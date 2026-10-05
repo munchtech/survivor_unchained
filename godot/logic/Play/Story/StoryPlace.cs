@@ -35,8 +35,8 @@ public sealed record StorySpace(string Id, Capsule[] Shapes)
     public double Dist(double x, double z) => Shapes.Min(s => s.Dist(x, z));
 }
 
-/// <summary>A way between two spaces, shut until its stage is won.</summary>
-public sealed record StoryGate(string Id, double X0, double Z0, double X1, double Z1);
+/// <summary>A way between two spaces, shut until its stage is won, and the space it opens.</summary>
+public sealed record StoryGate(string Id, double X0, double Z0, double X1, double Z1, string Into);
 
 public sealed class StoryPlace
 {
@@ -47,10 +47,22 @@ public sealed class StoryPlace
     public (double X, double Z) this[string point] => Points[point];
     public StorySpace Space(string id) => Spaces.First(s => s.Id == id);
 
+    /// <summary>The rectangle it stands in, with a margin.</summary>
+    public (double X0, double Z0, double X1, double Z1) Bounds(double margin = 3)
+    {
+        var all = Spaces.SelectMany(s => s.Shapes).ToList();
+        return (all.Min(c => Math.Min(c.X0, c.X1) - c.R) - margin, all.Min(c => Math.Min(c.Z0, c.Z1) - c.R) - margin,
+            all.Max(c => Math.Max(c.X0, c.X1) + c.R) + margin, all.Max(c => Math.Max(c.Z0, c.Z1) + c.R) + margin);
+    }
+
     /// <summary>Signed distance to the place's edge: negative inside.</summary>
     public double Dist(double x, double z) => Spaces.Min(s => s.Dist(x, z));
     public bool Inside(double x, double z, double margin = 0) => Dist(x, z) < -margin;
     public bool In(string space, double x, double z, double margin = 0) => Space(space).Dist(x, z) < -margin;
+    /// <summary>Inside one of the spaces open now (a leap or a blink is not carried over a shut gate).</summary>
+    public bool Inside(double x, double z, double margin, IReadOnlySet<string> open) => Spaces.Any(s => open.Contains(s.Id) && s.Dist(x, z) < -margin);
+    /// <summary>The space a point is in (the first, where they meet).</summary>
+    public string? SpaceAt(double x, double z) => Spaces.FirstOrDefault(s => s.Dist(x, z) < 0)?.Id;
 
     /// <summary>The place's walls: a band 2.5 m thick round its outline, as boxes a metre deep
     /// (one per run of wall along each row), so everything (her, the crowd, a thrown pot's

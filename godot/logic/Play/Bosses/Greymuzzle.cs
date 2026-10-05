@@ -45,6 +45,9 @@ public sealed class Greymuzzle : StoryBoss
     // the build is the twentieth minute's, he is eight levels over the tier, not twelve, and the fight
     // is three to four minutes with his time at the den: half again and a tenth, to be measured.
     public override double HealthMul(int tier) => 66 + 10.9 * tier;
+    // His blows at a story night's build (a table's twelfth minute, not its thirtieth): the contract's
+    // bands against her health then (contact a tenth, a lunge a quarter).
+    public override double DamageMul => 1.0;
     protected override bool DiesAtZero => false;
 
     /// <summary>The den floor's middle, and the den's mouth (the place's points).</summary>
@@ -72,7 +75,7 @@ public sealed class Greymuzzle : StoryBoss
         public double FromX, FromZ, ToX, ToZ, RunT = -1;
     }
     readonly List<Wolf> ring = new(), guard = new();
-    double ringR = 12, biteT = 9, shoveT, frostR = 99, frostDrawT;
+    double ringR = 12, biteT = 9, shoveT, biteGrace, frostR = 99, frostDrawT;
     bool ringBroken, longHunt, lyingDown;
     int lunges;
     double lungeT = 4, hamT = 3, howlT, sortieT, shakeT = 2, chainT = 3, howlHp;
@@ -171,16 +174,20 @@ public sealed class Greymuzzle : StoryBoss
         if (!lyingDown && pd > RingAt(pa) - 0.8 && shoveT <= 0)
         {
             shoveT = 0.6;
-            B.ShovePlayer(C.X - p.X, C.Z - p.Z, 2.5, E.Damage * 0.4, "the Pack");
+            // A snap, then a warning: pressed against the ring she is shoved, but bitten only now and then.
+            B.ShovePlayer(C.X - p.X, C.Z - p.Z, 2.5, biteGrace <= 0 ? E.Damage * 0.3 : 0, "the Pack");
+            if (biteGrace <= 0) biteGrace = 2;
             S.Bark(p.X, p.Z, "A wolf of the ring snaps, and shoves you back in.", null);
         }
-        // The guard before the den: inside two metres, shoved back.
+        // The guard before the den: inside two metres, shoved back onto the den floor (never into the ring).
         foreach (var w in guard)
             if (shoveT <= 0 && Dist(p.X, p.Z, w.E.X, w.E.Z) < 2)
             {
                 shoveT = 0.6;
-                B.ShovePlayer(p.X - w.E.X, p.Z - w.E.Z, 3, E.Damage * 0.4, "the Pack");
+                B.ShovePlayer(C.X - p.X, C.Z - p.Z, 3, biteGrace <= 0 ? E.Damage * 0.3 : 0, "the Pack");
+                if (biteGrace <= 0) biteGrace = 2;
             }
+        biteGrace -= dt;
         // The cold: while he howls it closes in from the ring, and only a fed fire's light is clear.
         if (Channel != null && PhaseIx == 1)
         {
@@ -480,7 +487,17 @@ public sealed class Greymuzzle : StoryBoss
         if (longHunt) { B.Rules.Light /= 0.5; longHunt = false; }
     }
 
-    public override string? State => PhaseIx == 1 && Channel != null ? "the cold closes in" : null;
+    public override string? State => Cold ? "the cold closes in" : null;
+
+    /* ------------------------------------------- what the hands read of him (BossSense) -- */
+
+    /// <summary>The moon-howl's cold is closing in.</summary>
+    public bool Cold => PhaseIx == 1 && Channel != null && !lyingDown;
+    /// <summary>Inside the ring, with a margin: a step past it is a shove.</summary>
+    public bool Inside(double x, double z, double margin) => ringBroken || lyingDown || Dist(x, z, C.X, C.Z) < RingAt(Math.Atan2(z - C.Z, x - C.X)) - margin;
+    public IReadOnlyList<Deadfall> Fires => S.Fires;
+    /// <summary>The den floor's middle: the ring stands round it.</summary>
+    public (double X, double Z) Middle => C;
 
     static double Wrap(double a)
     {

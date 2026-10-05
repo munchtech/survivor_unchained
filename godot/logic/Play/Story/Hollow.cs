@@ -37,16 +37,17 @@ public sealed class HollowByNight : StoryFight
         ],
         Gates =
         [
-            new("clough", -15.8, -7, -10.2, -14),
-            new("water", 6.1, 15, 12.9, 9),
+            new("clough", -15.8, -7, -10.2, -14, "water"),
+            new("water", 6.1, 15, 12.9, 9, "den"),
         ],
         Points = new()
         {
-            ["start"] = (-18, -38), ["rock"] = (-18, -18), ["head"] = (-18, -21),
+            ["start"] = (-18, -38), ["rock"] = (-18, -18), ["rock_low"] = (-21, -31), ["rock_mid"] = (-15, -25), ["head"] = (-18, -21), ["head_w"] = (-22, -20), ["head_e"] = (-14, -20),
             ["water_in"] = (-9, -7), ["reeds_w"] = (-8, 5), ["reeds_s"] = (5, -7), ["reeds_n"] = (-1, 8),
             ["shallow_a"] = (-2, -1), ["shallow_b"] = (5, 3),
             ["fire:a"] = (2, 9), ["fire:b"] = (9, 2),
             ["den_in"] = (11, 14), ["den"] = (19, 25), ["den_mouth"] = (21, 39), ["boss_start"] = (19, 16),
+            ["den_w"] = (7, 26), ["den_e"] = (31, 24), ["den_n"] = (15, 36),
             ["fire:c"] = (12, 18), ["fire:d"] = (26, 18), ["fire:e"] = (12, 32), ["fire:f"] = (26, 32),
         },
     };
@@ -79,17 +80,24 @@ public sealed class HollowByNight : StoryFight
     {
         public override string Goal => "Silence Old Blue";
         public override string? Gate => "clough";
-        public override int Level => 1;
+        public override double Minute => 2;
         public override string Start => "start";
+        public override (string Def, double Weight)[] Crowd => [("wolf", 5), ("wolf_runner", 1)];
+        public override int CrowdAlive => 26;
+        public override int CrowdPool => 300;
+        public override string[] CrowdFrom => ["head", "head_w", "head_e"];
+        public override int EmberFloor => 10;
         Enemy? blue;
-        double blueSeed, waveT = 7, howlT = 6, howlHp, howling = -1;
+        double blueSeed, howlT = 6, howlHp, howling = -1;
         School lastSchool;
         bool ringed;
+        int fled;
 
         protected override void Open()
         {
-            var (x, z) = A.Place["rock"];
-            blue = A.Foe("mb_caller", x, z, 1, "The Pack");
+            // He howls first from the low rock, and gives ground up the clough as he is hurt.
+            var (x, z) = A.Place["rock_low"];
+            blue = A.Foe("mb_caller", x, z, 1.5, "The Pack");
             if (blue != null)
             {
                 blueSeed = blue.Seed;
@@ -143,12 +151,7 @@ public sealed class HollowByNight : StoryFight
         {
             if (!Up(blue, blueSeed)) { Done = true; return; }
             A.Goal = (blue!.X, blue.Z);
-            waveT -= dt; howlT -= dt;
-            if (waveT <= 0)
-            {
-                waveT = 9;
-                if (A.Hostiles(e => e.Def.Id == "wolf") < 8) Head(2 + A.Tier / 2);
-            }
+            howlT -= dt;
             if (howlT <= 0 && howling < 0)
             {
                 howlT = 11;
@@ -156,6 +159,18 @@ public sealed class HollowByNight : StoryFight
                 howlHp = blue.Hp;
                 lastSchool = blue.LastSchool;
                 A.Bark(blue.X, blue.Z, "Old Blue lifts his head to howl.", null);
+            }
+            // Hurt, he gives ground up the cut to the next rock, and the Pack comes down it at her.
+            if (fled < 2 && blue.Hp < blue.MaxHp * (fled == 0 ? 0.66 : 0.33))
+            {
+                var (rx, rz) = A.Place[fled == 0 ? "rock_mid" : "rock"];
+                fled++;
+                blue.X = rx; blue.Z = rz;
+                blue.Kbx = blue.Kbz = 0;
+                blue.HomeX = rx; blue.HomeZ = rz;
+                B.Events.Emit(new Ev.Bark { X = rx, Z = rz, Text = "Old Blue gives ground, up the cut, and the Pack comes down it." });
+                Head(4 + A.Tier);
+                howlT = Math.Min(howlT, 2);
             }
             // Once, the runners ring her (the ring verb, read before the boss's ring).
             if (!ringed && blue.Hp < blue.MaxHp * 0.5)
@@ -186,10 +201,15 @@ public sealed class HollowByNight : StoryFight
             ? $"Light the deadfalls on the far bank ({Lit} of 2)"
             : Up(greenbelly, gbSeed) ? "Bring down Greenbelly" : $"Light the deadfalls on the far bank ({Lit} of 2)";
         public override string? Gate => "water";
-        public override int Level => 4;
+        public override double Minute => 6;
         public override string Start => "water_in";
+        public override (string Def, double Weight)[] Crowd => [("wolf_blighted", 3), ("wolf", 3), ("boar", 1)];
+        public override int CrowdAlive => 38;
+        public override int CrowdPool => 520;
+        public override string[] CrowdFrom => ["reeds_w", "reeds_s", "reeds_n"];
+        public override int EmberFloor => 20;
         Enemy? greenbelly;
-        double gbSeed, waveT = 4;
+        double gbSeed;
         readonly List<GroundZone> shallows = new();
         Deadfall[] fires = [];
         int Lit => fires.Count(f => f.EverLit);
@@ -222,17 +242,11 @@ public sealed class HollowByNight : StoryFight
             // The shallows: slurry underfoot slows as well as poisons.
             foreach (var zn in shallows)
                 if (zn.Alive && Dist(p.X, p.Z, zn.X, zn.Z) < zn.Radius) B.SlowPlayer(0.6, 0.3);
-            waveT -= dt;
-            if (waveT <= 0)
-            {
-                waveT = 10;
-                if (A.Hostiles(e => e.Def.Id == "wolf_blighted") < 9) Reeds(3);
-            }
             // Greenbelly comes for the first light (or when she has waited long enough for it).
             if (greenbelly == null && (Lit > 0 || T > 40))
             {
                 var (x, z) = A.Place["reeds_n"];
-                greenbelly = A.Foe("mb_blight_mother", x, z, 1, "The Pack");
+                greenbelly = A.Foe("mb_blight_mother", x, z, 2.2, "The Pack");
                 gbSeed = greenbelly?.Seed ?? 0;
             }
             var unlit = fires.Where(f => !f.EverLit).OrderBy(f => Dist(f.X, f.Z, p.X, p.Z)).FirstOrDefault();
@@ -259,18 +273,25 @@ public sealed class HollowByNight : StoryFight
     sealed class Drive : StoryBeat
     {
         public override string Goal => "Bring down Whitethroat";
-        public override int Level => 6;
+        public override double Minute => 10;
         public override string Start => "den_in";
+        public override (string Def, double Weight)[] Crowd => [("wolf", 4), ("wolf_runner", 2), ("wolf_blighted", 1), ("boar", 1)];
+        public override int CrowdAlive => 44;
+        public override int CrowdPool => 650;
+        public override string[] CrowdFrom => ["den_w", "den_e", "den_n"];
+        public override int EmberFloor => 28;
         Enemy? white;
         double whiteSeed, driveT = 5, runT = -1, pantT;
         double laneX0, laneZ0, laneX1, laneZ1;
         Battle.EnemyBlow? lane;
         bool hit;
+        /// <summary>Her yearlings take blows for her while she runs her drive: she is open when she misses.</summary>
+        const double Guarded = 0.45;
 
         protected override void Open()
         {
             var (x, z) = A.Place["den"];
-            white = A.Foe("mb_whitethroat", x, z + 6, 1, "The Pack");
+            white = A.Foe("mb_whitethroat", x, z + 6, 1.5, "The Pack");
             if (white != null)
             {
                 whiteSeed = white.Seed;
@@ -290,10 +311,10 @@ public sealed class HollowByNight : StoryFight
                 e.State = EnemyState.Recover;
                 e.Anim = EnemyAnim.Idle;
                 e.TakenMul = 1.5;
-                if (pantT <= 0) { e.TakenMul = 1; e.State = EnemyState.Active; }
+                if (pantT <= 0) { e.TakenMul = Guarded; e.State = EnemyState.Active; }
                 return true;
             }
-            if (runT < 0) return false;
+            if (runT < 0) { e.TakenMul = Guarded; return false; }
             runT += dt;
             if (runT < 1.0)
             {

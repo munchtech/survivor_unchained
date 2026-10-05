@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using SurvivorUnchained.Content;
 using SurvivorUnchained.Sim;
 
@@ -28,7 +29,9 @@ public static class BossSense
     /// <summary>Turns the way the hands were going (mx, mz) into the way a player who
     /// knows the boss goes, and dashes when only a dash will do. `reach`: how close
     /// its weapons want to be.</summary>
-    public static void Steer(Battle b, ArenaBoss? boss, bool deft, double reach, ref double mx, ref double mz)
+    /// <param name="aim">A story night's stage: where it wants her (a fire to light, a foe to find),
+    /// gone to when nothing of the boss's asks otherwise.</param>
+    public static void Steer(Battle b, ArenaBoss? boss, bool deft, double reach, ref double mx, ref double mz, (double X, double Z)? aim = null)
     {
         var p = b.Player;
         // Where it wants to be, by the fight's own question.
@@ -44,14 +47,34 @@ public static class BossSense
             case Grimtunnel { Flaring: >= 0 } g when g.E.Alive:
                 goal = (g.E.X, g.E.Z, Math.Max(2.2, Math.Min(reach * 0.7, 6)));
                 break;
+            // The cold closing in: into a fed fire's light, or to the nearest deadfall to light it.
+            case Greymuzzle { Cold: true } gm:
+            {
+                var lit = gm.Fires.Where(f => f.Burning).OrderBy(f => Dist(f.X, f.Z, p.X, p.Z)).FirstOrDefault();
+                var any = gm.Fires.Where(f => gm.Inside(f.X, f.Z, 0)).OrderBy(f => Dist(f.X, f.Z, p.X, p.Z)).FirstOrDefault();
+                if (lit != null) goal = (lit.X, lit.Z, lit.Reach * 0.6);
+                else if (any != null) goal = (any.X, any.Z, 1.0);
+                break;
+            }
         }
         foreach (var bl in b.Blows)
             if (bl.Kind == TelegraphKind.Safe && bl.Shape == TelegraphShape.Circle) { goal ??= (bl.X, bl.Z, bl.Radius * 0.5); break; }
+        if (goal == null && aim is var (ax, az) && b.Blows.Count == 0) goal = (ax, az, 1.2);
         if (goal is var (gx, gz, gn))
         {
             double d = Dist(gx, gz, p.X, p.Z);
             if (d > gn) { mx = (gx - p.X) / d; mz = (gz - p.Z) / d; }
             else { mx = 0; mz = 0; }
+        }
+
+        // A living wall (the Pack's ring): along it rather than into it.
+        if (boss is Greymuzzle wall && (mx != 0 || mz != 0) && !wall.Inside(p.X + mx * 1.5, p.Z + mz * 1.5, 1.0))
+        {
+            var (cx, cz) = wall.Middle;
+            double rx = cx - p.X, rz = cz - p.Z, rl = Math.Max(0.01, Math.Sqrt(rx * rx + rz * rz));
+            double tx = -rz / rl, tz = rx / rl;
+            if (tx * mx + tz * mz < 0) { tx = -tx; tz = -tz; }
+            mx = tx * 0.7 + rx / rl * 0.7; mz = tz * 0.7 + rz / rl * 0.7;
         }
 
         // The blows it has seen long enough to answer, and the ground about to close.
@@ -72,6 +95,8 @@ public static class BossSense
             else { cx = Math.Cos(c * Math.PI / 8); cz = Math.Sin(c * Math.PI / 8); }
             double score = want > 1e-6 ? (cx * mx + cz * mz) / want : 0;
             if ((cx != 0 || cz != 0) && b.Collision.Blocked(p.X + cx * 0.8, p.Z + cz * 0.8, p.Radius)) score -= 5;
+            // A living wall (the Pack's ring) is a wall: a step out of it is a shove.
+            if (boss is Greymuzzle ring && !ring.Inside(p.X + cx * 1.2, p.Z + cz * 1.2, 1.0)) score -= 6;
             double hurt = Caught(b, p.X, p.Z, cx * speed, cz * speed, deft, out double first);
             score -= hurt;
             if (score > bestScore) { bestScore = score; bx = cx; bz = cz; soonest = hurt > 0 ? first : double.MaxValue; }
@@ -86,6 +111,7 @@ public static class BossSense
             double cx = Math.Cos(c * Math.PI / 8), cz = Math.Sin(c * Math.PI / 8);
             double ex = p.X + cx * Abilities.Dash.Distance, ez = p.Z + cz * Abilities.Dash.Distance;
             if (b.InBounds != null && !b.InBounds(ex, ez)) continue;
+            if (boss is Greymuzzle ring && !ring.Inside(ex, ez, 1.0)) continue;
             double hurt = Caught(b, ex, ez, 0, 0, deft, out _);
             if (hurt < dashBest) { dashBest = hurt; dx = cx; dz = cz; }
         }

@@ -97,7 +97,7 @@ public class CheckpointTests
         var place = new StoryPlace
         {
             Spaces = [new("a", [Capsule.Circle(0, 0, 6)]), new("b", [Capsule.Circle(0, 12, 6), new Capsule(0, 4, 0, 8, 2.5)])],
-            Gates = [new StoryGate("ab", -3, 6, 3, 6)],
+            Gates = [new StoryGate("ab", -3, 6, 3, 6, "b")],
             Points = new() { ["start"] = (0, 0) },
         };
         var c = new CollisionWorld(80);

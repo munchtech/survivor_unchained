@@ -75,8 +75,21 @@ public abstract class StoryBeat
     public abstract string Goal { get; }
     /// <summary>The gate it opens when it is won (null: none).</summary>
     public virtual string? Gate => null;
+    /// <summary>The table night's minute this stage stands for: its creatures' levels (a table's,
+    /// one every two and a half minutes) and how much its crowd is softened (ArenaRun.FodderEase).</summary>
+    public abstract double Minute { get; }
     /// <summary>Creature levels over the tier's base.</summary>
-    public abstract int Level { get; }
+    public int Level => (int)(Minute / 2.5);
+    /// <summary>Its crowd: the kinds (weighted), how many are kept standing, how many there are in all
+    /// (finite: nothing is farmed), and the place's points they come from. The crowd is the ember's
+    /// food: a story night is still a night.</summary>
+    public virtual (string Def, double Weight)[] Crowd => [];
+    public virtual int CrowdAlive => 0;
+    public virtual int CrowdPool => 0;
+    public virtual string[] CrowdFrom => [];
+    /// <summary>The ember she has when it ends, at least: what its dead would have given her, so a quick
+    /// stage is not a weaker night.</summary>
+    public virtual int EmberFloor => 0;
     /// <summary>The place's point she begins it from (and gets up at).</summary>
     public abstract string Start { get; }
     public bool Done { get; protected set; }
@@ -126,8 +139,10 @@ public abstract class StoryFight
     public virtual string? BossGate => null;
     public abstract string BossAt { get; }
     public abstract string BossStart { get; }
-    /// <summary>Creature levels over the tier's base at the boss: a table night's twentieth minute.</summary>
-    public virtual int BossLevel => 8;
+    /// <summary>The table night's minute the boss stands for (its level), measured against the build a
+    /// story night gives: about a table night's twelfth minute (ember near thirty).</summary>
+    public virtual double BossMinute => 12;
+    public int BossLevel => (int)(BossMinute / 2.5);
     /// <summary>Its sign, heard before it comes.</summary>
     public abstract string Sign { get; }
     public abstract string BossDef { get; }

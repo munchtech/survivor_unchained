@@ -59,10 +59,15 @@ public sealed class StoryNight : ZoneRuntime, IStoryArena
     Enemy? boss;
     bool won, over;
     readonly List<Deadfall> fires = new();
+    /// <summary>The place's spaces open now: where she, a leap and the crowd may be.</summary>
+    readonly HashSet<string> open = new();
     readonly Dictionary<int, (double Seed, Func<Enemy, double, bool> Tick)> scripted = new();
     readonly HashSet<int> smallChests = new(), chests = new();
     readonly Dictionary<int, double> leaving = new();
     int chestsOpened;
+    /// <summary>What is left of the stage's crowd, and when it next tops up.</summary>
+    int crowdLeft;
+    double crowdT;
 
     /// <summary>How each stage went, for the harness: how long, the lowest health, the falls in it.</summary>
     public sealed record StageLog(string Name, double Seconds, double LowHp, int Falls);
@@ -137,7 +142,9 @@ public sealed class StoryNight : ZoneRuntime, IStoryArena
         b.Rules.EmberGain *= EmberPace;
         b.Rules.Light *= 1.6;
         var place = Fight.Place;
-        b.InBounds = (x, z) => map.CanStand(x, z) && place.Inside(x, z, 0.3);
+        var (ax, az) = place[Fight.Arrive];
+        open.Add(place.SpaceAt(ax, az) ?? place.Spaces[0].Id);
+        b.InBounds = (x, z) => map.CanStand(x, z) && place.Inside(x, z, 0.3, open);
         place.Build(b.Collision);
         b.Charges.Spikes = false;
         b.Charges.Cap = 2;
@@ -183,6 +190,8 @@ public sealed class StoryNight : ZoneRuntime, IStoryArena
         checkpoint = B!.Snapshot();
         Now = Stage.Beat;
         Goal = null;
+        crowdLeft = beat.CrowdPool;
+        crowdT = 1;
         StageBegun();
         beat.Begin(this);
         Objectives();
@@ -202,6 +211,8 @@ public sealed class StoryNight : ZoneRuntime, IStoryArena
         var b = beat!;
         b.End();
         StageEnded($"stage {beatIx + 1}");
+        // What the stage's dead would have given her, if she was quicker than they were many.
+        for (int k = 0; k < 200 && B!.EmberLevel < b.EmberFloor; k++) B.GainEmber(Math.Max(1, B.EmberNext - B.EmberXp), raw: true);
         if (b.Gate is { } g) Open(g);
         if (beatIx < Fight.Between.Length) G.Say(Fight.Between[beatIx]);
         // The stage's leftovers fall back into the dark: the quiet between is quiet.
@@ -216,7 +227,7 @@ public sealed class StoryNight : ZoneRuntime, IStoryArena
     void Open(string gate)
     {
         var g = Fight.Place.Gates.FirstOrDefault(x => x.Id == gate);
-        if (g != null) StoryPlace.Open(B!.Collision, g);
+        if (g != null) { StoryPlace.Open(B!.Collision, g); open.Add(g.Into); }
     }
 
     /* ------------------------------------------------------------- the boss -- */
@@ -279,6 +290,7 @@ public sealed class StoryNight : ZoneRuntime, IStoryArena
         switch (Now)
         {
             case Stage.Beat:
+                Crowd(dt);
                 beat!.Step(dt);
                 if (beat.Done) EndBeat();
                 break;
@@ -295,6 +307,44 @@ public sealed class StoryNight : ZoneRuntime, IStoryArena
                 break;
         }
         Leaving();
+        Strays(dt);
+    }
+
+    double strayT;
+
+    /// <summary>Anything of the fight's put out of its open ground (a shove, a slide) is brought back to the
+    /// nearest of the place's points it may stand on: a goal out of reach is a night that never ends.</summary>
+    void Strays(double dt)
+    {
+        if ((strayT -= dt) > 0) return;
+        strayT = 0.5;
+        foreach (var e in B!.Enemies.Living())
+        {
+            if (e.Disposition != Disposition.Hostile || e.Scripted || e.Boss || e.State is EnemyState.Dying or EnemyState.Burrowed) continue;
+            if (Fight.Place.Inside(e.X, e.Z, -0.8, open)) continue;
+            var home = Fight.Place.Points.Values.Where(q => Fight.Place.Inside(q.X, q.Z, 1, open)).OrderBy(q => Dist(q.X, q.Z, e.X, e.Z)).FirstOrDefault();
+            if (home == default) continue;
+            e.X = home.X; e.Z = home.Z; e.Kbx = e.Kbz = 0;
+        }
+    }
+
+    /// <summary>The stage's crowd kept standing, from its points out of her reach, until its pool is spent.</summary>
+    void Crowd(double dt)
+    {
+        var bt = beat!;
+        if (crowdLeft <= 0 || bt.Crowd.Length == 0 || (crowdT -= dt) > 0) return;
+        crowdT = 0.45;
+        int alive = Hostiles();
+        if (alive >= bt.CrowdAlive) return;
+        var p = B!.Player;
+        var all = bt.CrowdFrom.Select(id => Fight.Place[id]).ToList();
+        var far = all.Where(q => Dist(q.X, q.Z, p.X, p.Z) > 10).ToList();
+        var (x, z) = (far.Count > 0 ? far : all)[(int)(R() * (far.Count > 0 ? far.Count : all.Count))];
+        double sum = bt.Crowd.Sum(c => c.Weight), roll = R() * sum;
+        string def = bt.Crowd[^1].Def;
+        foreach (var c in bt.Crowd) { roll -= c.Weight; if (roll <= 0) { def = c.Def; break; } }
+        int n = Math.Min(crowdLeft, Math.Min(bt.CrowdAlive - alive, 3 + (int)(R() * 4)));
+        crowdLeft -= Math.Max(1, Group(def, n, x, z, 3.5).Count);
     }
 
     /// <summary>The deadfalls: she stands at one two seconds and the ember in her lights it; it burns
@@ -559,13 +609,17 @@ public sealed class StoryNight : ZoneRuntime, IStoryArena
 
     public void Withdraw(string id) => Interactables.RemoveAll(i => i.Id == $"story:{id}");
 
-    bool Standable(double x, double z) => map.CanStand(x, z) && Fight.Place.Inside(x, z, 0.6) && !B!.Collision.Blocked(x, z, 0.6);
+    bool Standable(double x, double z) => map.CanStand(x, z) && Fight.Place.Inside(x, z, 0.6, open) && !B!.Collision.Blocked(x, z, 0.6);
 
     Enemy? Spawn(string def, double x, double z, bool elite = false, SpawnStyle? style = null)
     {
         if (B == null) return null;
         var st = style ?? (Enemies.Get(def).Family == Family.Undead ? SpawnStyle.Rise : Enemies.Get(def).Behavior == Behavior.Tunneler ? SpawnStyle.Burrow : SpawnStyle.Walk);
-        return B.SpawnEnemy(def, x, z, new Battle.SpawnOpts { Level = Level + (elite ? 1 : 0), Elite = elite, Style = st });
+        var e = B.SpawnEnemy(def, x, z, new Battle.SpawnOpts { Level = Level + (elite ? 1 : 0), Elite = elite, Style = st });
+        // The crowd softens as a table night's does by its minute: the build's growth shows as a crowd
+        // that melts (ArenaRun.FodderEase). Not the named, the champions or the boss.
+        if (e != null && !e.Elite) e.MaxHp = e.Hp = e.MaxHp / ArenaRun.FodderEase(atBoss ? Fight.BossMinute : beat?.Minute ?? 0);
+        return e;
     }
 
     public Enemy? Foe(string def, double x, double z, double hpMul = 1, string? kicker = null)

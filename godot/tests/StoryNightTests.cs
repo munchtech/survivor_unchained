@@ -79,6 +79,54 @@ public class StoryNightTests
         Assert.Equal("Old Blue", n.Host.Boss?.Name);
     }
 
+    /// <summary>The place holds her: walking and dashing every way from each stage's start, she never
+    /// leaves it (a wall a dash went through left a bot outside, its fire out of reach).</summary>
+    [Theory]
+    [InlineData(0)]
+    [InlineData(1)]
+    [InlineData(2)]
+    [InlineData(3)]
+    public void The_place_holds_her_walking_and_dashing(int stage)
+    {
+        for (int k = 0; k < 16; k++)
+        {
+            var n = Hollow(unarmed: true);
+            n.Zone.SkipTo(stage);
+            foreach (var e in n.B.Enemies.Living().ToList()) n.B.Enemies.Release(e);
+            double mx = Math.Cos(k * Math.PI / 8), mz = Math.Sin(k * Math.PI / 8);
+            var p = n.B.Player;
+            for (int i = 0; i < 60 * 8; i++)
+            {
+                if (i % 30 == 0) { p.DashCharges = 2; n.B.Dash(mx, mz); }
+                n.B.Tick(1 / 60.0, mx, mz);
+                n.B.Events.Drain();
+                Assert.True(HollowByNight.Ground.Inside(p.X, p.Z, -0.6), $"stage {stage}, bearing {k}: out at ({p.X:0.0}, {p.Z:0.0})");
+            }
+        }
+    }
+
+    /// <summary>Each stage's goal can be walked to from where the stage before left her: the bots'
+    /// way (the harness's NavField) finds it through the opened gates.</summary>
+    [Fact]
+    public void Every_stage_can_be_walked_to()
+    {
+        var n = Hollow(unarmed: true);
+        var g = HollowByNight.Ground;
+        n.Zone.SkipTo(1);
+        var map = MapGen.Generate(n.Spec.Map);
+        foreach (var (from, to) in new[] { ("rock", "fire:a"), ("rock", "fire:b"), ("head_w", "water_in"), ("start", "fire:b") })
+        {
+            var nav = new NavField(map, n.B, g[to].X, g[to].Z, g.Bounds());
+            Assert.False(double.IsNaN(nav.ToGo(g[from].X, g[from].Z)), $"{from} to {to}");
+        }
+        n.Zone.SkipTo(2);
+        foreach (var (from, to) in new[] { ("fire:a", "den"), ("water_in", "den_n"), ("rock", "den_mouth") })
+        {
+            var nav = new NavField(map, n.B, g[to].X, g[to].Z, g.Bounds());
+            Assert.False(double.IsNaN(nav.ToGo(g[from].X, g[from].Z)), $"{from} to {to}");
+        }
+    }
+
     /// <summary>No clock: hands that do nothing never finish a stage.</summary>
     [Fact]
     public void A_stage_ends_on_its_goal_never_on_a_clock()
