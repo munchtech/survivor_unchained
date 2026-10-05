@@ -561,12 +561,39 @@ public partial class BattleFx
                 orbs.Add(new Transform3D(Godot.Basis.Identity.Scaled(Vector3.One * s * 1.8f), at), rim * 0.16f);
                 if (!lantern) Body(at, s * 1.6f, "umbral", art == "siphon" ? Hdr("#c050ff", 1.2f) : Hdr("#9a50ff", 1.2f), (float)now * 3 + p.Id);
                 Ribbons.Feed(key, at, 0.5f * s, ruin ? 0.28f : 0.18f, new Color(rim.R / 3, rim.G / 3, rim.B / 3), 1.6f, Ribbons.Style.Wisp);
-                // The tether: a thread back to the hand that cast it.
+                // The tether: a coil of the dark wound back to the hand that cast it, twisting as it
+                // pays out, and what it takes running back up it to her in her blood's rose. (A
+                // single faint wisp of a thread was not seen at all in a crowd.)
                 if (art.StartsWith("tether") && b0 != null)
                 {
                     var hand = V(b0.Player.X, Y(b0.Player.X, b0.Player.Z) + 1.15, b0.Player.Z);
-                    var mid = (hand + at) / 2 + Vector3.Up * 0.3f + new Vector3(Mathf.Sin((float)now * 7 + p.Id), 0, Mathf.Cos((float)now * 6 + p.Id)) * 0.25f;
-                    Ribbons.Now(new[] { hand, (hand + mid) / 2, mid, (mid + at) / 2, at }, 0.07f, Hdr("#b080ff", 1f), 1.6f, Ribbons.Style.Wisp, new[] { 0.3f, 0.8f, 1f, 0.8f, 0.5f });
+                    var span = at - hand;
+                    float len = Mathf.Max(0.3f, span.Length());
+                    var along = span / len;
+                    var side = Mathf.Abs(along.Y) < 0.95f ? along.Cross(Vector3.Up).Normalized() : Vector3.Right;
+                    var lift = side.Cross(along);
+                    const int N = 28;
+                    var coil = new Vector3[N + 1];
+                    var core = new Vector3[N + 1];
+                    var w = new float[N + 1];
+                    float turns = Mathf.Max(2, len / 1.2f), tf = (float)now * 9 + p.Id;
+                    for (int j = 0; j <= N; j++)
+                    {
+                        float u = j / (float)N, bell = Mathf.Sin(u * Mathf.Pi);
+                        var spine = hand + span * u + Vector3.Up * bell * 0.4f;
+                        float ang = u * turns * Mathf.Tau - tf, rad = 0.06f + 0.24f * bell;
+                        core[j] = spine;
+                        coil[j] = spine + (side * Mathf.Cos(ang) + lift * Mathf.Sin(ang)) * rad;
+                        w[j] = 0.35f + 0.65f * bell;
+                    }
+                    Ribbons.Now(core, 0.05f, Hdr("#3a1460", 1f), 1f, Ribbons.Style.Wisp, w);
+                    Ribbons.Now(coil, 0.04f, Hdr("#b47cff", 1.25f), 1.7f, Ribbons.Style.Glow, w);
+                    if (R() < 0.6f)
+                    {
+                        float k = (float)((now * 1.4 + p.Id * 0.37) % 1.0);
+                        var back = at - span * k + Vector3.Up * Mathf.Sin(k * Mathf.Pi) * 0.4f;
+                        Sparks.Spawn(back, -along * 0.5f, 0.28f, 0.15f, Hdr("#ff6a9a", 1.3f), Hdr("#a0204a", 0.8f), 0.05f, 0, 1);
+                    }
                 }
                 if (R() < 0.35f) Smoke.Spawn(at, -fwd * 0.3f + Vector3.Up * 0.2f, 0.6f, 0.2f * s, pal.Dim * 2f, pal.Dim, 0.45f * s, drag: 1.5f, alpha: 0.45f);
                 return true;
@@ -1285,6 +1312,8 @@ public partial class BattleFx
         // hid her), turning slowly.
         g.Fill.Decal.Modulate = Dim(edgeCol, fade * (inside == Inside.Runes ? 0.14f : inside == Inside.Veins ? 0.12f : 0.2f) * hush);
         g.Fill.Decal.Rotation = new Vector3(0, (float)(now * turn + z.Id * 1.7), 0);
+        if (inside == Inside.Runes) RuneRing(z.Id, at, r, fade * hush, now);
+        else if (inside == Inside.Embers) FirePatch(z.Id, at, r, fade);
         // What lives in it, sparse.
         var pal = Palette.Of(Palette.OfArt(z.Art));
         if (R() < 0.12f + 0.03f * r)
@@ -1325,8 +1354,72 @@ public partial class BattleFx
     /// emission ignores alpha) and its alpha the same, for what it lays as paint.</summary>
     static Color Dim(Color c, float k) => new(c.R * k, c.G * k, c.B * k, k);
 
+    readonly System.Collections.Generic.Dictionary<int, (MeshInstance3D Mesh, ShaderMaterial Mat)> runeRings = new();
+
+    /// <summary>A hallowed ground's ring of runes in the air at her waist, at its edge, turning
+    /// slowly (shaders/rune_ring.gdshader): seen over a packed crowd as its ground is not.</summary>
+    void RuneRing(int id, Vector3 ground, float r, float strength, double now)
+    {
+        if (!runeRings.TryGetValue(id, out var ring))
+        {
+            var mat = new ShaderMaterial { Shader = GD.Load<Shader>("res://shaders/rune_ring.gdshader") };
+            // (One seed and one turn for all: a cast laid over the last one crossfades into the same ring.)
+            var mesh = new MeshInstance3D { Mesh = new PlaneMesh { Size = new Vector2(2, 2) }, MaterialOverride = mat, CastShadow = GeometryInstance3D.ShadowCastingSetting.Off };
+            AddChild(mesh);
+            runeRings[id] = ring = (mesh, mat);
+        }
+        ring.Mesh.Visible = true;
+        // Runes about half a metre across whatever the reach (an integer, so the band closes).
+        ring.Mat.SetShaderParameter("count", Mathf.Max(16, Mathf.Round(Mathf.Tau * r * 0.9f / 0.55f)));
+        ring.Mat.SetShaderParameter("lit", strength * 0.5f);
+        ring.Mesh.Position = ground + Vector3.Up * 0.95f;
+        ring.Mesh.Rotation = new Vector3(0, (float)(-now * 0.18), 0);
+        ring.Mesh.Scale = new Vector3(r, 1, r);
+    }
+
+    readonly System.Collections.Generic.Dictionary<int, (MeshInstance3D Mesh, ShaderMaterial Mat)> firePatches = new();
+
+    /// <summary>Ground left burning: low tongues of flame standing round its edge and lapping in
+    /// (the rise's wall in small, shaders/fire_wall.gdshader), so it burns over a packed crowd's
+    /// feet where its embers on the ground are hidden. (A firepot's burst alone was a soft orange
+    /// blob.)</summary>
+    void FirePatch(int id, Vector3 ground, float r, float strength)
+    {
+        if (!firePatches.TryGetValue(id, out var patch))
+        {
+            var mat = new ShaderMaterial { Shader = GD.Load<Shader>("res://shaders/fire_wall.gdshader") };
+            mat.SetShaderParameter("seed", R() * 100);
+            mat.SetShaderParameter("segs", 48f);
+            mat.SetShaderParameter("cells", Mathf.Max(6, Mathf.Round(Mathf.Tau * r * 0.8f / 0.42f)));
+            var mesh = new MeshInstance3D
+            {
+                Mesh = Kept("firecards48", () => FireCards(48)), MaterialOverride = mat, CastShadow = GeometryInstance3D.ShadowCastingSetting.Off,
+                CustomAabb = new Aabb(new Vector3(-1.5f, -0.5f, -1.5f), new Vector3(3, 2, 3)),
+            };
+            AddChild(mesh);
+            firePatches[id] = patch = (mesh, mat);
+        }
+        patch.Mesh.Position = ground - Vector3.Up * 0.05f;
+        patch.Mesh.Scale = new Vector3(r * 0.8f, 0.75f + 0.1f * r, r * 0.8f);
+        patch.Mat.SetShaderParameter("burn", strength);
+    }
+
     void GroundsGone(System.Collections.Generic.HashSet<int> alive)
     {
+        if (firePatches.Count > 0)
+        {
+            var out1 = new System.Collections.Generic.List<int>();
+            foreach (var (id, patch) in firePatches)
+                if (!alive.Contains(id)) { patch.Mesh.QueueFree(); out1.Add(id); }
+            foreach (var id in out1) firePatches.Remove(id);
+        }
+        if (runeRings.Count > 0)
+        {
+            var over = new System.Collections.Generic.List<int>();
+            foreach (var (id, ring) in runeRings)
+                if (!alive.Contains(id)) { ring.Mesh.QueueFree(); over.Add(id); }
+            foreach (var id in over) runeRings.Remove(id);
+        }
         if (grounds.Count == 0) return;
         var gone = new System.Collections.Generic.List<int>();
         foreach (var (id, g) in grounds)

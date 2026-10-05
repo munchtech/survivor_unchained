@@ -16,6 +16,8 @@
 //   3 Set: two strands twisting.   4 Pillar: Legendary and Storied, past the top of the screen.
 //   5 Strike: a Legendary's light falling onto it as it lands (the fraction is how far through).
 //   6 Glow: a plain short light (Chart, Quest, the hoard stone).
+//   7 Shaft: a moment's column of light (BattleFx.Pillar: a strike, a level, an evolution, a chest,
+//     the night won), its height given.
 shader_type spatial;
 render_mode unshaded, blend_premul_alpha, depth_draw_never, depth_test_disabled, cull_disabled, shadows_disabled, fog_disabled, skip_vertex_transform;
 
@@ -129,6 +131,14 @@ void fragment() {
 		light = (tint * g(x, 0.05) * 1.3 + deep * g(x, 0.22) * 0.45) * trail * fall
 			+ deep * pool(half_w * 0.7) * flash * 0.65 + tint * g(x, 0.22) * g(y, 0.4) * flash * 0.6;
 		veil = g(x, 0.1) * trail * fall * 0.25 + pool(half_w * 0.8) * flash * 0.15;
+	} else if (kind > 6.5) {
+		// A shaft: light down from the sky or up out of the ground for a moment, a hot core in a
+		// glow scaled to its width, brightest at its foot.
+		float w = half_w;
+		float fade = rise * pow(1.0 - u, 0.9);
+		light = (tint * g(x, w * 0.09) * 1.2 + mix(tint, deep, 0.5) * g(x, w * 0.28) * 0.5 + deep * g(x, w * 0.7) * 0.14) * fade
+			+ deep * pool(w * 0.55) * 0.4;
+		veil = (g(x, w * 0.14) * 0.25 + g(x, w * 0.4) * 0.08) * fade;
 	} else {
 		// A plain short glow.
 		float fade = rise * pow(1.0 - u, 1.5);
