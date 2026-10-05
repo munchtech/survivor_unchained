@@ -645,7 +645,13 @@
     {
      "stat": "armor",
      "kind": "flat",
-     "value": 1,
+     "value": 2,
+     "source": "item"
+    },
+    {
+     "stat": "maxHealth",
+     "kind": "flat",
+     "value": 16,
      "source": "item"
     }
    ]
@@ -664,6 +670,12 @@
      "stat": "armor",
      "kind": "flat",
      "value": 3,
+     "source": "item"
+    },
+    {
+     "stat": "maxHealth",
+     "kind": "flat",
+     "value": 8,
      "source": "item"
     },
     {
@@ -687,13 +699,13 @@
     {
      "stat": "armor",
      "kind": "flat",
-     "value": 2,
+     "value": 3,
      "source": "item"
     },
     {
      "stat": "maxHealth",
      "kind": "flat",
-     "value": 10,
+     "value": 12,
      "source": "item"
     }
    ]
@@ -712,6 +724,12 @@
      "stat": "armor",
      "kind": "flat",
      "value": 5,
+     "source": "item"
+    },
+    {
+     "stat": "maxHealth",
+     "kind": "flat",
+     "value": 6,
      "source": "item"
     },
     {
@@ -737,6 +755,18 @@
      "kind": "inc",
      "value": 0.03,
      "source": "item"
+    },
+    {
+     "stat": "armor",
+     "kind": "flat",
+     "value": 3,
+     "source": "item"
+    },
+    {
+     "stat": "maxHealth",
+     "kind": "flat",
+     "value": 12,
+     "source": "item"
     }
    ]
   },
@@ -748,7 +778,15 @@
    "icon": "ring",
    "value": 10,
    "base": true,
-   "description": "Green at the edges."
+   "description": "Green at the edges.",
+   "mods": [
+    {
+     "stat": "critChance",
+     "kind": "flat",
+     "value": 0.015,
+     "source": "item"
+    }
+   ]
   },
   "silver_ring": {
    "id": "silver_ring",
@@ -758,7 +796,15 @@
    "icon": "ring",
    "value": 25,
    "base": true,
-   "description": "Bright, and a little cold."
+   "description": "Bright, and a little cold. The dead do not like it.",
+   "mods": [
+    {
+     "stat": "vs.undead",
+     "kind": "flat",
+     "value": 0.06,
+     "source": "item"
+    }
+   ]
   },
   "bone_amulet": {
    "id": "bone_amulet",
@@ -768,7 +814,21 @@
    "icon": "bone",
    "value": 12,
    "base": true,
-   "description": "Someone's knuckle, on a string."
+   "description": "Someone's knuckle, on a string.",
+   "mods": [
+    {
+     "stat": "maxHealth",
+     "kind": "flat",
+     "value": 6,
+     "source": "item"
+    },
+    {
+     "stat": "regen",
+     "kind": "flat",
+     "value": 0.2,
+     "source": "item"
+    }
+   ]
   },
   "watch_buckler": {
    "id": "watch_buckler",
@@ -1271,6 +1331,631 @@
    "stack": 10,
    "description": "Steep a piece in it, from the pack: a grade past what the forge can do, or something green and strong with a price, or only the veins, or a grade lost. It sets the piece for good.",
    "lore": "It is the GOOD stuff. Snib would not drink it. Snib would not drink the bad stuff EITHER."
+  },
+  "scar_glass": {
+   "id": "scar_glass",
+   "name": "Scar-Glass",
+   "plural": "pieces of scar-glass",
+   "kind": "material",
+   "rarity": 3,
+   "icon": "scar_glass",
+   "value": 60,
+   "stack": 10,
+   "description": "Steep a piece of gear in it by hand, as in a slurry jar: a grade past the forge, a power with a price, only the veins, or a grade lost. A night's scar leaves a piece for every hour you stay past winning it.",
+   "lore": "Ground that a scar burned until it ran, gone to dark glass. It only forms where somebody stayed too long. Held to the light it is the blue of the ford lamps, and it is never quite cold."
+  },
+  "mark_hunt_bone": {
+   "id": "mark_hunt_bone",
+   "name": "Tally-Bone",
+   "kind": "trophy",
+   "rarity": 1,
+   "icon": "hunt_bone",
+   "value": 40,
+   "description": "A deer's shinbone from a Pack ruler's den, scored end to end with toothmarks in close, even rows, the way a shepherd notches a stick to count. Vonnra can read the hunt in it, and mark a piece you wear with it.",
+   "tags": ["mark"]
+  },
+  "mark_lamp_glass": {
+   "id": "mark_lamp_glass",
+   "name": "Cracked Lamp-Glass",
+   "kind": "trophy",
+   "rarity": 1,
+   "icon": "lamp_glass",
+   "value": 40,
+   "description": "A lamp's chimney-glass from a lampling ruler, cracked from top to bottom. What was lit in it fell a long way once and went on burning where it landed. It is still warm. Vonnra can mark a piece you wear with it.",
+   "tags": ["mark"]
+  },
+  "mark_gate_nail": {
+   "id": "mark_gate_nail",
+   "name": "Bent Barrow-Nail",
+   "kind": "trophy",
+   "rarity": 1,
+   "icon": "gate_nail",
+   "value": 40,
+   "description": "A square iron nail as long as your hand, from a barrow door, bent double. Somebody nailed that door shut a long time ago. It was opened from inside. Vonnra can mark a piece you wear with it.",
+   "tags": ["mark"]
+  },
+  "mark_red_cord": {
+   "id": "mark_red_cord",
+   "name": "Muster-Cord",
+   "kind": "trophy",
+   "rarity": 1,
+   "icon": "red_cord",
+   "value": 40,
+   "description": "A length of red cord, knotted once for every name at a muster. Nobody untied the knots for the ones who did not come home. Vonnra can read the crowd in it, and mark a piece you wear with it.",
+   "tags": ["mark"]
+  },
+  "drowned_coat": {
+   "id": "drowned_coat",
+   "name": "The Drowned Coat",
+   "kind": "body",
+   "rarity": 4,
+   "icon": "armor_light",
+   "value": 320,
+   "of": "padded_jerkin",
+   "dropsFrom": 1,
+   "homes": [
+    "dead"
+   ],
+   "description": "Your dash leaves black water for 3 s that slows what wades in it by 40%. +30% fire resistance.",
+   "mods": [
+    {
+     "stat": "resist.fire",
+     "kind": "flat",
+     "value": 0.3,
+     "source": "item"
+    },
+    {
+     "stat": "healing",
+     "kind": "inc",
+     "value": -0.15,
+     "source": "item"
+    }
+   ],
+   "triggers": [
+    {
+     "on": "dash",
+     "icd": 0.5,
+     "effects": [
+      {
+       "do": "zone",
+       "radius": 1.8,
+       "duration": 3,
+       "dps": 2,
+       "basis": "flat",
+       "school": "frost",
+       "art": "zone_drowned",
+       "slow": 0.4
+      }
+     ],
+     "text": "Your dash leaves black water that slows"
+    }
+   ],
+   "downside": "You mend 15% less. It is always cold.",
+   "lore": "Wrung out, it is wet again by morning. Whoever wore it last went into the ford in it, and did not come out."
+  },
+  "corrans_sword": {
+   "id": "corrans_sword",
+   "name": "Corran's Sword",
+   "kind": "weapon",
+   "rarity": 4,
+   "icon": "sword",
+   "value": 320,
+   "of": "worn_oathblade",
+   "dropsFrom": 3,
+   "homes": [
+    "dead"
+   ],
+   "weapon": {
+    "id": "oathblade",
+    "rank": 1
+   },
+   "description": "Standing still, your weapons strike 25% faster, and a blow that lands sends a ring of steel round you, once a second.",
+   "mods": [
+    {
+     "stat": "cooldown",
+     "kind": "more",
+     "value": -0.25,
+     "source": "item",
+     "when": "still"
+    },
+    {
+     "stat": "moveSpeed",
+     "kind": "inc",
+     "value": -0.08,
+     "source": "item"
+    }
+   ],
+   "triggers": [
+    {
+     "on": "hit",
+     "icd": 1,
+     "when": {
+      "moving": false
+     },
+     "effects": [
+      {
+       "do": "nova",
+       "radius": 2.6,
+       "damage": 0.5,
+       "basis": "hit",
+       "school": "physical"
+      }
+     ],
+     "text": "Standing still, a blow that lands rings steel round you"
+    }
+   ],
+   "tags": [
+    "corrans_sword"
+   ],
+   "downside": "8% slower.",
+   "lore": "Notched along the spine in tens, the way a man counts nights on a post nobody relieves. The Watch's book has him down as a deserter."
+  },
+  "ditchwater": {
+   "id": "ditchwater",
+   "name": "Ditchwater",
+   "kind": "weapon",
+   "rarity": 4,
+   "icon": "bow",
+   "value": 320,
+   "of": "hunting_bow",
+   "dropsFrom": 3,
+   "homes": [
+    "dead"
+   ],
+   "weapon": {
+    "id": "volley",
+    "rank": 1
+   },
+   "description": "Volley's bolts pierce one more and chill what they pass through.",
+   "mods": [
+    {
+     "stat": "pierce",
+     "kind": "flat",
+     "value": 1,
+     "source": "item"
+    }
+   ],
+   "triggers": [
+    {
+     "on": "hit",
+     "when": {
+      "weapon": "volley"
+     },
+     "effects": [
+      {
+       "do": "status",
+       "target": "hit",
+       "status": {
+        "kind": "chill",
+        "chance": 1,
+        "power": 0.3,
+        "duration": 2
+       }
+      }
+     ],
+     "text": "Volley's bolts chill"
+    }
+   ],
+   "statuses": [
+    "chill"
+   ],
+   "lore": "Pulled out of the ditch on the Low Ford road, wound and loaded, with weed in the stock. Whoever loaded it never got to fire it."
+  },
+  "fever_year_staff": {
+   "id": "fever_year_staff",
+   "name": "The Fever-Year Staff",
+   "kind": "weapon",
+   "rarity": 4,
+   "icon": "staff",
+   "value": 340,
+   "of": "ember_staff",
+   "dropsFrom": 6,
+   "homes": [
+    "dead"
+   ],
+   "weapon": {
+    "id": "cinderfall",
+    "rank": 1
+   },
+   "description": "Cinderfall poisons as it burns. What dies poisoned passes the poison to three near it.",
+   "mods": [
+    {
+     "stat": "healing",
+     "kind": "inc",
+     "value": -0.1,
+     "source": "item"
+    }
+   ],
+   "triggers": [
+    {
+     "on": "hit",
+     "when": {
+      "weapon": "cinderfall"
+     },
+     "effects": [
+      {
+       "do": "status",
+       "target": "hit",
+       "status": {
+        "kind": "poison",
+        "chance": 1,
+        "power": 0.4,
+        "duration": 4
+       }
+      }
+     ],
+     "text": "Cinderfall poisons"
+    },
+    {
+     "on": "kill",
+     "when": {
+      "targetStatus": "poison"
+     },
+     "effects": [
+      {
+       "do": "spread",
+       "kind": "poison",
+       "radius": 3,
+       "count": 3
+      }
+     ],
+     "text": "The poisoned pass it on"
+    }
+   ],
+   "statuses": [
+    "poison"
+   ],
+   "downside": "You mend 10% less.",
+   "lore": "Charred to the grip. In the fever year they burned the bedding of the dead, and somebody stirred the fire with this until it was done."
+  },
+  "slurry_wheel": {
+   "id": "slurry_wheel",
+   "name": "The Slurry Wheel",
+   "kind": "offhand",
+   "rarity": 4,
+   "icon": "shield",
+   "value": 340,
+   "of": "watch_buckler",
+   "dropsFrom": 6,
+   "homes": [
+    "lamplings"
+   ],
+   "description": "Every block throws slurry round you: poison on everything within 3 m. You block more often.",
+   "mods": [
+    {
+     "stat": "block",
+     "kind": "flat",
+     "value": 1,
+     "source": "item"
+    },
+    {
+     "stat": "from.lampling",
+     "kind": "flat",
+     "value": -0.15,
+     "source": "item"
+    }
+   ],
+   "triggers": [
+    {
+     "on": "block",
+     "effects": [
+      {
+       "do": "status",
+       "target": "near",
+       "radius": 3,
+       "count": 12,
+       "status": {
+        "kind": "poison",
+        "chance": 1,
+        "power": 0.5,
+        "duration": 3
+       }
+      }
+     ],
+     "text": "A block throws slurry round you"
+    }
+   ],
+   "statuses": [
+    "poison"
+   ],
+   "downside": "15% more damage from lamplings.",
+   "lore": "A spare wheel off the Dig's pump, beaten flat and strapped for an arm. It still weeps green."
+  },
+  "kells_lamp": {
+   "id": "kells_lamp",
+   "name": "Kell's Lamp",
+   "kind": "relic",
+   "rarity": 4,
+   "icon": "lamp",
+   "value": 340,
+   "dropsFrom": 8,
+   "homes": [
+    "lamplings"
+   ],
+   "description": "Every two seconds your lamp flares: fire on everything within 3.5 m.",
+   "mods": [
+    {
+     "stat": "lightRadius",
+     "kind": "inc",
+     "value": 0.2,
+     "source": "item"
+    }
+   ],
+   "triggers": [
+    {
+     "on": "tick",
+     "icd": 2,
+     "effects": [
+      {
+       "do": "nova",
+       "radius": 3.5,
+       "damage": 14,
+       "basis": "flat",
+       "school": "fire"
+      }
+     ],
+     "text": "Your lamp flares every two seconds"
+    }
+   ],
+   "lore": "It came back up the shaft on its own, still lit. Kell did not."
+  },
+  "pelt_of_the_pack": {
+   "id": "pelt_of_the_pack",
+   "name": "Pelt of the Pack",
+   "kind": "cloak",
+   "rarity": 4,
+   "icon": "pelt",
+   "value": 300,
+   "of": "travelers_cloak",
+   "dropsFrom": 4,
+   "homes": [
+    "pack"
+   ],
+   "dropsWhen": {
+    "fact": "beasts.outcome",
+    "eq": "slaughtered"
+   },
+   "description": "Every wolf you kill in a fight gives you 2 health, to 80.",
+   "triggers": [
+    {
+     "on": "kill",
+     "when": {
+      "targetFamily": "wolf"
+     },
+     "effects": [
+      {
+       "do": "buff",
+       "id": "pack_pelt",
+       "stat": "maxHealth",
+       "value": 2,
+       "kind": "flat",
+       "duration": 100000,
+       "maxStacks": 40
+      }
+     ],
+     "text": "Wolves killed give you health"
+    }
+   ],
+   "tags": [
+    "pack_pelt"
+   ],
+   "lore": "Grey to the roots, and stitched from more than one wolf. Maeca could tell you whose, and won't."
+  },
+  "watch_coif": {
+   "id": "watch_coif",
+   "name": "Watch Coif",
+   "kind": "head",
+   "rarity": 3,
+   "set": "watch_kit",
+   "icon": "helm",
+   "value": 160,
+   "of": "iron_helm",
+   "dropsFrom": 2,
+   "homes": [
+    "dead"
+   ],
+   "description": "+12 health. The Watch's Kit.",
+   "mods": [
+    {
+     "stat": "maxHealth",
+     "kind": "flat",
+     "value": 12,
+     "source": "item"
+    }
+   ],
+   "lore": "Oiled, and hung on its peg. The man whose peg it was is not coming back for it."
+  },
+  "watch_hauberk": {
+   "id": "watch_hauberk",
+   "name": "Watch Hauberk",
+   "kind": "body",
+   "rarity": 3,
+   "set": "watch_kit",
+   "icon": "armor",
+   "value": 180,
+   "of": "chain_shirt",
+   "dropsFrom": 2,
+   "homes": [
+    "dead"
+   ],
+   "description": "+3 armour. The Watch's Kit.",
+   "mods": [
+    {
+     "stat": "armor",
+     "kind": "flat",
+     "value": 3,
+     "source": "item"
+    }
+   ],
+   "lore": "Mended at the shoulder where a blade went in, more than once, by someone who could not sew."
+  },
+  "watch_shield": {
+   "id": "watch_shield",
+   "name": "The Watch's Torch-Shield",
+   "kind": "offhand",
+   "rarity": 3,
+   "set": "watch_kit",
+   "icon": "shield",
+   "value": 170,
+   "of": "watch_buckler",
+   "dropsFrom": 2,
+   "homes": [
+    "dead"
+   ],
+   "description": "+10% holy damage. The Watch's Kit.",
+   "mods": [
+    {
+     "stat": "damage.holy",
+     "kind": "inc",
+     "value": 0.1,
+     "source": "item"
+    }
+   ],
+   "lore": "The torch is the Watch's. It was painted over once, and someone scraped it back."
+  },
+  "roost_hood": {
+   "id": "roost_hood",
+   "name": "Roost Hood",
+   "kind": "head",
+   "rarity": 3,
+   "set": "levy_red",
+   "icon": "helm_light",
+   "value": 160,
+   "of": "leather_cap",
+   "dropsFrom": 5,
+   "homes": [
+    "kerchiefs"
+   ],
+   "description": "+4% critical chance. The Levy Red.",
+   "mods": [
+    {
+     "stat": "critChance",
+     "kind": "flat",
+     "value": 0.04,
+     "source": "item"
+    }
+   ],
+   "tags": [
+    "kerchief_colors"
+   ],
+   "lore": "Red, and faded where the rain gets it, and darned where the rest of the world does."
+  },
+  "levy_colours": {
+   "id": "levy_colours",
+   "name": "Levy Colours",
+   "kind": "cloak",
+   "rarity": 3,
+   "set": "levy_red",
+   "icon": "cloak",
+   "value": 160,
+   "of": "travelers_cloak",
+   "dropsFrom": 5,
+   "homes": [
+    "kerchiefs"
+   ],
+   "description": "+5% speed. The Levy Red.",
+   "mods": [
+    {
+     "stat": "moveSpeed",
+     "kind": "inc",
+     "value": 0.05,
+     "source": "item"
+    }
+   ],
+   "lore": "A levy's cloak, cut down. The badge was unpicked. You can still see where it was."
+  },
+  "kerchief_knives": {
+   "id": "kerchief_knives",
+   "name": "Kerchief Knives",
+   "kind": "weapon",
+   "rarity": 3,
+   "set": "levy_red",
+   "icon": "dagger",
+   "value": 180,
+   "of": "knife_belt",
+   "dropsFrom": 5,
+   "homes": [
+    "kerchiefs"
+   ],
+   "weapon": {
+    "id": "knifestorm",
+    "rank": 1
+   },
+   "description": "Knifestorm. The Levy Red.",
+   "mods": [
+    {
+     "stat": "critDamage",
+     "kind": "flat",
+     "value": 0.15,
+     "source": "item"
+    }
+   ],
+   "lore": "Forty-one mouths. These were the forks."
+  },
+  "nans_cleaver": {
+   "id": "nans_cleaver",
+   "name": "Nan's Cleaver",
+   "kind": "weapon",
+   "rarity": 4,
+   "icon": "cleaver",
+   "value": 320,
+   "of": "butchers_cleaver",
+   "dropsFrom": 2,
+   "homes": [
+    "kerchiefs"
+   ],
+   "weapon": {
+    "id": "cleaver",
+    "rank": 1
+   },
+   "description": "Below half health, every kill mends 2% of your health. Your blows bleed.",
+   "mods": [
+    {
+     "stat": "damage",
+     "kind": "inc",
+     "value": -0.15,
+     "source": "item",
+     "when": "healthy"
+    }
+   ],
+   "triggers": [
+    {
+     "on": "kill",
+     "icd": 0.1,
+     "when": {
+      "selfHpBelow": 0.5
+     },
+     "effects": [
+      {
+       "do": "heal",
+       "amount": 0.02,
+       "basis": "maxhp"
+      }
+     ],
+     "text": "Below half health, kills mend you"
+    },
+    {
+     "on": "hit",
+     "chance": 0.15,
+     "effects": [
+      {
+       "do": "status",
+       "target": "hit",
+       "status": {
+        "kind": "bleed",
+        "chance": 1,
+        "power": 0.35,
+        "duration": 3
+       }
+      }
+     ]
+    }
+   ],
+   "statuses": [
+    "bleed"
+   ],
+   "downside": "Above four fifths of your health you deal 15% less.",
+   "lore": "Firepot Nan's, from the Roost's kitchen. It has jointed everything the road brought in, and the road brought in a great deal. She will want it back."
   }
  },
  "raritynames": [

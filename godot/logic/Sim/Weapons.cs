@@ -247,7 +247,7 @@ public static class Firing
             pr.GroundOnHit = w.GroundOf;
             // The Falling Star (a Mark): the cinder's blast leaves the ground burning.
             if (pr.GroundOnHit == null && w.Id == "cinderfall" && b.Marked(Marks.FallingStar, out double star))
-                pr.GroundOnHit = new GroundSpec(1.8, Marks.Lerp(1, 4, star), 0.25);
+                pr.GroundOnHit = new GroundSpec(1.8, Marks.Lerp(2, 5, star), 0.25);
             pr.Rank = w.Rank;
             pr.BossDamage = w.BossDamage;
             pr.AimAlongVelocity();
@@ -283,7 +283,7 @@ public static class Firing
         // The Ravine (a Mark): a second volley at the farthest in reach, a part as strong.
         if (w.Id == "volley" && b.Marked(Marks.Ravine, out double ravine) && b.FarthestHostile(p.X, p.Z, RangeOf(w)) is { } far && far != t)
         {
-            double af = Math.Atan2(far.Z - p.Z, far.X - p.X), k = Marks.Lerp(0.2, 0.9, ravine);
+            double af = Math.Atan2(far.Z - p.Z, far.X - p.X), k = Marks.Lerp(0.35, 0.9, ravine);
             for (int i = 0; i < n; i++)
                 if (Launch(b, w, af + (i - (n - 1) / 2.0) * spread, target: far.Id) is { } pr) pr.Damage *= k;
         }

@@ -396,6 +396,18 @@ over a lamp until "it lets go". If she has been accused (`vonnra.accused`),
 she uses the survivor's name and charges a tenth less (the items plan's small
 true consequence).
 
+**As built** (`Crafting.Bind`, `Crafting.Donors`; the bench's page as "The Toll
+Tower", from her "Can you move what's in one thing into another?"): she opens
+only once the toll is paid (`toll.paid`, the story lead's condition). Only
+plain powers move: a caged coal stays in Brannoc's cage (her own line,
+`bind.caged`), and worn skills, trophies and the slurry's powers will not let
+go. The donor must be in the pack, not worn. Each bind card names the power
+and the grade it comes in at, and where it comes from ("where it is grade IV; a
+rare piece holds III"); the first press asks again in red ("Your Searing Silver
+Ring is unmade for it. Press again to bind."), the second binds. The seam it goes
+into flares with a lamp's warmth and lights rise off it, slowly (the breath she
+describes going out of the old piece), not the forge's sparks.
+
 **Why**: Last Epoch's legendary potential and Kanai's Cube (C11): two finds
 become one keeper, every drop is a possible ingredient, and the offensive
 affixes (fire, crit, haste, reach), which the forge never makes, can still be
@@ -454,6 +466,27 @@ jar is opened, in Snib's voice ("It is the GOOD stuff. Snib would not drink
 it. Snib would not drink the bad stuff EITHER."; `crafting.json`, `snib`). **Why**: C7; the only way past the forge's ceiling, and a moral
 one: the gamble exists because the stream is poisoned, and curing the stream
 closes it (the jars already bought keep).
+
+**As built** (`Crafting.Steep`, `Crafting.Outcome`):
+- **Where.** At Snib's bench ("Sell me a jar of that.", the page "The Dig"), where
+  he sells the jars and steeps in his words; and by the survivor's own hand from
+  the pack (never in an arena), so a jar kept past the cure still works.
+- **"Up" is always past the forge.** One power, any that can still rise, goes
+  to the grade above the piece's cap (a rare's III gives IV; an epic's IV the
+  bright V), or a grade finer if it was there already. The bright V is the last
+  grade. A piece with nothing left to rise comes to only the veins.
+- **Seen before the jar is opened.** The odds are a bar cut by their weights.
+  Under each cut is what it would mean for this piece: which powers could rise or
+  fall and to what, and which slurry powers fit it. The press asks again, in red.
+- **Said after.** What it came to, plainly ("Hale gave a grade: +18 maximum
+  health to +10 maximum health"), coloured by how it went: green for a gain,
+  red for a loss, the veins' grey for nothing. The story's narration of how it
+  looked follows. The seam it touched rings.
+- **Set for good.** A steeped piece takes no heat back: rekindling and remaking
+  are refused (`Crafting.SetForGood`), or the forge could open it again past the
+  bright grade.
+- **The veins are seen everywhere.** A shader runs green-black veins through the
+  piece's own picture in every slot, card and anvil (`ItemViews.Steeped`).
 
 ---
 
@@ -729,6 +762,13 @@ steeping; the seeds' lines.
 21. **The draught key drinks the moonpetal only for a deep wound** (55% of health gone; combat's rule): a rare draught spent on a scratch would feel like a theft.
 22. **A trophy is set outside the seams** (`ItemInstance.Setting`): Greymuzzle's fang leads the piece's name, spends no heat and takes no seam, so the one fang in the game never competes with the forge's work.
 23. **Crafts never dress the figure again**: a craft changes what a piece does, never how it looks; rebuilding the figure made her blink out of the world (seen, 19.3).
+24. **Binding moves plain powers only**: coals stay in Brannoc's cage, and worn skills, trophies and the slurry's powers will not let go. Each of those is somebody's work or the night's; moving them would make binding the answer to everything.
+25. **The donor must be in the pack**: what is worn is in use; taking it off first is a beat of choice, not a chore.
+26. **Steeping by hand from the pack as well as at Snib's**: jars bought before the cure still work after it. The cure closes the sale, not the gamble already bought.
+27. **The slurry's "affix" outcome adds a fourth power past the seams**, the only thing that ever breaks the seam count (5.1).
+28. **Vonnra opens only once the toll is paid** (the story lead's condition): her table is the toll-house's, and she deals with those who have paid.
+29. **A steeped piece takes no heat back** (19.4): rekindling or remaking it would let the forge work past the bright grade.
+30. **"Up" goes past the cap however low the power was** (19.4): it lands one grade above the piece's cap. The first build only added a grade, so on an unfinished piece it was a dud that cost all its heat. The jar's words ("a grade past what the forge can do") are now true every time, and "temper first, then steep" is still the better order.
 
 ---
 
@@ -838,6 +878,29 @@ Seen at 1920×1080, and what was done:
 | Pack break down: no word of what it came to (toasts are under the pack); the survivor blinked out | The ask in red; "Broken down: ... 2 old iron, into the pouch" in the reading place; crafts no longer dress the figure again |
 | A real arena's end after a fall past the win carried every shard | Fixed: the zone hears of a fall before the battle marks her dead; a fall is now known by its killer (`ArenaTests.A_fall_after_the_win_spills_half_of_what_the_night_gave`) |
 
+### 19.4 Phase 3, seen at 1920×1080 and remade (October 2026)
+
+| Seen | Done |
+|---|---|
+| Vonnra's long name widened her column past its rail: the rail ran through her portrait and her words | The name's plaque fits the column (shorter rules, then a smaller face); the column keeps to 360 |
+| Her first binding's narration (about 490 letters) would not fit under the terms | What a crafter says sits under them, before their terms; mood and prices on one line; the portrait 330 high |
+| "A tenth off every price, at after you have accused her" | A standing is reached ("at respect 20"); a deed is done ("after you have accused her") |
+| Bind cards read "Searing from Searing Silver Ring", with no grade, and the grade a rare piece holds was not said | "Searing, at grade III"; "Out of your Searing Silver Ring, which is unmade (grade IV there; a rare piece holds III)" |
+| A binding rang nothing: no seam lit, no moment | The seam it went into flares with lamp-light, and lights rise off it slowly: her breath going out of the old piece, not the forge's sparks |
+| Snib's bench: no figure, no name, a weapon with no seams on the anvil, refusing | Snib drawn as he is (the lampling in his hat and lamp, `Portrait.Of(Beasts.Def)`), his name and calling; a piece the jar can take put down first |
+| The odds a wall of blue text | A bar cut by the weights; under each cut, what it would mean for this piece ("Hale II to IV"; the slurry powers that fit it) |
+| After a steep, nothing said what it came to | "What the jar did", plainly, coloured by how it went; the seam it touched rings green; the story's narration after |
+| A steeped piece looked like any other; Brannoc offered to rekindle and remake it | Green-black veins run through its picture everywhere (a shader on the picture itself); rekindling and remaking it are refused |
+| The pack's steep said only the narration, then cleared the card | It keeps the piece chosen, says what the jar did over its card, and shows the same odds bar under it while a jar is carried |
+| The bright grade V read as any other numeral | It reads as light: a pale numeral with a green glow, on the card and the badge |
+| Asked twice, in red, for what cannot be undone | Held (UI design's rule for every screen): the press fills over 0.8 s, a tap only nudges it (`Style.HoldButton`) |
+| A commission's "!" fell into Brannoc's two-line name plate and read as a letter | The mark stands clear above the plate, measured in the plate's pixels; the piece handed over rings in gold, "made for you, ready this morning"; his greeting says it ("Cooled overnight. Come and look.") |
+| The moonpetal brew's row glow | Seen, kept |
+
+Owed, Godot and the GPU permitting: the painted icons for the slurry jar and the four rulers' things (prompts in
+`tools/uiforge/items.py`, to agree with the UI art lead); the moonpetal draught's and flask's icons imported in this
+worktree; the hold presses, marks and charts seen in the running game.
+
 ---
 
 ## 20. The endgame: the atlas and the scars
@@ -939,8 +1002,84 @@ Light on purpose: the scar is "mindless survivors fun".
 
 ### 20.6 What to build, in order (after phases 2 and 3)
 
-1. Two kits (pack and table).
-2. Item level on gear and grade caps by item level (with combat's map loot).
-3. Chart verbs at the table (when combat's chart item exists).
-4. Marks (when combat agrees the skill hooks).
-5. Higher grades and remake to Legendary (Act 2's hands).
+Reordered (October 2026): the two pieces that are crafting's own came first. Two kits wait for UI design's
+pack, which is being redone from research.
+
+1. Marks on the item side (built, 20.7).
+2. Chart verbs at the table (built, 20.7).
+3. Item level on gear and grade odds by item level (built, 20.7; the loot lead now owns item level and builds on it).
+4. The scars' depth and scar-glass (built, 20.7).
+5. Two kits (pack and table), with UI design's new pack.
+6. Higher grades and remake to Legendary (Act 2's hands).
+
+### 20.7 What was built (October 2026)
+
+**Marks** (`Crafting.Inscribe`, `RulerMark`; combat's `Sim/Marks.cs` hook):
+- **Where they come from.** A map's ruler leaves its people's thing half the time. Each thing carries how
+  that people fought, and the story lead named them:
+
+  | People | Thing | Mark |
+  |---|---|---|
+  | The Pack | the Tally-Bone | of the Long Chase: Volley looses a second volley at the farthest foe |
+  | The lamplings | the Cracked Lamp-Glass | of the Falling Star: Cinderfall leaves burning ground |
+  | The Risen | the Bent Barrow-Nail | of the Open Gate: the dash leaves a ring of holy fire |
+  | The Kerchiefs | the Muster-Cord | of the Muster: Axe Gyre gains axes in a crowd |
+
+- **Grades.** A thing falls at a grade by the map's tier: a grade every three tiers, sometimes one finer, to VI.
+  The grade is the Mark's strength, 0 to 1. Tier 1 gives I or II.
+- **At Vonnra's table.** She writes it into a seam: open, or in place of a chosen power. The thing is used up.
+  One Mark to a piece; a second goes where the first was. No forge tempers a Mark: a finer one comes from a
+  harder map. It costs 2 shards, 60 gold and 30 a grade, and 5–7 heat.
+- **Worn.** The kit carries three into the maps (the same Mark twice is the finer). It does nothing at night.
+- **Why seams.** A Mark costs a seam, as a support gem costs a socket in Path of Exile. Without that a kit of
+  three would be free power. The cost is the build choice.
+
+**Charts at the Wayfinder's table** (`CraftingCharts.cs`; the bench page with charts on its anvil, opened from
+the table's "Work it first"):
+- A chart has heat: plain 4, fine 6, rare 8.
+- **Ink** a side: a random mod for the foe or against you. 1 shard and gold by tier; heat 2–3.
+- **Burn and redraw:** every mod but the pinned one, as many on each side as before. 2 shards; heat 2–3.
+- **Pin** one mod. It holds through a burn; one pin a chart, and a new one moves it. 2 of the people's own
+  material; heat 1.
+- **Scrape** one mod off. 3 old iron; heat 1–2.
+- **Annotate:** +5% found, to 20%, written in from another chart of the same people's ground, which is given
+  up. Gold; no heat.
+- A chart's rarity follows its mods: plain, fine to two, rare from three.
+- Ysolde's words are the story lead's. Two carry her secret unsaid: the pin ("Everybody's got one of those")
+  and the annotate (the chart given up "goes into a drawer, not the fire").
+
+**Rook's shelves** (the owner's approval of UI design's proposal; `Crafting.ShelfPrice`, `BuyShelf`):
+- The storeroom comes with one shelf of 24. More cost 300, 1,000 and 2,500 gold, then 5,000 each, to eight.
+- **Why these prices.** Act 1 earns about 1,600 gold in the simulation and crafting spends two thirds of it.
+  So the second shelf is about a Kerchief night's gold: a choice late in Act 1 or early in the atlas, not a
+  tax on the forge. The later shelves are the atlas's sinks, and are to be re-measured when the maps' gold
+  is (Last Epoch's and Grim Dawn's stash tabs also rise in price).
+- A save from before shelves keeps its 48 places as two shelves.
+
+**Item level** (`ItemInstance.Level`, `Crafting.FinerGrade`; the loot lead `a9a9c345a35e1fcad` now owns item level):
+- Gear found in a map is made at the map's level.
+- Each rarity rolls one of two grades. By day and at a first map's level that is a coin flip. The finer
+  grade then comes a fortieth more often each level, up to nine in ten.
+- It never passes the rarity's own finer grade, so the forge's ceiling stays a lucky drop's. The loot lead's
+  shift (+1 grade from level 25, +2 from 35) adds on top.
+
+**The scars' depth** (design 20.5; `Crafting.Night`):
+- Past the win, a shard every two minutes; past thirty minutes beyond it, a shard a minute, without end.
+- Once the stream is cured, a scar stayed in past the hour gives **scar-glass**, one more each hour after. It
+  steeps by hand as a jar did: the slurry's gamble outlives the cure, earned by staying, not bought.
+- A miniboss carries out two of its people's material (at the night's end, not dropped).
+
+**The economy against the loot lead's fewer drops** (`tests/CraftingEconomy.cs`, swept):
+- Carriers drop gear 45% of the time, not 60%.
+- Act 1's targets hold at every rate tried for a non-gear roll: first craft day 1, the weapon Rare by day 4
+  and Epic by day 8, crafting taking 63–68% of the gold.
+- What moves is what is left unspent at Act 1's end:
+
+  | A non-gear roll gives | Iron left | People's material left |
+  |---|---|---|
+  | (gear at 60%, before) | 59 | 62 |
+  | the people's material always, iron half the time, the boss 2 | 85 | 166 |
+  | nothing | 27 | 57 |
+  | **asked and built:** material 10%, iron 20%, the boss 1 | 51 | 77 |
+
+- Those materials are counted into the night's end tally in arenas, never dropped (decision 7).

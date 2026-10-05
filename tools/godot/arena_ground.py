@@ -49,7 +49,7 @@ PLACES = {
     # The Pack's Hollow: a sunk bowl of old wood, the leaf litter of years, roots
     # breaking through, the stream the Dig's slurry runs in.
     'hollow': [
-        ('litter', 'dry_decay_leaves'),     # the fallen leaves of years, red-brown
+        ('litter', 'leaves_forest_ground'), # this year's fallen leaves, rust and pale, on black: leaves read as leaves from 30 m
         ('rot', 'forest_leaves_03'),        # older, darker, rotted down (moss is the shader's)
         ('roots', 'roots'),                 # where the great trees' roots surface
         ('mud', 'mud_forest'),              # trodden black mud: the den's runs, the banks
@@ -217,9 +217,11 @@ def credit(assets):
     add = [f'- {a}: Poly Haven (https://polyhaven.com/a/{a}), CC0\n' for a in sorted(assets)]
     add = [l for l in add if l not in text]
     if add:
-        if not text.endswith('\n'):
-            text += '\n'
-        path.write_text(text + ''.join(add), encoding='utf-8')
+        # Into the Poly Haven list, after its last line (the credits read that section only;
+        # godot/tests/CreditsTests then says to rewrite the shipped credits).
+        lines = text.splitlines(keepends=True)
+        last = max((i for i, l in enumerate(lines) if l.startswith('- ') and ': Poly Haven (https://polyhaven.com/a/' in l and l.rstrip().endswith('CC0')), default=len(lines) - 1)
+        path.write_text(''.join(lines[:last + 1] + add + lines[last + 1:]), encoding='utf-8')
 
 
 def main():

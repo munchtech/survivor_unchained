@@ -270,6 +270,7 @@ public partial class DraftPanel : Control
         bool painted = UiArt.Has((string)panel.GetMeta("frame"));
         v2.Position = painted ? new Vector2(40, 22) : new Vector2(22, 20);
         v2.Size = painted ? new Vector2(CardW - 80, CardH - 64) : new Vector2(CardW - 44, CardH - 36);
+        v2.SetMeta("home", v2.Position);
         b.AddChild(v2);
         // What it is, on a ribbon; NEW when it is new to the build.
         var ribbon = Style.H(6);
@@ -306,6 +307,9 @@ public partial class DraftPanel : Control
         var text = o.Kind == OfferKind.Evolve && o.Text.Contains(" becomes ") && o.Text.IndexOf(". ") is int dot && dot > 0 ? o.Text[(dot + 2)..] : o.Text;
         var body = Style.Label(text, Style.Text, Style.Body, Style.Ink, true, HorizontalAlignment.Center);
         body.SizeFlagsVertical = SizeFlags.ExpandFill;
+        // A short line sits in the middle of the card's open space, not under the title with the
+        // space empty beneath it; the medallions and titles stay level across the row.
+        body.VerticalAlignment = VerticalAlignment.Center;
         v2.AddChild(body);
         // Why the ember dealt it: banked from the day, on your path, your calling's own, a duo; a trap said plainly.
         foreach (var why in o.Why.Where(w => o.Path == null || !w.StartsWith("On your path")).Take(2))
@@ -446,7 +450,11 @@ public partial class DraftPanel : Control
             float k = Mathf.Clamp((float)((t - 0.06 - i * 0.08) / 0.5), 0, 1);
             float e = 1 - (1 - k) * (1 - k) * (1 - k);
             if (chosen == null) cards[i].Modulate = Colors.White with { A = e };
-            cards[i].GetChild<Control>(1).Position = new Vector2(22, 20 + (1 - e) * 60);
+            // (risen from below to where the card's own frame puts its words: the painted frame's
+            // inset, not the drawn one's, or the words sat 18 px left of the card's middle)
+            var words = cards[i].GetChild<Control>(1);
+            var home = (Vector2)words.GetMeta("home");
+            words.Position = home + new Vector2(0, (1 - e) * 60);
             cards[i].PivotOffset = new Vector2(CardW / 2, CardH / 2);
             float target = chosen == i ? 1.06f : 1;
             cards[i].Scale = cards[i].Scale.Lerp(new Vector2(target, target), 1 - Mathf.Exp(-14 * (float)delta));

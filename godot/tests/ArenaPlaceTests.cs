@@ -102,6 +102,33 @@ public class ArenaPlaceTests
     }
 
     [Fact]
+    public void A_story_place_is_drawn_to_the_outline_it_is_fought_in()
+    {
+        // The Hollow by Night: the ground stood on is the fight's own outline (Play/Story), its
+        // rim walks round it, its gates are drawn, its deadfalls' fires are laid, and nothing
+        // tall stands inside it but the den's root plate at its edge.
+        var place = SurvivorUnchained.Play.Story.HollowByNight.Ground;
+        var m = MapGen.Generate(new MapSpec { Seed = 311, Arena = true, People = "pack", Story = "hollow_by_night" });
+        for (double z = -60; z <= 60; z += 1.5)
+            for (double x = -50; x <= 50; x += 1.5)
+            {
+                double d = place.Dist(x, z);
+                if (d < -1) Assert.True(m.CanStand(x, z), $"inside the outline, but not stood on: {x},{z}");
+                if (d > 1) Assert.False(m.CanStand(x, z), $"outside the outline, but stood on: {x},{z}");
+            }
+        Assert.All(m.Rim, r => Assert.InRange(place.Dist(r.X, r.Z), -0.3, 0.3));
+        Assert.True(m.Rim.Count > 100);
+        Assert.Equal(place.Gates.Length, m.Gates.Count);
+        foreach (var id in new SurvivorUnchained.Play.Story.HollowByNight().Fires) Assert.True(m.FireLights.ContainsKey(id), $"no fire laid at {id}");
+        var tall = m.Pieces.Where(p => Height(p.Id) is double h && h * p.Scale > 2.2 && place.Dist(p.X, p.Z) < -2).Select(p => p.Id).ToList();
+        Assert.Empty(tall);
+        Assert.DoesNotContain(m.Flora, f => f.Kind is "pine" or "broadleaf" or "autumn" or "dead" && place.Dist(f.X, f.Z) < 6);
+        // Nothing of the dressing stands on a point the fight is staged from.
+        foreach (var (pid, (px, pz)) in place.Points)
+            Assert.DoesNotContain(m.Pieces, p => p.Id is "arena/reeds" or "arena/deadfall" ? false : MathX.Dist(p.X, p.Z, px, pz) < 0.8 && !p.Id.Contains("bone"));
+    }
+
+    [Fact]
     public void The_ember_ring_chars_the_edge_all_the_way_round()
     {
         var m = MapGen.Generate(new MapSpec { Seed = 8, Arena = true, People = "pack" });

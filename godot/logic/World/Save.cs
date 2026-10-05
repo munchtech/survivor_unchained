@@ -43,7 +43,7 @@ public sealed record SlotInfo(int Slot, string Name, int Level, string Archetype
 /// <summary>The save slots, as files in a folder (the game's user folder).</summary>
 public sealed class Saves
 {
-    public const int Version = 3;
+    public const int Version = 4;
     public const int SlotCount = 3;
     readonly string dir;
 
@@ -60,7 +60,8 @@ public sealed class Saves
     {
         // Version 1 is the first; later versions add steps here, oldest first.
         d.World.Stash ??= new();
-        while (d.World.Stash.Count < WorldState.StashSize) d.World.Stash.Add(null);
+        // Whole shelves, at least the one that comes with the room (a save from before shelves had two).
+        while (d.World.Stash.Count < WorldState.Shelf || d.World.Stash.Count % WorldState.Shelf != 0) d.World.Stash.Add(null);
         d.World.Legacy ??= new();
         d.World.Shops ??= new();
         d.World.GroundItems ??= new();
@@ -79,11 +80,20 @@ public sealed class Saves
         // is as hot as its rarity, never colder).
         var ch = d.Character;
         ch.Materials ??= new();
+        // 4: the pack holds gear only (docs/design/LOOT_DESIGN.md §6): materials and trophies to the
+        // pouch, books, charts and marked things to the satchel, quest things and tools to the key
+        // ring, draughts to the belt. A draught kind past the belt's limit stays in the pack.
+        ch.Satchel ??= new();
+        ch.Keys ??= new();
+        ch.Belt ??= new();
+        ch.Filter ??= new();
+        ch.Seen ??= new();
+        d.World.Owned ??= new();
         for (int i = 0; i < ch.Pack.Count; i++)
-            if (ch.Pack[i] is { } it && Items.Find(it.Def) is { Kind: ItemKind.Material })
+            if (ch.Pack[i] is { } it && Items.Find(it.Def) is { } def && Drops.StoreOf(def, it) != Store.Pack)
             {
-                Inventory.AddToPack(ch, it);
                 ch.Pack[i] = null;
+                if (!Inventory.AddToPack(ch, it)) ch.Pack[i] = it;
             }
         void Heat(ItemInstance? it)
         {

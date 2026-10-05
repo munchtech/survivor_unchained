@@ -44,7 +44,17 @@ public partial class CrowdView : Node3D
         public bool Seen;
         /// <summary>How it falls, chosen at its first dying frame and kept for its body.</summary>
         public string? Death;
+        /// <summary>A slam's windup, while its blow and the get-up after it play (0: none).</summary>
+        public double Slam;
+        /// <summary>It knelt to aim: the shot that ends it is its own clip, not its melee strike.</summary>
+        public bool Aimed;
+        /// <summary>How far into its shot it was last frame (a new strike starts the clock again).</summary>
+        public double ShotT;
     }
+
+    /// <summary>Where in a slam's clip the fists (or the axe) meet the ground (crowd.py's SLAM_IMPACT): the
+    /// windup is played to land exactly there as the sim's blow lands, however long the kind winds up.</summary>
+    const double SlamImpact = 1.0;
 
     sealed record Corpse(string Visual, string Role, float X, float Z, float Facing, float Scale, Color Tint, float Glow, double Born);
 
@@ -115,6 +125,7 @@ public partial class CrowdView : Node3D
         foreach (var c in crowds.Values) c.Begin();
         foreach (var g in gaits.Values) g.Seen = false;
         living = 0;
+        whiteFlashes = 0;
         foreach (var e in b.Enemies.Items)
         {
             if (!e.Alive || e.Def.Visual.StartsWith("view:", StringComparison.Ordinal)) continue;
@@ -131,6 +142,12 @@ public partial class CrowdView : Node3D
             foreach (var id in gone) gaits.Remove(id);
         }
     }
+
+    /// <summary>Bodies flashed white this frame, and how many may be: past it, a flash stays at the
+    /// rim (the shader's whole-body white needs a flash over this).</summary>
+    int whiteFlashes;
+    const int WhiteFlashes = 4;
+    const float FlashRimOnly = 0.55f;
 
     void Draw(Enemy e, Func<double, double, double> heightAt)
     {
@@ -178,6 +195,18 @@ public partial class CrowdView : Node3D
                 role = "windup";
                 t = time;
                 break;
+            case EnemyState.Casting when e.Cast == CastKind.Slam && asset.Clips.ContainsKey("slam"):
+                // Up overhead and down, the fists meeting the ground as the blow lands.
+                role = "slam";
+                g.Slam = Math.Max(0.1, e.AnimT + e.StateT);
+                t = e.AnimT * SlamImpact / g.Slam;
+                break;
+            case EnemyState.Casting when e.Cast == CastKind.Aim && asset.Clips.ContainsKey("aim"):
+                // Down on one knee, the crossbow brought up to the eye, and held on its line.
+                role = "aim";
+                g.Aimed = true;
+                g.ShotT = 0;
+                break;
             case EnemyState.Casting:
                 // A cast of its own (a howl, a rally) from its start; a stand-in windup loops.
                 role = asset.Clips.ContainsKey("cast") ? "cast" : "windup";
@@ -188,6 +217,24 @@ public partial class CrowdView : Node3D
                 t = time * 1.8 + e.Seed * 5;
                 break;
             default:
+                // After a slam, the rest of it: the blow held on the ground, then the get-up (its
+                // clock runs on until a strike starts it again).
+                if (g.Slam > 0 && e.Anim != EnemyAnim.Attack && SlamImpact + e.AnimT - g.Slam < asset.Duration("slam"))
+                {
+                    role = "slam";
+                    t = SlamImpact + e.AnimT - g.Slam;
+                    break;
+                }
+                g.Slam = 0;
+                // After an aim, the shot: the release, the kick and the rise.
+                if (g.Aimed && e.AnimT >= g.ShotT && e.AnimT < asset.Duration("shot") && asset.Clips.ContainsKey("shot"))
+                {
+                    role = "shot";
+                    t = g.ShotT = e.AnimT;
+                    break;
+                }
+                g.Aimed = false;
+                g.ShotT = 0;
                 if (e.Anim == EnemyAnim.Attack && e.AnimT < asset.Duration("attack")) { role = "attack"; t = e.AnimT; }
                 else if (g.Walking)
                 {
@@ -216,6 +263,10 @@ public partial class CrowdView : Node3D
         float sc = (float)(e.Def.Scale ?? 1) * Beasts.Size(e.Def.Visual);
         // Struck: a squash, and a flinch along the blow, gone with the flash.
         float f = e.State == EnemyState.Dying ? 0 : (float)e.Flash * (1 - Still);
+        // The struck flare's instant of white across the whole body is for a few at once (and any
+        // champion or ruler); the rest keep it at the rim. A blast that hits sixty at once turned
+        // sixty bodies white in the same frame.
+        if (f > FlashRimOnly && !e.Elite && !e.Boss && e.Named == null && ++whiteFlashes > WhiteFlashes) f = FlashRimOnly;
         // The flinch along the blow: big enough to read from thirty metres up, twice on a critical (S-17).
         float push = e.LastCrit ? 0.45f : 0.25f;
         var at = new Vector3((float)(e.X + e.LastDx * f * push), (float)y, (float)(e.Z + e.LastDz * f * push));
@@ -227,7 +278,13 @@ public partial class CrowdView : Node3D
         if (e.Def.Tint is var (tr, tg, tb)) tint *= new Color((float)tr, (float)tg, (float)tb);
         if (e.Def.Glow is { } dg) glow = Math.Max(glow, (float)dg);
         if (e.Elite) { glow = Math.Max(glow, 0.05f); tint *= new Color(1.08f, 1.02f, 0.92f); }
-        if (e.Named != null) { glow = 0.25f; tint *= new Color(1.3f, 0.75f, 0.6f); }
+        // A nemesis (one that took a hero before) burns with it; a ruler, herald or named foe is
+        // itself, lifted only a little: painted orange, Greymuzzle was not an old grey wolf.
+        if (e.Named is { } nm)
+        {
+            if (nm.SourceHero != "") { glow = 0.25f; tint *= new Color(1.3f, 0.75f, 0.6f); }
+            else glow = Math.Max(glow, 0.06f);
+        }
         if (e.Disposition == Disposition.Neutral && !e.Provoked) tint *= new Color(0.95f, 0.95f, 0.95f);
         crowd.Push(new Transform3D(basis, at), role, t, f, dissolve, frozen, burning, tint, glow);
         living++;

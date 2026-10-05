@@ -148,61 +148,206 @@ def rally(name, rig: Rig, armed=False) -> Clip:
 
 
 # --------------------------------------------------------------------- the slam --
+# The frame the blow meets the ground (CrowdView.SlamImpact plays the windup to
+# land there as the sim's blow lands). On a frame the crowd's bake samples (15 a
+# second), so the blow is never smeared between two of them.
+SLAM_IMPACT = 30
+
+
 def slam(name, rig: Rig, armed=False) -> Clip:
     """A heavy's slam, the cast it makes before the ground breaks round it
     (combat's SlamSpec: a windup of 1.0 to 1.1 s, the blow landing at its
-    end): a crouch to gather, both fists (armed: the axe, the shield arm
-    braced low) driven up as high as they go, the body arched back on its
-    toes for a beat; then it jack-knifes and the fists come down onto the
-    ground in front, the knees going with them, at 0.95 s, and stay there."""
+    end). The lead foot planted as it sinks to gather; the fists locked
+    together (armed: the axe) swept up and cocked behind the head, the back
+    arched under them and the eyes kept on its mark, held a beat for the
+    player to read; then it jack-knifes, the body leading the arms, and the
+    fists (the axe head) go into the ground in front with the knees at 1.0 s.
+    It stays down a beat, glaring up, then shoves itself up off the ground."""
     P, H = _kit(rig)
-    feet = {"foot_l": {"pos": P(0.17, 0, 0.12), "rot": (12, 0, 0)}, "foot_r": {"pos": P(-0.18, 0, -0.10), "rot": (-14, 0, 0)}}
-    wide = {"foot_l": {"pos": P(0.20, 0, 0.16), "rot": (14, 0, 0)}, "foot_r": {"pos": P(-0.20, 0, -0.12), "rot": (-16, 0, 0)}}
+    planted = {"foot_l": {"pos": P(0.20, 0, 0.18), "rot": (16, 0, 0), "pole": (0.35, 0, 1)},
+               "foot_r": {"pos": P(-0.20, 0, -0.13), "rot": (-18, 0, 0), "pole": (-0.35, 0, 1)}}
+    feet = {0: {"foot_l": {"pos": P(0.14, 0, 0.05), "rot": (10, 0, 0)}, "foot_r": planted["foot_r"]},
+            3: {"foot_l": {"pos": P(0.17, 0.07, 0.12), "rot": (14, -6, 0)}, "foot_r": planted["foot_r"]}}
 
-    def fists(v_l, v_r, pole_l=(0.8, -0.3, -0.4), pole_r=(-0.8, -0.3, -0.4), knuckles=None):
-        if armed:
-            # The axe in the right fist, the haft led by the fist; the shield arm braced low across.
-            hand_r = arm(v_r, pole_r, blade=knuckles or (0.0, 0.6, 0.8))
-            hand_l = arm((-0.10, -0.30, 0.22), (0.9, -0.4, -0.3))
-            return {"hand_l": hand_l, "hand_r": hand_r, "fingers_l": "fist", "fingers_r": "grip"}
-        return {"hand_l": arm(v_l, pole_l), "hand_r": arm(v_r, pole_r), "fingers_l": "fist", "fingers_r": "fist"}
+    def hips(y, pitch, z=-0.05, yaw=0.0, x=0.0):
+        return {"pos": H(x, y, z), "rot": (yaw, pitch, 0)}
 
-    def down(y):
-        """The fists on the ground before the feet (armed: the axe head down flat in front)."""
-        if armed:
-            return {"hand_r": {"frame": "char", "pos": P(-0.06, y, 0.46), "pole": (-0.8, 0.4, -0.3), "blade": (0.0, -0.15, 1.0)},
-                    "hand_l": arm((-0.10, -0.30, 0.22), (0.9, -0.4, -0.3)), "fingers_l": "fist", "fingers_r": "grip"}
-        return {"hand_l": {"frame": "char", "pos": P(0.09, y, 0.42), "pole": (0.8, 0.4, -0.3), "knuckles": (0.0, -0.4, 0.9)},
-                "hand_r": {"frame": "char", "pos": P(-0.09, y, 0.42), "pole": (-0.8, 0.4, -0.3), "knuckles": (0.0, -0.4, 0.9)},
+    def hand(side, at, pole, knuckles=None, blade=None):
+        h = {"pos": P(*at), "pole": pole, "frame": "char"}
+        if knuckles is not None:
+            h["knuckles"] = knuckles
+        if blade is not None:
+            h["blade"] = blade
+        return {f"hand_{side}": h}
+
+    def fists(x, y, z, pole_out=(0.7, -0.2, -0.6), knuckles=(0.0, -1.0, 0.2)):
+        """Both fists, mirrored about the middle."""
+        (px, py, pz), (kx, ky, kz) = pole_out, knuckles
+        return {**hand("l", (x, y, z), (px, py, pz), (kx, ky, kz)), **hand("r", (-x, y, z), (-px, py, pz), (-kx, ky, kz)),
                 "fingers_l": "fist", "fingers_r": "fist"}
 
-    keys = [
-        # The gather: down into the knees, the fists low and in, the chest over them.
-        (0, {**feet, "hips": {"pos": H(0, 0.86, -0.02), "rot": (0, 14, 0)}, "spine": (0, 16, 0), "neck": (0, -6, 0), "head": (0, -10, 0),
-             **fists((-0.06, -0.40, 0.18), (0.06, -0.40, 0.18), knuckles=(0.0, -0.2, 1.0))}, "ease"),
-        # Up: the fists driven up in front of the face.
-        (9, {**wide, "hips": {"pos": H(0, 0.90, -0.02), "rot": (0, 0, 0)}, "spine": (0, -4, 0), "neck": (0, -4, 0), "head": (0, -8, 0),
-             "clav_l": (12, 4), "clav_r": (12, 4),
-             **fists((-0.08, 0.16, 0.26), (0.08, 0.16, 0.26), knuckles=(0.0, 0.9, 0.3))}, "auto"),
-        # As high as they go, arched back on the toes.
-        (21, {**wide, "hips": {"pos": H(0, 0.95, -0.06), "rot": (0, -8, 0)}, "spine": (0, -16, 0), "neck": (0, -6, 0), "head": (0, -14, 0),
-              "clav_l": (24, -4), "clav_r": (24, -4),
-              **fists((-0.06, 0.48, -0.04), (0.06, 0.48, -0.04), (0.6, 0.2, 1.0), (-0.6, 0.2, 1.0), knuckles=(0.0, 0.5, -0.85))}, "auto"),
-        # The hang.
-        (27, {**wide, "hips": {"pos": H(0, 0.96, -0.08), "rot": (0, -11, 0)}, "spine": (0, -20, 0), "neck": (0, -6, 0), "head": (0, -14, 0),
-              "clav_l": (26, -6), "clav_r": (26, -6),
-              **fists((-0.05, 0.47, -0.10), (0.05, 0.47, -0.10), (0.6, 0.2, 1.0), (-0.6, 0.2, 1.0), knuckles=(0.0, 0.3, -0.95))}, "linear"),
-        # Down: folded over into a squat, the fists into the ground before the feet.
-        (29, {**wide, "hips": {"pos": H(0, 0.42, -0.14), "rot": (0, 56, 0)}, "spine": (0, 34, 0), "neck": (0, 2, 0), "head": (0, -8, 0),
-              "clav_l": (-4, 16), "clav_r": (-4, 16), **down(0.14)}, "fast"),
-        (34, {**wide, "hips": {"pos": H(0, 0.38, -0.15), "rot": (0, 60, 0)}, "spine": (0, 36, 0), "neck": (0, 4, 0), "head": (0, -6, 0),
-              "clav_l": (-6, 18), "clav_r": (-6, 18), **down(0.08)}, "ease"),
-        (45, {**wide, "hips": {"pos": H(0, 0.40, -0.15), "rot": (0, 58, 0)}, "spine": (0, 34, 0), "neck": (0, 4, 0), "head": (0, -8, 0),
-              "clav_l": (-4, 16), "clav_r": (-4, 16), **down(0.09)}, "ease"),
+    def axe(at, blade, shield, pole=(-0.7, -0.3, -0.6), shield_pole=(0.7, -0.4, -0.5)):
+        """The axe in the right fist (blade: the way the haft leaves it), the shield arm's hand at `shield`."""
+        return {**hand("r", at, pole, blade=blade), **hand("l", shield, shield_pole), "fingers_l": "fist", "fingers_r": "grip"}
+
+    # (frame, body, unarmed hands, armed hands, ease)
+    beats = [
+        # Settled, the fists (the axe) low.
+        (0, dict(hips=hips(0.93, 4, -0.04), spine=(0, 4, 0)),
+         fists(0.24, 0.90, 0.04),
+         axe((-0.24, 0.92, 0.08), (0.0, -0.45, 0.9), (0.20, 0.98, 0.16)), "ease"),
+        # The gather: the lead foot planted as it sinks into its knees, the
+        # chest down over the fists (the axe drawn back low, the shield up).
+        (6, dict(hips=hips(0.78, 24, -0.06, yaw=-8), spine=(-8, 20, 0), neck=(0, -6, 0), head=(4, -18, 0)),
+         fists(0.13, 0.82, 0.42, knuckles=(0.0, -0.9, 0.4)),
+         axe((-0.32, 0.84, -0.16), (0.0, -0.55, -0.83), (0.10, 1.10, 0.36)), "auto"),
+        # Rising: the fists swept up past the face (the axe up over the shoulder).
+        (13, dict(hips=hips(0.89, 6, -0.05), spine=(0, -2, 0), neck=(0, -4, 0), head=(0, -8, 0), clav_l=(10, 4), clav_r=(10, 4)),
+         fists(0.06, 1.56, 0.32, (0.9, -0.2, -0.3), (-0.5, 0.5, 0.7)),
+         axe((-0.28, 1.58, 0.04), (0.0, 0.95, -0.3), (0.42, 1.22, 0.10), shield_pole=(0.5, -0.6, -0.6)), "auto"),
+        # The top: the fists cocked behind the head, the elbows up beside it
+        # (the axe raised high, its head up and back over the shoulder, where
+        # the camera above sees it; the shield arm flung wide),
+        # the back arched under them, the face still on its mark.
+        (19, dict(hips=hips(0.89, -10, 0.0, yaw=4), spine=(4, -22, 0), neck=(0, 8, 0), head=(0, 6, 0), clav_l=(24, -2), clav_r=(24, -2)),
+         fists(0.05, 1.66, -0.42, (0.6, 0.7, 0.4), (-0.6, -0.2, -0.75)),
+         axe((-0.16, 1.88, -0.12), (0.0, 0.62, -0.78), (0.56, 1.02, -0.12), (-0.8, 0.4, -0.3), (0.8, -0.4, -0.4)), "auto"),
+        # The hang: drawn a little further back.
+        (24, dict(hips=hips(0.88, -13, 0.03, yaw=4), spine=(4, -27, 0), neck=(0, 8, 0), head=(0, 8, 0), clav_l=(26, -4), clav_r=(26, -4)),
+         fists(0.05, 1.62, -0.50, (0.6, 0.7, 0.4), (-0.6, -0.3, -0.7)),
+         axe((-0.15, 1.86, -0.18), (0.0, 0.45, -0.89), (0.58, 1.00, -0.18), (-0.8, 0.4, -0.3), (0.8, -0.4, -0.4)), "linear"),
+        # Down: it jack-knifes, the body first, the fists whipped over the head.
+        (26, dict(hips=hips(0.84, 16, -0.03), spine=(0, 10, 0), neck=(0, -4, 0), head=(0, -14, 0), clav_l=(18, 8), clav_r=(18, 8)),
+         fists(0.06, 1.74, 0.26, (1.0, 0.2, -0.2), (-0.6, 0.6, 0.5)),
+         axe((-0.14, 1.78, 0.22), (0.0, 1.0, -0.1), (0.36, 1.10, 0.20), (-0.9, 0.2, -0.3)), "linear"),
+        (28, dict(hips=hips(0.60, 38, -0.02), spine=(0, 24, 0), neck=(0, -2, 0), head=(0, -16, 0), clav_l=(4, 14), clav_r=(4, 14)),
+         fists(0.07, 0.96, 0.64, (0.8, 0.4, -0.4), (-0.6, -0.3, 0.75)),
+         axe((-0.10, 1.00, 0.64), (0.0, 0.55, 0.83), (0.30, 0.70, 0.34), (-0.8, 0.4, -0.4)), "linear"),
+        # The blow: the fists (the axe head) into the ground before the feet.
+        (SLAM_IMPACT, dict(hips=hips(0.41, 50, -0.04), spine=(0, 30, 0), neck=(0, 2, 0), head=(0, -14, 0), clav_l=(-4, 16), clav_r=(-4, 16)),
+         fists(0.09, 0.10, 0.52, (0.8, 0.5, -0.3), (-0.5, -0.8, 0.3)),
+         axe((-0.10, 0.34, 0.58), (0.0, -0.6, 0.8), (0.26, 0.54, 0.38), (-0.8, 0.5, -0.3)), "fast"),
+        # Driven on into it, the knees and shoulders taking the shock.
+        (33, dict(hips=hips(0.38, 54, -0.05), spine=(0, 33, 0), neck=(0, 4, 0), head=(0, -10, 0), clav_l=(-8, 18), clav_r=(-8, 18)),
+         fists(0.10, 0.08, 0.53, (0.8, 0.5, -0.3), (-0.5, -0.8, 0.3)),
+         axe((-0.10, 0.29, 0.56), (0.0, -0.66, 0.75), (0.26, 0.50, 0.38), (-0.8, 0.5, -0.3)), "ease"),
+        # Held down a beat, the head coming up to glare.
+        (36, dict(hips=hips(0.40, 51, -0.05), spine=(0, 28, 0), neck=(0, -4, 0), head=(0, -24, 0), clav_l=(-4, 16), clav_r=(-4, 16)),
+         fists(0.11, 0.09, 0.52, (0.8, 0.5, -0.3), (-0.4, -0.85, 0.3)),
+         axe((-0.10, 0.30, 0.55), (0.0, -0.66, 0.75), (0.26, 0.51, 0.38), (-0.8, 0.5, -0.3)), "ease"),
+        # Shoved up off the ground (the axe wrenched out).
+        (42, dict(hips=hips(0.70, 28, -0.05), spine=(0, 14, 0), neck=(0, -2, 0), head=(0, -10, 0), clav_l=(4, 8), clav_r=(4, 8)),
+         fists(0.22, 0.56, 0.32, (0.7, 0.2, -0.6), (0.0, -0.9, 0.3)),
+         axe((-0.22, 0.70, 0.40), (0.0, 0.2, 0.98), (0.22, 0.80, 0.30)), "auto"),
+        # Up, and settled.
+        (47, dict(hips=hips(0.90, 6, -0.05), spine=(0, 4, 0), neck=(0, 0, 0), head=(0, -2, 0), clav_l=(6, 0), clav_r=(6, 0)),
+         fists(0.24, 0.88, 0.06),
+         axe((-0.24, 0.92, 0.12), (0.0, -0.3, 0.95), (0.20, 0.98, 0.18)), "auto"),
+        (50, dict(hips=hips(0.92, 4, -0.05), spine=(0, 4, 0)),
+         fists(0.24, 0.90, 0.04),
+         axe((-0.24, 0.92, 0.10), (0.0, -0.45, 0.9), (0.20, 0.98, 0.16)), "ease"),
     ]
-    keys = _in_char(rig, keys)
+    keys = []
+    for fr, pose, bare, held, ease in beats:
+        legs = feet.get(fr, planted)
+        keys.append((fr, {**legs, **pose, **(held if armed else bare)}, ease))
+    return build(name, rig, keys, meta={"layer": "full", "impact": SLAM_IMPACT / 30.0, "source": "keyed (tools/anim/crowd.py)",
+                                        "note": "a heavy's slam: up overhead, down onto the ground, and up again" + (", armed" if armed else "")})
+
+
+# ---------------------------------------------------------------- the kneel --
+# A crossbow's aim (combat's RangedSpec.Aim: 0.55 s, planted on its line, then
+# the shot, then planted 0.7 s more): down onto the right knee, the left foot
+# out in front and the left elbow on the knee under the fore-end, the stock at
+# the right shoulder and the cheek on it, the body side-on to the mark so the
+# bolt's line reads from above. The crossbow in the right fist pistol-fashion
+# (Arms.Hold): its stock runs along the fingers, its top out of the thumb.
+def _kneel_parts(rig: Rig):
+    P, H = _kit(rig)
+
+    def hips(y, pitch, z=-0.02, yaw=0.0, roll=0.0, x=0.0):
+        return {"pos": H(x, y, z), "rot": (yaw, pitch, roll)}
+
+    def bow(at, aim, left, pole=(-0.6, -0.7, -0.3), left_pole=(0.3, -0.9, -0.2), left_knuckles=(-0.7, 0.0, 0.7)):
+        """The crossbow's grip at `at`, its line along `aim` (its top kept up),
+        the left hand at `left` under the fore-end."""
+        aim = np.array(aim, float) / np.linalg.norm(aim)
+        top = np.array([0.0, 1.0, 0.0]) - aim * aim[1]
+        top = top / np.linalg.norm(top)
+        return {"hand_r": {"pos": P(*at), "pole": pole, "knuckles": tuple(aim), "blade": tuple(top), "frame": "char"},
+                "hand_l": {"pos": P(*left), "pole": left_pole, "knuckles": left_knuckles, "frame": "char"},
+                "fingers_r": "grip", "fingers_l": {"curl": 0.45, "thumb": 0.3}}
+
+    stand = {"foot_l": {"pos": P(0.13, 0, 0.06), "rot": (8, 0, 0)}, "foot_r": {"pos": P(-0.14, 0, -0.06), "rot": (-10, 0, 0)}}
+    # Down: the right knee on the ground under the hip, the shin back along
+    # it, the toes tucked under; the left foot out in front, its shin upright.
+    kneel = {"foot_l": {"pos": P(0.15, 0, 0.36), "rot": (6, 0, 0), "pole": (0.25, 0.3, 1.0)},
+             "foot_r": {"pos": P(-0.12, 0.085, -0.50), "rot": (-6, 68, 0), "toe": 66, "pole": (-0.05, -0.75, 1.0)}}
+    return P, H, hips, bow, stand, kneel
+
+
+def kneel_aim(name, rig: Rig) -> Clip:
+    """Down onto one knee and the crossbow up to the eye inside the aim's
+    0.55 s; held there, steady, until it looses (kneel_shot)."""
+    P, H, hips, bow, stand, kneel = _kneel_parts(rig)
+    aimed = dict(hips=hips(0.475, 4, yaw=-22), spine=(-16, 2, 0), neck=(14, 4, -4), head=(16, 8, -10), clav_r=(6, 6), clav_l=(0, 10),
+                 **bow((-0.09, 1.10, 0.08), (0.0, 0.0, 1.0), (-0.06, 1.05, 0.33)))
+    keys = [
+        # Standing, the crossbow low before it.
+        (0, {**stand, **dict(hips=hips(0.93, 4, -0.04), spine=(0, 4, 0)),
+             **bow((-0.17, 0.92, 0.22), (0.0, -0.40, 0.92), (-0.04, 0.88, 0.40))}, "ease"),
+        # The left foot out as it drops, the right heel coming up behind.
+        (3, {"foot_l": {"pos": P(0.15, 0.07, 0.22), "rot": (8, -8, 0)}, "foot_r": {"pos": P(-0.14, 0.02, -0.14), "rot": (-10, 20, 0), "toe": 20},
+             **dict(hips=hips(0.84, 6, -0.03, yaw=-6), spine=(-4, 6, 0)),
+             **bow((-0.16, 0.96, 0.22), (0.0, -0.25, 0.97), (-0.04, 0.92, 0.42))}, "auto"),
+        (6, {"foot_l": kneel["foot_l"], "foot_r": {"pos": P(-0.13, 0.05, -0.34), "rot": (-8, 45, 0), "toe": 40, "pole": (-0.05, -0.5, 1.0)},
+             **dict(hips=hips(0.70, 8, -0.02, yaw=-12), spine=(-8, 6, 0), neck=(4, 0, 0), head=(6, 0, 0)),
+             **bow((-0.14, 1.00, 0.20), (0.0, -0.10, 1.0), (-0.04, 0.96, 0.42))}, "auto"),
+        # The knee meets the ground, a touch low as the weight lands on it.
+        (10, {**kneel, **dict(hips=hips(0.46, 6, yaw=-18), spine=(-12, 4, 0), neck=(10, 2, 0), head=(12, 4, -4), clav_r=(4, 4)),
+              **bow((-0.12, 1.04, 0.14), (0.0, -0.02, 1.0), (-0.05, 1.00, 0.38))}, "auto"),
+        # Up to the eye: the stock in the shoulder, the cheek down on it.
+        (14, {**kneel, **dict(aimed, hips=hips(0.48, 4, yaw=-22))}, "auto"),
+        (17, {**kneel, **aimed}, "ease"),
+        # Held on the line, breathing.
+        (21, {**kneel, **dict(aimed, spine=(-16, 3, 0))}, "ease"),
+    ]
     return build(name, rig, keys, meta={"layer": "full", "hold": True, "source": "keyed (tools/anim/crowd.py)",
-                                        "note": "a heavy's slam: up overhead, down onto the ground at 0.95 s" + (", armed" if armed else "")})
+                                        "note": "a crossbow's kneel and aim"})
+
+
+def kneel_shot(name, rig: Rig) -> Clip:
+    """The release from the kneel: the kick up through the arms and the
+    shoulder, a beat on the knee as the bolt goes, then up off it, the back
+    foot brought under, the crossbow lowered. Standing by 0.63 s, inside
+    the 0.7 s the shooter stays planted after it looses."""
+    P, H, hips, bow, stand, kneel = _kneel_parts(rig)
+    aimed = dict(hips=hips(0.475, 4, yaw=-22), spine=(-16, 3, 0), neck=(14, 4, -4), head=(16, 8, -10), clav_r=(6, 6), clav_l=(0, 10))
+    keys = [
+        (0, {**kneel, **aimed, **bow((-0.09, 1.10, 0.08), (0.0, 0.0, 1.0), (-0.06, 1.05, 0.33))}, "fast"),
+        # The kick: the crossbow thrown up, the shoulder and the head knocked back.
+        (2, {**kneel, **dict(aimed, spine=(-16, -4, 0), neck=(14, -2, -4), head=(16, 0, -8), clav_r=(12, 0)),
+             **bow((-0.09, 1.15, 0.03), (0.0, 0.38, 0.92), (-0.06, 1.12, 0.30))}, "auto"),
+        (5, {**kneel, **dict(aimed, spine=(-15, 1, 0)), **bow((-0.10, 1.10, 0.07), (0.0, 0.08, 1.0), (-0.06, 1.05, 0.32))}, "ease"),
+        # Lowered, the head up off the stock, the weight going forward over the front foot.
+        (9, {**kneel, **dict(hips=hips(0.50, 14, yaw=-14), spine=(-8, 8, 0), neck=(6, 2, 0), head=(8, -2, 0)),
+             **bow((-0.15, 0.94, 0.22), (0.0, -0.30, 0.95), (-0.04, 0.92, 0.42))}, "auto"),
+        # Up off the knee on the front leg, the back foot drawn under.
+        (13, {"foot_l": kneel["foot_l"], "foot_r": {"pos": P(-0.13, 0.04, -0.40), "rot": (-8, 30, 0), "toe": 30, "pole": (-0.05, -0.3, 1.0)},
+              **dict(hips=hips(0.72, 16, 0.02, yaw=-8), spine=(-4, 8, 0), neck=(2, 0, 0), head=(4, -2, 0)),
+              **bow((-0.16, 0.92, 0.26), (0.0, -0.38, 0.92), (-0.04, 0.88, 0.44))}, "auto"),
+        (16, {"foot_l": kneel["foot_l"], "foot_r": {"pos": P(-0.14, 0.08, -0.20), "rot": (-10, 10, 0), "toe": 10},
+              **dict(hips=hips(0.86, 8, 0.06, yaw=-4), spine=(-2, 4, 0)),
+              **bow((-0.17, 0.92, 0.26), (0.0, -0.40, 0.92), (-0.04, 0.88, 0.42))}, "auto"),
+        (19, {"foot_l": kneel["foot_l"], "foot_r": {"pos": P(-0.14, 0, -0.08), "rot": (-10, 0, 0)},
+              **dict(hips=hips(0.91, 4, 0.08), spine=(0, 4, 0)),
+              **bow((-0.17, 0.92, 0.24), (0.0, -0.40, 0.92), (-0.04, 0.88, 0.40))}, "ease"),
+        (21, {"foot_l": kneel["foot_l"], "foot_r": {"pos": P(-0.14, 0, -0.08), "rot": (-10, 0, 0)},
+              **dict(hips=hips(0.92, 4, 0.08), spine=(0, 4, 0)),
+              **bow((-0.17, 0.92, 0.23), (0.0, -0.40, 0.92), (-0.04, 0.88, 0.40))}, "ease"),
+    ]
+    return build(name, rig, keys, meta={"layer": "full", "hold": True, "source": "keyed (tools/anim/crowd.py)",
+                                        "note": "a crossbow's shot from the kneel, and the rise"})
 
 
 # ------------------------------------------------------------------ the fallen --
@@ -533,6 +678,7 @@ def die_side(name, rig: Rig, armed=False, pistol=False) -> Clip:
 KEYED = {"lurch": lurch, "lurch_armed": lambda name, rig: lurch(name, rig, armed=True),
          "rally": rally, "rally_armed": lambda name, rig: rally(name, rig, armed=True),
          "slam": slam, "slam_armed": lambda name, rig: slam(name, rig, armed=True),
+         "kneel_aim": kneel_aim, "kneel_shot": kneel_shot,
          "die_back": die_back, "die_front": die_front, "die_side": die_side,
          "die_back_armed": lambda name, rig: die_back(name, rig, armed=True),
          "die_front_armed": lambda name, rig: die_front(name, rig, armed=True),

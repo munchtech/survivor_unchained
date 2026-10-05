@@ -128,6 +128,29 @@ public static class People
         return p;
     }
 
+    /// <summary>The scene files Build loads for a person, so they can be asked
+    /// for ahead, all at once (Prefetch): the heroine's body, outfit and hair,
+    /// or a kit body, its clothes, hair and beard. (The older bodies are left
+    /// to load as they always have.)</summary>
+    public static IEnumerable<string> Files(SurvivorUnchained.World.PersonSpec spec)
+    {
+        var look = LookOf(spec);
+        var body = spec.Body;
+        if (body == SurvivorUnchained.Play.Loadouts.HerBody && Args.Get("body") != "woman" && ResourceLoader.Exists("res://art/people/heroine.glb")) body = "heroine";
+        if (body == "heroine")
+        {
+            yield return "res://art/people/heroine.glb";
+            if (look.Outfit.FirstOrDefault(o => o.StartsWith("her:")) is string her) yield return $"res://art/people/heroine_outfit_{her[4..]}.gltf";
+            yield return $"res://art/people/heroine_hair_{(HerHairs.Contains(look.Hair) ? look.Hair! : HerHairs[0])}.gltf";
+            yield break;
+        }
+        if (body == SurvivorUnchained.Play.Loadouts.HerBody || body == "anime") yield break;
+        yield return $"{Dir}/{(look.Sex == "female" ? "Superhero_Female_FullBody" : "Superhero_Male_FullBody")}.gltf";
+        foreach (var part in look.Outfit) yield return $"{Dir}/{part}.gltf";
+        if (look.Hair != null) yield return $"{Dir}/{look.Hair}.gltf";
+        if (look.Beard) yield return $"{Dir}/Hair_Beard.gltf";
+    }
+
     // Getting up ends in an idle but is not one: looped, a risen (or the Warden)
     // would lie down and get up again.
     static bool IsCycle(string n) =>
@@ -173,6 +196,8 @@ public static class People
     /// own where they have it ("her/...", "him/..."), the library's otherwise.</summary>
     public static string Clip(Person p, string name)
     {
+        // One of the kit's own asked for by name ("folk/m_rise_stiff": the Warden in a cinematic).
+        if (name.StartsWith(FolkClips.Prefix) && p.Anim.HasAnimation(name)) return name;
         if (p.Own is not { } own) return p.Folk && FolkClips.For(p.Woman, name) is string folk ? folk : Resolve(name);
         // (One of their own asked for by its own name.)
         if (own.Owns(name)) return own.Has(name[own.Prefix.Length..]) ? name : Resolve("Idle");
@@ -735,12 +760,11 @@ public static class People
             jig.Amount = set == "warden" ? 0.55f : 1f;
             jig.Squash = set == "warden" ? 0f : 1f;
         }
-        // Her skin under the outfit's fitted pieces is not drawn: each
+        // Her skin under the outfit's fitted pieces is drawn tucked in: each
         // outfit marks it in one channel of her vertex colours.
         int ch = System.Array.IndexOf(OutfitChannels, set);
-        if (ch >= 0)
-            foreach (var mi in p.Skeleton.GetChildren().OfType<MeshInstance3D>())
-                if (!mi.Name.ToString().Contains('.') && !mi.Name.ToString().Contains('_')) HideSkin(mi, ch);
+        foreach (var mi in p.Skeleton.GetChildren().OfType<MeshInstance3D>())
+            if (!mi.Name.ToString().Contains('.') && !mi.Name.ToString().Contains('_')) TuckSkin(mi, ch);
     }
 
     static Shader? furShader, sheerShader, outfitShader;
@@ -811,38 +835,16 @@ public static class People
     /// colours (tools/assets/heroine_outfits.py's OUTFITS).</summary>
     static readonly string[] OutfitChannels = { "warden", "arcanist", "reaver", "ranger" };
 
-    static readonly Dictionary<(Mesh, int), ArrayMesh> hidden = new();
-
-    static void HideSkin(MeshInstance3D mi, int ch)
+    /// <summary>Her skin under the outfit tucked a few millimetres in by her
+    /// skin's shader (shaders/heroine_skin.gdshader), not cut away: cut, a
+    /// gap opened in her wherever a piece swung off her as she moved.</summary>
+    static void TuckSkin(MeshInstance3D mi, int ch)
     {
         // (Only her body is marked; her head is left as it is, shape keys and all.)
         if (mi.Mesh is not ArrayMesh am || (am.SurfaceGetFormat(0) & Mesh.ArrayFormat.FormatColor) == 0) return;
-        if (!hidden.TryGetValue((am, ch), out var mesh))
-        {
-            mesh = new ArrayMesh();
-            for (int s = 0; s < am.GetSurfaceCount(); s++)
-            {
-                var arr = am.SurfaceGetArrays(s);
-                var colV = arr[(int)Mesh.ArrayType.Color];
-                if (colV.VariantType != Variant.Type.Nil)
-                {
-                    var col = colV.AsColorArray();
-                    var idx = arr[(int)Mesh.ArrayType.Index].AsInt32Array();
-                    var kept = new List<int>(idx.Length);
-                    for (int t = 0; t + 2 < idx.Length; t += 3)
-                        if (col[idx[t]][ch] < 0.5f || col[idx[t + 1]][ch] < 0.5f || col[idx[t + 2]][ch] < 0.5f)
-                        { kept.Add(idx[t]); kept.Add(idx[t + 1]); kept.Add(idx[t + 2]); }
-                    arr[(int)Mesh.ArrayType.Index] = kept.ToArray();
-                }
-                var flags = (Mesh.ArrayFormat)((long)am.SurfaceGetFormat(s) & (long)Mesh.ArrayFormat.FlagUse8BoneWeights);
-                mesh.AddSurfaceFromArrays(am.SurfaceGetPrimitiveType(s), arr, new Godot.Collections.Array<Godot.Collections.Array>(), null, flags);
-                mesh.SurfaceSetMaterial(s, am.SurfaceGetMaterial(s));
-            }
-            hidden[(am, ch)] = mesh;
-        }
-        var over = Enumerable.Range(0, mi.Mesh.GetSurfaceCount()).Select(mi.GetSurfaceOverrideMaterial).ToList();
-        mi.Mesh = mesh;
-        for (int s = 0; s < over.Count; s++) mi.SetSurfaceOverrideMaterial(s, over[s]);
+        for (int s = 0; s < mi.GetSurfaceOverrideMaterialCount(); s++)
+            if (mi.GetSurfaceOverrideMaterial(s) is ShaderMaterial m && m.Shader == skinShader2)
+                m.SetShaderParameter("tuck_channel", ch);
     }
 
     /// <summary>Her paint as skin: light carried under it (subsurface
@@ -851,8 +853,8 @@ public static class People
     static Material Skin(BaseMaterial3D src, Look look, Mesh mesh, Color? own = null, string who = "heroine")
     {
         // shaders/heroine_skin.gdshader: pores, soft uneven sheen, light
-        // under the skin. (Her vertex colours mark what each outfit hides,
-        // not her paint: the shader never reads them.)
+        // under the skin. (Her vertex colours mark what each outfit covers,
+        // to tuck in, never her paint.)
         skinShader2 ??= GD.Load<Shader>("res://shaders/heroine_skin.gdshader");
         var m = new ShaderMaterial { Shader = skinShader2 };
         m.SetShaderParameter("paint", src.AlbedoTexture);
@@ -865,6 +867,9 @@ public static class People
         }
         m.SetShaderParameter("pores", GD.Load<Texture2D>("res://art/people/skin_pores.png"));
         m.SetShaderParameter("pore_scale", PoreScale(mesh));
+        // Shallower on the body and hands than the face, where pores show
+        // most: at the face's depth her hands read as pitted in close-up.
+        if (src.ResourceName != "skin_head") m.SetShaderParameter("pore_depth", 0.4f);
         // Her face a little more matte than her body: at the shine her body
         // has, her face read as plastic, and a light from behind lit the
         // side of her brow as a hard white band.
@@ -923,7 +928,7 @@ public static class People
                 uvArea += Mathf.Abs((uv[idx[t + 1]] - uv[idx[t]]).Cross(uv[idx[t + 2]] - uv[idx[t]])) / 2;
             }
         }
-        k = uvArea > 0 ? (float)(Math.Sqrt(area / uvArea) / 0.015) : 30f;
+        k = uvArea > 0 ? (float)(Math.Sqrt(area / uvArea) / 0.009) : 50f;
         poreScales[mesh] = k;
         return k;
     }
