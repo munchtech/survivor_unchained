@@ -56,8 +56,8 @@ public partial class Game
         if (risesLeft <= 0)
         {
             // No rise left: the night is lost, and the fall says so on its own. The world stays dark
-            // until the night's result is over it.
-            Wait(1.6, letGo);
+            // until the night's result is over it; it stands down (StoryNight.StandDown), her controls held.
+            Wait(1.6, () => { controls.Captured = true; letGo(); });
             return;
         }
         // The autopilot (runs and pictures) gets up, as a player mostly would.
@@ -83,7 +83,8 @@ public partial class Game
     bool FallKey(Act a)
     {
         if (a is Act.Confirm or Act.Interact) { var r = fallRise; EndFall(); if (r != null) GetUp(r); }
-        else if (a is Act.Cancel) { var l = fallLetGo; EndFall(); l?.Invoke(); }
+        // Let go: the night stands down (StoryNight.StandDown) and her controls are held until its result.
+        else if (a is Act.Cancel) { var l = fallLetGo; EndFall(); controls.Captured = true; l?.Invoke(); }
         return true;
     }
 

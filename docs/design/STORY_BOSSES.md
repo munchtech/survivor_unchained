@@ -510,6 +510,18 @@ Measured (32 nights a row, tiers 1–4, plain and deft, planned and careless): w
 2. **The Hollow and the Roost at the screen** with the experience director's successor.
 3. **Data owed by others:** the places drawn to `HollowByNight.Ground` and `RaidOnTheRoost.Ground` (arena art), then `PlaceBuilt => true` on each.
 
+### 8.3.2 The Dig, the knee and the Vault (5 October, `a427a874da78cba8b`)
+
+- **The knee's choice** (Redcowl, Greymuzzle) is a `StoryChoice` on the zone, put to her from anywhere: the banner names it ("Spare him, or finish it"), each answer has its own key (use, then her art; held 0.6 s; a click chooses), the boss bar goes while it waits, and his people keep back. The two prompts at his side (3.4 m) are gone.
+- **Grimtunnel climbs out of his hole** before it opens (it opened under him while he stood dazed: he could not walk out, a blade could not reach him, and at the lip's edge he stood there for minutes). The hands go in on him dazed. His boss: 2:30–3:00 planned, 4:00–4:40 careless.
+- **Every story boss grows 3% a second past its hard mark** (Redcowl's, made general): escalate, never execute, but end.
+- **Behind the Sealed Door is built** (`Play/Story/Vault.cs`, `Play/Bosses/BarrowLordStory.cs`, `VaultTests`), with §23.3's words. Differences from section 4:
+  - **The south end:** the Decurion's line is eight shields at every tier (a `Levy`, silent), through which he takes ×0.15; it forms again twice.
+  - **The hall's length:** the Scorpion's bolts are three aimed lanes every 4.2 s, cut short by the hall's cover (`VaultOpened.Cover`, `Clear`); behind his engine he takes ×0.3 from beyond 9 m.
+  - **The standards:** each is a part (`legion_standard`, holy and fire ×1.5) at 0.85 of the Signifer's health, with its own quickening pulse and a file of the dead every 10 s; the Signifer takes ×0.25 and falls with the last.
+  - **The Barrow Lord:** health 130, blows ×0.22 of her own health; the ranks stand on the landing's walls (never targets) and step in 2 m a side at each testudo; the pilum stops at a pilum still standing; the front's ring closes from the walls to 8 m (5 m on the Last Watch) and shoves at ×0.3; laid down, the hand ("Redi.") and the night is won.
+  - Measured (512 nights): the night 7.7–12.3 min, the way in 4.7–7.7, the boss 2:24–3:17 planned and 3:54–5:18 careless, won 86–94% planned and 80–95% careless, under half on the way in 14–25%.
+
 ### 8.4 To see in the game (none of it has been seen yet)
 
 - The place: the walls are invisible inside the old round arena until arena art builds the outline. Do the gates read as shut? (Today they are only marks of posts.)

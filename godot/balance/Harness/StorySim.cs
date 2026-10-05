@@ -16,9 +16,9 @@ namespace SurvivorUnchained.Balance;
 /// <summary>One story night to play: which fight, who, how they draft, how hard; whether it is past
 /// Act 1 (no rise of its own), and what she chooses at the boss's side where the story lets her.</summary>
 public sealed record StoryRunSpec(int Seed, string Calling, string Policy, string Fight = "hollow", int Tier = 1, int Level = 1, bool Deft = false,
-    bool Act2 = false, string Choice = "spare", double Cap = 25, bool Crates = false, bool Naive = false, bool Learned = false)
+    bool Act2 = false, string Choice = "spare", double Cap = 25, bool Crates = false, bool Naive = false, bool Learned = false, bool Banes = false)
 {
-    public string Key => $"{Fight}/{Calling}/{Policy}/t{Tier}/s{Seed}" + (Level > 1 ? $"/L{Level}" : "") + (Deft ? "/deft" : "") + (Act2 ? "/act2" : "") + $"/{Choice}" + (Crates ? "/crates" : "") + (Naive ? "/naive" : "") + (Learned ? "/learned" : "");
+    public string Key => $"{Fight}/{Calling}/{Policy}/t{Tier}/s{Seed}" + (Level > 1 ? $"/L{Level}" : "") + (Deft ? "/deft" : "") + (Act2 ? "/act2" : "") + $"/{Choice}" + (Crates ? "/crates" : "") + (Naive ? "/naive" : "") + (Learned ? "/learned" : "") + (Banes ? "/banes" : "");
     /// <summary>Plain and naive hands meet the boss for the first time on its first life (BossSense.Meeting);
     /// deft hands, and any with --learned, know it already.</summary>
     public bool Meets => !Deft && !Learned;
@@ -37,6 +37,11 @@ public sealed class StoryRunResult
     public int BossMarked, BossLanded, BossPhase = -1;
     public double BossBreak;
     public bool BossSoft;
+    /// <summary>Each of the boss's phase turns on its last life: the fight's seconds then, and the share of its
+    /// health it had left (above the phase's mark: the turn came at the phase's ceiling, not its health).</summary>
+    public List<(double T, double Hp)> BossTurns = new();
+    /// <summary>The boss's fight on its last life, in seconds (BossSeconds counts every life).</summary>
+    public double BossLife;
     public string KilledBy = "", Build = "";
     /// <summary>Where the night stood when it ended or was cut off (a stage that would not end).</summary>
     public string Where = "";
@@ -74,6 +79,8 @@ public static class StorySim
         if (spec.Act2) j.World.Facts["chapter.done"] = true;
         // Where the story lets her choose (Greymuzzle: she knelt and promised, the stream is clean).
         if (spec.Choice != "none") { j.World.Facts["promise.pack"] = true; j.World.Facts["stream.clear"] = true; }
+        // The banes learned by day (Chid's pole): known, and taken up where the fight offers them.
+        if (spec.Banes) j.World.Facts["bane.pole"] = true;
         var arena = StoryFights.Spec(spec.Fight, j.Ctx, "verge", 0, 0, 0);
         arena.Tier = spec.Tier;
         Arenas.Begin(j.World, arena);
@@ -97,6 +104,7 @@ public static class StorySim
         NavField? nav = null;
         double navX = 0, navZ = 0, navT = 0;
         int openedAt = -1;
+        SurvivorUnchained.Play.Bosses.ArenaBoss? lifeOf = null;
         var path = new List<(double X, double Z)>();
         int pathI = 0;
         double progressT = 0, bestToGo = double.MaxValue;
@@ -109,7 +117,8 @@ public static class StorySim
             // The stage's goal, walked to the way a player would (round the walls, through the gates).
             (double X, double Z)? way = null;
             // A run that fires the crates goes to them first, while they are offered.
-            var goal = spec.Crates && zone.Interactables.FirstOrDefault(i => i.Id == "story:crates") is { } cr ? (cr.X, cr.Z) : zone.Goal;
+            var goal = spec.Crates && zone.Interactables.FirstOrDefault(i => i.Id == "story:crates") is { } cr ? (cr.X, cr.Z)
+                : spec.Banes && zone.Interactables.FirstOrDefault(i => i.Id == "story:standard") is { } sd ? (sd.X, sd.Z) : zone.Goal;
             if (goal is var (wx, wz))
             {
                 navT -= ArenaSim.Dt;
@@ -164,6 +173,13 @@ public static class StorySim
             zone.Frame(ArenaSim.Dt);
             b.Tick(ArenaSim.Dt, mx, mz);
             if (zone.Falls > fallsBefore && zone.Now == StoryNight.Stage.Boss) meeting = null;
+            // Its phases on this life (a rise brings a new one, from its first phase).
+            if (zone.Now == StoryNight.Stage.Boss && zone.BossScript is { E: { } be } bt)
+            {
+                if (bt != lifeOf) { lifeOf = bt; r.BossTurns.Clear(); }
+                if (bt.PhaseIx > r.BossTurns.Count) r.BossTurns.Add((Math.Round(bt.FightT, 1), Math.Round(be.Hp / Math.Max(1, bt.MaxHp), 3)));
+                r.BossLife = bt.FightT;
+            }
             if (zone.Falls > fallsBefore)
                 r.FellAt.Add(zone.Now == StoryNight.Stage.Boss && bossBefore?.E is { } fe
                     ? $"boss ph{bossBefore.PhaseIx + 1} t{bossBefore.FightT:0} left {fe.Hp / Math.Max(1, fe.MaxHp):0%} max {b.MaxHp:0}"
@@ -187,11 +203,15 @@ public static class StorySim
             ArenaSim.Drafts(b, pick, rng, drafts, null);
             if (r.CardsAtBoss < 0 && zone.Now == StoryNight.Stage.Boss) { r.CardsAtBoss = drafts.Cards; r.MaxHpAtBoss = b.MaxHp; r.ReachAtBoss = Pilot.Reach(b); }
             // Her choice at his side, by the run's own; and the crates, fired or left, by the run's own.
-            var offer = zone.Interactables.FirstOrDefault(i => i.Id == (spec.Choice == "finish" ? "story:finish" : "story:let_go"))
-                ?? zone.Interactables.FirstOrDefault(i => i.Id is "story:let_go" or "story:finish");
-            offer?.Act();
+            if (zone.Choice is { } choice)
+            {
+                string want = spec.Choice == "finish" ? "finish" : "let_go";
+                zone.Answer(choice.Answers.Any(a => a.Id == want) ? want : choice.Answers[0].Id);
+            }
             if (spec.Crates && zone.Interactables.FirstOrDefault(i => i.Id == "story:crates") is { } crates
                 && Math.Abs(crates.X - b.Player.X) + Math.Abs(crates.Z - b.Player.Z) < 6) crates.Act();
+            if (spec.Banes && zone.Interactables.FirstOrDefault(i => i.Id == "story:standard") is { } lift
+                && Math.Abs(lift.X - b.Player.X) + Math.Abs(lift.Z - b.Player.Z) < 3) lift.Act();
             t += ArenaSim.Dt;
             if (trace && !outside && !zone.Place.Inside(b.Player.X, b.Player.Z, -0.6))
             {

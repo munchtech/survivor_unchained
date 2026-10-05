@@ -85,7 +85,7 @@ public sealed class StoryNight : ZoneRuntime, IStoryArena
         Hooks = new BattleHooks
         {
             OnKill = OnKill, OnLoot = OnLoot, OnPickup = OnPickup, OnPlayerDeath = OnFall,
-            BossTick = (e, dt) => e == boss && script != null ? script.Tick(e, dt) : scripted.TryGetValue(e.Id, out var s) && s.Seed == e.Seed && s.Tick(e, dt),
+            BossTick = (e, dt) => standing ? Stand(e) : e == boss && script != null ? script.Tick(e, dt) : scripted.TryGetValue(e.Id, out var s) && s.Seed == e.Seed && s.Tick(e, dt),
             OnBossHit = (e, school, dmg) => { if (e == boss) script?.OnHit(e, school, dmg); },
             OnBossStagger = e => { if (e == boss) script?.OnStagger(e); },
         };
@@ -116,6 +116,8 @@ public sealed class StoryNight : ZoneRuntime, IStoryArena
     }
 
     public bool Won => won;
+    /// <summary>The share of its health the boss is made with (1; less only for pictures of its end).</summary>
+    public double BossStartsAt { get; set; } = 1;
     public bool Over => over;
     public ArenaBoss? BossScript => script;
     public int Falls => falls;
@@ -155,6 +157,7 @@ public sealed class StoryNight : ZoneRuntime, IStoryArena
         open.Add(place.SpaceAt(ax, az) ?? place.Spaces[0].Id);
         b.InBounds = (x, z) => map.CanStand(x, z) && place.Inside(x, z, 0.3, open);
         place.Build(b.Collision);
+        Fight.Furnish(this);
         b.Charges.Spikes = false;
         b.Charges.Cap = 2;
         double burns = Fight.Burns(this);
@@ -340,6 +343,9 @@ public sealed class StoryNight : ZoneRuntime, IStoryArena
             boss.Boss = true;
             boss.Named = new Named { Title = BossName };
             boss.MaxHp = boss.Hp = boss.MaxHp * script.HealthMul(Spec.Tier) / BossEase;
+            // (pictures of its end, --bosshp: a boss of a share of its health, its marks with it and its floors
+            // still holding every phase; begun lower, the phases' marks healed it back up to them)
+            boss.MaxHp = boss.Hp = boss.MaxHp * Math.Clamp(BossStartsAt, 0.01, 1);
             boss.Damage = script.Teeth * Character.OwnHealth(G.Journey.Ch);
             script.Begin(boss);
             b.Events.Emit(new Ev.Focus { X = x, Z = z, Duration = rise ? 1.0 : 1.6 });
@@ -392,6 +398,7 @@ public sealed class StoryNight : ZoneRuntime, IStoryArena
                 break;
             case Stage.Boss:
                 ShutBehind();
+                script?.Grows(dt);
                 script?.Step(dt);
                 break;
         }
@@ -543,6 +550,7 @@ public sealed class StoryNight : ZoneRuntime, IStoryArena
         scripted.Clear();
         leaving.Clear();
         Interactables.RemoveAll(i => i.Id.StartsWith("story:"));
+        Choice = null;
     }
 
     /* --------------------------------------------------------------- a fall -- */
@@ -600,7 +608,40 @@ public sealed class StoryNight : ZoneRuntime, IStoryArena
         if (B == null || over) return;
         falling = false;
         StageEnded(atBoss ? "boss" : $"stage {beatIx + 1}");
+        StandDown();
         Finish(by);
+    }
+
+    /// <summary>The fight stands down where it is (UI design's finding: let go, the fight ran on under the
+    /// fall's shade until the result came up, her weapons still firing and hitting): her weapons fall quiet,
+    /// what was marked or thrown or laid on the ground goes, and everything on the field stands still where it
+    /// is, as in the lost night's words ("None of them comes in"). Time still runs, so the result comes on its
+    /// own beat.</summary>
+    void StandDown()
+    {
+        var b = B!;
+        standing = true;
+        b.Combat = false;
+        b.CancelBlows();
+        foreach (var pr in b.Projectiles.Living().ToList()) b.Projectiles.Release(pr);
+        foreach (var zn in b.Zones.Living().ToList()) b.Zones.Release(zn);
+        foreach (var e in b.Enemies.Living())
+        {
+            e.Scripted = true;
+            e.Provoked = false;
+            e.Target = -1;
+            if (e.Disposition != Disposition.Ally) e.Disposition = Disposition.Neutral;
+            Stand(e);
+        }
+    }
+
+    /// <summary>The field stood down (StandDown): a creature still where it is.</summary>
+    bool standing;
+    static bool Stand(Enemy e)
+    {
+        e.Vx = e.Vz = 0;
+        if (e.State != EnemyState.Dying) { e.State = EnemyState.Idle; e.Anim = EnemyAnim.Idle; }
+        return true;
     }
 
     public override bool OnDeath(string killer)
@@ -727,6 +768,9 @@ public sealed class StoryNight : ZoneRuntime, IStoryArena
 
     public void Withdraw(string id) => Interactables.RemoveAll(i => i.Id == $"story:{id}");
 
+    public void Ask(string who, string title, double x, double z, params ChoiceAnswer[] answers) => Choice = new StoryChoice(who, title, answers, x, z);
+    public void Unask() => Choice = null;
+
     bool Standable(double x, double z) => map.CanStand(x, z) && Fight.Place.Inside(x, z, 0.6, open) && !B!.Collision.Blocked(x, z, 0.6);
 
     Enemy? Spawn(string def, double x, double z, bool elite = false, SpawnStyle? style = null)
@@ -838,7 +882,8 @@ public sealed class StoryNight : ZoneRuntime, IStoryArena
         if (B == null || over) return;
         double want = Now == Stage.Boss ? CameraBoss : CameraNear;
         CameraDistance += (want - CameraDistance) * Math.Min(1, dt / 2.5);
-        if (Now == Stage.Boss && boss is { Alive: true } b && b.State != EnemyState.Dying && script != null)
+        // (the bar goes while her choice waits: the fight is over, and the choice stands where it stood)
+        if (Now == Stage.Boss && boss is { Alive: true } b && b.State != EnemyState.Dying && script != null && Choice == null)
             G.SetBoss(script.Bar(BossName, script.State is { } s ? $"{BossTitle} · {s}" : BossTitle));
         else if (Now == Stage.Beat && beat?.Bar is { } bar) G.SetBoss(bar);
         else G.SetBoss(null);

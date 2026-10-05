@@ -5,11 +5,13 @@ using SurvivorUnchained.Content;
 using SurvivorUnchained.Core;
 using SurvivorUnchained.Sim;
 
-namespace SurvivorUnchained.Balance;
+namespace SurvivorUnchained.Sim;
 
 /// <summary>How a bot takes cards. Each policy is a way a player might
 /// draft: the strongest-looking card now (greedy), one path held to
-/// (path:ID), anything (random), or whatever comes first (first).</summary>
+/// (path:ID), anything (random), or whatever comes first (first). The
+/// harness drafts by it, and the game's autopilot (--draft), so pictures
+/// show a night drafted as a player would.</summary>
 public abstract class Picker
 {
     public abstract string Name { get; }

@@ -36,6 +36,15 @@ public abstract class StoryBoss : ArenaBoss
     /// whether or not it is moving: its moves are Act's, its ground is this.</summary>
     public virtual void Step(double dt) { }
 
+    /// <summary>Past its hard mark it hits the harder the longer it goes, three per cent a second: it is the end
+    /// of it, one way or the other (escalate, never execute). A build that cannot finish it by then falls, and
+    /// comes back a day on with better; without this, the weakest stood a single life of thirteen minutes at
+    /// Grimtunnel and ten at Greymuzzle, neither of them able to end it.</summary>
+    public void Grows(double dt)
+    {
+        if (Hard && E is { Alive: true } && !Ending) E.Damage *= 1 + 0.03 * dt;
+    }
+
     /// <summary>Everything it put on the ground goes (its end, or a rise at its opening).</summary>
     public virtual void Clear() { }
 
