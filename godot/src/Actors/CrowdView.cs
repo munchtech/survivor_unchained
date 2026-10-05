@@ -115,6 +115,7 @@ public partial class CrowdView : Node3D
         foreach (var c in crowds.Values) c.Begin();
         foreach (var g in gaits.Values) g.Seen = false;
         living = 0;
+        whiteFlashes = 0;
         foreach (var e in b.Enemies.Items)
         {
             if (!e.Alive || e.Def.Visual.StartsWith("view:", StringComparison.Ordinal)) continue;
@@ -131,6 +132,12 @@ public partial class CrowdView : Node3D
             foreach (var id in gone) gaits.Remove(id);
         }
     }
+
+    /// <summary>Bodies flashed white this frame, and how many may be: past it, a flash stays at the
+    /// rim (the shader's whole-body white needs a flash over this).</summary>
+    int whiteFlashes;
+    const int WhiteFlashes = 4;
+    const float FlashRimOnly = 0.55f;
 
     void Draw(Enemy e, Func<double, double, double> heightAt)
     {
@@ -216,6 +223,10 @@ public partial class CrowdView : Node3D
         float sc = (float)(e.Def.Scale ?? 1) * Beasts.Size(e.Def.Visual);
         // Struck: a squash, and a flinch along the blow, gone with the flash.
         float f = e.State == EnemyState.Dying ? 0 : (float)e.Flash * (1 - Still);
+        // The struck flare's instant of white across the whole body is for a few at once (and any
+        // champion or ruler); the rest keep it at the rim. A blast that hits sixty at once turned
+        // sixty bodies white in the same frame.
+        if (f > FlashRimOnly && !e.Elite && !e.Boss && e.Named == null && ++whiteFlashes > WhiteFlashes) f = FlashRimOnly;
         // The flinch along the blow: big enough to read from thirty metres up, twice on a critical (S-17).
         float push = e.LastCrit ? 0.45f : 0.25f;
         var at = new Vector3((float)(e.X + e.LastDx * f * push), (float)y, (float)(e.Z + e.LastDz * f * push));
