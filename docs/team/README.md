@@ -68,7 +68,7 @@ The main session keeps this current. It is the address list for SendMessage. Ret
 | Male hero (body, head, hair, outfits) | ab82cbe99e2937ddd | docs/team/hero_male.md |
 | Heroine face, hair and character creation's Look | a833b7942e978d994 | docs/team/face.md |
 | Asset provenance (what isn't ours, licences, credits, replacement plan) | a80ff0c7fd988b178 | docs/team/provenance.md |
-| Legal and Steam compliance (AI disclosure, mature content, licences, brief for a lawyer) | af0973d59a5b2817a | docs/team/legal.md |
+| Legal and Steam compliance (paused; docs/handoff/legal.md; wake before submission or for a new outfit) | — | docs/team/legal.md |
 | Loot and itemisation (paused, built and merged; docs/handoff/loot.md for a successor) | — | docs/team/loot.md |
 | Creatures and models (our own boar first, then MODELS_TO_MAKE.md) | af551cacc6292152f | docs/team/creatures.md |
 | Heroine outfits | main session | — |
