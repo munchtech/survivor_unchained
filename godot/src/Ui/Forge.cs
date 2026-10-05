@@ -124,11 +124,7 @@ public partial class ForgeScreen : Overlay
 
         Gear(Fitted(new Vector2(RightX, Top), RightW, Style.Gap3));
 
-        var plate = Style.Panel(Kit.PanelBox(18, 6, Kit.Ground with { A = 0.9f }), Prompts());
-        plate.MouseFilter = MouseFilterEnum.Ignore;
-        var foot = new CenterContainer { Position = new Vector2(0, 996), Size = new Vector2(1920, 48), MouseFilter = MouseFilterEnum.Ignore };
-        foot.AddChild(plate);
-        AddChild(foot);
+        PromptsOnWorld(Prompts());
         Strike();
     }
 
@@ -285,7 +281,7 @@ public partial class ForgeScreen : Overlay
             fallback |= asDay;
             var (name, glyph) = InventoryScreen.Slots[s];
             var view = ItemViews.Slot(it, 50, it != null && it.Uid == sel && !making, null, false, it != null ? () => Choose(it.Uid) : null, null,
-                over => Hover(it, over), glyph, name, $"worn:{i++}");
+                over => Hover(it, over), glyph, name, $"worn:{i++}", engraved: true);
             if (it != null && (!Takes(it) || asDay)) view.Modulate = new Color(1, 1, 1, asDay ? 0.4f : 0.35f);
             worn.AddChild(view);
         }
@@ -447,12 +443,12 @@ public partial class ForgeScreen : Overlay
         names.SizeFlagsHorizontal = SizeFlags.ExpandFill;
         names.AddChild(Style.Label(Inventory.Name(it), Style.TextBold, 26, col, true));
         string what = it.Chart is { } ch ? $"{(ch.Rarity switch { 2 => "A rare chart", 1 => "A fine chart", _ => "A plain chart" })}, tier {ch.Tier}: {Crafting.Ground(ch.People)}"
-            : $"{Inventory.RarityName(it)} {def.Kind.ToString().ToLowerInvariant()}";
+            : ItemViews.KindLine(it);
         // Where it is: on now, set aside in the other kit, or carried.
         var loc = Inventory.Find(Ch, it.Uid);
         if (it.Chart == null && loc is { Worn: true }) what += Kits.Shown(Ch) ? $", worn {(Kits.On(Ch) == KitKind.Night ? "by night" : "by day")}" : ", worn";
         else if (loc is { Aside: true }) what += $", worn {(Kits.On(Ch) == KitKind.Night ? "by day" : "by night")}";
-        var kind = Style.H(Style.Gap2, Style.Label(what, Style.Ui, 15, Kit.Ink2), Style.Gems(it.Rarity, 7));
+        var kind = Style.H(Style.Gap2, Style.Label(what, Style.Ui, 15, Kit.Ink2));
         // Made for you this morning: said where the piece is named, the first time it is seen.
         if (handed == it.Uid) kind.AddChild(Style.Label("·  made for you, ready this morning", Style.TextItalic, 15, Style.GoldHi));
         if (slurried) kind.AddChild(Style.Label("·  slurried: green-black veins, set for good", Style.TextItalic, 15, ItemViews.SlurryGreen));
@@ -1093,23 +1089,21 @@ public partial class ForgeScreen : Overlay
     /// <summary>A craft's name as its act: a word in display type, lit under the pointer; held to full
     /// for what cannot be undone (the fill rising under the word); while under the pointer or the
     /// focus, the heat gauge shows what it may spend. What cannot be done now is a faint word.</summary>
-    Button Deed(string title, Quote q, Action act, string navId, bool hold, Color ink)
+    Control Deed(string title, Quote q, Action act, string navId, bool hold, Color ink)
     {
-        Button b;
-        if (hold)
+        if (hold && q.Ok)
         {
-            var h = Style.HoldButton(title, () => { if (q.Ok) act(); else Sound.Sfx.Deny(); });
-            h.Text = title;
+            // What cannot be undone: the word held until the ember runs its length (Self's trait offers' way).
+            var h = new HeldWord(title, "", act, 19, ink);
             Nav.Mark(h, navId, h.Nudge, focus: () => gauge?.Preview(q.HeatLo, q.HeatHi, q.Verb == Verb.Remake), blur: () => gauge?.Clear());
-            b = h;
+            h.MouseEntered += () => gauge?.Preview(q.HeatLo, q.HeatHi, q.Verb == Verb.Remake);
+            h.MouseExited += () => gauge?.Clear();
+            return h;
         }
-        else
-        {
-            b = new Button { Text = title, FocusMode = FocusModeEnum.None, MouseDefaultCursorShape = CursorShape.PointingHand };
-            Action press = q.Ok ? act : () => Sound.Sfx.Deny();
-            b.Pressed += press;
-            Nav.Mark(b, navId, press, focus: () => gauge?.Preview(q.HeatLo, q.HeatHi, q.Verb == Verb.Remake), blur: () => gauge?.Clear());
-        }
+        var b = new Button { Text = title, FocusMode = FocusModeEnum.None, MouseDefaultCursorShape = CursorShape.PointingHand };
+        Action press = q.Ok ? act : () => Sound.Sfx.Deny();
+        b.Pressed += press;
+        Nav.Mark(b, navId, press, focus: () => gauge?.Preview(q.HeatLo, q.HeatHi, q.Verb == Verb.Remake), blur: () => gauge?.Clear());
         Style.Font(b, Style.DisplayLight, 19, q.Ok ? ink : Kit.Faint, false);
         b.AddThemeColorOverride("font_hover_color", q.Ok ? ink.Lightened(0.25f) : Kit.Faint);
         b.AddThemeColorOverride("font_pressed_color", Style.EmberHi);

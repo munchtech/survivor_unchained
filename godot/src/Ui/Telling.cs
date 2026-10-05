@@ -1,7 +1,9 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using Godot;
 using SurvivorUnchained.Play;
+using SurvivorUnchained.Rpg;
 
 namespace SurvivorUnchained.Ui;
 
@@ -54,6 +56,7 @@ public abstract partial class TellingScreen : Overlay
             // (each number lands with a blow)
             if (k >= 1 && landed.Add(m) && !told) Sound.Sfx.Bash();
         }
+        CountWords();
         foreach (var (c, at, sound) in beats)
         {
             if (!IsInstanceValid(c)) continue;
@@ -147,5 +150,115 @@ public abstract partial class TellingScreen : Overlay
         var acts = Style.H(12, b);
         acts.Alignment = BoxContainer.AlignmentMode.Center;
         return acts;
+    }
+
+    /* ------------------------------------------------- the result's page -- */
+
+    // The numbers set as type, counting up: each label, its final value, how it is written, when.
+    readonly List<(Label L, double To, Func<double, string> Fmt, double At)> words = new();
+
+    /// <summary>
+    /// A result's page as one panel over the world (the owner: "we like to see our beautiful game";
+    /// no boxes in it): fitted to what it holds, centred, its ground a little see-through, with the
+    /// verdict as its title between the chains, the place under it. Returns the panel's column.
+    /// </summary>
+    protected VBoxContainer ResultPanel(string verdict, Color tone, string place, float width = 1180)
+    {
+        HideHud();
+        words.Clear();
+        landedWords.Clear();
+        // (a click anywhere off the panel tells the rest at once)
+        AddChild(new Backdrop(() => told = true, 0.55f));
+        var centre = new CenterContainer { MouseFilter = MouseFilterEnum.Ignore };
+        Style.Fill(centre);
+        AddChild(centre);
+        var panel = Style.Panel(Kit.Window(Margin + 8, Margin, Margin));
+        panel.CustomMinimumSize = new Vector2(width, 0);
+        panel.SelfModulate = Colors.White with { A = GroundAlpha };
+        panel.MouseFilter = MouseFilterEnum.Stop;
+        panel.GuiInput += e => { if (e is InputEventMouseButton { Pressed: true, ButtonIndex: MouseButton.Left }) told = true; };
+        centre.AddChild(panel);
+        var v = Style.V(Style.Gap4);
+        panel.AddChild(v);
+        var title = new Title(verdict, 34);
+        title.Modulate = tone;
+        v.AddChild(title);
+        v.AddChild(Style.Label(place, Style.TextItalic, 18, Kit.HeadInk, true, HorizontalAlignment.Center));
+        return v;
+    }
+
+    /// <summary>The numbers as a ledger line, as Self's attributes are: a large numeral counting up
+    /// over its name in small capitals, each on one baseline, fine rules between. No medallions.</summary>
+    protected Control Tally(params (double Value, Func<double, string> Fmt, string Label, double At, bool Good)[] stats)
+    {
+        var line = Style.H(0);
+        line.Alignment = BoxContainer.AlignmentMode.Center;
+        for (int i = 0; i < stats.Length; i++)
+        {
+            var (value, fmt, label, at, good) = stats[i];
+            if (i > 0) line.AddChild(new LedgerRule { CustomMinimumSize = new Vector2(57, 56) });
+            var n = Style.Label(fmt(0), Style.Display, 40, good ? Kit.Ink : Style.BloodHi, false, HorizontalAlignment.Center, true);
+            words.Add((n, value, fmt, at));
+            var cell = Style.V(0, n, Style.Label(label.ToUpperInvariant(), Style.DisplayLight, 14, Kit.HeadInk, false, HorizontalAlignment.Center, false));
+            cell.CustomMinimumSize = new Vector2(130, 0);
+            line.AddChild(cell);
+        }
+        return line;
+    }
+
+    /// <summary>Two columns side by side with a fine rule between them, no boxes; returns both.</summary>
+    protected static (VBoxContainer Left, VBoxContainer Right) Columns(VBoxContainer page, float rightW)
+    {
+        var row = Style.H(0);
+        var left = Style.V(Style.Gap3);
+        left.SizeFlagsHorizontal = SizeFlags.ExpandFill;
+        var right = Style.V(Style.Gap3);
+        right.CustomMinimumSize = new Vector2(rightW, 0);
+        row.AddChild(left);
+        var rule = new LedgerRule { CustomMinimumSize = new Vector2(49, 0), SizeFlagsVertical = SizeFlags.Fill };
+        row.AddChild(rule);
+        row.AddChild(right);
+        page.AddChild(row);
+        return (left, right);
+    }
+
+    /// <summary>The way on, as type with its key, there from the first moment: pressed during the
+    /// telling it tells the rest; pressed after, it goes.</summary>
+    protected Control OnwardWord(string text, Action go)
+    {
+        var w = Kit.Word(text, () => { if (Told) go(); else told = true; }, Style.EmberHi, 18);
+        var row = Style.H(10, Style.Prompt(Act.Confirm), w);
+        row.Alignment = BoxContainer.AlignmentMode.Center;
+        foreach (var c in row.GetChildren().OfType<Control>()) c.SizeFlagsVertical = SizeFlags.ShrinkCenter;
+        return row;
+    }
+
+    /// <summary>The numbers set as type, counting each frame (as the medallions do).</summary>
+    protected void CountWords()
+    {
+        foreach (var (l, to, fmt, at) in words)
+        {
+            if (!IsInstanceValid(l)) continue;
+            double k = Told ? 1 : Math.Clamp((ShownFor - at) / Count, 0, 1);
+            k = 1 - (1 - k) * (1 - k) * (1 - k);
+            var t = fmt(to * k);
+            if (t != l.Text) { l.Text = t; if (!Told && tick <= 0) { tick = 0.07; Sound.Sfx.Hover(); } }
+            if (k >= 1 && landedWords.Add(l) && !told) Sound.Sfx.Bash();
+        }
+    }
+
+    readonly HashSet<Label> landedWords = new();
+
+    /// <summary>A find as a tile, its card beside it when hovered.</summary>
+    protected Control FindTile(ItemInstance it, int size = 56)
+    {
+        var tile = ItemViews.Slot(it, size, ch: G.Journey.Ch);
+        tile.MouseEntered += () =>
+        {
+            var (card, worn) = ItemViews.Compare(it, G.Journey.Ch, Rpg.Items.SlotFor(Rpg.Items.Get(it.Def)) != null);
+            TipBeside(card, worn, tile, false, tile.GetGlobalRect().End.X);
+        };
+        tile.MouseExited += () => TipBeside(null, null, null, false, 0);
+        return tile;
     }
 }

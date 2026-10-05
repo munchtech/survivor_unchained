@@ -31,7 +31,7 @@ public sealed class PackBlock
     public static Shelf Open = Shelf.Pouch;
 
     public CharacterData Ch = null!;
-    public int Cols = 6, Tile = 68, StoreTile = 52, StoreCols = 8;
+    public int Cols = 6, Tile = 70, StoreTile = 52, StoreCols = 8;
     public float Width = 460;
     public string Nav = "pack";
     public string Title = "Carried";
@@ -63,9 +63,8 @@ public sealed class PackBlock
         v.AddChild(Kit.Head(Title, $"{held} of {ch.Pack.Count}", HeadEnd));
         int rows = ItemViews.RowsShown(ch.Pack, Cols);
         var grid = ItemViews.Grid(ch.Pack.Take(rows * Cols), Cols, Tile, Selected, Price, Click, Primary, Hover, Nav, null, Setup, Dear, ch, 8, Fresh);
-        var well = Style.Panel(Kit.WellBox(6), grid);
-        well.MouseFilter = Control.MouseFilterEnum.Ignore;
-        v.AddChild(well);
+        // (the tiles stand on the page itself: a well round them would be a box round boxes)
+        v.AddChild(grid);
 
         // The stores: tabs over one row, the purse at the row's end.
         var tabs = Kit.Tabs(Shelves.Select(s => s.Name).ToArray(), (int)Open, k => { Open = (Shelf)k; Refresh(); }, 15, 18,
@@ -107,8 +106,9 @@ public partial class InventoryScreen : Overlay
     /// <summary>Where each thing is worn on the doll: the left column, then the right, staggered.</summary>
     static readonly (EquipSlot Slot, bool Right, float Y)[] Doll =
     {
-        (EquipSlot.Head, false, 14), (EquipSlot.Cloak, false, 106), (EquipSlot.Body, false, 198), (EquipSlot.Relic, false, 290),
-        (EquipSlot.Amulet, true, 60), (EquipSlot.Weapon, true, 152), (EquipSlot.Offhand, true, 244), (EquipSlot.Ring1, true, 336), (EquipSlot.Ring2, true, 428),
+        // (the first places sit level with the carried grid's first row, so the two halves share a line)
+        (EquipSlot.Head, false, 36), (EquipSlot.Cloak, false, 122), (EquipSlot.Body, false, 208), (EquipSlot.Relic, false, 294),
+        (EquipSlot.Amulet, true, 58), (EquipSlot.Weapon, true, 144), (EquipSlot.Offhand, true, 230), (EquipSlot.Ring1, true, 316), (EquipSlot.Ring2, true, 402),
     };
     public static readonly Dictionary<EquipSlot, (string Name, string Glyph)> Slots = new()
     {
@@ -132,7 +132,7 @@ public partial class InventoryScreen : Overlay
         // The tiles are new: what was hovered is gone with the old ones until the pointer moves.
         hoverIt = null;
         hoverAt = null;
-        var v = BookPanel("Pack");
+        var v = BookPanel(null);
         var body = Style.H(24, DollView(ch));
         var right = Style.V(Style.Gap3);
         var block = new PackBlock
@@ -160,27 +160,35 @@ public partial class InventoryScreen : Overlay
 
     /* --------------------------------------------------------- the doll -- */
 
-    const int DollW = 352, DollH = 520, SlotS = 64;
+    // (as tall as the column of what she carries beside it, so neither leaves an empty strip above the prompts)
+    const int DollW = 352, DollH = 468, SlotS = 64;
 
     Control DollView(CharacterData ch)
     {
         var holder = new Control { CustomMinimumSize = new Vector2(DollW, DollH), MouseFilter = MouseFilterEnum.Ignore };
-        var ground = Style.Panel(Kit.WellBox(0));
-        ground.MouseFilter = MouseFilterEnum.Ignore;
-        ground.Position = Vector2.Zero;
-        ground.Size = new Vector2(DollW, DollH);
-        holder.AddChild(ground);
+        // No box under her: a pool of shade where she stands, fading into the panel on every side.
+        var pool = new TextureRect
+        {
+            Texture = new GradientTexture2D
+            {
+                Fill = GradientTexture2D.FillEnum.Radial, FillFrom = new Vector2(0.5f, 0.5f), FillTo = new Vector2(1f, 0.5f), Width = 128, Height = 128,
+                Gradient = new Gradient { Colors = new[] { new Color(0, 0, 0, 0.32f), new Color(0, 0, 0, 0.18f), new Color(0, 0, 0, 0) }, Offsets = new[] { 0f, 0.55f, 1f } },
+            },
+            ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize, StretchMode = TextureRect.StretchModeEnum.Scale, MouseFilter = MouseFilterEnum.Ignore,
+            Position = new Vector2(-20, -10), Size = new Vector2(DollW + 40, DollH + 20),
+        };
+        holder.AddChild(pool);
         var fig = Figure(ch, DollW - 2 * SlotS - 8, DollH - 16);
         fig.Position = new Vector2(SlotS + 4, 8);
         holder.AddChild(fig);
         foreach (var (s, right, y) in Doll)
         {
             var it = ch.Equipment[s];
-            var (name, _) = Slots[s];
+            var (name, glyph) = Slots[s];
             var slot = s;
             Action? off = it != null && slot != EquipSlot.Weapon ? () => G.Gear((j, b) => j.Unequip(slot, b)) : null;
             var view = ItemViews.Slot(it, SlotS, it != null && it.Uid == sel, null, false, it != null ? () => Select(it.Uid) : null, off,
-                over => Hover(it, over), null, name, $"eq:{slot}", null, false, false, false, ch);
+                over => Hover(it, over), glyph, name, $"eq:{slot}", null, false, false, false, ch, engraved: true);
             view.Position = new Vector2(right ? DollW - SlotS - 6 : 6, y);
             // Dragged from the pack, a thing that fits is worn here; dragged away from here, it is taken off.
             view.Drag = it != null && slot != EquipSlot.Weapon ? $"eq:{slot}:{it.Uid}" : null;

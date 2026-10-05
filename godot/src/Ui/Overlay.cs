@@ -266,28 +266,40 @@ public abstract partial class Overlay : Control
     /// (Pack, Self, Arts) is one right-hand panel, so turning its tabs changes only what is in it.</summary>
     public const float BookX = 1920 - 16 - BookW, BookW = 900;
 
+    /// <summary>The margin inside every panel, the same on all four sides.</summary>
+    public const int Margin = 28;
+
+    /// <summary>How much of the world shows through a panel's ground (the owner: "the whole
+    /// backdrop can get a ever so slight transparency"): evenly, everywhere, never in a fade.</summary>
+    public const float GroundAlpha = 0.93f;
+
     /// <summary>
     /// The day's book as a panel at the right, over the live world (the owner: "we like to see our
-    /// beautiful game"). It hugs what it holds and tapers into the world below; its head carries
-    /// the book's tabs on their chain and Close, then the title. The world is shaded only a little
-    /// toward it. Returns the column its content goes in.
+    /// beautiful game"). It hugs what it holds and ends cleanly at its content with the same margin on
+    /// every side (the owner on the old taper: "the fade away isn't needed"); its ground lets the
+    /// world through ever so slightly. Its head carries the book's tabs on their chain and Close, then
+    /// the title when there is one (Self's name; the Pack's open tab says enough). Returns its column.
     /// </summary>
-    protected VBoxContainer BookPanel(string title, Action? close = null)
+    protected VBoxContainer BookPanel(string? title, Action? close = null)
     {
         HideHud();
         var shade = new TextureRect
         {
             Texture = new GradientTexture2D
             {
-                Gradient = new Gradient { Colors = new[] { new Color(0.02f, 0.015f, 0.03f, 0), new Color(0.02f, 0.015f, 0.03f, 0.08f), new Color(0.02f, 0.015f, 0.03f, 0.4f) }, Offsets = new[] { 0f, 0.55f, 1f } },
+                Gradient = new Gradient { Colors = new[] { new Color(0.02f, 0.015f, 0.03f, 0), new Color(0.02f, 0.015f, 0.03f, 0.06f), new Color(0.02f, 0.015f, 0.03f, 0.3f), new Color(0.02f, 0.015f, 0.03f, 0.3f) }, Offsets = new[] { 0f, 0.3f, BookX / 1920f, 1f } },
                 Width = 256, Height = 4,
             },
             ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize, StretchMode = TextureRect.StretchModeEnum.Scale, MouseFilter = MouseFilterEnum.Ignore,
-            Position = Vector2.Zero, Size = new Vector2(BookX + 40, 1080),
+            Position = Vector2.Zero, Size = new Vector2(1920, 1080),
         };
         AddChild(shade);
-        var panel = new TaperPanel(Kit.Window(32, 18, 18), 110) { Position = new Vector2(BookX, 16) };
+        var panel = Style.Panel(Kit.Window(Margin, Margin, Margin));
+        panel.Position = new Vector2(BookX, 16);
         panel.CustomMinimumSize = new Vector2(BookW, 0);
+        panel.MouseFilter = MouseFilterEnum.Stop;
+        // (only the ground is see-through: what is on it stays whole)
+        panel.SelfModulate = Colors.White with { A = GroundAlpha };
         AddChild(panel);
         var v = Style.V(Style.Gap3);
         panel.AddChild(v);
@@ -302,23 +314,47 @@ public abstract partial class Overlay : Control
         btn.SizeFlagsVertical = SizeFlags.ShrinkBegin;
         head.AddChild(btn);
         v.AddChild(head);
-        v.AddChild(new Title(title, 30, false));
+        if (title != null) v.AddChild(new Title(title, 30, false));
         sideX = BookX; sideW = BookW;
         return v;
     }
 
     /// <summary>A fitted panel at a counter (theirs at the left, yours at the right, the keeper live
-    /// in the world between): as tall as what it holds, its one frame the window. Returns its column.</summary>
+    /// in the world between): as tall as what it holds, the same margin on every side, its ground
+    /// ever so slightly see-through. Returns its column.</summary>
     protected VBoxContainer Fitted(Vector2 at, float width, int gap = Style.Gap4)
     {
-        var panel = Style.Panel(Kit.Window(28, 22, 24));
+        var panel = Style.Panel(Kit.Window(Margin, Margin, Margin));
         panel.Position = at;
         panel.CustomMinimumSize = new Vector2(width, 0);
         panel.MouseFilter = MouseFilterEnum.Stop;
+        panel.SelfModulate = Colors.White with { A = GroundAlpha };
         AddChild(panel);
         var v = Style.V(gap);
         panel.AddChild(v);
         return v;
+    }
+
+    /// <summary>A screen's prompts along the foot of the world, under its panels (a counter, the bench):
+    /// the world can be bright there, so a soft oval of shade lies behind them, darkest at their middle
+    /// and gone well before its edge, so no shape is seen. No plate.</summary>
+    protected void PromptsOnWorld(Control row)
+    {
+        float w = row.GetCombinedMinimumSize().X + 260;
+        var wash = new TextureRect
+        {
+            Texture = new GradientTexture2D
+            {
+                Fill = GradientTexture2D.FillEnum.Radial, FillFrom = new Vector2(0.5f, 0.5f), FillTo = new Vector2(1, 0.5f), Width = 128, Height = 128,
+                Gradient = new Gradient { Colors = new[] { new Color(0.02f, 0.015f, 0.02f, 0.78f), new Color(0.02f, 0.015f, 0.02f, 0.6f), new Color(0.02f, 0.015f, 0.02f, 0) }, Offsets = new[] { 0f, 0.5f, 1f } },
+            },
+            ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize, StretchMode = TextureRect.StretchModeEnum.Scale, MouseFilter = MouseFilterEnum.Ignore,
+            Position = new Vector2(960 - w / 2, 1016 - 50), Size = new Vector2(w, 100),
+        };
+        AddChild(wash);
+        var centre = new CenterContainer { MouseFilter = MouseFilterEnum.Ignore, Position = new Vector2(0, 1000), Size = new Vector2(1920, 32) };
+        centre.AddChild(row);
+        AddChild(centre);
     }
 
     /// <summary>A side panel's prompts, along its foot.</summary>
@@ -383,12 +419,18 @@ public abstract partial class Overlay : Control
     /// <summary>Close, with its key: a pad shows B, the keyboard the screen's own key.</summary>
     protected static Button CloseButton(string closeKey, Action close)
     {
-        var btn = Style.Button("", close, false, true);
-        var row = Style.H(Style.Gap2, Controls.Instance?.UsingPad == true ? Style.PadButton("B") : Style.Key(closeKey), Style.Label("Close", Style.UiBold, Style.Small, Style.GoldHi));
+        // Close as words with its key, not a button box (words as type, the owner's rule).
+        var btn = new Button { FocusMode = FocusModeEnum.None, MouseDefaultCursorShape = CursorShape.PointingHand, Flat = true };
+        foreach (var s in new[] { "normal", "hover", "pressed", "focus" }) btn.AddThemeStyleboxOverride(s, new StyleBoxEmpty());
+        btn.Pressed += close;
+        var word = Style.Label("Close", Style.UiBold, Style.Small, Kit.Ink2);
+        var row = Style.H(Style.Gap2, Controls.Instance?.UsingPad == true ? Style.PadButton("B") : Style.Key(closeKey), word);
         row.MouseFilter = MouseFilterEnum.Ignore;
-        row.Position = new Vector2(10, 5);
+        row.Position = new Vector2(0, 5);
         btn.AddChild(row);
-        btn.CustomMinimumSize = new Vector2(row.GetCombinedMinimumSize().X + 22, 36);
+        btn.MouseEntered += () => word.AddThemeColorOverride("font_color", Kit.Ink);
+        btn.MouseExited += () => word.AddThemeColorOverride("font_color", Kit.Ink2);
+        btn.CustomMinimumSize = new Vector2(row.GetCombinedMinimumSize().X, 36);
         Nav.Id(btn, "close");
         return btn;
     }
