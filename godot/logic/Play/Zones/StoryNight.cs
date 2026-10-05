@@ -139,7 +139,9 @@ public sealed class StoryNight : ZoneRuntime, IStoryArena
         // The table's gold rates (crafting's economy): a night's rank and file pay a little.
         b.Rules.FodderGold = 0.0015;
         b.Rules.ChampionGold = 0.07;
-        b.Rules.EmberGain *= EmberPace;
+        // A kill's ember grows with its level, and a story night's yardstick (a table night's twelfth minute)
+        // does not: the same night gives the same build at every tier (measured: five cards more at tier 4).
+        b.Rules.EmberGain *= EmberPace / Enemies.ScaleFor(Spec.Tier * 3 - 2).Xp;
         b.Rules.Light *= 1.6;
         var place = Fight.Place;
         var (ax, az) = place[Fight.Arrive];
@@ -590,7 +592,10 @@ public sealed class StoryNight : ZoneRuntime, IStoryArena
     double R() => G.Rng.NextDouble();
 
     public StoryPlace Place => Fight.Place;
-    public int Level => Math.Max(1, Spec.Tier * 3 - 2 + (atBoss ? Fight.BossLevel : beat?.Level ?? 0));
+    /// <summary>The creature level now: the tier's base, the stage's own over it, and a dusk on the first
+    /// stage as a table night has (the tier's strength comes in over it, a level a tier above the first):
+    /// she meets it with nothing drafted, and at a higher tier her bare hands fall further behind.</summary>
+    public int Level => Math.Max(1, Spec.Tier * 3 - 2 + (atBoss ? Fight.BossLevel : beat?.Level ?? 0) - (!atBoss && beatIx == 0 ? Spec.Tier - 1 : 0));
     public IReadOnlyList<Deadfall> Fires => fires;
     public bool Fact(string key) => F(key).Truthy;
     public (double X, double Z)? Goal { get; set; }
@@ -620,15 +625,34 @@ public sealed class StoryNight : ZoneRuntime, IStoryArena
         // The crowd softens as a table night's does by its minute: the build's growth shows as a crowd
         // that melts (ArenaRun.FodderEase). Not the named, the champions or the boss.
         if (e != null && !e.Elite) e.MaxHp = e.Hp = e.MaxHp / ArenaRun.FodderEase(atBoss ? Fight.BossMinute : beat?.Minute ?? 0);
+        if (e != null) e.MaxHp = e.Hp = e.MaxHp / TierEase;
+        // The way in's rank and file bite softer than a table night's: the way in should dip, not fell
+        // (STORY_BOSSES.md 0.6), and the danger belongs to the boss. The named keep their own teeth.
+        if (e != null && !e.Elite && !atBoss) e.Damage *= CrowdTeeth;
+        // Her health grows a little slower with her level than their bite does with theirs: eased a tier.
+        if (e != null) e.Damage /= TierTeeth;
         return e;
     }
+
+    /// <summary>How hard the way in's rank and file bite, against a table night's.</summary>
+    public const double CrowdTeeth = 0.75;
+    public double TierTeeth => 1 + 0.2 * (Spec.Tier - 1);
+    public double Teeth => CrowdTeeth / TierTeeth;
+
+    /// <summary>A story night is the same fight at every tier: its tier is the game's guess at how strong
+    /// she has grown, and its creatures' levels already follow it. Their health grows faster with level
+    /// than her build's damage does (measured: a tier-3 night's stages ran twice as long as a tier-1's,
+    /// and were far more dangerous for it), so it is eased back a little a tier. Unlike the table's, a
+    /// story night does not ask more of the draft as the tiers climb.</summary>
+    public double TierEase => 1 + 0.3 * (Spec.Tier - 1);
 
     public Enemy? Foe(string def, double x, double z, double hpMul = 1, string? kicker = null)
     {
         var e = Spawn(def, x, z, true, SpawnStyle.Walk);
         if (e == null) return null;
-        // A named foe: a miniboss's measure (between a champion's twice and a herald's five times).
-        e.MaxHp = e.Hp = e.MaxHp * (1.6 + 0.6 * Spec.Tier) * hpMul;
+        // A named foe: a miniboss's measure at its own level (between a champion's twice and a herald's
+        // five times), times what its stage asks of it. Not more a tier: its level grows it already.
+        e.MaxHp = e.Hp = e.MaxHp * 2.2 * hpMul;
         e.Named = new Named { Title = e.Def.Name };
         smallChests.Add(e.Id);
         B!.Charges.Calm(B, 4);
@@ -668,6 +692,7 @@ public sealed class StoryNight : ZoneRuntime, IStoryArena
     public void Say(string title, string? sub, string tone) => G.Announce(new Announcement(title, sub ?? "", tone, 2.4));
     public void Bark(double x, double z, string text, string? speaker) => B?.Events.Emit(new Ev.Bark { X = x, Z = z, Text = text, Speaker = speaker });
     double IBossArena.HordeShare { set { } }
+    bool IBossArena.HordeReturns => false;
     void IBossArena.Won(double x, double z) => Victory(x, z, spared: false);
 
     /* ------------------------------------------------------------ on screen -- */

@@ -91,6 +91,30 @@ public class CheckpointTests
         Assert.Equal(0, b.Player.Iframes, 6);
     }
 
+    /// <summary>Every blessing's numbers are its own: ranked up it replaces what it gave (never stacks it),
+    /// and going back takes all of it away. Burn Bright named its numbers "syn:glass", which neither
+    /// its ranking nor a rise took away: at its third rank she had a quarter of her health and three
+    /// times her damage, and after a rise less again.</summary>
+    [Fact]
+    public void A_blessing_ranked_or_gone_back_from_leaves_no_numbers_behind()
+    {
+        foreach (var def in Content.Boons.All.Values.Where(d => d.Mods != null))
+        {
+            var b = BattleTests.Arena(4, ("cinderfall", 1));
+            var at = b.Snapshot();
+            int mods = b.Stats.List().Count;
+            double hp = b.Stats.Get(Stat.MaxHealth), dmg = b.Stats.Get(Stat.Damage);
+            for (int r = 0; r < def.Max; r++) b.AddBoon(def.Id);
+            var own = def.Mods!(def.Max).Count();
+            Assert.True(b.Stats.List().Count - mods <= own + 2, $"{def.Id}: {b.Stats.List().Count - mods} numbers at rank {def.Max}, its own are {own}");
+            b.Restore(at);
+            b.Events.Drain();
+            Assert.Equal(mods, b.Stats.List().Count);
+            Assert.Equal(hp, b.Stats.Get(Stat.MaxHealth), 6);
+            Assert.Equal(dmg, b.Stats.Get(Stat.Damage), 6);
+        }
+    }
+
     [Fact]
     public void A_place_is_walled_and_its_gates_open()
     {

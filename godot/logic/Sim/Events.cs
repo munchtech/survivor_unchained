@@ -43,6 +43,8 @@ public static class Ev
     public sealed class PlayerHit : CombatEvent
     {
         public double X, Z, Amount; public School School; public string Source = ""; public bool Dodged, Blocked;
+        /// <summary>The marked blow that landed, by its label (a boss's Lunge, the Pack's turn), if it was one.</summary>
+        public string? Label;
         /// <summary>Damage over time (poison, burning), said once a second: quieter than a blow.</summary>
         public bool Dot;
     }

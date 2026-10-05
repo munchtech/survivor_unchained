@@ -26,7 +26,9 @@ public sealed class NavField
         nx = (int)((x1 - x0) / Cell) + 1;
         nz = (int)((z1 - z0) / Cell) + 1;
         free = new bool[nx * nz];
-        double r = b.Player.Radius + 0.05;
+        // In a story night's place, a little more room: a way drawn a hair from a wall's corner was a
+        // way the hands could not walk (they caught on the corner and stood).
+        double r = b.Player.Radius + (box != null ? 0.25 : 0.05);
         for (int j = 0; j < nz; j++)
             for (int i = 0; i < nx; i++)
             {

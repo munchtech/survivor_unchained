@@ -1040,6 +1040,9 @@ public sealed partial class Battle
 
     /* ========================================================= damage out == */
 
+    /// <summary>The label of the marked blow being dealt now, for the hit it makes (the harness reads it).</summary>
+    string? blowLabel;
+
     /// <summary>A creature's blow on the survivor, after dodge, block and
     /// armour. A telegraphed blow (a lunge after its wind-up, a missile, a
     /// blast that marked its ground) slipped in the first moments of a dash
@@ -1256,7 +1259,7 @@ public sealed partial class Battle
             // capped by rhythm rather than by how many creatures touch you.
             p.HurtT = 0.3;
             p.Iframes = Math.Max(p.Iframes, 0.45);
-            Events.Emit(new Ev.PlayerHit { X = p.X, Z = p.Z, Amount = dmg, School = school, Source = source });
+            Events.Emit(new Ev.PlayerHit { X = p.X, Z = p.Z, Amount = dmg, School = school, Source = source, Label = blowLabel });
             Fire(TriggerEvent.Hurt, new ProcCtx { X = p.X, Z = p.Z, Damage = dmg });
         }
         if (from != null)
@@ -1584,7 +1587,9 @@ public sealed partial class Battle
                 if (b.Kind == TelegraphKind.Blow) Events.Emit(new Ev.Explosion { X = cx, Z = cz, Radius = Math.Max(1.2, b.Shape == TelegraphShape.Line ? b.Width : b.Radius * 0.6), School = b.School, Power = 0.8 });
                 if (p.Alive && b.Hit(p.X, p.Z, p.Radius))
                 {
+                    blowLabel = b.Label;
                     if (b.Damage > 0 && HurtPlayer(b.Damage, b.School, b.Source, b.From, telegraphed: true) > 0 && b.From?.Boss == true) BossBlowsTaken++;
+                    blowLabel = null;
                     if (b.Slow > 0 && p.Iframes <= 0.45) SlowPlayer(b.Slow, b.SlowFor);
                 }
             }
