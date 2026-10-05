@@ -2075,3 +2075,23 @@ stopped. These are the words, given to combat to paste:
 | It breaks (`Say`, boon); its bar | "The yearlings scatter" / "Whitethroat is in reach again" (not "open": that is her pant); "The yearlings" / "Whitethroat is out of reach until it breaks" |
 | The Pack's turn (sight; label) | "A growl goes round the ring. The Pack turns."; "The Pack turns" |
 | The Moon's first howl (channel; sight) | "The moon clears: into a fire's light!"; "He sits back and howls, and the cloud slides off the moon. The cold comes in off the ring." |
+
+### 23.7 The drive taught, the Roost's new slots, and the way back shut
+
+Combat's next slots: experience found players chasing the drive's gap, and
+the Roost's build needed words that section 23.1 did not have. Given to
+combat to paste. The narrator gives no orders, so advice is an announcement
+and the bark beside it is a sight.
+
+| Slot | Words |
+|---|---|
+| The first drive (`Say`, danger) | "The drive" / "The gap is where she runs: go through the wolves" |
+| Her first miss (sight at her; `Say`, boon) | "She misses, and stands with her head down, blowing."; "She is open" / "Hit her while she blows" |
+| The gap catches her, the first time (`Say`, danger) | "The gap is hers" / "Through the wolves, never the gap" |
+| After her seventh drive (`Say`, boon) | "Whitethroat is spent" / "She has nothing left to run with" |
+| Roost, a picket out of reach (`Goal`; bar) | "Break the pincer ({n} of {m})"; "The pincer" / "The picket is out of reach until it breaks" |
+| The picket comes down (sight) | "The picket comes down the bank at you, torch first." |
+| Barn-Door blocks a lock, the first time (`Say`, info) | "Barn-Door is in the way" / "Draw him off the lock, then break it" |
+| The levy forms again (`Say`, danger); the captain's bar | "The levy forms again" / "Round its ends to the captain"; "Round the line's ends to him" |
+| Redcowl reaches the cage's door (sight) | "He fills the door." |
+| The way back shuts on the boss's ground (sight) | the Hollow: "Behind you, the Pack fills the way you came."; the Roost: "Behind you, his people drag a cart across the way you came."; the Dig: "Behind you, the tub-way falls in."; the Door: "Behind you, a rank of the dead steps across the hall." |
