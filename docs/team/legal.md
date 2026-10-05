@@ -2,18 +2,21 @@
 
 Agent aab20546fe06daa89 (successor to aa12c130ddf4b904c), branch `worktree-agent-aab20546fe06daa89` (worktree `.claude/worktrees/agent-aab20546fe06daa89` in survivorsunchained). Not a lawyer: I find and organise the issues, cite primary sources, and recommend. The owner and the main session decide. Predecessor's handoff: `docs/handoff/legal.md`.
 
-## State (4 October 2026, evening): re-ruled on the owner's answers, documents only
+## State (4 October 2026, late evening): re-ruled on the owner's answers, documents only
 
 - **Updated:** `docs/legal/LEGAL_BRIEF.md`, `STEAM_CHECKLIST.md` and `QUESTIONS_FOR_LAWYER.md`. There is a new table, "The owner's answers and what they changed", and a new issue 28 (Suno). There are now 17 questions for the lawyer.
-- **Launch blockers now (7):**
+- **Launch blockers now (6):**
   - the AI disclosure;
   - the mature survey, with the motion check;
-  - the export and debug paths (performance lead, spec sent);
-  - licence notices (UI design successor; spec in brief issue 4);
+  - the export and debug paths: done in code at 8a770667; my `.pck` review waits for the GPU;
+  - licence notices: built at 178768aa (UI design, a26f87c39952dcd9c); the texts are verified, and my answers on the credits are sent;
   - the boar (replace, or buy on Fab as a stop-gap);
-  - the base bodies (replace before launch);
-  - the placeholder voices (excluded at export).
+  - the placeholder voices: excluded at export (8a770667).
 - **Cleared:**
+  - **The base bodies: kept, with conditions.** They are local Krea 2 Turbo pictures and TRELLIS 2 meshes, and the ComfyUI log agrees. The hero's picture probably used the Civitai LoRA "Mystic XXX" (2728644, alcaitiff), which allows selling images. The evidence is in `docs/legal/records/BODIES_RECORD.md`. Conditions:
+    - the owner signs the record;
+    - he confirms no real person and no one else's art went into the pictures;
+    - the bodies join the Krea footprint.
   - **The Ember Watch:** the owner made it with Claude, and no third party is involved. Records are to be kept (issue 5(e)).
   - **Explicit placeholders:** efc15256 is merged.
   - **"Warmed":** b47d98ea is checked; it resolves the issue once merged.
@@ -23,7 +26,7 @@ Agent aab20546fe06daa89 (successor to aa12c130ddf4b904c), branch `worktree-agent
 
 ## Key decisions (with why)
 
-- **Base bodies: replace before launch, not "eventually".** They came from Krea's website, whose commercial licence is on paid plans only, and whose 3D tool defaults to Hunyuan3D 2.1. That licence bars displaying output in the EU, UK and South Korea. The assets are deleted, so we can't show the plan, the model or the input picture.
+- **Base bodies: kept, with conditions** (re-ruled after the owner corrected "krea assets" to "we made it in comfyui"). The pictures are under the same Krea 2 licence as the UI art: the US$1M cap and 30-day termination.
 - **The boar: before launch too.** Its licensor's own words contradict its CC BY label.
 - **The Ember Watch is the owner's.**
   - Copyright needs no registration to exist (17 U.S.C. §408(a)), but covers only human-authored expression (Copyright Office, Part 2).
@@ -45,6 +48,7 @@ Agent aab20546fe06daa89 (successor to aa12c130ddf4b904c), branch `worktree-agent
 2. Review the performance lead's pack listing.
 3. Send the licences spec (brief issue 4) to the UI design successor once the roster names one.
 4. Review `docs/art/MODELS_TO_MAKE.md` against issue 5(g) when it lands.
+6. See the credits screen in game when the GPU is free, and check the UI design lead's next `CREDITS.md` pass against `STEAM_CHECKLIST.md` E.
 5. **Standing check of recent additions:**
    - the skills lead's "filmed clips" (0d2e4a0b);
    - arena art's concepts;

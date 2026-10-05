@@ -26,16 +26,18 @@ You asked: *"ai generated assets and things are perfectly ok for steam games and
    - So a competitor could, in principle, copy an individual AI-made icon or texture.
    - What you can protect: the game as a whole (your selection and arrangement), anything you personally made or changed, and your name and logo, by trademark.
    - Section 16 says how to strengthen this.
-4. **"No trouble" depends on a few fixes before launch.** After your answers, seven items still block launch:
+4. **"No trouble" depends on a few fixes before launch.** After your answers, six items still block launch:
    - the AI disclosure, filled in honestly;
    - the mature-content answers, which must cover what's hidden in the build as well as what's shown;
    - debug paths and unused files (including the hero's bare body) that ship in the build;
    - licence notices that don't ship yet;
    - the boar, which has conflicting licence terms: replace it, or buy the commercial version, before launch;
-   - the heroine's and hero's base bodies: they came from Krea assets that are now deleted, so nothing shows we had the right to sell them. Replace them with our own before launch, as you want;
    - the placeholder voices, which must be replaced or dropped from the build.
 
-   Two former blockers are cleared. **The Ember Watch is yours** (issue 5(e) explains what that means and what to keep). **The explicit-scene placeholders are out** of the data.
+   Three former blockers are cleared:
+   - **The Ember Watch is yours.** Issue 5(e) explains what that means and what to keep.
+   - **The explicit-scene placeholders are out** of the data.
+   - **The base bodies can stay.** You made the pictures with Krea 2 Turbo and the 3D with TRELLIS 2, both on our own machine. Sign the short record in `records/BODIES_RECORD.md`, and confirm that no real person or anyone else's art went into the pictures (issue 5(b)).
 5. **The mature content is sellable on Steam as it stands.** It counts as *Some Nudity or Sexual Content*, *Frequent Violence or Gore* and *General Mature Content*, not *Adult Only*.
    - **Explicit sex scenes** would move the game into Adult Only. That means hidden by default, a slower review, and exposure to the payment-card rules Valve added in July 2025.
    - **"Warmed" is now only a note that the night happened** (your decision; the story lead's change). Sex that granted a combat buff would have forced an R18+ rating in Australia. Without it, the game can be judged against MA 15+ instead (issue 7).
@@ -43,7 +45,7 @@ You asked: *"ai generated assets and things are perfectly ok for steam games and
    - ElevenLabs is fine for commercial use on a paid plan. Use only voices we have the right to: designed voices, your own voice, or performers who have consented in writing. Never feed ElevenLabs output into another AI model; its terms forbid it.
    - **Suno** (the hymn) is fine on a **Pro or Premier** plan, for a song you **download** through Suno's own download button. Suno assigns those songs to you. Free-plan songs are for personal, non-commercial use only (issue 28).
 
-**In one line:** ship it with an honest disclosure, fix the seven blockers (replacing the bodies and the boar is the biggest job), and plan for the Krea revenue cap. Then the AI use itself is not what gets you into trouble.
+**In one line:** ship it with an honest disclosure, fix the six blockers (the boar is the biggest job), and plan for the Krea revenue cap, which now covers the bodies' pictures as well as the interface. Then the AI use itself is not what gets you into trouble.
 
 ---
 
@@ -53,9 +55,9 @@ You asked: *"ai generated assets and things are perfectly ok for steam games and
 |---|---|---|
 | He lives in the **United States** | US law governs his own position: copyright, registration and his contracts. ElevenLabs' non-EEA terms apply to him. Steam needs his US tax form (W-9). Selling into the EU, UK and Australia still brings their content rules | 12, 16, 27 |
 | **"Warmed"** should only say it happened | **Resolved** once merged. The story lead's change (`worktree-agent-a73ca9d35d0c487a9`@b47d98ea) removes the bonus, keeps the note, and adds a test. Australia's "sex related to rewards" trigger is gone | 7 |
-| The base bodies came from **Krea assets, since deleted** | **Still a blocker; replace before launch.** Krea's site offers commercial rights only on paid plans; its 3D tool's default model is Hunyuan3D 2.1, whose licence bars displaying its output in the EU, UK and South Korea; and with the assets and history gone, we can't show which plan, model or picture made them | 5(b) |
+| The base bodies: **"we made images in krea 2 turbo… we used trellis for the 3d… we made it in comfyui"** (a correction of his first answer, "krea assets") | **Kept, with conditions; no longer a blocker.**<br>- The picture came from Krea 2 Turbo on our own machine, under the same licence as the UI art: the US$1M cap and 30-day termination.<br>- The mesh came from TRELLIS 2 (MIT), also local.<br>- The machine's logs agree. The hero's picture most likely used a Civitai LoRA whose creator allows selling images.<br>- Conditions: no real person and no one else's art in the pictures, and a signed record. See `records/BODIES_RECORD.md` | 5(b) |
 | **"I do not own [The Ember Watch]… I guess I own it?"** | **Yes: as far as anyone does, you own it.** There is no third party to clear. Copyright needs no registration to exist, but it protects only human-authored expression. Keep the records listed in 5(e). **Cleared as a blocker** | 5(e), 16 |
-| **Replace everything** third-party with our own over time | Agreed. Only the boar and the bodies must go before launch; credited CC0 and CC BY work can stay until replaced. "Generated own" replacements carry their generator's terms, so 5(g) sets rules | 5(a), 5(g) |
+| **Replace everything** third-party with our own over time | Agreed. Only the boar must go before launch; credited CC0 and CC BY work can stay until replaced. "Generated own" replacements carry their generator's terms, so 5(g) sets rules | 5(a), 5(g) |
 | **Export templates:** do what's needed | Noted. The release export (issue 3) can be built and its `.pck` listed when the GPU is free | 3 |
 | **The hymn** will be made in **Suno** | Fine on a paid plan, downloaded through Suno. Disclose it as AI music | 28, 1 |
 
@@ -70,7 +72,7 @@ I checked these in the repository at `f56ee42` (integration branch) and in rende
 - **AI-made content that ships** (the provenance auditor's count, which I have spot-checked):
   - Krea 2 art: the painted UI (frames, cards, logo), 117 colour icons, 48 item icons, ground marks, and the heroine's and hero's face paint and irises;
   - LTX-2.5: 15 effect flipbooks and 5 sound takes;
-  - the heroes' AI base meshes, rigged and rebuilt by agents. The owner says they came from Krea's website, and they are to be replaced (issue 5(b));
+  - the heroes' AI base meshes. Each is a picture made locally with Krea 2 Turbo, turned into 3D locally by TRELLIS 2, then rigged and rebuilt by agents (issue 5(b));
   - Kimodo: 10 folk motion clips;
   - 19 Maya1 and Seed-VC placeholder voice files in `godot/art/vo`;
   - story, dialogue and item text written by Claude agents under the owner's direction.
@@ -115,7 +117,7 @@ I checked these in the repository at `f56ee42` (integration branch) and in rende
 | 2 | Steam mature content survey, including content hidden in the build | BLOCKER |
 | 3 | Debug paths and unused files in the release build | BLOCKER |
 | 4 | Licence notices and credits missing from the build | BLOCKER |
-| 5 | Third-party asset blockers (the boar; the base bodies from deleted Krea assets); The Ember Watch | BLOCKER (boar, bodies); FINE (Ember Watch, with records) |
+| 5 | Third-party assets: the boar; the base bodies (local Krea 2 Turbo and TRELLIS 2); The Ember Watch | BLOCKER (boar); FINE with conditions (bodies); FINE (Ember Watch, with records) |
 | 6 | Explicit-scene placeholders in shipped data; the explicit-content decision | DONE (removed, efc15256) / decision |
 | 7 | Sex tied to a gameplay buff (Australia R18+, credit-card gate) | RESOLVED once b47d98ea merges |
 | 8 | Krea 2 licence: US$1M revenue cap, revocable on notice | SHOULD FIX now; BLOCKER before revenue nears $1M |
@@ -233,8 +235,14 @@ I checked these in the repository at `f56ee42` (integration branch) and in rende
 2. Add `tools_scenes/*` to the release `exclude_filter`.
 3. Move to a resource list the game actually uses (the "selected resources" mode, or an exclude list for unused third-party packs and bodies). Then check the `.pck` contents before upload.
 
-**Status (4 Oct, evening).**
-- The performance lead (a7145e18b3eb78294) has the exact spec:
+**Status (4 Oct, evening): done in code** by the performance lead at 8a770667, now merged:
+- `Args.Dev` = `OS.IsDebugBuild()` gates the developer switches;
+- the excludes below are in all three presets.
+
+What remains is my review of the exported `.pck` listing, when the GPU is free.
+
+The spec it implements:
+- The performance lead (a7145e18b3eb78294) had the exact spec:
   - `Args` in `godot/src/Shots.cs` returns nothing when `!OS.IsDebugBuild()`. Every developer argument goes through it, so one change gates them all.
   - The `exclude_filter` list: `tools_scenes/*`, the anime and woman bodies and their hair, `hero.glb` until his base garment exists, the unused KayKit, web and Poly Haven files, and `art/vo/*` for the placeholder voices.
   - A zip-pack listing for me to review.
@@ -272,6 +280,17 @@ I checked these in the repository at `f56ee42` (integration branch) and in rende
 3. Generate `CREDITS.txt` from the provenance ledger so it can't drift.
 4. I will review the screen and the folder before launch.
 
+**Status (4 Oct, evening): built; reviewed on paper, not yet seen in game.** The UI design lead (a26f87c39952dcd9c) built it at 178768aa:
+- `Content/Credits.cs` cleans `CREDITS.md` by rule into `data/credits.json` and `licences/CREDITS.txt`, and a golden-file test keeps them in step.
+- The page opens from the title and the pause menu.
+- Godot's notices are read from the engine.
+- `licences/` is packed and copied beside each build.
+
+I compared the shipped notice texts with their sources. `GODOT_LICENSE.txt` and `GODOT_COPYRIGHT.txt` match 4.5.1-stable, the two .NET files match `release/8.0`, and the OFL texts match `art/fonts`. Every CC BY entry carries its source, creator, licence link and changes. Open items (sent to the lead):
+- drop the entries for works the release excludes;
+- make the AI section the single list in `STEAM_CHECKLIST.md` E;
+- see the screen in game when the GPU is free.
+
 **Specification** (for the UI design lead's successor; sources checked 4 Oct 2026).
 - **Godot 4.5.1:**
   - Take `LICENSE.txt` and `COPYRIGHT.txt` from the `4.5.1-stable` tag of `godotengine/godot`.
@@ -296,7 +315,7 @@ I checked these in the repository at `f56ee42` (integration branch) and in rende
   - https://docs.godotengine.org/en/stable/classes/class_engine.html
   - https://docs.godotengine.org/en/stable/tutorials/scripting/c_sharp/c_sharp_basics.html
 
-### 5. Third-party asset blockers: BLOCKER (the boar, the bodies), SHOULD FIX (two), FINE (The Ember Watch)
+### 5. Third-party assets: BLOCKER (the boar), FINE with conditions (the bodies), SHOULD FIX (two), FINE (The Ember Watch)
 
 These are my rulings on the auditor's findings (`ASSET_PROVENANCE.md`), updated for the owner's answers of 4 October. The owner's aim: "we will replace everything eventually if we can with our own / generated own".
 
@@ -305,48 +324,39 @@ These are my rulings on the auditor's findings (`ASSET_PROVENANCE.md`), updated 
   - A CC licence, once granted, can't be revoked. But conflicting statements from the licensor invite a dispute and a Steam DMCA notice.
   - The owner plans to replace third-party work "eventually". **"Eventually" is too late for the boar:** it must be replaced before launch (`REPLACEMENT_PLAN.md` 1.1).
   - If the replacement won't be ready, buy the commercial version on Fab as a stop-gap and keep the receipt.
-- **(b) The base bodies:** **BLOCKER; replace before launch.**
+- **(b) The base bodies:** **FINE, with conditions** (re-ruled 4 Oct, evening, on the owner's corrected answer).
   - **What they are:**
     - the heroine's body, from the owner's `234.glb`;
-    - the older woman, `woman.glb`;
+    - the older woman, `woman.glb`, which is dropped from the build anyway (issue 3);
     - the hero's body, from `ComfyUI_00008.glb`;
     - the owner's reference sheet, `images/1.webp`.
-  - **The owner's answer** (4 Oct): "they were from krea assets that have since been deleted I think". So they came from Krea's website (krea.ai), not from the Krea 2 model we run locally. Those are two different sets of terms.
-  - **Krea's website terms** (Terms of Use, last updated 20 May 2024; pricing page, read 4 Oct 2026):
-    - Krea gives users only a "non-exclusive, non-sublicensable and non-transferable license to access, use (and in certain instances download, display, and re-share) content generated". It adds that "Your rights to use, reproduce, modify, distribute, or store of any Content may be dependent on specific purchases or plans".
-    - Commercial use is a permission Krea "may allow", which it "reserves the right to modify… at any time".
-    - The pricing page shows a **"Commercial license" on the Pro and Max plans, and not on the Free plan** (the Free column marks it with a cross).
-    - No revenue cap is stated. The open model's US$1M cap (issue 8) is in a different licence.
-    - Everything you generate is a "User Submission". Krea takes a perpetual, sublicensable licence to it, and on plans without private mode other users may see and reuse it.
-  - **Krea's 3D tool** (krea.ai/3d, read 4 Oct 2026):
-    - Its default model is **Hunyuan3D-2.1**. It also offers Hunyuan3D 3.1, TRELLIS 2, Rodin, Tripo and Meshy.
-    - The Tencent Hunyuan 3D 2.1 Community License "DOES NOT APPLY IN THE EUROPEAN UNION, UNITED KINGDOM AND SOUTH KOREA".
-    - §5(c): "You must not use, reproduce, modify, distribute, or display the Tencent Hunyuan 3D 2.1 Works, Output or results … outside the Territory".
-    - Its "Output" covers use "via a Hosted Service", which is what Krea is.
-    - Whether that bar reaches a Krea customer who never accepted Tencent's licence is **unsettled** (lawyer). We would be showing that output to every EU and UK buyer.
-  - **Why the bodies can't stay:**
-    1. We can't show the plan. On the Free plan there was no commercial licence.
-    2. We can't show the model. With Hunyuan3D, EU and UK sales are a problem.
-    3. We can't show the input pictures. If one was someone else's art or photo, or a real person, the body copies it.
-    4. The assets and their history are deleted, so none of this can be proved now. Krea's terms warn that deletion "may result in destruction of any Content", and that "we can't promise that we can recover or restore anything".
-
-    The owner also wants them replaced. Both reasons point the same way.
-  - **What carries the same taint:** everything shaped from these bodies.
-    - the heroine's body mesh and its paint;
-    - the 26 creation cameos (`godot/art/ui/create/female/*`), until they are re-shot on the new body;
-    - the hero's body.
-
-    Her outfits, hair and face paint are our own geometry and work. They need refitting to the new body, not replacing. Her head is already MakeHuman (CC0).
-  - **Actions:**
-    1. Rebuild both bodies on MakeHuman's CC0 base, sculpted to the brief by us (`REPLACEMENT_PLAN.md` 1.2 and 1.3). Use the models planner's `docs/art/MODELS_TO_MAKE.md` for the order.
-    2. Drop `woman.glb` from the build; nothing replaces it (issue 3).
-    3. Before then, the owner checks his email for Krea receipts covering the days he made them. A paid plan would lower the risk for anything still in the build at a deadline. It does not change the plan to replace them.
-    4. Record the replacements in the provenance ledger.
-  - **Sources:**
+  - **The owner's answer:** "we made images in krea 2 turbo for the IMAGE but we did not use hunyuan 3d. we used trellis for the 3d", and "we made it in comfyui". This corrects his first answer ("krea assets"). Krea's website was not used, so its plan terms and its Hunyuan-based 3D tool don't apply.
+  - **The machine agrees.** The evidence is copied into `docs/legal/records/BODIES_RECORD.md` before the logs rotate away.
+    - The only TRELLIS installed is TRELLIS 2 (since 30 Sep), run by ComfyUI's own nodes. No Hunyuan model is in ComfyUI, and no `nvdiffrast`, whose licence is non-commercial, is installed.
+    - **The hero:** five Krea 2 Turbo prompts ran from 00:18 to 00:26 on 4 Oct, then a TRELLIS 2 run (with BiRefNet and DINOv3) at 00:28. `ComfyUI_00008.glb`, made by "ComfyUI", landed on the Desktop at 00:38.
+    - **The heroine** (`234.glb`, in the repo by 1 Oct 23:08): the logs of that day don't name models. The owner's word, and TRELLIS 2 being the only TRELLIS installed, carry it.
+  - **The licences that apply:**
+    - **Krea 2 Community License** (issue 8). The pictures are Outputs of the Krea 2 Turbo weights we run locally, as for the UI art. Commercial use is allowed while total annual revenue is under US$1M, and the licence is revocable on 30 days' notice. Each body mesh is commercial use of a Krea picture. So **the bodies join the Krea footprint**: if revenue nears US$1M, or Krea gives notice, they need the enterprise licence or replacement like the rest.
+    - **TRELLIS 2** (`microsoft/TRELLIS.2-4B`): MIT. Its DINOv3 encoder is under Meta's DINOv3 License, which allows commercial use and makes no claim on outputs; BiRefNet is MIT. ComfyUI itself is GPL-3.0, a tool licence that doesn't reach its outputs.
+    - **A third-party LoRA, probably on the hero's picture.** Those runs attached 256 LoRA patches. The official darkbrush LoRA attaches 263, but `MysticXXX_KREA2_v1` has exactly 256 target layers. It was installed at 20:35 on 3 Oct, after the heroine was made. I identified it by its file hash on Civitai:
+      - model 2728644, "[KREA 2] Mystic XXX" by `alcaitiff`, version 1.0 of 25 Jun 2026;
+      - the creator's permissions allow commercial use of generated images (Image, Sell, Rent), need no credit, and allow derivatives;
+      - Civitai flags it as an explicit adult concept LoRA, not a real person (`poi` false), and not involving minors;
+      - its training data is unpublished. Whether a model's training on others' images taints its outputs is **unsettled law** everywhere, and the same is true of Krea 2 itself.
+      - Either way the hero is covered: if it was darkbrush, that is Krea's own LoRA under the same licence.
+  - **Lower likeness risk than it looks.** Neither hero's face comes from these pictures: both heads are MakeHuman (CC0), with face paint made separately. Only the body's shape does, which makes resemblance to a real person far less likely.
+  - **Conditions for keeping them:**
+    1. **No real person, and no one else's art.** The owner confirms in writing that each picture was made from his own words (text-to-image). No real person was named, no photo of a person was used, and no one else's picture was uploaded as an input. If any picture was image-to-image, he names the input and where it came from; the reference sheet `images/1.webp` is the one to account for.
+    2. **The record.** The owner signs the paragraph listed at the end of `BODIES_RECORD.md`: date, local ComfyUI, Krea 2 Turbo, the LoRA, the input, TRELLIS 2. He confirms which LoRA the hero's picture used. Keep the record with the provenance file.
+    3. **The Krea footprint.** List the heroine's and hero's bodies, and the 26 creation cameos made from her, in the Krea-made file list (`ASSET_PROVENANCE.md`) and in the stage 2 plan for the revenue cap.
+    4. **Disclosure.** They stay in the Steam AI disclosure as AI-made base meshes, which `STEAM_CHECKLIST.md` D3 already covers.
+  - **The owner's wish to make everything our own** still stands. These bodies can be rebuilt on MakeHuman later (`REPLACEMENT_PLAN.md` 1.2 and 1.3), but that's for ownership and the Krea cap, not because launch needs it.
+  - **What I checked before** (Krea's website terms, its 3D tool's default Hunyuan3D 2.1 model, and that licence's EU and UK bar) no longer applies to these bodies. It stays in 5(g) as a rule for any future work. Sources:
     - https://www.krea.ai/terms
     - https://www.krea.ai/pricing
     - https://www.krea.ai/3d
     - https://huggingface.co/tencent/Hunyuan3D-2.1/blob/main/LICENSE
+    - https://civitai.com/models/2728644 (with the API records cited in `BODIES_RECORD.md`)
 - **(c) Chevalier Sword and Medieval Shield** (Sketchfab, "based on the concept by Guillem Daudén" and "by Artyom Vlaskin"): **SHOULD FIX.**
   - A 3D modeller's CC BY grant can't license the concept artist's own rights in the design.
   - Action: replace them, or obtain the concept artists' written permission.
@@ -394,7 +404,7 @@ These are my rulings on the auditor's findings (`ASSET_PROVENANCE.md`), updated 
   - **The older woman body** (`woman.glb`, unknown origin): remove it from the build.
   - **Watch list:**
     - never ship the `fantasy` sound pack: it claims CC0, but its files carry 2014 library metadata;
-    - never ship anything made with the unknown `MysticXXX_KREA2_v1` LoRA;
+    - the `MysticXXX_KREA2_v1` LoRA is **now identified** (Civitai 2728644, by `alcaitiff`; the creator allows selling images). Outputs made with it may ship, with a ledger line, under the same Krea 2 terms (5(b));
     - never ship make3d's Hunyuan test models;
     - never ship motion captured from Pexels footage of identifiable people without a check.
   - **Marketing:** concept art and animatics made with Krea are Krea outputs. Using them on the store page or in a trailer is commercial use (issue 8), and it goes in the AI disclosure (issue 1).
@@ -411,7 +421,7 @@ These are my rulings on the auditor's findings (`ASSET_PROVENANCE.md`), updated 
      - any web generator on a free plan;
      - any picture of a real person without a release;
      - any picture of someone else's art;
-     - the `MysticXXX_KREA2_v1` LoRA.
+     - any LoRA or checkpoint whose creator doesn't allow commercial use of images, or that is trained on a real person (Civitai's "poi" flag). Check each one's permissions before use, as was done for `MysticXXX_KREA2_v1` (allowed).
 
   Every replacement gets a ledger line before it lands: file, tool, model, licence, input, date. A CC0 asset (Quaternius, Poly Haven, Kenney) has no legal risk at all. Replacing it with a Krea-made one *raises* risk, so do those last, for ownership's sake only.
 
@@ -491,7 +501,7 @@ These are my rulings on the auditor's findings (`ASSET_PROVENANCE.md`), updated 
 
 **Action.**
 1. Record our content-filter practice in writing: every Krea output is reviewed by an agent and approved by the owner before it ships, and prompts never name real people. That is our §4.2 compliance.
-2. Keep a list of every Krea-made shipped file (the auditor is building it).
+2. Keep a list of every Krea-made shipped file (the auditor is building it). It includes the heroine's and hero's bodies and the 26 creation cameos, because the bodies were sculpted from Krea 2 Turbo pictures (issue 5(b)).
 3. Either budget for an enterprise licence (ask Krea for a quote before launch; opensource@krea.ai), or schedule replacing Krea outputs with our own or differently licensed work. That also serves the "remove anything not ours" goal.
 4. Lawyer: whether past outputs remain usable after the threshold or after termination.
 
