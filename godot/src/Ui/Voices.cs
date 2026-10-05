@@ -193,6 +193,12 @@ public partial class Voices : Node3D
             var size = b.Box.GetCombinedMinimumSize();
             // (rising a little as it is said)
             var at = cam.UnprojectPosition(head) - new Vector2(size.X / 2, size.Y + (float)Math.Min(b.T, 3) * 6);
+            // A speaker at the top of the screen says it under their feet, not under the HUD's bars.
+            if (at.Y < Ui.GameHud.TopClear) at.Y = Math.Max(Ui.GameHud.TopClear, cam.UnprojectPosition(b.At).Y + 14);
+            at.X = Mathf.Clamp(at.X, 16, 1904 - size.X);
+            // Never inside the banner's words, nor beside them on their line (read across, a howl's
+            // caption and the banner's title made one sentence): under them (over them is the boss's bar).
+            if (Ui.GameHud.Banner is Rect2 band && band.GrowIndividual(140, 6, 140, 6).Intersects(new Rect2(at, size))) at.Y = band.End.Y + 10;
             float want = 0;
             for (int pass = 0; pass < 8; pass++)
             {

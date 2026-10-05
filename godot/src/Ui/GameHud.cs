@@ -892,6 +892,20 @@ public partial class GameHud : CanvasLayer
         while (toasts.GetChildCount() > 6) toasts.GetChild(0).Free();
     }
 
+    /// <summary>Where the banner's words stand on the screen while it shows (the lines said over
+    /// heads keep out of it: a howl's caption printed beside the banner's own line read as one).</summary>
+    public static Rect2? Banner { get; private set; }
+
+    /// <summary>How far down the top of the screen is the HUD's (the ember, the clock, a boss's bar).</summary>
+    public static float TopClear { get; private set; } = 118;
+
+    Rect2 BannerRect()
+    {
+        float w = Math.Max(annTitle.GetCombinedMinimumSize().X, Math.Max(annSub.GetCombinedMinimumSize().X, annKicker.Visible ? annKicker.GetCombinedMinimumSize().X : 0));
+        w = Math.Min(1200, w + 40);
+        return new Rect2(960 - w / 2, announce.Position.Y, w, announce.GetCombinedMinimumSize().Y);
+    }
+
     public void Announce(Announcement a)
     {
         annKicker.Text = a.Kicker?.ToUpperInvariant() ?? "";
@@ -1122,6 +1136,8 @@ public partial class GameHud : CanvasLayer
         else announce.Modulate = Colors.Transparent;
         // Nothing big over a choice being made.
         if (draft != null || talk != null) { announce.Modulate = Colors.Transparent; subtitle.Modulate = Colors.Transparent; }
+        Banner = announce.Modulate.A > 0.05f ? BannerRect() : null;
+        TopClear = bossBox.Visible ? bossBox.GetGlobalRect().End.Y + 8 : 118;
         foreach (var c in toasts.GetChildren())
         {
             if (c is not Control box) continue;

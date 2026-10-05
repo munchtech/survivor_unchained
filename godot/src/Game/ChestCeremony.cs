@@ -98,8 +98,20 @@ public partial class ChestCeremony : Control
         ChestItemKind.Evolution => it.Before != null ? $"{it.Before} evolves" : "Evolution",
         ChestItemKind.Rank => it.From <= 0 ? "New" : $"Rank {it.From} to {it.To}",
         ChestItemKind.Passive => it.From <= 0 ? "New passive" : $"Rank {it.From} to {it.To}",
+        // Gear says what its tooltip will ("Rare Head"); a chart is a chart.
+        ChestItemKind.Gear => it.Id == Maps.Charts.Item ? "A Wayfinder's chart"
+            : $"{Rpg.Items.RarityNames[Math.Clamp((int)it.Rarity, 0, Rpg.Items.RarityNames.Count - 1)]} {(Rpg.Items.Find(it.Id) is { } d ? ItemViews.KindName(d.Kind) : "find")}",
         _ => "Coin, and breath back",
     };
+
+    /// <summary>Where a thing goes as the opening closes: gear down to where it lies on the ground
+    /// (it is there to be picked up, not on the bar), the rest home to its place on the bar.</summary>
+    Vector2 HomeOf(ChestItem it)
+    {
+        if (it.X is not double x || it.Z is not double z) return hud.PlaceOf(it.Id);
+        var w = new Vector3((float)x, (float)scene.HeightAt(x, z) + 0.35f, (float)z);
+        return cam.Camera.IsPositionBehind(w) ? hud.PlaceOf(it.Id) : cam.Camera.UnprojectPosition(w);
+    }
 
     public override void _Ready()
     {
@@ -166,7 +178,9 @@ public partial class ChestCeremony : Control
         var v = Style.V(2);
         v.CustomMinimumSize = new Vector2(width, 0);
         v.Size = new Vector2(width, 60);
-        var name = Style.Label(it.Name, Style.Display, it.Kind == ChestItemKind.Evolution ? 22 : 19, it.Kind == ChestItemKind.Evolution ? Gilt : Style.GoldHi, true, HorizontalAlignment.Center);
+        // Gear's name in its rarity's colour, as everywhere loot is named.
+        var ink = it.Kind switch { ChestItemKind.Evolution => Gilt, ChestItemKind.Gear => col.Lightened(0.15f), _ => Style.GoldHi };
+        var name = Style.Label(it.Name, Style.Display, it.Kind == ChestItemKind.Evolution ? 22 : 19, ink, true, HorizontalAlignment.Center);
         name.CustomMinimumSize = new Vector2(width, 0);
         v.AddChild(name);
         var detail = Style.Label(DetailOf(it).ToUpperInvariant(), Style.UiHeavy, Style.Badge, col.Lightened(0.2f), true, HorizontalAlignment.Center);
@@ -353,9 +367,9 @@ public partial class ChestCeremony : Control
             }
             if (closing)
             {
-                // Home to its place on the bar, shrinking as it goes.
+                // Home to its place on the bar (or down to the ground it lies on), shrinking as it goes.
                 float k = Smooth(closeT / Outro);
-                pos = pos.Lerp(hud.PlaceOf(r.It.Id), k);
+                pos = pos.Lerp(HomeOf(r.It), k);
                 scale *= 1 - 0.65f * k;
                 r.Plate.Modulate = Colors.White with { A = 1 - Smooth(closeT / (Outro * 0.5)) };
                 r.M.Modulate = Colors.White with { A = 1 - Smooth((closeT - Outro * 0.7) / (Outro * 0.3)) };

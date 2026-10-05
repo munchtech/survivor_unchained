@@ -46,6 +46,9 @@ public static class ItemViews
         [ItemKind.Consumable] = "Consumable", [ItemKind.Quest] = "Quest item", [ItemKind.Tool] = "Tool", [ItemKind.Trophy] = "Trophy",
     };
 
+    /// <summary>A kind of thing in words, as its tooltip names it ("Rare Head").</summary>
+    public static string KindName(ItemKind k) => KindNames.GetValueOrDefault(k, k.ToString());
+
     static readonly Dictionary<string, string> StatNames = new()
     {
         ["maxHealth"] = "Health", ["armor"] = "Armour", ["damage"] = "Damage", ["cooldown"] = "Weapon speed", ["area"] = "Area", ["critChance"] = "Critical chance",
