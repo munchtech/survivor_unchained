@@ -4,17 +4,15 @@ What has to be modelled so that every character and creature in the game is ours
 
 Sources: the provenance audit (`docs/legal/ASSET_PROVENANCE.md`, `REPLACEMENT_PLAN.md`), the legal lead's rulings (`docs/legal/LEGAL_BRIEF.md` 5(a), 5(b) and 5(g), on `worktree-agent-aab20546fe06daa89@3ddc7728`), the cast (`docs/STORY_BIBLE.md` §3 and §5, `docs/VO_CAST.md`, `docs/cinematics/README.md`), the creatures (`godot/logic/Content/Enemies.cs`, `docs/bestiary/ROSTER.md`, `docs/bosses`), and the code that builds them today (`godot/src/Actors`).
 
-> **Update:** the owner says TRELLIS made the bodies, not Hunyuan, from a picture made with Krea 2 Turbo and/or a free LLM's image tool. Likely kept; the legal lead is re-ruling.
->
-> **Hold (4 October 2026):** the owner wants to keep the heroine's and hero's current bodies if their Krea records clear them: the 3D model used (not Hunyuan3D), a paid plan, and their own input picture. Their rebuilds below are fallbacks; nothing is replaced without the owner's decision.
+> **The bodies stay (owner, 4 October 2026).** The heroine's and hero's bodies were made with TRELLIS (MIT), run locally, from pictures the owner made with Krea 2 Turbo in our own ComfyUI. Not Hunyuan, and not Krea's website. They are ours, under Krea 2's US$1M revenue cap like the UI art (legal brief 5(b); `docs/legal/records/BODIES_RECORD.md`, for the owner to sign). Nobody replaces or rebuilds them; the rebuild plans below are fallbacks only.
 
 ## 1. Summary
 
-**23 models in all.** Everyone else is a reskin: one of these bodies with its own face, hair and outfit, which the team makes.
+**21 models to make** (the two bodies are kept). Everyone else is a reskin: one of these bodies with its own face, hair and outfit, which the team makes.
 
 | | Models | Which |
 |---|---|---|
-| **Must-make: blockers** (legal: replace before launch) | 3 | **The heroine's body** and **the hero's body**: both came from Krea's website, probably Hunyuan3D underneath, and the records are deleted (legal 5(b)). The 26 creation cameos are re-shot with her. **The boar**: its page says "personal use only" (legal 5(a)) |
+| **Must-make: blockers** (legal: replace before launch) | 1 | **The boar**: its page says "personal use only" (legal 5(a)). Until ours is made, the owner can buy the commercial version as a stop-gap. (The heroine's and hero's bodies were blockers; they're cleared and stay.) |
 | **Must-make: critical path** | 3 | **The Ford-Warden**: the first boss, held in close-up in the prologue; today a stretched townsman whose hood reads white. **The average man** and **the average woman**: the base of every townsperson, Kerchief and Risen, and of 15 named characters |
 | **Should-make** (Act 1 at full quality) | 12 | Six more generic builds; the wolf, the lampling and Grimtunnel; the Barrow Lord; Vonnra; Sella |
 | **Later** (Acts 2 and 3, and proposals) | 5 | The Warden of the Kiln Ford, the Thing in the Barn, the Bone-Heap, carrion crows, the Morrow |

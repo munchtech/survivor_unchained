@@ -40,6 +40,9 @@ public sealed class MapSpec
     /// how many of them hold altars). 0: the old map of fourteen clearings and three altars. The
     /// way between is the same snake, cut shorter, its other turns only bends in the way.</summary>
     public int Clearings, AltarCount;
+    /// <summary>An arena made to a story fight's own place (Play/Story: its outline, its gates and
+    /// points), by the fight's id; empty, the round ember arena.</summary>
+    public string Story = "";
 }
 
 /// <summary>A Bend: a widening of the way where it turns, with nothing placed in it but the way's own.</summary>
@@ -85,6 +88,8 @@ public sealed class MapBuild
     public byte[]? Splat3;
     /// <summary>An arena's grass, one byte a texel as Splat: how thick it grows.</summary>
     public byte[]? Grass;
+    /// <summary>An arena's fallen leaves, one byte a texel as Grass: how thick they lie.</summary>
+    public byte[]? Leaves;
     /// <summary>An arena's edge, all the way round: (x, z) every two degrees.</summary>
     public List<(double X, double Z)> Rim = new();
     /// <summary>Still water laid in an arena (a stream's course): points along
@@ -96,6 +101,10 @@ public sealed class MapBuild
     public List<(double X, double Z, double R)> Vents = new();
     /// <summary>An arena's metres inside its edge (negative outside), as the heights.</summary>
     public double[]? Inside;
+    /// <summary>A story place's gates (id, from, to): the ember burning across a way until its stage is won.</summary>
+    public List<(string Id, double X0, double Z0, double X1, double Z1)> Gates = new();
+    /// <summary>A story place's fires by point id (a deadfall): the light its flames burn with (Meta.Lights).</summary>
+    public Dictionary<string, int> FireLights = new();
     public required List<Area> Areas;
     public required List<PackSpot> Packs;
     /// <summary>The ways between the clearings, in order: from area k to area k + 1, point by point

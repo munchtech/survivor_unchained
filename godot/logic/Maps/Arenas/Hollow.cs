@@ -103,9 +103,12 @@ public sealed class Hollow : ArenaShape
         p.BaseB = Math.Max(p.BaseB * 0.85, (1 - MathX.Smoothstep(2, 5, f)) * 0.8);
         // Moss: in cushions along the stream's banks, and in islands across the
         // bowl where the canopy keeps it damp; never on the bed or the runs.
-        double isle = MathX.Smoothstep(0.46, 0.62, Noise.Noise(x * 0.11 + 70, z * 0.11 - 31) + n2 * 0.25);
+        // (Small and broken: moss holds to what keeps it damp, the roots' sides and the banks,
+        // and a few hollows; big open islands of it read as green paint from the camera.)
+        double isle = MathX.Smoothstep(0.55, 0.7, Noise.Noise(x * 0.17 + 70, z * 0.17 - 31) + n2 * 0.25);
         double banks = (1 - MathX.Smoothstep(1.5, 2.3, f + n1 * 0.5)) * MathX.Smoothstep(1.05, 1.3, f);
-        p.Moss = Math.Max(isle * 0.85, banks * MathX.Smoothstep(0.0, 0.35, n2));
+        double byRoots = (1 - MathX.Smoothstep(0.7, 1.8, B.At(rootsF, x, z) + n1 * 0.4)) * MathX.Smoothstep(-0.1, 0.3, n2);
+        p.Moss = Math.Max(Math.Max(isle * 0.7, byRoots * 0.8), banks * MathX.Smoothstep(0.0, 0.35, n2));
         // Roots.
         double rf = B.At(rootsF, x, z) + n2 * 0.25;
         p.L2 = (1 - MathX.Smoothstep(0.6, 1.0, rf)) * (1 - p.L4);
@@ -118,6 +121,9 @@ public sealed class Hollow : ArenaShape
         // Drier litter, needles and twigs, in drifts across the bowl, thickest toward the rim.
         p.L5 = MathX.Smoothstep(0.05, 0.45, Noise.Noise(x * 0.035 + 21, z * 0.035 + 3) + n2 * 0.2 + MathX.Smoothstep(30, 8, inn) * 0.3) * (1 - p.L3);
         if (Drowned) p.Wet = Math.Max(p.Wet, MathX.Smoothstep(0.35, 0.7, Noise.Noise(x * 0.05 - 9, z * 0.05)) * 0.8);
+        // This autumn's leaves, loose over the litter, in drifts; thin on the runs, the banks, the moss.
+        double blown = MathX.Smoothstep(0.3, 0.7, Noise.Noise(x * 0.07 - 23, z * 0.07 + 41) * 0.7 + n2 * 0.3 + MathX.Smoothstep(10, 2, inn) * 0.3);
+        p.Leaves = (0.35 + 0.65 * blown) * (1 - p.L3) * (1 - p.L4) * (1 - p.Moss * 0.85);
         // Grass only where the canopy opens, in clearings of the litter.
         double hard = Math.Max(Math.Max(p.L2, p.L3), Math.Max(p.L4, p.L5));
         p.Grass = (1 - hard) * MathX.Smoothstep(0.2, 0.55, Noise.Noise(x * 0.03 - 40, z * 0.03 + 12) + n2 * 0.2);

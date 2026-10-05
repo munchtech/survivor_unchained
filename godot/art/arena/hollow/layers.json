@@ -2,12 +2,12 @@
  "layers": [
   {
    "name": "litter",
-   "source": "dry_decay_leaves",
-   "metres": 2.0,
+   "source": "leaves_forest_ground",
+   "metres": 1.26,
    "mean": [
-    0.17158,
-    0.07566,
-    0.035
+    0.18564,
+    0.10872,
+    0.03884
    ]
   },
   {
