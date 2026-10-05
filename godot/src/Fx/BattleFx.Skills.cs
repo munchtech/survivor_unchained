@@ -75,6 +75,11 @@ public partial class BattleFx
             case "dagger" or "dagger_blood" or "dagger_flurry":
                 Sparks.Spawn(at, Vector3.Zero, 0.16f, 0.7f * g, art == "dagger_blood" ? Blood : SteelWhite * 0.8f, null, 0.8f * g, sprite: Sprites.Of("scratch"), spinV: 0);
                 break;
+            case "chakram" or "chakram_razor" or "chakram_hail":
+                // A cut across the body in the wind's colour (its blood for Razorgale). Held low: a
+                // ring of bodies cut at once at her feet summed to a pale glow at her hips.
+                Sparks.Spawn(at, Vector3.Zero, 0.13f, 0.6f * g, art == "chakram_razor" ? Blood * 0.7f : art == "chakram_hail" ? Hdr("#9fd8ff", 1.15f) : Hdr("#a8f0d0", 1.1f), null, 0.75f * g, sprite: Sprites.Of("scratch"), spinV: 0);
+                break;
             case "disc" or "disc_aegis" or "disc_reckon":
                 if (e.Crit) Books.Spawn("gold_flare", at + Vector3.Up * 0.3f, 0.6f * g, 0.3f, new Color(1f, 0.85f, 0.55f, 0.85f), sizeEnd: 1.4f * g);
                 Sparks.Spawn(at, Vector3.Zero, 0.18f, 1.1f * g, OathGold, OathGold * 0.2f, 0.3f, sprite: Sprites.Range("star").First + 3 + 1, spinV: 2);
@@ -93,12 +98,31 @@ public partial class BattleFx
         // burst at every bounce through a crowd piled into one cream glow; its star is enough.)
         // (Motes and shards hit too often for a filmed burst each: a crowd of them read as
         // one white haze. Their marks above are enough.)
+        // Shadow's wisps drink the light (drawn mostly as dark laid over the world, Flipbooks): pale
+        // and added, they read as grey smoke.
         var (book, tint) = art switch
         {
-            "moon" or "moon_brand" => ("moon_burst", new Color(0.55f, 0.45f, 1.05f, 0.75f)),
-            "umbral" or "ruin" or "siphon" or "tether" or "tether2" or "tether_mark" => ("shadow_wisps", new Color(1.2f, 1.1f, 1.4f, 0.9f)),
+            "moon" or "moon_brand" => ("moon_burst", new Color(0.22f, 0.17f, 0.8f, 0.5f)),
+            "umbral" or "ruin" or "siphon" or "tether" or "tether2" or "tether_mark" => ("shadow_wisps", art == "siphon" ? new Color(0.42f, 0.1f, 0.5f, 0.95f) : new Color(0.3f, 0.12f, 0.62f, 0.95f)),
             _ => ((string?)null, Colors.White),
         };
+        switch (art)
+        {
+            case "moon" or "moon_brand":
+            {
+                // The brand: the crescent stamped on what it struck, flaring and gone, and moonfire
+                // licking up off it.
+                var fire = MoonFire(art);
+                Sparks.Spawn(at + Vector3.Up * 0.25f, Vector3.Up * 0.35f, 0.5f, 0.55f * g, Hdr("#9a8cff", 1.1f), new Color(fire.R * 0.3f, fire.G * 0.3f, fire.B * 0.3f), 0.95f * g, sprite: Sprites.Range("crescent").First + 1, spinV: 0.6f);
+                for (int i = 0; i < 9; i++)
+                    MoonTongue(at + new Vector3((R() - 0.5f) * 0.6f, (R() - 0.5f) * 0.4f, (R() - 0.5f) * 0.6f), Vector3.Up * (0.8f + R() * 1.2f) + away * R() * 0.6f, (0.38f + R() * 0.18f) * g, fire);
+                break;
+            }
+            case "umbral" or "ruin" or "siphon":
+                // The bolt tearing on through the rank: a violet rent along its line.
+                Ribbons.Line(new[] { at - away * 0.7f, at, at + away * 1.0f }, (art == "ruin" ? 0.26f : 0.17f) * g, 0.16f, art == "siphon" ? Hdr("#b040ff", 1f) : Hdr("#7a3cff", 1f), 1.5f, Ribbons.Style.Wisp, new[] { 0f, 1f, 0f });
+                break;
+        }
         if (book != null) Books.Spawn(book, at, 0.25f * g, 0.3f, tint, sizeEnd: (0.55f + share * 0.5f) * g);
         int n = (e.Crit ? 7 : 3) + (int)(share * 6);
         switch (school)
@@ -175,7 +199,8 @@ public partial class BattleFx
                 Sparks.Spawn(hand + Vector3.Up * 0.1f, Vector3.Zero, 0.24f, 0.6f * g, (art.StartsWith("moon") ? Moon * 0.5f : art == "mote_cascade" ? FenLight * 0.45f : Hdr("#c070ff", 1.3f)), pal.Glow * 0.1f, 0.75f * g, sprite: Sprites.Of("magic"), spinV: 6);
                 break;
             case "cinder" or "living_flame" or "star":
-                Books.Spawn("fire_blast", hand, 0.5f * g, 0.35f, new Color(1.4f, 1.4f, 1.4f, 0.9f), sizeEnd: 1.1f * g);
+                // A puff of flame at the hand, orange (white-tinted, it was a cream ball at her side).
+                Books.Spawn("fire_blast", hand, 0.4f * g, 0.3f, new Color(1.25f, 0.62f, 0.26f, 0.85f), sizeEnd: 0.85f * g);
                 for (int i = 0; i < 6; i++) Sparks.Spawn(hand, dir * (2 + R() * 3) + new Vector3((R() - 0.5f) * 2, 1 + R() * 2, (R() - 0.5f) * 2), 0.4f, 0.05f, Ember, EmberDeep, 0.01f, -1, 1.5f);
                 break;
             case "shard" or "shard_deep" or "spear_ice":
@@ -200,6 +225,7 @@ public partial class BattleFx
     void Swing(Ev.Slash e)
     {
         string art = e.Art ?? "";
+        if (art is "palm" or "palm_temple" or "palm_storm") { Palm(e); return; }
         float g = Grow(e.Rank);
         float gy = Y(e.X, e.Z);
         var at = V(e.X, gy + 1.0, e.Z);
@@ -271,6 +297,52 @@ public partial class BattleFx
                 var rim = new Vector3(Mathf.Cos(a), 0, Mathf.Sin(a));
                 Sparks.Spawn(at + rim * reach * 0.95f, Vector3.Up * 0.4f, 0.5f, 0.12f, OathGold, OathGold * 0.3f, 0.02f, 0, 2, sprite: Sprites.Of("star"), spinV: 3);
             }
+    }
+
+    /// <summary>Iron Palms: the force of an open hand, not a blade. An outline of a palm in chi
+    /// (painted, palm_print) thrown out along the strike, fingers first, swelling as it goes; the
+    /// air pushed out in front of it bending the picture; the dust it drives along the ground.
+    /// (Drawn as a blade's crescent, a palm read as a sword.)</summary>
+    void Palm(Ev.Slash e)
+    {
+        float g = Grow(e.Rank);
+        bool storm = e.Art == "palm_storm";
+        float reach = (float)e.Reach;
+        var dir = new Vector3(Mathf.Cos((float)e.Angle), 0, Mathf.Sin((float)e.Angle));
+        float gy = Y(e.X, e.Z);
+        var from = V(e.X, gy + 1.0, e.Z);
+        var at = from + dir * reach * 0.45f;
+        var chi = storm ? Hdr("#8ab8ff", 1.6f) : Hdr("#ffb040", 1.6f);
+        // Fingers along the strike as the eye sees it: the sprite's up turned onto the strike's
+        // direction on the screen.
+        float turn = 0;
+        if (Cam != null)
+        {
+            var cb = Cam.Camera.GlobalBasis;
+            turn = Mathf.Atan2(-dir.Dot(cb.X), dir.Dot(cb.Y));
+        }
+        float size = Mathf.Min(2.4f, reach * 0.7f) * Mathf.Sqrt(g);
+        Sparks.Spawn(new Sparks.P
+        {
+            At = at, V = dir * reach * 1.6f, Drag = 5, Life = 0.2f, Size = size * 0.7f, SizeEnd = size * 1.08f,
+            Color = chi, ColorEnd = new Color(chi.R * 0.2f, chi.G * 0.15f, chi.B * 0.1f), Alpha = 1,
+            Sprite = Sprites.Range("palm_print").First + 1, Spin = Mathf.PosMod(turn, Mathf.Tau) + 0.001f, SpinV = 0.001f,
+        });
+        // The push of air in front of it.
+        Waves.Add(at + dir * reach * 0.25f + Vector3.Down * 0.6f, reach * 0.5f, 0.2f, chi, 0.35f);
+        // Chi shed off its edges, carried on with the blow.
+        var side = new Vector3(-dir.Z, 0, dir.X);
+        for (int i = 0; i < (int)(6 * g); i++)
+        {
+            float k = R() * 2 - 1;
+            Sparks.Spawn(at + side * k * size * 0.45f, dir * (3 + R() * 4) + side * k * 1.5f + Vector3.Up * R(), 0.25f + R() * 0.15f, 0.05f, chi, chi * 0.3f, 0.01f, 0, 3,
+                sprite: storm && R() < 0.4f ? Sprites.Of("spark") : 0);
+        }
+        if (storm) Ribbons.Bolt(at, at + dir * reach * 0.6f + side * (R() - 0.5f), 0.05f, 0.1f, chi * 0.6f, 2.2f, 1, 0.3f);
+        // The ground under the strike driven out ahead of it.
+        double tx = e.X + dir.X * reach * 0.7f, tz = e.Z + dir.Z * reach * 0.7f;
+        for (int i = 0; i < 5; i++)
+            Smoke.Spawn(V(tx, Y(tx, tz) + 0.15, tz), dir * (2.5f + R() * 2) + side * (R() - 0.5f) * 2 + Vector3.Up * 0.3f, 0.45f, 0.18f, new Color(0.3f, 0.25f, 0.2f), new Color(0.18f, 0.15f, 0.12f), 0.5f, drag: 3, alpha: 0.35f);
     }
 
     /// <summary>Blades' swings in progress (shaders/blade.gdshader).</summary>
@@ -356,15 +428,29 @@ public partial class BattleFx
             }
             case "chakram" or "chakram_razor" or "chakram_hail":
             {
+                // A thrown blade: dark steel lying flat and spinning, its five hooked teeth honed
+                // bright (ChakramMesh, shaders/chakram.gdshader), the wind it rides whipping round
+                // its tips. (A pale ring, two in flight, read as a pair of handcuffs; a painted
+                // blade facing the eye read as a pale bubble.)
                 float s = 0.8f * Mathf.Sqrt(g);
-                var tint = art == "chakram_hail" ? Palette.Of(School.Frost).Glow * 0.5f : new Color(0.9f, 0.95f, 0.92f);
-                Shade(at, 1.4f * s, 0.5f);
-                rings.Add(new Transform3D(new Godot.Basis(Vector3.Up, (float)(now * 22)).Scaled(Vector3.One * s), at), tint * 0.8f);
-                // The wind it rides, whipping round its rim.
-                SpinArcs(at, 0.62f * s, (float)(now * 26 + p.Id), 0.09f * s, art == "chakram_hail" ? Hdr("#cfeaff", 1f) : Hdr("#e6fff4", 1f), 2.4f);
-                // Gale Chakram rides the wind: a pale curl of air behind it.
-                Ribbons.Feed(key, at, 0.45f * s, 0.13f, art == "chakram_hail" ? Hdr("#8fd0ff", 1f) : Hdr("#a8f0d0", 1f), art == "chakram_razor" ? 1.4f : 1f,
-                    art == "chakram_hail" ? Ribbons.Style.Frost : art == "chakram_razor" ? Ribbons.Style.Steel : Ribbons.Style.Wisp);
+                bool hail = art == "chakram_hail", razor = art == "chakram_razor";
+                float spin = (float)(now * 19 + p.Id * 1.7f);
+                var edge = hail ? Hdr("#a8dcff", 1.3f) : razor ? Hdr("#ffb8a8", 1.25f) : Hdr("#d8fff0", 1.2f);
+                var gust = hail ? Hdr("#6ab8ff", 1f) : Hdr("#8ce8c4", 1f);
+                Shade(at, 1.5f * s, 0.35f);
+                // Turned the way its teeth lead (the mesh's angle grows toward its points).
+                chakrams.Add(new Transform3D(new Godot.Basis(Vector3.Up, -spin).Scaled(Vector3.One * 1.15f * s), at), edge);
+                SpinArcs(at, 0.66f * s, spin, 0.07f * s, gust, 1.4f);
+                if (razor && R() < 0.3f) Sparks.Spawn(at, Vector3.Up * 0.4f, 0.45f, 0.05f, Blood, BloodDim, 0.02f, 9);
+                if (hail && R() < 0.4f)
+                {
+                    float a = R() * Mathf.Tau;
+                    Sparks.Spawn(at + new Vector3(Mathf.Cos(a), 0, Mathf.Sin(a)) * 0.45f * s, -fwd * 0.6f + Vector3.Up * 0.3f, 0.35f, 0.07f, Hdr("#dff4ff", 1.8f), Hdr("#5ab4ff", 1f), 0.02f, 2, 2, sprite: Sprites.Of("star"), spinV: 6);
+                }
+                // Gale Chakram rides the wind: a thin curl of air behind it (broad and pale, it read as
+                // a lance through the blade).
+                Ribbons.Feed(key, at - fwd * 0.3f * s, 0.26f * s, 0.14f, new Color(gust.R * 0.45f, gust.G * 0.45f, gust.B * 0.45f), razor ? 0.9f : 0.75f,
+                    hail ? Ribbons.Style.Frost : razor ? Ribbons.Style.Steel : Ribbons.Style.Wisp);
                 return true;
             }
             case "mote" or "mote_cascade" or "mote_star" or "ember_seeker":
@@ -400,12 +486,23 @@ public partial class BattleFx
             }
             case "moon" or "moon_brand" or "moonfall":
             {
+                // Moonlit flame: a silver crescent wreathed in violet-blue fire streaming off it as
+                // it hunts, on a dark bed. (A white orb at its heart read as a pale pill, and a
+                // lilac haze round it as grey smoke over the pale dead.)
                 float s = 0.75f * g;
-                Shade(at, s * 2.4f, 0.6f);
-                orbs.Add(new Transform3D(Godot.Basis.Identity.Scaled(Vector3.One * s * 0.6f), at), Moon);
-                orbs.Add(new Transform3D(Godot.Basis.Identity.Scaled(Vector3.One * s * 2.2f), at), Hdr("#9a7aff", 1f) * 0.25f);
-                Body(at, s * 1.2f, "crescent", Moon * 0.5f, (float)now * 2 + p.Id);
-                Ribbons.Feed(key, at, 0.45f * g, 0.36f, Hdr("#b8a8ff", 1f), 2.2f, Ribbons.Style.Glow);
+                var fire = MoonFire(art);
+                Shade(at, s * 2.6f, 0.72f);
+                orbs.Add(new Transform3D(Godot.Basis.Identity.Scaled(Vector3.One * s * 1.9f), at), fire * 0.28f);
+                Body(at, s * 1.45f, "crescent", MoonSilver, (float)now * 2 + p.Id);
+                Ribbons.Feed(key, at, 0.5f * g, 0.3f, new Color(fire.R * 0.7f, fire.G * 0.7f, fire.B * 0.7f), 2f, Ribbons.Style.Flame);
+                trailAcc.TryGetValue(p.Id, out var lick);
+                lick += dt * 34;
+                while (lick >= 1)
+                {
+                    lick -= 1;
+                    MoonTongue(at + new Vector3((R() - 0.5f) * 0.3f, (R() - 0.3f) * 0.2f, (R() - 0.5f) * 0.3f) * s, -fwd * (0.4f + R() * 0.8f) + Vector3.Up * (0.5f + R() * 0.6f), 0.24f * s + R() * 0.1f * s, fire);
+                }
+                trailAcc[p.Id] = lick;
                 return true;
             }
             case "cinder" or "living_flame" or "star":
@@ -415,17 +512,20 @@ public partial class BattleFx
                 float s = (star ? 1.25f : small ? 0.55f : 0.85f) * g;
                 // Its heart yellow-hot, not white: past the tone curve's knee a coal read as a cream pill.
                 Shade(at, s * 2.2f, 0.5f);
-                orbs.Add(new Transform3D(Godot.Basis.Identity.Scaled(Vector3.One * s * 0.34f), at), star ? Hdr("#fff0d0", 2.6f) : Hdr("#ffc860", 2.1f));
+                orbs.Add(new Transform3D(Godot.Basis.Identity.Scaled(Vector3.One * s * 0.3f), at), star ? Hdr("#ffd890", 2.0f) : Hdr("#ffa840", 1.7f));
                 orbs.Add(new Transform3D(Godot.Basis.Identity.Scaled(Vector3.One * s * 1.5f), at), Hdr("#ff5a10", 1.6f) * 0.2f);
                 Body(at, s * 0.75f, "ember_coal", star ? Hdr("#ffb060", 1.6f) : Hdr("#ff7a28", 1.5f), (float)now * 5 + p.Id);
-                Ribbons.Feed(key, at, 0.55f * s, star ? 0.4f : 0.28f, Hdr("#ff8a2a", 1f), 2.4f, Ribbons.Style.Flame);
+                // Its flame streaming back, short and deep orange (long and bright, the coal read as
+                // a pale beam behind it).
+                Ribbons.Feed(key, at, 0.5f * s, star ? 0.3f : 0.18f, Hdr("#ff6a1a", 1f), 1.5f, Ribbons.Style.Flame);
                 if (p.Weapon == "frostfire_comet") Ribbons.Feed(key ^ 0x55aa, at + Vector3.Up * 0.05f, 0.35f * s, 0.35f, Hdr("#a8dcff", 1f), 2f, Ribbons.Style.Frost);
                 trailAcc.TryGetValue(p.Id, out var acc);
                 acc += dt * (star ? 50 : 30);
                 while (acc >= 1)
                 {
                     acc -= 1;
-                    if (R() < 0.35f) Books.Spawn("fire_loop", at + new Vector3((R() - 0.5f) * 0.1f, 0, (R() - 0.5f) * 0.1f), 0.5f * s, 0.22f, new Color(1.5f, 1.5f, 1.5f, 0.85f), sizeEnd: 0.15f * s, v: Vector3.Up * 0.8f);
+                    // (Its filmed flame tinted orange: white-tinted, the coal read as a cream pill.)
+                    if (R() < 0.35f) Books.Spawn("fire_loop", at + new Vector3((R() - 0.5f) * 0.1f, 0, (R() - 0.5f) * 0.1f), 0.5f * s, 0.22f, new Color(1.35f, 0.78f, 0.36f, 0.85f), sizeEnd: 0.15f * s, v: Vector3.Up * 0.8f);
                     Sparks.Spawn(at, -fwd * (0.5f + R()) + new Vector3((R() - 0.5f) * 1.2f, 0.6f + R(), (R() - 0.5f) * 1.2f), 0.4f + R() * 0.3f, 0.04f + R() * 0.03f, Ember, EmberDeep, 0.01f, -1.2f, 1.5f);
                     if (R() < 0.15f) Smoke.Spawn(at + Vector3.Up * 0.2f, Vector3.Up * 0.6f, 0.9f, 0.25f * s, new Color(0.3f, 0.27f, 0.25f), new Color(0.15f, 0.14f, 0.13f), 0.7f * s, drag: 1, alpha: 0.35f);
                 }
@@ -453,9 +553,11 @@ public partial class BattleFx
                 bool ruin = art == "ruin", lantern = p.Weapon == "soul_lantern";
                 float s = (ruin ? 0.8f : 0.55f) * g;
                 var rim = lantern ? Hdr("#b8ffe0", 2.2f) : art == "siphon" ? Hdr("#d070ff", 2.4f) : pal.Glow;
-                Shade(at, s * 2.4f, 0.75f);
-                orbs.Add(new Transform3D(Godot.Basis.Identity.Scaled(Vector3.One * s * 0.5f), at), lantern ? Hdr("#e8fff4", 3f) : pal.Core * 0.7f);
-                orbs.Add(new Transform3D(Godot.Basis.Identity.Scaled(Vector3.One * s * 1.8f), at), rim * 0.2f);
+                // Its heart is the dark of the bed under it (a pale core read as a grey puff); only
+                // the lantern's soul burns at its middle.
+                Shade(at, s * 2.4f, 0.85f);
+                if (lantern) orbs.Add(new Transform3D(Godot.Basis.Identity.Scaled(Vector3.One * s * 0.5f), at), Hdr("#e8fff4", 3f));
+                orbs.Add(new Transform3D(Godot.Basis.Identity.Scaled(Vector3.One * s * 1.8f), at), rim * 0.16f);
                 if (!lantern) Body(at, s * 1.6f, "umbral", art == "siphon" ? Hdr("#c050ff", 1.2f) : Hdr("#9a50ff", 1.2f), (float)now * 3 + p.Id);
                 Ribbons.Feed(key, at, 0.5f * s, ruin ? 0.28f : 0.18f, new Color(rim.R / 3, rim.G / 3, rim.B / 3), 1.6f, Ribbons.Style.Wisp);
                 // The tether: a thread back to the hand that cast it.
@@ -484,10 +586,52 @@ public partial class BattleFx
                 Ribbons.Feed(key, at, 0.9f * g, 0.18f, Hdr("#ffb84a", 1f), 0.9f, Ribbons.Style.Glow);
                 return true;
             }
+            case "herd" or "herd_great" or "herd_hunt":
+            {
+                // Spirit beasts running the crowd down: the wolf (Beasts, the crowd's own) lit
+                // green from within, its edges flaking as a spirit's would, a wisp of the wild
+                // streaming behind and motes kicked off its feet. (A pale orb with a dotted
+                // tail read as a comet, not a herd.)
+                herdCrowd ??= SpiritHerd();
+                bool hunt = art == "herd_hunt";
+                var feet = V(p.X, Y(p.X, p.Z), p.Z);
+                float sc = 1.2f * Mathf.Sqrt(g) * (art == "herd_great" ? 1.12f : 1);
+                double speed = Math.Sqrt(p.Vx * p.Vx + p.Vz * p.Vz);
+                double rate = herdCrowd.Asset.Pace > 0 ? Math.Clamp(speed / (herdCrowd.Asset.Pace * sc), 0.8, 2.4) : 1.6;
+                var basis = new Godot.Basis(Vector3.Up, Mathf.Pi / 2 - Mathf.Atan2((float)p.Vz, (float)p.Vx)) * Godot.Basis.FromScale(Vector3.One * sc);
+                // Whole, lit from within (flaking, its edges burned orange and it read as a dark
+                // shape in a green streak).
+                var tint = hunt ? new Color(0.7f, 1.6f, 0.4f) : new Color(0.45f, 1.5f, 1.0f);
+                herdCrowd.Push(new Transform3D(basis, feet), "move", now * rate + p.Id * 0.37, 0, 0, 0, 0, tint, 2.2f);
+                var wild = hunt ? Hdr("#7aff3a", 1f) : Hdr("#4affa0", 1f);
+                Ribbons.Feed(key, feet + Vector3.Up * 0.5f * sc, 0.3f * sc, 0.14f, new Color(wild.R * 0.4f, wild.G * 0.4f, wild.B * 0.4f), 0.9f, Ribbons.Style.Wisp);
+                trailAcc.TryGetValue(p.Id, out var kick);
+                kick += dt * 22;
+                while (kick >= 1)
+                {
+                    kick -= 1;
+                    var off = new Vector3((R() - 0.5f) * 0.6f, 0.1f + R() * 0.5f, (R() - 0.5f) * 0.6f) * sc;
+                    if (hunt && R() < 0.5f) MoonTongue(feet + off + Vector3.Up * 0.3f, -fwd * R() + Vector3.Up * (0.8f + R()), 0.35f * sc, Hdr("#6aff2a", 1.3f));
+                    else Sparks.Spawn(feet + off, -fwd * (0.5f + R()) + Vector3.Up * (0.6f + R()), 0.5f + R() * 0.3f, 0.05f + R() * 0.04f, wild * 1.4f, wild * 0.3f, 0.01f, -0.4f, 1.5f,
+                        sprite: R() < 0.3f ? Sprites.Of("star") : 0, spinV: 3);
+                }
+                trailAcc[p.Id] = kick;
+                return true;
+            }
             case "firepot":
                 return false;
         }
         return false;
+    }
+
+    /// <summary>The spirit beasts of Spirit Herd: the crowd's wolf, drawn as a crowd of its own.</summary>
+    VatCrowd? herdCrowd;
+
+    VatCrowd SpiritHerd()
+    {
+        var c = new VatCrowd(Vat.Of(Visuals.Of("wolf_spirit"), this)) { CastShadow = GeometryInstance3D.ShadowCastingSetting.Off };
+        AddChild(c);
+        return c;
     }
 
     /// <summary>A spinning disc's arc of light along its rim: from nothing at its tail to its brightest just short of its tip.</summary>
@@ -510,12 +654,68 @@ public partial class BattleFx
     }
 
     /// <summary>A painted body for this frame (a sprite of tools/comfy/fx_sprites.py),
-    /// `size` across, turned to `turn` radians.</summary>
-    void Body(Vector3 at, float size, string sprite, Color color, float turn) =>
+    /// `size` across, turned to `turn` radians. It lives one frame: living two, a body in
+    /// flight was drawn twice a step apart, a pale double of itself. While the fight is held
+    /// (no time passing) the last frame's body stands, and none is added over it.</summary>
+    void Body(Vector3 at, float size, string sprite, Color color, float turn)
+    {
+        if (frameDt <= 0) return;
         Sparks.Spawn(new Sparks.P
         {
-            At = at, Life = 0.035f, Size = size, SizeEnd = size, Color = color, ColorEnd = color, Alpha = 1,
+            At = at, Life = frameDt * 1.5f, Size = size, SizeEnd = size, Color = color, ColorEnd = color, Alpha = 1,
             Sprite = Sprites.Range(sprite).First + 1, Spin = Mathf.PosMod(turn, Mathf.Tau) + 0.001f, SpinV = 0.001f,
+        });
+    }
+
+    /// <summary>This frame's step of the fight's clock (0 while it is held).</summary>
+    float frameDt = 1f / 60;
+
+    /// <summary>Gale Chakram's blade, flat in the ground's plane round the origin, a metre
+    /// across its tips: a ring with five hooked teeth all leading the way it turns (its angle
+    /// growing toward each point), thin and two-sided. UV.x runs from its hole (0) to its
+    /// edge (1), whatever the edge's shape, for shaders/chakram.gdshader's honed edge.</summary>
+    static ArrayMesh ChakramMesh()
+    {
+        const int N = 240;
+        const float Hole = 0.24f, Rim = 0.36f, Tip = 0.52f, Thick = 0.012f;
+        static float Edge(float a)
+        {
+            float f = Mathf.PosMod(a / Mathf.Tau * 5, 1);
+            // A tooth's back swelling out to its point, then the hooked cut back in to the rim.
+            return f < 0.82f ? Rim + (Tip - Rim) * Mathf.Pow(f / 0.82f, 1.7f) : Tip - (Tip - Rim) * Mathf.SmoothStep(0, 1, (f - 0.82f) / 0.18f);
+        }
+        var st = new SurfaceTool();
+        st.Begin(Mesh.PrimitiveType.Triangles);
+        for (int side = 0; side < 2; side++)
+        {
+            var n = side == 0 ? Vector3.Up : Vector3.Down;
+            var lift = n * Thick;
+            for (int i = 0; i < N; i++)
+            {
+                float a0 = i / (float)N * Mathf.Tau, a1 = (i + 1) / (float)N * Mathf.Tau;
+                var d0 = new Vector3(Mathf.Cos(a0), 0, Mathf.Sin(a0));
+                var d1 = new Vector3(Mathf.Cos(a1), 0, Mathf.Sin(a1));
+                Vector3 in0 = d0 * Hole + lift, in1 = d1 * Hole + lift, out0 = d0 * Edge(a0) + lift, out1 = d1 * Edge(a1) + lift;
+                void P(Vector3 p, float u) { st.SetNormal(n); st.SetUV(new Vector2(u, 0)); st.AddVertex(p); }
+                P(in0, 0); P(out0, 1); P(out1, 1);
+                P(in0, 0); P(out1, 1); P(in1, 0);
+            }
+        }
+        return st.Commit();
+    }
+
+    /// <summary>Moonbrand's fire: violet-blue, its brand's a deeper violet. Held below the tone
+    /// curve's knee so it stays a colour over the pale dead.</summary>
+    static Color MoonFire(string art) => art == "moon_brand" ? Hdr("#9050ff", 1.5f) : Hdr("#6a64ff", 1.5f);
+
+    static readonly Color MoonSilver = Hdr("#c4c0ff", 1.2f);
+
+    /// <summary>A tongue of moonfire: an upright flame (the pack's), rising and gone.</summary>
+    void MoonTongue(Vector3 at, Vector3 v, float size, Color fire) =>
+        Sparks.Spawn(new Sparks.P
+        {
+            At = at, V = v, Life = 0.28f + R() * 0.14f, Size = size, SizeEnd = size * 0.35f, Color = fire * 0.85f, ColorEnd = new Color(fire.R * 0.25f, fire.G * 0.2f, fire.B * 0.45f),
+            Alpha = 1, Drag = 2.5f, Sprite = Sprites.Range("flame").First + 1 + (int)(R() * 3), Spin = (R() - 0.5f) * 0.5f + 0.001f, SpinV = 0.001f,
         });
 
     /// <summary>A dark soft bed under a bright core (drawn first), so it shows over the pale dead.</summary>
@@ -619,11 +819,13 @@ public partial class BattleFx
             case "nova_holy" or "nova_dawn" or "nova_sun":
             {
                 var h = Palette.Of(School.Holy);
-                var gold = Hdr("#ffd27a", 1f);
-                AddFront(ground, r, 0.4f, 0.42f * g, gold, 3f, Ribbons.Style.Glow, 0.1f);
-                for (int k = 1; k < rings; k++) AddFront(ground, r * (1 - 0.18f * k), 0.4f + 0.08f * k, 0.22f, gold, 1.8f, Ribbons.Style.Glow, 0.1f);
+                // Deep gold and thin: wide and bright, its front bloomed to a thick cream ring that
+                // was the strongest mark near her while it lasted.
+                var gold = Hdr("#ffb84a", 1f);
+                AddFront(ground, r, 0.4f, 0.24f * g, gold, 1.7f, Ribbons.Style.Glow, 0.1f);
+                for (int k = 1; k < rings; k++) AddFront(ground, r * (1 - 0.18f * k), 0.4f + 0.08f * k, 0.14f, gold, 1.1f, Ribbons.Style.Glow, 0.1f);
                 // Dawn's ring itself, filmed (LTX): a thin line of white-gold racing out, the middle left dark.
-                Books.Spawn("holy_ring", ground + Vector3.Up * 0.5f, r * 0.7f, 0.5f, new Color(1f, 0.85f, 0.55f, 0.85f), flat: true, sizeEnd: r * 2.3f);
+                Books.Spawn("holy_ring", ground + Vector3.Up * 0.5f, r * 0.7f, 0.5f, new Color(0.85f, 0.62f, 0.3f, 0.7f), flat: true, sizeEnd: r * 2.3f);
                 // Rays: short strokes of light thrown outward along the ground.
                 int n = 10 + rings * 4;
                 for (int i = 0; i < n; i++)
@@ -1004,7 +1206,8 @@ public partial class BattleFx
     static (Color Edge, Inside Inside, float Turn) GroundLook(string art) => art switch
     {
         "zone_holy" or "zone_sanct" => (Hdr("#ffcf6a", 1.5f), Inside.Runes, 0.25f),
-        "zone_pyre" => (Hdr("#ff8a2a", 1.6f), Inside.Embers, 0.2f),
+        // Ground left burning where a firepot broke or a star fell: fire in its cracks, its edge lit.
+        "zone_pyre" or "firepot_ground" or "star_ground" => (Hdr("#ff8a2a", 1.6f), Inside.Embers, 0.2f),
         "zone_blight" or "zone_blight2" or "zone_plague" => (Hdr("#b8e04a", 1.3f), Inside.Veins, 0.04f),
         "zone_thorn" or "zone_bloom" or "zone_root" => (Hdr("#4ec85a", 1.3f), Inside.Roots, 0.03f),
         _ => (Colors.Transparent, Inside.Runes, 0),
@@ -1039,6 +1242,20 @@ public partial class BattleFx
             var edge = Ground(z.X, z.Z, r, rimTex, edgeCol, 1e6f, 2.2f);
             g = (edge, fill);
             grounds[z.Id] = g;
+            // Thornbloom bursts up all at once under the crowd: brambles across the whole of it,
+            // standing as long as it holds them (a green ring with a few thorns read as any circle).
+            if (inside == Inside.Roots)
+            {
+                float stand = (float)Math.Max(0.6, z.Life - z.Age);
+                Erupt(z.X, z.Z, 0, r * 0.95f, 14 + (int)(r * 7), SpikeKind.Thorn, 1.05f, stand, Hdr("#3fae4a", 1f));
+                Erupt(z.X, z.Z, r * 0.7f, r * 1.0f, 8 + (int)(r * 3), SpikeKind.Thorn, 0.7f, stand, Hdr("#5ac85a", 1f));
+                Books.Spawn("bramble_burst", V(z.X, Y(z.X, z.Z) + 0.15, z.Z), r * 1.1f, 0.9f, new Color(0.8f, 1.1f, 0.75f, 0.85f), flat: true, sizeEnd: r * 2.1f);
+                Dust(z.X, z.Z, 8, 2.5f);
+            }
+            // Blightfield rots the ground it takes: a dark stain of rot under its veins (a bright
+            // ring round clean ground read as a circle drawn on it, not a field gone bad).
+            if (inside == Inside.Veins)
+                Scars.Add("blight", V(z.X, Y(z.X, z.Z), z.Z), r * 1.05f, (float)Math.Max(0.8, z.Life - z.Age) + 0.6f, 0);
         }
         float fade = (float)Math.Clamp(Math.Min(z.Age / 0.25, (z.Life - z.Age) / 0.5), 0, 1);
         float breathe = 0.85f + 0.15f * Mathf.Sin((float)now * 2.4f + z.Id);
@@ -1049,10 +1266,15 @@ public partial class BattleFx
             m.Decal.Position = at;
             m.Decal.Size = new Vector3(r * 2, 4, r * 2);
         }
-        g.Edge.Decal.Modulate = edgeCol with { A = fade * breathe * 0.85f };
-        // The pattern inside: a third of the edge's strength at most (the runes less:
-        // under her for a whole night, they hid her), turning slowly.
-        g.Fill.Decal.Modulate = edgeCol with { A = fade * (inside == Inside.Runes ? 0.18f : 0.3f) };
+        // Never louder than a crowd's hostile mark (MECHANICS.md section 2: the enemy's marks are
+        // drawn over hers), and half that while a boss is up, so the eye goes to his marks first.
+        // (At full strength her thickets' and rots' rims, two or three at once, were the loudest
+        // thing at Greymuzzle.) A thicket reads by its thorns, a rot by its stain, not their rims.
+        float hush = bossUp ? 0.5f : 1f;
+        g.Edge.Decal.Modulate = edgeCol with { A = fade * breathe * (inside is Inside.Roots or Inside.Veins ? 0.22f : 0.34f) * hush };
+        // The pattern inside, fainter still (the runes least: under her for a whole night, they
+        // hid her), turning slowly.
+        g.Fill.Decal.Modulate = edgeCol with { A = fade * (inside == Inside.Runes ? 0.14f : inside == Inside.Veins ? 0.12f : 0.2f) * hush };
         g.Fill.Decal.Rotation = new Vector3(0, (float)(now * turn + z.Id * 1.7), 0);
         // What lives in it, sparse.
         var pal = Palette.Of(Palette.OfArt(z.Art));
@@ -1068,7 +1290,8 @@ public partial class BattleFx
                     break;
                 case Inside.Embers:
                     Sparks.Spawn(foot, Vector3.Up * (1.5f + R()), 0.8f, 0.06f, Ember, EmberDeep, 0.01f, -1, 1);
-                    if (R() < 0.3f) Books.Spawn("fire_loop", foot + Vector3.Up * 0.35f, 0.7f, 0.8f, new Color(1.3f, 1.3f, 1.3f, 0.7f), sizeEnd: 0.3f);
+                    // (Tinted orange: its filmed white heart tinted pale read as cream.)
+                    if (R() < 0.3f) Books.Spawn("fire_loop", foot + Vector3.Up * 0.35f, 0.7f, 0.8f, new Color(1.3f, 0.74f, 0.34f, 0.7f), sizeEnd: 0.3f);
                     break;
                 case Inside.Veins:
                     // A bubble of the blight rising and breaking, and its fume low over the ground.

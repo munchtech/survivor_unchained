@@ -47,7 +47,7 @@ public partial class BattleFx : Node3D
     bool mirror;
 
     // What is in the air, and what lies on the ground.
-    Batch shades = null!, orbs = null!, steel = null!, axes = null!, daggers = null!, shards = null!, rings = null!, embers = null!, coins = null!, flasks = null!, lodestones = null!, sacks = null!, chests = null!, kegs = null!, lootBeams = null!;
+    Batch shades = null!, orbs = null!, steel = null!, axes = null!, daggers = null!, shards = null!, rings = null!, chakrams = null!, embers = null!, coins = null!, flasks = null!, lodestones = null!, sacks = null!, chests = null!, kegs = null!, lootBeams = null!;
     /// <summary>How far above the ground the middle of a sack and a chest sits.</summary>
     float sackUp, chestUp;
     readonly Dictionary<int, float> trailAcc = new();
@@ -125,6 +125,7 @@ public partial class BattleFx : Node3D
         daggers = Add(new Batch(Weapon("dagger_b", 0.5f), 600, null));
         shards = Add(new Batch(IceLance(), 600, Crystal(0.5f, 1.8f, 0.05f, 1f)));
         rings = Add(new Batch(new TorusMesh { InnerRadius = 0.36f, OuterRadius = 0.5f, Rings = 16, RingSegments = 6 }, 200, Glowing(1.2f, 0.2f, 0.8f)));
+        chakrams = Add(new Batch(ChakramMesh(), 200, new ShaderMaterial { Shader = GD.Load<Shader>("res://shaders/chakram.gdshader") }));
         // What lies on the ground is what the pack shows (the photographs'
         // models): an ember is the ember's crystals, lit the colour of its
         // worth; a draught, a lodestone, a sack of what was carried, a chest.
@@ -373,7 +374,8 @@ public partial class BattleFx : Node3D
 
         if (light)
         {
-            Books.Spawn(BlastOf(school), ground + Vector3.Up * 0.55f, r * 1.1f, life * 0.8f, new Color(glow * 0.7f, glow * 0.7f, glow * 0.7f, 0.8f), flat: true, sizeEnd: r * 2.1f);
+            var lt = school == School.Fire ? new Color(glow * 0.7f, glow * 0.45f, glow * 0.22f, 0.8f) : new Color(glow * 0.7f, glow * 0.7f, glow * 0.7f, 0.8f);
+            Books.Spawn(BlastOf(school), ground + Vector3.Up * 0.55f, r * 1.1f, life * 0.8f, lt, flat: true, sizeEnd: r * 2.1f);
             for (int i = 0; i < 6; i++)
             {
                 float a = R() * Mathf.Tau, v = r * (1 + R() * 2);
@@ -382,12 +384,15 @@ public partial class BattleFx : Node3D
             return true;
         }
         // The instant: brighter than anything else in the frame, gone in a breath.
-        if (On('f')) Sparks.Spawn(ground + Vector3.Up * 0.9f, Vector3.Zero, 0.07f, r * 0.4f, new Color(1.8f, 1.7f, 1.6f), pal.Glow * 0.4f, r * 0.8f, alpha: 0.8f);
+        // Fire's is yellow-hot, never white: a white instant over the pale dead read as a cream disc.
+        bool fire = school == School.Fire;
+        if (On('f')) Sparks.Spawn(ground + Vector3.Up * 0.9f, Vector3.Zero, 0.07f, r * (fire ? 0.3f : 0.4f), fire ? new Color(1.9f, 0.95f, 0.22f) : new Color(1.8f, 1.7f, 1.6f), pal.Glow * 0.4f, r * (fire ? 0.6f : 0.8f), alpha: fire ? 0.7f : 0.8f);
         // The air thrown out.
         if (On('w')) Waves.Add(ground + Vector3.Up * 0.35f, r * 1.7f, 0.35f, pal.Glow, school == School.Holy ? 0.6f : 1);
         // The burst, flat on the ground and above the grass.
         var tint = school == School.Frost ? new Color(glow * 0.8f, glow * 0.92f, glow * 1.15f, 1)
-            : school == School.Fire ? new Color(glow * 1.05f, glow * 0.72f, glow * 0.45f, 1) : new Color(glow, glow, glow, 1);
+            // Fire's heart held to yellow (its filmed white core, tinted warm-pale, bloomed cream).
+            : fire ? new Color(glow * 1.0f, glow * 0.6f, glow * 0.3f, 1) : new Color(glow, glow, glow, 1);
         if (On('b')) Books.Spawn(BlastOf(school), ground + Vector3.Up * 0.55f, r * 1.2f, life, tint, flat: true, sizeEnd: r * 2.4f);
         // What it throws.
         int n = On('d') ? Math.Min(48, 12 + (int)(r * 8)) : 0;
@@ -424,15 +429,18 @@ public partial class BattleFx : Node3D
         {
             // Thin and soon gone: smoke that lingers hides the next fight.
             // Steel's dust is the ground's brown, not tan: tan puffs over the pale dead read as cream.
-            var smoke = school == School.Shadow ? new Color(0.5f, 0.35f, 0.7f, 0.5f) : school == School.Physical ? new Color(0.42f, 0.34f, 0.26f, 0.38f) : new Color(0.45f, 0.42f, 0.4f, 0.42f);
+            // Fire's smoke is char-dark and soon gone: grey, lit by the blast and the lights round
+            // it, it hung a pale haze over her for a second and a half.
+            var smoke = school == School.Shadow ? new Color(0.5f, 0.35f, 0.7f, 0.5f) : school == School.Physical ? new Color(0.42f, 0.34f, 0.26f, 0.38f) : new Color(0.17f, 0.14f, 0.13f, 0.45f);
             for (int i = 0; i < 4; i++)
-                Smoke.Spawn(ground + new Vector3((R() - 0.5f) * r * 0.6f, 0.6f + R() * 0.4f, (R() - 0.5f) * r * 0.6f), new Vector3((R() - 0.5f) * 0.6f, 0.8f + R() * 0.6f, (R() - 0.5f) * 0.6f), brief ? 0.5f + R() * 0.15f : 1.2f + R() * 0.6f, r * 0.35f, smoke, smoke * 0.6f, r * 0.8f, drag: 1.2f, alpha: smoke.A);
+                Smoke.Spawn(ground + new Vector3((R() - 0.5f) * r * 0.6f, 0.6f + R() * 0.4f, (R() - 0.5f) * r * 0.6f), new Vector3((R() - 0.5f) * 0.6f, 0.8f + R() * 0.6f, (R() - 0.5f) * 0.6f), brief ? 0.5f + R() * 0.15f : fire ? 0.8f + R() * 0.4f : 1.2f + R() * 0.6f, r * 0.35f, smoke, smoke * 0.6f, r * 0.8f, drag: 1.2f, alpha: smoke.A);
         }
         else if (school == School.Frost)
             for (int i = 0; i < (brief ? 1 : 3); i++)
                 Smoke.Spawn(ground + new Vector3((R() - 0.5f) * r * 0.8f, 0.4f, (R() - 0.5f) * r * 0.8f), new Vector3(0, 0.25f, 0), 1.4f, r * 0.4f, new Color(0.75f, 0.85f, 1f), new Color(0.6f, 0.7f, 0.9f), r * 0.9f, drag: 1.5f, alpha: 0.18f);
         // Its light.
-        if (On('l')) Flash(ground + Vector3.Up * 1.4f, pal.Light, 12 * glow, brief ? 0.15f : 0.3f + r * 0.04f, r * 3 + 4);
+        // (Fire's light halved: an orange light at full strength lit the pale dead round it cream.)
+        if (On('l')) Flash(ground + Vector3.Up * 1.4f, pal.Light, (fire ? 6 : 12) * glow, brief ? 0.15f : 0.3f + r * 0.04f, fire ? r * 2.4f + 3 : r * 3 + 4);
         // And what it leaves behind.
         var (mark, size, last, spin) = ScarOf(school);
         if (On('m')) Scars.Add(mark, ground, r * size, last, spin);
@@ -860,6 +868,7 @@ public partial class BattleFx : Node3D
                 case Ev.Spawn e:
                 {
                     float gy = Y(e.X, e.Z);
+                    if (e.Style == SpawnStyle.Rise && e.Def.EndsWith("_ally", StringComparison.Ordinal)) { Raised(e); break; }
                     if (e.Style == SpawnStyle.Rise)
                     {
                         for (int i = 0; i < 10; i++) Smoke.Spawn(V(e.X + (R() - 0.5) * 0.8, gy + 0.1, e.Z + (R() - 0.5) * 0.8), new Vector3((R() - 0.5f) * 2, 1 + R() * 2, (R() - 0.5f) * 2), 0.7f, 0.2f, new Color("#3a2e22"), gravity: 6, sprite: Sprites.Of("dirt"), spinV: 2);
@@ -1174,6 +1183,7 @@ public partial class BattleFx : Node3D
     {
         time = now;
         float fdt = (float)dt;
+        frameDt = fdt;
         for (int i = pending.Count - 1; i >= 0; i--)
             if (pending[i].At <= now) { var fn = pending[i].Fn; pending.RemoveAt(i); fn(); }
         for (int i = 0; i < flashes.Count; i++)
@@ -1212,6 +1222,8 @@ public partial class BattleFx : Node3D
             if (t >= 1) m.Visible = false;
             beams[i] = (m, mat, t, life);
         }
+        bossUp = false;
+        foreach (var e in b.Enemies.Living()) if (e.Boss) { bossUp = true; break; }
         Zones(b, now);
         ArtTrails(b, fdt);
         StepRise(b, fdt);
@@ -1231,6 +1243,8 @@ public partial class BattleFx : Node3D
     }
 
     float artT;
+    /// <summary>A boss is up: her own grounds are drawn at half (the eye goes to his marks).</summary>
+    bool bossUp;
 
     /// <summary>An art while it runs: wind off a sprint, wisps off a wraith,
     /// embers off a cinder run, dust before a charge, the chain on a haul.</summary>
@@ -1291,7 +1305,9 @@ public partial class BattleFx : Node3D
             alive.Add(z.Id);
             if (z.Owner != Sim.Side.Enemy && SkillGround(z, now)) continue;
             var school = Palette.OfArt(z.Art);
-            var col = z.Owner == Sim.Side.Enemy ? Palette.HostileDanger * 0.6f : Palette.Of(school).Glow * 0.5f;
+            // The enemy's ground is the danger language's "this ground stays bad": violet and hatched,
+            // held toward the ground's own lit value (red, it was her colour and loud on the Dig's clay).
+            var col = z.Owner == Sim.Side.Enemy ? Palette.TeleGround * 0.28f : Palette.Of(school).Glow * 0.5f;
             // Hallowed and arcane ground is a turning circle of runes, burning
             // ground a spread of fire; the rest, and the enemy's, a glow.
             bool mine = z.Owner != Sim.Side.Enemy, runes = mine && school is School.Holy or School.Arcane;
@@ -1312,7 +1328,7 @@ public partial class BattleFx : Node3D
                 float a = R() * Mathf.Tau, d = (float)z.Radius * Mathf.Sqrt(R());
                 var pal = Palette.Of(school);
                 double x = z.X + Mathf.Cos(a) * d, zz = z.Z + Mathf.Sin(a) * d;
-                Sparks.Spawn(V(x, Y(x, zz) + 0.1, zz), new Vector3(0, 0.8f + R(), 0), 0.8f, 0.07f, z.Owner == Sim.Side.Enemy ? Palette.HostileRim : pal.Glow, pal.Dim, 0.01f, drag: 1);
+                Sparks.Spawn(V(x, Y(x, zz) + 0.1, zz), new Vector3(0, 0.8f + R(), 0), 0.8f, 0.07f, z.Owner == Sim.Side.Enemy ? Palette.TeleGround * 0.6f : pal.Glow, pal.Dim, 0.01f, drag: 1);
             }
         }
         var gone = zonesGone;
@@ -1324,7 +1340,7 @@ public partial class BattleFx : Node3D
 
     void Projectiles(Battle b, float dt, double now)
     {
-        shades.Begin(); orbs.Begin(); steel.Begin(); axes.Begin(); daggers.Begin(); shards.Begin(); rings.Begin(); kegs.Begin();
+        shades.Begin(); orbs.Begin(); steel.Begin(); axes.Begin(); daggers.Begin(); shards.Begin(); rings.Begin(); chakrams.Begin(); kegs.Begin(); herdCrowd?.Begin();
         Buffs(b);
         foreach (var p in b.Projectiles.Living())
         {
@@ -1400,7 +1416,7 @@ public partial class BattleFx : Node3D
             trailAcc[p.Id] = acc;
         }
         if (trailAcc.Count > 2000) trailAcc.Clear();
-        shades.End(); orbs.End(); steel.End(); axes.End(); daggers.End(); shards.End(); rings.End(); kegs.End();
+        shades.End(); orbs.End(); steel.End(); axes.End(); daggers.End(); shards.End(); rings.End(); chakrams.End(); kegs.End(); herdCrowd?.End();
     }
 
     // Ember by worth, kept saturated: the brighter tiers were near-white in every channel and bloomed

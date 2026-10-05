@@ -784,7 +784,7 @@ public partial class Game : Node, IZoneHost
                     // The blow that should have ended her, held: the world slows while she goes
                     // cold and gets up (BattleFx.Rise draws it).
                     scene?.Slow(1.1);
-                    foreach (var s in new[] { 0.08, 0.3, 0.55, 0.8, 1.1, 1.5, 2.2, 3.2 }) Shots.Want("rise", s);
+                    foreach (var s in new[] { 0.08, 0.3, 0.45, 0.6, 0.75, 0.9, 1.1, 1.5, 2.2, 3.2 }) Shots.Want("rise", s);
                     break;
                 case Ev.Bark bk:
                     // A named voice in a fight (the Warden, Grimtunnel) is heard over everything, when its line shows
