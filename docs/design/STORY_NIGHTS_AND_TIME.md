@@ -12,6 +12,17 @@ The owner, 4 October:
 - "time passing should probably happen because some users may not figure out the rest mechanic and
   anotehr way to prompt advancement is worth it, and also just natural."
 
+
+## The owner's decisions (4 October 2026)
+
+The design is approved, with these decisions. They overrule the doc below where it differs.
+
+1. **Losing a story fight wakes her in town** (Chid carries her home), and time has passed: the night is lost and she wakes the next morning. "We can't die" is part of the game, but losing costs her time ("having to die for a time"), and gives her a day to get new gear and prepare before she tries again. The fight waits for another night. Within a fight, the two get-ups before the loss stand (the recommendation).
+2. **Redcowl gets a spare-or-kill choice** at his knee, as Greymuzzle does: "Spare him" or "Finish it". The story bible already has both branches (he lives and returns in Act 2, or dies and Rav speaks his name). C11's last words play only if he dies; the story lead writes the spared ending.
+3. **Day length:** 12 minutes of free play (the recommendation).
+4. **Time passes outside fights and their stages.** A night left alone passes (the recommendation).
+5. **Several fights in one night are allowed** if she goes straight from one to the next. Because the clock runs outside fights, that takes direct intent.
+
 ## 1. Story fights: their own places, their own bosses
 
 **Today.** A story fight (`Verge.MakeStoryFights`) is the round 168 m arena of the table's nights,
