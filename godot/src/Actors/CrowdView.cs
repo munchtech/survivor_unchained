@@ -238,7 +238,13 @@ public partial class CrowdView : Node3D
         if (e.Def.Tint is var (tr, tg, tb)) tint *= new Color((float)tr, (float)tg, (float)tb);
         if (e.Def.Glow is { } dg) glow = Math.Max(glow, (float)dg);
         if (e.Elite) { glow = Math.Max(glow, 0.05f); tint *= new Color(1.08f, 1.02f, 0.92f); }
-        if (e.Named != null) { glow = 0.25f; tint *= new Color(1.3f, 0.75f, 0.6f); }
+        // A nemesis (one that took a hero before) burns with it; a ruler, herald or named foe is
+        // itself, lifted only a little: painted orange, Greymuzzle was not an old grey wolf.
+        if (e.Named is { } nm)
+        {
+            if (nm.SourceHero != "") { glow = 0.25f; tint *= new Color(1.3f, 0.75f, 0.6f); }
+            else glow = Math.Max(glow, 0.06f);
+        }
         if (e.Disposition == Disposition.Neutral && !e.Provoked) tint *= new Color(0.95f, 0.95f, 0.95f);
         crowd.Push(new Transform3D(basis, at), role, t, f, dissolve, frozen, burning, tint, glow);
         living++;
