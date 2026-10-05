@@ -2,12 +2,21 @@
 
 Agent ab82cbe99e2937ddd, branch `worktree-agent-ab82cbe99e2937ddd` (took over from ae2de192cce8298ca).
 
-## Current state: rebuild planned, waiting for the GPU
-- **The legal ruling** (LEGAL_BRIEF 5(b), `docs/art/MODELS_TO_MAKE.md`): his body came from Krea's website (probably Hunyuan underneath), and it and **everything shaped from it** must go before launch. Polishing it has stopped.
-- **In the game today:** only behind `--body hero`. That `hero.glb` (e7709bd) is tainted; the rebuild replaces it.
+## Current state: on hold, waiting for the owner's Krea records and the GPU
+- **The legal ruling** (LEGAL_BRIEF 5(b), `docs/art/MODELS_TO_MAKE.md`) flags his body as tainted: it came from Krea's website, probably Hunyuan underneath. The owner wants to keep it if he can, and is checking his Krea records (which 3D model, which plan, which input picture).
+- **The rebuild below is the fallback only.** Build nothing until the main session decides which way it goes.
 - **No Blender, Godot or ComfyUI** until the main session says the machine is free.
+- **In the game today:** only behind `--body hero`, with the predecessor's `hero.glb` (e7709bd).
 
-## The rebuild (path A: MakeHuman's CC0 body, a 1.98 m rugged build)
+## Next, if the current body stays (exact)
+1. Fix the head build, which fails in `heroine_face_fixes.lips`. `one_tone` moved his lips' hue; run it after `fix()`, on the fixed paint, or keep the lips out of it.
+2. Judge his face against his neck unlit (scratch `albedo.py`): the Krea face reads olive beside the tan neck.
+3. Render lit sheets in Godot (face, 3/4, side, back, chest, full body). Commit `hero.glb` only if it beats e7709bd everywhere.
+4. Put his skin values in People.Hero and lookdev.gd (`rough=0.62, shine=0.32`), and wire the brow dye and stubble.
+5. Merge the animation lead's `him/` library (`worktree-agent-a435f4dd0ac80df75@72ab9a8`).
+6. Hair and beards, the base garment, his four outfits, the Look step.
+
+## Fallback: the rebuild (path A, MakeHuman's CC0 body, a 1.98 m rugged build)
 1. **His body, `hero_male_body.py` rewritten.**
    - **The man:** a MakeHuman man by MPFB, from the system assets only (CC0):
      - gender 1, age about 0.59 (32), muscle 1.0, weight about 0.6;
@@ -42,7 +51,7 @@ Agent ab82cbe99e2937ddd, branch `worktree-agent-ab82cbe99e2937ddd` (took over fr
 
 **Optional path B,** if the owner wants a physique closer to the old one: his own drawing, or his paint-over of our render, through TRELLIS 2 (MIT, local). Then `wrap_sculpt.py` wraps MakeHuman onto it, keeping MakeHuman's topology, UVs and rig. It must never wrap onto `ComfyUI_00008.glb` or anything shaped from it.
 
-## What carries over, what's lost
+## If the rebuild goes ahead: what carries over, what's lost
 - **Carries over:**
   - **The head:** MakeHuman, CC0, as above.
   - **The paint pipeline:** the face-paint tool and the MakeHuman-layout lookup.
