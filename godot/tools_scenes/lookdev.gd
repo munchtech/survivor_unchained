@@ -64,7 +64,23 @@ func _init():
 					if m.normal_texture != null:
 						sk.set_shader_parameter("relief", m.normal_texture)
 						sk.set_shader_parameter("has_relief", true)
-					if who == "hero": sk.set_shader_parameter("tone", Color(1.0, 0.95, 0.9))
+					if who == "hero":
+						sk.set_shader_parameter("tone", Color(1.0, 0.95, 0.9))
+						# (his rougher skin, as People.HisSkin)
+						sk.set_shader_parameter("rough", 0.62)
+						sk.set_shader_parameter("shine", 0.3)
+						sk.set_shader_parameter("edge_rough", 0.45)
+						# (his brows dyed his hair's colour, and his stubble: People.HisShadow;
+						# BEARD=, SCALP= its depth, 0 to 1)
+						if part == "skin_head" and ResourceLoader.exists("res://art/people/head_tex/hero_shadow.png"):
+							var hc = Color(OS.get_environment("HAIRCOLOR")) if OS.get_environment("HAIRCOLOR") != "" else Color("#3a2a20")
+							sk.set_shader_parameter("shadow_mask", load("res://art/people/head_tex/hero_shadow.png"))
+							sk.set_shader_parameter("beard_shadow", float(OS.get_environment("BEARD")) if OS.get_environment("BEARD") != "" else 0.0)
+							sk.set_shader_parameter("scalp_shadow", float(OS.get_environment("SCALP")) if OS.get_environment("SCALP") != "" else 0.0)
+							sk.set_shader_parameter("shadow_colour", hc.darkened(0.35))
+							sk.set_shader_parameter("brow_dye", float(OS.get_environment("BROWDYE")) if OS.get_environment("BROWDYE") != "" else 0.0)
+							sk.set_shader_parameter("brow_paint", Color(OS.get_environment("BROWPAINT")) if OS.get_environment("BROWPAINT") != "" else Color("#4c3c2e"))
+							sk.set_shader_parameter("brow_colour", hc)
 					if OS.get_environment("NOSSS") != "": sk.set_shader_parameter("scatter", 0.0)
 					for kv in OS.get_environment("SKIN").split(",", false):
 						var e = kv.split("=")
