@@ -5,7 +5,7 @@ took over from a94ac6b67f1279213). Tools and sheets live in `scratchpad/vfx/` (s
 
 ## Current state (2026-10-05)
 
-Tests green (714). Pushed at milestones; integration merged in at 6241bb1f.
+Tests green (714). Handed off at the context limit; everything pushed (see the handoff).
 
 - **Seen and fixed this round** (1920×1080 in a packed crowd):
   - Gale Chakram: a flat blade of dark steel with five hooked teeth, honed edge in the wind's
@@ -29,19 +29,21 @@ Tests green (714). Pushed at milestones; integration merged in at 6241bb1f.
     flame tongues rides the front (`shaders/fire_wall.gdshader`), on combat's own curve
     (`Battle.RiseFront`).
   - The dead's war horn: LTX takes `tell_horn_0/1`, blown twice.
-- **In progress:** loot's light (`BattleFx.Loot.cs`, `shaders/loot_beam.gdshader`), done to
-  LOOT_DESIGN §8 and the coordinator's brief. Rare and up get beams; Common and Uncommon get only
-  their names. Epic breathes, Set is two twisting strands, and Legendary/Storied get a 40 m pillar
-  with an ember ring and its light. `--loot` drops one of each. Being judged by day and by night.
+- **Built, not yet seen** (the last run's import crashed and its frames were black):
+  - the loot beams' NaN fix (short beams drew black dashes that bloomed into pale discs);
+  - the Dig's looks (`BattleFx.Dig.cs`): Grimtunnel under, the tubs, the barrel's fuse, the
+    pits as holes, the crack as a fissure;
+  - the rise's frost mark shortened.
+- **Loot's light**: pillars and Set strands read as light by day and by night (`--loot`).
 
 ## Next step (exact)
 
-1. Judge batch 4 (loot by day and by night, the rise's cold and wall, the dimmed grounds).
-2. Send the performance lead (a0eb8c612c94d4aa5) the loot cost: one batch, at most two lights.
-3. Then: Firepot, Grave Tether, Seeking Motes' white puffs at her feet (the struck flare?),
-   Hallowed Ground's runes, evolutions, unions, the arts, sound per skill, a fed deadfall, and
-   "His age" ring (combat's asks).
-4. Move words under `GameHud.TopClear` once the experience branch (8b4d4402) reaches integration.
+1. Re-run `scratchpad/vfx/b7.sh` under a Godot turn, importing twice. Judge the loot beams, the
+   Dig at stages 1 and 3, and the rise.
+2. Send the performance lead the loot cost.
+3. Then: Iron Palms bigger; Moonbrand near her; Firepot, Grave Tether, Hallowed Ground; evolutions
+   and unions; the arts; sound per skill; combat's deadfall and "His age" ring; move words under
+   `GameHud.TopClear` once the experience branch reaches integration.
 
 ## Grades (now)
 
