@@ -6,7 +6,7 @@ Status page for the gameplay experience director (agent `ab406cf9ddd22b03b`, bra
 
 ## Current state (2026-10-04)
 
-Took over from `ad1f5623590e09883`. Tests green (631). The owner approved the story nights and the
+Took over from `ad1f5623590e09883`. Tests green (661). The owner approved the story nights and the
 day's clock (`docs/design/STORY_NIGHTS_AND_TIME.md`, decisions at its top). **Limit for now: no
 Godot or GPU**, code and `dotnet test` only.
 
@@ -33,7 +33,10 @@ Godot or GPU**, code and `dotnet test` only.
   lists "Also out tonight".
 - **StoryFights** (`Play/StoryFights.cs`): the four fights out of the Verge so the night can call
   them from anywhere; the Verge builds its interactables from it.
-- **Seam for combat:** `IZoneHost.StoryFall(risesLeft, rise, letGo)`; one rise in Act 1 only.
+- **The fall in a story night, staged** (`Game/GameFall.cs`, on combat's `StoryNight`, merged at
+  `aa68f38e`): the picture darkens and the world holds; with a rise left, "Get up" (confirm or the
+  use key) or "Let the night go" (back), no page; getting up is a short fade to the checkpoint and
+  the counted words (`RiseLine`); with none left, the night is lost and its result follows.
 
 **In-game checks owed (when Godot is allowed), all at 1920×1080:**
 1. A day run through on the autopilot at `--fixed-fps 60`: the light's blends at 1, 10 and 12
@@ -43,10 +46,13 @@ Godot or GPU**, code and `dotnet test` only.
 3. The night passing: the fade, "Dawn · Day N", the lines, the scars going out in the Verge.
 4. A story fight lost: the result, the shrine at dawn, Chid's waking, then the morning lines.
 5. Pausing: the clock still in talk, the pack, the map, the shop, the rest page and cutscenes.
+7. A fall in the Hollow (`--stage 3` for the boss): the darkening, the two choices (keys and pad),
+   the fade to the checkpoint and "You get up."; then a second fall with none left.
 6. The Verge at a turn: Maeca and the night packs only change on re-entry (judge if it jars).
 
 **Next:**
-1. The game's staging of `StoryFall` when combat's runtime lands (fade, "You get up.", the card).
+1. With combat: the Hollow measures 5 minutes, not 12, and 50–63% dip under half on the way in
+   (target 20–35%); combat lengthens the stages (more to do, not more health). The 40% sums wait.
 2. The crowd's status read for skills: drafted, unseen, on the side branch
    `experience-status-read@9d5d30e6` (rime in patches, fire in tongues, all status light under 1).
    Today (the predecessor's tint, skills' `scratchpad/vfx/ba_a9_1.png` rows 2 and 5): no longer

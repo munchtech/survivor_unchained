@@ -46,11 +46,14 @@ endless hour.
 | The boss | 3–4 min | A proper ARPG boss on its own ground, which opens at the end. It has three phases, and each one changes the space. Telegraphs are on the ground. Adds are the boss's own, each with a job, and the horde is off or a trickle. One weakness is the bane the day taught (Maeca's fed fires, Chid's standard, Grimtunnel's own lamp). The cinematic plays in and out (C10–C13). |
 | The end | — | No endless and no way out. The boss's end is the fight's end: the story's last line, then back where she was pulled from, into the same night (story's rule: the line never claims the dawn, and the town talks about it that night). |
 
-- **The build.** Embers are paid about 2.5 times faster (combat's number), so she meets the boss
-  with about what a table night has at minute 20. That build is the boss's yardstick: about 3–4
-  minutes at par, against the table rulers' 60–120 s.
-  - The waves are finite and creature levels are fixed per beat. So the build at the boss is set by
-    the content, a slow beat is no harder, and nothing is farmed.
+- **The build.** She meets the boss with about what a table night has at minute 12 (combat's,
+  measured: about ember 30 and 32 cards). Minute 20 was the first aim, but by then a table night
+  has killed some 20,000, which a short night in a small place cannot feed and should not try to.
+  That build is the boss's yardstick: about 3–4 minutes at par, against the table rulers' 60–120 s.
+  - The waves are finite and creature levels are fixed per beat. Each stage is a finite crowd
+    softened to the table minute it stands for (2, 6, 10), with an ember floor at its end, so the
+    build at the boss is set by the content, a quick stage is no weaker night, and nothing is
+    farmed.
   - A great blessing comes as the night opens, and another as the boss's ground opens, after its
     arrival.
 - **The tension.** The way in should feel dangerous without killing her. The aim is that 20–35% of
@@ -65,6 +68,11 @@ endless hour.
 - **Why this length.** It is long enough for a build to be earned and tested, and short enough to
   replay a fall without dread. It is also a third shorter than today's 20 minutes, so the story
   never sits behind long arenas.
+- **Measured so far** (combat's first small runs of the Hollow, tier 1, plain hands): the night
+  is about 5 minutes, not 12 (the way in 1.6 against 6–9, the boss 2.5–3.5); won 75%; under half
+  health on the way in 50–63%, against 20–35%. Next, combat lengthens the stages with more to do
+  (never more health) and moves the danger to the boss. Until the night measures 10–14 minutes,
+  nothing below leans on 12.
 
 ### Falling and getting up
 
@@ -196,7 +204,8 @@ by sleeping at the inn (`Journey.Sleep`). A player who never finds the inn's res
     nights: about 44% days.
   - With 12-minute story fights and one fight a night, an eight-day Act 1 (four story fights, four
     table nights) is about 49% days. Shorter story fights push the share up, and this is that
-    cost, stated plainly.
+    cost, stated plainly. These sums assume the 12-minute target, not the 5 minutes first
+    measured; they are re-done when the Hollow measures at length.
   - The lever is the day's length (choice 2): an 8-minute day brings Act 1 to about 43%. The share
     falls in Acts 2 and 3 either way.
   - The table's nights stay at 30 minutes. The atlas's maps wait on the owner.
