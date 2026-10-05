@@ -47,6 +47,14 @@ The owner asks: "accurate, efficient, on track, manage and engineer context. del
 - **Heavy work takes turns.** Two heavy jobs at once have crashed the machine (ComfyUI alone holds 20-26 GB of RAM). Before a heavy job, take a turn with `python C:/Users/munch/Desktop/survivorsunchained/tools/turn.py take gpu "<area>: <job>"` (ComfyUI, TRELLIS, MoGe; one at a time), `take blender ...` (Blender builds, bakes and renders; two at a time) or `take godot ...` (Godot runs for pictures or clips; three at a time, while RAM allows). Exit 1 means it's busy and says who has it or who you're queued behind: do light work (code, docs, design, review) meanwhile and ask again within 90 s to keep your place (or use `--wait N`). Waiters are served in the order they first asked, so retaking straight after giving back puts you at the back. Give it back the moment the job ends (`give gpu "<same name>"`); giving back the GPU also frees ComfyUI. Split long jobs into batches of under an hour, and give the turn back between them. `turn.py show` shows who holds what. `dotnet test` needs no turn.
 - **GPU:** the RTX 5080 (16 GB) is shared. ComfyUI at 127.0.0.1:8188 serves the art work. Free it between jobs with `POST /free {"unload_models": true, "free_memory": true}`, never by killing it, and release your own models when done. There is 32 GB of RAM; mind big CPU models.
 
+## Running a few at a time (the owner, 5 October 2026)
+
+- Only 3 to 5 leads run at once; the rest are paused with their handoff and status pages, never lost, and resumed in turn. Leads that work together run together, and a group has at most one GPU-heavy lead (face, creatures, UI art's ComfyUI batches).
+- Batch screenshots and renders: shoot everything a check needs in one turn, look once, fix in one pass.
+- Keep handoffs and status pages lean.
+- Effort: legal medium; performance measurement runs, story consistency checks, and provenance and licence logging high; everything else at its top. Every agent stays on the same model.
+- Running now: UI design, UI art, the face, animation (and the main session's outfits). Next group: combat, the experience director, arena art, skills VFX (the story fights). Then creatures, cinematics, performance, crafting.
+
 ## Roster
 
 The main session keeps this current. It is the address list for SendMessage. Retired agents' ids are not listed: a message to one wakes it.
@@ -59,7 +67,7 @@ The main session keeps this current. It is the address list for SendMessage. Ret
 | Animation | a7dd95d00c4a6a017 | docs/team/animation.md |
 | UI design (layouts, screens, the filter) | a4fdbc49786ba8b7f | docs/team/ui_design.md |
 | UI art | a0bff3ffe4d3ad748 | docs/team/ui_art.md |
-| Crafting (research, design, build) | ab0b263c720bdbda8 | docs/team/crafting.md |
+| Crafting (research, design, build) (paused; handoff ready at ed429efb) | — | docs/team/crafting.md |
 | Gameplay experience director | a9f0d6c64d891d56d | docs/team/experience.md |
 | Skills look and feel (VFX, under the main session) | abc6bbe020c7fe287 | docs/team/skills.md |
 | Cinematics production | a7a4c20bcfd7ccfd3 | docs/team/cinematics.md |
