@@ -460,13 +460,16 @@ public partial class Backdrop : Control
         blur ??= GD.Load<Shader>("res://shaders/ui_backdrop.gdshader");
         var world = new ColorRect { Material = new ShaderMaterial { Shader = blur }, MouseFilter = MouseFilterEnum.Ignore };
         ((ShaderMaterial)world.Material).SetShaderParameter("dim", Mathf.Lerp(1.1f, 0.62f, strength));
+        // A full page sees the world through it a little (the owner: "slightly see through"): a lighter
+        // blur, so what is sensed through the page is the place, not a smear.
+        if (page) { ((ShaderMaterial)world.Material).SetShaderParameter("blur", 1.8f); ((ShaderMaterial)world.Material).SetShaderParameter("dim", 0.82f); }
         Style.Fill(world);
         AddChild(world);
         // A full page is the day's book's own page (page/vellum.png): the binders' black vellum,
         // the world felt through it only where its lamps are bright.
         if (page && UiArt.Art("page/vellum.png") is { } skin)
         {
-            var v = new TextureRect { Texture = skin, ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize, StretchMode = TextureRect.StretchModeEnum.Tile, MouseFilter = MouseFilterEnum.Ignore, Modulate = new Color(1, 1, 1, 0.9f) };
+            var v = new TextureRect { Texture = skin, ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize, StretchMode = TextureRect.StretchModeEnum.Tile, MouseFilter = MouseFilterEnum.Ignore, Modulate = new Color(1, 1, 1, 0.85f) };
             Style.Fill(v);
             AddChild(v);
             // The binding stands above the page: the header's shade falls a hand's width down it,

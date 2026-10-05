@@ -170,7 +170,15 @@ public abstract partial class Overlay : Control
         band.Size = new Vector2(1928, 100);
         band.MouseFilter = MouseFilterEnum.Ignore;
         AddChild(band);
-        if (InBook) BookTabs(new Vector2(40, 30));
+        // The book's tabs ride the same chain on a full page as on the panel, so turning from the
+        // Pack to the Journal keeps one object under the hand.
+        if (InBook)
+        {
+            int on = Array.FindIndex(Book, b => b.Kind == Kind);
+            var tabs = new ChainTabs(Book.Select(b => (b.Name, Controls.Instance?.KeyLabel(b.Key) ?? "")).ToArray(), on, k => { Sound.Sfx.Page(); G.Open(Book[k].Kind); })
+                { Position = new Vector2(40, 16) };
+            AddChild(tabs);
+        }
         var plaque = new Plaque(title, 34, 120);
         AddChild(plaque);
         plaque.Position = new Vector2((1920 - plaque.CustomMinimumSize.X) / 2, sub != null ? 14 : 26);
