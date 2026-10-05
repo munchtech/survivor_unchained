@@ -1,25 +1,23 @@
-"""The tab chain in motion, as a reference for the game's code and to judge at 1:1: the book's
-tabs sit along a chain; the chosen tab's link is heated through; choosing another slides the
-chain link by link until that link sits under it, then the chain sways and settles.
+"""The tab chain in motion, as a reference for the game's code (ChainTabs) and to judge at 1:1:
+the book's tabs sit along a heavy forged chain; under the chosen tab five links are heated,
+the middle one pried open, cooling to dull red outward, a little ember light on the band under
+them; choosing another tab drags the chain link by link until that heat sits under it, the
+chain sagging as it runs and swinging as it stops.
 
-Everything the code needs is here and small (UI design builds it in the game):
-  * links are laid every `pitch` px along a shallow sag between the row's ends, alternately
-    flat and on edge, each link keeping its own sprite as it travels (its variant comes from
-    its own index along the chain, not its place on the screen);
-  * the row's ends fade over `fade` px, as a chain running on out of sight;
-  * the slide is a damped spring on the chain's phase (stiff, a little under-damped), so it
-    overshoots by a fraction of a link and comes back;
-  * the sway: the sag's depth springs too, kicked by the slide's speed, so the chain dips as it
-    runs and bobs once as it stops.
+Its feel comes from art/ui/chain/chain.json, as the game's does (made by chain.links):
+  pitch, fade, run       link spacing; the ends fade over `fade` px, `run` px past the end tabs
+  heat                   links each side of the middle that glow (heat 1 at the middle, falling
+                         to 1 - k/(heat+1) at the ends)
+  slide [k, c]           the spring on the chain's phase: x'' = k (target - x) - c x'
+  sag_spring [k, c]      the spring on its sag, toward sag_rest + min(|v| / sag_speed, 1) * sag_dip
 
-    python tools/uiforge/chainanim.py [--from 1 --to 3] [--scale 1]   # frames into chain/anim/
+    python tools/uiforge/chainanim.py      # frames into tools/comfy/out/uiforge/chain/anim/
 """
 from __future__ import annotations
 
 import json
 import math
 import os
-import sys
 
 import cv2
 import numpy as np
@@ -30,6 +28,15 @@ import forge as F
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(os.path.dirname(HERE))
 CH = os.path.join(ROOT, "tools", "comfy", "out", "uiforge", "chain")
+HEAT = [(0.0, "#7a2410"), (0.5, "#ff7a26"), (1.0, "#ffc070")]   # dull at the ends, bright at the heart
+
+
+def heat_colour(h):
+    for (a, ca), (b, cb) in zip(HEAT, HEAT[1:]):
+        if h <= b:
+            t = (h - a) / (b - a)
+            return F.hexc(ca, lin=False) * (1 - t) + F.hexc(cb, lin=False) * t
+    return F.hexc(HEAT[-1][1], lin=False)
 
 
 def sprites():
@@ -38,19 +45,16 @@ def sprites():
 
     def ld(n):
         return np.asarray(Image.open(os.path.join(d, n + ".png")).convert("RGBA"), np.float32) / 255
-    flats = [ld(f"face_{k}") for k in range(meta["variants"])]
-    edges = [ld(f"edge_{k}") for k in range(meta["variants"])]
-    return meta, flats, edges, ld(MARK)
-
-
-# The chosen tab's link: "open" (pried, ember in the break: the emblem) or "hot" (heated through).
-MARK = "open"
+    v = meta["variants"]
+    S = {f"{pre}{kind}_{k}": ld(f"{pre}{kind}_{k}") for pre in ("", "warm_", "hot_") for kind in ("face", "edge") for k in range(v)}
+    S["open"] = ld("open")
+    return meta, S
 
 
 class Spring:
     """x'' = k (target - x) - c x' (per second)."""
 
-    def __init__(self, x, k=170.0, c=17.0):
+    def __init__(self, x, k, c):
         self.x, self.v, self.k, self.c = x, 0.0, k, c
 
     def step(self, target, dt):
@@ -63,17 +67,19 @@ class Spring:
 _small = {}
 
 
-def lay(canvas, s, sprite, cx, cy, ang, alpha):
-    """Draw a sprite (made at 2x) centred at (cx, cy) shown px, turned by ang radians: brought
-    to its screen size first with an area filter (as mipmaps would), then placed."""
-    key = (id(sprite), s)
+def shrink(name, spr, s):
+    """A sprite made at 2x brought to its screen size with an area filter (as mipmaps would)."""
+    key = (name, s)
     if key not in _small:
-        pm0 = np.dstack([sprite[..., :3] * sprite[..., 3:4], sprite[..., 3:4]])
-        _small[key] = cv2.resize(pm0, (max(1, round(sprite.shape[1] * s / 2)), max(1, round(sprite.shape[0] * s / 2))),
+        pm = np.dstack([spr[..., :3] * spr[..., 3:4], spr[..., 3:4]])
+        _small[key] = cv2.resize(pm, (max(1, round(spr.shape[1] * s / 2)), max(1, round(spr.shape[0] * s / 2))),
                                  interpolation=cv2.INTER_AREA)
-    pm = _small[key]
+    return _small[key]
+
+
+def lay(canvas, pm, cx, cy, ang, alpha, s):
+    """Draw a premultiplied sprite centred at (cx, cy) shown px, turned by ang radians."""
     h, w = pm.shape[:2]
-    sw, sh = w, h
     M = cv2.getRotationMatrix2D((w / 2, h / 2), -math.degrees(ang), 1.0)
     M[0, 2] += cx * s - w / 2
     M[1, 2] += cy * s - h / 2
@@ -81,66 +87,87 @@ def lay(canvas, s, sprite, cx, cy, ang, alpha):
                          borderMode=cv2.BORDER_CONSTANT, borderValue=0)
     a = out[..., 3:4] * alpha
     canvas[..., :3] = canvas[..., :3] * (1 - a) + out[..., :3] * alpha
-    return sw, sh
 
 
-def frame(bg, s, meta, flats, edges, hot, x0, x1, y0, phase, sag, hot_index, fade=36.0):
+def glow(canvas, cx, cy, rx, ry, col, strength, s):
+    """Light added over the band: a soft ellipse of a colour."""
+    H, W = canvas.shape[:2]
+    yy, xx = np.mgrid[0:H, 0:W].astype(np.float32)
+    g = np.exp(-(((xx / s - cx) / rx) ** 2 + ((yy / s - cy) / ry) ** 2)) * strength
+    canvas[..., :3] = np.clip(canvas[..., :3] + g[..., None] * np.asarray(col, np.float32), 0, 1)
+
+
+def frame(bg, s, meta, S, x0, x1, y0, phase, sag, chosen, t, flicker_seed=7):
     """One picture: the chain between x0 and x1 (shown px) at height y0, its links shifted by
-    `phase` px, sagging `sag` px at its middle; the link numbered `hot_index` heated."""
+    `phase` px, sagging `sag` px at its middle; links near index `chosen` heated."""
     img = bg.copy()
-    p = meta["pitch"]
+    p, fade, heat = meta["pitch"], meta["fade"], meta["heat"]
+    var = meta["variants"]
     n0 = int(math.floor((x0 - phase) / p)) - 1
     n1 = int(math.ceil((x1 - phase) / p)) + 1
     mid, half = (x0 + x1) / 2, (x1 - x0) / 2
 
     def y_at(x):
-        t = (x - mid) / half
-        return y0 + sag * (1 - t * t)
+        u = (x - mid) / half
+        return y0 + sag * (1 - u * u)
 
+    # The ember's light on the band under the heated links, flickering a little.
+    cx = phase + chosen * p
+    fl = 1 + 0.12 * math.sin(t * 23 + flicker_seed) + 0.08 * math.sin(t * 37.3 + 1.7 * flicker_seed)
+    glow(img, cx, y_at(cx) + 5, p * (heat + 0.9), 9, heat_colour(0.55), 0.14 * fl, s)
     order = []
     for n in range(n0, n1 + 1):
         x = phase + n * p
-        if x < x0 - p or x > x1 + p:
-            continue
         a = np.clip(min(x - x0, x1 - x) / fade, 0, 1) ** 1.3
         if a <= 0:
             continue
         ang = math.atan2(y_at(x + 1) - y_at(x - 1), 2)
-        flat = n % 2 == 0
-        if n == hot_index:
-            spr = hot
+        kind = "face" if n % 2 == 0 else "edge"
+        k = (n * 7 + 3) % var
+        d = abs(n - chosen)
+        h = 1 - d / (heat + 1) if d <= heat else 0.0
+        order.append((0 if kind == "face" else 1, n, x, y_at(x), ang, a, kind, k, h))
+    # Face-on links first; those on edge pass through them and lie over their ends.
+    for _, n, x, y, ang, a, kind, k, h in sorted(order, key=lambda o: o[0]):
+        if n == chosen:
+            lay(img, shrink("open", S["open"], s), x, y, ang, a, s)
         else:
-            v = (n * 7 + 3) % len(flats)
-            spr = flats[v] if flat else edges[v]
-        order.append((0 if flat else 1, x, y_at(x), ang, a, spr))
-    # Flat links first; those on edge pass through them and lie over their ends.
-    for _, x, y, ang, a, spr in sorted(order, key=lambda o: o[0]):
-        lay(img, s, spr, x, y, ang, a)
+            lay(img, shrink(f"{kind}_{k}", S[f"{kind}_{k}"], s), x, y, ang, a, s)
+            if h > 0:
+                # Cold to warm to hot: the same link drawn in each state.
+                if h < 0.6:
+                    lay(img, shrink(f"warm_{kind}_{k}", S[f"warm_{kind}_{k}"], s), x, y, ang, a * h / 0.6, s)
+                else:
+                    lay(img, shrink(f"warm_{kind}_{k}", S[f"warm_{kind}_{k}"], s), x, y, ang, a, s)
+                    lay(img, shrink(f"hot_{kind}_{k}", S[f"hot_{kind}_{k}"], s), x, y, ang, a * (h - 0.6) / 0.4, s)
+        if h > 0:
+            glow(img, x, y, p * 0.7, p * 0.45, heat_colour(h), 0.24 * h * fl, s)
     return img
 
 
-def run(tabs, frm=1, to=3, scale=1.0, fps=60, secs=1.1, bg=None, y0=58.0, x0=30.0, x1=560.0, out=None, bg_after=None):
-    meta, flats, edges, hot = sprites()
-    _small.clear()                      # (keyed by the sprites' ids, which a new load reuses)
+def run(tabs, frm=1, to=3, scale=1.0, fps=60, secs=1.4, bg=None, y0=60.0, x0=None, x1=None, out=None, bg_after=None):
+    meta, S = sprites()
+    _small.clear()
     p = meta["pitch"]
     s = scale
+    x0 = tabs[0] - meta["run"] if x0 is None else x0
+    x1 = tabs[-1] + meta["run"] if x1 is None else x1
     if bg is None:
         bg = np.zeros((int(100 * s), int(620 * s), 4), np.float32)
         bg[..., :3] = [0.09, 0.07, 0.07]
         bg[..., 3] = 1
-    hot_index = 0
-    # Where the heated link must sit: under the chosen tab's middle.
-    ph = Spring(tabs[frm] - hot_index * p)
-    sg = Spring(3.0, k=120.0, c=7.0)
+    chosen = 0
+    ph = Spring(tabs[frm] - chosen * p, *meta["slide"])
+    rest, dip, speed = meta["sag_rest"], meta["sag_dip"], meta["sag_speed"]
+    sg = Spring(rest, *meta["sag_spring"])
     frames = []
     dt = 1.0 / fps
     for i in range(int(secs * fps)):
-        target = tabs[to] - hot_index * p if i >= 4 else tabs[frm] - hot_index * p
+        target = tabs[to] - chosen * p if i >= 4 else tabs[frm] - chosen * p
         x = ph.step(target, dt)
-        # The sag dips with the chain's speed and springs back.
-        sg.step(3.0 + min(abs(ph.v) / 260.0, 1.0) * 3.5, dt)
+        sg.step(rest + min(abs(ph.v) / speed, 1.0) * dip, dt)
         b = bg_after if (bg_after is not None and i >= 4) else bg
-        frames.append(frame(b, s, meta, flats, edges, hot, x0, x1, y0, x, sg.x, hot_index))
+        frames.append(frame(b, s, meta, S, x0, x1, y0, x, sg.x, chosen, i * dt))
     if out:
         os.makedirs(out, exist_ok=True)
         for i, f in enumerate(frames):
@@ -149,10 +176,5 @@ def run(tabs, frm=1, to=3, scale=1.0, fps=60, secs=1.1, bg=None, y0=58.0, x0=30.
 
 
 if __name__ == "__main__":
-    a = sys.argv[1:]
-    frm = int(a[a.index("--from") + 1]) if "--from" in a else 1
-    to = int(a[a.index("--to") + 1]) if "--to" in a else 3
-    scale = float(a[a.index("--scale") + 1]) if "--scale" in a else 1.0
-    tabs = [76, 166, 256, 350, 452]
-    fr = run(tabs, frm, to, scale, out=os.path.join(CH, "anim"))
+    fr = run([76, 167, 256, 358, 460], 1, 3, out=os.path.join(CH, "anim"))
     print(len(fr), "frames")

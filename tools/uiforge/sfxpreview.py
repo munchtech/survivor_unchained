@@ -36,16 +36,44 @@ def fm(F, Ratio, Index, D, G, A=0.002, F2=None):
     return np.sin(car * 2 * math.pi) * e
 
 
-def hiss(D, G, A=0.003, Bp=None, Q=1.0, rng=None):
+def biquad(x, kind, f, Q=0.707):
+    """The RBJ cookbook biquads Synth.cs uses (band, low, high)."""
     from scipy.signal import lfilter
+    w0 = 2 * math.pi * f / RATE
+    al = math.sin(w0) / (2 * Q)
+    cw = math.cos(w0)
+    if kind == "band":
+        b, a = [al, 0, -al], [1 + al, -2 * cw, 1 - al]
+    elif kind == "low":
+        b, a = [(1 - cw) / 2, 1 - cw, (1 - cw) / 2], [1 + al, -2 * cw, 1 - al]
+    else:
+        b, a = [(1 + cw) / 2, -(1 + cw), (1 + cw) / 2], [1 + al, -2 * cw, 1 - al]
+    return lfilter(b, a, x)
+
+
+def hiss(D, G, A=0.003, Bp=None, Q=1.0, Lp=None, Hp=None, brown=False, rng=None):
     e = env(int(A * RATE), int(D * RATE), G)
     x = (rng or np.random.default_rng(0)).standard_normal(len(e)) * 0.35
+    if brown:
+        x = np.cumsum(x) * 0.02
+        x = x - np.convolve(x, np.ones(512) / 512, mode="same")
     if Bp:
-        w0 = 2 * math.pi * Bp / RATE
-        al = math.sin(w0) / (2 * Q)
-        b = [al, 0, -al]
-        a = [1 + al, -2 * math.cos(w0), 1 - al]
-        x = lfilter(b, a, x)
+        x = biquad(x, "band", Bp, Q)
+    if Lp:
+        x = biquad(x, "low", Lp)
+    if Hp:
+        x = biquad(x, "high", Hp)
+    return x * e
+
+
+def tone(F, D, G, F2=None, A=0.002, Lp=None):
+    """A sine through an envelope, gliding from F to F2, low-passed if asked."""
+    e = env(int(A * RATE), int(D * RATE), G)
+    n = len(e)
+    f = np.full(n, F) if F2 is None else F * (F2 / F) ** (np.arange(n) / n)
+    x = np.sin(np.cumsum(f / RATE) * 2 * math.pi)
+    if Lp:
+        x = biquad(x, "low", Lp)
     return x * e
 
 
@@ -55,21 +83,29 @@ def chain(links=6, secs=0.32, seed=3):
 
     def R(a, b):
         return rng.uniform(a, b)
-    out = np.zeros(int((secs + 0.6) * RATE))
+    k = secs / 0.32
+    out = np.zeros(int((secs + 1.4) * RATE))
 
     def put(t, s):
-        i = int(t * RATE)
+        i = int(max(0, t) * RATE)
         j = min(len(out), i + len(s))
         out[i:j] += s[:j - i]
-    n = max(2, min(12, links))
+    n = max(2, min(14, links))
     for i in range(n):
         u = (i + 0.5) / n
-        t = secs * 0.7 * (1 - (1 - u) ** (1 / 3)) + R(-0.004, 0.004)
-        g = 0.022 * (1.0 - 0.45 * u) * R(0.75, 1.15)
-        put(max(0, t), fm(R(2200, 3400), R(2.7, 3.6), R(2.4, 3.4), R(0.03, 0.06), g))
-    put(0, hiss(secs * 0.9, 0.012, A=0.02, Bp=4200, Q=1.4, rng=rng))
-    put(secs * 0.8, fm(R(1500, 1800), 2.92, 3.2, 0.16, 0.03))
-    put(secs * 0.8 + 0.15, fm(R(1900, 2300), 3.27, 2.4, 0.08, 0.012))
+        t = k * (0.025 + 0.2 * u + 0.04 * u * u) + R(-0.004, 0.004)
+        g = (1.0 - 0.4 * u) * R(0.8, 1.15)
+        put(t, fm(R(700, 1300), R(1.4, 2.6), R(3, 5), R(0.07, 0.13), 0.035 * g))
+        f = R(150, 230)
+        put(t, tone(f, 0.05, 0.025 * g, F2=f * 0.8, Lp=500))
+    put(0.02 * k, hiss(0.26 * k, 0.035, A=0.05, Lp=900, brown=True, rng=rng))
+    stop = 0.29 * k
+    put(stop, tone(92, 0.25, 0.09, F2=68, Lp=380))
+    put(stop, fm(R(380, 440), 1.41, 4, 0.32, 0.05))
+    put(stop, hiss(0.07, 0.04, Bp=700, Q=1, rng=rng))
+    put(stop + 0.17, fm(R(1300, 1600), 2.76, 2.8, 0.14, 0.022))
+    put(stop + 0.42, fm(R(1500, 1800), 3.1, 2.2, 0.1, 0.01))
+    put(stop - 0.05, hiss(0.7, 0.014, A=0.18, Hp=4500, rng=rng))
     return out
 
 

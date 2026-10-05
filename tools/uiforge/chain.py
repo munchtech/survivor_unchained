@@ -127,16 +127,39 @@ def title(side="r", samples=96, length=270, link=(32, 19, 2.6), gap=10.0, fade=9
     return img
 
 
-def links(variants=6, samples=64, link=(24, 14, 2.0), cell=(36, 26), ss=3):
-    """chain/face_K, edge_K, hot and open (art/ui/chain/, cells of cell shown px, the link at
-    the centre along x): the tab chain's links, each its own sprite so the code can lay them
-    along a sagging line, slide them link by link and let them sway, with no two neighbours
-    alike; the chosen tab's link pried open with ember in the break (open), or heated through
-    (hot). `pitch` (shown px) is where the next link's centre sits."""
-    pitch = link[0] - 4 * link[2]
+# The tab chain's feel, read by the game (ChainTabs, from art/ui/chain/chain.json) and by
+# chainanim.py: heavy forged chain (the owner: "a little wimpy"), a heavy sag, a slower start,
+# a firm stop and a real swing back; five links heated under the chosen tab, cooling outward.
+FEEL = {"fade": 40, "run": 72, "heat": 2, "slide": [130, 17], "sag_spring": [62, 3.6],
+        "sag_rest": 6.5, "sag_dip": 8.0, "sag_speed": 200}
+
+
+def deepen_shadow(img, k=1.35, edge=8):
+    """The shadow the shadow catcher gave, a little darker (a heavier link sits harder on the
+    band), and faded out before the cell's sides so no edge of it shows."""
+    rgb, a = img[..., :3], img[..., 3]
+    lum = rgb @ np.array([0.3, 0.59, 0.11], np.float32)
+    shade = (lum < 0.03) & (a < 0.98)
+    h, w = a.shape
+    yy, xx = np.mgrid[0:h, 0:w].astype(np.float32)
+    d = np.minimum(np.minimum(xx, w - 1 - xx), np.minimum(yy, h - 1 - yy))
+    fade = np.clip(d / edge, 0, 1) ** 1.5
+    out = img.copy()
+    out[..., 3] = np.where(shade, np.clip(a * k, 0, 0.8) * fade, a)
+    return out
+
+
+def links(variants=6, samples=64, link=(30, 19, 3.2), cell=(52, 44), ss=3):
+    """chain/{,warm_,hot_}{face,edge}_K and open (art/ui/chain/, cells of `cell` shown px, the
+    link at the centre along x): the tab chain's links, each its own sprite so the code can lay
+    them along a sagging line, slide them link by link and let them sway, with no two
+    neighbours alike. Each is drawn cold, warm and hot with the same geometry, so the code can
+    heat a link by fading toward its hot drawing; open is the chosen tab's middle link, pried
+    apart and hot. `pitch` (shown px) is where the next link's centre sits."""
+    pitch = round(link[0] - 4 * link[2], 1)
     spec = {"cell": [cell[0] * 2, cell[1] * 2], "ss": ss, "samples": samples, "material": TAB_IRON,
             "link": {"length": link[0] * 2, "width": link[1] * 2, "wire": link[2] * 2},
-            "pitch": pitch * 2, "variants": variants, "seed": 5}
+            "pitch": pitch * 2, "variants": variants, "seed": 5, "gap": 16}
     d = os.path.join(OUT, "links")
     os.makedirs(d, exist_ok=True)
     sp = os.path.join(d, "spec.json")
@@ -147,19 +170,19 @@ def links(variants=6, samples=64, link=(24, 14, 2.0), cell=(36, 26), ss=3):
             os.remove(os.path.join(d, f))
     r = subprocess.run([BLENDER, "-b", "-P", os.path.join(HERE, "blender_links.py"), "--", sp, d],
                        capture_output=True, text=True, timeout=3600)
-    names = [f"face_{k}" for k in range(variants)] + [f"edge_{k}" for k in range(variants)] + ["hot", "open"]
+    names = [f"{pre}{kind}_{k}" for pre in ("", "warm_", "hot_") for kind in ("face", "edge") for k in range(variants)] + ["open"]
     made = {}
     for nm in names:
         p = os.path.join(d, nm + ".png")
         if not os.path.exists(p) or os.path.getmtime(p) < t0:
             raise RuntimeError(f"{nm} not rendered:\n" + (r.stdout + r.stderr)[-3000:])
         img = np.asarray(Image.open(p).convert("RGBA"), np.float32) / 255
-        img = F.downsample(img, (cell[0] * 2, cell[1] * 2))
-        if nm in ("hot", "open"):
-            img = ember_glow(img, 0.8, edge=10)
+        img = deepen_shadow(F.downsample(img, (cell[0] * 2, cell[1] * 2)))
+        if nm.startswith("hot_") or nm == "open":
+            img = ember_glow(img, 0.7, edge=10)
         made[f"chain/{nm}.png"] = img
-    json.dump({"pitch": pitch, "cell": list(cell), "variants": variants, "link": list(link)},
-              open(os.path.join(d, "chain.json"), "w"), indent=1)
+    meta = {"pitch": pitch, "cell": list(cell), "variants": variants, "link": list(link), **FEEL}
+    json.dump(meta, open(os.path.join(d, "chain.json"), "w"), indent=1)
     return made
 
 
