@@ -53,7 +53,7 @@ The owner asks: "accurate, efficient, on track, manage and engineer context. del
 - Batch screenshots and renders: shoot everything a check needs in one turn, look once, fix in one pass.
 - Keep handoffs and status pages lean.
 - Effort: legal medium; performance measurement runs, story consistency checks, and provenance and licence logging high; everything else at its top. Every agent stays on the same model.
-- Running now: UI design, the face, animation, combat, the experience director (and the main session's outfits). Next: arena art and skills VFX (the story fights), then creatures, cinematics, performance, crafting, UI art (handoff ready at cd0f4ab6).
+- Running now: the face, UI design, animation, skills VFX, combat (and the main session's outfits). Next: the experience director, arena art, creatures, cinematics, performance, crafting, UI art, story, the male hero.
 
 ## Roster
 
@@ -63,13 +63,13 @@ The main session keeps this current. It is the address list for SendMessage. Ret
 |---|---|---|
 | Voice (paused by the owner: no placeholders; final voices from ElevenLabs later) | a501b387a90d78b4e | docs/team/voice.md |
 | Story and writing | a7ba8903f4c8261b1 | docs/team/story.md |
-| Combat, encounters, bosses, balance | a739d6792d21f5efd | docs/team/combat.md |
-| Animation | a7dd95d00c4a6a017 | docs/team/animation.md |
-| UI design (layouts, screens, the filter) | a4fdbc49786ba8b7f | docs/team/ui_design.md |
+| Combat, encounters, bosses, balance | a427a874da78cba8b | docs/team/combat.md |
+| Animation | aa15f092820132274 | docs/team/animation.md |
+| UI design (layouts, screens, the filter) | a565196002a51af40 | docs/team/ui_design.md |
 | UI art (paused; handoff ready at cd0f4ab6) | — | docs/team/ui_art.md |
 | Crafting (research, design, build) (paused; handoff ready at ed429efb) | — | docs/team/crafting.md |
-| Gameplay experience director | a9f0d6c64d891d56d | docs/team/experience.md |
-| Skills look and feel (VFX, under the main session) | abc6bbe020c7fe287 | docs/team/skills.md |
+| Gameplay experience director (paused; handoff ready at b170d13e) | — | docs/team/experience.md |
+| Skills look and feel (VFX, under the main session) | a191ed81e2df462cf | docs/team/skills.md |
 | Cinematics production | a7a4c20bcfd7ccfd3 | docs/team/cinematics.md |
 | Performance | a0eb8c612c94d4aa5 | docs/team/performance.md |
 | Arena art | aba487928a1515c93 | docs/team/arena_art.md |
