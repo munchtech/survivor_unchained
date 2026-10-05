@@ -146,7 +146,7 @@ public partial class ArenaResultScreen : TellingScreen
         cue += 0.3;
         if (r.Spec.Story && !r.Won)
         {
-            wrap.AddChild(Beat(Style.Label("The fight waits on the Wayfinder's table, to be taken again.", Style.TextItalic, Style.Caption, Style.InkDim, true, HorizontalAlignment.Center), cue));
+            wrap.AddChild(Beat(Style.Label("It will be there again tomorrow night.", Style.TextItalic, Style.Caption, Style.InkDim, true, HorizontalAlignment.Center), cue));
             cue += 0.3;
         }
         // (the autopilot's Confirm, like a player's, first tells the rest, then leaves)

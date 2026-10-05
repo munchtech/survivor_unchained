@@ -120,11 +120,9 @@ None.
   its row. StoryLint now reads the fights' code. *The Keeper's Office* is
   wired (`chid.office`).
 - **Experience:** the Door's `EndWon`/`EndLost` in `StoryFights.cs` are
-  rewritten for the hall (words only). Open: a lost story fight is still put
-  on the Wayfinder's table (`Rematches`), and the result says "The fight
-  waits on the Wayfinder's table, to be taken again."; the owner's decision
-  is that it waits for another night. If the table rematch goes, the line
-  becomes "It will be there again tomorrow night."
+  rewritten for the hall (words only). The table rematch is gone (theirs,
+  `@8290bfda`): a lost story fight waits at its own place, and the result
+  now says "It will be there again tomorrow night."
 - **Cinematics:** C13's shot 3 says the way out is "at the head of the
   stair"; in the place she leaves back down the hall to the door (§23.3).
 - **Voice:** paused; notes above.

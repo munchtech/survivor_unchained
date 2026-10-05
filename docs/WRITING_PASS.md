@@ -1496,6 +1496,11 @@ wound or things lost.
   | The Dig | "The last thing you know is little hands, a great many of them, lifting you." |
   | The Door | "The last thing you know is the moon going by over the broken roof, and the dead carrying you under it, in step." (Rewritten for the hall at the stair's head: section 23.3.) |
 
+  Under it, the result says "It will be there again tomorrow night." (it
+  said the fight waited on the Wayfinder's table; experience took the table
+  rematch out, so a lost fight waits at its own place). A written story night's
+  result names no clock.
+
 - **The waking** (`chid.carried`, then `carried_chid`). Experience's
   `WakeAfterLoss` calls `Journey.CarriedHome(spec)` (`player.just_died`,
   `player.carried_home`), brings her to the shrine and opens Chid's
