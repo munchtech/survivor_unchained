@@ -368,6 +368,15 @@
 		"note": "the crowd's death: the knees fold and it goes down in a heap on its side, armed",
 		"source": "keyed (tools/anim/crowd.py)"
 	},
+	"m_fold_forward": {
+		"hold": true,
+		"layer": "full",
+		"length": 4.0,
+		"licence": "own work",
+		"loop": false,
+		"note": "the Warden (C03): folded forward into the river, face down, still",
+		"source": "keyed (tools/anim/clips/warden.py)"
+	},
 	"m_idle": {
 		"changes": "retargeted to her skeleton, feet locked, looped, in place",
 		"layer": "full",
@@ -387,6 +396,15 @@
 		"note": "a crossbow's kneel and aim",
 		"source": "keyed (tools/anim/crowd.py)"
 	},
+	"m_kneel_lamp": {
+		"hold": true,
+		"layer": "full",
+		"length": 10.4666662216187,
+		"licence": "own work",
+		"loop": false,
+		"note": "the Warden (C03): down on his knees, the lamp held up and looked at; the arm begins to shake",
+		"source": "keyed (tools/anim/clips/warden.py)"
+	},
 	"m_kneel_shot": {
 		"hold": true,
 		"layer": "full",
@@ -395,6 +413,15 @@
 		"loop": false,
 		"note": "a crossbow's shot from the kneel, and the rise",
 		"source": "keyed (tools/anim/crowd.py)"
+	},
+	"m_lamp_down": {
+		"hold": true,
+		"layer": "full",
+		"length": 2.5,
+		"licence": "own work",
+		"loop": false,
+		"note": "the Warden (C03): the fist lowered, the lamp into the river",
+		"source": "keyed (tools/anim/clips/warden.py)"
 	},
 	"m_lurch": {
 		"changes": "",
