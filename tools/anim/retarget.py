@@ -640,5 +640,33 @@ def lean_neck(rig, local):
     return L
 
 
+def spread_twist(sk: Skeleton, local, share=0.5):
+    """A take's forearm roll moved half into the forearm. Performers' rigs
+    put the roll of the forearm (the radius turning over the ulna) at the
+    wrist; on her, with no twist bones, all of it at the wrist wrings the
+    skin there like a sweet wrapper. Half in the forearm spreads it; the
+    hand's turn in the world is unchanged."""
+    L = local.copy()
+    for side in "lr":
+        la, ha = sk.i(f"lowerarm_{side}"), sk.i(f"hand_{side}")
+        axis = sk.rest_pos[ha] / np.linalg.norm(sk.rest_pos[ha])
+        rest = sk.rest_rot[ha]
+        for t in range(L.shape[0]):
+            d = qmul(L[t, ha], qinv(rest))  # the hand's turn from rest, in the forearm's frame
+            v = d[:3]
+            p = axis * np.dot(v, axis)
+            tw = np.array([p[0], p[1], p[2], d[3]])
+            n = np.linalg.norm(tw)
+            if n < 1e-9:
+                continue
+            tw = tw / n
+            if tw[3] < 0:
+                tw = -tw
+            part = qslerp(np.array([0, 0, 0, 1.0]), tw, share)
+            L[t, la] = qmul(L[t, la], part)
+            L[t, ha] = qmul(qinv(part), L[t, ha])
+    return L
+
+
 def clip_from(name, sk, local, pos, loop=False, meta=None):
-    return Clip(name, 30, local, pos, loop=loop, meta=meta or {})
+    return Clip(name, 30, spread_twist(sk, local), pos, loop=loop, meta=meta or {})

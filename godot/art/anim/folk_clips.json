@@ -136,7 +136,7 @@
 		"licence": "own work",
 		"loop": true,
 		"note": "the Risen's lurch, at the crowd's pace",
-		"source": "keyed (tools/anim/dead.py)",
+		"source": "keyed (tools/anim/crowd.py)",
 		"speed": 2.6,
 		"steps": 2.0
 	},
@@ -148,7 +148,7 @@
 		"licence": "own work",
 		"loop": true,
 		"note": "the Risen's lurch, at the crowd's pace, armed",
-		"source": "keyed (tools/anim/dead.py)",
+		"source": "keyed (tools/anim/crowd.py)",
 		"speed": 2.6,
 		"steps": 2.0
 	},
@@ -224,6 +224,17 @@
 		"loop": true,
 		"note": "townsfolk (women)",
 		"source": "Kimodo-SOMA-RP (NVIDIA, NVIDIA Open Model License): generated: talk_0.bvh",
+		"speed": 0.0
+	},
+	"f_unfold_arms": {
+		"changes": "retargeted to her skeleton, feet locked, looped, in place",
+		"hold": true,
+		"layer": "full",
+		"length": 2.96666669845581,
+		"licence": "Kimodo-SOMA-RP (NVIDIA, NVIDIA Open Model License)",
+		"loop": false,
+		"note": "Mother Rook (C04 B4b): her folded arms unfolded, the hands together low before her",
+		"source": "keyed over Kimodo-SOMA-RP (NVIDIA, NVIDIA Open Model License): generated: arms_crossed_0.bvh",
 		"speed": 0.0
 	},
 	"f_walk": {
@@ -387,6 +398,36 @@
 		"source": "Mixamo (Adobe): used in the game under Mixamo's terms, raw files not redistributed: folk_weight_shift_idle.bvh",
 		"speed": 0.0
 	},
+	"m_k_wade_drag_0": {
+		"changes": "retargeted to her skeleton, feet locked, in place",
+		"layer": "full",
+		"length": 5.96666669845581,
+		"licence": "Kimodo-SOMA-RP (NVIDIA, NVIDIA Open Model License)",
+		"loop": false,
+		"note": "",
+		"source": "Kimodo-SOMA-RP (NVIDIA, NVIDIA Open Model License): generated: wade_drag_0.bvh",
+		"speed": 0.28659972538614
+	},
+	"m_k_wade_drag_1": {
+		"changes": "retargeted to her skeleton, feet locked, in place",
+		"layer": "full",
+		"length": 5.96666669845581,
+		"licence": "Kimodo-SOMA-RP (NVIDIA, NVIDIA Open Model License)",
+		"loop": false,
+		"note": "",
+		"source": "Kimodo-SOMA-RP (NVIDIA, NVIDIA Open Model License): generated: wade_drag_1.bvh",
+		"speed": 0.836716679388343
+	},
+	"m_k_wade_drag_2": {
+		"changes": "retargeted to her skeleton, feet locked, in place",
+		"layer": "full",
+		"length": 5.96666669845581,
+		"licence": "Kimodo-SOMA-RP (NVIDIA, NVIDIA Open Model License)",
+		"loop": false,
+		"note": "",
+		"source": "Kimodo-SOMA-RP (NVIDIA, NVIDIA Open Model License): generated: wade_drag_2.bvh",
+		"speed": 0.491704562907945
+	},
 	"m_kneel_aim": {
 		"hold": true,
 		"layer": "full",
@@ -423,6 +464,17 @@
 		"note": "the Warden (C03): the fist lowered, the lamp into the river",
 		"source": "keyed (tools/anim/clips/warden.py)"
 	},
+	"m_lie_arm_up": {
+		"changes": "retargeted to her skeleton, feet locked, retimed",
+		"hold": true,
+		"layer": "full",
+		"length": 13.9666662216187,
+		"licence": "Kimodo-SOMA-RP (NVIDIA, NVIDIA Open Model License)",
+		"loop": false,
+		"note": "the Warden (C02): lying under the river, the lamp held up out of it",
+		"source": "keyed over rise_stiff's first frame",
+		"speed": 0.0
+	},
 	"m_lurch": {
 		"changes": "",
 		"cycle": 0.733333333333333,
@@ -431,7 +483,7 @@
 		"licence": "own work",
 		"loop": true,
 		"note": "the Risen's lurch, at the crowd's pace",
-		"source": "keyed (tools/anim/dead.py)",
+		"source": "keyed (tools/anim/crowd.py)",
 		"speed": 2.6,
 		"steps": 2.0
 	},
@@ -443,7 +495,7 @@
 		"licence": "own work",
 		"loop": true,
 		"note": "the Risen's lurch, at the crowd's pace, armed",
-		"source": "keyed (tools/anim/dead.py)",
+		"source": "keyed (tools/anim/crowd.py)",
 		"speed": 2.6,
 		"steps": 2.0
 	},
@@ -531,6 +583,16 @@
 		"note": "townsfolk (men)",
 		"source": "Mixamo (Adobe): used in the game under Mixamo's terms, raw files not redistributed: folk_talking.bvh",
 		"speed": 0.0
+	},
+	"m_wade_drag": {
+		"changes": "retargeted to her skeleton, feet locked, travel taken out, looped (seam spread)",
+		"layer": "full",
+		"length": 1.29999995231628,
+		"licence": "CC BY 4.0",
+		"loop": true,
+		"note": "the Warden (C02): wading out of the river toward her, the lamp up, the greatsword dragging",
+		"source": "100STYLE Heavyset_FW frames 813-891 (60 fps)",
+		"speed": 0.968388726222036
 	},
 	"m_walk": {
 		"changes": "retargeted to her skeleton, feet locked, looped, in place",

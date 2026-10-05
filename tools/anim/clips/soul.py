@@ -226,11 +226,17 @@ def arcanist_break(rig):
         first = (18, over("arcanist", hand_l=rub, head=(-4, 12, -6), fingers_l="relaxed"), "ease")
         second = (28, over("arcanist", hand_l={**rub, "pos": (0.02, float(neck[1]) + 0.04, float(neck[2]) - 0.11)}, head=(-6, 14, -10)), "ease")
     else:
-        # A strand tucked behind her ear.
+        # A strand tucked behind her ear: the hand comes up before her
+        # shoulder, fingers up, palm to her, then back over the ear (it turns
+        # on the way, not at the top).
+        tuck = {"pos": (0.13, 1.62, 0.04), "pole": (1.0, 0.2, -0.3), "knuckles": (-0.25, 0.8, -0.55)}
         first = (18, over("arcanist", hand_l=tuck, head=(-6, 4, 8), fingers_l="relaxed"), "ease")
         second = (28, over("arcanist", hand_l={**tuck, "pos": (0.14, 1.60, -0.02)}, head=(-6, 4, 8)), "ease")
+    rising = (9, over("arcanist", hand_l={"pos": (0.16, 1.38, 0.16), "pole": (1.0, -0.3, -0.3), "knuckles": (-0.1, 0.9, 0.3)},
+                      fingers_l="relaxed"), "auto")
     keys = [
         (0, over("arcanist"), "auto"),
+        *([rising] if rig.body != "him" else []),
         first,
         second,
         # Up at the sky, the staff turning in her fingers.
@@ -328,8 +334,18 @@ def catch_breath(rig):
         (48, bent(-0.6), "auto"),
         (60, bent(0.9), "auto"),
         (74, bent(-0.3, up=0.4), "auto"),
-        (90, upright, "ease"),
-        (104, body(stance(0.05), hand_l=arm((-0.02, -0.38, 0.06), (0.6, -0.4, -0.5)),
+        # Up off the knee, the hand rising before her chest, fingers up, palm
+        # toward her, before it goes into her hair (it turns over on the way,
+        # not in a flick at the top).
+        (86, body(stance(0.05), spine=(0, 6, 0), head=(-4, 0, 2),
+                  hand_l={"pos": (0.13, 1.30 + hy, 0.22 + hz), "pole": (0.9, -0.2, -0.3), "knuckles": (0.05, 0.9, 0.35)},
+                  hand_r=arm((0.02, -0.36, 0.10), (-0.6, -0.4, -0.5)), fingers_l="relaxed", fingers_r="grip"), "auto"),
+        (98, upright, "ease"),
+        # Down again round the front of her, not back through her shoulder.
+        (110, body(stance(0.05), spine=(0, 3, 0), head=(-3, -2, 2),
+                   hand_l={"pos": (0.16, 1.24 + hy, 0.20 + hz), "pole": (0.9, -0.3, -0.3), "knuckles": (0.1, 0.55, 0.8)},
+                   hand_r=arm((0.02, -0.37, 0.08), (-0.6, -0.4, -0.5)), fingers_l="relaxed", fingers_r="grip"), "auto"),
+        (124, body(stance(0.05), hand_l=arm((-0.02, -0.38, 0.06), (0.6, -0.4, -0.5)),
                    hand_r=arm((0.02, -0.38, 0.06), (-0.6, -0.4, -0.5)), fingers_l="relaxed", fingers_r="grip"), "ease"),
     ]
     return build("catch_breath", rig, keys, meta={"layer": "full"})

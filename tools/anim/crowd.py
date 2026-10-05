@@ -92,11 +92,9 @@ def _lurch_pose(g: Gait, rig: Rig, ph, armed=False):
 
 
 def lurch(name, rig: Rig, g: Gait = LURCH, armed=False) -> Clip:
+    from keyed import solve_frames
     n = g.frames
-    rot = np.empty((n + 1, len(rig.sk), 4))
-    pos = np.empty((n + 1, len(rig.sk), 3))
-    for f in range(n + 1):
-        rot[f], pos[f] = rig.solve(_lurch_pose(g, rig, f / n, armed))
+    rot, pos = solve_frames(rig, [_lurch_pose(g, rig, f / n, armed) for f in range(n + 1)], loop=True)
     meta = {"layer": "full", "speed": g.speed, "cycle": n / 30.0, "steps": 2, "source": "keyed (tools/anim/crowd.py)",
             "licence": "own work", "changes": "", "note": "the Risen's lurch, at the crowd's pace" + (", armed" if armed else "")}
     return Clip(name, 30, rot, pos, loop=True, meta=meta)
@@ -201,10 +199,14 @@ def slam(name, rig: Rig, armed=False) -> Clip:
         (6, dict(hips=hips(0.78, 24, -0.06, yaw=-8), spine=(-8, 20, 0), neck=(0, -6, 0), head=(4, -18, 0)),
          fists(0.13, 0.82, 0.42, knuckles=(0.0, -0.9, 0.4)),
          axe((-0.32, 0.84, -0.16), (0.0, -0.55, -0.83), (0.10, 1.10, 0.36)), "auto"),
-        # Rising: the fists swept up past the face (the axe up over the shoulder).
+        # Rising: the fists swept up past the face (the axe swung up out in
+        # front of the shoulder and over it, never folded in against it).
+        (10, dict(hips=hips(0.85, 14, -0.05), spine=(0, 8, 0), neck=(0, -6, 0), head=(0, -12, 0), clav_l=(6, 6), clav_r=(6, 6)),
+         fists(0.09, 1.22, 0.42, (0.9, -0.3, -0.3), (-0.3, 0.2, 0.9)),
+         axe((-0.26, 1.24, 0.40), (0.0, 0.7, 0.7), (0.30, 1.18, 0.26), shield_pole=(0.5, -0.6, -0.6)), "auto"),
         (13, dict(hips=hips(0.89, 6, -0.05), spine=(0, -2, 0), neck=(0, -4, 0), head=(0, -8, 0), clav_l=(10, 4), clav_r=(10, 4)),
          fists(0.06, 1.56, 0.32, (0.9, -0.2, -0.3), (-0.5, 0.5, 0.7)),
-         axe((-0.28, 1.58, 0.04), (0.0, 0.95, -0.3), (0.42, 1.22, 0.10), shield_pole=(0.5, -0.6, -0.6)), "auto"),
+         axe((-0.28, 1.70, 0.20), (0.0, 0.95, -0.3), (0.42, 1.22, 0.10), shield_pole=(0.5, -0.6, -0.6)), "auto"),
         # The top: the fists cocked behind the head, the elbows up beside it
         # (the axe raised high, its head up and back over the shoulder, where
         # the camera above sees it; the shield arm flung wide),

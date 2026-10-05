@@ -94,7 +94,7 @@
 	},
 	"catch_breath": {
 		"layer": "full",
-		"length": 3.46666669845581,
+		"length": 4.13333320617676,
 		"licence": "own work",
 		"loop": false,
 		"source": "keyed (tools/anim)"
@@ -282,8 +282,8 @@
 		"length": 7.0,
 		"licence": "own work",
 		"loop": false,
-		"note": "keyed (C01): on her right side, then up onto the elbow",
-		"source": "keyed (tools/anim)"
+		"note": "keyed (C01): on her right side, then up onto the forearm",
+		"source": "keyed (tools/anim/clips/story.py)"
 	},
 	"nod": {
 		"layer": "gesture",
@@ -400,8 +400,8 @@
 		"length": 6.0,
 		"licence": "own work",
 		"loop": false,
-		"note": "keyed (C01): from the elbow to kneeling on her heels, looking at her hands",
-		"source": "keyed (tools/anim)"
+		"note": "keyed (C01): from the forearm to sitting sideways, onto her knees and back on her heels, looking at her hands",
+		"source": "keyed (tools/anim/clips/story.py)"
 	},
 	"sit_log": {
 		"layer": "full",

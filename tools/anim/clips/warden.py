@@ -136,6 +136,73 @@ def rise_stiff(name, rig: Rig):
     return build(name, rig, keys, base=base, meta=dict(base.meta, hold=True))
 
 
+def lie_arm_up(name, rig: Rig):
+    """C02 shots 3 and 4 (and under 2): on his back on the river bed, dead
+    still, the left forearm stood up off the elbow so the lamp's fist is
+    out of the water; only the current moves it, a slow sway of the forearm
+    about the elbow. Exactly rise_stiff's first frame, so the rise follows
+    on without a seam. 14 s, held."""
+    rise = rise_stiff(name, rig)
+    if rise is None:
+        return None
+    sk = rig.sk
+    n = 420
+    rot = np.repeat(rise.rot[:1], n, axis=0)
+    pos = np.repeat(rise.pos[:1], n, axis=0)
+    base = Clip(name, 30, rot, pos, loop=False, meta=dict(rise.meta))
+    g, p = sk.fk(base.rot, base.pos)
+    I = sk.index
+    keys = []
+    for fr in range(n):
+        t = fr / 30.0
+        # The current: a slow lean of the forearm downstream and back, never
+        # the same twice (two slow periods), easing in from the cut.
+        k = min(1.0, t / 2.0)
+        sway = k * np.array([0.020 * math.sin(2 * math.pi * t / 5.3) + 0.008 * math.sin(2 * math.pi * t / 2.1 + 1.0),
+                             0.0, 0.012 * math.sin(2 * math.pi * t / 3.7 + 0.4)])
+        hand_l = {"pos": tuple(p[0, I["hand_l"]] + sway), "pole": (0.4, -1.0, 0.0), "frame": "char", "knuckles": (0.0, 1.0, 0.15)}
+        keys.append((fr, {"hand_l": hand_l, "fingers_l": LAMP_FIST, "fingers_r": SWORD_GRIP}, "linear"))
+    return build(name, rig, keys, base=base, meta=dict(base.meta, hold=True, source="keyed over rise_stiff's first frame",
+                                                          note="the Warden (C02): lying under the river, the lamp held up out of it"))
+
+
+def wade_drag(name, rig: Rig):
+    """C02 shot 6: out of the river toward her, a stride on a loop (the
+    cinematic carries him; at his size 2.5 his own speed is 2.5 times the
+    clip's). A heavy man's walk (100STYLE Heavyset, CC BY 4.0) leaning into
+    the water, each foot lifted clear of it; the lamp held up before him at
+    his left, lighting the way, steady; the greatsword trailing from his
+    right fist, its point back and down in the water behind him (Kimodo's
+    wade_drag takes hunch and paddle with both arms: rejected)."""
+    from clips.walks import _over, walk_loop
+    base = walk_loop(name, rig, "Heavyset")
+    sk = rig.sk
+    I = sk.index
+    n = base.frames
+    lean = {"hips": {"rot": (0, 7, 0)}, "spine": (0, 6, 0), "neck": (0, -4, 0), "head": (0, -3, 0)}
+    # The body first (leaning, wading), to hang the arms from where its shoulders go.
+    body = _over(name, rig, base, lambda fr: dict(lean), lift=0.09)
+    g, p = sk.fk(body.rot, body.pos)
+
+    def carriage(fr):
+        ph = 2 * math.pi * fr / (n - 1)
+        # The lamp-arm held out from the shoulder, the fist riding the walk a
+        # little (the body's bob), never swinging with it.
+        sl, sr = p[fr, I["upperarm_l"]], p[fr, I["upperarm_r"]]
+        lamp = sl + np.array([0.06, -0.12, 0.30]) + np.array([0.0, 0.006 * math.sin(2 * ph), 0.0])
+        # The sword arm hangs back with the drag, a small sway with the stride.
+        drag = sr + np.array([-0.08, -0.44, -0.14 + 0.02 * math.sin(ph)])
+        return {**lean,
+                "hand_l": {"pos": tuple(lamp), "pole": (0.8, -0.6, -0.2), "frame": "char", "knuckles": (0.0, 1.0, 0.15)},
+                "hand_r": {"pos": tuple(drag), "pole": (-0.5, 0.0, 1.0), "frame": "char",
+                           "blade": (0.0, -0.55, -0.83), "knuckles": (-0.1, -0.83, 0.55)},
+                "fingers_l": LAMP_FIST, "fingers_r": SWORD_GRIP}
+
+    clip = _over(name, rig, base, carriage, lift=0.09,
+                 meta={"note": "the Warden (C02): wading out of the river toward her, the lamp up, the greatsword dragging"})
+    return clip
+
+
 def bend_lift(name, rig: Rig):
     # Take 1's bend, from its start until his head is down about where hers
     # can be seen from it, slowing into the end; then carried on so slowly
@@ -358,5 +425,5 @@ def fold_forward(name, rig: Rig):
 
 
 # name: function(name, rig) -> Clip or None (the take not on this machine).
-CLIPS = {"rise_stiff": rise_stiff, "bend_lift": bend_lift, "kneel_lamp": kneel_lamp, "lamp_down": lamp_down,
+CLIPS = {"lie_arm_up": lie_arm_up, "rise_stiff": rise_stiff, "wade_drag": wade_drag, "bend_lift": bend_lift, "kneel_lamp": kneel_lamp, "lamp_down": lamp_down,
          "fold_forward": fold_forward}

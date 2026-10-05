@@ -94,7 +94,7 @@
 	},
 	"catch_breath": {
 		"layer": "full",
-		"length": 3.46666669845581,
+		"length": 4.13333320617676,
 		"licence": "own work",
 		"loop": false,
 		"source": "keyed (tools/anim)"
@@ -122,6 +122,15 @@
 		"length": 0.600000023841858,
 		"licence": "own work",
 		"loop": false,
+		"source": "keyed (tools/anim)"
+	},
+	"cup_hands": {
+		"hold": true,
+		"layer": "full",
+		"length": 3.5,
+		"licence": "own work",
+		"loop": false,
+		"note": "keyed (C01 shot 11, the arcanist): standing, the hands cupped before her, waiting; they fill (1.4 s) and lift",
 		"source": "keyed (tools/anim)"
 	},
 	"daggers_back": {
@@ -183,6 +192,16 @@
 		"loop": false,
 		"note": "the shoulders settle over 1.2 s, held",
 		"source": "keyed (tools/anim)"
+	},
+	"flask_drink": {
+		"changes": "retargeted to her skeleton, feet locked, centred; back, head and arms keyed over",
+		"hold": true,
+		"layer": "full",
+		"length": 11.6333332061768,
+		"licence": "CC BY 4.0",
+		"loop": false,
+		"note": "C04 A6-A7: the flask uncorked with her teeth, smelt, drunk anyway; held, breathing",
+		"source": "keyed over 100STYLE Neutral_ID frames 655-1368 (60 fps)"
 	},
 	"get_up": {
 		"layer": "full",
@@ -266,6 +285,15 @@
 		"loop": false,
 		"source": "keyed (tools/anim)"
 	},
+	"kneel_to_stand_snap": {
+		"hold": true,
+		"layer": "full",
+		"length": 3.29999995231628,
+		"licence": "own work",
+		"loop": false,
+		"note": "keyed (C01 shot 10): from her heels to her feet without her hands, turned 55 degrees to her left",
+		"source": "keyed (tools/anim/clips/story.py)"
+	},
 	"leap": {
 		"changes": "retargeted to her skeleton, feet locked, retimed, in place",
 		"layer": "full",
@@ -276,14 +304,23 @@
 		"source": "Mixamo (Adobe): used in the game under Mixamo's terms, raw files not redistributed: run_jump_attack.bvh",
 		"speed": 0.0
 	},
+	"letter": {
+		"hold": true,
+		"layer": "full",
+		"length": 7.66666650772095,
+		"licence": "own work",
+		"loop": false,
+		"note": "keyed (C01 shot 6): on her heels, the flask looked at, then the letter taken out, opened, looked at, folded and put back",
+		"source": "keyed (tools/anim)"
+	},
 	"lie_side_wake": {
 		"hold": true,
 		"layer": "full",
 		"length": 7.0,
 		"licence": "own work",
 		"loop": false,
-		"note": "keyed (C01): on her right side, then up onto the elbow",
-		"source": "keyed (tools/anim)"
+		"note": "keyed (C01): on her right side, then up onto the forearm",
+		"source": "keyed (tools/anim/clips/story.py)"
 	},
 	"nod": {
 		"layer": "gesture",
@@ -400,8 +437,8 @@
 		"length": 6.0,
 		"licence": "own work",
 		"loop": false,
-		"note": "keyed (C01): from the elbow to kneeling on her heels, looking at her hands",
-		"source": "keyed (tools/anim)"
+		"note": "keyed (C01): from the forearm to sitting sideways, onto her knees and back on her heels, looking at her hands",
+		"source": "keyed (tools/anim/clips/story.py)"
 	},
 	"sit_log": {
 		"layer": "full",
@@ -577,6 +614,15 @@
 		"source": "keyed (tools/anim)",
 		"weapon": "sword+shield"
 	},
+	"take_from_log": {
+		"hold": true,
+		"layer": "full",
+		"length": 2.0,
+		"licence": "own work",
+		"loop": false,
+		"note": "keyed (C01 shot 11): the weapon taken off the log (grip in hand at 0.6 s), round 110 degrees to her left, ready",
+		"source": "keyed (tools/anim)"
+	},
 	"throw": {
 		"contact": 0.0833333333333333,
 		"layer": "upper",
@@ -600,6 +646,36 @@
 		"loop": false,
 		"note": "keyed: back spring, 0.32 s flight, three-point landing",
 		"source": "keyed (tools/anim)"
+	},
+	"wade": {
+		"changes": "retargeted to her skeleton, feet locked, travel taken out, looped (seam spread)",
+		"layer": "full",
+		"length": 1.39999997615814,
+		"licence": "CC BY 4.0",
+		"loop": true,
+		"note": "her wade out of shin-deep water (C04 A1); the feet lifted clear each stride",
+		"source": "100STYLE Neutral_FW frames 799-883 (60 fps)",
+		"speed": 0.922163217461154
+	},
+	"walk_tired": {
+		"changes": "retargeted to her skeleton, feet locked, travel taken out, looped (seam spread)",
+		"layer": "full",
+		"length": 1.39999997615814,
+		"licence": "CC BY 4.0",
+		"loop": true,
+		"note": "her walk, tired (C04: up out of the ford, up the road, into the Waystation)",
+		"source": "100STYLE Neutral_FW frames 799-883 (60 fps)",
+		"speed": 0.922163217461154
+	},
+	"walk_uphill": {
+		"changes": "retargeted to her skeleton, feet locked, travel taken out, looped (seam spread)",
+		"layer": "full",
+		"length": 1.39999997615814,
+		"licence": "CC BY 4.0",
+		"loop": true,
+		"note": "her walk up a hill, leaning into it (C04 A8)",
+		"source": "100STYLE Neutral_FW frames 799-883 (60 fps)",
+		"speed": 0.922163217461154
 	},
 	"warcry": {
 		"layer": "upper",
