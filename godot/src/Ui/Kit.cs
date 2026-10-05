@@ -169,6 +169,36 @@ public static class Kit
         return b;
     }
 
+    /// <summary>An action as its key and its word, with no box (a panel's foot, a held moment's
+    /// choices): the key as the device in hand has it, the word lit when the pointer is on it.
+    /// ink: the word's colour (the ember for the one primary action).</summary>
+    public static Button Keyed(Act key, string text, Action press, Color? ink = null, int size = 17)
+    {
+        var colour = ink ?? Ink2;
+        var b = new Button { FocusMode = Control.FocusModeEnum.None, Flat = true, MouseDefaultCursorShape = Control.CursorShape.PointingHand };
+        foreach (var s in new[] { "normal", "hover", "pressed", "focus" }) b.AddThemeStyleboxOverride(s, new StyleBoxEmpty());
+        var word = Style.Label(text, Style.UiBold, size, colour, false, HorizontalAlignment.Left, false);
+        var row = Style.H(Style.Gap2, Style.Prompt(key), word);
+        foreach (var c in row.GetChildren().OfType<Control>()) c.SizeFlagsVertical = Control.SizeFlags.ShrinkCenter;
+        Quiet(row);
+        b.AddChild(row);
+        // (measured again in the tree: out of it, the key's cap takes the default theme's type and
+        // measures wide, which left the word short of the panel's edge)
+        b.CustomMinimumSize = row.GetCombinedMinimumSize();
+        b.Ready += () => b.CustomMinimumSize = row.GetCombinedMinimumSize();
+        b.MouseEntered += () => word.AddThemeColorOverride("font_color", colour.Lightened(0.3f));
+        b.MouseExited += () => word.AddThemeColorOverride("font_color", colour);
+        b.Pressed += press;
+        return b;
+    }
+
+    /// <summary>A control and all it holds let the pointer through to the button they sit in.</summary>
+    public static void Quiet(Node n)
+    {
+        if (n is Control c) c.MouseFilter = Control.MouseFilterEnum.Ignore;
+        foreach (var ch in n.GetChildren()) Quiet(ch);
+    }
+
     /// <summary>Text tabs: the open one in full ink over an ember underline (tab_on), the rest dim.
     /// count, if given, follows each name ("Pouch · 3").</summary>
     public static HBoxContainer Tabs(string[] names, int on, Action<int> pick, int size = 15, int gap = 22, string[]? counts = null)
@@ -177,28 +207,45 @@ public static class Kit
         for (int i = 0; i < names.Length; i++)
         {
             int k = i;
-            string text = counts != null && counts[i] != "" ? $"{names[i]} · {counts[i]}" : names[i];
-            var b = new Button { Text = text, FocusMode = Control.FocusModeEnum.None, MouseDefaultCursorShape = Control.CursorShape.PointingHand };
-            Style.Font(b, Style.UiBold, size, i == on ? Ink : Dim, false);
-            b.AddThemeColorOverride("font_hover_color", Ink);
-            b.AddThemeColorOverride("font_pressed_color", Ink);
-            StyleBox Pad(StyleBox s) { s.ContentMarginLeft = s.ContentMarginRight = 0; s.ContentMarginTop = 2; s.ContentMarginBottom = 8; return s; }
-            if (i == on)
-            {
-                var u = new StyleBoxFlat { BgColor = Colors.Transparent, BorderColor = Style.Ember, BorderWidthBottom = 2 };
-                foreach (var s in new[] { "normal", "hover", "pressed", "focus" }) b.AddThemeStyleboxOverride(s, Pad(UiArt.Frame("tab_on", u)));
-            }
-            else
-            {
-                b.AddThemeStyleboxOverride("normal", Pad(UiArt.Frame("tab", new StyleBoxEmpty())));
-                b.AddThemeStyleboxOverride("hover", Pad(UiArt.Frame("tab_hover", new StyleBoxEmpty())));
-                b.AddThemeStyleboxOverride("pressed", Pad(UiArt.Frame("tab_pressed", new StyleBoxEmpty())));
-                b.AddThemeStyleboxOverride("focus", new StyleBoxEmpty());
-            }
-            b.Pressed += () => { if (k != on) { Sound.Sfx.Page(); pick(k); } };
-            h.AddChild(b);
+            h.AddChild(Tab(counts != null && counts[i] != "" ? $"{names[i]} · {counts[i]}" : names[i], i == on, () => { if (k != on) { Sound.Sfx.Page(); pick(k); } }, size));
         }
         return h;
+    }
+
+    /// <summary>One word of the house's tabs: on, in full ink over the ember's underline; off, dim.</summary>
+    public static Button Tab(string text, bool on, Action press, int size = 15)
+    {
+        var b = new Button { Text = text, FocusMode = Control.FocusModeEnum.None, MouseDefaultCursorShape = Control.CursorShape.PointingHand };
+        Style.Font(b, Style.UiBold, size, on ? Ink : Dim, false);
+        b.AddThemeColorOverride("font_hover_color", Ink);
+        b.AddThemeColorOverride("font_pressed_color", Ink);
+        StyleBox Pad(StyleBox s) { s.ContentMarginLeft = s.ContentMarginRight = 0; s.ContentMarginTop = 2; s.ContentMarginBottom = 8; return s; }
+        if (on)
+        {
+            var u = new StyleBoxFlat { BgColor = Colors.Transparent, BorderColor = Style.Ember, BorderWidthBottom = 2 };
+            foreach (var s in new[] { "normal", "hover", "pressed", "focus" }) b.AddThemeStyleboxOverride(s, Pad(UiArt.Frame("tab_on", u)));
+            b.SetMeta("on", true);
+        }
+        else
+        {
+            b.AddThemeStyleboxOverride("normal", Pad(UiArt.Frame("tab", new StyleBoxEmpty())));
+            b.AddThemeStyleboxOverride("hover", Pad(UiArt.Frame("tab_hover", new StyleBoxEmpty())));
+            b.AddThemeStyleboxOverride("pressed", Pad(UiArt.Frame("tab_pressed", new StyleBoxEmpty())));
+            b.AddThemeStyleboxOverride("focus", new StyleBoxEmpty());
+        }
+        b.Pressed += press;
+        return b;
+    }
+
+    /// <summary>Many words to choose between (more than a line holds), as the house's tabs in
+    /// centred lines: the chosen one over the ember's underline.</summary>
+    public static HFlowContainer TabFlow(IEnumerable<(string Text, bool On, Action Press)> words, int size = 16, int gapX = 24, int gapY = 2)
+    {
+        var f = new HFlowContainer { MouseFilter = Control.MouseFilterEnum.Ignore, Alignment = FlowContainer.AlignmentMode.Center };
+        f.AddThemeConstantOverride("h_separation", gapX);
+        f.AddThemeConstantOverride("v_separation", gapY);
+        foreach (var (text, on, press) in words) f.AddChild(Tab(text, on, () => { if (!on) { Sound.Sfx.Page(); press(); } }, size));
+        return f;
     }
 
     /// <summary>A small round control (spend a point, take it back): nodes/round.png and its

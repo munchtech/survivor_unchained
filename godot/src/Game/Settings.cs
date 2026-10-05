@@ -38,6 +38,8 @@ public sealed class Settings
         var s = Read();
         // Tools taking pictures are taken as having agreed (the web game's ?manual).
         if (Args.Has("shot")) s.Mature = true;
+        // --adults: not yet agreed (pictures of the notice itself); never written back.
+        if (Args.Has("adults")) s.Mature = false;
         // --quality Q: a run at that quality whatever was saved (measuring, pictures).
         if (Args.Get("quality") is { } q) s.Quality = q;
         if (Args.Get("scale") is { } sc) s.Scale = sc;
@@ -57,6 +59,8 @@ public sealed class Settings
 
     public void Save()
     {
+        // (a picture of the notice never unsets the owner's own answer)
+        if (Args.Has("adults")) return;
         using var f = FileAccess.Open(File, FileAccess.ModeFlags.Write);
         f?.StoreString(Core.Json.Write(this));
     }

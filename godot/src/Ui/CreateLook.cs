@@ -25,15 +25,12 @@ namespace SurvivorUnchained.Ui;
 public partial class CreateScreen
 {
     static readonly Dictionary<string, string> HairNames = new() { ["Hair_SimpleParted"] = "Parted", ["Hair_Buzzed"] = "Cropped", ["Hair_Long"] = "Long", ["Hair_Buns"] = "Buns", ["Hair_BuzzedFemale"] = "Cropped", ["none"] = "Shorn" };
-    ScrollContainer? scroll;
-    (int, int) scrollKey;
-
     bool Her => d.Sex == Sex.Female;
     /// <summary>"Her" or "His", as the survivor is.</summary>
     string Their => Her ? "Her" : "His";
     /// <summary>What their own body offers to be shaped with (null: a kit body).</summary>
-    HeroLook? Kit => Loadouts.HeroKit(d.Sex);
-    string[] Sections => Kit is { } k
+    HeroLook? Hero => Loadouts.HeroKit(d.Sex);
+    string[] Sections => Hero is { } k
         ? new[] { "Hair" }.Concat(k.Faces.Count > 1 || k.Eyes.Count > 1 ? new[] { "Face" } : Array.Empty<string>())
             .Concat(k.Sliders.Count > 0 ? new[] { "Shape" } : Array.Empty<string>())
             .Concat(k.Paints.Count > 1 ? new[] { "Paint" } : Array.Empty<string>()).Append("Body").ToArray()
@@ -56,7 +53,7 @@ public partial class CreateScreen
     /// her near or takes her back; a double click goes to her face and back.</summary>
     Control Stage()
     {
-        var s = new Control { Position = new Vector2(590, 0), Size = new Vector2(790, 950), MouseFilter = MouseFilterEnum.Stop, MouseDefaultCursorShape = CursorShape.Drag };
+        var s = new Control { Position = new Vector2(Inset + PanelW, 0), Size = new Vector2(1920 - 2 * (Inset + PanelW), 1080), MouseFilter = MouseFilterEnum.Stop, MouseDefaultCursorShape = CursorShape.Drag };
         s.GuiInput += e =>
         {
             switch (e)
@@ -80,39 +77,21 @@ public partial class CreateScreen
 
     /* ------------------------------------------------------------ the parts -- */
 
-    /// <summary>The look's parts as a row of tabs, the triggers either side.</summary>
+    /// <summary>The look's parts as the house's tabs (type, the part shown over the ember's
+    /// underline), the triggers either side, as the Journal turns its sections.</summary>
     Control SectionTabs()
     {
         bool pad = Controls.Instance.UsingPad;
-        var row = Style.H(4);
+        var tabs = Kit.Tabs(Sections, Math.Clamp(d.Section, 0, Sections.Length - 1), k => Set(() => d.Section = k), 17, Sections.Length > 4 ? 22 : 30);
+        // (LT and RT turn them; focus keeps to the choices)
+        foreach (var b in tabs.GetChildren().OfType<Button>()) Nav.Skip(b);
+        var row = Style.H(Style.Gap4, pad ? Style.PadButton("LT") : Style.Key(","), tabs, pad ? Style.PadButton("RT") : Style.Key("."));
+        foreach (var c in row.GetChildren().OfType<Control>()) c.SizeFlagsVertical = SizeFlags.ShrinkCenter;
         row.Alignment = BoxContainer.AlignmentMode.Center;
-        var lt = pad ? Style.PadButton("LT") : Style.Key(",");
-        lt.SizeFlagsVertical = SizeFlags.ShrinkCenter;
-        row.AddChild(lt);
-        for (int i = 0; i < Sections.Length; i++)
-        {
-            int at = i;
-            bool on = d.Section == i;
-            var b = Style.Button("", () => Set(() => d.Section = at), false, true);
-            b.CustomMinimumSize = new Vector2(Sections.Length > 4 ? 82 : Sections.Length > 2 ? 96 : 140, 40);
-            foreach (var x in new[] { "normal", "hover", "pressed" }) b.AddThemeStyleboxOverride(x, new StyleBoxEmpty());
-            Nav.Skip(b);
-            var v = Style.V(3, Style.Label(Sections[i].ToUpperInvariant(), Style.Display, 16, on ? Style.EmberHi : Style.GoldDim, false, HorizontalAlignment.Center));
-            // (the part shown: an ember rule under its name)
-            v.AddChild(new ColorRect { Color = on ? Style.Ember : Style.Line with { A = 0.2f }, CustomMinimumSize = new Vector2(0, on ? 2 : 1), MouseFilter = MouseFilterEnum.Ignore });
-            v.MouseFilter = MouseFilterEnum.Ignore;
-            v.SetAnchorsPreset(LayoutPreset.FullRect);
-            v.Alignment = BoxContainer.AlignmentMode.Center;
-            b.AddChild(v);
-            row.AddChild(b);
-        }
-        var rt = pad ? Style.PadButton("RT") : Style.Key(".");
-        rt.SizeFlagsVertical = SizeFlags.ShrinkCenter;
-        row.AddChild(rt);
         return row;
     }
 
-    Control Look(Archetype a) => (Section, Kit) switch
+    Control Look(Archetype a) => (Section, Hero) switch
     {
         ("Hair", { } k) => HeroHair(k),
         ("Hair", null) => KitHair(a),
@@ -125,21 +104,17 @@ public partial class CreateScreen
     Control LookBody(Archetype a)
     {
         // (a woman or a man is chosen on the first step, with the calling)
-        var v = Style.V(8);
-        if (!Her && Kit == null)
+        var v = Style.V(Style.Gap2);
+        if (!Her && Hero == null)
         {
-            v.AddChild(Style.SubLabel("Beard"));
-            v.AddChild(Nav.Id(Style.Segment(d.Beard ? "Bearded" : "Clean-shaven", d.Beard, () => Set(() => d.Beard = !d.Beard)), "beard"));
+            v.AddChild(Kit.Head("Beard"));
+            v.AddChild(Flow(new[] { ("Bearded", d.Beard, (Action)(() => Set(() => d.Beard = true)), "beard:on"), ("Clean-shaven", !d.Beard, () => Set(() => d.Beard = false), "beard:off") }));
         }
-        v.AddChild(Style.SubLabel("Skin"));
+        v.AddChild(Kit.Head("Skin"));
         v.AddChild(Beads(Lore.Skins, d.Skin, id => d.Skin = id, Bead.Kind.Skin, "#f2c4a8"));
-        v.AddChild(Style.SubLabel($"Colours of {Their.ToLowerInvariant()} outfit"));
-        var pal = new GridContainer { Columns = 2 };
-        pal.AddThemeConstantOverride("h_separation", 6);
-        pal.AddThemeConstantOverride("v_separation", 6);
-        foreach (var p in a.Palettes) pal.AddChild(Style.Segment(p.Name, d.Palette == p.Id, () => Set(() => d.Palette = p.Id)));
-        v.AddChild(pal);
-        v.AddChild(Style.SubLabel("Cloak"));
+        v.AddChild(Kit.Head($"Colours of {Their.ToLowerInvariant()} outfit"));
+        v.AddChild(Flow(a.Palettes.Select(p => (p.Name, d.Palette == p.Id, (Action)(() => Set(() => d.Palette = p.Id)), $"palette:{p.Id}"))));
+        v.AddChild(Kit.Head("Cloak"));
         v.AddChild(Beads(Lore.CloakDyes, d.Cloak, id => d.Cloak = id, Bead.Kind.Cloth, "#3a2a20"));
         return v;
     }
@@ -147,7 +122,7 @@ public partial class CreateScreen
     /// <summary>The hero's own cuts as cameos (dyed the colour chosen), and the colours.</summary>
     Control HeroHair(HeroLook k)
     {
-        var v = Style.V(8, Style.SubLabel($"{Their} hair"));
+        var v = Style.V(Style.Gap2, Kit.Head($"{Their} hair"));
         // (large: a cut is told by its shape, which a small picture loses)
         var row = Grid(3);
         var dye = HairColour();
@@ -157,14 +132,13 @@ public partial class CreateScreen
         if (k.Beards.Count > 0)
         {
             // His beard, as his cuts: cameos dyed his hair's colour.
-            v.AddChild(Style.SubLabel("Beard"));
+            v.AddChild(Kit.Head("Beard"));
             var beards = Grid(4);
             foreach (var b in k.Beards)
                 beards.AddChild(new Cameo(Art($"beard_{b.Id}"), b.Name, d.BeardStyle == b.Id, () => Set(() => d.BeardStyle = b.Id), 100, dye, "mask"));
             v.AddChild(beards);
         }
-        v.AddChild(Style.Gap(4));
-        v.AddChild(Style.SubLabel("Colour"));
+        v.AddChild(Kit.Head("Colour"));
         v.AddChild(Beads(Lore.Hairs, d.Hair, id => d.Hair = id, Bead.Kind.Hair, OwnHair().ToHtml(false)));
         return v;
     }
@@ -173,17 +147,18 @@ public partial class CreateScreen
     Control KitHair(Archetype a)
     {
         bool hidden = d.Archetype == "stalker" ? d.Model == "rogue_hooded" : d.Headgear && d.Archetype != "reaver";
-        var v = Style.V(8, Style.H(8, Style.SubLabel($"{Their} hair"), hidden ? Style.Label("under the hood", Style.TextItalic, 13, Style.InkDim) : new Control()));
-        var cuts = Style.H(4);
-        foreach (var h in Lore.HairStyles(d.Sex).Append("none")) cuts.AddChild(Style.Segment(HairNames.GetValueOrDefault(h, h), d.HairStyle == h, () => Set(() => d.HairStyle = h)));
+        var v = Style.V(Style.Gap2, Kit.Head($"{Their} hair", hidden ? "under the hood" : null));
+        var cuts = Flow(Lore.HairStyles(d.Sex).Append("none").Select(h => (HairNames.GetValueOrDefault(h, h), d.HairStyle == h, (Action)(() => Set(() => d.HairStyle = h)), $"cut:{h}")));
         if (hidden) cuts.Modulate = new Color(1, 1, 1, 0.5f);
         v.AddChild(cuts);
         v.AddChild(Beads(Lore.Hairs, d.Hair, id => d.Hair = id, Bead.Kind.Hair, "#6a5a48"));
         if (d.Archetype != "reaver")
         {
-            v.AddChild(Style.SubLabel("Hood"));
-            if (a.AltModel != null) v.AddChild(Style.Button(d.Model == a.Model ? "Hood up" : "Hood down", () => Set(() => d.Model = d.Model == a.Model ? a.AltModel! : a.Model), false, true));
-            if (d.Archetype != "stalker") v.AddChild(Style.Button(d.Headgear ? "Hood up" : "Hood down", () => Set(() => d.Headgear = !d.Headgear), false, true));
+            v.AddChild(Kit.Head("Hood"));
+            // (a hooded body of its own for the calling, or the calling's headgear)
+            bool up = a.AltModel != null ? d.Model == a.Model : d.Headgear;
+            if (a.AltModel != null || d.Archetype != "stalker")
+                v.AddChild(Flow(new[] { ("Hood up", up, (Action)(() => Set(Hood(a, true))), "hood:up"), ("Hood down", !up, () => Set(Hood(a, false)), "hood:down") }));
         }
         return v;
     }
@@ -194,7 +169,7 @@ public partial class CreateScreen
         var v = Style.V(8);
         if (k.Faces.Count > 1)
         {
-            v.AddChild(Style.SubLabel($"{Their} face"));
+            v.AddChild(Kit.Head($"{Their} face"));
             var grid = Grid(4);
             foreach (var f in k.Faces)
                 grid.AddChild(new Cameo(Art($"face_{f.Id}"), f.Name, d.FaceShape == f.Id, () => Set(() => Choose(f)), 100, null, "mask"));
@@ -202,11 +177,11 @@ public partial class CreateScreen
         }
         if (k.Eyes.Count > 1)
         {
-            v.AddChild(Style.SubLabel("Eyes"));
+            v.AddChild(Kit.Head("Eyes"));
             v.AddChild(Beads(k.Eyes, d.Eyes, id => d.Eyes = id, Bead.Kind.Eye, ""));
         }
         if (k.Sliders.Count > 0)
-            v.AddChild(Style.Label("Shape it by hand in the next part.", Style.TextItalic, Style.Caption, Style.InkDim));
+            v.AddChild(Style.Label("Shape it by hand in the next part.", Style.TextItalic, 15, Kit.Dim, false, HorizontalAlignment.Center, false));
         return v;
     }
 
@@ -216,37 +191,29 @@ public partial class CreateScreen
         d.FaceShape = f.Id;
         d.Face = new Dictionary<string, double>(f.Shape);
         if (f.Skin is { } skin && Lore.Skins.Any(s => s.Id == skin)) d.Skin = skin;
-        if (f.Eyes is { } eyes && Kit is { } k && k.Eyes.Any(e => e.Id == eyes)) d.Eyes = eyes;
+        if (f.Eyes is { } eyes && Hero is { } k && k.Eyes.Any(e => e.Id == eyes)) d.Eyes = eyes;
     }
 
     /// <summary>The face shaped by hand: its groups as tabs, four to a row, and the
     /// group's sliders under them; the column to itself, so none is hidden.</summary>
     Control HeroShape(HeroLook k)
     {
-        var v = Style.V(8);
+        var v = Style.V(Style.Gap2);
         var groups = k.Sliders.Select(s => s.Group).Distinct().ToArray();
         int g = Math.Clamp(d.FaceGroup, 0, groups.Length - 1);
-        v.AddChild(Style.SubLabel($"Shape {Their.ToLowerInvariant()} face"));
-        var tabs = new GridContainer { Columns = Math.Min(4, groups.Length) };
-        tabs.AddThemeConstantOverride("h_separation", 6);
-        tabs.AddThemeConstantOverride("v_separation", 6);
-        for (int i = 0; i < groups.Length; i++)
-        {
-            int at = i;
-            var seg = Nav.Id(Style.Segment(groups[i], g == i, () => Set(() => d.FaceGroup = at)), $"group:{groups[i]}");
-            seg.CustomMinimumSize = new Vector2(114, 34);
-            tabs.AddChild(seg);
-        }
-        v.AddChild(tabs);
-        v.AddChild(Style.Gap(4));
+        v.AddChild(Kit.Head($"Shape {Their.ToLowerInvariant()} face"));
+        // (the groups as words, the one shown over the ember's underline; no boxes)
+        v.AddChild(Flow(groups.Select((name, i) => (name, g == i, (Action)(() => Set(() => d.FaceGroup = i)), $"group:{name}"))));
+        v.AddChild(Style.Gap(Style.Gap1));
         foreach (var s in k.Sliders.Where(s => s.Group == groups[g]))
             v.AddChild(SliderRow(s));
         var preset = k.Faces.FirstOrDefault(f => f.Id == d.FaceShape) ?? k.Faces.FirstOrDefault();
         if (Shaped(k, preset))
         {
-            v.AddChild(Style.Gap(4));
-            v.AddChild(Nav.Id(Style.Button(preset != null ? $"Back to {preset.Name.ToLowerInvariant()}" : $"Back to {Their.ToLowerInvariant()} own face",
-                () => Set(() => d.Face = new Dictionary<string, double>(preset?.Shape ?? new())), false, true), "unshape"));
+            var back = Nav.Id(Kit.Word(preset != null ? $"Back to {preset.Name.ToLowerInvariant()}" : $"Back to {Their.ToLowerInvariant()} own face",
+                () => Set(() => d.Face = new Dictionary<string, double>(preset?.Shape ?? new())), Style.EmberHi, 16), "unshape");
+            back.SizeFlagsHorizontal = SizeFlags.ShrinkCenter;
+            v.AddChild(back);
         }
         return v;
     }
@@ -269,6 +236,8 @@ public partial class CreateScreen
         low.CustomMinimumSize = new Vector2(80, 0);
         var high = Style.Label(s.High, Style.Ui, 13, Style.InkDim);
         high.CustomMinimumSize = new Vector2(80, 0);
+        // (the groove takes the room between its words, so every row runs the column's width)
+        g.SizeFlagsHorizontal = SizeFlags.ExpandFill;
         var row = Style.H(6, name, low, g, high);
         row.Alignment = BoxContainer.AlignmentMode.Begin;
         return row;
@@ -277,7 +246,7 @@ public partial class CreateScreen
     /// <summary>The paints as cameos (hers: bare, kohl, woad, ochre, ash, blood, gilt).</summary>
     Control HeroPaint(HeroLook k)
     {
-        var v = Style.V(8, Style.SubLabel($"Paint on {Their.ToLowerInvariant()} face"));
+        var v = Style.V(Style.Gap2, Kit.Head($"Paint on {Their.ToLowerInvariant()} face"));
         // (large: kohl and ash are fine lines a small picture loses)
         var grid = Grid(3);
         foreach (var p in k.Paints)
@@ -286,14 +255,32 @@ public partial class CreateScreen
         return v;
     }
 
-    /// <summary>A grid of cameos, so many to a row.</summary>
-    static GridContainer Grid(int columns)
+    /// <summary>Cameos in rows, so many to a row, each row centred (a short last row sits in the
+    /// middle, not against the left).</summary>
+    static HFlowContainer Grid(int columns)
     {
-        var g = new GridContainer { Columns = columns };
+        var g = new HFlowContainer { Alignment = FlowContainer.AlignmentMode.Center, MouseFilter = MouseFilterEnum.Ignore };
         g.AddThemeConstantOverride("h_separation", columns > 3 ? 6 : 10);
         g.AddThemeConstantOverride("v_separation", 2);
         return g;
     }
+
+    /// <summary>Words to choose between, as the house's tabs in centred lines, each with its focus id.</summary>
+    static HFlowContainer Flow(IEnumerable<(string Text, bool On, Action Press, string Id)> words)
+    {
+        var list = words.ToList();
+        var f = Kit.TabFlow(list.Select(w => (w.Text, w.On, w.Press)), 16, 24, 4);
+        int i = 0;
+        foreach (var b in f.GetChildren().OfType<Button>()) Nav.Id(b, list[i++].Id);
+        return f;
+    }
+
+    /// <summary>The hood up or down: the calling's hooded body where it has one, else its headgear.</summary>
+    Action Hood(Archetype a, bool up) => () =>
+    {
+        if (a.AltModel != null) d.Model = up ? a.Model : a.AltModel;
+        else d.Headgear = up;
+    };
 
     /* ---------------------------------------------------------- colours -- */
 
@@ -301,7 +288,7 @@ public partial class CreateScreen
     /// cloth as dyed wool, her eyes as irises; the one chosen ringed in gold.</summary>
     Control Beads(List<LookChoice> list, string now, Action<string> set, Bead.Kind kind, string own)
     {
-        var wrap = new HFlowContainer();
+        var wrap = new HFlowContainer { Alignment = FlowContainer.AlignmentMode.Center };
         wrap.AddThemeConstantOverride("h_separation", 6);
         wrap.AddThemeConstantOverride("v_separation", 6);
         foreach (var c in list)
@@ -313,7 +300,7 @@ public partial class CreateScreen
             b.Pressed += () => Set(() => set(id));
             wrap.AddChild(b);
         }
-        var v = Style.V(2, wrap, Style.Label(list.FirstOrDefault(c => c.Id == now)?.Name ?? "", Style.TextItalic, Style.Caption, Style.InkDim));
+        var v = Style.V(2, wrap, Style.Label(list.FirstOrDefault(c => c.Id == now)?.Name ?? "", Style.TextItalic, 15, Kit.Dim, false, HorizontalAlignment.Center, false));
         return v;
     }
 
@@ -329,7 +316,7 @@ public partial class CreateScreen
     Control LookDetail(Archetype a)
     {
         string title, name, words;
-        var k = Kit;
+        var k = Hero;
         switch (Section)
         {
             case "Hair" when k != null:
@@ -357,17 +344,23 @@ public partial class CreateScreen
                 (title, name, words) = ($"{Their} body", $"{a.Name}'s colours", a.Palettes.FirstOrDefault(x => x.Id == d.Palette)?.Name ?? "");
                 break;
         }
-        var v = Style.V(8, Style.Cap(title, 24), Style.Label(name, Style.Display, 20, Style.GoldHi), Style.Label(words, Style.TextItalic, 16, new Color("#c8a878"), true), Style.Rule());
-        v.AddChild(Style.SubLabel($"{Their} likeness"));
+        var v = Style.V(Style.Gap3, DTitle(title), DSub(name));
+        if (words != "") v.AddChild(DBody(words));
+        v.AddChild(Kit.RuleH());
+        v.AddChild(Kit.Head($"{Their} likeness"));
         foreach (var (key, val) in Likeness()) v.AddChild(Line(key, val));
-        v.AddChild(Style.Rule());
+        v.AddChild(Kit.RuleH());
         // How to turn the figure and come near, for the device in hand.
         bool pad = Controls.Instance.UsingPad;
         string them = Her ? "her" : "him";
-        v.AddChild(pad ? Style.H(8, Style.PadButton("Right stick"), Style.Label($"turn {them}, come near", Style.Ui, Style.Caption, Style.InkDim))
-            : Style.Label($"Drag to turn {them}; the wheel brings {them} near; a double click goes to {Their.ToLowerInvariant()} face.", Style.Ui, Style.Caption, Style.InkDim, true));
-        if (Sections.Length > 1)
-            v.AddChild(Style.H(8, pad ? Style.PadButton("LT") : Style.Key(","), pad ? Style.PadButton("RT") : Style.Key("."), Style.Label("the parts of the look", Style.Ui, Style.Caption, Style.InkDim)));
+        Label Quiet(string t) => Style.Label(t, Style.Ui, 15, Kit.Dim, true, HorizontalAlignment.Left, false);
+        if (pad)
+        {
+            var stick = Style.H(Style.Gap2, Style.PadButton("Right stick"), Quiet($"turns {them} and comes near"));
+            foreach (var c in stick.GetChildren().OfType<Control>()) c.SizeFlagsVertical = SizeFlags.ShrinkCenter;
+            v.AddChild(stick);
+        }
+        else v.AddChild(Quiet($"Drag to turn {them}; the wheel brings {them} near; a double click goes to {Their.ToLowerInvariant()} face."));
         return v;
     }
 
@@ -375,7 +368,7 @@ public partial class CreateScreen
     IEnumerable<(string, string)> Likeness()
     {
         string Of(List<LookChoice> l, string id) => l.FirstOrDefault(c => c.Id == id)?.Name ?? id;
-        var k = Kit;
+        var k = Hero;
         yield return ("Skin", Of(Lore.Skins, d.Skin));
         string cut = k != null ? k.Cuts.FirstOrDefault(h => h.Id == d.HairStyle)?.Name ?? d.HairStyle : HairNames.GetValueOrDefault(d.HairStyle, d.HairStyle);
         yield return ("Hair", $"{cut}, {Of(Lore.Hairs, d.Hair).ToLowerInvariant()}");
