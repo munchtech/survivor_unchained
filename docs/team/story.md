@@ -35,6 +35,11 @@ before recording. Agent a7ba8903f4c8261b1 (the sixth story lead), branch
     has his own soft and hard words.
   - **StoryLint holds the fights' rules over their code:** no "Ashford", no
     finished "surface-meat" from Grimtunnel, no genre word, no clock in a pull.
+  - **Seen in the game at 1920x1080:** Chid's gift (`office`, `office_end`,
+    and the book at his waking) fits its box and reads well; the Door's and
+    the Hollow's lost lines on the result screen; the Hollow's first sight
+    between stages. A written story night's result no longer says "N minutes
+    before Greymuzzle would have come" (it has no clock).
 - **Checks:** StoryLint, the seed check, the signature phrases and the body's
   hours are clean.
 
@@ -115,7 +120,9 @@ None.
   its row. StoryLint now reads the fights' code. *The Keeper's Office* is
   wired (`chid.office`).
 - **Experience:** the Door's `EndWon`/`EndLost` in `StoryFights.cs` are
-  rewritten for the hall (words only).
+  rewritten for the hall (words only). The table rematch is gone (theirs,
+  `@8290bfda`): a lost story fight waits at its own place, and the result
+  now says "It will be there again tomorrow night."
 - **Cinematics:** C13's shot 3 says the way out is "at the head of the
   stair"; in the place she leaves back down the hall to the door (§23.3).
 - **Voice:** paused; notes above.

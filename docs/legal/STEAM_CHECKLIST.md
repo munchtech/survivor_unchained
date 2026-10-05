@@ -21,13 +21,13 @@ Source: https://partner.steamgames.com/doc/gettingstarted/onboarding (read 4 Oct
 
 ## B. Fix before the build goes up (main session and leads)
 
-- [ ] **Debug paths out of release** [3]. Done in code by the performance lead (8a770667): `Args` is ignored outside debug builds, and the excludes are in place. Tick once I have reviewed the `.pck` listing.
+- [x] **Debug paths out of release** [3]. Done by the performance lead (8a770667). The `.pck` listing (`docs/legal/records/RELEASE_PACK_LISTING.txt`, 4 Oct) has been reviewed by legal: nothing excluded ships, and the release build ignores the switches. Re-list the pack before every upload.
   - `--body` and other developer arguments only when `OS.IsDebugBuild()`;
   - `tools_scenes/*` excluded;
   - unused bodies and packs excluded, among them `anime_female.glb`, `woman.glb`, the KayKit characters and the git-ignored Poly Haven copies;
   - check the `.pck` listing before upload.
 - [x] **Explicit-scene placeholders out of release data** [6]: the three `[explicit scene: … — to be written]` texts. Removed by the story lead (efc15256); `StoryLint` guards it. Tick for good once merged.
-- [ ] **Placeholder voices** [11]: replaced by finals, or dropped from release (they're marked `placeholder` in the index).
+- [x] **Placeholder voices** [11]: dropped from release (`art/vo/*` excluded; the listing confirms none ship). Finals will be added with their own ledger lines.
 - [ ] **Licence notices and credits ship** [4]:
   - a "Credits and licences" screen;
   - a `licences/` folder beside the executable, containing:

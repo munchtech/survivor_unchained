@@ -539,8 +539,8 @@ public sealed class HollowByNight : StoryFight
 
         protected override void Tick(double dt)
         {
-            if (!Up(white, whiteSeed)) { Done = true; return; }
-            if (!called && white!.Hp < white.MaxHp * 0.25 && runT < 0 && pantT <= 0)
+            if (!Up(this.white, whiteSeed) || this.white is not { } white) { Done = true; return; }
+            if (!called && white.Hp < white.MaxHp * 0.25 && runT < 0 && pantT <= 0)
             {
                 called = true;
                 var p = B.Player;

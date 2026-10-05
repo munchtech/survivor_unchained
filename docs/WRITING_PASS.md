@@ -1496,6 +1496,11 @@ wound or things lost.
   | The Dig | "The last thing you know is little hands, a great many of them, lifting you." |
   | The Door | "The last thing you know is the moon going by over the broken roof, and the dead carrying you under it, in step." (Rewritten for the hall at the stair's head: section 23.3.) |
 
+  Under it, the result says "It will be there again tomorrow night." (it
+  said the fight waited on the Wayfinder's table; experience took the table
+  rematch out, so a lost fight waits at its own place). A written story night's
+  result names no clock.
+
 - **The waking** (`chid.carried`, then `carried_chid`). Experience's
   `WakeAfterLoss` calls `Journey.CarriedHome(spec)` (`player.just_died`,
   `player.carried_home`), brings her to the shrine and opens Chid's
@@ -2044,3 +2049,29 @@ kind. ...Catch!"), and the Barrow Lord's three orders (Iungite, Testudo,
 Tenete), recorded as C13's two words are: a dry, enormous whisper. Section
 21's voices (the pickets, Redcowl's rally and "Mind where you swing.",
 Snib's four, Grimtunnel's four) are recorded with them.
+
+### 23.6 The Hollow's new beats (combat's `6f3216f5`, its words passed)
+
+Combat gave the Hollow's stages more to do. Old Blue gives ground when his
+howls are broken, with the yearlings' ring and then the Pack's rush between
+him and her. The reeds empty seven times. The Pack wheels at Whitethroat's
+half. Greymuzzle has the Pack's turn, and the Moon's first howl cannot be
+stopped. These are the words, given to combat to paste:
+
+| Slot | Words |
+|---|---|
+| Clough `Goal` | "Break Old Blue's howls ({n} of 4)"; "Break the ring round you ({n} of {m})"; "Break the rush down the cut ({n} of {m})"; "Silence Old Blue" |
+| He gives ground, the low rock (sight) | "Old Blue gives ground, up the cut to the next rock, and leaves his yearlings to you." (The `Say` "They run a ring round you" / "Break it, and go through" follows; the sight does not say it twice.) |
+| The ring broken (`Say`, boon) | "The ring is broken" / "Old Blue is on the next rock: break his howls" |
+| He goes up to the head (sight; then `Say`, danger) | "Old Blue goes up to the last rock, at the clough's head. Above him, the whole cut is wolves."; "The Pack comes down the cut" / "Break the rush, and he is yours" |
+| The rush broken (`Say`, boon) | "The rush is broken" / "Old Blue is alone on his rock: silence him" |
+| The bars | "The ring" and "The rush" / "Old Blue is out of reach until it breaks"; Old Blue: "Break his howls, and he gives ground", then "Nowhere left to go: silence him" |
+| Water `Goal` | "Light a deadfall on the far bank"; "Keep a fire fed while the reeds empty ({n} of 7)"; "Bring down Greenbelly"; "Light the deadfalls on the far bank ({n} of 2)" |
+| The reeds empty (sight) | the first: "The reeds stir, and the sick come out of them at you."; then "The reeds stir again." |
+| Greenbelly wades out (sight, optional) | "Out in the shallows, something heavy gets up." |
+| The reeds' bar | "The reeds" / "The sick will not cross a fed fire's light" |
+| The drive at half (`Say`, danger) | "The whole Pack wheels" / "Wider and quicker: still through the wolves, never the gap" |
+| The drive at a quarter: her yearlings' ring (`Goal`; sight; `Say`, danger) | "Break the yearlings' ring ({n} of {m})"; "Whitethroat yips, and her yearlings come round you in a ring."; "The yearlings ring you" / "Whitethroat is behind them: break the ring" |
+| It breaks (`Say`, boon); its bar | "The yearlings scatter" / "Whitethroat is in reach again" (not "open": that is her pant); "The yearlings" / "Whitethroat is out of reach until it breaks" |
+| The Pack's turn (sight; label) | "A growl goes round the ring. The Pack turns."; "The Pack turns" |
+| The Moon's first howl (channel; sight) | "The moon clears: into a fire's light!"; "He sits back and howls, and the cloud slides off the moon. The cold comes in off the ring." |

@@ -5,13 +5,12 @@ Agent aab20546fe06daa89 (successor to aa12c130ddf4b904c), branch `worktree-agent
 ## State (4 October 2026, late evening): re-ruled on the owner's answers, documents only
 
 - **Updated:** `docs/legal/LEGAL_BRIEF.md`, `STEAM_CHECKLIST.md` and `QUESTIONS_FOR_LAWYER.md`. There is a new table, "The owner's answers and what they changed", and a new issue 28 (Suno). There are now 17 questions for the lawyer.
-- **Launch blockers now (6):**
-  - the AI disclosure;
-  - the mature survey, with the motion check;
-  - the export and debug paths: done in code at 8a770667; my `.pck` review waits for the GPU;
-  - licence notices: built at 178768aa (UI design, a26f87c39952dcd9c); the texts are verified, and my answers on the credits are sent;
-  - the boar (replace, or buy on Fab as a stop-gap);
-  - the placeholder voices: excluded at export (8a770667).
+- **Launch blockers now (4):**
+  - the AI disclosure (owner, at submission);
+  - the mature survey, with the motion check (the tooling is ready; waiting for the outfit import);
+  - the licences screen: built and its texts verified; to be seen in game;
+  - the boar (replace, or buy on Fab as a stop-gap).
+- **Export and placeholder voices: done.** I reviewed the pack listing (`docs/legal/records/RELEASE_PACK_LISTING.txt`, a56abaf3a104be675): nothing excluded ships, and the release build ignores the switches. The Quaternius base bodies, `hero.res` and the voice index ship and are FINE. To do in the GPU check: confirm the Quaternius bodies have no anatomical detail.
 - **Cleared:**
   - **The base bodies: kept, with conditions.** They are local Krea 2 Turbo pictures and TRELLIS 2 meshes, and the ComfyUI log agrees. The hero's picture probably used the Civitai LoRA "Mystic XXX" (2728644, alcaitiff), which allows selling images. The evidence is in `docs/legal/records/BODIES_RECORD.md`. Conditions:
     - the owner signs the record;
@@ -41,6 +40,19 @@ Agent aab20546fe06daa89 (successor to aa12c130ddf4b904c), branch `worktree-agent
 
 ## Next (exact)
 
+0. **The motion check tooling is ready** (scratchpad `legal/`), waiting for the coordinator's word that the outfit rebuild has imported:
+   - `make_motioncheck2.py` builds `motioncheck2.gd` from lookdev. It adds:
+     - SPREAD: frames spread over a looped clip;
+     - VIEWS: several cameras per run, through SubViewports;
+     - FOLLOW: cameras follow her hips on travelling clips;
+     - MARKS: her areolas tinted magenta and her genital area cyan, after the outfit's skin hiding.
+   - `count.py` flags any frame showing either colour, and crops it.
+   - `motion3.sh` runs in three phases:
+     1. PHASE=calib: no outfit, to check that the marks land. Scratchpad only.
+     2. PHASE=cup: the Warden's sprint.
+     3. PHASE=all: about 42 clips for each of the four outfits.
+
+     It uses `--fixed-fps 60`, so no frames are skipped.
 1. **When the coordinator frees the GPU:**
    - The motion check: `scratchpad/legal/motion.sh` with the clip loop changed to dash, leap, death, death_back, hit, cast_bolt, cast_flick, cast_raise, throw, crossbow_shoot, the swing clips (list them first from `res://art/anim/heroine.res`), the sits and the breaks. All four outfits, jiggle on.
    - Then the cinematic poses (`--cine`) and the creation poses.

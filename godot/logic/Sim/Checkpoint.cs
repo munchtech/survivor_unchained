@@ -114,6 +114,7 @@ public sealed partial class Battle
         if (p.Rose > 0) p.Ashes = p.Revives = 0;
         p.DashCharges = s.DashCharges;
         p.BurnT = p.PoisonT = p.SlowT = 0;
+        riseFire = null;
         p.SlowF = 1;
         p.FellTo = null;
         Events.Since(said);

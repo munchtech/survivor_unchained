@@ -73,7 +73,7 @@ Everything in `ArenaBoss` holds: gates with floors and ceilings, the Break, the 
 
   These are fields on the script, not the table's 180 and 300 s.
 - **The horde is off.** The only creatures on its ground are the adds it calls, each with a job. The arrival clears the field, as `MakeWay` does today.
-- **Health:** start at the table ruler's multiplier × 1.6, at the boss ground's level (+4), and measure to the time. **The target is the length, not the number.** Greymuzzle: `66 + 10.9 × tier`, his blows at ×1.0 of his body's (the table's ×1.3 was set against a thirtieth-minute survivor).
+- **Health:** start at the table ruler's multiplier × 1.6, at the boss ground's level (+4), and measure to the time. **The target is the length, not the number.** Greymuzzle: 88, the same at every tier (his level grows him, and the night eases each tier: `StoryNight.TierEase`), his blows at ×2.3 of his body's: his teeth are in his marked moves, not a brawl.
 - **Damage:** in `SURVIVORS_BOSSES.md` §0.8's bands, as multiples of its blow:
   - contact ×0.4–0.6;
   - telegraphed blows ×1.5–2;
@@ -153,15 +153,15 @@ Measured by the `story` harness (section 5.4), at tiers 1–4, with 16 seeds, pl
 
 | # | Space | Goal | Named foe, and what it teaches | Waves | Length |
 |---|---|---|---|---|---|
-| 1 | The clough | Silence Old Blue | **Old Blue** (`mb_caller`) howls from a rock: a 4 s channel on his bar. Damage, a stagger or one hit of fire breaks it, and each howl he finishes calls five wolves from the clough's head. Hurt to two thirds and to a third, he gives ground up the cut to the next rock (three in all), and the Pack comes down it at her. *Teaches the moon-howl: a howl is a channel, and fire breaks it.* | Wolves in twos and threes. Once, the runners ring her (the ring verb). | 1.5–2.5 min |
-| 2 | The sick water | Light both deadfalls on the far bank. Greenbelly comes for the first light. | **Greenbelly** (`mb_blight_mother`) wades out of the shallows, bursting and brooding. *Teaches the deadfalls: the ember lights dead wood, and the Pack will not cross the light.* | Blight-sick wolves out of the reeds, slow. The shallows slow and poison. | 2–3 min |
-| 3 | The den's mouth (the place's set piece) | Bring down Whitethroat | **Whitethroat** (`mb_whitethroat`) runs the Drive. The wolves close in a crescent (7 + tier) and he runs the gap they leave, a lane across it. Go through the wolves, never the gap. Her yearlings take blows for her while she drives (she takes ×0.45); when her run misses, she stands panting for 2 s inside a pale-blue ring and takes ×1.5. *Teaches the ring, and that a wolf who misses is open.* | A crescent every 14 s: three or four drives. | 2–3 min |
+| 1 | The clough | Silence Old Blue | **Old Blue** (`mb_caller`) howls from a rock every 9 s: a 4 s channel on his bar. Damage of 3% of his health, a stagger or one hit of fire breaks it, and each howl he finishes calls five wolves from the clough's head. **His voice sets the pace, not his health:** four howls broken on a rock (or six howled) and he gives ground up the cut, his health held at his rock's mark (70%, 40%) until he does. Between rocks the Pack stands in the way and he is out of reach behind it: first the yearlings run a ring round her (8 + tier), then the whole cut comes down at her in five files of 3 + tier. On the rock at the clough's head there is nowhere left to go. *Teaches the moon-howl: a howl is a channel, and fire breaks it; and the ring.* | Wolves in twos and threes (18 standing). The ring; the rush. | about 1:45 |
+| 2 | The sick water | Light both deadfalls on the far bank | The first light wakes the reeds: seven pulses of the sick and the whole (5 + tier), one every 17 s, on the reeds' own time. A fed fire's light is her room (the Pack will not cross it) and burns 20 s: the stage asks her to keep one fed. **Greenbelly** (`mb_blight_mother`) wades out with the fourth, bursting and brooding; her bite and trail are thinned here, her burst is the lesson. *Teaches the deadfalls: the ember lights dead wood, the Pack will not cross the light, and a fire is kept, not lit once.* | The reeds' pulses; the shallows slow and sting. | about 1:50 |
+| 3 | The den's mouth (the place's set piece) | Bring down Whitethroat | **Whitethroat** (`mb_whitethroat`) runs the Drive every 11 s. The wolves close in a crescent (6 + tier) and she runs the gap they leave, a lane across it. Go through the wolves, never the gap. Her yearlings take the blows for her while she drives (she takes ×0.08); when her run misses she pants 2.5 s inside a pale-blue ring and takes ×2. At half the whole Pack wheels (9 + tier, every 9 s); at a quarter her yearlings ring the heroine and she is out of reach until it breaks. *Teaches the ring, and that a wolf who misses is open.* | The crescents. | about 1:40 |
 
 The sick lie in the den's mouth (the story's sight). Then the Pack backs off her into a ring, and he walks out through it (C10's arrival).
 
 ### The boss
 
-**Body.** The Pack-Mother's body (`boss_pack`, named Greymuzzle), slowed to Speed 4.6 for his limp. Health `66 + 10.9 × tier` times his body's, his blows at ×1.0 (0.4). He is wordless: what is heard is the Pack.
+**Body.** The Pack-Mother's body (`boss_pack`, named Greymuzzle), slowed to Speed 4.6 for his limp. Health 88 times his body's at every tier, his blows at ×2.3. He is wordless: what is heard is the Pack.
 
 **The Pack's ring.** About twenty wolves stand shoulder to shoulder round the fight, 12 m from the bowl's middle, with a grey hard edge drawn at their feet.
 - They are not targets and cannot be hurt. They are the arena's wall.
@@ -170,9 +170,9 @@ The sick lie in the den's mouth (the story's sight). Then the Pack backs off her
 
 | Phase | Its moves | How the space changes |
 |---|---|---|
-| **1. The Old Way** (100% to 65%) | **Stalk:** between moves he circles her at 7–9 m, limping (contact ×0.5).<br>**Lunge** (every 6 s): a lane through her and 4 m past, 2.2 m wide, marked 0.9 s, ×1.6. He ends where it ends, and if that is the ring, it opens for him.<br>**Hamstring** (within 5 m, every 5 s): a 70° cone, 4.2 m, 0.8 s, ×1.5, and she is slowed by 55% for 2 s.<br>**The ring's bite** (every 9 s): a growl behind her, then one wolf of the ring runs a lane across, marked 1.0 s, ×1.2, and goes back to its place.<br>**His age:** after every second lunge he stands and pants for 2.5 s. A pale-blue ring is round him, his breath smokes thick, and he takes ×1.25. | The ring holds at 12 m. Each fire she lights bows it out. |
-| **2. The Moon** (65% to 30%) | He goes back to the den's mouth. The ring opens on that side, and five wolves stand guard in an arc before it, open at both ends: melee's way in is round the guard's ends to his flank.<br>**The moon-howl** (as the phase begins, then every 22 s): he sits and howls, an 8 s channel ("The moon-howl: break it!").<br>&nbsp;&nbsp;– The moon clears and **the cold** comes in from the ring at 1.2 m a second: violet frost that chills and bites (×0.15 a second, no grace).<br>&nbsp;&nbsp;– The frost stops at a lit deadfall's light, which stays clear.<br>&nbsp;&nbsp;– **His dead** (pale wolves, not targets) run lanes across her every 2 s, marked 1.2 s, ×1.5. They swerve round a fed fire.<br>&nbsp;&nbsp;– Break the howl with damage of 6% of his health inside it, a stagger, or one hit of fire. He is then held for 3 s and the frost melts back.<br>**The guard** before the den is not a target. Inside 2 m it shoves her 3 m back onto the den floor (never into the ring), bitten as the ring bites. Shots and zones pass over it.<br>**Between howls** he comes out, runs a chain of two lunges at her, goes back, and pants: melee's window. | The frost closes in during each howl. A fire is a room in it. |
-| **3. On His Feet** (30% to 0) | He leaves the den's mouth for good. No more howls.<br>**Shake** (within 5.5 m, every 6 s): a 120° cone, 5 m, 1.0 s, ×1.8.<br>**Lunge chains of three** (every 8 s): each lane marked 0.8 s, ×1.6. The second and third lead where she is going (0.6 s). Then he pants for 3 s.<br>**The last of the Pack** (at 15%): the ring breaks and comes in, twelve wolves that are ordinary targets. | The ring closes to 9 m, then breaks at 15% and the bowl opens to its edge. |
+| **1. The Old Way** (100% to 65%) | **Stalk:** between moves he circles her at 7–9 m, limping, and does not brawl; walked into, he snaps (×0.3, at most every 1.5 s).<br>**Lunge** (every 4.5 s): a lane through her and 4 m past, 2.2 m wide, marked 0.9 s, ×1.6. He ends where it ends, and if that is the ring, it opens for him.<br>**Hamstring** (within 5 m, every 5 s): a 70° cone, 4.2 m, 0.8 s, ×1.5, and she is slowed by 55% for 2 s. Lamed, she is his: his next lunge comes at once.<br>**The Pack's turn** (every 13 s, not while he holds the den): a growl goes round the ring, and three of it cut across her from three sides, 0.4 s apart, each lane marked 1.1 s and more, ×1.5. The ground between the lanes is the answer, and it moves as each one lands.<br>**The ring's bite** (every 9 s): a growl behind her, then one wolf of the ring runs a lane across, marked 1.0 s, ×1.2, and goes back to its place.<br>**His age:** after every second lunge he stands and pants for 2.5 s. A pale-blue ring is round him, his breath smokes thick, and he takes ×1.25. | The ring holds at 12 m. Each fire she lights bows it out. |
+| **2. The Moon** (65% to 30%) | He goes back to the den's mouth. The ring opens on that side, and five wolves stand guard in an arc before it, open at both ends: melee's way in is round the guard's ends to his flank.<br>**The moon clears** (as the phase begins): his first howl cannot be broken. The cold bites ×0.45 a second and his dead run every 1.5 s: the fires are the answer the sick water taught.<br>**The moon-howl** (then every 22 s): he sits and howls, an 8 s channel ("The moon-howl: break it!").<br>&nbsp;&nbsp;– The moon clears and **the cold** comes in from the ring at 1.2 m a second: violet frost that chills and bites (×0.15 a second, no grace).<br>&nbsp;&nbsp;– The frost stops at a lit deadfall's light, which stays clear.<br>&nbsp;&nbsp;– **His dead** (pale wolves, not targets) run lanes across her every 2 s, marked 1.2 s, ×1.5. They swerve round a fed fire.<br>&nbsp;&nbsp;– Break the howl with damage of 6% of his health inside it, a stagger, or one hit of fire. He is then held for 3 s and the frost melts back.<br>**The guard** before the den is not a target. Inside 2 m it shoves her 3 m back onto the den floor (never into the ring), bitten as the ring bites. Shots and zones pass over it.<br>**Between howls** he comes out, runs a chain of two lunges at her, goes back, and pants: melee's window. | The frost closes in during each howl. A fire is a room in it. |
+| **3. On His Feet** (30% to 0) | He leaves the den's mouth for good. No more howls.<br>**Shake** (within 5.5 m, every 6 s): a 120° cone, 5 m, 1.0 s, ×1.8.<br>**Lunge chains of three** (every 8 s): each lane 2.6 m wide, marked 0.7 s, ×1.6. The second and third lead where she is going (0.6 s). Then he pants for 3 s.<br>**The last of the Pack** (at 15%): the ring breaks and comes in, twelve wolves that are ordinary targets. | The ring closes to 9 m, then breaks at 15% and the bowl opens to its edge. |
 
 - **Weakness: fire.** It breaks the moon-howl, and the fires are fire.
 - **Bane: Maeca's fed fires** ("They won't come near a fire that's fed"; `bane.fires`, set by her talk `maeca.fire`). The deadfalls are marked from the boss's first second, they burn for 35 s instead of 20, and the ring bows 7 m round them.
@@ -472,35 +472,31 @@ The table's nights and rulers are unchanged throughout.
   - a rise at the boss beginning him again;
   - pay for the night's own minutes.
 
-### 8.2 The first runs
+### 8.2 Tuned (4 October, evening)
 
-The Hollow, tier 1, small samples (the machine was the owner's: a few dozen nights, not a sweep):
+The Hollow, tiers 1–4, 64 nights a row (`story --fight hollow --tiers 1,2,3,4 --seeds 16 --bot plain,deft --policies greedy,random`):
 
-| Hands, draft | Runs | Won | Night (min) | Way in (min) | Stages (s) | Boss (s) | Under half on the way in | Boss on its first life |
-|---|---|---|---|---|---|---|---|---|
-| deft, greedy | 12 | 92% | 4.8 | 1.6 | 34 / 28 / 19 | 154 | 33% | 92% |
-| plain, greedy | 8 | 75% | 4.8 | 1.6 | 42 / 39 / 25 | 144 | 50% | 75% |
-| plain, random | 8 | 75% | 5.5 | 1.7 | 44 / 33 / 43 | 209 | 63% | 75% |
+| Hands, draft | Won | Night (min) | Way in (min) | Stages (s) | Boss (s) | Under half on the way in | Boss on its first life |
+|---|---|---|---|---|---|---|---|
+| deft, greedy | 97–100% | 8.8–11.2 | 5.0–5.9 | ~105 / 112 / 90–120 | 212–292 | 11–25% | 95–100% |
+| plain, greedy | 86–88% | 8.8–10.7 | 4.9–6.2 | ~105 / 110 / 90–130 | 189–252 | 16–36% | 81–88% |
+| plain, random | 80–89% | 10.6–13.4 | 5.9–7.1 | ~110 / 111 / 140–190 | 257–343 | 11–38% | 78–89% |
 
-What the runs found before these figures, all fixed:
-- the walls let a blink or a leap over a shut gate;
-- the ring and the guard shoved a bot to death in chains;
-- a named foe slid out of reach;
-- the bots stood pressed to a wall a metre from their way.
+- Falls in a stage: none. Cards at the boss: 32 at every tier.
+- The experience director, on the length: "a tight 10 beats a padded 12". The night is about ten minutes planned and deft; nothing is padded to reach twelve.
+- The boss's first life is above its 55–70%: the bots don't learn between tries, so a fall at the boss is decided by the build and a rise rarely changes it; pushing it lower took the planned win under 90%. It is to be judged at the screen.
 
-### 8.3 What is left, in order (when the machine is free)
+How it got there:
+- **The stages were given beats with their own pace** (his voice, the reeds' pulses, her drives), not health; the first runs' stages ended in half a minute because a minute-6 build melts fodder.
+- **His teeth went into his marked moves:** two thirds of what hurt her was his brawl between moves. He stalks now, and his moves hit harder.
+- **Every tier is the same night:** creature health eased 0.3 a tier and bite 0.2, named foes and his health not grown by the tier, ember per kill normalised to the tier, and a dusk on the first stage (a level a tier above the first). Tier 3 had run twice as long and three times as dangerous.
+- **Found on the way:** the harness's hands stood stuck at walls' corners (a quarter of runs timed out in the water; fixed in the Pilot and the place's NavField); Burn Bright stacked its numbers at each rank and kept them through a rise (fixed in `Boons.cs`, with a test over every blessing); Cold, Then Not burned everything in eight metres in one frame (now each body as the fire's front reaches it, after a 0.35 s cold).
 
-1. **The way in is a third of its target** (1.6 minutes against 6 to 9). The stages need more to do, not more health: the yardstick is a fight, not a sponge.
-   - The clough: Old Blue's three rocks are a start.
-   - The water: the deadfalls held while the reeds come.
-   - The drive: more drives, each a lesson.
-   Measure with `story --tiers 1,2,3 --seeds 8 --bot plain,deft`.
-2. **The danger is in the wrong place.** Half the plain runs dip under half health on the way in (target 20–35%), and the boss is won at its first life 75% (target 55–70%). Soften the crowd's teeth a little and give him one more true threat, then measure.
-3. **Tier 3 and 4** need their own look (plain hands won 17–25% at tier 3 before his blows were softened).
-4. **Then the other three:** the Roost (Redcowl's spared end plays `.spared` then `.flit`), the Dig, and the Vault.
-5. **Data owed by others:**
-   - Chid's node giving *The Keeper's Office* (story);
-   - the place drawn to `HollowByNight.Ground` (arena art).
+### 8.3 What is left, in order
+
+1. **The Roost, the Dig and the Vault** in the Hollow's shape (Redcowl's spared end plays `.spared` then `.flit`), with story's words (`WRITING_PASS.md` §23).
+2. **The Hollow at the screen:** the experience director is running it at 1920×1080, stage by stage.
+3. **Data owed by others:** the place drawn to `HollowByNight.Ground` (arena art).
 
 ### 8.4 To see in the game (none of it has been seen yet)
 

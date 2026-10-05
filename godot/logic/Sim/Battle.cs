@@ -386,6 +386,7 @@ public sealed partial class Battle
         UpdateZones(dt);
         UpdateStrikes(dt);
         UpdateBlows(dt);
+        UpdateRiseFire(dt);
         UpdatePickups(dt);
         UpdateBuffs(dt);
         if (Graves.Count > 40) Graves.RemoveRange(0, Graves.Count - 40);
@@ -1160,16 +1161,56 @@ public sealed partial class Battle
     }
 
     /// <summary>From the Ashes: the survivor gets up burning, and so does everything near them.</summary>
+    double RiseRadius(int rank) => (rank >= 2 ? 8 : 4) * Math.Sqrt(Stats.Get(Stat.Area));
+
+    /// <summary>"You go cold. Then the ember catches." The cold's beat before the fire, and how long its
+    /// front takes to run out to its edge (eased out, as a blast's air is; the look's FireRun).</summary>
+    public const double RiseCold = 0.35, RiseRun = 0.3;
+
+    /// <summary>Cold, Then Not's fire on its way out from where she got up.</summary>
+    sealed class RiseFireState
+    {
+        public double X, Z, R, Dmg, T;
+        public readonly HashSet<int> Caught = new(), Props = new();
+        public bool Lit;
+    }
+    RiseFireState? riseFire;
+
+    /// <summary>The fire goes out from her after the cold's beat, and each body catches as its front
+    /// reaches it: the near first, the edge last, a wave and not a flash (every body in eight metres
+    /// burning in one frame read as a bomb, and left the cold no beat).</summary>
     void RiseBurning(int rank)
     {
         var p = Player;
+        riseFire = new RiseFireState { X = p.X, Z = p.Z, R = RiseRadius(rank), Dmg = 40 * (1 + 0.08 * (EmberLevel - 1)) };
+    }
+
+    /// <summary>Where the rise's front has run to, this long after it caught (0 to its edge).</summary>
+    public static double RiseFront(double r, double t) => t <= 0 ? 0 : t >= RiseRun ? r : r * (1 - Math.Pow(1 - t / RiseRun, 3));
+
+    void UpdateRiseFire(double dt)
+    {
+        if (riseFire is not { } f) return;
+        f.T += dt;
+        double front = RiseFront(f.R, f.T - RiseCold);
+        if (front <= 0) return;
         var was = credit;
         credit = "boon:from_the_ashes";
-        double r = (rank >= 2 ? 8 : 4) * Math.Sqrt(Stats.Get(Stat.Area)), dmg = 40 * (1 + 0.08 * (EmberLevel - 1));
-        Explode(p.X, p.Z, r, dmg, School.Fire, [Tag.Fire, Tag.Area], null);
+        Tag[] tags = [Tag.Fire, Tag.Area, Tag.Explosion];
         var burn = new StatusPayload(StatusKind.Burn, 1, 1, 4);
-        ForEachHostileInRadius(p.X, p.Z, r, (e, _) => ApplyStatus(e, burn, dmg));
+        ForEachHostileInRadius(f.X, f.Z, front, (e, d) =>
+        {
+            if (!f.Caught.Add(e.Id)) return;
+            double dd = d == 0 ? 1 : d;
+            HitEnemy(e, f.Dmg, School.Fire, tags, new HitOpts { Knockback = 0.5, DirX = (e.X - f.X) / dd, DirZ = (e.Z - f.Z) / dd, Depth = 1 });
+            if (e.Alive) ApplyStatus(e, burn, f.Dmg);
+        });
+        foreach (var c in Collision.Within(f.X, f.Z, front))
+            if (c.Tag != null && f.Props.Add(c.Id)) Hooks.OnHitProp?.Invoke(c.Tag, c.Id, School.Fire, f.Dmg, f.X, f.Z);
+        // What answers a blast answers it once, as it catches.
+        if (!f.Lit) { f.Lit = true; Fire(TriggerEvent.Explode, new ProcCtx { X = f.X, Z = f.Z, Damage = f.Dmg, School = School.Fire, Tags = tags, Depth = 1 }); }
         credit = was;
+        if (front >= f.R) riseFire = null;
     }
 
     /// <summary>Cinderwake: fire where the dash has been.</summary>
@@ -1284,6 +1325,9 @@ public sealed partial class Battle
                 p.Hp = MaxHp * (ashes && ar >= 2 ? 1 : 0.5);
                 p.Iframes = ashes && ar >= 3 ? 3.5 : 2;
                 if (ashes && ar >= 3) p.DashCharges = RoundInt(Stats.Get(Stat.DashCharges));
+                // Said first: the view draws the cold, then the fire going out (RiseBurning catches each body
+                // as its front reaches it, after the cold's beat, Delay).
+                Events.Emit(new Ev.Rise { X = p.X, Z = p.Z, Ember = ashes, Rank = ashes ? ar : 1, Grace = p.Iframes, Radius = ashes ? RiseRadius(ar) : 0, Delay = ashes ? RiseCold : 0 });
                 if (ashes) RiseBurning(ar);
                 Events.Emit(new Ev.Announce { Title = ashes ? "You go cold. Then the ember catches." : "Something answers for you: not yet. You get up.", Tone = Tone.Boon });
             }

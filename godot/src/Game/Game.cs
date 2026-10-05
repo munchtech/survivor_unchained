@@ -748,6 +748,7 @@ public partial class Game : Node, IZoneHost
             case Ev.Victory: Haptics.Add(1, 0.4f, 0.4f, peak: true); break;
             case Ev.PlayerDeath: Haptics.Add(1, 0, 0.4f, blow: true, peak: true); break;
             case Ev.Evolve { Chest: false }: Haptics.Add(0.6f, 0.4f, 0.25f); break;
+            case Ev.Rise: Haptics.Add(0.9f, 0.2f, 0.3f, blow: true, peak: true); break;
         }
     }
 
@@ -779,6 +780,12 @@ public partial class Game : Node, IZoneHost
                     scene?.Slow(0.6);
                     Shots.Want("evolve", 0.25);
                     Shots.Want("evolve", 0.9);
+                    break;
+                case Ev.Rise:
+                    // The blow that should have ended her, held: the world slows while she goes
+                    // cold and gets up (BattleFx.Rise draws it).
+                    scene?.Slow(1.1);
+                    foreach (var s in new[] { 0.08, 0.3, 0.55, 0.8, 1.1, 1.5, 2.2, 3.2 }) Shots.Want("rise", s);
                     break;
                 case Ev.Bark bk:
                     // A named voice in a fight (the Warden, Grimtunnel) is heard over everything, when its line shows
@@ -1003,7 +1010,7 @@ public partial class Game : Node, IZoneHost
 
     /// <summary>--open KIND (or 'all'): the screens opened in turn, for
     /// pictures and for runs that check each builds (--bare hides the world).</summary>
-    bool hordeDone, dropsDone, castDone, giveDone, minuteDone, chestDone, barksDone, answerDone;
+    bool hordeDone, dropsDone, castDone, giveDone, minuteDone, chestDone, barksDone, answerDone, fallDone;
     int dieIx;
     double blastT = 0.5, marksT = 1;
 
@@ -1097,6 +1104,16 @@ public partial class Game : Node, IZoneHost
             lb.EmberXp = 0;
             lb.EmberNext = 1e9;
             lb.Player.Hp = lb.MaxHp;
+        }
+        // --fall-at T: a killing blow at T seconds, for pictures of her rise (give her
+        // +from_the_ashes for Cold, Then Not; otherwise she has Not Yet for it).
+        if (!fallDone && Args.Has("fall-at") && Battle is { } fb && Journey.Playtime >= Args.Num("fall-at", 3))
+        {
+            fallDone = true;
+            if (fb.Player.Ashes == 0) fb.Player.Revives = Math.Max(fb.Player.Revives, 1);
+            fb.Player.Iframes = 0;
+            fb.Player.Hp = 1;
+            fb.HurtPlayer(fb.MaxHp * 9, School.Physical, "a test", null);
         }
         // --blast SCHOOL[:R]: that school's burst a few paces ahead, every second and a half (pictures of it).
         if (Args.Get("blast") is string bl && Battle is { } bb && scene != null)
