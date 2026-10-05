@@ -77,5 +77,8 @@ public class MapSpoilsTests
         Assert.Equal("The Hollow Dene, tier 2: cleared, the first time: a point for the atlas", MapSpoils.AtlasLine(c, true, true));
         Assert.Equal("The Hollow Dene, tier 2: cleared", MapSpoils.AtlasLine(c, true, false));
         Assert.Equal("The Hollow Dene, tier 2: closed, Gutterwick still standing", MapSpoils.AtlasLine(c, false, false));
+        // (a ruler with a title is named mid-sentence as one: "the Barrow Lord", never "The Barrow Lord")
+        var d = new Chart { Tier = 1, People = "dead", Name = "The Lampless Howes" };
+        Assert.Equal("The Lampless Howes, tier 1: closed, the Barrow Lord still standing", MapSpoils.AtlasLine(d, false, false));
     }
 }
