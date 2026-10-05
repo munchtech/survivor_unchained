@@ -273,6 +273,8 @@ public sealed partial class Journey
         // A chart carries its map in its name until it is in the pack.
         if (p.Kind == PickupKind.Item && p.Ref != null && Maps.Charts.FromRef(p.Ref) is { } chart)
             return GiveChart(chart);
+        // Gear rolled whole where it fell (Rpg/Loot.cs) is taken as it is.
+        if (p.Payload is ItemInstance whole) return Take(whole);
         if (p.Kind is PickupKind.Item or PickupKind.Material or PickupKind.Quest && p.Ref != null)
         {
             // Gear on the ground was rolled when it fell; its light said how good it is. A ruler's
@@ -442,9 +444,9 @@ public sealed partial class Journey
 
     public void Use(string uid, Battle? b)
     {
-        if (Inventory.Find(Ch, uid) is not { InPack: true } loc) return;
+        if (Inventory.Find(Ch, uid) is not { Carried: true } loc) return;
         var def = Items.Get(loc.Item.Def);
-        if (def.Kind != ItemKind.Consumable || def.Consumable is not { } c) { Equip(uid, null, b); return; }
+        if (def.Kind != ItemKind.Consumable || def.Consumable is not { } c) { if (loc.InPack) Equip(uid, null, b); return; }
         if (c.Heal is double heal && b != null)
         {
             if (b.Player.Hp >= b.MaxHp - 0.5) { Warn("You are unhurt"); return; }
@@ -474,8 +476,7 @@ public sealed partial class Journey
             if (cure == "poisoned" && b != null) b.Player.PoisonT = 0;
             if (EnumKey<ConditionId>.TryParse(cure, out var cid)) Ch.Conditions.RemoveAll(x => x.Id == cid);
         }
-        loc.Item.Qty--;
-        if (loc.Item.Qty <= 0) Ch.Pack[loc.Index] = null;
+        Inventory.Remove(Ch, uid, 1);
         OnToast(new Toast(ToastKind.World, $"{def.Name} used"));
         OnTouch();
     }
@@ -485,15 +486,9 @@ public sealed partial class Journey
 
     public void Drop(string uid)
     {
-        if (Inventory.FromPouch(uid) is { } mat && Ch.Materials.Remove(mat))
-        {
-            OnToast(new Toast(ToastKind.World, $"Left behind: {Items.Get(mat).Name}"));
-            OnTouch();
-            return;
-        }
-        if (Inventory.Find(Ch, uid) is not { InPack: true } loc) return;
+        if (Inventory.Find(Ch, uid) is not { Carried: true } loc) return;
         if (StillNeeded(loc.Item)) { Warn("You might need that"); return; }
-        Ch.Pack[loc.Index] = null;
+        Inventory.Remove(Ch, uid);
         OnToast(new Toast(ToastKind.World, $"Left behind: {Inventory.Name(loc.Item)}"));
         OnTouch();
     }
@@ -739,8 +734,8 @@ public sealed partial class Journey
             var it = World.Shops.GetValueOrDefault(shop)?.Stock.FirstOrDefault(x => x.Uid == uid);
             return it == null ? null : Math.Max(1, (int)Math.Ceiling(UnitValue(it) * def.Markup * PriceMod(shop)));
         }
-        var mine = Ch.Pack.FirstOrDefault(x => x?.Uid == uid) ?? Inventory.Pouch(Ch).FirstOrDefault(x => x.Uid == uid);
-        if (mine == null) return null;
+        if (Inventory.Find(Ch, uid) is not { Carried: true } at) return null;
+        var mine = at.Item;
         var kind = Items.Get(mine.Def).Kind;
         if (!def.BuysAll && !def.Buys.Contains(kind.Key())) return null;
         // Nothing the story still needs goes over a counter: sold there, a
@@ -772,19 +767,8 @@ public sealed partial class Journey
     {
         var price = PriceOf(shop, uid, false);
         if (price == null) { Warn("They will not buy that"); return; }
-        ItemInstance it;
-        if (Inventory.FromPouch(uid) is { } mat)
-        {
-            // Out of the pouch, the whole of it: a stack on their counter.
-            it = Inventory.Make(Ch, mat, Ch.Materials.GetValueOrDefault(mat));
-            Ch.Materials.Remove(mat);
-        }
-        else
-        {
-            int i = Ch.Pack.FindIndex(x => x?.Uid == uid);
-            it = Ch.Pack[i]!;
-            Ch.Pack[i] = null;
-        }
+        // Out of wherever it is carried, the whole of it: a stack on their counter.
+        var it = Inventory.Remove(Ch, uid)!;
         Ch.Gold += price.Value;
         Ch.Stats.GoldEarned += price.Value;
         World.Shops.GetValueOrDefault(shop)?.Stock.Add(it);

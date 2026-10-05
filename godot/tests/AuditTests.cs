@@ -515,7 +515,7 @@ public class AuditTests
         p.Give("sigil_fragment");
         p.J.OpenShop("rav", new Random(1));
         p.J.OpenShop("vonnra", new Random(1));
-        foreach (var it in p.J.Ch.Pack.Where(i => i != null && Items.Get(i.Def).Kind == ItemKind.Quest))
+        foreach (var it in p.J.Ch.Keys.Where(i => Items.Get(i.Def).Kind == ItemKind.Quest))
         {
             Assert.Null(p.J.PriceOf("rav", it!.Uid, false));
             Assert.Null(p.J.PriceOf("vonnra", it.Uid, false));

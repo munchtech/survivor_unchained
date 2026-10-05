@@ -80,7 +80,7 @@ public class CraftersTests
     public void Her_flask_is_filled_at_the_inn_overnight_a_bitterroot_a_draught_to_three()
     {
         var p = Town();
-        foreach (var it in p.J.Ch.Pack.Where(x => x?.Def == "health_draught").ToList()) p.J.Ch.Pack[p.J.Ch.Pack.IndexOf(it)] = null;
+        p.J.Ch.Belt.Remove("health_draught");
         Assert.Equal(0, p.Count("health_draught"));
         var buy = Crafting.BuyFlask(p.J.Craft);
         Assert.True(buy.Ok, buy.Blocked);
@@ -500,8 +500,9 @@ public class CraftersTests
             for (uint s = 1; s <= 600; s++)
             {
                 var it = Inventory.Make(p.J.Ch, "iron_helm", rarity: 2, seed: s * 7919, dropped: true, level: level);
-                Assert.Equal(level, it.Level);
-                foreach (var a in it.Affixes) { all++; if (a.Tier == 2) finer++; }
+                Assert.Equal(level ?? p.J.Ch.Level, it.Level);
+                // Past level 25 the grades rise (loot's rule, docs/design/LOOT_DESIGN.md §4.3): read within the band.
+                foreach (var a in it.Affixes) { all++; if (a.Tier - Drops.GradeShift(it.Level) == 2) finer++; }
             }
             return finer / (double)all;
         }
@@ -510,9 +511,9 @@ public class CraftersTests
         Assert.InRange(Finer(10), 0.43, 0.57);
         Assert.InRange(Finer(30), 0.84, 0.95);
         Assert.Equal(0.7, Crafting.FinerGrade(18), 6);
-        // Never past the rarity's own finer grade: the forge's ceiling is still a lucky drop's.
+        // Never past the rarity's own finer grade, but for the grades depth adds past level 25 (loot's §4.3).
         Assert.All(Enumerable.Range(1, 200).Select(s => Inventory.Make(p.J.Ch, "iron_helm", rarity: 2, seed: (uint)s, level: 40)),
-            it => Assert.All(it.Affixes, a => Assert.True(a.Tier <= Crafting.Cap(it))));
+            it => Assert.All(it.Affixes, a => Assert.True(a.Tier <= Crafting.Cap(it) + Drops.GradeShift(it.Level))));
         // Only gear carries a level.
         Assert.Null(Inventory.Make(p.J.Ch, "wolf_pelt", level: 30).Level);
     }
@@ -568,7 +569,7 @@ public class CraftersTests
     {
         var c = new Maps.Chart { Tier = 2, People = people, Seed = 7, Rarity = rarity, Mods = mods.ToList(), Name = "The Test Ground" };
         Assert.True(p.J.GiveChart(c));
-        return p.J.Ch.Pack.First(i => i?.Chart == c)!;
+        return p.J.Ch.Satchel.First(i => i.Chart == c);
     }
 
     [Fact]
