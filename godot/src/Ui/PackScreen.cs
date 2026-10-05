@@ -107,8 +107,8 @@ public partial class InventoryScreen : Overlay
     static readonly (EquipSlot Slot, bool Right, float Y)[] Doll =
     {
         // (the first places sit level with the carried grid's first row, so the two halves share a line)
-        (EquipSlot.Head, false, 38), (EquipSlot.Cloak, false, 130), (EquipSlot.Body, false, 222), (EquipSlot.Relic, false, 314),
-        (EquipSlot.Amulet, true, 84), (EquipSlot.Weapon, true, 176), (EquipSlot.Offhand, true, 268), (EquipSlot.Ring1, true, 360), (EquipSlot.Ring2, true, 452),
+        (EquipSlot.Head, false, 36), (EquipSlot.Cloak, false, 122), (EquipSlot.Body, false, 208), (EquipSlot.Relic, false, 294),
+        (EquipSlot.Amulet, true, 58), (EquipSlot.Weapon, true, 144), (EquipSlot.Offhand, true, 230), (EquipSlot.Ring1, true, 316), (EquipSlot.Ring2, true, 402),
     };
     public static readonly Dictionary<EquipSlot, (string Name, string Glyph)> Slots = new()
     {
@@ -160,7 +160,8 @@ public partial class InventoryScreen : Overlay
 
     /* --------------------------------------------------------- the doll -- */
 
-    const int DollW = 352, DollH = 520, SlotS = 64;
+    // (as tall as the column of what she carries beside it, so neither leaves an empty strip above the prompts)
+    const int DollW = 352, DollH = 468, SlotS = 64;
 
     Control DollView(CharacterData ch)
     {
@@ -417,7 +418,7 @@ public partial class InventoryScreen : Overlay
         if (CanBreak(it) && Crafting.BreakDown(G.Journey.Craft, it) is { Ok: true } bq)
             acts.AddChild(Style.HoldButton($"Break down for {Items.Several(Crafting.Iron, bq.Gives[Crafting.Iron])}", () => BreakDown(it)));
         // A jar of the Dig's slurry carried: the one gamble, by the survivor's own hand.
-        bool steep = loc.InPack && !G.Journey.InArena && Inventory.Count(Ch, Crafting.Rules.Slurry.Jar) > 0 && Crafting.Steep(G.Journey.Craft, it).Ok;
+        bool steep = loc.InPack && !G.Journey.InArena && Crafting.CanSteep(Ch) && Crafting.Steep(G.Journey.Craft, it).Ok;
         if (steep) acts.AddChild(Style.HoldButton("Steep", () => Steep(it)));
         if (!loc.Worn && !G.Journey.StillNeeded(it)) acts.AddChild(Style.HoldButton("Leave behind", () => Leave(it)));
         var (card, worn) = ItemViews.Compare(it, Ch, Items.SlotFor(def) != null);

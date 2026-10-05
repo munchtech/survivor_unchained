@@ -505,10 +505,12 @@ public partial class SheetScreen : Overlay
     {
         v.AddChild(Kit.Head("Calling and origin"));
         var row = Style.H(22);
+        // (four even columns across the panel's content, as the standing's above)
+        const float ColW = (Overlay.BookW - 2 * Overlay.Margin - 3 * 22) / 4f;
         Control Col(string head, string name, string text, Color? nameCol = null)
         {
             var c = Style.V(2, Style.Label(head, Style.UiHeavy, 12, Kit.HeadInk, false, HorizontalAlignment.Left, false),
-                Style.Label(name, Style.TextBold, 18, nameCol ?? Kit.Ink, true), Style.Label(text, Style.TextItalic, 14, Kit.Dim, true));
+                Style.Label(Kit.Balance(name, Style.TextBold, 18, ColW), Style.TextBold, 18, nameCol ?? Kit.Ink, false, HorizontalAlignment.Left, true), Style.Label(Kit.Balance(text, Style.TextItalic, 14, ColW), Style.TextItalic, 14, Kit.Dim, false, HorizontalAlignment.Left, true));
             c.SizeFlagsHorizontal = SizeFlags.ExpandFill;
             return c;
         }
@@ -650,13 +652,13 @@ public partial class HeldWord : Control
     double p, flash;
     bool mouse, over, fired;
 
-    public HeldWord(string title, string text, Action done, int size = 19)
+    public HeldWord(string title, string text, Action done, int size = 19, Color? ink = null)
     {
         this.done = done;
         MouseFilter = MouseFilterEnum.Stop;
         MouseDefaultCursorShape = CursorShape.PointingHand;
-        name = size >= 18 ? Style.Label(title, Style.DisplayLight, size, Style.EmberHi, false, HorizontalAlignment.Left, true)
-            : Style.Label(title, Style.UiBold, size, Style.EmberHi, false, HorizontalAlignment.Left, true);
+        name = size >= 18 ? Style.Label(title, Style.DisplayLight, size, ink ?? Style.EmberHi, false, HorizontalAlignment.Left, true)
+            : Style.Label(title, Style.UiBold, size, ink ?? Style.EmberHi, false, HorizontalAlignment.Left, true);
         var body = Style.V(3, name);
         if (text != "") body.AddChild(Style.Label(text, Style.Ui, 14, Kit.Ink2, true));
         body.MouseFilter = MouseFilterEnum.Ignore;

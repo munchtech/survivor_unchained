@@ -33,7 +33,8 @@ The owner, 5 October:
 3. **Fewer drops, better drops, the rest is crafting.** Gear comes only from what visibly carries
    it (champions, minibosses, heralds, bosses, strongboxes, the Verge's elites). About a third fewer
    gear drops than today; each roll is likelier to be good, and Commons thin out as levels rise.
-   A carrier that drops no gear drops the people's material or old iron instead.
+   A carrier that drops no gear now and then leaves its people's material or old iron, at rates
+   crafting measured; in the night's arenas these join the tally at the night's end.
 4. **Legendaries are rare, early and certain once.** About one gear roll in 230. The first story
    boss a survivor beats drops one for certain (Diablo III's first-kill rule); a visible tally,
    "the dark's debt", guarantees one at the 120th roll without one. Four of the first eight can
@@ -281,17 +282,21 @@ arenas, now everywhere.
 
 | Source | Gear rolls (today) | Gear rolls (now) | If no gear | Floor and quality |
 |---|---|---|---|---|
-| Arena champion, captain, keeper | 1 at 60% | 1 at 45% | the people's material ×1–2, or old iron (30%) | – |
-| Arena miniboss | 1 at 60% | 1 | + 1 material | Uncommon; Rare+ ×1.5 |
-| Arena herald, lieutenant | 1 at 60% | 1 | + 1–2 materials | Uncommon; Rare+ ×1.5 |
-| Arena or story boss's hoard | 2 + tier/2 | 2, 3 from tier 3 | + 2–3 materials | first roll Rare; Rare+ ×2; Legendary ×4 |
-| Verge elite | 1 | 1 at 70% | the people's material | – |
-| Map pack carrier (grade 1 / 2) | 1 / 2 | 1 at 55% / 1 + 40% | material | – / Rare+ ×1.3 |
-| Map keeper (grade 3) | 2+ | 2 | + material | first Uncommon; Rare+ ×1.4 |
-| Map ruler | 3–5 | 3 + quantity | + 3 materials | first Rare; Rare+ ×2; Legendary ×4 |
+| Arena champion, captain, keeper | 1 at 60% | 1 at 45% | the people's material (10%), old iron (20%): to the night's end tally | – |
+| Arena miniboss | 1 at 60% | 1 | – (crafting's tally pays +2 at the end) | Uncommon; Rare+ ×1.5 |
+| Arena herald, lieutenant | 1 at 60% | 1 | – | Uncommon; Rare+ ×1.5 |
+| Arena or story boss's hoard | 2 + tier/2 | 2, 3 from tier 3 | + 1 material, to the tally | first roll Rare; Rare+ ×2; Legendary ×4 |
+| Verge elite | 1 | 1 at 70% | the people's material (10%), old iron (20%), on the ground | – |
+| Map pack carrier (grade 1 / 2) | 1 / 2 | 1 at 55% / 2 at 70% | material (10%), iron (20%); the map's per-kill materials as before | – / Rare+ ×1.3 |
+| Map keeper (grade 3) | 2+ | 2 | the map's per-kill materials | first Uncommon; Rare+ ×1.4 |
+| Map ruler | 3–5 | 3 + quantity | the map's per-kill materials (5) | first Rare; Rare+ ×2; Legendary ×4 |
 | Map strongbox | 3–5 | 2 + quantity | + 2 materials | first Uncommon; Rare+ ×1.5 |
 
-About a third fewer gear drops than today, each one likelier to be Rare or better. A chart's
+About a third fewer gear drops than today, each one likelier to be Rare or better. The materials in
+gear's place are crafting's measured rates (`CraftingEconomy`): a tenth the people's material, a
+fifth old iron, which leaves Act 1's stores about where they were; more piled up and meant nothing.
+In the night's arenas they are not dropped but join the night's end tally (crafting decision 7: no
+confetti, the tally is the moment), and a fall spills half of them as it does the rest. A chart's
 **quantity** adds rolls and its **rarity** multiplies Rare+ weights, as now. The survivor's
 **luck** raises Rare+ weights by half of what it adds (luck 1.4: ×1.2), never the count.
 
@@ -327,8 +332,9 @@ can read its affixes and the beam can say what it is.
   carriers), a place or a story condition (the Pelt of the Pack only after the Pack is
   slaughtered). Homes make them huntable at the Wayfinder's table (choose a people's chart to hunt
   their Legendary), the way Grim Dawn's infrequents are.
-- **Expected in Act 1** (`LootTests` simulates it from the counts above): about 250 gear rolls,
-  three to five Legendaries (one certain), two to four set pieces, fifteen Epics.
+- **Act 1, simulated** (`LootTests`, 60 runs of 18 nights and 10 days at these counts): about 215
+  gear drops (39 Common, 78 Uncommon, 74 Rare, 18 Epic), 3 set pieces and 3.5 Legendaries, one of
+  them certain; and in gear's place about 31 of the peoples' materials and 26 old iron.
 
 ### 5.4 Duplicates
 
@@ -442,18 +448,20 @@ different sentence. The rule list is for the few, later (UI's screen).
 
 | Tier | Label | Beam (VFX lead) | Drop sound (placeholders mine, FM synth, ours) | Map |
 |---|---|---|---|---|
-| Common | small grey text | none | a dull clink: cloth thump for armour, a short iron tick for a weapon | – |
-| Uncommon | green text | a low glow, 0.8 m | the clink and a soft high ring | – |
-| Rare | blue text on a dark plate | 2.5 m, steady | one clear bell, struck once | small dot |
-| Epic | violet, bordered plate | 5 m, a slow pulse | a struck bell held, with a low hum under it | violet diamond |
-| Set | verdigris, double border, chain-link mark | 6 m, two strands that twist | two bells a fifth apart, struck together: a pair | verdigris diamond |
+| Common | small grey words, near her only | none | a dull clink: cloth thump for armour, a short iron tick for a weapon | – |
+| Uncommon | green words on a dark plate, near her only | none | the clink and a soft high ring | – |
+| Rare | blue words on a dark plate | a low glow, 1.2 m | one clear bell, struck once | small dot |
+| Epic | violet, framed plate | 3 m, thin, a slow pulse | a struck bell held, with a low hum under it | violet diamond |
+| Set | verdigris, double border, chain-link mark | 4 m, two thin strands that twist | two bells a fifth apart, struck together: a pair | verdigris diamond |
 | Legendary | amber, large, framed, a slow shimmer | the sky pillar (8.2) | the toll (8.2) | amber star, and the screen's edge |
 | Storied | ember red, framed | the pillar ringed in sparks | the toll, then a breath of fire | ember star |
 | Material | small text in its colour | none | a soft pat | – |
 | Chart | parchment text | 2 m, pale | paper and a small chime | chart mark |
 | Quest | gold text | 1.5 m, gold | a short warm chime | – |
 
-Rules: the beam's height says the tier; colour says the band; a **mark** on the label says the
+Seen at 1920×1080 (`docs/loot/`): six beams after one fight read as clutter by day (the experience
+director), so Commons and Uncommons have no beam at all, only their names, as Diablo IV lights only
+its best. Rules: the beam's height says the tier; colour says the band; a **mark** on the label says the
 exception (an up-arrow for an upgrade, a small anvil for a better make than worn). Drop sounds play
 **when the thing lands**, from where it lands, so a Rare dropped behind you is heard behind you;
 the pickup keeps its short sound. A tier's sound plays at most twice a second (a boss's hoard of
@@ -576,6 +584,9 @@ leave room for Legendaries and Rares). The items plan's other eight sets wait fo
 | Filter | `Rpg/LootFilter.cs` | presets; first match; never-hidden; toggles; upgrades |
 | Sets and Legendaries | `items.json`, `loot.json` (`sets`), `Character.Kit` | bonuses at 2 and 3; content valid (powers parse, homes exist, least levels) |
 | Drop event and placeholder sounds | `Sim` (`Ev.Drop`), `src/Audio/Sfx.cs` | – (heard in the game) |
+| Names on the ground, the screen-edge pointer | `src/Ui/GroundLabels.cs`, `Game.Labels`, `Game.Offscreen` | seen: `docs/loot/labels_night.jpg` |
+| The first Legendary's moment | `Journey.FirstLegendaryTaken(item, x, z)`, once a world | the experience director stages it |
+| Pictures | `--loot [legendary]`, `--hoard N` | – |
 | End-of-fight gathering | `Arena/Arena.cs`, `Play/Zones/MapRun.cs` | gathers shown, breaks hidden, overflow to the storeroom |
 
 ---

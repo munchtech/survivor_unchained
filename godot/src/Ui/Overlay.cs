@@ -205,6 +205,10 @@ public abstract partial class Overlay : Control
     /// <summary>How near the camera comes while this is open (1: as it was).</summary>
     public virtual float CameraNear => 1;
 
+    /// <summary>A place on the ground the view looks at while this is open, instead of the survivor
+    /// (a counter: the keeper, live in the world between its two panels). Null: the survivor.</summary>
+    public virtual (double X, double Z)? CameraLook => null;
+
     /// <summary>
     /// A panel down one side of the screen (docs/UI_DESIGN.md 6, "Page or panel"):
     /// for what is tweaked mid-play, where the world should stay in view (Diablo
@@ -331,6 +335,28 @@ public abstract partial class Overlay : Control
         return v;
     }
 
+    /// <summary>A screen's prompts along the foot of the world, under its panels (a counter, the bench):
+    /// the world can be bright there, so a soft oval of shade lies behind them, darkest at their middle
+    /// and gone well before its edge, so no shape is seen. No plate.</summary>
+    protected void PromptsOnWorld(Control row)
+    {
+        float w = row.GetCombinedMinimumSize().X + 260;
+        var wash = new TextureRect
+        {
+            Texture = new GradientTexture2D
+            {
+                Fill = GradientTexture2D.FillEnum.Radial, FillFrom = new Vector2(0.5f, 0.5f), FillTo = new Vector2(1, 0.5f), Width = 128, Height = 128,
+                Gradient = new Gradient { Colors = new[] { new Color(0.02f, 0.015f, 0.02f, 0.78f), new Color(0.02f, 0.015f, 0.02f, 0.6f), new Color(0.02f, 0.015f, 0.02f, 0) }, Offsets = new[] { 0f, 0.5f, 1f } },
+            },
+            ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize, StretchMode = TextureRect.StretchModeEnum.Scale, MouseFilter = MouseFilterEnum.Ignore,
+            Position = new Vector2(960 - w / 2, 1016 - 50), Size = new Vector2(w, 100),
+        };
+        AddChild(wash);
+        var centre = new CenterContainer { MouseFilter = MouseFilterEnum.Ignore, Position = new Vector2(0, 1000), Size = new Vector2(1920, 32) };
+        centre.AddChild(row);
+        AddChild(centre);
+    }
+
     /// <summary>A side panel's prompts, along its foot.</summary>
     protected void SideFooter(Control row)
     {
@@ -393,12 +419,18 @@ public abstract partial class Overlay : Control
     /// <summary>Close, with its key: a pad shows B, the keyboard the screen's own key.</summary>
     protected static Button CloseButton(string closeKey, Action close)
     {
-        var btn = Style.Button("", close, false, true);
-        var row = Style.H(Style.Gap2, Controls.Instance?.UsingPad == true ? Style.PadButton("B") : Style.Key(closeKey), Style.Label("Close", Style.UiBold, Style.Small, Style.GoldHi));
+        // Close as words with its key, not a button box (words as type, the owner's rule).
+        var btn = new Button { FocusMode = FocusModeEnum.None, MouseDefaultCursorShape = CursorShape.PointingHand, Flat = true };
+        foreach (var s in new[] { "normal", "hover", "pressed", "focus" }) btn.AddThemeStyleboxOverride(s, new StyleBoxEmpty());
+        btn.Pressed += close;
+        var word = Style.Label("Close", Style.UiBold, Style.Small, Kit.Ink2);
+        var row = Style.H(Style.Gap2, Controls.Instance?.UsingPad == true ? Style.PadButton("B") : Style.Key(closeKey), word);
         row.MouseFilter = MouseFilterEnum.Ignore;
-        row.Position = new Vector2(10, 5);
+        row.Position = new Vector2(0, 5);
         btn.AddChild(row);
-        btn.CustomMinimumSize = new Vector2(row.GetCombinedMinimumSize().X + 22, 36);
+        btn.MouseEntered += () => word.AddThemeColorOverride("font_color", Kit.Ink);
+        btn.MouseExited += () => word.AddThemeColorOverride("font_color", Kit.Ink2);
+        btn.CustomMinimumSize = new Vector2(row.GetCombinedMinimumSize().X, 36);
         Nav.Id(btn, "close");
         return btn;
     }

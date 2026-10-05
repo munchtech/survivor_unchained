@@ -243,7 +243,8 @@ public class MapTests
         }
         Assert.True(waves > 10);
         Assert.NotNull(chest);
-        Assert.InRange(chest!.Items.Count, 3, 7);
+        // Two rolls and the chart's quantity, fewer and better than before (docs/design/LOOT_DESIGN.md §5.1).
+        Assert.InRange(chest!.Items.Count, 2, 7);
         Assert.Contains(chest.Items, i => i.Kind == ChestItemKind.Gear);
     }
 

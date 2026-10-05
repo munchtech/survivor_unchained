@@ -192,6 +192,8 @@ public sealed class WorldState
     public int LootDebt;
     /// <summary>A Legendary has fallen in this world: the first story boss's certain one is paid.</summary>
     public bool FirstLegendary;
+    /// <summary>A Legendary has been taken in this world: its first moment has been staged.</summary>
+    public bool FirstLegendaryTaken;
     /// <summary>The Set and Legendary pieces that have fallen here (a never-owned piece is likelier).</summary>
     public HashSet<string> Owned = new();
     /// <summary>Those who came before.</summary>

@@ -90,6 +90,8 @@ public sealed record ArenaResult(ArenaSpec Spec, bool Won, double Seconds, int K
     /// people's own), and what they spilled falling (docs/CRAFTING_DESIGN.md 6.1).</summary>
     public Dictionary<string, int> Carried { get; init; } = new();
     public Dictionary<string, int> Spilled { get; init; } = new();
+    /// <summary>What the haul looked like, said once (the first scar-glass carried out).</summary>
+    public string? HaulSeen { get; init; }
     /// <summary>What was still lying at the end (docs/design/LOOT_DESIGN.md §6.2): gathered home, to
     /// Rook's storeroom, or broken down for old iron.</summary>
     public Play.Journey.Gathered? Gathered { get; init; }
@@ -215,8 +217,24 @@ public static class Arenas
         var gathered = j.Gather(b);
         // What the night leaves in the survivor's fist, for the Waystation's hands: walked
         // out, all of it; fallen, half.
-        var carry = Crafting.Night(spec.People, spec.Tier, spec.Story, b.EmberLevel, Math.Max(0, b.Time / 60 - spec.Minutes), won, fell, b.ChampionsByFamily);
+        var carry = Crafting.Night(spec.People, spec.Tier, spec.Story, b.EmberLevel, Math.Max(0, b.Time / 60 - spec.Minutes), won, fell, b.ChampionsByFamily, b.MinibossesByFamily,
+            cured: j.World.Fact("stream.clear").Truthy || j.World.Fact("beasts.outcome").Str == "cured");
+        // What the carriers left in place of gear joins the tally, spilled as the rest is (LOOT_DESIGN §5).
+        foreach (var (m, n) in j.NightTally)
+        {
+            int kept = fell ? n / 2 : n;
+            if (kept > 0) carry.Kept[m] = carry.Kept.GetValueOrDefault(m) + kept;
+            if (n - kept > 0) carry.Spilled[m] = carry.Spilled.GetValueOrDefault(m) + n - kept;
+        }
+        j.NightTally.Clear();
         j.Carry(carry, spec.Name);
+        // The first scar-glass carried out is said, once (the story lead's words).
+        string? glassSeen = null;
+        if (carry.Kept.ContainsKey(Crafting.Rules.Night.Glass) && !j.World.Fact("glass.seen").Truthy)
+        {
+            j.World.Facts["glass.seen"] = true;
+            glassSeen = Crafting.Rules.Night.GlassFirst;
+        }
         var w = j.World;
         if (!won)
         {
@@ -248,7 +266,7 @@ public static class Arenas
         w.Arena = null;
         return new ArenaResult(spec, won, b.Time, b.KillCount, b.EmberLevel, xp, b.GoldTotal, fresh, levels, longest, null, taught)
         {
-            TomeChoices = choices, Recorded = recorded, Carried = carry.Kept, Spilled = carry.Spilled, Gathered = gathered,
+            TomeChoices = choices, Recorded = recorded, Carried = carry.Kept, Spilled = carry.Spilled, Gathered = gathered, HaulSeen = glassSeen,
         };
     }
 }

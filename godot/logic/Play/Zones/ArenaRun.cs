@@ -1113,7 +1113,7 @@ public sealed class ArenaRun : ZoneRuntime, IBossArena
     List<Loot> Gear(Enemy e, DropSource source) => G.Journey.Drops(new DropCtx
     {
         Source = source, Level = e.Level, People = Spec.People, Lean = lean, Luck = B!.Stats.Get(Stat.Luck), Gear = gear,
-        Depth = Beyond, Tier = Spec.Tier, StoryBoss = Spec.Story && source == DropSource.Boss, R = R,
+        Depth = Beyond, Tier = Spec.Tier, Tally = true, StoryBoss = Spec.Story && source == DropSource.Boss, R = R,
     });
 
     IEnumerable<Loot> OnLoot(Enemy e)

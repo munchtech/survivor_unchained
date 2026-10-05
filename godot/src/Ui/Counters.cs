@@ -24,6 +24,15 @@ public abstract partial class CounterScreen : Overlay
 
     protected CharacterData Ch => G.Journey.Ch;
 
+    /// <summary>Who keeps this counter (an actor's id in the zone): the view looks at them, framed
+    /// near, in the world between the two panels.</summary>
+    protected abstract string Keeper { get; }
+    /// <summary>Their panel's width, so the gap between the panels is known.</summary>
+    protected abstract float TheirsWidth { get; }
+    public override (double X, double Z)? CameraLook => G.Zone?.Actors.TryGetValue(Keeper, out var a) == true ? (a!.X, a.Z) : null;
+    public override float CameraShift => (40 + TheirsWidth + YoursX) / 2 - 960;
+    public override float CameraNear => 0.62f;
+
     /// <summary>Your side: the title, Close, then what you carry (PackBlock).</summary>
     protected VBoxContainer Yours(PackBlock block)
     {
@@ -50,26 +59,7 @@ public abstract partial class CounterScreen : Overlay
     }
 
     /// <summary>The foot's prompts, across the middle of the screen under the panels.</summary>
-    protected void Foot(Control row)
-    {
-        // Under the panels they lie on the world, which can be bright: a soft oval of shade behind
-        // them, darkest at their middle and gone well before its edge, so no shape is seen.
-        float w = row.GetCombinedMinimumSize().X + 260;
-        var wash = new TextureRect
-        {
-            Texture = new GradientTexture2D
-            {
-                Fill = GradientTexture2D.FillEnum.Radial, FillFrom = new Vector2(0.5f, 0.5f), FillTo = new Vector2(1, 0.5f), Width = 128, Height = 128,
-                Gradient = new Gradient { Colors = new[] { new Color(0.02f, 0.015f, 0.02f, 0.78f), new Color(0.02f, 0.015f, 0.02f, 0.6f), new Color(0.02f, 0.015f, 0.02f, 0) }, Offsets = new[] { 0f, 0.5f, 1f } },
-            },
-            ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize, StretchMode = TextureRect.StretchModeEnum.Scale, MouseFilter = MouseFilterEnum.Ignore,
-            Position = new Vector2(960 - w / 2, 1016 - 50), Size = new Vector2(w, 100),
-        };
-        AddChild(wash);
-        var centre = new CenterContainer { MouseFilter = MouseFilterEnum.Ignore, Position = new Vector2(0, 1000), Size = new Vector2(1920, 32) };
-        centre.AddChild(row);
-        AddChild(centre);
-    }
+    protected void Foot(Control row) => PromptsOnWorld(row);
 
     /// <summary>A thing hovered on their side: its card opens to the right of their panel.</summary>
     protected void TheirTip(ItemInstance? it, Control? over, float theirEdge, Control? prompts = null, int? price = null, bool dear = false)
@@ -99,7 +89,11 @@ public partial class StashScreen : CounterScreen
 {
     public override string Kind => "stash";
     const float TheirsW = 548;
+    protected override string Keeper => "rook";
+    protected override float TheirsWidth => TheirsW;
     static int shelf;
+    /// <summary>Rook's words over a shelf just sold.</summary>
+    string? said;
 
     public StashScreen(Game g) : base(g) { Nav.Prefer = "mine:0"; }
 
@@ -124,6 +118,7 @@ public partial class StashScreen : CounterScreen
                 {
                     if (!Crafting.BuyShelf(G.Journey.Craft)) { Sound.Sfx.Deny(); return; }
                     Sound.Sfx.Loot(false);
+                    said = Crafting.ShelfSaid(w);
                     shelf = w.Shelves - 1;
                     Refresh();
                 }, 15);
@@ -145,6 +140,8 @@ public partial class StashScreen : CounterScreen
             (it, over) => TheirTip(it, over, 40 + TheirsW, Keys(("Click", "Take it")), null), "store", null,
             (i, it, sv) => { if (it != null) sv.Drag = $"store:{it.Uid}"; sv.CanTake = d => d.StartsWith("mine:"); sv.Take = d => ToShelf(d[5..], first + i); }, null, ch);
         v.AddChild(grid);
+        // What Rook said over the shelf she just sold, under it.
+        if (said != null) v.AddChild(Style.Label($"“{said}”", Style.TextItalic, 16, Kit.Ink2, true));
 
         Yours(new PackBlock
         {
@@ -213,6 +210,8 @@ public partial class ShopScreen : CounterScreen
     public override string Kind => "shop";
     readonly string shop;
     const float TheirsW = 684;
+    protected override string Keeper => shop;
+    protected override float TheirsWidth => TheirsW;
 
     public ShopScreen(Game g, string shop) : base(g) { this.shop = shop; Nav.Prefer = "shelf:0"; }
 

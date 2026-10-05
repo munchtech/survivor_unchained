@@ -1,4 +1,6 @@
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using Godot;
 using SurvivorUnchained.Play;
 using SurvivorUnchained.Rpg;
@@ -232,6 +234,58 @@ public static class Kit
         var h = Style.H(28, items);
         h.Alignment = BoxContainer.AlignmentMode.Center;
         return h;
+    }
+
+    /// <summary>
+    /// Words broken into lines of even length, never leaving a word or two alone on the last (a
+    /// greedy wrap left Self's "You read the ground and the animals" over a lone "on it."). Of
+    /// every way to break the words into the fewest lines that fit `width`, it keeps the one whose
+    /// longest line is shortest.
+    /// </summary>
+    public static string Balance(string text, Font font, int size, float width)
+    {
+        var words = text.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        float W(int a, int b) => font.GetStringSize(string.Join(' ', words[a..b]), HorizontalAlignment.Left, -1, size).X;
+        if (words.Length < 2 || W(0, words.Length) <= width) return text;
+        // The fewest lines a greedy wrap needs.
+        int lines = 1;
+        for (int i = 0, start = 0; i < words.Length; i++)
+            if (i > start && W(start, i + 1) > width) { lines++; start = i; }
+        // The best breaks for that many lines (few words: a plain search).
+        int n = words.Length;
+        float best = float.MaxValue;
+        int[]? keep = null;
+        void Try(int from, int left, List<int> cuts, float worst)
+        {
+            if (worst >= best) return;
+            if (left == 1)
+            {
+                float w = W(from, n);
+                if (w > width) return;
+                float m = Math.Max(worst, w);
+                if (m < best) { best = m; keep = cuts.ToArray(); }
+                return;
+            }
+            for (int to = from + 1; to <= n - left + 1; to++)
+            {
+                float w = W(from, to);
+                if (w > width) break;
+                cuts.Add(to);
+                Try(to, left - 1, cuts, Math.Max(worst, w));
+                cuts.RemoveAt(cuts.Count - 1);
+            }
+        }
+        Try(0, lines, new List<int>(), 0);
+        if (keep == null) return text;
+        var o = new System.Text.StringBuilder();
+        int at = 0;
+        foreach (var cut in keep.Append(n))
+        {
+            if (o.Length > 0) o.Append('\n');
+            o.Append(string.Join(' ', words[at..cut]));
+            at = cut;
+        }
+        return o.ToString();
     }
 
     /// <summary>A number in a column: right-aligned in the face's tabular figures.</summary>

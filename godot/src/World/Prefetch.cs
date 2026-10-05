@@ -37,20 +37,26 @@ public static class Prefetch
             if (w.EndsWith(".glb")) scenes.Add($"res://assets/weapons/{w}");
         if (her != null) scenes.AddRange(People.Files(her));
         if (folk) scenes.AddRange(Wardrobe());
+        // Each scene's header read once a session, side by side (some 3 ms a
+        // file, 200 files in town).
+        var unread = new List<string>();
+        foreach (var s in scenes) if (!ktxOf.ContainsKey(s) && !unread.Contains(s)) unread.Add(s);
+        var read = new ConcurrentDictionary<string, string[]>();
+        Parallel.ForEach(unread, s => read[s] = KtxOf(s));
+        foreach (var (s, t) in read) ktxOf[s] = t;
         var want = new List<string>();
         var seen = new HashSet<string>();
         foreach (var s in scenes)
-            foreach (var t in KtxOf(s))
+            foreach (var t in ktxOf[s])
                 if (seen.Add(t) && !ResourceLoader.HasCached(t)) want.Add(t);
         Decode(want);
         // Let go once this frame's building is done (the place is built in one go).
         if (made.Count > 0) Callable.From(Release).CallDeferred();
     }
 
-    /// <summary>The KTX2 files a scene names as its own dependencies.</summary>
+    /// <summary>The KTX2 files a scene names as its own dependencies (any thread).</summary>
     static string[] KtxOf(string scene)
     {
-        if (ktxOf.TryGetValue(scene, out var hit)) return hit;
         var list = new List<string>();
         if (ResourceLoader.Exists(scene))
             foreach (var d in ResourceLoader.GetDependencies(scene))
@@ -61,7 +67,7 @@ public static class Prefetch
                 if (path.StartsWith("uid://")) path = ResourceUid.GetIdPath(ResourceUid.TextToId(path));
                 if (path.EndsWith(".ktx2")) list.Add(path);
             }
-        return ktxOf[scene] = list.ToArray();
+        return list.ToArray();
     }
 
     /// <summary>The files read and transcoded on worker threads; each made a

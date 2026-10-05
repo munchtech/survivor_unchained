@@ -23,8 +23,9 @@ public enum LootTier { Common, Uncommon, Rare, Epic, Set, Legendary, Storied, Ma
 public enum Make { Worn, Sound, Wrought, Legion, Heartwrought }
 
 /// <summary>Where a carried thing lives: the pack's places (gear only), what is worn, and the
-/// slotless stores that never fill (docs/design/LOOT_DESIGN.md §6).</summary>
-public enum Store { Pack, Worn, Pouch, Satchel, Keys, Belt }
+/// slotless stores that never fill (docs/design/LOOT_DESIGN.md §6); Kit: worn in the kit not on now
+/// (crafting's two kits, Rpg/Kits.cs).</summary>
+public enum Store { Pack, Worn, Pouch, Satchel, Keys, Belt, Kit }
 
 /// <summary>What carried the gear: each pays its own way (§5.1).</summary>
 public enum DropSource { Champion, Miniboss, Herald, Boss, Elite, MapPack, MapPackFine, MapKeeper, MapRuler, Strongbox }
@@ -91,9 +92,9 @@ public sealed class LootRules
     public int Debt = 120;
     /// <summary>The scars past the half hour: Rare and up likelier by this a minute, to this much more.</summary>
     public double DepthPerMinute = 0.02, DepthCap = 1;
-    /// <summary>A carrier that drops no gear: its people's material, and old iron this often.</summary>
-    public int Material = 1;
-    public double Iron = 0.5;
+    /// <summary>A carrier roll that is not gear: its people's material this often, old iron this often
+    /// (crafting's measured rates: more left Act 1's stores piled high and meaningless).</summary>
+    public double Material = 0.1, Iron = 0.2;
     /// <summary>A draught kind's carry limit on the belt.</summary>
     public int Belt = 20;
     /// <summary>An upgrade must beat what is worn by this much (and a little more).</summary>
@@ -117,6 +118,9 @@ public sealed class DropCtx
     public string? People;
     public IReadOnlyCollection<string>? Lean;
     public double Luck = 1, Rarity = 1, Quantity = 1, Gear = 1;
+    /// <summary>In the night's arenas the materials go to the night's end tally, not the ground
+    /// (crafting decision 7: no confetti, the tally is the moment).</summary>
+    public bool Tally;
     /// <summary>The scars: minutes past the half hour.</summary>
     public double Depth;
     /// <summary>The arena's tier (a hoard's extra rolls from the third).</summary>
@@ -432,12 +436,15 @@ public static class Drops
         bool owed = hoard && w != null && w.LootDebt >= Rules.Debt;
         bool first = x.StoryBoss && w != null && !w.FirstLegendary && EarlyLegendaries().Any();
         string? material = x.People != null ? PeopleMaterial(x.People) : null;
+        // Fire is the scars', iron the atlas's (crafting design 20.1): in a map the lamplings leave iron.
+        if (material == "ember_shard" && x.Source is DropSource.MapPack or DropSource.MapPackFine or DropSource.MapKeeper or DropSource.MapRuler or DropSource.Strongbox)
+            material = Iron;
         for (int k = 0; k < rolls; k++)
         {
             bool gear = R() < Math.Min(1, src.Chance * x.Gear);
             if (!gear)
             {
-                if (material != null) o.Add(new Dropped(null, material, Rules.Material, LootTier.Material));
+                if (material != null && R() < Rules.Material) o.Add(new Dropped(null, material, 1, LootTier.Material));
                 if (R() < Rules.Iron) o.Add(new Dropped(null, Iron, 1, LootTier.Material));
                 continue;
             }

@@ -292,10 +292,21 @@ in the order to build it.
     Order's evening call; the lamp motif; the burial hymn "Lie Down", sung by
     Chid and a crowd, C08).
 
-11a. **Boss hooks on a story fight**: `ArenaSpec` has a boss and a title but
-    nothing to play when the boss arrives or falls. C10 to C14 need two hooks
-    (a cinematic id, or a conversation to play as barks): on the boss's spawn,
-    and on its death before the reckoning. Section 9 lists each.
+11a. **Boss hooks on a story fight** (built by combat in `StoryNight`, 4
+    October): the fight plays `<id>_arrival` as the boss comes in, and
+    `<id>_end` or `<id>_spared` as it ends, where `CanCinematic` finds a
+    timeline (`StoryFight.Cinematic` names the id: `c10` for the Hollow). The
+    ids: `c10_arrival`, `c10_end`, `c10_spared`; `c11_arrival`, `c11_end`,
+    `c11_spared` (and `c11_again`, his laugh on a rise); `c12_arrival`,
+    `c12_end`; `c13_door` (before the fight), `c13_arrival`, `c13_end`.
+    - The end is decided in play (the spent boss, the prompts), and the
+      cinematic starts from it: `_end` on the death, `_spared` at the choice.
+      A spared part owns the boss's getting up and going; the fight releases
+      him when it hands back.
+    - The fight passes the marks `boss` (where he stands or lies, and his
+      heading) and `her`, and the place's named points the part needs
+      (`den_mouth` for C10), so the cameras are offsets that hold wherever the
+      fight ends (as C03's are).
 12. **Allies in a fight**: an NPC who fights beside her in an arena, holds a
     place (the edge of a light) and does not chase (Brannoc, C14; Act 2's war at
     the gate needs many).
@@ -396,10 +407,10 @@ those calls. File references are `godot/logic/Play/Zones/`.
 | C07 | `brannoc` (`nell`) | Brannoc's conversation, entry `nell`: met, day 2 or later, by day, not yet asked (npc flag `asked_nell`); he asks as she walks up to the smithy | The conversation, as text | The cinematic staging the same nodes and choices |
 | C08 | `cin_iron_marker` | `Waystation.cs`, interactable `burial` in the Quiet Garden: `nell.burying` (true the burial morning only, rule `nell.burial`), by day, once (zone key `waystation.burial`). After C14 it starts from the square | A caption of the garden, then the hymn as Chid's conversation | The cinematic in place of the caption and `G.Talk` |
 | C09 | `vonnra` (`fortune` to `f_door`) | `Waystation.cs`, Vonnra's conversation, the choice "Tell me my fortune." (after dark, `chapter.ready`); the stinger after the `fortune` action | The conversation, as text, including the interruption at `f_below` | The cinematic staging the fortune's nodes; the stinger before `Chapter.Summary` |
-| C10 | none (wordless) | `Verge.cs`, story fight `hollow_by_night`: the boss's spawn, and its death | Nothing: the title card ("Who Kept the Cold Off") comes from `ArenaSpec.BossTitle` | Both parts on the boss hooks (section 6, 11a) |
-| C11 | `cin_raid_on_the_roost` | Story fight `roost_raid`: arrival (`bairns`); at his knee, her choice: "Finish it" plays the death (`last`), "Spare him" the spared ending (`spared`, `flit`) | The outcome: the fight's `OnWin` sets `redcowl.last_words` exactly as `last` does, so Rav's "the leg held" is reachable; `OnSpare` sets `redcowl` = `spared` | The parts on the boss hooks |
+| C10 | none (wordless) | Story night `hollow_by_night` (`StoryNight`, `Play/Story/Hollow.cs`): `c10_arrival` as he walks out; spent, he lies down and, where the let-go is open, she chooses; `c10_end` on his death, `c10_spared` on "Let him go" | The title card ("Who Kept the Cold Off") from `ArenaSpec.BossTitle`; the lie-down and the walk to the den as barks | The three parts on the boss hooks (section 6, 11a) |
+| C11 | `cin_raid_on_the_roost` | Story fight `roost_raid`: `c11_arrival` (`bairns`); at his knee, her choice: "Finish it" plays `c11_end` (`last`), "Spare him" `c11_spared` (`spared`, `flit`) | The outcome: the fight's `OnWin` sets `redcowl.last_words` exactly as `last` does, so Rav's "the leg held" is reachable; `OnSpare` sets `redcowl` = `spared` | The parts on the boss hooks |
 | C12 | `cin_dig_boils_over` | Story fight `dig_boils`: spawn (`pump`) and death, played as a retreat (`quiet`) | Nothing yet (title "Ever So Grateful") | The two parts on the boss hooks |
-| C13 | `cin_behind_the_door` | The door: `Verge.cs`, interactable `night:vault`, before `G.EnterArena`. Then story fight `vault_opened`: spawn (`nondum`) and death, played as the hand at the gate (`redi`) | Nothing yet; the door's Latin is already in `vaultdoor` | The door before the arena; the two parts on the boss hooks |
+| C13 | `cin_behind_the_door` | The door (`c13_door`): `Verge.cs`, interactable `night:vault`, before `G.EnterArena`. Then story fight `vault_opened`: `c13_arrival` (`nondum`) up the stair, and `c13_end` when she has laid him down and he will not stay down: the hand at the gate (`redi`) | Nothing yet; the door's Latin is already in `vaultdoor` | The door before the arena; the two parts on the boss hooks |
 | C14 | `cin_road_back` | Dusk: a new node `brannoc.road` (the choice). Night: a new story fight `road_back` on the Low Ford road; spawn (`wat`'s title) and the dawn win | The night's outcome as told: the morning report (`nell.burial`) tells his going alone | The node, the facts (`nell.road`, `nell.brought_home`), the story fight with Brannoc as an ally, the report's variant; then the cinematic's four parts |
 
 Nothing else starts a cinematic. The explorer (`docs/cloud/story-explorer.md`)

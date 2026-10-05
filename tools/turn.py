@@ -11,7 +11,7 @@ job and give it back the moment the job ends; while you wait, do light work
   python tools/turn.py show
 
 gpu:   one holder. ComfyUI, TRELLIS, MoGe, and big Blender bakes or renders.
-godot: two holders. Godot runs for pictures or clips (dotnet test needs none).
+godot: three holders (each needs 5 GB of RAM free). Godot runs for pictures or clips (dotnet test needs none).
 
 Run it from any worktree by its full path in the main checkout:
 C:/Users/munch/Desktop/survivorsunchained/tools/turn.py
@@ -25,7 +25,7 @@ import urllib.request
 from pathlib import Path
 
 HOME = Path.home() / ".su_turns"
-SLOTS = {"gpu": 1, "godot": 2}
+SLOTS = {"gpu": 1, "godot": 3}
 STALE = 3 * 3600  # a holder that never gave its turn back (crashed or forgotten)
 LEAST_RAM = {"gpu": 0, "godot": 5}  # GB free needed, beyond the turn itself
 

@@ -1,135 +1,180 @@
 # Crafting: handoff
 
-For the next crafting lead. Read `docs/team/README.md` first (the owner's bar, how we work),
-then this, then `docs/team/crafting.md` (one-page status), then `docs/CRAFTING_DESIGN.md`
-(sections 1–20; 17 decisions, 19 what was seen and measured, 20 the endgame). The research is
-`docs/CRAFTING_RESEARCH.md` (lessons C1–C30, cited in the design).
+For the next crafting lead. Read these in order:
+1. `docs/team/README.md`: the owner's bar, how we work, heavy work by turns.
+2. This page.
+3. `docs/team/crafting.md`: the one-page status.
+4. `docs/CRAFTING_DESIGN.md`: section 17 is the decisions (1–30); 19 is what was seen and measured; 20 is the endgame
+   (20.2 the kits as built, 20.7 the endgame as built, 20.8 seen and measured, including the bench).
+5. `docs/design/LOOT_DESIGN.md`. Item level and make are loot's. Crafting's materials are what a carrier drops in
+   place of gear.
+
+The research is `docs/CRAFTING_RESEARCH.md` (C1–C30).
 
 ## The owner, in their words
 
 - "AAA standard", "strive for excellent, above and beyond - not just good enough".
-- "I don't want to polish, I want to create perfection." Remake rather than patch.
-- "Do we have soul?" Make it this valley's, not generic.
-- "end game is two types of arenas - permanent and our normal arenas. permanent is our arpg
-  build maps like poe and the normal arenas are for mindless survivors fun." The bible names
-  them the Wayfinder's atlas (Ysolde's) and the scars.
-- Story is about 40% of the game early on; the endless phase is truly endless.
-- Decided: the weapon's upgrade (Remake) costs old iron; falling after the half-hour spills half
-  the night's materials; full-page screens pause the world only in arena combat and are often
-  not the best choice.
+- "I don't want to polish, I want to create perfection." "We are striving for perfection."
+- "item drops should *mostly* feel good": fewer drops, the rest as crafting materials.
+- "end game is two types of arenas - permanent and our normal arenas. permanent is our arpg build maps like poe
+  and the normal arenas are for mindless survivors fun": the Wayfinder's atlas and the ember scars.
+- The latest screen rules (through UI design, for every screen):
+  - no dark rounded boxes holding data ("still ai boxes" at any size);
+  - no fades unless designed;
+  - no dead space, and a strict grid;
+  - words as type rather than buttons.
+- Decided earlier:
+  - remake costs old iron;
+  - a fall after the half hour spills half;
+  - full-page screens pause only in arenas;
+  - Rook's storeroom grows by bought shelves (24, then 300, 1,000, 2,500 and 5,000 gold, up to eight);
+  - the bench is two panels with the smith live in the world between them.
 
 ## Your brief
 
-Crafting lead: research, design and build crafting, playable end to end and seen in the running
-game at full resolution. It serves the story's early share (crafters are people, crafts open by
-story), the scars (survivors runs) and the atlas (build maps with build depth). Don't stop to
-ask. Keep `dotnet test` in `godot/tests` green, British spelling, short "why" comments, commit and
-push your own branch at milestones (the main session merges; no PRs), hand off past ~500k.
+Crafting lead: research, design and build crafting, playable end to end, and seen in the running game at
+1920×1080.
+- Don't stop to ask. Keep `dotnet test` in `godot/tests` green before every commit.
+- British spelling, and short comments that say why.
+- Commit and push your own branch at milestones. The main session merges it; open no PRs.
+- Take a turn for Godot (`tools/turn.py`) and give it back the moment the shots are done.
+- Hand off at about 500k tokens of context.
 
-## Done (this lead, `a7debf1459f14dfe7`)
+## Done (this lead, `ab0b263c720bdbda8`)
 
-- **The arena's gold cut** (combat built it at my ask; 7f04b40, cd9a194, 4c32586): champions 7%,
-  fodder 0.15%, bosses and minibosses in full. Measured by `CraftingProbe`: a Kerchief night pays
-  375/351/365 gold (it paid 2.5k–3.3k). `CraftingEconomy` reads the arena's real rates and holds
-  every target (weapon Epic by day 8, crafting takes 67% of the gold). Design 19.2, decision 18.
-- **Phase 2** (design 19.3): Wenna's still-room (`src/Ui/StillRoom.cs`, a side panel: brews, "Brew
-  N", her flask refilled at the inn), her bench after the cure (ForgeScreen `forge:wenna`), the
-  moonpetal draught (60%, drunk only for a deep wound), Brannoc's commissions ("Make me one"),
-  Greymuzzle's fang set outside the seams (`ItemInstance.Setting`), Maeca's braid of shed fur, her
-  once-only "That's his." (said lines can carry `effects` now).
-- **Phase 3, code and tests** (not yet seen in the game): Vonnra's binding (`Crafting.Bind`,
-  `Donors`; ForgeScreen `Binding` per seam, a two-step "Unmake it"), Snib's jars and bench
-  (`BuyJar`, `JarsLeft`, ForgeScreen `JarTile` and a Steep tile with the odds), steeping
-  (`Crafting.Steep`, outcomes up/affix/nothing/down, bright grade V, three slurry affixes
-  `fevered`, `of_the_sump`, `pipe_lads`) at Snib's bench in his words or from the pack by hand
-  (two-step, odds said). Snib's "Sell me a jar of that." opens his bench (`action: craft`).
-- **Seen and fixed**: the forge's hammer moment (row flare, streak sparks, heat burning out, then
-  the next preview); empty Work in said why; painted icons for the moonpetal draught, flask and
-  braid (`tools/comfy/ui_art.py icon item KEY "..."`); the pack's break down says what it came to
-  and the ask is red; crafts no longer re-dress the figure (`G.Gear` rebuilt her: she blinked
-  out); **an arena fall now spills half** (`Arenas.Finish` knows a fall by its killer).
-- All the story leads' words are wired verbatim (phase 2 from `a035208561a66c171`, phase 3 from
-  `a73ca9d35d0c487a9` at d132033f, renames applied: `bind.caged`, `steep.affix`, `jar`).
+- **Seen at 1920×1080** (design 20.8):
+  - a scar left an hour past the win (50 shards, a scar-glass, the story's line), and the same night fallen;
+  - a whole map's pay;
+  - a ruler's Mark coming home, and Vonnra inscribing it.
+  - Switches for this: `--clear T` fells a whole map, `--leave T` takes the way out of a won arena or cleared
+    map, and a map's pay is logged ("map paid: ...").
+- **The atlas's pay mended**, measured with the lab's `map` sweep, which now reports material, shards, iron and
+  Marks:
+  - the people's own now comes only from what carries it (ruler 3, keeper 2, leader 1): 15–18 a map, not 74–102;
+  - the Dig's lamplings pay old iron in maps, not the scars' fire;
+  - charts and Marks left lying come home at a map's end (`Journey.Gather`).
+  - Loot did their half: finds sent to Rook show on the map's result, and lampling carriers drop iron in maps.
+- **Two kits, in logic** (`Rpg/Kits.cs`, design 20.2 as built):
+  - the night kit holds only what differs from the day's, and goes on by itself wherever the ember burns;
+  - `Store.Kit` marks a piece worn in the kit that isn't on;
+  - `Journey.EquipKit` and `UnequipKit`; `--nightkit DEF` for pictures.
+  - UI design builds the Pack's switch.
+- **The bench as two panels** (`Forge.cs`; design 20.8):
+  - theirs at the left: the person as a strip, the anvil, its seams, the crafts, their terms;
+  - yours at the right: worn, with the kit switch; carried, stores and purse via UI design's `PackBlock`;
+  - the crafter live between, through `Overlay.CameraLook`, a world point the view looks at;
+  - the crafts grouped by verb under counted tabs (Temper 1 · Work in 4 · Cage 4 · The piece 3).
+  - Then remade as type to the owner's new rules:
+    - the seams are ledger rows;
+    - each craft's name is its act, held for what cannot be undone;
+    - the heat is a chain of UI art's links (hot, warm, cold);
+    - the likeness fades into the panel (`shaders/ui_likeness.gdshader`).
+- **A Legendary breaks down** for 5 old iron and 3 shards wherever it's broken (`Crafting.Yield`). Brannoc's own
+  lines over it (`breakDown.legendary`) are the story lead's, verbatim.
+- **Hand-offs made:**
+  - Vonnra's placeholder model → creatures, now on their should-make list;
+  - a bark drawn over a name plate → UI design, now on their list;
+  - two result-screen findings → UI design (the map result's best finds below the fold; the night result's left
+    card overflowing at 1080).
 
-## Next, in order
+## In progress, and next
 
-1. **Full-resolution checks, waiting for Godot to be free** (the owner is using the GPU: no Godot,
-   no ComfyUI, no Blender until the coordinator says so):
-   - Vonnra's table: `--met vonnra --facts toll.paid=true --items "silver_ring:3:searing@3+keen@1,bone_amulet:2:hale@1,ember_shard*6" --gold 400 --open "talk:vonnra>+>move what" --anvil bone_amulet`. Check the Bind cards, the armed "Unmake it" state, the strike, and her first.bind narration in the left pane (long: it may not fit).
-   - Snib's bench: `--met snib --items "iron_helm:2:hale@1+of_the_wolf@0" --gold 200 --open "talk:snib>jar"`. Snib may need `--zone` for the Dig (find where he stands). Check the jar tile, the Steep tile's odds, the two-step, and his words after.
-   - The pack's steep: `--items "slurry_jar,iron_helm:2:hale@1"`, then `--open inventory --clicks` (find the button by a shot first). Check the odds slab and the outcome note.
-   - A slurried piece's card (green line, the "slurried" tag line) and a grade V badge.
-   - Wenna's still-room after a moonpetal brew (the row glow; `--focus brew:2 --pad --keys Confirm`).
-   - A commission collected the next morning (the "!" over Brannoc, the piece on the anvil).
-2. **Paint the slurry jar's icon** when ComfyUI is free: `python tools/comfy/ui_art.py icon item slurry_jar "a squat stoneware jar sealed with wax and twine, green-black sludge glowing faintly through a crack, a crude scrawled mark" --seeds 4`, then `fit-icon item slurry_jar CANDIDATE`. It uses the `slurry_jar` key; until then it falls back to a glyph.
-3. **Design doc**: add 7.3 and 9 as built (place "The Toll Tower"; jars at Snib's bench and steeping by hand) and the decisions below; record phase 3's seen results in 19.4.
-4. **Endgame** (design 20.6): combat built maps (5c50de1) and the Marks hook (09b6b03).
-   - Two kits first.
-   - Then item level and grade caps.
-   - Then chart verbs at Ysolde's table (`ItemInstance.Chart`; the quality field is ready).
-   - Then Marks on the item side: fill `CombatKit.Marks` (id to strength 0–1, from grade 0–5) and `CombatKit.SkillMods` in `Character.Kit`. Four ids are proven in `Sim/Marks.cs`. Inscribed at Vonnra's table; her mark lines are already in data.
-5. Owed from before: re-measure shards with 20-minute story nights; minibosses' +2 of the
-   people's material.
+1. **The bench, the last pass.** UI design will tell you when their push is up. It brings:
+   - panels at an even 28 margin, see-through, no taper;
+   - grids straight on the page with no well; empty worn slots as engraved shapes; soft card edges;
+   - `HeldWord` (SelfScreen.cs).
 
-## Decisions (each with its why in design 17)
+   Then:
+   - merge it;
+   - swap the held acts in `ForgeScreen.Deed` (they use a `Style.HoldButton` stripped to a word for now) to
+     `HeldWord`;
+   - reshoot every bench with `scratchpad/craft4/bench_shots.py` and send UI design 1:1 shots.
 
-Heat caps working; the forge's ceiling is a lucky drop's grade; work in makes answers; three
-coals offered; the night pays at its end and a fall spills half; remake costs iron; one seam at a
-time; one remake a piece a day; break down halved; arena gold cut (18); Wenna brews from the start,
-tinctures after the cure (19); the still-room is a side panel (20); moonpetal only for a deep
-wound (21); a trophy is set outside the seams (22); crafts never re-dress the figure (23).
-Phase 3, to write into 17: binding moves plain powers only (coals stay in Brannoc's cage; worn
-skills, trophies and slurry powers will not let go); the donor must be in the pack; steeping is
-by the survivor's hand from the pack as well as at Snib's (jars kept past the cure still work);
-the slurry's outcome "affix" adds a fourth power past the seams; Vonnra opens only once the toll
-is paid (the story lead's condition).
+   Still open from their notes: the tabs' art (the boxed look should go once UI art's kit is applied), and the
+   worn row's engraved empties.
+2. **Icons.** UI art (`a0bff3ffe4d3ad748`) is repainting red_cord (it read as an S), lamp_glass (it read as a
+   drinking horn) and scar_glass, which is a placeholder star today. They're queued for the GPU. When their PNGs
+   land, take them into `tools/uiforge/items.py` and `godot/art/ui/icons/item`. Judge them in the game: the
+   night's haul (`--zone arena --minute 95 --won --facts stream.clear=true --lab --leave 2`), the satchel, and
+   Vonnra's Mark card.
+3. **Measure the endgame's economy**: hours of scars and maps mixed. Shards, iron and the people's own come in;
+   charts, marks, cages, rekindles, tempers and remakes spend them. My rough reckoning:
+   - iron and the people's own will pile up once a build is made, since few endgame sinks take them;
+   - shards roughly balance against chart working.
+
+   Measure before asking anyone for numbers (a lesson from the first lead).
+4. **Kits on the Pack:** when UI design's switch lands, see it at 1920×1080 with `--nightkit`.
+
+## Decisions (each with its why in design 17, 20.2, 20.7, 20.8)
+
+- Decisions 1–30 stand.
+- **The kit follows the place**, and the night kit holds only what differs: no swap verb, nobody dresses twice.
+- **The atlas pays iron and the scars pay fire.** Map materials come from what carries them.
+- **Shelf prices stand.** Maps pay about 1,000 gold an hour, nearly all of it from Kerchief maps.
+- **The bench's crafts are grouped by verb under counted tabs.** A dozen cards at once ran off the screen; UI
+  design agreed.
+- **Heat as a chain of links.** It's the motif doing a job, not ornament.
 
 ## Failures and why
 
-- Built the strike's sparks on the first page build; a craft builds the page twice, so they fired
-  on a page already gone and crashed. Now they wait a moment and play on the live page.
-- The first economy cut (champions to a tenth) left 1.6k–2.1k a Kerchief night: my predecessor's
-  model blamed champions, but fodder paid most. Measure before asking.
-- A headless `--import` rewrote 857 `.import` files and made 46 stray `.uid` files; reverted with
-  `scratchpad/craft2/revert_imports.py`. Commit only your own new `.import`/`.uid` files.
-- Heredocs with Python in Bash are refused by the worktree guard: write scripts with the Write
-  tool into the scratchpad (`craft2/ed.py` `sub()` keeps a file's CRLF; `js.py` keeps the JSON
-  layout; `crlf.py` restores CRLF after `sed -i`).
+- My first two-panel left panel ran off the foot of the screen, because every craft was shown at once (about 12
+  cards). Fixed by grouping the crafts.
+- My first `CameraShift` with no look point left Brannoc hidden under a roof, so the gap showed nothing. The
+  view now looks at the crafter, nearer.
+- `--leave 4` at minute 95 without `--lab`: the horde killed her first, so the "walked out" shot was really a
+  fall. Use `--lab` for the left case.
+- Leaving a whole-map clear at 7 s gave 0 gold, because the pulled coins hadn't arrived yet. Use `--leave 16`.
+- A Godot name clash: a method called `Look` (Game already has `Look`) and one called `Act` (the enum). Pick
+  names that are clearly yours.
 
 ## Gotchas
 
-- **Running the game from this worktree**: `godot/assets` is a junction to the main checkout's
-  `public/assets` (skip-worktree set); the main `godot/.godot` is copied in; untracked art copied
-  from the main `godot/art` (never commit those; a merge may need two of them removed first).
-  **Run `dotnet build` in `godot/` before every run**, or the old DLL runs.
-- **Play script**: `scratchpad/craft2/play.py NAME --timeout S -- [game args]` (frames in
-  `godot/.shots`, log in `craft2/logs`). New args: `--items DEF:RARITY:AFFIX@GRADE+...`,
-  `--facts k=v,...`, `--met a,b`, `--clicks X:Y,...` with `--click-every S`, `--won` (with
-  `--minute M`; then `--die T` falls her past the win), `--make --pattern DEF`, `--focus ID` on the
-  still-room. A conversation's greeting often needs `+` before a choice (`talk:wenna>+>brew me`).
-- `crafting.json` is hand-laid (one-line rules): edit it as text, not with a JSON round-trip.
-  Unknown keys inside an object are ignored, but a `_note` key inside `crafters` breaks the parse
-  (it is read as a crafter).
-- The HUD's toasts are hidden under the pack and full pages: say outcomes in the page itself.
-- `G.Gear` re-dresses the world figure (she blinks out) and the pack doll T-poses a frame on every
-  refresh (told to UI design). Crafts use `G.Journey.Work(...)` and `Refresh()` instead.
-- ComfyUI is shared: queue behind others' jobs, then `POST /free` when done.
+- **Running from a worktree:**
+  - `godot/assets` must be a junction to the main checkout's `public/assets` (skip-worktree). Make it with
+    PowerShell `New-Item -ItemType Junction`.
+  - Copy a sibling worktree's `godot/.godot` in (robocopy).
+  - Then run `scratchpad/craft4/copyimports.py` and `fillimported.py`. They copy missing `.import` files and
+    their imported data from the main checkout and sibling worktrees.
+  - Run `dotnet build` before every run.
+  - UI art's `art/ui/chain` has no imports; UiArt loads them from file, and that's fine.
+- **Scripts** (in `scratchpad/craft4/`):
+  - `play.py NAME --timeout S -- [game args]`; frames land in `godot/.shots`.
+  - `crop.py`, `sheet.py`.
+  - `ed.py`'s `sub()` keeps line endings. The worktree guard refuses complex shell, so write a Python edit
+    script and run it plainly.
+- **Clicks:** `--clicks X:Y` clicks, `hX:Y` hovers (UI design's), `pX:Y` presses and holds a second (mine).
+  Positions move with content: shoot once, then click.
+- **The bench's switches:**
+  - `--open forge:ID` (brannoc, wenna, vonnra with `--facts toll.paid=true`, snib, wayfinder with `--charts N`);
+  - `--anvil DEF`, `--make --pattern DEF`, `--near ID --met ID`, `--nightkit DEF`;
+  - `--items DEF:RARITY:AFFIX@G+..`.
+- **Turns:** `python C:/Users/munch/Desktop/survivorsunchained/tools/turn.py take godot "crafting: job" --wait 20`,
+  run in the background, then `give` when done. Waiters are served in the order they first asked.
+- **Data:** `crafting.json` is hand-laid; edit it as text.
 
-## Collaborators (roster in `docs/team/README.md`)
+## Collaborators
 
-- **Combat** `a1d4562f44c7f6feb`: built the gold cut and the Marks hook. They said yes to the
-  moonpetal draught (heal source "draught", so map suffixes catch it). The maps are theirs; the
-  item side of Marks is ours.
-- **Story** `a73ca9d35d0c487a9`: phase 3's words are wired. Vonnra's mark lines are waiting for
-  the endgame. Send them hooks with ids, where each line shows, and who says it.
-- **UI design** `a69858664f1d3dd29`: told about the still-room, the forge's moment and the pack's
-  doll bug.
-- **UI art** `a1a394643aabfb169`: told about the three item icons painted with their pipeline.
-- **Experience** `ad1f5623590e09883`: owns the atlas's and scars' loops.
+- **UI design** (`a4fdbc49786ba8b7f`):
+  - owns the screens' rules and the Pack's kit switch;
+  - judges the bench;
+  - will tell you when their push is up.
+- **UI art** (`a0bff3ffe4d3ad748`): the kit, the chain sprites, and the three icon repaints.
+- **Loot** (`a9a9c345a35e1fcad`, handed off at e5ef6453): item level, drops, Gather, MapSpoils.
+- **Combat** (`a5115633c7006e4d4`): maps (`MapRun`). They're fine with the material change, `ClearNow` and
+  `--leave`.
+- **Story** (`a7ba8903f4c8261b1`): all asks answered; Brannoc's Legendary lines are in WRITING_PASS §24.
+- **Creatures** (`af551cacc6292152f`): Vonnra's own model comes after the boar, the Ford-Warden and the average
+  man and woman. They'll tell you when it lands; judge it in her bench portrait.
 
 ## Files to read first
 
-`docs/team/crafting.md`, `docs/CRAFTING_DESIGN.md` (1, 7, 9, 17, 19, 20),
-`godot/logic/Rpg/Crafting.cs`, `godot/data/content/crafting.json`, `godot/src/Ui/Forge.cs`,
-`godot/src/Ui/StillRoom.cs`, `godot/logic/Play/JourneyCrafting.cs`, `godot/tests/CraftersTests.cs`,
-`godot/tests/CraftingEconomy.cs`, `godot/logic/Sim/Marks.cs` (combat's, for the endgame).
+- Status and design: `docs/team/crafting.md`; `docs/CRAFTING_DESIGN.md` (17, 20.2, 20.7, 20.8).
+- Logic:
+  - `godot/logic/Rpg/Crafting.cs`, `Rpg/Kits.cs`, `Rpg/CraftingCharts.cs`;
+  - `godot/logic/Play/JourneyCrafting.cs`;
+  - `godot/logic/Play/Zones/MapRun.cs` (OnLoot, ClearNow);
+  - `godot/data/content/crafting.json`.
+- UI: `godot/src/Ui/Forge.cs` (the bench, the ledger seams, crafts as type, GradeBadge, the HeatGauge chain).
+- Tests: `godot/tests/KitsTests.cs`, `AtlasPayTests.cs`, `CraftingTests.cs`, `CraftersTests.cs`, `CraftingEconomy.cs`.
+- The lab: `godot/balance/Harness/MapSim.cs`; run `dotnet run -c Release -- map --tiers 1,4,7 --seeds 2
+  --callings warden,arcanist --par 4` in `godot/balance`.

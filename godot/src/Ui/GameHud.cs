@@ -105,6 +105,7 @@ public partial class GameHud : CanvasLayer
     int killsShown;
     // What matters off the screen; where the prompt's thing is on it; the arena's clock and its word.
     EdgeMarks edges = null!;
+    GroundLabels ground = null!;
     Vector2? promptAnchor;
     Label tallyWord = null!;
     double? arenaLeft;
@@ -128,6 +129,10 @@ public partial class GameHud : CanvasLayer
         play.AddChild(combat);
         BuildBackings();
         BuildUnder();
+        // Loot's names on the ground, under everything else the fight shows (docs/design/LOOT_DESIGN.md §8.1).
+        ground = new GroundLabels();
+        Style.Fill(ground);
+        combat.AddChild(ground);
         edges = new EdgeMarks();
         Style.Fill(edges);
         combat.AddChild(edges);
@@ -890,11 +895,14 @@ public partial class GameHud : CanvasLayer
         // The newest first, the rest stepping down under it.
         toasts.MoveChild(box, 0);
         lastToast = (box, t.Kind, new List<string> { t.Text }, now);
-        while (toasts.GetChildCount() > 6) toasts.GetChild(toasts.GetChildCount() - 1).Free();
+        // (five at most: the column keeps clear of the health orb)
+        while (toasts.GetChildCount() > 5) toasts.GetChild(toasts.GetChildCount() - 1).Free();
     }
 
     public void Announce(Announcement a)
     {
+        // --clean: no title cards over the picture (previs stills taken as storyboard staging).
+        if (Args.Has("clean")) return;
         annKicker.Text = a.Kicker?.ToUpperInvariant() ?? "";
         annKicker.Visible = a.Kicker != null;
         annTitle.Text = a.Title.ToUpperInvariant();
@@ -1020,6 +1028,9 @@ public partial class GameHud : CanvasLayer
 
     /// <summary>What matters off the screen, each frame.</summary>
     public void Beyond(List<Beyond> list) => edges.Show(list);
+
+    /// <summary>Loot's names on the ground, each frame.</summary>
+    public void Ground(List<GroundLabel> list) => ground.Show(list);
 
     /// <summary>Where the thing the prompt is for stands on screen (null: the prompt keeps its place).</summary>
     public void PromptAt(Vector2? at) => promptAnchor = at;

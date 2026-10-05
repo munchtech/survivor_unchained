@@ -26,9 +26,19 @@ public sealed partial class Journey
         // paying is said in its own words.
         if (rolled.Any(r => r.Tier is LootTier.Legendary or LootTier.Storied))
             OnAnnounce(new Announcement(owed ? Rpg.Drops.DebtPaid : Rpg.Drops.NamedFalls, "", "reward", 3.2));
+        // In the night's arenas the materials are the night's end tally, not the ground's (crafting decision 7).
+        if (x.Tally)
+        {
+            foreach (var r in rolled.Where(r => r.Material != null)) NightTally[r.Material!] = NightTally.GetValueOrDefault(r.Material!) + r.Qty;
+            rolled = rolled.Where(r => r.Material == null).ToList();
+        }
         // Its landing heard from the tier the survivor chose (the jackpots always).
         return Rpg.Drops.AsLoot(rolled, Judge).Select(l => l with { Quiet = l.Tier is int t && !Ch.Filter.Heard((LootTier)t) }).ToList();
     }
+
+    /// <summary>The materials the night's carriers left in place of gear, paid at its end with the rest
+    /// of the night's yield (and half spilled on a fall).</summary>
+    public Dictionary<string, int> NightTally { get; } = new();
 
     /// <summary>The filter's word on a piece where it falls; a first sighting is remembered.</summary>
     public Verdict Judge(ItemInstance it)
@@ -75,6 +85,9 @@ public sealed partial class Journey
             {
                 // The people's material left lying is the night's too.
                 if (p.Kind == PickupKind.Material && p.Ref != null) { Inventory.AddToPack(Ch, Inventory.Make(Ch, p.Ref, Math.Max(1, MathX.RoundInt(p.Value)))); b.Pickups.Release(p); }
+                // A chart or a ruler's thing left lying comes home as if picked up (they go to the
+                // satchel, which never fills): left, the ruler's charts and Marks were lost with the map.
+                else if (p.Kind == PickupKind.Item && p.Ref != null && p.Look != Verdict.Hidden && PickedUp(p)) { home++; b.Pickups.Release(p); }
                 continue;
             }
             bool shown = p.Look != Verdict.Hidden;
@@ -83,8 +96,9 @@ public sealed partial class Journey
             else if (shown && Rpg.Drops.Jackpot(Rpg.Drops.TierOf(it))) { left++; continue; }
             else if (shown || Ch.Filter.BreakHidden)
             {
-                int n = Crafting.Rules.BreakDown[Math.Clamp(it.Rarity, 0, Crafting.Rules.BreakDown.Count - 1)];
-                int c = it.Affixes.Count(a => Items.Affix(a.Id)?.Kindled != null);
+                // (crafting's yield, the same as at the bench)
+                var yield = Crafting.Yield(it);
+                int n = yield.GetValueOrDefault(Crafting.Iron), c = yield.GetValueOrDefault(Crafting.Shard);
                 if (n > 0) Inventory.AddToPack(Ch, Inventory.Make(Ch, Crafting.Iron, n));
                 if (c > 0) Inventory.AddToPack(Ch, Inventory.Make(Ch, Crafting.Shard, c));
                 iron += n;
