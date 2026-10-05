@@ -202,6 +202,34 @@ public class CinematicTests
     }
 
     [Fact]
+    public void Every_fortune_ends_with_the_first_chart_in_her_pack()
+    {
+        // The atlas opens once she carries a chart, and the fortune's close gives the first: the
+        // Wayfinder's, so Vonnra bought it; priced, then waived, so it stays owed.
+        foreach (bool accuse in new[] { false, true })
+        {
+            var s = Q("hunter");
+            s.World.Facts["chapter.ready"] = true;
+            s.World.Time = TimeOfDay.Night;
+            if (accuse) Rules.Apply(Es("[{ quest: { id: 'lamps', status: 'active', entry: 'irons' } }, { quest: { id: 'lamps', entry: 'coin' } }]"), s.C);
+            Assert.False(SurvivorUnchained.Maps.Atlas.IsOpen(s.World, s.Ch));
+            var r = new DialogueRunner(Convo("vonnra"), s.C);
+            var p = r.Start();
+            while (p!.Choices.Count == 0) p = r.Advance();
+            p = r.Choose(p.Choices.First(c => c.Text.Contains("fortune")).Index).Next;
+            while (p!.Choices.Count == 0) p = r.Advance();
+            Assert.Equal("f_below", p.Node.Id);
+            p = r.Choose(p.Choices.First(c => c.Text.Contains(accuse ? "You lit the lamps" : "door")).Index).Next;
+            while (p!.Choices.Count == 0) p = r.Advance();
+            Assert.Equal("f_chart", p.Node.Id);
+            Assert.Contains("This once, no charge.", p.Text);
+            Assert.Single(s.Ch.Pack, it => it?.Chart != null);
+            Assert.True(SurvivorUnchained.Maps.Atlas.IsOpen(s.World, s.Ch));
+            Assert.Equal("fortune", r.Choose(p.Choices.Single().Index).Action);
+        }
+    }
+
+    [Fact]
     public void Wenna_gives_her_mask_to_whoever_cleaned_her_stream()
     {
         var s = Q();

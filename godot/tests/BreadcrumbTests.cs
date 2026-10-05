@@ -302,6 +302,8 @@ public class BreadcrumbTests
         Assert.Contains("Sit down, Wren", p.Text);
         p = r.Advance()!;
         Assert.Contains("Wren", p.Text);
+        p = r.Advance()!;
+        Assert.Equal("f_chart", p.Node.Id);
         Assert.Equal("fortune", r.Choose(p.Choices[0].Index).Action);
         Assert.True(k.World.Fact("vonnra.accused").Truthy);
         Assert.True(Has(k, "lamps", "accused"));
@@ -566,8 +568,9 @@ public class BreadcrumbTests
         Assert.True(p.F("chapter.ready").Truthy);
         var (_, choices, r, last) = p.Fortune();
         r.Choose(last.Choices.First(c => c.Text.Contains("You lit the lamps")).Index);
-        var door = r.Advance()!;
-        Assert.Equal("fortune", r.Choose(door.Choices[0].Index).Action);
+        r.Advance();
+        var close = r.Advance()!;
+        Assert.Equal("fortune", r.Choose(close.Choices[0].Index).Action);
         var sum = Chapter.Summary(p.J.Ch, p.W);
         Assert.Equal(["vault", "below", "lamps"], sum.Open.Select(o => o.Id));
         Assert.Equal(Lore.EntryText("lamps", "accused"), sum.Open.Single(o => o.Id == "lamps").Line);

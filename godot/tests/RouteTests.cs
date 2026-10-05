@@ -553,7 +553,13 @@ public class RouteTests
         r.Choose(last.Choices.First(c => c.Text.Contains("You lit the lamps")).Index);
         var door = r.Advance()!;
         Assert.Contains("Wren", door.Text);
-        Assert.Equal("fortune", r.Choose(door.Choices[0].Index).Action);
+        // The first chart, priced and waived; accused, she calls her neither traveller nor by name for it.
+        var chart = r.Advance()!;
+        Assert.Contains("ten gold. This once, no charge.", chart.Text);
+        Assert.DoesNotContain("traveller", chart.Text);
+        Assert.DoesNotContain("Wren", chart.Text);
+        Assert.True(SurvivorUnchained.Maps.Atlas.IsOpen(p.W, p.J.Ch));
+        Assert.Equal("fortune", r.Choose(chart.Choices[0].Index).Action);
         Assert.True(p.F("chapter.done").Truthy);
         Assert.Equal("accused", p.Journal("lamps")[^1]);
         Assert.Null(p.Marker("vonnra"));
@@ -602,8 +608,15 @@ public class RouteTests
         Assert.Contains("water running clear", read);
         Assert.Contains("boy asleep in a wagon", read);
         Assert.DoesNotContain(choices, c => c.Contains("You lit the lamps"));
-        var door = r.Choose(last.Choices.First(c => c.Text.Contains("door")).Index).Next!;
-        Assert.Equal("fortune", r.Choose(door.Choices[0].Index).Action);
+        Assert.False(SurvivorUnchained.Maps.Atlas.IsOpen(p.W, p.J.Ch));
+        r.Choose(last.Choices.First(c => c.Text.Contains("door")).Index);
+        // The fortune's close gives the first chart, and the Wayfinder's atlas opens with it.
+        var chart = r.Advance()!;
+        Assert.Equal("f_chart", chart.Node.Id);
+        Assert.Contains("That would be ten gold, traveller. This once, no charge.", chart.Text);
+        Assert.Contains(p.J.Ch.Pack, it => it?.Chart is { Tier: 1, People: "dead", Name: "The Lampless Howes" });
+        Assert.True(SurvivorUnchained.Maps.Atlas.IsOpen(p.W, p.J.Ch));
+        Assert.Equal("fortune", r.Choose(chart.Choices[0].Index).Action);
         Assert.Empty(p.Steps("fortune"));
         var sum = Chapter.Summary(p.J.Ch, p.W);
         Assert.Equal(["Cured at the source", "Brought home"], sum.Threads.Select(t => t.Verdict));

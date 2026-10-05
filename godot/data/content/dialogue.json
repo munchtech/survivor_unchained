@@ -14088,10 +14088,10 @@
        "fact": "vonnra.accused",
        "eq": true
       },
-      "text": "The door in the hillside is listening, as I am. That is all I see for free, {name}. The rest you will walk into yourself, and you will, because you are the kind that does."
+      "text": "The door in the hillside is listening, as I am. That is all I see for free, {name}."
      },
      {
-      "text": "The door is not for sale. That is all I see for free. The rest you will walk into yourself, and you will, because you are the kind that does."
+      "text": "The door is not for sale. That is all I see for free."
      }
     ],
     "effects": [
@@ -14108,6 +14108,32 @@
         "chapter"
        ],
        "spread": 0
+      }
+     }
+    ],
+    "next": "f_chart"
+   },
+   "f_chart": {
+    "id": "f_chart",
+    "text": [
+     {
+      "when": {
+       "fact": "vonnra.accused",
+       "eq": true
+      },
+      "text": "(She takes a folded chart from under the ledger and lays it between you. It is the Wayfinder's, and the margins are full.) That would be ten gold. This once, no charge. The rest you will walk into yourself, and you will, because you are the kind that does."
+     },
+     {
+      "text": "(She takes a folded chart from under the ledger and lays it between you. It is the Wayfinder's, and the margins are full.) That would be ten gold, traveller. This once, no charge. The rest you will walk into yourself, and you will, because you are the kind that does."
+     }
+    ],
+    "effects": [
+     {
+      "chart": {
+       "people": "dead",
+       "tier": 1,
+       "rarity": 0,
+       "name": "The Lampless Howes"
       }
      }
     ],
@@ -14292,6 +14318,21 @@
    "f_ember": {
     "id": "f_ember",
     "text": [
+     {
+      "when": {
+       "all": [
+        {
+         "fact": "be.crates",
+         "eq": "redcowl"
+        },
+        {
+         "fact": "redcowl",
+         "eq": "spared"
+        }
+       ]
+      },
+      "text": "And six crates on a cart going north over the ridge, and a man walking behind it who knows what they are for. He will not sell them. He is saving them. I wonder for what."
+     },
      {
       "when": {
        "fact": "be.crates",
