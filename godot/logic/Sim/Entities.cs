@@ -72,6 +72,9 @@ public sealed class Enemy : Pooled
     /// <summary>Hostile attacks the player; Neutral ignores until provoked; Ally fights for the player.</summary>
     public Disposition Disposition;
     public bool Elite, Boss;
+    /// <summary>Moved by the fight's script, not its own mind (a living wall, a caller holding a howl):
+    /// the zone's BossTick decides for it, as for a boss.</summary>
+    public bool Scripted;
     public EnemyState State = EnemyState.Active;
     public double StateT, AttackT, RangedT, RaiseT;
     /// <summary>-1 the player, otherwise an enemy id; -2 none.</summary>

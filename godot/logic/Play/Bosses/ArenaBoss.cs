@@ -159,14 +159,14 @@ public abstract class ArenaBoss
         }
         // The last phase keeps its floor too; then it dies (or holds at one, for a boss that ends otherwise).
         else e.HpFloor = DiesAtZero && PhaseT >= ph.Floor * FloorScale ? 0 : 1;
-        if (!Soft && FightT >= 180)
+        if (!Soft && FightT >= SoftAt)
         {
             Soft = true;
             A.HordeShare = 1;
             A.Say($"{e.Named?.Title ?? e.Def.Name} grows wild", "Its moves quicken, and the horde comes back", "danger");
             OnSoft();
         }
-        if (!Hard && FightT >= 300)
+        if (!Hard && FightT >= HardAt)
         {
             Hard = true;
             A.Say(HardName, "The end of it, one way or the other", "danger");
@@ -205,6 +205,10 @@ public abstract class ArenaBoss
         TransitionT > 0, IsBoss: true, Break: BreakSum + E.Overflow, Stagger: E.StaggeredT > 0 ? 1 : E.Stagger);
 
     protected abstract string HardName { get; }
+    /// <summary>When it grows wild, and when its end comes on a loop: three and five minutes at the
+    /// table; a story's boss is a longer fight (docs/design/STORY_BOSSES.md 0.4).</summary>
+    protected virtual double SoftAt => 180;
+    protected virtual double HardAt => 300;
     /// <summary>A phase begins (and the fight, for phase 0).</summary>
     protected abstract void Enter(int phase);
     /// <summary>Its moves; true while one moves it.</summary>

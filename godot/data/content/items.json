@@ -1096,6 +1096,20 @@
     "explosive"
    ]
   },
+  "keepers_office": {
+   "id": "keepers_office",
+   "name": "The Keeper's Office",
+   "kind": "consumable",
+   "rarity": 3,
+   "icon": "book",
+   "value": 0,
+   "stack": 1,
+   "description": "Read it to learn Not Yet, an art held in your art's place: once a fight, a blow that would end you does not.",
+   "consumable": {
+    "teaches": "cold_then_not"
+   },
+   "lore": "A small book of the Order's watch-hours, read to pieces. Whoever wrote it makes their Cs the old way. The last page has two lines on it and nothing else: Is it morning? Not yet."
+  },
   "manual_sprint": {
    "id": "manual_sprint",
    "name": "Manual: Sprint",

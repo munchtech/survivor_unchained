@@ -217,7 +217,7 @@ public class StoryLint
         "arena.last.tier", "arena.last.minutes", "arena.last.day", "arena.last.killer",
         // The banes learned by day, read by the story fights once they are built
         // (docs/design/STORY_BOSSES.md): Maeca's fed fires, Chid's pole.
-        "bane.fires", "bane.pole",
+        "bane.pole",
     ];
 
     [Fact]

@@ -85,14 +85,14 @@ public sealed class StoryPlace
         foreach (var g in Gates) Shut(c, g);
     }
 
-    /// <summary>A gate's posts: close-set, a little past its ends so it meets the walls.</summary>
+    /// <summary>A gate's posts: close-set, two metres past its ends so it meets the walls.</summary>
     public static void Shut(CollisionWorld c, StoryGate g)
     {
         double lx = g.X1 - g.X0, lz = g.Z1 - g.Z0, len = Math.Max(0.01, Math.Sqrt(lx * lx + lz * lz));
-        int n = (int)Math.Ceiling((len + 2) / 1.1);
+        int n = (int)Math.Ceiling((len + 4) / 1.1);
         for (int i = 0; i <= n; i++)
         {
-            double t = -1 / len + i * (len + 2) / n / len;
+            double t = -2 / len + i * (len + 4) / n / len;
             c.AddCircle(g.X0 + lx * t, g.Z0 + lz * t, 0.8, new ColliderOpts(Tag: $"gate:{g.Id}"));
         }
     }

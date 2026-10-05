@@ -74,7 +74,7 @@ public static class Ai
             return;
         }
 
-        if (e.Boss && b.Hooks.BossTick?.Invoke(e, dt) == true)
+        if ((e.Boss || e.Scripted) && b.Hooks.BossTick?.Invoke(e, dt) == true)
         {
             FinishMove(b, e);
             return;

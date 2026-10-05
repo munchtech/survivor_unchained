@@ -1282,7 +1282,7 @@ public sealed partial class Battle
                 p.Iframes = ashes && ar >= 3 ? 3.5 : 2;
                 if (ashes && ar >= 3) p.DashCharges = RoundInt(Stats.Get(Stat.DashCharges));
                 if (ashes) RiseBurning(ar);
-                Events.Emit(new Ev.Announce { Title = ashes ? "From the ashes" : "You rise again", Tone = Tone.Boon });
+                Events.Emit(new Ev.Announce { Title = ashes ? "You go cold. Then the ember catches." : "Something answers for you: not yet. You get up.", Tone = Tone.Boon });
             }
             else if (Hooks.OnPlayerDeath?.Invoke(p.LastKiller) == true)
                 p.Hp = Math.Max(p.Hp, 1);
@@ -1347,6 +1347,7 @@ public sealed partial class Battle
         e.Speed = def.Speed * (0.92 + Rng.Next() * 0.16) * (e.Disposition == Disposition.Ally ? 1 : Rules.FoeSpeed * (1 + 0.05 * Boons.GetValueOrDefault("dark_bargain")));
         e.Elite = def.Elite || o.Elite;
         e.Boss = def.Boss || o.Boss;
+        e.Scripted = false;
         e.State = o.Style == SpawnStyle.Rise ? EnemyState.Rising : o.Style == SpawnStyle.Burrow ? EnemyState.Burrowed : EnemyState.Active;
         e.StateT = o.Style == SpawnStyle.Rise ? 1.1 : o.Style == SpawnStyle.Burrow ? 0.3 : 0;
         e.AttackT = 0.5 + Rng.Next() * 0.5;
@@ -1549,6 +1550,8 @@ public sealed partial class Battle
     public void EndMark(int id) =>
         Events.Emit(new Ev.Telegraph { Id = id, Shape = TelegraphShape.Circle, Kind = TelegraphKind.Wall, Radius = 0.01, Duration = 0.01, Hostile = true });
     public IReadOnlyList<EnemyBlow> Blows => blows;
+    /// <summary>Every marked blow still to land is called off (she got up at a checkpoint).</summary>
+    public void CancelBlows() => blows.Clear();
 
     /// <summary>Mark a blow and let it land after its delay: it hurts the survivor
     /// if they are still in its shape (a blow slipped by a dash in time is a

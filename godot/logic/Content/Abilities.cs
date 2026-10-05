@@ -116,9 +116,9 @@ public static class Abilities
         /* The one way to get up and fight on (the owner: rare, and it costs something, or it is a
          * balancing nightmare). Held in the art's place, it is the price: she goes into the fight
          * without her art. The ember's draft offers the same thing as a great blessing. */
-        new() { Kind = AbilityKind.ColdThenNot, Id = "cold_then_not", Name = "Cold, Then Not", Icon = "embers", Cooldown = 0, Aim = AbilityAim.Self,
+        new() { Kind = AbilityKind.ColdThenNot, Id = "cold_then_not", Name = "Not Yet", Icon = "embers", Cooldown = 0, Aim = AbilityAim.Self,
             Role = ArtRole.Tank,
-            Description = "Held in your art's place, it asks nothing of your hands and gives them nothing. Once a fight, a blow that would end you does not: you go cold, then the ember catches, and you are up with half your health. Once, however many ways you carry it." },
+            Description = "Held in your art's place, it asks nothing of your hands and gives them nothing. Once a fight, a blow that would end you does not: you go down, something answers for you, not yet, and you are up with half your health. Once a fight, however many ways you carry it." },
         /* ------------------------------------------------ ways of moving -- */
         new() { Kind = AbilityKind.Leap, Id = "leap", Name = "Crashing Leap", Icon = "leap", Cooldown = 9, Aim = AbilityAim.Direction, Interrupts = true,
             Movement = true, Role = ArtRole.Damage,
