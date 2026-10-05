@@ -27,6 +27,13 @@ The predecessor's handoff, `docs/handoff/ui_design.md`, is the full brief.
   - The atlas is the Wayfinder's table's second page: the great atlas, the chart in hand with its oaths and the way in, and the points on the five biases.
   - Shots: `--zone map --open mapresult [--fell]`; `--zone waystation --charts 3 --lit pack:1 --open atlas`.
 
+- **Self is fuller** (5db4b94a): the figure is 420x480 in its hero plate; each pillar says what its points give now; "Of note" under the standing lists the finer stats gear has moved.
+- **Footer hook** (be6260b9): `footer` frame in `Page()` at y 1016, with the prompts at y 1044.
+- **The UI art lead (aa9c11f1e40170a4d, at 4d366b5a)** has landed the header, footer, hero plate, card_light and a cubic, cool-graded backdrop shader. Two prototypes in my files are approved:
+  - `Style.Column` wears `frames/column.png`, a gilt ruling;
+  - `Backdrop(page: true)` lays black vellum under full pages.
+  I asked for the ember at the page's foot to be lower and quieter.
+
 ## Next
 1. **When Godot is free:**
    - run `--headless --import`;
