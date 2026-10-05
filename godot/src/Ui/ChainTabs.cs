@@ -107,8 +107,9 @@ public partial class ChainTabs : Control
         glow = new HeatGlow(this);
         AddChild(glow);
         var min = row.GetCombinedMinimumSize();
-        chainY = min.Y + 9;
-        CustomMinimumSize = new Vector2(min.X, chainY + 16);
+        // (the chain hangs a little below the names, its links up to 44 high, so the row leaves it room)
+        chainY = min.Y + 14;
+        CustomMinimumSize = new Vector2(min.X, chainY + 22);
     }
 
     /// <summary>A tab's middle, in this control's own pixels.</summary>
@@ -197,14 +198,20 @@ public partial class ChainTabs : Control
                 float ang = Mathf.Atan2(Y(lx + 1) - Y(lx - 1), 2);
                 int variant = ((k * 7 + 3) % Variants + Variants) % Variants;
                 float heat = Heat(k);
-                // The heated run: UI art's hot links where they are painted (hot_face_N, hot_edge_N),
-                // else the cold link warmed toward the fire's colour; the glow over it is HeatGlow's.
-                var hot = heat > 0 && k != 0 ? Sprite($"hot_{(face ? "face" : "edge")}_{variant}") : null;
-                var tex = k == 0 && Sprite("open") is { } open ? open : hot ?? Sprite($"{(face ? "face" : "edge")}_{variant}");
+                string shape = face ? "face" : "edge";
                 DrawSetTransform(at, ang);
-                var tint = hot != null ? new Color(1, 1, 1).Lerp(HeatColour(heat).Lightened(0.5f), 0.25f * (1 - heat))
-                    : heat > 0 && k != 0 ? Colors.White.Lerp(HeatColour(heat).Lightened(0.35f), 0.6f * heat) : Colors.White;
-                if (tex != null) DrawTexture(tex, -tex.GetSize() / 2, tint with { A = a });
+                // The heated run, as UI art draws each link three ways with one geometry: the cold
+                // iron, the dull red laid over it as it warms, the fire's colour over that as it heats.
+                // The opened middle link is its own picture.
+                if (k == 0 && Sprite("open") is { } open) DrawTexture(open, -open.GetSize() / 2, Colors.White with { A = a });
+                else if (Sprite($"{shape}_{variant}") is { } cold)
+                {
+                    DrawTexture(cold, -cold.GetSize() / 2, Colors.White with { A = a });
+                    if (heat > 0 && Sprite($"warm_{shape}_{variant}") is { } warm)
+                        DrawTexture(warm, -warm.GetSize() / 2, Colors.White with { A = a * Math.Min(1, heat / 0.6f) });
+                    if (heat > 0.6f && Sprite($"hot_{shape}_{variant}") is { } hot)
+                        DrawTexture(hot, -hot.GetSize() / 2, Colors.White with { A = a * (heat - 0.6f) / 0.4f });
+                }
                 else DrawLink(k, face, a, heat);
                 if (heat > 0) heated.Add((at, heat * a));
             }
@@ -241,12 +248,24 @@ public partial class ChainTabs : Control
             };
         }
 
+        public override void _Process(double delta) { t += delta; QueueRedraw(); }
+
+        double t;
+
         public override void _Draw()
         {
+            // The forge's light on the band under the heated run, breathing as embers do.
+            if (chain.heated.Count > 0)
+            {
+                var mid = chain.heated.OrderByDescending(h => h.Heat).First().At;
+                float flick = 1 + 0.12f * Mathf.Sin((float)t * 23) + 0.08f * Mathf.Sin((float)t * 37.3f + 1.7f);
+                float rx = chain.Pitch * (F.Heat + 0.9f), ry = 9;
+                DrawTextureRect(soft!, new Rect2(mid + new Vector2(-rx, 5 - ry), new Vector2(rx * 2, ry * 2)), false, new Color("#ff7a26") with { A = 0.14f * flick });
+            }
             foreach (var (at, h) in chain.heated)
             {
                 float r = 9 + 9 * h;
-                DrawTextureRect(soft!, new Rect2(at - new Vector2(r * 1.4f, r), new Vector2(r * 2.8f, r * 2)), false, HeatColour(h) with { A = 0.18f + 0.32f * h });
+                DrawTextureRect(soft!, new Rect2(at - new Vector2(r * 1.4f, r), new Vector2(r * 2.8f, r * 2)), false, HeatColour(h) with { A = 0.24f * h });
             }
         }
     }
@@ -301,11 +320,22 @@ public partial class Title : Control
         MouseFilter = MouseFilterEnum.Ignore;
         TextureFilter = TextureFilterEnum.LinearWithMipmaps;
         tw = Style.Display.GetStringSize(this.text, HorizontalAlignment.Left, -1, size).X;
-        float arm = chains ? (UiArt.Art("ornaments/title_chain_l.png")?.GetWidth() ?? 80) + 6 : 0;
-        CustomMinimumSize = new Vector2(tw + 2 * arm, size * 1.3f);
+        // The chains take what room the panel gives them, a little at least, and run out of sight at
+        // its sides rather than widening it.
+        CustomMinimumSize = new Vector2(tw + (chains ? 2 * 70 : 0), size * 1.3f);
         SizeFlagsHorizontal = SizeFlags.ExpandFill;
+        if (chains)
+        {
+            fade ??= new Shader { Code = "shader_type canvas_item;\nuniform float width = 400.0;\nvarying float x;\nvoid vertex() { x = VERTEX.x; }\nvoid fragment() { COLOR.a *= smoothstep(0.0, 36.0, x) * smoothstep(width, width - 36.0, x); }" };
+            var mat = new ShaderMaterial { Shader = fade };
+            ClipContents = true;
+            Material = mat;
+            Resized += () => mat.SetShaderParameter("width", Size.X);
+        }
         Resized += QueueRedraw;
     }
+
+    static Shader? fade;
 
     public override void _Draw()
     {

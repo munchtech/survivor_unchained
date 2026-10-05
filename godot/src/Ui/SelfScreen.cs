@@ -138,54 +138,105 @@ public partial class SheetScreen : Overlay
 
     /* ------------------------------------------------------- attributes -- */
 
+    /// <summary>
+    /// The attributes as a ledger line (approved: "more like a dnd top bit"): four numerals and their
+    /// names set on the page on one baseline, fine rules between, no boxes. A point to spend is a
+    /// live coal in a small iron dish at the line's end; given to an attribute (a click on it, A on a
+    /// pad, or a coal dragged from the dish), the coal lies at the numeral's foot and the numeral is
+    /// lit as if from the fire, its new value, until Keep or Undo; a right click (X) takes it back.
+    /// </summary>
     void Attributes(VBoxContainer v, CharacterData ch)
     {
         var end = new List<Control>();
         int free = ch.Points - Spent;
         if (Spent > 0)
         {
-            end.Add(Style.Label($"{Spent} of {ch.Points} spent", Style.UiBold, 15, Style.Ember, false, HorizontalAlignment.Left, false));
-            end.Add(Nav.Id(Style.Button("Undo", Undo, false, true), "undo"));
-            end.Add(Nav.Id(Style.Button("Confirm", Keep, true, true), "keep"));
+            end.Add(Style.Label($"{Spent} of {ch.Points} spent", Style.TextItalic, 15, Style.Ember, false, HorizontalAlignment.Left, false));
+            end.Add(Nav.Underlined(Nav.Id(Kit.Word("UNDO", Undo, Kit.Dim, 14), "undo")));
+            var keep = Nav.Underlined(Nav.Id(Kit.Word("KEEP", Keep, Style.Ember, 14), "keep"));
+            // (the mouse's hover marks it the same quiet way the pad's focus does)
+            var under = new StyleBoxFlat { BgColor = Colors.Transparent, BorderColor = Style.Ember, BorderWidthBottom = 2, ContentMarginLeft = 4, ContentMarginRight = 4, ContentMarginTop = 2, ContentMarginBottom = 2 };
+            keep.AddThemeStyleboxOverride("hover", under);
+            end.Add(keep);
         }
-        else if (ch.Points > 0) end.Add(Style.Label($"{ch.Points} point{(ch.Points == 1 ? "" : "s")} to spend", Style.UiBold, 15, Style.Ember, false, HorizontalAlignment.Left, false));
         v.AddChild(Kit.Head("Attributes", "hover: what a point gives", end.ToArray()));
-        var strip = Style.H(10);
-        foreach (var (id, name, text) in Attrs)
+
+        var line = Style.H(0);
+        line.CustomMinimumSize = new Vector2(0, 70);
+        cells.Clear();
+        for (int i = 0; i < Attrs.Length; i++)
         {
+            var (id, name, _) = Attrs[i];
+            if (i > 0) line.AddChild(new LedgerRule());
             int now = Attr(ch, id), add = pending.GetValueOrDefault(id);
-            var cell = Style.Panel(Kit.PanelBox(14, 4));
-            cell.SizeFlagsHorizontal = SizeFlags.ExpandFill;
-            cell.CustomMinimumSize = new Vector2(0, 48);
-            cell.MouseFilter = MouseFilterEnum.Stop;
-            var row = Style.H(6, Style.Label($"{now}", Style.Display, 28, Kit.Ink, false, HorizontalAlignment.Left, false));
-            if (add > 0)
-            {
-                row.AddChild(new Arrow(Style.Good) { SizeFlagsVertical = SizeFlags.ShrinkCenter });
-                row.AddChild(Style.Label($"{now + add}", Style.Display, 28, Style.Good, false, HorizontalAlignment.Left, false));
-            }
-            var nm = Style.Label(name.ToUpperInvariant(), Style.DisplayLight, 15, Kit.HeadInk, false, HorizontalAlignment.Left, false);
-            nm.SizeFlagsVertical = SizeFlags.ShrinkCenter;
-            nm.SizeFlagsHorizontal = SizeFlags.ExpandFill;
-            row.AddChild(Style.Gap(0));
-            row.AddChild(nm);
+            var cell = new LedgerEntry(now + add, name, add) { SizeFlagsHorizontal = SizeFlags.ExpandFill };
             var attr = id;
-            if (add > 0) row.AddChild(Kit.Round("−", () => Take(attr), false));
-            if (free > 0) row.AddChild(Kit.Round("+", () => Put(attr)));
-            foreach (var c in row.GetChildren().OfType<Control>()) c.SizeFlagsVertical = SizeFlags.ShrinkCenter;
-            cell.AddChild(row);
+            cell.CanTake = d => d == "coal" && Ch.Points - Spent > 0;
+            cell.Take = _ => Put(attr);
+            cell.GuiInput += e =>
+            {
+                if (e is not InputEventMouseButton { Pressed: true } mb) return;
+                if (mb.ButtonIndex == MouseButton.Left) Put(attr);
+                else if (mb.ButtonIndex == MouseButton.Right) Take(attr);
+            };
             cell.MouseEntered += () => HoverAttr(attr, cell);
             cell.MouseExited += () => HoverAttr(null, null);
-            Nav.Mark(cell, $"attr:{id}", free > 0 ? () => Put(attr) : null, add > 0 ? () => Take(attr) : null, null, () => HoverAttr(attr, cell), () => HoverAttr(null, null));
-            strip.AddChild(cell);
+            Nav.Mark(cell, $"attr:{id}", () => Put(attr), () => Take(attr), null, () => HoverAttr(attr, cell), () => HoverAttr(null, null));
+            cells[id] = cell;
+            line.AddChild(cell);
         }
-        v.AddChild(strip);
+        if (ch.Points > 0)
+        {
+            var dish = new CoalDish(free);
+            dishAt = dish;
+            var cap = Style.Label(free == 0 ? "all given" : free == 1 ? "1 to spend" : $"{free} to spend", Style.UiBold, 13, free > 0 ? Kit.Dim : Kit.Faint, false, HorizontalAlignment.Center, false);
+            var col = Style.V(0, dish, cap);
+            col.SizeFlagsVertical = SizeFlags.ShrinkEnd;
+            line.AddChild(Style.Gap(0));
+            line.AddChild(new LedgerRule());
+            line.AddChild(col);
+        }
+        else dishAt = null;
+        v.AddChild(line);
+        // A coal just given or taken back flies between the dish and the numeral once the line is laid out.
+        if (flight is { } f && Time.GetTicksMsec() - f.At < 200) Callable.From(() => Fly(f.Attr, f.ToAttr)).CallDeferred();
+        flight = null;
+    }
+
+    readonly Dictionary<string, LedgerEntry> cells = new();
+    CoalDish? dishAt;
+    static (string Attr, bool ToAttr, ulong At)? flight;
+
+    /// <summary>A coal crossing between the dish and an attribute's foot, on a low arc, with its sound.</summary>
+    void Fly(string attr, bool toAttr)
+    {
+        if (!cells.TryGetValue(attr, out var cell) || !IsInstanceValid(cell)) return;
+        var at = cell.CoalAt;
+        var from = dishAt != null && IsInstanceValid(dishAt) ? dishAt.GlobalPosition + new Vector2(42, 18) : at + new Vector2(300, 0);
+        var (a, b) = toAttr ? (from, at) : (at, from);
+        var coal = new Coal(5) { ZIndex = 45 };
+        AddChild(coal);
+        coal.GlobalPosition = a - coal.Size / 2;
+        if (toAttr) cell.HideCoal(true);
+        var tw = coal.CreateTween();
+        tw.TweenMethod(Callable.From<float>(k =>
+        {
+            if (!IsInstanceValid(coal)) return;
+            var p = a.Lerp(b, k) + new Vector2(0, -40 * Mathf.Sin(k * Mathf.Pi));
+            coal.GlobalPosition = p - coal.Size / 2;
+        }), 0f, 1f, 0.32).SetTrans(Tween.TransitionType.Sine).SetEase(Tween.EaseType.InOut);
+        tw.TweenCallback(Callable.From(() =>
+        {
+            if (IsInstanceValid(cell)) cell.HideCoal(false);
+            coal.QueueFree();
+        }));
     }
 
     void Put(string attr)
     {
         if (Ch.Points - Spent <= 0) { Sound.Sfx.Deny(); return; }
         pending[attr] = pending.GetValueOrDefault(attr) + 1;
+        flight = (attr, true, Time.GetTicksMsec());
         Sound.Sfx.Click();
         Refresh();
     }
@@ -194,6 +245,7 @@ public partial class SheetScreen : Overlay
     {
         if (pending.GetValueOrDefault(attr) <= 0) return;
         if (--pending[attr] == 0) pending.Remove(attr);
+        flight = (attr, false, Time.GetTicksMsec());
         Sound.Sfx.Click();
         Refresh();
     }
@@ -241,7 +293,7 @@ public partial class SheetScreen : Overlay
                 if (Math.Abs(then.Get(l.Key) - now.Get(l.Key)) < 1e-6) continue;
                 var nl = Style.Label(l.Name, Style.Ui, 15, Kit.Ink2);
                 nl.SizeFlagsHorizontal = SizeFlags.ExpandFill;
-                c.AddChild(Style.H(8, nl, Kit.Num(Change(l.Key, now.Get(l.Key), then.Get(l.Key)), 15, Style.Good)));
+                c.AddChild(Style.H(8, nl, Kit.Num(Change(l.Key, now.Get(l.Key), then.Get(l.Key)), 15, new Color("#ffb05a"))));
             }
         }
         card.AddChild(c);
@@ -327,6 +379,7 @@ public partial class SheetScreen : Overlay
         v.AddChild(Kit.Head("Standing", "hover a number: where it comes from"));
         var cols = Style.H(22);
         lines.Clear();
+        arrows.Clear();
         var ch = Ch;
         foreach (var groups in Columns)
         {
@@ -347,10 +400,12 @@ public partial class SheetScreen : Overlay
                     label.SizeFlagsHorizontal = SizeFlags.ExpandFill;
                     label.ClipText = true;
                     var now = Kit.Num("", 16);
-                    var change = Kit.Num("", 14, Style.Good);
-                    change.CustomMinimumSize = new Vector2(40, 0);
+                    // While a coal is given: the number now, dimmed, then an ember arrow and what it will be.
+                    var change = Kit.Num("", 16, new Color("#ffb05a"));
+                    var arrow = new Arrow(Style.Ember) { Visible = false, SizeFlagsVertical = SizeFlags.ShrinkCenter };
                     lines[l.Key] = (now, change);
-                    var row = Style.H(6, label, now, change);
+                    arrows[l.Key] = arrow;
+                    var row = Style.H(4, label, now, arrow, change);
                     var holder = new PanelContainer { MouseFilter = MouseFilterEnum.Stop, CustomMinimumSize = new Vector2(0, 27) };
                     holder.AddThemeStyleboxOverride("panel", new LineUnder());
                     holder.AddChild(row);
@@ -374,19 +429,25 @@ public partial class SheetScreen : Overlay
     {
         var ch = Ch;
         var kit = Character.Kit(ch).Stats;
-        // What is put in and not yet kept shows; with nothing put in, the point hovered shows (never both,
-        // so a number is never two points ahead of what the strip says).
-        StatBlock? then = Spent > 0 ? Character.Kit(Would(null)).Stats : hovered != null && ch.Points > 0 ? Character.Kit(Would(hovered)).Stats : null;
+        // While coals are given, every number they move shows what it will be, in the coals' ember,
+        // until Keep or Undo (the owner: show "the projected stats when you place a point"). A hover
+        // alone moves nothing here: its card says what one more point would give.
+        var would = Spent > 0 ? Would(null) : null;
+        StatBlock? then = would != null ? Character.Kit(would).Stats : null;
         foreach (var l in Columns.SelectMany(c => c).SelectMany(g => g.Lines))
         {
             if (!lines.TryGetValue(l.Key, out var at) || !IsInstanceValid(at.Now)) continue;
+            bool moves = then != null && !l.Key.StartsWith("art:") && Math.Abs(then.Get(l.Key) - kit.Get(l.Key)) > 1e-6;
             at.Now.Text = l.Fmt(kit, ch);
             // A warding below nothing is a weakness: said in red.
-            at.Now.AddThemeColorOverride("font_color", l.Key.StartsWith("resist.") && kit.GetRaw(l.Key) < -1e-6 ? Style.Bad : Kit.Ink);
-            bool moves = then != null && !l.Key.StartsWith("art:") && Math.Abs(then.Get(l.Key) - kit.Get(l.Key)) > 1e-6;
-            at.Change.Text = moves ? Change(l.Key, kit.Get(l.Key), then!.Get(l.Key)) : "";
+            at.Now.AddThemeColorOverride("font_color", moves ? Kit.Dim : l.Key.StartsWith("resist.") && kit.GetRaw(l.Key) < -1e-6 ? Style.Bad : Kit.Ink);
+            at.Change.Text = moves ? l.Fmt(then!, would!) : "";
+            at.Change.Visible = moves;
+            if (arrows.TryGetValue(l.Key, out var arrow)) arrow.Visible = moves;
         }
     }
+
+    readonly Dictionary<string, Arrow> arrows = new();
 
     /// <summary>What a point would change, as the change itself (a tenth of a percent shows).</summary>
     static string Change(string key, double now, double then) => key switch
@@ -478,8 +539,8 @@ public partial class SheetScreen : Overlay
         var items = new List<Control>
         {
             pad ? Kit.Prompt(Act.Up, "Move") : Kit.Prompt("Arrows", "Move"),
-            Kit.Prompt(Act.Confirm, "Spend"),
-            Kit.Prompt(Act.Alt, "Take back"),
+            Kit.Prompt(Act.Confirm, "Give a coal"),
+            Kit.Prompt(Act.Alt, "Take it back"),
             pad ? Kit.Prompt(Act.TabNext, "Turn") : Kit.Prompt("[ ]", "Turn"),
             Kit.Prompt(Act.Cancel, Spent > 0 ? "Undo" : "Close"),
         };
@@ -505,6 +566,94 @@ public partial class SheetScreen : Overlay
         l.VerticalAlignment = VerticalAlignment.Center;
         p.AddChild(l);
         return p;
+    }
+}
+
+/// <summary>
+/// An attribute on Self's ledger line: its numeral large and its name in small capitals on one
+/// baseline, set on the page with no box. Given a coal, the numeral shows what it will be, lit
+/// from within as iron in the fire, and the coal lies just under it until Keep or Undo.
+/// </summary>
+public partial class LedgerEntry : Control
+{
+    const float Base = 48, NumSize = 44, NameSize = 17;
+    public Func<string, bool>? CanTake;
+    public Action<string>? Take;
+    readonly Label numeral;
+    readonly List<Coal> coals = new();
+    readonly float numW;
+
+    public LedgerEntry(int value, string name, int given)
+    {
+        MouseFilter = MouseFilterEnum.Stop;
+        MouseDefaultCursorShape = CursorShape.PointingHand;
+        CustomMinimumSize = new Vector2(0, 70);
+        bool lit = given > 0;
+        var face = Style.Display;
+        numW = face.GetStringSize($"{value}", HorizontalAlignment.Left, -1, (int)NumSize).X;
+        if (lit)
+        {
+            // The fire's light behind the numeral it was given to.
+            var halo = new TextureRect
+            {
+                Texture = Halo, ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize, StretchMode = TextureRect.StretchModeEnum.Scale,
+                Size = new Vector2(numW + 44, 70), Position = new Vector2(-22, Base - 52), MouseFilter = MouseFilterEnum.Ignore,
+                Modulate = Style.Ember with { A = 0.6f }, Material = new CanvasItemMaterial { BlendMode = CanvasItemMaterial.BlendModeEnum.Add },
+            };
+            AddChild(halo);
+        }
+        numeral = Style.Label($"{value}", face, (int)NumSize, lit ? new Color("#ffc47a") : Kit.Ink, false, HorizontalAlignment.Left, !lit);
+        if (lit)
+        {
+            numeral.AddThemeColorOverride("font_shadow_color", Style.Ember with { A = 0.7f });
+            numeral.AddThemeConstantOverride("shadow_outline_size", 12);
+            numeral.AddThemeConstantOverride("shadow_offset_x", 0);
+            numeral.AddThemeConstantOverride("shadow_offset_y", 0);
+        }
+        numeral.Position = new Vector2(0, Base - face.GetAscent((int)NumSize));
+        AddChild(numeral);
+        var nm = Style.Label(name.ToUpperInvariant(), Style.DisplayLight, (int)NameSize, lit ? new Color("#e8c496") : Kit.HeadInk, false, HorizontalAlignment.Left, false);
+        nm.Position = new Vector2(numW + 12, Base - Style.DisplayLight.GetAscent((int)NameSize));
+        AddChild(nm);
+        // The coals it was given, lying just under the numeral, so the line's rhythm holds.
+        for (int i = 0; i < given; i++)
+        {
+            var c = new Coal(31 + i, 1.05f);
+            c.Position = new Vector2(numW / 2 - c.Size.X / 2 + (i - (given - 1) / 2f) * 15, Base + 2);
+            coals.Add(c);
+            AddChild(c);
+        }
+    }
+
+    /// <summary>Where a coal given to it comes to rest, on the screen.</summary>
+    public Vector2 CoalAt => GlobalPosition + new Vector2(numW / 2 + (coals.Count - 1) * 6.5f, Base + 2 + 8);
+
+    /// <summary>The last coal hidden while one is flying in to take its place.</summary>
+    public void HideCoal(bool hide) { if (coals.Count > 0) coals[^1].Visible = !hide; }
+
+    static GradientTexture2D? halo;
+    static GradientTexture2D Halo => halo ??= new GradientTexture2D
+    {
+        Width = 64, Height = 64, Fill = GradientTexture2D.FillEnum.Radial, FillFrom = new Vector2(0.5f, 0.55f), FillTo = new Vector2(1, 0.55f),
+        Gradient = new Gradient { Colors = new[] { Colors.White, Colors.White with { A = 0.25f }, Colors.White with { A = 0 } }, Offsets = new[] { 0f, 0.45f, 1f } },
+    };
+
+    public override bool _CanDropData(Vector2 at, Variant data) => data.VariantType == Variant.Type.String && (CanTake?.Invoke(data.AsString()) ?? false);
+    public override void _DropData(Vector2 at, Variant data) => Take?.Invoke(data.AsString());
+}
+
+/// <summary>A fine upright rule between the ledger's entries, fading at both ends.</summary>
+public partial class LedgerRule : Control
+{
+    public LedgerRule() { CustomMinimumSize = new Vector2(29, 60); MouseFilter = MouseFilterEnum.Ignore; SizeFlagsVertical = SizeFlags.ShrinkEnd; }
+
+    public override void _Draw()
+    {
+        float x = 14, y0 = 8, y1 = Size.Y - 4, mid = (y0 + y1) / 2;
+        var c = Kit.Rule.Lightened(0.1f);
+        // (two halves, each fading toward its end)
+        DrawPolygon(new[] { new Vector2(x - 0.5f, y0), new Vector2(x + 0.5f, y0), new Vector2(x + 0.5f, mid), new Vector2(x - 0.5f, mid) }, new[] { c with { A = 0 }, c with { A = 0 }, c, c });
+        DrawPolygon(new[] { new Vector2(x - 0.5f, mid), new Vector2(x + 0.5f, mid), new Vector2(x + 0.5f, y1), new Vector2(x - 0.5f, y1) }, new[] { c, c, c with { A = 0 }, c with { A = 0 } });
     }
 }
 
