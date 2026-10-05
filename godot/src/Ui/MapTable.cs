@@ -1,3 +1,4 @@
+using System;
 using System.Linq;
 using Godot;
 using SurvivorUnchained.Maps;
@@ -5,13 +6,13 @@ using SurvivorUnchained.Play;
 
 namespace SurvivorUnchained.Ui;
 
-/// <summary>The Wayfinder's table by the east gate: today's maps, three of
-/// them, each an ember arena (a place, a people, a tier and the oaths it is
-/// sworn under), and the story's fights that were lost, to be taken again
-/// (Maps/MapOffers.cs, Arena/Arena.cs). Drawn as what it is (docs/UI_DESIGN.md
-/// 7.8): three map sheets in their wooden frames lying on the Wayfinder's
-/// table, each lettered with its place and sealed with its oaths, the way in
-/// at its foot.</summary>
+/// <summary>The Wayfinder's table by the east gate: today's maps, three of them, each an ember arena
+/// (a place, a people, a tier and the oaths it is sworn under), and the story's fights that were
+/// lost, to be taken again (Maps/MapOffers.cs, Arena/Arena.cs). One fitted panel over the world
+/// (it was an iron plate with the HUD showing round it): its title between the chains, the
+/// table's two pages as tabs, and on it the Wayfinder's sheets of parchment lying a little askew,
+/// as tall as their words (the atlas's last line was clipped under a fixed sheet). What is done
+/// on a sheet is written on it, in the Wayfinder's ink, not pressed as a button.</summary>
 public partial class MapTableScreen : Overlay
 {
     public override string Kind => "maps";
@@ -19,6 +20,8 @@ public partial class MapTableScreen : Overlay
     public MapTableScreen(Game g, string page = "nights") : base(g) { this.page = page; }
 
     static readonly Color Ink = new("#2e1d10"), InkSoft = new("#5a4126"), Asks = new("#8a2a18"), Gives = new("#2f5a22"), Answer = new("#4a3270");
+    /// <summary>The ink of what is done on a sheet: a deep red, darker when the pointer is on it.</summary>
+    static readonly Color Act_ = new("#7a1c10");
 
     /// <summary>Which of the table's two pages is open: tonight's maps (the nights), or the atlas
     /// (the charts and the places the road forgets), once the atlas is open.</summary>
@@ -44,119 +47,92 @@ public partial class MapTableScreen : Overlay
     {
         var w = G.Journey.World;
         int won = (int)w.Fact("arena.best").Number;
-        var offers = MapOffers.Today(w.Day, System.Math.Max(1, won), (int)w.Fact("map.drawn").Number);
+        var offers = MapOffers.Today(w.Day, Math.Max(1, won), (int)w.Fact("map.drawn").Number);
         bool atlas = AtlasOpen;
         if (!atlas) page = "nights";
-        bool again = page == "nights" && w.Rematches.Count > 0;
-        AddChild(Style.Scrim(G.CloseOverlay, 0.62f));
-        const float W = 1580;
-        // (a sheet holds what the map pays and up to two oaths in full)
-        float H = again ? 976 : 876;
-        var at = new Vector2((1920 - W) / 2, (1080 - H) / 2);
-        var plate = Style.Panel(Style.Plate(0));
-        plate.Position = at;
-        plate.Size = new Vector2(W, H);
-        AddChild(plate);
-        var table = new TableTop { Position = at + new Vector2(22, 92), Size = new Vector2(W - 44, H - 114) };
-        AddChild(table);
+        HideHud();
+        AddChild(Style.Scrim(G.CloseOverlay, 0.35f));
+        var centre = new CenterContainer { MouseFilter = MouseFilterEnum.Ignore };
+        Style.Fill(centre);
+        AddChild(centre);
+        var panel = Style.Panel(Kit.Window(Margin + 6, Margin, Margin));
+        panel.SelfModulate = Colors.White with { A = GroundAlpha };
+        panel.MouseFilter = MouseFilterEnum.Stop;
+        centre.AddChild(panel);
+        var v = Style.V(Style.Gap4);
+        panel.AddChild(v);
 
-        // The head: the table's name on its plaque, what the maps are, Close.
-        var plaque = new Plaque(page == "atlas" ? "The Wayfinder's Atlas" : "The Wayfinder's Table", 30, 110);
-        AddChild(plaque);
-        plaque.Position = new Vector2((1920 - plaque.CustomMinimumSize.X) / 2, at.Y + 14);
-        var sub = Style.Label(page == "atlas"
+        // The head: the title between the chains on the panel's axis, Close in its corner.
+        var title = new Title(page == "atlas" ? "The Wayfinder's Atlas" : "The Wayfinder's Table", 30);
+        var head = new Control { CustomMinimumSize = new Vector2(0, title.CustomMinimumSize.Y), MouseFilter = MouseFilterEnum.Ignore };
+        title.SetAnchorsPreset(LayoutPreset.FullRect);
+        head.AddChild(title);
+        var close = Nav.Skip(CloseButton("Esc", G.CloseOverlay));
+        head.AddChild(close);
+        close.Size = close.CustomMinimumSize;
+        close.SetAnchorsAndOffsetsPreset(LayoutPreset.CenterRight, LayoutPresetMode.KeepSize);
+        v.AddChild(head);
+        if (atlas)
+        {
+            var tabs = Kit.Tabs(new[] { "Tonight's maps", "The atlas" }, page == "atlas" ? 1 : 0, k => { page = k == 1 ? "atlas" : "nights"; Refresh(); }, 16, 28,
+                new[] { "", Atlas.Unspent(w) > 0 ? $"{Atlas.Unspent(w)} to spend" : "" });
+            tabs.Alignment = BoxContainer.AlignmentMode.Center;
+            v.AddChild(tabs);
+        }
+        v.AddChild(Style.Label(page == "atlas"
                 ? "Charts to the places the road forgets. One ground each, with a ruler at its heart. You go in as you are, and what you bring out is yours."
                 : $"Tonight's maps: each an ember arena, half an hour and what rules it at the end. {(won > 0 ? $"You have won tier {won}." : "You have won none yet.")} Spoils lean toward what answers the map.",
-            Style.TextItalic, Style.Small, Style.InkDim, false, HorizontalAlignment.Center);
-        sub.Position = at + new Vector2(0, 58);
-        sub.Size = new Vector2(W, 22);
-        AddChild(sub);
-        var close = Nav.Skip(CloseButton("Esc", G.CloseOverlay));
-        close.Position = at + new Vector2(W - 26 - close.CustomMinimumSize.X, 22);
-        AddChild(close);
-        if (atlas) Pages(at + new Vector2(28, 24));
-        if (page == "atlas")
-        {
-            Atlas_(at + new Vector2(22, 92), new Vector2(W - 44, H - 114));
-            if (Controls.Instance.UsingPad)
-            {
-                var af = Footer((Act.SubNext, "Tonight's maps"), (Act.Confirm, "Choose"), (Act.Cancel, "Close"));
-                af.Position = new Vector2(0, at.Y + H + 12);
-                af.Size = new Vector2(1920, 30);
-                AddChild(af);
-            }
-            return;
-        }
+            Style.TextItalic, 16, Kit.Dim, true, HorizontalAlignment.Center));
 
-        // The three sheets, a little askew as they lie.
-        float sheetW = 448, sheetH = 608, gap = (W - 44 - 3 * sheetW) / 4;
-        float[] tilt = { -1.2f, 0.6f, -0.5f };
-        for (int i = 0; i < offers.Count && i < 3; i++)
-        {
-            var o = offers[i];
-            var pos = at + new Vector2(22 + gap + i * (sheetW + gap), 92 + 26);
-            AddChild(Sheet(o, pos, new Vector2(sheetW, sheetH), tilt[i]));
-            var pick = o;
-            var enter = Nav.Id(Style.Button("Enter the arena", () => G.SetOut(pick), true), $"enter:{o.Spec.Name}");
-            enter.CustomMinimumSize = new Vector2(240, 44);
-            enter.Position = pos + new Vector2((sheetW - 240) / 2, sheetH + 22);
-            AddChild(enter);
-        }
+        if (page == "atlas") { Atlas_(v); Foot(); return; }
 
-        // The story's lost fights, to be taken again, on a slab along the table's foot.
-        if (again)
+        // The three sheets, a little askew as they lie, as tall as the tallest one's words.
+        var row = Style.H(30);
+        row.Alignment = BoxContainer.AlignmentMode.Center;
+        float[] tilt = { -1.0f, 0.6f, -0.5f };
+        for (int i = 0; i < offers.Count && i < 3; i++) row.AddChild(Sheet(offers[i], 452, tilt[i]));
+        v.AddChild(row);
+
+        // The story's lost fights, to be taken again, as a line under the sheets.
+        if (w.Rematches.Count > 0)
         {
-            var row = Style.H(Style.Gap4, Style.Label("FIGHTS TO TAKE AGAIN", Style.UiHeavy, Style.Caption, Style.Gold));
+            v.AddChild(Kit.Head("Fights to take again"));
+            var again = Style.H(36);
             foreach (var r in w.Rematches)
             {
                 var spec = r;
-                row.AddChild(Style.H(10, Style.V(0, Style.Label(r.Name, Style.UiBold, 17, Style.GoldHi), Style.Label(r.Sub != "" ? r.Sub : $"Tier {r.Tier}", Style.TextItalic, 14, Style.InkDim)),
-                    Style.Button("Take it again", () => G.Rematch(spec), false, true)));
+                var line = Style.H(14, Style.V(0, Style.Label(r.Name, Style.UiBold, 17, Kit.Ink), Style.Label(r.Sub != "" ? r.Sub : $"Tier {r.Tier}", Style.TextItalic, 14, Kit.Dim)),
+                    Nav.Id(Kit.Word("Take it again", () => G.Rematch(spec), Style.EmberHi, 16), $"again:{r.Name}"));
+                again.AddChild(line);
             }
-            var slab = Style.Panel(Style.Slab(12), row);
-            slab.Position = at + new Vector2(60, H - 112);
-            slab.Size = new Vector2(W - 120, 72);
-            AddChild(slab);
+            v.AddChild(again);
         }
-        if (Controls.Instance.UsingPad)
-        {
-            var f = Footer((Act.Left, "Choose a map"), (Act.Confirm, "Enter the arena"), (Act.Cancel, "Close"));
-            f.Position = new Vector2(0, at.Y + H + 12);
-            f.Size = new Vector2(1920, 30);
-            AddChild(f);
-        }
+        Foot();
     }
 
-    /// <summary>The table's two pages as tabs at the plate's head, LT and RT at their ends.</summary>
-    void Pages(Vector2 pos)
+    /// <summary>The prompts under the panel, on the world.</summary>
+    void Foot()
     {
         bool pad = Controls.Instance.UsingPad;
-        var bar = Style.H(Style.Gap1);
-        bar.MouseFilter = MouseFilterEnum.Ignore;
-        bar.AddChild(pad ? Style.PadButton("LT") : Style.Key(G.Key(Act.SubPrev)));
-        foreach (var (id, name) in new[] { ("nights", "Tonight's maps"), ("atlas", "The atlas") })
-        {
-            bool on = page == id;
-            var b = Style.Button("", () => { if (!on) { page = id; Sound.Sfx.Page(); Refresh(); } }, on, true);
-            var row = Style.H(Style.Gap2, Style.Label(name, Style.UiBold, Style.Small, on ? Colors.White : Style.GoldHi));
-            // A point to spend lights the atlas's tab with an ember.
-            if (id == "atlas" && Atlas.Unspent(G.Journey.World) > 0)
-            {
-                var ember = new Control { CustomMinimumSize = new Vector2(10, 20), MouseFilter = MouseFilterEnum.Ignore };
-                ember.AddChild(new ColorRect { Color = Style.Ember, Size = new Vector2(7, 7), Position = new Vector2(2, 7), Rotation = Mathf.Pi / 4, PivotOffset = new Vector2(3.5f, 3.5f), MouseFilter = MouseFilterEnum.Ignore });
-                row.AddChild(ember);
-            }
-            row.MouseFilter = MouseFilterEnum.Ignore;
-            row.Position = new Vector2(12, 6);
-            b.AddChild(row);
-            b.CustomMinimumSize = new Vector2(row.GetCombinedMinimumSize().X + 24, 36);
-            if (on) b.AddThemeStyleboxOverride("normal", UiArt.Frame("tab_on", Style.Box(new Color("#3a2614"), Style.LineHi, 1, 4)));
-            else if (UiArt.Has("tab")) b.AddThemeStyleboxOverride("normal", UiArt.Frame("tab", new StyleBoxEmpty()));
-            bar.AddChild(Nav.Skip(b));
-        }
-        bar.AddChild(pad ? Style.PadButton("RT") : Style.Key(G.Key(Act.SubNext)));
-        bar.Position = pos;
-        AddChild(bar);
+        PromptsOnWorld(pad
+            ? Kit.Prompts(Kit.Prompt(Act.Left, "Choose"), Kit.Prompt(Act.Confirm, page == "atlas" ? "Choose" : "Enter the arena"), AtlasOpen ? Kit.Prompt(Act.SubNext, page == "atlas" ? "Tonight's maps" : "The atlas") : new Control(), Kit.Prompt(Act.Cancel, "Close"))
+            : Kit.Prompts(Kit.Prompt("Click", page == "atlas" ? "Choose" : "Enter the arena"), Kit.Prompt("Esc", "Close")));
+    }
+
+    /// <summary>What is done on a sheet, written on it in the Wayfinder's red ink, darker under the pointer.</summary>
+    static Button InkWord(string text, Action act, int size = 19)
+    {
+        var b = new Button { Text = text, FocusMode = FocusModeEnum.None, MouseDefaultCursorShape = CursorShape.PointingHand, Flat = true, Alignment = HorizontalAlignment.Left };
+        Style.Font(b, Style.DisplayLight, size, Act_, false);
+        b.AddThemeColorOverride("font_hover_color", new Color("#3a0a04"));
+        b.AddThemeColorOverride("font_pressed_color", new Color("#3a0a04"));
+        foreach (var s in new[] { "normal", "hover", "pressed", "focus" })
+            b.AddThemeStyleboxOverride(s, new StyleBoxEmpty { ContentMarginLeft = 0, ContentMarginRight = 0, ContentMarginTop = 0, ContentMarginBottom = 2 });
+        var under = new StyleBoxFlat { BgColor = Colors.Transparent, BorderColor = Act_, BorderWidthBottom = 1, ContentMarginBottom = 2 };
+        b.AddThemeStyleboxOverride("hover", under);
+        b.Pressed += act;
+        b.SizeFlagsHorizontal = SizeFlags.ShrinkBegin;
+        return b;
     }
 
     /* -------------------------------------------------------- the atlas -- */
@@ -165,51 +141,58 @@ public partial class MapTableScreen : Overlay
     /// The atlas page (docs/EXPERIENCE_AUDIT.md, "A map's shape"): three sheets on the table. The
     /// great atlas itself, the peoples by tier, each pair lit when its ruler falls; the chart in
     /// hand, its oaths read as what they ask and what they pay, and the way in; and the points
-    /// the first clears gave, spent on the atlas's five biases. Made to look promising half-empty:
-    /// the beta has the first tier and a point.
+    /// the first clears gave, spent on the atlas's five biases. Made to look promising half-empty.
     /// </summary>
-    void Atlas_(Vector2 pos, Vector2 size)
+    void Atlas_(VBoxContainer page)
     {
         var w = G.Journey.World;
-        float h = size.Y - 52, y = pos.Y + 26;
-        float[] widths = { 520, 520, 420 };
-        float gap = (size.X - widths.Sum()) / 4, x = pos.X + gap;
-        float[] tilt = { -0.7f, 0.4f, -0.5f };
-        var sheets = new VBoxContainer[3];
-        for (int i = 0; i < 3; i++)
-        {
-            var (holder, inner) = Leaf(new Vector2(x, y), new Vector2(widths[i], h), tilt[i]);
-            AddChild(holder);
-            sheets[i] = inner;
-            x += widths[i] + gap;
-        }
-        GreatAtlas(sheets[0], w);
-        InHand(sheets[1]);
-        Points(sheets[2], w);
+        var row = Style.H(30);
+        row.Alignment = BoxContainer.AlignmentMode.Center;
+        var (a, av) = Leaf(500, -0.6f);
+        var (b, bv) = Leaf(500, 0.4f);
+        var (c, cv) = Leaf(430, -0.5f);
+        GreatAtlas(av, w);
+        InHand(bv);
+        Points(cv, w);
+        row.AddChild(a);
+        row.AddChild(b);
+        row.AddChild(c);
+        page.AddChild(row);
     }
 
-    /// <summary>A sheet of the Wayfinder's paper on the table, a little askew, its shadow under it;
-    /// returns the column its words go in.</summary>
-    static (Control Holder, VBoxContainer Words) Leaf(Vector2 pos, Vector2 size, float tiltDeg)
+    /// <summary>A sheet of the Wayfinder's paper on the table, a little askew, its shadow under it, as
+    /// tall as the tallest sheet beside it; returns it and the column its words go in.</summary>
+    static (Control Sheet, VBoxContainer Words) Leaf(float width, float tiltDeg)
     {
-        var holder = new Control { Position = pos, Size = size, PivotOffset = size / 2, RotationDegrees = tiltDeg, MouseFilter = MouseFilterEnum.Ignore };
-        for (int k = 5; k >= 1; k--)
-            holder.AddChild(new ColorRect { Color = new Color(0, 0, 0, 0.1f), Position = new Vector2(-k * 2 + 5, -k * 2 + 9), Size = size + new Vector2(k * 4, k * 4), MouseFilter = MouseFilterEnum.Ignore });
         var paper = Style.Panel(Style.Paper(30));
-        paper.Size = size;
+        paper.CustomMinimumSize = new Vector2(width, 0);
+        // (each as tall as its own words: sheets lying on a table, not a row of equal boxes)
+        paper.SizeFlagsVertical = SizeFlags.ShrinkBegin;
         paper.MouseFilter = MouseFilterEnum.Ignore;
-        holder.AddChild(paper);
+        paper.RotationDegrees = tiltDeg;
+        paper.Resized += () => paper.PivotOffset = paper.Size / 2;
+        // Its shadow on the table, under it.
+        var shadow = new Shadow { ShowBehindParent = true };
+        paper.AddChild(shadow);
         var v = Style.V(8);
-        v.Position = new Vector2(32, 28);
-        v.Size = size - new Vector2(64, 56);
-        holder.AddChild(v);
-        if (UiArt.Has("map_frame"))
+        paper.AddChild(v);
+        return (paper, v);
+    }
+
+    /// <summary>A sheet's shadow, soft, a little down and to the right of it.</summary>
+    partial class Shadow : Control
+    {
+        public Shadow() { MouseFilter = MouseFilterEnum.Ignore; TopLevel = false; }
+
+        public override void _Draw()
         {
-            var rim = new Panel { Size = size, MouseFilter = MouseFilterEnum.Ignore };
-            rim.AddThemeStyleboxOverride("panel", UiArt.Frame("map_frame", new StyleBoxEmpty()));
-            holder.AddChild(rim);
+            // (drawn from the sheet's own corner: the sheet lays this out inside its margins)
+            var s = GetParent<Control>().Size;
+            for (int k = 5; k >= 1; k--)
+                DrawRect(new Rect2(new Vector2(-k * 2 + 5, -k * 2 + 9) - Position, s + new Vector2(k * 4, k * 4)), new Color(0, 0, 0, 0.09f));
         }
-        return (holder, v);
+
+        public override void _Process(double delta) => QueueRedraw();
     }
 
     static Label Ink_(string t, Font f, int size, Color? c = null, HorizontalAlignment align = HorizontalAlignment.Left) =>
@@ -235,9 +218,8 @@ public partial class MapTableScreen : Overlay
         // What comes next, so the dark half reads as a road, not a lack.
         v.AddChild(Ink_("The next tier opens with the chart a ruler leaves: the first fall of each people at a tier always leaves one.",
             Style.TextItalic, Style.Caption, InkSoft, HorizontalAlignment.Center));
-        v.AddChild(new Control { SizeFlagsVertical = SizeFlags.ExpandFill, MouseFilter = MouseFilterEnum.Ignore });
         var rose = new CenterContainer { MouseFilter = MouseFilterEnum.Ignore };
-        rose.AddChild(Glyphs.Icon("compass", 120, InkSoft with { A = 0.2f }));
+        rose.AddChild(Glyphs.Icon("compass", 72, InkSoft with { A = 0.2f }));
         v.AddChild(rose);
     }
 
@@ -270,34 +252,30 @@ public partial class MapTableScreen : Overlay
         if (suf.Count > 0) { v.AddChild(Ink_("SWORN AGAINST YOU", Style.UiHeavy, Style.Badge, Asks)); foreach (var m in suf) v.AddChild(Oath(m)); }
         if (pre.Count + suf.Count > 0)
             v.AddChild(Ink_($"In all it pays {Pct(c.Quantity - 1)} more found, {Pct(c.RarityBonus - 1)} finer, and packs {Pct(c.PackSize - 1)} larger.", Style.TextBold, Style.Small, Gives));
-        v.AddChild(new Control { SizeFlagsVertical = SizeFlags.ExpandFill, MouseFilter = MouseFilterEnum.Ignore });
         // The others carried, to choose among (the highest tier first).
         if (carried.Count > 1)
         {
             v.AddChild(Ink_("OTHER CHARTS CARRIED", Style.UiHeavy, Style.Badge, InkSoft));
             var row = new HFlowContainer { MouseFilter = MouseFilterEnum.Ignore };
-            row.AddThemeConstantOverride("h_separation", 6);
-            row.AddThemeConstantOverride("v_separation", 6);
+            row.AddThemeConstantOverride("h_separation", 18);
+            row.AddThemeConstantOverride("v_separation", 4);
             foreach (var other in carried.Where(o => o != chosen).Take(6))
             {
                 var uid = other.Uid;
-                var b = Nav.Id(Style.Button($"{other.Chart!.Name}  ·  {other.Chart.Tier}", () => { chartUid = uid; Sound.Sfx.Page(); Refresh(); }, false, true), $"chart:{uid}");
+                var b = Nav.Id(InkWord($"{other.Chart!.Name}, tier {other.Chart.Tier}", () => { chartUid = uid; Sound.Sfx.Page(); Refresh(); }, 15), $"chart:{uid}");
                 b.TooltipText = Charts.Title(other.Chart);
                 row.AddChild(b);
             }
             v.AddChild(row);
         }
-        var go = Nav.Id(Style.Button("Set it on the table", () => SetOut(chosen.Uid), true), "chart:set");
-        go.CustomMinimumSize = new Vector2(0, 44);
+        var go = Nav.Id(InkWord("Set it on the table", () => SetOut(chosen.Uid), 21), "chart:set");
         // Worked first, if she will (crafting's, design 20.4): ink, burn and redraw, pin, scrape, annotate.
         if (SurvivorUnchained.Rpg.Crafting.Closed(SurvivorUnchained.Rpg.Crafting.Rules.Charts.Crafter, G.Journey.Ctx) == null)
         {
             string uid = chosen.Uid;
-            var work = Nav.Id(Style.Button("Work it first", () => { ForgeScreen.PutDown = uid; Sound.Sfx.Page(); G.Open($"forge:{SurvivorUnchained.Rpg.Crafting.Rules.Charts.Crafter}"); }, false), "chart:work");
-            work.CustomMinimumSize = new Vector2(0, 44);
-            var both = Style.H(Style.Gap2, work, go);
-            go.SizeFlagsHorizontal = SizeFlags.ExpandFill;
-            v.AddChild(both);
+            var work = Nav.Id(InkWord("Work it first", () => { ForgeScreen.PutDown = uid; Sound.Sfx.Page(); G.Open($"forge:{SurvivorUnchained.Rpg.Crafting.Rules.Charts.Crafter}"); }, 19), "chart:work");
+            work.AddThemeColorOverride("font_color", InkSoft);
+            v.AddChild(Style.H(28, go, work));
         }
         else v.AddChild(go);
         v.AddChild(Ink_("The chart is used up as its map opens.", Style.TextItalic, Style.Caption, InkSoft, HorizontalAlignment.Center));
@@ -344,8 +322,7 @@ public partial class MapTableScreen : Overlay
             if (unspent > 0 && r < Atlas.MaxRank)
             {
                 var bias = id;
-                var raise = Nav.Id(Style.Button(r == 0 ? "Learn it" : "Deepen it", () => { if (Atlas.Raise(w, bias)) { Sound.Sfx.Discovery(); Refresh(); } }, true, true), $"bias:{id}");
-                raise.SizeFlagsHorizontal = SizeFlags.ShrinkBegin;
+                var raise = Nav.Id(InkWord(r == 0 ? "Learn it" : "Deepen it", () => { if (Atlas.Raise(w, bias)) { Sound.Sfx.Discovery(); Refresh(); } }, 17), $"bias:{id}");
                 block.AddChild(raise);
             }
             // The people's road needs a people to follow.
@@ -356,7 +333,10 @@ public partial class MapTableScreen : Overlay
                 foreach (var p in MapOffers.Peoples)
                 {
                     var pid = p.Id;
-                    follow.AddChild(Nav.Id(Style.Segment(Style.Cap1(p.Name), Atlas.Road(w) == pid, () => { Atlas.Follow(w, pid); Refresh(); }), $"road:{pid}"));
+                    var word = InkWord(Style.Cap1(p.Name), () => { Atlas.Follow(w, pid); Refresh(); }, 15);
+                    // (the people followed is in full ink, the rest faint)
+                    if (Atlas.Road(w) != pid) word.AddThemeColorOverride("font_color", InkSoft with { A = 0.7f });
+                    follow.AddChild(Nav.Id(word, $"road:{pid}"));
                 }
                 block.AddChild(follow);
             }
@@ -386,7 +366,7 @@ public partial class MapTableScreen : Overlay
         // (the gear in a line: the names only, three at most; the bane in full is in the sub-title's words)
         var lean = MapOffers.Lean(o.Spec, o.People).Select(a => SurvivorUnchained.Rpg.Items.Affix(a)?.Name ?? a).Distinct().Take(3);
         v.AddChild(L($"Gear leaning to {string.Join(", ", lean)}", Style.TextItalic, Style.Caption, Answer));
-        v.AddChild(L($"Won, a tome to write one time in {System.Math.Round(1 / SurvivorUnchained.Arena.Arenas.TableTome)}; experience and gold for every minute held.", Style.TextItalic, Style.Caption, InkSoft));
+        v.AddChild(L(Kit.Balance($"Won, a tome to write one time in {System.Math.Round(1 / SurvivorUnchained.Arena.Arenas.TableTome)}; experience and gold for every minute held.", Style.TextItalic, Style.Caption, 380), Style.TextItalic, Style.Caption, InkSoft));
         return v;
     }
 
@@ -400,27 +380,17 @@ public partial class MapTableScreen : Overlay
         return string.Join(", or ", parts);
     }
 
-    /// <summary>One map: a sheet of parchment in a wooden frame, lettered by the Wayfinder.</summary>
-    Control Sheet(MapOffer o, Vector2 pos, Vector2 size, float tiltDeg)
+
+    /// <summary>One map: a sheet of parchment lettered by the Wayfinder, a little askew on the table,
+    /// the way in written at its foot.</summary>
+    Control Sheet(MapOffer o, float width, float tiltDeg)
     {
-        var holder = new Control { Position = pos, Size = size, PivotOffset = size / 2, RotationDegrees = tiltDeg, MouseFilter = MouseFilterEnum.Ignore };
-        // Its shadow on the table.
-        for (int k = 5; k >= 1; k--)
-            holder.AddChild(new ColorRect { Color = new Color(0, 0, 0, 0.1f), Position = new Vector2(-k * 2 + 5, -k * 2 + 9), Size = size + new Vector2(k * 4, k * 4), MouseFilter = MouseFilterEnum.Ignore });
-        var paper = Style.Panel(Style.Paper(30));
-        paper.Size = size;
-        paper.MouseFilter = MouseFilterEnum.Ignore;
-        holder.AddChild(paper);
-        // The compass the Wayfinder draws on every sheet, faint in its corner.
-        var rose = Glyphs.Icon("compass", 84, InkSoft with { A = 0.22f });
-        rose.Position = new Vector2(size.X - 118, size.Y - 150);
-        holder.AddChild(rose);
+        var (sheet, v) = Leaf(width, tiltDeg);
         var people = MapOffers.People(o.People);
         Label L(string t, Font f, int sz, Color c) => Style.Label(t, f, sz, c, true, HorizontalAlignment.Left, false);
-        var v = Style.V(6,
-            Style.H(8, Style.Label($"TIER {o.Spec.Tier}", Style.UiHeavy, Style.Caption, InkSoft, false, HorizontalAlignment.Left, false), Style.Gems(System.Math.Min(o.Spec.Tier - 1, 5), 6)),
-            L(o.Spec.Name.ToUpperInvariant(), Style.Display, 30, Ink),
-            L($"Held by {people.Name}; ruled at the end by {MapOffers.InSentence(people.BossName)}", Style.TextItalic, Style.Small, Ink));
+        v.AddChild(L($"TIER {o.Spec.Tier}", Style.UiHeavy, Style.Caption, InkSoft));
+        v.AddChild(L(o.Spec.Name.ToUpperInvariant(), Style.Display, 30, Ink));
+        v.AddChild(L($"Held by {people.Name}; ruled at the end by {MapOffers.InSentence(people.BossName)}", Style.TextItalic, Style.Small, Ink));
         // What it pays, before what it asks (the experience director's finding: the table said
         // nothing of it): what the night leaves in the fist, drawn; the gear it leans to; a tome's chance.
         v.AddChild(Pays(o, people));
@@ -442,49 +412,10 @@ public partial class MapTableScreen : Overlay
             terms.SizeFlagsHorizontal = SizeFlags.ExpandFill;
             v.AddChild(Style.H(10, seal, terms));
         }
-        v.AddChild(new Control { SizeFlagsVertical = SizeFlags.ExpandFill, MouseFilter = MouseFilterEnum.Ignore });
+        v.AddChild(Style.Gap(4));
         v.AddChild(L("Half an hour; the ember from nothing", Style.TextItalic, Style.Caption, InkSoft));
-        v.Position = new Vector2(34, 30);
-        v.Size = size - new Vector2(68, 60);
-        holder.AddChild(v);
-        // The frame it is pinned in (frames/map_frame.png), laid over the sheet's edge.
-        if (UiArt.Has("map_frame"))
-        {
-            var rim = new Panel { Size = size, MouseFilter = MouseFilterEnum.Ignore };
-            rim.AddThemeStyleboxOverride("panel", UiArt.Frame("map_frame", new StyleBoxEmpty()));
-            holder.AddChild(rim);
-        }
-        return holder;
-    }
-}
-
-/// <summary>The Wayfinder's table top: dark oiled wood, its grain running the length, lit from above.</summary>
-public partial class TableTop : Control
-{
-    public TableTop() { MouseFilter = MouseFilterEnum.Ignore; }
-
-    public override void _Draw()
-    {
-        var s = Size;
-        var top = new Color("#3a2416");
-        var foot = new Color("#1c1009");
-        DrawPolygon(new[] { Vector2.Zero, new Vector2(s.X, 0), s, new Vector2(0, s.Y) }, new[] { top, top, foot, foot });
-        // The grain: long faint strokes, fixed so it does not shimmer.
-        var rng = new RandomNumberGenerator { Seed = 7 };
-        for (int i = 0; i < 140; i++)
-        {
-            float y = rng.Randf() * s.Y, x0 = rng.Randf() * s.X * 0.6f, len = rng.RandfRange(s.X * 0.2f, s.X * 0.7f);
-            float wob = rng.RandfRange(-3, 3);
-            DrawLine(new Vector2(x0, y), new Vector2(Mathf.Min(s.X, x0 + len), y + wob), new Color(0, 0, 0, rng.RandfRange(0.06f, 0.16f)), rng.RandfRange(1, 2.5f), true);
-        }
-        for (int i = 0; i < 40; i++)
-        {
-            float y = rng.Randf() * s.Y, x0 = rng.Randf() * s.X;
-            DrawLine(new Vector2(x0, y), new Vector2(Mathf.Min(s.X, x0 + rng.RandfRange(80, 400)), y + rng.RandfRange(-2, 2)), new Color(1, 0.8f, 0.55f, 0.05f), 1, true);
-        }
-        // The lamp's light pooled in the middle, the edges falling into shadow.
-        for (int k = 0; k < 10; k++)
-            DrawRect(new Rect2(new Vector2(k * 6, k * 6), s - new Vector2(k * 12, k * 12)), new Color(0, 0, 0, 0.05f), false, 6);
-        DrawRect(new Rect2(Vector2.Zero, s), new Color(0, 0, 0, 0.6f), false, 2);
+        var pick = o;
+        v.AddChild(Nav.Id(InkWord("Enter the arena", () => G.SetOut(pick), 21), $"enter:{o.Spec.Name}"));
+        return sheet;
     }
 }

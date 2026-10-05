@@ -35,6 +35,11 @@ public sealed class Nav
     /// <summary>The ring is shown: the keys or the pad were used last, not the mouse.</summary>
     public static bool KeyMode;
 
+    static ulong mouseMovedAt;
+    /// <summary>The mouse was moved by a hand just now (not a control built under a resting pointer).</summary>
+    public static bool MouseMoved => Time.GetTicksMsec() - mouseMovedAt < 200;
+    public static void MouseMotion() => mouseMovedAt = Time.GetTicksMsec();
+
     readonly Control host;
     /// <summary>Only what is under this can take focus (a side panel); null, all of the host.</summary>
     public Control? Scope;
