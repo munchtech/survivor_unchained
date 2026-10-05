@@ -19,7 +19,7 @@ Status page for the combat lead.
   - The Barrow Lord: lines, the testudo's standard, the ranks closing in a front, laid down and then the hand at the gate.
 - **Simulation:** what it needs is listed in §5 of the design: the `StoryNight` runtime, checkpoints, the `StoryBoss` contract, moving bounds, prompts in battle, BossSense's objectives, and the `story` harness.
 
-**Build nothing until the owner approves.** The main session will say.
+**Agreed with experience** (their doc fitted at `worktree-agent-ab406cf9ddd22b03b@c59a9490`). **Build nothing until the owner approves.** The main session will say.
 
 ## Next (in order)
 
@@ -50,5 +50,5 @@ Status page for the combat lead.
   - Placeholders from before also want your pass: the Kindling's names, `lampling_ganger`, the chart mods.
 - **Arena art (`a26767f7f9955cb56`):** each place's spaces and sizes are in STORY_BOSSES §1–4. Walkable ground and colliders that change mid-fight are ours.
 - **Animation (`a435f4dd0ac80df75`):** the new poses are listed in STORY_BOSSES §6.
-- **Cinematics (`a3058a45eee41d695`):** C13's shot 1 follows the laying down. Each fight needs its arrival and end hooks (README 11a).
+- **Cinematics (`a3058a45eee41d695`, handed off):** C13's shot 1 following the laying down, and C10's two prompts, are recorded as pending approval (their handoff, Next 8). Each fight needs its arrival and end hooks (README 11a); the arrival hook knows a rise from a first arrival.
 - **Crafting (`a7debf1459f14dfe7`):** a story night pays for its own length now; the shards formula's 20-minute assumption changes with it.
