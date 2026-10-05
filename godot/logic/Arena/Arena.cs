@@ -53,11 +53,18 @@ public sealed class ArenaSpec
     /// foe of the story: Greymuzzle, Redcowl).</summary>
     public string? Boss, BossName, BossTitle;
     /// <summary>The boss is brought down and let go, not killed (Greymuzzle, when the story
-    /// allows it: docs/STORY_BIBLE.md, "The nights").</summary>
+    /// allows it: docs/STORY_BIBLE.md, "The nights"). Today's runtime does it on its own; the
+    /// story fights' own runtime asks her instead (OnSpare).</summary>
     public bool Spare;
     /// <summary>A story night's last line, won and lost: the narrator's, where the result
     /// would otherwise say only that the story goes on (docs/WRITING_PASS.md §20).</summary>
     public string? EndWon, EndLost;
+    /// <summary>Her choice at the boss's side when he is spent (the owner, 4 October): what
+    /// sparing him changes, in place of OnWin; its last line; and the prompt's words beside
+    /// "Finish it" ("Spare him", "Let him go"). No OnSpare, no choice (docs/WRITING_PASS.md §22).</summary>
+    public string? OnSpare, EndSpared, SpareVerb;
+    /// <summary>Won by sparing him: the result reads EndSpared.</summary>
+    public bool Spared;
 
     /// <summary>The ground (always by night: the ember burns only in the dark).</summary>
     public MapSpec Map => new() { Seed = Seed, Tier = Tier, Theme = Theme, Night = true, Oaths = Oaths, Name = Name, Arena = true, People = People, Mood = Mood };
@@ -110,7 +117,7 @@ public static class Arenas
         Boss = lost.Boss, BossName = lost.BossName, BossTitle = lost.BossTitle,
         // The fight is the same fight, spared or not; its lost line says where she comes to,
         // which is no longer where this one sends her back.
-        Spare = lost.Spare, EndWon = lost.EndWon,
+        Spare = lost.Spare, EndWon = lost.EndWon, OnSpare = lost.OnSpare, EndSpared = lost.EndSpared, SpareVerb = lost.SpareVerb,
         ReturnZone = zone, ReturnX = x, ReturnZ = z, ReturnFacing = facing,
     };
 
@@ -148,11 +155,15 @@ public static class Arenas
     }
 
     /// <summary>What rules the horde is dead: the fight is won, and the story is
-    /// told so at once (the arena goes on; whatever happens in it now, it was won).</summary>
-    public static void Won(Journey j, ArenaSpec spec)
+    /// told so at once (the arena goes on; whatever happens in it now, it was won).
+    /// Spared or finished is her choice at his side where the spec offers one (OnSpare);
+    /// left unsaid, it is the spec's own (today's runtime lets Greymuzzle go by itself).</summary>
+    public static void Won(Journey j, ArenaSpec spec, bool? spared = null)
     {
         var w = j.World;
-        if (spec.OnWin != null) j.Apply(spec.OnWin);
+        spec.Spared = spec.OnSpare != null && (spared ?? spec.Spare);
+        var outcome = spec.Spared ? spec.OnSpare : spec.OnWin;
+        if (outcome != null) j.Apply(outcome);
         w.Rematches.RemoveAll(r => r.Id == spec.Id);
         w.Facts[$"arena.{spec.Id}"] = "won";
         w.Facts["arena.won"] = w.Fact("arena.won").Number + 1;

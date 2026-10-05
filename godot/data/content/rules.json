@@ -966,6 +966,63 @@
    "report": "Vonnra came down from the toll tower before dawn, which nobody has seen her do, and walked out along the Verge road and back. She paid the gate-guard for his trouble, and told him he had not seen her."
   },
   {
+   "id": "roost.flitted",
+   "once": true,
+   "when": {
+    "history": "spared_redcowl"
+   },
+   "effect": [],
+   "report": "Before first light the wall saw torches come up out of the ravine and go north over the ridge, where no road goes. Holloway counted them all the way, down to a big man at the back who would not get on a cart, and sent nobody after. Rav watched from the Flagon's door until the last one was over."
+  },
+  {
+   "id": "hollow.sang",
+   "once": true,
+   "when": {
+    "quest": {
+     "id": "beasts",
+     "entry": "hollow_lost"
+    }
+   },
+   "effect": [],
+   "report": "The Pack sang in the Hollow half the night, the way they do over a kill. Then they stopped, all at once, in the middle of it."
+  },
+  {
+   "id": "roost.sang",
+   "once": true,
+   "when": {
+    "quest": {
+     "id": "caravan",
+     "entry": "roost_repelled"
+    }
+   },
+   "effect": [],
+   "report": "There was singing up the ravine last night, the slow kind the Kerchiefs keep for burying. Toward dawn it turned to shouting, and then to nothing."
+  },
+  {
+   "id": "dig.lamps",
+   "once": true,
+   "when": {
+    "quest": {
+     "id": "beasts",
+     "entry": "dig_held"
+    }
+   },
+   "effect": [],
+   "report": "Before dawn a line of little lamps came a long way down the hill from the Dig, toward the wall. It stopped where the wall's lamps reach, and went back up."
+  },
+  {
+   "id": "vault.shut",
+   "once": true,
+   "when": {
+    "quest": {
+     "id": "vault",
+     "entry": "shut"
+    }
+   },
+   "effect": [],
+   "report": "Out in the Verge the violet went out an hour before dawn, all at once, like a door shutting. Old Oswin says he heard marching first, a long way off, going down."
+  },
+  {
    "id": "jory.nights",
    "once": true,
    "when": {

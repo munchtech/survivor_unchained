@@ -176,6 +176,8 @@ public partial class Game
     {
         if (zone == null || Battle is not { } b) return;
         var p = b.Player;
+        // A second fight the same night: she does not go back to the lamps.
+        if (Journey.FoughtTonight) Say(Journey.DayLines.StraightOn, null, 3.5);
         if (Journey.Tonight is { } f) { EnterArena(StoryFights.Spec(f.Id, Journey.Ctx, zone.Id, p.X, p.Z, p.Facing)); return; }
         if (zone is Verge v && v.NearestScar(p.X, p.Z) is { } scar) { EnterArena(scar); return; }
         Open("maps");
@@ -185,9 +187,15 @@ public partial class Game
     List<Tracked> WithTonight(List<Tracked> list)
     {
         if (zone is not { ClockRuns: true } || World.Time != TimeOfDay.Night) return list;
-        string what = Journey.Tonight is { } f ? $"{f.Verb}: {f.Place}"
-            : zone is Verge { HasScars: true } ? "Step into an ember scar" : "The Wayfinder's table";
-        var steps = new List<Step> { new(what), new($"Hold {KeyLabel("answer")} to answer the night", Optional: true) };
+        // The night's fight first, then what else is out tonight, then how to answer it.
+        var called = StoryFights.Called(Journey.Ctx);
+        bool scars = zone is Verge { HasScars: true };
+        string what = called.FirstOrDefault() is { } f ? $"{f.Verb}: {f.Place}" : scars ? "Step into an ember scar" : "The Wayfinder's table";
+        var others = called.Skip(1).Select(o => o.Place).ToList();
+        if (scars && called.Count > 0) others.Add("the ember scars");
+        var steps = new List<Step> { new(what) };
+        if (others.Count > 0) steps.Add(new($"{Journey.DayLines.AlsoOut} {string.Join(", ", others)}", Optional: true));
+        steps.Add(new($"{Journey.DayLines.Answer}: hold {KeyLabel("answer")}", Optional: true));
         return new List<Tracked> { new("tonight", "Tonight", TrackTone.Main, steps) }.Concat(list).ToList();
     }
 

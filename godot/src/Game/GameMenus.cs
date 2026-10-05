@@ -343,6 +343,8 @@ public partial class Game
     }
 
     string? afterTalk;
+    /// <summary>What follows this conversation's end (the town's morning after Chid's waking).</summary>
+    Action? talkDone;
 
     void EndDialogue()
     {
@@ -361,6 +363,7 @@ public partial class Game
         Save("talk");
         // A conversation that opened a shop, the storeroom, a bed.
         if (afterTalk is string next) { afterTalk = null; Open(next); }
+        if (talkDone is { } done) { talkDone = null; done(); }
     }
 
 

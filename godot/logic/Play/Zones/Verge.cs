@@ -370,6 +370,12 @@ public sealed class Verge : ZoneRuntime
             }
         }
         if (roostSpawned && !KerchiefsFriendly() && !F("roost.hostile").Truthy && Near(roost, 26) && roostCrew.Any(Up)) TurnHostile("roost.hostile", "The Roost has seen you");
+        // Spared, he struck the camp before first light: the first time she comes back up the ruts by day.
+        if (F("redcowl").Str == "spared" && W.Time != TimeOfDay.Night && Near(roost, 30) && !(W.Zone("verge").TryGetValue("roost_struck", out var struck) && struck.Truthy))
+        {
+            W.Zone("verge")["roost_struck"] = true;
+            G.Say("The camp is struck: cold fires, and pale squares in the grass where the tents stood. They took everything that would carry. The Coyle wagons they left where they stood.", null, 6);
+        }
         // The Dig.
         if (!digSpawned && Near(dig, 44) && F("dig.pump").Str != "blown")
         {
@@ -706,7 +712,7 @@ public sealed class Verge : ZoneRuntime
             G.Look.HideProps("props/Chest_Wood", cargo.X + 2.2, cargo.Z - 1.4, 1.2);
             B?.Collision.RemoveTagged("strongbox");
         }
-        if (F("be.crates").Str is "sunk" or "burned" or "harlan" or "dig" or "watch")
+        if (F("be.crates").Str is "sunk" or "burned" or "harlan" or "dig" or "watch" || (F("be.crates").Str == "redcowl" && F("redcowl").Str == "spared"))
         {
             double cx = cargo.X - 1.5, cz = cargo.Z + 0.75;
             G.Look.HideProps("props/Crate_Wooden", cx, cz, 2.5);
@@ -1050,7 +1056,7 @@ public sealed class Verge : ZoneRuntime
             new(at("blind").X, at("blind").Z, "Hunters' Blind", MarkKind.Place),
             new(at("hollow").X, at("hollow").Z, "Wolf Hollow", toHollow ? MarkKind.Quest : WolvesFriendly() ? MarkKind.Place : MarkKind.Danger),
             new(at("dig").X, at("dig").Z, "The Dig", toDig ? MarkKind.Quest : F("dig.hostile").Truthy ? MarkKind.Danger : MarkKind.Place),
-            new(at("roost").X, at("roost").Z, "Redcowl's Roost", KerchiefsFriendly() || F("redcowl").Str == "tricked" ? MarkKind.Place : MarkKind.Danger),
+            new(at("roost").X, at("roost").Z, "Redcowl's Roost", KerchiefsFriendly() || F("redcowl").Str == "tricked" || F("roost.cleared").Truthy ? MarkKind.Place : MarkKind.Danger),
             new(at("vault").X, at("vault").Z, "Sealed Door", MarkKind.Mystery),
             new(at("sinkhole").X, at("sinkhole").Z, "The Sinkhole", MarkKind.Mystery),
             new(at("grove").X, at("grove").Z, "Moon Grove", MarkKind.Place),
