@@ -42,22 +42,23 @@ public partial class BattleFx
     static readonly Color Verdigris = new(0.16f, 0.8f, 0.66f), LegendAmber = new(1.0f, 0.52f, 0.12f), StoriedRed = new(1.0f, 0.28f, 0.1f);
     static readonly Color ChartPale = new(0.92f, 0.82f, 0.6f), QuestGold = new(1.0f, 0.76f, 0.3f);
 
-    enum Lit { Rare = 1, Epic = 2, Set = 3, Pillar = 4, Strike = 5, Glow = 6, Shaft = 7 }
+    enum Lit { Rare = 1, Epic = 2, Set = 3, Pillar = 4, Strike = 5, Glow = 6, Shaft = 7, Band = 8 }
 
-    // A moment's columns of light (Pillar): where, how tall and wide, in what colour, since when, how long.
-    readonly List<(Vector3 At, float Height, float Width, Color Colour, double Born, float Life)> shafts = new();
+    // A moment's columns of light (Pillar): where, how tall and wide, in what colour, since when, how
+    // long, and how thick the motes riding up it.
+    readonly List<(Vector3 At, float Height, float Width, Color Colour, double Born, float Life, float Motes)> shafts = new();
 
     /// <summary>A column of light from the ground for a moment (a strike from the sky, a level gained,
     /// an evolution, a chest, the night won), drawn as loot's light is: upright on the screen, soft,
     /// held below the tone curve's knee. (On a world-upright tube, the night's 34 m column and its
     /// white core read as a huge slanted cream bar.) `radius` is its core's reach; its glow spreads
-    /// four times wider.</summary>
-    void Pillar(Vector3 at, float height, float radius, Color color, float life)
+    /// four times wider. `motes`: light riding up it (0 to 1).</summary>
+    void Pillar(Vector3 at, float height, float radius, Color color, float life, float motes = 0)
     {
         // Its hue kept, its brightness held to the knee.
         float top = Mathf.Max(color.R, Mathf.Max(color.G, color.B));
         var c = top > 1.1f ? new Color(color.R / top * 1.1f, color.G / top * 1.1f, color.B / top * 1.1f) : color;
-        shafts.Add((at, height, Mathf.Max(0.5f, radius * 4), c, time, Mathf.Max(0.05f, life)));
+        shafts.Add((at, height, Mathf.Max(0.5f, radius * 4), c, time, Mathf.Max(0.05f, life), motes));
     }
 
     void EnsureLoot()
@@ -85,8 +86,9 @@ public partial class BattleFx
             if (k >= 1 || k < 0) { shafts.RemoveAt(i); continue; }
             // Up fast out of the ground, then thinning away.
             float grow = Mathf.SmoothStep(0, 0.12f, k), fade = (1 - k) * (1 - k);
-            Light(s.At.X, s.At.Y - 0.04f, s.At.Z, Lit.Shaft, 0, s.Width * (0.8f + 0.2f * grow), s.Height * (0.4f + 0.6f * grow), s.Colour, fade);
+            Light(s.At.X, s.At.Y - 0.04f, s.At.Z, Lit.Shaft, s.Motes, s.Width * (0.8f + 0.2f * grow), s.Height * (0.4f + 0.6f * grow), s.Colour, fade);
         }
+        StoryLights();
         lootLight!.End();
         for (int i = lampsLit; i < lootLamps.Length; i++) lootLamps[i].Visible = false;
     }

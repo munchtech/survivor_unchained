@@ -735,6 +735,7 @@ public sealed partial class Battle
         if (dl == 0) dl = 1;
         e.LastBlow = before > 0 ? dmg / Math.Max(1, before) : 0;
         e.LastCrit = crit;
+        e.LastDot = o.Dot;
         e.LastDx = dx / dl; e.LastDz = dz / dl;
         e.LastWeapon = o.Weapon?.Id;
         if (e.Disposition == Disposition.Neutral) Provoke(e);
@@ -1413,7 +1414,7 @@ public sealed partial class Battle
         e.RetargetT = Rng.Next() * 0.5;
         e.Slot = Rng.Next() * Tau;
         e.Seed = Rng.Next();
-        e.Burst = false; e.LastBlow = 0; e.LastCrit = false;
+        e.Burst = false; e.LastBlow = 0; e.LastCrit = false; e.LastDot = false;
         e.Status.Clear();
         e.Flash = 0;
         e.Anim = o.Style == SpawnStyle.Rise ? EnemyAnim.Rise : EnemyAnim.Move;
@@ -1991,6 +1992,7 @@ public sealed partial class Battle
                 var c = e.Status.Ensure(StatusKind.Chill, 0, 0, 0, 0);
                 c.T = Math.Max(c.T, z.Tick + 0.1);
                 c.Stacks = Math.Max(c.Stacks, (1 - z.Slow) * 8);
+                if (z.School != School.Frost) e.HeldUntil = Time + z.Tick + 0.1;
             }
         });
     }

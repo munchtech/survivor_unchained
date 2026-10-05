@@ -102,7 +102,7 @@ public partial class BattleFx
         // and added, they read as grey smoke.
         var (book, tint) = art switch
         {
-            "moon" or "moon_brand" => ("moon_burst", new Color(0.22f, 0.17f, 0.8f, 0.5f)),
+            "moon" or "moon_brand" => ("moon_burst", new Color(0.16f, 0.12f, 0.75f, 0.32f)),
             "umbral" or "ruin" or "siphon" or "tether" or "tether2" or "tether_mark" => ("shadow_wisps", art == "siphon" ? new Color(0.42f, 0.1f, 0.5f, 0.95f) : new Color(0.3f, 0.12f, 0.62f, 0.95f)),
             _ => ((string?)null, Colors.White),
         };
@@ -110,12 +110,19 @@ public partial class BattleFx
         {
             case "moon" or "moon_brand":
             {
-                // The brand: the crescent stamped on what it struck, flaring and gone, and moonfire
-                // licking up off it.
+                // The brand: the crescent stamped on what it struck, cold silver on a dark bed,
+                // flaring and gone, and moonfire licking up off it in violet tongues. (Pale violet
+                // over the tan dead, with smoke-soft flames and a stardust haze, it read as a lavender
+                // puff.)
                 var fire = MoonFire(art);
-                Sparks.Spawn(at + Vector3.Up * 0.25f, Vector3.Up * 0.35f, 0.5f, 0.55f * g, Hdr("#9a8cff", 1.1f), new Color(fire.R * 0.3f, fire.G * 0.3f, fire.B * 0.3f), 0.95f * g, sprite: Sprites.Range("crescent").First + 1, spinV: 0.6f);
-                for (int i = 0; i < 9; i++)
-                    MoonTongue(at + new Vector3((R() - 0.5f) * 0.6f, (R() - 0.5f) * 0.4f, (R() - 0.5f) * 0.6f), Vector3.Up * (0.8f + R() * 1.2f) + away * R() * 0.6f, (0.38f + R() * 0.18f) * g, fire);
+                Smoke.Spawn(at + Vector3.Up * 0.2f, Vector3.Zero, 0.45f, 0.7f * g, new Color(0.03f, 0.02f, 0.07f), null, 1.0f * g, alpha: 0.55f, sprite: -1);
+                Sparks.Spawn(new Sparks.P
+                {
+                    At = at + Vector3.Up * 0.3f, V = Vector3.Up * 0.3f, Life = 0.42f, Size = 0.5f * g, SizeEnd = 0.8f * g, Color = MoonSilver * 1.3f, ColorEnd = new Color(fire.R * 0.25f, fire.G * 0.25f, fire.B * 0.4f),
+                    Alpha = 1, Sprite = Sprites.Range("crescent").First + 1, Spin = (R() - 0.5f) * 0.6f + 0.001f, SpinV = 0.001f,
+                });
+                for (int i = 0; i < 7; i++)
+                    MoonTongue(at + new Vector3((R() - 0.5f) * 0.5f, (R() - 0.5f) * 0.3f, (R() - 0.5f) * 0.5f), Vector3.Up * (1.0f + R() * 1.2f) + away * R() * 0.5f, (0.34f + R() * 0.16f) * g, fire);
                 break;
             }
             case "umbral" or "ruin" or "siphon":
@@ -193,12 +200,21 @@ public partial class BattleFx
                 // The string's snap: a pale streak forward and a puff of grit.
                 Sparks.Spawn(hand, dir * 6, 0.07f, 0.35f * g, SteelWhite * 0.6f, null, 0.1f, sprite: Sprites.Of("light"));
                 break;
-            case "mote" or "mote_cascade" or "mote_star" or "moon" or "moon_brand":
+            case "moon" or "moon_brand":
+                // The moon drawn from her hand: a glint of its crescent, cold silver, gone in a breath.
+                // (A turning sigil in moonlight's lilac, every cast, read as a lavender blot at her side.)
+                Sparks.Spawn(new Sparks.P
+                {
+                    At = hand + Vector3.Up * 0.1f, Life = 0.2f, Size = 0.32f * g, SizeEnd = 0.5f * g, Color = MoonSilver * 1.2f, ColorEnd = MoonFire(art) * 0.3f,
+                    Alpha = 1, Sprite = Sprites.Range("crescent").First + 1, Spin = (float)e.Angle + 0.001f, SpinV = 0.001f,
+                });
+                break;
+            case "mote" or "mote_cascade" or "mote_star":
                 // A spell spoken: a turning glyph of light at the hand, in the spell's
                 // colour (white, it read as a blob at her feet).
-                Sparks.Spawn(hand + Vector3.Up * 0.1f, Vector3.Zero, 0.24f, 0.6f * g, (art.StartsWith("moon") ? Moon * 0.5f : art == "mote_cascade" ? FenLight * 0.45f : Hdr("#c070ff", 1.3f)), pal.Glow * 0.1f, 0.75f * g, sprite: Sprites.Of("magic"), spinV: 6);
+                Sparks.Spawn(hand + Vector3.Up * 0.1f, Vector3.Zero, 0.24f, 0.6f * g, art == "mote_cascade" ? FenLight * 0.45f : Hdr("#c070ff", 1.3f), pal.Glow * 0.1f, 0.75f * g, sprite: Sprites.Of("magic"), spinV: 6);
                 break;
-            case "cinder" or "living_flame" or "star":
+            case "cinder" or "living_flame" or "star" or "frostfire":
                 // A puff of flame at the hand, orange (white-tinted, it was a cream ball at her side).
                 Books.Spawn("fire_blast", hand, 0.4f * g, 0.3f, new Color(1.25f, 0.62f, 0.26f, 0.85f), sizeEnd: 0.85f * g);
                 for (int i = 0; i < 6; i++) Sparks.Spawn(hand, dir * (2 + R() * 3) + new Vector3((R() - 0.5f) * 2, 1 + R() * 2, (R() - 0.5f) * 2), 0.4f, 0.05f, Ember, EmberDeep, 0.01f, -1, 1.5f);
@@ -383,16 +399,24 @@ public partial class BattleFx
             }
             case "axe" or "axe_blood" or "axe_storm":
             {
-                float turn = (float)(now * 16 + p.Id), sz = 1.3f * Mathf.Sqrt(g);
+                bool butcher = art == "axe_blood";
+                float turn = (float)(now * 16 + p.Id), sz = (butcher ? 1.6f : 1.3f) * Mathf.Sqrt(g);
                 var basis = new Godot.Basis(Vector3.Up, -turn) * new Godot.Basis(Vector3.Right, Mathf.Pi / 2) * Godot.Basis.FromScale(Vector3.One * sz);
                 axes.Add(new Transform3D(basis, at), Colors.White);
                 // The head whirling: arcs of steel round it, so a spinning axe reads as one at a glance.
                 Shade(at, 1.1f * sz, 0.35f);
-                SpinArcs(at, 0.42f * sz, turn, 0.09f * sz, art == "axe_blood" ? Hdr("#ff5040", 1f) : art == "axe_storm" ? Hdr("#bfe0ff", 1f) : Hdr("#ffe6c8", 1f), 2f);
+                // (Steel even on the butcher's wheel: arcs in blood red made the four heads one red ring.)
+                SpinArcs(at, 0.42f * sz, turn, 0.09f * sz, art == "axe_storm" ? Hdr("#bfe0ff", 1f) : Hdr("#ffe6c8", 1f), butcher ? 2.4f : 2f);
                 // The orbit's wake: a curved streak behind each head, as the eye sees a spinning blade.
-                if (art == "axe_storm") Ribbons.Feed(key, at, 0.75f * g, 0.22f, Wind, 0.9f, Ribbons.Style.Wisp);
-                else Ribbons.Feed(key, at, 0.4f * g, 0.16f, art == "axe_blood" ? Hdr("#ff3a2a", 1f) : Hdr("#fff0e0", 1f), art == "axe_blood" ? 1.8f : 1.3f, Ribbons.Style.Steel);
-                if (art == "axe_blood" && R() < 0.25f) Sparks.Spawn(at, Vector3.Up * 0.5f, 0.5f, 0.06f, Blood, BloodDim, 0.02f, 9);
+                // (Its wind thin and cool: pale and wide, four heads' wakes joined into one white hoop round her.)
+                if (art == "axe_storm") Ribbons.Feed(key, at, 0.45f * g, 0.16f, Hdr("#7ab8c8", 1f), 0.6f, Ribbons.Style.Wisp);
+                else Ribbons.Feed(key, at, 0.4f * g, butcher ? 0.12f : 0.16f, butcher ? Hdr("#a8140c", 1f) : Hdr("#fff0e0", 1f), butcher ? 1.2f : 1.3f, Ribbons.Style.Steel);
+                // The butcher's cleavers fling blood off their edges as they turn.
+                if (butcher && R() < 0.5f)
+                {
+                    var outward = new Vector3(at.X - (float)p.X, 0, at.Z - (float)p.Z);
+                    Sparks.Spawn(at, (outward.LengthSquared() > 0.01f ? outward.Normalized() : Vector3.Right) * (2 + R() * 2) + Vector3.Up * (1 + R()), 0.5f, 0.06f + R() * 0.04f, Blood, BloodDim, 0.02f, 9);
+                }
                 return true;
             }
             case "disc" or "disc_aegis" or "disc_reckon":
@@ -493,9 +517,10 @@ public partial class BattleFx
                 float s = 0.75f * g;
                 var fire = MoonFire(art);
                 Shade(at, s * 2.6f, 0.72f);
-                orbs.Add(new Transform3D(Godot.Basis.Identity.Scaled(Vector3.One * s * 1.9f), at), fire * 0.28f);
+                orbs.Add(new Transform3D(Godot.Basis.Identity.Scaled(Vector3.One * s * 1.5f), at), fire * 0.16f);
                 Body(at, s * 1.45f, "crescent", MoonSilver, (float)now * 2 + p.Id);
-                Ribbons.Feed(key, at, 0.5f * g, 0.3f, new Color(fire.R * 0.7f, fire.G * 0.7f, fire.B * 0.7f), 2f, Ribbons.Style.Flame);
+                // Its trail a thin streak of flame (half a metre wide, it lay on the ground as a lilac smear).
+                Ribbons.Feed(key, at, 0.24f * g, 0.2f, new Color(fire.R * 0.6f, fire.G * 0.6f, fire.B * 0.6f), 2f, Ribbons.Style.Flame);
                 trailAcc.TryGetValue(p.Id, out var lick);
                 lick += dt * 34;
                 while (lick >= 1)
@@ -506,20 +531,25 @@ public partial class BattleFx
                 trailAcc[p.Id] = lick;
                 return true;
             }
-            case "cinder" or "living_flame" or "star":
+            case "cinder" or "living_flame" or "star" or "frostfire":
             {
                 // A burning coal: flame streaming off it, embers shed behind, a little smoke.
-                bool star = art == "star", small = art == "living_flame";
+                // Frostfire Comet: a heart of ice in the fire, a tail of frost beside the flame, and
+                // frost glinting off it with the embers. (Drawn as Fallen Star's, it had no cold in it
+                // at all: a cream streak.)
+                bool ice = art == "frostfire", star = art == "star" || ice, small = art == "living_flame";
                 float s = (star ? 1.25f : small ? 0.55f : 0.85f) * g;
                 // Its heart yellow-hot, not white: past the tone curve's knee a coal read as a cream pill.
                 Shade(at, s * 2.2f, 0.5f);
-                orbs.Add(new Transform3D(Godot.Basis.Identity.Scaled(Vector3.One * s * 0.3f), at), star ? Hdr("#ffd890", 2.0f) : Hdr("#ffa840", 1.7f));
-                orbs.Add(new Transform3D(Godot.Basis.Identity.Scaled(Vector3.One * s * 1.5f), at), Hdr("#ff5a10", 1.6f) * 0.2f);
+                orbs.Add(new Transform3D(Godot.Basis.Identity.Scaled(Vector3.One * s * 0.3f), at), ice ? Hdr("#9fd4ff", 1.6f) : star ? Hdr("#ffd890", 2.0f) : Hdr("#ffa840", 1.7f));
+                orbs.Add(new Transform3D(Godot.Basis.Identity.Scaled(Vector3.One * s * 1.5f), at), Hdr("#ff5a10", 1.6f) * (ice ? 0.14f : 0.2f));
                 Body(at, s * 0.75f, "ember_coal", star ? Hdr("#ffb060", 1.6f) : Hdr("#ff7a28", 1.5f), (float)now * 5 + p.Id);
+                if (ice) Body(at + Vector3.Up * 0.05f, s * 0.6f, "frost_star", Hdr("#8ac8ff", 1.5f), -(float)now * 4 + p.Id);
                 // Its flame streaming back, short and deep orange (long and bright, the coal read as
                 // a pale beam behind it).
                 Ribbons.Feed(key, at, 0.5f * s, star ? 0.3f : 0.18f, Hdr("#ff6a1a", 1f), 1.5f, Ribbons.Style.Flame);
-                if (p.Weapon == "frostfire_comet") Ribbons.Feed(key ^ 0x55aa, at + Vector3.Up * 0.05f, 0.35f * s, 0.35f, Hdr("#a8dcff", 1f), 2f, Ribbons.Style.Frost);
+                // (No frost ribbon beside the flame: its trail drew pale squares along the comet's
+                // path even with round glints. Its frost is the glints it sheds and its heart.)
                 trailAcc.TryGetValue(p.Id, out var acc);
                 acc += dt * (star ? 50 : 30);
                 while (acc >= 1)
@@ -527,7 +557,9 @@ public partial class BattleFx
                     acc -= 1;
                     // (Its filmed flame tinted orange: white-tinted, the coal read as a cream pill.)
                     if (R() < 0.35f) Books.Spawn("fire_loop", at + new Vector3((R() - 0.5f) * 0.1f, 0, (R() - 0.5f) * 0.1f), 0.5f * s, 0.22f, new Color(1.35f, 0.78f, 0.36f, 0.85f), sizeEnd: 0.15f * s, v: Vector3.Up * 0.8f);
-                    Sparks.Spawn(at, -fwd * (0.5f + R()) + new Vector3((R() - 0.5f) * 1.2f, 0.6f + R(), (R() - 0.5f) * 1.2f), 0.4f + R() * 0.3f, 0.04f + R() * 0.03f, Ember, EmberDeep, 0.01f, -1.2f, 1.5f);
+                    if (ice && R() < 0.5f)
+                        Sparks.Spawn(at, -fwd * (0.4f + R() * 0.8f) + new Vector3((R() - 0.5f) * 1.0f, 0.3f + R() * 0.6f, (R() - 0.5f) * 1.0f), 0.45f + R() * 0.3f, 0.09f + R() * 0.06f, Hdr("#a8dcff", 1.5f), IceDeep * 0.5f, 0.02f, 0.5f, 1.5f, sprite: Sprites.Of("frost_star"), spinV: 4);
+                    else Sparks.Spawn(at, -fwd * (0.5f + R()) + new Vector3((R() - 0.5f) * 1.2f, 0.6f + R(), (R() - 0.5f) * 1.2f), 0.4f + R() * 0.3f, 0.04f + R() * 0.03f, Ember, EmberDeep, 0.01f, -1.2f, 1.5f);
                     if (R() < 0.15f) Smoke.Spawn(at + Vector3.Up * 0.2f, Vector3.Up * 0.6f, 0.9f, 0.25f * s, new Color(0.3f, 0.27f, 0.25f), new Color(0.15f, 0.14f, 0.13f), 0.7f * s, drag: 1, alpha: 0.35f);
                 }
                 trailAcc[p.Id] = acc;
@@ -738,16 +770,17 @@ public partial class BattleFx
 
     /// <summary>Moonbrand's fire: violet-blue, its brand's a deeper violet. Held below the tone
     /// curve's knee so it stays a colour over the pale dead.</summary>
-    static Color MoonFire(string art) => art == "moon_brand" ? Hdr("#9050ff", 1.5f) : Hdr("#6a64ff", 1.5f);
+    static Color MoonFire(string art) => art == "moon_brand" ? Hdr("#7a3cff", 1.5f) : Hdr("#5a50ff", 1.5f);
 
-    static readonly Color MoonSilver = Hdr("#c4c0ff", 1.2f);
+    /// <summary>Moonlight: cold silver-blue. (Silver-lilac read as lavender.)</summary>
+    static readonly Color MoonSilver = Hdr("#d2deff", 1.2f);
 
     /// <summary>A tongue of moonfire: an upright flame (the pack's), rising and gone.</summary>
     void MoonTongue(Vector3 at, Vector3 v, float size, Color fire) =>
         Sparks.Spawn(new Sparks.P
         {
             At = at, V = v, Life = 0.28f + R() * 0.14f, Size = size, SizeEnd = size * 0.35f, Color = fire * 0.85f, ColorEnd = new Color(fire.R * 0.25f, fire.G * 0.2f, fire.B * 0.45f),
-            Alpha = 1, Drag = 2.5f, Sprite = Sprites.Range("flame").First + 1 + (int)(R() * 3), Spin = (R() - 0.5f) * 0.5f + 0.001f, SpinV = 0.001f,
+            Alpha = 1, Drag = 2.5f, Sprite = Sprites.Range("muzzle").First + 1 + (int)(R() * 4.99f), Spin = (R() - 0.5f) * 0.5f + 0.001f, SpinV = 0.001f,
         });
 
     /// <summary>A dark soft bed under a bright core (drawn first), so it shows over the pale dead.</summary>
@@ -888,9 +921,10 @@ public partial class BattleFx
                 // A scythe swept all the way round at the edge of its reach: the blade's
                 // crescent (Blades), crimson, with a darker one inside it a breath behind.
                 var hue = art == "nova_harrow" ? Hdr("#8a4aff", 1.1f) : Hdr("#e01a2a", 1.1f);
-                Blades.Add(at, facing, r, Mathf.Tau * 1.02f, false, 0.16f, 0.24f, hue, 0.3f * Mathf.Min(g, 1.3f));
-                Blades.Add(at + Vector3.Down * 0.1f, facing + Mathf.Pi, r * 0.8f, Mathf.Tau * 0.8f, false, 0.18f, 0.2f, hue * 0.55f, 0.3f, 0.04f);
-                if (rings > 1) Blades.Add(at, facing + Mathf.Pi / 2, r * 0.6f, Mathf.Tau * 0.9f, true, 0.16f, 0.2f, hue * 0.7f, 0.35f, 0.08f);
+                // Swept most of the way round, never closed: a full turn of its hot edge read as a hoop.
+                Blades.Add(at, facing, r, Mathf.Tau * 0.82f, false, 0.16f, 0.24f, hue, 0.3f * Mathf.Min(g, 1.3f));
+                Blades.Add(at + Vector3.Down * 0.1f, facing + Mathf.Pi, r * 0.8f, Mathf.Tau * 0.62f, false, 0.18f, 0.2f, hue * 0.55f, 0.3f, 0.04f);
+                if (rings > 1) Blades.Add(at, facing + Mathf.Pi / 2, r * 0.6f, Mathf.Tau * 0.7f, true, 0.16f, 0.2f, hue * 0.7f, 0.35f, 0.08f);
                 AddFront(ground, r, 0.3f, 0.3f * g, new Color(glow.R / 3, glow.G / 3, glow.B / 3), 1.8f, Ribbons.Style.Wisp, 0.6f);
                 // What it takes, drawn back in to the survivor.
                 int n = Math.Min(30, (int)(12 * g));
@@ -921,9 +955,12 @@ public partial class BattleFx
         float r = (float)e.Radius;
         if (e.Delay > 0.05)
         {
-            // The survivor's own marks are quiet: a thin ring, so they never read as a threat.
+            // The survivor's own marks are quiet: where it will fall, a faint light gathering on the
+            // ground as it comes, never a ring (six thin rings round her at once read as the
+            // interface's circles, and as a threat).
             var pal = Palette.Of(e.School);
-            if (art != "slash_quake") Ring(e.X, e.Z, r, pal.Glow * 0.3f, (float)e.Delay, false);
+            if (art != "slash_quake")
+                Sparks.Spawn(V(e.X, Y(e.X, e.Z) + 0.15, e.Z), Vector3.Zero, (float)e.Delay, r * 0.25f, pal.Glow * 0.12f, pal.Glow * 0.4f, r * 0.9f, alpha: 0.8f);
             var ev = e;
             pending.Add((time + e.Delay, () => Landing(ev)));
         }
@@ -944,10 +981,12 @@ public partial class BattleFx
             {
                 bool clap = art == "storm_clap", small = art == "arc_sky";
                 var top = ground + new Vector3((R() - 0.5f) * 3, small ? 9 : 16, (R() - 0.5f) * 3);
-                var col = Hdr("#8ab4ff", 1f);
-                Ribbons.Bolt(top, ground + Vector3.Up * 0.2f, (clap ? 0.55f : small ? 0.22f : 0.38f) * g, clap ? 0.3f : 0.22f, col, 4f, small ? 1 : 3, 0.18f);
+                // Electric blue with a hot thread, never white: at four times a pale blue every bolt
+                // and its burst came out white, a blown-out ball where each one landed.
+                var col = Hdr("#7aa6ff", 1f);
+                Ribbons.Bolt(top, ground + Vector3.Up * 0.2f, (clap ? 0.45f : small ? 0.18f : 0.3f) * g, clap ? 0.3f : 0.22f, col, 2.6f, small ? 1 : 3, 0.18f);
                 // Its glow round the thread, so the strike reads as a blow of light, not a hairline.
-                Ribbons.Bolt(top, ground + Vector3.Up * 0.2f, (clap ? 1.4f : small ? 0.6f : 1f) * g, 0.14f, Hdr("#2a5cff", 1f), 1.3f, 0, 0.16f);
+                Ribbons.Bolt(top, ground + Vector3.Up * 0.2f, (clap ? 1.2f : small ? 0.5f : 0.85f) * g, 0.14f, Hdr("#2a50ff", 1f), 1.1f, 0, 0.16f);
                 // The fork it throws along the ground where it lands.
                 for (int i = 0; i < (clap ? 5 : 3); i++)
                 {
@@ -966,12 +1005,14 @@ public partial class BattleFx
             {
                 // A moon falling: a pale streak down out of the dark, and the burst where it breaks.
                 var top = ground + new Vector3(-2.5f, 14, 1.5f);
-                Ribbons.Line(new[] { top, top.Lerp(ground, 0.5f), ground + Vector3.Up * 0.3f }, 0.45f * g, 0.25f, Hdr("#c8b8ff", 1f), 2.6f, Ribbons.Style.Glow, new[] { 0f, 0.6f, 1f });
-                // The moon breaks into stardust (filmed, LTX), its light thrown out in a ring.
-                Books.Spawn("moon_burst", ground + Vector3.Up * 0.6f, r * 0.8f, 0.7f, new Color(0.6f, 0.5f, 1.1f, 0.85f), flat: true, sizeEnd: r * 2.6f);
-                Flash(ground + Vector3.Up * 1.5f, new Color(0.75f, 0.7f, 1f), 7, 0.3f, r * 3);
+                // Moonlight cold silver-blue, its breaking a deep violet: pale lilac streaks, stardust
+                // and rings read pink-white, a field of lavender hoops.
+                Ribbons.Line(new[] { top, top.Lerp(ground, 0.5f), ground + Vector3.Up * 0.3f }, 0.3f * g, 0.22f, Hdr("#a8bcff", 1f), 2.0f, Ribbons.Style.Glow, new[] { 0f, 0.6f, 1f });
+                // The moon breaks into stardust (filmed, LTX), its light thrown out.
+                Books.Spawn("moon_burst", ground + Vector3.Up * 0.6f, r * 0.7f, 0.65f, new Color(0.26f, 0.22f, 0.95f, 0.6f), flat: true, sizeEnd: r * 2.0f);
+                Flash(ground + Vector3.Up * 1.5f, new Color(0.55f, 0.6f, 1f), 6, 0.3f, r * 3);
                 Scars.Add("runes", ground, r * 0.6f, 1.2f, -0.7f);
-                AddFront(ground, r * 1.3f, 0.35f, 0.25f * g, Hdr("#c8b8ff", 1f), 2.2f, Ribbons.Style.Glow, 0.2f);
+                AddFront(ground, r * 1.2f, 0.3f, 0.16f * g, Hdr("#6a5aff", 1f), 1.2f, Ribbons.Style.Wisp, 0.2f);
                 return;
             }
             case "arrow_rain":
@@ -1244,10 +1285,17 @@ public partial class BattleFx
         "zone_pyre" or "firepot_ground" or "star_ground" => (Hdr("#ff8a2a", 1.6f), Inside.Embers, 0.2f),
         "zone_blight" or "zone_blight2" or "zone_plague" => (Hdr("#b8e04a", 1.3f), Inside.Veins, 0.04f),
         "zone_thorn" or "zone_bloom" or "zone_root" => (Hdr("#4ec85a", 1.3f), Inside.Roots, 0.03f),
+        // Rotwood: the blight grown thorns, its thicket rotten wood in a stain of rot.
+        "zone_rot" => (Hdr("#a8c84a", 1.3f), Inside.Roots, 0.03f),
+        // Frostfire Comet's: fire in its cracks inside a rim of frost.
+        "frostfire_ground" => (Hdr("#8ad0ff", 1.5f), Inside.Embers, 0.2f),
         _ => (Colors.Transparent, Inside.Runes, 0),
     };
 
     readonly System.Collections.Generic.Dictionary<int, (Mark Edge, Mark Fill)> grounds = new();
+
+    /// <summary>The colour inside a ground: its edge's, but for frostfire's burning inside its frost.</summary>
+    static Color FillOf(string art, Color edge) => art == "frostfire_ground" ? Hdr("#ff8a2a", 1.6f) : edge;
     static Texture2D? rimTex, veinTex;
 
     /// <summary>A ground of the survivor's drawn to the rule above; false for
@@ -1272,7 +1320,7 @@ public partial class BattleFx
                 Inside.Roots => Premul(GD.Load<Texture2D>("res://art/fx/marks/roots_emit.png")),
                 _ => veinTex,
             };
-            var fill = Ground(z.X, z.Z, r, fillTex, edgeCol, 1e6f, 1.0f);
+            var fill = Ground(z.X, z.Z, r, fillTex, FillOf(z.Art, edgeCol), 1e6f, 1.0f);
             var edge = Ground(z.X, z.Z, r, rimTex, edgeCol, 1e6f, 2.2f);
             g = (edge, fill);
             grounds[z.Id] = g;
@@ -1281,8 +1329,10 @@ public partial class BattleFx
             if (inside == Inside.Roots)
             {
                 float stand = (float)Math.Max(0.6, z.Life - z.Age);
-                Erupt(z.X, z.Z, 0, r * 0.95f, 14 + (int)(r * 7), SpikeKind.Thorn, 1.05f, stand, Hdr("#3fae4a", 1f));
-                Erupt(z.X, z.Z, r * 0.7f, r * 1.0f, 8 + (int)(r * 3), SpikeKind.Thorn, 0.7f, stand, Hdr("#5ac85a", 1f));
+                bool rot = z.Art == "zone_rot";
+                Erupt(z.X, z.Z, 0, r * 0.95f, 14 + (int)(r * 7), SpikeKind.Thorn, 1.05f, stand, rot ? Hdr("#6a7a2a", 1f) : Hdr("#3fae4a", 1f));
+                Erupt(z.X, z.Z, r * 0.7f, r * 1.0f, 8 + (int)(r * 3), SpikeKind.Thorn, 0.7f, stand, rot ? Hdr("#8a9a3a", 1f) : Hdr("#5ac85a", 1f));
+                if (rot) Scars.Add("blight", V(z.X, Y(z.X, z.Z), z.Z), r * 1.05f, stand + 0.6f, 0);
                 Books.Spawn("bramble_burst", V(z.X, Y(z.X, z.Z) + 0.15, z.Z), r * 1.1f, 0.9f, new Color(0.8f, 1.1f, 0.75f, 0.85f), flat: true, sizeEnd: r * 2.1f);
                 Dust(z.X, z.Z, 8, 2.5f);
             }
@@ -1310,7 +1360,7 @@ public partial class BattleFx
         g.Edge.Decal.Modulate = Dim(edgeCol, fade * breathe * (inside is Inside.Roots or Inside.Veins ? 0.22f : 0.34f) * hush);
         // The pattern inside, fainter still (the runes least: under her for a whole night, they
         // hid her), turning slowly.
-        g.Fill.Decal.Modulate = Dim(edgeCol, fade * (inside == Inside.Runes ? 0.14f : inside == Inside.Veins ? 0.12f : 0.2f) * hush);
+        g.Fill.Decal.Modulate = Dim(FillOf(z.Art, edgeCol), fade * (inside == Inside.Runes ? 0.14f : inside == Inside.Veins ? 0.12f : 0.2f) * hush);
         g.Fill.Decal.Rotation = new Vector3(0, (float)(now * turn + z.Id * 1.7), 0);
         if (inside == Inside.Runes) RuneRing(z.Id, at, r, fade * hush, now);
         else if (inside == Inside.Embers) FirePatch(z.Id, at, r, fade);
@@ -1402,6 +1452,92 @@ public partial class BattleFx
         patch.Mesh.Position = ground - Vector3.Up * 0.05f;
         patch.Mesh.Scale = new Vector3(r * 0.8f, 0.75f + 0.1f * r, r * 0.8f);
         patch.Mat.SetShaderParameter("burn", strength);
+    }
+
+    /// <summary>A firepot breaking: a pot of blasting ember, not a ball of fire. The crack of it
+    /// (a yellow-hot instant), tongues of flame jetting out from where it broke and stopping short,
+    /// its powder thrown out burning, the clay pot's sherds flung out dark and tumbling, char-black
+    /// smoke punched up, the air thrown, its light, its scorch. (The school's filmed burst alone was a
+    /// soft orange fireball; it is kept small, as the heart of it.)</summary>
+    void PotBurst(Ev.Explosion e)
+    {
+        float r = Mathf.Max(1.2f, (float)e.Radius), gy = Y(e.X, e.Z);
+        var ground = V(e.X, gy, e.Z);
+        var cam = GetViewport()?.GetCamera3D();
+        Vector3 right = cam?.GlobalTransform.Basis.X ?? Vector3.Right, up = cam?.GlobalTransform.Basis.Y ?? Vector3.Up;
+        Cam?.AddTrauma((float)Math.Min(0.3, 0.08 + e.Power * 0.1));
+        // The crack: yellow-hot, never white (a white instant over the pale dead read as a cream disc).
+        Sparks.Spawn(ground + Vector3.Up * 0.6f, Vector3.Zero, 0.09f, r * 0.45f, new Color(2.1f, 1.15f, 0.3f), new Color(1.3f, 0.35f, 0.05f), r * 0.85f, alpha: 0.8f);
+        // Its heart: the filmed burst, small, quick and deep orange.
+        Books.Spawn("fire_blast", ground + Vector3.Up * 0.5f, r * 0.5f, 0.42f, new Color(1.25f, 0.55f, 0.18f, 1), flat: true, sizeEnd: r * 1.15f);
+        // Tongues of flame jetting out from where it broke, each turned on the screen along its way.
+        int jets = 9 + Math.Min(4, e.Rank / 2);
+        float a0 = R() * Mathf.Tau;
+        for (int i = 0; i < jets; i++)
+        {
+            float a = a0 + (i + (R() - 0.5f) * 0.6f) / jets * Mathf.Tau;
+            var dir = new Vector3(Mathf.Cos(a), 0.12f, Mathf.Sin(a)).Normalized();
+            float sx = dir.Dot(right), sy = dir.Dot(up);
+            float hot = 0.85f + R() * 0.3f;
+            Sparks.Spawn(new Sparks.P
+            {
+                At = ground + Vector3.Up * 0.35f + dir * 0.25f * r, V = dir * r * (2.6f + R() * 1.6f), Drag = 6, Life = 0.26f + R() * 0.12f,
+                Size = r * (0.3f + R() * 0.12f), SizeEnd = r * (0.62f + R() * 0.2f), Color = new Color(2.0f, 0.92f, 0.26f) * hot, ColorEnd = new Color(0.7f, 0.12f, 0.02f),
+                Alpha = 1, Sprite = Sprites.Range("muzzle").First + 1 + (int)(R() * 4.99f), Spin = Mathf.Atan2(-sx, sy) + 0.001f, SpinV = 0.001f,
+            });
+        }
+        // The blasting ember thrown out burning: fast, falling, and some still alight on the ground.
+        int n = 20 + (int)(r * 6);
+        for (int i = 0; i < n; i++)
+        {
+            float a = R() * Mathf.Tau, v = r * (2 + R() * 3.5f);
+            Sparks.Spawn(ground + Vector3.Up * 0.5f, new Vector3(Mathf.Cos(a) * v, 2.5f + R() * 4.5f, Mathf.Sin(a) * v), 0.5f + R() * 0.6f, 0.05f + R() * 0.05f,
+                new Color(2.4f, 1.1f, 0.28f), new Color(1.2f, 0.2f, 0.03f), 0.02f, 11, 1.2f);
+        }
+        // The pot's sherds: dark fired clay, flung out and tumbling down.
+        for (int i = 0; i < 9; i++)
+        {
+            float a = R() * Mathf.Tau, v = r * (1.4f + R() * 2.2f);
+            Smoke.Spawn(ground + Vector3.Up * 0.45f, new Vector3(Mathf.Cos(a) * v, 3 + R() * 3.5f, Mathf.Sin(a) * v), 0.6f + R() * 0.3f, 0.08f + R() * 0.07f,
+                new Color(0.2f, 0.09f, 0.05f), new Color(0.12f, 0.06f, 0.04f), -1, gravity: 16, sprite: Sprites.Of("dirt"), spinV: 9);
+        }
+        // Char-black smoke punched up out of it, soon gone (lingering, it hid the next fight).
+        for (int i = 0; i < 4; i++)
+            Smoke.Spawn(ground + new Vector3((R() - 0.5f) * r * 0.5f, 0.6f + R() * 0.4f, (R() - 0.5f) * r * 0.5f), new Vector3((R() - 0.5f) * 0.8f, 1.6f + R() * 0.8f, (R() - 0.5f) * 0.8f),
+                0.75f + R() * 0.35f, r * 0.3f, new Color(0.1f, 0.08f, 0.07f), new Color(0.05f, 0.04f, 0.04f), r * 0.75f, drag: 1.4f, alpha: 0.55f);
+        Waves.Add(ground + Vector3.Up * 0.35f, r * 1.6f, 0.3f, Palette.Of(School.Fire).Glow, 1);
+        Flash(ground + Vector3.Up * 1.4f, Palette.Of(School.Fire).Light, 8, 0.28f, r * 2.4f + 3);
+        Scars.Add("scorch", ground, r * 0.7f, 9);
+    }
+
+    /// <summary>Frostfire Comet breaking: fire and frost in one blow, side by side. Its burst half
+    /// flame and half frost (the school's fireball alone, six metres across, swallowed her when it
+    /// broke at her side), ice standing up round its rim, embers and frost thrown together, a scorch
+    /// and a rime left.</summary>
+    void FrostfireBurst(Ev.Explosion e)
+    {
+        float r = Mathf.Max(1.2f, (float)e.Radius), gy = Y(e.X, e.Z);
+        var ground = V(e.X, gy, e.Z);
+        Cam?.AddTrauma((float)Math.Min(0.3, 0.08 + e.Power * 0.1));
+        float a = R() * Mathf.Tau;
+        var side = new Vector3(Mathf.Cos(a), 0, Mathf.Sin(a)) * r * 0.22f;
+        Sparks.Spawn(ground + Vector3.Up * 0.8f, Vector3.Zero, 0.08f, r * 0.3f, new Color(1.5f, 1.25f, 1.1f), new Color(0.6f, 0.5f, 0.7f), r * 0.6f, alpha: 0.7f);
+        Books.Spawn("fire_blast", ground + Vector3.Up * 0.5f - side, r * 0.4f, 0.5f, new Color(1.25f, 0.55f, 0.18f, 1), flat: true, sizeEnd: r * 0.95f);
+        Books.Spawn("frost_burst", ground + Vector3.Up * 0.55f + side, r * 0.42f, 0.6f, new Color(0.5f, 0.75f, 1.15f, 1), flat: true, sizeEnd: r * 1.0f);
+        Erupt(e.X, e.Z, r * 0.35f, r * 0.85f, 7 + (int)(r * 2), SpikeKind.Ice, 0.75f, 1.3f, IceDeep);
+        for (int i = 0; i < 26; i++)
+        {
+            float b = R() * Mathf.Tau, v = r * (1.6f + R() * 3);
+            var dir = new Vector3(Mathf.Cos(b) * v, 2.5f + R() * 4, Mathf.Sin(b) * v);
+            if (i % 2 == 0) Sparks.Spawn(ground + Vector3.Up * 0.5f, dir, 0.5f + R() * 0.5f, 0.05f + R() * 0.04f, new Color(2.4f, 1.1f, 0.28f), new Color(1.2f, 0.2f, 0.03f), 0.02f, 10, 1.3f);
+            else Sparks.Spawn(ground + Vector3.Up * 0.5f, dir * 0.8f, 0.55f + R() * 0.4f, 0.08f + R() * 0.05f, Hdr("#a8dcff", 1.5f), IceDeep * 0.4f, 0.02f, 8, 1.6f, sprite: Sprites.Of("frost_star"), spinV: 6);
+        }
+        for (int i = 0; i < 3; i++)
+            Smoke.Spawn(ground + new Vector3((R() - 0.5f) * r * 0.5f, 0.5f, (R() - 0.5f) * r * 0.5f), new Vector3(0, 0.9f + R() * 0.5f, 0), 0.9f, r * 0.3f, new Color(0.62f, 0.7f, 0.82f), new Color(0.4f, 0.45f, 0.55f), r * 0.7f, drag: 1.4f, alpha: 0.28f);
+        Waves.Add(ground + Vector3.Up * 0.35f, r * 1.5f, 0.32f, Hdr("#8ad0ff", 1.4f), 1);
+        Flash(ground + Vector3.Up * 1.4f, new Color("#ffb070"), 7, 0.3f, r * 2.2f + 3);
+        Scars.Add("scorch", ground - side, r * 0.5f, 9);
+        Scars.Add("frost", ground + side, r * 0.5f, 6);
     }
 
     void GroundsGone(System.Collections.Generic.HashSet<int> alive)

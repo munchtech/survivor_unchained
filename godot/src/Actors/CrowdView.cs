@@ -294,13 +294,18 @@ public partial class CrowdView : Node3D
         // The flinch keeps the whole blow; only the light is held back (a crowd's struck all read by
         // their flinch, a few by their flare).
         float flare = f;
-        if (f > FlashRimOnly && !e.Boss && e.Named == null
+        // A tick of a burn or a poison is no blow: a breath at the rim, no white and no flinch. (Burning
+        // ground's ticks turned three bodies a frame into white cut-outs, over and over.)
+        if (e.LastDot && !e.Boss) { flare = Math.Min(f, FlashRimOnly); f *= 0.2f; }
+        else if (f > FlashRimOnly && !e.Boss && e.Named == null
             && (e.Elite ? ++eliteFlashes > EliteFlashes : ++whiteFlashes > WhiteFlashes)) flare = FlashRimOnly;
         // The flinch along the blow: big enough to read from thirty metres up, twice on a critical (S-17).
         float push = e.LastCrit ? 0.45f : 0.25f;
         var at = new Vector3((float)(e.X + e.LastDx * f * push), (float)y, (float)(e.Z + e.LastDz * f * push));
         var basis = new Godot.Basis(Vector3.Up, (float)(Math.PI / 2 - g.Facing)) * Godot.Basis.FromScale(new Vector3(sc * (1 + f * 0.1f), sc * (1 - f * 0.1f), sc * (1 + f * 0.1f)));
-        float frozen = e.Status.Has(StatusKind.Frozen) ? 1 : e.Status[StatusKind.Chill] is { } chill ? (float)Math.Min(0.5, chill.Stacks * 0.09) : 0;
+        // (Held by a ground that is not the cold, a thicket's or a rot's: its slow is no rime.)
+        bool held = battle != null && e.HeldUntil > battle.Time;
+        float frozen = e.Status.Has(StatusKind.Frozen) ? 1 : !held && e.Status[StatusKind.Chill] is { } chill ? (float)Math.Min(0.5, chill.Stacks * 0.09) : 0;
         float burning = e.Status.Has(StatusKind.Burn) ? 1 - 0.8f * Still : 0;
         var (tint, glow) = Visuals.Tint(e.Def.Visual);
         // A kind's own colour on a shared rig, and a champion's Signs (combat's, agreed with animation).

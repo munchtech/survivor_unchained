@@ -17,7 +17,8 @@
 //   5 Strike: a Legendary's light falling onto it as it lands (the fraction is how far through).
 //   6 Glow: a plain short light (Chart, Quest, the hoard stone).
 //   7 Shaft: a moment's column of light (BattleFx.Pillar: a strike, a level, an evolution, a chest,
-//     the night won), its height given.
+//     the night won), its height given; the fraction, how thick the motes riding up it.
+//   8 Band: a band of light lying on the ground at its reach (the way out), breathing.
 shader_type spatial;
 render_mode unshaded, blend_premul_alpha, depth_draw_never, depth_test_disabled, cull_disabled, shadows_disabled, fog_disabled, skip_vertex_transform;
 
@@ -45,8 +46,10 @@ void vertex() {
 	// A pillar reaches the top of the screen at the item's depth, and a little past it.
 	if (kind > 3.5 && kind < 5.5)
 		tall = max(tall, -foot.z / abs(PROJECTION_MATRIX[1][1]) - foot.y + half_w);
-	// Below the foot by the pool's reach (a circle on the ground seen from 56 degrees up).
+	// Below the foot by the pool's reach (a circle on the ground seen from 56 degrees up); what lies
+	// on the ground all round it, as far above.
 	float down = half_w * 0.85;
+	if (kind > 7.5) tall = down;
 	at = vec2(VERTEX.x * 2.0 * half_w, mix(-down, tall, VERTEX.y + 0.5));
 	VERTEX = foot + vec3(at, 0.0);
 }
@@ -60,15 +63,16 @@ float pool(float r) {
 	return exp(-dot(e, e) * 2.2);
 }
 
-// Motes of light climbing it: a few at a time, each in its own lane.
-float motes(float spread, float speed, float gap) {
+// Motes of light climbing it: a few at a time, each in its own lane, `size` across.
+float motes_of(float spread, float speed, float gap, float size) {
 	float y = at.y - TIME * speed;
 	float cell = floor(y / gap);
 	float fy = fract(y / gap);
 	float mx = (hash(cell) - 0.5) * spread;
 	float my = 0.25 + 0.5 * hash(cell + 5.0);
-	return g(at.x - mx, 0.03) * g((fy - my) * gap, 0.045) * step(0.45, hash(cell + 9.0));
+	return g(at.x - mx, size) * g((fy - my) * gap, size * 1.5) * step(0.45, hash(cell + 9.0));
 }
+float motes(float spread, float speed, float gap) { return motes_of(spread, speed, gap, 0.03); }
 
 void fragment() {
 	float x = at.x, y = at.y;
@@ -131,14 +135,29 @@ void fragment() {
 		light = (tint * g(x, 0.05) * 1.3 + deep * g(x, 0.22) * 0.45) * trail * fall
 			+ deep * pool(half_w * 0.7) * flash * 0.65 + tint * g(x, 0.22) * g(y, 0.4) * flash * 0.6;
 		veil = g(x, 0.1) * trail * fall * 0.25 + pool(half_w * 0.8) * flash * 0.15;
-	} else if (kind > 6.5) {
+	} else if (kind > 6.5 && kind < 7.5) {
 		// A shaft: light down from the sky or up out of the ground for a moment, a hot core in a
 		// glow scaled to its width, brightest at its foot.
 		float w = half_w;
-		float fade = rise * pow(1.0 - u, 0.9);
-		light = (tint * g(x, w * 0.09) * 1.2 + mix(tint, deep, 0.5) * g(x, w * 0.28) * 0.5 + deep * g(x, w * 0.7) * 0.14) * fade
+		// Born out of the ground over a breadth that goes with its width: over the narrow rise of
+		// the others, a wide column's haze ended in a straight line across her feet.
+		float fade = smoothstep(-0.25 * w, 0.15 * w, y) * pow(1.0 - u, 0.9);
+		// Motes riding up it (the night won: the ember leaving what ruled it), two lanes' worth.
+		float up = param > 0.01 ? (motes_of(w * 0.55, 3.2, 0.55, w * 0.025) + motes_of(w * 0.3, 2.1, 0.8, w * 0.02)) * param : 0.0;
+		light = (tint * (g(x, w * 0.09) * 1.2 + up * 1.4) + mix(tint, deep, 0.5) * g(x, w * 0.28) * 0.5 + deep * g(x, w * 0.7) * 0.14) * fade
 			+ deep * pool(w * 0.55) * 0.4;
-		veil = (g(x, w * 0.14) * 0.25 + g(x, w * 0.4) * 0.08) * fade;
+		// A little of the ground under its pool covered, so by night it lies warm and not pink.
+		veil = (g(x, w * 0.14) * 0.25 + g(x, w * 0.4) * 0.08) * fade + pool(w * 0.55) * 0.12;
+	} else if (kind > 7.5) {
+		// A band of light lying on the ground at its reach, soft on both sides, breathing; a faint
+		// light within it. (A decal's band with a hard edge read as a cream hoop.)
+		vec2 e = vec2(x / half_w, y / (half_w * 0.83));
+		float r = length(e);
+		float breath = 0.72 + 0.28 * sin(TIME * 2.2 + seed * 6.28);
+		float band = exp(-pow((r - 0.92) / 0.075, 2.0)) * breath;
+		float within = smoothstep(1.0, 0.2, r) * 0.1;
+		light = mix(tint, deep, 0.35) * band + deep * within;
+		veil = band * 0.05;
 	} else {
 		// A plain short glow.
 		float fade = rise * pow(1.0 - u, 1.5);

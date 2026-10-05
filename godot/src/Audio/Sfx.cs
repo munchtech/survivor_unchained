@@ -12,7 +12,7 @@ namespace SurvivorUnchained.Sound;
 /// two-hundredth sword hit does not sound like the first played again. Pan
 /// and near (0..1, how close to the survivor) come from where it happened.
 /// </summary>
-public static class Sfx
+public static partial class Sfx
 {
     static Synth? A => Synth.Instance is { Live: true } s ? s : null;
     static double R(double a, double b) => Synth.R(a, b);
