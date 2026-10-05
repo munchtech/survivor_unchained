@@ -1,54 +1,65 @@
 # Legal and Steam compliance: status
 
-Agent af0973d59a5b2817a (third lead; successor to aab20546fe06daa89), branch `worktree-agent-af0973d59a5b2817a`. Not a lawyer: I find and organise the issues, cite primary sources, and recommend. The owner and the main session decide. Handoff from my predecessor: `docs/handoff/legal.md`.
+Agent af0973d59a5b2817a (third lead), branch `worktree-agent-af0973d59a5b2817a`. Not a lawyer: I find and organise the issues, cite primary sources, and recommend. The owner and the main session decide. To resume cold: this page, then `docs/handoff/legal.md`.
 
-**Launch blockers (3):**
-- the AI disclosure: **ready to paste** (`STEAM_CHECKLIST.md` D3); the owner fills it in at submission;
-- the mature survey: waiting on the motion check of the main session's **tuck build**;
-- the boar: **no one owns its replacement**; recommend the owner buys the commercial version now.
+**Paused by the owner after the fit-fix pass** (5 Oct). Wake me for a new outfit, a store-page review, or before submission.
 
-**Done 5 Oct:** the licences screen, seen in game (every credits section, and the Godot, .NET and typeface licence pages).
+## Blockers (3)
 
-## State (5 October 2026, small hours)
+1. **The mature-content survey:** it waits on the motion check passing on the main session's **fit-fix build**. The draft answers are in `STEAM_CHECKLIST.md` D1 and D2.
+2. **The boar:** our own replaces it. A new creatures lead makes it locally with Krea 2 and TRELLIS 2, which puts it in the Krea footprint. Its picture comes from text alone, never from the Sketchfab boar or others' art (brief 5(a)). The old boar must not ship.
+3. **The AI disclosure:** ready to paste (`STEAM_CHECKLIST.md` D3). **Raise it at submission, not before** (the owner, 5 Oct).
 
-- **The motion check's codes are proven in Godot** (on the current build, before the tuck):
-  - calibration: the nipple tips and the crotch are found where they should be (tips at about ±0.11, 1.42, 0.16; crotch underside y 0.925; mons 0.967). 157 vertices fall in the areolas and 94 in the strip. The pictures show the codes centred on each nipple and the strip at the crotch, nowhere else;
-  - false positives: 64 frames of all four outfits, no codes drawn, under the linear tonemapper. **No pixel** passes as skin near a nipple, or as the strip, even at a 1-pixel threshold;
-  - the Warden's sprint, 64 frames: no areola and no strip. The closest visible skin to an areola is +1.0 cm past its edge, on each breast.
-- **New in the tools:**
-  - a third code for **tucked skin in view** (a dent or a gap), read from the outfit's channel of her vertex colours: cyan, paler the shallower the tuck. Near a nipple it rides on the blue code;
-  - **margins per breast and per edge of the rim** (upper, upper inner, inner and so on), measured from each nipple tip as posed, so each edge of a cup can be trimmed by its own margin;
-  - `tuckcalib` (each outfit's pieces hidden, so its tucked skin shows) and `PROJECT=` (run from a worktree against the main checkout's import);
-  - crops enlarged, with a ring on the closest pixel and the TEST TINT banner naming all three colours.
-- **The Quaternius base bodies** (townsfolk, Risen, the male survivor): no nipples and no genitals, in the mesh or the normal maps. Their skin textures paint underwear. No sentence is needed for Valve's reviewers.
-- **Path B answered** (models planner's appendix D): Qwen-Image, Z-Image-Turbo or FLUX.1 [schnell] (Apache-2.0) make pictures with no revenue cap; not FLUX [dev] or SD 3.5 (brief 5(g)).
-- **The AI disclosure:** a paste-ready text for the release as exported now, and a bullet to add for each thing that may ship later (`STEAM_CHECKLIST.md` D3). Valve's Content Survey page was re-read on 5 Oct: unchanged.
-- **Standing check:** the face lead's new references (`face_refs.py`) are Krea 2 Turbo from text alone, naming no real person; MoGe-2's weights are MIT. Credits line ready for when her MoGe face ships (checklist E).
+**Done:** the licences screen, seen in game on 5 Oct (every section and licence page). Also done: export and debug paths; the placeholder voices; the explicit placeholders; "Warmed"; The Ember Watch.
+
+**Waiting on the owner, to raise before submission:** sign `docs/legal/records/BODIES_RECORD.md`; paste the disclosure; give his state of residence and business structure; say whether "Munchtech" is registered; run the USPTO search.
+
+## The motion check: results
+
+On the tuck build, 35c5dc3a. Five views: chest, 45°, side, below, and over (looking down into the neckline). Jiggle on. Margins are past the areola's edge; negative means it shows.
+- **Codes:**
+  - fp: 80 frames of all four outfits, no false pixel;
+  - every outfit's tuck mask covers the areolas.
+- **Warden** (2,080 frames):
+  - the areola rim shows in 14 frames: chain_haul, chain_strike, dash and bull_rush, in the 45° view;
+  - a 1 px nipple-tip poke-through in cast_bolt and axe_fore;
+  - the strip shows lying on her back (death_back, low view), either side of the thong's rear;
+  - the closest edges are the right cup's inner and upper inner, at +0.05 and +0.08, seen from over.
+- **Arcanist** (2,180 frames):
+  - the strip shows either side of her crotch strap in most standing clips (below and 45° views);
+  - the areola's outer rim shows in 17 frames of big arm swings (chain_haul, bull_rush, cast_bolt, axes, daggers, sword, throw).
+- **Stalker:** cut short by a rebuild (13 of 46 clips). Provisionally clean (right breast lower outer -0.28 in 1 frame, under 6 px).
+- **Reaver:** not run on this build.
+- **Tucked skin in view:** mostly inside bracers, under lifted pauldrons and at the knee plate.
+- **The main session's fix build** answers all of these:
+  - cup and neckline edges keep her skin's weights;
+  - the tuck scales with closeness, up to 8 mm;
+  - 2.8 cm gussets on every crotch, a new one under the Reaver's G-string.
+
+  **Next:** when the main session sends its commit (it holds rebuilds in the main checkout until I report), re-run the Warden's and the Arcanist's finding clips, then the Stalker and the Reaver in full. Send the numbers, update brief issue 2 and checklist D2, and tick the motion check if it passes.
+
+## How to run the check
+
+Tools: `tools/legal/motioncheck/`. Read `run.sh`'s header and `count.py`'s docstring. Pictures go to the scratchpad only; calibration pictures show her bare.
+1. Merge integration. The generated script is built from this worktree's `lookdev.gd`, which must match the build.
+2. Make sure nothing imports or rebuilds in the main checkout. Godot runs there (`PROJECT=`), because this worktree has no import.
+3. Use the turn scripts in `scratchpad/legal3/`. Each takes a Godot turn (`take ... --wait 30`), runs, gives the turn back, and counts:
+   - `tuck_a.sh <tag>`: tuckcalib, calib, fp and cup;
+   - `findings.sh <tag>`: the Warden's and the Arcanist's finding clips;
+   - `run_outfit.sh <outfit> <tag>`: every clip for one outfit, about 10 minutes;
+   - `cup_only.sh <tag>`: the Warden's sprint.
+4. Read `<folder>/summary.txt`: per breast and edge margins with clip, view and frame; areola and strip flags; tucked-skin patches. Crops are in `crops/`, each with the TEST TINT banner.
+5. If a clip shows 0 frames in its log, an outfit failed to load: the checkout was mid-import. Re-run it.
 
 ## Key decisions (with why)
 
-- **The motion check measures; it never asks for more garment.** The owner: "pixel perfect no extra stuff hidden at all", "showing as much as we possibly can". It proves the areolas and the narrow strip stay covered, and measures how much more could show.
-- **Genitals:** none are modelled, and the Warden's thong is by design. The strip is checked because the survey must be true, not because anything is there.
+- **The check measures; it never asks for more garment.** The owner: "pixel perfect no extra stuff hidden at all".
+- **No genitals are modelled.** The strip is checked so the survey stays true, not because anything is there.
 - **Every crop carries the TEST TINT banner:** the owner once took the tint for the game.
-- **The rim landmarks come from the engine's own skinning** (her mesh baked in its pose each frame): the breast bone's pose put them about 12 cm low. Now the tip lands within 2 px of the drawn nipple in every calibration view.
-- **The disclosure names only what ships.** It says "rebuilt and rigged for the game", not "by hand": agents did much of the rebuild.
-
-## Next
-
-1. **The tuck build** (the main session will send the commit): merge; `tuckcalib`, `calib`, `fp`, `cup`; then `all`, one outfit per turn. Send the main session, per outfit: each breast's margin by edge, with clip, view and frame; any strip flag; any frame showing tucked skin.
-2. Update brief issue 2 and checklist D2 with the results; tick the motion check.
-3. Cinematic poses (`--cine`) and creation's Look poses: not yet in `run.sh`.
-4. Standing check: new assets and tools from every lead. Before launch, re-read the live Steam forms and the Krea, LTX, ElevenLabs and Suno terms.
-
-## Blockers on others
-
-- **The boar:** arena art says creatures aren't theirs; the models planner lists it as number 2; animation would rig it. Nobody has it scheduled. Recommendation to the owner: buy the Fab or Patreon commercial version now, keep the receipt, and replace it later.
-- The owner's state of residence and business structure (lawyer questions 12 and 2); whether "Munchtech", the name on the credits screen, is a registered name.
-- A person must run the USPTO search (it sits behind a bot challenge).
+- **The disclosure names only what ships,** and says "rebuilt and rigged for the game", not "by hand".
+- **Path B's picture models** (brief 5(g)): Qwen-Image, Z-Image-Turbo and FLUX.1 [schnell] (Apache-2.0) are fine; FLUX [dev] and SD 3.5 are not.
 
 ## Notes for other areas
 
-- **Main session:** the motion check is ready for the tuck build. If `vertex()` writes `COLOR`, tell me: the tuck code reads her vertex colour in `fragment()`.
-- **UI design (aab47bfdab5955dac):** two index labels run over the credits page's divider (sent).
-- **Models planner:** `MODELS_TO_MAKE.md` still says the bodies came from Krea's website and Hunyuan3D. They didn't: local Krea 2 Turbo pictures and local TRELLIS 2 (brief 5(b)). The bodies are kept, with conditions.
+- **Creatures lead (the boar):** follow brief 5(a) and 5(g): text-only pictures, a ledger line, and the Sketchfab boar out of the build when yours lands.
 - **Anyone adding a tool or model:** send me its licence link.

@@ -1,178 +1,141 @@
 # Handoff: legal and Steam compliance
 
-For the next legal and Steam compliance lead, from aab20546fe06daa89 (the second lead; the first was aa12c130ddf4b904c, whose handoff this replaces; it is in git history at 5c74633d). Read this, then `docs/team/README.md` (the turn rule and the roster), `docs/team/legal.md`, and the files at the end.
+For the next legal and Steam compliance lead, from af0973d59a5b2817a, the third lead. The first was aa12c130ddf4b904c; the second, aab20546fe06daa89, wrote the handoff this replaces (in git history at b0864e9f, with the full story of the motion check's earlier methods). Read this first, then `docs/team/README.md` (the owner's bar, the turn rule and the roster), `docs/team/legal.md`, and the files at the end.
 
-## The brief (in full, condensed only for length)
+## The brief
 
-You are the legal and Steam compliance lead for Survivor Unchained (Godot 4.5.1 .NET, an 18+ survivors-style action RPG, made by one owner with AI agents). You are **not a lawyer**, and say so. You research the current rules from primary sources and prepare a brief for a real games lawyer.
+You are the legal and Steam compliance lead for Survivor Unchained: Godot 4.5.1 .NET, an 18+ survivors-style action RPG, made by one owner with AI agents. The goal is to ship on Steam with little to no issue:
+- an honest AI disclosure;
+- a mature-content survey that is true;
+- licences in order;
+- a brief for a real games lawyer.
 
-1. **Track the launch blockers to done** with the leads who own them, and re-rule as the owner answers.
-2. **Run the motion check:** every outfit, every clip, jiggle on, so the mature-content survey is true of what a player can see.
-3. **Be the standing compliance check:** review new assets and tools as leads add them, and tell a lead directly if something is a problem.
+You are **not a lawyer**, and must say so; flag what needs one. The owner lives in the United States and owns the setting, The Ember Watch, which he made with Claude.
 
 Rules:
-- Change no game content; recommend, and the owner and the main session decide.
+- Change no game content: recommend, and the owner and the main session decide.
 - Never delete files.
 - Cite primary sources, and say where the law is unsettled.
 - Commit and push your own branch at milestones; the main session merges. Open no PRs.
+- Run `dotnet test` in `godot/tests` before every commit.
 - British spelling.
-- At about 500k tokens, write this handoff and end with HANDOFF READY.
+- Heavy work takes turns: `python C:/Users/munch/Desktop/survivorsunchained/tools/turn.py take godot "legal: <job>"`. Give the turn back the moment the batch ends; keep batches under an hour, one outfit per turn.
+- At about 500k tokens of context, hand off.
 
 ## The owner's words that matter here
 
-- "ai generated assets and things are perfectly ok for steam games and for making money and getting in no trouble right?"
-- "sell on Steam with little to no issue"; "eventually remove anything not ours"; "we will replace everything eventually if we can with our own / generated own".
-- The Ember Watch: "I do not own it. I mean I made the game but nothing is copyrighted or anything - we built it all in claude with no generated content. I guess I own it?"
-- The base bodies: "we made images in krea 2 turbo for the IMAGE but we did not use hunyuan 3d. we used trellis for the 3d", and "we made it in comfyui". This corrects his first answer, "krea assets that have since been deleted".
-- "Warmed": "we can remove that as a buff that does anything other than say it happened".
-- The heroine: "we've done substantial resculpting and editing to our heroine. at what point is it just ours?"
-- The outfits (through the main session): "pixel perfect showing as much as we possibly can". Cover exactly what must be covered and show everything else, with never a hole or a see-through.
-- He lives in the **United States** (his state is not yet given). The hymn will be made in **Suno**; the final voices in **ElevenLabs**.
+- **Coverage (5 Oct 2026):**
+  - "if you need to hide things they need to be pixel perfect no extra stuff hidden at all. none. not even a few pixels";
+  - "even on the nipple issues they need to be pixel perfect showing as much as we possibly can";
+  - "there was NEVER any issues with genitilia right?" Correct: none are modelled, and the Warden's thong is by design.
 
-## State (4 October 2026, late night)
+  So the motion check exists to prove that the areolas and the narrow midline strip stay covered in motion, and to **measure the margins** so the main session can trim coverage to the smallest that holds. **It never recommends extra garments.** The cyan tint once confused the owner, so every crop carries the TEST TINT banner.
+- On AI: "ai generated assets and things are perfectly ok for steam games and for making money and getting in no trouble right?"; "sell on Steam with little to no issue"; "we will replace everything eventually if we can with our own / generated own".
+- His earlier answers (the bodies, The Ember Watch, "Warmed", Suno, ElevenLabs) are in the brief's table "The owner's answers and what they changed".
 
-Integration branch at cd421c4f, which includes my c8bdc6c4. My last commit is this handoff.
+## State (5 October 2026)
 
-### The four launch blockers
+**Launch blockers: three.**
+1. **The AI disclosure:** ready to paste (`STEAM_CHECKLIST.md` D3), naming only what the release ships. Raise it, and the BODIES_RECORD signature, only at submission (the owner, 5 Oct). It has a bullet to add for each thing that may ship later (the hero's body, a MoGe-built face, voices, the hymn, store art). The owner pastes it at submission.
+2. **The mature-content survey:** waiting on the motion check of the main session's **tuck build** (below). Draft answers: checklist D1 and D2.
+3. **The boar:** our own replaces it (the owner, 5 Oct). A new creatures lead makes it locally with Krea 2 and TRELLIS 2, from text-only pictures. The Sketchfab boar must not ship (brief 5(a)).
 
-1. **The AI disclosure:** the owner fills it in at submission, from `STEAM_CHECKLIST.md` D3 and E. Section E is now the single AI list, naming only what ships.
-2. **The mature-content survey:** waiting on the motion re-measure on the main session's **tuck build** (below). The draft answers are in D1 and D2. Her crotch is a smooth form, with **no genitals modelled**; the owner confirms there never were any.
-3. **The licences screen:**
-   - built by UI design at 178768aa;
-   - its credits pruned to what ships (84cceb99, a185aea3);
-   - its notice texts byte-checked against Godot 4.5.1, .NET release/8.0 and the fonts.
+**Done this session:**
+- **The licences screen**, seen in game at 1920×1080: every credits section, the AI list as in checklist E, and the Godot, .NET and typeface licence pages. One layout fault (two index labels run past the divider) went to UI design.
+- **The Quaternius base bodies:** no nipples and no genitals, in mesh or normal maps; their textures paint underwear.
+- **Path B's picture models** (brief 5(g)): Qwen-Image, Z-Image-Turbo and FLUX.1 [schnell] (Apache-2.0) are fine; FLUX [dev] and SD 3.5 are not.
+- **Standing check:** the face lead's portraits are Krea 2 Turbo from text alone, naming no real person, and MoGe-2's weights are MIT. The new effect flipbooks' prompts name no other work. The logo is Cinzel (OFL) painted over by Krea.
+- **Lawyer question 12:** whether "Munchtech", the studio name on the credits screen, needs an assumed-name filing.
 
-   Still to do: **see it in game.** The UI design lead promised a screenshot when Godot is free.
-4. **The boar:** replace it, or buy the Fab commercial version as a stop-gap. The owner and arena art decide.
+### The motion check (tools in `tools/legal/motioncheck/`)
 
-**Done:**
-- the export and debug paths (8a770667; I reviewed the pack listing in `docs/legal/records/RELEASE_PACK_LISTING.txt`);
-- the placeholder voices, excluded from the release;
-- the explicit-scene placeholders, removed;
-- "Warmed", now flavour only (b47d98ea, test-guarded);
-- The Ember Watch: the owner's, with records to keep (brief 5(e));
-- the base bodies, kept with conditions: the owner signs `docs/legal/records/BODIES_RECORD.md` and confirms no real person or others' art went into the pictures (brief 5(b)).
+**How it works.** `make_motioncheck.py` builds a scene script from `godot/tools_scenes/lookdev.gd`, plus `marks_section.py`'s GDScript. Under MARKS, three codes are drawn as the last lines of her skin shader's fragment, unlit, under a linear tonemapper, so they read back exactly:
+- **Near a nipple** (within 6 cm, in rest pose): blue, with the distance in red (0.9 × d / 6 cm). The areola is d < 2.2 cm. Green is exactly 0.5 when that skin is more than half tucked.
+- **The strip a garment must cover:** pure green. It is the vulva's footprint were one modelled: the midline ±1.2 cm, from the perineum to just below the front of the mons.
+- **Tucked skin elsewhere:** cyan, with red = 0.9 × (1 − tuck), so deep tucks are pure cyan. The tuck is read from the outfit's channel of her vertex colours (warden red, arcanist green, reaver blue, ranger alpha). The main session confirmed its `vertex()` doesn't write COLOR.
 
-### The motion check: reworked, and **untested in Godot in its final form**
+**The landmarks** (for "where on the rim") come from the engine's own skinning. Her mesh is baked in its pose each frame, so the tip lands within 2 px of the drawn nipple. Up and in come from the centres of the skin 2 to 6 cm around the tip. The breast bone's own pose put them about 12 cm low.
 
-- **The tools** are in `tools/legal/motioncheck/`:
-  - `run.sh` runs the phases;
-  - `make_motioncheck.py` builds the scene script from `godot/tools_scenes/lookdev.gd`;
-  - `marks_section.py` holds the GDScript for the codes;
-  - `count.py` reads the pictures.
-- **How it works:**
-  - The generator adds her clip library, SPREAD (a looped clip with frames spread over one pass) and VIEWS (several cameras per run through SubViewports, each 960×540). It also adds FOLLOW (cameras keep with her hips) and MARKS.
-  - Under MARKS, two codes are drawn as the **last lines of her skin shader's fragment**, unlit, under a **linear tonemapper**, so they read back exactly and show on any skin the player could see, tucked skin included:
-    - **Blue, with red as distance:** every skin vertex within 6 cm of a nipple tip, red = 0.9 × d / 6 cm (linear), where d is the rest-pose distance from the tip. The areola is d < 2.2 cm: her texture's pigment is dark to about 2.3 cm and plain skin by 3.8 cm.
-    - **Pure green:** the strip a garment must cover, the vulva's footprint were one modelled. That is the midline ±1.2 cm, from the perineum (2.3 cm behind the lowest downward-facing midline point of her crotch, about y 0.925 in bind pose) forward and up to just below where the mons faces forward (about y 0.965). Skin facing sideways (her inner thighs, which touch below it) is excluded.
-  - The landmarks come from her untrimmed body:
-    - **nipples:** the sharpest bump on the front half of each breast (welded-neighbour curvature), at about (±0.11, 1.42, 0.16);
-    - **crotch:** from the normals, as above.
-- **How to run it:**
-  1. Take a turn: `python C:/Users/munch/Desktop/survivorsunchained/tools/turn.py take godot "legal: <job> (<your id>)"`.
-  2. Run `OUT=<scratch folder> bash C:/Users/munch/Desktop/survivorsunchained/tools/legal/motioncheck/run.sh <phase>`. Run it from the **main checkout**, whose `godot/.godot` is imported; a worktree has no import. Check first that nothing is importing there.
-  3. The phases:
-     - `calib`: no outfit. Check the `legal marks:` line in `log_calib.txt` and look at the three pictures. They show her bare: scratchpad only, never published.
-     - `fp`: each outfit with the linear tonemapper and no codes. count.py must find **nothing**.
-     - `cup`: the Warden's sprint, 16 frames.
-     - `all`: about 50 clips per outfit (`ONLY=` narrows it).
+**`count.py <folder> 6`** reports per outfit:
+- the frames where an areola, the strip or deep-tucked skin shows;
+- each breast's closest visible skin to the areola's edge, as a signed margin (negative: the areola shows), overall and for each of eight edges of the rim, with clip, view and frame;
+- crops, enlarged, with the TEST TINT banner and a ring on the closest pixel.
 
-     A batch takes about 16 s a clip.
-  4. Give the turn back at once, and keep batches under an hour.
-- **How to read count.py** (`python count.py <OUT> 6`):
-  - `summary.txt`, per outfit:
-    - the frames where an areola shows (≥ 6 px with d < 2.2 cm);
-    - the frames where the strip shows (≥ 6 px of green);
-    - the **closest visible skin to a nipple tip**, as a signed margin past the areola: negative means the areola shows. It comes with where on the rim ("her left breast, upper inner edge", as seen in that view) and the clip, view and frame.
-  - `counts.csv`: per frame.
-  - `crops/`: `flag_*.png` and `closest_<outfit>.png`, each with a banner saying it is a test tint, not the game. The owner was once confused by the blue.
-- **Untested:** the final codes (distance code, green strip, linear tonemapper, uniform carry-over) were written after my last run. **First:** `calib`, then `fp`, then `cup`, on the current build, before trusting a full run. My test script for exactly that is `scratchpad/legal/test_codes.sh`; it never got a turn. The uniform carry-over in `marks_section.py` (it keeps `tuck_channel` and the rest when the shader is swapped) is in this handoff's commit.
+**`run.sh` phases.** Each runs with `PROJECT=<main checkout>/godot` from a worktree, and needs a Godot turn:
+- `calib` and `tuckcalib` show her bare: scratchpad only;
+- `fp`: no codes; count.py must find nothing;
+- `cup`: the Warden's sprint;
+- `all`: about 45 clips, with `ONLY=<outfit>`.
 
-### Results so far (build 854b927e, the earlier cyan method, valid for the areolas)
+The views are chest, left, side, below, and **over** (looking down into her neckline, as play does).
 
-- **The Warden's left cup: fixed.** In close front, three-quarter and overhead views of the sprint, no areola shows in 48 frames. The cup's edge comes within about 2.8 cm of the tip, which is plain skin.
-- **No areola** in any frame of the Warden's 42 clips or the Arcanist's 44: **3,320 frames**. The Stalker and Reaver were not run on that build.
-- **Withdrawn:** my first crotch reading ("nothing under the Warden's skirt"). The mark ran 2 to 3.5 cm wide from where her inner thighs touch, so it counted the bare groin beside her thong (`warden.thong`, 2.4 cm wide at the crotch), which the owner wants shown. The main session reversed its brief ruling.
+**Proven on the pre-tuck build (5 Oct):**
+- calibration: tips at about (±0.11, 1.42, 0.16), the crotch underside at y 0.925, the mons at 0.967;
+- false positives: 64 frames of all four outfits, and **no pixel** passes for the near or strip code, even at 1 px;
+- the Warden's sprint: no areola or strip. Closest skin: +1.07 cm (right, upper inner) and +1.56 cm (left, upper inner).
 
-## Next, in order
+On that build, the "tucked skin" count is meaningless: cut edges carry the old mask.
 
-1. **On the main session's tuck build** (skin under garments is pushed inward by `-NORMAL * 0.006 * h` in a new `vertex()` of the skin shader, through `tuck_channel` and the graded COLOR channel; `lookdev.gd`'s `hide_skin` now sets `tuck_channel` instead of cutting triangles; UV2 is free):
-   1. merge;
-   2. take a turn;
-   3. run `calib`, then `fp`, then `cup`, then `all` for **all four outfits**;
-   4. count;
-   5. send the main session, per outfit, the **smallest areola margin and where on the rim**, every areola flag and every strip flag, with the labelled crops.
+### In progress: the tuck build
 
-   The main session will bring each cup down to the smallest margin that holds in motion. Re-measure after each change.
-2. Cinematic poses (`--cine`, the cinematics lead) and creation's Look poses: not yet covered by `run.sh`.
-3. The Quaternius base bodies (the townsfolk, the Risen, the male survivor): confirm their bare form has no anatomical detail. If it has, add a sentence to D2.
-4. Update brief issue 2 and checklist D2 with the final results, then tick the motion check.
-5. The licences screen screenshot (UI design, aab47bfdab5955dac), then tick blocker 4.
-6. Standing check: new tools and assets from every lead. Before launch, re-read the live Steam forms and the Krea, LTX, ElevenLabs and Suno terms; they change often.
+The main session builds outfits with her skin tucked in rather than cut away. `heroine_skin.gdshader`'s `vertex()` pushes skin in by `-NORMAL * 0.006 * h`, through `tuck_channel` and vertex colours graded 1/3, 2/3 and 1. It will message the commit. Then:
+1. merge it;
+2. run `scratchpad/legal3/tuck_a.sh <tag>` (one turn: tuckcalib, calib, fp, cup);
+3. run `scratchpad/legal3/run_outfit.sh <outfit> <tag>`, once per outfit, each in its own turn;
+4. send the main session, per outfit: each breast's margin by edge, with clip, view and frame; any strip flag; any frame showing deep-tucked skin (a dent or a gap). Expect the 1/3 edge ring to show by design; it is counted apart.
+
+Results so far: see `docs/team/legal.md`.
+
+## Next
+
+1. The tuck build, as above. Re-measure after each cup change the main session makes.
+2. Update brief issue 2 and checklist D2 with the results, then tick the motion check.
+3. Standing check of new assets and tools. Before launch, re-read the live Steam forms and the Krea, LTX, ElevenLabs and Suno terms.
+4. The owner's to-dos:
+   - sign `docs/legal/records/BODIES_RECORD.md`;
+   - give his state of residence and business structure;
+   - say whether "Munchtech" is registered;
+   - run the USPTO search himself (it sits behind a bot challenge).
 
 ## Decisions (and why)
 
-- **The bodies are kept** (local Krea 2 Turbo pictures and local TRELLIS 2 meshes). The ComfyUI log of 4 Oct agrees, and the evidence is copied into `BODIES_RECORD.md` because those logs rotate. They join the Krea US$1M footprint. The hero's picture probably used the Civitai LoRA "Mystic XXX" (2728644, by alcaitiff), which I identified by its SHA-256; its creator allows selling images.
-- **The Ember Watch is the owner's.** Copyright needs no registration (17 U.S.C. §408(a)), but covers only human-authored expression. Register Survivor Unchained within three months of launch (§412).
-- **"Ours" for the heroine** (brief 16):
-  - free to sell now;
-  - copyright only in the human part, with no threshold of changes;
-  - not yet free of strings: her face paint is a direct Krea Output, and whether the cap reaches the reworked mesh is unsettled (lawyer question 19).
-- **Suno:** Pro or Premier plan only, downloaded through Suno's button, never a remix.
-- **Replacements** (brief 5(g)):
-  - our own work first;
-  - then local MIT models from inputs we own;
-  - Krea 2 adds to the cap;
-  - never Hunyuan3D, free-plan web tools, or pictures of real people or others' art;
-  - check every LoRA's permissions.
-- **The motion check is automatic and measured, not eyeballed:** a few-centimetre area in thousands of frames can't be judged by eye. The marks are sized to the anatomy (the pigment and the vulva's footprint), not padded, because the owner wants everything else shown.
+- **The check measures; it never asks for more garment.** That is the owner's direction.
+- **The disclosure names only what ships, and says "rebuilt and rigged for the game", not "by hand"**: agents did much of the rebuild. "Under his direction and review", not "every asset reviewed by a person", which can't be shown.
+- **The boar: our own** (the owner's decision), under 5(g)'s path C rules.
+- **Path B's picture models:** Apache-2.0 or MIT, with no revenue cap. Not FLUX [dev] (non-commercial weights) or SD 3.5 (a US$1M cap like Krea's).
 
-## Failures and why (so you don't repeat them)
+## Failures and why
 
-- **Geometry guesses went wrong three times**, all now fixed in `marks_section.py`:
-  - the body mesh stops at the neck (1.65 m tall), so proportions of the whole height are wrong;
-  - the most forward point of a breast in bind pose is its lower curve, not the nipple;
-  - the lowest midline point is where her inner thighs touch (y 0.84), not her crotch (y 0.925).
-
-  Always calibrate with a picture.
-- **Colour detection under AgX:** magenta collided with the Arcanist's purple; two cyan brightnesses were fragile; a screen-space waist split misclassified forward-leaning poses. Hence exact codes under a linear tonemapper.
-- **Outfit skin hiding** used to delete the triangles at a nipple's tip, which moved the curvature landmark. Hence landmarks from the untrimmed body.
-- **SubViewports sized from the root in `_init` came out 100×100**; they are now fixed at 960×540. The root viewport's coordinates are in the project's 1920×1080 space, so the landmark JSONs store their viewport size.
-- **Slow renders skipped frames,** hence `--fixed-fps 60`.
-- **Godot's `save_png` fails silently into a missing folder,** so make the folder first.
-- **GDScript escapes inside Python strings:** one level too few put a raw line break into a string literal. `marks_section.py` now holds the GDScript in a raw string.
-- **The wide crotch mask** produced a finding the main session acted on, then reversed. Size masks to the anatomy, and say plainly what a mask covers.
-- **I deleted my own three calibration renders once** to clear a folder. That broke "never delete files" in the letter. Write to a fresh folder instead.
-- **The full run was stopped part-way** when the method changed, so the Stalker and Reaver have no results on 854b927e.
+- **Bone-based landmarks were 12 cm low.** `get_bone_global_pose` × bind pose didn't match what the renderer drew. Use `bake_mesh_from_current_skeleton_pose()`.
+- **"Furthest up" ring vertices gave skewed directions**: the mesh is coarse near the tips (27,558 vertices; 14 to 23 in a 2 cm ring). Halves' centres are robust.
+- **TaskStop didn't kill a Windows bash loop**: the stopped script later took a turn and ran. It gave the turn back, but check `turn.py show` after stopping one.
+- **A 45 s poll lost turns to 20 s pollers.** Use `take ... --wait 30`.
+- **I wrote "at 960x540" of a picture I hadn't taken** in a message to UI design, and corrected it. Claim only what you've seen.
 
 ## Gotchas
 
-- **The Bash guard** refuses compound commands that mention git, URLs containing "git", heredocs it can't parse, and `bash` of computed paths. Put logic in a script file and run it plainly. PowerShell works for process checks.
-- **Heavy work takes turns** (`tools/turn.py`). Godot allows two at a time, and the slots are often taken. Do light work meanwhile; never hold a turn idle.
-- **The pictures:** `calib` pictures and any MARKS picture without an outfit show her bare. Keep them in the scratchpad, never commit or publish them, and look at them only to calibrate.
-- **Generated scripts:** `tools/legal/motioncheck/.gitignore` ignores `*.gd`. An untracked stray `motioncheck2.gd` sits there from a mistake; leave it.
-- **Fetching sources:** Python's certificate store fails on krea.ai and some others; use curl, then `scratchpad/legal/strip.py`. Civitai's API (`/api/v1/model-versions/by-hash/<sha256>`, `/api/v1/models/<id>`) identifies a LoRA and its creator's permissions.
-- **ComfyUI's logs rotate** (three copies). Copy any evidence into `docs/legal/records/` at once.
-- **The scratchpad**, `C:\Users\munch\AppData\Local\Temp\claude\C--Users-munch-Desktop-wowsurvivors\f1b9be14-0826-4f47-8004-f1d371f2c6a3\scratchpad\legal\`, holds:
-  - licence and policy texts;
-  - the motion folders (motion2 to motion8, cupclose and cupclose2, calib);
-  - `diag*.gd` (headless landmark prints).
+- **The Bash guard** refuses compound commands that mention git, loops over computed program names, heredocs it can't parse, and `-C` redirects. Put logic in a script file in the scratchpad and run it plainly.
+- **Run Godot from the main checkout** (`PROJECT=`): the worktree has no import. The main checkout's import can lag. On 5 Oct it lacked `art/ui/page/vellum.png`, so the pages lost their backdrop. The main session also rebuilds outfits there: never run while it imports or rebuilds. Check the Godot processes and `turn.py show`.
+- **Never delete files**, even your own shots: give each run a fresh name or folder.
+- **Calibration pictures show her bare:** scratchpad only, never committed or published.
+- **The scratchpad** is `C:\Users\munch\AppData\Local\Temp\claude\C--Users-munch-Desktop-wowsurvivors\f1b9be14-0826-4f47-8004-f1d371f2c6a3\scratchpad\`:
+  - `legal3\` is mine: the batch scripts (`tuck_a.sh`, `run_outfit.sh`, `test4.sh`), `lmcheck.py` (landmarks against the code's minimum), `relief.py` (clay renders of a glTF), `dumptex.gd` (save imported textures), `hf_licences.py`, and the run folders t1 to t6;
+  - `legal\` is my predecessor's: licence and policy texts.
+- **Fetching:** curl works where Python's certificates fail. Sketchfab's API gives a model's licence and description. Fab is behind Cloudflare: don't try to get past it.
 
-## Collaborators (roster as of cd421c4f)
+## Collaborators (roster in `docs/team/README.md`)
 
 - **Main session:** outfits (the tuck build), decisions, merges.
-- **Performance** (a56abaf3a104be675): the pack listing; re-list before every upload.
-- **UI design** (aab47bfdab5955dac): the credits screen and its screenshot.
-- **Story** (a7ba8903f4c8261b1): "Warmed" and StoryLint.
-- **Arena art** (a26767f7f9955cb56): the boar's replacement.
-- **Heroine face** (a833b7942e978d994): the face paint (Krea) and its replacement plan.
-- **Provenance auditor** (a80ff0c7fd988b178): retired. I edited its rows in `ASSET_PROVENANCE.md` at the main session's request. A message would wake it.
+- **UI design** (aab47bfdab5955dac): the credits screen.
+- **Arena art** (a26767f7f9955cb56): not the boar ("creatures aren't arena art's").
+- **Animation** (a435f4dd0ac80df75): would rig a new boar. Its Kimodo takes may ship for crossbowmen and cinematics (checklist E has the line).
+- **Heroine face** (a6784044c82f101d9): the MoGe-2 face direction, built from Krea portraits.
+- **Performance** (a56abaf3a104be675): re-list the release pack before every upload.
 
 ## Files to read first
 
-1. `docs/legal/LEGAL_BRIEF.md`: the bottom line, the owner's-answers table, issue 2 (the motion check), 5 (assets, bodies, The Ember Watch, replacement rules), 16 (ownership) and 28 (Suno).
-2. `docs/legal/STEAM_CHECKLIST.md`: B (blockers), D (the survey drafts), E (the AI list).
-3. `docs/legal/QUESTIONS_FOR_LAWYER.md`: 19 questions.
-4. `docs/legal/records/`: `BODIES_RECORD.md` (the owner must sign it) and `RELEASE_PACK_LISTING.txt`.
-5. `tools/legal/motioncheck/`: start with `run.sh`'s header and `marks_section.py`'s comment.
-6. `docs/team/legal.md` and `docs/team/README.md`.
+1. `docs/legal/LEGAL_BRIEF.md`: the bottom line, the owner's-answers table, and issues 2, 4, 5 (5(g) for replacements and picture models) and 16.
+2. `docs/legal/STEAM_CHECKLIST.md`: B, D (D3 is ready to paste) and E.
+3. `docs/legal/QUESTIONS_FOR_LAWYER.md`.
+4. `tools/legal/motioncheck/`: `run.sh`'s header, `marks_section.py`'s comment, and `count.py`'s docstring.
+5. `docs/team/legal.md`.
