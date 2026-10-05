@@ -473,6 +473,15 @@ public sealed class HollowByNight : StoryFight
         /// does not think, and a pant must not last as long as a stun-lock.)</summary>
         bool Run(Enemy e, double dt)
         {
+            // The first drive's lesson is said while she crouches across from her, before its lane is marked.
+            if (sayT > 0)
+            {
+                e.Vx = e.Vz = 0;
+                e.State = EnemyState.Windup;
+                e.Anim = EnemyAnim.Windup;
+                e.Facing = Math.Atan2(B.Player.Z - e.Z, B.Player.X - e.X);
+                return true;
+            }
             if (pantT > 0)
             {
                 e.Vx = e.Vz = 0;
@@ -532,13 +541,32 @@ public sealed class HollowByNight : StoryFight
                 double a = away + (k / (double)Math.Max(1, n - 1) - 0.5) * Math.PI * arc;
                 A.Group("wolf", 1, p.X + Math.Cos(a) * 10, p.Z + Math.Sin(a) * 10, 0.4);
             }
+            // The first is a lesson: said first, alone, while she crouches (a second to read it before anything
+            // moves), then marked longer. The words and the lane at once were four things to read in 1.7 s.
+            if (drives++ == 0)
+            {
+                A.Say("The drive", "The gap is where she runs: go through the wolves", "danger");
+                sayT = 1.0;
+                return;
+            }
             A.Bark(w.X, w.Z, "A rising howl: the Pack wheels.", null);
-            // The first is a lesson: marked longer, and said.
-            mark = drives == 0 ? 1.7 : 1.0;
-            if (drives == 0) A.Say("The drive", "The gap is where she runs: go through the wolves", "danger");
-            drives++;
+            Mark(1.0);
+        }
+
+        /// <summary>A second's lesson before the first drive's lane (0: none waiting).</summary>
+        double sayT;
+
+        /// <summary>Her lane, aimed at her now, and her run down it after `seconds`.</summary>
+        void Mark(double seconds)
+        {
+            var p = B.Player;
+            var w = white!;
+            mark = seconds;
             double dx = p.X - w.X, dz = p.Z - w.Z, d = Math.Max(0.5, Math.Sqrt(dx * dx + dz * dz));
             double len = Math.Min(18, d + 6);
+            // Her run ends inside the place: run out past its wall, she stood outside it out of reach, and the
+            // stage never ended (one night in thirty, in the harness).
+            while (len > 3 && !A.Place.Inside(w.X + dx / d * len, w.Z + dz / d * len, 1.5)) len -= 0.5;
             laneX0 = w.X; laneZ0 = w.Z; laneX1 = w.X + dx / d * len; laneZ1 = w.Z + dz / d * len;
             hit = false;
             lane = B.Blow(new Battle.EnemyBlow
@@ -562,7 +590,8 @@ public sealed class HollowByNight : StoryFight
         protected override void Tick(double dt)
         {
             if (!Up(this.white, whiteSeed) || this.white is not { } white) { Done = true; return; }
-            if (!called && white.Hp < white.MaxHp * 0.25 && runT < 0 && pantT <= 0)
+            if (sayT > 0 && (sayT -= dt) <= 0) Mark(1.7);
+            if (!called && white.Hp < white.MaxHp * 0.25 && runT < 0 && pantT <= 0 && sayT <= 0)
             {
                 called = true;
                 var p = B.Player;
@@ -585,7 +614,7 @@ public sealed class HollowByNight : StoryFight
             }
             A.Goal = Ringed ? null : (white!.X, white.Z);
             if (pantT > 0 && (pantT -= dt) <= 0 && white.State == EnemyState.Recover) white.State = EnemyState.Active;
-            if (!spent && drives >= Drives && runT < 0 && pantT <= 0)
+            if (!spent && drives >= Drives && runT < 0 && pantT <= 0 && sayT <= 0)
             {
                 spent = true;
                 A.Say("Whitethroat is spent", "She has nothing left to run with", "boon");
@@ -599,7 +628,7 @@ public sealed class HollowByNight : StoryFight
                 A.Say("The whole Pack wheels", "Wider and quicker: still through the wolves, never the gap", "danger");
             }
             driveT -= dt;
-            if (!spent && driveT <= 0 && runT < 0 && pantT <= 0)
+            if (!spent && driveT <= 0 && runT < 0 && pantT <= 0 && sayT <= 0)
             {
                 driveT = wheeled ? 9 : 11;
                 Drive_();

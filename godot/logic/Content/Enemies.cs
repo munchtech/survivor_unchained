@@ -42,6 +42,8 @@ public sealed class RangedSpec
     /// <summary>Seconds planted and aiming before it looses (a crossbow's kneel): its aim is fixed
     /// as it begins, so stepping off the line in time is a dodge, as a lunge's wind-up is. 0: none.</summary>
     public double Aim;
+    /// <summary>Its own copy (a story's named foe throwing further than the table's).</summary>
+    public RangedSpec Clone() => (RangedSpec)MemberwiseClone();
 }
 
 public sealed record LungeSpec(double Range, double Cooldown, double Windup, double Time, double Speed);

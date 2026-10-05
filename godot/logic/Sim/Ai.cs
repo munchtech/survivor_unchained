@@ -18,6 +18,9 @@ namespace SurvivorUnchained.Sim;
 public static class Ai
 {
     public const double DieTime = 1.25;
+    /// <summary>How long a slammer stays planted after its blow lands, and a crossbow after it looses
+    /// (the clips' holds and get-ups, animation's numbers).</summary>
+    public const double SlamPlant = 0.65, ShotPlant = 0.7;
     static readonly Tag[] Physical = [Tag.Physical];
     static readonly Tag[] AllyStrike = [Tag.Summon, Tag.Melee, Tag.Physical];
 
@@ -51,6 +54,9 @@ public static class Ai
         {
             e.X += e.Kbx * dt;
             e.Z += e.Kbz * dt;
+            // Knocked into a wall, it stops at the wall (a scripted boss's own step never resolved it, and
+            // Grimtunnel was knocked out through the shut gate behind her, where she could not reach him).
+            b.Collision.Resolve(ref e.X, ref e.Z, e.Radius);
             double k = Math.Exp(-dt * 9);
             e.Kbx *= k; e.Kbz *= k;
             if (Math.Abs(e.Kbx) + Math.Abs(e.Kbz) < 0.05) e.Kbx = e.Kbz = 0;
@@ -189,6 +195,16 @@ public static class Ai
             }
         }
 
+        // Planted after its blow (a slam landed, a shot loosed): the blow held, then the get-up, which the view
+        // plays on AnimT. Walking off at once cut the clip (animation's ask). A lunger's own recovery is above.
+        if (e.State == EnemyState.Recover)
+        {
+            e.StateT -= dt;
+            e.Vx = e.Vz = 0;
+            if (e.StateT <= 0) e.State = EnemyState.Active;
+            return;
+        }
+
         // Casters raise the fallen.
         if (def.Raise is { } raise)
         {
@@ -247,6 +263,9 @@ public static class Ai
                 at.X = e.X + e.LungeX * aimReach; at.Z = e.Z + e.LungeZ * aimReach;
                 Shoot(b, e, at);
                 e.RangedT = aimed.Cooldown * (0.85 + b.Rng.Next() * 0.3);
+                // The release, the kick and the rise off the knee, before it walks.
+                e.State = EnemyState.Recover;
+                e.StateT = ShotPlant;
             }
             b.Collision.Resolve(ref e.X, ref e.Z, e.Radius);
             return;
@@ -412,7 +431,9 @@ public static class Ai
             e.Cast = CastKind.None;
             if (done == CastKind.Summon) Call(b, e, def.Summon!);
             else if (done == CastKind.Aura) Rally(b, e, def.Aura!);
-            // (A slam's blow was laid down when it was marked: marked, it lands.)
+            // (A slam's blow was laid down when it was marked: marked, it lands, now.) The blow held on the
+            // ground, then the get-up, before it moves or strikes again.
+            else if (done == CastKind.Slam) { e.State = EnemyState.Recover; e.StateT = SlamPlant; }
             return true;
         }
         if (e.Disposition != Disposition.Hostile) return false;
