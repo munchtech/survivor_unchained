@@ -149,8 +149,12 @@ public class OathTests
         var at = zone.ArrivalFrom(null);
         var b = j.StartBattle(true, map.Meta.Collision(), map.Ground.HeightAt, at.X, at.Z, at.Facing, 11, arena: true);
         zone.Begin(b);
-        Assert.True(b.Rules.HitChill);
+        // Dusk: the winter's crawl rides their blows from the middle of it, as its levels come in.
+        Assert.False(b.Rules.HitChill);
         // Half the arena's light (which reaches further than the wood's).
         Assert.Equal(0.5 * 1.6, b.Rules.Light, 3);
+        b.Time = 100;
+        zone.Step(1 / 60.0);
+        Assert.True(b.Rules.HitChill);
     }
 }

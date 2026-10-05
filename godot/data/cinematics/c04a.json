@@ -1,41 +1,73 @@
 {
   "id": "c04a",
   "title": "First Light",
-  "script": "docs/cinematics/shoot/c04.md",
+  "script": "docs/cinematics/shoot/c04a.md",
   "conversation": "cin_first_light",
   "zone": "lowford",
-  "draft": "Animatic draft from the written script (part A, the north bank): cameras unsurveyed, wiring to come.",
+  "draft": "Previs pass 1: surveyed on the north bank at dawn, stand-in motion and effects (Kimodo's wade_out, sun_face, flask_drink and walk_uphill, the ember draining, breath-smoke) to come.",
   "bars": {"in": 0.6, "out": 0.8},
   "skip": {"from": 1.5, "hold": 0.8},
   "world": {"rate": 0, "zoneHeld": true},
   "marks": {
     "bank": [1.0, -49.0, 3.1416],
-    "road": [0.5, -58.0, 3.1416]
+    "road": [0.5, -58.0, 3.1416],
+    "shallows": [2.0, -41.0, 1.5708],
+    "top": [0.2, -66.0, 3.1416]
   },
   "cast": {
     "her": {"kind": "survivor", "mark": "bank"}
   },
   "shots": [
     {
-      "id": "A1", "type": "MS", "dur": 4.0,
+      "id": "A1",
+      "type": "MS",
+      "dur": 4.0,
       "note": "Low on the north bank's edge, looking south at the water: her boots come up out of the river onto the frosted bank and walk on past camera; behind her wet prints come up out of the water and go on north. (Still south, looting: an MS of her in the shallows, turning to the light in the east.)",
-      "cam": {"pos": [0.6, 0.3, -52.0], "at": {"abs": [1.0, -0.6, -46.0]}, "lens": 35},
+      "cam": {"pos": [1.9, 0.3, -52.5], "at": {"abs": [0.8, -0.7, -47.0]}, "lens": 35},
+      "when": {"facts": ["!prologue.dawn_south"]},
       "cues": [
+        {"do": "event", "name": "ford_clear"},
+        {"do": "atmosphere", "preset": "dawn", "from": "night", "k1": 0.2},
         {"do": "music", "mood": "night", "intensity": 0.2},
+        {"do": "place", "mark": "bank"},
         {"do": "move", "to": "road", "dur": 4.0, "clip": "Walk_Formal_Loop", "speed": 0.8},
-        {"do": "prints", "from": [1.0, -49.0], "to": [0.6, -57.0], "stride": 0.8}
+        {"at": 3.9, "do": "anim", "clip": "@idle", "blend": 0.4},
+        {"do": "prints", "from": [1.0, -49.0], "to": [0.6, -57.0], "stride": 0.8},
+        {"at": 0.2, "do": "sfx", "name": "cloth_water", "gain": 0.6}
       ]
     },
     {
-      "id": "A2", "type": "ELS", "dur": 5.0,
-      "note": "From the west, across the road and up into the birches: the tops go gold one by one from the east as the sun clears the ridge; the light comes down the trunks, and where it reaches the road the blue in the iron by the verge goes pale and small.",
-      "cam": {"pos": [-14.0, 1.6, -60.0], "at": [6.0, 9.0, -62.0], "lens": 40},
+      "id": "A1s",
+      "type": "MS",
+      "dur": 4.0,
+      "when": {"facts": ["prologue.dawn_south"]},
+      "note": "Still south, looting the ford: an MS of her standing in the shallows, turning toward the light that is starting in the east.",
+      "cam": {"pos": {"abs": [-1.2, -0.3, -43.6]}, "at": {"actor": "her", "bone": "chest"}, "lens": 35},
       "cues": [
-        {"do": "atmosphere", "preset": "Dawn", "from": "Night", "over": 10.0}
+        {"do": "event", "name": "ford_clear"},
+        {"do": "atmosphere", "preset": "dawn", "from": "night", "k1": 0.2},
+        {"do": "music", "mood": "night", "intensity": 0.2},
+        {"do": "place", "mark": "shallows", "heading": 0.0},
+        {"do": "anim", "clip": "@idle", "blend": 0},
+        {"at": 1.2, "do": "look", "where": [30.0, 2.0, -41.0], "over": 1.6}
       ]
     },
     {
-      "id": "A3", "type": "MS", "dur": 3.5,
+      "id": "A2",
+      "type": "ELS",
+      "dur": 5.0,
+      "note": "From the west, across the road and up into the birches: the tops go gold one by one from the east as the sun clears the ridge; the light comes down the trunks, and where it reaches the road the blue in the iron by the verge goes pale and small.",
+      "cam": {"pos": [-5.0, 1.4, -58.0], "at": [10.0, 9.0, -64.0], "lens": 35},
+      "cues": [
+        {"do": "atmosphere", "preset": "dawn", "from": "night", "k0": 0.2, "over": 10.0},
+        {"do": "place", "mark": "road"},
+        {"do": "anim", "clip": "@idle", "blend": 0}
+      ]
+    },
+    {
+      "id": "A3",
+      "type": "MS",
+      "dur": 3.5,
       "note": "Side-on from the east, the sun behind the camera: the light reaches her face and shoulders. She shuts her eyes against it.",
       "cam": {"pos": {"mark": "road", "off": [3.0, 1.5, 0.0]}, "at": {"mark": "road", "off": [0, 1.4, 0]}, "lens": 50},
       "cues": [
@@ -44,7 +76,11 @@
       ]
     },
     {
-      "id": "A4", "type": "MLS", "dur": 5.0, "fit": ["cin_first_light.back"], "tail": 0.5,
+      "id": "A4",
+      "type": "MLS",
+      "dur": 5.0,
+      "fit": ["cin_first_light.back"],
+      "tail": 0.5,
       "note": "A slow tilt from her chest to her feet, then hold: the ember goes out of her, red light running down her body like water, off her shoulders and hands, down her legs, into the frosted road, gone. Her weapon's night-glow cools with it. N5.",
       "cam": {"pos": {"mark": "road", "off": [0.4, 1.3, -3.2]}, "at": {"mark": "road", "off": [0, 1.3, 0]}, "lens": 35, "move": {"at": {"mark": "road", "off": [0, 0.2, 0]}, "start": 0, "end": 2.0, "ease": "inout"}},
       "cues": [
@@ -54,13 +90,16 @@
         {"at": 0.3, "do": "music", "mood": "mystery", "intensity": 0.2, "over": 1.0},
         {"at": 3.5, "do": "music", "mood": "silence"},
         {"do": "face", "keys": {"mouth_open": 0.15, "brows_up": 0.3}, "over": 1.0},
-        {"do": "gaze", "look": [0, 0.9]}
+        {"do": "gaze", "look": [0, 0.9]},
+        {"at": 1.2, "do": "vfx", "kind": "nova", "where": {"mark": "road"}, "radius": 1.6, "school": "fire", "dur": 1.8}
       ]
     },
     {
-      "id": "A5", "type": "CU", "dur": 5.5,
+      "id": "A5",
+      "type": "CU",
+      "dur": 5.5,
       "note": "Frontal, low sun from frame right, the birches' shade behind: colour comes into her face. She breathes out, and her breath smokes in the cold, a long white plume in the sunlight. She sees it. She breathes again, to see it again. Then the cold reaches her: a shiver, once, hard.",
-      "cam": {"pos": {"mark": "road", "off": [0.2, 1.55, -1.3]}, "at": {"mark": "road", "off": [0, 1.6, 0]}, "lens": 85},
+      "cam": {"pos": {"actor": "her", "bone": "eyes", "off": [0.25, -0.02, -1.25]}, "at": {"actor": "her", "bone": "eyes"}, "lens": 85, "focus": {"actor": "her", "bone": "eyes"}, "fstop": 2.0},
       "cues": [
         {"at": 0.8, "do": "sfx", "name": "breath_out", "gain": 1.3},
         {"at": 0.8, "do": "face", "keys": {"mouth_open": 0.25, "brows_up": 0, "smile": 0}, "over": 0.6},
@@ -71,9 +110,11 @@
       ]
     },
     {
-      "id": "A6", "type": "MCU", "dur": 5.0,
+      "id": "A6",
+      "type": "MCU",
+      "dur": 5.0,
       "note": "She lifts the flask on its cord, pulls the cork with her teeth, and stops: smells it. The river. She drinks anyway, long, eyes shut; water on her chin. She lowers it.",
-      "cam": {"pos": {"mark": "road", "off": [0.8, 1.45, -1.8]}, "at": {"mark": "road", "off": [0, 1.45, 0]}, "lens": 50},
+      "cam": {"pos": {"actor": "her", "bone": "eyes", "off": [0.5, -0.15, -1.9]}, "at": {"actor": "her", "bone": "eyes", "off": [0, -0.12, 0]}, "lens": 50},
       "cues": [
         {"at": 1.0, "do": "sfx", "name": "click", "gain": 0.5},
         {"at": 1.5, "do": "face", "keys": {"nose_wrinkle": 0.3, "squint": 0, "frown": 0}, "over": 0.3},
@@ -82,9 +123,13 @@
       ]
     },
     {
-      "id": "A7", "type": "CU", "dur": 6.5, "fit": ["cin_first_light.face"], "tail": 3.0,
+      "id": "A7",
+      "type": "CU",
+      "dur": 6.5,
+      "fit": ["cin_first_light.face"],
+      "tail": 3.0,
       "note": "Frontal, a very slow push (0.05 m): she is still. Her eyes go inward, searching. N6. Then nothing: hold 3 s of silence after the line. Play someone who has mislaid a thing she uses every day.",
-      "cam": {"pos": {"mark": "road", "off": [0.1, 1.58, -1.2]}, "at": {"mark": "road", "off": [0, 1.6, 0]}, "lens": 85, "move": {"push": 0.05, "ease": "linear"}},
+      "cam": {"pos": {"actor": "her", "bone": "eyes", "off": [0.08, 0.0, -1.15]}, "at": {"actor": "her", "bone": "eyes"}, "lens": 85, "focus": {"actor": "her", "bone": "eyes"}, "fstop": 2.0, "move": {"push": 0.05, "ease": "linear"}},
       "cues": [
         {"do": "face", "keys": {"nose_wrinkle": 0, "brows_sad": 0.45}, "over": 2.0},
         {"do": "gaze", "look": [0, 0]},
@@ -94,15 +139,17 @@
       ]
     },
     {
-      "id": "A8", "type": "LS", "dur": 5.5,
+      "id": "A8",
+      "type": "LS",
+      "dur": 5.5,
       "note": "Low behind her on the road, looking north up the hill: she walks away from camera into the light; at the top of the hill the gate stands open. Bars out over the last 0.8 s; then the Douse announcement and the day tip.",
       "cam": {"pos": {"mark": "road", "off": [0.6, 0.6, 3.0]}, "at": [0.0, 4.0, -110.0], "lens": 28},
       "cues": [
-        {"do": "move", "to": [0.2, -66.0], "dur": 5.5, "clip": "Walk_Formal_Loop", "speed": 0.8},
+        {"do": "move", "to": "top", "dur": 5.5, "clip": "Walk_Formal_Loop", "speed": 0.8},
         {"at": 1.0, "do": "music", "mood": "explore", "intensity": 0.35, "over": 2.0},
         {"at": "end", "do": "event", "name": "douse"}
       ]
     }
   ],
-  "end": {"her": "road", "camera": "follow"}
+  "end": {"her": "top", "camera": "follow"}
 }

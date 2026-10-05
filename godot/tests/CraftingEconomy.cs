@@ -15,8 +15,9 @@ namespace SurvivorUnchained.Tests;
 /// Act 1's crafting economy played forward day by day (docs/CRAFTING_DESIGN.md 13.3–13.4):
 /// the measured faucets, a survivor who crafts on what they wear with the real forge (quotes,
 /// heat, terms), and the design's targets. The faucets, per won night, are the combat lead's
-/// sweep at 71608a4 (deft bot, fodder gold at 2%, gear only from carriers): ember at the end,
-/// champions, gold by people; the gear is the arena's own drop rule (ArenaRun.OnLoot, about 20
+/// sweep at 71608a4 (deft bot, gear only from carriers): ember at the end and champions; the gold
+/// by people is CraftingProbe's at 4c32586 (arena fodder at 0.15% of the day's gold, champions at
+/// 7%, bosses and minibosses in full); the gear is the arena's own drop rule (ArenaRun.OnLoot, about 20
 /// carriers at 60% and the boss's 2 + tier / 2). By day: the Verge's rates for a few beasts,
 /// and Act 1's quest gold (about 800) and story prices (about 500) spread over its days.
 /// </summary>
@@ -25,7 +26,7 @@ public class CraftingEconomy(ITestOutputHelper log)
     static readonly string[] PlainGear = ["iron_helm", "leather_cap", "chain_shirt", "padded_jerkin", "silver_ring", "copper_ring", "bone_amulet", "travelers_cloak", "watch_buckler"];
     static readonly string[] Peoples = ["pack", "dead", "lamplings", "kerchiefs"];
     // Per tier 1..3: ember at the end (median), champions, the Kerchiefs' gold and the others'.
-    static readonly int[] Ember = [57, 62, 67], Champs = [864, 1052, 1079], KerchiefGold = [2570, 3320, 2796], OtherGold = [11, 22, 16];
+    static readonly int[] Ember = [57, 62, 67], Champs = [864, 1052, 1079], KerchiefGold = [375, 351, 365], OtherGold = [15, 12, 16];
 
     sealed class Tally
     {
@@ -40,7 +41,7 @@ public class CraftingEconomy(ITestOutputHelper log)
 
     /// <summary>One Act 1, <paramref name="days"/> long, a night every day; <paramref name="championGold"/>
     /// scales the gold arena champions drop (1: today).</summary>
-    static Tally Play(int days, double championGold, uint seed, bool stay)
+    static Tally Play(int days, int[] kerchiefGold, uint seed, bool stay)
     {
         var a = Callings.Archetype("warden");
         var j = Journey.Begin(new CreationChoice { Name = "Ashe", Archetype = "warden", Background = "hunter", Palette = a.Palettes[0].Id, WeaponItem = a.Weapons[0], Ability = a.Abilities[0] }, seed);
@@ -66,7 +67,7 @@ public class CraftingEconomy(ITestOutputHelper log)
             var y = Crafting.Night(people, tier, story, Ember[tier - 1], stay ? 4 : 0, true, false, champs);
             j.Carry(y, "The night");
             t.ShardsByNight.Add(y.Kept.GetValueOrDefault(Crafting.Shard));
-            gold += people == "kerchiefs" ? KerchiefGold[tier - 1] * championGold : OtherGold[tier - 1];
+            gold += people == "kerchiefs" ? kerchiefGold[tier - 1] : OtherGold[tier - 1];
             var drops = new List<ItemInstance>();
             int carriers = 20;
             for (int k = 0; k < carriers; k++)
@@ -172,28 +173,33 @@ public class CraftingEconomy(ITestOutputHelper log)
     public void Act_one_crafting_meets_its_targets()
     {
         const int days = 10;
-        var runs = Enumerable.Range(0, 8).Select(s => Play(days, 1, (uint)(101 + s * 7), s % 2 == 0)).ToList();
-        var cut = Enumerable.Range(0, 8).Select(s => Play(days, 0.1, (uint)(101 + s * 7), s % 2 == 0)).ToList();
-        log.WriteLine(runs[0].Log);
+        // The gold measured above holds only while an arena keeps the rates it was measured at
+        // (combat's lines in ArenaRun.Begin): re-run CraftingProbe if they move.
+        var rules = ArenaTests.Make(ArenaTests.Spec("kerchiefs")).B.Rules;
+        Assert.Equal(0.07, rules.ChampionGold, 6);
+        Assert.Equal(0.0015, rules.FodderGold, 6);
+        var runs = Enumerable.Range(0, 8).Select(s => Play(days, KerchiefGold, (uint)(101 + s * 7), s % 2 == 0)).ToList();
+        // What the old rates paid a Kerchief night (champions in full, fodder at 2%), for comparison.
+        var before = Enumerable.Range(0, 8).Select(s => Play(days, [2570, 3320, 2796], (uint)(101 + s * 7), s % 2 == 0)).ToList();
         void Report(string name, List<Tally> rs) => log.WriteLine(
             $"{name}: first craft day {Med(rs.Select(r => r.FirstCraftDay))}, crafts a day {Med(rs.SelectMany(r => r.CraftsByDay)):0.0} (max {rs.SelectMany(r => r.CraftsByDay).Max()}), " +
             $"weapon rare day {Med(rs.Select(r => r.WeaponRare))}, epic day {Med(rs.Select(r => r.WeaponEpic))}, fully worked {Med(rs.Select(r => r.Worked))}, " +
             $"gold spent {Med(rs.Select(r => r.Spent / Math.Max(1, r.Earned))):0%} of {Med(rs.Select(r => r.Earned)):0} earned, shards a night {Med(rs.SelectMany(r => r.ShardsByNight))}");
-        Report("today's gold", runs);
-        Report("champion gold at a tenth", cut);
-        log.WriteLine(cut[0].Log);
+        Report("before the arena's gold was cut", before);
+        Report("an arena's gold today", runs);
+        log.WriteLine(runs[0].Log);
 
-        // The targets (design 13.3), held on the economy crafting asks for: arena champions paying a
-        // tenth of the day's gold (combat's one line; today's Kerchief nights pay 2.5k-3.3k, which
-        // buys the whole forge in a night). The first craft on day 1 or 2; the starting weapon rare
+        // The targets (design 13.3), on what an arena pays now (a Kerchief night about 350-375 gold;
+        // at the old rates it paid 2.5k-3.3k, which bought the whole forge in a night). The first
+        // craft on day 1 or 2; the starting weapon rare
         // by day 4 and epic by day 5 to 8; the forge finishes at most two pieces in an act; a won
         // night's shards pay for a cage or a rekindle; crafting takes 30-70% of the gold.
-        Assert.InRange(Med(cut.Select(r => r.FirstCraftDay)), 1, 2);
-        Assert.InRange(Med(cut.Select(r => r.WeaponRare)), 1, 4);
-        Assert.InRange(Med(cut.Select(r => r.WeaponEpic)), 5, 8);
-        Assert.InRange(Med(cut.Select(r => r.Worked)), 0, 2);
-        Assert.InRange(Med(cut.SelectMany(r => r.ShardsByNight)), 4, 8);
-        Assert.InRange(Med(cut.Select(r => r.Spent / Math.Max(1, r.Earned))), 0.3, 0.7);
+        Assert.InRange(Med(runs.Select(r => r.FirstCraftDay)), 1, 2);
+        Assert.InRange(Med(runs.Select(r => r.WeaponRare)), 1, 4);
+        Assert.InRange(Med(runs.Select(r => r.WeaponEpic)), 5, 8);
+        Assert.InRange(Med(runs.Select(r => r.Worked)), 0, 2);
+        Assert.InRange(Med(runs.SelectMany(r => r.ShardsByNight)), 4, 8);
+        Assert.InRange(Med(runs.Select(r => r.Spent / Math.Max(1, r.Earned))), 0.3, 0.7);
     }
 
     static double Med(IEnumerable<double> xs)

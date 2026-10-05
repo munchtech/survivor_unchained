@@ -1,138 +1,102 @@
 # Skills: how every skill looks, sounds and feels
 
-Status page for the skills lead (branch `worktree-agent-a8bafe3cd8a229639`).
+Status page for the skills lead (a63cd93fc73d5ed79, branch `worktree-agent-a63cd93fc73d5ed79`).
 
-## Current state (2026-10-04, stopped at the owner's usage limit)
+## Current state (2026-10-04, paused for the owner)
 
-Tests are green (520). Everything below is committed and pushed. ComfyUI is freed.
+Tests green (567). Everything is committed and pushed. No job of mine is running, and ComfyUI is freed.
+Sheets sent to the main session: `scratchpad/vfx/ba_nine_*.png`, `ba_a7_*.png`. Newer and not sent
+yet: `ba_a9_1.png` (numbers summed, frozen tint), `ba_s6_*.png` (Arcweb, Thunderhead, Verdant Lance,
+Reaving Arc, Gale Chakram, Umbral Bolt, Moonbrand).
 
-- **Inventory**:
-  - 26 combat skills, 52 evolutions and 9 unions (`logic/Content/Weapons.cs`);
-  - 16 arts;
-  - blessings and discoveries.
-  - The nine starting weapons: Oathblade, Judgement Disc, Cleaver, Axe Gyre,
-    Seeking Motes, Cinderfall, Rimeshard, Volley, Knifestorm.
-- **Before**: every skill drawn by its school; projectiles hidden in the crowd; the
-  grades are below. Frames: `godot/.shots/before_*`, rank 4, a horde of 70 risen
-  and 8 champions at 3 m, night.
-- **Crop and squaring** (done, tested):
-  - flipbook.py refuses a cut-off clip or a cell with edge light;
-  - the shaders fade every quad round;
-  - `FxTests` holds every atlas, sprite and mark to the rule.
-- **Batch 1, the nine starting weapons: working on screen, not yet sent.**
-  - Seen in the showcase frames (`godot/.shots/show1_*`: 40 risen at 9–14 m, every
-    0.05 s; strips made by the scratchpad's `skills/strip.py`):
-    - Volley: a fan of arrow streaks;
-    - Knifestorm: a ring of knife streaks;
-    - Axe Gyre: four axes with curved white wakes;
-    - Judgement Disc: gold hoops with gold wakes that curve as they home;
-    - Cinderfall: a burning coal with a flame trail, and its blast;
-    - Rimeshard: ice lances with frost trails;
-    - Seeking Motes: violet trails.
-  - Not seen yet, built since `show1`:
-    - the swept blade (Oathblade and Cleaver were still the painted fan in
-      `show1`, a flat beige half-disc);
-    - each skill's mark on the body;
-    - ice, stone and thorn spikes (`Erupt`, `shaders/crystal.gdshader`);
-    - the twinkling mote core;
-    - the toned-down Hoarfrost (white-out mist cut) and Dawnpulse (sigil smaller);
-    - the dark beds' effect in the crush scenario.
-- **Grounds** (Blightfield, Hallowed Ground, Thornbloom, Pyre): drawn to the
-  experience director's rule (no fill, lit edge, pattern ≤ 35%). Not yet seen: the
-  `show1` frames don't show the zone in the crop. Look at a full frame.
-- **Agreed with the experience director**:
-  - champion death blast about 3 m, flash ≤ 0.15 s, dust ≤ 0.6 s (done);
-  - zones as above;
-  - the survivor kept clear: what is drawn over the crowd drops to a third of its
-    strength over her (`shaders/hero_clear.gdshaderinc`).
-- **Spike tells** (combat): `Ev.Sound` ids `tell_*` play recorded takes (`Sfx.Tell`).
-  - Made with LTX's audio (`tools/comfy/sfx_clips.py`): tell_howl ×2, tell_drum ×2,
-    tell_fuse ×1.
-  - tell_whistle is not made yet; it plays a made sound until then.
-  - Nobody has listened to any take: the owner should.
-- **GPU jobs not done**:
-  - the skills' sprites (`tools/comfy/fx_sprites.py make`, Krea);
-  - the twelve clips (`fx_clips.py`).
-  - The first clip try failed with Windows error 1450 (out of RAM: 2 GB free while
-    Godot ran). Run them with no game open.
-  - The chain script is the scratchpad's `skills/gpu_chain.sh`.
-- **Ribbons.cs is the performance lead's** (a9586a5171413db0b) until they say they
-  have pushed region updates for `Buffer.Flush`. Don't edit it before then.
+- **Batch 1 (the nine starting weapons, Hoarfrost, Dawnpulse): remade and seen at full resolution**
+  in a packed crowd and in the 9–14 m showcase.
+  - Blades: a crescent shader (`shaders/blade.gdshader`, `src/Fx/Blades.cs`). The smear is held low
+    (0.55) and saturated; it read as cream on the dark Dig. Not yet seen since that change.
+  - Crowd restraint:
+    - kill budget of six a frame;
+    - flashes share their light;
+    - champions falling together are told by the first;
+    - sparks and filmed bursts keep her clear (`hero_clear`).
+  - Damage numbers (S-13, `src/Fx/Hits.Numbers.cs`):
+    - sum per target per 0.25 s beat;
+    - at most 8 new a frame;
+    - none within 1.5 m of her;
+    - damage over time in its school's colour.
+- **Batch 2, remade and seen once**:
+  - Arcweb is a forking blue bolt;
+  - Verdant Lance is a heart with twisting vines and a leaf gather;
+  - Reaving Arc is a crimson crescent;
+  - Thunderhead has a glow round the bolt, the filmed burst only for the clap, and quiet marks.
+  - Trails shortened, not yet seen since: Gale Chakram, Umbral Bolt; Moonbrand's dust made violet.
+- **Grounds and telegraphs**:
+  - fills premultiplied, so the pyre square is gone;
+  - Hallowed's edge thinner;
+  - hostile discs and lanes hatched (front edge plus about 30%);
+  - "blocked" said once per 0.35 s.
+- **Enemy looks** (`src/Fx/BattleFx.Enemies.cs`), built and compiling, **not yet seen**:
+  - a rally in the people's colour (it was a white-gold band: the arena lead's "lampling discs");
+  - summoning circles (the painted rune ring);
+  - slams that throw stone and roll dust;
+  - haste lines and ward glints;
+  - bolt_bone and frost_orb in flight.
+- **GPU done**:
+  - 10 Krea sprites;
+  - 12 LTX clips, of which 7 are in use: holy_ring, moon_burst, gold_flare, shadow_wisps, bramble_burst,
+    leaf_burst and (earlier) the school bursts. The other five were refused by the edge check or set aside
+    as poor; see commit 0d2e4a0b.
+  - tell_whistle ×2 and tell_fuse ×2. The owner should listen.
+  - **tell_horn** (the dead's new tell) is in `sfx_clips.py`, not made: it was interrupted for the pause.
 
-## Grades (before)
+## Next step (exact)
 
-1 (poor) to 5 (at the bar), from frames in play.
+1. Run `bash scratchpad/vfx/batch10.sh` with no other game open. It shoots the Dig, the Kerchiefs, the
+   dead and the Pack at minute 25, plus `s7`. Judge the rallies, summons, slams, bolts and orbs, and the
+   lamplings on the Dig's clay. Send the arena lead (a26767f7f9955cb56) the Dig crop.
+2. Run `bash scratchpad/vfx/gpu_horn.sh` (tell_horn, LTX; it waits for 11 GB of free RAM), then free ComfyUI.
+3. Send the main session `ba_a9_1.png` and `ba_s6_*.png` with the batch-10 results.
+4. Then: champion Sign marks; Firepot, Iron Palms, Grave Tether, Gravecall, Spirit Herd, Thornbloom and
+   Blightfield seen and judged; the evolutions and unions; the arts.
+
+## Grades (now)
+
+1 (poor) to 5 (at the bar), from frames in play. "Before" is in this page's git history.
 
 | Skill | Soul | Reads in a horde | Impact | School | Polish | Crop/square |
 |---|---|---|---|---|---|---|
-| Oathblade | 2 | 3 | 2 | 2 | 2 | ok |
-| Cleaver | 1 | 2 | 2 | 1 | 2 | ok |
-| Axe Gyre | 2 | 2 | 1 | 2 | 2 | ok |
-| Volley | 1 | 1 | 1 | 1 | 1 | ok |
-| Knifestorm | 1 | 1 | 1 | 1 | 1 | ok |
-| Judgement Disc | 1 | 1 | 2 | 2 | 1 | ok |
-| Seeking Motes | 1 | 1 | 1 | 2 | 1 | ok |
-| Moonbrand | 1 | 1 | 1 | 1 | 1 | ok |
-| Umbral Bolt | 1 | 1 | 1 | 1 | 1 | ok |
-| Cinderfall | 2 | 3 | 3 | 3 | 2 | ok |
-| Firepot | 2 | 3 | 3 | 3 | 2 | ok |
-| Rimeshard | 1 | 2 | 2 | 2 | 1 | ok |
-| Hoarfrost | 1 | 3 | 2 | 2 | 1 | ok |
-| Gale Chakram | 1 | 2 | 1 | 1 | 1 | ok |
-| Arcweb | 1 | 1 | 1 | 2 | 1 | risk (cylinder ends) |
-| Thunderhead | 2 | 3 | 3 | 3 | 2 | ok |
-| Verdant Lance | 1 | 2 | 1 | 2 | 1 | risk (cylinder ends) |
-| Dawnpulse | 1 | 3 | 2 | 1 | 1 | ok |
-| Reaving Arc | 1 | 1 | 1 | 1 | 1 | ok |
-| Blightfield | 1 | 3 | 1 | 2 | 1 | ok |
-| Hallowed Ground | 1 | 3 | 1 | 1 | 1 | ok |
+| Oathblade | 4 | 4 | 4 | 4 | 4 | ok |
+| Cleaver | 4 | 4 | 4 | 4 | 4 | ok |
+| Axe Gyre | 3 | 4 | 3 | 3 | 3 | ok |
+| Judgement Disc | 3 | 3 | 3 | 4 | 3 | ok |
+| Seeking Motes | 3 | 4 | 3 | 4 | 3 | ok |
+| Cinderfall | 3 | 4 | 4 | 4 | 3 | ok |
+| Rimeshard | 3 | 4 | 3 | 4 | 3 | ok |
+| Volley | 3 | 4 | 3 | 3 | 3 | ok |
+| Knifestorm | 3 | 4 | 3 | 3 | 3 | ok |
+| Hoarfrost | 4 | 4 | 4 | 4 | 4 | ok |
+| Dawnpulse | 3 | 3 | 4 | 4 | 3 | ok |
+| Arcweb | 4 | 4 | 4 | 4 | 3 | ok |
+| Verdant Lance | 4 | 4 | 3 | 4 | 3 | ok |
+| Reaving Arc | 4 | 4 | 4 | 4 | 3 | ok |
+| Thunderhead | 3 | 3 | 3 | 4 | 3 | ok |
 
 ## Key decisions
 
-- **Per skill, not per school**: the school sets colour and shape; the skill sets its
-  body, trail and landing. Rank grows it (`Grow`); an evolution adds a layer.
-- **Ribbons with a dark bed under them**: the risen are bone-grey, and light over them
-  washes to white; dark round a light is what makes it seen.
-- **Drawn over the crowd, at head height, never over her**: from the high camera,
-  bodies hide anything at chest height, and the survivor must stay readable.
-- **Real shapes where a flat picture fails**: ice, thorns and stone stand up as lit meshes.
-- **Pale effects need colour, not white**: frost is blue, holy is gold.
-
-## Next steps, in order
-
-1. Build and run `sweep.py show2 <the nine>` (showcase, `--horde 40 --dist 9 --spread 5
-   --every 0.05 --count 32 --start 2.0`). Then run `sweep.py a4 <the nine>` with the
-   default crowd, like for like with `before`. Judge every one at full resolution
-   (`strip.py`, `ba.py`).
-2. Make the before/after contact sheet (`ba.py`) and send it to the main session.
-   Send the experience director the minute-25 view (`--minute 25 --auto` with a late
-   build).
-3. GPU, with no game open: the sprites (pick, then `fx_sprites.py cut NAME=PATH`),
-   the twelve clips, tell_whistle and a second tell_fuse take. Then use them:
-   - sun_disc for the Judgement Disc;
-   - frost_spikes and ice_shatter for frost;
-   - holy_ring and gold_flare for holy;
-   - blood_scythe for Reaving Arc;
-   - poison_cloud and bramble_burst for the grounds.
-4. Arcweb: a thicker, bluer bolt. Verdant Lance and the other novas and grounds, seen and judged.
-5. Combat's enemy looks (its message of 2026-10-04):
-   - aura rings in the people's colour (asked for the people on the event);
-   - slams with a dust ring and stone;
-   - summon circles;
-   - the Sign marks;
-   - the haste and ward glints;
-   - the bolt_bone and frost_orb arts.
-6. Then evolutions and unions, the arts and the callings' own, and sound per skill.
-   A Sonniss-style library is on disk in `tools/comfy/out/sfx/` (arrows, axe impacts):
-   check its licence first.
+- **Hues below the tone curve's knee**: AgX turns coloured light over about 2 to cream. Only thin edges
+  and cores are white. Dark grounds raise exposure, so smears are held lower still.
+- **A crowd is told by its first few**: deaths, champion falls, flashes and numbers are all budgeted.
+- **Dark beds**, in the same pass where possible (premultiplied).
+- **Danger keeps its language**, hatched and never solid. A people's colour is for what is theirs.
+- **Per skill, not per school**; real shapes where a flat picture fails; painted sprites and filmed clips,
+  always through the edge checks.
 
 ## Notes for other areas
 
-- **Combat** (ac4ec5bbd2763a0df): events carry `Art` and `Rank` for the view. The
-  tells are in. Its enemy looks are queued above.
-- **Experience director** (a33f58e68e89e3ccf): an enemy hit flashes its whole body
-  white, which blooms into a blob over the pale risen. A tint or rim would read better.
-- **Performance** (a9586a5171413db0b): owns `Ribbons.Buffer.Flush` for now. My added
-  batches (shades; ice, thorn and stone spikes with shadows, at most 900) are in its harness.
-- **Pickups**: plain white balls lie on the ground in every frame (not identified).
-  Loot beams are cylinders with flat-cut tops.
+- **Experience director** (ad1f5623590e09883): frozen and burning are theirs, merged here (3c67542).
+  S-13 is built to their rule.
+- **Arena art** (a26767f7f9955cb56): the "white-gold lampling discs" were rallies drawn as holy bands;
+  now a people-coloured front. Their Dig crop is owed once batch 10 runs.
+- **Performance** (a7145e18b3eb78294): Blades is one MultiMesh, at most 48 instances. Ribbons gained only
+  the head cap.
+- **Anyone running a game in a worktree after a merge**: run `--headless --import` first. A plain run
+  does not import new textures, and the ground came out as banded gradients.

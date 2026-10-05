@@ -169,6 +169,13 @@ public sealed class WorldState
     public Dictionary<string, Dictionary<string, Fact>> Zones = new();
     public CorpseState? Corpse;
     public NemesisState? Nemesis;
+    /// <summary>What a night with the ember lit outside an arena (the prologue's) has taught,
+    /// banked until its dawn (Journey.Douse).</summary>
+    public double NightLessons;
+    /// <summary>Seconds played by kind of play (prologue, town, wild, story night, table night,
+    /// map): the owner wants the story two fifths of the game early on, and this is how it is
+    /// measured rather than guessed (Journey.StoryShare).</summary>
+    public Dictionary<string, double> TimeIn = new();
     /// <summary>Discoveries recorded in the codex.</summary>
     public List<string> Codex = new();
     /// <summary>Bestiary kill counts by creature.</summary>
@@ -183,6 +190,8 @@ public sealed class WorldState
     public Dictionary<string, ShopState> Shops = new();
     /// <summary>The ember arena begun (Arena/Arena.cs), until it is over.</summary>
     public Arena.ArenaSpec? Arena;
+    /// <summary>The Wayfinder's chart being walked, while it is (docs/SKILLS_DESIGN.md §17).</summary>
+    public Maps.Chart? Map;
     /// <summary>Story fights lost, waiting at the Wayfinder's table to be taken again.</summary>
     public List<Arena.ArenaSpec> Rematches = new();
 

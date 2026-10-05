@@ -40,6 +40,20 @@ public sealed class VatAsset
 
     public double Duration(string role) => Clips.TryGetValue(role, out var c) ? c.Duration : 1;
 
+    /// <summary>How many ways down it has ("die", "die2", "die3"...).</summary>
+    public int Deaths
+    {
+        get { int n = 1; while (Clips.ContainsKey($"die{n + 1}")) n++; return n; }
+    }
+
+    /// <summary>Its k-th way down (any k: taken round the ones it has), so a
+    /// field of the dead can be varied: on the back, on the face, on the side.</summary>
+    public string Death(int k)
+    {
+        int i = ((k % Deaths) + Deaths) % Deaths;
+        return i == 0 ? "die" : $"die{i + 1}";
+    }
+
     /// <summary>The two frames (absolute rows of frames) and the blend between them, `t` seconds into a role.</summary>
     public (int F0, int F1, float K) Frame(string role, double t)
     {
@@ -165,10 +179,16 @@ public static class Vat
         var person = pv.Person;
         var roles = new List<Role>();
         var c = spec.Clips;
-        foreach (var (role, clip) in new[] { ("move", c.Move), ("idle", c.Idle), ("attack", c.Attack), ("windup", c.Windup), ("die", c.Die), ("rise", c.Rise), ("hit", c.Hit), ("cast", c.Cast) })
+        // A kit body falls one of three ways (FolkClips.Deaths), so the dead do not all lie alike.
+        bool pistol = spec.Arms?.Right is string right && Arms.All.TryGetValue(right, out var held) && held.Pistol;
+        var deaths = person.Kit ? FolkClips.Deaths(person.Woman, !person.Folk, pistol) : null;
+        var plays = new List<(string, string?)> { ("move", c.Move), ("idle", c.Idle), ("attack", c.Attack), ("windup", c.Windup), ("rise", c.Rise), ("hit", c.Hit), ("cast", c.Cast) };
+        if (deaths != null) for (int i = 0; i < deaths.Length; i++) plays.Add((i == 0 ? "die" : $"die{i + 1}", deaths[i]));
+        else plays.Add(("die", c.Die));
+        foreach (var (role, clip) in plays)
         {
             if (clip == null) continue;
-            var name = Clip(person, clip);
+            var name = clip.StartsWith(FolkClips.Prefix) ? clip : Clip(person, clip);
             roles.Add(new Role(role, name, 0, person.Anim.HasAnimation(name) ? person.Anim.GetAnimation(name).Length : 1));
         }
         var asset = BakeRig(spec.Key, pv, person.Skeleton, person.Anim, person.Meshes, roles, 15, Budget, null);
@@ -725,7 +745,7 @@ public static class Vat
     // its clips and seconds of sampling; read back, a few milliseconds). Bump
     // Version whenever what a bake holds or how it is made changes (Visuals,
     // Beasts, this file).
-    const int Version = 9;
+    const int Version = 11;
     static string CachePath(string key) => $"user://vat/{key}.v{Version}.bin";
 
     static byte[] Bytes<T>(T[] a) where T : struct => System.Runtime.InteropServices.MemoryMarshal.AsBytes(a.AsSpan()).ToArray();

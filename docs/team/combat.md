@@ -1,70 +1,51 @@
 # Combat: skills, enemies, encounters, bosses, balance
 
 Status page for the combat lead.
-- **Agent:** `ac4ec5bbd2763a0df`.
-- **Branch:** `worktree-agent-ac4ec5bbd2763a0df`.
-- **Read first:** `docs/handoff/combat.md` (the predecessor's knowledge), then `docs/SKILLS_DESIGN.md` §16–17.
+- **Agent:** `a708da2c97bf85c95` (successor to `a1d4562f44c7f6feb`).
+- **Branch:** `worktree-agent-a708da2c97bf85c95`.
+- **Read first:** `docs/handoff/combat.md` (the predecessor's knowledge), `docs/design/STORY_BOSSES.md` (the current work), then `docs/SKILLS_DESIGN.md` §16–17.
 
-## Current state (2026-10-04, stopped at the owner's usage limit)
+## Current state (2026-10-04)
 
-Tests green (530). Everything is committed and pushed. Merged with the integration branch at `81429e6`.
+**The machine is the owner's.** No Godot, GPU, Blender or balance sweeps until the main session says so. Design, code, `dotnet build` and `dotnet test` only.
 
-**The owner's three encounter notes are built:**
-1. **The charge director** (§16.4): waves, lulls, spikes on the people's tell, and calm in breathers, the hush and duels. Charges a minute went from 123–184 to 42–59; the most at once from 15–22 to 5–7.
-2. **Stretches** (§16.5): five per people, at 3, 7, 12, 16 and 22 minutes.
-   - Each opens with a named miniboss wearing one verb. Its kinds join only after it comes, and its champion Signs open.
-   - Two minibosses return in the long push.
-   - In the long night, heralds and pairs of minibosses take turns.
-   - New verbs: auras, calls, slams, chained charges, runs that end in a blast, chilling or poisoning bites, fanned lobs.
-3. **Variety** (§16.5): 13 new kinds and 20 minibosses on existing rigs, told apart by scale, tint and behaviour. Nine champion Signs. A model brief for each in §16.5.
-   - The story lead's names are applied, including Gutterwick for the table's Lamplings.
+**Story nights redesigned, awaiting the owner's approval.** The owner: story nights "should be much more specialized and fun - smaller arena - and they don't need endless - they have proper arpg end bosses". `docs/design/STORY_BOSSES.md` is the combat half of the experience director's `docs/design/STORY_NIGHTS_AND_TIME.md`.
+- **Shape:** each fight is 10–14 min (12 at par): a way in of three beats ended by goals, never by a clock, then a 3–4 min boss.
+- **Ember and levels:** the ember is paid about ×2.5, and waves are finite, so she meets the boss with a table night's minute-20 build. Creature levels are fixed per beat.
+- **The bosses:**
+  - Greymuzzle: the Pack's ring as a living wall, fires she lights, the cold of the moon-howl, his age as his opening; let go by her choice.
+  - Redcowl: his own fight, replacing the Red Hand's script; the laugh before the Hook, a cage whose door he waits at, the levy, the child's cry, Rav's leg as the bane.
+  - Grimtunnel: lamps, Under, pits, Snib's barrel kicked into him, the heart splitting the ground.
+  - The Barrow Lord: lines, the testudo's standard, the ranks closing in a front, laid down and then the hand at the gate.
+- **Simulation:** what it needs is listed in §5 of the design: the `StoryNight` runtime, checkpoints, the `StoryBoss` contract, moving bounds, prompts in battle, BossSense's objectives, and the `story` harness.
 
-**Other changes:**
-- **Story nights are 20 minutes** on one night clock (§16.6): ember and experience are paced to match, and they end on their boss with no long night. Every night speaks in one voice ("The dead of night").
-- **Crafting's economy fixes:** arena fodder pays 2% gold; gear comes only from carriers.
-- **A fix:** bad ground no longer buys the survivor a moment of grace each tick (§16.7).
-- **Maps, the permanent ARPG arenas:** the mechanics are designed in §17, not built. The experience lead owns their shape and loop.
-
-**Measured** (deft bot, tiers 1–3, greedy and random, table oaths, 96 runs each). The "after" row is before the last tuning: minibosses now carry a one-card chest, the Scorpion and the Decurion are softer, so it needs re-measuring.
-
-| | Before (`81429e6`) | After (`71608a4`) |
-|---|---|---|
-| Won (greedy / random) | 98% / 92% | 88% / 94% |
-| Won (tiers 1 / 2 / 3) | 97% / 94% / 94% | 94% / 94% / 84% |
-| Boss TTK (Pack / Barrow / Gutterwick / Red Hand) | 99 / 90 / 97 / 77 s | 76 / 78 / 101 / 64 s |
-| Herald TTK (greedy / random) | 19 / 25 s | 20 / 37 s (Signs) |
-| Damage a minute at 25 (greedy) | 247k | 276k (miniboss chests: since cut to one card) |
-| Miniboss TTK, median | – | 9–52 s (The Scorpion 52, the Decurion 49, both since softened) |
+**Agreed with experience** (their doc fitted at `worktree-agent-ab406cf9ddd22b03b@c59a9490`). **Build nothing until the owner approves.** The main session will say.
 
 ## Next (in order)
 
-1. **Re-measure** with the one-card chests: `arena --callings all --policies greedy,random --seeds 4 --tiers 1,2,3 --level tier --oaths table --cap 34 --bot deft`. Compare with the "before" numbers above.
-   - **Bosses fell faster after the change;** that should come back with the smaller chests. The Pack-Mother's and Red Hand's re-measure is this sweep. If TTK still runs under 90 s, raise HealthMul.
-   - The baseline harness is rebuilt from `git archive 81429e6` into the scratchpad, as described in the handoff.
-2. **The experience lead's briefs:**
-   - From tier 3, a careless draft should lose more often than a planned one (about 60% won against 85%). Use a 6-seed sweep with greedy and random, both bots, to separate the signal from noise.
-   - Check the boss floor with a late `--give` build: 35 s was seen.
-3. **The full sweep, and the long night's tail** (0.004 quadratic).
-4. **Build maps** (§17.7, with the experience and crafting leads).
-5. **Then:** oaths on bosses, the Kindling, the Ford-Warden echo, weight as a number, and the remaining Signs (Warded, Mending, Leader).
+1. **On approval, story nights:** the runtime, the contract and the Hollow by Night as the template (STORY_BOSSES §5.6), with tests. Then measure with the `story` harness once the machine is free.
+2. **When the machine is free:** the run-ups re-measure (`combat-wip-runups@e63e74fd`; the handoff's §4.1 has the exact next step).
+3. **The Kerchiefs at tier 3** (68% planned / 50% careless) stay the hardest people.
+4. **The Lamplings** don't separate careless from planned drafts (87% / 81%).
+5. **The rest of the bestiary:** ground hazards hurting the horde at half, the Ford-Warden echo, weight as a number, the Signs Warded, Mending and Leader, Echoes.
 
 ## Key decisions
 
-- **A verb is shown before it spreads:** one big body first, then the crowd. A held-back miniboss's kinds join after 2½ minutes.
-- **Signed champions are cloned defs with their kind's id:** no special cases in the AI, the view or the bestiary.
-- **The balance probe's yardstick stays the day's rank and file** (`Denizens.Horde`), so new kinds don't move every path's number.
-- **Verb timers draw dice only when a creature has the verb,** and the charge director has its own stream. This keeps the fight's dice where they were.
+- **A story's outcome is never decided by the build by accident.** The crates go up by a prompt, Greymuzzle is let go by a choice, and a cage post breaks where she stands. Auto-fire would otherwise burn the Coyle crates for a fire build.
+- **The way in teaches the boss.** Each beat's named foe previews one of its mechanics (Nightreign's gauntlet).
+- **The waves are finite and creature levels are fixed per beat,** so the build at the boss is set by the content, a slow beat is not a harder one, and a rise replays the same beat.
+- **Story bosses are their own scripts.** The table's rulers are unchanged.
+- **Inherited:**
+  - from tier 3 the night tests the draft;
+  - a night is lost to the draft, not its first minutes;
+  - endings that are not deaths wait for the last floor;
+  - maps use one ruler health (3.5× its body) on 0.65 floors.
 
 ## Notes for other areas
 
-- **Animation (a1e3002b800ee55ac):** the motion list has been sent: a quadruped howl; kneel-to-shoot; a slam; a horn, drum or rally gesture; the shamble. Crossbow and pike gear variants are wanted.
-- **Skills look and feel (a8bafe3cd8a229639):**
-  - auras, calls and slams carry `Ev.Telegraph.Faction` for the people's colour;
-  - the dead's spike tell is now `tell_horn`, not `tell_drum`.
-- **Story (a035208561a66c171):** the renames are applied. "The dead of night" wording is used for every night.
-- **Crafting (a7862117a0240deb5):** the miniboss ids have been sent, `Loot = "miniboss"`. Maps want chart items (§17.2).
-- **Experience (a33f58e68e89e3ccf):**
-  - story nights are built as agreed;
-  - the maps' mechanics are in §17, with proposed changes to your brief in §17.7;
-  - minibosses respect your Hush and the herald's duel.
-- **Performance:** auras use one spatial query per pulse; enemy ground is capped at 24.
+- **Experience (`ab406cf9ddd22b03b`):** the Roost's third beat is the levy, with the crates as an optional shortcut, so a night without crates keeps its set piece. The checkpoint snapshot is ours.
+- **Story (`a73ca9d35d0c487a9`):** the fights' words are written (`WRITING_PASS.md` §21 at `worktree-agent-a73ca9d35d0c487a9@25bb2dc3`), the banes are facts (`bane.fires`, `bane.pole`; take them off StoryLint's seed list when read; the leg is Rav's `once:redcowl`), and the three outcomes are confirmed (STORY_BOSSES §6). Older placeholders still want their pass: the Kindling's names, `lampling_ganger`, the chart mods.
+- **Arena art (`a26767f7f9955cb56`):** each place's spaces and sizes are in STORY_BOSSES §1–4. Walkable ground and colliders that change mid-fight are ours.
+- **Animation (`a435f4dd0ac80df75`):** the new poses are listed in STORY_BOSSES §6.
+- **Cinematics (`a3058a45eee41d695`, handed off):** C13's shot 1 following the laying down, and C10's two prompts, are recorded as pending approval (their handoff, Next 8). Each fight needs its arrival and end hooks (README 11a); the arrival hook knows a rise from a first arrival.
+- **Crafting (`a7debf1459f14dfe7`):** a story night pays for its own length now; the shards formula's 20-minute assumption changes with it.

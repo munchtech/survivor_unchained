@@ -297,6 +297,36 @@ public class ArtTests
         Assert.False(ArtBook.Hold(ch, "wraith_walk"));
     }
 
+    /// <summary>The prologue's night, with the ember drafting, teaches nothing to the character
+    /// until its dawn, which pays it all (two levelling systems taught at once in the first minute
+    /// was the audit's finding 4); a day's fight still teaches as it goes.</summary>
+    [Fact]
+    public void A_night_with_the_ember_lit_pays_its_lessons_at_dawn()
+    {
+        var j = Journey("warden");
+        var b = j.StartBattle(true, new CollisionWorld(80), (_, _) => 0, 0, 0, 0, 7, arena: false, ember: true);
+        Assert.True(j.EmberLit);
+        for (int i = 0; i < 60; i++)
+        {
+            var e = Foe(b, "wolf", 3, 0);
+            b.KillEnemy(e, true, null);
+            j.Killed(e, true);
+        }
+        Assert.Equal(1, j.Ch.Level);
+        Assert.True(j.World.NightLessons > 0);
+        int levels = j.Douse(b);
+        Assert.True(levels > 0 && j.Ch.Level > 1, $"{levels} levels");
+        Assert.Equal(0, j.World.NightLessons);
+        // By day the lessons come as they are learned.
+        var day = j.StartBattle(true, new CollisionWorld(80), (_, _) => 0, 0, 0, 0, 8);
+        int before = j.Ch.Level;
+        double xp = j.Ch.Xp;
+        var f = Foe(day, "wolf", 3, 0);
+        day.KillEnemy(f, true, null);
+        j.Killed(f, true);
+        Assert.True(j.Ch.Xp > xp || j.Ch.Level > before);
+    }
+
     [Fact]
     public void A_manual_teaches_a_way_of_moving_but_not_another_callings_art()
     {

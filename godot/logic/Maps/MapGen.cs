@@ -36,9 +36,14 @@ public sealed class MapSpec
     /// <summary>An arena's mood (ArenaPlaces.Moods: ashen, drowned, moonless...);
     /// empty, it is read from the name.</summary>
     public string Mood = "";
+    /// <summary>A Wayfinder's map: how many clearings stand between the start and the ruler's (and
+    /// how many of them hold altars). 0: the old map of fourteen clearings and three altars. The
+    /// way between is the same snake, cut shorter, its other turns only bends in the way.</summary>
+    public int Clearings, AltarCount;
 }
 
-public enum AreaKind { Start, Clearing, Altar, Boss }
+/// <summary>A Bend: a widening of the way where it turns, with nothing placed in it but the way's own.</summary>
+public enum AreaKind { Start, Clearing, Altar, Boss, Bend }
 
 /// <summary>A clearing: where it is, how big, what it is for.</summary>
 public sealed record Area(int Index, AreaKind Kind, double X, double Z, double R);
@@ -76,6 +81,8 @@ public sealed class MapBuild
     /// <summary>An arena's second paint, as Splat: R wet, G the ember's char,
     /// B trodden, A the ground's second material (ArenaGen).</summary>
     public byte[]? Splat2;
+    /// <summary>An arena's third paint: R moss, G the slurry's glow (ArenaGen).</summary>
+    public byte[]? Splat3;
     /// <summary>An arena's grass, one byte a texel as Splat: how thick it grows.</summary>
     public byte[]? Grass;
     /// <summary>An arena's edge, all the way round: (x, z) every two degrees.</summary>
@@ -83,10 +90,17 @@ public sealed class MapBuild
     /// <summary>Still water laid in an arena (a stream's course): points along
     /// its middle, each with its half-width; the water's top is HeightAt + Depth.</summary>
     public List<(double X, double Z, double Hw)[]> Streams = new();
+    /// <summary>Rails laid in an arena (the Dig's): points along their middle, a metre apart.</summary>
+    public List<(double X, double Z, double Hw)[]> Rails = new();
+    /// <summary>Where an arena breathes smoke up out of the ground (the Dig's pit): middle and radius.</summary>
+    public List<(double X, double Z, double R)> Vents = new();
     /// <summary>An arena's metres inside its edge (negative outside), as the heights.</summary>
     public double[]? Inside;
     public required List<Area> Areas;
     public required List<PackSpot> Packs;
+    /// <summary>The ways between the clearings, in order: from area k to area k + 1, point by point
+    /// (where to walk, and how wide it is).</summary>
+    public List<(double X, double Z, double Hw)[]> Ways = new();
     /// <summary>Can the survivor stand here: res by res, 1 m apart, as the heights.</summary>
     public required bool[] Walkable;
     public Area Start => Areas[0];
@@ -126,6 +140,10 @@ public static class MapGen
         // and back, and back again, so the map is long for its size. An
         // arena is one clearing, as wide as the square allows.
         var order = spec.Arena ? new List<(int, int)>() : Snake(rng);
+        // A map's way is cut to its clearings (the experience lead's shape: 9-10 minutes at tiers 1-2,
+        // 10-12 from 3, a pack every 13-15 s): 15 turns of the snake for three clearings, 14 for four
+        // (they are bigger fights), all 16 for five. (12 turns for three measured 7 minutes.)
+        if (spec.Clearings > 0) order = order.Take(Math.Min(order.Count, spec.Clearings switch { 3 => 15, 4 => 14, _ => 16 })).ToList();
         double cell = (Size - Margin * 2) / Grid;
         var areas = new List<Area>();
         if (spec.Arena) areas.Add(new Area(0, AreaKind.Start, 0, 0, ArenaR));
@@ -140,8 +158,23 @@ public static class MapGen
         }
         // Three of the clearings between hold altars: early, midway, late.
         int na = areas.Count;
-        if (!spec.Arena) foreach (int k in new[] { rng.Int((int)(na * 0.15), (int)(na * 0.25)), rng.Int((int)(na * 0.4), (int)(na * 0.5)), rng.Int((int)(na * 0.65), (int)(na * 0.75)) })
+        if (!spec.Arena && spec.Clearings == 0) foreach (int k in new[] { rng.Int((int)(na * 0.15), (int)(na * 0.25)), rng.Int((int)(na * 0.4), (int)(na * 0.5)), rng.Int((int)(na * 0.65), (int)(na * 0.75)) })
             areas[k] = areas[k] with { Kind = AreaKind.Altar, R = Math.Max(areas[k].R, 17) };
+        // A Wayfinder's map: its clearings spread evenly along the way, the rest of the turns bends;
+        // the altars among the clearings, never the first (the way is learned before its question).
+        if (!spec.Arena && spec.Clearings > 0)
+        {
+            int between = na - 2, n = Math.Min(spec.Clearings, between);
+            var at = Enumerable.Range(0, n).Select(i => 1 + (int)Math.Round((i + 0.5) * between / n - 0.5)).ToList();
+            for (int k = 1; k < na - 1; k++)
+                if (!at.Contains(k)) areas[k] = areas[k] with { Kind = AreaKind.Bend, R = rng.Range(8, 10) };
+            int altars = Math.Clamp(spec.AltarCount, 0, Math.Max(0, n - 1));
+            for (int i = 0; i < altars; i++)
+            {
+                int k = at[altars == 1 ? n / 2 : 1 + (int)Math.Round(i * (n - 2) / (double)(altars - 1))];
+                areas[k] = areas[k] with { Kind = AreaKind.Altar, R = Math.Max(areas[k].R, 17) };
+            }
+        }
 
         // The ways between: a curve from each clearing to the next, bowed to one side.
         var ways = new List<(double X, double Z, double Hw)[]>();
@@ -615,7 +648,10 @@ public static class MapGen
         foreach (var a in areas) placesJson[$"area{a.Index}"] = new { x = a.X, z = a.Z };
         var meta = new ZoneMeta
         {
-            Id = spec.Arena ? "arena" : "map", Size = Size, Res = Res, SplatRes = SplatRes, Leaves = spec.Theme == "autumn" ? 0.5 : spec.Arena ? 0.22 : 0.42, BlightGlow = "#9aff4a",
+            Id = spec.Arena ? "arena" : "map", Size = Size, Res = Res, SplatRes = SplatRes, Leaves = spec.Theme == "autumn" ? 0.5 : spec.Arena ? 0.22 : 0.42,
+            // A map is walked by day, where the night's bright veins read as neon over the whole of its
+            // ruler's clearing: there they smoulder.
+            BlightGlow = spec.Arena || spec.Night ? "#9aff4a" : "#3d6420",
             Bound = half - 4,
             Start = new Start { X = st.X, Z = st.Z, Facing = areas.Count > 1 ? Math.Atan2(areas[1].X - st.X, areas[1].Z - st.Z) : 0 },
             Atmosphere = spec.Night ? Atmospheres.Night : Atmospheres.Day,
@@ -632,7 +668,7 @@ public static class MapGen
         return new MapBuild
         {
             Spec = spec, Meta = meta, Ground = ground, SplatRes = SplatRes, Splat = splat, Flora = flora, Props = props, Pieces = pieces,
-            Kinds = kinds, Areas = areas, Packs = packs, Walkable = walk,
+            Kinds = kinds, Areas = areas, Packs = packs, Walkable = walk, Ways = ways,
         };
     }
 

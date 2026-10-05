@@ -2,32 +2,32 @@
  "layers": [
   {
    "name": "clay",
-   "source": "red_mud_stones",
-   "metres": 1.5,
+   "source": "dry_ground_rocks",
+   "metres": 4.0,
    "mean": [
-    0.15759,
-    0.05598,
-    0.02134
+    0.30252,
+    0.17493,
+    0.07819
    ]
   },
   {
    "name": "spoil",
-   "source": "gravel_stones",
-   "metres": 2.0,
+   "source": "gray_rocks",
+   "metres": 1.8,
    "mean": [
-    0.07927,
-    0.07826,
-    0.07336
+    0.19301,
+    0.17018,
+    0.13271
    ]
   },
   {
-   "name": "rubble",
-   "source": "rocks_ground_06",
-   "metres": 3.0,
+   "name": "ballast",
+   "source": "stony_dirt_path",
+   "metres": 2.17,
    "mean": [
-    0.28951,
-    0.23235,
-    0.17437
+    0.0678,
+    0.03853,
+    0.01949
    ]
   },
   {
@@ -41,13 +41,13 @@
    ]
   },
   {
-   "name": "dry",
-   "source": "dry_mud_field_001",
-   "metres": 3.0,
+   "name": "rust",
+   "source": "red_dirt_mud_01",
+   "metres": 1.5,
    "mean": [
-    0.13138,
-    0.09864,
-    0.06034
+    0.21101,
+    0.08934,
+    0.03665
    ]
   },
   {
@@ -62,12 +62,12 @@
   },
   {
    "name": "face",
-   "source": "quarry_wall",
-   "metres": 1.8,
+   "source": "excavated_soil_wall",
+   "metres": 2.0,
    "mean": [
-    0.09447,
-    0.07295,
-    0.04415
+    0.15083,
+    0.07502,
+    0.02366
    ]
   }
  ]

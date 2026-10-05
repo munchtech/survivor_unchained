@@ -37,6 +37,8 @@ public sealed class PersonSpec
     public string? HairColor, Hair, Skin;
     public List<string>? Outfit;
     public bool? Beard;
+    /// <summary>A hero's own beard (Lore.Hero's beards: the male hero's), or none.</summary>
+    public string? BeardStyle;
     public double? Figure, Head;
     public Dye? Dye;
     /// <summary>Her face (her body's own): its sliders, -1 to 1 about her own.</summary>
@@ -45,6 +47,8 @@ public sealed class PersonSpec
     public string? Eyes, EyeRing;
     /// <summary>The paint on her face (Lore.Paints), or none.</summary>
     public string? Paint;
+    /// <summary>The face she started from, whose painting of her skin her head wears (none: her own).</summary>
+    public string? FaceShape;
 }
 
 public sealed class Held { public string? Right, Left, Forearm; }
@@ -98,6 +102,8 @@ public sealed class FolkLine
     /// <summary>A person's line said once in a playthrough, at the first chance
     /// once it holds (npcs.json "said": Brannoc's "Twelve, I made.").</summary>
     public bool? Once;
+    /// <summary>What a once-only line does when said (Maeca, seeing the fang worn: her regard falls).</summary>
+    public List<Change>? Effects;
 }
 
 public sealed class Concern { public string Text = ""; public Cond? When; public bool? Died; }
@@ -122,6 +128,8 @@ public sealed class HairCut { public string Id = "", Name = "", Words = ""; }
 public sealed class HeroLook
 {
     public List<HairCut> Cuts = new();
+    /// <summary>His beards (the male hero's: none, stubble, short, full...), as cuts are; hers none.</summary>
+    public List<HairCut> Beards = new();
     public List<LookChoice> Eyes = new();
     public List<FacePaint> Paints = new();
     public List<FaceShape> Faces = new();
@@ -145,10 +153,12 @@ public sealed class FaceSlider
     public double Min = -1, Max = 1;
 }
 
-/// <summary>A face to start from: her face's sliders (-1 to 1), set together.</summary>
+/// <summary>A face to start from: her face's sliders (-1 to 1), set together;
+/// and, for a face that has its own, a skin (Lore.Skins) and eyes (the hero's).</summary>
 public sealed class FaceShape
 {
     public string Id = "", Name = "", Words = "";
+    public string? Skin, Eyes;
     public Dictionary<string, double> Shape = new();
 }
 

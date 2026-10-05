@@ -1,98 +1,95 @@
 # Arena art: how every arena looks, and reads
 
-Status page for the arena art lead (agent `ab03c3c85571e5085`, branch
-`worktree-agent-ab03c3c85571e5085`). Sheets in `docs/arena/`.
+Status page for the arena art lead (agent `a26767f7f9955cb56`, branch
+`worktree-agent-a26767f7f9955cb56`; took over from `a52b851395b3ab3f4`, whose
+handoff is `docs/handoff/arena_art.md`). Sheets and concepts are in `docs/arena/`.
 
 ## The brief
 
-Own every arena's look: ground, dressing, landmarks, light and air, the fight's
-readability on it, and how each tells its place in the valley. The endgame has two
-kinds, each with its own identity: the **ember scars** (the survivors arenas, a
-night each, `ArenaRun`) and the **Wayfinder's atlas** (the permanent build maps,
-"like PoE"; story: "the places the road forgets", in Ysolde's hand, never the four
-scars by day).
+I own every arena's look: the ground, the dressing, the landmarks, the light
+and air, how readable the fight is on it, and how each arena shows its place in
+the valley. The endgame has two kinds of arena, each with its own look:
+- the **ember scars**: the survivors arenas, one night each (`ArenaRun`);
+- the **Wayfinder's atlas**: the permanent build maps, "like PoE" (story calls
+  them "the places the road forgets").
 
-## Audit (before), 1920×1080, all four peoples, empty, wide and at minute 25
+## Current state (paused for the owner, mid-pass)
 
-Sheets: `docs/arena/before_empty.jpg`, `before_wide.jpg`, `before_horde.jpg`.
-Grades 1–5 (the owner's bar is 5). Arenas are always night (the ember burns only in
-the dark), so "day and night" applies to the atlas, not the scars.
+**Honest grades, judged at full resolution:** Barrow ~2.5, Ruts ~2.5, Hollow
+~3, Dig ~3. The ground reads flat, like asphalt or paint blobs, from the arena
+camera. Under the moonless mood ("Deep" and "Lampless" names) 48–80% of the
+frame is flat black.
 
-| Arena | Soul | Place | Reads | Beauty | Why |
-|---|---|---|---|---|---|
-| The Risen (barrow) | 2 | 2 | 2 | 2 | one lit lawn with lilac gravel blotches; KayKit graves in rows are the only story; skeleton crowd blue-grey on grey-green |
-| The Pack | 1 | 1 | 1 | 1 | same lawn; wolves a dark mass on dark green; flat-shaded pale-blue cliff rocks in the play space read as the pale-blue "stand here" telegraph |
-| The Kerchiefs | 1 | 1 | 2 | 1 | same lawn; a few broken walls and crates; the red crowd reads, nothing says "road" |
-| The Lamplings | 1 | 1 | 2 | 1 | same lawn; lanterns; nothing says "dig" |
+**Minute-25 horde frames (done; seeds 947/311/523/739):**
+- The Kerchiefs, the Risen and the lamplings all read over their ground.
+- The Pack's dark-grey wolves are a dark mass on the Hollow's dark litter.
+- The red elite discs are heavy on the Dig's clay.
+- The skills lead says the lamplings' white-gold discs are blow telegraphs,
+  already toned down on their branch.
 
-Common faults: every arena the same ground whatever its name ("The Ashen Fen" was a
-Risen map); the clearing's edge a hard tree line with no meaning; the ground's value
-as bright as the dead; no landmark at all; cover up to 8 m tall (crypts) in the play
-space.
-
-## Current state
-
-**Handed off** (context past 500k): `docs/handoff/arena_art.md` has the state, honest
-grades from the first on-screen sheets (`docs/arena/wip1_*.jpg`: barrow ~3, ruts ~3,
-hollow ~2, dig ~2; the ring too strong, a lava field) and the next steps.
-
-**Built and seen on screen (first pass):**
-- `logic/Maps/ArenaPlaces.cs`: each people's place (barrow, hollow, ruts, dig), its
-  own night (key, hemi, fog, grade) and air (mist, haze, moon dapple, ember colour),
-  and moods read from the table's adjective (Ashen, Drowned, Lampless...). Names in
-  the valley's words from story.
-- `logic/Maps/ArenaGen.cs` + `Arenas/{Barrow,Hollow,Ruts,Dig}.cs`: an arena per
-  place. Common: the wandering edge, the ember ring's char, the walls, cover kept off
-  lanes. Barrow: the Legion's straight road, long barrows, opened graves, ash, a
-  sealed howe and a broken gate at the ends. Hollow: a bowl, the slurry stream, roots
-  from great trees, the den under a fallen giant, the Pack's runs. Ruts: the hollow
-  way with water in its ruts, the ravine's walls, the camp (fires, palisade, cage,
-  the pot for forty), wrecked wagons. Dig: the pit at the edge with its glow and
-  headframe, rails and carts, spoil heaps, slurry pools, terraced walls, gold lamps.
-- `tools/godot/arena_ground.py` → `godot/art/arena/<place>/`: seven Poly Haven CC0
-  scans per place (names in `layers.json` and `public/assets/CREDITS.md`).
-- `shaders/arena_ground.gdshader`, `View/ArenaGround.cs`: the place's materials
-  height-blended by two paints; standing water that holds the moon; trodden ground;
-  the ember's char with glowing cracks; dapple; the dark past the ring; the whole
-  ground held below the living (value, sat).
-- `View/ArenaEdge.cs`, `shaders/ember_curtain.gdshader`: sparks off the ring, a low
-  lit smoke curtain past it, mist in a fog volume, the stream's water.
-- Tests: `ArenaPlaceTests` (each people's place; nothing over 2.2 m in the fight
-  but thin posts; the story's rules; names and moods; the ring all round).
+**This pass so far (committed, not yet judged in full):**
+- **Ground shader** (`arena_ground.gdshader`, `ArenaGround.Layer`):
+  - per-layer contrast (`Con`), so a scan's grain survives 30 m;
+  - macro relief: each layer's `Lift` and `Bump` in metres, plus moss domes,
+    sunk pools and trodden ground. Bump mapping by derivatives turns these
+    into light on the edges between materials.
+- **Grass that reads** (`arena_grass.gdshader`, `Grass.Arena`, `ArenaGround.GrassLook`):
+  - whole tussocks of 24–26 arched blades, dark at the root and lit at the
+    tips, gathered into swathes with earth between;
+  - on in the Barrow and the Ruts and judged there: they read as grass now;
+  - the Dig and the Hollow have looks set but no grass paint yet.
+- **New scans:** the Dig's spoil is now `gray_rocks` (blasted lumps) and the
+  Barrow's road `grassy_cobblestone` (polygonal slabs like the Via Appia).
+  Both are flattened with a wider radius so their stones keep their shading.
+  They are imported but **not yet seen in game**.
+- **Concepts** for the Barrow and the Ruts: `docs/arena/concept_barrow_{0,1}.jpg`
+  and `concept_ruts_{0,1}.jpg`. The Barrow's targets are dense dry tussocks,
+  slabs with grass in the joints, dark open graves and mist. The Ruts' are
+  silvered puddles, green verges and the camp's fires.
 
 ## Key decisions
 
-- **A scar is its people's own ground** (story confirmed): never "a fen" for the Risen.
-- **Landmarks at the edge only; cover inside under 2.2 m** (thin poles excepted):
-  the experience director's rule, held by a test.
-- **The ground is the darkest thing that matters:** its value and saturation are held
-  down in the shader so the living, the dead and her light read over it.
-- **The ring is the scar's lip** (story's words): char and glowing cracks, sparks,
-  smoke lit from below; the place goes on past it into the dark.
-- **Story's must-nots are in code:** no crypt (the sealed door is the Verge's), no
-  human bones in the Hollow, no skulls in the Kerchiefs' camp, empty rusted lamp
-  posts on the Legion road (no oil for years), lamplings' lamps gold.
+- **A scar is its people's own ground** (story confirmed).
+- **Landmarks stand at the edge only; cover inside stays under 2.2 m.** A test holds this.
+- **Readability by local contrast and light, not by a black ground.**
+  - The old rule of keeping everything dark made asphalt.
+  - The ground stays under the living, but keeps its grain, its relief and its
+    own light pools.
+  - The experience director's test: in a minute-6 frame, no more than a fifth
+    of the screen reads as flat black (`black.py` in my scratchpad measures it).
+- **Grass is geometry, in tussocks.** Thin blades in the ground's own colour
+  read as scratches, and single tufts read as stars.
+- **The ring is a line, not a field** (inherited, holds).
 
-## Next
+## Next (in order)
 
-1. Tame the ring; check each place's edge landmarks; minute-25 hordes on the new
-   ground; iterate every place to 5s.
-2. Per-layer albedo targets (`ArenaGround.Looks`) are the value knob; the meadow
-   grass is off in arenas (it reads as stars from above).
-3. Landmark art per place (the Legion's sealed howe with its VII and dark sigil, the
-   den's fallen giant, the Roost's palisade and washing lines, the Dig's headframe
-   and pump) via Blender/make3d where the kits fall short.
-4. The atlas maps' look (other places: a Legion camp in the hills, an Order chapel,
-   the Kiln Ford's ferry), once their runtime exists.
-5. Measure draw calls and frame time with performance.
+1. **Exact next step:** build, then shoot `dig.txt` and `e.txt` (the scratchpad
+   `arena3/`; `batch.py SPEC PREFIX --build`). Judge the new spoil and road
+   scans at full resolution, and tune their `Looks` (Y, Con, Lift, Bump).
+2. The Dig:
+   - rust drifts: make them a mottle inside the clay, not blobs;
+   - spoil heaps: taller, lumpy, with coal-lump scatter;
+   - grass paint toward the edges;
+   - scattered stones;
+   - timber pieces made in `Pieces.Arena.cs` (stacks, props, a windlass);
+   - lamps.
+3. The Hollow's den: on screen and readable. Also wolves against the litter:
+   warmer, mid-value litter (try `leaves_forest_ground`) and moss that isn't paint.
+4. The Barrow: the howe on screen, plus place light (corpse-candles over open
+   graves) for the moonless mood. The Ruts: the camp on screen, the grey
+   cauldron replaced, puddles that hold the sky (sheen).
+5. The moonless mood: each place's own lights carry it.
+6. Horde frames again on all four; lift each arena to 4–5.
 
 ## Notes for other areas
 
-- **Experience (ad1f5623590e09883):** the ground's value is held under the living and
-  the dead; the crypt is gone from the play space (the new barrow has none; a test
-  holds it); confirm with a 5-minute autopilot run.
-- **Skills:** large ground effects should not be pale blue, amber, violet or grey
-  discs; the ground under them is now darker and less saturated.
-- **Performance:** new per arena: one ground material (7-layer arrays), ~700 ring
-  sparks, a smoke ring mesh, one fog volume, up to ~30 omni lights (ring 14).
-- **Story:** names wired as sent (`ArenaPlaces.Names`, `Moods`).
+- **Performance (a7145e18b3eb78294):** arena grass is now on in the Barrow and
+  the Ruts:
+  - about 36k tussock instances × 26 blades × 3 triangles, around 2.8M
+    triangles, similar to the overworld meadow;
+  - no shadows;
+  - the wider cell at lower qualities follows `GrassCell`.
+- **Experience (ad1f5623590e09883):** your near-black barrow (moonless) is on
+  my list as item 4/5. The fix is place light, not a lifted floor.
+- **Skills (a63cd93fc73d5ed79):** you're checking the telegraph discs against
+  the brighter clay; I'll judge them again after the Dig pass.

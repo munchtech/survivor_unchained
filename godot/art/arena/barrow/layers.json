@@ -22,12 +22,12 @@
   },
   {
    "name": "way",
-   "source": "stone_pathway_02",
-   "metres": 1.95,
+   "source": "grassy_cobblestone",
+   "metres": 2.0,
    "mean": [
-    0.05755,
-    0.03947,
-    0.02451
+    0.19297,
+    0.13533,
+    0.08463
    ]
   },
   {

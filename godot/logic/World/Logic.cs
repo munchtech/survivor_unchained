@@ -103,6 +103,9 @@ public sealed class Change
     public NpcFlagChange? NpcFlag;
     public FactionChange? Faction;
     public string? Give, Take;
+    /// <summary>With a give: who made it and the moment ("maeca:shedFur"), so the thing carries
+    /// their history line (crafting.json, "history.shedFur").</summary>
+    public string? Made;
     public int? Qty, Rarity;
     public double? Gold;
     public QuestChange? Quest;
@@ -237,6 +240,7 @@ public static class Rules
         {
             int qty = e.Qty ?? 1;
             var it = Inventory.Make(ch, e.Give, qty: qty, rarity: e.Rarity);
+            if (e.Made?.Split(':') is [var by, var moment]) (it.History ??= new()).Add(Crafting.History(w, by, moment));
             var name = Items.Get(e.Give).Name;
             if (Inventory.AddToPack(ch, it)) ctx.Notify(new Notice(qty > 1 ? $"{name} ×{qty}" : name, NoticeTone.Item));
             else

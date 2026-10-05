@@ -707,8 +707,8 @@ sealed class Playthrough
             case "maps": Mode = Mode.Maps; return false;
             case "rest": Mode = Mode.Rest; return false;
             case "fortune": Chapter(where); return false;
-            case "craft": return false;
-            case "sellpelts": case "bounty": return J.Service(a, B);
+            case "craft": case "still": return false;
+            case "sellpelts": case "bounty": case "slurry": return J.Service(a, B);
         }
         Tell("broken", $"{where}:action", $"A choice asks the game for '{a}', which it does not know", "data/content/dialogue.json");
         return J.Service(a, B);

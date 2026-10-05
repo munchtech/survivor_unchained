@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using Godot;
 using SurvivorUnchained.Rpg;
 using SurvivorUnchained.Ui;
@@ -212,6 +213,20 @@ public partial class Game
         // --step N --part N (pictures of a step, and of the look's part).
         if (Args.Get("step") is string st && int.TryParse(st, out var sn)) draft.Step = Math.Clamp(sn, 0, 4);
         if (Args.Get("part") is string pt && int.TryParse(pt, out var pn)) draft.Section = pn;
+        // --face slider=v,slider=v (pictures of a face shaped so), --hair ID
+        if (Args.Get("face") is string fc)
+            foreach (var kv in fc.Split(',', StringSplitOptions.RemoveEmptyEntries))
+                if (kv.Split('=') is [var k, var v] && double.TryParse(v, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var x))
+                    draft.Face[k] = x;
+        if (Args.Get("hair") is string hs) draft.HairStyle = hs;
+        // --preset ID: one of her faces to start from (its sliders and painting); --skin ID, --eyes ID
+        if (Args.Get("preset") is string ps && Loadouts.HeroKit(draft.Sex)?.Faces.FirstOrDefault(f => f.Id == ps) is { } pf)
+        {
+            draft.FaceShape = pf.Id;
+            foreach (var kv in pf.Shape) draft.Face.TryAdd(kv.Key, kv.Value);
+        }
+        if (Args.Get("skin") is string sk) draft.Skin = sk;
+        if (Args.Get("eyes") is string ey) draft.Eyes = ey;
         DressFigure(draft);
         PoseCreate();
         var create = new CreateScreen(this, draft);

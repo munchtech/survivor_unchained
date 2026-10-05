@@ -23,7 +23,10 @@ public partial class TitleScreen : Overlay
     string panel = "";
     bool left;
 
-    public TitleScreen(Game g) : base(g) { menu = new MenuList(Refresh, 24); }
+    /// <summary>The line the ember starts on: back from the credits, it is still on Credits.</summary>
+    string? focus;
+
+    public TitleScreen(Game g, string? focus = null) : base(g) { menu = new MenuList(Refresh, 24); this.focus = focus; }
 
     static readonly Dictionary<string, string> ZoneNames = new() { ["lowford"] = "The Low Ford Road", ["waystation"] = "The Waystation", ["verge"] = "Thornhollow Verge" };
 
@@ -75,8 +78,9 @@ public partial class TitleScreen : Overlay
         if (slots.Count > 0) menu.Add("Journeys", () => Panel("load"));
         menu.Add("Settings", () => Panel("settings"));
         menu.Add("Controls", () => Panel("controls"));
-        menu.Add("Credits", () => Panel("credits"));
+        menu.Add("Credits", G.Credits);
         menu.Add("Quit", G.QuitGame);
+        if (focus != null) { menu.Focus = Math.Max(0, menu.Items.FindIndex(i => i.Label == focus)); focus = null; }
         var list = menu.Build();
         list.Position = new Vector2(134, 560);
         AddChild(list);
@@ -85,10 +89,10 @@ public partial class TitleScreen : Overlay
         if (panel != "")
         {
             var box = Style.Panel(Style.Plate(20));
-            box.Position = new Vector2(540, panel == "controls" ? 90 : panel == "credits" ? 300 : 500);
-            box.CustomMinimumSize = new Vector2(panel == "controls" ? 820 : panel == "credits" ? 760 : 560, 0);
+            box.Position = new Vector2(540, panel == "controls" ? 90 : 500);
+            box.CustomMinimumSize = new Vector2(panel == "controls" ? 820 : 560, 0);
             Nav.Scope = box;
-            var v = Style.V(10, new Plaque(panel switch { "load" => "Journeys", "settings" => "Settings", "controls" => "Controls", _ => "Credits" }, 26, 50));
+            var v = Style.V(10, new Plaque(panel switch { "load" => "Journeys", "settings" => "Settings", _ => "Controls" }, 26, 50));
             switch (panel)
             {
                 case "load":
@@ -109,10 +113,7 @@ public partial class TitleScreen : Overlay
                     }
                     break;
                 case "settings": v.AddChild(SettingsPanel.Build(G, Refresh)); break;
-                case "controls": v.AddChild(new ControlsPanel()); break;
-                default:
-                    foreach (var line in Credits) v.AddChild(Style.Label(line, Style.Text, Style.Small, new Color("#ddd0b8"), true));
-                    break;
+                default: v.AddChild(new ControlsPanel()); break;
             }
             box.AddChild(v);
             AddChild(box);
@@ -158,21 +159,6 @@ public partial class TitleScreen : Overlay
         }
         catch (Exception) { return (null, false); }
     }
-
-    static readonly string[] Credits =
-    {
-        "People and their clothes, hair and movement: Quaternius (Universal Base Characters, Modular Character Outfits, Universal Animation Libraries 1 and 2; CC0).",
-        "A woman survivor's body: a figure made for the game in ComfyUI, rigged from the Genshin Style Anime Female Base Mesh by donizaki (Sketchfab, CC BY 4.0).",
-        "The heroine's movement: keyed for the game; her ways of standing from the 100STYLE dataset by Ian Mason et al. (CC BY 4.0), retargeted and re-keyed.",
-        "Weapons, from Sketchfab (CC BY 4.0): Chevalier Sword by rubenve; Viking Sword by Michael Makivic; medieval sword by LowSeb; Zweihander by Siesta; Medieval Mace by Kama Modeling; Viking battle axe by Mikhail Antonov; Snake Axe by Ashley Jay Thornton; Mage Staff by RMBehan; Medieval Crossbow by iedalton; Medieval Shield by Artem Mykhailov; Silver Bladed weapons by Peter Nox.",
-        "Houses, walls and props: Quaternius (Medieval Village MegaKit, Fantasy Props MegaKit, Stylized Nature MegaKit; CC0).",
-        "The ground: Poly Haven (photoscanned materials; CC0).",
-        "Creatures, from Sketchfab (CC BY 4.0): Animated Wolf Scene by Roo; Animated Realistic Boar by AnimalMesh 3D; Goblin Ghoul by Rodrigo Bento (the lamplings).",
-        "Effects and sounds: Kenney (Particle Pack, Impact Sounds, RPG Audio, Interface Sounds; CC0). Field recordings from OpenGameArt (CC0): thimras, PagDev, Ted Kerr, vishwajai.",
-        "World, lore and combat roots: The Ember Watch.",
-        "Typefaces: Cinzel, Alegreya, Alegreya Sans (OFL).",
-        "Built with Godot.",
-    };
 
     void Panel(string p) { panel = panel == p ? "" : p; Refresh(); }
 
@@ -222,6 +208,8 @@ public sealed class CreationDraft
     public int Step;
     public string Name = "", Archetype = "warden", WeaponItem = "worn_oathblade", Ability = "shield_bash", Background = "hunter";
     public string Palette = "steel", Model = "knight", Cloak = "calling", Skin = "fair", Hair = "as_is", HairStyle = "long";
+    /// <summary>A hero's own beard (Lore.Hero's beards: the male hero's), or "".</summary>
+    public string BeardStyle = "";
     public bool Headgear = true, Beard = true;
     /// <summary>The survivor is the heroine, unless a man is chosen.</summary>
     public Sex Sex = Sex.Female;
@@ -230,7 +218,7 @@ public sealed class CreationDraft
     /// (her own face where none is moved) and the face it started from.</summary>
     public string Eyes = "moss", Paint = "none", FaceShape = "own";
     public Dictionary<string, double> Face = new();
-    /// <summary>The look step's part (body, hair, face, paint) and the face's group of sliders.</summary>
+    /// <summary>The look step's part (hair, face, shape, paint, body) and the face's group of sliders.</summary>
     public int Section, FaceGroup;
 
     public CreationChoice Choice() => new()
@@ -240,15 +228,17 @@ public sealed class CreationDraft
         // (a hero's own body's face, eyes and paint: Loadouts.HeroKit)
         Face = Loadouts.HeroKit(Sex) != null ? new Dictionary<string, double>(Face) : null,
         Eyes = Loadouts.HeroKit(Sex) != null ? Eyes : null, Paint = Loadouts.HeroKit(Sex) != null ? Paint : null,
+        FaceShape = Loadouts.HeroKit(Sex) != null ? FaceShape : null,
+        BeardStyle = Loadouts.HeroKit(Sex) is { Beards.Count: > 0 } && BeardStyle != "" ? BeardStyle : null,
     };
 
     /// <summary>The figure by the fire is built again when this changes (who
     /// they are, what they wear and hold); a man's hair and skin are his clothes' kit.</summary>
-    public string BodyKey => $"{Archetype}|{Model}|{WeaponItem}|{Palette}|{Headgear}|{Cloak}|{Sex}|{Figure}|{Beard}" + (Sex == Sex.Male ? $"|{Skin}|{Hair}|{HairStyle}" : "");
+    public string BodyKey => $"{Archetype}|{Model}|{WeaponItem}|{Palette}|{Headgear}|{Cloak}|{Sex}|{Figure}|{Beard}" + (Sex == Sex.Male ? $"|{Skin}|{Hair}|{HairStyle}|{BeardStyle}" : "");
 
     /// <summary>What the figure looks like: changes when this does (her hair,
     /// skin, eyes, face and paint are changed on her where she stands).</summary>
-    public string LookKey => $"{BodyKey}|{Skin}|{Hair}|{HairStyle}|{Eyes}|{Paint}|{string.Join(",", Face.OrderBy(f => f.Key).Select(f => $"{f.Key}={f.Value:0.###}"))}";
+    public string LookKey => $"{BodyKey}|{Skin}|{Hair}|{HairStyle}|{Eyes}|{Paint}|{FaceShape}|{string.Join(",", Face.OrderBy(f => f.Key).Select(f => $"{f.Key}={f.Value:0.###}"))}";
 
     /// <summary>A body chosen: its own hairstyle kept if it is one of its own,
     /// its own first otherwise; a hero's own eyes, paint and face start as theirs.</summary>
@@ -261,6 +251,7 @@ public sealed class CreationDraft
             HairStyle = sx == Sex.Female ? Loadouts.HerHair(HairStyle) : kit.Cuts.Any(c => c.Id == HairStyle) ? HairStyle : kit.Cuts[0].Id;
             Eyes = kit.Eyes.FirstOrDefault()?.Id ?? "";
             Paint = kit.Paints.FirstOrDefault()?.Id ?? "none";
+            BeardStyle = kit.Beards.FirstOrDefault()?.Id ?? "";
             FaceShape = kit.Faces.FirstOrDefault()?.Id ?? "";
             Face = new Dictionary<string, double>(kit.Faces.FirstOrDefault()?.Shape ?? new());
         }

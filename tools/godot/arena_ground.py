@@ -40,7 +40,7 @@ PLACES = {
     'barrow': [
         ('turf', 'withered_grass'),         # dead grass over chalk
         ('bare', 'ground_grey'),            # grey soil where the grass gave up
-        ('way', 'stone_pathway_02'),        # the Legion's road, its slabs sunk and broken
+        ('way', 'grassy_cobblestone', 160), # the Legion's road: polygonal slabs, grass in the joints
         ('grave', 'brown_mud_02'),          # earth dug and heaped: the graves opened
         ('ash', 'burned_ground_01'),        # where the ember burned through
         ('rubble', 'rocky_trail'),          # chalk and stone round the ruins
@@ -49,8 +49,8 @@ PLACES = {
     # The Pack's Hollow: a sunk bowl of old wood, the leaf litter of years, roots
     # breaking through, the stream the Dig's slurry runs in.
     'hollow': [
-        ('litter', 'forest_leaves_03'),     # dark, rotted leaves
-        ('moss', 'brown_mud_leaves_01'),    # moss over wet mud
+        ('litter', 'dry_decay_leaves'),     # the fallen leaves of years, red-brown
+        ('rot', 'forest_leaves_03'),        # older, darker, rotted down (moss is the shader's)
         ('roots', 'roots'),                 # where the great trees' roots surface
         ('mud', 'mud_forest'),              # trodden black mud: the den's runs, the banks
         ('bed', 'river_small_rocks'),       # the stream's bed
@@ -71,13 +71,13 @@ PLACES = {
     # The Lamplings' dig: ember-stained clay, black spoil, broken stone, the
     # slurry the Dig cooks running where it was spilled.
     'dig': [
-        ('clay', 'red_mud_stones'),         # the valley's ember clay
-        ('spoil', 'gravel_stones'),         # black spoil, tipped
-        ('rubble', 'rocks_ground_06'),      # broken stone
+        ('clay', 'dry_ground_rocks'),       # the working's floor: ochre clay and broken stone
+        ('spoil', 'gray_rocks', 160),       # black spoil, tipped: blasted rock in lumps
+        ('ballast', 'stony_dirt_path'),     # broken stone: the rails' bed, the blast drifts
         ('slurry', 'brown_mud_03'),         # spilled slurry, glossy (the shader wets it)
-        ('dry', 'dry_mud_field_001'),       # baked clay
+        ('rust', 'red_dirt_mud_01'),        # clay stained rust by the ember, in drifts
         ('burnt', 'burned_ground_01'),      # ember-burnt
-        ('face', 'quarry_wall'),
+        ('face', 'excavated_soil_wall'),    # the working's cut walls
     ],
 }
 
@@ -189,9 +189,12 @@ def build(place, layers, info):
     out.mkdir(parents=True, exist_ok=True)
     strips = {k: Image.new('RGB', (SIZE, SIZE * len(layers))) for k in ('albedo', 'normal', 'arh')}
     meta = []
-    for i, (name, asset) in enumerate(layers):
+    for i, layer in enumerate(layers):
+        name, asset = layer[0], layer[1]
+        # A layer of big stones keeps their light and shade (a wider flattening).
+        radius = layer[2] if len(layer) > 2 else 48
         d = files(asset)
-        a = flatten(square(Image.open(d / 'diff.jpg').convert('RGB')))
+        a = flatten(square(Image.open(d / 'diff.jpg').convert('RGB')), radius)
         n = square(Image.open(d / 'nor.png').convert('RGB'))
         ao, rough, _ = square(Image.open(d / 'arm.jpg').convert('RGB')).split()
         h = height(d / 'disp.png')
@@ -229,7 +232,7 @@ def main():
         info = json.load(r)
     for place in want:
         build(place, PLACES[place], info)
-    credit({a for p in want for _, a in PLACES[p]})
+    credit({layer[1] for p in want for layer in PLACES[p]})
 
 
 if __name__ == '__main__':

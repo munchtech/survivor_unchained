@@ -72,6 +72,11 @@ public sealed class AffixDef
     public string? Grants;
     /// <summary>The least rarity it rolls on (skills come only on fine gear).</summary>
     public int MinRarity;
+    /// <summary>Given, never rolled: a trophy's power set into a piece (Greymuzzle's fang), or what the
+    /// slurry leaves in a steeped one.</summary>
+    public bool Unique;
+    /// <summary>The slurry's: strong, with a price; shown in its sick green.</summary>
+    public bool Slurry;
     /// <summary>What it gives the night's ember beyond numbers (docs/SKILLS_DESIGN.md,
     /// "Gear and the ember"): spark, reroll, refusal, roads, omens, or stand:PASSIVE,
     /// which counts as that passive in an evolution's recipe. One to an item,
@@ -188,6 +193,22 @@ public static class Items
         new() { Id = "of_the_art", Name = "of the Art", Prefix = false, Slots = [ItemKind.Ring, ItemKind.Amulet, ItemKind.Head, ItemKind.Relic],
             Mods = t => [M(Stat.AbilityCooldown, ModKind.More, -(0.05 + t * 0.03)), M(Stat.AbilityPower, ModKind.Inc, 0.05 + t * 0.05)],
             Text = t => $"Your art {Pct(0.05 + t * 0.03)} sooner and {Pct(0.05 + t * 0.05)} stronger" },
+
+        /* Set, never rolled: a trophy's power in a piece (docs/CRAFTING_DESIGN.md 10.1). */
+        new() { Id = "greymuzzles", Name = "Greymuzzle's", Prefix = true, Slots = [ItemKind.Weapon, ItemKind.Amulet], Unique = true,
+            Mods = _ => [M(Stat.VsOf(Family.Wolf), ModKind.Flat, 0.3), M(Stat.VsOf(Family.Beast), ModKind.Flat, 0.3), M(Stat.VsOf(Family.Boar), ModKind.Flat, 0.3)],
+            Text = _ => "+30% damage to wolves and beasts" },
+
+        /* The slurry's, past the seams (design 9): strong, and each with its price. */
+        new() { Id = "fevered", Name = "Fevered", Prefix = true, Unique = true, Slurry = true,
+            Slots = [ItemKind.Weapon, ItemKind.Offhand, ItemKind.Head, ItemKind.Body, ItemKind.Cloak, ItemKind.Amulet, ItemKind.Ring, ItemKind.Relic],
+            Mods = _ => [M(Stat.Damage, ModKind.Inc, 0.2), M(Stat.Healing, ModKind.Inc, -0.15)], Text = _ => "+20% damage; you mend 15% less" },
+        new() { Id = "of_the_sump", Name = "of the Sump", Prefix = false, Unique = true, Slurry = true,
+            Slots = [ItemKind.Weapon, ItemKind.Offhand, ItemKind.Head, ItemKind.Body, ItemKind.Cloak, ItemKind.Amulet, ItemKind.Ring, ItemKind.Relic],
+            Mods = _ => [M(Stat.Area, ModKind.Inc, 0.25), M(Stat.MoveSpeed, ModKind.Inc, -0.1)], Text = _ => "+25% area; you are 10% slower" },
+        new() { Id = "pipe_lads", Name = "Pipe-Lad's", Prefix = true, Unique = true, Slurry = true,
+            Slots = [ItemKind.Weapon, ItemKind.Offhand, ItemKind.Head, ItemKind.Body, ItemKind.Cloak, ItemKind.Amulet, ItemKind.Ring, ItemKind.Relic],
+            Mods = _ => [M(Stat.CritChance, ModKind.Flat, 0.15), M(Stat.MaxHealth, ModKind.Inc, -0.1)], Text = _ => "+15% critical chance; 10% less health" },
 
         /* Skills worn: fine gear that fights for you. */
         new() { Id = "of_motes", Name = "of Seeking Motes", Prefix = false, Slots = [ItemKind.Amulet, ItemKind.Relic, ItemKind.Ring], Grants = "seeking_motes", MinRarity = 2,
