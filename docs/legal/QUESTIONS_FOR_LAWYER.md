@@ -10,7 +10,7 @@ Updated the same evening by the successor legal lead (aab20546fe06daa89) for the
 - Expected first-year revenue: not yet given.
 - The owner made The Ember Watch, the source of the world and lore, himself with Claude. No third party is involved.
 - "Warmed" no longer has any effect in play.
-- The heroes' base bodies came from Krea's website and are to be replaced with our own before launch.
+- The heroes' base bodies were made locally: Krea 2 Turbo pictures, made into meshes by TRELLIS 2. They are kept, with conditions.
 - The hymn will be made in Suno.
 
 These change several answers below.
@@ -66,10 +66,10 @@ These change several answers below.
 
 ## Added after the owner's answers (4 October 2026, evening)
 
-15. **The base bodies from Krea's website** [5b]. We plan to replace them before launch. If any of them is still in the build on launch day:
-    - Krea's Terms of Use grant only a limited licence. The pricing page shows a commercial licence on paid plans only, and the plan used is unknown.
-    - Krea's 3D tool defaults to Hunyuan3D 2.1. Its licence (§5(c)) bars displaying Output outside a Territory that excludes the EU, UK and South Korea. Does that restriction bind a Krea customer, who never accepted Tencent's licence?
-    - What is the exposure, and is a paid-plan receipt enough to ship in the meantime?
+15. **The base bodies** [5b]. Corrected by the owner: the pictures were made locally with the Krea 2 Turbo open weights, and the meshes locally with TRELLIS 2 (MIT). Krea's website was not involved. The hero's picture probably used a Civitai LoRA whose creator allows commercial use of images; its training data is unpublished.
+    - Is the owner's signed record (`docs/legal/records/BODIES_RECORD.md`) enough evidence?
+    - Is a mesh made from a Krea Output itself "commercial use of Outputs" under §2.3 (the US$1M cap)? We assume so.
+    - Does a third-party LoRA's unknown training data add any exposure beyond the base model's own unsettled training question?
 16. **Suno for the hymn** [28].
     - On a Pro or Premier plan, Suno assigns its rights in Output to the user, and commercial use needs a permitted download. Is that enough for a song in a commercial game and its trailers?
     - What is our exposure if the labels' litigation against Suno ever finds its outputs infringing, given a song from our own lyrics with no artist or song named in the prompt?

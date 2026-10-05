@@ -235,8 +235,14 @@ I checked these in the repository at `f56ee42` (integration branch) and in rende
 2. Add `tools_scenes/*` to the release `exclude_filter`.
 3. Move to a resource list the game actually uses (the "selected resources" mode, or an exclude list for unused third-party packs and bodies). Then check the `.pck` contents before upload.
 
-**Status (4 Oct, evening).**
-- The performance lead (a7145e18b3eb78294) has the exact spec:
+**Status (4 Oct, evening): done in code** by the performance lead at 8a770667, now merged:
+- `Args.Dev` = `OS.IsDebugBuild()` gates the developer switches;
+- the excludes below are in all three presets.
+
+What remains is my review of the exported `.pck` listing, when the GPU is free.
+
+The spec it implements:
+- The performance lead (a7145e18b3eb78294) had the exact spec:
   - `Args` in `godot/src/Shots.cs` returns nothing when `!OS.IsDebugBuild()`. Every developer argument goes through it, so one change gates them all.
   - The `exclude_filter` list: `tools_scenes/*`, the anime and woman bodies and their hair, `hero.glb` until his base garment exists, the unused KayKit, web and Poly Haven files, and `art/vo/*` for the placeholder voices.
   - A zip-pack listing for me to review.
@@ -273,6 +279,17 @@ I checked these in the repository at `f56ee42` (integration branch) and in rende
    - `CREDITS.txt`, with every CC BY credit and the AI tools line (issue 24).
 3. Generate `CREDITS.txt` from the provenance ledger so it can't drift.
 4. I will review the screen and the folder before launch.
+
+**Status (4 Oct, evening): built; reviewed on paper, not yet seen in game.** The UI design lead (a26f87c39952dcd9c) built it at 178768aa:
+- `Content/Credits.cs` cleans `CREDITS.md` by rule into `data/credits.json` and `licences/CREDITS.txt`, and a golden-file test keeps them in step.
+- The page opens from the title and the pause menu.
+- Godot's notices are read from the engine.
+- `licences/` is packed and copied beside each build.
+
+I compared the shipped notice texts with their sources. `GODOT_LICENSE.txt` and `GODOT_COPYRIGHT.txt` match 4.5.1-stable, the two .NET files match `release/8.0`, and the OFL texts match `art/fonts`. Every CC BY entry carries its source, creator, licence link and changes. Open items (sent to the lead):
+- drop the entries for works the release excludes;
+- make the AI section the single list in `STEAM_CHECKLIST.md` E;
+- see the screen in game when the GPU is free.
 
 **Specification** (for the UI design lead's successor; sources checked 4 Oct 2026).
 - **Godot 4.5.1:**
@@ -484,7 +501,7 @@ These are my rulings on the auditor's findings (`ASSET_PROVENANCE.md`), updated 
 
 **Action.**
 1. Record our content-filter practice in writing: every Krea output is reviewed by an agent and approved by the owner before it ships, and prompts never name real people. That is our §4.2 compliance.
-2. Keep a list of every Krea-made shipped file (the auditor is building it).
+2. Keep a list of every Krea-made shipped file (the auditor is building it). It includes the heroine's and hero's bodies and the 26 creation cameos, because the bodies were sculpted from Krea 2 Turbo pictures (issue 5(b)).
 3. Either budget for an enterprise licence (ask Krea for a quote before launch; opensource@krea.ai), or schedule replacing Krea outputs with our own or differently licensed work. That also serves the "remove anything not ours" goal.
 4. Lawyer: whether past outputs remain usable after the threshold or after termination.
 
