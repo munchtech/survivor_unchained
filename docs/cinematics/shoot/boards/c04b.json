@@ -1,18 +1,18 @@
 {
   "seed": 1500,
   "people": {
-    "her": "a young woman with long dark red hair, bare arms, a fitted leather and steel armoured bodice with round steel pauldrons",
-    "town": "a small walled frontier town in early morning: timber and stone houses, a dozen chimneys smoking straight up in still air, a well in a small square, long blue shadows, low sun from the east",
-    "rook": "Mother Rook, a broad grey-haired innkeeper woman in a leather apron with her arms folded, standing in an inn doorway",
-    "guard": "a town watchman in a padded coat and iron helmet leaning on a spear"
+    "her": "a young woman with long dark red hair, in revealing steel plate armour: round steel pauldrons, a steel breastplate cut low, bare midriff, a short plated skirt, bare thighs and steel greaves; a sword and a round shield",
+    "town": "a small walled frontier town in early morning: half-timbered houses with red tile roofs, chimneys smoking straight up in still air, market stalls with striped awnings, a roofed well in a small square, long shadows, low sun from the east",
+    "rook": "Mother Rook, a dark-haired innkeeper woman in her forties, her hair pinned up in two buns, a leather bodice over a rose shirt, arms folded",
+    "guard": "a town watchman in a padded coat"
   },
   "shots": {
-    "B1": "extreme long shot just inside a town's south gate looking north up the main road: {town}; to the right a tall stone toll tower with the sun on it and in its high window, very small, an oil lamp still burning pale in daylight; {her} walking in under the camera, small, seen from behind",
-    "B2": "medium shot from behind the shoulder of {guard} at a town gate, watching a red-haired armoured woman walk away up the road into the town, morning light",
-    "B3": "medium long shot tracking behind {her} walking up a town street in the morning: ahead of her people stopping to stare, a man carrying a ladder turning so it swings, a woman at a well holding her bucket halfway, a child running",
-    "B4": "medium shot beside an inn door, {rook} soft in the foreground right; in focus beyond her, a red-haired armoured woman stopped at the edge of a small square, looking round at the faces; morning",
-    "B4a": "telephoto close-up of a high stone tower window in full morning sun: on the sill a small lamp, its flame pale in the daylight, just going out with a thin thread of smoke",
-    "B4b": "medium shot: {rook} in her inn doorway looking at someone off screen, unfolding her arms, morning light",
-    "B5": "high angle rising over a small town square in the morning: a red-haired armoured woman standing in it, an innkeeper in her doorway, chimney smoke, long shadows"
+    "B1": {"from": "staging", "denoise": 0.6, "prompt": "high wide shot from above a town's south gate looking north over the roofs: {town}; on the right skyline a tall half-timbered toll tower and in its upper window, very small, a lamp still burning pale in daylight; townsfolk small in the square"},
+    "B2": {"from": "staging", "denoise": 0.62, "prompt": "medium shot down a town street in the morning: {her} seen from behind walking away up the road toward the market stalls, a townswoman walking beside her glancing at her; a lantern post at frame left; {town}"},
+    "B3": {"from": "staging", "denoise": 0.62, "prompt": "medium long shot tracking behind {her} walking into a small town square in the morning: ahead of her people stopping to stare at her, a woman at the roofed well, a child sitting on the cobbles, a man turning; {town}"},
+    "B4": {"from": "staging", "denoise": 0.6, "prompt": "over-the-shoulder shot past the soft out-of-focus head and shoulder of {rook} in the left foreground: beyond her in focus, {her} stopped in a small cobbled square looking round at the faces; behind and above, a tall half-timbered toll tower with a small lamp in its upper window; morning light"},
+    "B4a": {"from": "staging", "denoise": 0.55, "prompt": "telephoto close-up of the upper arched window of a half-timbered tower in morning shade: on the sill stands a square black iron cage-lamp, its flame just gone out, a thin thread of grey smoke curling up from it against the pale glass"},
+    "B4b": {"from": "staging", "denoise": 0.6, "prompt": "medium shot, slightly low: {rook} standing before the stone wall of her inn by its arched window, looking off to the right at someone, her eyes coming down from something high, beginning to unfold her arms; morning light"},
+    "B5": {"from": "staging", "denoise": 0.62, "prompt": "high angle looking down on a cobbled town square in the morning: {her} walking past a roofed stone well, two townsmen at the right turning to look at her, a bench, long shadows"}
   }
 }

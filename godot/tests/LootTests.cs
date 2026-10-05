@@ -417,6 +417,20 @@ public class LootTests
     }
 
     [Fact]
+    public void The_first_legendary_taken_is_told_once_with_where_it_lay()
+    {
+        var j = Begin();
+        var told = new List<(string Def, double X, double Z)>();
+        j.FirstLegendaryTaken = (it, x, z) => told.Add((it.Def, x, z));
+        Assert.True(j.PickedUp(new Pickup(0) { Kind = PickupKind.Item, Ref = "iron_helm", Value = 1, X = 1, Z = 2, Payload = At("iron_helm", 3, 4) }));
+        Assert.Empty(told);
+        Assert.True(j.PickedUp(new Pickup(1) { Kind = PickupKind.Item, Ref = "drowned_coat", Value = 1, X = 3, Z = 4, Payload = Inventory.Make(null, "drowned_coat", level: 2) }));
+        Assert.True(j.PickedUp(new Pickup(2) { Kind = PickupKind.Item, Ref = "kells_lamp", Value = 1, X = 5, Z = 6, Payload = Inventory.Make(null, "kells_lamp", level: 9) }));
+        Assert.Equal(new[] { ("drowned_coat", 3.0, 4.0) }, told);
+        Assert.True(j.World.FirstLegendaryTaken);
+    }
+
+    [Fact]
     public void Gear_rolled_where_it_fell_is_taken_whole()
     {
         var j = Begin();

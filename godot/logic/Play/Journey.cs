@@ -47,6 +47,9 @@ public sealed partial class Journey
     /// <summary>Notices for the interface (the game shows them).</summary>
     public Action<Toast> OnToast = _ => { };
     public Action<Announcement> OnAnnounce = _ => { };
+    /// <summary>The first Legendary (or Storied) piece this world has ever seen taken, and where it lay:
+    /// the experience director stages its moment on it (docs/design/LOOT_DESIGN.md §8.2).</summary>
+    public Action<ItemInstance, double, double> FirstLegendaryTaken = (_, _, _) => { };
     /// <summary>Something the interface shows changed (the pack, the gold).</summary>
     public Action OnTouch = () => { };
 
@@ -274,7 +277,16 @@ public sealed partial class Journey
         if (p.Kind == PickupKind.Item && p.Ref != null && Maps.Charts.FromRef(p.Ref) is { } chart)
             return GiveChart(chart);
         // Gear rolled whole where it fell (Rpg/Loot.cs) is taken as it is.
-        if (p.Payload is ItemInstance whole) return Take(whole);
+        if (p.Payload is ItemInstance whole)
+        {
+            if (!Take(whole)) return false;
+            if (!World.FirstLegendaryTaken && Rpg.Drops.TierOf(whole) is LootTier.Legendary or LootTier.Storied)
+            {
+                World.FirstLegendaryTaken = true;
+                FirstLegendaryTaken(whole, p.X, p.Z);
+            }
+            return true;
+        }
         if (p.Kind is PickupKind.Item or PickupKind.Material or PickupKind.Quest && p.Ref != null)
         {
             // Gear on the ground was rolled when it fell; its light said how good it is. A ruler's
