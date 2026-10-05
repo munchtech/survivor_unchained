@@ -16,27 +16,23 @@ Agent af0973d59a5b2817a (third lead), branch `worktree-agent-af0973d59a5b2817a`.
 
 ## The motion check: results
 
-On the tuck build, 35c5dc3a. Five views: chest, 45°, side, below, and over (looking down into the neckline). Jiggle on. Margins are past the areola's edge; negative means it shows.
-- **Codes:**
-  - fp: 80 frames of all four outfits, no false pixel;
-  - every outfit's tuck mask covers the areolas.
-- **Warden** (2,080 frames):
-  - the areola rim shows in 14 frames: chain_haul, chain_strike, dash and bull_rush, in the 45° view;
-  - a 1 px nipple-tip poke-through in cast_bolt and axe_fore;
-  - the strip shows lying on her back (death_back, low view), either side of the thong's rear;
-  - the closest edges are the right cup's inner and upper inner, at +0.05 and +0.08, seen from over.
-- **Arcanist** (2,180 frames):
-  - the strip shows either side of her crotch strap in most standing clips (below and 45° views);
-  - the areola's outer rim shows in 17 frames of big arm swings (chain_haul, bull_rush, cast_bolt, axes, daggers, sword, throw).
-- **Stalker:** cut short by a rebuild (13 of 46 clips). Provisionally clean (right breast lower outer -0.28 in 1 frame, under 6 px).
-- **Reaver:** not run on this build.
-- **Tucked skin in view:** mostly inside bracers, under lifted pauldrons and at the knee plate.
-- **The main session's fix build** answers all of these:
-  - cup and neckline edges keep her skin's weights;
-  - the tuck scales with closeness, up to 8 mm;
-  - 2.8 cm gussets on every crotch, a new one under the Reaver's G-string.
+Latest: the main session's fix build, **0e35921f** (5 Oct). Five views: chest, 45°, side, below, and over (looking down into the neckline). Jiggle on. "Shows" means 6 px or more at 960×540. Margins are past the areola's edge; negative means it shows. Details and crops: `scratchpad/legal3/fix1/<outfit>/summary.txt` and `crops/`.
+- **Codes:** fp is clean (80 frames, all four outfits), and every outfit's tuck mask covers the areolas.
+- **Warden** (its 12 finding clips) and **Arcanist** (its 11): no areola shows.
+  - Left for "pixel perfect":
+    - the Warden's 1 to 4 px of the right cup's rim in chain_haul and chain_strike (45° view);
+    - 1 px nipple-tip pokes in axe_fore, cast_bolt and dash (chest);
+    - strip slivers beside the gusset: the Warden lying on her back (death_back) and in the leap from below; the Arcanist in 60 frames, mostly 6 to 13 px, worst 84 px (bull_rush below 05).
+  - The tightest edges are the Arcanist's right outer and lower outer (+0.02 and +0.05).
+- **Stalker** (all 46 clips): no areola shows; 1 to 2 px of the left breast's lower rim from below in 11 frames; the strip in 13 frames (sit_log low, vault, death_back), worst 40 px.
+- **Reaver** (all 46 clips): **fails: the areola shows in 26 frames.**
+  - Mostly the over view of the run, sprint, catch_breath and axe clips: her left breast's band gapes at its top edge, to 0.96 cm from the tip.
+  - Also her right breast at 45° in chain_haul, bull_rush and vault_back.
+  - Sent to the main session. Re-run the Reaver after its fix: `run_outfit.sh reaver <tag>`.
+- **Tucked skin in view** is nearly gone on the fix build (under 70 px anywhere).
+- **Not yet covered:** the Warden's and the Arcanist's other clips on the fix build (only their finding clips were re-run). Run them in full before submission.
 
-  **Next:** when the main session sends its commit (it holds rebuilds in the main checkout until I report), re-run the Warden's and the Arcanist's finding clips, then the Stalker and the Reaver in full. Send the numbers, update brief issue 2 and checklist D2, and tick the motion check if it passes.
+**Next:** the Reaver after its fix; then the Warden and the Arcanist in full. Then update brief issue 2 and checklist D2, and tick the motion check if every outfit passes.
 
 ## How to run the check
 
@@ -50,6 +46,14 @@ Tools: `tools/legal/motioncheck/`. Read `run.sh`'s header and `count.py`'s docst
    - `cup_only.sh <tag>`: the Warden's sprint.
 4. Read `<folder>/summary.txt`: per breast and edge margins with clip, view and frame; areola and strip flags; tucked-skin patches. Crops are in `crops/`, each with the TEST TINT banner.
 5. If a clip shows 0 frames in its log, an outfit failed to load: the checkout was mid-import. Re-run it.
+
+**Reading count.py's output without me** (`<folder>/summary.txt`, which `run_outfit.sh` prints at its end):
+- **First line per outfit:** frames; "areola shows in N" and "genital strip shows in N" count frames with 6 px or more (the pass bar); "tucked skin seen" counts frames with any patch of deep-tucked skin, a dent or a gap; "the edge ring" is the shallow 1/3 tuck at a piece's edge, which shows by design.
+- **Per breast:** the closest visible skin to the areola's edge in any frame, then by edge of the rim (as seen in that view; "inner" is towards her midline). It is a signed margin: +0.40 cm means 4 mm of skin still covered beyond the areola; negative means the areola shows. A margin of -2.20 means d = 0, the nipple tip itself, usually a 1 px poke-through.
+- **Under 6 px:** frames below the bar are not listed. Find them in `counts.csv` (columns `areola_px`, `genital_px`, `tucked_seen_px`), e.g. every row with `areola_px` of 1 or more.
+- **Crops** in `crops/`: `flag_*` for flagged frames, `closest_<outfit>_breast_l/_r` for each breast's closest pixel (ringed), and `tuck_<outfit>_N` for the largest tucked patches. Every crop carries the TEST TINT banner.
+- **The outfit passes** when areola and strip show in 0 frames. Then update brief issue 2 and checklist D2.
+- **Before trusting a run,** check the "clips with no frames" line is empty.
 
 ## Key decisions (with why)
 

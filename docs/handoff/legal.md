@@ -84,7 +84,7 @@ The main session builds outfits with her skin tucked in rather than cut away. `h
 3. run `scratchpad/legal3/run_outfit.sh <outfit> <tag>`, once per outfit, each in its own turn;
 4. send the main session, per outfit: each breast's margin by edge, with clip, view and frame; any strip flag; any frame showing deep-tucked skin (a dent or a gap). Expect the 1/3 edge ring to show by design; it is counted apart.
 
-Results so far: see `docs/team/legal.md`.
+**Done 5 Oct:** the tuck build (35c5dc3a) and the fix build (0e35921f). The Reaver still fails from above; the Warden and the Arcanist were re-run only on their finding clips. Results and next steps: `docs/team/legal.md`. Use `findings.sh` and `run_outfit.sh` with `CLIPS=` (run.sh) to re-run a finding's clips.
 
 ## Next
 
