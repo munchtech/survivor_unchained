@@ -65,7 +65,7 @@ public partial class MapTableScreen : Overlay
         AddChild(plaque);
         plaque.Position = new Vector2((1920 - plaque.CustomMinimumSize.X) / 2, at.Y + 14);
         var sub = Style.Label(page == "atlas"
-                ? "Charts to the places the road forgets: one ground each, a ruler at its heart, about ten minutes. You go in as you are, and what you find is yours."
+                ? "Charts to the places the road forgets. One ground each, with a ruler at its heart. You go in as you are, and what you bring out is yours."
                 : $"Tonight's maps: each an ember arena, half an hour and what rules it at the end. {(won > 0 ? $"You have won tier {won}." : "You have won none yet.")} Spoils lean toward what answers the map.",
             Style.TextItalic, Style.Small, Style.InkDim, false, HorizontalAlignment.Center);
         sub.Position = at + new Vector2(0, 58);
@@ -222,7 +222,7 @@ public partial class MapTableScreen : Overlay
     static void GreatAtlas(VBoxContainer v, SurvivorUnchained.World.WorldState w)
     {
         v.AddChild(Head("The great atlas", "The Places the Road Forgets"));
-        v.AddChild(Ink_("Each people's ground at each tier. A pair is lit where its ruler has fallen, and its first fall is a point to spend.", Style.TextItalic, Style.Small, InkSoft));
+        v.AddChild(Ink_("Each people's ground, tier by tier. A ground is lit where its ruler has fallen, and the first fall there is a point to spend.", Style.TextItalic, Style.Small, InkSoft));
         v.AddChild(Style.Gap(Style.Gap2));
         var grid = MapResultScreen.AtlasGrid(w, null, true);
         grid.SizeFlagsHorizontal = SizeFlags.ShrinkCenter;
@@ -230,10 +230,10 @@ public partial class MapTableScreen : Overlay
         v.AddChild(Style.Gap(Style.Gap2));
         int lit = MapOffers.Peoples.Sum(p => Enumerable.Range(1, 16).Count(t => Atlas.Done(w, p.Id, t)));
         int best = Atlas.Best(w), cleared = (int)w.Fact("atlas.cleared").Number;
-        v.AddChild(Ink_(lit == 0 ? "Nothing lit yet. Every people waits at the first tier." : $"{lit} lit  ·  the highest tier cleared: {best}  ·  {cleared} map{(cleared == 1 ? "" : "s")} cleared",
+        v.AddChild(Ink_(lit == 0 ? "Nothing is lit yet. Every people waits at the first tier." : $"{lit} lit  ·  the highest tier cleared: {best}  ·  {cleared} map{(cleared == 1 ? "" : "s")} cleared",
             Style.UiBold, Style.Small, Ink, HorizontalAlignment.Center));
         // What comes next, so the dark half reads as a road, not a lack.
-        v.AddChild(Ink_($"Tier {best + 1} opens with the chart a tier {System.Math.Max(1, best)} ruler leaves: the first fall of each people at a tier always leaves the next.",
+        v.AddChild(Ink_("The next tier opens with the chart a ruler leaves: the first fall of each people at a tier always leaves one.",
             Style.TextItalic, Style.Caption, InkSoft, HorizontalAlignment.Center));
         v.AddChild(new Control { SizeFlagsVertical = SizeFlags.ExpandFill, MouseFilter = MouseFilterEnum.Ignore });
         var rose = new CenterContainer { MouseFilter = MouseFilterEnum.Ignore };
@@ -250,14 +250,17 @@ public partial class MapTableScreen : Overlay
         v.AddChild(Head("The chart in hand", chosen?.Chart?.Name ?? "No chart"));
         if (chosen?.Chart is not { } c)
         {
-            v.AddChild(Ink_("A map's ruler leaves the next chart when it falls; its keepers and its strongbox, now and then, another. Vonnra's fortune gives the first.", Style.TextItalic, Style.Small, InkSoft));
+            v.AddChild(Ink_("A map's ruler leaves the next chart when it falls, and now and then its keepers or its strongbox leave another.", Style.TextItalic, Style.Small, InkSoft));
             return;
         }
         var people = MapOffers.People(c.People);
         string fineness = c.Rarity switch { 2 => "A rare chart", 1 => "A fine chart", _ => "A plain chart" };
         v.AddChild(Ink_($"{fineness}, tier {c.Tier}: held by {people.Name}, ruled at its heart by {MapOffers.InSentence(people.BossName)}.", Style.TextItalic, Style.Small, Ink));
         var spec = c.Map;
-        v.AddChild(Ink_($"Its ground: {spec.Clearings} clearings and {spec.AltarCount} altar{(spec.AltarCount == 1 ? "" : "s")} on a winding way. Three falls and it closes.", Style.Text, Style.Caption, InkSoft));
+        // (one fall ends a map unless she carries the rise, the owner's rule; more allowed, it says how many)
+        int allowed = SurvivorUnchained.Play.Zones.MapRun.FallsAllowed;
+        var falls = allowed > 1 ? $"{allowed} falls and it closes." : "Fall, and it closes, unless you carry Not Yet.";
+        v.AddChild(Ink_($"Its ground: {spec.Clearings} clearings and {spec.AltarCount} altar{(spec.AltarCount == 1 ? "" : "s")} on a winding way. {falls}", Style.Text, Style.Caption, InkSoft));
         v.AddChild(Style.Rule());
         // What it is sworn under: prefixes ask more of the foe's side, suffixes of yours. Each pays.
         var pre = c.Rolled.Where(m => m.Prefix).ToList();
