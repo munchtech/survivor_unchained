@@ -58,7 +58,7 @@ public partial class ForgeScreen : Overlay
         // Sitting down at the bench: a greeting, not what was said over the last craft.
         g.Journey.CraftSaid = null;
         // What was ordered yesterday is handed over first, and put on the anvil.
-        if (crafter == Crafting.Rules.Commission.Crafter && g.Journey.CollectCommission() is { } made) sel = made.Uid;
+        if (crafter == Crafting.Rules.Commission.Crafter && g.Journey.CollectCommission() is { } made) sel = handed = made.Uid;
         if (Args.Has("make") && Crafting.Does(crafter, Verb.Commission)) { making = true; pattern = Args.Get("pattern"); }
     }
 
@@ -87,11 +87,13 @@ public partial class ForgeScreen : Overlay
     {
         var def = Crafting.Crafter(crafter);
         var who = Lore.Person(crafter);
-        var page = Page(def?.Place ?? "The forge", who != null ? $"{who.Name}, {who.Role.ToLowerInvariant()}" : null, null, "Esc");
-        // Something on the anvil from the start: what is in hand (--anvil DEF: that piece, for pictures).
+        var (name, role) = WhoAt(who);
+        var page = Page(def?.Place ?? "The forge", name != null ? $"{name}, {Style.Lower1(role ?? "")}".TrimEnd(',', ' ') : null, null, "Esc");
+        // Something on the anvil from the start: what is in hand (--anvil DEF: that piece, for pictures),
+        // the first piece this hand can do something with before one it would only refuse.
         if (Chosen == null && !making)
         {
-            sel = (Workable().FirstOrDefault(it => it.Def == Args.Get("anvil")) ?? Workable().FirstOrDefault(Takes))?.Uid;
+            sel = (Workable().FirstOrDefault(it => it.Def == Args.Get("anvil")) ?? Workable().Where(Takes).OrderBy(it => Apt(it) ? 0 : 1).FirstOrDefault())?.Uid;
             seam = -1;
         }
         // Banked by night; or, for a bench that only works things in, not yet open (Wenna's, till the cure).
@@ -109,49 +111,50 @@ public partial class ForgeScreen : Overlay
 
     /* ------------------------------------------------------- the crafter -- */
 
+    /// <summary>Who is at the bench, by name and calling: one of the town's people, or one who only
+    /// speaks (Snib, foreman of the Dig, self-appointed).</summary>
+    (string? Name, string? Role) WhoAt(NpcDef? who) =>
+        who != null ? (who.Name, who.Role)
+        : Lore.Speakers.TryGetValue(crafter, out var sp) ? (sp.Name, sp.Title)
+        : (Crafting.Crafter(crafter)?.Name, null);
+
+    /// <summary>A piece this hand would do something with, not only refuse: the slurry wants seams in
+    /// a piece not steeped before.</summary>
+    bool Apt(ItemInstance it) => !Crafting.Does(crafter, Verb.Steep) || Crafting.Seams(it) > 0 && !Crafting.Slurried(it);
+
+    /// <summary>The crafter's column is this wide inside: the figure, the name and the words all keep to it.</summary>
+    const float Column = 360;
+
     void Them(VBoxContainer v, CrafterDef? def, NpcDef? who)
     {
-        if (who?.Person != null)
+        var (name, _) = WhoAt(who);
+        // The figure: one of the town's people as they stand, or the creature a crafter is (Snib).
+        Portrait? figure = who?.Person != null ? new Portrait(new Vector2I((int)Column, 330), Portrait.Framing.Bust).Of(who.Person, who.Arms, who.Scale ?? 1)
+            : def?.Visual is { } vis && SurvivorUnchained.View.Beasts.Of(vis) is { } beast ? new Portrait(new Vector2I((int)Column, 330), Portrait.Framing.Bust).Of(beast) : null;
+        if (figure != null)
         {
             var frame = Style.Panel(Style.Well(0));
-            frame.CustomMinimumSize = new Vector2(360, 380);
-            frame.AddChild(new Portrait(new Vector2I(360, 380), Portrait.Framing.Bust).Of(who.Person, who.Arms, who.Scale ?? 1));
+            frame.CustomMinimumSize = new Vector2(Column, 330);
+            frame.AddChild(figure);
             v.AddChild(frame);
         }
         var npc = G.Journey.World.Npc(crafter);
-        if (who != null)
+        if (name != null)
         {
             var plaque = new CenterContainer { MouseFilter = MouseFilterEnum.Ignore };
-            plaque.AddChild(new Plaque(who.Name, 26, 40));
+            plaque.AddChild(NamePlaque(name, Column));
             v.AddChild(plaque);
-            v.AddChild(Style.Label(Style.Cap1(Rules.Attitude(npc)), Style.TextItalic, Style.Body, Style.InkDim, false, HorizontalAlignment.Center));
+            // How they feel about you and what they charge, said once on one line.
             double mod = G.Journey.PriceMod(crafter);
             int pct = (int)Math.Round((mod - 1) * 100);
-            v.AddChild(Style.Label(pct == 0 ? $"{Style.Cap1(His)} usual prices" : pct < 0 ? $"Prices {-pct}% under {His} usual" : $"Prices {pct}% over {His} usual",
-                Style.UiBold, Style.Small, pct < 0 ? Style.Good : pct > 0 ? Style.Bad : Style.Ink, false, HorizontalAlignment.Center));
+            var mood = Style.H(Style.Gap2, Style.Label(Style.Cap1(Rules.Attitude(npc)), Style.TextItalic, Style.Body, Style.InkDim),
+                Style.Label("·", Style.Ui, Style.Body, Style.InkFaint),
+                Style.Label(pct == 0 ? $"{His} usual prices" : pct < 0 ? $"prices {-pct}% under {His} usual" : $"prices {pct}% over {His} usual",
+                    Style.UiBold, Style.Small, pct < 0 ? Style.Good : pct > 0 ? Style.Bad : Style.Ink));
+            mood.Alignment = BoxContainer.AlignmentMode.Center;
+            v.AddChild(mood);
         }
-        // Their terms: those given now, and the way up to the rest (C18: standing sets the terms).
-        var ladder = Crafting.TermLadder(crafter, G.Journey.Ctx);
-        if (ladder.Count > 0)
-        {
-            // The standing the terms ask for, as it is now ("his respect: 6").
-            var axes = new[] { Axis.Respect, Axis.Trust, Axis.Affection }
-                .Where(a => ladder.Any(t => t.Needs?.Contains(a.ToString().ToLowerInvariant()) == true)).ToList();
-            string standing = string.Join("  ·  ", axes.Select(a => $"{a.ToString().ToLowerInvariant()} {npc[a]:0}"));
-            v.AddChild(new Section($"{Style.Cap1(His)} terms", axes.Count > 0 ? $"{His} {standing}" : null));
-            foreach (var (line, fx, needs, met) in ladder)
-            {
-                var words = Style.V(0, Style.Label(line, Style.TextItalic, Style.Small, met ? Style.Good : Style.InkDim, true),
-                    Style.Label(met || needs == null ? Style.Cap1(fx) : $"{Style.Cap1(fx)}, at {needs}", Style.Ui, Style.Caption, met ? Style.Ink : Style.InkFaint, true));
-                words.SizeFlagsHorizontal = SizeFlags.ExpandFill;
-                v.AddChild(Style.H(Style.Gap2, Glyphs.Icon(met ? "flame" : "lock", 18, met ? Style.Ember : Style.InkFaint), words));
-            }
-            if (def is { RespectPerCraft: > 0 })
-                v.AddChild(Style.Label($"{Style.Cap1(He)} likes the work: every craft {He} does for you raises {His} {def.Grows.ToString().ToLowerInvariant()} a little.",
-                    Style.TextItalic, Style.Caption, Style.InkDim, true));
-        }
-        v.AddChild(Style.Gap(4));
-        // What they say: over the last craft done, or a greeting (the story lead's words, in data).
+        // What they say, under them: over the last craft done, or a greeting (the story lead's words, in data).
         var said = G.Journey.CraftSaid ?? new Said(null, Crafting.Line(crafter, "greet", G.Journey.World.Day), null);
         var box = Style.V(Style.Gap1);
         if (said.Before != null) box.AddChild(Style.Label(said.Before, Style.TextItalic, Style.Small, Style.InkDim, true, HorizontalAlignment.Center));
@@ -164,6 +167,41 @@ public partial class ForgeScreen : Overlay
             // Said just now: it comes in, rather than being there already.
             if (struck != null) { slab.Modulate = Colors.White with { A = 0 }; slab.CreateTween().TweenProperty(slab, "modulate:a", 1f, 0.45).SetDelay(0.25); }
         }
+        // Their terms: those given now, and the way up to the rest (C18: standing sets the terms).
+        var ladder = Crafting.TermLadder(crafter, G.Journey.Ctx);
+        if (ladder.Count > 0)
+        {
+            // The standing the terms ask for, as it is now ("his respect: 6").
+            var axes = new[] { Axis.Respect, Axis.Trust, Axis.Affection }
+                .Where(a => ladder.Any(t => t.Needs?.Contains(a.ToString().ToLowerInvariant()) == true)).ToList();
+            string standing = string.Join("  ·  ", axes.Select(a => $"{a.ToString().ToLowerInvariant()} {npc[a]:0}"));
+            v.AddChild(new Section($"{Style.Cap1(His)} terms", axes.Count > 0 ? $"{His} {standing}" : null));
+            foreach (var (line, fx, needs, met) in ladder)
+            {
+                // "at respect 20", but "after you have accused her": a standing is reached, a deed is done.
+                string when = needs == null ? "" : needs.Any(char.IsDigit) ? $", at {needs}" : $", {needs}";
+                var words = Style.V(0, Style.Label(line, Style.TextItalic, Style.Small, met ? Style.Good : Style.InkDim, true),
+                    Style.Label(met ? Style.Cap1(fx) : $"{Style.Cap1(fx)}{when}", Style.Ui, Style.Caption, met ? Style.Ink : Style.InkFaint, true));
+                words.SizeFlagsHorizontal = SizeFlags.ExpandFill;
+                v.AddChild(Style.H(Style.Gap2, Glyphs.Icon(met ? "flame" : "lock", 18, met ? Style.Ember : Style.InkFaint), words));
+            }
+            if (def is { RespectPerCraft: > 0 })
+                v.AddChild(Style.Label($"{Style.Cap1(He)} likes the work: every craft {He} does for you raises {His} {def.Grows.ToString().ToLowerInvariant()} a little.",
+                    Style.TextItalic, Style.Caption, Style.InkDim, true));
+        }
+    }
+
+    /// <summary>A name on its plaque, made to fit the column: a long name ("Vonnra Ash-of-Morrow")
+    /// takes shorter rules and then a smaller face before it would push the column wider.</summary>
+    static Plaque NamePlaque(string name, float room)
+    {
+        foreach (var (size, rule) in new[] { (26, 40f), (26, 22f), (24, 14f), (22, 10f), (20, 8f) })
+        {
+            var p = new Plaque(name, size, rule);
+            if (p.CustomMinimumSize.X <= room) return p;
+            p.QueueFree();
+        }
+        return new Plaque(name, 18, 6);
     }
 
     /* --------------------------------------------------------- the bench -- */
@@ -300,8 +338,11 @@ public partial class ForgeScreen : Overlay
         var body = Style.V(Style.Gap3);
         body.AddChild(Head(it));
         if (closed != null) body.AddChild(Style.Panel(Style.Slab(12), Style.Label(closed, Style.TextItalic, Style.Body, Style.Bad, true, HorizontalAlignment.Center)));
+        // What the jar just did to it, plainly, before the seams that show it.
+        if (came is { } c && c.Uid == it.Uid) body.AddChild(Came(c.Text, c.Mood));
         body.AddChild(SeamList(it));
         if (seam >= 0 && SeamCrafts) body.AddChild(AtSeam(it));
+        if (Crafting.Does(crafter, Verb.Steep)) body.AddChild(Steeping(it));
         if (Setting(it) is { } set) body.AddChild(set);
         if (Whole(it) is { } whole) body.AddChild(whole);
         var scroll = Style.Scroll(body);
@@ -313,16 +354,41 @@ public partial class ForgeScreen : Overlay
     {
         var def = Items.Get(it.Def);
         var col = Style.RarityOf(it.Rarity);
+        bool slurried = Crafting.Slurried(it);
         var h = Style.H(Style.Gap4);
-        h.AddChild(Style.Panel(Style.Box(new Color(0.03f, 0.03f, 0.04f), col with { A = 0.4f }, 1, 4, 6), ItemPhotos.Icon(def.Icon, 96, col.Lightened(0.25f))));
+        var pic = ItemPhotos.Icon(def.Icon, 96, col.Lightened(0.25f));
+        if (slurried) ItemViews.Steeped(pic);
+        var photo = Style.Panel(Style.Box(new Color(0.03f, 0.03f, 0.04f), slurried ? ItemViews.SlurryGreen with { A = 0.55f } : col with { A = 0.4f }, 1, 4, 6), pic);
+        h.AddChild(photo);
         var names = Style.V(Style.Gap1);
         names.SizeFlagsHorizontal = SizeFlags.ExpandFill;
         names.AddChild(Style.Label(Inventory.Name(it), Style.TextBold, 26, col, true));
-        names.AddChild(Style.H(Style.Gap2, Style.Label($"{Inventory.RarityName(it)} {def.Kind.ToString().ToLowerInvariant()}", Style.Ui, Style.Small, Style.InkDim), Style.Gems(it.Rarity, 7)));
+        var kind = Style.H(Style.Gap2, Style.Label($"{Inventory.RarityName(it)} {def.Kind.ToString().ToLowerInvariant()}", Style.Ui, Style.Small, Style.InkDim), Style.Gems(it.Rarity, 7));
+        // Made for you this morning: said where the piece is named, the first time it is seen.
+        if (handed == it.Uid) kind.AddChild(Style.Label("·  made for you, ready this morning", Style.TextItalic, Style.Small, Style.GoldHi));
+        if (slurried) kind.AddChild(Style.Label("·  slurried: green-black veins, set for good", Style.TextItalic, Style.Small, ItemViews.SlurryGreen));
+        names.AddChild(kind);
         gauge = new HeatGauge(it);
         names.AddChild(gauge);
         h.AddChild(names);
+        // The whole piece rings here (a remake, a rekindle, a jar that only left its veins): its picture
+        // is a panel, so the flare lies over it.
+        rows[-1] = (photo, photo);
+        if (handed == it.Uid && !handedShown) { handedShown = true; struck = (it.Uid, -1, it.Heat ?? 0, Verb.Commission); }
         return h;
+    }
+
+    bool handedShown;
+
+    /// <summary>What the slurry did, in a slab coloured by how it went: green for a gain, red for a
+    /// grade lost, the grey of the veins for nothing at all.</summary>
+    static Control Came(string text, int mood)
+    {
+        var col = mood > 0 ? ItemViews.SlurryGreen : mood < 0 ? Style.Bad : new Color("#9aa890");
+        var row = Style.H(Style.Gap3, Glyphs.Icon("drop", 26, col),
+            Style.V(1, Style.Label("What the jar did", Style.UiHeavy, Style.Badge, col), Style.Label(text, Style.UiBold, Style.Body, mood < 0 ? Style.Bad : Style.Ink, true)));
+        ((Control)row.GetChild(1)).SizeFlagsHorizontal = SizeFlags.ExpandFill;
+        return Style.Panel(Style.Box(new Color("#121a10"), col with { A = 0.6f }, 1, 5, 12), row);
     }
 
     /* ---------------------------------------------------------- the seams -- */
@@ -342,7 +408,9 @@ public partial class ForgeScreen : Overlay
                 + (could.Count > 0 ? $" Then {He} could work in {string.Join(", ", could.Take(could.Count - 1))}{(could.Count > 1 ? " or " : "")}{could[^1]}." : "")));
             return v;
         }
-        v.AddChild(new Section("Its seams", $"choose one to work  ·  grades to {Crafting.Grade(cap)} on {Crafting.Article(rarity)} piece"));
+        // A hand that works the whole piece (the slurry) shows the seams as what it may move, not as a choice.
+        v.AddChild(new Section("Its seams", SeamCrafts ? $"choose one to work  ·  grades to {Crafting.Grade(cap)} on {Crafting.Article(rarity)} piece"
+            : $"what is in it  ·  the forge takes {Crafting.Article(rarity)} piece to {Crafting.Grade(cap)}"));
         for (int k = 0; k < places; k++) v.AddChild(SeamRow(it, k, cap));
         return v;
     }
@@ -352,7 +420,7 @@ public partial class ForgeScreen : Overlay
         bool open = k >= it.Affixes.Count;
         var a = open ? null : it.Affixes[k];
         var ad = a != null ? Items.Affix(a.Id) : null;
-        bool coal = ad?.Kindled != null, skill = ad?.Grants != null, slurry = ad?.Slurry == true, on = k == seam;
+        bool coal = ad?.Kindled != null, skill = ad?.Grants != null, slurry = ad?.Slurry == true, on = k == seam && SeamCrafts;
         var panel = Style.Panel(Style.Box(on ? new Color("#2a1c12") : new Color("#141118"), on ? Style.Focus : Style.Line with { A = 0.25f }, on ? 2 : 1, 5, 10));
         panel.MouseFilter = MouseFilterEnum.Stop;
         var h = Style.H(Style.Gap3);
@@ -363,20 +431,26 @@ public partial class ForgeScreen : Overlay
         words.SizeFlagsVertical = SizeFlags.ShrinkCenter;
         string title = open ? "An open seam" : ad?.Text(a!.Tier) ?? a!.Id;
         string rarity = Inventory.RarityName(it).ToLowerInvariant();
+        bool bright = !open && a!.Tier >= Crafting.Bright;
         string note = open ? (Crafting.Does(crafter, Verb.Cage) ? "work a material in, or cage a coal" : Crafting.Does(crafter, Verb.WorkIn) ? "work a material in"
                 : Crafting.Does(crafter, Verb.Bind) ? "bind a power into it" : "empty")
             : coal ? $"{ad!.Name}: a caged coal, it shapes the ember's draft"
             : skill ? $"{ad!.Name}: a worn skill, it has no grades"
             : slurry ? $"{ad!.Name}: the slurry's, past its seams; it has no grades"
+            : bright ? $"{ad?.Name}  ·  the bright grade, V: past every forge"
+            : a!.Tier > cap ? $"{ad?.Name}  ·  grade {Crafting.Grade(a.Tier)}, past what the forge makes of {Crafting.Article(rarity)} piece"
             : a!.Tier >= cap ? $"{ad?.Name}  ·  grade {Crafting.Grade(a.Tier)}, as fine as {Crafting.Article(rarity)} piece is made"
             : $"{ad?.Name}  ·  grade {Crafting.Grade(a.Tier)}; tempers to {Crafting.Grade(cap)}";
-        words.AddChild(Style.Label(title, Style.UiBold, Style.Body, open ? Style.GoldHi : coal ? Style.EmberHi : slurry ? ItemViews.SlurryGreen : Style.Ink, true));
+        words.AddChild(Style.Label(title, Style.UiBold, Style.Body, open ? Style.GoldHi : coal ? Style.EmberHi : slurry ? ItemViews.SlurryGreen : bright ? ItemViews.BrightGrade : Style.Ink, true));
         words.AddChild(Style.Label(note, Style.TextItalic, Style.Caption, Style.InkDim, true));
         h.AddChild(words);
         if (on) h.AddChild(Style.Label("at the anvil", Style.UiHeavy, Style.Badge, Style.Focus));
         panel.AddChild(h);
-        panel.GuiInput += e => { if (e is InputEventMouseButton { Pressed: true, ButtonIndex: MouseButton.Left }) Pick(k); };
-        Nav.Mark(panel, $"seam:{k}", () => Pick(k));
+        if (SeamCrafts)
+        {
+            panel.GuiInput += e => { if (e is InputEventMouseButton { Pressed: true, ButtonIndex: MouseButton.Left }) Pick(k); };
+            Nav.Mark(panel, $"seam:{k}", () => Pick(k));
+        }
         rows[k] = (panel, badge);
         return panel;
     }
@@ -390,6 +464,13 @@ public partial class ForgeScreen : Overlay
         var a = open ? null : it.Affixes[k];
         var ad = a != null ? Items.Affix(a.Id) : null;
         bool coal = ad?.Kindled != null;
+        // Set: every seam's craft would refuse alike, so it is said once.
+        if (it.Heat is 0)
+        {
+            v.AddChild(Quiet(Crafting.Slurried(it) ? "Steeped and set for good: no hand works it again. It can still be worn, or broken down."
+                : Crafting.Does(crafter, Verb.Rekindle) ? "Set: its heat is spent. Rekindled (below), it could be worked again." : "Set: its heat is spent. Nothing more can be worked into it."));
+            return v;
+        }
         if (Plain(ad) && Crafting.Does(crafter, Verb.Temper))
         {
             v.AddChild(new Section("Temper", "the same, a grade finer"));
@@ -534,9 +615,9 @@ public partial class ForgeScreen : Overlay
         if (Crafting.Does(crafter, Verb.Rekindle))
         {
             var q = Crafting.Rekindle(X, it, crafter);
-            bool full = it.Heat is int h && h >= (it.HeatFull ?? 0);
-            row.AddChild(Tile("Rekindle", full ? null : q.After, q, () => Work(q, Sound.Sfx.Cage), "Rekindle", "rekindle",
-                full ? "As hot as it gets. When its heat runs low, ember shards bring half of it back, dearer each time." : null));
+            bool full = it.Heat is int h && h >= (it.HeatFull ?? 0), sealedUp = Crafting.Slurried(it);
+            row.AddChild(Tile("Rekindle", full || sealedUp ? null : q.After, q, () => Work(q, Sound.Sfx.Cage), "Rekindle", "rekindle",
+                sealedUp ? q.Blocked : full ? "As hot as it gets. When its heat runs low, ember shards bring half of it back, dearer each time." : null));
         }
         if (Crafting.Does(crafter, Verb.BreakDown))
         {
@@ -549,18 +630,6 @@ public partial class ForgeScreen : Overlay
                 breaking = false;
                 Work(q, Sound.Sfx.Shatter, off: true);
             }, breaking ? "Break it" : "Break down", "break", worn ? "Worn: take it off first to break it down." : q.Ok ? null : q.Blocked));
-        }
-        if (Crafting.Does(crafter, Verb.Steep))
-        {
-            var q = Crafting.Steep(X, it, crafter);
-            string odds = string.Join(";  ", Crafting.Odds().Select(o => $"{o.Chance:0%} {Odds(o.Outcome)}"));
-            bool settled = q.Blocked != null && q.Takes.Keys.All(m => Inventory.Count(Ch, m) > 0) && q.Blocked != closed;
-            row.AddChild(Tile(steeping ? "Steep it, and set it for good?" : "Steep in slurry", $"{Style.Cap1(odds)}. Whatever it comes to, it is set for good.", q, () =>
-            {
-                if (!steeping) { steeping = true; Sound.Sfx.Hover(); Refresh(); return; }
-                steeping = false;
-                Work(q, Sound.Sfx.Pour);
-            }, steeping ? "Steep it" : "Steep", "steep", settled ? q.Blocked : null));
         }
         if (row.GetChildCount() == 0) return null;
         v.AddChild(new Section("The piece itself"));
@@ -590,6 +659,7 @@ public partial class ForgeScreen : Overlay
         grid.AddThemeConstantOverride("h_separation", Style.Gap2);
         grid.AddThemeConstantOverride("v_separation", Style.Gap2);
         int n = 0;
+        string rarity = Inventory.RarityName(it).ToLowerInvariant();
         foreach (var (d, i) in donors)
         {
             var q = Crafting.Bind(X, it, d, i, open ? -1 : k, crafter);
@@ -597,15 +667,20 @@ public partial class ForgeScreen : Overlay
             string key = $"{d.Uid}:{i}";
             bool armed = unmaking == key;
             var dd = Items.Get(d.Def);
-            string lead = armed ? $"{Inventory.Name(d)} is unmade for it. Again to bind." : $"{Items.Affix(d.Affixes[i].Id)?.Name} from {Inventory.Name(d)}";
+            var roll = d.Affixes[i];
+            int grade = q.Grade >= 0 ? q.Grade : roll.Tier;
+            // The power and the grade it comes in at; where it comes from, and what that costs.
+            string lead = $"{Items.Affix(roll.Id)?.Name}, at grade {Crafting.Grade(grade)}";
+            string note = armed ? $"Your {Inventory.Name(d)} is unmade for it. Press again to bind."
+                : roll.Tier > grade ? $"From your {Inventory.Name(d)}, where it is grade {Crafting.Grade(roll.Tier)}; {Crafting.Article(rarity)} piece holds {Crafting.Grade(grade)}"
+                : $"From your {Inventory.Name(d)}";
             var card = Craft(armed ? "Unmake it" : "Bind", q, () =>
             {
                 if (unmaking != key) { unmaking = key; Sound.Sfx.Hover(); Refresh(); return; }
                 unmaking = null;
                 Work(q, () => { Sound.Sfx.Cage(); Sound.Sfx.Discovery(); });
-            }, lead, ItemPhotos.Icon(dd.Icon, 44, Style.RarityOf(d.Rarity)), $"bind:{n++}");
+            }, lead, ItemPhotos.Icon(dd.Icon, 44, Style.RarityOf(d.Rarity)), $"bind:{n++}", note, armed);
             card.CustomMinimumSize = new Vector2(452, 0);
-            if (armed) card.Modulate = new Color(1.15f, 0.92f, 0.85f);
             grid.AddChild(card);
         }
         v.AddChild(grid);
@@ -615,14 +690,109 @@ public partial class ForgeScreen : Overlay
 
     /* ---------------------------------------------------- the slurry's -- */
 
-    static string Odds(string outcome) => outcome switch
+    /// <summary>The one gamble, as the anvil's main work at Snib's: his word on the jar, the odds as a
+    /// bar cut by their weights, what each would mean for this piece, and the press, asked twice.</summary>
+    Control Steeping(ItemInstance it)
     {
-        "up" => "a grade past what the forge can do",
-        "affix" => "a slurry power past its seams, strong with a price",
-        "nothing" => "only the veins",
-        "down" => "a grade lost",
-        _ => outcome,
-    };
+        var v = Style.V(Style.Gap2);
+        var q = Crafting.Steep(X, it, crafter);
+        v.AddChild(new Section("Steep it in slurry", Crafting.Line(crafter, "jar") is { } said ? $"“{said}”" : "the one gamble"));
+        // Refused for what the piece is (not for want of a jar): said once, quietly, with no odds.
+        if (q.Blocked is { } why && (!Crafting.Workable(it) || Crafting.Slurried(it) || Crafting.Seams(it) == 0))
+        {
+            v.AddChild(Quiet(why));
+            return v;
+        }
+        var slab = Style.V(Style.Gap3);
+        slab.AddChild(SlurryOdds(it, 880));
+        var foot = Style.H(Style.Gap4);
+        var words = Style.V(2);
+        words.SizeFlagsHorizontal = SizeFlags.ExpandFill;
+        words.AddChild(Style.Label(steeping ? "Whatever it comes to, it is set for good: no hand will work it again." : "Whatever it comes to, it is set for good after.",
+            Style.UiBold, Style.Small, steeping ? Style.Bad : Style.Ink, true));
+        string cost = string.Join("  ·  ", q.Takes.Select(kv => Items.Several(kv.Key, kv.Value)).Append(it.Heat is > 0 and int h ? $"all {h} of its heat" : "it is set already"));
+        words.AddChild(Style.Label(cost, Style.Ui, Style.Caption, q.Ok ? Style.Ink : Style.InkDim, true));
+        // No jar: where one is had, rather than only that there is none.
+        bool noJar = q.Takes.Keys.Any(m => Inventory.Count(Ch, m) == 0);
+        if (!q.Ok && q.Blocked != closed)
+            words.AddChild(Style.Label(noJar && Crafting.Does(crafter, Verb.Buy) ? $"No jar yet: {He} sells them, above what you wear." : q.Blocked!, Style.TextItalic, Style.Caption, Style.Bad, true));
+        foot.AddChild(words);
+        var b = Press(Style.Button(steeping ? "Steep it" : "Steep", null, q.Ok, true), q, () =>
+        {
+            if (!steeping) { steeping = true; Sound.Sfx.Hover(); Refresh(); return; }
+            steeping = false;
+            Work(q, Sound.Sfx.Pour);
+        }, "steep");
+        if (steeping) b.AddThemeColorOverride("font_color", Style.Bad);
+        b.SizeFlagsVertical = SizeFlags.ShrinkCenter;
+        foot.AddChild(b);
+        slab.AddChild(foot);
+        var panel = Style.Panel(Style.Box(new Color("#11170f"), (steeping ? Style.Bad : ItemViews.SlurryGreen) with { A = steeping ? 0.8f : 0.45f }, steeping ? 2 : 1, 6, 16), slab);
+        v.AddChild(panel);
+        return v;
+    }
+
+    /// <summary>The slurry's odds, seen before the jar is opened (design 9): a bar cut by the weights,
+    /// each cut its chance and its words, and under it what that would mean for this piece. Shared by
+    /// Snib's bench and the pack, where the survivor steeps by hand.</summary>
+    public static Control SlurryOdds(ItemInstance it, float width)
+    {
+        var v = Style.V(Style.Gap1);
+        var odds = Crafting.Odds().ToList();
+        var bar = Style.H(2);
+        var cols = new Dictionary<string, Color>
+        {
+            ["up"] = ItemViews.BrightGrade, ["affix"] = ItemViews.SlurryGreen, ["nothing"] = new Color("#6f7a66"), ["down"] = Style.Bad,
+        };
+        var cap = Crafting.Cap(it);
+        var plain = it.Affixes.Where(a => Items.Affix(a.Id) is { } d && d.Kindled == null && d.Grants == null && !d.Slurry).ToList();
+        string Name(AffixRoll a) => Items.Affix(a.Id)?.Name ?? a.Id;
+        // Wide (the bench), each outcome is a column under its cut of the bar; narrow (the pack), the
+        // bar runs alone and the outcomes are listed under it.
+        bool wide = width >= 700;
+        var list = Style.V(Style.Gap1);
+        foreach (var (o, p) in odds)
+        {
+            var col = cols.GetValueOrDefault(o, Style.Ink);
+            var cell = Style.V(3);
+            cell.SizeFlagsHorizontal = SizeFlags.ExpandFill;
+            cell.SizeFlagsStretchRatio = (float)p;
+            var strip = new ColorRect { Color = col with { A = 0.85f }, CustomMinimumSize = new Vector2(wide ? Mathf.Max(120, (width - 2 * (odds.Count - 1)) * (float)p) : 0, 8), MouseFilter = MouseFilterEnum.Ignore };
+            strip.SizeFlagsHorizontal = SizeFlags.ExpandFill;
+            strip.SizeFlagsStretchRatio = (float)p;
+            var words = Style.V(2);
+            words.SizeFlagsHorizontal = SizeFlags.ExpandFill;
+            var head = Style.H(Style.Gap2, Style.Label($"{p:0%}", Style.Display, wide ? 22 : 17, col), Style.Label(Crafting.OddsWords(o), Style.UiBold, Style.Caption, Style.Ink, true));
+            ((Control)head.GetChild(1)).SizeFlagsHorizontal = SizeFlags.ExpandFill;
+            words.AddChild(head);
+            // What it would be here: the powers it could move, the ones it could gain.
+            string here = o switch
+            {
+                "up" => string.Join(", or ", plain.Where(a => a.Tier < Crafting.Bright).Select(a => $"{Name(a)} {Crafting.Grade(a.Tier)} to {Crafting.Grade(a.Tier + 1)}{(a.Tier + 1 > cap ? ", past the forge" : "")}")),
+                "affix" => string.Join(", ", Crafting.Rules.Slurry.Affixes.Select(Items.Affix).Where(d => d != null && d.Slots.Contains(Items.Get(it.Def).Kind) && it.Affixes.All(b => b.Id != d.Id)).Select(d => $"{d!.Name} ({d.Text(0)})")),
+                "down" => string.Join(", or ", plain.Where(a => a.Tier > 0).Select(a => $"{Name(a)} {Crafting.Grade(a.Tier)} to {Crafting.Grade(a.Tier - 1)}")),
+                _ => "the piece as it is, veined and set",
+            };
+            if (here == "") here = o switch { "down" => "nothing in it can fall a grade: only the veins", "affix" => "no slurry power fits it: only the veins", _ => "nothing in it can rise: only the veins" };
+            words.AddChild(Style.Label(here, Style.TextItalic, Style.Caption, Style.InkDim, true));
+            if (wide)
+            {
+                cell.AddChild(strip);
+                cell.AddChild(words);
+                bar.AddChild(cell);
+            }
+            else
+            {
+                bar.AddChild(strip);
+                var chip = new ColorRect { Color = col with { A = 0.85f }, CustomMinimumSize = new Vector2(6, 0), MouseFilter = MouseFilterEnum.Ignore };
+                list.AddChild(Style.H(Style.Gap2, chip, words));
+            }
+        }
+        bar.CustomMinimumSize = new Vector2(width, 0);
+        v.AddChild(bar);
+        if (!wide) v.AddChild(list);
+        return v;
+    }
 
     /// <summary>A jar of the Dig's slurry: Snib's three a day, bought at his bench.</summary>
     Control JarTile()
@@ -767,10 +937,11 @@ public partial class ForgeScreen : Overlay
         return b;
     }
 
-    /// <summary>A craft as a row: what it does (before and after), what it takes, and the press.</summary>
-    Control Craft(string title, Quote q, Action act, string lead, Control? icon, string navId)
+    /// <summary>A craft as a row: what it does (before and after), what it takes, and the press. A note
+    /// says where it comes from; warned, the row is asking again for what cannot be undone.</summary>
+    Control Craft(string title, Quote q, Action act, string lead, Control? icon, string navId, string? note = null, bool warn = false)
     {
-        var slab = Style.Panel(Style.Slab(12));
+        var slab = Style.Panel(warn ? Style.Box(new Color("#1e1212"), Style.Bad with { A = 0.85f }, 2, 5, 12) : Style.Slab(12));
         var h = Style.H(Style.Gap3);
         if (icon != null) h.AddChild(icon);
         var words = Style.V(2);
@@ -779,11 +950,13 @@ public partial class ForgeScreen : Overlay
         if (q.Before != null && q.After != null)
             words.AddChild(Style.H(Style.Gap2, Style.Label(q.Before, Style.Ui, Style.Small, Style.InkDim), Style.Label("to", Style.TextItalic, Style.Caption, Style.InkFaint), Style.Label(q.After, Style.UiBold, Style.Small, new Color("#9ad8ff"))));
         else if (q.After != null) words.AddChild(Style.Label(q.After, Style.UiBold, Style.Small, new Color("#9ad8ff"), true));
+        if (note != null) words.AddChild(Style.Label(note, Style.TextItalic, Style.Caption, warn ? Style.Bad : Style.InkDim, true));
         string cost = Cost(q);
         if (cost != "") words.AddChild(Style.Label(cost, Style.Ui, Style.Caption, q.Ok ? Style.Ink : Style.InkDim, true));
         if (!q.Ok && q.Blocked != closed) words.AddChild(Style.Label(q.Blocked!, Style.TextItalic, Style.Caption, Style.Bad, true));
         h.AddChild(words);
         var b = Press(Style.Button(title, null, q.Ok, true), q, act, navId);
+        if (warn) b.AddThemeColorOverride("font_color", Style.Bad);
         b.SizeFlagsVertical = SizeFlags.ShrinkCenter;
         h.AddChild(b);
         slab.AddChild(h);
@@ -822,18 +995,36 @@ public partial class ForgeScreen : Overlay
     {
         if (!q.Ok || sel == null) { Sound.Sfx.Deny(); return; }
         string uid = sel;
-        int heat = Chosen?.Heat ?? 0;
+        int heat = Chosen?.Heat ?? 0, at = seam;
         // Broken down, it leaves the anvil before the page is built again.
         if (off) { sel = null; seam = -1; }
         (sound ?? Sound.Sfx.Bash)();
-        struck = off ? null : (uid, q.Verb is Verb.Temper or Verb.WorkIn or Verb.Cage ? (q.Index >= 0 ? q.Index : seam) : -1, heat, q.Verb);
         // The pad's focus comes back to the seam worked when the press it was on is gone.
-        Nav.Prefer = seam >= 0 ? $"seam:{seam}" : "worn:0";
+        Nav.Prefer = seam >= 0 && SeamCrafts ? $"seam:{seam}" : "worn:0";
         // A craft changes what a piece does, never how it looks: the kit is folded back into the
         // fight (Journey.Work), and the figure is not dressed again.
-        G.Journey.Work(uid, q, G.Battle);
+        bool done = G.Journey.Work(uid, q, G.Battle);
+        // What rings: the seam worked (a power bound into an open seam lands where it was); where the
+        // slurry touched; the whole piece for what works all of it (-1: its head).
+        int rung = q.Verb switch
+        {
+            Verb.Temper or Verb.WorkIn or Verb.Cage or Verb.Bind => q.Index >= 0 ? q.Index : at,
+            Verb.Steep => q.Index,
+            _ => -1,
+        };
+        struck = off || !done ? null : (uid, rung, heat, q.Verb);
+        if (done && q.Verb == Verb.Steep && Inventory.Find(Ch, uid)?.Item is { } steeped)
+        {
+            var (text, mood) = Crafting.Outcome(steeped, q);
+            came = (uid, text, mood);
+        }
         Refresh();
     }
+
+    /// <summary>What a gamble just came to, said on the anvil while that piece is on it.</summary>
+    (string Uid, string Text, int Mood)? came;
+    /// <summary>A commission just handed over: new on the anvil.</summary>
+    string? handed;
 
     /// <summary>The hammer's moment, once the page is built again after a craft: the seam worked
     /// rings (its badge jumps, the row flares and cools), sparks fly off it, and the heat the craft
@@ -854,16 +1045,63 @@ public partial class ForgeScreen : Overlay
             if (!rows.TryGetValue(now.Seam, out var r) || !IsInstanceValid(r.Row) || !r.Row.IsInsideTree()) return;
             var (row, badge) = r;
             badge.PivotOffset = badge.Size / 2;
-            badge.Scale = Vector2.One * 1.4f;
+            badge.Scale = Vector2.One * (now.Seam < 0 ? 1.12f : 1.4f);
             badge.CreateTween().TweenProperty(badge, "scale", Vector2.One, 0.4).SetTrans(Tween.TransitionType.Back).SetEase(Tween.EaseType.Out);
-            // The row flares as the iron does under the hammer, and cools.
+            // The row flares as the work does, and cools: the iron under the hammer, the lamp's warmth
+            // a power was held over, the slurry's sick green, the gold of a thing made for you.
+            var (fill, edge, slow) = now.Verb switch
+            {
+                Verb.Bind => (new Color(1f, 0.86f, 0.55f, 0.32f), new Color(1f, 0.95f, 0.78f, 0.9f), 1.6),
+                Verb.Steep => (new Color(0.45f, 0.85f, 0.3f, 0.4f), new Color(0.8f, 1f, 0.6f, 0.9f), 1.4),
+                Verb.Commission => (new Color(1f, 0.78f, 0.35f, 0.35f), new Color(1f, 0.9f, 0.6f, 0.95f), 1.6),
+                _ => (new Color(1f, 0.55f, 0.18f, 0.5f), new Color(1f, 0.85f, 0.5f, 0.9f), 0.9),
+            };
             var flare = new Panel { MouseFilter = MouseFilterEnum.Ignore, Material = new CanvasItemMaterial { BlendMode = CanvasItemMaterial.BlendModeEnum.Add } };
-            flare.AddThemeStyleboxOverride("panel", Style.Box(new Color(1f, 0.55f, 0.18f, 0.5f), new Color(1f, 0.85f, 0.5f, 0.9f), 2, 5, 0));
+            flare.AddThemeStyleboxOverride("panel", Style.Box(fill, edge, 2, 5, 0));
+            flare.Size = row.Size;
             row.AddChild(flare);
-            flare.CreateTween().TweenProperty(flare, "modulate:a", 0f, 0.9).SetTrans(Tween.TransitionType.Quad).SetEase(Tween.EaseType.Out);
-            flare.GetTree().CreateTimer(1.0).Timeout += () => { if (IsInstanceValid(flare)) flare.QueueFree(); };
-            Sparks(row, badge.Position + badge.Size / 2, now.Verb == Verb.Cage);
+            flare.CreateTween().TweenProperty(flare, "modulate:a", 0f, slow).SetTrans(Tween.TransitionType.Quad).SetEase(Tween.EaseType.Out);
+            flare.GetTree().CreateTimer(slow + 0.1).Timeout += () => { if (IsInstanceValid(flare)) flare.QueueFree(); };
+            var at = badge.GetGlobalRect().GetCenter() - row.GetGlobalRect().Position;
+            switch (now.Verb)
+            {
+                case Verb.Bind: Motes(row, at, new Color("#fff4d8"), new Color("#ffd27a"), -30, 1.8); break;
+                case Verb.Steep: Motes(row, at, new Color("#e8ffc8"), new Color("#6fbf4a"), -70, 1.3); break;
+                case Verb.Commission: Motes(row, at, new Color("#fff2c0"), new Color("#ffb24a"), -40, 1.5); break;
+                default: Sparks(row, at, now.Verb is Verb.Cage or Verb.Rekindle); break;
+            }
         };
+    }
+
+    static GradientTexture2D? mote;
+    static GradientTexture2D Mote => mote ??= new GradientTexture2D
+    {
+        Width = 24, Height = 24, Fill = GradientTexture2D.FillEnum.Radial, FillFrom = new Vector2(0.5f, 0.5f), FillTo = new Vector2(1f, 0.5f),
+        Gradient = new Gradient { Colors = new[] { Colors.White, Colors.White with { A = 0.4f }, Colors.White with { A = 0 } }, Offsets = new[] { 0f, 0.3f, 1f } },
+    };
+
+    /// <summary>Soft lights rising slowly off the work, not flying from it: a breath let go over the
+    /// lamp (a binding), the slurry's bubbles (a steeping), a thing handed over.</summary>
+    static void Motes(Control at, Vector2 local, Color hot, Color cool, float rise, double life)
+    {
+        var ramp = new Gradient
+        {
+            Colors = new[] { hot with { A = 0 }, hot, cool, cool with { A = 0 } },
+            Offsets = new[] { 0f, 0.15f, 0.6f, 1f },
+        };
+        var p = new CpuParticles2D
+        {
+            Amount = 34, Lifetime = life, OneShot = true, Explosiveness = 0.7f, Emitting = false,
+            Direction = new Vector2(0, -1), Spread = 55, Gravity = new Vector2(0, rise),
+            InitialVelocityMin = 30, InitialVelocityMax = 120, DampingMin = 10, DampingMax = 40,
+            EmissionShape = CpuParticles2D.EmissionShapeEnum.Sphere, EmissionSphereRadius = 22,
+            ScaleAmountMin = 0.5f, ScaleAmountMax = 1.3f, ColorRamp = ramp, Position = local, ZIndex = 30,
+            Material = new CanvasItemMaterial { BlendMode = CanvasItemMaterial.BlendModeEnum.Add },
+            Texture = Mote,
+        };
+        at.AddChild(p);
+        p.Emitting = true;
+        p.GetTree().CreateTimer(life + 0.3).Timeout += () => { if (IsInstanceValid(p)) p.QueueFree(); };
     }
 
     bool striking;
@@ -932,7 +1170,11 @@ public partial class GradeBadge : Control
     public override void _Draw()
     {
         var r = new Rect2(Vector2.Zero, Size);
-        var col = mark switch { Mark.Coal => Style.Ember, Mark.Open => Style.GoldDim, Mark.Skill => Style.Day, Mark.Slurry => ItemViews.SlurryGreen, _ => Style.RarityOf(tier) };
+        bool bright = mark == Mark.Grade && tier >= Crafting.Bright;
+        var col = mark switch { Mark.Coal => Style.Ember, Mark.Open => Style.GoldDim, Mark.Skill => Style.Day, Mark.Slurry => ItemViews.SlurryGreen, _ => bright ? ItemViews.BrightGrade : Style.RarityOf(tier) };
+        // The bright grade gives off a little light of its own, past the badge's edge.
+        if (bright)
+            for (int i = 3; i >= 1; i--) DrawRect(r.Grow(i * 2.5f), ItemViews.SlurryGreen with { A = 0.07f * (4 - i) }, false, 2.5f);
         DrawRect(r, new Color(0.04f, 0.035f, 0.05f, 0.95f));
         if (mark == Mark.Open)
         {

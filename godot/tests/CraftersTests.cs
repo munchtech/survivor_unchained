@@ -332,17 +332,34 @@ public class CraftersTests
             Assert.True(Crafting.Slurried(it));
             Assert.Equal("It has been steeped. Once is all it takes.", Crafting.Steep(p.J.Craft, it).Blocked);
             var after = it.Affixes.Select(a => (a.Id, a.Tier)).ToList();
+            // What it came to is kept on the quote, said plainly, and names the power it touched.
+            var (said, mood) = Crafting.Outcome(it, q);
             switch (q.Outcome)
             {
-                case "up": Assert.Equal(before.Sum(a => a.Tier) + 1, after.Sum(a => a.Tier)); break;
-                case "down": Assert.Equal(before.Sum(a => a.Tier) - 1, after.Sum(a => a.Tier)); break;
-                case "nothing": Assert.Equal(before, after); break;
+                case "up":
+                    Assert.Equal(before.Sum(a => a.Tier) + 1, after.Sum(a => a.Tier));
+                    Assert.Equal(q.Grade, it.Affixes[q.Index].Tier);
+                    Assert.Equal(before[q.Index].Tier + 1, q.Grade);
+                    Assert.StartsWith(Items.Affix(q.Affix!)!.Name, said);
+                    Assert.Equal(1, mood);
+                    break;
+                case "down":
+                    Assert.Equal(before.Sum(a => a.Tier) - 1, after.Sum(a => a.Tier));
+                    Assert.Equal(before[q.Index].Tier - 1, it.Affixes[q.Index].Tier);
+                    Assert.Equal(-1, mood);
+                    break;
+                case "nothing": Assert.Equal(before, after); Assert.Equal(-1, q.Index); Assert.Equal(0, mood); break;
                 case "affix":
                     // Past the seams: a fourth power, the slurry's, strong with a price.
                     Assert.Equal(4, it.Affixes.Count);
                     Assert.True(Items.Affix(it.Affixes[3].Id)!.Slurry);
+                    Assert.Equal(3, q.Index);
+                    Assert.Contains(Items.Affix(it.Affixes[3].Id)!.Text(0), said);
                     break;
             }
+            // Set for good: no heat comes back to open it for the forge again.
+            Assert.Equal(Crafting.SetForGood, Crafting.Rekindle(p.J.Craft, it).Blocked);
+            Assert.Equal(Crafting.SetForGood, Crafting.Remake(p.J.Craft, it).Blocked);
             p.J.Ch.Pack[p.J.Ch.Pack.IndexOf(it)] = null;
         }
         // The weights, near enough: a quarter up, a quarter a slurry power, the rest veins or a grade lost.
@@ -350,8 +367,18 @@ public class CraftersTests
         Assert.InRange(seen["affix"], 70, 130);
         Assert.InRange(seen["nothing"], 90, 150);
         Assert.InRange(seen["down"], 50, 110);
-        // A grade IV taken up becomes the bright grade, V.
-        Assert.Equal("V", Crafting.Grade(4));
+        // A grade IV taken up becomes the bright grade, V; nothing goes past it.
+        Assert.Equal("V", Crafting.Grade(Crafting.Bright));
+        for (uint s = 1; s <= 60; s++)
+        {
+            p.Give("slurry_jar");
+            var it = Carry(p, "iron_helm", 3, ("hale", Crafting.Bright));
+            var q = Crafting.Steep(p.J.Craft, it);
+            Assert.True(Crafting.Do(p.J.Craft, it, q, new Rng(s * 104729)));
+            Assert.True(it.Affixes[0].Tier <= Crafting.Bright);
+            if (q.Outcome == "up") Assert.Fail("A bright grade cannot rise further: that is only the veins.");
+            p.J.Ch.Pack[p.J.Ch.Pack.IndexOf(it)] = null;
+        }
     }
 
     [Fact]

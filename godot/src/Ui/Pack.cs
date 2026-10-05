@@ -366,10 +366,16 @@ public partial class InventoryScreen : Overlay
         steeping = null;
         Sound.Sfx.Pour();
         if (!G.Journey.Work(it.Uid, q, G.Battle)) return;
-        broke = ($"Steeped: {Inventory.Name(it)}", G.Journey.CraftSaid?.After ?? "Green-black veins. It is set for good.", Items.Get(it.Def).Icon, Time.GetTicksMsec());
-        sel = null;
+        // What it came to, said plainly over its card (the piece stays chosen, so the card shows it
+        // as it is now), with how it looked under it.
+        var (text, mood) = Crafting.Outcome(it, q);
+        came = (it.Uid, text, mood, G.Journey.CraftSaid?.After);
+        sel = it.Uid;
         Refresh();
     }
+
+    /// <summary>What the slurry just did to a piece, said over its card while it stays chosen.</summary>
+    (string Uid, string Text, int Mood, string? Seen)? came;
 
     void Select(string uid) { sel = sel == uid ? null : uid; leaving = null; breaking = null; steeping = null; Refresh(); }
 
@@ -430,6 +436,17 @@ public partial class InventoryScreen : Overlay
         }
         if (it == null) return;
         var def = Items.Get(it.Def);
+        if (came is { } cm && cm.Uid == it.Uid)
+        {
+            var col = cm.Mood > 0 ? ItemViews.SlurryGreen : cm.Mood < 0 ? Style.Bad : new Color("#9aa890");
+            var words = Style.V(2, Style.Label("STEEPED", Style.UiHeavy, Style.Badge, col), Style.Label(cm.Text, Style.UiBold, Style.Body, cm.Mood < 0 ? Style.Bad : Style.Ink, true));
+            if (cm.Seen != null) words.AddChild(Style.Label(cm.Seen, Style.TextItalic, Style.Small, Style.InkDim, true));
+            words.SizeFlagsHorizontal = SizeFlags.ExpandFill;
+            var note = Style.Panel(Style.Box(new Color("#121a10"), col with { A = 0.6f }, 1, 5, 14), Style.H(Style.Gap3, Glyphs.Icon("drop", 28, col), words));
+            note.CustomMinimumSize = new Vector2(480, 0);
+            inspect.AddChild(note);
+        }
+        else if (came is { } old && old.Uid != it.Uid) came = null;
         var acts = Style.H(8);
         // A stack in the pouch: read, and left behind if it must be.
         if (Inventory.FromPouch(it.Uid) != null)
@@ -487,11 +504,10 @@ public partial class InventoryScreen : Overlay
     void SteepOdds(ItemInstance it)
     {
         if (steeping != it.Uid) return;
-        var lines = Style.V(2, Style.Label("Opened, the jar does one of these, and the piece is set for good after:", Style.UiBold, Style.Small, Style.Ink, true));
-        foreach (var (o, p) in Crafting.Odds())
-            lines.AddChild(Style.Label($"{p:0%}  {o switch { "up" => "one of its powers a grade past what the forge can do", "affix" => "a slurry power past its seams, strong, with a price", "nothing" => "only the veins", _ => "one of its powers a grade lower" }}",
-                Style.Ui, Style.Small, o == "down" ? Style.Bad : new Color("#a8e08a"), true));
-        var slab = Style.Panel(Style.Box(new Color("#121a10"), new Color("#4a7a3a") with { A = 0.7f }, 1, 5, 12), lines);
+        // The same odds as at Snib's bench, laid out for this piece; asked again in red.
+        var lines = Style.V(Style.Gap2, Style.Label("Opened, the jar does one of these, and the piece is set for good after:", Style.UiBold, Style.Small, Style.Bad, true),
+            ForgeScreen.SlurryOdds(it, 450));
+        var slab = Style.Panel(Style.Box(new Color("#121a10"), Style.Bad with { A = 0.7f }, 2, 5, 12), lines);
         slab.CustomMinimumSize = new Vector2(480, 0);
         inspect.AddChild(slab);
     }

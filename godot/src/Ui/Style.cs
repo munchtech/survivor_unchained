@@ -419,4 +419,6 @@ public static class Style
     public static Control Gap(float h) => new Control { CustomMinimumSize = new Vector2(0, h), MouseFilter = Control.MouseFilterEnum.Ignore };
 
     public static string Cap1(string s) => s.Length == 0 ? s : char.ToUpperInvariant(s[0]) + s[1..];
+    /// <summary>The first letter small, the rest as written ("Foreman of the Dig" after a comma).</summary>
+    public static string Lower1(string s) => s.Length == 0 ? s : char.ToLowerInvariant(s[0]) + s[1..];
 }

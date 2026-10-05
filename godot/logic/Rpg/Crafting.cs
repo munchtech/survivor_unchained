@@ -72,6 +72,9 @@ public sealed class CrafterDef
     public List<Easier> Easier = new();
     /// <summary>Verbs that open later than the crafter does, by the verb's key.</summary>
     public Dictionary<string, Gate> Gates = new();
+    /// <summary>For a crafter who is not one of the town's people (no person to draw): the creature
+    /// they are drawn as at their bench (Snib, a lampling).</summary>
+    public string? Visual;
     /// <summary>What they say (the story lead's words, in data): "greet" on sitting down at
     /// their bench; a verb's key ("temper") after that craft, in turn; "first.VERB" the first
     /// time, with "first.VERB.before" and ".after" as narration round it; "history.VERB" the
@@ -190,6 +193,8 @@ public static class Crafting
     /// <summary>The grade a worked-in affix enters at: the piece's own quality lifts it.</summary>
     public static int EntryGrade(ItemInstance it) => Math.Clamp(it.Rarity - 2, 0, 3);
     public static string Grade(int tier) => tier switch { 0 => "I", 1 => "II", 2 => "III", 3 => "IV", _ => "V" };
+    /// <summary>The bright grade (V): past every forge, given only by the slurry (design 5.1, 9).</summary>
+    public const int Bright = 4;
 
     static string Line(string affix, int tier) => Items.Affix(affix)?.Text(tier) ?? affix;
 
@@ -465,6 +470,8 @@ public static class Crafting
         var q = Begin(Verb.Remake, crafter, "Remake");
         int to = it.Rarity + 1;
         if (it.Heat == null) { q.Blocked = "That's somebody's work. Leave it be."; return q; }
+        // A remake brings heat back: a steeped piece stays as the slurry set it.
+        if (Slurried(it)) { q.Blocked = SetForGood; return q; }
         if (to > Rules.RemakeCap) { q.Blocked = "There's no better pattern he knows. Not yet."; return q; }
         // Remade iron cools overnight: one remake a piece a day (it also spreads a weapon's climb over days).
         bool cooling = it.Remade == x.World.Day;
@@ -486,6 +493,7 @@ public static class Crafting
     {
         var q = Begin(Verb.Rekindle, crafter, "Rekindle");
         if (it.Heat is not int h || it.HeatFull is not int full) { q.Blocked = "That's somebody's work. Leave it be."; return q; }
+        if (Slurried(it)) { q.Blocked = SetForGood; return q; }
         int n = it.Rekindled ?? 0;
         int add = (full + 1) / 2;
         q.Takes[Shard] = Rules.Rekindle.Shards << Math.Min(n, 8);
@@ -735,6 +743,10 @@ public static class Crafting
 
     public static bool Slurried(ItemInstance it) => it.Marks?.Contains(Rules.Slurry.Mark) == true;
 
+    /// <summary>Why a steeped piece takes no more heat: the slurry's setting is for good (design 9), or
+    /// a rekindle or a remake would open it again for the forge.</summary>
+    public const string SetForGood = "Steeped: the slurry set it for good. No heat will open it again.";
+
     /// <summary>Snib sells jars while the pump runs and he has been met: three a day.</summary>
     public static Quote BuyJar(CraftCtx x)
     {
@@ -788,6 +800,32 @@ public static class Crafting
         return q;
     }
 
+    /// <summary>What a steeping came to, said plainly (the story's narration says how it looked):
+    /// which power moved and to what, the power it gained, or nothing but the veins; and how it
+    /// went (1 a gain, -1 a loss, 0 nothing), for the colour it is said in.</summary>
+    public static (string Text, int Mood) Outcome(ItemInstance it, Quote q)
+    {
+        string name = q.Affix != null ? Items.Affix(q.Affix)?.Name ?? q.Affix : "";
+        return q.Outcome switch
+        {
+            "up" when q.Grade >= Bright => ($"{name} rose to the bright grade, past every forge: {q.After}", 1),
+            "up" when q.Grade > Cap(it) => ($"{name} rose past what the forge can do: grade {Grade(q.Grade)}, {q.After}", 1),
+            "up" => ($"{name} rose a grade: {q.Before} to {q.After}", 1),
+            "down" => ($"{name} gave a grade: {q.Before} to {q.After}", -1),
+            "affix" => ($"{name}, past its seams: {q.After}", 1),
+            _ => ("Only the veins: nothing else in it changed.", 0),
+        };
+    }
+
+    /// <summary>What each outcome means, in a few words, for the card that offers the jar.</summary>
+    public static string OddsWords(string outcome) => outcome switch
+    {
+        "up" => "one power a grade finer, past the forge if need be",
+        "affix" => "a slurry power past its seams, strong, with a price",
+        "nothing" => "only the veins",
+        _ => "one power a grade lower",
+    };
+
     /// <summary>The chances of each outcome, as shares of one (for the card that says them).</summary>
     public static IEnumerable<(string Outcome, double Chance)> Odds()
     {
@@ -802,21 +840,29 @@ public static class Crafting
         var plain = it.Affixes.Select((a, i) => (a, i)).Where(p => Bindable(Items.Affix(p.a.Id))).ToList();
         // Nothing in it to raise or lower: what would have happened to an affix happens past the seams.
         if (pick is "up" or "down" && plain.Count == 0) pick = pick == "up" ? "affix" : "nothing";
+        // What it came to is kept on the quote (which power, and its line before and after), so the
+        // bench and the pack can say it plainly and ring the seam it touched.
+        q.Index = -1;
+        q.Before = q.After = null;
         switch (pick)
         {
             case "up":
             {
                 // The lowest-raised first would be kind; the slurry is not: any of them, past the cap, to the bright grade.
-                var (a, _) = plain[rng.Int(0, plain.Count - 1)];
-                a.Tier = Math.Min(4, a.Tier + 1);
-                q.Affix = a.Id;
+                var (a, i) = plain[rng.Int(0, plain.Count - 1)];
+                if (a.Tier >= Bright) { pick = "nothing"; break; }
+                q.Before = Line(a.Id, a.Tier);
+                a.Tier++;
+                (q.Affix, q.Index, q.Grade, q.After) = (a.Id, i, a.Tier, Line(a.Id, a.Tier));
                 break;
             }
             case "down":
             {
-                var (a, _) = plain[rng.Int(0, plain.Count - 1)];
-                if (a.Tier > 0) a.Tier--; else pick = "nothing";
-                q.Affix = a.Id;
+                var (a, i) = plain[rng.Int(0, plain.Count - 1)];
+                if (a.Tier <= 0) { pick = "nothing"; break; }
+                q.Before = Line(a.Id, a.Tier);
+                a.Tier--;
+                (q.Affix, q.Index, q.Grade, q.After) = (a.Id, i, a.Tier, Line(a.Id, a.Tier));
                 break;
             }
             case "affix":
@@ -825,7 +871,7 @@ public static class Crafting
                 if (pool.Count == 0) { pick = "nothing"; break; }
                 var id = pool[rng.Int(0, pool.Count - 1)];
                 it.Affixes.Add(new AffixRoll { Id = id, Tier = 0 });
-                q.Affix = id;
+                (q.Affix, q.Index, q.Grade, q.After) = (id, it.Affixes.Count - 1, 0, Line(id, 0));
                 break;
             }
         }

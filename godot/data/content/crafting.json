@@ -133,6 +133,7 @@
   "snib": {
    "name": "Snib",
    "place": "The Dig",
+   "visual": "lampling",
    "verbs": ["steep", "buy"],
    "when": {"all": [{"met": "snib"}, {"not": {"any": [{"fact": "dig.pump", "eq": "broken"}, {"fact": "dig.pump", "eq": "blown"}, {"fact": "dig.pump", "eq": "moved"}]}}]},
    "closedLine": "No slurry, no jars. Snib is VERY sad about it. Snib is not sad about it.",
