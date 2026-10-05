@@ -808,8 +808,8 @@ public static class Sfx
     }
 
     /// <summary>A people's tell, a moment before its rush (combat's charge
-    /// director): the Pack's howl, the Kerchiefs' drum, a Lampling's fuse, the
-    /// barrow's whistle. Recorded takes (tools/comfy/sfx_clips.py), heard over
+    /// director): the Pack's howl, the Kerchiefs' whistle, a Lampling's fuse, the
+    /// dead's horn. Recorded takes (tools/comfy/sfx_clips.py), heard over
     /// the fight and never quite the same twice; a made sound if a take is
     /// missing, so a tell is never silent.</summary>
     public static void Tell(string id)
@@ -817,6 +817,13 @@ public static class Sfx
         if (A is not { } a || !a.Gate("tell", 1, 900)) return;
         if (Recordings.Has(id))
         {
+            // "A horn, twice": each take is one long blast, so a second answers the first, lower.
+            if (id == "tell_horn")
+            {
+                a.Play(new Clip { Of = id, G = 0.6, Pitch = R(0.98, 1.02), Verb = 0.6 });
+                a.Play(new Clip { Of = id, T = Now + 1.5, G = 0.52, Pitch = R(0.9, 0.94), Verb = 0.65 });
+                return;
+            }
             a.Play(new Clip { Of = id, G = id == "tell_fuse" ? 0.5 : 0.62, Pitch = R(0.94, 1.05), Verb = id == "tell_fuse" ? 0.15 : 0.45 });
             return;
         }
@@ -830,6 +837,11 @@ public static class Sfx
                 break;
             case "tell_fuse":
                 a.Play(new Hiss { D = 1.1, G = 0.08, Hp = 3500, Verb = 0.1 });
+                break;
+            case "tell_horn":
+                // Two long low blasts, the second falling away (never the whistle: it is the dead's horn).
+                a.Play(new Fm { F = 98, Ratio = 1.002, Index = 1.6, D = 1.1, G = 0.09, Verb = 0.7 });
+                a.Play(new Fm { T = Now + 1.25, F = 98, F2 = 92, Ratio = 1.002, Index = 1.4, D = 1.5, G = 0.08, Verb = 0.75 });
                 break;
             default:
                 a.Play(new Fm { F = 1900, Ratio = 2.01, Index = 0.4, D = 0.6, G = 0.05, Verb = 0.6 });

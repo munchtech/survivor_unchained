@@ -4,6 +4,7 @@ array (godot/art/fx/sprites.png, its groups in sprites.json).
 
     python tools/comfy/fx_sprites.py make [name ...]       # candidates, two seeds each
     python tools/comfy/fx_sprites.py cut NAME=PICK.png ...  # into the array
+    python tools/comfy/fx_sprites.py outline PICK.png OUT.png  # a solid shape as a lit outline
 
 A candidate lands in tools/comfy/out/fx_sprites/NAME_SEED_0.png. Cutting
 takes light from black (alpha from the brightest channel), centres it on its
@@ -48,6 +49,11 @@ SPRITES = {
     "gale_ring": "a wind chakram seen flat from directly above: a thin circular ring blade with exactly five short curved "
                  "crescent blades evenly spaced round its rim, all curving the same way like a five-pointed sawblade star, "
                  "each blade tapering to a sharp point, crisp thin luminous edges, empty dark centre",
+    # Iron Palms' strike: the force of an open hand, not a blade's crescent. Krea paints a solid
+    # golden hand; `outline` turns its silhouette into the chi palm that is cut (palm_print_2).
+    "palm_print": "the glowing imprint of one open human palm seen flat from directly above, a spread hand with five "
+                  "fingers outlined in bright amber and gold chi energy, fine force lines radiating out from the palm, "
+                  "a soft ring of pressure round it, luminous thin lines",
     "wind_swirl": "a spiral gust of wind seen from above, several thin curling streaks of air swirling round an empty centre "
                   "like a small whirlwind, wispy luminous lines fading at their tails",
 }
@@ -114,8 +120,26 @@ def cut(pairs):
     open(imp, "w").write(text)
 
 
+def outline(src, dst):
+    """A solid shape on black as a glowing outline: a lit edge, a soft glow round it, a faint
+    fill and the shape's own lines faint inside (a filled shape of light reads as a blob)."""
+    from PIL import ImageFilter
+
+    def blur(x, r):
+        return np.asarray(Image.fromarray((x * 255).astype(np.uint8)).filter(ImageFilter.GaussianBlur(r))).astype(np.float32) / 255
+
+    lum = (np.asarray(Image.open(src).convert("RGB")).astype(np.float32) / 255).max(axis=2)
+    mask = (blur((lum > 0.18).astype(np.float32), 2) > 0.5).astype(np.float32)
+    er = np.asarray(Image.fromarray((mask * 255).astype(np.uint8)).filter(ImageFilter.MinFilter(15))).astype(np.float32) / 255
+    edge = blur(np.clip(mask - er, 0, 1), 3)
+    out = np.clip(edge + blur(edge, 14) * 0.55 + mask * 0.16 + np.clip((0.75 - lum) * mask * er * 1.2, 0, 1) * 0.25, 0, 1)
+    Image.fromarray((np.dstack([out, out * 0.82, out * 0.45]) * 255).astype(np.uint8)).save(dst)
+
+
 if __name__ == "__main__":
-    if sys.argv[1] == "make":
+    if sys.argv[1] == "outline":
+        outline(sys.argv[2], sys.argv[3])
+    elif sys.argv[1] == "make":
         make(sys.argv[2:] or list(SPRITES))
     else:
         cut(sys.argv[2:])
