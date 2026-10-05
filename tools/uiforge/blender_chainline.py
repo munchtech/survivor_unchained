@@ -30,6 +30,9 @@ sys.path.insert(0, HERE)
 import blender_frames as B  # noqa: E402
 
 U = B.U
+SPEC = {}
+# How far from a neighbour's surface a link is rubbed bright, in bar radii.
+WEAR_REACH = 1.1
 
 
 def catenary(p0, p1, sag, n=400):
@@ -164,14 +167,14 @@ def iron_chain_material():
     k.new(rmask.outputs[0], rk.inputs[0])
     base = n.new("ShaderNodeMix")
     base.data_type = "RGBA"
-    base.inputs[6].default_value = B.hexc("#1f1b1b")
-    base.inputs[7].default_value = B.hexc("#3a2214")
+    base.inputs[6].default_value = B.hexc(SPEC.get("iron", "#1f1b1b"))
+    base.inputs[7].default_value = B.hexc(SPEC.get("rust", "#3a2214"))
     k.new(rk.outputs[0], base.inputs[0])
     worn = n.new("ShaderNodeMix")
     worn.data_type = "RGBA"
     k.new(attr.outputs["Fac"], worn.inputs[0])
     k.new(base.outputs[2], worn.inputs[6])
-    worn.inputs[7].default_value = B.hexc("#9c96a2")
+    worn.inputs[7].default_value = B.hexc(SPEC.get("worn", "#9c96a2"))
     k.new(worn.outputs[2], bsdf.inputs["Base Color"])
     # Rough where rusted, smooth where rubbed.
     rough = n.new("ShaderNodeMapRange")
@@ -182,7 +185,7 @@ def iron_chain_material():
     rough2.data_type = "FLOAT"
     k.new(attr.outputs["Fac"], rough2.inputs[0])
     k.new(rough.outputs[0], rough2.inputs[2])
-    rough2.inputs[3].default_value = 0.22
+    rough2.inputs[3].default_value = SPEC.get("worn_rough", 0.22)
     k.new(rough2.outputs[0], bsdf.inputs["Roughness"])
     metal = n.new("ShaderNodeMapRange")
     k.new(rk.outputs[0], metal.inputs["Value"])
@@ -257,7 +260,7 @@ def mark_wear(links, wire):
                     loc, _, _, d = trees[j].find_nearest(inv[j] @ p)
                     if loc is not None:
                         best = min(best, (links[j].matrix_world @ loc - p).length)
-            w = max(0.0, 1.0 - best / (wire * 2.6)) ** 0.8
+            w = max(0.0, 1.0 - best / (wire * WEAR_REACH)) ** 1.2
             ca.data[v.index].color = (w, w, w, 1)
 
 
@@ -286,6 +289,7 @@ def staple(x, y, W, H, mat, wire, ss):
 def main():
     argv = sys.argv[sys.argv.index("--") + 1:]
     spec = json.load(open(argv[0], encoding="utf-8"))
+    SPEC.update(spec.get("material", {}))
     out = argv[1]
     sc = B.reset()
     if spec.get("cpu", True):
@@ -354,4 +358,5 @@ def main():
     bpy.ops.render.render(write_still=True)
 
 
-main()
+if __name__ == "__main__":
+    main()

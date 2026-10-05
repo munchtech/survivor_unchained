@@ -52,18 +52,18 @@ public static class UiArt
         ["paper"] = new("frames/paper.png", 32, 32, 32, 32, Tile: true),
         // Inside a plate: the sunk well a grid or list lies in, the raised slab a group
         // stands on, the band across a page's head, the banner a verdict or name is cut in.
-        ["well"] = new("frames/well.png", 12, 12, 12, 12, Tile: true),
-        ["slab"] = new("frames/slab.png", 14, 14, 14, 14, Tile: true),
+        ["well"] = new("frames/well.png", 10, 10, 10, 10, Tile: true, Ground: "page/morocco.png", Tint: new Color(0.45f, 0.42f, 0.45f, 0.75f)),
+        ["slab"] = new("frames/slab.png", 14, 14, 14, 14, Tile: true, Out: 6, Ground: "page/morocco.png", Tint: new Color(1f, 1f, 1f, 0.88f)),
         ["header"] = new("frames/header.png", 0, 0, 0, 12, Tile: true),
         // Its match along the page's foot, the prompts set on its leather.
         ["footer"] = new("frames/footer.png", 0, 12, 0, 0, Tile: true),
         // The page's pieces (tools/uiforge/pages.py): the rail between a page's columns (its stone is
         // drawn at the middle by Overlay), the plate round the survivor's figure on the pack and the
         // self, and the light card for tooltips and the result's cards.
-        ["column_divider"] = new("frames/column_divider.png", 0, 24, 0, 24, Tile: true),
+        ["column_divider"] = new("frames/column_divider.png", 0, 28, 0, 28, Tile: true),
         // A page's column ruled in gilt (Style.Column): stretched, so the rules' fade follows its height.
         ["column"] = new("frames/column.png", 12, 16, 12, 8),
-        ["hero_plate"] = new("frames/hero_plate.png", 56, 56, 56, 56, Tile: true, Out: 12),
+        ["hero_plate"] = new("frames/hero_plate.png", 14, 14, 14, 14, Tile: true, Out: 6, Ground: "page/morocco.png", Tint: new Color(0.8f, 0.8f, 0.8f, 0.7f)),
         ["card_light"] = new("frames/card_light.png", 20, 20, 20, 20, Tile: true),
         // Hammered iron repeats rather than stretches; the ember stone at the top's middle is the code's.
         ["banner"] = new("frames/banner.png", 24, 14, 24, 14, Tile: true),
@@ -76,32 +76,32 @@ public static class UiArt
         // Self's attribute pillars (188 by 340, the medallion in the crest at the head) and
         // the HUD's console the skills sit on (130 high, 300 to 720 wide with the skill
         // count; its foot runs off the screen). Both hang from the house's brackets.
-        ["pillar"] = new("frames/pillar.png", 32, 100, 32, 36, Out: 12, Clear: 14),
+        ["pillar"] = new("frames/pillar.png", 14, 14, 14, 14, Tile: true, Out: 6, Ground: "page/morocco.png", Tint: new Color(1f, 1f, 1f, 0.88f)),
         ["console"] = new("frames/console.png", 48, 28, 48, 28, Tile: true, Out: 12, Clear: 0),
-        ["tooltip"] = new("frames/tooltip.png", 16, 16, 16, 16, Tile: true),
+        ["tooltip"] = new("frames/tooltip.png", 14, 14, 14, 14, Tile: true, Out: 6, Ground: "page/morocco.png", Tint: new Color(1f, 1f, 1f, 0.97f)),
         ["tooltip_worn"] = new("frames/tooltip_worn.png", 16, 16, 16, 16, Tile: true),
         // Buttons, tabs, segments, keycaps.
-        ["button"] = new("frames/button.png", 12, 10, 12, 10, Tile: true),
-        ["button_hover"] = new("frames/button_hover.png", 12, 10, 12, 10, Tile: true),
-        ["button_pressed"] = new("frames/button_pressed.png", 12, 10, 12, 10, Tile: true),
-        ["button_disabled"] = new("frames/button_disabled.png", 12, 10, 12, 10, Tile: true),
-        ["button_primary"] = new("frames/button_primary.png", 12, 10, 12, 10, Tile: true),
-        ["button_primary_hover"] = new("frames/button_primary_hover.png", 12, 10, 12, 10, Tile: true),
-        ["button_primary_pressed"] = new("frames/button_primary_pressed.png", 12, 10, 12, 10, Tile: true),
+        ["button"] = new("frames/button.png", 12, 10, 12, 10, Tile: true, Ground: "page/morocco.png", Tint: new Color(1.15f, 1.12f, 1.1f, 0.92f)),
+        ["button_hover"] = new("frames/button_hover.png", 12, 10, 12, 10, Tile: true, Ground: "page/morocco.png", Tint: new Color(1.4f, 1.34f, 1.3f, 0.95f)),
+        ["button_pressed"] = new("frames/button_pressed.png", 12, 10, 12, 10, Tile: true, Ground: "page/morocco.png", Tint: new Color(0.75f, 0.72f, 0.72f, 0.92f)),
+        ["button_disabled"] = new("frames/button_disabled.png", 12, 10, 12, 10, Tile: true, Ground: "page/morocco.png", Tint: new Color(0.7f, 0.7f, 0.7f, 0.5f)),
+        ["button_primary"] = new("frames/button_primary.png", 12, 10, 12, 10, Tile: true, Ground: "page/morocco.png", Tint: new Color(1.3f, 1.1f, 1f, 0.95f)),
+        ["button_primary_hover"] = new("frames/button_primary_hover.png", 12, 10, 12, 10, Tile: true, Ground: "page/morocco.png", Tint: new Color(1.5f, 1.25f, 1.1f, 0.97f)),
+        ["button_primary_pressed"] = new("frames/button_primary_pressed.png", 12, 10, 12, 10, Tile: true, Ground: "page/morocco.png", Tint: new Color(0.9f, 0.78f, 0.72f, 0.95f)),
         ["segment_on"] = new("frames/segment_on.png", 10, 8, 10, 8),
         ["tab"] = new("frames/tab.png", 14, 10, 14, 6),
-        ["tab_on"] = new("frames/tab_on.png", 14, 10, 14, 6),
-        ["row_on"] = new("frames/row_on.png", 12, 10, 12, 10, Tile: true),
-        ["keycap"] = new("frames/keycap.png", 6, 6, 6, 6),
+        ["tab_on"] = new("frames/tab_on.png", 18, 10, 18, 6, Tile: true),
+        ["row_on"] = new("frames/row_on.png", 10, 10, 10, 10, Tile: true, Ground: "page/morocco.png", Tint: new Color(0.8f, 0.74f, 0.72f, 0.9f)),
+        ["keycap"] = new("frames/keycap.png", 6, 6, 6, 6, Ground: "page/morocco.png", Tint: new Color(0.55f, 0.52f, 0.55f, 0.9f)),
         ["focus"] = new("frames/focus.png", 14, 14, 14, 14),
         // Slots, by rarity (0 common to 5 relic), and the empty one.
-        ["slot"] = new("frames/slot.png", 10, 10, 10, 10),
-        ["slot_0"] = new("frames/slot_common.png", 10, 10, 10, 10),
-        ["slot_1"] = new("frames/slot_uncommon.png", 10, 10, 10, 10),
-        ["slot_2"] = new("frames/slot_rare.png", 10, 10, 10, 10),
-        ["slot_3"] = new("frames/slot_epic.png", 10, 10, 10, 10),
-        ["slot_4"] = new("frames/slot_legendary.png", 10, 10, 10, 10),
-        ["slot_5"] = new("frames/slot_relic.png", 10, 10, 10, 10),
+        ["slot"] = new("frames/slot.png", 10, 10, 10, 10, Ground: "page/morocco.png", Tint: new Color(0.66f, 0.63f, 0.66f, 0.86f)),
+        ["slot_0"] = new("frames/slot_common.png", 10, 10, 10, 10, Ground: "page/morocco.png", Tint: new Color(0.55f, 0.52f, 0.55f, 0.85f)),
+        ["slot_1"] = new("frames/slot_uncommon.png", 10, 10, 10, 10, Ground: "page/morocco.png", Tint: new Color(0.55f, 0.52f, 0.55f, 0.85f)),
+        ["slot_2"] = new("frames/slot_rare.png", 10, 10, 10, 10, Ground: "page/morocco.png", Tint: new Color(0.55f, 0.52f, 0.55f, 0.85f)),
+        ["slot_3"] = new("frames/slot_epic.png", 10, 10, 10, 10, Ground: "page/morocco.png", Tint: new Color(0.55f, 0.52f, 0.55f, 0.85f)),
+        ["slot_4"] = new("frames/slot_legendary.png", 10, 10, 10, 10, Ground: "page/morocco.png", Tint: new Color(0.55f, 0.52f, 0.55f, 0.85f)),
+        ["slot_5"] = new("frames/slot_relic.png", 10, 10, 10, 10, Ground: "page/morocco.png", Tint: new Color(0.55f, 0.52f, 0.55f, 0.85f)),
         // The draft's cards, by rarity, and the evolution's.
         // Drawn one to one (368 by 500 with the 24 that may reach past the card): the
         // brackets the card hangs from and the coins at its foot overhang it.
@@ -116,7 +116,7 @@ public static class UiArt
         ["prompt"] = new("frames/prompt.png", 22, 12, 22, 12, Tile: true),
         // The note: its nail and its drop of wax in corners wider than the text keeps from.
         ["hint"] = new("frames/hint.png", 40, 40, 40, 40, Tile: true, Clear: 14),
-        ["chip"] = new("frames/chip.png", 8, 8, 8, 8),
+        ["chip"] = new("frames/chip.png", 8, 8, 8, 8, Ground: "page/morocco.png", Tint: new Color(1.1f, 1.08f, 1.05f, 0.85f)),
         ["weapon_slot"] = new("frames/weapon_slot.png", 12, 12, 12, 12),
         ["bar_track"] = new("bars/track.png", 8, 6, 8, 6, Tile: true),
         ["bar_track_boss"] = new("bars/track_boss.png", 24, 8, 24, 8),
@@ -124,6 +124,15 @@ public static class UiArt
         ["bar_casing"] = new("bars/casing.png", 16, 8, 16, 8, Tile: true, Out: 6),
         ["bar_casing_boss"] = new("bars/casing_boss.png", 64, 24, 64, 24, Tile: true, Out: 64, OutY: 24),
         ["map_frame"] = new("frames/map_frame.png", 20, 20, 20, 20, Tile: true, Out: 8),
+        // The reduced kit's own pieces (tools/uiforge/kit.py).
+        ["panel"] = new("frames/panel.png", 14, 14, 14, 14, Tile: true, Out: 6, Ground: "page/morocco.png", Tint: new Color(1f, 1f, 1f, 0.88f)),
+        ["tab_hover"] = new("frames/tab_hover.png", 18, 10, 18, 6, Tile: true),
+        ["tab_pressed"] = new("frames/tab_pressed.png", 18, 10, 18, 6, Tile: true),
+        ["side"] = new("frames/side.png", 48, 48, 48, 48, Tile: true, Out: 8, Ground: "page/vellum.png", Tint: new Color(1f, 1f, 1f, 0.96f)),
+        ["price"] = new("frames/price.png", 6, 6, 6, 6, Ground: "page/morocco.png", Tint: new Color(0.5f, 0.48f, 0.5f, 0.92f)),
+        ["row"] = new("frames/row.png", 10, 10, 10, 10, Tile: true, Ground: "page/morocco.png", Tint: new Color(0.7f, 0.68f, 0.7f, 0.85f)),
+        ["rule_h"] = new("frames/rule_h.png", 28, 0, 28, 0, Tile: true),
+        ["rule_v"] = new("frames/rule_v.png", 0, 28, 0, 28, Tile: true),
     };
 
     static readonly Dictionary<string, Texture2D?> cache = new();

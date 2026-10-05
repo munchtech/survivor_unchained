@@ -49,12 +49,18 @@ def render(spec, name):
     return img
 
 
-def ember_glow(img, strength=1.0):
-    """The break's light thrown on what is round it: a soft orange bloom from the hot pixels."""
+def ember_glow(img, strength=1.0, edge=0):
+    """The break's light thrown on what is round it: a soft orange bloom from the hot pixels.
+    `edge` px from the picture's sides it has faded to nothing (a sprite's cell must not show)."""
     rgb, a = img[..., :3], img[..., 3]
     hot = np.clip((rgb[..., 0] - 0.55) * 2.5, 0, 1) * np.clip(rgb[..., 0] - rgb[..., 2] - 0.3, 0, 1) * 3 * a
     g = cv2.GaussianBlur(hot, (0, 0), 6) * 0.9 + cv2.GaussianBlur(hot, (0, 0), 18) * 0.6
     g = np.clip(g * strength, 0, 1)
+    if edge:
+        h, w = g.shape
+        yy, xx = np.mgrid[0:h, 0:w].astype(np.float32)
+        d = np.minimum(np.minimum(xx, w - 1 - xx), np.minimum(yy, h - 1 - yy))
+        g = g * np.clip(d / edge, 0, 1) ** 1.5
     col = np.array([1.0, 0.45, 0.12], np.float32)
     out_a = a + g * (1 - a)
     out = (rgb * a[..., None] + col * (g * (1 - a))[..., None]) / np.maximum(out_a[..., None], 1e-4)
@@ -92,16 +98,23 @@ def band(samples=48, span=320, sag=10.0, broken_sag=15.0, rail_y=14.0):
     return ember_glow(render(spec, "band"))
 
 
-def title(side="r", samples=64, length=240, link=(28, 16, 2.3), gap=9.0, fade=80.0):
+# The iron's look, shared by every chain: dark in its hollows, rubbed bright where it is worked,
+# so each link reads crisp at 1:1 (the coordinator: "slightly soft").
+IRON = {"iron": "#161314", "rust": "#2c180e", "worn": "#d2ccd6", "worn_rough": 0.16}
+# The tab chain lies on the band's dark goatskin, so its iron is a step lighter to read there.
+TAB_IRON = {"iron": "#262122", "rust": "#3a2012", "worn": "#e2dce6", "worn_rough": 0.14}
+
+
+def title(side="r", samples=96, length=270, link=(32, 19, 2.6), gap=10.0, fade=90.0, ss=3):
     """ornaments/title_chain_SIDE.png, length x 40 shown: the chain either side of a page's
     title, as if the name had broken it. It runs in from beyond the plaque, fading as it goes
     out, and ends at the title in a link pried open at its end, ember in the break. Rendered for
     each side, so both are lit from the upper left (a mirrored one would cast its shadow the
     wrong way)."""
-    W, H = int(length), 40
+    W, H = int(length), 44
     y = H / 2
     near, far = (12.0, W + 30.0) if side == "r" else (W - 12.0, -30.0)
-    spec = {"size": [W * 2, H * 2], "ss": 2, "samples": samples,
+    spec = {"size": [W * 2, H * 2], "ss": ss, "samples": samples, "material": IRON,
             "link": {"length": link[0] * 2, "width": link[1] * 2, "wire": link[2] * 2},
             "chains": [{"from": [min(near, far) * 2, y * 2], "to": [max(near, far) * 2, y * 2], "sag": 4,
                         "open": "first" if side == "r" else "last", "gap": gap * 2, "where": "end"}],
@@ -112,6 +125,42 @@ def title(side="r", samples=64, length=240, link=(28, 16, 2.3), gap=9.0, fade=80
     d = (W - x) if side == "r" else x
     img[..., 3] *= np.clip(d / fade, 0, 1) ** 1.4
     return img
+
+
+def links(variants=6, samples=64, link=(24, 14, 2.0), cell=(36, 26), ss=3):
+    """chain/face_K, edge_K, hot and open (art/ui/chain/, cells of cell shown px, the link at
+    the centre along x): the tab chain's links, each its own sprite so the code can lay them
+    along a sagging line, slide them link by link and let them sway, with no two neighbours
+    alike; the chosen tab's link pried open with ember in the break (open), or heated through
+    (hot). `pitch` (shown px) is where the next link's centre sits."""
+    pitch = link[0] - 4 * link[2]
+    spec = {"cell": [cell[0] * 2, cell[1] * 2], "ss": ss, "samples": samples, "material": TAB_IRON,
+            "link": {"length": link[0] * 2, "width": link[1] * 2, "wire": link[2] * 2},
+            "pitch": pitch * 2, "variants": variants, "seed": 5}
+    d = os.path.join(OUT, "links")
+    os.makedirs(d, exist_ok=True)
+    sp = os.path.join(d, "spec.json")
+    json.dump(spec, open(sp, "w", encoding="utf-8"), indent=1)
+    t0 = time.time()
+    for f in os.listdir(d):
+        if f.endswith(".png"):
+            os.remove(os.path.join(d, f))
+    r = subprocess.run([BLENDER, "-b", "-P", os.path.join(HERE, "blender_links.py"), "--", sp, d],
+                       capture_output=True, text=True, timeout=3600)
+    names = [f"face_{k}" for k in range(variants)] + [f"edge_{k}" for k in range(variants)] + ["hot", "open"]
+    made = {}
+    for nm in names:
+        p = os.path.join(d, nm + ".png")
+        if not os.path.exists(p) or os.path.getmtime(p) < t0:
+            raise RuntimeError(f"{nm} not rendered:\n" + (r.stdout + r.stderr)[-3000:])
+        img = np.asarray(Image.open(p).convert("RGBA"), np.float32) / 255
+        img = F.downsample(img, (cell[0] * 2, cell[1] * 2))
+        if nm in ("hot", "open"):
+            img = ember_glow(img, 0.8, edge=10)
+        made[f"chain/{nm}.png"] = img
+    json.dump({"pitch": pitch, "cell": list(cell), "variants": variants, "link": list(link)},
+              open(os.path.join(d, "chain.json"), "w"), indent=1)
+    return made
 
 
 MAKE = {"swag": ("frames/chain_swag.png", swag), "band": ("frames/chain_band.png", band),

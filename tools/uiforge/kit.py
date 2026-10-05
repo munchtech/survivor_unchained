@@ -279,15 +279,15 @@ def rule_v(Ws=6, Hs=128, end=28):
     return layer(wall * fade, groove * fade)
 
 
-def underline(Ws=96, Hs=34, col=EMBER, end=16):
+def underline(Ws=96, Hs=34, col=EMBER, end=16, glow=0.10, a=0.95):
     """The open tab's mark: an ember line under its words, fading at its ends, and the faint
     light it throws up behind them. Nothing else: the other tabs are words alone."""
     W, H = int(Ws * K), int(Hs * K)
     yy, xx = np.mgrid[0:H, 0:W].astype(np.float32)
     y, x = (yy + 0.5) / K, (xx + 0.5) / K
     fade = np.clip(x / end, 0, 1) ** 1.2 * np.clip((Ws - x) / end, 0, 1) ** 1.2
-    line = np.clip(1 - np.abs(y - (Hs - 2.5)) / 1.0, 0, 1) * fade * 0.95
-    halo = np.exp(-((Hs - 2.5 - y) / 9.0) ** 2) * fade * 0.10 * (y < Hs - 2)
+    line = np.clip(1 - np.abs(y - (Hs - 2.5)) / 1.0, 0, 1) * fade * a
+    halo = np.exp(-((Hs - 2.5 - y) / 9.0) ** 2) * fade * glow * (y < Hs - 2)
     a = np.clip(line + halo, 0, 1)
     rgb = np.broadcast_to(colour(col), (H, W, 3)).copy()
     rgb = rgb * (1 - line[..., None] * 0.3) + np.array([1.0, 0.85, 0.6], np.float32) * line[..., None] * 0.3
@@ -574,7 +574,7 @@ SLICES = {
     "hero_plate": Slice("frames/hero_plate.png", 14, 14, 14, 14, True, 6, G, (0.8, 0.8, 0.8, 0.7)),
     "tooltip": Slice("frames/tooltip.png", 14, 14, 14, 14, True, 6, G, (1, 1, 1, 0.97)),
     "well": Slice("frames/well.png", 10, 10, 10, 10, True, 0, G, (0.45, 0.42, 0.45, 0.75)),
-    "slot": Slice("frames/slot.png", 10, 10, 10, 10, False, 0, G, (0.5, 0.47, 0.5, 0.8)),
+    "slot": Slice("frames/slot.png", 10, 10, 10, 10, False, 0, G, (0.66, 0.63, 0.66, 0.86)),
     **{f"slot_{i}": Slice(f"frames/slot_{nm}.png", 10, 10, 10, 10, False, 0, G, (0.55, 0.52, 0.55, 0.85))
        for i, nm in enumerate(["common", "uncommon", "rare", "epic", "legendary", "relic"])},
     "button": Slice("frames/button.png", 12, 10, 12, 10, True, 0, G, (1.15, 1.12, 1.1, 0.92)),
@@ -588,6 +588,8 @@ SLICES = {
     "keycap": Slice("frames/keycap.png", 6, 6, 6, 6, False, 0, G, (0.55, 0.52, 0.55, 0.9)),
     "tab": Slice("frames/tab.png", 14, 10, 14, 6),
     "tab_on": Slice("frames/tab_on.png", 18, 10, 18, 6, True),
+    "tab_hover": Slice("frames/tab_hover.png", 18, 10, 18, 6, True),
+    "tab_pressed": Slice("frames/tab_pressed.png", 18, 10, 18, 6, True),
     "side": Slice("frames/side.png", 48, 48, 48, 48, True, 8, "page/vellum.png", (1, 1, 1, 0.96)),
     "price": Slice("frames/price.png", 6, 6, 6, 6, False, 0, G, (0.5, 0.48, 0.5, 0.92)),
     "row": Slice("frames/row.png", 10, 10, 10, 10, True, 0, G, (0.7, 0.68, 0.7, 0.85)),
@@ -605,7 +607,7 @@ MAKE = {
     "frames/hero_plate.png": lambda: raised(220, 220, out=6, mid=192, wear=0.7),
     "frames/tooltip.png": lambda: raised(220, 220, out=6, mid=192, shadow=0.8),
     "frames/well.png": lambda: sunk(212, 212, mid=192, depth=1.0),
-    "frames/slot.png": lambda: sunk(80, 80, depth=0.9),
+    "frames/slot.png": lambda: sunk(80, 80, depth=0.8, rim=1.8),
     **{f"frames/slot_{nm}.png": (lambda i=i: sunk(80, 80, depth=0.9, line=RARITY[i], line_a=[0.22, 0.6, 0.7, 0.75, 0.8, 0.85][i],
                                                    glow=RARITY[i], glow_a=[0.0, 0.10, 0.14, 0.16, 0.2, 0.24][i]))
        for i, nm in enumerate(["common", "uncommon", "rare", "epic", "legendary", "relic"])},
@@ -620,6 +622,8 @@ MAKE = {
     "frames/keycap.png": lambda: sunk(24, 24, r=2.5, depth=0.7, mid=12),
     "frames/tab.png": lambda: clear(64, 34),
     "frames/tab_on.png": lambda: underline(96, 34),
+    "frames/tab_hover.png": lambda: underline(96, 34, col=F.hexc("#b8ab98", lin=False), glow=0.0, a=0.35),
+    "frames/tab_pressed.png": lambda: underline(96, 34, col=F.hexc("#d8c8b0", lin=False), glow=0.0, a=0.55),
     "frames/rule_h.png": rule_h,
     "frames/rule_v.png": rule_v,
     "medallion/ring.png": ring,
@@ -664,6 +668,8 @@ MAKE.update({
     "frames/column.png": column,
     "frames/column_divider.png": lambda: rule_v(24, 128),
 })
+CHAIN_ART = ([f"chain/face_{k}.png" for k in range(6)] + [f"chain/edge_{k}.png" for k in range(6)] +
+             ["chain/hot.png", "chain/open.png", "ornaments/title_chain_l.png", "ornaments/title_chain_r.png"])
 # Ornament the kit does without (moved aside on --apply, so the code's fallback is nothing).
 DROP = ["frames/column_divider_stone.png"]
 
@@ -715,6 +721,16 @@ def apply():
         dst = os.path.join(UI, rel)
         os.makedirs(os.path.dirname(dst), exist_ok=True)
         shutil.copyfile(srcp, dst)
+    # The chain's pieces (chain.py): the tab chain's links and the title's broken chain.
+    ch = os.path.join(ROOT, "tools", "comfy", "out", "uiforge", "chain")
+    for rel in CHAIN_ART:
+        srcp = os.path.join(ch, "sprites", rel) if rel.startswith("chain/") else os.path.join(ch, rel)
+        if not os.path.exists(srcp):
+            raise SystemExit(f"{rel} not made: run chain.py first")
+        dst = os.path.join(UI, rel)
+        os.makedirs(os.path.dirname(dst), exist_ok=True)
+        shutil.copyfile(srcp, dst)
+    shutil.copyfile(os.path.join(ch, "links", "chain.json"), os.path.join(UI, "chain", "chain.json"))
     for rel in DROP:
         for q in (os.path.join(UI, rel), os.path.join(UI, rel) + ".import"):
             if os.path.exists(q):

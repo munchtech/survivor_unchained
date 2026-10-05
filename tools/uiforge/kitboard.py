@@ -527,7 +527,10 @@ def title_chain(cv: Canvas, cx, cy, text, font, size, src="kit", gap=8):
         cv.over(resize(img, w * s, h * s), x * s, (cy - h / 2) * s)
 
 
-def self2(cv: Canvas, src="kit", chain="title"):
+TABS = []
+
+
+def self2(cv: Canvas, src="kit", chain="title", sel=1):
     """Self as the approved greybox lays it (UI design, 644fb432): no dead space, the page
     ending at its contents and fading into the world; the head band the one frame, and on its
     rail the chain, broken under her name."""
@@ -540,16 +543,18 @@ def self2(cv: Canvas, src="kit", chain="title"):
         if ch is not None:
             cv.over(resize(ch, 1920 * cv.s, 40 * cv.s), 0, 76 * cv.s)
     x = 60
+    TABS.clear()
     for i, t in enumerate(["Pack", "Self", "Arts", "Journal", "Map"]):
         fnt = ImageFont.truetype(font_path("alegreya-sans-700"), 17)
         tw = fnt.getlength(t)
-        if i == 1:
+        if i == sel and chain != "tabs":
             piece(cv, "tab_on", x - 12, 22, tw + 48, 34, src)
-        cv.text(x, 42, t, "alegreya-sans-700", 17, gold_hi if i == 1 else ink_dim, "ls")
+        cv.text(x, 42, t, "alegreya-sans-700", 17, gold_hi if i == sel else ink_dim, "ls")
+        TABS.append(x + tw / 2)
         piece(cv, "keycap", x + tw + 8, 27, 20, 20, src)
         cv.text(x + tw + 18, 42, "ICKJM"[i], "alegreya-sans-700", 12, ink_dim, "ms", shadow=False)
         x += tw + 62
-    if chain == "title":
+    if chain in ("title", "tabs"):
         title_chain(cv, 960, 37, "WREN", "cinzel-700", 38, src)
     cv.text(960, 50, "WREN", "cinzel-700", 38, gold_hi, "ms")
     cv.text(960, 69, "Level 4  ·  Warden  ·  Hunter, who knows Beastlore", "alegreya-400-italic", 15, ink_dim, "ms")
@@ -656,7 +661,8 @@ def main():
     out = args[args.index("--out") + 1] if "--out" in args else os.path.join(KIT, f"board_{page}_{int(1080 * scale)}.png")
     cv = {"specimen": specimen, "pack": pack, "self": self_, "self2": self2,
           "self2_plain": lambda c, s_: self2(c, s_, chain=None),
-          "self2_band": lambda c, s_: self2(c, s_, chain="band")}[page](Canvas(1920, 1080, scale), src)
+          "self2_band": lambda c, s_: self2(c, s_, chain="band"),
+          "self2_tabs": lambda c, s_: self2(c, s_, chain="tabs")}[page](Canvas(1920, 1080, scale), src)
     cv.image().save(out)
     print(out)
 
