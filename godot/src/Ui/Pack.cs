@@ -150,6 +150,14 @@ public partial class InventoryScreen : Overlay
     public static Control Figure(CharacterData ch, int w = 420, int h = 620)
     {
         var holder = new Control { CustomMinimumSize = new Vector2(w, h), MouseFilter = MouseFilterEnum.Ignore };
+        // The page's one hero plate rounds the figure (frames/hero_plate.png), behind it, so nothing moves when it lands.
+        if (UiArt.Has("hero_plate"))
+        {
+            var plate = new Panel { MouseFilter = MouseFilterEnum.Ignore };
+            plate.AddThemeStyleboxOverride("panel", UiArt.Frame("hero_plate", new StyleBoxEmpty()));
+            Style.Fill(plate);
+            holder.AddChild(plate);
+        }
         var glow = new TextureRect
         {
             Texture = new GradientTexture2D
