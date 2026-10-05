@@ -1,7 +1,7 @@
 # Crafting: status
 
-Crafting lead, agent `ab0b263c720bdbda8`, branch `worktree-agent-ab0b263c720bdbda8` (successor to
-`af01b0d61ef656dd4`, whose handoff is `docs/handoff/crafting.md`). Research: `docs/CRAFTING_RESEARCH.md`.
+Crafting lead, agent `ab0b263c720bdbda8` (handed off: `docs/handoff/crafting.md`), branch
+`worktree-agent-ab0b263c720bdbda8` (successor to `af01b0d61ef656dd4`). Research: `docs/CRAFTING_RESEARCH.md`.
 Design: `docs/CRAFTING_DESIGN.md` (20.2 the kits as built; 20.7 the endgame as built; 20.8 seen and measured).
 
 ## State (2026-10-05)
