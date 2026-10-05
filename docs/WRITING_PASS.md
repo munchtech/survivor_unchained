@@ -2071,5 +2071,7 @@ stopped. These are the words, given to combat to paste:
 | Greenbelly wades out (sight, optional) | "Out in the shallows, something heavy gets up." |
 | The reeds' bar | "The reeds" / "The sick will not cross a fed fire's light" |
 | The drive at half (`Say`, danger) | "The whole Pack wheels" / "Wider and quicker: still through the wolves, never the gap" |
+| The drive at a quarter: her yearlings' ring (`Goal`; sight; `Say`, danger) | "Break the yearlings' ring ({n} of {m})"; "Whitethroat yips, and her yearlings come round you in a ring."; "The yearlings ring you" / "Whitethroat is behind them: break the ring" |
+| It breaks (`Say`, boon); its bar | "The yearlings scatter" / "Whitethroat is in reach again" (not "open": that is her pant); "The yearlings" / "Whitethroat is out of reach until it breaks" |
 | The Pack's turn (sight; label) | "A growl goes round the ring. The Pack turns."; "The Pack turns" |
 | The Moon's first howl (channel; sight) | "The moon clears: into a fire's light!"; "He sits back and howls, and the cloud slides off the moon. The cold comes in off the ring." |
