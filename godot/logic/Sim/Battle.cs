@@ -504,6 +504,7 @@ public sealed partial class Battle
         condScratch.Add(p.Moving ? ModWhen.Moving : ModWhen.Still);
         if (p.Hp < MaxHp * 0.35) condScratch.Add(ModWhen.LowHealth);
         if (p.Hp >= MaxHp - 0.01) condScratch.Add(ModWhen.FullHealth);
+        if (p.Hp > MaxHp * 0.8) condScratch.Add(ModWhen.Healthy);
         // What gear asks of the moment: the dark, beasts close, fire underfoot, a dash just done.
         if (Night) condScratch.Add(ModWhen.Night);
         if (Time - dashEnded < 1.5) condScratch.Add(ModWhen.AfterDash);

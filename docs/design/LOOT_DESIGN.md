@@ -48,7 +48,7 @@ The owner, 5 October:
 7. **Nothing the filter shows is ever lost to a fight.** At a night's or a map's end everything
    shown and still lying is gathered home; Rare and up that will not fit goes to Rook's storeroom.
 8. **Presentation by tier, and one moment for a Legendary.** Beams grow with the tier, each tier
-   has its own drop sound, and a Legendary hushes the horde, tolls, and raises a pillar of amber
+   has its own drop sound, and a Legendary hushes the music, tolls, and raises a pillar of amber
    to the sky that the screen's edge points to.
 
 ---
@@ -219,21 +219,29 @@ skill.
 | **Legion** | 24–31 | ×4.0 | +45% | Act 3, tiers 8–11 |
 | **Heartwrought** | 32+ | ×5.5 | +70% | the deep atlas, tiers 12–16 |
 
+Armour has its own, gentler curve (×1, 1.8, 2.8, 3.4, 4.0): its reduction saturates
+(armour ÷ (armour + 20)), and a full Heartwrought set at ×5.5 came to about 75% (combat). The
+lasting answer is combat's: armour measured against the size of the blow (Path of Exile's rule),
+so deep armour is worth what deep blows ask. A piece's flat rule damage (Kell's Lamp's flare, the
+Drowned Coat's black water) grows with its make as its numbers do, so a deep copy is not a toy;
+rules that read the blow or the weapon already grow with what they read.
+
 The make is a word on the tooltip's second line ("Common helm · Wrought · level 18"), not in the
 name. **Why discrete makes, not a smooth curve**: two pieces are compared at a glance by a word
 (Diablo II's normal, exceptional, elite: R18); a curve would ask the player to read decimals.
-(The names are the items plan's; "Legion" and "Heartwrought" want the story lead's yes.)
+(The story lead's yes: "Legion" is the valley's word for the old empire's best iron, from about
+Act 2; "Heartwrought" never before Act 2's end, which level 32 keeps.)
 
 Every armour base gets implicits worth about one and a half affixes, so a Common has something to
 scale (section 10.3). Measured with the power score (4.4) over 200 rolls of each, the owner's claims
 hold for every helm, body and cloak base, and a test holds them (`LootTests`):
 
-| Iron Helm (power) | Common | Uncommon | Rare | Epic |
+| Chain Shirt (power) | Common | Uncommon | Rare | Epic |
 |---|---|---|---|---|
-| Worn (level 1–3) | 2.7 | 4.7 | 8.5 | 14.6 |
-| Sound (10) | 5.7 | | | |
-| Wrought (18) | 9.4 | | 15.6 (level 20) | |
-| Heartwrought (34) | 19.5 | | | 35.4 |
+| Worn (level 1–3) | 3.7 | 5.8 | 9.9 | 15.7 |
+| Sound (10) | 8.3 | | | |
+| Wrought (18) | 14.0 | | 20.7 (level 20) | |
+| Heartwrought (34) | about 24 | | | about 40 |
 
 - a **Sound Common** beats a **Worn Uncommon** of the same base;
 - a **Wrought Common** beats a **Worn Rare**;
@@ -313,8 +321,8 @@ can read its affixes and the beam can say what it is.
   the moment the story most wants to pay.
 - **The dark's debt.** Every gear roll that is not Legendary adds one; at 120 the next boss's or
   ruler's hoard holds a Legendary for certain, and the debt clears. It is shown, never hidden (R10):
-  on the night's and the map's result, a row of marks and a line in the story's voice. It never
-  switches off.
+  on the night's and the map's result, a row of marks under "What the dark owes you" (the story
+  lead's words), and "The dark settles up." when it pays. It never switches off.
 - **Homes.** Each Legendary and Set piece has a home: a people (twice as likely from their
   carriers), a place or a story condition (the Pelt of the Pack only after the Pack is
   slaughtered). Homes make them huntable at the Wayfinder's table (choose a people's chart to hunt
@@ -454,13 +462,15 @@ three Rares rings once, a little louder, not three times).
 ### 8.2 The moment a Legendary falls
 
 1. **The fall.** The carrier dies; the thing falls with a heavier arc than gear, and lands.
-2. **The hush.** For half a second the horde's sound drops by half (never the music), and the
+2. **The hush.** For a second the music and the world's noise drop away (never the fight's own
+   sounds: a warning under a hush is a blow unheard, combat's rule), and the
    **toll** sounds: a deep bell, a fifth and an octave above it, long in the air, like the toll
    bell at Vonnra's tower. It is never heard for anything else.
 3. **The pillar.** An amber pillar rises from it past the top of the screen, a ring of embers on
    the ground round it, its light thrown on the creatures near it. If it lies off screen, the
    screen's edge glows amber where it is.
-4. **The word.** A line under the HUD: "Something old has fallen." (the story lead's words).
+4. **The word.** A line under the HUD: "This one has a name." (the story lead's words; when the
+   dark's debt pays it, "The dark settles up.").
 5. **Until taken**, a faint toll every eight seconds, and the pillar stays.
 6. **Taken**: a reveal like the chest's (the experience director stages it): the name in amber,
    the power, the lore line. The first Legendary a survivor ever takes is held longer, and the
@@ -491,23 +501,23 @@ The Set moment is the same, smaller: no hush, the pair of bells, the twin beam, 
 
 Eight in Act 1, the Moonsilver Circlet among them. Four drop from level 1 to 3 (the early pool,
 from which the certain first one comes). Each is built on a base, so a later copy is a better
-make. Story lead: the lore lines are mine and narrator-voiced; please rewrite any in the valley's
-voice, and none says an act's answer early (`STORY_BIBLE.md`).
+make. The lore is the story lead's (WRITING_PASS §25), verbatim: none says an act's answer early
+(`STORY_BIBLE.md`), the Kerchiefs' town stays unsaid, and "Forty-One Mouths" stays C06's.
 
 | Legendary | Slot (base) | Least level | Home | Power (how it changes play) | Price | Lore |
 |---|---|---|---|---|---|---|
-| **The Drowned Coat** | body (padded jerkin) | 1 | the Risen; the Verge's drowned | Your dash leaves black water for 3 s that slows what wades in it by 40%; +30% fire resistance. *You dash through the crowd, not away.* | You mend 15% less. | "It has hung by Rook's fire for a week and it is still wet." |
-| **Forty-One Mouths** | weapon (butcher's cleaver) | 2 | the Kerchiefs | Below half health every kill mends 2% of your health; your blows bleed (15%). *You fight best hurt.* | At full health you deal 15% less. | "The Roost's cleaver. It fed forty-one mouths on whatever the road brought in, and the road brought in a great deal." |
-| **Corran's Sword** | weapon (worn oathblade) | 3 | the Risen | Standing still, your weapons strike 25% faster, and a blow that lands sends a ring of steel round you, once a second. *Plant your feet in the horde.* | 8% slower. Holloway knows it (tag). | "Notched along the spine, in tens, where somebody kept count of something. The book wrote him down as a deserter." |
-| **Ditchwater** | weapon (hunter's crossbow) | 3 | the Risen; the Low Ford road | Volley's bolts pierce one more and chill what they pass through. *Line them up.* | – | "Pulled out of the ditch on the Low Ford road, wound and loaded. Whoever loaded it never fired it." |
-| **The Fever-Year Staff** | weapon (ember staff) | 6 | the Risen | Cinderfall poisons as it burns; what dies poisoned passes the poison to three near it. *Seed a plague, then walk.* | You mend 10% less. | "Charred to the grip. In the fever year they burned the bedding of the dead, and somebody did it with this." |
-| **The Slurry Wheel** | off-hand (old watch shield) | 6 | the Lamplings | Every block throws slurry round you: poison on everything within 3 m; you block more often. *Stand in it and let them come.* | 15% more damage from lamplings. | "A spare wheel off the Dig's pump, beaten flat and strapped for an arm. It still weeps." |
-| **Kell's Lamp** | relic | 8 | the Lamplings | Every two seconds your lamp flares: fire on everything within 3.5 m. *Your light is a weapon; stay close.* | – | "It came back up the shaft on its own, still lit. Nobody has asked it where Kell is." |
+| **The Drowned Coat** | body (padded jerkin) | 1 | the Risen; the Verge's drowned | Your dash leaves black water for 3 s that slows what wades in it by 40%; +30% fire resistance. *You dash through the crowd, not away.* | You mend 15% less. | "Wrung out, it is wet again by morning. Whoever wore it last went into the ford in it, and did not come out." |
+| **Nan's Cleaver** | weapon (butcher's cleaver) | 2 | the Kerchiefs | Below half health every kill mends 2% of your health; your blows bleed (15%). *You fight best hurt.* | Above four fifths of your health you deal 15% less (combat: "at full" is never true in a horde). | "Firepot Nan's, from the Roost's kitchen. It has jointed everything the road brought in, and the road brought in a great deal. She will want it back." |
+| **Corran's Sword** | weapon (worn oathblade) | 3 | the Risen | Standing still, your weapons strike 25% faster, and a blow that lands sends a ring of steel round you, once a second. *Plant your feet in the horde.* | 8% slower. Holloway knows it (tag). | "Notched along the spine in tens, the way a man counts nights on a post nobody relieves. The Watch's book has him down as a deserter." |
+| **Ditchwater** | weapon (hunter's crossbow) | 3 | the Risen; the Low Ford road | Volley's bolts pierce one more and chill what they pass through. *Line them up.* | – | "Pulled out of the ditch on the Low Ford road, wound and loaded, with weed in the stock. Whoever loaded it never got to fire it." |
+| **The Fever-Year Staff** | weapon (ember staff) | 6 | the Risen | Cinderfall poisons as it burns; what dies poisoned passes the poison to three near it. *Seed a plague, then walk.* | You mend 10% less. | "Charred to the grip. In the fever year they burned the bedding of the dead, and somebody stirred the fire with this until it was done." |
+| **The Slurry Wheel** | off-hand (old watch shield) | 6 | the Lamplings | Every block throws slurry round you: poison on everything within 3 m; you block more often. *Stand in it and let them come.* | 15% more damage from lamplings. | "A spare wheel off the Dig's pump, beaten flat and strapped for an arm. It still weeps green." |
+| **Kell's Lamp** | relic | 8 | the Lamplings | Every two seconds your lamp flares: fire on everything within 3.5 m. *Your light is a weapon; stay close.* | – | "It came back up the shaft on its own, still lit. Kell did not." |
 | **Moonsilver Circlet** (exists) | head | 10 | the Moon Grove; Vonnra's stock | as today: +15% damage at night; crits at night call moonlight | – | as today |
 
 Story-gated, given or dropped only on a branch: **Pelt of the Pack** (cloak; after the Pack is
-slaughtered; every wolf killed this fight +2 health, to +80; "Brannoc counted the pelts twice and
-did not say anything either time."). No item grants a rise from death (principle 5): the items
+slaughtered; every wolf killed this fight +2 health, to +80; "Grey to the roots, and stitched from
+more than one wolf. Maeca could tell you whose, and won't."). No item grants a rise from death (principle 5): the items
 plan's Snib's Hard Hat and Kell's revive are cut for the owner's rule.
 
 ### 10.2 The first sets
@@ -518,10 +528,10 @@ plan's Snib's Hard Hat and Kell's revive are cut for the owner's rule.
 - **2 worn**: +25% armour; your light carries 25% further.
 - **3 worn**: standing still, you block a blow every six seconds, as a shield-wall does. The Watch
   takes you for one of its own (tag).
-- "Eleven men, a year unpaid, and every one of them still oils his mail."
+- "Eleven men on a wall built for sixty, and every one of them still oils his mail."
 
-**The Red Hand** (3; least level 5; the Kerchiefs)
-- Roost Hood (head, on the leather cap): +4% critical chance. Ashford Levy Colours (cloak, on the
+**The Levy Red** (3; least level 5; the Kerchiefs; not "the Red Hand", which is their map ruler)
+- Roost Hood (head, on the leather cap): +4% critical chance. Levy Colours (cloak, on the
   traveller's cloak): +5% speed. Kerchief Knives (weapon, on the knife belt): Knifestorm.
 - **2 worn**: +6% critical chance; Kerchiefs take you for one of theirs (the red kerchief's tag).
 - **3 worn**: your thrown and loosed skills fly one more; your critical strikes bleed.
@@ -541,7 +551,7 @@ leave room for Legendaries and Rares). The items plan's other eight sets wait fo
 | Base | Implicits (Worn) |
 |---|---|
 | Leather Cap | +2 armour, +16 health |
-| Iron Helm | +3 armour, +6 health; 2% slower |
+| Iron Helm | +3 armour, +8 health; 2% slower |
 | Padded Jerkin | +3 armour, +12 health |
 | Chain Shirt | +5 armour, +6 health; 4% slower |
 | Traveller's Cloak | +3% speed (never scaled), +3 armour, +12 health |
@@ -591,8 +601,9 @@ leave room for Legendaries and Rares). The items plan's other eight sets wait fo
   half-second hush in a fight; whether "standing still" and "at full health" read in the horde.
 - **Experience director**: the Legendary moment and the first-Legendary pause; whether drops
   "mostly feel good" in a night as played.
-- **Story**: the Legendaries' and sets' lore in the valley's voice; "Something old has fallen" and
-  the debt's line; the makes' names ("Legion", "Heartwrought").
+- **Story**: answered (WRITING_PASS §25): the lore, verbatim; "This one has a name."; "What the
+  dark owes you" and "The dark settles up."; the makes' names, yes. Holloway's line for Corran's
+  Sword waits for this branch on the integration branch.
 
 ---
 

@@ -639,7 +639,7 @@ public static class Character
             var def = Items.Get(it.Def);
             kit.GearIds.Add(def.Id);
             st.AddAll(Inventory.Mods(it));
-            foreach (var t in def.Triggers ?? new()) kit.Triggers.Add((t, $"item:{it.Uid}"));
+            foreach (var t in Drops.Triggers(def, it.Level)) kit.Triggers.Add((t, $"item:{it.Uid}"));
             foreach (var k in def.Statuses ?? new()) kit.GearStatuses.Add(k);
             // Kindling: one to an item, two to the survivor.
             if (it.Affixes.Select(ar => Items.Affix(ar.Id)).FirstOrDefault(a => a?.Kindled != null) is { } kin && kit.Kindled.Count < Inventory.MaxKindled)
