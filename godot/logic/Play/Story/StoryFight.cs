@@ -23,6 +23,9 @@ public interface IStoryArena : IBossArena
     List<Enemy> Group(string def, int n, double x, double z, double spread, SpawnStyle? style = null);
     /// <summary>The hostile creatures standing (of a kind, if asked).</summary>
     int Hostiles(Func<Enemy, bool>? which = null);
+    /// <summary>How hard the way in's rank and file bite, against a table night's at their level (ground they
+    /// foul bites the same).</summary>
+    double Teeth { get; }
     /// <summary>The place's deadfalls and braziers: lit by standing at them.</summary>
     IReadOnlyList<Deadfall> Fires { get; }
     /// <summary>A world fact holds (a bane learned by day).</summary>

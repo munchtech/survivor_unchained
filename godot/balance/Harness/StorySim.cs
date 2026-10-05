@@ -37,6 +37,9 @@ public sealed class StoryRunResult
     public string KilledBy = "", Build = "";
     /// <summary>Where the night stood when it ended or was cut off (a stage that would not end).</summary>
     public string Where = "";
+    /// <summary>What hurt her, by part of the night ("stage 2", "boss") and source, as a share of her
+    /// health: where the danger is.</summary>
+    public Dictionary<string, Dictionary<string, double>> HurtBy = new();
 
     /// <summary>The way in: its minutes, and how low she went on it.</summary>
     public double WayIn => Stages.Where(s => s.Name != "boss").Sum(s => s.Seconds) / 60;
@@ -83,6 +86,10 @@ public static class StorySim
         NavField? nav = null;
         double navX = 0, navZ = 0, navT = 0;
         int openedAt = -1;
+        // STORY_TRACE: can each of the place's points be stood on (the crowd and the waves come from them)?
+        if (trace)
+            foreach (var (id, (px, pz)) in zone.Place.Points)
+                Console.Error.WriteLine($"   POINT {id} ({px},{pz}) stand {map.CanStand(px, pz)} blocked {b.Collision.Blocked(px, pz, 0.6)} inside {zone.Place.Inside(px, pz, 0.6)}");
         while (t < spec.Cap * 60 && host.Result == null)
         {
             // The stage's goal, walked to the way a player would (round the walls, through the gates).
@@ -107,9 +114,12 @@ public static class StorySim
                     way = (pl.X + dx / dl * 3, pl.Z + dz / dl * 3);
                 }
             }
-            if (trace && (int)(t / 5) != (int)((t - ArenaSim.Dt) / 5)) Console.Error.WriteLine($"{t / 60:0.00} {zone.Now} {zone.BeatIx} at ({b.Player.X:0.0},{b.Player.Z:0.0}) d {zone.Place.Dist(b.Player.X, b.Player.Z):0.00} way {way} goal {zone.Goal}");
+            if (trace && (int)(t / 5) != (int)((t - ArenaSim.Dt) / 5)) Console.Error.WriteLine($"{t / 60:0.00} {zone.Now} {zone.BeatIx} at ({b.Player.X:0.0},{b.Player.Z:0.0}) d {zone.Place.Dist(b.Player.X, b.Player.Z):0.00} way {way} goal {zone.Goal} | {zone.Beat?.Goal} | {(zone.Beat?.Bar is { } bar ? $"{bar.Name} {bar.Hp:0}/{bar.MaxHp:0}" : "")} ember {b.EmberLevel} hp {b.Player.Hp:0}/{b.MaxHp:0}");
             var (mx, mz) = Pilot.Steer(b, spec.Deft, zone.BossScript, goal: way);
             if (trace && (int)(t / 5) != (int)((t - ArenaSim.Dt) / 5)) Console.Error.WriteLine($"   steer ({mx:0.00},{mz:0.00}) way {way} zones {b.Zones.Living().Count()} pickups {b.Pickups.Living().Count()} blows {b.Blows.Count} slow {b.Player.SlowF:0.00}");
+            if (trace && (int)(t / 30) != (int)((t - ArenaSim.Dt) / 30))
+                foreach (var c in b.Collision.Within(b.Player.X, b.Player.Z, 2.5))
+                    Console.Error.WriteLine($"   PROBE {c.Kind} {c.Tag} at ({c.X:0.0},{c.Z:0.0}) r {c.R:0.0} hw {c.Hw:0.0} hd {c.Hd:0.0} soft {c.Soft} canstand {map.CanStand(b.Player.X + mx, b.Player.Z + mz)}");
             Pilot.Act(b, j, mx, mz);
             zone.Step(ArenaSim.Dt);
             zone.Frame(ArenaSim.Dt);
@@ -117,6 +127,13 @@ public static class StorySim
             foreach (var ev in b.Events.Drain())
             {
                 if (ev is Ev.Telegraph { Boss: true, Kind: TelegraphKind.Blow } && zone.Now == StoryNight.Stage.Boss) r.BossMarked++;
+                if (ev is Ev.PlayerHit { Dodged: false } hit && hit.Amount > 0)
+                {
+                    string part = zone.Now == StoryNight.Stage.Boss ? "boss" : $"stage {zone.BeatIx + 1}";
+                    var by = r.HurtBy.TryGetValue(part, out var d) ? d : r.HurtBy[part] = new();
+                    string src = hit.Label is { } lb ? $"{hit.Source}: {lb}" : hit.Source;
+                    by[src] = by.GetValueOrDefault(src) + hit.Amount / Math.Max(1, b.MaxHp);
+                }
                 // STORY_TRACE=KEY: what lands on her, and the night's turns (why a run fell).
                 if (trace && ev is Ev.PlayerHit ph) Console.Error.WriteLine($"{t / 60:0.000} {zone.Now,-7} {ph.Source,-24} {ph.Amount,6:0} {(ph.Dodged ? "dodged" : ph.Blocked ? "blocked" : "")} hp {b.Player.Hp:0}/{b.MaxHp:0}");
                 if (trace && ev is Ev.Announce an) Console.Error.WriteLine($"{t / 60:0.000} {zone.Now,-7} ** {an.Title} {an.Subtitle}");

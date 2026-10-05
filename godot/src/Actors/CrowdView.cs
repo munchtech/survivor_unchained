@@ -115,6 +115,7 @@ public partial class CrowdView : Node3D
         foreach (var c in crowds.Values) c.Begin();
         foreach (var g in gaits.Values) g.Seen = false;
         living = 0;
+        whiteFlashes = 0;
         foreach (var e in b.Enemies.Items)
         {
             if (!e.Alive || e.Def.Visual.StartsWith("view:", StringComparison.Ordinal)) continue;
@@ -131,6 +132,12 @@ public partial class CrowdView : Node3D
             foreach (var id in gone) gaits.Remove(id);
         }
     }
+
+    /// <summary>Bodies flashed white this frame, and how many may be: past it, a flash stays at the
+    /// rim (the shader's whole-body white needs a flash over this).</summary>
+    int whiteFlashes;
+    const int WhiteFlashes = 4;
+    const float FlashRimOnly = 0.55f;
 
     void Draw(Enemy e, Func<double, double, double> heightAt)
     {
@@ -216,6 +223,10 @@ public partial class CrowdView : Node3D
         float sc = (float)(e.Def.Scale ?? 1) * Beasts.Size(e.Def.Visual);
         // Struck: a squash, and a flinch along the blow, gone with the flash.
         float f = e.State == EnemyState.Dying ? 0 : (float)e.Flash * (1 - Still);
+        // The struck flare's instant of white across the whole body is for a few at once (and any
+        // champion or ruler); the rest keep it at the rim. A blast that hits sixty at once turned
+        // sixty bodies white in the same frame.
+        if (f > FlashRimOnly && !e.Elite && !e.Boss && e.Named == null && ++whiteFlashes > WhiteFlashes) f = FlashRimOnly;
         // The flinch along the blow: big enough to read from thirty metres up, twice on a critical (S-17).
         float push = e.LastCrit ? 0.45f : 0.25f;
         var at = new Vector3((float)(e.X + e.LastDx * f * push), (float)y, (float)(e.Z + e.LastDz * f * push));
@@ -227,7 +238,13 @@ public partial class CrowdView : Node3D
         if (e.Def.Tint is var (tr, tg, tb)) tint *= new Color((float)tr, (float)tg, (float)tb);
         if (e.Def.Glow is { } dg) glow = Math.Max(glow, (float)dg);
         if (e.Elite) { glow = Math.Max(glow, 0.05f); tint *= new Color(1.08f, 1.02f, 0.92f); }
-        if (e.Named != null) { glow = 0.25f; tint *= new Color(1.3f, 0.75f, 0.6f); }
+        // A nemesis (one that took a hero before) burns with it; a ruler, herald or named foe is
+        // itself, lifted only a little: painted orange, Greymuzzle was not an old grey wolf.
+        if (e.Named is { } nm)
+        {
+            if (nm.SourceHero != "") { glow = 0.25f; tint *= new Color(1.3f, 0.75f, 0.6f); }
+            else glow = Math.Max(glow, 0.06f);
+        }
         if (e.Disposition == Disposition.Neutral && !e.Provoked) tint *= new Color(0.95f, 0.95f, 0.95f);
         crowd.Push(new Transform3D(basis, at), role, t, f, dissolve, frozen, burning, tint, glow);
         living++;

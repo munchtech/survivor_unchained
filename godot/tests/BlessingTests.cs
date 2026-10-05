@@ -170,6 +170,9 @@ public class BlessingTests
         b.HurtPlayer(b.MaxHp * 5, School.Physical, "wolf", wolf, telegraphed: true);
         Assert.True(b.Player.Alive);
         Assert.Equal(b.MaxHp * 0.5, b.Player.Hp, 1);
+        // The cold's beat, then the fire: it has caught the wolf by the time its front is out.
+        Assert.False(wolf.Status.Has(StatusKind.Burn));
+        Tick(b, Battle.RiseCold + Battle.RiseRun + 0.05);
         Assert.True(wolf.Status.Has(StatusKind.Burn));
         Assert.Equal(0, b.Player.Ashes);
         // Once a night at every rank (the owner: rising twice was too generous); the third rank
@@ -180,6 +183,35 @@ public class BlessingTests
         Assert.Equal(0, b.Player.Ashes);
         b.Douse([]);
         Assert.Equal(0, b.Player.Ashes);
+    }
+
+    /// <summary>"You go cold. Then the ember catches." Nothing burns in the cold's beat; then the fire runs
+    /// out from her and each body catches as its front reaches it, the near before the far (every body
+    /// in eight metres once burned in the same frame, a bomb and not a fire).</summary>
+    [Fact]
+    public void Cold_Then_Not_catches_the_near_first_and_the_far_as_its_front_reaches_them()
+    {
+        var b = BattleTests.Arena(12);
+        b.AddBoon("from_the_ashes");
+        b.AddBoon("from_the_ashes");
+        var p = b.Player;
+        Enemy Wolf(double d) => b.SpawnEnemy("wolf", p.X + d, p.Z, new Battle.SpawnOpts { Style = SpawnStyle.Walk, Disposition = Disposition.Hostile, Level = 30 })!;
+        var near = Wolf(1.5);
+        var far = Wolf(7);
+        Tick(b, 1 / 60.0);
+        b.HurtPlayer(b.MaxHp * 5, School.Physical, "wolf", near, telegraphed: true);
+        Assert.True(p.Alive);
+        double nearAt = -1, farAt = -1;
+        for (double t = 0; t < 1; t += 1 / 60.0)
+        {
+            near.X = p.X + 1.5; near.Z = p.Z; far.X = p.X + 7; far.Z = p.Z;
+            Tick(b, 1 / 60.0);
+            if (nearAt < 0 && near.Status.Has(StatusKind.Burn)) nearAt = t;
+            if (farAt < 0 && far.Status.Has(StatusKind.Burn)) farAt = t;
+        }
+        Assert.InRange(nearAt, Battle.RiseCold - 0.02, Battle.RiseCold + 0.1);
+        Assert.True(farAt > nearAt + 0.05, $"near {nearAt:0.00} s, far {farAt:0.00} s");
+        Assert.True(farAt < Battle.RiseCold + Battle.RiseRun + 0.05);
     }
 
     /// <summary>The owner: getting up and fighting on is rare, "or it is a balancing nightmare". Carried
