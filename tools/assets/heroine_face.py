@@ -497,6 +497,11 @@ if __name__ == "__main__":
         facing = np.clip(Nt @ -fwd, 0, 1)
         edge = np.clip(np.minimum.reduce([uv[:, 0], 1 - uv[:, 0], uv[:, 1], 1 - uv[:, 1]]) / 0.05, 0, 1)
         weights[name] = facing ** 4 * edge * vis * (1.0 if name == "front" else 0.8)
+        if name == "front" and os.environ.get("FACE_REF"):
+            # (her reference over all it sees well, its sides too: Krea's
+            # sides, painted another day, gave her redder lips and heavier
+            # freckles seen from three-quarters)
+            weights[name] = facing ** 1.5 * edge * vis * 1.5
         ref_front = name == "front" and os.path.exists(os.path.join(OUT, "normals_front.png")) and os.environ.get("FACE_REF")
         cols_v[name] = sample(delit_reference() if ref_front else delit(name), uv)
         print("LAID", name, "%d texels seen" % (weights[name] > 0.05).sum())
@@ -518,6 +523,14 @@ if __name__ == "__main__":
     theta = np.arctan2(P[:, 0], -P[:, 1])
     up = P[:, 2] - (eye_z + fs.hairline_height(theta))
     cover *= 1 - np.clip((up + 0.002) / 0.008, 0, 1)
+    # Nor under her jaw and down her neck: the paintings' necks, lighter
+    # than her body's, showed as a pale patch between her jaw and her
+    # collar; there her head's own skin (her body's colouring) is kept.
+    front_mid = (np.abs(P[:, 0]) < 0.012) & (Nt[:, 1] < -0.6)
+    chin_z = P[front_mid, 2].min() if front_mid.any() else eye_z - 0.11
+    below_mouth = np.clip((eye_z - 0.095 - P[:, 2]) / 0.01, 0, 1)            # (her chin and below: not her lips' undersides)
+    cover *= 1 - below_mouth * np.clip((-Nt[:, 2] - 0.25) / 0.3, 0, 1)
+    cover *= 1 - np.clip((chin_z + 0.003 - P[:, 2]) / 0.012, 0, 1)
     # And all of it coloured as her skin (her head's own, which heroine_head.py
     # matched to her body), over her cheeks, brow and neck seen square on.
     skin = (cover > 0.9) & (np.abs(col - np.median(col[cover > 0.9], 0)).max(1) < 0.08)

@@ -65,9 +65,11 @@ BUILD = {"measure-neck-height-decr": 0.9, "measure-neck-circ-incr": 0.5, "neck-b
 # down in front of her ears, round behind them (her ears themselves are
 # left bare: heroine_hair.py), down to her nape. Her hair grows above it
 # (heroine_hair.py); her face is painted below it (heroine_face.py).
-# 6.8 cm over her eyes in front, as her reference's is (her_23): at 8 cm,
-# with the hair's cards starting a centimetre over it, she read bald-browed.
-HAIRLINE = ([0, 20, 40, 55, 65, 75, 84, 100, 120, 145, 180], [0.068, 0.066, 0.060, 0.049, 0.036, 0.016, -0.010, -0.035, -0.048, -0.062, -0.074])
+# From her front round to her ears, where the hair of the head TRELLIS
+# made of her reference begins (face_wrap.py prints it): 6.4 cm over her
+# eyes in front, her temples' corners low and full. At 8 cm, with the
+# hair's cards starting a centimetre over it, she read bald-browed.
+HAIRLINE = ([0, 20, 40, 55, 65, 75, 84, 100, 120, 145, 180], [0.064, 0.064, 0.053, 0.036, 0.026, 0.006, -0.010, -0.035, -0.048, -0.062, -0.074])
 
 
 def hairline_height(theta):

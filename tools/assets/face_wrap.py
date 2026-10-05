@@ -11,7 +11,8 @@ only where her points lie changes.
 shape.glb: TRELLIS's surface. painted.glb: the same, with its colours (by
 which its hair is told from its skin). With --check, clay renders of her
 before and after and of TRELLIS's head, and its hair as read.
-WRAP_HAIR_DEPTH (metres, 0.005) is how far under its hair her skull lies.
+WRAP_HAIR_DEPTH (metres, 0.005) is how far under its hair her skull lies;
+WRAP_EYE_OPEN (0.92) how open her eyes are against its.
 
 Why: MakeHuman's targets move a face's outlines; fitted to a reference by
 its landmarks they could not give full lips, soft full cheeks and a fine
@@ -421,6 +422,7 @@ TTREE = cKDTree(TVh)
 # Where TRELLIS's head is hair, not skin (its colours: unlike her cheeks'
 # and forehead's): her skull lies under it, a little in (HAIR_DEPTH).
 HAIR_DEPTH = float(os.environ.get("WRAP_HAIR_DEPTH", "0.005"))
+EYE_OPEN = float(os.environ.get("WRAP_EYE_OPEN", "0.92"))
 _ca = paint_ob.data.color_attributes[0]
 _cols = np.zeros(len(_ca.data) * 4)
 _ca.data.foreach_get("color", _cols)
@@ -496,6 +498,11 @@ for ring in (EYE_A, EYE_B):
     src, dst = L0[rg][:, [0, 2]], Lt[rg][:, [0, 2]]
     Xa = np.c_[src, np.ones(len(src))]
     M = np.linalg.lstsq(Xa, dst, rcond=None)[0]                       # (3 x 2: dst = [x z 1] M)
+    # (and a little less open, about the opening's middle: as TRELLIS's,
+    # her lids showed white above her iris, and she stared)
+    cz = float((Xa @ M)[:, 1].mean())
+    M[:, 1] *= EYE_OPEN
+    M[2, 1] += cz * (1 - EYE_OPEN)
     dy = float(np.median(Lt[rg, 1] - L0[rg, 1]))
     eye_c.append((c0, r0))
     eye_map.append((M, dy))

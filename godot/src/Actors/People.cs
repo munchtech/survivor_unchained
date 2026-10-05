@@ -894,7 +894,11 @@ public static class People
     /// edge on (shaders/heroine_skin.gdshader).</summary>
     static readonly (float Rough, float Shine, float Edge) HisSkin = (0.62f, 0.3f, 0.45f);
 
-    static Color SkinTone(Look look) => look.Skin is Color tone ? tone.Lerp(Colors.White, 0.35f) : new Color(1.0f, 0.86f, 0.74f);
+    /// <summary>Her skin's tone: the one chosen, or her own, barely warmed.
+    /// (Her face is painted from her reference photograph now, its own
+    /// peach: warmed as much as the old pale paint was, under the portrait's
+    /// warm key she read a uniform orange-pink, like a doll.)</summary>
+    static Color SkinTone(Look look) => look.Skin is Color tone ? tone.Lerp(Colors.White, 0.35f) : new Color(1.0f, 0.93f, 0.87f);
 
     static Shader? skinShader2;
     static readonly Dictionary<Mesh, float> poreScales = new();

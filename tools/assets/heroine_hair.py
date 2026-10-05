@@ -185,6 +185,7 @@ def _key_moves(name):
 # in front of them, over them and behind them.
 EAR = (_key_moves("ears_out+") > 0.0005) | (_key_moves("ears_pointed+") > 0.0003) | (_key_moves("ears_lobes+") > 0.0003)
 EAR_TREE = cKDTree(HP[EAR]) if EAR.any() else None
+EAR_V = EAR_TREE.query(HP)[0] < 0.006 if EAR_TREE is not None else np.zeros(len(HP), bool)
 # Her neck, between her jaw and her shoulders (her skin there facing out,
 # not up or down), which hair hanging by it is kept well clear of: lying on
 # it, a strand read as a scratch on her skin, and as her head turned, the
@@ -210,11 +211,33 @@ def scalp(below=0.0):
     c = HP[T].mean(1)
     theta = np.arctan2(c[:, 0] - CENTRE[0], -(c[:, 1] - CENTRE[1]))
     ear = EAR_TREE.query(c)[0] < 0.006 if EAR_TREE is not None else (np.abs(c[:, 0]) > 0.079) & (c[:, 2] < EYE_Z + 0.05)
-    # (her outside only: not the inside of her mouth and nose, deep in her head)
+    # (her outside only: not the inside of her mouth, nose or ears, deep in
+    # her head. Facing away from her middle is not enough: shaped from her
+    # reference, the roof of her mouth lies behind her middle, under her
+    # nape's hairline, and hair grew from it out under her jaw. Her outside
+    # is as far out as her head goes that way, at that height, her ears
+    # aside, within 6 mm; and never near the middle of her head below her
+    # crown, where only her mouth's inside is.)
     n = np.cross(HP[T[:, 1]] - HP[T[:, 0]], HP[T[:, 2]] - HP[T[:, 0]])
     r = c - CENTRE
     outside = (np.linalg.norm(r, axis=1) > 0.06) & ((n * r).sum(1) > 0)
-    return T[(c[:, 2] > hairline_z(theta) - below) & ~ear & outside]
+    core = (np.hypot(r[:, 0], r[:, 1]) < 0.045) & (c[:, 2] < EYE_Z + 0.06)
+    return T[(c[:, 2] > hairline_z(theta) - below) & ~ear & outside & ~core & (depth_in(c) < 0.006)]
+
+
+def depth_in(c):
+    """How far each point lies inside her head's outline round her middle
+    (at its own height and angle; her ears not part of the outline)."""
+    ok = ~EAR_V
+    th = np.degrees(np.arctan2(HP[ok, 0] - CENTRE[0], -(HP[ok, 1] - CENTRE[1])))
+    rr = np.hypot(HP[ok, 0] - CENTRE[0], HP[ok, 1] - CENTRE[1])
+    key = lambda t, z: (np.floor((t + 180) / 5).astype(int) % 72) * 1000 + np.floor(z / 0.005).astype(int) % 1000
+    outer = {}
+    for k, r_ in zip(key(th, HP[ok, 2]), rr):
+        outer[k] = max(outer.get(k, 0.0), r_)
+    tc = np.degrees(np.arctan2(c[:, 0] - CENTRE[0], -(c[:, 1] - CENTRE[1])))
+    rc = np.hypot(c[:, 0] - CENTRE[0], c[:, 1] - CENTRE[1])
+    return np.array([outer.get(k, r_) - r_ for k, r_ in zip(key(tc, c[:, 2]), rc)])
 
 
 def roots(spacing, above=0.0, below=None, soft=0.0):
@@ -521,7 +544,8 @@ def style_long():
         # forehead falling forward of her ears, down past her cheeks and in
         # front of her shoulders (kept off her face: off_face), not all swept
         # back off it (slicked to her crown, she read bald-browed).
-        front = (pts[:, 1] < 0.005) & (np.abs(pts[:, 0]) > 0.042) & (pts[:, 2] < EYE_Z + 0.075) & (RNG.random(len(pts)) < 0.8)
+        front = ((pts[:, 1] < 0.005) & (np.abs(pts[:, 0]) > 0.042) & (pts[:, 2] < EYE_Z + 0.075) & (pts[:, 2] > EYE_Z)
+                 & (RNG.random(len(pts)) < 0.8))      # (from her temples, not by her ears: swept out from there they stood off her jaw)
         front &= off > 0.005                                     # (not her base layer's)
         sweep[front] = np.c_[np.sign(pts[front, 0]) * 0.9, -np.full(front.sum(), 0.15), -np.ones(front.sum())]
         dirs = combed(pts, nrm, sweep)
@@ -542,6 +566,8 @@ def style_long():
             print("  left out %d astray" % far.sum())
             P, pts, front = P[~far], pts[~far], front[~far]
         near = np.clip(rise(pts) / 0.03, 0.35, 1.0)              # (finer at their roots near her hairline)
+        if os.environ.get("HAIR_DUMP"):
+            np.savez(os.environ["HAIR_DUMP"] + "_%d.npz" % len(layers), P=P, pts=pts, front=front)
         layers.append(cards(P, RNG.uniform(*width, len(pts)), list(cols), off, root=near))
         print("  layer: %d cards" % len(pts))
     layers += hairline_hairs(comb_long)
@@ -560,7 +586,7 @@ def style_long():
     return layers
 
 
-def hairline_hairs(comb, spacing=0.0032, points=8, sides=None):
+def hairline_hairs(comb, spacing=0.0026, points=8, sides=None):
     """Her hairline, soft as a real one is, not the cards' ends in a row:
     fine short hairs lying on her scalp the way it is combed, thinning out
     toward its edge; and over its edge baby hairs, finer, shorter and fainter
@@ -580,7 +606,7 @@ def hairline_hairs(comb, spacing=0.0032, points=8, sides=None):
     print("  hairline: %d cards" % len(pts))
     # Baby hairs: about her hairline's edge (6 mm either side), short, fine
     # and faint, each a little off the way it is combed, some curling.
-    pts, nrm = roots(0.0042, above=-0.006, below=0.006)
+    pts, nrm = roots(0.0034, above=-0.006, below=0.006)
     n, k = len(pts), 6
     turn = RNG.normal(0, 0.45, n) + np.where(RNG.random(n) < 0.15, RNG.normal(0, 1.0, n), 0)
 
@@ -608,6 +634,11 @@ def comb_long(p, side=None):
     straight back off her hairline (each hair leaving it, not running along it)."""
     sd = (part_side(p) if side is None else side) * 0.7 * np.clip(rise(p) / 0.04, 0.2, 1.0)
     w = np.c_[sd, np.full(len(p), 0.8), -np.clip((0.06 - (p[:, 2] - EYE_Z)) * 12, 0.2, 1.5)]
+    # (in front of her ears, below her temples, straight down: combed back
+    # there, it met her ear and was turned out sideways, standing off her jaw)
+    th = np.degrees(np.abs(np.arctan2(p[:, 0] - CENTRE[0], -(p[:, 1] - CENTRE[1]))))
+    down = np.clip((EYE_Z + 0.015 - p[:, 2]) / 0.015, 0, 1) * np.clip(1 - np.abs(th - 80) / 25, 0, 1)
+    w = w * (1 - down)[:, None] + np.array([0.0, 0.15, -1.0]) * down[:, None]
     return w / np.linalg.norm(w, axis=1)[:, None]
 
 
