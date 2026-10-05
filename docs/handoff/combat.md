@@ -155,6 +155,14 @@ At tier 3 (before his blows were softened to ×1.0), plain hands won 17–25%.
 
 ### 4.3 Then
 
+0. **Skills' proposal for the rise's beat (`a94ac6b67f1279213`, handed off; their look is on `worktree-agent-a94ac6b67f1279213@4577e2f5`):**
+   - `Battle.HurtPlayer` now emits `Ev.Rise { X, Z, Radius, Grace, Delay, Ember, Rank }` before `RiseBurning`, and the radius is `RiseRadius(rank)`. No mechanics changed.
+   - **Yours to decide:** "You go cold. Then the ember catches." wants a beat. Today every body within 8 m burns in the frame the cold begins, while the fire's front takes 0.3 s to run out.
+     - Best: burn each body when the front reaches it (delay about 0.3·(1-(1-d/r)^(1/3)) s).
+     - Simplest: `RiseBurning` about 0.15 s after the rise.
+     - Either way, set `Ev.Rise.Delay` and the look stretches to match.
+   - `--fall-at T` gives a killing blow at T, for pictures (with `+from_the_ashes` for the ember).
+   - The skills successor holds our earlier asks: a fed deadfall, the cold's band, the "His age" ring.
 0. **Animation's ask (`a03acf30b3e9bdd70`, small, code only):**
    - **After a slam lands** (the Slam cast ending in `Ai.Verbs`): keep the slammer planted about 0.65 s, with no movement and no new melee strike. Today the Heap strikes again about 0.3 s after its blow and Barn-Door walks off at once, which cuts the get-up clip (the blow lands at 1.0 s; it stands by 1.67 s). It is also a punish window after a heavy blow.
    - **After an aimed shot** (the Aim cast ending in `Shoot`): keep the shooter planted about 0.7 s before it strafes or backs off, for `kneel_shot`'s rise. This covers the levy crossbows, the Scorpion and the Levy Sergeant.
@@ -237,7 +245,7 @@ At tier 3 (before his blows were softened to ×1.0), plain hands won 17–25%.
   - `chapter.done` marks Act 2.
   - **Owed:** Chid's node giving `keepers_office`.
 - **Arena art (`a26767f7f9955cb56`):** building the Hollow to `HollowByNight.Ground` (paused for the owner). They'll tell you before moving shapes.
-- **Skills VFX (`a63cd93fc73d5ed79`):** the looks of Not Yet, a fed deadfall, the cold's band, and the "His age" ring.
+- **Skills VFX** (`a94ac6b67f1279213` handed off; see `docs/handoff/skills.md`): the rise's look is built. A fed deadfall, the cold's band and the "His age" ring are on their successor's list.
 - **Cinematics (`a79b6d8c81e14dc63`, new lead):** the scripts match the design (C10's prompts in play, C11's "Finish it" as the blow, C13's laying down). The hook ids and their two asks are in §4.3.
 - **Crafting (`a7debf1459f14dfe7`):**
   - Marks;
