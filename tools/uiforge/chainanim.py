@@ -4,8 +4,12 @@ the middle one pried open, cooling to dull red outward, a little ember light on 
 them; choosing another tab drags the chain link by link until that heat sits under it, the
 chain sagging as it runs and swinging as it stops.
 
+The chain is anchored, not faded (an alpha fade reads as an effect, not a thing): each end runs
+into a forged eyelet set in the band, `run` px past the end tabs, and the links feed through it
+as the chain slides, going into the dark of its hole; the eyelets are what the sag hangs from.
+
 Its feel comes from art/ui/chain/chain.json, as the game's does (made by chain.links):
-  pitch, fade, run       link spacing; the ends fade over `fade` px, `run` px past the end tabs
+  pitch, run             link spacing; the eyelets sit `run` px past the end tabs
   heat                   links each side of the middle that glow (heat 1 at the middle, falling
                          to 1 - k/(heat+1) at the ends)
   slide [k, c]           the spring on the chain's phase: x'' = k (target - x) - c x'
@@ -48,6 +52,7 @@ def sprites():
     v = meta["variants"]
     S = {f"{pre}{kind}_{k}": ld(f"{pre}{kind}_{k}") for pre in ("", "warm_", "hot_") for kind in ("face", "edge") for k in range(v)}
     S["open"] = ld("open")
+    S["eyelet"] = ld("eyelet")
     return meta, S
 
 
@@ -77,14 +82,19 @@ def shrink(name, spr, s):
     return _small[key]
 
 
-def lay(canvas, pm, cx, cy, ang, alpha, s):
-    """Draw a premultiplied sprite centred at (cx, cy) shown px, turned by ang radians."""
+def lay(canvas, pm, cx, cy, ang, alpha, s, clip=None):
+    """Draw a premultiplied sprite centred at (cx, cy) shown px, turned by ang radians, only
+    between clip's x0 and x1 (shown px) if given: the links between the eyelets."""
     h, w = pm.shape[:2]
     M = cv2.getRotationMatrix2D((w / 2, h / 2), -math.degrees(ang), 1.0)
     M[0, 2] += cx * s - w / 2
     M[1, 2] += cy * s - h / 2
     out = cv2.warpAffine(pm, M, (canvas.shape[1], canvas.shape[0]), flags=cv2.INTER_LINEAR,
                          borderMode=cv2.BORDER_CONSTANT, borderValue=0)
+    if clip is not None:
+        xs = (np.arange(canvas.shape[1], dtype=np.float32) + 0.5) / s
+        m = ((xs >= clip[0]) & (xs <= clip[1])).astype(np.float32)[None, :, None]
+        out = out * m
     a = out[..., 3:4] * alpha
     canvas[..., :3] = canvas[..., :3] * (1 - a) + out[..., :3] * alpha
 
@@ -101,7 +111,7 @@ def frame(bg, s, meta, S, x0, x1, y0, phase, sag, chosen, t, flicker_seed=7):
     """One picture: the chain between x0 and x1 (shown px) at height y0, its links shifted by
     `phase` px, sagging `sag` px at its middle; links near index `chosen` heated."""
     img = bg.copy()
-    p, fade, heat = meta["pitch"], meta["fade"], meta["heat"]
+    p, heat = meta["pitch"], meta["heat"]
     var = meta["variants"]
     n0 = int(math.floor((x0 - phase) / p)) - 1
     n1 = int(math.ceil((x1 - phase) / p)) + 1
@@ -118,9 +128,9 @@ def frame(bg, s, meta, S, x0, x1, y0, phase, sag, chosen, t, flicker_seed=7):
     order = []
     for n in range(n0, n1 + 1):
         x = phase + n * p
-        a = np.clip(min(x - x0, x1 - x) / fade, 0, 1) ** 1.3
-        if a <= 0:
+        if x < x0 - p or x > x1 + p:
             continue
+        a = 1.0
         ang = math.atan2(y_at(x + 1) - y_at(x - 1), 2)
         kind = "face" if n % 2 == 0 else "edge"
         k = (n * 7 + 3) % var
@@ -128,20 +138,24 @@ def frame(bg, s, meta, S, x0, x1, y0, phase, sag, chosen, t, flicker_seed=7):
         h = 1 - d / (heat + 1) if d <= heat else 0.0
         order.append((0 if kind == "face" else 1, n, x, y_at(x), ang, a, kind, k, h))
     # Face-on links first; those on edge pass through them and lie over their ends.
+    clip = (x0, x1)
     for _, n, x, y, ang, a, kind, k, h in sorted(order, key=lambda o: o[0]):
         if n == chosen:
-            lay(img, shrink("open", S["open"], s), x, y, ang, a, s)
+            lay(img, shrink("open", S["open"], s), x, y, ang, a, s, clip)
         else:
-            lay(img, shrink(f"{kind}_{k}", S[f"{kind}_{k}"], s), x, y, ang, a, s)
+            lay(img, shrink(f"{kind}_{k}", S[f"{kind}_{k}"], s), x, y, ang, a, s, clip)
             if h > 0:
                 # Cold to warm to hot: the same link drawn in each state.
                 if h < 0.6:
-                    lay(img, shrink(f"warm_{kind}_{k}", S[f"warm_{kind}_{k}"], s), x, y, ang, a * h / 0.6, s)
+                    lay(img, shrink(f"warm_{kind}_{k}", S[f"warm_{kind}_{k}"], s), x, y, ang, a * h / 0.6, s, clip)
                 else:
-                    lay(img, shrink(f"warm_{kind}_{k}", S[f"warm_{kind}_{k}"], s), x, y, ang, a, s)
-                    lay(img, shrink(f"hot_{kind}_{k}", S[f"hot_{kind}_{k}"], s), x, y, ang, a * (h - 0.6) / 0.4, s)
-        if h > 0:
+                    lay(img, shrink(f"warm_{kind}_{k}", S[f"warm_{kind}_{k}"], s), x, y, ang, a, s, clip)
+                    lay(img, shrink(f"hot_{kind}_{k}", S[f"hot_{kind}_{k}"], s), x, y, ang, a * (h - 0.6) / 0.4, s, clip)
+        if h > 0 and x0 < x < x1:
             glow(img, x, y, p * 0.7, p * 0.45, heat_colour(h), 0.24 * h * fl, s)
+    # The eyelets over the chain's ends: the links go into their dark.
+    for ex in (x0, x1):
+        lay(img, shrink("eyelet", S["eyelet"], s), ex, y0, 0.0, 1.0, s)
     return img
 
 
