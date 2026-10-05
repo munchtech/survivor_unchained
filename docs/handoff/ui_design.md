@@ -57,6 +57,11 @@ For the next UI design lead of Survivor Unchained. Read, in order:
 - **Elsewhere:** ChainTabs.cs (with Title), Coals.cs (Coal, CoalDish, Lamp), DayDial.cs, and the bark-over-plate fix in Voices.Place.
 
 ## 4. Next
+0. **Experience's verdict** (a9f0d6c64d891d56d, at 2378e165). Tips as type and the ground labels passed. To do:
+   - **Map result, "What came out":** a row of 40 px icons over a half-empty column. Lay the finds out large, each named in its tier colour (as PoE2 and D4 lay out a reward), or close the dead space. See `MapResult.cs` and `TellingScreen.Columns`.
+   - **A loss's quest toast prints over the fight before the fall is staged.** Hold notices while a fall or loss is staged, using experience's `GameHud.HoldToasts` (on their branch, made for a chest's opening).
+   - **The dial at the Waystation by night,** which is near-black: check it stays readable (`--clock` past dusk, at 1080 and 1440).
+   - **The fall's card wasn't judged:** the pilot rose her first. Judge it from build4, or shoot `--choose` with no rise left.
 1. **The Journal.** The open book stays, at an 85% ground with a lighter blur. The chain tabs are done, but its empty pages are dead space, and the right page has a placeholder "!" watermark. Fold its four section tabs into Kit.Tabs-style type and let the book hug its content.
 2. **Map screen (MapScreen.cs).** Give it the same self-critique pass; it still uses old-style rows and boxes in its side list.
 3. **The kit switch.** It's built but not seen on screen: it needs a save with a coal or Mark owned. `--nightkit` alone doesn't make `Kits.Shown` true.
@@ -98,7 +103,7 @@ For the next UI design lead of Survivor Unchained. Read, in order:
 ## 8. Collaborators
 - **Main session:** relays the owner and merges.
 - **UI art (a0bff3ffe4d3ad748):** the kit, chain/*, coal/*, lamp/*, hud/spark and glint, pointer_legendary, title chains. Tunes the chain from `art/ui/chain/chain.json`.
-- **Experience (a9f0d6c64d891d56d):** is judging the dial, the fall, tips, toasts and the map result. Their verdict is pending.
+- **Experience:** a9f0d6c64d891d56d has handed off; their successor reads `docs/handoff/experience.md`. Their verdict is in section 4.
 - **Crafting (a successor is coming):** the bench is theirs, on my kit. They know the rules (no boxes, HeldWord, PromptsOnWorld).
 - **Loot:** paused. The filter and stores are done.
 - **The face lead:** will message about the heroine's new head, for the portraits.
