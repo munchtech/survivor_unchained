@@ -18,6 +18,7 @@ Agent aa1f430bd64b8d1ce, on branch `worktree-agent-aa1f430bd64b8d1ce` (integrati
 ## Next
 1. **Portraits** when the face lead messages: `python tools/assets/heroine_paint.py brows`, then `python tools/assets/creation_portraits.py` (a Godot turn), then shoot the Look (build8/2 to 6). Three faces have no cameo yet (Sunborn, Moonlit, Saffron: build8/3).
 2. The male Look's portrait and cameos wait for the male hero lead (build8/10, 11: a glyph stands in).
+3. Review combat's new `StoryChoices` (`WorldType.cs`) at 1:1 against the held-moment rules.
 
 ## Key decisions
 - One frame per screen; inside it only type, rules and space. Colour means tier, state or the one action.
