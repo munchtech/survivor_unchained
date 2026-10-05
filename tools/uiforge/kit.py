@@ -557,6 +557,13 @@ MATERIALS = {
 }
 
 
+def painted_ground(name, take, tone, contrast):
+    import materials
+    if os.path.exists(os.path.join(materials.RAW, f"{name}_1400_{take}.png")):
+        return materials.ground(name, take, tone, contrast)
+    return morocco(tone=tone)
+
+
 def paint_materials(seed=1400, n=4):
     import krea
     jobs = [(k, p, seed) for k, p in MATERIALS.items()]
@@ -599,7 +606,10 @@ SLICES = {
 }
 
 MAKE = {
-    "page/morocco.png": morocco,
+    # The panels' ground: painted goatskin (Krea macro, materials.py), its light taken out and
+    # made periodic, at 0.4 of its contrast so it stays calm behind words; the drawn one where
+    # the painting is not to hand.
+    "page/morocco.png": lambda: painted_ground("goatskin", 1, "#221b19", 0.4),
     # A page's ground in the same goatskin at page scale (512 shown, so it repeats seldom), for a
     # full page that stays: laid ever so slightly translucent over the world (about 0.88).
     "page/goatskin.png": lambda: morocco(N=1024, seed=17, tone="#1b1517"),
@@ -677,7 +687,8 @@ CHAIN_ART = ([f"chain/{pre}{kind}_{k}.png" for pre in ("", "warm_", "hot_") for 
 # The world's other small things, each made by its own tool (coals.py, embers.py): what they
 # are, and the folder under tools/comfy/out/uiforge/ they are made into.
 WORLD_ART = {"coal": ([f"coal/coal_{k}.png" for k in range(4)] + ["coal/dish.png", "coal/dish_rim.png", "coal/numeral_glow.png"]),
-             "embers": ["hud/spark.png", "hud/glint.png", "hud/pointer_legendary.png"]}
+             "embers": ["hud/spark.png", "hud/glint.png", "hud/pointer_legendary.png"],
+             "lamp": ["lamp/lamp.png", "lamp/lamp_lit.png", "lamp/light.png"]}
 # Pieces the kit once made and no longer does (removed from the game on --apply).
 GONE = ["chain/hot.png", "chain/eyelet.png", "chain/eyelet_left.png", "chain/eyelet_right.png", "chain/eyelet_hole.png"]
 # Ornament the kit does without (moved aside on --apply, so the code's fallback is nothing).

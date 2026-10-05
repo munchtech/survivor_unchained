@@ -4,8 +4,8 @@ below it, brightening when a level is gained. Modelled in Blender (blender_lamp.
 
     python tools/uiforge/lamp.py           # into tools/comfy/out/uiforge/lamp/, then kit.py --apply
 
-  lamp/lamp.png       the lamp at rest, 120x200 shown, its chain running up off its top edge's middle
-                      (draw it under the head band, so the chain goes up behind the rail)
+  lamp/lamp.png       the lamp at rest, 220x180 shown: the cage at x 110, hung by three links from a
+                      forged bracket whose plate (x 186) is nailed to the side panel's left frame
   lamp/lamp_lit.png   the same, its coal blown bright (cross-fade to it on a level gained)
   lamp/light.png      the light it throws on the page, 600x600 shown, its source at the middle:
                       laid under everything on the page, additively, scaled by how lit it is
@@ -27,10 +27,12 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(os.path.dirname(HERE))
 BLENDER = os.environ.get("BLENDER", r"C:\Users\munch\Tools\blender-4.5.14-windows-x64\blender.exe")
 OUT = os.path.join(ROOT, "tools", "comfy", "out", "uiforge", "lamp")
-SPEC = {"cell": [240, 400], "ss": 3, "samples": 128,
+SPEC = {"cell": [440, 360], "ss": 3, "samples": 128,
         "material": {"iron": "#262122", "rust": "#3a2012", "worn": "#e2dce6", "worn_rough": 0.14},
-        "cage": {"y": 270, "h": 130, "r": 40, "bars": 6, "bar": 3.4},
-        "chain": {"links": 8, "length": 38, "width": 23, "wire": 3.8}, "heat": [10, 28]}
+        "cage": {"y": 230, "h": 130, "r": 40, "bars": 6, "bar": 3.4},
+        "chain": {"links": 3, "length": 38, "width": 23, "wire": 3.8}, "heat": [10, 28],
+        # Hung from a forged bracket on the panel's frame (Self is a side panel over the world).
+        "bracket": {"arm": 150, "drop": 60, "bar": 4.2}}
 
 
 def render():
