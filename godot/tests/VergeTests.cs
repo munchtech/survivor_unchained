@@ -154,7 +154,9 @@ public class VergeTests
         SurvivorUnchained.Arena.Arenas.Begin(s.J.World, spec2);
         var b2 = s.J.StartBattle(true, new CollisionWorld(60), (_, _) => 0, 0, 0, 0, 3, arena: true);
         SurvivorUnchained.Arena.Arenas.Finish(s.J, b2, spec2, won: false);
-        Assert.Contains(s.J.World.Rematches, r => r.Id == "roost_raid");
+        // Lost, it waits at the Roost for another night (not at the table).
+        Assert.DoesNotContain(s.J.World.Rematches, r => r.Id == "roost_raid");
+        Assert.True(Make(TimeOfDay.Night, s.J).Zone.Interactables.Single(i => i.Id == "night:roost").When!());
         Assert.True(Quest(s.J, "caravan", "roost_repelled"));
     }
 

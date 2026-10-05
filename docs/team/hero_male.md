@@ -2,19 +2,27 @@
 
 Agent ab82cbe99e2937ddd, branch `worktree-agent-ab82cbe99e2937ddd` (took over from ae2de192cce8298ca).
 
-## Current state: on hold, waiting for the owner's Krea records and the GPU
-- **The legal ruling** (LEGAL_BRIEF 5(b), `docs/art/MODELS_TO_MAKE.md`) flags his body as tainted: it came from Krea's website, probably Hunyuan underneath. The owner wants to keep it if he can, and is checking his Krea records (which 3D model, which plan, which input picture).
-- **The rebuild below is the fallback only.** Build nothing until the main session decides which way it goes.
-- **No Blender, Godot or ComfyUI** until the main session says the machine is free.
-- **In the game today:** only behind `--body hero`, with the predecessor's `hero.glb` (e7709bd).
+## Current state: his current body stays, polished
+- **Legal has cleared both bodies to stay.** The owner confirmed TRELLIS 2 and Krea 2 Turbo, both run locally. The MakeHuman rebuild below is a fallback only.
+- **His new `hero.glb` is committed** (sheets: `docs/hero_male/face4.jpg`, `body4.jpg`). It beats e7709bd in every view:
+  - one skin tone from his scalp to his chest, with no seam at his nape or under his jaw;
+  - his Krea face no longer olive or green-cast;
+  - his skull rounded;
+  - his ears clean;
+  - the white collarbone lines and blotches gone;
+  - his skin matte, with roughness 0.62, sheen 0.3 and extra roughness edge on (`People.HisSkin`, the shader's new `edge_rough`).
+- **Still only behind `--body hero`** in the game, until his outfits exist. His own `him/` clips play (merged from animation).
+- **`People.HisShadow`** wires his stubble (scalp and beard ground) and a brow dye, from `head_tex/hero_shadow.png`. The brow dye is off: his painted brows have no hairs, so a dyed brow reads as a smudge of colour.
 
-## Next, if the current body stays (exact)
-1. Fix the head build, which fails in `heroine_face_fixes.lips`. `one_tone` moved his lips' hue; run it after `fix()`, on the fixed paint, or keep the lips out of it.
-2. Judge his face against his neck unlit (scratch `albedo.py`): the Krea face reads olive beside the tan neck.
-3. Render lit sheets in Godot (face, 3/4, side, back, chest, full body). Commit `hero.glb` only if it beats e7709bd everywhere.
-4. Put his skin values in People.Hero and lookdev.gd (`rough=0.62, shine=0.32`), and wire the brow dye and stubble.
-5. Merge the animation lead's `him/` library (`worktree-agent-a435f4dd0ac80df75@72ab9a8`).
-6. Hair and beards, the base garment, his four outfits, the Look step.
+## Next (exact)
+1. **Hair, brows and beards (`tools/assets/hero_male_hair.py`):**
+   - hair cards in the heroine's way;
+   - brow cards over his painted brows, with the painted brows lifted to a shadow through the mask, then `brow_dye` turned on;
+   - beards as cards from his beard ground, with the head's shape keys;
+   - stubble through `HisShadow`.
+2. **The base garment,** then his four outfits (`hero_male_outfits.py`).
+3. **The Look step:** `heroes.male` and `BeardStyle`, with the UI lead.
+4. **Later:** a body skin layer (redness at the knuckles, knees and elbows; the body still reads a little like clay).
 
 ## Fallback: the rebuild (path A, MakeHuman's CC0 body, a 1.98 m rugged build)
 1. **His body, `hero_male_body.py` rewritten.**

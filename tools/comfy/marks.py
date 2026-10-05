@@ -41,6 +41,18 @@ MARKS = {
               "luminous magenta and purple lines.", "black", 46),
     "roots": ("A ring of glowing green spectral roots and vines bursting through the ground, luminous emerald moss "
               "and sprouting leaves of light.", "black", 47),
+    # Her rise. Not Yet: the Order's watch-hours, wound back round her; Cold, Then Not: the ring
+    # of ground its fire leaves smouldering.
+    "watch_dial": ("An ancient night watchman's hour dial worn into the ground: a ring of twelve hour marks of tarnished "
+                   "gold, each a short engraved bar, a small lantern sigil at the top and tiny stars between the hours, "
+                   "fine engraved concentric circles, the grooves glowing with warm amber lamplight, empty dark middle.", "black", 51),
+    "watch_dial2": ("A circular watch dial of the night watch seared into the ground in warm amber lamplight: twelve hour "
+                    "marks round a thin ring, the four quarter hours longer, a little lantern at the top, faint stars "
+                    "between the hours, thin luminous engraved lines, weathered, empty dark middle.", "black", 52),
+    "smoulder": ("A wide ring of scorched earth left by a wall of fire: a ring of black char and grey ash around an "
+                 "unburnt centre, glowing orange embers and smouldering cracks along the ring, wisps of ash.", "white", 53),
+    "smoulder2": ("A ring of burnt ground where fire has just swept outward: charred black earth and ash in a broad ring "
+                  "with an untouched centre, many glowing orange embers and burning cracks in the char.", "white", 54),
 }
 
 

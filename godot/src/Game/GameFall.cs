@@ -26,7 +26,7 @@ public partial class Game
             return;
         }
         // The autopilot (runs and pictures) gets up, as a player mostly would.
-        if (auto != null) { Wait(1.4, () => GetUp(rise)); return; }
+        if (auto != null && !Args.Has("choose")) { Wait(1.4, () => GetUp(rise)); return; }
         Wait(0.9, () =>
         {
             if (scene == null) return;
@@ -37,6 +37,9 @@ public partial class Game
             controls.ClearLatches();
             hud.Prompt(new PromptView(controls.UsingPad ? "A" : KeyLabel("interact"), "Get up", "",
                 $"{KeyLabel("cancel")}: Let the night go", null, Act.Confirm));
+            Shots.Want("fall", 0.6);
+            // --choose rise|letgo: the choice made for a run, after the card has been seen.
+            if (Args.Get("choose") is string ch) Wait(2.0, () => { if (hudMode == "fall") FallKey(ch == "letgo" ? Act.Cancel : Act.Confirm); });
         });
     }
 

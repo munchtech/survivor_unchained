@@ -26,13 +26,13 @@ You asked: *"ai generated assets and things are perfectly ok for steam games and
    - So a competitor could, in principle, copy an individual AI-made icon or texture.
    - What you can protect: the game as a whole (your selection and arrangement), anything you personally made or changed, and your name and logo, by trademark.
    - Section 16 says how to strengthen this.
-4. **"No trouble" depends on a few fixes before launch.** After your answers, six items still block launch:
-   - the AI disclosure, filled in honestly;
-   - the mature-content answers, which must cover what's hidden in the build as well as what's shown;
-   - debug paths and unused files (including the hero's bare body) that ship in the build;
-   - licence notices that don't ship yet;
-   - the boar, which has conflicting licence terms: replace it, or buy the commercial version, before launch;
-   - the placeholder voices, which must be replaced or dropped from the build.
+4. **"No trouble" depends on a few fixes before launch.** Four items still block launch (4 Oct, night):
+   - the AI disclosure, filled in honestly at submission;
+   - the mature-content answers, which must cover what's hidden in the build as well as what's shown, once the motion check is finished;
+   - the licences screen, built and its texts verified, still to be seen in game;
+   - the boar, which has conflicting licence terms: replace it, or buy the commercial version, before launch.
+
+   Done since the first brief: debug paths and unused files are out of the release build, and so are the placeholder voices. The pack listing proves it (issue 3).
 
    Three former blockers are cleared:
    - **The Ember Watch is yours.** Issue 5(e) explains what that means and what to keep.
@@ -45,7 +45,7 @@ You asked: *"ai generated assets and things are perfectly ok for steam games and
    - ElevenLabs is fine for commercial use on a paid plan. Use only voices we have the right to: designed voices, your own voice, or performers who have consented in writing. Never feed ElevenLabs output into another AI model; its terms forbid it.
    - **Suno** (the hymn) is fine on a **Pro or Premier** plan, for a song you **download** through Suno's own download button. Suno assigns those songs to you. Free-plan songs are for personal, non-commercial use only (issue 28).
 
-**In one line:** ship it with an honest disclosure, fix the six blockers (the boar is the biggest job), and plan for the Krea revenue cap, which now covers the bodies' pictures as well as the interface. Then the AI use itself is not what gets you into trouble.
+**In one line:** ship it with an honest disclosure, clear the four blockers (the boar is the biggest job), and plan for the Krea revenue cap, which now covers the bodies' pictures as well as the interface. Then the AI use itself is not what gets you into trouble.
 
 ---
 
@@ -115,15 +115,15 @@ I checked these in the repository at `f56ee42` (integration branch) and in rende
 |---|---|---|
 | 1 | Steam AI disclosure (pre-generated; no live) | BLOCKER |
 | 2 | Steam mature content survey, including content hidden in the build | BLOCKER |
-| 3 | Debug paths and unused files in the release build | BLOCKER |
-| 4 | Licence notices and credits missing from the build | BLOCKER |
+| 3 | Debug paths and unused files in the release build | DONE (8a770667; pack listing reviewed) |
+| 4 | Licence notices and credits missing from the build | BLOCKER until seen in game (built at 178768aa; texts verified) |
 | 5 | Third-party assets: the boar; the base bodies (local Krea 2 Turbo and TRELLIS 2); The Ember Watch | BLOCKER (boar); FINE with conditions (bodies); FINE (Ember Watch, with records) |
 | 6 | Explicit-scene placeholders in shipped data; the explicit-content decision | DONE (removed, efc15256) / decision |
 | 7 | Sex tied to a gameplay buff (Australia R18+, credit-card gate) | RESOLVED once b47d98ea merges |
 | 8 | Krea 2 licence: US$1M revenue cap, revocable on notice | SHOULD FIX now; BLOCKER before revenue nears $1M |
 | 9 | LTX-2.x licence conditions | FINE, with two duties |
 | 10 | Other AI models (TRELLIS 2, Pixal3D, Kimodo and the rest) | FINE |
-| 11 | Placeholder voices (Maya1, Seed-VC, VoxCPM2) | BLOCKER if shipped; FINE if replaced |
+| 11 | Placeholder voices (Maya1, Seed-VC, VoxCPM2) | DONE: excluded from release (pack listing) |
 | 12 | ElevenLabs terms (finals) | SHOULD FIX (process) |
 | 13 | Voice cloning and digital-replica law | FINE as practised; get written consents |
 | 14 | Prompts that name other games (Diablo IV, Hades, Baldur's Gate) | SHOULD FIX |
@@ -239,7 +239,18 @@ I checked these in the repository at `f56ee42` (integration branch) and in rende
 - `Args.Dev` = `OS.IsDebugBuild()` gates the developer switches;
 - the excludes below are in all three presets.
 
-What remains is my review of the exported `.pck` listing, when the GPU is free.
+**Verified (4 Oct, night).** The performance lead's successor (a56abaf3a104be675) made a pack listing of the Windows preset, with the official 4.5.1 mono templates: `docs/legal/records/RELEASE_PACK_LISTING.txt`, 1,683 paths. I reviewed it.
+- None of the excluded paths ships: no tools scenes, no anime, woman or hero body, no KayKit characters or props, no web or Poly Haven originals, and no `art/vo` (the placeholder voices).
+- Every dependency of the shipped resources is present.
+- The C# ships as empty stubs.
+- A release build run with `--body hero --quick … --shot … --perf …` ignored every switch and opened at the age gate.
+
+**Ruled on what remains:**
+- **The Quaternius base bodies** (`assets/people/Superhero_*_FullBody.gltf`) ship because the townsfolk, the Risen and the male survivor are built on them, always dressed. FINE: CC0 and credited. I'll confirm their bare form has no anatomical detail in the GPU check; if it has, add one sentence to the reviewers' note.
+- **`art/anim/hero.res`** is animation data only: FINE.
+- **`data/vo/index.json`** ships with no audio behind it: FINE. No synthetic voice ships, so the disclosure names none.
+
+Issue 3 is **done**, and with it the placeholder-voice blocker (issue 11).
 
 The spec it implements:
 - The performance lead (a7145e18b3eb78294) had the exact spec:

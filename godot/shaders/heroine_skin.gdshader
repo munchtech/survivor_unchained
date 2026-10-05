@@ -18,6 +18,12 @@ uniform float pore_depth = 0.6;
 uniform float rough = 0.5;
 uniform float shine = 0.42;
 uniform float scatter = 0.38;
+// The soft rim the fine down on skin gives against a light from behind.
+uniform float rim = 0.25;
+// Rougher where the skin is seen edge on: there a light from behind
+// glanced off it as a hard white band (the Fresnel peak a matte skin's fine
+// hairs and pores break up).
+uniform float edge_rough = 0.0;
 // Her face's features drawn bold (tools/assets/heroine_features.py: red her
 // eyes and brows, green her lips), deepened the smaller her face is on
 // screen: from the game's camera her face is a few pixels across, and her
@@ -40,9 +46,23 @@ uniform sampler2D shadow_mask : hint_default_black, filter_linear_mipmap;
 uniform float beard_shadow = 0.0;
 uniform float scalp_shadow = 0.0;
 uniform vec3 shadow_colour : source_color = vec3(0.16, 0.12, 0.1);
+// His brows (painted with his face; the blue of shadow_mask) dyed his
+// hair's colour: their paint scaled from its own colour (brow_paint) to
+// brow_colour, every hair of it kept.
+uniform float brow_dye = 0.0;
+uniform vec3 brow_paint : source_color = vec3(0.2, 0.15, 0.12);
+uniform vec3 brow_colour : source_color = vec3(0.2, 0.15, 0.12);
 
 void fragment() {
 	ALBEDO = texture(paint, UV).rgb * tone;
+	if (brow_dye > 0.0) {
+		// (the hairs' own lightness kept, their black core lifted a little,
+		// so a fair or red man's brows are not black ones tinted)
+		float bm = texture(shadow_mask, UV).b * brow_dye;
+		vec3 lw = vec3(0.3, 0.59, 0.11);
+		float l = dot(ALBEDO, lw) / max(dot(brow_paint * tone, lw), 0.02);
+		ALBEDO = mix(ALBEDO, brow_colour * tone * pow(clamp(l, 0.0, 1.15), 0.5), bm);
+	}
 	vec2 tx = UV * vec2(textureSize(paint, 0));
 	float lod = 0.5 * log2(max(dot(dFdx(tx), dFdx(tx)), dot(dFdy(tx), dFdy(tx))));
 	float far = smoothstep(far_from, far_to, lod);
@@ -70,10 +90,11 @@ void fragment() {
 		NORMAL_MAP = q.rgb;
 		NORMAL_MAP_DEPTH = pore_depth;
 	}
-	ROUGHNESS = clamp(rough + (q.a - 0.5) * 0.3 + stubble * 0.15, 0.0, 1.0);
+	float edge = pow(1.0 - clamp(dot(NORMAL, VIEW), 0.0, 1.0), 3.0);
+	ROUGHNESS = clamp(rough + (q.a - 0.5) * 0.3 + stubble * 0.15 + edge_rough * edge, 0.0, 1.0);
 	SPECULAR = shine;
 	SSS_STRENGTH = scatter;
-	RIM = 0.25;
+	RIM = rim;
 	RIM_TINT = 0.6;
 	BACKLIGHT = ALBEDO * vec3(1.0, 0.45, 0.35) * 0.18;
 }

@@ -20,11 +20,13 @@ public partial class Scars : Node3D
         ["scorch"] = (5f, 0.35f), ["crack"] = (0f, 0f), ["blight"] = (0.6f, 0.5f), ["frost"] = (0.5f, 0.4f),
         // A sigil burns gold, not white: brighter, past the tone curve's knee, it read as peach.
         ["sigil"] = (1.5f, 0.7f), ["runes"] = (1.6f, 0.7f), ["roots"] = (4f, 0.7f),
+        // Her rise (Cold, Then Not): the ring of ground its fire leaves.
+        ["smoulder"] = (4f, 0.45f),
     };
 
     /// <summary>How far each mark covers the ground: the dark ones less, or
     /// under moonlight they read as holes of ink.</summary>
-    static readonly Dictionary<string, float> Strengths = new() { ["blight"] = 0.55f, ["scorch"] = 0.7f, ["crack"] = 0.8f, ["frost"] = 0.4f };
+    static readonly Dictionary<string, float> Strengths = new() { ["blight"] = 0.55f, ["scorch"] = 0.7f, ["crack"] = 0.8f, ["frost"] = 0.4f, ["smoulder"] = 0.75f };
 
     sealed class Scar
     {
@@ -69,7 +71,7 @@ public partial class Scars : Node3D
         d.EmissionEnergy = glow;
         // The dark marks lie over the ground's own colour rather than
         // replacing it: under the moon pure char reads as a hole.
-        d.AlbedoMix = name is "scorch" or "crack" or "blight" ? 0.7f : 1f;
+        d.AlbedoMix = name is "scorch" or "crack" or "blight" or "smoulder" ? 0.7f : 1f;
         d.Position = at;
         d.Rotation = new Vector3(0, Sparks.R() * Mathf.Tau, 0);
         d.Size = new Vector3(radius * 2, 3, radius * 2);
