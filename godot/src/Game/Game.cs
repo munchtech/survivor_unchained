@@ -1161,7 +1161,7 @@ public partial class Game : Node, IZoneHost
             var next1 = Inventory.Make(ch, SurvivorUnchained.Maps.Charts.Item, 1, 2);
             next1.Chart = SurvivorUnchained.Maps.Charts.Roll(new SurvivorUnchained.Core.Rng(7), chart.Tier + 1, chart.People, 3);
             bool fell = Args.Has("fell");
-            var r = new MapResult(chart, !fell, fell ? 486 : 641, fell ? 503 : 812, fell ? 3 : 1, fell ? 9 : 14, 16, fell ? null : 62, !fell,
+            var r = new MapResult(chart, !fell, fell ? 486 : 641, fell ? 503 : 812, fell ? MapRun.FallsAllowed : 1, fell ? 9 : 14, 16, fell ? null : 62, !fell,
                 fell ? new() { ["wolf_pelt"] = 3, ["ember_shard"] = 2 } : new());
             var spoils = new SurvivorUnchained.Maps.MapSpoils(fell ? gear.Take(2).ToList() : gear, fell ? new() : new() { next1 },
                 fell ? new() { ["wolf_pelt"] = 3 } : new() { ["wolf_pelt"] = 6, ["ember_shard"] = 4 }, fell ? 120 : 488);
