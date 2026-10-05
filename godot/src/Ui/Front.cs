@@ -26,7 +26,8 @@ public partial class TitleScreen : Overlay
     /// <summary>The line the ember starts on: back from the credits, it is still on Credits.</summary>
     string? focus;
 
-    public TitleScreen(Game g, string? focus = null) : base(g) { menu = new MenuList(Refresh, 24); this.focus = focus; }
+    // (--panel load|settings|controls: opened on that panel, for pictures)
+    public TitleScreen(Game g, string? focus = null) : base(g) { menu = new MenuList(Refresh, 24); this.focus = focus; if (Args.Get("panel") is "load" or "settings" or "controls") panel = Args.Get("panel")!; }
 
     static readonly Dictionary<string, string> ZoneNames = new() { ["lowford"] = "The Low Ford Road", ["waystation"] = "The Waystation", ["verge"] = "Thornhollow Verge" };
 
@@ -42,6 +43,7 @@ public partial class TitleScreen : Overlay
     protected override void Build()
     {
         if (!Settings.Current.Mature) { Mature(); return; }
+        // (a panel open takes the name's place: the picture keeps its fire, the panel its room)
         // A shade over the left of the picture, where the words are.
         var shade = new TextureRect
         {
@@ -67,7 +69,7 @@ public partial class TitleScreen : Overlay
         brand.AddChild(Style.Gap(4));
         brand.AddChild(new Plaque("", 14, 182));
         brand.AddChild(Style.Label("The run ends. The story doesn't.", Style.TextItalic, 23, new Color("#e8dcc6")));
-        AddChild(brand);
+        if (panel == "") AddChild(brand);
 
         var slots = G.Saves.Slots();
         var latest = slots.OrderByDescending(s => s.SavedAt).FirstOrDefault();
@@ -88,35 +90,34 @@ public partial class TitleScreen : Overlay
 
         if (panel != "")
         {
-            var box = Style.Panel(Style.Plate(20));
-            box.Position = new Vector2(540, panel == "controls" ? 90 : 500);
-            box.CustomMinimumSize = new Vector2(panel == "controls" ? 820 : 560, 0);
-            Nav.Scope = box;
-            var v = Style.V(10, new Plaque(panel switch { "load" => "Journeys", "settings" => "Settings", _ => "Controls" }, 26, 50));
+            // A fitted panel over the fire's picture, as the pause opens its own: its name, its rows as
+            // type, back with its key at its foot.
+            var v = Fitted(new Vector2(540, 16), panel == "controls" ? 600 : panel == "settings" ? 780 : 640);
+            Nav.Scope = v;
+            v.AddChild(new Title(panel switch { "load" => "Journeys", "settings" => "Settings", _ => "Controls" }, 30, false));
             switch (panel)
             {
                 case "load":
                     foreach (var s in slots)
                     {
                         var arch = Callings.Archetypes.GetValueOrDefault(s.Archetype);
-                        var row = Style.H(12);
-                        row.AddChild(Glyphs.Icon(s.Archetype switch { "warden" => "shield", "reaver" => "axe", "arcanist" => "staff", _ => "bow" }, 26, Style.Gold));
-                        var words = Style.V(0, Style.Label(s.Name, Style.Display, 18, s.Alive ? new Color("#f2e6cc") : new Color("#a08a80")),
-                            Style.Label($"{arch?.Name} {s.Level} · Day {s.Day} · {ZoneNames.GetValueOrDefault(s.Zone, s.Zone)}", Style.UiBold, Style.Caption, Style.InkDim),
-                            Style.Label(s.Alive ? $"Saved {Ago(s.SavedAt)}" : "Fallen", Style.TextItalic, Style.Caption, Style.InkFaint));
+                        var mark = Glyphs.Icon(s.Archetype switch { "warden" => "shield", "reaver" => "axe", "arcanist" => "staff", _ => "bow" }, 30, s.Alive ? Kit.Ink2 : Kit.Faint, true);
+                        mark.SizeFlagsVertical = SizeFlags.ShrinkCenter;
+                        var words = Style.V(0, Style.Label(s.Name.ToUpperInvariant(), Style.Display, 20, s.Alive ? Kit.Ink : Kit.Dim, false, HorizontalAlignment.Left, false),
+                            Style.Label($"{arch?.Name} {s.Level}  ·  Day {s.Day}  ·  {ZoneNames.GetValueOrDefault(s.Zone, s.Zone)}", Style.TextItalic, 16, Kit.HeadInk, false, HorizontalAlignment.Left, false),
+                            Style.Label(s.Alive ? $"Saved {Ago(s.SavedAt)}" : "Fallen", Style.Ui, 14, Kit.Dim, false, HorizontalAlignment.Left, false));
                         words.SizeFlagsHorizontal = SizeFlags.ExpandFill;
-                        row.AddChild(words);
                         int slot = s.Slot;
-                        row.AddChild(Style.Button("Resume", () => G.Continue(slot), true, true));
-                        row.AddChild(Style.Button("Forget", () => { G.Saves.Remove(slot); Refresh(); }, false, true));
-                        v.AddChild(row);
+                        var resume = Kit.Word("Resume", () => G.Continue(slot), Style.EmberHi, 17);
+                        var forget = Kit.Word("Forget", () => { G.Saves.Remove(slot); Refresh(); }, Kit.Dim, 15);
+                        foreach (var c in new Control[] { resume, forget }) c.SizeFlagsVertical = SizeFlags.ShrinkCenter;
+                        v.AddChild(Style.H(Style.Gap4, mark, words, resume, forget));
                     }
                     break;
                 case "settings": v.AddChild(SettingsPanel.Build(G, Refresh)); break;
                 default: v.AddChild(new ControlsPanel()); break;
             }
-            box.AddChild(v);
-            AddChild(box);
+            v.AddChild(Style.V(Style.Gap3, Kit.RuleH(), Nav.Id(Kit.Keyed(Act.Cancel, "Back", () => Panel(panel)), "back")));
         }
         var (built, stale) = Made;
         var foot = Style.Label($"BETA  ·  THE FIRST CHAPTER{(built is DateTime t ? $"  ·  BUILT {t:d MMMM, HH:mm}".ToUpperInvariant() : "")}", Style.UiBold, Style.Badge, Style.InkFaint);
@@ -165,17 +166,33 @@ public partial class TitleScreen : Overlay
     void Mature()
     {
         AddChild(Style.Scrim(null, 0.75f));
-        var card = Style.Centered(Style.Panel(Style.Plate(26)), new Vector2(560, 300));
-        AddChild(card);
-        var v = Style.V(10, Style.Cap("For adults", 18));
-        if (left) v.AddChild(Style.Label("Another time, then. The fire will still be burning.", Style.Text, 17, Style.Ink, true));
+        // The first thing the game says: a fitted panel over the fire, its words as type and its two
+        // answers as words with their keys (no card, no buttons' boxes).
+        var centre = new CenterContainer { MouseFilter = MouseFilterEnum.Ignore };
+        Style.Fill(centre);
+        AddChild(centre);
+        var panel = Style.Panel(Kit.Window(Margin + 8, Margin, Margin));
+        panel.CustomMinimumSize = new Vector2(620, 0);
+        panel.SelfModulate = Colors.White with { A = GroundAlpha };
+        centre.AddChild(panel);
+        var v = Style.V(Style.Gap4, new Title("For adults", 30, false));
+        // (broken into even lines across the panel's measure, never a word or two alone on the last)
+        Label Words(string t, bool quiet = false)
+        {
+            var f = quiet ? Style.TextItalic : Style.Text;
+            int size = quiet ? 16 : 18;
+            return Style.Label(Kit.Balance(t, f, size, 620 - 2 * (Margin + 8)), f, size, quiet ? Kit.Dim : Kit.Ink2, false, HorizontalAlignment.Center, false);
+        }
+        if (left) v.AddChild(Words("Another time, then. The fire will still be burning."));
         else
         {
-            v.AddChild(Style.Label("Survivor Unchained is made for adults. It has graphic violence and gore, strong language, revealing clothes and sexual themes. Nothing sexual is shown on screen.", Style.Text, 17, Style.Ink, true));
-            v.AddChild(Style.Label("Gore can be reduced or turned off in Settings.", Style.TextItalic, 15, Style.InkDim, true));
-            v.AddChild(Style.H(10, Style.Button("I am 18 or over", Agree, true), Style.Button("Leave", () => { left = true; Refresh(); })));
+            v.AddChild(Words("Survivor Unchained is made for adults. It has graphic violence and gore, strong language, revealing clothes and sexual themes. Nothing sexual is shown on screen."));
+            v.AddChild(Words("Gore can be reduced or turned off in Settings.", true));
+            var agree = Nav.Id(Kit.Keyed(Act.Confirm, "I am 18 or over", Agree, Style.EmberHi), "agree");
+            var leave = Nav.Id(Kit.Keyed(Act.Cancel, "Leave", () => { left = true; Refresh(); }), "leave");
+            v.AddChild(Style.V(Style.Gap3, Kit.RuleH(), Style.H(0, agree, new Control { SizeFlagsHorizontal = SizeFlags.ExpandFill, MouseFilter = MouseFilterEnum.Ignore }, leave)));
         }
-        card.AddChild(v);
+        panel.AddChild(v);
     }
 
     void Agree()
@@ -190,6 +207,7 @@ public partial class TitleScreen : Overlay
         if (!Settings.Current.Mature)
         {
             if (a == Act.Confirm && !left) { Agree(); return true; }
+            if (a == Act.Cancel && !left) { left = true; Refresh(); }
             return true;
         }
         if (panel != "")
@@ -320,182 +338,170 @@ public partial class CreateScreen : Overlay
         G.BeginJourney(d.Choice());
     }
 
+    /// <summary>Each step's question, the title over its column: the world asks them again later.</summary>
+    string Question => d.Step switch
+    {
+        CallingStep => "Who sits here?",
+        LookStep => Her ? "What does she look like?" : "What does he look like?",
+        ArmsStep => "With what?",
+        OriginStep => Her ? "Where is she from?" : "Where is he from?",
+        _ => Her ? "Who is she?" : "Who is he?",
+    };
+
+    /// <summary>The two panels' width and their inset from the screen's edges: the choices on the
+    /// left, what the one taken means on the right, mirrored, the figure standing between them.</summary>
+    const float PanelW = 560, Inset = 16;
+
     protected override void Build()
     {
         var a = Callings.Archetype(d.Archetype);
-        // (the column's place in its list, kept through the rebuild a choice makes)
-        float was = scroll != null && IsInstanceValid(scroll) && scrollKey == (d.Step, d.Section) ? scroll.ScrollVertical : 0;
-        // The figure between the column and the plate: dragged, she turns; the wheel brings her near.
+        // The figure between the panels: dragged, she turns; the wheel brings her near.
         AddChild(Stage());
-        // A forged column down the left, the figure by the fire in the middle, the choice read
-        // closely on the right (docs/UI_DESIGN.md, "Creation").
-        var column = Style.Panel(Style.Plate(0));
-        column.Position = new Vector2(-30, -30);
-        column.Size = new Vector2(620, 1140);
-        AddChild(column);
-        var col = Style.V(Style.Gap3);
-        col.Position = new Vector2(52, 44);
-        col.Size = new Vector2(486, 1000);
-        AddChild(col);
-        col.AddChild(Style.Label("By the fire on the Low Ford road", Style.TextItalic, Style.Body, new Color("#c8a878")));
-        col.AddChild(new Plaque("Who sits here?", 30, 30));
-        col.AddChild(StepRoad());
+        // The left panel: the steps on their chain, the step's question, the choices, the way on.
+        var col = Fitted(new Vector2(Inset, Inset), PanelW);
+        // (the steps are turned with LB and RB, or [ and ], drawn at the chain's ends)
+        var steps = new ChainTabs(Steps.Select(s => (s, "")).ToArray(), d.Step, k => { if (k != d.Step) { Sound.Sfx.Page(); Set(() => d.Step = k); } },
+            (G.Key(Act.TabPrev), G.Key(Act.TabNext)), 20) { SizeFlagsHorizontal = SizeFlags.ShrinkCenter };
+        col.AddChild(steps);
+        var head = Style.V(2, new Title(Question, 30, false),
+            Style.Label("By the fire on the Low Ford road", Style.TextItalic, 17, Kit.HeadInk, false, HorizontalAlignment.Center, false));
+        col.AddChild(head);
         if (d.Step == LookStep) col.AddChild(SectionTabs());
-        var body = d.Step switch { CallingStep => Calling(), LookStep => Look(a), ArmsStep => Arms(a), OriginStep => Origin(), _ => NamePage(a) };
-        var sc = Style.Scroll(body);
-        sc.SizeFlagsVertical = SizeFlags.ExpandFill;
-        col.AddChild(sc);
-        scroll = sc;
-        scrollKey = (d.Step, d.Section);
-        if (was > 0) Callable.From(() => { if (IsInstanceValid(sc)) sc.ScrollVertical = (int)was; }).CallDeferred();
-        var foot = Style.H(10, Nav.Id(Style.Button(d.Step > 0 ? "Back" : "Leave", () => { if (d.Step > 0) Set(() => d.Step--); else G.CancelCreation(); }), "back"));
-        foot.AddChild(new Control { SizeFlagsHorizontal = SizeFlags.ExpandFill });
-        // (from the calling, the button names what the look holds, so no one walks past it)
-        string next = d.Step + 1 == LookStep ? $"Next: {Their.ToLowerInvariant()} hair, face and paint" : $"Next: {Steps[Math.Min(d.Step + 1, NameStep)]}";
-        foot.AddChild(d.Step < NameStep ? Nav.Id(Style.Button(next, () => Set(() => d.Step++), true), "next") : Nav.Id(Style.Button("Begin the journey", Begin, true), "begin"));
-        col.AddChild(foot);
-
-        var right = Style.Panel(Style.Plate(24));
-        right.Position = new Vector2(1380, 110);
-        right.Size = new Vector2(500, 0);
-        right.CustomMinimumSize = new Vector2(500, 0);
+        col.AddChild(d.Step switch { CallingStep => Calling(), LookStep => Look(a), ArmsStep => Arms(a), OriginStep => Origin(), _ => NamePage(a) });
+        col.AddChild(Foot());
+        // The right panel, its twin: what the choice means, read closely.
+        var right = Fitted(new Vector2(1920 - Inset - PanelW, Inset), PanelW);
         right.AddChild(d.Step switch { CallingStep => CallingDetail(a), LookStep => LookDetail(a), ArmsStep => ArmsDetail(), OriginStep => OriginDetail(), _ => Summary(a) });
-        AddChild(right);
-
-        // Who they are becoming, on a banner at the figure's feet.
-        var cap = Style.Panel(OrnateBox.Make(OrnateBox.Kind.Banner, 20), Style.V(0, Style.Label(d.Name.Trim() == "" ? "NAMELESS" : d.Name.Trim().ToUpperInvariant(), Style.Display, 30, Style.GoldHi, false, HorizontalAlignment.Center),
-            Style.Label($"{Callings.Background(d.Background).Name} {a.Name}", Style.TextItalic, Style.Body, Style.Ink, false, HorizontalAlignment.Center)));
-        cap.CustomMinimumSize = new Vector2(380, 0);
-        AddChild(cap);
-        cap.Position = new Vector2(1010 - 190, 960);
+        // Who they are becoming, set on the ground at the figure's feet (not while the look is near her face).
+        if (d.Step != LookStep) AddChild(Nameplate(a));
     }
 
-    /// <summary>The four steps as a road of medallions: done in gold, this one lit, the rest dark.</summary>
-    Control StepRoad()
+    /// <summary>The panel's foot: back (or leave) and the way on, each its key and its word, at
+    /// either end; from the calling, the way on names what the look holds, so no one walks past it.</summary>
+    Control Foot()
     {
-        bool pad = Controls.Instance.UsingPad;
-        var road = Style.H(0);
-        road.Alignment = BoxContainer.AlignmentMode.Center;
-        var lb = pad ? Style.PadButton("LB") : Style.Key(G.Key(Act.TabPrev));
-        lb.SizeFlagsVertical = SizeFlags.ShrinkBegin;
-        road.AddChild(lb);
-        for (int i = 0; i < Steps.Length; i++)
-        {
-            int st = i;
-            bool here = d.Step == i, done = i < d.Step;
-            var b = Style.Button("", () => Set(() => d.Step = st), false, true);
-            foreach (var x in new[] { "normal", "hover", "pressed" }) b.AddThemeStyleboxOverride(x, new StyleBoxEmpty());
-            var v = Style.V(2);
-            v.MouseFilter = MouseFilterEnum.Ignore;
-            var mc = new CenterContainer { MouseFilter = MouseFilterEnum.Ignore };
-            mc.AddChild(new Medallion(here ? 52 : 44, Numerals[i])
-            {
-                Ring = here ? Style.Ember : done ? Style.Gold : Style.InkFaint, Ink = here ? Style.EmberHi : done ? Style.GoldHi : Style.InkDim,
-                Core = done || here ? new Color("#3a2210") : new Color("#120f14"), Lit = here,
-            });
-            v.AddChild(mc);
-            v.AddChild(Style.Label(Steps[i], Style.UiBold, Style.Caption, here ? Style.EmberHi : done ? Style.GoldHi : Style.InkDim, false, HorizontalAlignment.Center));
-            v.Size = new Vector2(84, 80);
-            b.AddChild(v);
-            b.CustomMinimumSize = new Vector2(84, 80);
-            road.AddChild(Nav.Skip(b));
-            if (i < Steps.Length - 1)
-            {
-                var line = new ColorRect { Color = i < d.Step ? Style.Gold : Style.Line, CustomMinimumSize = new Vector2(16, 2), SizeFlagsVertical = SizeFlags.ShrinkBegin, MouseFilter = MouseFilterEnum.Ignore };
-                var lw = new MarginContainer { MouseFilter = MouseFilterEnum.Ignore };
-                lw.AddThemeConstantOverride("margin_top", 26);
-                lw.AddChild(line);
-                road.AddChild(lw);
-            }
-        }
-        var rb = pad ? Style.PadButton("RB") : Style.Key(G.Key(Act.TabNext));
-        rb.SizeFlagsVertical = SizeFlags.ShrinkBegin;
-        road.AddChild(rb);
-        return road;
+        var back = Kit.Keyed(Act.Cancel, d.Step > 0 ? "Back" : "Leave", () => { if (d.Step > 0) Set(() => d.Step--); else G.CancelCreation(); });
+        Nav.Id(back, "back");
+        string next = d.Step + 1 == LookStep ? $"Next: {Their.ToLowerInvariant()} hair, face and paint" : $"Next: {Steps[Math.Min(d.Step + 1, NameStep)].ToLowerInvariant()}";
+        var on = d.Step < NameStep ? Nav.Id(Kit.Keyed(Act.Confirm, next, () => Set(() => d.Step++), Style.EmberHi), "next") : Nav.Id(Kit.Keyed(Act.Confirm, "Begin the journey", Begin, Style.EmberHi), "begin");
+        var row = Style.H(0, back, new Control { SizeFlagsHorizontal = SizeFlags.ExpandFill, MouseFilter = MouseFilterEnum.Ignore }, on);
+        return Style.V(Style.Gap3, Kit.RuleH(), row);
     }
 
-    /// <summary>A choice as a crested card: its mark on a medallion, its name, its words; the one taken lit in ember.</summary>
-    static Button Choice(string glyph, string name, string tag, bool on, Action act, Color? tagColor = null)
+    /// <summary>The name and what they are, as type on the ground at the figure's feet: no banner.</summary>
+    static Control Plate(string name, string what)
     {
-        var b = Style.Button("", act);
-        b.CustomMinimumSize = new Vector2(470, 92);
-        Nav.Id(b, $"choice:{name}");
-        var box = OrnateBox.Make(OrnateBox.Kind.Card, 0, on ? Style.Ember : Style.GoldDim);
-        box.Crest = on ? 40 : 0;
-        box.Glow = on ? 0.8f : 0;
-        var hover = OrnateBox.Make(OrnateBox.Kind.Card, 0, on ? Style.EmberHi : Style.Gold);
-        hover.Crest = 40;
-        b.AddThemeStyleboxOverride("normal", box);
-        b.AddThemeStyleboxOverride("hover", hover);
-        b.AddThemeStyleboxOverride("pressed", hover);
+        var v = Style.V(0, WorldType.Lettering(name, Style.Display, 36, new Color("#f2e8d4")), WorldType.Lettering(what, Style.TextItalic, 19, new Color("#d8cebc")));
+        foreach (var l in v.GetChildren().OfType<Label>()) l.HorizontalAlignment = HorizontalAlignment.Center;
+        var c = new CenterContainer { MouseFilter = MouseFilterEnum.Ignore, Position = new Vector2(Inset + PanelW, 884), Size = new Vector2(1920 - 2 * (Inset + PanelW), 96) };
+        c.AddChild(v);
+        return c;
+    }
+
+    Control Nameplate(Archetype a) => Plate(d.Name.Trim() == "" ? "NAMELESS" : d.Name.Trim().ToUpperInvariant(), $"{Callings.Background(d.Background).Name} {a.Name}");
+
+    /// <summary>A choice as a line of type: its mark, its name in capitals and what it is under it;
+    /// the one taken marked with the ember, as the menus mark theirs, and lit. No box.</summary>
+    Button Row(string glyph, string name, string tag, bool on, Action act, string id, Color? tagColor = null, bool marked = true)
+    {
+        var b = new Button { FocusMode = FocusModeEnum.None, Flat = true, MouseDefaultCursorShape = CursorShape.PointingHand };
+        foreach (var s in new[] { "normal", "hover", "pressed", "focus" }) b.AddThemeStyleboxOverride(s, new StyleBoxEmpty());
+        Nav.Id(b, id);
         if (on) b.SetMeta("on", true);
-        var row = Style.H(14, new Medallion(64, "", glyph) { Ring = on ? Style.Ember : Style.Gold, Ink = on ? Style.EmberHi : Style.GoldHi, Lit = on });
-        var words = Style.V(0, Style.Label(name.ToUpperInvariant(), Style.Display, 21, on ? Colors.White : Style.GoldHi), Style.Label(tag, Style.Ui, Style.Small, tagColor ?? Style.InkDim, true));
-        words.CustomMinimumSize = new Vector2(360, 0);
+        var ink = on ? new Color("#fff2d8") : Kit.Ink2;
+        var title = Style.Label(name.ToUpperInvariant(), Style.Display, 20, ink, false, HorizontalAlignment.Left, false);
+        var words = Style.V(0, title, Style.Label(tag, Style.TextItalic, 16, tagColor ?? Kit.Dim, false, HorizontalAlignment.Left, false));
         words.SizeFlagsVertical = SizeFlags.ShrinkCenter;
-        row.AddChild(words);
-        row.Position = new Vector2(14, 14);
+        // (drawn glyphs, all one hand: the painted ones are a mix of full colour and line)
+        var icon = Glyphs.Icon(glyph, 30, on ? Style.EmberHi : Kit.Dim, true);
+        icon.SizeFlagsVertical = SizeFlags.ShrinkCenter;
+        var row = Style.H(Style.Gap4, icon, words);
+        if (marked)
+        {
+            // (the ember diamond, as the pause and the title mark their line)
+            var markBox = new Control { CustomMinimumSize = new Vector2(12, 0), MouseFilter = MouseFilterEnum.Ignore, SizeFlagsVertical = SizeFlags.Fill };
+            // (turned about its corner: its middle on the name's capitals)
+            if (on) markBox.AddChild(new ColorRect { Color = Style.Ember, Size = new Vector2(8, 8), Rotation = Mathf.Pi / 4, Position = new Vector2(6, 8), MouseFilter = MouseFilterEnum.Ignore });
+            row.AddChild(markBox);
+            row.MoveChild(markBox, 0);
+        }
         row.MouseFilter = MouseFilterEnum.Ignore;
+        foreach (var c in row.GetChildren().OfType<Control>()) c.MouseFilter = MouseFilterEnum.Ignore;
         b.AddChild(row);
+        b.CustomMinimumSize = row.GetCombinedMinimumSize() + new Vector2(0, 4);
+        row.Position = new Vector2(0, 2);
+        b.MouseEntered += () => title.AddThemeColorOverride("font_color", Kit.Ink);
+        b.MouseExited += () => title.AddThemeColorOverride("font_color", ink);
+        b.Pressed += act;
         return b;
+    }
+
+    Button Choice(string glyph, string name, string tag, bool on, Action act, Color? tagColor = null) => Row(glyph, name, tag, on, act, $"choice:{name}", tagColor);
+
+    /// <summary>Words to choose between, the one chosen in full ink over the ember's underline (the
+    /// house's tabs), centred; each with its focus id.</summary>
+    static HBoxContainer Words(string[] names, int on, Action<int> pick, string[] ids, int size = 19, int gap = 40)
+    {
+        var tabs = Kit.Tabs(names, on, pick, size, gap);
+        tabs.Alignment = BoxContainer.AlignmentMode.Center;
+        int i = 0;
+        foreach (var b in tabs.GetChildren().OfType<Button>())
+        {
+            Nav.Id(b, ids[i]);
+            if (i == on) b.SetMeta("on", true);
+            i++;
+        }
+        return tabs;
     }
 
     /// <summary>Who sits here (a woman or a man: the first thing anyone asks), and how they fight.</summary>
     Control Calling()
     {
-        var v = Style.V(6);
-        var who = Style.H(8);
-        foreach (var sx in new[] { Sex.Female, Sex.Male })
-        {
-            var b = Nav.Id(Style.Segment(sx == Sex.Male ? "A man" : "A woman", d.Sex == sx, () => Set(() => d.SetSex(sx))), $"sex:{sx}");
-            b.CustomMinimumSize = new Vector2(231, 42);
-            Style.Font(b, Style.Display, 18, d.Sex == sx ? new Color("#2a1a0c") : Style.GoldHi, false);
-            if (d.Sex == sx) b.SetMeta("on", true);
-            who.AddChild(b);
-        }
-        v.AddChild(who);
-        v.AddChild(Style.Gap(4));
+        var v = Style.V(Style.Gap2);
+        v.AddChild(Words(new[] { "A woman", "A man" }, Her ? 0 : 1, k => Set(() => d.SetSex(k == 0 ? Sex.Female : Sex.Male)), new[] { "sex:Female", "sex:Male" }));
+        v.AddChild(Style.Gap(Style.Gap1));
         foreach (var (id, a) in Callings.Archetypes)
             v.AddChild(Choice(ClassGlyph.GetValueOrDefault(id, "sword"), a.Name, a.Tagline, d.Archetype == id, () => Set(() => ChooseArchetype(id))));
-        v.AddChild(Style.Gap(14));
+        v.AddChild(Style.Gap(Style.Gap2));
+        v.AddChild(Kit.RuleH());
+        v.AddChild(Style.Gap(Style.Gap2));
         v.AddChild(LookInvite());
         return v;
     }
 
     /// <summary>The look, offered under the callings: her portrait in its ring and what can be
-    /// shaped, so the step that makes her theirs is seen before anyone walks past it.</summary>
+    /// shaped, so the step that makes her theirs is seen before anyone walks past it. No card:
+    /// the portrait is the one painted thing on the panel.</summary>
     Button LookInvite()
     {
-        var b = Style.Button("", () => Set(() => { d.Step = LookStep; d.Section = 0; }));
-        b.CustomMinimumSize = new Vector2(470, 132);
+        var b = new Button { FocusMode = FocusModeEnum.None, Flat = true, MouseDefaultCursorShape = CursorShape.PointingHand };
+        foreach (var s in new[] { "normal", "hover", "pressed", "focus" }) b.AddThemeStyleboxOverride(s, new StyleBoxEmpty());
         Nav.Id(b, "invite:look");
-        var box = OrnateBox.Make(OrnateBox.Kind.Card, 0, Style.Ember);
-        box.Glow = 0.5f;
-        var hover = OrnateBox.Make(OrnateBox.Kind.Card, 0, Style.EmberHi);
-        hover.Crest = 40;
-        hover.Glow = 0.9f;
-        b.AddThemeStyleboxOverride("normal", box);
-        b.AddThemeStyleboxOverride("hover", hover);
-        b.AddThemeStyleboxOverride("pressed", hover);
-        var face = new Cameo(Art("look"), "", false, () => { }, 100, null, "mask") { MouseFilter = MouseFilterEnum.Ignore };
+        b.Pressed += () => Set(() => { d.Step = LookStep; d.Section = 0; });
+        const int size = 104;
+        var face = new Cameo(Art("look"), "", false, () => { }, size, null, "mask") { MouseFilter = MouseFilterEnum.Ignore, CustomMinimumSize = new Vector2(size + 14, size + 4) };
         bool pad = Controls.Instance.UsingPad;
-        var words = Style.V(2,
-            Style.Label($"II  ·  {Their} look".ToUpperInvariant(), Style.Display, 21, Style.GoldHi),
-            Style.Label($"{Their} hair and its colour, {Their.ToLowerInvariant()} face and eyes, the paint on it, {Their.ToLowerInvariant()} skin.", Style.Ui, Style.Small, Style.Ink, true),
-            Style.H(6, pad ? Style.PadButton("RB") : Style.Key(G.Key(Act.TabNext)), Style.Label($"Shape {(Her ? "her" : "him")}", Style.TextItalic, Style.Caption, Style.EmberHi)));
-        words.CustomMinimumSize = new Vector2(330, 0);
+        string them = Her ? "her" : "him", their = Their.ToLowerInvariant();
+        var head = Style.Label($"II  ·  {Their} look".ToUpperInvariant(), Style.Display, 20, Kit.Ink, false, HorizontalAlignment.Left, false);
+        var line = Style.Label(Kit.Balance($"{Their} hair and its colour, {their} face and eyes, the paint on it, {their} skin.", Style.Text, 16, 330), Style.Text, 16, Kit.Ink2, false, HorizontalAlignment.Left, false);
+        var shape = Style.Label($"Shape {them}", Style.TextItalic, 16, Style.EmberHi, false, HorizontalAlignment.Left, false);
+        var go = Style.H(Style.Gap2, pad ? Style.PadButton("RB") : Style.Key(G.Key(Act.TabNext)), shape);
+        foreach (var c in go.GetChildren().OfType<Control>()) c.SizeFlagsVertical = SizeFlags.ShrinkCenter;
+        var words = Style.V(Style.Gap1, head, line, go);
         words.SizeFlagsVertical = SizeFlags.ShrinkCenter;
-        var row = Style.H(10, face, words);
-        row.Position = new Vector2(8, 4);
+        var row = Style.H(Style.Gap4, face, words);
         row.MouseFilter = MouseFilterEnum.Ignore;
-        foreach (var c in new Control[] { words }) c.MouseFilter = MouseFilterEnum.Ignore;
+        foreach (var c in row.GetChildren().OfType<Control>()) c.MouseFilter = MouseFilterEnum.Ignore;
         b.AddChild(row);
+        b.CustomMinimumSize = row.GetCombinedMinimumSize();
+        b.MouseEntered += () => head.AddThemeColorOverride("font_color", new Color("#fff2d8"));
+        b.MouseExited += () => head.AddThemeColorOverride("font_color", Kit.Ink);
         return b;
     }
 
     Control Arms(Archetype a)
     {
-        var v = Style.V(6, Style.SubLabel("Weapon"));
+        var v = Style.V(Style.Gap2, Kit.Head("Weapon"));
         foreach (var id in a.Weapons)
         {
             var it = Items.Get(id);
@@ -503,7 +509,8 @@ public partial class CreateScreen : Overlay
             v.AddChild(Choice(it.Icon, it.Name, w != null ? $"{w.Name} · {w.School.ToString().ToLowerInvariant()}" : "", d.WeaponItem == id, () => Set(() => d.WeaponItem = id),
                 w != null ? ItemViews.SchoolColors[w.School] : null));
         }
-        v.AddChild(Style.H(8, Style.SubLabel("Art in hand"), Style.Label("you know all four; more are learned on the road", Style.TextItalic, Style.Caption, Style.InkDim)));
+        v.AddChild(Style.Gap(Style.Gap2));
+        v.AddChild(Kit.Head("Art in hand", "all four known; more on the road"));
         foreach (var id in ArtBook.Starting(a.Id))
         {
             var ab = Abilities.ById(id);
@@ -515,21 +522,25 @@ public partial class CreateScreen : Overlay
 
     Control Origin()
     {
-        var v = Style.V(6);
+        var v = Style.V(Style.Gap2);
         foreach (var (id, bg) in Callings.Backgrounds)
             v.AddChild(Choice(BgGlyph.GetValueOrDefault(id, "map"), bg.Name, bg.Summary, d.Background == id, () => Set(() => d.Background = id)));
         return v;
     }
 
-    /// <summary>The last step: their name (typed, or one from the road), and
+    /// <summary>The last step: their name, written on a line (typed, or one from the road), and
     /// who they are, read back before the journey begins.</summary>
     Control NamePage(Archetype a)
     {
-        var v = Style.V(8, Style.SubLabel("Name"));
-        nameBox = new LineEdit { Text = d.Name, PlaceholderText = "Your name", MaxLength = 18, CustomMinimumSize = new Vector2(360, 38), SizeFlagsHorizontal = SizeFlags.ExpandFill };
-        Style.Font(nameBox, Style.Display, 20, Style.GoldHi, false);
-        nameBox.AddThemeStyleboxOverride("normal", Style.Box(new Color("#0d0c10"), Style.GoldDim, 1, 4, 10));
-        nameBox.AddThemeStyleboxOverride("focus", Style.Box(new Color("#0d0c10"), Style.LineHi, 1, 4, 10));
+        var v = Style.V(Style.Gap2, Kit.Head("Name"));
+        nameBox = new LineEdit { Text = d.Name, PlaceholderText = "Your name", MaxLength = 18, CustomMinimumSize = new Vector2(300, 44), SizeFlagsHorizontal = SizeFlags.ExpandFill };
+        Style.Font(nameBox, Style.Display, 26, Kit.Ink, false);
+        nameBox.AddThemeColorOverride("font_placeholder_color", Kit.Faint);
+        nameBox.AddThemeColorOverride("caret_color", Style.EmberHi);
+        // Written on a rule, as a name is signed in a ledger: no field's box.
+        StyleBoxFlat Ruled(Color c) => new() { BgColor = Colors.Transparent, BorderColor = c, BorderWidthBottom = 1, ContentMarginLeft = 2, ContentMarginRight = 2, ContentMarginTop = 4, ContentMarginBottom = 6 };
+        nameBox.AddThemeStyleboxOverride("normal", Ruled(Kit.Edge));
+        nameBox.AddThemeStyleboxOverride("focus", Ruled(Style.Ember));
         nameBox.TextChanged += t =>
         {
             var clean = new string(t.Where(c => char.IsLetter(c) || c is '\'' or ' ' or '-').ToArray());
@@ -537,95 +548,128 @@ public partial class CreateScreen : Overlay
             if (clean != t) { nameBox.Text = clean; nameBox.CaretColumn = clean.Length; }
         };
         nameBox.TextSubmitted += _ => Begin();
-        v.AddChild(Style.H(8, Nav.Skip(nameBox), Nav.Id(Style.Button("A name from the road", () => Set(() => d.Name = Names[Random.Shared.Next(Names.Length)]), false, true), "roadname")));
+        var road = Nav.Id(Kit.Word("A name from the road", () => Set(() => d.Name = Names[Random.Shared.Next(Names.Length)]), Style.EmberHi, 16), "roadname");
+        road.SizeFlagsVertical = SizeFlags.ShrinkEnd;
+        v.AddChild(Style.H(Style.Gap4, Nav.Skip(nameBox), road));
         // The keyboard types at once; a pad cannot type, so it is offered names instead.
         if (!Controls.Instance.UsingPad) Callable.From(() => nameBox?.GrabFocus()).CallDeferred();
         else if (d.Name.Trim() == "") Nav.Prefer = "roadname";
-        // Who they are, each step's answer on its medallion; a press goes back to it.
-        v.AddChild(Style.Gap(6));
-        v.AddChild(Style.SubLabel(d.Sex == Sex.Female ? "Who she is" : "Who he is"));
+        // Who they are, each step's answer on its line; a press goes back to it.
+        v.AddChild(Style.Gap(Style.Gap3));
+        v.AddChild(Kit.Head(Her ? "Who she is" : "Who he is"));
         var bg = Callings.Background(d.Background);
         var ab = Abilities.ById(d.Ability);
         v.AddChild(Recall(CallingStep, ClassGlyph.GetValueOrDefault(d.Archetype, "sword"), a.Name, a.Tagline));
-        v.AddChild(Recall(LookStep, "mask", d.Sex == Sex.Female ? "Her look" : "His look", LookWords()));
+        v.AddChild(Recall(LookStep, "mask", Her ? "Her look" : "His look", LookWords()));
         v.AddChild(Recall(ArmsStep, ab.Icon, Items.Get(d.WeaponItem).Name, $"and {ab.Name} in hand"));
         v.AddChild(Recall(OriginStep, BgGlyph.GetValueOrDefault(d.Background, "map"), bg.Name, bg.Summary));
         return v;
     }
 
     /// <summary>A step's answer, read back: pressed, it goes back to that step.</summary>
-    Button Recall(int step, string glyph, string name, string words)
+    Button Recall(int step, string glyph, string name, string words) => Row(glyph, name, words, false, () => Set(() => d.Step = step), $"recall:{step}", null, false);
+
+    /* ------------------------------------------- the right panel's type -- */
+
+    /// <summary>What a choice is, read closely on the right panel: its name centred over it, what it
+    /// is in a line of italic, then its words; its numbers as a ledger line; its parts as lines.</summary>
+    static Control DTitle(string text) => new Title(text, 28, false);
+    static Label DSub(string text) => Style.Label(text, Style.TextItalic, 18, Kit.HeadInk, true, HorizontalAlignment.Center, false);
+    static Label DBody(string text, bool italic = false) => Style.Label(text, italic ? Style.TextItalic : Style.Text, 17, italic ? Kit.Dim : Kit.Ink2, true, HorizontalAlignment.Left, false);
+
+    /// <summary>A part as a line: its name in small capitals in a column, its words after.</summary>
+    static Control Line(string label, string text)
     {
-        var b = Style.Button("", () => Set(() => d.Step = step));
-        b.CustomMinimumSize = new Vector2(470, 70);
-        Nav.Id(b, $"recall:{step}");
-        foreach (var x in new[] { "normal", "hover", "pressed" })
-            b.AddThemeStyleboxOverride(x, x == "normal" ? new StyleBoxEmpty() : Style.Slab(0));
-        var row = Style.H(12, new Medallion(52, "", glyph) { Ring = Style.GoldDim, Ink = Style.GoldHi });
-        var w = Style.V(0, Style.Label(name, Style.UiBold, Style.Small, Style.GoldHi), Style.Label(words, Style.Ui, Style.Caption, Style.InkDim, true));
-        w.CustomMinimumSize = new Vector2(380, 0);
-        w.SizeFlagsVertical = SizeFlags.ShrinkCenter;
-        row.AddChild(w);
-        row.Position = new Vector2(8, 9);
-        row.MouseFilter = MouseFilterEnum.Ignore;
-        b.AddChild(row);
-        return b;
+        // (the small capitals centred on the words' first line, however many lines they run to)
+        var l = Style.Label(label.ToUpperInvariant(), Style.UiHeavy, 13, Kit.HeadInk, false, HorizontalAlignment.Left, false);
+        l.CustomMinimumSize = new Vector2(92, 23);
+        l.VerticalAlignment = VerticalAlignment.Center;
+        l.SizeFlagsVertical = SizeFlags.ShrinkBegin;
+        var w = Style.Label(text, Style.Text, 16, Kit.Ink2, true, HorizontalAlignment.Left, false);
+        w.SizeFlagsHorizontal = SizeFlags.ExpandFill;
+        return Style.H(Style.Gap3, l, w);
     }
 
-    static Label Line(string bold, string text) => Style.Label($"{bold}   {text}", Style.Text, 15, Style.Ink, true);
+    /// <summary>Numbers as a ledger line: each numeral over its name in small capitals, fine rules between.</summary>
+    static Control Ledger(params (string Value, string Label)[] cells)
+    {
+        var line = Style.H(0);
+        line.Alignment = BoxContainer.AlignmentMode.Center;
+        for (int i = 0; i < cells.Length; i++)
+        {
+            if (i > 0) line.AddChild(new LedgerRule { CustomMinimumSize = new Vector2(29, 52) });
+            var cell = Style.V(0, Style.Label(cells[i].Value, Style.Display, 32, Kit.Ink, false, HorizontalAlignment.Center, true),
+                Style.Label(cells[i].Label.ToUpperInvariant(), Style.DisplayLight, 13, Kit.HeadInk, false, HorizontalAlignment.Center, false));
+            cell.CustomMinimumSize = new Vector2(98, 0);
+            line.AddChild(cell);
+        }
+        return line;
+    }
 
-    static Control Bar(string label, double v, double max) => Style.H(10, Style.Label(label, Style.UiBold, 14, Style.InkDim), SheetScreen.Bar(v / max, "", Style.Gold, 240));
-
-    Control CallingDetail(Archetype a) => Style.V(8,
-        Style.Cap(a.Name, 24), Style.Label(a.Tagline, Style.TextItalic, 17, new Color("#c8a878"), true), Style.Label(a.Description, Style.Text, 16, Style.Ink, true), Style.Rule(),
-        Bar("Health  ", a.Base.MaxHealth, 200), Bar("Armour  ", a.Base.Armor + 1, 7), Bar("Speed    ", a.Base.MoveSpeed - 4, 2), Bar("Precision", a.Base.CritChance, 0.12), Style.Rule(),
-        Line("Weapons", string.Join(" · ", a.Weapons.Select(w => Items.Get(w).Name))), Line("Abilities", string.Join(" · ", a.Abilities.Select(x => Abilities.ById(x).Name))));
+    Control CallingDetail(Archetype a) => Style.V(Style.Gap3,
+        DTitle(a.Name), DSub(a.Tagline), DBody(a.Description), Kit.RuleH(),
+        Ledger(($"{a.Base.MaxHealth:0}", "Health"), ($"{a.Base.Armor:0}", "Armour"), ($"{a.Base.MoveSpeed:0.0}", "Speed"), ($"{a.Base.CritChance * 100:0}%", "Precision")),
+        Kit.RuleH(),
+        Line("Arms", string.Join(" · ", a.Weapons.Select(w => Items.Get(w).Name))), Line("Arts", string.Join(" · ", a.Abilities.Select(x => Abilities.ById(x).Name))));
 
     Control ArmsDetail()
     {
         var it = Items.Get(d.WeaponItem);
         var w = it.Weapon != null ? Weapons.All.GetValueOrDefault(it.Weapon.Id) : null;
         var ab = Abilities.ById(d.Ability);
-        var v = Style.V(8, Style.H(12, ItemPhotos.Icon(it.Icon, 72, Style.GoldHi), Style.V(2, Style.Cap(it.Name, 20),
-            w != null ? Style.Label($"{w.Name} · {w.School.ToString().ToLowerInvariant()}", Style.UiBold, 15, ItemViews.SchoolColors[w.School]) : new Control())));
-        v.AddChild(Style.Label(it.Description, Style.Text, 16, Style.Ink, true));
-        if (it.Lore != null) v.AddChild(Style.Label(it.Lore, Style.TextItalic, 15, Style.InkDim, true));
+        var photo = new CenterContainer { MouseFilter = MouseFilterEnum.Ignore };
+        photo.AddChild(ItemPhotos.Icon(it.Icon, 84, Style.GoldHi));
+        var v = Style.V(Style.Gap3, photo, DTitle(it.Name));
+        if (w != null) v.AddChild(Style.Label($"{w.Name} · {w.School.ToString().ToLowerInvariant()}", Style.TextItalic, 18, ItemViews.SchoolColors[w.School], false, HorizontalAlignment.Center, false));
+        v.AddChild(DBody(it.Description));
+        if (it.Lore != null) v.AddChild(DBody(it.Lore, true));
         if (w != null && w.Evolutions.Length > 0)
             v.AddChild(Line("At rank 8", string.Join(", or ", w.Evolutions.Select(e => $"{e.Name} (with {string.Join(" or ", e.Catalysts.Select(c => Boons.Find(c)?.Name ?? c))})"))));
-        v.AddChild(Style.Rule());
-        // The art's words take the panel's width (they were squeezed into a column).
-        var what = Style.V(2, Style.H(6, Style.Label(ab.Name, Style.UiBold, Style.Small, Style.GoldHi), Style.Prompt(Act.Ability)),
-            Style.Label(ab.Description, Style.Text, Style.Small, Style.Ink, true));
+        v.AddChild(Kit.RuleH());
+        // The art in hand: its mark, its name and key, what it does.
+        var name = Style.H(Style.Gap2, Style.Label(ab.Name.ToUpperInvariant(), Style.Display, 18, Kit.Ink, false, HorizontalAlignment.Left, false), Style.Prompt(Act.Ability));
+        foreach (var c in name.GetChildren().OfType<Control>()) c.SizeFlagsVertical = SizeFlags.ShrinkCenter;
+        var what = Style.V(Style.Gap1, name, Style.Label(ab.Description, Style.Text, 16, Kit.Ink2, true, HorizontalAlignment.Left, false));
         what.SizeFlagsHorizontal = SizeFlags.ExpandFill;
-        v.AddChild(Style.H(10, Glyphs.Icon(ab.Icon, 30, new Color("#ffe2b0")), what));
+        var mark = Glyphs.Icon(ab.Icon, 34, Style.EmberHi, true);
+        mark.SizeFlagsVertical = SizeFlags.ShrinkBegin;
+        v.AddChild(Style.H(Style.Gap4, mark, what));
         return v;
     }
 
     Control OriginDetail()
     {
         var bg = Callings.Background(d.Background);
-        var v = Style.V(8, Style.Cap(bg.Name, 24), Style.Label(bg.Summary, Style.TextItalic, 17, new Color("#c8a878"), true), Style.Label(bg.Story, Style.TextItalic, 15, Style.Ink, true), Style.Rule(),
+        var v = Style.V(Style.Gap3, DTitle(bg.Name), DSub(bg.Summary), DBody(bg.Story, true), Kit.RuleH(),
             Line("You know", string.Join(", ", bg.Knowledge.Select(k => SheetScreen.Know.GetValueOrDefault(k, k)))));
         foreach (var i in bg.Items)
         {
             var it = Items.Get(i);
-            v.AddChild(Style.H(10, ItemPhotos.Icon(it.Icon, 40, Style.RarityOf(it.Rarity)), Style.V(0, Style.Label(it.Name, Style.UiBold, 15, Style.RarityOf(it.Rarity)), Style.Label(it.Description, Style.Ui, 13, Style.InkDim, true))));
+            var pic = ItemPhotos.Icon(it.Icon, 40, Style.RarityOf(it.Rarity));
+            pic.SizeFlagsVertical = SizeFlags.ShrinkBegin;
+            var words = Style.V(0, Style.Label(it.Name, Style.UiBold, 16, Style.RarityOf(it.Rarity), false, HorizontalAlignment.Left, false), Style.Label(it.Description, Style.Text, 15, Kit.Dim, true, HorizontalAlignment.Left, false));
+            words.SizeFlagsHorizontal = SizeFlags.ExpandFill;
+            var carried = Style.H(Style.Gap3, pic, words);
+            carried.SizeFlagsHorizontal = SizeFlags.ExpandFill;
+            var l = Style.Label("CARRIES", Style.UiHeavy, 13, Kit.HeadInk, false, HorizontalAlignment.Left, false);
+            l.CustomMinimumSize = new Vector2(92, 0);
+            l.SizeFlagsVertical = SizeFlags.ShrinkBegin;
+            v.AddChild(Style.H(Style.Gap3, l, carried));
         }
-        v.AddChild(Style.Rule());
-        v.AddChild(Style.SubLabel("What it opens"));
-        foreach (var o in bg.Opens) v.AddChild(Style.Label($"• {o}", Style.Text, 15, Style.Ink, true));
+        v.AddChild(Kit.RuleH());
+        v.AddChild(Kit.Head("What it opens"));
+        foreach (var o in bg.Opens) v.AddChild(DBody($"•  {o}"));
         return v;
     }
 
     Control Summary(Archetype a)
     {
         var bg = Callings.Background(d.Background);
-        return Style.V(8, Style.Cap(d.Name.Trim() == "" ? "Nameless" : d.Name.Trim(), 24), Style.Label($"{bg.Name} {a.Name}", Style.TextItalic, 17, new Color("#c8a878")),
-            Style.Label(bg.Story, Style.TextItalic, 15, Style.Ink, true), Style.Rule(),
+        return Style.V(Style.Gap3, DTitle(d.Name.Trim() == "" ? "Nameless" : d.Name.Trim()), DSub($"{bg.Name} {a.Name}"), DBody(bg.Story, true), Kit.RuleH(),
             Line("Carries", Items.Get(d.WeaponItem).Name + string.Concat(bg.Items.Select(i => $", {Items.Get(i).Name}"))),
             Line("Hands", Abilities.ById(d.Ability).Name),
-            Line("Knows", string.Join(", ", bg.Knowledge.Select(k => SheetScreen.Know.GetValueOrDefault(k, k)))), Style.Rule(),
-            Style.Label("Night is falling on the Low Ford road. The fire is low. What you do from here, the world will remember.", Style.TextItalic, 15, Style.InkDim, true));
+            Line("Knows", string.Join(", ", bg.Knowledge.Select(k => SheetScreen.Know.GetValueOrDefault(k, k)))), Kit.RuleH(),
+            Style.Label("Night is falling on the Low Ford road. The fire is low. What you do from here, the world will remember.", Style.TextItalic, 17, Kit.HeadInk, true, HorizontalAlignment.Center, false));
     }
 
     public override bool Key(Act a)

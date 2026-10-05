@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using System.Text.RegularExpressions;
 using SurvivorUnchained.Play;
 using Godot;
@@ -29,6 +30,28 @@ public static partial class WorldType
         l.AddThemeConstantOverride("shadow_offset_y", 2);
         l.AddThemeConstantOverride("shadow_outline_size", Math.Max(6, size / 3));
         return l;
+    }
+
+    /// <summary>An action on the world: its key (none: a pad walks to it) and its word in lettering,
+    /// no box; the word brightens under the pointer. Returns the button and its word.</summary>
+    public static (Button Button, Label Word) Keyed(Act? key, string text, Font font, int size, Color ink, Action press)
+    {
+        var b = new Button { FocusMode = Control.FocusModeEnum.None, Flat = true, MouseDefaultCursorShape = Control.CursorShape.PointingHand };
+        foreach (var s in new[] { "normal", "hover", "pressed", "focus" }) b.AddThemeStyleboxOverride(s, new StyleBoxEmpty());
+        var word = Lettering(text, font, size, ink);
+        var row = new HBoxContainer { MouseFilter = Control.MouseFilterEnum.Ignore };
+        row.AddThemeConstantOverride("separation", 12);
+        if (key is Act k) row.AddChild(Style.Prompt(k));
+        row.AddChild(word);
+        foreach (var c in row.GetChildren().OfType<Control>()) c.SizeFlagsVertical = Control.SizeFlags.ShrinkCenter;
+        Kit.Quiet(row);
+        b.AddChild(row);
+        b.CustomMinimumSize = row.GetCombinedMinimumSize();
+        b.Ready += () => b.CustomMinimumSize = row.GetCombinedMinimumSize();
+        b.MouseEntered += () => word.AddThemeColorOverride("font_color", ink.Lightened(0.25f));
+        b.MouseExited += () => word.AddThemeColorOverride("font_color", ink);
+        b.Pressed += press;
+        return (b, word);
     }
 
     static GradientTexture2D? soft;

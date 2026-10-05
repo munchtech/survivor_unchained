@@ -83,19 +83,13 @@ public partial class CreditsScreen : Overlay
             v.AddChild(IndexLine(i));
         }
         v.AddChild(new Control { SizeFlagsVertical = SizeFlags.ExpandFill, MouseFilter = MouseFilterEnum.Ignore });
-        // The texts the licences ask for also lie beside the game.
-        var slab = Style.Panel(Style.Slab(16));
-        var sv = Style.V(Style.Gap2, Style.Label("Every licence text, and these credits, also lie beside the game in its licences folder.", Style.TextItalic, Style.Small, Style.InkDim, true));
-        var open = Style.Button("", OpenFolder, false, true);
-        var row = Style.H(Style.Gap2, Style.Prompt(Act.Alt), Style.Label("Open the licences folder", Style.UiBold, Style.Small, Style.GoldHi));
-        row.MouseFilter = MouseFilterEnum.Ignore;
-        row.Position = new Vector2(10, 5);
-        open.AddChild(row);
-        open.CustomMinimumSize = new Vector2(row.GetCombinedMinimumSize().X + 22, 36);
+        // The texts the licences ask for also lie beside the game: said, and the way to them, as type
+        // under a rule (no slab and no button's box).
+        var open = Kit.Keyed(Act.Alt, "Open the licences folder", OpenFolder, Style.GoldHi, 16);
         open.SizeFlagsHorizontal = SizeFlags.ShrinkBegin;
-        sv.AddChild(Nav.Skip(open));
-        slab.AddChild(sv);
-        v.AddChild(slab);
+        v.AddChild(Style.V(Style.Gap3, Kit.RuleH(),
+            Style.Label("Every licence text, and these credits, also lie beside the game in its licences folder.", Style.TextItalic, 16, Kit.Dim, true, HorizontalAlignment.Left, false),
+            Nav.Skip(open)));
     }
 
     /// <summary>A section's name in the index: what it is, not "Used under" (the heading on the
@@ -250,14 +244,14 @@ public partial class CreditsScreen : Overlay
             var seal = Rich();
             seal.FitContent = true;
             seal.AutowrapMode = TextServer.AutowrapMode.Off;
+            // (its name in the ember's small capitals at the head's end: no seal's box)
             Link(seal, licence, link ?? "", Style.UiHeavy, 15, Style.EmberHi);
-            var frame = Style.Box(new Color(0.25f, 0.12f, 0.05f, 0.55f), Style.Ember with { A = 0.55f }, 1, 3, 0);
-            frame.ContentMarginLeft = frame.ContentMarginRight = 12;
-            frame.ContentMarginTop = 4;
-            frame.ContentMarginBottom = 2;
-            var box = Style.Panel(frame, seal);
-            box.SizeFlagsVertical = SizeFlags.ShrinkCenter;
-            row.AddChild(box);
+            seal.SizeFlagsVertical = SizeFlags.ShrinkCenter;
+            // (at the end: a rich label expands by default, which took half the heading's line)
+            seal.SizeFlagsHorizontal = SizeFlags.ShrinkEnd;
+            // (a rich label wants its width given: its words' own, so the heading keeps the rest)
+            seal.CustomMinimumSize = new Vector2(Style.UiHeavy.GetStringSize(licence, HorizontalAlignment.Left, -1, 15).X + 6, 0);
+            row.AddChild(seal);
         }
         var v = Style.V(0, Style.Gap(Style.Gap4), row, HeadRule());
         return v;

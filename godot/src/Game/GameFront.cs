@@ -82,7 +82,9 @@ public partial class Game
         figureBody = d.BodyKey;
         figure = new PersonView(lo.Person, new Held { Right = lo.Arms.Right, Left = lo.Arms.Left, Forearm = lo.Arms.Forearm }, 0.8);
         scene!.AddChild(figure);
-        float x = Fire.X + 1.4f, z = Fire.Y + 1.0f;
+        // (where the camera looks: she stands in the middle of the screen, between creation's two
+        // panels, the fire behind her at her right hand, in view between her and the choices)
+        float x = Fire.X + 0.95f, z = Fire.Y + 1.0f;
         figure.Place(x, scene.HeightAt(x, z), z, FigureHeading + figTurnNow, true);
         figure.Loop(lo.Arms.Idle, 0);
         if (changedBody) figure.Flourish(d.Archetype switch { "arcanist" => "Spell_Simple_Enter", "reaver" => "Sword_Regular_A", "warden" => "Sword_Block", _ => "Pistol_Shoot" });
@@ -270,6 +272,7 @@ public partial class Game
         draft = new CreationDraft();
         // --new --sex female: creation opens on a woman (pictures of her).
         if (Args.Get("sex") == "female") draft.Sex = Sex.Female;
+        else if (Args.Get("sex") == "male") draft.SetSex(Sex.Male);
         if (Args.Get("archetype") is string arch)
         {
             var a = SurvivorUnchained.Rpg.Callings.Archetype(arch);
