@@ -131,7 +131,8 @@ void fragment() {
 	// from thirty metres up, with only an instant's glow across the whole of it
 	// (a full white-hot body bloomed the pale risen into blobs).
 	float hot = fx.x * fx.x;
-	e += vec3(1.0, 0.86, 0.72) * (hot * hot * 0.75 + fx.x * (0.1 + rim * rim * 1.8));
+	// (At 0.75 across the whole body a pale body lost its paint and read as a ghost.)
+	e += vec3(1.0, 0.86, 0.72) * (hot * hot * 0.38 + fx.x * (0.1 + rim * rim * 1.1));
 	e += c * COLOR.a;
 	// Ember at the dissolve's edge.
 	if (fx.y > 0.0) e += vec3(1.0, 0.45, 0.12) * smoothstep(fx.y + 0.12, fx.y, dn) * 3.0;
