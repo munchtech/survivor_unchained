@@ -659,7 +659,8 @@ public sealed class MapRun : ZoneRuntime, IBossArena
         Result = new MapResult(Chart, cleared, Seconds, kills, falls, PacksCleared, PackCount, bossTtk, firstClear, new(spilled));
         G.Journey.BankGold(B);
         G.Journey.World.Map = null;
-        G.After(B.Player.Alive ? 0.6 : 2.2, () => G.Travel("waystation", Chart.Name, cleared ? "Cleared" : "The map closes"));
+        // (the game tells it on its result page, then goes back to the Waystation)
+        G.MapOver(Result, B.Player.Alive);
     }
 
     public override void Frame(double dt)

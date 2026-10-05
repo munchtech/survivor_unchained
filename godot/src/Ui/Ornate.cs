@@ -245,7 +245,13 @@ public partial class Section : Control
 
     public override void _Draw()
     {
-        DrawColoredPolygon(new[] { new Vector2(5, 7), new Vector2(10, 12), new Vector2(5, 17), new Vector2(0, 12) }, Style.Ember);
+        // The painted mark (ornaments/section_mark.png, an ember set in gold) where there is one.
+        if (UiArt.Art("ornaments/section_mark.png") is { } mark)
+        {
+            var s = mark.GetSize();
+            DrawTextureRect(mark, new Rect2(new Vector2(5, 12) - s / 2, s), false);
+        }
+        else DrawColoredPolygon(new[] { new Vector2(5, 7), new Vector2(10, 12), new Vector2(5, 17), new Vector2(0, 12) }, Style.Ember);
         var label = GetChild<HBoxContainer>(0);
         float x = 16 + label.GetCombinedMinimumSize().X + 12;
         if (x < Size.X - 4) DrawLine(new Vector2(x, 12), new Vector2(Size.X, 12), Style.Line, 1);
@@ -426,6 +432,20 @@ public partial class Backdrop : Control
         ((ShaderMaterial)world.Material).SetShaderParameter("dim", Mathf.Lerp(1.1f, 0.62f, strength));
         Style.Fill(world);
         AddChild(world);
+        // The painted layers over it (tools/uiforge/pages.py): soot and wear gathered at the edges,
+        // then a fine grain over all, so the dark between columns is a surface, not an empty screen.
+        if (UiArt.Tex("page/backdrop_edges.png", false) is { } edges)
+        {
+            var e = new TextureRect { Texture = edges, ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize, StretchMode = TextureRect.StretchModeEnum.Scale, MouseFilter = MouseFilterEnum.Ignore };
+            Style.Fill(e);
+            AddChild(e);
+        }
+        if (UiArt.Art("page/backdrop_grain.png") is { } grain)
+        {
+            var g = new TextureRect { Texture = grain, ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize, StretchMode = TextureRect.StretchModeEnum.Tile, MouseFilter = MouseFilterEnum.Ignore };
+            Style.Fill(g);
+            AddChild(g);
+        }
         var dark = new TextureRect
         {
             Texture = new GradientTexture2D

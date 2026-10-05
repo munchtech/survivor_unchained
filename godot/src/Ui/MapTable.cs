@@ -16,16 +16,38 @@ public partial class MapTableScreen : Overlay
 {
     public override string Kind => "maps";
 
-    public MapTableScreen(Game g) : base(g) { }
+    public MapTableScreen(Game g, string page = "nights") : base(g) { this.page = page; }
 
     static readonly Color Ink = new("#2e1d10"), InkSoft = new("#5a4126"), Asks = new("#8a2a18"), Gives = new("#2f5a22"), Answer = new("#4a3270");
+
+    /// <summary>Which of the table's two pages is open: tonight's maps (the nights), or the atlas
+    /// (the charts and the places the road forgets), once the atlas is open.</summary>
+    string page = "nights";
+    string? chartUid;
+
+    bool AtlasOpen => Atlas.IsOpen(G.Journey.World, G.Journey.Ch);
+
+    public override bool Key(Act a)
+    {
+        // The table's two pages turn with LT and RT, as a screen's own pages do.
+        if (a is Act.SubNext or Act.SubPrev && AtlasOpen)
+        {
+            page = page == "atlas" ? "nights" : "atlas";
+            Sound.Sfx.Page();
+            Refresh();
+            return true;
+        }
+        return false;
+    }
 
     protected override void Build()
     {
         var w = G.Journey.World;
         int won = (int)w.Fact("arena.best").Number;
         var offers = MapOffers.Today(w.Day, System.Math.Max(1, won), (int)w.Fact("map.drawn").Number);
-        bool again = w.Rematches.Count > 0;
+        bool atlas = AtlasOpen;
+        if (!atlas) page = "nights";
+        bool again = page == "nights" && w.Rematches.Count > 0;
         AddChild(Style.Scrim(G.CloseOverlay, 0.62f));
         const float W = 1580;
         // (a sheet holds what the map pays and up to two oaths in full)
@@ -39,10 +61,12 @@ public partial class MapTableScreen : Overlay
         AddChild(table);
 
         // The head: the table's name on its plaque, what the maps are, Close.
-        var plaque = new Plaque("The Wayfinder's Table", 30, 110);
+        var plaque = new Plaque(page == "atlas" ? "The Wayfinder's Atlas" : "The Wayfinder's Table", 30, 110);
         AddChild(plaque);
         plaque.Position = new Vector2((1920 - plaque.CustomMinimumSize.X) / 2, at.Y + 14);
-        var sub = Style.Label($"Maps to places the road forgets: each an ember arena, half an hour and what rules it at the end. {(won > 0 ? $"You have won tier {won}." : "You have won none yet.")} Spoils lean toward what answers the map.",
+        var sub = Style.Label(page == "atlas"
+                ? "Charts to the places the road forgets: one ground each, a ruler at its heart, about ten minutes. You go in as you are, and what you find is yours."
+                : $"Tonight's maps: each an ember arena, half an hour and what rules it at the end. {(won > 0 ? $"You have won tier {won}." : "You have won none yet.")} Spoils lean toward what answers the map.",
             Style.TextItalic, Style.Small, Style.InkDim, false, HorizontalAlignment.Center);
         sub.Position = at + new Vector2(0, 58);
         sub.Size = new Vector2(W, 22);
@@ -50,6 +74,19 @@ public partial class MapTableScreen : Overlay
         var close = Nav.Skip(CloseButton("Esc", G.CloseOverlay));
         close.Position = at + new Vector2(W - 26 - close.CustomMinimumSize.X, 22);
         AddChild(close);
+        if (atlas) Pages(at + new Vector2(28, 24));
+        if (page == "atlas")
+        {
+            Atlas_(at + new Vector2(22, 92), new Vector2(W - 44, H - 114));
+            if (Controls.Instance.UsingPad)
+            {
+                var af = Footer((Act.SubNext, "Tonight's maps"), (Act.Confirm, "Choose"), (Act.Cancel, "Close"));
+                af.Position = new Vector2(0, at.Y + H + 12);
+                af.Size = new Vector2(1920, 30);
+                AddChild(af);
+            }
+            return;
+        }
 
         // The three sheets, a little askew as they lie.
         float sheetW = 448, sheetH = 608, gap = (W - 44 - 3 * sheetW) / 4;
@@ -87,6 +124,230 @@ public partial class MapTableScreen : Overlay
             f.Position = new Vector2(0, at.Y + H + 12);
             f.Size = new Vector2(1920, 30);
             AddChild(f);
+        }
+    }
+
+    /// <summary>The table's two pages as tabs at the plate's head, LT and RT at their ends.</summary>
+    void Pages(Vector2 pos)
+    {
+        bool pad = Controls.Instance.UsingPad;
+        var bar = Style.H(Style.Gap1);
+        bar.MouseFilter = MouseFilterEnum.Ignore;
+        bar.AddChild(pad ? Style.PadButton("LT") : Style.Key(G.Key(Act.SubPrev)));
+        foreach (var (id, name) in new[] { ("nights", "Tonight's maps"), ("atlas", "The atlas") })
+        {
+            bool on = page == id;
+            var b = Style.Button("", () => { if (!on) { page = id; Sound.Sfx.Page(); Refresh(); } }, on, true);
+            var row = Style.H(Style.Gap2, Style.Label(name, Style.UiBold, Style.Small, on ? Colors.White : Style.GoldHi));
+            // A point to spend lights the atlas's tab with an ember.
+            if (id == "atlas" && Atlas.Unspent(G.Journey.World) > 0)
+            {
+                var ember = new Control { CustomMinimumSize = new Vector2(10, 20), MouseFilter = MouseFilterEnum.Ignore };
+                ember.AddChild(new ColorRect { Color = Style.Ember, Size = new Vector2(7, 7), Position = new Vector2(2, 7), Rotation = Mathf.Pi / 4, PivotOffset = new Vector2(3.5f, 3.5f), MouseFilter = MouseFilterEnum.Ignore });
+                row.AddChild(ember);
+            }
+            row.MouseFilter = MouseFilterEnum.Ignore;
+            row.Position = new Vector2(12, 6);
+            b.AddChild(row);
+            b.CustomMinimumSize = new Vector2(row.GetCombinedMinimumSize().X + 24, 36);
+            if (on) b.AddThemeStyleboxOverride("normal", UiArt.Frame("tab_on", Style.Box(new Color("#3a2614"), Style.LineHi, 1, 4)));
+            else if (UiArt.Has("tab")) b.AddThemeStyleboxOverride("normal", UiArt.Frame("tab", new StyleBoxEmpty()));
+            bar.AddChild(Nav.Skip(b));
+        }
+        bar.AddChild(pad ? Style.PadButton("RT") : Style.Key(G.Key(Act.SubNext)));
+        bar.Position = pos;
+        AddChild(bar);
+    }
+
+    /* -------------------------------------------------------- the atlas -- */
+
+    /// <summary>
+    /// The atlas page (docs/EXPERIENCE_AUDIT.md, "A map's shape"): three sheets on the table. The
+    /// great atlas itself, the peoples by tier, each pair lit when its ruler falls; the chart in
+    /// hand, its oaths read as what they ask and what they pay, and the way in; and the points
+    /// the first clears gave, spent on the atlas's five biases. Made to look promising half-empty:
+    /// the beta has the first tier and a point.
+    /// </summary>
+    void Atlas_(Vector2 pos, Vector2 size)
+    {
+        var w = G.Journey.World;
+        float h = size.Y - 52, y = pos.Y + 26;
+        float[] widths = { 520, 520, 420 };
+        float gap = (size.X - widths.Sum()) / 4, x = pos.X + gap;
+        float[] tilt = { -0.7f, 0.4f, -0.5f };
+        var sheets = new VBoxContainer[3];
+        for (int i = 0; i < 3; i++)
+        {
+            var (holder, inner) = Leaf(new Vector2(x, y), new Vector2(widths[i], h), tilt[i]);
+            AddChild(holder);
+            sheets[i] = inner;
+            x += widths[i] + gap;
+        }
+        GreatAtlas(sheets[0], w);
+        InHand(sheets[1]);
+        Points(sheets[2], w);
+    }
+
+    /// <summary>A sheet of the Wayfinder's paper on the table, a little askew, its shadow under it;
+    /// returns the column its words go in.</summary>
+    static (Control Holder, VBoxContainer Words) Leaf(Vector2 pos, Vector2 size, float tiltDeg)
+    {
+        var holder = new Control { Position = pos, Size = size, PivotOffset = size / 2, RotationDegrees = tiltDeg, MouseFilter = MouseFilterEnum.Ignore };
+        for (int k = 5; k >= 1; k--)
+            holder.AddChild(new ColorRect { Color = new Color(0, 0, 0, 0.1f), Position = new Vector2(-k * 2 + 5, -k * 2 + 9), Size = size + new Vector2(k * 4, k * 4), MouseFilter = MouseFilterEnum.Ignore });
+        var paper = Style.Panel(Style.Paper(30));
+        paper.Size = size;
+        paper.MouseFilter = MouseFilterEnum.Ignore;
+        holder.AddChild(paper);
+        var v = Style.V(8);
+        v.Position = new Vector2(32, 28);
+        v.Size = size - new Vector2(64, 56);
+        holder.AddChild(v);
+        if (UiArt.Has("map_frame"))
+        {
+            var rim = new Panel { Size = size, MouseFilter = MouseFilterEnum.Ignore };
+            rim.AddThemeStyleboxOverride("panel", UiArt.Frame("map_frame", new StyleBoxEmpty()));
+            holder.AddChild(rim);
+        }
+        return (holder, v);
+    }
+
+    static Label Ink_(string t, Font f, int size, Color? c = null, HorizontalAlignment align = HorizontalAlignment.Left) =>
+        Style.Label(t, f, size, c ?? Ink, true, align, false);
+
+    static Control Head(string kicker, string title) =>
+        Style.V(2, Ink_(kicker.ToUpperInvariant(), Style.UiHeavy, Style.Badge, InkSoft), Ink_(title, Style.Display, 26));
+
+    /// <summary>The great atlas: each people's ground at each tier, lit where its ruler fell.</summary>
+    static void GreatAtlas(VBoxContainer v, SurvivorUnchained.World.WorldState w)
+    {
+        v.AddChild(Head("The great atlas", "The Places the Road Forgets"));
+        v.AddChild(Ink_("Each people's ground at each tier. A pair is lit where its ruler has fallen, and its first fall is a point to spend.", Style.TextItalic, Style.Small, InkSoft));
+        v.AddChild(Style.Gap(Style.Gap2));
+        var grid = MapResultScreen.AtlasGrid(w, null, true);
+        grid.SizeFlagsHorizontal = SizeFlags.ShrinkCenter;
+        v.AddChild(grid);
+        v.AddChild(Style.Gap(Style.Gap2));
+        int lit = MapOffers.Peoples.Sum(p => Enumerable.Range(1, 16).Count(t => Atlas.Done(w, p.Id, t)));
+        int best = Atlas.Best(w), cleared = (int)w.Fact("atlas.cleared").Number;
+        v.AddChild(Ink_(lit == 0 ? "Nothing lit yet. Every people waits at the first tier." : $"{lit} lit  ·  the highest tier cleared: {best}  ·  {cleared} map{(cleared == 1 ? "" : "s")} cleared",
+            Style.UiBold, Style.Small, Ink, HorizontalAlignment.Center));
+        // What comes next, so the dark half reads as a road, not a lack.
+        v.AddChild(Ink_($"Tier {best + 1} opens with the chart a tier {System.Math.Max(1, best)} ruler leaves: the first fall of each people at a tier always leaves the next.",
+            Style.TextItalic, Style.Caption, InkSoft, HorizontalAlignment.Center));
+        v.AddChild(new Control { SizeFlagsVertical = SizeFlags.ExpandFill, MouseFilter = MouseFilterEnum.Ignore });
+        var rose = new CenterContainer { MouseFilter = MouseFilterEnum.Ignore };
+        rose.AddChild(Glyphs.Icon("compass", 120, InkSoft with { A = 0.2f }));
+        v.AddChild(rose);
+    }
+
+    /// <summary>The chart in hand: those carried, the one chosen read out (what each oath asks and
+    /// pays), and the way in.</summary>
+    void InHand(VBoxContainer v)
+    {
+        var carried = Charts.Carried(G.Journey.Ch);
+        var chosen = carried.FirstOrDefault(c => c.Uid == chartUid) ?? carried.FirstOrDefault();
+        v.AddChild(Head("The chart in hand", chosen?.Chart?.Name ?? "No chart"));
+        if (chosen?.Chart is not { } c)
+        {
+            v.AddChild(Ink_("A map's ruler leaves the next chart when it falls; its keepers and its strongbox, now and then, another. Vonnra's fortune gives the first.", Style.TextItalic, Style.Small, InkSoft));
+            return;
+        }
+        var people = MapOffers.People(c.People);
+        string fineness = c.Rarity switch { 2 => "A rare chart", 1 => "A fine chart", _ => "A plain chart" };
+        v.AddChild(Ink_($"{fineness}, tier {c.Tier}: held by {people.Name}, ruled at its heart by {MapOffers.InSentence(people.BossName)}.", Style.TextItalic, Style.Small, Ink));
+        var spec = c.Map;
+        v.AddChild(Ink_($"Its ground: {spec.Clearings} clearings and {spec.AltarCount} altar{(spec.AltarCount == 1 ? "" : "s")} on a winding way. Three falls and it closes.", Style.Text, Style.Caption, InkSoft));
+        v.AddChild(Style.Rule());
+        // What it is sworn under: prefixes ask more of the foe's side, suffixes of yours. Each pays.
+        var pre = c.Rolled.Where(m => m.Prefix).ToList();
+        var suf = c.Rolled.Where(m => !m.Prefix).ToList();
+        if (pre.Count + suf.Count == 0) v.AddChild(Ink_("Sworn under nothing: plain ground, plain pay.", Style.TextItalic, Style.Small, InkSoft));
+        if (pre.Count > 0) { v.AddChild(Ink_("SWORN FOR THE FOE", Style.UiHeavy, Style.Badge, Asks)); foreach (var m in pre) v.AddChild(Oath(m)); }
+        if (suf.Count > 0) { v.AddChild(Ink_("SWORN AGAINST YOU", Style.UiHeavy, Style.Badge, Asks)); foreach (var m in suf) v.AddChild(Oath(m)); }
+        if (pre.Count + suf.Count > 0)
+            v.AddChild(Ink_($"In all it pays {Pct(c.Quantity - 1)} more found, {Pct(c.RarityBonus - 1)} finer, and packs {Pct(c.PackSize - 1)} larger.", Style.TextBold, Style.Small, Gives));
+        v.AddChild(new Control { SizeFlagsVertical = SizeFlags.ExpandFill, MouseFilter = MouseFilterEnum.Ignore });
+        // The others carried, to choose among (the highest tier first).
+        if (carried.Count > 1)
+        {
+            v.AddChild(Ink_("OTHER CHARTS CARRIED", Style.UiHeavy, Style.Badge, InkSoft));
+            var row = new HFlowContainer { MouseFilter = MouseFilterEnum.Ignore };
+            row.AddThemeConstantOverride("h_separation", 6);
+            row.AddThemeConstantOverride("v_separation", 6);
+            foreach (var other in carried.Where(o => o != chosen).Take(6))
+            {
+                var uid = other.Uid;
+                var b = Nav.Id(Style.Button($"{other.Chart!.Name}  ·  {other.Chart.Tier}", () => { chartUid = uid; Sound.Sfx.Page(); Refresh(); }, false, true), $"chart:{uid}");
+                b.TooltipText = Charts.Title(other.Chart);
+                row.AddChild(b);
+            }
+            v.AddChild(row);
+        }
+        var go = Nav.Id(Style.Button("Set it on the table", () => SetOut(chosen.Uid), true), "chart:set");
+        go.CustomMinimumSize = new Vector2(0, 44);
+        v.AddChild(go);
+        v.AddChild(Ink_("The chart is used up as its map opens.", Style.TextItalic, Style.Caption, InkSoft, HorizontalAlignment.Center));
+    }
+
+    static string Pct(double x) => $"{System.Math.Round(x * 100)}%";
+
+    /// <summary>One oath of a chart, sealed in wax beside its terms: what it asks, what it pays.</summary>
+    static Control Oath(ChartMod m)
+    {
+        var seal = new Panel { CustomMinimumSize = new Vector2(22, 22), MouseFilter = MouseFilterEnum.Ignore, SizeFlagsVertical = SizeFlags.ShrinkBegin };
+        var wax = Style.Box(m.Prefix ? new Color("#8a1c14") : new Color("#3a2a5a"), m.Prefix ? new Color("#5a0e0a") : new Color("#221636"), 2, 11, 0);
+        wax.ShadowColor = new Color(0, 0, 0, 0.35f); wax.ShadowSize = 3; wax.ShadowOffset = new Vector2(1, 2);
+        seal.AddThemeStyleboxOverride("panel", wax);
+        var pays = new System.Collections.Generic.List<string>();
+        if (m.Quantity > 0) pays.Add($"{Pct(m.Quantity)} more found");
+        if (m.Rarity > 0) pays.Add($"{Pct(m.Rarity)} finer");
+        if (m.PackSize > 0) pays.Add($"packs {Pct(m.PackSize)} larger");
+        var terms = Style.V(0, Ink_(m.Name, Style.TextBold, Style.Small), Ink_(m.Says, Style.Text, Style.Caption, Asks), Ink_($"Pays {string.Join(", ", pays)}", Style.Text, Style.Caption, Gives));
+        terms.SizeFlagsHorizontal = SizeFlags.ExpandFill;
+        return Style.H(10, seal, terms);
+    }
+
+    void SetOut(string uid)
+    {
+        if (Charts.TakeOut(G.Journey.Ch, uid) is not { } chart) return;
+        Sound.Sfx.Page();
+        G.EnterMap(chart);
+    }
+
+    /// <summary>The points the first clears gave, and the five biases they buy, three ranks each.</summary>
+    void Points(VBoxContainer v, SurvivorUnchained.World.WorldState w)
+    {
+        int unspent = Atlas.Unspent(w), points = Atlas.Points(w);
+        v.AddChild(Head("The Wayfinder's margins", unspent > 0 ? $"{unspent} point{(unspent == 1 ? "" : "s")} to spend" : points > 0 ? "Every point spent" : "No points yet"));
+        v.AddChild(Ink_("Each people's first fall at each tier is a point. Spent here, it bends what the maps give.", Style.TextItalic, Style.Caption, InkSoft));
+        foreach (var (id, name, rank) in Atlas.Biases)
+        {
+            int r = Atlas.Rank(w, id);
+            var pips = Style.H(3);
+            for (int k = 0; k < Atlas.MaxRank; k++) pips.AddChild(new AtlasStone(k < r, false, true) { CustomMinimumSize = new Vector2(20, 20) });
+            var top = Style.H(8, Ink_(name, Style.TextBold, Style.Small), new Control { SizeFlagsHorizontal = SizeFlags.ExpandFill, MouseFilter = MouseFilterEnum.Ignore }, pips);
+            var block = Style.V(1, top, Ink_(rank, Style.Text, Style.Caption, InkSoft));
+            if (unspent > 0 && r < Atlas.MaxRank)
+            {
+                var bias = id;
+                var raise = Nav.Id(Style.Button(r == 0 ? "Learn it" : "Deepen it", () => { if (Atlas.Raise(w, bias)) { Sound.Sfx.Discovery(); Refresh(); } }, true, true), $"bias:{id}");
+                raise.SizeFlagsHorizontal = SizeFlags.ShrinkBegin;
+                block.AddChild(raise);
+            }
+            // The people's road needs a people to follow.
+            if (id == Atlas.PeoplesRoad && r > 0)
+            {
+                var follow = new HFlowContainer { MouseFilter = MouseFilterEnum.Ignore };
+                follow.AddThemeConstantOverride("h_separation", 4);
+                foreach (var p in MapOffers.Peoples)
+                {
+                    var pid = p.Id;
+                    follow.AddChild(Nav.Id(Style.Segment(Style.Cap1(p.Name), Atlas.Road(w) == pid, () => { Atlas.Follow(w, pid); Refresh(); }), $"road:{pid}"));
+                }
+                block.AddChild(follow);
+            }
+            v.AddChild(block);
         }
     }
 

@@ -84,6 +84,7 @@ public partial class WorldScene : Node3D, IZoneLook
         Battle = b;
         Player?.QueueFree();
         Player = new PlayerView(lo);
+        look = Loadouts.Look(lo);
         AddChild(Player);
         var p = b.Player;
         cam.Snap((float)p.X, (float)HeightAt(p.X, p.Z), (float)p.Z);
@@ -94,10 +95,18 @@ public partial class WorldScene : Node3D, IZoneLook
     public void SetLoadout(Loadout lo)
     {
         if (Battle == null) return;
-        Player?.QueueFree();
+        // A ring or an amulet changes nothing that shows: the figure stays, and does not blink.
+        var key = Loadouts.Look(lo);
+        if (Player != null && key == look) return;
+        look = key;
+        var old = Player;
         Player = new PlayerView(lo);
         AddChild(Player);
+        // The new figure stands where the old one stood, facing its way, already posed.
+        if (old != null) { Player.Follow(old); old.QueueFree(); }
     }
+
+    string look = "";
 
     public void Update(double dt)
     {

@@ -71,5 +71,7 @@ public partial class Portrait : SubViewportContainer
         stage.AddChild(v);
         v.Rotation = new Vector3(0, 0.35f, 0);
         v.Loop(idle, 0);
+        // (Already on screen, it was readied before it had a loop to be posed in.)
+        v.Settle();
     }
 }

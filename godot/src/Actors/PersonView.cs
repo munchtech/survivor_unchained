@@ -219,6 +219,18 @@ public partial class PersonView : Node3D, INpcView
         return null;
     }
 
+    public override void _Ready() => Settle();
+
+    /// <summary>Posed now, as it will be drawn. A figure added in the middle of a frame showed its
+    /// bind pose (a T) for that frame, and her corrective layer eased in from nothing: the pack's
+    /// doll did both on every refresh.</summary>
+    public void Settle()
+    {
+        if (Driven || Cinema || !IsInsideTree()) return;
+        if (person.Pose is HerPose hp) hp.Lower = hp.Upper = native;
+        if (person.Anim.IsPlaying()) person.Anim.Advance(0);
+    }
+
     public override void _Process(double delta)
     {
         if (person.Pose is HerPose hp && !Driven)

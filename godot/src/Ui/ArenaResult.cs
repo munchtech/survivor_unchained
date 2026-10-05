@@ -15,84 +15,29 @@ namespace SurvivorUnchained.Ui;
 /// time with its own sound, the best last; what stays (the build the ember
 /// made) going to ash; then how it went, in a line, and back to the road.
 /// A press tells it all at once; the next leaves.</summary>
-public partial class ArenaResultScreen : Overlay
+public partial class ArenaResultScreen : TellingScreen
 {
     readonly ArenaResult r;
     public override string Kind => "arena";
+    Control? ash;
+    double ashAt;
     public override bool Dismissable => false;
 
     public ArenaResultScreen(Game g, ArenaResult result) : base(g) => r = result;
 
-    static string Clock(double s) => $"{(int)(s / 60)}:{(int)(s % 60):00}";
-
-    // The numbers counting up: each label, its final value, how it is written, when it starts.
-    readonly System.Collections.Generic.List<(Medallion M, double To, System.Func<double, string> Fmt, double At)> counts = new();
-    // What is shown in turn: each thing, when, and its sound; and what goes to ash, and when.
-    readonly System.Collections.Generic.List<(Control C, double At, System.Action? Sound)> beats = new();
-    readonly System.Collections.Generic.HashSet<Control> shown = new();
-    readonly System.Collections.Generic.HashSet<Medallion> landed = new();
-    Control? ash;
-    double ashAt, endAt, shownFor;
-    /// <summary>Told all at once (a press, a click, a tome written), so it is never told twice.</summary>
-    bool told;
-    double tick;
-    const double Count = 0.9;
-
-    /// <summary>Everything told (a press skipped the telling, or it ran its course).</summary>
-    bool Told => told || shownFor >= endAt;
-
     public override void _Process(double delta)
     {
         base._Process(delta);
-        shownFor += delta;
-        tick -= delta;
-        foreach (var (m, to, fmt, at) in counts)
-        {
-            if (!IsInstanceValid(m)) continue;
-            double k = Told ? 1 : Math.Clamp((shownFor - at) / Count, 0, 1);
-            k = 1 - (1 - k) * (1 - k) * (1 - k);
-            var t = fmt(to * k);
-            if (t != m.Text) { m.Text = t; m.Arc = (float)k; m.QueueRedraw(); if (!Told && tick <= 0) { tick = 0.07; Sound.Sfx.Hover(); } }
-            // (each number lands with a blow)
-            if (k >= 1 && landed.Add(m) && !told) Sound.Sfx.Bash();
-        }
-        foreach (var (c, at, sound) in beats)
-        {
-            if (!IsInstanceValid(c)) continue;
-            if (!shown.Contains(c) && (Told || shownFor >= at))
-            {
-                shown.Add(c);
-                if (!told) sound?.Invoke();
-            }
-            // In from a little to the left, as a line is set down.
-            float k = Told ? 1 : (float)Math.Clamp((shownFor - at) / 0.35, 0, 1);
-            k = 1 - (1 - k) * (1 - k);
-            c.Modulate = new Color(1, 1, 1, k);
-            if (c.GetParent() is not BoxContainer) c.Position = c.Position with { X = (1 - k) * -18 };
-        }
         // What stays goes grey, as the ember goes out.
-        if (ash != null && IsInstanceValid(ash))
-        {
-            float k = Told ? 1 : (float)Math.Clamp((shownFor - ashAt) / 1.1, 0, 1);
-            ash.Modulate = new Color(1, 1, 1, 1).Lerp(new Color(0.5f, 0.48f, 0.52f, 0.8f), k);
-        }
-    }
-
-    /// <summary>Shown in its turn, with its sound.</summary>
-    T Beat<T>(T c, double at, System.Action? sound = null) where T : Control
-    {
-        c.Modulate = new Color(1, 1, 1, 0);
-        beats.Add((c, at, sound));
-        endAt = Math.Max(endAt, at + 0.35);
-        return c;
+        if (ash == null || !IsInstanceValid(ash)) return;
+        float k = Told ? 1 : (float)Math.Clamp((ShownFor - ashAt) / 1.1, 0, 1);
+        ash.Modulate = new Color(1, 1, 1, 1).Lerp(new Color(0.5f, 0.48f, 0.52f, 0.8f), k);
     }
 
     protected override void Build()
     {
         HideHud();
-        beats.Clear();
-        shown.Clear();
-        landed.Clear();
+        Retell();
         // (a click anywhere tells the rest at once)
         AddChild(new Backdrop(() => told = true, r.Won ? 0.82f : 0.9f));
         var wrap = Style.Centered(Style.V(14), new Vector2(1240, 900));
@@ -106,14 +51,13 @@ public partial class ArenaResultScreen : Overlay
         wrap.AddChild(banner);
         wrap.AddChild(Style.Label(r.Spec.Name, Style.TextItalic, Style.Lead, Style.GoldHi, false, HorizontalAlignment.Center));
         double beyond = r.Seconds - r.Spec.Minutes * 60;
-        counts.Clear();
         // Beat one: the night's numbers, counting up one after another.
         var tally = Style.H(48,
-            Stat("hourglass", r.Seconds, Clock, r.Won ? "survived" : "held out", 0.5),
-            Stat("skull", r.Kills, x => $"{x:N0}", "slain", 0.85),
-            Stat("flame", r.EmberLevel, x => $"{x:0}", "ember", 1.2));
+            Stat("hourglass", r.Seconds, Clock, r.Won ? "survived" : "held out", 0.5, r.Won),
+            Stat("skull", r.Kills, x => $"{x:N0}", "slain", 0.85, r.Won),
+            Stat("flame", r.EmberLevel, x => $"{x:0}", "ember", 1.2, r.Won));
         double cue = 1.2 + Count;
-        if (r.Won && beyond >= 1) { tally.AddChild(Stat("moon", beyond, Clock, "past the dead of night", 1.55)); cue = 1.55 + Count; }
+        if (r.Won && beyond >= 1) { tally.AddChild(Stat("moon", beyond, Clock, "past the dead of night", 1.55, r.Won)); cue = 1.55 + Count; }
         tally.Alignment = BoxContainer.AlignmentMode.Center;
         wrap.AddChild(tally);
         if (r.Longest && r.Seconds > 120)
@@ -134,7 +78,7 @@ public partial class ArenaResultScreen : Overlay
         Next(Line("book", $"{r.Xp:N0} experience", Style.Ink), () => Sound.Sfx.Xp(6, 1, false, false));
         if (r.Gold > 0) Next(Line("coin", $"{r.Gold:N0} gold", Style.GoldHi), Sound.Sfx.Gold);
         // What the night left in the fist, for the Waystation's hands; on a fall, what spilled.
-        if (r.Carried.Count > 0 || r.Spilled.Count > 0) Next(Haul(r), () => Sound.Sfx.Loot(), 0.55);
+        if (r.Carried.Count > 0 || r.Spilled.Count > 0) Next(Haul(r.Carried, r.Spilled, "Carried out, for the Waystation's hands"), () => Sound.Sfx.Loot(), 0.55);
         foreach (var made in r.Recorded)
             Next(Line("scroll", made.StartsWith("evo:") ? $"In the codex: {EvolutionName(made[4..])}" : $"In the codex: the union {Unions.Find(made[6..])?.Name}", Style.GoldHi), Sound.Sfx.Page);
         if (r.Discovered.Count > 0)
@@ -206,15 +150,7 @@ public partial class ArenaResultScreen : Overlay
             cue += 0.3;
         }
         // (the autopilot's Confirm, like a player's, first tells the rest, then leaves)
-        var go = Style.Button("", () => { if (Told) G.LeaveArena(r); else told = true; }, true);
-        var gr = Style.H(8, Style.Prompt(Act.Confirm), Style.Label("Back to the road", Style.UiBold, Style.Body, new Color("#ffe4b0")));
-        gr.MouseFilter = MouseFilterEnum.Ignore;
-        gr.Position = new Vector2(16, 7);
-        go.AddChild(gr);
-        go.CustomMinimumSize = new Vector2(gr.GetCombinedMinimumSize().X + 32, 42);
-        var acts = Style.H(12, go);
-        acts.Alignment = BoxContainer.AlignmentMode.Center;
-        wrap.AddChild(Beat(acts, cue));
+        wrap.AddChild(Beat(Onward("Back to the road", () => G.LeaveArena(r)), cue));
     }
 
     static string EvolutionName(string id) => Weapons.All.Values.SelectMany(w => w.Evolutions).FirstOrDefault(e => e.Id == id)?.Name ?? id;
@@ -237,66 +173,12 @@ public partial class ArenaResultScreen : Overlay
     static readonly string[] Numerals = ["", "I", "II", "III", "IV", "V", "VI", "VII", "VIII"];
     static string Numeral(int n) => n >= 0 && n < Numerals.Length ? Numerals[n] : n.ToString();
 
-    /// <summary>A number of the night on a medallion, counting up with its ring filling, its name under it.</summary>
-    Control Stat(string glyph, double value, System.Func<double, string> fmt, string label, double at)
-    {
-        var m = new Medallion(150, fmt(0)) { Ring = r.Won ? Style.Gold : Style.InkDim, ArcColor = r.Won ? Style.Ember : Style.BloodHi, Ink = Style.GoldHi };
-        counts.Add((m, value, fmt, at));
-        var mc = new CenterContainer { MouseFilter = MouseFilterEnum.Ignore };
-        mc.AddChild(m);
-        var name = Style.H(6, Glyphs.Icon(glyph, 16, Style.Gold), Style.Label(label.ToUpperInvariant(), Style.UiHeavy, Style.Caption, Style.Gold));
-        name.Alignment = BoxContainer.AlignmentMode.Center;
-        return Style.V(4, mc, name);
-    }
-
-    static Control Line(string glyph, string text, Color c) => Style.H(8, Glyphs.Icon(glyph, 20, c), Style.Label(text, Style.UiBold, Style.Body, c));
-
-    /// <summary>What the night left in the fist (ember shards, the people's own), as the things
-    /// themselves, for the Waystation's hands; on a fall, what spilled, greyed beside it
-    /// (docs/CRAFTING_DESIGN.md 6.1: the run's last decision, shown as what it cost).</summary>
-    static Control Haul(ArenaResult r)
-    {
-        static Control Things(System.Collections.Generic.Dictionary<string, int> d, bool lost)
-        {
-            var h = Style.H(Style.Gap2);
-            foreach (var (m, n) in d)
-            {
-                var def = Rpg.Items.Get(m);
-                var slot = ItemViews.Slot(new Rpg.ItemInstance { Def = m, Qty = n, Rarity = def.Rarity }, 60);
-                slot.MouseFilter = MouseFilterEnum.Ignore;
-                var name = Style.Label(lost ? (def.Plural ?? def.Name.ToLowerInvariant()) : (n == 1 ? def.Name.ToLowerInvariant() : def.Plural ?? def.Name.ToLowerInvariant()),
-                    Style.Ui, Style.Caption, lost ? Style.InkFaint : Style.Ink, true, HorizontalAlignment.Center);
-                var cell = Style.V(2, slot, name);
-                cell.CustomMinimumSize = new Vector2(76, 0);
-                if (lost) cell.Modulate = new Color(1, 1, 1, 0.45f);
-                h.AddChild(cell);
-            }
-            return h;
-        }
-        var v = Style.V(4);
-        var row = Style.H(Style.Gap4);
-        if (r.Carried.Count > 0)
-            row.AddChild(Style.V(4, Style.Label("CARRIED OUT, FOR THE WAYSTATION'S HANDS", Style.UiHeavy, Style.Badge, Style.EmberHi), Things(r.Carried, false)));
-        if (r.Spilled.Count > 0)
-            row.AddChild(Style.V(4, Style.Label("SPILLED WHEN YOU FELL", Style.UiHeavy, Style.Badge, Style.InkDim), Things(r.Spilled, true)));
-        v.AddChild(row);
-        return v;
-    }
-
     static Control Skill(string id, bool fresh)
     {
         var (icon, name, what) = Weapons.All.TryGetValue(id, out var w) ? (w.Art, w.Name, "combat skill")
             : Boons.Find(id) is { } bd ? (bd.Icon, bd.Name, "passive skill") : ("scroll", id, "");
         var col = fresh ? new Color("#b8a8d8") : Style.InkDim;
         return Style.H(8, Glyphs.Icon(icon, 22, col), Style.V(0, Style.Label(name, Style.UiBold, Style.Small, col), Style.Label(what, Style.TextItalic, Style.Caption, Style.InkDim)));
-    }
-
-    static Control Card(Control inner, StyleBox? box = null)
-    {
-        var p = Style.Panel(box ?? Style.Column(20), Style.Scroll(inner));
-        p.SizeFlagsHorizontal = SizeFlags.ExpandFill;
-        inner.SizeFlagsHorizontal = SizeFlags.ExpandFill;
-        return p;
     }
 
     public override bool Key(Act a)

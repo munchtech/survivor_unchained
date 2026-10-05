@@ -75,6 +75,10 @@ public interface IZoneHost
     void Chest(ChestOpened c) => Announce(new Announcement(c.Hoard ?? "A chest", string.Join(" · ", c.Items.Select(i => i.Name)), "reward", 2.8));
     void Talk(string npc);
     void Travel(string zone, string? caption = null, string? sub = null);
+    /// <summary>A Wayfinder's map is over: the game tells it on its own page, then goes back to the
+    /// Waystation; a host without a page goes straight back.</summary>
+    void MapOver(Zones.MapResult r, bool alive) =>
+        After(alive ? 0.6 : 2.2, () => Travel("waystation", r.Chart.Name, r.Cleared ? "Cleared" : "The map closes"));
     /// <summary>Later, in game time (forgotten if the zone is left first).</summary>
     void After(double seconds, Action fn);
     void Save(string reason);
