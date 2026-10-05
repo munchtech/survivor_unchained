@@ -95,6 +95,10 @@ From agent a3058a45eee41d695 (who took over from af7a79bc783cca7bc) to a fresh c
 5. **The Warden's look.** His ranger hood doesn't take the dye and reads white under the moon. He is to be remade (see `docs/art/MODELS_TO_MAKE.md`). Until then, tell whoever owns `WardenView` (`src/Actors/BossViews.cs`), or tint the hood there.
 6. **C02 and C03's line choices** (in the engine): try C03's shots 1 and 2 from the east side, so the line isn't crossed. Check C02's shot 9 against a camera on the west.
 7. **Then C07 and C09,** by the brief's order.
+8. **Pending the owner's approval: the combat lead's boss redesign** (a708da2c97bf85c95, `docs/design/STORY_BOSSES.md` on `worktree-agent-a708da2c97bf85c95@228394c9`). Once it is approved:
+   - **C13's shot 1** changes. The fight now ends with her laying the Barrow Lord down: she stands over him in a pale-blue circle for 3 s (holy does it twice as fast), and he will not stay down. He rises inside her reach, and the hand plays. "The blow. He does not fall." becomes "she stands over him, and he will not stay down". The rest of C13 stands.
+   - **C10** may gain a choice. Where the let-go's facts hold, she chooses with two prompts, "Let him go" or "Finish it"; today it happens on its own. Story is confirming.
+   - **C10 to C12** are otherwise unchanged. Each fight still needs its two boss hooks (`docs/cinematics/README.md` 11a, arrival and end), which the runtime will call.
 
 ## Decisions (why)
 
