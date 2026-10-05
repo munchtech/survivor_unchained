@@ -78,6 +78,9 @@ public sealed record ArenaResult(ArenaSpec Spec, bool Won, double Seconds, int K
     /// people's own), and what they spilled falling (docs/CRAFTING_DESIGN.md 6.1).</summary>
     public Dictionary<string, int> Carried { get; init; } = new();
     public Dictionary<string, int> Spilled { get; init; } = new();
+    /// <summary>A story fight lost: she wakes in town a day on (the owner's decision), not where
+    /// she was pulled from (Journey.WakeAfterLoss).</summary>
+    public bool WakesInTown => Spec.Story && !Won;
 }
 
 public static class Arenas
