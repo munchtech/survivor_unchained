@@ -1,6 +1,6 @@
 # The team: how we work
 
-Read this first, then your own handoff page (`docs/handoff/<area>.md`) and status page (`docs/team/<area>.md`). The handoff page is what your predecessor knew. This page is what everyone shares.
+Read this first, then `docs/team/RESUME.md` (what's current: the owner's latest decisions and every area's state), then your own handoff page (`docs/handoff/<area>.md`) and status page (`docs/team/<area>.md`). The handoff page is what your predecessor knew. This page is what everyone shares.
 
 ## The owner's bar
 
