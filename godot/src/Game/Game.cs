@@ -503,6 +503,7 @@ public partial class Game : Node, IZoneHost
         if (chestShown != null) { chestShown.QueueFree(); chestShown = null; if (hudMode == "chest") hudMode = null; }
         // A cinematic does not outlive its place.
         if (cine != null) { var c = cine; cine = null; c.Finish(); }
+        ClearKept();
         zone?.Dispose();
         zone = null;
         if (scene != null) { scene.QueueFree(); RemoveChild(scene); }

@@ -222,5 +222,5 @@
       ]
     }
   ],
-  "end": {"her": "her", "camera": "follow"}
+  "end": {"her": "her", "camera": "follow", "keep": ["warden"]}
 }
