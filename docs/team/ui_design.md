@@ -20,14 +20,13 @@ Agent a4fdbc49786ba8b7f, on branch `worktree-agent-a4fdbc49786ba8b7f`, which has
   - words as type: Close, UNDO and KEEP, held words;
   - prompts lie on the world over a soft shade (`PromptsOnWorld`).
 
-## Next
-1. The loot screens: ground labels and the legendary edge pointer restyled. UI art's `hud/pointer_legendary.png` has landed, and `GroundLabels.cs` and `Game.Offscreen` are the loot lead's.
-2. The day dial and the fall's two choices, for the experience director.
-3. The Wayfinder's table and atlas (its iron plate, and the clipped "used up" line).
-4. The title menu stealing focus (gate hover-focus on real mouse motion).
-5. Portraits when her head changes; the male hero's Look.
-6. The bark over the name plate (`--near brannoc --barks 2`).
-7. The Pack's kit switch (By day · By night) on the doll, using crafting's `Kits` API.
+## Next (see docs/handoff/ui_design.md, 4)
+1. The Journal on the rules (its empty pages, its tabs); MapScreen's self-critique pass.
+2. The kit switch seen on screen (needs a save with a coal or Mark).
+3. Portraits when her head lands; the male hero's Look when he resumes.
+4. The old screens: pause, rest, chapter, credits, creation.
+
+Also built since: ground labels and the legendary chevron, the day dial, the fall's choices, the table and atlas as sheets, the title's focus, barks clear of plates, the kit switch, Arts on the book panel, full pages lighter (build4 to build6).
 
 ## Key decisions
 - One frame per screen; inside it only type, rules and space. Colour means tier, state or the one action.
