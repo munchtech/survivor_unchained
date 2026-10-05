@@ -1,4 +1,4 @@
-﻿// An ember arena's ground (View/ArenaGround.cs): the place's own seven
+// An ember arena's ground (View/ArenaGround.cs): the place's own seven
 // photoscanned materials (art/arena/PLACE: two for the ground itself, four it
 // paints over them, one for steep faces), mixed by the arena's two paints
 // (Maps/ArenaGen.cs), their edges frayed by noise and decided by height, each
@@ -17,12 +17,15 @@ render_mode diffuse_burley, specular_schlick_ggx;
 uniform sampler2D noise_tex : filter_linear_mipmap_anisotropic, repeat_enable;
 uniform sampler2D splat : filter_linear_mipmap, repeat_disable;
 uniform sampler2D splat2 : filter_linear_mipmap, repeat_disable;
-// R moss, G the slurry's light.
+// R moss, G the slurry's light, B foxfire, A open to the sky.
 uniform sampler2D splat3 : filter_linear_mipmap, repeat_disable;
 uniform vec3 moss_color : source_color = vec3(0.05, 0.1, 0.02);
 // The slurry the Dig cooks: "warm, faintly glowing", a sick yellow-green.
 uniform vec3 slurry : source_color = vec3(0.52, 0.62, 0.16);
 uniform float slurry_glow = 0.0;
+// Foxfire (splat3 B): the cold light rotting wood gives off.
+uniform vec3 fox_color : source_color = vec3(0.55, 0.85, 0.6);
+uniform float fox_glow = 0.0;
 uniform sampler2DArray g_alb : source_color, filter_linear_mipmap_anisotropic, repeat_enable;
 uniform sampler2DArray g_nor : filter_linear_mipmap_anisotropic, repeat_enable;
 uniform sampler2DArray g_arh : filter_linear_mipmap_anisotropic, repeat_enable;
@@ -59,6 +62,11 @@ uniform float sheen_amount = 0.06;
 // Where the lip burns: metres outside the walkable edge. Just past where she
 // can stand, so it marks the edge without ever lying under the fight.
 uniform float lip_at = 1.8;
+// How hot the lip burns: a story place's edge is its banks, and its lip burns low (a glow
+// in the char, no white thread round every bank).
+uniform float lip_glow = 1.0;
+// How far in from the edge the ground is heat-killed (metres): a story place is small.
+uniform float scorch_reach = 11.0;
 
 varying vec3 w_pos;
 varying vec3 w_nrm;
@@ -79,26 +87,22 @@ vec2 hash2(vec2 p) {
 }
 
 // Burnt ground splits into plates: the distance to the nearest plate's border
-// (Inigo Quilez's voronoi edges), and that plate's own hash.
+// (half the gap between the nearest two cells' points, never below nothing:
+// the exact border's search went wrong under the warp and filled whole plates
+// as border, which lit as flat orange blobs), and that plate's own hash.
 vec3 plates(vec2 x) {
 	vec2 n = floor(x), f = fract(x);
-	vec2 mg = vec2(0.0), mr = vec2(0.0);
-	float md = 8.0;
+	float d1 = 8.0, d2 = 8.0;
+	vec2 id = n;
 	for (int j = -1; j <= 1; j++)
 		for (int i = -1; i <= 1; i++) {
 			vec2 g = vec2(float(i), float(j));
 			vec2 r = g + hash2(n + g) - f;
-			float d = dot(r, r);
-			if (d < md) { md = d; mr = r; mg = g; }
+			float d = length(r);
+			if (d < d1) { d2 = d1; d1 = d; id = n + g; }
+			else if (d < d2) d2 = d;
 		}
-	md = 8.0;
-	for (int j = -2; j <= 2; j++)
-		for (int i = -2; i <= 2; i++) {
-			vec2 g = mg + vec2(float(i), float(j));
-			vec2 r = g + hash2(n + g) - f;
-			if (dot(mr - r, mr - r) > 1e-5) md = min(md, dot(0.5 * (mr + r), normalize(r - mr)));
-		}
-	return vec3(md, hash2(n + mg));
+	return vec3((d2 - d1) * 0.5, hash2(id));
 }
 
 vec2 g_uv(int i, vec3 p, vec3 n, out mat3 tbn) {
@@ -271,7 +275,9 @@ void fragment() {
 	albedo = mix(albedo, albedo * wet_tint * 1.4, pool);
 	rough = mix(rough, 0.06, pool);
 	rough = mix(rough, rough * 0.55, smoothstep(0.1, 0.45, wet));
-	n = normalize(mix(n, n_geo, pool * 0.92));
+	// Standing water lies level, whatever the ground under it does (a level face holds the
+	// moon in one place; a tilted one slides a white streak down the bank).
+	n = normalize(mix(n, vec3(0.0, 1.0, 0.0), pool * 0.92));
 	// Water lies level, below its banks.
 	H = mix(H, -0.06, pool);
 
@@ -295,7 +301,7 @@ void fragment() {
 	// telegraph.
 	float ch = s2.g;
 	float inn = w_inn + (nM.r - 0.5) * 2.2 + (nF.g - 0.5) * 0.25;
-	float scorch = 1.0 - smoothstep(2.0, 11.0, inn + (nL.g - 0.5) * 7.0);
+	float scorch = 1.0 - smoothstep(2.0 * scorch_reach / 11.0, scorch_reach, inn + (nL.g - 0.5) * 7.0 * scorch_reach / 11.0);
 	float lum0 = dot(albedo, vec3(0.2126, 0.7152, 0.0722));
 	albedo = mix(albedo, vec3(lum0) * vec3(1.05, 0.9, 0.74) * 0.72, scorch * 0.8);
 	float charred = smoothstep(0.15, 0.6, ch + (nF.b - 0.5) * 0.3);
@@ -323,7 +329,10 @@ void fragment() {
 		float grain = clamp(lum0 * 11.0, 0.35, 1.6);
 		float ash = smoothstep(0.5, 0.82, nM.a * 0.65 + nL.b * 0.35) * (1.0 - hgt * 0.4);
 		vec3 coal = vec3(0.02, 0.017, 0.015) * grain * (0.85 + 0.3 * pl.y);
-		coal = mix(coal, vec3(0.062, 0.06, 0.057) * grain, ash * 0.75);
+		// Ash: grey, broken by the ground's own grain and the plates' seams, never a flat
+		// sheet (under the ring's red lights a flat pale drift reads as orange paint).
+		float abreak = smoothstep(0.3, 0.7, nF.r * 0.6 + pl.y * 0.4);
+		coal = mix(coal, vec3(0.045, 0.044, 0.042) * grain * (0.6 + 0.5 * abreak), ash * 0.6);
 		coal *= 1.0 - seam * 0.45;
 		albedo = mix(albedo, coal, charred * 0.94);
 		rough = mix(rough, mix(0.9, 0.98, ash), charred);
@@ -345,7 +354,7 @@ void fragment() {
 			* (1.0 - smoothstep(-1.0, 0.0, d)) * exp(min(d, 0.0) * 0.35);
 		float flick = 0.6 + 0.4 * sin(TIME * (1.5 + ch2.x * 2.0) + ch2.y * 30.0);
 		vec3 white = mix(ember, vec3(1.0, 0.85, 0.55), 0.55);
-		glow += (white * line * 2.4 + ember * (halo * 0.5 + vein * 0.9 + spark * 1.4 * flick)) * breathe * ember_glow;
+		glow += (white * line * 2.4 * lip_glow * lip_glow + ember * (halo * 0.5 * lip_glow + vein * 0.9 + spark * 1.4 * flick)) * breathe * ember_glow;
 	}
 	// A hotter place than the ring (a pit's mouth, char past 0.85) glows whole.
 	float hot = smoothstep(0.87, 1.0, ch);
@@ -355,7 +364,9 @@ void fragment() {
 	// Moon through the leaves, in pools.
 	if (dapple > 0.0) {
 		float leaves = texture(noise_tex, w * 0.022 + vec2(TIME * 0.002, TIME * 0.0012)).g * 0.75 + texture(noise_tex, w * 0.09 - vec2(TIME * 0.004, 0.0)).b * 0.25;
-		albedo *= mix(1.0, mix(0.45, 1.4, smoothstep(0.4, 0.62, leaves)), dapple);
+		// In a clearing (splat3 A) the moon comes down whole: a pool of it, the canopy's
+		// shade all round.
+		albedo *= mix(mix(1.0, mix(0.45, 1.4, smoothstep(0.4, 0.62, leaves)), dapple), 1.35, s3.a);
 	}
 
 	// Past the ring the night closes in: the place goes on, darker.
@@ -373,6 +384,21 @@ void fragment() {
 	glow += sheen * sheen_amount * pool * (0.55 + 0.9 * ripple) * (1.0 - charred);
 	// The slurry's own light, faint, swirling slowly in it.
 	float swirl = texture(noise_tex, w * 0.16 + vec2(TIME * 0.006, -TIME * 0.009)).r;
-	glow += slurry * slurry_glow * s3.g * smoothstep(0.1, 0.6, wet) * (0.45 + 0.75 * swirl) * (1.0 - charred);
+	// Drawn out in threads and curls, not laid flat: a flat sheet of it reads as paint.
+	float rn = texture(noise_tex, w * 0.23 + vec2(TIME * 0.008, -TIME * 0.011) + swirl * 0.35).r;
+	float thr = pow(1.0 - abs(rn * 2.0 - 1.0), 10.0) * (0.35 + 0.65 * smoothstep(0.4, 0.7, swirl));
+	glow += slurry * slurry_glow * s3.g * smoothstep(0.3, 0.8, wet) * (0.05 + 1.4 * thr) * (1.0 - charred);
+	// Foxfire: specks of cold light on rotting wood and roots, a few in a cluster, each
+	// breathing slowly on its own; from thirty metres up, a faint scatter of pale green
+	// stars along the banks' feet.
+	if (s3.b > 0.02) {
+		vec2 fc = floor(w * 4.0);
+		vec2 fh = hash2(fc + 3.7);
+		float fd = length(fract(w * 4.0) - 0.2 - fh * 0.6);
+		float speck = step(0.62, hash2(fc + 8.1).x) * (1.0 - smoothstep(0.04, 0.12 + px * 4.0, fd));
+		float clump = smoothstep(0.45, 0.7, nM.r * 0.6 + nF.b * 0.4);
+		float pulse = 0.55 + 0.45 * sin(TIME * (0.4 + fh.x * 0.5) + fh.y * 20.0);
+		glow += fox_color * fox_glow * speck * clump * pulse * smoothstep(0.1, 0.6, s3.b);
+	}
 	EMISSION = glow;
 }

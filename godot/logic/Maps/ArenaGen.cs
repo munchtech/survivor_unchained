@@ -42,6 +42,11 @@ public struct ArenaPaint
     public double Moss;
     /// <summary>The slurry's own sick light, where it stands or runs.</summary>
     public double Glow;
+    /// <summary>Foxfire: rotting wood and roots glowing a little, cold (the Hollow's own light).</summary>
+    public double Fox;
+    /// <summary>Open to the sky: a clearing in a wood, where the moon comes down whole and the
+    /// canopy's dapple stops (0 under the trees).</summary>
+    public double Open;
 }
 
 /// <summary>A place's own making: its shapes, paint and dressing.</summary>
@@ -58,6 +63,8 @@ public abstract class ArenaShape
     public virtual double Relief(double x, double z) => 0;
     /// <summary>Where the ground cannot be stood on, inside the edge (a pit).</summary>
     public virtual bool Closed(double x, double z) => false;
+    /// <summary>How much of the banks rise outside the edge at a point (1 all; less where a stream cuts through).</summary>
+    public virtual double Bank(double x, double z) => 1;
     /// <summary>The paint at a point; `inn` is metres inside the edge (negative outside).</summary>
     public abstract void Paint(double x, double z, double inn, ref ArenaPaint p);
     /// <summary>The wall's dressing at a point `d` metres outside the edge.</summary>
@@ -86,11 +93,22 @@ public static class ArenaGen
         _ => new Arenas.Hollow(),
     };
 
+    /// <summary>A story fight's own place, made to its outline (Play/Story), or null to take its people's.</summary>
+    static ArenaShape? StoryShapeFor(string story) => story switch
+    {
+        "hollow_by_night" => new Arenas.HollowNight(),
+        _ => null,
+    };
+
     public static MapBuild Generate(MapSpec spec)
     {
         var place = ArenaPlaces.For(spec);
-        var shape = ShapeFor(place.Id);
-        var b = new Builder(spec, place);
+        var story = spec.Story != "" ? Play.Story.StoryScripts.For(spec.Story) : null;
+        // A story place is small and walled by its banks and the wood over them: the moon
+        // stands higher over it, or a low moon's shadows of the trees fill it to the brim.
+        if (story != null) place = place with { Night = place.Night with { KeyElevation = Math.Max(place.Night.KeyElevation, 62) } };
+        var shape = (story != null ? StoryShapeFor(spec.Story) : null) ?? ShapeFor(place.Id);
+        var b = new Builder(spec, place) { Outline = story?.Place, Story = story };
         shape.Bind(b);
         b.Edge();
         shape.Plan();
@@ -132,6 +150,11 @@ public static class ArenaGen
         public readonly List<(double X, double Z, double Hw)[]> Rails = new();
         public readonly List<(double X, double Z, double R)> Vents = new();
         public readonly Dictionary<string, FloraKind> Kinds = MapGen.Catalog();
+        /// <summary>A story place's outline: its edge is the outline's, not the round clearing's.</summary>
+        public Play.Story.StoryPlace? Outline { get; init; }
+        public Play.Story.StoryFight? Story { get; init; }
+        public readonly List<(string Id, double X0, double Z0, double X1, double Z1)> Gates = new();
+        public readonly Dictionary<string, int> FireLights = new();
         int cid = 1;
 
         public Builder(MapSpec spec, ArenaPlace place)
@@ -161,7 +184,8 @@ public static class ArenaGen
                 {
                     double x = i - Half, z = j - Half;
                     double d = Math.Sqrt(x * x + z * z);
-                    double edge = EdgeR(Math.Atan2(z, x)) - d;
+                    // A story place's edge is its outline's (its signed distance, negative inside).
+                    double edge = Outline != null ? -Outline.Dist(x, z) : EdgeR(Math.Atan2(z, x)) - d;
                     bool inBounds = Math.Abs(x) < Half - 6 && Math.Abs(z) < Half - 6;
                     Walk[j * Res + i] = inBounds && edge > 0;
                     Inside[j * Res + i] = edge;
@@ -191,7 +215,9 @@ public static class ArenaGen
                     // The ground climbs away from the clearing into banks and knolls.
                     double bank = MathX.Smoothstep(0.5, 12, d) * (4.5 + 3 * Noise.Fbm(x * 0.03, z * 0.03, 3))
                         + MathX.Smoothstep(10, 40, d) * 3 * (1 + Noise.Ridged(x * 0.02 + 7, z * 0.02, 3));
-                    Heights[j * Res + i] = (float)(roll + bank);
+                    // A story place's banks stand closer and steeper: the ways between its spaces are cuts.
+                    if (Outline != null) bank = MathX.Smoothstep(0.3, 5, d) * (3.2 + 1.6 * Noise.Fbm(x * 0.05, z * 0.05, 3)) + bank * 0.6;
+                    Heights[j * Res + i] = (float)(roll * (Outline != null ? 0.4 : 1) + bank * shape.Bank(x, z));
                 }
             // The clearing lies level-ish, pulled toward its middle's height.
             double h0 = Heights[MapGen.Idx(0, 0, Half)];
@@ -199,8 +225,8 @@ public static class ArenaGen
                 for (int i = 0; i < Res; i++)
                 {
                     double x = i - Half, z = j - Half, d = Math.Sqrt(x * x + z * z);
-                    if (d > R + 20) continue;
-                    double k = 1 - MathX.Smoothstep(R * 0.7, R + 6, d);
+                    if (Outline == null && d > R + 20) continue;
+                    double k = Outline != null ? 1 - MathX.Smoothstep(0, 10, Outside[j * Res + i]) : 1 - MathX.Smoothstep(R * 0.7, R + 6, d);
                     float h = Heights[j * Res + i];
                     Heights[j * Res + i] = (float)MathX.Lerp(h, h0 + Math.Min(0, h - h0) * 0.3, k * 0.85);
                 }
@@ -230,7 +256,7 @@ public static class ArenaGen
                     splat[o] = MapGen.B(p.L2); splat[o + 1] = MapGen.B(p.L3); splat[o + 2] = MapGen.B(p.L4); splat[o + 3] = MapGen.B(p.L5);
                     splat2[o] = MapGen.B(p.Wet); splat2[o + 1] = MapGen.B(p.Char); splat2[o + 2] = MapGen.B(p.Trod); splat2[o + 3] = MapGen.B(p.BaseB);
                     // Nothing grows on char.
-                    splat3[o] = MapGen.B(p.Moss * (1 - p.Char)); splat3[o + 1] = MapGen.B(p.Glow);
+                    splat3[o] = MapGen.B(p.Moss * (1 - p.Char)); splat3[o + 1] = MapGen.B(p.Glow); splat3[o + 2] = MapGen.B(p.Fox * (1 - p.Char)); splat3[o + 3] = MapGen.B(p.Open);
                     // Nothing grows on char, in water or where it is trodden flat.
                     grass[j * SplatRes + i] = MapGen.B(p.Grass * (1 - p.Char) * (1 - p.Wet * 0.9) * (1 - p.Trod * 0.7));
                 }
@@ -244,7 +270,9 @@ public static class ArenaGen
             if (inn > 14 || inn < -14) return 0;
             double n = Noise.Noise(x * 0.11 + 17, z * 0.11 - 5);
             double finger = Math.Pow(Math.Max(0, Noise.Ridged(x * 0.045 - 3, z * 0.045 + 9, 3)), 3) * 9;
-            double inward = 1 - MathX.Smoothstep(1.5, 4.5 + finger, inn + n * 1.6);
+            // A story place is small, and its edge is its banks: the char keeps to their feet.
+            double inward = Outline != null ? 1 - MathX.Smoothstep(0.2, 1.4 + finger * 0.15, inn + n * 0.8)
+                : 1 - MathX.Smoothstep(1.5, 4.5 + finger, inn + n * 1.6);
             double outward = MathX.Smoothstep(-12, -3, inn + n * 2);
             // Never past 0.85: what is hotter than that (a pit's mouth) glows whole.
             return MathX.Clamp01(inward * outward) * 0.85;
@@ -415,6 +443,9 @@ public static class ArenaGen
         /// <summary>The ember's ring: its lights, low and red, all the way round.</summary>
         public void Ring()
         {
+            // A story place's edge is its banks, its lip burning low: no lights of the ring's
+            // (their red on its char read as pools of paint along every bank).
+            if (Outline != null) return;
             int n = 14;
             double a0 = Rng.Range(0, Math.PI * 2);
             for (int k = 0; k < n; k++)
@@ -436,9 +467,9 @@ public static class ArenaGen
                 double hw = w / 2.0, hd = h / 2.0;
                 Colliders.Add(new ColliderDef { Id = cid++, Kind = ColliderKind.Box, X = i0 - Half - 0.5 + hw, Z = j0 - Half - 0.5 + hd, Hw = hw, Hd = hd, R = Math.Sqrt(hw * hw + hd * hd), Tag = "wall" });
             }
-            var rim = new List<(double, double)>();
-            for (int k = 0; k < 180; k++) rim.Add(AtEdge(k * Math.PI / 90));
-            var start = new Area(0, AreaKind.Start, 0, 0, R);
+            var rim = Rim().Select(p => (p.X, p.Z)).ToList();
+            var (sx, sz) = Story != null ? Story.Place[Story.Arrive] : (0, 0);
+            var start = new Area(0, AreaKind.Start, sx, sz, Outline != null ? 8 : R);
             var meta = new ZoneMeta
             {
                 Id = "arena", Size = Size, Res = Res, SplatRes = SplatRes, Leaves = 0.22, BlightGlow = "#9aff4a",
@@ -459,7 +490,63 @@ public static class ArenaGen
             {
                 Spec = Spec, Meta = meta, Ground = Ground, SplatRes = SplatRes, Splat = splat, Splat2 = splat2, Splat3 = splat3, Grass = grass, Flora = Flora, Props = new(), Pieces = Pieces,
                 Kinds = Kinds, Areas = new List<Area> { start }, Packs = new(), Walkable = Walk, Place = Place, Rim = rim, Streams = Streams, Rails = Rails, Vents = Vents, Inside = Inside,
+                Gates = Gates, FireLights = FireLights,
             };
+        }
+
+        List<(double X, double Z, double Nx, double Nz)>? rimPts;
+
+        /// <summary>The edge, walked round: points about a metre and a half apart in turn (the
+        /// round clearing's every two degrees), each with the way out from it. A story place's is
+        /// walked along its outline's zero, each step pulled back onto it.</summary>
+        public List<(double X, double Z, double Nx, double Nz)> Rim()
+        {
+            if (rimPts != null) return rimPts;
+            var pts = new List<(double X, double Z, double Nx, double Nz)>();
+            if (Outline == null)
+            {
+                for (int k = 0; k < 180; k++)
+                {
+                    double a = k * Math.PI / 90;
+                    var (x, z) = AtEdge(a);
+                    pts.Add((x, z, Math.Cos(a), Math.Sin(a)));
+                }
+                return rimPts = pts;
+            }
+            var o = Outline;
+            (double X, double Z) Out(double x, double z)
+            {
+                const double e = 0.05;
+                double gx = o.Dist(x + e, z) - o.Dist(x - e, z), gz = o.Dist(x, z + e) - o.Dist(x, z - e);
+                double l = Math.Max(1e-9, Math.Sqrt(gx * gx + gz * gz));
+                return (gx / l, gz / l);
+            }
+            (double X, double Z) Onto(double x, double z)
+            {
+                for (int it = 0; it < 5; it++)
+                {
+                    var (gx, gz) = Out(x, z);
+                    double f = o.Dist(x, z);
+                    x -= gx * f;
+                    z -= gz * f;
+                }
+                return (x, z);
+            }
+            // Begun where a line east from the first space's middle leaves the place.
+            var c0 = o.Spaces[0].Shapes[0];
+            double bx = (c0.X0 + c0.X1) / 2, bz = (c0.Z0 + c0.Z1) / 2;
+            while (o.Dist(bx, bz) < 0) bx += 0.25;
+            (bx, bz) = Onto(bx, bz);
+            double px = bx, pz = bz;
+            const double Step = 1.5;
+            for (int n = 0; n < 4000; n++)
+            {
+                var (gx, gz) = Out(px, pz);
+                pts.Add((px, pz, gx, gz));
+                (px, pz) = Onto(px - gz * Step, pz + gx * Step);
+                if (n > 8 && MathX.Dist(px, pz, bx, bz) < Step * 0.75) break;
+            }
+            return rimPts = pts;
         }
     }
 }

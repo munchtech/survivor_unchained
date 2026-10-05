@@ -67,7 +67,12 @@ public sealed class ArenaSpec
     public bool Spared;
 
     /// <summary>The ground (always by night: the ember burns only in the dark).</summary>
-    public MapSpec Map => new() { Seed = Seed, Tier = Tier, Theme = Theme, Night = true, Oaths = Oaths, Name = Name, Arena = true, People = People, Mood = Mood };
+    public MapSpec Map => new()
+    {
+        Seed = Seed, Tier = Tier, Theme = Theme, Night = true, Oaths = Oaths, Name = Name, Arena = true, People = People, Mood = Mood,
+        // A story fight with a place of its own is made to it.
+        Story = Story && SurvivorUnchained.Play.Story.StoryScripts.Has(Id) ? Id : "",
+    };
 }
 
 /// <summary>How an arena ended, and what came out of it.</summary>

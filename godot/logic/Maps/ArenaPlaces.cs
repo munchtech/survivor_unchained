@@ -135,7 +135,7 @@ public static class ArenaPlaces
         {
             Sky = Atmospheres.Night.Sky with { Glow = "#2a4448" },
             KeyColor = "#a8c4d4", KeyIntensity = 4.2, KeyElevation = 38, KeyAzimuth = 200, ShadowStrength = 0.82,
-            HemiSky = "#2a3c48", HemiGround = "#16140e", HemiIntensity = 1.0, EnvIntensity = 0.7,
+            HemiSky = "#2a3c48", HemiGround = "#16140e", HemiIntensity = 1.25, EnvIntensity = 0.75,
             FogColor = "#0e1818", FogDensity = 0.005, Exposure = 1.65, Rim = "#a0c8e0", RimStrength = 0.9,
             Grade = Grade with { ShadowTint = "#24443e", HighlightTint = "#ffb468", Saturation = 0.9, Lift = [0.01, 0.02, 0.03] },
         }, new ArenaAir("#7c9490", 0.06, 1.1, 1.4, 1.0, "#14201e", 0.55, "#ff5420", 0.9)),

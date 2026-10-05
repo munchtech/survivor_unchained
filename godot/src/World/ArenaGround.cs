@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using System.Text.Json;
 using Godot;
 
@@ -23,25 +23,27 @@ public static class ArenaGround
     /// (Bump). The scans were shot on days of every brightness; here each is
     /// set where the place needs it, all below the living, and the steps in
     /// value and height between them draw the place's lines.</summary>
-    public readonly record struct Layer(float Y, float Sat, float Con = 1.25f, float Lift = 0, float Bump = 0.05f);
+    public readonly record struct Layer(float Y, float Sat, float Con = 1.25f, float Lift = 0, float Bump = 0.05f, float Size = 1);
 
     static readonly Dictionary<string, Layer[]> Looks = new()
     {
         // turf, bare, way, grave, ash, rubble, face
-        ["barrow"] = [new(0.07f, 0.55f, Lift: 0.04f, Bump: 0.08f), new(0.06f, 0.5f), new(0.095f, 0.5f, Lift: 0.02f, Bump: 0.06f), new(0.035f, 0.7f, Lift: -0.02f),
+        ["barrow"] = [new(0.07f, 0.55f, Lift: 0.04f, Bump: 0.08f), new(0.06f, 0.5f), new(0.095f, 0.5f, Lift: 0.02f, Bump: 0.06f, Size: 1.7f), new(0.035f, 0.7f, Lift: -0.02f),
             new(0.04f, 0.6f, Lift: -0.01f), new(0.085f, 0.45f, Lift: 0.02f, Bump: 0.08f), new(0.05f, 0.6f)],
         // litter, rot, roots, mud, bed, needles, face: the leaves warm and
         // red-brown against the cold night, the runs and banks black, the
         // stream's stones the palest thing on the ground (moss is the shader's)
-        ["hollow"] = [new(0.08f, 1.0f, Lift: 0.02f), new(0.045f, 0.85f), new(0.065f, 0.8f, Lift: 0.03f, Bump: 0.1f), new(0.026f, 0.8f, Lift: -0.03f),
-            new(0.1f, 0.6f, Lift: -0.05f, Bump: 0.08f), new(0.085f, 0.9f, Lift: 0.01f), new(0.07f, 0.7f)],
+        // (Leaves drawn half again as large as the scan's: a leaf must be a few pixels to read
+        // as one from the arena camera, or the litter reads as gravel.)
+        ["hollow"] = [new(0.11f, 1.0f, Con: 1.4f, Lift: 0.02f, Size: 1.7f), new(0.06f, 0.9f, Con: 1.35f, Size: 1.5f), new(0.075f, 0.8f, Lift: 0.03f, Bump: 0.1f, Size: 1.3f),
+            new(0.03f, 0.8f, Lift: -0.03f), new(0.1f, 0.6f, Lift: -0.05f, Bump: 0.08f), new(0.1f, 0.9f, Con: 1.35f, Lift: 0.01f, Size: 1.4f), new(0.07f, 0.7f)],
         // verge, churn, ruts, wet, camp, metal, face
         ["ruts"] = [new(0.065f, 0.6f, Lift: 0.04f, Bump: 0.06f), new(0.05f, 0.65f), new(0.045f, 0.6f, Lift: -0.02f, Bump: 0.08f), new(0.04f, 0.65f, Lift: -0.04f),
             new(0.06f, 0.55f, Lift: 0.01f), new(0.08f, 0.5f, Lift: 0.01f, Bump: 0.06f), new(0.055f, 0.55f)],
         // clay, spoil, ballast, slurry, rust, burnt, face: ochre clay and stone
         // stained rust in drifts, the spoil heaps coal-black, the cut walls
         // ochre; rust, never a red near her hair's
-        ["dig"] = [new(0.1f, 0.95f, Lift: 0.02f, Bump: 0.08f), new(0.038f, 0.35f, Lift: 0.04f, Bump: 0.1f), new(0.05f, 0.6f, Lift: 0.01f, Bump: 0.06f), new(0.045f, 0.8f, Lift: -0.05f),
+        ["dig"] = [new(0.1f, 0.95f, Lift: 0.02f, Bump: 0.08f), new(0.05f, 0.35f, Con: 1.5f, Lift: 0.04f, Bump: 0.12f, Size: 1.3f), new(0.05f, 0.6f, Lift: 0.01f, Bump: 0.06f), new(0.045f, 0.8f, Lift: -0.05f),
             new(0.075f, 0.85f), new(0.035f, 0.5f), new(0.08f, 0.9f)],
     };
 
@@ -52,15 +54,16 @@ public static class ArenaGround
         ["ruts"] = new Color(0.62f, 0.6f, 0.56f), ["dig"] = new Color(0.7f, 0.6f, 0.46f),
     };
 
-    /// <summary>A place's moss, and how much its slurry glows (the Dig cooks
-    /// it; it lies in the Dig's pools and runs in the Hollow's stream).</summary>
-    static readonly Dictionary<string, (Color Moss, float Slurry)> Growth = new()
+    /// <summary>A place's moss, how much its slurry glows (the Dig cooks
+    /// it; it lies in the Dig's pools and runs in the Hollow's stream), and
+    /// how much its rotting wood glows with foxfire where it is painted.</summary>
+    static readonly Dictionary<string, (Color Moss, float Slurry, float Fox)> Growth = new()
     {
         // (sRGB: the shader takes them as colours.) The barrow's is lichen, grey.
-        ["barrow"] = (new Color("#3d4230"), 0f),
-        ["hollow"] = (new Color("#304620"), 0.55f),
-        ["ruts"] = (new Color("#3b4826"), 0f),
-        ["dig"] = (new Color("#3d4228"), 0.22f),
+        ["barrow"] = (new Color("#3d4230"), 0f, 0f),
+        ["hollow"] = (new Color("#304620"), 0.16f, 1.6f),
+        ["ruts"] = (new Color("#3b4826"), 0f, 0f),
+        ["dig"] = (new Color("#3d4228"), 0.22f, 0f),
     };
 
     public static ShaderMaterial Material(ZoneData z)
@@ -72,9 +75,12 @@ public static class ArenaGround
         mat.SetShaderParameter("splat", Mipped(z.Splat));
         mat.SetShaderParameter("splat2", Mipped(z.Splat2!));
         if (z.Splat3 != null) mat.SetShaderParameter("splat3", Mipped(z.Splat3));
-        var (moss, slurry) = Growth[place.Id];
+        var (moss, slurry, fox) = Growth[place.Id];
         mat.SetShaderParameter("moss_color", moss);
         mat.SetShaderParameter("slurry_glow", slurry);
+        mat.SetShaderParameter("fox_glow", fox);
+        mat.SetShaderParameter("lip_glow", z.Story ? 0.3f : 1f);
+        mat.SetShaderParameter("scorch_reach", z.Story ? 3.5f : 11f);
         mat.SetShaderParameter("g_alb", GD.Load<TextureLayered>($"{dir}/albedo.jpg"));
         mat.SetShaderParameter("g_nor", GD.Load<TextureLayered>($"{dir}/normal.jpg"));
         mat.SetShaderParameter("g_arh", GD.Load<TextureLayered>($"{dir}/arh.jpg"));
@@ -91,10 +97,11 @@ public static class ArenaGround
         int k = 0;
         foreach (var l in meta.RootElement.GetProperty("layers").EnumerateArray())
         {
-            scales.Add(1f / l.GetProperty("metres").GetSingle());
             var m = l.GetProperty("mean");
             float y = Mathf.Max(0.2126f * m[0].GetSingle() + 0.7152f * m[1].GetSingle() + 0.0722f * m[2].GetSingle(), 0.004f);
             var look = looks[k];
+            // (The Legion's slabs drawn larger than the scan's cobbles: a road built by an empire.)
+            scales.Add(1f / (l.GetProperty("metres").GetSingle() * look.Size));
             tones.Add(look.Y / y);
             sats.Add(look.Sat);
             cons.Add(look.Con);

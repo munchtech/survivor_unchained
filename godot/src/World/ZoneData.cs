@@ -34,6 +34,10 @@ public sealed class ZoneData
     public readonly List<(double X, double Z, double Hw)[]> Streams = new();
     public readonly List<(double X, double Z, double Hw)[]> Rails = new();
     public readonly List<(double X, double Z, double R)> Vents = new();
+    /// <summary>A story place's gates: the ember burning across a way until its stage is won (ArenaEdge).</summary>
+    public readonly List<(string Id, double X0, double Z0, double X1, double Z1)> Gates = new();
+    /// <summary>A story fight's own place (its edge is its banks: the ember's lip burns low there).</summary>
+    public readonly bool Story;
 
     public sealed record FloraGroup(string Kind, string Piece, Transform3D[] At, KitLook.Look Look);
     public sealed record LightSpec(Vector3 At, Color Color, float Intensity, float Distance, float Flicker, bool On);
@@ -127,6 +131,8 @@ public sealed class ZoneData
         Streams.AddRange(m.Streams);
         Rails.AddRange(m.Rails);
         Vents.AddRange(m.Vents);
+        Gates.AddRange(m.Gates);
+        Story = m.Spec.Story != "";
         var groups = new Dictionary<(string Kind, string Piece, int Bx, int Bz), List<Transform3D>>();
         foreach (var f in m.Flora)
         {

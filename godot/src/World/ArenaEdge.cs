@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using Godot;
 using SurvivorUnchained.Maps;
 
@@ -18,18 +18,27 @@ public static class ArenaEdge
         var root = new Node3D { Name = "ArenaEdge" };
         var place = z.Place!;
         var ember = new Color(place.Air.Ember);
-        root.AddChild(Sparks(z, ember));
-        root.AddChild(Curtain(z, ember));
+        var sparks = Sparks(z, ember);
+        // A story place's edge is its banks: a few sparks off its low lip, and no curtain.
+        if (z.Story) sparks.Amount = 160;
+        root.AddChild(sparks);
+        if (!z.Story) root.AddChild(Curtain(z, ember));
         if (place.Air.MistDensity > 0) root.AddChild(Mist(z));
         foreach (var s in z.Streams)
         {
+            // (A story place's water is the ground's own: its pool lies still, and the stream's
+            // sheet of flowing water over the fight read as a smear from the arena camera.)
+            if (z.Story) continue;
             root.AddChild(Stream(z, s));
-            // Mist lying along it, in two sheets, the lower thicker.
+            // Mist lying along it, in two sheets, the lower thicker (none in a story place: its
+            // stream runs through the fight, and mist over a fight hides it).
+            if (z.Story) continue;
             foreach (var (lift, op) in new[] { (0.45f, 0.16f), (1.3f, 0.08f) })
                 root.AddChild(MistSheet(z, s, 3.5f, lift, op, new Color(place.Air.MistColor)));
         }
         foreach (var r in z.Rails) root.AddChild(Rails(z, r));
         foreach (var v in z.Vents) root.AddChild(Vent(z, v, ember, new Color(place.Air.HazeColor)));
+        foreach (var g in z.Gates) root.AddChild(Gate(z, g, ember));
         return root;
     }
 
@@ -178,17 +187,99 @@ public static class ArenaEdge
         }
     }
 
-    /// <summary>The rim, every two degrees, `off` metres out from the edge, on the ground.</summary>
+    /// <summary>The rim, point by point, `off` metres out from the edge, on the ground. The way
+    /// out is across the rim from its neighbours (the rim runs round with the inside on its
+    /// left), so a story place's outline, which is no circle, is followed as well as the ring.</summary>
     static List<Vector3> Ring(ZoneData z, float off, float lift)
     {
         var pts = new List<Vector3>();
-        foreach (var (x, zz) in z.Rim)
+        int n = z.Rim.Count;
+        for (int i = 0; i < n; i++)
         {
-            var d = new Vector2((float)x, (float)zz);
-            var p = d + d.Normalized() * off;
+            var (x, zz) = z.Rim[i];
+            var (ax, az) = z.Rim[(i + n - 1) % n];
+            var (bx, bz) = z.Rim[(i + 1) % n];
+            var t = new Vector2((float)(bx - ax), (float)(bz - az)).Normalized();
+            var p = new Vector2((float)x, (float)zz) + new Vector2(t.Y, -t.X) * off;
             pts.Add(new Vector3(p.X, z.HeightAt(p.X, p.Y) + lift, p.Y));
         }
         return pts;
+    }
+
+    /// <summary>A story place's gate, shut: the ember burning across the way, the same fire as
+    /// the ring's lip (a white-hot thread on the char) with a low hedge of flame standing on it,
+    /// sparks going up and its light on the ground either side; the place's ring, drawn across
+    /// a way, says "not yet" as the lip says "no further". Named gate:ID; the night hides it as
+    /// the stage is won, and the char stays (the ground's paint).</summary>
+    static Node3D Gate(ZoneData z, (string Id, double X0, double Z0, double X1, double Z1) g, Color ember)
+    {
+        // (Godot keeps no colon in a name: the night finds it as gate:ID, ZoneView.)
+        var root = new Node3D { Name = $"gate_{g.Id}" };
+        var a = new Vector2((float)g.X0, (float)g.Z0);
+        var b = new Vector2((float)g.X1, (float)g.Z1);
+        var dir = (b - a).Normalized();
+        // Into the banks two metres at each end, so the fire meets them.
+        a -= dir * 2f;
+        b += dir * 2f;
+        float len = a.DistanceTo(b);
+        var across = new Vector2(-dir.Y, dir.X);
+        Vector3 On(Vector2 p, float lift) => new(p.X, z.HeightAt(p.X, p.Y) + lift, p.Y);
+        // The thread on the ground: a strip a metre and a half wide.
+        var verts = new List<Vector3>();
+        var uvs = new List<Vector2>();
+        var idx = new List<int>();
+        int steps = Mathf.CeilToInt(len / 0.5f);
+        for (int i = 0; i <= steps; i++)
+        {
+            float t = i / (float)steps;
+            var p = a.Lerp(b, t);
+            verts.Add(On(p - across * 0.75f, 0.06f)); uvs.Add(new Vector2(t * len, 0));
+            verts.Add(On(p + across * 0.75f, 0.06f)); uvs.Add(new Vector2(t * len, 1));
+            if (i > 0)
+            {
+                int k = (i - 1) * 2;
+                idx.AddRange(new[] { k, k + 2, k + 1, k + 1, k + 2, k + 3 });
+            }
+        }
+        var arrays = new Godot.Collections.Array();
+        arrays.Resize((int)Mesh.ArrayType.Max);
+        arrays[(int)Mesh.ArrayType.Vertex] = verts.ToArray();
+        arrays[(int)Mesh.ArrayType.TexUV] = uvs.ToArray();
+        arrays[(int)Mesh.ArrayType.Index] = idx.ToArray();
+        var mesh = new ArrayMesh();
+        mesh.AddSurfaceFromArrays(Mesh.PrimitiveType.Triangles, arrays);
+        var mat = new ShaderMaterial { Shader = GD.Load<Shader>("res://shaders/ember_gate.gdshader") };
+        mat.SetShaderParameter("noise_tex", NoiseTex.Get());
+        mat.SetShaderParameter("ember", ember);
+        root.AddChild(new MeshInstance3D { Name = "Thread", Mesh = mesh, MaterialOverride = mat, CastShadow = GeometryInstance3D.ShadowCastingSetting.Off });
+        // A hedge of low flames along it, out of step, smaller toward the banks.
+        int flames = Mathf.Max(4, Mathf.RoundToInt(len / 0.85f));
+        var rng = new RandomNumberGenerator { Seed = (ulong)g.Id.GetHashCode() };
+        for (int i = 0; i < flames; i++)
+        {
+            float t = (i + 0.5f) / flames;
+            float mid = 1 - Mathf.Abs(t * 2 - 1);
+            var p = a.Lerp(b, t) + across * (rng.Randf() - 0.5f) * 0.35f;
+            root.AddChild(Campfire.Build(On(p, 0), 0.32f + 0.3f * mid * (0.7f + 0.6f * rng.Randf()), ring: false, parts: "flames"));
+        }
+        // Sparks going up off it.
+        var pts = new List<Vector3>();
+        for (int i = 0; i <= 24; i++) pts.Add(On(a.Lerp(b, i / 24f), 0.15f));
+        var img = Image.CreateEmpty(pts.Count, 1, false, Image.Format.Rgbf);
+        for (int i = 0; i < pts.Count; i++) img.SetPixel(i, 0, new Color(pts[i].X, pts[i].Y, pts[i].Z));
+        var sparks = Sparks(z, ember);
+        var proc = (ParticleProcessMaterial)sparks.ProcessMaterial.Duplicate();
+        proc.EmissionPointTexture = ImageTexture.CreateFromImage(img);
+        proc.EmissionPointCount = pts.Count;
+        proc.InitialVelocityMax = 3f;
+        sparks.ProcessMaterial = proc;
+        sparks.Amount = 90;
+        sparks.Name = "GateSparks";
+        root.AddChild(sparks);
+        // Its light on the ground either side of the way.
+        var mid3 = On(a.Lerp(b, 0.5f), 1.2f);
+        root.AddChild(new OmniLight3D { Position = mid3, LightColor = ember.Lerp(new Color(1, 0.8f, 0.55f), 0.35f), LightEnergy = 2.2f, OmniRange = Mathf.Max(7, len * 0.8f), OmniAttenuation = 1.4f, ShadowEnabled = false });
+        return root;
     }
 
     /// <summary>Sparks off the ring: small, hot, rising and going out.</summary>

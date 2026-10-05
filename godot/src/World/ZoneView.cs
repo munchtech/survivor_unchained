@@ -60,7 +60,15 @@ public partial class ZoneView : Node3D
         AddChild(Landmarks.Root);
         Perf.Lap("landmarks");
         // An ember arena's ring, its mist and its streams.
-        if (z.Place != null) { AddChild(ArenaEdge.Build(z)); Perf.Lap("arena edge"); }
+        if (z.Place != null)
+        {
+            var edge = ArenaEdge.Build(z);
+            AddChild(edge);
+            // A story place's gates, found by name as the night opens them (Show).
+            foreach (var c in edge.GetChildren())
+                if (c is Node3D n3 && n3.Name.ToString().StartsWith("gate_")) Landmarks.Nodes["gate:" + n3.Name.ToString()[5..]] = n3;
+            Perf.Lap("arena edge");
+        }
         // (An arena whose place grows none, the Dig, has no meadow at all.)
         if (grassAround is Vector2 at && (z.Place == null || ArenaGround.GrowsGrass(z.Place.Id))) GrowGrass(at, grassRadius);
         Perf.Lap("grass");
@@ -76,8 +84,8 @@ public partial class ZoneView : Node3D
         {
             // The web game's ring of stones round it goes; the scanned pit takes its place.
             var fat = new Vector3((float)f.X, (float)f.Y, (float)f.Z);
-            HideLandmarksNear(fat, 0.85f * (float)f.Size);
-            var fire = Campfire.Build(fat, (float)f.Size, ring: true);
+            if (f.Ring) HideLandmarksNear(fat, 0.85f * (float)f.Size);
+            var fire = Campfire.Build(fat, (float)f.Size, ring: f.Ring);
             fx.AddChild(fire);
             fires.Add((f.Light, fire));
             // The web game marks a fire's flame with a glowing ball; here the
