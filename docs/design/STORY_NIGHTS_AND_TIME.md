@@ -2,7 +2,8 @@
 
 A proposal for the owner, by the experience director. Nothing here is built yet. Building starts
 when the owner approves (section 3 lists the choices that are the owner's). The bosses' moves are
-the combat lead's: `docs/design/STORY_BOSSES.md`.
+the combat lead's: `docs/design/STORY_BOSSES.md` (on `worktree-agent-a708da2c97bf85c95`), which
+holds each fight's beats, bosses and numbers.
 
 The owner, 4 October:
 - "story nights are what? arenas that happen because of the story? if were going to do that they
@@ -36,6 +37,14 @@ endless hour.
 - **The build.** Embers are paid about 2.5 times faster (combat's number), so she meets the boss
   with about what a table night has at minute 20. That build is the boss's yardstick: about 3–4
   minutes at par, against the table rulers' 60–120 s.
+  - The waves are finite and creature levels are fixed per beat. So the build at the boss is set by
+    the content, a slow beat is no harder, and nothing is farmed.
+  - A great blessing comes as the night opens, and another as the boss's ground opens, after its
+    arrival.
+- **The tension.** The way in should feel dangerous without killing her. The aim is that 20–35% of
+    runs dip under half health somewhere on the way in, with falls in 5% of beats or fewer (combat's
+    harness measures both). The real danger is at the boss: it fells her on its first life in about
+    a third of tries.
 - **The place.** About 50–60 m across, hand-shaped, with a separate boss ground. Today's arena is
   168 m across. From the camera's 22 m, a 50–60 m place is about a screen and a half: close enough
   that the place itself is the fight.
@@ -50,15 +59,18 @@ endless hour.
 - **A fall in a beat:** she gets up at that beat's start, with the build and health she brought
   into it.
 - **A fall at the boss:** she gets up as its ground opens, at full health, in phase one, with her
-  build.
+  build. The ground is as it opened. The arrival's cinematic does not play again; a two-second
+  re-entry (his howl, his laugh, his "Nondum") does instead.
 - **Two rises a night** (open choice 1). The third fall is the loss the story already writes: each
   fight's `OnLose`, and its lost line as she comes to in the same night. The fight then waits at its
   place and at the table for another night, as now. "Let the night go" is on the fall screen from
   the first fall.
 - **A rise is quick:** a three-second fade with no screens. Story's line is "You get up." (the
   prologue's words), then the second time "You get up. It takes less than it did."
-- **What to build:** combat snapshots the battle at each beat's start and at the boss's opening.
-  The run restores it.
+- **What to build:** combat snapshots the battle at each beat's start and at the boss's opening
+  (`STORY_BOSSES.md` §5.1). The run restores it, and the beat's waves begin again.
+- **The odds:** first-try wins with the two rises at 90% or more for a planned draft, and 70–80% for
+  a careless one (combat's §0.6).
 
 ### What each fight needs
 
@@ -101,8 +113,8 @@ combat's to write; the places are arena art's.
 
 | Fight (`id`) | Foe | The way in | The place's set piece | The boss's ground and its end |
 |---|---|---|---|---|
-| The Hollow by Night (`hollow_by_night`) | Greymuzzle, the Pack | Down the clough along the sick stream: wolves in twos and threes, and the blighted ones slow. The Pack is sick, not wicked: no human bones. | The den's mouth. The sick lie there, and the Pack herds her away from it. | The den's floor. He hunts, howls the Pack into a ring (fire breaks it), then fights alone on his feet. He is let go or he dies (C10). |
-| Raid on the Roost (`roost_raid`) | Redcowl, the Kerchiefs | Up the ruts through the camp's pickets in the dark. Torches and bells call each picket's wave. | The yard and the six B.E. crates, only while they are still in it (`be.crates` unset or `redcowl`). Fire near them blows them, a choice made in play that sets `be.crates` to `burned`. If they went home to Harlan, the yard has no crates and this set piece is not there. | His own fire, with his children asleep behind the line. Today he runs the Red Hand's script; he needs his own. He kneels, laughs and gives his last words (C11). |
+| The Hollow by Night (`hollow_by_night`) | Greymuzzle, the Pack | Down the clough along the sick stream: wolves in twos and threes, and the blighted ones slow. The Pack is sick, not wicked: no human bones. | The den's mouth. The sick lie there, and the Pack herds her away from it. | The den's floor. He hunts, howls the Pack into a ring (fire breaks it), then fights alone on his feet. Where the facts hold, letting him go is her choice at his side ("Let him go" or "Finish it"; story to confirm). Otherwise he dies (C10). |
+| Raid on the Roost (`roost_raid`) | Redcowl, the Kerchiefs | Up the ruts through the camp's pickets in the dark. Torches and bells call each picket's wave. | The levy marching in step through the camp's yard. The six B.E. crates are an optional shortcut beside it, only while they are still there (`be.crates` unset or `redcowl`). They go up by a prompt, *Fire the crates*, never by a fire build's stray shot, and that sets `be.crates` to `burned`. With no crates, the beat is the levy alone. | His own fire, with his children asleep behind the line. Today he runs the Red Hand's script; he needs his own. He kneels, laughs and gives his last words (C11). |
 | The Dig Boils Over (`dig_boils`) | Grimtunnel, the Lamplings | Lamplings pour up out of the pit. Hold the edge by the headframe, then the rails. | The pump: running, it is blown in the fight (`dig.pump` becomes `blown`, as now). | The pit's lip, with the heart's light in his cracks and Snib's comments. He goes back down the hole, delighted, and never dies (C12). |
 | Behind the Sealed Door (`vault_opened`) | The Barrow Lord, the Risen | The sigil is set and the door wakes violet. Inside is the Legion's hall at the head of the stair, and the dead come up it in ranks. She never goes down it: going down is Act 3, and in C13 Jessop stands far below and she must not pass him. The hall's roof has fallen in, so it is open to the moon with its wall tops standing. That keeps the arena's camera, with no ceiling to cut away. | The century's hall: the shield wall, and the standard (Chid's bane). | The head of the stair, with his one-word orders. He is laid down, and holy does it twice as fast. His hand at the gate (*Redi*) sends her home (C13). |
 
