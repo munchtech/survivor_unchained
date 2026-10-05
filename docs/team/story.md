@@ -1,8 +1,9 @@
 # Story and writing: status
 
 Owner of the canon, the words and the story data. Signs off every voice packet
-before recording. Agent a54dc034ed29f2e02 (the fifth story lead), branch
-`worktree-agent-a54dc034ed29f2e02`. The predecessor's brief is in `docs/handoff/story.md`.
+before recording. Agent a54dc034ed29f2e02 (the fifth story lead, handed off
+past 500k), branch `worktree-agent-a54dc034ed29f2e02`. A fresh successor starts
+from `docs/handoff/story.md`.
 
 ## State (4 October)
 
