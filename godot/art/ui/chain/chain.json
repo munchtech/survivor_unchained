@@ -1,13 +1,28 @@
 {
- "pitch": 16.0,
+ "pitch": 17.2,
  "cell": [
-  36,
-  26
+  52,
+  44
  ],
  "variants": 6,
  "link": [
-  24,
-  14,
-  2.0
- ]
+  30,
+  19,
+  3.2
+ ],
+ "fade": 0,
+ "run": 72,
+ "heat": 2,
+ "slide": [
+  130,
+  17
+ ],
+ "sag_spring": [
+  62,
+  3.6
+ ],
+ "sag_rest": 6.5,
+ "sag_dip": 8.0,
+ "sag_speed": 200,
+ "eyelet": true
 }
