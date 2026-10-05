@@ -73,10 +73,13 @@ public static class SettingsPanel
         var v = Style.V(Style.Gap2);
         HBoxContainer Row(string label, string[] options, string now, Action<string> set)
         {
+            // (set on the words' own line: they sit 2 px into their row, over their underline's room)
             var l = Style.Label(label, Style.UiBold, 16, Kit.Ink2, false, HorizontalAlignment.Left, false);
-            l.CustomMinimumSize = new Vector2(200, 0);
-            l.SizeFlagsVertical = Control.SizeFlags.ShrinkCenter;
-            var r = Style.H(Style.Gap5, l);
+            l.CustomMinimumSize = new Vector2(150, 0);
+            var m = new MarginContainer { MouseFilter = Control.MouseFilterEnum.Ignore, SizeFlagsVertical = Control.SizeFlags.ShrinkBegin };
+            m.AddThemeConstantOverride("margin_top", 2);
+            m.AddChild(l);
+            var r = Style.H(Style.Gap5, m);
             foreach (var o in options) r.AddChild(Kit.Tab(Style.Cap1(o), o == now, () => { if (o == now) return; Sound.Sfx.Click(); set(o); s.Save(); g.ApplySettings(); refresh(); }, 16));
             return r;
         }
@@ -276,7 +279,7 @@ public partial class PauseScreen : Overlay
         // Settings and controls open in a panel beside it, the menu still there to go back to.
         if (panel != "")
         {
-            var side = Plate(pair, panel == "controls" ? 600 : 780);
+            var side = Plate(pair, 600);
             side.AddChild(new Title(panel == "controls" ? "Controls" : "Settings", 30, false));
             side.AddChild(panel == "controls" ? new ControlsPanel() : SettingsPanel.Build(G, Refresh));
             var back = Nav.Id(Kit.Keyed(Act.Cancel, "Back", () => { panel = ""; Refresh(); }), "back");

@@ -92,7 +92,7 @@ public partial class TitleScreen : Overlay
         {
             // A fitted panel over the fire's picture, as the pause opens its own: its name, its rows as
             // type, back with its key at its foot.
-            var v = Fitted(new Vector2(540, 16), panel == "controls" ? 600 : panel == "settings" ? 780 : 640);
+            var v = Fitted(new Vector2(540, 16), panel == "load" ? 640 : 600);
             Nav.Scope = v;
             v.AddChild(new Title(panel switch { "load" => "Journeys", "settings" => "Settings", _ => "Controls" }, 30, false));
             switch (panel)
