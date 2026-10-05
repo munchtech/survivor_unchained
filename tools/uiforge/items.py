@@ -112,6 +112,10 @@ T2I = {
             "fragments and a cracked finger bone in the heap",
     "bomb": "a small iron-bound wooden crate charge, orange ember light glowing through the gaps between its slats, a "
             "short lit fuse sparking on top",
+    # The crafting lead's flask, repainted: its first came cool and flat-lit, a mark on it reading as a letter.
+    "flask": "a battered pewter hip flask in a stitched dark brown leather sleeve, a small screw cap on a short chain, "
+             "warm lamplight from the upper left catching its curved shoulder and the dents in it, plain metal with no "
+             "marks, no engraving, no letters",
 }
 
 OUT = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "..", "godot", "art", "ui", "icons", "item")
