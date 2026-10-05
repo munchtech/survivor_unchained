@@ -28,6 +28,7 @@ public sealed class Autopilot
     public (double X, double Z) Move { get; private set; }
     public readonly List<string> Log = new();
     string lastStage = "";
+    double lineT;
 
     public Autopilot(Game game) { g = game; }
 
@@ -40,7 +41,9 @@ public sealed class Autopilot
         t += dt;
         Move = (0, 0);
         if (g.Overlay == "draft") { g.Pick(0); return; }
-        if (g.Overlay == "dialogue") { g.Advance(); return; }
+        // A line is read at a reader's pace (pictures of conversations need the line on screen).
+        if (g.Overlay == "dialogue") { if ((lineT += dt) > 2.4) { lineT = 0; g.Advance(); } return; }
+        lineT = 0;
         // A chest opening is watched to its end (pictures of it).
         if (g.Overlay == "chest") return;
         // A night's result is read, then left as a player leaves it (closing it as a screen
