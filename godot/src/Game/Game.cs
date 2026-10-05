@@ -451,6 +451,10 @@ public partial class Game : Node, IZoneHost
         if (id == "arena") { currentMap = SurvivorUnchained.Maps.MapGen.Generate(World.Arena!.Map); data = new ZoneData(currentMap); }
         else if (id == "map") { currentMap = SurvivorUnchained.Maps.MapGen.Generate(World.Map!.Map); data = new ZoneData(currentMap); }
         else { currentMap = null; data = new ZoneData(id); }
+        // The kit's textures it is built from, decoded side by side first.
+        Perf.Lap("prefetch", true);
+        Prefetch.Zone(data, Journey != null ? Loadouts.Of(Journey.Ch).Person : null, folk: id != "arena");
+        Perf.Lap("its textures, decoded on worker threads");
         scene = new WorldScene(data, cam);
         AddChild(scene);
         scene.Move = () => auto?.Move ?? (controls.Captured ? (0, 0) : (controls.MoveX, controls.MoveZ));
@@ -1295,6 +1299,44 @@ public partial class Game : Node, IZoneHost
         };
         Perf.Note = () => $"{zone?.Id} foes {Battle?.Enemies.Count ?? 0} ember {Battle?.EmberLevel} kills {Battle?.KillCount} " +
                           (zone?.Debug() is { Count: > 0 } d ? string.Join(" ", d.Take(3).Select(kv => $"{kv.Key}={kv.Value}")) : "");
+        // --perf-flip A,B [--perf-flip-every S]: these taken out every other S
+        // seconds (default 1) and put back, the frame's "flip" counter 1 while
+        // out. One run measures both ways under the same load from the GPU's
+        // other users (it is shared): her, crowd, grass, sunshadows, ssao, msaa;
+        // or quality:Q, scale:S (that quality or resolution while out).
+        if (Args.Get("perf-flip") is string flips)
+        {
+            var flipped = flips.Split(',').ToHashSet();
+            double every = Args.Num("perf-flip-every", 1);
+            var clock = System.Diagnostics.Stopwatch.StartNew();
+            bool outNow = false, wasOut = false;
+            string q0 = Settings.Current.Quality, s0 = Settings.Current.Scale;
+            string? qOut = flipped.FirstOrDefault(f => f.StartsWith("quality:"))?[8..], sOut = flipped.FirstOrDefault(f => f.StartsWith("scale:"))?[6..];
+            Perf.CounterNames = [.. Perf.CounterNames, "flip"];
+            var counters = Perf.Counters;
+            Perf.Counters = a => { counters(a); a[^1] = outNow ? 1 : 0; };
+            perf.Each = () =>
+            {
+                if (scene == null) return;
+                outNow = (int)(clock.Elapsed.TotalSeconds / every) % 2 == 1;
+                bool on = !outNow;
+                if ((qOut ?? sOut) != null && outNow != wasOut)
+                {
+                    Settings.Current.Quality = outNow ? qOut ?? q0 : q0;
+                    Settings.Current.Scale = outNow ? sOut ?? s0 : s0;
+                    Graphics.Apply(Settings.Current, air, GetViewport(), scene);
+                }
+                wasOut = outNow;
+                if (flipped.Contains("her") && scene.Player != null) scene.Player.Visible = on;
+                if (flipped.Contains("crowd")) scene.Crowd.Visible = on;
+                if (flipped.Contains("grass") && scene.View.GetNodeOrNull<Node3D>("Grass") is { } g) g.Visible = on;
+                var t = Graphics.Current;
+                if (flipped.Contains("sunshadows")) air.Key.ShadowEnabled = on;
+                if (flipped.Contains("ssao")) air.Env.SsaoEnabled = on && t.Ssao;
+                if (flipped.Contains("msaa")) GetViewport().Msaa3D = on ? t.Msaa : Viewport.Msaa.Disabled;
+            };
+            return;
+        }
         // --perf-off A,B: things taken out of the picture, to see what each costs
         // by the difference (never for play): her, crowd, grass, flora, props,
         // landmarks, ground, water, fires, fx, hud, lamps, lampshadows,

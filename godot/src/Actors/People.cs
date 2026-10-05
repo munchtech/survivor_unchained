@@ -126,6 +126,29 @@ public static class People
         return p;
     }
 
+    /// <summary>The scene files Build loads for a person, so they can be asked
+    /// for ahead, all at once (Prefetch): the heroine's body, outfit and hair,
+    /// or a kit body, its clothes, hair and beard. (The older bodies are left
+    /// to load as they always have.)</summary>
+    public static IEnumerable<string> Files(SurvivorUnchained.World.PersonSpec spec)
+    {
+        var look = LookOf(spec);
+        var body = spec.Body;
+        if (body == SurvivorUnchained.Play.Loadouts.HerBody && Args.Get("body") != "woman" && ResourceLoader.Exists("res://art/people/heroine.glb")) body = "heroine";
+        if (body == "heroine")
+        {
+            yield return "res://art/people/heroine.glb";
+            if (look.Outfit.FirstOrDefault(o => o.StartsWith("her:")) is string her) yield return $"res://art/people/heroine_outfit_{her[4..]}.gltf";
+            yield return $"res://art/people/heroine_hair_{(HerHairs.Contains(look.Hair) ? look.Hair! : HerHairs[0])}.gltf";
+            yield break;
+        }
+        if (body == SurvivorUnchained.Play.Loadouts.HerBody || body == "anime") yield break;
+        yield return $"{Dir}/{(look.Sex == "female" ? "Superhero_Female_FullBody" : "Superhero_Male_FullBody")}.gltf";
+        foreach (var part in look.Outfit) yield return $"{Dir}/{part}.gltf";
+        if (look.Hair != null) yield return $"{Dir}/{look.Hair}.gltf";
+        if (look.Beard) yield return $"{Dir}/Hair_Beard.gltf";
+    }
+
     // Getting up ends in an idle but is not one: looped, a risen (or the Warden)
     // would lie down and get up again.
     static bool IsCycle(string n) =>
