@@ -128,7 +128,7 @@ public static class UiArt
         ["panel"] = new("frames/panel.png", 14, 14, 14, 14, Tile: true, Out: 6, Ground: "page/morocco.png", Tint: new Color(1f, 1f, 1f, 0.88f)),
         ["tab_hover"] = new("frames/tab_hover.png", 18, 10, 18, 6, Tile: true),
         ["tab_pressed"] = new("frames/tab_pressed.png", 18, 10, 18, 6, Tile: true),
-        ["side"] = new("frames/side.png", 48, 48, 48, 48, Tile: true, Out: 8, Ground: "page/vellum.png", Tint: new Color(1f, 1f, 1f, 0.96f)),
+        ["side"] = new("frames/side.png", 48, 48, 48, 48, Tile: true, Out: 8, Ground: "page/vellum.png", Tint: new Color(1f, 1f, 1f, 0.9f)),
         ["price"] = new("frames/price.png", 6, 6, 6, 6, Ground: "page/morocco.png", Tint: new Color(0.5f, 0.48f, 0.5f, 0.92f)),
         ["row"] = new("frames/row.png", 10, 10, 10, 10, Tile: true, Ground: "page/morocco.png", Tint: new Color(0.7f, 0.68f, 0.7f, 0.85f)),
         ["rule_h"] = new("frames/rule_h.png", 28, 0, 28, 0, Tile: true),

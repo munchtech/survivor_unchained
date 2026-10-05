@@ -29,7 +29,7 @@ OUT = os.path.join(ROOT, "tools", "comfy", "out", "uiforge", "lamp")
 SPEC = {"cell": [120, 280], "ss": 3, "samples": 128,
         "material": {"iron": "#262122", "rust": "#3a2012", "worn": "#e2dce6", "worn_rough": 0.14},
         "cage": {"y": 190, "h": 92, "r": 30, "bars": 6, "bar": 2.6},
-        "chain": {"links": 3, "length": 30, "width": 18, "wire": 3.0}, "heat": [5, 16]}
+        "chain": {"links": 3, "length": 30, "width": 18, "wire": 3.0}, "heat": [8, 24]}
 
 
 def render():

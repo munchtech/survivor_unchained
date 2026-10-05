@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://b52q0gk3xpytj"
-path="res://.godot/imported/eyelet.png-c04a499153607973abb4369b9ae1855a.ctex"
+uid="uid://sxnq2db1vqjn"
+path="res://.godot/imported/eye_front.png-a6bcc2098743ff79cb7eb86202fd3ce3.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://art/ui/chain/eyelet.png"
-dest_files=["res://.godot/imported/eyelet.png-c04a499153607973abb4369b9ae1855a.ctex"]
+source_file="res://art/ui/chain/eye_front.png"
+dest_files=["res://.godot/imported/eye_front.png-a6bcc2098743ff79cb7eb86202fd3ce3.ctex"]
 
 [params]
 

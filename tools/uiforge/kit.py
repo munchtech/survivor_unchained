@@ -672,13 +672,14 @@ MAKE.update({
     "frames/column_divider.png": lambda: rule_v(24, 128),
 })
 CHAIN_ART = ([f"chain/{pre}{kind}_{k}.png" for pre in ("", "warm_", "hot_") for kind in ("face", "edge") for k in range(6)] +
-             ["chain/open.png", "chain/eyelet.png", "ornaments/title_chain_l.png", "ornaments/title_chain_r.png"])
+             ["chain/open.png", "chain/eye_back.png", "chain/eye_front.png", "chain/tab.png",
+              "ornaments/title_chain_l.png", "ornaments/title_chain_r.png"])
 # The world's other small things, each made by its own tool (coals.py, embers.py): what they
 # are, and the folder under tools/comfy/out/uiforge/ they are made into.
 WORLD_ART = {"coal": ([f"coal/coal_{k}.png" for k in range(4)] + ["coal/dish.png", "coal/dish_rim.png", "coal/numeral_glow.png"]),
              "embers": ["hud/spark.png", "hud/glint.png", "hud/pointer_legendary.png"]}
 # Pieces the kit once made and no longer does (removed from the game on --apply).
-GONE = ["chain/hot.png"]
+GONE = ["chain/hot.png", "chain/eyelet.png", "chain/eyelet_left.png", "chain/eyelet_right.png", "chain/eyelet_hole.png"]
 # Ornament the kit does without (moved aside on --apply, so the code's fallback is nothing).
 DROP = ["frames/column_divider_stone.png"]
 

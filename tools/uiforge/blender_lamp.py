@@ -114,7 +114,7 @@ def main():
     fin.scale = (1, 1.6, 1)
     fin.data.materials.append(iron)
     # The coal, alive in it.
-    coal = K.coal(r * 0.95 * ss, 29)
+    coal = K.coal(r * 1.35 * ss, 29)
     coal.location = (0, P(0, cg["y"] + h * 0.12)[1], z0 * ss * U)
     cmat = K.coal_material(3)
     coal.data.materials.append(cmat)
