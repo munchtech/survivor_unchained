@@ -591,12 +591,14 @@ public sealed class MapRun : ZoneRuntime, IBossArena
         foreach (var l in loot)
         {
             double a = R() * Math.Tau, d = 1.2 + R() * 1.6;
-            B!.Spill(l with { Persistent = true }, x + Math.Cos(a) * d, z + Math.Sin(a) * d);
+            double px = x + Math.Cos(a) * d, pz = z + Math.Sin(a) * d;
+            if (B!.Spill(l with { Persistent = true }, px, pz) is { } pk) { px = pk.X; pz = pk.Z; }
             if (l.Ref == null || l.Kind == PickupKind.Material) continue;
             var chart = Charts.FromRef(l.Ref);
             var def = Items.Find(chart != null ? Charts.Item : l.Ref);
+            // Where it lies: its opening ends with each thing going down to its place on the ground.
             shown.Add(new ChestItem(ChestItemKind.Gear, def?.Id ?? l.Ref, chart != null ? Charts.Title(chart) : def?.Name ?? l.Ref, def?.Icon ?? "chest", 0, 0,
-                (Rarity)Math.Clamp(l.Rarity ?? 0, 0, 4), null, null));
+                (Rarity)Math.Clamp(l.Rarity ?? 0, 0, 4), null, null, px, pz));
         }
         if (!told) return;
         opened++;

@@ -928,6 +928,23 @@ public partial class GameHud : CanvasLayer
         while (toasts.GetChildCount() > 5) toasts.GetChild(toasts.GetChildCount() - 1).Free();
     }
 
+    /// <summary>Where the banner's words stand on the screen while it shows (the lines said over
+    /// heads keep out of it: a howl's caption printed beside the banner's own line read as one).</summary>
+    public static Rect2? Banner { get; private set; }
+
+    /// <summary>How far down the top of the screen is the HUD's (the ember, the clock, a boss's bar).</summary>
+    public static float TopClear { get; private set; } = 118;
+
+    /// <summary>The toasts wait (unseen, their time not running) while this is set.</summary>
+    public bool HoldToasts;
+
+    Rect2 BannerRect()
+    {
+        float w = Math.Max(annTitle.GetCombinedMinimumSize().X, Math.Max(annSub.GetCombinedMinimumSize().X, annKicker.Visible ? annKicker.GetCombinedMinimumSize().X : 0));
+        w = Math.Min(1200, w + 40);
+        return new Rect2(960 - w / 2, announce.Position.Y, w, announce.GetCombinedMinimumSize().Y);
+    }
+
     public void Announce(Announcement a)
     {
         // --clean: no title cards over the picture (previs stills taken as storyboard staging).
@@ -1172,8 +1189,15 @@ public partial class GameHud : CanvasLayer
         else announce.Modulate = Colors.Transparent;
         // Nothing big over a choice being made.
         if (draft != null || talk != null) { announce.Modulate = Colors.Transparent; subtitle.Modulate = Colors.Transparent; }
+        Banner = announce.Modulate.A > 0.05f ? BannerRect() : null;
+        TopClear = bossBox.Visible ? bossBox.GetGlobalRect().End.Y + 8 : 118;
         foreach (var c in toasts.GetChildren())
-            if (c is Notice n && !n.Step(delta)) n.QueueFree();
+        {
+            if (c is not Notice n) continue;
+            // Held while a chest's opening says the same things over the world; told after it, whole.
+            n.Modulate = HoldToasts ? Colors.Transparent : Colors.White;
+            if (!HoldToasts && !n.Step(delta)) n.QueueFree();
+        }
         // A tip keeps small and high while the fight is close round her, and comes to its size in a lull.
         if (tipLine != null && IsInstanceValid(tipLine)) tipLine.Small = busy;
         // The bar flows toward its value; a level's flash fades over a tenth of a second.

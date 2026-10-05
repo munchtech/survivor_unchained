@@ -146,8 +146,11 @@ public partial class CrowdView : Node3D
     /// <summary>Bodies flashed white this frame, and how many may be: past it, a flash stays at the
     /// rim (the shader's whole-body white needs a flash over this).</summary>
     int whiteFlashes;
-    const int WhiteFlashes = 4;
-    const float FlashRimOnly = 0.55f;
+    const int WhiteFlashes = 3;
+    /// <summary>The flare the rest keep, at the rim only. At 0.55 the rim's term alone turned pale
+    /// bodies (the Risen) into cream ghosts at thirty metres (seen from above, most of a body is
+    /// rim): seven at once round one Iron Palms, struck again each frame as they flew.</summary>
+    const float FlashRimOnly = 0.12f;
 
     void Draw(Enemy e, Func<double, double, double> heightAt)
     {
@@ -266,7 +269,10 @@ public partial class CrowdView : Node3D
         // The struck flare's instant of white across the whole body is for a few at once (and any
         // champion or ruler); the rest keep it at the rim. A blast that hits sixty at once turned
         // sixty bodies white in the same frame.
-        if (f > FlashRimOnly && !e.Elite && !e.Boss && e.Named == null && ++whiteFlashes > WhiteFlashes) f = FlashRimOnly;
+        // The flinch keeps the whole blow; only the light is held back (a crowd's struck all read by
+        // their flinch, a few by their flare).
+        float flare = f;
+        if (f > FlashRimOnly && !e.Elite && !e.Boss && e.Named == null && ++whiteFlashes > WhiteFlashes) flare = FlashRimOnly;
         // The flinch along the blow: big enough to read from thirty metres up, twice on a critical (S-17).
         float push = e.LastCrit ? 0.45f : 0.25f;
         var at = new Vector3((float)(e.X + e.LastDx * f * push), (float)y, (float)(e.Z + e.LastDz * f * push));
@@ -286,7 +292,7 @@ public partial class CrowdView : Node3D
             else glow = Math.Max(glow, 0.06f);
         }
         if (e.Disposition == Disposition.Neutral && !e.Provoked) tint *= new Color(0.95f, 0.95f, 0.95f);
-        crowd.Push(new Transform3D(basis, at), role, t, f, dissolve, frozen, burning, tint, glow);
+        crowd.Push(new Transform3D(basis, at), role, t, flare, dissolve, frozen, burning, tint, glow);
         living++;
     }
 

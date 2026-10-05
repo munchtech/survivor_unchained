@@ -53,7 +53,7 @@ public partial class BattleFx : Node3D
     float sackUp, chestUp;
     readonly Dictionary<int, float> trailAcc = new();
 
-    static Texture2D? ringTex, discTex, laneTex, hatchTex, dashTex, wallTex;
+    static Texture2D? ringTex, discTex, laneTex, hatchTex, dashTex, wallTex, laneFillTex;
     static readonly Dictionary<int, Texture2D> coneTex = new(), bandTex = new();
 
     sealed class Mark
@@ -63,6 +63,10 @@ public partial class BattleFx : Node3D
         public bool Progress, Grow, Active;
         public Color Color;
         public Decal? Fill;
+        /// <summary>A lane's fill runs from its start to its end over its life: where it comes from,
+        /// which way, how long.</summary>
+        public Vector3 From, Along;
+        public float Length;
     }
 
     public BattleFx(Func<double, double, double> heightAt)
@@ -95,6 +99,7 @@ public partial class BattleFx : Node3D
         hatchTex ??= GroundTexture(3);
         dashTex ??= GroundTexture(4);
         wallTex ??= GroundTexture(5);
+        laneFillTex ??= GroundTexture(6);
         var beamShader = GD.Load<Shader>("res://shaders/beam.gdshader");
         for (int i = 0; i < 20; i++)
         {
@@ -283,6 +288,7 @@ public partial class BattleFx : Node3D
         m.Radius = radius;
         m.Color = color;
         m.Progress = m.Grow = false;
+        m.Length = 0;
         var d = m.Decal;
         d.TextureEmission = tex;
         d.TextureAlbedo = null;
@@ -314,13 +320,32 @@ public partial class BattleFx : Node3D
         if (key is int k2) keyed[k2] = m;
     }
 
-    void Lane(double x0, double z0, double x1, double z1, float width, Color color, float life, int? key = null)
+    /// <summary>A lane on the ground; a hostile one fills from where the blow comes to its end as it
+    /// comes (as a circle fills from its heart), so a charge reads as coming and when, and never as
+    /// one more line on the ground (two edges alone read as the story places' burning edge).</summary>
+    void Lane(double x0, double z0, double x1, double z1, float width, Color color, float life, int? key = null, bool progress = false)
     {
-        if (key is int k && keyed.TryGetValue(k, out var old)) { old.Active = false; old.Decal.Visible = false; }
+        if (key is int k && keyed.TryGetValue(k, out var old)) { old.Active = false; old.Decal.Visible = false; if (old.Fill != null) old.Fill.Visible = false; }
         double dx = x1 - x0, dz = z1 - z0, len = Math.Max(0.5, Math.Sqrt(dx * dx + dz * dz));
         var m = Ground((x0 + x1) / 2, (z0 + z1) / 2, 1, laneTex!, color, life);
         m.Decal.Size = new Vector3(width, 4, (float)len);
         m.Decal.Rotation = new Vector3(0, (float)Math.Atan2(dx, dz), 0);
+        if (progress)
+        {
+            m.Progress = true;
+            m.From = V(x0, heightAt(x0, z0), z0);
+            m.Along = new Vector3((float)(dx / len), 0, (float)(dz / len));
+            m.Length = (float)len;
+            m.Radius = width / 2;
+            if (m.Fill == null) { m.Fill = new Decal { UpperFade = 0.3f, LowerFade = 0.3f, CullMask = 1 }; AddChild(m.Fill); }
+            m.Fill.TextureEmission = laneFillTex;
+            m.Fill.Modulate = color with { A = 0.42f };
+            m.Fill.EmissionEnergy = 1.4f;
+            m.Fill.Rotation = m.Decal.Rotation;
+            m.Fill.Position = m.From;
+            m.Fill.Size = new Vector3(width * 0.94f, 4, 0.01f);
+            m.Fill.Visible = true;
+        }
         if (key is int k2) keyed[k2] = m;
     }
 
@@ -514,6 +539,10 @@ public partial class BattleFx : Node3D
                 else if (kind == 3) a = r < 0.97f ? (Mathf.PosMod((u + v) * 7f, 1f) < 0.3f ? 0.38f : 0.08f) + Mathf.Clamp(1 - Mathf.Abs(r - 0.92f) / 0.05f, 0, 1) : 0;
                 // Stand here: a dashed ring.
                 else if (kind == 4) a = Mathf.Clamp(1 - Mathf.Abs(r - 0.9f) / 0.06f, 0, 1) * (Mathf.PosMod(Mathf.Atan2(v, u) / Mathf.Tau * 24f, 1f) < 0.55f ? 1 : 0) + (r < 0.9f ? 0.1f : 0);
+                // A lane's fill, run out along it as the blow comes: as a circle's, a bright front at
+                // its leading end (both ends: the one under the foe is hidden) and only a breath behind.
+                else if (kind == 6) a = Mathf.Clamp((0.9f - Mathf.Abs(u)) / 0.12f, 0, 1) * Mathf.Clamp((1 - Mathf.Abs(v)) / 0.03f, 0, 1)
+                    * (0.06f + 0.8f * Mathf.SmoothStep(0.84f, 0.96f, Mathf.Abs(v)));
                 // This will be solid: a hard, thick edge.
                 else a = (r < 0.97f ? 0.2f : 0) + Mathf.Clamp(1 - Mathf.Abs(r - 0.9f) / 0.09f, 0, 1);
                 a = Mathf.Clamp(a, 0, 1);
@@ -840,10 +869,12 @@ public partial class BattleFx : Node3D
                     // A crowd's marks are held near the ground's own lit value (the arena lead's rule: a
                     // stop over it at most): at full strength the Dig's lamplings' bombs burned cream
                     // rings over the dark clay. A boss's marks a little stronger.
-                    if (e.Hostile) { float k = e.Boss ? 0.5f : 0.28f; col = new Color(col.R * k, col.G * k, col.B * k, col.A); }
+                    // A named move (its name shown over whoever makes it) is one to read, whoever makes it:
+                    // a boss's strength (the Hollow's drive was drawn at the crowd's, and read as the place's edge).
+                    if (e.Hostile) { float k = e.Boss || e.Label is { Length: > 0 } ? 0.5f : 0.28f; col = new Color(col.R * k, col.G * k, col.B * k, col.A); }
                     if (!e.Hostile && e.Faction is { } rf && e.Shape == TelegraphShape.Ring) Rally(e, col);
                     else if (e.Hostile && e.Faction is { } sf && e.Kind == TelegraphKind.Ground && e.Id == -1 && e.Shape == TelegraphShape.Circle) Summoning(e, People(sf));
-                    else if (e.Shape == TelegraphShape.Line) Lane(e.X, e.Z, e.X1 ?? e.X, e.Z1 ?? e.Z, (float)(e.Width ?? 1), col, (float)e.Duration, e.Id);
+                    else if (e.Shape == TelegraphShape.Line) Lane(e.X, e.Z, e.X1 ?? e.X, e.Z1 ?? e.Z, (float)(e.Width ?? 1), col, (float)e.Duration, e.Id, e.Hostile && e.Kind == TelegraphKind.Blow);
                     else if (e.Shape == TelegraphShape.Cone) ConeMark(e.X, e.Z, (float)e.Radius, e.Angle ?? 0, e.Arc ?? Math.PI / 2, col, (float)e.Duration, e.Id);
                     else if (e.Shape == TelegraphShape.Ring) BandMark(e.X, e.Z, e.Inner, (float)e.Radius, col, (float)e.Duration, e.Id);
                     else if (e.Hostile && e.Kind != TelegraphKind.Blow)
@@ -1216,7 +1247,15 @@ public partial class BattleFx : Node3D
             {
                 // Telegraphs: steady, a quick flare at the end.
                 m.Decal.Modulate = m.Color with { A = m.T > 0.85f ? 1 : 0.75f + 0.1f * Mathf.Sin((float)now * 12) };
-                if (m.Progress && m.Fill != null) { float r = m.Radius * m.T; m.Fill.Size = new Vector3(r * 2, 4, r * 2); }
+                if (m.Progress && m.Fill != null && m.Length > 0)
+                {
+                    // A lane's fill runs out along it, its front reaching the end as the blow lands.
+                    float l = Mathf.Max(0.01f, m.Length * m.T);
+                    var mid = m.From + m.Along * (l / 2);
+                    m.Fill.Position = new Vector3(mid.X, (float)heightAt(mid.X, mid.Z), mid.Z);
+                    m.Fill.Size = new Vector3(m.Radius * 2 * 0.94f, 4, l);
+                }
+                else if (m.Progress && m.Fill != null) { float r = m.Radius * m.T; m.Fill.Size = new Vector3(r * 2, 4, r * 2); }
             }
         }
         for (int i = 0; i < beams.Count; i++)

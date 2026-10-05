@@ -310,6 +310,19 @@ public partial class Game : Node, IZoneHost
         Journey.OnToast = Toast;
         Journey.OnAnnounce = Announce;
         Journey.OnTouch = () => screens.Current?.Refresh();
+        Journey.FirstLegendaryTaken = FirstLegendary;
+    }
+
+    /// <summary>Her first Legendary ever, as she takes it up: held in the world as a chest's
+    /// opening is (no page), its name over it in its colour, and home into her hands. Later ones
+    /// have the drop's own pillar and toll, and a toast.</summary>
+    void FirstLegendary(ItemInstance it, double x, double z)
+    {
+        if (Battle is not { } b) return;
+        var def = Items.Find(it.Def);
+        var name = it.Name ?? def?.Name ?? it.Def;
+        var shown = new ChestItem(ChestItemKind.Gear, it.Def, name, def?.Icon ?? "chest", 0, 0, (Content.Rarity)it.Rarity, null, null, b.Player.X, b.Player.Z, def?.Description);
+        Chest(new ChestOpened(x, z, 7, new[] { shown }, name, 1, Bare: true));
     }
 
     /// <summary>What the player has set, applied now.</summary>
@@ -1211,6 +1224,12 @@ public partial class Game : Node, IZoneHost
             chestDone = true;
             foreach (var one in chs.Split(','))
                 if (int.TryParse(one.TrimEnd('!'), out var cn)) car.ChestAt(cn, one.EndsWith('!'));
+        }
+        // --strongbox: a map's strongbox at her feet at --chest-at seconds (its opening, for pictures).
+        if (!chestDone && Args.Has("strongbox") && zone is MapRun && Battle is { } sbb && Journey.Playtime >= Args.Num("chest-at", 3))
+        {
+            chestDone = true;
+            sbb.SpawnPickup(PickupKind.Chest, sbb.Player.X + 0.4, sbb.Player.Z, 1, "strongbox");
         }
         if (!giveDone && Args.Get("give") is string give && Battle is { } gb)
         {

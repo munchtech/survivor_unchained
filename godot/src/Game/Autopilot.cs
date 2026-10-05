@@ -159,16 +159,20 @@ public sealed class Autopilot
         }
         orbit += dt * 0.32;
         double tx = home.X + Math.Cos(orbit) * home.R * 0.6, tz = home.Z + Math.Sin(orbit) * home.R * 0.6;
+        bool fetching = false;
         if (close == 0 && p.Hp > b.MaxHp * 0.4)
         {
             double best = 9;
             foreach (var k in b.Pickups.Living())
             {
                 double dd = Math.Sqrt((k.X - p.X) * (k.X - p.X) + (k.Z - p.Z) * (k.Z - p.Z));
-                if (dd < best && Math.Sqrt((k.X - home.X) * (k.X - home.X) + (k.Z - home.Z) * (k.Z - home.Z)) < home.R * 1.4) { best = dd; tx = k.X; tz = k.Z; }
+                if (dd < best && Math.Sqrt((k.X - home.X) * (k.X - home.X) + (k.Z - home.Z) * (k.Z - home.Z)) < home.R * 1.4) { best = dd; tx = k.X; tz = k.Z; fetching = true; }
             }
         }
-        double mx = (tx - p.X) * 0.25 + rx * 1.6, mz = (tz - p.Z) * 0.25 + rz * 1.6;
+        // Going to something on the ground, all the way onto it (gear is not pulled to her: eased
+        // as the orbit is, she stopped a metre short and stood by a Legendary for good).
+        double pull = fetching ? 1.5 : 0.25;
+        double mx = (tx - p.X) * pull + rx * 1.6, mz = (tz - p.Z) * pull + rz * 1.6;
         double hd = Math.Sqrt((p.X - home.X) * (p.X - home.X) + (p.Z - home.Z) * (p.Z - home.Z));
         if (hd > home.R * 1.5) { mx += (home.X - p.X) / hd * 2; mz += (home.Z - p.Z) / hd * 2; }
         if (boss != null) BossSense.Steer(b, boss, true, 5, ref mx, ref mz);
