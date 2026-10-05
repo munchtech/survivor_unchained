@@ -28,7 +28,7 @@ public sealed record MapSpoils(List<ItemInstance> Gear, List<ItemInstance> Chart
 
     static IEnumerable<ItemInstance> Carried(CharacterData ch) =>
         ch.Pack.Where(p => p != null).Select(p => p!).Concat(ch.Satchel).Concat(ch.Keys)
-            .Concat(Items.EquipSlots.Select(s => ch.Equipment[s]).Where(x => x != null).Select(x => x!));
+            .Concat(Items.EquipSlots.Select(s => ch.Equipment[s]).Where(x => x != null).Select(x => x!)).Concat(Kits.Aside(ch).Select(a => a.Item));
 
     /// <summary>The atlas's line for a map's end ("The Lampless Howes, tier 1: cleared, the first
     /// time: a point for the atlas").</summary>

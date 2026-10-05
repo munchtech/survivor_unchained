@@ -123,6 +123,11 @@ public sealed class CharacterData
     public int TraitPicks;
     public List<string> Knowledge = new();
     public Equipment Equipment = new();
+    /// <summary>The two kits (Rpg/Kits.cs): the night kit's own slots, the kit not on now's pieces in
+    /// them, and whether the night's is on. Equipment is always what is on now.</summary>
+    public List<EquipSlot>? NightOwn;
+    public Equipment? OtherKit;
+    public bool NightOn;
     public List<ItemInstance?> Pack = Inventory.NewPack();
     /// <summary>The materials pouch: crafting's materials and trophies by id, never in the pack's places.</summary>
     public Dictionary<string, int> Materials = new();
@@ -405,8 +410,10 @@ public static class Inventory
         /// <summary>In the pack's places (not worn, not in a store).</summary>
         public bool InPack => Store == Store.Pack;
         public bool Worn => Store == Store.Worn;
-        /// <summary>Carried, anywhere but on the body.</summary>
-        public bool Carried => Store != Store.Worn;
+        /// <summary>Worn in the kit not on now (Rpg/Kits.cs).</summary>
+        public bool Aside => Store == Store.Kit;
+        /// <summary>Carried, anywhere but on the body (or set aside in the other kit).</summary>
+        public bool Carried => Store is not (Store.Worn or Store.Kit);
     }
 
     public static Where? Find(CharacterData ch, string uid)
@@ -416,6 +423,7 @@ public static class Inventory
         int i = ch.Pack.FindIndex(p => p?.Uid == uid);
         if (i >= 0) return new Where(Store.Pack, i, default, ch.Pack[i]!);
         foreach (var s in Items.EquipSlots) if (ch.Equipment[s]?.Uid == uid) return new Where(Store.Worn, -1, s, ch.Equipment[s]!);
+        foreach (var (s, it) in Kits.Aside(ch)) if (it.Uid == uid) return new Where(Store.Kit, -1, s, it);
         i = ch.Satchel.FindIndex(p => p.Uid == uid);
         if (i >= 0) return new Where(Store.Satchel, i, default, ch.Satchel[i]);
         i = ch.Keys.FindIndex(p => p.Uid == uid);
@@ -460,7 +468,7 @@ public static class Inventory
     /// <summary>Every whole thing carried and worn (the counted stores' stacks too).</summary>
     public static IEnumerable<ItemInstance> Everything(CharacterData ch) =>
         ch.Pack.Where(p => p != null).Select(p => p!).Concat(ch.Satchel).Concat(ch.Keys).Concat(Pouch(ch)).Concat(Belt(ch))
-            .Concat(Items.EquipSlots.Select(s => ch.Equipment[s]).Where(x => x != null).Select(x => x!));
+            .Concat(Items.EquipSlots.Select(s => ch.Equipment[s]).Where(x => x != null).Select(x => x!)).Concat(Kits.Aside(ch).Select(a => a.Item));
 
     /// <summary>Equip an item into a slot; whatever was there goes to the pack.</summary>
     public static bool Equip(CharacterData ch, ItemInstance it, EquipSlot slot)
@@ -468,6 +476,8 @@ public static class Inventory
         var def = Items.Get(it.Def);
         if (!Items.Fits(def, slot)) return false;
         var loc = Find(ch, it.Uid);
+        // (a piece in the other kit is moved by the kits, never pulled out from under them)
+        if (loc is { Aside: true }) return false;
         if (loc is { InPack: true }) ch.Pack[loc.Index] = null;
         if (loc is { Worn: true }) ch.Equipment[loc.Slot] = null;
         var prev = ch.Equipment[slot];

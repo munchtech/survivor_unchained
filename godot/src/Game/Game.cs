@@ -1078,7 +1078,7 @@ public partial class Game : Node, IZoneHost
 
     /// <summary>--open KIND (or 'all'): the screens opened in turn, for
     /// pictures and for runs that check each builds (--bare hides the world).</summary>
-    bool hordeDone, dropsDone, castDone, giveDone, minuteDone, chestDone, barksDone, answerDone, fallDone, litDone;
+    bool hordeDone, dropsDone, castDone, giveDone, minuteDone, chestDone, barksDone, answerDone, fallDone, litDone, leaveDone, clearDone;
     int dieIx;
     double blastT = 0.5, marksT = 1;
     int lootI, hoardI;
@@ -1156,6 +1156,21 @@ public partial class Game : Node, IZoneHost
             minuteDone = true;
             mr.SkipTo(Args.Num("minute", 29.9f) * 60);
             if (Args.Has("won")) mr.WinNow();
+        }
+        // --clear T: on a map, T seconds in, every pack, keeper and its ruler felled by her hand and the
+        // gold drawn in (pictures of what a whole map pays; then --leave).
+        if (!clearDone && Args.Has("clear") && zone is MapRun cm && Battle != null && Journey.Playtime >= Args.Num("clear", 3))
+        {
+            clearDone = true;
+            cm.ClearNow();
+        }
+        // --leave T: a won arena or a cleared map left by its way out T seconds in (pictures of the real
+        // tally: --minute 95 --won --leave 4 is an hour and five minutes stayed past the win).
+        if (!leaveDone && Args.Has("leave") && Battle != null && Journey.Playtime >= Args.Num("leave", 4))
+        {
+            leaveDone = true;
+            if (zone is ArenaRun lr) lr.Leave();
+            else if (zone is MapRun lm) lm.Leave();
         }
         // --stage N: a story night begun at its Nth stage (from 0; its stage count is the boss), the
         // ground behind opened (pictures and play of a stage or the boss: --stage 3).
