@@ -1828,6 +1828,7 @@ Nobody says so.
 | `Goal` | "Break the windlasses ({n} of 3)" |
 | As it opens (`Say`, info) | "The shafts are boiling" / "Break a windlass, and its shaft falls in" |
 | A windlass broken (sight) | "The windlass goes over, and the shaft falls in on itself." |
+| The first windlass she stands at (`Say`, info) | "Stand at the windlass" / "Close enough to touch, and your weapons break it" |
 | The first windlass (Snib) | "Not the WINDLASS! Snib has to wind that! Snib does not wind it. The lads wind it." |
 
 The Wick-Mother's name, lesson and "Up, up, up!" are her def's.
@@ -1840,6 +1841,8 @@ The Wick-Mother's name, lesson and "Up, up, up!" are her def's.
 | The first tub's warning (sight) | "The rails start to sing." |
 | A tub (label) | "A tub" |
 | The first tub (Snib) | "Mind the tubs! Tubs are EXPENSIVE. Tubs are Boss's." |
+| The Chucker on the roof, out of reach (bar) | "The Chucker" / "Out of reach on the roof until the tubs stop" |
+| The tubs stop, and he comes down (sight) | "The rails go quiet. Down off the brake-house roof comes the Chucker, a pot in each hand." |
 
 **Stage 3, the pump.**
 
@@ -2085,7 +2088,7 @@ and the bark beside it is a sight.
 
 | Slot | Words |
 |---|---|
-| The first drive (`Say`, danger) | "The drive" / "The gap is where she runs: go through the wolves" |
+| The first drive (`Say`, danger) | "The drive" / "Out of her line, into the wolves" (one idea for its 1.7 s: the experience director's) |
 | Her first miss (sight at her; `Say`, boon) | "She misses, and stands with her head down, blowing."; "She is open" / "Hit her while she blows" |
 | The gap catches her, the first time (`Say`, danger) | "The gap is hers" / "Through the wolves, never the gap" |
 | After her seventh drive (`Say`, boon) | "Whitethroat is spent" / "She has nothing left to run with" |
@@ -2094,7 +2097,7 @@ and the bark beside it is a sight.
 | Barn-Door blocks a lock, the first time (`Say`, info) | "Barn-Door is in the way" / "Draw him off the lock, then break it" |
 | The levy forms again (`Say`, danger); the captain's bar | "The levy forms again" / "Round its ends to the captain"; "Round the line's ends to him" |
 | Redcowl reaches the cage's door (sight) | "He fills the door." |
-| The way back shuts on the boss's ground (sight) | the Hollow: "Behind you, the Pack fills the way you came."; the Roost: "Behind you, his people drag a cart across the way you came."; the Dig: "Behind you, the tub-way falls in."; the Door: "Behind you, a rank of the dead steps across the hall." |
+| The way back shuts on the boss's ground (sight) | the Hollow: "Behind you, the Pack fills the way you came."; the Roost: "Behind you, his people drag a cart across the way you came."; the Dig (the neck from the pump-house onto the lip): "Behind you, the ground you came along from the pump-house slumps into the pit."; the Door: "Behind you, a rank of the dead steps across the hall." |
 
 ## 24. Crafting's words: the Wayfinder's table, the ruler's things, Brannoc's cooled commission (4 October)
 
@@ -2143,8 +2146,35 @@ bones' "never locked from the outside" in another place.
 "Tomorrow. Early."; at the anvil, "Yours. Don't bend it.") The crafting lead
 adds it with the fact; his hub's ids .1–.3 become .2–.4.
 
+**Brannoc breaks down a Legendary** (`breakDown.legendary`, in turn; a
+named thing someone made, going back to the fire for old iron and "the
+light in it"): "Somebody made this. ...Fire, then." / "Good work, that.
+Was." / "Light comes out last. Always does."
+
 **Snib, a bad steep:** "That is not Snib's fault. That is the JAR's fault.
 ...Snib filled the jar."
+
+**Scar-glass** (`scar_glass`, the slurry's heir once the stream is cured;
+design 20.5). It is what is left where a scar burned with someone standing in
+it: the ember shown, never said.
+- Name "Scar-Glass"; plural "pieces of scar-glass".
+- Lore: "Ground that a scar burned until it ran, gone to dark glass. It only
+  forms where somebody stayed too long. Held to the light it is the blue of
+  the ford lamps, and it is never quite cold." (Ford-lamp blue is ember's, as
+  the dead watchman's book has it: "Not oil. Wrong colour.")
+- Description: "Steep a piece of gear in it by hand, as in a slurry jar: a
+  grade past the forge, a power with a price, only the veins, or a grade
+  lost. A night's scar leaves a piece for every hour you stay past winning
+  it."
+- The night's end, the first time she carries one out: "Where you stood
+  longest, the ground has run and gone to glass. You break a piece off. It is
+  still warm when you get home."
+
+**Rook sells a storeroom shelf** (`rook` lines, for the shelf page):
+- `shelf`: "There. That shelf's yours, pet. Twenty-four things, and I've
+  counted, so don't try for twenty-five."
+- `shelf.more`: "Another? You'll have me sleeping in the yard. ...Go on, then.
+  It's yours."
 
 ## 25. Loot's words: Act 1's Legendaries and sets (5 October)
 
