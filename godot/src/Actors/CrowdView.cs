@@ -138,6 +138,7 @@ public partial class CrowdView : Node3D
         foreach (var g in gaits.Values) g.Seen = false;
         living = 0;
         whiteFlashes = 0;
+        eliteFlashes = 0;
         foreach (var e in b.Enemies.Items)
         {
             if (!e.Alive || e.Def.Visual.StartsWith("view:", StringComparison.Ordinal)) continue;
@@ -159,6 +160,10 @@ public partial class CrowdView : Node3D
     /// rim (the shader's whole-body white needs a flash over this).</summary>
     int whiteFlashes;
     const int WhiteFlashes = 3;
+    /// <summary>Champions flashed white this frame, on top of the three: eight elite risen under one
+    /// Iron Palms went white together, the same white-out the cap was made against.</summary>
+    int eliteFlashes;
+    const int EliteFlashes = 2;
     /// <summary>The flare the rest keep, at the rim only. At 0.55 the rim's term alone turned pale
     /// bodies (the Risen) into cream ghosts at thirty metres (seen from above, most of a body is
     /// rim): seven at once round one Iron Palms, struck again each frame as they flew.</summary>
@@ -283,13 +288,14 @@ public partial class CrowdView : Node3D
         if (e.State == EnemyState.Active && Under?.Invoke(e) == true) { role = "burrow"; y -= 0.25 + 0.32 * Math.Max(0, sc - 1); t = time + e.Seed * 3; }
         // Struck: a squash, and a flinch along the blow, gone with the flash.
         float f = e.State == EnemyState.Dying ? 0 : (float)e.Flash * (1 - Still);
-        // The struck flare's instant of white across the whole body is for a few at once (and any
-        // champion or ruler); the rest keep it at the rim. A blast that hits sixty at once turned
-        // sixty bodies white in the same frame.
+        // The struck flare's instant of white across the whole body is for a few at once, and two
+        // champions besides (any ruler always); the rest keep it at the rim. A blast that hits sixty
+        // at once turned sixty bodies white in the same frame.
         // The flinch keeps the whole blow; only the light is held back (a crowd's struck all read by
         // their flinch, a few by their flare).
         float flare = f;
-        if (f > FlashRimOnly && !e.Elite && !e.Boss && e.Named == null && ++whiteFlashes > WhiteFlashes) flare = FlashRimOnly;
+        if (f > FlashRimOnly && !e.Boss && e.Named == null
+            && (e.Elite ? ++eliteFlashes > EliteFlashes : ++whiteFlashes > WhiteFlashes)) flare = FlashRimOnly;
         // The flinch along the blow: big enough to read from thirty metres up, twice on a critical (S-17).
         float push = e.LastCrit ? 0.45f : 0.25f;
         var at = new Vector3((float)(e.X + e.LastDx * f * push), (float)y, (float)(e.Z + e.LastDz * f * push));

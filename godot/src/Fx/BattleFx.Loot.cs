@@ -67,7 +67,9 @@ public partial class BattleFx
         lootLight = Add(new Batch(new QuadMesh { Size = Vector2.One }, 300, mat));
         for (int i = 0; i < lootLamps.Length; i++)
         {
-            lootLamps[i] = new OmniLight3D { LightEnergy = 0, OmniRange = 7, OmniAttenuation = 1.4f, ShadowEnabled = false, Visible = false };
+            // Low and short: at 1.4 m up with a 7 m reach, by night it warmed the ground 300 px across,
+            // lighting the clearing; this marks the spot and what stands on it (about 180 px).
+            lootLamps[i] = new OmniLight3D { LightEnergy = 0, OmniRange = 2.8f, OmniAttenuation = 1.4f, ShadowEnabled = false, Visible = false };
             AddChild(lootLamps[i]);
         }
     }
@@ -170,12 +172,12 @@ public partial class BattleFx
         if (lampsLit < lootLamps.Length && stand > 0.01f)
         {
             var lamp = lootLamps[lampsLit++];
-            var at = V(p.X, gy + 1.4, p.Z);
+            var at = V(p.X, gy + 1.0, p.Z);
             float near = new Vector2(at.X - PlayerPos.X, at.Z - PlayerPos.Z).Length();
             lamp.Position = at;
             lamp.LightColor = colour;
             // Held off her as every light is that is not hers (she is lit by her own moments).
-            lamp.LightEnergy = 1.5f * flicker * stand * Mathf.Lerp(0.35f, 1, Mathf.SmoothStep(1, 3.5f, near));
+            lamp.LightEnergy = 1.1f * flicker * stand * Mathf.Lerp(0.35f, 1, Mathf.SmoothStep(1, 3.5f, near));
             lamp.Visible = true;
         }
     }

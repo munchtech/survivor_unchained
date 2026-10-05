@@ -118,8 +118,8 @@ void fragment() {
 		float hearth = g(x, 0.22) * g(y, 0.35);
 		vec3 amber = mix(tint, deep, 0.5);
 		light = (tint * (g(x, 0.045) * 1.2 + up * 0.9) + amber * g(x, 0.16) * 0.5 + deep * g(x, 0.6) * 0.16) * fade * shimmer
-			+ amber * hearth * 0.5 + deep * pool(half_w * 0.75) * 0.5;
-		veil = (g(x, 0.07) * 0.3 + g(x, 0.3) * 0.1) * fade + pool(half_w * 0.75) * 0.14;
+			+ amber * hearth * 0.5 + deep * pool(half_w * 0.52) * 0.5;
+		veil = (g(x, 0.07) * 0.3 + g(x, 0.3) * 0.1) * fade + pool(half_w * 0.52) * 0.14;
 	} else if (kind < 5.5) {
 		// The strike: its light falling down the screen onto it, a bright head and a trail, and
 		// on landing a flash at its foot.
