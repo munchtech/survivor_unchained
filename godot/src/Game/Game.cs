@@ -1184,8 +1184,8 @@ public partial class Game : Node, IZoneHost
         }
         // --loot [legendary]: a drop of every tier landing round her a beat apart, each with its light and
         // its sound, a hidden Common among them (pictures and ears for docs/design/LOOT_DESIGN.md §8);
-        // "legendary": only the Legendary, for its moment.
-        if (Args.Has("loot") && Battle is { } lootB && lootI < LootRing.Length && (lootT -= dt) <= 0)
+        // "legendary": only the Legendary, for its moment (--loot-at T: the first T seconds in, for pictures of its fall).
+        if (Args.Has("loot") && Battle is { } lootB && lootI < LootRing.Length && Journey.Playtime >= Args.Num("loot-at", 0) && (lootT -= dt) <= 0)
         {
             lootT = 0.9;
             var (def, rarity, look) = LootRing[Args.Get("loot") == "legendary" ? LootRing.Length - 1 : lootI];

@@ -28,10 +28,12 @@ public partial class BattleFx
     readonly Dictionary<int, Decal> holes = new();
     readonly List<(Vector3 From, Vector3 To, float T)> tubRuns = new();
     readonly List<(Vector3 At, float Left)> fuses = new();
-    MeshInstance3D[]? tubPool;
+    Node3D[]? tubPool;
     static Texture2D? holeTex, fissureTex;
     Vector3 lastUnder;
     float underScar;
+    double underShot;
+    float tubTest = 1.5f;
 
     /// <summary>A Dig look for this telegraph, drawn instead of (or as well as) its mark: false to
     /// draw the mark as usual.</summary>
@@ -51,15 +53,19 @@ public partial class BattleFx
         {
             case "The ground goes":
                 pending.Add((time + life, () => CaveIn(x, z, (float)e.Radius)));
+                if (Shots.On("boss")) Shots.Want("cavein", life + 0.3);
                 return false;
             case "The crack opens" when e.X1 is double x1 && e.Z1 is double z1:
                 pending.Add((time + life, () => Fissure(x, z, x1, z1, (float)(e.Width ?? 4))));
+                if (Shots.On("boss")) Shots.Want("fissure", life + 0.35);
                 return false;
             case "A tub" when e.X1 is double tx1 && e.Z1 is double tz1:
                 pending.Add((time + life, () => tubRuns.Add((V(x, Y(x, z), z), V(tx1, Y(tx1, tz1), tz1), 0))));
+                if (Shots.On("boss")) { Shots.Want("tubrun", life + 0.12); Shots.Want("tubrun", life + 0.3); }
                 return false;
             case "The barrel":
                 fuses.Add((V(x, Y(x, z) + 0.95, z), (float)life));
+                if (Shots.On("boss")) Shots.Want("fuse", life * 0.5);
                 return false;
         }
         return false;
@@ -76,6 +82,7 @@ public partial class BattleFx
             if (heading.LengthSquared() < 0.01f) heading = at - lastUnder;
             heading.Y = 0;
             var fwd = heading.LengthSquared() > 1e-4f ? heading.Normalized() : Vector3.Forward;
+            if (Shots.On("boss") && time > underShot) { underShot = time + 2.5; Shots.Want("under", 0.05); }
             // The earth heaving up ahead of him, clods and dust thrown off the mound.
             if (dt > 0)
             {
@@ -93,9 +100,22 @@ public partial class BattleFx
             if (underScar > 0.7f && (at - lastUnder).Length() < 3) { underScar = 0; Scars.Add("crack", at, 0.75f, 6f, 0); }
             if (Cam != null && R() < 0.2f) Cam.AddTrauma(0.03f);
             lastUnder = at;
+            // The mound itself: the earth heaved up round his back and ahead of him, breathing as he digs.
+            mound ??= Mound();
+            mound.Visible = true;
+            float heave = 1 + 0.07f * Mathf.Sin((float)time * 9);
+            mound.GlobalTransform = new Transform3D(new Godot.Basis(Vector3.Up, Mathf.Atan2(fwd.X, fwd.Z)) * Godot.Basis.FromScale(new Vector3(1.15f, 0.75f * heave, 1.6f)), at + fwd * 0.45f - Vector3.Up * 0.08f);
         }
-        // The tubs on their rails.
+        else if (mound != null) mound.Visible = false;
+        // The tubs on their rails. (--tubs: one run past her every three seconds, a picture of a tub anywhere.)
         if (tubPool == null) MakeTubs();
+        if (Args.Has("tubs") && (tubTest -= dt) <= 0)
+        {
+            tubTest = 3;
+            var c = PlayerPos;
+            tubRuns.Add((V(c.X - 14, Y(c.X - 14, c.Z + 2.5), c.Z + 2.5), V(c.X + 14, Y(c.X + 14, c.Z + 2.5), c.Z + 2.5), 0));
+            if (Shots.On("boss")) for (int i = 0; i < 6; i++) Shots.Want("tubtest", 0.6 + i * 0.12);
+        }
         int used = 0;
         for (int i = tubRuns.Count - 1; i >= 0; i--)
         {
@@ -111,7 +131,7 @@ public partial class BattleFx
             {
                 var tub = tubPool[used++];
                 tub.Visible = true;
-                tub.GlobalTransform = new Transform3D(new Godot.Basis(Vector3.Up, Mathf.Atan2(dir.X, dir.Z)), at + Vector3.Up * (0.57f + 0.03f * Mathf.Sin(t * 60)));
+                tub.GlobalTransform = new Transform3D(new Godot.Basis(Vector3.Up, Mathf.Atan2(dir.X, dir.Z)), at + Vector3.Up * (0.1f + 0.025f * Mathf.Sin(t * 60)));
             }
             // Sparks off its wheels on the rail, grit thrown, the rails' rumble.
             if (dt > 0)
@@ -247,24 +267,61 @@ public partial class BattleFx
         return ImageTexture.CreateFromImage(img);
     }
 
-    /// <summary>The Dig's iron tubs: a few, reused, built in code (an iron box on four wheels).</summary>
+    MeshInstance3D? mound;
+    static readonly Dictionary<string, Texture2D?> digLayers = new();
+
+    /// <summary>One layer of the Dig's ground (arena art's texture arrays: 0 clay, 1 spoil, ...), as a
+    /// plain texture for a thing made of the same earth.</summary>
+    static Texture2D? DigLayer(string map, int layer)
+    {
+        string key = map + layer;
+        if (digLayers.TryGetValue(key, out var t)) return t;
+        var arr = GD.Load<Resource>($"res://art/arena/dig/{map}.jpg") as TextureLayered;
+        var img = arr != null && layer < arr.GetLayers() ? arr.GetLayerData(layer) : null;
+        return digLayers[key] = img != null ? ImageTexture.CreateFromImage(img) : null;
+    }
+
+    /// <summary>Grimtunnel's mound: a low dome of broken earth, clods standing proud of it (its
+    /// faces lumpy, its colour the Dig's dirt, darker where it is freshly turned).</summary>
+    MeshInstance3D Mound()
+    {
+        // The Dig's own dirt (arena art's), a shade darker: freshly turned earth is damp. (Its own
+        // dark noise read as a black disc on the lit ground.)
+        var mat = new StandardMaterial3D
+        {
+            AlbedoTexture = DigLayer("albedo", 0), AlbedoColor = new Color(0.82f, 0.78f, 0.74f),
+            NormalEnabled = true, NormalTexture = new NoiseTexture2D { Width = 128, Height = 128, Seamless = true, AsNormalMap = true, BumpStrength = 5, Noise = new FastNoiseLite { Seed = 9, Frequency = 0.08f, FractalOctaves = 3 } },
+            // (the clay layer is laid four metres to a tile, as the ground lays it: layers.json)
+            Uv1Triplanar = true, Uv1WorldTriplanar = true, Uv1Scale = new Vector3(0.25f, 0.25f, 0.25f), Roughness = 0.95f,
+        };
+        var m = new MeshInstance3D { Mesh = new SphereMesh { Radius = 1, Height = 1.2f, RadialSegments = 14, Rings = 7 }, MaterialOverride = mat, Visible = false };
+        // Clods proud of it.
+        var rng = new Random(3);
+        for (int i = 0; i < 9; i++)
+        {
+            float a = (float)rng.NextDouble() * Mathf.Tau, d = 0.5f + (float)rng.NextDouble() * 0.45f;
+            m.AddChild(new MeshInstance3D
+            {
+                Mesh = new SphereMesh { Radius = 0.18f, Height = 0.26f, RadialSegments = 5, Rings = 3 }, MaterialOverride = mat,
+                Position = new Vector3(Mathf.Cos(a) * d, 0.45f - d * 0.3f, Mathf.Sin(a) * d),
+                Rotation = new Vector3((float)rng.NextDouble() * 3, (float)rng.NextDouble() * 3, 0),
+                Scale = Vector3.One * (0.7f + (float)rng.NextDouble() * 0.8f),
+            });
+        }
+        AddChild(m);
+        return m;
+    }
+
+    /// <summary>The Dig's iron tubs: a few, reused (MineTub).</summary>
     void MakeTubs()
     {
-        var iron = new StandardMaterial3D { AlbedoColor = new Color(0.16f, 0.14f, 0.13f), Metallic = 0.7f, Roughness = 0.45f };
-        var rust = new StandardMaterial3D { AlbedoColor = new Color(0.32f, 0.18f, 0.1f), Metallic = 0.3f, Roughness = 0.75f };
-        tubPool = new MeshInstance3D[4];
+        tubPool = new Node3D[4];
         for (int i = 0; i < tubPool.Length; i++)
         {
-            var root = new MeshInstance3D { Mesh = new BoxMesh { Size = new Vector3(1.15f, 0.75f, 1.5f) }, MaterialOverride = rust, Visible = false };
-            root.AddChild(new MeshInstance3D { Mesh = new BoxMesh { Size = new Vector3(1.25f, 0.12f, 1.6f) }, MaterialOverride = iron, Position = new Vector3(0, 0.42f, 0) });
-            foreach (var (wx, wz) in new[] { (-0.55f, -0.5f), (0.55f, -0.5f), (-0.55f, 0.5f), (0.55f, 0.5f) })
-                root.AddChild(new MeshInstance3D
-                {
-                    Mesh = new CylinderMesh { TopRadius = 0.2f, BottomRadius = 0.2f, Height = 0.1f, RadialSegments = 12 }, MaterialOverride = iron,
-                    Position = new Vector3(wx, -0.35f, wz), Rotation = new Vector3(0, 0, Mathf.Pi / 2),
-                });
-            AddChild(root);
-            tubPool[i] = root;
+            var tub = MineTub.Make(17 + i * 7);
+            tub.Visible = false;
+            AddChild(tub);
+            tubPool[i] = tub;
         }
     }
 }
