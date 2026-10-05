@@ -126,6 +126,17 @@ The greyboxes are in `docs/ui_review/greybox_*.png` (1920x1080). Each screen's c
   - The arts known as one list of medallions on the left; the art in hand large on the right, with its rank track.
   - The facets as a row of compact entries (taken, open, or locked with "opens at rank II"), not tall empty cards.
 
+### After the owner's first look (approved: "the ui layouts look better")
+
+- **Waste no space.**
+  - Panels hug what they hold.
+  - A surface that has to run on (a page's sheet, the Pack's full-height panel) tapers out into the world behind it instead of ending in an empty box.
+  - A grid shows the rows in use and one more; the count says the rest ("8 of 24").
+- **The slotless stores** (the loot lead's rules, our screens): the Pouch (materials), the Satchel (manuals and tomes) and the Key ring (quest things) are tabs over one compact row, never places in the pack. Stacks stack. The purse sits on the Standing line. Filter sits beside Sort, and the filter screen is to come.
+- **Approved:** Rook's second shelf (crafting prices it), and the bench as two panels with the smith in the world.
+- **The bench's crafts** are two to a row, scrolling down, because a bind can offer ten. A crafter's first-time telling may run to seven lines.
+- **Self** gains its calling and origin as a row under the stats (calling, origin, what she knows, renown).
+
 ## Rules for the art pass
 
 - **The window.** One ornamental piece per screen: the window (or the side panel's edge and head).
