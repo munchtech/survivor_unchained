@@ -278,7 +278,9 @@ public sealed class HollowNight : ArenaShape
         if (Rng.Chance(keep))
         {
             if (!Screens(x, z)) B.Put(Rng.Pick(new[] { "pine", "broadleaf", "pine", "broadleaf" }), x, z, 0.9 + Math.Min(0.6, d * 0.02));
-            else B.Put(Rng.Pick(new[] { "scan_trunk", "scan_stump", "scan_fern", "scan_shrub", "dead" }), x, z, Rng.Range(0.9, 1.3), 0.2);
+            // (Not a fallen trunk nor a bare tree either: from there a trunk eight metres long
+            // lay across the bottom of the frame as a black bar.)
+            else B.Put(Rng.Pick(new[] { "scan_stump", "scan_fern", "scan_shrub", "bramble" }), x, z, Rng.Range(0.9, 1.3), 0.2);
         }
         if (d < 11 && Rng.Chance(0.5)) B.Put(Rng.Pick(new[] { "scan_fern", "scan_fern", "scan_shrub", "fern", "bramble", "scan_shrub" }), x + Rng.Range(-1, 1), z + Rng.Range(-1, 1), Rng.Range(1.0, 1.6));
         // (Roots and stumps on the lips; rock only a little way back, and small: a big mossed
