@@ -114,6 +114,7 @@ public static class People
         {
             HerHair(p, HerHairs.Contains(look.Hair) ? look.Hair! : HerHairs[0], look.HairColor ?? HerHairColour);
             HerScalp(p, look.HairColor ?? HerHairColour);
+            HerFaceKey(p, look.FaceShape);
             if (look.Face != null) HerFace(p, look.Face);
             HerPaint(p, look.Paint, look.HairColor);
             p.FaceShape = look.FaceShape;                 // (its painting laid as her skin was made: Skin)
@@ -628,6 +629,7 @@ public static class People
             }
         HerScalp(p, colour);
         HerFace(p, look.Face ?? new Dictionary<string, float>(), whole: true);
+        HerFaceKey(p, look.FaceShape);
         if (look.Paint != p.Paint || look.HairColor != p.Brow) HerPaint(p, look.Paint, look.HairColor);
         if (look.FaceShape != p.FaceShape) HerHeadPaint(p, look.FaceShape);
     }
@@ -649,6 +651,24 @@ public static class People
                 m.SetShaderParameter("scalp_shadow", 1.0f);
                 m.SetShaderParameter("shadow_colour", hair.Darkened(0.3f));
             }
+    }
+
+    /// <summary>Her face as one she started from (Lore.Her's faces): its
+    /// whole shape, a key of its own on her head, its parts and her hair
+    /// (face_&lt;id&gt;, tools/assets/heroine_head.py: from her own face to it,
+    /// laid on a head TRELLIS made of its portrait), the others off; none, her own.</summary>
+    public static void HerFaceKey(Person p, string? face)
+    {
+        var want = face is { Length: > 0 } ? "face_" + face : null;
+        foreach (var mi in p.Meshes)
+        {
+            if (mi.Mesh is not ArrayMesh am) continue;
+            for (int i = 0; i < am.GetBlendShapeCount(); i++)
+            {
+                var name = am.GetBlendShapeName(i).ToString();
+                if (name.StartsWith("face_")) mi.SetBlendShapeValue(i, name == want ? 1f : 0f);
+            }
+        }
     }
 
     /// <summary>Her head's painting for a face she started from (Lore.Her's

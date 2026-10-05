@@ -281,6 +281,14 @@ for _k in fs.SLIDERS:
     SHAPES[_k + "-"] = {n: w for t, w in _minus.items() for n in sides([t])}
 for _k, _ts in EXPRESSIONS.items():
     SHAPES[_k] = {"x:" + t: 1.0 for t in _ts}
+# Her other faces (the presets), each its own whole face laid on her from
+# a head TRELLIS made of its portrait (face_wrap.py: portrait-<id>), as a
+# key from her own face to it: face_<id> (the game sets the one chosen,
+# People.HerFaceKey; her sliders work on top of it).
+_own = next((t for t in FACE if t.startswith("portrait-")), None)
+for _t in sorted(fs.portrait_paths()):
+    if _t != _own:
+        SHAPES["face_" + _t[len("portrait-"):]] = {_t: 1.0, **({_own: -1.0} if _own else {})}
 # MakeHuman's woman is longer and slimmer of neck and lower of shoulder than
 # she is, and where her hair hid her skin there is nothing of hers to fit
 # to: her build set by BUILD (her face is placed on hers, so a shorter neck

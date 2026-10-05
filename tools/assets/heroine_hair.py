@@ -510,27 +510,31 @@ def style_long():
                                               (0.008, (0.020, 0.030), range(0, 8), 0.007, 0.52),
                                               (0.007, (0.014, 0.022), range(3, 11), 0.011, 0.54),
                                               (0.008, (0.012, 0.018), range(6, 14), 0.015, 0.54)):
-        pts, nrm = roots(spacing, above=0.01)
+        pts, nrm = roots(spacing, above=0.004)
         side = part_side(pts)
         # Away from the parting and back over her head (her forehead's hair
         # swept back, not let fall over her face), then down.
         sweep = np.c_[side * 0.8, np.full(len(pts), 0.7), np.full(len(pts), -0.2)]
         back = pts[:, 1] > 0.03
         sweep[back] = np.c_[np.zeros(back.sum()), np.ones(back.sum()) * 0.6, -np.ones(back.sum())]
-        # A few locks by her temples falling in front of her shoulders, to
-        # frame her face.
-        front = (pts[:, 1] < 0.0) & (np.abs(pts[:, 0]) > 0.055) & (pts[:, 2] < EYE_Z + 0.06) & (RNG.random(len(pts)) < 0.5)
+        # Her face framed: the hair over her temples and the sides of her
+        # forehead falling forward of her ears, down past her cheeks and in
+        # front of her shoulders (kept off her face: off_face), not all swept
+        # back off it (slicked to her crown, she read bald-browed).
+        front = (pts[:, 1] < 0.005) & (np.abs(pts[:, 0]) > 0.042) & (pts[:, 2] < EYE_Z + 0.075) & (RNG.random(len(pts)) < 0.8)
         front &= off > 0.005                                     # (not her base layer's)
         sweep[front] = np.c_[np.sign(pts[front, 0]) * 0.9, -np.full(front.sum(), 0.15), -np.ones(front.sum())]
         dirs = combed(pts, nrm, sweep)
         start = pts - nrm * 0.002                  # (the root a little under her scalp: its card's end hidden)
         L = length * RNG.uniform(0.85, 1.08, len(pts))
-        L[front] = RNG.uniform(0.28, 0.34, front.sum())         # (to her collarbones)
-        # Laid on her head till behind her ears (her front's and top's), then let fall.
+        L[front] = RNG.uniform(0.30, 0.40, front.sum())         # (past her collarbones)
+        # Laid on her head till behind her ears (her front's and top's), then
+        # let fall; with some body on top, lifted off her by her parting.
         lie_for = np.clip(0.04 - pts[:, 1], 0, 0.14) + np.clip(pts[:, 2] - (EYE_Z + 0.06), 0, 0.1) * 0.6
         lie_for = np.maximum(lie_for, 0.05)
-        lie_for[front] = 0.05
-        P = drape_lengths(start, dirs, L, off, comb=comb_long, lie_for=lie_for)
+        lie_for[front] = 0.025
+        body = 0.006 * np.clip((pts[:, 2] - (EYE_Z + 0.07)) / 0.04, 0, 1) * np.clip(1 - np.abs(pts[:, 0] - 0.022) / 0.06, 0, 1)
+        P = drape_lengths(start, dirs, L, off, comb=comb_long, lie_for=lie_for, lift=body)
         P = wave(P, 0.007, 0.15, pts)
         # (any strand gone astray, far off her, left out)
         far = COLLIDE.query(P.reshape(-1, 3))[0].reshape(P.shape[:2]).max(1) > 0.12
@@ -621,10 +625,12 @@ def off_face(P, step):
     P[..., 0] = np.where(m, np.where(x < 0, -1, 1) * out, x)
 
 
-def drape_lengths(start, dirs, L, off, points=24, comb=None, lie_for=None):
+def drape_lengths(start, dirs, L, off, points=24, comb=None, lie_for=None, lift=0.0):
     """Strands of several lengths let fall together: their links scaled to
     each (so all have as many points); with `comb`, each first laid along her
-    scalp for `lie_for` metres."""
+    scalp for `lie_for` metres, rising `lift` more off her as it goes (some
+    body to the hair, each strand its own)."""
+    lift = np.broadcast_to(np.asarray(lift, float), (len(start),))
     S = len(start)
     out = np.zeros((S, points, 3))
     # (grouped by length, in bins, each bin draped as one)
@@ -637,7 +643,7 @@ def drape_lengths(start, dirs, L, off, points=24, comb=None, lie_for=None):
             seg = Lm / (points - 1)
             steps = np.minimum((lie_for[m] / seg).astype(int), points - 4)
             # (lying flatter than it hangs: combed hair lies close on the head)
-            pinned = (lie(start[m], dirs[m], comb, np.full(m.sum(), seg), steps, 0.003 + (off - 0.003) * 0.75), steps)
+            pinned = (lie(start[m], dirs[m], comb, np.full(m.sum(), seg), steps, 0.003 + (off - 0.003) * 0.75, lift=lift[m]), steps)
         out[m] = drape(start[m], dirs[m], Lm, points=points, offset=off, pinned=pinned, extra=off_face)
     return out
 
@@ -713,7 +719,7 @@ def gathered(T, layers, points=18, reach=0.012, lift=0.0):
     comb = toward(T)
     out = []
     for spacing, width, cols, off in layers:
-        pts, nrm = roots(spacing, above=0.01)
+        pts, nrm = roots(spacing, above=0.004)
         L = np.linalg.norm(T - pts, axis=1) * 1.6 + 0.02          # (more than enough: each stops at the tie)
         P = lie(pts - nrm * 0.002, combed(pts, nrm, comb(pts)), comb, L / (points - 1), np.full(len(pts), points - 1), off,
                 side=no_part(pts), stop=lambda q: np.linalg.norm(q - T, axis=1) < reach,
@@ -935,7 +941,7 @@ def style_bob():
     for spacing, width, cols, off in ((0.009, (0.026, 0.034), range(0, 6), 0.003),
                                       (0.008, (0.018, 0.026), range(0, 9), 0.007),
                                       (0.007, (0.012, 0.020), range(3, 12), 0.011)):
-        pts, nrm = roots(spacing, above=0.01)
+        pts, nrm = roots(spacing, above=0.004)
         lie_for = np.maximum(np.clip(pts[:, 2] - (EYE_Z + 0.04), 0, 0.1) * 0.8, 0.04)
         P = drape_lengths(pts - nrm * 0.002, combed(pts, nrm, comb_bob(pts)), np.full(len(pts), 0.34), off,
                           comb=comb_bob, lie_for=lie_for)
@@ -971,7 +977,7 @@ def style_pixie():
     for spacing, width, cols, off in ((0.008, (0.014, 0.022), range(0, 6), 0.002),
                                       (0.007, (0.010, 0.016), range(3, 12), 0.004),
                                       (0.007, (0.008, 0.013), range(6, 14), 0.006)):
-        pts, nrm = roots(spacing, above=0.008)
+        pts, nrm = roots(spacing, above=0.003)
         top = np.clip((pts[:, 2] - (EYE_Z + 0.05)) / 0.05, 0, 1) + np.clip(-pts[:, 1] / 0.06, 0, 1) * 0.5
         top = np.clip(top, 0, 1)
         L = (0.028 + 0.06 * top) * RNG.uniform(0.85, 1.1, len(pts))
@@ -999,8 +1005,10 @@ def cap(comb, sides=part_side):
     """Her scalp under the hair, a millimetre out from it: no skin shows
     between the cards, and her parting is a parting. Its UVs run along the way
     her hair is combed (the atlas's scalp strands lie that way), a tile every
-    2.5 cm; faded out over two and a half centimetres at her hairline,
-    unevenly (its alpha)."""
+    2.5 cm; faded out over its first 6 mm over her hairline, unevenly (its
+    alpha): her skin under it is darkened to her hair's colour there
+    (People.HerScalp), and a long fade, its alpha hashed, read as a speckled,
+    pixelated edge."""
     from scipy.sparse import coo_matrix, identity
     from scipy.sparse.linalg import spsolve
     T = scalp(below=0.012)                       # (on past her hairline, unseen there: no edge to it)
@@ -1011,12 +1019,12 @@ def cap(comb, sides=part_side):
     V = HP[used] + HN[used] * 0.001
     N = HN[used]
     theta = np.arctan2(V[:, 0] - CENTRE[0], -(V[:, 1] - CENTRE[1]))
-    # (over 2.5 cm, unevenly: a few millimetres of slow waves either way,
+    # (unevenly: a millimetre or two of slow waves either way,
     # so its fade is no line round her head)
     r = np.random.default_rng(5)
     wav = sum(0.0018 * np.sin(V @ (u / np.linalg.norm(u)) * 2 * np.pi / lam + ph)
               for u, lam, ph in zip(r.normal(size=(4, 3)), (0.011, 0.017, 0.023, 0.031), r.uniform(0, 6.3, 4)))
-    fade = np.clip((V[:, 2] - hairline_z(theta) + wav) / 0.025, 0, 1)
+    fade = np.clip((V[:, 2] - hairline_z(theta) - 0.002 + 0.5 * wav) / 0.006, 0, 1)
     # Along the combing (v) and across it (u), each edge as long in them as
     # along and across the combing there (least squares). Across, the same
     # way on both sides of her parting (mirrored there, not torn).
@@ -1148,7 +1156,7 @@ def follow_head(o, at):
     o.data.vertices.foreach_get("co", V0)
     made = []
     for k in kb[1:]:
-        if not k.name.endswith(("+", "-")):                     # (her sliders', not her expressions')
+        if not k.name.endswith(("+", "-")) and not k.name.startswith("face_"):   # (her sliders' and faces', not her expressions')
             continue
         co = np.zeros(len(HP) * 3)
         k.data.foreach_get("co", co)

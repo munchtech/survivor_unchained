@@ -1,40 +1,31 @@
 # Heroine face, hair and creation's Look: status
 
-Agent a6784044c82f101d9, branch `worktree-agent-a6784044c82f101d9` (took over from ade92e8285938438f).
-Read first: `docs/handoff/face.md` (the handoff) and `docs/FACE_RESEARCH.md` (the science).
+Agent a833b7942e978d994, branch `worktree-agent-a833b7942e978d994` (took over from a6784044c82f101d9).
+Read first: `docs/handoff/face.md` (the last handoff) and `docs/FACE_RESEARCH.md` (the science).
 
-## Current state (2026-10-04, evening)
-- **FACE v3 is built and painted** (`paintD_s11`), with hair, features and import, in this worktree. Art is **not committed**: it is still not beautiful.
-- **Judged at the Look close-up** (`--step 1 --part 1`; the Look is step 1 now):
-  - better than v2: the mouth no longer bulges, and the lips read more natural;
-  - still wrong:
-    - the face is long and gaunt at the cheeks, and the jaw is heavy;
-    - a pale fleck sits at the mouth's corners;
-    - the eyes are plain;
-    - the fire paints an orange smear down her shadow side, and the key light is weak;
-    - her hair starts far back, so she reads as bald-browed with a ragged hairline.
-- **Presets:** vixen and sunborn are repainted on the v3 head. Sunborn's old paint showed a pale band down her forehead.
-- **Play zoom** (`arenaF_c*.png`, reviewed): at 22 to 31 m and a 64° pitch, her face is foreshortened and mostly hidden by her hair's crown. In three of four shots she faces away. They must be retaken with her facing the camera before `far_*` can be tuned.
-
-## The direction I recommend: her face from a picture's own surface
-MakeHuman's targets can't make her beautiful: v1 to v3 only moved outlines. A landmark warp against her reference moved points only 1 to 3 mm; the predecessor's fit had already matched her outline. What is wrong is in the volumes: the lips, the lids, the cheeks.
-
-MoGe-2 (MIT, in our ComfyUI) reads a portrait's surface:
-- **its normals are excellent:** lid folds, lip volume, nose and cheekbones all come out clean;
-- **its depths are smoother and flatter** than its normals.
-
-The tools are `tools/assets/face_moge.py` and `tools/assets/face_warp.py`. The warp is experimental: its docstring says what fails and what to try next.
-
-New front references for her are in `scratchpad/face3/refs_her/`. `her_23` is the best: delicate, with fuller lips.
+## Current state (2026-10-04, night)
+- **Her face is now a TRELLIS 2 head's**, made from her front reference (`her_23`), laid on her MakeHuman head by `tools/assets/face_wrap.py` and written as our own target `portrait-heroine` (in `face_shapes.FACE`).
+  - Topology, rig, UVs, sliders and expressions are kept.
+  - Judged in the game at the Look close-up under UI design's portrait light: she reads as a pretty young woman, close to her reference. The old heavy jaw, gaunt cheeks and thin lips are gone.
+- **Her face is painted with the reference itself** (`heroine_face.py` with `FACE_REF`): the photo warped landmark to landmark onto the front, its own light partly taken out using her normals; the sides are Krea's as before.
+- **Hairline:** lowered to 6.8 cm over her eyes (the reference's), hair cards rooted at it, and the hair cap's fade cut to 6 mm. Her scalp under the hair is darkened to her hair's colour (`heroine_shadow.png`, `People.HerScalp`), so there is no pale, bald brow between the cards.
+- **The art is on disk, not committed** until it's judged good.
 
 ## Key decisions
-- **Judge in game:** at the Look close-up and at play zoom, with hair on (as before).
-- **Don't commit art that isn't beautiful.** The art stays on disk; the tools are committed.
-- **Presets:** each keeps its own painting (as before). The next step makes each preset's shape its own key from its own reference, not slider values.
+- **TRELLIS 2 over MoGe-2** for the shape: MoGe sees only the front and reads it flat; TRELLIS gives the whole head, its volumes round to the ears and under the jaw. (MIT, local.)
+- **Landmarks read alike on both heads:** clay renders of hers and TRELLIS's, lit the same, MediaPipe on both. The old `face_lab` anchors were read off a textured render and disagreed.
+- **The whole head is wrapped**, her cranium too (her skull 5 mm under TRELLIS's hair). MakeHuman's skull was a tall egg.
+- **Her head is sized by its shape before the portrait.** By its own nose and chin, the portrait grew her head 12%.
+- **Each eye's opening is an affine map** of her lid landmarks onto TRELLIS's. The eyeball moves whole, never stretched, and the lids are laid back on it.
+- **Made symmetrical:** TRELLIS's guess is a little lopsided.
+- **Presets:** each its own TRELLIS head and its own key, `face_<id>` (from her own face to it), plus its own paint. `People.HerFaceKey` sets the key; sliders work on top. Hair follows the key.
 
 ## Next
-See `docs/handoff/face.md`, "Next (exact)".
+1. The default face: the skin's colour and detail, and the hair's frame (volume, face-framing locks, the long style's bald parting and a stray lock across her cheek).
+2. The presets: front references by Krea (`face_refs.py --front`), then TRELLIS, wrap, paint, and `face_looks.py` with the presets' slider shapes emptied.
+3. Play-zoom readability.
 
 ## Notes for other areas
-- **Main session:** don't take my head or `heroine_built.blend` yet. I'll message you when the head is final.
-- **UI design:** the shot flags for the Look's parts are `--step 1 --part N`: 0 Hair, 1 Face, 2 Shape, 3 Paint, 4 Body. The Look close-up would gain a lot from a soft frontal fill light at face zoom (`GameFront.UpdateCreate`): the fire's orange falls on her shadow side. I haven't changed `GameFront`; it's yours to agree.
+- **Main session:** her head changes `heroine_built.blend` (the whole skull, not the neck: the wrap holds her neck and nape). I'll message before pushing the art, for the outfits.
+- **UI design:** the portrait light works; faces are judged under it now. The creation portraits want rerunning once the head lands.
+- **Male hero:** `face_shapes.FACE` gained `portrait-heroine` (hers only), and `target_paths()` now includes `heroine_face/targets/`. SLIDERS and REACH are unchanged.

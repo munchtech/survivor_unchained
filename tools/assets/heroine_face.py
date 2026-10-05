@@ -56,8 +56,9 @@ SKIN_AS_IS = None
 
 # One of her other faces (face_presets.py), painted on her head shaped as
 # it: FACE_SHAPE a JSON file of its sliders ({slider: -1 to 1}, set on her
-# head's keys and its parts'), FACE_WHO the words for the woman it is (as
-# face_refs.FACES has her, without her hair).
+# head's keys and its parts'; or a key of its own, {"face_<id>": 1}),
+# FACE_WHO the words for the woman it is (as face_refs.FACES has her,
+# without her hair).
 if os.environ.get("FACE_SHAPE"):
     import json
     _shape = json.load(open(os.environ["FACE_SHAPE"], encoding="utf-8-sig"))
@@ -65,6 +66,8 @@ if os.environ.get("FACE_SHAPE"):
         if _o.type == "MESH" and _o.data.shape_keys:
             _kb = _o.data.shape_keys.key_blocks
             for _s, _v in _shape.items():
+                if _s in _kb:
+                    _kb[_s].value = _v
                 if _s + "+" in _kb:
                     _kb[_s + "+"].value = max(_v, 0.0)
                 if _s + "-" in _kb:
@@ -183,6 +186,62 @@ def draw():
         cam.rotation_euler = (CENTRE - cam.location).to_track_quat("-Z", "Y").to_euler()
         sc.render.filepath = os.path.join(OUT, f"drawn_{name}.png")
         bpy.ops.render.render(write_still=True)
+    if os.environ.get("FACE_REF"):
+        # Her normals from in front (her skin only), for the reference's own
+        # light to be read off it and taken out (delit_reference).
+        cam.location = CENTRE + Vector((0, -1, 0))
+        cam.rotation_euler = (CENTRE - cam.location).to_track_quat("-Z", "Y").to_euler()
+        nm = bpy.data.materials.new("normals")
+        nm.use_nodes = True
+        nt = nm.node_tree
+        geo, em = nt.nodes.new("ShaderNodeNewGeometry"), nt.nodes.new("ShaderNodeEmission")
+        mad = nt.nodes.new("ShaderNodeVectorMath")
+        mad.operation = "MULTIPLY_ADD"
+        mad.inputs[1].default_value = (0.5, 0.5, 0.5)
+        mad.inputs[2].default_value = (0.5, 0.5, 0.5)
+        nt.links.new(geo.outputs["Normal"], mad.inputs[0])
+        nt.links.new(mad.outputs[0], em.inputs["Color"])
+        nt.links.new(em.outputs[0], next(n for n in nt.nodes if n.type == "OUTPUT_MATERIAL").inputs["Surface"])
+        hidden = [o for o in bpy.data.objects if o.type == "MESH" and not o.hide_render and o.name not in ("HeroineHead", "Heroine")]
+        for o in hidden:
+            o.hide_render = True
+        # (each slot of her head's and body's given the normals for the one
+        # picture: the view layer's override is not EEVEE's)
+        kept = {}
+        for o in (bpy.data.objects["HeroineHead"], bpy.data.objects["Heroine"]):
+            kept[o] = [s.material for s in o.material_slots]
+            for s in o.material_slots:
+                s.material = nm
+        sc.render.filepath = os.path.join(OUT, "normals_front.png")
+        bpy.ops.render.render(write_still=True)
+        # And her head in clay, lit from in front, with her eyes: where
+        # MediaPipe reads her features off her shape (her drawing's colours
+        # are MakeHuman's skin's, its lips and brows where MakeHuman has them,
+        # not where her shape has them now).
+        clay = bpy.data.materials.new("clay")
+        clay.use_nodes = True
+        clay.node_tree.nodes["Principled BSDF"].inputs["Base Color"].default_value = (0.62, 0.52, 0.47, 1)
+        clay.node_tree.nodes["Principled BSDF"].inputs["Roughness"].default_value = 0.55
+        eyes = bpy.data.objects["HeroineEyes"]
+        eyes.hide_render = False
+        kept[eyes] = [s.material for s in eyes.material_slots]
+        for o in kept:
+            for s in o.material_slots:
+                s.material = clay
+        sun = bpy.data.objects.new("ClaySun", bpy.data.lights.new("ClaySun", "SUN"))
+        sun.data.energy = 2.0
+        sun.data.angle = math.radians(20)
+        sun.rotation_euler = Vector((0.2, 1.0, -0.5)).normalized().to_track_quat("-Z", "Y").to_euler()
+        sc.collection.objects.link(sun)
+        sc.render.filepath = os.path.join(OUT, "clay_front.png")
+        bpy.ops.render.render(write_still=True)
+        bpy.data.objects.remove(sun)
+        eyes.hide_render = True
+        for o, mats in kept.items():
+            for s, m in zip(o.material_slots, mats):
+                s.material = m
+        for o in hidden:
+            o.hide_render = False
 
 
 def paint(name):
@@ -223,7 +282,7 @@ def from_reference(ref):
     py = os.path.join(os.environ.get("LOCALAPPDATA", ""), "facefit", ".venv", "Scripts", "python.exe")
     fit = os.path.join(os.path.dirname(os.path.abspath(__file__)), "face_fit.py")
     pts = {}
-    for name, path in (("drawn", os.path.join(OUT, "drawn_front.png")), ("ref", ref)):
+    for name, path in (("drawn", os.path.join(OUT, "clay_front.png")), ("ref", ref)):
         js = os.path.join(OUT, f"marks_{name}.json")
         subprocess.run([py, fit, "marks", path, js, "whole"], capture_output=True)
         if not os.path.exists(js):
@@ -233,7 +292,11 @@ def from_reference(ref):
     sw, sh = src.size
     # (from each pixel of the drawing to where the reference has it: on a
     # coarse grid, then smoothly between)
-    tps = RBFInterpolator(pts["drawn"], pts["ref"], kernel="thin_plate_spline", smoothing=2.0)
+    # (not by her brows' landmarks: on her clay MediaPipe can only guess
+    # them, and her reference's brows are kept as they are, carried by the
+    # landmarks round them)
+    use = np.setdiff1d(np.arange(len(pts["drawn"])), BROW_A + BROW_B)
+    tps = RBFInterpolator(pts["drawn"][use], pts["ref"][use], kernel="thin_plate_spline", smoothing=2.0)
     step = 8
     gy, gx = np.mgrid[0:DRAW:step, 0:DRAW:step]
     g = tps(np.c_[gx.ravel(), gy.ravel()].astype(float)).reshape(gx.shape + (2,))
@@ -275,6 +338,64 @@ def delit(name):
     broad_p = np.stack([ndimage.gaussian_filter(paint[..., k], sg) for k in range(3)], 2)
     broad_d = np.stack([ndimage.gaussian_filter(drawn[..., k], sg) for k in range(3)], 2)
     return np.clip(paint / np.maximum(broad_p, 1e-3) * broad_d, 0, 1)
+
+
+def delit_reference():
+    """The reference, laid on the front, without the light it was taken in,
+    its own colours kept (its brows, lips, blush and freckles: delit() would
+    put the drawing's broad colour, MakeHuman's brows and all, under it).
+    Her head's shape is the reference's now, so its light can be read off
+    her normals: its lightness fitted as a light from one side plus an even
+    one (first-order spherical harmonics) over her plain skin, and divided out."""
+    import json
+
+    from PIL import Image, ImageDraw
+    paint = load(os.path.join(OUT, "painted_front.png"))
+    nrm = np.asarray(Image.open(os.path.join(OUT, "normals_front.png")).convert("RGB"), np.float32)[::-1] / 255
+    nrm = np.where(nrm <= 0.04045, nrm / 12.92, ((nrm + 0.055) / 1.055) ** 2.4)      # (written as sRGB)
+    n = nrm * 2 - 1
+    on = np.linalg.norm(n, axis=2) > 0.7
+    n /= np.linalg.norm(n, axis=2)[..., None] + 1e-6
+    # (her plain skin: not her eyes, brows, nostrils or lips, nor her hair)
+    L = np.array(json.load(open(os.path.join(OUT, "marks_drawn.json")))["points"])
+    feat = Image.new("L", (DRAW, DRAW), 0)
+    d = ImageDraw.Draw(feat)
+    for ring, grow in ((EYE_RING_A, 1.6), (EYE_RING_B, 1.6), (BROW_A, 1.4), (BROW_B, 1.4), (LIP_RING, 1.25), (NOSTRILS, 1.5)):
+        p = L[ring]
+        c = p.mean(0)
+        d.polygon([tuple(q) for q in c + (p - c) * grow], fill=255)
+    top = L[10, 1] + 0.15 * (L[152, 1] - L[10, 1])            # (well below where her hair may begin)
+    feat = np.asarray(feat)[::-1] > 0
+    rows = np.arange(DRAW)[::-1][:, None] * np.ones((1, DRAW))
+    skin = on & ~feat & (rows > top) & (rows < L[152, 1])
+    lum = paint @ np.array([0.3, 0.59, 0.11])
+    A = np.c_[np.ones(skin.sum()), n[skin]]
+    keep = np.ones(skin.sum(), bool)
+    for _ in range(4):
+        coef = np.linalg.lstsq(A[keep], lum[skin][keep], rcond=None)[0]
+        r = lum[skin] - A @ coef
+        keep = np.abs(r) < 2.0 * r[keep].std()
+    S = coef[0] + n @ coef[1:]
+    # (taken out only in part: a beauty dish's light is softer than a single
+    # light's falls off, and divided out whole her face's edges glowed; and
+    # a little of its modelling kept reads as her shape, not as a stain)
+    S = np.clip(S / np.median(S[skin]), 0.55, 1.6) ** 0.45
+    print("REFERENCE'S LIGHT: even %.3f, from %s; its shading %.2f to %.2f over her skin" % (
+        coef[0], np.round(coef[1:] / (np.linalg.norm(coef[1:]) + 1e-9), 2), np.percentile(S[skin], 2), np.percentile(S[skin], 98)))
+    out = np.where(on[..., None], paint / S[..., None], paint)
+    from PIL import Image as _I
+    _I.fromarray((np.clip(out[::-1], 0, 1) * 255).astype(np.uint8)).save(os.path.join(OUT, "delit_front.png"))
+    return np.clip(out, 0, 1)
+
+
+# MediaPipe's landmarks of a face's parts (its face mesh's numbers): her
+# eyes' rims, her brows, her lips' outline, about her nostrils.
+EYE_RING_A = [33, 246, 161, 160, 159, 158, 157, 173, 133, 155, 154, 153, 145, 144, 163, 7]
+EYE_RING_B = [263, 466, 388, 387, 386, 385, 384, 398, 362, 382, 381, 380, 374, 373, 390, 249]
+BROW_A = [70, 63, 105, 66, 107, 55, 65, 52, 53, 46]
+BROW_B = [300, 293, 334, 296, 336, 285, 295, 282, 283, 276]
+LIP_RING = [61, 185, 40, 39, 37, 0, 267, 269, 270, 409, 291, 375, 321, 405, 314, 17, 84, 181, 91, 146]
+NOSTRILS = [98, 64, 48, 115, 220, 45, 4, 275, 440, 344, 278, 294, 327, 2]
 
 
 def texels():
@@ -354,6 +475,8 @@ if __name__ == "__main__":
             for name in VIEWS:
                 if name == "front" and os.environ.get("FACE_REF"):
                     from_reference(os.environ["FACE_REF"])
+                elif os.environ.get("FACE_REUSE") and os.path.exists(os.path.join(OUT, f"painted_{name}.png")):
+                    continue                     # (FACE_REUSE=1: a view already painted in <out> kept)
                 else:
                     paint(name)
                 print("PAINTED", name)
@@ -374,7 +497,8 @@ if __name__ == "__main__":
         facing = np.clip(Nt @ -fwd, 0, 1)
         edge = np.clip(np.minimum.reduce([uv[:, 0], 1 - uv[:, 0], uv[:, 1], 1 - uv[:, 1]]) / 0.05, 0, 1)
         weights[name] = facing ** 4 * edge * vis * (1.0 if name == "front" else 0.8)
-        cols_v[name] = sample(delit(name), uv)
+        ref_front = name == "front" and os.path.exists(os.path.join(OUT, "normals_front.png")) and os.environ.get("FACE_REF")
+        cols_v[name] = sample(delit_reference() if ref_front else delit(name), uv)
         print("LAID", name, "%d texels seen" % (weights[name] > 0.05).sum())
     # The sides coloured as the front where both see her well.
     for name in ("left", "right"):
@@ -384,14 +508,16 @@ if __name__ == "__main__":
     wsum = sum(weights.values())
     col = sum(cols_v[n] * weights[n][:, None] for n in VIEWS) / np.maximum(wsum, 1e-6)[:, None]
     cover = np.clip(wsum / 0.25, 0, 1)
-    # Her face only: none of it over her scalp, from 1 to 3 cm above her
-    # hairline (face_shapes.HAIRLINE), where her hair lies (a painting of a
-    # bald head can paint hair there, swept back, and it showed at her temples).
+    # Her face only: none of it over her scalp, faded out from just under
+    # her hairline (face_shapes.HAIRLINE) to 6 mm over it, where her hair
+    # lies (a painting of a bald head can paint hair there, swept back, and
+    # it showed at her temples; her reference's own hair is its colour, not
+    # the one she is dyed: her scalp is darkened to that in the game).
     eye_z = float(np.mean([(bpy.data.objects["HeroineEyes"].matrix_world @ v.co).z
                            for v in bpy.data.objects["HeroineEyes"].data.vertices]))
     theta = np.arctan2(P[:, 0], -P[:, 1])
     up = P[:, 2] - (eye_z + fs.hairline_height(theta))
-    cover *= 1 - np.clip((up - 0.01) / 0.02, 0, 1)
+    cover *= 1 - np.clip((up + 0.002) / 0.008, 0, 1)
     # And all of it coloured as her skin (her head's own, which heroine_head.py
     # matched to her body), over her cheeks, brow and neck seen square on.
     skin = (cover > 0.9) & (np.abs(col - np.median(col[cover > 0.9], 0)).max(1) < 0.08)
