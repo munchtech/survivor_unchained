@@ -41,14 +41,15 @@ public partial class InventoryScreen : Overlay
         [EquipSlot.Cloak] = ("Cloak", "cloak"), [EquipSlot.Amulet] = ("Amulet", "amulet"), [EquipSlot.Ring1] = ("Ring", "ring"), [EquipSlot.Ring2] = ("Ring", "ring"), [EquipSlot.Relic] = ("Relic", "relic"),
     };
 
-    /// <summary>The filters: what each shows.</summary>
-    static readonly (string Name, Func<ItemDef, bool> Has)[] Filters =
+    /// <summary>The pack's places, then the slotless stores (docs/design/LOOT_DESIGN.md §6). A stop-gap
+    /// row until UI design's tabs land: each shows its store, and Use and Leave work from it.</summary>
+    static readonly (string Name, Func<CharacterData, List<ItemInstance>>? Of)[] Filters =
     {
-        ("All", _ => true),
-        ("Gear", d => Items.SlotFor(d) != null),
-        ("Draughts", d => d.Kind == ItemKind.Consumable),
-        ("Materials", d => d.Kind is ItemKind.Material or ItemKind.Trophy or ItemKind.Tool),
-        ("Quest", d => d.Kind == ItemKind.Quest),
+        ("Pack", null),
+        ("Pouch", Inventory.Pouch),
+        ("Satchel", ch => ch.Satchel.ToList()),
+        ("Key ring", ch => ch.Keys.ToList()),
+        ("Belt", Inventory.Belt),
     };
 
     // What has been looked at this session: anything else in the pack is marked new.
@@ -89,8 +90,8 @@ public partial class InventoryScreen : Overlay
         v.AddChild(FilterRow());
         var well = Style.Panel(Style.Well(10));
         var centre = new CenterContainer { MouseFilter = MouseFilterEnum.Ignore };
-        // Materials live in the pouch, not the pack (docs/CRAFTING_DESIGN.md 4.3): their filter shows it.
-        if (filter == PouchFilter) centre.AddChild(ItemViews.Grid(PouchView(ch), 8, 84, it => it.Uid == sel, null, it => Select(it.Uid), null, Hover, "pack", Leave, null));
+        // Only gear takes a place; the stores show what they hold (docs/design/LOOT_DESIGN.md §6).
+        if (Filters[filter].Of is { } of) centre.AddChild(ItemViews.Grid(StoreView(of(ch)), 8, 84, it => it.Uid == sel, null, it => Select(it.Uid), Primary, Hover, "pack", Leave, null));
         else centre.AddChild(ItemViews.Grid(ch.Pack, 8, 84, it => it.Uid == sel, null, it => Select(it.Uid), Primary, Hover, "pack", Leave, SetupCell));
         well.AddChild(centre);
         v.AddChild(well);
@@ -110,12 +111,10 @@ public partial class InventoryScreen : Overlay
         Footer();
     }
 
-    const int PouchFilter = 3;
-
-    /// <summary>The pouch's materials, then the trophies and tools the pack holds, as one shelf.</summary>
-    static List<ItemInstance?> PouchView(CharacterData ch)
+    /// <summary>A store as one shelf of tiles.</summary>
+    static List<ItemInstance?> StoreView(List<ItemInstance> things)
     {
-        var o = Inventory.Pouch(ch).Cast<ItemInstance?>().Concat(ch.Pack.Where(p => p != null && Items.Get(p.Def).Kind is ItemKind.Trophy or ItemKind.Tool)).ToList();
+        var o = things.Cast<ItemInstance?>().ToList();
         while (o.Count < 24 || o.Count % 8 != 0) o.Add(null);
         return o;
     }
@@ -290,7 +289,6 @@ public partial class InventoryScreen : Overlay
                 mark.Position = new Vector2(2, 2);
                 view.AddChild(mark);
             }
-            if (!Filters[filter].Has(Items.Get(it.Def))) view.Modulate = new Color(1, 1, 1, 0.22f);
         }
         // Along the pack, a thing moves (or changes places); from the body, it is taken off into this place.
         view.CanTake = d => d.StartsWith("pack:") || d.StartsWith("eq:");
@@ -326,20 +324,16 @@ public partial class InventoryScreen : Overlay
         Tip(it != null && it.Uid != sel ? ItemViews.Compare(it, Ch, InPack(it)) : null, over);
     }
 
-    bool InPack(ItemInstance it) => Inventory.Find(Ch, it.Uid) is { InPack: true } || Inventory.FromPouch(it.Uid) != null;
+    bool InPack(ItemInstance it) => Inventory.Holds(Ch, it.Uid);
 
     /// <summary>The chosen thing: in the pack, worn, or a stack in the pouch.</summary>
     ItemInstance? Selected => sel == null ? null : Inventory.Find(Ch, sel)?.Item ?? Inventory.Pouch(Ch).FirstOrDefault(p => p.Uid == sel);
 
-    string? breaking;
-
-    /// <summary>Breaking down cannot be undone either: asked once, done the second time (never in an arena).</summary>
+    /// <summary>Breaking down cannot be undone either: held to full, never asked twice (never in an arena).</summary>
     void BreakDown(ItemInstance it)
     {
         var q = Crafting.BreakDown(G.Journey.Craft, it);
         if (!q.Ok || G.Journey.InArena) { Sound.Sfx.Deny(); return; }
-        if (breaking != it.Uid) { breaking = it.Uid; Sound.Sfx.Hover(); ShowInspect(it); return; }
-        breaking = null;
         if (sel == it.Uid) sel = null;
         Sound.Sfx.Shatter();
         // The HUD's toasts are hidden under the pack: what it came to is said where it was read.
@@ -354,24 +348,26 @@ public partial class InventoryScreen : Overlay
     /// reading place: the HUD's toasts are under the pack.</summary>
     (string Title, string Sub, string Icon, ulong At)? broke;
 
-    string? steeping;
-
-    /// <summary>Steeping, by the survivor's own hand (docs/CRAFTING_DESIGN.md 9): the odds said, asked
-    /// once, done the second time; what it came to said after. Never in an arena.</summary>
+    /// <summary>Steeping, by the survivor's own hand (docs/CRAFTING_DESIGN.md 9): the odds shown under the
+    /// card while a jar is carried, the press held to full; what it came to said after. Never in an arena.</summary>
     void Steep(ItemInstance it)
     {
         var q = Crafting.Steep(G.Journey.Craft, it);
         if (!q.Ok || G.Journey.InArena) { Sound.Sfx.Deny(); return; }
-        if (steeping != it.Uid) { steeping = it.Uid; breaking = null; leaving = null; Sound.Sfx.Hover(); ShowInspect(it); return; }
-        steeping = null;
         Sound.Sfx.Pour();
         if (!G.Journey.Work(it.Uid, q, G.Battle)) return;
-        broke = ($"Steeped: {Inventory.Name(it)}", G.Journey.CraftSaid?.After ?? "Green-black veins. It is set for good.", Items.Get(it.Def).Icon, Time.GetTicksMsec());
-        sel = null;
+        // What it came to, said plainly over its card (the piece stays chosen, so the card shows it
+        // as it is now), with how it looked under it.
+        var (text, mood) = Crafting.Outcome(it, q);
+        came = (it.Uid, text, mood, G.Journey.CraftSaid?.After);
+        sel = it.Uid;
         Refresh();
     }
 
-    void Select(string uid) { sel = sel == uid ? null : uid; leaving = null; breaking = null; steeping = null; Refresh(); }
+    /// <summary>What the slurry just did to a piece, said over its card while it stays chosen.</summary>
+    (string Uid, string Text, int Mood, string? Seen)? came;
+
+    void Select(string uid) { sel = sel == uid ? null : uid; leaving = null; Refresh(); }
 
     void Primary(ItemInstance it)
     {
@@ -379,7 +375,7 @@ public partial class InventoryScreen : Overlay
         var loc = Inventory.Find(Ch, it.Uid);
         if (loc == null) return;
         var def = Items.Get(it.Def);
-        if (!loc.InPack) { if (loc.Slot != EquipSlot.Weapon) G.Gear((j, b) => j.Unequip(loc.Slot, b)); else Sound.Sfx.Deny(); return; }
+        if (loc.Worn) { if (loc.Slot != EquipSlot.Weapon) G.Gear((j, b) => j.Unequip(loc.Slot, b)); else Sound.Sfx.Deny(); return; }
         if (def.Kind == ItemKind.Consumable) G.Gear((j, b) => j.Use(it.Uid, b));
         else if (Items.SlotFor(def) != null) { Sound.Sfx.Equip(); G.Gear((j, b) => j.Equip(it.Uid, null, b)); }
         else Sound.Sfx.Deny();
@@ -430,16 +426,29 @@ public partial class InventoryScreen : Overlay
         }
         if (it == null) return;
         var def = Items.Get(it.Def);
-        var acts = Style.H(8);
-        // A stack in the pouch: read, and left behind if it must be.
-        if (Inventory.FromPouch(it.Uid) != null)
+        if (came is { } cm && cm.Uid == it.Uid)
         {
-            if (!Controls.Instance.UsingPad) acts.AddChild(Style.Button(leaving == it.Uid ? "Leave it all behind for good" : "Leave behind", () => Leave(it), false, true));
+            var col = cm.Mood > 0 ? ItemViews.SlurryGreen : cm.Mood < 0 ? Style.Bad : new Color("#9aa890");
+            var words = Style.V(2, Style.Label("STEEPED", Style.UiHeavy, Style.Badge, col), Style.Label(cm.Text, Style.UiBold, Style.Body, cm.Mood < 0 ? Style.Bad : Style.Ink, true));
+            if (cm.Seen != null) words.AddChild(Style.Label(cm.Seen, Style.TextItalic, Style.Small, Style.InkDim, true));
+            words.SizeFlagsHorizontal = SizeFlags.ExpandFill;
+            var note = Style.Panel(Style.Box(new Color("#121a10"), col with { A = 0.6f }, 1, 5, 14), Style.H(Style.Gap3, Glyphs.Icon("drop", 28, col), words));
+            note.CustomMinimumSize = new Vector2(480, 0);
+            inspect.AddChild(note);
+        }
+        else if (came is { } old && old.Uid != it.Uid) came = null;
+        var acts = Style.H(8);
+        var loc = Inventory.Find(Ch, it.Uid);
+        if (loc == null) return;
+        // A thing in a store: read, used if it is used, and left behind if it must be.
+        if (!loc.InPack && !loc.Worn)
+        {
+            if (!Controls.Instance.UsingPad && def.Kind == ItemKind.Consumable) acts.AddChild(Style.Button("Use", () => Primary(it), true, true));
+            if (!Controls.Instance.UsingPad && !G.Journey.StillNeeded(it))
+                acts.AddChild(Style.Button(leaving == it.Uid ? "Leave it behind for good" : "Leave behind", () => Leave(it), false, true));
             inspect.AddChild(ItemViews.Card(it, Ch, false, acts, 480));
             return;
         }
-        var loc = Inventory.Find(Ch, it.Uid);
-        if (loc == null) return;
         if (!Controls.Instance.UsingPad)
         {
             if (loc.InPack && def.Kind == ItemKind.Consumable) acts.AddChild(Style.Button("Use", () => Primary(it), true, true));
@@ -450,17 +459,13 @@ public partial class InventoryScreen : Overlay
             // Gear not kept breaks down to old iron for the forge (docs/CRAFTING_DESIGN.md 5.2).
             if (loc.InPack && !G.Journey.InArena && Crafting.BreakDown(G.Journey.Craft, it) is { Ok: true } bq)
             {
-                var bb = Style.Button(breaking == it.Uid ? "Break it down for good" : $"Break down for {Items.Several(Crafting.Iron, bq.Gives[Crafting.Iron])}", () => BreakDown(it), false, true);
-                // Asked again, in the colour of what cannot be undone.
-                if (breaking == it.Uid) bb.AddThemeColorOverride("font_color", Style.Bad);
-                acts.AddChild(bb);
+                // Held, in the colour of what cannot be undone.
+                acts.AddChild(Style.HoldButton($"Break down for {Items.Several(Crafting.Iron, bq.Gives[Crafting.Iron])}", () => BreakDown(it)));
             }
             // A jar of the Dig's slurry carried: the one gamble, by the survivor's own hand.
             if (!G.Journey.InArena && Inventory.Count(Ch, Crafting.Rules.Slurry.Jar) > 0 && Crafting.Steep(G.Journey.Craft, it) is { Ok: true })
             {
-                var sb = Style.Button(steeping == it.Uid ? "Steep it, for good" : "Steep in slurry", () => Steep(it), false, true);
-                if (steeping == it.Uid) sb.AddThemeColorOverride("font_color", Style.Bad);
-                acts.AddChild(sb);
+                acts.AddChild(Style.HoldButton("Steep", () => Steep(it)));
             }
         }
         // Gear in the pack reads beside what it would replace: the ARPGs' side by side.
@@ -483,15 +488,14 @@ public partial class InventoryScreen : Overlay
         SteepOdds(it);
     }
 
-    /// <summary>Asked to steep: everything it could come to, said before the jar is opened (design 9).</summary>
+    /// <summary>A jar carried and a piece it can take: everything it could come to, seen before the jar is
+    /// opened (design 9), the same odds as at Snib's bench, laid out for this piece.</summary>
     void SteepOdds(ItemInstance it)
     {
-        if (steeping != it.Uid) return;
-        var lines = Style.V(2, Style.Label("Opened, the jar does one of these, and the piece is set for good after:", Style.UiBold, Style.Small, Style.Ink, true));
-        foreach (var (o, p) in Crafting.Odds())
-            lines.AddChild(Style.Label($"{p:0%}  {o switch { "up" => "one of its powers a grade past what the forge can do", "affix" => "a slurry power past its seams, strong, with a price", "nothing" => "only the veins", _ => "one of its powers a grade lower" }}",
-                Style.Ui, Style.Small, o == "down" ? Style.Bad : new Color("#a8e08a"), true));
-        var slab = Style.Panel(Style.Box(new Color("#121a10"), new Color("#4a7a3a") with { A = 0.7f }, 1, 5, 12), lines);
+        if (G.Journey.InArena || Controls.Instance.UsingPad || Inventory.Count(Ch, Crafting.Rules.Slurry.Jar) == 0 || !Crafting.Steep(G.Journey.Craft, it).Ok) return;
+        var lines = Style.V(Style.Gap2, Style.Label("Steeped, it comes to one of these, and is set for good after:", Style.UiBold, Style.Small, Style.Ink, true),
+            ForgeScreen.SlurryOdds(it, 450));
+        var slab = Style.Panel(Style.Box(new Color("#121a10"), ItemViews.SlurryGreen with { A = 0.45f }, 1, 5, 12), lines);
         slab.CustomMinimumSize = new Vector2(480, 0);
         inspect.AddChild(slab);
     }
@@ -519,10 +523,8 @@ public partial class InventoryScreen : Overlay
             case Act.SubNext: filter = (filter + 1) % Filters.Length; Sound.Sfx.Page(); Refresh(); return true;
             case Act.SubPrev: filter = (filter + Filters.Length - 1) % Filters.Length; Sound.Sfx.Page(); Refresh(); return true;
             case Act.Alt2: Sort(); return true;
-            case Act.Cancel when leaving != null || breaking != null || steeping != null:
+            case Act.Cancel when leaving != null:
                 leaving = null;
-                breaking = null;
-                steeping = null;
                 Footer();
                 ShowInspect(Selected);
                 return true;
@@ -745,13 +747,29 @@ public partial class StashScreen : Overlay
         var page = Page("Rook's Storeroom", "Kept safe, whatever becomes of you", null, "Esc");
         // The store is the larger: it keeps what a life on the road cannot carry.
         var store = Pane(page, new Rect2(0, 0, 1140, 920));
-        store.AddChild(new Section("Stored", $"{w.Stash.Count(x => x != null)} of {w.Stash.Count}"));
+        store.AddChild(new Section("Stored", $"{w.Stash.Count(x => x != null)} of {w.Stash.Count}  ·  {w.Shelves} shel{(w.Shelves == 1 ? "f" : "ves")}"));
         var well = Style.Panel(Style.Well(12));
         var sc = new CenterContainer { MouseFilter = MouseFilterEnum.Ignore };
         sc.AddChild(ItemViews.Grid(w.Stash, 8, 118, null, null, it => G.Journey.FromStash(it.Uid), it => G.Journey.FromStash(it.Uid), (it, over) => Read(it), "store", null,
             (i, it, v) => { if (it != null) v.Drag = $"store:{it.Uid}"; v.CanTake = d => d.StartsWith("mine:"); v.Take = d => G.Journey.ToStash(d[5..]); }));
         well.AddChild(sc);
-        store.AddChild(well);
+        // More shelves than the page holds scroll (UI design's shelf pages will replace this).
+        var shelves = Style.Scroll(well);
+        shelves.CustomMinimumSize = new Vector2(0, Mathf.Min(760, w.Stash.Count / 8 * 124 + 24));
+        store.AddChild(shelves);
+        // Another shelf, bought from Rook (the owner's: shelves of 24).
+        if (Crafting.ShelfPrice(G.Journey.Craft) is int price)
+        {
+            bool can = ch.Gold >= price;
+            var buy = Style.Button($"Another shelf from Rook: {price} gold", () =>
+            {
+                if (!Crafting.BuyShelf(G.Journey.Craft)) { Sound.Sfx.Deny(); return; }
+                Sound.Sfx.Loot(false);
+                Refresh();
+            }, false, true);
+            buy.Disabled = !can;
+            store.AddChild(Style.H(Style.Gap3, buy, Style.Label(can ? $"{WorldState.Shelf} more places" : $"{price} gold; you have {Math.Floor(ch.Gold)}", Style.TextItalic, Style.Small, can ? Style.InkDim : Style.Bad)));
+        }
         var mine = Pane(page, new Rect2(1170, 0, 670, 920));
         mine.AddChild(new Section("Your pack", $"{ch.Pack.Count(p => p != null)} of {ch.Pack.Count}"));
         var mwell = Style.Panel(Style.Well(12));

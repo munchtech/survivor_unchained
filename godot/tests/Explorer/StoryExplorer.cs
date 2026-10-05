@@ -370,7 +370,7 @@ sealed class StoryExplorer
     void Sane(Journey j)
     {
         if (j.Ch.Gold < 0) Report("contradiction", "gold", $"The survivor's purse is {j.Ch.Gold} gold", "logic");
-        foreach (var it in j.Ch.Pack.Concat(j.World.Stash))
+        foreach (var it in j.Ch.Pack.Concat(j.Ch.Satchel).Concat(j.Ch.Keys).Concat(j.World.Stash))
             if (it != null && it.Qty <= 0) Report("contradiction", $"qty:{it.Def}", $"The survivor carries {it.Qty}× {it.Def}", "logic");
         foreach (var (id, s) in j.World.Npcs)
             foreach (var axis in new[] { Axis.Trust, Axis.Affection, Axis.Respect, Axis.Fear })

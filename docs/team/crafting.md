@@ -1,60 +1,79 @@
 # Crafting: status
 
-Crafting lead, agent `a7debf1459f14dfe7` (handed off: `docs/handoff/crafting.md`), branch `worktree-agent-a7debf1459f14dfe7`
-(successor to `a97e32948c5bf419d`). Research: `docs/CRAFTING_RESEARCH.md` (lessons C1–C30).
-Design: `docs/CRAFTING_DESIGN.md` (sections 1–20; 19 is what was seen and measured, 20 the endgame).
+Crafting lead, agent `af01b0d61ef656dd4`, branch `worktree-agent-af01b0d61ef656dd4` (successor to `a7debf1459f14dfe7`;
+handoff from before: `docs/handoff/crafting.md`). Research: `docs/CRAFTING_RESEARCH.md` (C1–C30).
+Design: `docs/CRAFTING_DESIGN.md` (19.4 is phase 3 as seen; 20.7 is the endgame as built).
 
 ## State (2026-10-04)
 
-**Phases 1 and 2 are built and seen running at 1920×1080** (design 19.1, 19.3); phase 3 is built and tested, not yet seen. Tests green (580).
-- **The arena's gold is cut** (combat built it): champions 7%, fodder 0.15%, bosses and minibosses
-  in full. A Kerchief night pays about 350 gold (it paid 2.5k–3.3k). `CraftingEconomy` reads the
-  arena's real rates and holds every target (weapon Epic by day 8; crafting takes 67% of the gold).
-- **Phase 2**: Wenna's still-room (a side panel) and flask; her bench after the cure; Brannoc's
-  commissions ("Make me one"); Greymuzzle's fang set outside the seams; Maeca's braid of shed fur.
-  The story lead's words, verbatim. Tests: `tests/CraftersTests.cs`.
-- **Seen and fixed**: the forge's hammer moment (flare, sparks, the heat burning out); work in with
-  nothing to offer said why; painted icons for the new things; the pack's break down says what it
-  came to; crafts no longer dress the figure again; **an arena fall now spills half** (it kept all).
+Phases 1–3 are built. Phase 3 has been seen at 1920×1080 and remade where it fell short (design 19.4). The endgame's
+crafting is built in code and tests, but not yet seen. Tests green (671).
+- **Phase 3, seen and remade:**
+  - Vonnra's table: the column fits her name, and her words sit under her.
+  - Bind cards give the grade and where it comes from. A binding rings its seam with lamp-light.
+  - Snib's bench: Snib is drawn as his lampling. The odds are a bar showing what each outcome would mean for
+    this piece, and what the jar did is said plainly.
+  - A steeped piece shows its veins everywhere (a shader) and takes no more heat. The bright grade reads as light.
+  - The commission's "!" stands clear of the name plate.
+- **Hold to confirm** (`Style.HoldButton`, built for UI design's rule): unmake, steep and break down are held for
+  0.8 s, never asked twice.
+- **The slurry's "up"** always lands past the forge's cap (decision 30).
+- **Endgame** (design 20.7):
+  - Marks: rulers leave their people's thing; Vonnra inscribes it; three are worn in maps.
+  - Chart verbs at the Wayfinder's table: ink, burn and redraw, pin, scrape, annotate; charts have heat.
+  - Rook's shelves of 24: 300, 1,000 and 2,500 gold, then 5,000 each, to eight.
+  - The story lead's words are wired verbatim (Ysolde, the four things, Brannoc's "Cooled overnight", Snib's bad jar).
 
 ## Next, in order
 
-1. **Phase 3: code, data (the story lead's words, verbatim) and tests are done** (fc2c6c75):
-   Vonnra's binding, Snib's jars and bench, steeping by hand. **Not yet seen**: the full-resolution
-   checks wait until Godot is free (the owner is using the GPU). The list and exact commands are in
-   `docs/handoff/crafting.md`, Next 1. Then paint the `slurry_jar` icon, and write 7.3, 9 and 19.4
-   into the design.
-2. **Endgame** (design 20.6): combat's maps and Marks hook exist (09b6b03, 5c50de1). Two kits; item
-   level and grade caps; chart verbs at Ysolde's table (`ItemInstance.Chart`, quality field ready);
-   Marks on the item side (`CombatKit.Marks`, `CombatKit.SkillMods`, grade 0–5 to strength 0–1; four
-   proven: of the Ravine, of the Falling Star, of the Open Gate, of the Gyre).
-3. Re-measure shards with 20-minute story nights; minibosses' +2 of the people's material (owed).
+1. **When Godot and the GPU are free** (take a turn: `tools/turn.py`):
+   - Paint the icons for the slurry jar and the four rulers' things. Prompts are in `tools/uiforge/items.py` T2I
+     (`krea.t2i_many`, then `items.fit`). Agree them with UI art (`aa9c11f1e40170a4d`), then point the items at
+     the new keys.
+   - Import this worktree's new art (moon_draught, flask fail to load here), then revert stray `.import` files.
+   - See the hold presses, Vonnra's marks, the chart bench and Rook's shelves at 1920×1080.
+2. **Item level** on map gear, with better grade odds the higher the map (design 20.6, 3).
+3. **Two kits**, with UI design's new pack.
+4. When UI design's bench greybox is approved and built, fit the content to it. Agreed so far:
+   - the person as a strip;
+   - cards in two columns that scroll down;
+   - Snib's odds inside the Steep card;
+   - narration up to about seven lines for the first time each craft is done.
 
-## Decisions (why in design section 17)
+## Decisions (why in design 17 and 20.7)
 
-- Heat caps working; the forge's ceiling is a lucky drop's grade; work in makes answers.
-- Three coals offered; the night pays at its end and a fall spills half (owner).
-- Remake costs old iron (owner); one remake a piece a day; break down halved.
-- Arena gold cut, by combat (18). Wenna brews from the start, tinctures after the cure (19).
-- The still-room is a side panel (20). The moonpetal draught only for a deep wound (21).
-- A trophy is set outside the seams (22). Crafts never dress the figure again (23).
+- 1–23 as before: heat; the forge's ceiling; three coals; remake costs iron (owner); a fall spills half (owner); etc.
+- 24–30, phase 3:
+  - binding moves plain powers only, from the pack;
+  - steeping by hand too;
+  - the slurry's fourth power;
+  - Vonnra after the toll;
+  - a steeped piece takes no heat back;
+  - "up" always past the cap.
+- Marks take a seam (the support-gem trade). One to a piece, three worn. No forge tempers them.
+- Charts have heat, and their materials are the two arenas' own: shards from the scars, iron and the people's
+  material from the atlas.
+- Endgame order: crafting's own first (marks, charts). Kits wait for UI design's pack.
 
 ## Agreed with others
 
-- **Combat** (`a1d4562f44c7f6feb`): the gold cut; the moonpetal draught at 60% (heal source
-  "draught" so map suffixes catch it); the Marks hook built, item side mine.
-- **Story**: phase 2 words received and wired; phase 3 (Vonnra, no `{name}`) waits on my hooks.
-- **UI design** (`a69858664f1d3dd29`): told of the still-room, the forge's moment, and a pack bug
-  (the doll T-poses a frame on every refresh; `G.Gear` rebuilds the world figure).
-- **UI art** (`a1a394643aabfb169`): three item icons painted with their pipeline.
+- **UI design** (`aab47bfdab5955dac`):
+  - hold-to-confirm, which I built;
+  - the bench becomes two panels with the smith live between them (owner-approved), which they build;
+  - shelves: the logic is mine, the pages theirs.
+- **Story** (`a7ba8903f4c8261b1`): all five asks answered and wired.
+- **Combat** (`afe45df4957917614`), told:
+  - Marks.Gyre's id clashed with the of_the_gyre skill suffix (now of_the_muster), and Ravine's is now of_the_long_chase;
+  - a ruler's mark drop in MapRun;
+  - Chart.Pinned;
+  - chart heat in GiveChart;
+  - asked to check the marks' numbers at tier 1.
 
 ## Notes for other areas
 
-- **Pictures**: `--items DEF:RARITY:AFFIX@GRADE+AFFIX@GRADE`, `--facts k=v,k=v`, `--met a,b`,
-  `--clicks X:Y,rX:Y` (`--click-every S`), `--won` with `--minute M` (a night won where she stands;
-  `--die T` then falls her), `--make --pattern DEF` (the forge's commission page), `--focus ID`
-  on the still-room too.
-- **A worktree runs the game** once `godot/assets` is a junction to the main checkout's
-  `public/assets` (skip-worktree set), the main `godot/.godot` is copied in, untracked art is
-  copied from the main `godot/art`, and `dotnet build` is run in `godot/` (else the old DLL runs).
-  A headless `--import` rewrites hundreds of `.import` files: revert them, keep only your own.
+- **Pictures:**
+  - `--items DEF:RARITY:AFFIX@GRADE+...:MARKS` (a fourth part marks it, e.g. `:slurried`, which also sets it);
+  - `--near ID` stands her by a person;
+  - `--focus`, `--make`, `--pattern`, `--anvil` as before.
+- **Owed by others:** Vonnra's model reads as a placeholder in the bench portrait (a lavender hood, a flat orange top).
+- A bark draws over the speaker's name plate (Brannoc's "Hit a man with this..."): for UI design or the HUD.

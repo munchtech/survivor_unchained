@@ -878,8 +878,6 @@ public sealed class Verge : ZoneRuntime
         }
     }
 
-    static readonly string[] PlainGear = ["iron_helm", "leather_cap", "chain_shirt", "padded_jerkin", "silver_ring", "copper_ring", "bone_amulet", "travelers_cloak", "watch_buckler"];
-
     IEnumerable<Loot> OnLoot(Enemy e)
     {
         var out_ = new List<Loot>();
@@ -891,15 +889,10 @@ public sealed class Verge : ZoneRuntime
         if (loot == "kerchief" && r < 0.3) out_.Add(new Loot(PickupKind.Material, "kerchief_cloth", 1));
         if (e.Def.Family == Family.Lampling && r < 0.18) out_.Add(new Loot(PickupKind.Material, "ember_shard", 1));
         if (e.Def.Family == Family.Undead && r < 0.25) out_.Add(new Loot(PickupKind.Material, "bone_dust", 1));
+        // Gear, rolled whole where it falls at the elite's level (docs/design/LOOT_DESIGN.md §5): the
+        // column of light over it says how good; where it is not gear, its people's material.
         if (e.Elite && loot == "elite")
-        {
-            // Gear, rolled where it falls: better the stronger it was. The
-            // column of light over it says how good.
-            int lv = e.Level;
-            double roll = R();
-            int rarity = roll < 0.03 + lv * 0.008 ? 3 : roll < 0.16 + lv * 0.015 ? 2 : roll < 0.62 ? 1 : 0;
-            out_.Add(new Loot(PickupKind.Item, PlainGear[(int)Math.Floor(R() * PlainGear.Length)], 1, true, rarity));
-        }
+            out_.AddRange(G.Journey.Drops(new DropCtx { Source = DropSource.Elite, Level = e.Level, People = Drops.PeopleOf(e.Def.Family), Luck = B!.Stats.Get(Stat.Luck), R = R }));
         // Named things keep the light of what they are.
         return out_.Select(d => d.Kind == PickupKind.Item && d.Ref != null && d.Rarity == null ? d with { Rarity = Items.Find(d.Ref)?.Rarity ?? 0 } : d).ToList();
     }

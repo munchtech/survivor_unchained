@@ -89,12 +89,16 @@ public partial class Voices : Node3D
                 pl.Name.Text = p.Role != null ? $"{p.Name}\n{p.Role}" : p.Name;
                 pl.Mark.Text = p.Marker?.ToString() ?? "";
                 pl.Mark.Visible = p.Marker != null;
+                // The mark stands clear above the name, however many lines the name has: a fixed-size
+                // plate is measured on the screen, so the gap is in its pixels, not the world's (a
+                // world-space lift let the "!" fall into a two-line name and read as one of its letters).
+                pl.Mark.Offset = new Vector2(0, (p.Role != null ? 2 : 1) * 15 + 26);
             }
             var at = new Vector3((float)p.X, (float)p.Y, (float)p.Z);
             if (pl.Name.Position != at)
             {
                 pl.Name.Position = at;
-                pl.Mark.Position = at + Vector3.Up * 0.45f;
+                pl.Mark.Position = at;
             }
         }
         gone.Clear();

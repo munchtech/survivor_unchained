@@ -39,6 +39,16 @@
  },
  "_bind": "Vonnra's binding (design 7.3): a shard and 40 gold a grade bound; the piece that takes it spends 5-7 heat; the donor is unmade.",
  "bind": { "shardsPerGrade": 1, "goldPerGrade": 40, "heat": [5, 7], "crafter": "vonnra" },
+ "_mark": "Marks (design 20.3): a map's ruler leaves its people's thing with its Mark, at a grade every three tiers (sometimes one finer); Vonnra inscribes it in a seam. Worn three at once, in the maps only.",
+ "mark": { "crafter": "vonnra", "gold": 60, "goldPerGrade": 30, "shards": 2, "heat": [5, 7], "worn": 3, "chance": 0.5, "finer": 0.3, "tiersPerGrade": 3,
+  "drops": { "pack": { "item": "mark_hunt_bone", "mark": "of_the_long_chase" }, "lamplings": { "item": "mark_lamp_glass", "mark": "of_the_falling_star" },
+   "dead": { "item": "mark_gate_nail", "mark": "of_the_open_gate" }, "kerchiefs": { "item": "mark_red_cord", "mark": "of_the_muster" } } },
+ "_shelves": "Rook's storeroom by shelves of 24 (the owner's approval): one with the room; the next cost these, then 'then' each, to 'most'. Her prices follow how she feels about you.",
+ "shelves": { "seller": "rook", "prices": [300, 1000, 2500], "then": 5000, "most": 8 },
+ "_charts": "Working charts at the Wayfinder's table (design 20.4): a chart's heat by rarity (plain, fine, rare); ink a side, burn and redraw, pin, scrape, annotate. Shards from the scars, the people's material and iron from the atlas.",
+ "charts": { "crafter": "wayfinder", "heat": [4, 6, 8], "perSide": 3, "qualityStep": 5, "qualityMax": 20,
+  "ink": { "shards": 1, "gold": 10, "goldPerTier": 5, "heat": [2, 3] }, "burn": { "shards": 2, "heat": [2, 3] },
+  "pin": { "material": 2, "heat": [1, 1] }, "scrape": { "iron": 3, "heat": [1, 2] }, "annotate": { "gold": 20, "goldPerTier": 10 } },
  "_slurry": "Snib's jars (design 9), while the pump runs: 30 gold, three a day. Steeping, by weight: a grade past the cap, a slurry affix past the seams, only the veins, a grade lost. It sets the piece.",
  "slurry": {
   "jar": "slurry_jar", "crafter": "snib", "mark": "slurried", "gold": 30, "perDay": 3,
@@ -109,7 +119,7 @@
   "vonnra": {
    "name": "Vonnra",
    "place": "The Toll Tower",
-   "verbs": ["bind"],
+   "verbs": ["bind", "mark"],
    "when": {"all": [{"met": "vonnra"}, {"fact": "toll.paid", "eq": true}]},
    "closedLine": "Pay the toll first. Then we shall see what else you can afford.",
    "respectPerCraft": 1,
@@ -130,9 +140,44 @@
     { "when": { "fact": "vonnra.accused", "eq": true }, "gold": -10, "needs": "after you have accused her", "line": "She charges you a tenth less. She does not say why." }
    ]
   },
+  "wayfinder": {
+   "name": "Ysolde",
+   "place": "The Wayfinder's Table",
+   "verbs": ["ink", "burn", "pin", "scrape", "annotate"],
+   "when": { "met": "wayfinder" },
+   "closedLine": "I don't put my pen to a stranger's chart. Come and be introduced.",
+   "respectPerCraft": 1,
+   "respectFromCraft": 10,
+   "lines": {
+    "greet": ["Lay it flat, and your elbows off it. That ink's still deciding.", "Back from the edges? Show me where you've been.", "Sit. Mind the pens. What's the ground been saying?"],
+    "first.ink.before": ["She takes a pen from the jar without looking, dips it, and writes in the margin in a hand too small to read upside down."],
+    "first.ink": ["There. Sworn. I don't choose the words, mind; the ground does. I only hold the pen."],
+    "ink": ["Sworn.", "There. The ground's had its say.", "Written. It'll pay for that, one way or the other."],
+    "first.burn.before": ["She holds the margin to the lamp until the oaths in it brown and lift, brushes them off like crumbs, and writes it fresh."],
+    "first.burn": ["Same ground, new oaths. The ground doesn't remember what it swore last time. Neither do I, much."],
+    "burn": ["Burned and redrawn.", "Fresh margins. Don't get attached.", "Ask again if you don't like it. I'm paid either way."],
+    "first.pin.before": ["She threads a scrap of what that ground gave you onto a long brass pin, and puts it through the margin beside the oath, the way you'd pin a moth."],
+    "first.pin": ["Pinned. That one stays put when the rest go up. ...Everybody's got one of those."],
+    "pin": ["Pinned.", "That one stays.", "Held. Burn round it all you like."],
+    "first.scrape.before": ["She takes a penknife to the margin and scrapes the oath off a little at a time, the way a clerk takes out a name that shouldn't be in the ledger."],
+    "first.scrape": ["Gone. It never quite goes, mind. Hold it to the light and you'll still see where it was."],
+    "scrape": ["Scraped.", "Off it comes.", "Gone. Mostly."],
+    "first.annotate.before": ["She lays the two charts side by side and copies from one to the other in a hand as small as stitching: who went in, where they lay up, what they carried out."],
+    "first.annotate": ["Two charts of the one ground are worth more than twice one. People leave things out. ...I put them back in."],
+    "first.annotate.after": ["The chart you gave up goes into a drawer, not the fire. She locks the drawer."],
+    "annotate": ["Copied over.", "Margins full. That's how I like them.", "Nothing wasted. I'm a tidy woman."],
+    "history.ink": ["Sworn in the Wayfinder's hand, day {day}"],
+    "history.burn": ["Burned and redrawn at {who}'s table, day {day}"],
+    "history.pin": ["An oath pinned at {who}'s table, day {day}"],
+    "history.scrape": ["An oath scraped out by {who}, day {day}"],
+    "history.annotate": ["Annotated from another chart in {who}'s hand, day {day}"]
+   },
+   "easier": []
+  },
   "snib": {
    "name": "Snib",
    "place": "The Dig",
+   "visual": "lampling",
    "verbs": ["steep", "buy"],
    "when": {"all": [{"met": "snib"}, {"not": {"any": [{"fact": "dig.pump", "eq": "broken"}, {"fact": "dig.pump", "eq": "blown"}, {"fact": "dig.pump", "eq": "moved"}]}}]},
    "closedLine": "No slurry, no jars. Snib is VERY sad about it. Snib is not sad about it.",
@@ -150,6 +195,7 @@
     "steep.down": ["It hisses. Something in it gives."],
     "first.steep.before": ["He takes the lid off at arm's length and looks away. What is in the jar is the colour of the stream below the pipe, and warm. The piece goes in, and something in the jar moves to meet it."],
     "first.steep": ["There! Steeped! Snib did not see it move. It did not move."],
+    "steep.bad": ["That is not Snib's fault. That is the JAR's fault. ...Snib filled the jar."],
     "steep": ["Steeped. Snib would not wear that. Snib would. Snib cannot afford it.", "Green. GREEN. That is the good green. That is the bad green. Same green.", "Do not lick it. Snib licked it once. Snib got promoted."],
     "history.steep": ["Steeped in one of Snib's jars, day {day}"]
    }

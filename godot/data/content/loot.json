@@ -1,0 +1,70 @@
+{
+  "_doc": "Loot's numbers (docs/design/LOOT_DESIGN.md). Makes by level: Worn, Sound, Wrought, Legion, Heartwrought. A gear roll's tier at level L: Common = commonBase x commonFall^(L-1), Uncommon flat, Rare and Epic = base + per x L, Set and Legendary flat when one may fall there. The balance lab's to move.",
+  "makeFrom": [1, 8, 16, 24, 32],
+  "makeMult": [1, 1.8, 2.8, 4.0, 5.5],
+  "makeDamage": [0, 0.1, 0.25, 0.45, 0.7],
+  "_curves": "A stat's own make curve where the general one is too steep: armour saturates (armour / (armour + 20)), so a full Heartwrought set at x5.5 was about 75% reduction (combat). 'trigger' scales a piece's flat rule damage (Kell's Lamp by day).",
+  "curves": { "armor": [1, 1.8, 2.8, 3.4, 4.0], "trigger": [1, 1.8, 2.8, 4.0, 5.5] },
+  "unscaled": ["block", "moveSpeed"],
+  "maxLevel": 40,
+  "gradeUp": [25, 35],
+  "commonBase": 40, "commonFall": 0.93, "uncommon": 34, "rareBase": 18, "rarePer": 0.5, "epicBase": 3.5, "epicPer": 0.2,
+  "set": 0.9, "legendary": 0.4,
+  "luckShare": 0.5,
+  "weaponShare": 0.25, "callingShare": 0.67,
+  "unowned": 4, "home": 2,
+  "debt": 120,
+  "depthPerMinute": 0.02, "depthCap": 1,
+  "_material": "A carrier that drops no gear: its people's material, and old iron half the time (crafting's ask, to keep the forge's economy as measured).",
+  "material": 1, "iron": 0.5,
+  "belt": 20,
+  "upgradeMargin": 1.05,
+  "_power": "What a unit of each stat is worth to the power score (never shown): 'stat:kind', 'stat', or 'prefix.*'. Fractions are the stats' own (0.05 is 5%).",
+  "power": {
+    "armor": 1, "maxHealth": 0.12, "maxHealth:inc": 30, "moveSpeed:inc": 50, "critChance": 60, "critDamage": 8,
+    "damage:inc": 35, "damage.*:inc": 20, "cooldown:more": -60, "area:inc": 25, "regen": 3, "resist.*": 15,
+    "vs.*": 8, "from.*": 10, "xpGain:inc": 15, "goldGain:inc": 5, "pickupRadius": 0.5, "lightRadius:inc": 5,
+    "tenacity": 10, "healing:inc": 15, "abilityCooldown:more": -30, "abilityPower:inc": 20, "block": 3,
+    "projectiles": 6, "pierce": 3, "statusChance": 20, "lifesteal": 40, "summonDamage:inc": 15, "luck": 10, "dodge": 50
+  },
+  "_sources": "Each carrier's terms: the chance a roll is gear, the rolls (deep: more from the arena's third tier), the least tier of the first, how much likelier Rare and up and Legendary are, and the people's material always given.",
+  "sources": {
+    "champion": { "chance": 0.45, "rolls": 1 },
+    "miniboss": { "chance": 1, "rolls": 1, "floor": 1, "quality": 1.5, "materials": 1 },
+    "herald": { "chance": 1, "rolls": 1, "floor": 1, "quality": 1.5, "materials": 1 },
+    "boss": { "chance": 1, "rolls": 2, "deep": 1, "floor": 2, "quality": 2, "legendary": 4, "materials": 2 },
+    "elite": { "chance": 0.7, "rolls": 1 },
+    "mapPack": { "chance": 0.55, "rolls": 1 },
+    "mapPackFine": { "chance": 0.7, "rolls": 2, "quality": 1.3 },
+    "mapKeeper": { "chance": 1, "rolls": 2, "floor": 1, "quality": 1.4 },
+    "mapRuler": { "chance": 1, "rolls": 3, "floor": 2, "quality": 2, "legendary": 4 },
+    "strongbox": { "chance": 1, "rolls": 2, "floor": 1, "quality": 1.5, "materials": 2 }
+  },
+  "sets": {
+    "watch_kit": {
+      "id": "watch_kit", "name": "The Watch's Kit",
+      "pieces": ["watch_coif", "watch_hauberk", "watch_shield"],
+      "lore": "Eleven men on a wall built for sixty, and every one of them still oils his mail.",
+      "bonuses": [
+        { "worn": 2, "text": "+25% armour; your light carries 25% further",
+          "mods": [{ "stat": "armor", "kind": "inc", "value": 0.25, "source": "set" }, { "stat": "lightRadius", "kind": "inc", "value": 0.25, "source": "set" }] },
+        { "worn": 3, "text": "Standing still, you block a blow every six seconds, as a shield-wall does. The Watch takes you for one of its own",
+          "mods": [{ "stat": "block", "kind": "flat", "value": 2, "source": "set", "when": "still" }],
+          "tags": ["watch_kit"] }
+      ]
+    },
+    "levy_red": {
+      "id": "levy_red", "name": "The Levy Red",
+      "pieces": ["roost_hood", "levy_colours", "kerchief_knives"],
+      "lore": "Red was a town's colour before it was a gang's. Nobody in the Roost will tell you which town.",
+      "bonuses": [
+        { "worn": 2, "text": "+6% critical chance; Kerchiefs take you for one of theirs",
+          "mods": [{ "stat": "critChance", "kind": "flat", "value": 0.06, "source": "set" }],
+          "tags": ["kerchief_colors"] },
+        { "worn": 3, "text": "Your thrown and loosed skills fly one more; your critical strikes bleed",
+          "mods": [{ "stat": "projectiles", "kind": "flat", "value": 1, "source": "set" }],
+          "triggers": [{ "on": "crit", "chance": 1, "icd": 0.2, "effects": [{ "do": "status", "target": "hit", "status": { "kind": "bleed", "chance": 1, "power": 0.35, "duration": 3 } }], "text": "Critical strikes bleed" }] }
+      ]
+    }
+  }
+}
