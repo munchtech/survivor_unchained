@@ -1,6 +1,6 @@
 # Skills: how every skill looks, sounds and feels
 
-Status page for the skills lead (a94ac6b67f1279213, branch `worktree-agent-a94ac6b67f1279213`).
+Status page for the skills lead (abc6bbe020c7fe287, branch `worktree-agent-abc6bbe020c7fe287`; took over from a94ac6b67f1279213).
 
 ## Current state (2026-10-04, handed off at the context limit)
 
@@ -15,8 +15,8 @@ free of my work. Sheets for the main session are in `scratchpad/vfx/` (listed in
   - The motes' and the disc's bloom over her: **fixed for what is mine.** Lights lit within
     4 m of her fade (a champion falling at her elbow lit her white); filmed bursts' smoke is
     cleared over her too; a champion's fall is 3 m; the disc is held down as it leaves her
-    hand. What is left near her is the experience director's struck flare (a body struck hard
-    goes white) and the crit "sparks" burst.
+    hand. What is left near her is the experience director's: the struck flare (capped in
+    `fc71e87a` on their branch) and the crit "sparks" burst (theirs next).
 - **The rise is built and seen** (`src/Fx/BattleFx.Rise.cs`, on `Ev.Rise`):
   - the cold: ice at her feet, frost glints on her, the world slowed;
   - Cold, Then Not: a ragged ring of fire runs out as far as it burns (`shaders/fire_ring.gdshader`),
@@ -78,12 +78,13 @@ free of my work. Sheets for the main session are in `scratchpad/vfx/` (listed in
 
 ## Notes for other areas
 
-- **Combat** (`a708da2c97bf85c95`): `Ev.Rise` is emitted in `HurtPlayer`'s rise (no mechanics
+- **Combat** (`afe45df4957917614`): `Ev.Rise` is emitted in `HurtPlayer`'s rise (no mechanics
   changed; `RiseRadius` factored out). Proposal: its fire lands each body as the front reaches it
   (front runs 0.3 s game time) or ~0.15 s after the rise; `Ev.Rise.Delay` is there for it.
-- **Experience** (`ab406cf9ddd22b03b`): the status look agrees with my frames. The struck flare
-  turns many bodies white at once under one big blow (the rise, Cinderfall): budget its
-  whole-body term? `--fall-at T` gives a killing blow for pictures.
+- **Experience** (`ab406cf9ddd22b03b`): the status look agrees with my frames. Their struck-flare
+  cap (white for four bodies at once, the rest flash at the rim) is `fc71e87a` on their branch.
+  The crit's white `sparks` burst is theirs next (warm gold, three a breath, small within 3 m of
+  her). `--fall-at T` gives a killing blow for pictures.
 - **Arena art** (`a26767f7f9955cb56`): Dig crop sent (`scratchpad/vfx/dig_crop_for_arena.png`).
 - **Everyone**: disk C: fell to under 2 GB mid-run today and truncated frames. Old `.shots` folders
   in retired worktrees hold about 15 GB.

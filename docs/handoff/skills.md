@@ -57,7 +57,8 @@ push your branch at milestones; the main session merges it. Run `dotnet test` be
    job was in ComfyUI's queue.
 4. Cinderfall's blast blooms cream round her (and the coal in flight is a cream pill); Umbral Bolt
    and Moonbrand read as grey smoke (shadow_wisps tinted grey); the crit `sparks` burst is white
-   at her feet. Then Firepot, Iron Palms, Grave Tether, Gravecall, Spirit Herd, Thornbloom,
+   at her feet (the experience director's to fix next: warm gold, three a breath, small within
+   3 m of her). Then Firepot, Iron Palms, Grave Tether, Gravecall, Spirit Herd, Thornbloom,
    Blightfield; evolutions, unions, the arts, sound per skill; combat's asks (a fed deadfall, the
    cold's band, the pale-blue "His age" ring).
 5. The rise could be richer still: filmed flame (an LTX "ring of fire spreading on the ground from
@@ -107,6 +108,7 @@ push your branch at milestones; the main session merges it. Run `dotnet test` be
 
 - **Main session**: merges; sent the sheets listed below.
 - **Experience director** (`ab406cf9ddd22b03b`): owns `vat.gdshaderinc` (status and struck looks).
+  Their struck-flare cap is `fc71e87a` on `worktree-agent-ab406cf9ddd22b03b`.
 - **Combat** (`a708da2c97bf85c95`): told of `Ev.Rise` and the delay proposal.
 - **Arena art** (`a26767f7f9955cb56`): given the Dig crop.
 - **Performance** (`a7145e18b3eb78294`): Blades is one MultiMesh; tell them before touching `Ribbons.cs`.
