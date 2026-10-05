@@ -34,8 +34,13 @@ public sealed class ItemInstance
     public List<string>? Marks;
     /// <summary>How often its three coals have been drawn again today.</summary>
     public int? Draw;
+    /// <summary>A Wayfinder's chart: the map it opens (docs/SKILLS_DESIGN.md §17.2).</summary>
+    public Maps.Chart? Chart;
     /// <summary>The day it was last remade: a remade piece cools overnight before the next.</summary>
     public int? Remade;
+    /// <summary>A trophy's power set into it (an affix id: Greymuzzle's fang), outside its seams:
+    /// no grades, no heat, and its name leads the piece's.</summary>
+    public string? Setting;
 }
 
 public enum ConditionId { Wounded, Blightsick, Poisoned, Blessed, Rested, Wolfscent, Hunted, Warmed }
@@ -103,6 +108,9 @@ public sealed class CharacterData
     /// eyes' colour and the paint she wears (both Lore.Hero's).</summary>
     public Dictionary<string, double>? Face;
     public string? Eyes, Paint;
+    /// <summary>The face she started from (Lore.Hero's faces): each its own
+    /// painting of her skin, brows and lips, which her head wears (none: her own).</summary>
+    public string? FaceShape;
     public int Level = 1;
     public double Xp;
     public Attributes Attributes = new();
@@ -141,7 +149,7 @@ public sealed class CharacterData
 public sealed class CreationChoice
 {
     public string Name = "", Archetype = "warden", Background = "hunter", Palette = "", WeaponItem = "", Ability = "";
-    public string? Model, Cloak, Skin, Hair, HairStyle, Eyes, Paint, BeardStyle;
+    public string? Model, Cloak, Skin, Hair, HairStyle, Eyes, Paint, FaceShape, BeardStyle;
     public bool? Headgear, Beard;
     public Sex? Sex;
     public double? Figure;
@@ -180,7 +188,7 @@ public static class Inventory
         {
             var rng = new Rng(seed ?? (uint)loose.Next(1_000_000_000));
             int n = Math.Min(3, it.Rarity);
-            var pool = Items.Affixes.Where(a => a.Slots.Contains(def.Kind) && it.Rarity >= a.MinRarity).ToList();
+            var pool = Items.Affixes.Where(a => a.Slots.Contains(def.Kind) && it.Rarity >= a.MinRarity && !a.Unique).ToList();
             var picked = new HashSet<string>();
             bool hasPrefix = false, hasSuffix = false;
             // The passives the survivor's carried skills evolve with (the kindlings that would stand in for them).
@@ -212,6 +220,8 @@ public static class Inventory
         if (it.Name != null) return it.Name;
         var def = Items.Get(it.Def);
         var affs = it.Affixes.Select(a => Items.Affix(a.Id)).Where(a => a != null).ToList();
+        // What is set in it leads: Greymuzzle's Worn Oathblade.
+        if (it.Setting != null && Items.Affix(it.Setting) is { } set) affs.Insert(0, set);
         var pre = affs.FirstOrDefault(a => a!.Prefix);
         var suf = affs.FirstOrDefault(a => !a!.Prefix);
         return string.Join(" ", new[] { pre?.Name, def.Name, suf?.Name }.Where(s => !string.IsNullOrEmpty(s)));
@@ -226,10 +236,13 @@ public static class Inventory
         var o = (def.Mods ?? new()).Select(m => m with { Source = src }).ToList();
         foreach (var a in it.Affixes)
             if (Items.Affix(a.Id) is { } ad) o.AddRange(ad.Mods(a.Tier).Select(m => m with { Source = src }));
+        if (it.Setting != null && Items.Affix(it.Setting) is { } set) o.AddRange(set.Mods(0).Select(m => m with { Source = src }));
         return o;
     }
 
-    public static List<string> Lines(ItemInstance it) => it.Affixes.Select(a => Items.Affix(a.Id)?.Text(a.Tier) ?? "").ToList();
+    public static List<string> Lines(ItemInstance it) =>
+        (it.Setting != null && Items.Affix(it.Setting) is { } set ? new[] { set.Text(0) } : Array.Empty<string>())
+            .Concat(it.Affixes.Select(a => Items.Affix(a.Id)?.Text(a.Tier) ?? "")).ToList();
 
     public static bool AddToPack(CharacterData ch, ItemInstance it)
     {
@@ -256,6 +269,16 @@ public static class Inventory
     }
 
     public static int Free(CharacterData ch) => ch.Pack.Count(p => p == null);
+
+    /// <summary>How many more of a thing the pack could take (a material: any number, it goes in the pouch).</summary>
+    public static int Room(CharacterData ch, string defId)
+    {
+        var def = Items.Get(defId);
+        if (def.Kind == ItemKind.Material) return int.MaxValue;
+        int stack = Math.Max(1, def.Stack ?? 1), n = Free(ch) * stack;
+        foreach (var p in ch.Pack) if (p != null && p.Def == defId) n += Math.Max(0, stack - p.Qty);
+        return n;
+    }
 
     public static int Count(CharacterData ch, string defId)
     {
@@ -365,6 +388,11 @@ public sealed class CombatKit
     public AbilityKind Ability;
     public int ArtRank = 1;
     public List<string> Facets = new();
+    /// <summary>The Marks the gear carries (docs/items/CATALOGUE.md §4), each at its strength 0-1, and
+    /// numbers on single skills, by skill id: worn in the Wayfinder's maps (Battle.Wear). Crafting
+    /// fills them from the items.</summary>
+    public Dictionary<string, double> Marks = new();
+    public Dictionary<string, WeaponMods> SkillMods = new();
     public HashSet<string> GearIds = new();
     public HashSet<StatusKind> GearStatuses = new();
     public int StartLevels, Revives, Rerolls = 3;
@@ -393,7 +421,7 @@ public static class Character
             Beard = c.Beard, BeardStyle = c.BeardStyle, Figure = c.Figure, Attributes = Callings.StartAttributes(c.Archetype),
             // (only the sliders moved from her own face are kept)
             Face = c.Face?.Where(f => Math.Abs(f.Value) > 1e-3).ToDictionary(f => f.Key, f => Math.Round(Math.Clamp(f.Value, -1, 1), 3)) is { Count: > 0 } face ? face : null,
-            Eyes = c.Eyes, Paint = c.Paint == "none" ? null : c.Paint,
+            Eyes = c.Eyes, Paint = c.Paint == "none" ? null : c.Paint, FaceShape = c.FaceShape is "own" or "" ? null : c.FaceShape,
             Knowledge = new(bg.Knowledge), Gold = 25, Ability = c.Ability, CreatedDay = day,
         };
         ch.Known = ArtBook.Starting(c.Archetype);
@@ -517,10 +545,9 @@ public static class Character
                 case ConditionId.Blightsick: st.Add(new(Stat.Regen, ModKind.Flat, -0.8, "cond:blightsick")); break;
                 case ConditionId.Blessed: st.Add(new(Stat.DamageOf(School.Holy), ModKind.Inc, 0.15, "cond:blessed")); break;
                 case ConditionId.Rested: st.Add(new(Stat.MaxHealth, ModKind.Inc, 0.05, "cond:rested")); break;
-                case ConditionId.Warmed:
-                    st.Add(new(Stat.Damage, ModKind.Inc, 0.08, "cond:warmed"));
-                    st.Add(new(Stat.MoveSpeed, ModKind.Inc, 0.05, "cond:warmed"));
-                    break;
+                // Warmed (a love scene's night) only says the night happened: the owner's call, so
+                // sex earns nothing in a fight (Australia's R18+; docs/legal/LEGAL_BRIEF.md, issue 7).
+                case ConditionId.Warmed: break;
             }
         }
         return kit;

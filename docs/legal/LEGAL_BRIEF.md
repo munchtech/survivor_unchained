@@ -1,6 +1,6 @@
 # Survivor Unchained: legal and Steam compliance brief
 
-Prepared by the legal and Steam compliance lead (an AI agent, aa12c130ddf4b904c) on 4 October 2026, for the owner and for the games lawyer who reviews it before launch.
+Prepared by the legal and Steam compliance lead (an AI agent, aa12c130ddf4b904c) on 4 October 2026, for the owner and for the games lawyer who reviews it before launch. Updated the same evening by its successor (aab20546fe06daa89) after the owner's answers: see "The owner's answers and what they changed", below the bottom line.
 
 **This is not legal advice. I am not a lawyer.** It organises the issues, cites the primary sources and the dates I read them, and proposes actions. Where the law is unsettled I say so. A qualified games lawyer should confirm everything marked for them in `QUESTIONS_FOR_LAWYER.md` before launch.
 
@@ -26,24 +26,38 @@ You asked: *"ai generated assets and things are perfectly ok for steam games and
    - So a competitor could, in principle, copy an individual AI-made icon or texture.
    - What you can protect: the game as a whole (your selection and arrangement), anything you personally made or changed, and your name and logo, by trademark.
    - Section 16 says how to strengthen this.
-4. **"No trouble" depends on a few fixes before launch.** Nine items block launch until they're done:
-   - your confirmation that you own The Ember Watch, which the world and lore came from;
+4. **"No trouble" depends on a few fixes before launch.** After your answers, seven items still block launch:
    - the AI disclosure, filled in honestly;
    - the mature-content answers, which must cover what's hidden in the build as well as what's shown;
    - debug paths and unused files (including the hero's bare body) that ship in the build;
    - licence notices that don't ship yet;
-   - one asset with conflicting licence terms (the boar);
-   - an unknown source picture for the heroine's and hero's base bodies;
-   - unwritten "explicit scene" placeholders in the shipped story data;
+   - the boar, which has conflicting licence terms: replace it, or buy the commercial version, before launch;
+   - the heroine's and hero's base bodies: they came from Krea assets that are now deleted, so nothing shows we had the right to sell them. Replace them with our own before launch, as you want;
    - the placeholder voices, which must be replaced or dropped from the build.
 
-   None of them is hard.
-5. **The mature content is sellable on Steam as it stands.** It counts as *Some Nudity or Sexual Content*, *Frequent Violence or Gore* and *General Mature Content*, not *Adult Only*. Two things change that:
+   Two former blockers are cleared. **The Ember Watch is yours** (issue 5(e) explains what that means and what to keep). **The explicit-scene placeholders are out** of the data.
+5. **The mature content is sellable on Steam as it stands.** It counts as *Some Nudity or Sexual Content*, *Frequent Violence or Gore* and *General Mature Content*, not *Adult Only*.
    - **Explicit sex scenes** would move the game into Adult Only. That means hidden by default, a slower review, and exposure to the payment-card rules Valve added in July 2025.
-   - **Sex that grants a combat buff** ("Warmed": +8% damage, +5% speed) forces an R18+ rating in Australia, where Steam has required a credit card since 9 September 2026 to see such games. Decoupling the buff is a small change with a big effect.
-6. **Voices:** ElevenLabs is fine for commercial use on a paid plan. Use only voices we have the right to: designed voices, the owner's own voice, or performers who have consented in writing. Never feed ElevenLabs output into another AI model; its terms forbid it.
+   - **"Warmed" is now only a note that the night happened** (your decision; the story lead's change). Sex that granted a combat buff would have forced an R18+ rating in Australia. Without it, the game can be judged against MA 15+ instead (issue 7).
+6. **Voices and music:**
+   - ElevenLabs is fine for commercial use on a paid plan. Use only voices we have the right to: designed voices, your own voice, or performers who have consented in writing. Never feed ElevenLabs output into another AI model; its terms forbid it.
+   - **Suno** (the hymn) is fine on a **Pro or Premier** plan, for a song you **download** through Suno's own download button. Suno assigns those songs to you. Free-plan songs are for personal, non-commercial use only (issue 28).
 
-**In one line:** ship it with an honest disclosure, fix the nine blockers, decouple the buff, and plan for the Krea revenue cap. Then the AI use itself is not what gets you into trouble.
+**In one line:** ship it with an honest disclosure, fix the seven blockers (replacing the bodies and the boar is the biggest job), and plan for the Krea revenue cap. Then the AI use itself is not what gets you into trouble.
+
+---
+
+## The owner's answers and what they changed (4 October 2026)
+
+| The owner said | Ruling now | Issue |
+|---|---|---|
+| He lives in the **United States** | US law governs his own position: copyright, registration and his contracts. ElevenLabs' non-EEA terms apply to him. Steam needs his US tax form (W-9). Selling into the EU, UK and Australia still brings their content rules | 12, 16, 27 |
+| **"Warmed"** should only say it happened | **Resolved** once merged. The story lead's change (`worktree-agent-a73ca9d35d0c487a9`@b47d98ea) removes the bonus, keeps the note, and adds a test. Australia's "sex related to rewards" trigger is gone | 7 |
+| The base bodies came from **Krea assets, since deleted** | **Still a blocker; replace before launch.** Krea's site offers commercial rights only on paid plans; its 3D tool's default model is Hunyuan3D 2.1, whose licence bars displaying its output in the EU, UK and South Korea; and with the assets and history gone, we can't show which plan, model or picture made them | 5(b) |
+| **"I do not own [The Ember Watch]… I guess I own it?"** | **Yes: as far as anyone does, you own it.** There is no third party to clear. Copyright needs no registration to exist, but it protects only human-authored expression. Keep the records listed in 5(e). **Cleared as a blocker** | 5(e), 16 |
+| **Replace everything** third-party with our own over time | Agreed. Only the boar and the bodies must go before launch; credited CC0 and CC BY work can stay until replaced. "Generated own" replacements carry their generator's terms, so 5(g) sets rules | 5(a), 5(g) |
+| **Export templates:** do what's needed | Noted. The release export (issue 3) can be built and its `.pck` listed when the GPU is free | 3 |
+| **The hymn** will be made in **Suno** | Fine on a paid plan, downloaded through Suno. Disclose it as AI music | 28, 1 |
 
 ---
 
@@ -56,7 +70,7 @@ I checked these in the repository at `f56ee42` (integration branch) and in rende
 - **AI-made content that ships** (the provenance auditor's count, which I have spot-checked):
   - Krea 2 art: the painted UI (frames, cards, logo), 117 colour icons, 48 item icons, ground marks, and the heroine's and hero's face paint and irises;
   - LTX-2.5: 15 effect flipbooks and 5 sound takes;
-  - TRELLIS 2 base meshes, rigged and rebuilt by hand and by agents;
+  - the heroes' AI base meshes, rigged and rebuilt by agents. The owner says they came from Krea's website, and they are to be replaced (issue 5(b));
   - Kimodo: 10 folk motion clips;
   - 19 Maya1 and Seed-VC placeholder voice files in `godot/art/vo`;
   - story, dialogue and item text written by Claude agents under the owner's direction.
@@ -74,8 +88,12 @@ I checked these in the repository at `f56ee42` (integration branch) and in rende
   - Romances with adult characters (ages stated in the text).
   - Love scenes are written as non-graphic "cut-aways" that end before the act.
   - Sella is a sex worker: the player pays 15 gold for a night (`sella.price`, `sella.rest_night`).
-  - **Each love scene grants a combat buff**: `sella.night`, `sella.free_night` and `maeca.blind` apply `warmed`, which the notice text gives as "+8% damage, +5% speed, one day".
-  - Three placeholder lines reading "[explicit scene: … — to be written]" sat behind `settings.intimacy == "full"`. Nothing set that fact, so they were unreachable, but they shipped in the data. The story lead has now removed them (issue 6).
+  - **The love scenes used to grant a combat buff:** `sella.night`, `sella.free_night` and `maeca.blind` applied `warmed`, "+8% damage, +5% speed, one day".
+    - The owner removed the bonus. The story lead's b47d98ea (not yet merged) keeps `warmed` only as a note: "Warmed: last night is still with you".
+    - A test (`QuestTests`) checks that damage, speed, health, armour, critical hits and regeneration are the same with it or without it.
+    - The scenes still raise affection and trust, which is the relationship itself (issue 7).
+  - Three placeholder lines reading "[explicit scene: … — to be written]" sat behind `settings.intimacy == "full"`. Nothing set that fact, so they were unreachable, but they shipped in the data. The story lead removed them (efc15256, now merged), and `StoryLint` keeps them out (issue 6).
+- **Music (planned):** the hymn at Nell's grave is to be made by the owner in Suno (issue 28). The rest of the music is synthesised in code.
 - **Violence:** constant horde combat against humans, undead and beasts. Blood, pools and gibs ("a blow far bigger than what it killed bursts the body"), and corpses that lie for 18 seconds. There is a gore setting (full, reduced, off).
 - **Language:** infrequent strong language (one "fucking"; some "shit", "piss", "bitch", "bastard").
 - **No drugs, gambling, loot boxes or sexual violence**, and no minors in sexual contexts. I searched the content data for each.
@@ -97,9 +115,9 @@ I checked these in the repository at `f56ee42` (integration branch) and in rende
 | 2 | Steam mature content survey, including content hidden in the build | BLOCKER |
 | 3 | Debug paths and unused files in the release build | BLOCKER |
 | 4 | Licence notices and credits missing from the build | BLOCKER |
-| 5 | Third-party asset blockers (boar; base-body source pictures; Ember Watch chain of title) | BLOCKER |
-| 6 | Explicit-scene placeholders in shipped data; the explicit-content decision | BLOCKER (remove) / decision |
-| 7 | Sex tied to a gameplay buff (Australia R18+, credit-card gate) | SHOULD FIX |
+| 5 | Third-party asset blockers (the boar; the base bodies from deleted Krea assets); The Ember Watch | BLOCKER (boar, bodies); FINE (Ember Watch, with records) |
+| 6 | Explicit-scene placeholders in shipped data; the explicit-content decision | DONE (removed, efc15256) / decision |
+| 7 | Sex tied to a gameplay buff (Australia R18+, credit-card gate) | RESOLVED once b47d98ea merges |
 | 8 | Krea 2 licence: US$1M revenue cap, revocable on notice | SHOULD FIX now; BLOCKER before revenue nears $1M |
 | 9 | LTX-2.x licence conditions | FINE, with two duties |
 | 10 | Other AI models (TRELLIS 2, Pixal3D, Kimodo and the rest) | FINE |
@@ -119,7 +137,8 @@ I checked these in the repository at `f56ee42` (integration branch) and in rende
 | 24 | EU AI Act Article 50 and similar labelling duties | FINE, with a credits line |
 | 25 | Payment-processor content rule (July 2025) | FINE while non-explicit |
 | 26 | Claude-written text and code (Anthropic terms) | FINE |
-| 27 | Business set-up: entity, residence, governing terms | SHOULD FIX (lawyer) |
+| 27 | Business set-up: entity, residence (United States), governing terms | SHOULD FIX (lawyer) |
+| 28 | Suno for the hymn | FINE on a Pro or Premier plan, with Suno's own download |
 
 ---
 
@@ -142,7 +161,13 @@ I checked these in the repository at `f56ee42` (integration branch) and in rende
 - Revision report, secondary (17 Jan 2026): https://www.generationamiga.com/2026/01/17/valve-rewrites-steams-ai-disclosure-rules-for-developers/
 
 **Action.**
-1. Disclose pre-generated AI use for art, VFX, sound, animation, 3D base meshes, writing, and voices if any synthetic voice ships. Answer "no" to live generation. Use the draft wording in `STEAM_CHECKLIST.md`.
+1. Disclose pre-generated AI use for:
+   - art, VFX, sound, animation and writing;
+   - 3D base meshes, for as long as any AI-made mesh ships;
+   - voices, if any synthetic voice ships;
+   - music, once the Suno hymn ships (issue 28).
+
+   Answer "no" to live generation. Use the draft wording in `STEAM_CHECKLIST.md`.
 2. If capsules, trailers or store art use AI, disclose that too.
 3. Keep an **AI asset ledger**: file, tool, model, date, prompt or source, and human changes. The provenance file is its start. It is our evidence if Valve or anyone else asks.
 4. Re-read the live form at submission and update the wording if anything has changed.
@@ -208,6 +233,14 @@ I checked these in the repository at `f56ee42` (integration branch) and in rende
 2. Add `tools_scenes/*` to the release `exclude_filter`.
 3. Move to a resource list the game actually uses (the "selected resources" mode, or an exclude list for unused third-party packs and bodies). Then check the `.pck` contents before upload.
 
+**Status (4 Oct, evening).**
+- The performance lead (a7145e18b3eb78294) has the exact spec:
+  - `Args` in `godot/src/Shots.cs` returns nothing when `!OS.IsDebugBuild()`. Every developer argument goes through it, so one change gates them all.
+  - The `exclude_filter` list: `tools_scenes/*`, the anime and woman bodies and their hair, `hero.glb` until his base garment exists, the unused KayKit, web and Poly Haven files, and `art/vo/*` for the placeholder voices.
+  - A zip-pack listing for me to review.
+- The owner has approved the export templates, and the main session has fetched Godot's 4.5.1 mono templates. The build waits only for the GPU to be free.
+- Checked and harmless: `--bare` hides the world, not an outfit. The environment switches (`HAIRDEBUG`, `FX_LAYERS`, `CAMPFIRE_PARTS`, `FLORA_COUNT`) change only effects and counts.
+
 ### 4. Licence notices and credits missing from the build: BLOCKER
 
 **Evidence.**
@@ -239,38 +272,119 @@ I checked these in the repository at `f56ee42` (integration branch) and in rende
 3. Generate `CREDITS.txt` from the provenance ledger so it can't drift.
 4. I will review the screen and the folder before launch.
 
-### 5. Third-party asset blockers: BLOCKER (two items), SHOULD FIX (two)
+**Specification** (for the UI design lead's successor; sources checked 4 Oct 2026).
+- **Godot 4.5.1:**
+  - Take `LICENSE.txt` and `COPYRIGHT.txt` from the `4.5.1-stable` tag of `godotengine/godot`.
+  - On the screen, read the same notices from the engine: `Engine.GetLicenseText()`, `Engine.GetLicenseInfo()` and `Engine.GetCopyrightInfo()`. That way the screen can't drift from the engine that ships.
+  - Godot's compliance page accepts a credits screen, a licences menu or "a file containing the license text". It suggests shipping `COPYRIGHT.txt` "rename[d] to GODOT_COPYRIGHT.txt".
+- **.NET 8:**
+  - Godot "bundles the parts of .NET needed to run already-compiled games" (Godot's C# basics page), so the runtime's notices apply.
+  - Use `LICENSE.TXT` and `THIRD-PARTY-NOTICES.TXT` from the runtime pack that the export restores (`microsoft.netcore.app.runtime.*` in the NuGet cache). Failing that, take them from `dotnet/runtime`, branch `release/8.0`.
+  - Re-take all of these when Godot or .NET is upgraded.
+- **Fonts:** `godot/art/fonts/OFL-*.txt` as they are.
+- **CC BY works:** the entries in `public/assets/CREDITS.md` meet CC BY 4.0 §3(a): creator, title, link, licence link and changes. Keep its "provided as is, without warranty" sentence. That covers §3(a)(1)(A)(iii).
+- **Player-facing text** is a cleaned copy of `CREDITS.md`. Drop its internal notes:
+  - "under review" and "provenance under review";
+  - repository paths;
+  - the fetch tools' line-format notes;
+  - the web-only section.
 
-These are my rulings on the auditor's findings (`ASSET_PROVENANCE.md`).
+  Drop the anime and woman bodies too, once the export excludes them.
+- **How the folder ships:** Godot's export doesn't copy loose files, so `tools/godot/export.sh` should copy `licences/` beside the executable after each export. For macOS, it goes inside the `.zip` beside the `.app`. The in-game screen can read its texts from the pack through an include filter (`licences/*.txt`).
+- **Sources:**
+  - https://docs.godotengine.org/en/stable/about/complying_with_licenses.html
+  - https://docs.godotengine.org/en/stable/classes/class_engine.html
+  - https://docs.godotengine.org/en/stable/tutorials/scripting/c_sharp/c_sharp_basics.html
+
+### 5. Third-party asset blockers: BLOCKER (the boar, the bodies), SHOULD FIX (two), FINE (The Ember Watch)
+
+These are my rulings on the auditor's findings (`ASSET_PROVENANCE.md`), updated for the owner's answers of 4 October. The owner's aim: "we will replace everything eventually if we can with our own / generated own".
 
 - **(a) The boar** (`godot/art/beasts/boar.glb`, Sketchfab "Animated Realistic Boar" by AnimalMesh 3D): **BLOCKER.**
   - It is labelled CC BY 4.0, but its description says "personal use only; commercial use only for versions purchased on Fab or Patreon".
   - A CC licence, once granted, can't be revoked. But conflicting statements from the licensor invite a dispute and a Steam DMCA notice.
-  - Action: buy the commercial version on Fab and keep the receipt, or replace the model.
-- **(b) The base bodies' sources:** **BLOCKER until answered.**
-  - The heroine's body is the owner's sculpt `234.glb`; its generator and source picture are unrecorded.
-  - The same gap covers `woman.glb` ("a figure made in ComfyUI"), the hero's `ComfyUI_00008.glb` (TRELLIS 2 from an unknown picture) and the owner's reference sheet `images/1.webp`.
-  - Why it matters:
-    - `tools/make3d` copies the source picture's own pixels onto the model's texture.
-    - If a picture was someone else's art or photo, or shows a real person, the result is a copy of it.
-    - If the generator was **Hunyuan3D-2**, its licence "does not apply in the EU, the UK or South Korea" and forbids using or distributing its output there (`tools/make3d/README.md`; Tencent Hunyuan 3D 2.0 Community License).
-    - If the generator was **Meshy** (the auditor found a Meshy image-to-model file on the owner's Desktop at the time):
-      - on a paid plan, "you own the assets created through our platform";
-      - on the free plan, outputs are licensed **CC BY 4.0**, "we kindly ask that you credit Meshy".
-      - Either way commercial use is allowed, if the input picture was ours. Source: https://meshy.ai/pricing (read 4 Oct 2026).
-    - The heroine's 26 creation cameos (`godot/art/ui/create/female/*`) inherit the answer.
-  - Action:
-    1. The owner states, for each of the four, the generator and the picture's origin.
-    2. If any picture isn't ours (made by the owner, generated by us, or licensed), or any mesh came from Hunyuan3D-2, the asset is remade.
-    3. The answers go into the provenance ledger.
+  - The owner plans to replace third-party work "eventually". **"Eventually" is too late for the boar:** it must be replaced before launch (`REPLACEMENT_PLAN.md` 1.1).
+  - If the replacement won't be ready, buy the commercial version on Fab as a stop-gap and keep the receipt.
+- **(b) The base bodies:** **BLOCKER; replace before launch.**
+  - **What they are:**
+    - the heroine's body, from the owner's `234.glb`;
+    - the older woman, `woman.glb`;
+    - the hero's body, from `ComfyUI_00008.glb`;
+    - the owner's reference sheet, `images/1.webp`.
+  - **The owner's answer** (4 Oct): "they were from krea assets that have since been deleted I think". So they came from Krea's website (krea.ai), not from the Krea 2 model we run locally. Those are two different sets of terms.
+  - **Krea's website terms** (Terms of Use, last updated 20 May 2024; pricing page, read 4 Oct 2026):
+    - Krea gives users only a "non-exclusive, non-sublicensable and non-transferable license to access, use (and in certain instances download, display, and re-share) content generated". It adds that "Your rights to use, reproduce, modify, distribute, or store of any Content may be dependent on specific purchases or plans".
+    - Commercial use is a permission Krea "may allow", which it "reserves the right to modify… at any time".
+    - The pricing page shows a **"Commercial license" on the Pro and Max plans, and not on the Free plan** (the Free column marks it with a cross).
+    - No revenue cap is stated. The open model's US$1M cap (issue 8) is in a different licence.
+    - Everything you generate is a "User Submission". Krea takes a perpetual, sublicensable licence to it, and on plans without private mode other users may see and reuse it.
+  - **Krea's 3D tool** (krea.ai/3d, read 4 Oct 2026):
+    - Its default model is **Hunyuan3D-2.1**. It also offers Hunyuan3D 3.1, TRELLIS 2, Rodin, Tripo and Meshy.
+    - The Tencent Hunyuan 3D 2.1 Community License "DOES NOT APPLY IN THE EUROPEAN UNION, UNITED KINGDOM AND SOUTH KOREA".
+    - §5(c): "You must not use, reproduce, modify, distribute, or display the Tencent Hunyuan 3D 2.1 Works, Output or results … outside the Territory".
+    - Its "Output" covers use "via a Hosted Service", which is what Krea is.
+    - Whether that bar reaches a Krea customer who never accepted Tencent's licence is **unsettled** (lawyer). We would be showing that output to every EU and UK buyer.
+  - **Why the bodies can't stay:**
+    1. We can't show the plan. On the Free plan there was no commercial licence.
+    2. We can't show the model. With Hunyuan3D, EU and UK sales are a problem.
+    3. We can't show the input pictures. If one was someone else's art or photo, or a real person, the body copies it.
+    4. The assets and their history are deleted, so none of this can be proved now. Krea's terms warn that deletion "may result in destruction of any Content", and that "we can't promise that we can recover or restore anything".
+
+    The owner also wants them replaced. Both reasons point the same way.
+  - **What carries the same taint:** everything shaped from these bodies.
+    - the heroine's body mesh and its paint;
+    - the 26 creation cameos (`godot/art/ui/create/female/*`), until they are re-shot on the new body;
+    - the hero's body.
+
+    Her outfits, hair and face paint are our own geometry and work. They need refitting to the new body, not replacing. Her head is already MakeHuman (CC0).
+  - **Actions:**
+    1. Rebuild both bodies on MakeHuman's CC0 base, sculpted to the brief by us (`REPLACEMENT_PLAN.md` 1.2 and 1.3). Use the models planner's `docs/art/MODELS_TO_MAKE.md` for the order.
+    2. Drop `woman.glb` from the build; nothing replaces it (issue 3).
+    3. Before then, the owner checks his email for Krea receipts covering the days he made them. A paid plan would lower the risk for anything still in the build at a deadline. It does not change the plan to replace them.
+    4. Record the replacements in the provenance ledger.
+  - **Sources:**
+    - https://www.krea.ai/terms
+    - https://www.krea.ai/pricing
+    - https://www.krea.ai/3d
+    - https://huggingface.co/tencent/Hunyuan3D-2.1/blob/main/LICENSE
 - **(c) Chevalier Sword and Medieval Shield** (Sketchfab, "based on the concept by Guillem Daudén" and "by Artyom Vlaskin"): **SHOULD FIX.**
   - A 3D modeller's CC BY grant can't license the concept artist's own rights in the design.
   - Action: replace them, or obtain the concept artists' written permission.
 - **(d) Character names carried over from The Ember Watch** (Maeca Barefoot, Vonnra Hydrocheck, Rav, Chid, Keegan): **FINE**, subject to the owner confirming that none is a real person's name or handle.
-- **(e) Chain of title for The Ember Watch:** **BLOCKER until the owner confirms.**
-  - Survivor Unchained's world, lore, weapons and combat roots were ported from The Ember Watch, hosted at `stevenrogerino/wowsurvivors`. Its commits are by Claude and `munch4lunchbot`.
-  - If that account is the owner's, there is nothing to do. If anyone else owns it, we need a written assignment or licence.
-  - It began as a Warcraft fan work; its own NOTICE says every borrowed name was replaced. Issue 15 covers the names that still remain.
+- **(e) The Ember Watch:** **FINE (cleared as a blocker), with records to keep.**
+  - **The facts:**
+    - Survivor Unchained's world, lore, weapons and combat roots were ported from The Ember Watch, hosted at `stevenrogerino/wowsurvivors`. Its commits are by Claude and `munch4lunchbot`.
+    - The owner's answer (4 Oct): "I do not own it. I mean I made the game but nothing is copyrighted or anything - we built it all in claude with no generated content. I guess I own it?"
+  - **What the answer means, in plain words:**
+    1. **No one else has a claim, and that was the blocker.** The worry was that someone else might own the source. The owner made it, with Claude as his tool, and no other person contributed. So nobody else's permission is needed. Anthropic's terms assign Anthropic's rights in Claude's output to the user, "if any" (issue 26).
+    2. **"Nothing is copyrighted" isn't quite right, and no registration is needed for what is protected.**
+       - In the US, "Copyright protection … exists automatically from the moment the original work of authorship is fixed" (Copyright Office, Circular 1).
+       - "registration is not a condition of copyright protection" (17 U.S.C. §408(a)).
+       - Whatever in The Ember Watch is protected became the owner's the day it was written down (17 U.S.C. §201(a)).
+    3. **But copyright covers only the human part.** "We built it all in claude" means the words and code were written by an AI from his direction. "No generated content" is true of pictures, but text written by Claude *is* AI-generated for copyright purposes.
+       - The Copyright Office's position (*Copyright and Artificial Intelligence, Part 2*, 29 Jan 2025): purely AI-generated material is not protected, and "prompts do not alone provide sufficient control".
+       - What is protected: his own expression wherever it can be seen in the result, his creative selection and arrangement, and his own edits.
+       - Copyright never protects ideas, systems, names or titles in any case (17 U.S.C. §102(b); Circular 1: "Titles, names, short phrases, and slogans").
+       - So he owns The Ember Watch in the sense that matters for selling the game: it's his to use and nobody can stop him. But a copier could take some AI-written parts of it, and he could do little about that.
+    4. **Registration matters only for enforcing.** For a US work, you must register before you can sue for infringement (17 U.S.C. §411(a)). Statutory damages and attorney's fees need registration before the infringement, or within three months of first publication (§412).
+       - The useful step is to register **Survivor Unchained itself** around launch, not The Ember Watch.
+       - An online Standard Application costs US$65 (Copyright Office fees page, read 4 Oct 2026).
+       - The application must disclose the AI-generated material and claim only the human contribution. The lawyer should draft that claim (`QUESTIONS_FOR_LAWYER.md`, question 2).
+  - **Records to keep** (the owner's evidence of authorship and of no third party):
+    1. A dated archive of The Ember Watch repository with its full history: a `git bundle` of `stevenrogerino/wowsurvivors`, kept offline.
+    2. His own directions: chat transcripts, briefs, `CLAUDE.md` and memory files, design docs, anything he typed, drew or chose.
+    3. A short signed and dated statement covering:
+       - that he conceived and directed The Ember Watch and Survivor Unchained;
+       - that no other person contributed creative material (or naming anyone who did, and what they did);
+       - that the `stevenrogerino`, `munchtech` and `munch4lunchbot` accounts are his. If any is not, a one-paragraph written assignment from its holder is needed instead;
+       - which AI tools he used.
+    4. The version of Anthropic's terms in force while it was made (issue 26).
+  - It began as a Warcraft fan work. Its own NOTICE says every borrowed name was replaced, and issue 15 covers the names that remain. Copyright doesn't protect names, but trade marks and the look of copying can still cause trouble.
+  - **Sources:**
+    - Circular 1: https://www.copyright.gov/circs/circ01.pdf
+    - 17 U.S.C. §§102, 201, 408, 411 and 412: https://www.law.cornell.edu/uscode/text/17
+    - Fees: https://www.copyright.gov/about/fees.html
+    - Part 2 report: https://www.copyright.gov/ai/
 - **(f) My rulings on the rest of the auditor's inventory** (`ASSET_PROVENANCE.md`, 4 Oct):
   - **CC0 sources: FINE.** Quaternius, KayKit, Kenney, Poly Haven, ambientCG, OpenGameArt and MakeHuman. Keep the courtesy credits.
   - **CC BY sources: FINE once credited** (issue 4): the wolf, the lampling, the nine other weapons, 100STYLE and the anime base. This includes the 48 item icons, which are photographs of the CC BY weapons and so carry their credit duty.
@@ -285,13 +399,28 @@ These are my rulings on the auditor's findings (`ASSET_PROVENANCE.md`).
     - never ship motion captured from Pexels footage of identifiable people without a check.
   - **Marketing:** concept art and animatics made with Krea are Krea outputs. Using them on the store page or in a trailer is commercial use (issue 8), and it goes in the AI disclosure (issue 1).
   - **The web and Electron build** is a separate product. If it is ever sold, it needs its own notices.
+- **(g) Rules for replacements, "our own / generated own"** (new, 4 Oct). A replacement is only an improvement if its own chain is cleaner than what it replaces. In order of preference:
+  1. **Made by us** in Blender or in code, or on a CC0 base (MakeHuman, the UAL skeleton). There are no conditions.
+  2. **Generated locally with an unrestricted model:** TRELLIS 2, Pixal3D or MoGe (MIT), or Kimodo (outputs ours). The input picture must be ours too:
+     - our own render or drawing;
+     - the owner's own photo, with a model release if a person is in it;
+     - an image we generated ourselves.
+  3. **Generated with Krea 2 locally:** allowed, but it adds to the US$1M revenue cap and the 30-day termination risk (issue 8). That includes a mesh made from a Krea picture, because it is commercial use of a Krea output.
+  4. **Never for anything that ships:**
+     - Hunyuan3D in any version, local or on Krea's website (the EU and UK bar);
+     - any web generator on a free plan;
+     - any picture of a real person without a release;
+     - any picture of someone else's art;
+     - the `MysticXXX_KREA2_v1` LoRA.
+
+  Every replacement gets a ledger line before it lands: file, tool, model, licence, input, date. A CC0 asset (Quaternius, Poly Haven, Kenney) has no legal risk at all. Replacing it with a Krea-made one *raises* risk, so do those last, for ownership's sake only.
 
 ### 6. Explicit-scene placeholders and the explicit-content decision: BLOCKER (remove placeholders) / DECISION
 
 **Evidence.**
 - Three "[explicit scene: … — to be written]" slots shipped in `dialogue.json` behind `settings.intimacy == "full"`: `sella.night`, `sella.free_night` and `maeca.blind`. Three more, for Act 2, existed only in the docs.
 - `docs/romance/README.md` plans beat sheets "for the owner's writer".
-- **Status: the placeholders are removed** (story lead, efc15256 on `worktree-agent-a73ca9d35d0c487a9`, not yet merged):
+- **Status: the placeholders are removed** (story lead, efc15256, merged into the integration branch by 4 Oct evening):
   - Every scene keeps its non-explicit cut-away for all players.
   - `StoryLint` now fails if any "[explicit" text or `settings.intimacy` variant returns to `dialogue.json`.
   - The romance drafts in `docs/romance/data` still hold slots as notes only. They aren't shipped, and the test would catch them.
@@ -310,9 +439,21 @@ These are my rulings on the auditor's findings (`ASSET_PROVENANCE.md`).
 1. Remove the placeholder slots from the release data (or strip them at export) until the decision is made.
 2. **Decision for the owner, with the lawyer:** keep the base game non-explicit, the current cut-aways. If explicit scenes are ever wanted, ship them as a separate Adult Only DLC with its own survey and review, so the base game stays visible in the normal store.
 
-### 7. Sex tied to a gameplay buff: SHOULD FIX
+### 7. Sex tied to a gameplay buff: RESOLVED once b47d98ea merges
 
-**Evidence.** `sella.night`, `sella.free_night` and `maeca.blind` apply the condition `warmed`. The notice text: "You feel good. Better than good. (Warmed: +8% damage, +5% speed, one day)". The scenes also grant affection and trust.
+**Status (4 Oct, evening).**
+- The owner decided "we can remove that as a buff that does anything other than say it happened".
+- The story lead's b47d98ea (`worktree-agent-a73ca9d35d0c487a9`) does that, and I have checked the diff:
+  - `Character.cs` no longer adds the damage or speed modifiers;
+  - the notices and the book drop the numbers ("Warmed: last night is still with you");
+  - `QuestTests` checks that damage, speed, health, armour, critical hits and regeneration are the same with it and without it;
+  - the story bible now says a love scene never gets a mechanical reward.
+- The paid room's own "Rested: +5% health" comes from a bed, not sex, and is fine.
+- Once merged, the survey answer "sexual content linked to rewards" becomes **no**.
+- The game can then be judged against MA 15+ instead of being forced to R18+. MA 15+ allows "Sexual activity may be implied" and "Nudity should be justified by context", provided neither is "related to incentives or rewards".
+- One question remains for the lawyer (`QUESTIONS_FOR_LAWYER.md`, question 7): the scenes still raise affection and trust, which is the relationship itself.
+
+**Evidence (before the change).** `sella.night`, `sella.free_night` and `maeca.blind` applied the condition `warmed`. The notice text: "You feel good. Better than good. (Warmed: +8% damage, +5% speed, one day)". The scenes also grant affection and trust.
 
 **Law.** Australia's *Guidelines for the Classification of Computer Games 2023* (F2023L01424):
 - "Except in material restricted to adults, nudity and sexual activity must not be related to incentives or rewards."
@@ -324,10 +465,8 @@ These are my rulings on the auditor's findings (`ASSET_PROVENANCE.md`).
   - Steam's age-check notice: https://store.steampowered.com/agecheck/app/2172010/?cc=au
 
 **Action.**
-1. Decouple the buff from sex: give "Warmed" for a bath and a bed (the paid room already exists as `rest_night`) whether or not anything else happens, or remove it.
+1. ~~Decouple the buff from sex.~~ **Done** by the owner's decision (b47d98ea); it remains to be merged.
 2. Ask the lawyer whether relationship progress (affection and trust) from a love scene also counts as a reward.
-
-This is a design decision for the owner and the story and combat leads. It is the single cheapest change that keeps the most Australian buyers.
 
 ### 8. Krea 2 licence: SHOULD FIX now; BLOCKER before revenue nears US$1M
 
@@ -386,7 +525,7 @@ This is a design decision for the owner and the story and combat leads. It is th
 | Llama 3 8B (Meta) | Kimodo's text encoder only | Llama 3 Community License | no duty for motion outputs (we don't distribute Llama) |
 | Qwen3-VL 4B, Qwen-Image VAE | Krea's text encoder and VAE | shipped inside the Krea repo, under Krea's terms | as issue 8 |
 | Whisper | transcript checks | MIT / Apache 2.0 | n/a |
-| **Hunyuan3D-2 (Tencent)**, `tools/make3d` | picture to 3D | **Tencent Hunyuan 3D 2.0 Community License: excludes the EU, UK and South Korea**; free under 1M monthly active users | **don't ship any output** (issue 5b) |
+| **Hunyuan3D-2 and 2.1 (Tencent)**: `tools/make3d`, and the default model of Krea's website 3D tool | picture to 3D | **Tencent Hunyuan 3D 2.0 and 2.1 Community Licenses exclude the EU, UK and South Korea**; free under 1M monthly active users. The owner being in the US doesn't help: §5(c) of 2.1 bars displaying output outside the Territory, and EU and UK buyers would see it | **don't ship any output** (issues 5(b), 5(g)) |
 
 Sources: each model's Hugging Face card or LICENSE file, as named. The Kimodo licence was read from `nvidia/Kimodo-SOMA-RP-v1.1/LICENSE`.
 
@@ -411,7 +550,7 @@ Sources: each model's Hugging Face card or LICENSE file, as named. The Kimodo li
 
 ### 12. ElevenLabs terms (the final voices): SHOULD FIX (process)
 
-**The terms.** ElevenLabs Terms of Service (non-EEA, updated 31 March 2026). A separate version applies to residents of the EEA, Switzerland and the UK; the owner's residence decides which.
+**The terms.** ElevenLabs Terms of Service (non-EEA, updated 31 March 2026). A separate version applies to residents of the EEA, Switzerland and the UK. **The owner lives in the United States, so the non-EEA terms are his.**
 - Free users: non-commercial only. Paid users: commercial use. Help centre: "The free plan does not include a commercial license"; "Content generated using Beta Services cannot be used for any commercial purpose"; content made during a paid subscription stays commercially usable after it ends.
 - §4(c): "you retain all rights in and to your Output".
 - §4(d): ElevenLabs gets a **perpetual, irrevocable, sub-licensable licence to your Content** (inputs and outputs) to provide and improve its services. Our unreleased scripts are inputs.
@@ -527,6 +666,9 @@ Sources: each model's Hugging Face card or LICENSE file, as named. The Kimodo li
 1. Keep dated records of the owner's creative decisions: briefs, markups, selections, rejections, edits. The repo's history and the docs already do much of this; keep it.
 2. Have the owner personally write or rewrite key text (names, the opening, signature lines) and personally mark up or paint over key art (the heroine, the logo, the capsule).
 3. Consider a **US copyright registration** for the finished game, disclaiming AI-generated material accurately. Registration is the price of statutory damages in the US.
+   - The owner lives in the US, so this is his home system.
+   - File within three months of release to keep statutory damages and fees available (17 U.S.C. §412).
+   - The plain-words explanation and the records to keep are in issue 5(e).
 4. File trademarks for the name and logo (issue 17).
 
 ### 17. The name "Survivor Unchained": SHOULD FIX (clearance search)
@@ -579,7 +721,7 @@ Then decide whether to file. Until then, avoid sinking money into the logo.
 - **Australia:**
   - Classification law requires games sold in Australia to be classified. Steam's self-rating is not a Classification Board decision.
   - The Classification Board has acted against Refused Classification games on Steam.
-  - Our content is R18+ at least because of issue 7, which also triggers Steam's Australian credit-card gate.
+  - Our content was R18+ at least because of issue 7. With the buff gone (b47d98ea), MA 15+ may be open to it, subject to the lawyer's view on affection and trust, and to the overall impact being no higher than "strong".
   - Lawyer: whether to obtain a formal classification.
 - **UK:** since 2025 Steam asks UK users to verify their age with a credit card before they see mature content (Online Safety Act). This narrows the UK audience for any mature-flagged game.
 - **IARC, ESRB, PEGI:** not needed for Steam; Steam is not an IARC storefront. They will be needed for consoles or other stores later.
@@ -619,13 +761,51 @@ Our non-explicit content is well clear of this. It becomes a live risk only with
 - There is a US$100 fee per game, a **21-day wait** after paying it, and a public "coming soon" page for at least two weeks.
 - Source: https://partner.steamgames.com/doc/gettingstarted/onboarding
 
-The owner's **country of residence** decides:
-- which ElevenLabs terms apply;
-- whether Hunyuan3D's territory bar bites;
-- the governing law of his own contracts;
-- tax.
+**The owner lives in the United States** (his answer, 4 Oct). So:
+- **ElevenLabs:** the non-EEA terms apply (issue 12).
+- **Hunyuan3D:** being in the US doesn't remove its bar. It forbids displaying output outside its Territory, and the game sells to the EU and UK (issue 10). We ship none.
+- **Copyright and registration:** US law (issues 5(e) and 16).
+- **Tax:** Steam's onboarding takes a US person's W-9, with an SSN for a sole proprietor or an EIN for a company.
+- **His contracts:** the tools' own choices of law still govern them: Krea's website (California), the Krea 2 model licence (Delaware), Suno and the rest.
+- **Still unknown: his state.** It decides how a company is formed and taxed, and which state digital-replica and privacy laws are his home ones.
 
-**Lawyer:** whether to trade through a limited company before launch, for liability. The Krea revenue test counts "affiliated entities", so structure matters.
+**Lawyer:** whether to trade as a sole proprietor or through an LLC before signing the Steam Distribution Agreement, for liability. The Krea revenue test counts "affiliated entities", so structure matters.
+
+### 28. Suno for the hymn: FINE on a Pro or Premier plan, with Suno's own download
+
+**Evidence.**
+- The owner will make the hymn at Nell's grave ("Lie Down") in Suno.
+- Its words are the story lead's, in `godot/data/content`. All other music is synthesised in code.
+
+**The terms** (Suno Terms of Service, effective 3 September 2026; pricing page, read 4 Oct 2026):
+- **Ownership on a paid plan:** for Pro and Premier subscribers, "Suno hereby assigns to you all of its right, title and interest in and to any Output … generated from Submissions made by you". Suno adds that it "makes no representation or warranty to you that any copyright will vest in any Output". That matches the Copyright Office's position (issue 16): the song may be unprotected, though nobody else owns it either.
+- **The free plan:** "you will only use such Outputs for your lawful, personal and non-commercial purposes". The pricing page says the Free plan has "No commercial rights" and "No monthly song downloads". **So make the hymn on Pro (US$8 a month; 20 downloads a month) or Premier.** Keep the receipt for the month it was made.
+- **Commercial use needs a permitted download.**
+  - "You may not commercially exploit Output that has not been downloaded by you through an approved channel". Recording or stream-ripping is prohibited.
+  - You may "edit, process, or convert the format" of an Output "to the extent such use is incidental". So trimming it and converting it to OGG is fine.
+  - Don't remove Suno's "fingerprint, watermark or metadata" in order to conceal provenance.
+  - The rights in a download are "perpetual" and survive cancelling the subscription.
+- **Remixes are never commercial:** "Nothing in this paragraph permits commercial use of any Remix". Make the hymn as an original generation, not a remix of anyone's song, and don't switch on remixing by others.
+- **Suno's licence to what you give it:** a perpetual, irrevocable, sublicensable licence to all Content (the lyrics and the song). This covers improving its models and making Content "available to … other users of the Service as necessary to provide the Service".
+  - The lyrics are ours and become partly public through the game anyway, so the risk is low.
+  - Don't upload unreleased story material beyond the hymn.
+- **Prohibited uses:**
+  - no Output that infringes anyone's rights;
+  - no impersonating an artist;
+  - no using Suno or its Output "to … train other artificial intelligence and machine learning models".
+- **"Applicable rights holders may also have the right to collect revenue related to distribution of Outputs on third party platforms."** On YouTube, a trailer carrying the hymn may draw automated claims. Keep the download record to answer them.
+- **Suno's own litigation:** the record labels' copyright suits over Suno's training are, by press reports, partly settled (Warner Music Group, November 2025) and partly continuing in 2026. The reports conflict on the details, so the lawyer should check the docket. If a court ever found particular outputs infringing, a song that copies a real track would be the exposure. An original hymn with our own words and no named artist or song in the prompt is the low-risk case.
+
+**Action.**
+1. Use a Pro or Premier plan. Generate from our lyrics and a plain style description: no artist or song names.
+2. Download through Suno's button. Keep the download, the receipt, the prompt and the date in the ledger.
+3. Add music to the Steam AI disclosure and the credits line (`STEAM_CHECKLIST.md` D3 and E).
+4. Never use a free-plan or remixed take, or a recording of the stream.
+
+**Sources.**
+- https://suno.com/terms
+- https://suno.com/pricing
+- Press on the litigation (secondary): https://www.digitalmusicnews.com/2026/04/09/suno-universal-music-lawsuit-settlement-impasse/ and https://www.musicbusinessworldwide.com/wheres-v6/
 
 ---
 
@@ -649,9 +829,16 @@ The owner's **country of residence** decides:
 - UK *Report on Copyright and Artificial Intelligence* (18 Mar 2026): https://www.gov.uk/government/publications/report-and-impact-assessment-on-copyright-and-artificial-intelligence
 - Australia, *Guidelines for the Classification of Computer Games 2023*: https://www.legislation.gov.au/F2023L01424/asmade/text
 - EU AI Act Art. 50: https://ai-act-service-desk.ec.europa.eu/en/ai-act/article-50
+- US Copyright Office, Circular 1, *Copyright Basics*: https://www.copyright.gov/circs/circ01.pdf
+- US Copyright Office fees: https://www.copyright.gov/about/fees.html
+- 17 U.S.C. §§102, 201, 408, 411, 412: https://www.law.cornell.edu/uscode/text/17
 
 **Tools**
 - Krea 2 licence (22 Jun 2026), on the Hugging Face repo and https://krea.ai/krea-2-licensing; use policy at https://www.krea.ai/krea-2-use-policy
+- Krea website: Terms of Use (last updated 20 May 2024), https://www.krea.ai/terms; pricing, https://www.krea.ai/pricing; 3D tool, https://www.krea.ai/3d (read 4 Oct 2026, evening)
+- Tencent Hunyuan 3D 2.1 Community License (release date 13 Jun 2025): https://huggingface.co/tencent/Hunyuan3D-2.1/blob/main/LICENSE
+- Suno Terms of Service (effective 3 Sep 2026): https://suno.com/terms; pricing, https://suno.com/pricing
+- Godot `Engine` class (licence and copyright calls): https://docs.godotengine.org/en/stable/classes/class_engine.html; C# basics: https://docs.godotengine.org/en/stable/tutorials/scripting/c_sharp/c_sharp_basics.html
 - LTX-2.x licence (11 Aug 2026): https://github.com/Lightricks/LTX-2/blob/main/LICENSE-2_x
 - NVIDIA Open Model License: https://www.nvidia.com/en-us/agreements/enterprise-software/nvidia-open-model-license/
 - DINOv3 License: https://github.com/facebookresearch/dinov3
@@ -667,4 +854,5 @@ The owner's **country of residence** decides:
 **Secondary** (used only where a primary source couldn't be read, and marked where used):
 - Generation Amiga on the Jan 2026 AI form;
 - Holland & Knight on the *Thaler* cert denial;
-- Gaming On Linux on Valve's July 2025 rule.
+- Gaming On Linux on Valve's July 2025 rule;
+- Digital Music News and Music Business Worldwide on Suno's litigation (issue 28).

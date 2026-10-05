@@ -162,15 +162,29 @@ public partial class Game : Node, IZoneHost
                 var parts = spec.Split(':');
                 var idq = parts[0].Split('*');
                 int qty = idq.Length > 1 && int.TryParse(idq[1], out var nq) ? nq : 1;
-                Journey.GiveItem(idq[0], qty, parts.Length > 1 && int.TryParse(parts[1], out var r) ? r : null);
+                int? rar = parts.Length > 1 && int.TryParse(parts[1], out var r) ? r : null;
+                // iron_helm:3:of_the_wolf@1+of_the_lantern@2 : a piece with just those affixes, at those grades.
+                if (parts.Length > 2)
+                {
+                    var affixes = parts[2].Split('+').Select(a => a.Split('@')).Select(a => new AffixRoll { Id = a[0], Tier = a.Length > 1 && int.TryParse(a[1], out var t) ? t : 0 }).ToList();
+                    Inventory.AddToPack(Journey.Ch, Inventory.Make(Journey.Ch, idq[0], rarity: rar, affixes: affixes));
+                }
+                else Journey.GiveItem(idq[0], qty, rar);
             }
+        // --facts k=v,k=v: the world as a later day would have it (pictures: --facts stream.clear=true);
+        // a number or true/false is read as one, anything else as words; --met a,b: those people known.
+        if (Args.Get("facts") is string facts)
+            foreach (var kv in facts.Split(',').Select(f => f.Split('=', 2)).Where(f => f.Length == 2))
+                World.Facts[kv[0]] = kv[1] is "true" or "false" ? kv[1] == "true"
+                    : double.TryParse(kv[1], System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var fn) ? fn : kv[1];
+        if (Args.Get("met") is string met) foreach (var n in met.Split(',')) World.Npc(n).Flags["met"] = true;
         // --gold N: that much gold in the purse (pictures of a counter with money to spend).
         if (Args.Has("gold")) Journey.Ch.Gold = Args.Num("gold", 0);
         // --xp N: that much experience at once (pictures of the self with points to spend).
         if (Args.Has("xp")) Character.GainXp(Journey.Ch, Args.Num("xp", 0));
         var z = Args.Get("zone") ?? "lowford";
         Arrival? at = null;
-        if (Args.Get("at") is string s)
+        if (Args.Get("at") is string s && s != "boss")
         {
             var p = s.Split(',');
             at = new Arrival(double.Parse(p[0], System.Globalization.CultureInfo.InvariantCulture), double.Parse(p[1], System.Globalization.CultureInfo.InvariantCulture));
@@ -196,6 +210,19 @@ public partial class Game : Node, IZoneHost
             // --story: told as a story's night (twenty minutes, over at its boss's fall), for pictures of its end.
             if (Args.Has("story")) { spec.Story = true; spec.Minutes = 20; }
             Arenas.Begin(World, spec);
+        }
+        // --zone map [--tier T --people ID --mods a+b --seed N]: straight into a Wayfinder's map.
+        if (z == "map")
+            World.Map = new SurvivorUnchained.Maps.Chart
+            {
+                Tier = (int)Args.Num("tier", 1), People = Args.Get("people") ?? "pack", Seed = (int)Args.Num("seed", 1234),
+                Mods = (Args.Get("mods") ?? "").Split('+', StringSplitOptions.RemoveEmptyEntries).ToList(), Name = "The Test Map",
+            };
+        // --at boss: on a map, at the edge of its ruler's clearing (pictures of the ruler's fight).
+        if (z == "map" && Args.Get("at") == "boss")
+        {
+            var bc = SurvivorUnchained.Maps.MapGen.Generate(World.Map!.Map).Boss;
+            at = new Arrival(bc.X, bc.Z - bc.R + 1);
         }
         if (z != "lowford")
         {
@@ -288,6 +315,16 @@ public partial class Game : Node, IZoneHost
         Travel("arena", spec.Name, spec.Sub != "" ? spec.Sub : "Ember arena", null, pull: true);
     }
 
+    /// <summary>Into a Wayfinder's map: the chart is used up as it opens (docs/SKILLS_DESIGN.md §17).</summary>
+    public void EnterMap(SurvivorUnchained.Maps.Chart chart)
+    {
+        if (inTransit || zone is MapRun || zone is ArenaRun) return;
+        CloseOverlay();
+        Save("map");
+        World.Map = chart;
+        Travel("map", chart.Name, "A Wayfinder's map");
+    }
+
     /// <summary>The arena is over: what came of it, and then back to the story.</summary>
     public void ArenaOver(ArenaResult result)
     {
@@ -319,6 +356,7 @@ public partial class Game : Node, IZoneHost
         "waystation" => new Waystation(this, meta),
         "verge" => new Verge(this, meta),
         "arena" => new ArenaRun(this, currentMap!, World.Arena!),
+        "map" => new MapRun(this, currentMap!, World.Map!),
         _ => throw new ArgumentException($"no zone {id}"),
     };
 
@@ -350,6 +388,7 @@ public partial class Game : Node, IZoneHost
         // An arena is made from its seed each time it is entered.
         ZoneData data;
         if (id == "arena") { currentMap = SurvivorUnchained.Maps.MapGen.Generate(World.Arena!.Map); data = new ZoneData(currentMap); }
+        else if (id == "map") { currentMap = SurvivorUnchained.Maps.MapGen.Generate(World.Map!.Map); data = new ZoneData(currentMap); }
         else { currentMap = null; data = new ZoneData(id); }
         scene = new WorldScene(data, cam);
         AddChild(scene);
@@ -796,7 +835,7 @@ public partial class Game : Node, IZoneHost
             using var _ = new Perf.Span(Perf.Part.Hud);
             hudT = 1.0 / 12;
             var ch = Journey.Ch;
-            hud.Frame(Battle, ch.Gold, Inventory.Count(ch, "health_draught"), (ch.Level, ch.Xp / Character.XpForLevel(ch.Level)));
+            hud.Frame(Battle, ch.Gold, Journey.Draughts, (ch.Level, ch.Xp / Character.XpForLevel(ch.Level)));
             hud.MapFrame(MiniView());
             if (zone is ArenaRun ar && Battle is { } cb2)
             {
@@ -807,7 +846,8 @@ public partial class Game : Node, IZoneHost
             else hud.ArenaClock(null, "");
         }
         hud.SetBruise(scene.Bruise);
-        scene.Voices.Quiet = hudMode == "dialogue" || screens.Current != null;
+        // Names over heads and barks have no place in a cinematic's picture either.
+        scene.Voices.Quiet = hudMode == "dialogue" || screens.Current != null || cine != null;
         // Fallen: the world loses its colour.
         air.Env.AdjustmentSaturation = Mathf.Lerp(air.Env.AdjustmentSaturation, Battle?.Player.Alive == false ? 0.2f : 1f, 1 - Mathf.Exp(-2 * (float)dt));
         Report(dt);
@@ -919,11 +959,12 @@ public partial class Game : Node, IZoneHost
         }
         // --give A,B[:RANK][@EVOLUTION],+PASSIVE[:RANK]: a build in hand from the start
         // (pictures of weapons, of the draft with an arsenal), the arena's opening blessing passed over.
-        // --minute M: the arena's clock set to M minutes (pictures of its boss: --minute 29.9).
+        // --minute M: the arena's clock set to M minutes (pictures of its boss: --minute 29.9); --won: and the night won.
         if (!minuteDone && Args.Has("minute") && zone is ArenaRun mr && Battle != null)
         {
             minuteDone = true;
             mr.SkipTo(Args.Num("minute", 29.9f) * 60);
+            if (Args.Has("won")) mr.WinNow();
         }
         // --chest 1,3,5! [--chest-at T]: chests of those sizes opened at her feet T seconds in, one
         // after another (! a boss's hoard), for pictures of the opening.
@@ -1041,6 +1082,13 @@ public partial class Game : Node, IZoneHost
                 if (Args.Has("pad")) { controls.UsingPad = true; Ui.Nav.KeyMode = true; }
                 if (Enum.TryParse<Act>(keys.Split(',')[keyI++], true, out var ka)) controls.Press(ka);
             }
+            // --clicks X:Y,rX:Y,...: then the mouse goes there and clicks (r: the right button), in turn,
+            // through the same input a hand would give (pictures of a page worked by mouse).
+            else if (Args.Get("clicks") is string clicks && clickI < clicks.Split(',').Length)
+            {
+                tourT = Args.Num("click-every", 0.8f);
+                ClickAt(clicks.Split(',')[clickI++]);
+            }
             return;
         }
         if (Args.Has("pad")) { controls.UsingPad = true; Ui.Nav.KeyMode = true; }
@@ -1060,6 +1108,26 @@ public partial class Game : Node, IZoneHost
                 Spilled = Args.Has("fell") ? new() { ["ember_shard"] = 4, ["wolf_pelt"] = 2, ["boar_hide"] = 2 } : new(),
             });
         else Open(next);
+    }
+
+    int clickI;
+
+    /// <summary>A click as the mouse gives it: moved there, pressed, released ("r640:480" for the right button).</summary>
+    void ClickAt(string spec)
+    {
+        bool right = spec.StartsWith('r');
+        var xy = spec.TrimStart('r').Split(':');
+        if (xy.Length != 2 || !float.TryParse(xy[0], System.Globalization.CultureInfo.InvariantCulture, out var x)
+            || !float.TryParse(xy[1], System.Globalization.CultureInfo.InvariantCulture, out var y)) return;
+        var at = new Vector2(x, y);
+        controls.UsingPad = false;
+        Ui.Nav.KeyMode = false;
+        var vp = GetViewport();
+        vp.PushInput(new InputEventMouseMotion { Position = at, GlobalPosition = at });
+        var button = right ? MouseButton.Right : MouseButton.Left;
+        vp.PushInput(new InputEventMouseButton { Position = at, GlobalPosition = at, ButtonIndex = button, Pressed = true });
+        vp.PushInput(new InputEventMouseButton { Position = at, GlobalPosition = at, ButtonIndex = button, Pressed = false });
+        GD.Print($"click {spec}");
     }
 
     /// <summary>--open talk:ID>words>+: a conversation, each choice after it

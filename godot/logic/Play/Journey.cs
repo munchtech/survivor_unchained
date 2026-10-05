@@ -270,6 +270,9 @@ public sealed partial class Journey
     /// things into the pack. False leaves it on the ground (a full pack).</summary>
     public bool PickedUp(Pickup p)
     {
+        // A chart carries its map in its name until it is in the pack.
+        if (p.Kind == PickupKind.Item && p.Ref != null && Maps.Charts.FromRef(p.Ref) is { } chart)
+            return GiveChart(chart);
         if (p.Kind is PickupKind.Item or PickupKind.Material or PickupKind.Quest && p.Ref != null)
         {
             // Gear on the ground was rolled when it fell; its light said how good it is.
@@ -281,6 +284,18 @@ public sealed partial class Journey
 
     /// <summary>Something found in the field. False if there is no room.</summary>
     /// <param name="dropped">It fell in the world (its heat is rolled: docs/CRAFTING_DESIGN.md 5.1).</param>
+    /// <summary>A Wayfinder's chart into the pack.</summary>
+    public bool GiveChart(Maps.Chart chart)
+    {
+        var it = Inventory.Make(Ch, Maps.Charts.Item, 1, chart.Rarity);
+        it.Chart = chart;
+        it.Name = Maps.Charts.Title(chart);
+        if (!Inventory.AddToPack(Ch, it)) { OnToast(new Toast(ToastKind.Warning, "Your pack is full", it.Name)); return false; }
+        OnToast(new Toast(ToastKind.Loot, it.Name, Items.Get(Maps.Charts.Item).Description, Items.Get(Maps.Charts.Item).Icon, it.Rarity));
+        OnTouch();
+        return true;
+    }
+
     public bool GiveItem(string defId, int qty = 1, int? rarity = null, IReadOnlyCollection<string>? lean = null, bool dropped = false)
     {
         var it = Inventory.Make(Ch, defId, qty, rarity, lean: lean, dropped: dropped);
@@ -373,16 +388,22 @@ public sealed partial class Journey
 
     /* -------------------------------------------------------------- gear -- */
 
-    int Draughts => Inventory.Count(Ch, "health_draught");
+    const string Draught = "health_draught", Moonpetal = "moonpetal_draught";
 
-    /// <summary>R: drink a health draught.</summary>
+    /// <summary>The draughts the draught key can drink, of either kind (the HUD's count).</summary>
+    public int Draughts => Inventory.Count(Ch, Draught) + Inventory.Count(Ch, Moonpetal);
+
+    /// <summary>R: drink a draught: the one that fits the wound. The moonpetal (60%) only for a deep
+    /// one, 55% of health or more gone, so a rare draught is not spent on a scratch (combat's rule).</summary>
     public void Quaff(Battle? b)
     {
         if (b == null || !b.Player.Alive) return;
         if (Draughts == 0) { Warn("No draughts left"); return; }
         if (b.Player.Hp >= b.MaxHp - 0.5) { Warn("You are unhurt"); return; }
-        Inventory.Take(Ch, "health_draught", 1);
-        b.HealPlayer(b.MaxHp * (Items.Get("health_draught").Consumable?.Heal ?? 0.4), "draught");
+        bool deep = 1 - b.Player.Hp / b.MaxHp >= 0.55, moon = Inventory.Count(Ch, Moonpetal) > 0, plain = Inventory.Count(Ch, Draught) > 0;
+        string pick = (deep && moon) || !plain ? Moonpetal : Draught;
+        Inventory.Take(Ch, pick, 1);
+        b.HealPlayer(b.MaxHp * (Items.Get(pick).Consumable?.Heal ?? 0.4), "draught");
         OnTouch();
     }
 
@@ -569,6 +590,14 @@ public sealed partial class Journey
         var w = World;
         switch (action)
         {
+            // Snib's jars, bought in his hearing (docs/CRAFTING_DESIGN.md 9): the talk goes on.
+            case "slurry":
+            {
+                var q = Crafting.BuyJar(Craft);
+                if (!q.Ok) { Warn(q.Blocked!); return true; }
+                Make(q);
+                return true;
+            }
             case "sellpelts":
             {
                 int pelts = Inventory.Count(Ch, "wolf_pelt"), hides = Inventory.Count(Ch, "boar_hide");
@@ -814,6 +843,8 @@ public sealed partial class Journey
             var names = who.Count == 1 ? who[0] : $"{string.Join(", ", who.Take(who.Count - 1))} and {who[^1]}";
             lines.Add($"By breakfast, {names} had heard that you {ev.Text}.");
         }
+        if (Flask() is { } flask) lines.Add(flask);
+        Crafting.Morning(World);
         if (lines.Count == 0) lines.Add("A quiet night. Rook's bread is hot, and nobody died.");
         OnTouch();
         return lines;

@@ -16,6 +16,9 @@ namespace SurvivorUnchained.Ui;
 /// </summary>
 public static class ItemViews
 {
+    /// <summary>The slurry's sick green: what it put in a piece, and the veins.</summary>
+    public static readonly Color SlurryGreen = new("#a8e08a");
+
     public static readonly Dictionary<string, string> TagLines = new()
     {
         ["beastscent"] = "Wolves smell the forest on you, not the town.",
@@ -26,6 +29,8 @@ public static class ItemViews
         ["lockpick"] = "Opens simple locks.",
         ["scholar_lens"] = "Old script becomes legible through it.",
         ["wolf_fang"] = "A statement to any wolf that sees it.",
+        ["greymuzzle_fang"] = "The Pack knows it by sight.",
+        ["slurried"] = "Steeped: green-black veins run through it. It is set for good.",
         ["fireproof"] = "Fire finds little purchase.",
         ["digger_lamp"] = "The lamplings know whose it is.",
         ["moon_touched"] = "Something in the grove marked you.",
@@ -245,8 +250,8 @@ public static class ItemViews
         if (lines.Count > 0)
             v.AddChild(Style.V(1, lines.Select(x =>
             {
-                var text = Style.Label(x.Def!.Text(x.Tier), Style.UiBold, Style.Caption, x.Def.Kindled != null ? Style.EmberHi : new Color("#9ad8ff"), true);
-                if (x.Def.Kindled != null || x.Def.Grants != null) return (Control)text;
+                var text = Style.Label(x.Def!.Text(x.Tier), Style.UiBold, Style.Caption, x.Def.Kindled != null ? Style.EmberHi : x.Def.Slurry ? SlurryGreen : new Color("#9ad8ff"), true);
+                if (x.Def.Kindled != null || x.Def.Grants != null || x.Def.Slurry) return (Control)text;
                 var grade = Style.Label(Crafting.Grade(x.Tier), Style.Display, 12, Style.GoldDim);
                 grade.CustomMinimumSize = new Vector2(22, 0);
                 return Style.H(4, grade, text);

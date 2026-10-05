@@ -38,6 +38,8 @@ MATS = {
     "leather": ("#3a1a12", 0.0, 0.55, "#6a3e2a", 0.6),
     "silk": ("#ece4d2", 0.0, 0.32, "#f6f0e2", 0.0),
     "paper": ("#d2ccbc", 0.0, 0.92, "#e2dccc", 0.0),
+    # Bright forged steel (the logo's letters): iron that has been worked and kept.
+    "steel": ("#4a4652", 0.95, 0.30, "#eae6f2", 1.0),
 }
 IDS = {k: i for i, k in enumerate(MATS)}
 

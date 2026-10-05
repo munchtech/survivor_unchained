@@ -6,26 +6,9 @@ The owner needed the machine, so the team checkpointed and stopped. Everything i
 
 `claude/vigilant-galileo-l6jqyx` is at 87a3f528, with 567 tests green and pushed.
 
-## Pushed, not yet merged
+## Merged since the pause
 
-Merge each, then run `dotnet test` and push.
-
-| Lead | Branch@commit | Next step (from their status page) |
-|---|---|---|
-| Combat | worktree-agent-a1d4562f44c7f6feb@a4cdcf0f | Run-ups WIP is parked on combat-wip-runups (not for merging) |
-| Performance | worktree-agent-a7145e18b3eb78294@d6ee19c7 | Prefetch is parked on perf-prefetch-wip (crashes on quit, not for merging); export templates need the owner's OK |
-| Crafting | worktree-agent-a7debf1459f14dfe7@37c31d6c | Phase 3: Vonnra's binding, Snib's bench |
-| Legal | worktree-agent-aab20546fe06daa89@fbc9bf9b | Motion check of the rest of her clips |
-| Experience | worktree-agent-ab406cf9ddd22b03b@f8e26228 | Status tint: burning and frozen bodies at the rim, not white |
-| Animation | worktree-agent-a435f4dd0ac80df75@7a646f6c | The keyed slam; the crossbow aim once combat adds it |
-| Male hero | worktree-agent-ab82cbe99e2937ddd@0ea15f7 | Head tool tone pass after fix(); hero.glb is unchanged |
-| UI design | worktree-agent-a26f87c39952dcd9c@c9148ae0 | Credits and licences screen (a launch blocker) |
-| UI art | worktree-agent-a1a394643aabfb169@53c5857 | Hero plate, light card, imports, slice margins |
-| Skills | worktree-agent-a63cd93fc73d5ed79@0e6f2e8b | batch10.sh with no game open |
-| Face | worktree-agent-ade92e8285938438f@9dc74eda | FACE v3 and its paint; art not committed yet |
-| Arena art | worktree-agent-a26767f7f9955cb56@e10255f0 | Judge the new spoil and road; the Dig pass; the moonless fix |
-| Story | worktree-agent-a73ca9d35d0c487a9@0a65f095 | Idle: waiting on others |
-| Cinematics | worktree-agent-a3058a45eee41d695@d7e56082 | Confirm the toll-tower lamp in C04 B's shot B4a, then write shoot/c02 to c04b.md |
+All the leads' paused branches are merged (597 tests green), except two whose own leads are resolving conflicts: face (9dc74eda) and cinematics (d7e56082).
 
 ## The heroine's outfits (main session)
 
@@ -37,15 +20,40 @@ Merge each, then run `dotnet test` and push.
   4. Check all four outfits for regressions, then merge to the integration branch.
 - Then: the arcanist's boot cuffs as level bands; the face lead's new head means re-running `--body` (they'll say when).
 
-## Waiting on the owner
+## The owner's answers (4 October 2026)
 
-- The Godot export templates download (about 1 GB, from Godot's GitHub releases): the owner's own yes.
-- "Warmed" (the love scenes' combat buff): decouple it, for Australia's R18+?
-- The provenance questions (docs/legal/ASSET_PROVENANCE.md):
-  - what made 234.glb, woman.glb and ComfyUI_00008.glb, and from which pictures;
-  - whether the owner owns The Ember Watch;
-  - the boar: buy the commercial version or replace it;
-  - their country of residence.
-- The Wayfinder's maps: 30-minute nights, with permanent maps of about 10 minutes, as read now?
-- The placeholder voices: kept out of release builds?
-- Who sings the hymn at Nell's grave (C08)?
+1. **Export templates:** yes, download whatever is needed (the main session fetched Godot's official 4.5.1 mono templates).
+2. **"Warmed":** no longer a buff; it only says it happened (the story lead is making the change).
+3. **Base bodies:** they came from Krea assets, since deleted. Replace them with our own (see docs/art/MODELS_TO_MAKE.md, being written).
+4. **The Ember Watch:** the owner made it with Claude; nothing third-party, nothing registered (the legal lead is explaining what owning it means).
+5. **Third-party assets:** replace everything with our own over time.
+6. **Map lengths:** the owner wants these explained plainly; the combat lead is writing three lines.
+7. **The owner lives in the United States.**
+8. **The hymn at Nell's grave:** the owner will make it in Suno.
+
+## Handoffs ready: start their successors when the GPU is free
+
+These are past their memory limit. Each has a handoff in docs/handoff/<area>.md, and their branches are merged:
+- animation (67cb4f2c);
+- performance (a3513e14);
+- crafting (fdb62e76);
+- UI art (bfa7bdb);
+- skills (0a7e8eff);
+- face (5fd76deb).
+
+The combat successor is already running (design only).
+
+## Paused work that needs the GPU or Godot
+
+The owner is using the GPU. No Godot, no ComfyUI, no Blender until the owner says so. Waiting on that:
+- the outfit WIP build and checks;
+- the face lead's FACE v3;
+- the male hero's head;
+- UI art's renders;
+- skills' batch10;
+- arena art's shots;
+- animation's slam;
+- the experience director's status tint;
+- the legal motion check;
+- the performance lead's prefetch crash hunt and the release export;
+- every full-resolution check.

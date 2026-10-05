@@ -19,10 +19,18 @@ public static class Args
 {
     static Dictionary<string, string>? parsed;
 
+    /// <summary>Whether the developer's switches are read at all: in the
+    /// editor and debug builds, never in a release build. Every switch
+    /// (--quick, --zone, --body, --gold, --shot, --perf...) comes through
+    /// here, so a player's copy cannot be talked into a place, a body or a
+    /// view the game does not offer (the legal brief, issue 3).</summary>
+    public static bool Dev => OS.IsDebugBuild();
+
     static Dictionary<string, string> All()
     {
         if (parsed != null) return parsed;
         parsed = new();
+        if (!Dev) return parsed;
         var a = OS.GetCmdlineUserArgs();
         for (int i = 0; i < a.Length; i++)
         {

@@ -8,7 +8,7 @@ import sys
 import krea
 
 DARK = "isolated on a pure black background, seen straight on, orthographic"
-ICON = ("A single bold dark fantasy game skill icon, hand painted in the style of Diablo IV skill icons, "
+ICON = ("A single bold dark fantasy game skill icon, hand-painted with painterly brushwork, "
         "strong clean silhouette filling the frame, dramatic rim light from the upper left, glowing, "
         "on a pure black background, no frame, no border, no text: ")
 

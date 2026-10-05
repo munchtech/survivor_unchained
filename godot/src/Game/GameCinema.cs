@@ -32,7 +32,7 @@ public partial class Game
     /// <summary>A cinematic from the data, played now in the zone that is
     /// running; done when it hands back (or is skipped). False if it cannot
     /// play here (no scene, no such file), and the zone does without.</summary>
-    public bool Cinematic(string id, Action? done = null)
+    public bool Cinematic(string id, Action? done = null, IReadOnlyDictionary<string, double[]>? marks = null)
     {
         if (scene?.Battle is not { } b || cine != null) return false;
         // --nocine, or a quick start: the zone's captions instead (pictures of play from the first frame).
@@ -40,12 +40,18 @@ public partial class Game
         CineFile file;
         try { file = CineFile.Load(id); }
         catch (Exception e) { GD.PushWarning($"cinema: {id} not played ({e.Message})"); return false; }
+        // Where things really are (a boss falls where the fight leaves him).
+        if (marks != null) foreach (var (k, v) in marks) file.Marks[k] = v.ToArray();
         // A timeline that cannot be laid out is not played (its schedule is built
         // before anything on screen changes), and the zone does without.
         try { cine = new Cine(this, file, b, done); }
         catch (Exception e) { GD.PushError($"cinema: {id} not played: {e.Message}"); cine = null; return false; }
         return true;
     }
+
+    public bool CanCinematic(string id) =>
+        scene?.Battle != null && cine == null && !Args.Has("nocine") && !(quick && Args.Get("cine") != id)
+        && FileAccess.FileExists($"res://data/cinematics/{id}.json");
 
     /// <summary>Each frame, after the world is drawn: the camera, the cast, the cues.</summary>
     void CinemaFrame(double dt)
@@ -66,6 +72,13 @@ public partial class Game
         readonly CinemaBars bars = new();
         readonly Dictionary<string, PersonView> people = new();
         readonly Dictionary<string, Enemy> enemies = new();
+        readonly Dictionary<string, WardenView> bosses = new();
+        readonly Dictionary<string, OrbView> orbs = new();
+        readonly Dictionary<string, double> orbLight = new();
+        /// <summary>A crowd of extras by its cast name: its members' names, in order.</summary>
+        readonly Dictionary<string, List<string>> groups = new();
+        /// <summary>A crowd's cue, staggered down its members: done when the clock reaches it.</summary>
+        readonly List<TimedCue> later = new();
         readonly List<Tween> tweens = new();
         readonly List<Move> moves = new();
         readonly Dictionary<string, Dictionary<string, float>> faces = new();
@@ -74,13 +87,14 @@ public partial class Game
         (float Fov, Camera3D.KeepAspectEnum Keep, float Near, CameraAttributes? Attr) saved;
         CameraAttributesPractical dof = new();
         double skipHeld;
-        int stillShot = -1, camShot = -1;
+        int stillShot = -1, stillK, camShot = -1;
         readonly Dictionary<string, V3> camFixed = new();
         public bool Over { get; private set; }
         public bool ZoneHeld => file.World.ZoneHeld;
 
         sealed record Tween(double T0, double T1, Action<double> Apply);
-        sealed record Move(string Actor, Vector3 From, Vector3 To, double T0, double T1, double Heading);
+        /// <summary>Free: through the air or the water (an exact place), not along the ground.</summary>
+        sealed record Move(string Actor, Vector3 From, Vector3 To, double T0, double T1, double Heading, bool Free = false);
 
         public Cine(Game g, CineFile file, Battle b, Action? done)
         {
@@ -133,6 +147,55 @@ public partial class Game
                 if (c.Mark != null) Place(name, places.Resolve(MarkEl(c.Mark)), file.Mark(c.Mark).Heading);
                 v.Cue("Idle_Loop", 0, 1, 0);
             }
+            else if (c.Kind == "boss")
+            {
+                // The cinematic's own Warden: the zone's waits hidden, and the
+                // fight's takes his place where this one is left.
+                var w = new WardenView { Name = "Cine_" + name, Glow = c.Glow };
+                g.scene!.AddChild(w);
+                bosses[name] = w;
+                people[name] = w.Body;
+                w.Body.Cue("Sword_Idle", 0, 1, 0);
+                if (c.Mark != null) Place(name, places.Resolve(MarkEl(c.Mark)), file.Mark(c.Mark).Heading);
+            }
+            else if (c.Kind == "extras" && c.At != null)
+            {
+                // A crowd seen only here (the drowned in the ford): each dressed as an
+                // enemy of its visual, each at its own place, all cued by the cast's name.
+                var visuals = c.Visual is { Count: > 0 } vs ? vs : ["skeleton_minion"];
+                var members = new List<string>();
+                for (int i = 0; i < c.At.Count; i++)
+                {
+                    var spec = Visuals.Of(visuals[i % visuals.Count]);
+                    var v = new PersonView(spec.Person ?? new PersonSpec(), spec.Arms, 0.8 * spec.Scale) { Name = $"Cine_{name}{i}" };
+                    g.scene!.AddChild(v);
+                    string who = $"{name}.{i}";
+                    people[who] = v;
+                    members.Add(who);
+                    Place(who, places.Resolve(c.At[i]), c.Heading);
+                    // Out of step with each other, as a crowd stands.
+                    v.Cue(c.Idle ?? "Zombie_Idle_Loop", i * 0.37 % 1.6, 1, 0);
+                }
+                groups[name] = members;
+            }
+            else if (c.Kind == "orb")
+            {
+                var o = new OrbView(c.Color ?? "#bfe6ff", c.Size) { Name = "Cine_" + name };
+                g.scene!.AddChild(o);
+                orbs[name] = o;
+                orbLight[name] = 6 * c.Glow;
+                ((IOrb)o).Light = orbLight[name];
+                if (c.Mark != null) Place(name, places.Resolve(MarkEl(c.Mark)), 0, false);
+            }
+        }
+
+        /// <summary>Whoever or whatever a cue moves: a person (a boss's body) or an orb.</summary>
+        Node3D? NodeOf(string actor) => people.TryGetValue(actor, out var v) ? v : orbs.TryGetValue(actor, out var o) ? o : null;
+
+        /// <summary>A crowd's cue as one member's.</summary>
+        static CineCue Member(CineCue c, string who)
+        {
+            return new CineCue { At = c.At, Do = c.Do, When = c.When, Skip = c.Skip, Args = c.Args, Actor = who };
         }
 
         static JsonElement MarkEl(string mark) => JsonDocument.Parse($"{{\"mark\":\"{mark}\"}}").RootElement;
@@ -140,6 +203,7 @@ public partial class Game
         void Place(string actor, V3 at, double heading, bool visible = true)
         {
             if (people.TryGetValue(actor, out var v)) v.Place(at.X, at.Y, at.Z, heading, visible);
+            else if (orbs.TryGetValue(actor, out var o)) { o.Position = V(at); o.Visible = visible; }
         }
 
         /// <summary>Where someone is now, for the camera: their feet, or a bone.</summary>
@@ -158,6 +222,7 @@ public partial class Game
                 return new V3(p.X, p.Y, p.Z);
             }
             if (enemies.TryGetValue(name, out var e)) return new V3(e.X, g.scene!.HeightAt(e.X, e.Z) + (bone == "head" ? 1.6 : 0), e.Z);
+            if (orbs.TryGetValue(name, out var o)) { var q = o.GlobalPosition; return new V3(q.X, q.Y, q.Z); }
             return null;
         }
 
@@ -169,6 +234,12 @@ public partial class Game
             if (Over) return;
             Dispatch(player.Advance(dt));
             double t = player.T;
+            if (later.Count > 0)
+            {
+                var due = later.Where(c => c.T <= t).OrderBy(c => c.T).ToList();
+                foreach (var tc in due) later.Remove(tc);
+                Dispatch(due);
+            }
             foreach (var tw in tweens.ToList())
             {
                 double k = tw.T1 <= tw.T0 ? 1 : Math.Clamp((t - tw.T0) / (tw.T1 - tw.T0), 0, 1);
@@ -179,17 +250,24 @@ public partial class Game
             {
                 double k = Math.Clamp((t - m.T0) / Math.Max(0.01, m.T1 - m.T0), 0, 1);
                 var p = m.From.Lerp(m.To, (float)CineCamera.Ease("inout", k));
-                if (people.TryGetValue(m.Actor, out var v)) v.Place(p.X, g.scene!.HeightAt(p.X, p.Z), p.Z, m.Heading, true);
+                if (people.TryGetValue(m.Actor, out var v)) v.Place(p.X, m.Free ? p.Y : g.scene!.HeightAt(p.X, p.Z), p.Z, m.Heading, true);
+                else if (orbs.TryGetValue(m.Actor, out var o)) o.Position = p;
                 if (k >= 1) moves.Remove(m);
             }
             foreach (var v in people.Values) v.Advance(dt);
+            foreach (var w in bosses.Values) w.Shine(dt);
+            foreach (var o in orbs.Values) o.Turn(dt);
             Camera(dt);
             var shot = player.Shot.Shot;
             // --shot NAME --until S: each shot's standing frame saved as it passes (the previs boards).
             var span = player.Shot;
-            if (span.Index != stillShot && player.Local >= (shot.Still ?? span.Dur * 0.6))
+            // --stills N: N frames of each shot, evenly through it (to judge its motion), instead.
+            int many = (int)Args.Num("stills", 0);
+            if (span.Index != stillShot) { stillShot = span.Index; stillK = 0; }
+            double nextStill = many > 0 ? span.Dur * (stillK + 0.5) / many : shot.Still ?? span.Dur * 0.6;
+            if (stillK < Math.Max(1, many) && player.Local >= nextStill)
             {
-                stillShot = span.Index;
+                stillK++;
                 Shots.Want($"{file.Id}_s{shot.Id}", 0.05);
                 // --cinebones: where the cast's bones are at each still, for framing shots on them.
                 if (Args.Has("cinebones"))
@@ -298,6 +376,18 @@ public partial class Game
         {
             var c = tc.Cue;
             double t0 = tc.T, over = c.Num("over");
+            // A crowd's cue is each member's, "stagger" seconds apart down the crowd (a wave).
+            if (groups.TryGetValue(c.Actor, out var members))
+            {
+                double stagger = c.Num("stagger");
+                for (int i = 0; i < members.Count; i++)
+                {
+                    var one = tc with { T = tc.T + i * stagger, Cue = Member(c, members[i]) };
+                    if (stagger > 0 && i > 0 && !skipping) later.Add(one);
+                    else Do(one, skipping);
+                }
+                return;
+            }
             switch (c.Do)
             {
                 case "line":
@@ -306,7 +396,7 @@ public partial class Game
                     if (l.Raw == "") break;
                     var take = g.voice.Say(l.VoId, l.Raw);
                     // Narration (the file says whose) reads unnamed, in italics, whoever voices it.
-                    bars.Say(l.Text, file.Narrators.Contains(l.SpeakerId ?? "") ? null : l.Speaker, (take?.Sec ?? CineLines.Reading(l.Text)) + c.Num("linger", 0.7));
+                    bars.Say(l.Text, file.Narrators.Contains(l.SpeakerId ?? "") ? null : l.Speaker, (take?.Sec ?? CineLines.Reading(l.Text)) + c.Num("linger", 0.7), l.Sung);
                     break;
                 }
                 case "music":
@@ -330,11 +420,37 @@ public partial class Game
                     var at = c.Has("where") ? places.Resolve(c.Get("where")) : places.Resolve(MarkEl(c.Str("mark")!));
                     double heading = c.Has("heading") ? c.Num("heading") : c.Str("mark") is string mk ? file.Mark(mk).Heading : 0;
                     Place(c.Actor, at, heading, c.Bool("visible", true));
+                    // "tilt": pitched about their own across axis, degrees (lying on the back,
+                    // a pose made for standing: the Warden in the river, his lamp up).
+                    if (c.Has("tilt") && people.TryGetValue(c.Actor, out var tv)) tv.Rotation = new Vector3(Mathf.DegToRad((float)c.Num("tilt")), (float)heading, 0);
                     break;
                 }
                 case "hide":
-                    if (people.TryGetValue(c.Actor, out var hv)) hv.Visible = !c.Bool("hidden", true);
+                    if (bosses.TryGetValue(c.Actor, out var hw)) hw.Visible = !c.Bool("hidden", true);
+                    else if (NodeOf(c.Actor) is { } hv) hv.Visible = !c.Bool("hidden", true);
                     break;
+                case "lamp":
+                {
+                    // A boss's eyes and lamp, or an orb's light: how bright, and whether it burns.
+                    if (bosses.TryGetValue(c.Actor, out var w))
+                    {
+                        if (c.Has("lit")) w.LampLit = c.Bool("lit", true);
+                        if (!c.Has("glow")) break;
+                        double from = w.Glow, to = c.Num("glow");
+                        if (over > 0 && !skipping) tweens.Add(new Tween(t0, t0 + over, k => w.Glow = from + (to - from) * k));
+                        else w.Glow = to;
+                    }
+                    else if (orbs.TryGetValue(c.Actor, out var o))
+                    {
+                        if (c.Has("lit")) o.Visible = c.Bool("lit", true);
+                        if (!c.Has("glow")) break;
+                        double from = orbLight[c.Actor], to = 6 * c.Num("glow");
+                        void Set(double l) { orbLight[c.Actor] = l; ((IOrb)o).Light = l; }
+                        if (over > 0 && !skipping) tweens.Add(new Tween(t0, t0 + over, k => Set(from + (to - from) * k)));
+                        else Set(to);
+                    }
+                    break;
+                }
                 case "anim":
                 {
                     if (!people.TryGetValue(c.Actor, out var v)) break;
@@ -345,13 +461,16 @@ public partial class Game
                 }
                 case "move":
                 {
-                    if (!people.TryGetValue(c.Actor, out var v)) break;
-                    var to = places.Resolve(c.Has("to") && c.Get("to").ValueKind != JsonValueKind.String ? c.Get("to") : MarkEl(c.Str("to")!));
-                    var from = v.GlobalPosition;
+                    if (NodeOf(c.Actor) is not { } n) break;
+                    var toEl = c.Has("to") && c.Get("to").ValueKind != JsonValueKind.String ? c.Get("to") : MarkEl(c.Str("to")!);
+                    var to = places.Resolve(toEl);
+                    var from = n.GlobalPosition;
                     var dest = V(to);
                     double heading = c.Has("heading") ? c.Num("heading") : Math.Atan2(dest.X - from.X, dest.Z - from.Z);
-                    moves.Add(new Move(c.Actor, from, dest, t0, t0 + c.Num("dur", 1), heading));
-                    if (c.Str("clip") is string mc) v.Cue(mc, 0, c.Num("speed", 1), 0.25);
+                    // An exact place ("abs") is gone to through the air or the water; anything else along the ground.
+                    bool free = orbs.ContainsKey(c.Actor) || (toEl.ValueKind == JsonValueKind.Object && toEl.TryGetProperty("abs", out _));
+                    moves.Add(new Move(c.Actor, from, dest, t0, t0 + c.Num("dur", 1), heading, free));
+                    if (c.Str("clip") is string mc && n is PersonView v) v.Cue(mc, 0, c.Num("speed", 1), 0.25);
                     break;
                 }
                 case "look":
@@ -414,12 +533,24 @@ public partial class Game
                     break;
                 case "atmosphere":
                 {
+                    // A blend of a part of the way, "k0" to "k1" (a dawn begun in one
+                    // cinematic and finished in the next); a skip lands on k1.
                     var to = Atmospheres.ByName(c.Str("preset")!);
-                    if (over > 0 && !skipping && c.Str("from") is string fromName)
+                    double k0 = c.Num("k0"), k1 = c.Num("k1", 1);
+                    if (c.Str("from") is string fromName)
                     {
                         var from = Atmospheres.ByName(fromName);
-                        double last = -1;
-                        tweens.Add(new Tween(t0, t0 + over, k => { if (k - last > 0.02 || k >= 1) { last = k; g.SetAtmosphere(Atmospheres.Blend(from, to, k), k >= 1); } }));
+                        if (over > 0 && !skipping)
+                        {
+                            double last = -1;
+                            tweens.Add(new Tween(t0, t0 + over, k =>
+                            {
+                                if (k - last <= 0.02 && k < 1) return;
+                                last = k;
+                                g.SetAtmosphere(Atmospheres.Blend(from, to, k0 + (k1 - k0) * k), k >= 1);
+                            }));
+                        }
+                        else g.SetAtmosphere(k1 >= 1 ? to : Atmospheres.Blend(from, to, k1));
                     }
                     else g.SetAtmosphere(to);
                     break;
@@ -428,7 +559,10 @@ public partial class Game
                 {
                     var at = places.Resolve(c.Has("where") ? c.Get("where") : MarkEl(c.Str("mark") ?? c.Actor));
                     var style = c.Str("style") switch { "rise" => SpawnStyle.Rise, "burrow" => SpawnStyle.Burrow, _ => SpawnStyle.Walk };
-                    var e = b.SpawnEnemy(c.Str("def") ?? file.Cast.GetValueOrDefault(c.Actor)?.Def ?? "risen", at.X, at.Z, new Battle.SpawnOpts { Style = style, Level = (int)c.Num("level", 1) });
+                    var e = b.SpawnEnemy(c.Str("def") ?? file.Cast.GetValueOrDefault(c.Actor)?.Def ?? "risen", at.X, at.Z, new Battle.SpawnOpts
+                    {
+                        Style = style, Level = (int)c.Num("level", 1), Tag = c.Str("tag"), Disposition = c.Bool("neutral") ? Disposition.Neutral : null,
+                    });
                     if (e != null) enemies[c.Actor] = e;
                     break;
                 }
@@ -582,6 +716,9 @@ public partial class Game
                             AlbedoTexture = Halo(), AlbedoColor = new Color(col.R, col.G, col.B, (float)c.Num("halo", 0.55)), DisableFog = clear,
                         },
                     });
+                    // "light": it lights what is near it too (a lamp held to a face), within "range".
+                    if (c.Has("light"))
+                        root.AddChild(new OmniLight3D { LightColor = col, LightEnergy = (float)c.Num("light"), OmniRange = (float)c.Num("range", 4), OmniAttenuation = 1.4f });
                     // "under": [width, height], the dark of what the light is set in (a tower against the sky).
                     if (c.Get("under") is { ValueKind: JsonValueKind.Array } u)
                     {
@@ -713,7 +850,10 @@ public partial class Game
                 var (x, _, z, heading) = file.Mark(m);
                 p.X = x; p.Z = z; p.Facing = heading; p.Vx = p.Vz = 0;
             }
-            foreach (var v in people.Values) v.QueueFree();
+            foreach (var (name, v) in people) if (!bosses.ContainsKey(name)) v.QueueFree();
+            foreach (var w in bosses.Values) w.QueueFree();
+            foreach (var o in orbs.Values) o.QueueFree();
+            bosses.Clear(); orbs.Clear(); groups.Clear(); later.Clear();
             foreach (var n in props.Values) n.QueueFree();
             props.Clear();
             // Her prints stay: they are in the frost whether it played or not.

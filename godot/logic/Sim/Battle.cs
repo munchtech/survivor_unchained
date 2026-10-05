@@ -84,6 +84,9 @@ public sealed class MapRules
     /// full). An arena's thousand champions at the day's rate paid a Kerchief night 2.5k-3.3k gold,
     /// more than the rest of Act 1 together; there it is a tenth (crafting's measure).</summary>
     public double ChampionGold = 1;
+    /// <summary>A map's suffixes on the survivor: armour counted for less, a dash slower to come
+    /// back, regeneration, and what a draught mends (docs/SKILLS_DESIGN.md §17.2).</summary>
+    public double ArmourMul = 1, DashRecharge = 1, RegenMul = 1, DraughtMul = 1;
 }
 
 public sealed class BattleHooks
@@ -255,6 +258,8 @@ public sealed partial class Battle
     public readonly List<int> PendingBlessings = new();
     /// <summary>Great blessings owed (an arena's first, its fifteenth minute's).</summary>
     public int GreatOwed;
+    /// <summary>Cards more on the next great blessing (the ember-core broken in time).</summary>
+    public int GreatExtra;
     public readonly HashSet<string> Discoveries = new();
     /// <summary>Where the fight is coming from, for the adaptive director.</summary>
     public readonly DamageProfile Profile = new();
@@ -415,7 +420,7 @@ public sealed partial class Battle
         int maxCharges = RoundInt(st.Get(Stat.DashCharges));
         if (p.DashCharges < maxCharges)
         {
-            p.DashRecharge += dt * DashHaste() / st.Get(Stat.DashCooldown);
+            p.DashRecharge += dt * DashHaste() * Rules.DashRecharge / st.Get(Stat.DashCooldown);
             if (p.DashRecharge >= Abilities.Dash.Recharge) { p.DashRecharge = 0; p.DashCharges++; }
         }
 
@@ -424,7 +429,7 @@ public sealed partial class Battle
         if (blockRank > 0 && p.BlockT > 0) p.BlockT = Math.Max(0, p.BlockT - dt);
 
         // Regeneration and hazards on the survivor.
-        double regen = st.Get(Stat.Regen);
+        double regen = st.Get(Stat.Regen) * Rules.RegenMul;
         if (regen > 0 && p.Hp < MaxHp) HealPlayer(regen * dt, "regen", true);
         // Bitterroot draws it: what burns or poisons the survivor wears off twice as fast.
         double cure = Boons.ContainsKey("recovery") ? 2 : 1;
@@ -536,6 +541,7 @@ public sealed partial class Battle
         double x0 = p.X, z0 = p.Z;
         Events.Emit(new Ev.Dash { X0 = x0, Z0 = z0, X1 = x0 + p.DashDX * Abilities.Dash.Distance, Z1 = z0 + p.DashDZ * Abilities.Dash.Distance });
         Fire(TriggerEvent.Dash, new ProcCtx { X = p.X, Z = p.Z });
+        OpenGate(x0, z0);
         return true;
     }
 
@@ -571,6 +577,22 @@ public sealed partial class Battle
     {
         if (a == b) return false;
         return (War.TryGetValue(a, out var wa) && Array.IndexOf(wa, b) >= 0) || (War.TryGetValue(b, out var wb) && Array.IndexOf(wb, a) >= 0);
+    }
+
+    /// <summary>The farthest the survivor's side can hurt within r.</summary>
+    public Enemy? FarthestHostile(double x, double z, double r)
+    {
+        Enemy? best = null;
+        double bd = -1;
+        Spatial.Query(x, z, r, q);
+        foreach (var id in q)
+        {
+            var e = Enemies.Items[id];
+            if (!Targetable(e)) continue;
+            double d = (e.X - x) * (e.X - x) + (e.Z - z) * (e.Z - z);
+            if (d <= r * r && d > bd) { bd = d; best = e; }
+        }
+        return best;
     }
 
     public Enemy? NearestHostile(double x, double z, double r, Func<Enemy, bool>? filter = null)
@@ -1072,7 +1094,7 @@ public sealed partial class Battle
             });
         }
         double dmg = amount;
-        double armor = st.Get(Stat.Armor);
+        double armor = st.Get(Stat.Armor) * Rules.ArmourMul;
         foreach (var z in Zones.Items) if (z.Alive && z.Armor > 0 && Dist(z.X, z.Z, p.X, p.Z) < z.Radius) armor += z.Armor;
         dmg *= 1 - StatBlock.ArmorReduction(armor);
         dmg *= 1 - Clamp(st.GetRaw(Stat.ResistOf(school)), -1, 0.8);
@@ -1100,7 +1122,7 @@ public sealed partial class Battle
         var p = Player;
         if (!p.Alive || p.Iframes > 0 || p.Leap != null) return;
         var st = Stats;
-        double dmg = amount * (1 - StatBlock.ArmorReduction(st.Get(Stat.Armor))) * (1 - Clamp(st.GetRaw(Stat.ResistOf(school)), -1, 0.8));
+        double dmg = amount * (1 - StatBlock.ArmorReduction(st.Get(Stat.Armor) * Rules.ArmourMul)) * (1 - Clamp(st.GetRaw(Stat.ResistOf(school)), -1, 0.8));
         if (p.BulwarkT > 0) dmg *= Has("unmoving") ? 0.2 : 0.35;
         if (Art.WraithT > 0) dmg *= 0.5;
         string source = school switch { School.Fire => "burning ground", School.Frost => "frozen ground", School.Nature => "foul ground", _ => "bad ground" };
@@ -1273,7 +1295,7 @@ public sealed partial class Battle
     {
         var p = Player;
         if (!p.Alive) return;
-        double h = amount * Stats.Get(Stat.Healing) * (1 - Rules.HealCut);
+        double h = amount * Stats.Get(Stat.Healing) * (1 - Rules.HealCut) * (source == "draught" ? Rules.DraughtMul : 1);
         double before = p.Hp;
         p.Hp = Math.Min(MaxHp, p.Hp + h);
         if (!silent && p.Hp - before > 0.5) Events.Emit(new Ev.PlayerHeal { Amount = p.Hp - before });
@@ -1982,6 +2004,7 @@ public sealed partial class Battle
     {
         if (!Content.Weapons.All.ContainsKey(id) || Weapons.Exists(w => w.Id == id) || Weapons.Count >= Content.Weapons.MaxWeapons) return null;
         var w = new WeaponInst(id, rank, Weapons.Count);
+        if (SkillMods.TryGetValue(id, out var sm)) Marks.Fold(w.Mods, sm);
         Weapons.Add(w);
         foreach (var t in w.Def.Triggers) AddTrigger(t, $"weapon:{id}", 1, id);
         CheckDiscoveries();

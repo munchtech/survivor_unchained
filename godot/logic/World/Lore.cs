@@ -47,6 +47,8 @@ public sealed class PersonSpec
     public string? Eyes, EyeRing;
     /// <summary>The paint on her face (Lore.Paints), or none.</summary>
     public string? Paint;
+    /// <summary>The face she started from, whose painting of her skin her head wears (none: her own).</summary>
+    public string? FaceShape;
 }
 
 public sealed class Held { public string? Right, Left, Forearm; }
@@ -100,6 +102,8 @@ public sealed class FolkLine
     /// <summary>A person's line said once in a playthrough, at the first chance
     /// once it holds (npcs.json "said": Brannoc's "Twelve, I made.").</summary>
     public bool? Once;
+    /// <summary>What a once-only line does when said (Maeca, seeing the fang worn: her regard falls).</summary>
+    public List<Change>? Effects;
 }
 
 public sealed class Concern { public string Text = ""; public Cond? When; public bool? Died; }

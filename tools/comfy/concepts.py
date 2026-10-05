@@ -16,7 +16,7 @@ import sys
 HERE = os.path.dirname(os.path.abspath(__file__))
 
 STYLE = ("Dark fantasy video game character concept art, full body, standing heroic pose, facing the viewer, "
-         "plain neutral grey studio background, painterly yet detailed, dramatic rim lighting, Diablo and Baldur's Gate art style. ")
+         "plain neutral grey studio background, painterly yet detailed, dramatic rim lighting, grounded gritty dark fantasy realism with painterly brushwork. ")
 
 LOOKS = {
     "warden_f": "An attractive adult woman warrior, toned athletic hourglass figure with a generous bust and wide hips, "

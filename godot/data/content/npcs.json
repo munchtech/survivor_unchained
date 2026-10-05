@@ -425,6 +425,21 @@
        }
       ]
      }
+    },
+    {
+     "text": "That's his. Wear it where I can't see it.",
+     "when": {
+      "hasTag": "greymuzzle_fang"
+     },
+     "once": true,
+     "effects": [
+      {
+       "rel": {
+        "npc": "maeca",
+        "affection": -10
+       }
+      }
+     ]
     }
    ]
   },

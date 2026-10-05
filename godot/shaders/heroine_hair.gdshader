@@ -82,7 +82,8 @@ void fragment() {
 	} else {
 		float along = UV.y;                                       // 0 at the root, 1 at the tip
 		ALBEDO = tint * t.r * mix(1.0 - roots, 1.0, smoothstep(0.0, 0.1, along)) * mix(0.55, 1.0, depth);
-		ALPHA = t.a * smoothstep(0.0, 0.012, along);             // (its root's blunt end softened)
+		// (its root's blunt end softened; the baby hairs at her hairline faint: its vertex alpha)
+		ALPHA = t.a * smoothstep(0.0, 0.012, along) * COLOR.a;
 	}
 	ALPHA_HASH_SCALE = 1.0;
 	ROUGHNESS = 0.7;

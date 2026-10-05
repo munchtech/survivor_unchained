@@ -1,10 +1,35 @@
 # Experience: the game as a player lives it
 
-Status page for the gameplay experience director (agent `ad1f5623590e09883`, branch
-`worktree-agent-ad1f5623590e09883`; successor to `a33f58e68e89e3ccf`). The audit is
+Status page for the gameplay experience director (agent `ab406cf9ddd22b03b`, branch
+`worktree-agent-ab406cf9ddd22b03b`; successor to `ad1f5623590e09883`). The audit is
 `docs/EXPERIENCE_AUDIT.md`; evidence frames are in `docs/experience/`.
 
-## Current state (2026-10-04, handed off past 500k context)
+## Paused for the owner (2026-10-04)
+
+Took over from `ad1f5623590e09883`; merged the integration branch and its last commit
+(`4abe07d8`). Tests green (567). No code changed yet. Paused at the owner's request.
+
+- **Worktree setup:** `godot/assets` is a junction to `public/assets` (skip-worktree set);
+  `godot/.godot` copied from the old worktree; `override.cfg` in place. The `--import` was stopped
+  at about 1%: rerun `--headless --path godot --import` (about 15 min) before any picture.
+- **Tools:** the scratchpad's `experience/` scripts now point at this worktree;
+  `experience/pending.sh` lists what each lead's branch holds that this one doesn't.
+- **Waiting on merges** (not yet on the integration branch): skills `0d2e4a0b` (numbers that sum,
+  grounds, marks), animation `d7b091ea` (die2/die3), combat `1b0f8bf1` (maps, strongbox),
+  performance `29b5ae5b`. Combat's branch has no run-up danger work yet.
+- **Exact next step:** the crowd's status read (skills is waiting). In `shaders/vat.gdshaderinc`,
+  burning and frozen still add emission over the knee (burn: rim² 1.2 plus an `up` term, which
+  from the 56° camera lights most of a body; glow threshold 1.1), so a crowd blooms cream/white.
+  Plan: no full-body tint; fire as flickering tongues and soot only where they lick, ice as rime
+  patches darker than a pale body, a thin rim, all emission under about 1.0 so it stays
+  saturated. Shoot it first: `play.py frost -- --zone arena --people dead --time night --lab
+  --give hoarfrost:6 --horde 70 --dist 5 --spread 7` (and `cinderfall:6`), then change and reshoot.
+- **Then:** ask combat (`a1d4562f44c7f6feb`) where the run-ups' danger stands (targets 10–20%
+  under half in 7–10, 17–20, 25–28; wins within two points of 93%), and judge each merge as it lands.
+- **Do not build on the maps' length** until the owner confirms what "the Wayfinder's maps are
+  30" means (the main session is asking).
+
+## Before the pause (predecessor, 2026-10-04)
 
 Merged the integration branch at `f56ee42`. Tests green (567). Pushed. **Handed off:**
 `docs/handoff/experience.md` is the successor's brief. Since the list below: S-17 (her blows
@@ -61,8 +86,8 @@ nights, about two after each story night. Playtests now measure it (`TimeIn`).
 - **The chest is staged in the world;** a chest is worth 1.4 things on average, as before.
 - **The fall is the only screen-filling moment;** a boss's kill adds light and a ring, no blast.
 - **A story night needs no way out:** it lets her go by itself.
-- **"The Wayfinder's maps are 30" means the table's nights;** the atlas's build maps run about ten
-  minutes, dense (a pack every 13–15 s), lengthened or shortened by the way, not the packs.
+- **Unconfirmed: "the Wayfinder's maps are 30" read as the table's nights,** making the atlas's
+  build maps about ten minutes. The owner is being asked; build on neither reading until then.
 - **One levelling system at a time:** the ember by night, the character's lessons at dawn.
 
 ## Briefs sent (4 October)

@@ -1341,6 +1341,22 @@
                 "https://polyhaven.com/a/wooden_barrels_01"
               ],
               "lines": []
+            },
+            {
+              "work": false,
+              "text": "grassy_cobblestone: Poly Haven, CC0",
+              "links": [
+                "https://polyhaven.com/a/grassy_cobblestone"
+              ],
+              "lines": []
+            },
+            {
+              "work": false,
+              "text": "gray_rocks: Poly Haven, CC0",
+              "links": [
+                "https://polyhaven.com/a/gray_rocks"
+              ],
+              "lines": []
             }
           ]
         },

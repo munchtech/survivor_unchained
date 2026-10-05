@@ -1308,8 +1308,12 @@ sensual, ending before the act. That cut-away is the scene, for everyone.
 - If explicit scenes are ever wanted, it is the owner's decision with the
   lawyer: a separate Adult Only DLC with its own survey, so the base game
   stays in the normal store.
-- **Still the owner's call:** whether a love scene's "Warmed" buff comes off
-  the scene (Australia's R18+). Leave it until they decide.
+- **A love scene earns nothing in a fight** (the owner, 4 October; Australia's
+  R18+). The condition `warmed` stays as a record that the night happened
+  ("Warmed: last night is still with you" in the book), with no bonus. The
+  notices keep their words without numbers. Affection and trust still move,
+  because that is the relationship. Never give a love scene a mechanical
+  reward.
 
 The planned scenes, kept as notes (the beat sheets are in
 `docs/romance/scenes/`). None of this is game data:

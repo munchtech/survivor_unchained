@@ -36,8 +36,10 @@ CORNER_L, CORNER_R = (56, 944), (680, 944)
 # and the coins its painting set inside the foot, moved out to the corners.
 PICKS = {
     "common": ("card_v3/card_v3_401_3.png", ()),
-    "uncommon": ("card2_uncommon/card2_uncommon_653_1.png", ()),
-    "rare": ("card2_rare/card2_rare_650_1.png", ()),
+    # Louder: the common dressed with the Verge's bramble and moss, painted over (cardcolour.py).
+    "uncommon": ("card3/card3po_uncommon_46_690_0.png", ()),
+    # Louder: the common dressed with the Low Ford's rime, painted over (cardcolour.py).
+    "rare": ("card3/card3m_rare_30_693_0.png", ()),
     "epic": ("card_epic/card_epic_602_0.png", (((98, 852, 150, 902), (-1000, -1000)), ((606, 852, 658, 902), (-1000, -1000)))),
     "legendary": ("card2_legendary/card2_legendary_651_0.png", (((76, 866, 154, 952), CORNER_L), ((598, 866, 677, 952), CORNER_R))),
     "evolution": ("card2_evolution/card2_evolution_652_2.png", ()),

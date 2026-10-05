@@ -165,6 +165,8 @@ public static class Arenas
     public static ArenaResult Finish(Journey j, Battle b, ArenaSpec spec, bool won, string? killer = null)
     {
         var ch = j.Ch;
+        // A fall is told by its killer: the zone hears of it before the battle marks the survivor dead.
+        bool fell = killer != null || !b.Player.Alive;
         double xp = XpFor(spec, b.Time, won);
         var fresh = new List<string>();
         foreach (var id in Skills(b))
@@ -186,7 +188,7 @@ public static class Arenas
         j.BankGold(b);
         // What the night leaves in the survivor's fist, for the Waystation's hands: walked
         // out, all of it; fallen, half.
-        var carry = Crafting.Night(spec.People, spec.Tier, spec.Story, b.EmberLevel, Math.Max(0, b.Time / 60 - spec.Minutes), won, !b.Player.Alive, b.ChampionsByFamily);
+        var carry = Crafting.Night(spec.People, spec.Tier, spec.Story, b.EmberLevel, Math.Max(0, b.Time / 60 - spec.Minutes), won, fell, b.ChampionsByFamily);
         j.Carry(carry, spec.Name);
         var w = j.World;
         if (!won)
@@ -202,18 +204,18 @@ public static class Arenas
         // reacts to every run; ours said one line). The story writes what is said of it.
         w.Facts["arena.last.people"] = spec.People;
         w.Facts["arena.last.won"] = won;
-        w.Facts["arena.last.fell"] = !b.Player.Alive;
+        w.Facts["arena.last.fell"] = fell;
         w.Facts["arena.last.story"] = spec.Story;
         w.Facts["arena.last.tier"] = spec.Tier;
         w.Facts["arena.last.minutes"] = Math.Round(b.Time / 60, 1);
         w.Facts["arena.last.past"] = Math.Round(Math.Max(0, b.Time / 60 - spec.Minutes), 1);
         w.Facts["arena.last.day"] = w.Day;
         w.Facts["arena.last.longest"] = longest;
-        w.Facts["arena.last.killer"] = !b.Player.Alive && killer != null ? killer : null;
+        w.Facts["arena.last.killer"] = fell ? killer : null;
         // How long ago it was: 0 the night itself, 1 the day after (a daily rule counts it on),
         // so the town talks about the night just past and not one from last week.
         w.Facts["arena.last.ago"] = 0;
-        if (!b.Player.Alive) w.Facts["arena.fell"] = w.Fact("arena.fell").Number + 1;
+        if (fell) w.Facts["arena.fell"] = w.Fact("arena.fell").Number + 1;
         w.Facts["arena.nights"] = w.Fact("arena.nights").Number + 1;
         w.Arena = null;
         return new ArenaResult(spec, won, b.Time, b.KillCount, b.EmberLevel, xp, b.GoldTotal, fresh, levels, longest, null, taught)
