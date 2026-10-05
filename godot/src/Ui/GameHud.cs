@@ -904,6 +904,9 @@ public partial class GameHud : CanvasLayer
     /// <summary>How far down the top of the screen is the HUD's (the ember, the clock, a boss's bar).</summary>
     public static float TopClear { get; private set; } = 118;
 
+    /// <summary>The toasts wait (unseen, their time not running) while this is set.</summary>
+    public bool HoldToasts;
+
     Rect2 BannerRect()
     {
         float w = Math.Max(annTitle.GetCombinedMinimumSize().X, Math.Max(annSub.GetCombinedMinimumSize().X, annKicker.Visible ? annKicker.GetCombinedMinimumSize().X : 0));
@@ -1151,6 +1154,8 @@ public partial class GameHud : CanvasLayer
         foreach (var c in toasts.GetChildren())
         {
             if (c is not Control box) continue;
+            // Held while a chest's opening says the same things over the world; told after it, whole.
+            if (HoldToasts) { box.Modulate = Colors.Transparent; continue; }
             double t = (double)box.GetMeta("t") + delta, life = (double)box.GetMeta("life");
             box.SetMeta("t", t);
             float k = (float)(t / life);

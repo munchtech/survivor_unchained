@@ -116,6 +116,7 @@ public partial class ChestCeremony : Control
 
     public override void _Ready()
     {
+        hud.HoldToasts = true;
         BuildChest();
         // The edges of the world go dark round the chest: the eye goes where the light is.
         shade = new TextureRect
@@ -141,13 +142,13 @@ public partial class ChestCeremony : Control
         for (int i = 0; i < count; i++)
         {
             var it = c.Items[i];
-            float s = it.Kind == ChestItemKind.Evolution ? size + 26 : size;
+            float s = it.Kind == ChestItemKind.Evolution || bare ? size + 26 : size;
             var m = new Medallion((int)s, "", pool[i % pool.Count]) { Ring = Style.GoldDim, Ink = new Color("#e8dcc4"), Core = new Color("#1c1410"), Visible = false };
             m.Size = new Vector2(s, s);
             m.PivotOffset = new Vector2(s / 2, s / 2);
             var ring = new Shine { Size = new Vector2(s * 3, s * 3), Colour = ColourOf(it) };
             // Shown alone, its name is the kicker over it: the plate says only what it is.
-            var plate = Plate(it, count > 5 ? 160 : 190, !bare);
+            var plate = Plate(it, bare ? 520 : count > 5 ? 160 : 190, !bare);
             plate.Modulate = Colors.Transparent;
             AddChild(ring);
             AddChild(m);
@@ -190,6 +191,14 @@ public partial class ChestCeremony : Control
         var detail = Style.Label(DetailOf(it).ToUpperInvariant(), Style.UiHeavy, Style.Badge, col.Lightened(0.2f), true, HorizontalAlignment.Center);
         detail.CustomMinimumSize = new Vector2(width, 0);
         v.AddChild(detail);
+        // What it does, read where the eye already is (a Legendary's power).
+        if (it.Says is { Length: > 0 } says)
+        {
+            var line = Style.Label(says, Style.TextItalic, 21, new Color("#e8dcc6"), true, HorizontalAlignment.Center);
+            line.CustomMinimumSize = new Vector2(width, 0);
+            line.AutowrapMode = TextServer.AutowrapMode.WordSmart;
+            v.AddChild(line);
+        }
         v.MouseFilter = MouseFilterEnum.Ignore;
         return v;
     }
@@ -398,6 +407,7 @@ public partial class ChestCeremony : Control
             scene.Hold = 0;
             chest.QueueFree();
             Done = true;
+            hud.HoldToasts = false;
             // An evolution out of it: crowned on the bar as it arrives, and the world slowed for a
             // breath as the new thing fires its first.
             foreach (var r in reels) if (r.It.Kind == ChestItemKind.Evolution) { hud.Crown(r.It.Id); scene.Slow(0.6); }
@@ -409,6 +419,7 @@ public partial class ChestCeremony : Control
         // Left early (a zone changed under it): nothing of it stays in the world.
         if (IsInstanceValid(chest) && !chest.IsQueuedForDeletion()) chest.QueueFree();
         scene.Hold = 0;
+        hud.HoldToasts = false;
     }
 
     /// <summary>A ring of light thrown out from a thing as it lands.</summary>

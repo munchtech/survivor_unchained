@@ -10,9 +10,10 @@ public enum ChestItemKind { Evolution, Rank, Passive, Gold, Gear }
 
 /// <summary>One thing out of a chest, as its opening shows it: what it raised, its name and
 /// glyph, the ranks it went between, how rare it reads, its school (a combat skill's), and for
-/// an evolution what it grew from; for a thing flung out on the ground (a strongbox's gear), where it lies.</summary>
+/// an evolution what it grew from; for a thing flung out on the ground (a strongbox's gear), where it lies;
+/// and what it does, when that is worth reading in the moment (a Legendary's power).</summary>
 public sealed record ChestItem(ChestItemKind Kind, string Id, string Name, string Icon, int From, int To, Rarity Rarity, School? School, string? Before,
-    double? X = null, double? Z = null);
+    double? X = null, double? Z = null, string? Says = null);
 
 /// <summary>A chest opened: where it lay, what came out, whose hoard it was (a boss's, else
 /// null), and how many chests this night has opened (later ones open quicker). Bare: no chest at

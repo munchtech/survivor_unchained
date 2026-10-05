@@ -316,7 +316,7 @@ public partial class Game : Node, IZoneHost
         if (Battle is not { } b) return;
         var def = Items.Find(it.Def);
         var name = it.Name ?? def?.Name ?? it.Def;
-        var shown = new ChestItem(ChestItemKind.Gear, it.Def, name, def?.Icon ?? "chest", 0, 0, (Content.Rarity)it.Rarity, null, null, b.Player.X, b.Player.Z);
+        var shown = new ChestItem(ChestItemKind.Gear, it.Def, name, def?.Icon ?? "chest", 0, 0, (Content.Rarity)it.Rarity, null, null, b.Player.X, b.Player.Z, def?.Description);
         Chest(new ChestOpened(x, z, 7, new[] { shown }, name, 1, Bare: true));
     }
 
