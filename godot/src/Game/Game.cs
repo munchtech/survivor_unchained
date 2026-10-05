@@ -1345,7 +1345,8 @@ public partial class Game : Node, IZoneHost
         // --perf-flip A,B [--perf-flip-every S]: these taken out every other S
         // seconds (default 1) and put back, the frame's "flip" counter 1 while
         // out. One run measures both ways under the same load from the GPU's
-        // other users (it is shared): her, crowd, grass, sunshadows, ssao, msaa;
+        // other users (it is shared): her, furshadow (her fur's shadows), crowd,
+        // grass, sunshadows, ssao, msaa;
         // or quality:Q, scale:S (that quality or resolution while out).
         if (Args.Get("perf-flip") is string flips)
         {
@@ -1371,6 +1372,9 @@ public partial class Game : Node, IZoneHost
                 }
                 wasOut = outNow;
                 if (flipped.Contains("her") && scene.Player != null) scene.Player.Visible = on;
+                if (flipped.Contains("furshadow") && scene.Player != null)
+                    foreach (var n in scene.Player.FindChildren("*fur*", "MeshInstance3D", true, false))
+                        ((MeshInstance3D)n).CastShadow = on ? GeometryInstance3D.ShadowCastingSetting.On : GeometryInstance3D.ShadowCastingSetting.Off;
                 if (flipped.Contains("crowd")) scene.Crowd.Visible = on;
                 if (flipped.Contains("grass") && scene.View.GetNodeOrNull<Node3D>("Grass") is { } g) g.Visible = on;
                 var t = Graphics.Current;
