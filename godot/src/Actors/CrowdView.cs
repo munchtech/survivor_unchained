@@ -277,8 +277,10 @@ public partial class CrowdView : Node3D
         }
         // Gone along under the ground by its script (Grimtunnel's Under): drawn burrowing, as the
         // burrowed are (its back, hat and lamp above the earth), while the effects heave the mound.
-        if (e.State == EnemyState.Active && Under?.Invoke(e) == true) { role = "burrow"; y -= 0.25; t = time + e.Seed * 3; }
         float sc = (float)(e.Def.Scale ?? 1) * Beasts.Size(e.Def.Visual);
+        // (Sunk by its size: at a lampling's quarter metre a foreman of twice its size still walked
+        // the dirt whole.)
+        if (e.State == EnemyState.Active && Under?.Invoke(e) == true) { role = "burrow"; y -= 0.25 + 0.32 * Math.Max(0, sc - 1); t = time + e.Seed * 3; }
         // Struck: a squash, and a flinch along the blow, gone with the flash.
         float f = e.State == EnemyState.Dying ? 0 : (float)e.Flash * (1 - Still);
         // The struck flare's instant of white across the whole body is for a few at once (and any
