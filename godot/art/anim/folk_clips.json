@@ -266,6 +266,17 @@
 		"source": "Kimodo-SOMA-RP (NVIDIA, NVIDIA Open Model License): generated: arms_crossed_0.bvh",
 		"speed": 0.0
 	},
+	"m_bend_lift": {
+		"changes": "retargeted to her skeleton, feet locked, retimed",
+		"hold": true,
+		"layer": "full",
+		"length": 8.89999961853027,
+		"licence": "Kimodo-SOMA-RP (NVIDIA, NVIDIA Open Model License)",
+		"loop": false,
+		"note": "the Warden (C02): bent down to her, the lamp lifted to her face",
+		"source": "Kimodo-SOMA-RP (NVIDIA, NVIDIA Open Model License): generated: bend_lift_1.bvh",
+		"speed": 0.0
+	},
 	"m_cheer": {
 		"changes": "retargeted to her skeleton, feet locked, in place",
 		"layer": "full",
@@ -434,6 +445,17 @@
 		"loop": false,
 		"note": "a caster's rally, armed",
 		"source": "keyed (tools/anim/crowd.py)"
+	},
+	"m_rise_stiff": {
+		"changes": "retargeted to her skeleton, feet locked, retimed",
+		"hold": true,
+		"layer": "full",
+		"length": 4.19999980926514,
+		"licence": "Kimodo-SOMA-RP (NVIDIA, NVIDIA Open Model License)",
+		"loop": false,
+		"note": "the Warden (C02): up from his back under the river, slow and stiff, the lamp kept up",
+		"source": "Kimodo-SOMA-RP (NVIDIA, NVIDIA Open Model License): generated: rise_stiff_1.bvh",
+		"speed": 0.0
 	},
 	"m_sit_chair": {
 		"changes": "retargeted to her skeleton, feet locked, looped, in place",

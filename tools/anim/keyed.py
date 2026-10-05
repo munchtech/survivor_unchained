@@ -267,6 +267,13 @@ class Rig:
         for side in "lr":
             spec = pose.get(f"fingers_{side}", "relaxed")
             curl = finger_curl(spec)
+            # The thumb swung in across the palm before it bends ("oppose", 0..1),
+            # so a fist closes over the fingers instead of thumbing a lift.
+            oppose = spec.get("oppose", 0) if isinstance(spec, dict) else 0
+            if oppose:
+                j = I[f"thumb_01_{side}"]
+                along = qrot(qinv(self.grest[j]), qrot(self.grest[I[f"hand_{side}"]], [0, 1.0, 0]))
+                local[j] = qmul(local[j], qaxis(along / np.linalg.norm(along), oppose * 55 * (1 if side == "l" else -1)))
             for name, angles in curl.items():
                 for k, a in enumerate(angles):
                     j = I[f"{name}_0{k + 1}_{side}"]
