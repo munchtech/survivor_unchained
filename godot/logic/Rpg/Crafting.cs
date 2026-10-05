@@ -20,7 +20,7 @@ namespace SurvivorUnchained.Rpg;
  * before and after) and only then done, so the screen and the tests read the
  * same numbers. The numbers are data (data/content/crafting.json). */
 
-public enum Verb { Temper, WorkIn, Cage, Remake, Rekindle, BreakDown, Brew, Buy, Commission, Set, Bind, Steep }
+public enum Verb { Temper, WorkIn, Cage, Remake, Rekindle, BreakDown, Brew, Buy, Commission, Set, Bind, Steep, Mark, Ink, Burn, Pin, Scrape, Annotate }
 
 public sealed class CraftStep { public int Iron, Gold, GoldPerRarity; public int[] Heat = { 0, 0 }; }
 public sealed class CageRules { public int Shards = 4, Gold = 30, Redraw = 1, Offered = 3, MinRarity = 2; public int[] Heat = { 5, 7 }; }
@@ -32,6 +32,20 @@ public sealed class MaterialRule { public int Qty = 1; public List<string> Into 
 public sealed class Easier { public Cond? When; public int HeatTop, TemperIron, EntryGrade, Gold; public string? Line, Needs; }
 /// <summary>The binder's terms: a shard and gold a grade bound, and the heat it costs the piece that takes it.</summary>
 public sealed class BindRules { public int ShardsPerGrade = 1, GoldPerGrade = 40; public int[] Heat = { 5, 7 }; public string Crafter = "vonnra"; }
+/// <summary>What a map's ruler leaves (its people's thing, carrying its Mark at a grade), and what
+/// inscribing one costs at Vonnra's table (design 20.3).</summary>
+public sealed class MarkRules
+{
+    public string Crafter = "vonnra";
+    public int Gold = 60, GoldPerGrade = 30, Shards = 2, Worn = 3;
+    public int[] Heat = { 5, 7 };
+    /// <summary>A ruler's chance to leave it, and the grade it comes at: a grade every few tiers, sometimes one more.</summary>
+    public double Chance = 0.5, Finer = 0.3;
+    public int TiersPerGrade = 3;
+    /// <summary>By people: the thing its ruler leaves, and the Mark in it.</summary>
+    public Dictionary<string, MarkDrop> Drops = new();
+}
+public sealed class MarkDrop { public string Item = "", Mark = ""; }
 /// <summary>The one gamble (design 9): jars sold while the pump runs, and what steeping does, by weight.</summary>
 public sealed class SlurryRules
 {
@@ -109,6 +123,8 @@ public sealed class CraftingRules
     /// <summary>Trophies that can be set into a piece, by the trophy's item id.</summary>
     public Dictionary<string, SettingRule> Settings = new();
     public BindRules Bind = new();
+    public MarkRules Mark = new();
+    public ChartRules Charts = new();
     public SlurryRules Slurry = new();
     public Dictionary<string, MaterialRule> Materials = new();
     public Dictionary<string, CrafterDef> Crafters = new();
@@ -157,7 +173,7 @@ public sealed class CraftCtx
     public WorldState World => Ctx.World;
 }
 
-public static class Crafting
+public static partial class Crafting
 {
     public const string Iron = "old_iron", Shard = "ember_shard";
 
@@ -335,6 +351,7 @@ public static class Crafting
         Hot(it, q);
         if (q.Blocked != null) return q;
         if (def?.Kindled != null || def?.Grants != null) { q.Blocked = "A coal or a worn skill has no grades."; return q; }
+        if (def?.Mark == true) { q.Blocked = "A mark is as fine as what it came from. A finer one comes from a harder map."; return q; }
         if (a.Tier >= Cap(it)) { q.Blocked = $"Grade {Grade(a.Tier)} is as high as {Article(Inventory.RarityName(it).ToLowerInvariant())} piece goes."; return q; }
         var step = Rules.Temper[Math.Clamp(a.Tier, 0, Rules.Temper.Count - 1)];
         q.After = Line(a.Id, a.Tier + 1);
@@ -739,6 +756,56 @@ public static class Crafting
         return q;
     }
 
+    /* ------------------------------------------------------------- marks -- */
+
+    /// <summary>The Mark a ruler's thing carries, or null if it holds none.</summary>
+    public static AffixRoll? MarkIn(ItemInstance it) =>
+        Items.Get(it.Def).Kind == ItemKind.Trophy ? it.Affixes.FirstOrDefault(a => Items.Affix(a.Id)?.Mark == true) : null;
+
+    /// <summary>The Mark a ruler's thing is made with (by its item id), or null.</summary>
+    public static string? MarkOf(string item) => Rules.Mark.Drops.Values.FirstOrDefault(d => d.Item == item)?.Mark;
+
+    /// <summary>The things carried that hold a Mark, finest first.</summary>
+    public static List<ItemInstance> MarksCarried(CharacterData ch) =>
+        ch.Pack.Where(p => p != null && MarkIn(p) != null).Select(p => p!).OrderByDescending(p => MarkIn(p)!.Tier).ToList();
+
+    /// <summary>What a map's ruler leaves of its own (null: nothing this time): its people's thing, at a
+    /// grade by the map's tier (a grade every few tiers, now and then one finer), to VI.</summary>
+    public static (string Item, int Grade)? RulerMark(string people, int tier, Rng rng)
+    {
+        var r = Rules.Mark;
+        if (!r.Drops.TryGetValue(people, out var d) || rng.Next() >= r.Chance) return null;
+        int g = Math.Clamp((tier - 1) / Math.Max(1, r.TiersPerGrade) + (rng.Next() < r.Finer ? 1 : 0), 0, 5);
+        return (d.Item, g);
+    }
+
+    /// <summary>Inscribe: the Mark in a ruler's thing written into the chosen piece at that thing's grade,
+    /// in an open seam or in place of a chosen power; one Mark to a piece, so a second goes where the
+    /// first was. The thing is used up. Vonnra's, from the binders' book (design 20.3).</summary>
+    public static Quote Inscribe(CraftCtx x, ItemInstance it, ItemInstance from, int replace = -1, string? crafter = null)
+    {
+        var r = Rules.Mark;
+        crafter ??= r.Crafter;
+        var q = Begin(Verb.Mark, crafter, "Inscribe");
+        q.Donor = from.Uid;
+        if (MarkIn(from) is not { } m) { q.Blocked = "There is no mark in that."; return q; }
+        (q.Affix, q.Grade, q.After) = (m.Id, m.Tier, Line(m.Id, m.Tier));
+        if (!Fits(Items.Get(it.Def), m.Id)) { q.Blocked = "It doesn't take to that kind of piece."; return q; }
+        int held = it.Affixes.FindIndex(a => Items.Affix(a.Id)?.Mark == true);
+        q.Index = held >= 0 ? held : replace;
+        if (q.Index >= it.Affixes.Count) q.Blocked = "Choose what it goes in over.";
+        else if (q.Index >= 0) q.Before = Line(it.Affixes[q.Index].Id, it.Affixes[q.Index].Tier);
+        else if (OpenSeams(it) == 0) q.Blocked = Seams(it) == 0 ? "No seam to hold it: have it remade first." : "No open seam: choose what it goes in over.";
+        if (Inventory.Find(x.Ch, from.Uid) is not { InPack: true }) q.Blocked ??= "Carry it in your pack.";
+        var (top, _, _) = Terms(crafter, x.Ctx);
+        q.Takes[Shard] = r.Shards;
+        q.Gold = Price(x, crafter, r.Gold + r.GoldPerGrade * m.Tier);
+        (q.HeatLo, q.HeatHi) = HeatRange(r.Heat, top);
+        Hot(it, q);
+        Afford(x, q);
+        return q;
+    }
+
     /* ----------------------------------------------------------- the slurry -- */
 
     public static bool Slurried(ItemInstance it) => it.Marks?.Contains(Rules.Slurry.Mark) == true;
@@ -935,12 +1002,21 @@ public static class Crafting
             Steeped(x, it, q, rng);
             return true;
         }
-        if (q.Verb == Verb.Bind && (q.Donor == null || Inventory.Find(ch, q.Donor) is not { InPack: true })) return false;
+        if (q.Verb is Verb.Bind or Verb.Mark or Verb.Annotate && (q.Donor == null || Inventory.Find(ch, q.Donor) is not { InPack: true })) return false;
         if (q.Crafter != "" && Closed(q.Crafter, x.Ctx, q.Verb) is not null) return false;
         foreach (var (m, n) in q.Takes) if (Inventory.Count(ch, m) < n) return false;
         if (ch.Gold < q.Gold) return false;
         foreach (var (m, n) in q.Takes) Inventory.Take(ch, m, n);
         ch.Gold -= q.Gold;
+        // A chart is worked on its own terms (CraftingCharts.cs): its mods, not seams.
+        if (q.Verb is Verb.Ink or Verb.Burn or Verb.Pin or Verb.Scrape or Verb.Annotate)
+        {
+            if (it.Chart == null) return false;
+            int spent = ChartDone(it, q, rng, ch);
+            it.Heat = Math.Max(0, (it.Heat ?? 0) - spent);
+            Worked(x, q.Crafter);
+            return true;
+        }
         int cost = q.HeatLo == q.HeatHi ? q.HeatLo : rng.Int(q.HeatLo, q.HeatHi);
         switch (q.Verb)
         {
@@ -990,6 +1066,15 @@ public static class Crafting
                 var d = Inventory.Find(ch, q.Donor!)!;
                 ch.Pack[d.Index] = null;
                 (it.History ??= new()).Add(History(x, q.Crafter, "bind", "Bound by {who}, day {day}"));
+                break;
+            }
+            case Verb.Mark:
+            {
+                var roll = new AffixRoll { Id = q.Affix!, Tier = q.Grade };
+                if (q.Index >= 0) it.Affixes[q.Index] = roll; else it.Affixes.Add(roll);
+                // The ruler's thing is used up: what it held is written into the piece.
+                ch.Pack[Inventory.Find(ch, q.Donor!)!.Index] = null;
+                (it.History ??= new()).Add(History(x, q.Crafter, "mark", "Marked by {who}, day {day}"));
                 break;
             }
             case Verb.Set:

@@ -20,6 +20,8 @@ public static class ItemViews
     public static readonly Color SlurryGreen = new("#a8e08a");
     /// <summary>The bright grade (V), which only the slurry gives: a pale light, not a rarity's colour.</summary>
     public static readonly Color BrightGrade = new("#eaffd6");
+    /// <summary>A Mark's: the binders' ink, a violet that is no rarity's.</summary>
+    public static readonly Color MarkInk = new("#c4a8ff");
 
     /// <summary>A steeped piece's picture with the slurry in it (design 9: "green-black veins, a sick
     /// glow"): the veins run through the thing itself, not over its frame, so they are drawn by a
@@ -312,7 +314,7 @@ void fragment() {
                     if (parts.Length > 1) row.AddChild(Style.Label(parts[1].Trim(), Style.UiBold, Style.Caption, Style.Bad));
                     return (Control)row;
                 }
-                var text = Style.Label(x.Def.Text(x.Tier), Style.UiBold, Style.Caption, x.Def.Kindled != null ? Style.EmberHi : bright ? BrightGrade : new Color("#9ad8ff"), true);
+                var text = Style.Label(x.Def.Text(x.Tier), Style.UiBold, Style.Caption, x.Def.Kindled != null ? Style.EmberHi : x.Def.Mark ? MarkInk : bright ? BrightGrade : new Color("#9ad8ff"), true);
                 if (x.Def.Kindled != null || x.Def.Grants != null) return text;
                 // The bright grade reads as a light, not as one more numeral.
                 var grade = Style.Label(Crafting.Grade(x.Tier), Style.Display, bright ? 14 : 12, bright ? BrightGrade : Style.GoldDim);

@@ -275,8 +275,9 @@ public sealed partial class Journey
             return GiveChart(chart);
         if (p.Kind is PickupKind.Item or PickupKind.Material or PickupKind.Quest && p.Ref != null)
         {
-            // Gear on the ground was rolled when it fell; its light said how good it is.
-            int? rolled = p.Kind == PickupKind.Item && Items.Find(p.Ref)?.Base != null ? p.Tier : null;
+            // Gear on the ground was rolled when it fell; its light said how good it is. A ruler's
+            // Mark fell at its grade the same way.
+            int? rolled = p.Kind == PickupKind.Item && (Items.Find(p.Ref)?.Base != null || Crafting.MarkOf(p.Ref) != null) ? p.Tier : null;
             return GiveItem(p.Ref, Math.Max(1, MathX.RoundInt(p.Value)), rolled, p.Lean, dropped: true);
         }
         return true;
@@ -290,6 +291,8 @@ public sealed partial class Journey
         var it = Inventory.Make(Ch, Maps.Charts.Item, 1, chart.Rarity);
         it.Chart = chart;
         it.Name = Maps.Charts.Title(chart);
+        // A chart has heat as a piece has: the budget for working it at the Wayfinder's table.
+        it.Heat = it.HeatFull = Crafting.ChartHeat(chart);
         if (!Inventory.AddToPack(Ch, it)) { OnToast(new Toast(ToastKind.Warning, "Your pack is full", it.Name)); return false; }
         OnToast(new Toast(ToastKind.Loot, it.Name, Items.Get(Maps.Charts.Item).Description, Items.Get(Maps.Charts.Item).Icon, it.Rarity));
         OnTouch();

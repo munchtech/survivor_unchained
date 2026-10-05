@@ -39,6 +39,14 @@
  },
  "_bind": "Vonnra's binding (design 7.3): a shard and 40 gold a grade bound; the piece that takes it spends 5-7 heat; the donor is unmade.",
  "bind": { "shardsPerGrade": 1, "goldPerGrade": 40, "heat": [5, 7], "crafter": "vonnra" },
+ "_mark": "Marks (design 20.3): a map's ruler leaves its people's thing with its Mark, at a grade every three tiers (sometimes one finer); Vonnra inscribes it in a seam. Worn three at once, in the maps only.",
+ "mark": { "crafter": "vonnra", "gold": 60, "goldPerGrade": 30, "shards": 2, "heat": [5, 7], "worn": 3, "chance": 0.5, "finer": 0.3, "tiersPerGrade": 3,
+  "drops": { "pack": { "item": "mark_hunt_bone", "mark": "of_the_ravine" }, "lamplings": { "item": "mark_lamp_glass", "mark": "of_the_falling_star" },
+   "dead": { "item": "mark_gate_nail", "mark": "of_the_open_gate" }, "kerchiefs": { "item": "mark_red_cord", "mark": "of_the_wheel" } } },
+ "_charts": "Working charts at the Wayfinder's table (design 20.4): a chart's heat by rarity (plain, fine, rare); ink a side, burn and redraw, pin, scrape, annotate. Shards from the scars, the people's material and iron from the atlas.",
+ "charts": { "crafter": "wayfinder", "heat": [4, 6, 8], "perSide": 3, "qualityStep": 5, "qualityMax": 20,
+  "ink": { "shards": 1, "gold": 10, "goldPerTier": 5, "heat": [2, 3] }, "burn": { "shards": 2, "heat": [2, 3] },
+  "pin": { "material": 2, "heat": [1, 1] }, "scrape": { "iron": 3, "heat": [1, 2] }, "annotate": { "gold": 20, "goldPerTier": 10 } },
  "_slurry": "Snib's jars (design 9), while the pump runs: 30 gold, three a day. Steeping, by weight: a grade past the cap, a slurry affix past the seams, only the veins, a grade lost. It sets the piece.",
  "slurry": {
   "jar": "slurry_jar", "crafter": "snib", "mark": "slurried", "gold": 30, "perDay": 3,
@@ -109,7 +117,7 @@
   "vonnra": {
    "name": "Vonnra",
    "place": "The Toll Tower",
-   "verbs": ["bind"],
+   "verbs": ["bind", "mark"],
    "when": {"all": [{"met": "vonnra"}, {"fact": "toll.paid", "eq": true}]},
    "closedLine": "Pay the toll first. Then we shall see what else you can afford.",
    "respectPerCraft": 1,
@@ -129,6 +137,17 @@
    "easier": [
     { "when": { "fact": "vonnra.accused", "eq": true }, "gold": -10, "needs": "after you have accused her", "line": "She charges you a tenth less. She does not say why." }
    ]
+  },
+  "wayfinder": {
+   "name": "Ysolde",
+   "place": "The Wayfinder's Table",
+   "verbs": ["ink", "burn", "pin", "scrape", "annotate"],
+   "when": { "met": "wayfinder" },
+   "closedLine": "The charts are not for strangers.",
+   "respectPerCraft": 1,
+   "respectFromCraft": 10,
+   "lines": {},
+   "easier": []
   },
   "snib": {
    "name": "Snib",

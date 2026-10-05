@@ -19,8 +19,9 @@ public static class Marks
     /// <summary>The dash leaves a ring of holy fire for 3 s, burning for [20 → 90]% of the strongest
     /// skill's damage a second.</summary>
     public const string OpenGate = "of_the_open_gate";
-    /// <summary>Axe Gyre gains an axe for every [6 → 3] foes within 5 m, to three more.</summary>
-    public const string Gyre = "of_the_gyre";
+    /// <summary>Axe Gyre gains an axe for every [6 → 3] foes within 5 m, to three more. (Its id is not
+    /// "of_the_gyre": that is the suffix that grants Axe Gyre, and an id can name only one affix.)</summary>
+    public const string Gyre = "of_the_wheel";
 
     public static readonly string[] All = [Ravine, FallingStar, OpenGate, Gyre];
 

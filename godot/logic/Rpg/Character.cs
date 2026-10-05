@@ -184,6 +184,8 @@ public static class Inventory
         string uid = ch != null ? $"i{ch.NextUid++}" : $"i{loose.Next(1_000_000_000):x}";
         var it = new ItemInstance { Uid = uid, Def = defId, Qty = qty, Rarity = rarity ?? def.Rarity, Affixes = affixes ?? new() };
         if (Crafting.Workable(def)) it.Heat = it.HeatFull = Crafting.HeatAtMaking(it.Rarity, dropped ? new Rng(seed ?? (uint)loose.Next(1_000_000_000)) : null);
+        // A ruler's thing carries its Mark at the grade it fell at (its rarity, I to VI).
+        if (affixes == null && Crafting.MarkOf(defId) is { } mark) it.Affixes.Add(new AffixRoll { Id = mark, Tier = Math.Clamp(it.Rarity, 0, 5) });
         if (def.Base && affixes == null)
         {
             var rng = new Rng(seed ?? (uint)loose.Next(1_000_000_000));
@@ -518,6 +520,11 @@ public static class Character
             foreach (var ar in it.Affixes)
                 if (Items.Affix(ar.Id)?.Grants is { } g && kit.Weapons.All(w => w.Id != g) && kit.Weapons.Count < Content.Weapons.MaxWeapons)
                     kit.Weapons.Add((g, 1 + ar.Tier / 2));
+            // Marks, worn into the maps (Battle.Wear): one to a piece, three at once, and the same Mark
+            // twice is the finer of the two (design 20.3).
+            if (it.Affixes.FirstOrDefault(ar => Items.Affix(ar.Id)?.Mark == true) is { } mk
+                && (kit.Marks.ContainsKey(mk.Id) || kit.Marks.Count < Crafting.Rules.Mark.Worn))
+                kit.Marks[mk.Id] = Math.Max(kit.Marks.GetValueOrDefault(mk.Id), Items.MarkStrength(mk.Tier));
             if (def.Weapon != null && s is EquipSlot.Weapon or EquipSlot.Offhand)
             {
                 // Mastery: every 60 kills with a weapon starts it a rank higher, to +2.

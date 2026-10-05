@@ -112,6 +112,15 @@ T2I = {
             "fragments and a cracked finger bone in the heap",
     "bomb": "a small iron-bound wooden crate charge, orange ember light glowing through the gaps between its slats, a "
             "short lit fuse sparking on top",
+    # The crafting lead's Marks (design 20.3): what each people's map ruler leaves, carrying how it fought.
+    "hunt_bone": "a long pale bone gnawed by a great wolf's teeth into a deliberate spiralling pattern of grooves, "
+                 "a few grey wolf hairs caught in the grooves, a faint cold silver light in the deepest score",
+    "lamp_glass": "a cracked curved shard of thick amber lamp glass with a blackened brass rim, a tiny ember-orange "
+                  "flame still burning inside the crack, soot streaks",
+    "gate_nail": "a long square-headed iron coffin nail bent nearly double, flecked with grave soil and rust, a faint "
+                 "pale holy light glowing along the bend",
+    "red_cord": "a short length of faded red cloth cord tied with many tight knots in a row, frayed ends, a small iron "
+                "ring threaded on it",
     # The crafting lead's (design 9): Snib's jar of the Dig's slurry. No photograph (it has no model).
     "slurry_jar": "a squat grimy grey stoneware crock, its lid lashed down with twine, a crude X scratched deep into its "
                   "belly, sickly bright green light leaking out through the scratch and a crack under the lid, thick "
