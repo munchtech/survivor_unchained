@@ -23,9 +23,9 @@ Phases 1–3 and the endgame's crafting are built.
 
 ## Next, in order
 
-1. **The bench as two panels: built and seen** (`docs/ui_review/bench_v2/`; design 20.8). UI design is judging it. Polish from their notes; their tab art isn't merged here yet.
+1. **The bench**: two panels, then remade as type with the heat as a chain (design 20.8). Waiting on UI design's push (even 28 margins, bare grids, engraved worn slots, `HeldWord` for the held acts); merge it, swap the held acts to `HeldWord`, reshoot every bench and send 1:1 shots.
 2. **Icons:** judge UI art's repaints (red_cord, lamp_glass, scar_glass) in the game: the haul, the satchel, Vonnra's table.
-3. Break down a Legendary for 5 iron and 3 shards, once the loot lead's Legendaries are in.
+3. Measure the endgame's economy (scars and maps mixed, hours): shards and iron in against charts, marks, cages and rekindles out.
 
 ## Decisions (why in design 17, 20.2, 20.7, 20.8)
 

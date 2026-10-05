@@ -1142,3 +1142,12 @@ Marks: tiers 1, 4 and 7, warden and arcanist, the four peoples, a map about ten 
   steeping is one wide card with the odds inside it.
 - Every bench is seen: Brannoc (and "Make me one" as the anvil's other tab), Wenna, Vonnra, Snib and the
   Wayfinder's table. A piece worn by night says so on the anvil.
+- **Then remade as type** (the owner's tightened rules, through UI design: no boxes holding words, words
+  as type rather than buttons): the seams are ledger rows (the grade's numeral, a fine rule, a thin ember
+  mark at the anvil's seam); each craft's name is its act (held for what cannot be undone), with before
+  and after (the after in ember) and its cost in small type; the likeness fades into the panel.
+- **The heat is a chain** of UI art's links, a link a point: hot for what is left, cold iron for what is
+  spent. A craft under the pointer warms the links it would take; struck, they cool, the last first. The
+  chain is the game's motif doing a job here: a piece's working life is its hot links.
+- A Legendary breaks down for five old iron and three shards, wherever it is broken (`Crafting.Yield`),
+  and Brannoc has his own words over it (the story lead's).
