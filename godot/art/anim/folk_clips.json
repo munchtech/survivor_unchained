@@ -226,6 +226,17 @@
 		"source": "Kimodo-SOMA-RP (NVIDIA, NVIDIA Open Model License): generated: talk_0.bvh",
 		"speed": 0.0
 	},
+	"f_unfold_arms": {
+		"changes": "retargeted to her skeleton, feet locked, looped, in place",
+		"hold": true,
+		"layer": "full",
+		"length": 2.96666669845581,
+		"licence": "Kimodo-SOMA-RP (NVIDIA, NVIDIA Open Model License)",
+		"loop": false,
+		"note": "Mother Rook (C04 B4b): her folded arms unfolded, the hands together low before her",
+		"source": "keyed over Kimodo-SOMA-RP (NVIDIA, NVIDIA Open Model License): generated: arms_crossed_0.bvh",
+		"speed": 0.0
+	},
 	"f_walk": {
 		"changes": "retargeted to her skeleton, feet locked, looped, in place",
 		"layer": "full",

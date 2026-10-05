@@ -647,6 +647,36 @@
 		"note": "keyed: back spring, 0.32 s flight, three-point landing",
 		"source": "keyed (tools/anim)"
 	},
+	"wade": {
+		"changes": "retargeted to her skeleton, feet locked, travel taken out, looped (seam spread)",
+		"layer": "full",
+		"length": 1.39999997615814,
+		"licence": "CC BY 4.0",
+		"loop": true,
+		"note": "her wade out of shin-deep water (C04 A1); the feet lifted clear each stride",
+		"source": "100STYLE Neutral_FW frames 799-883 (60 fps)",
+		"speed": 0.922163217461154
+	},
+	"walk_tired": {
+		"changes": "retargeted to her skeleton, feet locked, travel taken out, looped (seam spread)",
+		"layer": "full",
+		"length": 1.39999997615814,
+		"licence": "CC BY 4.0",
+		"loop": true,
+		"note": "her walk, tired (C04: up out of the ford, up the road, into the Waystation)",
+		"source": "100STYLE Neutral_FW frames 799-883 (60 fps)",
+		"speed": 0.922163217461154
+	},
+	"walk_uphill": {
+		"changes": "retargeted to her skeleton, feet locked, travel taken out, looped (seam spread)",
+		"layer": "full",
+		"length": 1.39999997615814,
+		"licence": "CC BY 4.0",
+		"loop": true,
+		"note": "her walk up a hill, leaning into it (C04 A8)",
+		"source": "100STYLE Neutral_FW frames 799-883 (60 fps)",
+		"speed": 0.922163217461154
+	},
 	"warcry": {
 		"layer": "upper",
 		"length": 0.800000011920929,

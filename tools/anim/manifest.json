@@ -8,7 +8,7 @@
   "Kimodo": "NVIDIA Kimodo-SOMA-RP-v1.1, NVIDIA Open Model License: generated motion (tools/anim/kimodo_gen.py).",
   "SAM 3D Body": "Meta SAM 3D Body (SAM License) with the Momentum Human Rig (Apache 2.0): motion from video (tools/anim/video_motion.py); test footage from Pexels (Pexels licence), each clip's URL in its row."
  },
- "made": 76,
+ "made": 79,
  "planned": 71,
  "clips": [
   {
@@ -921,6 +921,42 @@
    "licence": "own work",
    "changes": "",
    "length": 2.0,
+   "layer": "full"
+  },
+  {
+   "clip": "wade",
+   "plays_for": "(not in the plan)",
+   "status": "made",
+   "fallback": "-",
+   "made_by": "",
+   "source": "100STYLE Neutral_FW frames 799-883 (60 fps)",
+   "licence": "CC BY 4.0",
+   "changes": "retargeted to her skeleton, feet locked, travel taken out, looped (seam spread)",
+   "length": 1.4,
+   "layer": "full"
+  },
+  {
+   "clip": "walk_tired",
+   "plays_for": "(not in the plan)",
+   "status": "made",
+   "fallback": "-",
+   "made_by": "",
+   "source": "100STYLE Neutral_FW frames 799-883 (60 fps)",
+   "licence": "CC BY 4.0",
+   "changes": "retargeted to her skeleton, feet locked, travel taken out, looped (seam spread)",
+   "length": 1.4,
+   "layer": "full"
+  },
+  {
+   "clip": "walk_uphill",
+   "plays_for": "(not in the plan)",
+   "status": "made",
+   "fallback": "-",
+   "made_by": "",
+   "source": "100STYLE Neutral_FW frames 799-883 (60 fps)",
+   "licence": "CC BY 4.0",
+   "changes": "retargeted to her skeleton, feet locked, travel taken out, looped (seam spread)",
+   "length": 1.4,
    "layer": "full"
   }
  ]
