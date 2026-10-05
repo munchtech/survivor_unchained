@@ -9,15 +9,21 @@ For each side, frame by frame, it measures:
   an elbow can't make;
 - the hand's turn on the forearm, split into the wrist's bend and a twist
   about the hand's length (the wrist has none of its own: a twist there
-  is a forearm twist put in the wrong bone);
+  is a forearm twist put in the wrong bone); the bend split again as a
+  wrist bends, toward the palm or the back (flexion, extension: far) and
+  toward the thumb or the little finger (radial, ulnar: a little), on the
+  wrist's own axes, which turn with the forearm as it rolls;
 - how far the hand turns in her space from one frame to the next (a flip
   shows as a turn of tens of degrees in a frame that the arm can't make).
 
 Flags (degrees): a hand or forearm spinning about its own length more than
 FLIP in one frame (30 fps), or any hand turning more than 120; a
-wrist twist past WRIST_TWIST; a wrist bend past WRIST_BEND; a forearm twist
-past FORE_TWIST from rest; an elbow bent sideways past ELBOW_SIDE. Reports
-the worst frames of each clip.
+wrist twist past WRIST_TWIST; a wrist bend past WRIST_BEND, or past what a
+wrist can do (FLEX, EXT, RADIAL, ULNAR: some degrees past the solver's own
+limits, keyed.Rig, as the solver reads the bend about the forearm's line
+and this about the hand's, up to 13 degrees apart on the hero); a forearm
+twist past FORE_TWIST from rest; an elbow
+bent sideways past ELBOW_SIDE. Reports the worst frames of each clip.
 """
 from __future__ import annotations
 
@@ -38,6 +44,7 @@ WRIST_TWIST = 50.0
 WRIST_BEND = 95.0
 FORE_TWIST = 120.0
 ELBOW_SIDE = 25.0
+FLEX, EXT, RADIAL, ULNAR = 85.0, 75.0, 30.0, 45.0
 
 SETS = [("her", HERE / "out" / "clips", "heroine_skeleton.json"),
         ("hero", HERE / "out" / "hero", "hero_skeleton.json"),
@@ -59,6 +66,30 @@ def swing_twist(q, axis):
     s = qmul(q, qinv(t))
     sw = math.degrees(2 * math.acos(min(1.0, abs(s[3]))))
     return sw, tw
+
+
+def wrist_bend(dh, y, side):
+    """A hand's local turn from rest (dh) as the wrist's flexion (+ toward the
+    palm) and deviation (+ toward the thumb), degrees: the twist about the
+    hand's length (y) taken off first, so the bend is read on the axes the
+    forearm's roll leaves (dh = twist * bend)."""
+    t = np.array([*(y * np.dot(dh[:3], y)), dh[3]])
+    n = np.linalg.norm(t)
+    t = t / n if n > 1e-9 else np.array([0, 0, 0, 1.0])
+    s = qmul(qinv(t), dh)
+    if s[3] < 0:
+        s = -s
+    a = 2 * math.acos(min(1.0, s[3]))
+    if a < 1e-6 or np.linalg.norm(s[:3]) < 1e-9:
+        return 0.0, 0.0
+    ax = s[:3] / np.linalg.norm(s[:3])
+    # The hand's +Z is its thumb side (keyed.Rig); +X = Y x Z is the back of
+    # her right hand and the palm of her left.
+    z = np.array([0, 0, 1.0]) - y * y[2]
+    z = z / np.linalg.norm(z)
+    x = np.cross(y, z)
+    d = math.degrees(a)
+    return d * float(np.dot(ax, z)) * (1 if side == "r" else -1), d * float(np.dot(ax, x))
 
 
 def angle(a, b):
@@ -140,9 +171,10 @@ def audit(path, sk):
                 roll_h = abs(swing_twist(qmul(g[f, h], qinv(g[f - 1, h])), ax / np.linalg.norm(ax))[1])
                 ax = qrot(g[f, fa], fa_axis)
                 roll_fa = abs(swing_twist(qmul(g[f, fa], qinv(g[f - 1, fa])), ax / np.linalg.norm(ax))[1])
-            rows.append((f, step, step_fa, fa_tw, h_sw, h_tw, roll_h, roll_fa))
+            flex, dev = wrist_bend(dh, h_axis, s)
+            rows.append((f, step, step_fa, fa_tw, h_sw, h_tw, roll_h, roll_fa, flex, dev))
         flags = []
-        for f, step, step_fa, fa_tw, h_sw, h_tw, roll_h, roll_fa in rows:
+        for f, step, step_fa, fa_tw, h_sw, h_tw, roll_h, roll_fa, flex, dev in rows:
             why = []
             if roll_h > FLIP:
                 why.append(f"hand spins {roll_h:.0f} in a frame")
@@ -154,6 +186,10 @@ def audit(path, sk):
                 why.append(f"wrist twist {h_tw:+.0f}")
             if h_sw > WRIST_BEND:
                 why.append(f"wrist bend {h_sw:.0f}")
+            if dev > RADIAL or -dev > ULNAR:
+                why.append(f"wrist bent {'to the thumb' if dev > 0 else 'to the little finger'} {abs(dev):.0f}")
+            if flex > FLEX or -flex > EXT:
+                why.append(f"wrist {'flexed' if flex > 0 else 'bent back'} {abs(flex):.0f}")
             if abs(fa_tw) > FORE_TWIST:
                 why.append(f"forearm twist {fa_tw:+.0f}")
             if f in out[f"elbow_{s}_bad"]:
@@ -164,7 +200,8 @@ def audit(path, sk):
                 flags.append((f, "; ".join(why)))
         out[s] = {"max_step": max(r[6] for r in rows), "max_step_fa": max(r[7] for r in rows),
                   "max_wrist_twist": max(abs(r[5]) for r in rows), "max_wrist_bend": max(r[4] for r in rows),
-                  "max_fore_twist": max(abs(r[3]) for r in rows), "flags": flags}
+                  "max_fore_twist": max(abs(r[3]) for r in rows), "max_dev": max(abs(r[9]) for r in rows),
+                  "flags": flags}
     return d, out
 
 
@@ -192,7 +229,7 @@ def main(argv):
                 parts = []
                 for s, o in arms.items():
                     parts.append(f"{s}: spin {o['max_step']:.0f}/{o['max_step_fa']:.0f} wtw {o['max_wrist_twist']:.0f} "
-                                 f"wbend {o['max_wrist_bend']:.0f} ftw {o['max_fore_twist']:.0f} elbow {out['elbow_' + s]:.0f} "
+                                 f"wbend {o['max_wrist_bend']:.0f} wdev {o['max_dev']:.0f} ftw {o['max_fore_twist']:.0f} elbow {out['elbow_' + s]:.0f} "
                                  f"knee {out['knee_' + s]:.0f} ({len(o['flags'])} flagged)")
                 print(f"{label:6s} {f.stem:28s} " + " | ".join(parts))
                 for s, o in bad.items():

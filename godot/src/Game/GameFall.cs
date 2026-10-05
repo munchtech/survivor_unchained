@@ -47,6 +47,8 @@ public partial class Game
         if (scene == null) { letGo(); return; }
         hud.Prompt(promptShown = null);
         ShadeWorld(1, 0.9);
+        // She goes down where she stands (the fight only holds her at a breath of life).
+        scene.Player?.Fall();
         if (risesLeft <= 0)
         {
             // No rise left: the night is lost, and the fall says so on its own.
@@ -97,6 +99,7 @@ public partial class Game
         {
             ShadeWorld(0, 0.01);
             rise();
+            scene?.Player?.Revive();
             hud.Fade(0, 1.0);
         });
     }

@@ -27,7 +27,7 @@ from pathlib import Path
 import numpy as np
 
 import bvh as bvhlib
-from rig import Clip, Skeleton, qbetween, qinv, qmul, qnorm, qrot, qslerp, two_bone_ik
+from rig import Clip, Skeleton, qaxis, qbetween, qinv, qmul, qnorm, qrot, qslerp, two_bone_ik
 
 MOCAP = Path(r"C:\Users\munch\Tools\mocap")
 
@@ -668,5 +668,48 @@ def spread_twist(sk: Skeleton, local, share=0.5):
     return L
 
 
+def keep_wrists(sk: Skeleton, local):
+    """A take's wrists brought within what a wrist can do (keyed.Rig's
+    range: far toward the palm and back, little to either side), read on
+    the wrist's own axes, which turn with the forearm's roll. A performer's
+    hand on another body's arm can land past them (her hands are smaller
+    and her forearms shorter); the hand then falls a little short."""
+    from keyed import Rig
+    L = local.copy()
+    for side in "lr":
+        ha = sk.i(f"hand_{side}")
+        mid = sk.i(f"middle_01_{side}")
+        y = sk.rest_pos[mid] / np.linalg.norm(sk.rest_pos[mid])
+        z = np.array([0, 0, 1.0]) - y * y[2]
+        z = z / np.linalg.norm(z)
+        x = np.cross(y, z)
+        sgn = 1.0 if side == "r" else -1.0
+        rest = sk.rest_rot[ha]
+        for t in range(L.shape[0]):
+            dh = qmul(qinv(rest), L[t, ha])
+            tw = np.array([*(y * np.dot(dh[:3], y)), dh[3]])
+            n = np.linalg.norm(tw)
+            if n < 1e-9:
+                continue
+            tw = tw / n
+            s = qmul(qinv(tw), dh)
+            if s[3] < 0:
+                s = -s
+            a = 2 * math.acos(min(1.0, s[3]))
+            if a < 1e-6 or np.linalg.norm(s[:3]) < 1e-9:
+                continue
+            ax = s[:3] / np.linalg.norm(s[:3])
+            d = math.degrees(a)
+            flex, dev = d * float(np.dot(ax, z)) * sgn, d * float(np.dot(ax, x))
+            f2, d2 = Rig._wrist_clamp(Rig, flex, dev)
+            if (f2, d2) == (flex, dev):
+                continue
+            v = f2 * sgn * z + d2 * x
+            ang = float(np.linalg.norm(v))
+            s2 = qaxis(v / ang, ang) if ang > 1e-6 else np.array([0, 0, 0, 1.0])
+            L[t, ha] = qmul(rest, qmul(tw, s2))
+    return L
+
+
 def clip_from(name, sk, local, pos, loop=False, meta=None):
-    return Clip(name, 30, spread_twist(sk, local), pos, loop=loop, meta=meta or {})
+    return Clip(name, 30, keep_wrists(sk, spread_twist(sk, local)), pos, loop=loop, meta=meta or {})

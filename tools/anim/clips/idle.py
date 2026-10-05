@@ -29,7 +29,7 @@ def layered(name, rig, base: Clip, over, meta=None) -> Clip:
     from keyed import solve_frames
     n = base.frames
     rot, pos = solve_frames(rig, [over(f / max(n - 1, 1), f) for f in range(n)], [(base.rot[f], base.pos[f]) for f in range(n)],
-                            loop=base.loop)
+                            loop=base.loop, weapon=(meta or {}).get("weapon", ""))
     m = dict(base.meta)
     m.update(meta or {})
     return Clip(name, base.fps, rot, pos, loop=base.loop, meta=m)
