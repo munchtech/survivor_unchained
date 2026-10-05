@@ -180,6 +180,24 @@
 		"source": "Mixamo (Adobe): used in the game under Mixamo's terms, raw files not redistributed: folk_sitting_floor.bvh",
 		"speed": 0.0
 	},
+	"f_slam": {
+		"impact": 1.0,
+		"layer": "full",
+		"length": 1.66666662693024,
+		"licence": "own work",
+		"loop": false,
+		"note": "a heavy's slam: up overhead, down onto the ground, and up again",
+		"source": "keyed (tools/anim/crowd.py)"
+	},
+	"f_slam_armed": {
+		"impact": 1.0,
+		"layer": "full",
+		"length": 1.66666662693024,
+		"licence": "own work",
+		"loop": false,
+		"note": "a heavy's slam: up overhead, down onto the ground, and up again, armed",
+		"source": "keyed (tools/anim/crowd.py)"
+	},
 	"f_talk": {
 		"changes": "retargeted to her skeleton, feet locked, looped, in place",
 		"layer": "full",
@@ -400,6 +418,24 @@
 		"note": "townsfolk (men)",
 		"source": "Mixamo (Adobe): used in the game under Mixamo's terms, raw files not redistributed: folk_sitting_floor.bvh",
 		"speed": 0.0
+	},
+	"m_slam": {
+		"impact": 1.0,
+		"layer": "full",
+		"length": 1.66666662693024,
+		"licence": "own work",
+		"loop": false,
+		"note": "a heavy's slam: up overhead, down onto the ground, and up again",
+		"source": "keyed (tools/anim/crowd.py)"
+	},
+	"m_slam_armed": {
+		"impact": 1.0,
+		"layer": "full",
+		"length": 1.66666662693024,
+		"licence": "own work",
+		"loop": false,
+		"note": "a heavy's slam: up overhead, down onto the ground, and up again, armed",
+		"source": "keyed (tools/anim/crowd.py)"
 	},
 	"m_talk": {
 		"changes": "retargeted to her skeleton, feet locked, looped, in place",
