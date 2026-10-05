@@ -91,6 +91,8 @@ public partial class SheetScreen : Overlay
 
     /// <summary>Points put in but not yet kept: shown everywhere as they would be, until Confirm or Undo.</summary>
     static readonly Dictionary<string, int> pending = new();
+    /// <summary>The level each survivor was last seen at here, so the lamp flares once for a level gained.</summary>
+    static readonly Dictionary<string, int> seenLevel = new();
     static string pendingFor = "";
     string? hovered;
 
@@ -121,6 +123,16 @@ public partial class SheetScreen : Overlay
         Calling(v, ch, arch, back, knows);
         v.AddChild(Prompts());
         ShowStanding();
+        // The lamp-iron on the panel's left frame, its cage over the world; it flares for a level gained.
+        bool gained = seenLevel.TryGetValue(ch.Id, out var was) && ch.Level > was;
+        seenLevel[ch.Id] = ch.Level;
+        var lamp = new Lamp(gained) { ZIndex = 5 };
+        if (lamp.Has)
+        {
+            lamp.Position = new Vector2(BookX - Lamp.Plate.X, 16 + 8);
+            AddChild(lamp);
+        }
+        else lamp.Free();
     }
 
     /// <summary>The way to the next level: a thin bar in the day's blue, with its numbers.</summary>

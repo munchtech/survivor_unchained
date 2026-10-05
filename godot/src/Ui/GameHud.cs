@@ -56,6 +56,7 @@ public partial class GameHud : CanvasLayer
     TextureRect abilityGlyph = null!;
     Label abilityCd = null!, abilityName = null!;
     Label zoneName = null!;
+    DayDial dial = null!;
     HBoxContainer zoneSub = null!;
     VBoxContainer objectives = null!, toasts = null!;
     PanelContainer promptBox = null!, hintBox = null!;
@@ -428,6 +429,8 @@ public partial class GameHud : CanvasLayer
         zoneSub = Style.H(6);
         zoneSub.Alignment = BoxContainer.AlignmentMode.End;
         c.AddChild(zoneSub);
+        dial = new DayDial { Visible = false, SizeFlagsVertical = Control.SizeFlags.ShrinkEnd };
+        zoneSub.AddChild(dial);
         c.AddChild(Style.Gap(10));
         objectives = Style.V(3);
         c.AddChild(objectives);
@@ -788,9 +791,35 @@ public partial class GameHud : CanvasLayer
     public void ZoneInfo(string name, string? region, int day, TimeOfDay time)
     {
         zoneName.Text = name.ToUpperInvariant();
-        foreach (var c in zoneSub.GetChildren()) c.QueueFree();
-        zoneSub.AddChild(Glyphs.Icon(time == TimeOfDay.Night ? "moon" : "sun", 15, time == TimeOfDay.Night ? Hex("#b8ccff") : Hex("#ffd890")));
+        foreach (var c in zoneSub.GetChildren()) if (c != dial) c.QueueFree();
+        // Where the clock runs, its dial says the time of day; elsewhere a sun or a moon.
+        if (!dial.Visible) zoneSub.AddChild(Glyphs.Icon(time == TimeOfDay.Night ? "moon" : "sun", 15, time == TimeOfDay.Night ? Hex("#b8ccff") : Hex("#ffd890")));
         zoneSub.AddChild(Style.Label($"{time}  ·  Day {day}" + (region != null ? $"  ·  {region}" : ""), Style.Ui, 17, Style.Ink with { A = 0.85f }));
+    }
+
+    FallChoices? fall;
+
+    /// <summary>The fall's two choices over the darkened world (null clears them).</summary>
+    public void Fall(int? risesLeft, Action? rise = null, Action? letGo = null)
+    {
+        if (fall != null && IsInstanceValid(fall)) fall.QueueFree();
+        fall = null;
+        if (risesLeft is not int n || rise == null || letGo == null) return;
+        fall = new FallChoices(n, rise, letGo);
+        root.AddChild(fall);
+    }
+
+    /// <summary>The day's clock on its dial by the place's name (null: where the clock does not run).</summary>
+    public void Clock(double? clock, bool running)
+    {
+        bool on = clock != null;
+        if (on != dial.Visible)
+        {
+            dial.Visible = on;
+            // (the sun or moon glyph it stands in for comes or goes with it)
+            if (zoneSub.GetChildCount() > 1 && zoneSub.GetChild(1) is TextureRect g) g.Visible = !on;
+        }
+        if (clock is double c) dial.Set(c, running);
     }
 
     public void Objectives(List<Tracked> list)

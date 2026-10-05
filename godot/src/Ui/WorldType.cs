@@ -1,5 +1,6 @@
 using System;
 using System.Text.RegularExpressions;
+using SurvivorUnchained.Play;
 using Godot;
 
 namespace SurvivorUnchained.Ui;
@@ -193,6 +194,75 @@ public partial class Notice : Control
         body.Modulate = Colors.White with { A = a };
         if (light != null) light.Modulate = lightColour with { A = lightColour.A * a };
         return T < Life;
+    }
+}
+
+/// <summary>
+/// The fall's two choices in a story night, as a held moment (the experience director's brief): no
+/// page and no box, the world darkened under them on its own layer, and the two set on it as type,
+/// side by side about her: "Get up" in the ember's light, its key drawn as the key, and "Let the night
+/// go" quieter; under each, what it means. The ember breathes behind "Get up" while it waits. A
+/// click, or the key, chooses.
+/// </summary>
+public partial class FallChoices : Control
+{
+    double t;
+    readonly TextureRect light;
+
+    public FallChoices(int risesLeft, Action rise, Action letGo)
+    {
+        MouseFilter = MouseFilterEnum.Ignore;
+        Size = new Vector2(1920, 1080);
+        light = WorldType.Light(new Vector2(520, 200), Style.Ember with { A = 0 });
+        var row = new HBoxContainer { MouseFilter = MouseFilterEnum.Ignore, Alignment = BoxContainer.AlignmentMode.Center };
+        row.AddThemeConstantOverride("separation", 120);
+        row.AddChild(Choice(Act.Confirm, "Get up", risesLeft == 1 ? "Once, this night: back where you last stood fast." : "Back where you last stood fast.", Style.EmberHi, 40, rise));
+        row.AddChild(Choice(Act.Cancel, "Let the night go", "The night is lost. The day comes on without it.", new Color("#cfc4b0"), 30, letGo));
+        row.Position = new Vector2(0, 560);
+        row.Size = new Vector2(1920, 0);
+        AddChild(row);
+        // (the light sits behind "Get up" itself, wherever the row puts it)
+        var first = (Control)row.GetChild(0);
+        light.Position = first.CustomMinimumSize / 2 - light.Size / 2;
+        light.ShowBehindParent = true;
+        first.AddChild(light);
+        Modulate = Colors.Transparent;
+    }
+
+    static Control Choice(Act key, string title, string line, Color ink, int size, Action pick)
+    {
+        var b = new Button { FocusMode = FocusModeEnum.None, Flat = true, MouseDefaultCursorShape = CursorShape.PointingHand };
+        foreach (var s in new[] { "normal", "hover", "pressed", "focus" }) b.AddThemeStyleboxOverride(s, new StyleBoxEmpty());
+        var head = new HBoxContainer { MouseFilter = MouseFilterEnum.Ignore, Alignment = BoxContainer.AlignmentMode.Center };
+        head.AddThemeConstantOverride("separation", 14);
+        var cap = Style.Prompt(key);
+        cap.SizeFlagsVertical = SizeFlags.ShrinkCenter;
+        head.AddChild(cap);
+        var word = WorldType.Lettering(title.ToUpperInvariant(), Style.Display, size, ink);
+        head.AddChild(word);
+        var col = new VBoxContainer { MouseFilter = MouseFilterEnum.Ignore };
+        col.AddThemeConstantOverride("separation", 6);
+        col.AddChild(head);
+        var under = WorldType.Lettering(line, Style.TextItalic, 18, new Color("#d8cebc"));
+        under.HorizontalAlignment = HorizontalAlignment.Center;
+        col.AddChild(under);
+        b.AddChild(col);
+        b.CustomMinimumSize = col.GetCombinedMinimumSize();
+        // (the two sit on one foot: their lines under them share a baseline)
+        b.SizeFlagsVertical = SizeFlags.ShrinkEnd;
+        col.Position = new Vector2(0, 0);
+        b.MouseEntered += () => word.AddThemeColorOverride("font_color", ink.Lightened(0.25f));
+        b.MouseExited += () => word.AddThemeColorOverride("font_color", ink);
+        b.Pressed += pick;
+        return b;
+    }
+
+    public override void _Process(double delta)
+    {
+        t += delta;
+        Modulate = Colors.White with { A = (float)Math.Clamp(t / 0.5, 0, 1) };
+        // The ember's light behind "Get up", breathing while it waits.
+        light.Modulate = Style.Ember with { A = 0.22f + 0.08f * Mathf.Sin((float)t * 2.1f) };
     }
 }
 

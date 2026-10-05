@@ -120,6 +120,76 @@ public partial class Coal : Control
 }
 
 /// <summary>
+/// The lamp-iron on Self's panel (UI art's lamp, the coordinator's placement): a forged sign-bracket
+/// on the panel's left frame near its top, its cage hanging out over the world with a coal in it,
+/// throwing its warmth on her and the page. The coal breathes slowly and unevenly, so it is alive;
+/// on a level gained it blows bright, holds, and settles back.
+/// </summary>
+public partial class Lamp : Control
+{
+    /// <summary>Where the bracket's plate and the coal are, in the sprite's own shown pixels.</summary>
+    public static readonly Vector2 Plate = new(186.5f, 33), Coal = new(110, 123);
+    double t, flare = -1;
+    readonly Texture2D? lamp, lit, light;
+
+    public Lamp(bool levelGained)
+    {
+        MouseFilter = MouseFilterEnum.Ignore;
+        TextureFilter = TextureFilterEnum.LinearWithMipmaps;
+        lamp = UiArt.Art("lamp/lamp.png");
+        lit = UiArt.Art("lamp/lamp_lit.png");
+        light = UiArt.Art("lamp/light.png");
+        Size = lamp?.GetSize() ?? Vector2.Zero;
+        if (levelGained) flare = 0;
+        // Its warmth, added over the world and the page, under the iron.
+        glowLayer = new LampLight(this) { MouseFilter = MouseFilterEnum.Ignore, ShowBehindParent = true, Material = new CanvasItemMaterial { BlendMode = CanvasItemMaterial.BlendModeEnum.Add } };
+        AddChild(glowLayer);
+    }
+
+    readonly Control glowLayer;
+    public bool Has => lamp != null;
+
+    /// <summary>The coal's slow uneven breath (0.01 to 0.11), or the flare of a level gained.</summary>
+    float Glow
+    {
+        get
+        {
+            float tt = (float)t;
+            float breath = 0.06f + 0.05f * (0.6f * Mathf.Sin(1.3f * tt) + 0.4f * Mathf.Sin(2.9f * tt + 1.1f));
+            // A level gained: blown bright over 0.3 s, held, settling back over 1.5 s.
+            float up = flare < 0 ? 0 : flare < 0.3 ? (float)(flare / 0.3) : flare < 1.3 ? 1 : (float)Math.Max(0, 1 - (flare - 1.3) / 1.5);
+            return Mathf.Max(breath, up);
+        }
+    }
+
+    public override void _Process(double delta) { t += delta; if (flare >= 0) flare += delta; QueueRedraw(); glowLayer.QueueRedraw(); }
+
+    public override void _Draw()
+    {
+        if (lamp == null) return;
+        DrawTexture(lamp, Vector2.Zero);
+        if (lit != null) DrawTexture(lit, Vector2.Zero, new Color(1, 1, 1, Glow));
+    }
+
+    partial class LampLight : Control
+    {
+        readonly Lamp lamp;
+        public LampLight(Lamp lamp) { this.lamp = lamp; }
+
+        public override void _Draw()
+        {
+            if (lamp.light is not { } light) return;
+            var ls = light.GetSize();
+            // 1 at rest, moving with the breath; 1.6 at a level's flare (laid twice past 1).
+            float strength = 1 + (lamp.Glow - 0.06f) * (lamp.Glow > 0.12f ? 0.64f : 1);
+            var at = new Rect2(Coal - ls / 2, ls);
+            DrawTextureRect(light, at, false, new Color(1, 1, 1, Mathf.Clamp(strength, 0, 1)));
+            if (strength > 1) DrawTextureRect(light, at, false, new Color(1, 1, 1, strength - 1));
+        }
+    }
+}
+
+/// <summary>
 /// A small iron dish of live coals at the end of Self's ledger: one coal for each point to spend.
 /// A coal is taken from it to an attribute (a click on the attribute, or a drag from the dish),
 /// and comes back to it if taken back. UI art's coal/dish.png and dish_rim.png win where painted.
