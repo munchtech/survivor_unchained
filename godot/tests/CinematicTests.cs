@@ -223,7 +223,7 @@ public class CinematicTests
             while (p!.Choices.Count == 0) p = r.Advance();
             Assert.Equal("f_chart", p.Node.Id);
             Assert.Contains("This once, no charge.", p.Text);
-            Assert.Single(s.Ch.Pack, it => it?.Chart != null);
+            Assert.Single(s.Ch.Satchel, it => it.Chart != null);
             Assert.True(SurvivorUnchained.Maps.Atlas.IsOpen(s.World, s.Ch));
             Assert.Equal("fortune", r.Choose(p.Choices.Single().Index).Action);
         }

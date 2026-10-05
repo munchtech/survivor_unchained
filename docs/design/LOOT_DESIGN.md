@@ -181,9 +181,7 @@ questions the owner asked.
 - A Legendary's tooltip keeps its power and lore to about six lines, so the compare still fits
   beside it at 1080 (UI design's limit).
 - Rarity numbers stay 0 to 5 in the code (crafting's heat and seams read them). A set piece is
-  rarity 3 with a `set`; the tier is worked out from both (`Loot.TierOf`).
-- **Epic is finer, not only fuller**: its grades roll from the top of its band twice and keep the
-  better (section 4.3).
+  rarity 3 with a `set`; the tier is worked out from both (`Drops.TierOf`).
 - **Why so few Legendaries.** The owner asked for "extremely rare". At 0.4% to 0.5% a roll and the
   drop counts in section 5, a player sees about three to five in Act 1, one of them certain.
   Diablo III's late flood (R8.2) is what we avoid: a Legendary must still stop the room.
@@ -216,33 +214,47 @@ skill.
 | Make | Levels | Base numbers | Weapon damage | Seen in |
 |---|---|---|---|---|
 | **Worn** | 1–7 | ×1.0 | – | the prologue, Act 1's first days |
-| **Sound** | 8–15 | ×1.6 | +10% | Act 1's later nights, the atlas's first tiers |
-| **Wrought** | 16–23 | ×2.4 | +25% | Act 2, tiers 4–7 |
-| **Legion** | 24–31 | ×3.4 | +45% | Act 3, tiers 8–11 |
-| **Heartwrought** | 32+ | ×4.6 | +70% | the deep atlas, tiers 12–16 |
+| **Sound** | 8–15 | ×1.8 | +10% | Act 1's later nights, the atlas's first tiers |
+| **Wrought** | 16–23 | ×2.8 | +25% | Act 2, tiers 4–7 |
+| **Legion** | 24–31 | ×4.0 | +45% | Act 3, tiers 8–11 |
+| **Heartwrought** | 32+ | ×5.5 | +70% | the deep atlas, tiers 12–16 |
 
 The make is a word on the tooltip's second line ("Common helm · Wrought · level 18"), not in the
 name. **Why discrete makes, not a smooth curve**: two pieces are compared at a glance by a word
 (Diablo II's normal, exceptional, elite: R18); a curve would ask the player to read decimals.
 (The names are the items plan's; "Legion" and "Heartwrought" want the story lead's yes.)
 
-Every base gets two implicits so a Common has something to scale (section 10.3). Measured with the
-power score (4.4), the owner's claims hold, and a test holds them (`LootTests`):
+Every armour base gets implicits worth about one and a half affixes, so a Common has something to
+scale (section 10.3). Measured with the power score (4.4) over 200 rolls of each, the owner's claims
+hold for every helm, body and cloak base, and a test holds them (`LootTests`):
+
+| Iron Helm (power) | Common | Uncommon | Rare | Epic |
+|---|---|---|---|---|
+| Worn (level 1–3) | 2.7 | 4.7 | 8.5 | 14.6 |
+| Sound (10) | 5.7 | | | |
+| Wrought (18) | 9.4 | | 15.6 (level 20) | |
+| Heartwrought (34) | 19.5 | | | 35.4 |
+
 - a **Sound Common** beats a **Worn Uncommon** of the same base;
 - a **Wrought Common** beats a **Worn Rare**;
-- a **Heartwrought Common** beats a **Worn Epic**.
+- a **Heartwrought Common** beats a **Worn Epic**;
+- and a deep Rare or Epic is still far better than a deep Common: rarity keeps its meaning.
+
+Rings and amulets are where affixes live: their small implicits scale too, but a Common ring never
+beats a good roll. A late Common ring is a base for the forge, as in Path of Exile.
 
 ### 4.3 Grades: affixes rise with depth
 
 Affix grades keep crafting's model (fixed values a grade, I to VI; `CRAFTING_DESIGN.md` §5.1, 17.2).
-A drop's grades come from its rarity, as today (Uncommon I–II, Rare II–III, Epic III–IV, the Epic
-rolling twice and keeping the better), **raised one grade from level 25 and two from level 35**,
+A drop's grades come from its rarity, as today (Uncommon I–II, Rare II–III, Epic III–IV; the finer
+of the two oftener the deeper it was made, crafting's `FinerGrade`), **raised one grade from level 25
+and two from level 35**,
 to VI at most. Nothing below level 25 changes, so Act 1's forge economy holds as measured. The
 forge's own caps are crafting's (the forge never passes what a piece's level allows).
 
 ### 4.4 The power score
 
-`Loot.Power(item)` sums an item's numbers by a value per unit (armour 1 a point, health 0.12,
+`Drops.Power(item)` sums an item's numbers by a value per unit (armour 1 a point, health 0.12,
 critical chance 0.6 a percent, increased damage 0.35 a percent, and so on, in `loot.json`), minus
 its downsides. It is never shown as a number. It drives three things: the filter's **upgrade**
 test (better than what is worn in that slot, by a margin), the tile's up-arrow, and the tests
@@ -277,7 +289,7 @@ About a third fewer gear drops than today, each one likelier to be Rare or bette
 
 ### 5.2 One roll, in order
 
-`Loot.Roll` (logic, `Rpg/Loot.cs`), for each gear roll:
+`Drops.Roll` (logic, `Rpg/Loot.cs`), for each gear roll:
 
 1. **The tier**, from the weights by level (section 3's table; formulas in `loot.json`), with the
    source's multipliers, the chart's and luck. A Set or Legendary is only rolled if one exists that
@@ -312,8 +324,10 @@ can read its affixes and the beam can say what it is.
 
 ### 5.4 Duplicates
 
-A Legendary owned before can still drop (a better make is a better copy). Breaking one down gives
-crafting's Legendary yield (5 old iron) and 3 ember shards; crafting prices it.
+A Legendary owned before can still drop (a better make is a better copy); a never-owned one is
+four times as likely. An old copy sells, or waits on Rook's shelves. The forge never works a
+Legendary or a set piece, and does not yet break one down (crafting's call; they have agreed 5 old
+iron and 3 ember shards when it does).
 
 ---
 
@@ -330,7 +344,7 @@ fills and never takes a place:
 | **Pouch** | materials and the crafters' currencies (old iron, ember shards, pelts, hide, cloth, dust, herbs, slurry jars) and **trophies** (Greymuzzle's fang, the map rulers' mark-trophies): what the Waystation's hands work with | counts, no limit |
 | **Satchel** | manuals, tomes, the Keeper's Office, and the **Wayfinder's charts** | books by kind (manuals to 3); each chart its own entry |
 | **Key ring** | quest things and tools (lockpicks, blasting ember, Wenna's flask, the strongbox, ledgers, keys) | by kind, at the item's stack |
-| **Belt** | draughts and remedies (health, moonpetal, antidote, bandages) | counts, a carry limit of 10 each (a balance number, not places) |
+| **Belt** | draughts and remedies (health, moonpetal, antidote, bandages) | counts, a carry limit of 20 each (combat's number to move, not places) |
 | **Purse** | gold | a number |
 
 - **Inventory management stays**, where it is a choice: which pieces of gear to keep, and Rook's
@@ -526,11 +540,11 @@ leave room for Legendaries and Rares). The items plan's other eight sets wait fo
 
 | Base | Implicits (Worn) |
 |---|---|
-| Leather Cap | +1 armour, +8 health |
-| Iron Helm | +3 armour, +4 health; 2% slower |
-| Padded Jerkin | +2 armour, +10 health |
+| Leather Cap | +2 armour, +16 health |
+| Iron Helm | +3 armour, +6 health; 2% slower |
+| Padded Jerkin | +3 armour, +12 health |
 | Chain Shirt | +5 armour, +6 health; 4% slower |
-| Traveller's Cloak | +3% speed, +1 armour |
+| Traveller's Cloak | +3% speed (never scaled), +3 armour, +12 health |
 | Copper Ring | +1.5% critical chance |
 | Silver Ring | +6% damage to the dead |
 | Knucklebone Amulet | +6 health, +0.2 health a second |
@@ -550,7 +564,7 @@ leave room for Legendaries and Rares). The items plan's other eight sets wait fo
 | Drop roll and tables | `Rpg/Loot.cs`, `data/content/loot.json`; the four zones call it | weights by level; floors; sources; set and legendary eligibility and homes; the first certain Legendary; the debt; duplicate protection; the Act 1 simulation |
 | Stores | `Rpg/Character.cs` (`Inventory`: satchel, key ring, belt; `Find`, `Count`, `Take`, `Remove`), `World/Save.cs` | routing of every kind; stacking; counts and takes across stores; quest things; charts; the save's move out of the pack; world tags from tools |
 | Filter | `Rpg/LootFilter.cs` | presets; first match; never-hidden; toggles; upgrades |
-| Sets and Legendaries | `items.json`, `Rpg/Loot.cs` (`Sets`), `Character.Kit` | bonuses at 2 and 3; content valid (powers parse, homes exist, least levels) |
+| Sets and Legendaries | `items.json`, `loot.json` (`sets`), `Character.Kit` | bonuses at 2 and 3; content valid (powers parse, homes exist, least levels) |
 | Drop event and placeholder sounds | `Sim` (`Ev.Drop`), `src/Audio/Sfx.cs` | – (heard in the game) |
 | End-of-fight gathering | `Arena/Arena.cs`, `Play/Zones/MapRun.cs` | gathers shown, breaks hidden, overflow to the storeroom |
 

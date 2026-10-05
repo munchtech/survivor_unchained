@@ -59,6 +59,17 @@ public sealed class ItemDef
     public bool Workable;
     /// <summary>The name of several, in running text ("wolf pelts", "old iron"): a material's.</summary>
     public string? Plural;
+    /// <summary>A set piece's set (Loot.Rules.Sets): its own tier for the eye, rarity 3 underneath.</summary>
+    public string? Set;
+    /// <summary>The base a named piece is built on: its own numbers come from that base at its make,
+    /// so a later copy is a better one (docs/design/LOOT_DESIGN.md §4.2).</summary>
+    public string? Of;
+    /// <summary>A Legendary or set piece falls from this level up; without it, it never falls by chance.</summary>
+    public int? DropsFrom;
+    /// <summary>The peoples it is likelier among (pack, dead, lamplings, kerchiefs).</summary>
+    public List<string>? Homes;
+    /// <summary>It falls only while this holds (the Pelt of the Pack after the Pack is slaughtered).</summary>
+    public World.Cond? DropsWhen;
 }
 
 public sealed class AffixDef

@@ -1100,20 +1100,21 @@ public sealed class ArenaRun : ZoneRuntime, IBossArena
     {
         if (over || !bossUp) return;
         var b = boss;
-        if (b != null) foreach (var l in OnLoot(b)) B!.SpawnPickup(l.Kind, x, z, l.Value, l.Ref);
+        if (b != null) foreach (var l in OnLoot(b)) B!.Spill(l, x, z);
         if (won) Felled();
         else Victory(x, z);
     }
 
     /* ------------------------------------------------------------ spoils -- */
 
-    static readonly string[] PlainGear = ["iron_helm", "leather_cap", "chain_shirt", "padded_jerkin", "silver_ring", "copper_ring", "bone_amulet", "travelers_cloak", "watch_buckler"];
-
-    int Rarity(double luck)
+    /// <summary>What a carrier leaves (docs/design/LOOT_DESIGN.md §5): gear rolled whole at the
+    /// carrier's level, fewer and better than before, the people's material where it is not gear;
+    /// deeper past the half hour, the better.</summary>
+    List<Loot> Gear(Enemy e, DropSource source) => G.Journey.Drops(new DropCtx
     {
-        double roll = R() / luck;
-        return roll < 0.04 + Spec.Tier * 0.01 ? 3 : roll < 0.2 + Spec.Tier * 0.02 ? 2 : roll < 0.65 ? 1 : 0;
-    }
+        Source = source, Level = e.Level, People = Spec.People, Lean = lean, Luck = B!.Stats.Get(Stat.Luck), Gear = gear,
+        Depth = Beyond, Tier = Spec.Tier, StoryBoss = Spec.Story && source == DropSource.Boss, R = R,
+    });
 
     IEnumerable<Loot> OnLoot(Enemy e)
     {
@@ -1123,14 +1124,13 @@ public sealed class ArenaRun : ZoneRuntime, IBossArena
         // items plan wants a handful (docs/CRAFTING_DESIGN.md).
         bool small = smallChests.Remove(e.Id), carrier = chests.Remove(e.Id) || small;
         if (carrier) o.Add(new Loot(PickupKind.Chest, small ? "small" : null, 1, true));
-        if (carrier && e != boss && R() < 0.6 * gear)
-            o.Add(new Loot(PickupKind.Item, PlainGear[(int)(R() * PlainGear.Length)], 1, true, Rarity(gear), lean));
+        if (carrier && e != boss)
+            o.AddRange(Gear(e, small ? DropSource.Miniboss : e == herald || e == keeper ? DropSource.Herald : DropSource.Champion));
         if (e == boss)
         {
             int n = 3 + (Spec.Tier >= 3 ? 2 : 0) + (script != null && script.BreakSum >= e.MaxHp * 0.1 ? 1 : 0) + (B!.BossBlowsTaken == bossBlowsBefore ? 1 : 0) + returns;
             o.Add(new Loot(PickupKind.Chest, "boss", n, true));
-            for (int k = 0; k < 2 + Spec.Tier / 2; k++)
-                o.Add(new Loot(PickupKind.Item, PlainGear[(int)(R() * PlainGear.Length)], 1, true, Math.Max(1, Rarity(gear * 1.5)), lean));
+            o.AddRange(Gear(e, DropSource.Boss));
             var pool = Abilities.All.Values.Where(a => a.Movement && ArtBook.CanLearn(G.Journey.Ch, a.Id)).Select(a => a.Id).ToList();
             if (pool.Count > 0) o.Add(new Loot(PickupKind.Item, ArtBook.Manual(pool[(int)(R() * pool.Count)]), 1, true, 2));
         }

@@ -59,7 +59,7 @@ public sealed partial class Journey
             _ => Inventory.Name(it),
         };
         OnToast(new Toast(ToastKind.Loot, title, sub, def.Icon, it.Rarity));
-        if (!loc.InPack) RefreshKit(b); else OnTouch();
+        if (loc.Worn) RefreshKit(b); else OnTouch();
         return true;
     }
 

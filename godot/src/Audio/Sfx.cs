@@ -364,6 +364,77 @@ public static class Sfx
         a.Play(new Fm { T = Now + 0.045, F = R(3100, 3500), Ratio = 1.93, Index = 1.5, D = 0.14, G = 0.03 });
     }
 
+    /// <summary>Loot landing, by its tier (Rpg.LootTier: 0 Common to 6 Storied, then material, book,
+    /// chart, draught, quest), from where it lands (docs/design/LOOT_DESIGN.md §8.1). Placeholders until
+    /// a sound lead: each tier its own, the rarer the longer it rings, and none heard twice a second.</summary>
+    public static void Drop(int tier, Where w = default)
+    {
+        if (A is not { } a || !a.Gate($"drop{tier}", 1, 500)) return;
+        double pan = w.Pan, g = 0.6 + 0.4 * w.Near;
+        switch (tier)
+        {
+            case 0: // Common: a dull clink, cloth and iron.
+                a.Play(new Tone { F = R(140, 170), F2 = 85, D = 0.08, G = 0.06 * g, Pan = pan });
+                a.Play(new Hiss { D = 0.05, G = 0.04 * g, Bp = R(800, 1000), Q = 1.5, Pan = pan });
+                break;
+            case 1: // Uncommon: the clink, and a soft high ring.
+                a.Play(new Tone { F = R(150, 170), F2 = 90, D = 0.07, G = 0.05 * g, Pan = pan });
+                a.Play(new Fm { T = Now + 0.03, F = 1568, Ratio = 2.0, Index = 0.6, D = 0.4, G = 0.025 * g, Pan = pan, Verb = 0.35 });
+                break;
+            case 2: // Rare: one clear bell, struck once.
+                a.Play(new Fm { F = 880, Ratio = 3.5, Index = 1.6, A = 0.002, D = 1.3, G = 0.05 * g, Pan = pan, Verb = 0.45 });
+                a.Play(new Fm { F = 1320, Ratio = 2.76, Index = 0.8, A = 0.002, D = 0.9, G = 0.02 * g, Pan = pan, Verb = 0.45 });
+                break;
+            case 3: // Epic: a struck bell held, with a low hum under it.
+                a.Play(new Fm { F = 660, Ratio = 2.76, Index = 2.2, A = 0.002, D = 2.2, G = 0.06 * g, Pan = pan, Verb = 0.6 });
+                a.Play(new Fm { F = 1320, Ratio = 3.5, Index = 1.0, A = 0.002, D = 1.6, G = 0.025 * g, Pan = pan, Verb = 0.6 });
+                a.Play(new Tone { F = 110, A = 0.15, D = 1.8, G = 0.035 * g, Lp = 600, Pan = pan });
+                break;
+            case 4: // Set: two bells a fifth apart, struck together: a pair.
+                a.Play(new Fm { F = 660, Ratio = 3.5, Index = 1.6, A = 0.002, D = 1.8, G = 0.05 * g, Pan = pan - 0.1, Verb = 0.55 });
+                a.Play(new Fm { F = 990, Ratio = 3.5, Index = 1.6, A = 0.002, D = 1.8, G = 0.045 * g, Pan = pan + 0.1, Verb = 0.55 });
+                a.Play(new Tone { F = 165, A = 0.1, D = 1.4, G = 0.025 * g, Lp = 700, Pan = pan });
+                break;
+            case 5 or 6: // Legendary, Storied: the toll (and its breath of fire).
+                Toll(tier == 6);
+                break;
+            case 7: // Material: a soft pat.
+                a.Play(new Tone { F = R(190, 220), F2 = 120, D = 0.05, G = 0.035 * g, Pan = pan });
+                a.Play(new Hiss { D = 0.04, G = 0.025 * g, Lp = 900, Pan = pan });
+                break;
+            case 8 or 10: // Book, draught: a soft thump and a small glassy tick.
+                a.Play(new Tone { F = 180, F2 = 110, D = 0.06, G = 0.04 * g, Pan = pan });
+                a.Play(new Fm { T = Now + 0.02, F = 2093, Ratio = 2.0, Index = 0.4, D = 0.25, G = 0.015 * g, Pan = pan, Verb = 0.3 });
+                break;
+            case 9: // Chart: paper, and a small chime.
+                a.Play(new Hiss { D = 0.18, G = 0.05 * g, Bp = 3000, Q = 0.8, Pan = pan });
+                a.Play(new Fm { T = Now + 0.06, F = 2093, Ratio = 2.0, Index = 0.5, D = 0.5, G = 0.02 * g, Pan = pan, Verb = 0.4 });
+                break;
+            default: // Quest: a short warm chime.
+                a.Play(new Fm { F = 523, Ratio = 2.0, Index = 0.5, D = 0.8, G = 0.035 * g, Pan = pan, Verb = 0.45 });
+                a.Play(new Fm { T = Now + 0.08, F = 784, Ratio = 2.0, Index = 0.5, D = 0.8, G = 0.03 * g, Pan = pan, Verb = 0.45 });
+                break;
+        }
+    }
+
+    /// <summary>A Legendary has fallen: the horde's sound drops by half for a moment, and the toll
+    /// sounds, a deep bell with its fifth and octave, long in the air, heard for nothing else; a
+    /// rising shimmer after. Faint: the reminder while it lies untaken.</summary>
+    public static void Toll(bool storied = false, bool faint = false)
+    {
+        if (A is not { } a || !a.Gate("toll", 1, faint ? 4000 : 900)) return;
+        double g = faint ? 0.35 : 1;
+        if (!faint) a.DuckSfx(0.5f, 0.5);
+        // On the interface's bus, so the hush does not swallow it.
+        a.Play(new Tone { F = 55, A = 0.004, D = 0.6, G = 0.12 * g, Lp = 300, Bus = Bus.Ui });
+        a.Play(new Fm { F = 98, Ratio = 2.76, Index = 3, A = 0.004, D = 6, G = 0.12 * g, Verb = 0.8, Bus = Bus.Ui });
+        a.Play(new Fm { T = Now + 0.02, F = 147, Ratio = 3.01, Index = 1.5, A = 0.004, D = 5, G = 0.06 * g, Verb = 0.8, Bus = Bus.Ui });
+        a.Play(new Fm { T = Now + 0.03, F = 196, Ratio = 2.0, Index = 1.0, A = 0.004, D = 4.5, G = 0.05 * g, Verb = 0.8, Bus = Bus.Ui });
+        if (faint) return;
+        a.Play(new Fm { T = Now + 0.45, F = 1760, F2 = 2637, A = 0.6, D = 2.2, G = 0.02, Ratio = 2.0, Index = 0.7, Verb = 0.85, Bus = Bus.Ui });
+        if (storied) a.Play(new Hiss { T = Now + 0.5, A = 0.4, D = 1.6, G = 0.06, Lp = 1200, Verb = 0.5, Bus = Bus.Ui });
+    }
+
     public static void Loot(bool rare = false)
     {
         if (A is not { } a) return;

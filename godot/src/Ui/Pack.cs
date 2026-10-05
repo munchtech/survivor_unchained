@@ -41,14 +41,15 @@ public partial class InventoryScreen : Overlay
         [EquipSlot.Cloak] = ("Cloak", "cloak"), [EquipSlot.Amulet] = ("Amulet", "amulet"), [EquipSlot.Ring1] = ("Ring", "ring"), [EquipSlot.Ring2] = ("Ring", "ring"), [EquipSlot.Relic] = ("Relic", "relic"),
     };
 
-    /// <summary>The filters: what each shows.</summary>
-    static readonly (string Name, Func<ItemDef, bool> Has)[] Filters =
+    /// <summary>The pack's places, then the slotless stores (docs/design/LOOT_DESIGN.md §6). A stop-gap
+    /// row until UI design's tabs land: each shows its store, and Use and Leave work from it.</summary>
+    static readonly (string Name, Func<CharacterData, List<ItemInstance>>? Of)[] Filters =
     {
-        ("All", _ => true),
-        ("Gear", d => Items.SlotFor(d) != null),
-        ("Draughts", d => d.Kind == ItemKind.Consumable),
-        ("Materials", d => d.Kind is ItemKind.Material or ItemKind.Trophy or ItemKind.Tool),
-        ("Quest", d => d.Kind == ItemKind.Quest),
+        ("Pack", null),
+        ("Pouch", Inventory.Pouch),
+        ("Satchel", ch => ch.Satchel.ToList()),
+        ("Key ring", ch => ch.Keys.ToList()),
+        ("Belt", Inventory.Belt),
     };
 
     // What has been looked at this session: anything else in the pack is marked new.
@@ -89,8 +90,8 @@ public partial class InventoryScreen : Overlay
         v.AddChild(FilterRow());
         var well = Style.Panel(Style.Well(10));
         var centre = new CenterContainer { MouseFilter = MouseFilterEnum.Ignore };
-        // Materials live in the pouch, not the pack (docs/CRAFTING_DESIGN.md 4.3): their filter shows it.
-        if (filter == PouchFilter) centre.AddChild(ItemViews.Grid(PouchView(ch), 8, 84, it => it.Uid == sel, null, it => Select(it.Uid), null, Hover, "pack", Leave, null));
+        // Only gear takes a place; the stores show what they hold (docs/design/LOOT_DESIGN.md §6).
+        if (Filters[filter].Of is { } of) centre.AddChild(ItemViews.Grid(StoreView(of(ch)), 8, 84, it => it.Uid == sel, null, it => Select(it.Uid), Primary, Hover, "pack", Leave, null));
         else centre.AddChild(ItemViews.Grid(ch.Pack, 8, 84, it => it.Uid == sel, null, it => Select(it.Uid), Primary, Hover, "pack", Leave, SetupCell));
         well.AddChild(centre);
         v.AddChild(well);
@@ -110,12 +111,10 @@ public partial class InventoryScreen : Overlay
         Footer();
     }
 
-    const int PouchFilter = 3;
-
-    /// <summary>The pouch's materials, then the trophies and tools the pack holds, as one shelf.</summary>
-    static List<ItemInstance?> PouchView(CharacterData ch)
+    /// <summary>A store as one shelf of tiles.</summary>
+    static List<ItemInstance?> StoreView(List<ItemInstance> things)
     {
-        var o = Inventory.Pouch(ch).Cast<ItemInstance?>().Concat(ch.Pack.Where(p => p != null && Items.Get(p.Def).Kind is ItemKind.Trophy or ItemKind.Tool)).ToList();
+        var o = things.Cast<ItemInstance?>().ToList();
         while (o.Count < 24 || o.Count % 8 != 0) o.Add(null);
         return o;
     }
@@ -290,7 +289,6 @@ public partial class InventoryScreen : Overlay
                 mark.Position = new Vector2(2, 2);
                 view.AddChild(mark);
             }
-            if (!Filters[filter].Has(Items.Get(it.Def))) view.Modulate = new Color(1, 1, 1, 0.22f);
         }
         // Along the pack, a thing moves (or changes places); from the body, it is taken off into this place.
         view.CanTake = d => d.StartsWith("pack:") || d.StartsWith("eq:");
@@ -326,7 +324,7 @@ public partial class InventoryScreen : Overlay
         Tip(it != null && it.Uid != sel ? ItemViews.Compare(it, Ch, InPack(it)) : null, over);
     }
 
-    bool InPack(ItemInstance it) => Inventory.Find(Ch, it.Uid) is { InPack: true } || Inventory.FromPouch(it.Uid) != null;
+    bool InPack(ItemInstance it) => Inventory.Holds(Ch, it.Uid);
 
     /// <summary>The chosen thing: in the pack, worn, or a stack in the pouch.</summary>
     ItemInstance? Selected => sel == null ? null : Inventory.Find(Ch, sel)?.Item ?? Inventory.Pouch(Ch).FirstOrDefault(p => p.Uid == sel);
@@ -377,7 +375,7 @@ public partial class InventoryScreen : Overlay
         var loc = Inventory.Find(Ch, it.Uid);
         if (loc == null) return;
         var def = Items.Get(it.Def);
-        if (!loc.InPack) { if (loc.Slot != EquipSlot.Weapon) G.Gear((j, b) => j.Unequip(loc.Slot, b)); else Sound.Sfx.Deny(); return; }
+        if (loc.Worn) { if (loc.Slot != EquipSlot.Weapon) G.Gear((j, b) => j.Unequip(loc.Slot, b)); else Sound.Sfx.Deny(); return; }
         if (def.Kind == ItemKind.Consumable) G.Gear((j, b) => j.Use(it.Uid, b));
         else if (Items.SlotFor(def) != null) { Sound.Sfx.Equip(); G.Gear((j, b) => j.Equip(it.Uid, null, b)); }
         else Sound.Sfx.Deny();
@@ -440,15 +438,17 @@ public partial class InventoryScreen : Overlay
         }
         else if (came is { } old && old.Uid != it.Uid) came = null;
         var acts = Style.H(8);
-        // A stack in the pouch: read, and left behind if it must be.
-        if (Inventory.FromPouch(it.Uid) != null)
+        var loc = Inventory.Find(Ch, it.Uid);
+        if (loc == null) return;
+        // A thing in a store: read, used if it is used, and left behind if it must be.
+        if (!loc.InPack && !loc.Worn)
         {
-            if (!Controls.Instance.UsingPad) acts.AddChild(Style.Button(leaving == it.Uid ? "Leave it all behind for good" : "Leave behind", () => Leave(it), false, true));
+            if (!Controls.Instance.UsingPad && def.Kind == ItemKind.Consumable) acts.AddChild(Style.Button("Use", () => Primary(it), true, true));
+            if (!Controls.Instance.UsingPad && !G.Journey.StillNeeded(it))
+                acts.AddChild(Style.Button(leaving == it.Uid ? "Leave it behind for good" : "Leave behind", () => Leave(it), false, true));
             inspect.AddChild(ItemViews.Card(it, Ch, false, acts, 480));
             return;
         }
-        var loc = Inventory.Find(Ch, it.Uid);
-        if (loc == null) return;
         if (!Controls.Instance.UsingPad)
         {
             if (loc.InPack && def.Kind == ItemKind.Consumable) acts.AddChild(Style.Button("Use", () => Primary(it), true, true));

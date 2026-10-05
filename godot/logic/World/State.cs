@@ -187,6 +187,13 @@ public sealed class WorldState
     public List<GroundItem> GroundItems = new();
     /// <summary>The inn's storage: it belongs to the world, so it outlives a character.</summary>
     public List<ItemInstance?> Stash = NewStash();
+    /// <summary>The dark's debt (docs/design/LOOT_DESIGN.md §5.3): gear rolls since the last
+    /// Legendary; at Loot's figure a boss's hoard holds one for certain.</summary>
+    public int LootDebt;
+    /// <summary>A Legendary has fallen in this world: the first story boss's certain one is paid.</summary>
+    public bool FirstLegendary;
+    /// <summary>The Set and Legendary pieces that have fallen here (a never-owned piece is likelier).</summary>
+    public HashSet<string> Owned = new();
     /// <summary>Those who came before.</summary>
     public List<LegacyEntry> Legacy = new();
     /// <summary>Shop stock and prices, by shop.</summary>

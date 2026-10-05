@@ -12,7 +12,11 @@ namespace SurvivorUnchained.Play.Zones;
 
 /// <summary>How a map ended, and what came out of it.</summary>
 public sealed record MapResult(Chart Chart, bool Cleared, double Seconds, int Kills, int Falls, int PacksCleared, int Packs,
-    double? BossTtk, bool FirstClear, Dictionary<string, int> Spilled);
+    double? BossTtk, bool FirstClear, Dictionary<string, int> Spilled)
+{
+    /// <summary>What was still lying at the end: gathered home, to Rook's storeroom, or broken down.</summary>
+    public Journey.Gathered? Gathered { get; init; }
+}
 
 /// <summary>
 /// A Wayfinder's map: the permanent ARPG arena (docs/SKILLS_DESIGN.md §17). The survivor's own
@@ -475,7 +479,7 @@ public sealed class MapRun : ZoneRuntime, IBossArena
     void IBossArena.Won(double x, double z)
     {
         if (over || !bossUp || boss == null) return;
-        foreach (var l in OnLoot(boss)) B!.SpawnPickup(l.Kind, x, z, l.Value, l.Ref);
+        foreach (var l in OnLoot(boss)) B!.Spill(l, x, z);
         RulerDown(x, z);
     }
 
@@ -505,17 +509,14 @@ public sealed class MapRun : ZoneRuntime, IBossArena
 
     /* ------------------------------------------------------------- spoils -- */
 
-    static readonly string[] PlainGear = ["iron_helm", "leather_cap", "chain_shirt", "padded_jerkin", "silver_ring", "copper_ring", "bone_amulet", "travelers_cloak", "watch_buckler"];
-
-    /// <summary>A rarity at the map's tier: rarer finds the higher it is, and under the chart's rarity.</summary>
-    int RarityRoll(double bonus = 1)
+    /// <summary>What a carrier leaves (docs/design/LOOT_DESIGN.md §5): gear rolled whole at the map's
+    /// level (its make climbs with the tier), under the chart's rarity and quantity, the people's
+    /// material where a roll is not gear; extra: further rolls the atlas has earned.</summary>
+    List<Loot> Gear(DropSource source, int extra = 0, int levelUp = 0) => G.Journey.Drops(new DropCtx
     {
-        double roll = R() / (Chart.RarityBonus * bonus);
-        return roll < 0.03 + Chart.Tier * 0.01 ? 3 : roll < 0.18 + Chart.Tier * 0.02 ? 2 : roll < 0.62 ? 1 : 0;
-    }
-
-    Loot Gear(double bonus = 1, int floor = 0) =>
-        new(PickupKind.Item, PlainGear[(int)(R() * PlainGear.Length)], 1, true, Math.Max(floor, RarityRoll(bonus)), MapOffers.Lean(Chart.Map, people.Id));
+        Source = source, Level = Chart.ItemLevel + levelUp, People = Chart.People, Lean = MapOffers.Lean(Chart.Map, people.Id),
+        Luck = B!.Stats.Get(Stat.Luck), Rarity = Chart.RarityBonus, Quantity = Chart.Quantity, Extra = extra, Tier = Chart.Tier, R = R,
+    });
 
     /// <summary>The people's material, as a day's kill drops it; a champion or keeper more.</summary>
     static string? Material(Enemy e) => e.Def.Family switch
@@ -535,8 +536,7 @@ public sealed class MapRun : ZoneRuntime, IBossArena
         }
         if (e == boss)
         {
-            int n = 3 + (R() < 0.5 * q ? 1 : 0) + (R() < 0.25 * q ? 1 : 0) + Atlas.Rank(G.Journey.World, Atlas.RulersHoard);
-            for (int k = 0; k < n; k++) o.Add(Gear(1.5, 1));
+            o.AddRange(Gear(DropSource.MapRuler, Atlas.Rank(G.Journey.World, Atlas.RulersHoard)));
             // Charts: one of its tier or one up, more under quantity; the first clear of a people at a
             // tier always gives the next tier (the ladder).
             bool first = !Atlas.Done(G.Journey.World, Chart.People, Chart.Tier);
@@ -557,10 +557,9 @@ public sealed class MapRun : ZoneRuntime, IBossArena
         if (carriers.Remove(e.Id, out int grade))
         {
             var w = G.Journey.World;
-            int n = grade switch { 3 => 2, 2 => 2, _ => 1 }
-                + (grade == 3 ? Atlas.Rank(w, Atlas.KeepersDue) : 0)
+            int extra = (grade == 3 ? Atlas.Rank(w, Atlas.KeepersDue) : 0)
                 + (grade < 3 && R() < 0.5 * Atlas.Rank(w, Atlas.MarkedMen) / Atlas.MaxRank ? 1 : 0);
-            for (int k = 0; k < n; k++) o.Add(Gear(grade >= 3 ? 1.4 : 1, grade >= 3 && R() < 0.35 ? 2 : 0));
+            o.AddRange(Gear(grade switch { 3 => DropSource.MapKeeper, 2 => DropSource.MapPackFine, _ => DropSource.MapPack }, extra));
             // A rare pack or a keeper, now and then a chart.
             if (grade >= 2 && R() < 0.12 * q) o.Add(new Loot(PickupKind.Item, Charts.Ref(Charts.Roll(rng, Chart.Tier, Chart.People, Chart.RarityBonus)), 1, true, 2));
         }
@@ -580,21 +579,14 @@ public sealed class MapRun : ZoneRuntime, IBossArena
     /// keeper's due" adds), now and then a chart; flung out round it, and its opening shown.</summary>
     void Strongbox(double x, double z)
     {
-        var loot = new List<Loot>();
-        int n = 3 + (R() < 0.5 * Chart.Quantity ? 1 : 0) + (R() < 0.25 * Chart.Quantity ? 1 : 0);
-        for (int k = 0; k < n; k++) loot.Add(Gear(1.3, 1));
+        var loot = Gear(DropSource.Strongbox, levelUp: 1);
         if (R() < 0.25 * Chart.Quantity) loot.Add(new Loot(PickupKind.Item, Charts.Ref(Charts.Roll(rng, Chart.Tier, Chart.People, Chart.RarityBonus)), 1, true, 2));
         var shown = new List<ChestItem>();
         foreach (var l in loot)
         {
             double a = R() * Math.Tau, d = 1.2 + R() * 1.6;
-            if (B!.SpawnPickup(l.Kind, x + Math.Cos(a) * d, z + Math.Sin(a) * d, l.Value, l.Ref) is { } pk)
-            {
-                pk.Persistent = true;
-                if (l.Rarity is { } r) pk.Tier = r;
-                pk.Lean = l.Lean;
-            }
-            if (l.Ref == null) continue;
+            B!.Spill(l with { Persistent = true }, x + Math.Cos(a) * d, z + Math.Sin(a) * d);
+            if (l.Ref == null || l.Kind == PickupKind.Material) continue;
             var chart = Charts.FromRef(l.Ref);
             var def = Items.Find(chart != null ? Charts.Item : l.Ref);
             shown.Add(new ChestItem(ChestItemKind.Gear, def?.Id ?? l.Ref, chart != null ? Charts.Title(chart) : def?.Name ?? l.Ref, def?.Icon ?? "chest", 0, 0,
@@ -664,7 +656,9 @@ public sealed class MapRun : ZoneRuntime, IBossArena
         if (B == null) return;
         over = true;
         G.SetBoss(null);
-        Result = new MapResult(Chart, cleared, Seconds, kills, falls, PacksCleared, PackCount, bossTtk, firstClear, new(spilled));
+        // What the filter shows and is still lying comes home; what it hid is broken down (LOOT_DESIGN §6.2).
+        var gathered = G.Journey.Gather(B);
+        Result = new MapResult(Chart, cleared, Seconds, kills, falls, PacksCleared, PackCount, bossTtk, firstClear, new(spilled)) { Gathered = gathered };
         G.Journey.BankGold(B);
         G.Journey.World.Map = null;
         // (the game tells it on its result page, then goes back to the Waystation)
