@@ -15,7 +15,7 @@ Agent a7a4c20bcfd7ccfd3 (succeeded a79b6d8c81e14dc63 on 5 October), branch `work
 
 ## Next, in order
 
-1. Look at C04 A's new crane at the hand-over, then render the staging for C02, C03 and C04 B (the heart's ring halo in C03); draw the boards (C02's s3, s5, s7, s8, s11; then C01, C03, C04 A and C04 B), each at full size.
+1. Stage animation's new C01 and C04 clips (handoff Next 1), film C04 A's hand-over again, then render the staging for C02, C03 and C04 B (the heart's ring halo in C03); draw the boards (C02's s3, s5, s7, s8, s11; then C01, C03, C04 A and C04 B), each at full size.
 2. Recut the Prologue animatic (`animatics/prologue.txt`; C01's shot 4 is now 6a).
 3. The male hero through the Prologue (`prev.py --male`).
 4. C02's and C03's line choices, then C07 and C09.
