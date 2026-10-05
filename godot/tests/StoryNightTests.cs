@@ -306,10 +306,22 @@ public class StoryNightTests
         Step(n, 400, each: _ =>
         {
             if (boss.Alive && boss.TakenMul > 0) n.B.HitEnemy(boss, boss.MaxHp * 0.02, School.Physical, [Tag.Physical], new HitOpts { NoCrit = true });
-        }, until: () => n.Zone.Interactables.Any(i => i.Id == "story:let_go"));
-        var choice = n.Zone.Interactables.First(i => i.Id == (letGo ? "story:let_go" : "story:finish"));
-        Assert.Equal("Let him go", n.Zone.Interactables.First(i => i.Id == "story:let_go").Verb);
-        choice.Act();
+        }, until: () => n.Zone.Choice != null);
+        var c = n.Zone.Choice!;
+        Assert.Equal("Greymuzzle", c.Who);
+        Assert.Equal("Let him go, or finish it", c.Title);
+        Assert.Equal(["let_go", "finish"], c.Answers.Select(a => a.Id));
+        Assert.Equal("Let him go", c.Answers[0].Verb);
+        n.Zone.Answer("nonsense");
+        Assert.Same(c, n.Zone.Choice);
+        // Left waiting, it waits; nothing comes at her while she weighs it.
+        double hp = n.B.Player.Hp;
+        Step(n, 20);
+        Assert.Same(c, n.Zone.Choice);
+        Assert.Equal(hp, n.B.Player.Hp, 3);
+        Assert.Empty(n.B.Enemies.Living().Where(e => !e.Scripted && e.State != EnemyState.Dying && n.B.HostileToPlayer(e) && !e.Status.Has(StatusKind.Fear)).Select(e => e.Def.Id));
+        n.Zone.Answer(letGo ? "let_go" : "finish");
+        Assert.Null(n.Zone.Choice);
         Step(n, 12, until: () => n.Zone.Won);
         Assert.True(n.Zone.Won);
         Assert.Equal(letGo ? "spared" : "dead", n.J.World.Fact("greymuzzle").Str);

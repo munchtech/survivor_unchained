@@ -14,7 +14,9 @@ namespace SurvivorUnchained.Play.Story;
  * falls: the men in it become what they are without it, and back off.
  *
  * The camp's yard (the Pike-Captain behind it) and Redcowl's second phase (his
- * own levy, out of the carts under the old red standard) both use it. */
+ * own levy, out of the carts under the old red standard) both use it, and the
+ * Seventh Legion's shield lines in the Vault (the Decurion's, the Barrow Lord's
+ * "Iungite!"), which march silent behind their shields. */
 public sealed class Levy
 {
     readonly IStoryArena A;
@@ -37,6 +39,8 @@ public sealed class Levy
     const double Spacing = 1.5, StepEvery = 1.3, StepLength = 1.1, Front = 1.8;
     double stepT = 2.2, waverT, shoveT, biteGrace, drawT;
     readonly string? caller;
+    readonly string front;
+    readonly (string First, string Then) calls;
     int steps;
     /// <summary>Its front's mark (one id a line, so the view moves it rather than adds one).</summary>
     readonly int mark = 890000 + next++ % 9000;
@@ -46,13 +50,20 @@ public sealed class Levy
     public double Wheel = 0.35;
     public bool Broken { get; private set; }
     public int Standing => men.Count(Here);
+    /// <summary>The men still standing in it (or out of it, once it has broken).</summary>
+    public IEnumerable<Enemy> Men => men.Where(Here).Select(m => m.E);
     public int Formed { get; }
 
     /// <param name="caller">Who calls the step ("Level! ...Step! ...Step!"), if anyone is named.</param>
-    public Levy(IStoryArena a, double x, double z, double toX, double toZ, int n, string def = "levy_pike", string? caller = null)
+    /// <param name="front">What its front is, where it hurts her (the levy's pikes, the Legion's shields).</param>
+    /// <param name="calls">The step's words (the first, then every fourth step), if not the levy's.</param>
+    public Levy(IStoryArena a, double x, double z, double toX, double toZ, int n, string def = "levy_pike", string? caller = null,
+        string front = "the levy's pikes", (string First, string Then)? calls = null)
     {
         A = a;
         this.caller = caller;
+        this.front = front;
+        this.calls = calls ?? ("Level! ...Step! ...Step!", "Step!");
         X = x; Z = z;
         double dx = toX - x, dz = toZ - z, d = Math.Max(0.01, Math.Sqrt(dx * dx + dz * dz));
         Fx = dx / d; Fz = dz / d;
@@ -130,7 +141,7 @@ public sealed class Levy
             // It halts at the place's edge (and at her: it pushes, it does not trample).
             double toHer = (p.X - X) * Fx + (p.Z - Z) * Fz;
             if (A.Place.Inside(nx, nz, 1.5) && toHer > Front + 0.5) { X = nx; Z = nz; }
-            if (caller != null && steps++ % 4 == 0) A.Bark(X - Fx * 2, Z - Fz * 2, steps == 1 ? "Level! ...Step! ...Step!" : "Step!", caller);
+            if (caller != null && steps++ % 4 == 0) A.Bark(X - Fx * 2, Z - Fz * 2, steps == 1 ? calls.First : calls.Then, caller);
         }
         // The front: pikes levelled. Walked into, it shoves her back, and bites now and then.
         double rx = p.X - X, rz = p.Z - Z, along = rx * Fx + rz * Fz, across = rx * Sx + rz * Sz;
@@ -141,7 +152,7 @@ public sealed class Levy
         {
             shoveT = 0.5;
             var pike = men[0].E;
-            B.ShovePlayer(Fx, Fz, 2.2, biteGrace <= 0 ? pike.Damage * 0.5 : 0, "the levy's pikes");
+            B.ShovePlayer(Fx, Fz, 2.2, biteGrace <= 0 ? pike.Damage * 0.5 : 0, front);
             if (biteGrace <= 0) biteGrace = 1.5;
         }
         if ((drawT -= dt) <= 0)

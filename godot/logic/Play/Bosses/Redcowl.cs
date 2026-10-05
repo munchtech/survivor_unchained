@@ -62,6 +62,8 @@ public sealed class Redcowl : StoryBoss
     }
     readonly List<Watcher> watchers = new();
     readonly List<(Enemy E, double Seed)> lot = new();
+    /// <summary>The men of a broken levy, loose in the yard: his people still, though not his lot's count.</summary>
+    readonly List<(Enemy E, double Seed)> loose = new();
     const int Watchers = 12;
     const double WatchR = 13.5;
 
@@ -166,7 +168,7 @@ public sealed class Redcowl : StoryBoss
             for (int k = 0; k < 2; k++)
             {
                 double a = S.R() * Math.PI * 2;
-                if (S.CanStand(cx + Math.Cos(a) * 2.5, cz + Math.Sin(a) * 2.5)) S.Spawn("footpad", cx + Math.Cos(a) * 2.5, cz + Math.Sin(a) * 2.5);
+                if (S.CanStand(cx + Math.Cos(a) * 2.5, cz + Math.Sin(a) * 2.5) && S.Spawn("footpad", cx + Math.Cos(a) * 2.5, cz + Math.Sin(a) * 2.5) is { } f) loose.Add((f, f.Seed));
             }
             // He waits at the door, the Hook down its lane.
             doorHook = 1.6;
@@ -218,7 +220,7 @@ public sealed class Redcowl : StoryBoss
             hurt.Enqueue((FightT, E.Hp));
             while (hurt.Count > 0 && FightT - hurt.Peek().T > 6) hurt.Dequeue();
             if (!levy.Broken && hurt.Count > 0 && hurt.Peek().Hp - E.Hp > E.MaxHp * 0.05) BreakLevy();
-            if (levy.Broken) levy = null;
+            if (levy.Broken) { foreach (var m in levy.Men) loose.Add((m, m.Seed)); levy = null; }
         }
     }
 
@@ -465,7 +467,6 @@ public sealed class Redcowl : StoryBoss
 
     public override void Step(double dt)
     {
-        if (Hard && E != null && !Ending) E.Damage *= 1 + 0.03 * dt;
         StepGround(dt);
     }
 
@@ -485,15 +486,19 @@ public sealed class Redcowl : StoryBoss
         e.State = EnemyState.Idle;
         e.Anim = EnemyAnim.Idle;
         e.Disposition = Disposition.Neutral;
-        levy?.Break();
-        foreach (var l in lot) if (l.E.Alive && l.E.Seed == l.Seed) l.E.Status[StatusKind.Fear] = new StatusSlot(6, 1, 1, 0);
+        // The levy breaks, and its men keep back from her with his lot while she chooses (broken, they
+        // turned on her, and a player weighing his life fought a line of pikes).
+        if (levy != null)
+        {
+            foreach (var m in levy.Men) loose.Add((m, m.Seed));
+            levy.Break();
+        }
+        foreach (var l in lot.Concat(loose)) if (l.E.Alive && l.E.Seed == l.Seed) l.E.Status[StatusKind.Fear] = new StatusSlot(6, 1, 1, 0);
         B.Events.Emit(new Ev.Focus { X = e.X, Z = e.Z, Duration = 2.4 });
         S.Bark(e.X, e.Z, "He goes down on one knee, the axe-head in the dirt, and laughs. It costs him.", null);
+        // Her choice, named on the screen and answered from wherever she stands (not a prompt at his side).
         if (S.CanSpare)
-        {
-            S.Offer("let_go", e.X, e.Z, S.SpareVerb, Him, () => Choose(true));
-            S.Offer("finish", e.X, e.Z, "Finish it", Him, () => Choose(false));
-        }
+            S.Ask(Him, $"{S.SpareVerb}, or finish it", e.X, e.Z, new ChoiceAnswer("let_go", S.SpareVerb, () => Choose(true)), new ChoiceAnswer("finish", "Finish it", () => Choose(false)));
         else Choose(false);
     }
 
@@ -501,8 +506,7 @@ public sealed class Redcowl : StoryBoss
 
     void Choose(bool spare)
     {
-        S.Withdraw("let_go");
-        S.Withdraw("finish");
+        S.Unask();
         if (!spare)
         {
             E.HpFloor = 0;
@@ -519,6 +523,8 @@ public sealed class Redcowl : StoryBoss
     bool Kneeling(Enemy e, double dt)
     {
         e.TakenMul = 0;
+        // While she chooses, his lot keep back from her: the fight is over, however long she takes.
+        if (goT < 0) foreach (var l in lot.Concat(loose)) if (l.E.Alive && l.E.Seed == l.Seed && l.E.State != EnemyState.Dying && (l.E.Status[StatusKind.Fear]?.T ?? 0) < 2) l.E.Status[StatusKind.Fear] = new StatusSlot(6, 1, 1, 0);
         if (goT < 0 || (goT += dt) < 1.5) { e.Vx = e.Vz = 0; e.State = EnemyState.Idle; e.Anim = EnemyAnim.Idle; return true; }
         if (goT - dt < 1.5)
         {
@@ -541,16 +547,16 @@ public sealed class Redcowl : StoryBoss
     {
         foreach (var w in watchers) if (Here(w)) B.Enemies.Release(w.E);
         watchers.Clear();
-        foreach (var l in lot) if (l.E.Alive && l.E.Seed == l.Seed && l.E.State != EnemyState.Dying) l.E.Status[StatusKind.Fear] = new StatusSlot(6, 1, 1, 0);
+        foreach (var l in lot.Concat(loose)) if (l.E.Alive && l.E.Seed == l.Seed && l.E.State != EnemyState.Dying) l.E.Status[StatusKind.Fear] = new StatusSlot(6, 1, 1, 0);
         lot.Clear();
+        loose.Clear();
         foreach (var id in carts) B.Collision.Remove(id);
         carts.Clear();
         cartsUp = false;
         ClearPosts();
         levy?.Clear();
         levy = null;
-        S.Withdraw("let_go");
-        S.Withdraw("finish");
+        S.Unask();
         if (lightDown) { B.Rules.Light /= 0.8; lightDown = false; }
     }
 

@@ -155,6 +155,7 @@ public sealed class StoryNight : ZoneRuntime, IStoryArena
         open.Add(place.SpaceAt(ax, az) ?? place.Spaces[0].Id);
         b.InBounds = (x, z) => map.CanStand(x, z) && place.Inside(x, z, 0.3, open);
         place.Build(b.Collision);
+        Fight.Furnish(this);
         b.Charges.Spikes = false;
         b.Charges.Cap = 2;
         double burns = Fight.Burns(this);
@@ -392,6 +393,7 @@ public sealed class StoryNight : ZoneRuntime, IStoryArena
                 break;
             case Stage.Boss:
                 ShutBehind();
+                script?.Grows(dt);
                 script?.Step(dt);
                 break;
         }
@@ -543,6 +545,7 @@ public sealed class StoryNight : ZoneRuntime, IStoryArena
         scripted.Clear();
         leaving.Clear();
         Interactables.RemoveAll(i => i.Id.StartsWith("story:"));
+        Choice = null;
     }
 
     /* --------------------------------------------------------------- a fall -- */
@@ -727,6 +730,9 @@ public sealed class StoryNight : ZoneRuntime, IStoryArena
 
     public void Withdraw(string id) => Interactables.RemoveAll(i => i.Id == $"story:{id}");
 
+    public void Ask(string who, string title, double x, double z, params ChoiceAnswer[] answers) => Choice = new StoryChoice(who, title, answers, x, z);
+    public void Unask() => Choice = null;
+
     bool Standable(double x, double z) => map.CanStand(x, z) && Fight.Place.Inside(x, z, 0.6, open) && !B!.Collision.Blocked(x, z, 0.6);
 
     Enemy? Spawn(string def, double x, double z, bool elite = false, SpawnStyle? style = null)
@@ -838,7 +844,8 @@ public sealed class StoryNight : ZoneRuntime, IStoryArena
         if (B == null || over) return;
         double want = Now == Stage.Boss ? CameraBoss : CameraNear;
         CameraDistance += (want - CameraDistance) * Math.Min(1, dt / 2.5);
-        if (Now == Stage.Boss && boss is { Alive: true } b && b.State != EnemyState.Dying && script != null)
+        // (the bar goes while her choice waits: the fight is over, and the choice stands where it stood)
+        if (Now == Stage.Boss && boss is { Alive: true } b && b.State != EnemyState.Dying && script != null && Choice == null)
             G.SetBoss(script.Bar(BossName, script.State is { } s ? $"{BossTitle} · {s}" : BossTitle));
         else if (Now == Stage.Beat && beat?.Bar is { } bar) G.SetBoss(bar);
         else G.SetBoss(null);

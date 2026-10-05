@@ -267,6 +267,105 @@ public partial class FallChoices : Control
 }
 
 /// <summary>
+/// A choice the story puts to her (StoryChoice: spare him, or finish it), held over the live world while
+/// he lies there, with no box and no shade (the world is the picture): his name small, the choice named in
+/// display type, and its answers side by side, each its key and its words, alike in weight (nothing
+/// chooses for her). It comes up a breath after he goes down, under the bar and over the fight. A key is
+/// held to choose: a ledger line under its words fills as it is held. A click chooses at once.
+/// </summary>
+public partial class StoryChoices : Control
+{
+    double t;
+    readonly VBoxContainer column;
+    readonly System.Collections.Generic.List<(Label Word, ColorRect Fill, float Width, Color Ink)> answers = new();
+    /// <summary>Where its top stands: the banner's place in the upper third (the boss's bar has gone), clear
+    /// of the fight round her.</summary>
+    const float Top = 1080 * 0.2f;
+
+    public StoryChoices(StoryChoice c, Act[] keys, Action<int> pick)
+    {
+        MouseFilter = MouseFilterEnum.Ignore;
+        Size = new Vector2(1920, 1080);
+        column = new VBoxContainer { MouseFilter = MouseFilterEnum.Ignore, Alignment = BoxContainer.AlignmentMode.Center };
+        column.AddThemeConstantOverride("separation", 2);
+        // His name over it as the banner's kicker is set, the choice in the banner's place and type.
+        var who = WorldType.Lettering(c.Who.ToUpperInvariant(), Style.UiHeavy, 16, new Color("#ffcf8a"));
+        who.HorizontalAlignment = HorizontalAlignment.Center;
+        column.AddChild(who);
+        var title = WorldType.Lettering(c.Title.ToUpperInvariant(), Style.Display, 40, new Color("#e2dac8"));
+        title.HorizontalAlignment = HorizontalAlignment.Center;
+        column.AddChild(title);
+        column.AddChild(new Control { CustomMinimumSize = new Vector2(0, 16), MouseFilter = MouseFilterEnum.Ignore });
+        var row = new HBoxContainer { MouseFilter = MouseFilterEnum.Ignore, Alignment = BoxContainer.AlignmentMode.Center };
+        row.AddThemeConstantOverride("separation", 96);
+        for (int i = 0; i < c.Answers.Count && i < keys.Length; i++)
+        {
+            int at = i;
+            // Mercy in the moon's pale, the end in the ember's red: two colours, one weight.
+            var ink = c.Answers[i].Id == "finish" ? new Color("#ff8a62") : new Color("#dce4ea");
+            row.AddChild(Answer(keys[i], c.Answers[i].Verb, ink, () => pick(at)));
+        }
+        column.AddChild(row);
+        var how = WorldType.Lettering("Hold to choose", Style.TextItalic, 17, new Color("#cfc4b0") with { A = 0.85f });
+        how.HorizontalAlignment = HorizontalAlignment.Center;
+        column.AddChild(how);
+        AddChild(column);
+        Modulate = Colors.Transparent;
+    }
+
+    Control Answer(Act key, string verb, Color ink, Action pick)
+    {
+        var b = new Button { FocusMode = FocusModeEnum.None, Flat = true, MouseDefaultCursorShape = CursorShape.PointingHand };
+        foreach (var s in new[] { "normal", "hover", "pressed", "focus" }) b.AddThemeStyleboxOverride(s, new StyleBoxEmpty());
+        var head = new HBoxContainer { MouseFilter = MouseFilterEnum.Ignore, Alignment = BoxContainer.AlignmentMode.Center };
+        head.AddThemeConstantOverride("separation", 14);
+        var cap = Style.Prompt(key);
+        cap.SizeFlagsVertical = SizeFlags.ShrinkCenter;
+        head.AddChild(cap);
+        var word = WorldType.Lettering(verb.ToUpperInvariant(), Style.Display, 30, ink);
+        head.AddChild(word);
+        var col = new VBoxContainer { MouseFilter = MouseFilterEnum.Ignore };
+        col.AddThemeConstantOverride("separation", 6);
+        col.AddChild(head);
+        // The ledger line under the words: faint, filling in their colour as the key is held.
+        float w = head.GetCombinedMinimumSize().X;
+        var track = new Control { CustomMinimumSize = new Vector2(w, 2), MouseFilter = MouseFilterEnum.Ignore };
+        track.AddChild(new ColorRect { Size = new Vector2(w, 2), Color = ink with { A = 0.22f }, MouseFilter = MouseFilterEnum.Ignore });
+        var fill = new ColorRect { Size = new Vector2(0, 2), Color = ink, MouseFilter = MouseFilterEnum.Ignore };
+        track.AddChild(fill);
+        col.AddChild(track);
+        b.AddChild(col);
+        b.CustomMinimumSize = col.GetCombinedMinimumSize();
+        b.MouseEntered += () => word.AddThemeColorOverride("font_color", ink.Lightened(0.25f));
+        b.MouseExited += () => word.AddThemeColorOverride("font_color", ink);
+        b.Pressed += pick;
+        answers.Add((word, fill, w, ink));
+        return b;
+    }
+
+    /// <summary>The answer whose key is held (-1: none), and how far to choosing it.</summary>
+    public void Held(int i, float k)
+    {
+        for (int j = 0; j < answers.Count; j++)
+        {
+            var (word, fill, w, ink) = answers[j];
+            fill.Size = new Vector2(j == i ? w * k : 0, 2);
+            word.AddThemeColorOverride("font_color", j == i ? ink.Lightened(0.2f * k) : ink);
+        }
+    }
+
+    public override void _Process(double delta)
+    {
+        t += delta;
+        var s = column.GetCombinedMinimumSize();
+        column.Size = s;
+        column.Position = new Vector2((1920 - s.X) / 2, Top);
+        // A breath after he goes down (his words land first), then it comes up.
+        Modulate = Colors.White with { A = (float)Math.Clamp((t - 0.45) / 0.4, 0, 1) };
+    }
+}
+
+/// <summary>
 /// A tip, centred in the upper third with no panel (the owner: "a centered attention grabbing
 /// thing that is also not on a cheap looking backdrop and just stylized readable text"): the key
 /// line in display type, a quieter line under it, its keys drawn as the keys themselves. It burns

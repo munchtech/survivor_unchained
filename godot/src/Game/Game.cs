@@ -404,6 +404,8 @@ public partial class Game : Node, IZoneHost
         scene.SimPaused = true;
         controls.Captured = true;
         hud.Prompt(promptShown = null);
+        // --end (pictures of a whole night): its result, and the run ends there rather than at --until.
+        if (Args.Has("end")) { Shots.Want("result", 1.5); Shots.EndIn(3); }
     }
 
     /// <summary>Out of the arena, to where the story left off.</summary>
@@ -520,7 +522,9 @@ public partial class Game : Node, IZoneHost
         scene = new WorldScene(data, cam);
         AddChild(scene);
         scene.Move = () => auto?.Move ?? PlayMove();
-        scene.Pressed = a => (auto?.Take(a) ?? false) || (!controls.Captured && controls.Pressed(a));
+        // While a story's choice waits, its keys are its own: her art is not cast by the key that answers it.
+        scene.Pressed = a => choiceUp != null && Array.IndexOf(ChoiceKeys, a) >= 0 ? Swallow(a)
+            : (auto?.Take(a) ?? false) || (!controls.Captured && controls.Pressed(a));
         scene.OnStep = dt => { if (cine is not { ZoneHeld: true }) zone?.Step(dt); };
         scene.OnEvents = OnEvents;
         ApplySettings();
@@ -733,7 +737,8 @@ public partial class Game : Node, IZoneHost
     void UpdateInteraction()
     {
         var b = Battle;
-        if (b == null || zone == null || Overlay != null || !b.Player.Alive || inTransit || cine != null)
+        // (a story's choice waiting has the keys: no prompt beside it)
+        if (b == null || zone == null || Overlay != null || !b.Player.Alive || inTransit || cine != null || zone.Choice != null)
         {
             near = null;
             if (promptShown != null) hud.Prompt(promptShown = null);
@@ -903,6 +908,7 @@ public partial class Game : Node, IZoneHost
             // The day's own clock: free play moves it, and each turn is staged (GameClock).
             TickDay(dt);
             UpdateInteraction();
+            UpdateChoice(dt);
             // The ground walked, on the map's fog.
             fogT -= dt;
             if (fogT <= 0 && Battle is { } fb)

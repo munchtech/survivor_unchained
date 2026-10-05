@@ -22,7 +22,7 @@ using SurvivorUnchained.Rpg;
  *           (--tiers 1,2,3 --people all --seeds N --level L|tier --gear R --mods a+b --cap MIN)
  *   story   the story's nights, stage by stage and their bosses (docs/design/STORY_BOSSES.md 0.6)
  *           (--fight hollow|all --tiers 1,2,3,4 --seeds N --policies greedy,random --bot plain,deft
- *           --act2 --choice spare|finish --level N|tier --out PATH)
+ *           --act2 --choice spare|finish --level N|tier --crates --banes --out PATH)
  *
  * Options: --callings warden,reaver|all  --policies greedy,random,path:steel|paths
  *          --seeds N  --seed0 S  --tier T (or --tiers 1,2,3)  --people pack,dead|all
@@ -190,7 +190,7 @@ void Story()
                     foreach (var h in hands)
                         for (int s = 0; s < seeds; s++)
                             specs.Add(new StoryRunSpec(seed0 + s, c, pol, f, tier, level == "tier" ? 1 + 3 * (tier - 1) : int.Parse(level), h == "deft",
-                                opt.Has("act2"), opt.Get("choice", "spare"), opt.Double("cap", 25), opt.Has("crates"), h == "naive", opt.Has("learned")));
+                                opt.Has("act2"), opt.Get("choice", "spare"), opt.Double("cap", 25), opt.Has("crates"), h == "naive", opt.Has("learned"), opt.Has("banes")));
     Console.WriteLine($"{specs.Count} story nights, {opt.Int("par", 16)} at a time");
     var results = new ConcurrentBag<StoryRunResult>();
     var sw = Stopwatch.StartNew();
