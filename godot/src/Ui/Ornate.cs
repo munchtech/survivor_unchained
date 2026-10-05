@@ -450,7 +450,7 @@ public partial class Backdrop : Control
     public float Strength = 0.88f;
     static Shader? blur;
 
-    public Backdrop(Action? onClick = null, float strength = 0.88f)
+    public Backdrop(Action? onClick = null, float strength = 0.88f, bool page = false)
     {
         Strength = strength;
         Style.Fill(this);
@@ -463,6 +463,18 @@ public partial class Backdrop : Control
         ((ShaderMaterial)world.Material).SetShaderParameter("dim", Mathf.Lerp(1.1f, 0.62f, strength));
         Style.Fill(world);
         AddChild(world);
+        // A full page is the day's book's own page (page/vellum.png): the binders' black vellum,
+        // the world felt through it only where its lamps are bright.
+        if (page && UiArt.Art("page/vellum.png") is { } skin)
+        {
+            var v = new TextureRect { Texture = skin, ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize, StretchMode = TextureRect.StretchModeEnum.Tile, MouseFilter = MouseFilterEnum.Ignore, Modulate = new Color(1, 1, 1, 0.9f) };
+            Style.Fill(v);
+            AddChild(v);
+            // The binding stands above the page: the header's shade falls a hand's width down it,
+            // the foot band's a little way up.
+            AddChild(Shade(new Rect2(0, 90, 1920, 70), true, 0.6f));
+            AddChild(Shade(new Rect2(0, 975, 1920, 50), false, 0.45f));
+        }
         // The painted layers over it (tools/uiforge/pages.py): soot and wear gathered at the edges,
         // then a fine grain over all, so the dark between columns is a surface, not an empty screen.
         if (UiArt.Tex("page/backdrop_edges.png", false) is { } edges)
@@ -501,6 +513,18 @@ public partial class Backdrop : Control
         Style.Fill(ember);
         AddChild(ember);
     }
+
+    /// <summary>A soft shade across the page, darkest at its top (down) or foot (up).</summary>
+    static TextureRect Shade(Rect2 at, bool down, float depth) => new()
+    {
+        Texture = new GradientTexture2D
+        {
+            Gradient = new Gradient { Colors = new[] { new Color(0.01f, 0.008f, 0.014f, depth), new Color(0.01f, 0.008f, 0.014f, 0) }, Offsets = new[] { 0f, 1f } },
+            FillFrom = new Vector2(0.5f, down ? 0 : 1), FillTo = new Vector2(0.5f, down ? 1 : 0), Width = 4, Height = 64,
+        },
+        Position = at.Position, Size = at.Size,
+        StretchMode = TextureRect.StretchModeEnum.Scale, ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize, MouseFilter = MouseFilterEnum.Ignore,
+    };
 }
 
 /// <summary>

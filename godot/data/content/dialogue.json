@@ -11405,6 +11405,29 @@
     "when": {
      "all": [
       {
+       "met": "chid"
+      },
+      {
+       "fact": "chapter.done",
+       "eq": true
+      },
+      {
+       "not": {
+        "npcFlag": {
+         "npc": "chid",
+         "key": "gave:office",
+         "eq": true
+        }
+       }
+      }
+     ]
+    },
+    "node": "office"
+   },
+   {
+    "when": {
+     "all": [
+      {
        "history": "opened_vault"
       },
       {
@@ -11576,6 +11599,29 @@
      "not": {
       "met": "chid"
      }
+    },
+    "mark": "!"
+   },
+   {
+    "when": {
+     "all": [
+      {
+       "met": "chid"
+      },
+      {
+       "fact": "chapter.done",
+       "eq": true
+      },
+      {
+       "not": {
+        "npcFlag": {
+         "npc": "chid",
+         "key": "gave:office",
+         "eq": true
+        }
+       }
+      }
+     ]
     },
     "mark": "!"
    }
@@ -12415,6 +12461,26 @@
       "when": {
        "all": [
         {
+         "fact": "chapter.done",
+         "eq": true
+        },
+        {
+         "not": {
+          "npcFlag": {
+           "npc": "chid",
+           "key": "gave:office",
+           "eq": true
+          }
+         }
+        }
+       ]
+      },
+      "text": "You're awake! Good. Good. It's morning, and you've slept the whole night on my bench, and that's all it's cost you: a night. They come round again; it's the one thing you can say for them. (He doesn't look at you.) Somebody brought you in. A carter, I expect. (He has a small book in both hands, held the way you hold a bird.) I was keeping this for you. It's only an old office, what the keepers said at night. There's a bit at the end. ...Read it before you go out again. Please."
+     },
+     {
+      "when": {
+       "all": [
+        {
          "fact": "arena.last.people",
          "eq": "pack"
         },
@@ -12520,6 +12586,37 @@
          "npc": "chid",
          "affection": 10
         }
+       },
+       {
+        "if": {
+         "all": [
+          {
+           "fact": "chapter.done",
+           "eq": true
+          },
+          {
+           "not": {
+            "npcFlag": {
+             "npc": "chid",
+             "key": "gave:office",
+             "eq": true
+            }
+           }
+          }
+         ]
+        },
+        "then": [
+         {
+          "give": "keepers_office"
+         },
+         {
+          "npcFlag": {
+           "npc": "chid",
+           "key": "gave:office",
+           "value": true
+          }
+         }
+        ]
        }
       ],
       "end": true
@@ -12527,6 +12624,39 @@
      {
       "text": "Who brought me in?",
       "once": "carried_who",
+      "effects": [
+       {
+        "if": {
+         "all": [
+          {
+           "fact": "chapter.done",
+           "eq": true
+          },
+          {
+           "not": {
+            "npcFlag": {
+             "npc": "chid",
+             "key": "gave:office",
+             "eq": true
+            }
+           }
+          }
+         ]
+        },
+        "then": [
+         {
+          "give": "keepers_office"
+         },
+         {
+          "npcFlag": {
+           "npc": "chid",
+           "key": "gave:office",
+           "value": true
+          }
+         }
+        ]
+       }
+      ],
       "goto": "carried_who"
      }
     ]
@@ -12535,6 +12665,92 @@
     "id": "carried_who",
     "text": "Oh, somebody kind. There are more of them about at night than you'd think. (He busies himself with the kettle.) ...Eat something. The day's yours.",
     "choices": [
+     {
+      "text": "Thank you, Chid.",
+      "effects": [
+       {
+        "rel": {
+         "npc": "chid",
+         "affection": 10
+        }
+       }
+      ],
+      "end": true
+     }
+    ]
+   },
+   "office": {
+    "id": "office",
+    "text": "You've been up the Tower. (He doesn't ask what she told you. He has a small book in both hands, held the way you hold a bird.) I want you to have this. It's only an old office: the watch-hours, what the keepers said at night. Nobody's said them in a long while. (He opens it at the last page, and doesn't look at it.) There's a bit at the end. You'll know it when you need it. ...Not now. It reads better in the dark.",
+    "effects": [
+     {
+      "give": "keepers_office"
+     },
+     {
+      "npcFlag": {
+       "npc": "chid",
+       "key": "gave:office",
+       "value": true
+      }
+     }
+    ],
+    "choices": [
+     {
+      "text": "What's at the end?",
+      "once": "office_end",
+      "goto": "office_end"
+     },
+     {
+      "text": "Who wrote it?",
+      "once": "office_who",
+      "goto": "office_who"
+     },
+     {
+      "text": "Thank you, Chid.",
+      "effects": [
+       {
+        "rel": {
+         "npc": "chid",
+         "affection": 10
+        }
+       }
+      ],
+      "end": true
+     }
+    ]
+   },
+   "office_end": {
+    "id": "office_end",
+    "text": "(He puts his hand over yours, flat on the cover.) Not now, I said! ...It's the end of the watch. One keeper asks, and the other one answers, so nobody has to sit up the whole night on their own. That's what an office is, really. Somebody answering.",
+    "choices": [
+     {
+      "text": "Who wrote it?",
+      "once": "office_who",
+      "goto": "office_who"
+     },
+     {
+      "text": "Thank you, Chid.",
+      "effects": [
+       {
+        "rel": {
+         "npc": "chid",
+         "affection": 10
+        }
+       }
+      ],
+      "end": true
+     }
+    ]
+   },
+   "office_who": {
+    "id": "office_who",
+    "text": "Oh, a keeper. One of the old ones. Lovely hand, hasn't he? Nobody makes a C like that any more.",
+    "choices": [
+     {
+      "text": "What's at the end?",
+      "once": "office_end",
+      "goto": "office_end"
+     },
      {
       "text": "Thank you, Chid.",
       "effects": [

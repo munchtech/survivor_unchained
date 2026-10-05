@@ -608,7 +608,7 @@ public class ArenaTests
     }
 
     [Fact]
-    public void Falling_keeps_what_was_earned_and_a_story_fight_waits_to_be_taken_again()
+    public void Falling_keeps_what_was_earned_and_a_story_fight_waits_at_its_place_not_the_table()
     {
         var s = Make(Spec(story: true));
         s.B.Time = 540;
@@ -624,12 +624,14 @@ public class ArenaTests
         Assert.InRange(r.Xp, 200, 400);
         Assert.Equal(gold + 40, s.J.Ch.Gold);
         Assert.True(s.J.World.Fact("test.lost").Truthy);
-        Assert.Single(s.J.World.Rematches, x => x.Id == "hollow_teeth");
-        // Taken again from the table and won, it is gone from it (and a second loss would tell the story nothing).
+        // Lost, it waits for another night where it stands (the night calls it), not at the table.
+        Assert.Empty(s.J.World.Rematches);
+        Assert.True(r.WakesInTown);
+        // A rematch an older save kept is still the same fight: won, it is gone from the table.
+        s.J.World.Rematches.Add(r.Spec);
         var again = Arenas.Again(s.J.World.Rematches[0], "waystation", 1, 2, 0);
         Assert.Null(again.OnLose);
         Assert.NotNull(again.OnWin);
-        // Its lost line says where she comes to, and a rematch sends her back to the table instead.
         Assert.Null(again.EndLost);
         var next = Make(again, s.J);
         next.B.Player.Iframes = 1e9;

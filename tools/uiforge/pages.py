@@ -46,7 +46,208 @@ def periodic_middle(img, TW, blend=48):
     return mid
 
 
-def header(ss=2, samples=160):
+def tiled(R, TW, fn):
+    """A field made once over one tile's width and repeated across the render, so the band
+    is exactly periodic over TW file px (the middle tile is cut out: no seam to blend)."""
+    one = fn(R.h, TW * R.ss)
+    return np.tile(one, (1, R.w // (TW * R.ss)))
+
+
+def rounded(d, half):
+    """A round profile across a line: 1 on its centre, 0 at its edges."""
+    return np.sqrt(np.clip(1 - (d / half) ** 2, 0, 1))
+
+
+def wire(R, X, yc, th, pitch, height):
+    """The binders' twisted wire laid along y = yc (file px): two strands, each a round
+    ridge crossing at a slant. Returns (height in file px, mask)."""
+    Y = R.yy / R.ss
+    d = Y - yc
+    tw = np.zeros_like(X)
+    for k0 in (0.0, 0.5):
+        uu = ((d / th) - ((((X / pitch) + k0) % 1.0) - 0.5)) % 1.0 - 0.5
+        tw = np.maximum(tw, np.sqrt(np.clip(1 - (uu / 0.5) ** 2, 0, 1)))
+    m = np.clip((th / 2 - np.abs(d)) * R.ss + 0.5, 0, 1)
+    return (tw * 0.6 + rounded(d, th / 2) * 0.4) * height, m
+
+
+def regrade(img, R, mat_name, factor):
+    """Grade one material's pixels of a render (linear light, its sheen with it): the softbox's
+    sheen greys a dark hide or vellum, which no change of albedo alone takes out."""
+    m = (R.mat == RL.IDS[mat_name]).astype(np.float32)
+    m = cv2.GaussianBlur(m, (0, 0), 0.6 * R.ss)[..., None]
+    lin = F.srgb_to_lin(np.clip(img[..., :3], 0, 1))
+    lin = lin * (1 - m) + lin * np.asarray(factor, np.float32) * m
+    out = img.copy()
+    out[..., :3] = F.lin_to_srgb(np.clip(lin, 0, 1))
+    return out
+
+
+def binding(TW, H, rail, fillets, roll, pad_span, leather_span, name, shadow, ss=2, samples=192):
+    """A band of the day's book's binding, tiled along (file TW x H; everything below in shown
+    px): black morocco with an oxblood depth, padded between `pad_span` so the light runs
+    across it, the binders' gilt fillets at `fillets` (y, half width), the twisted gold wire
+    with a binders' coin every 128 px along `roll` (its y, or None), and the forged rail
+    between `rail` (strap iron, a chamfered crown, the wire in a groove, domed nails).
+    `shadow` is 'below' (what the band casts on the page under its rail) or 'above' (a soft
+    seat where a foot band meets the page)."""
+    tiles = 3
+    W = TW * tiles
+    R = RL.Relief(W, H, ss)
+    X, Y = R.xx / ss, R.yy / ss
+    y = Y / K
+    xs = X / K
+    rail0, rail1 = rail
+    leather = (y >= leather_span[0]) & (y < leather_span[1])
+    # Morocco: a fine pebbled grain, a few long soft creases, the board padded under it.
+    pebble = tiled(R, TW, lambda h, w: F.fbm(h, w, scale=1.7 * K * ss, octaves=2, seed=81)) / ss
+    crease = tiled(R, TW, lambda h, w: F.fbm(h, w, scale=70 * K * ss, octaves=3, seed=82)) / ss
+    pad_t = np.clip((y - pad_span[0]) / (pad_span[1] - pad_span[0]), 0, 1)
+    pad = np.clip(np.sin(pad_t * math.pi), 0, 1) ** 0.7 * 2.2 * K
+    h = 4.0 * K + pad + pebble * 0.35 * K + crease * 0.9 * K
+    # Its edge turned down where it meets the rail.
+    if rail0 >= leather_span[1] - 2:   # (the rail at the foot)
+        h = h - np.clip((y - (rail0 - 2.5)) / 2.5, 0, 1) ** 2 * 2.5 * K
+    else:
+        h = h - np.clip(((rail1 + 2.5) - y) / 2.5, 0, 1) ** 2 * 2.5 * K
+    # The gilt: fillets pressed in and laid with gold (a round groove, so one wall takes the
+    # light), and the wire in a pressed channel.
+    gilt = np.zeros_like(X)
+    gh = np.zeros_like(X)
+    for yr, half in fillets:
+        d = y - yr
+        m = np.clip((half - np.abs(d)) * K * ss * 0.5 + 0.5, 0, 1)
+        prof = 4.0 * K - 0.5 * K - (1 - rounded(d, half)) * 0.45 * K
+        gh = np.where(m > 0.5, prof, gh)
+        gilt = np.maximum(gilt, m)
+    wm = np.zeros_like(X)
+    coins = np.zeros_like(X)
+    holes = np.zeros_like(X)
+    coin_h = np.zeros_like(X)
+    wire_h = np.zeros_like(X)
+    if roll is not None:
+        chan = np.clip((3.6 - np.abs(y - roll)) * K * ss * 0.5 + 0.5, 0, 1)
+        h = h - chan * 0.9 * K
+        wh, wm = wire(R, X, roll * K, 4.6 * K, TW / 150.0, 1.5 * K)   # (the pitch divides the tile)
+        wire_h = 3.1 * K + wh
+        # The binders' coin over the wire every 128 px: a square on its point, its face flat
+        # and its edges chamfered to take the light, the round hole showing the leather.
+        for k0 in range(int(W / K / 128) + 1):
+            cx = (k0 + 0.5) * 128.0
+            u, v = xs - cx, y - roll
+            dia = np.abs(u) + np.abs(v)
+            cm = np.clip((6.2 - dia) * K * ss * 0.5 + 0.5, 0, 1)
+            bev = np.clip((6.2 - dia) / 1.5, 0, 1)
+            bev = np.sqrt(1 - (1 - bev) ** 2)
+            r = np.hypot(u, v)
+            hm = np.clip((1.6 - r) * K * ss * 0.5 + 0.5, 0, 1)
+            lip = np.exp(-((r - 2.1) / 0.45) ** 2) * 0.45
+            ch = (4.4 + bev * 1.5 + lip) * K
+            ch = np.where(hm > 0.5, 3.4 * K, ch)
+            coin_h = np.where(cm > 0.5, np.maximum(coin_h, ch), coin_h)
+            coins = np.maximum(coins, cm)
+            holes = np.maximum(holes, hm * cm)
+        # The wire stops short of each coin (the coin is set in it).
+        clear = cv2.dilate((coins > 0.5).astype(np.uint8), np.ones((int(1.2 * K * ss) * 2 + 1,) * 2, np.uint8)) > 0
+        wm = wm * (~clear)
+    h = np.where(gilt > 0.5, gh, h)
+    h = np.where(wm > 0.5, np.maximum(h, wire_h), h)
+    h = np.where(coins > 0.5, np.maximum(h, coin_h), h)
+    h = np.where(leather, h, 0)
+    shape_h = np.where(leather, 4.0 * K + pad, 0)
+    shape_h = np.where(wm > 0.5, np.maximum(shape_h, wire_h), shape_h)
+    shape_h = np.where(coins > 0.5, np.maximum(shape_h, coin_h), shape_h)
+    # The rail: strap iron with a chamfered crown, planished and dented.
+    t = np.clip((y - rail0) / (rail1 - rail0), 0, 1)
+    rail_prof = np.minimum(np.clip(t / 0.22, 0, 1), np.clip((1 - t) / 0.22, 0, 1)) ** 0.6 * 3.2 * K + 5.5 * K
+    on_rail = (y >= rail0) & (y < rail1)
+    facet = tiled(R, TW, lambda hh, ww: F.facets(hh, ww, cell=12.0 * K * ss, tilt=0.025, seed=83, soften=1.2 * ss, elong=0.4)) / ss
+    dents = tiled(R, TW, lambda hh, ww: F.worley_dents(hh, ww, cell=4.0 * K * ss, depth=0.14 * K * ss, seed=84)) / ss
+    rail_h = rail_prof + (facet + dents) * K * 0.6
+    h = np.where(on_rail, rail_h, h)
+    shape_h = np.where(on_rail, rail_prof, shape_h)
+    yw = (rail0 + rail1) / 2
+    groove = np.clip((2.3 - np.abs(y - yw)) * K * ss * 0.5 + 0.5, 0, 1) * on_rail
+    h = h - groove * 1.4 * K
+    rwh, rwm = wire(R, X, yw * K, 3.6 * K, 3.2 * K, 1.8 * K)
+    rwm = rwm * on_rail
+    rwire_h = 7.6 * K + rwh
+    h = np.where(rwm > 0.5, np.maximum(h, rwire_h), h)
+    shape_h = np.where(rwm > 0.5, np.maximum(shape_h, rwire_h), shape_h)
+    # A domed nail through the rail every 64 px, either side of the wire, staggered.
+    nails = np.zeros_like(X)
+    for k0 in range(int(W / K / 64) + 1):
+        for (nx, ny) in (((k0 + 0.25) * 64, rail0 + 2.5), ((k0 + 0.75) * 64, rail1 - 2.5)):
+            dd = np.hypot(xs - nx, y - ny)
+            r = 1.9
+            dome = rounded(dd, r) * 1.3 * K + 8.9 * K
+            m = dd < r
+            h = np.where(m, np.maximum(h, dome), h)
+            shape_h = np.where(m, np.maximum(shape_h, dome), shape_h)
+            nails = np.maximum(nails, m.astype(np.float32))
+    R.height = (h * ss).astype(np.float32)
+    R.shape_height = (shape_h * ss).astype(np.float32)
+    R.alpha = (leather | on_rail).astype(np.float32)
+    R.mat[:] = RL.IDS["morocco"]
+    R.mat[on_rail] = RL.IDS["iron"]
+    R.mat[(nails > 0.5)] = RL.IDS["iron"]
+    R.mat[(gilt > 0.5) & leather] = RL.IDS["gold"]
+    R.mat[(wm > 0.5) & leather] = RL.IDS["gold"]
+    R.mat[(coins > 0.5) & leather] = RL.IDS["gold"]
+    R.mat[(holes > 0.5) & leather] = RL.IDS["morocco"]
+    R.mat[rwm > 0.5] = RL.IDS["gold"]
+    # The leather's colour: blotched as a hide is, darkest toward the screen's edge (the band
+    # runs off it).
+    cloud = tiled(R, TW, lambda hh, ww: F.fbm(hh, ww, scale=200 * K * ss, octaves=4, seed=85)) * 0.5 + 0.5
+    at_foot = rail0 >= leather_span[1] - 2
+    toward = np.clip(y / rail0, 0, 1) if at_foot else np.clip((leather_span[1] - y) / (leather_span[1] - rail1), 0, 1)
+    fall = 0.7 + 0.3 * toward ** 0.7
+    hide = (R.mat == RL.IDS["morocco"])
+    tint = np.where(hide, (0.8 + 0.35 * cloud) * fall, 1.0)
+    R.tint = (tint[..., None] * np.ones(3, np.float32)).astype(np.float32)
+    # (the softbox's sheen greys a dark hide: the oxblood is pushed so it survives the light)
+    R.tint = np.where(hide[..., None], R.tint * np.array([1.08, 0.7, 0.66], np.float32), R.tint).astype(np.float32)
+    R.tint = np.where(on_rail[..., None] & (R.mat == RL.IDS["iron"])[..., None], R.tint * np.array([1.0, 0.95, 0.88], np.float32), R.tint).astype(np.float32)
+    img = R.render(name, samples=samples, wear=1.0, grime=0.7, seed=86)
+    img = regrade(img, R, "morocco", (0.56, 0.41, 0.40))
+    small = R.file_size(img)
+    band = small[:, TW:2 * TW]
+    out = np.zeros((H, TW, 4), np.float32)
+    out[...] = band
+    yy = (np.arange(H, dtype=np.float32) / K)[:, None]
+    if shadow == "below":
+        sh = np.clip(1 - (yy - rail1) / 3.0, 0, 1) ** 1.2 * 0.75 * (yy >= rail1)
+    else:
+        sh = np.clip(1 - (rail0 - yy) / 4.0, 0, 1) ** 1.5 * 0.5 * (yy < rail0)
+    a = out[..., 3]
+    out[..., :3] = out[..., :3] * a[..., None]
+    out[..., 3] = np.maximum(a, sh)
+    out[..., :3] = np.where(out[..., 3:4] > 1e-4, out[..., :3] / np.maximum(out[..., 3:4], 1e-4), 0)
+    return out
+
+
+def header(ss=2, samples=192):
+    """The band across every page's head (frames/header.png, 1024x200 file, 512x100 shown,
+    slice 0 0 0 12, tiled along): the day's book's head. Along the top the twisted gold
+    wire between two gilt fillets with a binders' coin every 128 px; one gilt fillet over
+    the rail; the forged rail at the foot. The middle (y 18-78) is plain, for the tabs, the
+    title and its line."""
+    return binding(1024, 200, (84.0, 98.0), ((5.2, 0.75), (16.4, 0.75), (80.6, 0.6)), 10.8,
+                   (19.0, 79.0), (0.0, 85.0), "page_header2", "below", ss, samples)
+
+
+def footer(ss=2, samples=192):
+    """The band across a page's foot (frames/footer.png, 1024x136 file, 512x68 shown, slice
+    0 12 0 0, tiled along; Overlay.Page lays it at y 1016, under the content, so it runs off
+    the screen's foot): the book's foot, the header's twin turned over. Its top 16 px are
+    quiet (a pane's faded foot runs over them; only a soft seat shade from 12), then the
+    forged rail (16-28), a gilt fillet under it, and plain padded morocco where the prompts
+    are written (y 28-60, the screen's 1044-1076)."""
+    return binding(1024, 136, (16.0, 28.0), ((30.8, 0.6),), None,
+                   (32.0, 80.0), (27.0, 68.0), "page_footer", "above", ss, samples)
+
+
+def header_v1(ss=2, samples=160):
     TW, H = 1024, 200
     tiles = 3
     W = TW * tiles
@@ -190,15 +391,25 @@ def backdrop_edges(W=1920, H=1080):
     a_smoke = dens * 0.55
     # Low: the ember's light along the foot, in pools, and lighting the smoke that lies there.
     pools = F.fbm(h, w, scale=260, octaves=2, seed=97) * 0.5 + 0.5
-    low = np.clip((v - 0.62) / 0.38, 0, 1) ** 1.8 * (0.5 + 0.7 * pools)
-    ember = np.array([1.0, 0.45, 0.12], np.float32)
-    dark = np.array([0.07, 0.05, 0.045], np.float32)
-    lit = np.array([0.42, 0.24, 0.14], np.float32)
+    low = np.clip((v - 0.5) / 0.5, 0, 1) ** 2.0 * (0.45 + 0.8 * pools)
+    # The smoke is the house's cool iron-black (a warm brown one muddied the whole page); the
+    # ember is saturated and low, so it reads as light on the dark and not as a brown wash.
+    ember = np.array([1.0, 0.32, 0.06], np.float32)
+    dark = np.array([0.03, 0.026, 0.042], np.float32)
+    lit = np.array([0.30, 0.13, 0.05], np.float32)
     smoke_col = dark * (1 - low[..., None]) + lit * low[..., None]
-    a_ember = low * 0.22
+    a_ember = low * 0.42
     a = a_smoke + a_ember * (1 - a_smoke)
     rgb = (smoke_col * a_smoke[..., None] + ember * (a_ember * (1 - a_smoke))[..., None]) / np.maximum(a[..., None], 1e-4)
-    img = np.dstack([rgb, a]).astype(np.float32)
+    # The lamp: a broad pool of warm light from above and a little left, where the page is read,
+    # so the page has a lit middle and edges that fall away (laid under the smoke).
+    d = np.hypot((u - 0.42) / 0.62, (v - 0.32) / 0.7)
+    pool = np.clip(1 - d, 0, 1) ** 1.6 * (1 - a)
+    a_pool = pool * 0.0
+    lamp = np.array([0.62, 0.48, 0.34], np.float32)
+    a2 = a + a_pool
+    rgb = (rgb * a[..., None] + lamp * a_pool[..., None]) / np.maximum(a2[..., None], 1e-4)
+    img = np.dstack([rgb, a2]).astype(np.float32)
     return cv2.resize(img, (W, H), interpolation=cv2.INTER_CUBIC).clip(0, 1)
 
 
@@ -459,15 +670,151 @@ def card_light(ss=3, samples=160):
     R.mat[:] = RL.IDS["iron"]
     R.mat[vellum & (caps < 0.5)] = RL.IDS["paper"]
     cloud = periodic(R, m, P, lambda a, b: F.fbm(a, b, scale=60 * ss * K, octaves=4, seed=124)) * 0.5 + 0.5
-    vt = (0.115 + 0.05 * cloud) * (1 - tool * 0.3)
+    # (dark enough that the ink's light words read on it: about #241e1c, the house's iron warmed)
+    vt = (0.026 + 0.012 * cloud) * (1 - tool * 0.3)
     tint = np.where(vellum[..., None] & (caps[..., None] < 0.5), vt[..., None] * np.array([1.0, 0.86, 0.7], np.float32), 1.0)
     R.tint = tint.astype(np.float32)
     img = R.render("page_card_light", samples=samples, wear=1.2, grime=0.6, seed=125)
+    img = regrade(img, R, "paper", (0.40, 0.38, 0.50))
     small = R.file_size(img)
     # The vellum a little translucent, so the world behind is felt and not seen.
     sdf = frame_sd(*np.meshgrid(np.arange(W) + 0.5, np.arange(H) + 0.5), 0, 0, W, H)
     small[..., 3] = np.where(sdf > bead_w + 1, 0.93, small[..., 3])
     return small
+
+
+def aniso(h, w, sx, sy, seed):
+    """Streaked noise, periodic on the canvas: white noise blurred sx along and sy across
+    (in frequency space, so it wraps), normalised to about -1..1."""
+    rng = np.random.default_rng(seed)
+    n = rng.standard_normal((h, w)).astype(np.float32)
+    fy = np.fft.fftfreq(h)[:, None]
+    fx = np.fft.fftfreq(w)[None, :]
+    g = np.exp(-2 * math.pi ** 2 * ((fx * sx) ** 2 + (fy * sy) ** 2))
+    out = np.real(np.fft.ifft2(np.fft.fft2(n) * g)).astype(np.float32)
+    return out / (np.abs(out).max() + 1e-6)
+
+
+def vellum(ss=1, samples=96):
+    """The page the day's book is written on (page/vellum.png, 1024x1024 file, 512 shown,
+    tiled under every full page): the binders' black vellum, skin dyed violet-black as the
+    finest books of hours were, and written on in gold. Seen straight on and lit by the
+    house light: the skin's slow cockle, its fibre running one way, follicles pricked in
+    small groups, the dye uneven (browner where it took less), a soft sheen. Exactly
+    periodic over the tile (rendered with a wrapped margin, the margin cut away)."""
+    T, P = 1024, 96
+    R = RL.Relief(T + 2 * P, T + 2 * P, ss)
+
+    def per(f):
+        return np.pad(f, P * ss, mode="wrap")
+    n = T * ss
+    cockle = per(F.fbm(n, n, scale=260 * ss, octaves=3, seed=131))
+    swell = per(F.fbm(n, n, scale=60 * ss, octaves=3, seed=132))
+    fibre = per(aniso(n, n, 9.0 * ss, 0.9 * ss, 133))
+    fine = per(F.fbm(n, n, scale=1.3 * ss, octaves=2, seed=134))
+    # Follicles: tiny pits in twos and threes, as on a skin's hair side.
+    rng = np.random.default_rng(135)
+    pits = np.zeros((n, n), np.float32)
+    yy, xx = np.mgrid[0:n, 0:n].astype(np.float32)
+    for _ in range(900):
+        cx, cy = rng.uniform(0, n), rng.uniform(0, n)
+        for k in range(rng.integers(1, 4)):
+            px_, py_ = cx + rng.uniform(-3, 3) * ss, cy + rng.uniform(-3, 3) * ss
+            r = rng.uniform(0.5, 1.1) * ss
+            x0, x1 = int(px_ - 4 * r), int(px_ + 4 * r) + 1
+            y0, y1 = int(py_ - 4 * r), int(py_ + 4 * r) + 1
+            ys = np.arange(y0, y1) % n
+            xs_ = np.arange(x0, x1) % n
+            dx = (np.arange(x0, x1) - px_)[None, :]
+            dy = (np.arange(y0, y1) - py_)[:, None]
+            pits[np.ix_(ys, xs_)] = np.maximum(pits[np.ix_(ys, xs_)], np.exp(-(dx * dx + dy * dy) / (2 * r * r)))
+    pits = per(pits)
+    # Creases: where the skin was folded and stretched, a network of soft valleys (the zero lines
+    # of two noises, ridged), which the light picks out as the concept paintings' grain did.
+    crease = (1 - np.abs(per(F.fbm(n, n, scale=320 * ss, octaves=2, seed=140)))) ** 3
+    h = 10.0 + cockle * 9.0 + swell * 1.2 - crease * 1.6 + fibre * 0.1 + fine * 0.05 - pits * 0.4
+    R.height = (h * ss).astype(np.float32)
+    R.shape_height = ((10.0 + cockle * 9.0 + swell * 1.2 - crease * 1.6) * ss).astype(np.float32)
+    R.alpha = np.ones((R.h, R.w), np.float32)
+    R.mat[:] = RL.IDS["vellum_black"]
+    # The dye: violet-black, browner where it took less, darker in its pits and along its fibre.
+    take = per(F.fbm(n, n, scale=150 * ss, octaves=4, seed=136)) * 0.5 + 0.5
+    mott = per(F.fbm(n, n, scale=24 * ss, octaves=3, seed=137))
+    brown = np.array([1.3, 0.95, 0.72], np.float32)
+    violet = np.array([0.9, 0.88, 1.16], np.float32)
+    k = np.clip((take - 0.3) * 1.8, 0, 1)[..., None]
+    col = violet * (1 - k) + brown * k
+    cloud = per(F.fbm(n, n, scale=130 * ss, octaves=4, seed=139))
+    lum = (0.84 + cloud * 0.3 + mott * 0.08 + fibre * 0.04 - pits * 0.4 - crease * 0.12)[..., None]
+    R.tint = (col * lum).astype(np.float32)
+    img = R.render("page_vellum", samples=samples, wear=0.0, grime=0.0, grain=0.0, seed=138)
+    img = img[P * ss:(P + T) * ss, P * ss:(P + T) * ss]
+    # (all of it is vellum: its sheen greys it, so the whole render is taken down in linear light)
+    img[..., :3] = F.lin_to_srgb(F.srgb_to_lin(img[..., :3]) * 0.24)
+    out = F.downsample(img, (T, T)) if ss > 1 else img
+    out[..., 3] = 1.0
+    return out
+
+
+def column(ss=4, samples=128):
+    """A page's column (frames/column.png, 256x1024 file, 128x512 shown, slice 12 16 12 8,
+    stretched, so its fade follows the column's height): ruled as a scribe rules a page, not
+    framed. A double gilt fillet across the head and down both sides, a binders' coin where
+    they meet at each top corner; the side rules fade out down the column, and under them a
+    faint shade, darkest under the head, that falls away with them. Nothing in the middle."""
+    W, H = 256, 1024
+    R = RL.Relief(W, H, ss)
+    X, Y = R.xx / ss / K, R.yy / ss / K          # shown px
+    Ws, Hs = W / K, H / K
+    gold = np.zeros_like(X)
+    gh = np.zeros_like(X)
+    for off in (3.5, 6.5):
+        for d in (X - off, (Ws - off) - X, Y - off):
+            m = np.clip((0.55 - np.abs(d)) * K * ss + 0.5, 0, 1)
+            gold = np.maximum(gold, m)
+            gh = np.maximum(gh, m * (1.2 + rounded(d, 0.55) * 0.9))
+    # The rules run only inside the double fillet's square: trim what lies outside it.
+    inside = (X > 2.5) & (X < Ws - 2.5) & (Y > 2.5)
+    gold *= inside
+    gh *= inside
+    coins = np.zeros_like(X)
+    coin_h = np.zeros_like(X)
+    holes = np.zeros_like(X)
+    for cx in (5.0, Ws - 5.0):
+        u, v = X - cx, Y - 5.0
+        dia = np.abs(u) + np.abs(v)
+        cm = np.clip((5.2 - dia) * K * ss * 0.5 + 0.5, 0, 1)
+        bev = np.sqrt(1 - (1 - np.clip((5.2 - dia) / 1.3, 0, 1)) ** 2)
+        r = np.hypot(u, v)
+        hm = np.clip((1.3 - r) * K * ss * 0.5 + 0.5, 0, 1)
+        ch = np.where(hm > 0.5, 1.0, 2.2 + bev * 1.2 + np.exp(-((r - 1.7) / 0.4) ** 2) * 0.35)
+        coin_h = np.where(cm > 0.5, np.maximum(coin_h, ch), coin_h)
+        coins = np.maximum(coins, cm)
+        holes = np.maximum(holes, hm * cm)
+    h = np.where(coins > 0.5, coin_h, gh) * K
+    R.height = (h * ss).astype(np.float32)
+    R.shape_height = R.height.copy()
+    R.alpha = np.maximum(gold, coins).astype(np.float32)
+    R.mat[:] = RL.IDS["gold"]
+    R.mat[holes > 0.5] = RL.IDS["ember"]
+    R.emit = ember_light(R, holes, 5.0 * K, 5.0 * K, 10.4 * K, seed=151) * 0.6 + \
+        ember_light(R, holes, (Ws - 5.0) * K, 5.0 * K, 10.4 * K, seed=152) * 0.6
+    img = R.render("page_column", samples=samples, wear=0.6, grime=0.3, seed=153)
+    small = R.file_size(img)
+    ys = (np.arange(H, dtype=np.float32) / K)[:, None]
+    xs = (np.arange(W, dtype=np.float32) / K)[None, :]
+    # The side rules fade down the column (the head's rule and the coins stay).
+    fade = np.clip(1 - (ys - 40) / (Hs * 0.62), 0, 1) ** 1.4
+    side = (ys > 8.5).astype(np.float32)
+    small[..., 3] *= (1 - side) + side * fade
+    # The shade under it: a little darkness behind the words, deepest under the head.
+    shade_a = (0.42 * np.clip(1 - ys / (Hs * 0.85), 0, 1) ** 0.9 + 0.08) * np.clip(np.minimum(xs - 2, Ws - 2 - xs) / 6, 0, 1)
+    shade_a = shade_a * (ys > 2)
+    a = small[..., 3]
+    out_a = a + shade_a * (1 - a)
+    sh_col = np.array([0.03, 0.025, 0.04], np.float32)
+    rgb = (small[..., :3] * a[..., None] + sh_col * (shade_a * (1 - a))[..., None]) / np.maximum(out_a[..., None], 1e-4)
+    return np.dstack([rgb, out_a]).astype(np.float32)
 
 
 def column_divider_stone():
@@ -483,6 +830,7 @@ def section_mark():
 
 BUILD = {
     "header": ("frames/header.png", header),
+    "footer": ("frames/footer.png", footer),
     "column_divider": ("frames/column_divider.png", column_divider),
     "column_divider_stone": ("frames/column_divider_stone.png", column_divider_stone),
     "section_mark": ("ornaments/section_mark.png", section_mark),
@@ -490,6 +838,8 @@ BUILD = {
     "card_light": ("frames/card_light.png", card_light),
     "backdrop_grain": ("page/backdrop_grain.png", backdrop_grain),
     "backdrop_edges": ("page/backdrop_edges.png", backdrop_edges),
+    "vellum": ("page/vellum.png", vellum),
+    "column": ("frames/column.png", column),
 }
 
 

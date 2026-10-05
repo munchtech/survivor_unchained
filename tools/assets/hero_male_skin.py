@@ -135,6 +135,10 @@ def clean_relief(img, P, rows, cols, keep, hair=None, small=4000, sigma=8.0):
                 blur[y0:y1, x0:x1, ch] = np.where(mk > 0, b, blur[y0:y1, x0:x1, ch])
         h = hair[:, None]
         m = m * (1 - h) + blur[rows, cols] * h
+        # (and kept at a third: the slopes of his collarbones' and neck's
+        # cords, baked against his shape before it was smoothed there
+        # (hero_male_head.py), drew hard white lines in a light from behind)
+        m = m * (1 - 0.65 * h) + flat * (0.65 * h)
     m /= np.linalg.norm(m, axis=1)[:, None]
     img[rows, cols, :3] = m * 0.5 + 0.5
     print("  RELIEF: %d islands, %d of them tiny (%d%% of texels); %d texels flattened, %d of them inside out" % (
@@ -215,3 +219,20 @@ def one_tone(c, P, tone, face, keep=0.6):
     k = (keep * face)[:, None]
     # (by gain, not by adding: a lip's red stays a lip's red on any skin)
     return c * (tone + k * (b - tone)) / np.maximum(b, 1e-3)
+
+
+def no_green(c, P, margin=0.03, reach=0.05):
+    """Green taken out of skin (c at points P): Krea's painting, its light
+    lifted out, left a greenish cast where it had painted a highlight (his
+    brows' tails, the tip of his nose). Skin is never greener, against its
+    red, than the skin about it; where a texel is, by more than `margin`,
+    its hue is the skin's about it, its lightness its own."""
+    b = broad(c, P, 0.015)
+    gr = c[:, 1] / np.maximum(c[:, 0], 1e-3)
+    bgr = b[:, 1] / np.maximum(b[:, 0], 1e-3)
+    a = np.clip((gr - bgr - margin) / reach, 0, 1)
+    a = (a * a * (3 - 2 * a))[:, None]
+    lum = (c @ LUM)[:, None]
+    fixed = b * lum / np.maximum(b @ LUM, 1e-3)[:, None]
+    print("  GREEN: %d texels greener than the skin about them" % (a[:, 0] > 0.5).sum())
+    return c * (1 - a) + fixed * a

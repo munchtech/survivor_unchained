@@ -110,7 +110,8 @@ public static class Style
         b.ContentMarginLeft = b.ContentMarginRight = pad;
         b.ContentMarginTop = pad + 2;
         b.ContentMarginBottom = pad;
-        return b;
+        // Ruled in gilt where the art is (frames/column.png), its fade stretched with the column.
+        return UiArt.Frame("column", b);
     }
 
     /// <summary>A group inside a column (a calling, a group of numbers, a quiet note): no iron,
