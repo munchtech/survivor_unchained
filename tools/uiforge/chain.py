@@ -22,6 +22,8 @@ from PIL import Image
 
 import forge as F
 
+K = 2.0   # file px per shown px
+
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(os.path.dirname(HERE))
 BLENDER = os.environ.get("BLENDER", r"C:\Users\munch\Tools\blender-4.5.14-windows-x64\blender.exe")
@@ -130,7 +132,7 @@ def title(side="r", samples=96, length=270, link=(32, 19, 2.6), gap=10.0, fade=9
 # The tab chain's feel, read by the game (ChainTabs, from art/ui/chain/chain.json) and by
 # chainanim.py: heavy forged chain (the owner: "a little wimpy"), a heavy sag, a slower start,
 # a firm stop and a real swing back; five links heated under the chosen tab, cooling outward.
-FEEL = {"eyelet": True, "fade": 0, "run": 72, "heat": 2, "slide": [130, 17], "sag_spring": [62, 3.6],
+FEEL = {"eye": True, "fade": 0, "run": 40, "tail": 18, "heat": 2, "slide": [130, 17], "sag_spring": [62, 3.6],
         "sag_rest": 6.5, "sag_dip": 8.0, "sag_speed": 200}
 
 
@@ -164,7 +166,58 @@ def hole_dark(img, r):
     return out
 
 
-def links(variants=6, samples=64, link=(30, 19, 3.2), cell=(52, 44), ss=3):
+def eyelet_parts(cell=(52, 44), hole=12.5 * 2):
+    """The eyelet in the parts a chain is threaded through it with (the owner: the links must
+    truly go through it): its ring cut down the middle, the half the chain comes from drawn
+    under the links and the far half over them, and the dark of its hole over them too.
+      eyelet_left / eyelet_right   the ring's left and right halves (each a whole cell)
+      eyelet_hole                  the hole's dark alone
+    A left-hand eyelet (the chain coming from its right) draws eyelet_right under the links,
+    then eyelet_left and eyelet_hole over them; a right-hand one the other way round."""
+    raw = os.path.join(OUT, "links", "eyelet.png")
+    img = np.asarray(Image.open(raw).convert("RGBA"), np.float32) / 255
+    ring = deepen_shadow(F.downsample(img, (cell[0] * 2, cell[1] * 2)))
+    h, w = ring.shape[:2]
+    xx = (np.arange(w, dtype=np.float32) + 0.5)[None, :]
+    soft = np.clip((xx - w / 2) / 2.0 + 0.5, 0, 1)       # a two-pixel seam, so the halves meet clean
+    left, right = ring.copy(), ring.copy()
+    left[..., 3] *= 1 - soft
+    right[..., 3] *= soft
+    dark = hole_dark(np.zeros_like(ring), hole)
+    return {"chain/eyelet_left.png": left, "chain/eyelet_right.png": right, "chain/eyelet_hole.png": dark}
+
+
+def tab(Ws=30, Hs=30, seed=23):
+    """chain/tab.png, Ws x Hs shown in a cell with room for its shadow: where the chain ends,
+    a tab of the band's goatskin riveted down over it, so its last links go under leather and
+    are gone, nothing faded. Its inner end (toward the chain) is cut square; the outer end
+    rounded; one domed iron rivet through it."""
+    import kit
+    pad = 6
+    W, H = int((Ws + 2 * pad) * K), int((Hs + 2 * pad) * K)
+    sd, x, y = kit.box_sd(W, H, pad, pad, Ws + pad, Hs + pad, 3.5)
+    skin = kit.morocco(N=128, seed=seed, tone="#1d1516")
+    skin = np.tile(skin, (H // skin.shape[0] + 1, W // skin.shape[1] + 1, 1))[:H, :W]
+    inside = np.clip(sd * K + 0.5, 0, 1)
+    # The leather's edge turned down, lit as the panels' are.
+    edge = kit.raised(Ws + 2 * pad, Hs + 2 * pad, out=pad, r=3.5, mid=None, wear=1.1, lift=1.2, shadow=0.75)
+    img = kit.under(edge, np.dstack([skin[..., :3], inside]))
+    # The rivet: a small domed head of iron, lit from the upper left.
+    S = F.Surface(W, H)
+    cx, cy = (pad + Ws * 0.58) * K, (pad + Hs / 2) * K
+    d = np.hypot(S.xx - cx, S.yy - cy)
+    rr = 3.4 * K
+    S.height = (np.sqrt(np.clip(1 - (d / rr) ** 2, 0, 1)) * rr * 0.6).astype(np.float32)
+    cov = np.clip((rr - d) + 0.5, 0, 1)
+    S.paint(cov, F.Mat(tuple(F.hexc("#3a3440")), 0.75, 0.32))
+    S.alpha = cov
+    rv = np.asarray(S.finish(S.shade(normal_strength=1.0, ao=0.3, shadow=0.0)), np.float32) / 255
+    sh = np.roll(cv2.GaussianBlur(cov, (0, 0), 1.2 * K), int(1.0 * K), 0) * 0.6 * (1 - cov)
+    img = kit.under(rv, kit.under(np.dstack([np.broadcast_to(np.array([0.02, 0.015, 0.015], np.float32), cov.shape + (3,)), sh]), img))
+    return img.astype(np.float32)
+
+
+def links(variants=6, samples=64, link=(30, 19, 3.2), cell=(52, 44), ss=3, only_eye=False):
     """chain/{,warm_,hot_}{face,edge}_K and open (art/ui/chain/, cells of `cell` shown px, the
     link at the centre along x): the tab chain's links, each its own sprite so the code can lay
     them along a sagging line, slide them link by link and let them sway, with no two
@@ -175,30 +228,31 @@ def links(variants=6, samples=64, link=(30, 19, 3.2), cell=(52, 44), ss=3):
     spec = {"cell": [cell[0] * 2, cell[1] * 2], "ss": ss, "samples": samples, "material": TAB_IRON,
             "link": {"length": link[0] * 2, "width": link[1] * 2, "wire": link[2] * 2},
             "pitch": pitch * 2, "variants": variants, "seed": 5, "gap": 16,
-            "eyelet": {"hole": 12.5 * 2, "bar": 3.4 * 2, "nail": 1.8 * 2}}
+            "eye": {"r": 11.5 * 2, "bar": 2.7 * 2, "lean": 35}, "only_eye": only_eye}
     d = os.path.join(OUT, "links")
     os.makedirs(d, exist_ok=True)
     sp = os.path.join(d, "spec.json")
     json.dump(spec, open(sp, "w", encoding="utf-8"), indent=1)
     t0 = time.time()
-    for f in os.listdir(d):
-        if f.endswith(".png"):
-            os.remove(os.path.join(d, f))
+    names = [f"{pre}{kind}_{k}" for pre in ("", "warm_", "hot_") for kind in ("face", "edge") for k in range(variants)] + ["open"]
+    names = ["eye_back", "eye_front"] + ([] if only_eye else names)
+    for f in names:
+        if os.path.exists(os.path.join(d, f + ".png")):
+            os.remove(os.path.join(d, f + ".png"))
     r = subprocess.run([BLENDER, "-b", "-P", os.path.join(HERE, "blender_links.py"), "--", sp, d],
                        capture_output=True, text=True, timeout=3600)
-    names = [f"{pre}{kind}_{k}" for pre in ("", "warm_", "hot_") for kind in ("face", "edge") for k in range(variants)] + ["open", "eyelet"]
     made = {}
     for nm in names:
         p = os.path.join(d, nm + ".png")
         if not os.path.exists(p) or os.path.getmtime(p) < t0:
             raise RuntimeError(f"{nm} not rendered:\n" + (r.stdout + r.stderr)[-3000:])
         img = np.asarray(Image.open(p).convert("RGBA"), np.float32) / 255
-        img = deepen_shadow(F.downsample(img, (cell[0] * 2, cell[1] * 2)))
+        img = F.downsample(img, (cell[0] * 2, cell[1] * 2))
+        img = img if nm == "eye_front" else deepen_shadow(img)
         if nm.startswith("hot_") or nm == "open":
             img = ember_glow(img, 0.7, edge=10)
-        if nm == "eyelet":
-            img = hole_dark(img, 12.5 * 2)
         made[f"chain/{nm}.png"] = img
+    made["chain/tab.png"] = tab()
     meta = {"pitch": pitch, "cell": list(cell), "variants": variants, "link": list(link), **FEEL}
     json.dump(meta, open(os.path.join(d, "chain.json"), "w"), indent=1)
     return made

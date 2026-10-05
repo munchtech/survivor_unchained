@@ -106,7 +106,8 @@ def main():
     plane.scale = (W * U * 1.5, H * U * 1.5, 1)
     plane.is_shadow_catcher = True
     rnd = random.Random(spec.get("seed", 5))
-    jobs = [("face", k) for k in range(spec["variants"])] + [("edge", k) for k in range(spec["variants"])] + [("open", 0)]
+    jobs = [] if spec.get("only_eye") else \
+        [("face", k) for k in range(spec["variants"])] + [("edge", k) for k in range(spec["variants"])] + [("open", 0)]
     for kind, k in jobs:
         standing = kind == "edge"
         sl = 1 + rnd.uniform(-0.05, 0.05)
@@ -134,36 +135,67 @@ def main():
             sc.render.filepath = os.path.join(out, name)
             bpy.ops.render.render(write_still=True)
         bpy.data.objects.remove(ob, do_unlink=True)
-    if spec.get("eyelet"):
-        eyelet(spec, sc, out, ss, length, width, wire, states[""])
+    if spec.get("eye"):
+        eye(spec, sc, out, ss, length, width, wire, states[""], plane)
 
 
-def eyelet(spec, sc, out, ss, length, width, wire, iron):
-    """The chain's anchor (eyelet.png): a forged iron grommet set into the band, its hole wide
-    enough for a link to pass, rubbed bright inside where the chain has run through it, with
-    two small nails either side. The hole's darkness is added after (chain.py)."""
-    e = spec["eyelet"]
-    hole = e["hole"] * ss                      # inner radius, render px
-    bar = e["bar"] * ss
-    bpy.ops.mesh.primitive_torus_add(major_radius=(hole + bar) * U, minor_radius=bar * U,
-                                     major_segments=96, minor_segments=24, location=(0, 0, bar * 0.55 * U))
+def eye(spec, sc, out, ss, length, width, wire, iron, plane):
+    """The chain's anchor (the owner: the links must truly go through it): an eye-bolt driven
+    into the band, its ring standing across the chain and leaning back, so a link passing
+    through it goes under its near arc and over its far one. Rendered in two halves split at
+    the chain's height: eye_back.png (the far arc, the shank, the washer, and every shadow) to
+    lie under the links, eye_front.png (the near arc alone) over them."""
+    import bmesh
+    e = spec["eye"]
+    R, bar = e["r"] * ss, e["bar"] * ss
+    phi = math.radians(e.get("lean", 35))
+    bpy.ops.mesh.primitive_torus_add(major_radius=R * U, minor_radius=bar * U, major_segments=128, minor_segments=24)
     ring = bpy.context.active_object
-    ring.scale = (1.0, 1.0, 0.6)               # forged flat, not a round bar
-    bpy.ops.object.transform_apply(scale=True)
+    ring.rotation_euler = (0, math.pi / 2 - phi, 0)
+    zc = R * math.cos(phi) + bar * 0.4
+    ring.location = (0, 0, zc * U)
+    bpy.context.view_layer.update()
+    bpy.ops.object.transform_apply(location=True, rotation=True)
     ring.data.materials.append(iron)
-    # Where the chain runs through it: a link passing the hole, there only to find the wear.
+    # Where the chain has run through it: rubbed bright inside.
     lk, _ = C.link_mesh("pass", length * U, width * U, wire * U)
     lk.rotation_euler = (math.pi / 2, 0, 0)
-    lk.location = (0, 0, 0)
+    lk.location = (0, 0, zc * U)
     bpy.context.view_layer.update()
-    C.mark_wear([lk, ring], wire * U)
+    C.mark_wear([lk, ring], wire * U * 1.6)
     bpy.data.objects.remove(lk, do_unlink=True)
-    for sx in (-1, 1):
-        bpy.ops.mesh.primitive_uv_sphere_add(radius=e["nail"] * ss * U, location=((hole + bar * 2 + e["nail"] * ss * 1.6) * sx * U, 0, 0))
-        nl = bpy.context.active_object
-        nl.scale = (1, 1, 0.5)
-        nl.data.materials.append(iron)
-    sc.render.filepath = os.path.join(out, "eyelet.png")
+    # Its shank down into the band from the ring's foot, and a washer under it.
+    low = min(ring.data.vertices, key=lambda v: v.co.z).co
+    bpy.ops.mesh.primitive_cylinder_add(radius=bar * 0.9 * U, depth=max(low.z, bar * U) * 1.2, location=(low.x, low.y, low.z / 2))
+    shank = bpy.context.active_object
+    shank.data.materials.append(iron)
+    bpy.ops.mesh.primitive_cylinder_add(vertices=48, radius=bar * 2.6 * U, depth=bar * 0.6 * U, location=(low.x, low.y, bar * 0.3 * U))
+    washer = bpy.context.active_object
+    bev = washer.modifiers.new("b", "BEVEL")
+    bev.width = bar * 0.25 * U
+    bev.segments = 3
+    washer.data.materials.append(iron)
+    # Split the ring at the chain's height: the near arc (above) and the far arc (below).
+    front = ring.copy()
+    front.data = ring.data.copy()
+    bpy.context.scene.collection.objects.link(front)
+    for ob, keep_above in ((front, True), (ring, False)):
+        bm = bmesh.new()
+        bm.from_mesh(ob.data)
+        gone = [f for f in bm.faces if (f.calc_center_median().z > zc * U) != keep_above]
+        bmesh.ops.delete(bm, geom=gone, context="FACES")
+        bm.to_mesh(ob.data)
+        bm.free()
+    # The back: far arc, shank and washer seen, the near arc only casting its shadow.
+    front.visible_camera = False
+    sc.render.filepath = os.path.join(out, "eye_back.png")
+    bpy.ops.render.render(write_still=True)
+    # The front: the near arc alone, nothing under it, no shadow of its own on the page.
+    front.visible_camera = True
+    for ob in (ring, shank, washer):
+        ob.hide_render = True
+    plane.hide_render = True
+    sc.render.filepath = os.path.join(out, "eye_front.png")
     bpy.ops.render.render(write_still=True)
 
 

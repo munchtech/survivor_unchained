@@ -5,8 +5,10 @@ them; choosing another tab drags the chain link by link until that heat sits und
 chain sagging as it runs and swinging as it stops.
 
 The chain is anchored, not faded (an alpha fade reads as an effect, not a thing): each end runs
-into a forged eyelet set in the band, `run` px past the end tabs, and the links feed through it
-as the chain slides, going into the dark of its hole; the eyelets are what the sag hangs from.
+through an eye-bolt driven into the band, `run` px past the end tabs (under the ring's near arc,
+over its far one), then straight on `tail` px to where a riveted tab of the band's goatskin
+covers it; the links slide under the leather and are gone, nothing popping. The sag hangs
+between the eyes.
 
 Its feel comes from art/ui/chain/chain.json, as the game's does (made by chain.links):
   pitch, run             link spacing; the eyelets sit `run` px past the end tabs
@@ -52,7 +54,8 @@ def sprites():
     v = meta["variants"]
     S = {f"{pre}{kind}_{k}": ld(f"{pre}{kind}_{k}") for pre in ("", "warm_", "hot_") for kind in ("face", "edge") for k in range(v)}
     S["open"] = ld("open")
-    S["eyelet"] = ld("eyelet")
+    for k in ("eye_back", "eye_front", "tab"):
+        S[k] = ld(k)
     return meta, S
 
 
@@ -82,11 +85,15 @@ def shrink(name, spr, s):
     return _small[key]
 
 
-def lay(canvas, pm, cx, cy, ang, alpha, s, clip=None):
+def lay(canvas, pm, cx, cy, ang, alpha, s, clip=None, sx=1.0, shade=1.0):
     """Draw a premultiplied sprite centred at (cx, cy) shown px, turned by ang radians, only
-    between clip's x0 and x1 (shown px) if given: the links between the eyelets."""
+    between clip's x0 and x1 (shown px) if given; `sx` foreshortens it along its length (a link
+    turning to dive into an eyelet), `shade` darkens it (going down into the hole's dark)."""
     h, w = pm.shape[:2]
     M = cv2.getRotationMatrix2D((w / 2, h / 2), -math.degrees(ang), 1.0)
+    if sx != 1.0:
+        F_ = np.array([[sx, 0, w / 2 * (1 - sx)], [0, 1, 0], [0, 0, 1]], np.float32)
+        M = (np.vstack([M, [0, 0, 1]]) @ F_)[:2]
     M[0, 2] += cx * s - w / 2
     M[1, 2] += cy * s - h / 2
     out = cv2.warpAffine(pm, M, (canvas.shape[1], canvas.shape[0]), flags=cv2.INTER_LINEAR,
@@ -96,7 +103,7 @@ def lay(canvas, pm, cx, cy, ang, alpha, s, clip=None):
         m = ((xs >= clip[0]) & (xs <= clip[1])).astype(np.float32)[None, :, None]
         out = out * m
     a = out[..., 3:4] * alpha
-    canvas[..., :3] = canvas[..., :3] * (1 - a) + out[..., :3] * alpha
+    canvas[..., :3] = canvas[..., :3] * (1 - a) + out[..., :3] * alpha * shade
 
 
 def glow(canvas, cx, cy, rx, ry, col, strength, s):
@@ -121,41 +128,54 @@ def frame(bg, s, meta, S, x0, x1, y0, phase, sag, chosen, t, flicker_seed=7):
         u = (x - mid) / half
         return y0 + sag * (1 - u * u)
 
+    tail = meta.get("tail", 20)
+    e0, e1 = x0, x1                       # the eyes; the chain runs on to the tabs beyond them
+    t0x, t1x = e0 - tail, e1 + tail
+
+    def yy(x):
+        return y_at(x) if e0 <= x <= e1 else y0
+
     # The ember's light on the band under the heated links, flickering a little.
     cx = phase + chosen * p
     fl = 1 + 0.12 * math.sin(t * 23 + flicker_seed) + 0.08 * math.sin(t * 37.3 + 1.7 * flicker_seed)
-    glow(img, cx, y_at(cx) + 5, p * (heat + 0.9), 9, heat_colour(0.55), 0.14 * fl, s)
+    glow(img, cx, yy(cx) + 5, p * (heat + 0.9), 9, heat_colour(0.55), 0.14 * fl, s)
+    n0 = int(math.floor((t0x - phase) / p)) - 1
+    n1 = int(math.ceil((t1x - phase) / p)) + 1
     order = []
     for n in range(n0, n1 + 1):
         x = phase + n * p
-        if x < x0 - p or x > x1 + p:
+        if x < t0x - p or x > t1x + p:
             continue
-        a = 1.0
-        ang = math.atan2(y_at(x + 1) - y_at(x - 1), 2)
+        ang = math.atan2(yy(x + 1) - yy(x - 1), 2)
         kind = "face" if n % 2 == 0 else "edge"
         k = (n * 7 + 3) % var
         d = abs(n - chosen)
         h = 1 - d / (heat + 1) if d <= heat else 0.0
-        order.append((0 if kind == "face" else 1, n, x, y_at(x), ang, a, kind, k, h))
+        order.append((0 if kind == "face" else 1, n, x, yy(x), ang, kind, k, h))
+    clip = (t0x, t1x)
+    # The eyes' far arcs, shanks and shadows lie under the links.
+    for ex in (e0, e1):
+        lay(img, shrink("eye_back", S["eye_back"], s), ex, y0, 0.0, 1.0, s)
     # Face-on links first; those on edge pass through them and lie over their ends.
-    clip = (x0, x1)
-    for _, n, x, y, ang, a, kind, k, h in sorted(order, key=lambda o: o[0]):
+    for _, n, x, y, ang, kind, k, h in sorted(order, key=lambda o: o[0]):
         if n == chosen:
-            lay(img, shrink("open", S["open"], s), x, y, ang, a, s, clip)
+            lay(img, shrink("open", S["open"], s), x, y, ang, 1.0, s, clip)
         else:
-            lay(img, shrink(f"{kind}_{k}", S[f"{kind}_{k}"], s), x, y, ang, a, s, clip)
+            lay(img, shrink(f"{kind}_{k}", S[f"{kind}_{k}"], s), x, y, ang, 1.0, s, clip)
             if h > 0:
                 # Cold to warm to hot: the same link drawn in each state.
                 if h < 0.6:
-                    lay(img, shrink(f"warm_{kind}_{k}", S[f"warm_{kind}_{k}"], s), x, y, ang, a * h / 0.6, s, clip)
+                    lay(img, shrink(f"warm_{kind}_{k}", S[f"warm_{kind}_{k}"], s), x, y, ang, h / 0.6, s, clip)
                 else:
-                    lay(img, shrink(f"warm_{kind}_{k}", S[f"warm_{kind}_{k}"], s), x, y, ang, a, s, clip)
-                    lay(img, shrink(f"hot_{kind}_{k}", S[f"hot_{kind}_{k}"], s), x, y, ang, a * (h - 0.6) / 0.4, s, clip)
-        if h > 0 and x0 < x < x1:
+                    lay(img, shrink(f"warm_{kind}_{k}", S[f"warm_{kind}_{k}"], s), x, y, ang, 1.0, s, clip)
+                    lay(img, shrink(f"hot_{kind}_{k}", S[f"hot_{kind}_{k}"], s), x, y, ang, (h - 0.6) / 0.4, s, clip)
+        if h > 0 and t0x < x < t1x:
             glow(img, x, y, p * 0.7, p * 0.45, heat_colour(h), 0.24 * h * fl, s)
-    # The eyelets over the chain's ends: the links go into their dark.
-    for ex in (x0, x1):
-        lay(img, shrink("eyelet", S["eyelet"], s), ex, y0, 0.0, 1.0, s)
+    # The eyes' near arcs over the links passing through them; the tabs over the chain's ends.
+    for ex in (e0, e1):
+        lay(img, shrink("eye_front", S["eye_front"], s), ex, y0, 0.0, 1.0, s)
+    for tx in (t0x, t1x):
+        lay(img, shrink("tab", S["tab"], s), tx, y0, 0.0, 1.0, s)
     return img
 
 

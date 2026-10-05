@@ -557,6 +557,13 @@ MATERIALS = {
 }
 
 
+def painted_ground(name, take, tone, contrast):
+    import materials
+    if os.path.exists(os.path.join(materials.RAW, f"{name}_1400_{take}.png")):
+        return materials.ground(name, take, tone, contrast)
+    return morocco(tone=tone)
+
+
 def paint_materials(seed=1400, n=4):
     import krea
     jobs = [(k, p, seed) for k, p in MATERIALS.items()]
@@ -590,7 +597,7 @@ SLICES = {
     "tab_on": Slice("frames/tab_on.png", 18, 10, 18, 6, True),
     "tab_hover": Slice("frames/tab_hover.png", 18, 10, 18, 6, True),
     "tab_pressed": Slice("frames/tab_pressed.png", 18, 10, 18, 6, True),
-    "side": Slice("frames/side.png", 48, 48, 48, 48, True, 8, "page/vellum.png", (1, 1, 1, 0.96)),
+    "side": Slice("frames/side.png", 48, 48, 48, 48, True, 8, "page/vellum.png", (1, 1, 1, 0.9)),
     "price": Slice("frames/price.png", 6, 6, 6, 6, False, 0, G, (0.5, 0.48, 0.5, 0.92)),
     "row": Slice("frames/row.png", 10, 10, 10, 10, True, 0, G, (0.7, 0.68, 0.7, 0.85)),
     "row_on": Slice("frames/row_on.png", 10, 10, 10, 10, True, 0, G, (0.8, 0.74, 0.72, 0.9)),
@@ -599,7 +606,13 @@ SLICES = {
 }
 
 MAKE = {
-    "page/morocco.png": morocco,
+    # The panels' ground: painted goatskin (Krea macro, materials.py), its light taken out and
+    # made periodic, at 0.4 of its contrast so it stays calm behind words; the drawn one where
+    # the painting is not to hand.
+    "page/morocco.png": lambda: painted_ground("goatskin", 1, "#221b19", 0.4),
+    # A page's ground in the same goatskin at page scale (512 shown, so it repeats seldom), for a
+    # full page that stays: laid ever so slightly translucent over the world (about 0.88).
+    "page/goatskin.png": lambda: morocco(N=1024, seed=17, tone="#1b1517"),
     "page/backdrop_grain.png": grain,
     "frames/panel.png": lambda: raised(220, 220, out=6, mid=192),
     "frames/slab.png": lambda: raised(220, 220, out=6, mid=192),
@@ -669,13 +682,15 @@ MAKE.update({
     "frames/column_divider.png": lambda: rule_v(24, 128),
 })
 CHAIN_ART = ([f"chain/{pre}{kind}_{k}.png" for pre in ("", "warm_", "hot_") for kind in ("face", "edge") for k in range(6)] +
-             ["chain/open.png", "chain/eyelet.png", "ornaments/title_chain_l.png", "ornaments/title_chain_r.png"])
+             ["chain/open.png", "chain/eye_back.png", "chain/eye_front.png", "chain/tab.png",
+              "ornaments/title_chain_l.png", "ornaments/title_chain_r.png"])
 # The world's other small things, each made by its own tool (coals.py, embers.py): what they
 # are, and the folder under tools/comfy/out/uiforge/ they are made into.
 WORLD_ART = {"coal": ([f"coal/coal_{k}.png" for k in range(4)] + ["coal/dish.png", "coal/dish_rim.png", "coal/numeral_glow.png"]),
-             "embers": ["hud/spark.png", "hud/glint.png", "hud/pointer_legendary.png"]}
+             "embers": ["hud/spark.png", "hud/glint.png", "hud/pointer_legendary.png"],
+             "lamp": ["lamp/lamp.png", "lamp/lamp_lit.png", "lamp/light.png"]}
 # Pieces the kit once made and no longer does (removed from the game on --apply).
-GONE = ["chain/hot.png"]
+GONE = ["chain/hot.png", "chain/eyelet.png", "chain/eyelet_left.png", "chain/eyelet_right.png", "chain/eyelet_hole.png"]
 # Ornament the kit does without (moved aside on --apply, so the code's fallback is nothing).
 DROP = ["frames/column_divider_stone.png"]
 
