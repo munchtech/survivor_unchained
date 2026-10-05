@@ -298,7 +298,7 @@ public class VergeTests
             s.J.World.Facts["player.just_died"] = true;
             Assert.Equal("woke", new DialogueRunner(Dialogue.Find("chid")!, s.J.Ctx).Start()!.Node.Id);
             // In Act 1 she still has the night's own rise: no book yet.
-            Assert.DoesNotContain(s.J.Ch.Pack, i => i?.Def == "keepers_office");
+            Assert.DoesNotContain(s.J.Ch.Satchel, i => i.Def == "keepers_office");
         }
     }
 
@@ -306,7 +306,7 @@ public class VergeTests
     public void Chid_gives_The_Keepers_Office_on_Act_2s_first_morning_or_at_his_waking_after_a_lost_fight()
     {
         // The bible, section 7: from Act 2 she gets up only with the rise, and Chid's book teaches its art.
-        bool HasBook(Setup s) => s.J.Ch.Pack.Any(i => i?.Def == "keepers_office");
+        bool HasBook(Setup s) => s.J.Ch.Satchel.Any(i => i.Def == "keepers_office");
         var chid = Dialogue.Find("chid")!;
 
         // The first morning: he has it ready, and the shrine is marked until he has given it.
@@ -328,7 +328,7 @@ public class VergeTests
         // Given once: one book, no mark, and he is himself again.
         Assert.Null(Dialogue.MarkerOf(chid, m.J.Ctx));
         Assert.NotEqual("office", new DialogueRunner(chid, m.J.Ctx).Start()!.Node.Id);
-        Assert.Equal(1, m.J.Ch.Pack.Count(i => i?.Def == "keepers_office"));
+        Assert.Equal(1, m.J.Ch.Satchel.Count(i => i.Def == "keepers_office"));
 
         // Or she went out before she saw him, and lost: he gives it at the waking, either way out of it.
         foreach (var ask in new[] { "Thank you, Chid.", "Who brought me in?" })
@@ -360,7 +360,7 @@ public class VergeTests
         var wreck = I(s, "wreck");
         Assert.True(wreck.When!());
         wreck.Act();
-        Assert.Contains(s.J.Ch.Pack, p => p?.Def == "caravan_manifest");
+        Assert.Contains(s.J.Ch.Keys, p => p.Def == "caravan_manifest");
         Assert.Contains("wreck", s.J.World.Quests["caravan"].Entries);
         Assert.False(wreck.When!());
         Assert.NotEmpty(s.Host.Said);

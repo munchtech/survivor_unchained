@@ -124,8 +124,16 @@ public sealed class CharacterData
     public List<string> Knowledge = new();
     public Equipment Equipment = new();
     public List<ItemInstance?> Pack = Inventory.NewPack();
-    /// <summary>The materials pouch: crafting's materials by id, never in the pack's places.</summary>
+    /// <summary>The materials pouch: crafting's materials and trophies by id, never in the pack's places.</summary>
     public Dictionary<string, int> Materials = new();
+    /// <summary>The slotless stores (docs/design/LOOT_DESIGN.md §6): books, charts and the rulers'
+    /// marked things in the satchel; quest things and tools on the key ring; draughts on the belt.</summary>
+    public List<ItemInstance> Satchel = new(), Keys = new();
+    public Dictionary<string, int> Belt = new();
+    /// <summary>The survivor's item filter (docs/design/LOOT_DESIGN.md §7), and the bases seen at
+    /// each make ("iron_helm@Wrought"): a first sighting always shows.</summary>
+    public LootFilter Filter = new();
+    public HashSet<string> Seen = new();
     public double Gold;
     /// <summary>The art in hand (the web game's id, 'shield_bash').</summary>
     public string Ability = "";
@@ -185,7 +193,8 @@ public static class Inventory
     {
         var def = Items.Get(defId);
         string uid = ch != null ? $"i{ch.NextUid++}" : $"i{loose.Next(1_000_000_000):x}";
-        var it = new ItemInstance { Uid = uid, Def = defId, Qty = qty, Rarity = rarity ?? def.Rarity, Affixes = affixes ?? new(), Level = def.Base ? level : null };
+        // Gear carries the level it was made at (docs/design/LOOT_DESIGN.md §4.1): given, or the survivor's.
+        var it = new ItemInstance { Uid = uid, Def = defId, Qty = qty, Rarity = rarity ?? def.Rarity, Affixes = affixes ?? new(), Level = Drops.Leveled(def) ? level ?? ch?.Level : null };
         if (Crafting.Workable(def)) it.Heat = it.HeatFull = Crafting.HeatAtMaking(it.Rarity, dropped ? new Rng(seed ?? (uint)loose.Next(1_000_000_000)) : null);
         // A ruler's thing carries its Mark at the grade it fell at (its rarity, I to VI).
         if (affixes == null && Crafting.MarkOf(defId) is { } mark) it.Affixes.Add(new AffixRoll { Id = mark, Tier = Math.Clamp(it.Rarity, 0, 5) });
@@ -214,9 +223,10 @@ public static class Inventory
                 foreach (var c in cands) { roll -= W(c); if (roll <= 0) { a = c; break; } }
                 picked.Add(a.Id);
                 if (a.Prefix) hasPrefix = true; else hasSuffix = true;
-                // A rarity rolls one of two grades; made at a map's level, the finer comes oftener (a coin by day).
-                int finer = it.Level is int lv ? (rng.Next() < Crafting.FinerGrade(lv) ? 1 : 0) : rng.Int(0, 1);
-                it.Affixes.Add(new AffixRoll { Id = a.Id, Tier = Math.Max(0, Math.Min(3, it.Rarity - 1 + finer)) });
+                // A rarity rolls one of two grades; the deeper it was made, the finer comes oftener (a coin to
+                // level 10, read the same way as the coin was), and from level 25 the grades rise (Drops.GradeShift).
+                int finer = it.Level is int lv ? (rng.Next() >= 1 - Crafting.FinerGrade(lv) ? 1 : 0) : rng.Int(0, 1);
+                it.Affixes.Add(new AffixRoll { Id = a.Id, Tier = Math.Min(5, Math.Max(0, Math.Min(3, it.Rarity - 1 + finer)) + Drops.GradeShift(it.Level)) });
             }
         }
         return it;
@@ -240,7 +250,9 @@ public static class Inventory
     {
         var def = Items.Get(it.Def);
         string src = $"item:{it.Uid}";
-        var o = (def.Mods ?? new()).Select(m => m with { Source = src }).ToList();
+        // A base's own numbers (or the base a named piece is built on) at its make; a named piece's own after.
+        var o = Drops.Implicit(def, it.Level).Select(m => m with { Source = src }).ToList();
+        if (!def.Base) o.AddRange((def.Mods ?? new()).Select(m => m with { Source = src }));
         foreach (var a in it.Affixes)
             if (Items.Affix(a.Id) is { } ad) o.AddRange(ad.Mods(a.Tier).Select(m => m with { Source = src }));
         if (it.Setting != null && Items.Affix(it.Setting) is { } set) o.AddRange(set.Mods(0).Select(m => m with { Source = src }));
@@ -251,14 +263,34 @@ public static class Inventory
         (it.Setting != null && Items.Affix(it.Setting) is { } set ? new[] { set.Text(0) } : Array.Empty<string>())
             .Concat(it.Affixes.Select(a => Items.Affix(a.Id)?.Text(a.Tier) ?? "")).ToList();
 
+    /// <summary>The rank a weapon brings its skill in at: its own, a rank a rarity above its making, to
+    /// the gear's cap (mastery is added in the kit).</summary>
+    public static int WeaponRank(ItemInstance it)
+    {
+        var def = Items.Get(it.Def);
+        return def.Weapon == null ? 0 : Math.Min(GearRankCap, def.Weapon.Rank + Math.Max(0, it.Rarity - def.Rarity));
+    }
+
+    /// <summary>Carry a thing: gear into the pack's places, everything else into its store, which
+    /// never fills (docs/design/LOOT_DESIGN.md §6). False if there was no room (the pack's places,
+    /// or a draught kind's carry limit on the belt); a stack only partly taken keeps the rest.</summary>
     public static bool AddToPack(CharacterData ch, ItemInstance it)
     {
         var def = Items.Get(it.Def);
-        // Materials go in the pouch, which is never full.
-        if (def.Kind == ItemKind.Material)
+        switch (Drops.StoreOf(def, it))
         {
-            ch.Materials[it.Def] = ch.Materials.GetValueOrDefault(it.Def) + Math.Max(0, it.Qty);
-            return true;
+            case Store.Pouch:
+                ch.Materials[it.Def] = ch.Materials.GetValueOrDefault(it.Def) + Math.Max(0, it.Qty);
+                return true;
+            case Store.Belt:
+            {
+                int have = ch.Belt.GetValueOrDefault(it.Def), take = Math.Min(Math.Max(0, it.Qty), Math.Max(0, Drops.Rules.Belt - have));
+                if (take > 0) ch.Belt[it.Def] = have + take;
+                it.Qty -= take;
+                return it.Qty <= 0;
+            }
+            case Store.Satchel: Shelve(ch.Satchel, it, def); return true;
+            case Store.Keys: Shelve(ch.Keys, it, def); return true;
         }
         if (def.Stack is { } stack)
             foreach (var p in ch.Pack)
@@ -275,13 +307,33 @@ public static class Inventory
         return true;
     }
 
+    /// <summary>Into a list store: onto a stack of its kind while there is room in it (a chart or a
+    /// marked thing is always its own entry), else its own entry.</summary>
+    static void Shelve(List<ItemInstance> store, ItemInstance it, ItemDef def)
+    {
+        if (def.Stack is { } stack && stack > 1 && it.Chart == null && it.Affixes.Count == 0)
+            foreach (var p in store)
+            {
+                if (p.Def != it.Def || p.Qty >= stack || p.Chart != null || p.Affixes.Count > 0) continue;
+                int take = Math.Min(stack - p.Qty, it.Qty);
+                p.Qty += take;
+                it.Qty -= take;
+                if (it.Qty <= 0) return;
+            }
+        if (it.Qty > 0) store.Add(it);
+    }
+
     public static int Free(CharacterData ch) => ch.Pack.Count(p => p == null);
 
-    /// <summary>How many more of a thing the pack could take (a material: any number, it goes in the pouch).</summary>
+    /// <summary>How many more of a thing could be carried (the slotless stores: any number, but the belt's limit).</summary>
     public static int Room(CharacterData ch, string defId)
     {
         var def = Items.Get(defId);
-        if (def.Kind == ItemKind.Material) return int.MaxValue;
+        switch (Drops.StoreOf(def, null))
+        {
+            case Store.Belt: return Math.Max(0, Drops.Rules.Belt - ch.Belt.GetValueOrDefault(defId));
+            case Store.Pouch or Store.Satchel or Store.Keys: return int.MaxValue;
+        }
         int stack = Math.Max(1, def.Stack ?? 1), n = Free(ch) * stack;
         foreach (var p in ch.Pack) if (p != null && p.Def == defId) n += Math.Max(0, stack - p.Qty);
         return n;
@@ -289,23 +341,35 @@ public static class Inventory
 
     public static int Count(CharacterData ch, string defId)
     {
-        int n = ch.Materials.GetValueOrDefault(defId);
+        int n = ch.Materials.GetValueOrDefault(defId) + ch.Belt.GetValueOrDefault(defId);
         foreach (var p in ch.Pack) if (p?.Def == defId) n += p.Qty;
+        foreach (var p in ch.Satchel) if (p.Def == defId) n += p.Qty;
+        foreach (var p in ch.Keys) if (p.Def == defId) n += p.Qty;
         foreach (var s in Items.EquipSlots) if (ch.Equipment[s]?.Def == defId) n++;
         return n;
     }
 
-    /// <summary>Take up to qty of an item from the pack; how many were taken.</summary>
+    /// <summary>Take up to qty of a thing from wherever it is carried; how many were taken.</summary>
     public static int Take(CharacterData ch, string defId, int qty = 1)
     {
         int left = qty;
-        // The pouch first: that is where materials live.
-        if (ch.Materials.TryGetValue(defId, out int have) && have > 0)
-        {
-            int t = Math.Min(left, have);
-            left -= t;
-            if (have - t > 0) ch.Materials[defId] = have - t; else ch.Materials.Remove(defId);
-        }
+        // The counted stores first: that is where materials and draughts live.
+        foreach (var counts in new[] { ch.Materials, ch.Belt })
+            if (left > 0 && counts.TryGetValue(defId, out int have) && have > 0)
+            {
+                int t = Math.Min(left, have);
+                left -= t;
+                if (have - t > 0) counts[defId] = have - t; else counts.Remove(defId);
+            }
+        foreach (var store in new[] { ch.Satchel, ch.Keys })
+            for (int i = 0; i < store.Count && left > 0; i++)
+            {
+                if (store[i].Def != defId) continue;
+                int t = Math.Min(left, store[i].Qty);
+                store[i].Qty -= t;
+                left -= t;
+                if (store[i].Qty <= 0) store.RemoveAt(i--);
+            }
         for (int i = 0; i < ch.Pack.Count && left > 0; i++)
         {
             var p = ch.Pack[i];
@@ -320,23 +384,83 @@ public static class Inventory
 
     /// <summary>The pouch as things to show and sell: one stack a material ('m:' and its id),
     /// in the materials' own order.</summary>
-    public static List<ItemInstance> Pouch(CharacterData ch) =>
-        ch.Materials.Where(kv => kv.Value > 0 && Items.Find(kv.Key) != null)
+    public static List<ItemInstance> Pouch(CharacterData ch) => Counted(ch.Materials, "m:");
+
+    /// <summary>The belt as things to show, drink and sell: one stack a draught ('b:' and its id).</summary>
+    public static List<ItemInstance> Belt(CharacterData ch) => Counted(ch.Belt, "b:");
+
+    static List<ItemInstance> Counted(Dictionary<string, int> counts, string prefix) =>
+        counts.Where(kv => kv.Value > 0 && Items.Find(kv.Key) != null)
             .OrderBy(kv => Items.Get(kv.Key).Rarity).ThenBy(kv => Items.Get(kv.Key).Name)
-            .Select(kv => new ItemInstance { Uid = PouchUid(kv.Key), Def = kv.Key, Qty = kv.Value, Rarity = Items.Get(kv.Key).Rarity }).ToList();
+            .Select(kv => new ItemInstance { Uid = prefix + kv.Key, Def = kv.Key, Qty = kv.Value, Rarity = Items.Get(kv.Key).Rarity }).ToList();
 
     public static string PouchUid(string defId) => $"m:{defId}";
     public static string? FromPouch(string uid) => uid.StartsWith("m:") ? uid[2..] : null;
+    public static string? FromBelt(string uid) => uid.StartsWith("b:") ? uid[2..] : null;
 
-    public sealed record Where(bool InPack, int Index, EquipSlot Slot, ItemInstance Item);
+    /// <summary>Where a thing is: its store, its place in the pack or list (-1 in a counted store or
+    /// worn), the slot it is worn in, and the thing (a counted store's: the whole stack).</summary>
+    public sealed record Where(Store Store, int Index, EquipSlot Slot, ItemInstance Item)
+    {
+        /// <summary>In the pack's places (not worn, not in a store).</summary>
+        public bool InPack => Store == Store.Pack;
+        public bool Worn => Store == Store.Worn;
+        /// <summary>Carried, anywhere but on the body.</summary>
+        public bool Carried => Store != Store.Worn;
+    }
 
     public static Where? Find(CharacterData ch, string uid)
     {
+        if (FromPouch(uid) is { } m) return ch.Materials.GetValueOrDefault(m) > 0 ? new Where(Store.Pouch, -1, default, Pouch(ch).First(x => x.Def == m)) : null;
+        if (FromBelt(uid) is { } b) return ch.Belt.GetValueOrDefault(b) > 0 ? new Where(Store.Belt, -1, default, Belt(ch).First(x => x.Def == b)) : null;
         int i = ch.Pack.FindIndex(p => p?.Uid == uid);
-        if (i >= 0) return new Where(true, i, default, ch.Pack[i]!);
-        foreach (var s in Items.EquipSlots) if (ch.Equipment[s]?.Uid == uid) return new Where(false, -1, s, ch.Equipment[s]!);
+        if (i >= 0) return new Where(Store.Pack, i, default, ch.Pack[i]!);
+        foreach (var s in Items.EquipSlots) if (ch.Equipment[s]?.Uid == uid) return new Where(Store.Worn, -1, s, ch.Equipment[s]!);
+        i = ch.Satchel.FindIndex(p => p.Uid == uid);
+        if (i >= 0) return new Where(Store.Satchel, i, default, ch.Satchel[i]);
+        i = ch.Keys.FindIndex(p => p.Uid == uid);
+        if (i >= 0) return new Where(Store.Keys, i, default, ch.Keys[i]);
         return null;
     }
+
+    /// <summary>Carried, not worn: in the pack or a store.</summary>
+    public static bool Holds(CharacterData ch, string uid) => Find(ch, uid) is { Carried: true };
+
+    /// <summary>Take a carried thing out of wherever it is (qty of a stack, all of it if null):
+    /// what was taken, or null. Worn things are not taken.</summary>
+    public static ItemInstance? Remove(CharacterData ch, string uid, int? qty = null)
+    {
+        if (Find(ch, uid) is not { Carried: true } loc) return null;
+        var it = loc.Item;
+        int n = Math.Min(it.Qty, qty ?? it.Qty);
+        if (loc.Store is Store.Pouch or Store.Belt)
+        {
+            var counts = loc.Store == Store.Pouch ? ch.Materials : ch.Belt;
+            int left = counts.GetValueOrDefault(it.Def) - n;
+            if (left > 0) counts[it.Def] = left; else counts.Remove(it.Def);
+            return new ItemInstance { Uid = $"i{ch.NextUid++}", Def = it.Def, Qty = n, Rarity = it.Rarity };
+        }
+        if (n < it.Qty)
+        {
+            it.Qty -= n;
+            var part = Json.Clone(it);
+            part.Uid = $"i{ch.NextUid++}";
+            part.Qty = n;
+            return part;
+        }
+        switch (loc.Store)
+        {
+            case Store.Pack: ch.Pack[loc.Index] = null; break;
+            case Store.Satchel: ch.Satchel.RemoveAt(loc.Index); break;
+            case Store.Keys: ch.Keys.RemoveAt(loc.Index); break;
+        }
+        return it;
+    }
+
+    /// <summary>Every whole thing carried and worn (the counted stores' stacks too).</summary>
+    public static IEnumerable<ItemInstance> Everything(CharacterData ch) =>
+        ch.Pack.Where(p => p != null).Select(p => p!).Concat(ch.Satchel).Concat(ch.Keys).Concat(Pouch(ch)).Concat(Belt(ch))
+            .Concat(Items.EquipSlots.Select(s => ch.Equipment[s]).Where(x => x != null).Select(x => x!));
 
     /// <summary>Equip an item into a slot; whatever was there goes to the pack.</summary>
     public static bool Equip(CharacterData ch, ItemInstance it, EquipSlot slot)
@@ -345,7 +469,7 @@ public static class Inventory
         if (!Items.Fits(def, slot)) return false;
         var loc = Find(ch, it.Uid);
         if (loc is { InPack: true }) ch.Pack[loc.Index] = null;
-        if (loc is { InPack: false }) ch.Equipment[loc.Slot] = null;
+        if (loc is { Worn: true }) ch.Equipment[loc.Slot] = null;
         var prev = ch.Equipment[slot];
         ch.Equipment[slot] = it;
         if (prev != null)
@@ -374,8 +498,10 @@ public static class Inventory
             // What was worked into it shows too (a pelt worked into a coat: the wolves smell it).
             if (ch.Equipment[s]?.Marks is { } m) tags.UnionWith(m);
         }
-        foreach (var p in ch.Pack)
+        foreach (var p in ch.Pack.Concat(ch.Keys))
             if (p != null && Items.Find(p.Def) is { Kind: ItemKind.Tool, Tags: { } t }) tags.UnionWith(t);
+        // A set worn far enough says something too (the Watch's Kit: the Watch takes you for its own).
+        foreach (var (_, bonus) in Drops.SetBonuses(ch)) if (bonus.Tags != null) tags.UnionWith(bonus.Tags);
         foreach (var tr in ch.Traits) if (Callings.Trait(tr)?.Tags is { } t) tags.UnionWith(t);
         foreach (var k in ch.Knowledge) tags.Add($"knows:{k}");
         tags.Add($"bg:{ch.Background}");
@@ -513,7 +639,7 @@ public static class Character
             var def = Items.Get(it.Def);
             kit.GearIds.Add(def.Id);
             st.AddAll(Inventory.Mods(it));
-            foreach (var t in def.Triggers ?? new()) kit.Triggers.Add((t, $"item:{it.Uid}"));
+            foreach (var t in Drops.Triggers(def, it.Level)) kit.Triggers.Add((t, $"item:{it.Uid}"));
             foreach (var k in def.Statuses ?? new()) kit.GearStatuses.Add(k);
             // Kindling: one to an item, two to the survivor.
             if (it.Affixes.Select(ar => Items.Affix(ar.Id)).FirstOrDefault(a => a?.Kindled != null) is { } kin && kit.Kindled.Count < Inventory.MaxKindled)
@@ -536,6 +662,13 @@ public static class Character
                 int bonus = Math.Min(2, ch.Mastery.GetValueOrDefault(def.Weapon.Id) / 60);
                 kit.Weapons.Add((def.Weapon.Id, Math.Min(Inventory.GearRankCap, def.Weapon.Rank + bonus + Math.Max(0, it.Rarity - def.Rarity))));
             }
+        }
+        // A set worn far enough: each bonus reached, its numbers and its rules (docs/design/LOOT_DESIGN.md §10.2).
+        foreach (var (set, b) in Drops.SetBonuses(ch))
+        {
+            string from = $"set:{set.Id}:{b.Worn}";
+            if (b.Mods != null) st.AddAll(b.Mods.Select(m => m with { Source = from }));
+            foreach (var t in b.Triggers ?? new()) kit.Triggers.Add((t, from));
         }
         foreach (var (id, rank) in SkillBook.Carried(ch))
             if (kit.Weapons.All(w => w.Id != id)) kit.Learned.Add((id, rank));

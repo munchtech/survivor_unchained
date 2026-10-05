@@ -126,14 +126,14 @@ public static partial class Crafting
         q.After = $"{Math.Min(r.QualityMax, c.Quality + r.QualityStep)}% more found";
         if (c.Quality >= r.QualityMax) q.Blocked = $"As full of notes as a chart gets: {r.QualityMax}% more found.";
         else if (from?.Chart is not { } f || from.Uid == it.Uid || f.People != c.People) q.Blocked = $"Another chart of {Ground(c.People)} to write from.";
-        else if (Inventory.Find(x.Ch, from.Uid) is not { InPack: true }) q.Blocked = "Carry it in your pack.";
+        else if (!Inventory.Holds(x.Ch, from.Uid)) q.Blocked = "Carry it with you.";
         Afford(x, q);
         return q;
     }
 
     /// <summary>Another chart of the same people's ground, carried, to annotate from (the plainest first).</summary>
     public static ItemInstance? AnnotateFrom(CharacterData ch, ItemInstance it) =>
-        it.Chart is { } c ? ch.Pack.Where(p => p?.Chart is { } f && p.Uid != it.Uid && f.People == c.People).OrderBy(p => p!.Chart!.Rarity).ThenBy(p => p!.Chart!.Tier).FirstOrDefault() : null;
+        it.Chart is { } c ? ch.Satchel.Where(p => p.Chart is { } f && p.Uid != it.Uid && f.People == c.People).OrderBy(p => p.Chart!.Rarity).ThenBy(p => p.Chart!.Tier).FirstOrDefault() : null;
 
     /// <summary>A chart's rarity follows what is written on it: plain, fine to two mods, rare from three.</summary>
     static void Rerate(ItemInstance it, Chart c)
@@ -176,7 +176,7 @@ public static partial class Crafting
                 break;
             case Verb.Annotate:
                 c.Quality = Math.Min(Rules.Charts.QualityMax, c.Quality + Rules.Charts.QualityStep);
-                ch.Pack[Inventory.Find(ch, q.Donor!)!.Index] = null;
+                Inventory.Remove(ch, q.Donor!);
                 return 0;
         }
         Rerate(it, c);

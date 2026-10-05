@@ -199,7 +199,9 @@ public static partial class Crafting
     /// the Waystation's own (the wolfhide cloak). Somebody else's work is left be.</summary>
     public static bool Workable(ItemDef def) =>
         def.Kind is ItemKind.Weapon or ItemKind.Offhand or ItemKind.Head or ItemKind.Body or ItemKind.Cloak or ItemKind.Amulet or ItemKind.Ring or ItemKind.Relic
-        && (def.Base || def.Weapon != null || def.Workable);
+        && (def.Base || def.Weapon != null || def.Workable)
+        // A Legendary or a set piece is somebody's work, never the forge's (docs/design/LOOT_DESIGN.md §9).
+        && def.Rarity < 4 && def.Set == null;
 
     public static bool Workable(ItemInstance it) => Items.Find(it.Def) is { } d && Workable(d) && it.Heat != null;
 
@@ -812,7 +814,7 @@ public static partial class Crafting
 
     /// <summary>The things carried that hold a Mark, finest first.</summary>
     public static List<ItemInstance> MarksCarried(CharacterData ch) =>
-        ch.Pack.Where(p => p != null && MarkIn(p) != null).Select(p => p!).OrderByDescending(p => MarkIn(p)!.Tier).ToList();
+        ch.Satchel.Concat(ch.Pack.Where(p => p != null).Select(p => p!)).Where(p => MarkIn(p) != null).OrderByDescending(p => MarkIn(p)!.Tier).ToList();
 
     /// <summary>What a map's ruler leaves of its own (null: nothing this time): its people's thing, at a
     /// grade by the map's tier (a grade every few tiers, now and then one finer), to VI.</summary>
@@ -841,7 +843,7 @@ public static partial class Crafting
         if (q.Index >= it.Affixes.Count) q.Blocked = "Choose what it goes in over.";
         else if (q.Index >= 0) q.Before = Line(it.Affixes[q.Index].Id, it.Affixes[q.Index].Tier);
         else if (OpenSeams(it) == 0) q.Blocked = Seams(it) == 0 ? "No seam to hold it: have it remade first." : "No open seam: choose what it goes in over.";
-        if (Inventory.Find(x.Ch, from.Uid) is not { InPack: true }) q.Blocked ??= "Carry it in your pack.";
+        if (!Inventory.Holds(x.Ch, from.Uid)) q.Blocked ??= "Carry it with you.";
         var (top, _, _) = Terms(crafter, x.Ctx);
         q.Takes[Shard] = r.Shards;
         q.Gold = Price(x, crafter, r.Gold + r.GoldPerGrade * m.Tier);
@@ -1055,7 +1057,8 @@ public static partial class Crafting
             Steeped(x, it, q, rng);
             return true;
         }
-        if (q.Verb is Verb.Bind or Verb.Mark or Verb.Annotate && (q.Donor == null || Inventory.Find(ch, q.Donor) is not { InPack: true })) return false;
+        if (q.Verb is Verb.Bind && (q.Donor == null || Inventory.Find(ch, q.Donor) is not { InPack: true })) return false;
+        if (q.Verb is Verb.Mark or Verb.Annotate && (q.Donor == null || !Inventory.Holds(ch, q.Donor))) return false;
         if (q.Crafter != "" && Closed(q.Crafter, x.Ctx, q.Verb) is not null) return false;
         foreach (var (m, n) in q.Takes) if (Inventory.Count(ch, m) < n) return false;
         if (ch.Gold < q.Gold) return false;
@@ -1126,7 +1129,7 @@ public static partial class Crafting
                 var roll = new AffixRoll { Id = q.Affix!, Tier = q.Grade };
                 if (q.Index >= 0) it.Affixes[q.Index] = roll; else it.Affixes.Add(roll);
                 // The ruler's thing is used up: what it held is written into the piece.
-                ch.Pack[Inventory.Find(ch, q.Donor!)!.Index] = null;
+                Inventory.Remove(ch, q.Donor!);
                 (it.History ??= new()).Add(History(x, q.Crafter, "mark", "Marked by {who}, day {day}"));
                 break;
             }

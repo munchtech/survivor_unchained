@@ -207,6 +207,40 @@ public static class Style
         return b;
     }
 
+    static Theme? pageTheme;
+
+    /// <summary>What every screen's controls take unless they say otherwise: a scroll bar as a
+    /// slim dark rail with a gold grip, lit when held (the engine's grey bar was the last stock
+    /// thing left on the pages).</summary>
+    public static Theme PageTheme
+    {
+        get
+        {
+            if (pageTheme != null) return pageTheme;
+            var t = new Theme();
+            var rail = new StyleBoxFlat { BgColor = new Color(0, 0, 0, 0.3f), CornerDetail = 4 };
+            rail.SetCornerRadiusAll(4);
+            rail.ContentMarginLeft = rail.ContentMarginRight = 4;
+            rail.ContentMarginTop = rail.ContentMarginBottom = 2;
+            static StyleBoxFlat Grip(Color c)
+            {
+                var g = new StyleBoxFlat { BgColor = c, BorderColor = new Color("#2a1c0c"), CornerDetail = 4 };
+                g.SetCornerRadiusAll(4);
+                g.SetBorderWidthAll(1);
+                return g;
+            }
+            foreach (var type in new[] { "VScrollBar", "HScrollBar" })
+            {
+                t.SetStylebox("scroll", type, rail);
+                t.SetStylebox("scroll_focus", type, rail);
+                t.SetStylebox("grabber", type, Grip(GoldDim with { A = 0.9f }));
+                t.SetStylebox("grabber_highlight", type, Grip(Gold));
+                t.SetStylebox("grabber_pressed", type, Grip(GoldHi));
+            }
+            return pageTheme = t;
+        }
+    }
+
     /// <summary>A level from nothing to full (the settings' volumes): a gold
     /// groove that fills from the left, and its value in words beside it.
     /// `change` runs as it moves, `done` when it is let go.</summary>

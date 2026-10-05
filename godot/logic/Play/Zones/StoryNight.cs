@@ -134,12 +134,21 @@ public sealed class StoryNight : ZoneRuntime, IStoryArena
     public override void Begin(Battle b)
     {
         base.Begin(b);
-        foreach (var pc in map.Pieces) G.Look.AddProp(pc.Id, pc.X, pc.Z, pc.Rot, pc.Scale);
+        // Until arena art builds a fight's place to its outline (PlaceBuilt), the old round arena's props
+        // stand inside it: a stump in a neck the fight needs, a cart across a gate. Where the place is, they
+        // go, drawn and solid both; its own cover comes with its own build.
+        bool clear = !Fight.PlaceBuilt;
+        foreach (var pc in map.Pieces)
+            if (!clear || !Fight.Place.Inside(pc.X, pc.Z, -1.5)) G.Look.AddProp(pc.Id, pc.X, pc.Z, pc.Rot, pc.Scale);
+        if (clear)
+            foreach (var c in b.Collision.All().Where(c => c.Tag == null && Fight.Place.Inside(c.X, c.Z, -1.5)).ToList()) b.Collision.Remove(c.Id);
         b.Rules = MapOffers.Rules(Spec.Map);
         // The table's gold rates (crafting's economy): a night's rank and file pay a little.
         b.Rules.FodderGold = 0.0015;
         b.Rules.ChampionGold = 0.07;
-        b.Rules.EmberGain *= EmberPace;
+        // A kill's ember grows with its level, and a story night's yardstick (a table night's twelfth minute)
+        // does not: the same night gives the same build at every tier (measured: five cards more at tier 4).
+        b.Rules.EmberGain *= EmberPace / Enemies.ScaleFor(Spec.Tier * 3 - 2).Xp;
         b.Rules.Light *= 1.6;
         var place = Fight.Place;
         var (ax, az) = place[Fight.Arrive];
@@ -152,7 +161,9 @@ public sealed class StoryNight : ZoneRuntime, IStoryArena
         foreach (var id in Fight.Fires)
         {
             var (x, z) = place[id];
-            var f = new Deadfall { Id = id, X = x, Z = z, Burns = burns, Light = G.Look.AddLight(x, 1.1, z, "#ff8a3a", 2.8, 10, 0.22, 0.1, "#ffb35a") };
+            // The place's own fire laid in the deadfall (arena art's: flames along the wood), or a light.
+            int light = map.FireLights.TryGetValue(id, out var laid) ? laid : G.Look.AddLight(x, 1.1, z, "#ff8a3a", 2.8, 10, 0.22, 0.1, "#ffb35a");
+            var f = new Deadfall { Id = id, X = x, Z = z, Burns = burns, Light = light };
             G.Look.SetLit(f.Light, false);
             fires.Add(f);
         }
@@ -214,7 +225,7 @@ public sealed class StoryNight : ZoneRuntime, IStoryArena
         // What the stage's dead would have given her, if she was quicker than they were many.
         for (int k = 0; k < 200 && B!.EmberLevel < b.EmberFloor; k++) B.GainEmber(Math.Max(1, B.EmberNext - B.EmberXp), raw: true);
         if (b.Gate is { } g) Open(g);
-        if (beatIx < Fight.Between.Length) G.Say(Fight.Between[beatIx]);
+        if (Fight.BetweenSight(this, beatIx) is { } sight) G.Say(sight);
         // The stage's leftovers fall back into the dark: the quiet between is quiet.
         MakeWay();
         B!.Charges.Calm(B, 6);
@@ -224,10 +235,59 @@ public sealed class StoryNight : ZoneRuntime, IStoryArena
         Objectives();
     }
 
+    bool shutBehind;
+
+    static double SegDist(double x, double z, double x0, double z0, double x1, double z1)
+    {
+        double lx = x1 - x0, lz = z1 - z0, len2 = lx * lx + lz * lz;
+        double t = len2 > 0 ? Math.Clamp(((x - x0) * lx + (z - z0) * lz) / len2, -0.3, 1.3) : 0;
+        return Dist(x, z, x0 + lx * t, z0 + lz * t);
+    }
+
+    /// <summary>The boss's own ground: the space its start stands in.</summary>
+    string? BossGround => Fight.Place.SpaceAt(Fight.Place[Fight.BossStart].X, Fight.Place[Fight.BossStart].Z);
+    /// <summary>On it, and through its gate: on the same side of every gate into it as its start, and clear of
+    /// it (a gate's neck belongs to the space it opens, so in the neck she may still be on the near side).</summary>
+    bool OnBossGround()
+    {
+        if (BossGround is not { } g || B == null) return false;
+        var p = B.Player;
+        if (!Fight.Place.In(g, p.X, p.Z, 1.0)) return false;
+        var (sx, sz) = Fight.Place[Fight.BossStart];
+        foreach (var gate in Fight.Place.Gates.Where(q => q.Into == g))
+        {
+            double lx = gate.X1 - gate.X0, lz = gate.Z1 - gate.Z0;
+            double her = lx * (p.Z - gate.Z0) - lz * (p.X - gate.X0), start = lx * (sz - gate.Z0) - lz * (sx - gate.X0);
+            if (Math.Sign(her) != Math.Sign(start) || SegDist(p.X, p.Z, gate.X0, gate.Z0, gate.X1, gate.Z1) < 2.5) return false;
+        }
+        return true;
+    }
+
+    /// <summary>On the boss's ground, the way back shuts behind her (his people close it): the fight is
+    /// on its ground, and a fight that drifts back down the way in is a fight that never ends.</summary>
+    void ShutBehind()
+    {
+        if (shutBehind || B == null) return;
+        var ground = BossGround;
+        if (ground == null || !OnBossGround()) return;
+        shutBehind = true;
+        foreach (var g in Fight.Place.Gates.Where(g => g.Into == ground))
+        {
+            StoryPlace.Shut(B.Collision, g);
+            if (Fight.ShutSight is { } sight) B.Events.Emit(new Ev.Bark { X = (g.X0 + g.X1) / 2, Z = (g.Z0 + g.Z1) / 2, Text = sight });
+        }
+        open.Clear();
+        open.Add(ground);
+    }
+
     void Open(string gate)
     {
         var g = Fight.Place.Gates.FirstOrDefault(x => x.Id == gate);
-        if (g != null) { StoryPlace.Open(B!.Collision, g); open.Add(g.Into); }
+        if (g == null) return;
+        StoryPlace.Open(B!.Collision, g);
+        open.Add(g.Into);
+        // The ember's line across the way goes out (its char stays on the ground).
+        G.Look.Show($"gate:{g.Id}", false);
     }
 
     /* ------------------------------------------------------------- the boss -- */
@@ -299,10 +359,17 @@ public sealed class StoryNight : ZoneRuntime, IStoryArena
                 if (betweenT <= 0)
                 {
                     if (beatIx + 1 < Fight.Beats.Length) StartBeat(beatIx + 1);
-                    else BossOpen();
+                    // The boss comes when she steps onto his ground (or, if she does not come, the ember
+                    // takes her there after a while: a night is not lost standing at a gate).
+                    else if (OnBossGround() || betweenT < -20)
+                    {
+                        if (!OnBossGround()) { var (gx, gz) = Fight.Place[Fight.BossStart]; B.Player.X = gx; B.Player.Z = gz; }
+                        BossOpen();
+                    }
                 }
                 break;
             case Stage.Boss:
+                ShutBehind();
                 script?.Step(dt);
                 break;
         }
@@ -514,7 +581,7 @@ public sealed class StoryNight : ZoneRuntime, IStoryArena
         won = true;
         Now = Stage.Won;
         StageEnded("boss");
-        if (boss != null) foreach (var l in Hoard()) B.SpawnPickup(l.Kind, x, z, l.Value, l.Ref);
+        if (boss != null) foreach (var l in Hoard()) B.Spill(l, x, z);
         script?.Clear();
         boss = null;
         // The outcome told first: the end's cinematic reads it (redcowl = spared picks its words).
@@ -543,20 +610,20 @@ public sealed class StoryNight : ZoneRuntime, IStoryArena
 
     /* --------------------------------------------------------------- spoils -- */
 
-    static readonly string[] PlainGear = ["iron_helm", "leather_cap", "chain_shirt", "padded_jerkin", "silver_ring", "copper_ring", "bone_amulet", "travelers_cloak", "watch_buckler"];
-
-    int Rarity(double luck)
+    /// <summary>What a carrier leaves (docs/design/LOOT_DESIGN.md §5), rolled whole at its level; the
+    /// story's boss pays the survivor's first Legendary for certain.</summary>
+    List<Loot> Gear(int level, DropSource source) => G.Journey.Drops(new DropCtx
     {
-        double roll = R() / luck;
-        return roll < 0.04 + Spec.Tier * 0.01 ? 3 : roll < 0.2 + Spec.Tier * 0.02 ? 2 : roll < 0.65 ? 1 : 0;
-    }
+        Source = source, Level = level, People = Spec.People, Lean = lean, Luck = B!.Stats.Get(Stat.Luck), Tier = Spec.Tier,
+        Tally = true, StoryBoss = source == DropSource.Boss, R = R,
+    });
 
     IEnumerable<Loot> OnLoot(Enemy e)
     {
         var o = new List<Loot>();
         bool small = smallChests.Remove(e.Id), carrier = chests.Remove(e.Id) || small;
         if (carrier) o.Add(new Loot(PickupKind.Chest, small ? "small" : null, 1, true));
-        if (carrier && R() < 0.6) o.Add(new Loot(PickupKind.Item, PlainGear[(int)(R() * PlainGear.Length)], 1, true, Rarity(1), lean));
+        if (carrier) o.AddRange(Gear(e.Level, small ? DropSource.Miniboss : DropSource.Champion));
         return o;
     }
 
@@ -567,8 +634,7 @@ public sealed class StoryNight : ZoneRuntime, IStoryArena
         var o = new List<Loot>();
         int n = 3 + (Spec.Tier >= 3 ? 2 : 0) + (script != null && script.BreakSum >= script.MaxHp * 0.1 ? 1 : 0) + (B!.BossBlowsTaken == bossBlowsBefore ? 1 : 0);
         o.Add(new Loot(PickupKind.Chest, "boss", n, true));
-        for (int k = 0; k < 2 + Spec.Tier / 2; k++)
-            o.Add(new Loot(PickupKind.Item, PlainGear[(int)(R() * PlainGear.Length)], 1, true, Math.Max(1, Rarity(1.5)), lean));
+        o.AddRange(Gear(Level, DropSource.Boss));
         return o;
     }
 
@@ -590,12 +656,17 @@ public sealed class StoryNight : ZoneRuntime, IStoryArena
     double R() => G.Rng.NextDouble();
 
     public StoryPlace Place => Fight.Place;
-    public int Level => Math.Max(1, Spec.Tier * 3 - 2 + (atBoss ? Fight.BossLevel : beat?.Level ?? 0));
+    /// <summary>The creature level now: the tier's base, the stage's own over it, and a dusk on the first
+    /// stage as a table night has (the tier's strength comes in over it, a level a tier above the first):
+    /// she meets it with nothing drafted, and at a higher tier her bare hands fall further behind.</summary>
+    public int Level => Math.Max(1, Spec.Tier * 3 - 2 + (atBoss ? Fight.BossLevel : beat?.Level ?? 0) - (!atBoss && beatIx == 0 ? Spec.Tier - 1 : 0));
     public IReadOnlyList<Deadfall> Fires => fires;
     public bool Fact(string key) => F(key).Truthy;
     public (double X, double Z)? Goal { get; set; }
     public void Script(Enemy e, Func<Enemy, double, bool> tick) { e.Scripted = true; scripted[e.Id] = (e.Seed, tick); }
-    public void Line(string text) => G.Say(text);
+    public void Line(string text, string? speaker = null) => G.Say(text, speaker);
+    public Fact FactOf(string key) => F(key);
+    public void Apply(string effectsJson) => G.Apply(effectsJson);
     /// <summary>The spared ending is chosen in the fight when the story's spec carries both outcomes
     /// (OnSpare); without one, a spare the story allows happens of itself, as before.</summary>
     public bool CanSpare => Spec.OnSpare != null;
@@ -620,21 +691,48 @@ public sealed class StoryNight : ZoneRuntime, IStoryArena
         // The crowd softens as a table night's does by its minute: the build's growth shows as a crowd
         // that melts (ArenaRun.FodderEase). Not the named, the champions or the boss.
         if (e != null && !e.Elite) e.MaxHp = e.Hp = e.MaxHp / ArenaRun.FodderEase(atBoss ? Fight.BossMinute : beat?.Minute ?? 0);
+        if (e != null) e.MaxHp = e.Hp = e.MaxHp / TierEase;
+        // The way in's rank and file bite softer than a table night's: the way in should dip, not fell
+        // (STORY_BOSSES.md 0.6), and the danger belongs to the boss. The named keep their own teeth.
+        if (e != null && !e.Elite && !atBoss) e.Damage *= CrowdTeeth;
+        // Her health grows a little slower with her level than their bite does with theirs: eased a tier.
+        if (e != null) e.Damage /= TierTeeth;
         return e;
     }
 
-    public Enemy? Foe(string def, double x, double z, double hpMul = 1, string? kicker = null)
+    /// <summary>How hard the way in's rank and file bite, against a table night's.</summary>
+    public const double CrowdTeeth = 0.75;
+    public double TierTeeth => 1 + 0.2 * (Spec.Tier - 1);
+    public double Teeth => CrowdTeeth / TierTeeth;
+
+    /// <summary>A story night is the same fight at every tier: its tier is the game's guess at how strong
+    /// she has grown, and its creatures' levels already follow it. Their health grows faster with level
+    /// than her build's damage does (measured: a tier-3 night's stages ran twice as long as a tier-1's,
+    /// and were far more dangerous for it), so it is eased back a little a tier. Unlike the table's, a
+    /// story night does not ask more of the draft as the tiers climb.</summary>
+    public double TierEase => 1 + 0.3 * (Spec.Tier - 1);
+
+    public Enemy? Foe(string def, double x, double z, double hpMul = 1, string? kicker = null, bool quiet = false)
     {
         var e = Spawn(def, x, z, true, SpawnStyle.Walk);
         if (e == null) return null;
-        // A named foe: a miniboss's measure (between a champion's twice and a herald's five times).
-        e.MaxHp = e.Hp = e.MaxHp * (1.6 + 0.6 * Spec.Tier) * hpMul;
+        // A named foe: a miniboss's measure at its own level (between a champion's twice and a herald's
+        // five times), times what its stage asks of it. Not more a tier: its level grows it already.
+        e.MaxHp = e.Hp = e.MaxHp * 2.2 * hpMul;
         e.Named = new Named { Title = e.Def.Name };
+        if (quiet) return e;
         smallChests.Add(e.Id);
         B!.Charges.Calm(B, 4);
-        G.Announce(new Announcement(e.Def.Name, e.Def.Lesson, "danger", 3.2, kicker));
+        G.Announce(new Announcement(e.Def.Name, e.Def.Lesson, "danger", 3.2, kicker ?? (Fight.Kicker != "" ? Fight.Kicker : null)));
         return e;
     }
+
+    readonly HashSet<string> marks = new();
+    public void Mark(string key) => marks.Add(key);
+    public bool Marked(string key) => marks.Contains(key);
+    public bool Test(Cond cond) => Rules.Test(cond, C);
+    bool IStoryArena.Knows(string key) => Knows(key);
+    public void After(double seconds, Action act) => G.After(seconds, act);
 
     public List<Enemy> Group(string def, int n, double x, double z, double spread, SpawnStyle? style = null)
     {
@@ -709,7 +807,7 @@ public sealed class StoryNight : ZoneRuntime, IStoryArena
 
     public override Dictionary<string, object?> Debug() => new()
     {
-        ["stage"] = Now.ToString(), ["beat"] = beatIx, ["falls"] = falls, ["level"] = Level, ["ember"] = B?.EmberLevel,
+        ["stage"] = Now.ToString(), ["beat"] = beatIx, ["falls"] = falls, ["level"] = Level, ["ember"] = B?.EmberLevel, ["shut"] = shutBehind, ["open"] = string.Join("+", open),
         ["alive"] = B?.Enemies.Living().Count(e => e.Disposition == Disposition.Hostile) ?? 0,
     };
 }

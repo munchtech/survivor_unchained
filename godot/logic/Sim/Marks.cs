@@ -12,11 +12,12 @@ namespace SurvivorUnchained.Sim;
  * behaviour, by id. */
 public static class Marks
 {
-    /// <summary>Volley looses a second volley at the farthest foe in reach, for [20 → 90]% of it.</summary>
+    /// <summary>Volley looses a second volley at the farthest foe in reach, for [35 → 90]% of it. (Its floor
+    /// is a third: a grade-I mark from a tier-1 ruler must be worth a seam.)</summary>
     public const string Ravine = "of_the_long_chase";
-    /// <summary>Cinderfall's blast leaves burning ground for [1 → 4] s.</summary>
+    /// <summary>Cinderfall's blast leaves burning ground for [2 → 5] s.</summary>
     public const string FallingStar = "of_the_falling_star";
-    /// <summary>The dash leaves a ring of holy fire for 3 s, burning for [20 → 90]% of the strongest
+    /// <summary>The dash leaves a ring of holy fire for 3 s, burning for [30 → 90]% of the strongest
     /// skill's damage a second.</summary>
     public const string OpenGate = "of_the_open_gate";
     /// <summary>Axe Gyre gains an axe for every [6 → 3] foes within 5 m, to three more. (Its id is not
@@ -63,7 +64,7 @@ public sealed partial class Battle
         if (!Marked(Marks.OpenGate, out double t)) return;
         double strongest = 0;
         foreach (var w in Weapons) strongest = Math.Max(strongest, w.Damage);
-        var zn = SpawnZone(Side.Player, x, z, 2.4 * Math.Sqrt(Stats.Get(Stat.Area)), 3, strongest * Marks.Lerp(0.2, 0.9, t), School.Holy);
+        var zn = SpawnZone(Side.Player, x, z, 2.4 * Math.Sqrt(Stats.Get(Stat.Area)), 3, strongest * Marks.Lerp(0.3, 0.9, t), School.Holy);
         if (zn != null) { zn.Tags = [Tag.Zone, Tag.Holy]; zn.Art = "holy_ground"; }
     }
 }

@@ -634,7 +634,7 @@ public partial class ForgeScreen : Overlay
         {
             var q = Crafting.BreakDown(X, it, crafter);
             string gives = string.Join(" and ", q.Gives.Select(kv => Items.Several(kv.Key, kv.Value)));
-            bool worn = Inventory.Find(Ch, it.Uid) is { InPack: false };
+            bool worn = Inventory.Find(Ch, it.Uid) is { Worn: true };
             row.AddChild(Tile("Break down", $"For {gives}. It cannot be undone.", q, () => Work(q, Sound.Sfx.Shatter, off: true),
                 "Break down", "break", worn ? "Worn: take it off first to break it down." : q.Ok ? null : q.Blocked, hold: true));
         }

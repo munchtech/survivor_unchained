@@ -1,0 +1,2 @@
+# Generated scene scripts (make_motioncheck.py builds them from lookdev.gd each run).
+*.gd

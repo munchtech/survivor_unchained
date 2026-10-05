@@ -5,6 +5,7 @@ using SurvivorUnchained.Play;
 using SurvivorUnchained.Content;
 using SurvivorUnchained.Sim;
 using SurvivorUnchained.Ui;
+using LootTier = SurvivorUnchained.Rpg.LootTier;
 using static SurvivorUnchained.View.Shapes;
 
 namespace SurvivorUnchained.View;
@@ -128,7 +129,9 @@ public partial class BattleFx : Node3D
         // What lies on the ground is what the pack shows (the photographs'
         // models): an ember is the ember's crystals, lit the colour of its
         // worth; a draught, a lodestone, a sack of what was carried, a chest.
-        embers = Add(new Batch(Pickup("ember", 1.25f, m => m is BaseMaterial3D { EmissionEnabled: true }), 1400, Glowing(2.6f, 0.25f)));
+        // Lit by their own colour at about its strength, no more: at 2.6 times a stone was white-hot
+        // in every channel and the tone curve made cream popcorn of a field of them.
+        embers = Add(new Batch(Pickup("ember", 1.25f, m => m is BaseMaterial3D { EmissionEnabled: true }), 1400, Glowing(1.0f, 0.25f)));
         var coin = new Build();
         Lathe(coin, Pts(0, -0.012f, 0.12f, -0.012f, 0.15f, -0.02f, 0.16f, -0.012f, 0.16f, 0.012f, 0.15f, 0.02f, 0.12f, 0.012f, 0, 0.012f), 16);
         coins = Add(new Batch(coin.Mesh(), 600, Glowing(0.6f, 0.3f, 0.9f)));
@@ -146,6 +149,9 @@ public partial class BattleFx : Node3D
     }
 
     Batch Add(Batch b) { AddChild(b); return b; }
+
+    /// <summary>The Set tier's verdigris (docs/design/LOOT_DESIGN.md §3); UI design keeps the UI's own.</summary>
+    static readonly Color SetColour = new("#3fd6c0");
 
     /// <summary>An item's own model (the photographs', Ui/ItemModels) as one
     /// mesh to draw many of: its parts merged, each keeping its material (or
@@ -594,6 +600,10 @@ public partial class BattleFx : Node3D
 
     /* ------------------------------------------------------------- events -- */
 
+    /// <summary>Critical bursts in the last breath (a crowd of crits is told by a few).</summary>
+    double critBurstAt = -1;
+    int critBursts;
+
     public void Handle(IReadOnlyList<CombatEvent> events, Battle b)
     {
         b0 = b;
@@ -630,10 +640,16 @@ public partial class BattleFx : Node3D
                         if (away.LengthSquared() < 0.01f) away = Vector3.Forward;
                         Gore.Hit(at + Vector3.Up * 0.2f, e.Amount, e.MaxHp, View.Gore.Of(e.Family, e.Def ?? ""), e.Family == Family.Undead, away.Normalized(), e.Crit);
                     }
-                    if (e.Crit)
+                    // A critical's burst: warm gold under the tone curve's knee (white-hot, a crowd of
+                    // crits bloomed white round her), three at most in a breath, and small at her elbow.
+                    if (e.Crit && (time - critBurstAt > 0.15 || critBursts < 3))
                     {
-                        if (!Books.Spawn("sparks", at, 0.9f, 0.35f, new Color(1.4f, 1.3f, 1.2f), sizeEnd: 1.6f))
-                            Sparks.Spawn(at, Vector3.Zero, 0.22f, 1.1f, Palette.Of(e.School).Core, sizeEnd: 0.25f, sprite: Sprites.Of("star"), spinV: 4);
+                        if (time - critBurstAt > 0.15) { critBurstAt = time; critBursts = 0; }
+                        critBursts++;
+                        double dx = e.X - b.Player.X, dz = e.Z - b.Player.Z;
+                        float near = dx * dx + dz * dz < 9 ? 0.6f : 1f;
+                        if (!Books.Spawn("sparks", at, 0.7f * near, 0.3f, new Color(1f, 0.8f, 0.48f) * new Color(1, 1, 1, near), sizeEnd: 1.2f * near))
+                            Sparks.Spawn(at, Vector3.Zero, 0.22f * near, 1.1f, Palette.Of(e.School).Core, sizeEnd: 0.25f, sprite: Sprites.Of("star"), spinV: 4);
                         Cam?.AddTrauma(0.04f);
                     }
                     break;
@@ -1403,10 +1419,10 @@ public partial class BattleFx : Node3D
         shades.End(); orbs.End(); steel.End(); axes.End(); daggers.End(); shards.End(); rings.End(); kegs.End();
     }
 
-    // Ember by worth, kept saturated: the brighter tiers were near-white in every channel and bloomed
-    // to cream "popcorn" on the ground. Orange, amber, gold, a cold blue for the rare great stone,
-    // and the hoard stone's deep red (Battle.Hoard).
-    static readonly Color[] EmberTiers = { new(2.4f, 0.9f, 0.2f), new(2.6f, 1.45f, 0.3f), new(2.6f, 2.0f, 0.45f), new(0.5f, 1.3f, 2.8f), new(2.8f, 0.35f, 0.3f) };
+    // Ember by worth, kept saturated: orange, amber, gold, a cold blue for the rare great stone, and
+    // the hoard stone's deep red (Battle.Hoard). Their glow is these at about 1.3 at most: past the
+    // tone curve's knee every hue folds to cream, and a field of stones read as popcorn.
+    static readonly Color[] EmberTiers = { new(1.3f, 0.42f, 0.08f), new(1.3f, 0.72f, 0.14f), new(1.25f, 1.0f, 0.24f), new(0.25f, 0.62f, 1.35f), new(1.35f, 0.16f, 0.12f) };
     // (An array made for each ember on the ground every frame was most of what the effects threw away.)
     static readonly float[] EmberSizes = { 0.16f, 0.21f, 0.27f, 0.34f, 0.5f };
 
@@ -1430,7 +1446,7 @@ public partial class BattleFx : Node3D
                         s *= 1 + 0.12f * Mathf.Sin((float)now * 5);
                         lootBeams.Add(new Transform3D(Godot.Basis.Identity.Scaled(new Vector3(1.3f, 4.5f, 1.3f)), V(p.X, gy + 2.25, p.Z)), new Color("#ff3a2a"));
                     }
-                    embers.Add(new Transform3D(spin.Scaled(Vector3.One * s), V(p.X, gy + 0.45 + bob, p.Z)), EmberTiers[tier] * 0.5f);
+                    embers.Add(new Transform3D(spin.Scaled(Vector3.One * s), V(p.X, gy + 0.45 + bob, p.Z)), EmberTiers[tier]);
                     break;
                 }
                 case PickupKind.Gold:
@@ -1449,10 +1465,39 @@ public partial class BattleFx : Node3D
                     var col = Palette.Rarity[Math.Clamp(p.Tier, 0, Palette.Rarity.Length - 1)];
                     if (p.Kind == PickupKind.Quest) col = new Color("#ffd46a");
                     var lie = new Godot.Basis(Vector3.Up, p.Id * 2.4f);
+                    // What the item filter hides lies unlit and dark: the world stays honest, the eye is spared.
+                    bool hidden = p.Look == Verdict.Hidden;
                     if (p.Kind == PickupKind.Chest) chests.Add(new Transform3D(lie, V(p.X, gy + chestUp, p.Z)), Colors.White);
-                    else sacks.Add(new Transform3D(lie, V(p.X, gy + sackUp, p.Z)), Colors.White);
-                    float h = p.Kind is PickupKind.Material ? 1.4f : 3.2f;
-                    lootBeams.Add(new Transform3D(Godot.Basis.Identity.Scaled(new Vector3(1, h, 1)), V(p.X, gy + h / 2, p.Z)), col);
+                    else sacks.Add(new Transform3D(lie.Scaled(Vector3.One * (hidden ? 0.7f : 1f)), V(p.X, gy + sackUp, p.Z)), hidden ? new Color(0.35f, 0.33f, 0.3f) : Colors.White);
+                    if (hidden) break;
+                    float h = p.Kind is PickupKind.Material ? 1.4f : 3.2f, w = 1;
+                    // Loot rolled whole carries its tier (docs/design/LOOT_DESIGN.md §8.1): the beam's
+                    // height says how rare, its colour the band. Placeholder heights for the VFX lead.
+                    if (p.Loot >= 0)
+                    {
+                        (h, w, col) = (LootTier)p.Loot switch
+                        {
+                            LootTier.Common => (0f, 1f, col),
+                            LootTier.Uncommon => (0.8f, 1f, col),
+                            LootTier.Rare => (2.5f, 1f, col),
+                            LootTier.Epic => (5f * (1 + 0.08f * Mathf.Sin((float)now * 2.5f)), 1.2f, col),
+                            LootTier.Set => (6f, 1.4f, SetColour),
+                            LootTier.Legendary => (40f, 2.6f, Palette.Rarity[4]),
+                            LootTier.Storied => (40f, 2.6f, Palette.Rarity[5]),
+                            LootTier.Chart => (2f, 1f, new Color("#e8d8b0")),
+                            LootTier.Quest => (1.5f, 1f, new Color("#ffd46a")),
+                            LootTier.Book => (1.5f, 1f, col),
+                            _ => (0f, 1f, col),
+                        };
+                    }
+                    if (h <= 0) break;
+                    lootBeams.Add(new Transform3D(Godot.Basis.Identity.Scaled(new Vector3(w, h, w)), V(p.X, gy + h / 2, p.Z)), col);
+                    // A set's beam is two strands that twist about each other.
+                    if (p.Loot == (int)LootTier.Set)
+                    {
+                        float a = (float)now * 1.6f;
+                        lootBeams.Add(new Transform3D(Godot.Basis.Identity.Scaled(new Vector3(0.7f, h * 0.9f, 0.7f)), V(p.X + Mathf.Cos(a) * 0.18f, gy + h * 0.45f, p.Z + Mathf.Sin(a) * 0.18f)), col);
+                    }
                     break;
                 }
             }

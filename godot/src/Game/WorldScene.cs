@@ -103,7 +103,9 @@ public partial class WorldScene : Node3D, IZoneLook
         Player = new PlayerView(lo);
         AddChild(Player);
         // The new figure stands where the old one stood, facing its way, already posed.
-        if (old != null) { Player.Follow(old); old.QueueFree(); }
+        // The old one goes out of sight now: freed at the frame's end, it was drawn over the new
+        // one for that frame, and the two showed through each other.
+        if (old != null) { Player.Follow(old); old.Visible = false; old.QueueFree(); }
     }
 
     string look = "";

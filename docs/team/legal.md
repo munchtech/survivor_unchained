@@ -1,86 +1,54 @@
 # Legal and Steam compliance: status
 
-Agent aab20546fe06daa89 (successor to aa12c130ddf4b904c), branch `worktree-agent-aab20546fe06daa89` (worktree `.claude/worktrees/agent-aab20546fe06daa89` in survivorsunchained). Not a lawyer: I find and organise the issues, cite primary sources, and recommend. The owner and the main session decide. Predecessor's handoff: `docs/handoff/legal.md`.
+Agent af0973d59a5b2817a (third lead; successor to aab20546fe06daa89), branch `worktree-agent-af0973d59a5b2817a`. Not a lawyer: I find and organise the issues, cite primary sources, and recommend. The owner and the main session decide. Handoff from my predecessor: `docs/handoff/legal.md`.
 
-## State (4 October 2026, late evening): re-ruled on the owner's answers, documents only
+**Launch blockers (3):**
+- the AI disclosure: **ready to paste** (`STEAM_CHECKLIST.md` D3); the owner fills it in at submission;
+- the mature survey: waiting on the motion check of the main session's **tuck build**;
+- the boar: **no one owns its replacement**; recommend the owner buys the commercial version now.
 
-- **Updated:** `docs/legal/LEGAL_BRIEF.md`, `STEAM_CHECKLIST.md` and `QUESTIONS_FOR_LAWYER.md`. There is a new table, "The owner's answers and what they changed", and a new issue 28 (Suno). There are now 17 questions for the lawyer.
-- **Launch blockers now (4):**
-  - the AI disclosure (owner, at submission);
-  - the mature survey, with the motion check (the tooling is ready; waiting for the outfit import);
-  - the licences screen: built and its texts verified; to be seen in game;
-  - the boar (replace, or buy on Fab as a stop-gap).
-- **Export and placeholder voices: done.** I reviewed the pack listing (`docs/legal/records/RELEASE_PACK_LISTING.txt`, a56abaf3a104be675): nothing excluded ships, and the release build ignores the switches. The Quaternius base bodies, `hero.res` and the voice index ship and are FINE. To do in the GPU check: confirm the Quaternius bodies have no anatomical detail.
-- **Cleared:**
-  - **The base bodies: kept, with conditions.** They are local Krea 2 Turbo pictures and TRELLIS 2 meshes, and the ComfyUI log agrees. The hero's picture probably used the Civitai LoRA "Mystic XXX" (2728644, alcaitiff), which allows selling images. The evidence is in `docs/legal/records/BODIES_RECORD.md`. Conditions:
-    - the owner signs the record;
-    - he confirms no real person and no one else's art went into the pictures;
-    - the bodies join the Krea footprint.
-  - **The Ember Watch:** the owner made it with Claude, and no third party is involved. Records are to be kept (issue 5(e)).
-  - **Explicit placeholders:** efc15256 is merged.
-  - **"Warmed":** b47d98ea is checked; it resolves the issue once merged.
-- **Waiting for the GPU** (the coordinator's limit: no Godot until told):
-  - the motion check, including the Warden's cup fix on `outfits-wip@2a856f05`;
-  - the performance lead's release export and its `.pck` listing.
+**Done 5 Oct:** the licences screen, seen in game (every credits section, and the Godot, .NET and typeface licence pages).
+
+## State (5 October 2026, small hours)
+
+- **The motion check's codes are proven in Godot** (on the current build, before the tuck):
+  - calibration: the nipple tips and the crotch are found where they should be (tips at about ±0.11, 1.42, 0.16; crotch underside y 0.925; mons 0.967). 157 vertices fall in the areolas and 94 in the strip. The pictures show the codes centred on each nipple and the strip at the crotch, nowhere else;
+  - false positives: 64 frames of all four outfits, no codes drawn, under the linear tonemapper. **No pixel** passes as skin near a nipple, or as the strip, even at a 1-pixel threshold;
+  - the Warden's sprint, 64 frames: no areola and no strip. The closest visible skin to an areola is +1.0 cm past its edge, on each breast.
+- **New in the tools:**
+  - a third code for **tucked skin in view** (a dent or a gap), read from the outfit's channel of her vertex colours: cyan, paler the shallower the tuck. Near a nipple it rides on the blue code;
+  - **margins per breast and per edge of the rim** (upper, upper inner, inner and so on), measured from each nipple tip as posed, so each edge of a cup can be trimmed by its own margin;
+  - `tuckcalib` (each outfit's pieces hidden, so its tucked skin shows) and `PROJECT=` (run from a worktree against the main checkout's import);
+  - crops enlarged, with a ring on the closest pixel and the TEST TINT banner naming all three colours.
+- **The Quaternius base bodies** (townsfolk, Risen, the male survivor): no nipples and no genitals, in the mesh or the normal maps. Their skin textures paint underwear. No sentence is needed for Valve's reviewers.
+- **Path B answered** (models planner's appendix D): Qwen-Image, Z-Image-Turbo or FLUX.1 [schnell] (Apache-2.0) make pictures with no revenue cap; not FLUX [dev] or SD 3.5 (brief 5(g)).
+- **The AI disclosure:** a paste-ready text for the release as exported now, and a bullet to add for each thing that may ship later (`STEAM_CHECKLIST.md` D3). Valve's Content Survey page was re-read on 5 Oct: unchanged.
+- **Standing check:** the face lead's new references (`face_refs.py`) are Krea 2 Turbo from text alone, naming no real person; MoGe-2's weights are MIT. Credits line ready for when her MoGe face ships (checklist E).
 
 ## Key decisions (with why)
 
-- **Base bodies: kept, with conditions** (re-ruled after the owner corrected "krea assets" to "we made it in comfyui"). The pictures are under the same Krea 2 licence as the UI art: the US$1M cap and 30-day termination.
-- **The boar: before launch too.** Its licensor's own words contradict its CC BY label.
-- **The Ember Watch is the owner's.**
-  - Copyright needs no registration to exist (17 U.S.C. §408(a)), but covers only human-authored expression (Copyright Office, Part 2).
-  - Registering Survivor Unchained within three months of release keeps statutory damages and fees available (§412).
-- **"Generated own" replacements (issue 5(g)):**
-  - Our own work first; then local MIT-licensed models from inputs we own.
-  - Krea 2 adds to the US$1M cap.
-  - Never Hunyuan3D, free-plan web tools, or pictures of real people or others' art.
-- **Suno: Pro or Premier only, through Suno's own download.** Free-plan output is non-commercial, and remixes never are.
-- **US residence:** ElevenLabs' non-EEA terms; a W-9 for Steam; his state is still to be given.
-- **Survey:** General Mature, Frequent Violence or Gore, and Some Nudity or Sexual Content; not Adult Only. Australia's MA 15+ is possible once the buff is gone.
+- **The motion check measures; it never asks for more garment.** The owner: "pixel perfect no extra stuff hidden at all", "showing as much as we possibly can". It proves the areolas and the narrow strip stay covered, and measures how much more could show.
+- **Genitals:** none are modelled, and the Warden's thong is by design. The strip is checked because the survey must be true, not because anything is there.
+- **Every crop carries the TEST TINT banner:** the owner once took the tint for the game.
+- **The rim landmarks come from the engine's own skinning** (her mesh baked in its pose each frame): the breast bone's pose put them about 12 cm low. Now the tip lands within 2 px of the drawn nipple in every calibration view.
+- **The disclosure names only what ships.** It says "rebuilt and rigged for the game", not "by hand": agents did much of the rebuild.
 
-## Next (exact)
+## Next
 
-0. **The motion check tooling is ready** (scratchpad `legal/`), waiting for the coordinator's word that the outfit rebuild has imported:
-   - `make_motioncheck2.py` builds `motioncheck2.gd` from lookdev. It adds:
-     - SPREAD: frames spread over a looped clip;
-     - VIEWS: several cameras per run, through SubViewports;
-     - FOLLOW: cameras follow her hips on travelling clips;
-     - MARKS: her areolas tinted magenta and her genital area cyan, after the outfit's skin hiding.
-   - `count.py` flags any frame showing either colour, and crops it.
-   - `motion3.sh` runs in three phases:
-     1. PHASE=calib: no outfit, to check that the marks land. Scratchpad only.
-     2. PHASE=cup: the Warden's sprint.
-     3. PHASE=all: about 42 clips for each of the four outfits.
+1. **The tuck build** (the main session will send the commit): merge; `tuckcalib`, `calib`, `fp`, `cup`; then `all`, one outfit per turn. Send the main session, per outfit: each breast's margin by edge, with clip, view and frame; any strip flag; any frame showing tucked skin.
+2. Update brief issue 2 and checklist D2 with the results; tick the motion check.
+3. Cinematic poses (`--cine`) and creation's Look poses: not yet in `run.sh`.
+4. Standing check: new assets and tools from every lead. Before launch, re-read the live Steam forms and the Krea, LTX, ElevenLabs and Suno terms.
 
-     It uses `--fixed-fps 60`, so no frames are skipped.
-1. **When the coordinator frees the GPU:**
-   - The motion check: `scratchpad/legal/motion.sh` with the clip loop changed to dash, leap, death, death_back, hit, cast_bolt, cast_flick, cast_raise, throw, crossbow_shoot, the swing clips (list them first from `res://art/anim/heroine.res`), the sits and the breaks. All four outfits, jiggle on.
-   - Then the cinematic poses (`--cine`) and the creation poses.
-   - Re-check the Warden's left cup on `outfits-wip` once the main session builds it.
-2. Review the performance lead's pack listing.
-3. Send the licences spec (brief issue 4) to the UI design successor once the roster names one.
-4. Review `docs/art/MODELS_TO_MAKE.md` against issue 5(g) when it lands.
-6. See the credits screen in game when the GPU is free, and check the UI design lead's next `CREDITS.md` pass against `STEAM_CHECKLIST.md` E.
-5. **Standing check of recent additions:**
-   - the skills lead's "filmed clips" (0d2e4a0b);
-   - arena art's concepts;
-   - the cinematics gestures;
-   - `tools/uiforge/logo.py`.
+## Blockers on others
 
-## Blockers on me
-
-- The owner's state of residence and his business structure (lawyer questions 12 and 2).
+- **The boar:** arena art says creatures aren't theirs; the models planner lists it as number 2; animation would rig it. Nobody has it scheduled. Recommendation to the owner: buy the Fab or Patreon commercial version now, keep the receipt, and replace it later.
+- The owner's state of residence and business structure (lawyer questions 12 and 2); whether "Munchtech", the name on the credits screen, is a registered name.
 - A person must run the USPTO search (it sits behind a bot challenge).
 
 ## Notes for other areas
 
-- **Main session and models planner:** issue 5(g) gives the rules for replacements. Hunyuan3D is never to be used, including on Krea's website. Every replacement needs a ledger line.
-- **Owner:**
-  - Keep the Ember Watch records listed in issue 5(e), and sign the short authorship statement once the lawyer drafts it.
-  - Look in your email for Krea receipts covering the days the bodies were made.
-  - Make the hymn on Suno Pro or Premier, and download it with Suno's button.
-- **Performance (a7145e18b3eb78294):** the export spec is in your messages. Send me the zip-pack listing.
-- **UI design successor:** the licences screen is first in `docs/handoff/ui_design.md`; the spec is in brief issue 4. Use `Engine.GetLicenseText()` and `GetCopyrightInfo()` for Godot's part.
-- **Voice (successor):** the ElevenLabs rules are in `docs/handoff/voice.md`. The owner is in the US, so the non-EEA terms apply.
-- **UI art:** the side-by-side icon check against Diablo IV and Hades is still due before launch.
+- **Main session:** the motion check is ready for the tuck build. If `vertex()` writes `COLOR`, tell me: the tuck code reads her vertex colour in `fragment()`.
+- **UI design (aab47bfdab5955dac):** two index labels run over the credits page's divider (sent).
+- **Models planner:** `MODELS_TO_MAKE.md` still says the bodies came from Krea's website and Hunyuan3D. They didn't: local Krea 2 Turbo pictures and local TRELLIS 2 (brief 5(b)). The bodies are kept, with conditions.
 - **Anyone adding a tool or model:** send me its licence link.

@@ -417,7 +417,7 @@ public class RouteTests
         Assert.Equal(gold + 100, p.J.Ch.Gold);
         Assert.Null(p.Marker("harlan"));
         // The box is Rav's business now, not Harlan's, nor a counter's.
-        Assert.Null(p.J.PriceOf("vonnra", p.J.Ch.Pack.First(i => i?.Def == "coyle_strongbox")!.Uid, false));
+        Assert.Null(p.J.PriceOf("vonnra", p.J.Ch.Keys.First(i => i.Def == "coyle_strongbox").Uid, false));
         p.Talk("rav", "buy this, quietly", "sell it");
         Assert.Equal("sold", p.S("caravan.cargo"));
     }
@@ -508,7 +508,7 @@ public class RouteTests
         Assert.True(p.Has("vault", "fragment"));
         Assert.NotNull(p.Refusal("night:vault"));
         // The fragment cannot be dropped while the door waits for it.
-        var frag = p.J.Ch.Pack.First(i => i?.Def == "sigil_fragment")!;
+        var frag = p.J.Ch.Keys.First(i => i.Def == "sigil_fragment");
         p.J.Drop(frag.Uid);
         Assert.Equal(1, p.Count("sigil_fragment"));
         p.Night();
@@ -614,7 +614,7 @@ public class RouteTests
         var chart = r.Advance()!;
         Assert.Equal("f_chart", chart.Node.Id);
         Assert.Contains("That would be ten gold, traveller. This once, no charge.", chart.Text);
-        Assert.Contains(p.J.Ch.Pack, it => it?.Chart is { Tier: 1, People: "dead", Name: "The Lampless Howes" });
+        Assert.Contains(p.J.Ch.Satchel, it => it.Chart is { Tier: 1, People: "dead", Name: "The Lampless Howes" });
         Assert.True(SurvivorUnchained.Maps.Atlas.IsOpen(p.W, p.J.Ch));
         Assert.Equal("fortune", r.Choose(chart.Choices[0].Index).Action);
         Assert.Empty(p.Steps("fortune"));

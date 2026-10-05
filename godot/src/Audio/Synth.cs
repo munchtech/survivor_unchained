@@ -184,6 +184,18 @@ public partial class Synth : Node
         sfxDuck = k;
     }
 
+    /// <summary>Hold the music and the world's noise down for a while under a moment that must be
+    /// heard over them (a Legendary's toll), never the fight's own sounds, which carry its warnings.</summary>
+    public void DuckBeds(float k, double seconds)
+    {
+        bedDuckUntil = Now + seconds;
+        bedDuck = k;
+    }
+
+    volatile float bedDuck = 1;
+    double bedDuckUntil;
+    float bedDuckNow = 1;
+
     float voiceMusic = 1, voiceAmb = 1, voiceMusicNow = 1, voiceAmbNow = 1;
     /// <summary>Lower the music and the world's noise while someone speaks
     /// (VoiceOver): quickly down when a line starts, slowly back after.</summary>
@@ -250,6 +262,8 @@ public partial class Synth : Node
             float sfxTo = t < sfxDuckUntil ? sfxDuck : 1;
             sfxDuckNow += (sfxTo - sfxDuckNow) * (sfxTo < sfxDuckNow ? 0.00022f : 0.00005f);
             masterNow += (Master - masterNow) * 0.0002f;
+            float bedTo = t < bedDuckUntil ? bedDuck : 1;
+            bedDuckNow += (bedTo - bedDuckNow) * (bedTo < bedDuckNow ? 0.00022f : 0.00005f);
             // About 0.12 s down, 0.6 s back up.
             voiceMusicNow += (voiceMusic - voiceMusicNow) * (voiceMusic < voiceMusicNow ? 0.00019f : 0.000038f);
             voiceAmbNow += (voiceAmb - voiceAmbNow) * (voiceAmb < voiceAmbNow ? 0.00019f : 0.000038f);
@@ -260,7 +274,7 @@ public partial class Synth : Node
                 if (t < voice.Start) continue;
                 if (t > voice.End) { voices.RemoveAt(v); continue; }
                 float s = voice.Sample(t, dt);
-                float bus = Level[(int)voice.Bus] * (voice.Bus == Bus.Music ? duckNow * voiceMusicNow : voice.Bus == Bus.Amb ? voiceAmbNow : voice.Bus == Bus.Sfx ? sfxDuckNow : 1);
+                float bus = Level[(int)voice.Bus] * (voice.Bus == Bus.Music ? duckNow * voiceMusicNow * bedDuckNow : voice.Bus == Bus.Amb ? voiceAmbNow * bedDuckNow : voice.Bus == Bus.Sfx ? sfxDuckNow : 1);
                 float l = s * voice.L * bus, r = s * voice.R * bus;
                 dl += l; dr += r;
                 float send = Send[(int)voice.Bus] + voice.Verb;
