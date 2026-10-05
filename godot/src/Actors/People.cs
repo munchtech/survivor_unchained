@@ -194,6 +194,8 @@ public static class People
     /// own where they have it ("her/...", "him/..."), the library's otherwise.</summary>
     public static string Clip(Person p, string name)
     {
+        // One of the kit's own asked for by name ("folk/m_rise_stiff": the Warden in a cinematic).
+        if (name.StartsWith(FolkClips.Prefix) && p.Anim.HasAnimation(name)) return name;
         if (p.Own is not { } own) return p.Folk && FolkClips.For(p.Woman, name) is string folk ? folk : Resolve(name);
         // (One of their own asked for by its own name.)
         if (own.Owns(name)) return own.Has(name[own.Prefix.Length..]) ? name : Resolve("Idle");

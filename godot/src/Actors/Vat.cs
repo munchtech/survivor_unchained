@@ -182,7 +182,8 @@ public static class Vat
         // A kit body falls one of three ways (FolkClips.Deaths), so the dead do not all lie alike.
         bool pistol = spec.Arms?.Right is string right && Arms.All.TryGetValue(right, out var held) && held.Pistol;
         var deaths = person.Kit ? FolkClips.Deaths(person.Woman, !person.Folk, pistol) : null;
-        var plays = new List<(string, string?)> { ("move", c.Move), ("idle", c.Idle), ("attack", c.Attack), ("windup", c.Windup), ("rise", c.Rise), ("hit", c.Hit), ("cast", c.Cast) };
+        var plays = new List<(string, string?)> { ("move", c.Move), ("idle", c.Idle), ("attack", c.Attack), ("windup", c.Windup), ("rise", c.Rise), ("hit", c.Hit), ("cast", c.Cast),
+            ("slam", c.Slam), ("aim", c.Aim), ("shot", c.Shot) };
         if (deaths != null) for (int i = 0; i < deaths.Length; i++) plays.Add((i == 0 ? "die" : $"die{i + 1}", deaths[i]));
         else plays.Add(("die", c.Die));
         foreach (var (role, clip) in plays)
@@ -745,7 +746,7 @@ public static class Vat
     // its clips and seconds of sampling; read back, a few milliseconds). Bump
     // Version whenever what a bake holds or how it is made changes (Visuals,
     // Beasts, this file).
-    const int Version = 11;
+    const int Version = 13;
     static string CachePath(string key) => $"user://vat/{key}.v{Version}.bin";
 
     static byte[] Bytes<T>(T[] a) where T : struct => System.Runtime.InteropServices.MemoryMarshal.AsBytes(a.AsSpan()).ToArray();
