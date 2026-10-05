@@ -1362,6 +1362,10 @@ public partial class Game : Node, IZoneHost
         GD.Print($"[{scene.Time,6:0.0}s] {zone?.Id} hp {p?.Hp:0}/{b?.MaxHp:0} ember {b?.EmberLevel} kills {b?.KillCount} foes {foes} (drawn {drawn}, lying {dead}, gibs {gibs}, blood {splats}) at {p?.X:0},{p?.Z:0} {Overlay} clock {World.Time} {World.Clock:0.0}s day {World.Day} {dbg}{FrameCost()}{(synth.Live ? $" | sound {sound.Music.Mood} voices {synth.Voices} mix {synth.MixCost / Math.Max(1e-9, synth.Mixed) * 100:0}% heard {synth.Mixed:0}s skips {synth.Skips} queue {synth.Queue / synth.Rate * 1000:0}ms" : "")}");
     }
 
+    /// <summary>--perf-flip lampshadows: the place's lights that cast shadows (and the place they are in).</summary>
+    List<OmniLight3D>? shadowed;
+    WorldScene? shadowedIn;
+
     /// <summary>--perf: the frame measured (Perf.cs), with the game's own
     /// numbers beside it: the horde, the dead, the gore, the sound's voices.</summary>
     void MeasureWith(Perf perf)
@@ -1385,7 +1389,7 @@ public partial class Game : Node, IZoneHost
         // seconds (default 1) and put back, the frame's "flip" counter 1 while
         // out. One run measures both ways under the same load from the GPU's
         // other users (it is shared): her, furshadow (her fur's shadows), crowd,
-        // grass, sunshadows, ssao, msaa;
+        // grass, fires, lamps, lampshadows, pieces, sunshadows, ssao, msaa;
         // or quality:Q, scale:S (that quality or resolution while out).
         if (Args.Get("perf-flip") is string flips)
         {
@@ -1416,6 +1420,29 @@ public partial class Game : Node, IZoneHost
                         ((MeshInstance3D)n).CastShadow = on ? GeometryInstance3D.ShadowCastingSetting.On : GeometryInstance3D.ShadowCastingSetting.Off;
                 if (flipped.Contains("crowd")) scene.Crowd.Visible = on;
                 if (flipped.Contains("grass") && scene.View.GetNodeOrNull<Node3D>("Grass") is { } g) g.Visible = on;
+                // A place's fires (their flames and lights), its lamps, its lamps' shadows, its pieces.
+                foreach (var c in scene.View.GetChildren())
+                {
+                    if (c is not Node3D n) continue;
+                    string nm = n.Name;
+                    if (flipped.Contains("fires") && nm == "Fires" || flipped.Contains("lamps") && nm == "Lights" ||
+                        flipped.Contains("pieces") && nm is not ("Grass" or "Flora" or "Props" or "Landmarks" or "Ground" or "Water" or "Fires" or "Lights"))
+                        n.Visible = on;
+                }
+                // (Each light's own setting kept: a lamp unshadowed by day stays so.)
+                if (flipped.Contains("lampshadows"))
+                {
+                    if (shadowed == null || shadowedIn != scene)
+                    {
+                        shadowedIn = scene;
+                        shadowed = new();
+                        foreach (var nm in new[] { "Lights", "Fires" })
+                            if (scene.View.GetNodeOrNull(nm) is { } holder)
+                                foreach (var l in holder.FindChildren("*", "OmniLight3D", true, false))
+                                    if (((OmniLight3D)l).ShadowEnabled) shadowed.Add((OmniLight3D)l);
+                    }
+                    foreach (var l in shadowed) if (IsInstanceValid(l)) l.ShadowEnabled = on;
+                }
                 var t = Graphics.Current;
                 if (flipped.Contains("sunshadows")) air.Key.ShadowEnabled = on;
                 if (flipped.Contains("ssao")) air.Env.SsaoEnabled = on && t.Ssao;

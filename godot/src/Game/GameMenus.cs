@@ -224,6 +224,7 @@ public partial class Game
         var tip = draftTip;
         draftTip = null;
         string? great = LevelUp.GreatNext(b) ? b.Time < 60 ? "Dusk: the ember wakes, and any of them is yours" : "Midnight: a second, or the first deepened" : null;
+        using var _ = new Perf.Span(Perf.Part.DraftUi);
         hud.Draft(new DraftView(LevelUp.DraftLevel(b), LevelUp.BlessingNext(b), list, b.Rerolls, b.Banishes, LevelUp.Queued(b), tip,
             LevelUp.BuildTags(b), Pick, Reroll, Banish, great, b, LevelUp.CanSkip(b) ? Skip : null));
     }

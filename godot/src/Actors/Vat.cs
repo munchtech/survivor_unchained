@@ -76,6 +76,13 @@ public static class Vat
     /// <summary>The roles every crowd kind plays, and which loop.</summary>
     static bool Loops(string role) => role is "move" or "idle" or "burrow" or "cast";
 
+    /// <summary>Whether a kind is to hand without a bake: made this session, or kept on disk.</summary>
+    public static bool Ready(Visuals.Spec spec)
+    {
+        var key = Beasts.Of(spec.Key)?.Key ?? spec.Key;
+        return cache.ContainsKey(spec.Key) || cache.ContainsKey(key) || !Args.Has("vat-fresh") && FileAccess.FileExists(CachePath(key));
+    }
+
     /// <summary>A kind of creature, baked (once a session). `host` lends the
     /// scene tree to a person's animation player while it is sampled.</summary>
     public static VatAsset Of(Visuals.Spec spec, Node host)
