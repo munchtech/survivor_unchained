@@ -960,6 +960,8 @@ public partial class Game : Node, IZoneHost
             else hud.ArenaClock(null, "");
         }
         hud.SetBruise(scene.Bruise);
+        // The boss's script, for the looks that read its state (Grimtunnel under the ground).
+        scene.Fx.Boss = zone switch { ArenaRun ar => ar.BossScript, MapRun mr => mr.BossScript, StoryNight sn => sn.BossScript, _ => null };
         // Names over heads and barks have no place in a cinematic's picture either.
         scene.Voices.Quiet = hudMode == "dialogue" || screens.Current != null || cine != null;
         // Fallen: the world loses its colour.

@@ -91,6 +91,9 @@ public partial class CrowdView : Node3D
 
     public CrowdView() { Name = "Crowd"; }
 
+    /// <summary>Whether a creature is under the ground by its script's say (set by the view; null: none is).</summary>
+    public static Func<Enemy, bool>? Under;
+
     /// <summary>How many are standing, and lying (for the log).</summary>
     public (int Living, int Dead) Counts => (living, corpses.Count);
 
@@ -260,6 +263,9 @@ public partial class CrowdView : Node3D
             double turn = Math.Atan2(Math.Sin(aim - g.Facing), Math.Cos(aim - g.Facing));
             g.Facing += turn * Math.Min(1, dt * (free ? 9 : 18));
         }
+        // Gone along under the ground by its script (Grimtunnel's Under): drawn burrowing, as the
+        // burrowed are (its back, hat and lamp above the earth), while the effects heave the mound.
+        if (e.State == EnemyState.Active && Under?.Invoke(e) == true) { role = "burrow"; y -= 0.25; t = time + e.Seed * 3; }
         float sc = (float)(e.Def.Scale ?? 1) * Beasts.Size(e.Def.Visual);
         // Struck: a squash, and a flinch along the blow, gone with the flash.
         float f = e.State == EnemyState.Dying ? 0 : (float)e.Flash * (1 - Still);

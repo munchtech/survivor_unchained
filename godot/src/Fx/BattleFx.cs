@@ -839,6 +839,7 @@ public partial class BattleFx : Node3D
                 }
                 case Ev.Telegraph e:
                 {
+                    if (DigMark(e)) break;
                     var col = e.Hostile ? Palette.Telegraph(e.Kind) : e.Faction is { } pf ? People(pf) : Palette.Of(School.Holy).Glow;
                     // A crowd's marks are held near the ground's own lit value (the arena lead's rule: a
                     // stop over it at most): at full strength the Dig's lamplings' bombs burned cream
@@ -1241,6 +1242,7 @@ public partial class BattleFx : Node3D
         Zones(b, now);
         ArtTrails(b, fdt);
         StepRise(b, fdt);
+        StepDig(fdt);
         Projectiles(b, fdt, now);
         Pickups(b, now);
         StepFronts(fdt);

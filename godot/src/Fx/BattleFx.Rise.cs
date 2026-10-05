@@ -45,7 +45,8 @@ public partial class BattleFx
         Erupt(e.X, e.Z, 0.3f, 1.0f, 12, SpikeKind.Ice, 0.75f, cold + 0.15f, IceDeep);
         Erupt(e.X, e.Z, 0.9f, 1.8f, 14, SpikeKind.Ice, 0.5f, cold + 0.12f, IceDeep);
         AddFront(ground, 2.4f, cold + 0.15f, 0.1f, Rime, 1.3f, Ribbons.Style.Frost, 0.1f);
-        Scars.Add("frost", ground, 2.2f, cold + 1.2f, 0);
+        // (Gone as the fire comes: lingering, it laid a milky haze under the burning crowd.)
+        Scars.Add("frost", ground, 1.5f, cold + 0.3f, 0);
         Flash(ground + Vector3.Up * 1.3f, new Color("#8fc4ff"), 4, cold + 0.15f, 3.5f);
         // Over the crowd's heads, where a packed crowd lets it be seen (the ice at her feet is under
         // them): a ring of frost opening out at the height of their heads (StepRise), and snow

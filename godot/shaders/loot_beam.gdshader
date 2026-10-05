@@ -29,9 +29,12 @@ float hash(float n) { return fract(sin(n * 91.7 + seed * 37.3) * 43758.5453); }
 void fragment() {
 	// Across the column as the eye sees it: 1 down its middle, 0 at its sides.
 	float facing = clamp(dot(NORMAL, VIEW), 0.0, 1.0);
-	float line = pow(facing, 14.0);
-	float glow = pow(facing, 3.0);
-	float metres = up * tall;
+	float line = pow(max(facing, 1e-4), 14.0);
+	float glow = pow(max(facing, 1e-4), 3.0);
+	// Clamped here as well: interpolated, `up` creeps past 1 at the top rim, and pow of a hair
+	// below zero is NaN (a black line there, bloomed into a pale disc).
+	float u = clamp(up, 0.0, 1.0);
+	float metres = u * tall;
 	// Threads running up it: a few streaks round it, each its own speed.
 	float around = UV.x * 7.0;
 	float lane = floor(around);
@@ -43,8 +46,8 @@ void fragment() {
 	float shimmer = 0.82 + 0.18 * sin(metres * 2.3 - TIME * 3.1 + seed * 6.28);
 	// Born out of the ground (over its first fifth, or half a metre on a tall one); thinning away
 	// up its length.
-	float foot = smoothstep(0.0, min(0.5 / max(tall, 0.5), 0.22), up);
-	float fade = foot * pow(1.0 - up, 1.3);
+	float foot = smoothstep(0.0, min(0.5 / max(tall, 0.5), 0.22), u);
+	float fade = foot * pow(max(1.0 - u, 0.0), 1.3);
 	// Seen behind what stands in front of it, but never cut off by the ground it stands in.
 	float d = textureLod(depth_tex, SCREEN_UV, 0.0).r;
 	vec4 behind = INV_PROJECTION_MATRIX * vec4(SCREEN_UV * 2.0 - 1.0, d, 1.0);
