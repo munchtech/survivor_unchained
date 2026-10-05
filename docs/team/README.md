@@ -53,7 +53,7 @@ The owner asks: "accurate, efficient, on track, manage and engineer context. del
 - Batch screenshots and renders: shoot everything a check needs in one turn, look once, fix in one pass.
 - Keep handoffs and status pages lean.
 - Effort: legal medium; performance measurement runs, story consistency checks, and provenance and licence logging high; everything else at its top. Every agent stays on the same model.
-- Running now: the face, UI design, skills VFX, arena art, cinematics (and the main session's outfits). Next: animation, combat, the experience director, creatures, performance, crafting, UI art, story, the male hero.
+- Running now: the face, skills VFX, arena art, cinematics, the experience director (and the main session's outfits). Next: UI design (portraits once the face lands), animation, combat, creatures, performance, crafting, UI art, story, the male hero.
 
 ## Roster
 
@@ -65,10 +65,10 @@ The main session keeps this current. It is the address list for SendMessage. Ret
 | Story and writing | a7ba8903f4c8261b1 | docs/team/story.md |
 | Combat, encounters, bosses, balance (paused; handoff ready at af6452e1) | — | docs/team/combat.md |
 | Animation (paused; handoff ready at 85d0eaf9) | — | docs/team/animation.md |
-| UI design (layouts, screens, the filter) | aa1f430bd64b8d1ce | docs/team/ui_design.md |
+| UI design (paused; handoff ready at 09310365; portraits wait on the face) | — | docs/team/ui_design.md |
 | UI art (paused; handoff ready at cd0f4ab6) | — | docs/team/ui_art.md |
 | Crafting (research, design, build) (paused; handoff ready at ed429efb) | — | docs/team/crafting.md |
-| Gameplay experience director (paused; handoff ready at b170d13e) | — | docs/team/experience.md |
+| Gameplay experience director | af2c026d86e1b532b | docs/team/experience.md |
 | Skills look and feel (VFX, under the main session) | ad059388f00c19f9f | docs/team/skills.md |
 | Cinematics production | a7a4c20bcfd7ccfd3 | docs/team/cinematics.md |
 | Performance | a0eb8c612c94d4aa5 | docs/team/performance.md |
