@@ -31,6 +31,10 @@ All the leads' paused branches are merged (597 tests green), except two whose ow
 7. **The owner lives in the United States.**
 8. **The hymn at Nell's grave:** the owner will make it in Suno.
 
+## Hold: the base bodies (the owner's call)
+
+The owner wants to keep the heroine's and hero's bodies if their Krea records clear them: which 3D model (not Hunyuan), a paid plan, and their own input picture. **Nobody replaces or rebuilds a body until the owner decides.** The MakeHuman rebuild plans (docs/team/hero_male.md, docs/art/MODELS_TO_MAKE.md) are fallbacks only.
+
 ## Handoffs ready: start their successors when the GPU is free
 
 These are past their memory limit. Each has a handoff in docs/handoff/<area>.md, and their branches are merged:

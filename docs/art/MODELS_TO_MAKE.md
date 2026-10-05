@@ -4,6 +4,8 @@ What has to be modelled so that every character and creature in the game is ours
 
 Sources: the provenance audit (`docs/legal/ASSET_PROVENANCE.md`, `REPLACEMENT_PLAN.md`), the legal lead's rulings (`docs/legal/LEGAL_BRIEF.md` 5(a), 5(b) and 5(g), on `worktree-agent-aab20546fe06daa89@3ddc7728`), the cast (`docs/STORY_BIBLE.md` §3 and §5, `docs/VO_CAST.md`, `docs/cinematics/README.md`), the creatures (`godot/logic/Content/Enemies.cs`, `docs/bestiary/ROSTER.md`, `docs/bosses`), and the code that builds them today (`godot/src/Actors`).
 
+> **Hold (4 October 2026):** the owner wants to keep the heroine's and hero's current bodies if their Krea records clear them: the 3D model used (not Hunyuan3D), a paid plan, and their own input picture. Their rebuilds below are fallbacks; nothing is replaced without the owner's decision.
+
 ## 1. Summary
 
 **23 models in all.** Everyone else is a reskin: one of these bodies with its own face, hair and outfit, which the team makes.
