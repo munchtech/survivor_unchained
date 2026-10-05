@@ -91,7 +91,10 @@ places, and each one has a timeline the game plays. The chain:
     `radius` of `clear`; laid in knee-deep tiles so it never touches the
     trees; it stays, as the prints do), `glow` (a light seen far off: a
     point and a halo of `color` and `size`; `clear` carries it through the
-    mist; `under: [w, h]` sets it on a dark tower against the sky; for this
+    mist; `under: [w, h]` sets it on a dark tower against the sky;
+    `lantern: s` builds the keeper's lamp-iron about the flame at scale `s`,
+    turned `turn` degrees; `out: true` puts the flame out, keeps the iron,
+    and lets a thread of smoke go up for `smoke` seconds; for this
     cinematic only), `spawn` (an enemy into the fight, `style` rise),
     `world` (`rate`).
   - Frame: `bars`, `fade`, `title` (a title card), `hide`.
