@@ -15,8 +15,9 @@ free of my work. Sheets for the main session are in `scratchpad/vfx/` (listed in
   - The motes' and the disc's bloom over her: **fixed for what is mine.** Lights lit within
     4 m of her fade (a champion falling at her elbow lit her white); filmed bursts' smoke is
     cleared over her too; a champion's fall is 3 m; the disc is held down as it leaves her
-    hand. What is left near her is the experience director's struck flare (a body struck hard
-    goes white) and the crit "sparks" burst.
+    hand. The struck flare (a body struck hard goes white) is capped by the experience director
+    (`worktree-agent-ab406cf9ddd22b03b@0e8e8a3e`: whole-body white for at most 4 bodies a frame, elites
+    always; the rest rim only), not yet seen with my work merged. Left: the crit "sparks" burst.
 - **The rise is built and seen** (`src/Fx/BattleFx.Rise.cs`, on `Ev.Rise`):
   - the cold: ice at her feet, frost glints on her, the world slowed;
   - Cold, Then Not: a ragged ring of fire runs out as far as it burns (`shaders/fire_ring.gdshader`),
@@ -81,9 +82,9 @@ free of my work. Sheets for the main session are in `scratchpad/vfx/` (listed in
 - **Combat** (`a708da2c97bf85c95`): `Ev.Rise` is emitted in `HurtPlayer`'s rise (no mechanics
   changed; `RiseRadius` factored out). Proposal: its fire lands each body as the front reaches it
   (front runs 0.3 s game time) or ~0.15 s after the rise; `Ev.Rise.Delay` is there for it.
-- **Experience** (`ab406cf9ddd22b03b`): the status look agrees with my frames. The struck flare
-  turns many bodies white at once under one big blow (the rise, Cinderfall): budget its
-  whole-body term? `--fall-at T` gives a killing blow for pictures.
+- **Experience** (`ab406cf9ddd22b03b`): the status look agrees with my frames. They capped the
+  struck flare's whole-body white at my ask (`0e8e8a3e`, CrowdView WhiteFlashes/FlashRimOnly).
+  `--fall-at T` gives a killing blow for pictures.
 - **Arena art** (`a26767f7f9955cb56`): Dig crop sent (`scratchpad/vfx/dig_crop_for_arena.png`).
 - **Everyone**: disk C: fell to under 2 GB mid-run today and truncated frames. Old `.shots` folders
   in retired worktrees hold about 15 GB.

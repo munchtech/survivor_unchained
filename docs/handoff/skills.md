@@ -44,7 +44,10 @@ push your branch at milestones; the main session merges it. Run `dotnet test` be
   the Dig's cream rings are gone at 0.38 (0.28 unseen). Rallies, summons and slams read.
 - Her dash is one ribbon streak plus a little dust. The dry dead's bone dust is grey, 4 a told kill.
 - **Experience's status look** (frozen and burning bodies) is judged by them and committed on their
-  branch (`worktree-agent-ab406cf9ddd22b03b@a3d42f7d`); my frames agree (frozen a clear win).
+  branch (`worktree-agent-ab406cf9ddd22b03b@a3d42f7d`); my frames agree (frozen a clear win). At my
+  ask they also capped the struck flare (`@0e8e8a3e`): whole-body white for at most 4 bodies a
+  frame (elites, rulers and named foes always), the rest rim only. Once both branches are merged,
+  re-shoot Cinderfall and the rise to confirm the crowd no longer goes white together.
 
 ## Next, in order
 
