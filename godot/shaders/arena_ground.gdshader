@@ -23,6 +23,9 @@ uniform vec3 moss_color : source_color = vec3(0.05, 0.1, 0.02);
 // The slurry the Dig cooks: "warm, faintly glowing", a sick yellow-green.
 uniform vec3 slurry : source_color = vec3(0.52, 0.62, 0.16);
 uniform float slurry_glow = 0.0;
+// 1 where it lies in pools thick enough to be their colour (the Dig's), 0 where it is thinned in
+// water (the Hollow's).
+uniform float slurry_body = 0.0;
 // Foxfire (splat3 B): the cold light rotting wood gives off.
 uniform vec3 fox_color : source_color = vec3(0.55, 0.85, 0.6);
 uniform float fox_glow = 0.0;
@@ -294,6 +297,13 @@ void fragment() {
 	float pool = smoothstep(0.45, 0.75, wet);
 	albedo *= mix(1.0, 0.55, smoothstep(0.0, 0.5, wet));
 	albedo = mix(albedo, albedo * wet_tint * 1.4, pool);
+	// Where the slurry lies (a place that has it, splat3 G), the pool is the slurry itself:
+	// thick, sick yellow-green, opaque, not dark water with a light in it (dark, the Dig's
+	// pools read as brown blots on the clay).
+	// (Only where it is spilled thick, the Dig's own pools: in the Hollow's water it is
+	// thinned, and as a body there the shallows read as lime paint.)
+	float sl = pool * smoothstep(0.15, 0.6, s3.g) * slurry_body;
+	albedo = mix(albedo, slurry * 0.3, sl * 0.85);
 	rough = mix(rough, 0.06, pool);
 	rough = mix(rough, rough * 0.55, smoothstep(0.1, 0.45, wet));
 	// Standing water lies level, whatever the ground under it does (a level face holds the

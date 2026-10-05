@@ -288,6 +288,12 @@ func weapon(skel, kind):
 		var x = Vector3(0, 1, 0)
 		var y = Vector3(0, 0, 1)
 		mount.basis = Basis(x, y, x.cross(y))
+		# Her and the hero hold a weapon in a diagonal grip, its shaft leaning
+		# toward the fingers (Arms.Spec.Lean, tools/anim/keyed.py GRIP); the
+		# townsfolk square, as the library's clips do.
+		var lean = {"sword": 35.0, "axe": 30.0, "axes": 30.0, "daggers": 30.0, "wand": 30.0}.get(kind, 0.0)
+		if env("MODEL", "") in ["", "hero"] and lean > 0:
+			mount.basis = Basis(Vector3(1, 0, 0), deg_to_rad(-lean)) * mount.basis
 		mount.position = Vector3(-0.025, 0.075, 0)
 		at.add_child(mount)
 		var len = h[1]

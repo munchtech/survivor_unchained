@@ -161,7 +161,7 @@ public sealed class GrimtunnelStory : StoryBoss, IBound
             e.Vx = e.Vz = 0;
             e.State = EnemyState.Recover;
             e.Anim = EnemyAnim.Idle;
-            if (dazeT <= 0) { e.TakenMul = 1; e.State = EnemyState.Active; }
+            if (dazeT <= 0) { e.TakenMul = 1; e.State = EnemyState.Active; ClimbOut(e); }
             return true;
         }
         if (under) return Burrowing(e, dt);
@@ -327,7 +327,33 @@ public sealed class GrimtunnelStory : StoryBoss, IBound
             Hold(1.2);
         }
         else Daze(daze, bx, bz);
-        if (PhaseIx >= 1) Pit(bx, bz);
+        if (PhaseIx >= 1) holeOwed = (bx, bz);
+    }
+
+    /// <summary>The hole he came up through, opening when he climbs out of it (from the Collapse on).</summary>
+    (double X, double Z)? holeOwed;
+
+    /// <summary>Out of the hole he came up through, onto the ground nearest the lip's middle, and the hole opens
+    /// behind him. (It opened under him while he stood dazed in it: he could not walk out of his own sinkhole, a
+    /// blade could not reach him across it, and at the lip's edge, behind Snib's heap, he stood in it for minutes
+    /// while the night ran on.)</summary>
+    void ClimbOut(Enemy e)
+    {
+        if (holeOwed is not var (hx, hz)) return;
+        holeOwed = null;
+        double r = 2.3 + e.Radius + 0.4;
+        (double X, double Z)? best = null;
+        double bd = double.MaxValue;
+        for (int k = 0; k < 16; k++)
+        {
+            double a = k * Math.PI / 8, x = hx + Math.Cos(a) * r, z = hz + Math.Sin(a) * r;
+            if (B.Collision.Blocked(x, z, e.Radius) || !S.Place.Inside(x, z, e.Radius + 0.4) || !Inside(x, z, 1.2)) continue;
+            double d = Dist(x, z, C.X, C.Z);
+            if (d < bd) { bd = d; best = (x, z); }
+        }
+        best ??= Footing(caving ? caveR - 1.2 : GroundR);
+        if (best is var (fx, fz)) DashTo(fx, fz, 0.5);
+        Pit(hx, hz);
     }
 
     void Daze(double seconds, double x, double z)

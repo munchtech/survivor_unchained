@@ -1,178 +1,166 @@
 # Handoff: arena art
 
-For the next arena art lead. Read `docs/team/README.md`, then this, then
-`docs/team/arena_art.md` (the status page), then look at `docs/arena/hollow_night_1.jpg`
-and the concepts `docs/arena/concept_*.jpg` (all four places now have them).
+For the next arena art lead. Read these first:
+- `docs/team/README.md`
+- `docs/team/RESUME.md`
+- this page
+- `docs/team/arena_art.md` (the status page)
+
+Then look at the sheets `docs/arena/hollow_night_2.jpg` and `docs/arena/dig_1.jpg`, and the concepts `docs/arena/concept_*.jpg`.
 
 ## The owner's words
 
-- "AAA standard", "strive for excellent, above and beyond", "do we have soul?",
-  "never settle: remake rather than polish", "how things are can be limiting".
-- "We are striving for perfection." Improved is not enough. Before showing anything,
-  ask whether it's the best version of this in any game. Root the design in research
-  on how the best games solve it, then make it ours (the main session, passing on the owner).
-- Story fights: "much more specialized and fun - smaller arena", with "proper arpg end
-  bosses". The endgame: the **Wayfinder's atlas** (permanent build maps, "like poe")
-  and the **ember scars** (the survivors arenas). Each has its own look.
+- "AAA standard", "we are striving for perfection", "do we have soul?"
+- "never settle: remake rather than polish", "how things are can be limiting".
+- Story fights: "much more specialized and fun - smaller arena", with "proper arpg end bosses".
+- Endgame: the **Wayfinder's atlas** (permanent maps, "like poe") and the **ember scars** (survivors arenas).
 
-## The brief (in full)
+## The brief
 
-Own every arena's look: the ground, dressing, landmarks, light and air, how readable
-the fight is on it, and how each place tells its part of the valley. Since the owner's
-story-fight direction this also covers each story fight's own place, built to combat's
-outline. Arenas are always night. Readability comes first: she reads at the game camera
-(56° pitch and 22–34 m for round arenas; 64° and 22–27 m for story nights). Enemies,
-telegraphs and pickups must read over the ground, and in a minute-6 frame no more than
-a fifth of the screen may be flat black (experience's test).
+Own every arena's look:
+- the ground, dressing, landmarks, light and air;
+- readability at the game camera;
+- each story fight's own place, built to combat's outline (combat's code is the shape).
 
-The coordinator's list, in order, as I took it:
-1. minute-25 horde frames on all four (done);
-2. the Dig's rust and spoil, plus grass, stones and timber (in progress);
-3. the Hollow's den (done as a story place; still to do in the round Hollow);
-4. the Barrow's howe and the Ruts camp on screen, replacing the grey ball (the ball is done);
-5. grass that reads (done in the Barrow and the Ruts);
-6. lift every arena to 4–5.
-Then, from the main session: make the builder take an outline and build the Hollow
-by Night to combat's shape (done).
+Judge at 1920x1080, at the game camera, in play with the horde. In a frame, at most a fifth may be flat black (`black.py`).
+
+## Your order (from the coordinator, newest)
+
+1. **The Vault's hall.** Combat built the fight (`Play/Story/Vault.cs`, `VaultOpened.Ground`):
+   - the Decurion's shield line, the Scorpion's lanes, the Signifer's three standards, and the Barrow Lord;
+   - it has no place art: the hall's walls are invisible, and the cover (fallen beams, sarcophagi, `VaultOpened.Cover`) and the standards are stand-ins;
+   - build `Maps/Arenas/Vault.cs` as `HollowNight.cs` was built: an `ArenaShape`, wired in `ArenaGen.StoryShapeFor` ("vault_opened"), then set `VaultOpened.PlaceBuilt => true`;
+   - the hall runs up the screen (north is -z): a roofless Legion hall open to the moon, wall tops standing, the stair's mouth in the north wall.
+2. **The Roost** (`Play/Story/Roost.cs`, `RaidOnTheRoost.Ground`): four spaces, the ruts, the cage yard, the camp's yard and his fire, joined by gates. Combat's full note is in its message, copied under Collaborators below.
+3. Then the arenas' remaining lifts:
+   - the Barrow's howe, judged at its new end (`--at` must be re-found with `landmarks`);
+   - the Ruts;
+   - the Hollow at minute 25 and its stream;
+   - the atlas maps (experience's ask below).
 
 ## Done (this lead)
 
-- **Story places.** `MapSpec.Story` holds the fight's id, and `ArenaGen` builds that
-  fight's place to `StoryScripts.For(id).Place`:
-  - the signed distance to the outline becomes `Inside`;
-  - the rim is walked round the outline (`Builder.Rim()`);
-  - the banks stand steep outside it, cut where a stream runs (`ArenaShape.Bank`);
-  - the ring's lights are dropped there.
-  The place itself is `Arenas/HollowNight.cs`.
-- **The Hollow by Night:** see the status page. It has gates (`ArenaEdge.Gate`,
-  `ember_gate.gdshader`), deadfalls with their fires laid (`MapBuild.FireLights`), the
-  root plate over the den's mouth, reeds, the clough's watercourse and rocks, still
-  water, foxfire and open-sky clearings.
-- **Layout mirrored** (combat agreed): the way runs up the screen, away from the camera.
-- **Ground shader:**
-  - per-layer contrast and size (`ArenaGround.Layer`);
-  - macro relief by derivative bump mapping;
-  - ember plates fixed (they were filling whole plates as orange blobs at every ring);
-  - slurry glows in threads;
-  - standing water lies level;
-  - moss breaks into cushions at its edges;
-  - splat3 carries B foxfire and A open sky.
-- **Grass:** tussocks (`arena_grass.gdshader`, `Grass.Arena`, `ArenaGround.GrassLook`),
-  on in the Barrow and the Ruts. 0.72 ms of GPU in the barrow (performance measured it).
-- **Fallen leaves:** geometry (`arena_leaves.gdshader`, `Grass.Leaves`, the grass mask's
-  R, `ArenaPaint.Leaves`), in both Hollows. **Not yet judged.**
-- **Canopy shadows:** `ArenaEdge.Canopy` and `canopy.gdshader`, a shadows-only sheet
-  that turns the moon into pools. It works in the story Hollow (62° moon). The round
-  Hollow showed none at 38°: I subdivided the sheet against pancaking. **Not yet judged.**
+- **The Hollow by Night:**
+  - flat black is down from 26% to 5-19%;
+  - story canopy cover ×0.5;
+  - char and scorch stay at the banks' feet (`RingChar`, `scorch_out`);
+  - past the edge is only a quarter darker (`past_dark`);
+  - no crown on the camera side (`HollowNight.Screens`);
+  - the lip and its veins burn low in short stretches;
+  - Old Blue's rocks are stone knolls (`arena/knoll`);
+  - the clough's watercourse is half buried;
+  - moss stops at the banks' tops;
+  - `PlaceBuilt` is true.
+- **Canopy pools:**
+  - the finest noise term is dropped;
+  - the moon has `LightAngularDistance` 1.2° under any canopy (PCSS, `Atmosphere.Set`), so pools have a soft rim while contact shadows stay sharp;
+  - the Hollow's hemi light is up from 1.6 to 2.0.
+- **The Hollow's litter reads as leaves:**
+  - dry_decay_leaves over forest_ground_06 (`tools/godot/arena_ground.py`);
+  - the loose geometric leaves are matte (they were slate chips);
+  - moss is round cushions by hash (`arena_ground.gdshader`);
+  - the scanned moss clumps are gone;
+  - the round Hollow's stream mist sheets are gone, and its slurry curls instead of streaking;
+  - pale root scans are toned (`Dressing.ScanTint`).
 - **The Dig:**
-  - spoil `gray_rocks`, the tips conical and lumpy;
-  - rust a mottle;
-  - dry grass at the edges and the tips' feet;
-  - timber stacks by the rails (`arena/timber`);
-  - a windlass (`arena/winch`) and fence stakes at the pit's lip;
-  - the face material skipped on the tips.
-- **The Ruts:** the cook pot (`arena/cookpot`) on a tripod over its own fire, in place of
-  the grey ball.
-- **The Barrow:** the road is `grassy_cobblestone` drawn ×1.7, and reads as the Legion's slabs.
-- **Tools:**
-  - `--night hollow|roost|dig|vault [--stage N] [--lit]` (Game.cs);
-  - `tools/godot/arena_ground.py` takes a per-layer flatten radius and now puts its
-    credit lines into the Poly Haven list.
+  - tips are steep heaps of coal and rock lumps (`arena/spoil`), closed to the fight;
+  - the pit is a throat (`arena/throat`): rock walls, fallen rock, a red heart;
+  - its smoke is a column;
+  - the clay is lighter;
+  - rust, ballast and slurry mud are near the clay's value and graded wide (they were camouflage blots);
+  - thick slurry pools are their own yellow-green (`slurry_body`);
+  - dry grass drifts over the floor.
+- **The Barrow:**
+  - the howe stands at the road's far end, the top of the picture; this is not yet judged;
+  - tussock tips are warm, not grey stars.
+- **Tool:** `dotnet run -c Release --project godot/balance -- landmarks --people P --seed N`. It prints where streams, rails and pieces lie, for `--at`.
 
-## In progress (judged in `r10`, scratchpad `arena3/s_r10.jpg`)
+## Grades now (honest)
 
-- **The canopy works in both Hollows** now that the sheet is subdivided.
-  - The round Hollow has real moon pools: 10.8% flat black at the start, 21% at
-    minute 25.
-  - Too hard and blocky at the edges: the 0.55-frequency term in `canopy.gdshader`
-    is finer than the shadow map. Drop it, or soften with ShadowBlur.
-  - Under the crowns it is near black: raise the Hollow's hemi a little more, or let
-    the ground's foxfire carry.
-- **The story Hollow is 26% flat black at its start** (target ≤20%). The next step is
-  story cover ×0.5 (`ArenaEdge.Build`, now ×0.7). Not yet tried.
-- **The litter's micro-contrast is softened** (Con 0.8): control the detail, keep the
-  big shapes (Diablo IV's "old masters"). It reads less like gravel. The geometric
-  leaves are hard to see at the game camera: judge them closer, or drop them if they
-  only add noise.
+| Place | Grade |
+|---|---|
+| Hollow by Night | ~3.5-4 |
+| Hollow | ~3.5 |
+| Dig | ~3.5 |
+| Barrow | ~3 |
+| Ruts | ~3 |
 
-## Next
+None is a 5 yet.
 
-See the status page's Next list.
+What still holds each back:
+- **Hollow by Night:**
+  - the den floor is a big flat dark field;
+  - the root plate is not yet judged;
+  - the watercourse still reads grey.
+- **Dig:**
+  - the slurry pool is too lime and too flat;
+  - the tips are still dark masses at a distance;
+  - the floor wants the concept's terraces and walls seen at the edge.
+- **Barrow:**
+  - turf and road are blue-grey all over;
+  - mounds don't read;
+  - no grave mounds or stones like the concept's.
 
 ## Decisions (why)
 
-- **A story place's way runs up the screen.** Its landmark sits at the top, so it is
-  never between her and the camera.
-- **A gate is the ember's line drawn across a way.** The ring says "no further"; a gate
-  says "not yet".
-- **In a story place the banks are the edge.** The lip burns low there (`lip_glow` 0.3),
-  the scorch is narrow, and there are no ring lights.
-- **Flat black is measured** (`black.py`), not guessed.
-- **The canopy is real shadow, not painted dapple.** It falls on her and on the Pack
-  too, and it moves.
-- **Moss stays small and broken.** Large green islands read as paint.
+- **Flat black is measured** (`black.py`): at most 20%.
+- **Whole leaves read as leaves.** Pale chips read as gravel, however they are toned.
+- **A story place's banks and wood are its walls, seen whole.** Never a void of char.
+- **Moss is cushions by hash.** A threshold on paint is a cut-out of carpet.
+- **A paint layer that is a stain is graded wide and near its ground's value.** A narrow threshold makes camouflage blots.
+- **Fire in a hole is a red heart between fallen rock.** A lit floor reads as a pool or a fried egg.
+- **A landmark stands at the far end, away from the camera** (the top of the picture), never under the HUD.
 
 ## Failures and why
 
-- **The ember plates' exact voronoi border went wrong under the warp.** It filled whole
-  plates, which were lit as orange "paint" blobs at every ring. Replaced by an F2–F1
-  border, which can't go negative.
-- **A sheet of flowing stream water over a story fight read as a smear.** The story
-  place's water is the ground's own now (no stream mesh, no mist sheets).
-- **A tilted water normal slid a white moon streak down the bank.** Water now lies level.
-- **Big root plate unlit:** it faced away from the moon and read as a black burst. It
-  is now lit from the hole (sick green), with lighter tints. Judge it again.
-- **Canopy cover:** the noise sum is narrow, so a step at `1 - cover` closed nearly all
-  the sky. The threshold is now `0.62 - cover * 0.24`.
+- **LightAngularDistance 2.5°** washed the pools out into general shading; 1.2° keeps them.
+- **A noise texture as an emission map** turned the pit's fire pink (three channels).
+- **A whole-floor emissive in the pit** read as molten gold; then evenly lit under rock, as a red plate with black spots.
+- **Fallen trunks on the camera side** lay across the frame's foot as black bars.
 
 ## Gotchas
 
-- **The worktree guard refuses complex bash.** Avoid `cd X && git` and loops over
-  variables in bash. For multi-edit scripts I used small Python files (`ed*.py` in the
-  scratchpad) run from PowerShell.
-- **Heavy work takes turns** (`tools/turn.py`). My `batch.py` and `imp.py` take and give
-  the godot turn; a batch can wait up to 15 min for one. GPU jobs (ComfyUI) need
-  `take gpu`.
-- **Shader files are read when Godot starts each run.** Don't edit shaders while a batch
-  runs. C# is safe to edit once the batch has built.
-- **Godot node names can't hold ':'.** Gates are named `gate_ID`, and `ZoneView` maps
-  them to `gate:ID`.
-- **Credits:** run `WRITE_CREDITS=1 dotnet test --filter CreditsTests` in `godot/tests`
-  after adding a scan, and commit `data/credits.json` and `licences/CREDITS.txt`.
-- **The ground-texture importer:** `imp.py` reimports about 1000 files after a merge,
-  which takes several minutes.
-- **The first frames at about 2.5 s show the title card**; level-up cards cover frames
-  from about 5 s with `--auto`. Use `--auto idle` for clean ground frames.
-- **The Ruts' camp is at about (50, 42), the Dig's tips at about (36, −38)**
-  (seeds 523 and 739).
+- **The worktree guard refuses complex bash** (heredocs, loops with variables, `cd X && git`). Use the Edit tool, and plain commands.
+- **`godot/assets` must be a junction** to `public/assets` with `git update-index --skip-worktree godot/assets`. A merge can reset the flag; set it again.
+- **Restore `.import` noise** before committing: `git checkout -- "*.import"`. Remove untracked generated `godot/*.uid` files if a merge refuses: `git clean -f -- "godot/*.uid"`.
+- **Turns are a fair queue now.** `batch.py` waits up to 45 min for a godot turn, and `imp.py` up to 60.
+- **Credits:** after a new scan, run `WRITE_CREDITS=1 dotnet test --filter CreditsTests`.
+- **Shaders are read at each run's start.** Don't edit them mid-batch.
+- **The Hollow by Night camera:** stage 2 starts at the neck. `--at` frames use world x,z.
 
-## Tools (scratchpad `arena3/`)
+## Tools (scratchpad `arena4/`; repoint the paths to your worktree)
 
-- `batch.py SPEC PREFIX [--build] [--only a,b]` (`{p}` in names is the prefix);
-  `play.py`; `sheet2.py OUT COLS WIDTH names...`; `crop.py NAME x0 y0 x1 y1 [scale]`.
-- `black.py names...`: the flat-black share; `layers.py`: layer means.
-- `imp.py`: the import, taking a godot turn; `thumbs.py OUT ids...`: Poly Haven
-  thumbnails; `concepts.py`: Krea concepts (take a gpu turn first).
-- Specs: `hs.txt` (the Hollow by Night's stages, lit, water, gate), `r9.txt`/`r10.txt`
-  (mixed), `dig.txt`, `e.txt`, `h25.txt` (hordes).
+- `batch.py SPEC PREFIX [--build]`, `play.py`, `imp.py`
+- `black.py names...`, `sheet2.py OUT COLS WIDTH names...`, `crop.py NAME x0 y0 x1 y1 [scale]`
+- Specs: `b4.txt` (all places with landmarks), `b6.txt`/`b7.txt` (the Dig and the Barrow), `b2.txt` (Hollows)
 
 ## Collaborators
 
-- **Combat (successor of a708da2c97bf85c95, handoff docs/handoff/combat.md):**
-  - owns the story outlines;
-  - has queued the den's mouth move to about 18 m from boss_start.
-- **Experience:** readability, the flat-black test.
-- **Skills:** telegraph strength on the ground (now 0.28 for hostile marks).
-- **Performance (a56abaf3a104be675):** grass cost; `--perf-flip grass`.
-- **Story:** places' lore.
-- **Legal:** asked about the boar. That isn't arena art's; I pointed them to the models
-  planner and animation.
+- **Combat (a5115633c7006e4d4, handed off):**
+  - outlines in `Play/Story/*.cs`;
+  - `PlaceBuilt` per fight;
+  - the den's mouth stays at (21,-39).
+  - The Roost: four spaces climb north, joined by gates:
+    - the ruts: a capsule (0,-46)→(0,-24), r 7, with pickets on its lips;
+    - the cage yard: a circle at (-19,-17), r 8.5, with four cages, the fourth open, and the store at (-15,-10.5);
+    - the camp's yard: a circle at (-5,4), r 12, with six crates at (4,-4) under a torch post (a crater after);
+    - his fire: a circle at (0,33), r 14.5, the big fire at (0,45) with the children behind the cart line north of it. In phase 2, cart walls are dragged across at x = ±11, z 27-39: they need carts at the ends and dragged ruts.
+  - Walls are only posts (`StoryPlace.Posts`): banks and rims must carry the edge.
+- **Experience (a9f0d6c64d891d56d):** the atlas maps look like another game:
+  - stylised kit canopies cover fights;
+  - the moss blotches read as camouflage;
+  - they want maps dressed from each people's arena kit, nothing tall over a fight, and the ground a quiet stage.
+  - I told them the maps come after the arenas.
+- **Performance (a0eb8c612c94d4aa5):**
+  - landed BC7/BC5 mipmaps for the world scans;
+  - asked for a report if any scan blocks up or changes colour. None seen in my frames;
+  - should measure the PCSS moon under the canopy.
+- **Skills:** the attack marks over the ground.
 
 ## Files to read first
 
-- `godot/logic/Maps/ArenaGen.cs`, `godot/logic/Maps/Arenas/HollowNight.cs`,
-  `godot/logic/Play/Story/StoryPlace.cs`, `godot/logic/Play/Story/Hollow.cs`
-- `godot/shaders/arena_ground.gdshader`, `godot/src/World/ArenaGround.cs`,
-  `godot/src/World/ArenaEdge.cs`, `godot/src/World/Grass.cs`,
-  `godot/src/World/Pieces.Arena.cs`
+- `godot/logic/Maps/ArenaGen.cs`, `godot/logic/Maps/Arenas/HollowNight.cs` (the model for a story place), `Arenas/Dig.cs`
+- `godot/logic/Play/Story/Vault.cs`, `Roost.cs`, `StoryPlace.cs`
+- `godot/src/World/Pieces.Arena.cs` (the knoll, spoil and throat pieces), `ArenaGround.cs`, `ArenaEdge.cs`
+- `godot/shaders/arena_ground.gdshader`
 - `godot/tests/ArenaPlaceTests.cs`

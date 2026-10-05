@@ -16,6 +16,9 @@ origin facing +Z, her left at +X, up +Y; metres and degrees):
                       thumb side: the hand's +Z), "knuckles": (x, y, z) the
                       way the fingers point when flat (the hand's +Y),
                "pole": (x, y, z) the way the elbow points,
+               "thumb": (x, y, z) instead of blade and knuckles: the wrist
+                      left straight, the forearm rolled so the thumb side
+                      faces as near this way as it can (a carried weapon),
                "frame": "char" | "chest" (which space blade/knuckles/pos use)}
     foot_l/r  {"pos": (x, y, z) the ankle (y 0 = flat on the ground),
                "rot": (yaw, pitch, roll), "pole": (x, y, z) the knee's way,
@@ -53,9 +56,12 @@ class Rig:
 
     FEET_OUT = {"her": 0.0, "him": 0.045}
 
-    def __init__(self, sk: Skeleton, body="her"):
+    def __init__(self, sk: Skeleton, body="her", grips=True):
         self.sk = sk
         self.body = body
+        # Whether weapons sit in a diagonal grip (GRIP): her and the hero;
+        # not the folk, who also play the library's clips, held square.
+        self.grips = grips
         self.feet_out = self.FEET_OUT.get(body, 0.0)
         grot, gpos = sk.rest_globals()
         self.grest = grot[0]
@@ -87,12 +93,21 @@ class Rig:
         # The swivel each arm last needed (degrees about shoulder-to-wrist from
         # the keyed elbow), so a strained wrist is eased the same way frame to frame.
         self.swivel = {}
+        # How far a held weapon's shaft leans in each fist (degrees; GRIP),
+        # for the clip being solved.
+        self.grip = {}
 
     # Anatomy, degrees: how far the forearm turns about its length from the
     # hand's rest (pronation and supination, about neutral either way), and how
-    # far the wrist bends. A hand keyed past these is brought back within them,
-    # first by swinging the elbow round, then by letting the hand fall short.
-    TWIST_LIMIT, WRIST_LIMIT = 95.0, 80.0
+    # far the wrist bends: a long way toward the palm and back (flexion,
+    # extension), little to either side (toward the thumb, radial; toward the
+    # little finger, ulnar). A hand keyed past these is brought back within
+    # them, first by swinging the elbow round, then by letting the hand fall
+    # short. (A wrist bent 60 degrees sideways reads as broken: the old single
+    # limit of 80 let it, and runs flapped the sword hand from one side to the
+    # other every stride.)
+    TWIST_LIMIT = 95.0
+    FLEX, EXT, RADIAL, ULNAR = 75.0, 65.0, 22.0, 38.0
 
     def _bend(self, kind, side, top, mid, end, d_top, d_mid, S, E, W, pole):
         """The upper and lower bones' turns (character-space deltas) that put
@@ -141,10 +156,11 @@ class Rig:
         r2 = qbetween(qrot(d_mid, rest_f), f)
         return d_top, qmul(r2, d_mid)
 
-    def _strain(self, d_la, want, ha, fa):
+    def _strain(self, d_la, want, ha, fa, side):
         """How a hand keyed to `want` sits on its forearm: the turn about the
-        forearm (degrees, signed) and the wrist's bend (degrees), and the two
-        as rotations (twist, swing)."""
+        forearm (degrees, signed) and the wrist's bend (degrees), the two as
+        rotations (twist, swing), and the bend as the wrist's own flexion and
+        deviation (Rig._wrist_split)."""
         cur = qmul(d_la, self.grest[ha])
         rel = qmul(want, qinv(cur))
         tw = _twist(rel, fa)
@@ -155,7 +171,53 @@ class Rig:
         if sw[3] < 0:
             sw = -sw
         sw_deg = math.degrees(2 * math.acos(min(1.0, sw[3])))
-        return tw_deg, sw_deg, tw, sw
+        axis = sw[:3] / max(np.linalg.norm(sw[:3]), 1e-9)
+        phi, dev = self._wrist_split(axis, sw_deg, qmul(tw, cur), side)
+        return tw_deg, sw_deg, tw, sw, phi, dev
+
+    def _wrist_split(self, axis, deg, hand_t, side):
+        """A wrist bend (a turn of `deg` about `axis`, in her space, laid on
+        the hand `hand_t`) as flexion (+ toward the palm) and deviation (+
+        toward the thumb), degrees, about the hand's own axes: +Z the thumb
+        side, +X across the back (her right hand) or the palm (her left)."""
+        if deg < 1e-6:
+            return 0.0, 0.0
+        z, x = qrot(hand_t, [0, 0, 1.0]), qrot(hand_t, [1.0, 0, 0])
+        s = 1.0 if side == "r" else -1.0
+        return deg * float(np.dot(axis, z)) * s, deg * float(np.dot(axis, x))
+
+    def _wrist_join(self, phi, dev, hand_t, side):
+        """The bend _wrist_split read, as a turn in her space."""
+        z, x = qrot(hand_t, [0, 0, 1.0]), qrot(hand_t, [1.0, 0, 0])
+        s = 1.0 if side == "r" else -1.0
+        v = phi * s * z + dev * x
+        a = float(np.linalg.norm(v))
+        return qaxis(v / a, a) if a > 1e-6 else np.array([0, 0, 0, 1.0])
+
+    def _wrist_over(self, phi, dev):
+        """How far past its range a wrist is bent (0 within it; 1 is twice as
+        far as it goes), on a squared-off ellipse: a wrist bends a long way
+        toward the palm while bent a little sideways, not as far as either alone."""
+        lp = self.FLEX if phi > 0 else self.EXT
+        ld = self.RADIAL if dev > 0 else self.ULNAR
+        e = ((phi / lp) ** 4 + (dev / ld) ** 4) ** 0.25
+        return max(0.0, e - 1.0)
+
+    def _wrist_clamp(self, phi, dev):
+        """A wrist bend brought within its range, the way it was bending."""
+        lp = self.FLEX if phi > 0 else self.EXT
+        ld = self.RADIAL if dev > 0 else self.ULNAR
+        e = ((phi / lp) ** 4 + (dev / ld) ** 4) ** 0.25
+        if e <= 1.0:
+            return phi, dev
+        # Each within its own range first (so a bend that is only too far
+        # sideways keeps its flexion), then the two together.
+        phi = max(-self.EXT, min(self.FLEX, phi))
+        dev = max(-self.ULNAR, min(self.RADIAL, dev))
+        e = ((phi / lp) ** 4 + (dev / ld) ** 4) ** 0.25
+        if e > 1.0:
+            phi, dev = phi / e, dev / e
+        return phi, dev
 
     def _bend_axis(self, j, side):
         """The axis (in the bone's own frame) a finger joint curls about,
@@ -272,12 +334,38 @@ class Rig:
                 eb, wr = two_bone_ik(gpos[ua], gpos[la], gpos[ha], target, S + elbow_at[side])
             else:
                 eb, wr = two_bone_ik(gpos[ua], gpos[la], gpos[ha], target, gpos[la] + pole)
-            aimed = "blade" in spec or "knuckles" in spec
+            aimed = "blade" in spec or "knuckles" in spec or "thumb" in spec
+            # A weapon is held in a diagonal grip: its shaft crosses the palm
+            # from the root of the forefinger to the heel of the hand, so it
+            # leans from square to the fingers toward them (Rig.grip, from the
+            # clip's weapon; the game mounts it so, Arms.Hold). The blade and
+            # knuckles keyed are the grip's; the hand is turned back from it.
+            lean = self.grip.get(side, 0.0) if "blade" in spec else 0.0
+            lq = qaxis([1.0, 0, 0], -lean) if lean else None
 
             def want_for(d_la):
                 """The hand's wanted turn in her space (blade and knuckles; what
                 is not given is kept from the hand riding the forearm)."""
-                cur = qmul(d_la, self.grest[ha])
+                if "thumb" in spec and "blade" not in spec and "knuckles" not in spec:
+                    # The wrist left straight and the forearm rolled until the
+                    # thumb side faces as near this way as it can: a carried
+                    # weapon goes where the arm takes it, in the grip's lean
+                    # from the forearm, as a relaxed hand holds one.
+                    cur = qmul(d_la, self.grest[ha])
+                    fa_ = qrot(d_la, self.prest[ha] - self.prest[la])
+                    fa_ = fa_ / np.linalg.norm(fa_)
+                    t = np.array(spec["thumb"], float)
+                    t = qrot(frame, t) if spec.get("frame") == "chest" else t
+                    z = qrot(cur, [0, 0, 1.0])
+                    zp, tp = z - fa_ * np.dot(z, fa_), t - fa_ * np.dot(t, fa_)
+                    if np.linalg.norm(zp) < 1e-6 or np.linalg.norm(tp) < 1e-6:
+                        return cur
+                    ang = math.degrees(math.atan2(float(np.dot(np.cross(zp, tp), fa_)), float(np.dot(zp, tp))))
+                    return qmul(qaxis(fa_, ang), cur)
+                want = _want_grip(qmul(qmul(d_la, self.grest[ha]), lq) if lq is not None else qmul(d_la, self.grest[ha]))
+                return qmul(want, qinv(lq)) if lq is not None else want
+
+            def _want_grip(cur):
                 z, y = qrot(cur, [0, 0, 1]), qrot(cur, [0, 1, 0])
                 if "blade" in spec:
                     z = np.array(spec["blade"], float)
@@ -317,20 +405,22 @@ class Rig:
                 phi = force[side]
                 if phi:
                     d_ua, d_la = config(phi)
-            elif aimed:
+            elif "blade" in spec or "knuckles" in spec:
                 # A wrist keyed past what it can do: swing the elbow round (as
                 # little, and as like the last frame, as will do) until it can.
+                # (Not for a thumb's way alone: the wrist is straight, and the
+                # roll simply goes as far as the forearm turns.)
                 fa = (wr - eb) / np.linalg.norm(wr - eb)
-                tw_deg, sw_deg, _, _ = self._strain(d_la, want_for(d_la), ha, fa)
-                if abs(tw_deg) > self.TWIST_LIMIT or sw_deg > self.WRIST_LIMIT:
+                tw_deg, sw_deg, _, _, wp, wd = self._strain(d_la, want_for(d_la), ha, fa, side)
+                if abs(tw_deg) > self.TWIST_LIMIT or self._wrist_over(wp, wd) > 0:
                     prev = self.swivel.get(side, 0.0)
                     best = None
                     for cand in range(-42, 43, 6):
                         c_ua, c_la = config(float(cand))
                         E = S + qrot(qaxis((wr - S) / np.linalg.norm(wr - S), cand), eb - S)
                         cfa = (wr - E) / np.linalg.norm(wr - E)
-                        t, w_, _, _ = self._strain(c_la, want_for(c_la), ha, cfa)
-                        cost = (max(0.0, abs(t) - self.TWIST_LIMIT) ** 2 + 2 * max(0.0, w_ - self.WRIST_LIMIT) ** 2
+                        t, _, _, _, cp, cd = self._strain(c_la, want_for(c_la), ha, cfa, side)
+                        cost = (max(0.0, abs(t) - self.TWIST_LIMIT) ** 2 + 2 * (40 * self._wrist_over(cp, cd)) ** 2
                                 + 0.08 * cand * cand + 0.8 * (cand - prev) ** 2)
                         if best is None or cost < best[0]:
                             best = (cost, float(cand), c_ua, c_la)
@@ -348,7 +438,7 @@ class Rig:
                 fa = gpos[ha] - gpos[la]
                 fa = fa / np.linalg.norm(fa)
                 want = want_for(delta[la])
-                tw_deg, sw_deg, tw, sw = self._strain(delta[la], want, ha, fa)
+                tw_deg, sw_deg, tw, sw, _, _ = self._strain(delta[la], want, ha, fa, side)
                 # The turn about the forearm taken the way nearest last
                 # frame's (a hand keyed past half a turn would otherwise flip
                 # from one side to the other between two frames).
@@ -365,31 +455,31 @@ class Rig:
                 self.twist_last[side] = tw_deg
                 # Within what a forearm and a wrist can do.
                 tw_c = max(-self.TWIST_LIMIT, min(self.TWIST_LIMIT, tw_deg))
-                if sw_deg > self.WRIST_LIMIT:
-                    # The wrist bent toward the wanted hand, the short way
-                    # round unless the hand is keyed nearly back along the
-                    # forearm; then the way it bent last frame (either way is
-                    # as near, and choosing afresh each frame flips it).
-                    axis = sw[:3] / max(np.linalg.norm(sw[:3]), 1e-9)
-                    prev = getattr(self, "swing_last", {}).get(side)
-                    if prev is not None and sw_deg > 120 and float(np.dot(axis, prev)) < 0:
-                        axis, sw_deg = -axis, 360.0 - sw_deg
-                    if prev is not None and sw_deg > 120:
-                        # Near the singular split the bend's axis wheels round
-                        # from frame to frame: let it drift, not jump.
-                        axis = prev * 0.8 + axis * 0.2
-                        axis = axis / max(np.linalg.norm(axis), 1e-9)
-                    sw = qaxis(axis, self.WRIST_LIMIT)
-                    if not hasattr(self, "swing_last"):
-                        self.swing_last = {}
+                # The wrist bent toward the wanted hand, the short way round
+                # unless the hand is keyed nearly back along the forearm; then
+                # the way it bent last frame (either way is as near, and
+                # choosing afresh each frame flips it).
+                axis = sw[:3] / max(np.linalg.norm(sw[:3]), 1e-9)
+                prev = getattr(self, "swing_last", {}).get(side)
+                if prev is not None and sw_deg > 120 and float(np.dot(axis, prev)) < 0:
+                    axis, sw_deg = -axis, 360.0 - sw_deg
+                if prev is not None and sw_deg > 120:
+                    # Near the singular split the bend's axis wheels round
+                    # from frame to frame: let it drift, not jump.
+                    axis = prev * 0.8 + axis * 0.2
+                    axis = axis / max(np.linalg.norm(axis), 1e-9)
+                if not hasattr(self, "swing_last"):
+                    self.swing_last = {}
+                if sw_deg > 1:
                     self.swing_last[side] = axis
-                else:
-                    if not hasattr(self, "swing_last"):
-                        self.swing_last = {}
-                    if sw_deg > 1:
-                        self.swing_last[side] = sw[:3] / max(np.linalg.norm(sw[:3]), 1e-9)
+                # Then within the wrist's own range: far toward the palm and
+                # back, little to either side.
                 cur = qmul(delta[la], self.grest[ha])
-                want = qmul(sw, qmul(qaxis(fa, tw_c), cur))
+                hand_t = qmul(qaxis(fa, tw_c), cur)
+                wp, wd = self._wrist_split(axis, sw_deg, hand_t, side)
+                wp, wd = self._wrist_clamp(wp, wd)
+                sw = self._wrist_join(wp, wd, hand_t, side)
+                want = qmul(sw, hand_t)
                 hd = qmul(want, qinv(self.grest[ha]))
                 # The forearm takes its share of the turn about its length (the
                 # radius rolling over the ulna), so the wrist does not wring.
@@ -683,7 +773,7 @@ class Track:
         self.have = {n: [(k[0], f[n], k[2] if len(k) > 2 else "auto") for k, f in zip(self.keys, self.flats) if n in f]
                      for n in self.names}
         self.vectors = sorted({n[:-2] for n in self.names if n.endswith("#0") and n.split("#")[0].split(".")[-1]
-                               in ("blade", "knuckles", "pole") and all(f"{n[:-2]}#{i}" in self.names for i in (1, 2))
+                               in ("blade", "knuckles", "pole", "thumb") and all(f"{n[:-2]}#{i}" in self.names for i in (1, 2))
                                and len(self.have[n]) == len(self.have[n[:-2] + "#1"]) == len(self.have[n[:-2] + "#2"])})
 
     def __call__(self, fr, lead=None):
@@ -769,7 +859,7 @@ def _aims(keys):
     out = list(keys)
     for side in "lr":
         h = f"hand_{side}"
-        aimed = [isinstance(k[1].get(h), dict) and ("blade" in k[1][h] or "knuckles" in k[1][h]) for k in keys]
+        aimed = [isinstance(k[1].get(h), dict) and any(v in k[1][h] for v in ("blade", "knuckles", "thumb")) for k in keys]
         held = [isinstance(k[1].get(h), dict) for k in keys]
         if not any(aimed) or all(a for a, hh in zip(aimed, held) if hh):
             continue
@@ -796,12 +886,19 @@ def _whole_aims(rig: Rig, keys, base=None):
         specs = [k[1].get(h) if isinstance(k[1].get(h), dict) else None for k in keys]
         has_b = [s is not None and "blade" in s for s in specs]
         has_k = [s is not None and "knuckles" in s for s in specs]
-        aimed = [b or kk for b, kk in zip(has_b, has_k)]
+        # (A thumb's way alone, beside keys that aim the hand outright, is
+        # filled the same way: the aimed keys' blade would otherwise be held
+        # over it.)
+        has_t = [s is not None and "thumb" in s and not b and not kk for s, b, kk in zip(specs, has_b, has_k)]
+        aimed = [b or kk or t for b, kk, t in zip(has_b, has_k, has_t)]
         if not any(aimed):
             continue
         mixed = len({(b, kk) for b, kk, a in zip(has_b, has_k, aimed) if a}) > 1
         if not mixed:
             continue
+        # The blade and knuckles filled in are the grip's (Rig.grip), as keyed ones are.
+        lean = rig.grip.get(side, 0.0)
+        lq = qaxis([1.0, 0, 0], -lean)
         for i, k in enumerate(out):
             spec = specs[i]
             if spec is None or not aimed[i] or (has_b[i] and has_k[i]):
@@ -812,7 +909,8 @@ def _whole_aims(rig: Rig, keys, base=None):
             local, pos = rig.solve(k[1], base=b)
             rig.swivel_force = None
             g, _ = rig.globals(local, pos)
-            q = g[0, rig.I[h]]
+            q = qmul(g[0, rig.I[h]], lq)
+            spec = {kk: v for kk, v in spec.items() if kk != "thumb"}
             spec = dict(spec, frame="char", blade=tuple(float(x) for x in qrot(q, [0, 0, 1.0])),
                         knuckles=tuple(float(x) for x in qrot(q, [0, 1.0, 0])))
             if "pole" in specs[i] and specs[i].get("frame") == "chest":
@@ -835,7 +933,7 @@ def _one_frame(rig: Rig, keys, base=None):
     for side in "lr":
         h = f"hand_{side}"
         frames = {k[1][h].get("frame", "char") for k in keys if isinstance(k[1].get(h), dict)
-                  and any(v in k[1][h] for v in ("blade", "knuckles", "pole"))}
+                  and any(v in k[1][h] for v in ("blade", "knuckles", "pole", "thumb"))}
         if len(frames) < 2:
             continue
         for i, k in enumerate(out):
@@ -850,7 +948,7 @@ def _one_frame(rig: Rig, keys, base=None):
             g, _ = rig.globals(local, pos)
             chest = qmul(g[0, s3], qinv(rig.grest[s3]))
             spec = dict(spec, frame="char")
-            for v in ("blade", "knuckles", "pole"):
+            for v in ("blade", "knuckles", "pole", "thumb"):
                 if v in spec:
                     spec[v] = tuple(float(x) for x in qrot(chest, np.array(spec[v], float)))
             pose = dict(k[1])
@@ -859,12 +957,38 @@ def _one_frame(rig: Rig, keys, base=None):
     return out
 
 
-def solve_frames(rig: Rig, poses, bases=None, loop=False, sigma=2.0):
+# How far each weapon's shaft leans in a diagonal grip, from square to the
+# fingers toward them (degrees): a sword's grip runs from the root of the
+# forefinger to the heel of the hand, so with the wrist straight the blade
+# rises at about 55 degrees from the forearm's line and a little ulnar bend
+# puts it nearly in line. An axe's haft is gripped nearer square, a staff and
+# a crossbow square (mid-shaft; pistol fashion). Only her and the hero
+# (Rig.grips): the folk also play the Universal Animation Library, held
+# square. Must match the game's mounts (Arms.Spec.Lean).
+GRIP = {"sword": 35.0, "axe": 30.0, "daggers": 30.0, "wand": 30.0}
+
+
+def grip_of(weapon):
+    """Each fist's lean for a clip that holds `weapon` (its meta's "weapon":
+    "sword+shield", "axe", "axes", "daggers", "wand", "staff", "crossbow")."""
+    if not weapon:
+        return {}
+    main = weapon.split("+")[0]
+    if main == "axes":
+        return {"r": GRIP["axe"], "l": GRIP["axe"]}
+    if main == "daggers":
+        return {"r": GRIP["daggers"], "l": GRIP["daggers"]}
+    return {"r": GRIP[main]} if main in GRIP else {}
+
+
+def solve_frames(rig: Rig, poses, bases=None, loop=False, sigma=2.0, weapon=""):
     """Every frame's pose solved, where each elbow goes settled over the
     whole clip first: solved frame by frame (the pole's way, swung round
     where a keyed wrist needs it), then smoothed in time, so an elbow eases
     round instead of whipping between frames as the hand passes near the
-    shoulder or the wrist's strain tips it from one side to the other."""
+    shoulder or the wrist's strain tips it from one side to the other.
+    `weapon`: what the clip holds (grip_of)."""
+    rig.grip = grip_of(weapon) if rig.grips else {}
     n = len(poses)
     J = len(rig.sk)
     rot = np.empty((n, J, 4))
@@ -948,7 +1072,9 @@ def build(name, rig: Rig, keys, fps=30, loop=False, meta=None, post=None, base=N
     """A clip from keys [(frame, pose, ease), ...]. For a loop, the last key
     should be the first again. With a base clip, the keys are laid over its
     frames (Rig.solve's base): turns add to its turns, hands and feet given
-    are solved afresh. `lead`: see Track."""
+    are solved afresh. `lead`: see Track. A weapon in the meta ("weapon")
+    sits in the fist's diagonal grip (GRIP)."""
+    rig.grip = grip_of((meta or {}).get("weapon")) if rig.grips else {}
     keys = _one_frame(rig, keys, base)
     track = Track(keys)
     frames = track.frames
@@ -958,7 +1084,7 @@ def build(name, rig: Rig, keys, fps=30, loop=False, meta=None, post=None, base=N
         poses.append(post(fr, pose) if post else pose)
     bases = None if base is None else [(base.rot[min(fr, base.frames - 1)], base.pos[min(fr, base.frames - 1)])
                                        for fr in range(frames)]
-    rot, pos = solve_frames(rig, poses, bases, loop=loop)
+    rot, pos = solve_frames(rig, poses, bases, loop=loop, weapon=(meta or {}).get("weapon", ""))
     m = {"source": "keyed (tools/anim)", "licence": "own work"}
     m.update(meta or {})
     return Clip(name, fps, rot, pos, loop=loop, meta=m)

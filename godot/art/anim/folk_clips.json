@@ -398,36 +398,6 @@
 		"source": "Mixamo (Adobe): used in the game under Mixamo's terms, raw files not redistributed: folk_weight_shift_idle.bvh",
 		"speed": 0.0
 	},
-	"m_k_wade_drag_0": {
-		"changes": "retargeted to her skeleton, feet locked, in place",
-		"layer": "full",
-		"length": 5.96666669845581,
-		"licence": "Kimodo-SOMA-RP (NVIDIA, NVIDIA Open Model License)",
-		"loop": false,
-		"note": "",
-		"source": "Kimodo-SOMA-RP (NVIDIA, NVIDIA Open Model License): generated: wade_drag_0.bvh",
-		"speed": 0.28659972538614
-	},
-	"m_k_wade_drag_1": {
-		"changes": "retargeted to her skeleton, feet locked, in place",
-		"layer": "full",
-		"length": 5.96666669845581,
-		"licence": "Kimodo-SOMA-RP (NVIDIA, NVIDIA Open Model License)",
-		"loop": false,
-		"note": "",
-		"source": "Kimodo-SOMA-RP (NVIDIA, NVIDIA Open Model License): generated: wade_drag_1.bvh",
-		"speed": 0.836716679388343
-	},
-	"m_k_wade_drag_2": {
-		"changes": "retargeted to her skeleton, feet locked, in place",
-		"layer": "full",
-		"length": 5.96666669845581,
-		"licence": "Kimodo-SOMA-RP (NVIDIA, NVIDIA Open Model License)",
-		"loop": false,
-		"note": "",
-		"source": "Kimodo-SOMA-RP (NVIDIA, NVIDIA Open Model License): generated: wade_drag_2.bvh",
-		"speed": 0.491704562907945
-	},
 	"m_kneel_aim": {
 		"hold": true,
 		"layer": "full",

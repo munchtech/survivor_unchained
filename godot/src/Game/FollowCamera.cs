@@ -25,6 +25,11 @@ public sealed class FollowCamera
     /// <summary>How much of the shake the player wants (settings: 0..1).</summary>
     public float ShakeScale = 1;
     public Vector3? FocusOverride;
+    /// <summary>What the view keeps in frame with her (a story night's boss): the look leans a third of the
+    /// way toward it, never more than four and a half metres. Followed on her alone, the boss stood under the
+    /// HUD's bar at the screen's foot for a fight's length.</summary>
+    public Vector3? Toward;
+    float towardX, towardZ;
     /// <summary>Where the survivor should stand across the screen, in pixels from its middle at
     /// 1080 high (a side panel open: they step aside so they stay in view beside it).</summary>
     public float ScreenShift;
@@ -90,7 +95,15 @@ public sealed class FollowCamera
         if (!initialised) Snap(x, y, z);
         leadX = Damp(leadX, vx * Lead * 0.2f, 3, dt);
         leadZ = Damp(leadZ, vz * Lead * 0.2f, 3, dt);
-        var t = new Vector3(x + leadX, y + 0.8f, z + leadZ);
+        float wx = 0, wz = 0;
+        if (Toward is Vector3 tw)
+        {
+            float dx = tw.X - x, dz = tw.Z - z, dl = Mathf.Sqrt(dx * dx + dz * dz);
+            if (dl > 0.01f) { float k = Mathf.Min(dl * 0.33f, 4.5f) / dl; wx = dx * k; wz = dz * k; }
+        }
+        towardX = Damp(towardX, wx, 1.5f, dt);
+        towardZ = Damp(towardZ, wz, 1.5f, dt);
+        var t = new Vector3(x + leadX + towardX, y + 0.8f, z + leadZ + towardZ);
         overrideBlend = Damp(overrideBlend, FocusOverride.HasValue ? 1 : 0, 2.5f, dt);
         var f = FocusOverride is Vector3 o ? t.Lerp(o, overrideBlend) : t;
         look = new Vector3(Damp(look.X, f.X, 7, dt), Damp(look.Y, f.Y, 4, dt), Damp(look.Z, f.Z, 7, dt));

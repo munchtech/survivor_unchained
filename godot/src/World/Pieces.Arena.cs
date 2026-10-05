@@ -26,6 +26,8 @@ public static partial class Pieces
             "cookpot" => CookPot(),
             "winch" => Winch(),
             "knoll" => Knoll(seed, ground),
+            "spoil" => Spoil(seed, ground),
+            "throat" => Throat(seed, ground),
             _ => null,
         };
         if (made != null) made.Name = "arena_" + name;
@@ -323,6 +325,124 @@ public static partial class Pieces
         // (Darker than the boulders' scan as shot: pale, the three read as the brightest things
         // in the clough, over her.)
         return Hold((rock.Mesh(true), Surface("rock_boulder_dry", 1.4f, "#6c706c")));
+    }
+
+    /// <summary>The Dig's spoil tip as it lies: the lumps of blasted rock and coal the tubs
+    /// tipped, over the heap's cone (Dig's relief), eight metres across at scale 1 (set at the
+    /// heap's radius over eight). The great lumps rolled to its foot, the small lie on its
+    /// flanks; the coal's broken faces are glassy and catch the moon and the lamps, which is
+    /// what reads as a heap of rock from thirty metres up: a cone of black texture read as one
+    /// black field.</summary>
+    static Node3D Spoil(int seed, Func<Vector3, float>? ground)
+    {
+        float G(float x, float z) => ground?.Invoke(new Vector3(x, 0, z)) ?? 0;
+        var coal = new Build();
+        var stone = new Build();
+        var rng = new RandomNumberGenerator { Seed = (ulong)(seed * 13 + 5) };
+        const float R = 8;
+        for (int k = 0; k < 420; k++)
+        {
+            // Out from the top, thicker toward the foot; the bigger the lump, the further it rolled.
+            float t = Mathf.Sqrt(rng.Randf());
+            float s = Mathf.Lerp(0.3f, 0.7f, rng.Randf()) * (0.7f + 0.9f * t * t);
+            float a = rng.Randf() * Mathf.Tau, r = R * Mathf.Min(1.08f, t * 1.05f);
+            float x = Mathf.Cos(a) * r, z = Mathf.Sin(a) * r;
+            var at = new Vector3(x, G(x, z) - s * 0.2f, z);
+            Lump(rng.Randf() < 0.6f ? coal : stone, at, s, rng);
+        }
+        return Hold((coal.Mesh(), Mat("#2a2724", 0, 0.28f)), (stone.Mesh(), Mat("#5a544c", 0, 0.7f)));
+    }
+
+    /// <summary>The Dig's pit as a throat: rock walls going down in broken ledges from the lip
+    /// to the floor eight metres under it, and on the floor the fire, coals glowing between
+    /// fallen rock. Its origin is the floor's middle (the ground's own pit, whose steps the
+    /// walls cover); the lip is found by the probe. From the arena camera: a dark hole with a
+    /// red light in its bottom, the walls lit from below; never a pool of fire level with the
+    /// working.</summary>
+    static Node3D Throat(int seed, Func<Vector3, float>? ground)
+    {
+        float G(float x, float z) => ground?.Invoke(new Vector3(x, 0, z)) ?? 8;
+        float H = (G(8.2f, 0) + G(-8.2f, 0) + G(0, 8.2f) + G(0, -8.2f)) / 4;
+        var wall = new Build();
+        var floor = new Build();
+        var coal = new Build();
+        var rng = new RandomNumberGenerator { Seed = (ulong)(seed * 17 + 3) };
+        float s0 = seed * 0.29f;
+        // The walls, from the lip down: their faces turned in to the hole.
+        var prof = Pts(8.3f, H + 0.2f, 7.7f, H - 0.35f, 7.2f, H * 0.78f, 6.7f, H * 0.6f, 6.1f, H * 0.4f, 5.7f, H * 0.2f, 5.25f, 0.35f, 4.9f, -0.3f);
+        Lathe(wall, prof, 48, warp: p =>
+        {
+            float a = Mathf.Atan2(p.Z, p.X);
+            float rim = 1 + 0.08f * (Noise(Mathf.Cos(a) * 2.2f + s0, Mathf.Sin(a) * 2.2f) - 0.5f) * 2;
+            // Ledges where the rock splits along its beds, broken by the noise round the hole.
+            float ledge = 1 + 0.05f * Mathf.Sin(p.Y * 2.4f + Noise(Mathf.Cos(a) * 3 + s0, Mathf.Sin(a) * 3) * 5);
+            float rough = 1 + 0.06f * (Noise(p.X * 0.9f + s0, p.Y * 0.9f + p.Z * 0.9f) - 0.5f) * 2;
+            var xz = new Vector2(p.X, p.Z) * rim * ledge * rough;
+            // The lip lies on the working's floor wherever that is, all round.
+            float y = p.Y > H - 0.5f ? Mathf.Min(p.Y, G(xz.X, xz.Y) + (p.Y - H)) : p.Y;
+            return new Vector3(xz.X, y, xz.Y);
+        });
+        // The floor: what burns down there, under the rock that fell into it.
+        // Embers dull toward the walls, where the fallen rock lies thickest; the heart of it, in
+        // the middle, where the way goes down, burns.
+        var heart = new Build();
+        Lathe(floor, Pts(5.4f, 0.04f, 0, 0.04f), 32);
+        Lathe(heart, Pts(2.2f, 0.06f, 0, 0.06f), 24, warp: p =>
+        {
+            float k = 1 + 0.5f * (Noise(p.X * 0.9f + s0, p.Z * 0.9f) - 0.5f);
+            return new Vector3(p.X * k, p.Y, p.Z * k);
+        });
+        for (int k = 0; k < 300; k++)
+        {
+            float a = rng.Randf() * Mathf.Tau, r = 5.3f * Mathf.Pow(rng.Randf(), 0.35f);
+            float s = 0.35f + 0.8f * rng.Randf() * (0.45f + r / 9);
+            Lump(coal, new Vector3(Mathf.Cos(a) * r, 0.02f, Mathf.Sin(a) * r), s, rng);
+        }
+        // The fire shows between the fallen rock, in seams and at its heart, never as one sheet:
+        // lit whole, the floor read as a pool of molten gold; lit evenly under the rock, as a
+        // red plate with black spots.
+        StandardMaterial3D Fire(string c, float e) => new()
+        {
+            AlbedoColor = new Color("#1a0c06"), Roughness = 0.9f,
+            EmissionEnabled = true, Emission = new Color(c), EmissionEnergyMultiplier = e,
+        };
+        return Hold((wall.Mesh(true), Surface("rock_boulder_dry", 2.2f, "#4c4038")), (floor.Mesh(), Fire("#8a1c06", 0.35f)),
+            (heart.Mesh(), Fire("#ff5a14", 1.1f)), (coal.Mesh(), Mat("#1e1916", 0, 0.45f)));
+    }
+
+    /// <summary>A lump of broken rock, s across: a squat, faceted stone (a ring of five or six
+    /// faces, a smaller ring over them, a peak), each face shaded flat, as broken rock is.</summary>
+    static void Lump(Build b, Vector3 at, float s, RandomNumberGenerator rng)
+    {
+        int n = 5 + (int)(rng.Randi() % 2);
+        float turn = rng.Randf() * Mathf.Tau;
+        var bot = at + new Vector3(0, -s * 0.3f, 0);
+        var top = at + new Vector3((rng.Randf() - 0.5f) * s * 0.3f, s * (0.4f + 0.25f * rng.Randf()), (rng.Randf() - 0.5f) * s * 0.3f);
+        var lo = new Vector3[n];
+        var hi = new Vector3[n];
+        for (int k = 0; k < n; k++)
+        {
+            float a = turn + (k + (rng.Randf() - 0.5f) * 0.5f) * Mathf.Tau / n;
+            float r = s * (0.45f + 0.25f * rng.Randf());
+            lo[k] = at + new Vector3(Mathf.Cos(a) * r, s * 0.05f * rng.Randf(), Mathf.Sin(a) * r);
+            float a2 = a + Mathf.Pi / n;
+            hi[k] = at + new Vector3(Mathf.Cos(a2) * r * 0.62f, s * (0.22f + 0.12f * rng.Randf()), Mathf.Sin(a2) * r * 0.62f);
+        }
+        void Face(Vector3 p, Vector3 q, Vector3 w)
+        {
+            var nrm = (q - p).Cross(w - p).Normalized();
+            if (nrm.Dot((p + q + w) / 3 - at) < 0) nrm = -nrm;
+            int i = b.V(p, nrm), j = b.V(q, nrm), l = b.V(w, nrm);
+            b.Tri(i, j, l);
+        }
+        for (int k = 0; k < n; k++)
+        {
+            int k1 = (k + 1) % n;
+            Face(bot, lo[k1], lo[k]);
+            Face(lo[k], lo[k1], hi[k]);
+            Face(lo[k1], hi[k1], hi[k]);
+            Face(hi[k], hi[k1], top);
+        }
     }
 
     static Node3D Deadfall(int seed)

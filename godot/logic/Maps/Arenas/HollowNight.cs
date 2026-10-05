@@ -237,8 +237,11 @@ public sealed class HollowNight : ArenaShape
         double rootn = Noise.Ridged(x * 0.14 + 3, z * 0.14 - 8, 2);
         p.L2 = Math.Max(p.L2, MathX.Smoothstep(0.55, 0.8, rootn) * MathX.Smoothstep(4, 0.5, inn) * (1 - p.L3));
         // Moss in cushions where it is damp and nobody treads: the banks' feet, the clough.
-        double isle = MathX.Smoothstep(0.5, 0.66, Noise.Noise(x * 0.13 + 70, z * 0.13 - 31) + n2 * 0.25);
-        double foot = MathX.Smoothstep(5, 1.5, inn);
+        // (Up to the banks' tops and no further: out in the wood, where nothing chars it now, the
+        // moss ran on as a green lawn under the trees.)
+        double banksOnly = MathX.Smoothstep(-8, -3.5, inn);
+        double isle = MathX.Smoothstep(0.5, 0.66, Noise.Noise(x * 0.13 + 70, z * 0.13 - 31) + n2 * 0.25) * banksOnly;
+        double foot = MathX.Smoothstep(5, 1.5, inn) * banksOnly;
         p.Moss = Math.Max(p.Moss, Math.Max(isle * (space == "clough" ? 0.85 : 0.55), foot * MathX.Smoothstep(0.0, 0.35, n2) * 0.8));
         p.Moss *= (1 - p.Trod) * (1 - p.L4 * 0.7) * (1 - MathX.Smoothstep(0.3, 0.7, p.Wet));
         // Foxfire: rotting wood and roots at the banks' feet glowing a little, cold.

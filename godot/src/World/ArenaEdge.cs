@@ -52,19 +52,21 @@ public static class ArenaEdge
         var ramp = new Gradient();
         ramp.SetColor(0, new Color(ember.R, ember.G * 0.7f, ember.B * 0.5f, 0));
         ramp.SetColor(1, new Color(smoke.R * 0.8f, smoke.G * 0.8f, smoke.B * 0.8f, 0));
-        ramp.AddPoint(0.12f, new Color(ember.R * 0.85f, ember.G * 0.55f, ember.B * 0.4f, 0.5f));
-        ramp.AddPoint(0.4f, new Color(smoke.R * 1.6f + ember.R * 0.12f, smoke.G * 1.6f + ember.G * 0.06f, smoke.B * 1.6f, 0.42f));
+        // (A column out of the throat, not a lid over it: from the whole mouth, wide and lit
+        // ember-red, the smoke stood over the pit as one orange dome and hid the hole.)
+        ramp.AddPoint(0.12f, new Color(ember.R * 0.85f, ember.G * 0.55f, ember.B * 0.4f, 0.3f));
+        ramp.AddPoint(0.4f, new Color(smoke.R * 1.6f + ember.R * 0.05f, smoke.G * 1.6f + ember.G * 0.02f, smoke.B * 1.6f, 0.3f));
         var grow = new Curve();
         grow.AddPoint(new Vector2(0, 0.45f));
         grow.AddPoint(new Vector2(1, 1.6f));
         var proc = new ParticleProcessMaterial
         {
-            EmissionShape = ParticleProcessMaterial.EmissionShapeEnum.Sphere, EmissionSphereRadius = r,
-            Direction = Vector3.Up, Spread = 14,
-            InitialVelocityMin = 0.7f, InitialVelocityMax = 1.5f,
+            EmissionShape = ParticleProcessMaterial.EmissionShapeEnum.Sphere, EmissionSphereRadius = r * 0.35f,
+            Direction = Vector3.Up, Spread = 8,
+            InitialVelocityMin = 1.0f, InitialVelocityMax = 1.8f,
             Gravity = new Vector3(0.12f, 0.18f, 0.05f),
             TurbulenceEnabled = true, TurbulenceNoiseStrength = 0.6f, TurbulenceNoiseScale = 6f, TurbulenceInfluenceMin = 0.02f, TurbulenceInfluenceMax = 0.08f,
-            ScaleMin = 2.6f, ScaleMax = 4.4f, ScaleCurve = new CurveTexture { Curve = grow },
+            ScaleMin = 1.8f, ScaleMax = 3.0f, ScaleCurve = new CurveTexture { Curve = grow },
             AngleMin = 0, AngleMax = 360, AngularVelocityMin = -8, AngularVelocityMax = 8,
             ColorRamp = new GradientTexture1D { Gradient = ramp },
         };
@@ -77,7 +79,7 @@ public static class ArenaEdge
         };
         return new GpuParticles3D
         {
-            Name = "Vent", Amount = 48, Lifetime = 10, Preprocess = 10, ProcessMaterial = proc,
+            Name = "Vent", Amount = 32, Lifetime = 10, Preprocess = 10, ProcessMaterial = proc,
             DrawPass1 = new QuadMesh { Size = Vector2.One, Material = mat },
             Position = new Vector3(x, z.HeightAt(x, zz) - 3f, zz),
             VisibilityAabb = new Aabb(new Vector3(-20, -6, -20), new Vector3(40, 40, 40)),

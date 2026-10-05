@@ -103,7 +103,7 @@ def lie_side_wake(rig):
         toward = slerp_dir((-1.0, 0.0, 0.12), PROP_TOWARD, w)
         hand, pole = forearm_on_ground(rig.sk, p, fr, "r", toward, ground=0.035)
         keyed = pose["hand_r"]
-        k = min(1.0, w * 3)
+        k = min(1.0, w * 6)
         at = np.asarray(keyed["pos"], float) * (1 - k) + hand * k
         return {"hand_r": {**_aimed_only(keyed), "pos": tuple(at), "pole": tuple(np.asarray(keyed["pole"], float) * (1 - k) + pole * k),
                            "knuckles": tuple(slerp_dir(keyed["knuckles"], toward, k))}}
@@ -581,12 +581,28 @@ def shiver(rig):
     return build("shiver", rig, keys, meta={"layer": "gesture", "note": "the shoulders up 4 cm, a fast double tremor"})
 
 
+def flinch(rig):
+    """A blow taken on the move: the chest caves and twists away from it,
+    the shoulders jerk up round the neck and the head snaps back, in two
+    frames, and she shakes it off over a third of a second. Laid over a run
+    or a cut (the legs keep going, the arms keep what they hold): only the
+    back, the shoulders and the head move, so nothing is added to the legs
+    or the arms. Big enough to read at 31 m."""
+    keys = [
+        (0, _still(), "ease"),
+        (2, _still(spine=(16, -16, -8), neck=(6, -10, 0), head=(12, -20, -10), clav_l=(14, -8), clav_r=(14, -8)), "ease"),
+        (5, _still(spine=(9, -8, -4), neck=(3, -5, 0), head=(7, -10, -5), clav_l=(7, -4), clav_r=(7, -4)), "auto"),
+        (14, _still(), "ease"),
+    ]
+    return build("flinch", rig, keys, meta={"layer": "gesture", "note": "struck on the move: the back caves, the head snaps, 0.47 s"})
+
+
 ALL = (("lie_side_wake", lie_side_wake), ("sit_back_heels", sit_back_heels), ("reach_coals", reach_coals),
        ("letter", letter), ("kneel_to_stand_snap", kneel_to_stand_snap), ("take_from_log", take_from_log),
-       ("cup_hands", cup_hands), ("nod", nod), ("exhale", exhale), ("shiver", shiver))
+       ("cup_hands", cup_hands), ("nod", nod), ("exhale", exhale), ("shiver", shiver), ("flinch", flinch))
 # Judged on sheets (still to be judged in the cinematic itself). Anything
 # else here is work in progress, built only when named.
-JUDGED = {"lie_side_wake", "sit_back_heels", "reach_coals", "nod", "exhale", "shiver"}
+JUDGED = {"lie_side_wake", "sit_back_heels", "reach_coals", "nod", "exhale", "shiver", "flinch"}
 
 
 def clips(rig, want):

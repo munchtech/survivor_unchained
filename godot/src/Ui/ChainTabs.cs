@@ -81,14 +81,17 @@ public partial class ChainTabs : Control
     float x, v, sag, sagV, chainY;
     bool placed;
 
-    public ChainTabs((string Name, string Key)[] tabs, int on, Action<int> pick)
+    /// <summary>The tabs on their chain. on: the open tab, or -1 for none (the pause's way into the
+    /// book: the chain hangs cold, nothing heated). ends: the keys that turn them, drawn at the
+    /// chain's ends where the tabs have no keys of their own (creation's steps). gap: between the names.</summary>
+    public ChainTabs((string Name, string Key)[] tabs, int on, Action<int> pick, (string Prev, string Next)? ends = null, int gap = 26)
     {
         this.on = on;
         MouseFilter = MouseFilterEnum.Ignore;
         // The links are made at twice their size: drawn smaller, and turned on the sag, they want mipmaps.
         TextureFilter = TextureFilterEnum.LinearWithMipmaps;
         bool pad = Controls.Instance?.UsingPad == true;
-        row = Style.H(26);
+        row = Style.H(gap);
         if (pad) row.AddChild(Style.PadButton("LB"));
         for (int i = 0; i < tabs.Length; i++)
         {
@@ -96,11 +99,13 @@ public partial class ChainTabs : Control
             var b = new Button { FocusMode = FocusModeEnum.None, MouseDefaultCursorShape = CursorShape.PointingHand, Flat = true };
             foreach (var s in new[] { "normal", "hover", "pressed", "focus" })
                 b.AddThemeStyleboxOverride(s, new StyleBoxEmpty { ContentMarginLeft = 0, ContentMarginRight = 0 });
-            var inner = Style.H(8, Style.Label(tabs[i].Name, Style.UiBold, 16, i == on ? Kit.Ink : Kit.Dim, false, HorizontalAlignment.Left, false));
-            if (!pad) inner.AddChild(Style.Key(tabs[i].Key));
+            var inner = Style.H(8, Style.Label(tabs[i].Name, Style.UiBold, 16, i == on || on < 0 ? Kit.Ink : Kit.Dim, false, HorizontalAlignment.Left, false));
+            if (!pad && tabs[i].Key != "") inner.AddChild(Style.Key(tabs[i].Key));
             inner.MouseFilter = MouseFilterEnum.Ignore;
             b.AddChild(inner);
             b.CustomMinimumSize = inner.GetCombinedMinimumSize();
+            // (measured again in the tree, where its key's cap takes the screen's type)
+            b.Ready += () => b.CustomMinimumSize = inner.GetCombinedMinimumSize();
             b.MouseEntered += () => { if (k != on) inner.Modulate = new Color(1.25f, 1.2f, 1.1f); };
             b.MouseExited += () => inner.Modulate = Colors.White;
             b.Pressed += () => { if (k != on) pick(k); };
@@ -109,21 +114,56 @@ public partial class ChainTabs : Control
             row.AddChild(b);
         }
         if (pad) row.AddChild(Style.PadButton("RB"));
+        foreach (var c in row.GetChildren().OfType<Control>()) c.SizeFlagsVertical = SizeFlags.ShrinkCenter;
         AddChild(row);
+        // The turning keys outside the eyes, level with the names (laid out once in the tree, where
+        // the caps measure as they are drawn).
+        if (!pad && ends is { } e)
+        {
+            caps = (Style.Key(e.Prev), Style.Key(e.Next));
+            AddChild(caps.Value.L);
+            AddChild(caps.Value.R);
+        }
         glow = new HeatGlow(this);
         AddChild(glow);
         // (the eyes' near sides and the tabs, over the links and their glow)
         front = new Front(this);
         AddChild(front);
+        Lay();
+    }
+
+    (Control L, Control R)? caps;
+
+    public override void _Ready() => Lay();
+
+    /// <summary>Its room: the names' row stepped in from both ends so the eyes stay inside it, and
+    /// the turning keys, if any, outside the eyes. Laid again once in the tree, where the key caps
+    /// measure as they are drawn (out of it they take the default theme's type and run wide).</summary>
+    void Lay()
+    {
         var min = row.GetCombinedMinimumSize();
         // (the chain hangs a little below the names, its links up to 44 high, so the row leaves it room)
         chainY = min.Y + 14;
         // Anchored, the eyelet past the first tab stays inside the panel: the names step in to leave it room.
         // (the eyelet is half a cell wide: its middle stays that far inside, past the first name by the run)
-        float first = row.GetChildren().OfType<Button>().FirstOrDefault()?.GetCombinedMinimumSize().X / 2 ?? 20;
-        float inset = F.Eye ? Math.Max(0, Run + F.Tail + 26 - first) : 0;
-        row.Position = new Vector2(inset, 0);
-        CustomMinimumSize = new Vector2(min.X + inset, chainY + 22);
+        // (the same at the last tab, so a chain set in the middle of a panel is centred, eyes and all)
+        var buttons = row.GetChildren().OfType<Button>().ToList();
+        float first = buttons.FirstOrDefault()?.GetCombinedMinimumSize().X / 2 ?? 20, last = buttons.LastOrDefault()?.GetCombinedMinimumSize().X / 2 ?? 20;
+        float insetL = F.Eye ? Math.Max(0, Run + F.Tail + 26 - first) : 0;
+        float insetR = F.Eye ? Math.Max(0, Run + F.Tail + 26 - last) : 0;
+        float x = 0;
+        const float gap = 6;
+        if (caps is { } c)
+        {
+            var ls = c.L.GetCombinedMinimumSize();
+            var rs = c.R.GetCombinedMinimumSize();
+            c.L.Position = new Vector2(0, (min.Y - ls.Y) / 2);
+            c.R.Position = new Vector2(ls.X + gap + insetL + min.X + insetR + gap, (min.Y - rs.Y) / 2);
+            x = ls.X + gap;
+            insetR += gap + rs.X;
+        }
+        row.Position = new Vector2(x + insetL, 0);
+        CustomMinimumSize = new Vector2(x + insetL + min.X + insetR, chainY + 22);
     }
 
     /// <summary>A tab's middle, in this control's own pixels.</summary>
@@ -142,13 +182,14 @@ public partial class ChainTabs : Control
 
     public override void _Process(double delta)
     {
-        float goal = Centre(on);
+        // (none open: the chain at rest, its middle under the middle of the tabs)
+        float goal = on >= 0 ? Centre(on) : (Centre(0) + Centre(Tabs - 1)) / 2;
         if (!placed)
         {
             if (row.Size.X <= 0) return;
             placed = true;
             sag = F.SagRest;
-            bool fresh = !float.IsNaN(lastX) && Time.GetTicksMsec() - lastAt < 1500;
+            bool fresh = on >= 0 && !float.IsNaN(lastX) && Time.GetTicksMsec() - lastAt < 1500;
             x = fresh ? lastX : goal;
             if (fresh && Math.Abs(goal - x) > 2) Sound.Sfx.ChainSlide((int)Math.Round(Math.Abs(goal - x) / Pitch), 0.32);
         }
@@ -223,13 +264,13 @@ public partial class ChainTabs : Control
                 var at = new Vector2(lx, Y(lx));
                 float ang = Mathf.Atan2(Y(lx + 1) - Y(lx - 1), 2);
                 int variant = ((k * 7 + 3) % Variants + Variants) % Variants;
-                float heat = Heat(k);
+                float heat = on >= 0 ? Heat(k) : 0;
                 string shape = face ? "face" : "edge";
                 DrawSetTransform(at, ang);
                 // The heated run, as UI art draws each link three ways with one geometry: the cold
                 // iron, the dull red laid over it as it warms, the fire's colour over that as it heats.
                 // The opened middle link is its own picture.
-                if (k == 0 && Sprite("open") is { } open) DrawTexture(open, -open.GetSize() / 2, Colors.White with { A = a });
+                if (k == 0 && on >= 0 && Sprite("open") is { } open) DrawTexture(open, -open.GetSize() / 2, Colors.White with { A = a });
                 else if (Sprite($"{shape}_{variant}") is { } cold)
                 {
                     DrawTexture(cold, -cold.GetSize() / 2, Colors.White with { A = a });
@@ -327,7 +368,7 @@ public partial class ChainTabs : Control
     {
         float tone = 0.78f + 0.3f * Hash(k, 1);
         var iron = new Color(0.56f * tone, 0.52f * tone, 0.47f * tone, 0.95f * a).Lerp(HeatColour(heat) with { A = 0.95f * a }, 0.8f * heat);
-        if (k == 0)
+        if (k == 0 && on >= 0)
         {
             DrawCircle(new Vector2(0, 3), 7, new Color(1, 0.5f, 0.15f, 0.2f * a));
             DrawArc(Vector2.Zero, 9, 1.9f, 1.9f + Mathf.Tau - 0.9f, 20, new Color("#d0915a") with { A = a }, 2.4f, true);
