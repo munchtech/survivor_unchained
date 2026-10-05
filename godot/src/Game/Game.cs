@@ -115,7 +115,8 @@ public partial class Game : Node, IZoneHost
         if (Args.Has("auto")) auto = new Autopilot(this) { Idle = Args.Get("auto") == "idle" };
         Settings.Current.ApplyWindow();
         ApplySettings();
-        if (Args.Has("continue") && saves.LastSlot() is int slot) Continue(slot);
+        if (Args.Get("load") is string loadFile) LoadFile(loadFile);
+        else if (Args.Has("continue") && saves.LastSlot() is int slot) Continue(slot);
         else if (Args.Has("quick") || Args.Has("zone")) Quick();
         else
         {
@@ -401,6 +402,7 @@ public partial class Game : Node, IZoneHost
         hudMode = null;
         hud.Draft(null);
         screens.Show(new ArenaResultScreen(this, result));
+        LiftFall();
         scene.SimPaused = true;
         controls.Captured = true;
         hud.Prompt(promptShown = null);
@@ -423,10 +425,19 @@ public partial class Game : Node, IZoneHost
             var lines = Journey.WakeAfterLoss(s, null, Rng.NextDouble);
             Travel("waystation", "The shrine", $"Day {World.Day}", null, from: "death");
             if (leaving) Wait(0.8, () => screens.Close());
-            Wait(3.9, () => { talkDone = () => { Morning(lines); Shots.Want("morning", 1.5); }; Talk("chid"); Shots.Want("chid", 0.8); });
+            // What the loss wrote (its quest's line) waits through his words and comes with the
+            // morning's, told whole; if he has nothing to say, at once.
+            Wait(3.9, () =>
+            {
+                talkDone = () => { hud.HoldToasts = false; Morning(lines); Shots.Want("morning", 1.5); };
+                Talk("chid");
+                if (runner == null && talkDone is { } done) { talkDone = null; done(); }
+                Shots.Want("chid", 0.8);
+            });
             return;
         }
         // Back into the same night, with time to hear the town or go straight on to another fight.
+        Wait(1.0, () => hud.HoldToasts = false);
         Journey.BackFromFight();
         Travel(s.ReturnZone, null, null, new Arrival(s.ReturnX, s.ReturnZ, s.ReturnFacing));
         if (leaving) Wait(0.8, () => screens.Close());
@@ -722,6 +733,8 @@ public partial class Game : Node, IZoneHost
     {
         // Nothing is kept of an arena until it is over (the save made on the way in stands).
         if (zone == null || Mode != "play" || zone is ArenaRun or StoryNight) return;
+        // (a journey read with --load is a picture's, never written back)
+        if (Args.Has("load")) return;
         var b = Battle;
         if (b != null) Journey.Capture(b);
         var p = b?.Player;
@@ -1120,6 +1133,7 @@ public partial class Game : Node, IZoneHost
         new(ToastKind.Loot, "Keen Iron Helm of Reach", null, "helm", 3),
         new(ToastKind.Gold, "+40 gold", null, null, null),
         new(ToastKind.Quest, "The Low Ford: the bridge is held", "Speak to the Ford-Warden"),
+        new(ToastKind.Quest, "The Beast Problem", "You went into the Hollow after dark to finish the Pack, and the Pack finished with you. Greymuzzle is still out there, and bolder for it."),
         new(ToastKind.Loot, "Vonnra's Last Lantern", "Legendary", "lantern", 4),
     };
     bool leaveDone, clearDone;
@@ -1429,6 +1443,13 @@ public partial class Game : Node, IZoneHost
             var ch = Journey.Ch;
             var gear = new[] { ("copper_ring", 1), ("leather_cap", 1), ("chain_shirt", 2), ("bone_amulet", 2), ("iron_helm", 3) }
                 .Select(g => Inventory.Make(ch, g.Item1, rarity: g.Item2)).ToList();
+            // --finds N: a map's dozen and more (pictures of a big haul: the best named, the rest as tiles).
+            if (Args.Has("finds"))
+            {
+                var defs = new[] { "copper_ring", "leather_cap", "chain_shirt", "bone_amulet", "iron_helm" };
+                int[] rar = [0, 0, 1, 0, 2, 0, 1, 0, 3, 0, 1, 0, 0, 2, 0, 0, 1, 0, 0, 0];
+                gear = Enumerable.Range(0, (int)Args.Num("finds", 12)).Select(i => Inventory.Make(ch, defs[i % defs.Length], rarity: rar[i % rar.Length])).ToList();
+            }
             var next1 = Inventory.Make(ch, SurvivorUnchained.Maps.Charts.Item, 1, 2);
             next1.Chart = SurvivorUnchained.Maps.Charts.Roll(new SurvivorUnchained.Core.Rng(7), chart.Tier + 1, chart.People, 3);
             bool fell = Args.Has("fell");
