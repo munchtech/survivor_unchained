@@ -1,39 +1,42 @@
 # UI design: status
 
-Agent aab47bfdab5955dac (handing off), on branch `worktree-agent-aab47bfdab5955dac`, which has the integration branch merged. The full brief for a successor is in `docs/handoff/ui_design.md`.
+Agent a4fdbc49786ba8b7f, on branch `worktree-agent-a4fdbc49786ba8b7f`, which has the integration branch, loot, crafting and UI art merged. Pictures are in `docs/ui_review/build3/` (the latest), `build2/` and `build/` (before and after).
 
-## Current state
-- **Layouts approved by the owner** ("the ui layouts look better"). They were revised for no dead space.
-  - Research: `docs/design/UI_RESEARCH.md`.
-  - Greyboxes: `docs/ui_review/greybox/`, drawn by `python tools/uigreybox/screens.py OUTDIR`.
-  - Nothing is built in the game yet. That's next.
-- **Seen in the game at 1920x1080 and fixed:**
-  - the Look's face light (portrait rig, `GameFront.PortraitLight`);
-  - the pack's swap flash;
-  - the arena cards' centring;
-  - the licences index (legal passed the screen);
-  - the day clock's words, its key and the dawn fade;
-  - a slim scroll bar on every screen (`Style.PageTheme`), and `FadeEnds` for long readings.
-- **Seen and still poor** (fold into the build):
-  - the map result: two big half-empty boxes, and its telling runs past 9 s;
-  - the Wayfinder's table and atlas: an old iron plate with the HUD showing round it, and the atlas page's "used up" line clipped;
-  - Self, Pack, Forge: dead space, which the approved layouts answer.
+## Current state (built, seen at 1080 and 1440)
+- **The day's book** (Pack, Self, Arts) is one 900 px right-hand panel over the live world. Her figure is framed nearer in the world beside it (`CameraNear`). The tabs ride UI art's chain, fixed in eyelets, with a heated span and a rattle (`ChainTabs`, feel from `art/ui/chain/chain.json`).
+- **Self:** the attributes are a ledger line. Points are coals in a dish, and a coal given lights its numeral. Every number it moves shows its projected value in ember until KEEP or UNDO. The traits are a level track, and offers are held type (`HeldWord`). The standing is four aligned columns, with sources on hover.
+- **Pack:**
+  - the doll with engraved empty places;
+  - the carried grid, showing the rows in use plus one;
+  - the stores as tabs (Pouch, Satchel, Key ring, Belt), and the purse;
+  - Filter beside Sort (`FilterPanel`: presets, promises, drop sounds).
+  - Cards open beside the item with the worn piece, and each line carries its own change. Click holds the card, and holding Del breaks the item down.
+- **Counters** (Storeroom, Trader, crafting's Bench) are fitted panels with the keeper live in the gap; the camera looks at them.
+- **Results** (map and night) are one fitted panel: a ledger tally, the best finds first, and a telling under six seconds.
+- **Notices and tips** are type on the world: sparks, glints and tier light, with no boxes (`WorldType.cs`).
+- **Rules applied everywhere:**
+  - no boxes holding data;
+  - no fades; panels end cleanly with one 28 px margin and a 93% ground;
+  - words as type: Close, UNDO and KEEP, held words;
+  - prompts lie on the world over a soft shade (`PromptsOnWorld`).
 
 ## Next
-1. Build the approved layouts in the game with plain tonal styles, calling UI art's frame names: Self, Pack (with the stores tabs), Storeroom (shelves: crafting's logic is at af01b0d61ef656dd4@012403dd), Trader, and the bench (two panels, smith in the world).
-2. Experience's asks (ab406cf9ddd22b03b): the day dial by the zone name, and the fall's two choices as a held moment, not the use-key prompt.
-3. The map result and the table/atlas, in the same restraint.
-4. Heroine portraits after her new head (`heroine_paint.py`, `creation_portraits.py`); the male hero's Look with ab82cbe99e2937ddd.
+1. The loot screens: ground labels and the legendary edge pointer restyled. UI art's `hud/pointer_legendary.png` has landed, and `GroundLabels.cs` and `Game.Offscreen` are the loot lead's.
+2. The day dial and the fall's two choices, for the experience director.
+3. The Wayfinder's table and atlas (its iron plate, and the clipped "used up" line).
+4. The title menu stealing focus (gate hover-focus on real mouse motion).
+5. Portraits when her head changes; the male hero's Look.
+6. The bark over the name plate (`--near brannoc --barks 2`).
+7. The Pack's kit switch (By day · By night) on the doll, using crafting's `Kits` API.
 
 ## Key decisions
-- **One frame per screen.** Inside it: tone, spacing, type and rules. Colour is rarity, state, or the one primary action.
-- **Panels hug their contents.** A surface that must run on tapers into the world behind it.
-- **Counters are two fitted panels**, theirs left and yours right, with the keeper live in the world between them.
-- **No inspect panels.** A hover or focus card opens on the world side, with the worn piece beside it.
-- **Irreversible acts are held.** Crafting built `Style.HoldButton`.
-- **Portrait light only at head and shoulders and nearer.** The fire reaches her through a stand-in light, so the camp keeps its light.
+- One frame per screen; inside it only type, rules and space. Colour means tier, state or the one action.
+- No boxes, no fades: panels hug their content and end cleanly; the ground is slightly see-through.
+- Cards open beside the item, never in an inspect panel. A spend shows its preview everywhere until it's kept.
+- What can't be undone is held, never confirmed by a second dialog.
+- Before sending anything: a strict self-critique at 1:1 (dead space, grid, symmetry, boxes, fades, type, placeholders).
 
 ## Notes for other areas
-- **Everyone:** the game's Alegreya Sans has no →, ←, ▲ or ● glyphs. Use Alegreya (serif) or draw them.
-- **Loot lead (a9a9c345a35e1fcad):** the stores (pouch, satchel, key ring) are tabs over one row in the Pack and at every counter. The filter sits beside Sort.
-- **UI art (a0bff3ffe4d3ad748):** needs a taper (the side panel and page ground fading at the foot), tab_hover and tab_pressed, and chains used with purpose.
+- **Crafting** (successor): merge my branch (f82f7497 or later). `ForgeScreen.Deed` already uses `HeldWord`; the bench's foot uses `PromptsOnWorld`; Close is type.
+- **UI art:** names in use: `side`, `panel`, `slot*`, `tooltip`, `chip`, `rule_h`, `tab*`, `keycap`, `nodes/*`, `chain/*`, `coal/*`, `hud/spark`, `hud/glint`, `ornaments/title_chain_*`, and `icons/glyph/up`, `anvil` and `link_set_*`.
+- **Experience:** `--toasts T` and `--tip T` show the notices and a tip, for pictures.

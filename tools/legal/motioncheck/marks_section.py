@@ -49,9 +49,16 @@ func save_landmarks(c: Camera3D, path: String):
 		var e = legal_tips[n]
 		var xf = e[3].global_transform * sk.get_bone_global_pose(e[0]) * e[1]
 		var tip = e[2]
-		var p0 = e[3].global_transform * _baked_vs[e[4]][e[5]]
-		var pu = c.unproject_position(e[3].global_transform * _baked_vs[e[4]][e[6]])
-		var pin = c.unproject_position(e[3].global_transform * _baked_vs[e[4]][e[7]])
+		var bv = _baked_vs[e[4]]
+		var p0 = e[3].global_transform * bv[e[5]]
+		var mid = []
+		for h in e[6]:
+			var acc = Vector3.ZERO
+			for i in h: acc += bv[i]
+			mid.append(acc / max(h.size(), 1))
+		var gb = e[3].global_transform.basis
+		var pu = c.unproject_position(p0 + (gb * (mid[0] - mid[1])).normalized() * 0.02)
+		var pin = c.unproject_position(p0 + (gb * (mid[2] - mid[3])).normalized() * 0.02)
 		var s0 = c.unproject_position(p0)
 		outj["tip_" + n] = {"xy": [s0.x, s0.y], "behind": c.is_position_behind(p0), "up": [pu.x, pu.y], "inner": [pin.x, pin.y]}
 		var pb = xf * tip
@@ -169,16 +176,19 @@ func legal_marks(mi):
 			tips.append(best[b])
 			# (and the skin 2 cm above the tip and 2 cm in towards her midline, at rest, so the
 			# directions on screen come from her skin as drawn too)
-			var aims = [best[b] + Vector3(0, 0.02, 0), best[b] + Vector3(-signf(best[b].x) * 0.02, 0, 0)]
-			var near = [-1, -1]
-			var nd = [1e9, 1e9]
+			# (and her skin 2 to 6 cm around it, split into its upper and lower halves and its
+			# inner and outer ones: the halves' centres, as drawn, give its up and in directions)
+			var halves = [[], [], [], []]
 			for i in vs.size():
-				for k in 2:
-					var dd = vs[i].distance_squared_to(aims[k])
-					if dd < nd[k]:
-						nd[k] = dd
-						near[k] = i
-			legal_tips[breast_name[b]] = [skel.find_bone(breast_name[b]), breast[b], best[b], mi, si, bidx[b], near[0], near[1]]
+				var off = vs[i] - best[b]
+				var ol = off.length()
+				if ol < 0.02 or ol > 0.06: continue
+				var side = -signf(best[b].x) * off.x
+				if off.y > 0.01: halves[0].append(i)
+				elif off.y < -0.01: halves[1].append(i)
+				if side > 0.01: halves[2].append(i)
+				elif side < -0.01: halves[3].append(i)
+			legal_tips[breast_name[b]] = [skel.find_bone(breast_name[b]), breast[b], best[b], mi, si, bidx[b], halves]
 	print("legal marks: ", mi.name, " tips=", tips, " crotch underside=", under, " mons front=", mons)
 	print("legal marks: mesh transform ", mi.transform, " in a skeleton at ", skel.transform)
 	# Codes on the body as drawn (trimmed or not): same vertex positions.

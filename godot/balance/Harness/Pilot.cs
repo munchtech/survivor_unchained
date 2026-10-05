@@ -32,7 +32,10 @@ public static class Pilot
     /// lies about is picked up, and with nothing roused near, the hands walk on.</param>
     /// <param name="goal">A story night's stage: where it wants her (a fire to light, a foe to find). With no
     /// crush round her, the hands go there.</param>
-    public static (double X, double Z) Steer(Battle b, bool deft = false, ArenaBoss? boss = null, (double X, double Z)? onward = null, (double X, double Z)? goal = null, bool naive = false)
+    /// <param name="strikes">Read the crowd's own marked circles too (a story night's way in: its named foes'
+    /// slams are its lessons, and a relaxed player steps out of a brute's marked circle as of a boss's).</param>
+    /// <param name="first">The boss met for the first time (BossSense.Meeting): its new moves answered less.</param>
+    public static (double X, double Z) Steer(Battle b, bool deft = false, ArenaBoss? boss = null, (double X, double Z)? onward = null, (double X, double Z)? goal = null, bool naive = false, bool strikes = false, BossSense.Meeting? first = null)
     {
         var p = b.Player;
         double mx, mz;
@@ -105,7 +108,9 @@ public static class Pilot
         }
         // The boss's own fight, read last: it overrules the crowd.
         // Naive hands read only a boss's marks: the way in's (a drive's lane) they walk into, as a first-timer does.
-        if (ReadsBosses && (boss != null || b.Blows.Count > 0 && !naive)) Boss(b, boss, deft, ref mx, ref mz, goal);
+        double hx = mx, hz = mz;
+        if (ReadsBosses && (boss != null || (b.Blows.Count > 0 || strikes && b.EnemyStrikes().Any()) && !naive)) Boss(b, boss, deft, ref mx, ref mz, goal, strikes && !naive, first);
+        if (Debug) Console.Error.WriteLine($"   PILOT near {(nearest == null ? "-" : $"{nearest.Def.Id} {near:0.0}")} big {big != null} press {press.Count} goal {goal} stone {stone != null} hands ({hx:0.00},{hz:0.00}) after boss ({mx:0.00},{mz:0.00})");
         double ml = Math.Sqrt(mx * mx + mz * mz);
         if (ml > 1e-6) { mx /= ml; mz /= ml; }
         return (mx, mz);
@@ -197,13 +202,16 @@ public static class Pilot
             if (e.Def.Id == "ember_core" && e.State != EnemyState.Dying && Dist(e.X, e.Z, p.X, p.Z) > 2.5) { mx = e.X - p.X; mz = e.Z - p.Z; return; }
     }
 
+    /// <summary>A trace of the hands' choices, each step (one traced run, single-threaded).</summary>
+    [ThreadStatic] public static bool Debug;
+
     /// <summary>Off (--bossread 0) for the numbers of the hands before they knew the bosses.</summary>
     public static bool ReadsBosses = true;
 
     /// <summary>The boss read as a player who has died to it once (Play/Bosses/BossSense.cs,
     /// shared with the game's autopilot).</summary>
-    public static void Boss(Battle b, ArenaBoss? boss, bool deft, ref double mx, ref double mz, (double X, double Z)? goal = null) =>
-        BossSense.Steer(b, boss, deft, Reach(b), ref mx, ref mz, goal);
+    public static void Boss(Battle b, ArenaBoss? boss, bool deft, ref double mx, ref double mz, (double X, double Z)? goal = null, bool strikes = false, BossSense.Meeting? first = null) =>
+        BossSense.Steer(b, boss, deft, Reach(b), ref mx, ref mz, goal, strikes, first);
 
     /// <summary>The way on nearest the one wanted that a step down it is clear; straight on if none is.</summary>
     static (double X, double Z) Clearest(Battle b, double mx, double mz)

@@ -370,7 +370,7 @@ public class EncounterTests
         }
         // On the rigs the crowd already draws: no new model yet (that is the art pass's).
         string[] rigs = ["wolf", "wolf_alpha", "wolf_blighted", "boar", "lampling", "lampling_sapper", "skeleton_minion", "skeleton_warrior",
-            "skeleton_warrior_elite", "skeleton_rogue", "skeleton_mage", "kerchief_rogue", "kerchief_hooded", "kerchief_brute", "kerchief_enforcer"];
+            "skeleton_warrior_elite", "skeleton_rogue", "skeleton_mage", "kerchief_rogue", "kerchief_hooded", "kerchief_brute", "kerchief_enforcer", "kerchief_crossbow"];
         var all = MapOffers.Peoples.SelectMany(p => p.Arena.Select(h => h.Def).Concat(p.Stretches.Select(s => s.Miniboss)));
         Assert.All(all, id => Assert.Contains(Enemies.Get(id).Visual, rigs));
         // And no two kinds of a people the same body at the same size and colour.

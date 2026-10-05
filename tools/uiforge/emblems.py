@@ -468,26 +468,29 @@ def d_leap():
 def d_leap2():
     """Crashing Leap, second concept (the first was a grey arc on a dark disc at 90 px): the
     blow itself. A bold hard-edged arc of rushing air comes down steep from the upper left
-    into the ground, and the ground bursts: a fan of hot gold light thrown up out of the
-    break, a crown of dark broken slabs stood up round it and black against the light, a
-    ring of dust running out along the ground. Value first: dark slabs on white-gold."""
+    into the ground; where it lands the ground breaks, its cracks running out lit gold from a
+    small white-hot burst, and a crown of near-black slabs stands up round the break, black
+    against the light. Value first: no halo and no fan of rays (they fogged the first guide
+    into cream); the dark is kept dark so the light reads as light."""
     e = Emblem("physical", 0.96, (50, 52))
-    e.glow = 0.6
+    e.glow = 0.0
     gx, gy = 58, 76
-    ground = mat("#2a2420", 0.0, 0.9)
-    slab = mat("#4a3e34", 0.0, 0.8)
+    ground = mat("#1c1714", 0.0, 0.9)
+    slab = mat("#17120f", 0.0, 0.85)
     rim = mat("#ffcf80", 0.0, 0.5)
     e.lay(ellipse(gx - 4, gy + 6, 44, 11), ground, 2, 3, grain=1.0)
-    # The burst: a fan of light rising out of the break, hottest at its root.
-    e.lay(ellipse(gx, gy, 20, 7), "glow", 1, 3, light=3.0, hue="#fff0c0")
-    for ang in range(-70, 71, 14):
+    # The broken ground: cracks running out from the blow, lit from inside.
+    for i, line in enumerate(crack_web(gx, gy + 3, 36, 8.5, 0, n=9, seed=21, rings=(0.45,))):
+        w = 1.5 if i < 9 else 0.9
+        e.lay(stroke(line, w, w * 0.4), "glow", 0.4, 0.5, light=1.3 if i < 9 else 0.9, hue="#ffb24a", z=2.2)
+    # The burst: small and white-hot at the root, a few short hard spikes.
+    e.lay(ellipse(gx, gy, 9, 3.4), "glow", 1, 2, light=2.6, hue="#fff4d8")
+    for ang in (-52, -24, 0, 22, 48):
         a = math.radians(ang)
-        L = 34 - abs(ang) * 0.16
-        e.lay(stroke([(gx + 4 * math.sin(a), gy - 1), (gx + L * math.sin(a) * 0.9, gy - L * math.cos(a))], 5.0, 0.4),
-              "glow", 1, 2, light=2.2, hue="#ffd890")
-    # The ring of dust and light running out along the ground.
-    e.lay(cut(ellipse(gx - 2, gy + 3, 40, 9.5), ellipse(gx - 2, gy + 2.2, 33, 7)), "glow", 0.5, 2.5, light=1.0, hue="#ffb860")
-    # The crown of slabs, black against the light, each lit at its rim from the break.
+        L = 13 - abs(ang) * 0.06
+        e.lay(stroke([(gx + 2 * math.sin(a), gy - 1), (gx + L * math.sin(a), gy - 1 - L * math.cos(a))], 2.4, 0.2),
+              "glow", 1, 1.2, light=2.0, hue="#ffe2a0")
+    # The crown of slabs, near-black against the light, each lit only at its rim.
     for j, (dx, dy, h, w, tip) in enumerate(((-24, 4, 15, 13, -40), (-12, 0, 24, 12, -18), (2, -2, 28, 11, -4),
                                              (15, 0, 22, 12, 16), (27, 4, 14, 13, 42))):
         bx, by = gx + dx, gy + dy
@@ -497,21 +500,21 @@ def d_leap2():
                  (w * 0.3 + rng.uniform(-1.5, 1.5), -h * rng.uniform(0.78, 0.94)), (w / 2, -h * rng.uniform(0.35, 0.55)), (w / 2, 0)]
         pts = [(bx + x * c_ - y * s_, by + x * s_ + y * c_) for x, y in local]
         e.lay(poly(pts), slab, 6, 2.0, round_=False, grain=1.2)
-        e.lay(stroke(pts[1:5], 1.1, 0.7), rim, 6.4, 0.5, light=0.6)
+        e.lay(stroke(pts[1:5], 0.9, 0.5), rim, 6.4, 0.5, light=0.5)
     for j, (dx, dy, sz) in enumerate(((-30, -22, 3.2), (-18, -34, 2.6), (30, -26, 3.4), (20, -38, 2.2), (38, -12, 2.4))):
         e.lay(rock(gx + dx, gy + dy, sz, 40 + j), slab, 3, 1.4, grain=0.6)
     # The leap: a crescent of rushing air, thin where it left the ground, full and hard-edged
-    # where it comes down, its leading edge white-hot from the speed; two speed lines beside it.
+    # where it comes down; two speed lines beside it.
     path = bez((10, 70), (6, 18), (40, 2), (gx - 3, gy - 12), 72)
-    e.lay(stroke(path, 0.8, 11.0), mat("#e8e0d4", 0.0, 0.35), 4, 2.4, light=0.8)
-    e.lay(stroke(path[20:], 0.6, 4.0), "glow", 0.5, 1.5, light=2.2, z=4.2, hue="#fff4e0")
+    e.lay(stroke(path, 0.8, 11.0), mat("#e8e0d4", 0.0, 0.35), 4, 2.4, light=0.15)
+    e.lay(stroke(path[20:], 0.6, 4.0), "glow", 0.5, 1.5, light=1.4, z=4.2, hue="#fff4e0")
     P = np.asarray(path, np.float32)
     T = np.gradient(P, axis=0)
     T /= np.linalg.norm(T, axis=1, keepdims=True)
     Nn = np.stack([-T[:, 1], T[:, 0]], 1)
     for off, w in ((-9.5, 2.0), (-14.5, 1.3)):
         side = P[22:-10] + Nn[22:-10] * off * np.linspace(0.4, 1, len(P) - 32)[:, None]
-        e.lay(stroke(side.tolist(), 0.3, w), mat("#d8d0c4", 0.0, 0.4), 3, 1, light=0.5)
+        e.lay(stroke(side.tolist(), 0.3, w), mat("#d8d0c4", 0.0, 0.4), 3, 1, light=0.3)
     return e
 
 
@@ -1163,11 +1166,15 @@ PICKS: dict[str, tuple[int, int, int]] = {
     "tether": (62, 1300, 0), "consecrate": (50, 1300, 1), "drain": (50, 1300, 1),
     "static": (62, 1300, 0), "book": (62, 1300, 0),
     # Second pass: feint round its blade, smoke and the bolt lifted off the dark, leap's impact.
-    "feint": (65, 1330, 1), "smoke": (55, 1330, 1), "umbral": (65, 1330, 0), "leap": (55, 1330, 1),
+    "feint": (65, 1330, 1), "smoke": (55, 1330, 1), "umbral": (65, 1330, 0),
     # The other arts, brought into the family.
     "boot": (65, 1330, 0), "horns": (65, 1330, 1), "chain": (65, 1330, 0), "shield": (55, 1330, 1),
     "mark": (55, 1330, 0), "wing": (65, 1330, 0),
+    # Crashing Leap's second concept, in place of the first (its file is leap.png: ALIAS).
+    "leap2": (55, 1340, 0),
 }
+# A design whose painting replaces another key's icon.
+ALIAS = {"leap2": "leap"}
 
 
 def make_guide(key):
@@ -1227,7 +1234,7 @@ def fit(key, src_=None, dst=None):
         a = cv2.resize(a, img.size, interpolation=cv2.INTER_AREA)
     # The guide's silhouette, a little grown so the painting's own edge is kept.
     m = cv2.dilate(a, np.ones((3, 3), np.uint8), iterations=max(1, img.size[0] // 512))
-    dst = dst or os.path.join(UI, key + ".png")
+    dst = dst or os.path.join(UI, ALIAS.get(key, key) + ".png")
     return icons.fit(src_, dst, mask=m)
 
 
