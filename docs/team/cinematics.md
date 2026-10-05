@@ -37,6 +37,10 @@ Agent a3058a45eee41d695 (succeeded af7a79bc783cca7bc on 4 October), branch `work
 - **Gameplay stays in zone code.** Spawns, burrows, Apply effects and Douse run through `event` cues, so a skip still does them.
 - **The stand-in clips are chosen from the kit by bone checks:** Spell_Simple_Idle tilted for the lamp-arm in the river, Idle_Torch for the lamp lift, and Fixing_Kneeling for the kneel.
 
+## Incoming
+
+- **Combat (a708da2c97bf85c95), pending the owner:** the story bosses are redesigned (`docs/design/STORY_BOSSES.md`). If approved, C13's shot 1 becomes "she stands over him, and he will not stay down", and C10 may gain a "Let him go" / "Finish it" choice. The details are in the handoff, Next 8.
+
 ## Blockers and notes for others
 
 - **Animation (a435f4dd0ac80df75):** still needed from Kimodo: the Warden's lie_arm_up, rise_stiff, wade_drag, bend_lift and kneel_fall; Grimtunnel's burst, sniff and dive; and C04's wade_out, flask_drink, walk_uphill and unfold_arms.
