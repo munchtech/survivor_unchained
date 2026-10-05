@@ -1352,3 +1352,48 @@ changed:
     Steeped! Snib did not see it move. It did not move."
   - Narration in a `.before` slot carries no parentheses (the slot is already
     the narrator's): Brannoc's fang and Maeca's braid lost theirs.
+
+## 21. The story fights' words (4 October; combat's STORY_BOSSES.md, pending the owner)
+
+The new story fights are three beats ended by goals, then the boss, then the
+ending cinematic (C10 to C13). Combat holds these lines in its fight data. The
+pull names the place, never a clock. A line between beats is a sight, not a
+feeling. Nothing here says what the horde is.
+
+| Fight | The pull | After beat 1 | After beat 2 |
+|---|---|---|---|
+| The Hollow by Night | "The ember takes you down the clough, into the Hollow. The stream is loud here, and it smells wrong." | "The howling stops. In the quiet you can hear the stream, and something in the brush coughing." | "The deadfalls burn. Past them is the den's mouth, and in it, grey shapes that do not get up." |
+| Raid on the Roost | "The ember takes you up the ruts below the Roost. Somewhere above, a whistle, and another answering." | "Three whistles, and none answering. Ahead, the cage yard: four cages, and the fourth stands open with nobody in it." | "Past the cages, the camp's fires, and the levy forming up the way they were taught: in step, pikes level." |
+| The Dig Boils Over | "The ember takes you to the edge of the Dig. Every lamp in the hole is coming up at once." | "The last windlass goes over. Down the tub-way the brake-house lamp is lit, and the rails are singing." | "Past the brake-house stands the pump-house, and every lampling between you and it is carrying a crate." |
+| Behind the Sealed Door | "Through the door: a long hall, and the head of a stair. On the stair, something is coming up in step." | "The first ranks are down. The hall runs on ahead, long and straight, and at the end of it something is winding a great bow." | "Down the hall, three standards go up one after another, and the dead turn to face them." |
+
+- **The fights' own voices:**
+  - Old Blue (wordless): "(Old Blue howls from the rock, and every wolf in
+    the clough answers.)"
+  - The pickets: "(A whistle, short and sharp. Another answers it, further
+    up.)" and "Lights! Lights on the ruts!"
+  - Redcowl: "Red to me! Up, my lot!" At his last stand, behind the carts:
+    "(A child, crying for its mam.)", then cold: "Mind where you swing." (his
+    arrival's last words, C11, come back).
+  - Snib, in third person:
+    - "Not the WINDLASS! Snib has to wind that! Snib does not wind it. The
+      lads wind it."
+    - "Mind the tubs! Tubs are EXPENSIVE. Tubs are Boss's."
+    - "That is the Boss's SPARE! You cannot have the spare. ...You have the
+      spare."
+    - "The PUMP! Who will pump? Snib will not pump."
+  - Grimtunnel (first person, possessive; never finishes "surface-meat" at
+    her):
+    - "Still upstairs, are we? Downstairs'll want to hear about THIS."
+    - "Nobody's! Nobody's having my lamps!"
+    - "Ever so patient, downstairs is. I'm NOT."
+    - "Put that lamp DOWN, surface-m— you. That's MINE."
+  - The Signifer: "Signa!"
+- **Freeing the caravan's men in the raid** (beat 2) is the cages' own rescue:
+  `caravan.survivors` = `rescued`, `survivors_freed`, the caravan settled, and
+  the deed `freed_teamsters`, with the cage lines and Jory's "Is my uncle—?".
+  The fourth cage stays empty and open (Ewan).
+- **Greymuzzle's end** becomes her choice when the promise and the clean
+  stream hold: "Let him go" or "Finish it". "Finish it" breaks the promise.
+- **C13:** she lays the Barrow Lord down, he will not stay down, and he rises
+  within her reach for the hand and "Redi." (the bible, "The nights").

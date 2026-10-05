@@ -1106,10 +1106,13 @@ the story's view of them, so that the nights tell the story the days write.
   Snib getting the last word. The fight is won; he is not. Since C03 he never
   finishes "surface-meat" at her: he has smelled downstairs on her (Snib, who
   has not, still says it).
-- **The Barrow Lord is laid down, not killed.** At the end he will not lie down
-  until the survivor stands over him, and holy (the Order's school) does it
-  twice as fast. "Lie down" is the Order's word for the dead (the hymn, C02,
-  C08): an arena teaches it with the hands before the story says it.
+- **The Barrow Lord is laid down, not killed.** She lays him down and stands
+  over him, and holy (the Order's school) does it twice as fast. He will not
+  stay down: the Legion keeps its door from inside, and that is not done. He
+  rises within her reach, and his hand at the gate sends her home ("Redi.",
+  C13). The table's title says it: *Who Would Not Lie Down*. "Lie down" is the
+  Order's word for the dead (the hymn, C02, C08): an arena teaches it with the
+  hands before the story says it. (Combat's STORY_BOSSES.md, agreed.)
 - **Keegan's duel is at first light,** not by night. Her handbook's seventh
   article says the return is made "at dawn, when it is weakest", and she does it
   by the book: the ember has gone out of the survivor, who is ordinary and
@@ -1123,6 +1126,10 @@ the story's view of them, so that the nights tell the story the days write.
     sick, and she lets him. `greymuzzle` = `spared`; `beasts.outcome` stays
     `cured`; Maeca hears of it, and it is the one fight that raises her regard.
     C10 gains that variant (his eye on the den, then on her, and he walks).
+    With the new story fights (pending the owner) it becomes her choice when
+    he goes down: "Let him go" or "Finish it", offered only when the promise
+    and the clean stream hold. "Finish it" breaks the promise she knelt to
+    make (`promise.broken`), and Maeca knows it.
   - *The crates blown in the Roost fight:* yes, as the value that already exists:
     `be.crates` = `burned`, with its consequences (Act 2's breakthrough is
     narrower; the army has no powder). No new value.
@@ -1134,6 +1141,15 @@ the story's view of them, so that the nights tell the story the days write.
 - **Banes learned by day** (Maeca's fed fires, Chid's standard, Grimtunnel's own
   lamp): yes. They are story knowledge, earned in conversation, and the day half
   arming the night is the shape of the game.
+  - **Maeca** (`maeca.fire`, fact `bane.fires`): "Take fire, and feed it. They
+    won't come near a fire that's fed. That's not for your sake. It's so they
+    don't have to." She gives it to spare the Pack, not the survivor.
+  - **Chid** (`chid.legion`, fact `bane.pole`): "They never followed a man.
+    Never. They followed the pole." The Legion's dead follow what is carried
+    before them, which is a plain seed of Act 3, where they part for the
+    Morrow's own light.
+  - **Redcowl's leg** (`rav.redcowl`: Rav sewed it on), and Grimtunnel's own
+    lamp (the item `grimtunnels_lamp`).
 - **Thieves:** a lampling that takes ember stones off the ground is true to the
   lamplings, who carry their dead down on purpose ("Nobody's!"). Never what the
   survivor holds. Name it in their words (a carrier), not a genre's.

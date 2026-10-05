@@ -4223,6 +4223,27 @@
       "goto": "t_maeca"
      },
      {
+      "text": "If I go into the Hollow after dark?",
+      "show": {
+       "all": [
+        {
+         "not": {
+          "fact": "beasts.outcome",
+          "exists": true
+         }
+        },
+        {
+         "not": {
+          "fact": "greymuzzle",
+          "exists": true
+         }
+        }
+       ]
+      },
+      "once": "fire",
+      "goto": "fire"
+     },
+     {
       "text": "Goodbye.",
       "end": true
      }
@@ -5347,6 +5368,27 @@
      }
     ],
     "next": "hub"
+   },
+   "fire": {
+    "id": "fire",
+    "text": "(She looks at you for a long time.) If you're going in there with a blade, I'll not help you. ...Take fire, and feed it. They won't come near a fire that's fed. That's not for your sake. It's so they don't have to.",
+    "effects": [
+     {
+      "set": {
+       "bane.fires": true
+      }
+     }
+    ],
+    "choices": [
+     {
+      "text": "Something else.",
+      "goto": "hub"
+     },
+     {
+      "text": "Goodbye.",
+      "end": true
+     }
+    ]
    }
   }
  },
@@ -11503,6 +11545,17 @@
       "goto": "t_chid"
      },
      {
+      "text": "The old empire. Who were they?",
+      "show": {
+       "quest": {
+        "id": "vault",
+        "entry": "chid_empire"
+       }
+      },
+      "once": "legion",
+      "goto": "legion"
+     },
+     {
       "text": "Goodbye.",
       "end": true
      }
@@ -12040,6 +12093,27 @@
      {
       "text": "Where did I fall?",
       "goto": "where"
+     }
+    ]
+   },
+   "legion": {
+    "id": "legion",
+    "text": "Soldiers! The Seventh, the Order's books called them. Very tidy, very old, very... thorough. Oh, and this is the part I liked: they never followed a man. Never. They followed the pole. A bronze hand on a pole, a standard, and wherever it went they went, and if it went down they stood about like a choir that's lost its place. ...I don't know why I'm telling you that. It's a very old book.",
+    "effects": [
+     {
+      "set": {
+       "bane.pole": true
+      }
+     }
+    ],
+    "choices": [
+     {
+      "text": "Something else.",
+      "goto": "hub"
+     },
+     {
+      "text": "Goodbye.",
+      "end": true
      }
     ]
    }

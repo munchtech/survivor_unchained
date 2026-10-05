@@ -103,7 +103,11 @@ before recording. Agent a73ca9d35d0c487a9, branch `worktree-agent-a73ca9d35d0c48
    Once it is approved:
    - put in data the dusk call and night lines, the rise lines and the
      night-left-alone line (all sent);
-   - write the pulls and the sights between beats from combat's beat list;
+   - the pulls, the sights between beats and the fights' own voices are
+     written (WRITING_PASS §21) and sent to combat (a708da2c97bf85c95);
+   - the banes are in data: Maeca's fed fires (`maeca.fire`, `bane.fires`)
+     and Chid's pole (`chid.legion`, `bane.pole`), listed as seeds until the
+     fights read them;
    - update the bible's Pacing share.
 
    The clock starts when the first trouble reaches the journal.

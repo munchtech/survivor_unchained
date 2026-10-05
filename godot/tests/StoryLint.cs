@@ -211,6 +211,9 @@ public class StoryLint
         // The last night, for the town to talk about (docs/EXPERIENCE_AUDIT.md, finding 5): the
         // story's lines read them next; take each off this list as it is read.
         "arena.last.tier", "arena.last.minutes", "arena.last.day", "arena.last.killer",
+        // The banes learned by day, read by the story fights once they are built
+        // (docs/design/STORY_BOSSES.md): Maeca's fed fires, Chid's pole.
+        "bane.fires", "bane.pole",
     ];
 
     [Fact]
