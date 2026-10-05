@@ -35,9 +35,6 @@ public partial class ForgeScreen : Overlay
     /// <summary>The seam chosen on the anvil: an affix's place, or past the affixes an open
     /// seam (-1: the one most worth working, chosen when the piece is put down).</summary>
     int seam = -1;
-    bool breaking, steeping;
-    /// <summary>The donor a binding is armed to unmake ("uid:index"): asked once, done the second time.</summary>
-    string? unmaking;
     HeatGauge? gauge;
     /// <summary>Why the crafter is not working now (the forge banked), said once at the top.</summary>
     string? closed;
@@ -268,7 +265,7 @@ public partial class ForgeScreen : Overlay
         words.AddChild(Style.Label(sub, Style.TextItalic, Style.Caption, Style.InkDim, true));
         h.AddChild(words);
         panel.AddChild(h);
-        void Open() { if (making) return; making = true; sel = null; breaking = false; Sound.Sfx.Click(); Refresh(); }
+        void Open() { if (making) return; making = true; sel = null; Sound.Sfx.Click(); Refresh(); }
         panel.GuiInput += e => { if (e is InputEventMouseButton { Pressed: true, ButtonIndex: MouseButton.Left }) Open(); };
         Nav.Mark(panel, "make", Open);
         return panel;
@@ -287,7 +284,6 @@ public partial class ForgeScreen : Overlay
         if (Inventory.Find(Ch, uid) is not { } loc || !Takes(loc.Item)) { Sound.Sfx.Deny(); return; }
         sel = uid;
         seam = -1;
-        breaking = false;
         making = false;
         Sound.Sfx.Click();
         Refresh();
@@ -297,7 +293,6 @@ public partial class ForgeScreen : Overlay
     {
         if (seam == k) return;
         seam = k;
-        breaking = false;
         Sound.Sfx.Click();
         Refresh();
     }
@@ -624,12 +619,8 @@ public partial class ForgeScreen : Overlay
             var q = Crafting.BreakDown(X, it, crafter);
             string gives = string.Join(" and ", q.Gives.Select(kv => Items.Several(kv.Key, kv.Value)));
             bool worn = Inventory.Find(Ch, it.Uid) is { InPack: false };
-            row.AddChild(Tile(breaking ? "Break it down for good?" : "Break down", $"For {gives}. It cannot be undone.", q, () =>
-            {
-                if (!breaking) { breaking = true; Sound.Sfx.Hover(); Refresh(); return; }
-                breaking = false;
-                Work(q, Sound.Sfx.Shatter, off: true);
-            }, breaking ? "Break it" : "Break down", "break", worn ? "Worn: take it off first to break it down." : q.Ok ? null : q.Blocked));
+            row.AddChild(Tile("Break down", $"For {gives}. It cannot be undone.", q, () => Work(q, Sound.Sfx.Shatter, off: true),
+                "Break down", "break", worn ? "Worn: take it off first to break it down." : q.Ok ? null : q.Blocked, hold: true));
         }
         if (row.GetChildCount() == 0) return null;
         v.AddChild(new Section("The piece itself"));
@@ -664,22 +655,16 @@ public partial class ForgeScreen : Overlay
         {
             var q = Crafting.Bind(X, it, d, i, open ? -1 : k, crafter);
             q.Before = null;
-            string key = $"{d.Uid}:{i}";
-            bool armed = unmaking == key;
             var dd = Items.Get(d.Def);
             var roll = d.Affixes[i];
             int grade = q.Grade >= 0 ? q.Grade : roll.Tier;
             // The power and the grade it comes in at; where it comes from, and what that costs.
             string lead = $"{Items.Affix(roll.Id)?.Name}, at grade {Crafting.Grade(grade)}";
-            string note = armed ? $"Your {Inventory.Name(d)} is unmade for it. Press again to bind."
-                : roll.Tier > grade ? $"From your {Inventory.Name(d)}, where it is grade {Crafting.Grade(roll.Tier)}; {Crafting.Article(rarity)} piece holds {Crafting.Grade(grade)}"
-                : $"From your {Inventory.Name(d)}";
-            var card = Craft(armed ? "Unmake it" : "Bind", q, () =>
-            {
-                if (unmaking != key) { unmaking = key; Sound.Sfx.Hover(); Refresh(); return; }
-                unmaking = null;
-                Work(q, () => { Sound.Sfx.Cage(); Sound.Sfx.Discovery(); });
-            }, lead, ItemPhotos.Icon(dd.Icon, 44, Style.RarityOf(d.Rarity)), $"bind:{n++}", note, armed);
+            // What it costs is said on the card, since it is held, not asked twice: the donor is unmade.
+            string note = $"Out of your {Inventory.Name(d)}, which is unmade"
+                + (roll.Tier > grade ? $" (grade {Crafting.Grade(roll.Tier)} there; {Crafting.Article(rarity)} piece holds {Crafting.Grade(grade)})" : "");
+            var card = Craft("Bind", q, () => Work(q, () => { Sound.Sfx.Cage(); Sound.Sfx.Discovery(); }),
+                lead, ItemPhotos.Icon(dd.Icon, 44, Style.RarityOf(d.Rarity)), $"bind:{n++}", note, hold: true);
             card.CustomMinimumSize = new Vector2(452, 0);
             grid.AddChild(card);
         }
@@ -708,8 +693,7 @@ public partial class ForgeScreen : Overlay
         var foot = Style.H(Style.Gap4);
         var words = Style.V(2);
         words.SizeFlagsHorizontal = SizeFlags.ExpandFill;
-        words.AddChild(Style.Label(steeping ? "Whatever it comes to, it is set for good: no hand will work it again." : "Whatever it comes to, it is set for good after.",
-            Style.UiBold, Style.Small, steeping ? Style.Bad : Style.Ink, true));
+        words.AddChild(Style.Label("Whatever it comes to, it is set for good after: no hand will work it again.", Style.UiBold, Style.Small, Style.Ink, true));
         string cost = string.Join("  ·  ", q.Takes.Select(kv => Items.Several(kv.Key, kv.Value)).Append(it.Heat is > 0 and int h ? $"all {h} of its heat" : "it is set already"));
         words.AddChild(Style.Label(cost, Style.Ui, Style.Caption, q.Ok ? Style.Ink : Style.InkDim, true));
         // No jar: where one is had, rather than only that there is none.
@@ -717,17 +701,11 @@ public partial class ForgeScreen : Overlay
         if (!q.Ok && q.Blocked != closed)
             words.AddChild(Style.Label(noJar && Crafting.Does(crafter, Verb.Buy) ? $"No jar yet: {He} sells them, above what you wear." : q.Blocked!, Style.TextItalic, Style.Caption, Style.Bad, true));
         foot.AddChild(words);
-        var b = Press(Style.Button(steeping ? "Steep it" : "Steep", null, q.Ok, true), q, () =>
-        {
-            if (!steeping) { steeping = true; Sound.Sfx.Hover(); Refresh(); return; }
-            steeping = false;
-            Work(q, Sound.Sfx.Pour);
-        }, "steep");
-        if (steeping) b.AddThemeColorOverride("font_color", Style.Bad);
+        var b = Hold("Steep", q, () => Work(q, Sound.Sfx.Pour), "steep");
         b.SizeFlagsVertical = SizeFlags.ShrinkCenter;
         foot.AddChild(b);
         slab.AddChild(foot);
-        var panel = Style.Panel(Style.Box(new Color("#11170f"), (steeping ? Style.Bad : ItemViews.SlurryGreen) with { A = steeping ? 0.8f : 0.45f }, steeping ? 2 : 1, 6, 16), slab);
+        var panel = Style.Panel(Style.Box(new Color("#11170f"), ItemViews.SlurryGreen with { A = 0.45f }, 1, 6, 16), slab);
         v.AddChild(panel);
         return v;
     }
@@ -768,7 +746,8 @@ public partial class ForgeScreen : Overlay
             // What it would be here: the powers it could move, the ones it could gain.
             string here = o switch
             {
-                "up" => string.Join(", or ", plain.Where(a => a.Tier < Crafting.Bright).Select(a => $"{Name(a)} {Crafting.Grade(a.Tier)} to {Crafting.Grade(a.Tier + 1)}{(a.Tier + 1 > cap ? ", past the forge" : "")}")),
+                "up" => string.Join(", or ", plain.Where(a => a.Tier < Crafting.Bright)
+                    .Select(a => $"{Name(a)} {Crafting.Grade(a.Tier)} to {Crafting.Grade(Math.Min(Crafting.Bright, Math.Max(a.Tier + 1, cap + 1)))}")),
                 "affix" => string.Join(", ", Crafting.Rules.Slurry.Affixes.Select(Items.Affix).Where(d => d != null && d.Slots.Contains(Items.Get(it.Def).Kind) && it.Affixes.All(b => b.Id != d.Id)).Select(d => $"{d!.Name} ({d.Text(0)})")),
                 "down" => string.Join(", or ", plain.Where(a => a.Tier > 0).Select(a => $"{Name(a)} {Crafting.Grade(a.Tier)} to {Crafting.Grade(a.Tier - 1)}")),
                 _ => "the piece as it is, veined and set",
@@ -937,9 +916,23 @@ public partial class ForgeScreen : Overlay
         return b;
     }
 
+    /// <summary>A press for what cannot be undone: held to full (Style.HoldButton), never asked twice; while
+    /// under the pointer or the focus, the heat gauge shows what it may spend, as a press does.</summary>
+    Button Hold(string title, Quote q, Action act, string navId)
+    {
+        var b = Style.HoldButton(title, () => { if (q.Ok) act(); else Sound.Sfx.Deny(); });
+        b.Disabled = !q.Ok;
+        void Show() => gauge?.Preview(q.HeatLo, q.HeatHi, q.Verb == Verb.Remake);
+        void Hide() => gauge?.Clear();
+        b.MouseEntered += Show;
+        b.MouseExited += Hide;
+        Nav.Mark(b, navId, b.Nudge, focus: Show, blur: Hide);
+        return b;
+    }
+
     /// <summary>A craft as a row: what it does (before and after), what it takes, and the press. A note
     /// says where it comes from; warned, the row is asking again for what cannot be undone.</summary>
-    Control Craft(string title, Quote q, Action act, string lead, Control? icon, string navId, string? note = null, bool warn = false)
+    Control Craft(string title, Quote q, Action act, string lead, Control? icon, string navId, string? note = null, bool warn = false, bool hold = false)
     {
         var slab = Style.Panel(warn ? Style.Box(new Color("#1e1212"), Style.Bad with { A = 0.85f }, 2, 5, 12) : Style.Slab(12));
         var h = Style.H(Style.Gap3);
@@ -955,7 +948,7 @@ public partial class ForgeScreen : Overlay
         if (cost != "") words.AddChild(Style.Label(cost, Style.Ui, Style.Caption, q.Ok ? Style.Ink : Style.InkDim, true));
         if (!q.Ok && q.Blocked != closed) words.AddChild(Style.Label(q.Blocked!, Style.TextItalic, Style.Caption, Style.Bad, true));
         h.AddChild(words);
-        var b = Press(Style.Button(title, null, q.Ok, true), q, act, navId);
+        var b = hold ? Hold(title, q, act, navId) : Press(Style.Button(title, null, q.Ok, true), q, act, navId);
         if (warn) b.AddThemeColorOverride("font_color", Style.Bad);
         b.SizeFlagsVertical = SizeFlags.ShrinkCenter;
         h.AddChild(b);
@@ -965,7 +958,7 @@ public partial class ForgeScreen : Overlay
 
     /// <summary>A craft on the whole piece, as one of three tiles side by side; quiet when it
     /// does not apply now (said why), with no press.</summary>
-    Control Tile(string title, string? after, Quote q, Action act, string button, string navId, string? quiet)
+    Control Tile(string title, string? after, Quote q, Action act, string button, string navId, string? quiet, bool hold = false)
     {
         var slab = Style.Panel(Style.Slab(12));
         slab.CustomMinimumSize = new Vector2(292, 0);
@@ -984,7 +977,7 @@ public partial class ForgeScreen : Overlay
         string cost = Cost(q);
         if (cost != "") v.AddChild(Style.Label(cost, Style.Ui, Style.Caption, q.Ok ? Style.Ink : Style.InkDim, true));
         if (!q.Ok && q.Blocked != closed) v.AddChild(Style.Label(q.Blocked!, Style.TextItalic, Style.Caption, Style.Bad, true));
-        var b = Press(Style.Button(button, null, q.Ok, true), q, act, navId);
+        var b = hold ? Hold(button, q, act, navId) : Press(Style.Button(button, null, q.Ok, true), q, act, navId);
         b.SizeFlagsHorizontal = SizeFlags.ShrinkBegin;
         v.AddChild(b);
         slab.AddChild(v);
@@ -1140,8 +1133,6 @@ public partial class ForgeScreen : Overlay
 
     public override bool Key(Act a)
     {
-        if (a == Act.Cancel && breaking) { breaking = false; Refresh(); return true; }
-        if (a == Act.Cancel && (steeping || unmaking != null)) { steeping = false; unmaking = null; Refresh(); return true; }
         if (a == Act.Cancel && making && pattern != null) { pattern = null; Refresh(); return true; }
         return false;
     }

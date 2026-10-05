@@ -337,9 +337,11 @@ public class CraftersTests
             switch (q.Outcome)
             {
                 case "up":
-                    Assert.Equal(before.Sum(a => a.Tier) + 1, after.Sum(a => a.Tier));
+                    // One power past what the forge can do: above the piece's cap (an epic's IV), to the bright V.
                     Assert.Equal(q.Grade, it.Affixes[q.Index].Tier);
-                    Assert.Equal(before[q.Index].Tier + 1, q.Grade);
+                    Assert.Equal(Crafting.Bright, q.Grade);
+                    Assert.True(q.Grade > Crafting.Cap(it));
+                    Assert.Equal(before.Where((a, i) => i != q.Index), after.Where((a, i) => i != q.Index));
                     Assert.StartsWith(Items.Affix(q.Affix!)!.Name, said);
                     Assert.Equal(1, mood);
                     break;

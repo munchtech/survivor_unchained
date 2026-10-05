@@ -112,6 +112,10 @@ T2I = {
             "fragments and a cracked finger bone in the heap",
     "bomb": "a small iron-bound wooden crate charge, orange ember light glowing through the gaps between its slats, a "
             "short lit fuse sparking on top",
+    # The crafting lead's (design 9): Snib's jar of the Dig's slurry. No photograph (it has no model).
+    "slurry_jar": "a squat grimy grey stoneware crock, its lid lashed down with twine, a crude X scratched deep into its "
+                  "belly, sickly bright green light leaking out through the scratch and a crack under the lid, thick "
+                  "green-black sludge oozing from under the lid and dripping down one side",
 }
 
 OUT = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "..", "godot", "art", "ui", "icons", "item")

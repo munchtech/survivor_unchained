@@ -809,8 +809,7 @@ public static class Crafting
         return q.Outcome switch
         {
             "up" when q.Grade >= Bright => ($"{name} rose to the bright grade, past every forge: {q.After}", 1),
-            "up" when q.Grade > Cap(it) => ($"{name} rose past what the forge can do: grade {Grade(q.Grade)}, {q.After}", 1),
-            "up" => ($"{name} rose a grade: {q.Before} to {q.After}", 1),
+            "up" => ($"{name} rose past what the forge can do: grade {Grade(q.Grade)}, {q.After}", 1),
             "down" => ($"{name} gave a grade: {q.Before} to {q.After}", -1),
             "affix" => ($"{name}, past its seams: {q.After}", 1),
             _ => ("Only the veins: nothing else in it changed.", 0),
@@ -820,7 +819,7 @@ public static class Crafting
     /// <summary>What each outcome means, in a few words, for the card that offers the jar.</summary>
     public static string OddsWords(string outcome) => outcome switch
     {
-        "up" => "one power a grade finer, past the forge if need be",
+        "up" => "one power past what the forge can do",
         "affix" => "a slurry power past its seams, strong, with a price",
         "nothing" => "only the veins",
         _ => "one power a grade lower",
@@ -848,11 +847,14 @@ public static class Crafting
         {
             case "up":
             {
-                // The lowest-raised first would be kind; the slurry is not: any of them, past the cap, to the bright grade.
-                var (a, i) = plain[rng.Int(0, plain.Count - 1)];
-                if (a.Tier >= Bright) { pick = "nothing"; break; }
+                // Past what the forge can do (design 9): one power to a grade above the piece's cap, or a
+                // grade finer if it was there already; the bright grade is the last. The lowest-raised
+                // first would be kind; the slurry is not: any of them that can still rise.
+                var rising = plain.Where(p => p.a.Tier < Bright).ToList();
+                if (rising.Count == 0) { pick = "nothing"; break; }
+                var (a, i) = rising[rng.Int(0, rising.Count - 1)];
                 q.Before = Line(a.Id, a.Tier);
-                a.Tier++;
+                a.Tier = Math.Min(Bright, Math.Max(a.Tier + 1, Cap(it) + 1));
                 (q.Affix, q.Index, q.Grade, q.After) = (a.Id, i, a.Tier, Line(a.Id, a.Tier));
                 break;
             }

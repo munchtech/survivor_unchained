@@ -269,7 +269,7 @@ public partial class Game : Node, IZoneHost
         }
         else EnterZone(z, null, at);
         // --near ID: stood a few steps from that person (pictures of what shows over their head).
-        if (Args.Get("near") is string nid && zone != null && zone.Actors.TryGetValue(nid, out var na) && Battle is { } nb)
+        if (Args.Get("near") is string nearId && zone != null && zone.Actors.TryGetValue(nearId, out var na) && Battle is { } nb)
         {
             nb.Player.X = na.X + 2.2;
             nb.Player.Z = na.Z + 3.2;
