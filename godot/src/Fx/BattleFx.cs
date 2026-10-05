@@ -1508,7 +1508,7 @@ public partial class BattleFx : Node3D
                     {
                         // The hoard stone: bigger, beating like a heart, with a red beam to find it by.
                         s *= 1 + 0.12f * Mathf.Sin((float)now * 5);
-                        Column(p.X, gy, p.Z, 4.5f, 0.2f, StoriedRed, 0.7f);
+                        HoardLight(p.X, gy, p.Z);
                     }
                     embers.Add(new Transform3D(spin.Scaled(Vector3.One * s), V(p.X, gy + 0.45 + bob, p.Z)), EmberTiers[tier]);
                     break;
