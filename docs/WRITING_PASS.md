@@ -2146,6 +2146,28 @@ adds it with the fact; his hub's ids .1–.3 become .2–.4.
 **Snib, a bad steep:** "That is not Snib's fault. That is the JAR's fault.
 ...Snib filled the jar."
 
+**Scar-glass** (`scar_glass`, the slurry's heir once the stream is cured;
+design 20.5). It is what is left where a scar burned with someone standing in
+it: the ember shown, never said.
+- Name "Scar-Glass"; plural "pieces of scar-glass".
+- Lore: "Ground that a scar burned until it ran, gone to dark glass. It only
+  forms where somebody stayed too long. Held to the light it is the blue of
+  the ford lamps, and it is never quite cold." (Ford-lamp blue is ember's, as
+  the dead watchman's book has it: "Not oil. Wrong colour.")
+- Description: "Steep a piece of gear in it by hand, as in a slurry jar: a
+  grade past the forge, a power with a price, only the veins, or a grade
+  lost. A night's scar leaves a piece for every hour you stay past winning
+  it."
+- The night's end, the first time she carries one out: "Where you stood
+  longest, the ground has run and gone to glass. You break a piece off. It is
+  still warm when you get home."
+
+**Rook sells a storeroom shelf** (`rook` lines, for the shelf page):
+- `shelf`: "There. That shelf's yours, pet. Twenty-four things, and I've
+  counted, so don't try for twenty-five."
+- `shelf.more`: "Another? You'll have me sleeping in the yard. ...Go on, then.
+  It's yours."
+
 ## 25. Loot's words: Act 1's Legendaries and sets (5 October)
 
 The loot lead made Act 1's first Legendaries and sets
