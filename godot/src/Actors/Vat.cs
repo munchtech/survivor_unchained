@@ -123,8 +123,72 @@ public static class Vat
         public float Cut = -1;
     }
 
-    /// <summary>Poses every vertex of every surface (concatenated) for a role at t.</summary>
-    delegate void Sampler(string role, double t, Vector3[] pos, Vector3[] nor);
+    /// <summary>One frame of a bake as posed: every bone's matrix in the
+    /// model's space (and the root's), and for a looped stretch's last third
+    /// the pose it eases into, by K.</summary>
+    sealed class FramePose
+    {
+        public Transform3D M0;
+        public required Transform3D[] Bones;
+        public FramePose? Seam;
+        public float K;
+    }
+
+    /// <summary>What one thread skins a frame with: its own vertices for the
+    /// eased-into pose, and its own bind matrices for each part.</summary>
+    sealed class SkinScratch(List<Skinned> parts, int total)
+    {
+        public readonly Vector3[] SeamPos = new Vector3[total], SeamNor = new Vector3[total];
+        public readonly Transform3D[][] BindNow = parts.ConvertAll(p => new Transform3D[p.BindPose?.Length ?? 0]).ToArray();
+    }
+
+    /// <summary>Every vertex of every surface (concatenated) skinned to a frame's pose.</summary>
+    static void SkinFrame(List<Skinned> parts, FramePose fp, Vector3[] pos, Vector3[] nor, SkinScratch sc)
+    {
+        Skin(parts, fp, pos, nor, sc);
+        if (fp.Seam == null) return;
+        Skin(parts, fp.Seam, sc.SeamPos, sc.SeamNor, sc);
+        float k = fp.K;
+        var bp = sc.SeamPos; var bn = sc.SeamNor;
+        for (int i = 0; i < pos.Length; i++) { pos[i] = pos[i].Lerp(bp[i], k); nor[i] = nor[i].Lerp(bn[i], k).Normalized(); }
+    }
+
+    static void Skin(List<Skinned> parts, FramePose fp, Vector3[] pos, Vector3[] nor, SkinScratch sc)
+    {
+        var m0 = fp.M0;
+        var poses = fp.Bones;
+        for (int pi = 0; pi < parts.Count; pi++)
+        {
+            var p = parts[pi];
+            int o = p.Surf.Offset;
+            if (p.Rigid >= 0)
+            {
+                var m = poses[p.Rigid] * p.Rel;
+                for (int i = 0; i < p.V.Length; i++) { pos[o + i] = m * p.V[i]; nor[o + i] = (m.Basis * p.N[i]).Normalized(); }
+                continue;
+            }
+            // Each bind's matrix once a frame, not once a vertex.
+            var now = sc.BindNow[pi];
+            for (int k = 0; k < now.Length; k++) now[k] = p.BindBone![k] >= 0 ? poses[p.BindBone[k]] * p.BindPose![k] : m0;
+            var bones = p.Bones!; var weights = p.Weights!;
+            for (int i = 0; i < p.V.Length; i++)
+            {
+                Vector3 v = p.V[i], n = p.N[i], sp = Vector3.Zero, sn = Vector3.Zero;
+                float wsum = 0;
+                for (int k = 0; k < p.Stride; k++)
+                {
+                    float w = weights[i * p.Stride + k];
+                    if (w <= 0) continue;
+                    ref var m = ref now[bones[i * p.Stride + k]];
+                    sp += (m * v) * w;
+                    sn += (m.Basis * n) * w;
+                    wsum += w;
+                }
+                pos[o + i] = wsum > 0 ? sp / wsum : m0 * v;
+                nor[o + i] = sn.LengthSquared() > 0 ? sn.Normalized() : n;
+            }
+        }
+    }
 
     /* ------------------------------------------------------------- people -- */
 
@@ -140,7 +204,6 @@ public static class Vat
         public int Stride;
         public int[]? BindBone;
         public Transform3D[]? BindPose;
-        public Transform3D[]? BindNow;
         /// <summary>A rigid part (a weapon): the bone it rides, and where it sits from it.</summary>
         public int Rigid = -1;
         public Transform3D Rel;
@@ -300,7 +363,6 @@ public static class Vat
                 var p = Part(mi, s);
                 p.BindBone = bindBone;
                 p.BindPose = bindPose;
-                p.BindNow = new Transform3D[binds];
                 parts.Add(p);
             }
         }
@@ -335,8 +397,7 @@ public static class Vat
 
         var toModel = (norm ?? Transform3D.Identity) * view.GlobalTransform.AffineInverse() * skel.GlobalTransform;
         var toSkel = toModel.AffineInverse();
-        Transform3D[] poses = new Transform3D[skel.GetBoneCount()];
-        var scratch = (new Vector3[total], new Vector3[total]);
+        int boneCount = skel.GetBoneCount();
 
         // A clip that walks off: where its root bone is at each end of the
         // stretch a role plays, to be taken out again (a loop's travel spread
@@ -394,59 +455,34 @@ public static class Vat
             return root;
         }
 
-        void Skin(Transform3D root, Vector3[] pos, Vector3[] nor)
+        // The skeleton as posed now, as skinning wants it: every bone in the model's space.
+        FramePose Capture(Transform3D root)
         {
             var m0 = root * toModel;
-            for (int b = 0; b < poses.Length; b++) poses[b] = m0 * skel.GetBoneGlobalPose(b);
-            foreach (var p in parts)
-            {
-                int o = p.Surf.Offset;
-                if (p.Rigid >= 0)
-                {
-                    var m = poses[p.Rigid] * p.Rel;
-                    for (int i = 0; i < p.V.Length; i++) { pos[o + i] = m * p.V[i]; nor[o + i] = (m.Basis * p.N[i]).Normalized(); }
-                    continue;
-                }
-                // Each bind's matrix once a frame, not once a vertex.
-                var now = p.BindNow!;
-                for (int k = 0; k < now.Length; k++) now[k] = p.BindBone![k] >= 0 ? poses[p.BindBone[k]] * p.BindPose![k] : m0;
-                var bones = p.Bones!; var weights = p.Weights!;
-                for (int i = 0; i < p.V.Length; i++)
-                {
-                    Vector3 v = p.V[i], n = p.N[i], sp = Vector3.Zero, sn = Vector3.Zero;
-                    float wsum = 0;
-                    for (int k = 0; k < p.Stride; k++)
-                    {
-                        float w = weights[i * p.Stride + k];
-                        if (w <= 0) continue;
-                        ref var m = ref now[bones[i * p.Stride + k]];
-                        sp += (m * v) * w;
-                        sn += (m.Basis * n) * w;
-                        wsum += w;
-                    }
-                    pos[o + i] = wsum > 0 ? sp / wsum : m0 * v;
-                    nor[o + i] = sn.LengthSquared() > 0 ? sn.Normalized() : n;
-                }
-            }
+            var bones = new Transform3D[boneCount];
+            for (int b = 0; b < boneCount; b++) bones[b] = m0 * skel.GetBoneGlobalPose(b);
+            return new FramePose { M0 = m0, Bones = bones };
         }
 
-        void Sample(string role, double t, Vector3[] pos, Vector3[] nor)
+        // Posing needs the scene (the skeleton, its player), so it is done here,
+        // frame by frame; the skinning, nearly all of a bake's time, is plain
+        // arithmetic on what is captured, and Write spreads it over the cores.
+        FramePose PoseAt(string role, double t)
         {
             var r = roles.Find(x => x.Name == role)!;
-            Skin(Pose(r, t), pos, nor);
+            var fp = Capture(Pose(r, t));
             // A looped stretch of a longer clip: its last third eased into what
             // came before its start, so its end is its beginning.
             double w = r.Seam ? Math.Clamp((t / r.Length - 0.66) / 0.34, 0, 1) : 0;
-            if (w <= 0 || r.From < r.Length * r.Rate * 0.34) return;
-            var (bp, bn) = scratch;
-            Skin(Pose(r, t - r.Length), bp, bn);
-            float k = (float)(w * w * (3 - 2 * w));
-            for (int i = 0; i < pos.Length; i++) { pos[i] = pos[i].Lerp(bp[i], k); nor[i] = nor[i].Lerp(bn[i], k).Normalized(); }
+            if (w <= 0 || r.From < r.Length * r.Rate * 0.34) return fp;
+            fp.Seam = Capture(Pose(r, t - r.Length));
+            fp.K = (float)(w * w * (3 - 2 * w));
+            return fp;
         }
 
         var list = new List<(string Role, double Duration)>();
         foreach (var r in roles) list.Add((r.Name, r.Length));
-        var asset = Write(key, parts.ConvertAll(p => p.Surf), total, list, fps, Sample);
+        var asset = Write(key, parts.ConvertAll(p => p.Surf), total, list, fps, PoseAt, () => new SkinScratch(parts, total), (fp, pos, nor, sc) => SkinFrame(parts, fp, pos, nor, sc));
         if (Args.Has("vat-probe")) GD.Print($"  {key}: parts+lods {tParts - t0} ms, frames {Time.GetTicksMsec() - tParts} ms, {total} vertices");
         return asset;
     }
@@ -643,31 +679,37 @@ public static class Vat
         public required List<Surf> Surfs;
     }
 
-    static VatAsset Write(string key, List<Surf> surfs, int total, List<(string Role, double Duration)> roles, double fps, Sampler sample)
+    /// <summary>A kind's frames, role by role, posed here one after another
+    /// (`pose`: it needs the scene) and skinned and written side by side on
+    /// worker threads (`skin`, each with its own `scratch`). Each frame owns
+    /// its rows of the textures, so the bytes are the same as one thread's.</summary>
+    static VatAsset Write<TScratch>(string key, List<Surf> surfs, int total, List<(string Role, double Duration)> roles, double fps,
+        Func<string, double, FramePose> pose, Func<TScratch> scratch, Action<FramePose, Vector3[], Vector3[], TScratch> skin)
     {
         var clips = new Dictionary<string, VatAsset.Clip>();
         int frameCount = 0;
+        var posed = new List<FramePose>();
         foreach (var (role, dur) in roles)
         {
             int frames = Math.Min(MaxFrames, Math.Max(2, (int)Math.Round(dur * fps) + 1));
             clips[role] = new VatAsset.Clip(frameCount, frames, (frames - 1) / Math.Max(1e-3, dur), dur, Loops(role));
             frameCount += frames;
+            for (int f = 0; f < frames; f++) posed.Add(pose(role, (double)f / (frames - 1) * dur * 0.999));
         }
         int width = Math.Min(4096, Math.Max(1, total));
         int rows = (total + width - 1) / width;
         int texH = rows * frameCount;
         var posBytes = new byte[width * texH * 8];
         var norBytes = new byte[width * texH * 4];
-        var pos = new Vector3[total];
-        var nor = new Vector3[total];
-        float height = 0;
-        int frameIndex = 0;
-        foreach (var (role, dur) in roles)
-        {
-            var c = clips[role];
-            for (int f = 0; f < c.Frames; f++)
+        var heights = new float[frameCount];
+        var rest = (Pos: new Vector3[total], Nor: new Vector3[total]);
+        System.Threading.Tasks.Parallel.For(0, frameCount,
+            () => (Pos: new Vector3[total], Nor: new Vector3[total], Scratch: scratch()),
+            (frameIndex, _, local) =>
             {
-                sample(role, (double)f / (c.Frames - 1) * dur * 0.999, pos, nor);
+                var (pos, nor, sc) = local;
+                skin(posed[frameIndex], pos, nor, sc);
+                float height = 0;
                 for (int i = 0; i < total; i++)
                 {
                     int row = frameIndex * rows + i / width, col = i % width;
@@ -680,12 +722,15 @@ public static class Vat
                     norBytes[tk * 4 + 3] = 255;
                     if (pos[i].Y > height) height = pos[i].Y;
                 }
+                heights[frameIndex] = height;
                 // The rest geometry is the first frame.
-                if (frameIndex == 0)
-                    foreach (var s in surfs) { s.V = pos[s.Offset..(s.Offset + s.Count)]; s.N = nor[s.Offset..(s.Offset + s.Count)]; }
-                frameIndex++;
-            }
-        }
+                if (frameIndex == 0) { Array.Copy(pos, rest.Pos, total); Array.Copy(nor, rest.Nor, total); }
+                return local;
+            },
+            _ => { });
+        float height = 0;
+        foreach (var h in heights) if (h > height) height = h;
+        foreach (var s in surfs) { s.V = rest.Pos[s.Offset..(s.Offset + s.Count)]; s.N = rest.Nor[s.Offset..(s.Offset + s.Count)]; }
         var baked = new Baked { Key = key, Width = width, Rows = rows, FrameCount = frameCount, Height = height, Clips = clips, Pos = posBytes, Nor = norBytes, Surfs = surfs };
         Save(baked);
         return Build(baked);

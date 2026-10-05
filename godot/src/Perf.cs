@@ -40,9 +40,9 @@ public partial class Perf : Node
 
     /// <summary>Parts of the frame timed on their own (Begin and End round
     /// them; nothing is done when not measuring).</summary>
-    public enum Part { Sim, Player, Crowd, Fx, Hud, Sound, Zone }
-    const int Parts = 7;
-    static readonly string[] PartNames = { "sim", "player", "crowd", "fx", "hud", "sound", "zone" };
+    public enum Part { Sim, Player, Crowd, Fx, Hud, Sound, Zone, Events, Draft, Auto, Later }
+    const int Parts = 11;
+    static readonly string[] PartNames = { "sim", "player", "crowd", "fx", "hud", "sound", "zone", "events", "draft", "auto", "later" };
     static readonly double[] partMs = new double[Parts];
     static readonly long[] partFrom = new long[Parts];
     /// <summary>What each part allocated on the main thread, over the whole recording.</summary>
@@ -106,7 +106,7 @@ public partial class Perf : Node
     long lastAlloc, lastMainAlloc;
     int lastGen0, lastGen1, lastGen2;
     double lastPipes, coldPipes;
-    TimeSpan pauseAtStart;
+    TimeSpan pauseAtStart, lastPause;
     bool recording, firstFrame;
     Rid vp;
     readonly List<Frame> frames = new(16384);
@@ -160,6 +160,9 @@ public partial class Perf : Node
         if (!firstFrame) { firstFrame = true; GD.Print($"perf {name}: first frame at {Time.GetTicksMsec() / 1000.0:0.0}s since launch"); }
         Each();
         long alloc = GC.GetTotalAllocatedBytes(false), mainAlloc = GC.GetAllocatedBytesForCurrentThread();
+        var pause = GC.GetTotalPauseDuration();
+        double pauseMs = (pause - lastPause).TotalMilliseconds;
+        lastPause = pause;
         int g0 = GC.CollectionCount(0), g1 = GC.CollectionCount(1), g2 = GC.CollectionCount(2);
         double pipes = Pipes();
         if (!recording)
@@ -204,7 +207,7 @@ public partial class Perf : Node
         Remember(alloc, mainAlloc, g0, g1, g2, pipes);
         // A hitch: a frame well over the run's usual, with what came with it.
         if (frames.Count > 30 && ms > Math.Max(25, 2.5 * Median()))
-            hitches.Add($"{t:0.00}s {ms:0.0}ms (main {f.Main:0.0}: {PartsOf(frames.Count - 1)}; render cpu {f.RenderCpu:0.0}, gpu {f.Gpu:0.0}) pipelines {f.Pipelines} gc {f.Gen0}/{f.Gen1}/{f.Gen2} alloc {f.Alloc / 1024}KB {Note()}");
+            hitches.Add($"{t:0.00}s {ms:0.0}ms (main {f.Main:0.0}: {PartsOf(frames.Count - 1)}; render cpu {f.RenderCpu:0.0}, gpu {f.Gpu:0.0}) pipelines {f.Pipelines} gc {f.Gen0}/{f.Gen1}/{f.Gen2} (paused {pauseMs:0.0}) alloc {f.Alloc / 1024}KB {Note()}");
         if (t >= nextWindow)
         {
             nextWindow += window;

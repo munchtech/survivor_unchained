@@ -865,7 +865,9 @@ public partial class Game : Node, IZoneHost
         if (focusT > 0 && (focusT -= dt) <= 0 && hudMode == null) cam.FocusOverride = null;
         if (Mode == "play" && zone != null)
         {
+            Perf.Begin(Perf.Part.Auto);
             auto?.Drive(dt);
+            Perf.End(Perf.Part.Auto);
             Journey.Playtime += dt;
             // Booked to its kind of play: the story's share is measured, not guessed.
             Journey.Clock(dt, zone switch
@@ -894,7 +896,9 @@ public partial class Game : Node, IZoneHost
             // An arena's camera breathes with its night (unless a conversation has it, or --cam fixed it).
             if (zone is ArenaRun ar && hudMode == null && camSaved == null && !Args.Has("cam")) cam.TargetDistance = (float)ar.CameraDistance;
             if (zone is StoryNight sn && hudMode == null && camSaved == null && !Args.Has("cam")) cam.TargetDistance = (float)sn.CameraDistance;
+            Perf.Begin(Perf.Part.Later);
             RunLater(dt);
+            Perf.End(Perf.Part.Later);
         }
         else if (auto != null && Mode != "play") AutoFront();
         // --keys on the title or at the fire (pictures of their focus): pressed in turn, two seconds in.
@@ -947,8 +951,10 @@ public partial class Game : Node, IZoneHost
             Perf.End(Perf.Part.Sound);
         }
         if (Mode != "play") return;
+        Perf.Begin(Perf.Part.Draft);
         UpdateChest();
         UpdateDraft(dt);
+        Perf.End(Perf.Part.Draft);
         hudT -= dt;
         if (hudT <= 0)
         {
