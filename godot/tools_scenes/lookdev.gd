@@ -60,6 +60,8 @@ func _init():
 					sk.set_shader_parameter("paint", m.albedo_texture)
 					sk.set_shader_parameter("pores", load("res://art/people/skin_pores.png"))
 					sk.set_shader_parameter("pore_scale", pore_scale(mi.mesh))
+					# (as People.Skin: shallower on her body and hands than her face)
+					if m.resource_name != "skin_head": sk.set_shader_parameter("pore_depth", 0.4)
 					# (His relief baked from his sculpt, and his own tone: People.Skin, People.HisTone.)
 					if m.normal_texture != null:
 						sk.set_shader_parameter("relief", m.normal_texture)
@@ -272,7 +274,7 @@ func pore_scale(mesh):
 		for t in range(0, idx.size() - 2, 3):
 			area += (v[idx[t + 1]] - v[idx[t]]).cross(v[idx[t + 2]] - v[idx[t]]).length() / 2.0
 			uv_area += abs((uv[idx[t + 1]] - uv[idx[t]]).cross(uv[idx[t + 2]] - uv[idx[t]])) / 2.0
-	return sqrt(area / uv_area) / 0.015 if uv_area > 0.0 else 30.0
+	return sqrt(area / uv_area) / 0.009 if uv_area > 0.0 else 50.0
 
 func hair_colour():
 	return Color(OS.get_environment("HAIRCOLOR")) if OS.get_environment("HAIRCOLOR") != "" else Color("#8f2d14")

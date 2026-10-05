@@ -424,8 +424,9 @@ public static class Sfx
     {
         if (A is not { } a || !a.Gate("toll", 1, faint ? 4000 : 900)) return;
         double g = faint ? 0.35 : 1;
-        if (!faint) a.DuckSfx(0.5f, 0.5);
-        // On the interface's bus, so the hush does not swallow it.
+        // The hush is the music's and the world's, never the fight's (combat: a warning under a duck is
+        // a blow unheard). On the interface's bus, so the toll carries over the horde.
+        if (!faint) a.DuckBeds(0.35f, 1.2);
         a.Play(new Tone { F = 55, A = 0.004, D = 0.6, G = 0.12 * g, Lp = 300, Bus = Bus.Ui });
         a.Play(new Fm { F = 98, Ratio = 2.76, Index = 3, A = 0.004, D = 6, G = 0.12 * g, Verb = 0.8, Bus = Bus.Ui });
         a.Play(new Fm { T = Now + 0.02, F = 147, Ratio = 3.01, Index = 1.5, A = 0.004, D = 5, G = 0.06 * g, Verb = 0.8, Bus = Bus.Ui });

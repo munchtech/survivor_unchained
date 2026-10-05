@@ -826,6 +826,9 @@ public static class People
         }
         m.SetShaderParameter("pores", GD.Load<Texture2D>("res://art/people/skin_pores.png"));
         m.SetShaderParameter("pore_scale", PoreScale(mesh));
+        // Shallower on the body and hands than the face, where pores show
+        // most: at the face's depth her hands read as pitted in close-up.
+        if (src.ResourceName != "skin_head") m.SetShaderParameter("pore_depth", 0.4f);
         // Her face a little more matte than her body: at the shine her body
         // has, her face read as plastic, and a light from behind lit the
         // side of her brow as a hard white band.
@@ -880,7 +883,7 @@ public static class People
                 uvArea += Mathf.Abs((uv[idx[t + 1]] - uv[idx[t]]).Cross(uv[idx[t + 2]] - uv[idx[t]])) / 2;
             }
         }
-        k = uvArea > 0 ? (float)(Math.Sqrt(area / uvArea) / 0.015) : 30f;
+        k = uvArea > 0 ? (float)(Math.Sqrt(area / uvArea) / 0.009) : 50f;
         poreScales[mesh] = k;
         return k;
     }

@@ -104,6 +104,20 @@ public sealed class NavField
     {
         int k = Nearest(Index(x, z));
         if (k < 0) return (x, z);
+        // Off the free ground, the free cell nearby that is furthest on (the nearest one flipped from
+        // one side of her to the other as she was pushed, and the hands went back and forth for minutes).
+        if (k != Index(x, z) && Index(x, z) is int here and >= 0)
+        {
+            int i0 = here % nx, j0 = here / nx;
+            for (int dj = -3; dj <= 3; dj++)
+                for (int di = -3; di <= 3; di++)
+                {
+                    int ii = i0 + di, jj = j0 + dj;
+                    if (ii < 0 || jj < 0 || ii >= nx || jj >= nz) continue;
+                    int m = jj * nx + ii;
+                    if (free[m] && d[m] < d[k]) k = m;
+                }
+        }
         // Pushed off the free ground (against a stump, in a corner): look on from the nearest free
         // cell, or the hands go back and forth between it and the way on.
         if (k != Index(x, z)) (x, z) = At(k);
@@ -130,7 +144,33 @@ public sealed class NavField
         return best;
     }
 
-    bool Clear(double x0, double z0, double x1, double z1)
+    /// <summary>The whole way from here to the goal, cell by cell down the field (empty where nothing leads).</summary>
+    public List<(double X, double Z)> Path(double x, double z)
+    {
+        var o = new List<(double X, double Z)>();
+        int k = Nearest(Index(x, z));
+        if (k < 0 || d[k] == float.MaxValue) return o;
+        for (int s = 0; s < nx * nz && d[k] > 0; s++)
+        {
+            int i = k % nx, j = k / nx, next = k;
+            float bd = d[k];
+            for (int dj = -1; dj <= 1; dj++)
+                for (int di = -1; di <= 1; di++)
+                {
+                    int ii = i + di, jj = j + dj;
+                    if (ii < 0 || jj < 0 || ii >= nx || jj >= nz) continue;
+                    int m = jj * nx + ii;
+                    if (free[m] && d[m] < bd) { bd = d[m]; next = m; }
+                }
+            if (next == k) break;
+            k = next;
+            o.Add(At(k));
+        }
+        return o;
+    }
+
+    /// <summary>A straight walk between two points stays on free ground.</summary>
+    public bool Clear(double x0, double z0, double x1, double z1)
     {
         double len = Math.Sqrt((x1 - x0) * (x1 - x0) + (z1 - z0) * (z1 - z0));
         int steps = Math.Max(1, (int)(len / (Cell * 0.5)));

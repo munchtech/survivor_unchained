@@ -3,6 +3,8 @@
   "makeFrom": [1, 8, 16, 24, 32],
   "makeMult": [1, 1.8, 2.8, 4.0, 5.5],
   "makeDamage": [0, 0.1, 0.25, 0.45, 0.7],
+  "_curves": "A stat's own make curve where the general one is too steep: armour saturates (armour / (armour + 20)), so a full Heartwrought set at x5.5 was about 75% reduction (combat). 'trigger' scales a piece's flat rule damage (Kell's Lamp by day).",
+  "curves": { "armor": [1, 1.8, 2.8, 3.4, 4.0], "trigger": [1, 1.8, 2.8, 4.0, 5.5] },
   "unscaled": ["block", "moveSpeed"],
   "maxLevel": 40,
   "gradeUp": [25, 35],
@@ -42,7 +44,7 @@
     "watch_kit": {
       "id": "watch_kit", "name": "The Watch's Kit",
       "pieces": ["watch_coif", "watch_hauberk", "watch_shield"],
-      "lore": "Eleven men, a year unpaid, and every one of them still oils his mail.",
+      "lore": "Eleven men on a wall built for sixty, and every one of them still oils his mail.",
       "bonuses": [
         { "worn": 2, "text": "+25% armour; your light carries 25% further",
           "mods": [{ "stat": "armor", "kind": "inc", "value": 0.25, "source": "set" }, { "stat": "lightRadius", "kind": "inc", "value": 0.25, "source": "set" }] },

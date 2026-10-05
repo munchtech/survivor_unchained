@@ -504,6 +504,7 @@ public sealed partial class Battle
         condScratch.Add(p.Moving ? ModWhen.Moving : ModWhen.Still);
         if (p.Hp < MaxHp * 0.35) condScratch.Add(ModWhen.LowHealth);
         if (p.Hp >= MaxHp - 0.01) condScratch.Add(ModWhen.FullHealth);
+        if (p.Hp > MaxHp * 0.8) condScratch.Add(ModWhen.Healthy);
         // What gear asks of the moment: the dark, beasts close, fire underfoot, a dash just done.
         if (Night) condScratch.Add(ModWhen.Night);
         if (Time - dashEnded < 1.5) condScratch.Add(ModWhen.AfterDash);
@@ -1188,8 +1189,9 @@ public sealed partial class Battle
         riseFire = new RiseFireState { X = p.X, Z = p.Z, R = RiseRadius(rank), Dmg = 40 * (1 + 0.08 * (EmberLevel - 1)) };
     }
 
-    /// <summary>Where the rise's front has run to, this long after it caught (0 to its edge).</summary>
-    public static double RiseFront(double r, double t) => t <= 0 ? 0 : t >= RiseRun ? r : r * (1 - Math.Pow(1 - t / RiseRun, 3));
+    /// <summary>Where the rise's front has run to, this long after it caught: the look's own curve
+    /// (BattleFx.Rise, FireRun), so a body catches as the drawn wall reaches it.</summary>
+    public static double RiseFront(double r, double t) => t < 0 ? 0 : t >= RiseRun ? r : r * (0.03 + 0.97 * (1 - Math.Pow(1 - t / RiseRun, 3)));
 
     void UpdateRiseFire(double dt)
     {

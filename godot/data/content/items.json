@@ -675,7 +675,7 @@
     {
      "stat": "maxHealth",
      "kind": "flat",
-     "value": 6,
+     "value": 8,
      "source": "item"
     },
     {
@@ -1419,72 +1419,7 @@
     }
    ],
    "downside": "You mend 15% less. It is always cold.",
-   "lore": "It has hung by Rook's fire for a week and it is still wet."
-  },
-  "forty_one_mouths": {
-   "id": "forty_one_mouths",
-   "name": "Forty-One Mouths",
-   "kind": "weapon",
-   "rarity": 4,
-   "icon": "cleaver",
-   "value": 320,
-   "of": "butchers_cleaver",
-   "dropsFrom": 2,
-   "homes": [
-    "kerchiefs"
-   ],
-   "weapon": {
-    "id": "cleaver",
-    "rank": 1
-   },
-   "description": "Below half health, every kill mends 2% of your health. Your blows bleed.",
-   "mods": [
-    {
-     "stat": "damage",
-     "kind": "inc",
-     "value": -0.15,
-     "source": "item",
-     "when": "fullHealth"
-    }
-   ],
-   "triggers": [
-    {
-     "on": "kill",
-     "icd": 0.1,
-     "when": {
-      "selfHpBelow": 0.5
-     },
-     "effects": [
-      {
-       "do": "heal",
-       "amount": 0.02,
-       "basis": "maxhp"
-      }
-     ],
-     "text": "Below half health, kills mend you"
-    },
-    {
-     "on": "hit",
-     "chance": 0.15,
-     "effects": [
-      {
-       "do": "status",
-       "target": "hit",
-       "status": {
-        "kind": "bleed",
-        "chance": 1,
-        "power": 0.35,
-        "duration": 3
-       }
-      }
-     ]
-    }
-   ],
-   "statuses": [
-    "bleed"
-   ],
-   "downside": "At full health you deal 15% less.",
-   "lore": "The Roost's cleaver. It fed forty-one mouths on whatever the road brought in, and the road brought in a great deal."
+   "lore": "Wrung out, it is wet again by morning. Whoever wore it last went into the ford in it, and did not come out."
   },
   "corrans_sword": {
    "id": "corrans_sword",
@@ -1541,7 +1476,7 @@
     "corrans_sword"
    ],
    "downside": "8% slower.",
-   "lore": "Notched along the spine, in tens, where somebody kept count of something. The book wrote him down as a deserter."
+   "lore": "Notched along the spine in tens, the way a man counts nights on a post nobody relieves. The Watch's book has him down as a deserter."
   },
   "ditchwater": {
    "id": "ditchwater",
@@ -1592,7 +1527,7 @@
    "statuses": [
     "chill"
    ],
-   "lore": "Pulled out of the ditch on the Low Ford road, wound and loaded. Whoever loaded it never fired it."
+   "lore": "Pulled out of the ditch on the Low Ford road, wound and loaded, with weed in the stock. Whoever loaded it never got to fire it."
   },
   "fever_year_staff": {
    "id": "fever_year_staff",
@@ -1659,7 +1594,7 @@
     "poison"
    ],
    "downside": "You mend 10% less.",
-   "lore": "Charred to the grip. In the fever year they burned the bedding of the dead, and somebody did it with this."
+   "lore": "Charred to the grip. In the fever year they burned the bedding of the dead, and somebody stirred the fire with this until it was done."
   },
   "slurry_wheel": {
    "id": "slurry_wheel",
@@ -1712,7 +1647,7 @@
     "poison"
    ],
    "downside": "15% more damage from lamplings.",
-   "lore": "A spare wheel off the Dig's pump, beaten flat and strapped for an arm. It still weeps."
+   "lore": "A spare wheel off the Dig's pump, beaten flat and strapped for an arm. It still weeps green."
   },
   "kells_lamp": {
    "id": "kells_lamp",
@@ -1750,7 +1685,7 @@
      "text": "Your lamp flares every two seconds"
     }
    ],
-   "lore": "It came back up the shaft on its own, still lit. Nobody has asked it where Kell is."
+   "lore": "It came back up the shaft on its own, still lit. Kell did not."
   },
   "pelt_of_the_pack": {
    "id": "pelt_of_the_pack",
@@ -1792,7 +1727,7 @@
    "tags": [
     "pack_pelt"
    ],
-   "lore": "Brannoc counted the pelts twice and did not say anything either time."
+   "lore": "Grey to the roots, and stitched from more than one wolf. Maeca could tell you whose, and won't."
   },
   "watch_coif": {
    "id": "watch_coif",
@@ -1816,7 +1751,7 @@
      "source": "item"
     }
    ],
-   "lore": "The mail is oiled. The man who oiled it is not coming back for it."
+   "lore": "Oiled, and hung on its peg. The man whose peg it was is not coming back for it."
   },
   "watch_hauberk": {
    "id": "watch_hauberk",
@@ -1840,7 +1775,7 @@
      "source": "item"
     }
    ],
-   "lore": "Stitched at the shoulder where a blade went in, by someone who could not sew, more than once."
+   "lore": "Mended at the shoulder where a blade went in, more than once, by someone who could not sew."
   },
   "watch_shield": {
    "id": "watch_shield",
@@ -1895,7 +1830,7 @@
   },
   "levy_colours": {
    "id": "levy_colours",
-   "name": "Ashford Levy Colours",
+   "name": "Levy Colours",
    "kind": "cloak",
    "rarity": 3,
    "set": "levy_red",
@@ -1944,6 +1879,71 @@
     }
    ],
    "lore": "Forty-one mouths. These were the forks."
+  },
+  "nans_cleaver": {
+   "id": "nans_cleaver",
+   "name": "Nan's Cleaver",
+   "kind": "weapon",
+   "rarity": 4,
+   "icon": "cleaver",
+   "value": 320,
+   "of": "butchers_cleaver",
+   "dropsFrom": 2,
+   "homes": [
+    "kerchiefs"
+   ],
+   "weapon": {
+    "id": "cleaver",
+    "rank": 1
+   },
+   "description": "Below half health, every kill mends 2% of your health. Your blows bleed.",
+   "mods": [
+    {
+     "stat": "damage",
+     "kind": "inc",
+     "value": -0.15,
+     "source": "item",
+     "when": "healthy"
+    }
+   ],
+   "triggers": [
+    {
+     "on": "kill",
+     "icd": 0.1,
+     "when": {
+      "selfHpBelow": 0.5
+     },
+     "effects": [
+      {
+       "do": "heal",
+       "amount": 0.02,
+       "basis": "maxhp"
+      }
+     ],
+     "text": "Below half health, kills mend you"
+    },
+    {
+     "on": "hit",
+     "chance": 0.15,
+     "effects": [
+      {
+       "do": "status",
+       "target": "hit",
+       "status": {
+        "kind": "bleed",
+        "chance": 1,
+        "power": 0.35,
+        "duration": 3
+       }
+      }
+     ]
+    }
+   ],
+   "statuses": [
+    "bleed"
+   ],
+   "downside": "Above four fifths of your health you deal 15% less.",
+   "lore": "Firepot Nan's, from the Roost's kitchen. It has jointed everything the road brought in, and the road brought in a great deal. She will want it back."
   }
  },
  "raritynames": [

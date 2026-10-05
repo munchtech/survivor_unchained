@@ -69,6 +69,8 @@ public sealed class LootRules
     public List<int> MakeFrom = new() { 1, 8, 16, 24, 32 };
     public List<double> MakeMult = new() { 1, 1.8, 2.8, 4.0, 5.5 };
     public List<double> MakeDamage = new() { 0, 0.1, 0.25, 0.45, 0.7 };
+    /// <summary>A stat's own make curve where the general one is too steep for it (armour saturates).</summary>
+    public Dictionary<string, List<double>> Curves = new();
     /// <summary>A base's numbers the make never scales (a shield's block rank, speed).</summary>
     public List<string> Unscaled = new() { "block", "moveSpeed" };
     public int MaxLevel = 40;
@@ -137,6 +139,10 @@ public static class Drops
     public static LootRules Rules => rules ??= Json.Parse<LootRules>(Json.ReadContent("loot.json"));
 
     public const string Iron = "old_iron";
+
+    /// <summary>The story lead's words (WRITING_PASS §25): the HUD's line when a Legendary falls, the
+    /// debt's label, and its line when it pays.</summary>
+    public const string NamedFalls = "This one has a name.", DebtLabel = "What the dark owes you", DebtPaid = "The dark settles up.";
 
     /* ----------------------------------------------------------- tiers -- */
 
@@ -213,13 +219,37 @@ public static class Drops
     {
         var o = new List<StatMod>();
         var make = MakeOf(Math.Clamp(level ?? 1, 1, Rules.MaxLevel));
-        double mult = Rules.MakeMult[(int)make];
         if (BaseOf(def) is { Mods: { } mods })
             foreach (var m in mods)
-                o.Add(m.Value > 0 && !Rules.Unscaled.Contains(m.Stat) ? m with { Value = m.Value * mult } : m);
+                o.Add(m.Value > 0 && !Rules.Unscaled.Contains(m.Stat) ? m with { Value = m.Value * Mult(make, m.Stat) } : m);
         if (def.Kind == ItemKind.Weapon && def.Weapon != null && Rules.MakeDamage[(int)make] > 0)
             o.Add(new StatMod(Stat.Damage, ModKind.Inc, Rules.MakeDamage[(int)make], "item"));
         return o;
+    }
+
+    /// <summary>What the make multiplies a stat by: its own curve, or the general one.</summary>
+    public static double Mult(Make make, string stat) =>
+        (Rules.Curves.TryGetValue(stat, out var c) ? c : Rules.MakeMult)[(int)make];
+
+    /// <summary>A piece's rules at its make: a flat number in them (a lamp's flare, black water's
+    /// bite) grows as its base's numbers do, so a deep copy is not a toy (combat's ask). Rules
+    /// reading the blow or the weapon already grow with what they read.</summary>
+    public static List<TriggerDef> Triggers(ItemDef def, int? level)
+    {
+        double k = Mult(MakeOf(Math.Clamp(level ?? 1, 1, Rules.MaxLevel)), "trigger");
+        if (def.Triggers == null) return new();
+        if (k == 1) return def.Triggers;
+        Effect Scale(Effect e) => e switch
+        {
+            Effect.Nova n when n.Basis == Basis.Flat => n with { Damage = n.Damage * k },
+            Effect.Explode x when x.Basis == Basis.Flat => x with { Damage = x.Damage * k },
+            Effect.Zone z when z.Basis == Basis.Flat => z with { Dps = z.Dps * k },
+            Effect.Strike s when s.Basis == Basis.Flat => s with { Damage = s.Damage * k },
+            Effect.Missiles m when m.Basis == Basis.Flat => m with { Damage = m.Damage * k },
+            Effect.Chain c when c.Basis == Basis.Flat => c with { Damage = c.Damage * k },
+            _ => e,
+        };
+        return def.Triggers.Select(t => new TriggerDef { On = t.On, Chance = t.Chance, Icd = t.Icd, When = t.When, Text = t.Text, Effects = t.Effects.Select(Scale).ToArray() }).ToList();
     }
 
     /* ----------------------------------------------------------- power -- */

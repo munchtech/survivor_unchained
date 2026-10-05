@@ -20,8 +20,14 @@ public sealed partial class Journey
         x.Ch ??= Ch;
         x.World ??= World;
         if (x.Allows == null) x.Allows = c => Rules.Test(c, Ctx);
+        bool owed = World.LootDebt >= Rpg.Drops.Rules.Debt;
+        var rolled = Rpg.Drops.Roll(x);
+        // A Legendary falling is said under the HUD, once (docs/design/LOOT_DESIGN.md §8.2); the debt's
+        // paying is said in its own words.
+        if (rolled.Any(r => r.Tier is LootTier.Legendary or LootTier.Storied))
+            OnAnnounce(new Announcement(owed ? Rpg.Drops.DebtPaid : Rpg.Drops.NamedFalls, "", "reward", 3.2));
         // Its landing heard from the tier the survivor chose (the jackpots always).
-        return Rpg.Drops.AsLoot(Rpg.Drops.Roll(x), Judge).Select(l => l with { Quiet = l.Tier is int t && !Ch.Filter.Heard((LootTier)t) }).ToList();
+        return Rpg.Drops.AsLoot(rolled, Judge).Select(l => l with { Quiet = l.Tier is int t && !Ch.Filter.Heard((LootTier)t) }).ToList();
     }
 
     /// <summary>The filter's word on a piece where it falls; a first sighting is remembered.</summary>

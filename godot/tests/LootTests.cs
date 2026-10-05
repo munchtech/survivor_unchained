@@ -468,6 +468,21 @@ public class LootTests
     }
 
     [Fact]
+    public void A_deep_copys_flat_rules_grow_with_its_make_and_armour_grows_slower_at_the_top()
+    {
+        // Kell's Lamp by day was a flat 14 at any depth (combat): its make scales it as its base's numbers.
+        double Flare(int level) => Drops.Triggers(Items.Get("kells_lamp"), level).SelectMany(t => t.Effects).OfType<Effect.Nova>().Single().Damage;
+        Assert.Equal(14, Flare(1), 6);
+        Assert.Equal(14 * 5.5, Flare(34), 6);
+        // A rule that reads the blow already grows with it.
+        Assert.Equal(0.5, Drops.Triggers(Items.Get("corrans_sword"), 34).SelectMany(t => t.Effects).OfType<Effect.Nova>().Single().Damage, 6);
+        // Armour saturates, so its curve tops out lower than health's.
+        Assert.True(Drops.Mult(Make.Heartwrought, Stat.Armor) < Drops.Mult(Make.Heartwrought, Stat.MaxHealth));
+        // Nan's Cleaver's price is paid above four fifths of her health, not only at full (combat).
+        Assert.Contains(Items.Get("nans_cleaver").Mods!, m => m.When == ModWhen.Healthy && m.Value < 0);
+    }
+
+    [Fact]
     public void The_drowned_coats_dash_leaves_black_water_that_slows()
     {
         var j = Begin();
