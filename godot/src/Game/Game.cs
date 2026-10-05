@@ -434,6 +434,7 @@ public partial class Game : Node, IZoneHost
         hud.Prompt(promptShown = null);
         SetBoss(null);
         hud.Hint(CurrentHint = null);
+        objectivesBase = new();
         hud.Objectives(new());
         cam.FocusOverride = null;
     }

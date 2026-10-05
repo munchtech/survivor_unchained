@@ -29,7 +29,7 @@ public partial class Game
     const double AnswerHold = 0.8;
 
     bool FreePlay => zone != null && scene != null && zone.ClockRuns && Overlay == null && !inTransit && cine == null
-        && !scene.SimPaused && !dawnBreaking && Battle?.Player.Alive != false;
+        && !scene.SimPaused && !controls.Captured && !dawnBreaking && Battle?.Player.Alive != false;
 
     /// <summary>The clock's frame: free play moves it, the light blends, the night can be answered.</summary>
     void TickDay(double dt)
@@ -55,7 +55,7 @@ public partial class Game
                 // The town's own evening call, heard in the town; then, anywhere, what the night holds.
                 var tonight = Journey.Tonight;
                 double gap = 0;
-                if (zone is Waystation) { Say(Journey.DayLines.Dusk, "The gate", 4.5); gap = 5; }
+                if (zone is Waystation) { Say(Journey.DayLines.Dusk, "Gate guard", 4.5); gap = 5; }
                 After(gap, () => Say(Journey.DayLines.Tonight[tonight?.Id ?? ""], null, 5.5));
                 break;
             }
