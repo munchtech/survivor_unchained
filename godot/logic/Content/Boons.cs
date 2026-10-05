@@ -285,7 +285,7 @@ public static class Boons
         // storm, an answer to champions for the green and for the host.
         new() { Id = "from_the_ashes", Name = "Cold, Then Not", Icon = "embers", Rarity = Rarity.Legendary, Max = 3, Kind = BoonKind.Blessing, Tags = [Tag.Fire],
             Text = "Once a night, a blow that would end you does not. You go cold; then the ember catches, and you rise with half your health while everything near you burns.",
-            DeeperText = ["You rise whole, and the fire reaches twice as far.", "Twice a night."] },
+            DeeperText = ["You rise whole, and the fire reaches twice as far.", "You rise with your dash whole, and stand untouchable a moment longer."] },
         new() { Id = "grounding", Name = "Grounding", Icon = "static", Rarity = Rarity.Legendary, Max = 3, Kind = BoonKind.Blessing, Tags = [Tag.Storm, Tag.Chain],
             Text = "A fifth of every blow that reaches you is turned aside as lightning, which leaps from you to three creatures near you.",
             Triggers = [T(TriggerEvent.Hurt, [new Effect.Chain(3, 7, 4, Basis.Hit, School.Storm)], icd: 0.3)],

@@ -42,6 +42,9 @@ public sealed class PlayerState
     /// <summary>What felled the survivor when it was not a blow (poison, burning).</summary>
     public string? FellTo;
     public int Revives;
+    /// <summary>Times she has got up this fight (one at most: Cold, Then Not, however carried, or a
+    /// story night's own rise).</summary>
+    public int Rose;
     /// <summary>Risings From the Ashes still owed tonight (the ember's own, lost at dawn).</summary>
     public int Ashes;
     /// <summary>Blows that have reached the survivor since Watch Mail last turned one.</summary>
@@ -1117,7 +1120,7 @@ public sealed partial class Battle
     /// blow; but it is not a blow. It is never dodged or blocked, sets off no thorns, and buys
     /// none of the moment of grace a blow buys (it did: standing in fire made the survivor
     /// untouchable by the crowd's teeth, half a second in every half second). Said once a second.</summary>
-    void HurtByGround(double amount, School school, double dt)
+    public void HurtByGround(double amount, School school, double dt, string? named = null)
     {
         var p = Player;
         if (!p.Alive || p.Iframes > 0 || p.Leap != null) return;
@@ -1125,7 +1128,7 @@ public sealed partial class Battle
         double dmg = amount * (1 - StatBlock.ArmorReduction(st.Get(Stat.Armor) * Rules.ArmourMul)) * (1 - Clamp(st.GetRaw(Stat.ResistOf(school)), -1, 0.8));
         if (p.BulwarkT > 0) dmg *= Has("unmoving") ? 0.2 : 0.35;
         if (Art.WraithT > 0) dmg *= 0.5;
-        string source = school switch { School.Fire => "burning ground", School.Frost => "frozen ground", School.Nature => "foul ground", _ => "bad ground" };
+        string source = named ?? school switch { School.Fire => "burning ground", School.Frost => "frozen ground", School.Nature => "foul ground", _ => "bad ground" };
         Dot(ref groundSum, dmg, school, source, dt);
     }
 
@@ -1269,10 +1272,15 @@ public sealed partial class Battle
             {
                 // The ember's rising first: the kit's keeps for a night without it.
                 bool ashes = p.Ashes > 0;
-                if (ashes) p.Ashes--; else p.Revives--;
                 int ar = Boons.GetValueOrDefault("from_the_ashes");
+                // One rise a fight, however many ways she carries it (the owner: getting up and
+                // fighting on is rare, or it is a balancing nightmare).
+                p.Ashes = 0;
+                p.Revives = 0;
+                p.Rose++;
                 p.Hp = MaxHp * (ashes && ar >= 2 ? 1 : 0.5);
-                p.Iframes = 2;
+                p.Iframes = ashes && ar >= 3 ? 3.5 : 2;
+                if (ashes && ar >= 3) p.DashCharges = RoundInt(Stats.Get(Stat.DashCharges));
                 if (ashes) RiseBurning(ar);
                 Events.Emit(new Ev.Announce { Title = ashes ? "From the ashes" : "You rise again", Tone = Tone.Boon });
             }
@@ -2002,6 +2010,7 @@ public sealed partial class Battle
 
     public WeaponInst? AddWeapon(string id, int rank = 1)
     {
+        Journal('W', id, null, rank);
         if (!Content.Weapons.All.ContainsKey(id) || Weapons.Exists(w => w.Id == id) || Weapons.Count >= Content.Weapons.MaxWeapons) return null;
         var w = new WeaponInst(id, rank, Weapons.Count);
         if (SkillMods.TryGetValue(id, out var sm)) Marks.Fold(w.Mods, sm);
@@ -2027,6 +2036,7 @@ public sealed partial class Battle
     /// union comes in at full rank, and a combat slot is free again.</summary>
     public WeaponInst? Unite(string union)
     {
+        Journal('U', union);
         var u = Content.Unions.Find(union);
         if (u == null) return null;
         var a = Weapons.Find(w => w.Id == u.A);
@@ -2034,7 +2044,10 @@ public sealed partial class Battle
         if (a?.Evolution == null || c?.Evolution == null) return null;
         RemoveWeapon(u.A);
         RemoveWeapon(u.B);
+        // (Part of the union: the journal has it already.)
+        building++;
         var w = AddWeapon(u.Into, Content.Weapons.MaxRank);
+        building--;
         Events.Emit(new Ev.Evolve { Weapon = u.Into, Into = u.Id });
         Events.Emit(new Ev.Announce { Kicker = "Union", Title = u.Name, Subtitle = u.Description, Tone = Tone.Boon });
         return w;
@@ -2042,6 +2055,7 @@ public sealed partial class Battle
 
     public void RankWeapon(string id)
     {
+        Journal('R', id);
         var w = Weapons.Find(x => x.Id == id);
         if (w == null || w.Rank >= Content.Weapons.MaxRank) return;
         w.Rank++;
@@ -2050,6 +2064,7 @@ public sealed partial class Battle
     /// <summary>A finished weapon honed (the endless dark's draft): a little more damage each time.</summary>
     public void Hone(string id)
     {
+        Journal('H', id);
         var w = Weapons.Find(x => x.Id == id);
         if (w == null || w.Honed >= LevelUp.MaxHone) return;
         w.Honed++;
@@ -2060,6 +2075,7 @@ public sealed partial class Battle
     /// announcement of its own).</summary>
     public void Evolve(string id, string branch, bool chest = false)
     {
+        Journal('E', id, branch, chest ? 1 : 0);
         var w = Weapons.Find(x => x.Id == id);
         if (w == null) return;
         var evo = Array.Find(w.Def.Evolutions, e => e.Id == branch);
@@ -2075,6 +2091,7 @@ public sealed partial class Battle
 
     public void AddBoon(string id)
     {
+        Journal('B', id);
         var def = Content.Boons.Find(id);
         if (def == null) return;
         int r = Boons.GetValueOrDefault(id) + 1;
@@ -2092,7 +2109,8 @@ public sealed partial class Battle
         // Wisdom is the draft's own passive: each rank a reroll.
         if (id == "wisdom") Rerolls++;
         if (id == "spirit_companion") Summon("spirit_wolf", 0, 99);
-        if (id == "from_the_ashes" && r != 2) Player.Ashes++;
+        // Once a night at any rank: rising twice was too generous (the owner).
+        if (id == "from_the_ashes" && r == 1 && Player.Rose == 0) Player.Ashes++;
         if (id == "grave_call") Summon("ghoul_ally", 0, 99);
     }
 
@@ -2101,6 +2119,7 @@ public sealed partial class Battle
     /// with what they carry (their gear's skills, at the gear's ranks).</summary>
     public void Douse(IEnumerable<(string Id, int Rank)> kit)
     {
+        Built.Clear();
         foreach (var id in Boons.Keys.ToList())
         {
             Stats.RemoveSource($"boon:{id}");

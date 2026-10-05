@@ -1139,6 +1139,56 @@ third) widened the gap no further and cost the planned draft too (71% /
 56%). With the bot's noise, a careless draft falling twice as often is the
 signal; the rest of a random draft's losses are bosses it cannot finish.
 
+### 16.10 Getting up: once, and only for a price
+
+The owner: **"GET UP TWICE IS TOO GENEROUS. get up once i guess is ok? but
+only in early game. as we move on you shouldn't get to rise and keep fighting
+unless you have a trait for it. thats a balancing nightmare"**, and then:
+**"the trait can just be a skill/spell right - can get it in arenas or learn
+it for story etc"**.
+
+**The rule:**
+- **Act 1's story fights:** one rise, to the start of the stage she fell in.
+- **Everywhere else:** none. A fall ends the fight. This covers story fights
+  from Act 2, the table's nights, the scars and the atlas's maps. The maps'
+  three falls are gone.
+- **The exception is one power, Cold, Then Not.** Carried, it gets her up in
+  place with half her health.
+- **One rise a fight, however many ways she has it.** In Act 1 the story's
+  own rise counts as one of those ways.
+
+**Cold, Then Not.** The words are the night's own, from the great blessing
+that already had them: "You go cold; then the ember catches." It is what she
+is, a dead woman the ember keeps getting up. It comes two ways, and each
+costs her a power:
+- **In the ember's draft** (every night: table, scar, story), it is a
+  legendary great blessing, as before. It is rare by its rarity, and taking it
+  is the night's great choice spent on getting up rather than on killing.
+  - The second rank still gets her up whole.
+  - The third no longer gets her up twice. She rises with her dash whole and
+    is untouchable a moment longer.
+- **Learned by day, it is an art.** It is held in the art's place (one art is
+  carried), so the price is her art: she goes into the fight without her
+  bash, vault or smoke.
+  - It is the one way to have it on a map, where nothing is drafted.
+  - It is the one way to bring it into a story night from its first second.
+  - Story and crafting choose where it is learned: a manual, Chid's order, or
+    a trainer.
+
+**What went:** Second Wind, a trait any survivor could pick at a level-up,
+which gave a free rise once a night. Its job is Cold, Then Not's now.
+
+**Built:**
+- the art (`AbilityKind.ColdThenNot`, `cold_then_not`, which sets the kit's
+  one rise);
+- one rise a fight (`PlayerState.Rose`: any rise spends every source, and a
+  blessing taken after it arms nothing);
+- `MapRun.FallsAllowed = 1`;
+- the story's rise (`STORY_BOSSES.md` §0.4, §5.1).
+
+**Not built:** the art's look (the skills VFX lead), and its manual and where
+it is learned (story and crafting).
+
 ---
 
 ## 17. The two arenas: nights and maps
