@@ -204,6 +204,21 @@ public partial class ZoneView : Node3D
         foreach (var c in fire.GetChildren()) if (c is GpuParticles3D p) p.Emitting = on;
     }
 
+    /// <summary>The lit light nearest a place, within so far (creation's portrait takes the fire's
+    /// light off her face, and lays its own warm edge in its place).</summary>
+    public OmniLight3D? LightNear(Vector3 at, float within)
+    {
+        OmniLight3D? best = null;
+        float d = within;
+        for (int i = 0; i < lights.Count; i++)
+        {
+            if (!lit[i]) continue;
+            float di = lights[i].GlobalPosition.DistanceTo(at);
+            if (di < d) { d = di; best = lights[i]; }
+        }
+        return best;
+    }
+
     /// <summary>After dark or not: night-only pieces show, moths come to the
     /// lamps, chimney smoke goes dark.</summary>
     public void SetNight(bool on)
