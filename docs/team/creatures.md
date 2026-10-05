@@ -4,26 +4,31 @@ The creatures and models lead (branch `claude/creatures-boar`). The brief: repla
 
 ## State (5 October)
 
-- **The boar: in progress.** Pipeline set up; waiting on the GPU turn for the first pictures.
-  - `tools/creatures/concept.py`: concept pictures from Z-Image-Turbo (Apache-2.0, no revenue cap), each with its record (prompt, seed, model hash, date).
+- **The boar: the pipeline runs end to end** (dry run on a first sculpt); the real sculpt is in TRELLIS now.
+  - `tools/creatures/concept.py`: pictures from Z-Image-Turbo (Apache-2.0, no revenue cap), each with its record (prompt, seed, model hashes, date).
   - `tools/creatures/sculpt.py`: a picture through TRELLIS 2 (MIT) locally, with its record.
-  - `tools/comfy/graphs/zimage_t2i.json`: the Z-Image graph.
+  - `tools/creatures/boar_build.py` (Blender, stage by stage): prep, form (the body as one closed solid, what we remake cut away, smoothed), low (QuadriFlow quads, ~4.8k), dress (our tusks, tail, crest and tuft cards; one atlas), bake (paint, normals, position/normal/tangent/part maps, AO), rig, export (glTF with separate textures).
+  - `tools/creatures/boar_paint.py`: our paint in texture space (coat, grizzled back, cheek blaze, mud, scars, ivory; bristles drawn along the coat's lie into paint and normals).
+  - `tools/creatures/quadruped.py`: the four-legged rig (shared with the wolf later) and the pose solver; `boar_clips.py`: trot, gallop, idle, paw, gore, flinch, dazed, three deaths. `clip_sheet.py`: sheets for review.
+  - `tools/creatures/bristles.py`: the drawn bristle atlas.
+- **Game side (in, inert until the model lands):** `vat_normal.gdshader` (VAT_NORMAL variant), roles of length 0 play the whole clip, per-role looping, a beast's Pace and ChargePace, the `charge` role while lunging, the `stun` role while stunned.
 
 ## Key decisions
 
-- **Pictures from Z-Image-Turbo, not Krea 2.** Legal 5(g) ranks a cap-free local model above Krea; a Krea-made boar would only join the list of things to replace. Krea stays the fallback if Z-Image can't get the look.
-- **A new four-legged rig, not the old boar's skeleton.** The old skeleton's clips are part of the personal-use asset. The new rig is meant to be shared with the wolf later. Agreed with animation (a7dd95d00c4a6a017): I key a first pass, they review and own the clips.
-- **Budget (agreed with performance, a0eb8c612c94d4aa5):** about 7k VAT vertices (inside the 8000), a 2K albedo, a 2K normal map read through a compile-time `VAT_NORMAL` shader variant (only boar surfaces pay), the bristles on their own cut surface and texture. Textures ship as separate VRAM-compressed files, not embedded uncompressed.
-- **Charge as its own role** (a gallop), played while lunging; the trot stays `move`.
+- **Pictures from Z-Image-Turbo, not Krea 2.** Legal 5(g) ranks a cap-free local model above Krea; a Krea-made boar would only join the list of things to replace.
+- **The sculpt comes from a clay maquette picture.** TRELLIS turns painted fur into a crust of flakes that no remesh cleans; a grey clay maquette of the same beast gives clean sculpted forms (crest spikes, folds, scars). All colour is our own paint over it.
+- **A new four-legged rig, not the old boar's skeleton** (its clips are part of the personal-use asset). Agreed with animation (a7dd95d00c4a6a017): I key the first pass, they own the clips after.
+- **Budget (agreed with performance, a0eb8c612c94d4aa5):** about 7k VAT vertices, 2K albedo and 2K normal map (VRAM-compressed files beside the glTF), `VAT_NORMAL` as a compile-time variant, bristles on their own cut surface.
+- **QuadriFlow refuses meshes with zero-length edges** (smoothing leaves some): the low stage works at 100x scale with those collapsed.
 
 ## Next
 
-1. Concept pictures (Z-Image) → pick → TRELLIS 2 sculpts → pick.
-2. Blender: orient, symmetrise, retopology, UVs, bake, our own paint layer, tusks and bristle cards, rig, weights, first-pass clips.
-3. Swap into Godot under the same name; judge in a horde at the game camera and close up (Old Tusk at 1.9x).
-4. Paperwork: `docs/legal/records/BOAR_RECORD.md`, ASSET_PROVENANCE (CR-02 retired), CREDITS.
+1. Clay sculpt (boar_clay side 33) through form, low, dress, bake, paint, rig; read its landmarks off its pictures.
+2. Clip sheets, then into Godot: horde at the game camera (`--horde 60:boar`) and close up (Old Tusk); perf-flip numbers to performance.
+3. Paperwork: `docs/legal/records/BOAR_RECORD.md`, ASSET_PROVENANCE (CR-02 retired), CREDITS.
+4. Then the Ford-Warden, the average man and woman, the should-makes (Vonnra flagged by crafting, ab0b263c720bdbda8).
 
 ## Notes for other areas
 
-- **Animation:** rig conventions agreed (+Z forward, hooves at y 0, bones along +Y, mirrored rolls, in-place clips with speeds in m/s, Snout and leaf bones).
-- **Performance:** perf-flip numbers against today's boar with `--horde 60:boar` when it lands.
+- **Animation:** rig conventions as agreed. The rig path comes when the clay boar is rigged.
+- **Crafting:** Vonnra noted (should-make, after the blockers).

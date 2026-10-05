@@ -272,7 +272,9 @@ public static class Vat
             worn.Transform = from.AffineInverse() * new Transform3D(frame, tip + frame * prop.Offset);
             att.AddChild(worn);
         }
-        var asset = BakeRig(def.Key, view, skel, anim, meshes, def.Roles, 20, def.Budget, norm, def.Root);
+        // A role of no length plays its whole clip.
+        var roles = def.Roles.ConvertAll(r => r.Length > 0 || !anim.HasAnimation(r.Clip) ? r : r with { Length = anim.GetAnimation(r.Clip).Length });
+        var asset = BakeRig(def.Key, view, skel, anim, meshes, roles, 20, def.Budget, norm, def.Root);
         host.RemoveChild(view);
         view.QueueFree();
         return asset;

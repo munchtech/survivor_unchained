@@ -57,6 +57,41 @@ CREATURES = {
              "up from the lower jaw past the cheeks, with shorter upper tusks curling above them. Small deep-set amber eyes, "
              "one ear torn. Old pale scars across the snout, the shoulder and the flank, a ragged notch in one ear. Dried dark "
              "mud caked up the legs to the knees, heavy black cloven hooves, a thin tufted tail."),
+    # The second pass: the first read as any wild boar. This one pushes the
+    # silhouette the game camera sees from above: the hump and the hedge of
+    # quills down the back, and tusks that hook out wide of the head.
+    "boar_v2": ("A monstrous old razorback boar, a dark-fantasy beast built like a battering ram. An enormous hump of muscle "
+                "over the shoulders, the back sloping down to lean hindquarters, the head carried low on a short thick neck, a "
+                "long heavy wedge of a skull ending in a broad leathery snout disc. Along the whole spine, from between the ears "
+                "to the rump, stands a tall hedge of long stiff black quill-like bristles, splayed and broken like a dead thorn "
+                "thicket, tallest over the hump. Huge ivory tusks, yellowed at the root and chipped at the points, curve out "
+                "sideways from the lower jaw and hook up and back past the eyes, wide of the head; short upper tusks curl over "
+                "them. Short coarse near-black hide, grizzled rust and ash grey over the back, paler and thinner on the belly. "
+                "Small deep-set amber eyes. Old pale raised scars across the snout and the shoulders, one ear torn ragged. Dried "
+                "dark mud caked up the legs, heavy black cloven hooves, a thin tufted tail."),
+    # For the sculpt only: TRELLIS turns shaggy fur into a crust of flakes,
+    # so the shape is taken from the same beast with its hide short and
+    # tight over the muscle. Its crest and coat are ours, added after
+    # (bristle cards, the paint), from boar_v2's look.
+    "boar_shape": ("A monstrous old razorback boar, a dark-fantasy beast built like a battering ram, its coat clipped short so the "
+                   "body shows: short tight coarse near-black hide over hard muscle, no long fur anywhere. An enormous hump of muscle "
+                   "over the shoulders, deep chest, the back sloping down to lean hindquarters, the head carried low on a short thick "
+                   "neck, a long heavy wedge of a skull ending in a broad leathery snout disc, small deep-set eyes, upright pointed "
+                   "ears. A low hard ridge runs along the spine. Thick sturdy legs with knobbly knees, heavy black cloven hooves, a "
+                   "thin tail with a small tuft. The hide grizzled rust and ash grey over the back, pale scars on the shoulders. "
+                   "Ivory tusks curving out from the lower jaw."),
+    # For the sculpt, the third way: a sculptor's maquette in clay. TRELLIS
+    # reads a smooth sculpted surface cleanly (no fur to turn into flakes),
+    # and keeps the anatomy, the folds and the crest as hard forms; the
+    # paint is all ours after.
+    "boar_clay": ("A museum-quality grey clay sculpture maquette of a monstrous old razorback boar, a dark-fantasy creature "
+                  "design sculpt, matte uniform grey clay, no paint. Built like a battering ram: an enormous hump of muscle over "
+                  "the shoulders, deep chest, the back sloping down to lean hindquarters, the head carried low on a short thick neck, "
+                  "a long heavy wedge of a skull with a broad flat snout disc, heavy brow over small deep-set eyes, upright pointed "
+                  "ears. A hedge of stiff quill-like bristles sculpted as hard spiky clumps runs along the whole spine, tallest over "
+                  "the hump. Thick wrinkled hide sculpted in folds at the neck and the elbows, coarse bristle texture carved over the "
+                  "body, old scars as raised ridges on the shoulders. Huge curved tusks sweep out sideways from the lower jaw and hook "
+                  "up past the eyes. Thick sturdy legs, knobbly knees, heavy cloven hooves. A thin tail with a tuft."),
 }
 
 

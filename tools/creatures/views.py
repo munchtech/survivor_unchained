@@ -65,6 +65,7 @@ DIRS = {
     "top": (Vector((0, 0, 1)), Vector((0, -1, 0))),
     "back": (Vector((0, 1, 0)), Vector((0, 0, 1))),
     "right": (Vector((-1, 0, 0)), Vector((0, 0, 1))),
+    "bottom": (Vector((0, 0, -1)), Vector((0, -1, 0))),
 }
 
 from PIL import Image, ImageDraw  # noqa: E402

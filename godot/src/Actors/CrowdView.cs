@@ -193,7 +193,13 @@ public partial class CrowdView : Node3D
                 break;
             case EnemyState.Windup:
                 role = "windup";
-                t = time;
+                // (Out of step with each other where it loops: a boar's pawing.)
+                t = time + e.Seed * 3;
+                break;
+            case EnemyState.Stunned when asset.Clips.ContainsKey("stun"):
+                // Run into a tree: dazed where it stands until it comes round.
+                role = "stun";
+                t = time + e.Seed * 5;
                 break;
             case EnemyState.Casting when e.Cast == CastKind.Slam && asset.Clips.ContainsKey("slam"):
                 // Up overhead and down, the fists meeting the ground as the blow lands.
