@@ -56,6 +56,8 @@ public static class UiArt
         // drawn at the middle by Overlay), the plate round the survivor's figure on the pack and the
         // self, and the light card for tooltips and the result's cards.
         ["column_divider"] = new("frames/column_divider.png", 0, 24, 0, 24, Tile: true),
+        // A page's column ruled in gilt (Style.Column): stretched, so the rules' fade follows its height.
+        ["column"] = new("frames/column.png", 12, 16, 12, 8),
         ["hero_plate"] = new("frames/hero_plate.png", 56, 56, 56, 56, Tile: true, Out: 12),
         ["card_light"] = new("frames/card_light.png", 20, 20, 20, 20, Tile: true),
         // Hammered iron repeats rather than stretches; the ember stone at the top's middle is the code's.

@@ -159,7 +159,7 @@ public abstract partial class Overlay : Control
     protected Control Page(string title, string? sub = null, Action? close = null, string? closeKey = null)
     {
         HideHud();
-        AddChild(new Backdrop());
+        AddChild(new Backdrop(page: true));
         var band = Style.Panel(UiArt.Frame("header", OrnateBox.Make(OrnateBox.Kind.Slab, 0)));
         band.Position = new Vector2(-4, -4);
         band.Size = new Vector2(1928, 100);
