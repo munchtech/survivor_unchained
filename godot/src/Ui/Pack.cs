@@ -463,7 +463,7 @@ public partial class InventoryScreen : Overlay
                 acts.AddChild(Style.HoldButton($"Break down for {Items.Several(Crafting.Iron, bq.Gives[Crafting.Iron])}", () => BreakDown(it)));
             }
             // A jar of the Dig's slurry carried: the one gamble, by the survivor's own hand.
-            if (!G.Journey.InArena && Inventory.Count(Ch, Crafting.Rules.Slurry.Jar) > 0 && Crafting.Steep(G.Journey.Craft, it) is { Ok: true })
+            if (!G.Journey.InArena && Crafting.CanSteep(Ch) && Crafting.Steep(G.Journey.Craft, it) is { Ok: true })
             {
                 acts.AddChild(Style.HoldButton("Steep", () => Steep(it)));
             }
@@ -492,7 +492,7 @@ public partial class InventoryScreen : Overlay
     /// opened (design 9), the same odds as at Snib's bench, laid out for this piece.</summary>
     void SteepOdds(ItemInstance it)
     {
-        if (G.Journey.InArena || Controls.Instance.UsingPad || Inventory.Count(Ch, Crafting.Rules.Slurry.Jar) == 0 || !Crafting.Steep(G.Journey.Craft, it).Ok) return;
+        if (G.Journey.InArena || Controls.Instance.UsingPad || !Crafting.CanSteep(Ch) || !Crafting.Steep(G.Journey.Craft, it).Ok) return;
         var lines = Style.V(Style.Gap2, Style.Label("Steeped, it comes to one of these, and is set for good after:", Style.UiBold, Style.Small, Style.Ink, true),
             ForgeScreen.SlurryOdds(it, 450));
         var slab = Style.Panel(Style.Box(new Color("#121a10"), ItemViews.SlurryGreen with { A = 0.45f }, 1, 5, 12), lines);

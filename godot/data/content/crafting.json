@@ -235,6 +235,11 @@
   "storyBonus": 2,
   "cap": 8,
   "fellKeeps": 0.5,
+  "_deep": "The scars truly endless (design 20.5): a shard every two minutes past the win, a shard a minute past thirty; once the stream is cured, scar-glass past the hour, one more each hour after. A miniboss carries out two of its people's material.",
+  "deepFrom": 30,
+  "glassFrom": 60,
+  "glassEvery": 60,
+  "miniboss": 2,
   "peoples": {
    "pack": [{ "family": "wolf", "material": "wolf_pelt", "per": 150 }, { "family": "boar", "material": "boar_hide", "per": 150 }],
    "dead": [{ "family": "undead", "material": "bone_dust", "per": 150 }],

@@ -1272,6 +1272,17 @@
    "description": "Steep a piece in it, from the pack: a grade past what the forge can do, or something green and strong with a price, or only the veins, or a grade lost. It sets the piece for good.",
    "lore": "It is the GOOD stuff. Snib would not drink it. Snib would not drink the bad stuff EITHER."
   },
+  "scar_glass": {
+   "id": "scar_glass",
+   "name": "Scar-Glass",
+   "plural": "pieces of scar-glass",
+   "kind": "material",
+   "rarity": 3,
+   "icon": "scar_glass",
+   "value": 60,
+   "stack": 10,
+   "description": "What a deep scar leaves for one who stays past the hour, once the stream runs clean. Steep a piece in it, from the pack: a grade past what the forge can do, or something strong with a price, or only the veins, or a grade lost. It sets the piece for good."
+  },
   "mark_hunt_bone": {
    "id": "mark_hunt_bone",
    "name": "Tally-Bone",

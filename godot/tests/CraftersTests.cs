@@ -488,6 +488,38 @@ public class CraftersTests
         Assert.DoesNotContain(Marks.Gyre, worn.Keys);
     }
 
+    /* ---------------------------------------------------- the scars' depth -- */
+
+    [Fact]
+    public void A_scar_pays_deeper_the_longer_one_stays_and_glass_once_the_stream_is_clean()
+    {
+        var none = new Dictionary<Family, int>();
+        int Shards(double past, bool won = true) => Crafting.Night("pack", 1, false, 10, past, won, false, none).Kept.GetValueOrDefault(Crafting.Shard);
+        // A shard every two minutes past the win, to thirty; then a shard a minute: truly endless.
+        Assert.Equal(5, Shards(10));
+        Assert.Equal(15, Shards(30));
+        Assert.Equal(25, Shards(40));
+        Assert.Equal(105, Shards(120));
+        Assert.Equal(0, Shards(40, won: false));
+        // While the stream is sick, Snib sells the gamble; once it is clean, a scar stayed in past the hour gives it.
+        Assert.Equal(0, Crafting.Night("pack", 1, false, 10, 90, true, false, none).Kept.GetValueOrDefault("scar_glass"));
+        Assert.Equal(0, Crafting.Night("pack", 1, false, 10, 59, true, false, none, cured: true).Kept.GetValueOrDefault("scar_glass"));
+        Assert.Equal(1, Crafting.Night("pack", 1, false, 10, 60, true, false, none, cured: true).Kept["scar_glass"]);
+        Assert.Equal(2, Crafting.Night("pack", 1, false, 10, 125, true, false, none, cured: true).Kept["scar_glass"]);
+        // A miniboss carries out two of its people's material.
+        Assert.Equal(2, Crafting.Night("dead", 1, false, 10, 0, true, false, none, new Dictionary<Family, int> { [Family.Undead] = 1 }).Kept["bone_dust"]);
+        // The glass steeps by hand as a jar does, after the jars are gone.
+        var p = Town();
+        p.Give("scar_glass");
+        var it = Carry(p, "iron_helm", 2, ("hale", 1));
+        var q = Crafting.Steep(p.J.Craft, it);
+        Assert.True(q.Ok, q.Blocked);
+        Assert.Equal(1, q.Takes["scar_glass"]);
+        Assert.True(Crafting.Do(p.J.Craft, it, q, new Rng(4)));
+        Assert.Equal(0, p.Count("scar_glass"));
+        Assert.True(Crafting.Slurried(it));
+    }
+
     /* --------------------------------------------------------- item level -- */
 
     [Fact]
