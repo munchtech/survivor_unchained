@@ -7,9 +7,11 @@ what a player can see). It adds to lookdev:
 - VIEWS="name:deg,height,dist,targety:fov;...": several cameras in one run (the first is the
   window's, the rest SubViewports sharing its world); pictures are out_<name>_NN.png;
 - FOLLOW=1: every camera keeps its offset from her hips, for clips that travel (dash, leap, vault);
-- MARKS=1: her areolas and genital area drawn in unlit cyan, after the outfit's own skin hiding,
-  for count.py to find (see that file). Pictures with MARKS and no OUTFIT show her bare: keep
-  them out of the repo and never publish them.
+- MARKS=1: test codes on her skin (marks_section.py: skin near a nipple with its distance, the
+  strip a garment must cover, and tucked skin), drawn last in her skin shader so the outfit's
+  own tuck and hiding stay as in play, for count.py to read. LEGALBARE=1 also hides the outfit's
+  pieces, to see where its tucked skin lies. Pictures with MARKS and no OUTFIT, or with
+  LEGALBARE, show her bare: keep them out of the repo and never publish them.
     python make_motioncheck.py <out.gd>      (run.sh does this into its own output folder)
 Written as UTF-8 without a byte-order mark (Godot refuses a BOM in GDScript)."""
 import os
@@ -110,6 +112,9 @@ swap('\t\t# HAIR=<style> (heroine_hair_<style>.gltf; "none" for none), HAIRCOLOR
      '\t\t\tfor bm in skel.get_children():\n'
      '\t\t\t\tif bm is MeshInstance3D and not String(bm.name).contains(".") and not String(bm.name).contains("_") and bm.mesh.surface_get_format(0) & Mesh.ARRAY_FORMAT_COLOR:\n'
      '\t\t\t\t\tlegal_marks(bm)\n'
+     '\t\t\tif OS.get_environment("LEGALBARE") != "" and outfit != "":\n'
+     '\t\t\t\tfor pm in skel.get_children():\n'
+     '\t\t\t\t\tif pm is MeshInstance3D and String(pm.name).begins_with(outfit.split("_")[0] + "_"): pm.visible = false\n'
      '\t\t# HAIR=<style> (heroine_hair_<style>.gltf; "none" for none), HAIRCOLOR=#rrggbb.\n')
 # MARKS (or LINEAR=1, to test an outfit's own colours against the codes): a linear tonemapper.
 swap('\te.tonemap_mode = Environment.TONE_MAPPER_AGX\n',

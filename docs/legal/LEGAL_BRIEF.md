@@ -277,7 +277,7 @@ I checked these in the repository at `f56ee42` (integration branch) and in rende
 - A release build run with `--body hero --quick … --shot … --perf …` ignored every switch and opened at the age gate.
 
 **Ruled on what remains:**
-- **The Quaternius base bodies** (`assets/people/Superhero_*_FullBody.gltf`) ship because the townsfolk, the Risen and the male survivor are built on them, always dressed. FINE: CC0 and credited. I'll confirm their bare form has no anatomical detail in the GPU check; if it has, add one sentence to the reviewers' note.
+- **The Quaternius base bodies** (`assets/people/Superhero_*_FullBody.gltf`) ship because the townsfolk, the Risen and the male survivor are built on them, always dressed. FINE: CC0 and credited. **Checked 5 Oct:** clay renders of both bodies' bind pose show no nipples and no genitals (a smooth bust and a smooth crotch), and their skin textures (`T_Superhero_*`, `T_Regular_*`) paint underwear: a bra and briefs on the women, briefs on the men. No sentence is needed in the reviewers' note.
 - **`art/anim/hero.res`** is animation data only: FINE.
 - **`data/vo/index.json`** ships with no audio behind it: FINE. No synthetic voice ships, so the disclosure names none.
 
@@ -366,6 +366,7 @@ These are my rulings on the auditor's findings (`ASSET_PROVENANCE.md`), updated 
   - A CC licence, once granted, can't be revoked. But conflicting statements from the licensor invite a dispute and a Steam DMCA notice.
   - The owner plans to replace third-party work "eventually". **"Eventually" is too late for the boar:** it must be replaced before launch (`REPLACEMENT_PLAN.md` 1.1).
   - If the replacement won't be ready, buy the commercial version on Fab as a stop-gap and keep the receipt.
+  - **5 October: buy it now.** The page is unchanged (Sketchfab's API, 5 Oct): still labelled CC BY, still "This version is for personal use only. Commercial use is allowed only for versions purchased on Fab or Patreon." No lead has the replacement scheduled: arena art says creatures aren't theirs, the models planner lists it second, and animation would rig it. Buying the commercial version (Fab, or the creator's Patreon shop) clears the blocker for a small cost, and our own boar can still replace it later. Keep the receipt and the licence text in `docs/legal/records/`, and use the purchased file, not the Sketchfab download. Fab's site sits behind a bot check, so the owner must look up the listing himself.
 - **(b) The base bodies:** **FINE, with conditions** (re-ruled 4 Oct, evening, on the owner's corrected answer).
   - **What they are:**
     - the heroine's body, from the owner's `234.glb`;

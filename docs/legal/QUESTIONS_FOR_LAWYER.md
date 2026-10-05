@@ -61,6 +61,7 @@ These change several answers below.
 12. **Structure** [27]. The owner lives in the US; his state is to be given.
     - Should he trade as a sole proprietor or through an LLC before signing the Steam Distribution Agreement?
     - How does that interact with the "affiliated entities" revenue tests in the Krea and LTX licences?
+    - The credits screen says the game "is made by Munchtech". If Munchtech is not yet a registered business, does using it as a studio name need an assumed-name (DBA) filing in his state? Should the name be cleared, or filed as a mark, alongside the game's title (question 10)?
 13. **Voice release** [13]. Please draft a short written consent and licence for the owner's own voice, or a performer's, for AI cloning: scope, term, payment and withdrawal.
 14. **EULA** [21]. Is the Steam Subscriber Agreement enough, or do you recommend a short game-specific EULA (modding, AI disclosure, adult content acknowledgement)?
 
