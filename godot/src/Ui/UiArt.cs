@@ -30,8 +30,13 @@ public static class UiArt
     /// only, so nothing moves when the art arrives. Clear, when set, is how far
     /// the content keeps from the control's edge (shown pixels) where the
     /// painted border is narrower than the slice (a corner piece wider than the
-    /// border it sits on); unset, three quarters of the margin inside the control.</summary>
-    public sealed record Slice(string File, int L, int T, int R, int B, bool Tile = false, int Out = 0, int Clear = -1, int OutY = -1)
+    /// border it sits on); unset, three quarters of the margin inside the control.
+    /// Ground, when set, is a material (a tileable texture under art/ui/) laid at 1:1
+    /// inside the control under the slice, tinted by Tint: the slice then carries only
+    /// the edge's light and shade, and the material's grain never stretches with it
+    /// (tools/uiforge/kit.py).</summary>
+    public sealed record Slice(string File, int L, int T, int R, int B, bool Tile = false, int Out = 0, int Clear = -1, int OutY = -1,
+        string? Ground = null, Color? Tint = null)
     {
         /// <summary>How far past the control above and below (Out unless OutY is set).</summary>
         public int Oy => OutY >= 0 ? OutY : Out;
@@ -152,13 +157,19 @@ public static class UiArt
     public static StyleBox Frame(string id, StyleBox fallback)
     {
         if (!Frames.TryGetValue(id, out var s) || Tex(s.File) is not { } tex) return fallback;
-        var axis = s.Tile ? StyleBoxTexture.AxisStretchMode.TileFit : StyleBoxTexture.AxisStretchMode.Stretch;
-        var b = new StyleBoxTexture
+        StyleBox b;
+        if (s.Ground != null && Tex(s.Ground) is { } ground)
+            b = new GroundBox { Slice = s, Edge = tex, Ground = ground };
+        else
         {
-            Texture = tex, TextureMarginLeft = s.L, TextureMarginTop = s.T, TextureMarginRight = s.R, TextureMarginBottom = s.B,
-            AxisStretchHorizontal = axis, AxisStretchVertical = axis,
-            ExpandMarginLeft = s.Out, ExpandMarginTop = s.Oy, ExpandMarginRight = s.Out, ExpandMarginBottom = s.Oy,
-        };
+            var axis = s.Tile ? StyleBoxTexture.AxisStretchMode.TileFit : StyleBoxTexture.AxisStretchMode.Stretch;
+            b = new StyleBoxTexture
+            {
+                Texture = tex, TextureMarginLeft = s.L, TextureMarginTop = s.T, TextureMarginRight = s.R, TextureMarginBottom = s.B,
+                AxisStretchHorizontal = axis, AxisStretchVertical = axis,
+                ExpandMarginLeft = s.Out, ExpandMarginTop = s.Oy, ExpandMarginRight = s.Out, ExpandMarginBottom = s.Oy,
+            };
+        }
         // What is inside keeps clear of the painted border: at least three quarters of
         // the slice margin (the border lives in the outer three quarters, by the brief),
         // less the part of the margin that lies outside the control.
@@ -166,6 +177,43 @@ public static class UiArt
         foreach (var side in new[] { Side.Left, Side.Top, Side.Right, Side.Bottom })
             b.SetContentMargin(side, Mathf.Max(fallback.GetContentMargin(side), s.Clear >= 0 ? s.Clear : slice[side] * 0.75f));
         return b;
+    }
+
+    /// <summary>
+    /// Draws a slice with a Ground: the material first, at 1:1 inside the control, then the
+    /// slice's edge over it. Used by Frame and by the drawn boxes that wear art by name.
+    /// </summary>
+    public static void DrawSlice(Rid ci, Rect2 r, Slice s, Texture2D edge, Texture2D? ground)
+    {
+        if (ground != null) DrawGround(ci, r, ground, s.Tint ?? Colors.White);
+        var at = r.GrowIndividual(s.Out, s.Oy, s.Out, s.Oy);
+        var mode = s.Tile ? RenderingServer.NinePatchAxisMode.TileFit : RenderingServer.NinePatchAxisMode.Stretch;
+        RenderingServer.CanvasItemAddNinePatch(ci, at, new Rect2(Vector2.Zero, edge.GetSize()), edge.GetRid(),
+            new Vector2(s.L, s.T), new Vector2(s.R, s.B), mode, mode, true, Colors.White);
+    }
+
+    /// <summary>A material repeated at its own size over a rect, cut at the rect's edges (drawn
+    /// tile by tile, so it needs no texture repeat). Where in the material a rect begins comes
+    /// from its size, so like rects beside each other rarely show the same patch of it.</summary>
+    public static void DrawGround(Rid ci, Rect2 r, Texture2D ground, Color tint)
+    {
+        var ts = ground.GetSize();
+        if (ts.X < 1 || ts.Y < 1 || r.Size.X < 1 || r.Size.Y < 1) return;
+        float px = Mathf.PosMod(r.Size.X * 7.31f + r.Size.Y * 3.17f, ts.X), py = Mathf.PosMod(r.Size.Y * 5.71f + r.Size.X * 1.37f, ts.Y);
+        px = Mathf.Floor(px);
+        py = Mathf.Floor(py);
+        for (float y = 0; y < r.Size.Y;)
+        {
+            float sy = (y == 0 ? py : 0), h = Mathf.Min(ts.Y - sy, r.Size.Y - y);
+            for (float x = 0; x < r.Size.X;)
+            {
+                float sx = (x == 0 ? px : 0), w = Mathf.Min(ts.X - sx, r.Size.X - x);
+                RenderingServer.CanvasItemAddTextureRectRegion(ci, new Rect2(r.Position + new Vector2(x, y), new Vector2(w, h)),
+                    ground.GetRid(), new Rect2(sx, sy, w, h), tint);
+                x += w;
+            }
+            y += h;
+        }
     }
 
     /// <summary>A painted icon for a set ('glyph', 'item', 'map', 'prompt', 'hud'), or null.</summary>
@@ -188,4 +236,14 @@ public static class UiArt
         Set("hand.png", Input.CursorShape.PointingHand, new Vector2(11, 2));
         Set("forbidden.png", Input.CursorShape.Forbidden, new Vector2(16, 16));
     }
+}
+
+/// <summary>A frame whose material is laid at 1:1 under its slice (see UiArt.Slice.Ground).</summary>
+public partial class GroundBox : StyleBox
+{
+    public UiArt.Slice Slice = null!;
+    public Texture2D Edge = null!;
+    public Texture2D? Ground;
+
+    public override void _Draw(Rid ci, Rect2 r) => UiArt.DrawSlice(ci, r, Slice, Edge, Ground);
 }
