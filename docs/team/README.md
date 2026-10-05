@@ -53,7 +53,7 @@ The owner asks: "accurate, efficient, on track, manage and engineer context. del
 - Batch screenshots and renders: shoot everything a check needs in one turn, look once, fix in one pass.
 - Keep handoffs and status pages lean.
 - Effort: legal medium; performance measurement runs, story consistency checks, and provenance and licence logging high; everything else at its top. Every agent stays on the same model.
-- Running now: the face, UI design, animation, skills VFX, arena art (and the main session's outfits). Next: combat, the experience director, creatures, cinematics, performance, crafting, UI art, story, the male hero.
+- Running now: the face, UI design, skills VFX, arena art, cinematics (and the main session's outfits). Next: animation, combat, the experience director, creatures, performance, crafting, UI art, story, the male hero.
 
 ## Roster
 
@@ -64,7 +64,7 @@ The main session keeps this current. It is the address list for SendMessage. Ret
 | Voice (paused by the owner: no placeholders; final voices from ElevenLabs later) | a501b387a90d78b4e | docs/team/voice.md |
 | Story and writing | a7ba8903f4c8261b1 | docs/team/story.md |
 | Combat, encounters, bosses, balance (paused; handoff ready at af6452e1) | — | docs/team/combat.md |
-| Animation | aa15f092820132274 | docs/team/animation.md |
+| Animation (paused; handoff ready at 85d0eaf9) | — | docs/team/animation.md |
 | UI design (layouts, screens, the filter) | aa1f430bd64b8d1ce | docs/team/ui_design.md |
 | UI art (paused; handoff ready at cd0f4ab6) | — | docs/team/ui_art.md |
 | Crafting (research, design, build) (paused; handoff ready at ed429efb) | — | docs/team/crafting.md |
@@ -72,7 +72,7 @@ The main session keeps this current. It is the address list for SendMessage. Ret
 | Skills look and feel (VFX, under the main session) | ad059388f00c19f9f | docs/team/skills.md |
 | Cinematics production | a7a4c20bcfd7ccfd3 | docs/team/cinematics.md |
 | Performance | a0eb8c612c94d4aa5 | docs/team/performance.md |
-| Arena art | aba487928a1515c93 | docs/team/arena_art.md |
+| Arena art | a0b61c278bdd5c994 | docs/team/arena_art.md |
 | Male hero (body, head, hair, outfits) | ab82cbe99e2937ddd | docs/team/hero_male.md |
 | Heroine face, hair and character creation's Look | a6007bf07fd45ab0d | docs/team/face.md |
 | Asset provenance (what isn't ours, licences, credits, replacement plan) | a80ff0c7fd988b178 | docs/team/provenance.md |
