@@ -65,16 +65,16 @@ The main session keeps this current. It is the address list for SendMessage. Ret
 | Story and writing | a7ba8903f4c8261b1 | docs/team/story.md |
 | Combat, encounters, bosses, balance | a427a874da78cba8b | docs/team/combat.md |
 | Animation | aa15f092820132274 | docs/team/animation.md |
-| UI design (layouts, screens, the filter) | a565196002a51af40 | docs/team/ui_design.md |
+| UI design (layouts, screens, the filter) | aa1f430bd64b8d1ce | docs/team/ui_design.md |
 | UI art (paused; handoff ready at cd0f4ab6) | — | docs/team/ui_art.md |
 | Crafting (research, design, build) (paused; handoff ready at ed429efb) | — | docs/team/crafting.md |
 | Gameplay experience director (paused; handoff ready at b170d13e) | — | docs/team/experience.md |
-| Skills look and feel (VFX, under the main session) | a191ed81e2df462cf | docs/team/skills.md |
+| Skills look and feel (VFX, under the main session) | ad059388f00c19f9f | docs/team/skills.md |
 | Cinematics production | a7a4c20bcfd7ccfd3 | docs/team/cinematics.md |
 | Performance | a0eb8c612c94d4aa5 | docs/team/performance.md |
 | Arena art | aba487928a1515c93 | docs/team/arena_art.md |
 | Male hero (body, head, hair, outfits) | ab82cbe99e2937ddd | docs/team/hero_male.md |
-| Heroine face, hair and character creation's Look | a833b7942e978d994 | docs/team/face.md |
+| Heroine face, hair and character creation's Look | a6007bf07fd45ab0d | docs/team/face.md |
 | Asset provenance (what isn't ours, licences, credits, replacement plan) | a80ff0c7fd988b178 | docs/team/provenance.md |
 | Legal and Steam compliance (paused; docs/handoff/legal.md; wake before submission or for a new outfit) | — | docs/team/legal.md |
 | Loot and itemisation (paused, built and merged; docs/handoff/loot.md for a successor) | — | docs/team/loot.md |

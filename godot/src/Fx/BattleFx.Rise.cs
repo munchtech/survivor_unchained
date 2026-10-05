@@ -142,6 +142,42 @@ public partial class BattleFx
     ShaderMaterial? fireMat, wallMat;
     /// <summary>The wall of flame at its tallest, and how far apart its tongues stand (about).</summary>
     const float WallHigh = 2.8f, WallTongue = 0.85f;
+    /// <summary>The cards the wall is drawn on, round the ring (fire_wall.gdshader).</summary>
+    const int WallCards = 160;
+
+    /// <summary>The wall's ring of cards: each a quad standing on the unit ring at its place round it,
+    /// turned to the camera in the shader (UV: across -1..1 and up 0..1; UV2.x: its place, 0..1).</summary>
+    static ArrayMesh FireCards(int n)
+    {
+        var verts = new Vector3[n * 4];
+        var uv = new Vector2[n * 4];
+        var uv2 = new Vector2[n * 4];
+        var idx = new int[n * 6];
+        for (int i = 0; i < n; i++)
+        {
+            float a = i * Mathf.Tau / n;
+            var at = new Vector3(Mathf.Cos(a), 0, Mathf.Sin(a));
+            for (int k = 0; k < 4; k++)
+            {
+                float x = k is 0 or 3 ? -1 : 1, y = k >= 2 ? 1 : 0;
+                verts[i * 4 + k] = at + Vector3.Up * y;
+                uv[i * 4 + k] = new Vector2(x, y);
+                uv2[i * 4 + k] = new Vector2(i / (float)n, 0);
+            }
+            int b = i * 4;
+            idx[i * 6] = b; idx[i * 6 + 1] = b + 1; idx[i * 6 + 2] = b + 2;
+            idx[i * 6 + 3] = b; idx[i * 6 + 4] = b + 2; idx[i * 6 + 5] = b + 3;
+        }
+        var arrays = new Godot.Collections.Array();
+        arrays.Resize((int)Mesh.ArrayType.Max);
+        arrays[(int)Mesh.ArrayType.Vertex] = verts;
+        arrays[(int)Mesh.ArrayType.TexUV] = uv;
+        arrays[(int)Mesh.ArrayType.TexUV2] = uv2;
+        arrays[(int)Mesh.ArrayType.Index] = idx;
+        var mesh = new ArrayMesh();
+        mesh.AddSurfaceFromArrays(Mesh.PrimitiveType.Triangles, arrays);
+        return mesh;
+    }
 
     void StartFire(Vector3 at, float r)
     {
@@ -164,9 +200,11 @@ public partial class BattleFx
             wallMat = new ShaderMaterial { Shader = GD.Load<Shader>("res://shaders/fire_wall.gdshader") };
             wallMesh = new MeshInstance3D
             {
-                Mesh = new CylinderMesh { TopRadius = 1, BottomRadius = 1, Height = 1, RadialSegments = 160, Rings = 1, CapTop = false, CapBottom = false },
+                Mesh = FireCards(WallCards),
                 MaterialOverride = wallMat, CastShadow = GeometryInstance3D.ShadowCastingSetting.Off,
+                CustomAabb = new Aabb(new Vector3(-1.5f, -0.5f, -1.5f), new Vector3(3, 2, 3)),
             };
+            wallMat.SetShaderParameter("segs", (float)WallCards);
             AddChild(wallMesh);
         }
         if (wallMesh != null && wallMat != null)
@@ -198,7 +236,7 @@ public partial class BattleFx
             // then burning down there, lower and dimmer, its tongues guttering.
             float reach = r * (0.03f + 0.97f * ease);
             float high = WallHigh * (0.45f + 0.55f * ease) * (1 - down * down * 0.85f);
-            wallMesh.Position = at + Vector3.Up * (high / 2 - 0.05f);
+            wallMesh.Position = at - Vector3.Up * 0.05f;
             wallMesh.Scale = new Vector3(reach, high, reach);
             wallMat.SetShaderParameter("burn", Mathf.Min(1, t / 0.04f) * (1 - down * down));
         }

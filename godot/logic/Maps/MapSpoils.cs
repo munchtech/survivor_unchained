@@ -40,6 +40,6 @@ public sealed record MapSpoils(List<ItemInstance> Gear, List<ItemInstance> Chart
     /// <summary>The atlas's line for a map's end ("The Lampless Howes, tier 1: cleared, the first
     /// time: a point for the atlas").</summary>
     public static string AtlasLine(Chart c, bool cleared, bool first) =>
-        $"{c.Name}, tier {c.Tier}: " + (!cleared ? $"closed, {MapOffers.People(c.People).BossName} still standing"
+        $"{c.Name}, tier {c.Tier}: " + (!cleared ? $"closed, {MapOffers.InSentence(MapOffers.People(c.People).BossName)} still standing"
             : first ? "cleared, the first time: a point for the atlas" : "cleared");
 }

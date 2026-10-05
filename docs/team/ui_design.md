@@ -1,41 +1,33 @@
 # UI design: status
 
-Agent a4fdbc49786ba8b7f, on branch `worktree-agent-a4fdbc49786ba8b7f`, which has the integration branch, loot, crafting and UI art merged. Pictures are in `docs/ui_review/build3/` (the latest), `build2/` and `build/` (before and after).
+Agent a565196002a51af40, on branch `worktree-agent-a565196002a51af40` (integration merged). Pictures: `docs/ui_review/build7/` (latest), build6 and earlier before it.
 
 ## Current state (built, seen at 1080 and 1440)
-- **The day's book** (Pack, Self, Arts) is one 900 px right-hand panel over the live world. Her figure is framed nearer in the world beside it (`CameraNear`). The tabs ride UI art's chain, fixed in eyelets, with a heated span and a rattle (`ChainTabs`, feel from `art/ui/chain/chain.json`).
-- **Self:** the attributes are a ledger line. Points are coals in a dish, and a coal given lights its numeral. Every number it moves shows its projected value in ember until KEEP or UNDO. The traits are a level track, and offers are held type (`HeldWord`). The standing is four aligned columns, with sources on hover.
-- **Pack:**
-  - the doll with engraved empty places;
-  - the carried grid, showing the rows in use plus one;
-  - the stores as tabs (Pouch, Satchel, Key ring, Belt), and the purse;
-  - Filter beside Sort (`FilterPanel`: presets, promises, drop sounds).
-  - Cards open beside the item with the worn piece, and each line carries its own change. Click holds the card, and holding Del breaks the item down.
-- **Counters** (Storeroom, Trader, crafting's Bench) are fitted panels with the keeper live in the gap; the camera looks at them.
-- **Results** (map and night) are one fitted panel: a ledger tally, the best finds first, and a telling under six seconds.
-- **Notices and tips** are type on the world: sparks, glints and tier light, with no boxes (`WorldType.cs`).
-- **Rules applied everywhere:**
-  - no boxes holding data;
-  - no fades; panels end cleanly with one 28 px margin and a 93% ground;
-  - words as type: Close, UNDO and KEEP, held words;
-  - prompts lie on the world over a soft shade (`PromptsOnWorld`).
+- **The day's book** (Pack, Self, Arts) is one 900 px right-hand panel over the live world, tabs on UI art's chain.
+- **Results** (map and night) are one fitted panel told down the page in centred registers, never two columns:
+  - the verdict, the place, the tally as a ledger line;
+  - **What came out** (map): the best six finds laid out large (84 px tiles), each named in its tier colour with what it is in small capitals above the name; a chart is a find; the rest as small tiles in one row under them;
+  - what was carried out and the gold as one ledger line of counted things (spilled greyed behind a rule; breaks onto a second line rather than widening the panel);
+  - **The atlas** across the panel (peoples head the columns, tiers run down).
+  - The night's result the same: what you take out as ledger lines, what stays as a centred row of medallions going to ash.
+- **The fall:** the world darkens and the HUD steps back to 40%; "Get up" and "Let the night go" mirror about her, on one baseline. Notices are held from the fall until she gets up, or, on a loss, until Chid has spoken (`GameHud.HoldToasts`). A long notice sets its words under its title (560 px).
+- **Journal:** the book is 1440 wide (a reading measure) and hugs the open section's writing (520 to 852 tall, measured until it holds); the sections are the house's tabs as type; no watermark; People has no tinted rows; Deeds ends in a ledger line; the Codex is a ledger of arts with what each takes, the discoveries beside the beasts.
+- **Map:** the map's window (1040) and the list (440) centred together between the bands; the list is type with distances in a right-aligned column, hugging its lines; zoom and find-me are words in its foot.
+- **The dial by night** reads at 1080 and 1440 (build7/9).
+- **The map's names** are set clear of each other as it moves (`Declutter`); the kit switch is seen on the Pack (build7/18).
 
-## Next (see docs/handoff/ui_design.md, 4)
-1. The Journal on the rules (its empty pages, its tabs); MapScreen's self-critique pass.
-2. The kit switch seen on screen (needs a save with a coal or Mark).
-3. Portraits when her head lands; the male hero's Look when he resumes.
-4. The old screens: pause, rest, chapter, credits, creation.
-
-Also built since: ground labels and the legendary chevron, the day dial, the fall's choices, the table and atlas as sheets, the title's focus, barks clear of plates, the kit switch, Arts on the book panel, full pages lighter (build4 to build6).
+## Next (the handoff, section 4, has the detail)
+1. The old screens, shot and judged (build7/20 to 23): pause as a fitted panel with the chain; rest as a held moment in type; the chapter's tally as a ledger line; creation's rows, card and buttons as type.
+2. Portraits when the face lead says her head has landed; the male Look when he resumes.
 
 ## Key decisions
 - One frame per screen; inside it only type, rules and space. Colour means tier, state or the one action.
 - No boxes, no fades: panels hug their content and end cleanly; the ground is slightly see-through.
-- Cards open beside the item, never in an inspect panel. A spend shows its preview everywhere until it's kept.
-- What can't be undone is held, never confirmed by a second dialog.
+- A results page is registers down the page, not columns: no column can run short.
+- Cards open beside the item. A spend previews until kept. What can't be undone is held.
 - Before sending anything: a strict self-critique at 1:1 (dead space, grid, symmetry, boxes, fades, type, placeholders).
 
 ## Notes for other areas
-- **Crafting** (successor): merge my branch (f82f7497 or later). `ForgeScreen.Deed` already uses `HeldWord`; the bench's foot uses `PromptsOnWorld`; Close is type.
-- **UI art:** names in use: `side`, `panel`, `slot*`, `tooltip`, `chip`, `rule_h`, `tab*`, `keycap`, `nodes/*`, `chain/*`, `coal/*`, `hud/spark`, `hud/glint`, `ornaments/title_chain_*`, and `icons/glyph/up`, `anvil` and `link_set_*`.
-- **Experience:** `--toasts T` and `--tip T` show the notices and a tip, for pictures.
+- **Combat / experience:** after a story fall is let go, the fight runs on for 2.2 s under the shade before the result (her skills still strike, the boss's move words show): `StoryNight.Finish`'s `G.After` stops while the sim is paused, so the UI can't hold it still. In the rise run, her body wasn't visible between the fall's choices once (build4 had her there).
+- **UI art:** `book/ribbon.png` is no longer used (the Journal's sections are type). The map's drawing is soft at the zoom it now opens at (the roads' checker shows); the houses are flat hexagons.
+- **Developer switches added:** `--load FILE` (a save read as it stands, never written back), `--journal people|deeds|codex`, `--finds N` with `--open mapresult`.

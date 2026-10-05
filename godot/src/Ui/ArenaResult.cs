@@ -61,36 +61,39 @@ public partial class ArenaResultScreen : TellingScreen
         }
         var story = Story();
 
-        var (left, right) = Columns(v, 420);
-        // Beat two: what comes out, the best last: what is counted, what is carried, what is learned,
-        // then what is new to you (a level, a tome).
-        left.AddChild(Kit.Head("What you take out"));
-        void Next(Control c, Action? sound, double gap = 0.32) { left.AddChild(Beat(c, cue, sound)); cue += gap; }
-        // (experience and gold on one line: two numbers, not two rows)
-        var earned = Style.H(28, Line("book", $"{r.Xp:N0} experience", Kit.Ink));
-        if (r.Gold > 0) earned.AddChild(Line("coin", $"{r.Gold:N0} gold", Style.GoldHi));
-        Next(earned, () => { Sound.Sfx.Xp(6, 1, false, false); if (r.Gold > 0) Sound.Sfx.Gold(); });
-        // What the night left in the fist, for the Waystation's hands; on a fall, what spilled.
-        if (r.Carried.Count > 0 || r.Spilled.Count > 0) Next(Haul(r.Carried, r.Spilled, "Carried out, for the Waystation's hands"), () => Sound.Sfx.Loot(), 0.4);
-        if (r.HaulSeen is { } seen) Next(Style.Label(seen, Style.TextItalic, 15, Kit.Dim, true), null, 0.3);
+        // Beat two: what comes out, told down the panel as centred ledger lines (it was a column
+        // beside a near-empty one): what is counted and carried, what is learned, then what is new
+        // to you (a level, a tome).
+        Register(v, "What you take out");
+        void Next(Control c, Action? sound, double gap = 0.32) { v.AddChild(Beat(c, cue, sound)); cue += gap; }
+        Control Mid(string text, Color c, int size = 17, Font? font = null) => Style.Label(text, font ?? Style.UiBold, size, c, true, HorizontalAlignment.Center);
+        // The experience and the gold on one line; under it what the night left in the fist, for the
+        // Waystation's hands, and on a fall what spilled after it (on one line the two ran past the panel).
+        var earned = new System.Collections.Generic.List<Control> { Sum(Glyphs.Icon("book", 22, Kit.Ink), $"{r.Xp:N0} experience", Kit.Ink) };
+        if (r.Gold > 0) earned.Add(Sum(Glyphs.Icon("coin", 24, Style.GoldHi), $"{r.Gold:N0} gold", Style.GoldHi));
+        Next(LedgerLine(earned), () => { Sound.Sfx.Xp(6, 1, false, false); if (r.Gold > 0) Sound.Sfx.Gold(); }, 0.3);
+        if (r.Carried.Count > 0 || r.Spilled.Count > 0)
+            Next(LedgerLine(r.Carried.Select(kv => Counted(kv.Key, kv.Value)), r.Spilled), () => Sound.Sfx.Loot(), 0.4);
+        if (r.HaulSeen is { } seen) Next(Mid(seen, Kit.Dim, 15, Style.TextItalic), null, 0.3);
         foreach (var made in r.Recorded)
-            Next(Line("scroll", made.StartsWith("evo:") ? $"In the codex: {EvolutionName(made[4..])}" : $"In the codex: the union {Unions.Find(made[6..])?.Name}", Style.GoldHi), Sound.Sfx.Page);
+            Next(Mid(made.StartsWith("evo:") ? $"In the codex: {EvolutionName(made[4..])}" : $"In the codex: the union {Unions.Find(made[6..])?.Name}", Style.GoldHi), Sound.Sfx.Page);
         if (r.Discovered.Count > 0)
         {
             // The skills found, side by side under one line that says what they are for.
-            var found = new HFlowContainer { MouseFilter = MouseFilterEnum.Ignore };
-            found.AddThemeConstantOverride("h_separation", 22);
+            var found = new HFlowContainer { MouseFilter = MouseFilterEnum.Ignore, Alignment = FlowContainer.AlignmentMode.Center };
+            found.AddThemeConstantOverride("h_separation", 32);
             found.AddThemeConstantOverride("v_separation", 8);
             foreach (var id in r.Discovered) found.AddChild(Skill(id, true));
-            Next(Style.V(6, Style.Label("DISCOVERED  ·  to be learned by day, from tomes and from your calling", Style.UiHeavy, 12, Kit.HeadInk, true), found), Sound.Sfx.Discovery, 0.45);
+            Next(Style.V(8, Mid("DISCOVERED  ·  to be learned by day, from tomes and from your calling", Kit.HeadInk, 12, Style.UiHeavy), found), Sound.Sfx.Discovery, 0.45);
         }
-        if (r.Taught is { } taught) Next(Line("book", $"Your calling taught you {Weapons.All[taught].Name}", Style.Good), Sound.Sfx.Discovery);
-        if (r.LevelsGained > 0) Next(Line("star", $"Level {G.Journey.Ch.Level}" + (r.LevelsGained > 1 ? $": {r.LevelsGained} levels in one night" : ""), Style.Good), () => Sound.Sfx.LevelUp(), 0.45);
+        if (r.Taught is { } taught) Next(Mid($"Your calling taught you {Weapons.All[taught].Name}", Style.Good), Sound.Sfx.Discovery);
+        if (r.LevelsGained > 0) Next(Mid($"Level {G.Journey.Ch.Level}" + (r.LevelsGained > 1 ? $": {r.LevelsGained} levels in one night" : ""), Style.Good, 20), () => Sound.Sfx.LevelUp(), 0.45);
         // A tome won is the survivor's to write: one of what burned here (the best of a night, last).
-        if (r.Inscribed is { } tome) Next(Line("book", $"A tome: {Weapons.All[tome].Name}", new Color("#b8a8d8")), () => Sound.Sfx.Loot(true), 0.45);
+        if (r.Inscribed is { } tome) Next(Mid($"A tome: {Weapons.All[tome].Name}", new Color("#b8a8d8")), () => Sound.Sfx.Loot(true), 0.45);
         else if (r.TomeChoices.Count > 0)
         {
             var pick = Style.H(18, Style.Label("A blank tome, to write with one of what burned:", Style.Ui, 16, new Color("#b8a8d8")));
+            pick.Alignment = BoxContainer.AlignmentMode.Center;
             foreach (var id in r.TomeChoices)
             {
                 var w = Weapons.All[id];
@@ -101,30 +104,30 @@ public partial class ArenaResultScreen : TellingScreen
             Next(pick, () => Sound.Sfx.Loot(true), 0.45);
         }
 
-        // Beat three: what stays, the build the ember made, lit as it was, then going to ash.
-        right.AddChild(Kit.Head("What stays in the arena"));
+        // Beat three: what stays, the build the ember made, lit as it was across the panel, then going to ash.
         if (G.Battle is { } b)
         {
-            var grid = new GridContainer { Columns = 4, MouseFilter = MouseFilterEnum.Ignore };
-            grid.AddThemeConstantOverride("h_separation", 6);
-            grid.AddThemeConstantOverride("v_separation", 8);
+            Register(v, "What stays in the arena");
+            var grid = new HFlowContainer { MouseFilter = MouseFilterEnum.Ignore, Alignment = FlowContainer.AlignmentMode.Center };
+            grid.AddThemeConstantOverride("h_separation", 12);
+            grid.AddThemeConstantOverride("v_separation", 10);
             Control Kept(string glyph, string name)
             {
                 var mc = new CenterContainer { MouseFilter = MouseFilterEnum.Ignore };
-                mc.AddChild(new Medallion(52, "", glyph) { Ring = Style.Gold, Ink = Style.GoldHi, Core = new Color("#2a1a10") });
-                var kv = Style.V(2, mc, Style.Label(Kit.Balance(name, Style.Ui, 13, 96), Style.Ui, 13, Kit.Ink2, false, HorizontalAlignment.Center, true));
-                kv.CustomMinimumSize = new Vector2(100, 0);
+                mc.AddChild(new Medallion(56, "", glyph) { Ring = Style.Gold, Ink = Style.GoldHi, Core = new Color("#2a1a10") });
+                var kv = Style.V(4, mc, Style.Label(Kit.Balance(name, Style.Ui, 14, 104), Style.Ui, 14, Kit.Ink2, false, HorizontalAlignment.Center, true));
+                kv.CustomMinimumSize = new Vector2(112, 0);
                 return kv;
             }
             foreach (var w in b.Weapons) grid.AddChild(Kept(w.Evolution?.Art ?? w.Def.Art, $"{w.Evolution?.Name ?? w.Def.Name} {Numeral(w.Rank)}"));
             foreach (var (id, rank) in b.Boons)
                 if (rank > 0 && Boons.Find(id) is { } bd) grid.AddChild(Kept(bd.Icon, bd.Max > 1 ? $"{bd.Name} {Numeral(rank)}" : bd.Name));
-            right.AddChild(grid);
+            v.AddChild(grid);
             ash = grid;
+            ashAt = cue + 0.2;
+            v.AddChild(Beat(Mid("The ember goes out with the arena. The next one starts from nothing.", Kit.Dim, 15, Style.TextItalic), cue + 0.6));
+            cue += 0.9;
         }
-        ashAt = cue + 0.2;
-        right.AddChild(Beat(Style.Label("The ember goes out with the arena. The next one starts from nothing.", Style.TextItalic, 14, Kit.Faint, true), cue + 0.6));
-        cue += 0.9;
 
         // Beat four: how it ended, and the story's own line for it; the way back has been there all along.
         string after = r.Spec.Story

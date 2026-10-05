@@ -139,6 +139,8 @@ public partial class Notice : Control
     readonly WorldType.Spark spark;
     readonly WorldType.Glint glint;
     public readonly Label Title;
+    /// <summary>How wide a notice may run on one line before its words set under its title.</summary>
+    const float Wide = 560;
 
     public Notice(Control? icon, string text, string? sub, Color colour, bool noted, bool grand, double life)
     {
@@ -151,13 +153,32 @@ public partial class Notice : Control
         row.AddThemeConstantOverride("separation", 8);
         if (icon != null) { icon.SizeFlagsVertical = SizeFlags.ShrinkCenter; row.AddChild(icon); }
         row.AddChild(Title);
+        Control whole = row;
+        float lineH = row.GetCombinedMinimumSize().Y;
         if (!string.IsNullOrEmpty(sub))
         {
-            var s = WorldType.Lettering(sub, Style.TextItalic, grand ? 17 : 15, new Color("#cfc4b0"));
+            int subSize = grand ? 17 : 15;
+            float indent = row.GetCombinedMinimumSize().X - Title.GetCombinedMinimumSize().X;
+            // (measured by the font: a label out of the tree keeps the size of its first words)
+            bool fits = row.GetCombinedMinimumSize().X + 8 + Style.TextItalic.GetStringSize(sub, HorizontalAlignment.Left, -1, subSize).X <= Wide;
+            var s = WorldType.Lettering(fits ? sub : Kit.Balance(sub, Style.TextItalic, subSize, Wide - indent), Style.TextItalic, subSize, new Color("#cfc4b0"));
             s.SizeFlagsVertical = SizeFlags.ShrinkEnd;
-            row.AddChild(s);
+            if (fits) row.AddChild(s);
+            else
+            {
+                // A long line (a quest's entry) sets under its title, broken evenly, rather than
+                // running across the screen and over the names on the world.
+                var under = new HBoxContainer { MouseFilter = MouseFilterEnum.Ignore };
+                under.AddChild(new Control { CustomMinimumSize = new Vector2(indent, 0), MouseFilter = MouseFilterEnum.Ignore });
+                under.AddChild(s);
+                var stack = new VBoxContainer { MouseFilter = MouseFilterEnum.Ignore };
+                stack.AddThemeConstantOverride("separation", 1);
+                stack.AddChild(row);
+                stack.AddChild(under);
+                whole = stack;
+            }
         }
-        var size2 = row.GetCombinedMinimumSize();
+        var size2 = whole.GetCombinedMinimumSize();
         if (noted)
         {
             // Its own light behind it, faint, the colour of what it is.
@@ -165,11 +186,11 @@ public partial class Notice : Control
             light.Position = new Vector2(-30, -13);
             AddChild(light);
         }
-        body = row;
-        AddChild(row);
+        body = whole;
+        AddChild(whole);
         CustomMinimumSize = size2;
         float iconW = icon?.GetCombinedMinimumSize().X ?? 0;
-        spark = new WorldType.Spark(colour, grand ? 72 : 48) { Position = new Vector2(iconW / 2 - (grand ? 36 : 24), size2.Y / 2 - (grand ? 36 : 24)) };
+        spark = new WorldType.Spark(colour, grand ? 72 : 48) { Position = new Vector2(iconW / 2 - (grand ? 36 : 24), lineH / 2 - (grand ? 36 : 24)) };
         AddChild(spark);
         glint = new WorldType.Glint(Title.GetCombinedMinimumSize().X, colour) { Position = new Vector2(iconW + 8, 4) };
         AddChild(glint);
@@ -214,42 +235,45 @@ public partial class FallChoices : Control
         MouseFilter = MouseFilterEnum.Ignore;
         Size = new Vector2(1920, 1080);
         light = WorldType.Light(new Vector2(520, 200), Style.Ember with { A = 0 });
-        var row = new HBoxContainer { MouseFilter = MouseFilterEnum.Ignore, Alignment = BoxContainer.AlignmentMode.Center };
-        row.AddThemeConstantOverride("separation", 120);
-        row.AddChild(Choice(Act.Confirm, "Get up", risesLeft == 1 ? "Once, this night: back where you last stood fast." : "Back where you last stood fast.", Style.EmberHi, 34, rise));
-        row.AddChild(Choice(Act.Cancel, "Let the night go", "The night is lost. The day comes on without it.", new Color("#cfc4b0"), 34, letGo));
-        row.Position = new Vector2(0, 560);
-        row.Size = new Vector2(1920, 0);
-        AddChild(row);
-        // (the light sits behind "Get up" itself, wherever the row puts it)
-        var first = (Control)row.GetChild(0);
-        light.Position = first.CustomMinimumSize / 2 - light.Size / 2;
+        // Mirrored about her, where she lies at the screen's middle: "Get up" set flush to the
+        // gap's left side, "Let the night go" flush to its right, each line under its word the
+        // same way, on one baseline (a centred row put the gap off her by the words' difference).
+        var up = Choice(Act.Confirm, "Get up", risesLeft == 1 ? "Once, this night: back where you last stood fast." : "Back where you last stood fast.", Style.EmberHi, 34, rise, true, out var upHead);
+        var go = Choice(Act.Cancel, "Let the night go", "The night is lost. The day comes on without it.", new Color("#cfc4b0"), 34, letGo, false, out _);
+        const float half = 90, y = 560;
+        up.Position = new Vector2(960 - half - up.CustomMinimumSize.X, y);
+        go.Position = new Vector2(960 + half, y);
+        AddChild(up);
+        AddChild(go);
+        // (the light sits behind the words "Get up" themselves, at the button's right)
+        float hw = upHead.GetCombinedMinimumSize().X;
+        light.Position = new Vector2(up.CustomMinimumSize.X - hw / 2, upHead.GetCombinedMinimumSize().Y / 2) - light.Size / 2;
         light.ShowBehindParent = true;
-        first.AddChild(light);
+        up.AddChild(light);
         Modulate = Colors.Transparent;
     }
 
-    static Control Choice(Act key, string title, string line, Color ink, int size, Action pick)
+    static Control Choice(Act key, string title, string line, Color ink, int size, Action pick, bool towardRight, out Control head)
     {
         var b = new Button { FocusMode = FocusModeEnum.None, Flat = true, MouseDefaultCursorShape = CursorShape.PointingHand };
         foreach (var s in new[] { "normal", "hover", "pressed", "focus" }) b.AddThemeStyleboxOverride(s, new StyleBoxEmpty());
-        var head = new HBoxContainer { MouseFilter = MouseFilterEnum.Ignore, Alignment = BoxContainer.AlignmentMode.Center };
-        head.AddThemeConstantOverride("separation", 14);
+        var h = new HBoxContainer { MouseFilter = MouseFilterEnum.Ignore, Alignment = towardRight ? BoxContainer.AlignmentMode.End : BoxContainer.AlignmentMode.Begin };
+        h.AddThemeConstantOverride("separation", 14);
         var cap = Style.Prompt(key);
         cap.SizeFlagsVertical = SizeFlags.ShrinkCenter;
-        head.AddChild(cap);
+        h.AddChild(cap);
         var word = WorldType.Lettering(title.ToUpperInvariant(), Style.Display, size, ink);
-        head.AddChild(word);
+        h.AddChild(word);
+        head = h;
         var col = new VBoxContainer { MouseFilter = MouseFilterEnum.Ignore };
         col.AddThemeConstantOverride("separation", 6);
-        col.AddChild(head);
+        col.AddChild(h);
         var under = WorldType.Lettering(line, Style.TextItalic, 18, new Color("#d8cebc"));
-        under.HorizontalAlignment = HorizontalAlignment.Center;
+        under.HorizontalAlignment = towardRight ? HorizontalAlignment.Right : HorizontalAlignment.Left;
         col.AddChild(under);
         b.AddChild(col);
         b.CustomMinimumSize = col.GetCombinedMinimumSize();
-        // (the two sit on one foot: their lines under them share a baseline)
-        b.SizeFlagsVertical = SizeFlags.ShrinkEnd;
+        col.Size = b.CustomMinimumSize;
         col.Position = new Vector2(0, 0);
         b.MouseEntered += () => word.AddThemeColorOverride("font_color", ink.Lightened(0.25f));
         b.MouseExited += () => word.AddThemeColorOverride("font_color", ink);

@@ -822,6 +822,9 @@ public partial class GameHud : CanvasLayer
     {
         if (fall != null && IsInstanceValid(fall)) fall.QueueFree();
         fall = null;
+        // The play's HUD steps back while the choice waits, as under a conversation: the two
+        // choices are the brightest things on the screen (the bars and the ember sat over them).
+        play.Modulate = risesLeft != null ? new Color(1, 1, 1, 0.4f) : Colors.White;
         if (risesLeft is not int n || rise == null || letGo == null) return;
         fall = new FallChoices(n, rise, letGo);
         root.AddChild(fall);
