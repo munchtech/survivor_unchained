@@ -33,6 +33,7 @@ control rather than from straight lines between wrists.
 """
 from __future__ import annotations
 
+import bisect
 import copy
 import math
 
@@ -419,7 +420,7 @@ def _hermite(ts, vs, eases, t):
         return vs[0]
     if t >= ts[-1]:
         return vs[-1]
-    i = max(k for k in range(n - 1) if ts[k] <= t)
+    i = min(bisect.bisect_right(ts, t) - 1, n - 2)
     t0, t1 = ts[i], ts[i + 1]
     v0, v1 = vs[i], vs[i + 1]
     if eases[i] == "hold":
@@ -484,6 +485,10 @@ class Track:
                 if n not in f and _zero_default(n):
                     f[n] = 0.0
         self.frames = int(round(self.keys[-1][0])) + 1
+        # Each control's own keys, gathered once (a clip keyed every frame
+        # would otherwise gather them again for every control at every frame).
+        self.have = {n: [(k[0], f[n], k[2] if len(k) > 2 else "auto") for k, f in zip(self.keys, self.flats) if n in f]
+                     for n in self.names}
 
     def __call__(self, fr, lead=None):
         """The pose at frame fr. `lead`: frames ahead each part of her runs
@@ -491,7 +496,7 @@ class Track:
         is thrown from the hips with the blade's own timing kept."""
         flat = {}
         for n in self.names:
-            have = [(k[0], f[n], k[2] if len(k) > 2 else "auto") for k, f in zip(self.keys, self.flats) if n in f]
+            have = self.have[n]
             if not have:
                 continue
             t = fr

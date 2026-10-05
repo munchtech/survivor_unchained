@@ -273,6 +273,9 @@ func weapon(skel, kind):
 		fm.add_child(disc)
 		if kind == "shield": return
 		kind = "sword"
+	if kind == "flask":
+		flask(skel)
+		return
 	var hands = {"sword": [["hand_r", 0.95, 0.05, steel]], "axe": [["hand_r", 0.8, 0.07, steel]],
 		"axes": [["hand_r", 0.8, 0.07, steel], ["hand_l", 0.8, 0.07, steel]],
 		"daggers": [["hand_r", 0.4, 0.03, steel], ["hand_l", 0.4, 0.03, steel]],
@@ -302,6 +305,42 @@ func weapon(skel, kind):
 		mount.add_child(w)
 		m.position = Vector3(0, len * (0.5 - grip), 0)
 		w.add_child(m)
+
+# A flat pewter flask in the right hand, as Arms.Hold would mount one: its
+# body round the grip (13 cm tall, 10 wide, 4.5 thin across the palm), the
+# neck's mouth 9 cm up out of the thumb side.
+func flask(skel):
+	var at = BoneAttachment3D.new()
+	at.bone_name = "hand_r"
+	skel.add_child(at)
+	var mount = Node3D.new()
+	var x = Vector3(0, 1, 0)
+	var y = Vector3(0, 0, 1)
+	mount.basis = Basis(x, y, x.cross(y))
+	mount.position = Vector3(-0.025, 0.075, 0)
+	at.add_child(mount)
+	var pewter = StandardMaterial3D.new()
+	pewter.albedo_color = Color(0.56, 0.58, 0.59)
+	pewter.metallic = 0.85
+	pewter.roughness = 0.4
+	var body = MeshInstance3D.new()
+	var bm = CylinderMesh.new()
+	bm.top_radius = 0.05
+	bm.bottom_radius = 0.05
+	bm.height = 0.13
+	bm.material = pewter
+	body.mesh = bm
+	body.scale = Vector3(1, 1, 0.45)
+	mount.add_child(body)
+	var neck = MeshInstance3D.new()
+	var nm = CylinderMesh.new()
+	nm.top_radius = 0.012
+	nm.bottom_radius = 0.016
+	nm.height = 0.03
+	nm.material = pewter
+	neck.mesh = nm
+	neck.position = Vector3(0, 0.075, 0)
+	mount.add_child(neck)
 
 func stage(root):
 	# A checked floor: squares of half a metre, so a sliding foot shows.
@@ -353,6 +392,14 @@ func place_camera():
 		# cut from that screen at its true size. YAW turns her under it.
 		"day": Vector3(0, sin(deg_to_rad(56)) * 23, cos(deg_to_rad(56)) * 23),
 		"arena": Vector3(0, sin(deg_to_rad(64)) * 31, cos(deg_to_rad(64)) * 31)}[view]
+	# OFF=x,y,z: the camera at this offset from the look point (her space,
+	# metres), LOOKOFF=x,y,z the look point moved: a cinematic's own set-up.
+	if env("OFF", "") != "":
+		var o = env("OFF", "").split_floats(",")
+		off = Vector3(o[0], o[1], o[2])
+	if env("LOOKOFF", "") != "":
+		var lo = env("LOOKOFF", "").split_floats(",")
+		c += Vector3(lo[0], lo[1], lo[2])
 	if view == "game": cam.fov = 26
 	if view in ["day", "arena"]:
 		cam.fov = rad_to_deg(2 * atan(tan(deg_to_rad(17)) * vp.size.y / 1080.0))
@@ -362,7 +409,10 @@ func place_camera():
 
 func _process(delta):
 	her.position += her.basis.z.normalized() * speed * delta
-	place_camera()
+	# FIXCAM=1: the camera set up on the clip's first frame and left there,
+	# as a cinematic's camera is set on its marks when the shot begins.
+	if env("FIXCAM", "") == "" or frame <= warm:
+		place_camera()
 	frame += 1
 	if frame <= warm:
 		if frame == warm:
