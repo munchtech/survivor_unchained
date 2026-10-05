@@ -103,7 +103,7 @@ def lie_side_wake(rig):
         toward = slerp_dir((-1.0, 0.0, 0.12), PROP_TOWARD, w)
         hand, pole = forearm_on_ground(rig.sk, p, fr, "r", toward, ground=0.035)
         keyed = pose["hand_r"]
-        k = min(1.0, w * 3)
+        k = min(1.0, w * 6)
         at = np.asarray(keyed["pos"], float) * (1 - k) + hand * k
         return {"hand_r": {**_aimed_only(keyed), "pos": tuple(at), "pole": tuple(np.asarray(keyed["pole"], float) * (1 - k) + pole * k),
                            "knuckles": tuple(slerp_dir(keyed["knuckles"], toward, k))}}
