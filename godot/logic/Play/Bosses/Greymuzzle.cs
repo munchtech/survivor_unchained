@@ -46,10 +46,10 @@ public sealed class Greymuzzle : StoryBoss
     // The table's Pack-Mother is 41 + 6.8 a tier against a thirtieth-minute build in about 85 s. Here
     // the build is a table's twelfth minute and the fight three to four minutes, his time at the den
     // with it. The same at every tier: his level grows him, and the night eases the tiers (TierEase).
-    public override double HealthMul(int tier) => 77;
+    public override double HealthMul(int tier) => 88;
     // His blows at a story night's build (a table's twelfth minute, not its thirtieth). With his teeth in his
     // marked moves and not a brawl (Stalk), each must mean it: a lunge a third of her health.
-    public override double DamageMul => 2.0;
+    public override double DamageMul => 2.3;
     protected override bool DiesAtZero => false;
 
     /// <summary>The den floor's middle, and the den's mouth (the place's points).</summary>
@@ -294,7 +294,7 @@ public sealed class Greymuzzle : StoryBoss
 
     /// <summary>Between his moves he circles her at seven to nine metres, limping: an old wolf keeps a
     /// young one at the end of his reach and goes in only when he means it (a marked move). Walked
-    /// into, he snaps: contact, half his blow, now and then. His teeth are in his moves, not in a
+    /// into, he snaps: a third of his blow, now and then (a blade at his flank is not punished for it). His teeth are in his moves, not in a
     /// brawl she cannot read.</summary>
     bool Stalk(Enemy e, double dt, double dx, double dz, double d)
     {
@@ -313,8 +313,8 @@ public sealed class Greymuzzle : StoryBoss
         e.Anim = EnemyAnim.Move;
         if ((nipT -= dt) <= 0 && d < e.Radius + B.Player.Radius + 0.7)
         {
-            nipT = 1.2;
-            B.HurtPlayer(e.Damage * 0.5, School.Physical, Who, e);
+            nipT = 1.5;
+            B.HurtPlayer(e.Damage * 0.3, School.Physical, Who, e);
         }
         return true;
     }
@@ -402,12 +402,12 @@ public sealed class Greymuzzle : StoryBoss
         // The first is the moon clearing: it is not stopped, it is lived through, in a fire's light.
         unbreakable = !moonCleared;
         moonCleared = true;
-        Channel = unbreakable ? "The moon clears: get into a fire's light!" : "The moon-howl: break it!";
+        Channel = unbreakable ? "The moon clears: into a fire's light!" : "The moon-howl: break it!";
         ChannelProgress = 0;
         howlHp = e.Hp;
         frostR = ringR + 3;
         S.Bark(e.X, e.Z, unbreakable
-            ? "He sits back and howls, and the cloud goes off the moon. The cold comes in off the ring."
+            ? "He sits back and howls, and the cloud slides off the moon. The cold comes in off the ring."
             : "He sits back and howls at the moon, and the ring howls with him.", null);
         double nextLane = 0.6, every = unbreakable ? 1.5 : 2;
         Hold(8, () => { Channel = null; unbreakable = false; sortieT = 2.5; }, t =>

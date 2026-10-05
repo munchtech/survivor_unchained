@@ -89,7 +89,7 @@ public sealed class HollowByNight : StoryFight
         {
             Part.LowRock or Part.MidRock => $"Break Old Blue's howls ({broken} of {Breaks})",
             Part.Ring => $"Break the ring round you ({Got} of {Need})",
-            Part.Rush => $"Break the Pack's rush down the cut ({Got} of {Need})",
+            Part.Rush => $"Break the rush down the cut ({Got} of {Need})",
             _ => "Silence Old Blue",
         };
         public override string? Gate => "clough";
@@ -202,15 +202,15 @@ public sealed class HollowByNight : StoryFight
             switch (part)
             {
                 case Part.LowRock when (broken >= Breaks || howls >= Howls) && howling < 0:
-                    GiveGround(b, "rock_mid", 1, "Old Blue gives ground up the cut, and his yearlings run a ring round you.");
+                    GiveGround(b, "rock_mid", 1, "Old Blue gives ground, up the cut to the next rock, and leaves his yearlings to you.");
                     part = Part.Ring;
                     Ring();
                     break;
                 case Part.Ring when Got >= Need:
-                    InReach(b, Part.MidRock, "The ring is broken", "Old Blue howls from the rock: break his howls");
+                    InReach(b, Part.MidRock, "The ring is broken", "Old Blue is on the next rock: break his howls");
                     break;
                 case Part.MidRock when (broken >= Breaks || howls >= Howls) && howling < 0:
-                    GiveGround(b, "rock", 2, "Old Blue goes up to the clough's head, and every wolf in the clough comes down it.");
+                    GiveGround(b, "rock", 2, "Old Blue goes up to the last rock, at the clough's head. Above him, the whole cut is wolves.");
                     part = Part.Rush;
                     files = 0;
                     fileT = 0;
@@ -225,7 +225,7 @@ public sealed class HollowByNight : StoryFight
                         foreach (var e in A.Group("wolf", 3 + A.Tier, fx, fz, 2.5)) wave.Add((e, e.Seed));
                         files++;
                     }
-                    if (files == Files && Got >= Need) InReach(b, Part.HeadRock, "The rush is broken", "He is alone on the rock: silence him");
+                    if (files == Files && Got >= Need) InReach(b, Part.HeadRock, "The rush is broken", "Old Blue is alone on his rock: silence him");
                     break;
             }
             A.Goal = OutOfReach ? null : (b.X, b.Z);
@@ -283,9 +283,9 @@ public sealed class HollowByNight : StoryFight
         }
 
         public override BossBar? Bar => !Up(blue, blueSeed) ? null
-            : part == Part.Ring ? new BossBar("The ring", "Old Blue is out of reach behind it: break it", Need - Got, Math.Max(1, Need), Shielded: true, IsBoss: false)
-            : part == Part.Rush ? new BossBar("The Pack's rush", "Old Blue is out of reach behind it: break it", Need - Got, Math.Max(1, Need), Shielded: true, IsBoss: false)
-            : new BossBar(blue!.Def.Name, part == Part.HeadRock ? "Nowhere left to go: silence him" : "Break his howls and he gives ground", blue.Hp, blue.MaxHp,
+            : part == Part.Ring ? new BossBar("The ring", "Old Blue is out of reach until it breaks", Need - Got, Math.Max(1, Need), Shielded: true, IsBoss: false)
+            : part == Part.Rush ? new BossBar("The rush", "Old Blue is out of reach until it breaks", Need - Got, Math.Max(1, Need), Shielded: true, IsBoss: false)
+            : new BossBar(blue!.Def.Name, part == Part.HeadRock ? "Nowhere left to go: silence him" : "Break his howls, and he gives ground", blue.Hp, blue.MaxHp,
                 part == Part.HeadRock ? null : [Holds[part == Part.LowRock ? 0 : 1]], howling >= 0 ? ("The howl: break it!", howling / HowlFor) : null, IsBoss: false);
     }
 
@@ -301,13 +301,13 @@ public sealed class HollowByNight : StoryFight
         public override string Goal =>
             Lit == 0 ? "Light a deadfall on the far bank"
             : Up(greenbelly, gbSeed) ? "Bring down Greenbelly"
-            : Reeding ? $"The reeds empty at you: keep a fire fed ({pulses} of {Pulses})"
+            : Reeding ? $"Keep a fire fed while the reeds empty ({pulses} of {Pulses})"
             : $"Light the deadfalls on the far bank ({Lit} of 2)";
         bool Reeding => pulses < Pulses || PulseLeft > 2;
         public override string? Gate => "water";
         public override double Minute => 6;
         public override string Start => "water_in";
-        public override (string Def, double Weight)[] Crowd => [("wolf_blighted", 2), ("wolf", 4), ("boar", 1)];
+        public override (string Def, double Weight)[] Crowd => [("wolf_blighted", 1), ("wolf", 4), ("boar", 1)];
         public override int CrowdAlive => 20;
         public override int CrowdPool => 650;
         public override string[] CrowdFrom => ["reeds_w", "reeds_s", "reeds_n"];
@@ -332,7 +332,7 @@ public sealed class HollowByNight : StoryFight
                 var (x, z) = A.Place[pt];
                 // Slurry underfoot: it slows (Tick), and stings: a twelfth of a blighted wolf's bite a
                 // second. A lesson in where to put her feet, not a death in the water.
-                double dps = Enemies.Get("wolf_blighted").Damage * Enemies.ScaleFor(A.Level).Damage / 12;
+                double dps = Enemies.Get("wolf_blighted").Damage * Enemies.ScaleFor(A.Level).Damage * A.Teeth / 12;
                 var zn = B.SpawnZone(Side.Enemy, x, z, r, 9999, dps, School.Nature);
                 if (zn != null) { zn.Tags = [Tag.Zone, Tag.Nature]; shallows.Add(zn); }
             }
@@ -354,14 +354,21 @@ public sealed class HollowByNight : StoryFight
             pulseT = PulseEvery;
             var pts = new[] { "reeds_w", "reeds_s", "reeds_n" };
             int skip = (int)(A.R() * 3);
+            // Every other time, one bed gives up the sick (they burst), the other the whole: a lesson, not a minefield.
+            bool sick = pulses % 2 == 1;
             int each = (5 + A.Tier + 1) / 2;
             for (int k = 0; k < 3; k++)
-                if (k != skip) foreach (var e in Reeds(each, pts[k], k % 2 == 0 ? "wolf_blighted" : "wolf")) pulse.Add((e, e.Seed));
-            A.Bark(B.Player.X, B.Player.Z + 2, pulses == 1 ? "The reeds stir. The sick come out of them at the light." : "The reeds stir again.", null);
+                if (k != skip)
+                {
+                    foreach (var e in Reeds(each, pts[k], sick ? "wolf_blighted" : "wolf")) pulse.Add((e, e.Seed));
+                    sick = false;
+                }
+            A.Bark(B.Player.X, B.Player.Z + 2, pulses == 1 ? "The reeds stir, and the sick come out of them at you." : "The reeds stir again.", null);
             // With the fourth, the mother of them wades out of the shallows.
-            if (pulses == Pulses - 2 && greenbelly == null)
+            if (pulses == 4 && greenbelly == null)
             {
                 var (x, z) = A.Place["shallow_b"];
+                A.Bark(x, z, "Out in the shallows, something heavy gets up.", null);
                 greenbelly = A.Foe("mb_blight_mother", x, z, 3, "The Pack");
                 if (greenbelly != null)
                 {
@@ -369,10 +376,10 @@ public sealed class HollowByNight : StoryFight
                     // In her own water her trail is thinner (the stream carries it off): the lesson is
                     // her burst, not ground that kills whoever fights her close.
                     var def = greenbelly.Def.Clone();
-                    if (def.Trail is { } tr) def.Trail = tr with { Life = 2.5, DpsPct = tr.DpsPct * 0.5 };
+                    if (def.Trail is { } tr) def.Trail = tr with { Life = 2, DpsPct = tr.DpsPct * 0.35 };
                     greenbelly.Def = def;
-                    // Her bite is not the lesson either: a third less of it.
-                    greenbelly.Damage *= 0.65;
+                    // Her bite is not the lesson either: half of it. Her burst (and her litter's) is.
+                    greenbelly.Damage *= 0.5;
                 }
             }
         }
@@ -419,7 +426,7 @@ public sealed class HollowByNight : StoryFight
     /// ring, and that a wolf who misses is open (his age, at the boss).</summary>
     sealed class Drive : StoryBeat
     {
-        public override string Goal => "Bring down Whitethroat";
+        public override string Goal => Ringed ? $"Break the yearlings' ring ({yearlings.Count - YearlingsUp} of {yearlings.Count - 1})" : "Bring down Whitethroat";
         public override double Minute => 10;
         public override string Start => "den_in";
         public override (string Def, double Weight)[] Crowd => [("wolf", 4), ("wolf_runner", 2), ("wolf_blighted", 1), ("boar", 1)];
@@ -440,7 +447,7 @@ public sealed class HollowByNight : StoryFight
             var (x, z) = A.Place["den"];
             white = A.Foe("mb_whitethroat", x, z + 6, 9, "The Pack");
             // Her teeth between drives are not the lesson: the drive is (its lane keeps its weight).
-            if (white != null) white.Damage *= 0.6;
+            if (white != null) white.Damage *= 0.35;
             if (white != null)
             {
                 whiteSeed = white.Seed;
@@ -515,7 +522,7 @@ public sealed class HollowByNight : StoryFight
             lane = B.Blow(new Battle.EnemyBlow
             {
                 Shape = TelegraphShape.Line, X = laneX0, Z = laneZ0, X1 = laneX1, Z1 = laneZ1, Width = 2.4, Delay = 1.0,
-                Damage = w.Damage * 2.6, Source = w.Def.Name, From = w, Label = "The drive",
+                Damage = w.Damage * 4.5, Source = w.Def.Name, From = w, Label = "The drive",
             });
             // Missed if she is out of the lane when it lands (a dash through it is a miss as well).
             var marked = lane;
@@ -523,17 +530,46 @@ public sealed class HollowByNight : StoryFight
             runT = 0;
         }
 
+        /// <summary>Near her end she calls her yearlings round her (the ring again, closer): out of reach
+        /// behind them until it is broken.</summary>
+        readonly List<(Enemy E, double Seed)> yearlings = new();
+        bool called;
+        int YearlingsUp => yearlings.Count(y => Up(y.E, y.Seed));
+        bool Ringed => called && YearlingsUp > 1;
+
         protected override void Tick(double dt)
         {
             if (!Up(white, whiteSeed)) { Done = true; return; }
-            A.Goal = (white!.X, white.Z);
+            if (!called && white!.Hp < white.MaxHp * 0.25 && runT < 0 && pantT <= 0)
+            {
+                called = true;
+                var p = B.Player;
+                int n = 6 + A.Tier;
+                for (int k = 0; k < n; k++)
+                {
+                    double a = k * Math.PI * 2 / n;
+                    foreach (var e in A.Group("wolf_runner", 1, p.X + Math.Cos(a) * 8, p.Z + Math.Sin(a) * 8, 0.5)) yearlings.Add((e, e.Seed));
+                }
+                white.Disposition = Disposition.Neutral;
+                white.Target = -1;
+                A.Bark(white.X, white.Z, "Whitethroat yips, and her yearlings come round you in a ring.", null);
+                A.Say("The yearlings ring you", "Whitethroat is behind them: break the ring", "danger");
+            }
+            if (called && !Ringed && white!.Disposition == Disposition.Neutral)
+            {
+                white.Disposition = Disposition.Hostile;
+                driveT = Math.Min(driveT, 1.5);
+                A.Say("The yearlings scatter", "Whitethroat is in reach again", "boon");
+            }
+            A.Goal = Ringed ? null : (white!.X, white.Z);
             if (pantT > 0 && (pantT -= dt) <= 0 && white.State == EnemyState.Recover) white.State = EnemyState.Active;
-            white.TakenMul = pantT > 0 ? Opened : Guarded;
+            white.TakenMul = Ringed ? 0 : pantT > 0 ? Opened : Guarded;
+            if (Ringed) return;
             if (!wheeled && white.Hp < white.MaxHp * 0.5)
             {
                 wheeled = true;
                 driveT = Math.Min(driveT, 2);
-                A.Say("The whole Pack wheels", "Wider, and quicker: through the wolves, never the gap", "danger");
+                A.Say("The whole Pack wheels", "Wider and quicker: still through the wolves, never the gap", "danger");
             }
             driveT -= dt;
             if (driveT <= 0 && runT < 0 && pantT <= 0)
@@ -544,7 +580,8 @@ public sealed class HollowByNight : StoryFight
         }
 
         public override BossBar? Bar => Up(white, whiteSeed)
-            ? new BossBar(white!.Def.Name, "Go through the wolves, never the gap", white.Hp, white.MaxHp, IsBoss: false)
+            ? Ringed ? new BossBar("The yearlings", "Whitethroat is out of reach until it breaks", YearlingsUp - 1, Math.Max(1, yearlings.Count - 1), Shielded: true, IsBoss: false)
+            : new BossBar(white!.Def.Name, "Go through the wolves, never the gap", white.Hp, white.MaxHp, IsBoss: false)
             : null;
     }
 }

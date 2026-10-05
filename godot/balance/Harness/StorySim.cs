@@ -131,7 +131,8 @@ public static class StorySim
                 {
                     string part = zone.Now == StoryNight.Stage.Boss ? "boss" : $"stage {zone.BeatIx + 1}";
                     var by = r.HurtBy.TryGetValue(part, out var d) ? d : r.HurtBy[part] = new();
-                    by[hit.Source] = by.GetValueOrDefault(hit.Source) + hit.Amount / Math.Max(1, b.MaxHp);
+                    string src = hit.Label is { } lb ? $"{hit.Source}: {lb}" : hit.Source;
+                    by[src] = by.GetValueOrDefault(src) + hit.Amount / Math.Max(1, b.MaxHp);
                 }
                 // STORY_TRACE=KEY: what lands on her, and the night's turns (why a run fell).
                 if (trace && ev is Ev.PlayerHit ph) Console.Error.WriteLine($"{t / 60:0.000} {zone.Now,-7} {ph.Source,-24} {ph.Amount,6:0} {(ph.Dodged ? "dodged" : ph.Blocked ? "blocked" : "")} hp {b.Player.Hp:0}/{b.MaxHp:0}");
