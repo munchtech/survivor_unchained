@@ -134,6 +134,37 @@ def main():
             sc.render.filepath = os.path.join(out, name)
             bpy.ops.render.render(write_still=True)
         bpy.data.objects.remove(ob, do_unlink=True)
+    if spec.get("eyelet"):
+        eyelet(spec, sc, out, ss, length, width, wire, states[""])
+
+
+def eyelet(spec, sc, out, ss, length, width, wire, iron):
+    """The chain's anchor (eyelet.png): a forged iron grommet set into the band, its hole wide
+    enough for a link to pass, rubbed bright inside where the chain has run through it, with
+    two small nails either side. The hole's darkness is added after (chain.py)."""
+    e = spec["eyelet"]
+    hole = e["hole"] * ss                      # inner radius, render px
+    bar = e["bar"] * ss
+    bpy.ops.mesh.primitive_torus_add(major_radius=(hole + bar) * U, minor_radius=bar * U,
+                                     major_segments=96, minor_segments=24, location=(0, 0, bar * 0.55 * U))
+    ring = bpy.context.active_object
+    ring.scale = (1.0, 1.0, 0.6)               # forged flat, not a round bar
+    bpy.ops.object.transform_apply(scale=True)
+    ring.data.materials.append(iron)
+    # Where the chain runs through it: a link passing the hole, there only to find the wear.
+    lk, _ = C.link_mesh("pass", length * U, width * U, wire * U)
+    lk.rotation_euler = (math.pi / 2, 0, 0)
+    lk.location = (0, 0, 0)
+    bpy.context.view_layer.update()
+    C.mark_wear([lk, ring], wire * U)
+    bpy.data.objects.remove(lk, do_unlink=True)
+    for sx in (-1, 1):
+        bpy.ops.mesh.primitive_uv_sphere_add(radius=e["nail"] * ss * U, location=((hole + bar * 2 + e["nail"] * ss * 1.6) * sx * U, 0, 0))
+        nl = bpy.context.active_object
+        nl.scale = (1, 1, 0.5)
+        nl.data.materials.append(iron)
+    sc.render.filepath = os.path.join(out, "eyelet.png")
+    bpy.ops.render.render(write_still=True)
 
 
 if __name__ == "__main__":

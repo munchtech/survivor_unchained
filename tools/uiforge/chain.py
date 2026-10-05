@@ -130,7 +130,7 @@ def title(side="r", samples=96, length=270, link=(32, 19, 2.6), gap=10.0, fade=9
 # The tab chain's feel, read by the game (ChainTabs, from art/ui/chain/chain.json) and by
 # chainanim.py: heavy forged chain (the owner: "a little wimpy"), a heavy sag, a slower start,
 # a firm stop and a real swing back; five links heated under the chosen tab, cooling outward.
-FEEL = {"fade": 40, "run": 72, "heat": 2, "slide": [130, 17], "sag_spring": [62, 3.6],
+FEEL = {"eyelet": True, "fade": 0, "run": 72, "heat": 2, "slide": [130, 17], "sag_spring": [62, 3.6],
         "sag_rest": 6.5, "sag_dip": 8.0, "sag_speed": 200}
 
 
@@ -149,6 +149,21 @@ def deepen_shadow(img, k=1.35, edge=8):
     return out
 
 
+def hole_dark(img, r):
+    """The eyelet's hole: dark going down into the band, darkest at its middle, so a link
+    drawn under it fades into the dark as it goes in (r in file px)."""
+    h, w = img.shape[:2]
+    yy, xx = np.mgrid[0:h, 0:w].astype(np.float32)
+    d = np.hypot(xx - w / 2 + 0.5, yy - h / 2 + 0.5) / r
+    dark = np.clip(1.15 - d, 0, 1) ** 0.6 * 0.96 * (d < 1.02)
+    out = img.copy()
+    a = out[..., 3]
+    out[..., :3] = (out[..., :3] * a[..., None] + np.array([0.012, 0.008, 0.008], np.float32) * (dark * (1 - a))[..., None]) / \
+        np.maximum((a + dark * (1 - a))[..., None], 1e-4)
+    out[..., 3] = a + dark * (1 - a)
+    return out
+
+
 def links(variants=6, samples=64, link=(30, 19, 3.2), cell=(52, 44), ss=3):
     """chain/{,warm_,hot_}{face,edge}_K and open (art/ui/chain/, cells of `cell` shown px, the
     link at the centre along x): the tab chain's links, each its own sprite so the code can lay
@@ -159,7 +174,8 @@ def links(variants=6, samples=64, link=(30, 19, 3.2), cell=(52, 44), ss=3):
     pitch = round(link[0] - 4 * link[2], 1)
     spec = {"cell": [cell[0] * 2, cell[1] * 2], "ss": ss, "samples": samples, "material": TAB_IRON,
             "link": {"length": link[0] * 2, "width": link[1] * 2, "wire": link[2] * 2},
-            "pitch": pitch * 2, "variants": variants, "seed": 5, "gap": 16}
+            "pitch": pitch * 2, "variants": variants, "seed": 5, "gap": 16,
+            "eyelet": {"hole": 12.5 * 2, "bar": 3.4 * 2, "nail": 1.8 * 2}}
     d = os.path.join(OUT, "links")
     os.makedirs(d, exist_ok=True)
     sp = os.path.join(d, "spec.json")
@@ -170,7 +186,7 @@ def links(variants=6, samples=64, link=(30, 19, 3.2), cell=(52, 44), ss=3):
             os.remove(os.path.join(d, f))
     r = subprocess.run([BLENDER, "-b", "-P", os.path.join(HERE, "blender_links.py"), "--", sp, d],
                        capture_output=True, text=True, timeout=3600)
-    names = [f"{pre}{kind}_{k}" for pre in ("", "warm_", "hot_") for kind in ("face", "edge") for k in range(variants)] + ["open"]
+    names = [f"{pre}{kind}_{k}" for pre in ("", "warm_", "hot_") for kind in ("face", "edge") for k in range(variants)] + ["open", "eyelet"]
     made = {}
     for nm in names:
         p = os.path.join(d, nm + ".png")
@@ -180,6 +196,8 @@ def links(variants=6, samples=64, link=(30, 19, 3.2), cell=(52, 44), ss=3):
         img = deepen_shadow(F.downsample(img, (cell[0] * 2, cell[1] * 2)))
         if nm.startswith("hot_") or nm == "open":
             img = ember_glow(img, 0.7, edge=10)
+        if nm == "eyelet":
+            img = hole_dark(img, 12.5 * 2)
         made[f"chain/{nm}.png"] = img
     meta = {"pitch": pitch, "cell": list(cell), "variants": variants, "link": list(link), **FEEL}
     json.dump(meta, open(os.path.join(d, "chain.json"), "w"), indent=1)
