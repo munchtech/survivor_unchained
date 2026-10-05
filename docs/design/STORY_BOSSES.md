@@ -167,14 +167,14 @@ The sick lie in the den's mouth (the story's sight). Then the Pack backs off her
 | **3. On His Feet** (30% to 0) | He leaves the den's mouth for good. No more howls.<br>**Shake** (within 5.5 m, every 6 s): a 120° cone, 5 m, 1.0 s, ×1.8.<br>**Lunge chains of three** (every 8 s): each lane marked 0.8 s, ×1.6. The second and third lead where she is going (0.6 s). Then he pants for 3 s.<br>**The last of the Pack** (at 15%): the ring breaks and comes in, twelve wolves that are ordinary targets. | The ring closes to 9 m, then breaks at 15% and the bowl opens to its edge. |
 
 - **Weakness: fire.** It breaks the moon-howl, and the fires are fire.
-- **Bane: Maeca's fed fires** ("They won't come near a fire that's fed"; the story lead names the fact). The deadfalls are marked from the boss's first second, they burn for 35 s instead of 20, and the ring bows 7 m round them.
+- **Bane: Maeca's fed fires** ("They won't come near a fire that's fed"; `bane.fires`, set by her talk `maeca.fire`). The deadfalls are marked from the boss's first second, they burn for 35 s instead of 20, and the ring bows 7 m round them.
 - **Enrages:**
   - **soft** (4:30): the ring closes 2 m and bites every 5 s;
   - **hard** (6:00), **The Long Hunt**: the light falls to half and never comes back, and he lunges out of the dark every 3 s.
 - **The ending (C10).** Spent, he goes down on his side, and the ring lies down where it stands.
   - **Where the let-go is open** (`promise.pack`, not broken, the stream clean): two prompts wait at his side, *Let him go* and *Finish it*, with no clock.
     - Let go: he gets up and walks to the den (the `LetGo` built today), and `greymuzzle` becomes `spared`.
-    - Finished: C10's death.
+    - Finished: C10's death; `promise.broken` is set with the killed outcome, and Maeca turns against her as her rule says (story confirmed).
   - **Otherwise** he dies, with his look past her to the den.
   - Today the let-go is automatic when its facts hold. A choice gives her the act the bible describes ("she lets him").
 
@@ -202,7 +202,7 @@ The sick lie in the den's mouth (the story's sight). Then the Pack backs off her
 | # | Space | Goal | Named foe, and what it teaches | Waves | Length |
 |---|---|---|---|---|---|
 | 1 | The ruts | Silence the three pickets | Each picket has a torch and a whistle on a bank's lip. While one stands, its whistle calls footpads off both banks at once (the pincer). **Firepot Nan** (`mb_firepot_nan`) comes with the third whistle and lobs pots from the lip. *Teaches the lobbed circle and fire left burning: his thrown torch.* | Footpads in pincers; pillagers on the lips (no more than 3 throwing). | 1.5–2.5 min |
-| 2 | The cage yard | Break the locks, or bring down Barn-Door if the cages are empty | **Barn-Door** (`mb_barn_door`, shielded, ironbound) holds the cage row. A lock is a target only while she stands within 4 m of it, so her fire breaks the one she stands by. *Teaches his cage: to break a post, stand by it.* If the caravan's men are still held (`caravan.survivors` unset), the freed run down the ruts. They do not fight. | Footpads from the store; bruisers with Barn-Door. | 2–3 min |
+| 2 | The cage yard | Break the locks, or bring down Barn-Door if the cages are empty | **Barn-Door** (`mb_barn_door`, shielded, ironbound) holds the cage row. A lock is a target only while she stands within 4 m of it, so her fire breaks the one she stands by. *Teaches his cage: to break a post, stand by it.* If the caravan's men are still held (`caravan.survivors` unset), the freed run down the ruts; they do not fight. The last lock broken runs the cage rescue's own effects (`Verge.OpenCage`): `caravan.survivors` = `rescued`, the quest entry, the deed and the cage lines, Jory's included. The fourth cage stands empty with its door open (C06). | Footpads from the store; bruisers with Barn-Door. | 2–3 min |
 | 3 | The camp's yard (the place's set piece) | Break the levy: bring down the Pike-Captain | **The levy** forms and marches in step: 6 + tier pikes (`levy_pike`) in a line, locked. The line is not a target while it holds. Shots pass through it at half to what is behind, and area and melee break a man at its ends. **The Pike-Captain** (`mb_pike_captain`) walks behind the line and is the target. The line wavers when he takes damage of 5% of his health within 6 s, and breaks when he falls. *Teaches the levy he calls in his second phase.* | The line, twice if the first breaks early; footpads at its flanks. | 2–3 min |
 
 **The crates** (only while `be.crates` is unset or `redcowl`). In the camp's yard, a torch burns on a post beside the six crates, with a prompt: *Fire the crates* (1 s).
@@ -223,11 +223,11 @@ Then the Kerchiefs hold their ground and part, torches up, and he comes through 
 | Phase | Its moves | How the space changes |
 |---|---|---|
 | **1. The Host** (100% to 65%) | **The Greeting** (within 5 m, every 5 s): a wide sweep, a 150° cone, 4.5 m, 1.0 s, ×1.4.<br>**"Ha! HA."**, then **the Hook** (every 10 s). The laugh comes first: his head goes back, and there is no mark yet (0.6 s; the voice before the killing move). Then he brings the axe overhead down a 7 m line, 2.2 m wide, marked 1.2 s, ×2.0. The axe sticks: he is open for 1.8 s (a pale-blue ring) and takes ×1.25. **The laugh is always the hook.**<br>**Pass the torch** (when she keeps beyond 9 m for 4 s): a watcher hands him a torch and he throws it, a 2.4 m circle, 1.2 s, ×1.2, leaving fire for 3 s.<br>**His lot:** two footpads at a time from the watchers' ring, four alive at most, all ordinary targets. | His people's torches are the light; the yard is open. |
-| **2. Forty-One Mouths** (65% to 30%) | **"Up, my lot!"** as the phase begins: a rallying call, a 3 s channel.<br>**The cage** (every 18 s): bruisers drop a ring of ten posts round her, 5 m out, marked grey for 1.5 s and then solid for 8 s.<br>&nbsp;&nbsp;– It has **one gap, the door, facing him**. He waits at the door with the Hook down the door's lane.<br>&nbsp;&nbsp;– Inside are two footpads.<br>&nbsp;&nbsp;– Ways out: stand by a post (the posts are targets only from inside, nearest first, so her weapons break the one she stands by); dash out before it closes; or let the Hook land in the door and go out behind it.<br>**The levy** (once, at 50%): six pikes march in step out of the cart-line under the old red standard with the arms of his town (C06). They push, and are not targets while locked. They break when he is hurt hard (5% in 6 s) or staggered.<br>**The Hook** goes on, every 12 s. | The call drags the carts into two short walls (marked grey for 1.5 s, then solid). The yard becomes a pen about 22 m across. |
+| **2. Forty-One Mouths** (65% to 30%) | **"Red to me! Up, my lot!"** as the phase begins: a rallying call, a 3 s channel.<br>**The cage** (every 18 s): bruisers drop a ring of ten posts round her, 5 m out, marked grey for 1.5 s and then solid for 8 s.<br>&nbsp;&nbsp;– It has **one gap, the door, facing him**. He waits at the door with the Hook down the door's lane.<br>&nbsp;&nbsp;– Inside are two footpads.<br>&nbsp;&nbsp;– Ways out: stand by a post (the posts are targets only from inside, nearest first, so her weapons break the one she stands by); dash out before it closes; or let the Hook land in the door and go out behind it.<br>**The levy** (once, at 50%): six pikes march in step out of the cart-line under the old red standard with the arms of his town (C06). They push, and are not targets while locked. They break when he is hurt hard (5% in 6 s) or staggered.<br>**The Hook** goes on, every 12 s. | The call drags the carts into two short walls (marked grey for 1.5 s, then solid). The yard becomes a pen about 22 m across. |
 | **3. Mind Where You Swing** (30% to 0) | **The laugh is gone.** He never laughs again.<br>**Chains** (every 7 s): the Hook (marked 1.3 s, longer now there is no laugh), then the Greeting, then a shoulder charge (a lane 8 m long, 0.8 s, ×1.6). The axe sticks at the chain's end for 1.5 s.<br>**The bairns** (once, at 15%): a child cries behind the carts. He stops and turns his head to the tents for 3 s: open, ×1.5 taken, the fight stopped for him. Then, cold: "Mind where you swing." His cadence is ×0.85 to the end. | The watchers lower their torches and the light draws in. |
 
-- **Weakness: storm.** One hit breaks "Up, my lot!": he is held for 3 s, the carts still come, and the levy does not (his people heard nothing).
-- **Bane: the leg** (Rav's talk of the sail-needle, `rav.redcowl`). He wrenches the stuck axe out on the sewn leg, so the open moment is 2.6 s and his stagger fills twice as fast in it. The leg holds: it never breaks, and his last words pay it.
+- **Weakness: storm.** One hit breaks "Red to me! Up, my lot!": he is held for 3 s, the carts still come, and the levy does not (his people heard nothing).
+- **Bane: the leg** (Rav's talk of the sail-needle, `rav.redcowl`; read from Rav's flag `once:redcowl`, which his hub's choice records). He wrenches the stuck axe out on the sewn leg, so the open moment is 2.6 s and his stagger fills twice as fast in it. The leg holds: it never breaks, and his last words pay it.
 - **Enrages:**
   - **soft** (4:30): a cage every 12 s;
   - **hard** (6:00), **All Forty-One**: the whole camp turns out at the carts, torches up, and the levy re-forms every 15 s.
@@ -313,7 +313,7 @@ Then the dead part, and he comes up through them: "Nondum" (C13's arrival).
 | **3. Nondum** (40% to 0) | **The front:** the ranks come down off the walls and close round the fight in a front, a step every 8 s, to 8 m from the landing's middle. Their shields have a grey edge and are not targets. Touching the front shoves her 2 m back, ×0.5. **Holy on him makes the front give a step:** the dead give ground to the Order's school.<br>**Gladius** (within 4.8 m, every 4 s): the cone, then a lane 5 m long, 0.7 s, ×1.5.<br>**"Tenete!"** (every 12 s): a band round her, 4.5 to 6.5 m, 1.5 s, ×0.8; caught in it, she is held for 1.2 s.<br>**He will not lie down** (spent): he goes down inside a pale-blue circle (3 m) for 8 s.<br>&nbsp;&nbsp;– Standing in it for 3 s lays him down; holy does it twice as fast. The front's dead come at the circle to drag her out.<br>&nbsp;&nbsp;– If she fails, he rises with a quarter of his health, a fifth quicker, and the phase runs again.<br>&nbsp;&nbsp;– If she lays him down, he does not stay down: C13's hand at the gate. | The landing closes to the front's ring, and opens again only at the end. |
 
 - **Weakness: holy.** It lays him down twice as fast, makes the front give ground, and keeps his raised dead down.
-- **Bane: the standard** (Chid: "They never followed a man. They followed the pole."; the story lead names the fact). Without it, the standard still breaks, but it cannot be lifted.
+- **Bane: the standard** (Chid: "They never followed a man. Never. They followed the pole."; `bane.pole`, set by his talk `chid.legion`). Without it, the standard still breaks, but it cannot be lifted.
 - **Enrages:**
   - **soft** (4:30): a new line forms every 10 s;
   - **hard** (6:00), **The Last Watch**: the front walks in to 5 m.
@@ -413,12 +413,9 @@ The table's nights and rulers are unchanged throughout.
 
 ## 6. For the other leads
 
-- **Story** (`a73ca9d35d0c487a9`): the beat list goes to you with this document.
-  - Lines are needed for: the pull, the lines between beats, Old Blue, the pickets' whistles, Snib's barrel and lamp lines, the Signifer's "Signa!", Redcowl's call "Up, my lot!", the child's cry and his cold line, and Grimtunnel's barks.
-  - Facts to name for the banes: Maeca's fed fires and Chid's pole. The leg is `rav.redcowl`; the lamp is the item.
-  - Two outcomes to confirm:
-    - freeing the caravan's men in the raid sets `caravan.survivors` to `rescued`;
-    - Greymuzzle's let-go is a choice she makes when its facts hold, not automatic.
+- **Story** (`a73ca9d35d0c487a9`): done. The words (the pulls, the sights between beats, and the fights' voices) are in `WRITING_PASS.md` §21 at `worktree-agent-a73ca9d35d0c487a9@25bb2dc3`; copy them from there when building.
+  - The banes read `bane.fires` and `bane.pole`. Take both off StoryLint's seed list when the fights read them. The leg reads Rav's flag `once:redcowl`.
+  - Confirmed: freeing the men runs the cage rescue's effects; Greymuzzle's let-go is her choice; C13's laying down is in the bible.
 - **Experience** (`ab406cf9ddd22b03b`): the Roost's third beat is the levy, with the crates as an optional shortcut, so a night without crates still has its set piece. Fire near the crates becomes a prompt (section 0.5).
 - **Arena art** (`a26767f7f9955cb56`): each place's spaces and sizes are in its section. Every place needs low cover only, a boss ground that reads at 30 m by night, and the landmark at the edge, not in the fight.
 - **Animation** (`a435f4dd0ac80df75`):

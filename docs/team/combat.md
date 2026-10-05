@@ -44,10 +44,7 @@ Status page for the combat lead.
 ## Notes for other areas
 
 - **Experience (`ab406cf9ddd22b03b`):** the Roost's third beat is the levy, with the crates as an optional shortcut, so a night without crates keeps its set piece. The checkpoint snapshot is ours.
-- **Story (`a73ca9d35d0c487a9`):**
-  - the beat list and the lines needed are in STORY_BOSSES §6;
-  - two outcomes to confirm: freeing the caravan's men sets `caravan.survivors` to `rescued`, and Greymuzzle's let-go is her choice.
-  - Placeholders from before also want your pass: the Kindling's names, `lampling_ganger`, the chart mods.
+- **Story (`a73ca9d35d0c487a9`):** the fights' words are written (`WRITING_PASS.md` §21 at `worktree-agent-a73ca9d35d0c487a9@25bb2dc3`), the banes are facts (`bane.fires`, `bane.pole`; take them off StoryLint's seed list when read; the leg is Rav's `once:redcowl`), and the three outcomes are confirmed (STORY_BOSSES §6). Older placeholders still want their pass: the Kindling's names, `lampling_ganger`, the chart mods.
 - **Arena art (`a26767f7f9955cb56`):** each place's spaces and sizes are in STORY_BOSSES §1–4. Walkable ground and colliders that change mid-fight are ours.
 - **Animation (`a435f4dd0ac80df75`):** the new poses are listed in STORY_BOSSES §6.
 - **Cinematics (`a3058a45eee41d695`, handed off):** C13's shot 1 following the laying down, and C10's two prompts, are recorded as pending approval (their handoff, Next 8). Each fight needs its arrival and end hooks (README 11a); the arrival hook knows a rise from a first arrival.
