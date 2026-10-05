@@ -74,7 +74,9 @@ void fragment() {
 		behind.xyz /= behind.w;
 		fade *= clamp((VERTEX.z - behind.z) / soft, 0.0, 1.0);
 	}
-	// Its light over her held to a third, as every effect's is (hero_clear).
-	ALBEDO = c.rgb * tint.rgb * fade * hero_clear(VERTEX, VIEW_MATRIX, PROJECTION_MATRIX, VIEWPORT_SIZE);
-	ALPHA = c.a * fade * (1.0 - add);
+	// Its light over her held to a third, as every effect's is (hero_clear), and its smoke too:
+	// a burst laid over her tinted her as well as lighting her.
+	float clear = hero_clear(VERTEX, VIEW_MATRIX, PROJECTION_MATRIX, VIEWPORT_SIZE);
+	ALBEDO = c.rgb * tint.rgb * fade * clear;
+	ALPHA = c.a * fade * (1.0 - add) * clear;
 }

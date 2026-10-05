@@ -137,6 +137,32 @@ public static class Sfx
         a.Play(new Hiss { A = 0.005, D = 0.3, G = 0.06, Bp = 2400, Bp2 = 6000, Q = 1.2, Verb = 0.3 });
     }
 
+    /// <summary>Her rise (BattleFx.Rise), in the slowed world's time: the cold (a glassy breath
+    /// in and one beat of the heart), then the ember catching (a low rush of fire) or the
+    /// Order's answer (one toll of a watch bell, deep and long).</summary>
+    public static void Rise(bool ember)
+    {
+        if (A is not { } a) return;
+        a.DuckSfx(0.35f, 1.6);
+        double t = Now;
+        a.Play(new Hiss { A = 0.12, D = 0.55, G = 0.05, Bp = 5200, Bp2 = 8000, Q = 2.2, Verb = 0.55 });
+        a.Play(new Fm { F = 1567.98, F2 = 1318.5, Ratio = 2.76, Index = 0.9, A = 0.08, D = 0.7, G = 0.025, Verb = 0.7 });
+        a.Play(new Tone { T = t + 0.12, F = 62, F2 = 38, D = 0.32, G = 0.24 });
+        if (ember)
+        {
+            a.Play(new Tone { T = t + 0.4, F = 70, F2 = 47, D = 0.3, G = 0.2 });
+            a.Play(new Hiss { T = t + 0.48, A = 0.05, D = 1.3, G = 0.16, Bp = 280, Bp2 = 2200, Q = 0.7, Verb = 0.35 });
+            a.Play(new Tone { T = t + 0.48, F = 55, F2 = 98, A = 0.04, D = 1.0, G = 0.14, Type = Wave.Saw, Lp = 280, Lp2 = 1100 });
+            a.Play(new Hiss { T = t + 0.6, A = 0.3, D = 1.4, G = 0.04, Hp = 3500, Verb = 0.2 });
+        }
+        else
+        {
+            a.Play(new Clip { T = t + 0.36, Of = "impactBell_heavy", G = 0.5, Pitch = 0.5, Verb = 0.85 });
+            a.Play(new Fm { T = t + 0.36, F = 196, Ratio = 2.76, Index = 0.7, A = 0.01, D = 3.4, G = 0.05, Verb = 0.85 });
+            a.Play(new Fm { T = t + 0.36, F = 98, Ratio = 1.4, Index = 0.5, A = 0.01, D = 3.8, G = 0.06, Verb = 0.8 });
+        }
+    }
+
     public static void Dash()
     {
         if (A is not { } a) return;

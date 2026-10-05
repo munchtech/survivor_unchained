@@ -84,6 +84,10 @@ public static class Ev
     public sealed class Dash : CombatEvent { public double X0, Z0, X1, Z1; }
     /// <summary>A telegraphed blow slipped at the last moment (Battle.PerfectDodge).</summary>
     public sealed class PerfectDodge : CombatEvent { public double X, Z; }
+    /// <summary>A killing blow that did not end her (Battle.HurtPlayer): Ember, the ember's
+    /// Cold, Then Not, burning everything within Radius; else the art Not Yet. Grace is how
+    /// long she is untouchable after; Delay, how long after this its fire burns (the cold's beat).</summary>
+    public sealed class Rise : CombatEvent { public double X, Z, Radius, Grace, Delay; public bool Ember; public int Rank; }
     /// <summary>An art used, or a moment of one. X1, Z1: its other end (a
     /// chain's bite, a step's landing, a drain's thread).</summary>
     public sealed class Ability : CombatEvent { public string Id = ""; public double X, Z, X1, Z1, Angle, Radius; public bool Wide; public int Who = -1; }
