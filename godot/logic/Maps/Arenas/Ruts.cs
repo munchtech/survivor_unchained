@@ -154,12 +154,20 @@ public sealed class Ruts : ArenaShape
         // with the prisoners' bowls in it (they were fed).
         foreach (var (id, ox, oz, r) in new[] { ("props/Crate_Wooden", -5.5, -4.0, 0.6), ("props/Crate_Wooden", -6.2, -2.8, 0.6), ("props/Barrel", -4.6, -5.3, 0.5),
                      ("props/Barrel_Holder", 5.8, -4.5, 0.9), ("props/Cage_Small", 0.0, -7.5, 0.9), ("props/Mug", 0.6, -7.2, 0.0), ("props/Chest_Wood", 3.8, -6.2, 0.6),
-                     ("village/Prop_Wagon", -1.0, -9.0, 1.8), ("props/Cauldron", 1.5, 1.0, 0.8), ("props/Bucket_Wooden_1", 2.6, 1.6, 0.0) })
+                     ("village/Prop_Wagon", -1.0, -9.0, 1.8), ("props/Bucket_Wooden_1", 2.6, 1.6, 0.0) })
         {
             // Across the camp (ox) and toward the road (oz; behind it, negative).
             double px = campX + ux * ox + fx * oz, pz = campZ + uz * ox + fz * oz;
             B.Piece(id, px, pz, face + Rng.Range(-0.3, 0.3), id.Contains("Cage") ? 1.6 : id.Contains("Cauldron") ? 1.8 : 1.0);
             if (r > 0) B.Block(px, pz, r);
+        }
+        // The pot, over its own fire in the middle of the camp: the camp's heart, the
+        // brightest warm thing at the edge of the fight.
+        {
+            double px = campX + ux * 1.5 + fx * 1.0, pz = campZ + uz * 1.5 + fz * 1.0;
+            B.Piece("arena/cookpot", px, pz, face);
+            B.Block(px, pz, 1.2);
+            B.Glow(px, pz, "#ff8a3a", 11, fire: true, height: 0.5, size: 0.75);
         }
         // Their colours: red rags on poles, at the camp's edge.
         foreach (int side in new[] { -1, 1 })

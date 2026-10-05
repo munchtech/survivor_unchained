@@ -222,6 +222,8 @@ public partial class Game : Node, IZoneHost
             spec.Spare = Args.Has("spare");
             // --story: told as a story's night (twenty minutes, over at its boss's fall), for pictures of its end.
             if (Args.Has("story")) { spec.Story = true; spec.Minutes = 20; }
+            // --night hollow|roost|dig|vault: that story fight's own night (pictures of its place; --stage N for later stages).
+            if (Args.Get("night") is string nt) spec = SurvivorUnchained.Play.StoryFights.Spec(nt, Journey.Ctx, "waystation", at0.X, at0.Z, at0.Facing);
             Arenas.Begin(World, spec);
         }
         // --zone map [--tier T --people ID --mods a+b --seed N]: straight into a Wayfinder's map.
@@ -1019,7 +1021,7 @@ public partial class Game : Node, IZoneHost
 
     /// <summary>--open KIND (or 'all'): the screens opened in turn, for
     /// pictures and for runs that check each builds (--bare hides the world).</summary>
-    bool hordeDone, dropsDone, castDone, giveDone, minuteDone, chestDone, barksDone, answerDone, fallDone;
+    bool hordeDone, dropsDone, castDone, giveDone, minuteDone, chestDone, barksDone, answerDone, fallDone, litDone;
     int dieIx;
     double blastT = 0.5, marksT = 1;
 
@@ -1072,6 +1074,12 @@ public partial class Game : Node, IZoneHost
         {
             minuteDone = true;
             sn2.SkipTo((int)Args.Num("stage", 0));
+        }
+        // --lit: a story night's deadfalls all burning (pictures of them alight).
+        if (!litDone && Args.Has("lit") && zone is StoryNight sn3 && Battle != null)
+        {
+            litDone = true;
+            foreach (var f in sn3.Fires) { f.Lit = 9999; f.EverLit = true; scene.SetLit(f.Light, true); }
         }
         // --chest 1,3,5! [--chest-at T]: chests of those sizes opened at her feet T seconds in, one
         // after another (! a boss's hoard), for pictures of the opening.
