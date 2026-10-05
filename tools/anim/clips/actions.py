@@ -194,7 +194,7 @@ def death_back(rig):
                    "foot_r": {"pos": (-0.18, 0.03, 0.02), "rot": (-16, -30, 0), "pole": (-0.3, 1, 0.3)},
                    "hips": {"pos": (0, -0.92, -0.58)}},
                   hips=(0, -36, 4), spine=(-4, -4, 4), neck=(0, 10, 0), head=(0, 16, 0), clav_l=(14, 0), clav_r=(14, 0),
-                  hand_l=arm((0.80, -0.10, 0.20), (0.9, 0.3, -0.4)), hand_r=arm((-0.80, -0.14, 0.18), (-0.9, 0.3, -0.4)),
+                  hand_l=arm((0.42, -0.06, 0.10), (0.9, 0.3, -0.4)), hand_r=arm((-0.42, -0.08, 0.09), (-0.9, 0.3, -0.4)),
                   fingers_l="open", fingers_r="open"), "linear"),
         # The back hits: the head whipped back, the legs bounced up.
         (17, {"hips": {"pos": (0.0, -0.97, -0.64), "rot": (0, -84, 0)},

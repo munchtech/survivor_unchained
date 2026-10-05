@@ -67,6 +67,11 @@ def _elbow(up=1.0, sag=0.0):
     }
 
 
+def _aimed_only(spec):
+    """A keyed hand without its place (a contact puts it), keeping its aim."""
+    return {k: v for k, v in spec.items() if k not in ("arc", "mix", "pos")}
+
+
 PROP_TOWARD = (-0.55, 0.0, 0.83)  # her right forearm along the ground, toward her head and before her
 
 
@@ -100,7 +105,7 @@ def lie_side_wake(rig):
         keyed = pose["hand_r"]
         k = min(1.0, w * 3)
         at = np.asarray(keyed["pos"], float) * (1 - k) + hand * k
-        return {"hand_r": {"pos": tuple(at), "pole": tuple(np.asarray(keyed["pole"], float) * (1 - k) + pole * k),
+        return {"hand_r": {**_aimed_only(keyed), "pos": tuple(at), "pole": tuple(np.asarray(keyed["pole"], float) * (1 - k) + pole * k),
                            "knuckles": tuple(slerp_dir(keyed["knuckles"], toward, k))}}
 
     return contact_build("lie_side_wake", rig, keys, contacts,
@@ -124,9 +129,9 @@ def _heels(look=1.0, hands=1.0, breath=0.0):
         "foot_r": {"pos": (-0.11, -0.045, -0.11), "rot": (-4, 140, 0), "pole": (-0.1, 0, 1)},
         # (Her arms are short for her legs: resting, the hands lie high on the thighs.)
         "hand_l": {"pos": (0.12 - 0.01 * hands, lap, 0.14 + 0.18 * hands), "pole": (0.7, -0.5, -0.3),
-                   "knuckles": (0.1, 0.25 * hands - 0.35 * (1 - hands), 1.0), "blade": (1.0, 0.0, -0.1)},
+                   "knuckles": (0.1, 0.25 * hands - 0.35 * (1 - hands), 1.0), "blade": (1.0, 0.0, -0.1), "aim": 1.0},
         "hand_r": {"pos": (-0.12 + 0.01 * hands, lap, 0.14 + 0.18 * hands), "pole": (-0.7, -0.5, -0.3),
-                   "knuckles": (-0.1, 0.25 * hands - 0.35 * (1 - hands), 1.0), "blade": (-1.0, 0.0, -0.1)},
+                   "knuckles": (-0.1, 0.25 * hands - 0.35 * (1 - hands), 1.0), "blade": (-1.0, 0.0, -0.1), "aim": 1.0},
         "clav_l": (0, 6), "clav_r": (0, 6),
         "fingers_l": _f(0.3, 0.2), "fingers_r": _f(0.3, 0.2),
     }
@@ -185,7 +190,7 @@ def sit_back_heels(rig):
             hand, pole = forearm_on_ground(rig.sk, p, fr, "r", PROP_TOWARD, ground=0.035)
             keyed = pose["hand_r"]
             at = hand * w + np.asarray(keyed["pos"], float) * (1 - w)
-            out["hand_r"] = {"pos": tuple(at), "pole": tuple(pole * w + np.asarray(keyed["pole"], float) * (1 - w)),
+            out["hand_r"] = {**_aimed_only(keyed), "pos": tuple(at), "pole": tuple(pole * w + np.asarray(keyed["pole"], float) * (1 - w)),
                              "knuckles": tuple(slerp_dir(keyed.get("knuckles", PROP_TOWARD), PROP_TOWARD, w))}
         return out
 
@@ -325,7 +330,9 @@ def _ready(turn, breath=0.0, over=None):
     pose = {"hips": {"pos": _hips_at(0.985 + 0.004 * b, 0.12, 0.0, turn), "rot": (turn, 8, 0)}, "spine": (0, 8 - 2.5 * b, 0),
             "neck": (0, -2 + b, 0), "head": (4, -1, 0),
             "foot_l": foot((0.13, 0.0, 0.24), 1), "foot_r": foot((-0.13, 0.0, -0.02), -1),
-            "hand_l": arm((0.09, -0.21, 0.30), (0.7, -0.6, -0.3)), "hand_r": arm((-0.07, -0.25, 0.26), (-0.7, -0.6, -0.3)),
+            # (Not aimed: the hands hang off the forearms as they fall.)
+            "hand_l": {**arm((0.09, -0.21, 0.30), (0.7, -0.6, -0.3)), "aim": 0.0},
+            "hand_r": {**arm((-0.07, -0.25, 0.26), (-0.7, -0.6, -0.3)), "aim": 0.0},
             "clav_l": (4 + 2.5 * b, 4), "clav_r": (4 + 2.5 * b, 4), "fingers_l": _f(0.45, 0.3), "fingers_r": _f(0.45, 0.3)}
     pose.update(over or {})
     return pose

@@ -92,8 +92,8 @@ def contact_build(name, rig, keys, contacts, base=None, meta=None):
     pose)` gives the controls to lay over each frame (a hand flat on the
     ground under the shoulder, a flask at the lips), and the whole solved
     again."""
-    from keyed import Track
-    track = Track(keys)
+    from keyed import Track, _one_frame
+    track = Track(_one_frame(rig, keys, base))
     poses = [track(fr) for fr in range(track.frames)]
     first = solved(name, rig, poses, base=base)
     g, p = rig.sk.fk(first.rot, first.pos)
@@ -103,13 +103,11 @@ def contact_build(name, rig, keys, contacts, base=None, meta=None):
 def solved(name, rig, poses, base=None, meta=None, fps=30):
     """A clip of one pose a frame, each solved as it is (keyed.build without
     the keys' timing, for poses already worked out frame by frame)."""
+    from keyed import solve_frames
     from rig import Clip
     n = len(poses)
-    rot = np.empty((n, len(rig.sk), 4))
-    pos = np.empty((n, len(rig.sk), 3))
-    for fr, pose in enumerate(poses):
-        b = None if base is None else (base.rot[min(fr, base.frames - 1)], base.pos[min(fr, base.frames - 1)])
-        rot[fr], pos[fr] = rig.solve(pose, base=b)
+    bases = None if base is None else [(base.rot[min(fr, base.frames - 1)], base.pos[min(fr, base.frames - 1)]) for fr in range(n)]
+    rot, pos = solve_frames(rig, poses, bases)
     m = {"source": "keyed (tools/anim)", "licence": "own work"}
     m.update(meta or {})
     return Clip(name, fps, rot, pos, loop=False, meta=m)

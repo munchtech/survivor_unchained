@@ -26,11 +26,10 @@ from rig import Clip
 def layered(name, rig, base: Clip, over, meta=None) -> Clip:
     """A clip with every frame of `base` under the controls `over(t, frame)`
     gives (hands, fingers, any extra turns)."""
+    from keyed import solve_frames
     n = base.frames
-    rot = np.empty_like(base.rot)
-    pos = np.empty_like(base.pos)
-    for f in range(n):
-        rot[f], pos[f] = rig.solve(over(f / max(n - 1, 1), f), base=(base.rot[f], base.pos[f]))
+    rot, pos = solve_frames(rig, [over(f / max(n - 1, 1), f) for f in range(n)], [(base.rot[f], base.pos[f]) for f in range(n)],
+                            loop=base.loop)
     m = dict(base.meta)
     m.update(meta or {})
     return Clip(name, base.fps, rot, pos, loop=base.loop, meta=m)
