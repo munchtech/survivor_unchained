@@ -40,19 +40,13 @@ Agent aab20546fe06daa89 (successor to aa12c130ddf4b904c), branch `worktree-agent
 
 ## Next (exact)
 
-0. **The motion check tooling is ready** (scratchpad `legal/`), waiting for the coordinator's word that the outfit rebuild has imported:
-   - `make_motioncheck2.py` builds `motioncheck2.gd` from lookdev. It adds:
-     - SPREAD: frames spread over a looped clip;
-     - VIEWS: several cameras per run, through SubViewports;
-     - FOLLOW: cameras follow her hips on travelling clips;
-     - MARKS: her areolas tinted magenta and her genital area cyan, after the outfit's skin hiding.
-   - `count.py` flags any frame showing either colour, and crops it.
-   - `motion3.sh` runs in three phases:
-     1. PHASE=calib: no outfit, to check that the marks land. Scratchpad only.
-     2. PHASE=cup: the Warden's sprint.
-     3. PHASE=all: about 42 clips for each of the four outfits.
-
-     It uses `--fixed-fps 60`, so no frames are skipped.
+0. **The motion check, second pass (running, 4 Oct night).**
+   - The tools are in `tools/legal/motioncheck/` (`run.sh`, `make_motioncheck.py`, `count.py`). They mark her areolas and genital area unlit cyan, after the outfit's skin hiding, and count what shows.
+   - **Results so far:**
+     - the Warden's left cup is fixed;
+     - **nothing is under the Warden's skirt**, and her bare, smooth crotch shows in the sprint (sent to the main session);
+     - no genitals are modelled.
+   - The full run is in the scratchpad (`legal/motion8`). Next, run and sprint for all four rebuilt outfits.
 1. **When the coordinator frees the GPU:**
    - The motion check: `scratchpad/legal/motion.sh` with the clip loop changed to dash, leap, death, death_back, hit, cast_bolt, cast_flick, cast_raise, throw, crossbow_shoot, the swing clips (list them first from `res://art/anim/heroine.res`), the sits and the breaks. All four outfits, jiggle on.
    - Then the cinematic poses (`--cine`) and the creation poses.
