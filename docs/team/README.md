@@ -59,7 +59,7 @@ The main session keeps this current. It is the address list for SendMessage. Ret
 | Animation | a7dd95d00c4a6a017 | docs/team/animation.md |
 | UI design (layouts, screens, the filter) | a4fdbc49786ba8b7f | docs/team/ui_design.md |
 | UI art | a0bff3ffe4d3ad748 | docs/team/ui_art.md |
-| Crafting (research, design, build) | af01b0d61ef656dd4 | docs/team/crafting.md |
+| Crafting (research, design, build) | ab0b263c720bdbda8 | docs/team/crafting.md |
 | Gameplay experience director | a9f0d6c64d891d56d | docs/team/experience.md |
 | Skills look and feel (VFX, under the main session) | abc6bbe020c7fe287 | docs/team/skills.md |
 | Cinematics production | a7a4c20bcfd7ccfd3 | docs/team/cinematics.md |
@@ -69,6 +69,6 @@ The main session keeps this current. It is the address list for SendMessage. Ret
 | Heroine face, hair and character creation's Look | a833b7942e978d994 | docs/team/face.md |
 | Asset provenance (what isn't ours, licences, credits, replacement plan) | a80ff0c7fd988b178 | docs/team/provenance.md |
 | Legal and Steam compliance (AI disclosure, mature content, licences, brief for a lawyer) | af0973d59a5b2817a | docs/team/legal.md |
-| Loot and itemisation (tiers, legendaries, sets, drops, filter, stacking) | a9a9c345a35e1fcad | docs/team/loot.md |
+| Loot and itemisation (paused, built and merged; docs/handoff/loot.md for a successor) | — | docs/team/loot.md |
 | Creatures and models (our own boar first, then MODELS_TO_MAKE.md) | af551cacc6292152f | docs/team/creatures.md |
 | Heroine outfits | main session | — |
