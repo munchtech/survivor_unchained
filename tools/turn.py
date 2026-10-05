@@ -10,8 +10,11 @@ job and give it back the moment the job ends; while you wait, do light work
   python tools/turn.py give gpu                       # also frees ComfyUI's models
   python tools/turn.py show
 
-gpu:   one holder. ComfyUI, TRELLIS, MoGe, and big Blender bakes or renders.
-godot: three holders (each needs 5 GB of RAM free). Godot runs for pictures or clips (dotnet test needs none).
+gpu:     one holder. ComfyUI, TRELLIS and MoGe: they share one server and most
+         of the card's memory, and swapping their models thrashes 20 GB.
+blender: two holders (each needs 6 GB of RAM free). Blender builds, bakes and
+         renders: mostly CPU, a few GB each.
+godot:   three holders (each needs 5 GB of RAM free). Godot runs for pictures or clips (dotnet test needs none).
 
 Waiters are served in the order they first asked: whoever has asked longest
 gets the next free turn, and giving a turn back then taking it again puts you
@@ -30,9 +33,9 @@ import urllib.request
 from pathlib import Path
 
 HOME = Path.home() / ".su_turns"
-SLOTS = {"gpu": 1, "godot": 3}
+SLOTS = {"gpu": 1, "blender": 2, "godot": 3}
 STALE = 3 * 3600  # a holder that never gave its turn back (crashed or forgotten)
-LEAST_RAM = {"gpu": 0, "godot": 5}  # GB free needed, beyond the turn itself
+LEAST_RAM = {"gpu": 0, "blender": 6, "godot": 5}  # GB free needed, beyond the turn itself
 FRESH = 90  # seconds a place in the queue lasts without being asked again
 
 
