@@ -194,7 +194,7 @@ func dress(h):
 				sk.shader = load("res://shaders/heroine_skin.gdshader")
 				sk.set_shader_parameter("paint", src.albedo_texture)
 				sk.set_shader_parameter("pores", load("res://art/people/skin_pores.png"))
-				sk.set_shader_parameter("pore_scale", 30.0)
+				sk.set_shader_parameter("pore_scale", 50.0)
 				mi.set_surface_override_material(s, sk)
 	var outfit = env("OUTFIT", "warden")
 	if outfit != "none":

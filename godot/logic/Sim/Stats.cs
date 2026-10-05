@@ -19,7 +19,8 @@ namespace SurvivorUnchained.Sim;
 public enum ModKind { Flat, Inc, More }
 
 /// <summary>When a conditional modifier applies.</summary>
-public enum ModWhen { Moving, Still, Night, LowHealth, FullHealth, NearBeasts, InBurning, Shapeshifted, AfterDash }
+/// <summary>Healthy: above four fifths of her health (a price paid while it is easy).</summary>
+public enum ModWhen { Moving, Still, Night, LowHealth, FullHealth, NearBeasts, InBurning, Shapeshifted, AfterDash, Healthy }
 
 public sealed record StatMod(string Stat, ModKind Kind, double Value, string Source = "", ModWhen? When = null);
 

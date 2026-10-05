@@ -1,17 +1,17 @@
 {
   "seed": 1400,
   "people": {
-    "her": "a young woman with long damp dark red hair, bare arms, a fitted leather and steel armoured bodice with round steel pauldrons, a corked water flask on a cord round her wrist",
-    "dawn": "first light at dawn in a birch wood, low gold sun from the east raking through the trunks, frost on everything"
+    "her": "a young woman with long damp dark red hair, in revealing steel plate armour: round steel pauldrons, a steel breastplate cut low, bare midriff, a short plated skirt, bare thighs and steel greaves; a corked water flask on a cord round her wrist",
+    "dawn": "first light at dawn in a pine wood by a river, low gold sun from the east raking through the trunks, frost on everything"
   },
   "shots": {
-    "A1": "low medium shot on a frosted riverbank looking back at the water: a woman's wet boots stepping up out of the river onto the frost and walking on past camera, a line of wet dark bootprints coming up out of the water behind her and going on; grey dawn",
-    "A2": "extreme long shot across a forest road into tall birches at sunrise: the tops of the birches turning gold one by one from the east, the light coming down the trunks; by the verge a small blue flame in an iron lamp going pale and small in the daylight",
-    "A3": "medium shot side-on: {her} on a frosted road in {dawn}, the first sunlight reaching her face and shoulders, eyes closing against it, tired",
-    "A4": "medium long shot tilting down {her} standing on a frosted road: glowing ember red light running down her body like water, off her shoulders and out of her hands, down her legs, soaking into the frosted road at her feet; {dawn}",
-    "A5": "close-up of {her} in low gold dawn sunlight, colour returning to her face, breathing out a long white plume of breath smoke into the cold air and watching it with the faintest smile; birches in shade behind her",
-    "A6": "medium close-up: {her} pulling the cork from a small water flask with her teeth and stopping to smell it, nose wrinkling; dawn light",
-    "A7": "close-up of {her}, very still, eyes unfocused and searching inward, trying to remember something and not finding it; soft gold dawn light, birch trunks behind",
-    "A8": "low wide shot from behind {her} walking away up a road through a birch wood toward the light, at the top of the hill a wooden town gate standing open, long shadows on the frost"
+    "A1": {"from": "staging", "denoise": 0.8, "prompt": "low shot at water level looking up the river toward the far bank at grey dawn: {her} wading up out of the shallow ford toward camera onto the frosted near bank, water running off her, her wet steel greaves stepping out of the water; stepping stones across the river; pines beyond"},
+    "A2": {"from": "staging", "denoise": 0.62, "prompt": "extreme long shot up into tall pines at sunrise: the tops of the pines turning gold one by one from the east, the light coming down the trunks, a pale violet sky with the last stars"},
+    "A3": {"from": "staging", "denoise": 0.72, "prompt": "medium shot side-on: {her} standing on a frosted riverbank in {dawn}, the first sunlight reaching her face and shoulders, eyes closing against it, tired; the river behind"},
+    "A4": {"from": "staging", "denoise": 0.74, "prompt": "medium long shot tilting down {her} standing on the frosted bank: glowing ember-red light running down her legs like water and soaking into the frosted earth at her feet, the red light pooling and sinking into the ground; her sword point down at her side; the river behind; {dawn}"},
+    "A5": {"from": "staging", "denoise": 0.68, "prompt": "close-up of {her} in low gold dawn sunlight, colour returning to her face, breathing out a long white plume of breath smoke into the cold air and watching it; a square stone pillar with a pale dying flame behind her; pines in shade"},
+    "A6": {"from": "staging", "denoise": 0.66, "prompt": "medium close-up of {her} lifting the small corked flask on the cord at her wrist and pulling the cork with her teeth, stopping to smell the river water in it, nose wrinkling; a square stone pillar with a pale flame and the river behind; dawn light"},
+    "A7": {"from": "staging", "denoise": 0.62, "prompt": "close-up of {her} face, very still, eyes unfocused and searching inward, trying to remember a face and not finding it; soft gold dawn light, pines behind"},
+    "A8": {"from": "staging", "denoise": 0.62, "prompt": "long shot from behind {her} walking away up a dirt road through a pine wood toward the light, a stone town gate with battlements open at the top of the road, long shadows on the frost"}
   }
 }

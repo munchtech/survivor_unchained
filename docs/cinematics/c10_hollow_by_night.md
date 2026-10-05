@@ -25,8 +25,18 @@ he does not look away from her.
 
 ## Trigger and facts
 
-- **Arrival:** the arena's boss spawn (30 minutes) in `hollow_by_night`.
-- **Death:** the boss's death in that arena, before the win's reckoning.
+- **Arrival:** `c10_arrival`, as the third beat ends in `hollow_by_night`
+  (combat's `STORY_BOSSES.md` §1): the Pack backs off her into a ring, and he
+  walks out of the den's mouth through it.
+- **Spent** (gameplay, no cinematic): he goes down on his side, breathing hard,
+  and the ring lies down where it stands. Where the let-go is open, two prompts
+  wait at his side with no clock, "Let him go" and "Finish it". Otherwise he
+  dies there.
+- **Death:** `c10_end`, on his death: "Finish it", or no choice.
+- **Let go:** `c10_spared`, on "Let him go". It plays at the choice and owns
+  his getting up and his walk to the den; the fight releases him at its end.
+- The fight passes the marks `boss` (where he lies, his heading), `her`, and
+  `den_mouth`.
 - Reads: `promise.pack` (his look), calling (nothing changes), the arena's own
   ground.
 - Sets nothing (the arena's `OnWin` sets `greymuzzle` dead and the rest).
@@ -49,7 +59,7 @@ shadows, the ember's red on her.
 
 | # | Shot | Lens | Camera | Framing and action | Dur. |
 |---|---|---|---|---|---|
-| 1 | MS | 50 | Static, low; `WorldRate` 0.2 on the blow, then 1 | The last blow; his legs go; he goes down on his side. The rest of the horde stops where it is and lies down. | 3.0 |
+| 1 | MS | 50 | Static, low; `WorldRate` 0.2 on the blow, then 1 | **Finish it** (the let-go was open): he lies on his side; her weapon comes down, and we cut on the stroke, before it lands. **No choice:** he lies on his side where his legs went, his ribs heaving; the ring lies down where it stands. | 3.0 |
 | 2 | CU | 100 | Static, at ground level, on his head | He breathes hard, his breath smoking. His eye finds her. | 3.0 |
 | 3 | MCU | 50 | Static, on her, low, from his eye-line | She stands over him with her weapon down; the ember's light on her. Her breath does not smoke; his does. | 3.0 |
 | 4 | CU | 100 | As 2 | His eye leaves her and goes past her, to the den: a black mouth under the roots at the Hollow's edge (the arena's set dressing; behind her, out of focus). It stays there. *(If she promised:* his eye does not leave her.*)* The breathing stops. The smoke from his muzzle thins and stops. | 4.0 |
@@ -65,13 +75,15 @@ runs clear (`stream.clear`): the fight can end without his death
 and the ring lies down where it stands, and two prompts wait at his side with
 no clock, "Let him go" and "Finish it". "Finish it" plays the death above and
 breaks the promise she knelt to make. "Let him go" plays this variant.
-Shots 1 to 3 as above, with the prompts after shot 3. Then:
+The prompts are the fight's, after he goes down. This part plays at the
+choice:
 
 | # | Shot | Lens | Camera | Framing and action | Dur. |
 |---|---|---|---|---|---|
-| 4 | CU | 100 | As 2 | His eye goes to the den, and back to her, and stays. She lowers her weapon. | 3.0 |
-| 5 | LS | 35 | Static, low, behind her | He gets up, slowly, the way an old animal does, back legs first. He walks past her to the den without looking at her again, and lies down among his sick in the mouth of it. The ring of wolves goes in after him, one by one. | 6.0 |
-| 6 | to the reckoning | | | The Hollow empty but for her. | 1.0 |
+| 1 | CU | 100 | Static, at ground level, on his head | He breathes hard, his breath smoking. His eye goes to the den, and back to her, and stays. | 3.0 |
+| 2 | MCU | 50 | Static, on her, low, from his eye-line | She lowers her weapon. | 2.0 |
+| 3 | LS | 35 | Static, low, behind her | He gets up, slowly, the way an old animal does, back legs first. He walks past her to the den without looking at her again, and lies down among his sick in the mouth of it. The ring of wolves goes in after him, one by one. | 6.0 |
+| 4 | to the reckoning | | | The Hollow empty but for her. | 1.0 |
 
 No flute note. From the den, the thin whine of shot 4a, and this time something
 answers it.

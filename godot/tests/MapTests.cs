@@ -79,7 +79,7 @@ public class MapTests
         var j = MapSim.Survivor("warden", 10, 1, 1);
         var chart = Charts.Roll(new Rng(3), 2, "dead");
         Assert.True(j.PickedUp(new Pickup(0) { Kind = PickupKind.Item, Ref = Charts.Ref(chart), Value = 1 }));
-        var it = j.Ch.Pack.First(i => i?.Chart != null)!;
+        var it = j.Ch.Satchel.First(i => i.Chart != null);
         Assert.Equal(Charts.Item, it.Def);
         Assert.Equal(2, it.Chart!.Tier);
     }
@@ -154,7 +154,7 @@ public class MapTests
         Assert.Equal(1, Atlas.Points(r.J.World));
         // (On the ground, or already in the pack if they fell within her reach.)
         var charts = r.B.Pickups.Living().Where(p => p.Ref != null && Charts.FromRef(p.Ref) != null).Select(p => Charts.FromRef(p.Ref!)!)
-            .Concat(r.J.Ch.Pack.Where(i => i?.Chart != null).Select(i => i!.Chart!)).ToList();
+            .Concat(r.J.Ch.Satchel.Where(i => i.Chart != null).Select(i => i.Chart!)).ToList();
         Assert.NotEmpty(charts);
         Assert.Contains(charts, c => c.Tier == 2 && c.People == "kerchiefs");
     }
@@ -243,7 +243,8 @@ public class MapTests
         }
         Assert.True(waves > 10);
         Assert.NotNull(chest);
-        Assert.InRange(chest!.Items.Count, 3, 7);
+        // Two rolls and the chart's quantity, fewer and better than before (docs/design/LOOT_DESIGN.md §5.1).
+        Assert.InRange(chest!.Items.Count, 2, 7);
         Assert.Contains(chest.Items, i => i.Kind == ChestItemKind.Gear);
     }
 

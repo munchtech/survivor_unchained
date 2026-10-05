@@ -106,7 +106,8 @@
         {"at": 2.0, "do": "face", "keys": {"mouth_open": 0.05, "smile": 0.1}, "over": 0.5},
         {"at": 2.8, "do": "sfx", "name": "breath_out", "gain": 1.1},
         {"at": 4.4, "do": "face", "keys": {"smile": 0, "squint": 0.2, "frown": 0.2}, "over": 0.2},
-        {"at": 4.4, "do": "sfx", "name": "cloth", "gain": 0.6}
+        {"at": 4.4, "do": "sfx", "name": "cloth", "gain": 0.6},
+        {"at": 4.4, "do": "anim", "clip": "her/shiver", "from": 0, "speed": 1, "blend": 0.1}
       ]
     },
     {

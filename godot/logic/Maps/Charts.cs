@@ -34,6 +34,8 @@ public sealed class Chart
     public List<string> Mods = new();
     /// <summary>Crafting's: one more percent found a point, to 20.</summary>
     public int Quality;
+    /// <summary>Crafting's: the mod held through a burn and redraw at the Wayfinder's table (one a chart).</summary>
+    public string? Pinned;
     public string Name = "";
     public string Theme = "wood";
 
@@ -156,20 +158,20 @@ public static class Charts
         };
     }
 
-    /// <summary>A chart carried, taken out of the pack to be set on the table (it is used up as its
+    /// <summary>A chart carried, taken out of the satchel to be set on the table (it is used up as its
     /// map opens); null if it is not there.</summary>
     public static Chart? TakeOut(Rpg.CharacterData ch, string uid)
     {
-        int i = ch.Pack.FindIndex(p => p?.Uid == uid && p.Chart != null);
+        int i = ch.Satchel.FindIndex(p => p.Uid == uid && p.Chart != null);
         if (i < 0) return null;
-        var c = ch.Pack[i]!.Chart;
-        ch.Pack[i] = null;
+        var c = ch.Satchel[i].Chart;
+        ch.Satchel.RemoveAt(i);
         return c;
     }
 
     /// <summary>The charts carried, the highest tier first, then the finest.</summary>
     public static System.Collections.Generic.List<Rpg.ItemInstance> Carried(Rpg.CharacterData ch) =>
-        ch.Pack.Where(p => p?.Chart != null).Select(p => p!).OrderByDescending(p => p.Chart!.Tier).ThenByDescending(p => p.Chart!.Rarity).ToList();
+        ch.Satchel.Where(p => p.Chart != null).OrderByDescending(p => p.Chart!.Tier).ThenByDescending(p => p.Chart!.Rarity).ToList();
 
     /// <summary>What a chart is called in the pack: its tier, who holds it, and its name.</summary>
     public static string Title(Chart c) => $"{c.Name} (tier {c.Tier}, {MapOffers.People(c.People).Name})";
@@ -209,7 +211,7 @@ public static class Atlas
     /// <summary>The atlas is open once a chart is carried (Vonnra's fortune at Act 1's end gives
     /// the first) or a map has been cleared.</summary>
     public static bool IsOpen(World.WorldState w, Rpg.CharacterData? ch = null) =>
-        Best(w) > 0 || ch != null && ch.Pack.Any(p => p?.Chart != null);
+        Best(w) > 0 || ch != null && ch.Satchel.Any(p => p.Chart != null);
 
     /// <summary>The highest tier cleared of any people, and the points the first clears gave.</summary>
     public static int Best(World.WorldState w) => (int)w.Fact("atlas.best").Number;

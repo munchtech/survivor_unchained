@@ -187,6 +187,15 @@ public sealed class WorldState
     public List<GroundItem> GroundItems = new();
     /// <summary>The inn's storage: it belongs to the world, so it outlives a character.</summary>
     public List<ItemInstance?> Stash = NewStash();
+    /// <summary>The dark's debt (docs/design/LOOT_DESIGN.md §5.3): gear rolls since the last
+    /// Legendary; at Loot's figure a boss's hoard holds one for certain.</summary>
+    public int LootDebt;
+    /// <summary>A Legendary has fallen in this world: the first story boss's certain one is paid.</summary>
+    public bool FirstLegendary;
+    /// <summary>A Legendary has been taken in this world: its first moment has been staged.</summary>
+    public bool FirstLegendaryTaken;
+    /// <summary>The Set and Legendary pieces that have fallen here (a never-owned piece is likelier).</summary>
+    public HashSet<string> Owned = new();
     /// <summary>Those who came before.</summary>
     public List<LegacyEntry> Legacy = new();
     /// <summary>Shop stock and prices, by shop.</summary>
@@ -198,8 +207,11 @@ public sealed class WorldState
     /// <summary>Story fights lost, waiting at the Wayfinder's table to be taken again.</summary>
     public List<Arena.ArenaSpec> Rematches = new();
 
-    public const int StashSize = 48;
-    static List<ItemInstance?> NewStash() { var s = new List<ItemInstance?>(StashSize); for (int i = 0; i < StashSize; i++) s.Add(null); return s; }
+    /// <summary>A shelf of Rook's storeroom: one comes with the room, more are bought from her
+    /// (Crafting.ShelfPrice). A save from before shelves kept 48 places: two shelves.</summary>
+    public const int Shelf = 24;
+    public int Shelves => System.Math.Max(1, Stash.Count / Shelf);
+    static List<ItemInstance?> NewStash() { var s = new List<ItemInstance?>(Shelf); for (int i = 0; i < Shelf; i++) s.Add(null); return s; }
 
     public static WorldState Fresh(uint seed) => new() { Seed = seed };
 

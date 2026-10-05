@@ -17,8 +17,9 @@ public interface IStoryArena : IBossArena
     StoryPlace Place { get; }
     /// <summary>The creature level now: the tier's, and the stage's own over it.</summary>
     int Level { get; }
-    /// <summary>A named foe: a miniboss of its people, on the bar while it lives, carrying a small chest.</summary>
-    Enemy? Foe(string def, double x, double z, double hpMul = 1, string? kicker = null);
+    /// <summary>A named foe: a miniboss of its people, on the bar while it lives, carrying a small chest.
+    /// `kicker`: over its name (the fight's own by default); `quiet`: not announced (a picket, one of three).</summary>
+    Enemy? Foe(string def, double x, double z, double hpMul = 1, string? kicker = null, bool quiet = false);
     /// <summary>A few of a kind round a point (on standable ground inside the place).</summary>
     List<Enemy> Group(string def, int n, double x, double z, double spread, SpawnStyle? style = null);
     /// <summary>The hostile creatures standing (of a kind, if asked).</summary>
@@ -30,6 +31,19 @@ public interface IStoryArena : IBossArena
     IReadOnlyList<Deadfall> Fires { get; }
     /// <summary>A world fact holds (a bane learned by day).</summary>
     bool Fact(string key);
+    /// <summary>A world fact as it stands (who is in the cages, where the crates went).</summary>
+    SurvivorUnchained.World.Fact FactOf(string key);
+    /// <summary>The world told what happened (the story's effects, as a dialogue's are).</summary>
+    void Apply(string effectsJson);
+    /// <summary>A condition on the world, as dialogue tests it (a flag on someone, a thing she knows).</summary>
+    bool Test(SurvivorUnchained.World.Cond cond);
+    /// <summary>She knows it (a clue, a name).</summary>
+    bool Knows(string key);
+    /// <summary>Something that happened tonight, in this fight (the crates fired): marked, and asked after.</summary>
+    void Mark(string key);
+    bool Marked(string key);
+    /// <summary>Done this many seconds on (a cart dragged, a cage closing).</summary>
+    void After(double seconds, Action act);
     /// <summary>Where the stage wants her (a fire to light, a foe to find): the hands go there when
     /// nothing threatens. Null: wherever the fight is.</summary>
     (double X, double Z)? Goal { get; set; }
@@ -39,8 +53,8 @@ public interface IStoryArena : IBossArena
     /// <summary>A choice put in front of her where she stands (let him go, finish it).</summary>
     void Offer(string id, double x, double z, string verb, string name, Action act);
     void Withdraw(string id);
-    /// <summary>The narrator's words (the story lead's).</summary>
-    void Line(string text);
+    /// <summary>The narrator's words (the story lead's), or someone's, said aloud.</summary>
+    void Line(string text, string? speaker = null);
     /// <summary>A spared ending can be chosen in this fight (its outcome is in the spec).</summary>
     bool CanSpare { get; }
     /// <summary>The prompt beside "Finish it" ("Let him go", "Spare him").</summary>
@@ -66,6 +80,39 @@ public sealed class Deadfall
     public bool EverLit;
     public bool Burning => Lit > 0;
     public bool InLight(double x, double z, double margin = 0) => Burning && (x - X) * (x - X) + (z - Z) * (z - Z) < (Reach + margin) * (Reach + margin);
+}
+
+/// <summary>Something broken by standing at it (a cage's lock, a cage's post). Her weapons fire on their
+/// own at whatever is near, so what breaks must be what she chose: the one she stands by, never the one a
+/// stray shot found (STORY_BOSSES.md 0.5). Its ring fills as she works at it.</summary>
+public sealed class StandBy
+{
+    public double X, Z;
+    /// <summary>How near she must stand, and how long it takes her there.</summary>
+    public double Reach = 3.5, Takes = 4;
+    /// <summary>How far she has got with it (0 to 1), and whether it has given.</summary>
+    public double Done;
+    public bool Broken;
+    double drawT;
+
+    /// <summary>She is at it.</summary>
+    public bool At(Battle b) => !Broken && (b.Player.X - X) * (b.Player.X - X) + (b.Player.Z - Z) * (b.Player.Z - Z) < Reach * Reach;
+
+    /// <summary>A step of it (`mark`: its ring's id, drawn while she works at it): true the moment it gives.</summary>
+    public bool Step(Battle b, double dt, int mark)
+    {
+        if (Broken) return false;
+        bool at = At(b);
+        if (at) Done = Math.Min(1, Done + dt / Takes);
+        if (at && (drawT -= dt) <= 0)
+        {
+            drawT = 0.2;
+            b.Events.Emit(new Ev.Telegraph { Id = mark, Shape = TelegraphShape.Ring, Kind = TelegraphKind.Safe, X = X, Z = Z, Inner = Math.Max(0.2, Reach * (1 - Done)), Radius = Reach, Duration = 0.3, Hostile = false });
+        }
+        if (Done < 1) return false;
+        Broken = true;
+        return true;
+    }
 }
 
 /// <summary>One stage of the way in: a goal, the waves that make it hard, and where she gets up
@@ -134,9 +181,18 @@ public abstract class StoryFight
     public abstract string Arrive { get; }
     /// <summary>The stages, each made afresh.</summary>
     public abstract Func<StoryBeat>[] Beats { get; }
-    /// <summary>The pull, and the sight after each stage (docs/WRITING_PASS.md §21).</summary>
+    /// <summary>The pull, and the sight after each stage (docs/WRITING_PASS.md §21, §23).</summary>
     public abstract string Pull { get; }
     public abstract string[] Between { get; }
+    /// <summary>The sight after a stage, where it reads the world (who is in the cages); by default, Between's.</summary>
+    public virtual string? BetweenSight(IStoryArena a, int stage) => stage < Between.Length ? Between[stage] : null;
+    /// <summary>The words over its named foes' names (its people).</summary>
+    public virtual string Kicker => "";
+    /// <summary>Arena art has built the place to this outline (its own ground and cover): until then the old
+    /// arena's props inside it are cleared (StoryNight.Begin). Arena art sets it as each place lands.</summary>
+    public virtual bool PlaceBuilt => false;
+    /// <summary>The sight as the way back shuts behind her on the boss's ground.</summary>
+    public virtual string? ShutSight => null;
     /// <summary>The boss's own ground: the gate that opens on it (null: the last stage's ground),
     /// where it comes from, and where she stands as it does (and gets up there).</summary>
     public virtual string? BossGate => null;
@@ -163,6 +219,7 @@ public static class StoryScripts
     public static StoryFight? For(string specId) => specId switch
     {
         "hollow_by_night" => new HollowByNight(),
+        "roost_raid" => new RaidOnTheRoost(),
         _ => null,
     };
 

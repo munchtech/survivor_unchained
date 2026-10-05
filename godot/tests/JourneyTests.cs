@@ -160,6 +160,8 @@ public class JourneyTests
     public void The_storeroom_keeps_what_is_put_in_it()
     {
         var (j, _) = Make();
+        // The pack holds gear (docs/design/LOOT_DESIGN.md §6): a helm to put away.
+        Assert.True(j.GiveItem("iron_helm"));
         var d = j.Ch.Pack.First(p => p != null)!;
         j.ToStash(d.Uid);
         Assert.DoesNotContain(j.Ch.Pack, p => p?.Uid == d.Uid);
