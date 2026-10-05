@@ -32,6 +32,8 @@ public partial class Game
         if (cine != null) return true;
         // A chest opening: any key brings it all down, a second closes it.
         if (hudMode == "chest") { chestShown?.Skip(); return true; }
+        // A fall in a story night: get up, or let the night go (GameFall).
+        if (hudMode == "fall") return FallKey(a);
         if (hudMode is "draft" or "dialogue") return hud.Key(a);
         switch (a)
         {

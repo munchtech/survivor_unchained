@@ -477,7 +477,8 @@ public sealed class StoryNight : ZoneRuntime, IStoryArena
             beat.Begin(this);
         }
         G.Revived(x, z);
-        G.Say("You get up.");
+        // The prologue's words the first time ever, a little less after (story.rises).
+        G.Say(G.Journey.RiseLine());
         Objectives();
     }
 
