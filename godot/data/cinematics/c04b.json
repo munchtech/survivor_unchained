@@ -106,6 +106,7 @@
       "note": "Rise and swing into the follow camera: the square, the survivor in it, Rook at her door. Bars out; Rook's mark comes up. Control. (No zone title: the chapter's card was it.)",
       "cam": {"pos": [3.0, 1.8, 11.5], "at": [0.0, 1.2, 7.0], "lens": 35, "move": {"pos": [0.0, 9.0, 16.0], "ease": "inout", "follow": true}},
       "cues": [
+        {"at": 0.0, "do": "play"},
         {"at": 0.6, "do": "music", "mood": "town", "intensity": 0.5, "over": 2.0}
       ]
     }

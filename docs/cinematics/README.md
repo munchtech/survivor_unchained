@@ -239,6 +239,35 @@ interact or pause for 0.8 s (a ring fills). Skipping lands on the end state:
 the effects applied, the survivor where the cinematic leaves her, the game's
 camera. A cinematic seen once can be skipped from its first frame.
 
+## 5a. Handing back to play
+
+The owner: "cinematics that have our character immediately playable in the
+same spot should have us... in that same spot when we are playable again ...
+it should feel like its walking in and we just jump right into that." Every
+cinematic that ends in play (an `end.her` mark) keeps these rules, and
+`CinemaTests` holds every timeline to them (`CineHandover`):
+
+1. **Place and facing.** Play takes her exact place and facing from the
+   cinematic's last frame: never a spawn point, never a default facing. The
+   timeline leaves her on its end mark, facing the way the mark faces (a skip
+   puts her there too); if the zone needs her somewhere else, the cinematic
+   ends there.
+2. **Her own body plays the last shot.** A `play` cue at 0 of the last shot,
+   on its cut, puts her own body where her double stands, facing as it faces;
+   the double goes, and the cut hides the change. From there her moves steer
+   her as a player's stick would, at the pace the timeline asks, so the walk
+   that ends the cinematic is the walk play continues: same body, same gait,
+   same stride. If she is walking when it ends, the walk carries on into play
+   and eases to a stop over 0.7 s unless the player takes it.
+3. **Camera.** The last shot blends into the game's camera over 0.5 s or
+   more (a `follow` move to its end), aimed at where she really is; better
+   still, it ends near the game's angle, so the blend is small. The game's
+   camera then starts from exactly that frame.
+4. **HUD.** It fades in as the bars go out, over the blend.
+
+The story fights' parts (11a) keep the same rules: a `_spared` part's walk
+away is the boss's, but a part that leaves her in play hands her back so.
+
 ## 6. What the game needs that it does not have yet
 
 The tech each script needs is listed in that script; this is the whole list,

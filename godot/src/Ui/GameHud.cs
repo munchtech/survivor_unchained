@@ -551,7 +551,25 @@ public partial class GameHud : CanvasLayer
     /* ------------------------------------------------------------- state -- */
 
     /// <summary>The play HUD shown or not (the title and creation have none).</summary>
-    public void ShowPlay(bool on) => play.Visible = on;
+    Tween? playFade;
+
+    /// <summary>The play's HUD shown or hidden; shown with a fade (seconds),
+    /// it comes in over a cinematic's blend into play rather than at once.</summary>
+    public void ShowPlay(bool on, float fade = 0)
+    {
+        playFade?.Kill();
+        playFade = null;
+        if (!on || fade <= 0 || play.Visible)
+        {
+            play.Visible = on;
+            play.Modulate = Colors.White;
+            return;
+        }
+        play.Visible = true;
+        play.Modulate = new Color(1, 1, 1, 0);
+        playFade = play.CreateTween();
+        playFade.TweenProperty(play, "modulate:a", 1f, fade).SetTrans(Tween.TransitionType.Sine).SetEase(Tween.EaseType.InOut);
+    }
 
     public void SetBruise(float v) => ((ShaderMaterial)bruise.Material).SetShaderParameter("amount", v);
 

@@ -10,16 +10,21 @@ namespace SurvivorUnchained.View;
 /// </summary>
 public static class Campfire
 {
+    /// <summary>The render layer the coals are drawn on (layer 10), kept out
+    /// of the fire's own lights.</summary>
+    public const uint CoalLayer = 1 << 9;
+
     /// <param name="ring">Lay its own stones and logs (not where the web
     /// game's are already laid).</param>
     /// <param name="parts">Which of flames, embers, smoke (for telling
     /// them apart).</param>
-    public static Node3D Build(Vector3 at, float size = 1, bool ring = true, string parts = "flames,embers,smoke")
+    public static Node3D Build(Vector3 at, float size = 1, bool ring = true, string parts = "coals,flames,embers,smoke")
     {
         var root = new Node3D { Name = "Campfire", Position = at };
         // CAMPFIRE_PARTS picks the layers, for pictures of each alone.
         parts = System.Environment.GetEnvironmentVariable("CAMPFIRE_PARTS") ?? parts;
         if (ring) Ring(root, size);
+        if (parts.Contains("coals")) root.AddChild(Coals(size));
         if (parts.Contains("flames")) root.AddChild(FilmedFlames(size) ?? Flames(size));
         if (parts.Contains("embers")) root.AddChild(Embers(size));
         if (parts.Contains("smoke")) root.AddChild(Smoke(size));
@@ -28,6 +33,11 @@ public static class Campfire
 
     static void Ring(Node3D root, float size)
     {
+        if (ResourceLoader.Exists("res://art/materials/rock_boulder_dry/albedo.jpg"))
+        {
+            root.AddChild(Stones(size));
+            return;
+        }
         if (ResourceLoader.Exists("res://art/world/stone_fire_pit.glb"))
         {
             // The scan is a metre and a half across; a fire of size 1 is about
@@ -64,6 +74,174 @@ public static class Campfire
             log.Basis = new Basis(new Vector3(-Mathf.Sin(a), 0, Mathf.Cos(a)), Mathf.DegToRad(72)) ;
             root.AddChild(log);
         }
+    }
+
+    /// <summary>The ring: eleven field stones, rounded and uneven, laid end to
+    /// end round the fire and bedded a third into the ground, sooted black on
+    /// the faces toward the fire. Made, not scanned, so they hold their shape
+    /// in a close-up (the scanned pit's few thousand faces read as cut facets
+    /// at half a metre, in C01).</summary>
+    static MeshInstance3D Stones(float size)
+    {
+        var b = new Shapes.Build();
+        var rng = new RandomNumberGenerator { Seed = 41 };
+        const int n = 11;
+        for (int k = 0; k < n; k++)
+        {
+            float a = k * Mathf.Tau / n + (rng.Randf() - 0.5f) * 0.22f;
+            float len = 0.26f + 0.1f * rng.Randf(), wid = 0.18f + 0.07f * rng.Randf(), hi = 0.17f + 0.08f * rng.Randf();
+            var at = new Vector3(Mathf.Cos(a), 0, Mathf.Sin(a)) * (0.6f + 0.06f * rng.Randf());
+            at.Y = hi * 0.06f;
+            // Long side along the ring, each turned and tipped a little its own way.
+            var basis = new Basis(Vector3.Up, -a + Mathf.Pi / 2 + (rng.Randf() - 0.5f) * 0.5f) * new Basis(Vector3.Right, (rng.Randf() - 0.5f) * 0.3f);
+            Stone(b, new Transform3D(basis.Scaled(new Vector3(len, hi, wid)), at), rng.Randf() * 100);
+        }
+        // Soot: the faces toward the fire and low down blackened, fading outward.
+        var col = new Color[b.P.Count];
+        for (int i = 0; i < col.Length; i++)
+        {
+            var p = b.P[i];
+            float inward = Mathf.Clamp(-(b.N[i].X * p.X + b.N[i].Z * p.Z) / Mathf.Max(0.01f, new Vector2(p.X, p.Z).Length()), 0, 1);
+            float near = 1 - Mathf.SmoothStep(0.45f, 0.75f, new Vector2(p.X, p.Z).Length());
+            float soot = Mathf.Clamp(inward * 0.85f + near * 0.5f, 0, 1) * 0.82f;
+            col[i] = new Color(1 - soot, 1 - soot * 0.97f, 1 - soot * 0.95f);
+        }
+        for (int i = 0; i < b.P.Count; i++) b.P[i] *= size;
+        var arr = new Godot.Collections.Array();
+        arr.Resize((int)Mesh.ArrayType.Max);
+        arr[(int)Mesh.ArrayType.Vertex] = b.P.ToArray();
+        arr[(int)Mesh.ArrayType.Normal] = b.N.ToArray();
+        arr[(int)Mesh.ArrayType.TexUV] = b.U.ToArray();
+        arr[(int)Mesh.ArrayType.Color] = col;
+        arr[(int)Mesh.ArrayType.Index] = b.I.ToArray();
+        var mesh = new ArrayMesh();
+        mesh.AddSurfaceFromArrays(Mesh.PrimitiveType.Triangles, arr);
+        var st = new SurfaceTool();
+        st.CreateFrom(mesh, 0);
+        st.GenerateTangents();
+        var mat = (StandardMaterial3D)Made.Surface("rock_boulder_dry", 0.7f, "#8c867c").Duplicate();
+        mat.VertexColorUseAsAlbedo = true;
+        return new MeshInstance3D { Name = "Stones", Mesh = st.Commit(), MaterialOverride = mat };
+    }
+
+    /// <summary>A field stone: a sphere of 24 by 14, pushed out and in by
+    /// slow noise for its shape and quicker noise for its knobs, its
+    /// underside flattened; placed and sized by `at`.</summary>
+    static void Stone(Shapes.Build b, Transform3D at, float seed)
+    {
+        const int rings = 14, segs = 24;
+        int v0 = b.P.Count, i0 = b.I.Count;
+        float Nz(Vector3 d, float f) => Mathf.Sin(d.X * f + seed) * Mathf.Sin(d.Y * f * 1.3f + seed * 1.7f) * Mathf.Sin(d.Z * f * 0.9f + seed * 0.6f);
+        for (int i = 0; i <= rings; i++)
+            for (int s = 0; s <= segs; s++)
+            {
+                float phi = Mathf.Pi * i / rings, th = Mathf.Tau * s / segs;
+                var d = new Vector3(Mathf.Sin(phi) * Mathf.Cos(th), Mathf.Cos(phi), Mathf.Sin(phi) * Mathf.Sin(th));
+                float k = 1 + 0.16f * Nz(d, 2.1f) + 0.07f * Nz(d, 4.7f) + 0.025f * Nz(d, 11f);
+                var p = d * 0.5f * k;
+                if (p.Y < -0.15f) p.Y = -0.15f + (p.Y + 0.15f) * 0.3f;
+                b.V(at * p, Vector3.Up, new Vector2((float)s / segs, (float)i / rings));
+            }
+        for (int i = 0; i < rings; i++)
+            for (int s = 0; s < segs; s++)
+            {
+                int a0 = v0 + i * (segs + 1) + s, a2 = a0 + segs + 1;
+                b.I.Add(a0); b.I.Add(a0 + 1); b.I.Add(a2 + 1);
+                b.I.Add(a0); b.I.Add(a2 + 1); b.I.Add(a2);
+            }
+        // Each triangle turned to face out from the stone's middle; then
+        // normals from the faces, welded across the seam and the poles.
+        var mid = at.Origin;
+        for (int k = i0; k < b.I.Count; k += 3)
+        {
+            int a = b.I[k], c1 = b.I[k + 1], c2 = b.I[k + 2];
+            var face = (b.P[c2] - b.P[a]).Cross(b.P[c1] - b.P[a]);
+            if (face.Dot(b.P[a] + b.P[c1] + b.P[c2] - 3 * mid) < 0) { b.I[k + 1] = c2; b.I[k + 2] = c1; }
+        }
+        b.Warp(v0, i0, p => p, weld: true);
+    }
+
+    /// <summary>What the fire burns on and what is left when it burns down:
+    /// a bed of ash, a low heap of charcoal lumps, and four sticks laid in a
+    /// star, their inner ends burnt to coal (shaders/coals.gdshader). A hand
+    /// held over it in C01 is lit by it, and the title's flames stand on it.</summary>
+    static MeshInstance3D Coals(float size)
+    {
+        var b = new Shapes.Build();
+        var rng = new RandomNumberGenerator { Seed = 23 };
+        // The ash: a lumpy disc, highest in the middle.
+        int rings = 7, segs = 28;
+        int c0 = b.V(new Vector3(0, 0.03f, 0) * size, Vector3.Up);
+        for (int i = 1; i <= rings; i++)
+            for (int s = 0; s < segs; s++)
+            {
+                float r = 0.42f * i / rings, a = Mathf.Tau * s / segs;
+                // Its rim dips under the ground, unevenly, so it has no edge.
+                float h = 0.03f * (1 - Mathf.Pow(r / 0.42f, 1.5f)) + 0.008f * (rng.Randf() - 0.5f) - (i == rings ? 0.012f + 0.012f * rng.Randf() : 0);
+                b.V(new Vector3(Mathf.Cos(a) * r, h - 0.004f, Mathf.Sin(a) * r) * size, Vector3.Up);
+            }
+        for (int s = 0; s < segs; s++) b.Tri(c0, 1 + s, 1 + (s + 1) % segs);
+        for (int i = 0; i < rings - 1; i++)
+            for (int s = 0; s < segs; s++)
+            {
+                int a0 = 1 + i * segs + s, a1 = 1 + i * segs + (s + 1) % segs;
+                b.Quad(a0, a1, a1 + segs, a0 + segs);
+            }
+        // The charcoal: lumps heaped low, each a stone of a few flat faces.
+        for (int k = 0; k < 30; k++)
+        {
+            float r = 0.3f * Mathf.Sqrt(rng.Randf()), a = rng.Randf() * Mathf.Tau;
+            float len = 0.05f + 0.06f * rng.Randf(), wid = 0.03f + 0.03f * rng.Randf(), hi = 0.022f + 0.022f * rng.Randf();
+            var at = new Vector3(Mathf.Cos(a) * r, 0.025f + 0.045f * (1 - r / 0.32f) + hi * 0.3f, Mathf.Sin(a) * r);
+            var basis = new Basis(Vector3.Up, rng.Randf() * Mathf.Tau) * new Basis(Vector3.Forward, (rng.Randf() - 0.5f) * 0.5f);
+            Lump(b, new Transform3D(basis.Scaled(new Vector3(len, hi, wid) * size), at * size), rng);
+        }
+        // The sticks, laid in a star from the stones to the middle, burnt from the middle out.
+        for (int k = 0; k < 4; k++)
+        {
+            float a = k * Mathf.Tau / 4 + 0.5f + 0.3f * rng.Randf(), r0 = 0.06f + 0.05f * rng.Randf(), rad = 0.032f + 0.012f * rng.Randf();
+            var dir = new Vector3(Mathf.Cos(a), 0, Mathf.Sin(a));
+            int kk = k;
+            var path = Shapes.Path(9, t => (dir * Mathf.Lerp(r0, 0.6f, t) + new Vector3(0, Mathf.Lerp(0.05f, 0.13f, t) + 0.006f * Mathf.Sin(t * 9 + kk), 0)) * size);
+            Shapes.Tube(b, path, t => rad * size * (0.55f + 0.45f * Mathf.SmoothStep(0, 0.35f, t)), 10);
+        }
+        var mat = new ShaderMaterial { Shader = GD.Load<Shader>("res://shaders/coals.gdshader") };
+        mat.SetShaderParameter("size", size);
+        // On a layer of their own, which neither their glow nor their fire's
+        // light reaches: the light comes from them, so they are not lit by it.
+        var coals = new MeshInstance3D { Name = "Coals", Mesh = b.Faceted().Mesh(), MaterialOverride = mat, Layers = CoalLayer };
+        // Their own glow, falling off within a metre: what is held just over
+        // them (a hand, in C01) is lit from below, deep orange.
+        coals.AddChild(new OmniLight3D
+        {
+            Name = "Glow", Position = new Vector3(0, 0.1f, 0) * size, LightColor = new Color(1f, 0.36f, 0.08f),
+            LightEnergy = 0.35f, OmniRange = 1.1f * size, OmniAttenuation = 1.6f, ShadowEnabled = false, LightSpecular = 0.3f,
+            LightCullMask = 0xFFFFF & ~CoalLayer,
+        });
+        return coals;
+    }
+
+    /// <summary>A charcoal lump: a sphere of a few rings, each corner pushed in
+    /// or out, placed and sized by `at`.</summary>
+    static void Lump(Shapes.Build b, Transform3D at, RandomNumberGenerator rng)
+    {
+        const int rings = 4, segs = 7;
+        int v0 = b.P.Count;
+        var bump = new float[(rings + 1) * segs];
+        for (int i = 0; i < bump.Length; i++) bump[i] = 0.8f + 0.4f * rng.Randf();
+        for (int i = 0; i <= rings; i++)
+            for (int s = 0; s < segs; s++)
+            {
+                float phi = Mathf.Pi * i / rings, th = Mathf.Tau * s / segs;
+                var d = new Vector3(Mathf.Sin(phi) * Mathf.Cos(th), Mathf.Cos(phi), Mathf.Sin(phi) * Mathf.Sin(th));
+                b.V(at * (d * 0.5f * bump[i * segs + s]), (at.Basis * d).Normalized());
+            }
+        for (int i = 0; i < rings; i++)
+            for (int s = 0; s < segs; s++)
+            {
+                int a0 = v0 + i * segs + s, a1 = v0 + i * segs + (s + 1) % segs;
+                b.Quad(a0, a1, a1 + segs, a0 + segs);
+            }
     }
 
     /// <summary>A soft round sprite: bright middle, nothing at the edge.</summary>
