@@ -1,8 +1,8 @@
 # Story and writing: status
 
 Owner of the canon, the words and the story data; signs off every voice packet
-before recording. Agent a73ca9d35d0c487a9, branch `worktree-agent-a73ca9d35d0c487a9`
-(successor to a035208561a66c171; handoff in `docs/handoff/story.md`).
+before recording. Agent a73ca9d35d0c487a9 (handed off past 500k), branch
+`worktree-agent-a73ca9d35d0c487a9`. A fresh successor starts from `docs/handoff/story.md`.
 
 ## State
 
@@ -86,15 +86,19 @@ before recording. Agent a73ca9d35d0c487a9, branch `worktree-agent-a73ca9d35d0c48
 
 ## Next
 
-1. The result screen's new slots, when the experience successor sends UI's
-   beats (the words for today's slots are in).
-2. C14: Brannoc's dusk choice (`brannoc.road`), the `nell.burial` variant, the
-   night's last lines and a RouteTests play, once combat builds the fight.
-3. C01 to C04: the cinematics lead's line asks, when they come.
-4. Crafting phase 3: all lines sent to the crafting lead (a7debf1459f14dfe7),
-   who is wiring them, slurry affix names included (Fevered, of the Sump,
-   Pipe-Lad's). Answer wire-up questions only.
-5. Act 2's text, when the owner asks.
+The handoff (`docs/handoff/story.md` §3) has the detail. In order:
+1. **The story fights and the day's clock**, once the owner approves
+   experience's and combat's proposals (agreed, with two fixes). Their words
+   are written (WRITING_PASS §21). The dusk, rise and night-left-alone lines go
+   into data, and the bible's Pacing share is updated. The banes `bane.fires`
+   and `bane.pole` are seeds until the fights read them.
+2. **Vonnra's fortune gives the first chart** (`Journey.GiveChart`), which
+   opens the atlas. It needs a hook and her line: priced, then waived.
+3. The result screen's new slots, when experience sends UI's beats.
+4. C14: `brannoc.road`, the `nell.burial` variant, its last lines and a
+   RouteTests play, once combat builds the fight.
+5. C01 to C04: the cinematics lead's line asks.
+6. Act 2's text, when the owner asks.
 
 ## Blockers
 
