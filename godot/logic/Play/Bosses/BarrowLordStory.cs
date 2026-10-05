@@ -511,6 +511,8 @@ public sealed class BarrowLordStory : StoryBoss, IBound
         e.Vx = e.Vz = 0;
         Channel = "Lay him down";
         ChannelProgress = 0;
+        // What he had ordered goes with him (the press still landed round her as he went down).
+        B.CancelBlows();
         S.Bark(e.X, e.Z, "He goes down.", null);
         S.Say("He is down", "Stand over him to lay him down", "danger");
         B.Blow(new Battle.EnemyBlow { Shape = TelegraphShape.Circle, Kind = TelegraphKind.Safe, X = e.X, Z = e.Z, Radius = 3, Delay = 8, From = e, Label = "Lay him down" });

@@ -196,6 +196,8 @@ public interface IOrb
 {
     bool Visible { get; set; }
     void Place(double x, double y, double z, double spin, double scale);
+    /// <summary>Turned to face that way (yaw), where it can be.</summary>
+    void Face(double yaw) { }
     double Light { set; }
     void Dispose();
 }

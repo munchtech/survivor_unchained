@@ -636,6 +636,10 @@ public static class Character
         st.AddAll([
             new(Stat.Damage, ModKind.Inc, at.Might * 0.025, src),
             new(Stat.MaxHealth, ModKind.Flat, at.Might * 4 + at.Resolve * 3, src),
+            // Finesse is for what is thrown or shot (its weapons' own attribute, SkillBook): its damage in a bucket
+            // of its own. Through crit alone a point was worth about 0.3% against Might's 2.5%, and a stalker who
+            // put every point in it hit little harder for them.
+            new(Stat.DamageOf(Tag.Projectile), ModKind.Inc, at.Finesse * 0.02, src),
             new(Stat.CritChance, ModKind.Flat, at.Finesse * 0.006, src),
             new(Stat.MoveSpeed, ModKind.Inc, at.Finesse * 0.01, src),
             new(Stat.ProjectileSpeed, ModKind.Inc, at.Finesse * 0.02, src),

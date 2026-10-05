@@ -62,7 +62,7 @@ public sealed class VaultOpened : StoryFight
     /// bolts), lying across the hall. (X, Z, half-width, half-depth, a beam or not.)</summary>
     public static readonly (double X, double Z, double Hw, double Hd, bool Beam)[] Cover =
     [
-        (-5.5, 1.5, 2.2, 0.35, true), (4.5, -2.5, 1.3, 0.6, false), (-3, -8, 1.3, 0.6, false), (6, -12, 2.2, 0.35, true), (-6.5, -14.5, 1.3, 0.6, false),
+        (-5.5, 1.5, 2.0, 0.7, true), (4.5, -2.5, 1.3, 0.6, false), (-3, -8, 1.3, 0.6, false), (6, -12, 2.0, 0.7, true), (-6.5, -14.5, 1.3, 0.6, false),
     ];
 
     public override StoryPlace Place => Ground;
@@ -90,8 +90,12 @@ public sealed class VaultOpened : StoryFight
         foreach (var (x, z, hw, hd, beam) in Cover)
         {
             a.B.Collision.AddBox(x, z, hw, hd, 0, new ColliderOpts(Tag: "cover"));
-            var v = a.Piece(beam ? "dungeon/rubble_large" : "halloween/grave_A_destroyed", beam ? 1.6 : 1.3);
-            v.Place(x, a.HeightAt(x, z), z, beam ? Math.PI / 2 : 0, beam ? 1.6 : 1.3);
+            // Stand-ins sized to the colliders until arena art builds the hall: a toppled column lying across
+            // the hall for a fallen beam, a broken grave for a sarcophagus.
+            var v = a.Piece(beam ? "dungeon/pillar" : "halloween/grave_A_destroyed", 1);
+            // (The column stands on its foot: laid over and turned, it runs four metres east of where it is put.)
+            v.Place(beam ? x - 2 : x, a.HeightAt(x, z) + (beam ? 0.75 : 0), z, beam ? Math.PI / 2 : 0, beam ? 1 : 1.15);
+            if (beam) v.Face(Math.PI / 2);
             v.Visible = true;
         }
     }
@@ -123,8 +127,9 @@ public sealed class VaultOpened : StoryFight
             e.MaxHp = e.Hp = hp;
             e.Named = new Named { Title = "The standard" };
             var s = new Standard { E = e, seed = e.Seed, X = x, Z = z };
-            s.view = a.Piece("hex_nature/flag_red", 2.6);
-            s.view.Place(x, a.HeightAt(x, z), z, 0, 2.6);
+            // The kit's flag is a hand high: at eleven times, a pole a man and a half high and its rag.
+            s.view = a.Piece("hex_nature/flag_red", 11);
+            s.view.Place(x, a.HeightAt(x, z), z, 0, 11);
             s.view.Visible = true;
             return s;
         }

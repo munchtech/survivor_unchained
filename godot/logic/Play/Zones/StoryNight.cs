@@ -85,7 +85,7 @@ public sealed class StoryNight : ZoneRuntime, IStoryArena
         Hooks = new BattleHooks
         {
             OnKill = OnKill, OnLoot = OnLoot, OnPickup = OnPickup, OnPlayerDeath = OnFall,
-            BossTick = (e, dt) => e == boss && script != null ? script.Tick(e, dt) : scripted.TryGetValue(e.Id, out var s) && s.Seed == e.Seed && s.Tick(e, dt),
+            BossTick = (e, dt) => standing ? Stand(e) : e == boss && script != null ? script.Tick(e, dt) : scripted.TryGetValue(e.Id, out var s) && s.Seed == e.Seed && s.Tick(e, dt),
             OnBossHit = (e, school, dmg) => { if (e == boss) script?.OnHit(e, school, dmg); },
             OnBossStagger = e => { if (e == boss) script?.OnStagger(e); },
         };
@@ -603,7 +603,40 @@ public sealed class StoryNight : ZoneRuntime, IStoryArena
         if (B == null || over) return;
         falling = false;
         StageEnded(atBoss ? "boss" : $"stage {beatIx + 1}");
+        StandDown();
         Finish(by);
+    }
+
+    /// <summary>The fight stands down where it is (UI design's finding: let go, the fight ran on under the
+    /// fall's shade until the result came up, her weapons still firing and hitting): her weapons fall quiet,
+    /// what was marked or thrown or laid on the ground goes, and everything on the field stands still where it
+    /// is, as in the lost night's words ("None of them comes in"). Time still runs, so the result comes on its
+    /// own beat.</summary>
+    void StandDown()
+    {
+        var b = B!;
+        standing = true;
+        b.Combat = false;
+        b.CancelBlows();
+        foreach (var pr in b.Projectiles.Living().ToList()) b.Projectiles.Release(pr);
+        foreach (var zn in b.Zones.Living().ToList()) b.Zones.Release(zn);
+        foreach (var e in b.Enemies.Living())
+        {
+            e.Scripted = true;
+            e.Provoked = false;
+            e.Target = -1;
+            if (e.Disposition != Disposition.Ally) e.Disposition = Disposition.Neutral;
+            Stand(e);
+        }
+    }
+
+    /// <summary>The field stood down (StandDown): a creature still where it is.</summary>
+    bool standing;
+    static bool Stand(Enemy e)
+    {
+        e.Vx = e.Vz = 0;
+        if (e.State != EnemyState.Dying) { e.State = EnemyState.Idle; e.Anim = EnemyAnim.Idle; }
+        return true;
     }
 
     public override bool OnDeath(string killer)

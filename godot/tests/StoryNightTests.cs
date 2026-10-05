@@ -214,6 +214,34 @@ public class StoryNightTests
         Assert.True(n.Host.Result.WakesInTown);
     }
 
+    /// <summary>Let go, the night stands down at once while its result comes on its own beat: her weapons quiet,
+    /// nothing marked or thrown left, every creature still where it stands and none of them a foe. (It ran on
+    /// under the fall's shade, her weapons still hitting, until the result came up.)</summary>
+    [Fact]
+    public void A_night_let_go_stands_down_until_its_result()
+    {
+        var n = Hollow(before: j => j.World.Facts["chapter.done"] = true);
+        Step(n, 6);
+        Assert.Contains(n.B.Enemies.Living(), e => e.Disposition == Disposition.Hostile);
+        n.B.Player.Iframes = 0;
+        n.B.HurtPlayer(n.B.MaxHp * 9, School.Physical, "test", null);
+        // The host lets it go a second on (no rise past Act 1); then the result two seconds after that.
+        Step(n, 1.2, keep: false);
+        Assert.True(n.Zone.Over);
+        Assert.Null(n.Host.Result);
+        Assert.False(n.B.Combat);
+        var at = n.B.Enemies.Living().ToDictionary(e => e.Id, e => (e.X, e.Z));
+        Step(n, 1, keep: false, until: () => n.Host.Result != null);
+        Assert.DoesNotContain(n.B.Enemies.Living(), e => n.B.HostileToPlayer(e) || n.B.Targetable(e));
+        Assert.Empty(n.B.Blows);
+        Assert.Empty(n.B.Projectiles.Living());
+        foreach (var e in n.B.Enemies.Living().Where(e => at.ContainsKey(e.Id)))
+            Assert.True(Math.Abs(e.X - at[e.Id].X) + Math.Abs(e.Z - at[e.Id].Z) < 0.05, $"{e.Def.Id} moved");
+        Step(n, 3, keep: false);
+        Assert.NotNull(n.Host.Result);
+        Assert.False(n.Host.Result!.Won);
+    }
+
     [Fact]
     public void Past_Act_1_a_fall_loses_the_night_unless_she_carries_the_rise()
     {

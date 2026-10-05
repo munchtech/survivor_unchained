@@ -486,6 +486,8 @@ public sealed class Redcowl : StoryBoss
         e.State = EnemyState.Idle;
         e.Anim = EnemyAnim.Idle;
         e.Disposition = Disposition.Neutral;
+        // What he had marked goes with him.
+        B.CancelBlows();
         // The levy breaks, and its men keep back from her with his lot while she chooses (broken, they
         // turned on her, and a player weighing his life fought a line of pikes).
         if (levy != null)

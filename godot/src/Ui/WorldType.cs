@@ -277,7 +277,20 @@ public partial class StoryChoices : Control
 {
     double t;
     readonly VBoxContainer column;
-    readonly System.Collections.Generic.List<(Label Word, ColorRect Fill, float Width, Color Ink)> answers = new();
+    /// <summary>Each answer: its button, its words and their row, the ledger line under them and its fill.</summary>
+    sealed class Answer
+    {
+        public required Button Button;
+        public required VBoxContainer Col;
+        public required HBoxContainer Head;
+        public required Label Word;
+        public required Control Track;
+        public required ColorRect Line, Fill;
+        public required Color Ink;
+    }
+    readonly System.Collections.Generic.List<Answer> answers = new();
+    int held = -1;
+    float heldK;
     /// <summary>Where its top stands: the banner's place in the upper third (the boss's bar has gone), clear
     /// of the fight round her.</summary>
     const float Top = 1080 * 0.2f;
@@ -303,9 +316,11 @@ public partial class StoryChoices : Control
             int at = i;
             // Mercy in the moon's pale, the end in the ember's red: two colours, one weight.
             var ink = c.Answers[i].Id == "finish" ? new Color("#ff8a62") : new Color("#dce4ea");
-            row.AddChild(Answer(keys[i], c.Answers[i].Verb, ink, () => pick(at)));
+            row.AddChild(Make(keys[i], c.Answers[i].Verb, ink, () => pick(at)));
         }
+        row.SizeFlagsHorizontal = SizeFlags.ShrinkCenter;
         column.AddChild(row);
+        column.AddChild(new Control { CustomMinimumSize = new Vector2(0, 8), MouseFilter = MouseFilterEnum.Ignore });
         var how = WorldType.Lettering("Hold to choose", Style.TextItalic, 17, new Color("#cfc4b0") with { A = 0.85f });
         how.HorizontalAlignment = HorizontalAlignment.Center;
         column.AddChild(how);
@@ -313,7 +328,7 @@ public partial class StoryChoices : Control
         Modulate = Colors.Transparent;
     }
 
-    Control Answer(Act key, string verb, Color ink, Action pick)
+    Control Make(Act key, string verb, Color ink, Action pick)
     {
         var b = new Button { FocusMode = FocusModeEnum.None, Flat = true, MouseDefaultCursorShape = CursorShape.PointingHand };
         foreach (var s in new[] { "normal", "hover", "pressed", "focus" }) b.AddThemeStyleboxOverride(s, new StyleBoxEmpty());
@@ -328,35 +343,43 @@ public partial class StoryChoices : Control
         col.AddThemeConstantOverride("separation", 6);
         col.AddChild(head);
         // The ledger line under the words: faint, filling in their colour as the key is held.
-        float w = head.GetCombinedMinimumSize().X;
-        var track = new Control { CustomMinimumSize = new Vector2(w, 2), MouseFilter = MouseFilterEnum.Ignore };
-        track.AddChild(new ColorRect { Size = new Vector2(w, 2), Color = ink with { A = 0.22f }, MouseFilter = MouseFilterEnum.Ignore });
+        var track = new Control { CustomMinimumSize = new Vector2(1, 2), MouseFilter = MouseFilterEnum.Ignore };
+        var line = new ColorRect { Size = new Vector2(1, 2), Color = ink with { A = 0.22f }, MouseFilter = MouseFilterEnum.Ignore };
         var fill = new ColorRect { Size = new Vector2(0, 2), Color = ink, MouseFilter = MouseFilterEnum.Ignore };
+        track.AddChild(line);
         track.AddChild(fill);
         col.AddChild(track);
         b.AddChild(col);
-        b.CustomMinimumSize = col.GetCombinedMinimumSize();
         b.MouseEntered += () => word.AddThemeColorOverride("font_color", ink.Lightened(0.25f));
         b.MouseExited += () => word.AddThemeColorOverride("font_color", ink);
         b.Pressed += pick;
-        answers.Add((word, fill, w, ink));
+        answers.Add(new Answer { Button = b, Col = col, Head = head, Word = word, Track = track, Line = line, Fill = fill, Ink = ink });
         return b;
     }
 
     /// <summary>The answer whose key is held (-1: none), and how far to choosing it.</summary>
     public void Held(int i, float k)
     {
+        held = i;
+        heldK = k;
         for (int j = 0; j < answers.Count; j++)
-        {
-            var (word, fill, w, ink) = answers[j];
-            fill.Size = new Vector2(j == i ? w * k : 0, 2);
-            word.AddThemeColorOverride("font_color", j == i ? ink.Lightened(0.2f * k) : ink);
-        }
+            answers[j].Word.AddThemeColorOverride("font_color", j == i ? answers[j].Ink.Lightened(0.2f * k) : answers[j].Ink);
     }
 
     public override void _Process(double delta)
     {
         t += delta;
+        // Each answer as wide as its words, its line as wide as them (a button does not size to what is in it,
+        // and measured before its words were in the tree the two ran into each other).
+        for (int j = 0; j < answers.Count; j++)
+        {
+            var a = answers[j];
+            float w = a.Head.GetCombinedMinimumSize().X;
+            a.Track.CustomMinimumSize = new Vector2(w, 2);
+            a.Line.Size = new Vector2(w, 2);
+            a.Fill.Size = new Vector2(j == held ? w * heldK : 0, 2);
+            a.Button.CustomMinimumSize = a.Col.GetCombinedMinimumSize();
+        }
         var s = column.GetCombinedMinimumSize();
         column.Size = s;
         column.Position = new Vector2((1920 - s.X) / 2, Top);

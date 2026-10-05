@@ -556,6 +556,8 @@ public sealed class Greymuzzle : StoryBoss, IBound
         e.State = EnemyState.Idle;
         e.Anim = EnemyAnim.Idle;
         e.Disposition = Disposition.Neutral;
+        // What he had marked goes with him (his pant's ring lay on under the choice).
+        B.CancelBlows();
         B.Events.Emit(new Ev.Focus { X = e.X, Z = e.Z, Duration = 2.4 });
         S.Bark(e.X, e.Z, "His legs go. He lies on his side, breathing hard, and the ring lies down where it stands.", null);
         // A broken ring's wolves lie down where they stand too: the fight is over, however long she takes to
