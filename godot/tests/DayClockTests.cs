@@ -195,7 +195,7 @@ public class DayClockTests
     }
 
     [Fact]
-    public void The_wood_opens_its_scars_at_nightfall_and_puts_them_out_at_dawn()
+    public void The_wood_opens_its_scars_and_raises_its_dead_at_nightfall_and_puts_the_scars_out_at_dawn()
     {
         var j = Arrived();
         j.World.Time = TimeOfDay.Dusk;
@@ -209,9 +209,18 @@ public class DayClockTests
         host.Battle = b;
         zone.Begin(b);
         Assert.False(zone.HasScars);
+        int Risen() => b.Enemies.Living().Count(e => e.Def.Id.StartsWith("risen"));
+        int before = Risen();
         j.PassTime(DayClock.NightAt - DayClock.DuskAt);
         zone.TimeTurned(TimeOfDay.Night);
         Assert.True(zone.HasScars);
+        // The dead get up out of the wood at nightfall, none of them on top of her.
+        Assert.True(Risen() > before);
+        Assert.All(b.Enemies.Living().Where(e => e.Def.Id.StartsWith("risen")), e =>
+            Assert.True(System.Math.Sqrt((e.X - b.Player.X) * (e.X - b.Player.X) + (e.Z - b.Player.Z) * (e.Z - b.Player.Z)) > 25));
+        int risen = Risen();
+        zone.TimeTurned(TimeOfDay.Night);
+        Assert.Equal(risen, Risen());
         Assert.Contains(zone.Interactables, i => i.Id.StartsWith("scar:"));
         Assert.NotNull(zone.NearestScar(b.Player.X, b.Player.Z));
         j.SeeNightOut(() => 0.5);
