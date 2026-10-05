@@ -1,8 +1,8 @@
 # Arena art: how every arena looks, and reads
 
-Status page for arena art (lead `aba487928a1515c93`, branch `worktree-agent-aba487928a1515c93`).
-The predecessor's handoff is `docs/handoff/arena_art.md`; sheets and concepts are in `docs/arena/`
-(latest: `hollow_night_2.jpg`).
+Status page for arena art (branch `worktree-agent-aba487928a1515c93`). The lead `aba487928a1515c93`
+has **handed off**: read `docs/handoff/arena_art.md`. Sheets and concepts are in `docs/arena/`
+(latest: `hollow_night_2.jpg`, `dig_1.jpg`).
 
 ## The brief
 
@@ -17,8 +17,8 @@ scars** (survivors runs) and the **Wayfinder's atlas** (permanent maps, "like Po
 |---|---|---|
 | Hollow by Night (story) | ~3.5–4 | 5–19% flat black (was 26%). The banks read as wood now, not a void. Old Blue's knolls are stone. `PlaceBuilt` is set. |
 | Hollow | ~3.5 | The litter reads as leaves. Moss grows in cushions. The canopy pools are soft. The stream is still weak (dark, 36% black at the water). |
-| Dig | ~3 | Next. The spoil is one black field with no heaps to see. The rust is camouflage blobs. The pit's smoke is an orange dome. |
-| Barrow | ~3 | The tussocks are pale straw stars, all blue-grey. The howe sits at the frame's foot in the dark. |
+| Dig | ~3.5 | The tips are heaps of coal and rock lumps. The pit is a throat with a red heart. The clay is lighter, and the rust and ballast are graded (no blots). Still: the slurry pool is too lime, and the tips are dark masses from afar. |
+| Barrow | ~3 | The tussock tips are warm. The howe has moved to the top of the picture, not yet judged. Still blue-grey all over. |
 | Ruts | ~3 | Not yet re-judged. |
 
 ## Key decisions
@@ -40,16 +40,11 @@ scars** (survivors runs) and the **Wayfinder's atlas** (permanent maps, "like Po
 
 ## Next (in order)
 
-1. **The Dig:**
-   - heaps that read as heaps: lumps of coal-black rock with glints, spoil kept to the heap;
-   - rust as the clay's own colour, not blobs;
-   - the pit as a throat, not a dome of lit smoke;
-   - judge the timber, the windlass and the lamplings' discs.
-2. The Barrow's howe and gate on screen; its tussocks.
-3. The Ruts.
+1. **The Vault's hall** (combat built the fight; it has no place art: invisible walls, stand-in cover and standards). Build `Maps/Arenas/Vault.cs` to `VaultOpened.Ground`, then set `PlaceBuilt`.
+2. **The Roost**, built to `RaidOnTheRoost.Ground`.
+3. The Barrow's howe at its new end; the Dig's slurry and tips from afar; the Ruts.
 4. The Hollow at minute 25, and its stream.
 5. The atlas maps from each people's kit (experience's ask: nothing tall over a fight, the ground a quiet stage).
-6. The Roost, built to combat's outline (`RaidOnTheRoost.Ground`), then the Dig's and the Vault's.
 
 ## Notes for other areas
 
