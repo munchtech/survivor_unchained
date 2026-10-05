@@ -2,7 +2,7 @@
 
 Agent a79b6d8c81e14dc63 (succeeded a3058a45eee41d695 on 4 October), branch `worktree-agent-a79b6d8c81e14dc63`. The brief: shooting scripts, boards and animatics for C01 to C14, and the in-engine cinematic player. Pipeline and timeline format: `docs/cinematics/shoot/README.md`. Predecessor's handoff: `docs/handoff/cinematics.md`.
 
-## State (5 October)
+## State (5 October; handed off: `docs/handoff/cinematics.md`)
 
 - **The Prologue (C01 to C04) is surveyed, wired and playing in the game** (previs). This pass:
   - **C01 is on animation's clips:** she lies curled at the fire's edge (`lie_side_wake`), comes up onto her elbow, kneels back on her heels (`sit_back_heels`), and holds her hand to the coals (`reach_coals`, now shot 6a after the kneel). Every face shot is reframed on her bones; her looks are head turns.
@@ -16,7 +16,7 @@ Agent a79b6d8c81e14dc63 (succeeded a3058a45eee41d695 on 4 October), branch `work
 
 ## Next, in order
 
-1. Finish the board remakes: C01, C03, C04 A and C04 B over the new staging, and C02's s3, s5, s7, s8 and s11 again (the lamp now hangs in his fist). Look at every one at full size.
+1. Re-render the staging (C01, C02, C03, C04 B; the commands are in the handoff, Next 1), then finish the board remakes: C01, C03, C04 A and C04 B, and C02's s3, s5, s7, s8 and s11 again. Look at every one at full size.
 2. Recut the Prologue animatic (`animatics/prologue.txt`; C01's shot 4 is now 6a).
 3. Check the Prologue with the male hero (`--sex male --body hero`): every face camera should hold on his bones; his clips (`him/`) need C01's three.
 4. C02's and C03's line choices (handoff Next 6), then C07 and C09.
