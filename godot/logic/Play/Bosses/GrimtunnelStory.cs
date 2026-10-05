@@ -48,9 +48,10 @@ public sealed class GrimtunnelStory : StoryBoss, IBound
     public override string ReEntry => "The crack opens again, and he climbs out of it with his arms spread.";
     /// <summary>Measured to the length, as Greymuzzle's and Redcowl's were: the same at every tier. Under the
     /// ground he takes half, and his lamps take a quarter of what is put into him.</summary>
-    public override double HealthMul(int tier) => 95;
-    /// <summary>His burst up a third of her health at a story night's build; his teeth are in his marked moves.</summary>
-    public override double DamageMul => 1.3;
+    public override double HealthMul(int tier) => 109;
+    /// <summary>His teeth are in his marked moves; his burst up (×2) about a third of her health at a story
+    /// night's build.</summary>
+    public override double Teeth => 0.2;
     protected override bool DiesAtZero => false;
     protected override bool OverGaps => under;
 
@@ -78,12 +79,12 @@ public sealed class GrimtunnelStory : StoryBoss, IBound
     readonly List<(double X, double Z, int Id, int Mark)> pits = new();
     readonly List<int> crack = new();
     bool crackOpen;
-    double seamT, caveR = GroundR, caveT, caveDrawT, caveShoveT;
+    double seamT, caveR = GroundR, caveT, caveDrawT, caveShoveT, caveGrace;
     bool caving;
 
     /* ------------------------------------------------------------------- moves -- */
 
-    double underT = 6, lampT = 3, mothT = 14, pulseT = 4, pickT = 2, barrelT = -1, nipT, side = 1, sideT, dazeT;
+    double underT = 6, lampT = 3, mothT = 14, pulseT = 4, pickT = 2, barrelT = -1, side = 1, sideT, dazeT;
     bool under, frostCaught, temper;
     double underRun, underMax;
     /// <summary>Unders still drawn to his own lamp, set down (the bane).</summary>
@@ -164,7 +165,9 @@ public sealed class GrimtunnelStory : StoryBoss, IBound
             return true;
         }
         if (under) return Burrowing(e, dt);
-        e.TakenMul = 1;
+        // (His cracked hide holds through his moves: set back to one here each step, the barrel's crack never
+        // reached a blow.)
+        e.TakenMul = cracked > 0 ? 1.25 : 1;
         if (flareT > 0 && (flareT -= dt) <= 0) flaring = -1;
         if (Running(e, dt)) return true;
         var (dx, dz, d) = ToPlayer();
@@ -189,7 +192,8 @@ public sealed class GrimtunnelStory : StoryBoss, IBound
     }
 
     /// <summary>Between his moves he comes round her at five to seven metres, swinging his lamps, pleased with
-    /// everything; walked into, a cuff (a third of a blow, now and then). His teeth are in his marked moves.</summary>
+    /// everything; pressed close, he ambles off round her, and cuffs only what walks across his path
+    /// (StoryBoss.Cuff). His teeth are in his marked moves.</summary>
     bool Stalk(Enemy e, double dt, double dx, double dz, double d)
     {
         if ((sideT -= dt) <= 0) { sideT = 3 + S.R() * 3; side = S.R() < 0.5 ? -1 : 1; }
@@ -197,23 +201,20 @@ public sealed class GrimtunnelStory : StoryBoss, IBound
         double vx = dx * radial - dz * side * 0.8, vz = dz * radial + dx * side * 0.8;
         double vl = Math.Max(1e-6, Math.Sqrt(vx * vx + vz * vz)), sp = e.Speed * 0.7;
         double nx = e.X + vx / vl * sp * dt, nz = e.Z + vz / vl * sp * dt;
-        if (!S.Place.Inside(nx, nz, 1.5) || B.Collision.Blocked(nx, nz, e.Radius))
+        bool cornered = !S.Place.Inside(nx, nz, 1.5) || B.Collision.Blocked(nx, nz, e.Radius) || !Inside(nx, nz, 1.2);
+        if (cornered)
         {
             side = -side; sideT = 2;
             double cx = C.X - e.X, cz = C.Z - e.Z, cl = Math.Max(0.01, Math.Sqrt(cx * cx + cz * cz));
-            nx = e.X + cx / cl * sp * dt; nz = e.Z + cz / cl * sp * dt;
+            vx = cx / cl; vz = cz / cl; vl = 1;
+            nx = e.X + vx * sp * dt; nz = e.Z + vz * sp * dt;
             if (B.Collision.Blocked(nx, nz, e.Radius)) { nx = e.X; nz = e.Z; }
         }
         e.X = nx; e.Z = nz;
         e.Vx = vx / vl * sp; e.Vz = vz / vl * sp;
-        e.Facing = Math.Atan2(dz, dx);
         e.State = EnemyState.Active;
         e.Anim = EnemyAnim.Move;
-        if ((nipT -= dt) <= 0 && d < e.Radius + B.Player.Radius + 0.7)
-        {
-            nipT = 1.6;
-            B.HurtPlayer(e.Damage * 0.3, School.Physical, Who, e);
-        }
+        Cuff(e, dt, vx, vz, dx, dz, d, cornered, 0.3, 1.6);
         return true;
     }
 
@@ -337,11 +338,13 @@ public sealed class GrimtunnelStory : StoryBoss, IBound
     }
 
     /// <summary>A sinkhole where he burst (from the Collapse on): marked a moment, then ground nothing stands on,
-    /// up to five and one more a tier; the oldest fills when the next opens, until he grows wild.</summary>
+    /// up to five and one more a tier; the oldest fills when the next opens. Wild, they stop filling, but only
+    /// to half again as many: left to grow without end, a slow night's lip became holes with a little ground
+    /// between, and the two halves of the Heart could not be crossed.</summary>
     void Pit(double x, double z)
     {
-        int cap = 5 + S.Tier;
-        if (pits.Count >= cap && !Soft) { var old = pits[0]; pits.RemoveAt(0); B.Collision.Remove(old.Id); B.EndMark(old.Mark); }
+        int cap = (5 + S.Tier) * (Soft ? 3 : 2) / 2;
+        if (pits.Count >= cap) { var old = pits[0]; pits.RemoveAt(0); B.Collision.Remove(old.Id); B.EndMark(old.Mark); }
         B.Blow(new Battle.EnemyBlow { Shape = TelegraphShape.Circle, Kind = TelegraphKind.Wall, X = x, Z = z, Radius = 2.6, Delay = 1.5, From = E, Label = "The ground goes" });
         S.After(1.5, () =>
         {
@@ -493,6 +496,8 @@ public sealed class GrimtunnelStory : StoryBoss, IBound
     }
 
     double cracked;
+    /// <summary>His hide cracked by Snib's barrel: he takes more, for a while.</summary>
+    public bool Cracked => cracked > 0;
 
     /// <summary>"Ooh, the GOOD stuff!": he picks it up and throws it at her, marked long.</summary>
     void Throw(Barrel b)
@@ -596,15 +601,42 @@ public sealed class GrimtunnelStory : StoryBoss, IBound
         caveT = 10;
     }
 
+    /// <summary>Ground he can stand on within `r` of the lip's middle, nearest him: not in the crack or a pit
+    /// (set down in the crack, the walk's own push carried him back out along it to where the floor had gone).</summary>
+    (double X, double Z)? Footing(double r)
+    {
+        (double X, double Z)? best = null;
+        double bd = double.MaxValue;
+        for (double rr = Math.Max(0, r); rr >= 0; rr -= 1)
+            for (int k = 0; k < (rr < 0.5 ? 1 : 16); k++)
+            {
+                double a = k * Math.PI / 8, x = C.X + Math.Cos(a) * rr, z = C.Z + Math.Sin(a) * rr;
+                if (B.Collision.Blocked(x, z, E.Radius)) continue;
+                double d = Dist(x, z, E.X, E.Z);
+                if (d < bd) { bd = d; best = (x, z); }
+            }
+        return best;
+    }
+
     void Cave(double dt)
     {
-        if ((caveT -= dt) <= 0) { caveT = 10; caveR = Math.Max(5, caveR - 2); }
+        // (It stops at seven metres: the crack runs through the lip's middle, and at five the halves either side
+        // of it were too narrow to stand in.)
+        if ((caveT -= dt) <= 0) { caveT = 10; caveR = Math.Max(7, caveR - 2); }
+        // The floor goes from under him too: he scrambles in off it. (Left standing out on ground that had gone,
+        // he fought on from where she could not follow, and a weak build's night ran to the cap.)
+        double ed = Dist(E.X, E.Z, C.X, C.Z);
+        if (!goingDown && !under && ed > caveR - 1.2 && (Footing(caveR - 1.2) ?? Footing(caveR + 1)) is var (fx, fz)) { E.X = fx; E.Z = fz; }
         var p = B.Player;
         double d = Dist(p.X, p.Z, C.X, C.Z);
+        // The going floor shoves her back in, and hurts only now and then, as any living wall does (Greymuzzle's
+        // ring): shoved half a blow every 0.6 s, the hands took more from the edge than from him.
+        caveGrace -= dt;
         if ((caveShoveT -= dt) <= 0 && d > caveR - 0.6)
         {
             caveShoveT = 0.6;
-            B.ShovePlayer(C.X - p.X, C.Z - p.Z, 2.5, E.Damage * 0.5, "the floor going");
+            B.ShovePlayer(C.X - p.X, C.Z - p.Z, 2.5, caveGrace <= 0 ? E.Damage * 0.5 : 0, "the floor going");
+            if (caveGrace <= 0) caveGrace = 2;
         }
         if ((caveDrawT -= dt) <= 0)
         {

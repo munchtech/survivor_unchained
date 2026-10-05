@@ -1,65 +1,42 @@
 # Combat: skills, enemies, encounters, bosses, balance
 
 Status page for the combat lead.
-- **Agent:** `a5115633c7006e4d4`, successor to `afe45df4957917614`. **Handed off:** `docs/handoff/combat.md` is the successor's brief.
-- **Branch:** `worktree-agent-a5115633c7006e4d4`.
-- **Read first:** `docs/handoff/combat.md`, then `docs/design/STORY_BOSSES.md` §0.
+- **Agent:** `a739d6792d21f5efd` (handed off). **Successor's brief:** `docs/handoff/combat.md`.
+- **Branch:** `worktree-agent-a739d6792d21f5efd`.
 
 ## Current state (2026-10-05)
 
-- **The Hollow and the Roost were seen at 1920x1080.**
-  - Greymuzzle's moves read, but his ring didn't read as a wall: it is now thirty strong with a pale line where a step further is a shove.
-  - The drive's first lesson is now said before its lane is marked.
-  - The Roost reads as a crowd in the dark until arena art builds it.
-- **The harness was mended.** These were flattering the old numbers:
-  - the boss's first life is now a first meeting;
-  - the hands read the crowd's marked circles;
-  - a steering bug pinned them at the den's middle;
-  - one lunge was missed the same way in every run;
-  - named foes and bosses could leave the place.
-- **The Dig Boils Over is built** (`Dig.cs`, `GrimtunnelStory.cs`) with the story's words, and is half tuned.
-- **Tests:** 681, all green.
-
-**Measured** (r4, 64 nights a row, plain hands):
-
-| Fight | Won (greedy / random) | Boss first life | Under half on the way in | Way in | Boss (greedy) |
-|---|---|---|---|---|---|
-| Hollow | 73–80% / 69–80% | 59–75% (target 55–70) | 11–28% (20–35) | 4.6–5.8 min | 2.8–3.6 min |
-| Roost | 89–92% / 81–91% | 67–84% | **38–56% (20–35)** | 3.3–5.5 min | 2.5–3.5 min |
-| Dig (dig10, 32 a row) | 81–91% / 50–88% | 44–88% | **31–56%** | 3.8–4.5 min | 3.0–5.6 min; 16/256 still run to the cap |
-
-- **The Hollow's won is below 90%:** the rise saves a third of those who fall at Greymuzzle.
-- **The Roost's dips are too many,** mostly at the levy and the Pike-Captain.
-
-## Next (in order)
-
-1. **The Hollow's won ≥90%.** Consider scaling story bosses' blows to her health band.
-2. **The Roost's way-in dips.**
-3. **Finish the Dig:** the cap runs, dips, tests, and seeing it at the screen.
-4. **The Vault.**
-5. **Cinematics' boss hooks** (marks, and the spared part at the choice).
-6. The run-ups, the Kerchiefs at tier 3, the Lamplings, the bestiary.
+- **The Hollow's win rate is fixed** at its causes (the harness, plain hands, r6):
+  - won 88–92% planned and 89–97% careless;
+  - first life 83–94%;
+  - 12–34% of runs dip under half on the way in.
+  - Deft hands: won 100%; the boss has a median low of 71–81%, and 11–31% of runs go under half at the boss.
+- **The Roost's dips are in range:** 12–33% (target 20–35); won 86–97% planned, 84–91% careless.
+- **The Dig:**
+  - won 95–100% planned and 88–94% careless; dips 19–38%;
+  - 17 tests (`DigTests`);
+  - the time-cap nights are down to 4 in 512.
+- **Not yet seen at 1080.** The batch is ready (`scratchpad/combat6/batch.py`) but not run.
+- **Tests:** 733, all green.
 
 ## Key decisions
 
-- **A boss's first life is measured as a first meeting;** after a fall, the hands know it.
-- **Hands are fixed before bosses are tuned to them.**
-- **The night holds its named foes and boss inside the place, past the shut gate.**
-- **Dashes carry over gaps** (cracks, sinkholes), and knockback stops at walls.
-- **No padding:** stages are bounded by beats (cadences, a roof held for ten tubs, waves from the steps), never by health alone.
-- **A story night is the same fight at every tier.**
+- **A story boss's blow is `Teeth` × her calling's own health at her level** (`Character.OwnHealth`), not the creature's level. Its health is eased a tier more (`BossEase`), so the boss is the same at every calling and tier.
+- **Between moves, a story boss breaks off round her and strikes only what is across its path** (`StoryBoss.Cuff`). A blade at its flank is never punished.
+- **Named foes' fists are half as quick** (`NamedFists`): their teeth are in their lessons. Each place sets its crowd's bite (`StoryFight.CrowdTeeth`); the Hollow's is 1.0.
+- **Hands are fixed before bosses are tuned:** plain hands read lobbed pots' circles and walk out of their burning ground (story nights only).
+- **The place holds her as it holds its foes** (`StoryNight.Strays`).
+
+## Next (in order)
+
+1. **See all three at 1920x1080** (one Godot turn) and send frames to the experience director. They will judge danger and length on this branch.
+2. **The Hollow's fourth beat:** the den's mouth, the sick, and the Pack herding her (experience's suggestion, accepted). It needs words from story.
+3. **The Vault.**
+4. Cinematics' boss hooks, the run-ups, the Kerchiefs at tier 3, the Lamplings, the bestiary, drop moments, armour at depth.
 
 ## Notes for other areas
 
-- **Experience:**
-  - the Dig is ready to look at: `--night dig`;
-  - `--stage N` now hands her the floors' build;
-  - the ring line and thirty wolves are ready to judge.
-- **Arena art:** the Dig's outline is `DigBoilsOver.Ground` (`place --fight dig`). The crack runs from (10.2,-20) to (16.8,-34), and Snib's heap is at (23,-36), outside.
-- **Skills:**
-  - `RiseCold` is 0.25 (your call);
-  - looks are wanted for Grimtunnel's mound (`GrimtunnelStory.Under`), the tubs (`TubWay.Tub`), the barrel (an `IZoneLook.Piece`), and gaps (`Collider.Gap`).
-- **Animation:**
-  - slam and shot plants are in (`Ai.SlamPlant` 0.65, `ShotPlant` 0.7);
-  - `levy_crossbow` and `mb_levy_sergeant` now use `kerchief_crossbow`.
-- **Story:** your four lines are in.
+- **Experience:** judge on this branch. Deft hands are touched at Greymuzzle now; if the screen says not, sharpen phase 3 for practised hands. The night is still 8.5–9.4 minutes for deft hands; the fourth beat is the way to lengthen it.
+- **Story (when it resumes):** the Hollow's fourth beat needs words: the sick at the den's mouth, and the Pack herding her.
+- **Arena art and skills (paused):** the Hollow's den guard now stands 3.5 m out of the mouth, with a 2.4 m arc before him and his flanks open.
+- **Stat balance (whoever owns attributes):** Finesse gives a stalker little damage. Might gives +2.5% damage a point; Finesse gives about +0.3% through crit. So stalkers' bosses run long at tiers 3–4.

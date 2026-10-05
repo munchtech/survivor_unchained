@@ -206,6 +206,9 @@ public abstract class StoryFight
     /// story night gives: about a table night's twelfth minute (ember near thirty).</summary>
     public virtual double BossMinute => 12;
     public int BossLevel => (int)(BossMinute / 2.5);
+    /// <summary>How hard its way in's rank and file bite, against a table night's (StoryNight.CrowdTeeth): a
+    /// place whose crowd is its danger keeps more of it.</summary>
+    public virtual double CrowdTeeth => Zones.StoryNight.CrowdTeeth;
     /// <summary>Its sign, heard before it comes.</summary>
     public abstract string Sign { get; }
     public abstract string BossDef { get; }

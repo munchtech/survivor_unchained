@@ -43,8 +43,9 @@ public sealed class StoryRunResult
     /// <summary>Each fall: the part of the night, and at the boss its phase, its fight's seconds and how much of
     /// it was left; her health then (whether a fall was the build's or the hands').</summary>
     public List<string> FellAt = new();
-    /// <summary>Her health as the boss's ground opened (what his blows are measured against).</summary>
-    public double MaxHpAtBoss;
+    /// <summary>Her health as the boss's ground opened, and how far her weapons reach then (a blade build's
+    /// fight is at his flank, a bow's at range).</summary>
+    public double MaxHpAtBoss, ReachAtBoss;
     /// <summary>What hurt her, by part of the night ("stage 2", "boss") and source, as a share of her
     /// health: where the danger is.</summary>
     public Dictionary<string, Dictionary<string, double>> HurtBy = new();
@@ -141,7 +142,7 @@ public static class StorySim
                     way = (pl.X + dx / dl * 3, pl.Z + dz / dl * 3);
                 }
             }
-            if (trace && ((int)(t / 5) != (int)((t - ArenaSim.Dt) / 5) || Environment.GetEnvironmentVariable("STORY_TICKS") is string tk0 && t > double.Parse(tk0) && t < double.Parse(tk0) + 8 && (int)(t * 4) != (int)((t - ArenaSim.Dt) * 4))) Console.Error.WriteLine($"{t / 60:0.00} {zone.Now} {zone.BeatIx} at ({b.Player.X:0.0},{b.Player.Z:0.0}) d {zone.Place.Dist(b.Player.X, b.Player.Z):0.00} way {way} goal {zone.Goal} | {zone.Beat?.Goal} | {(zone.Beat?.Bar is { } bar ? $"{bar.Name} {bar.Hp:0}/{bar.MaxHp:0}" : "")} ember {b.EmberLevel} hp {b.Player.Hp:0}/{b.MaxHp:0} shut {zone.Debug()["shut"]} open {zone.Debug()["open"]}{(zone.Now == StoryNight.Stage.Boss && zone.BossScript is { } bsx && bsx.E != null ? $" | boss {bsx.E.Hp:0}/{bsx.E.MaxHp:0} at ({bsx.E.X:0},{bsx.E.Z:0}) ph {bsx.PhaseIx} t {bsx.FightT:0} {bsx.E.State} {bsx.E.Disposition} taken {bsx.E.TakenMul:0.00} floor {bsx.E.HpFloor:0}" : "")}");
+            if (trace && ((int)(t / 5) != (int)((t - ArenaSim.Dt) / 5) || Environment.GetEnvironmentVariable("STORY_TICKS") is string tk0 && t > double.Parse(tk0) && t < double.Parse(tk0) + 8 && (int)(t * 4) != (int)((t - ArenaSim.Dt) * 4))) Console.Error.WriteLine($"{t / 60:0.00} {zone.Now} {zone.BeatIx} at ({b.Player.X:0.0},{b.Player.Z:0.0}) d {zone.Place.Dist(b.Player.X, b.Player.Z):0.00} way {way} goal {zone.Goal} | {zone.Beat?.Goal} | {(zone.Beat?.Bar is { } bar ? $"{bar.Name} {bar.Hp:0}/{bar.MaxHp:0}" : "")} ember {b.EmberLevel} hp {b.Player.Hp:0}/{b.MaxHp:0} shut {zone.Debug()["shut"]} open {zone.Debug()["open"]}{(zone.Now == StoryNight.Stage.Boss && zone.BossScript is { } bsx && bsx.E != null ? $" | boss {bsx.E.Hp:0}/{bsx.E.MaxHp:0} at ({bsx.E.X:0},{bsx.E.Z:0}) ph {bsx.PhaseIx} t {bsx.FightT:0} {bsx.E.State} {bsx.E.Disposition} taken {bsx.E.TakenMul:0.00} floor {bsx.E.HpFloor:0}{(bsx.Soft ? " soft" : "")}{(bsx.Hard ? " hard" : "")}{(bsx is SurvivorUnchained.Play.Bosses.IBound ib && !ib.Inside(bsx.E.X, bsx.E.Z, 0) ? " OUTSIDE-BOUND" : "")}" : "")}");
             // The boss's first life is a first meeting with it; a fall there teaches it.
             if (zone.Now == StoryNight.Stage.Boss && !met) { met = true; if (spec.Meets) meeting = new(); }
             Pilot.Debug = trace && Environment.GetEnvironmentVariable("STORY_TICKS") is string tk3 && t > double.Parse(tk3) && t < double.Parse(tk3) + 8 && (int)(t * 4) != (int)((t - ArenaSim.Dt) * 4);
@@ -184,7 +185,7 @@ public static class StorySim
             host.Pass(ArenaSim.Dt);
             j.BankArt(b);
             ArenaSim.Drafts(b, pick, rng, drafts, null);
-            if (r.CardsAtBoss < 0 && zone.Now == StoryNight.Stage.Boss) { r.CardsAtBoss = drafts.Cards; r.MaxHpAtBoss = b.MaxHp; }
+            if (r.CardsAtBoss < 0 && zone.Now == StoryNight.Stage.Boss) { r.CardsAtBoss = drafts.Cards; r.MaxHpAtBoss = b.MaxHp; r.ReachAtBoss = Pilot.Reach(b); }
             // Her choice at his side, by the run's own; and the crates, fired or left, by the run's own.
             var offer = zone.Interactables.FirstOrDefault(i => i.Id == (spec.Choice == "finish" ? "story:finish" : "story:let_go"))
                 ?? zone.Interactables.FirstOrDefault(i => i.Id is "story:let_go" or "story:finish");

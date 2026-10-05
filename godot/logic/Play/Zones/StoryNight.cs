@@ -339,8 +339,8 @@ public sealed class StoryNight : ZoneRuntime, IStoryArena
         {
             boss.Boss = true;
             boss.Named = new Named { Title = BossName };
-            boss.MaxHp = boss.Hp = boss.MaxHp * script.HealthMul(Spec.Tier);
-            boss.Damage *= script.DamageMul;
+            boss.MaxHp = boss.Hp = boss.MaxHp * script.HealthMul(Spec.Tier) / BossEase;
+            boss.Damage = script.Teeth * Character.OwnHealth(G.Journey.Ch);
             script.Begin(boss);
             b.Events.Emit(new Ev.Focus { X = x, Z = z, Duration = rise ? 1.0 : 1.6 });
         }
@@ -407,6 +407,14 @@ public sealed class StoryNight : ZoneRuntime, IStoryArena
     {
         if ((strayT -= dt) > 0) return;
         strayT = 0.5;
+        // She is held by the place as its foes are. (Put out past the lip's wall at the Heart's turn, a night stood
+        // outside its own fight until the cap.)
+        var me = B!.Player;
+        if (!Fight.Place.Inside(me.X, me.Z, -0.8, open) || shutBehind && !PastGates(me.X, me.Z))
+        {
+            var back = Home(me.X, me.Z, me.Radius, boss: true);
+            if (back != default) { me.X = back.X; me.Z = back.Z; me.Vx = me.Vz = 0; }
+        }
         foreach (var e in B!.Enemies.Living())
         {
             // A named foe the stage asks her to reach, or the boss, is brought back however its script moved it,
@@ -417,18 +425,21 @@ public sealed class StoryNight : ZoneRuntime, IStoryArena
             // (The boss, once the way back is shut, on his own side of it too: pushed out of a hole of his own
             // making, Grimtunnel went through the shut gate.)
             if (Fight.Place.Inside(e.X, e.Z, -0.8, open) && !(e.Boss && shutBehind && !PastGates(e.X, e.Z))) continue;
-            // (A point the fight has since filled is no home: Grimtunnel set down at the crack's end, in the crack,
-            // was pushed out of it through the wall, and back, and out.)
-            // The place's points, and ground round each (a boss is big, and his own holes fill his ground).
-            var home = Fight.Place.Points.Values
-                .SelectMany(q => Enumerable.Range(0, 17).Select(k => k == 0 ? (X: q.X, Z: q.Z)
-                    : (X: q.X + Math.Cos(k * Math.PI / 4) * (k <= 8 ? 2.5 : 5), Z: q.Z + Math.Sin(k * Math.PI / 4) * (k <= 8 ? 2.5 : 5))))
-                .Where(q => Fight.Place.Inside(q.X, q.Z, 1, open) && (!e.Boss || !shutBehind || PastGates(q.X, q.Z)) && !B.Collision.Blocked(q.X, q.Z, e.Radius))
-                .OrderBy(q => Dist(q.X, q.Z, e.X, e.Z)).FirstOrDefault();
+            var home = Home(e.X, e.Z, e.Radius, e.Boss);
             if (home == default) continue;
             e.X = home.X; e.Z = home.Z; e.Kbx = e.Kbz = 0;
         }
     }
+
+    /// <summary>Free ground nearest a point: the place's points, and ground round each (a boss is big, and his own
+    /// holes fill his ground); past the shut gate for the boss (and her) once it is shut. (A point the fight has
+    /// since filled is no home: Grimtunnel set down at the crack's end, in the crack, was pushed out of it
+    /// through the wall, and back, and out.)</summary>
+    (double X, double Z) Home(double x, double z, double radius, bool boss) => Fight.Place.Points.Values
+        .SelectMany(q => Enumerable.Range(0, 17).Select(k => k == 0 ? (X: q.X, Z: q.Z)
+            : (X: q.X + Math.Cos(k * Math.PI / 4) * (k <= 8 ? 2.5 : 5), Z: q.Z + Math.Sin(k * Math.PI / 4) * (k <= 8 ? 2.5 : 5))))
+        .Where(q => Fight.Place.Inside(q.X, q.Z, 1, open) && (!boss || !shutBehind || PastGates(q.X, q.Z)) && !B!.Collision.Blocked(q.X, q.Z, radius))
+        .OrderBy(q => Dist(q.X, q.Z, x, z)).FirstOrDefault();
 
     /// <summary>The stage's crowd kept standing, from its points out of her reach, until its pool is spent.</summary>
     void Crowd(double dt)
@@ -729,7 +740,7 @@ public sealed class StoryNight : ZoneRuntime, IStoryArena
         if (e != null) e.MaxHp = e.Hp = e.MaxHp / TierEase;
         // The way in's rank and file bite softer than a table night's: the way in should dip, not fell
         // (STORY_BOSSES.md 0.6), and the danger belongs to the boss. The named keep their own teeth.
-        if (e != null && !e.Elite && !atBoss) e.Damage *= CrowdTeeth;
+        if (e != null && !e.Elite && !atBoss) e.Damage *= Fight.CrowdTeeth;
         // Her health grows a little slower with her level than their bite does with theirs: eased a tier.
         if (e != null) e.Damage /= TierTeeth;
         return e;
@@ -737,8 +748,10 @@ public sealed class StoryNight : ZoneRuntime, IStoryArena
 
     /// <summary>How hard the way in's rank and file bite, against a table night's.</summary>
     public const double CrowdTeeth = 0.75;
+    /// <summary>How much slower a named foe's fists are than its kind's.</summary>
+    public const double NamedFists = 2;
     public double TierTeeth => 1 + 0.2 * (Spec.Tier - 1);
-    public double Teeth => CrowdTeeth / TierTeeth;
+    public double Teeth => Fight.CrowdTeeth / TierTeeth;
 
     /// <summary>A story night is the same fight at every tier: its tier is the game's guess at how strong
     /// she has grown, and its creatures' levels already follow it. Their health grows faster with level
@@ -746,6 +759,12 @@ public sealed class StoryNight : ZoneRuntime, IStoryArena
     /// and were far more dangerous for it), so it is eased back a little a tier. Unlike the table's, a
     /// story night does not ask more of the draft as the tiers climb.</summary>
     public double TierEase => 1 + 0.3 * (Spec.Tier - 1);
+
+    /// <summary>The boss eased the more as the tiers climb: his level grows his health faster than her own
+    /// level grows her blows, so with the crowd's ease alone each story boss ran a third longer at tier 4
+    /// than at tier 1 (Greymuzzle 2.6 against 3.6 minutes planned), and the longer a fight, the more of his
+    /// blows land. The same boss at every tier, as the same night.</summary>
+    public double BossEase => 1 + 0.1 * (Spec.Tier - 1);
 
     public Enemy? Foe(string def, double x, double z, double hpMul = 1, string? kicker = null, bool quiet = false)
     {
@@ -755,6 +774,12 @@ public sealed class StoryNight : ZoneRuntime, IStoryArena
         // five times), times what its stage asks of it. Not more a tier: its level grows it already.
         e.MaxHp = e.Hp = e.MaxHp * 2.2 * hpMul;
         e.Named = new Named { Title = e.Def.Name };
+        // Its lesson is its marked move (a lunge, a slam, its pots), not its fists: in a press it strikes half as
+        // often as its kind. (The Pike-Captain, Barn-Door and the pickets brawled blade builds under half on the
+        // way in, a blow a second, as much as all their marked moves.)
+        var fists = e.Def.Clone();
+        fists.AttackEvery = (fists.AttackEvery ?? 1.0) * NamedFists;
+        e.Def = fists;
         if (quiet) return e;
         smallChests.Add(e.Id);
         B!.Charges.Calm(B, 4);
