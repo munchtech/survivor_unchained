@@ -1166,11 +1166,15 @@ PICKS: dict[str, tuple[int, int, int]] = {
     "tether": (62, 1300, 0), "consecrate": (50, 1300, 1), "drain": (50, 1300, 1),
     "static": (62, 1300, 0), "book": (62, 1300, 0),
     # Second pass: feint round its blade, smoke and the bolt lifted off the dark, leap's impact.
-    "feint": (65, 1330, 1), "smoke": (55, 1330, 1), "umbral": (65, 1330, 0), "leap": (55, 1330, 1),
+    "feint": (65, 1330, 1), "smoke": (55, 1330, 1), "umbral": (65, 1330, 0),
     # The other arts, brought into the family.
     "boot": (65, 1330, 0), "horns": (65, 1330, 1), "chain": (65, 1330, 0), "shield": (55, 1330, 1),
     "mark": (55, 1330, 0), "wing": (65, 1330, 0),
+    # Crashing Leap's second concept, in place of the first (its file is leap.png: ALIAS).
+    "leap2": (55, 1340, 0),
 }
+# A design whose painting replaces another key's icon.
+ALIAS = {"leap2": "leap"}
 
 
 def make_guide(key):
@@ -1230,7 +1234,7 @@ def fit(key, src_=None, dst=None):
         a = cv2.resize(a, img.size, interpolation=cv2.INTER_AREA)
     # The guide's silhouette, a little grown so the painting's own edge is kept.
     m = cv2.dilate(a, np.ones((3, 3), np.uint8), iterations=max(1, img.size[0] // 512))
-    dst = dst or os.path.join(UI, key + ".png")
+    dst = dst or os.path.join(UI, ALIAS.get(key, key) + ".png")
     return icons.fit(src_, dst, mask=m)
 
 

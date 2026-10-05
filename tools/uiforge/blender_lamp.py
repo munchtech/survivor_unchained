@@ -139,6 +139,47 @@ def main():
         links.append(ob)
     bpy.context.view_layer.update()
     C.mark_wear(links, wr * U)
+    # The bracket it hangs from (as the Waystation's signs hang): a back plate nailed to the
+    # panel's frame on the right, a forged arm out over the lamp ending in a small eye the
+    # chain hooks into, and a scroll under the arm bracing it to the plate.
+    br = spec.get("bracket")
+    if br:
+        arm_y = loop_y - 5 - chn["links"] * pitch / ss - 2
+        wall = Wf / 2 + br["arm"]
+        bw = br["bar"]
+        za = z0 * ss * U
+        tube("arm", [P(Wf / 2 + 4, arm_y, z0), P(wall, arm_y, z0)], bw * ss * U, iron)
+        eye_r = 5.0
+        tube("arm_eye", [(math.cos(a) * eye_r * ss * U, P(0, arm_y + eye_r * 0.2)[1] + math.sin(a) * eye_r * ss * U, za)
+                         for a in (2 * math.pi * i / 40 for i in range(41))], bw * 0.8 * ss * U, iron)
+        # The brace: a quarter scroll from low on the plate up under the arm, curling at its end.
+        pts = []
+        for i in range(41):
+            t = i / 40
+            ang = math.pi / 2 * t
+            rx, ry = br["arm"] * 0.62, br["drop"]
+            x = wall - rx * math.sin(ang)
+            y = arm_y + ry * math.cos(ang)
+            pts.append(P(x, y, z0 * 0.9))
+        cx_, cy_ = wall - br["arm"] * 0.62, arm_y + 7
+        for i in range(1, 25):
+            a = math.pi + 2.2 * math.pi * i / 24
+            rr = 7 * (1 - 0.6 * i / 24)
+            pts.append(P(cx_ + 7 + math.cos(a) * rr, cy_ + math.sin(a) * rr, z0 * 0.9))
+        tube("brace", pts, bw * 0.7 * ss * U, iron)
+        bpy.ops.mesh.primitive_cube_add(size=1)
+        plate = bpy.context.active_object
+        plate.scale = (14 * ss * U, (br["drop"] + 34) * ss * U, 3 * ss * U)
+        plate.location = P(wall + 3, arm_y + br["drop"] / 2 - 2, 1.5)
+        bev = plate.modifiers.new("b", "BEVEL")
+        bev.width = 2 * ss * U
+        bev.segments = 3
+        plate.data.materials.append(iron)
+        for ny in (arm_y - 12, arm_y + br["drop"] + 10):
+            bpy.ops.mesh.primitive_uv_sphere_add(radius=2.6 * ss * U, location=P(wall + 3, ny, 3.2))
+            nl = bpy.context.active_object
+            nl.scale = (1, 1, 0.55)
+            nl.data.materials.append(iron)
     # Its coal at rest, then blown bright (a level gained).
     heat = spec.get("heat", [5, 16])
     em = None
