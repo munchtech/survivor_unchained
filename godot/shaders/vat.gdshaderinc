@@ -40,6 +40,16 @@ vec3 dye_hsv(vec3 c) {
 varying flat vec4 fx;
 varying vec3 vat_local;
 
+// Value noise on the body's own shape (its bake space), so a status's patches stay on the body as
+// it moves rather than swimming over it.
+float vat_hash(vec3 p) { return fract(sin(dot(p, vec3(12.9898, 78.233, 37.719))) * 43758.5453); }
+float vat_noise(vec3 p) {
+	vec3 i = floor(p), f = fract(p);
+	f = f * f * (3.0 - 2.0 * f);
+	return mix(mix(mix(vat_hash(i), vat_hash(i + vec3(1.0, 0.0, 0.0)), f.x), mix(vat_hash(i + vec3(0.0, 1.0, 0.0)), vat_hash(i + vec3(1.0, 1.0, 0.0)), f.x), f.y),
+		mix(mix(vat_hash(i + vec3(0.0, 0.0, 1.0)), vat_hash(i + vec3(1.0, 0.0, 1.0)), f.x), mix(vat_hash(i + vec3(0.0, 1.0, 1.0)), vat_hash(i + vec3(1.0, 1.0, 1.0)), f.x), f.y), f.z);
+}
+
 ivec2 vat_coord(int frame, int vid) {
 	int row = vid / vat_width;
 	return ivec2(vid - row * vat_width, frame * vat_rows + row);
@@ -83,28 +93,44 @@ void fragment() {
 	float rim = 1.0 - clamp(dot(NORMAL, VIEW), 0.0, 1.0);
 	vec3 sky = (VIEW_MATRIX * vec4(0.0, 1.0, 0.0, 0.0)).xyz;
 	float up = clamp(dot(NORMAL, sky), 0.0, 1.0);
-	// Frozen: a cool cast at the body's own value (no brightening), frost settled on what faces
-	// up, and ice at the edge (emission below). Mixing to a pale blue turned the already-pale
-	// risen chalk-white in a Hoarfrost crowd, and the skill's own ring and ice were lost in it.
-	float lum = dot(c, vec3(0.2126, 0.7152, 0.0722));
-	c = mix(c, vec3(0.55, 0.78, 1.0) * lum * 1.34, fx.z * 0.3);
-	c = mix(c, vec3(0.78, 0.88, 1.0) * max(lum, 0.2), fx.z * up * up * 0.25);
+	// A status reads on the body in patches and at its edge, never as a wash over the whole of it.
+	// Washes turned a crowd of pale risen white in Hoarfrost and cream in Cinderfall: AgX folds a
+	// bright hue to white past about 1, and the glow blooms what is over 1.1. So the ice is darker
+	// and bluer than a pale body, not paler, and every status light stays under 1.
+	float rough = roughness;
+	vec3 e = glow_color;
+	if (fx.z > 0.0) {
+		// Frozen (chill to half): rime grows in patches on what faces up, a cold blue at a
+		// middle value that a pale body shows against; the ice is glossy, with a thin cold rim
+		// and a few glints.
+		float lum = dot(c, vec3(0.2126, 0.7152, 0.0722));
+		float rime = smoothstep(0.42, 0.62, vat_noise(vat_local * 5.0) * 0.75 + up * 0.45) * smoothstep(0.0, 0.5, fx.z);
+		vec3 ice = vec3(0.16, 0.36, 0.62) * (0.7 + 0.6 * clamp(lum, 0.0, 0.6));
+		c = mix(c, vec3(lum) * vec3(0.9, 0.97, 1.08), fx.z * 0.3);
+		c = mix(c, ice, rime * 0.85);
+		rough = mix(rough, 0.22, rime);
+		float glint = step(0.992, vat_hash(floor(vat_local * 16.0) + floor(TIME * 3.0)));
+		e += vec3(0.28, 0.62, 1.0) * fx.z * pow(rim, 4.0) * 0.85 + vec3(0.55, 0.8, 1.0) * rime * glint * 0.8;
+	}
+	if (fx.w > 0.0) {
+		// Burning: tongues of fire licking up the body from its edges, soot where they have
+		// been, deep orange that stays orange; the rest of the body is its own colour.
+		float lick = vat_noise(vec3(vat_local.x * 3.4, vat_local.y * 2.4 - TIME * 2.6, vat_local.z * 3.4));
+		float tongue = smoothstep(0.5, 0.8, lick * 0.8 + rim * 0.45) * fx.w;
+		float soot = smoothstep(0.3, 0.6, lick * 0.8 + rim * 0.3) * fx.w;
+		c *= 1.0 - soot * 0.6;
+		e += vec3(0.95, 0.32, 0.05) * tongue * 0.95 + vec3(1.0, 0.5, 0.12) * pow(rim, 4.0) * fx.w * 0.45;
+	}
 	ALBEDO = c;
-	ROUGHNESS = roughness;
+	ROUGHNESS = rough;
 	METALLIC = metallic;
 	RIM = rim_amount;
 	RIM_TINT = rim_tint;
-	vec3 e = glow_color;
 	// Struck: a warm flare that lives at the rim, so the body keeps its shape
 	// from thirty metres up, with only an instant's glow across the whole of it
 	// (a full white-hot body bloomed the pale risen into blobs).
 	float hot = fx.x * fx.x;
 	e += vec3(1.0, 0.86, 0.72) * (hot * hot * 0.75 + fx.x * (0.1 + rim * rim * 1.8));
-	// Burning: fire at the edges and along the top, flickering up the body, not the whole of it
-	// lit orange (a Cinderfall crowd went cream); the ice's rim the same way.
-	float flicker = 0.55 + 0.45 * sin(vat_local.y * 9.0 + vat_local.x * 5.0 + TIME * 11.0);
-	e += vec3(1.0, 0.42, 0.1) * fx.w * (rim * rim * 1.2 + up * up * 0.45) * flicker;
-	e += vec3(0.5, 0.78, 1.15) * fx.z * rim * rim * 0.6;
 	e += c * COLOR.a;
 	// Ember at the dissolve's edge.
 	if (fx.y > 0.0) e += vec3(1.0, 0.45, 0.12) * smoothstep(fx.y + 0.12, fx.y, dn) * 3.0;
