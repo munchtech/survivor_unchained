@@ -42,10 +42,10 @@ public sealed class Redcowl : StoryBoss
     protected override string HardSub => "The whole camp turns out";
     protected override (string Title, string Sub) SoftWords(Enemy e) => ("His lot close in", "Quicker, and more of them");
     public override string ReEntry => "The torches part again, and he comes back through them, laughing.";
-    /// <summary>The Red Hand's body (until Redcowl's own, with the greataxe, exists). His health and his blows
-    /// are measured to the length, as Greymuzzle's were: the same at every tier.</summary>
-    public override double HealthMul(int tier) => 90;
-    public override double DamageMul => 1.9;
+    /// <summary>The Red Hand's body (until Redcowl's own, with the greataxe, exists). His health is measured to
+    /// the length, as Greymuzzle's was: the same at every tier. His blows are measured against her (Teeth).</summary>
+    public override double HealthMul(int tier) => 103;
+    public override double Teeth => 0.4;
     protected override bool DiesAtZero => false;
 
     const string Him = "Redcowl";
@@ -231,7 +231,7 @@ public sealed class Redcowl : StoryBoss
 
     /* --------------------------------------------------------------- his moves -- */
 
-    double greetT = 3, hookT = 6, torchT, farT, lotT = 2, cageT, chainT = 3, levyT = 15, nipT, side = 1, sideT;
+    double greetT = 3, hookT = 6, torchT, farT, lotT = 2, cageT, chainT = 3, levyT = 15, side = 1, sideT;
     bool laughed, rallied, rallyBroken, bairns, levied;
     double cadence = 1;
     double Cad => Cadence * cadence;
@@ -319,7 +319,8 @@ public sealed class Redcowl : StoryBoss
     }
 
     /// <summary>Between his moves he walks round her like a host round his own fire, at six to eight
-    /// metres. Walked into, he shoulders her off: a third of a blow, now and then.</summary>
+    /// metres. Pressed close, he steps off round her; walked into across his path, he shoulders her off
+    /// (StoryBoss.Cuff).</summary>
     bool Stalk(Enemy e, double dt, double dx, double dz, double d)
     {
         if ((sideT -= dt) <= 0) { sideT = 3 + S.R() * 3; side = S.R() < 0.5 ? -1 : 1; }
@@ -327,24 +328,21 @@ public sealed class Redcowl : StoryBoss
         double vx = dx * radial - dz * side * 0.8, vz = dz * radial + dx * side * 0.8;
         double vl = Math.Max(1e-6, Math.Sqrt(vx * vx + vz * vz)), sp = e.Speed * 0.7;
         double nx = e.X + vx / vl * sp * dt, nz = e.Z + vz / vl * sp * dt;
-        if (!S.Place.Inside(nx, nz, 1.5) || B.Collision.Blocked(nx, nz, e.Radius))
+        bool cornered = !S.Place.Inside(nx, nz, 1.5) || B.Collision.Blocked(nx, nz, e.Radius);
+        if (cornered)
         {
             // Into a corner: he turns, and steps back toward the middle of his yard.
             side = -side; sideT = 2;
             double cx = C.X - e.X, cz = C.Z - e.Z, cl = Math.Max(0.01, Math.Sqrt(cx * cx + cz * cz));
-            nx = e.X + cx / cl * sp * dt; nz = e.Z + cz / cl * sp * dt;
+            vx = cx / cl; vz = cz / cl; vl = 1;
+            nx = e.X + vx * sp * dt; nz = e.Z + vz * sp * dt;
             if (B.Collision.Blocked(nx, nz, e.Radius)) { nx = e.X; nz = e.Z; }
         }
         e.X = nx; e.Z = nz;
         e.Vx = vx / vl * sp; e.Vz = vz / vl * sp;
-        e.Facing = Math.Atan2(dz, dx);
         e.State = EnemyState.Active;
         e.Anim = EnemyAnim.Move;
-        if ((nipT -= dt) <= 0 && d < e.Radius + B.Player.Radius + 0.7)
-        {
-            nipT = 2;
-            B.HurtPlayer(e.Damage * 0.2, School.Physical, Who, e);
-        }
+        Cuff(e, dt, vx, vz, dx, dz, d, cornered, 0.2, 2);
         return true;
     }
 

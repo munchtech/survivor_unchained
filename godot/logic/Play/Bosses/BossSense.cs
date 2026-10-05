@@ -197,8 +197,11 @@ public static class BossSense
         foreach (var bl in b.Blows)
             if (Threat(bl, deft, first)) n++;
         if (strikes)
+        {
             foreach (var s in b.EnemyStrikes())
                 if (Threat(s, deft)) n++;
+            if (Burning(b, p.X, p.Z, p.Radius)) n++;
+        }
         if (n == 0) return;
         double speed = Math.Max(1, b.Stats.Get(Stat.MoveSpeed) * p.SlowF);
         // Candidates: the way it was going, standing, and sixteen bearings.
@@ -280,6 +283,7 @@ public static class BossSense
             first = Math.Min(first, bl.T);
         }
         if (strikes)
+        {
             foreach (var s in b.EnemyStrikes())
             {
                 if (!Threat(s, deft)) continue;
@@ -289,7 +293,22 @@ public static class BossSense
                 sum += 10 + s.Damage / Math.Max(1, b.MaxHp) * 40;
                 first = Math.Min(first, s.Left);
             }
+            // Ground of theirs that burns or sickens, half a second on: walked out of, not stood in. (Left in it,
+            // the hands took more from a pot's fire than from the pot on the Dig's way in.)
+            if (Burning(b, x + vx * 0.5, z + vz * 0.5, p.Radius * 0.5)) sum += 6;
+        }
         return sum;
+    }
+
+    /// <summary>She stands on ground of theirs that hurts.</summary>
+    public static bool Underfoot(Battle b) => Burning(b, b.Player.X, b.Player.Z, b.Player.Radius);
+
+    /// <summary>On ground of theirs that hurts (a pot's fire, a burst's slurry), within `r` of its edge.</summary>
+    static bool Burning(Battle b, double x, double z, double r)
+    {
+        foreach (var g in b.Zones.Living())
+            if (g.Owner == Side.Enemy && g.Dps > 0 && Dist(g.X, g.Z, x, z) < g.Radius + r) return true;
+        return false;
     }
 
     /// <summary>A creature's marked circle the hands answer: marked long enough to have been seen, and noticed

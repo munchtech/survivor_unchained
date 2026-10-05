@@ -43,8 +43,9 @@ public sealed class StoryRunResult
     /// <summary>Each fall: the part of the night, and at the boss its phase, its fight's seconds and how much of
     /// it was left; her health then (whether a fall was the build's or the hands').</summary>
     public List<string> FellAt = new();
-    /// <summary>Her health as the boss's ground opened (what his blows are measured against).</summary>
-    public double MaxHpAtBoss;
+    /// <summary>Her health as the boss's ground opened, and how far her weapons reach then (a blade build's
+    /// fight is at his flank, a bow's at range).</summary>
+    public double MaxHpAtBoss, ReachAtBoss;
     /// <summary>What hurt her, by part of the night ("stage 2", "boss") and source, as a share of her
     /// health: where the danger is.</summary>
     public Dictionary<string, Dictionary<string, double>> HurtBy = new();
@@ -184,7 +185,7 @@ public static class StorySim
             host.Pass(ArenaSim.Dt);
             j.BankArt(b);
             ArenaSim.Drafts(b, pick, rng, drafts, null);
-            if (r.CardsAtBoss < 0 && zone.Now == StoryNight.Stage.Boss) { r.CardsAtBoss = drafts.Cards; r.MaxHpAtBoss = b.MaxHp; }
+            if (r.CardsAtBoss < 0 && zone.Now == StoryNight.Stage.Boss) { r.CardsAtBoss = drafts.Cards; r.MaxHpAtBoss = b.MaxHp; r.ReachAtBoss = Pilot.Reach(b); }
             // Her choice at his side, by the run's own; and the crates, fired or left, by the run's own.
             var offer = zone.Interactables.FirstOrDefault(i => i.Id == (spec.Choice == "finish" ? "story:finish" : "story:let_go"))
                 ?? zone.Interactables.FirstOrDefault(i => i.Id is "story:let_go" or "story:finish");

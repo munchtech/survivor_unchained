@@ -74,6 +74,10 @@ public sealed class HollowByNight : StoryFight
     public override string? Cinematic => "c10";
     public override StoryBoss Boss(IStoryArena a) => new Greymuzzle(a);
     public override string[] Fires => ["fire:a", "fire:b", "fire:c", "fire:d", "fire:e", "fire:f"];
+    /// <summary>The Pack bites at its full weight: its wolves in twos and threes are the Hollow's danger, as the
+    /// Kerchiefs' pots and pikes are the Roost's. (With its named foes' fists slowed, three nights in a hundred
+    /// dipped under half on the way in at the story's usual three quarters: a stroll.)</summary>
+    public override double CrowdTeeth => 1.0;
     /// <summary>Maeca's fed fires (bane.fires): a deadfall fed burns longer.</summary>
     public override double Burns(IStoryArena a) => a.Fact("bane.fires") ? 35 : 20;
 
@@ -452,6 +456,9 @@ public sealed class HollowByNight : StoryFight
         const int Drives = 7;
         /// <summary>Her yearlings take blows for her while she runs her drive: she is open when she misses.</summary>
         const double Guarded = 0.08, Opened = 2.0, Pant = 2.5;
+        /// <summary>Her drive's lane, over her bite: the gap is hers, and caught in it is a wound. (At 4.5 her
+        /// fists did eight times the drive's harm; with a named foe's fists slowed, the stage hurt no one.)</summary>
+        const double DriveTeeth = 7;
 
         protected override void Open()
         {
@@ -572,7 +579,7 @@ public sealed class HollowByNight : StoryFight
             lane = B.Blow(new Battle.EnemyBlow
             {
                 Shape = TelegraphShape.Line, X = laneX0, Z = laneZ0, X1 = laneX1, Z1 = laneZ1, Width = 2.4, Delay = mark,
-                Damage = w.Damage * 4.5, Source = w.Def.Name, From = w, Label = "The drive",
+                Damage = w.Damage * DriveTeeth, Source = w.Def.Name, From = w, Label = "The drive",
             });
             // Missed if she is out of the lane when it lands (a dash through it is a miss as well).
             var marked = lane;

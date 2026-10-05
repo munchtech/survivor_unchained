@@ -605,6 +605,10 @@ public static class Character
         return gained;
     }
 
+    /// <summary>Her calling's own health at her level: what she is before her attributes, her gear and
+    /// whatever a night drafts her. A story boss's blows are measured against it (StoryBoss.Teeth).</summary>
+    public static double OwnHealth(CharacterData ch) => Callings.Archetype(ch.Archetype).Base.MaxHealth + (ch.Level - 1) * 8;
+
     /// <summary>The survivor as the Battle needs them: stats with every source folded in.</summary>
     public static CombatKit Kit(CharacterData ch)
     {
@@ -614,7 +618,7 @@ public static class Character
         var at = ch.Attributes;
         st.SetBase(new Dictionary<string, double>
         {
-            [Stat.MaxHealth] = a.Base.MaxHealth + (ch.Level - 1) * 8, [Stat.Regen] = a.Base.Regen, [Stat.Armor] = a.Base.Armor,
+            [Stat.MaxHealth] = OwnHealth(ch), [Stat.Regen] = a.Base.Regen, [Stat.Armor] = a.Base.Armor,
             [Stat.MoveSpeed] = a.Base.MoveSpeed, [Stat.PickupRadius] = a.Base.PickupRadius, [Stat.CritChance] = a.Base.CritChance,
             [Stat.CritDamage] = 1.5, [Stat.Luck] = 1,
         });
