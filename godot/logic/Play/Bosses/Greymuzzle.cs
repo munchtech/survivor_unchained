@@ -44,12 +44,12 @@ public sealed class Greymuzzle : StoryBoss
     protected override (string Title, string Sub) SoftWords(Enemy e) => ("The ring draws in", "It bites quicker now");
     public override string ReEntry => "The ring forms again, and the old wolf walks out through it.";
     // The table's Pack-Mother is 41 + 6.8 a tier against a thirtieth-minute build in about 85 s. Here
-    // the build is the twentieth minute's, he is eight levels over the tier, not twelve, and the fight
-    // is three to four minutes with his time at the den: half again and a tenth, to be measured.
-    public override double HealthMul(int tier) => 66 + 10.9 * tier;
-    // His blows at a story night's build (a table's twelfth minute, not its thirtieth): the contract's
-    // bands against her health then (contact a tenth, a lunge a quarter).
-    public override double DamageMul => 1.0;
+    // the build is a table's twelfth minute and the fight three to four minutes, his time at the den
+    // with it. The same at every tier: his level grows him, and the night eases the tiers (TierEase).
+    public override double HealthMul(int tier) => 88;
+    // His blows at a story night's build (a table's twelfth minute, not its thirtieth). With his teeth in his
+    // marked moves and not a brawl (Stalk), each must mean it: a lunge a third of her health.
+    public override double DamageMul => 2.3;
     protected override bool DiesAtZero => false;
 
     /// <summary>The den floor's middle, and the den's mouth (the place's points).</summary>
@@ -80,7 +80,10 @@ public sealed class Greymuzzle : StoryBoss
     double ringR = 12, biteT = 9, shoveT, biteGrace, frostR = 99, frostDrawT;
     bool ringBroken, longHunt, lyingDown;
     int lunges;
-    double lungeT = 4, hamT = 3, howlT, sortieT, shakeT = 2, chainT = 3, howlHp;
+    double lungeT = 4, hamT = 3, howlT, sortieT, shakeT = 2, chainT = 3, turnT = 10, howlHp;
+    /// <summary>The first moon-howl of the Moon cannot be stopped: the moon clears, and the fires are
+    /// what she has (the sick water taught them). Those after can be broken.</summary>
+    bool moonCleared;
     bool atDen;
 
     public const int RingWolves = 20;
@@ -197,7 +200,8 @@ public sealed class Greymuzzle : StoryBoss
             bool lit = S.Fires.Any(f => f.InLight(p.X, p.Z));
             if (pd > frostR && !lit)
             {
-                B.HurtByGround(E.Damage * 0.15 * dt, School.Frost, dt, "the cold");
+                // The moon cleared bites in earnest: there is no stopping it, only the fires.
+                B.HurtByGround(E.Damage * (unbreakable ? 0.45 : 0.15) * dt, School.Frost, dt, "the cold");
                 B.SlowPlayer(0.7, 0.3);
             }
             if ((frostDrawT -= dt) <= 0)
@@ -260,14 +264,16 @@ public sealed class Greymuzzle : StoryBoss
         if (Spent(e)) { LieDown(e); return true; }
         if (Running(e, dt)) return true;
         var (dx, dz, d) = ToPlayer();
-        lungeT -= dt; hamT -= dt; biteT -= dt; howlT -= dt; sortieT -= dt; shakeT -= dt; chainT -= dt;
+        lungeT -= dt; hamT -= dt; biteT -= dt; howlT -= dt; sortieT -= dt; shakeT -= dt; chainT -= dt; turnT -= dt;
         if (!ringBroken && biteT <= 0 && PhaseIx < 2) { biteT = (Soft ? 5 : 9) * Cadence; Bite(); }
+        // The Pack's turn: the ring wheels and three of it cut across her, one after another.
+        if (!ringBroken && turnT <= 0 && PhaseIx != 1) { turnT = TurnEvery * Cadence; Turn(); }
         switch (PhaseIx)
         {
             case 0:
-                if (lungeT <= 0) { lungeT = (Hard ? 3 : 6) * Cadence; Lunge(); return true; }
+                if (lungeT <= 0) { lungeT = (Hard ? 3 : 4.5) * Cadence; Lunge(); return true; }
                 if (d < 5 && hamT <= 0) { hamT = 5 * Cadence; Hamstring(); return true; }
-                return false;
+                return Stalk(e, dt, dx, dz, d);
             case 1:
                 if (!atDen) return true;
                 if (howlT <= 0) { howlT = 22 * Cadence; Howl(e); return true; }
@@ -280,7 +286,66 @@ public sealed class Greymuzzle : StoryBoss
                 if (!ringBroken && e.Hp < e.MaxHp * 0.15) BreakRing();
                 if (d < 5.5 && shakeT <= 0) { shakeT = 6 * Cadence; Hold(1.0); Cone(5, 120, 1.0, 1.8, "Shake"); return true; }
                 if (chainT <= 0) { chainT = (Hard ? 3 : 8) * Cadence; Chain(3, () => Pant(3)); return true; }
-                return false;
+                return Stalk(e, dt, dx, dz, d);
+        }
+    }
+
+    double nipT, side = 1, sideT;
+
+    /// <summary>Between his moves he circles her at seven to nine metres, limping: an old wolf keeps a
+    /// young one at the end of his reach and goes in only when he means it (a marked move). Walked
+    /// into, he snaps: a third of his blow, now and then (a blade at his flank is not punished for it). His teeth are in his moves, not in a
+    /// brawl she cannot read.</summary>
+    bool Stalk(Enemy e, double dt, double dx, double dz, double d)
+    {
+        if ((sideT -= dt) <= 0) { sideT = 3 + S.R() * 3; side = S.R() < 0.5 ? -1 : 1; }
+        double radial = Math.Clamp((d - 8) / 2, -1, 1);
+        double vx = dx * radial - dz * side * 0.8, vz = dz * radial + dx * side * 0.8;
+        double vl = Math.Max(1e-6, Math.Sqrt(vx * vx + vz * vz)), sp = e.Speed * 0.75;
+        double nx = e.X + vx / vl * sp * dt, nz = e.Z + vz / vl * sp * dt;
+        // The ring is his wall too: he turns along it, not into it.
+        if (!Inside(nx, nz, 1.6)) { side = -side; sideT = 2; nx = e.X; nz = e.Z; }
+        e.X = nx; e.Z = nz;
+        B.Collision.Resolve(ref e.X, ref e.Z, e.Radius);
+        e.Vx = vx / vl * sp; e.Vz = vz / vl * sp;
+        e.Facing = Math.Atan2(dz, dx);
+        e.State = EnemyState.Active;
+        e.Anim = EnemyAnim.Move;
+        if ((nipT -= dt) <= 0 && d < e.Radius + B.Player.Radius + 0.7)
+        {
+            nipT = 1.5;
+            B.HurtPlayer(e.Damage * 0.3, School.Physical, Who, e);
+        }
+        return true;
+    }
+
+    /// <summary>How often the ring turns (it does not while he holds the den).</summary>
+    const double TurnEvery = 13;
+
+    /// <summary>The Pack's turn: a growl goes round the ring, and three of it cut across her from three
+    /// sides, a breath apart, each in a marked lane. The ground between the lanes is the answer, and it
+    /// moves as each one lands.</summary>
+    void Turn()
+    {
+        var p = B.Player;
+        var free = ring.Where(r => r.RunT < 0).ToList();
+        if (free.Count < 3) return;
+        double a0 = S.R() * Math.PI * 2;
+        S.Bark(p.X, p.Z, "A growl goes round the ring. The Pack turns.", null);
+        for (int k = 0; k < 3; k++)
+        {
+            double a = a0 + k * Math.PI * 2 / 3;
+            var w = free.OrderBy(r => Math.Abs(Wrap(Math.Atan2(r.E.Z - p.Z, r.E.X - p.X) - a))).First();
+            free.Remove(w);
+            double dx = p.X - w.E.X, dz = p.Z - w.E.Z, dl = Math.Max(0.5, Math.Sqrt(dx * dx + dz * dz));
+            double len = Math.Min(20, dl + 5);
+            double fx = w.E.X, fz = w.E.Z, x1 = fx + dx / dl * len, z1 = fz + dz / dl * len;
+            var b = B.Blow(new Battle.EnemyBlow
+            {
+                Shape = TelegraphShape.Line, X = fx, Z = fz, X1 = x1, Z1 = z1, Width = 1.8, Delay = 1.1 + k * 0.4, Damage = E.Damage * 1.5,
+                Source = "the Pack's turn", From = E, Label = "The Pack turns",
+            });
+            b.After = _ => { w.FromX = fx; w.FromZ = fz; w.ToX = x1; w.ToZ = z1; w.RunT = 0; };
         }
     }
 
@@ -294,11 +359,14 @@ public sealed class Greymuzzle : StoryBoss
         Hold(0.9, () => DashTo(x1, z1, 0.35, () => { if (++lunges % 2 == 0) Pant(2.5); }));
     }
 
+    /// <summary>A snap at her legs. It is how an old wolf hunts: lamed, she is his, and his lunge comes
+    /// while she is slow (the hamstring answered by staying out of his reach, or by the dash).</summary>
     void Hamstring()
     {
         Hold(0.8);
         var b = Cone(4.2, 70, 0.8, 1.5, "Hamstring");
         b.Slow = 0.55; b.SlowFor = 2;
+        b.After = bb => { if (bb.Player.SlowT > 0 && PhaseIx == 0) lungeT = Math.Min(lungeT, 0.5); };
     }
 
     /// <summary>His age: he stands and pants, his breath thick, open and hurt the more for it.</summary>
@@ -331,24 +399,34 @@ public sealed class Greymuzzle : StoryBoss
     /// Damage of 6% of his health in it, a stagger, or one hit of fire stops it.</summary>
     void Howl(Enemy e)
     {
-        Channel = "The moon-howl: break it!";
+        // The first is the moon clearing: it is not stopped, it is lived through, in a fire's light.
+        unbreakable = !moonCleared;
+        moonCleared = true;
+        Channel = unbreakable ? "The moon clears: into a fire's light!" : "The moon-howl: break it!";
         ChannelProgress = 0;
         howlHp = e.Hp;
         frostR = ringR + 3;
-        S.Bark(e.X, e.Z, "He sits back and howls at the moon, and the ring howls with him.", null);
-        double nextLane = 0.6;
-        Hold(8, () => { Channel = null; sortieT = 2.5; }, t =>
+        S.Bark(e.X, e.Z, unbreakable
+            ? "He sits back and howls, and the cloud slides off the moon. The cold comes in off the ring."
+            : "He sits back and howls at the moon, and the ring howls with him.", null);
+        double nextLane = 0.6, every = unbreakable ? 1.5 : 2;
+        Hold(8, () => { Channel = null; unbreakable = false; sortieT = 2.5; }, t =>
         {
             ChannelProgress = t / 8;
-            if (howlHp - E.Hp >= E.MaxHp * 0.06) { BreakChannel(E, "Hurt enough to stop"); sortieT = 3.5; return false; }
+            if (!unbreakable && howlHp - E.Hp >= E.MaxHp * 0.06) { BreakChannel(E, "Hurt enough to stop"); sortieT = 3.5; return false; }
             if (t >= nextLane)
             {
-                nextLane += 2;
+                nextLane += every;
                 DeadRun();
             }
             return true;
         });
     }
+
+    bool unbreakable;
+
+    public override void OnHit(Enemy e, School school, double dmg) { if (!unbreakable) base.OnHit(e, school, dmg); }
+    public override void OnStagger(Enemy e) { if (!unbreakable) base.OnStagger(e); }
 
     /// <summary>One of his dead runs a lane across her (never through a fed fire's light: they swerve).</summary>
     void DeadRun()
@@ -381,8 +459,10 @@ public sealed class Greymuzzle : StoryBoss
         double dx = tx - E.X, dz = tz - E.Z, d = Math.Max(0.5, Math.Sqrt(dx * dx + dz * dz));
         double len = Math.Min(14, d + 3);
         double x1 = E.X + dx / d * len, z1 = E.Z + dz / d * len;
-        Lane(E.X, E.Z, x1, z1, 2.2, 0.8, 1.6, "Lunge");
-        Hold(0.8, () => DashTo(x1, z1, 0.35, () => Chain(n - 1, then)));
+        // On his feet the old way is quicker and wider: he has nothing left to save it for.
+        double mark = PhaseIx == 2 ? 0.7 : 0.8, width = PhaseIx == 2 ? 2.6 : 2.2;
+        Lane(E.X, E.Z, x1, z1, width, mark, 1.6, "Lunge");
+        Hold(mark, () => DashTo(x1, z1, 0.35, () => Chain(n - 1, then)));
     }
 
     /// <summary>The last of the Pack: the ring breaks and comes in, ordinary wolves now.</summary>

@@ -73,7 +73,7 @@ public class StoryNightTests
         var g = HollowByNight.Ground.Gates[0];
         Assert.True(n.B.Collision.Blocked((g.X0 + g.X1) / 2, (g.Z0 + g.Z1) / 2, 0.5));
         Assert.Equal(StoryNight.Stage.Beat, n.Zone.Now);
-        Assert.Equal("Silence Old Blue", n.Zone.Beat!.Goal);
+        Assert.Equal("Break Old Blue's howls (0 of 4)", n.Zone.Beat!.Goal);
         // Old Blue is on the bar from the first second.
         Step(n, 0.5);
         Assert.Equal("Old Blue", n.Host.Boss?.Name);

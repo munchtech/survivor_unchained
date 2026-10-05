@@ -1,7 +1,9 @@
 """The townsfolk's own clips: captured and generated motion retargeted onto
 the kit's bodies (the game's women and men, People.Build), packed into
-godot/art/anim/folk.res for People.Clip (FolkClips.cs); and the
-crowd's own motion, keyed (crowd.py), which the crowd bakes (Vat.cs).
+godot/art/anim/folk.res for People.Clip (FolkClips.cs); the crowd's
+own motion, keyed (crowd.py), which the crowd bakes (Vat.cs); and the
+Ford-Warden's cinematic clips on the man (clips/warden.py), which the
+cinematics play by name ("folk/m_rise_stiff").
 
     python tools/anim/folk.py [names]
 
@@ -24,6 +26,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 import crowd  # noqa: E402
 from build import GODOT  # noqa: E402
+from clips import warden  # noqa: E402
 from clips.generated import make  # noqa: E402
 from keyed import Rig  # noqa: E402
 from rig import DATA, REPO, Skeleton, write_clip  # noqa: E402
@@ -76,6 +79,18 @@ def build(want):
             made.append(clip.name)
             print(f"  {clip.name:16s} {clip.frames:4d} frames {clip.length:5.2f} s  speed {clip.meta.get('speed', 0):.2f}  "
                   f"({time.time() - t0:.1f} s)")
+        # The Ford-Warden's cinematic clips, on the man (clips/warden.py).
+        for name, fn in (warden.CLIPS.items() if sex == "m" else ()):
+            if want and not any(w in name for w in want):
+                continue
+            t0 = time.time()
+            clip = fn(f"{sex}_{name}", rig)
+            if clip is None:
+                print(f"  {sex}_{name}: its take is not on this machine")
+                continue
+            write_clip(clip, sk, OUT)
+            made.append(clip.name)
+            print(f"  {clip.name:16s} {clip.frames:4d} frames {clip.length:5.2f} s  (the Warden, {time.time() - t0:.1f} s)")
         # The crowd's own motion, keyed (crowd.py).
         for name, fn in crowd.KEYED.items():
             if want and not any(w in name for w in want):

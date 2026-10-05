@@ -36,6 +36,8 @@ public sealed class FireDef
     /// <summary>The light it burns with (an index into the lights): a fire
     /// burns while its light is on.</summary>
     public int Light;
+    /// <summary>In a ring of stones (a campfire); without, a fire where it caught (a deadfall).</summary>
+    public bool Ring = true;
 }
 
 public sealed class Point3

@@ -16,9 +16,9 @@ namespace SurvivorUnchained.Balance;
 /// <summary>One story night to play: which fight, who, how they draft, how hard; whether it is past
 /// Act 1 (no rise of its own), and what she chooses at the boss's side where the story lets her.</summary>
 public sealed record StoryRunSpec(int Seed, string Calling, string Policy, string Fight = "hollow", int Tier = 1, int Level = 1, bool Deft = false,
-    bool Act2 = false, string Choice = "spare", double Cap = 25)
+    bool Act2 = false, string Choice = "spare", double Cap = 25, bool Crates = false, bool Naive = false)
 {
-    public string Key => $"{Fight}/{Calling}/{Policy}/t{Tier}/s{Seed}" + (Level > 1 ? $"/L{Level}" : "") + (Deft ? "/deft" : "") + (Act2 ? "/act2" : "") + $"/{Choice}";
+    public string Key => $"{Fight}/{Calling}/{Policy}/t{Tier}/s{Seed}" + (Level > 1 ? $"/L{Level}" : "") + (Deft ? "/deft" : "") + (Act2 ? "/act2" : "") + $"/{Choice}" + (Crates ? "/crates" : "") + (Naive ? "/naive" : "");
 }
 
 public sealed class StoryRunResult
@@ -37,6 +37,9 @@ public sealed class StoryRunResult
     public string KilledBy = "", Build = "";
     /// <summary>Where the night stood when it ended or was cut off (a stage that would not end).</summary>
     public string Where = "";
+    /// <summary>What hurt her, by part of the night ("stage 2", "boss") and source, as a share of her
+    /// health: where the danger is.</summary>
+    public Dictionary<string, Dictionary<string, double>> HurtBy = new();
 
     /// <summary>The way in: its minutes, and how low she went on it.</summary>
     public double WayIn => Stages.Where(s => s.Name != "boss").Sum(s => s.Seconds) / 60;
@@ -83,33 +86,60 @@ public static class StorySim
         NavField? nav = null;
         double navX = 0, navZ = 0, navT = 0;
         int openedAt = -1;
+        var path = new List<(double X, double Z)>();
+        int pathI = 0;
+        double progressT = 0, bestToGo = double.MaxValue;
+        // STORY_TRACE: can each of the place's points be stood on (the crowd and the waves come from them)?
+        if (trace)
+            foreach (var (id, (px, pz)) in zone.Place.Points)
+                Console.Error.WriteLine($"   POINT {id} ({px},{pz}) stand {map.CanStand(px, pz)} blocked {b.Collision.Blocked(px, pz, 0.6)} inside {zone.Place.Inside(px, pz, 0.6)}");
         while (t < spec.Cap * 60 && host.Result == null)
         {
             // The stage's goal, walked to the way a player would (round the walls, through the gates).
             (double X, double Z)? way = null;
-            if (zone.Goal is var (wx, wz))
+            // A run that fires the crates goes to them first, while they are offered.
+            var goal = spec.Crates && zone.Interactables.FirstOrDefault(i => i.Id == "story:crates") is { } cr ? (cr.X, cr.Z) : zone.Goal;
+            if (goal is var (wx, wz))
             {
                 navT -= ArenaSim.Dt;
-                if (nav == null || navT <= 0 && (Math.Abs(wx - navX) + Math.Abs(wz - navZ) > 2 || openedAt != zone.BeatIx * 10 + (int)zone.Now))
-                {
-                    nav = new NavField(map, b, wx, wz, zone.Place.Bounds());
-                    (navX, navZ, navT, openedAt) = (wx, wz, 0.5, zone.BeatIx * 10 + (int)zone.Now);
-                }
                 var pl = b.Player;
-                if (Math.Abs(wx - pl.X) + Math.Abs(wz - pl.Z) < 2) way = (wx, wz);
+                bool replan = nav == null || navT <= 0 && (Math.Abs(wx - navX) + Math.Abs(wz - navZ) > 2 || openedAt != zone.BeatIx * 10 + (int)zone.Now);
+                // Pushed well off her way, or no nearer in three seconds: the way again from where she is.
+                if (!replan && path.Count > 0 && (pathI < path.Count && Math.Abs(path[pathI].X - pl.X) + Math.Abs(path[pathI].Z - pl.Z) > 5 || t - progressT > 3)) replan = true;
+                if (replan)
+                {
+                    if (nav == null || Math.Abs(wx - navX) + Math.Abs(wz - navZ) > 0.5 || openedAt != zone.BeatIx * 10 + (int)zone.Now) nav = new NavField(map, b, wx, wz, zone.Place.Bounds());
+                    (navX, navZ, navT, openedAt) = (wx, wz, 0.5, zone.BeatIx * 10 + (int)zone.Now);
+                    path = nav.Path(pl.X, pl.Z);
+                    pathI = 0;
+                    progressT = t;
+                    bestToGo = double.MaxValue;
+                }
+                double toGo = Math.Abs(wx - pl.X) + Math.Abs(wz - pl.Z);
+                if (toGo < bestToGo - 0.5) { bestToGo = toGo; progressT = t; }
+                if (toGo < 2 || path.Count == 0) way = (wx, wz);
                 else
                 {
-                    // On down the way, three metres ahead (a way point at her feet, pressed to a wall, is
-                    // no reason to stand still).
-                    var (ox, oz) = nav.Onward(pl.X, pl.Z);
-                    double dx = ox - pl.X, dz = oz - pl.Z, dl = Math.Sqrt(dx * dx + dz * dz);
+                    // Down the way she planned: past the points she has reached, toward the furthest still in a
+                    // straight line from her, three metres ahead. (The field's slope alone flipped from one side
+                    // of her to the other in a neck, and she stood there for minutes.)
+                    while (pathI < path.Count - 1 && Math.Abs(path[pathI].X - pl.X) + Math.Abs(path[pathI].Z - pl.Z) < 1.2) pathI++;
+                    int best = pathI;
+                    for (int k = pathI; k < Math.Min(path.Count, pathI + 14); k++) if (nav!.Clear(pl.X, pl.Z, path[k].X, path[k].Z)) best = k;
+                    double dx = path[best].X - pl.X, dz = path[best].Z - pl.Z, dl = Math.Sqrt(dx * dx + dz * dz);
                     if (dl < 0.2) { dx = wx - pl.X; dz = wz - pl.Z; dl = Math.Max(0.01, Math.Sqrt(dx * dx + dz * dz)); }
                     way = (pl.X + dx / dl * 3, pl.Z + dz / dl * 3);
                 }
             }
-            if (trace && (int)(t / 5) != (int)((t - ArenaSim.Dt) / 5)) Console.Error.WriteLine($"{t / 60:0.00} {zone.Now} {zone.BeatIx} at ({b.Player.X:0.0},{b.Player.Z:0.0}) d {zone.Place.Dist(b.Player.X, b.Player.Z):0.00} way {way} goal {zone.Goal}");
-            var (mx, mz) = Pilot.Steer(b, spec.Deft, zone.BossScript, goal: way);
-            if (trace && (int)(t / 5) != (int)((t - ArenaSim.Dt) / 5)) Console.Error.WriteLine($"   steer ({mx:0.00},{mz:0.00}) way {way} zones {b.Zones.Living().Count()} pickups {b.Pickups.Living().Count()} blows {b.Blows.Count} slow {b.Player.SlowF:0.00}");
+            if (trace && ((int)(t / 5) != (int)((t - ArenaSim.Dt) / 5) || Environment.GetEnvironmentVariable("STORY_TICKS") is string tk0 && t > double.Parse(tk0) && t < double.Parse(tk0) + 8 && (int)(t * 4) != (int)((t - ArenaSim.Dt) * 4))) Console.Error.WriteLine($"{t / 60:0.00} {zone.Now} {zone.BeatIx} at ({b.Player.X:0.0},{b.Player.Z:0.0}) d {zone.Place.Dist(b.Player.X, b.Player.Z):0.00} way {way} goal {zone.Goal} | {zone.Beat?.Goal} | {(zone.Beat?.Bar is { } bar ? $"{bar.Name} {bar.Hp:0}/{bar.MaxHp:0}" : "")} ember {b.EmberLevel} hp {b.Player.Hp:0}/{b.MaxHp:0} shut {zone.Debug()["shut"]} open {zone.Debug()["open"]}{(zone.Now == StoryNight.Stage.Boss && zone.BossScript is { } bsx && bsx.E != null ? $" | boss {bsx.E.Hp:0}/{bsx.E.MaxHp:0} at ({bsx.E.X:0},{bsx.E.Z:0}) ph {bsx.PhaseIx} t {bsx.FightT:0} {bsx.E.State} {bsx.E.Disposition} taken {bsx.E.TakenMul:0.00} floor {bsx.E.HpFloor:0}" : "")}");
+            var (mx, mz) = Pilot.Steer(b, spec.Deft, zone.BossScript, goal: way, naive: spec.Naive);
+            if (trace && ((int)(t / 5) != (int)((t - ArenaSim.Dt) / 5) || Environment.GetEnvironmentVariable("STORY_TICKS") is string tk && t > double.Parse(tk) && t < double.Parse(tk) + 0.25)) Console.Error.WriteLine($"   steer ({mx:0.00},{mz:0.00}) way {way} zones {b.Zones.Living().Count()} pickups {b.Pickups.Living().Count()} blows {b.Blows.Count} slow {b.Player.SlowF:0.00} speed {b.Stats.Get(Stat.MoveSpeed):0.00} bulwark {b.Player.BulwarkT:0.0} dash {b.Player.DashT:0.00} leap {b.Player.Leap != null} vel ({b.Player.Vx:0.00},{b.Player.Vz:0.00}) still {b.Player.StillT:0.0} hurt {b.Player.HurtT:0.00}");
+            if (trace && (int)(t / 30) != (int)((t - ArenaSim.Dt) / 30))
+                foreach (var c in b.Collision.Within(b.Player.X, b.Player.Z, 2.5))
+                    Console.Error.WriteLine($"   PROBE {c.Kind} {c.Tag} at ({c.X:0.0},{c.Z:0.0}) r {c.R:0.0} hw {c.Hw:0.0} hd {c.Hd:0.0} soft {c.Soft} canstand {map.CanStand(b.Player.X + mx, b.Player.Z + mz)}");
+            if (trace && (int)(t / 30) != (int)((t - ArenaSim.Dt) / 30))
+                foreach (var e in b.Enemies.Living().Where(e => Math.Abs(e.X - b.Player.X) + Math.Abs(e.Z - b.Player.Z) < 3))
+                    Console.Error.WriteLine($"   NEAR {e.Def.Id} {e.Disposition} {e.State} at ({e.X:0.0},{e.Z:0.0}) r {e.Radius:0.0} scripted {e.Scripted}");
             Pilot.Act(b, j, mx, mz);
             zone.Step(ArenaSim.Dt);
             zone.Frame(ArenaSim.Dt);
@@ -117,6 +147,13 @@ public static class StorySim
             foreach (var ev in b.Events.Drain())
             {
                 if (ev is Ev.Telegraph { Boss: true, Kind: TelegraphKind.Blow } && zone.Now == StoryNight.Stage.Boss) r.BossMarked++;
+                if (ev is Ev.PlayerHit { Dodged: false } hit && hit.Amount > 0)
+                {
+                    string part = zone.Now == StoryNight.Stage.Boss ? "boss" : $"stage {zone.BeatIx + 1}";
+                    var by = r.HurtBy.TryGetValue(part, out var d) ? d : r.HurtBy[part] = new();
+                    string src = hit.Label is { } lb ? $"{hit.Source}: {lb}" : hit.Source;
+                    by[src] = by.GetValueOrDefault(src) + hit.Amount / Math.Max(1, b.MaxHp);
+                }
                 // STORY_TRACE=KEY: what lands on her, and the night's turns (why a run fell).
                 if (trace && ev is Ev.PlayerHit ph) Console.Error.WriteLine($"{t / 60:0.000} {zone.Now,-7} {ph.Source,-24} {ph.Amount,6:0} {(ph.Dodged ? "dodged" : ph.Blocked ? "blocked" : "")} hp {b.Player.Hp:0}/{b.MaxHp:0}");
                 if (trace && ev is Ev.Announce an) Console.Error.WriteLine($"{t / 60:0.000} {zone.Now,-7} ** {an.Title} {an.Subtitle}");
@@ -125,10 +162,12 @@ public static class StorySim
             j.BankArt(b);
             ArenaSim.Drafts(b, pick, rng, drafts, null);
             if (r.CardsAtBoss < 0 && zone.Now == StoryNight.Stage.Boss) r.CardsAtBoss = drafts.Cards;
-            // Her choice at his side, by the run's own.
+            // Her choice at his side, by the run's own; and the crates, fired or left, by the run's own.
             var offer = zone.Interactables.FirstOrDefault(i => i.Id == (spec.Choice == "finish" ? "story:finish" : "story:let_go"))
-                ?? zone.Interactables.FirstOrDefault(i => i.Id.StartsWith("story:"));
+                ?? zone.Interactables.FirstOrDefault(i => i.Id is "story:let_go" or "story:finish");
             offer?.Act();
+            if (spec.Crates && zone.Interactables.FirstOrDefault(i => i.Id == "story:crates") is { } crates
+                && Math.Abs(crates.X - b.Player.X) + Math.Abs(crates.Z - b.Player.Z) < 6) crates.Act();
             t += ArenaSim.Dt;
             if (trace && !outside && !zone.Place.Inside(b.Player.X, b.Player.Z, -0.6))
             {
@@ -137,7 +176,7 @@ public static class StorySim
             }
         }
         r.Won = zone.Won;
-        r.Spared = arena.Spared || j.World.Fact("greymuzzle").Str == "spared";
+        r.Spared = arena.Spared || j.World.Fact("greymuzzle").Str == "spared" || j.World.Fact("redcowl").Str == "spared";
         r.Minutes = t / 60;
         r.Stages = zone.Log.ToList();
         r.Falls = zone.Falls;
@@ -172,13 +211,13 @@ public static class StorySim
         var sb = new StringBuilder();
         sb.AppendLine("| Fight | Tier | Draft | Hands | Runs | Won | Night (median min) | Way in | Stage 1 / 2 / 3 (s) | Boss (s) | Under half on the way in | Falls a stage | Boss on its first life | Marked blows landed | Cards at boss |");
         sb.AppendLine("|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|");
-        foreach (var g in rs.GroupBy(r => (r.Spec.Fight, r.Spec.Tier, r.Spec.Policy, r.Spec.Deft)).OrderBy(g => g.Key))
+        foreach (var g in rs.GroupBy(r => (r.Spec.Fight, r.Spec.Tier, r.Spec.Policy, Hands: r.Spec.Deft ? "deft" : r.Spec.Naive ? "naive" : "plain")).OrderBy(g => g.Key))
         {
             var l = g.ToList();
             int won = l.Count(r => r.Won);
             string stage(int i) => $"{Median(l.Select(r => r.Stages.FirstOrDefault(s => s.Name == $"stage {i}")?.Seconds ?? double.NaN).Where(x => !double.IsNaN(x))):0}";
             int stages = l.Sum(r => r.Stages.Count(s => s.Name != "boss")), fellIn = l.Sum(r => r.Stages.Where(s => s.Name != "boss").Count(s => s.Falls > 0));
-            sb.AppendLine($"| {g.Key.Fight} | {g.Key.Tier} | {g.Key.Policy} | {(g.Key.Deft ? "deft" : "plain")} | {l.Count} | {Pct(won, l.Count)} | {Median(l.Select(r => r.Minutes)):0.0} | {Median(l.Select(r => r.WayIn)):0.0} | {stage(1)} / {stage(2)} / {stage(3)} | {Median(l.Where(r => r.BossSeconds != null).Select(r => r.BossSeconds!.Value)):0} | {Pct(l.Count(r => r.LowWayIn < 0.5), l.Count)} | {Pct(fellIn, stages)} | {Pct(l.Count(r => r.BossFirstLife), l.Count)} | {(l.Count == 0 ? 0 : l.Average(r => r.BossLanded)):0.0} | {Median(l.Where(r => r.CardsAtBoss >= 0).Select(r => (double)r.CardsAtBoss)):0} |");
+            sb.AppendLine($"| {g.Key.Fight} | {g.Key.Tier} | {g.Key.Policy} | {g.Key.Hands} | {l.Count} | {Pct(won, l.Count)} | {Median(l.Select(r => r.Minutes)):0.0} | {Median(l.Select(r => r.WayIn)):0.0} | {stage(1)} / {stage(2)} / {stage(3)} | {Median(l.Where(r => r.BossSeconds != null).Select(r => r.BossSeconds!.Value)):0} | {Pct(l.Count(r => r.LowWayIn < 0.5), l.Count)} | {Pct(fellIn, stages)} | {Pct(l.Count(r => r.BossFirstLife), l.Count)} | {(l.Count == 0 ? 0 : l.Average(r => r.BossLanded)):0.0} | {Median(l.Where(r => r.CardsAtBoss >= 0).Select(r => (double)r.CardsAtBoss)):0} |");
         }
         return sb.ToString();
     }

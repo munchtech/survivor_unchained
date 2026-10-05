@@ -100,7 +100,7 @@ public class WaystationTests
         s.J.GiveItem("lockpicks");
         Assert.Null(wh.Locked!());
         wh.Act();
-        Assert.Contains(s.J.Ch.Pack, p => p?.Def == "pell_ledger");
+        Assert.Contains(s.J.Ch.Keys, p => p.Def == "pell_ledger");
         Assert.Contains(s.J.World.History, h => h.Id == "burgled_pell");
         Assert.False(wh.When!());
     }

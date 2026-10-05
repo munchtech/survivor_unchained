@@ -333,10 +333,10 @@ public class ArtTests
         var j = Journey("warden");
         Assert.False(ArtBook.Knows(j.Ch, "wraith_walk"));
         Assert.True(j.GiveItem("manual_wraith_walk"));
-        var it = j.Ch.Pack.First(i => i?.Def == "manual_wraith_walk")!;
+        var it = j.Ch.Satchel.First(i => i.Def == "manual_wraith_walk");
         j.Use(it.Uid, null);
         Assert.True(ArtBook.Knows(j.Ch, "wraith_walk"));
-        Assert.DoesNotContain(j.Ch.Pack, i => i?.Def == "manual_wraith_walk");
+        Assert.DoesNotContain(j.Ch.Satchel, i => i.Def == "manual_wraith_walk");
         Assert.False(ArtBook.Learn(j.Ch, "smoke_bomb"));
         // A survivor from before the book knows their calling's arts.
         var old = Survivor("stalker");

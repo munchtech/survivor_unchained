@@ -3650,8 +3650,10 @@ for name, build in OUTFITS.items():
     made += [o for o in build() if o]
 
 # Her skin under each outfit's fitted pieces is marked, one colour channel
-# an outfit (CHANNELS, as People.cs has them), for the game to leave undrawn: a smooth
-# cup need not clear every bump of hers, and nothing of her shows through.
+# an outfit (CHANNELS, as People.cs has them), for the game to draw tucked a
+# few millimetres in (shaders/heroine_skin.gdshader): a smooth cup need not
+# clear every bump of hers, nothing of her shows through, and since nothing
+# of her is cut away no gap can open where a piece moves off her.
 # Loose things (a coat, a hat) and sheer ones hide nothing.
 if BODY_OUT:
     me = body.data
@@ -3688,6 +3690,19 @@ if BODY_OUT:
                     proud[v.index] and tree.ray_cast(co + n * 0.0005, -n, 0.015)[0] is not None):
                 vals[v.index, k] = 1
                 hid += 1
+        # Tucked in gradually from the border, a third, two thirds, then all
+        # the way, so her skin slopes under a piece's edge as if it pressed
+        # in, rather than stepping down.
+        if "_body_nb" not in globals():
+            ev = np.array([e.vertices[:] for e in me.edges])
+            globals()["_body_nb"] = sparse.coo_matrix((np.ones(2 * len(ev)), (np.r_[ev[:, 0], ev[:, 1]], np.r_[ev[:, 1], ev[:, 0]])),
+                                                      shape=(len(me.vertices), len(me.vertices))).tocsr()
+        under = vals[:, k] > 0.5
+        reached, ring = ~under, np.zeros(len(under))
+        for r_ in (1, 2):
+            nxt = under & ~reached & ((_body_nb @ reached.astype(float)) > 0)
+            ring[nxt], reached = r_, reached | nxt
+        vals[:, k] = np.where(under, np.where(ring > 0, ring / 3, 1.0), 0.0)
         if name in BALD:
             # Her hair is part of her body: hidden under a hat that is to carry the look.
             _, j = cKDTree(P).query(np.array([(body.matrix_world @ v.co)[:] for v in me.vertices]))

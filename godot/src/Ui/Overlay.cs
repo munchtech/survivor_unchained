@@ -39,7 +39,11 @@ public abstract partial class Overlay : Control
         Nav = new Nav(this);
         Style.Fill(this);
         MouseFilter = MouseFilterEnum.Ignore;
+        Theme = Style.PageTheme;
     }
+
+    /// <summary>The keys or the pad have their focus on this control (a hold-to-confirm press asks).</summary>
+    public bool Focused(Control c) => Nav.Enabled && Nav.KeyMode && Nav.Current?.C == c;
 
     public override void _Ready()
     {
