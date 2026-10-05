@@ -95,7 +95,19 @@ From agent a3058a45eee41d695 (who took over from af7a79bc783cca7bc) to a fresh c
 5. **The Warden's look.** His ranger hood doesn't take the dye and reads white under the moon. He is to be remade (see `docs/art/MODELS_TO_MAKE.md`). Until then, tell whoever owns `WardenView` (`src/Actors/BossViews.cs`), or tint the hood there.
 6. **C02 and C03's line choices** (in the engine): try C03's shots 1 and 2 from the east side, so the line isn't crossed. Check C02's shot 9 against a camera on the west.
 7. **Then C07 and C09,** by the brief's order.
-8. **Pending the owner's approval: the combat lead's boss redesign** (a708da2c97bf85c95, `docs/design/STORY_BOSSES.md` on `worktree-agent-a708da2c97bf85c95@228394c9`). Once it is approved:
+8. **Note from story (a54dc034ed29f2e02), 4 October: the owner approved the redesign below.** Story fights end on her choice where the story offers one, so two endings now need shooting:
+   - **C11 has a spared ending.** At Redcowl's knee she chooses "Spare him" or "Finish it". The death part plays only if she finishes it, and "Finish it" is now the blow (shot 1). The spared part is new in `docs/cinematics/c11_raid_on_the_roost.md`, "Spared", six shots:
+     - his line at the knee, `cin_raid_on_the_roost.spared` (four variants);
+     - he gets up on the sewn leg and shoulders the axe;
+     - `cin_raid_on_the_roost.flit`, "...Up, my lot! Boots on! We're flitting!";
+     - his people part and he walks off without limping.
+
+     The conversation's entry plays `spared` once `redcowl` = `spared`. Combat applies the outcome first, then plays the hook.
+   - **C10's let-go is her choice.** "Let him go" or "Finish it" come after shot 3 (`c10_hollow_by_night.md`, "Variant: let go").
+   - **C09 gives the first chart.** `vonnra.f_door` is shorter, and the new `vonnra.f_chart` lays a chart on the table: "That would be ten gold, traveller. This once, no charge." It's shots 12b, 12c and 16b in `c09_fortune.md`. The chart arrives by data whether or not the cinematic plays.
+   - **Combat's hook ids:** combat's StoryNight tries `{cinematic}_arrival`, `_end` and `_spared` where `CanCinematic` finds one. Name the real ids when you build C10 and C11.
+   - **A lost story fight** no longer comes to at the place. She wakes on Chid's bench the next morning, and his conversation opens with a narrated waking for that fight (`chid.carried`). Nothing to shoot unless you want it.
+9. **The combat lead's boss redesign, now approved (see 8)** (a708da2c97bf85c95, `docs/design/STORY_BOSSES.md` on `worktree-agent-a708da2c97bf85c95@228394c9`). Once it is approved:
    - **C13's shot 1** changes. The fight now ends with her laying the Barrow Lord down: she stands over him in a pale-blue circle for 3 s (holy does it twice as fast), and he will not stay down. He rises inside her reach, and the hand plays. "The blow. He does not fall." becomes "she stands over him, and he will not stay down". The rest of C13 stands.
    - **C10** may gain a choice. Where the let-go's facts hold, she chooses with two prompts, "Let him go" or "Finish it"; today it happens on its own. Story is confirming.
    - **C10 to C12** are otherwise unchanged. Each fight still needs its two boss hooks (`docs/cinematics/README.md` 11a, arrival and end), which the runtime will call.
