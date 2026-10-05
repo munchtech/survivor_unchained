@@ -428,17 +428,19 @@ public partial class Game : Node, IZoneHost
 
     /// <summary>The survivor as the map opened: what it paid is read against this at its end.</summary>
     CharacterData? mapStart;
+    List<ItemInstance?>? mapStash;
 
     MapRun StartMap()
     {
         mapStart = SurvivorUnchained.Core.Json.Clone(Journey.Ch);
+        mapStash = World.Stash.ToList();
         return new MapRun(this, currentMap!, World.Map!);
     }
 
     /// <summary>A map is over: what it paid on its own page, the world held behind it.</summary>
     public void MapOver(MapResult r, bool alive)
     {
-        var spoils = SurvivorUnchained.Maps.MapSpoils.Between(mapStart ?? Journey.Ch, Journey.Ch);
+        var spoils = SurvivorUnchained.Maps.MapSpoils.Between(mapStart ?? Journey.Ch, Journey.Ch, mapStash ?? World.Stash, World.Stash);
         Wait(alive ? 1.0 : 2.2, () =>
         {
             if (scene == null || zone is not MapRun) return;
@@ -939,6 +941,7 @@ public partial class Game : Node, IZoneHost
             }
             else hud.PromptAt(null);
             hud.Beyond(Overlay == null ? Offscreen(fb2) : new());
+            hud.Ground(Overlay == null ? Labels(fb2) : new());
         }
         {
             var sb = Battle;
@@ -1020,6 +1023,49 @@ public partial class Game : Node, IZoneHost
             Add(e.X, e.Z, "skull", Style.EmberHi);
         foreach (var p in b.Pickups.Living().Where(p => p.Kind == PickupKind.Chest).OrderBy(p => (p.X - px) * (p.X - px) + (p.Z - pz) * (p.Z - pz)).Take(2))
             Add(p.X, p.Z, "relic", Style.GoldHi);
+        // A Legendary lying untaken: the screen's edge points to it, in its amber (docs/design/LOOT_DESIGN.md §8.2).
+        foreach (var p in b.Pickups.Living().Where(p => p.Loot is (int)LootTier.Legendary or (int)LootTier.Storied && p.Look != Verdict.Hidden))
+            Add(p.X, p.Z, "sun", Style.RarityOf(p.Loot == (int)LootTier.Storied ? 5 : 4));
+        return o;
+    }
+
+    /// <summary>Loot's names on the ground (docs/design/LOOT_DESIGN.md §8.1): what the filter shows, Rare
+    /// and up wherever it lies on screen, the rest only near her, so a horde's floor is not a page of text.</summary>
+    List<Ui.GroundLabel> Labels(Battle b)
+    {
+        var o = new List<Ui.GroundLabel>();
+        if (scene == null) return o;
+        var view = new Rect2(Vector2.Zero, GetViewport().GetVisibleRect().Size);
+        double px = b.Player.X, pz = b.Player.Z;
+        foreach (var p in b.Pickups.Items)
+        {
+            if (!p.Alive || p.Look == Verdict.Hidden || p.Kind is PickupKind.Ember or PickupKind.Gold or PickupKind.Chest or PickupKind.Heal or PickupKind.Magnet) continue;
+            // What a zone laid down by hand (a quest thing, a story's drop) is labelled by what it is.
+            LootTier tier;
+            if (p.Loot >= 0) tier = (LootTier)p.Loot;
+            else if (p.Ref != null && Items.Find(p.Ref) is { } d0) tier = Drops.TierOf(d0, p.Tier);
+            else continue;
+            double d2 = (p.X - px) * (p.X - px) + (p.Z - pz) * (p.Z - pz);
+            if (tier < LootTier.Rare && d2 > 10 * 10 || tier >= LootTier.Material && d2 > 8 * 8) continue;
+            var w = new Vector3((float)p.X, (float)scene.HeightAt(p.X, p.Z) + 0.4f, (float)p.Z);
+            if (camera.IsPositionBehind(w)) continue;
+            var sp = camera.UnprojectPosition(w);
+            if (!view.HasPoint(sp)) continue;
+            string text = p.Payload is ItemInstance it ? Inventory.Name(it) : p.Ref != null && Items.Find(p.Ref) is { } def ? (p.Value > 1 ? Items.Several(def.Id, (int)p.Value) : def.Name) : "";
+            if (text.Length == 0) continue;
+            var col = tier switch
+            {
+                LootTier.Set => new Color("#3fd6c0"),
+                LootTier.Material or LootTier.Draught => Style.InkDim,
+                LootTier.Chart or LootTier.Book => new Color("#e8d8b0"),
+                LootTier.Quest => Style.GoldHi,
+                LootTier.Legendary => Style.RarityOf(4),
+                LootTier.Storied => Style.RarityOf(5),
+                _ => Style.RarityOf((int)tier),
+            };
+            int loud = tier >= LootTier.Legendary && tier <= LootTier.Storied ? 3 : p.Look == Verdict.Emphasised || tier is LootTier.Epic or LootTier.Set ? 2 : tier >= LootTier.Material || tier == LootTier.Common ? 0 : 1;
+            o.Add(new Ui.GroundLabel(sp, text, col, loud, tier == LootTier.Set));
+        }
         return o;
     }
 
@@ -1049,6 +1095,14 @@ public partial class Game : Node, IZoneHost
     bool hordeDone, dropsDone, castDone, giveDone, minuteDone, chestDone, barksDone, answerDone, fallDone, litDone;
     int dieIx;
     double blastT = 0.5, marksT = 1;
+    int lootI, hoardI;
+    double hoardT = 1.5;
+    double lootT = 1.5;
+    static readonly (string Def, int? Rarity, Verdict Look)[] LootRing =
+    [
+        ("leather_cap", 0, Verdict.Hidden), ("iron_helm", 0, Verdict.Shown), ("copper_ring", 1, Verdict.Shown), ("chain_shirt", 2, Verdict.Shown),
+        ("iron_helm", 3, Verdict.Emphasised), ("watch_coif", null, Verdict.Emphasised), ("drowned_coat", null, Verdict.Emphasised),
+    ];
 
     void Tour(double dt)
     {
@@ -1084,6 +1138,30 @@ public partial class Game : Node, IZoneHost
                 if (k != null) { k.Tier = kinds[i] == PickupKind.Ember ? i : 2; k.Vx = k.Vz = 0; k.Age = -600; }
             }
         }
+        // --loot [legendary]: a drop of every tier landing round her a beat apart, each with its light and
+        // its sound, a hidden Common among them (pictures and ears for docs/design/LOOT_DESIGN.md §8);
+        // "legendary": only the Legendary, for its moment.
+        if (Args.Has("loot") && Battle is { } lootB && lootI < LootRing.Length && (lootT -= dt) <= 0)
+        {
+            lootT = 0.9;
+            var (def, rarity, look) = LootRing[Args.Get("loot") == "legendary" ? LootRing.Length - 1 : lootI];
+            lootI = Args.Get("loot") == "legendary" ? LootRing.Length : lootI + 1;
+            var it = Rpg.Inventory.Make(Journey.Ch, def, rarity: rarity, level: (int)Args.Num("level", 5));
+            double a = lootI * Math.Tau / LootRing.Length, d = 4.5;
+            lootB.Spill(new Loot(PickupKind.Item, def, 1, true, it.Rarity, null, it, (int)Rpg.Drops.TierOf(it), look), lootB.Player.X + Math.Cos(a) * d, lootB.Player.Z + Math.Sin(a) * d);
+        }
+        // --hoard [N]: N story bosses' hoards rolled by the real drop roll at her feet, two seconds apart
+        // (the first pays the certain Legendary): pictures of a hoard as the filter judges it.
+        if (Args.Has("hoard") && Battle is { } hoardB && hoardI < (int)Args.Num("hoard", 1) && (hoardT -= dt) <= 0)
+        {
+            hoardT = 2;
+            hoardI++;
+            foreach (var l in Journey.Drops(new DropCtx { Source = DropSource.Boss, Level = (int)Args.Num("level", 5), People = Args.Get("people") ?? "pack", StoryBoss = true, R = Rng.NextDouble }))
+            {
+                double a = Rng.NextDouble() * Math.Tau, d = 2 + Rng.NextDouble() * 3;
+                hoardB.Spill(l, hoardB.Player.X + Math.Cos(a) * d, hoardB.Player.Z + Math.Sin(a) * d);
+            }
+        }
         // --give A,B[:RANK][@EVOLUTION],+PASSIVE[:RANK]: a build in hand from the start
         // (pictures of weapons, of the draft with an arsenal), the arena's opening blessing passed over.
         // --minute M: the arena's clock set to M minutes (pictures of its boss: --minute 29.9); --won: and the night won.
@@ -1094,11 +1172,12 @@ public partial class Game : Node, IZoneHost
             if (Args.Has("won")) mr.WinNow();
         }
         // --stage N: a story night begun at its Nth stage (from 0; its stage count is the boss), the
-        // ground behind opened (pictures and play of a stage or the boss: --stage 3).
+        // ground behind opened and the build the stages before would have left her (pictures and play of a
+        // stage or the boss: --stage 3).
         if (!minuteDone && Args.Has("stage") && zone is StoryNight sn2 && Battle != null)
         {
             minuteDone = true;
-            sn2.SkipTo((int)Args.Num("stage", 0));
+            sn2.SkipTo((int)Args.Num("stage", 0), floors: true);
         }
         // --lit: a story night's deadfalls all burning (pictures of them alight).
         if (!litDone && Args.Has("lit") && zone is StoryNight sn3 && Battle != null)
@@ -1292,7 +1371,9 @@ public partial class Game : Node, IZoneHost
     void ClickAt(string spec)
     {
         bool right = spec.StartsWith('r');
-        var xy = spec.TrimStart('r').Split(':');
+        // hX:Y: pressed and held a second before it is let go (pictures of a hold-to-confirm press).
+        bool hold = spec.StartsWith('h');
+        var xy = spec.TrimStart('r', 'h').Split(':');
         if (xy.Length != 2 || !float.TryParse(xy[0], System.Globalization.CultureInfo.InvariantCulture, out var x)
             || !float.TryParse(xy[1], System.Globalization.CultureInfo.InvariantCulture, out var y)) return;
         var at = new Vector2(x, y);
@@ -1302,7 +1383,8 @@ public partial class Game : Node, IZoneHost
         vp.PushInput(new InputEventMouseMotion { Position = at, GlobalPosition = at });
         var button = right ? MouseButton.Right : MouseButton.Left;
         vp.PushInput(new InputEventMouseButton { Position = at, GlobalPosition = at, ButtonIndex = button, Pressed = true });
-        vp.PushInput(new InputEventMouseButton { Position = at, GlobalPosition = at, ButtonIndex = button, Pressed = false });
+        if (hold) GetTree().CreateTimer(1.0).Timeout += () => vp.PushInput(new InputEventMouseButton { Position = at, GlobalPosition = at, ButtonIndex = button, Pressed = false });
+        else vp.PushInput(new InputEventMouseButton { Position = at, GlobalPosition = at, ButtonIndex = button, Pressed = false });
         GD.Print($"click {spec}");
     }
 

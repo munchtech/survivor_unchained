@@ -80,6 +80,11 @@ public partial class MapResultScreen : TellingScreen
             }
         }
         else Next(Style.Label("No gear came out of it.", Style.TextItalic, Style.Small, Style.InkDim), null, 0.3);
+        // Where the gathering at the end put what she did not walk over (docs/design/LOOT_DESIGN.md §6.2).
+        if (spoils.Stored.Count > 0)
+            Next(Style.Label($"Your pack was full: Rook keeps {(spoils.Stored.Count == 1 ? "one of these" : $"{spoils.Stored.Count} of these")} for you.", Style.TextItalic, Style.Small, Style.InkDim), null, 0.3);
+        if (r.Gathered is { Broken: > 0 } g)
+            Next(Style.Label($"Broken down: {g.Broken} {(g.Broken == 1 ? "thing" : "things")} for {Items.Several(Crafting.Iron, g.Iron)}{(g.Shards > 0 ? $" and {Items.Several(Crafting.Shard, g.Shards)}" : "")}.", Style.TextItalic, Style.Small, Style.InkDim), null, 0.3);
         foreach (var c in spoils.Charts) Next(ChartFound(c), () => Sound.Sfx.Loot(true), 0.55);
         if (spoils.Materials.Count > 0 || r.Spilled.Count > 0) Next(Haul(spoils.Materials, r.Spilled, "Carried out"), () => Sound.Sfx.Loot(), 0.5);
         if (spoils.Gold >= 1) Next(Line("coin", $"{spoils.Gold:N0} gold", Style.GoldHi), Sound.Sfx.Gold);

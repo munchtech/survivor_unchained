@@ -79,6 +79,7 @@ public partial class ArenaResultScreen : TellingScreen
         if (r.Gold > 0) Next(Line("coin", $"{r.Gold:N0} gold", Style.GoldHi), Sound.Sfx.Gold);
         // What the night left in the fist, for the Waystation's hands; on a fall, what spilled.
         if (r.Carried.Count > 0 || r.Spilled.Count > 0) Next(Haul(r.Carried, r.Spilled, "Carried out, for the Waystation's hands"), () => Sound.Sfx.Loot(), 0.55);
+        if (r.HaulSeen is { } seen) Next(Style.Label(seen, Style.TextItalic, Style.Small, Style.InkDim, true), null, 0.5);
         foreach (var made in r.Recorded)
             Next(Line("scroll", made.StartsWith("evo:") ? $"In the codex: {EvolutionName(made[4..])}" : $"In the codex: the union {Unions.Find(made[6..])?.Name}", Style.GoldHi), Sound.Sfx.Page);
         if (r.Discovered.Count > 0)

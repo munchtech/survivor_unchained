@@ -36,7 +36,7 @@ Source: https://partner.steamgames.com/doc/gettingstarted/onboarding (read 4 Oct
     - `OFL-Alegreya.txt`, `OFL-AlegreyaSans.txt` and `OFL-Cinzel.txt`;
     - `CREDITS.txt`, holding every CC BY credit and the AI tools line (section E).
 - [ ] **Asset blockers cleared** [5]:
-  - the boar replaced with our own, or the Fab commercial version bought as a stop-gap, with the receipt kept;
+  - the boar replaced with our own (the owner's decision, 5 Oct: a creatures lead makes it locally with Krea 2 and TRELLIS 2, from text-only pictures; brief 5(a)). The Sketchfab boar must not ship;
   - the heroine's and hero's base bodies **kept, with conditions** (re-ruled 4 Oct, evening). They are local Krea 2 Turbo pictures made into meshes by TRELLIS 2. The owner:
     - signs the record in `docs/legal/records/BODIES_RECORD.md`;
     - confirms no real person and no one else's art went into the pictures;
@@ -51,7 +51,7 @@ Source: https://partner.steamgames.com/doc/gettingstarted/onboarding (read 4 Oct
 - [ ] **Motion check** [2]: in motion, with jiggle on and at close range, confirm that no nipple, areola or genital area ever shows on any outfit. Fix it or disclose it.
   - **The Warden's left cup: fixed** (854b927e). Verified with jiggle on in close front, three-quarter and overhead views: no areola shows.
   - **The Warden's crotch:** my first reading counted the groin beside her thong (`warden.thong`) and is withdrawn. She is to be re-counted against the narrow strip, the vulva's footprint, on the next build.
-  - The second, automatic pass covers every clip for all four outfits (brief issue 2); it is in progress.
+  - **The tuck build (35c5dc3a, 5 Oct):** findings on the Warden and the Arcanist (the areola's rim in gaps at the cup's edge in big swings; the strip either side of narrow crotch straps). The main session's fix build answers them, and is to be re-checked (status: `docs/team/legal.md`).
   - Re-run it after any outfit or body change, and before upload.
 - [ ] **Icon check** [14]: icons made from the old style-named prompts compared with Diablo IV and Hades; any close one remade.
 

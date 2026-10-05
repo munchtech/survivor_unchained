@@ -1332,12 +1332,24 @@
    "description": "Steep a piece in it, from the pack: a grade past what the forge can do, or something green and strong with a price, or only the veins, or a grade lost. It sets the piece for good.",
    "lore": "It is the GOOD stuff. Snib would not drink it. Snib would not drink the bad stuff EITHER."
   },
+  "scar_glass": {
+   "id": "scar_glass",
+   "name": "Scar-Glass",
+   "plural": "pieces of scar-glass",
+   "kind": "material",
+   "rarity": 3,
+   "icon": "scar_glass",
+   "value": 60,
+   "stack": 10,
+   "description": "Steep a piece of gear in it by hand, as in a slurry jar: a grade past the forge, a power with a price, only the veins, or a grade lost. A night's scar leaves a piece for every hour you stay past winning it.",
+   "lore": "Ground that a scar burned until it ran, gone to dark glass. It only forms where somebody stayed too long. Held to the light it is the blue of the ford lamps, and it is never quite cold."
+  },
   "mark_hunt_bone": {
    "id": "mark_hunt_bone",
    "name": "Tally-Bone",
    "kind": "trophy",
    "rarity": 1,
-   "icon": "bone",
+   "icon": "hunt_bone",
    "value": 40,
    "description": "A deer's shinbone from a Pack ruler's den, scored end to end with toothmarks in close, even rows, the way a shepherd notches a stick to count. Vonnra can read the hunt in it, and mark a piece you wear with it.",
    "tags": ["mark"]
@@ -1347,7 +1359,7 @@
    "name": "Cracked Lamp-Glass",
    "kind": "trophy",
    "rarity": 1,
-   "icon": "lantern",
+   "icon": "lamp_glass",
    "value": 40,
    "description": "A lamp's chimney-glass from a lampling ruler, cracked from top to bottom. What was lit in it fell a long way once and went on burning where it landed. It is still warm. Vonnra can mark a piece you wear with it.",
    "tags": ["mark"]
@@ -1357,7 +1369,7 @@
    "name": "Bent Barrow-Nail",
    "kind": "trophy",
    "rarity": 1,
-   "icon": "key",
+   "icon": "gate_nail",
    "value": 40,
    "description": "A square iron nail as long as your hand, from a barrow door, bent double. Somebody nailed that door shut a long time ago. It was opened from inside. Vonnra can mark a piece you wear with it.",
    "tags": ["mark"]
@@ -1367,7 +1379,7 @@
    "name": "Muster-Cord",
    "kind": "trophy",
    "rarity": 1,
-   "icon": "kerchief",
+   "icon": "red_cord",
    "value": 40,
    "description": "A length of red cord, knotted once for every name at a muster. Nobody untied the knots for the ones who did not come home. Vonnra can read the crowd in it, and mark a piece you wear with it.",
    "tags": ["mark"]

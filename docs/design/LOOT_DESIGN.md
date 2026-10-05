@@ -332,8 +332,9 @@ can read its affixes and the beam can say what it is.
   carriers), a place or a story condition (the Pelt of the Pack only after the Pack is
   slaughtered). Homes make them huntable at the Wayfinder's table (choose a people's chart to hunt
   their Legendary), the way Grim Dawn's infrequents are.
-- **Expected in Act 1** (`LootTests` simulates it from the counts above): about 250 gear rolls,
-  three to five Legendaries (one certain), two to four set pieces, fifteen Epics.
+- **Act 1, simulated** (`LootTests`, 60 runs of 18 nights and 10 days at these counts): about 215
+  gear drops (39 Common, 78 Uncommon, 74 Rare, 18 Epic), 3 set pieces and 3.5 Legendaries, one of
+  them certain; and in gear's place about 31 of the peoples' materials and 26 old iron.
 
 ### 5.4 Duplicates
 
@@ -447,18 +448,20 @@ different sentence. The rule list is for the few, later (UI's screen).
 
 | Tier | Label | Beam (VFX lead) | Drop sound (placeholders mine, FM synth, ours) | Map |
 |---|---|---|---|---|
-| Common | small grey text | none | a dull clink: cloth thump for armour, a short iron tick for a weapon | – |
-| Uncommon | green text | a low glow, 0.8 m | the clink and a soft high ring | – |
-| Rare | blue text on a dark plate | 2.5 m, steady | one clear bell, struck once | small dot |
-| Epic | violet, bordered plate | 5 m, a slow pulse | a struck bell held, with a low hum under it | violet diamond |
-| Set | verdigris, double border, chain-link mark | 6 m, two strands that twist | two bells a fifth apart, struck together: a pair | verdigris diamond |
+| Common | small grey words, near her only | none | a dull clink: cloth thump for armour, a short iron tick for a weapon | – |
+| Uncommon | green words on a dark plate, near her only | none | the clink and a soft high ring | – |
+| Rare | blue words on a dark plate | a low glow, 1.2 m | one clear bell, struck once | small dot |
+| Epic | violet, framed plate | 3 m, thin, a slow pulse | a struck bell held, with a low hum under it | violet diamond |
+| Set | verdigris, double border, chain-link mark | 4 m, two thin strands that twist | two bells a fifth apart, struck together: a pair | verdigris diamond |
 | Legendary | amber, large, framed, a slow shimmer | the sky pillar (8.2) | the toll (8.2) | amber star, and the screen's edge |
 | Storied | ember red, framed | the pillar ringed in sparks | the toll, then a breath of fire | ember star |
 | Material | small text in its colour | none | a soft pat | – |
 | Chart | parchment text | 2 m, pale | paper and a small chime | chart mark |
 | Quest | gold text | 1.5 m, gold | a short warm chime | – |
 
-Rules: the beam's height says the tier; colour says the band; a **mark** on the label says the
+Seen at 1920×1080 (`docs/loot/`): six beams after one fight read as clutter by day (the experience
+director), so Commons and Uncommons have no beam at all, only their names, as Diablo IV lights only
+its best. Rules: the beam's height says the tier; colour says the band; a **mark** on the label says the
 exception (an up-arrow for an upgrade, a small anvil for a better make than worn). Drop sounds play
 **when the thing lands**, from where it lands, so a Rare dropped behind you is heard behind you;
 the pickup keeps its short sound. A tier's sound plays at most twice a second (a boss's hoard of
@@ -581,6 +584,9 @@ leave room for Legendaries and Rares). The items plan's other eight sets wait fo
 | Filter | `Rpg/LootFilter.cs` | presets; first match; never-hidden; toggles; upgrades |
 | Sets and Legendaries | `items.json`, `loot.json` (`sets`), `Character.Kit` | bonuses at 2 and 3; content valid (powers parse, homes exist, least levels) |
 | Drop event and placeholder sounds | `Sim` (`Ev.Drop`), `src/Audio/Sfx.cs` | – (heard in the game) |
+| Names on the ground, the screen-edge pointer | `src/Ui/GroundLabels.cs`, `Game.Labels`, `Game.Offscreen` | seen: `docs/loot/labels_night.jpg` |
+| The first Legendary's moment | `Journey.FirstLegendaryTaken(item, x, z)`, once a world | the experience director stages it |
+| Pictures | `--loot [legendary]`, `--hoard N` | – |
 | End-of-fight gathering | `Arena/Arena.cs`, `Play/Zones/MapRun.cs` | gathers shown, breaks hidden, overflow to the storeroom |
 
 ---

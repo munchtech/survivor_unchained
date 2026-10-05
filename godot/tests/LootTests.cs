@@ -174,6 +174,9 @@ public class LootTests
         Assert.Equal(0, pickups);
         int tallied = j.NightTally.Values.Sum();
         Assert.True(tallied > 20);
+        // Fire is the scars': a map's lamplings leave iron, never shards.
+        Assert.DoesNotContain(Enumerable.Range(0, 300).SelectMany(s => Drops.Roll(new DropCtx { Ch = j.Ch, World = j.World, Source = DropSource.MapPack, Level = 10, People = "lamplings", R = Seq(s) })),
+            d => d.Material == "ember_shard");
         // In a map they are the ground's.
         int ground = Enumerable.Range(0, 300).Sum(s => j.Drops(new DropCtx { Source = DropSource.MapPack, Level = 10, People = "pack", R = Seq(s) }).Count(l => l.Kind == PickupKind.Material));
         Assert.True(ground > 20);
@@ -414,6 +417,20 @@ public class LootTests
         Assert.Contains(j.Ch.Pack, p => p?.Uid == shown.Uid);
         Assert.True(Inventory.Count(j.Ch, Crafting.Iron) > iron);
         Assert.False(p1.Alive);
+    }
+
+    [Fact]
+    public void The_first_legendary_taken_is_told_once_with_where_it_lay()
+    {
+        var j = Begin();
+        var told = new List<(string Def, double X, double Z)>();
+        j.FirstLegendaryTaken = (it, x, z) => told.Add((it.Def, x, z));
+        Assert.True(j.PickedUp(new Pickup(0) { Kind = PickupKind.Item, Ref = "iron_helm", Value = 1, X = 1, Z = 2, Payload = At("iron_helm", 3, 4) }));
+        Assert.Empty(told);
+        Assert.True(j.PickedUp(new Pickup(1) { Kind = PickupKind.Item, Ref = "drowned_coat", Value = 1, X = 3, Z = 4, Payload = Inventory.Make(null, "drowned_coat", level: 2) }));
+        Assert.True(j.PickedUp(new Pickup(2) { Kind = PickupKind.Item, Ref = "kells_lamp", Value = 1, X = 5, Z = 6, Payload = Inventory.Make(null, "kells_lamp", level: 9) }));
+        Assert.Equal(new[] { ("drowned_coat", 3.0, 4.0) }, told);
+        Assert.True(j.World.FirstLegendaryTaken);
     }
 
     [Fact]

@@ -266,7 +266,9 @@ def crotch_bridge(name, pos, tris, gap_at, mkey, thick, bevel, trim, lift):
     straight along the roof of the slot, overlapping the garment's bound
     edges in front and behind."""
     path = roof_path(GAP_F - 0.014, GAP_B + 0.014, 18, lift=0.002)
-    return ribbon(name + "_gusset", path, 0.013, mkey, lift=0.0, thick=thick, snap=False)
+    # (2.8 cm: at 1.3 her bare skin showed either side of it from below as
+    # she moved; what must be covered there is 2.4 cm across)
+    return ribbon(name + "_gusset", path, 0.028, mkey, lift=0.0, thick=thick, snap=False)
 
 
 def spline(pts, step=0.004):
@@ -2076,8 +2078,18 @@ def finish(name, pos, wt, tris, mkey, thick, bevel, budget=3000, scraps=True):
     # Over her breasts a piece moves with her body and breasts, never her
     # arms: her skin at the outer curve of each breast is partly her arm's,
     # and a garment taking that from it is dragged out of shape when her arm
-    # moves (the skin under it is hidden).
-    wt = steady_on_breasts(wt)
+    # moves (the skin under it is hidden). But at its edges it keeps her
+    # skin's own weights, eased in over 3 cm: there her skin is seen, and
+    # with her arm's share gone from the edge alone, her skin drew away from
+    # under a plate cup's top as she ran, and you saw down into the cup.
+    steady = steady_on_breasts(wt)
+    if len(be):
+        d_ = cKDTree(pos[np.unique(be)]).query(pos)[0]
+        s_ = np.clip((d_ - 0.005) / 0.025, 0, 1)
+        s_ = (s_ * s_ * (3 - 2 * s_))[:, None]
+        wt = steady * s_ + np.asarray(wt, float) * (1 - s_)
+    else:
+        wt = steady
     if scraps:
         wt = eased_weights(pos, tris, wt)
     # No point left without a bone (it would stay behind when she moves):
@@ -2727,6 +2739,7 @@ def warden():
     def belt_z(a):
         return bz0 + 0.05 * np.clip(np.abs(0.17 * np.sin(a)) / 0.15, 0, 1) ** 2 + 0.06 * ramp(-np.cos(a), -0.15, 0.35)
     under_belt = bz0 - 0.022
+    thong_back = back_string(under_belt + 0.06, CROTCH + 0.012)
     # The straps: from each cup's peak, over her shoulder, down her back to
     # the strap round it.
     back_z = UNDERBUST + 0.035
@@ -2770,7 +2783,11 @@ def warden():
         *piece("warden.thong", AND(FRONT - 0.3, np.minimum(0.012 + 0.42 * np.maximum(Z - CROTCH, 0), 0.034) - np.abs(X),
                                    (bz0 - 0.04) - Z, Z - (CROTCH - 0.03)), "darkleather", lift=0.0012, thick=0.0018, smooth=2,
                soften=0),
-        *ribbon("warden.thong_back", thong_path(under_belt + 0.06), 0.02, "darkleather", lift=0.003, thick=0.003, snap=False),
+        *ribbon("warden.thong_back", thong_back, 0.02, "darkleather", lift=0.003, thick=0.003, snap=False),
+        # (under her, a gusset wider than the string, as a thong's is: the
+        # string alone left her bare either side there as she lay on her back)
+        *ribbon("warden.thong_gusset", roof_path(thong_back[-1][1] - 0.004, GAP_F - 0.006, 10), 0.028, "darkleather", lift=0.003,
+                thick=0.003, snap=False),
     ]
     # A skirt of steel plates hung all round from the belt, each its own (her
     # legs move freely between them; each swings with the thigh it is over),
@@ -3513,8 +3530,11 @@ def reaver():
         *piece("reaver.gstring", OR(
             AND(FRONT - 0.3, np.minimum(0.012 + 0.42 * np.maximum(Z - CROTCH, 0), 0.034) - np.abs(X), (belt_z + 0.005) - Z, Z - (CROTCH - 0.03)),
             ), "oldleather", lift=0.002, smooth=2, soften=0),
-        *ribbon("reaver.gstring_back", thong_path(bz0 + 0.07), 0.022, "oldleather", lift=0.003, thick=0.004,
+        *ribbon("reaver.gstring_back", back_string(bz0 + 0.07, CROTCH + 0.012), 0.022, "oldleather", lift=0.003, thick=0.004,
                 trim=edge(0.004, "blackleather"), snap=False),
+        # (under her a gusset wider than the string, as on the warden's thong)
+        *ribbon("reaver.gstring_gusset", roof_path(back_string(bz0 + 0.07, CROTCH + 0.012)[-1][1] - 0.004, GAP_F - 0.006, 10),
+                0.028, "oldleather", lift=0.003, thick=0.004, snap=False),
         *piece("reaver.cape", cape, "fur", lift=0.012, thick=0.004, smooth=12, soften=10, keep_off=("Head",)),
         *piece("reaver.tattoo_arm", OR(zigzag_band("r", ELBOW_S - 0.12, legs=False), zigzag_band("r", ELBOW_S - 0.06, legs=False, amp=0.01, width=0.012)), "ink", lift=0.0012, thick=0.0002, bevel=0.0, soften=0, budget=10 ** 7),
         *piece("reaver.tattoo_thigh", OR(zigzag_band("l", 0.15), zigzag_band("l", 0.22, amp=0.01, width=0.013)), "ink", lift=0.0012, thick=0.0002, bevel=0.0, soften=0, budget=10 ** 7),
@@ -3683,13 +3703,18 @@ if BODY_OUT:
         # ran, the plate and her breast swinging a little apart)
         disc = np.minimum(*[np.linalg.norm(P[jj] - q, axis=1) for q in NIPPLE.values()]) < 0.028
         proud = ((((P - P_FILLED) * N).sum(1)[jj] > 0.0005) & (P[jj, 2] > CROTCH + 0.12)) | disc
+        # Tucked as deep as the piece lies close: skin a piece stands well
+        # clear of (a pauldron, a bracer) cannot come through it, and tucked
+        # there it showed as a deeper gap under the piece's edge as it swung.
         for v in me.vertices:
             co = body.matrix_world @ v.co
             n = (mw3 @ v.normal).normalized()
-            if tree.ray_cast(co + n * 0.0005, n, 0.012)[0] is not None or (
-                    proud[v.index] and tree.ray_cast(co + n * 0.0005, -n, 0.015)[0] is not None):
+            hit = tree.ray_cast(co + n * 0.0005, n, 0.012)
+            if proud[v.index] and tree.ray_cast(co + n * 0.0005, -n, 0.015)[0] is not None:
                 vals[v.index, k] = 1
-                hid += 1
+            elif hit[0] is not None:
+                vals[v.index, k] = np.clip((0.005 - hit[3] - 0.0005) / 0.004, 0, 1)
+            hid += vals[v.index, k] > 0
         # Tucked in gradually from the border, a third, two thirds, then all
         # the way, so her skin slopes under a piece's edge as if it pressed
         # in, rather than stepping down.
@@ -3697,12 +3722,12 @@ if BODY_OUT:
             ev = np.array([e.vertices[:] for e in me.edges])
             globals()["_body_nb"] = sparse.coo_matrix((np.ones(2 * len(ev)), (np.r_[ev[:, 0], ev[:, 1]], np.r_[ev[:, 1], ev[:, 0]])),
                                                       shape=(len(me.vertices), len(me.vertices))).tocsr()
-        under = vals[:, k] > 0.5
+        under = vals[:, k] > 0
         reached, ring = ~under, np.zeros(len(under))
         for r_ in (1, 2):
             nxt = under & ~reached & ((_body_nb @ reached.astype(float)) > 0)
             ring[nxt], reached = r_, reached | nxt
-        vals[:, k] = np.where(under, np.where(ring > 0, ring / 3, 1.0), 0.0)
+        vals[:, k] *= np.where(ring > 0, ring / 3, 1.0)
         if name in BALD:
             # Her hair is part of her body: hidden under a hat that is to carry the look.
             _, j = cKDTree(P).query(np.array([(body.matrix_world @ v.co)[:] for v in me.vertices]))
