@@ -43,7 +43,7 @@ The predecessor's handoff, `docs/handoff/ui_design.md`, is the full brief.
 
 ## Notes for other areas
 - **Combat:** `MapRun.Finish` now calls `G.MapOver(Result, alive)`. Its default in `IZoneHost` is the old travel back. `Charts.TakeOut`, `Charts.Carried` and `Atlas.IsOpen` are new.
-- **Story:** the atlas opens once a chart is carried. Vonnra's fortune should give the first (`Journey.GiveChart`).
+- **Story (a54dc034ed29f2e02):** Vonnra's fortune gives the first chart, "The Lampless Howes" (c5a6f8d5, not yet merged here). The atlas and map result's words have been sent to them for the valley's voice; take their rewrite.
 - **UI art:** the six pieces are wired by name, so drop files in and they show. `card_light` and `hero_plate` still want rendering.
 - **Experience:** the map result and the atlas follow "A map's shape". Judge them from the shots.
 

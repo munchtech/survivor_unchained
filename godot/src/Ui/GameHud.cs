@@ -61,6 +61,7 @@ public partial class GameHud : CanvasLayer
     PanelContainer promptBox = null!, hintBox = null!;
     Control subtitle = null!, announce = null!, bossBox = null!;
     Label sayWho = null!, sayText = null!, annKicker = null!, annTitle = null!, annSub = null!;
+    TextureRect sayShade = null!;
     Label bossName = null!, bossTitle = null!, bossChannel = null!;
     ColorRect bossFill = null!, bossTrail = null!, bossChannelFill = null!;
     Control bossTrack = null!, bossChannelBox = null!;
@@ -69,6 +70,8 @@ public partial class GameHud : CanvasLayer
     ShaderMaterial pullMat = null!;
     double pullT = -1, pullDur = 1;
     Label fadeCaption = null!, fadeSub = null!;
+    TextureRect fadeGlow = null!;
+    Control fadeRule = null!;
     double fadeFrom = 1, fadeTo = 1, fadeT = 1, fadeDur = 1;
     DraftPanel? draft;
     TalkPanel? talk;
@@ -141,11 +144,27 @@ public partial class GameHud : CanvasLayer
         fade = new ColorRect { Color = new Color(0, 0, 0, 1), MouseFilter = Control.MouseFilterEnum.Ignore };
         Style.Fill(fade);
         top.AddChild(fade);
+        // Over the black, for a dawn: first light low along the foot, rising as the words come up.
+        fadeGlow = new TextureRect
+        {
+            Texture = new GradientTexture2D
+            {
+                Gradient = new Gradient { Offsets = new[] { 0f, 0.4f, 1f }, Colors = new[] { Colors.White, Colors.White with { A = 0.3f }, Colors.White with { A = 0 } } },
+                FillFrom = new Vector2(0.5f, 1), FillTo = new Vector2(0.5f, 0.15f), Width = 8, Height = 128,
+            },
+            ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize, StretchMode = TextureRect.StretchModeEnum.Scale,
+            MouseFilter = Control.MouseFilterEnum.Ignore, Visible = false,
+        };
+        Style.Fill(fadeGlow);
+        top.AddChild(fadeGlow);
         fadeCaption = Style.Label("", Style.Display, 54, Style.GoldHi, false, HorizontalAlignment.Center);
         fadeCaption.Position = new Vector2(0, 470); fadeCaption.Size = new Vector2(1920, 80);
         top.AddChild(fadeCaption);
+        // The house's rule between the words, as under the name on the title.
+        fadeRule = new Plaque("", 14, 150) { Position = new Vector2(960 - 178, 536), Size = new Vector2(356, 18) };
+        top.AddChild(fadeRule);
         fadeSub = Style.Label("", Style.TextItalic, 24, Style.Ink, false, HorizontalAlignment.Center);
-        fadeSub.Position = new Vector2(0, 550); fadeSub.Size = new Vector2(1920, 40);
+        fadeSub.Position = new Vector2(0, 560); fadeSub.Size = new Vector2(1920, 40);
         top.AddChild(fadeSub);
     }
 
@@ -424,10 +443,24 @@ public partial class GameHud : CanvasLayer
         subtitle.Position = new Vector2(504, 1080 - 228 - 90);
         subtitle.Size = new Vector2(912, 90);
         ((VBoxContainer)subtitle).Alignment = BoxContainer.AlignmentMode.End;
-        sayWho = Style.Label("", Style.Display, 16, Style.Gold, false, HorizontalAlignment.Center);
+        sayWho = Style.Label("", Style.Display, 17, Style.GoldHi, false, HorizontalAlignment.Center);
         sayText = Style.Label("", Style.Text, 24, Hex("#f4ecdc"), true, HorizontalAlignment.Center);
         subtitle.AddChild(sayWho);
         subtitle.AddChild(sayText);
+        // A soft smoke behind the words, drawn behind the line and sized to it: on daylit stone a
+        // pale line with only a shadow was hard to read.
+        sayShade = new TextureRect
+        {
+            Texture = new GradientTexture2D
+            {
+                Gradient = new Gradient { Offsets = new[] { 0f, 0.55f, 1f }, Colors = new[] { new Color(0.02f, 0.015f, 0.03f, 0.72f), new Color(0.02f, 0.015f, 0.03f, 0.48f), new Color(0.02f, 0.015f, 0.03f, 0) } },
+                Fill = GradientTexture2D.FillEnum.Radial, FillFrom = new Vector2(0.5f, 0.5f), FillTo = new Vector2(1f, 0.5f), Width = 128, Height = 64,
+            },
+            ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize, StretchMode = TextureRect.StretchModeEnum.Scale,
+            MouseFilter = Control.MouseFilterEnum.Ignore, ShowBehindParent = true,
+            AnchorLeft = 0.5f, AnchorRight = 0.5f, AnchorTop = 0, AnchorBottom = 1,
+        };
+        sayText.AddChild(sayShade);
         subtitle.Modulate = Colors.Transparent;
         play.AddChild(subtitle);
         promptBox = Style.Panel(UiArt.Frame("prompt", Style.Box(new Color(0.08f, 0.07f, 0.09f, 0.92f), Style.Line, 1, 24, 10)));
@@ -763,11 +796,24 @@ public partial class GameHud : CanvasLayer
                 var col = s.Done ? Style.InkDim with { A = 0.6f } : s.Optional ? Style.InkDim : Style.Ink;
                 var box = new Panel { CustomMinimumSize = new Vector2(10, 10), MouseFilter = Control.MouseFilterEnum.Ignore };
                 box.AddThemeStyleboxOverride("panel", Style.Box(s.Done ? Style.Gold : new Color(0, 0, 0, 0.4f), col, 1, s.Optional ? 5 : 1, 0));
-                var l = Style.Label(s.Text, s.Optional ? Style.TextItalic : Style.Ui, 16, col, true, HorizontalAlignment.Right);
-                l.CustomMinimumSize = new Vector2(370, 0);
                 var mark = new CenterContainer { CustomMinimumSize = new Vector2(12, 20), MouseFilter = Control.MouseFilterEnum.Ignore };
                 mark.AddChild(box);
-                var row = Style.H(7, l, mark);
+                HBoxContainer row;
+                // "Answer the night: hold [[answer]]": the key itself, as the device in hand shows it.
+                var key = System.Text.RegularExpressions.Regex.Match(s.Text, @"\[\[(\w+)\]\]");
+                if (key.Success && Enum.TryParse<Act>(key.Groups[1].Value, true, out var act))
+                {
+                    var font = s.Optional ? Style.TextItalic : Style.Ui;
+                    row = Style.H(5, Style.Label(s.Text[..key.Index].TrimEnd(), font, 16, col), Style.Prompt(act));
+                    if (s.Text[(key.Index + key.Length)..].Trim() is { Length: > 0 } after) row.AddChild(Style.Label(after, font, 16, col));
+                    row.AddChild(mark);
+                }
+                else
+                {
+                    var l = Style.Label(s.Text, s.Optional ? Style.TextItalic : Style.Ui, 16, col, true, HorizontalAlignment.Right);
+                    l.CustomMinimumSize = new Vector2(370, 0);
+                    row = Style.H(7, l, mark);
+                }
                 row.Alignment = BoxContainer.AlignmentMode.End;
                 objectives.AddChild(row);
             }
@@ -802,6 +848,14 @@ public partial class GameHud : CanvasLayer
         sayWho.Visible = who != null;
         sayText.Text = text;
         sayT = seconds;
+        // The narrator in italic, a speaker upright, as the cinematics set them.
+        sayText.AddThemeFontOverride("font", who == null ? Style.TextItalic : Style.Text);
+        // The smoke as wide as the line (wrapped lines are the box's width), reaching up over the name.
+        float w = Mathf.Min(sayText.Size.X > 0 ? sayText.Size.X : 912, Style.Text.GetStringSize(text, HorizontalAlignment.Left, -1, 24).X);
+        sayShade.OffsetLeft = -w / 2 - 150;
+        sayShade.OffsetRight = w / 2 + 150;
+        sayShade.OffsetTop = who != null ? -50 : -26;
+        sayShade.OffsetBottom = 26;
     }
 
     public void Toast(Toast t)
@@ -983,7 +1037,6 @@ public partial class GameHud : CanvasLayer
         minimap.Show(m.Seen, m.N, m.Marks, m.X, m.Z, m.Facing, m.Night);
     }
 
-    /// <summary>Fade to black (1) or back (0) over some seconds, with words over the black.</summary>
     /// <summary>Pulled into an arena: the world swirls in and burns away to the
     /// dark, where the caption comes up (shaders/pull.gdshader).</summary>
     public void Pull(double seconds, string? caption = null, string? sub = null)
@@ -996,13 +1049,21 @@ public partial class GameHud : CanvasLayer
         fadeSub.Text = sub ?? "";
     }
 
-    public void Fade(float to, double seconds, string? caption = null, string? sub = null)
+    /// <summary>Fade to black (1) or back (0) over some seconds, with words over the black; a glow,
+    /// if given, rises along the foot with them (first light, for a dawn).</summary>
+    public void Fade(float to, double seconds, string? caption = null, string? sub = null, Color? glow = null)
     {
         fadeFrom = fade.Color.A;
         fadeTo = to;
         fadeT = 0;
         fadeDur = Math.Max(0.01, seconds);
-        if (to > 0.5f) { fadeCaption.Text = caption ?? ""; fadeSub.Text = sub ?? ""; }
+        if (to > 0.5f)
+        {
+            fadeCaption.Text = caption ?? "";
+            fadeSub.Text = sub ?? "";
+            fadeGlow.Visible = glow != null;
+            if (glow is Color g) fadeGlow.SelfModulate = g;
+        }
     }
 
     /* ------------------------------------------------- the draft, a talk -- */
@@ -1141,6 +1202,9 @@ public partial class GameHud : CanvasLayer
         float cap = Mathf.Clamp((fade.Color.A - 0.6f) / 0.4f, 0, 1);
         fadeCaption.Modulate = Colors.White with { A = cap };
         fadeSub.Modulate = Colors.White with { A = cap };
+        fadeRule.Modulate = Colors.White with { A = fadeCaption.Text != "" ? cap : 0 };
+        // (the glow stays as the black lifts, so the morning comes up out of it)
+        fadeGlow.Modulate = Colors.White with { A = Mathf.Clamp(fade.Color.A * 1.4f - 0.2f, 0, 1) };
     }
 }
 
