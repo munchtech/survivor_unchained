@@ -324,25 +324,20 @@ public partial class SheetScreen : Overlay
             v.AddChild(chips);
         }
         if (ch.TraitPicks <= 0) return;
-        // A trait to choose: the three on offer, each for good, under the track.
-        var offers = Style.H(10);
-        foreach (var t in Offer(ch))
+        // A trait to choose: the three on offer as type on the page, no boxes; each for good, so it
+        // is taken by holding it until the ember runs the length of its name.
+        var offers = Style.H(22);
+        var picks = Offer(ch);
+        for (int i = 0; i < picks.Count; i++)
         {
-            var def = Callings.Trait(t)!;
-            var id = t;
-            var b = Style.Button("", () => G.Gear((j, bt) => j.PickTrait(id, bt)));
-            var inner = Style.V(3, Style.Label(def.Name, Style.UiBold, 16, Style.EmberHi), Style.Label(def.Text, Style.Ui, 14, Kit.Ink2, true));
-            inner.MouseFilter = MouseFilterEnum.Ignore;
-            inner.Position = new Vector2(12, 7);
-            inner.Size = new Vector2(240, 70);
-            b.AddChild(inner);
-            b.CustomMinimumSize = new Vector2(0, 74);
-            b.SizeFlagsHorizontal = SizeFlags.ExpandFill;
-            b.Resized += () => inner.Size = new Vector2(b.Size.X - 28, b.Size.Y - 20);
-            Nav.Id(b, $"trait:{t}");
-            offers.AddChild(b);
+            if (i > 0) offers.AddChild(new LedgerRule());
+            var def = Callings.Trait(picks[i])!;
+            var id = picks[i];
+            var w = new HeldWord(def.Name, def.Text, () => G.Gear((j, bt) => j.PickTrait(id, bt))) { SizeFlagsHorizontal = SizeFlags.ExpandFill };
+            Nav.Mark(w, $"trait:{id}", w.Nudge);
+            offers.AddChild(w);
         }
-        v.AddChild(Style.Label($"Choose {(ch.TraitPicks == 1 ? "one" : ch.TraitPicks.ToString())}: each is for good.", Style.TextItalic, 14, Style.Ember));
+        v.AddChild(Style.Label($"Choose {(ch.TraitPicks == 1 ? "one" : ch.TraitPicks.ToString())}, holding it: each is for good.", Style.TextItalic, 14, Style.Ember));
         v.AddChild(offers);
     }
 
@@ -596,7 +591,7 @@ public partial class LedgerEntry : Control
             // The fire's light behind the numeral it was given to.
             var halo = new TextureRect
             {
-                Texture = Halo, ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize, StretchMode = TextureRect.StretchModeEnum.Scale,
+                Texture = UiArt.Art("coal/numeral_glow.png") ?? Halo, ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize, StretchMode = TextureRect.StretchModeEnum.Scale,
                 Size = new Vector2(numW + 44, 70), Position = new Vector2(-22, Base - 52), MouseFilter = MouseFilterEnum.Ignore,
                 Modulate = Style.Ember with { A = 0.6f }, Material = new CanvasItemMaterial { BlendMode = CanvasItemMaterial.BlendModeEnum.Add },
             };
@@ -640,6 +635,70 @@ public partial class LedgerEntry : Control
 
     public override bool _CanDropData(Vector2 at, Variant data) => data.VariantType == Variant.Type.String && (CanTake?.Invoke(data.AsString()) ?? false);
     public override void _DropData(Vector2 at, Variant data) => Take?.Invoke(data.AsString());
+}
+
+/// <summary>
+/// A choice for good set as type on the page (a trait on offer): its name in display type and the
+/// line under it, no box. Hovered, an ember glow wakes under the name; held (the mouse, or A or Enter
+/// with focus), the ember runs the name's length, and when it reaches the end the choice is made.
+/// Let go early and it cools back (the rule for what cannot be undone: held, never asked twice).
+/// </summary>
+public partial class HeldWord : Control
+{
+    readonly Label name;
+    readonly Action done;
+    double p, flash;
+    bool mouse, over, fired;
+
+    public HeldWord(string title, string text, Action done, int size = 19)
+    {
+        this.done = done;
+        MouseFilter = MouseFilterEnum.Stop;
+        MouseDefaultCursorShape = CursorShape.PointingHand;
+        name = size >= 18 ? Style.Label(title, Style.DisplayLight, size, Style.EmberHi, false, HorizontalAlignment.Left, true)
+            : Style.Label(title, Style.UiBold, size, Style.EmberHi, false, HorizontalAlignment.Left, true);
+        var body = Style.V(3, name);
+        if (text != "") body.AddChild(Style.Label(text, Style.Ui, 14, Kit.Ink2, true));
+        body.MouseFilter = MouseFilterEnum.Ignore;
+        body.Position = new Vector2(0, 2);
+        AddChild(body);
+        Resized += () => body.Size = new Vector2(Size.X, 0);
+        CustomMinimumSize = text != "" ? new Vector2(0, 78) : new Vector2(name.GetCombinedMinimumSize().X + 4, name.GetCombinedMinimumSize().Y + 10);
+        MouseEntered += () => { over = true; Sound.Sfx.Hover(); };
+        MouseExited += () => { over = false; mouse = false; };
+        GuiInput += e => { if (e is InputEventMouseButton { ButtonIndex: MouseButton.Left } mb) mouse = mb.Pressed; };
+    }
+
+    /// <summary>A tap: the ember jumps a little and cools, as a hint that it must be held.</summary>
+    public void Nudge() { if (!fired && p < 0.15) p = 0.15; }
+
+    bool Held()
+    {
+        if (mouse) return true;
+        for (Node? n = GetParent(); n != null; n = n.GetParent())
+            if (n is Overlay o) return o.Focused(this) && Play.Controls.Instance.Held(Play.Act.Confirm);
+        return false;
+    }
+
+    public override void _Process(double delta)
+    {
+        if (flash > 0)
+        {
+            flash -= delta;
+            if (flash <= 0) { fired = true; done(); }
+        }
+        else if (Held() && !fired) { p = Math.Min(1, p + delta / HoldButton.Time); if (p >= 1) { flash = 0.15; Sound.Sfx.Pick(); } }
+        else if (!Held()) { fired = false; p = Math.Max(0, p - delta / HoldButton.Drain); }
+        QueueRedraw();
+    }
+
+    public override void _Draw()
+    {
+        float w = Math.Min(name.GetCombinedMinimumSize().X + 4, Size.X), y = name.Size.Y + 4;
+        // the glow of a hover under the name, then the ember running along it as it is held
+        if (over || p > 0) DrawRect(new Rect2(0, y, w, 1), Style.Ember with { A = 0.35f });
+        if (p > 0) DrawRect(new Rect2(0, y - 0.5f, w * (float)Math.Min(1, p), 2.5f), (flash > 0 ? Style.EmberHi : Style.Ember) with { A = 0.95f });
+    }
 }
 
 /// <summary>A fine upright rule between the ledger's entries, fading at both ends.</summary>
@@ -708,7 +767,7 @@ public partial class TraitTrack : Control
     void Lay(CharacterData ch, Action<string, Control> hover, Action leave)
     {
         foreach (var c in GetChildren()) { RemoveChild(c); c.QueueFree(); }
-        float x0 = 20, x1 = Size.X - 20, step = (x1 - x0) / Math.Max(1, nodes.Count - 1), y = top;
+        float x0 = 17, x1 = Size.X - 17, step = (x1 - x0) / Math.Max(1, nodes.Count - 1), y = top;
         for (int i = 0; i < nodes.Count; i++)
         {
             var (_, lv, t, state) = nodes[i];
@@ -737,7 +796,8 @@ public partial class TraitTrack : Control
     static Control Centred(Label l, float x, float y)
     {
         var w = l.GetCombinedMinimumSize();
-        l.Position = new Vector2(x - w.X / 2, y);
+        // (centred under its node, but never past the column's edges)
+        l.Position = new Vector2(Mathf.Max(0, x - w.X / 2), y);
         return l;
     }
 

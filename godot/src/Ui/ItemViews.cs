@@ -198,10 +198,11 @@ void fragment() {
     /// marks are judged against `ch` (what they wear), when given.</summary>
     public static SlotView Slot(ItemInstance? it, int size, bool selected = false, int? price = null, bool refused = false,
         Action? onClick = null, Action? onDouble = null, Action<Control?>? onHover = null, string? emptyGlyph = null, string? caption = null,
-        string? navId = null, Action? onAlt = null, bool fresh = false, bool dim = false, bool dear = false, CharacterData? ch = null)
+        string? navId = null, Action? onAlt = null, bool fresh = false, bool dim = false, bool dear = false, CharacterData? ch = null, bool engraved = false)
     {
         var box = new SlotView { CustomMinimumSize = new Vector2(size, size), MouseFilter = Control.MouseFilterEnum.Stop, Item = it };
-        box.AddThemeStyleboxOverride("panel", Kit.TileBox(it, selected));
+        // An empty place on the body is no box: the shape of what goes there, cut faintly into the page.
+        box.AddThemeStyleboxOverride("panel", it == null && engraved ? new StyleBoxEmpty() : Kit.TileBox(it, selected));
         if (it != null)
         {
             var def = Items.Get(it.Def);
@@ -252,6 +253,19 @@ void fragment() {
                 box.AddChild(q);
             }
             if (refused || dim) box.Modulate = new Color(1, 1, 1, dim ? 0.25f : 0.4f);
+        }
+        else if (engraved && emptyGlyph != null)
+        {
+            float g = size * 0.6f;
+            var cut = Glyphs.Icon(emptyGlyph, (int)g, new Color(0, 0, 0, 0.55f));
+            cut.Position = new Vector2((size - g) / 2 + 1, (size - g) / 2 + 1.5f);
+            cut.Size = new Vector2(g, g);
+            box.AddChild(cut);
+            var lit = Glyphs.Icon(emptyGlyph, (int)g, Kit.Glyph.Lightened(0.12f));
+            lit.Position = new Vector2((size - g) / 2, (size - g) / 2);
+            lit.Size = new Vector2(g, g);
+            box.AddChild(lit);
+            if (caption != null) box.TooltipText = Style.Cap1(caption.ToLowerInvariant());
         }
         else if (caption != null)
         {
@@ -550,39 +564,54 @@ void fragment() {
     }
 }
 
-/// <summary>A card's ground: the tooltip art when painted, a raised dark plate until then, with a
-/// strip of the thing's tier along its top edge in either case (the art cannot know the tier).</summary>
+/// <summary>
+/// A card's ground (the coordinator: keep the backing a tooltip needs, but taper its edges into the
+/// world rather than a hard rectangle): a dark wash, solid where the words are and fading to
+/// nothing over its last <see cref="Soft"/> pixels, with no frame; the thing's tier is only the
+/// rule along its top, itself fading at its ends.
+/// </summary>
 public partial class CardBox : StyleBox
 {
     public Color Tier = Colors.White;
     public bool Worn;
+    /// <summary>How far in from its edge the wash is whole.</summary>
+    public const float Soft = 18;
 
     public CardBox()
     {
-        ContentMarginLeft = ContentMarginRight = 16;
-        ContentMarginTop = 16;
-        ContentMarginBottom = 14;
+        ContentMarginLeft = ContentMarginRight = 22;
+        ContentMarginTop = 22;
+        ContentMarginBottom = 20;
     }
 
     public override void _Draw(Rid ci, Rect2 r)
     {
-        // The shadow it casts on the world, so it reads as lifted off what it is over.
-        RenderingServer.CanvasItemAddRect(ci, new Rect2(r.Position + new Vector2(6, 8), r.Size), new Color(0, 0, 0, 0.4f));
-        // (the worn card is told apart by its quieter strip and its words, not by another frame)
-        if (UiArt.Frames.TryGetValue("tooltip", out var s) && UiArt.Tex(s.File) is { } tex)
-            UiArt.DrawSlice(ci, r, s, tex, s.Ground != null ? UiArt.Tex(s.Ground) : null);
-        else
-        {
-            RenderingServer.CanvasItemAddRect(ci, r, Worn ? new Color("#1d1b1f") : new Color("#221f24"));
-            var edge = Worn ? new Color("#3e3a40") : new Color("#4a464c");
-            RenderingServer.CanvasItemAddRect(ci, new Rect2(r.Position, new Vector2(r.Size.X, 1)), edge);
-            RenderingServer.CanvasItemAddRect(ci, new Rect2(r.Position + new Vector2(0, r.Size.Y - 1), new Vector2(r.Size.X, 1)), edge);
-            RenderingServer.CanvasItemAddRect(ci, new Rect2(r.Position, new Vector2(1, r.Size.Y)), edge);
-            RenderingServer.CanvasItemAddRect(ci, new Rect2(r.Position + new Vector2(r.Size.X - 1, 0), new Vector2(1, r.Size.Y)), edge);
-        }
-        RenderingServer.CanvasItemAddRect(ci, new Rect2(r.Position + new Vector2(1, 1), new Vector2(r.Size.X - 2, Worn ? 2 : 3)), Tier with { A = Worn ? 0.55f : 1 });
+        var c = Worn ? new Color(0.06f, 0.05f, 0.06f, 0.9f) : new Color(0.07f, 0.06f, 0.07f, 0.94f);
+        var o = c with { A = 0 };
+        float s = Soft, x0 = r.Position.X, y0 = r.Position.Y, x1 = r.End.X, y1 = r.End.Y;
+        Vector2 P(float x, float y) => new(x, y);
+        void Quad(Vector2 a, Vector2 b, Vector2 cc, Vector2 d, Color ca, Color cb, Color ccc, Color cd) =>
+            RenderingServer.CanvasItemAddPolygon(ci, new[] { a, b, cc, d }, new[] { ca, cb, ccc, cd });
+        // the whole middle, then each edge fading out, then each corner fading out from its inner point
+        RenderingServer.CanvasItemAddRect(ci, new Rect2(x0 + s, y0 + s, r.Size.X - 2 * s, r.Size.Y - 2 * s), c);
+        Quad(P(x0 + s, y0), P(x1 - s, y0), P(x1 - s, y0 + s), P(x0 + s, y0 + s), o, o, c, c);
+        Quad(P(x0 + s, y1 - s), P(x1 - s, y1 - s), P(x1 - s, y1), P(x0 + s, y1), c, c, o, o);
+        Quad(P(x0, y0 + s), P(x0 + s, y0 + s), P(x0 + s, y1 - s), P(x0, y1 - s), o, c, c, o);
+        Quad(P(x1 - s, y0 + s), P(x1, y0 + s), P(x1, y1 - s), P(x1 - s, y1 - s), c, o, o, c);
+        Quad(P(x0, y0), P(x0 + s, y0), P(x0 + s, y0 + s), P(x0, y0 + s), o, o, c, o);
+        Quad(P(x1 - s, y0), P(x1, y0), P(x1, y0 + s), P(x1 - s, y0 + s), o, o, o, c);
+        Quad(P(x0, y1 - s), P(x0 + s, y1 - s), P(x0 + s, y1), P(x0, y1), o, c, o, o);
+        Quad(P(x1 - s, y1 - s), P(x1, y1 - s), P(x1, y1), P(x1 - s, y1), c, o, o, o);
+        // The tier's rule along the top, inside the wash, fading at its ends.
+        var t = Tier with { A = Worn ? 0.5f : 0.95f };
+        var t0 = t with { A = 0 };
+        float ry = y0 + s * 0.55f, h = Worn ? 1.5f : 2, mid0 = x0 + s * 2.2f, mid1 = x1 - s * 2.2f;
+        Quad(P(x0 + s * 0.6f, ry), P(mid0, ry), P(mid0, ry + h), P(x0 + s * 0.6f, ry + h), t0, t, t, t0);
+        RenderingServer.CanvasItemAddRect(ci, new Rect2(mid0, ry, mid1 - mid0, h), t);
+        Quad(P(mid1, ry), P(x1 - s * 0.6f, ry), P(x1 - s * 0.6f, ry + h), P(mid1, ry + h), t, t0, t0, t);
     }
 }
+
 
 /// <summary>The small marks in a tile's corners and before a card's name: the up-arrow of an upgrade,
 /// the anvil of a better make, a set's chain-link, the ember dot of something new. Painted marks

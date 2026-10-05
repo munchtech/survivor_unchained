@@ -29,14 +29,20 @@ public abstract partial class CounterScreen : Overlay
     {
         HideHud();
         var v = Fitted(new Vector2(YoursX, Top), YoursW);
-        var head = Style.H(8, new Title("Your pack", 28, false));
+        // The title on the panel's own axis, Close in its corner: side by side in a row, the title
+        // would centre on what Close leaves and sit off the panel's middle.
+        var title = new Title("Your pack", 28, false);
+        var head = new Control { CustomMinimumSize = new Vector2(0, title.CustomMinimumSize.Y), MouseFilter = MouseFilterEnum.Ignore };
+        title.SetAnchorsPreset(LayoutPreset.FullRect);
+        head.AddChild(title);
         var close = Nav.Skip(CloseButton("Esc", G.CloseOverlay));
-        close.SizeFlagsVertical = SizeFlags.ShrinkCenter;
         head.AddChild(close);
+        close.Size = close.CustomMinimumSize;
+        close.SetAnchorsAndOffsetsPreset(LayoutPreset.CenterRight, LayoutPresetMode.KeepSize);
         v.AddChild(head);
         block.Ch = Ch;
         block.Width = 484;
-        block.Tile = 72;
+        block.Tile = 74;
         block.BigPurse = true;
         block.Refresh = Refresh;
         v.AddChild(block.Build());
@@ -46,13 +52,22 @@ public abstract partial class CounterScreen : Overlay
     /// <summary>The foot's prompts, across the middle of the screen under the panels.</summary>
     protected void Foot(Control row)
     {
-        // On a ground of their own: under the panels they lie on the world, which can be bright.
-        var ground = new StyleBoxFlat { BgColor = new Color(0.05f, 0.04f, 0.05f, 0.72f), CornerDetail = 6, ContentMarginLeft = 18, ContentMarginRight = 18, ContentMarginTop = 6, ContentMarginBottom = 6 };
-        ground.SetCornerRadiusAll(6);
-        var plate = Style.Panel(ground, row);
-        plate.MouseFilter = MouseFilterEnum.Ignore;
-        var centre = new CenterContainer { MouseFilter = MouseFilterEnum.Ignore, Position = new Vector2(0, 994), Size = new Vector2(1920, 44) };
-        centre.AddChild(plate);
+        // Under the panels they lie on the world, which can be bright: a soft oval of shade behind
+        // them, darkest at their middle and gone well before its edge, so no shape is seen.
+        float w = row.GetCombinedMinimumSize().X + 260;
+        var wash = new TextureRect
+        {
+            Texture = new GradientTexture2D
+            {
+                Fill = GradientTexture2D.FillEnum.Radial, FillFrom = new Vector2(0.5f, 0.5f), FillTo = new Vector2(1, 0.5f), Width = 128, Height = 128,
+                Gradient = new Gradient { Colors = new[] { new Color(0.02f, 0.015f, 0.02f, 0.78f), new Color(0.02f, 0.015f, 0.02f, 0.6f), new Color(0.02f, 0.015f, 0.02f, 0) }, Offsets = new[] { 0f, 0.5f, 1f } },
+            },
+            ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize, StretchMode = TextureRect.StretchModeEnum.Scale, MouseFilter = MouseFilterEnum.Ignore,
+            Position = new Vector2(960 - w / 2, 1016 - 50), Size = new Vector2(w, 100),
+        };
+        AddChild(wash);
+        var centre = new CenterContainer { MouseFilter = MouseFilterEnum.Ignore, Position = new Vector2(0, 1000), Size = new Vector2(1920, 32) };
+        centre.AddChild(row);
         AddChild(centre);
     }
 
@@ -101,31 +116,35 @@ public partial class StashScreen : CounterScreen
         row.AddChild(new Control { SizeFlagsHorizontal = SizeFlags.ExpandFill, MouseFilter = MouseFilterEnum.Ignore });
         if (Crafting.ShelfPrice(G.Journey.Craft) is int price)
         {
+            // Another shelf from Rook, held to buy (gold spent for good), set as type like the tabs.
             bool can = ch.Gold >= price;
-            var buy = Style.HoldButton($"Another shelf · {price} gold", () =>
+            if (can)
             {
-                if (!Crafting.BuyShelf(G.Journey.Craft)) { Sound.Sfx.Deny(); return; }
-                Sound.Sfx.Loot(false);
-                shelf = w.Shelves - 1;
-                Refresh();
-            }, false);
-            buy.Disabled = !can;
-            buy.TooltipText = can ? $"{WorldState.Shelf} more places, kept by Rook" : $"{price} gold: you have {Math.Floor(ch.Gold)}";
-            row.AddChild(buy);
+                var buy = new HeldWord($"Another shelf · {price} gold", "", () =>
+                {
+                    if (!Crafting.BuyShelf(G.Journey.Craft)) { Sound.Sfx.Deny(); return; }
+                    Sound.Sfx.Loot(false);
+                    shelf = w.Shelves - 1;
+                    Refresh();
+                }, 15);
+                buy.TooltipText = $"{WorldState.Shelf} more places, kept by Rook. Hold to buy.";
+                Nav.Mark(buy, "shelf:buy", buy.Nudge);
+                row.AddChild(buy);
+            }
+            else row.AddChild(Style.Label($"another shelf · {price} gold", Style.TextItalic, 15, Kit.Faint, false, HorizontalAlignment.Left, false));
         }
         else row.AddChild(Style.Label("kept safe, whatever becomes of you", Style.TextItalic, 15, Kit.Faint));
         v.AddChild(row);
         var places = w.Stash.Skip(shelf * WorldState.Shelf).Take(WorldState.Shelf).ToList();
         int on = places.Count(x => x != null);
         v.AddChild(Kit.Head("On the shelf", $"{on} of {places.Count}", Nav.Skip(Kit.Word("Sort", SortShelf))));
-        int rows = ItemViews.RowsShown(places, 6);
+        // (an empty shelf is one row to put things on, not a wall of empty places)
+        int rows = ItemViews.RowsShown(places, 6, 1);
         int first = shelf * WorldState.Shelf;
-        var grid = ItemViews.Grid(places.Take(rows * 6), 6, 72, null, null, it => G.Journey.FromStash(it.Uid), it => G.Journey.FromStash(it.Uid),
+        var grid = ItemViews.Grid(places.Take(rows * 6), 6, 74, null, null, it => G.Journey.FromStash(it.Uid), it => G.Journey.FromStash(it.Uid),
             (it, over) => TheirTip(it, over, 40 + TheirsW, Keys(("Click", "Take it")), null), "store", null,
             (i, it, sv) => { if (it != null) sv.Drag = $"store:{it.Uid}"; sv.CanTake = d => d.StartsWith("mine:"); sv.Take = d => ToShelf(d[5..], first + i); }, null, ch);
-        var well = Style.Panel(Kit.WellBox(6), grid);
-        well.MouseFilter = MouseFilterEnum.Ignore;
-        v.AddChild(well);
+        v.AddChild(grid);
 
         Yours(new PackBlock
         {
@@ -237,7 +256,7 @@ public partial class ShopScreen : CounterScreen
         v.AddChild(Kit.Head("Wares", $"{stock.Count}"));
         var shelf = stock.Cast<ItemInstance?>().ToList();
         while (shelf.Count % 7 != 0 || shelf.Count == 0) shelf.Add(null);
-        var grid = ItemViews.Grid(shelf, 7, 80, null, it => G.Journey.PriceOf(shop, it.Uid, true), null, Buy,
+        var grid = ItemViews.Grid(shelf, 7, 82, null, it => G.Journey.PriceOf(shop, it.Uid, true), null, Buy,
             (it, over) => TheirTip(it, over, 40 + TheirsW, Keys(("Rclick", "Buy")), it != null ? G.Journey.PriceOf(shop, it.Uid, true) : null, it != null && G.Journey.PriceOf(shop, it.Uid, true) > ch.Gold),
             "shelf", null, (i, it, sv) =>
             {
@@ -245,9 +264,7 @@ public partial class ShopScreen : CounterScreen
                 sv.CanTake = d => d.StartsWith("mine:");
                 sv.Take = d => Sell(d[5..]);
             }, it => G.Journey.PriceOf(shop, it.Uid, true) is int p && p > ch.Gold, ch);
-        var well = Style.Panel(Kit.WellBox(6), grid);
-        well.MouseFilter = MouseFilterEnum.Ignore;
-        v.AddChild(well);
+        v.AddChild(grid);
         v.AddChild(Style.Label(def.BuysAll ? $"They will buy anything, at {def.Pays * 100:0}% of its worth." : $"They buy {Buys(def)}, at {def.Pays * 100:0}% of their worth; the rest is dimmed.",
             Style.TextItalic, 15, Kit.Dim, true));
 

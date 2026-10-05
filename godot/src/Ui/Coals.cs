@@ -35,6 +35,9 @@ public partial class Coal : Control
         // Its light on what it lies on, laid on additively under it.
         halo = new HaloLight(this) { MouseFilter = MouseFilterEnum.Ignore, ShowBehindParent = true, Material = new CanvasItemMaterial { BlendMode = CanvasItemMaterial.BlendModeEnum.Add } };
         AddChild(halo);
+        // The fire in its cracks, breathing: the coal's own picture laid over it again, added, warm.
+        heart = new HeartLight(this) { MouseFilter = MouseFilterEnum.Ignore, Material = new CanvasItemMaterial { BlendMode = CanvasItemMaterial.BlendModeEnum.Add } };
+        AddChild(heart);
     }
 
     /// <summary>How it breathes now (0.8 to 1.15), the halo and the heart together.</summary>
@@ -45,6 +48,7 @@ public partial class Coal : Control
         t += delta;
         QueueRedraw();
         halo.QueueRedraw();
+        heart.QueueRedraw();
     }
 
     static float Hash(int k, int salt)
@@ -60,7 +64,7 @@ public partial class Coal : Control
         if (UiArt.Art($"coal/coal_{((Seed % 4) + 4) % 4}.png") is { } art)
         {
             var s = art.GetSize() * Scale;
-            DrawTextureRect(art, new Rect2(c - s / 2, s), false, new Color(Breath, Breath, Breath));
+            DrawTextureRect(art, new Rect2(c - s / 2, s), false, Colors.White);
             return;
         }
         float rx = 9 * Scale, ry = 6.5f * Scale;
@@ -85,6 +89,22 @@ public partial class Coal : Control
         DrawCircle(c, 1.6f * Scale, new Color(1f, 0.85f, 0.55f) with { A = Mathf.Clamp(b - 0.2f, 0, 1) });
     }
 
+    readonly Control heart;
+
+    partial class HeartLight : Control
+    {
+        readonly Coal coal;
+        public HeartLight(Coal coal) { this.coal = coal; }
+
+        public override void _Draw()
+        {
+            if (UiArt.Art($"coal/coal_{((coal.Seed % 4) + 4) % 4}.png") is not { } art) return;
+            var c = coal.Size / 2;
+            var s = art.GetSize() * coal.Scale;
+            DrawTextureRect(art, new Rect2(c - s / 2, s), false, new Color(1f, 0.45f, 0.12f, 0.75f * coal.Breath));
+        }
+    }
+
     partial class HaloLight : Control
     {
         readonly Coal coal;
@@ -94,7 +114,7 @@ public partial class Coal : Control
         {
             var c = coal.Size / 2;
             float r = 20 * coal.Scale * coal.Breath;
-            DrawTextureRect(soft!, new Rect2(c - new Vector2(r * 1.3f, r), new Vector2(r * 2.6f, r * 2)), false, Style.Ember with { A = 0.32f });
+            DrawTextureRect(soft!, new Rect2(c - new Vector2(r * 1.3f, r), new Vector2(r * 2.6f, r * 2)), false, Style.Ember with { A = 0.6f });
         }
     }
 }
@@ -107,7 +127,8 @@ public partial class Coal : Control
 public partial class CoalDish : Control
 {
     /// <summary>Where each coal lies in the dish, from its middle.</summary>
-    static readonly Vector2[] Spots = { new(-10, -1), new(9, 1), new(0, -5), new(-3, 4), new(15, -4) };
+    // (five in a row along the dish, 12 px apart, 9 to 13 px down from its top: UI art's dish)
+    const int Most = 5;
     public readonly List<Coal> Coals = new();
     readonly int count;
 
@@ -117,9 +138,11 @@ public partial class CoalDish : Control
         MouseFilter = MouseFilterEnum.Stop;
         CustomMinimumSize = new Vector2(84, 40);
         TooltipText = count == 1 ? "A point to spend: give the coal to an attribute" : $"{count} points to spend: give each coal to an attribute";
-        for (int i = 0; i < Math.Min(count, Spots.Length); i++)
+        int n = Math.Min(count, Most);
+        for (int i = 0; i < n; i++)
         {
-            var coal = new Coal(11 + i) { Position = new Vector2(42, 18) + Spots[i] - new Vector2(10, 8) };
+            var at = new Vector2(42 + (i - (n - 1) / 2f) * 12, 11 + (i % 2 == 0 ? 0 : 2));
+            var coal = new Coal(11 + i) { Position = at - new Vector2(10, 8) };
             Coals.Add(coal);
             AddChild(coal);
         }

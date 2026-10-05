@@ -29,6 +29,7 @@ public partial class ChainTabs : Control
     {
         public float Pitch = 16, Fade = 36, Run = 64;
         public int Variants = 6, Heat = 2;
+        public bool Eyelet;
         public float SlideK = 210, SlideC = 24, SagRest = 4.5f, SagDip = 4.5f, SagSpeed = 240, SagK = 110, SagC = 9;
 
         public static Feel Load()
@@ -49,6 +50,7 @@ public partial class ChainTabs : Control
                 f.Variants = (int)N("variants", f.Variants);
                 // (heat: links each side of the open one that glow; a span of 2 is five links)
                 f.Heat = (int)N("heat", f.Heat);
+                f.Eyelet = r.TryGetProperty("eyelet", out var ey) && ey.ValueKind == System.Text.Json.JsonValueKind.True;
                 (f.SlideK, f.SlideC) = Pair("slide", f.SlideK, f.SlideC);
                 (f.SagK, f.SagC) = Pair("sag_spring", f.SagK, f.SagC);
                 f.SagRest = N("sag_rest", f.SagRest);
@@ -109,7 +111,12 @@ public partial class ChainTabs : Control
         var min = row.GetCombinedMinimumSize();
         // (the chain hangs a little below the names, its links up to 44 high, so the row leaves it room)
         chainY = min.Y + 14;
-        CustomMinimumSize = new Vector2(min.X, chainY + 22);
+        // Anchored, the eyelet past the first tab stays inside the panel: the names step in to leave it room.
+        // (the eyelet is half a cell wide: its middle stays that far inside, past the first name by the run)
+        float first = row.GetChildren().OfType<Button>().FirstOrDefault()?.GetCombinedMinimumSize().X / 2 ?? 20;
+        float inset = F.Eyelet ? Math.Max(0, Run + 28 - first) : 0;
+        row.Position = new Vector2(inset, 0);
+        CustomMinimumSize = new Vector2(min.X + inset, chainY + 22);
     }
 
     /// <summary>A tab's middle, in this control's own pixels.</summary>
@@ -119,7 +126,7 @@ public partial class ChainTabs : Control
         foreach (var c in row.GetChildren())
         {
             if (c is not Button b) continue;
-            if (i++ == tab) return b.Position.X + b.Size.X / 2;
+            if (i++ == tab) return row.Position.X + b.Position.X + b.Size.X / 2;
         }
         return 0;
     }
@@ -192,7 +199,9 @@ public partial class ChainTabs : Control
                 bool face = (k & 1) == 0;
                 if (face != (pass == 0)) continue;
                 float lx = x + k * Pitch;
-                float a = Mathf.Pow(Mathf.Clamp(Math.Min(lx - x0, x1 - lx) / Fade, 0, 1), 1.3f);
+                // Anchored, the chain runs from eyelet to eyelet and its links pass into their holes;
+                // loose, it fades out at its ends.
+                float a = Fade <= 0 ? (lx >= x0 && lx <= x1 ? 1 : 0) : Mathf.Pow(Mathf.Clamp(Math.Min(lx - x0, x1 - lx) / Fade, 0, 1), 1.3f);
                 if (a <= 0) continue;
                 var at = new Vector2(lx, Y(lx));
                 float ang = Mathf.Atan2(Y(lx + 1) - Y(lx - 1), 2);
@@ -215,6 +224,14 @@ public partial class ChainTabs : Control
                 else DrawLink(k, face, a, heat);
                 if (heat > 0) heated.Add((at, heat * a));
             }
+        // The forged eyelets the chain is fixed in, over the links' ends (the owner disliked it fading).
+        if (F.Eyelet && Sprite("eyelet") is { } eye)
+        {
+            DrawSetTransform(new Vector2(x0, Y(x0)));
+            DrawTexture(eye, -eye.GetSize() / 2);
+            DrawSetTransform(new Vector2(x1, Y(x1)), 0, new Vector2(-1, 1));
+            DrawTexture(eye, -eye.GetSize() / 2);
+        }
         DrawSetTransform(Vector2.Zero);
         glow.QueueRedraw();
     }

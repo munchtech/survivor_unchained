@@ -93,7 +93,10 @@ public partial class GameHud : CanvasLayer
     Minimap minimap = null!;
     VBoxContainer corner = null!;
     // Discoveries in a burst become one toast that grows.
-    (PanelContainer Box, ToastKind Kind, List<string> Names, double At)? lastToast;
+    (Notice Box, ToastKind Kind, List<string> Names, double At)? lastToast;
+    TipLine? tipLine;
+    /// <summary>The fight is close round her (four or more near): a tip keeps small and high until a lull.</summary>
+    bool busy;
     // The bar eased every frame toward its true value (docs/feel S-06): shown, wanted, the level's flash.
     float barShown, barWant, barFlash;
     bool barEmber = true;
@@ -561,6 +564,8 @@ public partial class GameHud : CanvasLayer
         var at = b.Combat ? new Vector2(consoleX - 150, 1080 - 156) : new Vector2(30, 1080 - 30 - globe.Size.Y);
         if (globe.Position != at) { globe.Position = at; statuses.Position = at + new Vector2(0, -40); }
         var p = b.Player;
+        // (only while a tip is up: the count is not free)
+        busy = tipLine != null && b.Combat && b.HostilesInRadius(p.X, p.Z, 9).Count >= 4;
         double max = b.MaxHp;
         float k = (float)Math.Clamp(p.Hp / max, 0, 1);
         hpShown = k;
@@ -866,30 +871,26 @@ public partial class GameHud : CanvasLayer
             && now - lt.At < 2.5 && IsInstanceValid(lt.Box) && lt.Names.Count < 5)
         {
             lt.Names.Add(t.Text);
-            if (lt.Box.FindChild("Title", true, false) is Label title) title.Text = string.Join(", ", lt.Names);
-            lt.Box.SetMeta("t", 0.06);
+            lt.Box.Title.Text = string.Join(", ", lt.Names);
+            lt.Box.T = Math.Min(lt.Box.T, 0.5);
             lastToast = lt with { At = now };
             return;
         }
+        // Words on the world, no box (the owner: "the item toasts could be transparent and stylized"):
+        // the icon small, the name in its colour, the count after it.
         var (glyph, color) = ToastLook.GetValueOrDefault(t.Kind, ("arcane", Style.Gold));
         if (t.Rarity is int r) color = Style.RarityOf(r);
-        var box = new PanelContainer { MouseFilter = Control.MouseFilterEnum.Ignore, CustomMinimumSize = new Vector2(408, 0) };
-        var s = Style.Box(new Color(0.047f, 0.04f, 0.055f, 0.82f), color, 0, 4, 8);
-        s.BorderWidthLeft = 3;
-        box.AddThemeStyleboxOverride("panel", UiArt.Frame("toast", s));
-        var row = Style.H(10, t.Icon != null ? ItemPhotos.Icon(t.Icon, 40, color) : Glyphs.Icon(glyph, 22, color));
-        var head = Style.Label(t.Text, t.Kind == ToastKind.Quest ? Style.Display : Style.UiBold, 17, t.Kind == ToastKind.Quest ? Style.GoldHi : t.Rarity != null ? color : Hex("#f0e6d2"), true);
-        head.Name = "Title";
-        var words = Style.V(0, head);
-        if (!string.IsNullOrEmpty(t.Sub)) words.AddChild(Style.Label(t.Sub, Style.TextItalic, Style.Caption, Hex("#b8ab96"), true));
-        words.SizeFlagsHorizontal = Control.SizeFlags.ExpandFill;
-        row.AddChild(words);
-        box.AddChild(row);
-        box.SetMeta("t", 0.0);
-        box.SetMeta("life", t.Life ?? 5.0);
+        if (t.Kind == ToastKind.Quest) color = Style.GoldHi;
+        else if (t.Rarity == null && t.Kind is not (ToastKind.Warning or ToastKind.Level or ToastKind.Gold)) color = Hex("#f0e6d2");
+        bool grand = t.Rarity >= 4, noted = grand || t.Rarity >= 2 || t.Kind is ToastKind.Quest or ToastKind.Level;
+        Control icon = t.Icon != null ? ItemPhotos.Icon(t.Icon, grand ? 40 : 30, color) : Glyphs.Icon(glyph, 18, color);
+        icon.CustomMinimumSize = t.Icon != null ? new Vector2(grand ? 40 : 30, grand ? 40 : 30) : new Vector2(18, 18);
+        var box = new Notice(icon, t.Text, t.Sub, color, noted, grand, t.Life ?? (grand ? 8 : t.Kind == ToastKind.Quest ? 6 : 4.5));
         toasts.AddChild(box);
+        // The newest first, the rest stepping down under it.
+        toasts.MoveChild(box, 0);
         lastToast = (box, t.Kind, new List<string> { t.Text }, now);
-        while (toasts.GetChildCount() > 6) toasts.GetChild(0).Free();
+        while (toasts.GetChildCount() > 6) toasts.GetChild(toasts.GetChildCount() - 1).Free();
     }
 
     public void Announce(Announcement a)
@@ -957,18 +958,18 @@ public partial class GameHud : CanvasLayer
 
     public void Hint(Hint? h)
     {
+        bool same = hintView != null && h != null && hintView.Id == h.Id;
         hintView = h;
-        hintBox.Visible = h != null;
-        foreach (var c in hintBox.GetChildren()) { hintBox.RemoveChild(c); c.QueueFree(); }
+        hintBox.Visible = false;
+        // The tip, centred in the upper third and set on the world itself (the owner: "a centered
+        // attention grabbing thing that is also not on a cheap looking backdrop").
+        if (same && tipLine != null && IsInstanceValid(tipLine)) return;
+        if (tipLine != null && IsInstanceValid(tipLine)) tipLine.QueueFree();
+        tipLine = null;
         if (h == null) return;
-        var ink = Style.ParchmentInk;
-        var v = Style.V(5, Style.H(6, Glyphs.Icon("scroll", 17, Hex("#6a3a14")), Style.Label(h.Title.ToUpperInvariant(), Style.Display, 15, Hex("#6a3a14"), false, HorizontalAlignment.Left, false)),
-            Style.Label(h.Text, Style.Text, 19, ink, true, HorizontalAlignment.Left, false));
-        // A known width, so the words wrap before the box is measured.
-        v.GetChild<Control>(1).CustomMinimumSize = new Vector2(396 - 28, 0);
-        if (h.Keys.Count > 0) v.AddChild(Style.H(6, HintKeys(h.Keys).ToArray()));
-        hintBox.AddChild(v);
-        hintBox.OffsetTop = hintBox.OffsetBottom;
+        Control? keys = h.Keys.Count > 0 ? Style.H(6, HintKeys(h.Keys).ToArray()) : null;
+        tipLine = new TipLine(h.Title, h.Text, keys) { Position = new Vector2(960, 1080 * 0.17f), Small = busy };
+        play.AddChild(tipLine);
     }
 
     static readonly string[] PadNames = ["A", "B", "X", "Y", "LB", "RB", "LT", "RT", "View", "Menu"];
@@ -1123,14 +1124,9 @@ public partial class GameHud : CanvasLayer
         // Nothing big over a choice being made.
         if (draft != null || talk != null) { announce.Modulate = Colors.Transparent; subtitle.Modulate = Colors.Transparent; }
         foreach (var c in toasts.GetChildren())
-        {
-            if (c is not Control box) continue;
-            double t = (double)box.GetMeta("t") + delta, life = (double)box.GetMeta("life");
-            box.SetMeta("t", t);
-            float k = (float)(t / life);
-            box.Modulate = Colors.White with { A = k < 0.05f ? k / 0.05f : k > 0.88f ? (1 - k) / 0.12f : 1 };
-            if (t >= life) box.QueueFree();
-        }
+            if (c is Notice n && !n.Step(delta)) n.QueueFree();
+        // A tip keeps small and high while the fight is close round her, and comes to its size in a lull.
+        if (tipLine != null && IsInstanceValid(tipLine)) tipLine.Small = busy;
         // The bar flows toward its value; a level's flash fades over a tenth of a second.
         barShown = barShown > barWant + 0.5f ? Mathf.MoveToward(barShown, barWant, dt * 6) : barShown + (barWant - barShown) * (1 - Mathf.Exp(-18 * dt));
         float fw = (760 * K - 32) * Mathf.Clamp(barShown, 0, 1);

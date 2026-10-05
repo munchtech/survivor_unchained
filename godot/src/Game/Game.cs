@@ -1034,7 +1034,20 @@ public partial class Game : Node, IZoneHost
 
     /// <summary>--open KIND (or 'all'): the screens opened in turn, for
     /// pictures and for runs that check each builds (--bare hides the world).</summary>
-    bool hordeDone, dropsDone, castDone, giveDone, minuteDone, chestDone, barksDone, answerDone, fallDone, litDone;
+    bool hordeDone, dropsDone, castDone, giveDone, minuteDone, chestDone, barksDone, answerDone, fallDone, litDone, tipDone;
+    int toastI;
+
+    /// <summary>One of each kind of notice (--toasts), in the words the game uses.</summary>
+    static readonly Toast[] SampleToasts =
+    {
+        new(ToastKind.Loot, "Ember Shard", "×10", "ember", 1),
+        new(ToastKind.Loot, "Worn Leather Cap", null, "helm_light", 0),
+        new(ToastKind.Loot, "Tally-Bone of the Long Chase", "Rare trophy", "bone", 2),
+        new(ToastKind.Loot, "Keen Iron Helm of Reach", null, "helm", 3),
+        new(ToastKind.Gold, "+40 gold", null, null, null),
+        new(ToastKind.Quest, "The Low Ford: the bridge is held", "Speak to the Ford-Warden"),
+        new(ToastKind.Loot, "Vonnra's Last Lantern", "Legendary", "lantern", 4),
+    };
     int dieIx;
     double blastT = 0.5, marksT = 1;
 
@@ -1217,6 +1230,15 @@ public partial class Game : Node, IZoneHost
         }
         // --nohud: the world alone, for pictures of what a screen lies over.
         if (Args.Has("nohud") && Mode == "play") Hud.ShowPlay(false);
+        // --toasts T: from T seconds in, one of each kind of notice a beat apart (pictures of them on the world);
+        // --tip T: a tutorial tip at T seconds.
+        if (Args.Has("toasts") && Battle != null && toastI < SampleToasts.Length && Journey.Playtime >= Args.Num("toasts", 2) + toastI * 0.45)
+            Hud.Toast(SampleToasts[toastI++]);
+        if (Args.Has("tip") && !tipDone && Battle != null && Journey.Playtime >= Args.Num("tip", 2))
+        {
+            tipDone = true;
+            SetHint(new Hint("sample", "Elites", "Bigger, tougher, and worth it: elites carry better things. When a red line appears on the ground, it is about to come down it.", [KeyLabel("dash")]));
+        }
         if (Args.Get("open") is not string want) return;
         tourT -= dt;
         if (tourT > 0) return;
