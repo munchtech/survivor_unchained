@@ -94,7 +94,20 @@ before recording. Agent a73ca9d35d0c487a9, branch `worktree-agent-a73ca9d35d0c48
 4. Crafting phase 3: all lines sent to the crafting lead (a7debf1459f14dfe7),
    who is wiring them, slurry affix names included (Fevered, of the Sump,
    Pipe-Lad's). Answer wire-up questions only.
-5. Act 2's text, when the owner asks.
+5. **Story nights and the day's clock** (experience's
+   `docs/design/STORY_NIGHTS_AND_TIME.md`, awaiting the owner). Agreed, with
+   two fixes sent:
+   - the vault fight stays at the head of the stair;
+   - the crates can be blown only while they are in the yard.
+
+   Once it is approved:
+   - put in data the dusk call and night lines, the rise lines and the
+     night-left-alone line (all sent);
+   - write the pulls and the sights between beats from combat's beat list;
+   - update the bible's Pacing share.
+
+   The clock starts when the first trouble reaches the journal.
+6. Act 2's text, when the owner asks.
 
 ## Blockers
 
