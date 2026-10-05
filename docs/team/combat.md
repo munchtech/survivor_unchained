@@ -10,6 +10,8 @@ Status page for the combat lead.
 
 ## Current state (2026-10-04)
 
+**Handed off:** `docs/handoff/combat.md` is the successor's brief.
+
 **The machine is the owner's.** No Godot, GPU, Blender or sweeps. Code, `dotnet build` and `dotnet test` only; a few dozen headless nights at a time, at most.
 
 **Story nights are built, with the Hollow by Night as the template.** The owner approved the design. STORY_BOSSES §8 has the detail.
