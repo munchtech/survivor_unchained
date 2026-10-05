@@ -488,6 +488,35 @@ public class CraftersTests
         Assert.DoesNotContain(Marks.Gyre, worn.Keys);
     }
 
+    /* --------------------------------------------------------- item level -- */
+
+    [Fact]
+    public void Gear_from_a_harder_map_rolls_the_finer_grade_more_often()
+    {
+        var p = Town();
+        double Finer(int? level)
+        {
+            int finer = 0, all = 0;
+            for (uint s = 1; s <= 600; s++)
+            {
+                var it = Inventory.Make(p.J.Ch, "iron_helm", rarity: 2, seed: s * 7919, dropped: true, level: level);
+                Assert.Equal(level, it.Level);
+                foreach (var a in it.Affixes) { all++; if (a.Tier == 2) finer++; }
+            }
+            return finer / (double)all;
+        }
+        // By day a coin; a first map's level the same; a tier-11 map's (level 30) nine in ten.
+        Assert.InRange(Finer(null), 0.43, 0.57);
+        Assert.InRange(Finer(10), 0.43, 0.57);
+        Assert.InRange(Finer(30), 0.84, 0.95);
+        Assert.Equal(0.7, Crafting.FinerGrade(18), 6);
+        // Never past the rarity's own finer grade: the forge's ceiling is still a lucky drop's.
+        Assert.All(Enumerable.Range(1, 200).Select(s => Inventory.Make(p.J.Ch, "iron_helm", rarity: 2, seed: (uint)s, level: 40)),
+            it => Assert.All(it.Affixes, a => Assert.True(a.Tier <= Crafting.Cap(it))));
+        // Only gear carries a level.
+        Assert.Null(Inventory.Make(p.J.Ch, "wolf_pelt", level: 30).Level);
+    }
+
     /* ----------------------------------------------------- Rook's shelves -- */
 
     [Fact]

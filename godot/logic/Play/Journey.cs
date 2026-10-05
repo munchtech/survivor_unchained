@@ -301,7 +301,8 @@ public sealed partial class Journey
 
     public bool GiveItem(string defId, int qty = 1, int? rarity = null, IReadOnlyCollection<string>? lean = null, bool dropped = false)
     {
-        var it = Inventory.Make(Ch, defId, qty, rarity, lean: lean, dropped: dropped);
+        // Found in a Wayfinder's map, gear is made at the map's level (design 20.3).
+        var it = Inventory.Make(Ch, defId, qty, rarity, lean: lean, dropped: dropped, level: dropped ? World.Map?.ItemLevel : null);
         var def = Items.Get(defId);
         if (!Inventory.AddToPack(Ch, it)) { OnToast(new Toast(ToastKind.Warning, "Your pack is full", def.Name)); return false; }
         OnToast(new Toast(ToastKind.Loot, $"{Inventory.Name(it)}{(qty > 1 ? $" ×{qty}" : "")}",

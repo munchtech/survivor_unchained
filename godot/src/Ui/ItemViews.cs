@@ -294,6 +294,8 @@ void fragment() {
         names.AddChild(Style.Label(Inventory.Name(it), Style.TextBold, 19, col, true));
         var kind = Style.H(Style.Gap2, Style.Label($"{Inventory.RarityName(it)} {KindNames.GetValueOrDefault(def.Kind, def.Kind.ToString())}{(def.Unique ? " · Unique" : "")}", Style.Ui, Style.Caption, Style.InkDim), Style.Gems(it.Rarity, 5));
         kind.Alignment = BoxContainer.AlignmentMode.Begin;
+        // Made in a map: at its level (the harder the map, the finer its grades came).
+        if (it.Level is int lv) kind.AddChild(Style.Label($"·  item level {lv}", Style.Ui, Style.Caption, Style.InkDim));
         names.AddChild(kind);
         head.AddChild(names);
         v.AddChild(head);

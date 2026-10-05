@@ -760,6 +760,12 @@ public static partial class Crafting
         return q;
     }
 
+    /* ------------------------------------------------------- item level -- */
+
+    /// <summary>The chance a piece made at this level rolls the finer of its rarity's two grades: an even
+    /// coin at a first map's level (10, as by day), rising a fortieth a level to nine in ten (design 20.3).</summary>
+    public static double FinerGrade(int level) => Math.Clamp(0.5 + (level - 10) * 0.025, 0.5, 0.9);
+
     /* ---------------------------------------------------------- shelves -- */
 
     /// <summary>What Rook asks for the storeroom's next shelf (her prices follow how she feels about you),
