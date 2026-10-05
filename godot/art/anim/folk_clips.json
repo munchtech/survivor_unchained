@@ -110,6 +110,24 @@
 		"source": "Mixamo (Adobe): used in the game under Mixamo's terms, raw files not redistributed: folk_weight_shift_idle.bvh",
 		"speed": 0.0
 	},
+	"f_kneel_aim": {
+		"hold": true,
+		"layer": "full",
+		"length": 0.699999988079071,
+		"licence": "own work",
+		"loop": false,
+		"note": "a crossbow's kneel and aim",
+		"source": "keyed (tools/anim/crowd.py)"
+	},
+	"f_kneel_shot": {
+		"hold": true,
+		"layer": "full",
+		"length": 0.699999988079071,
+		"licence": "own work",
+		"loop": false,
+		"note": "a crossbow's shot from the kneel, and the rise",
+		"source": "keyed (tools/anim/crowd.py)"
+	},
 	"f_lurch": {
 		"changes": "",
 		"cycle": 0.733333333333333,
@@ -348,6 +366,24 @@
 		"note": "townsfolk (men)",
 		"source": "Mixamo (Adobe): used in the game under Mixamo's terms, raw files not redistributed: folk_weight_shift_idle.bvh",
 		"speed": 0.0
+	},
+	"m_kneel_aim": {
+		"hold": true,
+		"layer": "full",
+		"length": 0.699999988079071,
+		"licence": "own work",
+		"loop": false,
+		"note": "a crossbow's kneel and aim",
+		"source": "keyed (tools/anim/crowd.py)"
+	},
+	"m_kneel_shot": {
+		"hold": true,
+		"layer": "full",
+		"length": 0.699999988079071,
+		"licence": "own work",
+		"loop": false,
+		"note": "a crossbow's shot from the kneel, and the rise",
+		"source": "keyed (tools/anim/crowd.py)"
 	},
 	"m_lurch": {
 		"changes": "",

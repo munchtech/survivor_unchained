@@ -33,6 +33,9 @@ public static class Visuals
     const string Rally = "Rally";
     /// <summary>A heavy's blow on the ground (FolkClips.Crowd): both fists, or the axe, up overhead and down.</summary>
     const string GroundSlam = "Slam";
+    /// <summary>A crossbow's aim (FolkClips.Crowd): down on one knee and the stock to the cheek; and the
+    /// shot that ends it, the kick and the rise.</summary>
+    static Clips Kneels(Clips c) => c with { Aim = "KneelAim", Shot = "KneelShot" };
 
     static Clips Fight(string move, string idle, string attack, string windup, string hit = "Hit_Chest", string? cast = Rally) =>
         new(move, idle, attack, windup, "Death01", "Idle_Loop", hit, cast);
@@ -60,7 +63,7 @@ public static class Visuals
             "skeleton_warrior_elite" => new(visual, P(Sex.Male, "ranger", hood: true, pauldron: true, beard: true, hairColor: "#3a3630", skin: Rot, cloth: "#2a2c2e"),
                 new Held { Right = "zweihander" }, Shamble("Sword_Idle", "Sword_Attack", "Sword_Idle", "Walk_Loop", Rally)),
             "skeleton_rogue" => new(visual, P(Sex.Female, "ranger", hood: true, skin: Rot, figure: 0.8, cloth: "#3a3e34"),
-                new Held { Right = "crossbow" }, Shamble("Pistol_Idle_Loop", "Pistol_Shoot", "Pistol_Idle_Loop", cast: Rally)),
+                new Held { Right = "crossbow" }, Kneels(Shamble("Pistol_Idle_Loop", "Pistol_Shoot", "Pistol_Idle_Loop", cast: Rally))),
             "skeleton_mage" => new(visual, P(Sex.Male, "peasant", hood: true, beard: true, hairColor: "#4a4640", skin: Rot, cloth: "#2e2a36", under: "#16141a"),
                 new Held { Right = "short_staff" }, Shamble("Zombie_Idle_Loop", "Spell_Simple_Shoot", "Spell_Simple_Idle_Loop", cast: Rally)),
             // A footpad: quick, hooded, a knife in each hand.
@@ -69,6 +72,9 @@ public static class Visuals
             // A pillager: hooded, throwing what comes to hand.
             "kerchief_hooded" => new(visual, P(Sex.Male, "ranger", hood: true, beard: true, hairColor: "#3a2618", skin: "#c4945e", cloth: Kerchief), null,
                 Fight("Jog_Fwd_Loop", "Idle_Loop", "OverhandThrow", "Idle_Loop")),
+            // A levy crossbowman: the pillager's red hood, a crossbow, and the kneel to shoot.
+            "kerchief_crossbow" => new(visual, P(Sex.Male, "ranger", hood: true, beard: true, hairColor: "#3a2618", skin: "#c4945e", cloth: Kerchief),
+                new Held { Right = "crossbow" }, Kneels(Fight("Jog_Fwd_Loop", "Pistol_Idle_Loop", "Pistol_Shoot", "Pistol_Idle_Loop", cast: null))),
             // A bruiser: bare-chested behind a round shield, an axe.
             "kerchief_brute" => new(visual, P(Sex.Male, "bare", pauldron: true, hair: "Hair_Buzzed", beard: true, hairColor: "#2a1a12", skin: "#946040", under: KerchiefDark),
                 new Held { Right = "viking_axe", Forearm = "shield_round" }, Fight("Walk_Loop", "Idle_Shield_Loop", "Sword_Regular_A", "Idle_Shield_Loop", "Idle_Shield_Break", cast: null) with { Slam = GroundSlam }, 1.1),
