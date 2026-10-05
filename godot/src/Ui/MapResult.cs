@@ -142,18 +142,19 @@ public partial class MapResultScreen : TellingScreen
     /// the pair this map was, ringed. The beta shows the first tier and the next, still dark.</summary>
     public static Control AtlasGrid(World.WorldState w, Chart? here = null, bool paper = false)
     {
-        int tiers = Math.Clamp(Math.Max(Atlas.Best(w) + 1, here?.Tier ?? 1) + 1, 2, 16);
-        var grid = new GridContainer { Columns = tiers + 1, MouseFilter = MouseFilterEnum.Ignore };
+        // Up to the tier past the best (the next, dark, so the road shows), at most a window's worth.
+        int last = Math.Clamp(Math.Max(Atlas.Best(w) + 1, here?.Tier ?? 1) + 1, 2, 16), span = paper ? 8 : 6, first = Math.Max(1, last - span + 1);
+        var grid = new GridContainer { Columns = last - first + 2, MouseFilter = MouseFilterEnum.Ignore };
         grid.AddThemeConstantOverride("h_separation", 10);
         grid.AddThemeConstantOverride("v_separation", 6);
         grid.AddChild(new Control { MouseFilter = MouseFilterEnum.Ignore });
-        for (int t = 1; t <= tiers; t++) grid.AddChild(Style.Label(Numeral(t), Style.DisplayLight, 14, paper ? new Color("#5a4126") : Style.GoldDim, false, HorizontalAlignment.Center, !paper));
+        for (int t = first; t <= last; t++) grid.AddChild(Style.Label(Numeral(t), Style.DisplayLight, 14, paper ? new Color("#5a4126") : Style.GoldDim, false, HorizontalAlignment.Center, !paper));
         foreach (var p in MapOffers.Peoples)
         {
             var name = Style.Label(Style.Cap1(p.Name), Style.UiBold, Style.Small, paper ? new Color("#2e1d10") : Style.Ink, false, HorizontalAlignment.Left, !paper);
             name.CustomMinimumSize = new Vector2(150, 0);
             grid.AddChild(name);
-            for (int t = 1; t <= tiers; t++)
+            for (int t = first; t <= last; t++)
                 grid.AddChild(new AtlasStone(Atlas.Done(w, p.Id, t), here != null && here.People == p.Id && here.Tier == t, paper));
         }
         return grid;
