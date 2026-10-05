@@ -53,7 +53,7 @@ The owner asks: "accurate, efficient, on track, manage and engineer context. del
 - Batch screenshots and renders: shoot everything a check needs in one turn, look once, fix in one pass.
 - Keep handoffs and status pages lean.
 - Effort: legal medium; performance measurement runs, story consistency checks, and provenance and licence logging high; everything else at its top. Every agent stays on the same model.
-- Running now: the face, UI design, animation, skills VFX, combat (and the main session's outfits). Next: the experience director, arena art, creatures, cinematics, performance, crafting, UI art, story, the male hero.
+- Running now: the face, UI design, animation, skills VFX, arena art (and the main session's outfits). Next: combat, the experience director, creatures, cinematics, performance, crafting, UI art, story, the male hero.
 
 ## Roster
 
@@ -63,7 +63,7 @@ The main session keeps this current. It is the address list for SendMessage. Ret
 |---|---|---|
 | Voice (paused by the owner: no placeholders; final voices from ElevenLabs later) | a501b387a90d78b4e | docs/team/voice.md |
 | Story and writing | a7ba8903f4c8261b1 | docs/team/story.md |
-| Combat, encounters, bosses, balance | a427a874da78cba8b | docs/team/combat.md |
+| Combat, encounters, bosses, balance (paused; handoff ready at af6452e1) | — | docs/team/combat.md |
 | Animation | aa15f092820132274 | docs/team/animation.md |
 | UI design (layouts, screens, the filter) | aa1f430bd64b8d1ce | docs/team/ui_design.md |
 | UI art (paused; handoff ready at cd0f4ab6) | — | docs/team/ui_art.md |
