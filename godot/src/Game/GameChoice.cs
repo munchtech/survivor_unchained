@@ -20,6 +20,8 @@ public partial class Game
     int choiceHeld = -1;
     /// <summary>Keys already down when it came up: let go before they count.</summary>
     readonly HashSet<Act> choiceStale = new();
+    /// <summary>A choice was on screen (its held notices are let go when it goes).</summary>
+    bool wasUp;
 
     /// <summary>The choice on screen while one waits and nothing is over the game; its held key.</summary>
     void UpdateChoice(double dt)
@@ -33,6 +35,11 @@ public partial class Game
             choiceStale.Clear();
             if (c != null) foreach (var a in ChoiceKeys) if (controls.Held(a)) choiceStale.Add(a);
             hud.Choice(c, ChoiceKeys, AnswerChoice);
+            // Notices wait while she weighs it (as at a fall): nothing prints over the choice, and they are told
+            // whole once she has answered.
+            if (c != null) hud.HoldToasts = true;
+            else if (wasUp) hud.HoldToasts = false;
+            wasUp = c != null;
             if (c != null) Shots.Want("choice", 1.6);
         }
         if (c == null) return;

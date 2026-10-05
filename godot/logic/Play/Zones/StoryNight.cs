@@ -869,7 +869,12 @@ public sealed class StoryNight : ZoneRuntime, IStoryArena
     double IBossArena.R() => R();
     Enemy? IBossArena.Spawn(string def, double x, double z, bool elite, SpawnStyle? style) => Spawn(def, x, z, elite, style);
     bool IBossArena.CanStand(double x, double z) => Standable(x, z);
-    public void Say(string title, string? sub, string tone) => G.Announce(new Announcement(title, sub ?? "", tone, 2.4));
+    /// <summary>A banner (none while a choice is put to her: it stands in the banner's place, and a boss's
+    /// wildness coming due on its clock while she weighs his end is no news).</summary>
+    public void Say(string title, string? sub, string tone)
+    {
+        if (Choice == null) G.Announce(new Announcement(title, sub ?? "", tone, 2.4));
+    }
     public void Bark(double x, double z, string text, string? speaker) => B?.Events.Emit(new Ev.Bark { X = x, Z = z, Text = text, Speaker = speaker });
     double IBossArena.HordeShare { set { } }
     bool IBossArena.HordeReturns => false;
