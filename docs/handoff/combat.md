@@ -160,6 +160,10 @@ At tier 3 (before his blows were softened to ×1.0), plain hands won 17–25%.
    - **After an aimed shot** (the Aim cast ending in `Shoot`): keep the shooter planted about 0.7 s before it strafes or backs off, for `kneel_shot`'s rise. This covers the levy crossbows, the Scorpion and the Levy Sergeant.
    - The view plays both on `e.AnimT`, so no new state is needed. Send them the numbers chosen; they fit the clips' tails to them.
    - When their `kerchief_crossbow` visual lands: point `levy_crossbow` and `mb_levy_sergeant` at it, and add it to the rigs list in `EncounterTests`. The Scorpion (`skeleton_rogue`) gets the kneel too.
+0. **Cinematics' asks (`a79b6d8c81e14dc63`, small, code only; nothing changes in play until their timelines exist, since `CanCinematic` is false):**
+   - **The ids** match StoryNight's `{cinematic}_{part}`: `c10_arrival` / `_end` / `_spared`; `c11_arrival` / `_end` / `_spared`, plus `c11_again` (his laugh on a rise, optional); `c12_arrival` / `_end`; `c13_door` (before the fight), `c13_arrival` / `_end`. `c13_end` is for when he is laid down and won't stay down, not a death.
+   - **Marks:** pass them to `G.Cinematic`, as the Prologue does for C03: `boss` [x, z, heading] where he stands or lies, `her` [x, z, heading], and for C10 `den_mouth` [x, z]. Their cameras are offsets from these.
+   - **The spared part plays at the choice:** call `c10_spared` in `Greymuzzle.Choose(true)`, not after the walk. The cinematic owns his getting up and his walk to the den; on its done callback, release him and call `Ended(spared: true)`. If `CanCinematic` is false, keep today's walk. Redcowl's spare works the same way.
 1. **The Roost, the Dig and the Vault**, in the Hollow's shape: a `StoryFight` per fight, its place and stages, a `StoryBoss`, and `StoryScripts.For`.
    - Redcowl's spared end plays `.spared` then `.flit`.
    - Freeing the caravan's men runs `Verge.OpenCage`'s effects.
@@ -234,7 +238,7 @@ At tier 3 (before his blows were softened to ×1.0), plain hands won 17–25%.
   - **Owed:** Chid's node giving `keepers_office`.
 - **Arena art (`a26767f7f9955cb56`):** building the Hollow to `HollowByNight.Ground` (paused for the owner). They'll tell you before moving shapes.
 - **Skills VFX (`a63cd93fc73d5ed79`):** the looks of Not Yet, a fed deadfall, the cold's band, and the "His age" ring.
-- **Cinematics** (the lead handed off): C13's first shot follows the laying down; C10's choice; the hook ids.
+- **Cinematics (`a79b6d8c81e14dc63`, new lead):** the scripts match the design (C10's prompts in play, C11's "Finish it" as the blow, C13's laying down). The hook ids and their two asks are in §4.3.
 - **Crafting (`a7debf1459f14dfe7`):**
   - Marks;
   - gold;
