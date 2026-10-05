@@ -1,70 +1,21 @@
-# Paused, 4 October 2026: how to pick back up
+# Where we are, 5 October 2026: how to pick back up
 
-The owner needed the machine, so the team checkpointed and stopped. Everything is pushed. Resume the leads from the roster in `README.md` by SendMessage ("continue from your status page").
+The team is running. The roster in `README.md` is the address list. Heavy work takes turns (`tools/turn.py`; see README). If you are picking up after a pause, resume the leads by SendMessage ("continue from your status page").
 
 ## The integration branch
 
-`claude/vigilant-galileo-l6jqyx` is at 87a3f528, with 567 tests green and pushed.
-
-## Merged since the pause
-
-All the leads' paused branches are merged (597 tests green), except two whose own leads are resolving conflicts: face (9dc74eda) and cinematics (d7e56082).
+`claude/vigilant-galileo-l6jqyx`, 663 tests green, pushed. The main session merges leads' branches as they push, and at each handoff.
 
 ## The heroine's outfits (main session)
 
-- Committed and good: 87ad2f1 (snug cups, the warden's straps, the stalker's top edge, soft nipple rises, minimal skin hiding).
-- **outfits-wip@2a856f05** (pushed, not merged) holds the tailoring fixes since, partly unbuilt; its commit message lists what's seen and what isn't. Next:
-  1. Check out its `tools/assets/heroine_outfits.py`, then run `bash $TEMP/hs/full_build.sh` and `bash $TEMP/hs/closeups.sh $TEMP/hs/cups.txt`.
-  2. Check the arcanist's neckline in Idle: the steps came from the binding's nearest-point weights, now one set per ring.
-  3. Check the warden's left cup in the sprint with jiggle on: the nipple disc is now hidden. Use the legal handoff's motioncheck steps.
-  4. Check all four outfits for regressions, then merge to the integration branch.
-- Then: the arcanist's boot cuffs as level bands; the face lead's new head means re-running `--body` (they'll say when).
+- Done and committed: snug cups, the warden's straight straps, the stalker's top edge and binding, the arcanist's stockings, notch and neckline, soft nipple rises.
+- **In progress: her skin tucked in, not cut away.** Skin under fitted pieces used to be deleted, which opened holes when pieces swung off her. Now `shaders/heroine_skin.gdshader` tucks it 6 mm inward, graded over two rings from each piece's edge (`heroine_outfits.py` writes the grades; `People.TuckSkin` sets the channel). It's built and the tests are green. It still needs seeing in motion before it's committed. Build with `bash $TEMP/hs/turn_build.sh` (full_build in turns).
+- Then: the legal re-check on that build (the narrowed crotch strip, the areola-to-cup margins), then trimming cups to the smallest margin that holds; the arcanist's boot cuffs as level bands.
 
-## The owner's answers (4 October 2026)
+## The owner's standing decisions (see the memory and docs/legal)
 
-1. **Export templates:** yes, download whatever is needed (the main session fetched Godot's official 4.5.1 mono templates).
-2. **"Warmed":** no longer a buff; it only says it happened (the story lead is making the change).
-3. **Base bodies:** they came from Krea assets, since deleted. Replace them with our own (see docs/art/MODELS_TO_MAKE.md, being written).
-4. **The Ember Watch:** the owner made it with Claude; nothing third-party, nothing registered (the legal lead is explaining what owning it means).
-5. **Third-party assets:** replace everything with our own over time.
-6. **Map lengths:** the owner wants these explained plainly; the combat lead is writing three lines.
-7. **The owner lives in the United States.**
-8. **The hymn at Nell's grave:** the owner will make it in Suno.
-
-## Hold: the base bodies (the owner's call): likely staying
-
-The owner says the bodies were made with **TRELLIS** (MIT), not Hunyuan, from a picture the owner made with Krea 2 Turbo in our own ComfyUI. **They stay** (Krea 2's US$1M cap applies, as for the UI art); the legal lead is writing it up. The male hero lead goes back to polishing his current body once the GPU is free.
-
-The owner wants to keep the heroine's and hero's bodies if their Krea records clear them: which 3D model (not Hunyuan), a paid plan, and their own input picture. **Nobody replaces or rebuilds a body until the owner decides.** The MakeHuman rebuild plans (docs/team/hero_male.md, docs/art/MODELS_TO_MAKE.md) are fallbacks only.
-
-## Handoffs ready: start their successors when the GPU is free
-
-These are past their memory limit. Each has a handoff in docs/handoff/<area>.md, and their branches are merged:
-- animation (67cb4f2c);
-- performance (a3513e14);
-- crafting (fdb62e76);
-- UI art (bfa7bdb);
-- skills (0a7e8eff);
-- face (5fd76deb);
-- cinematics (81b25319);
-- story (a8b5aa71);
-- UI design (fcec91aa, then 84cceb99);
-- story (7b548886, the fourth lead);
-- combat (ecb6e2c6: story nights built, the Hollow first, to tune when the machine is free).
-
-The experience director (ab406cf9ddd22b03b, about 450k), arena art (a26767f7f9955cb56), legal (aab20546fe06daa89) and the male hero (ab82cbe99e2937ddd) are still within their limits.
-
-## Paused work that needs the GPU or Godot
-
-The owner is using the GPU. No Godot, no ComfyUI, no Blender until the owner says so. Waiting on that:
-- the outfit WIP build and checks;
-- the face lead's FACE v3;
-- the male hero's head;
-- UI art's renders;
-- skills' batch10;
-- arena art's shots;
-- animation's slam;
-- the experience director's status tint;
-- the legal motion check;
-- the performance lead's prefetch crash hunt and the release export;
-- every full-resolution check.
+- **Coverage is pixel-perfect.** Show as much as possible, cover exactly the areola, and never hide extra skin. Holes or see-through are worse than anything they fix. There were never any genital issues: the Warden's thong is by design, so add no briefs.
+- **UI:** at most one ornamental frame per screen; layouts from research; greyboxes before art. Self, Pack, Storeroom and Trader are being redone.
+- **The bodies stay** (TRELLIS from our own Krea 2 picture). Krea 2's US$1M cap applies.
+- **Story fights:** small, specialised arenas with ARPG bosses and no endless phase. A loss wakes her at Chid's a day on. Redcowl can be spared or killed. Time passes outside fights. One rise in Act 1 only; later only with the rise skill.
+- **US resident; Steam with honest AI disclosure.** The hymn comes from Suno. Final voices come from ElevenLabs, with no placeholders shipped.

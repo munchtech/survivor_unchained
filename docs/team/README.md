@@ -58,10 +58,10 @@ The main session keeps this current. It is the address list for SendMessage. Ret
 | Combat, encounters, bosses, balance | afe45df4957917614 | docs/team/combat.md |
 | Animation | a03acf30b3e9bdd70 | docs/team/animation.md |
 | UI design (character creation first) | aab47bfdab5955dac | docs/team/ui_design.md |
-| UI art | aa9c11f1e40170a4d | docs/team/ui_art.md |
+| UI art | a0bff3ffe4d3ad748 | docs/team/ui_art.md |
 | Crafting (research, design, build) | af01b0d61ef656dd4 | docs/team/crafting.md |
 | Gameplay experience director | ab406cf9ddd22b03b | docs/team/experience.md |
-| Skills look and feel (VFX, under the main session) | (successor starting) | docs/team/skills.md |
+| Skills look and feel (VFX, under the main session) | abc6bbe020c7fe287 | docs/team/skills.md |
 | Cinematics production | a79b6d8c81e14dc63 | docs/team/cinematics.md |
 | Performance | a56abaf3a104be675 | docs/team/performance.md |
 | Arena art | a26767f7f9955cb56 | docs/team/arena_art.md |
