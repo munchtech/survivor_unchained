@@ -39,6 +39,7 @@ public abstract partial class Overlay : Control
         Nav = new Nav(this);
         Style.Fill(this);
         MouseFilter = MouseFilterEnum.Ignore;
+        Theme = Style.PageTheme;
     }
 
     public override void _Ready()
