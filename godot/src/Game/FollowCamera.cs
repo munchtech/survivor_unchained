@@ -28,6 +28,10 @@ public sealed class FollowCamera
     /// <summary>Where the survivor should stand across the screen, in pixels from its middle at
     /// 1080 high (a side panel open: they step aside so they stay in view beside it).</summary>
     public float ScreenShift;
+    /// <summary>How near the camera comes while a side panel is open (1: as it was): the panel took
+    /// the room her large figure had, so the world frames her nearer instead.</summary>
+    public float ScreenNear = 1;
+    float near = 1;
     float overrideBlend, leadX, leadZ, shakeT;
     Vector3 look;
     bool initialised;
@@ -92,7 +96,8 @@ public sealed class FollowCamera
         Trauma = Mathf.Max(0, Trauma - dt * 1.4f);
         kickT += dt;
         // The view slides sideways, the angle unchanged: pixels to metres at the survivor's distance.
-        float perPx = 2 * Distance * Mathf.Tan(Mathf.DegToRad(Camera.Fov) / 2) / 1080;
+        near = Damp(near, ScreenNear, 5, dt);
+        float perPx = 2 * Distance * near * Mathf.Tan(Mathf.DegToRad(Camera.Fov) / 2) / 1080;
         Camera.HOffset = Damp(Camera.HOffset, -ScreenShift * perPx, 6, dt);
         shakeT += dt;
         Place();
@@ -101,7 +106,8 @@ public sealed class FollowCamera
     void Place()
     {
         float cp = Mathf.Cos(Pitch), sp = Mathf.Sin(Pitch);
-        var pos = new Vector3(look.X + Mathf.Sin(Yaw) * cp * Distance, look.Y + sp * Distance, look.Z + Mathf.Cos(Yaw) * cp * Distance);
+        float d = Distance * near;
+        var pos = new Vector3(look.X + Mathf.Sin(Yaw) * cp * d, look.Y + sp * d, look.Z + Mathf.Cos(Yaw) * cp * d);
         float s = Trauma * Trauma, t = shakeT * 22;
         float N(float a) => Mathf.Sin(t + a) * 0.5f + Mathf.Sin(t * 2.3f + a * 1.7f) * 0.3f + Mathf.Sin(t * 4.1f + a * 3.1f) * 0.2f;
         var lean = Kicked();

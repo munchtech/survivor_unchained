@@ -202,6 +202,9 @@ public abstract partial class Overlay : Control
     /// pixels from the middle (a side panel: beside it, in view). 0 leaves them centred.</summary>
     public virtual float CameraShift => 0;
 
+    /// <summary>How near the camera comes while this is open (1: as it was).</summary>
+    public virtual float CameraNear => 1;
+
     /// <summary>
     /// A panel down one side of the screen (docs/UI_DESIGN.md 6, "Page or panel"):
     /// for what is tweaked mid-play, where the world should stay in view (Diablo
@@ -252,6 +255,67 @@ public abstract partial class Overlay : Control
     }
 
     float sideX, sideW;
+
+    /* --------------------------------------------- the approved layouts -- */
+
+    /// <summary>The day's book's panel: its left edge and width (docs/ui_review/self_v2). The book
+    /// (Pack, Self, Arts) is one right-hand panel, so turning its tabs changes only what is in it.</summary>
+    public const float BookX = 1920 - 16 - BookW, BookW = 900;
+
+    /// <summary>
+    /// The day's book as a panel at the right, over the live world (the owner: "we like to see our
+    /// beautiful game"). It hugs what it holds and tapers into the world below; its head carries
+    /// the book's tabs on their chain and Close, then the title. The world is shaded only a little
+    /// toward it. Returns the column its content goes in.
+    /// </summary>
+    protected VBoxContainer BookPanel(string title, Action? close = null)
+    {
+        HideHud();
+        var shade = new TextureRect
+        {
+            Texture = new GradientTexture2D
+            {
+                Gradient = new Gradient { Colors = new[] { new Color(0.02f, 0.015f, 0.03f, 0), new Color(0.02f, 0.015f, 0.03f, 0.08f), new Color(0.02f, 0.015f, 0.03f, 0.4f) }, Offsets = new[] { 0f, 0.55f, 1f } },
+                Width = 256, Height = 4,
+            },
+            ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize, StretchMode = TextureRect.StretchModeEnum.Scale, MouseFilter = MouseFilterEnum.Ignore,
+            Position = Vector2.Zero, Size = new Vector2(BookX + 40, 1080),
+        };
+        AddChild(shade);
+        var panel = new TaperPanel(Kit.Window(32, 18, 18), 110) { Position = new Vector2(BookX, 16) };
+        panel.CustomMinimumSize = new Vector2(BookW, 0);
+        AddChild(panel);
+        var v = Style.V(Style.Gap4);
+        panel.AddChild(v);
+        var head = Style.H(Style.Gap3);
+        if (InBook)
+        {
+            int on = Array.FindIndex(Book, b => b.Kind == Kind);
+            head.AddChild(new ChainTabs(Book.Select(b => (b.Name, Controls.Instance?.KeyLabel(b.Key) ?? "")).ToArray(), on, k => { Sound.Sfx.Page(); G.Open(Book[k].Kind); }));
+        }
+        head.AddChild(new Control { SizeFlagsHorizontal = SizeFlags.ExpandFill, MouseFilter = MouseFilterEnum.Ignore });
+        var btn = Nav.Skip(CloseButton(Toggle is Act t ? G.Key(t) : "Esc", close ?? G.CloseOverlay));
+        btn.SizeFlagsVertical = SizeFlags.ShrinkBegin;
+        head.AddChild(btn);
+        v.AddChild(head);
+        v.AddChild(new Title(title));
+        sideX = BookX; sideW = BookW;
+        return v;
+    }
+
+    /// <summary>A fitted panel at a counter (theirs at the left, yours at the right, the keeper live
+    /// in the world between): as tall as what it holds, its one frame the window. Returns its column.</summary>
+    protected VBoxContainer Fitted(Vector2 at, float width, int gap = Style.Gap4)
+    {
+        var panel = Style.Panel(Kit.Window(28, 22, 24));
+        panel.Position = at;
+        panel.CustomMinimumSize = new Vector2(width, 0);
+        panel.MouseFilter = MouseFilterEnum.Stop;
+        AddChild(panel);
+        var v = Style.V(gap);
+        panel.AddChild(v);
+        return v;
+    }
 
     /// <summary>A side panel's prompts, along its foot.</summary>
     protected void SideFooter(Control row)
@@ -401,6 +465,45 @@ public abstract partial class Overlay : Control
         }
         Place();
         Callable.From(() => { Place(); if (IsInstanceValid(shown)) shown.Modulate = Colors.White; }).CallDeferred();
+    }
+
+    /// <summary>
+    /// A thing's card beside it, on the world's side of the panel it lies in (UI_RESEARCH 7: no
+    /// inspect panel; the card opens beside the thing, the worn piece beside that, so the eye goes
+    /// from the thing to its card to what it would replace). leftward: the cards open to the left
+    /// of edge (a panel at the screen's right); else to the right of it. The worn card goes on
+    /// further out where there is room, under the first where there is not.
+    /// </summary>
+    protected void TipBeside(Control? card, Control? worn, Control? over, bool leftward, float edge)
+    {
+        tip?.QueueFree();
+        tip = null;
+        if (card == null || over == null) return;
+        var holder = new Control { MouseFilter = MouseFilterEnum.Ignore, ZIndex = 40, Modulate = Colors.Transparent };
+        holder.AddChild(card);
+        if (worn != null) holder.AddChild(worn);
+        tip = holder;
+        AddChild(holder);
+        void Place()
+        {
+            if (!IsInstanceValid(holder) || holder != tip || !IsInstanceValid(over)) return;
+            var r = over.GetGlobalRect();
+            var vp = GetViewportRect().Size;
+            card.ResetSize();
+            var cs = card.Size;
+            float x = leftward ? edge - 14 - cs.X : edge + 14;
+            float y = Mathf.Clamp(r.Position.Y - 8, 8, vp.Y - 8 - cs.Y);
+            card.Position = new Vector2(x, y);
+            if (worn == null) return;
+            worn.ResetSize();
+            var ws = worn.Size;
+            float wx = leftward ? x - 12 - ws.X : x + cs.X + 12;
+            bool beside = leftward ? wx >= 8 : wx + ws.X <= vp.X - 8;
+            // Beside it, its top a little lower, so the two read as a pair and not a wall; under it otherwise.
+            worn.Position = beside ? new Vector2(wx, Mathf.Clamp(y + 22, 8, vp.Y - 8 - ws.Y)) : new Vector2(x, Mathf.Min(y + cs.Y + 10, vp.Y - 8 - ws.Y));
+        }
+        Place();
+        Callable.From(() => { Place(); if (IsInstanceValid(holder)) holder.Modulate = Colors.White; }).CallDeferred();
     }
 }
 

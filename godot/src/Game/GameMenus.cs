@@ -88,6 +88,7 @@ public partial class Game
         // (the credits are opened from the pause menu, and the world waits for them as it does for it)
         scene.SimPaused = o is PauseScreen or CreditsScreen || zone?.Ember == true;
         cam.ScreenShift = o.CameraShift;
+        cam.ScreenNear = o.CameraNear;
         controls.Captured = true;
         hud.Prompt(promptShown = null);
     }
@@ -106,6 +107,7 @@ public partial class Game
         // A shop, the pack or a rest may have changed what people's markers say.
         zone?.Touched();
         cam.ScreenShift = 0;
+        cam.ScreenNear = 1;
         if (scene != null && hudMode == null) scene.SimPaused = false;
         controls.Captured = false;
         controls.ClearLatches();

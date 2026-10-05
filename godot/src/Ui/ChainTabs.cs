@@ -167,3 +167,69 @@ public partial class ChainTabs : Control
         DrawSetTransform(Vector2.Zero);
     }
 }
+
+/// <summary>
+/// A panel's title between two short lengths of chain (approved on the dressed board, "cool where
+/// it is"), each ending at the name in a link pried open, ember in the break. UI art's
+/// ornaments/title_chain_l.png and title_chain_r.png are drawn at their own size outward from the
+/// name's ends; until they land, a few drawn links fade out from it.
+/// </summary>
+public partial class Title : Control
+{
+    readonly string text;
+    readonly int size;
+    readonly float tw;
+
+    public Title(string text, int size = 30)
+    {
+        this.text = text.ToUpperInvariant();
+        this.size = size;
+        MouseFilter = MouseFilterEnum.Ignore;
+        tw = Style.Display.GetStringSize(this.text, HorizontalAlignment.Left, -1, size).X;
+        CustomMinimumSize = new Vector2(tw + 200, size * 1.3f);
+        SizeFlagsHorizontal = SizeFlags.ExpandFill;
+        Resized += QueueRedraw;
+    }
+
+    public override void _Draw()
+    {
+        float cx = Size.X / 2, y = Size.Y * 0.56f;
+        var font = Style.Display;
+        var at = new Vector2(cx - tw / 2, Size.Y * 0.5f + size * 0.36f);
+        DrawString(font, at + new Vector2(0, 1), text, HorizontalAlignment.Left, -1, size, new Color(0, 0, 0, 0.8f));
+        DrawString(font, at, text, HorizontalAlignment.Left, -1, size, Kit.Ink);
+        var l = UiArt.Art("ornaments/title_chain_l.png");
+        var r = UiArt.Art("ornaments/title_chain_r.png");
+        if (l != null && r != null)
+        {
+            var ls = l.GetSize();
+            var rs = r.GetSize();
+            DrawTexture(l, new Vector2(cx - tw / 2 - 14 - ls.X, y - ls.Y / 2));
+            DrawTexture(r, new Vector2(cx + tw / 2 + 14, y - rs.Y / 2));
+            return;
+        }
+        foreach (int side in new[] { -1, 1 })
+        {
+            float x0 = cx + side * (tw / 2 + 18);
+            for (int k = 0; k < 6; k++)
+            {
+                float lx = x0 + side * k * 12, a = 1 - k / 6f;
+                var iron = new Color(0.56f, 0.52f, 0.47f, 0.9f * a);
+                if (k == 0)
+                {
+                    // The link at the name, sprung open toward it, the ember in the gap.
+                    float from = side > 0 ? 0.8f : Mathf.Pi + 0.8f;
+                    DrawArc(new Vector2(lx, y), 6.5f, from + (side > 0 ? Mathf.Pi : 0), from + (side > 0 ? Mathf.Pi : 0) + Mathf.Tau - 1.6f, 14, new Color("#c9a46c"), 2, true);
+                    DrawCircle(new Vector2(lx - side * 5, y), 2.2f, Style.Ember);
+                }
+                else if (k % 2 == 1)
+                {
+                    var pts = new Vector2[13];
+                    for (int i = 0; i <= 12; i++) pts[i] = new Vector2(lx + Mathf.Cos(i * Mathf.Tau / 12) * 6.5f, y + Mathf.Sin(i * Mathf.Tau / 12) * 3.8f);
+                    DrawPolyline(pts, iron, 1.8f, true);
+                }
+                else DrawLine(new Vector2(lx - 5.5f, y), new Vector2(lx + 5.5f, y), iron.Darkened(0.1f), 2.6f, true);
+            }
+        }
+    }
+}
