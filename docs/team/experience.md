@@ -45,8 +45,12 @@ Godot or GPU**, code and `dotnet test` only.
 1. The game's staging of `StoryFall` when combat's runtime lands (fade, "You get up.", the card).
 2. The crowd's status read for skills: drafted, unseen, on the side branch
    `experience-status-read@9d5d30e6` (rime in patches, fire in tongues, all status light under 1).
-   When Godot is allowed: Hoarfrost and Cinderfall crowds (70 risen, rank 6) before and after,
-   sheets to skills, then merge it into this branch.
+   Today (the predecessor's tint, skills' `scratchpad/vfx/ba_a9_1.png` rows 2 and 5): no longer
+   white, but frozen reads as grey bodies and burning as tan ones: the status barely reads. When
+   Godot is allowed: import first, then skills' worst case, before and after: `--quick arcanist
+   --zone arena --people dead --time night --tier 2 --lab --give hoarfrost:4 --horde 70,8:risen!
+   --dist 3 --spread 9 --seconds 2.5 --every 0.08 --count 24` (frames 13–14; `cinderfall:4`,
+   frames 21–23). Sheets to whoever holds the skills row (its lead handed off), then merge.
 3. Judge the waiting merges in play once Godot is allowed: skills' grounds, marks and numbers,
    animation's death poses, combat's maps and strongbox through the chest ceremony.
 4. The run-ups' danger with combat (`a708da2c97bf85c95`): 10–20% of runs under half health in
