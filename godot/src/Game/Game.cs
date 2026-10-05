@@ -1215,6 +1215,8 @@ public partial class Game : Node, IZoneHost
             wb.Events.Emit(new Ev.Bark { X = x - 0.5, Z = z - 1.2, Text = "Hold the line!", Speaker = "Brannoc" });
             wb.Events.Emit(new Ev.Bark { X = x, Z = z, Text = "Blocked" });
         }
+        // --nohud: the world alone, for pictures of what a screen lies over.
+        if (Args.Has("nohud") && Mode == "play") Hud.ShowPlay(false);
         if (Args.Get("open") is not string want) return;
         tourT -= dt;
         if (tourT > 0) return;
