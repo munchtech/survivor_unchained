@@ -48,6 +48,7 @@ public sealed class MarkRules
 public sealed class MarkDrop { public string Item = "", Mark = ""; }
 /// <summary>Rook's shelves (the storeroom grows by shelves of 24): the price of each after the first, then
 /// of every one beyond those, and the most there can be.</summary>
+public sealed class RookLines { public string? Shelf, ShelfMore; }
 public sealed class ShelfRules { public string Seller = "rook"; public List<int> Prices = new() { 300, 1000, 2500 }; public int Then = 5000, Most = 8; }
 /// <summary>The one gamble (design 9): jars sold while the pump runs, and what steeping does, by weight.</summary>
 public sealed class SlurryRules
@@ -104,7 +105,13 @@ public sealed record Said(string? Before, string? Line, string? After);
 public sealed class NightPeople { public string Family = "", Material = ""; public int Per = 150; }
 public sealed class NightRules
 {
-    public int EmberFrom = 10, EmberPer = 8, MinutesPer = 2, StoryBonus = 2, Cap = 8;
+    public int EmberFrom = 10, EmberPer = 8, MinutesPer = 2, StoryBonus = 2, Cap = 8, Miniboss = 2;
+    /// <summary>The scars' depth (design 20.5): past this many minutes beyond the win, a shard a minute; past
+    /// GlassFrom, once the stream is cured, scar-glass, one and another each GlassEvery minutes more.</summary>
+    public int DeepFrom = 30, GlassFrom = 60, GlassEvery = 60;
+    public string Glass = "scar_glass";
+    /// <summary>Said at the night's end the first time scar-glass is carried out (the story lead's).</summary>
+    public string? GlassFirst;
     public double FellKeeps = 0.5;
     public Dictionary<string, List<NightPeople>> Peoples = new();
 }
@@ -129,6 +136,8 @@ public sealed class CraftingRules
     public MarkRules Mark = new();
     public ChartRules Charts = new();
     public ShelfRules Shelves = new();
+    /// <summary>Rook's words over a shelf sold: the first, then any after (the story lead's).</summary>
+    public RookLines Rook = new();
     public SlurryRules Slurry = new();
     public Dictionary<string, MaterialRule> Materials = new();
     public Dictionary<string, CrafterDef> Crafters = new();
@@ -791,6 +800,9 @@ public static partial class Crafting
         return true;
     }
 
+    /// <summary>What Rook says over the shelf just sold: the second shelf's line, then the later ones'.</summary>
+    public static string? ShelfSaid(WorldState w) => w.Shelves <= 2 ? Rules.Rook.Shelf : Rules.Rook.ShelfMore ?? Rules.Rook.Shelf;
+
     /* ------------------------------------------------------------- marks -- */
 
     /// <summary>The Mark a ruler's thing carries, or null if it holds none.</summary>
@@ -845,6 +857,13 @@ public static partial class Crafting
 
     public static bool Slurried(ItemInstance it) => it.Marks?.Contains(Rules.Slurry.Mark) == true;
 
+    /// <summary>What a steeping is done with: a jar of Snib's while one is carried, else the scars' glass.</summary>
+    public static string SteepWith(CharacterData ch) =>
+        Inventory.Count(ch, Rules.Slurry.Jar) > 0 || Inventory.Count(ch, Rules.Night.Glass) == 0 ? Rules.Slurry.Jar : Rules.Night.Glass;
+
+    /// <summary>Something carried to steep with by hand (a jar, or scar-glass).</summary>
+    public static bool CanSteep(CharacterData ch) => Inventory.Count(ch, Rules.Slurry.Jar) + Inventory.Count(ch, Rules.Night.Glass) > 0;
+
     /// <summary>Why a steeped piece takes no more heat: the slurry's setting is for good (design 9), or
     /// a rekindle or a remake would open it again for the forge.</summary>
     public const string SetForGood = "Steeped: the slurry set it for good. No heat will open it again.";
@@ -891,11 +910,11 @@ public static partial class Crafting
         // At Snib's bench he does it, in his words; from the pack, by the survivor's own hand (a jar
         // kept past the cure still steeps).
         var q = Begin(Verb.Steep, crafter, "Steep in slurry");
-        q.Takes[s.Jar] = 1;
+        q.Takes[SteepWith(x.Ch)] = 1;
         if (!Workable(it)) q.Blocked = "That's somebody's work. Leave it be.";
         else if (Slurried(it)) q.Blocked = "It has been steeped. Once is all it takes.";
         else if (Seams(it) == 0) q.Blocked = "Too plain a piece: there is nothing in it for the slurry to take.";
-        else if (Inventory.Count(x.Ch, s.Jar) < 1) q.Blocked = "You have no slurry.";
+        else if (Inventory.Count(x.Ch, SteepWith(x.Ch)) < 1) q.Blocked = "You have no slurry.";
         q.HeatLo = q.HeatHi = it.Heat ?? 0;
         q.After = "It is set for good after, whatever it comes to.";
         if (q.Blocked == null && crafter != "" && Closed(crafter, x.Ctx, Verb.Steep) is { } shut) q.Blocked = shut;
@@ -1032,8 +1051,9 @@ public static partial class Crafting
         if (q.Verb is Verb.Brew or Verb.Buy or Verb.Commission) return Make(x, q);
         if (q.Verb == Verb.Steep)
         {
-            if (Inventory.Count(ch, Rules.Slurry.Jar) < 1 || Slurried(it) || q.Crafter != "" && Closed(q.Crafter, x.Ctx, q.Verb) is not null) return false;
-            Inventory.Take(ch, Rules.Slurry.Jar, 1);
+            string with = q.Takes.Keys.FirstOrDefault() ?? Rules.Slurry.Jar;
+            if (Inventory.Count(ch, with) < 1 || Slurried(it) || q.Crafter != "" && Closed(q.Crafter, x.Ctx, q.Verb) is not null) return false;
+            Inventory.Take(ch, with, 1);
             Steeped(x, it, q, rng);
             return true;
         }
@@ -1151,16 +1171,22 @@ public static partial class Crafting
         new[] { Shard }.Concat((Rules.Night.Peoples.GetValueOrDefault(people) ?? new()).Select(p => p.Material)).Distinct().ToList();
 
     public static NightYield Night(string people, int tier, bool story, int ember, double minutesPast, bool won, bool fell,
-        IReadOnlyDictionary<Family, int> champions)
+        IReadOnlyDictionary<Family, int> champions, IReadOnlyDictionary<Family, int>? minibosses = null, bool cured = false)
     {
         var r = Rules.Night;
         var all = new Dictionary<string, int>();
         void Add(string m, int n) { if (n > 0) all[m] = all.GetValueOrDefault(m) + n; }
-        Add(Shard, Math.Max(0, ember - r.EmberFrom) / Math.Max(1, r.EmberPer) + Math.Max(0, tier - 1)
-            + (won ? (int)Math.Floor(Math.Max(0, minutesPast) / Math.Max(1, r.MinutesPer)) : 0) + (won && story ? r.StoryBonus : 0));
+        // Past the win the scar keeps paying: a shard every two minutes, then from its deep a shard a minute.
+        double past = Math.Max(0, minutesPast);
+        int deep = won ? (int)Math.Floor(Math.Min(past, r.DeepFrom) / Math.Max(1, r.MinutesPer)) + (int)Math.Floor(Math.Max(0, past - r.DeepFrom)) : 0;
+        Add(Shard, Math.Max(0, ember - r.EmberFrom) / Math.Max(1, r.EmberPer) + Math.Max(0, tier - 1) + deep + (won && story ? r.StoryBonus : 0));
+        // The slurry's heir: with the stream cured the jars are gone, but a scar stayed in past the hour
+        // gives glass with the same gamble in it (earned by staying, not bought).
+        if (won && cured && past >= r.GlassFrom) Add(r.Glass, 1 + (int)((past - r.GlassFrom) / Math.Max(1, r.GlassEvery)));
         foreach (var p in r.Peoples.GetValueOrDefault(people) ?? new())
             if (EnumKey<Family>.TryParse(p.Family, out var fam))
-                Add(p.Material, Math.Min(r.Cap, champions.GetValueOrDefault(fam) / Math.Max(1, p.Per)));
+                // The champions' tally, to the cap; a miniboss of the people carries out two more besides.
+                Add(p.Material, Math.Min(r.Cap, champions.GetValueOrDefault(fam) / Math.Max(1, p.Per)) + r.Miniboss * (minibosses?.GetValueOrDefault(fam) ?? 0));
         var kept = new Dictionary<string, int>();
         var spilled = new Dictionary<string, int>();
         foreach (var (m, n) in all)
