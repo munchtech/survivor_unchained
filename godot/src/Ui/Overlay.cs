@@ -100,6 +100,7 @@ public abstract partial class Overlay : Control
     public override void _Input(InputEvent e)
     {
         // The mouse moving takes the ring away; the pointer is the focus now.
+        if (e is InputEventMouseMotion { Relative: var rel } && rel.Length() > 0.5f) Nav.MouseMotion();
         if (e is InputEventMouseMotion mm && mm.Relative.Length() > 6 && Nav.KeyMode) Nav.KeyMode = false;
     }
 

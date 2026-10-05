@@ -188,6 +188,23 @@ public partial class Voices : Node3D
         var cam = GetViewport()?.GetCamera3D();
         if (cam == null) return;
         var placed = new List<Rect2>();
+        // The name plates first, as they stand on the screen: a line never prints over someone's name
+        // (crafting's finding at the forge); it is lifted clear of it as of an older line.
+        if (display != null && plates.Count > 0)
+        {
+            float vpH = GetViewport().GetVisibleRect().Size.Y;
+            // (a fixed-size Label3D's font pixel on the screen)
+            float k = 0.0007f / (2 * Mathf.Tan(Mathf.DegToRad(cam.Fov) / 2)) * vpH;
+            foreach (var (n, m) in plates.Values)
+            {
+                if (!n.Visible || n.Text == "" || cam.IsPositionBehind(n.Position)) continue;
+                var c = cam.UnprojectPosition(n.Position);
+                var lines = n.Text.Split('\n');
+                float w = lines.Max(l => display.GetStringSize(l, HorizontalAlignment.Left, -1, n.FontSize).X) * k, h = lines.Length * n.FontSize * 1.3f * k;
+                placed.Add(new Rect2(c - new Vector2(w / 2, h / 2), new Vector2(w, h)).Grow(4));
+                if (m.Visible) placed.Add(new Rect2(c - new Vector2(m.FontSize * k / 2, m.Offset.Y * k + m.FontSize * k / 2), new Vector2(m.FontSize * k, m.FontSize * k)));
+            }
+        }
         float ease = 1 - Mathf.Exp(-10f * (float)delta);
         foreach (var b in barks)
         {

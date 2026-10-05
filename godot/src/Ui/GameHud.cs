@@ -1059,7 +1059,16 @@ public partial class GameHud : CanvasLayer
     public void Beyond(List<Beyond> list) => edges.Show(list);
 
     /// <summary>Loot's names on the ground, each frame.</summary>
-    public void Ground(List<GroundLabel> list) => ground.Show(list);
+    public void Ground(List<GroundLabel> list)
+    {
+        // The HUD's own words own their ground: labels give way under them.
+        ground.KeepOut.Clear();
+        if (tipLine != null && IsInstanceValid(tipLine)) ground.KeepOut.Add(tipLine.Area.Grow(12));
+        if (corner.IsVisibleInTree()) ground.KeepOut.Add(corner.GetGlobalRect().Grow(8));
+        if (toasts.GetChildCount() > 0) ground.KeepOut.Add(toasts.GetGlobalRect().Grow(8));
+        if (announce.Modulate.A > 0.05f) ground.KeepOut.Add(announce.GetGlobalRect());
+        ground.Show(list);
+    }
 
     /// <summary>Where the thing the prompt is for stands on screen (null: the prompt keeps its place).</summary>
     public void PromptAt(Vector2? at) => promptAnchor = at;

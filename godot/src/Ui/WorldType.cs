@@ -216,8 +216,8 @@ public partial class FallChoices : Control
         light = WorldType.Light(new Vector2(520, 200), Style.Ember with { A = 0 });
         var row = new HBoxContainer { MouseFilter = MouseFilterEnum.Ignore, Alignment = BoxContainer.AlignmentMode.Center };
         row.AddThemeConstantOverride("separation", 120);
-        row.AddChild(Choice(Act.Confirm, "Get up", risesLeft == 1 ? "Once, this night: back where you last stood fast." : "Back where you last stood fast.", Style.EmberHi, 40, rise));
-        row.AddChild(Choice(Act.Cancel, "Let the night go", "The night is lost. The day comes on without it.", new Color("#cfc4b0"), 30, letGo));
+        row.AddChild(Choice(Act.Confirm, "Get up", risesLeft == 1 ? "Once, this night: back where you last stood fast." : "Back where you last stood fast.", Style.EmberHi, 34, rise));
+        row.AddChild(Choice(Act.Cancel, "Let the night go", "The night is lost. The day comes on without it.", new Color("#cfc4b0"), 34, letGo));
         row.Position = new Vector2(0, 560);
         row.Size = new Vector2(1920, 0);
         AddChild(row);
@@ -322,6 +322,9 @@ public partial class TipLine : Control
         }
         return safe;
     }
+
+    /// <summary>Where its words are on the screen (what loot's labels give way to).</summary>
+    public Rect2 Area => column.GetGlobalRect() with { Size = column.Size * column.Scale };
 
     public override void _Process(double delta)
     {
