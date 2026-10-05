@@ -872,25 +872,26 @@ public static class Sfx
 
     public static void Page() { if (A is { } a && a.Gate("page", 1, 120)) a.Play(new Clip { Of = "bookFlip", G = 0.2, Pitch = R(0.95, 1.1), Bus = Bus.Ui }); }
 
-    /// <summary>The book's chain sliding to a new tab (ChainTabs): links knocking against each other,
-    /// fast and bright as it runs, slower and lower as it settles, then the one heavier knock when
-    /// it stops. Further means more links run past. dir is -1 left, +1 right: the rattle moves that way.</summary>
-    public static void Chain(int dir, float far)
+    /// <summary>The tab chain sliding to another tab (tools/uiforge/chainanim.py): a click for
+    /// each link that runs by, uneven as forged links are, close together as the chain leaps
+    /// off and spreading as it slows (it moves on a spring), a faint scrape of iron under them,
+    /// then a lower chink as it stops and a softer one as it sways back. `links` is how many
+    /// links pass; `secs` how long until it comes to rest.</summary>
+    public static void ChainSlide(int links = 6, double secs = 0.32)
     {
-        if (A is not { } a || !a.Gate("chain", 1, 90)) return;
-        int n = 4 + (int)Math.Clamp(far * 7, 0, 7);
-        double t = 0;
+        if (A is not { } a || !a.Gate("chain", 1, 120)) return;
+        int n = Math.Clamp(links, 2, 12);
+        double t0 = Now;
         for (int i = 0; i < n; i++)
         {
-            double k = i / (double)Math.Max(1, n - 1);
-            // (iron on iron: an inharmonic strike, its partials never a chord)
-            a.Play(new Fm { T = Now + t, F = R(1900, 2600) * (1 - 0.25 * k), Ratio = R(2.6, 3.4), Index = R(1.6, 2.6), D = R(0.05, 0.09), G = 0.022 * (1 - 0.4 * k), Pan = dir * (0.35 * k - 0.15), Bus = Bus.Ui });
-            if (i % 2 == 0) a.Play(new Hiss { T = Now + t, D = 0.03, G = 0.012, Bp = R(3500, 5000), Q = 2, Pan = dir * 0.2 * k, Bus = Bus.Ui });
-            t += R(0.022, 0.036) * (1 + 1.6 * k * k);
+            double u = (i + 0.5) / n;
+            double t = t0 + secs * 0.7 * (1 - Math.Pow(1 - u, 1 / 3.0)) + R(-0.004, 0.004);
+            double g = 0.022 * (1.0 - 0.45 * u) * R(0.75, 1.15);
+            a.Play(new Fm { T = t, F = R(2200, 3400), Ratio = R(2.7, 3.6), Index = R(2.4, 3.4), D = R(0.03, 0.06), G = g, Pan = R(-0.15, 0.15), Verb = 0.12, Bus = Bus.Ui });
         }
-        // It settles: the opened link drops into place.
-        a.Play(new Fm { T = Now + t + 0.03, F = R(900, 1100), Ratio = 2.76, Index = 2.2, D = 0.18, G = 0.03, Pan = dir * 0.2, Verb = 0.25, Bus = Bus.Ui });
-        a.Play(new Tone { T = Now + t + 0.03, F = 140, F2 = 110, D = 0.06, G = 0.025, Bus = Bus.Ui });
+        a.Play(new Hiss { T = t0, A = 0.02, D = secs * 0.9, G = 0.012, Bp = 4200, Q = 1.4, Bus = Bus.Ui });
+        a.Play(new Fm { T = t0 + secs * 0.8, F = R(1500, 1800), Ratio = 2.92, Index = 3.2, D = 0.16, G = 0.03, Verb = 0.25, Bus = Bus.Ui });
+        a.Play(new Fm { T = t0 + secs * 0.8 + 0.15, F = R(1900, 2300), Ratio = 3.27, Index = 2.4, D = 0.08, G = 0.012, Verb = 0.2, Bus = Bus.Ui });
     }
 
     public static void Pick()

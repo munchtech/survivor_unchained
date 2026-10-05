@@ -279,15 +279,15 @@ def rule_v(Ws=6, Hs=128, end=28):
     return layer(wall * fade, groove * fade)
 
 
-def underline(Ws=96, Hs=34, col=EMBER, end=16):
+def underline(Ws=96, Hs=34, col=EMBER, end=16, glow=0.10, a=0.95):
     """The open tab's mark: an ember line under its words, fading at its ends, and the faint
     light it throws up behind them. Nothing else: the other tabs are words alone."""
     W, H = int(Ws * K), int(Hs * K)
     yy, xx = np.mgrid[0:H, 0:W].astype(np.float32)
     y, x = (yy + 0.5) / K, (xx + 0.5) / K
     fade = np.clip(x / end, 0, 1) ** 1.2 * np.clip((Ws - x) / end, 0, 1) ** 1.2
-    line = np.clip(1 - np.abs(y - (Hs - 2.5)) / 1.0, 0, 1) * fade * 0.95
-    halo = np.exp(-((Hs - 2.5 - y) / 9.0) ** 2) * fade * 0.10 * (y < Hs - 2)
+    line = np.clip(1 - np.abs(y - (Hs - 2.5)) / 1.0, 0, 1) * fade * a
+    halo = np.exp(-((Hs - 2.5 - y) / 9.0) ** 2) * fade * glow * (y < Hs - 2)
     a = np.clip(line + halo, 0, 1)
     rgb = np.broadcast_to(colour(col), (H, W, 3)).copy()
     rgb = rgb * (1 - line[..., None] * 0.3) + np.array([1.0, 0.85, 0.6], np.float32) * line[..., None] * 0.3
@@ -365,7 +365,7 @@ def disc(S=40, w=2.2, metal="#2a2630", fill=None, glow=None, glow_a=0.0, sunk_=F
 
 # ----------------------------------------------------------------------------- bands --
 
-def binding(TW, H, leather, rail, fillets, shadow, nails=256.0, seed=51, ss=2, tone="#161011"):
+def binding(TW, H, leather, rail, fillets, shadow, nails=256.0, seed=51, ss=2, tone="#181112", iron="#28242a", tilt=0.010, rough=0.27, cell=48.0, dent=0.015, rubk=4.2):
     """A band of the day's book's binding (the screen's one frame), tiled along: TW x H file
     px; spans below in shown px. The panels' goatskin, darker, over a padded board, a fillet
     blind-tooled into it at each of `fillets`; at `rail` a strap of forged iron, its edges a
@@ -404,8 +404,8 @@ def binding(TW, H, leather, rail, fillets, shadow, nails=256.0, seed=51, ss=2, t
     ch = 1.7 / (r1 - r0)
     prof = np.minimum(np.clip(t / ch, 0, 1), np.clip((1 - t) / ch, 0, 1)) ** 0.7
     crown = np.sin(t * math.pi) * 0.35
-    plan = F.facets(Hh, W, cell=14.0 * k, tilt=0.03, seed=seed + 2, soften=2.0 * ss) / k
-    dents = F.worley_dents(Hh, W, cell=5.0 * k, depth=0.06 * k, seed=seed + 3) / k
+    plan = F.facets(Hh, W, cell=cell * k, tilt=tilt, seed=seed + 2, soften=5.0 * ss) / k
+    dents = F.worley_dents(Hh, W, cell=5.0 * k, depth=dent * k, seed=seed + 3) / k
     h = (6.0 + prof * 2.4 + crown + (plan + dents) * prof) * k
     nail = np.zeros_like(x)
     if nails:
@@ -418,7 +418,7 @@ def binding(TW, H, leather, rail, fillets, shadow, nails=256.0, seed=51, ss=2, t
     # Its top chamfer rubbed bright in places (where hands and the page have worn it).
     rub = np.clip(1 - np.abs(t - ch * 0.5) / (ch * 0.7), 0, 1) * np.clip(periodic1(x, P, seed + 8, lo=2, hi=30) * 0.6 + 0.6, 0, 1.3)
     mott = F.fbm(Hh, W, scale=30 * k, octaves=3, seed=seed + 7) * 0.5 + 0.5
-    S.paint(on_rail, F.Mat(tuple(F.hexc("#2a2530")), 0.7, 0.42), albedo_mul=(0.8 + 0.4 * mott) * (1 + rub * 1.6))
+    S.paint(on_rail, F.Mat(tuple(F.hexc(iron)), 0.7, rough), albedo_mul=(0.8 + 0.4 * mott) * (1 + rub * rubk))
     S.paint(nail * on_rail, F.Mat(tuple(F.hexc("#3c3742")), 0.75, 0.34))
     S.alpha = on_rail
     rl = S.shade(normal_strength=1.0, ao=0.4, shadow=0.0)
@@ -532,6 +532,37 @@ def side(m=48, out=8, P=256, border=12.0, seed=61, tone="#161011", ss=2):
     return F.downsample(img, (int(Ws * K), int(Ws * K))).astype(np.float32)
 
 
+def grain(N=512, seed=91):
+    """The backdrop's grain (page/backdrop_grain.png, N file px, tiled): a film's grain over the
+    world, fine and faint, light and dark in equal measure. No specks: over the page's vellum,
+    bright specks read as stars or dust on the screen."""
+    g = F.fbm(N, N, scale=1.3, octaves=2, seed=seed)
+    g = g / (np.abs(g).max() + 1e-6)
+    coarse = F.fbm(N, N, scale=60, octaves=3, seed=seed + 1) * 0.5 + 0.5
+    a = np.abs(g) * (0.045 + 0.02 * coarse)
+    rgb = np.where((g > 0)[..., None], np.array([0.92, 0.86, 0.78], np.float32), np.array([0.02, 0.015, 0.02], np.float32))
+    return np.dstack([rgb, np.clip(a, 0, 1)]).astype(np.float32)
+
+
+# Materials painted on the local Krea (no LoRA: a material, not a painting), to set beside
+# the drawn ones and take whichever reads truer at 1:1.
+MATERIALS = {
+    "vellum": "extreme close-up macro photograph filling the whole frame with the surface of black-dyed calfskin "
+              "vellum, matte, faint hair follicle pores in small groups, faint branching veins in the skin, gentle "
+              "cockle, the dye slightly uneven, soft even light from the upper left, flat top-down view, no objects, "
+              "no text",
+    "goatskin": "extreme close-up macro photograph filling the whole frame with black-dyed morocco goatskin "
+                "bookbinding leather, fine pin-head pebble grain, a soft sheen, slightly uneven dye with a hint of "
+                "oxblood, soft even light from the upper left, flat top-down view, no objects, no text",
+}
+
+
+def paint_materials(seed=1400, n=4):
+    import krea
+    jobs = [(k, p, seed) for k, p in MATERIALS.items()]
+    return krea.t2i_many(jobs, size=(1024, 1024), lora=0.0, tag="materials", n=n)
+
+
 # ---------------------------------------------------------------------------- pieces --
 
 G = "page/morocco.png"
@@ -543,7 +574,7 @@ SLICES = {
     "hero_plate": Slice("frames/hero_plate.png", 14, 14, 14, 14, True, 6, G, (0.8, 0.8, 0.8, 0.7)),
     "tooltip": Slice("frames/tooltip.png", 14, 14, 14, 14, True, 6, G, (1, 1, 1, 0.97)),
     "well": Slice("frames/well.png", 10, 10, 10, 10, True, 0, G, (0.45, 0.42, 0.45, 0.75)),
-    "slot": Slice("frames/slot.png", 10, 10, 10, 10, False, 0, G, (0.5, 0.47, 0.5, 0.8)),
+    "slot": Slice("frames/slot.png", 10, 10, 10, 10, False, 0, G, (0.66, 0.63, 0.66, 0.86)),
     **{f"slot_{i}": Slice(f"frames/slot_{nm}.png", 10, 10, 10, 10, False, 0, G, (0.55, 0.52, 0.55, 0.85))
        for i, nm in enumerate(["common", "uncommon", "rare", "epic", "legendary", "relic"])},
     "button": Slice("frames/button.png", 12, 10, 12, 10, True, 0, G, (1.15, 1.12, 1.1, 0.92)),
@@ -557,6 +588,8 @@ SLICES = {
     "keycap": Slice("frames/keycap.png", 6, 6, 6, 6, False, 0, G, (0.55, 0.52, 0.55, 0.9)),
     "tab": Slice("frames/tab.png", 14, 10, 14, 6),
     "tab_on": Slice("frames/tab_on.png", 18, 10, 18, 6, True),
+    "tab_hover": Slice("frames/tab_hover.png", 18, 10, 18, 6, True),
+    "tab_pressed": Slice("frames/tab_pressed.png", 18, 10, 18, 6, True),
     "side": Slice("frames/side.png", 48, 48, 48, 48, True, 8, "page/vellum.png", (1, 1, 1, 0.96)),
     "price": Slice("frames/price.png", 6, 6, 6, 6, False, 0, G, (0.5, 0.48, 0.5, 0.92)),
     "row": Slice("frames/row.png", 10, 10, 10, 10, True, 0, G, (0.7, 0.68, 0.7, 0.85)),
@@ -567,13 +600,14 @@ SLICES = {
 
 MAKE = {
     "page/morocco.png": morocco,
+    "page/backdrop_grain.png": grain,
     "frames/panel.png": lambda: raised(220, 220, out=6, mid=192),
     "frames/slab.png": lambda: raised(220, 220, out=6, mid=192),
     "frames/pillar.png": lambda: raised(220, 220, out=6, mid=192),
     "frames/hero_plate.png": lambda: raised(220, 220, out=6, mid=192, wear=0.7),
     "frames/tooltip.png": lambda: raised(220, 220, out=6, mid=192, shadow=0.8),
     "frames/well.png": lambda: sunk(212, 212, mid=192, depth=1.0),
-    "frames/slot.png": lambda: sunk(80, 80, depth=0.9),
+    "frames/slot.png": lambda: sunk(80, 80, depth=0.8, rim=1.8),
     **{f"frames/slot_{nm}.png": (lambda i=i: sunk(80, 80, depth=0.9, line=RARITY[i], line_a=[0.22, 0.6, 0.7, 0.75, 0.8, 0.85][i],
                                                    glow=RARITY[i], glow_a=[0.0, 0.10, 0.14, 0.16, 0.2, 0.24][i]))
        for i, nm in enumerate(["common", "uncommon", "rare", "epic", "legendary", "relic"])},
@@ -588,6 +622,8 @@ MAKE = {
     "frames/keycap.png": lambda: sunk(24, 24, r=2.5, depth=0.7, mid=12),
     "frames/tab.png": lambda: clear(64, 34),
     "frames/tab_on.png": lambda: underline(96, 34),
+    "frames/tab_hover.png": lambda: underline(96, 34, col=F.hexc("#b8ab98", lin=False), glow=0.0, a=0.35),
+    "frames/tab_pressed.png": lambda: underline(96, 34, col=F.hexc("#d8c8b0", lin=False), glow=0.0, a=0.55),
     "frames/rule_h.png": rule_h,
     "frames/rule_v.png": rule_v,
     "medallion/ring.png": ring,
@@ -612,11 +648,102 @@ def plain_bands():
     return {"frames/header.png": pages.header_plain, "frames/footer.png": pages.footer_plain}
 
 
-def main(apply=False, only=None):
-    dst_root = UI if apply else OUT
+def column(Ws=128, Hs=512):
+    """A page's column (Style.Column): no rules, only a faint shade under its head falling away
+    down it, soft at its sides, so the words have a little dark behind them."""
+    W, H = int(Ws * K), int(Hs * K)
+    yy, xx = np.mgrid[0:H, 0:W].astype(np.float32)
+    y, x = yy / K, xx / K
+    a = (0.30 * np.clip(1 - y / (Hs * 0.85), 0, 1) ** 1.2) * np.clip(np.minimum(x, Ws - x) / 10, 0, 1)
+    rgb = np.broadcast_to(np.array([0.025, 0.02, 0.03], np.float32), (H, W, 3))
+    return np.dstack([rgb, a]).astype(np.float32)
+
+
+SLICES.update({
+    "column": Slice("frames/column.png", 12, 16, 12, 8),
+    # Overlay.Dividers lays a 24-wide rail down each gap: the pressed rule down its middle.
+    "column_divider": Slice("frames/column_divider.png", 0, 28, 0, 28, True),
+})
+MAKE.update({
+    "frames/column.png": column,
+    "frames/column_divider.png": lambda: rule_v(24, 128),
+})
+CHAIN_ART = ([f"chain/face_{k}.png" for k in range(6)] + [f"chain/edge_{k}.png" for k in range(6)] +
+             ["chain/hot.png", "chain/open.png", "ornaments/title_chain_l.png", "ornaments/title_chain_r.png"])
+# Ornament the kit does without (moved aside on --apply, so the code's fallback is nothing).
+DROP = ["frames/column_divider_stone.png"]
+
+
+def csharp(name, s: Slice):
+    """The slice as a line of UiArt.Frames."""
+    args = [f'"{s.file}"', str(s.L), str(s.T), str(s.R), str(s.B)]
+    if s.tile:
+        args.append("Tile: true")
+    if s.out:
+        args.append(f"Out: {s.out}")
+    if s.ground:
+        args.append(f'Ground: "{s.ground}"')
+        r, g, b, a = s.tint
+        args.append(f"Tint: new Color({r:g}f, {g:g}f, {b:g}f, {a:g}f)")
+    return f'        ["{name}"] = new({", ".join(args)}),'
+
+
+def patch_frames():
+    """Write the kit's slices into UiArt.Frames: a line that names a kit piece is replaced, a
+    new one is added before the table's end. The art and its margins go in together."""
+    import re
+    p = os.path.join(ROOT, "godot", "src", "Ui", "UiArt.cs")
+    src = open(p, encoding="utf-8").read()
+    start = src.index("public static readonly Dictionary<string, Slice> Frames = new()")
+    end = src.index("    };", start)
+    table = src[start:end]
+    added = []
+    for name, s in SLICES.items():
+        line = csharp(name, s)
+        pat = re.compile(r'^        \["' + re.escape(name) + r'"\] = new\(.*\),$', re.M)
+        if pat.search(table):
+            table = pat.sub(lambda _m: line, table)
+        else:
+            added.append(line)
+    if added:
+        table = table.rstrip() + "\n        // The reduced kit's own pieces (tools/uiforge/kit.py).\n" + "\n".join(added) + "\n"
+    open(p, "w", encoding="utf-8", newline="\n").write(src[:start] + table + src[end:])
+    print("UiArt.Frames:", len(SLICES), "kit slices,", len(added), "added")
+
+
+def apply():
+    """Lay the judged pieces (as made into OUT) over the game's art, drop what the kit does
+    without, and write the slices. Undo with git (checkout godot/art/ui and UiArt.cs)."""
+    for rel in MAKE:
+        srcp = os.path.join(OUT, rel)
+        if not os.path.exists(srcp):
+            raise SystemExit(f"{rel} not made: run kit.py first")
+        dst = os.path.join(UI, rel)
+        os.makedirs(os.path.dirname(dst), exist_ok=True)
+        shutil.copyfile(srcp, dst)
+    # The chain's pieces (chain.py): the tab chain's links and the title's broken chain.
+    ch = os.path.join(ROOT, "tools", "comfy", "out", "uiforge", "chain")
+    for rel in CHAIN_ART:
+        srcp = os.path.join(ch, "sprites", rel) if rel.startswith("chain/") else os.path.join(ch, rel)
+        if not os.path.exists(srcp):
+            raise SystemExit(f"{rel} not made: run chain.py first")
+        dst = os.path.join(UI, rel)
+        os.makedirs(os.path.dirname(dst), exist_ok=True)
+        shutil.copyfile(srcp, dst)
+    shutil.copyfile(os.path.join(ch, "links", "chain.json"), os.path.join(UI, "chain", "chain.json"))
+    for rel in DROP:
+        for q in (os.path.join(UI, rel), os.path.join(UI, rel) + ".import"):
+            if os.path.exists(q):
+                os.makedirs(os.path.join(OUT, "dropped"), exist_ok=True)
+                shutil.move(q, os.path.join(OUT, "dropped", os.path.basename(q)))
+    patch_frames()
+    print("applied", len(MAKE), "pieces")
+
+
+def main(only=None):
     todo = {k: v for k, v in MAKE.items() if not only or any(o in k for o in only)}
     for rel, fn in todo.items():
-        p = os.path.join(dst_root, rel)
+        p = os.path.join(OUT, rel)
         os.makedirs(os.path.dirname(p), exist_ok=True)
         F.save(F.to_pil(np.clip(fn(), 0, 1)), p)
         print("kit", rel, flush=True)
@@ -624,4 +751,7 @@ def main(apply=False, only=None):
 
 if __name__ == "__main__":
     a = sys.argv[1:]
-    main("--apply" in a, [x for x in a if not x.startswith("--")])
+    if "--apply" in a:
+        apply()
+    else:
+        main([x for x in a if not x.startswith("--")])

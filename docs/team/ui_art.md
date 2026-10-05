@@ -1,59 +1,51 @@
 # UI art: status
 
-Agent aa9c11f1e40170a4d (successor to a1a394643aabfb169). Branch `worktree-agent-aa9c11f1e40170a4d`.
-Full brief and history: `docs/handoff/ui_art.md`. One rebuild: `python tools/uiforge/build.py`.
+Agent a0bff3ffe4d3ad748 (successor to aa9c11f1e40170a4d). Branch `worktree-agent-a0bff3ffe4d3ad748`.
+Full brief and history: `docs/handoff/ui_art.md`.
 
 ## State (2026-10-04)
 
-- **The owner's verdict changed the direction.** "Those borders are just ugly, adding more of them
-  doesn't make them better"; the pages look "ai looking", "not rooted in ui research". The arena (draft)
-  cards "look pretty cool": keep them.
-- **New rule (coordinator):** at most one ornamental frame per screen, the outer window. Inside it go
-  quiet tonal panels, thin rules and recessed tiles for empty slots. Rarity colour goes only on filled
-  slots. Ember is the one accent, used for meaning.
-- **The reduced kit is built, not applied** (`tools/uiforge/kit.py`, 5b815c9d). It holds a raised tonal
-  panel, a recessed tile, a shade-only column, a thin gutter rule, and the header and foot band worn plain.
-  The before/after crop of Self went to the coordinator: `godot/.shots/kit_crop_self.png` (ignored).
-- **In the game now** (4d366b5a, 859d5bfc):
-  - the gilt morocco header and foot band;
-  - the black vellum ground;
-  - the cubic-read, cool-graded backdrop shader;
-  - gilt-ruled columns;
-  - the hero plate and the light card;
-  - the ember low at the page's foot.
-  The kit replaces most of the ornament once applied. The vellum, the shader and the low ember stay.
-- **The crafting lead's three icons** were refitted to the set's 0.82 fill. The flask still wants a repaint.
+- **The rule:** one ornamental frame per screen (the window). Inside it, hierarchy comes from spacing, type, tonal panels and thin rules. Empty slots are quiet, rarity colour goes on filled slots only, and ember is used only for meaning.
+- **The kit has its material** (`tools/uiforge/kit.py`; not applied in the game):
+  - **Ground:** the binders' goatskin (`page/morocco.png`, a pin-head grain, the dye uneven, its tone a step above the page). UiArt draws it at 1:1 under each frame, so the grain never stretches. The code is in (`UiArt.Slice.Ground`, `GroundBox`), and it does nothing until a slice names a ground.
+  - **Edges:** only light and shade.
+    - Raised panels are lit on the top and left edges, worn at the corners, with a soft shadow.
+    - Wells and slots are pressed in. A filled slot gets a rarity hairline and a glow rising from its foot.
+    - Rules are blind-tooled.
+    - The open tab gets an ember underline. Other tabs are words alone.
+    - Buttons have their states; primary has an ember foot.
+    - Keycaps, chips, price tags, rows and `row_on` (ember edge).
+    - The track's nodes are taken, next (ember) and later. Round plus and minus buttons, and a slim ring.
+  - **The frame:**
+    - the head and foot bands: dark goatskin and a smooth forged rail;
+    - the side panel: a goatskin border, a blind fillet, and plain iron corner caps as on heavy books, with the vellum inside at 1:1.
+- **Judging:** `tools/uiforge/kitboard.py` lays the kit on a page at 1080 or 1440, blending as Godot does. It can lay a specimen page, or Self and the Pack as UI design's greyboxes lay them. Outputs go to `tools/comfy/out/uiforge/kit/board_*.png`.
+- **Greyboxes:** UI design (aab47bfdab5955dac) sent Self, Pack, Storeroom, Trader and the bench to the coordinator. They are waiting for the owner's approval.
 
-## Next (exact)
+## Next
 
-1. Wait for the greybox layouts. The UI design lead aab47bfdab5955dac is redoing Self, Pack, Storeroom and
-   Trader from research. Art goes on them only once the coordinator and the owner approve.
-2. Meanwhile, finish the kit and keep it quiet. The coordinator found the panels "plain to a fault":
-   flat dark rectangles read as a generic web dark mode. Give them the world through material, not frames:
-   - a faint grain of vellum or leather inside each panel, at 1:1 (tiled, not stretched);
-   - worn light along the top edge;
-   - a warmer, more varied tone than the page.
-   Then, in the same restraint:
-   - the medallion rings (`medallion/ring.png`, the attribute and level medals) pared to a plain ring;
-   - tabs, buttons and keycaps as tonal plates;
-   - the Pack's side panel as the screen's one outer frame (worn iron or leather, not filigree);
-   - the slots: an empty slot is a recessed tile, and a filled one carries its rarity colour.
-3. Then apply the kit (`python tools/uiforge/kit.py --apply`), shoot the four screens at 1080 and 1440,
-   and send before/after.
-4. Crashing Leap: a second concept is drafted (`emblems.d_leap2`, not painted). Its guide still fogs: cut
-   the halo and the light fan and keep dark slabs against the burst.
-5. The flask repaint (warm light, no stamped mark), then the legal lead's pre-launch icon check.
+1. Shoot Self and the Pack in game with the kit applied locally, at 1080 and 1440. Send before and after crops to the coordinator. Revert after.
+2. GPU batch (`scratchpad/uiart2/gpu_batch1.py`):
+   - Krea macro materials (vellum, goatskin), to compare with the drawn ones;
+   - the flask (`items.T2I["flask"]`);
+   - Crashing Leap's second concept (the guide now has no halo and no rays, and has gold cracks).
+3. Page vellum: the current one is blotchy and streaky at 1:1. Replace it with the material that reads truer.
+4. Once the owner approves the layouts, dress them (`kit.py --apply` writes the art and UiArt.Frames together).
 
 ## Key decisions
 
-- One frame per screen; the material carries the page, not ornament (the owner's verdict above).
-- The page's ground is black vellum, the world faint through it. The blur alone was low in definition and
-  brown.
-- The backdrop shader reads its mips through a cubic B-spline (smooth) and grades cool iron, warm only where lit.
-- Heavy jobs take a turn (`tools/turn.py take gpu|godot`), given back the moment they end.
+- **Material goes in a ground drawn at 1:1, not in the nine-slice.** TileFit stretches what it tiles, and a panel's grain must not change with its size.
+- **The kit applies as a set:** art and slice margins together (`kit.apply` patches UiArt.Frames). Old art with new margins breaks.
+- **Panels are goatskin, the page is vellum, the frame is goatskin and iron:** one book, three surfaces.
+- **No bright specks in the backdrop's grain.** Over the vellum, they read as stars.
+- **Shots delete the old picture before a run** (`shots.py`), so a failed run can't pass off a stale one.
 
 ## Notes for other areas
 
-- UI design: the column ruling, Backdrop(page: true) and the vellum are approved and wired (a26f87c39952dcd9c).
-  The kit swaps art by the same names, so applying it needs no code.
-- ComfyUI is shared and memory is tight: Godot imports and Blender renders crashed when other jobs held 30+ GB.
+- **UI design:** use the frame names from my message:
+  - panel, well, slot, slot_N, rule_h, rule_v, side, tooltip, chip, price, row, row_on;
+  - button and its states, keycap;
+  - nodes: taken, next, later, round, round_spend.
+
+  Tabs need "tab_hover" and "tab_pressed", or hover shows a button plate. The section mark before headings (`Section`) should go under the rule.
+- **Legal:** sheets of every shipped icon are in `docs/legal/icon_check/`. We can't fetch others' art here, so the visual side-by-side against Diablo IV and Hades needs someone with the games open.
