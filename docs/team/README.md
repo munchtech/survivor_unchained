@@ -62,7 +62,7 @@ The main session keeps this current. It is the address list for SendMessage. Ret
 | Crafting (research, design, build) | af01b0d61ef656dd4 | docs/team/crafting.md |
 | Gameplay experience director | a9f0d6c64d891d56d | docs/team/experience.md |
 | Skills look and feel (VFX, under the main session) | abc6bbe020c7fe287 | docs/team/skills.md |
-| Cinematics production | a79b6d8c81e14dc63 | docs/team/cinematics.md |
+| Cinematics production | a7a4c20bcfd7ccfd3 | docs/team/cinematics.md |
 | Performance | a0eb8c612c94d4aa5 | docs/team/performance.md |
 | Arena art | aba487928a1515c93 | docs/team/arena_art.md |
 | Male hero (body, head, hair, outfits) | ab82cbe99e2937ddd | docs/team/hero_male.md |
@@ -70,4 +70,5 @@ The main session keeps this current. It is the address list for SendMessage. Ret
 | Asset provenance (what isn't ours, licences, credits, replacement plan) | a80ff0c7fd988b178 | docs/team/provenance.md |
 | Legal and Steam compliance (AI disclosure, mature content, licences, brief for a lawyer) | af0973d59a5b2817a | docs/team/legal.md |
 | Loot and itemisation (tiers, legendaries, sets, drops, filter, stacking) | a9a9c345a35e1fcad | docs/team/loot.md |
+| Creatures and models (our own boar first, then MODELS_TO_MAKE.md) | af551cacc6292152f | docs/team/creatures.md |
 | Heroine outfits | main session | — |
