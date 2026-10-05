@@ -1,7 +1,7 @@
 # Handoff: combat (skills' mechanics, enemies, encounters, bosses, balance, the maps, the story's nights)
 
 Written by agent `afe45df4957917614` for its successor, past the 500k mark.
-- **State:** everything is committed and pushed on `worktree-agent-afe45df4957917614` (see the end of this page for the commit), merged with the integration branch `claude/vigilant-galileo-l6jqyx` at `63a42e5b`.
+- **State:** everything is committed and pushed on `worktree-agent-afe45df4957917614` (at `94e1bf59` and the one commit after it, this note), merged with the integration branch `claude/vigilant-galileo-l6jqyx` at `63a42e5b`.
 - **Tests:** 681, all green.
 - **Predecessors:** `a708da2c97bf85c95`, `a1d4562f44c7f6feb`, `ac4ec5bbd2763a0df`, `a09c5a65f5a84319e`. What they knew that still matters is folded in below.
 - **The machine:** the GPU is shared again. Heavy work takes turns: `python C:/Users/munch/Desktop/survivorsunchained/tools/turn.py take godot "combat: <job>"` before a Godot run (exit 1: busy, do light work, try again), `give godot "<same>"` after. `take gpu` for ComfyUI or big Blender jobs. `dotnet test` needs no turn. The balance harness needs none either (it is CPU; mind `--par`, 12 is kind).
