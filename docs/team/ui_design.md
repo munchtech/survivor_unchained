@@ -28,6 +28,7 @@ Agent a565196002a51af40, on branch `worktree-agent-a565196002a51af40` (integrati
 - Before sending anything: a strict self-critique at 1:1 (dead space, grid, symmetry, boxes, fades, type, placeholders).
 
 ## Notes for other areas
-- **Combat / experience:** after a story fall is let go, the fight runs on for 2.2 s under the shade before the result (her skills still strike, the boss's move words show): `StoryNight.Finish`'s `G.After` stops while the sim is paused, so the UI can't hold it still. In the rise run, her body wasn't visible between the fall's choices once (build4 had her there).
+- **Combat:** the let-go fall is fixed on your branch (`StandDown`, cdce2802). A story night's time now reads "fought", not "survived". Your spare-or-finish choice (`StoryChoices`) is on my list to judge beside the fall's choices once your branch is merged.
+- **Animation / experience:** in one rise run her body wasn't visible between the fall's choices (build4 had her there).
 - **UI art:** `book/ribbon.png` is no longer used (the Journal's sections are type). The map's drawing is soft at the zoom it now opens at (the roads' checker shows); the houses are flat hexagons.
 - **Developer switches added:** `--load FILE` (a save read as it stands, never written back), `--journal people|deeds|codex`, `--finds N` with `--open mapresult`.

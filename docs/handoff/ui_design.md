@@ -39,7 +39,8 @@ For the next UI design lead of Survivor Unchained. Read, in order:
 3. **Chapter** (build7/22): the tally is five coin medallions pinned to the page's foot (dead space above them). Use the Journal's ledger line after the words, the 1440 book hugging, and words (Kit.Word) for the two buttons; "Who remembers you" has the role pushed to a far column by ExpandFill labels.
 4. **Creation** (`Front.cs` CreateScreen; build7/23): the first impression. Callings are boxed rows, the woman/man toggle two boxes, the calling's card a box with stat bars, the nameplate a box, Leave and Next boxed buttons. Rows as type, the card's words on the world, the stats as a ledger line.
 5. **Credits** are already type on a page; check at 1:1 only.
-6. **Portraits** when the face lead messages: re-run `tools/assets/heroine_paint.py` and `tools/assets/creation_portraits.py`, then shoot the Look. The male Look waits for the male hero lead.
+6. **Spare or finish** (combat's `StoryChoices` in `WorldType.cs`, shown by `GameHud.Choice`/`ChoiceHeld` from `GameChoice.cs`, on `worktree-agent-a427a874da78cba8b` at cdce2802): type in the banner's place, a ledger line filling under each answer while its key is held. Merge their branch and judge it beside the fall's choices (one family: the held moment as type on the world).
+7. **Portraits** when the face lead messages: re-run `tools/assets/heroine_paint.py` and `tools/assets/creation_portraits.py`, then shoot the Look. The male Look waits for the male hero lead.
 
 ## 5. Decisions (each with its why)
 - **A results page is registers, not columns:** no column can run short, and the eye reads down once.
@@ -60,13 +61,13 @@ For the next UI design lead of Survivor Unchained. Read, in order:
 - **Worktree:** `godot/assets` is a junction to `public/assets` (skip-worktree); the `.godot` cache was copied from a4fdbc49786ba8b7f. Never commit the `.import` files the import dirties (git shows many as modified; stage only your files by name).
 - **The worktree guard** refuses heredocs piped into python and loops: write a pairs file and run `scratchpad/uid7/sub.py FILE PAIRS.py` (exact replacements, keeps CRLF).
 - **Shots:** `scratchpad/uid7/shot.ps1 NAME SECS [args]` (`$env:SHOT_RES`, `$env:SHOT_ENGINE`); `crop.py`, `grid.py OUT COLS W names...`, `review.py OUTDIR name=shot`. Batches `b1.ps1` to `b9.ps1` show the switches for every screen. `fortune.json` is a day-two save for `--load`.
-- **`G.After` stops while the sim is paused**, so a fall can't hold the world still before the result.
+- **`G.After` stops while the sim is paused**, so a fall can't hold the world still before the result (combat's StandDown stills it instead).
 - **Fonts:** Alegreya Sans lacks →, ←, ▲ and ●.
 
 ## 8. Collaborators
 - **Main session:** relays the owner and merges.
 - **Experience** (successor of a9f0d6c64d891d56d): their verdict is answered in build7 1 to 9.
-- **Combat / experience:** a let-go fall runs 2.2 s under the shade with her skills still striking (status page, notes).
+- **Combat (a427a874da78cba8b):** fixed the let-go fall on their branch (`StoryNight.StandDown`: her weapons quiet, the ground cleared, every creature still, her controls held). They also flagged "Survived" over a story night with no clock: it now reads "fought". Their branch has the spare-or-finish choice (section 4, 6).
 - **UI art (paused):** `book/ribbon.png` is unused now; the map's drawing is soft at its opening zoom.
 - **The face lead (a833b7942e978d994):** will message when her head lands, for the portraits.
 

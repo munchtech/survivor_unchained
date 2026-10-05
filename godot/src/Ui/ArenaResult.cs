@@ -49,7 +49,9 @@ public partial class ArenaResultScreen : TellingScreen
         // Beat one: the night's numbers, counting up one after another.
         var stats = new System.Collections.Generic.List<(double, Func<double, string>, string, double, bool)>
         {
-            (r.Seconds, Clock, r.Won ? "survived" : "held out", 0.3, r.Won), (r.Kills, x => $"{x:N0}", "slain", 0.55, r.Won), (r.EmberLevel, x => $"{x:0}", "ember", 0.8, r.Won),
+            // (a written story night has no clock to survive: its time is how long the fight took)
+            (r.Seconds, Clock, !r.Won ? "held out" : SurvivorUnchained.Play.Story.StoryScripts.Has(r.Spec.Id) ? "fought" : "survived", 0.3, r.Won),
+            (r.Kills, x => $"{x:N0}", "slain", 0.55, r.Won), (r.EmberLevel, x => $"{x:0}", "ember", 0.8, r.Won),
         };
         double cue = 0.8 + Count;
         if (r.Won && beyond >= 1) { stats.Add((beyond, Clock, "past the dead of night", 1.05, r.Won)); cue = 1.05 + Count; }
