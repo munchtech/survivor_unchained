@@ -174,6 +174,9 @@ public class LootTests
         Assert.Equal(0, pickups);
         int tallied = j.NightTally.Values.Sum();
         Assert.True(tallied > 20);
+        // Fire is the scars': a map's lamplings leave iron, never shards.
+        Assert.DoesNotContain(Enumerable.Range(0, 300).SelectMany(s => Drops.Roll(new DropCtx { Ch = j.Ch, World = j.World, Source = DropSource.MapPack, Level = 10, People = "lamplings", R = Seq(s) })),
+            d => d.Material == "ember_shard");
         // In a map they are the ground's.
         int ground = Enumerable.Range(0, 300).Sum(s => j.Drops(new DropCtx { Source = DropSource.MapPack, Level = 10, People = "pack", R = Seq(s) }).Count(l => l.Kind == PickupKind.Material));
         Assert.True(ground > 20);
