@@ -61,6 +61,10 @@ public interface IStoryArena : IBossArena
     string SpareVerb { get; }
     /// <summary>The fight ends as she chose: spared or not (its outcome told to the story first).</summary>
     void Ended(double x, double z, bool spared);
+    /// <summary>A kit piece the fight moves about (Snib's barrel).</summary>
+    IOrb Piece(string id, double scale);
+    /// <summary>The ground's height (to set a piece on it).</summary>
+    double HeightAt(double x, double z);
 }
 
 /// <summary>Dead wood (or a brazier) that the ember in her lights: she stands at it for two
@@ -220,6 +224,7 @@ public static class StoryScripts
     {
         "hollow_by_night" => new HollowByNight(),
         "roost_raid" => new RaidOnTheRoost(),
+        "dig_boils" => new DigBoilsOver(),
         _ => null,
     };
 

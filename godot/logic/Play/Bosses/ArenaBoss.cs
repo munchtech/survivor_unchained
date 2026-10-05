@@ -270,6 +270,8 @@ public abstract class ArenaBoss
     }
 
     protected bool Busy => move != null;
+    /// <summary>Its runs carry it over gaps in the ground (Grimtunnel under it).</summary>
+    protected virtual bool OverGaps => false;
 
     /// <summary>Runs the move under way; true while there is one.</summary>
     protected bool Running(Enemy e, double dt)
@@ -283,7 +285,7 @@ public abstract class ArenaBoss
             double nx = move.DashFromX + (move.DashX - move.DashFromX) * k, nz = move.DashFromZ + (move.DashZ - move.DashFromZ) * k;
             e.Vx = (nx - e.X) / Math.Max(dt, 1e-4); e.Vz = (nz - e.Z) / Math.Max(dt, 1e-4);
             e.X = nx; e.Z = nz;
-            B.Collision.Resolve(ref e.X, ref e.Z, e.Radius);
+            B.Collision.Resolve(ref e.X, ref e.Z, e.Radius, overGaps: OverGaps);
             e.Facing = Math.Atan2(move.DashZ - move.DashFromZ, move.DashX - move.DashFromX);
             e.State = EnemyState.Active;
             e.Anim = EnemyAnim.Move;
