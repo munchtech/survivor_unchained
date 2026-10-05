@@ -22,6 +22,9 @@ public interface IBossArena
     void Bark(double x, double z, string text, string? speaker = null);
     /// <summary>The share of its number the horde is kept at while the boss lives.</summary>
     double HordeShare { set; }
+    /// <summary>The horde comes back when the boss grows wild (the table's); a map or a story night keeps it off,
+    /// so the words must not promise it.</summary>
+    bool HordeReturns => true;
     /// <summary>The fight is won (Grimtunnel goes back down rather than dying).</summary>
     void Won(double x, double z);
 }
@@ -163,13 +166,14 @@ public abstract class ArenaBoss
         {
             Soft = true;
             A.HordeShare = 1;
-            A.Say($"{e.Named?.Title ?? e.Def.Name} grows wild", "Its moves quicken, and the horde comes back", "danger");
+            var (title, sub) = SoftWords(e);
+            A.Say(title, sub, "danger");
             OnSoft();
         }
         if (!Hard && FightT >= HardAt)
         {
             Hard = true;
-            A.Say(HardName, "The end of it, one way or the other", "danger");
+            A.Say(HardName, HardSub, "danger");
             OnHard();
         }
         return Act(e, dt);
@@ -205,6 +209,12 @@ public abstract class ArenaBoss
         TransitionT > 0, IsBoss: true, Break: BreakSum + E.Overflow, Stagger: E.StaggeredT > 0 ? 1 : E.Stagger);
 
     protected abstract string HardName { get; }
+    /// <summary>What is said as it grows wild (docs/WRITING_PASS.md 23.4): a boss whose wildness is its own
+    /// says so in its own words.</summary>
+    protected virtual (string Title, string Sub) SoftWords(Enemy e) =>
+        ($"{e.Named?.Title ?? e.Def.Name} grows wild", A.HordeReturns ? "Its moves quicken, and the horde comes back" : "Its moves quicken");
+    /// <summary>What is said under its end's name.</summary>
+    protected virtual string HardSub => "The end of it, one way or the other";
     /// <summary>When it grows wild, and when its end comes on a loop: three and five minutes at the
     /// table; a story's boss is a longer fight (docs/design/STORY_BOSSES.md 0.4).</summary>
     protected virtual double SoftAt => 180;

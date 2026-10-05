@@ -668,6 +668,7 @@ public sealed class StoryNight : ZoneRuntime, IStoryArena
     public void Say(string title, string? sub, string tone) => G.Announce(new Announcement(title, sub ?? "", tone, 2.4));
     public void Bark(double x, double z, string text, string? speaker) => B?.Events.Emit(new Ev.Bark { X = x, Z = z, Text = text, Speaker = speaker });
     double IBossArena.HordeShare { set { } }
+    bool IBossArena.HordeReturns => false;
     void IBossArena.Won(double x, double z) => Victory(x, z, spared: false);
 
     /* ------------------------------------------------------------ on screen -- */

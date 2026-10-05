@@ -295,6 +295,59 @@ public class VergeTests
             Assert.True(s.J.World.Fact("player.carried_home").IsNull);
             s.J.World.Facts["player.just_died"] = true;
             Assert.Equal("woke", new DialogueRunner(Dialogue.Find("chid")!, s.J.Ctx).Start()!.Node.Id);
+            // In Act 1 she still has the night's own rise: no book yet.
+            Assert.DoesNotContain(s.J.Ch.Pack, i => i?.Def == "keepers_office");
+        }
+    }
+
+    [Fact]
+    public void Chid_gives_The_Keepers_Office_on_Act_2s_first_morning_or_at_his_waking_after_a_lost_fight()
+    {
+        // The bible, section 7: from Act 2 she gets up only with the rise, and Chid's book teaches its art.
+        bool HasBook(Setup s) => s.J.Ch.Pack.Any(i => i?.Def == "keepers_office");
+        var chid = Dialogue.Find("chid")!;
+
+        // The first morning: he has it ready, and the shrine is marked until he has given it.
+        var m = Make();
+        m.J.World.Npc("chid").Flags["met"] = true;
+        Assert.Null(Dialogue.MarkerOf(chid, m.J.Ctx));
+        m.J.World.Facts["chapter.done"] = true;
+        Assert.Equal("!", Dialogue.MarkerOf(chid, m.J.Ctx));
+        var r = new DialogueRunner(chid, m.J.Ctx);
+        var p = r.Start()!;
+        Assert.Equal("office", p.Node.Id);
+        Assert.Contains("held the way you hold a bird", p.Text);
+        Assert.True(HasBook(m));
+        p = r.Choose(p.Choices.Single(c => c.Text == "Who wrote it?").Index).Next!;
+        Assert.Contains("Nobody makes a C like that any more", p.Text);
+        p = r.Choose(p.Choices.Single(c => c.Text == "What's at the end?").Index).Next!;
+        Assert.Contains("Somebody answering", p.Text);
+        Assert.Null(r.Choose(p.Choices.Single(c => c.Text == "Thank you, Chid.").Index).Next);
+        // Given once: one book, no mark, and he is himself again.
+        Assert.Null(Dialogue.MarkerOf(chid, m.J.Ctx));
+        Assert.NotEqual("office", new DialogueRunner(chid, m.J.Ctx).Start()!.Node.Id);
+        Assert.Equal(1, m.J.Ch.Pack.Count(i => i?.Def == "keepers_office"));
+
+        // Or she went out before she saw him, and lost: he gives it at the waking, either way out of it.
+        foreach (var ask in new[] { "Thank you, Chid.", "Who brought me in?" })
+        {
+            var s = Make();
+            s.J.World.Npc("chid").Flags["met"] = true;
+            s.J.World.Facts["chapter.done"] = true;
+            s.J.World.Facts["dig.hostile"] = true;
+            var spec = Fight(s.J, "dig");
+            SurvivorUnchained.Arena.Arenas.Begin(s.J.World, spec);
+            var b = s.J.StartBattle(true, new CollisionWorld(60), (_, _) => 0, 0, 0, 0, 3, arena: true);
+            SurvivorUnchained.Arena.Arenas.Finish(s.J, b, spec, won: false);
+            s.J.CarriedHome(spec);
+            var w = new DialogueRunner(chid, s.J.Ctx);
+            Assert.Equal("carried", w.Start()!.Node.Id);
+            p = w.Advance()!;
+            Assert.Contains("Read it before you go out again", p.Text);
+            Assert.False(HasBook(s));
+            w.Choose(p.Choices.Single(c => c.Text == ask).Index);
+            Assert.True(HasBook(s));
+            Assert.NotEqual("office", new DialogueRunner(chid, s.J.Ctx).Start()!.Node.Id);
         }
     }
 

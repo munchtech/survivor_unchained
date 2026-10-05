@@ -1494,7 +1494,7 @@ wound or things lost.
   | The Hollow | "The last thing you know is the stream, very loud, and the Pack standing round you in a ring. None of them comes in." |
   | The Roost | "The last thing you know is the fire going small, and a big hand closing your eyes for you." |
   | The Dig | "The last thing you know is little hands, a great many of them, lifting you." |
-  | The Door | "The last thing you know is the stair going by beneath you, and the dead carrying you up it, in step." |
+  | The Door | "The last thing you know is the moon going by over the broken roof, and the dead carrying you under it, in step." (Rewritten for the hall at the stair's head: section 23.3.) |
 
 - **The waking** (`chid.carried`, then `carried_chid`). Experience's
   `WakeAfterLoss` calls `Journey.CarriedHome(spec)` (`player.just_died`,
@@ -1566,18 +1566,34 @@ wound or things lost.
     watch-hours, read to pieces. Whoever wrote it makes their Cs the old way.
     The last page has two lines on it and nothing else: Is it morning? Not
     yet."
-  - **Chid's gift, written and waiting for the item** to reach the
-    integration branch (`chid.office`, an entry once `chapter.done`, and a
-    variant of `carried_chid` after a lost Act 2 fight if she has no book):
-    - "(He has a small book in both hands, held the way you hold a bird.) I
-      want you to have this. It's only an old office: the watch-hours, what
-      the keepers said at night. Nobody's said them in a long while. (He opens
-      it at the last page, and doesn't look at it.) There's a bit at the end.
-      You'll know it when you need it. ...Not now. It reads better in the
-      dark."
-    - "Who wrote it?": "Oh, a keeper. One of the old ones. Lovely hand,
-      hasn't he? Nobody makes a C like that any more." (His own words about
-      the note in Ashe's trunk, said again without noticing: Act 3.)
+  - **Chid's gift** (`keepers_office`, given once; his flag `gave:office`):
+    - **Act 2's first morning:** an entry, `chid.office`, once `chapter.done`.
+      The shrine is marked "!" until he has given it. "You've been up the
+      Tower. (He doesn't ask what she told you. He has a small book in both
+      hands, held the way you hold a bird.) I want you to have this. It's only
+      an old office: the watch-hours, what the keepers said at night.
+      Nobody's said them in a long while. (He opens it at the last page, and
+      doesn't look at it.) There's a bit at the end. You'll know it when you
+      need it. ...Not now. It reads better in the dark."
+    - "What's at the end?" (`office_end`): "(He puts his hand over yours,
+      flat on the cover.) Not now, I said! ...It's the end of the watch. One
+      keeper asks, and the other one answers, so nobody has to sit up the
+      whole night on their own. That's what an office is, really. Somebody
+      answering." (It plants the art's "something answers for you", and his
+      want: company.)
+    - "Who wrote it?" (`office_who`): "Oh, a keeper. One of the old ones.
+      Lovely hand, hasn't he? Nobody makes a C like that any more." (His own
+      words about the note in Ashe's trunk, said again without noticing: Act
+      3.)
+    - **Or at his waking after a lost fight**, if she went out in Act 2
+      before he could give it: a first variant of `carried_chid`, given as
+      she leaves the waking either way. "...Somebody brought you in. A
+      carter, I expect. (He has a small book in both hands, held the way you
+      hold a bird.) I was keeping this for you. It's only an old office, what
+      the keepers said at night. There's a bit at the end. ...Read it before
+      you go out again. Please." (The morning's "Not now" against the
+      waking's "Please": his fear shows.)
+    [DATA, done; `VergeTests.Chid_gives_The_Keepers_Office_on_Act_2s_first_morning_or_at_his_waking_after_a_lost_fight`]
 - **The clock's words** (`Journey.DayLines`, experience's code):
   - dusk: "Lamps are lit. Stay where they reach." Then the night's fight:
     - the Hollow: "Out past the lamps, the Pack has stopped howling.";
@@ -1625,4 +1641,406 @@ Vonnra's final packet has changed lines that need new takes:
 
 New lines for Redcowl (`spared` .0 to .3, `flit`), Rav (`cb_spared_redcowl`,
 `owes_two`, and barks appended to `said`), Chid (`carried`, `carried_chid`
-.0 to .8, `carried_who`), and barks for Holloway, Maeca and Keegan.
+.0 to .9, `carried_who`), and barks for Holloway, Maeca and Keegan.
+
+Chid's gift: `office`, `office_end` and `office_who` are new, and
+`carried_chid` has a new .0 (the book at the waking), so its old .0 to .8 are
+now .1 to .9.
+
+## 23. The story fights' words, slot by slot: the Roost, the Dig and the Door (4 October)
+
+Combat is building the other three story fights in the Hollow's shape
+(`docs/design/STORY_BOSSES.md` sections 2 to 4). These are their words,
+keyed to the slots the Hollow fills, so they can be pasted as the fights are
+built. Section 21's lines stand and are repeated here so each fight is on one
+page.
+
+**The slots.** `StoryFight`: `Pull`, `Between` (one sight per stage, the last
+leading into the boss), `Sign`, and the kicker passed to `Foe`. `StoryBeat`:
+`Goal`, its `Say`s, barks and blow labels. `StoryBoss`: `Phases`,
+`WeaknessText`, `HardName`, `ReEntry`, the soft and hard subtitles (section
+23.4), barks and labels. `StoryFights.Spec`: `EndWon`, `EndLost` and
+`EndSpared`.
+
+**How to read the tables.**
+- "Sight" is a bark with no speaker: the narrator, said to the air where it
+  happens. Present tense, one image, never what it means.
+- A named speaker is a voiced line, and a bark keeps that speaker.
+- A label is the word on a ground mark: plain, short, and the thing itself.
+  A label never translates the Legion's orders; what follows shows what an
+  order means.
+- `Say` is an announcement (title / subtitle, tone).
+- Where a line reads the world (a fact, an item), the condition is given. The
+  first that holds is used, and the last is unconditional, as in dialogue.
+
+**The fights' rules (the bible, "The nights").**
+- The Kerchiefs never say "Ashford", and no line about them does.
+- In the Dig, "Boss" means Grimtunnel and nobody else. He never finishes
+  "surface-meat" at her. Snib still says it, and Snib speaks only while he
+  lives (`snib.dead` unset).
+- The Legion's dead speak the old tongue, one plural word each. "Nondum" and
+  "Redi" are his to her, and are said only in C13.
+- No genre words. A voice comes before the killing mark, never instead of it.
+
+### 23.1 Raid on the Roost (`roost_raid`): Redcowl, *Of the Kerchiefs*
+
+**The fight.** The kicker for its named foes is "The Kerchiefs". Its cinematic
+is C11.
+
+| Slot | Reads | Words |
+|---|---|---|
+| `Pull` | | "The ember takes you up the ruts below the Roost. Somewhere above, a whistle, and another answering." |
+| `Between[0]` | `caravan.survivors` unset (the men still caged) | "Three whistles, and none answering. Ahead, the cage yard: four cages, and the fourth stands open with nobody in it." |
+| | `rescued` | "Three whistles, and none answering. Ahead, the cage yard: four empty cages, and somebody very big still standing guard on them." |
+| | `dead` | "Three whistles, and none answering. Ahead, the cage yard: four empty cages, and three mounds of new earth beside them." |
+| `Between[1]` | | "Past the cages, the camp's fires, and the levy forming up the way they were taught: in step, pikes level." |
+| `Between[2]` | the crates fired in this stage | "Where the crates stood there is a hole in the yard. Beyond it, the Kerchiefs fall back to the big fire and stand there with their torches up. Then they part." |
+| | otherwise | "The Kerchiefs fall back to the big fire and stand there with their torches up. Then they part." |
+| `Sign` | | "A laugh from behind the big fire, in no hurry at all." |
+
+**Stage 1, the ruts.**
+
+| Slot | Words |
+|---|---|
+| `Goal` | "Silence the pickets ({n} of 3)" |
+| A picket's whistle (sight) | "(A whistle, short and sharp. Another answers it, further up.)" |
+| A picket that sees her (a Kerchief) | "Lights! Lights on the ruts!" |
+| The first pincer (`Say`, danger) | "Off both banks at once" / "Get out from between them" |
+| A picket silenced (sight) | "The torch tumbles down the bank. That whistle will not answer again." |
+| Firepot Nan, as she comes with the third whistle | "Hot ones! Mind your backs!" |
+
+Nan's name, lesson and note are her def's. "Mind your backs!" is a cook's
+call in a crowded kitchen: she cooked for forty-one on the road.
+
+**Stage 2, the cage yard.**
+
+| Slot | Reads | Words |
+|---|---|---|
+| `Goal` | the men still caged | "Break the cage locks ({n} of 3)" |
+| | the cages empty | "Bring down Barn-Door" |
+| The first lock she nears (`Say`, info) | | "Stand by a lock" / "Your weapons break the one you stand by" |
+| A lock broken | | The cage rescue's own lines (`Verge.CageLines`, and Jory's "Is my uncle—?" at the third), as by day. |
+| The last lock (sight) | | "The freed men run for the ruts, and nobody stops them." |
+
+Barn-Door's "Down!" is his def's word. With the cages empty he guards nothing,
+and says nothing about it.
+
+**Stage 3, the camp's yard.**
+
+| Slot | Reads | Words |
+|---|---|---|
+| `Goal` | | "Bring down the Pike-Captain, behind the line" |
+| The levy forms (`Say`, danger) | | "The levy" / "Round its ends, to the captain behind it" |
+| The line steps off (the Pike-Captain) | | "Level! ...Step! ...Step!" |
+| It wavers (sight) | | "The line wavers." |
+| It breaks (`Say`, boon, then a sight) | | "The levy breaks"; "Pikes go down in the mud, and the men behind them back off to the fires." |
+| The crates' prompt (`Offer`) | `be.crates` unset or `redcowl`; knows `clue.blasting_ember` | verb "Fire the crates", name "The six B.E. crates" |
+| | otherwise | verb "Fire the crates", name "Six crates, under a torch" |
+| The crates marked (a Kerchief) | | "DOWN! Get DOWN!" |
+| Their ring (label) | | "The crates" |
+| After (sight) | | "Where the crates stood there is a hole in the yard. The levy is on the ground round it." |
+
+Someone who does not know what B.E. is sees six crates and a torch, as by day
+(`Verge.cs`, the crates).
+
+**The boss, Redcowl.**
+
+| Slot | Reads | Words |
+|---|---|---|
+| `Phases` | | "The Host", "Forty-One Mouths", "Mind Where You Swing" (combat's; approved) |
+| `WeaknessText` | | "Storm breaks his rally before his people hear it" |
+| `HardName` / hard subtitle | | "All Forty-One" / "The whole camp turns out" |
+| Soft title / subtitle | | "His lot close in" / "Quicker, and more of them" |
+| `ReEntry` | | "The torches part again, and he comes back through them, laughing." |
+
+*Phase 1, the Host.*
+
+| Slot | Reads | Words |
+|---|---|---|
+| The Greeting (label) | | "The Greeting" |
+| The laugh, before the Hook's mark (Redcowl) | | "Ha! HA." |
+| The Hook (label) | | "The Hook" |
+| The axe stuck, open (label on the pale-blue ring) | | "The axe sticks" |
+| He wrenches it free, the first time (sight) | Rav's flag `once:redcowl` (the leg) | "He wrenches the axe free, and his weight goes on the sewn leg." |
+| A torch handed to him (sight) | | "One of his people hands him a torch." |
+| The torch (label) | | "A torch" |
+
+*Phase 2, Forty-One Mouths.*
+
+| Slot | Words |
+|---|---|
+| The rally (Redcowl) | "Red to me! Up, my lot!" |
+| The rally's channel (the bar) | "His rally: break it!" |
+| The rally broken by storm (sight, after the announcement) | "His people never hear it." |
+| The carts dragged (sight) | "His people drag the carts across, and the yard is a pen." |
+| The cage (label on the posts) | "The cage" |
+| The first cage (`Say`, danger) | "They cage you" / "Stand by a post to break it, or chance the door" |
+| The levy, once at half (sight, then `Say`, danger) | "Out of the carts come six pikes in step, under an old red standard."; "The levy" / "Hurt him hard, and it breaks" |
+| The levy broken (`Say`, boon) | "The levy breaks" |
+
+*Phase 3, Mind Where You Swing.*
+
+| Slot | Words |
+|---|---|
+| As it begins (sight) | "He stops laughing." |
+| The shoulder charge (label) | "The Charge" |
+| The bairns, once at 15% (sight) | "(A child, crying for its mam.)" |
+| His head turned to the tents, open (label) | "He listens" |
+| Then, cold (Redcowl) | "Mind where you swing." |
+| The watchers (sight) | "His people lower their torches." |
+
+*His end.*
+
+| Slot | Words |
+|---|---|
+| Spent (sight) | "He goes down on one knee, the axe-head in the dirt, and laughs. It costs him." |
+| The prompts (`Offer`, name "Redcowl") | `SpareVerb` "Spare him", and "Finish it" (done) |
+| Spared | C11's `spared`, then `flit`. Where the cinematic cannot play, the sight: "He gets up on the sewn leg, and it holds." |
+| Finished | C11's `last`. |
+| The result | `EndWon`, `EndSpared` and `EndLost` (done, section 22). |
+
+### 23.2 The Dig Boils Over (`dig_boils`): Grimtunnel, *Ever So Grateful*
+
+**The fight.** The kicker is "The Dig". Its cinematic is C12. Snib comments
+from the spoil heap, and is heard on the way in too.
+
+| Slot | Reads | Words |
+|---|---|---|
+| `Pull` | | "The ember takes you to the edge of the Dig. Every lamp in the hole is coming up at once." |
+| `Between[0]` | | "The last windlass goes over. Down the tub-way the brake-house lamp is lit, and the rails are singing." |
+| `Between[1]` | `dig.pump` running | "Past the brake-house stands the pump-house, and every lampling between you and it is carrying a crate." |
+| | `broken`, `blown` or `moved` | "Past the brake-house stands the pump-house. Somebody inside is lighting lamps, one after another." |
+| `Between[2]` | | "Every lampling left on the lip lies down flat, with its hands over its lamp." |
+| `Sign` | | "Under the lip, something knocks twice. A line of blue light shows in the ground." |
+
+The knock is the one the Penhales hear under their farm at night (`tam.tock`).
+Nobody says so.
+
+**Stage 1, the edge.**
+
+| Slot | Words |
+|---|---|
+| `Goal` | "Break the windlasses ({n} of 3)" |
+| As it opens (`Say`, info) | "The shafts are boiling" / "Break a windlass, and its shaft falls in" |
+| A windlass broken (sight) | "The windlass goes over, and the shaft falls in on itself." |
+| The first windlass (Snib) | "Not the WINDLASS! Snib has to wind that! Snib does not wind it. The lads wind it." |
+
+The Wick-Mother's name, lesson and "Up, up, up!" are her def's.
+
+**Stage 2, the tub-way.**
+
+| Slot | Words |
+|---|---|
+| `Goal` | "Bring down the Chucker at the brake-house" |
+| The first tub's warning (sight) | "The rails start to sing." |
+| A tub (label) | "A tub" |
+| The first tub (Snib) | "Mind the tubs! Tubs are EXPENSIVE. Tubs are Boss's." |
+
+**Stage 3, the pump.**
+
+| Slot | Reads | Words |
+|---|---|---|
+| `Goal` | the pump running | "Bring down the Perfect of Fuses" |
+| | stopped | "Bring down the Lamplighter" |
+| The first fuse-runner (`Say`, danger) | running | "They carry it lit" / "Kill the runners, or step off as one goes" |
+| A runner's crate (label) | running | "A lit crate" |
+| The Perfect falls (sight) | running | "His crate rolls on without him, into the pump." |
+| The pump's ring (label; `Say`, danger) | running | "The pump"; "The pump is going up" / "Get clear" |
+| The pump blows (Snib) | running | "The PUMP! Who will pump? Snib will not pump." |
+| After (sight) | running | "The pump-house goes up. Down the hill, the slurry stops." |
+| The Lamplighter falls (Snib) | stopped | "That is the Boss's LIGHT! Nobody puts out the Boss's light. ...You put out the Boss's light." |
+
+**The boss, Grimtunnel.**
+
+| Slot | Words |
+|---|---|
+| `Phases` | "The Shift", "The Collapse", "The Heart" (combat's; approved) |
+| `WeaknessText` | "Frost stops him under the ground, and a lamp can be broken while it flares" |
+| `HardName` / hard subtitle | "All Downstairs" / "The floor goes, from the edge in" |
+| Soft title / subtitle | "The holes stay open" / "The moths come quicker" |
+| `ReEntry` | "The crack opens again, and he climbs out of it with his arms spread." |
+
+"The Fall" is the table's hard name and stays there. Here it would read as
+hers: a fall is what she gets up from.
+
+*Phase 1, the Shift.*
+
+| Slot | Reads | Words |
+|---|---|---|
+| Just after the arrival (Snib) | without his lamp | "BOSS! Boss is UP! Snib said Boss would come up. ...Snib did not say that." |
+| | with `grimtunnels_lamp` (Snib, then Grimtunnel) | "That is the Boss's SPARE! You cannot have the spare. ...You have the spare."; then "Put that lamp DOWN, surface-m— you. That's MINE." |
+| The lamp's prompt (`Offer`) | with the lamp | verb "Set down his lamp", name "Grimtunnel's lamp" |
+| He comes up under it (sight) | the lamp set down | "He comes up under his own lamp, and stops to look at it." |
+| The lamps (labels) | | red "Blasting ember", blue "The deep lamp", green "Slurry" (the table's) |
+| A lamp broken (announcement; then Grimtunnel, the first time) | | "His red lamp breaks" (and blue, green); "Nobody's! Nobody's having my lamps!" |
+| Under (sight; then the label) | | "Rocks in a barrel: something under the ground." (the table's); "He bursts up" |
+| Dazed after (label) | | "Dazed" |
+| Moths (sight) | | "Lamplings flock to the light." (the table's) |
+
+"The spare" is the lamp she carries. Snib has said so by day (`snib.lamp`:
+"That is the Boss's LAMP. The spare!"). Told to put it down, she can, and it
+is the trap: he cannot leave his own light alone.
+
+*Phase 2, the Collapse.*
+
+| Slot | Words |
+|---|---|
+| As it begins (Grimtunnel) | "Still upstairs, are we? Downstairs'll want to hear about THIS." |
+| A sinkhole (label) | "The ground goes" (the table's) |
+| Snib's barrel, before it rolls (Snib) | "Boss! BOSS! Not the good stuff! It IS the good stuff." |
+| The first barrel (`Say`, info) | "Snib's barrel" / "Walk into it to roll it at him" |
+| It blows on him (label; `Say`, boon) | "The barrel"; "His hide cracks" / "He takes more, for a while" |
+| Then (Snib) | "Snib did NOT roll that. ...Snib rolled that." |
+| Left alone, he picks it up (Grimtunnel) | "Ooh, the GOOD stuff! Ever so kind. ...Catch!" |
+| Thrown (label) | "The barrel" |
+
+*Phase 3, the Heart.*
+
+| Slot | Words |
+|---|---|
+| As it begins (sight) | "Blue light comes up in every seam of his hide." |
+| Then (Grimtunnel) | "Ever so patient, downstairs is. I'm NOT." |
+| Then (Snib) | "Boss has gone BLUE. Boss is not well. ...Boss is VERY well." |
+| The crack opening (label) | "The crack opens" |
+| The heart's bands (label) | "The heart's pulse" |
+| His pick (label) | "Pick" (the table's) |
+
+*His end.*
+
+| Slot | Words |
+|---|---|
+| Down the hole | C12's retreat, `quiet`: "I told it about you! It went ever so QUIET!" Where the cinematic cannot play, the same line as his bark. |
+| The last word, as the crack shuts (Snib) | "Boss! Wait for Snib! ...Snib is not going down there. ...Snib is going down there." |
+| The result | `EndWon` and `EndLost` (done). |
+
+### 23.3 Behind the Sealed Door (`vault_opened`): the Barrow Lord, *Of the Seventh Legion*
+
+**The fight.** The kicker is "The Seventh Legion". C13's door plays first, and
+its arrival and hand at the boss. The fight is in the hall and at the head of
+the stair, and never goes down it.
+
+| Slot | Words |
+|---|---|
+| `Pull` | "Through the door: a long hall, and the head of a stair. On the stair, something is coming up in step." |
+| `Between[0]` | "The first ranks are down. The hall runs on ahead, long and straight, and at the end of it something is winding a great bow." |
+| `Between[1]` | "Down the hall, three standards go up one after another, and the dead turn to face them." |
+| `Between[2]` | "The last standard goes down. Along the walls, the dead stand to attention, all at once, with one sound." |
+| `Sign` | "On the stair, one tread heavier than the rest, coming up." |
+
+**Stage 1, the hall's south end.**
+
+| Slot | Words |
+|---|---|
+| `Goal` | "Bring down the Decurion" |
+| The line locks (`Say`, danger) | "The shields lock" / "Break the line at its ends" |
+
+The Decurion's "Scuta!" is his def's word.
+
+**Stage 2, the hall's length.**
+
+| Slot | Words |
+|---|---|
+| `Goal` | "Bring down the Scorpion" |
+| Before each volley (sight) | "Down the hall, a ratchet, winding." |
+| A bolt (label) | "A bolt" |
+| The first volley (`Say`, info) | "Down the hall's length" / "Step off the line, or get behind stone" |
+
+**Stage 3, the standards.**
+
+| Slot | Words |
+|---|---|
+| `Goal` | "Break the standards ({n} of 3)" |
+| A standard broken (sight) | "The standard goes down. The dead round it stop where they stand, and look about them." |
+
+The Signifer's "Signa!" is his def's word. The broken standard shows Chid's
+"a choir that's lost its place" without anyone saying it.
+
+**The boss, the Barrow Lord.**
+
+| Slot | Words |
+|---|---|
+| `Phases` | "The Drill", "Testudo", "Nondum" (combat's; approved: "Nondum" stands on the bar untranslated, as the arrival's word does for anyone who cannot read it) |
+| `WeaknessText` | "Holy lays him down twice as fast, and the dead give ground to it" |
+| `HardName` / hard subtitle | "The Last Watch" / "The front walks in" |
+| Soft title / subtitle | "The drill quickens" / "New lines form quicker" |
+| `ReEntry` | "The dead part again. He comes up through them, and gives you the same long look." |
+
+*Phase 1, the Drill.*
+
+| Slot | Words |
+|---|---|
+| The line called (the Barrow Lord) | "Iungite!" |
+| The marching line (label) | "The line" |
+| His spear (label) | "Pilum" |
+| His sword (label) | "Gladius" |
+
+*Phase 2, Testudo.*
+
+| Slot | Reads | Words |
+|---|---|---|
+| The ring called (the Barrow Lord) | | "Testudo!" |
+| The first ring (`Say`, danger) | | "Shields round him" / "Break the standard inside" |
+| The part (its name) | | "The standard" |
+| It breaks (announcement) | | "The standard breaks" |
+| The charge (label) | | "The century charges" |
+| A rank steps down, the first time (sight) | | "A rank steps down off each wall, in step." |
+| The prompt (`Offer`) | `bane.pole` | verb "Lift the standard", name "The Legion's standard" |
+| Lifted (sight, then `Say`, boon) | `bane.pole` | "Along the walls, the ranks turn to face the standard in your hands."; "They follow the pole" / "The century will not close up again" |
+
+*Phase 3, Nondum.*
+
+| Slot | Words |
+|---|---|
+| As it begins (sight) | "The ranks come down off the walls and close round you in a front." |
+| The front (label) | "The front" |
+| Holy on him, the first time the front gives (`Say`, boon) | "The front gives ground" / "Holy drives it back a step" |
+| The band called (the Barrow Lord) | "Tenete!" |
+| The band (label) | "The press" |
+
+*His end: he will not lie down.*
+
+| Slot | Words |
+|---|---|
+| Spent (sight; then `Say`, danger) | "He goes down."; "He is down" / "Stand over him to lay him down" |
+| The circle (label) | "Lay him down" |
+| The front's dead come for her (sight) | "The dead come to drag you off him." |
+| She fails: he rises (sight; then `Say`, danger) | "He gets up."; "He will not lie down" / "Again, and quicker" |
+| She lays him down (sight) | "You lay him down." |
+| The hand at the gate | C13's hand, `redi`. Where the cinematic cannot play, the sight "He gets up inside your reach, puts his hand flat on your breastbone, and pushes, once.", then the Barrow Lord's "Redi." |
+| The result | `EndWon` and `EndLost`, rewritten for the hall (below). |
+
+**The Door's ends, rewritten for the place** (`StoryFights.Spec`, done). She
+fights at the head of the stair and never goes down it, so nobody lets her up
+it, and nobody carries her up it:
+- `EndWon`: "The dead stand on the stair in their ranks, and let you go. At
+  the door, yours are the only bootprints coming out." (It pays the bootprints
+  going in and none coming out: Jessop's.)
+- `EndLost`: "The last thing you know is the moon going by over the broken
+  roof, and the dead carrying you under it, in step." (The hall's roof is
+  fallen in and open to the moon. They carry her back down it, to the door.)
+
+### 23.4 For every story boss: when it grows wild, and its end
+
+`ArenaBoss` announced the soft enrage as "{name} grows wild" / "Its moves
+quicken, and the horde comes back". In a story night, and in a map, no horde
+comes back. Now:
+- the arena says whether it does (`IBossArena.HordeReturns`: the table yes,
+  a map and a story night no), and the default drops the promise where it is
+  false: "{name} grows wild" / "Its moves quicken";
+- a boss can say it in its own words (`ArenaBoss.SoftWords` and `HardSub`,
+  virtual):
+  - Greymuzzle: "The ring draws in" / "It bites quicker now"; and the Long
+    Hunt: "The light goes, and he hunts you in the dark";
+  - Redcowl, Grimtunnel and the Barrow Lord: their tables above.
+  [CODE, done for the Hollow and the default]
+
+### 23.5 For voice (paused; text-only notes)
+
+New voiced lines, once the fights are built: Firepot Nan ("Hot ones! Mind
+your backs!"), the Pike-Captain ("Level! ...Step! ...Step!"), a Kerchief
+("DOWN! Get DOWN!"), Snib (six new: Boss up, the Lamplighter, the barrel
+twice, the blue, the last word), Grimtunnel ("Ooh, the GOOD stuff! Ever so
+kind. ...Catch!"), and the Barrow Lord's three orders (Iungite, Testudo,
+Tenete), recorded as C13's two words are: a dry, enormous whisper. Section
+21's voices (the pickets, Redcowl's rally and "Mind where you swing.",
+Snib's four, Grimtunnel's four) are recorded with them.
