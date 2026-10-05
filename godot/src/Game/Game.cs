@@ -278,10 +278,12 @@ public partial class Game : Node, IZoneHost
             nb.Player.Z = na.Z + 3.2;
         }
         hud.Fade(0, 0.5);
-        // --travel ZONE@S: on to ZONE S seconds in (measuring a second, warm
-        // build: what a place costs to enter once the session has begun).
-        if (Args.Get("travel")?.Split('@') is [var onTo, var after] && double.TryParse(after, System.Globalization.CultureInfo.InvariantCulture, out var secs))
-            Wait(secs, () => Travel(onTo));
+        // --travel ZONE@S[,ZONE@S...]: on to each ZONE S seconds in (measuring
+        // later, warm builds: what a place costs to enter once the session has
+        // begun, and to enter again).
+        foreach (var hop in Args.Get("travel")?.Split(',') ?? [])
+            if (hop.Split('@') is [var onTo, var after] && double.TryParse(after, System.Globalization.CultureInfo.InvariantCulture, out var secs))
+                Wait(secs, () => Travel(onTo));
         // --cine ID: that cinematic played here at once (pictures of it, its previs).
         if (Args.Get("cine") is string cid && cine == null) Cinematic(cid);
         Save("new");
