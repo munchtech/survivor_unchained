@@ -20,7 +20,7 @@ For the next animation lead. Read `docs/team/README.md`, then this page, then `d
 - Take a turn for every Godot run, packs included (`tools/turn.py take godot "animation: ..." --wait N`). Godot has three slots; the owner runs 3 to 5 agents at once.
 - Run `dotnet test` in `godot/tests` before commits (666 pass). Commit and push your branch. Open no PRs. Use British spelling.
 
-## 3. Done (pushed: 52cdc0ab, 0881e32d, and the wrist-pass commit)
+## 3. Done (pushed: 52cdc0ab, 0881e32d and d31b84dc)
 
 - **C04 A6 `flask_drink`:**
   - the cork pulled with her teeth, the smell, the long drink;
@@ -41,13 +41,12 @@ For the next animation lead. Read `docs/team/README.md`, then this page, then `d
 
 ## 4. Next, in order
 
-1. **Finish the wrist pass:**
-   - run `python tools/anim/audit.py` over everything;
-   - fix the worst at their keys (see §6);
-   - pack under a turn;
-   - render after strips with `strips.py after` (scratch, §8);
-   - judge the strikes at speed in the game (`--on casts`);
-   - send the before and after strips to the coordinator.
+1. **Finish the wrist pass.**
+   - The audit stands at 894 flagged frames, down from 9,945.
+   - Re-key the 13 clips that still roll a hand over 90° in a frame. They are listed on the status page.
+   - **Start with `warden_show`.** It regressed: the sword arm now comes up across her face in the hold. Compare it with `anim4/sh/ba_warden_show.png`.
+   - Then judge the strikes at speed in the game (`--on casts`).
+   - The before and after strips of the worst five are `anim4/sh/ba_*.png`. Send them to the coordinator: they haven't gone yet.
 2. **Judge in the cinematics** once cinematics has blocked them:
    - C01's seven clips and C04's flask, walks and Rook;
    - the Warden's `lie_arm_up` and `wade_drag` in C02.
@@ -69,7 +68,8 @@ For the next animation lead. Read `docs/team/README.md`, then this page, then `d
   - Aims are made whole and put in one frame before blending.
   - Elbows and knees bend on their hinges.
   - The forearm takes half the roll.
-  - Limits: twist 95°, wrist 70°.
+  - Limits: twist 95°, wrist 80°.
+  - The elbow swings at most 42° off the keyed pole. A wider search gave poses the animator never asked for: the arm across the chest or face.
   - The elbow's path and the hinge through straight stretches are settled over the whole clip (`keyed.solve_frames`).
 - Clips whose keys asked the impossible were re-keyed:
   - `catch_breath`: the hand's path round the front;
