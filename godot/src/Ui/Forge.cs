@@ -169,11 +169,10 @@ public partial class ForgeScreen : Overlay
             : def?.Visual is { } vis && SurvivorUnchained.View.Beasts.Of(vis) is { } beast ? new Portrait(size, Portrait.Framing.Bust).Of(beast) : null;
         if (figure != null)
         {
-            var frame = Style.Panel(Kit.WellBox(0));
-            frame.CustomMinimumSize = new Vector2(size.X, size.Y);
-            frame.SizeFlagsVertical = SizeFlags.ShrinkBegin;
-            frame.AddChild(figure);
-            h.AddChild(frame);
+            // No frame: the likeness fades into the panel at its edges (as the counters' keepers do).
+            figure.Material = Fade;
+            figure.SizeFlagsVertical = SizeFlags.ShrinkBegin;
+            h.AddChild(figure);
         }
         var words = Style.V(4);
         words.SizeFlagsHorizontal = SizeFlags.ExpandFill;
@@ -217,6 +216,10 @@ public partial class ForgeScreen : Overlay
         h.AddChild(words);
         return h;
     }
+
+    static ShaderMaterial? fade;
+    /// <summary>A likeness's edges faded into what is behind it (shaders/ui_likeness.gdshader).</summary>
+    static ShaderMaterial Fade => fade ??= new ShaderMaterial { Shader = GD.Load<Shader>("res://shaders/ui_likeness.gdshader") };
 
     /// <summary>Their terms along the panel's foot: those given now, and the way up to the rest (C18:
     /// standing sets the terms), with the standing they ask for as it is now.</summary>
@@ -268,9 +271,10 @@ public partial class ForgeScreen : Overlay
             ? Kit.Tabs(new[] { "By day", "By night" }, (int)shown, k => { kitShown = (KitKind)k; Refresh(); }, 15, 16)
             : null;
         v.AddChild(Kit.Head("Worn", switcher == null ? "choose a piece" : null, switcher != null ? new[] { switcher } : Array.Empty<Control>()));
-        var worn = new GridContainer { Columns = 6, MouseFilter = MouseFilterEnum.Ignore };
-        worn.AddThemeConstantOverride("h_separation", 8);
-        worn.AddThemeConstantOverride("v_separation", 8);
+        // One line of nine (three tiles under six read as a broken grid).
+        var worn = new GridContainer { Columns = 9, MouseFilter = MouseFilterEnum.Ignore };
+        worn.AddThemeConstantOverride("h_separation", 5);
+        worn.AddThemeConstantOverride("v_separation", 5);
         int i = 0;
         bool fallback = false;
         foreach (var s in Items.EquipSlots)
@@ -280,12 +284,12 @@ public partial class ForgeScreen : Overlay
             bool asDay = shown == KitKind.Night && it != null && !Kits.HasOwn(Ch, KitKind.Night, s);
             fallback |= asDay;
             var (name, glyph) = InventoryScreen.Slots[s];
-            var view = ItemViews.Slot(it, 72, it != null && it.Uid == sel && !making, null, false, it != null ? () => Choose(it.Uid) : null, null,
+            var view = ItemViews.Slot(it, 50, it != null && it.Uid == sel && !making, null, false, it != null ? () => Choose(it.Uid) : null, null,
                 over => Hover(it, over), glyph, name, $"worn:{i++}");
             if (it != null && (!Takes(it) || asDay)) view.Modulate = new Color(1, 1, 1, asDay ? 0.4f : 0.35f);
             worn.AddChild(view);
         }
-        v.AddChild(Style.Panel(Kit.WellBox(6), worn));
+        v.AddChild(worn);
         if (fallback) v.AddChild(Style.Label("Faint: as by day. The night kit wears the day's piece where it has none of its own.", Style.TextItalic, 14, Kit.Faint, true));
         var block = new PackBlock
         {
@@ -473,7 +477,7 @@ public partial class ForgeScreen : Overlay
         var row = Style.H(Style.Gap3, Glyphs.Icon("drop", 26, col),
             Style.V(1, Style.Label("WHAT THE JAR DID", Style.UiHeavy, 13, col), Style.Label(text, Style.UiBold, 17, mood < 0 ? Style.Bad : Kit.Ink, true)));
         ((Control)row.GetChild(1)).SizeFlagsHorizontal = SizeFlags.ExpandFill;
-        return Style.Panel(Kit.PanelBox(14, 10, new Color("#18200f")), row);
+        return Style.H(12, new ColorRect { Color = col, CustomMinimumSize = new Vector2(2, 0), MouseFilter = MouseFilterEnum.Ignore }, row);
     }
 
     /* ---------------------------------------------------------- the seams -- */
@@ -507,20 +511,17 @@ public partial class ForgeScreen : Overlay
         var a = open ? null : it.Affixes[k];
         var ad = a != null ? Items.Affix(a.Id) : null;
         bool coal = ad?.Kindled != null, skill = ad?.Grants != null, slurry = ad?.Slurry == true, mark = ad?.Mark == true, on = k == seam && SeamCrafts;
-        // The seam at the anvil is the one raised panel with the ember's edge; the rest lie in the well.
-        var box = new StyleBoxFlat { BgColor = on ? new Color("#33251b") : Kit.Well, BorderColor = on ? Style.Ember : new Color("#0a090b"), CornerDetail = 4 };
-        box.SetCornerRadiusAll(3);
-        box.SetBorderWidthAll(on ? 1 : 0);
-        box.BorderWidthTop = 1;
-        box.ContentMarginLeft = box.ContentMarginRight = 12;
-        box.ContentMarginTop = box.ContentMarginBottom = 7;
-        var panel = Style.Panel(box);
-        panel.MouseFilter = MouseFilterEnum.Stop;
+        // A ledger's row (the owner: no boxes holding words): the grade's numeral, its words, a fine
+        // rule under it; the seam at the anvil has a thin ember mark at its left and its words in full ink.
+        var row = Style.Panel(new StyleBoxEmpty { ContentMarginTop = 6, ContentMarginBottom = 6 });
+        row.MouseFilter = MouseFilterEnum.Stop;
         var h = Style.H(14);
+        h.AddChild(new ColorRect { Color = on ? Style.Ember : Colors.Transparent, CustomMinimumSize = new Vector2(2, 0), MouseFilter = MouseFilterEnum.Ignore });
         var badge = new GradeBadge(open ? GradeBadge.Mark.Open : coal ? GradeBadge.Mark.Coal : skill ? GradeBadge.Mark.Skill : slurry ? GradeBadge.Mark.Slurry
             : mark ? GradeBadge.Mark.Inscribed : GradeBadge.Mark.Grade, a?.Tier ?? 0, cap);
+        badge.SizeFlagsVertical = SizeFlags.ShrinkCenter;
         h.AddChild(badge);
-        var words = Style.V(1);
+        var words = Style.V(0);
         words.SizeFlagsHorizontal = SizeFlags.ExpandFill;
         words.SizeFlagsVertical = SizeFlags.ShrinkCenter;
         string title = open ? "An open seam" : ad?.Text(a!.Tier) ?? a!.Id;
@@ -536,19 +537,22 @@ public partial class ForgeScreen : Overlay
             : a!.Tier > cap ? $"{ad?.Name}  ·  grade {Crafting.Grade(a.Tier)}, past what the forge makes of {Crafting.Article(rarity)} piece"
             : a!.Tier >= cap ? $"{ad?.Name}  ·  grade {Crafting.Grade(a.Tier)}, as fine as {Crafting.Article(rarity)} piece is made"
             : $"{ad?.Name}  ·  grade {Crafting.Grade(a.Tier)}; tempers to {Crafting.Grade(cap)}";
-        words.AddChild(Style.Label(title, Style.UiBold, 17, open ? Style.GoldHi : coal ? Style.EmberHi : slurry ? ItemViews.SlurryGreen : mark ? ItemViews.MarkInk : bright ? ItemViews.BrightGrade : Kit.Ink, true));
+        // Its own colour where the power has one (a coal's ember, the slurry's green, a mark's violet);
+        // otherwise ink, full at the anvil and a step back elsewhere.
+        var ink = coal ? Style.EmberHi : slurry ? ItemViews.SlurryGreen : mark ? ItemViews.MarkInk : bright ? ItemViews.BrightGrade : on ? Kit.Ink : Kit.Ink2;
+        words.AddChild(Style.Label(title, open ? Style.TextItalic : Style.UiBold, 17, open ? (on ? Kit.Ink : Kit.Ink2) : ink, true));
         words.AddChild(Style.Label(note, Style.TextItalic, 15, Kit.Dim, true));
         h.AddChild(words);
-        if (on) h.AddChild(Style.Label("AT THE ANVIL", Style.UiHeavy, 12, Style.Ember));
-        panel.AddChild(h);
+        row.AddChild(h);
         if (SeamCrafts)
         {
-            panel.MouseDefaultCursorShape = CursorShape.PointingHand;
-            panel.GuiInput += e => { if (e is InputEventMouseButton { Pressed: true, ButtonIndex: MouseButton.Left }) Pick(k); };
-            Nav.Mark(panel, $"seam:{k}", () => Pick(k));
+            row.MouseDefaultCursorShape = CursorShape.PointingHand;
+            row.GuiInput += e => { if (e is InputEventMouseButton { Pressed: true, ButtonIndex: MouseButton.Left }) Pick(k); };
+            Nav.Mark(row, $"seam:{k}", () => Pick(k));
         }
-        rows[k] = (panel, badge);
-        return panel;
+        rows[k] = (row, badge);
+        var v = Style.V(0, row, Kit.RuleH());
+        return v;
     }
 
     /// <summary>The crafts for the chosen seam: temper it, work a material in, cage a coal, bind, mark.</summary>
@@ -634,7 +638,7 @@ public partial class ForgeScreen : Overlay
             bool wants = wanted.Contains(a.Kindled!);
             o.Add(Card($"Cage: {a.Name}", q, () => Work(q, Sound.Sfx.Cage), "Cage it", $"coal:{n++}", null,
                 wants ? "Your skills evolve with it" : coal ? "In place of the coal it holds, which goes out" : "A coal from the night, caged: it shapes the ember's draft",
-                ink: Style.EmberHi, lit: wants));
+                lit: wants));
         }
         var again = Crafting.Redraw(X, it, crafter);
         o.Add(Card("Three more coals", again, () => Work(again, Sound.Sfx.Click), "Three more", "redraw", null, "Not these: the fire offers three others"));
@@ -822,13 +826,9 @@ public partial class ForgeScreen : Overlay
     Control ModRow(Maps.Chart c, Maps.ChartMod m, int index, int k)
     {
         bool on = k == seam, pinned = c.Pinned == m.Id;
-        var box = new StyleBoxFlat { BgColor = on ? new Color("#33251b") : Kit.Well, BorderColor = on ? Style.Ember : new Color("#0a090b"), CornerDetail = 4 };
-        box.SetCornerRadiusAll(3);
-        box.SetBorderWidthAll(on ? 1 : 0);
-        box.BorderWidthTop = 1;
-        box.ContentMarginLeft = box.ContentMarginRight = 12;
-        box.ContentMarginTop = box.ContentMarginBottom = 7;
-        var panel = Style.Panel(box);
+        // A ledger's row, as the seams are: the wax, the oath's words, a fine rule; the one on the table
+        // with a thin ember mark at its left.
+        var panel = Style.Panel(new StyleBoxEmpty { ContentMarginTop = 6, ContentMarginBottom = 6 });
         panel.MouseFilter = MouseFilterEnum.Stop;
         var seal = new Panel { CustomMinimumSize = new Vector2(34, 34), MouseFilter = MouseFilterEnum.Ignore, SizeFlagsVertical = SizeFlags.ShrinkCenter };
         var wax = Style.Box(m.Prefix ? new Color("#8a1c14") : new Color("#3a2a5a"), m.Prefix ? new Color("#5a0e0a") : new Color("#221636"), 2, 17, 0);
@@ -838,18 +838,16 @@ public partial class ForgeScreen : Overlay
         if (m.Quantity > 0) pays.Add($"{Pct(m.Quantity)} more found");
         if (m.Rarity > 0) pays.Add($"{Pct(m.Rarity)} finer");
         if (m.PackSize > 0) pays.Add($"packs {Pct(m.PackSize)} larger");
-        var words = Style.V(1, Style.Label(m.Says, Style.UiBold, 17, Kit.Ink, true),
-            Style.Label($"{m.Name}  ·  pays {string.Join(", ", pays)}", Style.TextItalic, 15, Kit.Dim, true));
+        var words = Style.V(0, Style.Label(m.Says, Style.UiBold, 17, on ? Kit.Ink : Kit.Ink2, true),
+            Style.Label($"{m.Name}  ·  pays {string.Join(", ", pays)}{(pinned ? "  ·  pinned" : "")}", Style.TextItalic, 15, pinned ? Style.GoldHi : Kit.Dim, true));
         words.SizeFlagsHorizontal = SizeFlags.ExpandFill;
-        var h = Style.H(14, seal, words);
-        if (pinned) h.AddChild(Style.Label("PINNED", Style.UiHeavy, 12, Style.GoldHi));
-        if (on) h.AddChild(Style.Label("ON THE TABLE", Style.UiHeavy, 12, Style.Ember));
+        var h = Style.H(14, new ColorRect { Color = on ? Style.Ember : Colors.Transparent, CustomMinimumSize = new Vector2(2, 0), MouseFilter = MouseFilterEnum.Ignore }, seal, words);
         panel.AddChild(h);
         panel.MouseDefaultCursorShape = CursorShape.PointingHand;
         panel.GuiInput += e => { if (e is InputEventMouseButton { Pressed: true, ButtonIndex: MouseButton.Left }) Pick(k); };
         Nav.Mark(panel, $"seam:{k}", () => Pick(k));
         if (index >= 0) rows[index] = (panel, seal);
-        return panel;
+        return Style.V(0, panel, Kit.RuleH());
     }
 
     /* ---------------------------------------------------- the slurry's -- */
@@ -863,12 +861,12 @@ public partial class ForgeScreen : Overlay
         var q = Crafting.Steep(X, it, crafter);
         // Refused for what the piece is (not for want of a jar): said once, quietly, with no odds.
         if (q.Blocked is { } why && (!Crafting.Workable(it) || Crafting.Slurried(it) || Crafting.Seams(it) == 0)) { o.Note(why); return; }
-        var slab = Style.V(Style.Gap3);
-        var top = Style.H(10, Style.Label("Steep it in slurry", Style.TextBold, 19, ItemViews.SlurryGreen, false, HorizontalAlignment.Left, false));
+        var slab = Style.V(Style.Gap2);
+        var top = Style.H(14, Deed("Steep it in slurry", q, () => Work(q, Sound.Sfx.Pour), "steep", true, ItemViews.SlurryGreen));
         if (Crafting.Line(crafter, "jar") is { } said) top.AddChild(Style.Label($"“{said}”", Style.TextItalic, 15, Kit.Dim, true));
         ((Control)top.GetChild(top.GetChildCount() - 1)).SizeFlagsHorizontal = SizeFlags.ExpandFill;
         slab.AddChild(top);
-        slab.AddChild(SlurryOdds(it, LeftW - 2 * Pad - 32));
+        slab.AddChild(SlurryOdds(it, LeftW - 2 * Pad));
         var foot = Style.H(Style.Gap4);
         var words = Style.V(2);
         words.SizeFlagsHorizontal = SizeFlags.ExpandFill;
@@ -879,12 +877,10 @@ public partial class ForgeScreen : Overlay
         bool noJar = q.Takes.Keys.Any(m => Inventory.Count(Ch, m) == 0);
         if (!q.Ok && q.Blocked != closed)
             words.AddChild(Style.Label(noJar && Crafting.Does(crafter, Verb.Buy) ? $"No jar yet: {He} sells them, above the anvil." : q.Blocked!, Style.TextItalic, 15, Style.Bad, true));
+        else if (q.Ok) words.AddChild(Style.Label("held: it cannot be undone", Style.Ui, 14, Kit.Ink2, true));
         foot.AddChild(words);
-        var b = Hold("Steep", q, () => Work(q, Sound.Sfx.Pour), "steep");
-        b.SizeFlagsVertical = SizeFlags.ShrinkCenter;
-        foot.AddChild(b);
         slab.AddChild(foot);
-        o.Wide = Style.Panel(Kit.PanelBox(16, 14, new Color("#151d12")), slab);
+        o.Wide = slab;
     }
 
     /// <summary>The slurry's odds, seen before the jar is opened (design 9): a bar cut by the weights,
@@ -960,16 +956,10 @@ public partial class ForgeScreen : Overlay
         var words = Style.V(1);
         words.SizeFlagsHorizontal = SizeFlags.ExpandFill;
         int carry = Inventory.Count(Ch, s.Jar), left = Crafting.JarsLeft(G.Journey.World);
-        words.AddChild(Style.Label("A jar of slurry", Style.TextBold, 19, new Color("#a8e08a")));
-        words.AddChild(Style.Label(q.Ok ? $"{q.Gold} gold  ·  {left} left today  ·  you carry {carry}" : q.Blocked!, Style.TextItalic, 15, q.Ok ? Kit.Dim : Style.Bad, true));
+        words.AddChild(Deed("Buy a jar of slurry", q, () => { Sound.Sfx.Loot(false); if (G.Journey.Make(q)) Refresh(); }, "jar", false, new Color("#a8e08a")));
+        words.AddChild(Style.Label(q.Ok ? $"{q.Gold} gold  ·  {left} left today  ·  you carry {carry}" : q.Blocked!, Style.Ui, 14, q.Ok ? Kit.Ink2 : Style.Bad, true));
         h.AddChild(words);
-        var b = Style.Button("Buy", null, q.Ok, true);
-        b.Disabled = !q.Ok;
-        b.SizeFlagsVertical = SizeFlags.ShrinkCenter;
-        b.Pressed += () => { if (!q.Ok) { Sound.Sfx.Deny(); return; } Sound.Sfx.Loot(false); if (G.Journey.Make(q)) Refresh(); };
-        Nav.Mark(b, "jar", () => b.EmitSignal(BaseButton.SignalName.Pressed));
-        h.AddChild(b);
-        return Style.Panel(Kit.PanelBox(14, 10, new Color("#151d12")), h);
+        return h;
     }
 
     /* ------------------------------------------------------ make me one -- */
@@ -1063,87 +1053,74 @@ public partial class ForgeScreen : Overlay
         return string.Join("  ·  ", parts);
     }
 
-    /// <summary>A craft's press: it does the craft when it can, and while under the pointer or
-    /// the focus the heat gauge shows what it may spend.</summary>
-    Button Press(Button b, Quote q, Action act, string navId)
+    /// <summary>
+    /// A craft as type, two to a row (the owner: no boxes holding words, words as type rather than
+    /// buttons): its name is the act, in display type, held for what cannot be undone; then what it
+    /// makes of the seam or the piece, before and after with the after in ember (as Self's preview);
+    /// where it comes from; and what it takes, in small type, or why it cannot be done. lit: the one
+    /// the night leans toward (a coal your skills evolve with) is named in ember. (verb: the act's
+    /// word when it was a button; the name is the act now.)
+    /// </summary>
+    Control Card(string title, Quote q, Action act, string verb, string navId, Control? icon = null, string? note = null, bool hold = false, Color? ink = null, bool lit = false)
     {
-        b.Disabled = !q.Ok;
-        Action press = q.Ok ? act : () => Sound.Sfx.Deny();
-        b.Pressed += press;
-        void Show() => gauge?.Preview(q.HeatLo, q.HeatHi, q.Verb == Verb.Remake);
-        void Hide() => gauge?.Clear();
-        b.MouseEntered += Show;
-        b.MouseExited += Hide;
-        Nav.Mark(b, navId, press, focus: Show, blur: Hide);
-        return b;
-    }
-
-    /// <summary>A press for what cannot be undone: held to full (Style.HoldButton), never asked twice; while
-    /// under the pointer or the focus, the heat gauge shows what it may spend, as a press does.</summary>
-    Button Hold(string title, Quote q, Action act, string navId)
-    {
-        var b = Style.HoldButton(title, () => { if (q.Ok) act(); else Sound.Sfx.Deny(); });
-        b.Disabled = !q.Ok;
-        void Show() => gauge?.Preview(q.HeatLo, q.HeatHi, q.Verb == Verb.Remake);
-        void Hide() => gauge?.Clear();
-        b.MouseEntered += Show;
-        b.MouseExited += Hide;
-        Nav.Mark(b, navId, b.Nudge, focus: Show, blur: Hide);
-        return b;
-    }
-
-    /// <summary>A craft as a card, two to a row (the approved bench): its name; what it makes of the seam
-    /// or the piece (before, then after, the after lit); where it comes from; then what it takes beside
-    /// its one press, or why it cannot be done. lit: the card the night leans toward (a coal your
-    /// skills evolve with) has the ember's edge.</summary>
-    Control Card(string title, Quote q, Action act, string button, string navId, Control? icon = null, string? note = null, bool hold = false, Color? ink = null, bool lit = false)
-    {
-        var box = new StyleBoxFlat { BgColor = lit ? new Color("#33251b") : new Color("#2d2a2e"), BorderColor = lit ? Style.Ember : Kit.PanelHi, CornerDetail = 4 };
-        box.SetCornerRadiusAll(3);
-        box.SetBorderWidthAll(lit ? 1 : 0);
-        box.BorderWidthTop = 1;
-        box.ContentMarginLeft = box.ContentMarginRight = 14;
-        box.ContentMarginTop = 9;
-        box.ContentMarginBottom = 10;
-        var card = Style.Panel(lit ? box : UiArt.Frame("panel", box));
-        card.CustomMinimumSize = new Vector2(CardW, 0);
-        card.SetMeta("ok", q.Ok);
         var v = Style.V(3);
+        v.CustomMinimumSize = new Vector2(CardW, 0);
+        v.SetMeta("ok", q.Ok);
         var top = Style.H(10);
-        if (icon != null) { icon.SizeFlagsVertical = SizeFlags.ShrinkBegin; top.AddChild(icon); }
-        var name = Style.Label(title, Style.TextBold, 19, ink ?? Kit.Ink, true);
-        name.SizeFlagsHorizontal = SizeFlags.ExpandFill;
-        top.AddChild(name);
+        if (icon != null) { icon.SizeFlagsVertical = SizeFlags.ShrinkCenter; top.AddChild(icon); }
+        var word = Deed(title, q, act, navId, hold, lit ? Style.EmberHi : ink ?? Kit.Ink);
+        word.SizeFlagsVertical = SizeFlags.ShrinkCenter;
+        top.AddChild(word);
         v.AddChild(top);
-        var after = new Color("#9ad8ff");
         if (q.Before != null && q.After != null)
         {
             var flow = new HFlowContainer { MouseFilter = MouseFilterEnum.Ignore };
             flow.AddThemeConstantOverride("h_separation", 6);
             flow.AddChild(Style.Label(q.Before, Style.Ui, 15, Kit.Dim, false, HorizontalAlignment.Left, false));
-            flow.AddChild(Style.Label("to", Style.TextItalic, 15, Kit.Faint, false, HorizontalAlignment.Left, false));
-            flow.AddChild(Style.Label(q.After, Style.UiBold, 15, after, false, HorizontalAlignment.Left, false));
+            flow.AddChild(new Arrow(Style.Ember) { SizeFlagsVertical = SizeFlags.ShrinkCenter });
+            flow.AddChild(Style.Label(q.After, Style.UiBold, 15, Style.EmberHi, false, HorizontalAlignment.Left, false));
             v.AddChild(flow);
         }
-        else if (q.After != null) v.AddChild(Style.Label(q.After, Style.UiBold, 15, after, true));
+        else if (q.After != null) v.AddChild(Style.Label(q.After, Style.UiBold, 15, Style.EmberHi, true));
         if (note != null) v.AddChild(Style.Label(note, Style.TextItalic, 15, lit ? Style.Ember : Kit.Dim, true));
-        var foot = Style.H(12);
-        var costs = Style.V(1);
-        costs.SizeFlagsHorizontal = SizeFlags.ExpandFill;
-        costs.SizeFlagsVertical = SizeFlags.ShrinkCenter;
         string cost = Cost(q);
-        if (cost != "") costs.AddChild(Style.Label(cost, Style.Ui, 15, q.Ok ? Kit.Ink2 : Kit.Dim, true));
-        if (!q.Ok && q.Blocked != closed) costs.AddChild(Style.Label(q.Blocked!, Style.TextItalic, 15, Style.Bad, true));
-        foot.AddChild(costs);
-        var b = hold ? Hold(button, q, act, navId) : Press(Style.Button(button, null, q.Ok, true), q, act, navId);
-        b.SizeFlagsVertical = SizeFlags.ShrinkEnd;
-        foot.AddChild(b);
-        // (the press sits at the card's foot whatever its words run to, so a row of cards reads level)
-        var room = new Control { SizeFlagsVertical = SizeFlags.ExpandFill, MouseFilter = MouseFilterEnum.Ignore };
-        v.AddChild(room);
-        v.AddChild(foot);
-        card.AddChild(v);
-        return card;
+        if (hold && q.Ok) cost = cost == "" ? "held: it cannot be undone" : $"{cost}  ·  held: it cannot be undone";
+        if (cost != "") v.AddChild(Style.Label(cost, Style.Ui, 14, q.Ok ? Kit.Ink2 : Kit.Faint, true));
+        if (!q.Ok && q.Blocked != closed) v.AddChild(Style.Label(q.Blocked!, Style.TextItalic, 14, Style.Bad, true));
+        return v;
+    }
+
+    /// <summary>A craft's name as its act: a word in display type, lit under the pointer; held to full
+    /// for what cannot be undone (the fill rising under the word); while under the pointer or the
+    /// focus, the heat gauge shows what it may spend. What cannot be done now is a faint word.</summary>
+    Button Deed(string title, Quote q, Action act, string navId, bool hold, Color ink)
+    {
+        Button b;
+        if (hold)
+        {
+            var h = Style.HoldButton(title, () => { if (q.Ok) act(); else Sound.Sfx.Deny(); });
+            h.Text = title;
+            Nav.Mark(h, navId, h.Nudge, focus: () => gauge?.Preview(q.HeatLo, q.HeatHi, q.Verb == Verb.Remake), blur: () => gauge?.Clear());
+            b = h;
+        }
+        else
+        {
+            b = new Button { Text = title, FocusMode = FocusModeEnum.None, MouseDefaultCursorShape = CursorShape.PointingHand };
+            Action press = q.Ok ? act : () => Sound.Sfx.Deny();
+            b.Pressed += press;
+            Nav.Mark(b, navId, press, focus: () => gauge?.Preview(q.HeatLo, q.HeatHi, q.Verb == Verb.Remake), blur: () => gauge?.Clear());
+        }
+        Style.Font(b, Style.DisplayLight, 19, q.Ok ? ink : Kit.Faint, false);
+        b.AddThemeColorOverride("font_hover_color", q.Ok ? ink.Lightened(0.25f) : Kit.Faint);
+        b.AddThemeColorOverride("font_pressed_color", Style.EmberHi);
+        b.AddThemeColorOverride("font_disabled_color", Kit.Faint);
+        foreach (var st in new[] { "normal", "hover", "pressed", "focus", "disabled" })
+            b.AddThemeStyleboxOverride(st, new StyleBoxEmpty { ContentMarginLeft = 0, ContentMarginRight = 6, ContentMarginTop = 0, ContentMarginBottom = 2 });
+        b.Disabled = !q.Ok;
+        b.Alignment = HorizontalAlignment.Left;
+        b.MouseEntered += () => gauge?.Preview(q.HeatLo, q.HeatHi, q.Verb == Verb.Remake);
+        b.MouseExited += () => gauge?.Clear();
+        return b;
     }
 
     void Work(Quote q, Action? sound = null, bool off = false)
@@ -1215,8 +1192,13 @@ public partial class ForgeScreen : Overlay
                 Verb.Commission => (new Color(1f, 0.78f, 0.35f, 0.35f), new Color(1f, 0.9f, 0.6f, 0.95f), 1.6),
                 _ => (new Color(1f, 0.55f, 0.18f, 0.5f), new Color(1f, 0.85f, 0.5f, 0.9f), 0.9),
             };
-            var flare = new Panel { MouseFilter = MouseFilterEnum.Ignore, Material = new CanvasItemMaterial { BlendMode = CanvasItemMaterial.BlendModeEnum.Add } };
-            flare.AddThemeStyleboxOverride("panel", Style.Box(fill, edge, 2, 5, 0));
+            // A light from the row's left edge across it, fading out, added to what is there: no box.
+            var flare = new TextureRect
+            {
+                MouseFilter = MouseFilterEnum.Ignore, Material = new CanvasItemMaterial { BlendMode = CanvasItemMaterial.BlendModeEnum.Add },
+                Texture = new GradientTexture2D { Width = 64, Height = 4, Gradient = new Gradient { Colors = new[] { edge, fill, fill with { A = 0 } }, Offsets = new[] { 0f, 0.25f, 1f } } },
+                ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize, StretchMode = TextureRect.StretchModeEnum.Scale,
+            };
             flare.Size = row.Size;
             row.AddChild(flare);
             flare.CreateTween().TweenProperty(flare, "modulate:a", 0f, slow).SetTrans(Tween.TransitionType.Quad).SetEase(Tween.EaseType.Out);
@@ -1307,9 +1289,10 @@ public partial class ForgeScreen : Overlay
 }
 
 /// <summary>
-/// A seam's mark at the head of its row: a grade as its numeral, coloured as the rarity of
-/// the same rank (grade IV reads as epic), with pips under it for the grades it has and the
-/// ones it can still be tempered to; a caged coal as a flame; an open seam as a gap waiting.
+/// A seam's mark at the head of its ledger row: a grade as its numeral in Cinzel, coloured as the
+/// rarity of the same rank (grade IV reads as epic), no box round it; the bright grade with a little
+/// light of its own; a caged coal as a flame, a worn skill as a book, the slurry's as a drop; an open
+/// seam as a "+" cut into the page.
 /// </summary>
 public partial class GradeBadge : Control
 {
@@ -1322,69 +1305,57 @@ public partial class GradeBadge : Control
         this.mark = mark;
         this.tier = tier;
         this.cap = cap;
-        CustomMinimumSize = new Vector2(54, 54);
+        CustomMinimumSize = new Vector2(44, 36);
         MouseFilter = MouseFilterEnum.Ignore;
     }
 
     public override void _Draw()
     {
-        var r = new Rect2(Vector2.Zero, Size);
+        var c = Size / 2;
         bool bright = mark == Mark.Grade && tier >= Crafting.Bright;
-        var col = mark switch { Mark.Coal => Style.Ember, Mark.Open => Style.GoldDim, Mark.Skill => Style.Day, Mark.Slurry => ItemViews.SlurryGreen, Mark.Inscribed => ItemViews.MarkInk, _ => bright ? ItemViews.BrightGrade : Style.RarityOf(tier) };
-        // The bright grade gives off a little light of its own, past the badge's edge.
-        if (bright)
-            for (int i = 3; i >= 1; i--) DrawRect(r.Grow(i * 2.5f), ItemViews.SlurryGreen with { A = 0.07f * (4 - i) }, false, 2.5f);
-        DrawRect(r, new Color(0.04f, 0.035f, 0.05f, 0.95f));
+        var col = mark switch { Mark.Coal => Style.Ember, Mark.Skill => Style.Day, Mark.Slurry => ItemViews.SlurryGreen, Mark.Inscribed => ItemViews.MarkInk, _ => bright ? ItemViews.BrightGrade : Style.RarityOf(tier) };
         if (mark == Mark.Open)
         {
-            // A gap waiting: a dashed frame and a cross.
-            for (int i = 0; i < 4; i++)
+            // Cut into the page: a dark stroke with the light catching its lower edge.
+            foreach (var (off, ink) in new[] { (new Vector2(0, 1), new Color(1, 1, 1, 0.12f)), (Vector2.Zero, new Color(0, 0, 0, 0.75f)) })
             {
-                var a = new[] { r.Position, r.Position + new Vector2(r.Size.X, 0), r.End, r.Position + new Vector2(0, r.Size.Y) };
-                DrawDashedLine(a[i], a[(i + 1) % 4], col, 1.5f, 5);
+                DrawLine(c + off + new Vector2(-9, 0), c + off + new Vector2(9, 0), ink, 2.2f, true);
+                DrawLine(c + off + new Vector2(0, -9), c + off + new Vector2(0, 9), ink, 2.2f, true);
             }
-            var c = r.GetCenter();
-            DrawLine(c + new Vector2(-9, 0), c + new Vector2(9, 0), col, 2);
-            DrawLine(c + new Vector2(0, -9), c + new Vector2(0, 9), col, 2);
             return;
         }
-        DrawRect(r, col with { A = 0.7f }, false, 1.5f);
         if (mark is Mark.Coal or Mark.Skill or Mark.Slurry)
         {
-            DrawRect(r.Grow(-2), col with { A = 0.12f });
-            var tex = Glyphs.Texture(mark switch { Mark.Coal => "flame", Mark.Slurry => "drop", _ => "book" }, 30, col);
-            DrawTextureRect(tex, new Rect2(r.GetCenter() - new Vector2(15, 15), new Vector2(30, 30)), false);
+            var tex = Glyphs.Texture(mark switch { Mark.Coal => "flame", Mark.Slurry => "drop", _ => "book" }, 28, col);
+            DrawTextureRect(tex, new Rect2(c - new Vector2(14, 14), new Vector2(28, 28)), false);
             return;
         }
-        DrawRect(r.Grow(-2), col with { A = 0.08f + 0.04f * tier });
+        // The bright grade gives off a little light of its own.
+        if (bright) for (int i = 3; i >= 1; i--) DrawCircle(c, 9 + i * 5, ItemViews.SlurryGreen with { A = 0.05f * (4 - i) });
         string numeral = Crafting.Grade(tier);
         var font = Style.Display;
-        var size = font.GetStringSize(numeral, HorizontalAlignment.Left, -1, 22);
-        DrawString(font, new Vector2((Size.X - size.X) / 2, 30), numeral, HorizontalAlignment.Left, -1, 22, col.Lightened(0.15f));
-        // Pips: one for each grade it can reach here, lit for those it has.
-        int n = mark == Mark.Inscribed ? 6 : Math.Max(cap, tier) + 1;
-        float w = 7, gap = 3, x0 = (Size.X - (n * w + (n - 1) * gap)) / 2;
-        for (int i = 0; i < n; i++)
-        {
-            var p = new Rect2(x0 + i * (w + gap), Size.Y - 13, w, 5);
-            if (i <= tier) DrawRect(p, col);
-            else DrawRect(p, col with { A = 0.55f }, false, 1);
-        }
+        var size = font.GetStringSize(numeral, HorizontalAlignment.Left, -1, 26);
+        var at = new Vector2(c.X - size.X / 2, c.Y + 9);
+        DrawString(font, at + new Vector2(0, 1), numeral, HorizontalAlignment.Left, -1, 26, new Color(0, 0, 0, 0.7f));
+        DrawString(font, at, numeral, HorizontalAlignment.Left, -1, 26, col.Lightened(0.15f));
     }
 }
 
 /// <summary>
-/// A piece's heat as cells of ember: lit for what is left, dark for what is spent. While a
-/// craft is under the pointer or the focus, it shows what that craft may cost: the cells it
-/// will surely take dimmed, the ones it might take pulsing; or, for a craft that adds heat,
-/// the new cells, outlined in gold. The budget shown before it is spent (C3, C4).
+/// A piece's heat as a chain of iron links (UI art's chain/: face and edge in turn, cold, warm and
+/// hot): a link for every point of heat it can take, hot for what is left, cold iron for what is
+/// spent, its count as type beside it. While a craft is under the pointer or the focus, the links it
+/// will surely take go warm and the ones it might take pulse; a craft that adds heat lights new
+/// links. Struck, the spent links cool from hot through warm to cold, the last first. The budget is
+/// shown before it is spent (C3, C4), and the chain is the motif doing a job: its working life is
+/// literally its hot links.
 /// </summary>
 public partial class HeatGauge : HBoxContainer
 {
     readonly int heat, full;
     int lo, hi;
     bool preview, grows;
-    readonly Cells cells;
+    readonly Links links;
     readonly Label words;
 
     public HeatGauge(ItemInstance it, float width = 430)
@@ -1393,16 +1364,20 @@ public partial class HeatGauge : HBoxContainer
         full = Math.Max(1, it.HeatFull ?? heat);
         AddThemeConstantOverride("separation", Style.Gap3);
         MouseFilter = MouseFilterEnum.Ignore;
-        cells = new Cells(this) { CustomMinimumSize = new Vector2(width, 18) };
-        cells.SizeFlagsVertical = SizeFlags.ShrinkCenter;
-        AddChild(cells);
-        words = Style.Label("", Style.UiBold, Style.Small, Style.EmberHi);
+        // As long as the chain is (a link a point, at the links' own pitch), up to the width allowed, so
+        // its count sits beside its last link rather than across a gap.
+        int most = Math.Max(full, heat);
+        links = new Links(this) { CustomMinimumSize = new Vector2(Math.Min(width, Links.Length(most)), Links.H) };
+        links.SizeFlagsVertical = SizeFlags.ShrinkCenter;
+        AddChild(links);
+        words = Style.Label("", Style.UiBold, 16, Style.EmberHi);
+        words.SizeFlagsVertical = SizeFlags.ShrinkCenter;
         AddChild(words);
         Say();
     }
 
-    /// <summary>The heat a craft just took, burning out of the cells it had (from the heat before
-    /// to now), or what it gave glowing in: the gauge's half of the hammer's moment.</summary>
+    /// <summary>The heat a craft just took, cooling out of the links it had (from the heat before to
+    /// now), or what it gave heating in: the gauge's half of the hammer's moment.</summary>
     public void Burn(int before)
     {
         if (before == heat) return;
@@ -1411,7 +1386,7 @@ public partial class HeatGauge : HBoxContainer
         burnFrom = before;
         burnT = 0;
         Say();
-        cells.QueueRedraw();
+        links.QueueRedraw();
     }
 
     int burnFrom = -1;
@@ -1430,7 +1405,7 @@ public partial class HeatGauge : HBoxContainer
         this.grows = grows;
         preview = true;
         Say();
-        cells.QueueRedraw();
+        links.QueueRedraw();
     }
 
     public void Clear()
@@ -1439,14 +1414,14 @@ public partial class HeatGauge : HBoxContainer
         if (!preview) return;
         preview = false;
         Say();
-        cells.QueueRedraw();
+        links.QueueRedraw();
     }
 
     void Say()
     {
-        if (heat <= 0 && !(preview && lo < 0)) { words.Text = "Set: nothing more can be worked into it"; words.AddThemeColorOverride("font_color", Style.InkDim); return; }
+        if (heat <= 0 && !(preview && lo < 0)) { words.Text = "Set: nothing more can be worked into it"; words.AddThemeColorOverride("font_color", Kit.Dim); return; }
         words.AddThemeColorOverride("font_color", Style.EmberHi);
-        // Just worked: what it took, said while the cells burn out.
+        // Just worked: what it took, said while the links cool.
         if (burnFrom >= 0 && !preview)
         {
             words.Text = burnFrom > heat ? $"{burnFrom - heat} heat spent: {heat} of {full}" : $"+{heat - burnFrom} heat: {heat} of {full}";
@@ -1476,60 +1451,82 @@ public partial class HeatGauge : HBoxContainer
                 Say();
                 if (pending is { } p) { pending = null; Preview(p.Lo, p.Hi, p.Grows); }
             }
-            cells.QueueRedraw();
+            links.QueueRedraw();
         }
-        if (preview && (lo < 0 || hi > lo)) cells.QueueRedraw();
+        if (preview && (lo < 0 || hi > lo)) links.QueueRedraw();
     }
 
-    sealed partial class Cells : Control
+    sealed partial class Links : Control
     {
         readonly HeatGauge g;
-        public Cells(HeatGauge g) { this.g = g; MouseFilter = MouseFilterEnum.Ignore; }
+        public Links(HeatGauge g) { this.g = g; MouseFilter = MouseFilterEnum.Ignore; }
+
+        /// <summary>The links' drawn height, and a chain's length for n links at their own pitch.</summary>
+        public const float H = 38;
+        public static float Length(int n) => (n - 1) * 17.2f * (H / 44f) + 52 * (H / 44f);
+
+        /// <summary>UI art's link, by its heat (0 cold, 1 warm, 2 hot) and its turn in the chain (face or
+        /// edge, and one of its six castings, so no two neighbours are the same iron).</summary>
+        static Texture2D? Link(int heat, int i) =>
+            UiArt.Art($"chain/{(heat switch { 2 => "hot_", 1 => "warm_", _ => "" })}{(i % 2 == 0 ? "face" : "edge")}_{i % 6}.png");
 
         public override void _Draw()
         {
             int n = g.Grown;
-            float gap = n > 24 ? 1 : 2, w = (Size.X - gap * (n - 1)) / n, hgt = Size.Y;
-            float pulse = 0.55f + 0.45f * Mathf.Sin((float)Time.GetTicksMsec() / 180f);
-            var dark = new Color("#1a1210");
+            float pulse = 0.5f + 0.5f * Mathf.Sin((float)Time.GetTicksMsec() / 180f);
+            // The link's own size at the drawn scale, and the pitch the chain needs to fit its width.
+            float s = Size.Y / 44f, cw = 52 * s, ch = 44 * s;
+            float pitch = Mathf.Min(17.2f * s, n > 1 ? (Size.X - cw) / (n - 1) : 0);
+            if (Link(2, 0) == null) { Cells(n, pulse); return; }
             for (int i = 0; i < n; i++)
             {
-                var r = new Rect2(i * (w + gap), 0, w, hgt);
-                var lit = Style.Ember.Lerp(Style.EmberHi, n > 1 ? i / (float)(n - 1) * 0.6f : 0);
+                var r = new Rect2(i * pitch, 0, cw, ch);
                 bool has = i < g.heat;
-                if (g.preview && g.lo < 0 && i >= g.heat && i < g.NewHeat)
-                {
-                    // Heat a craft would add: new cells, outlined in gold.
-                    DrawRect(r, Style.Gold.Lerp(Style.EmberHi, 0.4f) with { A = 0.45f + 0.35f * pulse });
-                    DrawRect(r, Colors.White with { A = 0.8f }, false, 1.5f);
-                    continue;
-                }
-                // Just spent: the cell flares white-hot and dies to dark over a second, the last first.
+                // A craft that adds heat: new links lit, breathing.
+                if (g.preview && g.lo < 0 && i >= g.heat && i < g.NewHeat) { Draw(2, i, r, 0.45f + 0.4f * pulse); continue; }
+                // Just spent: hot to warm to cold over a second, the last first.
                 if (!has && g.burnFrom > i)
                 {
                     float t = Mathf.Clamp((float)(g.burnT - (g.burnFrom - 1 - i) * 0.07) / 0.8f, 0, 1);
-                    DrawRect(r, dark);
-                    DrawRect(r, new Color("#fff4d0").Lerp(Style.Ember, Mathf.Min(1, t * 2)) with { A = 1 - t });
-                    DrawRect(r, Style.Line with { A = 0.25f * t }, false, 1);
+                    Draw(0, i, r, 1);
+                    Draw(1, i, r, 1 - Mathf.Clamp((t - 0.5f) * 2, 0, 1));
+                    Draw(2, i, r, 1 - Mathf.Clamp(t * 2, 0, 1));
                     continue;
                 }
-                if (!has) { DrawRect(r, dark); DrawRect(r, Style.Line with { A = 0.25f }, false, 1); continue; }
-                // Just given (a rekindle, a remake): the new cells glow in from gold.
+                if (!has) { Draw(0, i, r, 0.75f); continue; }
+                // Just given (a rekindle, a remake): the new links heat in from cold.
                 if (g.burnFrom >= 0 && g.burnFrom <= i)
                 {
                     float t = Mathf.Clamp((float)(g.burnT - (i - g.burnFrom) * 0.06) / 0.7f, 0, 1);
-                    DrawRect(r, Style.Gold.Lerp(lit, t) with { A = 0.35f + 0.65f * t });
-                    DrawRect(r, Colors.White with { A = 0.8f * (1 - t) }, false, 1.5f);
+                    Draw(0, i, r, 1);
+                    Draw(2, i, r, t);
                     continue;
                 }
                 if (g.preview && g.lo >= 0)
                 {
                     bool sure = i >= g.heat - g.lo, maybe = !sure && i >= g.heat - g.hi;
-                    if (sure) { DrawRect(r, lit with { A = 0.22f }); DrawRect(r, Style.Bad with { A = 0.8f }, false, 1.5f); continue; }
-                    if (maybe) { DrawRect(r, lit with { A = 0.3f + 0.5f * pulse }); DrawRect(r, Style.Bad with { A = 0.5f }, false, 1); continue; }
+                    if (sure) { Draw(1, i, r, 1); continue; }
+                    if (maybe) { Draw(1, i, r, 1); Draw(2, i, r, pulse); continue; }
                 }
-                DrawRect(r, lit);
-                DrawRect(new Rect2(r.Position, new Vector2(w, hgt * 0.35f)), Colors.White with { A = 0.18f });
+                Draw(2, i, r, 1);
+            }
+        }
+
+        void Draw(int heat, int i, Rect2 r, float a)
+        {
+            if (a <= 0.01f || Link(heat, i) is not { } t) return;
+            DrawTextureRect(t, r, false, Colors.White with { A = a });
+        }
+
+        /// <summary>Until UI art's links are in the build: the heat as plain cells.</summary>
+        void Cells(int n, float pulse)
+        {
+            float gap = 2, w = (Size.X - gap * (n - 1)) / n, hgt = Size.Y * 0.6f, y = Size.Y * 0.2f;
+            for (int i = 0; i < n; i++)
+            {
+                var r = new Rect2(i * (w + gap), y, w, hgt);
+                bool spent = i >= g.heat || g.preview && g.lo >= 0 && i >= g.heat - g.hi;
+                DrawRect(r, spent ? new Color("#1a1210") : Style.Ember with { A = spent ? 1 : 0.6f + 0.4f * pulse });
             }
         }
     }
