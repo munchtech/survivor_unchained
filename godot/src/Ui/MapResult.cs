@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using Godot;
 using SurvivorUnchained.Maps;
@@ -24,113 +25,97 @@ public partial class MapResultScreen : TellingScreen
 
     public MapResultScreen(Game g, MapResult result, MapSpoils spoils) : base(g) { r = result; this.spoils = spoils; }
 
+    /// <summary>
+    /// One panel over the world, fitted (it was a page of two half-empty boxes): the verdict between
+    /// the chains, the chart and who held it; the map's numbers as a ledger line; then what came out,
+    /// the best first and named, so a map's dozen and more finds never bury the Epic under Commons
+    /// (crafting's note at 1080), and the rest as tiles together in one beat; the atlas beside it.
+    /// The way back is there from the first moment, and the whole telling is done in under six
+    /// seconds (it ran past nine).
+    /// </summary>
     protected override void Build()
     {
-        HideHud();
         Retell();
-        // (a click anywhere tells the rest at once)
-        AddChild(new Backdrop(() => told = true, r.Cleared ? 0.82f : 0.9f));
-        var wrap = Style.Centered(Style.V(14), new Vector2(1420, 940));
-        AddChild(wrap);
         var people = MapOffers.People(r.Chart.People);
-        var banner = Style.Panel(OrnateBox.Make(OrnateBox.Kind.Banner, 30, r.Cleared ? Style.Gold : Style.BloodHi),
-            Style.Label(r.Cleared ? "THE MAP IS CLEARED" : "THE MAP CLOSES", Style.Display, 40, r.Cleared ? new Color("#ffe6b8") : Style.BloodHi, false, HorizontalAlignment.Center));
-        banner.SizeFlagsHorizontal = SizeFlags.ShrinkCenter;
-        wrap.AddChild(banner);
-        wrap.AddChild(Style.Label(r.Chart.Name, Style.TextItalic, Style.Lead, Style.GoldHi, false, HorizontalAlignment.Center));
-        // What the chart was: its tier, who held it, what it was sworn under.
         var sworn = r.Chart.Rolled.Select(m => m.Name).ToList();
-        wrap.AddChild(Style.Label($"Tier {r.Chart.Tier}  ·  held by {people.Name}{(sworn.Count > 0 ? "  ·  " + string.Join(", ", sworn) : "")}",
-            Style.Ui, Style.Small, Style.InkDim, true, HorizontalAlignment.Center));
+        var v = ResultPanel(r.Cleared ? "The map is cleared" : "The map closes", r.Cleared ? new Color("#ffe6b8") : Style.BloodHi,
+            $"{r.Chart.Name}  ·  tier {r.Chart.Tier}, held by {people.Name}{(sworn.Count > 0 ? "  ·  " + string.Join(", ", sworn) : "")}");
 
-        // Beat one: the map's numbers.
-        var tally = Style.H(48, Stat("hourglass", r.Seconds, Clock, r.Cleared ? "cleared in" : "held out", 0.5, r.Cleared));
-        double at = 0.85;
-        // Falls are counted where a map allows more than one, or where she rose again (Not Yet) and
-        // cleared it; where one fall ends it, the verdict has already said so.
+        // Beat one: the map's numbers, counting up in turn.
+        var stats = new List<(double, Func<double, string>, string, double, bool)> { (r.Seconds, Clock, r.Cleared ? "cleared in" : "held out", 0.3, r.Cleared) };
+        double at = 0.55;
+        // Falls are counted where a map allows more than one, or where she rose again and cleared it.
         if (MapRun.FallsAllowed > 1 || r.Falls > 0 && r.Cleared)
         {
-            tally.AddChild(Stat("heart", r.Falls, x => MapRun.FallsAllowed > 1 ? $"{x:0} / {MapRun.FallsAllowed}" : $"{x:0}", MapRun.FallsAllowed > 1 ? "falls" : "rose again", at, r.Falls < MapRun.FallsAllowed));
-            at += 0.35;
+            stats.Add((r.Falls, x => MapRun.FallsAllowed > 1 ? $"{x:0}/{MapRun.FallsAllowed}" : $"{x:0}", MapRun.FallsAllowed > 1 ? "falls" : "rose again", at, r.Falls < MapRun.FallsAllowed));
+            at += 0.25;
         }
-        tally.AddChild(Stat("skull", r.Kills, x => $"{x:N0}", "slain", at, r.Cleared));
-        tally.AddChild(Stat("sigil", r.PacksCleared, x => $"{x:0} / {r.Packs}", "packs broken", at + 0.35, r.Cleared));
-        tally.Alignment = BoxContainer.AlignmentMode.Center;
-        wrap.AddChild(tally);
-        double cue = at + 0.35 + Count + 0.3;
+        stats.Add((r.Kills, x => $"{x:N0}", "slain", at, r.Cleared));
+        stats.Add((r.PacksCleared, x => $"{x:0}/{r.Packs}", "packs broken", at + 0.25, r.Cleared));
+        v.AddChild(Tally(stats.ToArray()));
+        double cue = at + 0.25 + Count;
 
-        var two = Style.H(18);
-        two.SizeFlagsVertical = SizeFlags.ExpandFill;
-        wrap.AddChild(two);
-
-        // Beat two: what came out, loot first, the best last.
-        var outv = Style.V(10, new Section("What came out"));
-        void Next(Control c, Action? sound, double gap = 0.42) { outv.AddChild(Beat(c, cue, sound)); cue += gap; }
-        if (spoils.Gear.Count > 0)
+        var (left, right) = Columns(v, 430);
+        // Beat two: what came out, the best first.
+        left.AddChild(Kit.Head("What came out", $"{spoils.Gear.Count} piece{(spoils.Gear.Count == 1 ? "" : "s")}"));
+        // The best first: a Legendary or Storied piece, a set's, an Epic, a ruler's marked thing; then the rest.
+        static int Rank(ItemInstance it) => Drops.TierOf(it) switch
         {
-            var grid = new HFlowContainer { MouseFilter = MouseFilterEnum.Ignore };
-            grid.AddThemeConstantOverride("h_separation", 12);
-            grid.AddThemeConstantOverride("v_separation", 10);
-            outv.AddChild(grid);
-            foreach (var it in spoils.Gear)
-            {
-                var found = it;
-                grid.AddChild(Beat(Find(it), cue, () => Sound.Sfx.Loot(found.Rarity >= 3)));
-                cue += it.Rarity >= 3 ? 0.6 : 0.32;
-            }
+            LootTier.Storied => 9, LootTier.Legendary => 8, LootTier.Set => 7, LootTier.Epic => 6, LootTier.Book or LootTier.Chart or LootTier.Quest => 5,
+            LootTier.Rare => 3, LootTier.Uncommon => 2, LootTier.Common => 1, _ => 0,
+        };
+        var gear = spoils.Gear.OrderByDescending(Rank).ThenByDescending(Drops.LevelOf).ToList();
+        var noted = gear.Where(it => Rank(it) >= 5).ToList();
+        foreach (var it in noted)
+        {
+            var found = it;
+            var col = ItemViews.ColourOf(it);
+            var line = Style.H(12, FindTile(it, 48), Style.V(0, Style.Label(Inventory.Name(it), Style.TextBold, 18, col), Style.Label(ItemViews.KindLine(it), Style.Ui, 14, Kit.Dim)));
+            foreach (var c in line.GetChildren().OfType<Control>()) c.SizeFlagsVertical = SizeFlags.ShrinkCenter;
+            left.AddChild(Beat(line, cue, () => Sound.Sfx.Loot(true)));
+            cue += 0.5;
         }
-        else Next(Style.Label("No gear came out of it.", Style.TextItalic, Style.Small, Style.InkDim), null, 0.3);
+        var rest = gear.Except(noted).ToList();
+        if (rest.Count > 0)
+        {
+            // (the rest together, in one beat: a dozen Commons told one by one was the slow part)
+            var flow = new HFlowContainer { MouseFilter = MouseFilterEnum.Ignore };
+            flow.AddThemeConstantOverride("h_separation", 8);
+            flow.AddThemeConstantOverride("v_separation", 8);
+            foreach (var it in rest) flow.AddChild(FindTile(it, 52));
+            left.AddChild(Beat(flow, cue, () => Sound.Sfx.Loot(false)));
+            cue += 0.45;
+        }
+        else if (gear.Count == 0) { left.AddChild(Beat(Style.Label("No gear came out of it.", Style.TextItalic, 15, Kit.Dim), cue)); cue += 0.3; }
         // Where the gathering at the end put what she did not walk over (docs/design/LOOT_DESIGN.md §6.2).
-        if (spoils.Stored.Count > 0)
-            Next(Style.Label($"Your pack was full: Rook keeps {(spoils.Stored.Count == 1 ? "one of these" : $"{spoils.Stored.Count} of these")} for you.", Style.TextItalic, Style.Small, Style.InkDim), null, 0.3);
-        if (r.Gathered is { Broken: > 0 } g)
-            Next(Style.Label($"Broken down: {g.Broken} {(g.Broken == 1 ? "thing" : "things")} for {Items.Several(Crafting.Iron, g.Iron)}{(g.Shards > 0 ? $" and {Items.Several(Crafting.Shard, g.Shards)}" : "")}.", Style.TextItalic, Style.Small, Style.InkDim), null, 0.3);
-        foreach (var c in spoils.Charts) Next(ChartFound(c), () => Sound.Sfx.Loot(true), 0.55);
-        if (spoils.Materials.Count > 0 || r.Spilled.Count > 0) Next(Haul(spoils.Materials, r.Spilled, "Carried out"), () => Sound.Sfx.Loot(), 0.5);
-        if (spoils.Gold >= 1) Next(Line("coin", $"{spoils.Gold:N0} gold", Style.GoldHi), Sound.Sfx.Gold);
-        two.AddChild(Card(outv));
+        var notes = new List<string>();
+        if (spoils.Stored.Count > 0) notes.Add($"Your pack was full: Rook keeps {(spoils.Stored.Count == 1 ? "one of these" : $"{spoils.Stored.Count} of these")} for you.");
+        if (r.Gathered is { Broken: > 0 } g) notes.Add($"Broken down: {g.Broken} {(g.Broken == 1 ? "thing" : "things")} for {Items.Several(Crafting.Iron, g.Iron)}{(g.Shards > 0 ? $" and {Items.Several(Crafting.Shard, g.Shards)}" : "")}.");
+        if (notes.Count > 0) { left.AddChild(Beat(Style.Label(string.Join("  ", notes), Style.TextItalic, 15, Kit.Dim, true), cue)); cue += 0.25; }
+        // What else came out sits under the atlas, so the two columns are of a height.
+        if (spoils.Charts.Count > 0 || spoils.Materials.Count > 0 || r.Spilled.Count > 0 || spoils.Gold >= 1)
+        {
+            right.AddChild(Kit.Head("And besides"));
+            foreach (var c in spoils.Charts) { right.AddChild(Beat(ChartFound(c), cue, () => Sound.Sfx.Loot(true))); cue += 0.45; }
+            if (spoils.Materials.Count > 0 || r.Spilled.Count > 0) { right.AddChild(Beat(Haul(spoils.Materials, r.Spilled, "Carried out"), cue, () => Sound.Sfx.Loot())); cue += 0.4; }
+            if (spoils.Gold >= 1) { right.AddChild(Beat(Line("coin", $"{spoils.Gold:N0} gold", Style.GoldHi), cue, Sound.Sfx.Gold)); cue += 0.35; }
+            right.AddChild(Style.Gap(Style.Gap2));
+        }
 
         // Beat three: the atlas, and the mark the map left on it.
-        var atlas = Style.V(10, new Section("The atlas"));
-        atlas.CustomMinimumSize = new Vector2(420, 0);
-        var line = MapSpoils.AtlasLine(r.Chart, r.Cleared, r.FirstClear);
-        atlas.AddChild(Beat(Style.Label(line, Style.TextItalic, Style.Lead, r.FirstClear ? Style.EmberHi : r.Cleared ? Style.Ink : Style.InkDim, true), cue, r.FirstClear ? Sound.Sfx.Discovery : null));
-        cue += 0.45;
-        atlas.AddChild(Beat(AtlasGrid(G.Journey.World, r.Chart), cue));
-        cue += 0.4;
+        right.AddChild(Kit.Head("The atlas"));
+        var atlasLine = MapSpoils.AtlasLine(r.Chart, r.Cleared, r.FirstClear);
+        right.AddChild(Beat(Style.Label(atlasLine, Style.TextItalic, 17, r.FirstClear ? Style.EmberHi : r.Cleared ? Kit.Ink : Kit.Dim, true), cue, r.FirstClear ? Sound.Sfx.Discovery : null));
+        right.AddChild(Beat(AtlasGrid(G.Journey.World, r.Chart), cue + 0.2));
         int unspent = Atlas.Unspent(G.Journey.World);
-        if (unspent > 0)
-        {
-            atlas.AddChild(Beat(Style.Label($"{unspent} point{(unspent == 1 ? "" : "s")} to spend on the atlas, at the Wayfinder's table.", Style.UiBold, Style.Small, Style.EmberHi, true), cue));
-            cue += 0.3;
-        }
-        two.AddChild(Card(atlas, Style.Slab(18)));
+        if (unspent > 0) right.AddChild(Beat(Style.Label($"{unspent} point{(unspent == 1 ? "" : "s")} to spend on the atlas, at the Wayfinder's table.", Style.UiBold, 15, Style.EmberHi, true), cue + 0.4));
+        cue += 0.6;
 
-        // Beat four: a line for how it went, and back to the Waystation.
+        // Beat four: a line for how it went; the way back has been there all along.
         var after = r.Cleared ? "The Wayfinder will want it for her margins." : $"The chart is spent. {people.BossName} keeps the ground, for now.";
-        wrap.AddChild(Beat(Style.Label(after, Style.TextItalic, Style.Body, Style.Ink, true, HorizontalAlignment.Center), cue, Sound.Sfx.Page));
-        cue += 0.5;
-        wrap.AddChild(Beat(Onward("Back to the Waystation", () => G.LeaveMap(r)), cue));
-    }
-
-    /// <summary>A find, as a small card in its rarity: the thing, its name and kind, its first line;
-    /// held over, the whole card beside it.</summary>
-    Control Find(ItemInstance it)
-    {
-        var col = Style.RarityOf(it.Rarity);
-        var card = Style.Panel(UiArt.Frame("card_light", Style.Box(new Color(0.07f, 0.062f, 0.08f, 0.9f), col with { A = 0.5f }, 1, 4, 10)));
-        card.CustomMinimumSize = new Vector2(300, 0);
-        card.MouseFilter = MouseFilterEnum.Stop;
-        var slot = ItemViews.Slot(it, 56);
-        slot.MouseFilter = MouseFilterEnum.Ignore;
-        var words = Style.V(1, Style.Label(Inventory.Name(it), Style.TextBold, Style.Small, col, true),
-            Style.Label(Inventory.RarityName(it), Style.Ui, Style.Caption, Style.InkDim));
-        if (Inventory.Lines(it).FirstOrDefault(l => l != "") is { } first) words.AddChild(Style.Label(first, Style.Ui, Style.Caption, Style.Ink, true));
-        words.SizeFlagsHorizontal = SizeFlags.ExpandFill;
-        card.AddChild(Style.H(10, slot, words));
-        card.MouseEntered += () => Tip(ItemViews.Card(it, G.Journey.Ch, true), card);
-        card.MouseExited += () => Tip(null, null);
-        return card;
+        v.AddChild(Kit.RuleH());
+        v.AddChild(Beat(Style.Label(after, Style.TextItalic, 18, Kit.Ink2, true, HorizontalAlignment.Center), cue, Sound.Sfx.Page));
+        v.AddChild(OnwardWord("Back to the Waystation", () => G.LeaveMap(r)));
     }
 
     /// <summary>A chart won: the next map in hand, its tier and who holds it, what it is sworn under.</summary>

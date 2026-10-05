@@ -117,12 +117,16 @@ T2I = {
     # the bend and the knots).
     "hunt_bone": "a straight pale bone tally stick lying diagonally, its whole length cut with dozens of deep dark "
                  "parallel notches in a neat row like a ladder, tooth-gnawed ends, a few grey wolf hairs",
-    "lamp_glass": "a cracked curved shard of thick amber lamp glass with a blackened brass rim, a tiny ember-orange "
-                  "flame still burning inside the crack, soot streaks",
+    # UI art's repaints (seed 1130; lamp_glass 1140): the cord read as the letter S, the shard as a horn.
+    "lamp_glass": "the empty glass chimney of an oil lamp lying on its side by itself, a bulging tube of thick smoky "
+                  "amber glass open at both ends, a long crack down its side and a jagged piece broken out of its rim, a "
+                  "tiny ember-orange flame still glowing caught inside the glass, soot streaks, no lamp, no base, no "
+                  "brass, only the glass",
     "gate_nail": "a long square iron door nail bent double into a tight U shape, its square head and point side by "
                  "side, flecked with grave soil and rust, a faint pale light along the bend",
-    "red_cord": "a length of faded red cord lying in a loose S curve with a long row of small tight knots tied along "
-                "it at even intervals, frayed ends, nothing else",
+    "red_cord": "a hank of faded red cord coiled round in several loose loops, bound once round the middle of the "
+                "hank, its frayed end hanging free below, small tight knots tied all along the cord at even intervals, "
+                "nothing else",
     # The crafting lead's (design 20.5): what a deep scar leaves past the hour once the stream is clean.
     # Its lore (the story lead's): "the blue of the ford lamps, and it is never quite cold".
     "scar_glass": "a jagged shard of dark smoky glass, nearly black, a cold pale blue glow like a lamp flame trapped "
@@ -131,6 +135,9 @@ T2I = {
     "slurry_jar": "a squat grimy grey stoneware crock, its lid lashed down with twine, a crude X scratched deep into its "
                   "belly, sickly bright green light leaking out through the scratch and a crack under the lid, thick "
                   "green-black sludge oozing from under the lid and dripping down one side",
+    # The crafting lead's flask, repainted: its first came cool and flat-lit, a mark on it reading as a letter.
+    "flask": "a flat pewter hip flask in a stitched brown leather sleeve, a small screw cap on a short chain, worn and "
+             "dented, warm candlelight gleaming on the pewter, plain metal with no marks, no engraving, no letters",
 }
 
 OUT = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "..", "godot", "art", "ui", "icons", "item")
@@ -140,7 +147,9 @@ PICKS: dict = {
     # Painted from words (T2I), where the photograph was a poor start.
     "hide": (1100, 1), "root": (1100, 2), "seed": (1100, 3), "dust": (1100, 0), "bomb": (1100, 1), "pelt": (1110, 2),
     # The crafting lead's: Snib's jar, and the four rulers' things that carry a Mark.
-    "slurry_jar": (1100, 0), "lamp_glass": (1100, 1), "hunt_bone": (1120, 2), "gate_nail": (1110, 0), "red_cord": (1110, 1),
+    "slurry_jar": (1100, 0), "hunt_bone": (1120, 2), "gate_nail": (1110, 0),
+    # UI art's repaints, fitted at the set's 0.82.
+    "red_cord": (1130, 2), "lamp_glass": (1140, 3), "scar_glass": (1130, 3), "flask": (1130, 2),
 }
 
 

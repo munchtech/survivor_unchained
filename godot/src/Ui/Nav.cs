@@ -269,9 +269,22 @@ public sealed class Nav
         var cur = Current;
         ring.Visible = Enabled && KeyMode && cur != null;
         if (!ring.Visible) return;
-        var r = cur!.Value.C.GetGlobalRect().Grow(4);
-        ring.GlobalPosition = r.Position;
-        ring.Size = r.Size;
+        // A word set as type (KEEP on Self's ledger) is marked by an ember line under it, not a ring round it.
+        bool under = cur!.Value.C.HasMeta("nav_underline");
+        if (under != underlined)
+        {
+            underlined = under;
+            ring.AddThemeStyleboxOverride("panel", under ? Underline : Style.FocusFrame());
+        }
+        var r = under ? cur.Value.C.GetGlobalRect() : cur.Value.C.GetGlobalRect().Grow(4);
+        ring.GlobalPosition = under ? new Vector2(r.Position.X, r.End.Y - 1) : r.Position;
+        ring.Size = under ? new Vector2(r.Size.X, 3) : r.Size;
         ring.Modulate = Colors.White with { A = 0.8f + 0.2f * Mathf.Sin((float)t * 4) };
     }
+
+    bool underlined;
+    static readonly StyleBoxFlat Underline = new() { BgColor = Style.Ember with { A = 0.85f }, ShadowColor = Style.Ember with { A = 0.35f }, ShadowSize = 4 };
+
+    /// <summary>Marked by an ember line under it when it has focus, not a ring: for words set as type.</summary>
+    public static T Underlined<T>(T c) where T : Control { c.SetMeta("nav_underline", true); return c; }
 }

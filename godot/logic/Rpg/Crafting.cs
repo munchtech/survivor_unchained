@@ -121,6 +121,8 @@ public sealed class CraftingRules
     public List<int> Heat = new();
     public double HeatSpread = 0.2;
     public List<int> BreakDown = new();
+    /// <summary>Ember shards a Legendary gives besides its iron, broken down (agreed with loot): the light in it.</summary>
+    public int LegendaryShards = 3;
     public List<CraftStep> Temper = new();
     public CraftStep WorkIn = new();
     public CageRules Cage = new();
@@ -543,15 +545,24 @@ public static partial class Crafting
         var q = Begin(Verb.BreakDown, crafter, "Break down");
         var def = Items.Get(it.Def);
         bool gear = Items.SlotFor(def) != null;
-        int iron = Rules.BreakDown[RarityIx(it.Rarity)];
+        foreach (var (m, n) in Yield(it)) q.Gives[m] = n;
         if (!gear) q.Blocked = "Only gear breaks down.";
         else if (def.Unique || it.Rarity >= 5) q.Blocked = "You can't bring yourself to.";
-        else if (iron <= 0) q.Blocked = "Nothing in it worth the breaking.";
+        else if (q.Gives.GetValueOrDefault(Iron) <= 0) q.Blocked = "Nothing in it worth the breaking.";
         else if (Inventory.Find(x.Ch, it.Uid) is not { InPack: true }) q.Blocked = "Take it off first.";
-        q.Gives[Iron] = iron;
-        int coals = it.Affixes.Count(a => Items.Affix(a.Id)?.Kindled != null);
-        if (coals > 0) q.Gives[Shard] = coals;
         return q;
+    }
+
+    /// <summary>What a piece breaks down to, wherever it is broken (at the bench, from the pack, at a
+    /// fight's end): its rarity's old iron, a shard for each caged coal, and from a Legendary the
+    /// light in it as well (an old copy is worth the breaking, not only the selling).</summary>
+    public static Dictionary<string, int> Yield(ItemInstance it)
+    {
+        var o = new Dictionary<string, int> { [Iron] = Rules.BreakDown[RarityIx(it.Rarity)] };
+        int shards = it.Affixes.Count(a => Items.Affix(a.Id)?.Kindled != null)
+            + (Drops.TierOf(it) == LootTier.Legendary ? Rules.LegendaryShards : 0);
+        if (shards > 0) o[Shard] = shards;
+        return o;
     }
 
     /* --------------------------------------------------- the still-room -- */
@@ -1163,13 +1174,13 @@ public static partial class Crafting
     /// <summary>What a survivor carries out of an arena, and what they spilled falling.</summary>
     public sealed record NightYield(Dictionary<string, int> Kept, Dictionary<string, int> Spilled);
 
-    /// <summary>Ember shards for the ember reached, the tier, the minutes stayed past the half
-    /// hour and a story fight won; the people's own for their champions slain. A fall keeps half.</summary>
     /// <summary>What a night among a people can leave in the fist (Night's materials), in the
     /// order a table says them: ember shards, then the people's own.</summary>
     public static List<string> NightMaterials(string people) =>
         new[] { Shard }.Concat((Rules.Night.Peoples.GetValueOrDefault(people) ?? new()).Select(p => p.Material)).Distinct().ToList();
 
+    /// <summary>Ember shards for the ember reached, the tier, the minutes stayed past the half
+    /// hour and a story fight won; the people's own for their champions slain. A fall keeps half.</summary>
     public static NightYield Night(string people, int tier, bool story, int ember, double minutesPast, bool won, bool fell,
         IReadOnlyDictionary<Family, int> champions, IReadOnlyDictionary<Family, int>? minibosses = null, bool cured = false)
     {

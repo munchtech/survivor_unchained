@@ -7,6 +7,7 @@ shape with a little metal in it, not a hairline.
 """
 from __future__ import annotations
 
+import math
 import os
 
 import cv2
@@ -19,7 +20,7 @@ import svgglyph as G
 KEYS = ["amulet", "armor", "bow", "campfire", "censer", "cleaver", "cloak", "compass", "dash", "drop", "eye", "helm",
         "hood", "key", "lock", "map", "mask", "next", "quest", "relic", "ring", "scroll", "sigil", "slash", "staff", "sun",
         "sword", "talk", "totem", "wand", "frost", "bolt_bone", "crescent_holy", "firepot", "frost_orb", "venom_smoke",
-        "zone", "zone_fire_enemy", "zone_venom"]
+        "zone", "zone_fire_enemy", "zone_venom", "link_set", "link_closed", "link_broken"]
 
 # Where the line glyph does not make a good solid (it would read as a letter), a
 # shape of our own: 24-unit SVG paths, each filled or cut.
@@ -90,9 +91,87 @@ def custom_mask(parts, S, pad=1.2):
     return fill.astype(np.float32) / 255, cut.astype(np.float32) / 255
 
 
+def _link_sd(X, Y, c, u, st, R):
+    """Distance (units) from points to a link's centreline: a stadium round centre c, its long
+    axis along unit u, straight half-length st, end radius R."""
+    dx, dy = X - c[0], Y - c[1]
+    a = dx * u[0] + dy * u[1]
+    b = -dx * u[1] + dy * u[0]
+    a = a - np.clip(a, -st, st)
+    return np.hypot(a, b) - R, a, b
+
+
+def chain_mark(kind, S, pad=1.2):
+    """The chain's own marks, in the glyph family (fill and cut masks at S px):
+      link_set     two whole links joined, one through the other: made to be worn together
+                   (a Set item); the opposite of the broken one, and drawn the same way
+      link_broken  one link pried open at its side, its ends bent apart: unchained (unlocked)
+    Bars are thick and the gaps wide, so the mark holds at 14 px."""
+    scale = S / (24 + 2 * pad)
+    yy, xx = np.mgrid[0:S, 0:S].astype(np.float32)
+    X, Y = (xx + 0.5) / scale - pad, (yy + 0.5) / scale - pad
+    u = (math.sqrt(0.5), -math.sqrt(0.5))            # up and to the right
+    bar = 1.45
+    fill = np.zeros((S, S), np.float32)
+    cut = np.zeros((S, S), np.float32)
+
+    def cov(d):
+        return np.clip(0.5 - d * scale, 0, 1)
+    if kind == "link_set":
+        cA, cB = (8.6, 15.4), (15.4, 8.6)
+        st, R = 2.4, 3.6
+        dA, aA, bA = _link_sd(X, Y, cA, u, st, R)
+        dB, aB, bB = _link_sd(X, Y, cB, u, st, R)
+        ringA, ringB = cov(np.abs(dA) - bar), cov(np.abs(dB) - bar)
+        fill = np.maximum(ringA, ringB)
+        # Over and under: on one side of the axis B lies over A, on the other A over B, each
+        # parting the one beneath with a clear gap so the two read as joined, not merged.
+        side = -(X - 12) * u[1] + (Y - 12) * u[0]          # across the axis
+        g = 0.85
+        cut = np.maximum(cut, np.clip(cov(np.abs(dB) - bar - g) - ringB, 0, 1) * ringA * (side < 0))
+        cut = np.maximum(cut, np.clip(cov(np.abs(dA) - bar - g) - ringA, 0, 1) * ringB * (side > 0))
+    elif kind in ("link_closed", "link_broken"):
+        # Locked: a chain link hung shut on an iron staple, the staple's legs going down into
+        # it, so it stands like a lock made of the chain. Unlocked: the staple's one leg pulled
+        # out and swung up, the link left open below it.
+        body_c = (12, 15.4)
+        dB, _, _ = _link_sd(X, Y, body_c, (1.0, 0.0), 2.6, 4.6)
+        body = cov(np.abs(dB) - bar * 1.05)
+
+        def stroke(pts, w):
+            d = np.full(X.shape, 1e9, np.float32)
+            for (ax, ay), (bx, by) in zip(pts, pts[1:]):
+                dx, dy = bx - ax, by - ay
+                t = np.clip(((X - ax) * dx + (Y - ay) * dy) / (dx * dx + dy * dy + 1e-9), 0, 1)
+                d = np.minimum(d, np.hypot(X - ax - t * dx, Y - ay - t * dy))
+            return cov(d - w)
+        # The staple: a U of round bar, its legs at x 8.6 and 15.4.
+        arc = [(8.6 + 6.8 * (0.5 - 0.5 * math.cos(a)), 7.6 - 3.6 * math.sin(a)) for a in np.linspace(0, math.pi, 24)]
+        if kind == "link_closed":
+            staple = stroke([(8.6, 13.2)] + arc + [(15.4, 13.2)], bar * 0.95)
+            # Where the legs go into the link, the link's bar is cut so they pass behind it.
+            fill = np.maximum(body, staple)
+            cut = np.clip(cov(np.abs(dB) - bar * 1.05 - 0.75) - body, 0, 1) * 0 + \
+                (staple * (1 - stroke([(8.6, 14.0), (8.6, 12.0)], bar * 0.95)) * 0)
+        else:
+            # Swung up about its left leg by 35 degrees, its right leg out of the link.
+            ang = math.radians(-35)
+            ox, oy = 8.6, 11.0
+
+            def rot(p):
+                x, y = p[0] - ox, p[1] - oy
+                return (ox + x * math.cos(ang) - y * math.sin(ang), oy + x * math.sin(ang) + y * math.cos(ang))
+            pts = [rot(p) for p in [(8.6, 11.0)] + arc + [(15.4, 10.6)]]
+            staple = stroke([(8.6, 13.2)] + pts, bar * 0.95)
+            fill = np.maximum(body, staple)
+    return fill, cut
+
+
 def mark(key, size=256, ss=2, stroke=2.3):
     S = size * ss
-    if key in STATS:
+    if key in ("link_set", "link_closed", "link_broken"):
+        body, cut = chain_mark(key, S)
+    elif key in STATS:
         v = STATS[key]
         if isinstance(v, str):
             body, cut = G.bold(v, S, stroke=stroke)

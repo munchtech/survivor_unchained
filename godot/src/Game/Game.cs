@@ -191,6 +191,11 @@ public partial class Game : Node, IZoneHost
                 }
                 else Journey.GiveItem(idq[0], qty, rar);
             }
+        // --nightkit DEF,DEF: those pieces from the pack worn by night (pictures of the two kits).
+        if (Args.Get("nightkit") is string nk)
+            foreach (var d in nk.Split(','))
+                if (Journey.Ch.Pack.FirstOrDefault(p => p?.Def == d) is { } piece && Items.SlotFor(Items.Get(d)) is EquipSlot ks)
+                    Kits.Put(Journey.Ch, KitKind.Night, piece, ks);
         // --facts k=v,k=v: the world as a later day would have it (pictures: --facts stream.clear=true);
         // a number or true/false is read as one, anything else as words; --met a,b: those people known.
         if (Args.Get("facts") is string facts)
@@ -435,6 +440,10 @@ public partial class Game : Node, IZoneHost
     public void MapOver(MapResult r, bool alive)
     {
         var spoils = SurvivorUnchained.Maps.MapSpoils.Between(mapStart ?? Journey.Ch, Journey.Ch, mapStash ?? World.Stash, World.Stash);
+        // (pictures and probes of the atlas's pay read it from the log as well)
+        if (Args.Has("shot"))
+            GD.Print($"map paid: {spoils.Gear.Count} gear [{string.Join(", ", spoils.Gear.Select(g => $"{Inventory.RarityName(g)} {g.Def}"))}]; "
+                + $"charts {spoils.Charts.Count}; {string.Join(", ", spoils.Materials.Select(m => $"{m.Key} {m.Value}"))}; gold {spoils.Gold:0}; {r.Gathered}");
         Wait(alive ? 1.0 : 2.2, () =>
         {
             if (scene == null || zone is not MapRun) return;
@@ -1080,7 +1089,21 @@ public partial class Game : Node, IZoneHost
 
     /// <summary>--open KIND (or 'all'): the screens opened in turn, for
     /// pictures and for runs that check each builds (--bare hides the world).</summary>
-    bool hordeDone, dropsDone, castDone, giveDone, minuteDone, chestDone, barksDone, answerDone, fallDone, litDone;
+    bool hordeDone, dropsDone, castDone, giveDone, minuteDone, chestDone, barksDone, answerDone, fallDone, litDone, tipDone;
+    int toastI;
+
+    /// <summary>One of each kind of notice (--toasts), in the words the game uses.</summary>
+    static readonly Toast[] SampleToasts =
+    {
+        new(ToastKind.Loot, "Ember Shard", "×10", "ember", 1),
+        new(ToastKind.Loot, "Worn Leather Cap", null, "helm_light", 0),
+        new(ToastKind.Loot, "Tally-Bone of the Long Chase", "Rare trophy", "bone", 2),
+        new(ToastKind.Loot, "Keen Iron Helm of Reach", null, "helm", 3),
+        new(ToastKind.Gold, "+40 gold", null, null, null),
+        new(ToastKind.Quest, "The Low Ford: the bridge is held", "Speak to the Ford-Warden"),
+        new(ToastKind.Loot, "Vonnra's Last Lantern", "Legendary", "lantern", 4),
+    };
+    bool leaveDone, clearDone;
     int dieIx;
     double blastT = 0.5, marksT = 1;
     int lootI, hoardI;
@@ -1158,6 +1181,21 @@ public partial class Game : Node, IZoneHost
             minuteDone = true;
             mr.SkipTo(Args.Num("minute", 29.9f) * 60);
             if (Args.Has("won")) mr.WinNow();
+        }
+        // --clear T: on a map, T seconds in, every pack, keeper and its ruler felled by her hand and the
+        // gold drawn in (pictures of what a whole map pays; then --leave).
+        if (!clearDone && Args.Has("clear") && zone is MapRun cm && Battle != null && Journey.Playtime >= Args.Num("clear", 3))
+        {
+            clearDone = true;
+            cm.ClearNow();
+        }
+        // --leave T: a won arena or a cleared map left by its way out T seconds in (pictures of the real
+        // tally: --minute 95 --won --leave 4 is an hour and five minutes stayed past the win).
+        if (!leaveDone && Args.Has("leave") && Battle != null && Journey.Playtime >= Args.Num("leave", 4))
+        {
+            leaveDone = true;
+            if (zone is ArenaRun lr) lr.Leave();
+            else if (zone is MapRun lm) lm.Leave();
         }
         // --stage N: a story night begun at its Nth stage (from 0; its stage count is the boss), the
         // ground behind opened and the build the stages before would have left her (pictures and play of a
@@ -1294,6 +1332,17 @@ public partial class Game : Node, IZoneHost
             wb.Events.Emit(new Ev.Bark { X = x - 0.5, Z = z - 1.2, Text = "Hold the line!", Speaker = "Brannoc" });
             wb.Events.Emit(new Ev.Bark { X = x, Z = z, Text = "Blocked" });
         }
+        // --nohud: the world alone, for pictures of what a screen lies over.
+        if (Args.Has("nohud") && Mode == "play") Hud.ShowPlay(false);
+        // --toasts T: from T seconds in, one of each kind of notice a beat apart (pictures of them on the world);
+        // --tip T: a tutorial tip at T seconds.
+        if (Args.Has("toasts") && Battle != null && toastI < SampleToasts.Length && Journey.Playtime >= Args.Num("toasts", 2) + toastI * 0.45)
+            Hud.Toast(SampleToasts[toastI++]);
+        if (Args.Has("tip") && !tipDone && Battle != null && Journey.Playtime >= Args.Num("tip", 2))
+        {
+            tipDone = true;
+            SetHint(new Hint("sample", "Elites", "Bigger, tougher, and worth it: elites carry better things. When a red line appears on the ground, it is about to come down it.", [KeyLabel("dash")]));
+        }
         if (Args.Get("open") is not string want) return;
         tourT -= dt;
         if (tourT > 0) return;
@@ -1358,10 +1407,10 @@ public partial class Game : Node, IZoneHost
     /// <summary>A click as the mouse gives it: moved there, pressed, released ("r640:480" for the right button).</summary>
     void ClickAt(string spec)
     {
-        bool right = spec.StartsWith('r');
-        // hX:Y: pressed and held a second before it is let go (pictures of a hold-to-confirm press).
-        bool hold = spec.StartsWith('h');
-        var xy = spec.TrimStart('r', 'h').Split(':');
+        // (r: the right button; h: the mouse only comes to rest there, for pictures of a hover;
+        // p: pressed and held a second before it is let go, for pictures of a hold-to-confirm press)
+        bool right = spec.StartsWith('r'), hover = spec.StartsWith('h'), hold = spec.StartsWith('p');
+        var xy = spec.TrimStart('r', 'h', 'p').Split(':');
         if (xy.Length != 2 || !float.TryParse(xy[0], System.Globalization.CultureInfo.InvariantCulture, out var x)
             || !float.TryParse(xy[1], System.Globalization.CultureInfo.InvariantCulture, out var y)) return;
         var at = new Vector2(x, y);
@@ -1369,6 +1418,7 @@ public partial class Game : Node, IZoneHost
         Ui.Nav.KeyMode = false;
         var vp = GetViewport();
         vp.PushInput(new InputEventMouseMotion { Position = at, GlobalPosition = at });
+        if (hover) { GD.Print($"hover {spec}"); return; }
         var button = right ? MouseButton.Right : MouseButton.Left;
         vp.PushInput(new InputEventMouseButton { Position = at, GlobalPosition = at, ButtonIndex = button, Pressed = true });
         if (hold) GetTree().CreateTimer(1.0).Timeout += () => vp.PushInput(new InputEventMouseButton { Position = at, GlobalPosition = at, ButtonIndex = button, Pressed = false });

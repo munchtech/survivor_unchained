@@ -23,6 +23,9 @@ public sealed class MapRunResult
     public bool Cleared, Closed;
     public double Minutes, LowHp = 1, DamageTaken;
     public int Falls, Kills, Packs, PacksCleared, Quaffs, Items, Charts, Gold;
+    /// <summary>What crafting reads (docs/CRAFTING_DESIGN.md 20.1): the people's own material and the
+    /// ember shards picked up, the old iron the gear would break down to, and the rulers' Marks.</summary>
+    public int Material, Shards, Iron, Marks;
     public double? BossTtk;
     public int BossPhase;
     /// <summary>What was left of the ruler when the map closed (-1: never met).</summary>
@@ -90,11 +93,18 @@ public static class MapSim
         // counted and stashed, so the pack never fills and leaves a piece lying under the hands.
         var zh = zone.Hooks;
         b.Hooks = BattleHooks.Following(zh);
-        int gear = 0;
+        int gear = 0, iron = 0, marks = 0;
         b.Hooks.OnPickup = pk =>
         {
             if (zh.OnPickup != null && !zh.OnPickup(pk)) return false;
-            if (pk.Kind == PickupKind.Item && pk.Ref != null && Charts.FromRef(pk.Ref) == null) { gear++; return true; }
+            if (pk.Kind == PickupKind.Item && pk.Ref != null && Crafting.MarkOf(pk.Ref) != null) { marks++; return true; }
+            if (pk.Kind == PickupKind.Item && pk.Ref != null && Charts.FromRef(pk.Ref) == null)
+            {
+                gear++;
+                int rarity = pk.Payload is ItemInstance it ? it.Rarity : (int)pk.Tier;
+                iron += Crafting.Rules.BreakDown[Math.Clamp(rarity, 0, Crafting.Rules.BreakDown.Count - 1)];
+                return true;
+            }
             j.PickedUp(pk);
             return true;
         };
@@ -175,8 +185,12 @@ public static class MapSim
         r.KillGap = Median(kills);
         r.PackGap = Median(packs);
         r.Items = gear;
-        r.Charts = j.Ch.Pack.Count(i => i?.Chart != null);
+        r.Charts = j.Ch.Pack.Count(i => i?.Chart != null) + j.Ch.Satchel.Count(i => i.Chart != null);
         r.Gold = (int)j.Ch.Gold;
+        r.Shards = j.Ch.Materials.GetValueOrDefault(Crafting.Shard);
+        r.Iron = iron + j.Ch.Materials.GetValueOrDefault(Crafting.Iron);
+        r.Material = j.Ch.Materials.Where(m => m.Key != Crafting.Shard && m.Key != Crafting.Iron).Sum(m => m.Value);
+        r.Marks = marks;
         return r;
     }
 
@@ -192,13 +206,13 @@ public static class MapSim
     public static string Report(List<MapRunResult> rs)
     {
         var sb = new System.Text.StringBuilder();
-        sb.AppendLine("| group | runs | cleared | closed | falls/run | minutes | boss TTK (s) | kill gap (s) | pack gap (s) | lowest | items | charts | gold |");
-        sb.AppendLine("|---|---|---|---|---|---|---|---|---|---|---|---|---|");
+        sb.AppendLine("| group | runs | cleared | closed | falls/run | minutes | boss TTK (s) | kill gap (s) | pack gap (s) | lowest | items | charts | gold | material | shards | iron | marks |");
+        sb.AppendLine("|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|");
         void Row(string name, List<MapRunResult> l)
         {
             if (l.Count == 0) return;
             double M(IEnumerable<double> xs) { var a = xs.Where(x => !double.IsNaN(x)).OrderBy(x => x).ToList(); return a.Count == 0 ? double.NaN : a[a.Count / 2]; }
-            sb.AppendLine($"| {name} | {l.Count} | {100 * l.Count(x => x.Cleared) / l.Count}% | {100 * l.Count(x => x.Closed) / l.Count}% | {l.Average(x => x.Falls):0.00} | {M(l.Where(x => x.Cleared).Select(x => x.Minutes)):0.0} | {M(l.Where(x => x.BossTtk != null).Select(x => x.BossTtk!.Value)):0} | {M(l.Select(x => x.KillGap)):0.0} | {M(l.Select(x => x.PackGap)):0} | {M(l.Select(x => x.LowHp)):0.00} | {M(l.Select(x => (double)x.Items)):0} | {M(l.Select(x => (double)x.Charts)):0} | {M(l.Select(x => (double)x.Gold)):0} |");
+            sb.AppendLine($"| {name} | {l.Count} | {100 * l.Count(x => x.Cleared) / l.Count}% | {100 * l.Count(x => x.Closed) / l.Count}% | {l.Average(x => x.Falls):0.00} | {M(l.Where(x => x.Cleared).Select(x => x.Minutes)):0.0} | {M(l.Where(x => x.BossTtk != null).Select(x => x.BossTtk!.Value)):0} | {M(l.Select(x => x.KillGap)):0.0} | {M(l.Select(x => x.PackGap)):0} | {M(l.Select(x => x.LowHp)):0.00} | {M(l.Select(x => (double)x.Items)):0} | {M(l.Select(x => (double)x.Charts)):0} | {M(l.Select(x => (double)x.Gold)):0} | {M(l.Select(x => (double)x.Material)):0} | {M(l.Select(x => (double)x.Shards)):0} | {M(l.Select(x => (double)x.Iron)):0} | {l.Average(x => x.Marks):0.0} |");
         }
         Row("all", rs);
         foreach (var g in rs.GroupBy(x => $"tier {x.Spec.Tier}").OrderBy(g => g.Key)) Row(g.Key, g.ToList());

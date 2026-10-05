@@ -29,7 +29,7 @@ You asked: *"ai generated assets and things are perfectly ok for steam games and
 4. **"No trouble" depends on a few fixes before launch.** Three items still block launch (5 Oct):
    - the AI disclosure, filled in honestly at submission. The text is ready to paste (`STEAM_CHECKLIST.md` D3);
    - the mature-content answers, which must cover what's hidden in the build as well as what's shown, once the motion check is finished on the new outfit build;
-   - the boar, which has conflicting licence terms. No one has its replacement scheduled, so **buy the commercial version now** and keep the receipt.
+   - the boar, which has conflicting licence terms. Our own boar replaces it (a new creatures lead, Krea 2 and TRELLIS 2 locally); the old one must not ship.
 
    The licences screen is done: built, its texts verified, and seen in game (5 Oct).
 
@@ -46,7 +46,7 @@ You asked: *"ai generated assets and things are perfectly ok for steam games and
    - ElevenLabs is fine for commercial use on a paid plan. Use only voices we have the right to: designed voices, your own voice, or performers who have consented in writing. Never feed ElevenLabs output into another AI model; its terms forbid it.
    - **Suno** (the hymn) is fine on a **Pro or Premier** plan, for a song you **download** through Suno's own download button. Suno assigns those songs to you. Free-plan songs are for personal, non-commercial use only (issue 28).
 
-**In one line:** ship it with an honest disclosure, clear the three blockers (buying the boar's commercial version is the quickest), and plan for the Krea revenue cap, which now covers the bodies' pictures as well as the interface. Then the AI use itself is not what gets you into trouble.
+**In one line:** ship it with an honest disclosure, clear the three blockers (our own boar must land before launch), and plan for the Krea revenue cap, which now covers the bodies' pictures as well as the interface. Then the AI use itself is not what gets you into trouble.
 
 ---
 
@@ -374,7 +374,7 @@ These are my rulings on the auditor's findings (`ASSET_PROVENANCE.md`), updated 
   - A CC licence, once granted, can't be revoked. But conflicting statements from the licensor invite a dispute and a Steam DMCA notice.
   - The owner plans to replace third-party work "eventually". **"Eventually" is too late for the boar:** it must be replaced before launch (`REPLACEMENT_PLAN.md` 1.1).
   - If the replacement won't be ready, buy the commercial version on Fab as a stop-gap and keep the receipt.
-  - **5 October: buy it now.** The page is unchanged (Sketchfab's API, 5 Oct): still labelled CC BY, still "This version is for personal use only. Commercial use is allowed only for versions purchased on Fab or Patreon." No lead has the replacement scheduled: arena art says creatures aren't theirs, the models planner lists it second, and animation would rig it. Buying the commercial version (Fab, or the creator's Patreon shop) clears the blocker for a small cost, and our own boar can still replace it later. Keep the receipt and the licence text in `docs/legal/records/`, and use the purchased file, not the Sketchfab download. Fab's site sits behind a bot check, so the owner must look up the listing himself.
+  - **5 October: our own boar (the owner's decision).** A new creatures lead makes it locally with Krea 2 (the picture) and TRELLIS 2 (the mesh): path C of 5(g), so it joins the Krea footprint. Conditions: the picture is made from text alone, never from renders or photos of the Sketchfab boar or anyone else's model or art; no LoRA without its creator's commercial permission; a ledger line; the Sketchfab boar is removed from the build when ours lands. The page was unchanged on 5 Oct ("This version is for personal use only"), so the old boar must not ship.
 - **(b) The base bodies:** **FINE, with conditions** (re-ruled 4 Oct, evening, on the owner's corrected answer).
   - **What they are:**
     - the heroine's body, from the owner's `234.glb`;
