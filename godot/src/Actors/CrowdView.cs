@@ -212,6 +212,16 @@ public partial class CrowdView : Node3D
                 role = asset.Clips.ContainsKey("cast") ? "cast" : "windup";
                 t = role == "cast" ? e.AnimT : time;
                 break;
+            case EnemyState.Lunging when asset.Clips.ContainsKey("charge"):
+            {
+                // A charge of its own (a boar's gallop), its clock run at the speed it goes
+                // so its hooves hold the ground down the lane.
+                role = "charge";
+                double size = (e.Def.Scale ?? 1) * Beasts.Size(e.Def.Visual);
+                g.Phase += dt * (asset.ChargePace > 0 ? Math.Clamp(speed / (asset.ChargePace * size), 0.6, 1.8) : 1);
+                t = g.Phase;
+                break;
+            }
             case EnemyState.Lunging:
                 role = "move";
                 t = time * 1.8 + e.Seed * 5;

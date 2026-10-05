@@ -24,9 +24,12 @@ public static class Beasts
     /// <summary>A modelled creature. Legs: the hip bones of one that walks
     /// upright, which say where its front is (a four-legged one faces from
     /// pelvis to head). Root: the bone a clip that walks off carries (root
-    /// motion), held over the spot. Props: what it wears.</summary>
+    /// motion), held over the spot. Props: what it wears. Pace and
+    /// ChargePace: how fast its move and its charge carry it at their
+    /// natural rate, in metres a second at its height (0: not known), so the
+    /// crowd plays them at the speed it goes and the hooves hold the ground.</summary>
     public sealed record Def(string Key, string Path, float Height, string Pelvis, string Head, List<Vat.Role> Roles, int Budget = 8000,
-        (string Left, string Right)? Legs = null, string? Root = null, List<Prop>? Props = null);
+        (string Left, string Right)? Legs = null, string? Root = null, List<Prop>? Props = null, double Pace = 0, double ChargePace = 0);
 
     /// <summary>Something made in code and worn, carried rigidly with a bone:
     /// set where the bone's Tip is as the model stands idle, upright along the

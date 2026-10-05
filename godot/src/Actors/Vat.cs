@@ -34,6 +34,9 @@ public sealed class VatAsset
     /// second at its own size; 0 when not known (the crowd then plays the
     /// walk at its natural rate at the kind's full speed).</summary>
     public float Pace;
+    /// <summary>How fast its charge (its own gallop, the role "charge")
+    /// carries it at its natural rate, as Pace; 0 when it has none.</summary>
+    public float ChargePace;
 
     public Clip For(string role) =>
         Clips.TryGetValue(role, out var c) ? c : Clips.TryGetValue("move", out var m) ? m : Clips["idle"];
@@ -71,10 +74,10 @@ public static class Vat
 {
     const int MaxFrames = 48;
     static readonly Dictionary<string, VatAsset> cache = new();
-    static Shader? shader, cutShader;
+    static Shader? shader, cutShader, normalShader;
 
     /// <summary>The roles every crowd kind plays, and which loop.</summary>
-    static bool Loops(string role) => role is "move" or "idle" or "burrow" or "cast";
+    static bool Loops(string role) => role is "move" or "idle" or "burrow" or "cast" or "charge";
 
     /// <summary>A kind of creature, baked (once a session). `host` lends the
     /// scene tree to a person's animation player while it is sampled.</summary>
@@ -89,6 +92,7 @@ public static class Vat
         var kept = Load(key);
         var asset = kept != null ? Build(kept) : beast != null ? BakeBeast(beast, host) : BakePerson(spec, host);
         if (beast == null) asset.Pace = Pace(spec);
+        else { asset.Pace = (float)beast.Pace; asset.ChargePace = (float)beast.ChargePace; }
         cache[key] = asset;
         cache[spec.Key] = asset;
         if (Args.Has("log"))
@@ -121,6 +125,8 @@ public static class Vat
         public float DyeLum = 1;
         /// <summary>Fur and hair cards: cut where the texture's alpha falls below this (-1: solid).</summary>
         public float Cut = -1;
+        /// <summary>A normal map (tangent space), drawn with vat_normal.gdshader.</summary>
+        public Texture2D? Normal;
     }
 
     /// <summary>Poses every vertex of every surface (concatenated) for a role at t.</summary>
@@ -157,7 +163,11 @@ public static class Vat
     /// a fall) where the model has no clip for the role. Seam: a looped
     /// stretch of a longer clip, its end eased into its start. Rate: how fast
     /// the clip is played (Length is how long the role lasts).</summary>
-    public sealed record Role(string Name, string Clip, double From, double Length, Func<double, Moves>? Over = null, bool Hold = false, bool Seam = false, double Rate = 1);
+    public sealed record Role(string Name, string Clip, double From, double Length, Func<double, Moves>? Over = null, bool Hold = false, bool Seam = false, double Rate = 1, bool? Loop = null)
+    {
+        /// <summary>Whether it loops: its own say, or the crowd's rule for its name.</summary>
+        public bool Loops => Loop ?? Vat.Loops(Name);
+    }
 
     /// <summary>Moves over a pose, in the model's own space (+Z forward, +Y up,
     /// +X its left): bones turned about their own origins (Euler XYZ, radians)
@@ -365,7 +375,7 @@ public static class Vat
             if (still >= 0)
             {
                 var (a, b) = travel[r.Name];
-                var off = Loops(r.Name) && !r.Hold ? a.Lerp(b, (float)((at - r.From) / (r.Length * r.Rate))) : a;
+                var off = r.Loops && !r.Hold ? a.Lerp(b, (float)((at - r.From) / (r.Length * r.Rate))) : a;
                 var now = toModel * skel.GetBoneGlobalPose(still).Origin;
                 var want = new Vector3(now.X - off.X + spot.X, now.Y, now.Z - off.Z + spot.Z);
                 int parent = skel.GetBoneParent(still);
@@ -444,8 +454,8 @@ public static class Vat
             for (int i = 0; i < pos.Length; i++) { pos[i] = pos[i].Lerp(bp[i], k); nor[i] = nor[i].Lerp(bn[i], k).Normalized(); }
         }
 
-        var list = new List<(string Role, double Duration)>();
-        foreach (var r in roles) list.Add((r.Name, r.Length));
+        var list = new List<(string Role, double Duration, bool Loop)>();
+        foreach (var r in roles) list.Add((r.Name, r.Length, r.Loops));
         var asset = Write(key, parts.ConvertAll(p => p.Surf), total, list, fps, Sample);
         if (Args.Has("vat-probe")) GD.Print($"  {key}: parts+lods {tParts - t0} ms, frames {Time.GetTicksMsec() - tParts} ms, {total} vertices");
         return asset;
@@ -620,6 +630,7 @@ public static class Vat
             if (bm.Transparency != BaseMaterial3D.TransparencyEnum.Disabled)
                 s.Cut = bm.Transparency == BaseMaterial3D.TransparencyEnum.AlphaScissor ? bm.AlphaScissorThreshold : 0.4f;
             s.Tex = bm.AlbedoTexture;
+            if (bm.NormalEnabled && bm.NormalTexture != null) s.Normal = bm.NormalTexture;
             s.Albedo = bm.AlbedoColor;
             s.Roughness = bm.Roughness;
             s.Metallic = bm.MetallicTexture != null ? 0 : bm.Metallic;
@@ -643,14 +654,14 @@ public static class Vat
         public required List<Surf> Surfs;
     }
 
-    static VatAsset Write(string key, List<Surf> surfs, int total, List<(string Role, double Duration)> roles, double fps, Sampler sample)
+    static VatAsset Write(string key, List<Surf> surfs, int total, List<(string Role, double Duration, bool Loop)> roles, double fps, Sampler sample)
     {
         var clips = new Dictionary<string, VatAsset.Clip>();
         int frameCount = 0;
-        foreach (var (role, dur) in roles)
+        foreach (var (role, dur, loop) in roles)
         {
             int frames = Math.Min(MaxFrames, Math.Max(2, (int)Math.Round(dur * fps) + 1));
-            clips[role] = new VatAsset.Clip(frameCount, frames, (frames - 1) / Math.Max(1e-3, dur), dur, Loops(role));
+            clips[role] = new VatAsset.Clip(frameCount, frames, (frames - 1) / Math.Max(1e-3, dur), dur, loop);
             frameCount += frames;
         }
         int width = Math.Min(4096, Math.Max(1, total));
@@ -662,7 +673,7 @@ public static class Vat
         var nor = new Vector3[total];
         float height = 0;
         int frameIndex = 0;
-        foreach (var (role, dur) in roles)
+        foreach (var (role, dur, _) in roles)
         {
             var c = clips[role];
             for (int f = 0; f < c.Frames; f++)
@@ -698,6 +709,7 @@ public static class Vat
         var norTex = ImageTexture.CreateFromImage(Image.CreateFromData(b.Width, texH, false, Image.Format.Rgba8, b.Nor));
         shader ??= GD.Load<Shader>("res://shaders/vat.gdshader");
         cutShader ??= GD.Load<Shader>("res://shaders/vat_cut.gdshader");
+        normalShader ??= GD.Load<Shader>("res://shaders/vat_normal.gdshader");
         var mesh = new ArrayMesh();
         foreach (var s in b.Surfs)
         {
@@ -711,7 +723,10 @@ public static class Vat
             arrays[(int)Mesh.ArrayType.Color] = s.Color;
             arrays[(int)Mesh.ArrayType.Index] = s.Index;
             mesh.AddSurfaceFromArrays(Mesh.PrimitiveType.Triangles, arrays);
-            var m = new ShaderMaterial { Shader = s.Cut >= 0 ? cutShader : shader };
+            // Only a surface with a normal map pays for reading it (a variant
+            // of the shader, so every other kind's is unchanged).
+            var m = new ShaderMaterial { Shader = s.Cut >= 0 ? cutShader : s.Normal != null ? normalShader : shader };
+            if (s.Normal != null && s.Cut < 0) m.SetShaderParameter("normal_tex", s.Normal);
             if (s.Cut >= 0) m.SetShaderParameter("alpha_cut", s.Cut);
             m.SetShaderParameter("vat_pos", posTex);
             m.SetShaderParameter("vat_nor", norTex);
@@ -746,7 +761,7 @@ public static class Vat
     // its clips and seconds of sampling; read back, a few milliseconds). Bump
     // Version whenever what a bake holds or how it is made changes (Visuals,
     // Beasts, this file).
-    const int Version = 13;
+    const int Version = 14;
     static string CachePath(string key) => $"user://vat/{key}.v{Version}.bin";
 
     static byte[] Bytes<T>(T[] a) where T : struct => System.Runtime.InteropServices.MemoryMarshal.AsBytes(a.AsSpan()).ToArray();
@@ -775,24 +790,31 @@ public static class Vat
         {
             f.Store32((uint)s.Count); f.Store32((uint)s.Offset);
             Blob(Bytes(s.V)); Blob(Bytes(s.N)); Blob(Bytes(s.Uv)); Blob(s.Color != null ? Bytes(s.Color) : Array.Empty<byte>()); Blob(Bytes(s.Index));
-            // A texture by its file, or (one inside a model's file) by its pixels.
-            var tp = s.Tex?.ResourcePath ?? "";
-            if (s.Tex == null) f.Store8(0);
-            else if (tp != "" && !tp.Contains("::")) { f.Store8(1); f.StorePascalString(tp); }
-            else
-            {
-                var img = s.Tex.GetImage();
-                if (img == null || img.IsEmpty()) { f.Close(); DirAccess.RemoveAbsolute(CachePath(b.Key)); return; }
-                f.Store8(2);
-                f.Store32((uint)img.GetWidth()); f.Store32((uint)img.GetHeight()); f.Store32((uint)img.GetFormat()); f.Store8((byte)(img.HasMipmaps() ? 1 : 0));
-                Blob(img.GetData());
-            }
+            if (!Tex(s.Tex)) { f.Close(); DirAccess.RemoveAbsolute(CachePath(b.Key)); return; }
             foreach (var c in new[] { s.Albedo, s.Glow }) { f.StoreFloat(c.R); f.StoreFloat(c.G); f.StoreFloat(c.B); f.StoreFloat(c.A); }
             f.StoreFloat(s.Roughness); f.StoreFloat(s.Metallic);
             f.Store8((byte)(s.Dyed ? 1 : 0));
             foreach (var v3 in new[] { s.DyeColor, s.DyeH, s.DyeS, s.DyeV }) { f.StoreFloat(v3.X); f.StoreFloat(v3.Y); f.StoreFloat(v3.Z); }
             f.StoreFloat(s.DyeLum);
             f.StoreFloat(s.Cut);
+            if (!Tex(s.Normal)) { f.Close(); DirAccess.RemoveAbsolute(CachePath(b.Key)); return; }
+        }
+
+        // A texture by its file, or (one inside a model's file) by its pixels.
+        bool Tex(Texture2D? t)
+        {
+            var tp = t?.ResourcePath ?? "";
+            if (t == null) f.Store8(0);
+            else if (tp != "" && !tp.Contains("::")) { f.Store8(1); f.StorePascalString(tp); }
+            else
+            {
+                var img = t.GetImage();
+                if (img == null || img.IsEmpty()) return false;
+                f.Store8(2);
+                f.Store32((uint)img.GetWidth()); f.Store32((uint)img.GetHeight()); f.Store32((uint)img.GetFormat()); f.Store8((byte)(img.HasMipmaps() ? 1 : 0));
+                Blob(img.GetData());
+            }
+            return true;
         }
     }
 
@@ -803,6 +825,21 @@ public static class Vat
         using var f = FileAccess.Open(path, FileAccess.ModeFlags.Read);
         if (f == null || f.Get32() != Version) return null;
         byte[] Blob() => f.GetBuffer(f.Get32());
+        Texture2D? Tex()
+        {
+            switch (f.Get8())
+            {
+                case 1: return GD.Load<Texture2D>(f.GetPascalString());
+                case 2:
+                {
+                    int w = (int)f.Get32(), h = (int)f.Get32();
+                    var fmt = (Image.Format)f.Get32();
+                    bool mips = f.Get8() == 1;
+                    return ImageTexture.CreateFromImage(Image.CreateFromData(w, h, mips, fmt, Blob()));
+                }
+                default: return null;
+            }
+        }
         int width = (int)f.Get32(), rows = (int)f.Get32(), frames = (int)f.Get32();
         float height = f.GetFloat();
         var clips = new Dictionary<string, VatAsset.Clip>();
@@ -818,19 +855,7 @@ public static class Vat
         {
             int count = (int)f.Get32(), offset = (int)f.Get32();
             var v = Of<Vector3>(Blob()); var nn = Of<Vector3>(Blob()); var uv = Of<Vector2>(Blob()); var col = Blob(); var idx = Of<int>(Blob());
-            Texture2D? tex = null;
-            switch (f.Get8())
-            {
-                case 1: tex = GD.Load<Texture2D>(f.GetPascalString()); break;
-                case 2:
-                {
-                    int w = (int)f.Get32(), h = (int)f.Get32();
-                    var fmt = (Image.Format)f.Get32();
-                    bool mips = f.Get8() == 1;
-                    tex = ImageTexture.CreateFromImage(Image.CreateFromData(w, h, mips, fmt, Blob()));
-                    break;
-                }
-            }
+            var tex = Tex();
             Color C() => new(f.GetFloat(), f.GetFloat(), f.GetFloat(), f.GetFloat());
             var albedo = C(); var glow = C();
             var s = new Surf
@@ -843,6 +868,7 @@ public static class Vat
             s.DyeColor = V3(); s.DyeH = V3(); s.DyeS = V3(); s.DyeV = V3();
             s.DyeLum = f.GetFloat();
             s.Cut = f.GetFloat();
+            s.Normal = Tex();
             surfs.Add(s);
         }
         if (f.GetError() != Error.Ok && f.GetError() != Error.FileEof) return null;

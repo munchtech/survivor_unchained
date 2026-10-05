@@ -1,6 +1,7 @@
 // The crowd's vertex animation, shared by vat.gdshader (solid bodies, one
-// side) and vat_cut.gdshader (fur and hair cards: two sides, cut by alpha).
-// See vat.gdshader for what it does.
+// side), vat_cut.gdshader (fur and hair cards: two sides, cut by alpha) and
+// vat_normal.gdshader (solid, with a normal map). See vat.gdshader for what
+// it does.
 
 uniform sampler2D vat_pos : filter_nearest, repeat_disable;
 uniform sampler2D vat_nor : filter_nearest, repeat_disable;
@@ -26,6 +27,13 @@ uniform vec3 dye_h = vec3(0.0, 1.0, 0.05);
 uniform vec3 dye_s = vec3(0.0, 1.0, 0.05);
 uniform vec3 dye_v = vec3(0.0, 1.0, 0.05);
 uniform float dye_lum = 0.25;
+
+#ifdef VAT_NORMAL
+// A tangent-space normal map (OpenGL's: green up the texture). Only the
+// kinds that have one are drawn with this variant.
+uniform sampler2D normal_tex : hint_normal, filter_linear_mipmap, repeat_enable;
+uniform float normal_depth = 1.0;
+#endif
 
 float dye_band(float x, vec3 r) { return smoothstep(r.x - r.z, r.x, x) * (1.0 - smoothstep(r.y, r.y + r.z, x)); }
 
@@ -75,6 +83,24 @@ void fragment() {
 	// Dissolve: the dead go back to the dark in ragged flakes.
 	float dn = fract(sin(dot(floor(vat_local * 18.0), vec3(12.9898, 78.233, 37.719))) * 43758.5453);
 	if (fx.y > 0.0 && dn < fx.y) discard;
+#ifdef VAT_NORMAL
+	{
+		// No tangents are baked (the textures hold only where each vertex is
+		// and which way it faces), so the frame is built per pixel from how
+		// the position and the UV change across it: a cotangent frame, which
+		// also holds where the UVs are mirrored.
+		vec3 dp1 = dFdx(VERTEX), dp2 = dFdy(VERTEX);
+		vec2 duv1 = dFdx(UV), duv2 = dFdy(UV);
+		vec3 dp2perp = cross(dp2, NORMAL), dp1perp = cross(NORMAL, dp1);
+		vec3 t = dp2perp * duv1.x + dp1perp * duv2.x;
+		vec3 b = dp2perp * duv1.y + dp1perp * duv2.y;
+		float invmax = inversesqrt(max(max(dot(t, t), dot(b, b)), 1e-20));
+		vec2 nxy = (texture(normal_tex, UV).xy * 2.0 - 1.0) * normal_depth;
+		float nz = sqrt(max(0.0, 1.0 - dot(nxy, nxy)));
+		// (UV.y runs down the texture, the map's green up it.)
+		NORMAL = normalize(t * invmax * nxy.x - b * invmax * nxy.y + NORMAL * nz);
+	}
+#endif
 	vec3 c = albedo.rgb;
 	vec4 tex = use_tex ? texture(albedo_tex, UV) : vec4(1.0);
 	c *= tex.rgb;
