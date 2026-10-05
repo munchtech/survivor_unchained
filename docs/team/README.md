@@ -65,7 +65,7 @@ The main session keeps this current. It is the address list for SendMessage. Ret
 | Story and writing | a7ba8903f4c8261b1 | docs/team/story.md |
 | Combat, encounters, bosses, balance | a427a874da78cba8b | docs/team/combat.md |
 | Animation | aa15f092820132274 | docs/team/animation.md |
-| UI design (layouts, screens, the filter) | a565196002a51af40 | docs/team/ui_design.md |
+| UI design (layouts, screens, the filter) | aa1f430bd64b8d1ce | docs/team/ui_design.md |
 | UI art (paused; handoff ready at cd0f4ab6) | — | docs/team/ui_art.md |
 | Crafting (research, design, build) (paused; handoff ready at ed429efb) | — | docs/team/crafting.md |
 | Gameplay experience director (paused; handoff ready at b170d13e) | — | docs/team/experience.md |
