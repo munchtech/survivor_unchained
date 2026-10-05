@@ -19,7 +19,7 @@ public partial class ArtsScreen : Overlay
     public override string Kind => "arts";
     public override Act? Toggle => Act.Arts;
 
-    static readonly string[] Numerals = ["I", "II", "III", "IV", "V"];
+    public static readonly string[] Numerals = ["I", "II", "III", "IV", "V"];
     static readonly System.Collections.Generic.Dictionary<ArtRole, (string Name, Color Color)> Roles = new()
     {
         [ArtRole.Tank] = ("Holds the line", new Color("#d8b870")), [ArtRole.Damage] = ("Deals death", new Color("#e8866a")),

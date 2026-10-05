@@ -146,6 +146,8 @@ public sealed partial class Journey
     /// <param name="ember">The ember burns here (the night: the prologue, an arena).</param>
     public Battle StartBattle(bool combat, CollisionWorld col, Func<double, double, double> heightAt, double x, double z, double facing, uint seed, bool arena = false, bool ember = false)
     {
+        // The kit goes on with the place: the night's wherever the ember burns, where its coals work.
+        Kits.Wear(Ch, combat && (arena || ember) ? KitKind.Night : KitKind.Day);
         var kit = Character.Kit(Ch);
         InArena = arena;
         var exp = combat && !arena ? Expedition : null;

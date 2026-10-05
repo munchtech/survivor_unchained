@@ -23,8 +23,9 @@ public enum LootTier { Common, Uncommon, Rare, Epic, Set, Legendary, Storied, Ma
 public enum Make { Worn, Sound, Wrought, Legion, Heartwrought }
 
 /// <summary>Where a carried thing lives: the pack's places (gear only), what is worn, and the
-/// slotless stores that never fill (docs/design/LOOT_DESIGN.md §6).</summary>
-public enum Store { Pack, Worn, Pouch, Satchel, Keys, Belt }
+/// slotless stores that never fill (docs/design/LOOT_DESIGN.md §6); Kit: worn in the kit not on now
+/// (crafting's two kits, Rpg/Kits.cs).</summary>
+public enum Store { Pack, Worn, Pouch, Satchel, Keys, Belt, Kit }
 
 /// <summary>What carried the gear: each pays its own way (§5.1).</summary>
 public enum DropSource { Champion, Miniboss, Herald, Boss, Elite, MapPack, MapPackFine, MapKeeper, MapRuler, Strongbox }
