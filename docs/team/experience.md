@@ -43,7 +43,10 @@ Godot or GPU**, code and `dotnet test` only.
 
 **Next:**
 1. The game's staging of `StoryFall` when combat's runtime lands (fade, "You get up.", the card).
-2. The crowd's status read for skills (shader drafted only when it can be seen: no Godot yet).
+2. The crowd's status read for skills: drafted, unseen, on the side branch
+   `experience-status-read@9d5d30e6` (rime in patches, fire in tongues, all status light under 1).
+   When Godot is allowed: Hoarfrost and Cinderfall crowds (70 risen, rank 6) before and after,
+   sheets to skills, then merge it into this branch.
 3. Judge the waiting merges in play once Godot is allowed: skills' grounds, marks and numbers,
    animation's death poses, combat's maps and strongbox through the chest ceremony.
 4. The run-ups' danger with combat (`a708da2c97bf85c95`): 10–20% of runs under half health in
