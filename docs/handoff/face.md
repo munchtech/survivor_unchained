@@ -183,4 +183,4 @@ Rules for work:
   - `scratchpad/face3/` (mine): `refs_her/`, `ref_h11/` (MoGe and warp checks), `sbs.py`, `refs_front.py`, `lookD.jpg`;
   - `scratchpad/face2/` (the scripts).
 
-HANDOFF READY: docs/handoff/face.md on worktree-agent-a6784044c82f101d9@<commit>
+HANDOFF READY: docs/handoff/face.md on worktree-agent-a6784044c82f101d9@330c0304 (this line added after)
