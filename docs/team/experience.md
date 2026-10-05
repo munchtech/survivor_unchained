@@ -1,87 +1,77 @@
 # Experience: the game as a player lives it
 
-Status page for the gameplay experience director (agent `ab406cf9ddd22b03b`, branch
-`worktree-agent-ab406cf9ddd22b03b`; successor to `ad1f5623590e09883`). The audit is
-`docs/EXPERIENCE_AUDIT.md`; evidence frames are in `docs/experience/`.
+Status page for the gameplay experience director: agent `a9f0d6c64d891d56d`, branch
+`worktree-agent-a9f0d6c64d891d56d`. Successor to `ab406cf9ddd22b03b`, whose knowledge is in
+`docs/handoff/experience.md`. The audit is `docs/EXPERIENCE_AUDIT.md`; the approved design for
+story nights and the clock is `docs/design/STORY_NIGHTS_AND_TIME.md`. Evidence frames are in
+`docs/experience/`.
 
-## Current state (2026-10-04)
+## Current state (2026-10-05)
 
-Took over from `ad1f5623590e09883`. Tests green (665). **Handed off** at the context limit:
-`docs/handoff/experience.md`. The owner approved the story nights and the
-day's clock (`docs/design/STORY_NIGHTS_AND_TIME.md`, decisions at its top). Godot allowed again.
+**The Hollow, seen whole at 1920×1080** (combat's ea002b1e and arena art's f7c4c43c, both now in
+the integration branch), on the autopilot (warden, tier 1):
+- **Shape:** 10:00 in all. The clough runs to 1:45, the water to 4:00, the drive to 7:00, then the
+  boss to 10:00.
+- **Too soft:** her lowest was 193/212, and she was full at every boss sample. Sent to combat
+  (`a5115633c7006e4d4`), who agrees and is looking at Greymuzzle.
+- **The drive (combat's fix):** the first run is marked longer and said; her first miss and her
+  first hit are told; she has seven runs. "SHE IS OPEN" over the pale-blue ring is the stage's best
+  beat (`drive_she_is_open.jpg`). Two problems:
+  - The first run says four things at once (`drive_four_texts.jpg`).
+  - Its lane read as the place's burning edge (`drive_lane_like_the_edge.jpg`).
+  Combat has the asks: say the lesson a beat before the lane, and use fewer words.
+- **Fixed by me (3019fa2d):**
+  - Every hostile lane fills as it comes, and a named move draws at a boss's strength
+    (`drive_lane_fills.jpg`).
+  - Captions keep out of, and off the line of, the banner's words.
+  - A speaker at the top edge has their line under their feet.
+  - The strongbox's gear in the chest ceremony: named as its tooltip names it, in its rarity's
+    colour, and sent down to where it lies (it said "Coin, and breath back"). Not yet seen in play.
+- **Noise, briefed to skills (`abc6bbe020c7fe287`):**
+  - Her own Thornbloom/Rotwood rims are the loudest marks at the boss (`boss_own_grounds_loudest.jpg`).
+  - Enemy ground in the water is red at 0.6, not violet at the crowd's strength (`water_salmon_zones.jpg`).
+  - Move words sit over the HUD's top text.
+  - Her thick cream grace ring.
 
-**The day's clock, built and seen at 1920×1080** (`World/DayClock.cs`, `Play/Journey.Day.cs`,
-`Game/GameClock.cs`, `Game/GameFall.cs`; frames in `docs/experience/`):
-- 12 minutes of free play from dawn to night (dawn 1, day 9, dusk 2), then 6 of night; still in
-  talk, pages, the draft and chest, cinematics, travel, pause, arenas and the prologue (seen: the
-  pack, journal, map and rest page hold it); day 1 waits for `beasts` or `caravan`.
-- **The light is read off the clock:** dawn warms into day, day goes gold over dusk's first
-  minute, the dark comes in over dusk's last half minute and night's first, so "Night" lands in
-  the dark (`dusk_gold_town.jpg`, `nightfall_town.jpg`).
-- **Dusk:** the gate guard's call in town, then the night's line; **nightfall:** "Night" with the
-  called fight, a "Tonight" entry (with "Also out tonight"), and hold N (pad L3) to answer. Seen:
-  answered from town, pulled into the Hollow.
-- **The Verge at nightfall:** scars open and the dead rise away from her; they go out at dawn.
-- **A night left alone:** nudge at 3 minutes, the fade at 6, "Dawn · Day N", the story's line,
-  then the morning's news.
-- **A story fight lost:** the result, then Chid's bench at dawn a day on, his waking for that
-  fight, then the morning lines. No table rematch: it waits at its place (story's line: "It will
-  be there again tomorrow night").
-- **The fall** (`fall_choices.jpg`): the world darkens under the HUD; "Get up" or "Let the night
-  go"; getting up fades to the checkpoint with the counted words.
-- **The crowd's status read** (`frozen_rime.jpg`, `burning_char.jpg`): ice in rime, glossy blue,
-  never white; fire as thin orange tongues over char. Sheets sent to skills (`a94ac6b67f1279213`).
+## Next
 
-**Fixed from the frames:** dusk was darker than night (the Verge went black and red: the sun at
-18° grazing the ground at half the light) and is now a golden hour at 34°; the lamps' moths were
-drawn a metre across (Godot's particle billboard drops particle scale unless it keeps it), cream
-puffballs round every lamp from dusk on; the fall's fade greyed its own choices.
-
-**Since:** the crit's burst (warm gold, three a breath, small at her elbow); the ember stones as
-gems, not popcorn; rulers in their own colour (Greymuzzle grey, not orange); the Hollow seen whole
-(`hollow_drive.jpg`, `greymuzzle_grey.jpg`, `ember_gems.jpg`): the drive was the problem, combat
-is fixing it.
-
-**Next:** see `docs/handoff/experience.md` "In progress, and next" (the Hollow after combat's push,
-the screen's noise with skills, maps and the strongbox, the run-ups, UI's dial and fall).
-
-**Harness** (`scratchpad/experience/`): `clock_runs.sh dusk|answer|verge|nightout|nudge|fall|
-letgo|pauses`, `tod.sh TAG TIME` (the Verge and the town side by side), `status_runs.sh TAG`
-(skills' worst case), `ba.py` (before and after crops), `runlog.py NAME` (a run's gist). Game
-switches: `--clock S`, `--night ID`, `--answer T`, `--die T1,T2`, `--choose rise|letgo`. After a
-code change, `dotnet build` the game project itself (Godot runs `.godot/mono/temp/bin`), not to
-another folder.
-
-## Notes for other areas
-
-- **Story** (`a7ba8903f4c8261b1`): the story fights' specs live in `Play/StoryFights.cs`; the
-  rematch line change pairs with mine (`8290bfda`).
-- **Combat**: `StoryFall` stages the fall; `ClockRuns` is false by default, so the story-night
-  runtime needs nothing for the clock.
-- **Skills**: `vat.gdshaderinc`'s frozen and burning lines are mine; Cinderfall's own blast
-  still blooms cream mid-crowd (theirs).
+1. **Maps and the strongbox through the chest ceremony.** Use `judge_runs.sh map` and `box`; the
+   game's `--strongbox` puts one at her feet.
+2. **The extra death poses by day** (`judge_runs.sh deadday`).
+3. **The Hollow again** after combat's Greymuzzle work and skills' noise fixes.
+4. **The Roost** once combat has seen it.
+5. **UI design (`a4fdbc49786ba8b7f`):** the day dial and the fall's choices, after the Self and
+   Pack rework. Judge their frames.
+6. **Loot (`a9a9c345a35e1fcad`):**
+   - The first Legendary ever is staged through the chest ceremony: the world held, no page. Later
+     ones get the pillar, the toll and a toast.
+   - Judge a night's drops from their frames.
 
 ## Decisions (with why)
 
-- **The night calls a story fight only once the story has pointed her at it:** the Pack and the
-  Roost stand open from the start, and they are the violent roads; a clock must never push her
-  down one unasked.
-- **Free play is the world with nothing over it:** the clock never eats talk, reading or menus,
-  so a slow reader never loses a night.
-- **The light is read off the clock, not its turns; lamps and the corner turn at once:** a pop
-  reads as a bug, a slow change as the world, and the dark must come before the word "night".
-- **The chest is staged in the world;** a chest is worth 1.4 things on average, as before.
-- **The fall is the only screen-filling moment;** a boss's kill adds light and a ring, no blast.
-- **One levelling system at a time:** the ember by night, the character's lessons at dawn.
-- **Unconfirmed: "the Wayfinder's maps are 30" read as the table's nights,** making the atlas's
-  build maps about ten minutes. The owner is being asked; build on neither reading until then.
-- **What came before** (the chest ceremony, the evolution, the ember ladder, the swell, rumble,
-  the hoard stone, the night's lessons) is in `docs/handoff/experience.md`.
+- **A named move is drawn at a boss's strength, whoever makes it:** a mechanic the stage teaches
+  must never sit at the crowd's 0.28.
+- **A hostile lane fills as it comes:** two edges alone read as one more line on the ground. A
+  moving front says that it is coming, and when.
+- **Words never share a line:** a caption beside the banner reads as one sentence.
+- **The first Legendary is held in the world, not paused on a page:** the owner wants full pages
+  rarely.
+- Earlier decisions are in `docs/handoff/experience.md`.
+
+## Notes for other areas
+
+- **Combat:** `--stage N` starts her at ember 1, so stage-skip runs can't judge a stage's length
+  or danger. Please hand her the floor build there.
+- **Skills:** `GameHud.TopClear` and `GameHud.Banner` are there for anything drawn over the
+  world near the top or the banner.
 
 ## Tools (scratchpad `experience/`)
 
-- `play.py NAME -- [game args]`: a run at 1920×1080, fixed 60 fps (`--real` for wall time).
-- `sheet.py`, `tsheet.py`, `crop.py`, `keep.py` (to `docs/experience/`), `spec.py` (a `--wav`
-  spectrogram), `words.py` (dialogue words), `pending.sh` (what each lead's branch holds).
-- The game: `--story` (a story night), `--chest 1,3,5!` (chests at her feet), `--log` (with stones,
-  hoard and the story's share).
+- `play.py NAME -- [game args]`: a run at 1920×1080, fixed 60 fps.
+- `judge_runs.sh drive|hollow|map|box|dead|deadday`: this lead's runs.
+- `sheet.py`, `crop.py`, `keep.py` (frames to `docs/experience/`), `runlog.py`.
+- `branches.py` (what each lead's branch holds beyond ours), `contains.py`.
+- `wait_turn.py` (waits for a turn, then takes it), `wait_for.py`.
+- **Gotcha:** a fresh worktree checks `godot/assets` out as a stub file. Replace it with a junction
+  to `public/assets`, mark it `git update-index --assume-unchanged godot/assets`, then run
+  `--headless --import`.

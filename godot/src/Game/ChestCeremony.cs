@@ -334,8 +334,9 @@ public partial class ChestCeremony : Control
         int n = reels.Count;
         float gap = n <= 5 ? 200 : Math.Min(200, 1560f / n);
         float cx = Mathf.Clamp(mouth.X, 140 + gap * (n - 1) / 2, 1780 - gap * (n - 1) / 2);
-        // Clear of the top bars (a herald's or a boss's name and health sit there).
-        float cy = Math.Max(390, mouth.Y - 250);
+        // Over her head, not across it (she stands at the chest, and the middle name sat on her
+        // face), and clear of the top bars (a herald's or a boss's name and health sit there).
+        float cy = Math.Max(GameHud.TopClear + 150, mouth.Y - 340);
         for (int i = 0; i < n; i++)
         {
             var r = reels[i];

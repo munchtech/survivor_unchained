@@ -1089,6 +1089,12 @@ public partial class Game : Node, IZoneHost
             foreach (var one in chs.Split(','))
                 if (int.TryParse(one.TrimEnd('!'), out var cn)) car.ChestAt(cn, one.EndsWith('!'));
         }
+        // --strongbox: a map's strongbox at her feet at --chest-at seconds (its opening, for pictures).
+        if (!chestDone && Args.Has("strongbox") && zone is MapRun && Battle is { } sbb && Journey.Playtime >= Args.Num("chest-at", 3))
+        {
+            chestDone = true;
+            sbb.SpawnPickup(PickupKind.Chest, sbb.Player.X + 0.4, sbb.Player.Z, 1, "strongbox");
+        }
         if (!giveDone && Args.Get("give") is string give && Battle is { } gb)
         {
             giveDone = true;
