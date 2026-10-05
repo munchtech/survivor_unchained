@@ -160,6 +160,12 @@ func legal_marks(mi):
 	for si in overrides.size():
 		var m = overrides[si]
 		if m is ShaderMaterial and m.shader != null and String(m.shader.resource_path).ends_with("heroine_skin.gdshader"):
+			# Carry every uniform across (the outfit's tuck_channel among them), so her skin is
+			# drawn, tucked and hidden exactly as in play; only the codes are added.
+			var kept = {}
+			for u in m.shader.get_shader_uniform_list():
+				kept[u.name] = m.get_shader_parameter(u.name)
 			m.shader = tinted_skin(m.shader)
+			for n in kept: m.set_shader_parameter(n, kept[n])
 		mi.set_surface_override_material(si, m)
 '''

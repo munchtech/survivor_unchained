@@ -1,6 +1,14 @@
 # Legal and Steam compliance: status
 
-Agent aab20546fe06daa89 (successor to aa12c130ddf4b904c), branch `worktree-agent-aab20546fe06daa89` (worktree `.claude/worktrees/agent-aab20546fe06daa89` in survivorsunchained). Not a lawyer: I find and organise the issues, cite primary sources, and recommend. The owner and the main session decide. Predecessor's handoff: `docs/handoff/legal.md`.
+Agent aab20546fe06daa89 (successor to aa12c130ddf4b904c), branch `worktree-agent-aab20546fe06daa89`. Not a lawyer: I find and organise the issues, cite primary sources, and recommend. The owner and the main session decide.
+
+**Handed off (context past 600k, 4 Oct late night): a successor starts from `docs/handoff/legal.md`.** No Godot or GPU turn is held.
+
+**Launch blockers (4):**
+- the AI disclosure, at submission;
+- the mature survey, waiting on the motion re-measure on the tuck build;
+- the licences screen, to be seen in game;
+- the boar.
 
 ## State (4 October 2026, late evening): re-ruled on the owner's answers, documents only
 
@@ -40,13 +48,19 @@ Agent aab20546fe06daa89 (successor to aa12c130ddf4b904c), branch `worktree-agent
 
 ## Next (exact)
 
-0. **The motion check, second pass (running, 4 Oct night).**
-   - The tools are in `tools/legal/motioncheck/` (`run.sh`, `make_motioncheck.py`, `count.py`). They mark her areolas and genital area unlit cyan, after the outfit's skin hiding, and count what shows.
-   - **Results so far:**
-     - the Warden's left cup is fixed;
-     - **nothing is under the Warden's skirt**, and her bare, smooth crotch shows in the sprint (sent to the main session);
-     - no genitals are modelled.
-   - The full run is in the scratchpad (`legal/motion8`). Next, run and sprint for all four rebuilt outfits.
+0. **The motion check, reworked to the main session's four points** (tools in `tools/legal/motioncheck`):
+   - a narrow genital strip (the vulva's footprint, ±1.2 cm);
+   - areola margins per outfit, with where on the rim;
+   - crops labelled as a test tint;
+   - codes drawn last in the skin shader, so they show on tucked skin.
+
+   **On build 854b927e:** the Warden's cup is fixed, and no areola shows in the Warden's or Arcanist's clips. My first, wide crotch reading is withdrawn.
+
+   **Next:**
+   - test the new codes (calibration, false positives; queued for a Godot turn);
+   - then, on the main session's next build (the skin tuck), run every outfit and send the margins.
+
+   **Heavy work takes turns:** `tools/turn.py take godot "legal: …"`, and give the turn back the moment the batch ends.
 1. **When the coordinator frees the GPU:**
    - The motion check: `scratchpad/legal/motion.sh` with the clip loop changed to dash, leap, death, death_back, hit, cast_bolt, cast_flick, cast_raise, throw, crossbow_shoot, the swing clips (list them first from `res://art/anim/heroine.res`), the sits and the breaks. All four outfits, jiggle on.
    - Then the cinematic poses (`--cine`) and the creation poses.
