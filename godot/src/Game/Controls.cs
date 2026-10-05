@@ -15,6 +15,9 @@ public enum Act
     Alt, Alt2,
     /// <summary>A page within a screen (pad LT and RT): the journal's sections, the map's zoom.</summary>
     SubPrev, SubNext,
+    /// <summary>Held at night in the town or the wood: answer the night, the ember pulling her to
+    /// the night's fight (docs/design/STORY_NIGHTS_AND_TIME.md).</summary>
+    Answer,
 }
 
 /// <summary>
@@ -39,10 +42,10 @@ public partial class Controls : Node
         [Act.Pause] = ["Escape", "KeyP"], [Act.Confirm] = ["Enter", "NumpadEnter"], [Act.Cancel] = ["Escape", "Backspace"],
         [Act.Reroll] = ["KeyX"], [Act.Banish] = ["KeyB"], [Act.Pick1] = ["Digit1"], [Act.Pick2] = ["Digit2"], [Act.Pick3] = ["Digit3"], [Act.Pick4] = ["Digit4"],
         [Act.TabNext] = ["BracketRight"], [Act.TabPrev] = ["BracketLeft"], [Act.Arts] = ["KeyK"], [Act.Skip] = ["KeyV"],
-        [Act.Alt] = ["Delete"], [Act.Alt2] = [], [Act.SubPrev] = ["Comma"], [Act.SubNext] = ["Period"],
+        [Act.Alt] = ["Delete"], [Act.Alt2] = [], [Act.SubPrev] = ["Comma"], [Act.SubNext] = ["Period"], [Act.Answer] = ["KeyN"],
     };
 
-    public static readonly Act[] Rebindable = [Act.Up, Act.Left, Act.Down, Act.Right, Act.Dash, Act.Ability, Act.Ultimate, Act.Interact, Act.Inventory, Act.Character, Act.Arts, Act.Journal, Act.Map, Act.Reroll, Act.Banish, Act.Skip];
+    public static readonly Act[] Rebindable = [Act.Up, Act.Left, Act.Down, Act.Right, Act.Dash, Act.Ability, Act.Ultimate, Act.Interact, Act.Inventory, Act.Character, Act.Arts, Act.Journal, Act.Map, Act.Reroll, Act.Banish, Act.Skip, Act.Answer];
     static readonly string[] Reserved = ["Escape", "Enter", "NumpadEnter", "Backspace", "Digit1", "Digit2", "Digit3", "Digit4", "BracketLeft", "BracketRight", "Comma", "Period", "Delete"];
 
     /// <summary>The standard pad layout: View opens the pack, whose tabs
@@ -55,7 +58,7 @@ public partial class Controls : Node
         [Act.Confirm] = [JoyButton.A], [Act.Cancel] = [JoyButton.B], [Act.Inventory] = [JoyButton.Back], [Act.Pause] = [JoyButton.Start],
         [Act.Up] = [JoyButton.DpadUp], [Act.Down] = [JoyButton.DpadDown], [Act.Left] = [JoyButton.DpadLeft], [Act.Right] = [JoyButton.DpadRight],
         [Act.TabNext] = [JoyButton.RightShoulder], [Act.TabPrev] = [JoyButton.LeftShoulder], [Act.Reroll] = [JoyButton.X], [Act.Banish] = [JoyButton.Y],
-        [Act.Skip] = [JoyButton.RightStick],
+        [Act.Skip] = [JoyButton.RightStick], [Act.Answer] = [JoyButton.LeftStick],
         [Act.Alt] = [JoyButton.X], [Act.Alt2] = [JoyButton.Y],
     };
 
@@ -352,7 +355,7 @@ public partial class Controls : Node
     {
         [JoyButton.A] = "A", [JoyButton.B] = "B", [JoyButton.X] = "X", [JoyButton.Y] = "Y", [JoyButton.LeftShoulder] = "LB", [JoyButton.RightShoulder] = "RB",
         [JoyButton.Back] = "View", [JoyButton.Start] = "Menu", [JoyButton.DpadUp] = "D-pad up", [JoyButton.DpadDown] = "D-pad down",
-        [JoyButton.DpadLeft] = "D-pad left", [JoyButton.DpadRight] = "D-pad right",
+        [JoyButton.DpadLeft] = "D-pad left", [JoyButton.DpadRight] = "D-pad right", [JoyButton.LeftStick] = "L3", [JoyButton.RightStick] = "R3",
     };
 
     public IEnumerable<string> PadLabels(Act a) => a switch

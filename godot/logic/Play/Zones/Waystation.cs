@@ -20,6 +20,7 @@ public sealed class Waystation : ZoneRuntime
     public override string Name => "The Waystation";
     public override string? Region => "Where three roads meet";
     public override bool Combat => false;
+    public override bool ClockRuns => true;
 
     /// <summary>What the stall-keepers shout.</summary>
     static readonly Dictionary<string, string[]> StallCalls = new()
@@ -362,6 +363,8 @@ public sealed class Waystation : ZoneRuntime
         if (from == "verge") return new(east.X - 5, east.Z, -Math.PI / 2);
         if (from == "arena") return AtTable;
         if (from == "death") return new(shrine.X + 6, shrine.Z + 6, Math.PI * 0.25);
+        // Carried home after a story night lost: she wakes at the Last Lamp's door.
+        if (from == "carried") { var inn = Way("inn"); return new(inn.X, inn.Z, 0); }
         // Far enough through the south gate that the wall is behind the
         // camera, not a brown slab across the bottom of the picture.
         return new(south.X, south.Z - 15, Math.PI);

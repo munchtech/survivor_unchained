@@ -130,9 +130,7 @@ public partial class Game
             hud.Fade(1, 0.8, "Nightfall", $"Day {w.Day}");
             Wait(1.4, () =>
             {
-                air.Set(zone!.AtmosphereFor(TimeOfDay.Night));
-                scene?.View.SetNight(true);
-                hud.ZoneInfo(zone.Name, zone.Region, w.Day, TimeOfDay.Night);
+                SetTimeOutright(TimeOfDay.Night);
                 hud.Fade(0, 1.2);
                 Save("night");
             });
@@ -146,10 +144,7 @@ public partial class Game
         Wait(0.95, () =>
         {
             screen?.Report(lines);
-            air.Set(zone!.AtmosphereFor(TimeOfDay.Day));
-            scene?.View.SetNight(false);
-            scene?.View.SetDusk(false);
-            hud.ZoneInfo(zone.Name, zone.Region, w.Day, TimeOfDay.Day);
+            SetTimeOutright(TimeOfDay.Day);
             Save("rest");
             hud.Fade(0, 0.6);
         });

@@ -1,7 +1,8 @@
 # Story nights and the day's clock
 
-A proposal for the owner, by the experience director. Nothing here is built yet. Building starts
-when the owner approves (section 3 lists the choices that are the owner's). The bosses' moves are
+The experience director's design, approved by the owner on 4 October with the decisions below,
+which overrule the text where it differs. Being built: the day's clock (experience) and the story
+nights' runtime (combat). The bosses' moves are
 the combat lead's: `docs/design/STORY_BOSSES.md` (on `worktree-agent-a708da2c97bf85c95`), which
 holds each fight's beats, bosses and numbers.
 
@@ -17,7 +18,7 @@ The owner, 4 October:
 
 The design is approved, with these decisions. They overrule the doc below where it differs.
 
-1. **Losing a story fight wakes her in town** (Chid carries her home), and time has passed: the night is lost and she wakes the next morning. "We can't die" is part of the game, but losing costs her time ("having to die for a time"), and gives her a day to get new gear and prepare before she tries again. The fight waits for another night. Within a fight, the two get-ups before the loss stand (the recommendation).
+1. **Losing a story fight wakes her in town** (Chid carries her home), and time has passed: the night is lost and she wakes the next morning. "We can't die" is part of the game, but losing costs her time ("having to die for a time"), and gives her a day to get new gear and prepare before she tries again. The fight waits for another night. **Getting up (owner, revised): once, and only early.** In Act 1's story fights she may rise once, at the start of the stage she fell in (or the boss's opening). From Act 2 on there's no rising at all, unless a trait grants it, and such traits stay rare. "Get up twice is too generous ... as we move on you shouldn't get to rise and keep fighting unless you have a trait for it. thats a balancing nightmare". The same rule applies to the atlas maps: no falls to spare without the trait.
 2. **Redcowl gets a spare-or-kill choice** at his knee, as Greymuzzle does: "Spare him" or "Finish it". The story bible already has both branches (he lives and returns in Act 2, or dies and Rav speaks his name). C11's last words play only if he dies; the story lead writes the spared ending.
 3. **Day length:** 12 minutes of free play (the recommendation).
 4. **Time passes outside fights and their stages.** A night left alone passes (the recommendation).
@@ -72,16 +73,16 @@ endless hour.
 - **A fall at the boss:** she gets up as its ground opens, at full health, in phase one, with her
   build. The ground is as it opened. The arrival's cinematic does not play again; a two-second
   re-entry (his howl, his laugh, his "Nondum") does instead.
-- **Two rises a night** (open choice 1). The third fall is the loss the story already writes: each
-  fight's `OnLose`, and its lost line as she comes to in the same night. The fight then waits at its
-  place and at the table for another night, as now. "Let the night go" is on the fall screen from
-  the first fall.
-- **A rise is quick:** a three-second fade with no screens. Story's line is "You get up." (the
-  prologue's words), then the second time "You get up. It takes less than it did."
+- **One rise, in Act 1 only** (the owner's decision 1, revised). From Act 2 on there is none
+  unless a rare trait grants it, and the atlas's maps keep the same rule. The fall with no rise
+  left is the loss: the fight's `OnLose`, and she wakes in town a day on (decision 1). The fight
+  waits for another night. "Let the night go" is on the fall card whenever a rise is offered.
+- **A rise is quick:** a three-second fade with no screens, and story's line, "You get up." (the
+  prologue's words). The runtime counts the rises and passes what is left to the host
+  (`IZoneHost.StoryFall`), which never assumes a number.
 - **What to build:** combat snapshots the battle at each beat's start and at the boss's opening
   (`STORY_BOSSES.md` §5.1). The run restores it, and the beat's waves begin again.
-- **The odds:** first-try wins with the two rises at 90% or more for a planned draft, and 70–80% for
-  a careless one (combat's §0.6).
+- **The odds:** combat re-sets its first-try targets for one rise (`STORY_BOSSES.md` §0.6).
 
 ### What each fight needs
 
@@ -173,13 +174,15 @@ by sleeping at the inn (`Journey.Sleep`). A player who never finds the inn's res
     her straight there. A card names the fight first and lists any others open that night.
 - **Not ready?** Nothing forces a fight. The night holds for 6 minutes of free play: shop, talk to
   the night's folk, or go to Pell's door. At 3 minutes, one nudge ("Half the night is gone"). At 6,
-  the night passes on its own (open choice 3): a fade, and story's line, "You see the night out on
-  your feet. At first light the warmth comes back into your hands." The world moves on a day, as when she sleeps, but without the inn's rest. A story fight that wasn't
-  fought waits; nothing is lost but the night.
-- **One fight a night** (open choice 4). After any night's fight she comes back into the same
-  night, as now, and the town talks about it that night. The night's other fights close. The
-  night's clock resumes with at least 3 minutes left, so there is time to hear the town. Then the
-  inn's bed, or the night passing on its own, moves her on.
+  the night passes on its own (decided): a fade, and story's line, "You see the night out on your
+  feet. At first light the warmth comes back into your hands." The world moves on a day, as when
+  she sleeps, but without the inn's rest. A story fight that wasn't fought waits; nothing is lost
+  but the night.
+- **Several fights a night, by intent** (decided). After a fight she won or walked out of, she comes
+  back into the same night, and the town talks about it that night. The night's clock resumes with
+  at least 3 minutes left: time to hear the town, or to go straight to another fight. Then the
+  inn's bed, or the night passing on its own, moves her on. A story fight lost wakes her in town a
+  day on instead.
 - **The skips stay.**
   - The inn's sleep goes to the next morning, healed, with the overnight talk, from any hour.
   - "Wait for nightfall" jumps to the night from day or dusk.
@@ -199,16 +202,12 @@ by sleeping at the inn (`Journey.Sleep`). A player who never finds the inn's res
   - The table's nights stay at 30 minutes. The atlas's maps wait on the owner.
     `WorldState.TimeIn` measures it in playtests.
 
-## 3. For the owner: four choices
+## 3. The choices (decided: see "The owner's decisions" at the top)
 
-1. **Getting up after a fall in a story fight.** I recommend two rises a night, then the story's
-   own loss, and the fight waits for another night. This keeps the stakes, and the losses the story
-   wrote. The alternative is unlimited rises from the last checkpoint.
-2. **The day's length.** I recommend 12 minutes of free play, which makes about 20 with the talk;
-   Act 1 is then about half days. The alternatives are 8 (brisker; back to about 43% days) or 16
-   (more room to wander; about 53%).
-3. **A night left alone.** I recommend that it passes on its own after 6 minutes, so a lost player
-   always moves on. The alternative is that the night holds until she fights or sleeps.
-4. **How many fights a night.** I recommend one. She comes back into the night to hear the town,
-   and then the bed or the night's own end moves her on, so the cycle stays clean: a day, then one
-   night's fight. The alternative is today's rule, where she can take another scar the same night.
+What was put to the owner, kept for the why:
+1. **Getting up after a fall:** I recommended two rises a night. The owner chose one, in Act 1
+   only, and none later without a rare trait.
+2. **The day's length:** 12 minutes of free play, as recommended.
+3. **A night left alone:** it passes, as recommended.
+4. **How many fights a night:** I recommended one. The owner allows several, if she goes straight
+   from one to the next: the clock runs between them.

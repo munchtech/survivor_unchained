@@ -811,8 +811,13 @@ public sealed partial class Journey
         get { var rook = World.Npc("rook"); return rook.Affection >= 30 || rook.Trust >= 40 ? 0 : 5; }
     }
 
-    /// <summary>Wait for nightfall.</summary>
-    public void Nightfall() => World.Time = TimeOfDay.Night;
+    /// <summary>Wait for nightfall: a shortcut through what is left of the day (the clock would
+    /// bring it anyway).</summary>
+    public void Nightfall()
+    {
+        World.Time = TimeOfDay.Night;
+        World.Clock = DayClock.NightAt;
+    }
 
     /// <summary>Sleep the night: the world moves on a day, the ember goes
     /// out, wounds close. What happened overnight, as lines to read.</summary>
@@ -823,10 +828,20 @@ public sealed partial class Journey
         Ch.Gold -= cost;
         var report = Simulation.AdvanceDay(Ctx, rng);
         World.Time = TimeOfDay.Day;
+        World.Clock = DayClock.DayAt;
         Expedition = null;
         if (b != null) b.Player.Hp = b.MaxHp;
+        var lines = Overnight(report, atInn: true);
+        if (lines.Count == 0) lines.Add("A quiet night. Rook's bread is hot, and nobody died.");
+        OnTouch();
+        return lines;
+    }
+
+    /// <summary>What the night brought, as lines: the world's own news, the talk of the town (who
+    /// heard what), and, for a night spent at the inn, Wenna's flask filled; and the smith's morning.</summary>
+    List<string> Overnight(DayReport report, bool atInn)
+    {
         var lines = new List<string>(report.Lines);
-        // The talk of the town: who heard what, overnight.
         var short_ = new Dictionary<string, string> { ["holloway"] = "Holloway", ["harlan"] = "Harlan", ["pell"] = "Pell", ["keegan"] = "Keegan" };
         var byEvent = new List<(string Event, List<string> Who)>();
         foreach (var h in report.Heard)
@@ -843,10 +858,8 @@ public sealed partial class Journey
             var names = who.Count == 1 ? who[0] : $"{string.Join(", ", who.Take(who.Count - 1))} and {who[^1]}";
             lines.Add($"By breakfast, {names} had heard that you {ev.Text}.");
         }
-        if (Flask() is { } flask) lines.Add(flask);
+        if (atInn && Flask() is { } flask) lines.Add(flask);
         Crafting.Morning(World);
-        if (lines.Count == 0) lines.Add("A quiet night. Rook's bread is hot, and nobody died.");
-        OnTouch();
         return lines;
     }
 
