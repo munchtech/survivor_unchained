@@ -134,7 +134,14 @@ public sealed class StoryNight : ZoneRuntime, IStoryArena
     public override void Begin(Battle b)
     {
         base.Begin(b);
-        foreach (var pc in map.Pieces) G.Look.AddProp(pc.Id, pc.X, pc.Z, pc.Rot, pc.Scale);
+        // Until arena art builds a fight's place to its outline (PlaceBuilt), the old round arena's props
+        // stand inside it: a stump in a neck the fight needs, a cart across a gate. Where the place is, they
+        // go, drawn and solid both; its own cover comes with its own build.
+        bool clear = !Fight.PlaceBuilt;
+        foreach (var pc in map.Pieces)
+            if (!clear || !Fight.Place.Inside(pc.X, pc.Z, -1.5)) G.Look.AddProp(pc.Id, pc.X, pc.Z, pc.Rot, pc.Scale);
+        if (clear)
+            foreach (var c in b.Collision.All().Where(c => c.Tag == null && Fight.Place.Inside(c.X, c.Z, -1.5)).ToList()) b.Collision.Remove(c.Id);
         b.Rules = MapOffers.Rules(Spec.Map);
         // The table's gold rates (crafting's economy): a night's rank and file pay a little.
         b.Rules.FodderGold = 0.0015;
@@ -218,7 +225,7 @@ public sealed class StoryNight : ZoneRuntime, IStoryArena
         // What the stage's dead would have given her, if she was quicker than they were many.
         for (int k = 0; k < 200 && B!.EmberLevel < b.EmberFloor; k++) B.GainEmber(Math.Max(1, B.EmberNext - B.EmberXp), raw: true);
         if (b.Gate is { } g) Open(g);
-        if (beatIx < Fight.Between.Length) G.Say(Fight.Between[beatIx]);
+        if (Fight.BetweenSight(this, beatIx) is { } sight) G.Say(sight);
         // The stage's leftovers fall back into the dark: the quiet between is quiet.
         MakeWay();
         B!.Charges.Calm(B, 6);
@@ -226,6 +233,51 @@ public sealed class StoryNight : ZoneRuntime, IStoryArena
         betweenT = 6;
         Goal = beatIx + 1 < Fight.Beats.Length ? Fight.Place[Fight.Beats[beatIx + 1]().Start] : Fight.Place[Fight.BossStart];
         Objectives();
+    }
+
+    bool shutBehind;
+
+    static double SegDist(double x, double z, double x0, double z0, double x1, double z1)
+    {
+        double lx = x1 - x0, lz = z1 - z0, len2 = lx * lx + lz * lz;
+        double t = len2 > 0 ? Math.Clamp(((x - x0) * lx + (z - z0) * lz) / len2, -0.3, 1.3) : 0;
+        return Dist(x, z, x0 + lx * t, z0 + lz * t);
+    }
+
+    /// <summary>The boss's own ground: the space its start stands in.</summary>
+    string? BossGround => Fight.Place.SpaceAt(Fight.Place[Fight.BossStart].X, Fight.Place[Fight.BossStart].Z);
+    /// <summary>On it, and through its gate: on the same side of every gate into it as its start, and clear of
+    /// it (a gate's neck belongs to the space it opens, so in the neck she may still be on the near side).</summary>
+    bool OnBossGround()
+    {
+        if (BossGround is not { } g || B == null) return false;
+        var p = B.Player;
+        if (!Fight.Place.In(g, p.X, p.Z, 1.0)) return false;
+        var (sx, sz) = Fight.Place[Fight.BossStart];
+        foreach (var gate in Fight.Place.Gates.Where(q => q.Into == g))
+        {
+            double lx = gate.X1 - gate.X0, lz = gate.Z1 - gate.Z0;
+            double her = lx * (p.Z - gate.Z0) - lz * (p.X - gate.X0), start = lx * (sz - gate.Z0) - lz * (sx - gate.X0);
+            if (Math.Sign(her) != Math.Sign(start) || SegDist(p.X, p.Z, gate.X0, gate.Z0, gate.X1, gate.Z1) < 2.5) return false;
+        }
+        return true;
+    }
+
+    /// <summary>On the boss's ground, the way back shuts behind her (his people close it): the fight is
+    /// on its ground, and a fight that drifts back down the way in is a fight that never ends.</summary>
+    void ShutBehind()
+    {
+        if (shutBehind || B == null) return;
+        var ground = BossGround;
+        if (ground == null || !OnBossGround()) return;
+        shutBehind = true;
+        foreach (var g in Fight.Place.Gates.Where(g => g.Into == ground))
+        {
+            StoryPlace.Shut(B.Collision, g);
+            if (Fight.ShutSight is { } sight) B.Events.Emit(new Ev.Bark { X = (g.X0 + g.X1) / 2, Z = (g.Z0 + g.Z1) / 2, Text = sight });
+        }
+        open.Clear();
+        open.Add(ground);
     }
 
     void Open(string gate)
@@ -307,10 +359,17 @@ public sealed class StoryNight : ZoneRuntime, IStoryArena
                 if (betweenT <= 0)
                 {
                     if (beatIx + 1 < Fight.Beats.Length) StartBeat(beatIx + 1);
-                    else BossOpen();
+                    // The boss comes when she steps onto his ground (or, if she does not come, the ember
+                    // takes her there after a while: a night is not lost standing at a gate).
+                    else if (OnBossGround() || betweenT < -20)
+                    {
+                        if (!OnBossGround()) { var (gx, gz) = Fight.Place[Fight.BossStart]; B.Player.X = gx; B.Player.Z = gz; }
+                        BossOpen();
+                    }
                 }
                 break;
             case Stage.Boss:
+                ShutBehind();
                 script?.Step(dt);
                 break;
         }
@@ -606,7 +665,9 @@ public sealed class StoryNight : ZoneRuntime, IStoryArena
     public bool Fact(string key) => F(key).Truthy;
     public (double X, double Z)? Goal { get; set; }
     public void Script(Enemy e, Func<Enemy, double, bool> tick) { e.Scripted = true; scripted[e.Id] = (e.Seed, tick); }
-    public void Line(string text) => G.Say(text);
+    public void Line(string text, string? speaker = null) => G.Say(text, speaker);
+    public Fact FactOf(string key) => F(key);
+    public void Apply(string effectsJson) => G.Apply(effectsJson);
     /// <summary>The spared ending is chosen in the fight when the story's spec carries both outcomes
     /// (OnSpare); without one, a spare the story allows happens of itself, as before.</summary>
     public bool CanSpare => Spec.OnSpare != null;
@@ -652,7 +713,7 @@ public sealed class StoryNight : ZoneRuntime, IStoryArena
     /// story night does not ask more of the draft as the tiers climb.</summary>
     public double TierEase => 1 + 0.3 * (Spec.Tier - 1);
 
-    public Enemy? Foe(string def, double x, double z, double hpMul = 1, string? kicker = null)
+    public Enemy? Foe(string def, double x, double z, double hpMul = 1, string? kicker = null, bool quiet = false)
     {
         var e = Spawn(def, x, z, true, SpawnStyle.Walk);
         if (e == null) return null;
@@ -660,11 +721,19 @@ public sealed class StoryNight : ZoneRuntime, IStoryArena
         // five times), times what its stage asks of it. Not more a tier: its level grows it already.
         e.MaxHp = e.Hp = e.MaxHp * 2.2 * hpMul;
         e.Named = new Named { Title = e.Def.Name };
+        if (quiet) return e;
         smallChests.Add(e.Id);
         B!.Charges.Calm(B, 4);
-        G.Announce(new Announcement(e.Def.Name, e.Def.Lesson, "danger", 3.2, kicker));
+        G.Announce(new Announcement(e.Def.Name, e.Def.Lesson, "danger", 3.2, kicker ?? (Fight.Kicker != "" ? Fight.Kicker : null)));
         return e;
     }
+
+    readonly HashSet<string> marks = new();
+    public void Mark(string key) => marks.Add(key);
+    public bool Marked(string key) => marks.Contains(key);
+    public bool Test(Cond cond) => Rules.Test(cond, C);
+    bool IStoryArena.Knows(string key) => Knows(key);
+    public void After(double seconds, Action act) => G.After(seconds, act);
 
     public List<Enemy> Group(string def, int n, double x, double z, double spread, SpawnStyle? style = null)
     {
@@ -739,7 +808,7 @@ public sealed class StoryNight : ZoneRuntime, IStoryArena
 
     public override Dictionary<string, object?> Debug() => new()
     {
-        ["stage"] = Now.ToString(), ["beat"] = beatIx, ["falls"] = falls, ["level"] = Level, ["ember"] = B?.EmberLevel,
+        ["stage"] = Now.ToString(), ["beat"] = beatIx, ["falls"] = falls, ["level"] = Level, ["ember"] = B?.EmberLevel, ["shut"] = shutBehind, ["open"] = string.Join("+", open),
         ["alive"] = B?.Enemies.Living().Count(e => e.Disposition == Disposition.Hostile) ?? 0,
     };
 }
