@@ -8,6 +8,29 @@ namespace SurvivorUnchained.Tests;
 /// <summary>What the survivor looks like and carries (Play/Loadout.cs).</summary>
 public class LoadoutTests
 {
+    [Fact]
+    public void Only_what_shows_changes_the_look()
+    {
+        // The figure is built again only when its look changes (a blink otherwise, the crafting lead's bug).
+        var a = Callings.Archetype("warden");
+        var ch = Character.Create(new CreationChoice { Name = "Ashe", Archetype = "warden", Background = "hunter", Palette = a.Palettes[0].Id, WeaponItem = a.Weapons[0], Ability = a.Abilities[0] }, 1, 7);
+        var look = Loadouts.Look(Loadouts.Of(ch));
+        Assert.Equal(look, Loadouts.Look(Loadouts.Of(ch)));
+        ch.Equipment.Ring1 = Inventory.Make(ch, "copper_ring");
+        ch.Equipment.Amulet = Inventory.Make(ch, "bone_amulet");
+        ch.Equipment.Head = Inventory.Make(ch, "iron_helm");
+        Assert.Equal(look, Loadouts.Look(Loadouts.Of(ch)));
+        var other = Callings.Archetype("reaver").Weapons[0];
+        Assert.NotEqual(look, Loadouts.Look(Loadouts.Of(Armed(ch, other))));
+    }
+
+    static CharacterData Armed(CharacterData ch, string weapon)
+    {
+        var c = Core.Json.Clone(ch);
+        c.Equipment.Weapon = Inventory.Make(c, weapon);
+        return c;
+    }
+
     [Theory]
     [InlineData("warden")]
     [InlineData("reaver")]

@@ -84,6 +84,11 @@ public static class Loadouts
     }
 
     /// <summary>The survivor as their character sheet has them.</summary>
+    /// <summary>What shows of a loadout, as one string: alike if they look alike. Most of what is
+    /// worn does not show (a ring, an amulet, armour under the calling's clothes), and a figure
+    /// built again for nothing blinks.</summary>
+    public static string Look(Loadout lo) => Core.Json.Write(lo);
+
     public static Loadout Of(CharacterData ch)
     {
         var a = Callings.Archetype(ch.Archetype);

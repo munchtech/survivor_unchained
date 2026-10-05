@@ -160,8 +160,27 @@ public partial class InventoryScreen : Overlay
             Size = new Vector2(w, h), ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize, StretchMode = TextureRect.StretchModeEnum.Scale, MouseFilter = MouseFilterEnum.Ignore,
         };
         holder.AddChild(glow);
-        holder.AddChild(new Portrait(new Vector2I(w, h)).Of(Loadouts.Of(ch)));
+        holder.AddChild(Doll(Loadouts.Of(ch), w, h));
         return holder;
+    }
+
+    static Portrait? doll;
+    static string dollKey = "";
+
+    /// <summary>The figure, kept across a screen's rebuilds while it looks the same: taken out of
+    /// the page being thrown away and set in the new one, its idle never restarted (built anew each
+    /// time, it stood in its bind pose for a frame on every refresh).</summary>
+    static Portrait Doll(Play.Loadout lo, int w, int h)
+    {
+        var key = $"{w}x{h} {Loadouts.Look(lo)}";
+        if (doll != null && IsInstanceValid(doll) && !doll.IsQueuedForDeletion() && key == dollKey && doll.GetParent() is { } was)
+        {
+            // (its old page is queued to be freed with all it holds; out of it, the doll is not)
+            was.RemoveChild(doll);
+            return doll;
+        }
+        dollKey = key;
+        return doll = new Portrait(new Vector2I(w, h)).Of(lo);
     }
 
     /* ------------------------------------------------------- the standing -- */
