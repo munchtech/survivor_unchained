@@ -31,7 +31,9 @@ All the leads' paused branches are merged (597 tests green), except two whose ow
 7. **The owner lives in the United States.**
 8. **The hymn at Nell's grave:** the owner will make it in Suno.
 
-## Hold: the base bodies (the owner's call)
+## Hold: the base bodies (the owner's call): likely staying
+
+The owner says the bodies were made with **TRELLIS** (MIT), not Hunyuan, from an AI picture made with Krea 2 Turbo and/or a free LLM's image tool (which one is being confirmed). The legal lead is re-ruling; expect "keep, with conditions".
 
 The owner wants to keep the heroine's and hero's bodies if their Krea records clear them: which 3D model (not Hunyuan), a paid plan, and their own input picture. **Nobody replaces or rebuilds a body until the owner decides.** The MakeHuman rebuild plans (docs/team/hero_male.md, docs/art/MODELS_TO_MAKE.md) are fallbacks only.
 
