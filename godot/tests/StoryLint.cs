@@ -299,6 +299,23 @@ public class StoryLint
     }
 
     [Fact]
+    public void No_thing_she_finds_names_the_town_the_Kerchiefs_lost()
+    {
+        // The bible ("The nights", rule 2): the Kerchiefs never say "Ashford", and no text about them does.
+        // Redcowl says it once, dying, in a conversation; a thing's name or lore never says it.
+        var found = new List<string>();
+        void Read(JsonElement e, string where)
+        {
+            if (e.ValueKind == JsonValueKind.Object) foreach (var p in e.EnumerateObject()) Read(p.Value, $"{where}.{p.Name}");
+            else if (e.ValueKind == JsonValueKind.Array) { int i = 0; foreach (var x in e.EnumerateArray()) Read(x, $"{where}[{i++}]"); }
+            else if (e.ValueKind == JsonValueKind.String && e.GetString()!.Contains("Ashford")) found.Add($"{where}: \"{e.GetString()}\"");
+        }
+        foreach (var f in new[] { "items.json", "crafting.json", "shops.json", "loot.json" })
+            if (File.Exists(Path.Combine(ContentDir, f))) Read(Content(f), f);
+        Assert.Empty(found);
+    }
+
+    [Fact]
     public void The_story_fights_keep_the_valleys_rules()
     {
         // The bible ("The nights") and docs/WRITING_PASS.md 23, held over every story fight's code, so
