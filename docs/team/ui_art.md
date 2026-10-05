@@ -1,55 +1,59 @@
 # UI art: status
 
-Agent a1a394643aabfb169 (successor to a72467cac33063d3a). Branch `worktree-agent-a1a394643aabfb169`.
-Handoff from before: `docs/handoff/ui_art.md`. One rebuild: `python tools/uiforge/build.py`.
+Agent aa9c11f1e40170a4d (successor to a1a394643aabfb169). Branch `worktree-agent-aa9c11f1e40170a4d`.
+Full brief and history: `docs/handoff/ui_art.md`. One rebuild: `python tools/uiforge/build.py`.
 
-## State (paused for the owner's machine, 2026-10-04)
+## State (2026-10-04)
 
-- **Icons: 33 remade as modelled emblems** (`emblems.py`, picks in `emblems.PICKS`, `build.py emblems`):
-  the 23 from the brief plus the six arts that showed people (boot, horns, chain, shield, mark, wing).
-  Each is drawn as shapes with height, material and grain, lit, set in its school's glow, then painted
-  over on the Krea and cut on its own silhouette. Seen in game (arts, HUD, draft).
-- **Items:** pelt, hide, root, seed, dust and the blasting ember were repainted from words (`items.T2I`, `items.PICKS`).
-- **Logo** (`logo.py`, `build.py logo`): Cinzel at weight 900 (OFL, `tools/uiforge/fonts`) in forged
-  steel, with the seven-link chain between the words, its middle link pried open and the ember in the
-  break. Seen on the title.
-- **Cards:** uncommon and rare are louder (`cardcolour.py`). The common is dressed with bramble or rime
-  before the paint; the rare is laid back over its dressing.
-- **Page pieces** (`pages.py`, `build.py pages`), for the UI design lead's frameless layout (merged at 0165e94):
-  - built and in `godot/art/ui`: `frames/header.png` (worked leather, a forged rail, seen in game);
-    `page/backdrop_grain.png` and `page/backdrop_edges.png` (previewed over a shot, not yet wired);
-    `frames/column_divider.png` and `column_divider_stone.png`; `ornaments/section_mark.png`;
-  - written but **not yet rendered**: `hero_plate`, `card_light`.
+- **The owner's verdict changed the direction.** "Those borders are just ugly, adding more of them
+  doesn't make them better"; the pages look "ai looking", "not rooted in ui research". The arena (draft)
+  cards "look pretty cool": keep them.
+- **New rule (coordinator):** at most one ornamental frame per screen, the outer window. Inside it go
+  quiet tonal panels, thin rules and recessed tiles for empty slots. Rarity colour goes only on filled
+  slots. Ember is the one accent, used for meaning.
+- **The reduced kit is built, not applied** (`tools/uiforge/kit.py`, 5b815c9d). It holds a raised tonal
+  panel, a recessed tile, a shade-only column, a thin gutter rule, and the header and foot band worn plain.
+  The before/after crop of Self went to the coordinator: `godot/.shots/kit_crop_self.png` (ignored).
+- **In the game now** (4d366b5a, 859d5bfc):
+  - the gilt morocco header and foot band;
+  - the black vellum ground;
+  - the cubic-read, cool-graded backdrop shader;
+  - gilt-ruled columns;
+  - the hero plate and the light card;
+  - the ember low at the page's foot.
+  The kit replaces most of the ornament once applied. The vellum, the shader and the low ember stay.
+- **The crafting lead's three icons** were refitted to the set's 0.82 fill. The flask still wants a repaint.
 
 ## Next (exact)
 
-1. `python tools/uiforge/pages.py hero_plate card_light`, then look at both at file size and at 1080. Fix
-   the corner brackets' reach and the vellum's tone if they need it.
-2. Run `godot --headless --path godot --import` and restore stray imports (see Gotchas). The new PNGs have no
-   `.import` yet. Commit them.
-3. Send the slice margins to the UI design lead (a69858664f1d3dd29) so they can wire the pieces:
-   - header: (0,0,0,12) Tile, as before.
-   - column_divider: 48x1120 file, (0,24,0,24) Tile; the middle is one 512 px period.
-   - column_divider_stone: 64x64 file.
-   - section_mark: 24x24 file.
-   - hero_plate: (56,56,56,56) Tile, Out 12.
-   - card_light: (20,20,20,20) Tile.
-   - backdrop_grain: tiled. backdrop_edges: stretched.
-4. Show the owner before and after at full resolution. "Before" is the integration branch's page shots;
-   "after" is shots once the pieces are wired.
-5. Then: rethink leap's concept (weak at 90 px in the art slot); judge the crafting lead's three new
-   item icons (moon_draught, flask, fur_braid at dcd68cd) against the set; portrait cards for creation;
-   hover-state shots; the side-by-side legal check of the icons before launch.
+1. Wait for the greybox layouts. The UI design lead aab47bfdab5955dac is redoing Self, Pack, Storeroom and
+   Trader from research. Art goes on them only once the coordinator and the owner approve.
+2. Meanwhile, finish the kit and keep it quiet. The coordinator found the panels "plain to a fault":
+   flat dark rectangles read as a generic web dark mode. Give them the world through material, not frames:
+   - a faint grain of vellum or leather inside each panel, at 1:1 (tiled, not stretched);
+   - worn light along the top edge;
+   - a warmer, more varied tone than the page.
+   Then, in the same restraint:
+   - the medallion rings (`medallion/ring.png`, the attribute and level medals) pared to a plain ring;
+   - tabs, buttons and keycaps as tonal plates;
+   - the Pack's side panel as the screen's one outer frame (worn iron or leather, not filigree);
+   - the slots: an empty slot is a recessed tile, and a filled one carries its rarity colour.
+3. Then apply the kit (`python tools/uiforge/kit.py --apply`), shoot the four screens at 1080 and 1440,
+   and send before/after.
+4. Crashing Leap: a second concept is drafted (`emblems.d_leap2`, not painted). Its guide still fogs: cut
+   the halo and the light fan and keep dark slabs against the burst.
+5. The flask repaint (warm light, no stamped mark), then the legal lead's pre-launch icon check.
 
 ## Key decisions
 
-- Icons: the thing itself, modelled, then painted. The guide's halo never lies over the object, and every
-  design sits inside the glow's circle (`frame` zoom).
-- Prompts describe the look in plain words and never name a product (the legal lead's ask, c457cc9).
-- Page pieces are reliefs at twice their shown size, with no paint-over on thin strips (it softens them).
-  Nine-slice textures are periodic over exactly the repeat, so they need no blending.
+- One frame per screen; the material carries the page, not ornament (the owner's verdict above).
+- The page's ground is black vellum, the world faint through it. The blur alone was low in definition and
+  brown.
+- The backdrop shader reads its mips through a cubic B-spline (smooth) and grades cool iron, warm only where lit.
+- Heavy jobs take a turn (`tools/turn.py take gpu|godot`), given back the moment they end.
 
 ## Notes for other areas
 
-- UI design: the pieces above are ready to wire; margins in Next 3. crest_card stays on the choice and trait cards.
-- ComfyUI is shared. Use `krea.i2i_many`, then `POST /free`. Never kill it.
+- UI design: the column ruling, Backdrop(page: true) and the vellum are approved and wired (a26f87c39952dcd9c).
+  The kit swaps art by the same names, so applying it needs no code.
+- ComfyUI is shared and memory is tight: Godot imports and Blender renders crashed when other jobs held 30+ GB.
