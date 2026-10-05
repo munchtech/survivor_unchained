@@ -571,14 +571,22 @@ if Lph is not None:
     # affine map across her face of TRELLIS's lips onto the photograph's,
     # so their outline keeps TRELLIS's smooth shape: taken point by point,
     # the photograph's landmarks kinked her lips' border)
-    _lr = np.isin(rows, LIPS)
-    _li = [i for i in LIPS if ok_t[i]]
+    # (the outline only: where her lips meet stays where TRELLIS has it, or
+    # a fuller mouth in the photograph pulled her lips apart)
+    _lr = np.isin(rows, [i for i in LIPS if i not in INNER_LIPS])
+    _li = [i for i in LIPS if ok_t[i] and i not in INNER_LIPS]
+    # (and only her mouth's width: taller than TRELLIS's lips, the
+    # photograph's border sat above their bulge on its surface and folded)
     _A = np.linalg.lstsq(np.c_[Lt[_li][:, [0, 2]], np.ones(len(_li))], Lph[_li][:, [0, 2]], rcond=None)[0]
-    Lgoal[np.ix_(_lr, [0, 2])] = np.c_[Lt[rows[_lr]][:, [0, 2]], np.ones(_lr.sum())] @ _A
+    Lgoal[_lr, 0] = (np.c_[Lt[rows[_lr]][:, [0, 2]], np.ones(_lr.sum())] @ _A)[:, 0]
 L0r = (P[tri[rows]] * bary[rows][:, :, None]).sum(1)
 D = np.zeros((n, 3))
 K_LM, K_HOLD, K_EYE = 3.0, 20.0, 30.0
 I3 = sp.identity(3, format="csr")
+# (landmarks across her face only, hardly in depth: cast onto TRELLIS's surface
+# along a ray, those round her lips came at uneven depths and crumpled them;
+# her depth there is its surface's, which the fit takes anyway)
+LM_AXES = sp.diags([1.0, 0.05, 1.0]).tocsr()
 cranium = Pi[:, 2] > brow_z + 0.02
 
 
@@ -589,11 +597,11 @@ def solve(Q, Nq, ws, k_bend):
     # (unknowns: every point's x, then every point's y, then z)
     Nc = sp.hstack([sp.diags(Nq[:, k]) for k in range(3)]).tocsr()          # (n x 3n: each point's move along its normal)
     r = ((Q - Pi) * Nq).sum(1)
-    A = Nc.T @ sp.diags(ws) @ Nc + 0.05 * sp.kron(I3, sp.diags(ws)) + K_LM * sp.kron(I3, Bm.T @ sp.diags(wa) @ Bm) \
+    A = Nc.T @ sp.diags(ws) @ Nc + 0.05 * sp.kron(I3, sp.diags(ws)) + K_LM * sp.kron(LM_AXES, Bm.T @ sp.diags(wa) @ Bm) \
         + k_bend * sp.kron(I3, LTL) + K_HOLD * sp.kron(I3, sp.diags(hold)) + K_EYE * sp.kron(I3, sp.diags(wgoal)) \
         + 1e-8 * sp.identity(3 * n)
     b = Nc.T @ (ws * r) + 0.05 * np.concatenate([ws * (Q - Pi)[:, k] for k in range(3)]) \
-        + K_LM * np.concatenate([Bm.T @ (wa * (Lgoal - L0r)[:, k]) for k in range(3)]) \
+        + K_LM * np.concatenate([LM_AXES[k, k] * (Bm.T @ (wa * (Lgoal - L0r)[:, k])) for k in range(3)]) \
         + K_EYE * np.concatenate([wgoal * goal[:, k] for k in range(3)])
     x = spl.spsolve(A.tocsc(), b)
     return x.reshape(3, n).T
@@ -654,6 +662,17 @@ for it, k_bend in enumerate((60.0, 25.0, 10.0, 5.0, 2.5, 1.5, 1.0, 0.7)):
         it, k_bend, (ws > 0.5).sum(), 1000 * np.sqrt((res ** 2).mean()), 1000 * np.abs(res).max(), 1000 * np.linalg.norm(D, axis=1).max()))
 got = Bm @ (Pi + D)
 print("LANDMARKS within %.2f mm (rms)" % (1000 * np.sqrt(((got - Lgoal) ** 2).sum(1).mean())))
+# Her lips' moves smoothed among themselves (a few rounds of each point
+# toward its neighbours' mean, over her lips and 4 mm round them): her lips
+# are few points, and laid one by one on TRELLIS's they crumpled at their border.
+_ring = [61, 146, 91, 181, 84, 17, 314, 405, 321, 375, 291, 409, 270, 269, 267, 0, 37, 39, 40, 185]
+_lc = L0[_ring][:, [0, 2]].mean(0)
+_lip = inside(_lc + (L0[_ring][:, [0, 2]] - _lc) * 1.25, Pi[:, [0, 2]]) & (Pi[:, 1] < L0[LIPS, 1].max() + 0.012)
+_lip &= ~mouth_in & (wsurf > 0.5)                 # (her lips' outsides only: where they meet stays shut)
+_Avg = sp.diags(1 / np.maximum(np.asarray(Adj.sum(1)).ravel(), 1)) @ Adj
+for _ in range(2):
+    D = np.where(_lip[:, None], 0.6 * D + 0.4 * (_Avg @ D), D)
+print("LIPS: %d of her points smoothed" % _lip.sum())
 DD = np.zeros((NV, 3))
 DD[idx] = D
 
