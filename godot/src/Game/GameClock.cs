@@ -118,7 +118,7 @@ public partial class Game
         dawnBreaking = true;
         controls.Captured = true;
         hud.Prompt(promptShown = null);
-        hud.Fade(1, 1.2, "Dawn", $"Day {World.Day + 1}");
+        hud.Fade(1, 1.2, "Dawn", $"Day {World.Day + 1}", new Godot.Color(1f, 0.62f, 0.3f, 0.32f));
         Wait(1.3, () =>
         {
             dawnBreaking = false;
@@ -195,7 +195,8 @@ public partial class Game
         if (scars && called.Count > 0) others.Add("the ember scars");
         var steps = new List<Step> { new(what) };
         if (others.Count > 0) steps.Add(new($"{Journey.DayLines.AlsoOut} {string.Join(", ", others)}", Optional: true));
-        steps.Add(new($"{Journey.DayLines.Answer}: hold {KeyLabel("answer")}", Optional: true));
+        // (the tracker draws [[answer]] as the key itself, a keycap or the pad's button)
+        steps.Add(new($"{Journey.DayLines.Answer}: hold [[answer]]", Optional: true));
         return new List<Tracked> { new("tonight", "Tonight", TrackTone.Main, steps) }.Concat(list).ToList();
     }
 

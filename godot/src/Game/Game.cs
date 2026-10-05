@@ -242,6 +242,15 @@ public partial class Game : Node, IZoneHost
             // Skipping ahead: the prologue counts as done.
             World.Facts["prologue.done"] = true;
             World.Time = Enum.TryParse<TimeOfDay>(Args.Get("time") ?? "day", true, out var t) ? t : TimeOfDay.Day;
+            // --clock S: the day's clock running, S seconds past dawn (pictures of its turns: 590 is ten
+            // seconds before dusk, 710 before nightfall, 890 before the nudge, 1070 before the night passes;
+            // run with --fixed-fps 60, or the first frame's load is counted as play).
+            if (Args.Has("clock"))
+            {
+                World.Facts["clock.started"] = true;
+                World.Clock = Args.Num("clock", 0);
+                World.Time = SurvivorUnchained.World.DayClock.At(World.Clock);
+            }
             EnterZone(z, "lowford", at);
         }
         else EnterZone(z, null, at);
