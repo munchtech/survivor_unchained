@@ -30,10 +30,13 @@ uniform float edge_rough = 0.0;
 // screen: from the game's camera her face is a few pixels across, and her
 // paint's mipmaps average her eyes, brows and lips into her skin. Measured
 // as how many of her paint's texels a pixel covers (2^far_from to 2^far_to).
+// (Begun sooner and darker since her face became a photograph's: its
+// features are softer than the old paint's, and at the nearest play zoom,
+// 12.5 m, her eyes had all but gone.)
 uniform sampler2D features : hint_default_black, filter_linear_mipmap;
-uniform float far_from = 3.5;
-uniform float far_to = 6.0;
-uniform float far_dark = 0.78;
+uniform float far_from = 3.0;
+uniform float far_to = 5.0;
+uniform float far_dark = 0.86;
 uniform vec3 far_lips : source_color = vec3(0.62, 0.16, 0.15);
 // A body's own relief, baked from its sculpt (the hero's: every muscle and
 // vein his reduced mesh has only in paint), the pores laid over it.

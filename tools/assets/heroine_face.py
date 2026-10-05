@@ -424,6 +424,13 @@ def delit_reference():
     print("REFERENCE'S LIGHT: even %.3f, from %s; its shading %.2f to %.2f over her skin" % (
         coef[0], np.round(coef[1:] / (np.linalg.norm(coef[1:]) + 1e-9), 2), np.percentile(S[skin], 2), np.percentile(S[skin], 98)))
     out = np.where(on[..., None], paint / S[..., None], paint)
+    # (and its shine taken off her skin: a highlight is the light's, not her
+    # skin's colour, and on a cheekbone it showed in the game as a pale smudge)
+    from scipy import ndimage as _nd
+    local = np.stack([_nd.gaussian_filter(out[..., k], DRAW / 200) for k in range(3)], 2)
+    cap = local * 1.06
+    shine = on & ~feat & (rows > top)
+    out = np.where(shine[..., None] & (out > cap), cap + (out - cap) * 0.2, out)
     from PIL import Image as _I
     _I.fromarray((np.clip(out[::-1], 0, 1) * 255).astype(np.uint8)).save(os.path.join(OUT, "delit_front.png"))
     return np.clip(out, 0, 1)

@@ -356,8 +356,13 @@ def fix(head, path, raw=None, key=None):
         shutil.copy(path, raw)
     a = np.asarray(Image.open(raw).convert("RGB"), np.float32).copy()
     lids(head, a)
-    nose(head, a)
-    lips(head, a)
+    # (another face, painted from its own photograph on her head shaped as
+    # it: its nostrils and lips are the photograph's, where its nose and
+    # mouth are; shading them again from its shape darkened its upper lip in
+    # blotches, the inside of its mouth lying near its lips' front)
+    if key is None:
+        nose(head, a)
+        lips(head, a)
     Image.fromarray(np.clip(a, 0, 255).astype(np.uint8)).save(path, quality=92)
 
 

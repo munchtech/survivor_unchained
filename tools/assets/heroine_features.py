@@ -140,7 +140,21 @@ import face_shapes as fs  # noqa: E402
 eye_z = EV[:, 2].mean()
 theta = np.arctan2(P[:, 0], -(P[:, 1] - 0.0))
 rise = P[:, 2] - (eye_z + fs.hairline_height(theta))
-scalp = smooth((rise + 0.010) / 0.016)
+# (faint from 1.6 cm under her hairline, most of it in its last centimetre:
+# the hair thinning out into her skin, not a band where the cards end)
+scalp = smooth((rise + 0.016) / 0.022) ** 2
+# Not her ears (what her ears' own keys move, and 6 mm round them): darkened
+# with her scalp they turned the colour of her hair.
+from scipy.spatial import cKDTree  # noqa: E402
+_kb = me.shape_keys.key_blocks if me.shape_keys else {}
+_base = np.array([d.co[:] for d in _kb[0].data]) if _kb else None
+_ear = np.zeros(len(V), bool)
+for _name, _min in (("ears_out+", 0.0005), ("ears_pointed+", 0.0003), ("ears_lobes+", 0.0003)):
+    if _name in _kb:
+        _ear |= np.linalg.norm(np.array([d.co[:] for d in _kb[_name].data]) - _base, axis=1) > _min
+if _ear.any():
+    _d = cKDTree(V[_ear]).query(P)[0]
+    scalp *= smooth((_d - 0.002) / 0.006)
 sh = np.zeros((SIZE, SIZE, 4), np.float32)
 sh[rows, cols, 1] = scalp
 sh[..., 3] = 1

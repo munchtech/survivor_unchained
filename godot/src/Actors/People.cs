@@ -693,8 +693,9 @@ public static class People
             if (mi.Mesh is not ArrayMesh am) continue;
             for (int i = 0; i < am.GetBlendShapeCount(); i++)
             {
+                // (not the face_width and face_shape sliders' keys: theirs end in + or -)
                 var name = am.GetBlendShapeName(i).ToString();
-                if (name.StartsWith("face_")) mi.SetBlendShapeValue(i, name == want ? 1f : 0f);
+                if (name.StartsWith("face_") && !name.EndsWith('+') && !name.EndsWith('-')) mi.SetBlendShapeValue(i, name == want ? 1f : 0f);
             }
         }
     }
@@ -905,8 +906,12 @@ public static class People
     /// <summary>Her skin's tone: the one chosen, or her own, barely warmed.
     /// (Her face is painted from her reference photograph now, its own
     /// peach: warmed as much as the old pale paint was, under the portrait's
-    /// warm key she read a uniform orange-pink, like a doll.)</summary>
-    static Color SkinTone(Look look) => look.Skin is Color tone ? tone.Lerp(Colors.White, 0.35f) : new Color(1.0f, 0.93f, 0.87f);
+    /// warm key she read a uniform orange-pink, like a doll. A tone chosen is
+    /// eased toward white the less the darker it is: eased as far as a fair
+    /// one, a brown or olive skin read pale and pink beside the faces painted
+    /// from photographs of women of that colouring.)</summary>
+    static Color SkinTone(Look look) =>
+        look.Skin is Color tone ? tone.Lerp(Colors.White, 0.35f * Mathf.Clamp(tone.Luminance * 1.1f, 0.25f, 1f)) : new Color(1.0f, 0.93f, 0.87f);
 
     static Shader? skinShader2;
     static readonly Dictionary<Mesh, float> poreScales = new();
