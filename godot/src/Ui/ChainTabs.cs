@@ -29,7 +29,10 @@ public partial class ChainTabs : Control
     {
         public float Pitch = 16, Fade = 36, Run = 64;
         public int Variants = 6, Heat = 2;
-        public bool Eyelet;
+        /// <summary>Fixed at both ends through an iron eye, with a tab beyond it (the owner: it should
+        /// truly go through), rather than fading out.</summary>
+        public bool Eye;
+        public float Tail = 18;
         public float SlideK = 210, SlideC = 24, SagRest = 4.5f, SagDip = 4.5f, SagSpeed = 240, SagK = 110, SagC = 9;
 
         public static Feel Load()
@@ -50,7 +53,8 @@ public partial class ChainTabs : Control
                 f.Variants = (int)N("variants", f.Variants);
                 // (heat: links each side of the open one that glow; a span of 2 is five links)
                 f.Heat = (int)N("heat", f.Heat);
-                f.Eyelet = r.TryGetProperty("eyelet", out var ey) && ey.ValueKind == System.Text.Json.JsonValueKind.True;
+                f.Eye = r.TryGetProperty("eye", out var ey) && ey.ValueKind == System.Text.Json.JsonValueKind.True;
+                f.Tail = N("tail", f.Tail);
                 (f.SlideK, f.SlideC) = Pair("slide", f.SlideK, f.SlideC);
                 (f.SagK, f.SagC) = Pair("sag_spring", f.SagK, f.SagC);
                 f.SagRest = N("sag_rest", f.SagRest);
@@ -108,13 +112,16 @@ public partial class ChainTabs : Control
         AddChild(row);
         glow = new HeatGlow(this);
         AddChild(glow);
+        // (the eyes' near sides and the tabs, over the links and their glow)
+        front = new Front(this);
+        AddChild(front);
         var min = row.GetCombinedMinimumSize();
         // (the chain hangs a little below the names, its links up to 44 high, so the row leaves it room)
         chainY = min.Y + 14;
         // Anchored, the eyelet past the first tab stays inside the panel: the names step in to leave it room.
         // (the eyelet is half a cell wide: its middle stays that far inside, past the first name by the run)
         float first = row.GetChildren().OfType<Button>().FirstOrDefault()?.GetCombinedMinimumSize().X / 2 ?? 20;
-        float inset = F.Eyelet ? Math.Max(0, Run + 28 - first) : 0;
+        float inset = F.Eye ? Math.Max(0, Run + F.Tail + 26 - first) : 0;
         row.Position = new Vector2(inset, 0);
         CustomMinimumSize = new Vector2(min.X + inset, chainY + 22);
     }
@@ -189,9 +196,19 @@ public partial class ChainTabs : Control
         int n = Tabs;
         if (n == 0) return;
         float x0 = Centre(0) - Run, x1 = Centre(n - 1) + Run, mid = (x0 + x1) / 2, half = (x1 - x0) / 2;
-        float Y(float at) { float t = (at - mid) / half; return chainY + sag * (1 - t * t); }
-        int k0 = (int)Math.Floor((x0 - x) / Pitch) - 1, k1 = (int)Math.Ceiling((x1 - x) / Pitch) + 1;
+        // Through the eyes, the chain runs on to a tab each side; it hangs only between the eyes.
+        float t0 = F.Eye ? x0 - F.Tail : x0, t1 = F.Eye ? x1 + F.Tail : x1;
+        float Y(float at) { float t = (at - mid) / half; return Math.Abs(t) >= 1 ? chainY : chainY + sag * (1 - t * t); }
+        int k0 = (int)Math.Floor((t0 - x) / Pitch) - 1, k1 = (int)Math.Ceiling((t1 - x) / Pitch) + 1;
         heated.Clear();
+        eyes = F.Eye ? (new Vector2(x0, chainY), new Vector2(x1, chainY), new Vector2(t0, chainY), new Vector2(t1, chainY)) : null;
+        if (eyes != null && Sprite("eye_back") is { } back)
+        {
+            DrawTexture(back, eyes.Value.L - back.GetSize() / 2);
+            DrawSetTransform(eyes.Value.R, 0, new Vector2(-1, 1));
+            DrawTexture(back, -back.GetSize() / 2);
+            DrawSetTransform(Vector2.Zero);
+        }
         // Face-on links first; those on edge pass through their ends and lie over them.
         for (int pass = 0; pass < 2; pass++)
             for (int k = k0; k <= k1; k++)
@@ -201,7 +218,7 @@ public partial class ChainTabs : Control
                 float lx = x + k * Pitch;
                 // Anchored, the chain runs from eyelet to eyelet and its links pass into their holes;
                 // loose, it fades out at its ends.
-                float a = Fade <= 0 ? (lx >= x0 && lx <= x1 ? 1 : 0) : Mathf.Pow(Mathf.Clamp(Math.Min(lx - x0, x1 - lx) / Fade, 0, 1), 1.3f);
+                float a = Fade <= 0 ? (lx >= t0 && lx <= t1 ? 1 : 0) : Mathf.Pow(Mathf.Clamp(Math.Min(lx - x0, x1 - lx) / Fade, 0, 1), 1.3f);
                 if (a <= 0) continue;
                 var at = new Vector2(lx, Y(lx));
                 float ang = Mathf.Atan2(Y(lx + 1) - Y(lx - 1), 2);
@@ -224,16 +241,9 @@ public partial class ChainTabs : Control
                 else DrawLink(k, face, a, heat);
                 if (heat > 0) heated.Add((at, heat * a));
             }
-        // The forged eyelets the chain is fixed in, over the links' ends (the owner disliked it fading).
-        if (F.Eyelet && Sprite("eyelet") is { } eye)
-        {
-            DrawSetTransform(new Vector2(x0, Y(x0)));
-            DrawTexture(eye, -eye.GetSize() / 2);
-            DrawSetTransform(new Vector2(x1, Y(x1)), 0, new Vector2(-1, 1));
-            DrawTexture(eye, -eye.GetSize() / 2);
-        }
         DrawSetTransform(Vector2.Zero);
         glow.QueueRedraw();
+        front.QueueRedraw();
     }
 
     /// <summary>How hot a link is: the open tab's run of links, hottest at its middle (1), cooling to
@@ -288,6 +298,29 @@ public partial class ChainTabs : Control
     }
 
     readonly HeatGlow glow;
+    readonly Front front;
+    /// <summary>Where the eyes (L, R) and the tabs beyond them (TL, TR) are this frame.</summary>
+    (Vector2 L, Vector2 R, Vector2 TL, Vector2 TR)? eyes;
+
+    /// <summary>The near side of each eye, the chain passing behind it, and the tab that holds its end.</summary>
+    partial class Front : Control
+    {
+        readonly ChainTabs chain;
+        public Front(ChainTabs chain) { this.chain = chain; MouseFilter = MouseFilterEnum.Ignore; TextureFilter = TextureFilterEnum.LinearWithMipmaps; }
+
+        public override void _Draw()
+        {
+            if (chain.eyes is not { } e) return;
+            foreach (var (name, l, r) in new[] { ("eye_front", e.L, e.R), ("tab", e.TL, e.TR) })
+            {
+                if (Sprite(name) is not { } t) continue;
+                DrawTexture(t, l - t.GetSize() / 2);
+                DrawSetTransform(r, 0, new Vector2(-1, 1));
+                DrawTexture(t, -t.GetSize() / 2);
+                DrawSetTransform(Vector2.Zero);
+            }
+        }
+    }
 
     /// <summary>A link drawn, until UI art's are there: each a little different by its place on the chain.</summary>
     void DrawLink(int k, bool face, float a, float heat)

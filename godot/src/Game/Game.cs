@@ -1022,7 +1022,7 @@ public partial class Game : Node, IZoneHost
             Add(p.X, p.Z, "relic", Style.GoldHi);
         // A Legendary lying untaken: the screen's edge points to it, in its amber (docs/design/LOOT_DESIGN.md §8.2).
         foreach (var p in b.Pickups.Living().Where(p => p.Loot is (int)LootTier.Legendary or (int)LootTier.Storied && p.Look != Verdict.Hidden))
-            Add(p.X, p.Z, "sun", Style.RarityOf(p.Loot == (int)LootTier.Storied ? 5 : 4));
+            Add(p.X, p.Z, "legendary", p.Loot == (int)LootTier.Storied ? ItemViews.TierColour(LootTier.Storied) : ItemViews.TierColour(LootTier.Legendary));
         return o;
     }
 
@@ -1050,16 +1050,8 @@ public partial class Game : Node, IZoneHost
             if (!view.HasPoint(sp)) continue;
             string text = p.Payload is ItemInstance it ? Inventory.Name(it) : p.Ref != null && Items.Find(p.Ref) is { } def ? (p.Value > 1 ? Items.Several(def.Id, (int)p.Value) : def.Name) : "";
             if (text.Length == 0) continue;
-            var col = tier switch
-            {
-                LootTier.Set => new Color("#3fd6c0"),
-                LootTier.Material or LootTier.Draught => Style.InkDim,
-                LootTier.Chart or LootTier.Book => new Color("#e8d8b0"),
-                LootTier.Quest => Style.GoldHi,
-                LootTier.Legendary => Style.RarityOf(4),
-                LootTier.Storied => Style.RarityOf(5),
-                _ => Style.RarityOf((int)tier),
-            };
+            // The tiers' colours from the one table the tiles and cards use (ItemViews.TierColour).
+            var col = tier is LootTier.Material or LootTier.Draught ? Style.InkDim : ItemViews.TierColour(tier);
             int loud = tier >= LootTier.Legendary && tier <= LootTier.Storied ? 3 : p.Look == Verdict.Emphasised || tier is LootTier.Epic or LootTier.Set ? 2 : tier >= LootTier.Material || tier == LootTier.Common ? 0 : 1;
             o.Add(new Ui.GroundLabel(sp, text, col, loud, tier == LootTier.Set));
         }
@@ -1158,7 +1150,8 @@ public partial class Game : Node, IZoneHost
             var (def, rarity, look) = LootRing[Args.Get("loot") == "legendary" ? LootRing.Length - 1 : lootI];
             lootI = Args.Get("loot") == "legendary" ? LootRing.Length : lootI + 1;
             var it = Rpg.Inventory.Make(Journey.Ch, def, rarity: rarity, level: (int)Args.Num("level", 5));
-            double a = lootI * Math.Tau / LootRing.Length, d = 4.5;
+            // (--far: dropped off the screen, for pictures of the edge's pointer to it)
+            double a = lootI * Math.Tau / LootRing.Length, d = Args.Has("far") ? 28 : 4.5;
             lootB.Spill(new Loot(PickupKind.Item, def, 1, true, it.Rarity, null, it, (int)Rpg.Drops.TierOf(it), look), lootB.Player.X + Math.Cos(a) * d, lootB.Player.Z + Math.Sin(a) * d);
         }
         // --hoard [N]: N story bosses' hoards rolled by the real drop roll at her feet, two seconds apart
