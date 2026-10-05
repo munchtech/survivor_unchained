@@ -27,6 +27,9 @@ build() {
   if grep -q "Failed to build project" "$log" || [ ! -e "$ROOT/release/godot/$dir/$file" ]; then
     echo "no $preset build (see release/godot/$dir.log)" >&2; exit 1
   fi
+  # The licence texts and credits go beside the game (docs/legal/LEGAL_BRIEF.md, issue 4).
+  mkdir -p "$ROOT/release/godot/$dir/licences"
+  cp "$ROOT/godot/licences/"* "$ROOT/release/godot/$dir/licences/"
   echo "  release/godot/$dir/$file"
 }
 # The first export imports anything new.

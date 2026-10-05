@@ -75,7 +75,7 @@ public partial class TitleScreen : Overlay
         if (slots.Count > 0) menu.Add("Journeys", () => Panel("load"));
         menu.Add("Settings", () => Panel("settings"));
         menu.Add("Controls", () => Panel("controls"));
-        menu.Add("Credits", () => Panel("credits"));
+        menu.Add("Credits", G.Credits);
         menu.Add("Quit", G.QuitGame);
         var list = menu.Build();
         list.Position = new Vector2(134, 560);
@@ -85,10 +85,10 @@ public partial class TitleScreen : Overlay
         if (panel != "")
         {
             var box = Style.Panel(Style.Plate(20));
-            box.Position = new Vector2(540, panel == "controls" ? 90 : panel == "credits" ? 300 : 500);
-            box.CustomMinimumSize = new Vector2(panel == "controls" ? 820 : panel == "credits" ? 760 : 560, 0);
+            box.Position = new Vector2(540, panel == "controls" ? 90 : 500);
+            box.CustomMinimumSize = new Vector2(panel == "controls" ? 820 : 560, 0);
             Nav.Scope = box;
-            var v = Style.V(10, new Plaque(panel switch { "load" => "Journeys", "settings" => "Settings", "controls" => "Controls", _ => "Credits" }, 26, 50));
+            var v = Style.V(10, new Plaque(panel switch { "load" => "Journeys", "settings" => "Settings", _ => "Controls" }, 26, 50));
             switch (panel)
             {
                 case "load":
@@ -109,10 +109,7 @@ public partial class TitleScreen : Overlay
                     }
                     break;
                 case "settings": v.AddChild(SettingsPanel.Build(G, Refresh)); break;
-                case "controls": v.AddChild(new ControlsPanel()); break;
-                default:
-                    foreach (var line in Credits) v.AddChild(Style.Label(line, Style.Text, Style.Small, new Color("#ddd0b8"), true));
-                    break;
+                default: v.AddChild(new ControlsPanel()); break;
             }
             box.AddChild(v);
             AddChild(box);
@@ -158,21 +155,6 @@ public partial class TitleScreen : Overlay
         }
         catch (Exception) { return (null, false); }
     }
-
-    static readonly string[] Credits =
-    {
-        "People and their clothes, hair and movement: Quaternius (Universal Base Characters, Modular Character Outfits, Universal Animation Libraries 1 and 2; CC0).",
-        "A woman survivor's body: a figure made for the game in ComfyUI, rigged from the Genshin Style Anime Female Base Mesh by donizaki (Sketchfab, CC BY 4.0).",
-        "The heroine's movement: keyed for the game; her ways of standing from the 100STYLE dataset by Ian Mason et al. (CC BY 4.0), retargeted and re-keyed.",
-        "Weapons, from Sketchfab (CC BY 4.0): Chevalier Sword by rubenve; Viking Sword by Michael Makivic; medieval sword by LowSeb; Zweihander by Siesta; Medieval Mace by Kama Modeling; Viking battle axe by Mikhail Antonov; Snake Axe by Ashley Jay Thornton; Mage Staff by RMBehan; Medieval Crossbow by iedalton; Medieval Shield by Artem Mykhailov; Silver Bladed weapons by Peter Nox.",
-        "Houses, walls and props: Quaternius (Medieval Village MegaKit, Fantasy Props MegaKit, Stylized Nature MegaKit; CC0).",
-        "The ground: Poly Haven (photoscanned materials; CC0).",
-        "Creatures, from Sketchfab (CC BY 4.0): Animated Wolf Scene by Roo; Animated Realistic Boar by AnimalMesh 3D; Goblin Ghoul by Rodrigo Bento (the lamplings).",
-        "Effects and sounds: Kenney (Particle Pack, Impact Sounds, RPG Audio, Interface Sounds; CC0). Field recordings from OpenGameArt (CC0): thimras, PagDev, Ted Kerr, vishwajai.",
-        "World, lore and combat roots: The Ember Watch.",
-        "Typefaces: Cinzel, Alegreya, Alegreya Sans (OFL).",
-        "Built with Godot.",
-    };
 
     void Panel(string p) { panel = panel == p ? "" : p; Refresh(); }
 

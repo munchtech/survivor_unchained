@@ -1,0 +1,1543 @@
+{
+  "intro": [
+    "Survivor Unchained is made by Munchtech. Its world, lore and combat roots are The Ember Watch.",
+    "These credits list everything in the game that others made, with each licence. Works under CC BY are used with the credit required below. Works under CC0 need no credit, and we give it with thanks."
+  ],
+  "sections": [
+    {
+      "title": "Engine and runtime",
+      "short": "Engine and runtime",
+      "notes": [],
+      "groups": [
+        {
+          "sub": false,
+          "links": [],
+          "notes": [],
+          "entries": [
+            {
+              "name": "Godot Engine",
+              "work": false,
+              "text": "4.5 (with C# support). Copyright (c) 2014-present Godot Engine contributors; copyright (c) 2007-2014 Juan Linietsky, Ariel Manzur.",
+              "links": [
+                "https://godotengine.org/license"
+              ],
+              "lines": [
+                "MIT licence",
+                "It includes third-party components under their own licences, listed in Godot's COPYRIGHT.txt. Among them are Jolt Physics (MIT), FreeType, HarfBuzz, ICU, mbedTLS and ENet."
+              ]
+            },
+            {
+              "name": ".NET",
+              "work": false,
+              "text": "8 runtime and GodotSharp. .NET Foundation and contributors; MIT. Third-party notices are in .NET's THIRD-PARTY-NOTICES.TXT.",
+              "links": [],
+              "lines": []
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Typefaces (SIL Open Font License 1.1)",
+      "short": "Typefaces",
+      "notes": [],
+      "groups": [
+        {
+          "sub": false,
+          "links": [],
+          "notes": [],
+          "entries": [
+            {
+              "name": "Cinzel:",
+              "work": false,
+              "text": "Copyright 2020 The Cinzel Project Authors",
+              "links": [
+                "https://github.com/NDISCOVER/Cinzel"
+              ],
+              "lines": []
+            },
+            {
+              "name": "Alegreya:",
+              "work": false,
+              "text": "Copyright 2011 The Alegreya Project Authors",
+              "links": [
+                "https://github.com/huertatipografica/Alegreya"
+              ],
+              "lines": []
+            },
+            {
+              "name": "Alegreya Sans:",
+              "work": false,
+              "text": "Copyright 2013 The Alegreya Sans Project Authors",
+              "links": [
+                "https://github.com/huertatipografica/Alegreya-Sans"
+              ],
+              "lines": []
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Used under Creative Commons Attribution 4.0 (credit required)",
+      "short": "Used under Creative Commons Attribution 4.0",
+      "licence": "CC BY 4.0",
+      "licenceLink": "https://creativecommons.org/licenses/by/4.0/",
+      "notes": [
+        "Licence: https://creativecommons.org/licenses/by/4.0/. Each work is provided as is, without warranty, by its creator. Our changes are listed with it."
+      ],
+      "groups": [
+        {
+          "title": "Weapons, from Sketchfab",
+          "sub": false,
+          "links": [],
+          "notes": [
+            "Changes for every weapon: turned and scaled to one grip convention in code; photographed in the game, and the photograph painted over, for its item icon."
+          ],
+          "entries": [
+            {
+              "name": "Chevalier Sword",
+              "work": true,
+              "text": "by rubenve",
+              "links": [
+                "https://sketchfab.com/rubenve",
+                "https://sketchfab.com/3d-models/chevalier-sword-b2662f2666a844e8a1bd0e7c4a7672d8"
+              ],
+              "lines": []
+            },
+            {
+              "name": "Viking Sword (Game Model)",
+              "work": true,
+              "text": "by Michael Makivic",
+              "links": [
+                "https://sketchfab.com/makivic",
+                "https://sketchfab.com/3d-models/viking-sword-game-model-a05d0bd73e9e4508b873ffd7b6a6238d"
+              ],
+              "lines": []
+            },
+            {
+              "name": "medieval sword",
+              "work": true,
+              "text": "by LowSeb",
+              "links": [
+                "https://sketchfab.com/lowseb",
+                "https://sketchfab.com/3d-models/medieval-sword-da574cba504e4b83a3293f3d3bd067fb"
+              ],
+              "lines": []
+            },
+            {
+              "name": "Zweihander",
+              "work": true,
+              "text": "by Siesta",
+              "links": [
+                "https://sketchfab.com/siesta",
+                "https://sketchfab.com/3d-models/zweihander-bde0f0351bf443f6bed68aeff84b4129"
+              ],
+              "lines": []
+            },
+            {
+              "name": "Medieval Mace",
+              "work": true,
+              "text": "designed by Kama Modeling; modelled and textured by Yavuz Temel",
+              "links": [
+                "https://sketchfab.com/KamaModeling",
+                "https://sketchfab.com/3d-models/medieval-mace-83217215a0c541b2956a8e87a4ae62fe"
+              ],
+              "lines": []
+            },
+            {
+              "name": "Viking battle axe",
+              "work": true,
+              "text": "by Mikhail Antonov",
+              "links": [
+                "https://sketchfab.com/xeofox",
+                "https://sketchfab.com/3d-models/viking-battle-axe-b7123192adbf40f68043c57dd8ddcd15"
+              ],
+              "lines": []
+            },
+            {
+              "name": "Snake Axe",
+              "work": true,
+              "text": "by Ashley Jay Thornton",
+              "links": [
+                "https://sketchfab.com/AshleyJay",
+                "https://sketchfab.com/3d-models/snake-axe-ace485ac031c4ee0a918e99d2b80560b"
+              ],
+              "lines": []
+            },
+            {
+              "name": "Mage Staff",
+              "work": true,
+              "text": "by RMBehan",
+              "links": [
+                "https://sketchfab.com/RMBehan",
+                "https://sketchfab.com/3d-models/mage-staff-a172d06792734bbc9b11272b4f497c2c"
+              ],
+              "lines": []
+            },
+            {
+              "name": "Medieval Crossbow",
+              "work": true,
+              "text": "by iedalton",
+              "links": [
+                "https://sketchfab.com/iedalton",
+                "https://sketchfab.com/3d-models/medieval-crossbow-cc36ed347db340d59bd2ec7b06ae0d63"
+              ],
+              "lines": []
+            },
+            {
+              "name": "Medieval Shield",
+              "work": true,
+              "text": "by Artem Mykhailov",
+              "links": [
+                "https://sketchfab.com/CGArtem",
+                "https://sketchfab.com/3d-models/medieval-shield-b98b8f64d935415aab0fe9b70074511f"
+              ],
+              "lines": []
+            },
+            {
+              "name": "Silver Bladed weapons - Fantasy weapon set",
+              "work": true,
+              "text": "by Peter Nox (listed as Asylum Nox when downloaded)",
+              "links": [
+                "https://sketchfab.com/Peter.Nox",
+                "https://sketchfab.com/3d-models/silver-bladed-weapons-fantasy-weapon-set-d5189211a1d348b0a9d7ddc052a22989"
+              ],
+              "lines": []
+            }
+          ]
+        },
+        {
+          "title": "Creatures, from Sketchfab",
+          "sub": false,
+          "links": [],
+          "notes": [
+            "Changes: scaled and tinted per kind. Each creature plays its own clips, and moves it lacks are composed in code over its poses. It is baked into the crowd's animation textures."
+          ],
+          "entries": [
+            {
+              "name": "Animated Wolf Scene",
+              "work": true,
+              "text": "by Roo",
+              "links": [
+                "https://sketchfab.com/roo3d",
+                "https://sketchfab.com/3d-models/animated-wolf-scene-5d55506494e5460eaadf04370e07cd5c"
+              ],
+              "lines": []
+            },
+            {
+              "name": "Animated Realistic Boar – 3D Animal Model",
+              "work": true,
+              "text": "by AnimalMesh 3D",
+              "links": [
+                "https://sketchfab.com/AnimalMesh3D",
+                "https://sketchfab.com/3d-models/animated-realistic-boar-3d-animal-model-f672a7fd93e84997b80a54ba30956111"
+              ],
+              "lines": []
+            },
+            {
+              "name": "Goblin Ghoul",
+              "work": true,
+              "text": "by Rodrigo Bento",
+              "links": [
+                "https://sketchfab.com/rodrigobento",
+                "https://sketchfab.com/3d-models/goblin-ghoul-a6c6fffee3d34823b6d87a7054782577"
+              ],
+              "lines": [
+                "Changes: the lamplings' hats, lamps and satchels are made in code and carried on its bones."
+              ]
+            }
+          ]
+        },
+        {
+          "title": "A woman's body, from Sketchfab",
+          "sub": false,
+          "links": [],
+          "notes": [],
+          "entries": [
+            {
+              "name": "Genshin Style Anime Female Base Mesh For Blender",
+              "work": true,
+              "text": "by David Onizaki (donizaki)",
+              "links": [
+                "https://sketchfab.com/donizaki",
+                "https://sketchfab.com/3d-models/genshin-style-anime-female-base-mesh-for-blender-c2d6727e8c9742feb9a4a3bccac6e0e0"
+              ],
+              "lines": [
+                "Changes: rigged to the Quaternius skeleton; arms raised to its T-pose; hands refitted.",
+                "Its joints also seeded the older woman body's skeleton, and the Quaternius hairstyles were refitted to its head."
+              ]
+            }
+          ]
+        },
+        {
+          "title": "Motion: the heroine's idles",
+          "sub": false,
+          "links": [],
+          "notes": [],
+          "entries": [
+            {
+              "work": false,
+              "text": "100STYLE dataset by Ian Mason, Sebastian Starke and Taku Komura, \"Real-Time Style Modelling of Human Locomotion via Feature-Wise Transformations and Local Motion Phases\" (2022)",
+              "links": [
+                "https://zenodo.org/records/8127870"
+              ],
+              "lines": [
+                "Takes used: Heavyset, Strutting, Angry and Crouched (and Followed as reference for one glance).",
+                "Changes: retargeted to her skeleton; feet locked; looped; centred; arms re-keyed to hold her weapons."
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Used under service terms or model licences",
+      "short": "Used under service terms or model licences",
+      "notes": [],
+      "groups": [
+        {
+          "sub": false,
+          "links": [],
+          "notes": [],
+          "entries": [
+            {
+              "name": "Adobe Mixamo",
+              "work": false,
+              "text": "motion, used in the game under Mixamo's terms; the raw files are not distributed",
+              "links": [],
+              "lines": [
+                "The heroine's Crashing Leap: \"Standing Melee Run Jump Attack\", retargeted and retimed.",
+                "The townsfolk: a feminine walk; a weight-shift idle; \"General Conversation\" talk; sitting on a chair and on the floor; picking up.",
+                "All are retargeted to the kit's bodies."
+              ]
+            },
+            {
+              "name": "NVIDIA Kimodo",
+              "work": false,
+              "text": "(Kimodo-SOMA-RP): generated motion for the townsfolk's men's walk, women's talk, arms crossed, cheer, wave and work at a table. Kimodo is licensed by NVIDIA Corporation under the NVIDIA Open Model License.",
+              "links": [],
+              "lines": []
+            },
+            {
+              "name": "Reallusion AccuRIG",
+              "work": false,
+              "text": "rigged the heroine's and the hero's bodies. Their weights were then folded onto our own skeleton; no Reallusion content ships.",
+              "links": [],
+              "lines": []
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Third-party works under CC0 (no credit required; credited with thanks)",
+      "short": "Third-party works under CC0",
+      "notes": [],
+      "groups": [
+        {
+          "title": "Quaternius",
+          "sub": false,
+          "links": [
+            "https://quaternius.com"
+          ],
+          "notes": [],
+          "entries": [
+            {
+              "work": false,
+              "text": "Universal Base Characters, Modular Character Outfits – Fantasy, and Universal Animation Library 1 and 2. The game's skeleton is the Animation Library's.",
+              "links": [],
+              "lines": []
+            },
+            {
+              "work": false,
+              "text": "Medieval Village MegaKit, Fantasy Props MegaKit and Stylized Nature MegaKit",
+              "links": [],
+              "lines": []
+            },
+            {
+              "work": false,
+              "text": "Quaternius hairstyles refitted to the anime body's head",
+              "links": [],
+              "lines": []
+            }
+          ]
+        },
+        {
+          "title": "KayKit by Kay Lousberg",
+          "sub": false,
+          "links": [
+            "https://www.kaylousberg.com"
+          ],
+          "notes": [
+            "Their meshes are also inside the zones' landmarks."
+          ],
+          "entries": [
+            {
+              "work": false,
+              "text": "KayKit Character Pack: Adventures 1.0",
+              "links": [],
+              "lines": []
+            },
+            {
+              "work": false,
+              "text": "KayKit Character Pack: Skeletons 1.0",
+              "links": [],
+              "lines": []
+            },
+            {
+              "work": false,
+              "text": "KayKit Dungeon Remastered 1.0",
+              "links": [],
+              "lines": []
+            },
+            {
+              "work": false,
+              "text": "KayKit Medieval Hexagon Pack 1.0",
+              "links": [],
+              "lines": []
+            },
+            {
+              "work": false,
+              "text": "KayKit Halloween Bits 1.0",
+              "links": [],
+              "lines": []
+            }
+          ]
+        },
+        {
+          "title": "Kenney",
+          "sub": false,
+          "links": [
+            "https://kenney.nl"
+          ],
+          "notes": [],
+          "entries": [
+            {
+              "work": false,
+              "text": "Particle Pack. These are the effects' sprites: smoke, sparks, flames, magic and slashes, packed into a texture array, plus embers, puff and runes.",
+              "links": [
+                "https://kenney.nl/assets/particle-pack"
+              ],
+              "lines": []
+            },
+            {
+              "work": false,
+              "text": "Impact Sounds, RPG Audio and Interface Sounds",
+              "links": [
+                "https://kenney.nl/assets/impact-sounds",
+                "https://kenney.nl/assets/rpg-audio",
+                "https://kenney.nl/assets/interface-sounds"
+              ],
+              "lines": []
+            }
+          ]
+        },
+        {
+          "title": "OpenGameArt field recordings",
+          "sub": false,
+          "links": [],
+          "notes": [
+            "Cut to loop and made mono at 24 kHz (the game plays each wide, its right side half a take along):"
+          ],
+          "entries": [
+            {
+              "name": "Park ambiences",
+              "work": true,
+              "text": "by thimras",
+              "links": [
+                "https://opengameart.org/content/park-ambiences"
+              ],
+              "lines": []
+            },
+            {
+              "name": "Fireplace Sound loop",
+              "work": true,
+              "text": "by PagDev",
+              "links": [
+                "https://opengameart.org/content/fireplace-sound-loop"
+              ],
+              "lines": []
+            },
+            {
+              "name": "Crickets Ambient Noise - loopable",
+              "work": true,
+              "text": "by Wolfgang_, recording by Ted Kerr",
+              "links": [
+                "https://opengameart.org/content/crickets-ambient-noise-loopable"
+              ],
+              "lines": []
+            },
+            {
+              "name": "Blacksmith's Hammer",
+              "work": true,
+              "text": "by vishwajai",
+              "links": [
+                "https://opengameart.org/content/blacksmiths-hammer"
+              ],
+              "lines": []
+            }
+          ]
+        },
+        {
+          "title": "MakeHuman, made with MPFB",
+          "sub": false,
+          "links": [
+            "http://www.makehumancommunity.org"
+          ],
+          "notes": [],
+          "entries": [
+            {
+              "work": false,
+              "text": "The heroine's and the hero's heads, eyes, brows, lashes, teeth and tongue, and the targets that shape their faces: MakeHuman system assets, CC0",
+              "links": [],
+              "lines": []
+            },
+            {
+              "work": false,
+              "text": "The heroine's head skin, \"Light skin female ginger\" by MargaretToigo, CC0",
+              "links": [
+                "http://www.makehumancommunity.org/node/1130"
+              ],
+              "lines": []
+            }
+          ]
+        },
+        {
+          "title": "Poly Haven",
+          "sub": false,
+          "links": [
+            "https://polyhaven.com"
+          ],
+          "notes": [
+            "Each Poly Haven asset is credited to its scanners and artists, by name."
+          ],
+          "entries": []
+        },
+        {
+          "title": "The Verge's ground",
+          "sub": true,
+          "links": [],
+          "notes": [],
+          "entries": [
+            {
+              "name": "Sparse Grass",
+              "work": true,
+              "text": "by Amal Kumar: grass",
+              "links": [
+                "https://polyhaven.com/a/sparse_grass"
+              ],
+              "lines": []
+            },
+            {
+              "name": "Forest Leaves 02",
+              "work": true,
+              "text": "by Rob Tuytel: leaves",
+              "links": [
+                "https://polyhaven.com/a/forest_leaves_02"
+              ],
+              "lines": []
+            },
+            {
+              "name": "Forest Ground 04",
+              "work": true,
+              "text": "by Rob Tuytel, Rico Cilliers: dirt",
+              "links": [
+                "https://polyhaven.com/a/forest_ground_04"
+              ],
+              "lines": []
+            },
+            {
+              "name": "Mud Forest",
+              "work": true,
+              "text": "by eye-candy.xyz: mud",
+              "links": [
+                "https://polyhaven.com/a/mud_forest"
+              ],
+              "lines": []
+            },
+            {
+              "name": "Cobblestone 05",
+              "work": true,
+              "text": "by Rob Tuytel: stone",
+              "links": [
+                "https://polyhaven.com/a/cobblestone_05"
+              ],
+              "lines": []
+            },
+            {
+              "name": "Mossy Rock",
+              "work": true,
+              "text": "by Rob Tuytel: rock",
+              "links": [
+                "https://polyhaven.com/a/mossy_rock"
+              ],
+              "lines": []
+            },
+            {
+              "name": "Burned Ground 01",
+              "work": true,
+              "text": "by Rob Tuytel: blight",
+              "links": [
+                "https://polyhaven.com/a/burned_ground_01"
+              ],
+              "lines": []
+            }
+          ]
+        },
+        {
+          "title": "Building materials, 1k",
+          "sub": true,
+          "links": [],
+          "notes": [],
+          "entries": [
+            {
+              "name": "Medieval Blocks 03",
+              "work": true,
+              "text": "by Rob Tuytel: dressed stone for walls, the gate, towers, the crypt and pillars",
+              "links": [
+                "https://polyhaven.com/a/medieval_blocks_03"
+              ],
+              "lines": []
+            },
+            {
+              "name": "Castle Wall Slates",
+              "work": true,
+              "text": "by Rob Tuytel: slate roofs, clay tiles",
+              "links": [
+                "https://polyhaven.com/a/castle_wall_slates"
+              ],
+              "lines": []
+            },
+            {
+              "name": "Rock Boulder Dry",
+              "work": true,
+              "text": "by Dimitrios Savva, Rico Cilliers: headstones, rock",
+              "links": [
+                "https://polyhaven.com/a/rock_boulder_dry"
+              ],
+              "lines": []
+            },
+            {
+              "name": "Rough Wood",
+              "work": true,
+              "text": "by Rob Tuytel: posts, crosses, timber",
+              "links": [
+                "https://polyhaven.com/a/rough_wood"
+              ],
+              "lines": []
+            }
+          ]
+        },
+        {
+          "title": "Outfit materials",
+          "sub": true,
+          "links": [],
+          "notes": [],
+          "entries": [
+            {
+              "name": "Brown Leather",
+              "work": true,
+              "text": "by Rob Tuytel",
+              "links": [
+                "https://polyhaven.com/a/brown_leather"
+              ],
+              "lines": []
+            },
+            {
+              "name": "Curly Teddy Natural",
+              "work": true,
+              "text": "by colormass, Rico Cilliers",
+              "links": [
+                "https://polyhaven.com/a/curly_teddy_natural"
+              ],
+              "lines": []
+            },
+            {
+              "name": "Fabric Leather 02",
+              "work": true,
+              "text": "by Rob Tuytel",
+              "links": [
+                "https://polyhaven.com/a/fabric_leather_02"
+              ],
+              "lines": []
+            },
+            {
+              "name": "Faux Fur Geometric",
+              "work": true,
+              "text": "by colormass, Rico Cilliers",
+              "links": [
+                "https://polyhaven.com/a/faux_fur_geometric"
+              ],
+              "lines": []
+            },
+            {
+              "name": "Leather Red 02",
+              "work": true,
+              "text": "by Rob Tuytel",
+              "links": [
+                "https://polyhaven.com/a/leather_red_02"
+              ],
+              "lines": []
+            },
+            {
+              "name": "Metal Plate",
+              "work": true,
+              "text": "by Rob Tuytel",
+              "links": [
+                "https://polyhaven.com/a/metal_plate"
+              ],
+              "lines": []
+            },
+            {
+              "name": "Metal Plate 02",
+              "work": true,
+              "text": "by Rob Tuytel",
+              "links": [
+                "https://polyhaven.com/a/metal_plate_02"
+              ],
+              "lines": []
+            },
+            {
+              "name": "Rough Linen",
+              "work": true,
+              "text": "by colormass, Rico Cilliers",
+              "links": [
+                "https://polyhaven.com/a/rough_linen"
+              ],
+              "lines": []
+            },
+            {
+              "name": "Rusty Metal 02",
+              "work": true,
+              "text": "by Rob Tuytel",
+              "links": [
+                "https://polyhaven.com/a/rusty_metal_02"
+              ],
+              "lines": []
+            },
+            {
+              "name": "Velour Velvet",
+              "work": true,
+              "text": "by colormass, Rico Cilliers",
+              "links": [
+                "https://polyhaven.com/a/velour_velvet"
+              ],
+              "lines": []
+            }
+          ]
+        },
+        {
+          "title": "The light the items are photographed in",
+          "sub": true,
+          "links": [],
+          "notes": [],
+          "entries": [
+            {
+              "name": "Studio Small 08",
+              "work": true,
+              "text": "by Sergej Majboroda",
+              "links": [
+                "https://polyhaven.com/a/studio_small_08"
+              ],
+              "lines": []
+            }
+          ]
+        },
+        {
+          "title": "The arenas' grounds",
+          "sub": true,
+          "links": [],
+          "notes": [
+            "Their authors, per Poly Haven:"
+          ],
+          "entries": [
+            {
+              "work": false,
+              "text": "Rob Tuytel: brown_mud_02, brown_mud_03, brown_mud_leaves_01, burned_ground_01, forest_leaves_04, grass_path_3, ground_grey, mossy_rock, red_mud_stones, rocks_ground_06; dry_mud_field_001 and river_small_rocks with Rico Cilliers; forest_leaves_03 with Dimitrios Savva",
+              "links": [],
+              "lines": []
+            },
+            {
+              "work": false,
+              "text": "Amal Kumar: dark_rock, gravel_road, gravel_stones, muddy_tracks, rocky_terrain, rocky_trail, stone_pathway_02",
+              "links": [],
+              "lines": []
+            },
+            {
+              "work": false,
+              "text": "eye-candy.xyz: mud_forest, wood_chips",
+              "links": [],
+              "lines": []
+            },
+            {
+              "work": false,
+              "text": "Dimitrios Savva: quarry_wall; roots with Dario Barresi",
+              "links": [],
+              "lines": []
+            },
+            {
+              "work": false,
+              "text": "Charlotte Baglioni: withered_grass",
+              "links": [],
+              "lines": []
+            }
+          ]
+        },
+        {
+          "sub": true,
+          "links": [],
+          "notes": [],
+          "entries": [
+            {
+              "work": false,
+              "text": "brown_mud_02: Poly Haven, CC0",
+              "links": [
+                "https://polyhaven.com/a/brown_mud_02"
+              ],
+              "lines": []
+            },
+            {
+              "work": false,
+              "text": "brown_mud_03: Poly Haven, CC0",
+              "links": [
+                "https://polyhaven.com/a/brown_mud_03"
+              ],
+              "lines": []
+            },
+            {
+              "work": false,
+              "text": "brown_mud_leaves_01: Poly Haven, CC0",
+              "links": [
+                "https://polyhaven.com/a/brown_mud_leaves_01"
+              ],
+              "lines": []
+            },
+            {
+              "work": false,
+              "text": "burned_ground_01: Poly Haven, CC0",
+              "links": [
+                "https://polyhaven.com/a/burned_ground_01"
+              ],
+              "lines": []
+            },
+            {
+              "work": false,
+              "text": "dark_rock: Poly Haven, CC0",
+              "links": [
+                "https://polyhaven.com/a/dark_rock"
+              ],
+              "lines": []
+            },
+            {
+              "work": false,
+              "text": "dry_mud_field_001: Poly Haven, CC0",
+              "links": [
+                "https://polyhaven.com/a/dry_mud_field_001"
+              ],
+              "lines": []
+            },
+            {
+              "work": false,
+              "text": "forest_leaves_03: Poly Haven, CC0",
+              "links": [
+                "https://polyhaven.com/a/forest_leaves_03"
+              ],
+              "lines": []
+            },
+            {
+              "work": false,
+              "text": "forest_leaves_04: Poly Haven, CC0",
+              "links": [
+                "https://polyhaven.com/a/forest_leaves_04"
+              ],
+              "lines": []
+            },
+            {
+              "work": false,
+              "text": "grass_path_3: Poly Haven, CC0",
+              "links": [
+                "https://polyhaven.com/a/grass_path_3"
+              ],
+              "lines": []
+            },
+            {
+              "work": false,
+              "text": "gravel_road: Poly Haven, CC0",
+              "links": [
+                "https://polyhaven.com/a/gravel_road"
+              ],
+              "lines": []
+            },
+            {
+              "work": false,
+              "text": "gravel_stones: Poly Haven, CC0",
+              "links": [
+                "https://polyhaven.com/a/gravel_stones"
+              ],
+              "lines": []
+            },
+            {
+              "work": false,
+              "text": "ground_grey: Poly Haven, CC0",
+              "links": [
+                "https://polyhaven.com/a/ground_grey"
+              ],
+              "lines": []
+            },
+            {
+              "work": false,
+              "text": "mossy_rock: Poly Haven, CC0",
+              "links": [
+                "https://polyhaven.com/a/mossy_rock"
+              ],
+              "lines": []
+            },
+            {
+              "work": false,
+              "text": "mud_forest: Poly Haven, CC0",
+              "links": [
+                "https://polyhaven.com/a/mud_forest"
+              ],
+              "lines": []
+            },
+            {
+              "work": false,
+              "text": "muddy_tracks: Poly Haven, CC0",
+              "links": [
+                "https://polyhaven.com/a/muddy_tracks"
+              ],
+              "lines": []
+            },
+            {
+              "work": false,
+              "text": "quarry_wall: Poly Haven, CC0",
+              "links": [
+                "https://polyhaven.com/a/quarry_wall"
+              ],
+              "lines": []
+            },
+            {
+              "work": false,
+              "text": "red_mud_stones: Poly Haven, CC0",
+              "links": [
+                "https://polyhaven.com/a/red_mud_stones"
+              ],
+              "lines": []
+            },
+            {
+              "work": false,
+              "text": "river_small_rocks: Poly Haven, CC0",
+              "links": [
+                "https://polyhaven.com/a/river_small_rocks"
+              ],
+              "lines": []
+            },
+            {
+              "work": false,
+              "text": "rocks_ground_06: Poly Haven, CC0",
+              "links": [
+                "https://polyhaven.com/a/rocks_ground_06"
+              ],
+              "lines": []
+            },
+            {
+              "work": false,
+              "text": "rocky_terrain: Poly Haven, CC0",
+              "links": [
+                "https://polyhaven.com/a/rocky_terrain"
+              ],
+              "lines": []
+            },
+            {
+              "work": false,
+              "text": "rocky_trail: Poly Haven, CC0",
+              "links": [
+                "https://polyhaven.com/a/rocky_trail"
+              ],
+              "lines": []
+            },
+            {
+              "work": false,
+              "text": "roots: Poly Haven, CC0",
+              "links": [
+                "https://polyhaven.com/a/roots"
+              ],
+              "lines": []
+            },
+            {
+              "work": false,
+              "text": "stone_pathway_02: Poly Haven, CC0",
+              "links": [
+                "https://polyhaven.com/a/stone_pathway_02"
+              ],
+              "lines": []
+            },
+            {
+              "work": false,
+              "text": "withered_grass: Poly Haven, CC0",
+              "links": [
+                "https://polyhaven.com/a/withered_grass"
+              ],
+              "lines": []
+            },
+            {
+              "work": false,
+              "text": "wood_chips: Poly Haven, CC0",
+              "links": [
+                "https://polyhaven.com/a/wood_chips"
+              ],
+              "lines": []
+            },
+            {
+              "work": false,
+              "text": "dry_decay_leaves: Poly Haven, CC0",
+              "links": [
+                "https://polyhaven.com/a/dry_decay_leaves"
+              ],
+              "lines": []
+            },
+            {
+              "work": false,
+              "text": "excavated_soil_wall: Poly Haven, CC0",
+              "links": [
+                "https://polyhaven.com/a/excavated_soil_wall"
+              ],
+              "lines": []
+            },
+            {
+              "work": false,
+              "text": "mud_cracked_dry_03: Poly Haven, CC0",
+              "links": [
+                "https://polyhaven.com/a/mud_cracked_dry_03"
+              ],
+              "lines": []
+            },
+            {
+              "work": false,
+              "text": "red_dirt_mud_01: Poly Haven, CC0",
+              "links": [
+                "https://polyhaven.com/a/red_dirt_mud_01"
+              ],
+              "lines": []
+            },
+            {
+              "work": false,
+              "text": "stony_dirt_path: Poly Haven, CC0",
+              "links": [
+                "https://polyhaven.com/a/stony_dirt_path"
+              ],
+              "lines": []
+            },
+            {
+              "work": false,
+              "text": "dry_ground_rocks: Poly Haven, CC0",
+              "links": [
+                "https://polyhaven.com/a/dry_ground_rocks"
+              ],
+              "lines": []
+            }
+          ]
+        },
+        {
+          "title": "Poly Haven models",
+          "sub": false,
+          "links": [],
+          "notes": [],
+          "entries": [
+            {
+              "name": "Rock Moss Set 01",
+              "work": true,
+              "text": "by Kless Gyzen, Poly Haven, CC0",
+              "links": [
+                "https://polyhaven.com/a/rock_moss_set_01"
+              ],
+              "lines": []
+            },
+            {
+              "name": "Rock Moss Set 02",
+              "work": true,
+              "text": "by Kless Gyzen, Poly Haven, CC0",
+              "links": [
+                "https://polyhaven.com/a/rock_moss_set_02"
+              ],
+              "lines": []
+            },
+            {
+              "name": "Boulder 01",
+              "work": true,
+              "text": "by Rico Cilliers, Poly Haven, CC0",
+              "links": [
+                "https://polyhaven.com/a/boulder_01"
+              ],
+              "lines": []
+            },
+            {
+              "name": "Rock 07",
+              "work": true,
+              "text": "by Jenelle van Heerden, Poly Haven, CC0",
+              "links": [
+                "https://polyhaven.com/a/rock_07"
+              ],
+              "lines": []
+            },
+            {
+              "name": "Rock 09",
+              "work": true,
+              "text": "by Jenelle van Heerden, Poly Haven, CC0",
+              "links": [
+                "https://polyhaven.com/a/rock_09"
+              ],
+              "lines": []
+            },
+            {
+              "name": "Stone 01",
+              "work": true,
+              "text": "by Dario Barresi, Rico Cilliers, Poly Haven, CC0",
+              "links": [
+                "https://polyhaven.com/a/stone_01"
+              ],
+              "lines": []
+            },
+            {
+              "name": "Namaqualand Stones 01",
+              "work": true,
+              "text": "by Greg Zaal, Jenelle van Heerden, Poly Haven, CC0",
+              "links": [
+                "https://polyhaven.com/a/namaqualand_stones_01"
+              ],
+              "lines": []
+            },
+            {
+              "name": "Root Cluster 01",
+              "work": true,
+              "text": "by Jenelle van Heerden, Rico Cilliers, Poly Haven, CC0",
+              "links": [
+                "https://polyhaven.com/a/root_cluster_01"
+              ],
+              "lines": []
+            },
+            {
+              "name": "Root Cluster 02",
+              "work": true,
+              "text": "by Jenelle van Heerden, Poly Haven, CC0",
+              "links": [
+                "https://polyhaven.com/a/root_cluster_02"
+              ],
+              "lines": []
+            },
+            {
+              "name": "Single Root",
+              "work": true,
+              "text": "by Jenelle van Heerden, Poly Haven, CC0",
+              "links": [
+                "https://polyhaven.com/a/single_root"
+              ],
+              "lines": []
+            },
+            {
+              "name": "Pine Roots",
+              "work": true,
+              "text": "by Rob Tuytel, Poly Haven, CC0",
+              "links": [
+                "https://polyhaven.com/a/pine_roots"
+              ],
+              "lines": []
+            },
+            {
+              "name": "Tree Stump 01",
+              "work": true,
+              "text": "by Rob Tuytel, Poly Haven, CC0",
+              "links": [
+                "https://polyhaven.com/a/tree_stump_01"
+              ],
+              "lines": []
+            },
+            {
+              "name": "Tree Stump 02",
+              "work": true,
+              "text": "by Rob Tuytel, Poly Haven, CC0",
+              "links": [
+                "https://polyhaven.com/a/tree_stump_02"
+              ],
+              "lines": []
+            },
+            {
+              "name": "Dead Tree Trunk",
+              "work": true,
+              "text": "by Rob Tuytel, Poly Haven, CC0",
+              "links": [
+                "https://polyhaven.com/a/dead_tree_trunk"
+              ],
+              "lines": []
+            },
+            {
+              "name": "Dead Tree Trunk 02",
+              "work": true,
+              "text": "by Jenelle van Heerden, Rico Cilliers, Poly Haven, CC0",
+              "links": [
+                "https://polyhaven.com/a/dead_tree_trunk_02"
+              ],
+              "lines": []
+            },
+            {
+              "name": "Dry Branches Medium 01",
+              "work": true,
+              "text": "by Rico Cilliers, Poly Haven, CC0",
+              "links": [
+                "https://polyhaven.com/a/dry_branches_medium_01"
+              ],
+              "lines": []
+            },
+            {
+              "name": "Bark Debris 01",
+              "work": true,
+              "text": "by Greg Zaal, Jenelle van Heerden, Poly Haven, CC0",
+              "links": [
+                "https://polyhaven.com/a/bark_debris_01"
+              ],
+              "lines": []
+            },
+            {
+              "name": "Moss 01",
+              "work": true,
+              "text": "by Rob Tuytel, Poly Haven, CC0",
+              "links": [
+                "https://polyhaven.com/a/moss_01"
+              ],
+              "lines": []
+            },
+            {
+              "name": "Fern 02",
+              "work": true,
+              "text": "by Rob Tuytel, Rico Cilliers, Poly Haven, CC0",
+              "links": [
+                "https://polyhaven.com/a/fern_02"
+              ],
+              "lines": []
+            },
+            {
+              "name": "Nettle Plant",
+              "work": true,
+              "text": "by Rob Tuytel, Rico Cilliers, Poly Haven, CC0",
+              "links": [
+                "https://polyhaven.com/a/nettle_plant"
+              ],
+              "lines": []
+            },
+            {
+              "name": "Weed Plant 02",
+              "work": true,
+              "text": "by Rob Tuytel, Rico Cilliers, Poly Haven, CC0",
+              "links": [
+                "https://polyhaven.com/a/weed_plant_02"
+              ],
+              "lines": []
+            },
+            {
+              "name": "Shrub 01",
+              "work": true,
+              "text": "by Rico Cilliers, Poly Haven, CC0",
+              "links": [
+                "https://polyhaven.com/a/shrub_01"
+              ],
+              "lines": []
+            },
+            {
+              "name": "Shrub 02",
+              "work": true,
+              "text": "by Rico Cilliers, Poly Haven, CC0",
+              "links": [
+                "https://polyhaven.com/a/shrub_02"
+              ],
+              "lines": []
+            },
+            {
+              "name": "Shrub 03",
+              "work": true,
+              "text": "by Rico Cilliers, Poly Haven, CC0",
+              "links": [
+                "https://polyhaven.com/a/shrub_03"
+              ],
+              "lines": []
+            },
+            {
+              "name": "Shrub 04",
+              "work": true,
+              "text": "by Rico Cilliers, Poly Haven, CC0",
+              "links": [
+                "https://polyhaven.com/a/shrub_04"
+              ],
+              "lines": []
+            },
+            {
+              "name": "Grass Medium 01",
+              "work": true,
+              "text": "by Rob Tuytel, Rico Cilliers, Poly Haven, CC0",
+              "links": [
+                "https://polyhaven.com/a/grass_medium_01"
+              ],
+              "lines": []
+            },
+            {
+              "name": "Grass Medium 02",
+              "work": true,
+              "text": "by Rico Cilliers, Poly Haven, CC0",
+              "links": [
+                "https://polyhaven.com/a/grass_medium_02"
+              ],
+              "lines": []
+            },
+            {
+              "name": "Stone Fire Pit",
+              "work": true,
+              "text": "by Sebastian Platen, Poly Haven, CC0",
+              "links": [
+                "https://polyhaven.com/a/stone_fire_pit"
+              ],
+              "lines": []
+            },
+            {
+              "name": "Gothic Statue",
+              "work": true,
+              "text": "by Benny Weimer, Poly Haven, CC0",
+              "links": [
+                "https://polyhaven.com/a/gothic_statue"
+              ],
+              "lines": []
+            },
+            {
+              "name": "Kite Shield",
+              "work": true,
+              "text": "by Ulan Cabanilla, Poly Haven, CC0",
+              "links": [
+                "https://polyhaven.com/a/kite_shield"
+              ],
+              "lines": []
+            },
+            {
+              "name": "Wooden Lantern 01",
+              "work": true,
+              "text": "by James Ray Cock, Poly Haven, CC0",
+              "links": [
+                "https://polyhaven.com/a/wooden_lantern_01"
+              ],
+              "lines": []
+            },
+            {
+              "name": "Old Military Crate",
+              "work": true,
+              "text": "by Jack Mava, Poly Haven, CC0",
+              "links": [
+                "https://polyhaven.com/a/old_military_crate"
+              ],
+              "lines": []
+            },
+            {
+              "name": "Wooden Barrels 01",
+              "work": true,
+              "text": "by James Ray Cock, Poly Haven, CC0",
+              "links": [
+                "https://polyhaven.com/a/wooden_barrels_01"
+              ],
+              "lines": []
+            }
+          ]
+        },
+        {
+          "title": "ambientCG",
+          "sub": false,
+          "links": [],
+          "notes": [
+            "Outfit leathers and metals. Created using these materials from ambientCG.com, licensed under the Creative Commons CC0 1.0 Universal License."
+          ],
+          "entries": [
+            {
+              "work": false,
+              "text": "Metal038: ambientCG, CC0",
+              "links": [
+                "https://ambientcg.com/view?id=Metal038"
+              ],
+              "lines": []
+            },
+            {
+              "work": false,
+              "text": "Metal048C: ambientCG, CC0",
+              "links": [
+                "https://ambientcg.com/view?id=Metal048C"
+              ],
+              "lines": []
+            },
+            {
+              "work": false,
+              "text": "Metal046B: ambientCG, CC0",
+              "links": [
+                "https://ambientcg.com/view?id=Metal046B"
+              ],
+              "lines": []
+            },
+            {
+              "work": false,
+              "text": "Metal053C: ambientCG, CC0",
+              "links": [
+                "https://ambientcg.com/view?id=Metal053C"
+              ],
+              "lines": []
+            },
+            {
+              "work": false,
+              "text": "Leather037: ambientCG, CC0",
+              "links": [
+                "https://ambientcg.com/view?id=Leather037"
+              ],
+              "lines": []
+            },
+            {
+              "work": false,
+              "text": "Leather034C: ambientCG, CC0",
+              "links": [
+                "https://ambientcg.com/view?id=Leather034C"
+              ],
+              "lines": []
+            },
+            {
+              "work": false,
+              "text": "Leather024: ambientCG, CC0",
+              "links": [
+                "https://ambientcg.com/view?id=Leather024"
+              ],
+              "lines": []
+            },
+            {
+              "work": false,
+              "text": "Leather014: ambientCG, CC0",
+              "links": [
+                "https://ambientcg.com/view?id=Leather014"
+              ],
+              "lines": []
+            },
+            {
+              "work": false,
+              "text": "Leather026: ambientCG, CC0",
+              "links": [
+                "https://ambientcg.com/view?id=Leather026"
+              ],
+              "lines": []
+            },
+            {
+              "work": false,
+              "text": "Leather021: ambientCG, CC0",
+              "links": [
+                "https://ambientcg.com/view?id=Leather021"
+              ],
+              "lines": []
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Made with AI tools (disclosure)",
+      "short": "Made with AI tools",
+      "notes": [
+        "Parts of the game were made with generative AI during development. Some images, effects, sounds, motion, voices and text in it were generated by AI, then reviewed and edited by the developer. Nothing is generated by AI while you play."
+      ],
+      "groups": [
+        {
+          "sub": false,
+          "links": [],
+          "notes": [],
+          "entries": [
+            {
+              "name": "Images:",
+              "work": false,
+              "text": "most of the interface's painted art and icons, the ground marks of blows and spells, and the heroes' face paint and irises were painted with Krea 2. Krea 2 is licensed under the Krea 2 Community License Agreement. Cut-outs used BiRefNet (MIT). All of it was painted over our own geometry, renders and photographs where noted.",
+              "links": [
+                "https://krea.ai/krea-2-licensing"
+              ],
+              "lines": []
+            },
+            {
+              "name": "Effects video and some combat sounds",
+              "work": false,
+              "text": "were made with LTX 2.5 (Lightricks, LTX-2.x Community License), with Gemma 4 as its text encoder (Apache-2.0). This content is machine generated.",
+              "links": [],
+              "lines": []
+            },
+            {
+              "name": "3D figures:",
+              "work": false,
+              "text": "the male hero's body was sculpted by TRELLIS 2 (Microsoft, MIT), built with DINOv3 (Meta) and MoGe 2",
+              "links": [],
+              "lines": []
+            },
+            {
+              "name": "Motion:",
+              "work": false,
+              "text": "NVIDIA Kimodo (above)",
+              "links": [],
+              "lines": []
+            },
+            {
+              "name": "Placeholder voices:",
+              "work": false,
+              "text": "Maya1 (Apache-2.0) performances, converted by Seed-VC into voices designed with VoxCPM2 (Apache-2.0) from written descriptions. No real person's voice is cloned. They will be replaced by recorded finals.",
+              "links": [],
+              "lines": []
+            },
+            {
+              "name": "Code and writing",
+              "work": false,
+              "text": "were written with Claude (Anthropic) under the owner's direction",
+              "links": [],
+              "lines": []
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Made for the game",
+      "short": "Made for the game",
+      "notes": [],
+      "groups": [
+        {
+          "sub": false,
+          "links": [],
+          "notes": [],
+          "entries": [
+            {
+              "work": false,
+              "text": "The interface's art: frames, cards, slots, bars, medallions, ornaments, the logo, cursors, pad buttons, map marks and every icon",
+              "links": [],
+              "lines": [
+                "Most of it was then painted over on the local ComfyUI (Krea 2 turbo with the darkbrush LoRA; see above).",
+                "The item icons paint over the game's own photographs of its item models."
+              ]
+            },
+            {
+              "work": false,
+              "text": "The heroine's hair, outfits and face-paint designs, the skin's pores, the town well, the glyphs, the app icon, the shaders, the synthesised sounds and music, and every keyed animation",
+              "links": [],
+              "lines": []
+            },
+            {
+              "work": false,
+              "text": "The heroine's body comes from a figure given to the game by its owner",
+              "links": [],
+              "lines": []
+            },
+            {
+              "work": false,
+              "text": "The older woman survivor's body is a figure made in ComfyUI and given to the game by its owner",
+              "links": [],
+              "lines": [
+                "Beside it is a mask of her skin, hair and suit."
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

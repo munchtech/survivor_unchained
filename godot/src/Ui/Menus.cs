@@ -214,6 +214,7 @@ public partial class PauseScreen : Overlay
         else menu.Add("Save", () => { G.Save("manual"); G.Toast(new Toast(ToastKind.World, "Journey saved")); });
         menu.Add("Settings", () => { panel = panel == "settings" ? "" : "settings"; Refresh(); });
         menu.Add("Controls", () => { panel = panel == "controls" ? "" : "controls"; Refresh(); });
+        menu.Add("Credits and licences", G.Credits);
         menu.Add("Leave to the title", G.QuitToTitle);
         menu.Add("Quit the game", G.QuitGame);
         col.AddChild(menu.Build());

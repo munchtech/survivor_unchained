@@ -1,50 +1,63 @@
 # UI design (character creation first): status
 
-Agent a26f87c39952dcd9c, branch `worktree-agent-a26f87c39952dcd9c`. It has the integration branch merged in, plus the predecessor's tip (a69858664f1d3dd29@29792ce3).
+Agent a26f87c39952dcd9c, branch `worktree-agent-a26f87c39952dcd9c`. It has the integration branch merged in, as of 2a1198df.
 The predecessor's handoff, `docs/handoff/ui_design.md`, is the full brief.
 
-## Current state (paused by the owner, 4 October)
-- The worktree is set up:
-  - `godot/assets` is a junction with skip-worktree;
-  - `override.cfg` sets the user folder `SurvivorUnchainedUiLead4`;
-  - the build and headless import are done.
-- Shot tools are in `scratchpad/uid4/` (`shot.ps1`, `edlib.py`), pointed at this worktree.
-- **`godot/licences/` holds the upstream texts, unchanged:**
-  - Godot 4.5.1-stable `LICENSE.txt` and `COPYRIGHT.txt`, as `GODOT_*`;
-  - .NET runtime `release/8.0` `LICENSE.TXT` and `THIRD-PARTY-NOTICES.TXT`, as `DOTNET_*`;
-  - the three `OFL-*.txt`, copied from `godot/art/fonts`.
-  Nothing ships them yet.
+## Current state (Godot is off-limits until the main session frees it)
+**The licences, code done; the screen is not yet seen in game.**
+- **`Content/Credits.cs`** turns `public/assets/CREDITS.md` into the player's credits.
+  - It cuts what belongs to the workshop: paths, `-> file` tails, the fetch tools' note, review notes (the boar's "personal use", PE-0x and CR-0x) and the web game's section. Every other word is kept.
+  - If a fetch tool appends a line at the end, it is put back in its section.
+- **The outputs:** `godot/data/credits.json` (the screen's) and `godot/licences/CREDITS.txt` (shipped).
+  - In CREDITS.txt, each CC BY work has Source, Creator, Licence and Modified lines, the form STEAM_CHECKLIST asks for.
+- **`CreditsTests` (7 tests):**
+  - a golden-file check; regenerate with `WRITE_CREDITS=1 dotnet test --filter CreditsTests`;
+  - every link in the ledger must ship;
+  - none of the workshop's words may ship;
+  - each CC BY work has its creator, link and changes;
+  - the export wiring is in place.
+- **`godot/licences/`:**
+  - the Godot 4.5.1 `LICENSE` and `COPYRIGHT`;
+  - the .NET 8 `LICENSE.TXT` and `THIRD-PARTY-NOTICES.TXT`;
+  - the three OFL texts;
+  - `CREDITS.txt`.
+- **Export:**
+  - `export_presets.cfg` includes `licences/*` in all three presets;
+  - `tools/godot/export.sh` copies the folder beside each build.
+- **`Ui/Credits.cs`, `CreditsScreen`:**
+  - a page over the blurred world;
+  - the index on the left: seven credit sections I to VII, then Godot, .NET and the typefaces;
+  - the reading on the right: each section's numeral and title over a rule, a CC BY seal, groups with a rail on the left and the works beside it, links that open in the browser, and long runs of short names as one line;
+  - Godot's parts are read from `Engine.GetCopyrightInfo()`; the licence texts come from `res://licences`;
+  - controls: LT/RT or Left/Right change section, Up/Down scroll, X opens the licences folder, B goes back.
+- **How to reach it:**
+  - the title's Credits, which returns to the title;
+  - the pause menu's "Credits and licences", which returns to the pause menu with the world kept paused;
+  - `--quick --open credits`.
+- **CREDITS.md edits (player-facing):**
+  - "This file lists" became "These credits list";
+  - the AI section's "This is to be declared on its Steam page" became the AI-use statement.
 
-## Next: the licences screen (the exact next step)
-1. Merge `origin/claude/vigilant-galileo-l6jqyx` again. It now has the performance lead's export work, so re-read `godot/export_presets.cfg` and `tools/godot/export.sh` before touching them.
-2. In `godot/logic`, write `Credits.Parse(md)`: `public/assets/CREDITS.md` becomes sections, groups and entries, made player-facing.
-   - Drop backticked paths, `-> file` tails, the fetch-tool note and the web-only section.
-   - Keep any Sketchfab line that `sketchfab.mjs` appends at the end.
-   - Don't ship CREDITS.md itself: its review notes (the boar's "personal use", PE-05 and PE-06) must not reach the `.pck`.
-3. A golden-file test writes `godot/data/credits.json` (for the screen) and `godot/licences/CREDITS.txt` from it when `WRITE_CREDITS=1`. Otherwise it fails if either is stale, or if any CC BY or OFL link in CREDITS.md is missing.
-4. Add `licences/README.txt`: an index of the folder plus the AI-use line from CREDITS.md's AI section.
-5. Export:
-   - add `licences/*` to `include_filter`, so the game can show the texts;
-   - make `export.sh` copy `godot/licences/` beside each build.
-6. `Ui/CreditsScreen.cs`, the page style (Backdrop, frameless `Style.Column`):
-   - a section index on the left, the scrolling credits on the right;
-   - Godot's MIT text and its components from `Engine.GetCopyrightInfo()`;
-   - the .NET and OFL texts read from `res://licences`;
-   - "Open the licences folder" via `OS.ShellOpen`.
-7. Hook it up:
-   - `Game.Open("credits")` keeps the world paused like the pause menu, and its close returns to the pause menu;
-   - the title's Credits item opens it, and its close returns to the title;
-   - the pause menu gets "Credits and licences";
-   - `--open credits` for shots.
-8. Take shots at 1920x1080. Then send the wording to the **legal lead, aab20546fe06daa89**, before pushing the screen.
+## Next
+1. **When Godot is free:**
+   - take shots at 1920x1080 of each section, the three licence views and the title route;
+   - fix what is drab or dense, then send the wording to the **legal lead, aab20546fe06daa89**.
+2. Then, in the handoff's order:
+   - the UI art lead's six pieces;
+   - the map result and atlas;
+   - the portrait reruns;
+   - the pack's two bugs.
 
-After that, in the handoff's order: the UI art lead's six pieces, the map result and atlas, the portrait reruns, and the pack's two bugs.
+## Questions for legal (to send with the shots)
+- The AI line: CREDITS.md lists the tools in the build (Maya1, Seed-VC, VoxCPM2, BiRefNet, DINOv3, MoGe 2). STEAM_CHECKLIST E names ElevenLabs and Pixal3D. Which wording is right?
+- Does a CC BY work need "Modified" when no changes are listed? Today it is left out.
 
 ## Waiting on others
 - **Face lead (ade92e8285938438f):** the new head. After `heroine.glb`, rerun `heroine_paint.py`, then `creation_portraits.py`.
 - **Male hero (ab82cbe99e2937ddd):** `heroes.male` and his builder. Then run `creation_portraits.py --sex male`.
 
 ## Key decisions
-- Look is step II: the calling dresses her, then she is shaped.
-- Portraits are rendered from the game, so they stay true when her head changes.
-- The licence texts are the upstream files, byte for byte, from the tags that match what ships (Godot 4.5.1, .NET 8).
+- **Ship a cleaned copy, never CREDITS.md itself:** its review notes would be in the `.pck` for data-miners.
+- **Clean by rules, not by hand,** so the shipped credits can't drift from the ledger; a test fails when they do.
+- **The licence texts are the upstream files, byte for byte,** from the tags that match what ships (Godot 4.5.1, .NET 8).
+- **Look is step II:** the calling dresses her, then she is shaped. Portraits are rendered from the game.

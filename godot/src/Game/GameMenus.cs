@@ -66,6 +66,7 @@ public partial class Game
             "maps" => new MapTableScreen(this),
             "arts" => new ArtsScreen(this),
             "chapter" => new ChapterScreen(this),
+            "credits" => new CreditsScreen(this, () => Open("pause")),
             _ when kind.StartsWith("shop:") => new ShopScreen(this, kind[5..]),
             _ when kind.StartsWith("forge:") => new ForgeScreen(this, kind[6..]),
             _ => new PauseScreen(this),
@@ -80,10 +81,18 @@ public partial class Game
         // The pause menu stops the world; any other screen only where the ember burns (an arena,
         // the prologue's night road), where the horde would not wait. Elsewhere, the Verge by
         // day too, the world goes on behind it (the owner's rule).
-        scene.SimPaused = o is PauseScreen || zone?.Ember == true;
+        // (the credits are opened from the pause menu, and the world waits for them as it does for it)
+        scene.SimPaused = o is PauseScreen or CreditsScreen || zone?.Ember == true;
         cam.ScreenShift = o.CameraShift;
         controls.Captured = true;
         hud.Prompt(promptShown = null);
+    }
+
+    /// <summary>The credits and licences, from the title or the pause menu; closing them goes back there.</summary>
+    public void Credits()
+    {
+        if (Mode == "title") screens.Show(new CreditsScreen(this, () => screens.Show(new TitleScreen(this))));
+        else Open("credits");
     }
 
     public void CloseOverlay()
