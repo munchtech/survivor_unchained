@@ -872,26 +872,34 @@ public static class Sfx
 
     public static void Page() { if (A is { } a && a.Gate("page", 1, 120)) a.Play(new Clip { Of = "bookFlip", G = 0.2, Pitch = R(0.95, 1.1), Bus = Bus.Ui }); }
 
-    /// <summary>The tab chain sliding to another tab (tools/uiforge/chainanim.py): a click for
-    /// each link that runs by, uneven as forged links are, close together as the chain leaps
-    /// off and spreading as it slows (it moves on a spring), a faint scrape of iron under them,
-    /// then a lower chink as it stops and a softer one as it sways back. `links` is how many
-    /// links pass; `secs` how long until it comes to rest.</summary>
+    /// <summary>The tab chain dragged to another tab (tools/uiforge/chainanim.py; heavy forged
+    /// chain, the owner: "a little wimpy"). Each link that runs by knocks low iron with a thud of
+    /// body under it, timed as the chain moves on its spring (a slow start, quickest early, then
+    /// easing). Under them the drag, a grinding rumble. Then a solid clunk as it stops, a chink
+    /// as it settles, a softer one as it swings back, and the hiss of the new links taking the
+    /// heat. `links` is how many links pass; `secs` stretches the timing (0.32: the game's slide).</summary>
     public static void ChainSlide(int links = 6, double secs = 0.32)
     {
         if (A is not { } a || !a.Gate("chain", 1, 120)) return;
-        int n = Math.Clamp(links, 2, 12);
-        double t0 = Now;
+        int n = Math.Clamp(links, 2, 14);
+        double t0 = Now, k = secs / 0.32;
         for (int i = 0; i < n; i++)
         {
             double u = (i + 0.5) / n;
-            double t = t0 + secs * 0.7 * (1 - Math.Pow(1 - u, 1 / 3.0)) + R(-0.004, 0.004);
-            double g = 0.022 * (1.0 - 0.45 * u) * R(0.75, 1.15);
-            a.Play(new Fm { T = t, F = R(2200, 3400), Ratio = R(2.7, 3.6), Index = R(2.4, 3.4), D = R(0.03, 0.06), G = g, Pan = R(-0.15, 0.15), Verb = 0.12, Bus = Bus.Ui });
+            double t = t0 + k * (0.025 + 0.2 * u + 0.04 * u * u) + R(-0.004, 0.004);
+            double g = (1.0 - 0.4 * u) * R(0.8, 1.15);
+            a.Play(new Fm { T = t, F = R(700, 1300), Ratio = R(1.4, 2.6), Index = R(3, 5), D = R(0.07, 0.13), G = 0.035 * g, Pan = R(-0.15, 0.15), Verb = 0.15, Bus = Bus.Ui });
+            double f = R(150, 230);
+            a.Play(new Tone { T = t, F = f, F2 = f * 0.8, D = 0.05, G = 0.025 * g, Lp = 500, Bus = Bus.Ui });
         }
-        a.Play(new Hiss { T = t0, A = 0.02, D = secs * 0.9, G = 0.012, Bp = 4200, Q = 1.4, Bus = Bus.Ui });
-        a.Play(new Fm { T = t0 + secs * 0.8, F = R(1500, 1800), Ratio = 2.92, Index = 3.2, D = 0.16, G = 0.03, Verb = 0.25, Bus = Bus.Ui });
-        a.Play(new Fm { T = t0 + secs * 0.8 + 0.15, F = R(1900, 2300), Ratio = 3.27, Index = 2.4, D = 0.08, G = 0.012, Verb = 0.2, Bus = Bus.Ui });
+        a.Play(new Hiss { T = t0 + 0.02 * k, A = 0.05, D = 0.26 * k, G = 0.035, Lp = 900, Brown = true, Bus = Bus.Ui });
+        double stop = t0 + 0.29 * k;
+        a.Play(new Tone { T = stop, F = 92, F2 = 68, D = 0.25, G = 0.09, Lp = 380, Bus = Bus.Ui });
+        a.Play(new Fm { T = stop, F = R(380, 440), Ratio = 1.41, Index = 4, D = 0.32, G = 0.05, Verb = 0.3, Bus = Bus.Ui });
+        a.Play(new Hiss { T = stop, D = 0.07, G = 0.04, Bp = 700, Q = 1, Bus = Bus.Ui });
+        a.Play(new Fm { T = stop + 0.17, F = R(1300, 1600), Ratio = 2.76, Index = 2.8, D = 0.14, G = 0.022, Verb = 0.25, Bus = Bus.Ui });
+        a.Play(new Fm { T = stop + 0.42, F = R(1500, 1800), Ratio = 3.1, Index = 2.2, D = 0.1, G = 0.01, Verb = 0.25, Bus = Bus.Ui });
+        a.Play(new Hiss { T = stop - 0.05, A = 0.18, D = 0.7, G = 0.014, Hp = 4500, Bus = Bus.Ui });
     }
 
     public static void Pick()

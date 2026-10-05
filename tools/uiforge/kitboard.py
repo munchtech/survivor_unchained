@@ -167,16 +167,19 @@ def world(cv: Canvas):
     cv.rgb[:] = np.clip(w, 0, 1)
 
 
+GROUND = ("page/vellum.png", 0.9)
+
+
 def backdrop(cv: Canvas, src, taper=None):
     """Backdrop(page: true): the vellum at 0.9, the bands' shades, the edges, the grain, the dark.
     `taper` (y0, y1): the page ends at its contents and fades into the world between them."""
     world(cv)
-    vel = load("page/vellum.png", src)
+    vel = load(GROUND[0], src)
     s = cv.s
     ys = np.arange(cv.H, dtype=np.float32)[:, None] / s
     if taper:
         under_ = cv.rgb.copy()
-    cv.tiled(vel, 0, 0, 1920, 1080, (1, 1, 1, 0.9))
+    cv.tiled(vel, 0, 0, 1920, 1080, (1, 1, 1, GROUND[1]))
     if taper:
         t = np.clip((ys - taper[0]) / (taper[1] - taper[0]), 0, 1)
         f = (t * t * (3 - 2 * t))[..., None]
@@ -659,10 +662,17 @@ def main():
     src = args[args.index("--src") + 1] if "--src" in args else "kit"
     page = args[args.index("--page") + 1] if "--page" in args else "specimen"
     out = args[args.index("--out") + 1] if "--out" in args else os.path.join(KIT, f"board_{page}_{int(1080 * scale)}.png")
-    cv = {"specimen": specimen, "pack": pack, "self": self_, "self2": self2,
-          "self2_plain": lambda c, s_: self2(c, s_, chain=None),
-          "self2_band": lambda c, s_: self2(c, s_, chain="band"),
-          "self2_tabs": lambda c, s_: self2(c, s_, chain="tabs")}[page](Canvas(1920, 1080, scale), src)
+    pages = {"specimen": specimen, "pack": pack, "self": self_, "self2": self2,
+             "self2_plain": lambda c, s_: self2(c, s_, chain=None),
+             "self2_band": lambda c, s_: self2(c, s_, chain="band"),
+             "self2_tabs": lambda c, s_: self2(c, s_, chain="tabs")}
+    if "--ground" in args:
+        # Another page ground to try: --ground page/goatskin.png:0.88
+        global GROUND
+        g = args[args.index("--ground") + 1].split(":")
+        GROUND = (g[0], float(g[1]))
+        out = out.replace(".png", f"_{os.path.basename(g[0])[:-4]}{g[1]}.png")
+    cv = pages[page](Canvas(1920, 1080, scale), src)
     cv.image().save(out)
     print(out)
 
