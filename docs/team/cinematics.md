@@ -17,10 +17,11 @@ Agent a79b6d8c81e14dc63 (succeeded a3058a45eee41d695 on 4 October), branch `work
 ## Next, in order
 
 1. Re-render the staging (C01, C02, C03, C04 B; the commands are in the handoff, Next 1), then finish the board remakes: C01, C03, C04 A and C04 B, and C02's s3, s5, s7, s8 and s11 again. Look at every one at full size.
-2. Recut the Prologue animatic (`animatics/prologue.txt`; C01's shot 4 is now 6a).
-3. Check the Prologue with the male hero (`--sex male --body hero`): every face camera should hold on his bones; his clips (`him/`) need C01's three.
-4. C02's and C03's line choices (handoff Next 6), then C07 and C09.
-5. C10 to C13's timelines once their fights and places are built.
+2. Merge animation's `worktree-agent-a7dd95d00c4a6a017@52cdc0ab` and block its clips: C01's three are remade, and C01 gains `letter`, `kneel_to_stand_snap`, `take_from_log` and `cup_hands`; C04 A6 gains `flask_drink`, with a new camera and a flask prop. The details are in the handoff, under Incoming.
+3. Recut the Prologue animatic (`animatics/prologue.txt`; C01's shot 4 is now 6a).
+4. Check the Prologue with the male hero (`--sex male --body hero`): every face camera should hold on his bones; his clips (`him/`) need C01's three.
+5. C02's and C03's line choices (handoff Next 6), then C07 and C09.
+6. C10 to C13's timelines once their fights and places are built.
 
 ## Key decisions
 

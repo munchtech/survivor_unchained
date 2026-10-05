@@ -98,6 +98,24 @@ From agent a79b6d8c81e14dc63 (who took over from a3058a45eee41d695) to a fresh c
 4. **C02's and C03's line choices** (the old handoff's item 6), then C07 and C09.
 5. **C10 to C13 timelines** once their fights and places exist (only the Hollow is built, and its place isn't dressed yet).
 
+## Incoming from animation, after the handoff (a7dd95d00c4a6a017, `worktree-agent-a7dd95d00c4a6a017@52cdc0ab`)
+
+Merge that branch first. Then:
+- **C01's three clips are remade** under the same names; the old ones sank her knees 18 cm into the ground. Re-render C01 and re-check shots 2 to 6a.
+  - `sit_back_heels` is on her heels by 3.2 s, with her hands up by 4.7 s.
+  - `reach_coals` puts her palm 0.44 m ahead and 0.37 m up: set the coals' edge there, and re-check `lie`.
+- **New C01 clips** (all `her/...`, and each chains end to start):
+  - `letter` (shot 6, 7.7 s): flask 0.5 to 1.4 s, bedroll 1.7 to 2.5 s, letter out at 3.5 s, open from 4.1 s, folded at 5.9 s, back inside at 6.5 s. Prop: a letter folded to 10 × 7 cm in her left pinch, opening to 20 × 14 cm.
+  - `kneel_to_stand_snap` (shot 10, 3.3 s): her head snaps at 0.13 s and she stands by 0.77 s. It ends turned 55° to her left, so re-place her heading at the cut to 11.
+  - `take_from_log` (shot 11, 2.0 s): she starts square to the log, with the grip 0.55 m ahead, 0.10 m right and 0.78 m up. Swap the prop for `@own` at 0.6 s. It ends turned 110° left; blend to her calling's idle after.
+  - `cup_hands` (shot 11, the arcanist, 3.5 s): her hands are cupped by 0.6 s. The light goes at 1.4 s.
+- **C04 A6 `her/flask_drink`** (11.6 s; it holds through A7):
+  - cues: `{"do":"hold","slot":"all","piece":null}` at A5's start, and `{"do":"anim","clip":"her/flask_drink","blend":0.3}` at A6's start;
+  - beats: the cork pulled at 1.0 s (the click), under her nose at 1.45 s, the recoil at 1.6 s (`nose_wrinkle`), on her lips from 2.35 s, off at 4.4 s. Re-time A6's face and lids cues to these;
+  - camera: A6 moves to her front-left, eyes + (-1.25, -0.15, -1.45), aimed at eyes + (0, -0.12, 0). From the front-right her forearm covers her face;
+  - prop: a flat pewter flask in `handslot.r`, mounted as `Arms.Hold` mounts things, about 13 × 10 × 4.5 cm, with the mouth 9 cm up the mount's +Y and the cork 2 cm above it. The cork leaves the flask at 1.0 s and is in her left hand from 1.2 s. At A7's start, remove the flask and give her weapon back with `@own`;
+  - `prop` only takes `Arms` pieces today, so the flask, the cork and the letter need a small builder: a `"model"` on `prop`, or a `Carried` stand-in in `PersonView`.
+
 ## Decisions (why)
 
 - **The engine's frame is the staging truth; boards are drawn over it.** God of War's team previs'd first ("Keyframes and Cardboard Props", GDC 2019); here the previs is in the engine, so a board drawn over it keeps the surveyed lens and the scale. Higher denoise (0.7 to 0.8) where the staging lacks the action (a burst, a dive, an ember).
