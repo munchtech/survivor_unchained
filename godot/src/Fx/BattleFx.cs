@@ -594,6 +594,10 @@ public partial class BattleFx : Node3D
 
     /* ------------------------------------------------------------- events -- */
 
+    /// <summary>Critical bursts in the last breath (a crowd of crits is told by a few).</summary>
+    double critBurstAt = -1;
+    int critBursts;
+
     public void Handle(IReadOnlyList<CombatEvent> events, Battle b)
     {
         b0 = b;
@@ -630,10 +634,16 @@ public partial class BattleFx : Node3D
                         if (away.LengthSquared() < 0.01f) away = Vector3.Forward;
                         Gore.Hit(at + Vector3.Up * 0.2f, e.Amount, e.MaxHp, View.Gore.Of(e.Family, e.Def ?? ""), e.Family == Family.Undead, away.Normalized(), e.Crit);
                     }
-                    if (e.Crit)
+                    // A critical's burst: warm gold under the tone curve's knee (white-hot, a crowd of
+                    // crits bloomed white round her), three at most in a breath, and small at her elbow.
+                    if (e.Crit && (time - critBurstAt > 0.15 || critBursts < 3))
                     {
-                        if (!Books.Spawn("sparks", at, 0.9f, 0.35f, new Color(1.4f, 1.3f, 1.2f), sizeEnd: 1.6f))
-                            Sparks.Spawn(at, Vector3.Zero, 0.22f, 1.1f, Palette.Of(e.School).Core, sizeEnd: 0.25f, sprite: Sprites.Of("star"), spinV: 4);
+                        if (time - critBurstAt > 0.15) { critBurstAt = time; critBursts = 0; }
+                        critBursts++;
+                        double dx = e.X - b.Player.X, dz = e.Z - b.Player.Z;
+                        float near = dx * dx + dz * dz < 9 ? 0.6f : 1f;
+                        if (!Books.Spawn("sparks", at, 0.7f * near, 0.3f, new Color(1f, 0.8f, 0.48f) * new Color(1, 1, 1, near), sizeEnd: 1.2f * near))
+                            Sparks.Spawn(at, Vector3.Zero, 0.22f * near, 1.1f, Palette.Of(e.School).Core, sizeEnd: 0.25f, sprite: Sprites.Of("star"), spinV: 4);
                         Cam?.AddTrauma(0.04f);
                     }
                     break;
