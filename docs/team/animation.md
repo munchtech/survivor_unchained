@@ -35,6 +35,7 @@ Agent: the successor of a7dd95d00c4a6a017 (this session), branch `worktree-agent
 | Folk die_front (and armed, pistol) | Audit; ground | The fall's arms; the shield arm lies as it falls | Good by numbers (was 164) |
 | C04 flask_drink | Contact (spout to lips) | Rebuilt | Holds: the spout within 1.4 cm of her lips through the drink |
 | C01 clips (cup_hands, letter, reach_coals, sit_back_heels, lie_side_wake, kneel_to_stand_snap, take_from_log) | Audit; ground; sheets (`anim5/sh/c01_all_s1.png`) | Rebuilt; lie_side_wake's forearm brought to the ground sooner | Fair on sheets; to judge in C01. lie_side_wake's elbow dips 5 cm for 3 frames (was 9 for 6; **the hero's 16**: his body is pending); sit_back_heels' toes 8 cm |
+| flinch (new, a gesture) | Sheets over a run and a cut, three-quarter and the arena camera | New: laid over a run or a blow (`PlayerView`, when moving or busy); standing, the upper-body hit as before | Good on sheets: the chest caves, the head snaps back, the legs keep running and the arms their hold |
 | leap | Ground | Retargeted takes keep knees and seats out of the ground (`retarget.retarget`: the hips lifted, the legs re-reached for the planted ankles) | Good: the landing knee on the ground (was 10 cm in). The toes 4 cm at the spring |
 | The hero's chain_strike | Audit | — | **Flagged:** the blow spins his hand 106 degrees in a frame. His body is pending; fix with his rebuild |
 | Folk arms_crossed, talk (retargeted) | Audit | Held to the wrist's range | The tucked hand toward the thumb 35 before; to re-audit |
@@ -42,7 +43,7 @@ Agent: the successor of a7dd95d00c4a6a017 (this session), branch `worktree-agent
 ## Next
 
 1. C01 and C04 in their cinematics, once blocked.
-2. Grimtunnel's four and the lampling's slam (`Beasts.cs`); the chain haul's landing crouch and a heavier running flinch.
+2. Grimtunnel's four and the lampling's slam (`Beasts.cs`): nothing in the game asks for these roles yet; agree the moments with combat first. The chain haul's landing crouch.
 3. The male hero's library when his body lands (his chain_strike and lie_side_wake are flagged).
 4. Toes through the ground (a toe clamp in `retarget`).
 
