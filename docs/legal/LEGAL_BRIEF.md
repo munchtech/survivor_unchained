@@ -83,7 +83,12 @@ I checked these in the repository at `f56ee42` (integration branch) and in rende
     - Reaver: a single leather band covers the nipples, leaving heavy underboob; a low belt and loincloth flap.
     - Stalker: a leather corset with the nipples showing as a soft rise through it; the right buttock is bare in a thong cut, and a high cut runs over the right hip.
     - Warden: the plate skirt leaves the lower buttocks bare.
-  - **My motion check** (issue 2): in the sprint, the Warden's left plate cup clips and shows part of the nipple. The other outfits stayed covered in the run and sprint clips. Her crotch is covered in all four outfits; whether it is modelled is still unconfirmed.
+  - **The motion check** (issue 2; second pass after the outfit rebuild at 854b927e):
+    - the Warden's left cup is now fixed;
+    - the Warden wears a narrow thong under her plate skirt (`warden.thong`). My first crotch mark was too wide and counted the bare groin beside it, so that finding is withdrawn until the narrow re-count;
+    - her crotch is a smooth form: **no genitals are modelled** (seen in a calibration render, 4 Oct, kept in the scratchpad).
+
+    The other clips and outfits are being checked.
 - **Character creation:** it never shows her or him without the calling's full outfit, has no base layer, and no shipped toggle for one (UI design lead, 4 Oct). A dev portrait tool once built her bare by mistake; it is fixed, and the images were re-rendered dressed.
 - **The male hero:** a bare body with a smooth crotch and bare buttocks. He is reachable only through the debug argument `--body hero`, which is **not** gated to debug builds (`godot/src/Actors/People.cs:103`). A base garment is being added (hero lead, 4 Oct).
 - **Sexual content in text** (`godot/data/content/dialogue.json`):
@@ -209,10 +214,36 @@ I checked these in the repository at `f56ee42` (integration branch) and in rende
 - **Warden, otherwise:** the lower buttocks show beneath the plate skirt. No exposure.
 - **Not yet checked:** combat swings, the dash and leap, deaths, crouching, cinematic poses, and creation's poses.
 
+**The second pass** (4 Oct 2026, night; the outfit rebuild at 854b927e). It is automatic, so that nothing hangs on spotting a few pixels by eye.
+- **The method.** For the check only, her areolas and genital area are tinted unlit cyan in a copy of her skin shader. The tint goes on after the outfit's own skin hiding, so hidden skin stays hidden exactly as in play. A counter then flags any frame that shows cyan, and saves a crop.
+  - The areola mark is sized to the pigment: within 2.2 cm of the nipple tip. Her skin texture is dark to about 2.3 cm and plain skin by 3.8 cm.
+  - The genital mark covers the pubic mound and the crotch between the thighs, erring wide.
+  - No outfit contains cyan: 253 earlier unmarked frames had none.
+  - Two brightnesses tell the two marks apart.
+  - Each clip loops at a fixed 60 frames a second, with 10 to 16 frames spread over one pass. Jiggle is on. Three or four cameras run at once, and floor clips get low cameras.
+- **The clips:**
+  - every combat swing, cast and throw;
+  - dash, leap, vault and bull rush;
+  - hit, both deaths and getting up;
+  - sitting and kneeling (there is no crouch clip);
+  - the idles and their breaks, the stops, and the creation show poses;
+  - the weapon-carrying runs and sprints;
+  - the cinematic gestures.
+- **The tools:** `scratchpad/legal/make_motioncheck2.py`, `motion3.sh` and `count.py`, to be kept in the repo for re-runs before launch.
+- **The Warden's left cup: fixed.** No areola shows in any frame of the sprint, in close front, three-quarter or overhead views (48 frames, 0 flags). The cup's edge comes within about 2.8 cm of the nipple tip; that is plain skin.
+- **The Warden's crotch: first reading withdrawn.** My first genital mark was too wide.
+  - It ran 2 to 3.5 cm either side of the midline from where her inner thighs touch, so it counted the bare groin and inner thigh beside her thong (`warden.thong`, 2.4 cm wide at the crotch). The owner wants that skin shown.
+  - The mark is now the strip a garment must cover: the vulva's footprint, were one modelled, 1.2 cm either side of the midline, from the perineum to just below the front of the mons. It is found on the mesh from her crotch's underside.
+  - The Warden's clips are to be re-counted against it on the next build.
+- **Areolas on this build:** none shows in any frame of the Warden's 42 clips or the Arcanist's 44 (3,320 frames). The Stalker and Reaver were not run on this build; the next build re-measures every outfit.
+- **The margin (asked for by the main session):** the distance code reports, per outfit, the closest visible skin to each areola's edge in any frame, and where on the rim it falls, so each cup can be brought down to the smallest margin that holds in motion.
+- **The rest:** in progress; results to follow here.
+
 **Action.**
 1. Use the draft answers in `STEAM_CHECKLIST.md`.
-2. **Fix the Warden's left cup clipping** in the sprint (outfits, main session). Until it's fixed, the survey's "no exposed nipples in play" is not true.
-3. Extend the motion check to the clips not yet checked, at close range. If anything shows, fix it or disclose it.
+2. ~~Fix the Warden's left cup clipping.~~ **Done** (854b927e, verified).
+3. ~~Give the Warden a base garment under her skirt.~~ Withdrawn: she wears a thong by design. The narrow-strip re-count on the next build decides whether it covers in motion.
+4. Finish the second pass on every clip and outfit. Re-run it after any outfit or body change, and before launch.
 
 ### 3. Debug paths and unused files in the release build: BLOCKER
 

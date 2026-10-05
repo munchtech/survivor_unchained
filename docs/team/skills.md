@@ -1,62 +1,43 @@
 # Skills: how every skill looks, sounds and feels
 
-Status page for the skills lead (a63cd93fc73d5ed79, branch `worktree-agent-a63cd93fc73d5ed79`).
+Status page for the skills lead (a94ac6b67f1279213, branch `worktree-agent-a94ac6b67f1279213`).
 
-## Current state (2026-10-04, paused for the owner)
+## Current state (2026-10-04, handed off at the context limit)
 
-Tests green (567). Everything is committed and pushed. No job of mine is running, and ComfyUI is freed.
-Sheets sent to the main session: `scratchpad/vfx/ba_nine_*.png`, `ba_a7_*.png`. Newer and not sent
-yet: `ba_a9_1.png` (numbers summed, frozen tint), `ba_s6_*.png` (Arcweb, Thunderhead, Verdant Lance,
-Reaving Arc, Gale Chakram, Umbral Bolt, Moonbrand).
+Tests green (661). Everything is committed and pushed. No job of mine is running, and ComfyUI is
+free of my work. Sheets for the main session are in `scratchpad/vfx/` (listed in the handoff).
 
-- **Batch 1 (the nine starting weapons, Hoarfrost, Dawnpulse): remade and seen at full resolution**
-  in a packed crowd and in the 9–14 m showcase.
-  - Blades: a crescent shader (`shaders/blade.gdshader`, `src/Fx/Blades.cs`). The smear is held low
-    (0.55) and saturated; it read as cream on the dark Dig. Not yet seen since that change.
-  - Crowd restraint:
-    - kill budget of six a frame;
-    - flashes share their light;
-    - champions falling together are told by the first;
-    - sparks and filmed bursts keep her clear (`hero_clear`).
-  - Damage numbers (S-13, `src/Fx/Hits.Numbers.cs`):
-    - sum per target per 0.25 s beat;
-    - at most 8 new a frame;
-    - none within 1.5 m of her;
-    - damage over time in its school's colour.
-- **Batch 2, remade and seen once**:
-  - Arcweb is a forking blue bolt;
-  - Verdant Lance is a heart with twisting vines and a leaf gather;
-  - Reaving Arc is a crimson crescent;
-  - Thunderhead has a glow round the bolt, the filmed burst only for the clap, and quiet marks.
-  - Trails shortened, not yet seen since: Gale Chakram, Umbral Bolt; Moonbrand's dust made violet.
-- **Grounds and telegraphs**:
-  - fills premultiplied, so the pyre square is gone;
-  - Hallowed's edge thinner;
-  - hostile discs and lanes hatched (front edge plus about 30%);
-  - "blocked" said once per 0.35 s.
-- **Enemy looks** (`src/Fx/BattleFx.Enemies.cs`), built and compiling, **not yet seen**:
-  - a rally in the people's colour (it was a white-gold band: the arena lead's "lampling discs");
-  - summoning circles (the painted rune ring);
-  - slams that throw stone and roll dust;
-  - haste lines and ward glints;
-  - bolt_bone and frost_orb in flight.
-- **GPU done**:
-  - 10 Krea sprites;
-  - 12 LTX clips, of which 7 are in use: holy_ring, moon_burst, gold_flare, shadow_wisps, bramble_burst,
-    leaf_burst and (earlier) the school bursts. The other five were refused by the edge check or set aside
-    as poor; see commit 0d2e4a0b.
-  - tell_whistle ×2 and tell_fuse ×2. The owner should listen.
-  - **tell_horn** (the dead's new tell) is in `sfx_clips.py`, not made: it was interrupted for the pause.
+- **The main session's three findings, seen at 1920×1080 in a packed crowd:**
+  - Damage numbers: **fixed.** Four new a frame, twelve on screen, none laid over one still
+    rising (summed per target was not enough: a packed crowd still wore a number on every body).
+  - Hoarfrost: **fixed.** The crowd is not white; with the experience director's status look
+    (their branch, `a3d42f7d`) frozen bodies read as cold blue.
+  - The motes' and the disc's bloom over her: **fixed for what is mine.** Lights lit within
+    4 m of her fade (a champion falling at her elbow lit her white); filmed bursts' smoke is
+    cleared over her too; a champion's fall is 3 m; the disc is held down as it leaves her
+    hand. What is left near her is the experience director's struck flare (a body struck hard
+    goes white) and the crit "sparks" burst.
+- **The rise is built and seen** (`src/Fx/BattleFx.Rise.cs`, on `Ev.Rise`):
+  - the cold: ice at her feet, frost glints on her, the world slowed;
+  - Cold, Then Not: a ragged ring of fire runs out as far as it burns (`shaders/fire_ring.gdshader`),
+    a band of char with embers behind it, a smouldering ring left (Krea mark `smoulder`);
+  - Not Yet: a watch-lamp over her and the watch's hours (Krea, one-frame flipbook `watch_dial`)
+    held round her at the waist, turning back;
+  - a grace ring at her feet gutters as her untouchable time runs out; its own sound (`Sfx.Rise`).
+- **Enemy looks** (batch 10 re-shot as `dig4`, `kerch3`, `dead3`, `pack3`): rallies and summons read.
+  Hostile marks were cream rings on the Dig's clay: now held to 0.28 of their old strength (a
+  boss's 0.5). Seen at 0.38; 0.28 is not yet seen.
+- Her dash is a streak, not a string of pearls (built, not yet seen close). The dry dead's bone
+  dust is grey and budgeted (it hung cream clouds over every kill).
 
 ## Next step (exact)
 
-1. Run `bash scratchpad/vfx/batch10.sh` with no other game open. It shoots the Dig, the Kerchiefs, the
-   dead and the Pack at minute 25, plus `s7`. Judge the rallies, summons, slams, bolts and orbs, and the
-   lamplings on the Dig's clay. Send the arena lead (a26767f7f9955cb56) the Dig crop.
-2. Run `bash scratchpad/vfx/gpu_horn.sh` (tell_horn, LTX; it waits for 11 GB of free RAM), then free ComfyUI.
-3. Send the main session `ba_a9_1.png` and `ba_s6_*.png` with the batch-10 results.
-4. Then: champion Sign marks; Firepot, Iron Palms, Grave Tether, Gravecall, Spirit Herd, Thornbloom and
-   Blightfield seen and judged; the evolutions and unions; the arts.
+1. Shoot `dig5` and the dash (any `--auto` run) to see hostile marks at 0.28 and the dash streak.
+2. Gale Chakram: cut `gale_ring_1_1_0.png` (five blades in a ring) and `wind_swirl_2_2_0.png` into
+   the sprite array (`fx_sprites.py cut`), import, and draw the chakram as `Body(..., "gale_ring")`.
+3. `gpu_horn` when 11 GB of RAM is free (it never was today). ComfyUI's queue had no war horn job.
+4. Cinderfall's blast blooms cream round her; Umbral Bolt and Moonbrand read as grey smoke; then
+   the rest of the table below.
 
 ## Grades (now)
 
@@ -69,7 +50,7 @@ Reaving Arc, Gale Chakram, Umbral Bolt, Moonbrand).
 | Axe Gyre | 3 | 4 | 3 | 3 | 3 | ok |
 | Judgement Disc | 3 | 3 | 3 | 4 | 3 | ok |
 | Seeking Motes | 3 | 4 | 3 | 4 | 3 | ok |
-| Cinderfall | 3 | 4 | 4 | 4 | 3 | ok |
+| Cinderfall | 3 | 3 | 4 | 4 | 2 | ok |
 | Rimeshard | 3 | 4 | 3 | 4 | 3 | ok |
 | Volley | 3 | 4 | 3 | 3 | 3 | ok |
 | Knifestorm | 3 | 4 | 3 | 3 | 3 | ok |
@@ -79,24 +60,30 @@ Reaving Arc, Gale Chakram, Umbral Bolt, Moonbrand).
 | Verdant Lance | 4 | 4 | 3 | 4 | 3 | ok |
 | Reaving Arc | 4 | 4 | 4 | 4 | 3 | ok |
 | Thunderhead | 3 | 3 | 3 | 4 | 3 | ok |
+| Gale Chakram | 2 | 3 | 2 | 2 | 2 | ok |
+| Umbral Bolt | 2 | 2 | 2 | 2 | 2 | ok |
+| Moonbrand | 2 | 2 | 2 | 3 | 2 | ok |
+| Cold, Then Not (rise) | 4 | 4 | 4 | 4 | 3 | ok |
+| Not Yet (rise) | 4 | 3 | 3 | 4 | 3 | ok |
 
 ## Key decisions
 
-- **Hues below the tone curve's knee**: AgX turns coloured light over about 2 to cream. Only thin edges
-  and cores are white. Dark grounds raise exposure, so smears are held lower still.
-- **A crowd is told by its first few**: deaths, champion falls, flashes and numbers are all budgeted.
-- **Dark beds**, in the same pass where possible (premultiplied).
-- **Danger keeps its language**, hatched and never solid. A people's colour is for what is theirs.
-- **Per skill, not per school**; real shapes where a flat picture fails; painted sprites and filmed clips,
-  always through the edge checks.
+- **Hues below the tone curve's knee**: AgX turns coloured light over about 2 to cream.
+- **A crowd is told by its first few**: deaths, falls, flashes, dust and numbers are budgeted.
+- **Nothing lights her but her own moments**: lights fade near her; effects are cleared over her.
+- **Danger keeps its language**, hatched and never solid, held near the ground's lit value.
+- **Ground marks hide under a packed crowd**: what must be seen is held in the air (the dial).
+- **Fire from above is a ragged edge, not torches**: a field shader, not upright sprites.
+- **Never a hooked cross**: a four-armed turning blade reads as one. Five blades.
 
 ## Notes for other areas
 
-- **Experience director** (ad1f5623590e09883): frozen and burning are theirs, merged here (3c67542).
-  S-13 is built to their rule.
-- **Arena art** (a26767f7f9955cb56): the "white-gold lampling discs" were rallies drawn as holy bands;
-  now a people-coloured front. Their Dig crop is owed once batch 10 runs.
-- **Performance** (a7145e18b3eb78294): Blades is one MultiMesh, at most 48 instances. Ribbons gained only
-  the head cap.
-- **Anyone running a game in a worktree after a merge**: run `--headless --import` first. A plain run
-  does not import new textures, and the ground came out as banded gradients.
+- **Combat** (`a708da2c97bf85c95`): `Ev.Rise` is emitted in `HurtPlayer`'s rise (no mechanics
+  changed; `RiseRadius` factored out). Proposal: its fire lands each body as the front reaches it
+  (front runs 0.3 s game time) or ~0.15 s after the rise; `Ev.Rise.Delay` is there for it.
+- **Experience** (`ab406cf9ddd22b03b`): the status look agrees with my frames. The struck flare
+  turns many bodies white at once under one big blow (the rise, Cinderfall): budget its
+  whole-body term? `--fall-at T` gives a killing blow for pictures.
+- **Arena art** (`a26767f7f9955cb56`): Dig crop sent (`scratchpad/vfx/dig_crop_for_arena.png`).
+- **Everyone**: disk C: fell to under 2 GB mid-run today and truncated frames. Old `.shots` folders
+  in retired worktrees hold about 15 GB.

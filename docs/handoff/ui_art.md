@@ -1,198 +1,216 @@
 # Handoff: the interface's art (UI art lead)
 
-For the next agent carrying on the UI art of Survivor Unchained. Read `docs/team/README.md`
-first (the team's bar, how we work, safety, roster), then this whole file, then
-`docs/team/ui_art.md` (the one-page status). The previous handoff is in this file's git
-history at `a2bd171`; what still matters from it is folded in here.
+For the next agent carrying on the UI art of Survivor Unchained. Read these in order:
+1. `docs/team/README.md`: the team's bar, how we work, safety, the roster, and **taking turns for heavy work**.
+2. This whole file.
+3. `docs/team/ui_art.md`: the one-page status.
 
-Branch: `worktree-agent-a1a394643aabfb169`, merged into the integration branch at `53c5857`
-(565 tests green). Worktree on this PC:
-`C:\Users\munch\Desktop\survivorsunchained\.claude\worktrees\agent-a1a394643aabfb169`.
+Earlier handoffs are in this file's git history (bfa7bdb1, a2bd171). What still matters from them is folded in here.
 
-**Before any build, copy the cached paintings and renders** (ignored by git, ~1.6 GB; every
-build reuses them, and the picks below point into them). Copy, never move or delete:
-`C:\Users\munch\Desktop\survivorsunchained\.claude\worktrees\agent-a1a394643aabfb169\tools\comfy\out\uiforge\`
-into your own worktree's `tools/comfy/out/uiforge/` (robocopy `/E`; its exit code 1 means "copied").
-It holds my predecessor's caches as well as mine (`emblems/`, `card3/`, `items_t2i/`,
-`relief/`, `paintover/`, `guides/`).
+- **Branch:** `worktree-agent-aa9c11f1e40170a4d`, at 5b815c9d plus the handoff commit. 661 tests are green. The main session merges it.
+- **Worktree:** `C:\Users\munch\Desktop\survivorsunchained\.claude\worktrees\agent-aa9c11f1e40170a4d`.
+
+**Before any build, copy the cached paintings and renders.** They're about 2 GB, ignored by git, and every build reuses them.
+- Copy `...\worktrees\agent-aa9c11f1e40170a4d\tools\comfy\out\uiforge\` into your own worktree's `tools/comfy/out/uiforge/`.
+- Use `robocopy /E`. Its exit code 1 means "copied".
+- Copy it; never move or delete it.
+
+**Also copy `godot\.godot`** from this worktree (or any recent one), skipping `mono`. A fresh `--import` of the whole project:
+- took hours with other agents importing at the same time;
+- crashed from lack of memory three times.
+
+With the cache, the import only redoes what changed.
 
 ---
 
 ## 1. The owner's bar (quotes)
 
-- "I don't want to polish, I want to create perfection." AAA, "above and beyond".
-- "Do we have soul?": unique to this world, never generic dark-fantasy UI.
-- "painted art is generally better right? ... I want the best."
-- Latest, on the pages' persistent framing and backdrop (the themed panel frames, the leather
-  backdrop, the flat panels): **"looks a little drab and low effort and low def"**. The
-  coordinator's reading: remake frame and backdrop at true resolution for 1920x1080 and up, crisp,
-  no upscaled texture, with depth, material and craft (forged iron with real light, worked leather,
-  tooling or vellum, not flat black), readable behind text; agree the layout with the UI design
-  lead; **show the owner before/after at full resolution**.
+- "I don't want to polish, I want to create perfection." "We are striving for perfection." AAA, "above and beyond".
+- "Do we have soul?": unique to this world, never generic.
+- On the pages' persistent framing and backdrop (before this session): "looks a little drab and low effort and low def".
+- **On this session's result, the latest and the one that rules:**
+  - "those borders are just ugly, adding more of them dosn't make them better";
+  - the inventory and character page look "ai looking" and "not rooted in ui research";
+  - the arena cards (the draft's cards) "look pretty cool": keep them.
 
-## 2. My brief, in full
+## 2. The brief, in full
 
-From the coordinator, in order: 1) the 24 skill icons redesigned as modelled objects (two were
-painted; the wraith read as purple fog): finish them and replace the game's icons; 2) the weak item
-icons (pelt, hide, dust, seed, root, the blasting ember); 3) louder uncommon and rare cards; 4) a
-modelled logo; 5) hover-state screenshots; 6) portrait cards for character creation, with the UI
-design successor. Wiring the stat icons into Book.cs is UI code: agree it with the UI design lead.
-ComfyUI is shared: batch many paintings as one job, `POST /free` between jobs, never kill it.
-Commit and push at milestones; `dotnet test` in `godot/tests` before every commit; British
-spelling; check everything in game at full resolution; hand off at ~500k.
+The coordinator's (main session's) orders, latest first.
 
-Added later: the owner's "drab" note became **the priority** (section 1). The UI design lead
-(a69858664f1d3dd29) reworked the layout (the live world blurred and warmed behind every page,
-frameless columns that fade downward, iron only on what is acted on: pillars, cards, buttons,
-wells) and asked for six pieces (section 5). The legal lead asked that prompts never name a
-product (done, section 7).
+**A. The restraint rule (now the law):**
+- **Frames:** at most one ornamental frame per screen, the outer window.
+- **Inside it:** quiet tonal panels and thin rules.
+- **Slots:** empty slots are subtle recessed tiles; rarity colour goes only on filled slots.
+- **Materials, not ornament:** the outer frame should feel grounded in the world (worn iron, leather, bound vellum), with less filigree on everything.
+- **The backdrop:** depth and texture at 1080p and 1440p, not flat muddy brown.
+- **Accent:** one accent colour (ember), used for meaning only.
+- **Research:** study how Diablo IV, PoE 2, Last Epoch, BG3 and Hades II restrain their ornament. Study only: never copy their art.
+- **Greyboxes:** UI design (aab47bfdab5955dac) is redoing Self, Pack, Storeroom and Trader from research as greyboxes. Put art on them **only after the coordinator and the owner approve the layouts**.
+
+**B. On the reduced Self crop:** "The restraint is the right direction." But the panels are "plain to a fault": flat dark rectangles read as a generic web dark mode. Give them the world through material:
+- a faint grain of vellum or leather inside;
+- worn light on the top edge;
+- a slightly warmer, more varied tone than the page.
+
+Not frames. Next in the same restraint: the medallion rings, the iron tabs, buttons and keycaps, and the Pack's side plate. Don't apply yet: the tall empty pillars and the six identical empty trait boxes are a layout problem, and the layout is changing.
+
+**C. The original list for this session:**
+1. Render the hero plate and light card. **Done.**
+2. Import the new page images. **Done.**
+3. Send the slice margins to UI design. **Done.**
+4. Before/after shots at 1920x1080 for the owner. **Done;** the verdict was A.
+5. Then:
+   - Crashing Leap's new concept (**drafted, not painted**);
+   - the crafting lead's three item icons (**refitted; the flask still needs a repaint**);
+   - the legal lead's pre-launch icon check against other games (**not started**).
+
+**Standing rules:**
+- **Tests:** `dotnet test` in `godot/tests` before every commit.
+- **Commits:** commit and push your own branch at milestones. Open no PRs.
+- **Spelling:** British.
+- **ComfyUI** is shared. Batch your paintings and `POST /free` after each batch. Never kill it.
+- **Taking turns:** heavy work takes a turn.
+  - Run `python C:/Users/munch/Desktop/survivorsunchained/tools/turn.py take gpu "ui art: <job>"` for ComfyUI or big Blender renders.
+  - Use `take godot ...` for Godot shots.
+  - Exit 1 means busy: do light work and try again.
+  - Give the turn back the moment the job ends; giving back the GPU frees ComfyUI.
+  - Keep batches under an hour.
+- **Handoff:** at about 500k tokens.
 
 ## 3. The soul (locked; `docs/UI_ART_BRIEF.md` 2.6)
 
-Brannoc's iron, the binders' gold, the Morrow's light: smith's work from the Waystation (strap
-iron, planished, ragged edges, lamp-iron brackets with outward scrolls), the binders' twisted wire
-and square coin with its round hole, the ember asleep in the holes and awake where there is power.
-Emblem: the seven-link chain with one link pried open, ember at the break. Rarity is a road
-(common road iron, uncommon the Verge, rare the Low Ford's rime, epic the binders' violet,
-legendary the Order's dawn gold, evolution the chain breaking).
+Brannoc's iron, the binders' gold, the Morrow's light:
+- **The iron:** smith's work from the Waystation.
+- **The gold:** the binders' twisted wire, and their square coin with its round hole.
+- **The light:** the ember asleep in the holes, awake where there is power.
+- **The page:** this session's addition is "the day's book", written on the binders' black vellum.
 
-## 4. Done (all merged)
+Under the restraint rule, the soul has to live in **material and light, not in ornament everywhere**.
 
-- **Icons, 33 modelled emblems** (`tools/uiforge/emblems.py`; picks in `emblems.PICKS`; `build.py
-  emblems`, which runs after `icons`): mirror, wraith, leap, blink, smoke, echo, feint, hourglass,
-  embers, aegis, howl, expand (a Ford lamp), retaura, frostaura, pyre, risen, herd, tether,
-  umbral, consecrate, drain, static (a twisted-iron conduit), book (a wayfinder's chart), and the
-  arts that still showed people: boot (Sprint), horns (Bull Rush: a bull-helm with a binders'
-  ring), chain (Grapple Chain), shield (Shield Bash), mark (Mark Prey), wing (Vault). Method: each
-  design is shapes (signed distances in a 100-unit square) with heights, materials and grain
-  (`Emblem.lay`, `Emblem.rope` for the twisted wire), lit by the house matcaps, set in its school's
-  glow (the guide), painted over on the Krea at 0.5-0.65 (`paint_many` = one queued graph), and cut
-  on the guide's silhouette (`fit`). Seen in game (arts list, HUD art slot, draft).
-- **Items** (`items.py`): pelt, hide, root, seed, dust, bomb repainted from words (`items.T2I`,
-  picks in `items.PICKS`). The pelt's first take was a living wolf's head (reads as a summon);
-  now a tied fur bundle (seed 1110).
-- **Logo** (`logo.py`, `build.py logo`; `build.py painted` no longer fits the old one):
-  SURVIVOR over UNCHAINED in Cinzel's variable font at weight 900 (OFL, kept in
-  `tools/uiforge/fonts/` with its licence), forged steel with a deep chamfer, the seven-link
-  chain between the words, its middle link pried open with the ember in the break and its glow
-  on the air, strap iron out to two binders' coins. Seen on the title at 1080.
-- **Cards** (`cardcolour.py`, picks in `cards.PICKS`): the common card dressed before the paint.
-  Uncommon: bramble with leaves up both sides, moss low, the iron a little green (painted at
-  0.46). Rare: crystalline rime and hoarfrost on every edge, icicles, a cold sheen (painted at
-  0.3 and laid back over its dressing, `merge` keep 0.6).
-- **Page pieces** (`pages.py`, `build.py pages`): `frames/header.png` remade (worked oxblood
-  leather, tooled only where nothing is written, a slim forged rail with the binders' wire; seen
-  in game). Built but not yet wired: `page/backdrop_grain.png`, `page/backdrop_edges.png`,
-  `frames/column_divider.png`, `frames/column_divider_stone.png`, `ornaments/section_mark.png`.
-- **Prompts** name no product (c457cc9): "hand-painted with painterly brushwork" etc.
-- `shots.py` has a `pack_mats` screen (the materials in the pack).
+## 4. What is in the game now (merged by the main session from this branch)
 
-## 5. In progress: the six pieces for the UI design lead
+| piece | file | notes |
+|---|---|---|
+| header | `frames/header.png` 1024x200 | gilt morocco: a twisted gold wire roll with coins, a forged rail with wire. **Ornate: the kit replaces it** |
+| foot band | `frames/footer.png` 1024x136 | the header's twin. UI design's hook lays it at y 1016, before the content, with its top 16 px quiet; the prompts sit at y 1044 |
+| ground | `page/vellum.png` 1024x1024, tiled | black vellum laid at 0.9 alpha over the blurred world, only on full pages (`Backdrop(page: true)` in `Overlay.Page`). **Keep** |
+| band shades | `Ornate.cs` `Backdrop.Shade` | the header's shade falls down the page, the foot band's rises. **Keep** |
+| backdrop shader | `shaders/ui_backdrop.gdshader` | a cubic B-spline read of the blur's mips (the old bilinear read was blocky, the "low def"); grades shadows into cool iron and keeps light warm; `shade` has a default. **Keep** |
+| page light | `page/backdrop_edges.png` | cool smoke at the edges; the ember low and orange under the last 160 px above the foot band (UI design asked it be quieter). **Keep** |
+| column | `frames/column.png` (12,16,12,8), stretched | gilt double rules with coins, fading down. **Ornate: the kit replaces it** |
+| hero plate | `frames/hero_plate.png` | strap iron, wire, coins. **Ornate: the kit replaces it** |
+| light card | `frames/card_light.png` | dark vellum with an iron bead, on the map result's finds. Likely too framed under the rule |
+| item icons | `icons/item/{flask,moon_draught,fur_braid}.png` | refitted from 0.98 to the set's 0.82 fill. The **flask still drifts**: cool flat light, and a stamped mark that reads as a letter. Repaint it |
 
-Agreed with a69858664f1d3dd29 (they wire them in code; tell them each file's margins as it
-lands). All files at twice the shown size (UiArt halves them); margins below are in shown px.
+UI design (a26f87c39952dcd9c, the earlier lead) approved and wired the column hook (`Style.Column` → `UiArt.Frame("column", ...)`) and `Backdrop(page: true)`. The kit swaps art by the same names, so it needs no code.
 
-| piece | file | state | slice / use |
-|---|---|---|---|
-| header | frames/header.png 1024x200 | built, seen | (0,0,0,12) Tile, as before |
-| backdrop | page/backdrop_grain.png 512x512; page/backdrop_edges.png 1920x1080 | built, previewed over a shot only | grain tiled, edges stretched, over the blurred world, under the shade |
-| column divider | frames/column_divider.png 48x1120 + column_divider_stone.png 64x64 | built | (0,24,0,24) Tile; the middle is exactly one 512-shown period; the stone drawn at each divider's middle in code |
-| hero plate | frames/hero_plate.png 512x512 | **code written, not rendered** | (56,56,56,56) Tile, Out 12; frames Self's figure (536x560) and the Pack's (~300x360) |
-| light card | frames/card_light.png 320x320 | **code written, not rendered** | (20,20,20,20) Tile; tooltips and the result's cards (crest_card stays on choice and trait cards) |
-| section rule | ornaments/section_mark.png 24x24 | built | ~10 px before 14 px heavy caps on their baseline |
+## 5. The reduced kit (built, NOT applied) — your main line of work
 
-Layout facts from them: page columns run 920 tall at x 40-1880 with 24-30 px gaps for dividers.
+`tools/uiforge/kit.py` draws flat pieces in numpy at 2x. Nothing here needs a render, except the plain bands.
+- `python tools/uiforge/kit.py` writes to `tools/comfy/out/uiforge/kit/` for judging.
+- `python tools/uiforge/kit.py --apply` lays the pieces over the named frames. It also moves `column_divider_stone` into `kit/dropped/`, which removes the stone.
 
-**The new PNGs have no `.import` files yet** (header.png had one already). Run
-`<godot console exe> --headless --path godot --import` (shots.py does this), commit the new
-`.import` files, and restore the unrelated ones Godot rewrites (section 9).
+The pieces:
+- **tonal** (raised): pillar 212x364 with Out 12; slab 64 with its light within the 14 px slice; hero_plate 256 with Out 12.
+- **recessed**: well and slot.
+- **column**: shade only.
+- **rule**: the gutter.
+- **header and footer worn plain**: `pages.header_plain` and `pages.footer_plain`, via `binding(..., gilt=False, rail_wire=False)`.
 
-## 6. Next, in order
+Seen on Self:
+- `godot/.shots/kit_crop_self.png`: ornate left, kit right, at 1:1.
+- `kit_beforeafter_self.png`: the integration branch against the kit.
 
-1. `python tools/uiforge/pages.py hero_plate card_light`; look at both at file size and over a 1080
-   shot; fix the corner brackets' reach and the vellum's tone as needed.
-2. Import (above), commit, send the margins (section 5) to a69858664f1d3dd29.
-3. When they are wired: before/after shots at full resolution for the owner. "Before" = the
-   integration branch's pages before 0165e94 / my h1-h2 shots in `godot/.shots/` (ignored); "after" =
-   shots once wired (self, pack, arts, journal, stash, shop).
-4. **Crashing Leap** (`leap`): weak at 90 px in the HUD's art slot (a grey arc on a dark disc). Every
-   take (seeds 1310/1320/1330, 0.5-0.7) shares it, so it is the concept: needs a bold silhouette
-   with value contrast (e.g. a forged iron spike or maul driven into a lit crater, or the arc made
-   crisp and warm). The physical school's prompt drains colour (see `emblems.COLOURS`).
-5. Judge the crafting lead's three new item icons (moon_draught, flask, fur_braid, their branch at
-   dcd68cd) against the set; repaint if they drift.
-6. Portrait cards for creation (UI design side registers them; read `docs/team/ui_design.md`).
-7. Hover-state shots (no hover option in the shot harness yet; `--pad --keys` exists).
-8. Before launch, the legal lead's check: each shipped icon/frame side by side with the named
-   commercial icon sets; remake any close to a specific one.
-9. Still open from before: the remaining soft icons in the old painted family (zone_*, nova_*,
-   tether2/_mark, siphon, herd_great/_hunt, command, kindling, living_flame, scent, execute, beam_*)
-   as emblems, judged with the whole family; stat marks wiring (UI design's call; keys are
-   `stat_<Stat lower>`); `Plaque._Draw` draws the mirrored rule through the title (reported to UI
-   design, fix with `DrawSetTransform` scale -1).
+The coordinator approved the direction.
+
+**What to do next, in order:**
+1. **Material in the panels**, per brief B:
+   - a faint vellum or leather grain inside each tonal panel, at 1:1. Tile it, or let the panel stay translucent over the vellum, which it already is at 0.42. Either way the grain must not stretch.
+   - worn light on the top edge;
+   - a warmer, more varied tone (fbm variation, a touch of oxblood).
+   Judge at 1080 **and 1440**.
+2. **Pare the rest** to the same restraint:
+   - the medallion rings (`medallion/ring.png`, `hud/medal_level.png`, and the attribute medallions drawn by `Medallion` in `Ornate.cs`; check what's art and what's code);
+   - tabs, buttons and keycaps (`frames/tab*.png`, `button*.png`, `keycap.png`);
+   - the Pack's side plate (`frames/plate.png`, the panel's one outer frame: worn iron or leather, plain);
+   - slots: an empty slot is a recessed tile; `slot_0..5` keep rarity colour only on filled slots.
+3. **Wait for the greyboxes** (aab47bfdab5955dac). Then apply, shoot Self, Pack, Storeroom and Trader at 1080 and 1440, and send before/after crops to the coordinator.
+4. Don't touch the draft's cards (`card_0..5`, `card_evolve`): the owner likes them.
+
+## 6. Other open work
+
+- **Crashing Leap (`leap`)** is weak at 90 px: a grey arc on a dark disc.
+  - `emblems.d_leap2` is a second concept (a hard-edged arc into a burst, with a crown of dark slabs). Its guide (`tools/comfy/out/uiforge/emblems/leap2_guide.png`) still fogs into cream, so it is not painted.
+  - To fix: cut `e.glow`, drop the light fan rays, and make the slabs near-black against a small hot burst. Ground cracks lit gold (`crack_web`) read better than rays.
+  - Leap is the Reaver's (barbarian) leap-slam. Its affix "of the Long Fall" leaves the ground broken, so the broken ground is core.
+  - Paint with `emblems.paint_many(["leap2"], 0.55, 1340)` (take the gpu turn first). Pick it into `PICKS`, `fit`, and judge at 128, 44 and 17 px on a dark disc.
+- **The flask** (`items.py`): add a T2I entry (a pewter hip flask in a stitched leather sleeve, warm light from the upper left, **no marks or letters**), paint, then `fit` at 0.84 → 0.82.
+- **The legal lead's pre-launch check:** lay every shipped icon and frame side by side with the named commercial sets, and remake any close to a specific one.
+  - The legal lead is now aab20546fe06daa89 (see the roster).
+  - Prompts never name a product.
+- **From earlier handoffs, still open:**
+  - the soft icons in the old painted family (zone_*, nova_*, tether2, siphon, herd_great/_hunt, command, kindling, living_flame, scent, execute, beam_*);
+  - the stat marks' wiring (UI design's);
+  - `Plaque._Draw` mirroring;
+  - hover-state shots;
+  - portrait cards for creation.
 
 ## 7. Decisions (why)
 
-- Icons: the thing itself, never a person; modelled for the silhouette, painted for the hand.
-- The guide's whole-shape halo never lies over the object (it washed the first lamp and mirror),
-  and is faint for steel and shadow (`HALO`): a dark thing in a fog of its own colour loses its edge.
-- Every design sits inside the guide's glow circle (radius ~46 units): `Emblem(school, zoom, at)`
-  scales a design to fit instead of redrawing it; the saved mask is faded with it.
-- Prompts in plain words, no product named (legal lead aa12c130ddf4b904c).
-- Logo letters from the game's own face at weight 900: exact and heavy; at 600, wide-set, it read
-  like a book cover.
-- Cards: colour laid into the guide before the paint; the words must ask for it too.
-- Page pieces: reliefs at twice size, no paint-over on thin strips (a painting is made at a
-  megapixel and softens a 100-px band). Nine-slice surfaces are periodic over exactly the repeat
-  (`pages.periodic`), so no seam blending.
-- Backdrop in two layers (tiled grain, stretched edges): one 4K grain PNG would be ~25 MB.
+- **One frame per screen; material over ornament.** The owner's verdict. Ornate frames nested in a frame read "AI fantasy".
+- **The page's ground is black vellum** with the world faint through it. The blur alone was low in definition and brown, and a crafted surface at 1:1 gives detail at any resolution. It fits the soul: the day's book, written in gold on black, like the black books of hours.
+- **The blur shader uses a cubic B-spline over the mips.** Bilinear reads of small mips are blocky. The grade is cool iron in the shadows and warm only in the light, because the old warm tint plus grey made everything brown.
+- **The ember stays low and orange**, under 160 px above the foot. Higher and redder, it washed the page in oxblood (UI design's catch).
+- **Relief renders are keyed by a hash of their inputs** (`relief.Relief.render` writes a `.key`). A failed Blender run (out of memory) used to hand back the previous picture silently. Now you can re-grade after a render without a Blender pass.
+- **`pages.regrade`** grades one material's pixels in linear light after the render. The softbox's sheen greys dark hide and vellum, and changing the albedo alone can't take that out.
+- **Headers and bands are exactly periodic.** Use `pages.tiled`: make the fields over one tile and tile them, with wire pitches that divide the tile. The middle of three rendered tiles is then cut out, with no seam to blend.
 
 ## 8. Failures and why
 
-- Wraith 1: purple fog (halo). Wraith 2 (side view, separate rags): an octopus. Front-view hood worked.
-- Feint as a crescent beside a blade: a scythe, three times. A curved arrow round a standing blade works.
-- Smoke as bevelled circles: grapes/cauliflower; soft-edged lay (`soft=`) plus paint fixed it.
-- Leap: the physical school's "cold white steel" words painted it grey; `COLOURS` overrides help
-  but the concept is still weak (section 6.4).
-- Horns at 0.55 painted colour static; 0.65 was clean.
-- My `replace_fn` patch helper swallowed the module tables after the last design (it skipped to
-  the next `def`); restored from git. Bound replacements by the next design, not the next def.
-- Cards: the base words said "a few" leaves, "faint" light, rime "along the top", so paintings
-  stayed quiet. At 0.5 Krea also invented extra coins and chains on the rare. Merging back onto
-  the guide fixes colour but ghosts where shapes differ; at keep 0.6 over a 0.3 paint it is clean.
-- Logo v1: pink chain (an over-strong warm tint), a pinprick ember; v2 fixed both (glow layer).
-- `coin_piece`: a coin set on its point needs its diagonal to fit (0.62 of the box), and an
-  ember is a crusted coal, not a flat orange disc.
+- **Header v2's first render:** a black stripe from NaNs (`sin` slightly below 0 raised to 0.7). Clip before taking powers.
+- **Blender ran out of memory** (`Malloc returns null`) while ComfyUI held 26 GB, and the stale PNG came back as if new. That's why renders are now keyed and stale outputs deleted.
+- **Godot `--import` crashed** with a null `mem` on large glTF scenes under memory pressure, three times. Copying a recent `.godot` cache and retrying when commit memory was over 12 GB worked (`scratchpad/import_when_free.ps1`, a loop).
+- **Lamp pool on the vellum** (a warm radial lift): it turned the page grey-brown again. Removed. Broad warm light over violet-black reads as mud; only concentrated, saturated light reads as light.
+- **Vellum v2 with ridged-noise creases** read as cracked leather or dried mud. v3 has soft cockle and mottling instead.
+- **PowerShell gotchas:**
+  - `git commit -m` with a here-string containing double quotes split into pathspecs. Use `git commit -F <file>`.
+  - `Set-Content` writes ANSI; use `[IO.File]::WriteAllText` or the Edit tool.
+- **Leap2's guide fogs.** The school's halo and the strong light fan flood it; see section 6.
 
 ## 9. Gotchas
 
-- This worktree refuses compound shell commands (heredoc + other commands, `&&` chains with
-  scripts): write patch scripts to the scratchpad with Write and run them with one `python` call.
-- `godot/assets` must be a junction to `public/assets` (`New-Item -ItemType Junction`), then
-  `git update-index --skip-worktree godot/assets`.
-- Godot rewrites unrelated `.import` files (`godot/art/people/paint/*`): `git diff --name-only --
-  godot/art/people > list` then `git checkout --pathspec-from-file=list --`. Many others show as
-  modified only through autocrlf; `git diff` is empty for them; stage by path.
-- ComfyUI's queue is shared with long jobs: a 46-painting graph took ~20 min. `krea.i2i_many`
-  returns a dict; `cardcolour.paint` returns a list. Always `POST /free` after.
-- Emblem guides and masks must be regenerated together; `fit` cuts on the saved mask. Rendering all
-  guides takes ~2-3 min (the rope is a fast union now).
-- Icons are shown inside round medallions on dark discs: judge at 128/44/17 px and on a dark disc.
-- Blender: `C:\Users\munch\Tools\blender-4.5.14-windows-x64\blender.exe`; the logo renders in ~3-4 min.
-- My viewing scripts (look sheets, at-size discs, crops) lived in my session's scratchpad and are
-  gone; they are a few lines each over `emblems.fit` and PIL.
+- `godot/assets` must be a junction to `public/assets`. A fresh worktree checks it out as a symlink text file. Remove it, then `New-Item -ItemType Junction`, then `git update-index --skip-worktree godot/assets`.
+- **Stray `.import` changes:** Godot rewrites many `.import` files. Most are autocrlf noise with an empty `git diff`. Stage only your own paths, and restore real stray changes (e.g. `godot/art/people/...`) with `git checkout --`. Filter `git status` (`Where-Object { $_ -notmatch '\.import$|\.uid$' }`), or the output floods.
+- **Imported files win over disk:** `UiArt.Tex` loads the imported resource when a `.import` exists, else the PNG from disk. For a clean "before", move a piece's PNG **and** its `.import` away.
+- **Shots:** `python tools/uiforge/shots.py <screens> --prefix P` writes to `godot/.shots/P_<screen>.png`, which is ignored. It imports first.
+  - Take the godot turn first.
+  - Build C# first: `dotnet build godot/SurvivorUnchained.csproj`.
+- **My viewing scripts** live in my session's scratchpad. Each is a few lines of PIL, so recreate them as needed:
+  - `look.py` composites over a colour;
+  - `sheet.py` makes contact sheets;
+  - `try_piece.py` renders a `pages.py` piece to a scratch path, not into the game;
+  - `refit_items.py` handles the 0.82 fill.
+- **The roster changes.** UI design for the page greyboxes is now **aab47bfdab5955dac**. The earlier UI design lead is a26f87c39952dcd9c (credits, map result, atlas, Self density). Check `docs/team/README.md`.
 
 ## 10. Collaborators
 
-- Coordinator / main session: `main`.
-- UI design lead: a69858664f1d3dd29 (the page layout; wires the six pieces).
-- Legal lead: aa12c130ddf4b904c (prompts; pre-launch icon check).
-- Crafting lead: a7debf1459f14dfe7 (painted three item icons with the pipeline, dcd68cd).
-- Face lead, skills lead and video jobs share ComfyUI. Roster: `docs/team/README.md`.
+- **Coordinator / main session:** `main`. It approves art going onto layouts, with the owner.
+- **UI design:**
+  - aab47bfdab5955dac: the greyboxes for Self, Pack, Storeroom and Trader.
+  - a26f87c39952dcd9c: owns `Overlay.cs`, `Style.cs` and `Ornate.cs` changes; approved the vellum and column hooks.
+- **Crafting lead:** a7debf1459f14dfe7.
+- **Legal lead:** aab20546fe06daa89.
 
 ## 11. Read first
 
-1. `docs/team/README.md`  2. this file  3. `docs/team/ui_art.md`  4. `docs/UI_ART_BRIEF.md` (2.6)
-5. `tools/uiforge/pages.py` (the page pieces), `build.py`
-6. `tools/uiforge/emblems.py`, `cardcolour.py`, `logo.py`, `relief.py`
-7. `godot/src/Ui/UiArt.cs` (frames and their slices), `Overlay.cs` (Page, Backdrop)
+1. `docs/team/README.md`
+2. this file
+3. `docs/team/ui_art.md`
+4. `docs/UI_ART_BRIEF.md`: 2.2 materials, 2.6 the soul. Read them under the restraint rule.
+5. `tools/uiforge/kit.py`, `pages.py` (`binding`, `vellum`, `backdrop_edges`, `regrade`, `tiled`), `relief.py`.
+6. `godot/src/Ui/UiArt.cs` (frames and slices), `Ornate.cs` (`Backdrop`, `OrnateBox.ArtId`, `Medallion`), `Style.cs` (`Column`, `Slab`), `Overlay.cs` (`Page`).
+7. The shots in `godot/.shots/`:
+   - `b0_*`: before (the integration branch at the session's start);
+   - `a8_*`: the ornate pass;
+   - `k1_self`: the kit;
+   - `kit_crop_self.png`.
