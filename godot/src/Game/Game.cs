@@ -804,7 +804,7 @@ public partial class Game : Node, IZoneHost
                     // The blow that should have ended her, held: the world slows while she goes
                     // cold and gets up (BattleFx.Rise draws it).
                     scene?.Slow(1.1);
-                    foreach (var s in new[] { 0.08, 0.3, 0.45, 0.6, 0.75, 0.9, 1.1, 1.5, 2.2, 3.2 }) Shots.Want("rise", s);
+                    foreach (var s in new[] { 0.1, 0.5, 0.9, 1.08, 1.16, 1.24, 1.32, 1.45, 2.0, 3.0 }) Shots.Want("rise", s);
                     break;
                 case Ev.Bark bk:
                     // A named voice in a fight (the Warden, Grimtunnel) is heard over everything, when its line shows
@@ -1034,7 +1034,7 @@ public partial class Game : Node, IZoneHost
 
     /// <summary>--open KIND (or 'all'): the screens opened in turn, for
     /// pictures and for runs that check each builds (--bare hides the world).</summary>
-    bool hordeDone, dropsDone, castDone, giveDone, minuteDone, chestDone, barksDone, answerDone, fallDone, litDone;
+    bool hordeDone, dropsDone, lootDone, castDone, giveDone, minuteDone, chestDone, barksDone, answerDone, fallDone, litDone;
     int dieIx;
     double blastT = 0.5, marksT = 1;
 
@@ -1070,6 +1070,21 @@ public partial class Game : Node, IZoneHost
                 double a = i * Math.Tau / kinds.Length;
                 var k = db.SpawnPickup(kinds[i], db.Player.X + Math.Cos(a) * 2.2, db.Player.Z + Math.Sin(a) * 2.2, 0.01);
                 if (k != null) { k.Tier = kinds[i] == PickupKind.Ember ? i : 2; k.Vx = k.Vz = 0; k.Age = -600; }
+            }
+        }
+        // --loot [--loot-at T]: one of every tier of loot falling round the survivor T seconds in (3 by
+        // default), each landing as shown loot does (Ev.Drop), for pictures of their light.
+        if (!lootDone && Args.Has("loot") && Battle is { } lootB && Journey.Playtime >= Args.Num("loot-at", 3))
+        {
+            lootDone = true;
+            var tiers = new[] { LootTier.Common, LootTier.Uncommon, LootTier.Rare, LootTier.Epic, LootTier.Set, LootTier.Legendary, LootTier.Storied, LootTier.Chart, LootTier.Quest, LootTier.Rare, LootTier.Epic };
+            for (int i = 0; i < tiers.Length; i++)
+            {
+                double a = i * Math.Tau / tiers.Length + 0.3, d = 3.2 + (i % 3) * 1.1;
+                var k = lootB.SpawnPickup(tiers[i] is LootTier.Quest ? PickupKind.Quest : PickupKind.Item, lootB.Player.X + Math.Cos(a) * d, lootB.Player.Z + Math.Sin(a) * d, 0.01);
+                if (k == null) continue;
+                k.Loot = (int)tiers[i]; k.Tier = Math.Min(5, (int)tiers[i]); k.Vx = k.Vz = 0; k.Age = -600;
+                lootB.Events.Emit(new Ev.Drop { Tier = k.Loot, X = k.X, Z = k.Z, Kind = k.Kind });
             }
         }
         // --give A,B[:RANK][@EVOLUTION],+PASSIVE[:RANK]: a build in hand from the start

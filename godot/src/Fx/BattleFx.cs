@@ -48,7 +48,7 @@ public partial class BattleFx : Node3D
     bool mirror;
 
     // What is in the air, and what lies on the ground.
-    Batch shades = null!, orbs = null!, steel = null!, axes = null!, daggers = null!, shards = null!, rings = null!, chakrams = null!, embers = null!, coins = null!, flasks = null!, lodestones = null!, sacks = null!, chests = null!, kegs = null!, lootBeams = null!;
+    Batch shades = null!, orbs = null!, steel = null!, axes = null!, daggers = null!, shards = null!, rings = null!, chakrams = null!, embers = null!, coins = null!, flasks = null!, lodestones = null!, sacks = null!, chests = null!, kegs = null!;
     /// <summary>How far above the ground the middle of a sack and a chest sits.</summary>
     float sackUp, chestUp;
     readonly Dictionary<int, float> trailAcc = new();
@@ -112,8 +112,6 @@ public partial class BattleFx : Node3D
             m.SetShaderParameter("metallic", metal);
             return m;
         }
-        var beam = new ShaderMaterial { Shader = beamShader };
-        beam.SetShaderParameter("energy", 1.6f);
         // What the survivor sends flying is drawn over the crowd it flies through.
         var over = new ShaderMaterial { Shader = GD.Load<Shader>("res://shaders/spark_over.gdshader") };
         over.SetShaderParameter("sprites", Sprites.Array);
@@ -146,13 +144,10 @@ public partial class BattleFx : Node3D
         chests = Add(new Batch(chest, 60, null, true));
         // A sapper's firepot: a keg of powder, thrown.
         kegs = Add(new Batch(Pickup("bomb", 0.34f), 60, null));
-        lootBeams = Add(new Batch(new CylinderMesh { TopRadius = 0.12f, BottomRadius = 0.18f, Height = 1, RadialSegments = 10, CapTop = false, CapBottom = false }, 200, beam));
     }
 
     Batch Add(Batch b) { AddChild(b); return b; }
 
-    /// <summary>The Set tier's verdigris (docs/design/LOOT_DESIGN.md §3); UI design keeps the UI's own.</summary>
-    static readonly Color SetColour = new("#3fd6c0");
 
     /// <summary>An item's own model (the photographs', Ui/ItemModels) as one
     /// mesh to draw many of: its parts merged, each keeping its material (or
@@ -881,6 +876,9 @@ public partial class BattleFx : Node3D
                     Cam?.AddTrauma(0.35f);
                     break;
                 }
+                case Ev.Drop d:
+                    Dropped(d);
+                    break;
                 case Ev.Spawn e:
                 {
                     float gy = Y(e.X, e.Z);
@@ -1338,7 +1336,8 @@ public partial class BattleFx : Node3D
             m.Decal.Position = V(z.X, heightAt(z.X, z.Z), z.Z);
             m.Decal.Size = new Vector3((float)z.Radius * 2, 4, (float)z.Radius * 2);
             float fade = (float)Math.Min(1, Math.Min(z.Age / 0.2, (z.Life - z.Age) / 0.4));
-            m.Decal.Modulate = col with { A = Mathf.Max(0, fade) * (0.55f + 0.15f * Mathf.Sin((float)now * 3 + z.Id)) };
+            // Faded in its colour (a decal's emission ignores alpha).
+            m.Decal.Modulate = Dim(col, Mathf.Max(0, fade) * (0.85f + 0.15f * Mathf.Sin((float)now * 3 + z.Id)));
             if (R() < 0.3f)
             {
                 float a = R() * Mathf.Tau, d = (float)z.Radius * Mathf.Sqrt(R());
@@ -1444,7 +1443,7 @@ public partial class BattleFx : Node3D
 
     void Pickups(Battle b, double now)
     {
-        embers.Begin(); coins.Begin(); flasks.Begin(); lodestones.Begin(); sacks.Begin(); chests.Begin(); lootBeams.Begin();
+        embers.Begin(); coins.Begin(); flasks.Begin(); lodestones.Begin(); sacks.Begin(); chests.Begin(); BeginLoot();
         foreach (var p in b.Pickups.Living())
         {
             float gy = Y(p.X, p.Z);
@@ -1460,7 +1459,7 @@ public partial class BattleFx : Node3D
                     {
                         // The hoard stone: bigger, beating like a heart, with a red beam to find it by.
                         s *= 1 + 0.12f * Mathf.Sin((float)now * 5);
-                        lootBeams.Add(new Transform3D(Godot.Basis.Identity.Scaled(new Vector3(1.3f, 4.5f, 1.3f)), V(p.X, gy + 2.25, p.Z)), new Color("#ff3a2a"));
+                        Column(p.X, gy, p.Z, 4.5f, 0.2f, StoriedRed, 0.7f);
                     }
                     embers.Add(new Transform3D(spin.Scaled(Vector3.One * s), V(p.X, gy + 0.45 + bob, p.Z)), EmberTiers[tier]);
                     break;
@@ -1486,38 +1485,13 @@ public partial class BattleFx : Node3D
                     if (p.Kind == PickupKind.Chest) chests.Add(new Transform3D(lie, V(p.X, gy + chestUp, p.Z)), Colors.White);
                     else sacks.Add(new Transform3D(lie.Scaled(Vector3.One * (hidden ? 0.7f : 1f)), V(p.X, gy + sackUp, p.Z)), hidden ? new Color(0.35f, 0.33f, 0.3f) : Colors.White);
                     if (hidden) break;
-                    float h = p.Kind is PickupKind.Material ? 1.4f : 3.2f, w = 1;
-                    // Loot rolled whole carries its tier (docs/design/LOOT_DESIGN.md §8.1): the beam's
-                    // height says how rare, its colour the band. Placeholder heights for the VFX lead.
-                    if (p.Loot >= 0)
-                    {
-                        (h, w, col) = (LootTier)p.Loot switch
-                        {
-                            LootTier.Common => (0f, 1f, col),
-                            LootTier.Uncommon => (0.8f, 1f, col),
-                            LootTier.Rare => (2.5f, 1f, col),
-                            LootTier.Epic => (5f * (1 + 0.08f * Mathf.Sin((float)now * 2.5f)), 1.2f, col),
-                            LootTier.Set => (6f, 1.4f, SetColour),
-                            LootTier.Legendary => (40f, 2.6f, Palette.Rarity[4]),
-                            LootTier.Storied => (40f, 2.6f, Palette.Rarity[5]),
-                            LootTier.Chart => (2f, 1f, new Color("#e8d8b0")),
-                            LootTier.Quest => (1.5f, 1f, new Color("#ffd46a")),
-                            LootTier.Book => (1.5f, 1f, col),
-                            _ => (0f, 1f, col),
-                        };
-                    }
-                    if (h <= 0) break;
-                    lootBeams.Add(new Transform3D(Godot.Basis.Identity.Scaled(new Vector3(w, h, w)), V(p.X, gy + h / 2, p.Z)), col);
-                    // A set's beam is two strands that twist about each other.
-                    if (p.Loot == (int)LootTier.Set)
-                    {
-                        float a = (float)now * 1.6f;
-                        lootBeams.Add(new Transform3D(Godot.Basis.Identity.Scaled(new Vector3(0.7f, h * 0.9f, 0.7f)), V(p.X + Mathf.Cos(a) * 0.18f, gy + h * 0.45f, p.Z + Mathf.Sin(a) * 0.18f)), col);
-                    }
+                    // Loot rolled whole carries its tier (docs/design/LOOT_DESIGN.md §8.1): the light's
+                    // height says how rare, its colour the band (BattleFx.Loot).
+                    LootLight(p, gy, now, col);
                     break;
                 }
             }
         }
-        embers.End(); coins.End(); flasks.End(); lodestones.End(); sacks.End(); chests.End(); lootBeams.End();
+        embers.End(); coins.End(); flasks.End(); lodestones.End(); sacks.End(); chests.End(); EndLoot();
     }
 }

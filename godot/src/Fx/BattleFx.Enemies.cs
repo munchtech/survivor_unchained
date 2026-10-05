@@ -118,6 +118,7 @@ public partial class BattleFx
     static readonly Color Soul = Hdr("#3affc8", 1.35f);
 
     int buffBudget;
+    double lastWard = -1;
 
     /// <summary>Those a rally has lifted: a haste is speed lines at their heels, a
     /// ward a pale hexagon that winks on them now and then.</summary>
@@ -139,9 +140,12 @@ public partial class BattleFx
                 Ribbons.Line(new[] { feet + back * 0.2f, feet + back * 0.7f, feet + back * 1.2f }, 0.08f, 0.18f, col, 2f, Ribbons.Style.Steel, new[] { 1f, 0.6f, 0f });
                 buffBudget--;
             }
-            if (e.WardT > 0 && R() < 0.06f)
+            // A ward winks on one of them now and then, told by a few at a time: a wink a frame per
+            // warded body piled a hundred pale discs over a warded crowd (the Dig, a white mass).
+            if (e.WardT > 0 && time - lastWard > 0.06 && R() < 0.08f)
             {
-                Sparks.Spawn(feet + Vector3.Up * 1.0f, Vector3.Zero, 0.35f, 0.9f, Hdr("#c8dcff", 1.2f) * 0.6f, null, 1.1f, sprite: Sprites.Range("ward_disc").First + 1, spinV: 0.5f);
+                lastWard = time;
+                Sparks.Spawn(feet + Vector3.Up * 0.9f, Vector3.Zero, 0.3f, 0.6f, Hdr("#8ab0ff", 1f) * 0.45f, null, 0.8f, sprite: Sprites.Range("ward_disc").First + 1, spinV: 0.5f);
                 buffBudget--;
             }
         }

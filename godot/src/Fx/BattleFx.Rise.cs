@@ -29,6 +29,7 @@ public partial class BattleFx
     bool rose;
     double graceFrom, graceUntil = -1, handFrom = -1;
     bool graceEmber;
+    double coldFrom, coldUntil = -1;
     float handAngle;
 
     void Rise(Ev.Rise e)
@@ -36,9 +37,28 @@ public partial class BattleFx
         rose = true;
         float gy = Y(e.X, e.Z);
         var ground = V(e.X, gy, e.Z);
-        // The cold: ice standing at her feet, frost glinting on her. Brief: the fire is coming.
+        // The cold: ice standing up round her feet and frost running out over the ground from her,
+        // frost glinting on her, a cold light on her alone. Combat holds it a beat (Battle.RiseCold,
+        // about a second in the slowed world) before the ember catches, so it must be seen: a few
+        // small spikes under the crowd read as nothing happening.
         float cold = e.Ember ? (float)Math.Max(0.06, e.Delay) : 0.11f;
-        Erupt(e.X, e.Z, 0.4f, 1.0f, 10, SpikeKind.Ice, 0.45f, cold + 0.12f, IceDeep);
+        Erupt(e.X, e.Z, 0.3f, 1.0f, 12, SpikeKind.Ice, 0.75f, cold + 0.15f, IceDeep);
+        Erupt(e.X, e.Z, 0.9f, 1.8f, 14, SpikeKind.Ice, 0.5f, cold + 0.12f, IceDeep);
+        AddFront(ground, 2.4f, cold + 0.15f, 0.1f, Rime, 1.3f, Ribbons.Style.Frost, 0.1f);
+        Scars.Add("frost", ground, 2.2f, cold + 1.2f, 0);
+        Flash(ground + Vector3.Up * 1.3f, new Color("#8fc4ff"), 4, cold + 0.15f, 3.5f);
+        // Over the crowd's heads, where a packed crowd lets it be seen (the ice at her feet is under
+        // them): a ring of frost opening out at the height of their heads (StepRise), and snow
+        // coming down over them.
+        coldFrom = time;
+        coldUntil = time + cold + 0.1;
+        for (int i = 0; i < 46; i++)
+        {
+            float a = R() * Mathf.Tau, d = 0.4f + Mathf.Sqrt(R()) * 2.4f;
+            Sparks.Spawn(ground + new Vector3(Mathf.Cos(a) * d, 2.1f + R() * 1.1f, Mathf.Sin(a) * d), new Vector3((R() - 0.5f) * 0.3f, -0.9f - R() * 0.6f, (R() - 0.5f) * 0.3f),
+                cold + 0.35f + R() * 0.3f, 0.07f + R() * 0.06f, Hdr("#dff2ff", 1.4f), Hdr("#7ab8ff", 0.8f), 0.03f, 0, 0.6f,
+                sprite: i % 3 == 0 ? Sprites.Of("frost_star") : Sprites.Of("star"), spinV: 1.5f);
+        }
         for (int i = 0; i < 24; i++)
         {
             float a = R() * Mathf.Tau, h = 0.15f + R() * 1.55f, rr = 0.24f + R() * 0.14f;
@@ -120,7 +140,7 @@ public partial class BattleFx
     MeshInstance3D? fireMesh, wallMesh;
     ShaderMaterial? fireMat, wallMat;
     /// <summary>The wall of flame at its tallest, and how far apart its tongues stand (about).</summary>
-    const float WallHigh = 2.1f, WallTongue = 0.85f;
+    const float WallHigh = 2.8f, WallTongue = 0.85f;
 
     void StartFire(Vector3 at, float r)
     {
@@ -219,8 +239,23 @@ public partial class BattleFx
     {
         StepFire();
         var p = b.Player;
-        if (!p.Alive) { graceUntil = -1; handFrom = -1; return; }
+        if (!p.Alive) { graceUntil = -1; handFrom = -1; coldUntil = -1; return; }
         float gy = Y(p.X, p.Z);
+        if (time < coldUntil)
+        {
+            // The frost ring over their heads, opening out and fading as the ember catches.
+            float k = (float)((time - coldFrom) / Math.Max(0.05, coldUntil - coldFrom));
+            float rr = 0.9f + 1.7f * (1 - (1 - k) * (1 - k));
+            const int N = 44;
+            var ring = new Vector3[N + 1];
+            for (int j = 0; j <= N; j++)
+            {
+                float a = j / (float)N * Mathf.Tau;
+                ring[j] = V(p.X + Mathf.Cos(a) * rr, gy + 2.0, p.Z + Mathf.Sin(a) * rr);
+            }
+            // Ice blue, not white (at Rime's own pale it read as a chalk ring).
+            Ribbons.Now(ring, 0.13f, Hdr("#4aa0ff", 1f), 1.7f * Mathf.Min(1, k * 6) * (1 - k * k), Ribbons.Style.Frost);
+        }
         if (handFrom >= 0)
         {
             // Three hours wound back over its first third of a second, then held as it fades.

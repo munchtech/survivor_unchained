@@ -19,9 +19,9 @@ uniform float burn = 1.0;
 uniform float seed = 0.0;
 uniform float soft = 0.3;
 // Held below the tone curve's knee: hotter, flame reads as cream.
-uniform vec3 hot = vec3(1.25, 0.78, 0.22);
-uniform vec3 mid = vec3(1.0, 0.36, 0.05);
-uniform vec3 deep = vec3(0.42, 0.05, 0.01);
+uniform vec3 hot = vec3(1.15, 0.56, 0.12);
+uniform vec3 mid = vec3(0.95, 0.27, 0.035);
+uniform vec3 deep = vec3(0.38, 0.035, 0.0);
 
 vec2 grad(vec2 i) {
 	float a = fract(sin(dot(i, vec2(127.1, 311.7)) + seed) * 43758.5453) * 6.2831853;
@@ -59,13 +59,13 @@ void fragment() {
 	// Ridged noise: each tongue rises to a point, its own height, the tall ones few.
 	float n = fbm(vec2(xs * 1.1, TIME * 0.9), cells * 1.1);
 	float ridge = 1.0 - abs(2.0 * n - 1.0);
-	float high = 0.12 + 0.88 * pow(ridge, 2.2) * (0.88 + 0.12 * sin(TIME * 15.0 + xs * 2.3));
+	float high = 0.14 + 0.86 * pow(ridge, 1.4) * (0.88 + 0.12 * sin(TIME * 15.0 + xs * 2.3));
 	// Torn as it climbs: the turbulence opens dark gaps toward the tips.
 	float tear = fbm(vec2(xs * 2.6, up * 4.0 - TIME * 3.6), cells * 2.6);
 	float body = 1.0 - up / max(0.05, high);
 	float f = clamp(body * 1.25 - (1.0 - tear) * 0.55 * sqrt(up), 0.0, 1.0);
 	// Its roots burn steady along the ground.
-	f = max(f, (1.0 - smoothstep(0.0, 0.1, up)) * (0.7 + 0.3 * tear));
+	f = max(f, (1.0 - smoothstep(0.0, 0.1, up)) * (0.5 + 0.3 * tear));
 	vec3 col = mix(deep, mid, smoothstep(0.12, 0.55, f));
 	col = mix(col, hot, smoothstep(0.62, 0.95, f));
 	float a = smoothstep(0.0, 0.35, f);

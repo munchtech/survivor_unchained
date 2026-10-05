@@ -312,7 +312,7 @@ public partial class BattleFx
         float gy = Y(e.X, e.Z);
         var from = V(e.X, gy + 1.0, e.Z);
         var at = from + dir * reach * 0.45f;
-        var chi = storm ? Hdr("#8ab8ff", 1.6f) : Hdr("#ffb040", 1.6f);
+        var chi = storm ? Hdr("#8ab8ff", 1.9f) : Hdr("#ffa838", 1.9f);
         // Fingers along the strike as the eye sees it: the sprite's up turned onto the strike's
         // direction on the screen.
         float turn = 0;
@@ -321,7 +321,7 @@ public partial class BattleFx
             var cb = Cam.Camera.GlobalBasis;
             turn = Mathf.Atan2(-dir.Dot(cb.X), dir.Dot(cb.Y));
         }
-        float size = Mathf.Min(2.4f, reach * 0.7f) * Mathf.Sqrt(g);
+        float size = Mathf.Min(2.9f, reach * 0.88f) * Mathf.Sqrt(g);
         Sparks.Spawn(new Sparks.P
         {
             At = at, V = dir * reach * 1.6f, Drag = 5, Life = 0.2f, Size = size * 0.7f, SizeEnd = size * 1.08f,
@@ -435,7 +435,8 @@ public partial class BattleFx
                 float s = 0.8f * Mathf.Sqrt(g);
                 bool hail = art == "chakram_hail", razor = art == "chakram_razor";
                 float spin = (float)(now * 19 + p.Id * 1.7f);
-                var edge = hail ? Hdr("#a8dcff", 1.3f) : razor ? Hdr("#ffb8a8", 1.25f) : Hdr("#d8fff0", 1.2f);
+                // The honed edge in the wind's mint (near white, it read as a cut-out of paper).
+                var edge = hail ? Hdr("#8ccfff", 1.35f) : razor ? Hdr("#ff9a88", 1.3f) : Hdr("#8ef0c8", 1.35f);
                 var gust = hail ? Hdr("#6ab8ff", 1f) : Hdr("#8ce8c4", 1f);
                 Shade(at, 1.5f * s, 0.35f);
                 // Turned the way its teeth lead (the mesh's angle grows toward its points).
@@ -603,6 +604,10 @@ public partial class BattleFx
                 // shape in a green streak).
                 var tint = hunt ? new Color(0.7f, 1.6f, 0.4f) : new Color(0.45f, 1.5f, 1.0f);
                 herdCrowd.Push(new Transform3D(basis, feet), "move", now * rate + p.Id * 0.37, 0, 0, 0, 0, tint, 2.2f);
+                // A spirit leaves itself behind as it runs: two fading echoes a stride back, coming
+                // apart in flakes (a green wolf alone read as a dyed one, not a spirit).
+                for (int k = 1; k <= 2; k++)
+                    herdCrowd.Push(new Transform3D(basis, feet - fwd * 0.55f * k * sc), "move", (now - 0.07 * k) * rate + p.Id * 0.37, 0, 0.35f + 0.25f * k, 0, 0, tint * (1.1f - 0.2f * k), 2.6f);
                 var wild = hunt ? Hdr("#7aff3a", 1f) : Hdr("#4affa0", 1f);
                 Ribbons.Feed(key, feet + Vector3.Up * 0.5f * sc, 0.3f * sc, 0.14f, new Color(wild.R * 0.4f, wild.G * 0.4f, wild.B * 0.4f), 0.9f, Ribbons.Style.Wisp);
                 trailAcc.TryGetValue(p.Id, out var kick);
@@ -825,7 +830,7 @@ public partial class BattleFx
                 AddFront(ground, r, 0.4f, 0.24f * g, gold, 1.7f, Ribbons.Style.Glow, 0.1f);
                 for (int k = 1; k < rings; k++) AddFront(ground, r * (1 - 0.18f * k), 0.4f + 0.08f * k, 0.14f, gold, 1.1f, Ribbons.Style.Glow, 0.1f);
                 // Dawn's ring itself, filmed (LTX): a thin line of white-gold racing out, the middle left dark.
-                Books.Spawn("holy_ring", ground + Vector3.Up * 0.5f, r * 0.7f, 0.5f, new Color(0.85f, 0.62f, 0.3f, 0.7f), flat: true, sizeEnd: r * 2.3f);
+                Books.Spawn("holy_ring", ground + Vector3.Up * 0.5f, r * 0.7f, 0.45f, new Color(0.6f, 0.38f, 0.12f, 0.5f), flat: true, sizeEnd: r * 2.3f);
                 // Rays: short strokes of light thrown outward along the ground.
                 int n = 10 + rings * 4;
                 for (int i = 0; i < n; i++)
@@ -840,7 +845,9 @@ public partial class BattleFx
                     float a = R() * Mathf.Tau, d = r * (0.3f + R() * 0.7f);
                     Sparks.Spawn(ground + new Vector3(Mathf.Cos(a) * d, 0.3f, Mathf.Sin(a) * d), Vector3.Up * (1 + R() * 1.5f), 0.7f + R() * 0.4f, 0.08f, h.Core, h.Glow, 0.02f, -0.4f, 1.5f, sprite: R() < 0.5f ? Sprites.Of("star") : 0, spinV: 3);
                 }
-                Scars.Add("sigil", ground, r * 0.7f, art == "nova_sun" ? 3 : 1.4f, 0.6f);
+                // The sigil it leaves, small at her feet (seventy percent of its reach, it was a lit
+                // disc of rings over the whole crowd).
+                Scars.Add("sigil", ground, Mathf.Min(1.6f, r * 0.35f), art == "nova_sun" ? 3 : 1.2f, 0.6f);
                 Flash(ground + Vector3.Up * 1.5f, h.Light, 7, 0.4f, r * 2.5f);
                 Books.Spawn("gold_flare", ground + Vector3.Up * 1.4f, r * 0.35f, 0.35f, new Color(1f, 0.85f, 0.55f, 0.8f), sizeEnd: r * 0.9f);
                 return true;
@@ -1271,10 +1278,12 @@ public partial class BattleFx
         // (At full strength her thickets' and rots' rims, two or three at once, were the loudest
         // thing at Greymuzzle.) A thicket reads by its thorns, a rot by its stain, not their rims.
         float hush = bossUp ? 0.5f : 1f;
-        g.Edge.Decal.Modulate = edgeCol with { A = fade * breathe * (inside is Inside.Roots or Inside.Veins ? 0.22f : 0.34f) * hush };
+        // (Scaled in its colour: a decal's emission ignores its alpha, so an alpha of a fifth left
+        // the rims at full strength.)
+        g.Edge.Decal.Modulate = Dim(edgeCol, fade * breathe * (inside is Inside.Roots or Inside.Veins ? 0.22f : 0.34f) * hush);
         // The pattern inside, fainter still (the runes least: under her for a whole night, they
         // hid her), turning slowly.
-        g.Fill.Decal.Modulate = edgeCol with { A = fade * (inside == Inside.Runes ? 0.14f : inside == Inside.Veins ? 0.12f : 0.2f) * hush };
+        g.Fill.Decal.Modulate = Dim(edgeCol, fade * (inside == Inside.Runes ? 0.14f : inside == Inside.Veins ? 0.12f : 0.2f) * hush);
         g.Fill.Decal.Rotation = new Vector3(0, (float)(now * turn + z.Id * 1.7), 0);
         // What lives in it, sparse.
         var pal = Palette.Of(Palette.OfArt(z.Art));
@@ -1311,6 +1320,10 @@ public partial class BattleFx
         }
         return true;
     }
+
+    /// <summary>A decal's colour at a strength: its light scaled in the colour itself (a decal's
+    /// emission ignores alpha) and its alpha the same, for what it lays as paint.</summary>
+    static Color Dim(Color c, float k) => new(c.R * k, c.G * k, c.B * k, k);
 
     void GroundsGone(System.Collections.Generic.HashSet<int> alive)
     {
