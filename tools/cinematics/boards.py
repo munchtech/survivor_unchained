@@ -134,7 +134,7 @@ def main():
             api = json.loads(json.dumps(base))
             api["30:24"]["inputs"]["value"] = False
             api["30:23"]["inputs"]["value"] = False
-            api["30:3"]["inputs"]["seed"] = spec.get("seed", 1000) + i
+            api["30:3"]["inputs"]["seed"] = entry.get("seed", spec.get("seed", 1000) + i)
             api["30:19"]["inputs"]["value"] = STYLE + prompt
             api["30:5"]["inputs"]["width"] = 1536
             api["30:5"]["inputs"]["height"] = 640

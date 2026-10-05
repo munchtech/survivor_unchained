@@ -26,6 +26,8 @@ public partial class WardenView : Node3D, IBossView
     public double Glow { get; set; } = 1;
     /// <summary>Whether his lamp burns (it goes out in the river in C03).</summary>
     public bool LampLit { get; set; } = true;
+    /// <summary>Where his lamp hangs (for framing a cinematic on it).</summary>
+    public Vector3 LampAt => lamp.GlobalPosition;
     /// <summary>The body, for a cinematic that moves and poses him itself.</summary>
     public PersonView Body => view;
     const float Size = 2.6f;
@@ -63,10 +65,10 @@ public partial class WardenView : Node3D, IBossView
                 if (mi.GetSurfaceOverrideMaterial(s) is ShaderMaterial dyed && dyed.ResourceName == "MI_Ranger")
                     People.SetDye(dyed, SoakedMask, Soaked);
         // The lantern hangs from the left fist by its bail, plumb, whatever the arm
-        // does (Hang): the grip is the hand's slot, where a held thing is held.
-        var at = new BoneAttachment3D { BoneName = "handslot.l" };
+        // does (Hang): the grip is in the closed fist, where Arms.Hold puts a held thing.
+        var at = new BoneAttachment3D { BoneName = "hand_l" };
         view.Person.Skeleton.AddChild(at);
-        grip = new Node3D();
+        grip = new Node3D { Position = new Vector3(0, 0.075f, 0) };
         at.AddChild(grip);
         lamp = LampIron.Make(Bail);
         AddChild(lamp);
@@ -268,25 +270,30 @@ public partial class EmberCoreView : Node3D, IOrb
     void IOrb.Dispose() => QueueFree();
 }
 
+/// <summary>The Warden's heart: a stone the size of a fist, cut in a few broad faces, with a cold
+/// light in it. Its faces catch the light unevenly as it turns, so it reads as a thing and not a
+/// glare; the light inside rises and falls with Light.</summary>
 public partial class OrbView : Node3D, IOrb
 {
     readonly MeshInstance3D ball;
     readonly OmniLight3D light;
+    readonly StandardMaterial3D stone;
 
     public OrbView(string color, double size)
     {
-        var c = new Color(color).SrgbToLinear();
-        ball = new MeshInstance3D
+        var c = new Color(color);
+        stone = new StandardMaterial3D
         {
-            Mesh = new SphereMesh { Radius = (float)size, Height = (float)size * 2, RadialSegments = 16, Rings = 8 },
-            MaterialOverride = new StandardMaterial3D { ShadingMode = BaseMaterial3D.ShadingModeEnum.Unshaded, AlbedoColor = new Color(c.R * 3, c.G * 3, c.B * 3) },
-            CastShadow = GeometryInstance3D.ShadowCastingSetting.Off,
+            AlbedoColor = c.Darkened(0.7f), Metallic = 0.35f, Roughness = 0.12f,
+            EmissionEnabled = true, Emission = new Color(c.R * 0.3f, c.G * 0.6f, c.B * 0.95f), EmissionEnergyMultiplier = 0.5f,
+            RimEnabled = true, Rim = 0.6f, RimTint = 0.8f,
         };
+        ball = new MeshInstance3D { Mesh = Facets((float)size), MaterialOverride = stone, CastShadow = GeometryInstance3D.ShadowCastingSetting.Off };
         AddChild(ball);
         // A soft halo about it, as a bright thing has in mist.
         AddChild(new MeshInstance3D
         {
-            Mesh = new QuadMesh { Size = Vector2.One * (float)size * 7 },
+            Mesh = new QuadMesh { Size = Vector2.One * (float)size * 4.5f },
             CastShadow = GeometryInstance3D.ShadowCastingSetting.Off,
             MaterialOverride = new StandardMaterial3D
             {
@@ -294,10 +301,11 @@ public partial class OrbView : Node3D, IOrb
                 BlendMode = BaseMaterial3D.BlendModeEnum.Add, BillboardMode = BaseMaterial3D.BillboardModeEnum.Enabled,
                 AlbedoTexture = new GradientTexture2D
                 {
-                    Gradient = new Gradient { Colors = [new Color(1, 1, 1, 1), new Color(1, 1, 1, 0.2f), new Color(1, 1, 1, 0)], Offsets = [0, 0.2f, 1] },
+                    // A ring of light about the stone, clear at the middle, so the stone's faces read through it.
+                    Gradient = new Gradient { Colors = [new Color(1, 1, 1, 0), new Color(1, 1, 1, 0), new Color(1, 1, 1, 0.55f), new Color(1, 1, 1, 0)], Offsets = [0, 0.16f, 0.24f, 1] },
                     Fill = GradientTexture2D.FillEnum.Radial, FillFrom = new Vector2(0.5f, 0.5f), FillTo = new Vector2(1, 0.5f), Width = 64, Height = 64,
                 },
-                AlbedoColor = new Color(new Color(color), 0.5f),
+                AlbedoColor = new Color(new Color(color), 0.35f),
             },
         });
         light = new OmniLight3D { LightColor = new Color(color), OmniRange = 14, OmniAttenuation = 1.3f };
@@ -314,7 +322,38 @@ public partial class OrbView : Node3D, IOrb
         ball.Scale = Vector3.One * (float)scale;
     }
 
-    public double Light { set => light.LightEnergy = (float)(value / Math.PI); }
+    public double Light
+    {
+        set
+        {
+            light.LightEnergy = (float)(value / Math.PI);
+            // The light inside, not a glare: the faces must still read at full strength.
+            stone.EmissionEnergyMultiplier = 0.35f + Mathf.Clamp((float)value, 0, 6) * 0.15f;
+        }
+    }
+
+    /// <summary>A rough-cut stone: a squashed, uneven sphere of a few flat faces.</summary>
+    static Mesh Facets(float size)
+    {
+        var src = new SphereMesh { Radius = size, Height = size * 1.7f, RadialSegments = 7, Rings = 4 };
+        var st = new SurfaceTool();
+        st.CreateFrom(src, 0);
+        st.Deindex();
+        var arrays = st.Commit().SurfaceGetArrays(0);
+        var verts = (Vector3[])arrays[(int)Mesh.ArrayType.Vertex];
+        // Each corner pushed in or out a little, the same for the same corner, so the faces are uneven.
+        for (int i = 0; i < verts.Length; i++)
+        {
+            var v = verts[i];
+            float n = Mathf.Sin(v.X * 53.1f + v.Y * 17.3f) * Mathf.Cos(v.Z * 41.7f - v.Y * 9.1f);
+            verts[i] = v * (1 + n * 0.14f);
+        }
+        var flat = new SurfaceTool();
+        flat.Begin(Mesh.PrimitiveType.Triangles);
+        foreach (var v in verts) flat.AddVertex(v);
+        flat.GenerateNormals();
+        return flat.Commit();
+    }
 
     /// <summary>Turning slowly where it hangs (a cinematic's frame).</summary>
     public void Turn(double dt) => ball.RotateY((float)(dt * 1.4));

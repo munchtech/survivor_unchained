@@ -86,7 +86,7 @@
       "dur": 4.0,
       "still": 2.6,
       "note": "Her face on its side on the frozen ground, half ember, half moon. At 2.0 her eyes open. No start.",
-      "cam": {"pos": [-11.05, 0.3, 89.22], "at": {"actor": "her", "bone": "eyes", "off": [0, -0.02, 0]}, "lens": 100, "focus": {"actor": "her", "bone": "eyes"}, "fstop": 2.0, "move": {"push": 0.1, "ease": "linear"}},
+      "cam": {"pos": [-11.05, 0.55, 89.22], "at": {"actor": "her", "bone": "eyes", "off": [0, -0.02, 0]}, "lens": 100, "focus": {"actor": "her", "bone": "eyes"}, "fstop": 2.0, "move": {"push": 0.1, "ease": "linear"}},
       "cues": [
         {"at": 2.0, "do": "lids", "value": 0, "over": 0.15},
         {"at": 2.0, "do": "face", "keys": {"eyes_wide": 0.25}, "over": 0.2},
@@ -100,7 +100,7 @@
       "dur": 4.5,
       "still": 2.6,
       "note": "Low on the fire's far side, through the embers: she pushes up. Her hair hangs.",
-      "cam": {"pos": [-11.6, 0.42, 89.8], "at": {"actor": "her", "bone": "chest", "off": [0, 0.1, 0]}, "lens": 40, "focus": {"actor": "her", "bone": "head"}, "fstop": 2.8},
+      "cam": {"pos": [-10.35, 0.42, 88.6], "at": {"actor": "her", "bone": "chest", "off": [0, 0.1, 0]}, "lens": 40, "focus": {"actor": "her", "bone": "head"}, "fstop": 2.8},
       "cues": [
         {"at": 0.6, "do": "sfx", "name": "cloth_water", "gain": 0.8},
         {"at": 0.0, "do": "anim", "clip": "her/lie_side_wake", "from": 2.4, "speed": 1.0, "blend": 0.15}
@@ -112,7 +112,7 @@
       "dur": 7.0,
       "still": 1.5,
       "note": "Front three-quarter from her left, the fire's side: she sits on the log, facing the embers. She looks down at herself, the cord, the full flask; across at the bedroll, dry, its blanket folded. N1. (The letter and sitting back on her heels when Kimodo's clips come.)",
-      "cam": {"pos": [-11.1, 0.85, 91.6], "at": {"actor": "her", "bone": "chest", "off": [0, 0.12, 0], "track": true}, "lens": 40, "focus": {"actor": "her", "bone": "eyes", "track": true}, "fstop": 2.8},
+      "cam": {"pos": [-11.1, 0.85, 91.6], "at": {"actor": "her", "bone": "chest", "off": [0, 0.0, 0], "track": true}, "lens": 40, "focus": {"actor": "her", "bone": "eyes", "track": true}, "fstop": 2.8},
       "cues": [
         {"do": "anim", "clip": "her/sit_back_heels", "from": 0, "speed": 1.0, "blend": 0},
         {"do": "face", "keys": {"brows_sad": 0.3, "mouth_open": 0.08}, "over": 1.2},
@@ -145,7 +145,7 @@
       "tail": 0.7,
       "still": 4.5,
       "note": "Behind her, low over her left shoulder: the prints in the frost, dark and wet, coming out of the night to where she lay. The camera tilts up along them, north, into the dark they came from. N2.",
-      "cam": {"pos": [-9.35, 1.12, 91.48], "at": [-8.9, 0.0, 86.5], "lens": 28, "focus": 3.0, "fstop": 4.0, "move": {"at": [-6.6, 1.2, 72.0], "start": 0.4, "end": "end-0.6", "ease": "slow", "focus": {"abs": [-6.6, 1.2, 72.0]}}},
+      "cam": {"pos": [-9.55, 1.12, 91.45], "at": [-8.9, 0.0, 86.5], "lens": 28, "focus": 3.0, "fstop": 4.0, "move": {"at": [-6.6, 1.2, 72.0], "start": 0.4, "end": "end-0.6", "ease": "slow", "focus": {"abs": [-6.6, 1.2, 72.0]}}},
       "cues": [
         {"at": 0.0, "do": "head", "where": [-8.9, 0.3, 86.5], "over": 1.2},
         {"do": "gaze", "look": [0, 0.5], "wander": 0.03},
@@ -158,13 +158,14 @@
       "dur": 4.0,
       "still": 2.2,
       "note": "Frontal, a little under her eyes, the dark behind her. From the trail to her boots. She breathes out, long. Nothing shows. Hold a beat.",
-      "cam": {"pos": {"actor": "her", "bone": "eyes", "off": [0.08, -0.06, -1.2]}, "at": {"actor": "her", "bone": "eyes", "off": [0, -0.16, 0]}, "lens": 85, "focus": {"actor": "her", "bone": "eyes"}, "fstop": 2.0},
+      "cam": {"pos": {"actor": "her", "bone": "eyes", "off": [0.08, -0.02, -1.0]}, "at": {"actor": "her", "bone": "eyes", "off": [0, -0.05, 0]}, "lens": 70, "focus": {"actor": "her", "bone": "eyes"}, "fstop": 2.0},
       "cues": [
         {"do": "gaze", "look": [0, 0.1]},
         {"at": 0.7, "do": "gaze", "look": [0, 0.9]},
-        {"at": 1.2, "do": "face", "keys": {"mouth_open": 0.2, "brows_sad": 0.4}, "over": 1.2},
+        {"at": 1.2, "do": "face", "keys": {"mouth_open": 0.12, "brows_sad": 0.4}, "over": 1.2},
         {"at": 1.2, "do": "sfx", "name": "breath_out", "gain": 1.3},
-        {"at": 2.5, "do": "face", "keys": {"mouth_open": 0.05, "brows_sad": 0.2}, "over": 0.9}
+        {"at": 2.5, "do": "face", "keys": {"mouth_open": 0.05, "brows_sad": 0.2}, "over": 0.9},
+        {"at": 1.2, "do": "anim", "clip": "her/exhale", "from": 0, "speed": 1, "blend": 0.2}
       ]
     },
     {
@@ -188,7 +189,7 @@
       "tail": 0.8,
       "still": 3.5,
       "note": "As 8, a touch tighter. The narration runs on over the cut ('and a voice comes down to you...'); then the voice up the road, as if at her shoulder. She does not turn; her eyes go a fraction toward it, and come back. Unnamed.",
-      "cam": {"pos": {"actor": "her", "bone": "eyes", "off": [0.06, -0.05, -1.05]}, "at": {"actor": "her", "bone": "eyes", "off": [0, -0.16, 0]}, "lens": 85, "focus": {"actor": "her", "bone": "eyes"}, "fstop": 2.0},
+      "cam": {"pos": {"actor": "her", "bone": "eyes", "off": [0.06, -0.02, -0.9]}, "at": {"actor": "her", "bone": "eyes", "off": [0, -0.05, 0]}, "lens": 85, "focus": {"actor": "her", "bone": "eyes"}, "fstop": 2.0},
       "cues": [
         {"do": "lit", "light": 7, "on": true},
         {"do": "lit", "light": 8, "on": true},

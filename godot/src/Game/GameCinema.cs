@@ -274,6 +274,9 @@ public partial class Game
                     foreach (var name in people.Keys)
                         GD.Print($"cinebones {file.Id} s{shot.Id} {name} " + string.Join(" ", new[] { "head", "eyes", "chest", "hand_r", "hand_l", "foot_l", "foot_r" }
                             .Select(bn => ActorAt(name, bn) is V3 p ? $"{bn}=({p.X:0.00},{p.Y:0.00},{p.Z:0.00})" : "")));
+                if (Args.Has("cinebones"))
+                    foreach (var (name, w) in bosses)
+                        GD.Print($"cinebones {file.Id} s{shot.Id} {name} lamp=({w.LampAt.X:0.00},{w.LampAt.Y:0.00},{w.LampAt.Z:0.00})");
             }
             bars.Frame((float)player.Bars, shot.Black ? 1 : 0);
             if (player.Done) Over = true;
