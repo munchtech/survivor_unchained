@@ -7,75 +7,59 @@ Status page for the gameplay experience director (agent `ab406cf9ddd22b03b`, bra
 ## Current state (2026-10-04)
 
 Took over from `ad1f5623590e09883`. Tests green (661). The owner approved the story nights and the
-day's clock (`docs/design/STORY_NIGHTS_AND_TIME.md`, decisions at its top). **Limit for now: no
-Godot or GPU**, code and `dotnet test` only.
+day's clock (`docs/design/STORY_NIGHTS_AND_TIME.md`, decisions at its top). Godot allowed again.
 
-**Built (`d95946c5` and after), not yet seen in a run:**
-- **The day's clock** (`World/DayClock.cs`, `Play/Journey.Day.cs`, `Game/GameClock.cs`):
-  - 12 minutes of free play from dawn to night (dawn 1, day 9, dusk 2), then 6 of night;
-  - free play is the town or the Verge with nothing over it: no page, talk, draft, chest,
-    cinematic, travel, pause or captured controls; never in arenas or the prologue;
-  - day 1 waits until `beasts` or `caravan` is in the journal (story's call).
-- **Dusk:** the light blends over a minute; in town the gate guard's evening call; anywhere, the
-  night's line (`Journey.DayLines`, story's drafts).
-- **Nightfall:** "Night" with the called fight's place; a "Tonight" entry above the objectives;
-  hold Answer (N, pad L3, rebindable) to be pulled to the called story fight, else the nearest
-  scar in the Verge, else the Wayfinder's table. A fight is called only once the story has pointed
-  her at it (`StoryFights.Called`: the bounty, the Roost found; the Dig and the vault always).
-- **A night left alone** passes at 6 minutes (nudge at 3): fade, a day on, no inn's rest.
-- **The skips:** the inn's sleep (next morning, healed) and "wait for nightfall" set the clock.
-- **Back from a fight:** the same night with at least 3 minutes left (several fights by intent).
-- **A story fight lost** (`ArenaResult.WakesInTown`): she wakes on Chid's bench in the shrine a
-  day on, healed (`Journey.WakeAfterLoss` calls story's `CarriedHome`); Chid's conversation tells
-  the waking for that fight, then the town's morning lines.
-- **Story's final words** in `Journey.DayLines`; a rise counted (`RiseLine`, story.rises); a
-  second fight answered the same night says "straight on" (`FoughtTonight`); the night's card
-  lists "Also out tonight".
-- **StoryFights** (`Play/StoryFights.cs`): the four fights out of the Verge so the night can call
-  them from anywhere; the Verge builds its interactables from it.
-- **The fall in a story night, staged** (`Game/GameFall.cs`, on combat's `StoryNight`, merged at
-  `aa68f38e`): the picture darkens and the world holds; with a rise left, "Get up" (confirm or the
-  use key) or "Let the night go" (back), no page; getting up is a short fade to the checkpoint and
-  the counted words (`RiseLine`); with none left, the night is lost and its result follows.
+**The day's clock, built and seen at 1920×1080** (`World/DayClock.cs`, `Play/Journey.Day.cs`,
+`Game/GameClock.cs`, `Game/GameFall.cs`; frames in `docs/experience/`):
+- 12 minutes of free play from dawn to night (dawn 1, day 9, dusk 2), then 6 of night; still in
+  talk, pages, the draft and chest, cinematics, travel, pause, arenas and the prologue (seen: the
+  pack, journal, map and rest page hold it); day 1 waits for `beasts` or `caravan`.
+- **The light is read off the clock:** dawn warms into day, day goes gold over dusk's first
+  minute, the dark comes in over dusk's last half minute and night's first, so "Night" lands in
+  the dark (`dusk_gold_town.jpg`, `nightfall_town.jpg`).
+- **Dusk:** the gate guard's call in town, then the night's line; **nightfall:** "Night" with the
+  called fight, a "Tonight" entry (with "Also out tonight"), and hold N (pad L3) to answer. Seen:
+  answered from town, pulled into the Hollow.
+- **The Verge at nightfall:** scars open and the dead rise away from her; they go out at dawn.
+- **A night left alone:** nudge at 3 minutes, the fade at 6, "Dawn · Day N", the story's line,
+  then the morning's news.
+- **A story fight lost:** the result, then Chid's bench at dawn a day on, his waking for that
+  fight, then the morning lines. No table rematch: it waits at its place (story's line: "It will
+  be there again tomorrow night").
+- **The fall** (`fall_choices.jpg`): the world darkens under the HUD; "Get up" or "Let the night
+  go"; getting up fades to the checkpoint with the counted words.
+- **The crowd's status read** (`frozen_rime.jpg`, `burning_char.jpg`): ice in rime, glossy blue,
+  never white; fire as thin orange tongues over char. Sheets sent to skills (`a94ac6b67f1279213`).
 
-**In-game checks owed (when Godot is allowed), all at 1920×1080:**
-1. A day run through on the autopilot at `--fixed-fps 60`: the light's blends at 1, 10 and 12
-   minutes (no pop, no grade stutter), lamps and shadows at dusk, the HUD's corner.
-2. Dusk in town (the call, then the line) and in the Verge (the line only); the night's
-   announcement and the "Tonight" entry; Answer from town and from the wood.
-3. The night passing: the fade, "Dawn · Day N", the lines, the scars going out in the Verge.
-4. A story fight lost: the result, the shrine at dawn, Chid's waking, then the morning lines.
-5. Pausing: the clock still in talk, the pack, the map, the shop, the rest page and cutscenes.
-7. A fall in the Hollow (`--stage 3` for the boss): the darkening, the two choices (keys and pad),
-   the fade to the checkpoint and "You get up."; then a second fall with none left.
-6. The Verge at a turn: Maeca and the night packs only change on re-entry (judge if it jars).
+**Fixed from the frames:** dusk was darker than night (the Verge went black and red: the sun at
+18° grazing the ground at half the light) and is now a golden hour at 34°; the lamps' moths were
+drawn a metre across (Godot's particle billboard drops particle scale unless it keeps it), cream
+puffballs round every lamp from dusk on; the fall's fade greyed its own choices.
 
 **Next:**
-1. With combat: the Hollow measures 5 minutes, not 12, and 50–63% dip under half on the way in
-   (target 20–35%); combat lengthens the stages (more to do, not more health). The 40% sums wait.
-2. The crowd's status read for skills: drafted, unseen, on the side branch
-   `experience-status-read@9d5d30e6` (rime in patches, fire in tongues, all status light under 1).
-   Today (the predecessor's tint, skills' `scratchpad/vfx/ba_a9_1.png` rows 2 and 5): no longer
-   white, but frozen reads as grey bodies and burning as tan ones: the status barely reads. When
-   Godot is allowed: import first, then skills' worst case, before and after: `--quick arcanist
-   --zone arena --people dead --time night --tier 2 --lab --give hoarfrost:4 --horde 70,8:risen!
-   --dist 3 --spread 9 --seconds 2.5 --every 0.08 --count 24` (frames 13–14; `cinderfall:4`,
-   frames 21–23). Sheets to whoever holds the skills row (its lead handed off), then merge.
-3. Judge the waiting merges in play once Godot is allowed: skills' grounds, marks and numbers,
-   animation's death poses, combat's maps and strongbox through the chest ceremony.
-4. The run-ups' danger with combat (`a708da2c97bf85c95`): 10–20% of runs under half health in
-   7–10, 17–20, 25–28; wins within two points of 93%.
+1. With combat (`afe45df4957917614` now): the Hollow measured 5 minutes, not 12, and 50–63% dip
+   under half on the way in (target 20–35%); combat lengthens the stages. The 40% sums wait.
+2. Judge the waiting merges in play: skills' grounds, marks and numbers, animation's death
+   poses, combat's maps and strongbox through the chest ceremony.
+3. The run-ups' danger with combat: 10–20% of runs under half health in 7–10, 17–20, 25–28.
+4. Still to see: a full day on the autopilot for the dawn-to-day turn and the HUD's corner;
+   Maeca and the Verge's day packs still change only on re-entry (dawn after a night out).
 
-**Worktree:** `godot/assets` is a junction to `public/assets`; `godot/.godot` copied; the import
-was stopped at about 1% (rerun `--headless --path godot --import`, about 15 min, before any
-picture). Scratchpad tools in `experience/` point here.
+**Harness** (`scratchpad/experience/`): `clock_runs.sh dusk|answer|verge|nightout|nudge|fall|
+letgo|pauses`, `tod.sh TAG TIME` (the Verge and the town side by side), `status_runs.sh TAG`
+(skills' worst case), `ba.py` (before and after crops), `runlog.py NAME` (a run's gist). Game
+switches: `--clock S`, `--night ID`, `--answer T`, `--die T1,T2`, `--choose rise|letgo`. After a
+code change, `dotnet build` the game project itself (Godot runs `.godot/mono/temp/bin`), not to
+another folder.
 
 ## Notes for other areas
 
-- **Story** (`a54dc034ed29f2e02`): its spare choices and lost lines are ported into
-  `StoryFights.Spec` (`415e16f3`); edit the story fights' specs there, not in the Verge.
-- **Combat** (`a708da2c97bf85c95`): `StoryFall` and `StoryFights` are pushed; `ClockRuns` is
-  false by default, so the story-night runtime needs nothing for the clock.
+- **Story** (`a7ba8903f4c8261b1`): the story fights' specs live in `Play/StoryFights.cs`; the
+  rematch line change pairs with mine (`8290bfda`).
+- **Combat**: `StoryFall` stages the fall; `ClockRuns` is false by default, so the story-night
+  runtime needs nothing for the clock.
+- **Skills**: `vat.gdshaderinc`'s frozen and burning lines are mine; Cinderfall's own blast
+  still blooms cream mid-crowd (theirs).
 
 ## Decisions (with why)
 
@@ -84,8 +68,8 @@ picture). Scratchpad tools in `experience/` point here.
   down one unasked.
 - **Free play is the world with nothing over it:** the clock never eats talk, reading or menus,
   so a slow reader never loses a night.
-- **The light turns over a minute; lamps and the corner turn at once:** a pop reads as a bug, a
-  slow change as the world.
+- **The light is read off the clock, not its turns; lamps and the corner turn at once:** a pop
+  reads as a bug, a slow change as the world, and the dark must come before the word "night".
 - **The chest is staged in the world;** a chest is worth 1.4 things on average, as before.
 - **The fall is the only screen-filling moment;** a boss's kill adds light and a ring, no blast.
 - **One levelling system at a time:** the ember by night, the character's lessons at dawn.
