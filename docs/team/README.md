@@ -69,8 +69,8 @@ The main session keeps this current. It is the address list for SendMessage. Ret
 | UI art (paused; handoff ready at cd0f4ab6) | — | docs/team/ui_art.md |
 | Crafting (research, design, build) (paused; handoff ready at ed429efb) | — | docs/team/crafting.md |
 | Gameplay experience director | af2c026d86e1b532b | docs/team/experience.md |
-| Skills look and feel (VFX, under the main session) | ad059388f00c19f9f | docs/team/skills.md |
-| Cinematics production | a7a4c20bcfd7ccfd3 | docs/team/cinematics.md |
+| Skills look and feel (VFX, under the main session) | a560452c597415545 | docs/team/skills.md |
+| Cinematics production | aece7b87e89b13f19 | docs/team/cinematics.md |
 | Performance | a0eb8c612c94d4aa5 | docs/team/performance.md |
 | Arena art | a0b61c278bdd5c994 | docs/team/arena_art.md |
 | Male hero (body, head, hair, outfits) | ab82cbe99e2937ddd | docs/team/hero_male.md |
