@@ -150,6 +150,92 @@ public static class Grass
         return mesh;
     }
 
+    /// <summary>A cell's scatter of fallen leaves: n leaves, each a pointed oval eleven
+    /// centimetres long before the shader sizes it, lying flat and curled a little along its
+    /// spine, turned every way. COLOR.rg is each leaf's middle in the cell, COLOR.b its own
+    /// hash (shaders/arena_leaves.gdshader); UV.y is 1 on the curl's crown.</summary>
+    static ArrayMesh LeafScatter(int n, float cell)
+    {
+        var verts = new System.Collections.Generic.List<Vector3>();
+        var cols = new System.Collections.Generic.List<Color>();
+        var uv = new System.Collections.Generic.List<Vector2>();
+        var idx = new System.Collections.Generic.List<int>();
+        var rng = new RandomNumberGenerator { Seed = 53 };
+        for (int k = 0; k < n; k++)
+        {
+            float mx = rng.Randf(), mz = rng.Randf(), own = (k + 0.5f) / n;
+            var mid = new Vector3((mx - 0.5f) * cell, 0, (mz - 0.5f) * cell);
+            float ang = rng.Randf() * Mathf.Tau, len = 0.11f * (0.8f + 0.4f * rng.Randf()), wid = len * (0.38f + 0.2f * rng.Randf());
+            var along = new Vector3(Mathf.Cos(ang), 0, Mathf.Sin(ang));
+            var across = new Vector3(-along.Z, 0, along.X);
+            float curl = len * (0.08f + 0.12f * rng.Randf());
+            var col = new Color(mx, mz, own);
+            int o = verts.Count;
+            // Tip, two shoulders each side, the stalk end; the spine raised (the curl).
+            (float t, float w, float up)[] ring = { (-0.5f, 0, 0), (-0.25f, 0.42f, 0), (0.12f, 0.5f, 0), (0.5f, 0, 0), (0.12f, -0.5f, 0), (-0.25f, -0.42f, 0) };
+            verts.Add(mid + Vector3.Up * curl); cols.Add(col); uv.Add(new Vector2(0, 1));
+            foreach (var (t, w, _) in ring)
+            {
+                verts.Add(mid + along * t * len + across * w * wid);
+                cols.Add(col); uv.Add(new Vector2(0, 0));
+            }
+            for (int s = 0; s < ring.Length; s++) idx.AddRange(new[] { o, o + 1 + s, o + 1 + (s + 1) % ring.Length });
+        }
+        var arrays = new Godot.Collections.Array();
+        arrays.Resize((int)Mesh.ArrayType.Max);
+        arrays[(int)Mesh.ArrayType.Vertex] = verts.ToArray();
+        var ups = new Vector3[verts.Count];
+        for (int i = 0; i < ups.Length; i++) ups[i] = Vector3.Up;
+        arrays[(int)Mesh.ArrayType.Normal] = ups;
+        arrays[(int)Mesh.ArrayType.Color] = cols.ToArray();
+        arrays[(int)Mesh.ArrayType.TexUV] = uv.ToArray();
+        arrays[(int)Mesh.ArrayType.Index] = idx.ToArray();
+        var mesh = new ArrayMesh();
+        mesh.AddSurfaceFromArrays(Mesh.PrimitiveType.Triangles, arrays);
+        return mesh;
+    }
+
+    /// <summary>An ember arena's fallen leaves (ArenaGround.LeafLook), where its paint lays
+    /// them (the grass mask's R), or null for a place with none.</summary>
+    public static MultiMeshInstance3D? Leaves(ZoneData z, Vector2 centre, float radius, float cellQuality)
+    {
+        if (z.Place == null || z.GrassMask == null || ArenaGround.LeavesOf(z.Place.Id) is not { } look) return null;
+        const float Cell = 0.6f;
+        var mesh = LeafScatter(look.PerCell, Cell);
+        float step = Cell * Mathf.Max(1, cellQuality / 0.3f);
+        int n = (int)(radius * 2 / step);
+        var mm = new MultiMesh { TransformFormat = MultiMesh.TransformFormatEnum.Transform3D, Mesh = mesh, InstanceCount = n * n };
+        var rng = new RandomNumberGenerator { Seed = 19 };
+        int i = 0;
+        for (int j = 0; j < n; j++)
+            for (int k = 0; k < n; k++)
+            {
+                float x = centre.X - radius + (k + rng.Randf()) * step, zz = centre.Y - radius + (j + rng.Randf()) * step;
+                mm.SetInstanceTransform(i++, new Transform3D(new Basis(Vector3.Up, rng.Randf() * Mathf.Tau), new Vector3(x, 0, zz)));
+            }
+        var mat = new ShaderMaterial { Shader = GD.Load<Shader>("res://shaders/arena_leaves.gdshader") };
+        mat.SetShaderParameter("noise_tex", NoiseTex.Get());
+        mat.SetShaderParameter("splat", ImageTexture.CreateFromImage(z.GrassMask!));
+        mat.SetShaderParameter("zone_size", z.Size);
+        mat.SetShaderParameter("density", look.Density);
+        mat.SetShaderParameter("size", look.Size);
+        mat.SetShaderParameter("cell_span", Cell);
+        mat.SetShaderParameter("span", radius * 2);
+        mat.SetShaderParameter("centre", centre);
+        var g = z.Ground;
+        var hb = new byte[g.Heights.Length * 4];
+        System.Buffer.BlockCopy(g.Heights, 0, hb, 0, hb.Length);
+        mat.SetShaderParameter("heights", ImageTexture.CreateFromImage(Image.CreateFromData(g.Res, g.Res, false, Image.Format.Rf, hb)));
+        mat.SetShaderParameter("h_size", (float)g.Size);
+        mat.SetShaderParameter("h_res", (float)g.Res);
+        mesh.SurfaceSetMaterial(0, mat);
+        return new MultiMeshInstance3D
+        {
+            Multimesh = mm, Name = "Leaves", CastShadow = GeometryInstance3D.ShadowCastingSetting.Off,
+            CustomAabb = new Aabb(new Vector3(-1e4f, -1e4f, -1e4f), new Vector3(2e4f, 2e4f, 2e4f)),
+        };
+    }
+
     /// <summary>An ember arena's grass: tussocks where its paint grows them
     /// (shaders/arena_grass.gdshader), coloured and sized by its place
     /// (ArenaGround.Grass). The grid is sparser than a meadow's (a tussock

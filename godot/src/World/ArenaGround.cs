@@ -35,8 +35,8 @@ public static class ArenaGround
         // stream's stones the palest thing on the ground (moss is the shader's)
         // (Leaves drawn half again as large as the scan's: a leaf must be a few pixels to read
         // as one from the arena camera, or the litter reads as gravel.)
-        ["hollow"] = [new(0.11f, 1.0f, Con: 1.4f, Lift: 0.02f, Size: 1.7f), new(0.06f, 0.9f, Con: 1.35f, Size: 1.5f), new(0.075f, 0.8f, Lift: 0.03f, Bump: 0.1f, Size: 1.3f),
-            new(0.03f, 0.8f, Lift: -0.03f), new(0.1f, 0.6f, Lift: -0.05f, Bump: 0.08f), new(0.1f, 0.9f, Con: 1.35f, Lift: 0.01f, Size: 1.4f), new(0.07f, 0.7f)],
+        ["hollow"] = [new(0.1f, 1.0f, Con: 0.8f, Lift: 0.02f, Size: 1.9f), new(0.05f, 0.9f, Con: 0.9f, Size: 1.5f), new(0.075f, 0.8f, Lift: 0.03f, Bump: 0.1f, Size: 1.3f),
+            new(0.03f, 0.8f, Lift: -0.03f), new(0.1f, 0.6f, Lift: -0.05f, Bump: 0.08f), new(0.085f, 0.9f, Con: 0.9f, Lift: 0.01f, Size: 1.4f), new(0.07f, 0.7f)],
         // verge, churn, ruts, wet, camp, metal, face
         ["ruts"] = [new(0.065f, 0.6f, Lift: 0.04f, Bump: 0.06f), new(0.05f, 0.65f), new(0.045f, 0.6f, Lift: -0.02f, Bump: 0.08f), new(0.04f, 0.65f, Lift: -0.04f),
             new(0.06f, 0.55f, Lift: 0.01f), new(0.08f, 0.5f, Lift: 0.01f, Bump: 0.06f), new(0.055f, 0.55f)],
@@ -80,6 +80,7 @@ public static class ArenaGround
         mat.SetShaderParameter("slurry_glow", slurry);
         mat.SetShaderParameter("fox_glow", fox);
         mat.SetShaderParameter("lip_glow", z.Story ? 0.3f : 1f);
+        mat.SetShaderParameter("face_skip_b", place.Id == "dig" ? 1f : 0f);
         mat.SetShaderParameter("scorch_reach", z.Story ? 3.5f : 11f);
         mat.SetShaderParameter("g_alb", GD.Load<TextureLayered>($"{dir}/albedo.jpg"));
         mat.SetShaderParameter("g_nor", GD.Load<TextureLayered>($"{dir}/normal.jpg"));
@@ -118,7 +119,8 @@ public static class ArenaGround
         mat.SetShaderParameter("g_lift", lifts);
         mat.SetShaderParameter("g_bump", bumps);
         mat.SetShaderParameter("wet_tint", Wet[place.Id]);
-        mat.SetShaderParameter("dapple", (float)place.Air.Dapple);
+        // (The canopy's pools are real shadow now, ArenaEdge.Canopy: none painted on the ground.)
+        mat.SetShaderParameter("dapple", 0f);
         mat.SetShaderParameter("ember", new Color(place.Air.Ember));
         mat.SetShaderParameter("ember_glow", (float)place.Air.EmberGlow);
         return mat;
@@ -147,7 +149,19 @@ public static class ArenaGround
 
     public static GrassLook GrassOf(string place) => Grasses[place];
 
-    public static bool GrowsGrass(string place) => Grasses[place].Density > 0;
+    /// <summary>A place's fallen leaves: how thick where its paint lays them, leaves to a
+    /// cell of sixty centimetres, and how large (1: about eleven centimetres).</summary>
+    public sealed record LeafLook(float Density, int PerCell, float Size);
+
+    static readonly Dictionary<string, LeafLook> LeafLooks = new()
+    {
+        // The Hollow's: this autumn's, over the litter of years.
+        ["hollow"] = new(1f, 14, 1.35f),
+    };
+
+    public static LeafLook? LeavesOf(string place) => LeafLooks.GetValueOrDefault(place);
+
+    public static bool GrowsGrass(string place) => Grasses[place].Density > 0 || LeafLooks.ContainsKey(place);
 
     public static void Grass(ShaderMaterial mat, ZoneData z)
     {

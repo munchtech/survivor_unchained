@@ -47,6 +47,7 @@ uniform float g_mean[NL];
 uniform float g_lift[NL];
 uniform float g_bump[NL];
 uniform float relief = 1.0;
+uniform float face_skip_b = 0.0;
 uniform float zone_size = 300.0;
 // Moonlight through a canopy, in pools (the Hollow).
 uniform float dapple = 0.0;
@@ -172,6 +173,9 @@ void fragment() {
 	}
 	float slope = 1.0 - clamp(n_geo.y, 0.0, 1.0);
 	float wr = smoothstep(0.32, 0.52, slope + (nM.b - 0.5) * 0.15);
+	// (A place's second ground can keep its own face on a slope: the Dig's spoil tips are
+	// black rock all the way up, never the cut walls' clay.)
+	wr *= 1.0 - face_skip_b * smoothstep(0.35, 0.7, s2.a);
 	for (int k = 0; k < NL; k++) gw[k] *= 1.0 - wr;
 	gw[FACE] += wr;
 
@@ -236,7 +240,7 @@ void fragment() {
 	vec4 s3 = texture(splat3, suv);
 	float mo = 0.0;
 	if (s3.r > 0.02) {
-		vec2 ca = w * 7.5, cb = w * 2.6;
+		vec2 ca = w * 3.6, cb = w * 1.3;
 		vec2 ia = floor(ca), fa = fract(ca), ib = floor(cb), fb = fract(cb);
 		float da = 8.0, db = 8.0;
 		vec2 ra = vec2(0.0), rb = vec2(0.0), ha = vec2(0.0), hb = vec2(0.0);
@@ -250,15 +254,24 @@ void fragment() {
 				if (b2 < db) { db = b2; rb = qb; hb = pb; }
 			}
 		float dome = (1.0 - clamp(da, 0.0, 1.0)) * 0.6 + (1.0 - clamp(db, 0.0, 1.0)) * 0.4;
-		mo = smoothstep(0.45, 0.6, s3.r + (nM.g - 0.5) * 0.28 + (dome - 0.55) * 0.35 + (0.5 - hgt) * 0.12);
+		// Solid where the paint is deep; toward its edge the mat breaks into separate round
+		// cushions, each there or not by its own hash, so the edge is a scatter of moss and
+		// never a line round a painted island.
+		float inner = smoothstep(0.62, 0.82, s3.r + (nM.g - 0.5) * 0.2);
+		float pres = smoothstep(-0.04, 0.08, s3.r * 1.15 + (nM.g - 0.5) * 0.25 + (0.5 - hgt) * 0.1 - hb.y * 0.6 - 0.18);
+		float cushion = 1.0 - smoothstep(0.3, 0.7, db);
+		mo = max(inner, pres * cushion);
 		vec3 mc = moss_color * mix(vec3(1.25, 1.1, 0.6), vec3(0.8, 1.0, 0.95), hb.x) * (0.75 + 0.5 * ha.y);
-		mc *= 0.3 + 0.8 * dome;
+		// Velvet, not bubbles: the domes shade the cushion gently, and a fine fibre runs
+		// through it (from thirty metres up, strong round highlights read as bubble wrap).
+		float fib = texture(noise_tex, w * 3.3 + 0.17).g * 0.6 + texture(noise_tex, w * 8.1 + 0.53).b * 0.4;
+		mc *= (0.55 + 0.55 * smoothstep(0.15, 0.95, dome)) * (0.72 + 0.56 * fib);
 		albedo = mix(albedo, mc, mo);
 		rough = mix(rough, 0.95, mo);
 		// A cushion stands a hand high, each dome a little higher.
 		H = mix(H, H + 0.05 + 0.06 * dome, mo);
 		// The domes' slopes, toward the light and away from it.
-		n = normalize(mix(n, normalize(n_geo - vec3(ra.x + rb.x * 0.6, 0.0, ra.y + rb.y * 0.6) * 0.9), mo * 0.85));
+		n = normalize(mix(n, normalize(n_geo - vec3(ra.x + rb.x * 0.6, 0.0, ra.y + rb.y * 0.6) * 0.5), mo * 0.5));
 	}
 
 	// Trodden flat: darker, smoother.

@@ -22,6 +22,9 @@ public static partial class Pieces
             "rootplate" => RootPlate(ground),
             "reeds" => Reeds(seed),
             "deadfall" => Deadfall(seed),
+            "timber" => Timber(seed),
+            "cookpot" => CookPot(),
+            "winch" => Winch(),
             _ => null,
         };
         if (made != null) made.Name = "arena_" + name;
@@ -185,8 +188,103 @@ public static partial class Pieces
             var d = new Vector3(k % 2 == 0 ? 1 : -1, 0.6f, -0.3f).Normalized();
             Tube(bark, new List<Vector3> { at, at + d * (1.2f + rng.Randf()) }, t => 0.28f - 0.18f * t, 6);
         }
-        return Hold((earth.Mesh(true), Surface("forest_ground_04", 1.6f, "#5a4c40")), (roots.Mesh(true), Surface("rough_wood", 0.9f, "#6a5e52")),
-            (fine.Mesh(), Mat("#3e3428", 0, 0.9f)), (bark.Mesh(true), Surface("rough_wood", 1.2f, "#5e544a")), (stone.Mesh(true), Surface("rock_boulder_dry", 0.8f, "#8a8478")));
+        return Hold((earth.Mesh(true), Surface("forest_ground_04", 1.6f, "#8a7a66")), (roots.Mesh(true), Surface("rough_wood", 0.9f, "#9a8a76")),
+            (fine.Mesh(), Mat("#6a5a46", 0, 0.9f)), (bark.Mesh(true), Surface("rough_wood", 1.2f, "#5e544a")), (stone.Mesh(true), Surface("rock_boulder_dry", 0.8f, "#8a8478")));
+    }
+
+    /// <summary>The Roost's pot: "one pot big enough for all of them", forty-one mouths. A black
+    /// iron cauldron as wide as a cart wheel, its lip rolled, hung from a chain off a tripod of
+    /// rough poles over the cookfire (the fire is the camp's own, set by the place); a ladle
+    /// in it, its stew catching the firelight. From above it reads as a dark ring with a
+    /// gleaming middle under three crossing poles, not a ball.</summary>
+    static Node3D CookPot()
+    {
+        var iron = new Build();
+        var wood = new Build();
+        var stew = new Build();
+        var chain = new Build();
+        const float R = 0.75f, y0 = 0.55f;
+        // The pot: round-bellied, its lip rolled outward.
+        Lathe(iron, Pts(0, y0, R * 0.55f, y0 + 0.04f, R * 0.92f, y0 + 0.25f, R, y0 + 0.5f, R * 0.93f, y0 + 0.78f, R * 0.95f, y0 + 0.84f, R * 1.02f, y0 + 0.86f,
+            R * 0.98f, y0 + 0.82f, R * 0.88f, y0 + 0.8f), 28);
+        // Three stubby legs.
+        for (int k = 0; k < 3; k++)
+        {
+            float a = k * Mathf.Tau / 3;
+            Tube(iron, new List<Vector3> { new(Mathf.Cos(a) * R * 0.5f, y0 + 0.05f, Mathf.Sin(a) * R * 0.5f), new(Mathf.Cos(a) * R * 0.62f, 0.25f, Mathf.Sin(a) * R * 0.62f) }, 0.05f, 5);
+        }
+        // The stew, a little below the lip.
+        Lathe(stew, Pts(0, y0 + 0.72f, R * 0.88f, y0 + 0.72f), 28, warp: p => p + new Vector3(0, 0.02f * Mathf.Sin(p.X * 9) * Mathf.Cos(p.Z * 7), 0));
+        // The tripod over it, its poles crossing at the top, the chain down to the bail.
+        var top = new Vector3(0, 2.6f, 0);
+        for (int k = 0; k < 3; k++)
+        {
+            float a = k * Mathf.Tau / 3 + 0.4f;
+            var foot = new Vector3(Mathf.Cos(a) * 1.7f, 0, Mathf.Sin(a) * 1.7f);
+            Beam(wood, foot, top + (top - foot).Normalized() * 0.35f, 0.11f);
+        }
+        Tube(chain, new List<Vector3> { top, new(0, y0 + 1.3f, 0) }, 0.025f, 4);
+        Tube(chain, Path(12, t => new Vector3(Mathf.Cos(t * Mathf.Pi) * R * 0.95f, y0 + 0.86f + Mathf.Sin(t * Mathf.Pi) * 0.45f, 0)), 0.02f, 4);
+        // The ladle.
+        Tube(wood, new List<Vector3> { new(R * 0.3f, y0 + 0.7f, 0.1f), new(R * 1.1f, y0 + 1.25f, 0.35f) }, 0.025f, 4);
+        return Hold((iron.Mesh(), Mat("#1e1c1a", 0.75f, 0.42f)), (wood.Mesh(true), Surface("rough_wood", 0.8f, "#6e5e4c")),
+            (stew.Mesh(), Mat("#3a2412", 0, 0.18f)), (chain.Mesh(), Wrought()));
+    }
+
+    /// <summary>The Dig's timber, stacked where it was unloaded: squared props and sleepers in
+    /// courses laid crosswise, a few askew, one leaning against the stack. Knee to waist high;
+    /// from above, the crosshatch of pale sawn ends and dark sides reads as worked wood.</summary>
+    static Node3D Timber(int seed)
+    {
+        var wood = new Build();
+        var rng = new RandomNumberGenerator { Seed = (ulong)(seed * 977 + 5) };
+        int courses = 3 + (int)(rng.Randf() * 3);
+        float y = 0;
+        for (int c = 0; c < courses; c++)
+        {
+            bool across = c % 2 == 1;
+            int n = 4 - (c > 2 ? 1 : 0);
+            for (int k = 0; k < n; k++)
+            {
+                float o = (k - (n - 1) / 2f) * 0.3f + (rng.Randf() - 0.5f) * 0.05f;
+                float len = 2.2f + 0.4f * rng.Randf(), skew = (rng.Randf() - 0.5f) * 0.12f;
+                var a = across ? new Vector3(o, y + 0.1f, -len / 2) : new Vector3(-len / 2, y + 0.1f, o);
+                var b = across ? new Vector3(o + skew, y + 0.1f, len / 2) : new Vector3(len / 2, y + 0.1f, o + skew);
+                Beam(wood, a, b, 0.22f, 0.18f);
+            }
+            y += 0.19f;
+        }
+        // One prop leant against the stack.
+        Beam(wood, new Vector3(1.6f, 0.02f, 0.4f), new Vector3(0.7f, y + 0.1f, 0.2f), 0.2f);
+        return Hold((wood.Mesh(true), Surface("rough_wood", 1.0f, "#8a7a64")));
+    }
+
+    /// <summary>A windlass at the pit's lip: two A-frame trestles, a drum between them wound with
+    /// rope, an iron crank. It stands on the lip with the rope going down; under 2 m.
+    /// Its axle along X; origin at its middle on the ground.</summary>
+    static Node3D Winch()
+    {
+        var wood = new Build();
+        var iron = new Build();
+        var rope = new Build();
+        foreach (float sx in new[] { -1.1f, 1.1f })
+        {
+            Beam(wood, new Vector3(sx, 0, -0.7f), new Vector3(sx, 1.25f, 0), 0.16f);
+            Beam(wood, new Vector3(sx, 0, 0.7f), new Vector3(sx, 1.25f, 0), 0.16f);
+            Beam(wood, new Vector3(sx, 0.45f, -0.48f), new Vector3(sx, 0.45f, 0.48f), 0.1f);
+        }
+        Tube(iron, new List<Vector3> { new(-1.35f, 1.2f, 0), new(1.35f, 1.2f, 0) }, 0.05f, 6);
+        Lathe(wood, Pts(0.26f, -0.85f, 0.3f, -0.8f, 0.3f, 0.8f, 0.26f, 0.85f), 14, new Transform3D(new Basis(Vector3.Back, Mathf.Pi / 2), new Vector3(0, 1.2f, 0)));
+        // The rope wound on the drum, and paid out over its front.
+        for (int k = 0; k < 9; k++)
+        {
+            float x = -0.7f + k * 0.175f;
+            Tube(rope, Path(16, t => new Vector3(x, 1.2f + 0.31f * Mathf.Sin(t * Mathf.Tau), 0.31f * Mathf.Cos(t * Mathf.Tau)), true), 0.025f, 4, true);
+        }
+        Tube(rope, new List<Vector3> { new(0.2f, 1.2f, 0.32f), new(0.25f, 0.2f, 1.6f), new(0.25f, -2.5f, 2.2f) }, 0.025f, 4);
+        // The crank.
+        Tube(iron, new List<Vector3> { new(1.35f, 1.2f, 0), new(1.35f, 1.55f, 0.15f), new(1.6f, 1.55f, 0.15f) }, 0.035f, 5);
+        return Hold((wood.Mesh(true), Surface("rough_wood", 0.9f, "#7a6a56")), (iron.Mesh(), Wrought()), (rope.Mesh(), Mat("#8a7a5a", 0, 0.9f)));
     }
 
     /// <summary>A deadfall: a dead tree come down years ago, its bark gone and the wood weathered

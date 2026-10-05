@@ -88,6 +88,8 @@ public sealed class MapBuild
     public byte[]? Splat3;
     /// <summary>An arena's grass, one byte a texel as Splat: how thick it grows.</summary>
     public byte[]? Grass;
+    /// <summary>An arena's fallen leaves, one byte a texel as Grass: how thick they lie.</summary>
+    public byte[]? Leaves;
     /// <summary>An arena's edge, all the way round: (x, z) every two degrees.</summary>
     public List<(double X, double Z)> Rim = new();
     /// <summary>Still water laid in an arena (a stream's course): points along

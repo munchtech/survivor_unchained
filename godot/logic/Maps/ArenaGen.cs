@@ -47,6 +47,8 @@ public struct ArenaPaint
     /// <summary>Open to the sky: a clearing in a wood, where the moon comes down whole and the
     /// canopy's dapple stops (0 under the trees).</summary>
     public double Open;
+    /// <summary>Fallen leaves lying loose over the ground (geometry: World/Grass.cs, Leaves).</summary>
+    public double Leaves;
 }
 
 /// <summary>A place's own making: its shapes, paint and dressing.</summary>
@@ -140,6 +142,7 @@ public static class ArenaGen
         readonly byte[] splat2 = new byte[SplatRes * SplatRes * 4];
         readonly byte[] splat3 = new byte[SplatRes * SplatRes * 4];
         readonly byte[] grass = new byte[SplatRes * SplatRes];
+        readonly byte[] leaves = new byte[SplatRes * SplatRes];
         public readonly List<FloraPlace> Flora = new();
         public readonly List<PropPlace> Pieces = new();
         public readonly List<ColliderDef> Colliders = new();
@@ -259,6 +262,8 @@ public static class ArenaGen
                     splat3[o] = MapGen.B(p.Moss * (1 - p.Char)); splat3[o + 1] = MapGen.B(p.Glow); splat3[o + 2] = MapGen.B(p.Fox * (1 - p.Char)); splat3[o + 3] = MapGen.B(p.Open);
                     // Nothing grows on char, in water or where it is trodden flat.
                     grass[j * SplatRes + i] = MapGen.B(p.Grass * (1 - p.Char) * (1 - p.Wet * 0.9) * (1 - p.Trod * 0.7));
+                    // Nor do leaves lie on char, in water or on trodden ground; they blow into the hollows.
+                    leaves[j * SplatRes + i] = MapGen.B(p.Leaves * (1 - p.Char) * (1 - p.Wet) * (1 - p.Trod * 0.8));
                 }
             });
         }
@@ -488,7 +493,7 @@ public static class ArenaGen
             };
             return new MapBuild
             {
-                Spec = Spec, Meta = meta, Ground = Ground, SplatRes = SplatRes, Splat = splat, Splat2 = splat2, Splat3 = splat3, Grass = grass, Flora = Flora, Props = new(), Pieces = Pieces,
+                Spec = Spec, Meta = meta, Ground = Ground, SplatRes = SplatRes, Splat = splat, Splat2 = splat2, Splat3 = splat3, Grass = grass, Leaves = leaves, Flora = Flora, Props = new(), Pieces = Pieces,
                 Kinds = Kinds, Areas = new List<Area> { start }, Packs = new(), Walkable = Walk, Place = Place, Rim = rim, Streams = Streams, Rails = Rails, Vents = Vents, Inside = Inside,
                 Gates = Gates, FireLights = FireLights,
             };

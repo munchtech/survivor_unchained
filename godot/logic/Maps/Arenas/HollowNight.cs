@@ -241,6 +241,10 @@ public sealed class HollowNight : ArenaShape
         double cl = Math.Abs(x - cx) + n1 * 2;
         p.Open = Math.Max(Math.Max(1 - MathX.Smoothstep(7, 13, dd + n1 * 3), 1 - MathX.Smoothstep(5, 10, dp + n1 * 2)),
             space == "clough" ? (1 - MathX.Smoothstep(2, 6, cl)) * 0.7 : 0);
+        // This autumn's leaves, loose over the litter: blown into drifts against the banks and
+        // thin where it is trodden, wet or mossed.
+        double blown = MathX.Smoothstep(0.3, 0.7, Noise.Noise(x * 0.07 - 23, z * 0.07 + 41) * 0.7 + n2 * 0.3 + MathX.Smoothstep(6, 1, inn) * 0.35);
+        p.Leaves = (0.35 + 0.65 * blown) * (1 - p.L3) * (1 - p.L4) * (1 - p.Moss * 0.85);
         // Grass where the canopy opens: a little along the clough and round the pool.
         double hard = Math.Max(Math.Max(p.L3, p.L4), p.Trod);
         p.Grass = Math.Max(p.Grass, (1 - hard) * MathX.Smoothstep(0.25, 0.6, Noise.Noise(x * 0.05 - 40, z * 0.05 + 12) + n2 * 0.2) * 0.8);
@@ -256,7 +260,10 @@ public sealed class HollowNight : ArenaShape
         double keep = d < 11 ? 0 : d < 18 ? 0.22 : d < 32 ? 0.34 : 0.15;
         if (Rng.Chance(keep)) B.Put(Rng.Pick(new[] { "pine", "broadleaf", "pine", "broadleaf" }), x, z, 0.9 + Math.Min(0.6, d * 0.02));
         if (d < 11 && Rng.Chance(0.5)) B.Put(Rng.Pick(new[] { "scan_fern", "scan_fern", "scan_shrub", "fern", "bramble", "scan_shrub" }), x + Rng.Range(-1, 1), z + Rng.Range(-1, 1), Rng.Range(1.0, 1.6));
-        if (d < 7 && Rng.Chance(0.16)) B.Put(Rng.Pick(new[] { "scan_root", "scan_root", "scan_mossrock", "scan_stump", "scan_branches" }), x, z, Rng.Range(0.9, 1.4), 0.15);
+        // (Roots and stumps on the lips; rock only a little way back, and small: a big mossed
+        // slab on a lip leans out over the fight from the arena camera.)
+        if (d < 7 && Rng.Chance(0.16)) B.Put(Rng.Pick(new[] { "scan_root", "scan_root", "scan_stump", "scan_branches" }), x, z, Rng.Range(0.9, 1.4), 0.15);
+        if (d > 3 && d < 9 && Rng.Chance(0.05)) B.Put("scan_mossrock", x, z, Rng.Range(0.55, 0.8), 0.3);
     }
 
     public override void Fringe(double x, double z, double inn)
@@ -350,8 +357,9 @@ public sealed class HollowNight : ArenaShape
         double face = ArenaGen.Builder.Facing(rx0, rz0, den.X, den.Z);
         B.Piece("arena/rootplate", rx0, rz0, face, 1);
         // The sick lying in it: a faint light of the slurry's, deep in the hole.
-        var (gx0, gz0) = Past(3.2);
-        B.Glow(gx0, gz0, "#b8d060", 2.4, height: 0.3, flicker: 0.05);
+        // (In the hole's mouth, under the plate: it lights the roots hanging over it from below.)
+        var (gx0, gz0) = Past(0.6);
+        B.Glow(gx0, gz0, "#b8d060", 4.5, height: 0.7, flicker: 0.06);
         // Their bones about the floor: deer and boar, never a man's.
         for (int k = 0; k < 10; k++)
         {

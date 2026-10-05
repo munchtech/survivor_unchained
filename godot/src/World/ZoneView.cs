@@ -34,7 +34,7 @@ public partial class ZoneView : Node3D
     readonly List<GpuParticles3D> chimneys = new();
     readonly List<(int Light, GpuParticles3D Moths)> moths = new();
     readonly ShaderMaterial ground;
-    MultiMeshInstance3D? grass;
+    MultiMeshInstance3D? grass, leaves;
     readonly Node3D props;
     double time;
     public bool Night { get; private set; }
@@ -294,10 +294,14 @@ public partial class ZoneView : Node3D
     public void GrowGrass(Vector2 at, float radius = 40)
     {
         grass?.QueueFree();
+        leaves?.QueueFree();
         grass = Grass.Build(Data, at, radius, grassCell);
         grassAt = at;
         grassRadius = radius;
         AddChild(grass);
+        // An arena's fallen leaves, following her as its grass does.
+        leaves = Grass.Leaves(Data, at, radius, grassCell);
+        if (leaves != null) AddChild(leaves);
     }
 
     float grassCell = 0.3f, grassRadius = 40;
@@ -323,7 +327,11 @@ public partial class ZoneView : Node3D
     }
 
     /// <summary>The meadow's middle, every frame: the shader moves the tufts.</summary>
-    public void FollowGrass(Vector2 at) => grass?.Multimesh.Mesh.SurfaceGetMaterial(0)?.Set("shader_parameter/centre", at);
+    public void FollowGrass(Vector2 at)
+    {
+        grass?.Multimesh.Mesh.SurfaceGetMaterial(0)?.Set("shader_parameter/centre", at);
+        leaves?.Multimesh.Mesh.SurfaceGetMaterial(0)?.Set("shader_parameter/centre", at);
+    }
 
     public override void _Process(double delta)
     {

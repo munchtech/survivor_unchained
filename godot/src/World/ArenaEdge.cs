@@ -39,6 +39,8 @@ public static class ArenaEdge
         foreach (var r in z.Rails) root.AddChild(Rails(z, r));
         foreach (var v in z.Vents) root.AddChild(Vent(z, v, ember, new Color(place.Air.HazeColor)));
         foreach (var g in z.Gates) root.AddChild(Gate(z, g, ember));
+        // (A story place is a cut under the wood's edge: more of its sky is open.)
+        if (place.Air.Dapple > 0 && z.Splat3 != null) root.AddChild(Canopy(z, (float)place.Air.Dapple * (z.Story ? 0.7f : 1f)));
         return root;
     }
 
@@ -204,6 +206,36 @@ public static class ArenaEdge
             pts.Add(new Vector3(p.X, z.HeightAt(p.X, p.Y) + lift, p.Y));
         }
         return pts;
+    }
+
+    /// <summary>The wood's canopy over a place in the trees (the Hollow): a sheet fourteen metres
+    /// up, drawn only into the moon's shadow (shaders/canopy.gdshader), so the moon comes down in
+    /// pools that fall on everything alike and sway with the wind, and clearings stand open to
+    /// it. The pools are where the fight reads best; under the crowns the ground drops to the
+    /// sky's light alone.</summary>
+    static MeshInstance3D Canopy(ZoneData z, float cover)
+    {
+        // (Low: a canopy far over a low moon throws its pools a long way off, and they slide.)
+        const float H = 9f;
+        var air = z.Meta.Atmosphere;
+        float el = Mathf.DegToRad((float)air.KeyElevation), az = Mathf.DegToRad((float)air.KeyAzimuth);
+        var dir = new Vector3(Mathf.Cos(el) * Mathf.Cos(az), Mathf.Sin(el), Mathf.Cos(el) * Mathf.Sin(az)).Normalized();
+        var off = new Vector2(-dir.X, -dir.Z) * H / Mathf.Max(dir.Y, 0.2f);
+        float y = z.HeightAt(0, 0) + H;
+        var mat = new ShaderMaterial { Shader = GD.Load<Shader>("res://shaders/canopy.gdshader") };
+        mat.SetShaderParameter("noise_tex", NoiseTex.Get());
+        mat.SetShaderParameter("open_tex", ImageTexture.CreateFromImage(z.Splat3!));
+        mat.SetShaderParameter("zone_size", z.Size);
+        mat.SetShaderParameter("moon_off", off);
+        mat.SetShaderParameter("cover", cover);
+        return new MeshInstance3D
+        {
+            // (Subdivided every four metres: the moon's shadow pancakes what lies before its near
+            // plane, and a sheet of two great triangles pancaked across it casts nothing true.)
+            Name = "Canopy", Mesh = new PlaneMesh { Size = new Vector2(z.Size, z.Size), SubdivideWidth = (int)(z.Size / 4), SubdivideDepth = (int)(z.Size / 4) }, MaterialOverride = mat,
+            Position = new Vector3(-off.X, y, -off.Y),
+            CastShadow = GeometryInstance3D.ShadowCastingSetting.ShadowsOnly,
+        };
     }
 
     /// <summary>A story place's gate, shut: the ember burning across the way, the same fire as

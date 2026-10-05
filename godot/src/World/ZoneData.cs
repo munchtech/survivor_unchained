@@ -124,6 +124,8 @@ public sealed class ZoneData
         {
             var g = new byte[m.Grass.Length * 4];
             for (int i = 0; i < m.Grass.Length; i++) g[i * 4 + 1] = (byte)(255 - m.Grass[i]);
+            // R: the fallen leaves (Grass.Leaves).
+            if (m.Leaves != null) for (int i = 0; i < m.Leaves.Length; i++) g[i * 4] = m.Leaves[i];
             GrassMask = Image.CreateFromData(m.SplatRes, m.SplatRes, false, Image.Format.Rgba8, g);
         }
         Inside = m.Inside;
