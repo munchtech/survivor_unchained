@@ -205,6 +205,10 @@ public abstract partial class Overlay : Control
     /// <summary>How near the camera comes while this is open (1: as it was).</summary>
     public virtual float CameraNear => 1;
 
+    /// <summary>A place on the ground the view looks at while this is open, instead of the survivor
+    /// (a counter: the keeper, live in the world between its two panels). Null: the survivor.</summary>
+    public virtual (double X, double Z)? CameraLook => null;
+
     /// <summary>
     /// A panel down one side of the screen (docs/UI_DESIGN.md 6, "Page or panel"):
     /// for what is tweaked mid-play, where the world should stay in view (Diablo

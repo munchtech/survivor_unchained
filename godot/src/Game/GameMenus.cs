@@ -89,8 +89,19 @@ public partial class Game
         scene.SimPaused = o is PauseScreen or CreditsScreen || zone?.Ember == true;
         cam.ScreenShift = o.CameraShift;
         cam.ScreenNear = o.CameraNear;
+        LookFor(o.CameraLook);
         controls.Captured = true;
         hud.Prompt(promptShown = null);
+    }
+
+    bool screenLook;
+
+    /// <summary>The view looks where a screen asks (a counter's keeper), and back at the survivor
+    /// when it closes; a cutscene's own framing is never taken from it.</summary>
+    void LookFor((double X, double Z)? at)
+    {
+        if (at is { } p && scene != null) { cam.FocusOverride = new Godot.Vector3((float)p.X, (float)scene.HeightAt(p.X, p.Z) + 0.8f, (float)p.Z); screenLook = true; }
+        else if (screenLook) { cam.FocusOverride = null; screenLook = false; }
     }
 
     /// <summary>The credits and licences, from the title or the pause menu; closing them goes back there.</summary>
@@ -108,6 +119,7 @@ public partial class Game
         zone?.Touched();
         cam.ScreenShift = 0;
         cam.ScreenNear = 1;
+        LookFor(null);
         if (scene != null && hudMode == null) scene.SimPaused = false;
         controls.Captured = false;
         controls.ClearLatches();

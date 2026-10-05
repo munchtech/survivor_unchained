@@ -191,6 +191,11 @@ public partial class Game : Node, IZoneHost
                 }
                 else Journey.GiveItem(idq[0], qty, rar);
             }
+        // --nightkit DEF,DEF: those pieces from the pack worn by night (pictures of the two kits).
+        if (Args.Get("nightkit") is string nk)
+            foreach (var d in nk.Split(','))
+                if (Journey.Ch.Pack.FirstOrDefault(p => p?.Def == d) is { } piece && Items.SlotFor(Items.Get(d)) is EquipSlot ks)
+                    Kits.Put(Journey.Ch, KitKind.Night, piece, ks);
         // --facts k=v,k=v: the world as a later day would have it (pictures: --facts stream.clear=true);
         // a number or true/false is read as one, anything else as words; --met a,b: those people known.
         if (Args.Get("facts") is string facts)
