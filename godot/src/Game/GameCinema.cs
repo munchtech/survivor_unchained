@@ -44,6 +44,7 @@ public partial class Game
         if (marks != null) foreach (var (k, v) in marks) file.Marks[k] = v.ToArray();
         // A timeline that cannot be laid out is not played (its schedule is built
         // before anything on screen changes), and the zone does without.
+        ClearKept();
         try { cine = new Cine(this, file, b, done); }
         catch (Exception e) { GD.PushError($"cinema: {id} not played: {e.Message}"); cine = null; return false; }
         handoffId = id;
@@ -59,6 +60,14 @@ public partial class Game
      * player held the stick; at its end the walk carries on into play and
      * eases to a stop over CarryFade unless the player takes it. */
     (double X, double Z)? cineWalk;
+    /// <summary>Bodies a cinematic left in the world (end.keep), until the next one or the place goes.</summary>
+    readonly List<Node3D> kept = new();
+
+    void ClearKept()
+    {
+        foreach (var n in kept) if (IsInstanceValid(n)) n.QueueFree();
+        kept.Clear();
+    }
     (double X, double Z) carry;
     double carryT;
     const double CarryFade = 0.7;
@@ -398,8 +407,14 @@ public partial class Game
             {
                 var (fp, fl) = g.cam.PoseFor(end);
                 float k = (float)pose.FollowK;
+                // The way it looks turns from the shot's to the game's (a point far up a
+                // road, lerped toward her, kept the camera looking ahead until the last
+                // moment and lost her from the frame on the way).
+                Vector3 d0 = (at - pos).Normalized(), d1 = (fl - fp).Normalized();
+                float reach = Mathf.Lerp((at - pos).Length(), (fl - fp).Length(), k);
                 pos = pos.Lerp(fp, k);
-                at = at.Lerp(fl, k);
+                // The look turns ahead of the move (its square root), so she stays in the frame.
+                at = pos + (d0.Dot(d1) > 0.9999f ? d1 : d0.Slerp(d1, Mathf.Sqrt(k))) * reach;
                 hfov = Mathf.Lerp(hfov, FollowHfov(), k);
             }
             if (pose.Handheld > 0)
@@ -1062,8 +1077,10 @@ public partial class Game
                 p.Vx = moving > 0 ? herVel.X : 0; p.Vz = moving > 0 ? herVel.Z : 0;
                 pv?.Face((float)heading, new Vector3((float)x, (float)g.scene.HeightAt(x, z), (float)z), moving);
             }
-            foreach (var (name, v) in people) if (!bosses.ContainsKey(name)) v.QueueFree();
-            foreach (var w in bosses.Values) w.QueueFree();
+            // Who stays where it left them (a body in the river) stays, still, until the next one.
+            var keep = file.End.Keep ?? new List<string>();
+            foreach (var (name, v) in people) if (!bosses.ContainsKey(name)) { if (keep.Contains(name)) g.kept.Add(v); else v.QueueFree(); }
+            foreach (var (name, w) in bosses) { if (keep.Contains(name)) g.kept.Add(w); else w.QueueFree(); }
             foreach (var o in orbs.Values) o.QueueFree();
             bosses.Clear(); orbs.Clear(); groups.Clear(); later.Clear();
             foreach (var n in props.Values) n.QueueFree();
