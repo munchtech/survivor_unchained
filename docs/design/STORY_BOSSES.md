@@ -86,7 +86,7 @@ Everything in `ArenaBoss` holds: gates with floors and ceilings, the Break, the 
   - the hand at the gate (the Barrow Lord).
 
   The cinematic plays in and out through the boss hooks (`docs/cinematics/README.md` 11a).
-- **A rise at the boss** restores its ground to the moment it opened: the ring, walls, pits, posts, fires and frost.
+- **A rise at the boss** restores its ground to the moment it opened: the ring, walls, pits, posts, fires and frost. The arrival's cinematic does not play again: a two-second re-entry does instead (his howl, the laugh, "Nondum"), so the arrival hook is told whether this is a first arrival or a rise.
 - **Arena changes end with the fight,** within 3 s of the ending.
 
 ### 0.5 Rules every story boss keeps
@@ -116,6 +116,7 @@ Measured by the `story` harness (section 5.4), at tiers 1–4, with 16 seeds, pl
 | Cards at the boss | a table night's minute-20 count, within two |
 | Won on the first try, with the two rises, plain hands | planned 90% or more; careless 70–80% |
 | The boss on its first life, plain hands | 55–70%: it kills a first-timer sometimes |
+| Runs under half health somewhere on the way in, plain hands | 20–35%: the way in has a dip, not a stroll (the table night's run-ups measured 2–5%) |
 | Falls in a beat, plain hands | 5% of beats or fewer: the danger is at the boss |
 | Telegraphed blows taken at the boss, plain hands | 3–6 on average |
 
@@ -316,7 +317,7 @@ Then the dead part, and he comes up through them: "Nondum" (C13's arrival).
 - **Enrages:**
   - **soft** (4:30): a new line forms every 10 s;
   - **hard** (6:00), **The Last Watch**: the front walks in to 5 m.
-- **The ending (C13).** She lays him down, and he gets up inside her weapon, puts his gauntlet flat on her breastbone ("Redi"), and pushes once. The dead step back onto the stair together and stand. The fight is won and the way out stands open. C13's shot 1 reads "The blow. He does not fall."; with the laying down it becomes "she stands over him, and he will not stay down". That is the cinematics lead's line to change.
+- **The ending (C13).** She lays him down, and he gets up inside her weapon, puts his gauntlet flat on her breastbone ("Redi"), and pushes once. The dead step back onto the stair together and stand. The night ends there, as every story fight's does: C13 stages the open stair-head, but there is no way out to walk to, and the result follows. C13's shot 1 reads "The blow. He does not fall."; with the laying down it becomes "she stands over him, and he will not stay down". That is the cinematics lead's line to change.
 
 ---
 
@@ -349,6 +350,7 @@ A subclass of `ArenaBoss` with:
 - `SoftAt` and `HardAt` as fields, with the table's 180 and 300 s as their defaults;
 - floors and ceilings per section 0.4;
 - `Ending(Enemy)`, the story's end, run when it is spent;
+- `Arrive(bool rise)`: the arrival hook, the cinematic on a first arrival and the two-second re-entry on a rise;
 - a reset that a rise calls.
 
 The story scripts are their own classes: `Greymuzzle`, `Redcowl`, `GrimtunnelStory` and `BarrowLordStory`. The story's spec picks them; the table's rulers stay exactly as they are. Shared moves move from the table's scripts into `ArenaBoss`, so both use them: lunge chains, Hamstring, Pilum, Testudo, the lamps, Under.
