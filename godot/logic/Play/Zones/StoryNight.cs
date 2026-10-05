@@ -407,6 +407,14 @@ public sealed class StoryNight : ZoneRuntime, IStoryArena
     {
         if ((strayT -= dt) > 0) return;
         strayT = 0.5;
+        // She is held by the place as its foes are. (Put out past the lip's wall at the Heart's turn, a night stood
+        // outside its own fight until the cap.)
+        var me = B!.Player;
+        if (!Fight.Place.Inside(me.X, me.Z, -0.8, open) || shutBehind && !PastGates(me.X, me.Z))
+        {
+            var back = Home(me.X, me.Z, me.Radius, boss: true);
+            if (back != default) { me.X = back.X; me.Z = back.Z; me.Vx = me.Vz = 0; }
+        }
         foreach (var e in B!.Enemies.Living())
         {
             // A named foe the stage asks her to reach, or the boss, is brought back however its script moved it,
@@ -417,18 +425,21 @@ public sealed class StoryNight : ZoneRuntime, IStoryArena
             // (The boss, once the way back is shut, on his own side of it too: pushed out of a hole of his own
             // making, Grimtunnel went through the shut gate.)
             if (Fight.Place.Inside(e.X, e.Z, -0.8, open) && !(e.Boss && shutBehind && !PastGates(e.X, e.Z))) continue;
-            // (A point the fight has since filled is no home: Grimtunnel set down at the crack's end, in the crack,
-            // was pushed out of it through the wall, and back, and out.)
-            // The place's points, and ground round each (a boss is big, and his own holes fill his ground).
-            var home = Fight.Place.Points.Values
-                .SelectMany(q => Enumerable.Range(0, 17).Select(k => k == 0 ? (X: q.X, Z: q.Z)
-                    : (X: q.X + Math.Cos(k * Math.PI / 4) * (k <= 8 ? 2.5 : 5), Z: q.Z + Math.Sin(k * Math.PI / 4) * (k <= 8 ? 2.5 : 5))))
-                .Where(q => Fight.Place.Inside(q.X, q.Z, 1, open) && (!e.Boss || !shutBehind || PastGates(q.X, q.Z)) && !B.Collision.Blocked(q.X, q.Z, e.Radius))
-                .OrderBy(q => Dist(q.X, q.Z, e.X, e.Z)).FirstOrDefault();
+            var home = Home(e.X, e.Z, e.Radius, e.Boss);
             if (home == default) continue;
             e.X = home.X; e.Z = home.Z; e.Kbx = e.Kbz = 0;
         }
     }
+
+    /// <summary>Free ground nearest a point: the place's points, and ground round each (a boss is big, and his own
+    /// holes fill his ground); past the shut gate for the boss (and her) once it is shut. (A point the fight has
+    /// since filled is no home: Grimtunnel set down at the crack's end, in the crack, was pushed out of it
+    /// through the wall, and back, and out.)</summary>
+    (double X, double Z) Home(double x, double z, double radius, bool boss) => Fight.Place.Points.Values
+        .SelectMany(q => Enumerable.Range(0, 17).Select(k => k == 0 ? (X: q.X, Z: q.Z)
+            : (X: q.X + Math.Cos(k * Math.PI / 4) * (k <= 8 ? 2.5 : 5), Z: q.Z + Math.Sin(k * Math.PI / 4) * (k <= 8 ? 2.5 : 5))))
+        .Where(q => Fight.Place.Inside(q.X, q.Z, 1, open) && (!boss || !shutBehind || PastGates(q.X, q.Z)) && !B!.Collision.Blocked(q.X, q.Z, radius))
+        .OrderBy(q => Dist(q.X, q.Z, x, z)).FirstOrDefault();
 
     /// <summary>The stage's crowd kept standing, from its points out of her reach, until its pool is spent.</summary>
     void Crowd(double dt)

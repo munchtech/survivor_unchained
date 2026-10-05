@@ -338,11 +338,13 @@ public sealed class GrimtunnelStory : StoryBoss, IBound
     }
 
     /// <summary>A sinkhole where he burst (from the Collapse on): marked a moment, then ground nothing stands on,
-    /// up to five and one more a tier; the oldest fills when the next opens, until he grows wild.</summary>
+    /// up to five and one more a tier; the oldest fills when the next opens. Wild, they stop filling, but only
+    /// to half again as many: left to grow without end, a slow night's lip became holes with a little ground
+    /// between, and the two halves of the Heart could not be crossed.</summary>
     void Pit(double x, double z)
     {
-        int cap = 5 + S.Tier;
-        if (pits.Count >= cap && !Soft) { var old = pits[0]; pits.RemoveAt(0); B.Collision.Remove(old.Id); B.EndMark(old.Mark); }
+        int cap = (5 + S.Tier) * (Soft ? 3 : 2) / 2;
+        if (pits.Count >= cap) { var old = pits[0]; pits.RemoveAt(0); B.Collision.Remove(old.Id); B.EndMark(old.Mark); }
         B.Blow(new Battle.EnemyBlow { Shape = TelegraphShape.Circle, Kind = TelegraphKind.Wall, X = x, Z = z, Radius = 2.6, Delay = 1.5, From = E, Label = "The ground goes" });
         S.After(1.5, () =>
         {
@@ -599,18 +601,32 @@ public sealed class GrimtunnelStory : StoryBoss, IBound
         caveT = 10;
     }
 
+    /// <summary>Ground he can stand on within `r` of the lip's middle, nearest him: not in the crack or a pit
+    /// (set down in the crack, the walk's own push carried him back out along it to where the floor had gone).</summary>
+    (double X, double Z)? Footing(double r)
+    {
+        (double X, double Z)? best = null;
+        double bd = double.MaxValue;
+        for (double rr = Math.Max(0, r); rr >= 0; rr -= 1)
+            for (int k = 0; k < (rr < 0.5 ? 1 : 16); k++)
+            {
+                double a = k * Math.PI / 8, x = C.X + Math.Cos(a) * rr, z = C.Z + Math.Sin(a) * rr;
+                if (B.Collision.Blocked(x, z, E.Radius)) continue;
+                double d = Dist(x, z, E.X, E.Z);
+                if (d < bd) { bd = d; best = (x, z); }
+            }
+        return best;
+    }
+
     void Cave(double dt)
     {
-        if ((caveT -= dt) <= 0) { caveT = 10; caveR = Math.Max(5, caveR - 2); }
+        // (It stops at seven metres: the crack runs through the lip's middle, and at five the halves either side
+        // of it were too narrow to stand in.)
+        if ((caveT -= dt) <= 0) { caveT = 10; caveR = Math.Max(7, caveR - 2); }
         // The floor goes from under him too: he scrambles in off it. (Left standing out on ground that had gone,
         // he fought on from where she could not follow, and a weak build's night ran to the cap.)
         double ed = Dist(E.X, E.Z, C.X, C.Z);
-        if (!goingDown && ed > caveR - 1.2)
-        {
-            double k = (caveR - 1.2) / Math.Max(0.01, ed);
-            E.X = C.X + (E.X - C.X) * k; E.Z = C.Z + (E.Z - C.Z) * k;
-            B.Collision.Resolve(ref E.X, ref E.Z, E.Radius, overGaps: true);
-        }
+        if (!goingDown && !under && ed > caveR - 1.2 && (Footing(caveR - 1.2) ?? Footing(caveR + 1)) is var (fx, fz)) { E.X = fx; E.Z = fz; }
         var p = B.Player;
         double d = Dist(p.X, p.Z, C.X, C.Z);
         // The going floor shoves her back in, and hurts only now and then, as any living wall does (Greymuzzle's

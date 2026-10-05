@@ -463,7 +463,9 @@ public sealed class HollowByNight : StoryFight
         protected override void Open()
         {
             var (x, z) = A.Place["den"];
-            white = A.Foe("mb_whitethroat", x, z + 6, 9, "The Pack");
+            // She lives through her seven drives: a practised reader made her miss, and her pants (twice taken) ended
+            // the stage in under a minute, three drives short (the experience director's 1:40 drive at the screen).
+            white = A.Foe("mb_whitethroat", x, z + 6, 12, "The Pack");
             // Her teeth between drives are not the lesson: the drive is (its lane keeps its weight).
             if (white != null) white.Damage *= 0.35;
             if (white != null)
