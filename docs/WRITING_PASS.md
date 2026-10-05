@@ -2145,3 +2145,43 @@ adds it with the fact; his hub's ids .1–.3 become .2–.4.
 
 **Snib, a bad steep:** "That is not Snib's fault. That is the JAR's fault.
 ...Snib filled the jar."
+
+## 25. Loot's words: Act 1's Legendaries and sets (5 October)
+
+The loot lead made Act 1's first Legendaries and sets
+(`worktree-agent-a9a9c345a35e1fcad@2404bf9f`, `docs/design/LOOT_DESIGN.md`
+§10). These are the story's corrections and rewrites, given to be pasted
+verbatim. Anything not named stands.
+
+- **Must fix:** "Ashford Levy Colours" becomes "Levy Colours". The Kerchiefs
+  never name the town and no text about them says it (the bible, "The
+  nights", rule 2). The set's lore keeps it unsaid: "Red was a town's colour
+  before it was a gang's. Nobody in the Roost will tell you which town."
+- **Renamed:** "Forty-One Mouths" (the cleaver) becomes "Nan's Cleaver". The
+  phrase is C06's title and a phase of Redcowl's already.
+
+| Item | Lore |
+|---|---|
+| `forty_one_mouths` (Nan's Cleaver) | "Firepot Nan's, from the Roost's kitchen. It has jointed everything the road brought in, and the road brought in a great deal. She will want it back." |
+| `drowned_coat` | "Wrung out, it is wet again by morning. Whoever wore it last went into the ford in it, and did not come out." |
+| `corrans_sword` | "Notched along the spine in tens, the way a man counts nights on a post nobody relieves. The Watch's book has him down as a deserter." |
+| `ditchwater` | "Pulled out of the ditch on the Low Ford road, wound and loaded, with weed in the stock. Whoever loaded it never got to fire it." |
+| `fever_year_staff` | "Charred to the grip. In the fever year they burned the bedding of the dead, and somebody stirred the fire with this until it was done." |
+| `slurry_wheel` | "A spare wheel off the Dig's pump, beaten flat and strapped for an arm. It still weeps green." |
+| `kells_lamp` | "It came back up the shaft on its own, still lit. Kell did not." |
+| `pelt_of_the_pack` | "Grey to the roots, and stitched from more than one wolf. Maeca could tell you whose, and won't." |
+| `watch_kit` (the set) | "Eleven men on a wall built for sixty, and every one of them still oils his mail." |
+| `watch_coif` | "Oiled, and hung on its peg. The man whose peg it was is not coming back for it." |
+| `watch_hauberk` | "Mended at the shoulder where a blade went in, more than once, by someone who could not sew." |
+
+- **A Legendary falls** (the HUD): "This one has a name." ("Fallen" would read
+  as hers.)
+- **The dark's debt** (the pity tally): "What the dark owes you"; when it
+  pays, "The dark settles up."
+- **The makes:** Worn, Sound and Wrought, yes. Legion, yes: the valley's word
+  for the old empire's best iron, never a people, and from about Act 2.
+  Heartwrought, yes, never before Act 2's end (level 32): the heart it names
+  is Act 3's.
+- **Later, when the items are on the integration branch:** Holloway sees
+  Corran's sword (`corrans_sword`): "(He looks at the sword a long time.)
+  That's Corran's. ...Keep it oiled. He did."

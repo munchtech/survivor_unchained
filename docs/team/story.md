@@ -43,7 +43,10 @@ before recording. Agent a7ba8903f4c8261b1 (the sixth story lead), branch
   - **Words passed for other leads since:** the Hollow's new beats and the
     Roost's extra slots for combat (WRITING_PASS §23.6–23.7); Ysolde at her
     chart table, the four ruler's things and their Marks, Brannoc's cooled
-    commission and Snib's bad steep for crafting (§24). A lost story fight's
+    commission and Snib's bad steep for crafting (§24); Act 1's Legendaries
+    and sets for loot (§25: "Ashford Levy Colours" is out, the cleaver is
+    Nan's, and StoryLint now holds that no thing's name or lore says
+    "Ashford"). A lost story fight's
     result now says "It will be there again tomorrow night." (experience took
     the table rematch out).
 - **Checks:** StoryLint, the seed check, the signature phrases and the body's
