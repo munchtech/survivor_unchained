@@ -220,6 +220,8 @@ At tier 3 (before his blows were softened to ×1.0), plain hands won 17–25%.
   - `StoryFights.cs` holds the specs.
   - `ArenaResult.WakesInTown` and `Journey.WakeAfterLoss`; the day clock.
   - Told: the yardstick is minute 12, and the measured night was about 5 minutes.
+  - Their staging is on `worktree-agent-ab406cf9ddd22b03b@369b88e2` (`src/Game/GameFall.cs`): a darkened hold, "Get up" or "Let the night go", and a half-second fade. They changed one line in `StoryNight.Rise`: `G.Say(G.Journey.RiseLine())`, the counted rise line.
+  - **Owed to them:** the Hollow's numbers again (the way in, under half on the way in, the boss's first life) once the stages are lengthened.
 - **Story (`a54dc034ed29f2e02`):**
   - `OnSpare`, `EndSpared`, `SpareVerb`, `Spared` and `Arenas.Won(spared)`;
   - the words: WRITING_PASS §21 (the pulls, the sights, the voices) and the rise's names and texts;
