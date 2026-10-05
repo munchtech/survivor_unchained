@@ -1477,16 +1477,15 @@ public partial class BattleFx : Node3D
                     {
                         (h, w, col) = (LootTier)p.Loot switch
                         {
-                            LootTier.Common => (0f, 1f, col),
-                            LootTier.Uncommon => (0.8f, 1f, col),
-                            LootTier.Rare => (2.5f, 1f, col),
-                            LootTier.Epic => (5f * (1 + 0.08f * Mathf.Sin((float)now * 2.5f)), 1.2f, col),
-                            LootTier.Set => (6f, 1.4f, SetColour),
-                            LootTier.Legendary => (40f, 2.6f, Palette.Rarity[4]),
-                            LootTier.Storied => (40f, 2.6f, Palette.Rarity[5]),
-                            LootTier.Chart => (2f, 1f, new Color("#e8d8b0")),
-                            LootTier.Quest => (1.5f, 1f, new Color("#ffd46a")),
-                            LootTier.Book => (1.5f, 1f, col),
+                            LootTier.Common or LootTier.Uncommon => (0f, 1f, col),
+                            LootTier.Rare => (1.2f, 0.55f, col),
+                            LootTier.Epic => (3f * (1 + 0.08f * Mathf.Sin((float)now * 2.5f)), 0.6f, col),
+                            LootTier.Set => (4f, 0.6f, SetColour),
+                            LootTier.Legendary => (40f, 0.9f, Palette.Rarity[4]),
+                            LootTier.Storied => (40f, 0.9f, Palette.Rarity[5]),
+                            LootTier.Chart => (1.2f, 0.55f, new Color("#e8d8b0")),
+                            LootTier.Quest => (1.2f, 0.55f, new Color("#ffd46a")),
+                            LootTier.Book => (1f, 0.55f, col),
                             _ => (0f, 1f, col),
                         };
                     }
@@ -1496,7 +1495,7 @@ public partial class BattleFx : Node3D
                     if (p.Loot == (int)LootTier.Set)
                     {
                         float a = (float)now * 1.6f;
-                        lootBeams.Add(new Transform3D(Godot.Basis.Identity.Scaled(new Vector3(0.7f, h * 0.9f, 0.7f)), V(p.X + Mathf.Cos(a) * 0.18f, gy + h * 0.45f, p.Z + Mathf.Sin(a) * 0.18f)), col);
+                        lootBeams.Add(new Transform3D(Godot.Basis.Identity.Scaled(new Vector3(0.45f, h * 0.9f, 0.45f)), V(p.X + Mathf.Cos(a) * 0.14f, gy + h * 0.45f, p.Z + Mathf.Sin(a) * 0.14f)), col);
                     }
                     break;
                 }
