@@ -64,6 +64,7 @@ public partial class Game
             "stash" => new StashScreen(this),
             "rest" => new RestScreen(this),
             "maps" => new MapTableScreen(this),
+            "atlas" => new MapTableScreen(this, "atlas"),
             "arts" => new ArtsScreen(this),
             "chapter" => new ChapterScreen(this),
             "credits" => new CreditsScreen(this, () => { Open("pause"); (screens.Current as PauseScreen)?.FocusOn("Credits and licences"); }),

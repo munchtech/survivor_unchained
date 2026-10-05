@@ -154,6 +154,19 @@ public partial class Game : Node, IZoneHost
                 foreach (var f in parts[1].Split('+')) ArtBook.Choose(ch, parts[0], f);
             }
         }
+        // --charts N: N Wayfinder's charts in the pack, the first plain, the rest finer and higher
+        // (pictures of the atlas); --lit PEOPLE:TIER+...: those pairs of the atlas cleared, and
+        // their points (e.g. --lit pack:1 for the beta's first tier and point).
+        if (Args.Has("charts"))
+        {
+            var cr = new SurvivorUnchained.Core.Rng(11);
+            for (int i = 0; i < (int)Args.Num("charts", 1); i++)
+                Journey.GiveChart(SurvivorUnchained.Maps.Charts.Roll(cr, 1 + i / 2, SurvivorUnchained.Maps.MapOffers.Peoples[i % SurvivorUnchained.Maps.MapOffers.Peoples.Length].Id, 1 + i));
+        }
+        if (Args.Get("lit") is string lit)
+            foreach (var pair in lit.Split('+'))
+                if (pair.Split(':') is [var pid, var tier] && int.TryParse(tier, out var tn))
+                    SurvivorUnchained.Maps.Atlas.Complete(World, new SurvivorUnchained.Maps.Chart { People = pid, Tier = tn });
         // --items A,B[:RARITY],C*N: those things in the pack from the start, N of them for a
         // stack (pictures of the pack, the shop, the forge with a stocked pouch).
         if (Args.Get("items") is string items)
@@ -356,9 +369,41 @@ public partial class Game : Node, IZoneHost
         "waystation" => new Waystation(this, meta),
         "verge" => new Verge(this, meta),
         "arena" => new ArenaRun(this, currentMap!, World.Arena!),
-        "map" => new MapRun(this, currentMap!, World.Map!),
+        "map" => StartMap(),
         _ => throw new ArgumentException($"no zone {id}"),
     };
+
+    /// <summary>The survivor as the map opened: what it paid is read against this at its end.</summary>
+    CharacterData? mapStart;
+
+    MapRun StartMap()
+    {
+        mapStart = SurvivorUnchained.Core.Json.Clone(Journey.Ch);
+        return new MapRun(this, currentMap!, World.Map!);
+    }
+
+    /// <summary>A map is over: what it paid on its own page, the world held behind it.</summary>
+    public void MapOver(MapResult r, bool alive)
+    {
+        var spoils = SurvivorUnchained.Maps.MapSpoils.Between(mapStart ?? Journey.Ch, Journey.Ch);
+        Wait(alive ? 1.0 : 2.2, () =>
+        {
+            if (scene == null || zone is not MapRun) return;
+            hudMode = null;
+            screens.Show(new MapResultScreen(this, r, spoils));
+            scene.SimPaused = true;
+            controls.Captured = true;
+            hud.Prompt(promptShown = null);
+        });
+    }
+
+    /// <summary>Out of the map, back to the Waystation; the page stays up until the fade is dark.</summary>
+    public void LeaveMap(MapResult r)
+    {
+        bool leaving = !inTransit;
+        Travel("waystation", r.Chart.Name, r.Cleared ? "Cleared" : "The map closes");
+        if (leaving) Wait(0.8, () => screens.Close());
+    }
 
     void LeaveZone()
     {
@@ -1107,6 +1152,23 @@ public partial class Game : Node, IZoneHost
                 Carried = Args.Has("fell") ? new() { ["ember_shard"] = 3, ["wolf_pelt"] = 2, ["boar_hide"] = 1 } : new() { ["ember_shard"] = 7, ["wolf_pelt"] = 4, ["boar_hide"] = 3 },
                 Spilled = Args.Has("fell") ? new() { ["ember_shard"] = 4, ["wolf_pelt"] = 2, ["boar_hide"] = 2 } : new(),
             });
+        // A map's end, with sample spoils (pictures of the map's result; on a map; --fell: closed at the third fall).
+        else if (next == "mapresult" && World.Map is { } chart && zone is MapRun)
+        {
+            var ch = Journey.Ch;
+            var gear = new[] { ("copper_ring", 1), ("leather_cap", 1), ("chain_shirt", 2), ("bone_amulet", 2), ("iron_helm", 3) }
+                .Select(g => Inventory.Make(ch, g.Item1, rarity: g.Item2)).ToList();
+            var next1 = Inventory.Make(ch, SurvivorUnchained.Maps.Charts.Item, 1, 2);
+            next1.Chart = SurvivorUnchained.Maps.Charts.Roll(new SurvivorUnchained.Core.Rng(7), chart.Tier + 1, chart.People, 3);
+            bool fell = Args.Has("fell");
+            var r = new MapResult(chart, !fell, fell ? 486 : 641, fell ? 503 : 812, fell ? 3 : 1, fell ? 9 : 14, 16, fell ? null : 62, !fell,
+                fell ? new() { ["wolf_pelt"] = 3, ["ember_shard"] = 2 } : new());
+            var spoils = new SurvivorUnchained.Maps.MapSpoils(fell ? gear.Take(2).ToList() : gear, fell ? new() : new() { next1 },
+                fell ? new() { ["wolf_pelt"] = 3 } : new() { ["wolf_pelt"] = 6, ["ember_shard"] = 4 }, fell ? 120 : 488);
+            hudMode = null;
+            screens.Show(new MapResultScreen(this, r, spoils));
+            if (scene != null) scene.SimPaused = true;
+        }
         else Open(next);
     }
 
