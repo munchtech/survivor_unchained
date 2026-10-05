@@ -82,7 +82,7 @@ Changes: scaled and tinted per kind. Each creature plays its own clips, and move
 
   All are retargeted to the kit's bodies. Each folk clip's source is in `godot/art/anim/folk_clips.json`.
 - **NVIDIA Kimodo** (Kimodo-SOMA-RP): generated motion for the townsfolk's men's walk, women's talk, arms crossed, cheer, wave and work at a table (`tools/anim/kimodo_gen.py`). Kimodo is licensed by NVIDIA Corporation under the NVIDIA Open Model License.
-- **Reallusion AccuRIG** rigged the heroine's and the hero's bodies. Their weights were then folded onto our own skeleton; no Reallusion content ships.
+- **Reallusion AccuRIG** rigged the heroine's body. Her weights were then folded onto our own skeleton; no Reallusion content ships.
 
 ## Third-party works under CC0 (no credit required; credited with thanks)
 
@@ -117,7 +117,7 @@ Cut to loop and made mono at 24 kHz (the game plays each wide, its right side ha
 
 ### MakeHuman (http://www.makehumancommunity.org), made with MPFB
 
-- The heroine's and the hero's heads, eyes, brows, lashes, teeth and tongue, and the targets that shape their faces: MakeHuman system assets, CC0 -> `godot/art/people/heroine.glb`, `hero.glb`, `godot/art/people/head_tex`.
+- The heroine's head, eyes, brows, lashes, teeth and tongue, and the targets that shape her face: MakeHuman system assets, CC0 -> `godot/art/people/heroine.glb`, `godot/art/people/head_tex`. (The hero's join when his body ships: `docs/legal/STEAM_CHECKLIST.md` E.)
 - The heroine's head skin, "Light skin female ginger" by MargaretToigo (http://www.makehumancommunity.org/node/1130), CC0 -> `godot/art/people/head_tex/heroine_head.jpg`, `heroine_graft.jpg`.
 
 ### Poly Haven (https://polyhaven.com)

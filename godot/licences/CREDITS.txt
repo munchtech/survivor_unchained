@@ -141,7 +141,7 @@ USED UNDER SERVICE TERMS OR MODEL LICENCES
     The townsfolk: a feminine walk; a weight-shift idle; "General Conversation" talk; sitting on a chair and on the floor; picking up.
     All are retargeted to the kit's bodies.
 * NVIDIA Kimodo (Kimodo-SOMA-RP): generated motion for the townsfolk's men's walk, women's talk, arms crossed, cheer, wave and work at a table. Kimodo is licensed by NVIDIA Corporation under the NVIDIA Open Model License.
-* Reallusion AccuRIG rigged the heroine's and the hero's bodies. Their weights were then folded onto our own skeleton; no Reallusion content ships.
+* Reallusion AccuRIG rigged the heroine's body. Her weights were then folded onto our own skeleton; no Reallusion content ships.
 
 ========================================================================
 THIRD-PARTY WORKS UNDER CC0 (NO CREDIT REQUIRED; CREDITED WITH THANKS)
@@ -195,7 +195,7 @@ MakeHuman, made with MPFB
 ------------------------------------------------------------------------
 http://www.makehumancommunity.org
 
-* The heroine's and the hero's heads, eyes, brows, lashes, teeth and tongue, and the targets that shape their faces: MakeHuman system assets, CC0
+* The heroine's head, eyes, brows, lashes, teeth and tongue, and the targets that shape her face: MakeHuman system assets, CC0
 * The heroine's head skin, "Light skin female ginger" by MargaretToigo, CC0
     http://www.makehumancommunity.org/node/1130
 
