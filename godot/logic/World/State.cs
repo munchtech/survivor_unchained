@@ -158,6 +158,9 @@ public sealed class WorldState
     public uint Seed;
     public int Day = 1;
     public TimeOfDay Time = TimeOfDay.Dusk;
+    /// <summary>Seconds of free play since this day's dawn (DayClock): where in its time of day the
+    /// world is, so the day moves on by itself.</summary>
+    public double Clock = DayClock.DuskAt;
     public Dictionary<string, Fact> Facts = new();
     public List<string> Knowledge = new();
     public Dictionary<string, NpcState> Npcs = new();

@@ -20,6 +20,7 @@ public sealed class Waystation : ZoneRuntime
     public override string Name => "The Waystation";
     public override string? Region => "Where three roads meet";
     public override bool Combat => false;
+    public override bool ClockRuns => true;
 
     /// <summary>What the stall-keepers shout.</summary>
     static readonly Dictionary<string, string[]> StallCalls = new()

@@ -107,6 +107,12 @@ public interface IZoneHost
     void ArenaOver(Arena.ArenaResult result) { }
     /// <summary>Pulled into an ember arena (saved first, where the survivor stands).</summary>
     void EnterArena(Arena.ArenaSpec spec) { }
+    /// <summary>She fell in a story night (docs/design/STORY_NIGHTS_AND_TIME.md, "Falling and getting
+    /// up"): the host stages it and calls `rise` (back to the checkpoint) or `letGo` (the night lost),
+    /// and the night waits until it does. A host without a stage gets her up while she has rises
+    /// left, after a beat, and lets the night go when she has none. A rise's words are
+    /// Journey.RiseLine (counted, so the host asks for them once a rise).</summary>
+    void StoryFall(int risesLeft, Action rise, Action letGo) => After(1.0, risesLeft > 0 ? rise : letGo);
     /// <summary>A cinematic (godot/data/cinematics/ID.json) played now, `done`
     /// when it hands back or is skipped. False where none can play (no
     /// screen, the tests): the zone then says its lines as captions. `marks`
@@ -376,6 +382,12 @@ public abstract class ZoneRuntime
     /// worked out only now and then (the markers over people's heads) is worked
     /// out again before the next frame.</summary>
     public virtual void Touched() { }
+    /// <summary>The day's clock runs here (the town and the wild): never in an arena, which is its own
+    /// night, nor in the prologue, whose night is told.</summary>
+    public virtual bool ClockRuns => false;
+    /// <summary>The time of day turned while she is here (the clock, a skip): what the place does
+    /// about it beyond the light and the air, which the host turns.</summary>
+    public virtual void TimeTurned(TimeOfDay now) { }
     public virtual void Events(IReadOnlyList<CombatEvent> evs) { }
     /// <summary>The time of day the zone shows, from the world.</summary>
     public virtual TimeOfDay TimeOf(WorldState w) => w.Time;
@@ -419,10 +431,10 @@ public abstract class ZoneRuntime
     }
 
     /// <summary>A history change, as the web game's hist() writes one.</summary>
-    protected static string Hist(string id, string text, string[] tags, int spread, string? sentiment = null, string? reactions = null) =>
+    protected internal static string Hist(string id, string text, string[] tags, int spread, string? sentiment = null, string? reactions = null) =>
         $$"""{ "history": { "id": "{{id}}", "text": "{{Esc(text)}}", "tags": [{{string.Join(", ", Array.ConvertAll(tags, t => $"\"{t}\""))}}], "spread": {{spread}}{{(sentiment != null ? $", \"sentiment\": {sentiment}" : "")}}{{(reactions != null ? $", \"reactions\": {reactions}" : "")}} } }""";
 
-    protected static string Esc(string s) => s.Replace("\\", "\\\\").Replace("\"", "\\\"");
+    protected internal static string Esc(string s) => s.Replace("\\", "\\\\").Replace("\"", "\\\"");
 
     protected static double Dist(double ax, double az, double bx, double bz) => Math.Sqrt((ax - bx) * (ax - bx) + (az - bz) * (az - bz));
 }
