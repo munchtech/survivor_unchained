@@ -116,6 +116,8 @@ public sealed class StoryNight : ZoneRuntime, IStoryArena
     }
 
     public bool Won => won;
+    /// <summary>The share of its health the boss is made with (1; less only for pictures of its end).</summary>
+    public double BossStartsAt { get; set; } = 1;
     public bool Over => over;
     public ArenaBoss? BossScript => script;
     public int Falls => falls;
@@ -341,6 +343,9 @@ public sealed class StoryNight : ZoneRuntime, IStoryArena
             boss.Boss = true;
             boss.Named = new Named { Title = BossName };
             boss.MaxHp = boss.Hp = boss.MaxHp * script.HealthMul(Spec.Tier) / BossEase;
+            // (pictures of its end, --bosshp: a boss of a share of its health, its marks with it and its floors
+            // still holding every phase; begun lower, the phases' marks healed it back up to them)
+            boss.MaxHp = boss.Hp = boss.MaxHp * Math.Clamp(BossStartsAt, 0.01, 1);
             boss.Damage = script.Teeth * Character.OwnHealth(G.Journey.Ch);
             script.Begin(boss);
             b.Events.Emit(new Ev.Focus { X = x, Z = z, Duration = rise ? 1.0 : 1.6 });

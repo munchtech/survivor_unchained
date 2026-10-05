@@ -441,7 +441,7 @@ public partial class Game : Node, IZoneHost
         "verge" => new Verge(this, meta),
         // A story fight with its own stages and boss is a story night; the rest are the table's.
         "arena" => World.Arena!.Story && SurvivorUnchained.Play.Story.StoryScripts.For(World.Arena.Id) is { } fight
-            ? new StoryNight(this, currentMap!, World.Arena, fight) : new ArenaRun(this, currentMap!, World.Arena!),
+            ? new StoryNight(this, currentMap!, World.Arena, fight) { BossStartsAt = Args.Num("bosshp", 1) } : new ArenaRun(this, currentMap!, World.Arena!),
         "map" => StartMap(),
         _ => throw new ArgumentException($"no zone {id}"),
     };
