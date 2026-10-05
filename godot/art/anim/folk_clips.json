@@ -110,6 +110,24 @@
 		"source": "Mixamo (Adobe): used in the game under Mixamo's terms, raw files not redistributed: folk_weight_shift_idle.bvh",
 		"speed": 0.0
 	},
+	"f_kneel_aim": {
+		"hold": true,
+		"layer": "full",
+		"length": 0.699999988079071,
+		"licence": "own work",
+		"loop": false,
+		"note": "a crossbow's kneel and aim",
+		"source": "keyed (tools/anim/crowd.py)"
+	},
+	"f_kneel_shot": {
+		"hold": true,
+		"layer": "full",
+		"length": 0.699999988079071,
+		"licence": "own work",
+		"loop": false,
+		"note": "a crossbow's shot from the kneel, and the rise",
+		"source": "keyed (tools/anim/crowd.py)"
+	},
 	"f_lurch": {
 		"changes": "",
 		"cycle": 0.733333333333333,
@@ -180,6 +198,24 @@
 		"source": "Mixamo (Adobe): used in the game under Mixamo's terms, raw files not redistributed: folk_sitting_floor.bvh",
 		"speed": 0.0
 	},
+	"f_slam": {
+		"impact": 1.0,
+		"layer": "full",
+		"length": 1.66666662693024,
+		"licence": "own work",
+		"loop": false,
+		"note": "a heavy's slam: up overhead, down onto the ground, and up again",
+		"source": "keyed (tools/anim/crowd.py)"
+	},
+	"f_slam_armed": {
+		"impact": 1.0,
+		"layer": "full",
+		"length": 1.66666662693024,
+		"licence": "own work",
+		"loop": false,
+		"note": "a heavy's slam: up overhead, down onto the ground, and up again, armed",
+		"source": "keyed (tools/anim/crowd.py)"
+	},
 	"f_talk": {
 		"changes": "retargeted to her skeleton, feet locked, looped, in place",
 		"layer": "full",
@@ -228,6 +264,17 @@
 		"loop": true,
 		"note": "townsfolk (men)",
 		"source": "Kimodo-SOMA-RP (NVIDIA, NVIDIA Open Model License): generated: arms_crossed_0.bvh",
+		"speed": 0.0
+	},
+	"m_bend_lift": {
+		"changes": "retargeted to her skeleton, feet locked, retimed",
+		"hold": true,
+		"layer": "full",
+		"length": 8.89999961853027,
+		"licence": "Kimodo-SOMA-RP (NVIDIA, NVIDIA Open Model License)",
+		"loop": false,
+		"note": "the Warden (C02): bent down to her, the lamp lifted to her face",
+		"source": "Kimodo-SOMA-RP (NVIDIA, NVIDIA Open Model License): generated: bend_lift_1.bvh",
 		"speed": 0.0
 	},
 	"m_cheer": {
@@ -321,6 +368,15 @@
 		"note": "the crowd's death: the knees fold and it goes down in a heap on its side, armed",
 		"source": "keyed (tools/anim/crowd.py)"
 	},
+	"m_fold_forward": {
+		"hold": true,
+		"layer": "full",
+		"length": 4.0,
+		"licence": "own work",
+		"loop": false,
+		"note": "the Warden (C03): folded forward into the river, face down, still",
+		"source": "keyed (tools/anim/clips/warden.py)"
+	},
 	"m_idle": {
 		"changes": "retargeted to her skeleton, feet locked, looped, in place",
 		"layer": "full",
@@ -330,6 +386,42 @@
 		"note": "townsfolk (men)",
 		"source": "Mixamo (Adobe): used in the game under Mixamo's terms, raw files not redistributed: folk_weight_shift_idle.bvh",
 		"speed": 0.0
+	},
+	"m_kneel_aim": {
+		"hold": true,
+		"layer": "full",
+		"length": 0.699999988079071,
+		"licence": "own work",
+		"loop": false,
+		"note": "a crossbow's kneel and aim",
+		"source": "keyed (tools/anim/crowd.py)"
+	},
+	"m_kneel_lamp": {
+		"hold": true,
+		"layer": "full",
+		"length": 10.4666662216187,
+		"licence": "own work",
+		"loop": false,
+		"note": "the Warden (C03): down on his knees, the lamp held up and looked at; the arm begins to shake",
+		"source": "keyed (tools/anim/clips/warden.py)"
+	},
+	"m_kneel_shot": {
+		"hold": true,
+		"layer": "full",
+		"length": 0.699999988079071,
+		"licence": "own work",
+		"loop": false,
+		"note": "a crossbow's shot from the kneel, and the rise",
+		"source": "keyed (tools/anim/crowd.py)"
+	},
+	"m_lamp_down": {
+		"hold": true,
+		"layer": "full",
+		"length": 2.5,
+		"licence": "own work",
+		"loop": false,
+		"note": "the Warden (C03): the fist lowered, the lamp into the river",
+		"source": "keyed (tools/anim/clips/warden.py)"
 	},
 	"m_lurch": {
 		"changes": "",
@@ -381,6 +473,17 @@
 		"note": "a caster's rally, armed",
 		"source": "keyed (tools/anim/crowd.py)"
 	},
+	"m_rise_stiff": {
+		"changes": "retargeted to her skeleton, feet locked, retimed",
+		"hold": true,
+		"layer": "full",
+		"length": 4.19999980926514,
+		"licence": "Kimodo-SOMA-RP (NVIDIA, NVIDIA Open Model License)",
+		"loop": false,
+		"note": "the Warden (C02): up from his back under the river, slow and stiff, the lamp kept up",
+		"source": "Kimodo-SOMA-RP (NVIDIA, NVIDIA Open Model License): generated: rise_stiff_1.bvh",
+		"speed": 0.0
+	},
 	"m_sit_chair": {
 		"changes": "retargeted to her skeleton, feet locked, looped, in place",
 		"layer": "full",
@@ -400,6 +503,24 @@
 		"note": "townsfolk (men)",
 		"source": "Mixamo (Adobe): used in the game under Mixamo's terms, raw files not redistributed: folk_sitting_floor.bvh",
 		"speed": 0.0
+	},
+	"m_slam": {
+		"impact": 1.0,
+		"layer": "full",
+		"length": 1.66666662693024,
+		"licence": "own work",
+		"loop": false,
+		"note": "a heavy's slam: up overhead, down onto the ground, and up again",
+		"source": "keyed (tools/anim/crowd.py)"
+	},
+	"m_slam_armed": {
+		"impact": 1.0,
+		"layer": "full",
+		"length": 1.66666662693024,
+		"licence": "own work",
+		"loop": false,
+		"note": "a heavy's slam: up overhead, down onto the ground, and up again, armed",
+		"source": "keyed (tools/anim/crowd.py)"
 	},
 	"m_talk": {
 		"changes": "retargeted to her skeleton, feet locked, looped, in place",

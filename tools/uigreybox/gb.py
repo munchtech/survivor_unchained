@@ -77,6 +77,29 @@ class Canvas:
         """The screen's one ornamental frame (drawn plain here)."""
         self.rect(x, y, w, h, None, outline=(110, 104, 92), width=3, r=4)
 
+    def taper(self, x, y, w, h, fill, fade=90, frame=True, sides=True):
+        """A surface that runs on past its contents and fades out over its last `fade` px into
+        whatever is behind (the world, the page's backdrop), with its frame fading with it."""
+        solid = h - fade
+        self.rect(x, y, w, solid, fill)
+        edge = (110, 104, 92)
+        for i in range(fade):
+            k = 1 - i / fade
+            k = k * k
+            yy = y + solid + i
+            bg = self.im.getpixel((int(x + w / 2), int(yy)))
+            col = tuple(int(fill[j] * k + bg[j] * (1 - k)) for j in range(3))
+            self.d.line((x, yy, x + w - 1, yy), fill=col)
+            if frame and sides:
+                ec = tuple(int(edge[j] * k + bg[j] * (1 - k)) for j in range(3))
+                self.d.line((x, yy, x + 2, yy), fill=ec)
+                self.d.line((x + w - 3, yy, x + w - 1, yy), fill=ec)
+        if frame:
+            self.d.line((x, y, x + w - 1, y), fill=edge, width=3)
+            if sides:
+                self.d.line((x, y, x, y + solid), fill=edge, width=3)
+                self.d.line((x + w - 2, y, x + w - 2, y + solid), fill=edge, width=3)
+
     def rule(self, x0, y, x1, color=RULE):
         self.d.line((x0, y, x1, y), fill=color)
 

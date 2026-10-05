@@ -44,7 +44,17 @@ public partial class CrowdView : Node3D
         public bool Seen;
         /// <summary>How it falls, chosen at its first dying frame and kept for its body.</summary>
         public string? Death;
+        /// <summary>A slam's windup, while its blow and the get-up after it play (0: none).</summary>
+        public double Slam;
+        /// <summary>It knelt to aim: the shot that ends it is its own clip, not its melee strike.</summary>
+        public bool Aimed;
+        /// <summary>How far into its shot it was last frame (a new strike starts the clock again).</summary>
+        public double ShotT;
     }
+
+    /// <summary>Where in a slam's clip the fists (or the axe) meet the ground (crowd.py's SLAM_IMPACT): the
+    /// windup is played to land exactly there as the sim's blow lands, however long the kind winds up.</summary>
+    const double SlamImpact = 1.0;
 
     sealed record Corpse(string Visual, string Role, float X, float Z, float Facing, float Scale, Color Tint, float Glow, double Born);
 
@@ -185,6 +195,18 @@ public partial class CrowdView : Node3D
                 role = "windup";
                 t = time;
                 break;
+            case EnemyState.Casting when e.Cast == CastKind.Slam && asset.Clips.ContainsKey("slam"):
+                // Up overhead and down, the fists meeting the ground as the blow lands.
+                role = "slam";
+                g.Slam = Math.Max(0.1, e.AnimT + e.StateT);
+                t = e.AnimT * SlamImpact / g.Slam;
+                break;
+            case EnemyState.Casting when e.Cast == CastKind.Aim && asset.Clips.ContainsKey("aim"):
+                // Down on one knee, the crossbow brought up to the eye, and held on its line.
+                role = "aim";
+                g.Aimed = true;
+                g.ShotT = 0;
+                break;
             case EnemyState.Casting:
                 // A cast of its own (a howl, a rally) from its start; a stand-in windup loops.
                 role = asset.Clips.ContainsKey("cast") ? "cast" : "windup";
@@ -195,6 +217,24 @@ public partial class CrowdView : Node3D
                 t = time * 1.8 + e.Seed * 5;
                 break;
             default:
+                // After a slam, the rest of it: the blow held on the ground, then the get-up (its
+                // clock runs on until a strike starts it again).
+                if (g.Slam > 0 && e.Anim != EnemyAnim.Attack && SlamImpact + e.AnimT - g.Slam < asset.Duration("slam"))
+                {
+                    role = "slam";
+                    t = SlamImpact + e.AnimT - g.Slam;
+                    break;
+                }
+                g.Slam = 0;
+                // After an aim, the shot: the release, the kick and the rise.
+                if (g.Aimed && e.AnimT >= g.ShotT && e.AnimT < asset.Duration("shot") && asset.Clips.ContainsKey("shot"))
+                {
+                    role = "shot";
+                    t = g.ShotT = e.AnimT;
+                    break;
+                }
+                g.Aimed = false;
+                g.ShotT = 0;
                 if (e.Anim == EnemyAnim.Attack && e.AnimT < asset.Duration("attack")) { role = "attack"; t = e.AnimT; }
                 else if (g.Walking)
                 {
