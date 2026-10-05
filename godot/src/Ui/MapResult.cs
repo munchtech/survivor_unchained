@@ -44,14 +44,20 @@ public partial class MapResultScreen : TellingScreen
             Style.Ui, Style.Small, Style.InkDim, true, HorizontalAlignment.Center));
 
         // Beat one: the map's numbers.
-        var tally = Style.H(48,
-            Stat("hourglass", r.Seconds, Clock, r.Cleared ? "cleared in" : "held out", 0.5, r.Cleared),
-            Stat("heart", r.Falls, x => $"{x:0} / {MapRun.FallsAllowed}", "falls", 0.85, r.Falls < MapRun.FallsAllowed),
-            Stat("skull", r.Kills, x => $"{x:N0}", "slain", 1.2, r.Cleared),
-            Stat("sigil", r.PacksCleared, x => $"{x:0} / {r.Packs}", "packs broken", 1.55, r.Cleared));
+        var tally = Style.H(48, Stat("hourglass", r.Seconds, Clock, r.Cleared ? "cleared in" : "held out", 0.5, r.Cleared));
+        double at = 0.85;
+        // Falls are counted where a map allows more than one, or where she rose again (Not Yet) and
+        // cleared it; where one fall ends it, the verdict has already said so.
+        if (MapRun.FallsAllowed > 1 || r.Falls > 0 && r.Cleared)
+        {
+            tally.AddChild(Stat("heart", r.Falls, x => MapRun.FallsAllowed > 1 ? $"{x:0} / {MapRun.FallsAllowed}" : $"{x:0}", MapRun.FallsAllowed > 1 ? "falls" : "rose again", at, r.Falls < MapRun.FallsAllowed));
+            at += 0.35;
+        }
+        tally.AddChild(Stat("skull", r.Kills, x => $"{x:N0}", "slain", at, r.Cleared));
+        tally.AddChild(Stat("sigil", r.PacksCleared, x => $"{x:0} / {r.Packs}", "packs broken", at + 0.35, r.Cleared));
         tally.Alignment = BoxContainer.AlignmentMode.Center;
         wrap.AddChild(tally);
-        double cue = 1.55 + Count + 0.3;
+        double cue = at + 0.35 + Count + 0.3;
 
         var two = Style.H(18);
         two.SizeFlagsVertical = SizeFlags.ExpandFill;

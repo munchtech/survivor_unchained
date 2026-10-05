@@ -194,6 +194,8 @@ public sealed class Verge : ZoneRuntime
     public override void TimeTurned(TimeOfDay now)
     {
         if (now == TimeOfDay.Night && scars.Count == 0) OpenScars();
+        // Nightfall in the wood: the dead get up out of it, away from her.
+        if (now == TimeOfDay.Night && !deadUp) { deadUp = true; PlacePacks(deadOnly: true); }
         if (now != TimeOfDay.Night && scars.Count > 0)
         {
             Interactables.RemoveAll(i => i.Id.StartsWith("scar:"));
@@ -259,10 +261,12 @@ public sealed class Verge : ZoneRuntime
     }
 
     /// <summary>The wood's packs, laid out as the survivor comes in: where each
-    /// people keeps to, as many as the world has left of them, resting.</summary>
-    void PlacePacks()
+    /// people keeps to, as many as the world has left of them, resting. `deadOnly`: only the
+    /// night's dead, rising where she is not (nightfall while she is in the wood).</summary>
+    void PlacePacks(bool deadOnly = false)
     {
         if (B == null) return;
+        var her = B.Player;
         var taken = new List<(double X, double Z)>();
         var keep = new[] { V("post"), V("hollow"), V("roost"), V("dig"), V("sinkhole"), V("entry") };
         (double X, double Z)? Spot(Func<double, double, bool> where)
@@ -271,6 +275,7 @@ public sealed class Verge : ZoneRuntime
             {
                 double x = R() * 250 - 125, z = R() * 250 - 125;
                 if (x < -96 || !OpenGround(x, z) || !where(x, z)) continue;
+                if (deadOnly && Dist(x, z, her.X, her.Z) < 32) continue;
                 if (taken.Any(o => Dist(o.X, o.Z, x, z) < 26) || keep.Any(k => Dist(k.X, k.Z, x, z) < 30)) continue;
                 taken.Add((x, z));
                 return (x, z);
@@ -290,6 +295,8 @@ public sealed class Verge : ZoneRuntime
             }
         }
         bool night = W.Time == TimeOfDay.Night;
+        deadUp |= night;
+        if (deadOnly) { RaiseTheDead(); return; }
         double pop = F("beasts.population").IsNull ? 60 : F("beasts.population").Number;
         bool sick = !StreamClean();
         // The Pack, by the water while the sickness is on them.
@@ -311,8 +318,10 @@ public sealed class Verge : ZoneRuntime
             for (int k = 0; k < 2; k++)
                 if (Spot((x, z) => Dist(x, z, sink.X, sink.Z) < 60) is { } at) Pack("lampling", 4, at, SpawnStyle.Burrow);
         }
+        if (night) RaiseTheDead();
+
         // After dark the dead are up, thickest round the vault.
-        if (night)
+        void RaiseTheDead()
         {
             var vault = V("vault");
             for (int k = 0; k < 5; k++)
@@ -320,6 +329,9 @@ public sealed class Verge : ZoneRuntime
                     Pack(k % 3 == 2 ? "risen_warrior" : "risen", 4 + (int)(R() * 3), at, SpawnStyle.Rise, mix: "risen_archer", mixK: 0.25);
         }
     }
+
+    /// <summary>The night's dead are up in the wood (laid out by night, or risen at nightfall).</summary>
+    bool deadUp;
 
     /* ------------------------------------------------------------ places -- */
 

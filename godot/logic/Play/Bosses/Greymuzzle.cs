@@ -40,6 +40,8 @@ public sealed class Greymuzzle : StoryBoss
     public override School Weakness => School.Fire;
     public override string WeaknessText => "Fire breaks his moon-howl, and the Pack will not cross a fed fire's light";
     protected override string HardName => "The Long Hunt";
+    protected override string HardSub => "The light goes, and he hunts you in the dark";
+    protected override (string Title, string Sub) SoftWords(Enemy e) => ("The ring draws in", "It bites quicker now");
     public override string ReEntry => "The ring forms again, and the old wolf walks out through it.";
     // The table's Pack-Mother is 41 + 6.8 a tier against a thirtieth-minute build in about 85 s. Here
     // the build is the twentieth minute's, he is eight levels over the tier, not twelve, and the fight

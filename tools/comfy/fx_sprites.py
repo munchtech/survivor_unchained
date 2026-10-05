@@ -42,6 +42,14 @@ SPRITES = {
     "frost_star": "a six-pointed star of pale blue ice crystal, sharp glassy spikes, glittering, a snowflake of light",
     "ember_coal": "a burning ember coal, glowing orange and yellow, small flames licking off it, sparks",
     "blood_drop": "a splash of glowing crimson blood light, a dark red droplet bursting into fine spatter",
+    # Gale Chakram's body: read as a thrown blade by its hooked edges, not as a ring (a pale ring,
+    # two in flight read as a pair of handcuffs). Five blades, never four: four hooked arms
+    # turning read as a hooked cross.
+    "gale_ring": "a wind chakram seen flat from directly above: a thin circular ring blade with exactly five short curved "
+                 "crescent blades evenly spaced round its rim, all curving the same way like a five-pointed sawblade star, "
+                 "each blade tapering to a sharp point, crisp thin luminous edges, empty dark centre",
+    "wind_swirl": "a spiral gust of wind seen from above, several thin curling streaks of air swirling round an empty centre "
+                  "like a small whirlwind, wispy luminous lines fading at their tails",
 }
 
 
