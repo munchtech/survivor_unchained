@@ -222,13 +222,13 @@ public static class Items
 
         /* Marks (design 20.3; combat's behaviours in Sim/Marks.cs): inscribed, never rolled; a grade I to VI
          * is the Mark's strength, 0 to 1 across its bracket. They work in the Wayfinder's maps only. */
-        new() { Id = Sim.Marks.Ravine, Name = "of the Ravine", Prefix = false, Unique = true, Mark = true, Slots = Gear,
+        new() { Id = Sim.Marks.Ravine, Name = "of the Long Chase", Prefix = false, Unique = true, Mark = true, Slots = Gear,
             Text = t => $"In the maps: Volley looses a second volley at the farthest foe in reach, for {Pct(Sim.Marks.Lerp(0.2, 0.9, MarkStrength(t)))} of it" },
         new() { Id = Sim.Marks.FallingStar, Name = "of the Falling Star", Prefix = false, Unique = true, Mark = true, Slots = Gear,
             Text = t => $"In the maps: Cinderfall's blast leaves burning ground for {Sim.Marks.Lerp(1, 4, MarkStrength(t)):0.#} s" },
         new() { Id = Sim.Marks.OpenGate, Name = "of the Open Gate", Prefix = false, Unique = true, Mark = true, Slots = Gear,
             Text = t => $"In the maps: your dash leaves a ring of holy fire for 3 s, burning for {Pct(Sim.Marks.Lerp(0.2, 0.9, MarkStrength(t)))} of your strongest skill's damage a second" },
-        new() { Id = Sim.Marks.Gyre, Name = "of the Wheel", Prefix = false, Unique = true, Mark = true, Slots = Gear,
+        new() { Id = Sim.Marks.Gyre, Name = "of the Muster", Prefix = false, Unique = true, Mark = true, Slots = Gear,
             Text = t => $"In the maps: Axe Gyre gains an axe for every {MathX.RoundInt(Sim.Marks.Lerp(6, 3, MarkStrength(t)))} foes within 5 m, to three more" },
 
         /* Skills worn: fine gear that fights for you. */

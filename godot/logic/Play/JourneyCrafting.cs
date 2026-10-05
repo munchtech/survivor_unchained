@@ -38,6 +38,8 @@ public sealed partial class Journey
         // whatever Snib says over it.
         string? seen = q.Verb == Verb.Steep ? Crafting.Line(Crafting.Rules.Slurry.Crafter, $"steep.{q.Outcome}") : null;
         if (seen != null) CraftSaid = (CraftSaid ?? new Said(null, null, null)) with { After = seen };
+        if (q.Verb == Verb.Steep && q.Outcome == "down" && q.Crafter != "" && CraftSaid is { Before: null } said && Crafting.Line(q.Crafter, "steep.bad") is { } bad)
+            CraftSaid = said with { Line = bad };
         var def = Items.Get(it.Def);
         string? sub = q.Verb switch
         {

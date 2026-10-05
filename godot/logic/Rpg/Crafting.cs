@@ -46,6 +46,9 @@ public sealed class MarkRules
     public Dictionary<string, MarkDrop> Drops = new();
 }
 public sealed class MarkDrop { public string Item = "", Mark = ""; }
+/// <summary>Rook's shelves (the storeroom grows by shelves of 24): the price of each after the first, then
+/// of every one beyond those, and the most there can be.</summary>
+public sealed class ShelfRules { public string Seller = "rook"; public List<int> Prices = new() { 300, 1000, 2500 }; public int Then = 5000, Most = 8; }
 /// <summary>The one gamble (design 9): jars sold while the pump runs, and what steeping does, by weight.</summary>
 public sealed class SlurryRules
 {
@@ -125,6 +128,7 @@ public sealed class CraftingRules
     public BindRules Bind = new();
     public MarkRules Mark = new();
     public ChartRules Charts = new();
+    public ShelfRules Shelves = new();
     public SlurryRules Slurry = new();
     public Dictionary<string, MaterialRule> Materials = new();
     public Dictionary<string, CrafterDef> Crafters = new();
@@ -754,6 +758,29 @@ public static partial class Crafting
         Hot(it, q);
         Afford(x, q);
         return q;
+    }
+
+    /* ---------------------------------------------------------- shelves -- */
+
+    /// <summary>What Rook asks for the storeroom's next shelf (her prices follow how she feels about you),
+    /// or null if it has as many as it can hold. Priced against the economy: the second is about a
+    /// Kerchief night's gold, the third and fourth the atlas's, the rest a long sink.</summary>
+    public static int? ShelfPrice(CraftCtx x)
+    {
+        var r = Rules.Shelves;
+        int have = x.World.Shelves;
+        if (have >= r.Most) return null;
+        int k = have - 1;
+        return Price(x, r.Seller, k < r.Prices.Count ? r.Prices[k] : r.Then);
+    }
+
+    /// <summary>The next shelf bought, paid for and empty (false if it cannot be).</summary>
+    public static bool BuyShelf(CraftCtx x)
+    {
+        if (ShelfPrice(x) is not int gold || x.Ch.Gold < gold) return false;
+        x.Ch.Gold -= gold;
+        for (int i = 0; i < World.WorldState.Shelf; i++) x.World.Stash.Add(null);
+        return true;
     }
 
     /* ------------------------------------------------------------- marks -- */

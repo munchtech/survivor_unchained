@@ -60,7 +60,8 @@ public sealed class Saves
     {
         // Version 1 is the first; later versions add steps here, oldest first.
         d.World.Stash ??= new();
-        while (d.World.Stash.Count < WorldState.StashSize) d.World.Stash.Add(null);
+        // Whole shelves, at least the one that comes with the room (a save from before shelves had two).
+        while (d.World.Stash.Count < WorldState.Shelf || d.World.Stash.Count % WorldState.Shelf != 0) d.World.Stash.Add(null);
         d.World.Legacy ??= new();
         d.World.Shops ??= new();
         d.World.GroundItems ??= new();

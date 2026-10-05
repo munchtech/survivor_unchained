@@ -747,13 +747,29 @@ public partial class StashScreen : Overlay
         var page = Page("Rook's Storeroom", "Kept safe, whatever becomes of you", null, "Esc");
         // The store is the larger: it keeps what a life on the road cannot carry.
         var store = Pane(page, new Rect2(0, 0, 1140, 920));
-        store.AddChild(new Section("Stored", $"{w.Stash.Count(x => x != null)} of {w.Stash.Count}"));
+        store.AddChild(new Section("Stored", $"{w.Stash.Count(x => x != null)} of {w.Stash.Count}  ·  {w.Shelves} shel{(w.Shelves == 1 ? "f" : "ves")}"));
         var well = Style.Panel(Style.Well(12));
         var sc = new CenterContainer { MouseFilter = MouseFilterEnum.Ignore };
         sc.AddChild(ItemViews.Grid(w.Stash, 8, 118, null, null, it => G.Journey.FromStash(it.Uid), it => G.Journey.FromStash(it.Uid), (it, over) => Read(it), "store", null,
             (i, it, v) => { if (it != null) v.Drag = $"store:{it.Uid}"; v.CanTake = d => d.StartsWith("mine:"); v.Take = d => G.Journey.ToStash(d[5..]); }));
         well.AddChild(sc);
-        store.AddChild(well);
+        // More shelves than the page holds scroll (UI design's shelf pages will replace this).
+        var shelves = Style.Scroll(well);
+        shelves.CustomMinimumSize = new Vector2(0, Mathf.Min(760, w.Stash.Count / 8 * 124 + 24));
+        store.AddChild(shelves);
+        // Another shelf, bought from Rook (the owner's: shelves of 24).
+        if (Crafting.ShelfPrice(G.Journey.Craft) is int price)
+        {
+            bool can = ch.Gold >= price;
+            var buy = Style.Button($"Another shelf from Rook: {price} gold", () =>
+            {
+                if (!Crafting.BuyShelf(G.Journey.Craft)) { Sound.Sfx.Deny(); return; }
+                Sound.Sfx.Loot(false);
+                Refresh();
+            }, false, true);
+            buy.Disabled = !can;
+            store.AddChild(Style.H(Style.Gap3, buy, Style.Label(can ? $"{WorldState.Shelf} more places" : $"{price} gold; you have {Math.Floor(ch.Gold)}", Style.TextItalic, Style.Small, can ? Style.InkDim : Style.Bad)));
+        }
         var mine = Pane(page, new Rect2(1170, 0, 670, 920));
         mine.AddChild(new Section("Your pack", $"{ch.Pack.Count(p => p != null)} of {ch.Pack.Count}"));
         var mwell = Style.Panel(Style.Well(12));

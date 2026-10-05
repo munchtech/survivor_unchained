@@ -488,6 +488,51 @@ public class CraftersTests
         Assert.DoesNotContain(Marks.Gyre, worn.Keys);
     }
 
+    /* ----------------------------------------------------- Rook's shelves -- */
+
+    [Fact]
+    public void Rooks_storeroom_grows_by_shelves_bought_dearer_each_time()
+    {
+        var p = Town();
+        // The room comes with one shelf of 24.
+        Assert.Equal(WorldState.Shelf, p.W.Stash.Count);
+        Assert.Equal(1, p.W.Shelves);
+        p.J.Ch.Gold = 100_000;
+        var paid = new List<int>();
+        while (Crafting.ShelfPrice(p.J.Craft) is int price)
+        {
+            double gold = p.J.Ch.Gold;
+            Assert.True(Crafting.BuyShelf(p.J.Craft));
+            Assert.Equal(gold - price, p.J.Ch.Gold);
+            paid.Add(price);
+        }
+        // To the most there can be, each dearer than the last or as dear; the second is about a Kerchief night's gold.
+        Assert.Equal(Crafting.Rules.Shelves.Most, p.W.Shelves);
+        Assert.Equal(Crafting.Rules.Shelves.Most * WorldState.Shelf, p.W.Stash.Count);
+        Assert.InRange(paid[0], 250, 400);
+        Assert.Equal(paid.OrderBy(x => x), paid);
+        Assert.False(Crafting.BuyShelf(p.J.Craft));
+        // Not without the gold.
+        var q = Town();
+        q.J.Ch.Gold = 10;
+        Assert.False(Crafting.BuyShelf(q.J.Craft));
+        Assert.Equal(1, q.W.Shelves);
+    }
+
+    [Fact]
+    public void A_storeroom_from_before_shelves_keeps_its_two_and_a_short_one_is_made_whole()
+    {
+        var p = Town();
+        var d = Json.Parse<SaveData>(Json.Write(p.J.ToSave(new SaveLocation { Zone = "waystation" })));
+        d.World.Stash = Enumerable.Repeat<ItemInstance?>(null, 48).ToList();
+        d.World.Stash[40] = new ItemInstance { Uid = "kept", Def = "iron_helm", Rarity = 1 };
+        var back = Saves.Migrate(Json.Parse<SaveData>(Json.Write(d)));
+        Assert.Equal(2, back.World.Shelves);
+        Assert.Equal("kept", back.World.Stash[40]!.Uid);
+        d.World.Stash = Enumerable.Repeat<ItemInstance?>(null, 30).ToList();
+        Assert.Equal(48, Saves.Migrate(Json.Parse<SaveData>(Json.Write(d))).World.Stash.Count);
+    }
+
     /* ------------------------------------------------------------ Charts -- */
 
     static ItemInstance ChartOf(Route p, string people, int rarity, params string[] mods)
