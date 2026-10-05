@@ -1,103 +1,128 @@
 # Story and writing: status
 
 Owner of the canon, the words and the story data. Signs off every voice packet
-before recording. Agent a54dc034ed29f2e02 (the fifth story lead, handed off
-past 500k), branch `worktree-agent-a54dc034ed29f2e02`. A fresh successor starts
-from `docs/handoff/story.md`.
+before recording. Agent a7ba8903f4c8261b1 (the sixth story lead), branch
+`worktree-agent-a7ba8903f4c8261b1`. A fresh successor starts from
+`docs/handoff/story.md`.
 
 ## State (4 October)
 
-- **Canon:** `docs/STORY_BIBLE.md`; `docs/VOICES.md`; `docs/WRITING_PASS.md` §22 is
-  the latest: the owner's decisions on the story fights, the clock and the first chart.
-- **Done, from the owner's decisions** (all tested, all in data):
-  - **Redcowl spared or killed.** At his knee: "Spare him" or "Finish it" (the
-    hook, `ArenaSpec.OnSpare`/`EndSpared`/`SpareVerb`, is agreed with combat).
-    - Spared: C11's `spared` and `flit` ("the rest of me"; "We're flitting!").
-      He strikes the camp by first light, takes the crates only if he swore to
-      keep them, and returns in Act 2 owing her.
-    - Every later reader knows: Rav's two cups, the morning report, barks,
-      concerns, standing, the chapter page, the fortune's crates, and the bible.
-    - Greymuzzle has the same choice; "Finish it" breaks the promise.
-  - **A lost story fight wakes her on Chid's bench the next morning.**
-    - The lost line is the last thing she knows.
-    - The waking is a seed for each fight; then Chid's carter lie, the cost
-      ("a night"), and a pointer to whoever can help her get ready.
-    - Morning reports and barks for each loss.
-    - Experience wired it (`WakeAfterLoss` → `CarriedHome` → the shrine → Chid).
-  - **The clock's words** are in experience's `Journey.DayLines`: dusk, the
-    night's fight, the nudge, the night left alone, the rise, straight on.
-  - **The fortune gives the first chart** (`vonnra.f_chart`, "The Lampless
-    Howes", priced and waived). It uses a new change, `{ "chart": ... }`. Charts
-    are named in the valley's words now.
-  - **The rise's words** (combat's): the art "Not Yet" and the blessing "Cold,
-    Then Not", with their texts and captions. The art comes from *The Keeper's
-    Office*, Chid's book, in Act 2 (bible §7).
+- **Canon:** `docs/STORY_BIBLE.md`; `docs/VOICES.md`; `docs/WRITING_PASS.md`
+  §22 (the owner's story-fight decisions) and §23 (the three fights' words).
+- **Done this session:**
+  - **Chid gives *The Keeper's Office*** (`keepers_office`, which teaches the
+    art Not Yet), once:
+    - on Act 2's first morning (`chid.office`, the shrine marked "!" until
+      he has), with "What's at the end?" ("Somebody answering.") and "Who
+      wrote it?" ("Nobody makes a C like that any more.");
+    - or at his waking after a lost fight, if she went out before he could
+      (a first variant of `carried_chid`: "Read it before you go out again.
+      Please."). Tested both ways.
+  - **The Roost, the Dig and the Door, every word, slot by slot**
+    (WRITING_PASS §23), for combat to paste as it builds them in the
+    Hollow's shape:
+    - the sights between stages, read against the world (the cages empty or
+      full, the pump running or not, the crates fired);
+    - the signs, goals, announcements, labels, re-entries, weaknesses and the
+      soft and hard words;
+    - Snib's commentary, Grimtunnel's lamp trap, the levy's step, the Legion's
+      orders, and Redcowl's knee.
+  - **The Door's ends rewritten for its place** (she fights at the stair's
+    head and never goes down it). Won: "At the door, yours are the only
+    bootprints coming out." Lost: the moon going by over the broken roof.
+  - **A false line fixed:** a boss growing wild no longer promises "the
+    horde comes back" in a map or a story night, where it doesn't. Greymuzzle
+    has his own soft and hard words.
+  - **StoryLint holds the fights' rules over their code:** no "Ashford", no
+    finished "surface-meat" from Grimtunnel, no genre word, no clock in a pull.
+  - **Seen in the game at 1920x1080:** Chid's gift (`office`, `office_end`,
+    and the book at his waking) fits its box and reads well; the Door's and
+    the Hollow's lost lines on the result screen; the Hollow's first sight
+    between stages. A written story night's result no longer says "N minutes
+    before Greymuzzle would have come" (it has no clock).
 - **Checks:** StoryLint, the seed check, the signature phrases and the body's
   hours are clean.
-- **Voice is paused:** text-only packet notes are in WRITING_PASS §22.5 and below.
 
 ## Key decisions (why)
 
-- **Spared, Redcowl owes her and leaves.** A beaten captain moves his people; a
-  debt is how he talks ("Redcowl owes Rav a leg"). He never says the word:
-  it is spent dying.
-- **The loss's cost is the night, said once by Chid.** It costs no gold,
-  wound or things, so it buys a day to get ready rather than punishing her.
-  The pointers turn the day into getting ready.
-- **She wakes at the shrine, not the inn:** every death's waking is Chid's, with
-  his carter lie wearing thin. The narrator never says who carried her.
-- **Two names for the one rise:** the ember's "Cold, Then Not" (Chid's line)
-  and the Order's "Not Yet". The book's Cs are Chid's hand (Act 3).
-- **The chart is the Wayfinder's, margins full:** Vonnra buys from Ysolde too.
+- **The book is given once, by Chid, whichever way she comes to him.** It is
+  the only way she gets up in Act 2 besides a legendary blessing, so it must
+  not be missable. "Not now" at the morning and "Please" at the waking show
+  his fear without his saying it.
+- **"Somebody answering" plants the rise.** The art's text is "something
+  answers for you: not yet"; Chid's want is company. The Ford-Warden's "Is it
+  morning?" is the question.
+- **"All Downstairs", not "The Fall",** for Grimtunnel's end here: in a story
+  night "a fall" is hers.
+- **The Legion's orders are never translated in a bark or a label.** What
+  follows shows what they mean; only C13's subtitles translate, for a reader.
+- **Snib speaks only while he lives,** and gets the last word, as the bible
+  says, with his gag: "Snib is not going down there. ...Snib is going down
+  there."
 - Everything older stands (the handoff's §4).
 
-## Packet notes, text-only (for when voice resumes)
+## Packet notes, text-only (voice is paused)
 
-- **Final:** narrator, Rook, Holloway, Brannoc, Sella, Vonnra, Harlan. Vonnra's
-  final packet changed: `f_door` .0/.1 shortened; `f_chart` .0/.1 new; `f_ember`
-  gained a .0 (the old .0–.6 are .1–.7).
-- **Sella's final packet** still needs new takes of `say_calling.2` and
-  `bark.sella.night.1`.
+- **Final:** narrator, Rook, Holloway, Brannoc, Sella, Vonnra, Harlan.
+  Vonnra's final packet changed: `f_door` .0/.1 shortened; `f_chart` .0/.1
+  new; `f_ember` gained a .0 (the old .0–.6 are .1–.7).
+- **Sella** still needs new takes of `say_calling.2` and `bark.sella.night.1`.
 - **Read, with notes:**
   - **Chid** wants company, the shrine lit, and this one to stay up. He hides
-    that he is Unchained, that he carries her in (the carter is his lie), that
-    he is "C.", and that he was at the ford. "…" not "..…" in takes 13 and 14.
-    Bark day.1, "I should know.", is said without noticing. Re-take
-    `cb_nemesis_slain.0`.
+    that he is Unchained, that he carries her in, that he is "C.", and that he
+    was at the ford. "…" not "..…" in takes 13 and 14. Bark day.1 is said
+    without noticing. Re-take `cb_nemesis_slain.0`. **New:** `office` (the
+    book "held the way you hold a bird"; "Not now. It reads better in the
+    dark." is gentle, a little too quick), `office_end` ("Somebody answering."
+    is the plainest thing in it), `office_who` (said without noticing: it is
+    his own line about the note). **`carried_chid` has a new .0** ("Please."
+    is the only time he asks her for anything), so its old .0–.8 are .1–.9.
   - **Maeca** wants the Pack cured and let be. She hides Ashford, her
-    neighbours in the Kerchiefs, and the boots. Bark said.3, "Listen.", is very
-    quiet but not a whisper. Re-take `driving.0`.
-  - **Ysolde** wants the maps walked and the margins full. She hides Sallow and
-    Edric. "My brother didn't." is her one lie, practised smooth. Re-take
+    neighbours in the Kerchiefs, and the boots. Bark said.3, "Listen.", is
+    very quiet but not a whisper. Re-take `driving.0`.
+  - **Ysolde** wants the maps walked and the margins full. She hides Sallow
+    and Edric. "My brother didn't." is her one lie, practised smooth. Re-take
     `places.0`.
-- **New lines since:** Chid `carried`, `carried_chid`, `carried_who`; Rav
+- **New since the last packets:** Chid `carried`, `carried_chid`,
+  `carried_who`, `office`, `office_end`, `office_who`; Rav
   `cb_spared_redcowl`, `owes_two`; Redcowl `spared`, `flit`; barks for
   Holloway, Maeca, Rav and Keegan (appended to `said`).
-- **Ids shifted** when the explicit slots came out: `sella.night` .1–.3 → .0–.2,
-  `sella.free_night` .1–.2 → .0–.1, `maeca.blind` .1–.2 → .0–.1.
+- **For the fights, once built** (WRITING_PASS §21 and §23.5): Firepot Nan,
+  the Pike-Captain, a Kerchief's "DOWN!", Snib's ten, Grimtunnel's five, and
+  the Barrow Lord's three orders in C13's dry whisper.
+- **Ids shifted** when the explicit slots came out: `sella.night` .1–.3 →
+  .0–.2, `sella.free_night` .1–.2 → .0–.1, `maeca.blind` .1–.2 → .0–.1.
 
 ## Next
 
-1. **Chid gives *The Keeper's Office*** (`keepers_office`, combat's item) from
-   Act 2's first morning and at his waking after a lost Act 2 fight, once the
-   item is on the integration branch.
+1. **Review the fights' words in place** as combat builds the Roost, the Dig
+   and the Door; answer combat's asks.
 2. **C14, "The Road Back"**, once combat builds it in the story-fight shape:
-   `brannoc.road`, the `nell.burial` variant, its won and lost lines, and a RouteTests play.
-3. **The result screen's new slots**, when experience sends them.
-4. **C01 to C04:** the cinematics lead's line asks.
-5. **Act 2's text**, when the owner asks (bible §7; Redcowl spared is planned).
+   `brannoc.road`, the `nell.burial` variant, its won and lost lines, and a
+   RouteTests play.
+3. **See it as the player does** (the GPU is free): Chid's gift and the
+   waking on his bench, the Hollow's lines between stages, the spared
+   ending's result line, the fortune's chart.
+4. **The result screen's new slots**, when experience sends them; **C01 to
+   C04**, the cinematics lead's line asks.
+5. **Act 2's text**, when the owner asks (bible §7).
 
 ## Blockers
 
-None. No Godot until the main session says the GPU is free.
+None.
 
 ## For other areas
 
-- **Combat:** the spare fields are yours to call (`Won(j, spec, spared)`). For
-  Redcowl, play `.spared` then `.flit`. `chapter.done` is the Act 2 fact.
-  Charts are named by `MapOffers.Name`.
-- **Experience:** story fights' specs live in `StoryFights.cs`; edit words there.
-  Check the waking on Chid's bench in play when Godot is free.
-- **Cinematics:** C09's chart beat, C10's choice, C11's spared ending
-  (`docs/handoff/cinematics.md`, item 8).
-- **UI:** the atlas words are agreed; the chart arrives at the fortune.
+- **Combat (`afe45df4957917614`):** WRITING_PASS §23 has every word for the
+  Roost, the Dig and the Door, keyed to the Hollow's slots. Some sights read
+  the world (`Between` by `caravan.survivors`, `dig.pump` and the crates).
+  `SoftWords`/`HardSub` are virtual on `ArenaBoss` now; give each story boss
+  its row. StoryLint now reads the fights' code. *The Keeper's Office* is
+  wired (`chid.office`).
+- **Experience:** the Door's `EndWon`/`EndLost` in `StoryFights.cs` are
+  rewritten for the hall (words only). The table rematch is gone (theirs,
+  `@8290bfda`): a lost story fight waits at its own place, and the result
+  now says "It will be there again tomorrow night."
+- **Cinematics:** C13's shot 3 says the way out is "at the head of the
+  stair"; in the place she leaves back down the hall to the door (§23.3).
+- **Voice:** paused; notes above.

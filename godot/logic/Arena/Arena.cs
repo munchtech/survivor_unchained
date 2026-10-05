@@ -211,8 +211,9 @@ public static class Arenas
         if (!won)
         {
             if (spec.OnLose != null) j.Apply(spec.OnLose);
+            // A story fight lost waits for another night at its own place, where the night calls it
+            // by name (the owner's decision); the table no longer keeps a second copy of it.
             w.Rematches.RemoveAll(r => r.Id == spec.Id);
-            if (spec.Story) w.Rematches.Add(spec);
             w.Facts[$"arena.{spec.Id}"] = "lost";
         }
         bool longest = b.Time / 60 > w.Fact("arena.longest").Number;

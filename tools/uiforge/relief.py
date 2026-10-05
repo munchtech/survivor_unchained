@@ -40,6 +40,12 @@ MATS = {
     "paper": ("#d2ccbc", 0.0, 0.92, "#e2dccc", 0.0),
     # Bright forged steel (the logo's letters): iron that has been worked and kept.
     "steel": ("#4a4652", 0.95, 0.30, "#eae6f2", 1.0),
+    # Black morocco for the page's binding: oxblood deep in it, a soft sheen, rubbed a little
+    # warmer where the hand goes.
+    "morocco": ("#24100d", 0.0, 0.62, "#4a2219", 0.5),
+    # The binders' black vellum, the page the day's book is written on: dyed skin, violet-black,
+    # a soft sheen, rubbed a little greyer where hands go.
+    "vellum_black": ("#1e1a24", 0.0, 0.7, "#2e2834", 0.25),
 }
 IDS = {k: i for i, k in enumerate(MATS)}
 
@@ -122,11 +128,27 @@ class Relief:
         os.makedirs(CACHE, exist_ok=True)
         npz = os.path.join(CACHE, name + ".npz")
         out = os.path.join(CACHE, name + ".png")
+        # The same relief renders the same: keyed by what goes in, so grading after the render
+        # can be tried again without a Blender pass.
+        import hashlib
+        hsh = hashlib.sha1()
+        for arr in (self.height, self.alpha, base, metal, rough, self.emit):
+            hsh.update(np.ascontiguousarray(arr).tobytes())
+        hsh.update(str(samples).encode())
+        key = os.path.join(CACHE, name + ".key")
+        if os.path.exists(out) and os.path.exists(key) and open(key).read() == hsh.hexdigest():
+            return np.asarray(Image.open(out).convert("RGBA"), np.float32) / 255
         np.savez(npz, height=self.height, alpha=self.alpha, base=base, metal=metal, rough=rough, emit=self.emit)
+        # A render that fails (Blender out of memory on a busy machine) must not hand back the
+        # last one's picture.
+        for p in (out, key):
+            if os.path.exists(p):
+                os.remove(p)
         r = subprocess.run([BLENDER, "-b", "-P", os.path.join(HERE, "blender_relief.py"), "--", npz, out, str(samples)],
                            capture_output=True, text=True, timeout=1800)
         if not os.path.exists(out) or "Traceback" in r.stdout + r.stderr:
             raise RuntimeError((r.stdout + r.stderr)[-3000:])
+        open(key, "w").write(hsh.hexdigest())
         img = np.asarray(Image.open(out).convert("RGBA"), np.float32) / 255
         return img  # render resolution, straight alpha
 

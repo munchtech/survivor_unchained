@@ -213,6 +213,11 @@ public partial class BattleFx : Node3D
         int lit = 0;
         foreach (var f in flashes) if (f.T < 0.5f) lit++;
         peak /= 1 + 0.6f * lit;
+        // A light lit beside her lights her most of all: a champion falling at her elbow burned
+        // her white through every effect's hero_clear. Her own moments (lit where she stands)
+        // keep their light; the rest fade out within four metres of her.
+        float near = new Vector2(at.X - PlayerPos.X, at.Z - PlayerPos.Z).Length();
+        if (near > 0.4f) peak *= Mathf.Lerp(0.15f, 1, Mathf.SmoothStep(1, 4, near));
         int best = 0;
         for (int i = 1; i < flashes.Count; i++) if (flashes[i].Light.LightEnergy < flashes[best].Light.LightEnergy) best = i;
         var l = flashes[best].Light;
@@ -594,6 +599,7 @@ public partial class BattleFx : Node3D
         b0 = b;
         hitBudget = 28;
         killBudget = 6;
+        rose = false;
         foreach (var ev in events)
         {
             switch (ev)
@@ -658,8 +664,11 @@ public partial class BattleFx : Node3D
                             Sparks.Spawn(V(e.X + (R() - 0.5) * 0.6, gy + 0.5, e.Z + (R() - 0.5) * 0.6), new Vector3(0, 1.4f + R() * 1.5f, 0), 0.8f + R() * 0.5f, 0.06f,
                                 new Color(2.2f, 0.9f, 0.25f), new Color(1.4f, 0.25f, 0.05f), 0.02f, 0, 0.8f);
                     }
+                    // The dry dead's bone dust, the grey of old bone and few (pale and six to a death, every
+                    // kill on the dead hung a cream cloud over the crowd, and sixty falling to one blow a
+                    // snow of white specks): told by the first few too.
                     if (e.Family == Family.Undead)
-                        for (int i = 0; i < 6; i++) Smoke.Spawn(V(e.X, gy + 0.6, e.Z), new Vector3((R() - 0.5f) * 3, 2 + R() * 2, (R() - 0.5f) * 3), 0.9f, 0.2f, new Color("#d8d2c0"), gravity: 9, sprite: Sprites.Of("dirt"), spinV: 3);
+                        for (int i = 0; i < (told ? 4 : 1); i++) Smoke.Spawn(V(e.X, gy + 0.6, e.Z), new Vector3((R() - 0.5f) * 3, 2 + R() * 2, (R() - 0.5f) * 3), 0.7f, 0.14f, new Color("#7e776b"), gravity: 11, sprite: Sprites.Of("dirt"), spinV: 3);
                     Smoke.Spawn(V(e.X, gy + 0.3, e.Z), new Vector3(0, 0.5f, 0), 0.9f, 0.5f, new Color("#3a3430"), new Color("#1a1816"), 1.3f, alpha: 0.35f);
                     if (e.Elite || e.Boss)
                     {
@@ -673,7 +682,9 @@ public partial class BattleFx : Node3D
                         if (first) lastFall = time;
                         Flash(V(e.X, gy + 1.5, e.Z), pal.Light, e.Boss ? 16 : first ? 10 : 4, e.Boss ? 0.6f : 0.15f, e.Boss ? 12 : 8);
                         if (e.Boss) Waves.Add(V(e.X, gy + 0.5, e.Z), 7, 0.5f, pal.Glow, 0.8f);
-                        else if (!Blast(e.X, e.Z, e.School, first ? 2f : 1.3f, 0.55f, 0.8f, light: !first)) Nova(e.X, e.Z, 3, pal.Glow, 0.45f);
+                        // (A burst's reach is its radius, its picture 2.4 times that across: at 2 it was
+                        // nearly five metres of colour, the rule's three is 1.3.)
+                        else if (!Blast(e.X, e.Z, e.School, first ? 1.3f : 0.9f, 0.55f, 0.8f, light: !first)) Nova(e.X, e.Z, 3, pal.Glow, 0.45f);
                         Cam?.AddTrauma(0.35f);
                     }
                     break;
@@ -721,6 +732,12 @@ public partial class BattleFx : Node3D
                     if ((e.Rings ?? 1) > 0) Flash(V(e.X, Y(e.X, e.Z) + 1.3, e.Z), pal.Light, 6, 0.35f, (float)e.Radius * 2);
                     break;
                 }
+                case Ev.Rise e:
+                    Rise(e);
+                    break;
+                // The rise's fire is drawn by the rise (a ring going out from her), not as a blast.
+                case Ev.Explosion { School: School.Fire, Art: null } when rose:
+                    break;
                 case Ev.Explosion e:
                 {
                     float gy = Y(e.X, e.Z), r = (float)e.Radius;
@@ -804,6 +821,10 @@ public partial class BattleFx : Node3D
                 case Ev.Telegraph e:
                 {
                     var col = e.Hostile ? Palette.Telegraph(e.Kind) : e.Faction is { } pf ? People(pf) : Palette.Of(School.Holy).Glow;
+                    // A crowd's marks are held near the ground's own lit value (the arena lead's rule: a
+                    // stop over it at most): at full strength the Dig's lamplings' bombs burned cream
+                    // rings over the dark clay. A boss's marks a little stronger.
+                    if (e.Hostile) { float k = e.Boss ? 0.5f : 0.28f; col = new Color(col.R * k, col.G * k, col.B * k, col.A); }
                     if (!e.Hostile && e.Faction is { } rf && e.Shape == TelegraphShape.Ring) Rally(e, col);
                     else if (e.Hostile && e.Faction is { } sf && e.Kind == TelegraphKind.Ground && e.Id == -1 && e.Shape == TelegraphShape.Circle) Summoning(e, People(sf));
                     else if (e.Shape == TelegraphShape.Line) Lane(e.X, e.Z, e.X1 ?? e.X, e.Z1 ?? e.Z, (float)(e.Width ?? 1), col, (float)e.Duration, e.Id);
@@ -945,14 +966,27 @@ public partial class BattleFx : Node3D
                     break;
                 }
                 case Ev.Dash e:
-                    for (int i = 0; i < 14; i++)
+                {
+                    // Her dash: one streak of cold air where she went, thinning to its start, and dust
+                    // kicked up at her heels (fourteen soft spots in a row read as a string of pearls).
+                    var path = new Vector3[6];
+                    var widths = new float[6];
+                    for (int i = 0; i < 6; i++)
                     {
-                        float t = i / 14f;
+                        float t = i / 5f;
                         double x = e.X0 + (e.X1 - e.X0) * t, z = e.Z0 + (e.Z1 - e.Z0) * t;
-                        Sparks.Spawn(V(x, Y(x, z) + 0.9, z), Vector3.Zero, 0.35f, 0.5f, new Color(0.5f, 0.65f, 1.3f), new Color(0.1f, 0.14f, 0.4f), 0.1f, alpha: 0.35f);
-                        Smoke.Spawn(V(x, Y(x, z) + 0.15, z), new Vector3(0, 0.4f, 0), 0.6f, 0.3f, new Color("#4a4038"), sizeEnd: 0.7f, alpha: 0.35f);
+                        path[i] = V(x, Y(x, z) + 0.75 + 0.15 * t, z);
+                        widths[i] = Mathf.SmoothStep(0, 1, t) * (1 - 0.3f * Mathf.Max(0, t - 0.8f) / 0.2f);
+                    }
+                    Ribbons.Line(path, 0.55f, 0.28f, new Color(0.42f, 0.55f, 0.95f), 1.1f, Ribbons.Style.Wisp, widths);
+                    for (int i = 0; i < 5; i++)
+                    {
+                        float t = (i + 0.5f) / 5f;
+                        double x = e.X0 + (e.X1 - e.X0) * t, z = e.Z0 + (e.Z1 - e.Z0) * t;
+                        Smoke.Spawn(V(x, Y(x, z) + 0.15, z), new Vector3((R() - 0.5f) * 0.6f, 0.4f, (R() - 0.5f) * 0.6f), 0.55f, 0.3f, new Color("#4a4038"), sizeEnd: 0.75f, alpha: 0.3f);
                     }
                     break;
+                }
                 case Ev.Ability e:
                     Ability(e, b);
                     break;
@@ -1180,6 +1214,7 @@ public partial class BattleFx : Node3D
         }
         Zones(b, now);
         ArtTrails(b, fdt);
+        StepRise(b, fdt);
         Projectiles(b, fdt, now);
         Pickups(b, now);
         StepFronts(fdt);

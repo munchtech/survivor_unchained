@@ -237,11 +237,27 @@ public partial class Game : Node, IZoneHost
             var bc = SurvivorUnchained.Maps.MapGen.Generate(World.Map!.Map).Boss;
             at = new Arrival(bc.X, bc.Z - bc.R + 1);
         }
+        // --night ID: straight into a story fight by night (a StoryFights id: hollow, roost, dig, vault),
+        // back to the Verge at its place after (pictures of a story night, its falls and its loss).
+        if (Args.Get("night") is string nid && StoryFights.Get(nid) is { } nf)
+        {
+            var spot = ZoneMeta.Load("verge").Place("V", nf.Spot);
+            Arenas.Begin(World, StoryFights.Spec(nid, Journey.Ctx, "verge", spot.X, spot.Z, 0));
+            z = "arena";
+        }
         if (z != "lowford")
         {
             // Skipping ahead: the prologue counts as done.
             World.Facts["prologue.done"] = true;
             World.Time = Enum.TryParse<TimeOfDay>(Args.Get("time") ?? "day", true, out var t) ? t : TimeOfDay.Day;
+            // --clock S: the day's clock at S seconds of free play since dawn, running (pictures of its
+            // turns: 585 is a quarter minute before dusk, 1065 before the night's end).
+            if (Args.Has("clock"))
+            {
+                World.Clock = Args.Num("clock", 0);
+                World.Time = DayClock.At(World.Clock);
+                World.Facts["clock.started"] = true;
+            }
             EnterZone(z, "lowford", at);
         }
         else EnterZone(z, null, at);
@@ -367,7 +383,7 @@ public partial class Game : Node, IZoneHost
             var lines = Journey.WakeAfterLoss(s, null, Rng.NextDouble);
             Travel("waystation", "The shrine", $"Day {World.Day}", null, from: "death");
             if (leaving) Wait(0.8, () => screens.Close());
-            Wait(3.9, () => { talkDone = () => Morning(lines); Talk("chid"); });
+            Wait(3.9, () => { talkDone = () => { Morning(lines); Shots.Want("morning", 1.5); }; Talk("chid"); Shots.Want("chid", 0.8); });
             return;
         }
         // Back into the same night, with time to hear the town or go straight on to another fight.
@@ -735,6 +751,7 @@ public partial class Game : Node, IZoneHost
             case Ev.Victory: Haptics.Add(1, 0.4f, 0.4f, peak: true); break;
             case Ev.PlayerDeath: Haptics.Add(1, 0, 0.4f, blow: true, peak: true); break;
             case Ev.Evolve { Chest: false }: Haptics.Add(0.6f, 0.4f, 0.25f); break;
+            case Ev.Rise: Haptics.Add(0.9f, 0.2f, 0.3f, blow: true, peak: true); break;
         }
     }
 
@@ -766,6 +783,12 @@ public partial class Game : Node, IZoneHost
                     scene?.Slow(0.6);
                     Shots.Want("evolve", 0.25);
                     Shots.Want("evolve", 0.9);
+                    break;
+                case Ev.Rise:
+                    // The blow that should have ended her, held: the world slows while she goes
+                    // cold and gets up (BattleFx.Rise draws it).
+                    scene?.Slow(1.1);
+                    foreach (var s in new[] { 0.08, 0.3, 0.55, 0.8, 1.1, 1.5, 2.2, 3.2 }) Shots.Want("rise", s);
                     break;
                 case Ev.Bark bk:
                     // A named voice in a fight (the Warden, Grimtunnel) is heard over everything, when its line shows
@@ -990,7 +1013,8 @@ public partial class Game : Node, IZoneHost
 
     /// <summary>--open KIND (or 'all'): the screens opened in turn, for
     /// pictures and for runs that check each builds (--bare hides the world).</summary>
-    bool hordeDone, dropsDone, castDone, giveDone, minuteDone, dieDone, chestDone, barksDone;
+    bool hordeDone, dropsDone, castDone, giveDone, minuteDone, chestDone, barksDone, answerDone, fallDone;
+    int dieIx;
     double blastT = 0.5, marksT = 1;
 
     void Tour(double dt)
@@ -1084,6 +1108,16 @@ public partial class Game : Node, IZoneHost
             lb.EmberNext = 1e9;
             lb.Player.Hp = lb.MaxHp;
         }
+        // --fall-at T: a killing blow at T seconds, for pictures of her rise (give her
+        // +from_the_ashes for Cold, Then Not; otherwise she has Not Yet for it).
+        if (!fallDone && Args.Has("fall-at") && Battle is { } fb && Journey.Playtime >= Args.Num("fall-at", 3))
+        {
+            fallDone = true;
+            if (fb.Player.Ashes == 0) fb.Player.Revives = Math.Max(fb.Player.Revives, 1);
+            fb.Player.Iframes = 0;
+            fb.Player.Hp = 1;
+            fb.HurtPlayer(fb.MaxHp * 9, School.Physical, "a test", null);
+        }
         // --blast SCHOOL[:R]: that school's burst a few paces ahead, every second and a half (pictures of it).
         if (Args.Get("blast") is string bl && Battle is { } bb && scene != null)
         {
@@ -1127,11 +1161,20 @@ public partial class Game : Node, IZoneHost
         }
         // --die T: T seconds in, a risen at arm's length before her (--behind:
         // at her back) fells her where she stands (a picture of her fall).
-        if (!dieDone && Args.Has("die") && Battle is { } kb && Journey.Playtime >= Args.Num("die", 1))
+        // --die T1,T2: again at each time listed (a story night's falls: the rise, then the loss).
+        var dies = (Args.Get("die") ?? "").Split(',', StringSplitOptions.RemoveEmptyEntries);
+        if (dieIx < dies.Length && Battle is { } kb && kb.Player.Alive
+            && Journey.Playtime >= double.Parse(dies[dieIx] == "" ? "1" : dies[dieIx], System.Globalization.CultureInfo.InvariantCulture))
         {
-            dieDone = true;
+            dieIx++;
             var killer = kb.SpawnEnemy("risen", kb.Player.X, kb.Player.Z + (Args.Has("behind") ? -1.2 : 1.2));
             kb.HurtPlayerRaw(kb.Player.Hp + 1e6, School.Physical, "test", killer);
+        }
+        // --answer T: the night answered T seconds in, as if the key were held (pictures of the pull).
+        if (!answerDone && Args.Has("answer") && Journey.Playtime >= Args.Num("answer", 1) && World.Time == TimeOfDay.Night && zone is { ClockRuns: true })
+        {
+            answerDone = true;
+            AnswerNight();
         }
         // --barks T: T seconds in, a crowd of lines at once by her (pictures of them waiting their
         // turns and standing clear of each other): one voice's three, two others close by, an alert.
@@ -1193,7 +1236,7 @@ public partial class Game : Node, IZoneHost
             var next1 = Inventory.Make(ch, SurvivorUnchained.Maps.Charts.Item, 1, 2);
             next1.Chart = SurvivorUnchained.Maps.Charts.Roll(new SurvivorUnchained.Core.Rng(7), chart.Tier + 1, chart.People, 3);
             bool fell = Args.Has("fell");
-            var r = new MapResult(chart, !fell, fell ? 486 : 641, fell ? 503 : 812, fell ? 3 : 1, fell ? 9 : 14, 16, fell ? null : 62, !fell,
+            var r = new MapResult(chart, !fell, fell ? 486 : 641, fell ? 503 : 812, fell ? MapRun.FallsAllowed : 1, fell ? 9 : 14, 16, fell ? null : 62, !fell,
                 fell ? new() { ["wolf_pelt"] = 3, ["ember_shard"] = 2 } : new());
             var spoils = new SurvivorUnchained.Maps.MapSpoils(fell ? gear.Take(2).ToList() : gear, fell ? new() : new() { next1 },
                 fell ? new() { ["wolf_pelt"] = 3 } : new() { ["wolf_pelt"] = 6, ["ember_shard"] = 4 }, fell ? 120 : 488);
@@ -1277,7 +1320,7 @@ public partial class Game : Node, IZoneHost
         var dbg = zone?.Debug() is { Count: > 0 } d ? string.Join(" ", d.Take(6).Select(kv => $"{kv.Key}={kv.Value}")) : "";
         var (drawn, dead) = scene!.Crowd.Counts;
         var (gibs, splats) = scene.Fx.Gore.Counts;
-        GD.Print($"[{scene.Time,6:0.0}s] {zone?.Id} hp {p?.Hp:0}/{b?.MaxHp:0} ember {b?.EmberLevel} kills {b?.KillCount} foes {foes} (drawn {drawn}, lying {dead}, gibs {gibs}, blood {splats}) at {p?.X:0},{p?.Z:0} {Overlay} {dbg}{FrameCost()}{(synth.Live ? $" | sound {sound.Music.Mood} voices {synth.Voices} mix {synth.MixCost / Math.Max(1e-9, synth.Mixed) * 100:0}% heard {synth.Mixed:0}s skips {synth.Skips} queue {synth.Queue / synth.Rate * 1000:0}ms" : "")}");
+        GD.Print($"[{scene.Time,6:0.0}s] {zone?.Id} hp {p?.Hp:0}/{b?.MaxHp:0} ember {b?.EmberLevel} kills {b?.KillCount} foes {foes} (drawn {drawn}, lying {dead}, gibs {gibs}, blood {splats}) at {p?.X:0},{p?.Z:0} {Overlay} clock {World.Time} {World.Clock:0.0}s day {World.Day} {dbg}{FrameCost()}{(synth.Live ? $" | sound {sound.Music.Mood} voices {synth.Voices} mix {synth.MixCost / Math.Max(1e-9, synth.Mixed) * 100:0}% heard {synth.Mixed:0}s skips {synth.Skips} queue {synth.Queue / synth.Rate * 1000:0}ms" : "")}");
     }
 
     /// <summary>--perf: the frame measured (Perf.cs), with the game's own

@@ -1013,6 +1013,7 @@ def bind_edges(name, pos, at, tris, key, width, height, overhang, thick, sigma=0
         return pos, []
     nor = vertex_normals(pos, tris)
     tree = cKDTree(pos)
+    sheet_bvh = BVHTree.FromPolygons([tuple(p) for p in pos], tris.tolist())
     beads = []
     pos = pos.copy()
     moved = np.zeros(len(pos), bool)
@@ -1024,17 +1025,34 @@ def bind_edges(name, pos, at, tris, key, width, height, overhang, thick, sigma=0
         if seg.max() > 0.015 or seg.sum() < 0.07:
             continue
         cur = smooth_closed(lp, sigma)
-        # Back onto the sheet, and the sheet's normal there.
+        # Back onto the sheet (its surface, not the plane of the nearest
+        # point: that changed from point to point and stepped the line in
+        # depth, unseen face-on, kinked at a glancing view), the move eased
+        # along the line; and the sheet's normal there.
+        # (the sheet's facing, from its surface, eased well along the line:
+        # taken from the nearest point's normal it swung near the cut edge,
+        # and the rolled edge, set off sideways by it, folded into a Z)
+        hits = [sheet_bvh.find_nearest(Vector(q)) for q in cur]
+        on = np.array([h[0][:] for h in hits])
+        nrm = np.array([h[1][:] for h in hits])
         _, j = tree.query(cur)
-        nrm = nor[j].copy()
-        for _ in range(4):
+        nrm = np.where(((nrm * nor[j]).sum(1) < 0)[:, None], -nrm, nrm)
+        for _ in range(12):
             nrm = (np.roll(nrm, 1, 0) + 2 * nrm + np.roll(nrm, -1, 0)) / 4
-        cur = cur + nrm * ((pos[j] - cur) * nrm).sum(1)[:, None]
+        nrm /= np.linalg.norm(nrm, axis=1)[:, None] + 1e-12
+        mv = on - cur
+        for _ in range(6):
+            mv = (np.roll(mv, 1, 0) + 2 * mv + np.roll(mv, -1, 0)) / 4
+        cur = cur + mv
         tg = np.roll(cur, -1, 0) - np.roll(cur, 1, 0)
         tg /= np.linalg.norm(tg, axis=1)[:, None] + 1e-12
         nrm = nrm - tg * (nrm * tg).sum(1)[:, None]
         nrm /= np.linalg.norm(nrm, axis=1)[:, None] + 1e-12
         bn = np.cross(nrm, tg)
+        for _ in range(8):
+            bn = (np.roll(bn, 1, 0) + 2 * bn + np.roll(bn, -1, 0)) / 4
+        bn = bn - tg * (bn * tg).sum(1)[:, None]
+        bn /= np.linalg.norm(bn, axis=1)[:, None] + 1e-12
         # Outward: away from the sheet's points near the line.
         votes = []
         for i in range(0, len(cur), 4):
@@ -1839,8 +1857,11 @@ def piece(name, field, mkey, lift=0.003, thick=0.003, smooth=0, bevel=0.0012, tr
             tp, ta, tr = weld(tp, ta, tr)
             tp = relax(tp + vertex_normals(tp, tr) * (thick + h), tr, edge=30)
             made.append(finish(name + "_trim", tp, ta[:, 3:3 + NB], tr, tkey, tt, bevel, 1500))
+    # Only the piece itself hides her skin: its binding, trim, studs and
+    # stitches overhang its edge, and skin hidden under them showed as holes
+    # in her just past it.
     for o in made:
-        o["hides"] = len(SPEC[mkey]) < 7
+        o["hides"] = o is made[0] and len(SPEC[mkey]) < 7
     return made
 
 
@@ -2460,7 +2481,7 @@ def plate_cups(name, mkey, top, lift=0.003, thick=0.003, trim=None, studs=None, 
     if studs:
         made += rivets(name, pos2, at2, tris2, thick, studs)
     for o_ in made:
-        o_["hides"] = True
+        o_["hides"] = o_ is made[0]
     print("PLATE CUP %s: %d points" % (name, len(pos2)))
     return made
 
@@ -3407,7 +3428,7 @@ def bandeau(name, mkey, zc, width, lift=0.004, thick=0.003, trim=None, rows=11, 
     at = np.hstack([nor, W[j].astype(float), edge[:, None]])
     made = trimmed(name, pos, at, tris, mkey, thick, 0.001, trim)
     for o in made:
-        o["hides"] = True
+        o["hides"] = o is made[0]
     print("BANDEAU", name, "at %.3f, %.3f tall" % (zc, width))
     return made
 

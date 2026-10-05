@@ -465,6 +465,56 @@ def d_leap():
     return e
 
 
+def d_leap2():
+    """Crashing Leap, second concept (the first was a grey arc on a dark disc at 90 px): the
+    blow itself. A bold hard-edged arc of rushing air comes down steep from the upper left
+    into the ground, and the ground bursts: a fan of hot gold light thrown up out of the
+    break, a crown of dark broken slabs stood up round it and black against the light, a
+    ring of dust running out along the ground. Value first: dark slabs on white-gold."""
+    e = Emblem("physical", 0.96, (50, 52))
+    e.glow = 0.6
+    gx, gy = 58, 76
+    ground = mat("#2a2420", 0.0, 0.9)
+    slab = mat("#4a3e34", 0.0, 0.8)
+    rim = mat("#ffcf80", 0.0, 0.5)
+    e.lay(ellipse(gx - 4, gy + 6, 44, 11), ground, 2, 3, grain=1.0)
+    # The burst: a fan of light rising out of the break, hottest at its root.
+    e.lay(ellipse(gx, gy, 20, 7), "glow", 1, 3, light=3.0, hue="#fff0c0")
+    for ang in range(-70, 71, 14):
+        a = math.radians(ang)
+        L = 34 - abs(ang) * 0.16
+        e.lay(stroke([(gx + 4 * math.sin(a), gy - 1), (gx + L * math.sin(a) * 0.9, gy - L * math.cos(a))], 5.0, 0.4),
+              "glow", 1, 2, light=2.2, hue="#ffd890")
+    # The ring of dust and light running out along the ground.
+    e.lay(cut(ellipse(gx - 2, gy + 3, 40, 9.5), ellipse(gx - 2, gy + 2.2, 33, 7)), "glow", 0.5, 2.5, light=1.0, hue="#ffb860")
+    # The crown of slabs, black against the light, each lit at its rim from the break.
+    for j, (dx, dy, h, w, tip) in enumerate(((-24, 4, 15, 13, -40), (-12, 0, 24, 12, -18), (2, -2, 28, 11, -4),
+                                             (15, 0, 22, 12, 16), (27, 4, 14, 13, 42))):
+        bx, by = gx + dx, gy + dy
+        c_, s_ = math.cos(math.radians(tip)), math.sin(math.radians(tip))
+        rng = np.random.default_rng(j + 11)
+        local = [(-w / 2, 0), (-w / 2 + rng.uniform(-1.5, 1), -h * 0.62), (-w * 0.1 + rng.uniform(-2, 2), -h),
+                 (w * 0.3 + rng.uniform(-1.5, 1.5), -h * rng.uniform(0.78, 0.94)), (w / 2, -h * rng.uniform(0.35, 0.55)), (w / 2, 0)]
+        pts = [(bx + x * c_ - y * s_, by + x * s_ + y * c_) for x, y in local]
+        e.lay(poly(pts), slab, 6, 2.0, round_=False, grain=1.2)
+        e.lay(stroke(pts[1:5], 1.1, 0.7), rim, 6.4, 0.5, light=0.6)
+    for j, (dx, dy, sz) in enumerate(((-30, -22, 3.2), (-18, -34, 2.6), (30, -26, 3.4), (20, -38, 2.2), (38, -12, 2.4))):
+        e.lay(rock(gx + dx, gy + dy, sz, 40 + j), slab, 3, 1.4, grain=0.6)
+    # The leap: a crescent of rushing air, thin where it left the ground, full and hard-edged
+    # where it comes down, its leading edge white-hot from the speed; two speed lines beside it.
+    path = bez((10, 70), (6, 18), (40, 2), (gx - 3, gy - 12), 72)
+    e.lay(stroke(path, 0.8, 11.0), mat("#e8e0d4", 0.0, 0.35), 4, 2.4, light=0.8)
+    e.lay(stroke(path[20:], 0.6, 4.0), "glow", 0.5, 1.5, light=2.2, z=4.2, hue="#fff4e0")
+    P = np.asarray(path, np.float32)
+    T = np.gradient(P, axis=0)
+    T /= np.linalg.norm(T, axis=1, keepdims=True)
+    Nn = np.stack([-T[:, 1], T[:, 0]], 1)
+    for off, w in ((-9.5, 2.0), (-14.5, 1.3)):
+        side = P[22:-10] + Nn[22:-10] * off * np.linspace(0.4, 1, len(P) - 32)[:, None]
+        e.lay(stroke(side.tolist(), 0.3, w), mat("#d8d0c4", 0.0, 0.4), 3, 1, light=0.5)
+    return e
+
+
 def d_blink():
     """Blink: a rift torn in the air, rimed at its edges, ice shards bursting from it."""
     e = Emblem("frost", 0.95, (50, 52))
@@ -1051,6 +1101,10 @@ SUBJECT = {
               "into violet light, a black void inside the hood with two small glowing violet eyes",
     "leap": "a streak of rushing air arcing high and crashing down into the ground, the ground split open in a "
             "glowing crater, broken slabs of stone thrust up on end round it, stones and dust thrown up",
+    "leap2": "a bold hard-edged crescent streak of rushing white air sweeping down steeply from the upper left and "
+             "crashing into the ground, the ground bursting open in a fan of blazing gold-white light, a crown of dark "
+             "broken stone slabs thrust up on end round the break and black against the light, a ring of dust and "
+             "light running out along the ground, stones thrown up",
     "blink": "a jagged rift torn in the air glowing white-blue, its edges rimed with frost, ice shards bursting out of it",
     "smoke": "a cracked round clay pot burst open at the top, thick billowing pale grey smoke boiling up out of it, "
              "violet light glowing from inside the pot",
@@ -1128,7 +1182,9 @@ def make_guide(key):
 
 # Colours of its own where the school's words would drain it (steel's "cold white" painted the
 # leap's stone and dust as a grey blur).
-COLOURS = {"leap": "warm brown stone and dust colours lit hot gold and white from the impact"}
+COLOURS = {"leap": "warm brown stone and dust colours lit hot gold and white from the impact",
+           "leap2": "near-black stone slabs against blazing gold and white light, the streak of air bright white, strong "
+                    "contrast between dark and light"}
 
 
 def prompt(key, school):

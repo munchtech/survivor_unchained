@@ -19,6 +19,12 @@ as the sculpt made it. The neck's ring is sewn to his body along CUT, and
 his head, a mesh of its own for its shape keys, meets it along SPLIT, where
 the two share their points.
 
+His skin is made one with it on the way: his body's paint and relief are
+cleaned of what the sculpt's lighting and long hair left on them
+(tools/assets/hero_male_skin.py), his neck and shoulders smoothed where that
+hair lay, and his neck, graft and head brought to one tone after his face's
+fixes. His brows are marked in hero_shadow.png's blue for the game to dye.
+
 With HEAD_CHECK=<folder> in the environment, renders of each step are
 written there.
 """
@@ -181,6 +187,33 @@ assert him.matrix_world == arm.matrix_world and him.matrix_world.is_identity
 IMG = next(n.image for n in hme.materials[0].node_tree.nodes if n.type == "TEX_IMAGE" and n.image and n.image.colorspace_settings.name == "sRGB")
 TEX = np.array(IMG.pixels[:], np.float32).reshape(IMG.size[1], IMG.size[0], 4)
 HV = np.array([v.co[:] for v in hme.vertices])
+
+
+def hair_lay(P):
+    """Where the sculpt's long hair lay on him: his neck, the tops of his
+    shoulders and his upper chest and back, above his nipples and inside his
+    deltoids (his arms, out level in his rest pose, are not in it)."""
+    return smooth01((P[:, 2] - 1.45) / 0.04) * (1 - smooth01((np.abs(P[:, 0]) - 0.24) / 0.05))
+
+
+# ---- his neck and shoulders smoothed where the sculpt's hair lay: its
+# strands were moulded into him there as ridges, and his collarbones' edges
+# came out as sharp folds, so a light from behind drew hard white lines on
+# them. Taubin's smoothing (which keeps his size), his muscles left as they
+# are, being far broader than a strand.
+_E = np.array([e.vertices[:] for e in hme.edges])
+_Ah = sp.coo_matrix((np.ones(len(_E)), (_E[:, 0], _E[:, 1])), shape=(len(HV), len(HV))).tocsr()
+_Ah = ((_Ah + _Ah.T) > 0).astype(float)
+_Ah = sp.diags(1 / np.maximum(np.asarray(_Ah.sum(1)).ravel(), 1)) @ _Ah
+_wh = hair_lay(HV)[:, None]
+_HV0 = HV.copy()
+for _ in range(30):
+    HV = HV + 0.5 * _wh * (_Ah @ HV - HV)
+    HV = HV - 0.53 * _wh * (_Ah @ HV - HV)
+hme.vertices.foreach_set("co", HV.ravel())
+hme.update()
+print("NECK smoothed where his hair lay: %d points, %.1f mm at most" % ((_wh > 0.5).sum(), 1000 * np.linalg.norm(HV - _HV0, axis=1).max()))
+del _Ah, _wh, _HV0, _E
 hme.calc_loop_triangles()
 HT = np.array([t.vertices[:] for t in hme.loop_triangles])
 HTL = np.array([t.loops[:] for t in hme.loop_triangles])
@@ -979,6 +1012,11 @@ _ang = np.degrees(np.arccos(np.clip((_on * bn[_lv[_mine]]).sum(1), -1, 1)))
 print("NORMALS: hers differ from the joined smooth ones by %.1f deg on average (%.1f at the 99th percentile)"
       % (_ang.mean(), np.percentile(_ang, 99)))
 LN = np.where(_mine[:, None], _old, bn[_lv])
+# (Where his hair lay, smoothed, his old normals are not his shape: eased
+# into the smooth ones over the smoothing's own edge.)
+_t = hair_lay(BV[_lv])[:, None]
+LN = LN * (1 - _t) + bn[_lv] * _t
+LN /= np.linalg.norm(LN, axis=1)[:, None] + 1e-12
 hme.normals_split_custom_set([tuple(n) for n in LN])
 head.data.normals_split_custom_set_from_vertices([tuple(n) for n in hn])
 for k in ("n0", "n1", "n2", "ox", "oy", "oz", "new"):
@@ -1089,10 +1127,7 @@ import hero_male_skin  # noqa: E402
 
 _r, _c, _t, _b = raster(HUV[HTL], (IMG.size[0], IMG.size[1]))
 _P = (HV[HT[_t]] * _b[:, :, None]).sum(1)
-# Where the sculpt's long hair lay on him: his neck, the tops of his
-# shoulders and his upper chest and back, above his nipples and inside his
-# deltoids (his arms, out level in his rest pose, are not in it).
-_HAIR = smooth01((_P[:, 2] - 1.45) / 0.04) * (1 - smooth01((np.abs(_P[:, 0]) - 0.24) / 0.05))
+_HAIR = hair_lay(_P)
 # (Flecks may be lifted anywhere; dark streaks only where his hair lay; his
 # nails, pale by right, kept.)
 _n, _most = hero_male_skin.clean(TEX, _P, _r, _c, dark_zone=_HAIR > 0.5, keep=(np.abs(_P[:, 0]) > 0.85) | (_P[:, 2] < 0.05))
@@ -1349,15 +1384,18 @@ if os.path.exists(FACE_PAINT):
 # hair's colour (People.HisShadow): blue in the map, as much as each texel
 # is darker than his brow's bare skin, in the band above his eyes.
 _ax = np.abs(P_[:, 0])
-_bz = (smooth01((P_[:, 2] - (_eye_z + 0.012)) / 0.006) * (1 - smooth01((P_[:, 2] - (_eye_z + 0.05)) / 0.01))
-       * (1 - smooth01((_ax - 0.068) / 0.01)) * (1 - smooth01((P_[:, 1] - (_ear_y - 0.015)) / 0.01)))
+# (Where they grow: about MakeHuman's own brows, its cards laid on his
+# brow, a centimetre round, for Krea painted them heavier and lower.)
+_bcard = cKDTree(place(grab(proxies["eyebrow001"])[0]))
+_bz = 1 - smooth01((_bcard.query(P_)[0] - 0.005) / 0.004)
 _lum = col @ np.array([0.3, 0.59, 0.11])
 _fore = (P_[:, 2] > _eye_z + 0.055) & (P_[:, 2] < _eye_z + 0.08) & (_ax < 0.04) & (P_[:, 1] < _ear_y - 0.01)
-_brow = np.clip((np.median(_lum[_fore]) - _lum) / 0.22, 0, 1) * _bz
+# (only what is clearly darker than his brow's skin: a lid's or a brow
+# bone's shading, dyed a fair man's colour, showed as a pale patch)
+_brow = np.clip((np.median(_lum[_fore]) - _lum - 0.05) / 0.15, 0, 1) * _bz
 _mask[r_, c_, 2] = _brow
-BROW_PAINT = (col * _brow[:, None]).sum(0) / max(_brow.sum(), 1e-6)
-print("BROWS marked over %d texels, painted %s (People.HisBrowPaint)" % ((_brow > 0.5).sum(), "#%02x%02x%02x" % tuple(
-    int(round(255 * v)) for v in np.clip(BROW_PAINT, 0, 1))))
+BROW_T = _brow.copy()
+print("BROWS marked over %d texels" % (_brow > 0.5).sum())
 save_image(pad(_mask, _ins), os.path.join(TEXDIR, "hero_shadow.png"))
 # Over the 3 cm above SPLIT, eased into his own skin's.
 near = s_split(P_) < 0.03
@@ -1368,10 +1406,9 @@ hc_ = sample(TEX, huv)[:, :3]
 mix = (1 - smooth01(s_split(P_[near]) / 0.03)) * (1 - smooth01((dist - 0.01) / 0.01))
 mix = mix[:, None]
 col[near] = col[near] * (1 - mix) + hc_ * mix
-# All of it one skin with his body's (hero_male_skin.one_tone): his face and
-# ears keep some warmth of their own, and all their features.
+# (Brought to one skin with his body's after the face's fixes, which find
+# his lips by their own red: see below.)
 _face_w = np.maximum(_a[:, 0] if os.path.exists(FACE_PAINT) else 0.0, EAR_T)
-col = hero_male_skin.one_tone(col, P_, NECK_TONE, _face_w, keep=0.3)
 himg = np.zeros((HSIZE, HSIZE, 4), np.float32)
 himg[..., 3] = 1
 himg[r_, c_, :3] = col
@@ -1380,7 +1417,7 @@ inside[r_, c_] = True
 himg = pad(himg, inside)
 hpath = os.path.join(TEXDIR, "hero_head.jpg")
 save_image(himg, hpath)
-HEAD_TEXELS = (r_.copy(), c_.copy(), P_.copy())
+HEAD_TEXELS = (r_.copy(), c_.copy(), P_.copy(), _face_w.copy())
 
 head.data.materials[0] = textured("skin_head", hpath)
 print("HEAD paint from", os.path.basename(_mh_png))
@@ -1547,14 +1584,25 @@ heroine_face_fixes.fix(head, hpath)
 from PIL import Image  # noqa: E402
 _fixed = np.asarray(Image.open(hpath).convert("RGB"), np.float32) / 255
 _raw = np.asarray(Image.open(heroine_face_fixes.RAW).convert("RGB"), np.float32) / 255
-_hr, _hc, _hp = HEAD_TEXELS
+_hr, _hc, _hp, _hfw = HEAD_TEXELS
+_hin = np.zeros((HSIZE, HSIZE), bool)
+_hin[HSIZE - 1 - _hr, _hc] = True
 _hr = HSIZE - 1 - _hr
 _drop = (_raw[_hr, _hc] - _fixed[_hr, _hc]) @ np.array([0.3, 0.59, 0.11])
 _nost = (((_hp[:, 0]) / 0.024) ** 2 + ((_hp[:, 2] - (_nose[2] - 0.012)) / 0.016) ** 2 + ((_hp[:, 1] - (_nose[1] + 0.022)) / 0.03) ** 2) < 1
 _back = (_drop > 0.06) & ~_nost
 _fixed[_hr[_back], _hc[_back]] = _raw[_hr[_back], _hc[_back]]
-Image.fromarray((_fixed * 255 + 0.5).astype(np.uint8)).save(hpath, quality=92)
 print("NOSE shading kept to his nostrils: %d texels given back" % _back.sum())
+# All of it one skin with his body's (hero_male_skin.one_tone): his face and
+# ears keep some warmth of their own, and all their features. (Krea painted
+# his face olive beside his tan neck, and MakeHuman's paint is pinker.)
+_fixed[_hr, _hc] = np.clip(hero_male_skin.no_green(hero_male_skin.one_tone(_fixed[_hr, _hc], _hp, NECK_TONE, _hfw, keep=0.3), _hp), 0, 1)
+_fixed = pad(_fixed, _hin)
+Image.fromarray((_fixed * 255 + 0.5).astype(np.uint8)).save(hpath, quality=92)
+print("HEAD toned to his neck's %s" % np.round(NECK_TONE, 3))
+# (His brows' paint as it is now, the colour the game dyes from.)
+_bp = np.median(_fixed[_hr, _hc][BROW_T > 0.7], 0)
+print("BROWS painted #%02x%02x%02x (People.HisBrowPaint)" % tuple(int(round(255 * v)) for v in np.clip(_bp, 0, 1)))
 for _im in bpy.data.images:
     if bpy.path.abspath(_im.filepath) == hpath:
         if _im.packed_file:
