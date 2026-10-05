@@ -19,6 +19,12 @@ public static partial class Pieces
         {
             "headframe" => Headframe(ground),
             "tub" => Tub(seed),
+            "rootplate" => RootPlate(ground),
+            "reeds" => Reeds(seed),
+            "deadfall" => Deadfall(seed),
+            "timber" => Timber(seed),
+            "cookpot" => CookPot(),
+            "winch" => Winch(),
             _ => null,
         };
         if (made != null) made.Name = "arena_" + name;
@@ -101,6 +107,265 @@ public static partial class Pieces
                 Beam(iron, cage + new Vector3(sx, -0.9f, sz), cage + new Vector3(sx, 0.9f, sz), 0.08f);
         Beam(wood, cage + new Vector3(0, 0.9f, -0.95f), cage + new Vector3(0, 0.9f, 0.95f), 1.5f, 0.1f);
         return Hold((wood.Mesh(true), Surface("rough_wood", 1.4f, "#6e5e50")), (iron.Mesh(), Wrought()));
+    }
+
+    /// <summary>The Hollow's den: a giant oak come down in a storm long ago, its root plate torn up
+    /// and standing on end over the pit it tore, the den under it. The plate is a great disc of
+    /// earth seven metres across, its roots radiating over its face and broken off round its rim,
+    /// fine roots hanging down over the hole like a curtain, stones held in it; the trunk lies
+    /// back into the wood behind. Origin: the pit's middle, on its floor; +Z, toward the fight.
+    /// From the arena camera it is the Hollow's one great shape, at the den floor's far edge.</summary>
+    static Node3D RootPlate(Func<Vector3, float>? ground)
+    {
+        float G(float x, float z) => ground?.Invoke(new Vector3(x, 0, z)) ?? 0;
+        var earth = new Build();
+        var roots = new Build();
+        var fine = new Build();
+        var bark = new Build();
+        var stone = new Build();
+        // The plate: standing on its edge behind the pit, leaning back a little, its rim torn.
+        const float R = 3.5f;
+        var c = new Vector3(0, 3.5f, -0.6f);
+        var tilt = new Basis(Vector3.Right, -0.2f);
+        var face = tilt * Vector3.Back;
+        Lathe(earth, Pts(0, -0.55f, R * 0.7f, -0.5f, R, -0.2f, R * 0.96f, 0.15f, R * 0.6f, 0.4f, 0, 0.45f), 40,
+            new Transform3D(tilt * new Basis(Vector3.Right, Mathf.Pi / 2), c),
+            warp: p =>
+            {
+                var q = p - c;
+                float a = Mathf.Atan2(q.Y, q.X);
+                float rim = 1 + 0.16f * (Noise(Mathf.Cos(a) * 2.2f + 5, Mathf.Sin(a) * 2.2f) - 0.5f) * 2 + 0.07f * (Noise(Mathf.Cos(a) * 7, Mathf.Sin(a) * 7 + 3) - 0.5f) * 2;
+                var along = face * face.Dot(q);
+                var flat = q - along;
+                return c + along * (1 + 0.3f * (Noise(q.X * 1.3f, q.Y * 1.3f) - 0.5f)) + flat * rim;
+            });
+        // The roots: from the plate's middle out over its face, curving forward and down, broken
+        // off past the rim; the great ones thick as a thigh.
+        var rng = new RandomNumberGenerator { Seed = 71 };
+        for (int k = 0; k < 30; k++)
+        {
+            float a = k / 30f * Mathf.Tau + rng.Randf() * 0.2f;
+            bool great = k % 3 == 0;
+            float reach = R * (great ? 1.25f : 0.9f + 0.4f * rng.Randf());
+            float r0 = great ? 0.32f : 0.1f + 0.08f * rng.Randf();
+            var dir = tilt * new Vector3(Mathf.Cos(a), Mathf.Sin(a), 0);
+            var path = Path(10, t =>
+            {
+                var p = c + face * (0.5f + 0.4f * Mathf.Sin(t * Mathf.Pi)) + dir * reach * t;
+                // Hanging down past the rim under their weight, the lower ones toward the pit.
+                p.Y -= 0.9f * t * t * t * (1 + Mathf.Max(0, -dir.Y));
+                return p + new Vector3(Noise(t * 3 + k, 1) - 0.5f, Noise(t * 3 + k, 7) - 0.5f, 0) * 0.35f;
+            });
+            Tube(roots, path, t => r0 * (1 - 0.8f * t), 6);
+        }
+        // Fine roots hanging off the plate's lower half over the hole, a ragged curtain.
+        for (int k = 0; k < 70; k++)
+        {
+            float a = Mathf.Pi + rng.Randf() * Mathf.Pi;
+            float rr = R * (0.35f + 0.65f * rng.Randf());
+            var top = c + tilt * new Vector3(Mathf.Cos(a) * rr, Mathf.Sin(a) * rr, 0) + face * (0.45f + 0.2f * rng.Randf());
+            float len = 0.8f + 2.4f * rng.Randf();
+            float sway = rng.Randf() * 0.4f;
+            Tube(fine, Path(6, t => top + new Vector3(sway * t, -len * t, 0.25f * t * t)), t => 0.035f * (1 - 0.85f * t), 3);
+        }
+        // Stones the roots tore up with them.
+        for (int k = 0; k < 9; k++)
+        {
+            float a = rng.Randf() * Mathf.Tau, rr = R * rng.Randf() * 0.85f;
+            var at = c + tilt * new Vector3(Mathf.Cos(a) * rr, Mathf.Sin(a) * rr, 0) + face * 0.45f;
+            float s = 0.18f + 0.25f * rng.Randf();
+            Lathe(stone, Pts(0, -s, s, -s * 0.3f, s * 0.9f, s * 0.4f, 0, s), 8, new Transform3D(Basis.Identity, at),
+                warp: p => p + (p - at) * (Noise(p.X * 4 + k, p.Z * 4) - 0.5f) * 0.6f);
+        }
+        // The trunk, lying back into the wood behind the plate, its far end on the ground.
+        var t0 = c - face * 0.4f + Vector3.Down * 0.6f;
+        var t1 = new Vector3(1.8f, G(1.8f, -17f) + 0.9f, -17f);
+        Tube(bark, Path(14, t => t0.Lerp(t1, t) + Vector3.Up * Mathf.Sin(t * Mathf.Pi) * 0.4f), t => 1.15f - 0.45f * t, 14);
+        // Its branches, broken off short.
+        for (int k = 0; k < 5; k++)
+        {
+            var at = t0.Lerp(t1, 0.35f + 0.13f * k);
+            var d = new Vector3(k % 2 == 0 ? 1 : -1, 0.6f, -0.3f).Normalized();
+            Tube(bark, new List<Vector3> { at, at + d * (1.2f + rng.Randf()) }, t => 0.28f - 0.18f * t, 6);
+        }
+        return Hold((earth.Mesh(true), Surface("forest_ground_04", 1.6f, "#8a7a66")), (roots.Mesh(true), Surface("rough_wood", 0.9f, "#9a8a76")),
+            (fine.Mesh(), Mat("#6a5a46", 0, 0.9f)), (bark.Mesh(true), Surface("rough_wood", 1.2f, "#5e544a")), (stone.Mesh(true), Surface("rock_boulder_dry", 0.8f, "#8a8478")));
+    }
+
+    /// <summary>The Roost's pot: "one pot big enough for all of them", forty-one mouths. A black
+    /// iron cauldron as wide as a cart wheel, its lip rolled, hung from a chain off a tripod of
+    /// rough poles over the cookfire (the fire is the camp's own, set by the place); a ladle
+    /// in it, its stew catching the firelight. From above it reads as a dark ring with a
+    /// gleaming middle under three crossing poles, not a ball.</summary>
+    static Node3D CookPot()
+    {
+        var iron = new Build();
+        var wood = new Build();
+        var stew = new Build();
+        var chain = new Build();
+        const float R = 0.75f, y0 = 0.55f;
+        // The pot: round-bellied, its lip rolled outward.
+        Lathe(iron, Pts(0, y0, R * 0.55f, y0 + 0.04f, R * 0.92f, y0 + 0.25f, R, y0 + 0.5f, R * 0.93f, y0 + 0.78f, R * 0.95f, y0 + 0.84f, R * 1.02f, y0 + 0.86f,
+            R * 0.98f, y0 + 0.82f, R * 0.88f, y0 + 0.8f), 28);
+        // Three stubby legs.
+        for (int k = 0; k < 3; k++)
+        {
+            float a = k * Mathf.Tau / 3;
+            Tube(iron, new List<Vector3> { new(Mathf.Cos(a) * R * 0.5f, y0 + 0.05f, Mathf.Sin(a) * R * 0.5f), new(Mathf.Cos(a) * R * 0.62f, 0.25f, Mathf.Sin(a) * R * 0.62f) }, 0.05f, 5);
+        }
+        // The stew, a little below the lip.
+        Lathe(stew, Pts(0, y0 + 0.72f, R * 0.88f, y0 + 0.72f), 28, warp: p => p + new Vector3(0, 0.02f * Mathf.Sin(p.X * 9) * Mathf.Cos(p.Z * 7), 0));
+        // The tripod over it, its poles crossing at the top, the chain down to the bail.
+        var top = new Vector3(0, 2.6f, 0);
+        for (int k = 0; k < 3; k++)
+        {
+            float a = k * Mathf.Tau / 3 + 0.4f;
+            var foot = new Vector3(Mathf.Cos(a) * 1.7f, 0, Mathf.Sin(a) * 1.7f);
+            Beam(wood, foot, top + (top - foot).Normalized() * 0.35f, 0.11f);
+        }
+        Tube(chain, new List<Vector3> { top, new(0, y0 + 1.3f, 0) }, 0.025f, 4);
+        Tube(chain, Path(12, t => new Vector3(Mathf.Cos(t * Mathf.Pi) * R * 0.95f, y0 + 0.86f + Mathf.Sin(t * Mathf.Pi) * 0.45f, 0)), 0.02f, 4);
+        // The ladle.
+        Tube(wood, new List<Vector3> { new(R * 0.3f, y0 + 0.7f, 0.1f), new(R * 1.1f, y0 + 1.25f, 0.35f) }, 0.025f, 4);
+        return Hold((iron.Mesh(), Mat("#1e1c1a", 0.75f, 0.42f)), (wood.Mesh(true), Surface("rough_wood", 0.8f, "#6e5e4c")),
+            (stew.Mesh(), Mat("#3a2412", 0, 0.18f)), (chain.Mesh(), Wrought()));
+    }
+
+    /// <summary>The Dig's timber, stacked where it was unloaded: squared props and sleepers in
+    /// courses laid crosswise, a few askew, one leaning against the stack. Knee to waist high;
+    /// from above, the crosshatch of pale sawn ends and dark sides reads as worked wood.</summary>
+    static Node3D Timber(int seed)
+    {
+        var wood = new Build();
+        var rng = new RandomNumberGenerator { Seed = (ulong)(seed * 977 + 5) };
+        int courses = 3 + (int)(rng.Randf() * 3);
+        float y = 0;
+        for (int c = 0; c < courses; c++)
+        {
+            bool across = c % 2 == 1;
+            int n = 4 - (c > 2 ? 1 : 0);
+            for (int k = 0; k < n; k++)
+            {
+                float o = (k - (n - 1) / 2f) * 0.3f + (rng.Randf() - 0.5f) * 0.05f;
+                float len = 2.2f + 0.4f * rng.Randf(), skew = (rng.Randf() - 0.5f) * 0.12f;
+                var a = across ? new Vector3(o, y + 0.1f, -len / 2) : new Vector3(-len / 2, y + 0.1f, o);
+                var b = across ? new Vector3(o + skew, y + 0.1f, len / 2) : new Vector3(len / 2, y + 0.1f, o + skew);
+                Beam(wood, a, b, 0.22f, 0.18f);
+            }
+            y += 0.19f;
+        }
+        // One prop leant against the stack.
+        Beam(wood, new Vector3(1.6f, 0.02f, 0.4f), new Vector3(0.7f, y + 0.1f, 0.2f), 0.2f);
+        return Hold((wood.Mesh(true), Surface("rough_wood", 1.0f, "#8a7a64")));
+    }
+
+    /// <summary>A windlass at the pit's lip: two A-frame trestles, a drum between them wound with
+    /// rope, an iron crank. It stands on the lip with the rope going down; under 2 m.
+    /// Its axle along X; origin at its middle on the ground.</summary>
+    static Node3D Winch()
+    {
+        var wood = new Build();
+        var iron = new Build();
+        var rope = new Build();
+        foreach (float sx in new[] { -1.1f, 1.1f })
+        {
+            Beam(wood, new Vector3(sx, 0, -0.7f), new Vector3(sx, 1.25f, 0), 0.16f);
+            Beam(wood, new Vector3(sx, 0, 0.7f), new Vector3(sx, 1.25f, 0), 0.16f);
+            Beam(wood, new Vector3(sx, 0.45f, -0.48f), new Vector3(sx, 0.45f, 0.48f), 0.1f);
+        }
+        Tube(iron, new List<Vector3> { new(-1.35f, 1.2f, 0), new(1.35f, 1.2f, 0) }, 0.05f, 6);
+        Lathe(wood, Pts(0.26f, -0.85f, 0.3f, -0.8f, 0.3f, 0.8f, 0.26f, 0.85f), 14, new Transform3D(new Basis(Vector3.Back, Mathf.Pi / 2), new Vector3(0, 1.2f, 0)));
+        // The rope wound on the drum, and paid out over its front.
+        for (int k = 0; k < 9; k++)
+        {
+            float x = -0.7f + k * 0.175f;
+            Tube(rope, Path(16, t => new Vector3(x, 1.2f + 0.31f * Mathf.Sin(t * Mathf.Tau), 0.31f * Mathf.Cos(t * Mathf.Tau)), true), 0.025f, 4, true);
+        }
+        Tube(rope, new List<Vector3> { new(0.2f, 1.2f, 0.32f), new(0.25f, 0.2f, 1.6f), new(0.25f, -2.5f, 2.2f) }, 0.025f, 4);
+        // The crank.
+        Tube(iron, new List<Vector3> { new(1.35f, 1.2f, 0), new(1.35f, 1.55f, 0.15f), new(1.6f, 1.55f, 0.15f) }, 0.035f, 5);
+        return Hold((wood.Mesh(true), Surface("rough_wood", 0.9f, "#7a6a56")), (iron.Mesh(), Wrought()), (rope.Mesh(), Mat("#8a7a5a", 0, 0.9f)));
+    }
+
+    /// <summary>A deadfall: a dead tree come down years ago, its bark gone and the wood weathered
+    /// silver, its limbs snapped to stubs; the brash it dropped heaped at its crown end. Dry, and
+    /// pale against the dark litter, so from thirty metres up it reads as the thing that will
+    /// burn. Its length along X, the brash at +X; knee high.</summary>
+    static Node3D Deadfall(int seed)
+    {
+        var wood = new Build();
+        var brash = new Build();
+        var rng = new RandomNumberGenerator { Seed = (ulong)(seed * 31 + 7) };
+        float len = 3.4f + 0.6f * rng.Randf();
+        var a = new Vector3(-len / 2, 0.24f, 0);
+        var b = new Vector3(len / 2, 0.16f, 0.15f * (rng.Randf() - 0.5f));
+        Tube(wood, Path(10, t => a.Lerp(b, t) + new Vector3(0, 0.04f * Mathf.Sin(t * 7), 0.06f * Mathf.Sin(t * 4 + seed))), t => 0.27f - 0.1f * t, 10);
+        // The root end, snapped: a stump of splinters.
+        for (int k = 0; k < 6; k++)
+        {
+            float ang = k * Mathf.Tau / 6 + rng.Randf() * 0.4f;
+            var at = a + new Vector3(0, Mathf.Sin(ang) * 0.18f, Mathf.Cos(ang) * 0.18f);
+            Tube(wood, new List<Vector3> { at, at + new Vector3(-0.25f - 0.2f * rng.Randf(), Mathf.Sin(ang) * 0.1f, Mathf.Cos(ang) * 0.1f) }, t => 0.06f * (1 - t), 4);
+        }
+        // Limbs snapped to stubs, up and out.
+        for (int k = 0; k < 5; k++)
+        {
+            var at = a.Lerp(b, 0.25f + 0.15f * k);
+            float side = k % 2 == 0 ? 1 : -1;
+            var d = new Vector3(0.3f, 0.5f + 0.4f * rng.Randf(), side * (0.6f + 0.3f * rng.Randf())).Normalized();
+            Tube(wood, new List<Vector3> { at, at + d * (0.35f + 0.5f * rng.Randf()) }, t => 0.08f * (1 - 0.7f * t), 5);
+        }
+        // The brash, heaped at the crown end: sticks every way, a heap knee high.
+        for (int k = 0; k < 24; k++)
+        {
+            var c = b + new Vector3(0.2f + rng.Randf() * 0.8f, 0, (rng.Randf() - 0.5f) * 1.1f);
+            float ang = rng.Randf() * Mathf.Tau, l = 0.5f + 0.9f * rng.Randf();
+            var d = new Vector3(Mathf.Cos(ang), 0.1f + 0.3f * rng.Randf(), Mathf.Sin(ang));
+            var s0 = c + new Vector3(0, 0.05f + 0.25f * rng.Randf(), 0) - d * l * 0.5f;
+            Tube(brash, new List<Vector3> { s0, s0 + d * l }, t => 0.045f * (1 - 0.6f * t), 4);
+        }
+        return Hold((wood.Mesh(true), Surface("rough_wood", 0.8f, "#a29a8c")), (brash.Mesh(true), Surface("rough_wood", 0.6f, "#5a5248")));
+    }
+
+    /// <summary>A clump of reeds at the sick water's edge: forty-odd blades a metre to a metre
+    /// and a half tall, leaning out, a few broken over, the year's last bulrush heads standing
+    /// among them. Under the 2.2 m the fight is read over; the blighted come out of them.</summary>
+    static Node3D Reeds(int seed)
+    {
+        var live = new Build();
+        var dead = new Build();
+        var heads = new Build();
+        var rng = new RandomNumberGenerator { Seed = (ulong)(seed * 7919 + 13) };
+        for (int k = 0; k < 60; k++)
+        {
+            float a = rng.Randf() * Mathf.Tau, rr = 0.5f * Mathf.Sqrt(rng.Randf());
+            var foot = new Vector3(Mathf.Cos(a) * rr, 0, Mathf.Sin(a) * rr);
+            float h = 0.9f + 0.6f * rng.Randf();
+            var lean = new Vector3(Mathf.Cos(a), 0, Mathf.Sin(a)) * (0.1f + 0.35f * rng.Randf());
+            bool broken = rng.Randf() < 0.12f;
+            float w = 0.025f + 0.015f * rng.Randf();
+            var across = new Vector3(-Mathf.Sin(a), 0, Mathf.Cos(a));
+            var b = rng.Randf() < 0.25f ? dead : live;
+            int n = 5;
+            int prev = -1;
+            for (int s = 0; s <= n; s++)
+            {
+                float t = s / (float)n;
+                var p = foot + Vector3.Up * h * t + lean * h * t * t;
+                if (broken && t > 0.6f) p = foot + Vector3.Up * h * 0.6f + lean * h * 0.36f + (lean.Normalized() + Vector3.Down * 0.6f) * h * (t - 0.6f);
+                float ww = w * (1 - t * 0.9f);
+                var nrm = across.Cross(Vector3.Up).Normalized();
+                int l = b.V(p - across * ww, nrm), r = b.V(p + across * ww, nrm);
+                if (prev >= 0) b.Quad(prev, prev + 1, r, l);
+                prev = l;
+            }
+            if (!broken && rng.Randf() < 0.18f)
+            {
+                var top = foot + Vector3.Up * h * 0.85f + lean * h * 0.72f;
+                Lathe(heads, Pts(0, -0.1f, 0.03f, -0.08f, 0.032f, 0.08f, 0, 0.1f), 6, new Transform3D(Basis.Identity, top));
+            }
+        }
+        return Hold((live.Mesh(), Mat("#36422a", 0, 0.75f, true)), (dead.Mesh(), Mat("#5c5038", 0, 0.8f, true)), (heads.Mesh(), Mat("#3a2414", 0, 0.9f)));
     }
 
     /// <summary>A mine tub: an iron box tapering to its floor, rusted, banded,

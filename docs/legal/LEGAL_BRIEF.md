@@ -26,11 +26,12 @@ You asked: *"ai generated assets and things are perfectly ok for steam games and
    - So a competitor could, in principle, copy an individual AI-made icon or texture.
    - What you can protect: the game as a whole (your selection and arrangement), anything you personally made or changed, and your name and logo, by trademark.
    - Section 16 says how to strengthen this.
-4. **"No trouble" depends on a few fixes before launch.** Four items still block launch (4 Oct, night):
-   - the AI disclosure, filled in honestly at submission;
-   - the mature-content answers, which must cover what's hidden in the build as well as what's shown, once the motion check is finished;
-   - the licences screen, built and its texts verified, still to be seen in game;
-   - the boar, which has conflicting licence terms: replace it, or buy the commercial version, before launch.
+4. **"No trouble" depends on a few fixes before launch.** Three items still block launch (5 Oct):
+   - the AI disclosure, filled in honestly at submission. The text is ready to paste (`STEAM_CHECKLIST.md` D3);
+   - the mature-content answers, which must cover what's hidden in the build as well as what's shown, once the motion check is finished on the new outfit build;
+   - the boar, which has conflicting licence terms. No one has its replacement scheduled, so **buy the commercial version now** and keep the receipt.
+
+   The licences screen is done: built, its texts verified, and seen in game (5 Oct).
 
    Done since the first brief: debug paths and unused files are out of the release build, and so are the placeholder voices. The pack listing proves it (issue 3).
 
@@ -45,7 +46,7 @@ You asked: *"ai generated assets and things are perfectly ok for steam games and
    - ElevenLabs is fine for commercial use on a paid plan. Use only voices we have the right to: designed voices, your own voice, or performers who have consented in writing. Never feed ElevenLabs output into another AI model; its terms forbid it.
    - **Suno** (the hymn) is fine on a **Pro or Premier** plan, for a song you **download** through Suno's own download button. Suno assigns those songs to you. Free-plan songs are for personal, non-commercial use only (issue 28).
 
-**In one line:** ship it with an honest disclosure, clear the four blockers (the boar is the biggest job), and plan for the Krea revenue cap, which now covers the bodies' pictures as well as the interface. Then the AI use itself is not what gets you into trouble.
+**In one line:** ship it with an honest disclosure, clear the three blockers (buying the boar's commercial version is the quickest), and plan for the Krea revenue cap, which now covers the bodies' pictures as well as the interface. Then the AI use itself is not what gets you into trouble.
 
 ---
 
@@ -83,7 +84,12 @@ I checked these in the repository at `f56ee42` (integration branch) and in rende
     - Reaver: a single leather band covers the nipples, leaving heavy underboob; a low belt and loincloth flap.
     - Stalker: a leather corset with the nipples showing as a soft rise through it; the right buttock is bare in a thong cut, and a high cut runs over the right hip.
     - Warden: the plate skirt leaves the lower buttocks bare.
-  - **My motion check** (issue 2): in the sprint, the Warden's left plate cup clips and shows part of the nipple. The other outfits stayed covered in the run and sprint clips. Her crotch is covered in all four outfits; whether it is modelled is still unconfirmed.
+  - **The motion check** (issue 2; second pass after the outfit rebuild at 854b927e):
+    - the Warden's left cup is now fixed;
+    - the Warden wears a narrow thong under her plate skirt (`warden.thong`). My first crotch mark was too wide and counted the bare groin beside it, so that finding is withdrawn until the narrow re-count;
+    - her crotch is a smooth form: **no genitals are modelled** (seen in a calibration render, 4 Oct, kept in the scratchpad).
+
+    The other clips and outfits are being checked.
 - **Character creation:** it never shows her or him without the calling's full outfit, has no base layer, and no shipped toggle for one (UI design lead, 4 Oct). A dev portrait tool once built her bare by mistake; it is fixed, and the images were re-rendered dressed.
 - **The male hero:** a bare body with a smooth crotch and bare buttocks. He is reachable only through the debug argument `--body hero`, which is **not** gated to debug builds (`godot/src/Actors/People.cs:103`). A base garment is being added (hero lead, 4 Oct).
 - **Sexual content in text** (`godot/data/content/dialogue.json`):
@@ -116,7 +122,7 @@ I checked these in the repository at `f56ee42` (integration branch) and in rende
 | 1 | Steam AI disclosure (pre-generated; no live) | BLOCKER |
 | 2 | Steam mature content survey, including content hidden in the build | BLOCKER |
 | 3 | Debug paths and unused files in the release build | DONE (8a770667; pack listing reviewed) |
-| 4 | Licence notices and credits missing from the build | BLOCKER until seen in game (built at 178768aa; texts verified) |
+| 4 | Licence notices and credits missing from the build | DONE (built at 178768aa; texts verified; seen in game 5 Oct). Re-check the folder beside each release build |
 | 5 | Third-party assets: the boar; the base bodies (local Krea 2 Turbo and TRELLIS 2); The Ember Watch | BLOCKER (boar); FINE with conditions (bodies); FINE (Ember Watch, with records) |
 | 6 | Explicit-scene placeholders in shipped data; the explicit-content decision | DONE (removed, efc15256) / decision |
 | 7 | Sex tied to a gameplay buff (Australia R18+, credit-card gate) | RESOLVED once b47d98ea merges |
@@ -209,10 +215,36 @@ I checked these in the repository at `f56ee42` (integration branch) and in rende
 - **Warden, otherwise:** the lower buttocks show beneath the plate skirt. No exposure.
 - **Not yet checked:** combat swings, the dash and leap, deaths, crouching, cinematic poses, and creation's poses.
 
+**The second pass** (4 Oct 2026, night; the outfit rebuild at 854b927e). It is automatic, so that nothing hangs on spotting a few pixels by eye.
+- **The method.** For the check only, her areolas and genital area are tinted unlit cyan in a copy of her skin shader. The tint goes on after the outfit's own skin hiding, so hidden skin stays hidden exactly as in play. A counter then flags any frame that shows cyan, and saves a crop.
+  - The areola mark is sized to the pigment: within 2.2 cm of the nipple tip. Her skin texture is dark to about 2.3 cm and plain skin by 3.8 cm.
+  - The genital mark covers the pubic mound and the crotch between the thighs, erring wide.
+  - No outfit contains cyan: 253 earlier unmarked frames had none.
+  - Two brightnesses tell the two marks apart.
+  - Each clip loops at a fixed 60 frames a second, with 10 to 16 frames spread over one pass. Jiggle is on. Three or four cameras run at once, and floor clips get low cameras.
+- **The clips:**
+  - every combat swing, cast and throw;
+  - dash, leap, vault and bull rush;
+  - hit, both deaths and getting up;
+  - sitting and kneeling (there is no crouch clip);
+  - the idles and their breaks, the stops, and the creation show poses;
+  - the weapon-carrying runs and sprints;
+  - the cinematic gestures.
+- **The tools:** `scratchpad/legal/make_motioncheck2.py`, `motion3.sh` and `count.py`, to be kept in the repo for re-runs before launch.
+- **The Warden's left cup: fixed.** No areola shows in any frame of the sprint, in close front, three-quarter or overhead views (48 frames, 0 flags). The cup's edge comes within about 2.8 cm of the nipple tip; that is plain skin.
+- **The Warden's crotch: first reading withdrawn.** My first genital mark was too wide.
+  - It ran 2 to 3.5 cm either side of the midline from where her inner thighs touch, so it counted the bare groin and inner thigh beside her thong (`warden.thong`, 2.4 cm wide at the crotch). The owner wants that skin shown.
+  - The mark is now the strip a garment must cover: the vulva's footprint, were one modelled, 1.2 cm either side of the midline, from the perineum to just below the front of the mons. It is found on the mesh from her crotch's underside.
+  - The Warden's clips are to be re-counted against it on the next build.
+- **Areolas on this build:** none shows in any frame of the Warden's 42 clips or the Arcanist's 44 (3,320 frames). The Stalker and Reaver were not run on this build; the next build re-measures every outfit.
+- **The margin (asked for by the main session):** the distance code reports, per outfit, the closest visible skin to each areola's edge in any frame, and where on the rim it falls, so each cup can be brought down to the smallest margin that holds in motion.
+- **The rest:** in progress; results to follow here.
+
 **Action.**
 1. Use the draft answers in `STEAM_CHECKLIST.md`.
-2. **Fix the Warden's left cup clipping** in the sprint (outfits, main session). Until it's fixed, the survey's "no exposed nipples in play" is not true.
-3. Extend the motion check to the clips not yet checked, at close range. If anything shows, fix it or disclose it.
+2. ~~Fix the Warden's left cup clipping.~~ **Done** (854b927e, verified).
+3. ~~Give the Warden a base garment under her skirt.~~ Withdrawn: she wears a thong by design. The narrow-strip re-count on the next build decides whether it covers in motion.
+4. Finish the second pass on every clip and outfit. Re-run it after any outfit or body change, and before launch.
 
 ### 3. Debug paths and unused files in the release build: BLOCKER
 
@@ -246,7 +278,7 @@ I checked these in the repository at `f56ee42` (integration branch) and in rende
 - A release build run with `--body hero --quick … --shot … --perf …` ignored every switch and opened at the age gate.
 
 **Ruled on what remains:**
-- **The Quaternius base bodies** (`assets/people/Superhero_*_FullBody.gltf`) ship because the townsfolk, the Risen and the male survivor are built on them, always dressed. FINE: CC0 and credited. I'll confirm their bare form has no anatomical detail in the GPU check; if it has, add one sentence to the reviewers' note.
+- **The Quaternius base bodies** (`assets/people/Superhero_*_FullBody.gltf`) ship because the townsfolk, the Risen and the male survivor are built on them, always dressed. FINE: CC0 and credited. **Checked 5 Oct:** clay renders of both bodies' bind pose show no nipples and no genitals (a smooth bust and a smooth crotch), and their skin textures (`T_Superhero_*`, `T_Regular_*`) paint underwear: a bra and briefs on the women, briefs on the men. No sentence is needed in the reviewers' note.
 - **`art/anim/hero.res`** is animation data only: FINE.
 - **`data/vo/index.json`** ships with no audio behind it: FINE. No synthetic voice ships, so the disclosure names none.
 
@@ -260,7 +292,7 @@ The spec it implements:
 - The owner has approved the export templates, and the main session has fetched Godot's 4.5.1 mono templates. The build waits only for the GPU to be free.
 - Checked and harmless: `--bare` hides the world, not an outfit. The environment switches (`HAIRDEBUG`, `FX_LAYERS`, `CAMPFIRE_PARTS`, `FLORA_COUNT`) change only effects and counts.
 
-### 4. Licence notices and credits missing from the build: BLOCKER
+### 4. Licence notices and credits missing from the build: DONE
 
 **Evidence.**
 - The export has no `.txt` or `.md` files.
@@ -302,6 +334,13 @@ I compared the shipped notice texts with their sources. `GODOT_LICENSE.txt` and 
 - make the AI section the single list in `STEAM_CHECKLIST.md` E;
 - see the screen in game when the GPU is free.
 
+**Seen in game (5 Oct 2026, 1920×1080, the main checkout at e1b90496's code).** Opened with `--open credits`, then each index entry clicked:
+- all seven credits sections show, and the AI section carries the text of `STEAM_CHECKLIST.md` E;
+- the Godot page shows the MIT text and "Its parts, made by others", read from the engine (`Engine.GetCopyrightInfo()`); the .NET page its MIT text and third-party notice; the typefaces page the OFL 1.1 text with the three fonts' copyright lines;
+- a button offers to open the licences folder (not pressed).
+
+One layout fault, not a legal one: two index labels run past the panel's divider (sent to UI design). Before each upload, check that `licences/` sits beside the release executable (`export.sh` copies it there).
+
 **Specification** (for the UI design lead's successor; sources checked 4 Oct 2026).
 - **Godot 4.5.1:**
   - Take `LICENSE.txt` and `COPYRIGHT.txt` from the `4.5.1-stable` tag of `godotengine/godot`.
@@ -335,6 +374,7 @@ These are my rulings on the auditor's findings (`ASSET_PROVENANCE.md`), updated 
   - A CC licence, once granted, can't be revoked. But conflicting statements from the licensor invite a dispute and a Steam DMCA notice.
   - The owner plans to replace third-party work "eventually". **"Eventually" is too late for the boar:** it must be replaced before launch (`REPLACEMENT_PLAN.md` 1.1).
   - If the replacement won't be ready, buy the commercial version on Fab as a stop-gap and keep the receipt.
+  - **5 October: buy it now.** The page is unchanged (Sketchfab's API, 5 Oct): still labelled CC BY, still "This version is for personal use only. Commercial use is allowed only for versions purchased on Fab or Patreon." No lead has the replacement scheduled: arena art says creatures aren't theirs, the models planner lists it second, and animation would rig it. Buying the commercial version (Fab, or the creator's Patreon shop) clears the blocker for a small cost, and our own boar can still replace it later. Keep the receipt and the licence text in `docs/legal/records/`, and use the purchased file, not the Sketchfab download. Fab's site sits behind a bot check, so the owner must look up the listing himself.
 - **(b) The base bodies:** **FINE, with conditions** (re-ruled 4 Oct, evening, on the owner's corrected answer).
   - **What they are:**
     - the heroine's body, from the owner's `234.glb`;
@@ -425,7 +465,15 @@ These are my rulings on the auditor's findings (`ASSET_PROVENANCE.md`), updated 
   2. **Generated locally with an unrestricted model:** TRELLIS 2, Pixal3D or MoGe (MIT), or Kimodo (outputs ours). The input picture must be ours too:
      - our own render or drawing;
      - the owner's own photo, with a model release if a person is in it;
-     - an image we generated ourselves.
+     - an image we generated ourselves, with a local image model that has no revenue cap (below).
+
+     **Which local image models count** (answering `MODELS_TO_MAKE.md` appendix D; licence fields read from Hugging Face's API on 5 Oct 2026, to be re-read from each model's own licence file before first use):
+     - **Yes, no revenue cap:** Qwen-Image and Qwen-Image-2512 (Apache-2.0), Z-Image-Turbo (Apache-2.0), FLUX.1 [schnell] (Apache-2.0). First choice: Qwen-Image, whose VAE and text encoder our Krea 2 pipeline already loads, so ComfyUI has most of it. Apache-2.0 governs the model; it puts no conditions on images we make with it.
+     - **Yes, with a note:** HiDream-I1 (MIT), but its text encoder is Llama 3.1 8B, under Meta's Llama 3.1 Community License. Its conditions (the 700M-user threshold, the "Built with Llama" notice) attach to distributing the model, which we don't do; read it before use.
+     - **No:** FLUX.1 [dev] and FLUX.2 [dev] (Black Forest Labs' non-commercial licences; whatever they say of outputs, we'd be running the weights for a commercial product). Stable Diffusion 3.5 (Stability's Community License: free only under US$1M revenue, the same cap problem as Krea). Any model whose licence bars the EU or UK, like Hunyuan's.
+     - **Allowed but not preferred:** Stable Diffusion XL (CreativeML Open RAIL++-M): commercial use allowed, with a list of banned uses that we would never come near; older and weaker.
+
+     The same rules apply as for any AI picture: text prompts naming no real person, artist or other work; no LoRA without its creator's commercial permission; a ledger line. Training data is unsettled law for every one of these, as for Krea (lawyer question 15).
   3. **Generated with Krea 2 locally:** allowed, but it adds to the US$1M revenue cap and the 30-day termination risk (issue 8). That includes a mesh made from a Krea picture, because it is commercial use of a Krea output.
   4. **Never for anything that ships:**
      - Hunyuan3D in any version, local or on Krea's website (the EU and UK bar);

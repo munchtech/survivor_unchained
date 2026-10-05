@@ -128,7 +128,9 @@ public partial class BattleFx : Node3D
         // What lies on the ground is what the pack shows (the photographs'
         // models): an ember is the ember's crystals, lit the colour of its
         // worth; a draught, a lodestone, a sack of what was carried, a chest.
-        embers = Add(new Batch(Pickup("ember", 1.25f, m => m is BaseMaterial3D { EmissionEnabled: true }), 1400, Glowing(2.6f, 0.25f)));
+        // Lit by their own colour at about its strength, no more: at 2.6 times a stone was white-hot
+        // in every channel and the tone curve made cream popcorn of a field of them.
+        embers = Add(new Batch(Pickup("ember", 1.25f, m => m is BaseMaterial3D { EmissionEnabled: true }), 1400, Glowing(1.0f, 0.25f)));
         var coin = new Build();
         Lathe(coin, Pts(0, -0.012f, 0.12f, -0.012f, 0.15f, -0.02f, 0.16f, -0.012f, 0.16f, 0.012f, 0.15f, 0.02f, 0.12f, 0.012f, 0, 0.012f), 16);
         coins = Add(new Batch(coin.Mesh(), 600, Glowing(0.6f, 0.3f, 0.9f)));
@@ -594,6 +596,10 @@ public partial class BattleFx : Node3D
 
     /* ------------------------------------------------------------- events -- */
 
+    /// <summary>Critical bursts in the last breath (a crowd of crits is told by a few).</summary>
+    double critBurstAt = -1;
+    int critBursts;
+
     public void Handle(IReadOnlyList<CombatEvent> events, Battle b)
     {
         b0 = b;
@@ -630,10 +636,16 @@ public partial class BattleFx : Node3D
                         if (away.LengthSquared() < 0.01f) away = Vector3.Forward;
                         Gore.Hit(at + Vector3.Up * 0.2f, e.Amount, e.MaxHp, View.Gore.Of(e.Family, e.Def ?? ""), e.Family == Family.Undead, away.Normalized(), e.Crit);
                     }
-                    if (e.Crit)
+                    // A critical's burst: warm gold under the tone curve's knee (white-hot, a crowd of
+                    // crits bloomed white round her), three at most in a breath, and small at her elbow.
+                    if (e.Crit && (time - critBurstAt > 0.15 || critBursts < 3))
                     {
-                        if (!Books.Spawn("sparks", at, 0.9f, 0.35f, new Color(1.4f, 1.3f, 1.2f), sizeEnd: 1.6f))
-                            Sparks.Spawn(at, Vector3.Zero, 0.22f, 1.1f, Palette.Of(e.School).Core, sizeEnd: 0.25f, sprite: Sprites.Of("star"), spinV: 4);
+                        if (time - critBurstAt > 0.15) { critBurstAt = time; critBursts = 0; }
+                        critBursts++;
+                        double dx = e.X - b.Player.X, dz = e.Z - b.Player.Z;
+                        float near = dx * dx + dz * dz < 9 ? 0.6f : 1f;
+                        if (!Books.Spawn("sparks", at, 0.7f * near, 0.3f, new Color(1f, 0.8f, 0.48f) * new Color(1, 1, 1, near), sizeEnd: 1.2f * near))
+                            Sparks.Spawn(at, Vector3.Zero, 0.22f * near, 1.1f, Palette.Of(e.School).Core, sizeEnd: 0.25f, sprite: Sprites.Of("star"), spinV: 4);
                         Cam?.AddTrauma(0.04f);
                     }
                     break;
@@ -1403,10 +1415,10 @@ public partial class BattleFx : Node3D
         shades.End(); orbs.End(); steel.End(); axes.End(); daggers.End(); shards.End(); rings.End(); kegs.End();
     }
 
-    // Ember by worth, kept saturated: the brighter tiers were near-white in every channel and bloomed
-    // to cream "popcorn" on the ground. Orange, amber, gold, a cold blue for the rare great stone,
-    // and the hoard stone's deep red (Battle.Hoard).
-    static readonly Color[] EmberTiers = { new(2.4f, 0.9f, 0.2f), new(2.6f, 1.45f, 0.3f), new(2.6f, 2.0f, 0.45f), new(0.5f, 1.3f, 2.8f), new(2.8f, 0.35f, 0.3f) };
+    // Ember by worth, kept saturated: orange, amber, gold, a cold blue for the rare great stone, and
+    // the hoard stone's deep red (Battle.Hoard). Their glow is these at about 1.3 at most: past the
+    // tone curve's knee every hue folds to cream, and a field of stones read as popcorn.
+    static readonly Color[] EmberTiers = { new(1.3f, 0.42f, 0.08f), new(1.3f, 0.72f, 0.14f), new(1.25f, 1.0f, 0.24f), new(0.25f, 0.62f, 1.35f), new(1.35f, 0.16f, 0.12f) };
     // (An array made for each ember on the ground every frame was most of what the effects threw away.)
     static readonly float[] EmberSizes = { 0.16f, 0.21f, 0.27f, 0.34f, 0.5f };
 
@@ -1430,7 +1442,7 @@ public partial class BattleFx : Node3D
                         s *= 1 + 0.12f * Mathf.Sin((float)now * 5);
                         lootBeams.Add(new Transform3D(Godot.Basis.Identity.Scaled(new Vector3(1.3f, 4.5f, 1.3f)), V(p.X, gy + 2.25, p.Z)), new Color("#ff3a2a"));
                     }
-                    embers.Add(new Transform3D(spin.Scaled(Vector3.One * s), V(p.X, gy + 0.45 + bob, p.Z)), EmberTiers[tier] * 0.5f);
+                    embers.Add(new Transform3D(spin.Scaled(Vector3.One * s), V(p.X, gy + 0.45 + bob, p.Z)), EmberTiers[tier]);
                     break;
                 }
                 case PickupKind.Gold:

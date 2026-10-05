@@ -161,7 +161,9 @@ public sealed class StoryNight : ZoneRuntime, IStoryArena
         foreach (var id in Fight.Fires)
         {
             var (x, z) = place[id];
-            var f = new Deadfall { Id = id, X = x, Z = z, Burns = burns, Light = G.Look.AddLight(x, 1.1, z, "#ff8a3a", 2.8, 10, 0.22, 0.1, "#ffb35a") };
+            // The place's own fire laid in the deadfall (arena art's: flames along the wood), or a light.
+            int light = map.FireLights.TryGetValue(id, out var laid) ? laid : G.Look.AddLight(x, 1.1, z, "#ff8a3a", 2.8, 10, 0.22, 0.1, "#ffb35a");
+            var f = new Deadfall { Id = id, X = x, Z = z, Burns = burns, Light = light };
             G.Look.SetLit(f.Light, false);
             fires.Add(f);
         }
@@ -281,7 +283,11 @@ public sealed class StoryNight : ZoneRuntime, IStoryArena
     void Open(string gate)
     {
         var g = Fight.Place.Gates.FirstOrDefault(x => x.Id == gate);
-        if (g != null) { StoryPlace.Open(B!.Collision, g); open.Add(g.Into); }
+        if (g == null) return;
+        StoryPlace.Open(B!.Collision, g);
+        open.Add(g.Into);
+        // The ember's line across the way goes out (its char stays on the ground).
+        G.Look.Show($"gate:{g.Id}", false);
     }
 
     /* ------------------------------------------------------------- the boss -- */

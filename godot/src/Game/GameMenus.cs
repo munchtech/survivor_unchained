@@ -129,7 +129,8 @@ public partial class Game
         {
             Journey.Nightfall();
             CloseOverlay();
-            hud.Fade(1, 0.8, "Nightfall", $"Day {w.Day}");
+            // (the ember's light along the foot, where a dawn has the first light)
+            hud.Fade(1, 0.8, "Nightfall", $"Day {w.Day}", new Color(1f, 0.32f, 0.1f, 0.3f));
             Wait(1.4, () =>
             {
                 SetTimeOutright(TimeOfDay.Night);

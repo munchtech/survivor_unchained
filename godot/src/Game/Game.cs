@@ -222,6 +222,8 @@ public partial class Game : Node, IZoneHost
             spec.Spare = Args.Has("spare");
             // --story: told as a story's night (twenty minutes, over at its boss's fall), for pictures of its end.
             if (Args.Has("story")) { spec.Story = true; spec.Minutes = 20; }
+            // --night hollow|roost|dig|vault: that story fight's own night (pictures of its place; --stage N for later stages).
+            if (Args.Get("night") is string nt) spec = SurvivorUnchained.Play.StoryFights.Spec(nt, Journey.Ctx, "waystation", at0.X, at0.Z, at0.Facing);
             Arenas.Begin(World, spec);
         }
         // --zone map [--tier T --people ID --mods a+b --seed N]: straight into a Wayfinder's map.
@@ -250,13 +252,14 @@ public partial class Game : Node, IZoneHost
             // Skipping ahead: the prologue counts as done.
             World.Facts["prologue.done"] = true;
             World.Time = Enum.TryParse<TimeOfDay>(Args.Get("time") ?? "day", true, out var t) ? t : TimeOfDay.Day;
-            // --clock S: the day's clock at S seconds of free play since dawn, running (pictures of its
-            // turns: 585 is a quarter minute before dusk, 1065 before the night's end).
+            // --clock S: the day's clock running, S seconds past dawn (pictures of its turns: 590 is ten
+            // seconds before dusk, 710 before nightfall, 890 before the nudge, 1070 before the night passes;
+            // run with --fixed-fps 60, or the first frame's load is counted as play).
             if (Args.Has("clock"))
             {
-                World.Clock = Args.Num("clock", 0);
-                World.Time = DayClock.At(World.Clock);
                 World.Facts["clock.started"] = true;
+                World.Clock = Args.Num("clock", 0);
+                World.Time = SurvivorUnchained.World.DayClock.At(World.Clock);
             }
             EnterZone(z, "lowford", at);
         }
@@ -467,6 +470,10 @@ public partial class Game : Node, IZoneHost
         if (id == "arena") { currentMap = SurvivorUnchained.Maps.MapGen.Generate(World.Arena!.Map); data = new ZoneData(currentMap); }
         else if (id == "map") { currentMap = SurvivorUnchained.Maps.MapGen.Generate(World.Map!.Map); data = new ZoneData(currentMap); }
         else { currentMap = null; data = new ZoneData(id); }
+        // The kit's textures it is built from, decoded side by side first.
+        Perf.Lap("prefetch", true);
+        Prefetch.Zone(data, Journey != null ? Loadouts.Of(Journey.Ch).Person : null, folk: id != "arena");
+        Perf.Lap("its textures, decoded on worker threads");
         scene = new WorldScene(data, cam);
         AddChild(scene);
         scene.Move = () => auto?.Move ?? (controls.Captured ? (0, 0) : (controls.MoveX, controls.MoveZ));
@@ -760,7 +767,7 @@ public partial class Game : Node, IZoneHost
         int crits = 0;
         foreach (var e in evs)
         {
-            if (Shots.On("boss")) BossShot(e);
+            if (Shots.On("boss") || Shots.On("casts")) BossShot(e);
             Feel(e, ref crits);
             switch (e)
             {
@@ -806,11 +813,16 @@ public partial class Game : Node, IZoneHost
     }
 
     /// <summary>--on boss: a frame of each boss move as it is marked, its Break, its
-    /// stagger, its arrival and what is announced (Shots.Want).</summary>
+    /// stagger, its arrival and what is announced (Shots.Want). --on casts: a run of
+    /// frames, fifteen a second, through each creature's marked cast and a second after
+    /// it (judging a slam or a call as the player sees it).</summary>
     static void BossShot(CombatEvent e)
     {
         switch (e)
         {
+            case Ev.Telegraph t when Shots.On("casts") && t.Id >= 0 && t.Hostile:
+                for (int i = 0; i * (1 / 15.0) < t.Duration + 1; i++) Shots.Want($"cast{t.Id}", i / 15.0);
+                break;
             case Ev.Telegraph t when t.Boss && t.Label is { Length: > 0 } l: Shots.Want(l, Math.Min(0.7, t.Duration * 0.6)); break;
             case Ev.Break: Shots.Want("break", 0.3); break;
             case Ev.Focus: Shots.Want("focus", 1.0); break;
@@ -1009,7 +1021,7 @@ public partial class Game : Node, IZoneHost
 
     /// <summary>--open KIND (or 'all'): the screens opened in turn, for
     /// pictures and for runs that check each builds (--bare hides the world).</summary>
-    bool hordeDone, dropsDone, castDone, giveDone, minuteDone, chestDone, barksDone, answerDone, fallDone;
+    bool hordeDone, dropsDone, castDone, giveDone, minuteDone, chestDone, barksDone, answerDone, fallDone, litDone;
     int dieIx;
     double blastT = 0.5, marksT = 1;
 
@@ -1062,6 +1074,12 @@ public partial class Game : Node, IZoneHost
         {
             minuteDone = true;
             sn2.SkipTo((int)Args.Num("stage", 0));
+        }
+        // --lit: a story night's deadfalls all burning (pictures of them alight).
+        if (!litDone && Args.Has("lit") && zone is StoryNight sn3 && Battle != null)
+        {
+            litDone = true;
+            foreach (var f in sn3.Fires) { f.Lit = 9999; f.EverLit = true; scene.SetLit(f.Light, true); }
         }
         // --chest 1,3,5! [--chest-at T]: chests of those sizes opened at her feet T seconds in, one
         // after another (! a boss's hoard), for pictures of the opening.
@@ -1338,6 +1356,48 @@ public partial class Game : Node, IZoneHost
         };
         Perf.Note = () => $"{zone?.Id} foes {Battle?.Enemies.Count ?? 0} ember {Battle?.EmberLevel} kills {Battle?.KillCount} " +
                           (zone?.Debug() is { Count: > 0 } d ? string.Join(" ", d.Take(3).Select(kv => $"{kv.Key}={kv.Value}")) : "");
+        // --perf-flip A,B [--perf-flip-every S]: these taken out every other S
+        // seconds (default 1) and put back, the frame's "flip" counter 1 while
+        // out. One run measures both ways under the same load from the GPU's
+        // other users (it is shared): her, furshadow (her fur's shadows), crowd,
+        // grass, sunshadows, ssao, msaa;
+        // or quality:Q, scale:S (that quality or resolution while out).
+        if (Args.Get("perf-flip") is string flips)
+        {
+            var flipped = flips.Split(',').ToHashSet();
+            double every = Args.Num("perf-flip-every", 1);
+            var clock = System.Diagnostics.Stopwatch.StartNew();
+            bool outNow = false, wasOut = false;
+            string q0 = Settings.Current.Quality, s0 = Settings.Current.Scale;
+            string? qOut = flipped.FirstOrDefault(f => f.StartsWith("quality:"))?[8..], sOut = flipped.FirstOrDefault(f => f.StartsWith("scale:"))?[6..];
+            Perf.CounterNames = [.. Perf.CounterNames, "flip"];
+            var counters = Perf.Counters;
+            Perf.Counters = a => { counters(a); a[^1] = outNow ? 1 : 0; };
+            perf.Each = () =>
+            {
+                if (scene == null) return;
+                outNow = (int)(clock.Elapsed.TotalSeconds / every) % 2 == 1;
+                bool on = !outNow;
+                if ((qOut ?? sOut) != null && outNow != wasOut)
+                {
+                    Settings.Current.Quality = outNow ? qOut ?? q0 : q0;
+                    Settings.Current.Scale = outNow ? sOut ?? s0 : s0;
+                    Graphics.Apply(Settings.Current, air, GetViewport(), scene);
+                }
+                wasOut = outNow;
+                if (flipped.Contains("her") && scene.Player != null) scene.Player.Visible = on;
+                if (flipped.Contains("furshadow") && scene.Player != null)
+                    foreach (var n in scene.Player.FindChildren("*fur*", "MeshInstance3D", true, false))
+                        ((MeshInstance3D)n).CastShadow = on ? GeometryInstance3D.ShadowCastingSetting.On : GeometryInstance3D.ShadowCastingSetting.Off;
+                if (flipped.Contains("crowd")) scene.Crowd.Visible = on;
+                if (flipped.Contains("grass") && scene.View.GetNodeOrNull<Node3D>("Grass") is { } g) g.Visible = on;
+                var t = Graphics.Current;
+                if (flipped.Contains("sunshadows")) air.Key.ShadowEnabled = on;
+                if (flipped.Contains("ssao")) air.Env.SsaoEnabled = on && t.Ssao;
+                if (flipped.Contains("msaa")) GetViewport().Msaa3D = on ? t.Msaa : Viewport.Msaa.Disabled;
+            };
+            return;
+        }
         // --perf-off A,B: things taken out of the picture, to see what each costs
         // by the difference (never for play): her, crowd, grass, flora, props,
         // landmarks, ground, water, fires, fx, hud, lamps, lampshadows,

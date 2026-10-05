@@ -1,95 +1,66 @@
 # Arena art: how every arena looks, and reads
 
-Status page for the arena art lead (agent `a26767f7f9955cb56`, branch
-`worktree-agent-a26767f7f9955cb56`; took over from `a52b851395b3ab3f4`, whose
-handoff is `docs/handoff/arena_art.md`). Sheets and concepts are in `docs/arena/`.
+Status page for arena art (branch `worktree-agent-a26767f7f9955cb56`). The lead
+(a26767f7f9955cb56) has handed off: read `docs/handoff/arena_art.md`. Sheets and
+concepts are in `docs/arena/`.
 
 ## The brief
 
-I own every arena's look: the ground, the dressing, the landmarks, the light
-and air, how readable the fight is on it, and how each arena shows its place in
-the valley. The endgame has two kinds of arena, each with its own look:
-- the **ember scars**: the survivors arenas, one night each (`ArenaRun`);
-- the **Wayfinder's atlas**: the permanent build maps, "like PoE" (story calls
-  them "the places the road forgets").
+I own every arena's look: the ground, the dressing, the landmarks, the light and air,
+how readable the fight is on it, and how each place tells its part of the valley. That
+includes each story fight's own place, built to combat's outline. The endgame has two
+kinds of arena, each with its own look: the **ember scars** (survivors runs, `ArenaRun`)
+and the **Wayfinder's atlas** (permanent build maps, "like PoE").
 
-## Current state (paused for the owner, mid-pass)
+## Current state
 
-**Honest grades, judged at full resolution:** Barrow ~2.5, Ruts ~2.5, Hollow
-~3, Dig ~3. The ground reads flat, like asphalt or paint blobs, from the arena
-camera. Under the moonless mood ("Deep" and "Lampless" names) 48–80% of the
-frame is flat black.
+| Place | Grade | State |
+|---|---|---|
+| Hollow by Night (story) | ~3.5 | Built to combat's outline: gates, deadfalls with fires, the root plate over the den, reeds, still water, foxfire, moon pools. Start area 26% flat black. |
+| Hollow | ~3 | Canopy moon pools (real shadow) and broken moss. Litter softened but still reads as gravel. Pool edges blocky. |
+| Dig | ~3 | Tips of blasted rock, rust as a mottle, dry grass at the edges, timber stacks, a windlass and stakes at the pit. |
+| Barrow | ~3 | Tussock grass; the Legion's slab road. Howe and gate not yet judged on screen. |
+| Ruts | ~3 | Tussock grass; the cook pot on its tripod over a fire replaces the grey ball. |
 
-**Minute-25 horde frames (done; seeds 947/311/523/739):**
-- The Kerchiefs, the Risen and the lamplings all read over their ground.
-- The Pack's dark-grey wolves are a dark mass on the Hollow's dark litter.
-- The red elite discs are heavy on the Dig's clay.
-- The skills lead says the lamplings' white-gold discs are blow telegraphs,
-  already toned down on their branch.
-
-**This pass so far (committed, not yet judged in full):**
-- **Ground shader** (`arena_ground.gdshader`, `ArenaGround.Layer`):
-  - per-layer contrast (`Con`), so a scan's grain survives 30 m;
-  - macro relief: each layer's `Lift` and `Bump` in metres, plus moss domes,
-    sunk pools and trodden ground. Bump mapping by derivatives turns these
-    into light on the edges between materials.
-- **Grass that reads** (`arena_grass.gdshader`, `Grass.Arena`, `ArenaGround.GrassLook`):
-  - whole tussocks of 24–26 arched blades, dark at the root and lit at the
-    tips, gathered into swathes with earth between;
-  - on in the Barrow and the Ruts and judged there: they read as grass now;
-  - the Dig and the Hollow have looks set but no grass paint yet.
-- **New scans:** the Dig's spoil is now `gray_rocks` (blasted lumps) and the
-  Barrow's road `grassy_cobblestone` (polygonal slabs like the Via Appia).
-  Both are flattened with a wider radius so their stones keep their shading.
-  They are imported but **not yet seen in game**.
-- **Concepts** for the Barrow and the Ruts: `docs/arena/concept_barrow_{0,1}.jpg`
-  and `concept_ruts_{0,1}.jpg`. The Barrow's targets are dense dry tussocks,
-  slabs with grass in the joints, dark open graves and mist. The Ruts' are
-  silvered puddles, green verges and the camp's fires.
+**Fixed for every arena:**
+- the ember plates' orange blobs;
+- the slurry glows in threads;
+- standing water lies level;
+- the litter's micro-contrast is controlled.
 
 ## Key decisions
 
-- **A scar is its people's own ground** (story confirmed).
-- **Landmarks stand at the edge only; cover inside stays under 2.2 m.** A test holds this.
-- **Readability by local contrast and light, not by a black ground.**
-  - The old rule of keeping everything dark made asphalt.
-  - The ground stays under the living, but keeps its grain, its relief and its
-    own light pools.
-  - The experience director's test: in a minute-6 frame, no more than a fifth
-    of the screen reads as flat black (`black.py` in my scratchpad measures it).
-- **Grass is geometry, in tussocks.** Thin blades in the ground's own colour
-  read as scratches, and single tufts read as stars.
-- **The ring is a line, not a field** (inherited, holds).
+- **A scar is its people's own ground.**
+- **Landmarks stand at the edge only; cover inside stays under 2.2 m.** Tests hold
+  this, for story places too.
+- **Readability comes from contrast and the place's own light, not a black ground.**
+  Flat black stays at or under a fifth of a frame (`black.py`).
+- **Grass is geometry in tussocks.** Moss stays small and broken.
+- **The canopy is real shadow,** shadows-only and subdivided, not painted dapple.
+- **A story place's way runs up the screen,** its landmark at the top. A gate is the
+  ember's line across a way.
 
 ## Next (in order)
 
-1. **Exact next step:** build, then shoot `dig.txt` and `e.txt` (the scratchpad
-   `arena3/`; `batch.py SPEC PREFIX --build`). Judge the new spoil and road
-   scans at full resolution, and tune their `Looks` (Y, Con, Lift, Bump).
-2. The Dig:
-   - rust drifts: make them a mottle inside the clay, not blobs;
-   - spoil heaps: taller, lumpy, with coal-lump scatter;
-   - grass paint toward the edges;
-   - scattered stones;
-   - timber pieces made in `Pieces.Arena.cs` (stacks, props, a windlass);
-   - lamps.
-3. The Hollow's den: on screen and readable. Also wolves against the litter:
-   warmer, mid-value litter (try `leaves_forest_ground`) and moss that isn't paint.
-4. The Barrow: the howe on screen, plus place light (corpse-candles over open
-   graves) for the moonless mood. The Ruts: the camp on screen, the grey
-   cauldron replaced, puddles that hold the sky (sheen).
-5. The moonless mood: each place's own lights carry it.
-6. Horde frames again on all four; lift each arena to 4–5.
+1. **Exact next step:**
+   - set the story canopy cover to ×0.5;
+   - drop the canopy's finest noise term (blocky pool edges);
+   - shoot `hs.txt` and `r10.txt` (scratchpad `arena3/`).
+2. The Hollow's litter: does it read as leaves from 30 m? If not, drop the geometric
+   leaves.
+3. The Dig: judge the tips, rust, grass, timber and windlass at the game camera, and
+   the bomb marks (skills, 0.28).
+4. The Barrow's howe and gate on screen; the Ruts' camp judged.
+5. The moonless mood carried by each place's own lights.
+6. Horde frames on all four; lift each to 4–5.
+7. The next story places (the Roost, the Dig's edge, the vault) once combat has their
+   outlines. Combat's successor may move the den's mouth to about 18 m from boss_start.
 
 ## Notes for other areas
 
-- **Performance (a7145e18b3eb78294):** arena grass is now on in the Barrow and
-  the Ruts:
-  - about 36k tussock instances × 26 blades × 3 triangles, around 2.8M
-    triangles, similar to the overworld meadow;
-  - no shadows;
-  - the wider cell at lower qualities follows `GrassCell`.
-- **Experience (ad1f5623590e09883):** your near-black barrow (moonless) is on
-  my list as item 4/5. The fix is place light, not a lifted floor.
-- **Skills (a63cd93fc73d5ed79):** you're checking the telegraph discs against
-  the brighter clay; I'll judge them again after the Dig pass.
+- **Combat:** `--night ID [--stage N] [--lit]`. The gates hide as `gate:ID`; the
+  deadfalls burn on `map.FireLights`.
+- **Performance:** new per Hollow: a subdivided shadows-only canopy (75×75 quads) and
+  leaf scatter (14 leaves per 0.6 m cell, in the meadow's ring). Grass is 0.72 ms in
+  the barrow (yours).
+- **Experience:** story Hollow 15–26%, round Hollow 11–21% flat black.

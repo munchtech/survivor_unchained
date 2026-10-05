@@ -27,28 +27,32 @@ public sealed class HollowByNight : StoryFight
 {
     public override string Id => "hollow_by_night";
 
+    // The way runs up the screen, away from the camera (which stands to the +z side): in at
+    // the clough at the bottom, the den's mouth at the top of the picture, where the boss
+    // comes out of it toward her and the root plate over it never stands between her and
+    // the camera (arena art).
     public static readonly StoryPlace Ground = new()
     {
         Spaces =
         [
-            new("clough", [new Capsule(-18, -36, -18, -15, 7)]),
-            new("water", [Capsule.Circle(0, 0, 11), new Capsule(-18, -15, -8, -6, 3.5)]),
-            new("den", [Capsule.Circle(19, 25, 15), new Capsule(6, 8, 13, 16, 3.5)]),
+            new("clough", [new Capsule(-18, 36, -18, 15, 7)]),
+            new("water", [Capsule.Circle(0, 0, 11), new Capsule(-18, 15, -8, 6, 3.5)]),
+            new("den", [Capsule.Circle(19, -25, 15), new Capsule(6, -8, 13, -16, 3.5)]),
         ],
         Gates =
         [
-            new("clough", -15.8, -7, -10.2, -14, "water"),
-            new("water", 6.1, 15, 12.9, 9, "den"),
+            new("clough", -15.8, 7, -10.2, 14, "water"),
+            new("water", 6.1, -15, 12.9, -9, "den"),
         ],
         Points = new()
         {
-            ["start"] = (-18, -38), ["rock"] = (-18, -18), ["rock_low"] = (-21, -31), ["rock_mid"] = (-15, -25), ["head"] = (-18, -21), ["head_w"] = (-22, -20), ["head_e"] = (-14, -20),
-            ["water_in"] = (-9, -7), ["reeds_w"] = (-8, 5), ["reeds_s"] = (5, -7), ["reeds_n"] = (-1, 8),
-            ["shallow_a"] = (-2, -1), ["shallow_b"] = (5, 3),
-            ["fire:a"] = (2, 9), ["fire:b"] = (9, 2),
-            ["den_in"] = (11, 14), ["den"] = (19, 25), ["den_mouth"] = (21, 39), ["boss_start"] = (19, 16),
-            ["den_w"] = (7, 26), ["den_e"] = (31, 24), ["den_n"] = (15, 36),
-            ["fire:c"] = (12, 18), ["fire:d"] = (26, 18), ["fire:e"] = (12, 32), ["fire:f"] = (26, 32),
+            ["start"] = (-18, 38), ["rock"] = (-18, 18), ["rock_low"] = (-21, 31), ["rock_mid"] = (-15, 25), ["head"] = (-18, 21), ["head_w"] = (-22, 20), ["head_e"] = (-14, 20),
+            ["water_in"] = (-9, 7), ["reeds_w"] = (-8, -5), ["reeds_s"] = (5, 7), ["reeds_n"] = (-1, -8),
+            ["shallow_a"] = (-2, 1), ["shallow_b"] = (5, -3),
+            ["fire:a"] = (2, -9), ["fire:b"] = (9, -2),
+            ["den_in"] = (11, -14), ["den"] = (19, -25), ["den_mouth"] = (21, -39), ["boss_start"] = (19, -16),
+            ["den_w"] = (7, -26), ["den_e"] = (31, -24), ["den_n"] = (15, -36),
+            ["fire:c"] = (12, -18), ["fire:d"] = (26, -18), ["fire:e"] = (12, -32), ["fire:f"] = (26, -32),
         },
     };
 
