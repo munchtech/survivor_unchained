@@ -27,6 +27,9 @@ public enum Side { Player, Enemy, Ally, World }
 public enum Seek { Nearest, Elite, Random, Strongest, Marked }
 public enum PickupKind { Ember, Gold, Heal, Magnet, Item, Material, Chest, Quest, Relic }
 
+/// <summary>An item filter's word on a drop: hidden, shown, or shown with emphasis.</summary>
+public enum Verdict { Hidden, Shown, Emphasised }
+
 public sealed class StatusSlot
 {
     public double T, Stacks, Power, Tick;
@@ -248,6 +251,12 @@ public sealed class Pickup : Pooled
     public int Tier;
     /// <summary>Gear: affixes it is likelier to roll when it is picked up.</summary>
     public string[]? Lean;
+    /// <summary>Gear rolled whole where it fell (an Rpg.ItemInstance), taken as it is.</summary>
+    public object? Payload;
+    /// <summary>Its tier for the eye (Rpg.LootTier), or -1: the beam's height and colour, the sound.</summary>
+    public int Loot = -1;
+    /// <summary>What the survivor's item filter made of it: hidden things are not taken underfoot.</summary>
+    public Verdict Look = Verdict.Shown;
 
     public Pickup(int id) { Id = id; }
 }

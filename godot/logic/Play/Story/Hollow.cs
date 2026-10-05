@@ -67,6 +67,7 @@ public sealed class HollowByNight : StoryFight
         "The wolves back away from you, low, into a ring. Something is coming out of the den.",
     ];
     public override string BossAt => "den_mouth";
+    public override string ShutSight => "Behind you, the Pack fills the way you came.";
     public override string BossStart => "boss_start";
     public override string Sign => "A howl from the den's mouth, old and cracking at the top.";
     public override string BossDef => "boss_pack";
@@ -442,7 +443,13 @@ public sealed class HollowByNight : StoryFight
         double whiteSeed, driveT = 5, runT = -1, pantT;
         double laneX0, laneZ0, laneX1, laneZ1;
         Battle.EnemyBlow? lane;
-        bool hit, wheeled;
+        bool hit, wheeled, missedOnce, hitOnce, spent;
+        int drives;
+        /// <summary>How long a drive's lane is marked before she runs it (the first, longer: a lesson).</summary>
+        double mark = 1.0;
+        /// <summary>Her drives are numbered: after this many she has nothing left to run with, and her guard
+        /// is gone (the stage is bounded by her drives, so hands that run into the gap are hurt, not held).</summary>
+        const int Drives = 7;
         /// <summary>Her yearlings take blows for her while she runs her drive: she is open when she misses.</summary>
         const double Guarded = 0.08, Opened = 2.0, Pant = 2.5;
 
@@ -475,7 +482,7 @@ public sealed class HollowByNight : StoryFight
             }
             if (runT < 0) return false;
             runT += dt;
-            if (runT < 1.0)
+            if (runT < mark)
             {
                 // Waiting across the gap, marked.
                 e.Vx = e.Vz = 0;
@@ -484,7 +491,7 @@ public sealed class HollowByNight : StoryFight
                 e.Facing = Math.Atan2(laneZ1 - laneZ0, laneX1 - laneX0);
                 return true;
             }
-            double k = Math.Min(1, (runT - 1.0) / 0.45);
+            double k = Math.Min(1, (runT - mark) / 0.45);
             e.X = laneX0 + (laneX1 - laneX0) * k;
             e.Z = laneZ0 + (laneZ1 - laneZ0) * k;
             B.Collision.Resolve(ref e.X, ref e.Z, e.Radius);
@@ -499,7 +506,14 @@ public sealed class HollowByNight : StoryFight
                 {
                     pantT = Pant;
                     B.Blow(new Battle.EnemyBlow { Shape = TelegraphShape.Circle, Kind = TelegraphKind.Safe, X = e.X, Z = e.Z, Radius = 2.4, Delay = Pant, From = e, Label = "She missed" });
+                    if (!missedOnce)
+                    {
+                        missedOnce = true;
+                        A.Bark(e.X, e.Z, "She misses, and stands with her head down, blowing.", null);
+                        A.Say("She is open", "Hit her while she blows", "boon");
+                    }
                 }
+                else if (!hitOnce) { hitOnce = true; A.Say("The gap is hers", "Through the wolves, never the gap", "danger"); }
             }
             return true;
         }
@@ -519,13 +533,17 @@ public sealed class HollowByNight : StoryFight
                 A.Group("wolf", 1, p.X + Math.Cos(a) * 10, p.Z + Math.Sin(a) * 10, 0.4);
             }
             A.Bark(w.X, w.Z, "A rising howl: the Pack wheels.", null);
+            // The first is a lesson: marked longer, and said.
+            mark = drives == 0 ? 1.7 : 1.0;
+            if (drives == 0) A.Say("The drive", "The gap is where she runs: go through the wolves", "danger");
+            drives++;
             double dx = p.X - w.X, dz = p.Z - w.Z, d = Math.Max(0.5, Math.Sqrt(dx * dx + dz * dz));
             double len = Math.Min(18, d + 6);
             laneX0 = w.X; laneZ0 = w.Z; laneX1 = w.X + dx / d * len; laneZ1 = w.Z + dz / d * len;
             hit = false;
             lane = B.Blow(new Battle.EnemyBlow
             {
-                Shape = TelegraphShape.Line, X = laneX0, Z = laneZ0, X1 = laneX1, Z1 = laneZ1, Width = 2.4, Delay = 1.0,
+                Shape = TelegraphShape.Line, X = laneX0, Z = laneZ0, X1 = laneX1, Z1 = laneZ1, Width = 2.4, Delay = mark,
                 Damage = w.Damage * 4.5, Source = w.Def.Name, From = w, Label = "The drive",
             });
             // Missed if she is out of the lane when it lands (a dash through it is a miss as well).
@@ -567,7 +585,12 @@ public sealed class HollowByNight : StoryFight
             }
             A.Goal = Ringed ? null : (white!.X, white.Z);
             if (pantT > 0 && (pantT -= dt) <= 0 && white.State == EnemyState.Recover) white.State = EnemyState.Active;
-            white.TakenMul = Ringed ? 0 : pantT > 0 ? Opened : Guarded;
+            if (!spent && drives >= Drives && runT < 0 && pantT <= 0)
+            {
+                spent = true;
+                A.Say("Whitethroat is spent", "She has nothing left to run with", "boon");
+            }
+            white.TakenMul = Ringed ? 0 : pantT > 0 ? Opened : spent ? 1.25 : Guarded;
             if (Ringed) return;
             if (!wheeled && white.Hp < white.MaxHp * 0.5)
             {
@@ -576,7 +599,7 @@ public sealed class HollowByNight : StoryFight
                 A.Say("The whole Pack wheels", "Wider and quicker: still through the wolves, never the gap", "danger");
             }
             driveT -= dt;
-            if (driveT <= 0 && runT < 0 && pantT <= 0)
+            if (!spent && driveT <= 0 && runT < 0 && pantT <= 0)
             {
                 driveT = wheeled ? 9 : 11;
                 Drive_();

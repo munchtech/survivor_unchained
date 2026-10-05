@@ -61,8 +61,8 @@ public class MarkTests
         }
         Assert.True(burning);
         var z0 = b.Zones.Living().First(z => z.Owner == Side.Player && z.School == School.Fire);
-        // Grade I: a second of it.
-        Assert.InRange(z0.Life, 0, 1.01);
+        // Grade I: two seconds of it.
+        Assert.InRange(z0.Life, 1.0, 2.01);
     }
 
     [Fact]

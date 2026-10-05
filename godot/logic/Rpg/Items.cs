@@ -59,6 +59,17 @@ public sealed class ItemDef
     public bool Workable;
     /// <summary>The name of several, in running text ("wolf pelts", "old iron"): a material's.</summary>
     public string? Plural;
+    /// <summary>A set piece's set (Loot.Rules.Sets): its own tier for the eye, rarity 3 underneath.</summary>
+    public string? Set;
+    /// <summary>The base a named piece is built on: its own numbers come from that base at its make,
+    /// so a later copy is a better one (docs/design/LOOT_DESIGN.md §4.2).</summary>
+    public string? Of;
+    /// <summary>A Legendary or set piece falls from this level up; without it, it never falls by chance.</summary>
+    public int? DropsFrom;
+    /// <summary>The peoples it is likelier among (pack, dead, lamplings, kerchiefs).</summary>
+    public List<string>? Homes;
+    /// <summary>It falls only while this holds (the Pelt of the Pack after the Pack is slaughtered).</summary>
+    public World.Cond? DropsWhen;
 }
 
 public sealed class AffixDef
@@ -77,6 +88,10 @@ public sealed class AffixDef
     public bool Unique;
     /// <summary>The slurry's: strong, with a price; shown in its sick green.</summary>
     public bool Slurry;
+    /// <summary>A Mark (Sim/Marks.cs; design 20.3): what a map's ruler leaves, inscribed by Vonnra. It
+    /// changes how one skill or verb behaves in the Wayfinder's maps, and only there, read by id; its
+    /// grade (I to VI) is its strength. It takes a seam; one to a piece, three worn at once.</summary>
+    public bool Mark;
     /// <summary>What it gives the night's ember beyond numbers (docs/SKILLS_DESIGN.md,
     /// "Gear and the ember"): spark, reroll, refusal, roads, omens, or stand:PASSIVE,
     /// which counts as that passive in an evolution's recipe. One to an item,
@@ -131,6 +146,12 @@ public static class Items
     static StatMod M(string stat, ModKind kind, double value) => new(stat, kind, value, "item");
     static string Pct(double v) => $"{MathX.RoundInt(v * 100)}%";
     static string F1(double v) => v.ToString("0.0", System.Globalization.CultureInfo.InvariantCulture);
+
+    /// <summary>Every kind of piece that is worn (declared before the affixes, which read it).</summary>
+    static readonly ItemKind[] Gear = [ItemKind.Weapon, ItemKind.Offhand, ItemKind.Head, ItemKind.Body, ItemKind.Cloak, ItemKind.Amulet, ItemKind.Ring, ItemKind.Relic];
+
+    /// <summary>A Mark's strength from its grade: 0 at grade I, 1 at grade VI (combat lerps across it).</summary>
+    public static double MarkStrength(int tier) => Math.Clamp(tier / 5.0, 0, 1);
 
     public static readonly AffixDef[] Affixes =
     [
@@ -209,6 +230,17 @@ public static class Items
         new() { Id = "pipe_lads", Name = "Pipe-Lad's", Prefix = true, Unique = true, Slurry = true,
             Slots = [ItemKind.Weapon, ItemKind.Offhand, ItemKind.Head, ItemKind.Body, ItemKind.Cloak, ItemKind.Amulet, ItemKind.Ring, ItemKind.Relic],
             Mods = _ => [M(Stat.CritChance, ModKind.Flat, 0.15), M(Stat.MaxHealth, ModKind.Inc, -0.1)], Text = _ => "+15% critical chance; 10% less health" },
+
+        /* Marks (design 20.3; combat's behaviours in Sim/Marks.cs): inscribed, never rolled; a grade I to VI
+         * is the Mark's strength, 0 to 1 across its bracket. They work in the Wayfinder's maps only. */
+        new() { Id = Sim.Marks.Ravine, Name = "of the Long Chase", Prefix = false, Unique = true, Mark = true, Slots = Gear,
+            Text = t => $"In the maps: Volley looses a second volley at the farthest foe in reach, for {Pct(Sim.Marks.Lerp(0.2, 0.9, MarkStrength(t)))} of it" },
+        new() { Id = Sim.Marks.FallingStar, Name = "of the Falling Star", Prefix = false, Unique = true, Mark = true, Slots = Gear,
+            Text = t => $"In the maps: Cinderfall's blast leaves burning ground for {Sim.Marks.Lerp(1, 4, MarkStrength(t)):0.#} s" },
+        new() { Id = Sim.Marks.OpenGate, Name = "of the Open Gate", Prefix = false, Unique = true, Mark = true, Slots = Gear,
+            Text = t => $"In the maps: your dash leaves a ring of holy fire for 3 s, burning for {Pct(Sim.Marks.Lerp(0.2, 0.9, MarkStrength(t)))} of your strongest skill's damage a second" },
+        new() { Id = Sim.Marks.Gyre, Name = "of the Muster", Prefix = false, Unique = true, Mark = true, Slots = Gear,
+            Text = t => $"In the maps: Axe Gyre gains an axe for every {MathX.RoundInt(Sim.Marks.Lerp(6, 3, MarkStrength(t)))} foes within 5 m, to three more" },
 
         /* Skills worn: fine gear that fights for you. */
         new() { Id = "of_motes", Name = "of Seeking Motes", Prefix = false, Slots = [ItemKind.Amulet, ItemKind.Relic, ItemKind.Ring], Grants = "seeking_motes", MinRarity = 2,

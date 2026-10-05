@@ -11,7 +11,8 @@ render_mode sss_mode_skin;
 uniform sampler2D paint : source_color, filter_linear_mipmap_anisotropic;
 uniform vec3 tone : source_color = vec3(1.0, 0.86, 0.74);
 // Her pores' tile (RGB its normals, A how rough), and how many tiles to a
-// UV unit (People.cs works it out from the mesh: one tile every 1.5 cm).
+// UV unit (People.cs works it out from the mesh: one tile every 9 mm; at
+// 1.5 cm they read as large and even on her hands).
 uniform sampler2D pores : hint_default_white, filter_linear_mipmap_anisotropic, repeat_enable;
 uniform float pore_scale = 30.0;
 uniform float pore_depth = 0.6;
@@ -84,12 +85,16 @@ void fragment() {
 	vec2 f = texture(features, UV).rg * far;
 	ALBEDO *= 1.0 - far_dark * f.x;
 	ALBEDO = mix(ALBEDO, far_lips * tone, 0.75 * f.y);
-	vec4 q = texture(pores, UV * pore_scale);
+	// (two offset tiles, so no grid shows, their depth varying over her in
+	// soft patches as real pores do)
+	vec4 q = mix(texture(pores, UV * pore_scale), texture(pores, UV * pore_scale * 0.77 + vec2(0.53, 0.19)), 0.35);
+	float patchy = smoothstep(0.2, 0.8, texture(pores, UV * pore_scale * 0.07 + vec2(0.31, 0.67)).a);
+	float depth = pore_depth * mix(0.35, 1.0, patchy);
 	float stubble = 0.0;
 	if (beard_shadow > 0.0 || scalp_shadow > 0.0) {
 		vec2 g = texture(shadow_mask, UV).rg;
 		// (the stubs: the pore tile's grain, finer, as dots)
-		float stubs = smoothstep(0.3, 0.7, texture(pores, UV * pore_scale * 2.7 + vec2(0.37, 0.11)).a);
+		float stubs = smoothstep(0.3, 0.7, texture(pores, UV * pore_scale * 1.62 + vec2(0.37, 0.11)).a);
 		stubble = clamp(g.r * beard_shadow + g.g * scalp_shadow, 0.0, 1.0) * mix(0.55, 1.0, stubs);
 		ALBEDO = mix(ALBEDO, ALBEDO * shadow_colour * 2.4, stubble * 0.85);
 	}
@@ -97,13 +102,13 @@ void fragment() {
 		// The two reliefs as one (each from its x and y, as Godot keeps a
 		// normal map): the pores' slopes added to the body's, at their depth.
 		vec2 a = texture(relief, UV).xy * 2.0 - 1.0;
-		vec2 b = (q.xy * 2.0 - 1.0) * pore_depth;
+		vec2 b = (q.xy * 2.0 - 1.0) * depth;
 		vec3 n = normalize(vec3(a + b, sqrt(max(0.0, 1.0 - dot(a, a)))));
 		NORMAL_MAP = vec3(n.xy * 0.5 + 0.5, 1.0);
 		NORMAL_MAP_DEPTH = 1.0;
 	} else {
 		NORMAL_MAP = q.rgb;
-		NORMAL_MAP_DEPTH = pore_depth;
+		NORMAL_MAP_DEPTH = depth;
 	}
 	float edge = pow(1.0 - clamp(dot(NORMAL, VIEW), 0.0, 1.0), 3.0);
 	ROUGHNESS = clamp(rough + (q.a - 0.5) * 0.3 + stubble * 0.15 + edge_rough * edge, 0.0, 1.0);

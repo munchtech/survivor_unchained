@@ -58,7 +58,10 @@ public sealed class PlayerState
 /// <summary>A drop a creature leaves besides ember and gold. Rarity colours
 /// an item's beam of light (and, for gear, is the rarity it is made at).</summary>
 /// <summary>Lean: affixes the gear is likelier to roll (what answers a map's oaths).</summary>
-public sealed record Loot(PickupKind Kind, string? Ref, double Value, bool Persistent = false, int? Rarity = null, string[]? Lean = null);
+/// <summary>Payload: gear rolled whole where it falls (Rpg/Loot.cs); Tier its tier for the eye; Look the
+/// item filter's word on it.</summary>
+public sealed record Loot(PickupKind Kind, string? Ref, double Value, bool Persistent = false, int? Rarity = null, string[]? Lean = null,
+    object? Payload = null, int? Tier = null, Verdict Look = Verdict.Shown, bool Quiet = false);
 
 /// <summary>A map's oaths as rules of the fight (Maps/MapOffers.cs).</summary>
 public sealed class MapRules
@@ -501,6 +504,7 @@ public sealed partial class Battle
         condScratch.Add(p.Moving ? ModWhen.Moving : ModWhen.Still);
         if (p.Hp < MaxHp * 0.35) condScratch.Add(ModWhen.LowHealth);
         if (p.Hp >= MaxHp - 0.01) condScratch.Add(ModWhen.FullHealth);
+        if (p.Hp > MaxHp * 0.8) condScratch.Add(ModWhen.Healthy);
         // What gear asks of the moment: the dark, beasts close, fire underfoot, a dash just done.
         if (Night) condScratch.Add(ModWhen.Night);
         if (Time - dashEnded < 1.5) condScratch.Add(ModWhen.AfterDash);
@@ -854,7 +858,7 @@ public sealed partial class Battle
                         var pk = SpawnPickup(d.Kind, e.X, e.Z, d.Value, d.Ref);
                         if (pk != null && d.Persistent) pk.Persistent = true;
                         if (pk != null && d.Rarity is { } r) pk.Tier = r;
-                        if (pk != null) pk.Lean = d.Lean;
+                        if (pk != null) Dress(pk, d);
                     }
             }
         }
@@ -1185,8 +1189,9 @@ public sealed partial class Battle
         riseFire = new RiseFireState { X = p.X, Z = p.Z, R = RiseRadius(rank), Dmg = 40 * (1 + 0.08 * (EmberLevel - 1)) };
     }
 
-    /// <summary>Where the rise's front has run to, this long after it caught (0 to its edge).</summary>
-    public static double RiseFront(double r, double t) => t <= 0 ? 0 : t >= RiseRun ? r : r * (1 - Math.Pow(1 - t / RiseRun, 3));
+    /// <summary>Where the rise's front has run to, this long after it caught: the look's own curve
+    /// (BattleFx.Rise, FireRun), so a body catches as the drawn wall reaches it.</summary>
+    public static double RiseFront(double r, double t) => t < 0 ? 0 : t >= RiseRun ? r : r * (0.03 + 0.97 * (1 - Math.Pow(1 - t / RiseRun, 3)));
 
     void UpdateRiseFire(double dt)
     {
@@ -1477,10 +1482,37 @@ public sealed partial class Battle
         if (p == null) return null;
         double a = Rng.Next() * Tau, v = 1.5 + Rng.Next() * 2;
         p.Kind = kind; p.X = x; p.Z = z; p.Vx = Math.Cos(a) * v; p.Vz = Math.Sin(a) * v; p.Value = value; p.Ref = reference;
-        p.Age = 0; p.Pulled = false; p.PullT = 0; p.Persistent = false; p.Tier = 0; p.Lean = null;
+        p.Age = 0; p.Pulled = false; p.PullT = 0; p.Persistent = false; p.Tier = 0; p.Lean = null; p.Payload = null; p.Loot = -1; p.Look = Verdict.Shown;
         if (kind == PickupKind.Ember) p.Tier = value >= 40 ? 3 : value >= 12 ? 2 : value >= 4 ? 1 : 0;
         return p;
     }
+
+    /// <summary>A zone's loot laid down where it says (a boss's hoard, a strongbox's spill): as a
+    /// creature's drop is, with its piece, light and sound.</summary>
+    public Pickup? Spill(Loot d, double x, double z)
+    {
+        var pk = SpawnPickup(d.Kind, x, z, d.Value, d.Ref);
+        if (pk == null) return null;
+        if (d.Persistent) pk.Persistent = true;
+        if (d.Rarity is { } r) pk.Tier = r;
+        Dress(pk, d);
+        return pk;
+    }
+
+    /// <summary>A drop's loot as it lands: its whole piece, its tier and the filter's word, and the
+    /// sound of its landing (Ev.Drop) for anything the filter shows.</summary>
+    public void Dress(Pickup pk, Loot d)
+    {
+        pk.Lean = d.Lean;
+        pk.Payload = d.Payload;
+        pk.Loot = d.Tier ?? -1;
+        pk.Look = d.Look;
+        if (pk.Loot >= 0 && d.Look != Verdict.Hidden)
+            Events.Emit(new Ev.Drop { Tier = pk.Loot, X = pk.X, Z = pk.Z, Emphasised = d.Look == Verdict.Emphasised, Kind = pk.Kind, Quiet = d.Quiet });
+    }
+
+    /// <summary>Hidden drops are taken underfoot only while this holds (the show-all key held).</summary>
+    public bool TakeHidden;
 
     /// <summary>The most stones left lying before the rest are gathered into one, the night's hoard
     /// stone (the genre's red gem): a late night left thousands carpeting the field, and once the
@@ -2010,7 +2042,7 @@ public sealed partial class Battle
                 k.X += dx / n * Math.Min(d, sp * dt);
                 k.Z += dz / n * Math.Min(d, sp * dt);
             }
-            if (d < p.Radius + 0.35 && (autoPull || k.Age > 0.4)) Collect(k);
+            if (d < p.Radius + 0.35 && (autoPull || k.Age > 0.4) && (k.Look != Verdict.Hidden || TakeHidden)) Collect(k);
             // Ember on the ground cools after a long while; gear does not.
             if (k.Alive && !k.Persistent && k.Kind == PickupKind.Ember && k.Age > 90) Pickups.Release(k);
         }

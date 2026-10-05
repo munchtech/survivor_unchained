@@ -7057,6 +7057,13 @@
      },
      {
       "when": {
+       "fact": "commission.done",
+       "eq": true
+      },
+      "text": "Cooled overnight. Come and look."
+     },
+     {
+      "when": {
        "fact": "nell.buried",
        "eq": true
       },

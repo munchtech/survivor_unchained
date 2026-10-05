@@ -26,7 +26,7 @@ public class SkillTests
     {
         var j = Make("arcanist");
         j.GiveItem(SkillBook.Tome("seeking_motes"));
-        var tome = j.Ch.Pack.First(p => p?.Def == SkillBook.Tome("seeking_motes"))!;
+        var tome = j.Ch.Satchel.First(p => p.Def == SkillBook.Tome("seeking_motes"));
         // Never seen in an arena: the words mean nothing yet.
         j.Use(tome.Uid, null);
         Assert.False(SkillBook.Knows(j.Ch, "seeking_motes"));
@@ -36,7 +36,7 @@ public class SkillTests
         // A free slot takes it into hand, and by day it is in the fight.
         Assert.Contains("seeking_motes", j.Ch.Slotted);
         Assert.Contains(Day(j).Weapons, w => w.Id == "seeking_motes" && w.Rank == SkillBook.Rank(j.Ch));
-        Assert.DoesNotContain(j.Ch.Pack, p => p?.Def == SkillBook.Tome("seeking_motes"));
+        Assert.DoesNotContain(j.Ch.Satchel, p => p.Def == SkillBook.Tome("seeking_motes"));
     }
 
     [Fact]
