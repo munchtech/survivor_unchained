@@ -2075,3 +2075,113 @@ stopped. These are the words, given to combat to paste:
 | It breaks (`Say`, boon); its bar | "The yearlings scatter" / "Whitethroat is in reach again" (not "open": that is her pant); "The yearlings" / "Whitethroat is out of reach until it breaks" |
 | The Pack's turn (sight; label) | "A growl goes round the ring. The Pack turns."; "The Pack turns" |
 | The Moon's first howl (channel; sight) | "The moon clears: into a fire's light!"; "He sits back and howls, and the cloud slides off the moon. The cold comes in off the ring." |
+
+### 23.7 The drive taught, the Roost's new slots, and the way back shut
+
+Combat's next slots: experience found players chasing the drive's gap, and
+the Roost's build needed words that section 23.1 did not have. Given to
+combat to paste. The narrator gives no orders, so advice is an announcement
+and the bark beside it is a sight.
+
+| Slot | Words |
+|---|---|
+| The first drive (`Say`, danger) | "The drive" / "The gap is where she runs: go through the wolves" |
+| Her first miss (sight at her; `Say`, boon) | "She misses, and stands with her head down, blowing."; "She is open" / "Hit her while she blows" |
+| The gap catches her, the first time (`Say`, danger) | "The gap is hers" / "Through the wolves, never the gap" |
+| After her seventh drive (`Say`, boon) | "Whitethroat is spent" / "She has nothing left to run with" |
+| Roost, a picket out of reach (`Goal`; bar) | "Break the pincer ({n} of {m})"; "The pincer" / "The picket is out of reach until it breaks" |
+| The picket comes down (sight) | "The picket comes down the bank at you, torch first." |
+| Barn-Door blocks a lock, the first time (`Say`, info) | "Barn-Door is in the way" / "Draw him off the lock, then break it" |
+| The levy forms again (`Say`, danger); the captain's bar | "The levy forms again" / "Round its ends to the captain"; "Round the line's ends to him" |
+| Redcowl reaches the cage's door (sight) | "He fills the door." |
+| The way back shuts on the boss's ground (sight) | the Hollow: "Behind you, the Pack fills the way you came."; the Roost: "Behind you, his people drag a cart across the way you came."; the Dig: "Behind you, the tub-way falls in."; the Door: "Behind you, a rank of the dead steps across the hall." |
+
+## 24. Crafting's words: the Wayfinder's table, the ruler's things, Brannoc's cooled commission (4 October)
+
+The crafting lead built the atlas's chart-working at Ysolde's table and the
+Marks that Vonnra inscribes (`worktree-agent-af01b0d61ef656dd4@5238cb7a`).
+These are the words, given to be wired verbatim (`crafting.json`
+`crafters.<id>.lines`, `items.json`). Lists are said in turn.
+
+**Ysolde at her table** (`crafters.wayfinder.lines`). Brisk, bookish, the
+dead as entries in a margin. Her secret shapes two verbs: "pin" keeps the
+one thing when the rest burns (Edric, unsaid), and "annotate" keeps the
+notes (the drawer, locked).
+
+| Key | Words |
+|---|---|
+| `greet` | "Lay it flat, and your elbows off it. That ink's still deciding." / "Back from the edges? Show me where you've been." / "Sit. Mind the pens. What's the ground been saying?" |
+| `closedLine` | "I don't put my pen to a stranger's chart. Come and be introduced." |
+| `first.ink.before` | "She takes a pen from the jar without looking, dips it, and writes in the margin in a hand too small to read upside down." |
+| `first.ink` / `ink` | "There. Sworn. I don't choose the words, mind; the ground does. I only hold the pen." / "Sworn." / "There. The ground's had its say." / "Written. It'll pay for that, one way or the other." |
+| `first.burn.before` | "She holds the margin to the lamp until the oaths in it brown and lift, brushes them off like crumbs, and writes it fresh." |
+| `first.burn` / `burn` | "Same ground, new oaths. The ground doesn't remember what it swore last time. Neither do I, much." / "Burned and redrawn." / "Fresh margins. Don't get attached." / "Ask again if you don't like it. I'm paid either way." |
+| `first.pin.before` | "She threads a scrap of what that ground gave you onto a long brass pin, and puts it through the margin beside the oath, the way you'd pin a moth." |
+| `first.pin` / `pin` | "Pinned. That one stays put when the rest go up. ...Everybody's got one of those." / "Pinned." / "That one stays." / "Held. Burn round it all you like." |
+| `first.scrape.before` | "She takes a penknife to the margin and scrapes the oath off a little at a time, the way a clerk takes out a name that shouldn't be in the ledger." |
+| `first.scrape` / `scrape` | "Gone. It never quite goes, mind. Hold it to the light and you'll still see where it was." / "Scraped." / "Off it comes." / "Gone. Mostly." |
+| `first.annotate.before` | "She lays the two charts side by side and copies from one to the other in a hand as small as stitching: who went in, where they lay up, what they carried out." |
+| `first.annotate` / `annotate` | "Two charts of the one ground are worth more than twice one. People leave things out. ...I put them back in." / "Copied over." / "Margins full. That's how I like them." / "Nothing wasted. I'm a tidy woman." |
+| `first.annotate.after` | "The chart you gave up goes into a drawer, not the fire. She locks the drawer." |
+| `history.*` | ink "Sworn in the Wayfinder's hand, day {day}"; burn "Burned and redrawn at {who}'s table, day {day}"; pin "An oath pinned at {who}'s table, day {day}"; scrape "An oath scraped out by {who}, day {day}"; annotate "Annotated from another chart in {who}'s hand, day {day}" |
+
+**The ruler's things that carry a Mark** (`items.json`; Vonnra marks a piece
+with one):
+
+| Item | Name | Description | Its Mark |
+|---|---|---|---|
+| `mark_hunt_bone` | Tally-Bone | "A deer's shinbone from a Pack ruler's den, scored end to end with toothmarks in close, even rows, the way a shepherd notches a stick to count. Vonnra can read the hunt in it, and mark a piece you wear with it." | "of the Long Chase" (was "of the Ravine": the second volley runs down the farthest) |
+| `mark_lamp_glass` | Cracked Lamp-Glass | "A lamp's chimney-glass from a lampling ruler, cracked from top to bottom. What was lit in it fell a long way once and went on burning where it landed. It is still warm. Vonnra can mark a piece you wear with it." | "of the Falling Star" |
+| `mark_gate_nail` | Bent Barrow-Nail | "A square iron nail as long as your hand, from a barrow door, bent double. Somebody nailed that door shut a long time ago. It was opened from inside. Vonnra can mark a piece you wear with it." | "of the Open Gate" |
+| `mark_red_cord` | Muster-Cord | "A length of red cord, knotted once for every name at a muster. Nobody untied the knots for the ones who did not come home. Vonnra can read the crowd in it, and mark a piece you wear with it." | "of the Muster" (was "of the Wheel": in a crowd, it gains axes) |
+
+The cord never names the town. The nail's door "opened from inside" is the
+bones' "never locked from the outside" in another place.
+
+**Brannoc, a commission ready:** a hub variant after the night's, when
+`commission.done` holds: "Cooled overnight. Come and look." (It pays
+"Tomorrow. Early."; at the anvil, "Yours. Don't bend it.") The crafting lead
+adds it with the fact; his hub's ids .1–.3 become .2–.4.
+
+**Snib, a bad steep:** "That is not Snib's fault. That is the JAR's fault.
+...Snib filled the jar."
+
+## 25. Loot's words: Act 1's Legendaries and sets (5 October)
+
+The loot lead made Act 1's first Legendaries and sets
+(`worktree-agent-a9a9c345a35e1fcad@2404bf9f`, `docs/design/LOOT_DESIGN.md`
+§10). These are the story's corrections and rewrites, given to be pasted
+verbatim. Anything not named stands.
+
+- **Must fix:** "Ashford Levy Colours" becomes "Levy Colours". The Kerchiefs
+  never name the town and no text about them says it (the bible, "The
+  nights", rule 2). The set's lore keeps it unsaid: "Red was a town's colour
+  before it was a gang's. Nobody in the Roost will tell you which town."
+- **Renamed:** "Forty-One Mouths" (the cleaver) becomes "Nan's Cleaver". The
+  phrase is C06's title and a phase of Redcowl's already.
+
+| Item | Lore |
+|---|---|
+| `forty_one_mouths` (Nan's Cleaver) | "Firepot Nan's, from the Roost's kitchen. It has jointed everything the road brought in, and the road brought in a great deal. She will want it back." |
+| `drowned_coat` | "Wrung out, it is wet again by morning. Whoever wore it last went into the ford in it, and did not come out." |
+| `corrans_sword` | "Notched along the spine in tens, the way a man counts nights on a post nobody relieves. The Watch's book has him down as a deserter." |
+| `ditchwater` | "Pulled out of the ditch on the Low Ford road, wound and loaded, with weed in the stock. Whoever loaded it never got to fire it." |
+| `fever_year_staff` | "Charred to the grip. In the fever year they burned the bedding of the dead, and somebody stirred the fire with this until it was done." |
+| `slurry_wheel` | "A spare wheel off the Dig's pump, beaten flat and strapped for an arm. It still weeps green." |
+| `kells_lamp` | "It came back up the shaft on its own, still lit. Kell did not." |
+| `pelt_of_the_pack` | "Grey to the roots, and stitched from more than one wolf. Maeca could tell you whose, and won't." |
+| `watch_kit` (the set) | "Eleven men on a wall built for sixty, and every one of them still oils his mail." |
+| `watch_coif` | "Oiled, and hung on its peg. The man whose peg it was is not coming back for it." |
+| `watch_hauberk` | "Mended at the shoulder where a blade went in, more than once, by someone who could not sew." |
+
+- **A Legendary falls** (the HUD): "This one has a name." ("Fallen" would read
+  as hers.)
+- **The dark's debt** (the pity tally): "What the dark owes you"; when it
+  pays, "The dark settles up."
+- **The makes:** Worn, Sound and Wrought, yes. Legion, yes: the valley's word
+  for the old empire's best iron, never a people, and from about Act 2.
+  Heartwrought, yes, never before Act 2's end (level 32): the heart it names
+  is Act 3's.
+- **Later, when the items are on the integration branch:** Holloway sees
+  Corran's sword (`corrans_sword`): "(He looks at the sword a long time.)
+  That's Corran's. ...Keep it oiled. He did."

@@ -18,6 +18,56 @@ public static class ItemViews
 {
     /// <summary>The slurry's sick green: what it put in a piece, and the veins.</summary>
     public static readonly Color SlurryGreen = new("#a8e08a");
+    /// <summary>The bright grade (V), which only the slurry gives: a pale light, not a rarity's colour.</summary>
+    public static readonly Color BrightGrade = new("#eaffd6");
+    /// <summary>A Mark's: the binders' ink, a violet that is no rarity's.</summary>
+    public static readonly Color MarkInk = new("#c4a8ff");
+
+    /// <summary>A steeped piece's picture with the slurry in it (design 9: "green-black veins, a sick
+    /// glow"): the veins run through the thing itself, not over its frame, so they are drawn by a
+    /// shader on the picture's own pixels. Returns the icon it was given.</summary>
+    public static Control Steeped(Control icon)
+    {
+        foreach (var c in icon.GetChildren()) if (c is TextureRect r) r.Material = SlurryMaterial;
+        if (icon is TextureRect self) self.Material = SlurryMaterial;
+        return icon;
+    }
+
+    static ShaderMaterial? slurry;
+    static ShaderMaterial SlurryMaterial => slurry ??= new ShaderMaterial { Shader = new Shader { Code = SlurryShader } };
+
+    // A net of thin veins (the borders of warped cells), thinned out in patches so it reads as grown
+    // through the piece rather than laid over it; near black at their hearts, a sick green light
+    // along them, and a green cast over the whole.
+    const string SlurryShader = @"shader_type canvas_item;
+vec2 h2(vec2 p) { p = vec2(dot(p, vec2(127.1, 311.7)), dot(p, vec2(269.5, 183.3))); return fract(sin(p) * 43758.5453); }
+float vn(vec2 p) {
+    vec2 i = floor(p), f = fract(p); f = f * f * (3.0 - 2.0 * f);
+    return mix(mix(h2(i).x, h2(i + vec2(1.0, 0.0)).x, f.x), mix(h2(i + vec2(0.0, 1.0)).x, h2(i + vec2(1.0, 1.0)).x, f.x), f.y);
+}
+float edge(vec2 x) {
+    vec2 n = floor(x), f = fract(x);
+    float d1 = 8.0, d2 = 8.0;
+    for (int j = -1; j <= 1; j++) for (int i = -1; i <= 1; i++) {
+        vec2 g = vec2(float(i), float(j));
+        vec2 r = g + h2(n + g) - f;
+        float d = dot(r, r);
+        if (d < d1) { d2 = d1; d1 = d; } else if (d < d2) { d2 = d; }
+    }
+    return sqrt(d2) - sqrt(d1);
+}
+void fragment() {
+    vec4 c = COLOR;
+    vec2 p = UV * 3.4 + vec2(vn(UV * 5.0), vn(UV * 5.0 + 7.3)) * 0.55;
+    float e = edge(p);
+    float keep = smoothstep(0.32, 0.62, vn(UV * 2.2 + 3.1));
+    float vein = (1.0 - smoothstep(0.015, 0.06, e)) * keep;
+    float glow = (1.0 - smoothstep(0.0, 0.2, e)) * keep;
+    vec3 col = mix(c.rgb, c.rgb * vec3(0.62, 0.86, 0.55), 0.4);
+    col += vec3(0.22, 0.5, 0.12) * glow * 0.45;
+    col = mix(col, vec3(0.02, 0.06, 0.02), vein * 0.92);
+    COLOR = vec4(col, c.a);
+}";
 
     public static readonly Dictionary<string, string> TagLines = new()
     {
@@ -114,6 +164,8 @@ public static class ItemViews
             icon.Position = new Vector2(size * (1 - k) / 2, caption != null ? size * 0.02f : size * 0.05f);
             icon.Size = new Vector2(size * k, size * k);
             box.AddChild(icon);
+            // Steeped: the veins run through it wherever it is seen.
+            if (Crafting.Slurried(it)) Steeped(icon);
             if (it.Qty > 1)
             {
                 // How many, as a count (x3), never to be mistaken for a price.
@@ -235,13 +287,18 @@ public static class ItemViews
         var v = Style.V(6);
         card.AddChild(v);
         var head = Style.H(10);
-        var photo = Style.Panel(Style.Box(new Color(0.03f, 0.03f, 0.04f), col with { A = 0.35f }, 1, 4, 4), ItemPhotos.Icon(def.Icon, 64, col.Lightened(0.25f)));
+        bool slurried = Crafting.Slurried(it);
+        var pic = ItemPhotos.Icon(def.Icon, 64, col.Lightened(0.25f));
+        if (slurried) Steeped(pic);
+        var photo = Style.Panel(Style.Box(new Color(0.03f, 0.03f, 0.04f), slurried ? SlurryGreen with { A = 0.5f } : col with { A = 0.35f }, 1, 4, 4), pic);
         head.AddChild(photo);
         var names = Style.V(2);
         names.SizeFlagsHorizontal = Control.SizeFlags.ExpandFill;
         names.AddChild(Style.Label(Inventory.Name(it), Style.TextBold, 19, col, true));
         var kind = Style.H(Style.Gap2, Style.Label($"{Inventory.RarityName(it)} {KindNames.GetValueOrDefault(def.Kind, def.Kind.ToString())}{(def.Unique ? " · Unique" : "")}", Style.Ui, Style.Caption, Style.InkDim), Style.Gems(it.Rarity, 5));
         kind.Alignment = BoxContainer.AlignmentMode.Begin;
+        // Made in a map: at its level (the harder the map, the finer its grades came).
+        if (it.Level is int lv) kind.AddChild(Style.Label($"·  item level {lv}", Style.Ui, Style.Caption, Style.InkDim));
         names.AddChild(kind);
         head.AddChild(names);
         v.AddChild(head);
@@ -253,15 +310,27 @@ public static class ItemViews
         if (lines.Count > 0)
             v.AddChild(Style.V(1, lines.Select(x =>
             {
-                var text = Style.Label(x.Def!.Text(x.Tier), Style.UiBold, Style.Caption, x.Def.Kindled != null ? Style.EmberHi : x.Def.Slurry ? SlurryGreen : new Color("#9ad8ff"), true);
-                if (x.Def.Kindled != null || x.Def.Grants != null || x.Def.Slurry) return (Control)text;
-                var grade = Style.Label(Crafting.Grade(x.Tier), Style.Display, 12, Style.GoldDim);
+                bool bright = x.Tier >= Crafting.Bright && x.Def!.Kindled == null && x.Def.Grants == null && !x.Def.Slurry;
+                if (x.Def!.Slurry)
+                {
+                    // The slurry's power, past the seams: its gift in green, its price after it in red.
+                    var parts = x.Def.Text(x.Tier).Split(';', 2);
+                    var row = Style.H(4, Glyphs.Icon("drop", 13, SlurryGreen), Style.Label(parts.Length > 1 ? $"{parts[0]};" : parts[0], Style.UiBold, Style.Caption, SlurryGreen));
+                    if (parts.Length > 1) row.AddChild(Style.Label(parts[1].Trim(), Style.UiBold, Style.Caption, Style.Bad));
+                    return (Control)row;
+                }
+                var text = Style.Label(x.Def.Text(x.Tier), Style.UiBold, Style.Caption, x.Def.Kindled != null ? Style.EmberHi : x.Def.Mark ? MarkInk : bright ? BrightGrade : new Color("#9ad8ff"), true);
+                if (x.Def.Kindled != null || x.Def.Grants != null) return text;
+                // The bright grade reads as a light, not as one more numeral.
+                var grade = Style.Label(Crafting.Grade(x.Tier), Style.Display, bright ? 14 : 12, bright ? BrightGrade : Style.GoldDim);
+                if (bright) { grade.AddThemeConstantOverride("outline_size", 4); grade.AddThemeColorOverride("font_outline_color", SlurryGreen with { A = 0.45f }); }
                 grade.CustomMinimumSize = new Vector2(22, 0);
                 return Style.H(4, grade, text);
             }).ToArray()));
         if (it.Heat != null && Crafting.OpenSeams(it) is int open && open > 0)
             v.AddChild(Style.Label(open == 1 ? "An open seam: something can be worked into it" : $"{open} open seams: things can be worked into it", Style.TextItalic, Style.Caption, Style.GoldDim, true));
-        if (it.Heat is int heat)
+        // (A steeped piece's veins say it is set, below; not twice.)
+        if (it.Heat is int heat && !(heat == 0 && slurried))
             v.AddChild(Style.Label(heat > 0 ? $"Heat {heat} of {it.HeatFull ?? heat}: it can still be worked" : "Set: nothing more can be worked into it", Style.UiBold, Style.Caption, heat > 0 ? Style.Ember : Style.InkDim));
         if (def.Downside != null) v.AddChild(Style.Label(def.Downside, Style.UiBold, Style.Caption, Style.Bad, true));
         foreach (var t in (def.Tags ?? new()).Concat(it.Marks ?? new()).Distinct())

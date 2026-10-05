@@ -581,7 +581,7 @@ public sealed class StoryNight : ZoneRuntime, IStoryArena
         won = true;
         Now = Stage.Won;
         StageEnded("boss");
-        if (boss != null) foreach (var l in Hoard()) B.SpawnPickup(l.Kind, x, z, l.Value, l.Ref);
+        if (boss != null) foreach (var l in Hoard()) B.Spill(l, x, z);
         script?.Clear();
         boss = null;
         // The outcome told first: the end's cinematic reads it (redcowl = spared picks its words).
@@ -610,20 +610,20 @@ public sealed class StoryNight : ZoneRuntime, IStoryArena
 
     /* --------------------------------------------------------------- spoils -- */
 
-    static readonly string[] PlainGear = ["iron_helm", "leather_cap", "chain_shirt", "padded_jerkin", "silver_ring", "copper_ring", "bone_amulet", "travelers_cloak", "watch_buckler"];
-
-    int Rarity(double luck)
+    /// <summary>What a carrier leaves (docs/design/LOOT_DESIGN.md §5), rolled whole at its level; the
+    /// story's boss pays the survivor's first Legendary for certain.</summary>
+    List<Loot> Gear(int level, DropSource source) => G.Journey.Drops(new DropCtx
     {
-        double roll = R() / luck;
-        return roll < 0.04 + Spec.Tier * 0.01 ? 3 : roll < 0.2 + Spec.Tier * 0.02 ? 2 : roll < 0.65 ? 1 : 0;
-    }
+        Source = source, Level = level, People = Spec.People, Lean = lean, Luck = B!.Stats.Get(Stat.Luck), Tier = Spec.Tier,
+        Tally = true, StoryBoss = source == DropSource.Boss, R = R,
+    });
 
     IEnumerable<Loot> OnLoot(Enemy e)
     {
         var o = new List<Loot>();
         bool small = smallChests.Remove(e.Id), carrier = chests.Remove(e.Id) || small;
         if (carrier) o.Add(new Loot(PickupKind.Chest, small ? "small" : null, 1, true));
-        if (carrier && R() < 0.6) o.Add(new Loot(PickupKind.Item, PlainGear[(int)(R() * PlainGear.Length)], 1, true, Rarity(1), lean));
+        if (carrier) o.AddRange(Gear(e.Level, small ? DropSource.Miniboss : DropSource.Champion));
         return o;
     }
 
@@ -634,8 +634,7 @@ public sealed class StoryNight : ZoneRuntime, IStoryArena
         var o = new List<Loot>();
         int n = 3 + (Spec.Tier >= 3 ? 2 : 0) + (script != null && script.BreakSum >= script.MaxHp * 0.1 ? 1 : 0) + (B!.BossBlowsTaken == bossBlowsBefore ? 1 : 0);
         o.Add(new Loot(PickupKind.Chest, "boss", n, true));
-        for (int k = 0; k < 2 + Spec.Tier / 2; k++)
-            o.Add(new Loot(PickupKind.Item, PlainGear[(int)(R() * PlainGear.Length)], 1, true, Math.Max(1, Rarity(1.5)), lean));
+        o.AddRange(Gear(Level, DropSource.Boss));
         return o;
     }
 

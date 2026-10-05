@@ -5,6 +5,7 @@ using SurvivorUnchained.Play;
 using SurvivorUnchained.Content;
 using SurvivorUnchained.Sim;
 using SurvivorUnchained.Ui;
+using LootTier = SurvivorUnchained.Rpg.LootTier;
 using static SurvivorUnchained.View.Shapes;
 
 namespace SurvivorUnchained.View;
@@ -153,6 +154,9 @@ public partial class BattleFx : Node3D
     }
 
     Batch Add(Batch b) { AddChild(b); return b; }
+
+    /// <summary>The Set tier's verdigris (docs/design/LOOT_DESIGN.md §3); UI design keeps the UI's own.</summary>
+    static readonly Color SetColour = new("#3fd6c0");
 
     /// <summary>An item's own model (the photographs', Ui/ItemModels) as one
     /// mesh to draw many of: its parts merged, each keeping its material (or
@@ -1500,10 +1504,38 @@ public partial class BattleFx : Node3D
                     var col = Palette.Rarity[Math.Clamp(p.Tier, 0, Palette.Rarity.Length - 1)];
                     if (p.Kind == PickupKind.Quest) col = new Color("#ffd46a");
                     var lie = new Godot.Basis(Vector3.Up, p.Id * 2.4f);
+                    // What the item filter hides lies unlit and dark: the world stays honest, the eye is spared.
+                    bool hidden = p.Look == Verdict.Hidden;
                     if (p.Kind == PickupKind.Chest) chests.Add(new Transform3D(lie, V(p.X, gy + chestUp, p.Z)), Colors.White);
-                    else sacks.Add(new Transform3D(lie, V(p.X, gy + sackUp, p.Z)), Colors.White);
-                    float h = p.Kind is PickupKind.Material ? 1.4f : 3.2f;
-                    lootBeams.Add(new Transform3D(Godot.Basis.Identity.Scaled(new Vector3(1, h, 1)), V(p.X, gy + h / 2, p.Z)), col);
+                    else sacks.Add(new Transform3D(lie.Scaled(Vector3.One * (hidden ? 0.7f : 1f)), V(p.X, gy + sackUp, p.Z)), hidden ? new Color(0.35f, 0.33f, 0.3f) : Colors.White);
+                    if (hidden) break;
+                    float h = p.Kind is PickupKind.Material ? 1.4f : 3.2f, w = 1;
+                    // Loot rolled whole carries its tier (docs/design/LOOT_DESIGN.md §8.1): the beam's
+                    // height says how rare, its colour the band. Placeholder heights for the VFX lead.
+                    if (p.Loot >= 0)
+                    {
+                        (h, w, col) = (LootTier)p.Loot switch
+                        {
+                            LootTier.Common or LootTier.Uncommon => (0f, 1f, col),
+                            LootTier.Rare => (1.2f, 0.55f, col),
+                            LootTier.Epic => (3f * (1 + 0.08f * Mathf.Sin((float)now * 2.5f)), 0.6f, col),
+                            LootTier.Set => (4f, 0.6f, SetColour),
+                            LootTier.Legendary => (40f, 0.9f, Palette.Rarity[4]),
+                            LootTier.Storied => (40f, 0.9f, Palette.Rarity[5]),
+                            LootTier.Chart => (1.2f, 0.55f, new Color("#e8d8b0")),
+                            LootTier.Quest => (1.2f, 0.55f, new Color("#ffd46a")),
+                            LootTier.Book => (1f, 0.55f, col),
+                            _ => (0f, 1f, col),
+                        };
+                    }
+                    if (h <= 0) break;
+                    lootBeams.Add(new Transform3D(Godot.Basis.Identity.Scaled(new Vector3(w, h, w)), V(p.X, gy + h / 2, p.Z)), col);
+                    // A set's beam is two strands that twist about each other.
+                    if (p.Loot == (int)LootTier.Set)
+                    {
+                        float a = (float)now * 1.6f;
+                        lootBeams.Add(new Transform3D(Godot.Basis.Identity.Scaled(new Vector3(0.45f, h * 0.9f, 0.45f)), V(p.X + Mathf.Cos(a) * 0.14f, gy + h * 0.45f, p.Z + Mathf.Sin(a) * 0.14f)), col);
+                    }
                     break;
                 }
             }

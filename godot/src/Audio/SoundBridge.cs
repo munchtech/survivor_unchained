@@ -36,6 +36,8 @@ public sealed class SoundBridge
     public Mood? CineMood;
     public double CineIntensity;
 
+    double tollT;
+
     public SoundBridge(Synth a)
     {
         this.a = a;
@@ -78,6 +80,8 @@ public sealed class SoundBridge
                 case Ev.Dash: Sfx.Dash(); break;
                 case Ev.PerfectDodge: Sfx.Perfect(); break;
                 case Ev.Rise r: Sfx.Rise(r.Ember); break;
+                // Loot landing where the filter lets it be heard (docs/design/LOOT_DESIGN.md §8).
+                case Ev.Drop dr when !dr.Quiet: Sfx.Drop(dr.Tier, At(dr.X, dr.Z)); break;
                 case Ev.Ability ab: Sfx.Art(ab.Id); break;
                 case Ev.Spawn sp: Sfx.Spawn(sp.Style, At(sp.X, sp.Z)); break;
                 case Ev.LevelUp: Sfx.LevelUp(b != null && LevelUp.BlessingNext(b)); break;
@@ -101,6 +105,13 @@ public sealed class SoundBridge
                 case Ev.Sound snd when snd.Id == "door": Sfx.Door(); break;
                 case Ev.Sound snd when snd.Id.StartsWith("tell"): Sfx.Tell(snd.Id); break;
             }
+        }
+        // A Legendary lying untaken tolls faintly every eight seconds, until it is taken (§8.2).
+        if (b != null && (tollT -= 1.0 / 60) <= 0)
+        {
+            tollT = 8;
+            foreach (var p in b.Pickups.Items)
+                if (p.Alive && p.Loot is 5 or 6 && p.Look != Verdict.Hidden && p.Age > 4) { Sfx.Toll(p.Loot == 6, true); break; }
         }
         // The stones taken this frame are one voice, a step or a few up the ladder (S-02).
         if (stones > 0)

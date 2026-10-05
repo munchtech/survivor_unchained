@@ -19,16 +19,22 @@ public partial class WardenView : Node3D, IBossView
 {
     readonly PersonView view;
     readonly OmniLight3D light;
-    readonly Node3D lamp, flame;
+    readonly Node3D lamp, flame, grip;
     readonly List<StandardMaterial3D> eyes = new(), skin = new();
     string pose = "";
     double heading, time, flash;
     public double Glow { get; set; } = 1;
     /// <summary>Whether his lamp burns (it goes out in the river in C03).</summary>
     public bool LampLit { get; set; } = true;
+    /// <summary>Where his lamp hangs (for framing a cinematic on it).</summary>
+    public Vector3 LampAt => lamp.GlobalPosition;
     /// <summary>The body, for a cinematic that moves and poses him itself.</summary>
     public PersonView Body => view;
     const float Size = 2.6f;
+    /// <summary>His kit's colour: wool and leather dark with the river.</summary>
+    static readonly Color Soaked = new("#3a3e44");
+    /// <summary>The ranger's cloth band (People's MI_Ranger), measured against brighter paint.</summary>
+    static readonly People.DyeMask SoakedMask = new(new Vector2(0.17f, 0.45f), new Vector2(0.25f, 1), new Vector2(0.03f, 1), 0.3f);
 
     public WardenView()
     {
@@ -48,21 +54,25 @@ public partial class WardenView : Node3D, IBossView
                     if (m.ResourceName.Contains("Eye")) { m.Emission = new Color("#7ac8ff"); eyes.Add(m); }
                     else { m.Emission = Colors.Black; skin.Add(m); }
                 }
-        // The lantern hangs from the left fist.
+        // His kit's cloth is the ranger's green paint dyed, and the dye is as bright as
+        // the paint under it over the mask's brightness. The ranger's mask is set for a
+        // townsman's dark green, so the hood's and mantle's light greens came out near
+        // white, and read as a white cowl round the face C02 holds in close-up. Until he
+        // has his own model (docs/art/MODELS_TO_MAKE.md), his dye is measured against
+        // brighter paint, so all of it comes out dark with the river.
+        foreach (var mi in view.Person.Meshes)
+            for (int s = 0; s < mi.Mesh.GetSurfaceCount(); s++)
+                if (mi.GetSurfaceOverrideMaterial(s) is ShaderMaterial dyed && dyed.ResourceName == "MI_Ranger")
+                    People.SetDye(dyed, SoakedMask, Soaked);
+        // The lantern hangs from the left fist by its bail, plumb, whatever the arm
+        // does (Hang): the grip is in the closed fist, where Arms.Hold puts a held thing.
         var at = new BoneAttachment3D { BoneName = "hand_l" };
         view.Person.Skeleton.AddChild(at);
-        lamp = new Node3D { Position = new Vector3(0, -0.1f, 0) };
-        at.AddChild(lamp);
-        // A lamp-iron, new black iron in the old fist: an open cage, so the flame shows.
-        var iron = new StandardMaterial3D { AlbedoColor = new Color("#1e1c1a"), Metallic = 0.7f, Roughness = 0.38f };
-        void Iron(Mesh m, Vector3 at) { m.SurfaceSetMaterial(0, iron); lamp.AddChild(new MeshInstance3D { Mesh = m, Position = at }); }
-        Iron(new BoxMesh { Size = new Vector3(0.13f, 0.018f, 0.13f) }, new Vector3(0, -0.06f, 0));
-        Iron(new BoxMesh { Size = new Vector3(0.13f, 0.02f, 0.13f) }, new Vector3(0, -0.22f, 0));
-        Iron(new CylinderMesh { TopRadius = 0.02f, BottomRadius = 0.06f, Height = 0.045f, RadialSegments = 4 }, new Vector3(0, -0.03f, 0));
-        foreach (var (x, z) in new[] { (-1, -1), (-1, 1), (1, -1), (1, 1) })
-            Iron(new BoxMesh { Size = new Vector3(0.012f, 0.16f, 0.012f) }, new Vector3(x * 0.058f, -0.14f, z * 0.058f));
-        Iron(new TorusMesh { InnerRadius = 0.022f, OuterRadius = 0.032f, Rings = 12, RingSegments = 6 }, new Vector3(0, 0.0f, 0));
-        flame = new Node3D { Position = new Vector3(0, -0.15f, 0) };
+        grip = new Node3D { Position = new Vector3(0, 0.075f, 0) };
+        at.AddChild(grip);
+        lamp = LampIron.Make(Bail);
+        AddChild(lamp);
+        flame = new Node3D { Position = new Vector3(0, LampIron.FlameY, 0) };
         lamp.AddChild(flame);
         flame.AddChild(new MeshInstance3D
         {
@@ -128,6 +138,7 @@ public partial class WardenView : Node3D, IBossView
         flash = Math.Max(flash - dt * 6, e?.Flash ?? 0);
         foreach (var m in skin) m.Emission = new Color(1f, 0.8f, 0.6f) * (float)(flash * 0.25);
         double g = Glow * (pose == "sleep" ? 0.35 : 1) * (pose == "dead" ? 0 : 1);
+        Hang();
         Light(g, (float)y);
         lamp.Visible = pose != "dead" || g > 0.01;
         flame.Visible = LampLit && g > 0.01;
@@ -139,9 +150,22 @@ public partial class WardenView : Node3D, IBossView
     {
         time += dt;
         Visible = true;
+        Hang();
         Light(Glow, view.GlobalPosition.Y);
         lamp.Visible = true;
         flame.Visible = LampLit && Glow > 0.01;
+    }
+
+    /// <summary>The bail's length, ring to fist, in the lamp's own measure.</summary>
+    const float Bail = 0.07f;
+
+    /// <summary>The lamp hangs straight down from his fist on its bail, turned with him.</summary>
+    void Hang()
+    {
+        // As big as it was in his hand (the body is scaled up to a giant's).
+        float s = grip.GlobalTransform.Basis.Scale.X;
+        lamp.GlobalTransform = new Transform3D(new Godot.Basis(Vector3.Up, GlobalRotation.Y).Scaled(Vector3.One * s),
+            grip.GlobalPosition - new Vector3(0, Bail * s, 0));
     }
 
     void Light(double g, float ground)
@@ -157,6 +181,47 @@ public partial class WardenView : Node3D, IBossView
     // Explicit, so they do not shadow Godot's own Hide() and Dispose().
     void IBossView.Hide() => Visible = false;
     void IBossView.Dispose() => QueueFree();
+}
+
+/// <summary>
+/// A keeper's lamp-iron: black iron, an open cage so the flame shows, hung by a
+/// ring at the top. The Warden carries one, and the same pattern burns in the
+/// toll tower's window (C04) and stands on Vonnra's table (C09), so the eye can
+/// tie them together before anyone says so. The flame is the caller's.
+/// </summary>
+public static class LampIron
+{
+    /// <summary>Where the flame sits, from the ring at the top (the origin).</summary>
+    public const float FlameY = -0.15f;
+    /// <summary>The underside of the base: set it here to stand the lamp on a sill.</summary>
+    public const float FootY = -0.23f;
+    static StandardMaterial3D? iron;
+
+    /// <summary>The lamp-iron; with a bail, an iron loop up from its ring that long, to hang it by.</summary>
+    public static Node3D Make(float bail = 0)
+    {
+        iron ??= new StandardMaterial3D { AlbedoColor = new Color("#1e1c1a"), Metallic = 0.7f, Roughness = 0.38f };
+        var lamp = new Node3D { Name = "LampIron" };
+        void Iron(Mesh m, Vector3 at)
+        {
+            m.SurfaceSetMaterial(0, iron);
+            lamp.AddChild(new MeshInstance3D { Mesh = m, Position = at });
+        }
+        Iron(new BoxMesh { Size = new Vector3(0.13f, 0.018f, 0.13f) }, new Vector3(0, -0.06f, 0));
+        Iron(new BoxMesh { Size = new Vector3(0.13f, 0.02f, 0.13f) }, new Vector3(0, -0.22f, 0));
+        Iron(new CylinderMesh { TopRadius = 0.02f, BottomRadius = 0.06f, Height = 0.045f, RadialSegments = 4 }, new Vector3(0, -0.03f, 0));
+        foreach (var (x, z) in new[] { (-1, -1), (-1, 1), (1, -1), (1, 1) })
+            Iron(new BoxMesh { Size = new Vector3(0.012f, 0.16f, 0.012f) }, new Vector3(x * 0.058f, -0.14f, z * 0.058f));
+        Iron(new TorusMesh { InnerRadius = 0.022f, OuterRadius = 0.032f, Rings = 12, RingSegments = 6 }, new Vector3(0, 0.0f, 0));
+        if (bail > 0)
+        {
+            // Two thin rods from the ring's sides up to a hook where the fist closes.
+            foreach (int side in new[] { -1, 1 })
+                Iron(new BoxMesh { Size = new Vector3(0.007f, bail, 0.007f) }, new Vector3(side * 0.02f, bail / 2 + 0.02f, 0));
+            Iron(new BoxMesh { Size = new Vector3(0.05f, 0.008f, 0.008f) }, new Vector3(0, bail + 0.02f, 0));
+        }
+        return lamp;
+    }
 }
 
 /// <summary>A bright thing with a light of its own (the Warden's heart).</summary>
@@ -205,25 +270,30 @@ public partial class EmberCoreView : Node3D, IOrb
     void IOrb.Dispose() => QueueFree();
 }
 
+/// <summary>The Warden's heart: a stone the size of a fist, cut in a few broad faces, with a cold
+/// light in it. Its faces catch the light unevenly as it turns, so it reads as a thing and not a
+/// glare; the light inside rises and falls with Light.</summary>
 public partial class OrbView : Node3D, IOrb
 {
     readonly MeshInstance3D ball;
     readonly OmniLight3D light;
+    readonly StandardMaterial3D stone;
 
     public OrbView(string color, double size)
     {
-        var c = new Color(color).SrgbToLinear();
-        ball = new MeshInstance3D
+        var c = new Color(color);
+        stone = new StandardMaterial3D
         {
-            Mesh = new SphereMesh { Radius = (float)size, Height = (float)size * 2, RadialSegments = 16, Rings = 8 },
-            MaterialOverride = new StandardMaterial3D { ShadingMode = BaseMaterial3D.ShadingModeEnum.Unshaded, AlbedoColor = new Color(c.R * 3, c.G * 3, c.B * 3) },
-            CastShadow = GeometryInstance3D.ShadowCastingSetting.Off,
+            AlbedoColor = c.Darkened(0.7f), Metallic = 0.35f, Roughness = 0.12f,
+            EmissionEnabled = true, Emission = new Color(c.R * 0.3f, c.G * 0.6f, c.B * 0.95f), EmissionEnergyMultiplier = 0.5f,
+            RimEnabled = true, Rim = 0.6f, RimTint = 0.8f,
         };
+        ball = new MeshInstance3D { Mesh = Facets((float)size), MaterialOverride = stone, CastShadow = GeometryInstance3D.ShadowCastingSetting.Off };
         AddChild(ball);
         // A soft halo about it, as a bright thing has in mist.
         AddChild(new MeshInstance3D
         {
-            Mesh = new QuadMesh { Size = Vector2.One * (float)size * 7 },
+            Mesh = new QuadMesh { Size = Vector2.One * (float)size * 4.5f },
             CastShadow = GeometryInstance3D.ShadowCastingSetting.Off,
             MaterialOverride = new StandardMaterial3D
             {
@@ -231,10 +301,11 @@ public partial class OrbView : Node3D, IOrb
                 BlendMode = BaseMaterial3D.BlendModeEnum.Add, BillboardMode = BaseMaterial3D.BillboardModeEnum.Enabled,
                 AlbedoTexture = new GradientTexture2D
                 {
-                    Gradient = new Gradient { Colors = [new Color(1, 1, 1, 1), new Color(1, 1, 1, 0.2f), new Color(1, 1, 1, 0)], Offsets = [0, 0.2f, 1] },
+                    // A ring of light about the stone, clear at the middle, so the stone's faces read through it.
+                    Gradient = new Gradient { Colors = [new Color(1, 1, 1, 0), new Color(1, 1, 1, 0), new Color(1, 1, 1, 0.55f), new Color(1, 1, 1, 0)], Offsets = [0, 0.16f, 0.24f, 1] },
                     Fill = GradientTexture2D.FillEnum.Radial, FillFrom = new Vector2(0.5f, 0.5f), FillTo = new Vector2(1, 0.5f), Width = 64, Height = 64,
                 },
-                AlbedoColor = new Color(new Color(color), 0.5f),
+                AlbedoColor = new Color(new Color(color), 0.35f),
             },
         });
         light = new OmniLight3D { LightColor = new Color(color), OmniRange = 14, OmniAttenuation = 1.3f };
@@ -251,7 +322,38 @@ public partial class OrbView : Node3D, IOrb
         ball.Scale = Vector3.One * (float)scale;
     }
 
-    public double Light { set => light.LightEnergy = (float)(value / Math.PI); }
+    public double Light
+    {
+        set
+        {
+            light.LightEnergy = (float)(value / Math.PI);
+            // The light inside, not a glare: the faces must still read at full strength.
+            stone.EmissionEnergyMultiplier = 0.35f + Mathf.Clamp((float)value, 0, 6) * 0.15f;
+        }
+    }
+
+    /// <summary>A rough-cut stone: a squashed, uneven sphere of a few flat faces.</summary>
+    static Mesh Facets(float size)
+    {
+        var src = new SphereMesh { Radius = size, Height = size * 1.7f, RadialSegments = 7, Rings = 4 };
+        var st = new SurfaceTool();
+        st.CreateFrom(src, 0);
+        st.Deindex();
+        var arrays = st.Commit().SurfaceGetArrays(0);
+        var verts = (Vector3[])arrays[(int)Mesh.ArrayType.Vertex];
+        // Each corner pushed in or out a little, the same for the same corner, so the faces are uneven.
+        for (int i = 0; i < verts.Length; i++)
+        {
+            var v = verts[i];
+            float n = Mathf.Sin(v.X * 53.1f + v.Y * 17.3f) * Mathf.Cos(v.Z * 41.7f - v.Y * 9.1f);
+            verts[i] = v * (1 + n * 0.14f);
+        }
+        var flat = new SurfaceTool();
+        flat.Begin(Mesh.PrimitiveType.Triangles);
+        foreach (var v in verts) flat.AddVertex(v);
+        flat.GenerateNormals();
+        return flat.Commit();
+    }
 
     /// <summary>Turning slowly where it hangs (a cinematic's frame).</summary>
     public void Turn(double dt) => ball.RotateY((float)(dt * 1.4));

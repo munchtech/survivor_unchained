@@ -9,7 +9,7 @@
   "world": {"rate": 0, "zoneHeld": true},
   "marks": {
     "fire": [-10.5, 90.5],
-    "lie": [-9.1, 91.05, 3.1416],
+    "lie": [-9.65, 90.9, -1.9451],
     "seat": [-8.5, 90.75, -1.5708],
     "seat_nw": [-8.5, 90.75, -2.356],
     "stand": [-8.95, 90.55, -1.75],
@@ -42,7 +42,7 @@
         {"do": "hold", "slot": "all", "piece": null},
         {"do": "prop", "name": "weapon", "piece": "@weapon", "where": [-8.33, 0.42, 89.05], "rot": [0, 90, 72]},
         {"do": "prop", "name": "shield", "piece": "@shield", "where": [-8.05, 0.3, 89.55], "rot": [0, 80, 78], "when": {"calling": ["warden"]}},
-        {"do": "anim", "clip": "her/get_up", "from": 0, "speed": 0, "blend": 0},
+        {"do": "anim", "clip": "her/lie_side_wake", "from": 0, "speed": 0, "blend": 0},
         {"do": "lids", "value": 1, "over": 0},
         {"do": "gaze", "look": [0.1, 0.3], "wander": 0.05}
       ]
@@ -73,8 +73,9 @@
       "dur": 3.5,
       "still": 2.5,
       "note": "Straight down from above: the fire burned to embers, and beside it, face down on the bare ground, her; her hand lies in the ash at the coals' edge. Frost silvers the corners. The camera sinks a little, slowly.",
-      "cam": {"pos": [-9.62, 4.2, 91.0], "at": [-9.8, 0.0, 91.0], "lens": 28, "focus": 4.1, "fstop": 4.0, "move": {"pos": [-9.62, 3.7, 91.0], "ease": "slow"}},
+      "cam": {"pos": [-9.95, 4.0, 90.62], "at": [-9.97, 0.0, 90.6], "lens": 28, "focus": 3.9, "fstop": 4.0, "move": {"pos": [-9.95, 3.6, 90.62], "ease": "slow"}},
       "cues": [
+        {"do": "anim", "clip": "her/lie_side_wake", "from": 0, "speed": 0.24, "blend": 0},
         {"at": 1.4, "do": "sfx", "name": "drip", "pan": 0.1},
         {"at": 2.6, "do": "sfx", "name": "drip", "pan": 0.05}
       ]
@@ -85,7 +86,7 @@
       "dur": 4.0,
       "still": 2.6,
       "note": "Her face on its side on the frozen ground, half ember, half moon. At 2.0 her eyes open. No start.",
-      "cam": {"pos": {"actor": "her", "bone": "head", "off": [-0.78, 0.02, -0.38]}, "at": {"actor": "her", "bone": "head", "off": [0, -0.03, 0]}, "lens": 85, "focus": {"actor": "her", "bone": "eyes"}, "fstop": 2.0, "move": {"push": 0.1, "ease": "linear"}},
+      "cam": {"pos": [-11.05, 0.55, 89.22], "at": {"actor": "her", "bone": "eyes", "off": [0, -0.02, 0]}, "lens": 100, "focus": {"actor": "her", "bone": "eyes"}, "fstop": 2.0, "move": {"push": 0.1, "ease": "linear"}},
       "cues": [
         {"at": 2.0, "do": "lids", "value": 0, "over": 0.15},
         {"at": 2.0, "do": "face", "keys": {"eyes_wide": 0.25}, "over": 0.2},
@@ -94,38 +95,26 @@
       ]
     },
     {
-      "id": "4",
-      "type": "INSERT",
-      "dur": 3.0,
-      "still": 2.0,
-      "note": "From above, close: her hand in the ash at the edge of the coals, closer than anyone could bear. It does not pull back. (Kimodo reach_coals, when it comes, opens it toward them.)",
-      "cam": {"pos": [-9.7, 1.25, 90.87], "at": [-9.82, 0.0, 90.86], "lens": 28, "focus": 1.18, "fstop": 2.0},
-      "cues": [
-        {"at": 0.3, "do": "sfx", "name": "cloth_water", "gain": 0.3}
-      ]
-    },
-    {
       "id": "5",
       "type": "MS",
-      "dur": 3.5,
+      "dur": 4.5,
       "still": 2.6,
       "note": "Low on the fire's far side, through the embers: she pushes up. Her hair hangs.",
-      "cam": {"pos": [-12.3, 0.42, 91.75], "at": {"actor": "her", "bone": "chest", "off": [0, -0.1, 0]}, "lens": 35, "focus": {"actor": "her", "bone": "head"}, "fstop": 2.8},
+      "cam": {"pos": [-10.35, 0.42, 88.6], "at": {"actor": "her", "bone": "chest", "off": [0, 0.1, 0]}, "lens": 40, "focus": {"actor": "her", "bone": "head"}, "fstop": 2.8},
       "cues": [
-        {"at": 0.4, "do": "anim", "clip": "her/get_up", "from": 0, "speed": 0.16, "blend": 0.1},
-        {"at": 0.6, "do": "sfx", "name": "cloth_water", "gain": 0.8}
+        {"at": 0.6, "do": "sfx", "name": "cloth_water", "gain": 0.8},
+        {"at": 0.0, "do": "anim", "clip": "her/lie_side_wake", "from": 2.4, "speed": 1.0, "blend": 0.15}
       ]
     },
     {
       "id": "6",
-      "type": "MCU",
+      "type": "MS",
       "dur": 7.0,
       "still": 1.5,
       "note": "Front three-quarter from her left, the fire's side: she sits on the log, facing the embers. She looks down at herself, the cord, the full flask; across at the bedroll, dry, its blanket folded. N1. (The letter and sitting back on her heels when Kimodo's clips come.)",
-      "cam": {"pos": [-9.43, 1.15, 91.68], "at": [-8.26, 1.12, 90.75], "lens": 50, "focus": {"actor": "her", "bone": "eyes"}, "fstop": 2.8},
+      "cam": {"pos": [-11.1, 0.85, 91.6], "at": {"actor": "her", "bone": "chest", "off": [0, 0.0, 0], "track": true}, "lens": 40, "focus": {"actor": "her", "bone": "eyes", "track": true}, "fstop": 2.8},
       "cues": [
-        {"do": "place", "actor": "her", "mark": "seat"},
-        {"do": "anim", "clip": "her/sit_log", "from": 0, "speed": 0.6, "blend": 0},
+        {"do": "anim", "clip": "her/sit_back_heels", "from": 0, "speed": 1.0, "blend": 0},
         {"do": "face", "keys": {"brows_sad": 0.3, "mouth_open": 0.08}, "over": 1.2},
         {"do": "gaze", "look": [0, 0.8], "wander": 0.04},
         {"at": 0.8, "do": "line", "id": "cin_drowned_fire.bedroll"},
@@ -137,6 +126,18 @@
       ]
     },
     {
+      "id": "6a",
+      "type": "INSERT",
+      "dur": 3.0,
+      "still": 2.0,
+      "note": "The hand to the coals: kneeling, she holds her right hand out low over the embers, palm down, closer than anyone could bear, and it stays.",
+      "cam": {"pos": [-9.95, 0.75, 91.35], "at": [-10.15, 0.25, 90.6], "lens": 50, "focus": 0.8, "fstop": 2.0},
+      "cues": [
+        {"do": "anim", "clip": "her/reach_coals", "from": 0, "speed": 1.0, "blend": 0},
+        {"at": 0.3, "do": "sfx", "name": "cloth_water", "gain": 0.3}
+      ]
+    },
+    {
       "id": "7",
       "type": "OTS",
       "dur": 7.5,
@@ -144,9 +145,9 @@
       "tail": 0.7,
       "still": 4.5,
       "note": "Behind her, low over her left shoulder: the prints in the frost, dark and wet, coming out of the night to where she lay. The camera tilts up along them, north, into the dark they came from. N2.",
-      "cam": {"pos": [-8.6, 1.32, 91.7], "at": [-8.9, 0.0, 86.5], "lens": 28, "focus": 3.0, "fstop": 4.0, "move": {"at": [-6.6, 1.2, 72.0], "start": 0.4, "end": "end-0.6", "ease": "slow", "focus": {"abs": [-6.6, 1.2, 72.0]}}},
+      "cam": {"pos": [-9.55, 1.12, 91.45], "at": [-8.9, 0.0, 86.5], "lens": 28, "focus": 3.0, "fstop": 4.0, "move": {"at": [-6.6, 1.2, 72.0], "start": 0.4, "end": "end-0.6", "ease": "slow", "focus": {"abs": [-6.6, 1.2, 72.0]}}},
       "cues": [
-        {"do": "place", "actor": "her", "mark": "seat_nw"},
+        {"at": 0.0, "do": "head", "where": [-8.9, 0.3, 86.5], "over": 1.2},
         {"do": "gaze", "look": [0, 0.5], "wander": 0.03},
         {"at": 0.6, "do": "line", "id": "cin_drowned_fire.prints"}
       ]
@@ -157,13 +158,14 @@
       "dur": 4.0,
       "still": 2.2,
       "note": "Frontal, a little under her eyes, the dark behind her. From the trail to her boots. She breathes out, long. Nothing shows. Hold a beat.",
-      "cam": {"pos": [-9.46, 1.23, 89.79], "at": {"actor": "her", "bone": "eyes", "off": [0, -0.05, 0]}, "lens": 85, "focus": {"actor": "her", "bone": "eyes"}, "fstop": 2.0},
+      "cam": {"pos": {"actor": "her", "bone": "eyes", "off": [0.08, -0.02, -1.0]}, "at": {"actor": "her", "bone": "eyes", "off": [0, -0.05, 0]}, "lens": 70, "focus": {"actor": "her", "bone": "eyes"}, "fstop": 2.0},
       "cues": [
         {"do": "gaze", "look": [0, 0.1]},
         {"at": 0.7, "do": "gaze", "look": [0, 0.9]},
-        {"at": 1.2, "do": "face", "keys": {"mouth_open": 0.2, "brows_sad": 0.4}, "over": 1.2},
+        {"at": 1.2, "do": "face", "keys": {"mouth_open": 0.12, "brows_sad": 0.4}, "over": 1.2},
         {"at": 1.2, "do": "sfx", "name": "breath_out", "gain": 1.3},
-        {"at": 2.5, "do": "face", "keys": {"mouth_open": 0.05, "brows_sad": 0.2}, "over": 0.9}
+        {"at": 2.5, "do": "face", "keys": {"mouth_open": 0.05, "brows_sad": 0.2}, "over": 0.9},
+        {"at": 1.2, "do": "anim", "clip": "her/exhale", "from": 0, "speed": 1, "blend": 0.2}
       ]
     },
     {
@@ -187,7 +189,7 @@
       "tail": 0.8,
       "still": 3.5,
       "note": "As 8, a touch tighter. The narration runs on over the cut ('and a voice comes down to you...'); then the voice up the road, as if at her shoulder. She does not turn; her eyes go a fraction toward it, and come back. Unnamed.",
-      "cam": {"pos": [-9.38, 1.23, 89.87], "at": {"actor": "her", "bone": "eyes", "off": [0, -0.04, 0]}, "lens": 85, "focus": {"actor": "her", "bone": "eyes"}, "fstop": 2.0},
+      "cam": {"pos": {"actor": "her", "bone": "eyes", "off": [0.06, -0.02, -0.9]}, "at": {"actor": "her", "bone": "eyes", "off": [0, -0.05, 0]}, "lens": 85, "focus": {"actor": "her", "bone": "eyes"}, "fstop": 2.0},
       "cues": [
         {"do": "lit", "light": 7, "on": true},
         {"do": "lit", "light": 8, "on": true},
@@ -222,14 +224,15 @@
       "dur": 2.5,
       "still": 1.0,
       "note": "From the fire's side: her head turns hard toward the sound, screen left, as the risen was. On her feet in one movement.",
-      "cam": {"pos": [-9.25, 1.2, 91.75], "at": {"actor": "her", "bone": "head", "off": [0, 0.0, 0], "track": true}, "lens": 50, "focus": {"actor": "her", "bone": "eyes"}, "fstop": 2.8},
+      "cam": {"pos": [-10.4, 1.1, 92.1], "at": {"actor": "her", "bone": "head", "off": [0, 0.0, 0], "track": true}, "lens": 50, "focus": {"actor": "her", "bone": "eyes"}, "fstop": 2.8},
       "cues": [
+        {"at": 0.12, "do": "head", "where": {"mark": "r1", "off": [0, 1.2, 0]}, "over": 0.18},
         {"do": "world", "rate": 0},
-        {"at": 0.12, "do": "look", "where": {"mark": "r1"}, "over": 0.22},
         {"at": 0.12, "do": "gaze", "look": [0.45, -0.05], "wander": 0.02},
         {"at": 0.12, "do": "face", "keys": {"eyes_wide": 0.6, "brows_sad": 0, "brows_angry": 0.2, "mouth_open": 0.1}, "over": 0.2},
         {"at": 0.75, "do": "anim", "clip": "@idle", "from": 0, "speed": 1, "blend": 0.4},
-        {"at": 0.75, "do": "move", "to": "stand", "dur": 0.45, "heading": -1.75}
+        {"at": 0.75, "do": "move", "to": "stand", "dur": 0.45, "heading": -1.75},
+        {"at": 1.4, "do": "head", "amount": 0, "over": 0.5}
       ]
     },
     {

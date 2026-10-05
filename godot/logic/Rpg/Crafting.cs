@@ -20,7 +20,7 @@ namespace SurvivorUnchained.Rpg;
  * before and after) and only then done, so the screen and the tests read the
  * same numbers. The numbers are data (data/content/crafting.json). */
 
-public enum Verb { Temper, WorkIn, Cage, Remake, Rekindle, BreakDown, Brew, Buy, Commission, Set, Bind, Steep }
+public enum Verb { Temper, WorkIn, Cage, Remake, Rekindle, BreakDown, Brew, Buy, Commission, Set, Bind, Steep, Mark, Ink, Burn, Pin, Scrape, Annotate }
 
 public sealed class CraftStep { public int Iron, Gold, GoldPerRarity; public int[] Heat = { 0, 0 }; }
 public sealed class CageRules { public int Shards = 4, Gold = 30, Redraw = 1, Offered = 3, MinRarity = 2; public int[] Heat = { 5, 7 }; }
@@ -32,6 +32,24 @@ public sealed class MaterialRule { public int Qty = 1; public List<string> Into 
 public sealed class Easier { public Cond? When; public int HeatTop, TemperIron, EntryGrade, Gold; public string? Line, Needs; }
 /// <summary>The binder's terms: a shard and gold a grade bound, and the heat it costs the piece that takes it.</summary>
 public sealed class BindRules { public int ShardsPerGrade = 1, GoldPerGrade = 40; public int[] Heat = { 5, 7 }; public string Crafter = "vonnra"; }
+/// <summary>What a map's ruler leaves (its people's thing, carrying its Mark at a grade), and what
+/// inscribing one costs at Vonnra's table (design 20.3).</summary>
+public sealed class MarkRules
+{
+    public string Crafter = "vonnra";
+    public int Gold = 60, GoldPerGrade = 30, Shards = 2, Worn = 3;
+    public int[] Heat = { 5, 7 };
+    /// <summary>A ruler's chance to leave it, and the grade it comes at: a grade every few tiers, sometimes one more.</summary>
+    public double Chance = 0.5, Finer = 0.3;
+    public int TiersPerGrade = 3;
+    /// <summary>By people: the thing its ruler leaves, and the Mark in it.</summary>
+    public Dictionary<string, MarkDrop> Drops = new();
+}
+public sealed class MarkDrop { public string Item = "", Mark = ""; }
+/// <summary>Rook's shelves (the storeroom grows by shelves of 24): the price of each after the first, then
+/// of every one beyond those, and the most there can be.</summary>
+public sealed class RookLines { public string? Shelf, ShelfMore; }
+public sealed class ShelfRules { public string Seller = "rook"; public List<int> Prices = new() { 300, 1000, 2500 }; public int Then = 5000, Most = 8; }
 /// <summary>The one gamble (design 9): jars sold while the pump runs, and what steeping does, by weight.</summary>
 public sealed class SlurryRules
 {
@@ -72,6 +90,9 @@ public sealed class CrafterDef
     public List<Easier> Easier = new();
     /// <summary>Verbs that open later than the crafter does, by the verb's key.</summary>
     public Dictionary<string, Gate> Gates = new();
+    /// <summary>For a crafter who is not one of the town's people (no person to draw): the creature
+    /// they are drawn as at their bench (Snib, a lampling).</summary>
+    public string? Visual;
     /// <summary>What they say (the story lead's words, in data): "greet" on sitting down at
     /// their bench; a verb's key ("temper") after that craft, in turn; "first.VERB" the first
     /// time, with "first.VERB.before" and ".after" as narration round it; "history.VERB" the
@@ -84,7 +105,13 @@ public sealed record Said(string? Before, string? Line, string? After);
 public sealed class NightPeople { public string Family = "", Material = ""; public int Per = 150; }
 public sealed class NightRules
 {
-    public int EmberFrom = 10, EmberPer = 8, MinutesPer = 2, StoryBonus = 2, Cap = 8;
+    public int EmberFrom = 10, EmberPer = 8, MinutesPer = 2, StoryBonus = 2, Cap = 8, Miniboss = 2;
+    /// <summary>The scars' depth (design 20.5): past this many minutes beyond the win, a shard a minute; past
+    /// GlassFrom, once the stream is cured, scar-glass, one and another each GlassEvery minutes more.</summary>
+    public int DeepFrom = 30, GlassFrom = 60, GlassEvery = 60;
+    public string Glass = "scar_glass";
+    /// <summary>Said at the night's end the first time scar-glass is carried out (the story lead's).</summary>
+    public string? GlassFirst;
     public double FellKeeps = 0.5;
     public Dictionary<string, List<NightPeople>> Peoples = new();
 }
@@ -106,6 +133,11 @@ public sealed class CraftingRules
     /// <summary>Trophies that can be set into a piece, by the trophy's item id.</summary>
     public Dictionary<string, SettingRule> Settings = new();
     public BindRules Bind = new();
+    public MarkRules Mark = new();
+    public ChartRules Charts = new();
+    public ShelfRules Shelves = new();
+    /// <summary>Rook's words over a shelf sold: the first, then any after (the story lead's).</summary>
+    public RookLines Rook = new();
     public SlurryRules Slurry = new();
     public Dictionary<string, MaterialRule> Materials = new();
     public Dictionary<string, CrafterDef> Crafters = new();
@@ -154,7 +186,7 @@ public sealed class CraftCtx
     public WorldState World => Ctx.World;
 }
 
-public static class Crafting
+public static partial class Crafting
 {
     public const string Iron = "old_iron", Shard = "ember_shard";
 
@@ -167,7 +199,9 @@ public static class Crafting
     /// the Waystation's own (the wolfhide cloak). Somebody else's work is left be.</summary>
     public static bool Workable(ItemDef def) =>
         def.Kind is ItemKind.Weapon or ItemKind.Offhand or ItemKind.Head or ItemKind.Body or ItemKind.Cloak or ItemKind.Amulet or ItemKind.Ring or ItemKind.Relic
-        && (def.Base || def.Weapon != null || def.Workable);
+        && (def.Base || def.Weapon != null || def.Workable)
+        // A Legendary or a set piece is somebody's work, never the forge's (docs/design/LOOT_DESIGN.md §9).
+        && def.Rarity < 4 && def.Set == null;
 
     public static bool Workable(ItemInstance it) => Items.Find(it.Def) is { } d && Workable(d) && it.Heat != null;
 
@@ -190,6 +224,8 @@ public static class Crafting
     /// <summary>The grade a worked-in affix enters at: the piece's own quality lifts it.</summary>
     public static int EntryGrade(ItemInstance it) => Math.Clamp(it.Rarity - 2, 0, 3);
     public static string Grade(int tier) => tier switch { 0 => "I", 1 => "II", 2 => "III", 3 => "IV", _ => "V" };
+    /// <summary>The bright grade (V): past every forge, given only by the slurry (design 5.1, 9).</summary>
+    public const int Bright = 4;
 
     static string Line(string affix, int tier) => Items.Affix(affix)?.Text(tier) ?? affix;
 
@@ -330,6 +366,7 @@ public static class Crafting
         Hot(it, q);
         if (q.Blocked != null) return q;
         if (def?.Kindled != null || def?.Grants != null) { q.Blocked = "A coal or a worn skill has no grades."; return q; }
+        if (def?.Mark == true) { q.Blocked = "A mark is as fine as what it came from. A finer one comes from a harder map."; return q; }
         if (a.Tier >= Cap(it)) { q.Blocked = $"Grade {Grade(a.Tier)} is as high as {Article(Inventory.RarityName(it).ToLowerInvariant())} piece goes."; return q; }
         var step = Rules.Temper[Math.Clamp(a.Tier, 0, Rules.Temper.Count - 1)];
         q.After = Line(a.Id, a.Tier + 1);
@@ -465,6 +502,8 @@ public static class Crafting
         var q = Begin(Verb.Remake, crafter, "Remake");
         int to = it.Rarity + 1;
         if (it.Heat == null) { q.Blocked = "That's somebody's work. Leave it be."; return q; }
+        // A remake brings heat back: a steeped piece stays as the slurry set it.
+        if (Slurried(it)) { q.Blocked = SetForGood; return q; }
         if (to > Rules.RemakeCap) { q.Blocked = "There's no better pattern he knows. Not yet."; return q; }
         // Remade iron cools overnight: one remake a piece a day (it also spreads a weapon's climb over days).
         bool cooling = it.Remade == x.World.Day;
@@ -486,6 +525,7 @@ public static class Crafting
     {
         var q = Begin(Verb.Rekindle, crafter, "Rekindle");
         if (it.Heat is not int h || it.HeatFull is not int full) { q.Blocked = "That's somebody's work. Leave it be."; return q; }
+        if (Slurried(it)) { q.Blocked = SetForGood; return q; }
         int n = it.Rekindled ?? 0;
         int add = (full + 1) / 2;
         q.Takes[Shard] = Rules.Rekindle.Shards << Math.Min(n, 8);
@@ -731,9 +771,102 @@ public static class Crafting
         return q;
     }
 
+    /* ------------------------------------------------------- item level -- */
+
+    /// <summary>The chance a piece made at this level rolls the finer of its rarity's two grades: an even
+    /// coin at a first map's level (10, as by day), rising a fortieth a level to nine in ten (design 20.3).</summary>
+    public static double FinerGrade(int level) => Math.Clamp(0.5 + (level - 10) * 0.025, 0.5, 0.9);
+
+    /* ---------------------------------------------------------- shelves -- */
+
+    /// <summary>What Rook asks for the storeroom's next shelf (her prices follow how she feels about you),
+    /// or null if it has as many as it can hold. Priced against the economy: the second is about a
+    /// Kerchief night's gold, the third and fourth the atlas's, the rest a long sink.</summary>
+    public static int? ShelfPrice(CraftCtx x)
+    {
+        var r = Rules.Shelves;
+        int have = x.World.Shelves;
+        if (have >= r.Most) return null;
+        int k = have - 1;
+        return Price(x, r.Seller, k < r.Prices.Count ? r.Prices[k] : r.Then);
+    }
+
+    /// <summary>The next shelf bought, paid for and empty (false if it cannot be).</summary>
+    public static bool BuyShelf(CraftCtx x)
+    {
+        if (ShelfPrice(x) is not int gold || x.Ch.Gold < gold) return false;
+        x.Ch.Gold -= gold;
+        for (int i = 0; i < World.WorldState.Shelf; i++) x.World.Stash.Add(null);
+        return true;
+    }
+
+    /// <summary>What Rook says over the shelf just sold: the second shelf's line, then the later ones'.</summary>
+    public static string? ShelfSaid(WorldState w) => w.Shelves <= 2 ? Rules.Rook.Shelf : Rules.Rook.ShelfMore ?? Rules.Rook.Shelf;
+
+    /* ------------------------------------------------------------- marks -- */
+
+    /// <summary>The Mark a ruler's thing carries, or null if it holds none.</summary>
+    public static AffixRoll? MarkIn(ItemInstance it) =>
+        Items.Get(it.Def).Kind == ItemKind.Trophy ? it.Affixes.FirstOrDefault(a => Items.Affix(a.Id)?.Mark == true) : null;
+
+    /// <summary>The Mark a ruler's thing is made with (by its item id), or null.</summary>
+    public static string? MarkOf(string item) => Rules.Mark.Drops.Values.FirstOrDefault(d => d.Item == item)?.Mark;
+
+    /// <summary>The things carried that hold a Mark, finest first.</summary>
+    public static List<ItemInstance> MarksCarried(CharacterData ch) =>
+        ch.Satchel.Concat(ch.Pack.Where(p => p != null).Select(p => p!)).Where(p => MarkIn(p) != null).OrderByDescending(p => MarkIn(p)!.Tier).ToList();
+
+    /// <summary>What a map's ruler leaves of its own (null: nothing this time): its people's thing, at a
+    /// grade by the map's tier (a grade every few tiers, now and then one finer), to VI.</summary>
+    public static (string Item, int Grade)? RulerMark(string people, int tier, Rng rng)
+    {
+        var r = Rules.Mark;
+        if (!r.Drops.TryGetValue(people, out var d) || rng.Next() >= r.Chance) return null;
+        int g = Math.Clamp((tier - 1) / Math.Max(1, r.TiersPerGrade) + (rng.Next() < r.Finer ? 1 : 0), 0, 5);
+        return (d.Item, g);
+    }
+
+    /// <summary>Inscribe: the Mark in a ruler's thing written into the chosen piece at that thing's grade,
+    /// in an open seam or in place of a chosen power; one Mark to a piece, so a second goes where the
+    /// first was. The thing is used up. Vonnra's, from the binders' book (design 20.3).</summary>
+    public static Quote Inscribe(CraftCtx x, ItemInstance it, ItemInstance from, int replace = -1, string? crafter = null)
+    {
+        var r = Rules.Mark;
+        crafter ??= r.Crafter;
+        var q = Begin(Verb.Mark, crafter, "Inscribe");
+        q.Donor = from.Uid;
+        if (MarkIn(from) is not { } m) { q.Blocked = "There is no mark in that."; return q; }
+        (q.Affix, q.Grade, q.After) = (m.Id, m.Tier, Line(m.Id, m.Tier));
+        if (!Fits(Items.Get(it.Def), m.Id)) { q.Blocked = "It doesn't take to that kind of piece."; return q; }
+        int held = it.Affixes.FindIndex(a => Items.Affix(a.Id)?.Mark == true);
+        q.Index = held >= 0 ? held : replace;
+        if (q.Index >= it.Affixes.Count) q.Blocked = "Choose what it goes in over.";
+        else if (q.Index >= 0) q.Before = Line(it.Affixes[q.Index].Id, it.Affixes[q.Index].Tier);
+        else if (OpenSeams(it) == 0) q.Blocked = Seams(it) == 0 ? "No seam to hold it: have it remade first." : "No open seam: choose what it goes in over.";
+        if (!Inventory.Holds(x.Ch, from.Uid)) q.Blocked ??= "Carry it with you.";
+        var (top, _, _) = Terms(crafter, x.Ctx);
+        q.Takes[Shard] = r.Shards;
+        q.Gold = Price(x, crafter, r.Gold + r.GoldPerGrade * m.Tier);
+        (q.HeatLo, q.HeatHi) = HeatRange(r.Heat, top);
+        Hot(it, q);
+        Afford(x, q);
+        return q;
+    }
+
     /* ----------------------------------------------------------- the slurry -- */
 
     public static bool Slurried(ItemInstance it) => it.Marks?.Contains(Rules.Slurry.Mark) == true;
+
+    /// <summary>What a steeping is done with: a jar of Snib's while one is carried, else the scars' glass.</summary>
+    public static string SteepWith(CharacterData ch) =>
+        Inventory.Count(ch, Rules.Slurry.Jar) > 0 || Inventory.Count(ch, Rules.Night.Glass) == 0 ? Rules.Slurry.Jar : Rules.Night.Glass;
+
+    /// <summary>Something carried to steep with by hand (a jar, or scar-glass).</summary>
+    public static bool CanSteep(CharacterData ch) => Inventory.Count(ch, Rules.Slurry.Jar) + Inventory.Count(ch, Rules.Night.Glass) > 0;
+
+    /// <summary>Why a steeped piece takes no more heat: the slurry's setting is for good (design 9), or
+    /// a rekindle or a remake would open it again for the forge.</summary>
+    public const string SetForGood = "Steeped: the slurry set it for good. No heat will open it again.";
 
     /// <summary>Snib sells jars while the pump runs and he has been met: three a day.</summary>
     public static Quote BuyJar(CraftCtx x)
@@ -777,16 +910,41 @@ public static class Crafting
         // At Snib's bench he does it, in his words; from the pack, by the survivor's own hand (a jar
         // kept past the cure still steeps).
         var q = Begin(Verb.Steep, crafter, "Steep in slurry");
-        q.Takes[s.Jar] = 1;
+        q.Takes[SteepWith(x.Ch)] = 1;
         if (!Workable(it)) q.Blocked = "That's somebody's work. Leave it be.";
         else if (Slurried(it)) q.Blocked = "It has been steeped. Once is all it takes.";
         else if (Seams(it) == 0) q.Blocked = "Too plain a piece: there is nothing in it for the slurry to take.";
-        else if (Inventory.Count(x.Ch, s.Jar) < 1) q.Blocked = "You have no slurry.";
+        else if (Inventory.Count(x.Ch, SteepWith(x.Ch)) < 1) q.Blocked = "You have no slurry.";
         q.HeatLo = q.HeatHi = it.Heat ?? 0;
         q.After = "It is set for good after, whatever it comes to.";
         if (q.Blocked == null && crafter != "" && Closed(crafter, x.Ctx, Verb.Steep) is { } shut) q.Blocked = shut;
         return q;
     }
+
+    /// <summary>What a steeping came to, said plainly (the story's narration says how it looked):
+    /// which power moved and to what, the power it gained, or nothing but the veins; and how it
+    /// went (1 a gain, -1 a loss, 0 nothing), for the colour it is said in.</summary>
+    public static (string Text, int Mood) Outcome(ItemInstance it, Quote q)
+    {
+        string name = q.Affix != null ? Items.Affix(q.Affix)?.Name ?? q.Affix : "";
+        return q.Outcome switch
+        {
+            "up" when q.Grade >= Bright => ($"{name} rose to the bright grade, past every forge: {q.After}", 1),
+            "up" => ($"{name} rose past what the forge can do: grade {Grade(q.Grade)}, {q.After}", 1),
+            "down" => ($"{name} gave a grade: {q.Before} to {q.After}", -1),
+            "affix" => ($"{name}, past its seams: {q.After}", 1),
+            _ => ("Only the veins: nothing else in it changed.", 0),
+        };
+    }
+
+    /// <summary>What each outcome means, in a few words, for the card that offers the jar.</summary>
+    public static string OddsWords(string outcome) => outcome switch
+    {
+        "up" => "one power past what the forge can do",
+        "affix" => "a slurry power past its seams, strong, with a price",
+        "nothing" => "only the veins",
+        _ => "one power a grade lower",
+    };
 
     /// <summary>The chances of each outcome, as shares of one (for the card that says them).</summary>
     public static IEnumerable<(string Outcome, double Chance)> Odds()
@@ -802,21 +960,32 @@ public static class Crafting
         var plain = it.Affixes.Select((a, i) => (a, i)).Where(p => Bindable(Items.Affix(p.a.Id))).ToList();
         // Nothing in it to raise or lower: what would have happened to an affix happens past the seams.
         if (pick is "up" or "down" && plain.Count == 0) pick = pick == "up" ? "affix" : "nothing";
+        // What it came to is kept on the quote (which power, and its line before and after), so the
+        // bench and the pack can say it plainly and ring the seam it touched.
+        q.Index = -1;
+        q.Before = q.After = null;
         switch (pick)
         {
             case "up":
             {
-                // The lowest-raised first would be kind; the slurry is not: any of them, past the cap, to the bright grade.
-                var (a, _) = plain[rng.Int(0, plain.Count - 1)];
-                a.Tier = Math.Min(4, a.Tier + 1);
-                q.Affix = a.Id;
+                // Past what the forge can do (design 9): one power to a grade above the piece's cap, or a
+                // grade finer if it was there already; the bright grade is the last. The lowest-raised
+                // first would be kind; the slurry is not: any of them that can still rise.
+                var rising = plain.Where(p => p.a.Tier < Bright).ToList();
+                if (rising.Count == 0) { pick = "nothing"; break; }
+                var (a, i) = rising[rng.Int(0, rising.Count - 1)];
+                q.Before = Line(a.Id, a.Tier);
+                a.Tier = Math.Min(Bright, Math.Max(a.Tier + 1, Cap(it) + 1));
+                (q.Affix, q.Index, q.Grade, q.After) = (a.Id, i, a.Tier, Line(a.Id, a.Tier));
                 break;
             }
             case "down":
             {
-                var (a, _) = plain[rng.Int(0, plain.Count - 1)];
-                if (a.Tier > 0) a.Tier--; else pick = "nothing";
-                q.Affix = a.Id;
+                var (a, i) = plain[rng.Int(0, plain.Count - 1)];
+                if (a.Tier <= 0) { pick = "nothing"; break; }
+                q.Before = Line(a.Id, a.Tier);
+                a.Tier--;
+                (q.Affix, q.Index, q.Grade, q.After) = (a.Id, i, a.Tier, Line(a.Id, a.Tier));
                 break;
             }
             case "affix":
@@ -825,7 +994,7 @@ public static class Crafting
                 if (pool.Count == 0) { pick = "nothing"; break; }
                 var id = pool[rng.Int(0, pool.Count - 1)];
                 it.Affixes.Add(new AffixRoll { Id = id, Tier = 0 });
-                q.Affix = id;
+                (q.Affix, q.Index, q.Grade, q.After) = (id, it.Affixes.Count - 1, 0, Line(id, 0));
                 break;
             }
         }
@@ -882,17 +1051,28 @@ public static class Crafting
         if (q.Verb is Verb.Brew or Verb.Buy or Verb.Commission) return Make(x, q);
         if (q.Verb == Verb.Steep)
         {
-            if (Inventory.Count(ch, Rules.Slurry.Jar) < 1 || Slurried(it) || q.Crafter != "" && Closed(q.Crafter, x.Ctx, q.Verb) is not null) return false;
-            Inventory.Take(ch, Rules.Slurry.Jar, 1);
+            string with = q.Takes.Keys.FirstOrDefault() ?? Rules.Slurry.Jar;
+            if (Inventory.Count(ch, with) < 1 || Slurried(it) || q.Crafter != "" && Closed(q.Crafter, x.Ctx, q.Verb) is not null) return false;
+            Inventory.Take(ch, with, 1);
             Steeped(x, it, q, rng);
             return true;
         }
-        if (q.Verb == Verb.Bind && (q.Donor == null || Inventory.Find(ch, q.Donor) is not { InPack: true })) return false;
+        if (q.Verb is Verb.Bind && (q.Donor == null || Inventory.Find(ch, q.Donor) is not { InPack: true })) return false;
+        if (q.Verb is Verb.Mark or Verb.Annotate && (q.Donor == null || !Inventory.Holds(ch, q.Donor))) return false;
         if (q.Crafter != "" && Closed(q.Crafter, x.Ctx, q.Verb) is not null) return false;
         foreach (var (m, n) in q.Takes) if (Inventory.Count(ch, m) < n) return false;
         if (ch.Gold < q.Gold) return false;
         foreach (var (m, n) in q.Takes) Inventory.Take(ch, m, n);
         ch.Gold -= q.Gold;
+        // A chart is worked on its own terms (CraftingCharts.cs): its mods, not seams.
+        if (q.Verb is Verb.Ink or Verb.Burn or Verb.Pin or Verb.Scrape or Verb.Annotate)
+        {
+            if (it.Chart == null) return false;
+            int spent = ChartDone(it, q, rng, ch);
+            it.Heat = Math.Max(0, (it.Heat ?? 0) - spent);
+            Worked(x, q.Crafter);
+            return true;
+        }
         int cost = q.HeatLo == q.HeatHi ? q.HeatLo : rng.Int(q.HeatLo, q.HeatHi);
         switch (q.Verb)
         {
@@ -944,6 +1124,15 @@ public static class Crafting
                 (it.History ??= new()).Add(History(x, q.Crafter, "bind", "Bound by {who}, day {day}"));
                 break;
             }
+            case Verb.Mark:
+            {
+                var roll = new AffixRoll { Id = q.Affix!, Tier = q.Grade };
+                if (q.Index >= 0) it.Affixes[q.Index] = roll; else it.Affixes.Add(roll);
+                // The ruler's thing is used up: what it held is written into the piece.
+                Inventory.Remove(ch, q.Donor!);
+                (it.History ??= new()).Add(History(x, q.Crafter, "mark", "Marked by {who}, day {day}"));
+                break;
+            }
             case Verb.Set:
             {
                 var s = Rules.Settings[q.Def!];
@@ -982,16 +1171,22 @@ public static class Crafting
         new[] { Shard }.Concat((Rules.Night.Peoples.GetValueOrDefault(people) ?? new()).Select(p => p.Material)).Distinct().ToList();
 
     public static NightYield Night(string people, int tier, bool story, int ember, double minutesPast, bool won, bool fell,
-        IReadOnlyDictionary<Family, int> champions)
+        IReadOnlyDictionary<Family, int> champions, IReadOnlyDictionary<Family, int>? minibosses = null, bool cured = false)
     {
         var r = Rules.Night;
         var all = new Dictionary<string, int>();
         void Add(string m, int n) { if (n > 0) all[m] = all.GetValueOrDefault(m) + n; }
-        Add(Shard, Math.Max(0, ember - r.EmberFrom) / Math.Max(1, r.EmberPer) + Math.Max(0, tier - 1)
-            + (won ? (int)Math.Floor(Math.Max(0, minutesPast) / Math.Max(1, r.MinutesPer)) : 0) + (won && story ? r.StoryBonus : 0));
+        // Past the win the scar keeps paying: a shard every two minutes, then from its deep a shard a minute.
+        double past = Math.Max(0, minutesPast);
+        int deep = won ? (int)Math.Floor(Math.Min(past, r.DeepFrom) / Math.Max(1, r.MinutesPer)) + (int)Math.Floor(Math.Max(0, past - r.DeepFrom)) : 0;
+        Add(Shard, Math.Max(0, ember - r.EmberFrom) / Math.Max(1, r.EmberPer) + Math.Max(0, tier - 1) + deep + (won && story ? r.StoryBonus : 0));
+        // The slurry's heir: with the stream cured the jars are gone, but a scar stayed in past the hour
+        // gives glass with the same gamble in it (earned by staying, not bought).
+        if (won && cured && past >= r.GlassFrom) Add(r.Glass, 1 + (int)((past - r.GlassFrom) / Math.Max(1, r.GlassEvery)));
         foreach (var p in r.Peoples.GetValueOrDefault(people) ?? new())
             if (EnumKey<Family>.TryParse(p.Family, out var fam))
-                Add(p.Material, Math.Min(r.Cap, champions.GetValueOrDefault(fam) / Math.Max(1, p.Per)));
+                // The champions' tally, to the cap; a miniboss of the people carries out two more besides.
+                Add(p.Material, Math.Min(r.Cap, champions.GetValueOrDefault(fam) / Math.Max(1, p.Per)) + r.Miniboss * (minibosses?.GetValueOrDefault(fam) ?? 0));
         var kept = new Dictionary<string, int>();
         var spilled = new Dictionary<string, int>();
         foreach (var (m, n) in all)

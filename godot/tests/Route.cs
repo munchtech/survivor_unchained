@@ -266,5 +266,5 @@ sealed class Route
     public string Loaded { get; private set; } = "";
 
     /// <summary>The state that matters, as text, for "nothing changed across a save".</summary>
-    public string Snapshot() => Json.Write(new { W.Facts, W.Quests, W.Day, W.Time, Knowledge = J.Ch.Knowledge.OrderBy(k => k).ToList(), Pack = J.Ch.Pack.Where(p => p != null).Select(p => p!.Def).OrderBy(d => d).ToList(), J.Ch.Gold });
+    public string Snapshot() => Json.Write(new { W.Facts, W.Quests, W.Day, W.Time, Knowledge = J.Ch.Knowledge.OrderBy(k => k).ToList(), Pack = J.Ch.Pack.Where(p => p != null).Select(p => p!.Def).Concat(J.Ch.Satchel.Concat(J.Ch.Keys).Select(p => p.Def)).OrderBy(d => d).ToList(), J.Ch.Gold });
 }

@@ -14,14 +14,15 @@ public static class Marks
 {
     /// <summary>Volley looses a second volley at the farthest foe in reach, for [35 → 90]% of it. (Its floor
     /// is a third: a grade-I mark from a tier-1 ruler must be worth a seam.)</summary>
-    public const string Ravine = "of_the_ravine";
+    public const string Ravine = "of_the_long_chase";
     /// <summary>Cinderfall's blast leaves burning ground for [2 → 5] s.</summary>
     public const string FallingStar = "of_the_falling_star";
     /// <summary>The dash leaves a ring of holy fire for 3 s, burning for [30 → 90]% of the strongest
     /// skill's damage a second.</summary>
     public const string OpenGate = "of_the_open_gate";
-    /// <summary>Axe Gyre gains an axe for every [6 → 3] foes within 5 m, to three more.</summary>
-    public const string Gyre = "of_the_gyre";
+    /// <summary>Axe Gyre gains an axe for every [6 → 3] foes within 5 m, to three more. (Its id is not
+    /// "of_the_gyre": that is the suffix that grants Axe Gyre, and an id can name only one affix.)</summary>
+    public const string Gyre = "of_the_muster";
 
     public static readonly string[] All = [Ravine, FallingStar, OpenGate, Gyre];
 

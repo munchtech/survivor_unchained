@@ -46,7 +46,7 @@
       "note": "Low at the water from the south-west: he goes down on his knees in the river; the greatsword falls from his right hand and sinks. His left arm stays up, the lamp held clear of the water, steady.",
       "cam": {"pos": {"mark": "w", "off": [-6.0, 0.5, 5.5]}, "at": {"mark": "w", "off": [0, 1.5, 0]}, "lens": 28},
       "cues": [
-        {"do": "anim", "actor": "warden", "clip": "Fixing_Kneeling", "from": 0.8, "speed": 0.25, "blend": 0.9},
+        {"do": "anim", "actor": "warden", "clip": "folk/m_kneel_lamp", "from": 0, "speed": 1, "blend": 0.6},
         {"at": 0.6, "do": "sfx", "name": "kneel_water", "gain": 0.8},
         {"at": 1.4, "do": "hold", "actor": "warden", "slot": "handslot.r", "piece": null},
         {"at": 1.4, "do": "sfx", "name": "sink", "gain": 0.7}
@@ -58,7 +58,7 @@
       "dur": 4.0,
       "fit": ["cin_heart_goes_down.morning"],
       "note": "Up at him past the lamp: he looks at the lamp, not at her. W4, in another voice: a tired man's. The arm begins to shake.",
-      "cam": {"pos": {"mark": "w", "off": [0.8, 0.8, 2.2]}, "at": {"actor": "warden", "bone": "head", "off": [0, 0.3, 0]}, "lens": 50, "focus": {"actor": "warden", "bone": "head", "off": [0, 0.3, 0]}, "fstop": 2.8},
+      "cam": {"pos": {"mark": "w", "off": [-0.9, 0.8, 2.2]}, "at": {"actor": "warden", "bone": "head", "off": [0, 0.3, 0]}, "lens": 50, "focus": {"actor": "warden", "bone": "head", "off": [0, 0.3, 0]}, "fstop": 2.8},
       "cues": [
         {"at": 1.4, "do": "line", "id": "cin_heart_goes_down.morning"}
       ]
@@ -72,8 +72,7 @@
       "cues": [
         {"do": "face", "keys": {"brows_sad": 0.35, "mouth_open": 0.05}, "over": 0.6},
         {"do": "gaze", "look": [0, -0.4]},
-        {"at": 0.9, "do": "lids", "value": 0.6, "over": 0.3},
-        {"at": 1.6, "do": "lids", "value": null}
+        {"at": 0.9, "do": "anim", "clip": "her/nod", "from": 0, "speed": 1, "blend": 0.2}
       ]
     },
     {
@@ -81,8 +80,9 @@
       "type": "INSERT",
       "dur": 2.5,
       "note": "The fist lowers, and the lamp goes into the river. The flame hisses out in a puff of steam. Dark.",
-      "cam": {"pos": {"mark": "w", "off": [2.8, 1.0, 2.2]}, "at": {"actor": "warden", "bone": "hand_l", "off": [0, -0.25, 0]}, "lens": 35},
+      "cam": {"pos": {"actor": "warden", "bone": "hand_l", "off": [1.6, -0.6, 1.4]}, "at": {"actor": "warden", "bone": "hand_l", "off": [0, -0.55, 0], "track": true}, "lens": 35},
       "cues": [
+        {"at": 0.0, "do": "anim", "actor": "warden", "clip": "folk/m_lamp_down", "from": 0, "speed": 1, "blend": 0.3},
         {"at": 1.1, "do": "lamp", "actor": "warden", "lit": false, "glow": 0.0, "over": 0.4},
         {"at": 1.1, "do": "sfx", "name": "lamp_out", "gain": 1.0}
       ]
@@ -92,11 +92,11 @@
       "type": "LS",
       "dur": 4.0,
       "note": "From behind her, low: he folds forward into the water and is still. The mist closes over him. A beat of nothing. Then the water over his chest lightens from beneath.",
-      "cam": {"pos": {"mark": "her", "off": [1.3, 1.7, 3.6]}, "at": {"mark": "w", "off": [0, 0.5, -1.2]}, "lens": 28},
+      "cam": {"pos": {"mark": "her", "off": [1.3, 1.7, 3.6]}, "at": {"mark": "w", "off": [0, 0.5, 1.6]}, "lens": 28},
       "cues": [
-        {"do": "anim", "actor": "warden", "clip": "Death01", "from": 0.4, "speed": 0.45, "blend": 0.5},
+        {"do": "anim", "actor": "warden", "clip": "folk/m_fold_forward", "from": 0, "speed": 1, "blend": 0.2},
         {"at": 1.0, "do": "sfx", "name": "water_close", "gain": 0.4},
-        {"at": 2.6, "do": "place", "actor": "heart", "where": {"mark": "w", "off": [0, 0, -2.4], "y": -1.25}},
+        {"at": 2.6, "do": "place", "actor": "heart", "where": {"mark": "w", "off": [0, 0, 2.0], "y": -1.25}},
         {"at": 2.6, "do": "lamp", "actor": "heart", "glow": 0.35, "over": 1.2},
         {"at": "end-0.6", "do": "title", "title": "The Ford-Warden falls", "kind": "boon", "seconds": 2.6}
       ]
@@ -106,10 +106,10 @@
       "type": "MS",
       "dur": 4.0,
       "note": "A slow push in toward the light: the heart rises out of the water, a stone the size of a fist full of cold light, turning, water running off it. No line: its hum, and the river.",
-      "cam": {"pos": {"mark": "w", "off": [1.8, 0.9, -0.8]}, "at": {"actor": "heart", "track": true}, "lens": 50, "move": {"push": 0.6, "ease": "slow"}},
+      "cam": {"pos": {"mark": "w", "off": [1.8, 0.9, 3.2]}, "at": {"actor": "heart", "track": true}, "lens": 50, "move": {"push": 0.6, "ease": "slow"}},
       "cues": [
         {"do": "music", "mood": "mystery", "intensity": 0.5, "over": 3.0},
-        {"do": "move", "actor": "heart", "to": {"mark": "w", "off": [0, 0, -2.4], "y": -0.35}, "dur": 3.4},
+        {"do": "move", "actor": "heart", "to": {"mark": "w", "off": [0, 0, 2.0], "y": -0.35}, "dur": 3.4},
         {"do": "lamp", "actor": "heart", "glow": 0.8, "over": 2.5},
         {"do": "sfx", "name": "heart_hum", "gain": 0.8}
       ]

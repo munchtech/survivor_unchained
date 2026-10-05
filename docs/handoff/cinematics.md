@@ -1,166 +1,150 @@
 # Cinematics: handoff
 
-From agent a3058a45eee41d695 (who took over from af7a79bc783cca7bc) to a fresh cinematics production lead. Read `docs/team/README.md` first, then this page, then `docs/team/cinematics.md`.
+From agent a79b6d8c81e14dc63 (who took over from a3058a45eee41d695) to a fresh cinematics production lead. Read `docs/team/README.md` first, then this page, then `docs/team/cinematics.md`.
 
 ## The owner's quotes
 
 - "Time to begin scripting the writing in preparation for shooting the scenes."
-- The bar: "cinematic, movie quality, soul, nothing generic". "AAA standard", "strive for excellent, above and beyond", "Do we have soul?". Never settle; remake rather than polish; check everything at full resolution, as the player sees it.
+- The bar: "cinematic, movie quality, soul, nothing generic". "AAA standard", "strive for excellent, above and beyond". "We are striving for perfection": before you show anything, ask whether it is the best version of this in any game. Root design in research on how the best games solve it, then make it ours. Never settle; remake rather than polish; check everything at full resolution, as the player sees it.
 - The structure: story is about 40% of the game early on, and the cinematics carry much of it, "so make them count".
-- On voice: "no more placeholders ... keep cinematic voice". Finals come from ElevenLabs later.
-- On models: the owner wants the bought and kit models replaced with our own. A models planner is writing `docs/art/MODELS_TO_MAKE.md`, and the Ford-Warden has his own entry there.
+- On voice: "no more placeholders ... keep cinematic voice". Finals come from ElevenLabs later. Add no new voice placeholders.
+- On models: the bought and kit models are to be replaced with our own (`docs/art/MODELS_TO_MAKE.md`; the Ford-Warden has his own entry).
 
 ## The brief, in full
 
-1. **A shooting script per cinematic,** `docs/cinematics/shoot/<id>.md`, in numbered shots. Each shot gives:
-   - the camera (framing, lens, height, move, cut motivation);
-   - the blocking (marks in the real zone);
-   - the performance (an existing clip, a Kimodo prompt, hand-keying, or face beats);
-   - the sound (VO ids, music, SFX);
-   - the picture (light, atmosphere, VFX, subtitles);
-   - the timing.
-
-   Shoot it like a film: coverage, eyelines, and the 180° line kept or broken on purpose.
-2. **Boards,** made locally with ComfyUI (`tools/cinematics/boards.py`), in ink and grey marker with colour only in the light.
-3. **Animatics:** boards, the cinematic VO takes and temp music, cut to check the pacing (`tools/cinematics/animatic.py`).
+1. **A shooting script per cinematic,** `docs/cinematics/shoot/<id>.md`, in numbered shots: camera, blocking (marks in the real zone), performance, sound, picture and timing. Shoot it like a film: coverage, eyelines, the 180° line kept or broken on purpose.
+2. **Boards** (`tools/cinematics/boards.py`, local ComfyUI): ink and grey marker, colour only in the light. They are now drawn over the engine's own previs frames (see Decisions).
+3. **Animatics** (`tools/cinematics/animatic.py`): boards, the cinematic takes and temp music, cut to check the pacing.
 4. **The in-engine pipeline:** JSON timelines (`godot/data/cinematics`), wired to the triggers in `docs/cinematics/README.md` §9.
 5. **First milestone:** C01 and the Prologue (C02 to C04) scripted, boarded, cut, playable and right. Then the rest by importance (C07 and C09 first).
-6. **Ways of working:** don't stop to ask; use British spelling; keep tests green; commit and push at milestones; open no PRs. Free ComfyUI's models after your batches, and never kill it. Ask the main session to have the owner run Kimodo when prompts are ready.
+6. **This session's list (from the main session), with where it stands:**
+   1. C04 B's tower lamp (B4a): **done.**
+   2. C10, C11 and C13 after the approved boss redesign, with combat's boss hooks: **done in the scripts and the hook contract;** the timelines wait for the fights' places.
+   3. The board remakes, shot by shot: **C02 done (some to redo), the rest staged and prompted.**
+   4. Block animation's three C01 clips: **done.**
+   5. The Kimodo clips once animation judges them: **the Warden's five are in (C02, C03).**
+   6. The animatic recut: **not yet** (after the boards).
+   7. The Warden's white hood, tinted in WardenView until his own model: **done.**
+7. **Ways of working:** don't stop to ask; British spelling; `dotnet test` (in `godot/tests`) before every commit; commit and push your branch at milestones; open no PRs. **Heavy work takes turns:** `python C:/Users/munch/Desktop/survivorsunchained/tools/turn.py take godot|gpu "cinematics: <job>"` before a Godot render or a ComfyUI job, and give it back after. `boards.py` and the scratch `prev.py` do this themselves.
 
 ## Done this session
 
-- **The animatic was watched through,** shot by shot. About 35 of its 54 boards are weak; the list is under Next.
-- **Subtitles** (bfecf70, agreed with the story lead):
-  - `CineLines.Subtitle` drops a lower-case (parenthesis), the VO pipeline's direction, and "sung" sets italics;
-  - a capitalised one (C13's translations) stays;
-  - the text in `dialogue.json` is untouched, so the takes still match;
-  - the animatic does the same.
-- **C02 to C04 are surveyed on the real sets and wired into the game.** They are previs pass 1, with stand-in motion; the details are in their shooting scripts.
-  - **C02** at the ford, in place of `RunIntro`. The fight's Warden is spawned on `warden_end` by `warden_up`.
-  - **C03** where the Warden falls, in place of `RunVictory`'s staging:
-    - the zone passes `w` and `her` as marks;
-    - Grimtunnel is spawned by the cinematic (tagged and neutral), and surfaced and burrowed by zone events;
-    - the hand-back runs `Taken()` and `Dawnbreak()`.
-  - **C04 A** on the north bank (or 25 s later, with a south variant on the fact `prologue.dawn_south`). Its `douse` event calls `Douse(false)`.
-  - **C04 B** on the first arrival at the Waystation, with its own Rook (`rook_cine` hides the zone's).
-  - Tests: C02's wiring is tested both ways. The Prologue tests pass without a screen.
-- **Shooting scripts** for C02, C03, C04 A and C04 B are written from the timelines as they play, each with its changes from the written script and the reasons. The table in `shoot/README.md` is updated.
-- **Player additions** (`src/Game/GameCinema.cs`, `logic/Cinema/CineFile.cs`):
-  - casts: `boss` (the cinematic's own WardenView), `extras` (a crowd, cued together with a `stagger`) and `orb`;
-  - cues: a `lamp` cue (glow and lit, for a boss or an orb);
-  - `place` can `tilt` a body;
-  - a `glow` can carry a `light`;
-  - a `move` to an `abs` place goes through the water or the air;
-  - spawns take `tag` and `neutral`;
-  - atmosphere blends can run part of the way (`k0`, `k1`; a skip lands on `k1`);
-  - the cue's `Actor` is a real field;
-  - name plates and barks are hidden while a cinematic plays;
-  - `--stills N` saves N frames of every shot, to judge motion;
-  - `Game.CanCinematic`.
-- **Fixes:**
-  - `LayToIdle` no longer loops (`People.IsCycle`);
-  - the Warden's lamp is an open iron cage with its flame showing (it was a solid box);
-  - the C03 sounds `kneel_water`, `sink`, `lamp_out`, `heart_hum`, `burst`, `sniff` and `groan` are made in `Sfx.Cine` and in the animatic;
-  - the story lint counts a cinematic's `when` facts as reads.
-- **Merged** the integration branch. One conflict, in `Prologue.Douse`: the experience lead's dawn level-up is kept, and the caption is cut when C04 A has said the lines.
+- **C04 B** (checked at full size, reframed; `shoot/c04b.md`):
+  - the toll tower's lamp is the keeper's lamp-iron on the window's sill (mark `lamp`, flame 7.12 m up). At B4a (280 mm, 2.6 s) its flame goes out and a thread of smoke climbs the glass;
+  - B1's crane starts at 12 m, the only height from the gate where the tower shows over the roofs;
+  - B4 is low over Rook's shoulder, with the survivor and the tower and its lamp on one line. B4b is Rook's single (the reverse);
+  - Rook's looks are head turns.
+- **C01 on animation's clips** (`shoot/c01.md`):
+  - she lies curled on her right side at the ring's east edge, her face to the embers (`lie` (-9.65, 90.90), heading toward the fire), on `her/lie_side_wake`; she comes up onto her elbow (shot 5), kneels back on her heels (`sit_back_heels`, shot 6), and holds her hand to the coals (`reach_coals`);
+  - the hand insert is now **shot 6a, after the kneel** (shot 4 is gone; its board was renamed `s6a.jpg`);
+  - every camera of shots 2 to 10 was re-surveyed. The face shots aim at her bones;
+  - her look to the trail (7, held through 8b) and her whip round to R1 (10) are head turns;
+  - the exhale (8) is animation's gesture.
+- **C02 and C03 play the Warden's judged clips** (animation's `folk/m_rise_stiff`, `m_bend_lift`, `m_kneel_lamp`, `m_lamp_down`, `m_fold_forward`):
+  - he folds forward and lies face down at her feet, so the heart rises from his chest at `w` + (0, 0, 2);
+  - C03's lamp insert (4) follows the lamp into the river;
+  - C03's shot 3 is from his right, so the lamp held up no longer covers his face;
+  - the nod (C03 3b) and the shiver (C04 A5) are gestures laid over her.
+- **The Warden's look until his own model** (`src/Actors/BossViews.cs`):
+  - his dye is measured against brighter paint, so the hood and mantle come out dark (they read white);
+  - his lamp hangs plumb from his fist on a bail (`hand_l` plus 0.075 up the hand, where `Arms.Hold` grips). It had floated, and my first try at it, on `handslot.l`, put it at his feet. In the river he lies at y -1.2 so the lamp hangs clear of the water, and his own lamp replaced the stand-in glows (shot 8 keeps a glow's light at the flame for the ECU);
+  - `LampIron` is shared by him and the tower's lamp.
+- **The heart** (`OrbView`, also the game's orb in the Prologue): a rough-cut stone of a few faces, with the light inside and a ring halo, not a white ball. One more look is owed: the last render of it was before the ring halo.
+- **Player additions:**
+  - `head` (`HeadTurn`, a SkeletonModifier3D: neck and head turn toward a point, kept level, eased; `amount` 0 lets go);
+  - `glow` `lantern` / `turn` / `out` / `smoke` / `smokeColor` (`Campfire.WickSmoke`);
+  - `--clean` hides title cards (for staging);
+  - `--cinebones` also prints a boss's lamp.
+- **C10, C11 and C13** follow the approved redesign:
+  - the spent boss and her choice are play, and the cinematic starts from them;
+  - C10's death opens on "Finish it" (or the fight's own end), and its let-go plays at the choice and owns his walk to the den;
+  - C11 names its hooks;
+  - C13's shot 1 is her standing over the Barrow Lord, who will not stay down. The door opens on the roofless hall (story's two corrections).
 
-## Next, in order
+  The hook ids and the marks a fight passes are in `docs/cinematics/README.md` 11a. Combat (a708da2c97bf85c95, handed off; its successor is afe45df4957917614) queued both asks in `docs/handoff/combat.md` §4.3:
+  - marks `boss`, `her` and `den_mouth` to `G.Cinematic`;
+  - `c10_spared` played from `Greymuzzle.Choose(true)`, releasing him on done.
+- **Boards over staging** (`boards.py`):
+  - `--stage <shot-name>` cuts `godot/.shots/<name>_<id>_s*_1.png` to the picture and saves it in `tools/comfy/out/staging/<id>/` (out of git);
+  - a shot `{"prompt", "from": "staging", "denoise", "seed"}` is drawn img2img over it;
+  - the tool takes the GPU's turn.
+  - **C02's twelve boards are remade:** stone pillars with blue flames, the Warden in leathers and mail, the right staging. The prompts for C01, C03, C04 A and C04 B are rewritten.
 
-1. **C04 B's B4a check (needs Godot).** Check that the toll tower's lamp sits in the tower's upper window. Run:
+## In progress and next, in order
 
-   ```
-   python <scratchpad>/cin2/prev.py c04b s5 40 --zone waystation --only B4a
-   ```
-
-   The window is at about (30.9, 7.9, -6.6) and is set in three places in `c04b.json`: the mark `window`, the B1 `glow` and B4a's camera. Then render all of C04 B and look at it at full size.
-2. **Remake the weak boards.** Use the engine stills as staging (img2img on Krea from the previs frames), so the Warden's scale and the framing match the surveyed cameras. Describe the Warden as a hooded giant in a ranger's leathers and old mail, not a robed wizard. Use no Victorian street lamps: the posts are square stone pillars with a cold blue flame in an iron cup, and there are no bridges at the ford. The weak boards:
-   - **C01:** s2 (a dress, not her armour), s8 (an MS, not a CU), s8b (the head is cropped at the eyes), s10 (she sits rather than whips round), s11 and s12 (she is drawn twice; the fire is high, not embers);
-   - **C02:** s1, s5, s9 and s11 (street lamps), s3 (two panels), s4 (an MS, and a frame border drawn in), s7 (scale), s10 (white trousers, colour) and s12;
-   - **C03:** s1 (no blow), s5 (not a giant), s6 and s8 (the heart is held), s9 (no burst), s10 (no heart), s11 (crawls rather than dives), s12 (bridges) and s13 (twice);
-   - **C04 A:** A1 (walks into the river), A4 (no ember, and a photographic background), A5 (no breath), A6 (frame lines), A7 (an MS, not a CU) and A8 (twice);
-   - **C04 B:** B3 (they cheer), B4 (Rook smiling), B4b (stained glass) and B5 (twice).
-3. **Block animation's three C01 clips** (`her/lie_side_wake` 7 s, `her/sit_back_heels` 6 s, `her/reach_coals` 4.2 s; merged, in `heroine.res`), in place of the log-sitting stand-in in C01's shots 2 to 8b:
-   - `lie_side_wake`: she lies on her right side, head toward -X, facing +Z, and comes up onto her right elbow. Set her `lie` heading so that +Z faces the fire;
-   - `sit_back_heels`: from that pose to kneeling on her heels, hands palm up before her lap;
-   - `reach_coals`: the right hand goes out low, palm down, and stays.
-
-   Re-survey with `--cinebones`, reframe every face shot to the kneeling eyeline, and then update `shoot/c01.md`.
-4. **Recut the Prologue animatic** once the boards are remade. The command is:
+1. **Re-render the staging, then draw the boards.** Everything was stopped cleanly at the handoff; no turns are held. Staging for C01, C02, C03 and C04 A was rendered and staged mid-session, but C02, C03 and C01 shot 5 have changed since. Run these one at a time, each waiting for its turn:
 
    ```
-   python tools/cinematics/animatic.py c01 "card:..." c02 "card:..." c03 "card:..." c04a "card:..." c04b --crf 28 --out docs/cinematics/shoot/animatics/prologue.mp4
+   python <scratchpad>/cin3/prev.py c01 st1 75 --clean --wait 90 --quiet
+   python <scratchpad>/cin3/prev.py c02 st2 80 --clean --wait 90 --quiet
+   python <scratchpad>/cin3/prev.py c03 st3 80 --clean --wait 90 --quiet
+   python <scratchpad>/cin3/prev.py c04b st4b 40 --zone waystation --clean --wait 90 --quiet
+   python tools/cinematics/boards.py <id> --stage <name>
+   python tools/cinematics/boards.py <id> --force [--only ...] --wait 120 --sheet <scratch>.jpg
    ```
 
-   The exact cards are in `animatics/prologue.txt`. The timelines' new cameras don't change the animatic's clock, only the boards do.
-5. **The Warden's look.** His ranger hood doesn't take the dye and reads white under the moon. He is to be remade (see `docs/art/MODELS_TO_MAKE.md`). Until then, tell whoever owns `WardenView` (`src/Actors/BossViews.cs`), or tint the hood there.
-6. **C02 and C03's line choices** (in the engine): try C03's shots 1 and 2 from the east side, so the line isn't crossed. Check C02's shot 9 against a camera on the west.
-7. **Then C07 and C09,** by the brief's order.
-8. **Note from story (a54dc034ed29f2e02), 4 October: the owner approved the redesign below.** Story fights end on her choice where the story offers one, so two endings now need shooting:
-   - **C11 has a spared ending.** At Redcowl's knee she chooses "Spare him" or "Finish it". The death part plays only if she finishes it, and "Finish it" is now the blow (shot 1). The spared part is new in `docs/cinematics/c11_raid_on_the_roost.md`, "Spared", six shots:
-     - his line at the knee, `cin_raid_on_the_roost.spared` (four variants);
-     - he gets up on the sewn leg and shoulders the axe;
-     - `cin_raid_on_the_roost.flit`, "...Up, my lot! Boots on! We're flitting!";
-     - his people part and he walks off without limping.
+   (C04 A's staging is current.)
 
-     The conversation's entry plays `spared` once `redcowl` = `spared`. Combat applies the outcome first, then plays the hook.
-   - **C10's let-go is her choice.** "Let him go" or "Finish it" come after shot 3 (`c10_hollow_by_night.md`, "Variant: let go").
-   - **C09 gives the first chart.** `vonnra.f_door` is shorter, and the new `vonnra.f_chart` lays a chart on the table: "That would be ten gold, traveller. This once, no charge." It's shots 12b, 12c and 16b in `c09_fortune.md`. The chart arrives by data whether or not the cinematic plays.
-   - **Combat's hook ids:** combat's StoryNight tries `{cinematic}_arrival`, `_end` and `_spared` where `CanCinematic` finds one. Name the real ids when you build C10 and C11.
-   - **A lost story fight** no longer comes to at the place. She wakes on Chid's bench the next morning, and his conversation opens with a narrated waking for that fight (`chid.carried`). Nothing to shoot unless you want it.
-9. **The combat lead's boss redesign, now approved (see 8)** (a708da2c97bf85c95, `docs/design/STORY_BOSSES.md` on `worktree-agent-a708da2c97bf85c95@228394c9`). Once it is approved:
-   - **C13's shot 1** changes. The fight now ends with her laying the Barrow Lord down: she stands over him in a pale-blue circle for 3 s (holy does it twice as fast), and he will not stay down. He rises inside her reach, and the hand plays. "The blow. He does not fall." becomes "she stands over him, and he will not stay down". The rest of C13 stands.
-   - **C10** may gain a choice. Where the let-go's facts hold, she chooses with two prompts, "Let him go" or "Finish it"; today it happens on its own. Story is confirming.
-   - **C10 to C12** are otherwise unchanged. Each fight still needs its two boss hooks (`docs/cinematics/README.md` 11a, arrival and end), which the runtime will call.
+   Look at each board at full size. C02's board faults are:
+   - s3 (the gauntlet is open; the lamp must hang from the fist);
+   - s5 (the lamp was drawn at his feet: old staging);
+   - s7 (he reads 1.6 times her height, not three; the prompt and denoise are raised);
+   - s8 (a candle at her chin; the prompt is fixed);
+   - s11 (a red beard and two shields on the ground; it has a new seed).
+
+   For C03, look at the heart (the ring halo) in the engine before you board s5 to s8.
+2. **Recut the Prologue animatic** (`animatics/prologue.txt` has the cards). C01's shot 4 is now 6a.
+3. **The male hero:** play the Prologue with `--sex male --body hero`. The face cameras aim at bones, so they should hold; check C01's absolute camera positions, and whether `him/` has the three C01 clips.
+4. **C02's and C03's line choices** (the old handoff's item 6), then C07 and C09.
+5. **C10 to C13 timelines** once their fights and places exist (only the Hollow is built, and its place isn't dressed yet).
 
 ## Decisions (why)
 
-- **The cinematic owns the boss's body while it plays.** The zone hides its own and takes him back at the cinematic's end mark. One body is ever on screen, and the fight starts where the picture ended.
-- **C03 is framed relative to where he falls,** with her always put 4 m south of him behind shot 1's close framing. The cameras are offsets, so they hold wherever the fight ends.
-- **Gameplay stays in zone code,** reached by `event` cues (spawns, burrows, Douse, the Apply effects). A skip still does what lasts.
-- **The dawn is one sunrise across two cinematics.** C03 takes it a fifth of the way, the road holds it there, and C04 A finishes it with `k0` 0.2.
-- **Stand-in clips are picked by bone checks,** not by name:
-  - `Spell_Simple_Idle` tilted onto his back puts the left hand up out of the river;
-  - `Idle_Torch` holds the left hand's lamp up;
-  - `Fixing_Kneeling` is the kneel;
-  - `Death01` falls backward, so the heart rises 2.4 m north of where he knelt.
-- **C04 B has its own Rook** a step off the inn's wall, because every frame of her and the square from her real spot sits inside the inn.
-- **Subtitles strip only lower-case parentheses.** That is VOICES' rule: a capitalised one is words to show.
+- **The engine's frame is the staging truth; boards are drawn over it.** God of War's team previs'd first ("Keyframes and Cardboard Props", GDC 2019); here the previs is in the engine, so a board drawn over it keeps the surveyed lens and the scale. Higher denoise (0.7 to 0.8) where the staging lacks the action (a burst, a dive, an ember).
+- **Cameras aim at bones, not heights** (Baldur's Gate 3's adaptive cameras), so a shot follows the body it is given.
+- **Looks are head turns** (`head`). The `look` cue turns the whole body, and on a kneeling body that read as a statue on a turntable.
+- **The cinematic owns the boss's body while it plays.** A spared part plays at the choice and owns his going; the fight releases him at its end.
+- **The tower's lamp is the Warden's lamp-iron with an ordinary warm flame:** the eye can tie Vonnra to the keepers before anyone says so (C09 puts it on her table).
+- **The C01 reach comes after the kneel** (written order: before). The clip is made kneeling, and awake it reads as on purpose.
 
 ## Failures and why
 
-- **The cue's `actor` was lost.** `CineCue.Actor` was a computed property, so System.Text.Json kept the key out of `[JsonExtensionData]`, and every `"actor"` cue fell back to her. It is now a settable property.
-- **`LayToIdle` looped** (its name contains "Idle"), so the Warden lay down again after getting up.
-- **The heart's light blew out Grimtunnel at close range** (16 per glow). The cinematic orb now uses 6 per glow.
-- **Atmosphere names are lower-case** (`dawn`, `night`). "Dawn" throws, and the cue fails with a warning.
-- **First camera guesses landed inside trees and walls** (C04 A's ELS, the Waystation's inn). Survey with `_survey.json` before you frame.
+- **The first lamp hang used `handslot.l`,** which is a held-slot name, not a bone, so the attachment sat at the root and the lamp was at his feet. `--cinebones` now prints the lamp's place; check it after any change.
+- **The heart blew out to a white disc** (an unshaded sphere at three times its colour, then an emissive stone under an additive halo). Its emission is capped now, and the halo is a ring that leaves the stone clear.
+- **A second dye slot in `person.gdshader`** was a wrong turn (reverted). The hood is dyed in the first slot; the ranger mask's low `Lum` was what made light greens come out near white.
+- **The renderer's stdout once ran Python out of memory.** `prev.py` now streams to a log, with a 7-minute limit that stops the whole process tree.
+- **`prev.py` deletes `.shots/<name>_*` before each run,** so reusing one name across cinematics wipes the earlier ones. Use one name per cinematic.
 
 ## Gotchas
 
-- **The worktree guard** refuses Bash commands that `cd` outside the worktree, or that are too complex to verify. Write files with the Write tool and run single `python <abs path>` commands. `python <scratchpad>/cin2/jedit.py <id> <edits.py>` edits a timeline in the house layout.
-- **`_survey.json`** is a scratch cinematic (the tests skip ids starting with `_`). Point its `zone` at the set and render it with `prev.py _survey sv <until> [--zone Z]`.
-- **The "THE LOW FORD ROAD" title** shows over previs stills under `--quick`, but not in play.
-- **Previs vs play:**
-  - in `--cine` previs there is no fight, so the zone's own Warden is asleep at home; `warden_cine` and `ford_clear` hide it;
-  - Grimtunnel's surfacing is ticked by the zone's `Frame` (`grimByCine`), because the world is held.
-- **Never commit `.import` and `.uid` files.** Add files by name. `godot/assets` is a junction to the main checkout's `public/assets`, marked skip-worktree. The `.godot` import cache was copied from the predecessor's worktree.
-- **Headings:** 0 faces south (+z), π/2 east, π north.
+- **The worktree guard** refuses Bash that `cd`s outside the worktree or is "too complex" (variables in commands, some heredocs with `git` near them). Write patch scripts to the scratchpad and run them plainly. `jedit.py <id> <edit.py>` edits a timeline in the house layout.
+- **Scratch tools are in `<scratchpad>/cin3`.** They point at this worktree, so change the path in each if yours differs:
+  - `prev.py` renders and takes the Godot turn; `--wait` is in minutes, `--clean` hides titles, `--stills N` gives N frames a shot, and `--only` lists shots;
+  - `jedit.py` edits a timeline;
+  - `crops.py` lays the same crop of several stills side by side, at full size;
+  - `times.py` gives each shot's start and length;
+  - `btest.py` tries one prompt at several denoise levels;
+  - `ed_b02.py` (`setspec`) rewrites a board spec one shot per line.
+- **The machine is contended.** Expect 5 to 20 minutes' wait for a turn, so batch your renders. RAM below 5 GB free also blocks a Godot turn.
+- **`godot/assets` is a junction** to the main checkout's `public/assets`, marked skip-worktree. The `.godot` import cache was copied from the predecessor's worktree. A few newer assets (`console.png`, `tell_drum_*.wav`) aren't imported in it, which is harmless.
+- **Headings:** 0 faces south (+z), π/2 east, π north. Marks with three numbers are `[x, z, heading]`; four are `[x, h, z, heading]`.
+- **Previs vs play:** the stills are taken in real time while the world is held; particles and the head turn still run.
 
 ## Collaborators (the roster is in `docs/team/README.md`)
 
-- **Story:** a73ca9d35d0c487a9. They agreed the subtitle rule, and they rule on any line that fights a shot.
-- **Animation:** a435f4dd0ac80df75. From Kimodo, still needed:
-  - the Warden's `lie_arm_up`, `rise_stiff`, `wade_drag`, `bend_lift` and `kneel_fall`;
-  - Grimtunnel's burst, sniff and dive (a lampling-rig composition or a retarget);
+- **Story** (a7ba8903f4c8261b1): agreed the C13 changes; rules on any line that fights a shot.
+- **Combat** (afe45df4957917614, the successor): has the marks and `c10_spared` requests in its handoff §4.3.
+- **Animation** (a03acf30b3e9bdd70): judged the Warden's clips in our cinematics (they swap cues locally and never commit timelines). Still to come:
+  - the Warden's `lie_arm_up` and `wade_drag`;
+  - Grimtunnel's burst, sniff and dive;
   - C04's `wade_out`, `flask_drink`, `walk_uphill` and `unfold_arms`;
-  - to key by hand: the nod, the shiver and the exhale.
-- **Voice:** a501b387a90d78b4e (paused). Add no new placeholders.
-- **The models planner:** `docs/art/MODELS_TO_MAKE.md` (the Warden, the lamp-iron, the heart as a faceted stone).
+  - C01's `letter` and `kneel_to_stand_snap`.
+- **Voice** (a501b387a90d78b4e, paused): add no new placeholders.
 
 ## Files to read first
 
-1. `docs/cinematics/shoot/README.md`, then `shoot/c02.md`, `c03.md`, `c04a.md` and `c04b.md`
-2. `godot/data/cinematics/c02.json` (the boss, extras and glow cues in use)
-3. `godot/src/Game/GameCinema.cs` (the cast kinds, `Do`, `Finish`) and `logic/Cinema/CineFile.cs`
-4. `godot/logic/Play/Zones/Prologue.cs`: `StartIntro`, `WardenUp`, `OnWardenDown`, `GrimUp`, `GrimDown`, `HeartGone`, `FirstLight`, `CineEvent` and `Douse`
-5. `godot/logic/Play/Zones/Waystation.cs` (`Begin`, `CineEvent`)
-6. `<scratchpad>/cin2/prev.py` and `jedit.py`
+1. `docs/team/cinematics.md`, then `docs/cinematics/shoot/README.md` and `shoot/c01.md` to `c04b.md`
+2. `godot/src/Game/GameCinema.cs` (the cues, `glow`, `head`, the stills) and `godot/src/Actors/HeadTurn.cs`
+3. `godot/src/Actors/BossViews.cs` (`WardenView`'s dye, `Hang`, `LampIron`, `OrbView`)
+4. `tools/cinematics/boards.py` and `docs/cinematics/shoot/boards/*.json`
+5. `docs/cinematics/README.md` 11a, and `c10_hollow_by_night.md`, `c11_raid_on_the_roost.md` and `c13_behind_the_door.md`

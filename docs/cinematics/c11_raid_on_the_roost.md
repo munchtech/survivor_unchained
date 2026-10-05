@@ -40,6 +40,11 @@ a message for his brother, about a leg.
 - **Spared** ("Spare him"): the spared part below. The choice's outcome is
   applied first (`redcowl` = `spared`), and the conversation's entry plays
   `spared` from then on.
+- **Boss hooks:** `c11_arrival`, `c11_end` ("Finish it") and `c11_spared`
+  ("Spare him"). The spared part plays at the choice and owns his standing up
+  and his walk back through his people; the fight releases him at its end. On a
+  rise, `c11_again` (the two-second laugh) where it exists. The fight passes the
+  marks `boss` (where he kneels, his heading) and `her`.
 - Reads: `redcowl.ashford_said` (his last line, or his spared line), sex (lad
   or lass).
 - Sets, death: `redcowl.last_words` = `"ashford"` or `"leg"` (on its

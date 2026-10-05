@@ -44,7 +44,7 @@ The owner asks: "accurate, efficient, on track, manage and engineer context. del
 - Never print or commit tokens or keys. Use environment variables, and ask the owner to set them. The owner signs into sites themselves; never enter a password.
 - Downloads are consented ("you have my consent to download and use whatever you need always"). Name what you fetch, and use reputable sources only. Every download in the built-in browser needs the owner to click Save, so batch them and warn the main session first.
 - **Voice cloning:** only voices we have the right to. That means the owner's own voice, performances the owner approves, or datasets licensed for cloning. Never clone a real, identifiable person.
-- **Heavy work takes turns.** Two heavy jobs at once have crashed the machine (ComfyUI alone holds 20-26 GB of RAM). Before a heavy job, take a turn with `python C:/Users/munch/Desktop/survivorsunchained/tools/turn.py take gpu "<area>: <job>"` (ComfyUI, TRELLIS, MoGe, big Blender bakes or renders; one at a time) or `take godot ...` (Godot runs for pictures or clips; two at a time). Exit 1 means it's busy and says who has it: do light work (code, docs, design, review) meanwhile and try again. Give it back the moment the job ends (`give gpu "<same name>"`); giving back the GPU also frees ComfyUI. Split long jobs into batches of under an hour, and give the turn back between them. `turn.py show` shows who holds what. `dotnet test` needs no turn.
+- **Heavy work takes turns.** Two heavy jobs at once have crashed the machine (ComfyUI alone holds 20-26 GB of RAM). Before a heavy job, take a turn with `python C:/Users/munch/Desktop/survivorsunchained/tools/turn.py take gpu "<area>: <job>"` (ComfyUI, TRELLIS, MoGe, big Blender bakes or renders; one at a time) or `take godot ...` (Godot runs for pictures or clips; three at a time, while RAM allows). Exit 1 means it's busy and says who has it: do light work (code, docs, design, review) meanwhile and try again. Give it back the moment the job ends (`give gpu "<same name>"`); giving back the GPU also frees ComfyUI. Split long jobs into batches of under an hour, and give the turn back between them. `turn.py show` shows who holds what. `dotnet test` needs no turn.
 - **GPU:** the RTX 5080 (16 GB) is shared. ComfyUI at 127.0.0.1:8188 serves the art work. Free it between jobs with `POST /free {"unload_models": true, "free_memory": true}`, never by killing it, and release your own models when done. There is 32 GB of RAM; mind big CPU models.
 
 ## Roster
@@ -59,15 +59,16 @@ The main session keeps this current. It is the address list for SendMessage. Ret
 | Animation | a7dd95d00c4a6a017 | docs/team/animation.md |
 | UI design (layouts, screens, the filter) | a4fdbc49786ba8b7f | docs/team/ui_design.md |
 | UI art | a0bff3ffe4d3ad748 | docs/team/ui_art.md |
-| Crafting (research, design, build) | af01b0d61ef656dd4 | docs/team/crafting.md |
+| Crafting (research, design, build) | ab0b263c720bdbda8 | docs/team/crafting.md |
 | Gameplay experience director | a9f0d6c64d891d56d | docs/team/experience.md |
 | Skills look and feel (VFX, under the main session) | abc6bbe020c7fe287 | docs/team/skills.md |
-| Cinematics production | a79b6d8c81e14dc63 | docs/team/cinematics.md |
-| Performance | a56abaf3a104be675 | docs/team/performance.md |
+| Cinematics production | a7a4c20bcfd7ccfd3 | docs/team/cinematics.md |
+| Performance | a0eb8c612c94d4aa5 | docs/team/performance.md |
 | Arena art | aba487928a1515c93 | docs/team/arena_art.md |
 | Male hero (body, head, hair, outfits) | ab82cbe99e2937ddd | docs/team/hero_male.md |
 | Heroine face, hair and character creation's Look | a833b7942e978d994 | docs/team/face.md |
 | Asset provenance (what isn't ours, licences, credits, replacement plan) | a80ff0c7fd988b178 | docs/team/provenance.md |
 | Legal and Steam compliance (AI disclosure, mature content, licences, brief for a lawyer) | af0973d59a5b2817a | docs/team/legal.md |
-| Loot and itemisation (tiers, legendaries, sets, drops, filter, stacking) | a9a9c345a35e1fcad | docs/team/loot.md |
+| Loot and itemisation (paused, built and merged; docs/handoff/loot.md for a successor) | — | docs/team/loot.md |
+| Creatures and models (our own boar first, then MODELS_TO_MAKE.md) | af551cacc6292152f | docs/team/creatures.md |
 | Heroine outfits | main session | — |
