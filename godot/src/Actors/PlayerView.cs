@@ -445,7 +445,12 @@ public partial class PlayerView : Node3D
         if (p.HurtT > 0.25 && hurtSeen <= 0)
         {
             hurtSeen = 0.4;
-            if (!Busy) Upper("Hit_A", mine && own.Has("hit") ? 1.2 : 1.6);
+            // On the move or mid-blow, her own flinch is laid over what she is
+            // doing (the legs keep running, the arms keep their hold); standing,
+            // the whole of her upper body takes the hit.
+            bool jolt = mine && own.Has("flinch") && person.Gestures != null && (sp > 1.5f || Busy);
+            if (jolt) person.Gestures!.Play(person.Anim.GetAnimation(own.Prefix + "flinch"));
+            else if (!Busy) Upper("Hit_A", mine && own.Has("hit") ? 1.2 : 1.6);
         }
         hurtSeen -= dt;
         speed = Mathf.Lerp(speed, sp, 1 - Mathf.Exp(-10 * (float)dt));

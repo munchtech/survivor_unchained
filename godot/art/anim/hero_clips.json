@@ -192,6 +192,14 @@
 		"note": "the shoulders settle over 1.2 s, held",
 		"source": "keyed (tools/anim)"
 	},
+	"flinch": {
+		"layer": "gesture",
+		"length": 0.466666668653488,
+		"licence": "own work",
+		"loop": false,
+		"note": "struck on the move: the back caves, the head snaps, 0.47 s",
+		"source": "keyed (tools/anim)"
+	},
 	"get_up": {
 		"layer": "full",
 		"length": 1.46666669845581,

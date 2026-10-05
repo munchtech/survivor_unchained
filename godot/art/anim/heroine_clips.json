@@ -211,6 +211,14 @@
 		"note": "C04 A6-A7: the flask uncorked with her teeth, smelt, drunk anyway; held, breathing",
 		"source": "keyed over 100STYLE Neutral_ID frames 655-1368 (60 fps)"
 	},
+	"flinch": {
+		"layer": "gesture",
+		"length": 0.466666668653488,
+		"licence": "own work",
+		"loop": false,
+		"note": "struck on the move: the back caves, the head snaps, 0.47 s",
+		"source": "keyed (tools/anim)"
+	},
 	"get_up": {
 		"layer": "full",
 		"length": 1.46666669845581,

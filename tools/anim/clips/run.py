@@ -35,7 +35,7 @@ def _perp(up_deg, out=0.0):
     return tuple(v / np.linalg.norm(v))
 
 
-def blade_carry(out=-1.0, up_back=0.35, up_fwd=0.75, swing=None):
+def blade_carry(out=-1.0, up_back=0.35, up_fwd=0.5, swing=None):
     """A blade carried in the swinging hand as a running hand carries one:
     the wrist straight in the grip and the forearm rolled so the thumb side
     faces out and up (`out`: -1 her right, +1 her left), so the blade rides
@@ -117,8 +117,8 @@ STALKER = Gait(frames=20, speed=SPEED, duty=0.34, drop=0.14, bob=0.035, lean=26,
 # The runs the game asks for: calling and what is in hand.
 RUNS = {
     "run_warden": (WARDEN, {"r": blade_carry(swing=SWORD_SWING), "l": shield_guard()}, "sword+shield"),
-    "run_reaver": (REAVER, {"r": blade_carry(swing=AXE_SWING)}, "axe"),
-    "run_reaver_axes": (REAVER, {"r": blade_carry(swing=AXE_SWING), "l": blade_carry(1.0, swing=AXE_SWING)}, "axes"),
+    "run_reaver": (REAVER, {"r": blade_carry(up_fwd=0.75, swing=AXE_SWING)}, "axe"),
+    "run_reaver_axes": (REAVER, {"r": blade_carry(up_fwd=0.75, swing=AXE_SWING), "l": blade_carry(1.0, up_fwd=0.75, swing=AXE_SWING)}, "axes"),
     "run_arcanist": (ARCANIST, {"r": staff_hold()}, "staff"),
     "run_arcanist_wand": (ARCANIST, {"r": blade_carry()}, "wand"),
     "run_stalker": (STALKER, {"r": crossbow_low()}, "crossbow"),
