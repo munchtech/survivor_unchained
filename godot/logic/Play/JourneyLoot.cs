@@ -96,8 +96,9 @@ public sealed partial class Journey
             else if (shown && Rpg.Drops.Jackpot(Rpg.Drops.TierOf(it))) { left++; continue; }
             else if (shown || Ch.Filter.BreakHidden)
             {
-                int n = Crafting.Rules.BreakDown[Math.Clamp(it.Rarity, 0, Crafting.Rules.BreakDown.Count - 1)];
-                int c = it.Affixes.Count(a => Items.Affix(a.Id)?.Kindled != null);
+                // (crafting's yield, the same as at the bench)
+                var yield = Crafting.Yield(it);
+                int n = yield.GetValueOrDefault(Crafting.Iron), c = yield.GetValueOrDefault(Crafting.Shard);
                 if (n > 0) Inventory.AddToPack(Ch, Inventory.Make(Ch, Crafting.Iron, n));
                 if (c > 0) Inventory.AddToPack(Ch, Inventory.Make(Ch, Crafting.Shard, c));
                 iron += n;

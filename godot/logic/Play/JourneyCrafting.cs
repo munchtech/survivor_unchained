@@ -30,10 +30,12 @@ public sealed partial class Journey
         if (!q.Ok) { Warn(q.Blocked!); return false; }
         string before = Inventory.Name(it);
         int heat = it.Heat ?? 0;
+        // A Legendary broken has the smith's own words over it, where there are any ("Scrap." would not do).
+        bool legendary = q.Verb == Verb.BreakDown && Rpg.Drops.TierOf(it) == LootTier.Legendary;
         if (!Crafting.Do(Craft, it, q, craftRng)) { Warn("It could not be done."); return false; }
         // A trophy set has its own words, said the once ("fang.set").
         string? moment = q.Verb == Verb.Set && Crafting.Rules.Settings.GetValueOrDefault(q.Def ?? "") is { } s ? $"{s.Moment}.set" : null;
-        if (q.Crafter != "") CraftSaid = Crafting.Speak(Craft, q.Crafter, q.Verb, moment);
+        if (q.Crafter != "") CraftSaid = Crafting.Speak(Craft, q.Crafter, q.Verb, moment, legendary ? "breakDown.legendary" : null);
         // The slurry's outcome is said as what the survivor sees (the story lead's narration), after
         // whatever Snib says over it.
         string? seen = q.Verb == Verb.Steep ? Crafting.Line(Crafting.Rules.Slurry.Crafter, $"steep.{q.Outcome}") : null;

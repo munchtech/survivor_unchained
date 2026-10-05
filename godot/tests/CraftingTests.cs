@@ -353,6 +353,28 @@ public class CraftingTests
     }
 
     [Fact]
+    public void A_Legendary_breaks_down_for_five_old_iron_and_three_shards_wherever_it_is_broken()
+    {
+        var j = Make();
+        var legendary = Items.All.Values.First(d => d.Rarity == 4 && !d.Unique && Items.SlotFor(d) != null);
+        var it = Piece(j, legendary.Id, 4);
+        Assert.Equal(LootTier.Legendary, Drops.TierOf(it));
+        var q = Crafting.BreakDown(j.Craft, it);
+        Assert.True(q.Ok, q.Blocked);
+        Assert.Equal(5, q.Gives[Crafting.Iron]);
+        Assert.Equal(3, q.Gives[Crafting.Shard]);
+        // A fight's end breaks down what it hid or could not carry by the same yield.
+        Assert.Equal(q.Gives, Crafting.Yield(it));
+        Assert.True(j.Work(it.Uid, q, null));
+        Assert.Equal(3, Inventory.Count(j.Ch, Crafting.Shard));
+        // At the forge, his own words over somebody's named work going back to the fire (the story lead's).
+        var again = Piece(j, legendary.Id, 4);
+        j.World.Npc("brannoc").Flags["first.breakDown"] = true;
+        Assert.True(j.Work(again.Uid, Crafting.BreakDown(j.Craft, again, "brannoc"), null));
+        Assert.Contains(j.CraftSaid?.Line, new[] { "Somebody made this. ...Fire, then.", "Good work, that. Was.", "Light comes out last. Always does." });
+    }
+
+    [Fact]
     public void The_forge_is_banked_at_night_and_a_smith_likes_being_brought_work()
     {
         var j = Make();
