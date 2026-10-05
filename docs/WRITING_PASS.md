@@ -1566,18 +1566,34 @@ wound or things lost.
     watch-hours, read to pieces. Whoever wrote it makes their Cs the old way.
     The last page has two lines on it and nothing else: Is it morning? Not
     yet."
-  - **Chid's gift, written and waiting for the item** to reach the
-    integration branch (`chid.office`, an entry once `chapter.done`, and a
-    variant of `carried_chid` after a lost Act 2 fight if she has no book):
-    - "(He has a small book in both hands, held the way you hold a bird.) I
-      want you to have this. It's only an old office: the watch-hours, what
-      the keepers said at night. Nobody's said them in a long while. (He opens
-      it at the last page, and doesn't look at it.) There's a bit at the end.
-      You'll know it when you need it. ...Not now. It reads better in the
-      dark."
-    - "Who wrote it?": "Oh, a keeper. One of the old ones. Lovely hand,
-      hasn't he? Nobody makes a C like that any more." (His own words about
-      the note in Ashe's trunk, said again without noticing: Act 3.)
+  - **Chid's gift** (`keepers_office`, given once; his flag `gave:office`):
+    - **Act 2's first morning:** an entry, `chid.office`, once `chapter.done`.
+      The shrine is marked "!" until he has given it. "You've been up the
+      Tower. (He doesn't ask what she told you. He has a small book in both
+      hands, held the way you hold a bird.) I want you to have this. It's only
+      an old office: the watch-hours, what the keepers said at night.
+      Nobody's said them in a long while. (He opens it at the last page, and
+      doesn't look at it.) There's a bit at the end. You'll know it when you
+      need it. ...Not now. It reads better in the dark."
+    - "What's at the end?" (`office_end`): "(He puts his hand over yours,
+      flat on the cover.) Not now, I said! ...It's the end of the watch. One
+      keeper asks, and the other one answers, so nobody has to sit up the
+      whole night on their own. That's what an office is, really. Somebody
+      answering." (It plants the art's "something answers for you", and his
+      want: company.)
+    - "Who wrote it?" (`office_who`): "Oh, a keeper. One of the old ones.
+      Lovely hand, hasn't he? Nobody makes a C like that any more." (His own
+      words about the note in Ashe's trunk, said again without noticing: Act
+      3.)
+    - **Or at his waking after a lost fight**, if she went out in Act 2
+      before he could give it: a first variant of `carried_chid`, given as
+      she leaves the waking either way. "...Somebody brought you in. A
+      carter, I expect. (He has a small book in both hands, held the way you
+      hold a bird.) I was keeping this for you. It's only an old office, what
+      the keepers said at night. There's a bit at the end. ...Read it before
+      you go out again. Please." (The morning's "Not now" against the
+      waking's "Please": his fear shows.)
+    [DATA, done; `VergeTests.Chid_gives_The_Keepers_Office_on_Act_2s_first_morning_or_at_his_waking_after_a_lost_fight`]
 - **The clock's words** (`Journey.DayLines`, experience's code):
   - dusk: "Lamps are lit. Stay where they reach." Then the night's fight:
     - the Hollow: "Out past the lamps, the Pack has stopped howling.";
@@ -1625,4 +1641,8 @@ Vonnra's final packet has changed lines that need new takes:
 
 New lines for Redcowl (`spared` .0 to .3, `flit`), Rav (`cb_spared_redcowl`,
 `owes_two`, and barks appended to `said`), Chid (`carried`, `carried_chid`
-.0 to .8, `carried_who`), and barks for Holloway, Maeca and Keegan.
+.0 to .9, `carried_who`), and barks for Holloway, Maeca and Keegan.
+
+Chid's gift: `office`, `office_end` and `office_who` are new, and
+`carried_chid` has a new .0 (the book at the waking), so its old .0 to .8 are
+now .1 to .9.
