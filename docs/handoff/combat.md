@@ -155,6 +155,11 @@ At tier 3 (before his blows were softened to ×1.0), plain hands won 17–25%.
 
 ### 4.3 Then
 
+0. **Animation's ask (`a03acf30b3e9bdd70`, small, code only):**
+   - **After a slam lands** (the Slam cast ending in `Ai.Verbs`): keep the slammer planted about 0.65 s, with no movement and no new melee strike. Today the Heap strikes again about 0.3 s after its blow and Barn-Door walks off at once, which cuts the get-up clip (the blow lands at 1.0 s; it stands by 1.67 s). It is also a punish window after a heavy blow.
+   - **After an aimed shot** (the Aim cast ending in `Shoot`): keep the shooter planted about 0.7 s before it strafes or backs off, for `kneel_shot`'s rise. This covers the levy crossbows, the Scorpion and the Levy Sergeant.
+   - The view plays both on `e.AnimT`, so no new state is needed. Send them the numbers chosen; they fit the clips' tails to them.
+   - When their `kerchief_crossbow` visual lands: point `levy_crossbow` and `mb_levy_sergeant` at it, and add it to the rigs list in `EncounterTests`. The Scorpion (`skeleton_rogue`) gets the kneel too.
 1. **The Roost, the Dig and the Vault**, in the Hollow's shape: a `StoryFight` per fight, its place and stages, a `StoryBoss`, and `StoryScripts.For`.
    - Redcowl's spared end plays `.spared` then `.flit`.
    - Freeing the caravan's men runs `Verge.OpenCage`'s effects.
