@@ -33,7 +33,7 @@ All the leads' paused branches are merged (597 tests green), except two whose ow
 
 ## Hold: the base bodies (the owner's call): likely staying
 
-The owner says the bodies were made with **TRELLIS** (MIT), not Hunyuan, from an AI picture made with Krea 2 Turbo and/or a free LLM's image tool (which one is being confirmed). The legal lead is re-ruling; expect "keep, with conditions".
+The owner says the bodies were made with **TRELLIS** (MIT), not Hunyuan, from a picture the owner made with Krea 2 Turbo in our own ComfyUI. **They stay** (Krea 2's US$1M cap applies, as for the UI art); the legal lead is writing it up. The male hero lead goes back to polishing his current body once the GPU is free.
 
 The owner wants to keep the heroine's and hero's bodies if their Krea records clear them: which 3D model (not Hunyuan), a paid plan, and their own input picture. **Nobody replaces or rebuilds a body until the owner decides.** The MakeHuman rebuild plans (docs/team/hero_male.md, docs/art/MODELS_TO_MAKE.md) are fallbacks only.
 
