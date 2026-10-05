@@ -128,8 +128,10 @@ public static class StoryFights
                 return Night("vault_opened", "Behind the Sealed Door", "dead", 947, "boss_dead", "The Barrow Lord", "Of the Seventh Legion",
                     $$"""[{ "set": { "vault.opened": true } }, { "quest": { "id": "vault", "entry": "opened" } }, {{ZoneRuntime.Hist("opened_vault", "opened the old empire's door in the Verge and came back out of it", ["vault", "mystery"], 3, """{ "fear": 5, "respect": 10 }""", """{ "vonnra": { "trust": -10 }, "chid": { "respect": 15 } }""")}}]""",
                     """[{ "quest": { "id": "vault", "entry": "shut" } }]""",
-                    "The dead stand aside and let you up the stair. They did not do that for the last one.",
-                    "The last thing you know is the stair going by beneath you, and the dead carrying you up it, in step.");
+                    // She fights at the head of the stair and never goes down it (STORY_BOSSES 4): the dead let
+                    // her go back down the hall, open to the moon, past the bootprints that only go in (Jessop's).
+                    "The dead stand on the stair in their ranks, and let you go. At the door, yours are the only bootprints coming out.",
+                    "The last thing you know is the moon going by over the broken roof, and the dead carrying you under it, in step.");
             default:
                 throw new ArgumentException($"no story fight {id}");
         }

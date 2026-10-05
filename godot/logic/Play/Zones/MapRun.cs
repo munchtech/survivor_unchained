@@ -471,6 +471,7 @@ public sealed class MapRun : ZoneRuntime, IBossArena
     void IBossArena.Say(string title, string? sub, string tone) => G.Announce(new Announcement(title, sub ?? "", tone, 2.4));
     void IBossArena.Bark(double x, double z, string text, string? speaker) => B?.Events.Emit(new Ev.Bark { X = x, Z = z, Text = text, Speaker = speaker });
     double IBossArena.HordeShare { set { } }
+    bool IBossArena.HordeReturns => false;
     void IBossArena.Won(double x, double z)
     {
         if (over || !bossUp || boss == null) return;

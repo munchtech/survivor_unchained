@@ -299,6 +299,38 @@ public class StoryLint
     }
 
     [Fact]
+    public void The_story_fights_keep_the_valleys_rules()
+    {
+        // The bible ("The nights") and docs/WRITING_PASS.md 23, held over every story fight's code, so
+        // the fights still to be written keep them too: the Kerchiefs never say "Ashford" and no line
+        // about them does; Grimtunnel never finishes "surface-meat" at her; no genre word; a pull names
+        // the place, never a clock. Only what the game says is read: comments are left out.
+        var fights = Code.Value.Where(c => c.File.Contains("logic/Play/Story/") || c.File.Contains("logic/Play/Bosses/")
+            || c.File.EndsWith("logic/Play/StoryFights.cs") || c.File.EndsWith("logic/Play/Zones/StoryNight.cs")).ToList();
+        Assert.Contains(fights, c => c.File.EndsWith("Hollow.cs"));
+        var comment = new Regex(@"/\*.*?\*/|//[^\r\n]*", RegexOptions.Singleline);
+        var literal = new Regex(@"""((?:[^""\\\r\n]|\\.)*)""");
+        var genre = new Regex(@"\b(alpha|warlord|ganger)s?\b", RegexOptions.IgnoreCase);
+        var found = new List<string>();
+        foreach (var (file, raw) in fights)
+        {
+            var text = comment.Replace(raw, "");
+            foreach (Match m in literal.Matches(text))
+            {
+                var s = m.Groups[1].Value;
+                if (!s.Contains(' ')) continue;
+                if (s.Contains("Ashford")) found.Add($"{file}: says Ashford: \"{s}\"");
+                if (genre.Match(s) is { Success: true } g) found.Add($"{file}: genre word \"{g.Value}\"");
+            }
+            foreach (Match m in new Regex(@"""((?:[^""\\\r\n]|\\.)*)""\s*,\s*""Grimtunnel""").Matches(text))
+                if (m.Groups[1].Value.Contains("surface-meat")) found.Add($"{file}: Grimtunnel finishes it: \"{m.Groups[1].Value}\"");
+            foreach (Match m in new Regex(@"\bPull\s*=>\s*""((?:[^""\\\r\n]|\\.)*)""").Matches(text))
+                if (Regex.IsMatch(m.Groups[1].Value, @"\d|\b(minute|hour|second|clock)s?\b", RegexOptions.IgnoreCase)) found.Add($"{file}: a pull with a clock: \"{m.Groups[1].Value}\"");
+        }
+        Assert.Empty(found);
+    }
+
+    [Fact]
     public void The_table_names_its_maps_in_the_valleys_words_for_their_people()
     {
         // The bible's place words ("The nights"): a map's name says whose ground it is, and no
