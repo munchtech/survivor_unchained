@@ -50,7 +50,22 @@ public partial class HerFaceLife : Node
             }
         nextBlink = rng.RandfRange(1.0f, 4.0f);
         nextLook = rng.RandfRange(0.4f, 1.5f);
+        // --open-eyes: a still of her face with her lids up and her eyes ahead
+        // (a blink caught in a still read as a face with its eyes shut).
+        if (Args.Has("open-eyes")) { Lids = 0; Wander = 0; }
+        // --eyecycle paint,#rrggbb,...: her irises dyed each in turn, one a picture
+        // (--seconds, then every --every): the eye shader's colours measured as
+        // the game shows them, against the portraits' (paint: as painted).
+        if (Args.Get("eyecycle") is string cyc)
+            cycle = System.Array.ConvertAll(cyc.Split(','), s => s == "paint" ? (Color?)null : new Color(s));
+        // --eyeparam name=value,...: her eye shader's numbers set (pictures of them tried).
+        if (eyes != null && Args.Get("eyeparam") is string ep)
+            foreach (var kv in ep.Split(','))
+                if (kv.Split('=') is [var k, var v] && float.TryParse(v, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var f))
+                    eyes.SetShaderParameter(k, f);
     }
+
+    Color?[]? cycle;
 
     public override void _Process(double delta)
     {
@@ -99,6 +114,13 @@ public partial class HerFaceLife : Node
         {
             eyes.SetShaderParameter("gaze_a", gaze);
             eyes.SetShaderParameter("gaze_b", gaze);
+            if (cycle != null)
+            {
+                float every = Args.Num("every", 1), first = Args.Num("seconds", 3);
+                int i = Mathf.Clamp((int)Mathf.Floor((float)(Shots.Clock - first + every / 2) / every), 0, cycle.Length - 1);
+                eyes.SetShaderParameter("recolour", cycle[i] == null ? 0f : 1f);
+                if (cycle[i] is Color c) { eyes.SetShaderParameter("iris_colour", c); eyes.SetShaderParameter("ring_colour", c); }
+            }
         }
     }
 

@@ -15,8 +15,10 @@ shape.glb: TRELLIS's surface. painted.glb: the same, with its colours (by
 which its hair is told from its skin). With --check, clay renders of her
 before and after and of TRELLIS's head, and its hair as read.
 WRAP_HAIR_DEPTH (metres, 0.005) is how far under its hair her skull lies;
-WRAP_EYE_OPEN (0.92) how open her eyes are against its, and WRAP_EYE_MIN (0.86)
-the least they are against hers (TRELLIS closes some eyes to slits).
+WRAP_EYE_OPEN (0.92) how open her eyes are against its, and WRAP_EYE_MIN (0.89)
+the least they are against hers by her lids' landmarks (TRELLIS closes some
+eyes to slits; through the pupil her opening comes out a little less: at 0.86
+Fey's was 0.84 of hers).
 
 Why: MakeHuman's targets move a face's outlines; fitted to a reference by
 its landmarks they could not give full lips, soft full cheeks and a fine
@@ -450,7 +452,7 @@ if PHOTO:
 # and forehead's): her skull lies under it, a little in (HAIR_DEPTH).
 HAIR_DEPTH = float(os.environ.get("WRAP_HAIR_DEPTH", "0.005"))
 EYE_OPEN = float(os.environ.get("WRAP_EYE_OPEN", "0.92"))
-EYE_MIN = float(os.environ.get("WRAP_EYE_MIN", "0.86"))
+EYE_MIN = float(os.environ.get("WRAP_EYE_MIN", "0.89"))
 _ca = paint_ob.data.color_attributes[0]
 _cols = np.zeros(len(_ca.data) * 4)
 _ca.data.foreach_get("color", _cols)
@@ -556,6 +558,34 @@ for ring in (EYE_A, EYE_B):
 near_eye = np.min([np.linalg.norm(Pi - c, axis=1) - r for c, r in eye_c], 0)
 mouth_in = inside(L0[INNER_LIPS][:, [0, 2]], Pi[:, [0, 2]]) & (Pi[:, 1] > L0[INNER_LIPS, 1].min() + 0.002)
 wsurf = (1 - hold) * (1 - ears) * smooth01((near_eye - 0.008) / 0.006) * ~mouth_in
+# Her inside: the walls of her mouth (which reach up under her cheeks), her
+# nostrils, where her lips meet: a point from which no way out, along its
+# normal or leaning 50 degrees off it four ways, leaves her (all but one meet
+# her own head within 8 cm). Laid on TRELLIS's skin (the surface met turned
+# to face as hers does), they lay on her outside: her mouth's walls came
+# through her cheeks, as pale smudges under a face's eyes and holes in its
+# paint. They are carried along instead.
+_N0 = vertex_normals(Pi, loc[Fr])
+if (_N0[:, 1][(wsurf > 0.5) & (Pi[:, 2] < brow_z)] < 0).mean() < 0.5:
+    _N0 = -_N0
+_own = BVHTree.FromPolygons([tuple(p) for p in Pi], loc[Fr].tolist())
+
+
+def _enclosed(i):
+    nv = _N0[i]
+    t1 = np.cross(nv, [0.0, 0.0, 1.0] if abs(nv[2]) < 0.9 else [1.0, 0.0, 0.0])
+    t1 /= np.linalg.norm(t1)
+    t2 = np.cross(nv, t1)
+    o = Vector(Pi[i] + nv * 2e-4)
+    hits = 0
+    for d in (nv, nv + 1.19 * t1, nv - 1.19 * t1, nv + 1.19 * t2, nv - 1.19 * t2):
+        hits += _own.ray_cast(o, Vector(d / np.linalg.norm(d)), 0.08)[0] is not None
+    return hits >= 4
+
+
+INNER = np.array([_enclosed(i) for i in range(n)])
+wsurf = wsurf * ~INNER
+print("INSIDE: %d of her points enclosed by her (her mouth's walls, nostrils, ...): carried along, not laid on its skin" % INNER.sum())
 # Landmarks: her nose's and lips' (her eyes have their own map; her face's
 # outline and brows are left to the surface: MediaPipe reads the one off a
 # soft edge, and TRELLIS's brows are hair standing off its skin).
@@ -673,6 +703,48 @@ _Avg = sp.diags(1 / np.maximum(np.asarray(Adj.sum(1)).ravel(), 1)) @ Adj
 for _ in range(2):
     D = np.where(_lip[:, None], 0.6 * D + 0.4 * (_Avg @ D), D)
 print("LIPS: %d of her points smoothed" % _lip.sum())
+# Her inside kept inside: any of it carried to within 1.5 mm of her outside
+# (or through it, where a face is hollower than hers) set back behind it, if
+# it lay further in than that on her own face (where her lips meet, her
+# inside and outside are one edge: left as they are).
+_outF = loc[Fr][~INNER[loc[Fr]].any(1)]
+
+
+def _depths(X):
+    """How far behind her outside each of her inside's points lies (- through it), and the way out there."""
+    Nx = vertex_normals(X, loc[Fr])
+    if (Nx[:, 1][(wsurf > 0.5) & (Pi[:, 2] < brow_z)] < 0).mean() < 0.5:
+        Nx = -Nx
+    bvh = BVHTree.FromPolygons([tuple(p) for p in X], _outF.tolist())
+    dep, out = np.full(n, np.inf), np.zeros((n, 3))
+    for i in np.where(INNER)[0]:
+        s_, _, f_, _ = bvh.find_nearest(Vector(X[i]), 0.02)
+        if s_ is None:
+            continue
+        no = Nx[_outF[f_]].mean(0)
+        no /= np.linalg.norm(no) + 1e-12
+        dep[i], out[i] = np.dot(np.array(s_[:]) - X[i], no), no
+    return dep, out
+
+
+_dep0, _ = _depths(Pi)
+_keep = np.minimum(0.0015, 0.6 * _dep0)
+_moved = np.zeros(n, bool)
+for _ in range(8):
+    _dep, _out = _depths(Pi + D)
+    _short = INNER & (_dep0 > 0.001) & (_dep < _keep)
+    if not _short.any():
+        break
+    _back = np.where(_short[:, None], -_out * (_keep - _dep)[:, None], 0.0)
+    _back = np.where(INNER[:, None], 0.7 * _back + 0.3 * (_Avg @ _back), 0.0)       # (eased among her inside's points)
+    D = D + _back
+    _moved |= _short
+_dep, _ = _depths(Pi + D)
+_chk = INNER & (_dep0 > 0.001)
+_w = np.where(_chk)[0][np.argmin(_dep[_chk])]
+print("INSIDE SET BACK: %d of her inside's points were within 1.5 mm of her outside or through it; now %d; the shallowest %.2f mm "
+      "(at %s, %.1f mm in on her own face)" % (_moved.sum(), (_chk & (_dep < 0.6 * _keep)).sum(), 1000 * _dep[_w],
+                                             np.round(Pi[_w] + D[_w], 3), 1000 * _dep0[_w]))
 DD = np.zeros((NV, 3))
 DD[idx] = D
 

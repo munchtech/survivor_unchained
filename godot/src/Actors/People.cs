@@ -662,7 +662,7 @@ public static class People
             {
                 if (mi.GetSurfaceOverrideMaterial(s) is ShaderMaterial m)
                 {
-                    if (m.Shader == hairShader) m.SetShaderParameter("colour", colour);
+                    if (m.Shader == hairShader || m.Shader == hairSoftShader) m.SetShaderParameter("colour", colour);
                     else if (m.Shader == skinShader2) m.SetShaderParameter("tone", SkinTone(look));
                     else if (m.Shader == eyeShader) EyeColour(m, look.Eyes, look.EyeRing);
                 }
@@ -691,6 +691,7 @@ public static class People
                 if (mi.Mesh.SurfaceGetMaterial(s)?.ResourceName != "skin_head" || mi.GetSurfaceOverrideMaterial(s) is not ShaderMaterial m) continue;
                 m.SetShaderParameter("shadow_mask", mask);
                 m.SetShaderParameter("scalp_shadow", 1.0f);
+                m.SetShaderParameter("scalp_stubs", 0.0f);
                 m.SetShaderParameter("shadow_colour", hair.Darkened(0.3f));
                 set++;
             }
@@ -733,7 +734,7 @@ public static class People
     static string? HeadPaintFile(string? face) =>
         face is { Length: > 0 } && ResourceLoader.Exists($"res://art/people/head_tex/heroine_head_{face}.jpg") ? $"res://art/people/head_tex/heroine_head_{face}.jpg" : null;
 
-    static Shader? hairShader, eyeShader;
+    static Shader? hairShader, hairSoftShader, eyeShader;
 
     /// <summary>Hair: her hair cards (tools/assets/heroine_hair.py) by
     /// shaders/heroine_hair.gdshader, dyed: the strands' atlas cut to its
@@ -742,7 +743,11 @@ public static class People
     static Material Hair(BaseMaterial3D src, Color colour)
     {
         hairShader ??= GD.Load<Shader>("res://shaders/heroine_hair.gdshader");
-        var m = new ShaderMaterial { Shader = hairShader };
+        hairSoftShader ??= GD.Load<Shader>("res://shaders/heroine_hair_soft.gdshader");
+        // (the cap on her scalp and the fine hairs at her hairline blended, as
+        // they thin out into her skin; the fine hairs over the cap)
+        bool soft = src.ResourceName is "hair_cap" or "hair_fine";
+        var m = new ShaderMaterial { Shader = soft ? hairSoftShader : hairShader, RenderPriority = src.ResourceName == "hair_fine" ? 1 : 0 };
         m.SetShaderParameter("strands", src.AlbedoTexture);
         m.SetShaderParameter("colour", colour);
         m.SetShaderParameter("cap", src.ResourceName == "hair_cap");
@@ -903,6 +908,13 @@ public static class People
             // screen, so a face still reads from the game's camera)
             if (ResourceLoader.Exists("res://art/people/head_tex/heroine_features.png"))
                 m.SetShaderParameter("features", GD.Load<Texture2D>("res://art/people/head_tex/heroine_features.png"));
+            // (and her head's own shade, under her jaw most: unshaded, her neck under
+            // it was lit as her cheeks were, a pale band down to her collar)
+            if (ResourceLoader.Exists("res://art/people/head_tex/heroine_ao.png"))
+            {
+                m.SetShaderParameter("ao_map", GD.Load<Texture2D>("res://art/people/head_tex/heroine_ao.png"));
+                m.SetShaderParameter("ao_light", 0.55f);
+            }
         }
         // His skin, all of it, rougher than hers: at her sheen his deep
         // relief caught the light as wet plastic.

@@ -1207,6 +1207,72 @@ FACE_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "heroine_fac
 FACE_PAINT = os.path.join(FACE_DIR, "face_paint.png")
 
 
+HEAD_T, HEAD_B = t_, b_
+_HEAD_TV = HT2[t_]                             # (each texel's triangle's three points)
+_HEAD_S = s_split(P_)
+
+
+def _to_points(vals, w=None):
+    """Texels' values (n x k) to her head's points: each point the mean of the
+    texels about it, by their weights toward it (and w)."""
+    wt = HEAD_B if w is None else HEAD_B * w[:, None]
+    nv = len(HEAD_V)
+    acc = np.zeros((nv, vals.shape[1]))
+    ws = np.zeros(nv)
+    for k in range(3):
+        ws += np.bincount(_HEAD_TV[:, k], wt[:, k], nv)
+        for ch in range(vals.shape[1]):
+            acc[:, ch] += np.bincount(_HEAD_TV[:, k], vals[:, ch] * wt[:, k], nv)
+    return acc / np.maximum(ws, 1e-9)[:, None], ws
+
+
+_e = np.array([(f[i], f[(i + 1) % len(f)]) for f in HEAD_FACES for i in range(len(f))])
+_HEAD_ADJ = sp.coo_matrix((np.ones(len(_e)), (_e[:, 0], _e[:, 1])), shape=(len(HEAD_V),) * 2).tocsr()
+_HEAD_ADJ = ((_HEAD_ADJ + _HEAD_ADJ.T) > 0).astype(float)
+_HEAD_LAP = sp.diags(np.asarray(_HEAD_ADJ.sum(1)).ravel()) - _HEAD_ADJ
+# (her body's skin at her neck's seam, a point at a time: where heroine_head.py
+# eases into it, the 6 mm above SPLIT)
+_seam_t = np.zeros(len(P_), bool)
+_seam_t[np.where(_near)[0][(_mix[:, 0] > 0.5) & (s_split(P_[_near]) < 0.006)]] = True
+_body_t = np.zeros((len(P_), 3))
+_body_t[np.where(_near)[0]] = _hc
+
+
+def matched_base(fp, a):
+    """Her head's own skin (MakeHuman's, in her colouring) brought to the face
+    painted over it and to her body at her neck: the difference at each, eased
+    across what lies between (a harmonic field over her head's points), so her
+    neck, ears and scalp are the colour of her face where they meet it and of
+    her body where they meet that. Left as it was, MakeHuman's skin, paler and
+    greyer than both, showed as a light band across her neck between her jaw
+    and her collar."""
+    nv = len(HEAD_V)
+    off_t = fp - HEAD_BASE
+    off_f, wf = _to_points(off_t, (a[:, 0] > 0.97).astype(float))
+    av, _ = _to_points(a)
+    face = (av[:, 0] > 0.97) & (wf > 0.3)
+    # (the face's difference smoothed over the face, so its brows and freckles
+    # are not carried out across her neck: only its colour)
+    A = sp.diags(1 / np.maximum(np.asarray(_HEAD_ADJ.sum(1)).ravel(), 1)) @ _HEAD_ADJ
+    for _ in range(40):
+        off_f = np.where(face[:, None], A @ np.where(face[:, None], off_f, 0) / np.maximum(A @ face.astype(float), 1e-6)[:, None], off_f)
+    off_b, wb = _to_points(_body_t - HEAD_BASE, _seam_t.astype(float))
+    body = wb > 0.3
+    fixed = face | body
+    val = np.where(face[:, None], off_f, off_b)
+    free = np.where(~fixed)[0]
+    fx = np.where(fixed)[0]
+    Lff = (_HEAD_LAP[free][:, free] + 1e-6 * sp.identity(len(free))).tocsc()     # (a piece touching neither: left as it is)
+    rhs = -_HEAD_LAP[free][:, fx] @ val[fx]
+    off = val.copy()
+    for ch in range(3):
+        off[free, ch] = spl.spsolve(Lff, rhs[:, ch])
+    off_t = (off[_HEAD_TV] * HEAD_B[:, :, None]).sum(1)
+    print("MATCHED her head's skin: %d points to her face, %d to her body at her neck; moved %.3f at most (mean %.3f)" % (
+        face.sum(), body.sum(), np.abs(off_t).max(), np.abs(off_t).mean()))
+    return np.clip(HEAD_BASE + off_t, 0, 1)
+
+
 def head_paint(face_paint, path):
     """Her head's texture with a face's paint laid over (none: MakeHuman's
     skin in her colouring), eased into her own skin at her neck, written to `path`."""
@@ -1216,6 +1282,7 @@ def head_paint(face_paint, path):
         fp = np.asarray(Image.open(face_paint).convert("RGBA"), np.float32)[::-1] / 255
         if fp.shape[0] == HSIZE:
             a = fp[HEAD_R, HEAD_C, 3:4]
+            c = matched_base(fp[HEAD_R, HEAD_C, :3], a)
             c = c * (1 - a) + fp[HEAD_R, HEAD_C, :3] * a
             print("FACE PAINT %s laid over %d%% of her head" % (os.path.basename(face_paint), 100 * (a > 0.5).mean()))
     c[_near] = c[_near] * (1 - _mix) + _hc * _mix
@@ -1274,6 +1341,9 @@ if _up:
     used = np.zeros(TEX.shape[:2], bool)
     used[r3, c3] = True
     TEX2 = fill_in(TEX, used & ~bad, bad)
+    # (and between her islands, the nearest of her skin: left red, it bled
+    # into her seams as the texture was drawn smaller)
+    TEX2 = pad(TEX2, used)
     # (Written out and loaded back: packing an image already packed keeps
     # the old paint, not the new.)
     _bp = os.path.join(os.path.dirname(OUT_BLEND), "heroine_body_paint.png")

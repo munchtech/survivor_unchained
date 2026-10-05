@@ -55,6 +55,8 @@ public partial class Shots : Node
     int count, taken;
     double time;
     static Shots? live;
+    /// <summary>The pictures' own clock (seconds since they began), for what changes between pictures.</summary>
+    public static double Clock => live?.time ?? 0;
     /// <summary>Frames the game asks for (--on boss): what, and when.</summary>
     readonly List<(double At, string Tag)> wanted = new();
     readonly Dictionary<string, int> tagged = new();
@@ -80,6 +82,11 @@ public partial class Shots : Node
         until = Args.Num("until", Args.Has("on") ? 120 : 0);
         count = (int)Args.Num("count", every > 0 ? 8 : Args.Has("on") ? 0 : 1);
         ProcessMode = ProcessModeEnum.Always;
+        // --unshaded: paint as it is, without light (a seam in a texture told
+        // from one in the lighting).
+        if (Args.Has("unshaded")) GetViewport().DebugDraw = Viewport.DebugDrawEnum.Unshaded;
+        // --debugdraw Lighting (or NormalBuffer, ...): any of Godot's own views.
+        if (Args.Get("debugdraw") is string dd && System.Enum.TryParse<Viewport.DebugDrawEnum>(dd, true, out var mode)) GetViewport().DebugDraw = mode;
     }
 
     public override void _Process(double delta)

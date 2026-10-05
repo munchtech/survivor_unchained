@@ -33,6 +33,11 @@ uniform vec3 ring_colour : source_color = vec3(0.62, 0.42, 0.16);
 uniform float ring = 0.56;
 // The paint's mean light (linear), so a colour chosen comes out as itself.
 const float PAINT_LIGHT = 0.12;
+// The iris's light over all (painted or dyed), against her skin's: measured
+// in the game against the portraits (at 1, her irises showed two and a half
+// times as light against her cheek as her portrait's, and Fey's frost white;
+// the colours chosen are dyed for 0.4).
+uniform float iris_light = 0.4;
 // Where she is looking, each eye's iris slid over its ball (in irises'
 // radii: +x to her left, +y down; both eyes' paint the same way round).
 uniform vec2 gaze_a = vec2(0.0);
@@ -42,8 +47,11 @@ uniform float lids = 0.7;
 // (what makes a face look alive on screen; larger, it read as a white blob
 // and her eyes as staring), up and to one side of the pupil,
 // drifting a little as she is seen from elsewhere. Where on the iris (in its
-// radii) and how bright.
-uniform vec2 catch_at = vec2(-0.34, -0.36);
+// radii) and how bright. (Her paint's u and v run to her right and up her
+// eye, as she is seen: at (-0.34, -0.36) it sat under her pupil, on the far
+// side from her key light's own highlight, two white blobs to an eye; here
+// it lies with that one, above and to her right.)
+uniform vec2 catch_at = vec2(0.32, 0.34);
 uniform float catchlight = 0.55;
 // How small on screen the eye goes from itself to one dark mark: from a
 // pixel covering 2^far_from of its paint's texels to 2^far_to.
@@ -88,6 +96,7 @@ void fragment() {
 		vec3 dyed = hue * (lum / PAINT_LIGHT) * mix(vec3(1.0), own, 0.15);
 		ir = mix(ir, dyed, recolour);
 	}
+	ir *= iris_light;
 	if (rr < pupil) ir = vec3(0.012);
 	vec3 col = mix(texture(eye, UV).rgb, ir * tint, in_iris);
 	// The limbal ring: the iris's edge dark, as the sclera meets it.

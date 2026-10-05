@@ -603,7 +603,9 @@ def hairline_hairs(comb, spacing=0.0026, points=8, sides=None):
     """Her hairline, soft as a real one is, not the cards' ends in a row:
     fine short hairs lying on her scalp the way it is combed, thinning out
     toward its edge; and over its edge baby hairs, finer, shorter and fainter
-    (each card's alpha), a few astray. Two sets of cards."""
+    (each card's alpha), a few astray. Two sets of cards, of their own
+    material (hair_fine: the game blends them over her skin, as faint as they
+    are; cut by hashed alpha they were a scatter of dots)."""
     out = []
     pts, nrm = roots(spacing, above=-0.001, below=0.022, soft=0.014)
     theta = np.arctan2(pts[:, 0] - CENTRE[0], -(pts[:, 1] - CENTRE[1]))
@@ -615,6 +617,7 @@ def hairline_hairs(comb, spacing=0.0026, points=8, sides=None):
             side=sides(pts) if sides else None)
     c = cards(P, RNG.uniform(0.003, 0.006, len(pts)), list(range(6, 16)), 0.0015)
     c["alpha"] = np.repeat(RNG.uniform(0.65, 1.0, len(pts)), 3 * points)
+    c["mat"] = 3
     out.append(c)
     print("  hairline: %d cards" % len(pts))
     # Baby hairs: about her hairline's edge (6 mm either side), short, fine
@@ -631,6 +634,7 @@ def hairline_hairs(comb, spacing=0.0026, points=8, sides=None):
             side=sides(pts) if sides else None, lift=RNG.uniform(0.0, 0.0025, n))
     c = cards(P, RNG.uniform(0.0018, 0.0032, n), [14, 15], 0.0009, narrow=0.7)
     c["alpha"] = np.repeat(RNG.uniform(0.3, 0.55, n), 3 * k)
+    c["mat"] = 3
     out.append(c)
     print("  baby hairs: %d cards" % n)
     return out
@@ -1076,10 +1080,10 @@ def cap(comb, sides=part_side):
     """Her scalp under the hair, a millimetre out from it: no skin shows
     between the cards, and her parting is a parting. Its UVs run along the way
     her hair is combed (the atlas's scalp strands lie that way), a tile every
-    2.5 cm; faded out over its first 6 mm over her hairline, unevenly (its
-    alpha): her skin under it is darkened to her hair's colour there
-    (People.HerScalp), and a long fade, its alpha hashed, read as a speckled,
-    pixelated edge."""
+    2.5 cm; faded out over its first centimetre over her hairline, unevenly
+    (its alpha), blended over her skin in the game (heroine_hair_soft.gdshader):
+    cut by hashed alpha, a fade that long read as a speckled, pixelated edge,
+    and one short enough not to, as a hard one."""
     from scipy.sparse import coo_matrix, identity
     from scipy.sparse.linalg import spsolve
     T = scalp(below=0.012)                       # (on past her hairline, unseen there: no edge to it)
@@ -1095,7 +1099,7 @@ def cap(comb, sides=part_side):
     r = np.random.default_rng(5)
     wav = sum(0.0018 * np.sin(V @ (u / np.linalg.norm(u)) * 2 * np.pi / lam + ph)
               for u, lam, ph in zip(r.normal(size=(4, 3)), (0.011, 0.017, 0.023, 0.031), r.uniform(0, 6.3, 4)))
-    fade = np.clip((V[:, 2] - hairline_z(theta) - 0.002 + 0.5 * wav) / 0.006, 0, 1)
+    fade = np.clip((V[:, 2] - hairline_z(theta) + 0.001 + 0.5 * wav) / 0.011, 0, 1)
     # Along the combing (v) and across it (u), each edge as long in them as
     # along and across the combing there (least squares). Across, the same
     # way on both sides of her parting (mirrored there, not torn).
@@ -1130,7 +1134,7 @@ def build(style):
     V, N, UV, C, F, M = [], [], [], [], [], []
     base = 0
     for li, c in enumerate(layers):
-        mat = c.get("mat", 0)                                # (0 cards; 1 a solid rope of hair, as the cap; 2 a tie)
+        mat = c.get("mat", 0)                                # (0 cards; 1 a solid rope of hair, as the cap; 2 a tie; 3 fine hairs)
         V.append(c["V"]), N.append(c["N"]), UV.append(c["UV"])
         F.extend((c["F"] + base).tolist())
         M.extend([mat] * len(c["F"]))
@@ -1140,7 +1144,7 @@ def build(style):
         # parting into her hair, not a row of cards' ends: a wig's edge at
         # the Look's close-up)
         alpha = c.get("alpha", np.ones(len(c["V"])))
-        if mat == 0 and "arc" in c:
+        if mat in (0, 3) and "arc" in c:
             ramp = np.clip(c["arc"] / np.minimum(0.008, c["length"] / 3 + 1e-6), 0, 1)
             alpha = alpha * ramp * ramp * (3 - 2 * ramp)
         C.append(np.c_[np.zeros(len(c["V"])), c["card"], np.full(len(c["V"]), 1.0 if mat == 1 else 0.0), alpha])
@@ -1187,6 +1191,7 @@ def build(style):
     o.data.materials.append(hair_material("hair", ATLAS))
     o.data.materials.append(hair_material("hair_cap", SCALP))
     o.data.materials.append(tie_material())
+    o.data.materials.append(hair_material("hair_fine", ATLAS))
     follow_head(o, at)
     # Its chain: each point's place along it and how much it moves with it
     # (a second UV); and the chain, its bone and what it is kept out of, in a

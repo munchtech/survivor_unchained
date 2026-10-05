@@ -140,9 +140,11 @@ import face_shapes as fs  # noqa: E402
 eye_z = EV[:, 2].mean()
 theta = np.arctan2(P[:, 0], -(P[:, 1] - 0.0))
 rise = P[:, 2] - (eye_z + fs.hairline_height(theta))
-# (faint from 1.6 cm under her hairline, most of it in its last centimetre:
-# the hair thinning out into her skin, not a band where the cards end)
-scalp = smooth((rise + 0.016) / 0.022) ** 2
+# (faint from 4 mm under her hairline, most of it over the centimetre above:
+# under her hair's cap as it thins out, blended over her skin there. It
+# began 1.6 cm under, when the cap ended hard: there it read as a dark band
+# of skin under her hair.)
+scalp = smooth((rise + 0.004) / 0.012) ** 2
 # Not her ears (what her ears' own keys move, and 6 mm round them): darkened
 # with her scalp they turned the colour of her hair.
 from scipy.spatial import cKDTree  # noqa: E402
@@ -162,6 +164,85 @@ sh[..., 1] = np.clip(ndimage.gaussian_filter(sh[..., 1], 1.5) * inside + (1 - in
 spath = os.path.join(OUT, "heroine_shadow.png")
 Image.fromarray((sh[::-1] * 255 + 0.5).astype(np.uint8)).save(spath)
 print("SCALP", spath, "%d texels" % (sh[..., 1] > 0.5).sum())
+
+# Her head's own shade where light reaches her less (ambient occlusion): under
+# her jaw and chin, in her nostrils, the corners of her mouth, the folds of
+# her ears, the creases of her lids. Without it her neck under her jaw was lit
+# as brightly as her cheeks, brighter where it faced up into the key light: a
+# pale band from her jaw to her collar where her portrait has a shadow. Rays
+# over the hemisphere of each of her head's points (48, out to 5 cm, nearer
+# hits counting more) against her head, her body and her eyes; laid in her
+# head's UVs (red) for her skin's shader (AO, and some of the light: People.Skin).
+from mathutils import Vector  # noqa: E402
+from mathutils.bvhtree import BVHTree  # noqa: E402
+_vs, _fs = [], []
+for _name in ("HeroineHead", "Heroine", "HeroineEyes"):
+    _o = bpy.data.objects.get(_name)
+    if _o is None:
+        continue
+    _b = len(_vs)
+    _M = np.array(_o.matrix_world)
+    _vs += [tuple(p_) for p_ in np.array([v.co[:] for v in _o.data.vertices]) @ _M[:3, :3].T + _M[:3, 3]]
+    _fs += [[_b + i for i in p_.vertices] for p_ in _o.data.polygons]
+_bvh = BVHTree.FromPolygons(_vs, _fs)
+VN = np.zeros_like(V)
+for k_ in range(3):
+    np.add.at(VN, T[:, k_], FN)
+VN /= np.linalg.norm(VN, axis=1)[:, None] + 1e-12
+_rng = np.random.default_rng(3)
+_u = _rng.random((48, 2))
+_dirs = np.c_[np.sqrt(_u[:, 0]) * np.cos(2 * np.pi * _u[:, 1]), np.sqrt(_u[:, 0]) * np.sin(2 * np.pi * _u[:, 1]), np.sqrt(1 - _u[:, 0])]
+REACH = 0.05
+ao_v = np.ones(len(V))
+for i_ in range(len(V)):
+    n_ = VN[i_]
+    t1 = np.cross(n_, [0.0, 0.0, 1.0] if abs(n_[2]) < 0.9 else [1.0, 0.0, 0.0])
+    t1 /= np.linalg.norm(t1)
+    t2 = np.cross(n_, t1)
+    o_ = Vector(V[i_] + n_ * 0.0006)
+    occ = 0.0
+    for d_ in _dirs:
+        w_ = d_[0] * t1 + d_[1] * t2 + d_[2] * n_
+        h_ = _bvh.ray_cast(o_, Vector(w_), REACH)
+        if h_[0] is not None:
+            occ += 1.0 - h_[3] / REACH
+    ao_v[i_] = 1.0 - occ / len(_dirs)
+# (none at her neck's seam with her body, whose own skin has none: eased to
+# nothing over the 2 cm above it)
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+_split = V[:, 2] - (1.625 + 0.27 * (V[:, 1] + 0.02))
+ao_v = 1 - (1 - ao_v) * smooth(_split / 0.02)
+# (per texel, from its triangle's points)
+_UVn = UV / SIZE
+_ao = np.ones((SIZE, SIZE), np.float32)
+_in = np.zeros((SIZE, SIZE), bool)
+for k_, t_ in enumerate(UV):
+    x0, y0 = np.maximum(np.floor(t_.min(0)).astype(int), 0)
+    x1, y1 = np.minimum(np.ceil(t_.max(0)).astype(int), SIZE - 1)
+    if x1 < x0 or y1 < y0:
+        continue
+    xs, ys = np.meshgrid(np.arange(x0, x1 + 1), np.arange(y0, y1 + 1))
+    q_ = np.stack([xs.ravel() + 0.5, ys.ravel() + 0.5], 1)
+    a_, b_, c_ = t_
+    v0, v1, v2 = b_ - a_, c_ - a_, q_ - a_
+    den = v0[0] * v1[1] - v1[0] * v0[1]
+    if abs(den) < 1e-12:
+        continue
+    vv = (v2[:, 0] * v1[1] - v1[0] * v2[:, 1]) / den
+    ww = (v0[0] * v2[:, 1] - v2[:, 0] * v0[1]) / den
+    bb = np.stack([1 - vv - ww, vv, ww], 1)
+    m_ = (bb > -1e-3).all(1)
+    _ao[ys.ravel()[m_], xs.ravel()[m_]] = (ao_v[T[k_]][None] * bb[m_]).sum(1)
+    _in[ys.ravel()[m_], xs.ravel()[m_]] = True
+_, (iy_, ix_) = ndimage.distance_transform_edt(~_in, return_indices=True)
+_ao = _ao[iy_, ix_]
+aop = np.zeros((SIZE, SIZE, 4), np.float32)
+aop[..., 0] = aop[..., 1] = aop[..., 2] = np.clip(_ao, 0, 1)
+aop[..., 3] = 1
+apath = os.path.join(OUT, "heroine_ao.png")
+Image.fromarray((aop[::-1] * 255 + 0.5).astype(np.uint8)).save(apath)
+print("AO", apath, "her points: mean %.2f, 5%% %.2f; under her chin %.2f" % (
+    ao_v.mean(), np.percentile(ao_v, 5), np.median(ao_v[(V[:, 2] < EV[:, 2].mean() - 0.11) & (V[:, 2] > EV[:, 2].mean() - 0.15) & (np.abs(V[:, 0]) < 0.03) & (VN[:, 2] < -0.3)])))
 if os.environ.get("FEATURES_PREVIEW"):
     # (her paint with the mask over it: darkened where red, reddened where green)
     small = np.array(Image.fromarray((np.clip(paint[::-1], 0, 1) * 255).astype(np.uint8)).resize((SIZE, SIZE)), np.float32) / 255
