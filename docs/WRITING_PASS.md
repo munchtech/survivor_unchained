@@ -1427,8 +1427,8 @@ of the words.
 
     | Node | Variant | Line |
     |---|---|---|
-    | `spared` | `redcowl.ashford_said` (lass, lad) | "Ha! (a laugh, and it costs him) ...You said a word in my camp once, and I let you. Now you've let me. That's us square, lass. ...Near enough." |
-    | `spared` | otherwise (lass, lad) | "Ha! (a laugh, and it costs him) ...You minded where you swung. That's two I owe, then, lass. The saw-bones a leg, and you the rest of me." |
+    | `spared` | `redcowl.ashford_said` (lass, lad) | "(a laugh, and it costs him) Ha! ...You said a word in my camp once, and I let you. Now you've let me. That's us square, lass. ...Near enough." |
+    | `spared` | otherwise (lass, lad) | "(a laugh, and it costs him) Ha! ...You minded where you swung. That's two I owe, then, lass. The saw-bones a leg, and you the rest of me." |
     | `flit` | | "(cold, to her) We'll be off your road by light. (to the camp, the big voice back) Up, my lot! Boots on! We're flitting!" |
 
     - "You minded where you swung" pays "Mind where you swing" (the bairns).
@@ -1579,8 +1579,7 @@ wound or things lost.
 
 - The fortune's close is two beats now. `f_door` (the door, "That is all I
   see for free.") leads to `f_chart`: "(She takes a folded chart from under
-  the ledger and lays it between you. It is the Wayfinder's, and the margins
-  are full.) That would be ten gold, traveller. This once, no charge. The
+  the ledger and lays it between you. It is in the Wayfinder's hand, and its margins are written full.) That would be ten gold, traveller. This once, no charge. The
   rest you will walk into yourself, and you will, because you are the kind
   that does." Accused, it has neither "traveller" nor the name: she spent the
   name on the door's line.

@@ -14121,10 +14121,10 @@
        "fact": "vonnra.accused",
        "eq": true
       },
-      "text": "(She takes a folded chart from under the ledger and lays it between you. It is the Wayfinder's, and the margins are full.) That would be ten gold. This once, no charge. The rest you will walk into yourself, and you will, because you are the kind that does."
+      "text": "(She takes a folded chart from under the ledger and lays it between you. It is in the Wayfinder's hand, and its margins are written full.) That would be ten gold. This once, no charge. The rest you will walk into yourself, and you will, because you are the kind that does."
      },
      {
-      "text": "(She takes a folded chart from under the ledger and lays it between you. It is the Wayfinder's, and the margins are full.) That would be ten gold, traveller. This once, no charge. The rest you will walk into yourself, and you will, because you are the kind that does."
+      "text": "(She takes a folded chart from under the ledger and lays it between you. It is in the Wayfinder's hand, and its margins are written full.) That would be ten gold, traveller. This once, no charge. The rest you will walk into yourself, and you will, because you are the kind that does."
      }
     ],
     "effects": [
@@ -21150,23 +21150,23 @@
         }
        ]
       },
-      "text": "Ha! (a laugh, and it costs him) ...You said a word in my camp once, and I let you. Now you've let me. That's us square, lass. ...Near enough."
+      "text": "(a laugh, and it costs him) Ha! ...You said a word in my camp once, and I let you. Now you've let me. That's us square, lass. ...Near enough."
      },
      {
       "when": {
        "fact": "redcowl.ashford_said",
        "eq": true
       },
-      "text": "Ha! (a laugh, and it costs him) ...You said a word in my camp once, and I let you. Now you've let me. That's us square, lad. ...Near enough."
+      "text": "(a laugh, and it costs him) Ha! ...You said a word in my camp once, and I let you. Now you've let me. That's us square, lad. ...Near enough."
      },
      {
       "when": {
        "sex": "female"
       },
-      "text": "Ha! (a laugh, and it costs him) ...You minded where you swung. That's two I owe, then, lass. The saw-bones a leg, and you the rest of me."
+      "text": "(a laugh, and it costs him) Ha! ...You minded where you swung. That's two I owe, then, lass. The saw-bones a leg, and you the rest of me."
      },
      {
-      "text": "Ha! (a laugh, and it costs him) ...You minded where you swung. That's two I owe, then, lad. The saw-bones a leg, and you the rest of me."
+      "text": "(a laugh, and it costs him) Ha! ...You minded where you swung. That's two I owe, then, lad. The saw-bones a leg, and you the rest of me."
      }
     ],
     "next": "flit"

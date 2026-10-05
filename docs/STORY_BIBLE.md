@@ -749,8 +749,7 @@ Each seed names the beat it pays (section 7 and 8). `WRITING_PASS.md` section
   through it with one".
 - `wayfinder.t_wayfinder`: her brother did not come out of a barrow in the
   Morrow hills; she has drawn it eleven times (Edric, Act 2).
-- `vonnra.f_chart`: the first chart, laid down at the fortune's close: "It is
-  the Wayfinder's, and the margins are full." Vonnra buys from Ysolde too,
+- `vonnra.f_chart`: the first chart, laid down at the fortune's close: "It is in the Wayfinder's hand, and its margins are written full." Vonnra buys from Ysolde too,
   and the margins are what Ysolde sells (Act 2, Silverstair).
 
 **The cinematics** (`docs/cinematics/`; each script says what it plants and pays)
