@@ -329,6 +329,10 @@ Their authors, per Poly Haven:
     https://polyhaven.com/a/stony_dirt_path
 * dry_ground_rocks: Poly Haven, CC0
     https://polyhaven.com/a/dry_ground_rocks
+* grassy_cobblestone: Poly Haven, CC0
+    https://polyhaven.com/a/grassy_cobblestone
+* gray_rocks: Poly Haven, CC0
+    https://polyhaven.com/a/gray_rocks
 
 Poly Haven models
 ------------------------------------------------------------------------
@@ -399,10 +403,6 @@ Poly Haven models
     https://polyhaven.com/a/old_military_crate
 * "Wooden Barrels 01" by James Ray Cock, Poly Haven, CC0
     https://polyhaven.com/a/wooden_barrels_01
-* grassy_cobblestone: Poly Haven, CC0
-    https://polyhaven.com/a/grassy_cobblestone
-* gray_rocks: Poly Haven, CC0
-    https://polyhaven.com/a/gray_rocks
 
 ambientCG
 ------------------------------------------------------------------------
