@@ -333,15 +333,17 @@ public partial class BattleFx
                 float spin = (float)(now * 16 + p.Id);
                 // Its face: a sawblade of sunlight (painted, tools/comfy/fx_sprites.py), turning.
                 // Held dim, so its grooves and teeth show rather than a filled sun.
-                Body(at, 1.05f * s, aegis ? "ward_disc" : "sun_disc", gold * 0.6f, spin * 1.3f);
+                // Leaving her hand it is held down, so it never blooms over her.
+                float off = Mathf.Lerp(0.35f, 1, Mathf.SmoothStep(0.8f, 3f, new Vector2(at.X - PlayerPos.X, at.Z - PlayerPos.Z).Length()));
+                Body(at, 1.05f * s, aegis ? "ward_disc" : "sun_disc", gold * (0.6f * off), spin * 1.3f);
                 // The sun it carries: a hot gold heart, kept small and coloured (a wide
                 // white halo read as a cream doughnut), on a dark bed.
                 Shade(at, 1.7f * s, 0.6f);
-                orbs.Add(new Transform3D(Godot.Basis.Identity.Scaled(Vector3.One * 0.3f * s), at), aegis ? Hdr("#f0f6ff", 1.8f) : Hdr("#fff0c0", 1.8f));
-                orbs.Add(new Transform3D(Godot.Basis.Identity.Scaled(Vector3.One * 0.95f * s), at), (aegis ? Hdr("#9ab8ff", 1.6f) : Hdr("#ffb030", 1.6f)) * 0.1f);
+                orbs.Add(new Transform3D(Godot.Basis.Identity.Scaled(Vector3.One * 0.3f * s), at), (aegis ? Hdr("#f0f6ff", 1.8f) : Hdr("#fff0c0", 1.8f)) * off);
+                orbs.Add(new Transform3D(Godot.Basis.Identity.Scaled(Vector3.One * 0.95f * s), at), (aegis ? Hdr("#9ab8ff", 1.6f) : Hdr("#ffb030", 1.6f)) * (0.1f * off));
                 // A blade spinning: arcs of light whipping round its rim, as the eye
                 // sees a sawblade turn, and the sun's rays flung off its edge.
-                SpinArcs(at, 0.6f * s, spin * 1.6f, 0.1f * s, aegis ? Hdr("#e8f2ff", 1f) : Hdr("#fff0c0", 1f), 3f);
+                SpinArcs(at, 0.6f * s, spin * 1.6f, 0.1f * s, aegis ? Hdr("#e8f2ff", 1f) : Hdr("#fff0c0", 1f), 3f * off);
                 // Its wake: short, so a thrown disc never reads as a beam.
                 Ribbons.Feed(key, at, 0.36f * s, 0.13f, edge, 1.5f, Ribbons.Style.Glow);
                 if (R() < 0.5f)
