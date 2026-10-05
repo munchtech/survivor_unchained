@@ -170,6 +170,15 @@ public partial class PauseScreen : Overlay
 
     public PauseScreen(Game g) : base(g) { menu = new MenuList(Refresh, 20); }
 
+    /// <summary>The ember on a line of the menu (back from the credits, on the credits).</summary>
+    public void FocusOn(string label)
+    {
+        focus = label;
+        Refresh();
+    }
+
+    string? focus;
+
     protected override void Build()
     {
         // The world stays in view, paused, behind a column down the left: the eye goes to the
@@ -217,6 +226,7 @@ public partial class PauseScreen : Overlay
         menu.Add("Credits and licences", G.Credits);
         menu.Add("Leave to the title", G.QuitToTitle);
         menu.Add("Quit the game", G.QuitGame);
+        if (focus != null) { menu.Focus = Math.Max(0, menu.Items.FindIndex(i => i.Label == focus)); focus = null; }
         col.AddChild(menu.Build());
         col.AddChild(new Control { SizeFlagsVertical = SizeFlags.ExpandFill, MouseFilter = MouseFilterEnum.Ignore });
         // The book, one press away: each page as a medallion with its key.

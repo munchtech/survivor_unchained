@@ -23,7 +23,10 @@ public partial class TitleScreen : Overlay
     string panel = "";
     bool left;
 
-    public TitleScreen(Game g) : base(g) { menu = new MenuList(Refresh, 24); }
+    /// <summary>The line the ember starts on: back from the credits, it is still on Credits.</summary>
+    string? focus;
+
+    public TitleScreen(Game g, string? focus = null) : base(g) { menu = new MenuList(Refresh, 24); this.focus = focus; }
 
     static readonly Dictionary<string, string> ZoneNames = new() { ["lowford"] = "The Low Ford Road", ["waystation"] = "The Waystation", ["verge"] = "Thornhollow Verge" };
 
@@ -77,6 +80,7 @@ public partial class TitleScreen : Overlay
         menu.Add("Controls", () => Panel("controls"));
         menu.Add("Credits", G.Credits);
         menu.Add("Quit", G.QuitGame);
+        if (focus != null) { menu.Focus = Math.Max(0, menu.Items.FindIndex(i => i.Label == focus)); focus = null; }
         var list = menu.Build();
         list.Position = new Vector2(134, 560);
         AddChild(list);
