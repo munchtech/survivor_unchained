@@ -694,12 +694,11 @@ public static class People
             jig.Amount = set == "warden" ? 0.55f : 1f;
             jig.Squash = set == "warden" ? 0f : 1f;
         }
-        // Her skin under the outfit's fitted pieces is not drawn: each
+        // Her skin under the outfit's fitted pieces is drawn tucked in: each
         // outfit marks it in one channel of her vertex colours.
         int ch = System.Array.IndexOf(OutfitChannels, set);
-        if (ch >= 0)
-            foreach (var mi in p.Skeleton.GetChildren().OfType<MeshInstance3D>())
-                if (!mi.Name.ToString().Contains('.') && !mi.Name.ToString().Contains('_')) HideSkin(mi, ch);
+        foreach (var mi in p.Skeleton.GetChildren().OfType<MeshInstance3D>())
+            if (!mi.Name.ToString().Contains('.') && !mi.Name.ToString().Contains('_')) TuckSkin(mi, ch);
     }
 
     static Shader? furShader, sheerShader, outfitShader;
@@ -770,38 +769,16 @@ public static class People
     /// colours (tools/assets/heroine_outfits.py's OUTFITS).</summary>
     static readonly string[] OutfitChannels = { "warden", "arcanist", "reaver", "ranger" };
 
-    static readonly Dictionary<(Mesh, int), ArrayMesh> hidden = new();
-
-    static void HideSkin(MeshInstance3D mi, int ch)
+    /// <summary>Her skin under the outfit tucked a few millimetres in by her
+    /// skin's shader (shaders/heroine_skin.gdshader), not cut away: cut, a
+    /// gap opened in her wherever a piece swung off her as she moved.</summary>
+    static void TuckSkin(MeshInstance3D mi, int ch)
     {
         // (Only her body is marked; her head is left as it is, shape keys and all.)
         if (mi.Mesh is not ArrayMesh am || (am.SurfaceGetFormat(0) & Mesh.ArrayFormat.FormatColor) == 0) return;
-        if (!hidden.TryGetValue((am, ch), out var mesh))
-        {
-            mesh = new ArrayMesh();
-            for (int s = 0; s < am.GetSurfaceCount(); s++)
-            {
-                var arr = am.SurfaceGetArrays(s);
-                var colV = arr[(int)Mesh.ArrayType.Color];
-                if (colV.VariantType != Variant.Type.Nil)
-                {
-                    var col = colV.AsColorArray();
-                    var idx = arr[(int)Mesh.ArrayType.Index].AsInt32Array();
-                    var kept = new List<int>(idx.Length);
-                    for (int t = 0; t + 2 < idx.Length; t += 3)
-                        if (col[idx[t]][ch] < 0.5f || col[idx[t + 1]][ch] < 0.5f || col[idx[t + 2]][ch] < 0.5f)
-                        { kept.Add(idx[t]); kept.Add(idx[t + 1]); kept.Add(idx[t + 2]); }
-                    arr[(int)Mesh.ArrayType.Index] = kept.ToArray();
-                }
-                var flags = (Mesh.ArrayFormat)((long)am.SurfaceGetFormat(s) & (long)Mesh.ArrayFormat.FlagUse8BoneWeights);
-                mesh.AddSurfaceFromArrays(am.SurfaceGetPrimitiveType(s), arr, new Godot.Collections.Array<Godot.Collections.Array>(), null, flags);
-                mesh.SurfaceSetMaterial(s, am.SurfaceGetMaterial(s));
-            }
-            hidden[(am, ch)] = mesh;
-        }
-        var over = Enumerable.Range(0, mi.Mesh.GetSurfaceCount()).Select(mi.GetSurfaceOverrideMaterial).ToList();
-        mi.Mesh = mesh;
-        for (int s = 0; s < over.Count; s++) mi.SetSurfaceOverrideMaterial(s, over[s]);
+        for (int s = 0; s < mi.GetSurfaceOverrideMaterialCount(); s++)
+            if (mi.GetSurfaceOverrideMaterial(s) is ShaderMaterial m && m.Shader == skinShader2)
+                m.SetShaderParameter("tuck_channel", ch);
     }
 
     /// <summary>Her paint as skin: light carried under it (subsurface
@@ -810,8 +787,8 @@ public static class People
     static Material Skin(BaseMaterial3D src, Look look, Mesh mesh, Color? own = null, string who = "heroine")
     {
         // shaders/heroine_skin.gdshader: pores, soft uneven sheen, light
-        // under the skin. (Her vertex colours mark what each outfit hides,
-        // not her paint: the shader never reads them.)
+        // under the skin. (Her vertex colours mark what each outfit covers,
+        // to tuck in, never her paint.)
         skinShader2 ??= GD.Load<Shader>("res://shaders/heroine_skin.gdshader");
         var m = new ShaderMaterial { Shader = skinShader2 };
         m.SetShaderParameter("paint", src.AlbedoTexture);

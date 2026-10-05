@@ -53,6 +53,21 @@ uniform float brow_dye = 0.0;
 uniform vec3 brow_paint : source_color = vec3(0.2, 0.15, 0.12);
 uniform vec3 brow_colour : source_color = vec3(0.2, 0.15, 0.12);
 
+// Her skin under her outfit's fitted pieces, tucked a few millimetres in
+// (heroine_outfits.py marks it, graded from a piece's edge, in the channel
+// of her vertex colours tuck_channel names): it never shows through what
+// she wears, and as nothing of her is cut away no gap opens in her where a
+// piece swings off her.
+uniform int tuck_channel = -1;
+uniform float tuck = 0.006;
+
+void vertex() {
+	if (tuck_channel >= 0) {
+		float h = tuck_channel == 0 ? COLOR.r : tuck_channel == 1 ? COLOR.g : tuck_channel == 2 ? COLOR.b : COLOR.a;
+		VERTEX -= NORMAL * tuck * h;
+	}
+}
+
 void fragment() {
 	ALBEDO = texture(paint, UV).rgb * tone;
 	if (brow_dye > 0.0) {

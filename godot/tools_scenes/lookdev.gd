@@ -117,7 +117,7 @@ func _init():
 						for s in mi.mesh.get_surface_count():
 							if mi.mesh.surface_get_material(s) is StandardMaterial3D: mi.mesh.surface_get_material(s).vertex_color_use_as_albedo = false
 			o.free()
-			# Her skin under the outfit's fitted pieces is not drawn (its
+			# Her skin under the outfit's fitted pieces is drawn tucked in (its
 			# channel in her vertex colours: warden red, arcanist green).
 			var ch = ["warden", "arcanist", "reaver", "ranger"].find(outfit.trim_suffix("_").split(".")[0].split("_")[0])
 			if ch >= 0 and OS.get_environment("NOHIDE") == "":
@@ -301,25 +301,12 @@ func fur(mi, shells = 20):
 		mi.set_surface_override_material(si, first)
 
 func hide_skin(mi, ch):
-	var src = mi.mesh
-	var out = ArrayMesh.new()
-	for si in src.get_surface_count():
-		var arr = src.surface_get_arrays(si)
-		var col = arr[Mesh.ARRAY_COLOR]
-		if col != null and col.size() > 0:
-			var idx = arr[Mesh.ARRAY_INDEX]
-			var kept = PackedInt32Array()
-			for t in range(0, idx.size(), 3):
-				var a = col[idx[t]][ch]; var b = col[idx[t + 1]][ch]; var c = col[idx[t + 2]][ch]
-				if a < 0.5 or b < 0.5 or c < 0.5:
-					kept.append(idx[t]); kept.append(idx[t + 1]); kept.append(idx[t + 2])
-			arr[Mesh.ARRAY_INDEX] = kept
-		out.add_surface_from_arrays(src.surface_get_primitive_type(si), arr)
-		out.surface_set_material(si, src.surface_get_material(si))
-	var overrides = []
-	for si in src.get_surface_count(): overrides.append(mi.get_surface_override_material(si))
-	mi.mesh = out
-	for si in overrides.size(): mi.set_surface_override_material(si, overrides[si])
+	# As People.TuckSkin: her skin under the outfit tucked in by her skin's
+	# shader, not cut away.
+	for si in mi.get_surface_override_material_count():
+		var m = mi.get_surface_override_material(si)
+		if m is ShaderMaterial and m.shader == load("res://shaders/heroine_skin.gdshader"):
+			m.set_shader_parameter("tuck_channel", ch)
 
 func _process(delta):
 	t += delta
