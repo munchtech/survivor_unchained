@@ -31,7 +31,7 @@ endless hour.
 | The way in | 6–9 min in all | Three or four authored beats of 1.5–3 min, each a wave with a goal or a small set piece. A beat ends when its goal is met, never on a timer. One story sight or line comes between beats. |
 | The place's set piece | inside the way in | The thing only this place has, played: hold an edge, break a thing, open a door. It ends with the boss's sign: a sound, then a light at the edge it will come from. |
 | The boss | 3–4 min | A proper ARPG boss on its own ground, which opens at the end. It has three phases, and each one changes the space. Telegraphs are on the ground. Adds are the boss's own, each with a job, and the horde is off or a trickle. One weakness is the bane the day taught (Maeca's fed fires, Chid's standard, Grimtunnel's own lamp). The cinematic plays in and out (C10–C13). |
-| The dawn | — | No endless and no way out. The boss's end is the night's end: the story's last line, then back where she was pulled from, at dawn. |
+| The end | — | No endless and no way out. The boss's end is the fight's end: the story's last line, then back where she was pulled from, into the same night (story's rule: the line never claims the dawn, and the town talks about it that night). |
 
 - **The build.** Embers are paid about 2.5 times faster (combat's number), so she meets the boss
   with about what a table night has at minute 20. That build is the boss's yardstick: about 3–4
@@ -51,11 +51,12 @@ endless hour.
   into it.
 - **A fall at the boss:** she gets up as its ground opens, at full health, in phase one, with her
   build.
-- **Two rises a night** (open choice 1). The third fall is the loss the story already writes (each
-  fight's `OnLose` and its lost line). Dawn comes, and the fight waits at its place and at the table
-  for another night, as now. "Let the night go" is on the fall screen from the first fall.
-- **A rise is quick:** a three-second fade with no screens. The line is the story's (the ember
-  gets her up).
+- **Two rises a night** (open choice 1). The third fall is the loss the story already writes: each
+  fight's `OnLose`, and its lost line as she comes to in the same night. The fight then waits at its
+  place and at the table for another night, as now. "Let the night go" is on the fall screen from
+  the first fall.
+- **A rise is quick:** a three-second fade with no screens. Story's line is "You get up." (the
+  prologue's words), then the second time "You get up. It takes less than it did."
 - **What to build:** combat snapshots the battle at each beat's start and at the boss's opening.
   The run restores it.
 
@@ -67,17 +68,30 @@ endless hour.
   - a boss ground with the place's landmark at the heart of the fight;
   - each phase's change as a state of the place (something falls, floods, burns or opens).
 
-  The fight must read at 30 m by night. `ArenaGen`'s places already shape any outline (`Closed`).
+  The fight must read at 30 m by night.
+  - **Agreed with arena art:** `ArenaGen` assumes a circle beyond `Closed`, so the builder will take
+    an outline (a union of shapes per space). `Inside` becomes a signed distance from that outline,
+    and the rim is traced from its contours, so a place can have several. The grid shrinks to about
+    90 m, which makes the paint about three times finer for the closer fight. That is a few days in
+    `ArenaGen` and `Ground.cs`.
+  - Paint and props can change live. Walkable ground and colliders that change mid-fight (a boss
+    ground opening, a floor falling) are the simulation's part, with combat.
 - **Combat** (`a708da2c97bf85c95`, in `STORY_BOSSES.md`): each boss's phases, moves, adds and
   space mechanics; the beats' waves and goals; the ember's rate; the snapshots; health measured
-  against the build above.
+  against the build above. **Agreed with combat:** this section's numbers are its frame (10–14
+  minutes, beats that end on their goals, a 3–4 minute boss, embers ×2.5, 50–60 m). Redcowl gets
+  his own script instead of the Red Hand's.
 - **Story** (`a73ca9d35d0c487a9`): the pull's line, a sight or line between beats, the boss's own
   words (wordless, orders, Snib's comments), the rise's line, and the ends (C10–C13 and the
-  existing won and lost lines).
+  existing won and lost lines). **Agreed with story:** the rise, dusk and night-alone lines are
+  drafted (quoted below). The pull's line and the sights between beats come once
+  `STORY_BOSSES.md` fixes each fight's beats. The bible's share number follows the owner's choice of
+  day length.
 - **Experience** (mine): the night's shape and staging, the fall and rise flow, the clock (section
   2), and judging each fight in real runs at full resolution.
-- **Order:** build the Hollow by Night first, as the template. Its kit is arena art's furthest
-  along, its ending is the richest (let go or killed), and the wolves are most routes' first
+- **Order:** build the Hollow by Night first, as the template. Its kit is among arena art's
+  furthest along (stream, mist, moss and roots), and its den, next on arena art's list anyway, can
+  be built as the boss ground from the start. Its ending is the richest (let go or killed), and the wolves are most routes' first
   trouble. The other three follow once the Hollow has been judged.
 
 ### Every story fight, and its form
@@ -88,9 +102,9 @@ combat's to write; the places are arena art's.
 | Fight (`id`) | Foe | The way in | The place's set piece | The boss's ground and its end |
 |---|---|---|---|---|
 | The Hollow by Night (`hollow_by_night`) | Greymuzzle, the Pack | Down the clough along the sick stream: wolves in twos and threes, and the blighted ones slow. The Pack is sick, not wicked: no human bones. | The den's mouth. The sick lie there, and the Pack herds her away from it. | The den's floor. He hunts, howls the Pack into a ring (fire breaks it), then fights alone on his feet. He is let go or he dies (C10). |
-| Raid on the Roost (`roost_raid`) | Redcowl, the Kerchiefs | Up the ruts through the camp's pickets in the dark. Torches and bells call each picket's wave. | The yard and the six B.E. crates. Fire near them blows them, a choice made in play that sets `be.crates` to `burned`. | His own fire, with his children asleep behind the line. Today he runs the Red Hand's script; he needs his own. He kneels, laughs and gives his last words (C11). |
+| Raid on the Roost (`roost_raid`) | Redcowl, the Kerchiefs | Up the ruts through the camp's pickets in the dark. Torches and bells call each picket's wave. | The yard and the six B.E. crates, only while they are still in it (`be.crates` unset or `redcowl`). Fire near them blows them, a choice made in play that sets `be.crates` to `burned`. If they went home to Harlan, the yard has no crates and this set piece is not there. | His own fire, with his children asleep behind the line. Today he runs the Red Hand's script; he needs his own. He kneels, laughs and gives his last words (C11). |
 | The Dig Boils Over (`dig_boils`) | Grimtunnel, the Lamplings | Lamplings pour up out of the pit. Hold the edge by the headframe, then the rails. | The pump: running, it is blown in the fight (`dig.pump` becomes `blown`, as now). | The pit's lip, with the heart's light in his cracks and Snib's comments. He goes back down the hole, delighted, and never dies (C12). |
-| Behind the Sealed Door (`vault_opened`) | The Barrow Lord, the Risen | The sigil is set and the door wakes violet. Down the stair, the Legion's dead come in ranks. | The century's hall: the shield wall, and the standard (Chid's bane). | The foot of the stair, with his one-word orders. He is laid down, and holy does it twice as fast. His hand at the gate sends her home (C13). |
+| Behind the Sealed Door (`vault_opened`) | The Barrow Lord, the Risen | The sigil is set and the door wakes violet. Inside is the Legion's hall at the head of the stair, and the dead come up it in ranks. She never goes down it: going down is Act 3, and in C13 Jessop stands far below and she must not pass him. The hall's roof has fallen in, so it is open to the moon with its wall tops standing. That keeps the arena's camera, with no ceiling to cut away. | The century's hall: the shield wall, and the standard (Chid's bane). | The head of the stair, with his one-word orders. He is laid down, and holy does it twice as fast. His hand at the gate (*Redi*) sends her home (C13). |
 
 Later story fights are designed in `docs/bosses/` but not built: the Thing in the Barn, the Warden
 of the Kiln Ford, the Silver Penitent (Silverstair and the war at the gate), the Centurion of the
@@ -119,10 +133,16 @@ by sleeping at the inn (`Journey.Sleep`). A player who never finds the inn's res
 - **It stops** in conversations, cinematics, every page and menu (pack, journal, map, shop, the
   table, rest), the draft and the chest, the pause, and travel and loads. It runs while she is free
   in the town or the Verge, fights by day included. It never runs in an arena, which is its own
-  night, or in the prologue. On day 1 it waits until the arrival's introductions are done (story
-  names the step).
-- **Dusk is the warning.** The lamps are lit and the town thins to its dusk folk. One line names
-  what the night holds ("The Hollow is waiting"; the words and any sound are story's).
+  night, or in the prologue. On day 1 it starts when the arrival ends: when the first of the two
+  troubles (`beasts` or `caravan`) reaches her journal. Until then she has nowhere to be.
+- **Dusk is the warning.** The lamps are lit and the town thins to its dusk folk. The gate guard
+  gives the town's evening call ("Lamps are lit. Stay where they reach."), then one line names the
+  night's fight (story's drafts):
+  - Hollow: "Out past the lamps, the Pack has stopped howling."
+  - Roost: "Up the Old Road, the Kerchiefs' fires are lit all along the ravine."
+  - Dig: "On the hill over the Dig, the lamps are all moving the same way."
+  - Vault: "Out in the Verge, the sealed door has woken. Its light is violet."
+  - Nothing open: "Out on the Verge, the ember is coming up."
 - **Nightfall calls the night's fight.**
   - The night's fight is the open story fight, or else the Wayfinder's table and the Verge's scars.
   - Its mark lights on the map, and a beam stands at its place.
@@ -130,12 +150,13 @@ by sleeping at the inn (`Journey.Sleep`). A player who never finds the inn's res
     her straight there. A card names the fight first and lists any others open that night.
 - **Not ready?** Nothing forces a fight. The night holds for 6 minutes of free play: shop, talk to
   the night's folk, or go to Pell's door. At 3 minutes, one nudge ("Half the night is gone"). At 6,
-  the night passes on its own (open choice 3): a fade, and "You saw the night out on your feet". The
-  world moves on a day, as when she sleeps, but without the inn's rest. A story fight that wasn't
+  the night passes on its own (open choice 3): a fade, and story's line, "You see the night out on
+  your feet. At first light the warmth comes back into your hands." The world moves on a day, as when she sleeps, but without the inn's rest. A story fight that wasn't
   fought waits; nothing is lost but the night.
-- **One fight a night** (open choice 4): every arena ends at dawn (`STORY_BIBLE.md` "The nights").
-  After any night's fight she comes back at dawn of the next day. The overnight news (who heard
-  what) follows the night's result.
+- **One fight a night** (open choice 4). After any night's fight she comes back into the same
+  night, as now, and the town talks about it that night. The night's other fights close. The
+  night's clock resumes with at least 3 minutes left, so there is time to hear the town. Then the
+  inn's bed, or the night passing on its own, moves her on.
 - **The skips stay.**
   - The inn's sleep goes to the next morning, healed, with the overnight talk, from any hour.
   - "Wait for nightfall" jumps to the night from day or dusk.
@@ -165,6 +186,6 @@ by sleeping at the inn (`Journey.Sleep`). A player who never finds the inn's res
    (more room to wander; about 53%).
 3. **A night left alone.** I recommend that it passes on its own after 6 minutes, so a lost player
    always moves on. The alternative is that the night holds until she fights or sleeps.
-4. **How many fights a night.** I recommend one: the arena's end is the dawn, and the cycle stays
-   clean. The alternative is today's rule, where she comes back to the same night and can take
-   another scar.
+4. **How many fights a night.** I recommend one. She comes back into the night to hear the town,
+   and then the bed or the night's own end moves her on, so the cycle stays clean: a day, then one
+   night's fight. The alternative is today's rule, where she can take another scar the same night.
