@@ -359,3 +359,30 @@ public partial class OrbView : Node3D, IOrb
     public void Turn(double dt) => ball.RotateY((float)(dt * 1.4));
     void IOrb.Dispose() => QueueFree();
 }
+
+/// <summary>A kit piece that moves (Snib's barrel): placed and turned where the fight puts it, rolled
+/// about its own long axis as it goes (spin), with no light of its own.</summary>
+public partial class PieceView : Node3D, IOrb
+{
+    readonly Node3D piece;
+
+    public PieceView(Node3D piece)
+    {
+        this.piece = piece;
+        AddChild(piece);
+        Visible = false;
+    }
+
+    bool IOrb.Visible { get => Visible; set => Visible = value; }
+
+    /// <summary>`spin`: how far round it has rolled; it lies on its side, rolling the way it faces.</summary>
+    public void Place(double x, double y, double z, double spin, double scale)
+    {
+        Position = new Vector3((float)x, (float)y, (float)z);
+        piece.Rotation = new Vector3((float)spin, 0, 0);
+        Scale = Vector3.One * (float)scale;
+    }
+
+    public double Light { set { } }
+    void IOrb.Dispose() => QueueFree();
+}

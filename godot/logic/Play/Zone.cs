@@ -165,6 +165,9 @@ public interface IZoneLook
     /// <summary>The Kindling's ember-core: a lump of raw ember, split by glowing fissures that widen
     /// as it is broken (Light: 0 whole, 1 nearly broken). A plain orb where nothing better is drawn.</summary>
     IOrb EmberCore(double size) => Orb("#ff7a2a", size * 0.45);
+    /// <summary>A kit piece that moves (Snib's barrel rolling): placed, turned and scaled as an orb is.
+    /// A plain orb where nothing better is drawn.</summary>
+    IOrb Piece(string id, double scale) => Orb("#8a5a2a", scale * 0.35);
 }
 
 /// <summary>A boss's own view: a pose (sleep, wake, walk, windup, cleave,

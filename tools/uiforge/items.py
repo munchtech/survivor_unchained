@@ -131,10 +131,6 @@ T2I = {
     "slurry_jar": "a squat grimy grey stoneware crock, its lid lashed down with twine, a crude X scratched deep into its "
                   "belly, sickly bright green light leaking out through the scratch and a crack under the lid, thick "
                   "green-black sludge oozing from under the lid and dripping down one side",
-    # The crafting lead's flask, repainted: its first came cool and flat-lit, a mark on it reading as a letter.
-    "flask": "a battered pewter hip flask in a stitched dark brown leather sleeve, a small screw cap on a short chain, "
-             "warm lamplight from the upper left catching its curved shoulder and the dents in it, plain metal with no "
-             "marks, no engraving, no letters",
 }
 
 OUT = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "..", "godot", "art", "ui", "icons", "item")

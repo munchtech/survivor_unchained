@@ -85,6 +85,16 @@ class Canvas:
         a = part[..., 3:4] * alpha
         self.rgb[y0:y1, x0:x1] = self.rgb[y0:y1, x0:x1] * (1 - a) + np.clip(part[..., :3], 0, 1) * a
 
+    def add(self, img, x, y, gain=1.0):
+        """Light added (straight-alpha img's colour times its alpha) at screen (x, y)."""
+        x, y = int(round(x)), int(round(y))
+        h, w = img.shape[:2]
+        x0, y0, x1, y1 = max(0, x), max(0, y), min(self.W, x + w), min(self.H, y + h)
+        if x1 <= x0 or y1 <= y0:
+            return
+        part = img[y0 - y:y1 - y, x0 - x:x1 - x]
+        self.rgb[y0:y1, x0:x1] = np.clip(self.rgb[y0:y1, x0:x1] + part[..., :3] * part[..., 3:4] * gain, 0, 1)
+
     def fill(self, x, y, w, h, rgb, a):
         s = self.s
         x0, y0 = int(round(x * s)), int(round(y * s))
@@ -533,12 +543,32 @@ def title_chain(cv: Canvas, cx, cy, text, font, size, src="kit", gap=8):
 TABS = []
 
 
+LAMP = {"x": 430, "top": 78, "lit": False}
+
+
+def lamp(cv: Canvas, src="kit", lit=False):
+    """The lamp-iron (lamp/lamp.png, 120x200 shown, its chain running up off its top) at LAMP,
+    drawn under the head band so its chain goes up behind the rail, and the light it throws on
+    the page (lamp/light.png, 600x600, its source at the middle)."""
+    s = cv.s
+    lp = load("lamp/lamp_lit.png" if lit else "lamp/lamp.png", src)
+    li = load("lamp/light.png", src)
+    if lp is None or li is None:
+        return
+    cx, top = LAMP["x"], LAMP["top"]
+    coal_y = top + 135 + 9
+    cv.add(resize(li, 600 * s, 600 * s), (cx - 300) * s, (coal_y - 300) * s, 1.6 if lit else 1.0)
+    cv.over(resize(lp, 120 * s, 200 * s), (cx - 60) * s, top * s)
+
+
 def self2(cv: Canvas, src="kit", chain="title", sel=1):
     """Self as the approved greybox lays it (UI design, 644fb432): no dead space, the page
     ending at its contents and fading into the world; the head band the one frame, and on its
     rail the chain, broken under her name."""
     backdrop(cv, src, taper=(880, 1010))
     ink, ink_dim, gold, gold_hi, ember = "#e8dcc8", "#a89c8c", "#c9a256", "#f0d9a0", "#ff9a4a"
+    if LAMP.get("on"):
+        lamp(cv, src, LAMP.get("lit", False))
     hd = load("frames/header.png", src)
     cv.nine(hd, -4, -4, 1928, 100, 0, 0, 0, 12, True)
     if chain == "band":
@@ -665,7 +695,9 @@ def main():
     pages = {"specimen": specimen, "pack": pack, "self": self_, "self2": self2,
              "self2_plain": lambda c, s_: self2(c, s_, chain=None),
              "self2_band": lambda c, s_: self2(c, s_, chain="band"),
-             "self2_tabs": lambda c, s_: self2(c, s_, chain="tabs")}
+             "self2_tabs": lambda c, s_: self2(c, s_, chain="tabs"),
+          "self2_lamp": lambda c, s_: (LAMP.update(on=True, lit=False), self2(c, s_, chain="tabs"))[1],
+          "self2_lamp_lit": lambda c, s_: (LAMP.update(on=True, lit=True), self2(c, s_, chain="tabs"))[1]}
     if "--ground" in args:
         # Another page ground to try: --ground page/goatskin.png:0.88
         global GROUND

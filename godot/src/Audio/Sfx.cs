@@ -910,6 +910,21 @@ public static class Sfx
         if (A is not { } a || !a.Gate("chain", 1, 120)) return;
         int n = Math.Clamp(links, 2, 14);
         double t0 = Now, k = secs / 0.32;
+        // Real chain where we have it (art/sound/chainLink_*, chainDrag_*, chainSettle_*: CC0
+        // recordings cut, pitched down and given body by tools/uiforge/chainsfx.py), one clink
+        // per link at the same spring-timed crossings; the modal iron below stands in without it.
+        if (Recordings.Has("chainLink"))
+        {
+            for (int i = 0; i < n; i++)
+            {
+                double u = (i + 0.5) / n;
+                double t = t0 + k * (0.025 + 0.2 * u + 0.04 * u * u) + R(-0.004, 0.004);
+                a.Play(new Clip { T = t, Of = "chainLink", G = 0.32 * (1 - 0.35 * u) * R(0.8, 1.1), Pitch = R(0.94, 1.06), Verb = 0.12, Bus = Bus.Ui });
+            }
+            if (Recordings.Has("chainDrag")) a.Play(new Clip { T = t0 + 0.02 * k, Of = "chainDrag", G = 0.16, Bus = Bus.Ui });
+            if (Recordings.Has("chainSettle")) a.Play(new Clip { T = t0 + 0.29 * k, Of = "chainSettle", G = 0.42, Verb = 0.25, Bus = Bus.Ui });
+            return;
+        }
         for (int i = 0; i < n; i++)
         {
             double u = (i + 0.5) / n;

@@ -10,8 +10,10 @@
   19,
   3.2
  ],
+ "eye": true,
  "fade": 0,
- "run": 72,
+ "run": 40,
+ "tail": 18,
  "heat": 2,
  "slide": [
   130,
@@ -23,6 +25,5 @@
  ],
  "sag_rest": 6.5,
  "sag_dip": 8.0,
- "sag_speed": 200,
- "eyelet": true
+ "sag_speed": 200
 }
