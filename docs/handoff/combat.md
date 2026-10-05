@@ -35,7 +35,7 @@ Written by `a427a874da78cba8b` for its successor.
   - `IStoryArena.Ask`/`Unask`; `ZoneRuntime.Choice`/`Answer(id)`.
   - Shown by `src/Game/GameChoice.cs` and `StoryChoices` in `src/Ui/WorldType.cs`.
   - Keys: use, then her art, held 0.6 s, armed after 0.8 s; keys already down when it comes up must be let go first; her art is not cast by them. A click chooses at once.
-  - The boss bar goes while it waits. His lot, a broken levy (`Redcowl.loose`), the cage's men and a broken ring (`Greymuzzle.loose`) keep back; his end clears his marks (`CancelBlows`).
+  - The boss bar goes while it waits; notices are held (`HoldToasts`) and the zone's banners wait (UI design's check: it stands in the banner's place). His lot, a broken levy (`Redcowl.loose`), the cage's men and a broken ring (`Greymuzzle.loose`) keep back; his end clears his marks (`CancelBlows`).
 - **Grimtunnel climbs out** of the hole he came up through before it opens (`GrimtunnelStory.ClimbOut`, `holeOwed`). The hands go in on him dazed (`BossSense`).
   - Boss 2:30–3:00 planned, 4:00–4:40 careless; no capped nights.
 - **`StoryBoss.Grows`:** past its hard mark every story boss's blow grows 3% a second. Lives of 10–13 minutes ended; careless wins fell about 5 points, still above the 70–80% target.
