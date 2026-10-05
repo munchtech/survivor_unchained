@@ -283,6 +283,12 @@ public partial class Game : Node, IZoneHost
             nb.Player.Z = na.Z + 3.2;
         }
         hud.Fade(0, 0.5);
+        // --travel ZONE@S[,ZONE@S...]: on to each ZONE S seconds in (measuring
+        // later, warm builds: what a place costs to enter once the session has
+        // begun, and to enter again).
+        foreach (var hop in Args.Get("travel")?.Split(',') ?? [])
+            if (hop.Split('@') is [var onTo, var after] && double.TryParse(after, System.Globalization.CultureInfo.InvariantCulture, out var secs))
+                Wait(secs, () => Travel(onTo));
         // --cine ID: that cinematic played here at once (pictures of it, its previs).
         if (Args.Get("cine") is string cid && cine == null) Cinematic(cid);
         Save("new");
@@ -883,7 +889,9 @@ public partial class Game : Node, IZoneHost
         if (focusT > 0 && (focusT -= dt) <= 0 && hudMode == null) cam.FocusOverride = null;
         if (Mode == "play" && zone != null)
         {
+            Perf.Begin(Perf.Part.Auto);
             auto?.Drive(dt);
+            Perf.End(Perf.Part.Auto);
             Journey.Playtime += dt;
             // Booked to its kind of play: the story's share is measured, not guessed.
             Journey.Clock(dt, zone switch
@@ -912,7 +920,9 @@ public partial class Game : Node, IZoneHost
             // An arena's camera breathes with its night (unless a conversation has it, or --cam fixed it).
             if (zone is ArenaRun ar && hudMode == null && camSaved == null && !Args.Has("cam")) cam.TargetDistance = (float)ar.CameraDistance;
             if (zone is StoryNight sn && hudMode == null && camSaved == null && !Args.Has("cam")) cam.TargetDistance = (float)sn.CameraDistance;
+            Perf.Begin(Perf.Part.Later);
             RunLater(dt);
+            Perf.End(Perf.Part.Later);
         }
         else if (auto != null && Mode != "play") AutoFront();
         // --keys on the title or at the fire (pictures of their focus): pressed in turn, two seconds in.
@@ -966,8 +976,10 @@ public partial class Game : Node, IZoneHost
             Perf.End(Perf.Part.Sound);
         }
         if (Mode != "play") return;
+        Perf.Begin(Perf.Part.Draft);
         UpdateChest();
         UpdateDraft(dt);
+        Perf.End(Perf.Part.Draft);
         hudT -= dt;
         if (hudT <= 0)
         {
@@ -1511,6 +1523,10 @@ public partial class Game : Node, IZoneHost
         GD.Print($"[{scene.Time,6:0.0}s] {zone?.Id} hp {p?.Hp:0}/{b?.MaxHp:0} ember {b?.EmberLevel} kills {b?.KillCount} foes {foes} (drawn {drawn}, lying {dead}, gibs {gibs}, blood {splats}) at {p?.X:0},{p?.Z:0} {Overlay} clock {World.Time} {World.Clock:0.0}s day {World.Day} {dbg}{FrameCost()}{(synth.Live ? $" | sound {sound.Music.Mood} voices {synth.Voices} mix {synth.MixCost / Math.Max(1e-9, synth.Mixed) * 100:0}% heard {synth.Mixed:0}s skips {synth.Skips} queue {synth.Queue / synth.Rate * 1000:0}ms" : "")}");
     }
 
+    /// <summary>--perf-flip lampshadows: the place's lights that cast shadows (and the place they are in).</summary>
+    List<OmniLight3D>? shadowed;
+    WorldScene? shadowedIn;
+
     /// <summary>--perf: the frame measured (Perf.cs), with the game's own
     /// numbers beside it: the horde, the dead, the gore, the sound's voices.</summary>
     void MeasureWith(Perf perf)
@@ -1534,7 +1550,7 @@ public partial class Game : Node, IZoneHost
         // seconds (default 1) and put back, the frame's "flip" counter 1 while
         // out. One run measures both ways under the same load from the GPU's
         // other users (it is shared): her, furshadow (her fur's shadows), crowd,
-        // grass, sunshadows, ssao, msaa;
+        // grass, fires, lamps, lampshadows, pieces, sunshadows, ssao, msaa;
         // or quality:Q, scale:S (that quality or resolution while out).
         if (Args.Get("perf-flip") is string flips)
         {
@@ -1565,6 +1581,29 @@ public partial class Game : Node, IZoneHost
                         ((MeshInstance3D)n).CastShadow = on ? GeometryInstance3D.ShadowCastingSetting.On : GeometryInstance3D.ShadowCastingSetting.Off;
                 if (flipped.Contains("crowd")) scene.Crowd.Visible = on;
                 if (flipped.Contains("grass") && scene.View.GetNodeOrNull<Node3D>("Grass") is { } g) g.Visible = on;
+                // A place's fires (their flames and lights), its lamps, its lamps' shadows, its pieces.
+                foreach (var c in scene.View.GetChildren())
+                {
+                    if (c is not Node3D n) continue;
+                    string nm = n.Name;
+                    if (flipped.Contains("fires") && nm == "Fires" || flipped.Contains("lamps") && nm == "Lights" ||
+                        flipped.Contains("pieces") && nm is not ("Grass" or "Flora" or "Props" or "Landmarks" or "Ground" or "Water" or "Fires" or "Lights"))
+                        n.Visible = on;
+                }
+                // (Each light's own setting kept: a lamp unshadowed by day stays so.)
+                if (flipped.Contains("lampshadows"))
+                {
+                    if (shadowed == null || shadowedIn != scene)
+                    {
+                        shadowedIn = scene;
+                        shadowed = new();
+                        foreach (var nm in new[] { "Lights", "Fires" })
+                            if (scene.View.GetNodeOrNull(nm) is { } holder)
+                                foreach (var l in holder.FindChildren("*", "OmniLight3D", true, false))
+                                    if (((OmniLight3D)l).ShadowEnabled) shadowed.Add((OmniLight3D)l);
+                    }
+                    foreach (var l in shadowed) if (IsInstanceValid(l)) l.ShadowEnabled = on;
+                }
                 var t = Graphics.Current;
                 if (flipped.Contains("sunshadows")) air.Key.ShadowEnabled = on;
                 if (flipped.Contains("ssao")) air.Env.SsaoEnabled = on && t.Ssao;

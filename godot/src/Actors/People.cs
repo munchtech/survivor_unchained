@@ -102,20 +102,26 @@ public static class People
         // The man survivor is the hero (tools/assets/hero_male_body.py) once
         // his outfits are made; till then the kit's man, and --body hero shows him.
         if (body == SurvivorUnchained.Play.Loadouts.HisBody && ResourceLoader.Exists("res://art/people/hero.glb") && Args.Get("body") == "hero") body = "hero";
+        bool her = body == "heroine";
+        if (her) Perf.Lap("play: (before her)");
         var p = body switch { SurvivorUnchained.Play.Loadouts.HerBody => Woman(look), "heroine" => Heroine(look), "hero" => Hero(look), "anime" => Her(look), _ => Build(look) };
+        if (her) Perf.Lap("play: her body");
         if (body == "hero" && look.Face != null) HerFace(p, look.Face);
         // Her own clips are chosen by her calling, which her outfit says.
         if (p.Own != null) p.Calling = HerClips.Calling(look.Outfit);
         // Her body wears her calling's outfit, cut from it.
-        if (body == "heroine" && look.Outfit.FirstOrDefault(o => o.StartsWith("her:")) is string her) HerOutfit(p, her[4..]);
+        if (her && look.Outfit.FirstOrDefault(o => o.StartsWith("her:")) is string set) HerOutfit(p, set[4..]);
+        if (her) Perf.Lap("play: her outfit");
         // Her hair, a mesh of its own: the style chosen if it is one of hers;
         // her face shaped, and the paint on it.
-        if (body == "heroine")
+        if (her)
         {
             HerHair(p, HerHairs.Contains(look.Hair) ? look.Hair! : HerHairs[0], look.HairColor ?? HerHairColour);
+            Perf.Lap("play: her hair");
             if (look.Face != null) HerFace(p, look.Face);
             HerPaint(p, look.Paint, look.HairColor);
             p.FaceShape = look.FaceShape;                 // (its painting laid as her skin was made: Skin)
+            Perf.Lap("play: her face and paint");
         }
         // A child's larger head.
         if (spec.Head is double h && h != 1)
@@ -298,6 +304,7 @@ public static class People
 
     static Shader? womanShader;
     static Texture2D? womanMask;
+    static PackedScene? heroineScene, heroScene;
 
     /// <summary>The woman survivor in the body made from the reference
     /// pictures: TRELLIS 2's model of the figure, bound to the game's own
@@ -305,7 +312,12 @@ public static class People
     /// skin, hair and suit are her own paint.</summary>
     public static Person Heroine(Look look)
     {
-        var root = GD.Load<PackedScene>("res://art/people/heroine.glb").Instantiate<Node3D>();
+        // Kept for the session: read again at every place entered, her body
+        // (73 MB imported, its paint inside it) cost 0.3-0.5 s each time.
+        heroineScene ??= GD.Load<PackedScene>("res://art/people/heroine.glb");
+        Perf.Lap("play: her body: loaded");
+        var root = heroineScene.Instantiate<Node3D>();
+        Perf.Lap("play: her body: instanced");
         var skel = (Skeleton3D)root.FindChildren("*", "Skeleton3D", true, false)[0];
         var person = new Person { Root = root, Skeleton = skel, Anim = new AnimationPlayer(), Body = "heroine" };
         person.Pose = new HerPose();
@@ -324,6 +336,7 @@ public static class People
                 if (mi.Mesh.SurfaceGetMaterial(s) is BaseMaterial3D src)
                     mi.SetSurfaceOverrideMaterial(s, HerPart(src, look, mi.Mesh));
         }
+        Perf.Lap("play: her body: her materials");
         root.AddChild(person.Anim);
         person.Anim.RootNode = "..";
         person.Anim.AddAnimationLibrary("", Clips());
@@ -333,6 +346,7 @@ public static class People
             person.Own = OwnClips.Her;
             person.Anim.AddAnimationLibrary(OwnClips.Her.Name, her);
         }
+        Perf.Lap("play: her body: her clips");
         return person;
     }
 
@@ -344,7 +358,9 @@ public static class People
     /// baked from his sculpt.</summary>
     public static Person Hero(Look look)
     {
-        var root = GD.Load<PackedScene>("res://art/people/hero.glb").Instantiate<Node3D>();
+        // Kept for the session, as hers is.
+        heroScene ??= GD.Load<PackedScene>("res://art/people/hero.glb");
+        var root = heroScene.Instantiate<Node3D>();
         var skel = (Skeleton3D)root.FindChildren("*", "Skeleton3D", true, false)[0];
         var person = new Person { Root = root, Skeleton = skel, Anim = new AnimationPlayer(), Body = "hero" };
         // His carriage over the library's clips: fingers eased, his arms held

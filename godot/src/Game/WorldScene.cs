@@ -171,6 +171,7 @@ public partial class WorldScene : Node3D, IZoneLook
         {
             var evs = frameEvents;
             frameEvents = new();
+            using var _ = new Perf.Span(Perf.Part.Events);
             OnEvents(evs);
         }
     }

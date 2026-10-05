@@ -101,7 +101,16 @@ public partial class CrowdView : Node3D
     /// the first wolf does not hitch the frame.</summary>
     public void Prepare(IEnumerable<string> visuals)
     {
-        foreach (var v in visuals) if (!v.StartsWith("view:")) Crowd(v);
+        var kinds = new List<string>();
+        foreach (var v in visuals) if (!v.StartsWith("view:")) kinds.Add(v);
+        // The people still to be baked (a first launch) are built from the
+        // kit's models: their textures decoded side by side first, not one by
+        // one as each model loads.
+        var files = new List<string>();
+        foreach (var v in kinds)
+            if (Visuals.Of(v) is { Person: { } person } spec && !Vat.Ready(spec)) files.AddRange(People.Files(person));
+        if (files.Count > 0) Prefetch.Scenes(files);
+        foreach (var v in kinds) Crowd(v);
     }
 
     VatCrowd Crowd(string visual)

@@ -40,9 +40,9 @@ public partial class Perf : Node
 
     /// <summary>Parts of the frame timed on their own (Begin and End round
     /// them; nothing is done when not measuring).</summary>
-    public enum Part { Sim, Player, Crowd, Fx, Hud, Sound, Zone }
-    const int Parts = 7;
-    static readonly string[] PartNames = { "sim", "player", "crowd", "fx", "hud", "sound", "zone" };
+    public enum Part { Sim, Player, Crowd, Fx, Hud, Sound, Zone, Events, Draft, Auto, Later, DraftUi }
+    const int Parts = 12;
+    static readonly string[] PartNames = { "sim", "player", "crowd", "fx", "hud", "sound", "zone", "events", "draft", "auto", "later", "draftui" };
     static readonly double[] partMs = new double[Parts];
     static readonly long[] partFrom = new long[Parts];
     /// <summary>What each part allocated on the main thread, over the whole recording.</summary>
@@ -106,7 +106,7 @@ public partial class Perf : Node
     long lastAlloc, lastMainAlloc;
     int lastGen0, lastGen1, lastGen2;
     double lastPipes, coldPipes;
-    TimeSpan pauseAtStart;
+    TimeSpan pauseAtStart, lastPause;
     bool recording, firstFrame;
     Rid vp;
     readonly List<Frame> frames = new(16384);
@@ -121,9 +121,36 @@ public partial class Perf : Node
 
     public static bool On => Args.Has("perf");
 
+    /// <summary>--perf-allocs: the runtime's allocation samples (one every
+    /// 100 KB or so, named by the type that crossed the line) counted by type
+    /// over the recording, to find what the garbage is made of.</summary>
+    sealed class AllocSamples : System.Diagnostics.Tracing.EventListener
+    {
+        public volatile bool Counting;
+        public readonly System.Collections.Concurrent.ConcurrentDictionary<string, long> Bytes = new();
+
+        protected override void OnEventSourceCreated(System.Diagnostics.Tracing.EventSource source)
+        {
+            if (source.Name == "Microsoft-Windows-DotNETRuntime")
+                EnableEvents(source, System.Diagnostics.Tracing.EventLevel.Verbose, (System.Diagnostics.Tracing.EventKeywords)0x1);
+        }
+
+        protected override void OnEventWritten(System.Diagnostics.Tracing.EventWrittenEventArgs e)
+        {
+            if (!Counting || e.EventName is not ("GCAllocationTick_V4" or "GCAllocationTick_V3") || e.PayloadNames == null || e.Payload == null) return;
+            int ti = e.PayloadNames.IndexOf("TypeName"), ai = e.PayloadNames.IndexOf("AllocationAmount64");
+            if (ti < 0) return;
+            long amount = ai >= 0 ? Convert.ToInt64(e.Payload[ai]) : 100_000;
+            Bytes.AddOrUpdate((string)e.Payload[ti]!, amount, (_, v) => v + amount);
+        }
+    }
+
+    AllocSamples? allocs;
+
     public override void _Ready()
     {
         if (!On) { SetProcess(false); return; }
+        if (Args.Has("perf-allocs")) allocs = new AllocSamples();
         name = Args.Get("perf") is { } n && n != "1" ? n : "perf";
         warm = Args.Num("perf-warm", 8);
         span = Args.Num("perf-for", 30);
@@ -160,6 +187,9 @@ public partial class Perf : Node
         if (!firstFrame) { firstFrame = true; GD.Print($"perf {name}: first frame at {Time.GetTicksMsec() / 1000.0:0.0}s since launch"); }
         Each();
         long alloc = GC.GetTotalAllocatedBytes(false), mainAlloc = GC.GetAllocatedBytesForCurrentThread();
+        var pause = GC.GetTotalPauseDuration();
+        double pauseMs = (pause - lastPause).TotalMilliseconds;
+        lastPause = pause;
         int g0 = GC.CollectionCount(0), g1 = GC.CollectionCount(1), g2 = GC.CollectionCount(2);
         double pipes = Pipes();
         if (!recording)
@@ -169,6 +199,7 @@ public partial class Perf : Node
             if (t >= warm)
             {
                 recording = live = true;
+                if (allocs != null) allocs.Counting = true;
                 pauseAtStart = GC.GetTotalPauseDuration();
                 extraNames = CounterNames;
                 counters = new double[extraNames.Length];
@@ -204,7 +235,7 @@ public partial class Perf : Node
         Remember(alloc, mainAlloc, g0, g1, g2, pipes);
         // A hitch: a frame well over the run's usual, with what came with it.
         if (frames.Count > 30 && ms > Math.Max(25, 2.5 * Median()))
-            hitches.Add($"{t:0.00}s {ms:0.0}ms (main {f.Main:0.0}: {PartsOf(frames.Count - 1)}; render cpu {f.RenderCpu:0.0}, gpu {f.Gpu:0.0}) pipelines {f.Pipelines} gc {f.Gen0}/{f.Gen1}/{f.Gen2} alloc {f.Alloc / 1024}KB {Note()}");
+            hitches.Add($"{t:0.00}s {ms:0.0}ms (main {f.Main:0.0}: {PartsOf(frames.Count - 1)}; render cpu {f.RenderCpu:0.0}, gpu {f.Gpu:0.0}) pipelines {f.Pipelines} gc {f.Gen0}/{f.Gen1}/{f.Gen2} (paused {pauseMs:0.0}) alloc {f.Alloc / 1024}KB {Note()}");
         if (t >= nextWindow)
         {
             nextWindow += window;
@@ -316,6 +347,22 @@ public partial class Perf : Node
     {
         SetProcess(false);
         live = false;
+        if (allocs != null)
+        {
+            allocs.Counting = false;
+            long all = allocs.Bytes.Values.Sum();
+            GD.Print($"perf {name} allocated (sampled), {all / 1048576.0:0.0} MB over the recording, by type:");
+            foreach (var (type, bytes) in allocs.Bytes.OrderByDescending(kv => kv.Value).Take(30))
+                GD.Print($"perf alloc {bytes / 1024,8} KB {100.0 * bytes / Math.Max(1, all),5:0.0}%  {type}");
+            allocs.Dispose();
+        }
+        // The last young collection: what it kept, what the heap holds by generation, and how long it held the game.
+        var gi = GC.GetGCMemoryInfo(GCKind.Ephemeral);
+        if (gi.Index > 0)
+            GD.Print($"perf {name} last young GC: gen {gi.Generation}, paused {string.Join("/", gi.PauseDurations.ToArray().Select(p => p.TotalMilliseconds.ToString("0.0", CultureInfo.InvariantCulture)))} ms, " +
+                     $"promoted {gi.PromotedBytes / 1024} KB, heap {gi.HeapSizeBytes / 1048576} MB, by generation (MB before/after) " +
+                     string.Join(" ", gi.GenerationInfo.ToArray().Select((g, i) => $"g{i} {g.SizeBeforeBytes / 1048576.0:0.0}/{g.SizeAfterBytes / 1048576.0:0.0}")) +
+                     $", pinned {gi.PinnedObjectsCount}, concurrent {gi.Concurrent}");
         var dir = ProjectSettings.GlobalizePath("res://.shots/perf");
         DirAccess.MakeDirRecursiveAbsolute(dir);
         var ms = frames.Select(x => x.Ms).OrderBy(x => x).ToList();

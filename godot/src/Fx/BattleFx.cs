@@ -158,11 +158,19 @@ public partial class BattleFx : Node3D
     /// mesh to draw many of: its parts merged, each keeping its material (or
     /// only the parts whose material `keep` wants), centred, `size` across at
     /// its largest.</summary>
-    static Mesh Pickup(string key, float size, Func<Material, bool>? keep = null) => Merge(ItemModels.Make(key)?.Model, size, keep);
+    static Mesh Pickup(string key, float size, Func<Material, bool>? keep = null) =>
+        Kept($"pickup:{key}:{size}:{keep != null}", () => Merge(ItemModels.Make(key)?.Model, size, keep));
 
     /// <summary>A weapon as the survivor holds it (Arms), as one mesh, its
     /// length along +Y.</summary>
-    static Mesh Weapon(string id, float size) => Merge(Arms.Make(id), size, null);
+    static Mesh Weapon(string id, float size) => Kept($"weapon:{id}:{size}", () => Merge(Arms.Make(id), size, null));
+
+    static readonly Dictionary<string, Mesh> mergedOnce = new();
+
+    /// <summary>Each merged mesh made once a session: the models loaded and
+    /// merged again at every place entered cost half a second. (Nothing draws
+    /// them differently: the batches only point at them.)</summary>
+    static Mesh Kept(string key, Func<Mesh> make) => mergedOnce.TryGetValue(key, out var m) ? m : mergedOnce[key] = make();
 
     static Mesh Merge(Node3D? model, float size, Func<Material, bool>? keep)
     {

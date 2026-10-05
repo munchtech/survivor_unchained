@@ -158,12 +158,20 @@ public partial class Synth : Node
             else if (ms - calm > 20000 && Queue > least) { Queue = Math.Max(least, (int)(Queue * 0.85)); calm = ms; }
             int free = Math.Min(d.GetFramesAvailable(), w.GetFramesAvailable());
             int n = Math.Min(free, Queue - (capacity - free));
-            if (n < 128) { Thread.Sleep(2); continue; }
-            var (outDry, outWet) = Mix(n);
-            d.PushBuffer(outDry);
-            w.PushBuffer(outWet);
+            if (n < Chunk) { Thread.Sleep(2); continue; }
+            // A chunk at a time into the kept buffers: two fresh arrays a push
+            // were half of all the garbage the game made in a fight.
+            for (; n >= Chunk; n -= Chunk)
+            {
+                Mix(Chunk, chunkDry, chunkWet);
+                d.PushBuffer(chunkDry);
+                w.PushBuffer(chunkWet);
+            }
         }
     }
+
+    const int Chunk = 128;
+    readonly Vector2[] chunkDry = new Vector2[Chunk], chunkWet = new Vector2[Chunk];
 
     AudioStreamGeneratorPlayback Player(string bus)
     {
@@ -239,21 +247,22 @@ public partial class Synth : Node
             int k = (int)tapeOwed;
             tapeOwed -= k;
             if (k <= 0) return;
-            var (d, w) = Mix(k);
+            var d = new Vector2[k];
+            var w = new Vector2[k];
+            Mix(k, d, w);
             // The room, roughly: the wet send folded in, as the reverb would return it.
             for (int i = 0; i < k; i++) tape.Add(d[i] + w[i] * 0.35f);
             return;
         }
     }
 
-    /// <summary>The next n samples of everything playing: dry, and the room's send.</summary>
-    (Vector2[] Dry, Vector2[] Wet) Mix(int n)
+    /// <summary>The next n samples of everything playing, into the first n of
+    /// each: dry, and the room's send.</summary>
+    void Mix(int n, Vector2[] outDry, Vector2[] outWet)
     {
         ulong t0 = Time.GetTicksUsec();
         while (incoming.TryDequeue(out var nv)) voices.Add(nv);
         while (bedsIn.TryDequeue(out var nb)) beds.Add(nb);
-        var outDry = new Vector2[n];
-        var outWet = new Vector2[n];
         float dt = (float)(1 / Rate);
         for (int i = 0; i < n; i++)
         {
@@ -294,7 +303,6 @@ public partial class Synth : Node
         Interlocked.Add(ref clock, n);
         MixCost += (Time.GetTicksUsec() - t0) / 1e6;
         Mixed += n / Rate;
-        return (outDry, outWet);
     }
 
     public int Voices => voices.Count;
