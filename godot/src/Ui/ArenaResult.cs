@@ -162,7 +162,9 @@ public partial class ArenaResultScreen : TellingScreen
         double end = r.Spec.Minutes * 60;
         var parts = new System.Collections.Generic.List<string>();
         if (G.LastFall is var (killer, at) && G.Battle?.Player.Alive == false) parts.Add($"Brought down by {killer} at {Clock(at)}");
-        if (!r.Won)
+        // A written story night has no clock (its boss comes when its stages are done), so it says nothing
+        // of minutes before the boss; its own last line says the rest.
+        if (!r.Won && !SurvivorUnchained.Play.Story.StoryScripts.Has(r.Spec.Id))
         {
             if (r.Seconds < end) { int m = (int)Math.Ceiling((end - r.Seconds) / 60); parts.Add($"{m} minute{(m == 1 ? "" : "s")} before {SurvivorUnchained.Maps.MapOffers.InSentence(boss)} would have come"); }
             else parts.Add($"{boss} still stands");
