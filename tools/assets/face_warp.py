@@ -40,8 +40,13 @@ EXPERIMENTAL, not yet good enough to build her with (2026-10-04, against
 heroine_11): across alone narrows her face to the picture's, but leaves a
 ridge along her jaw (the skin under it doesn't follow); in depth, MoGe's
 surface is flatter than its own normals say, and laid on her it made her
-face a flat mask. Next: her depth from MoGe's normals (integrated, with
-its depth for the broad shape), and her jaw's underside moved with it.
+face a flat mask, stepped at its edge. WARP_NORMALS=<moge_normal png>
+remakes the surface's depth from MoGe's normals (integrated; its broad
+shape from its depths): clean, no stripes, but its relief came out a
+quarter of MoGe's depths' (check the normals' decoding, sRGB or sign,
+against the point map's own slopes, before trusting it). Next: that check;
+the depth data faded softly to nothing toward her face's edge (it is cut
+off there now, and the face steps); her jaw's underside moved with her jaw.
 Debugging: WARP_NO_ACROSS=1 or WARP_NO_DEPTH=1 skip a stage, WARP_DUMP=<npz>
 writes the landmarks as read on each.
 """
@@ -246,6 +251,73 @@ def at_pixels(px):
     return (MV[kk] * ww[:, :, None]).sum(1) / ww.sum(1)[:, None]
 
 
+
+
+def from_normals(path):
+    """The surface's depths remade from MoGe's own normals (its picture,
+    normal_opengl), which carry the face's relief far better than its depths:
+    the normals' slopes integrated over the face (least squares, so it holds
+    together), its broadest shape left to MoGe's depths."""
+    from scipy import ndimage
+    nimg = np.asarray(Image.open(path).convert("RGB"), np.float64) / 255 * 2 - 1
+    H, W = nimg.shape[:2]
+    # (each point's pixel, rounded, and the face's box with a margin)
+    col = np.clip(np.round(MPX[:, 0] - 0.5).astype(int), 0, W - 1)
+    row = np.clip(np.round(MPX[:, 1] - 0.5).astype(int), 0, H - 1)
+    x0, y0 = np.maximum(Lp.min(0).astype(int) - 40, 0)
+    x1, y1 = np.minimum(Lp.max(0).astype(int) + 40, [W - 1, H - 1])
+    depth = np.full((H, W), np.nan)
+    depth[row, col] = MV[:, 1]
+    sub = depth[y0:y1, x0:x1]
+    nz = np.clip(nimg[y0:y1, x0:x1, 2], 0.2, None)
+    gx = -nimg[y0:y1, x0:x1, 0] / nz                       # (height toward the camera, per pixel right)
+    gy = nimg[y0:y1, x0:x1, 1] / nz                        # (per pixel down: its normals' y is up)
+    ok = np.isfinite(sub)
+    h, w = sub.shape
+    ids = -np.ones((h, w), int)
+    ids[ok] = np.arange(ok.sum())
+    rr, cc, vv, bb = [], [], [], []
+    k = 0
+    for dy_, dx_, g in ((0, 1, gx), (1, 0, gy)):
+        a = ids[:h - dy_, :w - dx_]
+        b = ids[dy_:, dx_:]
+        m = (a >= 0) & (b >= 0)
+        gg = 0.5 * (g[:h - dy_, :w - dx_] + g[dy_:, dx_:])[m]
+        n_ = m.sum()
+        rr += [np.arange(k, k + n_)] * 2
+        cc += [b[m], a[m]]
+        vv += [np.ones(n_), -np.ones(n_)]
+        bb.append(gg)
+        k += n_
+    A = sp.coo_matrix((np.concatenate(vv), (np.concatenate(rr), np.concatenate(cc))), shape=(k, ok.sum())).tocsr()
+    # (solved directly: an iterative solve leaves the broad slopes unsettled, flat)
+    hpx = spl.spsolve((A.T @ A + 1e-6 * sp.eye(ok.sum())).tocsc(), A.T @ np.concatenate(bb))
+    # (pixels to the surface's own units: how far apart neighbouring points lie across)
+    xmap = np.full((H, W), np.nan)
+    xmap[row, col] = MV[:, 0]
+    px = np.nanmedian(np.abs(np.diff(xmap[y0:y1, x0:x1], axis=1)))
+    hy = np.full((h, w), np.nan)
+    hy[ok] = -hpx * px                                     # (depth: away from the camera)
+    # Its broad shape from MoGe's depths: both blurred wide, the difference added back.
+    def blur(img, s):
+        m_ = np.isfinite(img)
+        num = ndimage.gaussian_filter(np.where(m_, img, 0), s)
+        den = ndimage.gaussian_filter(m_.astype(float), s)
+        return num / np.maximum(den, 1e-6)
+    s_ = max(h, w) / 8
+    fused = hy - blur(hy, s_) + blur(sub, s_)
+    rel = np.nanstd(hy - blur(hy, s_)) / max(np.nanstd(sub - blur(sub, s_)), 1e-9)
+    print("NORMALS: relief from the normals %.2f times MoGe's own" % rel)
+    inbox = (col >= x0) & (col < x1) & (row >= y0) & (row < y1)
+    fz = np.full(len(MV), np.nan)
+    fz[inbox] = fused[row[inbox] - y0, col[inbox] - x0]
+    good = np.isfinite(fz)
+    # (each point moved along its own ray from the camera, to its new depth)
+    MV[good] = MV[good] * (fz[good] / MV[good, 1])[:, None]
+
+
+if os.environ.get("WARP_NORMALS"):
+    from_normals(os.environ["WARP_NORMALS"])
 Lr = at_pixels(Lp)
 if os.environ.get("WARP_DUMP"):
     np.savez(os.environ["WARP_DUMP"], Lr=Lr, L0=L0, hit=hit, Lp=Lp)
