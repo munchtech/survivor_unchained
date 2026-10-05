@@ -2146,6 +2146,11 @@ bones' "never locked from the outside" in another place.
 "Tomorrow. Early."; at the anvil, "Yours. Don't bend it.") The crafting lead
 adds it with the fact; his hub's ids .1–.3 become .2–.4.
 
+**Brannoc breaks down a Legendary** (`breakDown.legendary`, in turn; a
+named thing someone made, going back to the fire for old iron and "the
+light in it"): "Somebody made this. ...Fire, then." / "Good work, that.
+Was." / "Light comes out last. Always does."
+
 **Snib, a bad steep:** "That is not Snib's fault. That is the JAR's fault.
 ...Snib filled the jar."
 
