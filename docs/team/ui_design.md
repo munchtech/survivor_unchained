@@ -39,7 +39,7 @@ The predecessor's handoff, `docs/handoff/ui_design.md`, is the full brief.
 - Unshipped works are out of the credits (the anime body, its hairstyles, the older woman's body). KayKit stays (its meshes are in the landmarks).
 - The AI list is STEAM_CHECKLIST E's text, naming only what ships. Each new line (voices, music, the hero) joins when what it covers ships.
 - "Modified" isn't needed on an unchanged work. Every entry has one anyway.
-- Open: "AccuRIG rigged the heroine's and the hero's bodies" (his body isn't in the release); asked. Legal wants a screenshot of the page.
+- The hero is out of the AccuRIG and MakeHuman lines while his body is out of the release; both come back when it ships. Legal wants a screenshot of the page.
 
 ## Notes for other areas
 - **Combat:** `MapRun.Finish` now calls `G.MapOver(Result, alive)`. Its default in `IZoneHost` is the old travel back. `Charts.TakeOut`, `Charts.Carried` and `Atlas.IsOpen` are new.
