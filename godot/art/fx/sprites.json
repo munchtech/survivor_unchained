@@ -1,6 +1,6 @@
 {
  "size": 256,
- "layers": 78,
+ "layers": 80,
  "groups": {
   "smoke": [
    0,
@@ -104,6 +104,14 @@
   ],
   "blood_drop": [
    77,
+   1
+  ],
+  "gale_ring": [
+   78,
+   1
+  ],
+  "wind_swirl": [
+   79,
    1
   ]
  }
