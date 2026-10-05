@@ -63,7 +63,9 @@ void vertex() {
 void fragment() {
 	// The curl's crown catches the light; the leaf's edges lie in its own shade.
 	ALBEDO = v_col * mix(0.7, 1.15, v_t);
-	ROUGHNESS = 0.6;
-	SPECULAR = 0.4;
+	// Dry and matte: with a sheen, every leaf gave back the cold moon and lay on the litter
+	// as a blue-grey chip of slate.
+	ROUGHNESS = 0.88;
+	SPECULAR = 0.12;
 	NORMAL = normalize((VIEW_MATRIX * vec4(0.0, 1.0, 0.0, 0.0)).xyz);
 }

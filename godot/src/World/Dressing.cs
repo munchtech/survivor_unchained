@@ -89,6 +89,10 @@ public static class Dressing
     {
         ["stone_01"] = new(0.5f, 0.47f, 0.42f), ["namaqualand_stones_01"] = new(0.45f, 0.42f, 0.38f),
         ["rock_07"] = new(0.6f, 0.58f, 0.55f), ["rock_09"] = new(0.6f, 0.58f, 0.55f), ["bark_debris_01"] = new(0.7f, 0.65f, 0.6f),
+        // (Roots photographed washed and dry, near white: from above a cluster read as a pale
+        // cut-out of card lying on the litter.)
+        ["root_cluster_01"] = new(0.5f, 0.45f, 0.4f), ["root_cluster_02"] = new(0.5f, 0.45f, 0.4f),
+        ["single_root"] = new(0.55f, 0.5f, 0.45f), ["pine_roots"] = new(0.55f, 0.5f, 0.45f),
     };
 
     static readonly Dictionary<string, List<(Mesh Mesh, Transform3D Local)>> variants = new();

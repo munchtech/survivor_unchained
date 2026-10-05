@@ -30,17 +30,16 @@ public static class ArenaEdge
             // sheet of flowing water over the fight read as a smear from the arena camera.)
             if (z.Story) continue;
             root.AddChild(Stream(z, s));
-            // Mist lying along it, in two sheets, the lower thicker (none in a story place: its
-            // stream runs through the fight, and mist over a fight hides it).
-            if (z.Story) continue;
-            foreach (var (lift, op) in new[] { (0.45f, 0.16f), (1.3f, 0.08f) })
-                root.AddChild(MistSheet(z, s, 3.5f, lift, op, new Color(place.Air.MistColor)));
+            // (No sheets of mist along it: from the arena camera two sheets over the water hid its
+            // stones and its light under one grey smear, streaked like a blur of speed. The
+            // place's mist lies in its low ground as a fog, the water's among it.)
         }
         foreach (var r in z.Rails) root.AddChild(Rails(z, r));
         foreach (var v in z.Vents) root.AddChild(Vent(z, v, ember, new Color(place.Air.HazeColor)));
         foreach (var g in z.Gates) root.AddChild(Gate(z, g, ember));
-        // (A story place is a cut under the wood's edge: more of its sky is open.)
-        if (place.Air.Dapple > 0 && z.Splat3 != null) root.AddChild(Canopy(z, (float)place.Air.Dapple * (z.Story ? 0.7f : 1f)));
+        // (A story place is a cut under the wood's edge: more of its sky is open. At 0.7 of the
+        // wood's cover a quarter of its opening frame was flat black.)
+        if (place.Air.Dapple > 0 && z.Splat3 != null) root.AddChild(Canopy(z, (float)place.Air.Dapple * (z.Story ? 0.5f : 1f)));
         return root;
     }
 

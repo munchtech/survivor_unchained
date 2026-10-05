@@ -123,9 +123,12 @@ public class ArenaPlaceTests
         var tall = m.Pieces.Where(p => Height(p.Id) is double h && h * p.Scale > 2.2 && place.Dist(p.X, p.Z) < -2).Select(p => p.Id).ToList();
         Assert.Empty(tall);
         Assert.DoesNotContain(m.Flora, f => f.Kind is "pine" or "broadleaf" or "autumn" or "dead" && place.Dist(f.X, f.Z) < 6);
-        // Nothing of the dressing stands on a point the fight is staged from.
+        // Nothing of the dressing stands on a point the fight is staged from (a knoll is the
+        // ground its point is, the rock he howls from: its stone sheathes the rise, flush).
         foreach (var (pid, (px, pz)) in place.Points)
-            Assert.DoesNotContain(m.Pieces, p => p.Id is "arena/reeds" or "arena/deadfall" ? false : MathX.Dist(p.X, p.Z, px, pz) < 0.8 && !p.Id.Contains("bone"));
+            Assert.DoesNotContain(m.Pieces, p => p.Id is "arena/reeds" or "arena/deadfall" or "arena/knoll" ? false : MathX.Dist(p.X, p.Z, px, pz) < 0.8 && !p.Id.Contains("bone"));
+        foreach (var id in new[] { "rock", "rock_low", "rock_mid" })
+            Assert.Contains(m.Pieces, p => p.Id == "arena/knoll" && MathX.Dist(p.X, p.Z, place[id].X, place[id].Z) < 0.1);
     }
 
     [Fact]
