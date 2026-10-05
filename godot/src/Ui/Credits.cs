@@ -39,7 +39,7 @@ public partial class CreditsScreen : Overlay
     public CreditsScreen(Game g, Action back) : base(g)
     {
         this.back = back;
-        for (int i = 0; i < Ledger.Sections.Count; i++) index.Add((Ledger.Sections[i].Short, Numerals[Math.Min(i, Numerals.Length - 1)], "credits", i));
+        for (int i = 0; i < Ledger.Sections.Count; i++) index.Add((IndexName(Ledger.Sections[i].Short), Numerals[Math.Min(i, Numerals.Length - 1)], "credits", i));
         index.Add(("Godot Engine", null, "godot", 0));
         index.Add((".NET runtime", null, "dotnet", 0));
         index.Add(("The typefaces", null, "fonts", 0));
@@ -59,7 +59,8 @@ public partial class CreditsScreen : Overlay
         margin.AddChild(view switch { "godot" => Godot_(), "dotnet" => DotNet(), "fonts" => Fonts(), _ => Reading() });
         scroll.AddChild(margin);
         inner = margin;
-        right.AddChild(scroll);
+        // Its ends melt away, so a line half under the edge is going, not cut.
+        right.AddChild(new FadeEnds(scroll, 30, 56));
         PageFooter(Footer((Act.SubNext, "Section"), (Act.Down, "Read on"), (Act.Alt, "Open the licences folder"), (Act.Cancel, "Back")));
         Mark();
     }
@@ -97,28 +98,34 @@ public partial class CreditsScreen : Overlay
         v.AddChild(slab);
     }
 
+    /// <summary>A section's name in the index: what it is, not "Used under" (the heading on the
+    /// page says that in full). Long names wrap under themselves.</summary>
+    static string IndexName(string s) => s.StartsWith("Used under ", StringComparison.Ordinal) ? Style.Cap1(s["Used under ".Length..]) : s;
+
     Control IndexLine(int i)
     {
         var (name, numeral, _, _) = index[i];
-        var b = new Button { Flat = true, FocusMode = FocusModeEnum.None, MouseDefaultCursorShape = CursorShape.PointingHand, CustomMinimumSize = new Vector2(0, 34) };
-        foreach (var st in new[] { "normal", "hover", "pressed", "focus" }) b.AddThemeStyleboxOverride(st, new StyleBoxEmpty());
         var row = Style.H(10);
-        row.Position = new Vector2(4, 5);
-        var markBox = new Control { CustomMinimumSize = new Vector2(14, 22), MouseFilter = MouseFilterEnum.Ignore };
+        row.MouseFilter = MouseFilterEnum.Ignore;
+        var markBox = new Control { CustomMinimumSize = new Vector2(14, 22), MouseFilter = MouseFilterEnum.Ignore, SizeFlagsVertical = SizeFlags.ShrinkBegin };
         var mark = new ColorRect { Color = Style.Ember, Size = new Vector2(8, 8), Position = new Vector2(3, 7), Rotation = Mathf.Pi / 4, PivotOffset = new Vector2(4, 4), MouseFilter = MouseFilterEnum.Ignore };
         markBox.AddChild(mark);
         row.AddChild(markBox);
         var num = Style.Label(numeral ?? "", Style.DisplayLight, 15, Style.GoldDim);
         num.CustomMinimumSize = new Vector2(34, 0);
+        num.SizeFlagsVertical = SizeFlags.ShrinkBegin;
         row.AddChild(num);
-        var label = Style.Label(name, Style.Display, 17, Style.GoldHi);
+        var label = Style.Label(name, Style.Display, 17, Style.GoldHi, true);
         row.AddChild(label);
-        b.AddChild(row);
-        b.MouseEntered += () => { if (i != at) label.AddThemeColorOverride("font_color", Colors.White); };
-        b.MouseExited += Mark;
-        b.Pressed += () => Go(i);
+        // The whole line answers the mouse, as tall as its words (a wrapped name is two lines).
+        var hit = new MarginContainer { MouseFilter = MouseFilterEnum.Stop, MouseDefaultCursorShape = CursorShape.PointingHand };
+        foreach (var (side, px) in new[] { ("left", 4), ("top", 5), ("bottom", 5) }) hit.AddThemeConstantOverride("margin_" + side, px);
+        hit.AddChild(row);
+        hit.MouseEntered += () => { if (i != at) label.AddThemeColorOverride("font_color", Colors.White); };
+        hit.MouseExited += Mark;
+        hit.GuiInput += e => { if (e is InputEventMouseButton { Pressed: true, ButtonIndex: MouseButton.Left }) Go(i); };
         marks.Add((label, mark));
-        return Nav.Skip(b);
+        return Nav.Skip(hit);
     }
 
     /// <summary>The index lit where the reading is.</summary>
@@ -252,13 +259,42 @@ public partial class CreditsScreen : Overlay
             box.SizeFlagsVertical = SizeFlags.ShrinkCenter;
             row.AddChild(box);
         }
-        var v = Style.V(0, Style.Gap(Style.Gap4), row, Style.Rule());
+        var v = Style.V(0, Style.Gap(Style.Gap4), row, HeadRule());
         return v;
+    }
+
+    /// <summary>The rule under a heading: from where the heading starts, fading out to the right
+    /// (a centred ornament under a left-set heading read as misplaced).</summary>
+    static Control HeadRule()
+    {
+        var r = new TextureRect
+        {
+            Texture = new GradientTexture2D
+            {
+                Gradient = new Gradient { Offsets = new[] { 0f, 0.6f, 1f }, Colors = new[] { Style.GoldDim with { A = 0.85f }, Style.GoldDim with { A = 0.3f }, Style.GoldDim with { A = 0 } } },
+                Width = 256, Height = 1,
+            },
+            ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize, StretchMode = TextureRect.StretchModeEnum.Scale,
+            CustomMinimumSize = new Vector2(0, 1), SizeFlagsHorizontal = SizeFlags.ExpandFill, MouseFilter = MouseFilterEnum.Ignore,
+        };
+        var m = new MarginContainer { MouseFilter = MouseFilterEnum.Ignore };
+        m.AddThemeConstantOverride("margin_top", 10);
+        m.AddThemeConstantOverride("margin_bottom", 10);
+        m.AddChild(r);
+        return m;
     }
 
     /// <summary>A group: its name, notes and links down a rail at the left, its works beside them.</summary>
     static Control Group(CreditGroup g)
     {
+        // A group with nothing to say beside its works (the engine, the AI disclosure) has no rail:
+        // its works read from the page's own edge, not from an empty column.
+        if (g.Title == null && g.Notes.Count == 0 && g.Links.Count == 0)
+        {
+            var plain = Style.V(Style.Gap3);
+            foreach (var e in g.Entries) plain.AddChild(Work(e));
+            return Measure(plain);
+        }
         var row = Style.H(Style.Gap6);
         var rail = Style.V(Style.Gap2);
         rail.CustomMinimumSize = new Vector2(300, 0);
@@ -409,6 +445,18 @@ public partial class CreditsScreen : Overlay
             if (lines.Count == 0) continue;
             if (!first) r.Newline();
             first = false;
+            // A heading on its own line at a paragraph's head ("PREAMBLE", "DEFINITIONS", as the OFL
+            // has them) is set as a heading over its paragraph, not run into it.
+            if (lines.Count > 1 && lines[0].Length < 40 && lines[0] == lines[0].ToUpperInvariant() && lines[0].Any(char.IsLetter))
+            {
+                r.Newline();
+                Run(r, lines[0], Style.UiHeavy, size - 2, Style.Gold);
+                r.Newline();
+                lines.RemoveAt(0);
+                Run(r, string.Join(" ", lines), Style.Text, size, Style.Ink);
+                r.Newline();
+                continue;
+            }
             var text = string.Join(" ", lines);
             if (underlined || lines.Count == 1 && text.Length < 70 && text == text.ToUpperInvariant() && text.Any(char.IsLetter))
             {

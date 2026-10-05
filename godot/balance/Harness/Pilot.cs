@@ -32,7 +32,7 @@ public static class Pilot
     /// lies about is picked up, and with nothing roused near, the hands walk on.</param>
     /// <param name="goal">A story night's stage: where it wants her (a fire to light, a foe to find). With no
     /// crush round her, the hands go there.</param>
-    public static (double X, double Z) Steer(Battle b, bool deft = false, ArenaBoss? boss = null, (double X, double Z)? onward = null, (double X, double Z)? goal = null)
+    public static (double X, double Z) Steer(Battle b, bool deft = false, ArenaBoss? boss = null, (double X, double Z)? onward = null, (double X, double Z)? goal = null, bool naive = false)
     {
         var p = b.Player;
         double mx, mz;
@@ -104,7 +104,8 @@ public static class Pilot
             else (mx, mz) = (-mz, mx);
         }
         // The boss's own fight, read last: it overrules the crowd.
-        if (ReadsBosses && (boss != null || b.Blows.Count > 0)) Boss(b, boss, deft, ref mx, ref mz, goal);
+        // Naive hands read only a boss's marks: the way in's (a drive's lane) they walk into, as a first-timer does.
+        if (ReadsBosses && (boss != null || b.Blows.Count > 0 && !naive)) Boss(b, boss, deft, ref mx, ref mz, goal);
         double ml = Math.Sqrt(mx * mx + mz * mz);
         if (ml > 1e-6) { mx /= ml; mz /= ml; }
         return (mx, mz);

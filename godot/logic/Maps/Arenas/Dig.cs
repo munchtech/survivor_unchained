@@ -45,10 +45,10 @@ public sealed class Dig : ArenaShape
         for (int t = 0; t < 200 && heaps.Count < 6; t++)
         {
             double a = Rng.Range(0, Math.PI * 2), rr = Rng.Range(46, ArenaGen.R - 6);
-            double x = Math.Cos(a) * rr, z = Math.Sin(a) * rr, r = Rng.Range(7, 11);
+            double x = Math.Cos(a) * rr, z = Math.Sin(a) * rr, r = Rng.Range(6, 9.5);
             if (B.At(railsF, x, z) * 1.1 < r + 3 || MathX.Dist(x, z, pitX, pitZ) < PitR + r + 4) continue;
             if (heaps.Exists(h => MathX.Dist(h.X, h.Z, x, z) < h.R + r + 3)) continue;
-            heaps.Add((x, z, r, Rng.Range(1.6, 2.6)));
+            heaps.Add((x, z, r, Rng.Range(2.4, 3.6)));
         }
         // Slurry spilled and pooling in the low places; baked clay where it dried.
         for (int k = 0; k < (Drowned ? 9 : 5); k++)
@@ -74,7 +74,12 @@ public sealed class Dig : ArenaShape
         foreach (var hp in heaps)
         {
             double d = MathX.Dist(x, z, hp.X, hp.Z);
-            if (d < hp.R) h += hp.H * (1 - MathX.Smoothstep(0, hp.R, d)) * (1 + 0.15 * Noise.Noise(x * 0.4, z * 0.4));
+            // A tip: a cone at the rock's angle of rest, its top rounded where the last tub
+            // was emptied, its flanks lumpy with what rolled down them.
+            if (d >= hp.R) continue;
+            double k = 1 - d / hp.R;
+            h += hp.H * Math.Pow(k, 1.1) * MathX.Smoothstep(0, 0.2, k) * (1 - 0.25 * MathX.Smoothstep(0.75, 1, k))
+                * (1 + 0.12 * Noise.Noise(x * 0.4, z * 0.4) + 0.08 * Noise.Noise(x * 1.3 + 5, z * 1.3));
         }
         foreach (var p in pools)
         {
@@ -121,12 +126,16 @@ public sealed class Dig : ArenaShape
         }
         // The clay stained rust by the ember, in the planned patches and in
         // broad drifts across the working, so the floor is never one colour.
-        p.L4 = MathX.Smoothstep(0.25, 0.6, Noise.Noise(x * 0.03 - 17, z * 0.03 + 5) + n1 * 0.3 + n2 * 0.25) * 0.6;
+        // A mottle, never a blob: small stains a metre or two across, gathered where the broad
+        // drifts and the planned patches are, frayed by the clay's own grain.
+        double n3 = Noise.Noise(x * 0.42 - 3, z * 0.42 + 8), n4 = Noise.Noise(x * 0.13 + 9, z * 0.13 - 4);
+        double drift = MathX.Smoothstep(0.2, 0.6, Noise.Noise(x * 0.03 - 17, z * 0.03 + 5) + n1 * 0.3);
         foreach (var bk in bakes)
         {
             double d = MathX.Dist(x, z, bk.X, bk.Z);
-            if (d < bk.R + 2) p.L4 = Math.Max(p.L4, (1 - MathX.Smoothstep(bk.R * 0.4, bk.R, d + n1 * 2.5)) * 0.9);
+            if (d < bk.R + 2) drift = Math.Max(drift, 1 - MathX.Smoothstep(bk.R * 0.3, bk.R, d + n1 * 2.5));
         }
+        p.L4 = MathX.Smoothstep(0.42, 0.62, n4 * 0.6 + n3 * 0.4 + drift * 0.45 - 0.2) * (0.35 + 0.6 * drift);
         p.L4 *= 1 - p.L3;
         // Burnt round the pit's mouth (and, in an ashen dig, where the blasting was).
         double dp = MathX.Dist(x, z, pitX, pitZ);
@@ -137,6 +146,17 @@ public sealed class Dig : ArenaShape
         p.Char = Math.Max(p.Char, 0.85 * (1 - MathX.Smoothstep(PitR - 0.5, PitR + 3.5, dp + n1 * 1.5)) * MathX.Smoothstep(PitR - 1.5, PitR - 0.5, dp));
         if (dp < PitR - 4) p.Char = Math.Max(p.Char, 0.9 + 0.1 * (1 - MathX.Smoothstep(0, PitR - 4, dp)));
         if (Drowned) p.Wet = Math.Max(p.Wet, MathX.Smoothstep(0.35, 0.7, Noise.Noise(x * 0.05 - 9, z * 0.05)) * 0.7);
+        // Dry grass where nobody walks: along the working's edge, round the tips' feet, between
+        // the stones; never on the rails' bed, in the slurry or the char.
+        double feet = 0;
+        foreach (var hp in heaps)
+        {
+            double d = MathX.Dist(x, z, hp.X, hp.Z);
+            feet = Math.Max(feet, (1 - MathX.Smoothstep(1.5, 4, Math.Abs(d - hp.R - 1.2))));
+        }
+        double wild = Math.Max(MathX.Smoothstep(16, 5, inn), feet * 0.9);
+        p.Grass = wild * MathX.Smoothstep(0.35, 0.7, Noise.Noise(x * 0.09 + 31, z * 0.09 - 7) * 0.7 + n2 * 0.3 + 0.15)
+            * (1 - p.L2 * 0.9) * (1 - p.L3) * (1 - p.Trod) * (1 - p.L5);
     }
 
     public override void Wall(double x, double z, double d)
@@ -190,6 +210,19 @@ public sealed class Dig : ArenaShape
             if (!B.CanStand(lx, lz)) continue;
             B.Piece("halloween/lantern_standing", lx, lz, Rng.Range(0, Math.PI * 2), 1.2);
             B.Glow(lx, lz, "#ffcf7a", 6, height: 0.8, flicker: 0.05);
+        }
+
+        // A windlass at the lip, the way down for what the cage won't carry; a fence of
+        // stakes along the lip either side of the headframe's feet.
+        var (wx, wz) = (pitX + Math.Sin(face) * (PitR + 1.4) + ux * 4.2, pitZ + Math.Cos(face) * (PitR + 1.4) + uz * 4.2);
+        if (B.CanStand(wx, wz)) { B.Piece("arena/winch", wx, wz, face + Math.PI); B.Block(wx, wz, 1.0); }
+        for (int k = -6; k <= 6; k++)
+        {
+            if (Math.Abs(k) < 2) continue;
+            double a = face + k * 0.16;
+            double fx1 = pitX + Math.Sin(a) * (PitR + 0.6), fz1 = pitZ + Math.Cos(a) * (PitR + 0.6);
+            if (!B.CanStand(fx1, fz1)) continue;
+            B.Piece("village/Prop_WoodenFence_Single", fx1, fz1, a + Math.PI / 2, 1.0);
         }
 
         // ---------------------------------------------------------- the rails --
@@ -254,6 +287,19 @@ public sealed class Dig : ArenaShape
             B.Piece("halloween/post_lantern", lx, lz, Rng.Range(0, Math.PI * 2), 0.9);
             B.Block(lx, lz, 0.3);
             B.Glow(lx, lz, "#ffcf7a", 8, height: 2.7, flicker: 0.04);
+        }
+        // Timber stacked by the rails where it was unloaded, sleepers and props for the workings.
+        for (int k = 14; k < rails.Length - 8; k += 19)
+        {
+            var (x, z, hw) = rails[k];
+            var (nx, nz, _) = rails[k + 1];
+            double dx = nx - x, dz = nz - z, len = Math.Sqrt(dx * dx + dz * dz);
+            int side = (k / 19) % 2 == 0 ? 1 : -1;
+            double px = x - dz / len * side * (hw + 2.2), pz = z + dx / len * side * (hw + 2.2);
+            if (!B.Free(px, pz, 1.6)) continue;
+            B.Piece("arena/timber", px, pz, Math.Atan2(dx, dz) + Rng.Range(-0.2, 0.2));
+            B.Slab(px, pz, 1.2, 0.7, Math.Atan2(dx, dz));
+            B.Take(px, pz, 2);
         }
         // Lamps along the rails.
         for (int k = 8; k < rails.Length - 4; k += 16)

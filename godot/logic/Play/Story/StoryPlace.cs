@@ -64,36 +64,28 @@ public sealed class StoryPlace
     /// <summary>The space a point is in (the first, where they meet).</summary>
     public string? SpaceAt(double x, double z) => Spaces.FirstOrDefault(s => s.Dist(x, z) < 0)?.Id;
 
-    /// <summary>The place's walls: a band 2.5 m thick round its outline, as boxes a metre deep
-    /// (one per run of wall along each row), so everything (her, the crowd, a thrown pot's
-    /// lander) keeps inside it.</summary>
-    public List<(double X, double Z, double Hw, double Hd)> Walls()
+    /// <summary>The place's walls as a skin of posts round its outline: circles 0.8 m round, half a metre
+    /// apart, their inner edge on the outline, and a second rank behind. A wall of square rows stepped a
+    /// metre at a time down every diagonal, and her feet (and the bots') caught on each step; posts let her
+    /// slide along a slant as along a straight.</summary>
+    public List<(double X, double Z)> Posts()
     {
-        var o = new List<(double, double, double, double)>();
-        double x0 = Spaces.SelectMany(s => s.Shapes).Min(c => Math.Min(c.X0, c.X1) - c.R) - 4, x1 = Spaces.SelectMany(s => s.Shapes).Max(c => Math.Max(c.X0, c.X1) + c.R) + 4;
-        double z0 = Spaces.SelectMany(s => s.Shapes).Min(c => Math.Min(c.Z0, c.Z1) - c.R) - 4, z1 = Spaces.SelectMany(s => s.Shapes).Max(c => Math.Max(c.Z0, c.Z1) + c.R) + 4;
-        for (double z = Math.Floor(z0); z < z1; z += 1)
-        {
-            double? from = null;
-            for (double x = Math.Floor(x0); x <= x1 + 1; x += 1)
+        var o = new List<(double, double)>();
+        var (x0, z0, x1, z1) = Bounds(4);
+        for (double z = Math.Floor(z0); z <= z1; z += 0.5)
+            for (double x = Math.Floor(x0); x <= x1; x += 0.5)
             {
-                double d = Dist(x + 0.5, z + 0.5);
-                bool wall = d >= 0 && d < 2.5 && x <= x1;
-                if (wall && from == null) from = x;
-                else if (!wall && from is double f)
-                {
-                    o.Add(((f + x) / 2, z + 0.5, (x - f) / 2, 0.5));
-                    from = null;
-                }
+                double d = Dist(x, z);
+                // The skin: inner edges on the outline. Behind it, a coarser rank, so nothing is thin.
+                if (d > 0.55 && d <= 1.05 || d > 1.6 && d <= 2.6 && ((int)Math.Round(x * 2) + (int)Math.Round(z * 2)) % 2 == 0) o.Add((x, z));
             }
-        }
         return o;
     }
 
     /// <summary>Stands its walls and shuts its gates in a fight's collision.</summary>
     public void Build(CollisionWorld c)
     {
-        foreach (var (x, z, hw, hd) in Walls()) c.AddBox(x, z, hw, hd, 0, new ColliderOpts(Tag: "place"));
+        foreach (var (x, z) in Posts()) c.AddCircle(x, z, 0.8, new ColliderOpts(Tag: "place"));
         foreach (var g in Gates) Shut(c, g);
     }
 

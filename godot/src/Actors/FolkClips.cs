@@ -64,11 +64,17 @@ public static class FolkClips
     /// names, or null: the Risen's lurch at the crowd's pace rather than
     /// skating on the library's slow zombie walk (armed, the weapon hangs
     /// and the other hand reaches); a caster's rally, the weapon or the fist
-    /// thrust up and shaken.</summary>
+    /// thrust up and shaken; a heavy's slam, both fists (armed: the axe)
+    /// brought down from overhead into the ground, and the get-up after it;
+    /// a crossbow's drop to one knee and aim, and the shot, the kick and the
+    /// rise.</summary>
     public static string? Crowd(bool woman, bool armed, string game) => game switch
     {
         "Zombie_Walk_Fwd_Loop" or "Zombie_Walk_Fwd" or "Walking_D_Skeletons" => Named(woman, armed ? "lurch_armed" : "lurch"),
         "Rally" => Named(woman, armed ? "rally_armed" : "rally"),
+        "Slam" => Named(woman, armed ? "slam_armed" : "slam"),
+        "KneelAim" => Named(woman, "kneel_aim"),
+        "KneelShot" => Named(woman, "kneel_shot"),
         _ => null,
     };
 

@@ -333,6 +333,8 @@ Their authors, per Poly Haven:
     https://polyhaven.com/a/grassy_cobblestone
 * gray_rocks: Poly Haven, CC0
     https://polyhaven.com/a/gray_rocks
+* leaves_forest_ground: Poly Haven, CC0
+    https://polyhaven.com/a/leaves_forest_ground
 
 Poly Haven models
 ------------------------------------------------------------------------
