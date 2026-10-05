@@ -367,7 +367,9 @@ void fragment() {
 			* (1.0 - smoothstep(-1.0, 0.0, d)) * exp(min(d, 0.0) * 0.35);
 		float flick = 0.6 + 0.4 * sin(TIME * (1.5 + ch2.x * 2.0) + ch2.y * 30.0);
 		vec3 white = mix(ember, vec3(1.0, 0.85, 0.55), 0.55);
-		glow += (white * line * 2.4 * lip_glow * lip_glow + ember * (halo * 0.5 * lip_glow + vein * 0.9 + spark * 1.4 * flick)) * breathe * ember_glow;
+		// (A story place's banks burn low, veins and all: lit seams wandering over its banks
+		// read as red worms.)
+		glow += (white * line * 2.4 * lip_glow * lip_glow + ember * (halo * 0.5 * lip_glow + vein * 0.9 * lip_glow * lip_glow + spark * 1.4 * flick)) * breathe * ember_glow;
 	}
 	// A hotter place than the ring (a pit's mouth, char past 0.85) glows whole.
 	float hot = smoothstep(0.87, 1.0, ch);

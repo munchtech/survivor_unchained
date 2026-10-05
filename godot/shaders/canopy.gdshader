@@ -24,9 +24,10 @@ void vertex() {
 void fragment() {
 	vec2 p = w_pos.xz;
 	vec2 sway = vec2(sin(TIME * 0.35 + p.y * 0.05), cos(TIME * 0.29 + p.x * 0.05)) * 0.25;
-	// Crowns a few metres across, their edges torn into leaf clusters.
-	float crowns = texture(noise_tex, (p + sway) * 0.045).g * 0.62 + texture(noise_tex, (p + sway * 2.0) * 0.16 + 0.31).b * 0.26
-		+ texture(noise_tex, (p + sway * 3.0) * 0.55 + 0.77).r * 0.12;
+	// Crowns a few metres across, their edges torn into leaf clusters. (No finer: clusters
+	// under a metre are finer than the moon's shadow map draws, and the pools' edges came
+	// out stepped. Their soft rim is the moon's own breadth, Atmosphere.Set.)
+	float crowns = texture(noise_tex, (p + sway) * 0.045).g * 0.68 + texture(noise_tex, (p + sway * 2.0) * 0.16 + 0.31).b * 0.32;
 	float open = texture(open_tex, (p + moon_off + zone_size * 0.5) / zone_size).a;
 	// (The noise's sum sits about a half, spread narrowly: cover is mapped onto that spread.)
 	float leaf = step(0.62 - cover * 0.24, crowns) * (1.0 - step(0.5, open));

@@ -33,9 +33,10 @@ public static class ArenaGround
         // litter, rot, roots, mud, bed, needles, face: the leaves warm and
         // red-brown against the cold night, the runs and banks black, the
         // stream's stones the palest thing on the ground (moss is the shader's)
-        // (Leaves drawn half again as large as the scan's: a leaf must be a few pixels to read
-        // as one from the arena camera, or the litter reads as gravel.)
-        ["hollow"] = [new(0.1f, 1.0f, Con: 0.8f, Lift: 0.02f, Size: 1.9f), new(0.05f, 0.9f, Con: 0.9f, Size: 1.5f), new(0.075f, 0.8f, Lift: 0.03f, Bump: 0.1f, Size: 1.3f),
+        // (Leaves drawn a third larger than the scan's: a leaf must be a few pixels to read as
+        // one from the arena camera. Whole red-brown leaves read as leaves; a scan of pale
+        // chips on black read as gravel however it was toned.) The rot is black earth.
+        ["hollow"] = [new(0.095f, 1.0f, Con: 1.1f, Lift: 0.02f, Size: 1.35f), new(0.04f, 0.85f, Con: 1.1f), new(0.075f, 0.8f, Lift: 0.03f, Bump: 0.1f, Size: 1.3f),
             new(0.03f, 0.8f, Lift: -0.03f), new(0.1f, 0.6f, Lift: -0.05f, Bump: 0.08f), new(0.085f, 0.9f, Con: 0.9f, Lift: 0.01f, Size: 1.4f), new(0.07f, 0.7f)],
         // verge, churn, ruts, wet, camp, metal, face
         ["ruts"] = [new(0.065f, 0.6f, Lift: 0.04f, Bump: 0.06f), new(0.05f, 0.65f), new(0.045f, 0.6f, Lift: -0.02f, Bump: 0.08f), new(0.04f, 0.65f, Lift: -0.04f),

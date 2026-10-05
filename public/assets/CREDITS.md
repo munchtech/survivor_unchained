@@ -200,6 +200,7 @@ The arenas' grounds (`godot/art/arena/<place>`, by `tools/godot/arena_ground.py`
 - grassy_cobblestone: Poly Haven (https://polyhaven.com/a/grassy_cobblestone), CC0
 - gray_rocks: Poly Haven (https://polyhaven.com/a/gray_rocks), CC0
 - leaves_forest_ground: Poly Haven (https://polyhaven.com/a/leaves_forest_ground), CC0
+- forest_ground_06: Poly Haven (https://polyhaven.com/a/forest_ground_06), CC0
 
 ## Poly Haven models (CC0)
 

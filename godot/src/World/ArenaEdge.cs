@@ -39,8 +39,9 @@ public static class ArenaEdge
         foreach (var r in z.Rails) root.AddChild(Rails(z, r));
         foreach (var v in z.Vents) root.AddChild(Vent(z, v, ember, new Color(place.Air.HazeColor)));
         foreach (var g in z.Gates) root.AddChild(Gate(z, g, ember));
-        // (A story place is a cut under the wood's edge: more of its sky is open.)
-        if (place.Air.Dapple > 0 && z.Splat3 != null) root.AddChild(Canopy(z, (float)place.Air.Dapple * (z.Story ? 0.7f : 1f)));
+        // (A story place is a cut under the wood's edge: more of its sky is open. At 0.7 of the
+        // wood's cover a quarter of its opening frame was flat black.)
+        if (place.Air.Dapple > 0 && z.Splat3 != null) root.AddChild(Canopy(z, (float)place.Air.Dapple * (z.Story ? 0.5f : 1f)));
         return root;
     }
 

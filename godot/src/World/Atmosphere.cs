@@ -111,10 +111,15 @@ public partial class Atmosphere : Node3D
         Env.VolumetricFogAlbedo = C(p.FogColor).Lightened(0.5f);
         Env.VolumetricFogDensity = 0.0012f;
         // An ember arena's own air: smoke or dust hanging in it.
+        Key.LightAngularDistance = 0;
         if (air is { } a)
         {
             Env.VolumetricFogDensity = 0.0012f * (float)a.Haze;
             Env.VolumetricFogAlbedo = C(a.HazeColor).Lightened(0.35f);
+            // Under a canopy the moon's breadth softens a shadow by how far its caster stands
+            // over the ground (PCSS): the pools get a soft rim from leaves nine metres up, and
+            // the shadows at the living's feet stay sharp.
+            if (a.Dapple > 0) Key.LightAngularDistance = 2.5f;
         }
         Env.TonemapExposure = (float)p.Exposure * ExposureScale;
         var rim = C(p.Rim).SrgbToLinear();
