@@ -90,7 +90,8 @@ public partial class SheetScreen : Overlay
         // Who they are: the figure, the way to the next level, the art in hand, what they know.
         var who = Pane(page, new Rect2(0, 0, 536, 920));
         var fig = new CenterContainer { MouseFilter = MouseFilterEnum.Ignore };
-        fig.AddChild(InventoryScreen.Figure(ch, 400, 430));
+        // (as large as the column holds with the level, the art in hand and the calling under it)
+        fig.AddChild(InventoryScreen.Figure(ch, 420, 480));
         who.AddChild(fig);
         double need = Character.XpForLevel(ch.Level);
         var lvl = new Medallion(76, $"{ch.Level}") { Arc = (float)(ch.Xp / need), ArcColor = Style.Day, Core = new Color("#1c2a3a"), Ink = Style.DayHi };
@@ -145,9 +146,12 @@ public partial class SheetScreen : Overlay
             med.AddChild(new Medallion(120, $"{Attr(ch, id)}"));
             v.AddChild(med);
             v.AddChild(Style.Label(nm.ToUpperInvariant(), Style.Display, 22, Style.GoldHi, false, HorizontalAlignment.Center));
-            var words = Style.Label(text, Style.Ui, Style.Caption, Style.Ink, true, HorizontalAlignment.Center);
-            words.SizeFlagsVertical = SizeFlags.ExpandFill;
-            v.AddChild(words);
+            v.AddChild(Style.Label(text, Style.Ui, Style.Caption, Style.InkDim, true, HorizontalAlignment.Center));
+            // What the points already in it give, in all: the pillar says what it is worth to her now.
+            var gives = Style.Label(Gives(ch, id), Style.UiBold, Style.Small, Style.Ink, true, HorizontalAlignment.Center);
+            gives.SizeFlagsVertical = SizeFlags.ExpandFill;
+            gives.VerticalAlignment = VerticalAlignment.Center;
+            v.AddChild(gives);
             if (ch.Points > 0)
             {
                 var attr = id;
@@ -218,6 +222,7 @@ public partial class SheetScreen : Overlay
         standing = Style.V(Style.Gap2);
         right.AddChild(standing);
         ShowStanding(null);
+        right.AddChild(Finest(ch));
         if (Controls.Instance.UsingPad)
             PageFooter(Footer((Act.Confirm, ch.Points > 0 ? "Spend a point" : "Choose"), (Act.TabPrev, "Pack"), (Act.TabNext, "Arts"), (Act.Cancel, "Close")));
     }
@@ -282,6 +287,68 @@ public partial class SheetScreen : Overlay
             change.Text = moves ? Change(key, now, then!.Get(key)) : "";
             change.Visible = moves;
         }
+    }
+
+    /// <summary>What an attribute's points give now, in all ("Your 6: +15% damage, +24 health"):
+    /// the standing with them, against the standing without.</summary>
+    static string Gives(CharacterData ch, string attr)
+    {
+        int n = Attr(ch, attr);
+        if (n <= 0) return "Nothing in it yet.";
+        var without = Core.Json.Clone(ch);
+        switch (attr) { case "might": without.Attributes.Might = 0; break; case "finesse": without.Attributes.Finesse = 0; break; case "wits": without.Attributes.Wits = 0; break; default: without.Attributes.Resolve = 0; break; }
+        StatBlock now = Character.Kit(ch).Stats, then = Character.Kit(without).Stats;
+        var parts = Standing.SelectMany(g => g.Lines)
+            .Where(l => Math.Abs(now.Get(l.Key) - then.Get(l.Key)) > 1e-6)
+            .Select(l => $"{Change(l.Key, then.Get(l.Key), now.Get(l.Key))} {l.Name.ToLowerInvariant()}").ToList();
+        return parts.Count == 0 ? $"Your {n}." : $"Your {n}: {string.Join(", ", parts)}";
+    }
+
+    /// <summary>What gear, traits and arts add beyond the standing's own lines, each written as it reads.</summary>
+    static readonly (string Key, string Name, Func<double, string> Fmt)[] Finer =
+    {
+        (Stat.Lifesteal, "Life drawn from blows", v => $"{v * 100:0.#}%"),
+        (Stat.Thorns, "Thorns", v => $"{v:0.#} back"),
+        (Stat.Block, "Block", v => $"{v * 100:0}%"),
+        (Stat.Projectiles, "Projectiles", v => $"{v:+0;-0}"),
+        (Stat.Pierce, "Pierce", v => $"{v:+0;-0}"),
+        (Stat.Duration, "Duration", Pct),
+        (Stat.StatusChance, "Chance to afflict", v => $"{v * 100:0}%"),
+        (Stat.StatusDamage, "Affliction damage", Pct),
+        (Stat.AbilityPower, "The art's strength", Pct),
+        (Stat.AbilityCooldown, "The art's wait", v => $"{(v - 1) * 100:+0;-0;0}%"),
+        (Stat.DashCooldown, "The dash's wait", v => $"{(v - 1) * 100:+0;-0;0}%"),
+        (Stat.Tenacity, "Slows shaken off", v => $"{v * 100:0}%"),
+        (Stat.ExecuteThreshold, "Finishes the near-dead", v => $"under {v * 100:0}%"),
+        (Stat.LightRadius, "Light carried", Pct),
+        (Stat.SummonDamage, "Allies' damage", Pct),
+        (Stat.Knockback, "Knockback", Pct),
+    };
+
+    /// <summary>The finer lines of the standing that gear, traits and arts have moved from where
+    /// they start; or, while none has, what may come there.</summary>
+    static Control Finest(CharacterData ch)
+    {
+        var kit = Character.Kit(ch).Stats;
+        var bases = kit.GetBase();
+        var plain = new StatBlock();
+        var plate = Style.Panel(Style.Slab(12));
+        plate.MouseFilter = MouseFilterEnum.Ignore;
+        var col = Style.V(4, Style.Label("OF NOTE", Style.UiHeavy, Style.Caption, Style.Gold));
+        plate.AddChild(col);
+        int n = 0;
+        foreach (var (key, name, fmt) in Finer)
+        {
+            double v = kit.Get(key), start = bases.TryGetValue(key, out var b) ? b : plain.Get(key);
+            if (Math.Abs(v - start) < 1e-6) continue;
+            var label = Style.Label(name, Style.Ui, Style.Body, Style.InkDim);
+            label.CustomMinimumSize = new Vector2(180, 0);
+            col.AddChild(Style.H(10, label, Style.Label(fmt(v), Style.UiBold, Style.Body, Style.Ink)));
+            n++;
+        }
+        if (n == 0)
+            col.AddChild(Style.Label("Gear, traits and arts add more here as they come: life drawn from blows, thorns, block, pierce, afflictions, a quicker art.", Style.TextItalic, Style.Small, Style.InkDim, true));
+        return plate;
     }
 
     /// <summary>What a point would change, as the change itself (a tenth of a percent shows).</summary>
