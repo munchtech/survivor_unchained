@@ -259,10 +259,14 @@ public static class Campfire
             TurbulenceEnabled = true, TurbulenceNoiseStrength = 3f, TurbulenceNoiseScale = 0.8f, TurbulenceInfluenceMin = 0.3f, TurbulenceInfluenceMax = 0.6f,
             ColorRamp = Ramp((0, new Color(1.6f, 1.45f, 1.1f, 0)), (0.1f, new Color(1.6f, 1.45f, 1.1f, 0.9f)), (1, new Color(1.3f, 1.05f, 0.6f, 0))),
         };
+        // Godot's particle billboard drops the particle's scale unless told to keep it: the specks
+        // were drawn a metre across, cream puffballs round every lamp from dusk on.
+        var look = Sprite(Blob(Colors.White, new Color(1, 1, 1, 0)), true);
+        look.BillboardKeepScale = true;
         return new GpuParticles3D
         {
             Name = "Moths", Amount = 7, Lifetime = 2.1, ProcessMaterial = p, Emitting = false,
-            DrawPass1 = new QuadMesh { Size = new Vector2(1, 1), Material = Sprite(Blob(Colors.White, new Color(1, 1, 1, 0)), true) },
+            DrawPass1 = new QuadMesh { Size = new Vector2(1, 1), Material = look },
             CastShadow = GeometryInstance3D.ShadowCastingSetting.Off,
         };
     }

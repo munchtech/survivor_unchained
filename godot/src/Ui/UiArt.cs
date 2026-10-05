@@ -50,10 +50,14 @@ public static class UiArt
         ["well"] = new("frames/well.png", 12, 12, 12, 12, Tile: true),
         ["slab"] = new("frames/slab.png", 14, 14, 14, 14, Tile: true),
         ["header"] = new("frames/header.png", 0, 0, 0, 12, Tile: true),
+        // Its match along the page's foot, the prompts set on its leather.
+        ["footer"] = new("frames/footer.png", 0, 12, 0, 0, Tile: true),
         // The page's pieces (tools/uiforge/pages.py): the rail between a page's columns (its stone is
         // drawn at the middle by Overlay), the plate round the survivor's figure on the pack and the
         // self, and the light card for tooltips and the result's cards.
         ["column_divider"] = new("frames/column_divider.png", 0, 24, 0, 24, Tile: true),
+        // A page's column ruled in gilt (Style.Column): stretched, so the rules' fade follows its height.
+        ["column"] = new("frames/column.png", 12, 16, 12, 8),
         ["hero_plate"] = new("frames/hero_plate.png", 56, 56, 56, 56, Tile: true, Out: 12),
         ["card_light"] = new("frames/card_light.png", 20, 20, 20, 20, Tile: true),
         // Hammered iron repeats rather than stretches; the ember stone at the top's middle is the code's.

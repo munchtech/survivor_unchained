@@ -7,16 +7,19 @@ namespace SurvivorUnchained.View;
 /// <summary>
 /// The damage numbers, kept to what the eye can take in (the experience
 /// director's rule, S-13): a target's hits within a beat sum into one number
-/// that rises and grows as they land; at most eight new numbers a frame, the
-/// biggest first and her crits always; one struck for a fifth of its life a
-/// size bigger, a crit gold; none drawn over her. A crowd struck all at once
-/// carpeted itself in numbers that hid both it and the blow.
+/// that rises and grows as they land; at most four new numbers a frame and
+/// twelve on screen, the biggest first and crits before them, none laid over
+/// another still rising; one struck for a fifth of its life a size bigger
+/// and told first, a crit gold; none drawn over her. A crowd struck all at
+/// once carpeted itself in numbers that hid both it and the blow.
 /// </summary>
 public partial class Hits
 {
     /// <summary>How long a target's hits keep summing into one number.</summary>
     const double Beat = 0.25;
-    const int NewPerFrame = 8;
+    const int NewPerFrame = 4;
+    /// <summary>The most numbers on screen at once (a big blow is told past it).</summary>
+    const int LiveMost = 12;
     /// <summary>The nearest a number is drawn to her, in metres over the ground.</summary>
     const float ClearOfHer = 1.5f;
 
@@ -92,15 +95,28 @@ public partial class Hits
         waiting.Add(new Waiting { Target = target, At = at, Amount = amount, MaxHp = maxHp, Crit = crit, Tint = dot });
     }
 
-    /// <summary>Show this frame's new numbers: her crits always, then the biggest, eight at most; `her` is where she stands.</summary>
+    /// <summary>Show this frame's new numbers, the weightiest first, `her` being where she
+    /// stands. A crowd is told by a few: no more than LiveMost on screen at once and none laid
+    /// over another still rising (summed per target, eight a frame, a packed crowd still wore a
+    /// number on every body, overlapping into a carpet).</summary>
     public void Flush(Vector3? her)
     {
         if (waiting.Count == 0) return;
-        waiting.Sort((a, b) => a.Crit != b.Crit ? (a.Crit ? -1 : 1) : b.Amount.CompareTo(a.Amount));
+        // A blow that takes a fifth of what it struck is told first, then crits, then the biggest.
+        waiting.Sort((a, b) => Heavy(a) != Heavy(b) ? (Heavy(a) ? -1 : 1) : a.Crit != b.Crit ? (a.Crit ? -1 : 1) : b.Amount.CompareTo(a.Amount));
+        int live = 0;
+        young.Clear();
+        for (int k = 0; k < numbers.Count; k++)
+        {
+            if (numbers[k].T >= 1 || tallyOf[k] == int.MinValue) continue;
+            live++;
+            if (numbers[k].T < 0.6f) young.Add(numbers[k].Label.GlobalPosition);
+        }
         int shown = 0;
         foreach (var w in waiting)
         {
-            if (shown >= NewPerFrame && !w.Crit) break;
+            // No exceptions: in a crowd of the small dead nearly every blow takes a fifth of one.
+            if (shown >= NewPerFrame || live >= LiveMost) break;
             var at = w.At;
             if (her is { } h)
             {
@@ -112,6 +128,7 @@ public partial class Hits
                     at = new Vector3(h.X + off.X * ClearOfHer, at.Y, h.Z + off.Z * ClearOfHer);
                 }
             }
+            if (Crowded(at)) continue;
             var t = new Tallied { Target = w.Target, Sum = w.Amount, Born = clock, Crit = w.Crit, Heavy = w.MaxHp > 0 && w.Amount > w.MaxHp * 0.2, Tint = w.Tint };
             int i = Show(at, "", Colors.White, 60);
             tallies[i] = t;
@@ -119,8 +136,26 @@ public partial class Hits
             labelOfTarget[w.Target] = i;
             Restyle(i, t);
             shown++;
+            live++;
+            young.Add(numbers[i].Label.GlobalPosition);
         }
         waiting.Clear();
+    }
+
+    readonly List<Vector3> young = new();
+
+    static bool Heavy(in Waiting w) => w.MaxHp > 0 && w.Amount > w.MaxHp * 0.2 && w.Tint == null;
+
+    /// <summary>Whether a number at `at` would be laid over one still rising (on the ground's
+    /// plane: the camera looks down, so nearness there is nearness on screen).</summary>
+    bool Crowded(Vector3 at)
+    {
+        foreach (var y in young)
+        {
+            float dx = (at.X - y.X) / 1.2f, dz = (at.Z - y.Z) / 0.8f;
+            if (dx * dx + dz * dz < 1) return true;
+        }
+        return false;
     }
 
     /// <summary>A tallied number's text, colour and size from what it holds.</summary>

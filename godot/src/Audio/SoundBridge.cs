@@ -77,6 +77,7 @@ public sealed class SoundBridge
                 case Ev.Muzzle m: Sfx.Shoot(m.School, At(m.X, m.Z)); break;
                 case Ev.Dash: Sfx.Dash(); break;
                 case Ev.PerfectDodge: Sfx.Perfect(); break;
+                case Ev.Rise r: Sfx.Rise(r.Ember); break;
                 case Ev.Ability ab: Sfx.Art(ab.Id); break;
                 case Ev.Spawn sp: Sfx.Spawn(sp.Style, At(sp.X, sp.Z)); break;
                 case Ev.LevelUp: Sfx.LevelUp(b != null && LevelUp.BlessingNext(b)); break;
