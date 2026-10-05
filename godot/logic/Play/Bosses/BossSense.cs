@@ -47,6 +47,15 @@ public static class BossSense
             case Grimtunnel { Flaring: >= 0 } g when g.E.Alive:
                 goal = (g.E.X, g.E.Z, Math.Max(2.2, Math.Min(reach * 0.7, 6)));
                 break;
+            // Caged: to the post furthest from the door (and from him at it), and stand by it till it gives.
+            case Redcowl { InCage: true } rc:
+            {
+                var (cx, cz) = rc.CageAt;
+                var (doorX, doorZ) = rc.Door;
+                var post = rc.Posts.Where(q => !q.Broken).OrderByDescending(q => Dist(q.X, q.Z, doorX, doorZ)).FirstOrDefault();
+                if (post != null) goal = (post.X + (cx - post.X) * 0.3, post.Z + (cz - post.Z) * 0.3, 0.4);
+                break;
+            }
             // The cold closing in: into a fed fire's light, or to the nearest deadfall to light it.
             case Greymuzzle { Cold: true } gm:
             {
