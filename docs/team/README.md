@@ -53,7 +53,7 @@ The owner asks: "accurate, efficient, on track, manage and engineer context. del
 - Batch screenshots and renders: shoot everything a check needs in one turn, look once, fix in one pass.
 - Keep handoffs and status pages lean.
 - Effort: legal medium; performance measurement runs, story consistency checks, and provenance and licence logging high; everything else at its top. Every agent stays on the same model.
-- Running now: UI design, UI art, the face, animation (and the main session's outfits). Next group: combat, the experience director, arena art, skills VFX (the story fights). Then creatures, cinematics, performance, crafting.
+- Running now: UI design, the face, animation, combat, the experience director (and the main session's outfits). Next: arena art and skills VFX (the story fights), then creatures, cinematics, performance, crafting, UI art (handoff ready at cd0f4ab6).
 
 ## Roster
 
@@ -66,7 +66,7 @@ The main session keeps this current. It is the address list for SendMessage. Ret
 | Combat, encounters, bosses, balance | a739d6792d21f5efd | docs/team/combat.md |
 | Animation | a7dd95d00c4a6a017 | docs/team/animation.md |
 | UI design (layouts, screens, the filter) | a4fdbc49786ba8b7f | docs/team/ui_design.md |
-| UI art | a0bff3ffe4d3ad748 | docs/team/ui_art.md |
+| UI art (paused; handoff ready at cd0f4ab6) | — | docs/team/ui_art.md |
 | Crafting (research, design, build) (paused; handoff ready at ed429efb) | — | docs/team/crafting.md |
 | Gameplay experience director | a9f0d6c64d891d56d | docs/team/experience.md |
 | Skills look and feel (VFX, under the main session) | abc6bbe020c7fe287 | docs/team/skills.md |
