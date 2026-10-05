@@ -102,8 +102,14 @@ public partial class Gore : Node3D
         }
     }
 
-    /// <summary>A ragged blot with droplets thrown round it; wet (smooth) where the blood is.</summary>
-    static (ImageTexture Albedo, ImageTexture Orm) SplatTextures()
+    static (ImageTexture Albedo, ImageTexture Orm)? splatTextures;
+
+    /// <summary>A ragged blot with droplets thrown round it; wet (smooth) where
+    /// the blood is. Painted once a session (a quarter of a second, pixel by
+    /// pixel), not again at every place entered.</summary>
+    static (ImageTexture Albedo, ImageTexture Orm) SplatTextures() => splatTextures ??= PaintSplat();
+
+    static (ImageTexture Albedo, ImageTexture Orm) PaintSplat()
     {
         const int N = 256;
         var img = Image.CreateEmpty(N, N, true, Image.Format.Rgba8);

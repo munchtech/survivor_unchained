@@ -756,6 +756,7 @@ public static class Vat
         // A run without a screen keeps no texture data to write down.
         if (DisplayServer.GetName() == "headless") return;
         DirAccess.MakeDirRecursiveAbsolute("user://vat");
+        Sweep();
         using var f = FileAccess.Open(CachePath(b.Key), FileAccess.ModeFlags.Write);
         if (f == null) return;
         void Blob(byte[] data) { f.Store32((uint)data.Length); f.StoreBuffer(data); }
@@ -792,6 +793,23 @@ public static class Vat
             foreach (var v3 in new[] { s.DyeColor, s.DyeH, s.DyeS, s.DyeV }) { f.StoreFloat(v3.X); f.StoreFloat(v3.Y); f.StoreFloat(v3.Z); }
             f.StoreFloat(s.DyeLum);
             f.StoreFloat(s.Cut);
+        }
+    }
+
+    static bool swept;
+
+    /// <summary>Bakes made by an older Version deleted, once a run, before a
+    /// new one is written: nothing reads them again, and each version's set is
+    /// some 300 MB (a player's folder would otherwise grow with every update).</summary>
+    static void Sweep()
+    {
+        if (swept) return;
+        swept = true;
+        foreach (var file in DirAccess.GetFilesAt("user://vat"))
+        {
+            int at = file.LastIndexOf(".v", StringComparison.Ordinal);
+            if (at > 0 && file.EndsWith(".bin") && int.TryParse(file[(at + 2)..^4], out int v) && v < Version)
+                DirAccess.RemoveAbsolute($"user://vat/{file}");
         }
     }
 
