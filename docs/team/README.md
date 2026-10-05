@@ -56,15 +56,15 @@ The main session keeps this current. It is the address list for SendMessage. Ret
 | Voice (paused by the owner: no placeholders; final voices from ElevenLabs later) | a501b387a90d78b4e | docs/team/voice.md |
 | Story and writing | a7ba8903f4c8261b1 | docs/team/story.md |
 | Combat, encounters, bosses, balance | afe45df4957917614 | docs/team/combat.md |
-| Animation | a03acf30b3e9bdd70 | docs/team/animation.md |
-| UI design (character creation first) | aab47bfdab5955dac | docs/team/ui_design.md |
+| Animation | a7dd95d00c4a6a017 | docs/team/animation.md |
+| UI design (layouts, screens, the filter) | a4fdbc49786ba8b7f | docs/team/ui_design.md |
 | UI art | a0bff3ffe4d3ad748 | docs/team/ui_art.md |
 | Crafting (research, design, build) | af01b0d61ef656dd4 | docs/team/crafting.md |
 | Gameplay experience director | a9f0d6c64d891d56d | docs/team/experience.md |
 | Skills look and feel (VFX, under the main session) | abc6bbe020c7fe287 | docs/team/skills.md |
 | Cinematics production | a79b6d8c81e14dc63 | docs/team/cinematics.md |
 | Performance | a56abaf3a104be675 | docs/team/performance.md |
-| Arena art | a26767f7f9955cb56 | docs/team/arena_art.md |
+| Arena art | aba487928a1515c93 | docs/team/arena_art.md |
 | Male hero (body, head, hair, outfits) | ab82cbe99e2937ddd | docs/team/hero_male.md |
 | Heroine face, hair and character creation's Look | a833b7942e978d994 | docs/team/face.md |
 | Asset provenance (what isn't ours, licences, credits, replacement plan) | a80ff0c7fd988b178 | docs/team/provenance.md |
