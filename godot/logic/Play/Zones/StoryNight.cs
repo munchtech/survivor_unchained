@@ -174,17 +174,26 @@ public sealed class StoryNight : ZoneRuntime, IStoryArena
         StartBeat(0);
     }
 
-    /// <summary>Pictures and probes: straight to a stage (or the boss: Fight.Beats.Length), the build
-    /// as it stands, the ground behind opened.</summary>
-    public void SkipTo(int stage)
+    /// <summary>Pictures and probes: straight to a stage (or the boss: Fight.Beats.Length), the ground
+    /// behind opened. `floors`: with the ember the stages passed over would have left her at least (their
+    /// floors, drafted as she goes) and the night's first great blessing, so a picture of a later stage is
+    /// of the build that meets it; otherwise the build as it stands.</summary>
+    public void SkipTo(int stage, bool floors = false)
     {
         if (B == null) return;
         stage = Math.Clamp(stage, 0, Fight.Beats.Length);
         beat?.End();
         Clear(all: true);
+        int floor = 0;
         for (int i = 0; i < stage && i < Fight.Beats.Length; i++)
-            if (Fight.Beats[i]() is { Gate: { } g }) Open(g);
-        B.GreatOwed = 0;
+            if (Fight.Beats[i]() is { } passed)
+            {
+                if (passed.Gate is { } g) Open(g);
+                floor = Math.Max(floor, passed.EmberFloor);
+            }
+        if (floors)
+            for (int k = 0; k < 200 && B.EmberLevel < floor; k++) B.GainEmber(Math.Max(1, B.EmberNext - B.EmberXp), raw: true);
+        else B.GreatOwed = 0;
         if (stage >= Fight.Beats.Length) { beatIx = stage - 1; BossOpen(); }
         else StartBeat(stage);
         var (x, z) = getUp;
@@ -259,6 +268,19 @@ public sealed class StoryNight : ZoneRuntime, IStoryArena
             double lx = gate.X1 - gate.X0, lz = gate.Z1 - gate.Z0;
             double her = lx * (p.Z - gate.Z0) - lz * (p.X - gate.X0), start = lx * (sz - gate.Z0) - lz * (sx - gate.X0);
             if (Math.Sign(her) != Math.Sign(start) || SegDist(p.X, p.Z, gate.X0, gate.Z0, gate.X1, gate.Z1) < 2.5) return false;
+        }
+        return true;
+    }
+
+    /// <summary>A point on the boss's ground's side of every gate into it (as its start is).</summary>
+    bool PastGates(double x, double z)
+    {
+        if (BossGround is not { } g) return true;
+        var (sx, sz) = Fight.Place[Fight.BossStart];
+        foreach (var gate in Fight.Place.Gates.Where(q => q.Into == g))
+        {
+            double lx = gate.X1 - gate.X0, lz = gate.Z1 - gate.Z0;
+            if (Math.Sign(lx * (z - gate.Z0) - lz * (x - gate.X0)) != Math.Sign(lx * (sz - gate.Z0) - lz * (sx - gate.X0))) return false;
         }
         return true;
     }
@@ -379,7 +401,7 @@ public sealed class StoryNight : ZoneRuntime, IStoryArena
 
     double strayT;
 
-    /// <summary>Anything of the fight's put out of its open ground (a shove, a slide) is brought back to the
+    /// <summary>Anything of the fight's put out of its open ground (a shove, a slide, a run) is brought back to the
     /// nearest of the place's points it may stand on: a goal out of reach is a night that never ends.</summary>
     void Strays(double dt)
     {
@@ -387,9 +409,22 @@ public sealed class StoryNight : ZoneRuntime, IStoryArena
         strayT = 0.5;
         foreach (var e in B!.Enemies.Living())
         {
-            if (e.Disposition != Disposition.Hostile || e.Scripted || e.Boss || e.State is EnemyState.Dying or EnemyState.Burrowed) continue;
-            if (Fight.Place.Inside(e.X, e.Z, -0.8, open)) continue;
-            var home = Fight.Place.Points.Values.Where(q => Fight.Place.Inside(q.X, q.Z, 1, open)).OrderBy(q => Dist(q.X, q.Z, e.X, e.Z)).FirstOrDefault();
+            // A named foe the stage asks her to reach, or the boss, is brought back however its script moved it,
+            // and whoever it is with (Whitethroat ran her drive's lane out through the den's wall, and stood there;
+            // Grimtunnel was knocked out past the lip's).
+            bool named = e.Named != null;
+            if (!named && (e.Disposition != Disposition.Hostile || e.Scripted || e.Boss) || e.State is EnemyState.Dying or EnemyState.Burrowed) continue;
+            // (The boss, once the way back is shut, on his own side of it too: pushed out of a hole of his own
+            // making, Grimtunnel went through the shut gate.)
+            if (Fight.Place.Inside(e.X, e.Z, -0.8, open) && !(e.Boss && shutBehind && !PastGates(e.X, e.Z))) continue;
+            // (A point the fight has since filled is no home: Grimtunnel set down at the crack's end, in the crack,
+            // was pushed out of it through the wall, and back, and out.)
+            // The place's points, and ground round each (a boss is big, and his own holes fill his ground).
+            var home = Fight.Place.Points.Values
+                .SelectMany(q => Enumerable.Range(0, 17).Select(k => k == 0 ? (X: q.X, Z: q.Z)
+                    : (X: q.X + Math.Cos(k * Math.PI / 4) * (k <= 8 ? 2.5 : 5), Z: q.Z + Math.Sin(k * Math.PI / 4) * (k <= 8 ? 2.5 : 5))))
+                .Where(q => Fight.Place.Inside(q.X, q.Z, 1, open) && (!e.Boss || !shutBehind || PastGates(q.X, q.Z)) && !B.Collision.Blocked(q.X, q.Z, e.Radius))
+                .OrderBy(q => Dist(q.X, q.Z, e.X, e.Z)).FirstOrDefault();
             if (home == default) continue;
             e.X = home.X; e.Z = home.Z; e.Kbx = e.Kbz = 0;
         }
@@ -730,6 +765,8 @@ public sealed class StoryNight : ZoneRuntime, IStoryArena
     readonly HashSet<string> marks = new();
     public void Mark(string key) => marks.Add(key);
     public bool Marked(string key) => marks.Contains(key);
+    public IOrb Piece(string id, double scale) => G.Look.Piece(id, scale);
+    public double HeightAt(double x, double z) => G.Look.HeightAt(x, z);
     public bool Test(Cond cond) => Rules.Test(cond, C);
     bool IStoryArena.Knows(string key) => Knows(key);
     public void After(double seconds, Action act) => G.After(seconds, act);

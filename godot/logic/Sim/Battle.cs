@@ -467,7 +467,8 @@ public sealed partial class Battle
             double dsp = Abilities.Dash.Distance / Abilities.Dash.Time;
             p.X += p.DashDX * dsp * dt;
             p.Z += p.DashDZ * dsp * dt;
-            Collision.Resolve(ref p.X, ref p.Z, p.Radius, true);
+            // Over a gap in the ground (a crack, a sinkhole) a dash carries her; walls still stop it.
+            Collision.Resolve(ref p.X, ref p.Z, p.Radius, true, overGaps: true);
             if (Boons.TryGetValue("cinderwake", out int wake) && Dist(p.X, p.Z, p.WakeX, p.WakeZ) > 0.9) Wake(wake);
             // Out of a dash with your feet under you: a burst of pace, so dashes chain.
             if (p.DashT <= 0)
@@ -1172,7 +1173,7 @@ public sealed partial class Battle
 
     /// <summary>"You go cold. Then the ember catches." The cold's beat before the fire, and how long its
     /// front takes to run out to its edge (eased out, as a blast's air is; the look's FireRun).</summary>
-    public const double RiseCold = 0.35, RiseRun = 0.3;
+    public const double RiseCold = 0.25, RiseRun = 0.3;
 
     /// <summary>Cold, Then Not's fire on its way out from where she got up.</summary>
     sealed class RiseFireState
@@ -1587,6 +1588,8 @@ public sealed partial class Battle
         /// <summary>Slowed by it (a fraction of pace, for a time).</summary>
         public double Slow, SlowFor;
         public string? Label;
+        /// <summary>When it was marked (the battle's clock).</summary>
+        public double At;
         /// <summary>What it leaves, or does besides, when it lands.</summary>
         public Action<Battle>? After;
         public bool Hit(double x, double z, double r)
@@ -1632,6 +1635,15 @@ public sealed partial class Battle
     public void EndMark(int id) =>
         Events.Emit(new Ev.Telegraph { Id = id, Shape = TelegraphShape.Circle, Kind = TelegraphKind.Wall, Radius = 0.01, Duration = 0.01, Hostile = true });
     public IReadOnlyList<EnemyBlow> Blows => blows;
+
+    /// <summary>The creatures' own marked circles still to land (a brute's slam, a burst's fuse): where, how
+    /// wide, how long they were marked and how long is left, and what each does. For the hands that read
+    /// marks (BossSense): a relaxed player steps out of a circle marked under a brute as surely as a boss's.</summary>
+    public IEnumerable<(double X, double Z, double R, double Marked, double Left, double Damage)> EnemyStrikes()
+    {
+        foreach (var s in strikes)
+            if (s.Owner == Side.Enemy) yield return (s.X, s.Z, s.R, s.Delay, s.T, s.Dmg);
+    }
     /// <summary>Every marked blow still to land is called off (she got up at a checkpoint).</summary>
     public void CancelBlows() => blows.Clear();
 
@@ -1641,6 +1653,7 @@ public sealed partial class Battle
     public EnemyBlow Blow(EnemyBlow b)
     {
         b.T = b.Delay;
+        b.At = Time;
         blows.Add(b);
         Events.Emit(new Ev.Telegraph
         {
@@ -2643,6 +2656,8 @@ public sealed class Buff
 sealed class StrikeSpec
 {
     public double X, Z, R, Dmg, T;
+    /// <summary>How long it was marked in all (T is what is left).</summary>
+    public readonly double Delay;
     public School School;
     public Tag[] Tags;
     public WeaponInst? Weapon;
@@ -2652,6 +2667,6 @@ sealed class StrikeSpec
 
     public StrikeSpec(double x, double z, double r, double dmg, School school, Tag[] tags, double t, WeaponInst? weapon, Side owner, int depth)
     {
-        X = x; Z = z; R = r; Dmg = dmg; School = school; Tags = tags; T = t; Weapon = weapon; Owner = owner; Depth = depth;
+        X = x; Z = z; R = r; Dmg = dmg; School = school; Tags = tags; T = t; Delay = t; Weapon = weapon; Owner = owner; Depth = depth;
     }
 }
