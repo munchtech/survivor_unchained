@@ -1828,6 +1828,7 @@ Nobody says so.
 | `Goal` | "Break the windlasses ({n} of 3)" |
 | As it opens (`Say`, info) | "The shafts are boiling" / "Break a windlass, and its shaft falls in" |
 | A windlass broken (sight) | "The windlass goes over, and the shaft falls in on itself." |
+| The first windlass she stands at (`Say`, info) | "Stand at the windlass" / "Close enough to touch, and your weapons break it" |
 | The first windlass (Snib) | "Not the WINDLASS! Snib has to wind that! Snib does not wind it. The lads wind it." |
 
 The Wick-Mother's name, lesson and "Up, up, up!" are her def's.
@@ -1840,6 +1841,8 @@ The Wick-Mother's name, lesson and "Up, up, up!" are her def's.
 | The first tub's warning (sight) | "The rails start to sing." |
 | A tub (label) | "A tub" |
 | The first tub (Snib) | "Mind the tubs! Tubs are EXPENSIVE. Tubs are Boss's." |
+| The Chucker on the roof, out of reach (bar) | "The Chucker" / "Out of reach on the roof until the tubs stop" |
+| The tubs stop, and he comes down (sight) | "The rails go quiet. Down off the brake-house roof comes the Chucker, a pot in each hand." |
 
 **Stage 3, the pump.**
 
@@ -2085,7 +2088,7 @@ and the bark beside it is a sight.
 
 | Slot | Words |
 |---|---|
-| The first drive (`Say`, danger) | "The drive" / "The gap is where she runs: go through the wolves" |
+| The first drive (`Say`, danger) | "The drive" / "Out of her line, into the wolves" (one idea for its 1.7 s: the experience director's) |
 | Her first miss (sight at her; `Say`, boon) | "She misses, and stands with her head down, blowing."; "She is open" / "Hit her while she blows" |
 | The gap catches her, the first time (`Say`, danger) | "The gap is hers" / "Through the wolves, never the gap" |
 | After her seventh drive (`Say`, boon) | "Whitethroat is spent" / "She has nothing left to run with" |
@@ -2094,7 +2097,7 @@ and the bark beside it is a sight.
 | Barn-Door blocks a lock, the first time (`Say`, info) | "Barn-Door is in the way" / "Draw him off the lock, then break it" |
 | The levy forms again (`Say`, danger); the captain's bar | "The levy forms again" / "Round its ends to the captain"; "Round the line's ends to him" |
 | Redcowl reaches the cage's door (sight) | "He fills the door." |
-| The way back shuts on the boss's ground (sight) | the Hollow: "Behind you, the Pack fills the way you came."; the Roost: "Behind you, his people drag a cart across the way you came."; the Dig: "Behind you, the tub-way falls in."; the Door: "Behind you, a rank of the dead steps across the hall." |
+| The way back shuts on the boss's ground (sight) | the Hollow: "Behind you, the Pack fills the way you came."; the Roost: "Behind you, his people drag a cart across the way you came."; the Dig (the neck from the pump-house onto the lip): "Behind you, the ground you came along from the pump-house slumps into the pit."; the Door: "Behind you, a rank of the dead steps across the hall." |
 
 ## 24. Crafting's words: the Wayfinder's table, the ruler's things, Brannoc's cooled commission (4 October)
 
