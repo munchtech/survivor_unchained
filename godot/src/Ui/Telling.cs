@@ -117,7 +117,8 @@ public abstract partial class TellingScreen : Overlay
                 var def = Rpg.Items.Get(m);
                 var slot = ItemViews.Slot(new Rpg.ItemInstance { Def = m, Qty = n, Rarity = def.Rarity }, 60);
                 slot.MouseFilter = MouseFilterEnum.Ignore;
-                var name = Style.Label(lost ? (def.Plural ?? def.Name.ToLowerInvariant()) : (n == 1 ? def.Name.ToLowerInvariant() : def.Plural ?? def.Name.ToLowerInvariant()),
+                // (one spilled is named as one: "pieces of scar-glass" under a single piece misread it)
+                var name = Style.Label(n == 1 ? def.Name.ToLowerInvariant() : def.Plural ?? def.Name.ToLowerInvariant(),
                     Style.Ui, Style.Caption, lost ? Style.InkFaint : Style.Ink, true, HorizontalAlignment.Center);
                 var cell = Style.V(2, slot, name);
                 cell.CustomMinimumSize = new Vector2(76, 0);
