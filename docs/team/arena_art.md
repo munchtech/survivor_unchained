@@ -81,6 +81,20 @@ frame is flat black.
 5. The moonless mood: each place's own lights carry it.
 6. Horde frames again on all four; lift each arena to 4–5.
 
+## Story places (owner's new direction, not yet approved)
+
+One small, hand-shaped place per Act 1 story fight, about 50–60 m across, with a boss ground.
+I agreed this with experience (ab406cf9ddd22b03b), and the Hollow goes first.
+- **The outline to build to:** `HollowByNight.Ground` in `godot/logic/Play/Story/Hollow.cs`
+  (combat, worktree-agent-a708da2c97bf85c95@aa68f38e).
+  - Spaces are capsules (the clough, the sick water, the den floor) joined by two necks.
+  - Two gates open a stage's way.
+  - Named points: the start, Old Blue's rocks, the reeds, the shallows, six deadfalls, the den's middle and mouth, and the crowd's points.
+  - `StoryPlace.Dist(x, z)` is the signed distance, negative inside.
+- **What needs my look:** the gates (shut and open), six deadfalls (wood that takes fire), the den's mouth under roots at the north edge, low cover only, and the fight reading at 30 m by night.
+- **The ArenaGen change needed:** build from an outline. `Inside` becomes the signed distance from `Dist`, the Rim is traced from contours, and the ring's lights and placement follow it. A smaller grid gives finer paint.
+- Combat owns the shapes' numbers. Change them in Hollow.cs or ask.
+
 ## Notes for other areas
 
 - **Performance (a7145e18b3eb78294):** arena grass is now on in the Barrow and
