@@ -26,11 +26,12 @@ You asked: *"ai generated assets and things are perfectly ok for steam games and
    - So a competitor could, in principle, copy an individual AI-made icon or texture.
    - What you can protect: the game as a whole (your selection and arrangement), anything you personally made or changed, and your name and logo, by trademark.
    - Section 16 says how to strengthen this.
-4. **"No trouble" depends on a few fixes before launch.** Four items still block launch (4 Oct, night):
-   - the AI disclosure, filled in honestly at submission;
-   - the mature-content answers, which must cover what's hidden in the build as well as what's shown, once the motion check is finished;
-   - the licences screen, built and its texts verified, still to be seen in game;
-   - the boar, which has conflicting licence terms: replace it, or buy the commercial version, before launch.
+4. **"No trouble" depends on a few fixes before launch.** Three items still block launch (5 Oct):
+   - the AI disclosure, filled in honestly at submission. The text is ready to paste (`STEAM_CHECKLIST.md` D3);
+   - the mature-content answers, which must cover what's hidden in the build as well as what's shown, once the motion check is finished on the new outfit build;
+   - the boar, which has conflicting licence terms. No one has its replacement scheduled, so **buy the commercial version now** and keep the receipt.
+
+   The licences screen is done: built, its texts verified, and seen in game (5 Oct).
 
    Done since the first brief: debug paths and unused files are out of the release build, and so are the placeholder voices. The pack listing proves it (issue 3).
 
@@ -45,7 +46,7 @@ You asked: *"ai generated assets and things are perfectly ok for steam games and
    - ElevenLabs is fine for commercial use on a paid plan. Use only voices we have the right to: designed voices, your own voice, or performers who have consented in writing. Never feed ElevenLabs output into another AI model; its terms forbid it.
    - **Suno** (the hymn) is fine on a **Pro or Premier** plan, for a song you **download** through Suno's own download button. Suno assigns those songs to you. Free-plan songs are for personal, non-commercial use only (issue 28).
 
-**In one line:** ship it with an honest disclosure, clear the four blockers (the boar is the biggest job), and plan for the Krea revenue cap, which now covers the bodies' pictures as well as the interface. Then the AI use itself is not what gets you into trouble.
+**In one line:** ship it with an honest disclosure, clear the three blockers (buying the boar's commercial version is the quickest), and plan for the Krea revenue cap, which now covers the bodies' pictures as well as the interface. Then the AI use itself is not what gets you into trouble.
 
 ---
 
@@ -121,7 +122,7 @@ I checked these in the repository at `f56ee42` (integration branch) and in rende
 | 1 | Steam AI disclosure (pre-generated; no live) | BLOCKER |
 | 2 | Steam mature content survey, including content hidden in the build | BLOCKER |
 | 3 | Debug paths and unused files in the release build | DONE (8a770667; pack listing reviewed) |
-| 4 | Licence notices and credits missing from the build | BLOCKER until seen in game (built at 178768aa; texts verified) |
+| 4 | Licence notices and credits missing from the build | DONE (built at 178768aa; texts verified; seen in game 5 Oct). Re-check the folder beside each release build |
 | 5 | Third-party assets: the boar; the base bodies (local Krea 2 Turbo and TRELLIS 2); The Ember Watch | BLOCKER (boar); FINE with conditions (bodies); FINE (Ember Watch, with records) |
 | 6 | Explicit-scene placeholders in shipped data; the explicit-content decision | DONE (removed, efc15256) / decision |
 | 7 | Sex tied to a gameplay buff (Australia R18+, credit-card gate) | RESOLVED once b47d98ea merges |
@@ -291,7 +292,7 @@ The spec it implements:
 - The owner has approved the export templates, and the main session has fetched Godot's 4.5.1 mono templates. The build waits only for the GPU to be free.
 - Checked and harmless: `--bare` hides the world, not an outfit. The environment switches (`HAIRDEBUG`, `FX_LAYERS`, `CAMPFIRE_PARTS`, `FLORA_COUNT`) change only effects and counts.
 
-### 4. Licence notices and credits missing from the build: BLOCKER
+### 4. Licence notices and credits missing from the build: DONE
 
 **Evidence.**
 - The export has no `.txt` or `.md` files.
@@ -332,6 +333,13 @@ I compared the shipped notice texts with their sources. `GODOT_LICENSE.txt` and 
 - drop the entries for works the release excludes;
 - make the AI section the single list in `STEAM_CHECKLIST.md` E;
 - see the screen in game when the GPU is free.
+
+**Seen in game (5 Oct 2026, 1920×1080, the main checkout at e1b90496's code).** Opened with `--open credits`, then each index entry clicked:
+- all seven credits sections show, and the AI section carries the text of `STEAM_CHECKLIST.md` E;
+- the Godot page shows the MIT text and "Its parts, made by others", read from the engine (`Engine.GetCopyrightInfo()`); the .NET page its MIT text and third-party notice; the typefaces page the OFL 1.1 text with the three fonts' copyright lines;
+- a button offers to open the licences folder (not pressed).
+
+One layout fault, not a legal one: two index labels run past the panel's divider (sent to UI design). Before each upload, check that `licences/` sits beside the release executable (`export.sh` copies it there).
 
 **Specification** (for the UI design lead's successor; sources checked 4 Oct 2026).
 - **Godot 4.5.1:**
@@ -457,7 +465,15 @@ These are my rulings on the auditor's findings (`ASSET_PROVENANCE.md`), updated 
   2. **Generated locally with an unrestricted model:** TRELLIS 2, Pixal3D or MoGe (MIT), or Kimodo (outputs ours). The input picture must be ours too:
      - our own render or drawing;
      - the owner's own photo, with a model release if a person is in it;
-     - an image we generated ourselves.
+     - an image we generated ourselves, with a local image model that has no revenue cap (below).
+
+     **Which local image models count** (answering `MODELS_TO_MAKE.md` appendix D; licence fields read from Hugging Face's API on 5 Oct 2026, to be re-read from each model's own licence file before first use):
+     - **Yes, no revenue cap:** Qwen-Image and Qwen-Image-2512 (Apache-2.0), Z-Image-Turbo (Apache-2.0), FLUX.1 [schnell] (Apache-2.0). First choice: Qwen-Image, whose VAE and text encoder our Krea 2 pipeline already loads, so ComfyUI has most of it. Apache-2.0 governs the model; it puts no conditions on images we make with it.
+     - **Yes, with a note:** HiDream-I1 (MIT), but its text encoder is Llama 3.1 8B, under Meta's Llama 3.1 Community License. Its conditions (the 700M-user threshold, the "Built with Llama" notice) attach to distributing the model, which we don't do; read it before use.
+     - **No:** FLUX.1 [dev] and FLUX.2 [dev] (Black Forest Labs' non-commercial licences; whatever they say of outputs, we'd be running the weights for a commercial product). Stable Diffusion 3.5 (Stability's Community License: free only under US$1M revenue, the same cap problem as Krea). Any model whose licence bars the EU or UK, like Hunyuan's.
+     - **Allowed but not preferred:** Stable Diffusion XL (CreativeML Open RAIL++-M): commercial use allowed, with a list of banned uses that we would never come near; older and weaker.
+
+     The same rules apply as for any AI picture: text prompts naming no real person, artist or other work; no LoRA without its creator's commercial permission; a ledger line. Training data is unsettled law for every one of these, as for Krea (lawyer question 15).
   3. **Generated with Krea 2 locally:** allowed, but it adds to the US$1M revenue cap and the 30-day termination risk (issue 8). That includes a mesh made from a Krea picture, because it is commercial use of a Krea output.
   4. **Never for anything that ships:**
      - Hunyuan3D in any version, local or on Krea's website (the EU and UK bar);

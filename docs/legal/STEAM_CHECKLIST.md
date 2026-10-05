@@ -28,7 +28,7 @@ Source: https://partner.steamgames.com/doc/gettingstarted/onboarding (read 4 Oct
   - check the `.pck` listing before upload.
 - [x] **Explicit-scene placeholders out of release data** [6]: the three `[explicit scene: … — to be written]` texts. Removed by the story lead (efc15256); `StoryLint` guards it. Tick for good once merged.
 - [x] **Placeholder voices** [11]: dropped from release (`art/vo/*` excluded; the listing confirms none ship). Finals will be added with their own ledger lines.
-- [ ] **Licence notices and credits ship** [4]:
+- [x] **Licence notices and credits ship** [4]. Built (178768aa), texts checked against their sources, and the screen seen in game (5 Oct). Before each upload, check that `licences/` sits beside the release executable:
   - a "Credits and licences" screen;
   - a `licences/` folder beside the executable, containing:
     - `GODOT_LICENSE.txt` and `GODOT_COPYRIGHT.txt`;

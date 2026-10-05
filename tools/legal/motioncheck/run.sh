@@ -23,7 +23,8 @@ OUT="${OUT:-${TMPDIR:-/tmp}/legal_motion}"
 mkdir -p "$OUT"
 python "$ROOT/tools/legal/motioncheck/make_motioncheck.py" "$OUT/motioncheck.gd" >/dev/null || exit 1
 cd "${PROJECT:-$ROOT/godot}" || exit 1
-STAND="chest:0,1.45,1.3,1.30:35;left:45,1.40,1.2,1.28:36;side:90,1.30,1.3,1.25:38;below:0,0.95,1.2,1.25:42"
+# (over: looking down into her neckline, as the play camera does from far above)
+STAND="chest:0,1.45,1.3,1.30:35;left:45,1.40,1.2,1.28:36;side:90,1.30,1.3,1.25:38;below:0,0.95,1.2,1.25:42;over:15,2.20,0.65,1.30:38"
 FLOOR="low:0,0.55,1.9,0.25:45;lowside:90,0.55,1.9,0.25:45;top:25,2.0,1.4,0.25:50"
 shoot() { # outfit clip views follow frames
   local o="$1" clip="$2" views="$3" follow="$4" frames="$5"

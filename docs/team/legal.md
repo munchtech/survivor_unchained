@@ -2,11 +2,12 @@
 
 Agent af0973d59a5b2817a (third lead; successor to aab20546fe06daa89), branch `worktree-agent-af0973d59a5b2817a`. Not a lawyer: I find and organise the issues, cite primary sources, and recommend. The owner and the main session decide. Handoff from my predecessor: `docs/handoff/legal.md`.
 
-**Launch blockers (4):**
+**Launch blockers (3):**
 - the AI disclosure: **ready to paste** (`STEAM_CHECKLIST.md` D3); the owner fills it in at submission;
 - the mature survey: waiting on the motion check of the main session's **tuck build**;
-- the licences screen: **seen in game** (5 Oct, the credits page); its licence pages are being shot;
 - the boar: **no one owns its replacement**; recommend the owner buys the commercial version now.
+
+**Done 5 Oct:** the licences screen, seen in game (every credits section, and the Godot, .NET and typeface licence pages).
 
 ## State (5 October 2026, small hours)
 
@@ -19,7 +20,8 @@ Agent af0973d59a5b2817a (third lead; successor to aab20546fe06daa89), branch `wo
   - **margins per breast and per edge of the rim** (upper, upper inner, inner and so on), measured from each nipple tip as posed, so each edge of a cup can be trimmed by its own margin;
   - `tuckcalib` (each outfit's pieces hidden, so its tucked skin shows) and `PROJECT=` (run from a worktree against the main checkout's import);
   - crops enlarged, with a ring on the closest pixel and the TEST TINT banner naming all three colours.
-- **The Quaternius base bodies** (townsfolk, Risen, the male survivor): no nipples and no genitals modelled. Their skin textures paint underwear (a bra and briefs). Their normal maps: being checked.
+- **The Quaternius base bodies** (townsfolk, Risen, the male survivor): no nipples and no genitals, in the mesh or the normal maps. Their skin textures paint underwear. No sentence is needed for Valve's reviewers.
+- **Path B answered** (models planner's appendix D): Qwen-Image, Z-Image-Turbo or FLUX.1 [schnell] (Apache-2.0) make pictures with no revenue cap; not FLUX [dev] or SD 3.5 (brief 5(g)).
 - **The AI disclosure:** a paste-ready text for the release as exported now, and a bullet to add for each thing that may ship later (`STEAM_CHECKLIST.md` D3). Valve's Content Survey page was re-read on 5 Oct: unchanged.
 - **Standing check:** the face lead's new references (`face_refs.py`) are Krea 2 Turbo from text alone, naming no real person; MoGe-2's weights are MIT. Credits line ready for when her MoGe face ships (checklist E).
 
@@ -28,7 +30,7 @@ Agent af0973d59a5b2817a (third lead; successor to aab20546fe06daa89), branch `wo
 - **The motion check measures; it never asks for more garment.** The owner: "pixel perfect no extra stuff hidden at all", "showing as much as we possibly can". It proves the areolas and the narrow strip stay covered, and measures how much more could show.
 - **Genitals:** none are modelled, and the Warden's thong is by design. The strip is checked because the survey must be true, not because anything is there.
 - **Every crop carries the TEST TINT banner:** the owner once took the tint for the game.
-- **Landmarks are posed as the renderer skins her** (her mesh's own transform, then the bone): the first calibration showed the skeleton's transform alone put them about 12 cm low. The fix is being re-checked.
+- **The rim landmarks come from the engine's own skinning** (her mesh baked in its pose each frame): the breast bone's pose put them about 12 cm low. Now the tip lands within 2 px of the drawn nipple in every calibration view.
 - **The disclosure names only what ships.** It says "rebuilt and rigged for the game", not "by hand": agents did much of the rebuild.
 
 ## Next
@@ -47,6 +49,6 @@ Agent af0973d59a5b2817a (third lead; successor to aab20546fe06daa89), branch `wo
 ## Notes for other areas
 
 - **Main session:** the motion check is ready for the tuck build. If `vertex()` writes `COLOR`, tell me: the tuck code reads her vertex colour in `fragment()`.
-- **UI design (aab47bfdab5955dac):** two index labels run over the credits page's divider (details to follow).
+- **UI design (aab47bfdab5955dac):** two index labels run over the credits page's divider (sent).
 - **Models planner:** `MODELS_TO_MAKE.md` still says the bodies came from Krea's website and Hunyuan3D. They didn't: local Krea 2 Turbo pictures and local TRELLIS 2 (brief 5(b)). The bodies are kept, with conditions.
 - **Anyone adding a tool or model:** send me its licence link.
