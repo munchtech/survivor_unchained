@@ -533,7 +533,17 @@ if __name__ == "__main__":
     rows, cols, T, tri, bary, V, N, P, Nt = texels()
     base = SKIN_AS_IS if SKIN_AS_IS is not None else \
         np.array(head.data.materials[0].node_tree.nodes["Image Texture"].image.pixels[:], np.float32).reshape(SIZE, SIZE, 4)
-    cols_v, weights = {}, {}
+    # Each view laid back as two: its broad colour (light, blush, the
+    # tone of her skin), blended among the views that see a place; and its
+    # fine detail (pores, freckles, the grain of her skin, finer than
+    # DETAIL_MM), taken from the one view that sees it most squarely. Blended
+    # as one, her front's grain was averaged half and half with the sides'
+    # over her cheeks (paintings of another day, their freckles not hers:
+    # each dimmed the other), and her paint held half the grain of the
+    # photograph laid on her front.
+    from scipy import ndimage as _ndi
+    _sg = float(os.environ.get("FACE_DETAIL_MM", "1.6")) / 1000 * DRAW / SCALE
+    cols_v, fine_v, weights = {}, {}, {}
     for name, ang in VIEWS.items():
         a = math.radians(ang)
         fwd = np.array([-math.sin(a), math.cos(a), 0.0])
@@ -554,7 +564,10 @@ if __name__ == "__main__":
             # freckles seen from three-quarters)
             weights[name] = facing ** 1.5 * edge * vis * 1.5
         ref_front = name == "front" and os.path.exists(os.path.join(OUT, "normals_front.png")) and os.environ.get("FACE_REF")
-        cols_v[name] = sample(delit_reference() if ref_front else delit(name), uv)
+        img = delit_reference() if ref_front else delit(name)
+        broad = np.stack([_ndi.gaussian_filter(img[..., k], _sg) for k in range(3)], 2)
+        cols_v[name] = sample(broad, uv)
+        fine_v[name] = sample(img - broad, uv)
         print("LAID", name, "%d texels seen" % (weights[name] > 0.05).sum())
     # The sides coloured as the front where both see her well.
     for name in ("left", "right"):
@@ -563,6 +576,12 @@ if __name__ == "__main__":
             cols_v[name] = match(cols_v[name], cols_v["front"], both)
     wsum = sum(weights.values())
     col = sum(cols_v[n] * weights[n][:, None] for n in VIEWS) / np.maximum(wsum, 1e-6)[:, None]
+    # (the detail's weights sharpened: where two views see a place almost as
+    # squarely, still eased from one to the other, not cut)
+    wf = {n: weights[n] ** 6 for n in VIEWS}
+    wfs = sum(wf.values())
+    fine = sum(fine_v[n] * wf[n][:, None] for n in VIEWS) / np.maximum(wfs, 1e-12)[:, None]
+    fine *= np.clip(wsum / 0.25, 0, 1)[:, None]
     cover = np.clip(wsum / 0.25, 0, 1)
     # Her face only: none of it over her scalp, faded out from just under
     # her hairline (face_shapes.HAIRLINE) to 6 mm over it, where her hair
@@ -588,7 +607,12 @@ if __name__ == "__main__":
     # And all of it coloured as her skin (her head's own, which heroine_head.py
     # matched to her body), over her cheeks, brow and neck seen square on.
     skin = (cover > 0.9) & (np.abs(col - np.median(col[cover > 0.9], 0)).max(1) < 0.08)
-    col = match(col, base[rows, cols, :3], skin)
+    # (broad colour to broad colour: her head's own skin as broad as the views' is, about 12 texels to their 1.6 mm)
+    base_b = np.stack([_ndi.gaussian_filter(base[..., k], 12) for k in range(3)], 2)
+    col = match(col, base_b[rows, cols], skin)
+    # Her fine detail over it as the views have it (FACE_DETAIL_GAIN: a little
+    # more, for what the game's filtering and light under her skin smooth away).
+    col = col + fine * float(os.environ.get("FACE_DETAIL_GAIN", "1.0"))
     out = np.zeros((SIZE, SIZE, 4), np.float32)
     out[rows, cols, :3] = np.clip(col, 0, 1)
     out[rows, cols, 3] = cover

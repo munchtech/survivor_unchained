@@ -1019,6 +1019,14 @@ _on = _old[_mine] / np.linalg.norm(_old[_mine], axis=1)[:, None]
 _ang = np.degrees(np.arccos(np.clip((_on * bn[_lv[_mine]]).sum(1), -1, 1)))
 print("NORMALS: hers differ from the joined smooth ones by %.1f deg on average (%.1f at the 99th percentile)"
       % (_ang.mean(), np.percentile(_ang, 99)))
+# (but not along her middle where hers turn away from the joined ones: her
+# body's two halves meet there unjoined, and her own normals each side lean
+# in toward the seam, a V down the front of her throat and chest; under a
+# light from the side, half her neck fell into shade on a straight line)
+_bad = np.zeros(len(_mine), bool)
+_bad[np.where(_mine)[0]] = (_ang > 8) & (np.abs(BV[_lv[_mine], 0]) < 0.02)
+_mine &= ~_bad
+print("NORMALS: %d corners along her middle given the joined smooth normals (hers leaned in toward her seam)" % _bad.sum())
 LN = np.where(_mine[:, None], _old, bn[_lv])
 hme.normals_split_custom_set([tuple(n) for n in LN])
 head.data.normals_split_custom_set_from_vertices([tuple(n) for n in hn])

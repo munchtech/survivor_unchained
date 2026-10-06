@@ -126,8 +126,12 @@ void fragment() {
 	}
 	float edge = pow(1.0 - clamp(dot(NORMAL, VIEW), 0.0, 1.0), 3.0);
 	ROUGHNESS = clamp(rough + (q.a - 0.5) * 0.3 + stubble * 0.15 + edge_rough * edge, 0.0, 1.0);
-	SPECULAR = shine;
-	AO = texture(ao_map, UV).r;
+	// (no sheen where her head's own shade is deep: in the crease where her
+	// lips meet and the mouth behind, the rim light's reflection on her lips'
+	// inner linings showed as white slivers along their line at a turn)
+	float ao = texture(ao_map, UV).r;
+	SPECULAR = shine * smoothstep(0.45, 0.95, ao);
+	AO = ao;
 	AO_LIGHT_AFFECT = ao_light;
 	SSS_STRENGTH = scatter;
 	RIM = rim;
