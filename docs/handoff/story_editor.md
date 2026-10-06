@@ -7,7 +7,8 @@ drafts and send back notes. You never rewrite their scenes. Read
 section of `docs/team/OWNER_NOTES.md`, then this page, then
 `docs/story/EDITORIAL_LETTER.md`. The letter is the core of the job.
 
-- **Branch:** `worktree-agent-a8d7dfe2856df399e`. Merge
+- **Branch:** `worktree-agent-ad7d2e659356b6dc5` (the second editor; the
+  first was `worktree-agent-a8d7dfe2856df399e`). Merge
   `origin/claude/vigilant-galileo-l6jqyx` first, and often. Commit your
   notes to `docs/story/` and push. Open no PRs.
 - **Tests:** `cd godot/tests && dotnet test` before every commit, even
@@ -56,12 +57,14 @@ section of `docs/team/OWNER_NOTES.md`, then this page, then
   Maeca, the false-belief twist tests, the quiet act endings and the
   missing elation, the mother's missing face, line notes, and voices that
   blur.
-- **Next:**
-  - The story lead sends a **full story treatment first**. Read all of it,
-    then write `docs/story/notes/01_treatment.md`.
-  - Send the notes by SendMessage (short, with the file path), commit and
-    push.
-  - Then note each beat draft as it comes, in `docs/story/notes/NN_<beat>.md`.
+- **Done:** `docs/story/notes/01_treatment.md`, notes on the writer's
+  `TREATMENT.md`, `SAMPLE_SCENES.md` and `EMOTIONAL_PASS.md` (at
+  `63b97e39`), ranked. Sent to the main session, which carries them and the
+  owner's choices to the writer's successor (the writer, `a3047062bf0f80c54`,
+  is paused near its limit).
+- **Next:** note each beat draft of the rewrite as it comes, in
+  `docs/story/notes/NN_<beat>.md`. Check first that the successor took
+  notes 01's items 1 to 3, or that the owner overruled them.
 
 ## 4. Decisions, and why
 
@@ -78,6 +81,20 @@ section of `docs/team/OWNER_NOTES.md`, then this page, then
   - and in Act 1 she must be kind to him, never visibly aggrieved.
 - **Brannoc:** the player must be in the room when he knows. Put his iron
   in his hands, plant his pride, and bring the boots into Act 1 as irony.
+- **Notes 01, the main calls:**
+  - the confession's option "Did anyone come out from under it?" is the
+    loudest tell for Maeca; cut it;
+  - move the confession to mid-Act 1, and put "tell Maeca" on the trunk as a
+    false forgiveness;
+  - put the player's hands on the rope (a held haul with no fail state);
+  - cut boots from Holloway (the roll's boot sizes; "Every pair"). Nell's new
+    boots are the only boot image left;
+  - offer the owner Holloway's call as wrong but defensible ("the lamp in his
+    eyes"), since the owner's word was "poor judgement call";
+  - give twist B a false belief (Rook's kind lie on day 1), and quieten the
+    readable ledger;
+  - cast the narrator plain, and make her thin across the game, so C43 turns
+    twice.
 - **I praised and protected:** the romances, C07, C14's images, the comedy
   (Snib, Keegan, Chid, Sella), ember-is-the-dead, C09's eyeline rule, and
   "Them first."
@@ -95,11 +112,15 @@ section of `docs/team/OWNER_NOTES.md`, then this page, then
   feeling and cannot create it.
 - The bible still says "Maeca Barefoot" and calls the boots Act 2's spine.
   Treat the treatment, once the owner chooses, as superseding those parts.
+- The writer's self-critique list (one blow too many in Act 2; the one-night
+  window; the voice twist's guessability; Brannoc's beats crowding) came by
+  message, not in a file. Notes 01 answers each (items 6, 1b, 4 and 7).
 - "Ashford" is fine in dialogue, but never in item names or lore.
 
 ## 6. Collaborators
 
-- **Story lead (the writer):** `a3047062bf0f80c54`. Sends drafts, gets
+- **Story lead (the writer):** `a3047062bf0f80c54`, paused near its limit;
+  its successor starts from `docs/handoff/story.md`. Sends drafts, gets
   notes.
 - **Story and writing, the earlier lead:** `a7ba8903f4c8261b1`
   (`docs/team/story.md`).
@@ -115,4 +136,5 @@ section of `docs/team/OWNER_NOTES.md`, then this page, then
    beats 3, 4 and 8
 4. `docs/cinematics/c07_hammer_stops.md`, `c14_road_back.md`,
    `c09_fortune.md` and `act2_outline.md` (C22, C23, C27, C31)
-5. The treatment, when it arrives
+5. `docs/story/TREATMENT.md`, `SAMPLE_SCENES.md`, and
+   `docs/story/notes/01_treatment.md`
