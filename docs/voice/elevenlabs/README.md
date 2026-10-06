@@ -72,27 +72,27 @@ Holloway, Brannoc and Sella, in that order.
 <!-- PACKETS -->
 | Character | Takes | Characters | Held |
 |---|---|---|---|
-| [The narrator](narrator.md) | 269 | 27,374 | 269 |
-| [Sella](sella.md) | 95 | 9,832 |  |
-| [Vonnra Ash-of-Morrow](vonnra.md) | 102 | 9,021 |  |
-| [Captain Holloway](holloway.md) | 64 | 7,712 |  |
-| [Harlan Coyle](harlan.md) | 63 | 7,141 |  |
-| [Mother Rook](rook.md) | 45 | 6,073 |  |
-| [Chid](chid.md) | 51 | 5,525 | 2 |
-| [Rav Cutwell](rav.md) | 52 | 5,351 |  |
-| [Maeca Barefoot](maeca.md) | 73 | 5,332 |  |
-| [Dame Keegan Orme](keegan.md) | 44 | 4,924 | 1 |
-| [Old Wenna](wenna.md) | 33 | 3,978 |  |
-| [Redcowl](redcowl.md) | 40 | 3,806 |  |
-| [Pell Varrow](pell.md) | 31 | 3,605 |  |
-| [Ysolde Marrow, the Wayfinder](ysolde.md) | 26 | 3,142 |  |
+| [The narrator](narrator.md) | 350 | 34,195 | 350 |
+| [Sella](sella.md) | 97 | 9,939 |  |
+| [Captain Holloway](holloway.md) | 108 | 9,684 | 108 |
+| [Vonnra Ash-of-Morrow](vonnra.md) | 103 | 8,907 | 103 |
+| [Chid](chid.md) | 75 | 8,438 | 2 |
+| [Harlan Coyle](harlan.md) | 63 | 7,229 | 63 |
+| [Mother Rook](rook.md) | 54 | 6,561 |  |
+| [Maeca](maeca.md) | 87 | 6,295 | 87 |
+| [Rav Cutwell](rav.md) | 61 | 6,009 |  |
+| [Dame Keegan Orme](keegan.md) | 48 | 5,218 | 1 |
+| [Redcowl](redcowl.md) | 45 | 4,339 |  |
+| [Old Wenna](wenna.md) | 34 | 4,069 |  |
+| [Pell Varrow](pell.md) | 32 | 3,622 |  |
+| [Ysolde Marrow, the Wayfinder](ysolde.md) | 30 | 3,403 |  |
+| [Townsman, middle-aged](folk_m1.md) | 47 | 3,081 |  |
 | [Townswoman, young](folk_f2.md) | 47 | 3,056 |  |
-| [Townsman, middle-aged](folk_m1.md) | 46 | 2,998 |  |
-| [Townswoman, middle-aged](folk_f1.md) | 45 | 2,638 |  |
+| [Townswoman, middle-aged](folk_f1.md) | 46 | 2,721 |  |
+| [Brannoc](brannoc.md) | 63 | 2,635 | 63 |
 | [Townsman, old](folk_m2.md) | 43 | 2,470 |  |
 | [Snib](snib.md) | 15 | 2,199 |  |
-| [Brannoc](brannoc.md) | 49 | 2,197 |  |
-| [Tam](tam.md) | 19 | 1,814 |  |
+| [Tam](tam.md) | 21 | 2,020 |  |
 | [Jory Coyle](jory.md) | 14 | 877 |  |
 | [A Watchman at the gate](guard.md) | 12 | 510 |  |
 | [Grimtunnel](grimtunnel.md) | 7 | 442 |  |

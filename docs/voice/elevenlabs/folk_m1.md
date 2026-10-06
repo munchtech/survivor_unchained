@@ -1,6 +1,6 @@
 # Townsman, middle-aged: ElevenLabs packet
 
-Voice id in the game: `folk_m1`. 46 takes to record (2,998 characters; about 8,994 credits at three tries a line). Status: **draft**, until the story lead (a7622ae77d19e31dc) checks every line and marks it final.
+Voice id in the game: `folk_m1`. 47 takes to record (3,081 characters; about 9,243 credits at three tries a line). Status: **draft**, until the story lead (a7622ae77d19e31dc) checks every line and marks it final.
 
 ## Who they are
 
@@ -37,7 +37,7 @@ python tools/vo/import_takes.py ~/Downloads/su_vo --voice folk_m1
 
 ## Saying the names
 
-The text to paste already respells these; keep the respelling: Penhale as *Pen-hale*, Redcowl as *Red-cowl*, Vonnra as *Vonra*.
+The text to paste already respells these; keep the respelling: Penhale as *Pen-hale*, Redcowl as *Red-cowl*, Redcowl's as *Red-cowl's*, Vonnra as *Vonra*.
 
 ## The lines
 
@@ -504,4 +504,15 @@ Subtitle: They say a cart went out of the east gate the night Pell vanished, and
 [warning, kindly] No carter's been up the Old Road in a month. So who keeps bringing that one in?
 ```
 Subtitle: No carter's been up the Old Road in a month. So who keeps bringing that one in?
+
+### 47. `folk.109.m.wav`
+
+*Where:* folk.json lines[109]
+*Played:* puzzled, uneasy; doing: the carter nobody sees; pace: measured; volume: level.
+*Note:* A real question to a neighbour.
+
+```
+[puzzled, uneasy] Red-cowl's gone off over the ridge, they say. On his own two feet. Somebody let him.
+```
+Subtitle: Redcowl's gone off over the ridge, they say. On his own two feet. Somebody let him.
 

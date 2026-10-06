@@ -178,6 +178,8 @@ public partial class Game
         if (scene != null) scene.SimPaused = false;
         controls.Captured = false;
         controls.ClearLatches();
+        // A night at the inn wakes her in the town: the morning's scene, if the story set one.
+        PlayScene(dusk: false, 1.2);
     }
 
     /* ------------------------------------------------------------ chest -- */

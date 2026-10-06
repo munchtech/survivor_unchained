@@ -1,6 +1,28 @@
 {
  "rules": [
   {
+   "id": "dawn.voice",
+   "once": true,
+   "when": {
+    "day": {
+     "gte": 3
+    }
+   },
+   "effect": [],
+   "report": "Her voice is going the way her face went. You still have the word."
+  },
+  {
+   "id": "dawn.word",
+   "once": true,
+   "when": {
+    "day": {
+     "gte": 6
+    }
+   },
+   "effect": [],
+   "report": "This morning it takes you a moment to find her word. It is there."
+  },
+  {
    "id": "beasts.escalate",
    "when": {
     "all": [
@@ -1051,17 +1073,25 @@
    "report": "Brannoc's yard is stacked with pelts to the eaves, and the flies have found it. Maeca walked past it this morning and did not look."
   },
   {
-   "id": "nell.burial",
+   "id": "nell.burial_with",
    "once": true,
    "when": {
-    "any": [
+    "all": [
      {
-      "fact": "nell.told",
-      "eq": "gone"
+      "any": [
+       {
+        "fact": "nell.told",
+        "eq": "gone"
+       },
+       {
+        "fact": "nell.told",
+        "eq": "risen"
+       }
+      ]
      },
      {
-      "fact": "nell.told",
-      "eq": "risen"
+      "fact": "nell.road",
+      "eq": "with"
      }
     ]
    },
@@ -1082,9 +1112,91 @@
        }
       }
      }
+    },
+    {
+     "later": {
+      "days": 1,
+      "id": "brannoc.road_dark",
+      "effect": [
+       {
+        "set": {
+         "brannoc.road_dark": true
+        }
+       }
+      ]
+     }
     }
    ],
-   "report": "Brannoc banked his forge at dusk yesterday and went down the Low Ford road alone, with a lantern and a blanket. He came back up it at sunrise with the blanket in his arms, and Chid walked out past the guards to meet him, and walked beside him up the street. They are burying her this morning, behind the shrine, next to the old captain. Nobody has been asked to come."
+   "report": "Brannoc banked his forge at dusk yesterday, and you walked down the Low Ford road with him in the last of the light, between his irons. He never once looked up at them. Under the last one, over the ditch, he stopped, and reached up, and closed his bare hand round the light until it went out. He made no sound. He opened his hand. Then he got down into the ditch for her. Two small new boots stuck out of the blanket's end all the way home. They are burying her this morning, behind the shrine, next to the old captain."
+  },
+  {
+   "id": "nell.burial",
+   "once": true,
+   "when": {
+    "all": [
+     {
+      "any": [
+       {
+        "fact": "nell.told",
+        "eq": "gone"
+       },
+       {
+        "fact": "nell.told",
+        "eq": "risen"
+       }
+      ]
+     },
+     {
+      "not": {
+       "fact": "nell.road",
+       "eq": "with"
+      }
+     }
+    ]
+   },
+   "effect": [
+    {
+     "set": {
+      "nell.buried": true,
+      "nell.burying": true
+     }
+    },
+    {
+     "later": {
+      "days": 1,
+      "id": "nell.burying",
+      "effect": {
+       "set": {
+        "nell.burying": false
+       }
+      }
+     }
+    },
+    {
+     "later": {
+      "days": 1,
+      "id": "brannoc.road_dark",
+      "effect": [
+       {
+        "set": {
+         "brannoc.road_dark": true
+        }
+       }
+      ]
+     }
+    }
+   ],
+   "report": "Brannoc banked his forge at dusk yesterday and went down the Low Ford road alone, with a lantern and a blanket, between his irons. At the ford one blue light went out. He came back up the road at sunrise with the blanket in his arms, and Chid walked out past the guards to meet him, and walked beside him up the street. They are burying her this morning, behind the shrine, next to the old captain. Nobody has been asked to come."
+  },
+  {
+   "id": "brannoc.road_dark",
+   "once": true,
+   "when": {
+    "fact": "brannoc.road_dark",
+    "eq": true
+   },
+   "effect": [],
+   "report": "The Low Ford road was dark at dawn, for the first time since winter: every iron on it out. And the hammer's wrong. It comes slower now, one-handed, with a beat missing, and you can hear the river from the square."
   },
   {
    "id": "nell.asking",
@@ -1314,6 +1426,323 @@
      "wolf.blood": 0
     }
    }
+  },
+  {
+   "id": "holloway.waited",
+   "once": true,
+   "when": {
+    "all": [
+     {
+      "fact": "arena.last.ago",
+      "eq": 0
+     },
+     {
+      "fact": "prologue.done",
+      "eq": true
+     },
+     {
+      "not": {
+       "fact": "scene.morning",
+       "exists": true
+      }
+     }
+    ]
+   },
+   "effect": [
+    {
+     "set": {
+      "holloway.waited": true,
+      "scene.morning": "scene_gate_dawn"
+     }
+    },
+    {
+     "later": {
+      "days": 1,
+      "id": "holloway.count_due",
+      "effect": [
+       {
+        "set": {
+         "holloway.count_due": true
+        }
+       }
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "id": "holloway.count",
+   "once": true,
+   "when": {
+    "all": [
+     {
+      "fact": "arena.last.ago",
+      "eq": 0
+     },
+     {
+      "fact": "holloway.waited",
+      "eq": true
+     },
+     {
+      "fact": "holloway.count_due",
+      "eq": true
+     },
+     {
+      "day": {
+       "gte": 3
+      }
+     },
+     {
+      "not": {
+       "fact": "scene.morning",
+       "exists": true
+      }
+     }
+    ]
+   },
+   "effect": [
+    {
+     "set": {
+      "scene.morning": "scene_in_my_count"
+     }
+    }
+   ]
+  },
+  {
+   "id": "holloway.knocking",
+   "once": true,
+   "when": {
+    "all": [
+     {
+      "fact": "tremor.felt",
+      "eq": true
+     },
+     {
+      "day": {
+       "gte": 4
+      }
+     },
+     {
+      "not": {
+       "fact": "scene.dusk",
+       "exists": true
+      }
+     }
+    ]
+   },
+   "effect": [
+    {
+     "set": {
+      "scene.dusk": "scene_knocking"
+     }
+    }
+   ]
+  },
+  {
+   "id": "maeca.heard",
+   "once": true,
+   "when": {
+    "all": [
+     {
+      "fact": "holloway.confessed",
+      "eq": true
+     },
+     {
+      "not": {
+       "fact": "scene.morning",
+       "exists": true
+      }
+     }
+    ]
+   },
+   "effect": [
+    {
+     "set": {
+      "scene.morning": "scene_did_he"
+     }
+    }
+   ]
+  },
+  {
+   "id": "maeca.cup",
+   "once": true,
+   "when": {
+    "all": [
+     {
+      "fact": "maeca.told_lid",
+      "exists": true
+     },
+     {
+      "not": {
+       "fact": "scene.dusk",
+       "exists": true
+      }
+     }
+    ]
+   },
+   "effect": [
+    {
+     "set": {
+      "scene.dusk": "scene_his_cup"
+     }
+    }
+   ]
+  },
+  {
+   "id": "decoy.rope",
+   "once": true,
+   "when": {
+    "all": [
+     {
+      "fact": "holloway.cup_seen",
+      "eq": true
+     },
+     {
+      "not": {
+       "fact": "redcowl",
+       "eq": "dead"
+      }
+     },
+     {
+      "not": {
+       "fact": "redcowl",
+       "eq": "spared"
+      }
+     },
+     {
+      "not": {
+       "fact": "roost.cleared",
+       "eq": true
+      }
+     },
+     {
+      "not": {
+       "history": "burned_roost"
+      }
+     }
+    ]
+   },
+   "effect": [],
+   "report": "A Kerchief came into the Flagon last night, which they never do, and drank alone in the corner, and told the room on his way out that the Roost has a rope with the captain's name on it. Rav put him out. Holloway laughed when he heard, and then he didn't."
+  },
+  {
+   "id": "decoy.ledger",
+   "once": true,
+   "when": {
+    "all": [
+     {
+      "fact": "holloway.cup_seen",
+      "eq": true
+     },
+     {
+      "any": [
+       {
+        "fact": "redcowl",
+        "eq": "dead"
+       },
+       {
+        "fact": "redcowl",
+        "eq": "spared"
+       },
+       {
+        "fact": "roost.cleared",
+        "eq": true
+       },
+       {
+        "history": "burned_roost"
+       }
+      ]
+     },
+     {
+      "not": {
+       "fact": "caravan.pell",
+       "eq": "exposed"
+      }
+     },
+     {
+      "not": {
+       "fact": "caravan.pell",
+       "eq": "fled"
+      }
+     },
+     {
+      "not": {
+       "fact": "pell.fate",
+       "exists": true
+      }
+     }
+    ]
+   },
+   "effect": [],
+   "report": "Pell Varrow sat in the Flagon's window until late last night with his ledger open, and Rav says he wrote something down every time the captain drank."
+  },
+  {
+   "id": "sallow.rider",
+   "once": true,
+   "when": {
+    "day": {
+     "gte": 5
+    }
+   },
+   "effect": [],
+   "report": "A rider came down through the north gate at first light with a silver seal on his saddlebag, and spent an hour in the Watch House with the door shut. Dame Keegan watched him go and wrote something down. Holloway was drunk by noon."
+  },
+  {
+   "id": "brannoc.forge",
+   "once": true,
+   "when": {
+    "all": [
+     {
+      "day": {
+       "gte": 2
+      }
+     },
+     {
+      "met": "brannoc"
+     },
+     {
+      "not": {
+       "npcFlag": {
+        "npc": "brannoc",
+        "key": "asked_nell",
+        "eq": true
+       }
+      }
+     },
+     {
+      "not": {
+       "fact": "scene.dusk",
+       "exists": true
+      }
+     }
+    ]
+   },
+   "effect": [
+    {
+     "set": {
+      "scene.dusk": "brannoc:dusk_call"
+     }
+    }
+   ]
+  },
+  {
+   "id": "ford.thanks",
+   "once": true,
+   "when": {
+    "all": [
+     {
+      "day": {
+       "gte": 2
+      }
+     },
+     {
+      "fact": "prologue.done",
+      "eq": true
+     }
+    ]
+   },
+   "effect": [],
+   "report": "The first carter in a month went south over the Low Ford yesterday, and came back up the road at dusk with a full load, and stood up on his box at the gate and told the whole street who to thank for it. Rook stood him a drink on your slate."
   },
   {
    "id": "arena.ago",

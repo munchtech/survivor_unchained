@@ -407,7 +407,7 @@ public sealed partial class Journey
             // Never a name the story has spent: Wat is the drowned carter, and the
             // dead watchman at the ford is Corran.
             Family.Kerchief => ["Red Hob", "Knuckles Marro", "Sly Dell"],
-            Family.Lampling => ["Wick", "Soot-Tooth"],
+            Family.Lampling => ["Stub", "Soot-Tooth"],
             Family.Undead => ["the Unburied", "the Ditch-Walker"],
             _ => ["the Thing in the Wood"],
         };

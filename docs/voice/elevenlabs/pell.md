@@ -1,6 +1,6 @@
 # Pell Varrow: ElevenLabs packet
 
-Voice id in the game: `pell`. 31 takes to record (3,605 characters; about 10,815 credits at three tries a line). Status: **draft**, until the story lead (a7622ae77d19e31dc) checks every line and marks it final.
+Voice id in the game: `pell`. 32 takes to record (3,622 characters; about 10,866 credits at three tries a line). Status: **draft**, until the story lead (a7622ae77d19e31dc) checks every line and marks it final.
 
 ## Who they are
 
@@ -260,9 +260,9 @@ Subtitle: A scholar of the burning arts. Do you know, I've never once sold an ar
 *Note:* The politeness thins. 'I'll remember it.' quietly.
 
 ```
-[cold unease, quietly] You've been standing there longer than I noticed. I don't care for that. I'll remember it.
+[cold unease, quietly] You'd make an excellent debt collector. Nobody hears you coming, and everybody pays. Do think about it.
 ```
-Subtitle: You've been standing there longer than I noticed. I don't care for that. I'll remember it.
+Subtitle: You'd make an excellent debt collector. Nobody hears you coming, and everybody pays. Do think about it.
 
 ### 21. `dlg.pell.say_woman.0.wav`
 
@@ -288,27 +288,27 @@ Subtitle: I hear the Dig's pump broke. Pumps do. And I hear a very small foreman
 
 ### 23. `dlg.pell.t_pell.0.p0.wav`
 
-*Where:* dialogue.json pell/t_pell#0; part 1 of 3: **pell: My sister kept the books in Ashford. I came up to collect them, after. There wasn't an Ash…** / narrator: He straightens a pen that was straight. / pell: She wrote to me the week before. The garrison's boots had come in short, and somebody had …
+*Where:* dialogue.json pell/t_pell#0; part 1 of 3: **pell: My sister kept the books in Ashford, in the lower town. I came up to collect them, after. …** / narrator: He straightens a pen that was straight. / pell: Somebody barred it. I know who. ...So I count. Somebody ought to know what things cost.
 *Played:* grief behind precision; doing: why he counts; pace: slow; volume: quiet.
 *Wants:* to be understood, once
 *Note:* Plain, no smile. 'There wasn't an Ashford to collect them from.' level. Narrator: the pen. The boots told flatly; 'She thought it was funny.' fond. 'She had a dreadful sense of humour.' nearly breaks. Pause. The last line a creed.
 
 ```
-[grief behind precision, quietly] My sister kept the books in Ashford. I came up to collect them, after. There wasn't an Ashford to collect them from.
+[grief behind precision, quietly] My sister kept the books in Ashford, in the lower town. I came up to collect them, after. There wasn't a lower town to collect them from. There was a lid on the main shaft, barred from the top.
 ```
-Subtitle: My sister kept the books in Ashford. I came up to collect them, after. There wasn't an Ashford to collect them from.
+Subtitle: My sister kept the books in Ashford, in the lower town. I came up to collect them, after. There wasn't a lower town to collect them from. There was a lid on the main shaft, barred from the top.
 
 ### 24. `dlg.pell.t_pell.0.p2.wav`
 
-*Where:* dialogue.json pell/t_pell#0; part 3 of 3: pell: My sister kept the books in Ashford. I came up to collect them, after. There wasn't an Ash… / narrator: He straightens a pen that was straight. / **pell: She wrote to me the week before. The garrison's boots had come in short, and somebody had …**
+*Where:* dialogue.json pell/t_pell#0; part 3 of 3: pell: My sister kept the books in Ashford, in the lower town. I came up to collect them, after. … / narrator: He straightens a pen that was straight. / **pell: Somebody barred it. I know who. ...So I count. Somebody ought to know what things cost.**
 *Played:* grief behind precision; doing: why he counts; pace: slow; volume: quiet.
 *Wants:* to be understood, once
 *Note:* Plain, no smile. 'There wasn't an Ashford to collect them from.' level. Narrator: the pen. The boots told flatly; 'She thought it was funny.' fond. 'She had a dreadful sense of humour.' nearly breaks. Pause. The last line a creed.
 
 ```
-[grief behind precision, quietly] She wrote to me the week before. The garrison's boots had come in short, and somebody had signed for them full. She thought it was funny. She had a dreadful sense of humour. ...So I count. Somebody ought to know what things cost.
+[grief behind precision, quietly] Somebody barred it. I know who. ...So I count. Somebody ought to know what things cost.
 ```
-Subtitle: She wrote to me the week before. The garrison's boots had come in short, and somebody had signed for them full. She thought it was funny. She had a dreadful sense of humour. ...So I count. Somebody ought to know what things cost.
+Subtitle: Somebody barred it. I know who. ...So I count. Somebody ought to know what things cost.
 
 ## Said in passing
 
@@ -381,4 +381,13 @@ Subtitle: Who's there?
 [smooth, quietly] The numbers don't sleep. Why should I?
 ```
 Subtitle: The numbers don't sleep. Why should I?
+
+### 32. `bark.pell.said.0.wav`
+
+*Where:* npcs.json pell.said[0]
+
+```
+Roughly how much ember did you burn last night? I'm keeping a column.
+```
+Subtitle: Roughly how much ember did you burn last night? I'm keeping a column.
 

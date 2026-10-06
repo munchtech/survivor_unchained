@@ -248,6 +248,11 @@
       "goto": "rumours"
      },
      {
+      "text": "I've come home. My mother sent for me.",
+      "once": "mother",
+      "goto": "mother"
+     },
+     {
       "text": "Tell me about the Waystation.",
       "goto": "town"
      },
@@ -297,7 +302,7 @@
         "gte": 30
        }
       },
-      "text": "There you are. I kept a bowl back. Don't tell the others."
+      "text": "There you are. I kept a bowl back. The others can whistle."
      },
      {
       "text": "Back again, {name}. What'll it be?"
@@ -315,6 +320,11 @@
      {
       "text": "What's the talk?",
       "goto": "rumours"
+     },
+     {
+      "text": "I've come home. My mother sent for me.",
+      "once": "mother",
+      "goto": "mother"
      },
      {
       "text": "Tell me about the Waystation.",
@@ -627,6 +637,11 @@
       "goto": "rumours"
      },
      {
+      "text": "I've come home. My mother sent for me.",
+      "once": "mother",
+      "goto": "mother"
+     },
+     {
       "text": "Tell me about the Waystation.",
       "goto": "town"
      },
@@ -837,6 +852,72 @@
      },
      {
       "text": "Goodbye, Rook.",
+      "end": true
+     }
+    ]
+   },
+   "mother": {
+    "id": "mother",
+    "text": "(She stops wiping the cup. She looks at your face a beat too long, and then out of the window at the tower, and then at the cup.) ...Sit down, pet.",
+    "next": "mother2"
+   },
+   "mother2": {
+    "id": "mother2",
+    "text": "She went in her sleep, pet. A week since. (She sets the cup down.) Chid brought her down and saw to her. I sat with her, after.",
+    "choices": [
+     {
+      "text": "Where is she?",
+      "goto": "mother_where"
+     },
+     {
+      "text": "I was a day short.",
+      "goto": "mother_short"
+     },
+     {
+      "text": "(Say nothing.)",
+      "goto": "mother_quiet"
+     }
+    ]
+   },
+   "mother_where": {
+    "id": "mother_where",
+    "text": "Quiet Garden, behind the shrine. There's a marker. No name on it yet; you can tell Chid what to cut.",
+    "next": "mother_room"
+   },
+   "mother_short": {
+    "id": "mother_short",
+    "text": "(Something goes across her face, and is put away.) You came, pet. That's the part that counts.",
+    "next": "mother_room"
+   },
+   "mother_quiet": {
+    "id": "mother_quiet",
+    "text": "(She lets it be quiet. She's good at that.)",
+    "next": "mother_room"
+   },
+   "mother_room": {
+    "id": "mother_room",
+    "text": "(She turns a ring on the nail behind the bar, among the keys, without looking at it.) Back room's yours, if you want it. It's been free a week.",
+    "effects": [
+     {
+      "set": {
+       "mother.told": true
+      }
+     },
+     {
+      "quest": {
+       "id": "home",
+       "status": "active",
+       "entry": "rook"
+      }
+     }
+    ],
+    "choices": [
+     {
+      "text": "Thank you, Rook.",
+      "goto": "hub"
+     },
+     {
+      "text": "(Go and find the garden.)",
       "end": true
      }
     ]
@@ -1261,7 +1342,7 @@
       "when": {
        "history": "ford_warden_slain"
       },
-      "text": "You're the one who put the Ford-Warden down. The Watch kept those lamps, once. I'd thank you, but thanks don't feed eleven men. Holloway. Captain of what's left of the Watch."
+      "text": "You're the one put the Ford-Warden down. (He looks at you a moment longer than he means to.) The Watch kept that crossing, once. Then we couldn't. ...Thank you. Holloway. Captain of what's left of the Watch: eleven of us, and the cat. I count the cat."
      },
      {
       "text": "You came up the Low Ford road. At night. Either you're very good or very lucky, and I've no use for either kind of trouble in my town. Holloway. Captain of the Watch."
@@ -1594,20 +1675,6 @@
     "text": [
      {
       "when": {
-       "fact": "beasts.outcome",
-       "eq": "cured"
-      },
-      "text": "The water's clean and the wolves are back in the deep wood. I was wrong about them. Don't tell anyone I said so."
-     },
-     {
-      "when": {
-       "fact": "wolves.at_gate",
-       "eq": true
-      },
-      "text": "You heard. Aldo. Wife at Low Kiln, a bad knee, and a habit of humming on the wall that I told him twice to stop. They took him off it by the bad leg. I'd give a month's pay to hear him hum. Five a pelt, still. What do you want?"
-     },
-     {
-      "when": {
        "all": [
         {
          "time": "night"
@@ -1616,10 +1683,50 @@
          "day": {
           "gte": 3
          }
+        },
+        {
+         "not": {
+          "fact": "holloway.letter_seen",
+          "eq": true
+         }
         }
        ]
       },
-      "text": "(A letter lies open under his lamp, a silver seal broken on it. He turns it face down when you come in, and puts his cup on it.) What."
+      "text": "(A letter lies open on his knee under the gate-lamp, a silver seal broken on it. He turns it over when you come, and puts his cup on it.) What."
+     },
+     {
+      "when": {
+       "all": [
+        {
+         "time": "night"
+        },
+        {
+         "fact": "holloway.confessed",
+         "eq": true
+        }
+       ]
+      },
+      "text": "(On the ground in the gateway, his back to the post, a cup in his fist.) Gate open. Count short. Cup empty. (He finds you.) You. What."
+     },
+     {
+      "when": {
+       "time": "night"
+      },
+      "text": "(On the ground in the gateway, his back to the post, a cup in his fist, counting under his breath.) ...Forty-four. Forty— (He loses it, and starts again at one.) What."
+     },
+     {
+      "when": {
+       "fact": "beasts.outcome",
+       "eq": "cured"
+      },
+      "text": "The water's clean and the wolves are back in the deep wood. I was wrong about them. That's not for the board."
+     },
+     {
+      "when": {
+       "fact": "wolves.at_gate",
+       "eq": true
+      },
+      "text": "You heard. Aldo. Wife at Low Kiln, a bad knee, and a habit of humming on the wall that I told him twice to stop. They took him off it by the bad leg. I'd give a month's pay to hear him hum. Five a pelt, still. What do you want?"
      },
      {
       "when": {
@@ -1973,6 +2080,25 @@
       "goto": "post"
      },
      {
+      "text": "Who are you counting?",
+      "show": {
+       "time": "night"
+      },
+      "goto": "roll"
+     },
+     {
+      "text": "Rook says not to ask you about Ashford.",
+      "show": {
+       "npcFlag": {
+        "npc": "rook",
+        "key": "once:valley",
+        "eq": true
+       }
+      },
+      "once": "ashford",
+      "goto": "ashford"
+     },
+     {
       "text": "That letter. The silver seal.",
       "show": {
        "all": [
@@ -2039,13 +2165,8 @@
    },
    "maeca": {
     "id": "maeca",
-    "text": "Maeca's right more often than I'd like. She's earned that. ...She's earned a lot of things she never got.",
+    "text": "Maeca's right more often than I'd like. She tracks for the Watch: men, not wolves. Watch won't pay her, so I do. She takes it every week, and buys my drink with it. ...Then she walks me home.",
     "choices": [
-     {
-      "text": "Such as?",
-      "once": "ashford",
-      "goto": "ashford"
-     },
      {
       "text": "Something else.",
       "goto": "hub"
@@ -2054,7 +2175,7 @@
    },
    "ashford": {
     "id": "ashford",
-    "text": "Boots, for a start. I counted boots for the Ashford garrison, once, and I was good at it. That's all you're getting. Something else?",
+    "text": "Then don't. (He doesn't look up.) ...Garrison town, up the valley. The ground went one night, and the lower town with it. I held the upper town. Watch made me captain for it. (He picks up the cup.) That's the report.",
     "choices": [
      {
       "text": "Something else.",
@@ -3370,7 +3491,7 @@
    },
    "cb_nemesis_slain": {
     "id": "cb_nemesis_slain",
-    "text": "Heard you went back for whatever killed you and took your things off it. I've known men who wouldn't go back for their own boots.",
+    "text": "Heard you went back for whatever killed you and took your things off it. Most leave a thing where it beat them. I've a few things there myself.",
     "effects": [
      {
       "npcFlag": {
@@ -3415,7 +3536,7 @@
       "when": {
        "archetype": "arcanist"
       },
-      "text": "Spark-thrower. The last one we had set the barracks roof alight trying to light a pipe. Do your tricks outside my walls."
+      "text": "Burns, does it? What's it run on? (He looks at your hands.) Everything runs on something. I'll want it written down."
      },
      {
       "when": {
@@ -3454,7 +3575,7 @@
    },
    "t_holloway": {
     "id": "t_holloway",
-    "text": "A posting with walls somebody else has to count. A dog. Eight hours' sleep in one go. In that order. ...Don't tell the men about the dog.",
+    "text": "A posting with walls somebody else has to count. A dog. Eight hours' sleep in one go. In that order. ...The men aren't to know about the dog.",
     "choices": [
      {
       "text": "Something else.",
@@ -3549,7 +3670,7 @@
    },
    "post2": {
     "id": "post2",
-    "text": "Not by us. We've not had oil for those lamps since my first winter, and nobody's asked me for any. (He writes something down, and crosses it out.) So somebody had oil. And a reason. ...I'll send two men down with a cart. I owe Corran a hole in the ground, and an apology he can't hear.",
+    "text": "Not by us. We've not had oil for those lamps since my first winter, and nobody's asked me for any. (He writes something down, and crosses it out.) So somebody had ember, and irons to burn it in. And a reason. ...I'll send two men down with a cart. I owe Corran a hole in the ground, and an apology he can't hear.",
     "choices": [
      {
       "text": "Something else.",
@@ -3578,6 +3699,34 @@
      },
      {
       "text": "That's all.",
+      "end": true
+     }
+    ]
+   },
+   "roll": {
+    "id": "roll",
+    "text": "(He isn't looking at you. He's looking down the dark road, and his lips are moving.) ...Abbot. Two bairns. Ancell. His mam. Bede. Nobody. Carrow. A wife, and one coming. (He finds you.) Garrison. The roll. I say it at night. Keeps them in order.",
+    "choices": [
+     {
+      "text": "(Listen.)",
+      "goto": "roll2"
+     },
+     {
+      "text": "Something else.",
+      "goto": "hub"
+     },
+     {
+      "text": "Goodnight, Captain.",
+      "end": true
+     }
+    ]
+   },
+   "roll2": {
+    "id": "roll2",
+    "text": "Dunning. Two bairns. Ede. Her da. Fenn. Nobody. Gale. ...Gale. (He stops on it, and drinks, and starts again at Abbot.)",
+    "choices": [
+     {
+      "text": "Goodnight, Captain.",
       "end": true
      }
     ]
@@ -3909,16 +4058,16 @@
       "when": {
        "bg": "hunter"
       },
-      "text": "You walk like someone who's followed a thing to its den. Hunter? Then you've seen it too, out there. They're not hunting. They're running. Maeca. Barefoot, before you ask."
+      "text": "You walk like someone who's followed a thing to its den. Hunter? Then you've seen it too, out there. They're not hunting. They're running. Maeca. I track for the Watch, before you ask. Not wolves."
      },
      {
       "when": {
        "hasTag": "wolf_pelts"
       },
-      "text": "That cloak's made of wolves. I can smell it from here, and so can they. Maeca Barefoot. What do you want?"
+      "text": "That cloak's made of wolves. I can smell it from here, and so can they. Maeca. What do you want?"
      },
      {
-      "text": "Another blade for Holloway's bounty? The Pack aren't the problem. They're what the problem looks like from the road. Maeca. Barefoot, before you ask."
+      "text": "Another blade for Holloway's bounty? The Pack aren't the problem. They're what the problem looks like from the road. Maeca. I track for the Watch, before you ask. Not wolves."
      }
     ],
     "effects": [
@@ -4009,9 +4158,29 @@
       "goto": "kerchiefs"
      },
      {
-      "text": "Why \"Barefoot\"?",
-      "once": "barefoot",
-      "goto": "barefoot"
+      "text": "You track for the Watch?",
+      "once": "watch",
+      "goto": "watch"
+     },
+     {
+      "text": "You were at Ashford.",
+      "show": {
+       "any": [
+        {
+         "npcFlag": {
+          "npc": "rook",
+          "key": "once:valley",
+          "eq": true
+         }
+        },
+        {
+         "fact": "holloway.confessed",
+         "eq": true
+        }
+       ]
+      },
+      "once": "ashford",
+      "goto": "ashford"
      },
      {
       "text": "Goodbye.",
@@ -4111,9 +4280,29 @@
       "goto": "kerchiefs"
      },
      {
-      "text": "Why \"Barefoot\"?",
-      "once": "barefoot",
-      "goto": "barefoot"
+      "text": "You track for the Watch?",
+      "once": "watch",
+      "goto": "watch"
+     },
+     {
+      "text": "You were at Ashford.",
+      "show": {
+       "any": [
+        {
+         "npcFlag": {
+          "npc": "rook",
+          "key": "once:valley",
+          "eq": true
+         }
+        },
+        {
+         "fact": "holloway.confessed",
+         "eq": true
+        }
+       ]
+      },
+      "once": "ashford",
+      "goto": "ashford"
      },
      {
       "text": "Is the fire at the Blind still big enough for two?",
@@ -4398,35 +4587,7 @@
    },
    "where": {
     "id": "where",
-    "text": "The Hunters' Blind, out past the wreck on the Old Road, most days. I watch the Hollow from there. You'll know it by the smoke; I'm the only one fool enough to light a fire in that wood. Nights, I'm here, drinking Rav's piss.",
-    "choices": [
-     {
-      "text": "Something else.",
-      "goto": "hub"
-     },
-     {
-      "text": "Goodbye.",
-      "end": true
-     }
-    ]
-   },
-   "barefoot": {
-    "id": "barefoot",
-    "text": "Boots were signed for. They never came. You learn to hear the ground through your feet. I prefer it now.",
-    "choices": [
-     {
-      "text": "Who signed for them?",
-      "goto": "signed"
-     },
-     {
-      "text": "Something else.",
-      "goto": "hub"
-     }
-    ]
-   },
-   "signed": {
-    "id": "signed",
-    "text": "Somebody with a good hand and a ledger. ...You ask a lot of questions for a stranger.",
+    "text": "The Hunters' Blind, out past the wreck on the Old Road, most days. I watch the Hollow from there. You'll know it by the smoke; I'm the only one fool enough to light a fire in that wood. Nights, I'm here, drinking Rav's piss, and then I walk the captain home.",
     "choices": [
      {
       "text": "Something else.",
@@ -4541,10 +4702,10 @@
       "when": {
        "archetype": "stalker"
       },
-      "text": "You move like you've done this. Quiet feet. ...Pity about the boots."
+      "text": "You walk like you've done this. Heel last, weight back. ...Who taught you? Not the Watch. The Watch walks like a dropped tray."
      },
      {
-      "text": "You move like you've done this. Quiet feet. ...Pity about the boots."
+      "text": "You walk like you've done this. Heel last, weight back. ...Who taught you? Not the Watch. The Watch walks like a dropped tray."
      }
     ],
     "effects": [
@@ -4684,7 +4845,7 @@
       "text": "(Grey light. She's already up, barefoot in the frost, listening.) Go on, then. The wood's awake, and so's Holloway, and he'll count us both."
      },
      {
-      "text": "(Grey light. She's already up, barefoot in the frost, listening to the wood.) The Pack found me, after Ashford. Three days in a cave mouth with the garrison dead round me, and the old grey one came and lay down across the way in. Kept the cold off. Kept everything off. ...That's why. That's all of why. Don't make it a story."
+      "text": "(Grey light. She's already up, barefoot in the frost, listening to the wood.) The Pack found me, after Ashford. Three days, and then a cave mouth, and a lad I'd been fond of dying in it. The old grey one came and lay down across the way in. Kept the cold off. Kept everything off. ...That's why. That's all of why. Don't make it a story."
      }
     ],
     "effects": [
@@ -4799,7 +4960,7 @@
         "gte": 1
        }
       },
-      "text": "She goes out by the east gate without a lamp, and you follow her along the Old Road past the wreck, by starlight and the white of the frost. She walks barefoot on ground that would cut you through your boots, and doesn't make a sound. Once she stops, and you stop, and somewhere off in the Hollow a wolf calls and is answered. \"Him. And the bitch with the white foot.\" She walks on."
+      "text": "She goes out by the east gate without a lamp, and you follow her along the Old Road past the wreck, by starlight and the white of the frost. She doesn't make a sound. Once she stops, and you stop, and somewhere off in the Hollow a wolf calls and is answered. \"Him. And the bitch with the white foot.\" She walks on."
      },
      {
       "text": "The Old Road, the wreck, the frost. You know the way now, and she lets you walk in front, which she has never done."
@@ -4810,7 +4971,7 @@
    "blind_fire": {
     "id": "blind_fire",
     "speaker": "narrator",
-    "text": "The Hunters' Blind is a lean-to of hides against a fallen oak, with a fire the size of a hat. She feeds it one stick at a time. She doesn't talk. After a while she takes the crossbow off her back, and checks it, and lays it down by her right hand, and turns and looks at you across the fire as if you were a track she has been following for days.",
+    "text": "The Hunters' Blind is a lean-to of hides against a fallen oak, with a fire the size of a hat. She sits, and pulls her boots off first thing, and sets her bare feet flat on the cold ground, as if she were listening through them. She feeds the fire one stick at a time. She doesn't talk. After a while she takes the crossbow off her back, and checks it, and lays it down by her right hand, and turns and looks at you across the fire as if you were a track she has been following for days.",
     "next": "blind_ask"
    },
    "blind_ask": {
@@ -5478,6 +5639,34 @@
       }
      }
     ],
+    "choices": [
+     {
+      "text": "Something else.",
+      "goto": "hub"
+     },
+     {
+      "text": "Goodbye.",
+      "end": true
+     }
+    ]
+   },
+   "watch": {
+    "id": "watch",
+    "text": "Men. Deserters, mostly, and the ones the road loses. The Watch won't pay for it, so Holloway does, out of his own pocket. (She drinks.) I take it. Every week. ...He'd pay me double, if I let him. I don't let him.",
+    "choices": [
+     {
+      "text": "Something else.",
+      "goto": "hub"
+     },
+     {
+      "text": "Goodbye.",
+      "end": true
+     }
+    ]
+   },
+   "ashford": {
+    "id": "ashford",
+    "text": "(She doesn't look up from her cup.) The cave mouths.",
     "choices": [
      {
       "text": "Something else.",
@@ -6320,7 +6509,7 @@
       "when": {
        "archetype": "arcanist"
       },
-      "text": "Spark-hands. Don't touch the drying racks; the last one of you set my sage alight and I smelled like a funeral for a week."
+      "text": "Your hands smell of hot iron, child, and you've not been near a forge. I don't want to know. Comfrey, twice a day, and keep them off my drying racks."
      },
      {
       "when": {
@@ -6788,7 +6977,7 @@
    },
    "tock": {
     "id": "tock",
-    "text": "The ground knocks. At night. Tock, and then tock, under the floor, like somebody wanting to come in, and Pa says it's moles, and I said moles don't knock, and he said go to sleep Tam, so I did, but it kept knocking.",
+    "text": "The ground knocks. At night. Tock, and then tock, under the floor, like somebody wanting to come in, and Pa says it's moles, and I said moles don't knock, and he said go to sleep Tam, so I did, but it kept knocking. Pa says the moles can knock on somebody else's bloody floor. I'm not to say bloody.",
     "effects": [
      {
       "set": {
@@ -6826,6 +7015,42 @@
      }
     },
     "node": "first"
+   },
+   {
+    "when": {
+     "all": [
+      {
+       "time": "dusk"
+      },
+      {
+       "all": [
+        {
+         "met": "brannoc"
+        },
+        {
+         "day": {
+          "gte": 2
+         }
+        },
+        {
+         "not": {
+          "time": "night"
+         }
+        },
+        {
+         "not": {
+          "npcFlag": {
+           "npc": "brannoc",
+           "key": "asked_nell",
+           "eq": true
+          }
+         }
+        }
+       ]
+      }
+     ]
+    },
+    "node": "dusk_call"
    },
    {
     "when": {
@@ -6964,10 +7189,10 @@
       "when": {
        "bg": "hunter"
       },
-      "text": "Hunter. Good. You'll know a clean pelt. Brannoc. Iron, and things with fur on."
+      "text": "Hunter. Good. You'll know a clean pelt. Brannoc. Iron, and things with fur on. (The hammer. He looks at you properly.) ...Came up the Low Ford road? Irons on it. Mine. Ten. (The hammer.) Best I've done."
      },
      {
-      "text": "Brannoc. I make things of iron. I buy things with fur on. Which?"
+      "text": "Brannoc. I make things of iron. I buy things with fur on. Which? (The hammer. He looks at you properly.) ...Came up the Low Ford road? Irons on it. Mine. Ten. (The hammer.) Best I've done."
      }
     ],
     "choices": [
@@ -7067,7 +7292,7 @@
        "fact": "nell.buried",
        "eq": true
       },
-      "text": "(He works. He doesn't stop when you come in, and he doesn't send you away.) Steel or fur?"
+      "text": "(He works one-handed; the other hand is bound in rag. He doesn't stop when you come in, and he doesn't send you away.) Steel or fur?"
      },
      {
       "when": {
@@ -7261,7 +7486,7 @@
       "text": "(He looks at the two irons on the rack for a long time.) Twelve ordered. Ten went down to the ford, at night, square coin on the anvil. ...Buyer'll want these two. Buyer can come and ask me for them."
      },
      {
-      "text": "Spares. Lamp-irons for the Low Ford. Twelve ordered last winter, ten collected. Collected at night; coin left on the anvil. Old coin, the square kind. Didn't ask who. ...Should've."
+      "text": "Spares. Twelve ordered for the Low Ford, last winter. Ten collected, at night, coin left on the anvil. Old coin. Square. (He runs his thumb along one.) Didn't ask who. Paid for my girl's boots."
      }
     ],
     "choices": [
@@ -7387,7 +7612,7 @@
       "text": "(He takes it. Turns it to the light. Puts his thumb under the socket, where the mark is.) Mine. (He holds it a long time.) ...Mine."
      },
      {
-      "text": "(He takes it. Turns it to the light. Puts his thumb under the socket.) Mine. Mark's under there. Last winter's work: twelve for the Low Ford, ten collected, at night, square coin on the anvil. (He gives it back.) Keep it. It's done what it was for."
+      "text": "(He takes it. Turns it to the light. Puts his thumb under the socket.) Mine. Mark's under there. (He weighs it.) Thing in the water had it? ...Took it off a post, then. Good iron. Held. (He gives it back.) Keep it. It'll hold."
      }
     ],
     "effects": [
@@ -7544,18 +7769,7 @@
    },
    "nell_ditch": {
     "id": "nell_ditch",
-    "text": [
-     {
-      "when": {
-       "fact": "brannoc.saw_iron",
-       "eq": true
-      },
-      "text": "(He puts the hammer down, and looks at the two irons still on the rack, and then he doesn't look at anything.) ...Had the reins. She'd want the reins. Always wanted the reins."
-     },
-     {
-      "text": "(He puts the hammer down. You have never seen him put the hammer down.) ...Had the reins. (a long breath, through the nose) She'd want the reins. Always wanted the reins."
-     }
-    ],
+    "text": "(He puts the hammer down. You have never seen him put the hammer down.) ...Had the reins. (a long breath, through the nose) She'd want the reins. Always wanted the reins.",
     "choices": [
      {
       "text": "She was gone before I came. The water took her.",
@@ -7641,17 +7855,8 @@
    },
    "nell_gone": {
     "id": "nell_gone",
-    "text": "Quick, then. Water's quick. (He picks the hammer up and holds it, and doesn't use it.) Forge is shut. Go on.",
-    "choices": [
-     {
-      "text": "I'm sorry, Brannoc.",
-      "end": true
-     },
-     {
-      "text": "(Leave him.)",
-      "end": true
-     }
-    ]
+    "text": "Quick, then. Water's quick. (He picks the hammer up and holds it, and doesn't use it.)",
+    "next": "nell_iron"
    },
    "nell_risen": {
     "id": "nell_risen",
@@ -7669,23 +7874,13 @@
    },
    "nell_quick": {
     "id": "nell_quick",
-    "text": "(A long time.) ...Thank you. (The forge ticks as it cools.) Forge is shut. Go on.",
-    "choices": [
-     {
-      "text": "(Leave him.)",
-      "end": true
-     }
-    ]
+    "text": "(A long time.) ...Thank you.",
+    "next": "nell_iron"
    },
    "nell_slow": {
     "id": "nell_slow",
-    "text": "(He nods, once, as if you've told him a price.) Forge is shut.",
-    "choices": [
-     {
-      "text": "(Leave him.)",
-      "end": true
-     }
-    ]
+    "text": "(He nods, once, as if you've told him a price.)",
+    "next": "nell_iron"
    },
    "nell_lie": {
     "id": "nell_lie",
@@ -7724,6 +7919,198 @@
       "end": true
      }
     ]
+   },
+   "nell_iron": {
+    "id": "nell_iron",
+    "text": [
+     {
+      "when": {
+       "all": [
+        {
+         "hasItem": "wardens_lampiron"
+        },
+        {
+         "fact": "brannoc.saw_iron",
+         "eq": true
+        }
+       ]
+      },
+      "text": "(His eyes go to the iron at your belt, and stay there.) ...That was in its hand. The thing in the water."
+     },
+     {
+      "when": {
+       "hasItem": "wardens_lampiron"
+      },
+      "text": "(His eyes go to the iron at your belt, and stay there.) ...Where'd you get that."
+     },
+     {
+      "text": "(He looks at the two irons on the rack, and then at you.) The thing in the water. What was it carrying."
+     }
+    ],
+    "choices": [
+     {
+      "text": "Yes.",
+      "show": {
+       "all": [
+        {
+         "hasItem": "wardens_lampiron"
+        },
+        {
+         "fact": "brannoc.saw_iron",
+         "eq": true
+        }
+       ]
+      },
+      "goto": "nell_hand"
+     },
+     {
+      "text": "Out of the fist of the thing in the ford.",
+      "show": {
+       "all": [
+        {
+         "hasItem": "wardens_lampiron"
+        },
+        {
+         "not": {
+          "fact": "brannoc.saw_iron",
+          "eq": true
+         }
+        }
+       ]
+      },
+      "goto": "nell_hand"
+     },
+     {
+      "text": "A lamp-iron. Your mark under the socket.",
+      "show": {
+       "not": {
+        "hasItem": "wardens_lampiron"
+       }
+      },
+      "goto": "nell_told"
+     }
+    ]
+   },
+   "nell_hand": {
+    "id": "nell_hand",
+    "text": "(He holds out his hand. You put the iron in it. He turns it to the forge, and his thumb goes under the socket and finds the mark without looking.) Lifts it up. (a breath) To see your face. ...Does it.",
+    "choices": [
+     {
+      "text": "It does.",
+      "goto": "nell_letters"
+     }
+    ]
+   },
+   "nell_told": {
+    "id": "nell_told",
+    "text": "(He doesn't move.) Lifts it up. (a breath) To see your face. ...Does it.",
+    "choices": [
+     {
+      "text": "It does.",
+      "goto": "nell_letters"
+     }
+    ]
+   },
+   "nell_letters": {
+    "id": "nell_letters",
+    "text": "(The forge ticks. He does not move for a long time.) Knew my mark before she knew her letters.",
+    "effects": [
+     {
+      "set": {
+       "brannoc.knew_iron": true
+      }
+     },
+     {
+      "quest": {
+       "id": "lamps",
+       "status": "active",
+       "entry": "irons"
+      }
+     },
+     {
+      "quest": {
+       "id": "lamps",
+       "entry": "mark"
+      }
+     }
+    ],
+    "next": "nell_thought"
+   },
+   "nell_thought": {
+    "id": "nell_thought",
+    "text": "(Longer.) She'd have thought I'd come for her.",
+    "next": "nell_shut"
+   },
+   "nell_shut": {
+    "id": "nell_shut",
+    "text": [
+     {
+      "when": {
+       "hasItem": "wardens_lampiron"
+      },
+      "text": "(Nothing. Then he gives you the iron back, carefully, the way you'd hand someone a thing that was still hot. On the anvil the bar goes from orange to grey.) Forge is shut."
+     },
+     {
+      "text": "(Nothing. On the anvil the bar goes from orange to grey.) Forge is shut."
+     }
+    ],
+    "next": "nell_lantern"
+   },
+   "nell_lantern": {
+    "id": "nell_lantern",
+    "text": "(He takes the lantern down off its hook, and lights it, and takes a blanket off the shelf.) You know the place.",
+    "choices": [
+     {
+      "text": "I'll show you.",
+      "effects": [
+       {
+        "set": {
+         "nell.road": "with"
+        }
+       }
+      ],
+      "goto": "nell_with"
+     },
+     {
+      "text": "Not tonight.",
+      "effects": [
+       {
+        "set": {
+         "nell.road": "alone"
+        }
+       }
+      ],
+      "goto": "nell_alone"
+     }
+    ]
+   },
+   "nell_with": {
+    "id": "nell_with",
+    "speaker": "narrator",
+    "text": "He doesn't wait for anything else. He goes out, and you go with him, down toward the south gate in the last of the light.",
+    "choices": [
+     {
+      "text": "(Go with him.)",
+      "end": true
+     }
+    ]
+   },
+   "nell_alone": {
+    "id": "nell_alone",
+    "speaker": "narrator",
+    "text": "He nods, once, and goes out past you with the lantern and the blanket, down toward the south gate.",
+    "choices": [
+     {
+      "text": "(Let him go.)",
+      "end": true
+     }
+    ]
+   },
+   "dusk_call": {
+    "id": "dusk_call",
+    "speaker": "narrator",
+    "text": "As the light goes, the hammer at the smithy stops. Brannoc calls you over, without looking up.",
+    "next": "nell"
    }
   }
  },
@@ -8867,7 +9254,7 @@
    },
    "jory": {
     "id": "jory",
-    "text": "Alive. Alive! I— here. A hundred, as I said, and that's the least of it. Whatever you need that I can sell you, you pay cost. Cost! Don't tell anyone.",
+    "text": "Alive. Alive! I— here. A hundred, as I said, and that's the least of it. Whatever you need that I can sell you, you pay cost. Cost! And I'll swear blind I never said it.",
     "effects": [
      {
       "gold": 100
@@ -9093,7 +9480,7 @@
    },
    "knew": {
     "id": "knew",
-    "text": "Jory? Jory knows salt from sugar on a good day. He didn't know. ...He didn't know. I did.",
+    "text": "Jory? Jory knows salt from sugar on a good day. He didn't know. ...He didn't know. (He goes back to counting the jars.)",
     "choices": [
      {
       "text": "Something else.",
@@ -10324,10 +10711,10 @@
       "when": {
        "archetype": "stalker"
       },
-      "text": "You've been standing there longer than I noticed. I don't care for that. I'll remember it."
+      "text": "You'd make an excellent debt collector. Nobody hears you coming, and everybody pays. Do think about it."
      },
      {
-      "text": "You've been standing there longer than I noticed. I don't care for that. I'll remember it."
+      "text": "You'd make an excellent debt collector. Nobody hears you coming, and everybody pays. Do think about it."
      }
     ],
     "effects": [
@@ -10371,7 +10758,7 @@
    },
    "t_pell": {
     "id": "t_pell",
-    "text": "My sister kept the books in Ashford. I came up to collect them, after. There wasn't an Ashford to collect them from. (He straightens a pen that was straight.) She wrote to me the week before. The garrison's boots had come in short, and somebody had signed for them full. She thought it was funny. She had a dreadful sense of humour. ...So I count. Somebody ought to know what things cost.",
+    "text": "My sister kept the books in Ashford, in the lower town. I came up to collect them, after. There wasn't a lower town to collect them from. There was a lid on the main shaft, barred from the top. (He straightens a pen that was straight.) Somebody barred it. I know who. ...So I count. Somebody ought to know what things cost.",
     "choices": [
      {
       "text": "Something else.",
@@ -11119,10 +11506,10 @@
       "when": {
        "archetype": "stalker"
       },
-      "text": "You counted the doors when you sat down. Old Kerchief habit. Who taught you?"
+      "text": "You sit with your back to the wall and your weight on your toes. I've stitched men who sat like that. Mostly in the back."
      },
      {
-      "text": "You counted the doors when you sat down. Old Kerchief habit. Who taught you?"
+      "text": "You sit with your back to the wall and your weight on your toes. I've stitched men who sat like that. Mostly in the back."
      }
     ],
     "effects": [
@@ -12286,10 +12673,10 @@
       "when": {
        "archetype": "stalker"
       },
-      "text": "You came in from the side. Nobody comes in from the side. The side's where I keep the spiders."
+      "text": "You put your feet down like the floor's asleep and you don't want to wake it. The Order had a word for walking like that. I've forgotten it. It was a nice word."
      },
      {
-      "text": "You came in from the side. Nobody comes in from the side. The side's where I keep the spiders."
+      "text": "You put your feet down like the floor's asleep and you don't want to wake it. The Order had a word for walking like that. I've forgotten it. It was a nice word."
      }
     ],
     "effects": [
@@ -12315,7 +12702,16 @@
       }
      }
     ],
-    "next": "hub"
+    "choices": [
+     {
+      "text": "(Write down what she called you, at dusk.)",
+      "goto": "names_write"
+     },
+     {
+      "text": "(Sit.)",
+      "goto": "hub"
+     }
+    ]
    },
    "t_chid": {
     "id": "t_chid",
@@ -12771,6 +13167,25 @@
       "end": true
      }
     ]
+   },
+   "names_write": {
+    "id": "names_write",
+    "text": "(He watches you write it, and doesn't look at what.) Good. Keep it somewhere dry.",
+    "effects": [
+     {
+      "set": {
+       "mother.word": true
+      }
+     },
+     {
+      "quest": {
+       "id": "home",
+       "status": "active",
+       "entry": "word"
+      }
+     }
+    ],
+    "next": "hub"
    }
   }
  },
@@ -14168,87 +14583,11 @@
       "text": "The caravan: a cold trail, cold cages. It is not finished. Neither are you."
      }
     ],
-    "next": "f_ember"
-   },
-   "f_pell": {
-    "id": "f_pell",
-    "text": [
-     {
-      "when": {
-       "fact": "pell.fate",
-       "eq": "taken"
-      },
-      "text": "And Pell Varrow, in a cage that was built for someone else. You know which one. He is still counting. It is all he has left to do."
-     },
-     {
-      "when": {
-       "fact": "caravan.pell",
-       "eq": "exposed"
-      },
-      "text": "And Pell. Pell in irons, being walked to the cells, telling everyone who will listen that he has friends. He does. They are not in this town."
-     },
-     {
-      "when": {
-       "fact": "caravan.pell",
-       "eq": "ally"
-      },
-      "text": "And a ledger, with your name in it, in Pell's small tidy hand. You were paid. So was everyone else in that book. I would keep an eye on all of them."
-     },
-     {
-      "when": {
-       "fact": "caravan.pell",
-       "eq": "fled"
-      },
-      "text": "And an empty warehouse, and a man on a fast horse who will not stop until he is somewhere that has never heard of the Coyle Company. He took his books with him. You are in them."
-     },
-     {
-      "text": "And Pell Varrow, counting. He is always counting. One day he will count you."
-     }
-    ],
-    "next": "f_self"
-   },
-   "f_self": {
-    "id": "f_self",
-    "text": [
-     {
-      "when": {
-       "trait": "risen_once"
-      },
-      "text": "And you. You have already died on this road. Most people only get to do that the once. Something did not want you to stay down, and I would very much like to know what."
-     },
-     {
-      "when": {
-       "fact": "player.wanted",
-       "eq": true
-      },
-      "text": "And you. The Watch has your description. It is not flattering."
-     },
-     {
-      "when": {
-       "trait": "wolf_friend"
-      },
-      "text": "And you, who smell of the Pack now. Dogs in the square will not bark at you. People will."
-     },
-     {
-      "text": "And you. You came up the Low Ford road at night, and the lamps lit for you. They have not done that for anyone in a long time."
-     }
-    ],
     "next": "f_past"
    },
    "f_below": {
     "id": "f_below",
-    "text": [
-     {
-      "when": {
-       "fact": "tam.tock",
-       "eq": true
-      },
-      "text": "Last. Under the Verge, something is turning over in its sleep, and under a farm past the Old Road, something is knocking to be let in. The little lamp-people are digging down to it with the Warden's heart in their arms, and they think it will be grateful. And the door in the hillside... (The roof shivers under the table, and the glass of her lamp rings in its frame. The flame lies over toward the hill. Down in the town every lamp dips at once, and comes back; the braziers on the wall do not. She looks east, into the dark, and does not finish.)"
-     },
-     {
-      "text": "Last. Under the Verge, something is turning over in its sleep. The little lamp-people are digging down to it with the Warden's heart in their arms, and they think it will be grateful. And the door in the hillside... (The roof shivers under the table, and the glass of her lamp rings in its frame. The flame lies over toward the hill. Down in the town every lamp dips at once, and comes back; the braziers on the wall do not. She looks east, into the dark, and does not finish.)"
-     }
-    ],
+    "text": "And the door in the hillside... (The roof shivers under the table, and the glass of her lamp rings in its frame. The flame lies over toward the hill. Down in the town every lamp dips at once, and comes back; the braziers on the wall do not. She looks east, into the dark, and does not finish.)",
     "choices": [
      {
       "text": "What about the door?",
@@ -14344,10 +14683,10 @@
        "fact": "vonnra.accused",
        "eq": true
       },
-      "text": "(She takes a folded chart from under the ledger and lays it between you. It is in the Wayfinder's hand, and its margins are written full.) That would be ten gold. This once, no charge. The rest you will walk into yourself, and you will, because you are the kind that does."
+      "text": "(She takes a folded chart from under the ledger and lays it between you. It is in the Wayfinder's hand, and its margins are written full.) That would be ten gold. This once, no charge. The rest you will walk into yourself, and you will, because you are the kind that does. (The ledger lies open under her hand at its last page, and from where you sit you can read it. Twenty-six lines, every one struck through. The twenty-fifth: Nell, the smith's girl. With Wat. The twenty-sixth: Rook's lodger. And under them a twenty-seventh, not struck: From the ford. Got up.)"
      },
      {
-      "text": "(She takes a folded chart from under the ledger and lays it between you. It is in the Wayfinder's hand, and its margins are written full.) That would be ten gold, traveller. This once, no charge. The rest you will walk into yourself, and you will, because you are the kind that does."
+      "text": "(She takes a folded chart from under the ledger and lays it between you. It is in the Wayfinder's hand, and its margins are written full.) That would be ten gold, traveller. This once, no charge. The rest you will walk into yourself, and you will, because you are the kind that does. (The ledger lies open under her hand at its last page, and from where you sit you can read it. Twenty-six lines, every one struck through. The twenty-fifth: Nell, the smith's girl. With Wat. The twenty-sixth: Rook's lodger. And under them a twenty-seventh, not struck: From the ford. Got up.)"
      }
     ],
     "effects": [
@@ -14463,10 +14802,10 @@
       "when": {
        "archetype": "stalker"
       },
-      "text": "You came to my window from the side the light does not reach. Few think to. I noticed."
+      "text": "You paid no toll the first time you passed my tower, traveller. Nobody saw you pass. I have added it to your account."
      },
      {
-      "text": "You came to my window from the side the light does not reach. Few think to. I noticed."
+      "text": "You paid no toll the first time you passed my tower, traveller. Nobody saw you pass. I have added it to your account."
      }
     ],
     "effects": [
@@ -14538,9 +14877,65 @@
      }
     ]
    },
-   "f_ember": {
-    "id": "f_ember",
+   "f_past": {
+    "id": "f_past",
     "text": [
+     {
+      "when": {
+       "all": [
+        {
+         "fact": "sella.past_sold",
+         "eq": true
+        },
+        {
+         "bg": "hunter"
+        }
+       ]
+      },
+      "text": "And before the ford: a child following tracks through these woods, with a bow too big for them. (She is not looking at your palm.)"
+     },
+     {
+      "when": {
+       "all": [
+        {
+         "fact": "sella.past_sold",
+         "eq": true
+        },
+        {
+         "bg": "scholar"
+        }
+       ]
+      },
+      "text": "And before the ford: four years in a cloister cellar among dead men's letters, and a lens you were not meant to leave with. (She is not looking at your palm.)"
+     },
+     {
+      "when": {
+       "all": [
+        {
+         "fact": "sella.past_sold",
+         "eq": true
+        },
+        {
+         "bg": "outcast"
+        }
+       ]
+      },
+      "text": "And before the ford: worse company than the Kerchiefs, and the trick of walking away from it. (She is not looking at your palm.)"
+     },
+     {
+      "when": {
+       "all": [
+        {
+         "fact": "sella.past_sold",
+         "eq": true
+        },
+        {
+         "bg": "devout"
+        }
+       ]
+      },
+      "text": "And before the ford: chapel lamps that nobody came to see, and you, lighting them anyway. (She is not looking at your palm.)"
+     },
      {
       "when": {
        "all": [
@@ -14608,84 +15003,41 @@
      },
      {
       "when": {
-       "knows": "clue.blasting_ember"
+       "fact": "pell.fate",
+       "eq": "taken"
       },
-      "text": "And six crates still waiting in a ravine to go where they were paid to go. Someone will deliver them. Someone always does."
-     },
-     {
-      "text": "And six crates nobody opened, marked with two letters, waiting in a ravine to go where they were paid to go. Someone will deliver them. Someone always does."
-     }
-    ],
-    "next": "f_pell"
-   },
-   "f_past": {
-    "id": "f_past",
-    "text": [
-     {
-      "when": {
-       "all": [
-        {
-         "fact": "sella.past_sold",
-         "eq": true
-        },
-        {
-         "bg": "hunter"
-        }
-       ]
-      },
-      "text": "And before the ford: a child following tracks through these woods, with a bow too big for them. (She is not looking at your palm.)"
+      "text": "And Pell Varrow, in a cage that was built for someone else. You know which one. He is still counting. It is all he has left to do."
      },
      {
       "when": {
-       "all": [
-        {
-         "fact": "sella.past_sold",
-         "eq": true
-        },
-        {
-         "bg": "scholar"
-        }
-       ]
+       "fact": "caravan.pell",
+       "eq": "exposed"
       },
-      "text": "And before the ford: four years in a cloister cellar among dead men's letters, and a lens you were not meant to leave with. (She is not looking at your palm.)"
+      "text": "And Pell. Pell in irons, being walked to the cells, telling everyone who will listen that he has friends. He does. They are not in this town."
      },
      {
       "when": {
-       "all": [
-        {
-         "fact": "sella.past_sold",
-         "eq": true
-        },
-        {
-         "bg": "outcast"
-        }
-       ]
+       "fact": "caravan.pell",
+       "eq": "ally"
       },
-      "text": "And before the ford: worse company than the Kerchiefs, and the trick of walking away from it. (She is not looking at your palm.)"
+      "text": "And a ledger, with your name in it, in Pell's small tidy hand. You were paid. So was everyone else in that book. I would keep an eye on all of them."
      },
      {
       "when": {
-       "all": [
-        {
-         "fact": "sella.past_sold",
-         "eq": true
-        },
-        {
-         "bg": "devout"
-        }
-       ]
+       "fact": "caravan.pell",
+       "eq": "fled"
       },
-      "text": "And before the ford: chapel lamps that nobody came to see, and you, lighting them anyway. (She is not looking at your palm.)"
+      "text": "And an empty warehouse, and a man on a fast horse who will not stop until he is somewhere that has never heard of the Coyle Company. He took his books with him. You are in them."
      },
      {
       "text": "Of before the ford, I see very little. The water took it, or you left it on the far bank. Most do."
      }
     ],
-    "next": "f_below"
+    "next": "f_ford"
    },
    "f_accuse": {
     "id": "f_accuse",
-    "text": "(For the first time she looks at your face and not at your hand. It goes on long enough that the lamp gutters.) ...Sit down, {name}. I have not finished reading.",
+    "text": "I did not kill him. (For the first time she looks at your face and not at your hand. It goes on long enough that the lamp gutters.) ...Sit down, {name}. I have not finished reading.",
     "effects": [
      {
       "set": {
@@ -14720,6 +15072,27 @@
      }
     ],
     "next": "f_door"
+   },
+   "f_ford": {
+    "id": "f_ford",
+    "text": [
+     {
+      "when": {
+       "fact": "warden.answer",
+       "eq": "silent"
+      },
+      "text": "And the ford. (She turns the cup over on the table.) He would have held that lamp out of the water until the river ran dry, traveller. Two hundred years he held it, and he would have held it two hundred more, and got up every dusk to hold it again. You did not even tell him it was morning. He let go anyway."
+     },
+     {
+      "text": "And the ford. (She turns the cup over on the table.) He would have held that lamp out of the water until the river ran dry, traveller. Two hundred years he held it, and he would have held it two hundred more, and got up every dusk to hold it again. You told him it was morning."
+     }
+    ],
+    "next": "f_did"
+   },
+   "f_did": {
+    "id": "f_did",
+    "text": "When the lamp went into the water, his heart came up out of it, and a little lamp-person was waiting to carry it away down a hole. The ground has turned over every night since. The Dig digs faster. The Penhale boy's floor knocks. (She lays her hand flat on the cup.) You stopped the drowning, traveller. You also did this.",
+    "next": "f_below"
    }
   }
  },
@@ -15205,10 +15578,10 @@
       "when": {
        "archetype": "stalker"
       },
-      "text": "You have been standing there for some time. I knew. I was merely being polite. ...I did not know."
+      "text": "The handbook says to challenge anyone who approaches unseen. (She checks.) It does not say what to do if one forgets. ...Halt. Belatedly."
      },
      {
-      "text": "You have been standing there for some time. I knew. I was merely being polite. ...I did not know."
+      "text": "The handbook says to challenge anyone who approaches unseen. (She checks.) It does not say what to do if one forgets. ...Halt. Belatedly."
      }
     ],
     "effects": [
@@ -16966,7 +17339,7 @@
    },
    "say_maeca": {
     "id": "say_maeca",
-    "text": "Maeca Barefoot came in this morning humming. Maeca. Humming. I've a professional interest, love: who's my competition?",
+    "text": "Maeca came in this morning humming. Maeca. Humming. I've a professional interest, love: who's my competition?",
     "effects": [
      {
       "npcFlag": {
@@ -18348,7 +18721,7 @@
       "when": {
        "archetype": "arcanist"
       },
-      "text": "Keep your hands where I can see them, and keep them cold. The last spark-thrower in here set fire to my tent. Redcowl. You're in my camp. Talk."
+      "text": "Keep your hands where I can see them, and keep them cold. I've bairns asleep in this camp, and they've had enough fire for one life. Redcowl. You're in my camp. Talk."
      },
      {
       "when": {
@@ -18709,7 +19082,7 @@
           {
            "npcFlag": {
             "npc": "maeca",
-            "key": "once:barefoot",
+            "key": "once:ashford",
             "eq": true
            }
           },
@@ -18732,7 +19105,7 @@
    },
    "who": {
     "id": "who",
-    "text": "Mine. Forty-one mouths, and a dozen of them can hold a blade. The rest are what's left when a town goes into the ground and the Watch counts its boots and goes home. ...Ha! Listen to me. Talk or bleed, I said. Talk.",
+    "text": "Mine. Forty-one mouths, and a dozen of them can hold a blade. The rest are what's left when a town goes into the ground and the Watch writes it down and goes home. ...Ha! Listen to me. Talk or bleed, I said. Talk.",
     "choices": [
      {
       "text": "About the Coyle wagons.",
@@ -20964,10 +21337,10 @@
       "when": {
        "archetype": "stalker"
       },
-      "text": "A stalker. You'll want the maps with cover. Here, and here. Don't tell the reavers; they'll only stand in it."
+      "text": "A stalker. You'll want the maps with cover. Here, and here. The reavers never ask; they'd only stand in it."
      },
      {
-      "text": "A stalker. You'll want the maps with cover. Here, and here. Don't tell the reavers; they'll only stand in it."
+      "text": "A stalker. You'll want the maps with cover. Here, and here. The reavers never ask; they'd only stand in it."
      }
     ],
     "effects": [
@@ -21212,7 +21585,7 @@
    "face": {
     "id": "face",
     "speaker": "narrator",
-    "text": "You try to call up your mother's face, and find it is not quite where you left it.",
+    "text": "You try to call up your mother's face, and find it is not quite where you left it. Her voice is still there. \"Lamp's lit, Spark. Stay where it reaches.\"",
     "next": "baking"
    },
    "baking": {
@@ -21539,6 +21912,436 @@
     "choices": [
      {
       "text": "(Continue.)",
+      "end": true
+     }
+    ]
+   }
+  }
+ },
+ "scene_gate_dawn": {
+  "npc": "scene_gate_dawn",
+  "entry": [
+   {
+    "node": "gate"
+   }
+  ],
+  "nodes": {
+   "gate": {
+    "id": "gate",
+    "speaker": "narrator",
+    "text": "The gate has stood open all night. Captain Holloway is asleep on the ground in the gateway, his back to the post, his lamp burned out and a bottle by his hand. Maeca sits on the step beside him with her crossbow across her knees. She is awake.",
+    "next": "maeca"
+   },
+   "maeca": {
+    "id": "maeca",
+    "speaker": "maeca",
+    "text": "(a nod at him) Waits up for you. (a beat) Somebody waits up for him.",
+    "next": "wake"
+   },
+   "wake": {
+    "id": "wake",
+    "speaker": "holloway",
+    "text": "(awake all at once, the way soldiers wake, and finding you) ...One in. (He looks past you at the empty road.) Count's right.",
+    "choices": [
+     {
+      "text": "You waited all night?",
+      "goto": "all"
+     },
+     {
+      "text": "Thank you, Captain.",
+      "goto": "thanks"
+     },
+     {
+      "text": "(Say nothing.)",
+      "goto": "bar"
+     }
+    ]
+   },
+   "all": {
+    "id": "all",
+    "speaker": "holloway",
+    "text": "Gate was open. Somebody had to stand in it. (Maeca looks at the step he was asleep on, and then at him, and says nothing at all, very loudly.)",
+    "next": "bar"
+   },
+   "thanks": {
+    "id": "thanks",
+    "speaker": "holloway",
+    "text": "Don't. That's a drink you owe me. The cheap stuff; I'm not proud.",
+    "next": "bar"
+   },
+   "bar": {
+    "id": "bar",
+    "speaker": "narrator",
+    "text": "He gets up, and puts his shoulder to the gate, and bars it. Maeca picks up his bottle, looks at what's left in it, and pours it out on the step.",
+    "next": "last"
+   },
+   "last": {
+    "id": "last",
+    "speaker": "maeca",
+    "text": "That's your last.",
+    "choices": [
+     {
+      "text": "(Go.)",
+      "end": true
+     }
+    ]
+   }
+  }
+ },
+ "scene_in_my_count": {
+  "npc": "scene_in_my_count",
+  "entry": [
+   {
+    "node": "crowd"
+   }
+  ],
+  "nodes": {
+   "crowd": {
+    "id": "crowd",
+    "speaker": "narrator",
+    "text": "There are folk at the gate end of the square when you come down, and the talk stops when they see you. Somebody says it out loud: every night you go out into the dark, and every morning you come back out of it, and nothing out there ever touches you. Rook has a word for that. They are between you and the street, and they are not moving.",
+    "next": "captain"
+   },
+   "captain": {
+    "id": "captain",
+    "speaker": "holloway",
+    "text": "(He comes down the street at a walk, not hurrying, and he has been drinking, and he stops in the gateway between you and them.) She's in my count.",
+    "next": "men"
+   },
+   "men": {
+    "id": "men",
+    "speaker": "narrator",
+    "text": "Nobody moves. Two of his own men are at the back of the crowd, and they stay there.",
+    "next": "through"
+   },
+   "through": {
+    "id": "through",
+    "speaker": "holloway",
+    "text": "Anybody wants her out of it comes through me. (He sways, and plants his feet.) ...And I'm drunk, so it'll take you all morning.",
+    "next": "gone"
+   },
+   "gone": {
+    "id": "gone",
+    "speaker": "narrator",
+    "text": "It takes a while. He stands there until the last of them has gone home, and then he sits down where he stood.",
+    "choices": [
+     {
+      "text": "Captain—",
+      "goto": "dont"
+     },
+     {
+      "text": "(Sit down with him.)",
+      "goto": "sit"
+     }
+    ]
+   },
+   "dont": {
+    "id": "dont",
+    "speaker": "holloway",
+    "text": "Don't. Go and get some sleep. Somebody in this town should.",
+    "choices": [
+     {
+      "text": "(Go.)",
+      "end": true
+     }
+    ]
+   },
+   "sit": {
+    "id": "sit",
+    "speaker": "narrator",
+    "text": "You sit. After a while he passes you the cup. There's nothing in it. Neither of you says so.",
+    "choices": [
+     {
+      "text": "(Stay a while.)",
+      "end": true
+     }
+    ]
+   }
+  }
+ },
+ "scene_knocking": {
+  "npc": "scene_knocking",
+  "entry": [
+   {
+    "node": "ground"
+   }
+  ],
+  "nodes": {
+   "ground": {
+    "id": "ground",
+    "speaker": "narrator",
+    "text": "The ground turns over under the square, and every lamp on the wall dips and comes back. At the gate Holloway hasn't moved. He's sitting against the post with his cup, and he's listening to something.",
+    "next": "hear"
+   },
+   "hear": {
+    "id": "hear",
+    "speaker": "holloway",
+    "text": "Hear that.",
+    "choices": [
+     {
+      "text": "Hear what?",
+      "goto": "knock"
+     },
+     {
+      "text": "(Listen.)",
+      "goto": "knock"
+     }
+    ]
+   },
+   "knock": {
+    "id": "knock",
+    "speaker": "holloway",
+    "text": "Knocking. (He listens.) From under. (He drinks.) No. Course not.",
+    "choices": [
+     {
+      "text": "Captain. What happened at Ashford?",
+      "goto": "tell"
+     },
+     {
+      "text": "Nothing's knocking. Go home.",
+      "goto": "home"
+     }
+    ]
+   },
+   "home": {
+    "id": "home",
+    "speaker": "holloway",
+    "text": "Can't. Somebody's still out. (He drinks.) ...You want to know about Ashford. Everybody does. Sit, then.",
+    "next": "tell"
+   },
+   "tell": {
+    "id": "tell",
+    "speaker": "holloway",
+    "text": "(He counts on his fingers, loses his place, and starts again.) Ground went. Lower town with it. Night. Half the garrison on the hill, at the cave mouths. Half down the shaft. Ladders. (He drinks.) Me at the top. Lamp. Windlass. Lid. Counting them up. Lamp in my eyes. One. Two. (A long time.) Ninety-one. Then I looked down.",
+    "choices": [
+     {
+      "text": "What did you see?",
+      "goto": "saw"
+     },
+     {
+      "text": "(Wait.)",
+      "goto": "saw"
+     }
+    ]
+   },
+   "saw": {
+    "id": "saw",
+    "speaker": "holloway",
+    "text": "Dead. Climbing. Under the last of ours, close as that. (He holds one hand flat over the other.) Four hundred behind me, asleep. Bairns. (He drinks.) Lid down. Bar across. Sat on it. (He breathes out, a long way.) Three days, they knocked.",
+    "choices": [
+     {
+      "text": "You saved the upper town.",
+      "goto": "saved"
+     },
+     {
+      "text": "You shut them in.",
+      "goto": "shut"
+     },
+     {
+      "text": "Does anyone else know?",
+      "goto": "knows"
+     },
+     {
+      "text": "(Say nothing.)",
+      "goto": "silent"
+     }
+    ]
+   },
+   "saved": {
+    "id": "saved",
+    "speaker": "holloway",
+    "text": "Both numbers are right. That's the trouble with counting.",
+    "next": "wrote"
+   },
+   "shut": {
+    "id": "shut",
+    "speaker": "holloway",
+    "text": "I did.",
+    "next": "wrote"
+   },
+   "knows": {
+    "id": "knows",
+    "speaker": "holloway",
+    "text": "(He looks into the cup.) Pell. Went up after, for his sister's money. Found the lid barred from the top. (He drinks.) He's a careful man. He's waiting for a price.",
+    "next": "wrote"
+   },
+   "silent": {
+    "id": "silent",
+    "speaker": "holloway",
+    "text": "(He counts. You can see his lips do it.)",
+    "next": "wrote"
+   },
+   "wrote": {
+    "id": "wrote",
+    "speaker": "holloway",
+    "text": "Wrote them down with the hill party. At the cave mouths. Some of the hill came home; nobody asked which. Widows get paid for the cave mouths. (He looks into the cup, finds it empty, and keeps holding it.) Go to bed. (He gets up, holding the gatepost, and looks down the dark road.) Somebody's still out. ...Always somebody still out.",
+    "effects": [
+     {
+      "set": {
+       "holloway.confessed": true
+      }
+     },
+     {
+      "rel": {
+       "npc": "holloway",
+       "trust": 10
+      },
+      "quiet": true
+     }
+    ],
+    "choices": [
+     {
+      "text": "Goodnight, Captain.",
+      "end": true
+     },
+     {
+      "text": "(Leave him.)",
+      "end": true
+     }
+    ]
+   }
+  }
+ },
+ "scene_did_he": {
+  "npc": "scene_did_he",
+  "entry": [
+   {
+    "node": "well"
+   }
+  ],
+  "nodes": {
+   "well": {
+    "id": "well",
+    "speaker": "maeca",
+    "text": "(She's waiting for you at the well, which she never does.) He talked to you. Last night. At the gate.",
+    "choices": [
+     {
+      "text": "He told me about Ashford. The shaft, and the lid.",
+      "effects": [
+       {
+        "set": {
+         "maeca.told_lid": "told"
+        }
+       }
+      ],
+      "goto": "told"
+     },
+     {
+      "text": "He was drunk. It was nothing.",
+      "effects": [
+       {
+        "set": {
+         "maeca.told_lid": "kept"
+        }
+       }
+      ],
+      "goto": "kept"
+     },
+     {
+      "text": "(Say nothing.)",
+      "effects": [
+       {
+        "set": {
+         "maeca.told_lid": "silent"
+        }
+       }
+      ],
+      "goto": "quiet"
+     }
+    ]
+   },
+   "told": {
+    "id": "told",
+    "speaker": "narrator",
+    "text": "She looks at you for a long time.",
+    "next": "did"
+   },
+   "kept": {
+    "id": "kept",
+    "speaker": "narrator",
+    "text": "She looks at you the way she looks at a track that might be lying.",
+    "next": "did"
+   },
+   "quiet": {
+    "id": "quiet",
+    "speaker": "narrator",
+    "text": "She waits. You don't fill it. She nods, slowly, as if you had.",
+    "next": "did"
+   },
+   "did": {
+    "id": "did",
+    "speaker": "maeca",
+    "text": "...Did he.",
+    "choices": [
+     {
+      "text": "(Go.)",
+      "end": true
+     }
+    ]
+   }
+  }
+ },
+ "scene_his_cup": {
+  "npc": "scene_his_cup",
+  "entry": [
+   {
+    "node": "cup"
+   }
+  ],
+  "nodes": {
+   "cup": {
+    "id": "cup",
+    "speaker": "narrator",
+    "text": "At the gate, Holloway is on the ground with his back to the post, counting. Maeca comes down the street, and takes the cup out of his hand, and fills it from her own flask, and gives it back. Then she sits down beside him with her crossbow across her knees, and he leans on her a little, and she lets him.",
+    "effects": [
+     {
+      "set": {
+       "holloway.cup_seen": true
+      }
+     }
+    ],
+    "choices": [
+     {
+      "text": "(Leave them be.)",
+      "end": true
+     }
+    ]
+   }
+  }
+ },
+ "warden_answer": {
+  "npc": "warden_answer",
+  "entry": [
+   {
+    "node": "wait"
+   }
+  ],
+  "nodes": {
+   "wait": {
+    "id": "wait",
+    "speaker": "narrator",
+    "text": "He waits for an answer, the lamp held up to your face.",
+    "choices": [
+     {
+      "text": "(Nod.)",
+      "effects": [
+       {
+        "set": {
+         "warden.answer": "nodded"
+        }
+       }
+      ],
+      "end": true
+     },
+     {
+      "text": "(Say nothing.)",
+      "effects": [
+       {
+        "set": {
+         "warden.answer": "silent"
+        }
+       }
+      ],
       "end": true
      }
     ]

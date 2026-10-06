@@ -1,6 +1,6 @@
 # Rav Cutwell: ElevenLabs packet
 
-Voice id in the game: `rav`. 52 takes to record (5,351 characters; about 16,053 credits at three tries a line). Status: **draft**, until the story lead (a7622ae77d19e31dc) checks every line and marks it final.
+Voice id in the game: `rav`. 61 takes to record (6,009 characters; about 18,027 credits at three tries a line). Status: **draft**, until the story lead (a7622ae77d19e31dc) checks every line and marks it final.
 
 ## Who they are
 
@@ -276,9 +276,9 @@ Subtitle: Spell-scorched fingertips. You'll want goose fat for that. And to stop
 *Note:* Suddenly sober and interested: 'Who taught you?'
 
 ```
-[sharp, curious, quietly] You counted the doors when you sat down. Old Kerchief habit. Who taught you?
+[sharp, curious, quietly] You sit with your back to the wall and your weight on your toes. I've stitched men who sat like that. Mostly in the back.
 ```
-Subtitle: You counted the doors when you sat down. Old Kerchief habit. Who taught you?
+Subtitle: You sit with your back to the wall and your weight on your toes. I've stitched men who sat like that. Mostly in the back.
 
 ### 22. `dlg.rav.say_sella.0.wav`
 
@@ -500,9 +500,45 @@ Subtitle: Aye. Well. Sit, then.
 ```
 Subtitle: No. You're not, and you shouldn't be; he'd have said it was the job. Don't say it again, pal. I'll not be able to hear it twice.
 
+### 42. `dlg.rav.cb_spared_redcowl.0.p1.wav`
+
+*Where:* dialogue.json rav/cb_spared_redcowl#0; part 2 of 4: narrator: Two cups are out before you reach his table, and he fills them both. / **rav: Busy night up the ruts, I hear. Heard a man got up off his knee after, on a leg he'd no bu…** / narrator: He pushes one across. / rav: Good work, that leg. Whoever did it. ...That one doesn't go on the slate, pal.
+
+```
+Busy night up the ruts, I hear. Heard a man got up off his knee after, on a leg he'd no business still having.
+```
+Subtitle: Busy night up the ruts, I hear. Heard a man got up off his knee after, on a leg he'd no business still having.
+
+### 43. `dlg.rav.cb_spared_redcowl.0.p3.wav`
+
+*Where:* dialogue.json rav/cb_spared_redcowl#0; part 4 of 4: narrator: Two cups are out before you reach his table, and he fills them both. / rav: Busy night up the ruts, I hear. Heard a man got up off his knee after, on a leg he'd no bu… / narrator: He pushes one across. / **rav: Good work, that leg. Whoever did it. ...That one doesn't go on the slate, pal.**
+
+```
+Good work, that leg. Whoever did it. ...That one doesn't go on the slate, pal.
+```
+Subtitle: Good work, that leg. Whoever did it. ...That one doesn't go on the slate, pal.
+
+### 44. `dlg.rav.owes_two.0.p0.wav`
+
+*Where:* dialogue.json rav/owes_two#0; part 1 of 3: **rav: Did he. ...He's a terrible payer. Always was.** / narrator: He drinks. / rav: Drink your drink, pal.
+
+```
+[a breath out through his nose] Did he. ...He's a terrible payer. Always was.
+```
+Subtitle: Did he. ...He's a terrible payer. Always was.
+
+### 45. `dlg.rav.owes_two.0.p2.wav`
+
+*Where:* dialogue.json rav/owes_two#0; part 3 of 3: rav: Did he. ...He's a terrible payer. Always was. / narrator: He drinks. / **rav: Drink your drink, pal.**
+
+```
+Drink your drink, pal.
+```
+Subtitle: Drink your drink, pal.
+
 ## Said in passing
 
-### 42. `bark.rav.day.0.wav`
+### 46. `bark.rav.day.0.wav`
 
 *Where:* npcs.json rav.barks[0]
 *Played:* wry; pace: measured; volume: level.
@@ -512,7 +548,7 @@ Subtitle: No. You're not, and you shouldn't be; he'd have said it was the job. D
 ```
 Subtitle: I'm a doctor. Don't make me prove it.
 
-### 43. `bark.rav.day.1.wav`
+### 47. `bark.rav.day.1.wav`
 
 *Where:* npcs.json rav.barks[1]
 *Played:* wry; pace: measured; volume: level.
@@ -522,7 +558,7 @@ Subtitle: I'm a doctor. Don't make me prove it.
 ```
 Subtitle: Red cloth's a hard habit to break.
 
-### 44. `bark.rav.day.2.wav`
+### 48. `bark.rav.day.2.wav`
 
 *Where:* npcs.json rav.barks[2]
 *Played:* wry; pace: measured; volume: level.
@@ -532,7 +568,7 @@ Subtitle: Red cloth's a hard habit to break.
 ```
 Subtitle: Buy me a drink and I'll tell you a lie worth hearing.
 
-### 45. `bark.rav.day.3.wav`
+### 49. `bark.rav.day.3.wav`
 
 *Where:* npcs.json rav.barks[3]
 *Played:* wry; pace: measured; volume: level.
@@ -542,7 +578,7 @@ Subtitle: Buy me a drink and I'll tell you a lie worth hearing.
 ```
 Subtitle: Drop your trousers or don't. The leeches aren't fussy.
 
-### 46. `bark.rav.day.4.wav`
+### 50. `bark.rav.day.4.wav`
 
 *Where:* npcs.json rav.barks[4]
 *Played:* wry; pace: measured; volume: level.
@@ -552,7 +588,7 @@ Subtitle: Drop your trousers or don't. The leeches aren't fussy.
 ```
 Subtitle: Half my patients die. The other half pay.
 
-### 47. `bark.rav.day.5.wav`
+### 51. `bark.rav.day.5.wav`
 
 *Where:* npcs.json rav.barks[5]
 *Played:* wry; pace: measured; volume: level.
@@ -562,7 +598,7 @@ Subtitle: Half my patients die. The other half pay.
 ```
 Subtitle: Pox, piles, a pike-wound or a broken heart: I've a cure for three of them and a drink for the fourth.
 
-### 48. `bark.rav.night.0.wav`
+### 52. `bark.rav.night.0.wav`
 
 *Where:* npcs.json rav.nightBarks[0]
 *Played:* merry; pace: measured; volume: level.
@@ -572,7 +608,7 @@ Subtitle: Pox, piles, a pike-wound or a broken heart: I've a cure for three of t
 ```
 Subtitle: Night surgery's double. Night anything's double.
 
-### 49. `bark.rav.night.1.wav`
+### 53. `bark.rav.night.1.wav`
 
 *Where:* npcs.json rav.nightBarks[1]
 *Played:* merry; pace: measured; volume: level.
@@ -582,7 +618,7 @@ Subtitle: Night surgery's double. Night anything's double.
 ```
 Subtitle: The best stories come after the third cup.
 
-### 50. `bark.rav.night.2.wav`
+### 54. `bark.rav.night.2.wav`
 
 *Where:* npcs.json rav.nightBarks[2]
 *Played:* merry; pace: measured; volume: level.
@@ -592,7 +628,7 @@ Subtitle: The best stories come after the third cup.
 ```
 Subtitle: Pull up a stool. Mind the blood.
 
-### 51. `bark.rav.night.3.wav`
+### 55. `bark.rav.night.3.wav`
 
 *Where:* npcs.json rav.nightBarks[3]
 *Played:* merry; pace: measured; volume: level.
@@ -602,7 +638,7 @@ Subtitle: Pull up a stool. Mind the blood.
 ```
 Subtitle: Last orders were an hour ago. I'm the only one who heard them.
 
-### 52. `bark.rav.said.0.wav`
+### 56. `bark.rav.said.0.wav`
 
 *Where:* npcs.json rav.said[0]
 *Played:* grief, sudden; doing: his mother; pace: slow; volume: quiet.
@@ -612,4 +648,49 @@ Subtitle: Last orders were an hour ago. I'm the only one who heard them.
 [grief, sudden, quietly] Man owed me a leg, pal. Bad debt, now.
 ```
 Subtitle: Man owed me a leg, pal. Bad debt, now.
+
+### 57. `bark.rav.said.1.wav`
+
+*Where:* npcs.json rav.said[1]
+
+```
+Red on your sleeve, pal, and it's not yours. Don't tell me whose.
+```
+Subtitle: Red on your sleeve, pal, and it's not yours. Don't tell me whose.
+
+### 58. `bark.rav.said.2.wav`
+
+*Where:* npcs.json rav.said[2]
+
+```
+Red on your sleeve again. There's not enough Kerchiefs left to bleed like that.
+```
+Subtitle: Red on your sleeve again. There's not enough Kerchiefs left to bleed like that.
+
+### 59. `bark.rav.said.3.wav`
+
+*Where:* npcs.json rav.said[3]
+
+```
+Back on your feet. Doctor's orders: drink, then fall over somewhere soft.
+```
+Subtitle: Back on your feet. Doctor's orders: drink, then fall over somewhere soft.
+
+### 60. `bark.rav.said.4.wav`
+
+*Where:* npcs.json rav.said[4]
+
+```
+Heard the lads laid you out proper. Hands crossed and all. That's manners, from them.
+```
+Subtitle: Heard the lads laid you out proper. Hands crossed and all. That's manners, from them.
+
+### 61. `bark.rav.said.5.wav`
+
+*Where:* npcs.json rav.said[5]
+
+```
+Quiet up the ruts, these nights. I don't miss the trade.
+```
+Subtitle: Quiet up the ruts, these nights. I don't miss the trade.
 

@@ -855,6 +855,24 @@
    "when": {
     "history": "spared_redcowl"
    }
+  },
+  {
+   "text": "Captain won't bar the gate till he's counted the cat. Fox has had the hens twice.",
+   "night": true
+  },
+  {
+   "text": "He counts the gate in every night, the captain. Drunk, he counts past us. Ninety-one, and stops.",
+   "night": true,
+   "when": {
+    "not": {
+     "fact": "holloway.confessed",
+     "eq": true
+    }
+   }
+  },
+  {
+   "text": "Maeca pays the captain's slate at the Flagon. Every week. He thinks it's the Watch.",
+   "night": false
   }
  ]
 }

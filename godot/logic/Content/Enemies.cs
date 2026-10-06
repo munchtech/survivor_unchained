@@ -348,7 +348,7 @@ public static class Enemies
             Note = "The Legion's signifer, who carried its standard: VII on a rag that was red once. The dead quicken and harden where it goes, and the fallen get up to follow it." },
 
         // The Lamplings.
-        new() { Id = "lampling_wick", Name = "Wick", Family = Family.Lampling, Faction = Faction.Lampling, Visual = "lampling", Scale = 0.72, Tint = (1.3, 1.12, 0.8), Glow = 0.3,
+        new() { Id = "lampling_wick", Name = "Stub", Family = Family.Lampling, Faction = Faction.Lampling, Visual = "lampling", Scale = 0.72, Tint = (1.3, 1.12, 0.8), Glow = 0.3,
             Health = 10, Speed = 4.6, Damage = 5, Radius = 0.32, Xp = 1.5, Behavior = Behavior.Pack, AttackEvery = 0.8, Resists = new() { [School.Fire] = 0.3, [School.Frost] = -0.3 },
             Note = "The youngest of the Dig, a candle-stub on the head. Sent up first, because they run fastest and the Dig has more." },
         new() { Id = "lampling_fuse", Name = "Fuse-Runner", Family = Family.Lampling, Faction = Faction.Lampling, Visual = "lampling_sapper", Scale = 1.08, Tint = (1.3, 0.75, 0.5), Glow = 0.18,
@@ -359,12 +359,12 @@ public static class Enemies
             Health = 28, Speed = 2.7, Damage = 7, Radius = 0.4, Xp = 5, Behavior = Behavior.Ranged, Resists = new() { [School.Fire] = 0.5, [School.Frost] = -0.3 },
             Ranged = new() { Range = 9, Cooldown = 3.6, Speed = 9, School = School.Fire, Count = 3, Spread = 0.3, Art = "cinder" },
             Note = "Shakes three flames out of its lamp at once, in a fan. The gaps are there to be stood in." },
-        new() { Id = "mb_wick_mother", Name = "The Wick-Mother", Family = Family.Lampling, Faction = Faction.Lampling, Visual = "lampling", Scale = 1.6, Tint = (1.3, 1.15, 0.8), Glow = 0.3,
+        new() { Id = "mb_wick_mother", Name = "Old Gutter", Family = Family.Lampling, Faction = Faction.Lampling, Visual = "lampling", Scale = 1.6, Tint = (1.3, 1.15, 0.8), Glow = 0.3,
             Health = 420, Speed = 3.6, Damage = 10, Radius = 0.8, Mass = 4, Xp = 40, Behavior = Behavior.Pack, Resists = new() { [School.Fire] = 0.3, [School.Frost] = -0.3 },
             Summon = new(10, 6, "lampling_wick", 1.0, SpawnStyle.Burrow, 6, AtTarget: true, Max: 30, Word: "Up, up, up!"),
             Elite = true, Miniboss = true, Loot = "miniboss", AttackEvery = 1.0,
             Lesson = "She sends the little ones up first, all round you. They run fast and die quick.",
-            Note = "Mother of every wick in her tunnel, and she has a great many tunnels. She calls; the ground answers." },
+            Note = "The oldest candle in the Dig, burned down to the gutter, and every stub in her tunnels is hers. She calls; the ground answers." },
         new() { Id = "mb_bombardier", Name = "The Chucker", Family = Family.Lampling, Faction = Faction.Lampling, Visual = "lampling_sapper", Scale = 1.6, Tint = (1.2, 0.85, 0.65),
             // (Measured: 47 s at 420, 102 at the slowest.)
             Health = 300, Speed = 2.7, Damage = 10, Radius = 0.8, Mass = 4, Xp = 40, Behavior = Behavior.Ranged, Resists = new() { [School.Fire] = 0.5, [School.Frost] = -0.3 },

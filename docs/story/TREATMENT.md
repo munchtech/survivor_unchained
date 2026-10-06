@@ -1,10 +1,85 @@
 # Story treatment: Survivor Unchained, Acts 1 to 3
 
-The writer's treatment for the owner's choice, 5 October 2026. It answers the
-owner's brief and the editor's letter (`EDITORIAL_LETTER.md`), and it rests
-on the beat-by-beat diagnosis (`EMOTIONAL_PASS.md`). Nothing here is in the
-game's data yet. When the owner says yes (section 10 lists the choices), the
-lines get rewritten, Act 1 first.
+The writer's treatment, 5 October 2026, **approved by the owner** with the
+choices below (6 October). It answers the owner's brief and the editor's
+letter (`EDITORIAL_LETTER.md`), and it rests on the beat-by-beat diagnosis
+(`EMOTIONAL_PASS.md`). The editor's notes on it (`notes/01_treatment.md`) are
+applied. The rewrite into the game's data goes Act 1, then Act 2, then Act 3.
+
+## 0. What the owner decided, and the notes applied
+
+These overrule the text below wherever it differs.
+
+- **All four twists: yes.** "You did this", "Ninety-two", the woman with the
+  lamp, the voice.
+- **The narrator is a woman of about sixty, cast plain and dry**, a woman who
+  has told people bad news before, with the valley's accent lightly. Warmth
+  only once, at "There you are." Not "warm, a winter's tale".
+- **Her name for the survivor is "Spark", not "Wick"** (players hear John
+  Wick). Read aloud, "Lamp's lit, Flame" doubles the fire and carries "old
+  flame"; "Lamp's lit, Spark" is short, dry and a child's name. The lamplings'
+  Wick and Wick-Mother are renamed all the same (§9).
+- **Holloway's act is option (b):** with the lamp in his eyes he took the
+  living on the ladder, grey with slurry and too far gone to call out, for the
+  dead. His lid made the dead he feared: three days near ember, they died and
+  got up, and Maeca finished them. He never learns it. Maeca says it once,
+  after the kill. "Both numbers are right" turns over: one of them was wrong.
+- **No boots on Holloway.** The roll is who each man left behind ("Abbot. Two
+  bairns. Ancell. His mam. Bede. Nobody."); the daybook lists names and who
+  they left. Nobody dies of footwear. Nell's new boots are the one boot image.
+- **The confession moves to the middle of Act 1** (a dusk at the gate, the
+  first after the ground turns over, from day 4), so the player loves him,
+  learns what he did, and goes on loving him. Its leading option ("Did anyone
+  come out from under it?") is gone: "Does anyone else know?" names Pell, and
+  the eye goes to red. **"Tell Maeca" is on the trunk:** if the player doesn't
+  go to her, she comes to them ("He talked to you."). Either way: "...Did
+  he." That dusk the player watches her take his cup, fill it, and sit down
+  beside him. The decoy gets louder the next morning.
+- **The rope: the player's hands on it.** The survivor and Maeca haul him up
+  together (Ashford's windlass turned round), a held input with no fail
+  state. "Count's right." The haul is done; then the post end is cut and the
+  rope runs out through their hands. He is a body-length below the lip, lit
+  from above, out of reach. The music lifts under the climb and dies with the
+  rope. A red kerchief at the lip in the beat before.
+- **Holloway risen at his gate: on the fourth dusk,** after three days of the
+  gate barred and his stool empty, the Ashford rhyme. "Somebody's still out.
+  ...Always somebody still out."
+- **The nod is the game's first choice.** The silent variant's knife is
+  crueller; both are kept.
+- **The lamp-iron is her night lantern,** at her belt, so every player's hands
+  are on Brannoc's work every night.
+- **Brannoc, reordered:** the mercy before the knife ("Was it quick?", then his
+  eyes on the iron at her belt, then "She'd have thought I'd come for her.");
+  C07 and C14 one sequence at dusk ("Forge is shut." then the lantern: "You
+  know the place."); no "reads his own bracket"; no irons laid in the road; the
+  road dark and the hammer slow.
+- **The lie to Brannoc costs his warmth, never play** (the owner: "we can't get
+  punished from gameplay perspective - he just talks to us like he hates us
+  or ignores us"). Prices, commissions, masterworks, crafting and maps stay
+  exactly as on the truth route; Act 3's cage and stair keep what play needs.
+  On the lie route he goes on hoping through Act 1 ("Low Kiln's three days.
+  She'll be there by now."), **forges and sells the last two irons in Act 2,
+  the Kiln Ford is lit, and then the grey mare comes up the south road** with
+  Nell's bundle: the harshest version, the owner's choice. The Kiln Ford's
+  drownings (Jory's ending, Aldo's widow) stand. On the "didn't look" answer
+  the truth lands the same way, and he is cold rather than hateful.
+- **"You did this", built up:** three people thank her for the ford in Act 1
+  (Sella, Holloway, the town), and Vonnra says both halves: "You stopped the
+  drowning. You also did this." Tam lands it after the rope: "It started the
+  night the ford went dark."
+- **Twist B's false belief, named:** on day 1 Rook tells her a kind lie: her
+  mother went in her sleep, a week since, in Rook's back room ("Back room's
+  free. Has been a week."). A plain marker in the Quiet Garden; its earth is
+  fresh. The ledger's line twenty-six is innocent: "Rook's lodger." Rook's
+  sale had a cost: told the traveller was expected, Vonnra kept the irons lit
+  all that week. The ring is on a nail behind Rook's bar from day 1.
+- **Twist A's second turn:** from Act 2's turn the narrator says less, and at
+  the stair the player learns why: their ember crowded her out. Her voice
+  leaves them, and goes down. The word is checkable: on day 3 she writes it in
+  her journal at Chid's asking.
+- **Love scenes: both versions written** (`LOVE_SCENES.md`), the narration as
+  unvoiced text and the lovers' own lines, with the editor's warning that
+  silent narration in the room may read as her mother having been there.
 
 **The owner, in his words:**
 - "we really want a powerful epic story with real emotional happenings.
@@ -36,7 +111,7 @@ stretch. Choices bend how each lands, never whether.
 |---|---|---|---|
 | **Devastation (on the trunk)** | Brannoc learns, in front of her, that the light he made for his daughter is what drowned her | Maeca kills Holloway at the top of a rope, the morning the count came right | Her mother, found and lost again; Chid at dawn asking "Is it morning?" |
 | **Twist** | **"You did this."** Her first victory, and her mercy, broke the chain (§3.1) | **"Ninety-two."** Maeca was on the ladder (§4); then **the woman with the lamp**: she cut down her own mother in the ford (§3.3) | **The voice.** The narrator, all along, was her mother (§3.4) |
-| **Elation** | Jory home: Harlan's "Alive. Alive!", the town out in the street, Holloway on the gate laughing | The war at the north gate: the line breaking, then everyone she helped arriving, each from a choice made days before | "Lamp's lit, Wick": she was never alone. A two-hundred-year-old priest feeling his knees ache |
+| **Elation** | Jory home: Harlan's "Alive. Alive!", the town out in the street, Holloway on the gate laughing | The war at the north gate: the line breaking, then everyone she helped arriving, each from a choice made days before | "Lamp's lit, Spark": she was never alone. A two-hundred-year-old priest feeling his knees ache |
 | **Laugh in the dark** | Chid singing Nell down flat, and smiling at his own crack | Tam's Pa swearing at his rescuers, and Holloway laughing back up the hole, a breath before the rope | Snib on the stair ("Snib is not going down there. ...Snib is going down there.") |
 | **What it costs her** | Her pride in the prologue; a smith's hands; the town's clock | A friend; her trust in a lover or a friend; what she is; her mother's body, by her own hand | Her mother's voice, her own life or her light, and the power she used all game |
 
@@ -63,18 +138,17 @@ The editor is right (letter §3.9): you cannot be devastated by losing someone
 you were never given. So the player is given one specific, slightly odd
 thing in the first five minutes, and the dawns take it away a piece at a time.
 
-**She called the survivor "Wick".** In the valley's old speech "wick" means
-alive (Rook: "Square's wick with Watchmen this morning"), and it is the
-thread a lamp burns on. At dusk, when the survivor was small and out in the
+**She called the survivor "Spark"** (first drafted as "Wick"; §0). A spark is
+what lights a lamp, and a small child is one. At dusk, when the survivor was small and out in the
 yard, her mother would put the lamp in the window and call from the door:
-**"Lamp's lit, Wick. Stay where it reaches."** It is the Order's evening call,
+**"Lamp's lit, Spark. Stay where it reaches."** It is the Order's evening call,
 the one the Waystation's gate says every dusk without knowing whose it was,
 made small and kept in one family. The call is the valley's; the name is
 hers.
 
 - **C04, the first dawn** (trunk): *"You try to call up your mother's face,
   and find it is not quite where you left it. Her voice is still there. 'Lamp's
-  lit, Wick. Stay where it reaches.'"*
+  lit, Spark. Stay where it reaches.'"*
 - **The first dusk at the gate:** the Watch call the lamps, and she turns her
   head. *"You have heard that said at a door."*
 - **The dawns take it.** One line now and then, at the night's end:
@@ -86,11 +160,9 @@ hers.
     the game stops saying it.
 - **The bottom of the stair:** she says it (§3.4).
 
-"Wick" can be recorded, where a typed name cannot, so the summit of the game
-is voiced. It is the same for a daughter or a son. **One clash to clear:**
-combat's lampling swarmer is called "Wick" and its miniboss "The Wick-Mother"
-(`Enemies.cs`). I recommend renaming them "Stub" and "The Stub-Mother" (they
-wear candle-stubs; it's a display name only).
+"Spark" can be recorded, where a typed name cannot, so the summit of the game
+is voiced. It is the same for a daughter or a son. The lampling swarmer and
+its miniboss are renamed away from "Wick" and "The Wick-Mother" all the same.
 
 ---
 
@@ -254,7 +326,7 @@ no player can match the accents.
 5. **The narrator never enters a bedroom.** At every love scene the voice
    stops at the door; the scene's prose plays as unvoiced text, and the
    picture holds its one object. Players read it as a rating choice.
-6. **The dawn lines that take "Wick" away.** She is narrating her child
+6. **The dawn lines that take "Spark" away.** She is narrating her child
    forgetting her, plainly, with no weight, night after night.
 7. **The silences:** at the water's edge in the prologue; through Rook's
    confession. The only two places in the game the narrator does not speak.
@@ -268,7 +340,7 @@ no player can match the accents.
 Dannet; a girl saying "Da" once, as an echo (Nell, not pressed again). Then,
 from out of all of it, and for the first time from a *place* (the sound
 designer moves the narrator's voice out of the air and into the pale thing
-below): **"Lamp's lit, Wick."** The voice the player has heard every night of
+below): **"Lamp's lit, Spark."** The voice the player has heard every night of
 the game. Choices: "Mam?" / (Listen.) / "Let them go." Then the narrator
 speaks in the first person, once:
 - "I came up with you. Somebody had to tell you where you were."
@@ -280,7 +352,7 @@ speaks in the first person, once:
 - **A, re-forge, the survivor lies down:** *"You lie down."* Then, for the
   first time, a second line after it: *"I'm here."*
 - **B, break the chain:** the dead go, one by one, her last. Her last line,
-  *"It's morning, Wick. Go on."* The epilogue's pages are silent text. The
+  *"It's morning, Spark. Go on."* The epilogue's pages are silent text. The
   game is never narrated again.
 - **C, take the light:** two thousand years of voices come up into her, and
   the narrator's grows fainter under them until the last narrated line is
@@ -677,7 +749,7 @@ as only Nell did. He stops. It is a gift, not a wound.
 |---|---|---|
 | The waking: no breath, prints up from the river | dread | C01 |
 | "Is it morning?" and the nod (her choice) | grace | C03 |
-| First dawn: breath smoking; "Lamp's lit, Wick." | relief, and the first thing to lose | C04 |
+| First dawn: breath smoking; "Lamp's lit, Spark." | relief, and the first thing to lose | C04 |
 | Holloway's coat; Rook's back room | warmth | C04 B |
 | Brannoc's pride: the road he lit, her new boots | dread (the player knows) | the forge |
 | The first night's return: Holloway asleep at the gate, Maeca over him with her crossbow | warmth (re-read: a hunter waiting) | the gate |
@@ -707,7 +779,7 @@ as only Nell did. He stops. It is a gift, not a wound.
 | Redcowl: "So that's the man kept my bairns alive." | both | C26 |
 | Silverstair: the cages; Edric and Ysolde | joy | C29 |
 | What you are: Chid tells her | irony landing | C30 |
-| The dawns stop saying "Wick" | loss, noticed | dawns |
+| The dawns stop saying "Spark" | loss, noticed | dawns |
 | The war at the gate: the line breaks, then they come; his empty stool; Maeca in his coat counting them in | **elation and grief at once** | C31 |
 | Rook's kitchen: the woman with the lamp; the player's own blow; the narrator silent | **the knife** | C32 |
 | "Come down with me." She goes, with her mother's killer | dread | C32 |
@@ -721,10 +793,10 @@ as only Nell did. He stops. It is a gift, not a wound.
 | Chid's truth; Tobin's name | tenderness | C42 |
 | Snib on the stair | laugh | C40 to C43 |
 | The names; "Da", once | grief | C43 |
-| **"Lamp's lit, Wick."** The narrator's voice, from below | **the twist; devastation and joy at once** | C43 |
+| **"Lamp's lit, Spark."** The narrator's voice, from below | **the twist; devastation and joy at once** | C43 |
 | Vonnra: "I wanted it to be morning." | her break | C43 |
 | The inner door: the coin | sacrifice | C44 |
-| The ending: "You lie down. I'm here." / "It's morning, Wick. Go on." / the voice drowned out | both | C50 to C52 |
+| The ending: "You lie down. I'm here." / "It's morning, Spark. Go on." / the voice drowned out | both | C50 to C52 |
 | Chid at dawn: "Is it morning?"; or his knees | **both** | after the ending |
 | Rook's candle | quiet | C53 |
 
@@ -769,16 +841,16 @@ as only Nell did. He stops. It is a gift, not a wound.
   moved into the world for one line in C43 (sound design).
 - **Combat:** the lampling "Wick" and "The Wick-Mother" renamed.
 
-## 10. For the owner to choose
+## 10. The owner's choices (decided; see §0)
 
-1. **The twists** (each separable): §3.1 "You did this"; §3.2 and §4
-   "Ninety-two" (I'd call it essential: it is the shock you asked for);
-   §3.3 the woman with the lamp; §3.4 the voice.
-2. **The narrator recast as a woman of about sixty** (needed for §3.4).
-3. **Love scenes under §3.4:** the narration plays as unvoiced text, keeping
-   the prose (my recommendation), or is rewritten into the lovers' own lines.
-4. **Holloway risen at his own gate** the dusk after: keep or cut.
-5. **The nod as the game's first choice.**
-6. **The lamp-iron as her night lantern.**
-7. **The lie to Brannoc costs his trade** for the rest of the game.
-8. **"Wick"**, and renaming the lamplings' Wick and Wick-Mother.
+1. The twists: all four.
+2. The narrator recast: yes, plain and dry.
+3. Love scenes: both versions on the page, for him to choose
+   (`LOVE_SCENES.md`).
+4. Holloway risen at his gate: yes, on the fourth dusk.
+5. The nod as the first choice: yes.
+6. The lamp-iron lantern: yes.
+7. The lie to Brannoc: costs his warmth only, never play; the truth comes in
+   Act 2 with the grey mare, after the Kiln Ford is lit.
+8. "Spark" for her (not "Wick"), and the lamplings renamed.
+9. Holloway's act: option (b), the lamp in his eyes.

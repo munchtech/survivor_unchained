@@ -63,9 +63,15 @@ Rules for everyone:
 **The narrator.** Present tense, second person, plain nouns and working
 verbs; one image per line, never two adjectives where one will do. Says
 what happens and what can be seen, never what it means. Never theatrical,
-never cute, never names a feeling the scene has already shown. *Casting:*
-50s, neutral RP, low and close; a winter's tale told by the fire, slight
-gravel, unhurried.
+never cute, never names a feeling the scene has already shown. Never enters
+a bedroom: at a love scene the voice stops at the door. Says less from Act
+2's turn on (shorter dawns, a line missing here and there), and the player
+should take it for style. *Casting (the owner, 6 October):* a woman of about
+sixty, plain and dry, level, a woman who has told people bad news before;
+the valley's accent, lightly (northern, not RP). No warmth, no "winter's
+tale": she lets warmth in once in the whole game, at "There you are." The
+quoted words of the survivor's mother ("Lamp's lit, Spark.") are said exactly
+as plainly as the rest; she does no voice for anyone.
 
 **Mother Rook** (the Last Lamp). Short sentences, bossy imperatives, kindness
 said sideways ("Sit down before you fall down"). Yorkshire turns: "love" is
@@ -77,16 +83,22 @@ warm, dry, bossy.
 **Captain Holloway** (the Watch). A quartermaster who was made a captain:
 numbers, lists, what things cost ("eleven men, four can hold a spear the
 right way round"). Clipped, tired, contractions, anger held one notch below
-the surface. Says "proof", never "evidence". Never says sorry; the nearest
-he gets is paying for something. Goes very quiet whenever Ashford or Maeca
-comes up. *Casting:* 45, Lancashire flattened by the army; hoarse from
-shouting.
+the surface. Says "proof", never "evidence". Never says sorry (it is written
+once, in his daybook, found after his death); the nearest he gets is paying
+for something. Never talks about boots. **Drunk, he talks like his own
+ledger:** entries, no subjects, numbers without nouns ("Ninety-one up. Lid
+down. Three days."), and nobody else talks like that. Sober, Ashford is "the
+report"; drunk, at the gate, it is the truth. Laughs once in the whole
+game, in the hole at the Penhale farm. *Casting:* 45, Lancashire flattened by
+the army; hoarse from shouting.
 
-**Maeca Barefoot** (the Ashford Garrison). Few words, all of them about
-ground, tracks, weather and animals. Level, quiet, present tense. Calls the
-wolves "the Pack" or "them", never "beasts" or "monsters". Contempt is
-quiet and final. Never raises her voice; never talks about Ashford except
-in three words or fewer. *Casting:* 30s, Welsh borders, a hunter's
+**Maeca** (the Ashford Garrison). Just Maeca: no other name. Few words, all
+of them about ground, tracks, weather and animals. Level, quiet, present
+tense. Calls the wolves "the Pack" or "them", never "beasts" or "monsters".
+Contempt is quiet and final. Never raises her voice; about Ashford she says
+three words, "The cave mouths.", and nothing else. Signature: "I track for
+the Watch, before you ask. Not wolves." Every kindness she does Holloway is
+true, and is a hunter waiting. *Casting:* 30s, Welsh borders, a hunter's
 half-voice with a hard edge.
 
 **Old Wenna** (herbalist). Brisk, cracked, impatient; lists of plants and
@@ -103,8 +115,10 @@ very short lines.
 
 **Brannoc** (smith). Fewest words in town: fragments, two sentences at the
 most, the hammer under everything. Talks about iron the way other people
-talk about weather. Never small talk, never thanks anyone in words (once:
-when he is told his daughter's end was quick). The only question he ever
+talk about weather. Never small talk, except his girl: the one thing he
+talks about unasked, and the only time he sounds happy ("Irons on it. Mine.
+Ten. Best I've done."). Never thanks anyone in words (once: when he is told
+his daughter's end was quick). The only question he ever
 asks is about Nell; when he stops hammering, the narrator says so, because
 it is the loudest thing he does. *Casting:* 50, Cornish, deep and slow.
 

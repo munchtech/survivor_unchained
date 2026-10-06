@@ -1,6 +1,6 @@
 # Sella: ElevenLabs packet
 
-Voice id in the game: `sella`. 95 takes to record (9,832 characters; about 29,496 credits at three tries a line). Status: **final** (the story lead, 2026-10-03): record it.
+Voice id in the game: `sella`. 97 takes to record (9,939 characters; about 29,817 credits at three tries a line). Status: **final** (the story lead, 2026-10-03): record it.
 
 ## Who they are
 
@@ -181,14 +181,12 @@ Subtitle: Clever. Everybody, love. Pell pays for what his rivals say. Holloway p
 ```
 Subtitle: Fifteen gold, up front. For that you get the blue room, a bath that's warm at least to start with, and me, until morning. Anything you'd rather I didn't do, say so. Anything you'd rather I did, say that too.
 
-### 13. `dlg.sella.night.1.p1.wav`
+### 13. `dlg.sella.night.0.p1.wav`
 
-*Where:* dialogue.json sella/night#1; part 2 of 3: narrator: The water's gone cool by the time either of you notices, and she drags the quilt off the b… / **sella: Don't,** / narrator: and kisses you so you can't. After, you lie on the floor of the blue room with the lamp tu…
-*Played:* low, caught; doing: a night with Sella; pace: slow; volume: quiet.
-*Note:* Low. She stops you looking at her because tonight has stopped being work and she can't have you see it; the kiss cuts it off.
+*Where:* dialogue.json sella/night#0; part 2 of 3: narrator: The water's gone cool by the time either of you notices, and she drags the quilt off the b… / **sella: Don't,** / narrator: and kisses you so you can't. After, you lie on the floor of the blue room with the lamp tu…
 
 ```
-[low, caught, quietly] Don't,
+Don't,
 ```
 Subtitle: Don't,
 
@@ -304,16 +302,16 @@ Subtitle: All that steel. Takes an age to get off, I expect. I charge by the hou
 ```
 Subtitle: Big hands. Be gentle with them upstairs, or you'll be paying for the furniture.
 
-### 24. `dlg.sella.say_calling.2.wav`
+### 24. `dlg.sella.say_calling.2.wav`  **RE-RECORD: the words changed**
 
 *Where:* dialogue.json sella/say_calling#2
 *Played:* startled, amused; doing: you're hot to the touch; pace: measured; volume: level.
 *Note:* Puzzled, then laughing: 'You're a little bit on fire.'
 
 ```
-[startled, amused] Your hands are warm. Not in a nice way. Are you on fire? Your hands are a little bit on fire.
+[startled, amused] Something on you's smouldering, love. Are you on fire? You're a little bit on fire.
 ```
-Subtitle: Your hands are warm. Not in a nice way. Are you on fire? Your hands are a little bit on fire.
+Subtitle: Something on you's smouldering, love. Are you on fire? You're a little bit on fire.
 
 ### 25. `dlg.sella.say_calling.3.wav`
 
@@ -338,16 +336,16 @@ Subtitle: You came up behind me without a sound. Do that upstairs and you'll get
 ```
 Subtitle: Don't look so surprised, love. You're not the first woman up those stairs and you won't be the last. Half my regulars are lonelier than you.
 
-### 27. `dlg.sella.say_maeca.0.wav`
+### 27. `dlg.sella.say_maeca.0.wav`  **RE-RECORD: the words changed**
 
 *Where:* dialogue.json sella/say_maeca#0
 *Played:* delighted gossip; doing: Maeca's humming; pace: measured; volume: level.
 *Note:* 'Maeca. Humming.' incredulous. Teasing professional jealousy.
 
 ```
-[delighted gossip] Mayka Barefoot came in this morning humming. Mayka. Humming. I've a professional interest, love: who's my competition?
+[delighted gossip] Mayka came in this morning humming. Mayka. Humming. I've a professional interest, love: who's my competition?
 ```
-Subtitle: Maeca Barefoot came in this morning humming. Maeca. Humming. I've a professional interest, love: who's my competition?
+Subtitle: Maeca came in this morning humming. Maeca. Humming. I've a professional interest, love: who's my competition?
 
 ### 28. `dlg.sella.t_sella.0.wav`
 
@@ -373,14 +371,12 @@ Subtitle: A house in the south with a door that locks from the inside, and someb
 ```
 Subtitle: Put your purse away. Tonight I'm not working. ...Don't look at me like that. Don't make it strange.
 
-### 30. `dlg.sella.free_night.1.p1.wav`
+### 30. `dlg.sella.free_night.0.p1.wav`
 
-*Where:* dialogue.json sella/free_night#1; part 2 of 3: narrator: She doesn't talk the way she talks for money. She doesn't talk at all, at first. She undre… / **sella: You told me anyway,** / narrator: and nothing else, and then she sleeps.
-*Played:* wonder, nearly asleep; doing: a night Sella gives; pace: slow; volume: quiet.
-*Note:* Into your shoulder, nearly asleep. Wonder, not tears. You told her your past knowing she sells it, and that is the whole night.
+*Where:* dialogue.json sella/free_night#0; part 2 of 3: narrator: She doesn't talk the way she talks for money. She doesn't talk at all, at first. She undre… / **sella: You told me anyway,** / narrator: and nothing else, and then she sleeps.
 
 ```
-[wonder, nearly asleep, quietly] You told me anyway,
+You told me anyway,
 ```
 Subtitle: You told me anyway,
 
@@ -1106,4 +1102,22 @@ Subtitle: The blue room's got a lamp lit. Guess who's in it.
 [teasing, quietly] Rook's walls are thin and I'm not quiet. Fair warning.
 ```
 Subtitle: Rook's walls are thin and I'm not quiet. Fair warning.
+
+### 96. `bark.sella.said.0.wav`
+
+*Where:* npcs.json sella.said[0]
+
+```
+Tell me about last night, love. I pay better than the Wayfinder.
+```
+Subtitle: Tell me about last night, love. I pay better than the Wayfinder.
+
+### 97. `bark.sella.said.1.wav`
+
+*Where:* npcs.json sella.said[1]
+
+```
+Back, and all your bits still on. Pity to waste them on sleep.
+```
+Subtitle: Back, and all your bits still on. Pity to waste them on sleep.
 

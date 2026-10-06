@@ -61,8 +61,14 @@ public partial class Game
                 // The town's own evening call, heard in the town; then, anywhere, what the night holds.
                 var tonight = Journey.Tonight;
                 double gap = 0;
-                if (zone is Waystation) { Say(Journey.DayLines.Dusk, "Gate guard", 4.5); gap = 5; }
+                if (zone is Waystation)
+                {
+                    Say(Journey.DayLines.Dusk, "Gate guard", 4.5); gap = 5;
+                    if (Journey.FirstDuskCall()) { After(gap, () => Say(Journey.DayLines.DuskHeard, null, 3.5)); gap += 4; }
+                }
                 After(gap, () => Say(Journey.DayLines.Tonight[tonight?.Id ?? ""], null, 5.5));
+                // A scene the story set for this dusk (the forge, the knocking at the gate) plays after the call.
+                PlayScene(dusk: true, gap + 6);
                 break;
             }
             case ClockTurn.Night:
@@ -175,6 +181,8 @@ public partial class Game
     /// picture, the news after it as notices.</summary>
     void Morning(List<string> lines)
     {
+        // A scene the story set for this morning (the gate at dawn) plays once the page has been read.
+        PlayScene(dusk: false, 3.0 + Math.Max(0, lines.Count - 1) * 1.6);
         if (lines.Count == 0) return;
         Say(lines[0], null, 6);
         for (int i = 1; i < lines.Count; i++)
@@ -182,6 +190,18 @@ public partial class Game
             var line = lines[i];
             After(2.5 + i * 1.6, () => Toast(new Toast(ToastKind.World, line)));
         }
+    }
+
+    /// <summary>The story's scene for this morning or dusk (Journey.TakeScene), in the town only: it
+    /// waits for the next turn in the Waystation, and for any conversation already open to close.</summary>
+    void PlayScene(bool dusk, double after)
+    {
+        if (zone is not Waystation || !Journey.SceneWaiting(dusk)) return;
+        After(after, () =>
+        {
+            if (runner != null || zone is not Waystation) return;
+            if (Journey.TakeScene(dusk) is { } id) Talk(id);
+        });
     }
 
     /* ------------------------------------------------------- answer the night -- */

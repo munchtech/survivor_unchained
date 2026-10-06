@@ -109,7 +109,7 @@ public class DigTests
     }
 
     /// <summary>A windlass gives to her standing at it, never to anything from across the edge; it goes over,
-    /// its shaft falls in and leaves a hole, and the first brings the Wick-Mother up out of the next.</summary>
+    /// its shaft falls in and leaves a hole, and the first brings Old Gutter up out of the next.</summary>
     [Fact]
     public void A_windlass_gives_to_the_one_who_stands_at_it_and_its_shaft_falls_in()
     {

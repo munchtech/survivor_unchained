@@ -1,6 +1,6 @@
 # Tam: ElevenLabs packet
 
-Voice id in the game: `tam`. 19 takes to record (1,814 characters; about 5,442 credits at three tries a line). Status: **draft**, until the story lead (a7622ae77d19e31dc) checks every line and marks it final.
+Voice id in the game: `tam`. 21 takes to record (2,020 characters; about 6,060 credits at three tries a line). Status: **draft**, until the story lead (a7622ae77d19e31dc) checks every line and marks it final.
 
 ## Who they are
 
@@ -184,9 +184,9 @@ Subtitle: No. Her name was Clover and she ate a whole hat once. Pa says the wolv
 *Note:* One long breathless run-on. 'Tock, and then tock' imitated softly. Quoting Pa sleepily. 'but it kept knocking.' quiet and spooked.
 
 ```
-[earnest, spooked, quietly] The ground knocks. At night. Tock, and then tock, under the floor, like somebody wanting to come in, and Pa says it's moles, and I said moles don't knock, and he said go to sleep Tam, so I did, but it kept knocking.
+[earnest, spooked, quietly] The ground knocks. At night. Tock, and then tock, under the floor, like somebody wanting to come in, and Pa says it's moles, and I said moles don't knock, and he said go to sleep Tam, so I did, but it kept knocking. Pa says the moles can knock on somebody else's bloody floor. I'm not to say bloody.
 ```
-Subtitle: The ground knocks. At night. Tock, and then tock, under the floor, like somebody wanting to come in, and Pa says it's moles, and I said moles don't knock, and he said go to sleep Tam, so I did, but it kept knocking.
+Subtitle: The ground knocks. At night. Tock, and then tock, under the floor, like somebody wanting to come in, and Pa says it's moles, and I said moles don't knock, and he said go to sleep Tam, so I did, but it kept knocking. Pa says the moles can knock on somebody else's bloody floor. I'm not to say bloody.
 
 ## Said in passing
 
@@ -254,4 +254,22 @@ Subtitle: Somebody killed all the wolves. Even the ones that were only sick.
 [spooked, earnest] Still knocking under our floor. Pa's stopped saying it's moles.
 ```
 Subtitle: Still knocking under our floor. Pa's stopped saying it's moles.
+
+### 20. `bark.tam.said.5.wav`
+
+*Where:* npcs.json tam.said[5]
+
+```
+The hill lit up last night and Pa said marsh-lights and it was you.
+```
+Subtitle: The hill lit up last night and Pa said marsh-lights and it was you.
+
+### 21. `bark.tam.said.6.wav`
+
+*Where:* npcs.json tam.said[6]
+
+```
+Pa says I'm not to watch the hill at night. I watch it.
+```
+Subtitle: Pa says I'm not to watch the hill at night. I watch it.
 
