@@ -42,6 +42,7 @@ The owner: "we need better writing", "we need emotional power", "a mind breaking
   - tones and irises within a few percent;
   - no seams, bands or blobs;
   - it holds at play distance.
+- **Freckles as a Look choice** (paints and sliders pass): an amount from none to heavy, on by default for her own face only and off for the presets, so any face the player builds can have them or not. The face lead designs the freckles themselves from her_23 (sparse, soft, varied, sun-placed).
 - **Distance:** "not seeing any face at long distance is tragic." When the book opens (Pack, Self, Arts), the camera comes in close enough that her face reads. At play zoom she always has SOME face: eyes, brows, a mouth.
 
 ### Animation: an artists' kit for later (after the face, paints and hair)
