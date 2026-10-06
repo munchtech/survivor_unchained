@@ -1,142 +1,160 @@
 # Handoff: performance lead
 
-For a fresh successor. Read `docs/team/README.md` first, then this, then
-`docs/team/performance.md` (status) and, for the harness and older numbers,
-`docs/PERF_AUDIT.md`. Written by agent a56abaf3a104be675 at its context limit,
-2026-10-05. (The predecessor before me was a7145e18b3eb78294.)
+For a fresh successor. Read these first:
+- `docs/team/README.md`
+- `docs/team/RESUME.md`
+- `docs/team/OWNER_NOTES.md`
+- then this page;
+- then `docs/team/performance.md` (status);
+- the method and older numbers are in `docs/PERF_AUDIT.md`.
+
+Written by agent a0eb8c612c94d4aa5 at its context limit, 2026-10-06. Before it: a56abaf3a104be675, then a7145e18b3eb78294.
 
 ## The owner's words
 
-- "look for any optimizations we may be missing to improve performance - do not sacrifice quality at this time but we can consider it".
-- "we are striving for perfection". Improved is not enough: ask whether it is the best version of this in any game, and root designs in how the best games solve it.
-- **The heroine:** at every in-game zoom except the farthest, her breasts and buttocks stay high detail and her face must read. "If a tier must trade, it trades the world, not her."
-- **Lamps:** the town's lamps cast shadows only at dusk and by night (done earlier).
-- The team bar: "AAA standard", "never settle", "Never claim what you haven't seen". British spelling.
+- On her in motion: "the pixel blur while running is that intentional or something we can fix?", "we are blurry when moving in active action gameplay." Earlier: "We don't look very smooth while running, a little blurry pixelated." The owner sent zoomed crops of her head while running: smeared and blocky.
+- On the trees: "the filter to see through trees and stuff is also a little pedestrian in its pixelation."
+- "we still want sex appeal so don't lose that". Her outfits and her detail are never traded for frames. "If a tier must trade, it trades the world, not her."
+- "we are striving for perfection." "do not sacrifice quality at this time but we can consider it."
+- Medium stays without MSAA: the owner took the main session's recommendation. That question is closed.
 
-## The brief (from the main session, 2026-10-04)
+## Your brief (from the main session, 2026-10-06), top priority first
 
-1. Release export and pack listing for the legal lead. **Done and accepted.**
-2. The prefetch crash on quit; merge once fixed. **Fixed by a redesign and merged.**
-3. The quality tiers (Low's shadow split, Medium's MSAA) and FSR, each looked at in full. **Done.** Medium's MSAA is with the owner.
-4. The arena grass cost. **Measured.** Arena art keeps the look.
-5. Measure her merged outfits. **Done.**
+1. **Her motion blur.** Find the true cause, then make her crisp in motion at the game camera, without bringing back aliasing on grass and specular.
+   - Check:
+     - whether her skinned meshes, hair cards, outfit pieces and the crowd write motion vectors;
+     - TAA's jitter and history weights;
+     - the follow camera's sub-pixel judder;
+     - any render scale or FSR.
+   - Compare in one A/B batch:
+     - motion vectors fixed;
+     - TAA off with MSAA 4x and a light post AA;
+     - FSR2 at native as the AA.
+   - Show the main session before and after crops of her sprinting, at 1080 and 1440, with frame times. Run a strict self-critique at 1:1 first.
+2. **The see-through-trees effect.** Replace the pixel dither with something that looks designed: a soft, smooth, round cut-out around her, feathered, stable in motion, no screen-door. Arena art owns the trees; they're paused, so note the change on the status page. It is noted already: show it to them when they're back.
+3. Then the status page's "Next".
 
 Working rules:
-- Commit and push your own branch at milestones; the main session merges. No PRs.
-- `dotnet test` in `godot/tests` before every commit.
-- **Heavy work takes turns.** Run `python C:/Users/munch/Desktop/survivorsunchained/tools/turn.py take godot "performance: <job>"` before any Godot run; exit 1 means busy, so do light work. Give it back the moment you are done, and profile only while you hold a turn. A headless `--import` or `-s` script is a Godot job too.
-- The GPU is shared: say which numbers it may affect, and prefer `--perf-flip`.
+- Heavy work takes turns: `python C:/Users/munch/Desktop/survivorsunchained/tools/turn.py take godot "performance: <job>" --wait 30`. There are three Godot slots, each needing 5 GB of RAM free, served in a fair queue. Profile only while you hold a turn, and give it back the moment the run ends.
+- The GPU is shared: use `--perf-flip` for A/B within one run.
+- Batch your shots and look once.
+- Run `dotnet test` in `godot/tests` before every commit (762 green at hand-off).
+- Commit and push your branch; the main session merges it. Open no PRs.
+- Use British spelling.
+- Hand off at about 500k tokens of context.
 
-## Done (on `worktree-agent-a56abaf3a104be675`)
+## What I found for the top priority (light reading only; nothing run yet)
 
-| commit | what | numbers |
+- **AA as set:**
+  - `project.godot` has `msaa_3d=2` (4x in Godot's count) and `use_taa=true`.
+  - `Graphics.Apply` (`src/Game/Graphics.cs`) does `UseTaa = !fsr` and `Msaa3D = fsr ? off : tier.Msaa`. High is MSAA 4x + TAA; Medium is TAA only. FSR2 is opt-in.
+- **Prime suspect: TAA ghosting on things whose motion is made in a vertex shader.** Godot's motion vectors come from the previous model matrix and the previous skinning, not from a vertex shader's own displacement. So these will smear under TAA:
+  - her hair sway, done in the shader (`HairSway` sets `sway`/`head`/`chain`);
+  - her fur shells;
+  - (her jiggle is a skeleton modifier, on bones, so its vectors should be right);
+  - the VAT crowd: a MultiMesh posed in the vertex shader;
+  - grass wind.
+
+  Her skinned body should have correct vectors; verify that. Then check her blend shapes (the face, the figure) and the outfits.
+  - Ways to test: `--perf-off taa` exists (Game.cs `--perf-off`), and `--perf-flip` can be extended to flip TAA in one run.
+  - Shoot her sprinting with `--auto` and `--shot NAME --every 0.0333 --count 8 --cam 23`. `scratchpad/perf3/her_crop.py` and `her_flicker.py` crop her and map the shimmer.
+  - The handoff before this measured TAA/MSAA/FSR shimmer round her when still: High 2, Medium 8, FSR doubles it.
+- **The see-through dither** is in `shaders/kit.gdshader`, at the fragment's start:
+  - a tunnel from the camera to the survivor;
+  - `bayer(FRAGCOORD)` with a 4x4 ordered dither and `discard`, "a fade the temporal AA resolves to translucency".
+
+  So the dither *relies on* TAA: turning TAA off without replacing it shows a bare screen-door. The two tasks are linked; do the cut-out so it needs no TAA.
+  - Options:
+    - a feathered alpha-blended cut in a depth pre-pass;
+    - a screen-space round mask around her projected position, smoothstepped, with a dissolve edge in world space;
+    - per-instance fade over time, so it doesn't pop.
+
+    Mind the trees' shadows: a cut tree must still cast its shadow.
+  - `shaders/hero_clear.gdshaderinc` (`hero_clear(...)`) clears effects round her. It's another place the same look should match.
+  - The global `survivor` vec4 is set each frame in `WorldScene.Draw`.
+
+## Done (this round, on `worktree-agent-a0eb8c612c94d4aa5`)
+
+| commit | what | numbers (optimised C#, 2560x1440) |
 |---|---|---|
-| 10ab91a8 | `docs/legal/records/RELEASE_PACK_LISTING.txt` | 1,683 paths, 1.37 GB; nothing excluded ships; the release build ignores the switches and plays |
-| 45cab502 | Prefetch rewritten: the kit's KTX2 textures transcoded on .NET threads (`Image.LoadKtxFromBuffer`) and put in the cache with `TakeOverPath`, let go after the build frame. Also `--perf-flip`, `tools/perf/flip.py` and `tools/godot/pack_listing.py` | quit crash 0 in 20 (the old prefetch: 3 in 11); Waystation build 10.4 to 7.0 s |
-| 78776e81 | Low tier: 2 cascades split at 35 m on 4096 (perf-tiers-wip merged); `--perf-flip furshadow` | Low saves 1.8 ms against High (the old Low saved 2.3); her shadows and those near her as at High |
-| 07cfa567 | status page | |
-| f16890ab | Prefetch reads the scenes' dependencies on worker threads, once a session (`GetDependencies` was 0.7 s of a first entry) | Waystation 6.8-9.2 to 4.3-5.8 s; quit crashes 0 in 10 |
+| 0f81f988 | perf-loads-wip landed: the photoscans' mipmaps and BC7/BC5 (arena art agreed); effects' meshes and Gore's splat made once a session; VAT sweep; `--travel` chains | arena VRAM 2,226 to 1,998 MB; flora 1.5-2.2 to 0.9-1.0 s; second entry's stage 0.5-0.84 to 0.15-0.18 s; 903 MB of old bakes swept |
+| 1e824956 | VAT frames skinned with Parallel.For, posed on the main thread; Perf parts events/draft/auto/later and each hitch's GC pause | wolf and boar 1.8-1.9 to 0.44-0.49 s; bytes identical (7 kinds, Debug and optimised) |
+| 14ade2e4 | her (and the hero's) body PackedScene held; `Prefetch.Scenes` before the people's first bakes; synth mixes into kept 128-frame buffers; `--perf-allocs`; `--perf-flip fires,lamps,lampshadows,pieces` | her re-entry 0.3-0.5 s to 0; the Risen's bakes 5.1-5.4 to 2.7-2.8 s; garbage 19-30 to 12-16 KB a frame; quit check 0 crashes in 10 |
+| 9b9d19d9 | per-frame StringNames made once (hair sway, gaze, reflections, hits, beams, globals, HUD, minimap); `UiArt.Warm()` at start; `--perf-flip labels` | 22-23 to 17-18 KB a frame; GCs 7-8 to 5; GC pause 105 to 67 ms in 40 s; no draft hitch since |
+| 018bdbb2 | merged the integration branch (toasts redesigned by UI; my HUD names kept where they still apply) | |
 
-## Measured (2560x1440, paired flips unless marked)
+## Measured, worth keeping
 
-- **Dense fight** (tier 3, 27.5 min, about 340 foes; High is 5.1-5.5 ms GPU):
-  - Medium -1.0 ms; Low -1.8 ms.
-  - FSR quality/balanced/performance: -1.4/-1.8/-2.0 ms.
-  - MSAA 2x at Medium: +0.4 ms on a quiet GPU, 0.9 ms on a busy one.
-  - SMAA at Medium: 0.07 ms but more shimmer, so rejected.
-- **Her**, town / dense:
-  - warden 0.60 / 0.68 ms;
-  - reaver 0.84 / 1.06 ms (21 fur shells; 2.5M primitives);
-  - arcanist 0.50 ms; stalker 0.61 ms.
-  - Her fur's shadows: 0.15-0.25 ms.
-  - Outfit triangles: warden 708k, ranger 651k, arcanist 436k, reaver 375k. Body 92k, long hair 173k.
-- **Grass:**
-  - barrow 0.72 ms (2.8M prims); hollow about 0.4 ms (0.8M).
-  - Collapsing off-view tussocks in the vertex shader saved 0.03 ms, so it was reverted. The cost is the on-screen blades under MSAA.
-- **Shimmer round her at 23 m** (`her_flicker.py`, pixels changing over 6 levels across 8 frames): High 2, Medium 8, Medium + MSAA 2x 5, Medium + SMAA 100. FSR doubles the mean frame-to-frame change.
-- **Loads** (zone build, ms; CPU contention moves these a lot):
-  - Waystation: 10.4-10.8 s (base) to 7.0 s (KTX prefetch), then 4.3-5.8 s with parallel dependency reads (uncommitted).
-  - Arena: 6.5 s to 4.5-5.2 s.
-
-## In progress: branch `perf-loads-wip@65259ada` (built and tests pass, not yet run in the game)
-
-Merge it into your branch, take a Godot turn, verify each item, then commit or drop it.
-
-1. (Done and committed: the parallel dependency reads, f16890ab.)
-2. **`Gore.SplatTextures` and `BattleFx` Pickup/Weapon meshes made once a session.** These were 0.23 s and 0.47 s at every place entered.
-   - Built, not yet run.
-   - To verify: `--travel waystation@6` from an arena quick start, comparing `scratchpad/perf3/dll_travelbase` with `dll_travel`. Then look at a fight (blood, pickups, thrown axes) for sameness.
-3. **`--travel ZONE@S`** (Game.cs): goes on to ZONE S seconds in, to measure a warm second build. Built, not run.
-4. **`Vat.Sweep`**: older-version VAT bakes deleted before a new bake is written. Each version is about 300 MB; the shared user folder held 1.9 GB over versions 7-13. Built, not run.
-5. **Photoscans (art/world/*.glb): mipmaps and BC7/BC5 at import** (`tools_scenes/import_world.gd`; the 33 `.import` files point at it).
-   - Their embedded textures are RGB8 1K **without mipmaps** (probed with `scratchpad/perf3/texprobe.gd`). That should alias at a distance, but it is not yet seen in pictures, and it takes 4x the VRAM of BC7. Arena flora took 1.4-1.7 s to load.
-   - `scratchpad/perf3/batch6.ps1` does the A/B; it waited 40 minutes for a turn and was stopped, so it has not run.
-     - It shoots A (before the reimport) with the crowd, effects and HUD out.
-     - Then it runs `--import`, shoots B, and times the arena's flora lap before and after.
-     - Run it from a worktree with perf-loads-wip merged, but take the A shots with the old `.import` files' imports still in `.godot`. The import only changes on `--import`, so A comes first.
-   - **Agree it with arena art** (a26767f7f9955cb56) before committing: it is a visible change, meant as a fix.
-
-## Next, in order
-
-1. Verify and land `perf-loads-wip` (above), then push.
-2. **Her build on load** ("the survivor stood up", about 2.0-2.5 s): heroine.glb, HerOutfit, HerHair, Arms.Make. The main session replaced HideSkin with TuckSkin (a shader parameter), so re-profile after merging. `scratchpad/perf3/loadprof.ps1` profiles a build with dotnet-trace (GUI exe, inside a turn); `prof.py --thread <main> --under Game.EnterZone`.
-3. **First-launch VAT bakes:**
-   - The arena's kinds took 2.0 s fresh against 0.1 s cached; later kinds bake mid-fight.
-   - Ideas: skin the frames on worker threads (pose on the main thread, skin in parallel; bakes must stay byte-identical); warm the bakes at the title.
-   - `--vat-fresh --vat-probe --log` show per-kind times.
-4. **The dense fight's main-thread spikes** (22-39 ms, one with a gen-1 GC): outside the timed parts.
-5. **Arena art's Hollow by Night story place:** six deadfalls with flame sets and lights, and gate lights with flame cards. Sweep it with the story nights.
-6. **Medium's MSAA:** do as the owner decides (the main session asked).
+- **Her (warden, dense):** 0.71 ms GPU, 0.96M primitives, 32 shadow draws.
+- **Loot labels:** about zero.
+- **Hollow by Night:**
+  - pieces 1.15 ms GPU (1.48M primitives);
+  - its fires are unlit at stage 0 and cost nothing measurable;
+  - its lamps' shadows are within noise.
+- **Arena dumps** (`--perf-dump`):
+  - lamplings: 26 shadowed omni lights and 1,340 shadow draws, yet 3.3 ms GPU;
+  - pack: 15.4M vertices in the zone.
+- **Dense hitches** (now 22-50 ms, rarer):
+  - a queued draft rebuilt whole at each pick (`GameMenus.Present`), 15-20 ms;
+  - gen-1 GCs, 15-40 ms;
+  - the shared GPU (spikes with gpu at 15-65 ms are other sessions).
+- **Debug vs optimised C#:**
+  - The editor's DLL is `/optimize-`.
+  - Dense main thread is about the same (2.6-3.4 ms).
+  - Bake skinning gains little: Godot's math structs dominate.
 
 ## Decisions (and why)
 
-- **Paired flips (`--perf-flip`) for GPU costs.** The GPU is shared and plain A/B runs swing 2x. Flips put both halves under the same load. Draw counts and primitives are exact.
-- **No Godot threaded loader.** `ResourceLoader.LoadThreadedRequest` with whole scenes crashed on quit, about 1 run in 4-10, in `godotsharp_internal_refcounted_disposed` at shutdown. Decode the textures ourselves; nothing held past the build frame.
-- **Her detail is never traded.** No LODs on her, no fewer fur shells, her textures lossless; her outfits' triangles stay.
-- **FSR stays opt-in**, native the default: it doubles the shimmer round her.
-- **Low keeps High's cascade near her** for +0.5 ms against the old Low.
-- **Invisible changes only** without the owner's or the owning lead's word. Visible fixes (the photoscans' mipmaps) go to the owning lead first.
+- **Paired flips for GPU costs:** the GPU is shared, and plain A/B runs swing 2x.
+- **No Godot threaded loader:** it crashed on quit. We decode KTX2 on .NET threads (`Prefetch`).
+- **Her detail is never traded,** and her textures stay lossless (the face lead's rule).
+- **Invisible changes only,** unless the owning lead agrees. Visible ones (the photoscans) are shown to the owner of the look first.
+- **Bakes must stay byte-identical** when sped up; compare `user://vat/*.bin` across builds.
 
 ## Failures and why
 
-- **The grass early-out:** off-view geometry was already cheap. Measure before building.
-- **SMAA with TAA** shimmers more than nothing: it runs on jittered frames.
-- **The predecessor's `_ExitTree` Release did not fix the prefetch crash** (3 in 11): the threaded loader itself is at fault.
-- **PowerShell variables are case-insensitive.** `$s` in a loop overwrote `$S`, and `$t` overwrote `$T` (the turn tool), so a turn was not given back. Use long, distinct names in batch scripts.
-- **The disk filled** (0 bytes free) when my 1.4 GB export landed on a nearly full drive. Keep one export at a time and delete it once tested; check `Get-PSDrive C` before big writes.
+- **`DOTNET_GCgen0size=128 MB`:** one run had a 172 ms pause. It isn't consistent, so it was dropped.
+- **Holding the kit's people's PackedScenes:** no gain on a first entry; repeat entries weren't measured, so it was dropped.
+- **A `Select-String` filter hid the "done" lines** of some runs. Read the `.json` in `godot/.shots/perf` to be sure.
+- **Weekly limit:** I was cut off mid-batch once. Commit at milestones.
 
 ## Gotchas
 
-- `godot/assets` must be a junction to the worktree's `public/assets`, with `git update-index --skip-worktree godot/assets`. Copy generated `.import` files for public/assets from another worktree (`scratchpad/perf3/copy_imports.py`), or let `--import` make them.
-- Restore line-ending-only `.import` rewrites with `git checkout -- "*.import"` before merging. Untracked `.import` files that the merge adds must be deleted first. Never commit the `.uid` files Godot generates.
-- `godot/override.cfg` (git-excluded) gives perf runs their own user folder (`SurvivorUnchainedPerf`).
-- `run.py --wait 0`: otherwise it waits up to 10 minutes for a quiet GPU.
-- The release build uses `config/use_custom_user_dir` from an `override.cfg` beside the exe; put `{"fullscreen":false}` in that folder's `settings.json` for a window. `scratchpad/perf3/relplay.ps1` drives it by posted keys (no focus taken) and captures with a topmost screen copy. PrintWindow gives black for Vulkan.
-- `her_shots.py` / `her_crop.py` / `her_flicker.py` (scratchpad/perf3): her at 12.5/23/31 m, crops with difference maps, and a per-pixel shimmer map.
-- `--perf x --perf-warm 1000 --perf-off crowd,fx,hud` with `--shot` takes still pictures without the crowd, effects and HUD.
+- **The worktree's setup:**
+  - `godot/assets` is a junction to `public/assets`, with `git update-index --skip-worktree godot/assets`.
+  - `godot/override.cfg` (excluded) sets the perf user folder `SurvivorUnchainedPerf`.
+  - Copy `.godot` and the generated `public/assets` `.import` files from an imported worktree (`scratchpad/perf4/copy_imports.py`).
+  - Any `--import` takes 1.5-9 min, inside a turn.
+- **Merging:** untracked `*.uid` files that Godot generates block merges. Delete the ones git names. Never commit them.
+- **Builds:**
+  - Keep A/B builds out of the bin: `dotnet build -p:Optimize=true --no-incremental -o <dir>`, then copy `SurvivorUnchained.*` into `godot/.godot/mono/temp/bin/Debug` (or use `run.py --builds a=DIR,b=DIR`).
+  - Plain `-p:Optimize=true` without `--no-incremental` silently keeps the old DLL.
+- **PowerShell:** variables are case-insensitive. Use long, distinct names in batch scripts.
+- **Shots:** `--shot NAME --seconds S --every 0.0333 --count 8 --perf x --perf-warm 1000 --perf-off crowd,fx,hud` takes clean stills.
+- **Bakes:** `--vat-fresh --vat-probe --log` re-bakes and prints per-kind times.
 
 ## Collaborators
 
-| who | what |
-|---|---|
-| Main session / coordinator | merges; relays the owner; holds Medium's MSAA question; replaced HideSkin with TuckSkin |
-| Legal (aab20546fe06daa89) | accepted the listing; re-list before every upload (`tools/godot/pack_listing.py`) |
-| Arena art (a26767f7f9955cb56) | keeps 26 grass blades; owns the photoscans' look (agree the mipmap fix); the Hollow by Night lights |
-| Skills (a94ac6b67f1279213) | BattleFx/Gore are theirs: tell them about the once-a-session meshes and splat |
-| Face (a6784044c82f101d9) | her import settings stay (lossless, mipmaps) |
+- **Main session / coordinator:** merges; relays the owner; owns her outfits.
+- **Arena art** (aba487928a1515c93, paused): owns the trees' look and Hollow by Night. They agreed the photoscan fix.
+- **Creatures** (af551cacc6292152f): the boar. 7k VAT vertices, 2K albedo and normal, `VAT_NORMAL` compile-time variant agreed. They will send flips.
+- **Skills** (abc6bbe020c7fe287): told about the `BattleFx.Kept` meshes.
+- **UI design:** owns the draft panel (it is rebuilt at each pick).
+- **The face lead:** her import settings stay (lossless, mipmaps).
 
 ## Files to read first
 
-- `docs/team/performance.md`
-- `godot/src/World/Prefetch.cs`
+- `godot/src/Game/Graphics.cs` (tiers, AA)
+- `godot/project.godot` (rendering)
+- `godot/shaders/kit.gdshader` (the see-through dither)
+- `godot/shaders/hero_clear.gdshaderinc`
+- `godot/src/Actors/HairSway.cs`, `HerJiggle.cs`, `PlayerView.cs`
 - `godot/src/Game/Game.cs` (`MeasureWith`: `--perf-flip`, `--perf-off`; `--travel`)
-- `godot/src/Game/Graphics.cs`
-- `tools/perf/run.py`, `tools/perf/flip.py`, `tools/godot/pack_listing.py`
-- `godot/src/Actors/Vat.cs` (cache, bake)
-- scratch scripts in `C:\Users\munch\AppData\Local\Temp\claude\C--Users-munch-Desktop-wowsurvivors\f1b9be14-0826-4f47-8004-f1d371f2c6a3\scratchpad\perf3`:
-  - `batch*.ps1` (turn-wrapped batches);
-  - `crashloop.ps1`;
-  - `loadprof.ps1` and `prof.py`;
-  - `gshot.py`;
-  - `relrun.ps1` and `relplay.ps1`;
-  - `packlist.py`, `depcheck.gd`.
+- `godot/src/Perf.cs`
+- `tools/perf/run.py`, `tools/perf/flip.py`
+- Scratch scripts in `C:\Users\munch\AppData\Local\Temp\claude\C--Users-munch-Desktop-wowsurvivors\f1b9be14-0826-4f47-8004-f1d371f2c6a3\scratchpad\perf4`:
+  - `batch1-9.ps1` (turn-wrapped);
+  - `gshot.py`, `scan_flicker.py`;
+  - `loadprof.ps1`, `prof2.py` (`--from/--to`), `longcalls.py` (the long main-thread calls in a dotnet-trace);
+  - `herload.gd`, `stringnames.py`;
+  - perf3's `her_crop.py` and `her_flicker.py`.
