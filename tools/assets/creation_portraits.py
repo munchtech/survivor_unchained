@@ -54,9 +54,18 @@ def jobs_for(kinds, hero):
             for tag, colour in (('g', GREY), ('w', '#ffffff'), ('k', '#000000')):
                 jobs.append({'name': f"hair_{cut['id']}_{tag}", 'view': view, 'yaw': CUT_YAW.get(cut['id'], yaw), 'back': CUT_BACK.get(cut['id'], 0), 'hair': cut['id'], 'hairColor': colour, 'outfit': HAIR_OUTFIT, 'chin': CHIN['hair']})
     if 'face' in kinds:
+        # Each face as creation puts it on her (CreateLook.Choose): its own head
+        # (People.HerFaceKey: the face_<id> key and painting; none for her own),
+        # its skin and its eyes. (Its sliders alone, as the old presets were,
+        # left every portrait her own face.)
+        skins = {s['id']: s['color'] for s in skins_of()}
+        eyes = {e['id']: e for e in hero['eyes']}
         for f in hero['faces']:
             view, yaw = VIEW['face']
-            jobs.append({'name': f"face_{f['id']}", 'view': view, 'yaw': yaw, 'hair': 'ponytail', 'face': f.get('shape', {}), 'outfit': OUTFIT, 'chin': CHIN['face']})
+            e = eyes.get(f.get('eyes', ''), {})
+            jobs.append({'name': f"face_{f['id']}", 'view': view, 'yaw': yaw, 'hair': 'ponytail', 'face': f.get('shape', {}),
+                         'faceShape': '' if f['id'] == 'own' else f['id'], 'skin': skins.get(f.get('skin', ''), ''),
+                         'eyes': e.get('color', ''), 'eyeRing': e.get('ring', ''), 'outfit': OUTFIT, 'chin': CHIN['face']})
     if 'paint' in kinds:
         for p in hero['paints']:
             view, yaw = VIEW['paint']
@@ -65,6 +74,11 @@ def jobs_for(kinds, hero):
         view, yaw = VIEW['look']
         jobs.append({'name': 'look', 'view': view, 'yaw': yaw, 'hair': 'long', 'outfit': OUTFIT, 'chin': CHIN['look']})
     return jobs
+
+
+def skins_of():
+    with open(os.path.join(GODOT_DIR, 'data', 'content', 'looks.json'), encoding='utf-8') as f:
+        return json.load(f)['skins']
 
 
 def render(jobs, raw):

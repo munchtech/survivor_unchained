@@ -12,7 +12,7 @@ namespace SurvivorUnchained.Tools;
 /// photographed square by a firelit portrait light: a warm key from the
 /// fire's side, a cool fill, moonlight rimming her hair from behind.
 /// JOBS=a JSON file: [{"name", "view": "bust"|"head"|"face", "yaw", "back", "chin", "seek", "outfit", "hair",
-/// "hairColor", "face": {slider: v}, "eyes", "eyeRing", "paint", "skin"}, ...];
+/// "hairColor", "face": {slider: v}, "faceShape", "eyes", "eyeRing", "paint", "skin"}, ...];
 /// OUT=a folder; SIZE=pixels (square). A picture a job, saved when her hair
 /// has settled and the frame has gathered (the hair is cut by hashed alpha,
 /// which the TAA smooths over frames).
@@ -173,8 +173,11 @@ public partial class Portraits : Node3D
     {
         static Color? C(Godot.Collections.Dictionary d, string k) => d.ContainsKey(k) && (string)d[k] != "" ? new Color((string)d[k]) : null;
         var face = d.ContainsKey("face") ? d["face"].AsGodotDictionary().ToDictionary(kv => (string)kv.Key, kv => (float)kv.Value) : new Dictionary<string, float>();
+        // (faceShape: one of her other faces, its own head and painting, People.HerFaceKey; "" her own)
+        var shape = d.ContainsKey("faceShape") && (string)d["faceShape"] != "" ? (string)d["faceShape"] : null;
         var look = new People.Look("female", new[] { "her:" + outfit }, d.ContainsKey("hair") ? (string)d["hair"] : "long", false,
-            C(d, "hairColor"), C(d, "skin"), null, null, 1, face, C(d, "eyes"), C(d, "eyeRing"), d.ContainsKey("paint") ? (string)d["paint"] : null);
+            C(d, "hairColor"), C(d, "skin"), null, null, 1, face, C(d, "eyes"), C(d, "eyeRing"), d.ContainsKey("paint") ? (string)d["paint"] : null,
+            shape);
         People.HerRestyle(her!, look);
     }
 }
