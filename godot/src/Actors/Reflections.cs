@@ -16,6 +16,8 @@ public partial class Reflections : Node3D
 {
     static readonly Shader GhostShader = GD.Load<Shader>("res://shaders/ghost.gdshader");
     static readonly Color Glass = new(0.55f, 0.82f, 1.0f), EchoTint = new(0.72f, 0.55f, 1.0f);
+    // (Names made once, not a new one every frame for the collector.)
+    static readonly StringName TintName = "tint", FadeName = "fade", CrackName = "crack";
 
     sealed class Ghost
     {
@@ -91,9 +93,9 @@ public partial class Reflections : Node3D
             float life = d.LifeT > 0 ? Mathf.Clamp((float)d.LifeT / 0.6f, 0, 1) : 1;
             float flick = life < 1 ? 0.6f + 0.4f * Mathf.Sin((float)(b.Time * 40 + d.Id)) : 1;
             bool echo = d == b.Art.Echo;
-            g.Mat.SetShaderParameter("tint", echo ? EchoTint : Glass);
-            g.Mat.SetShaderParameter("fade", g.Fade * life * flick);
-            g.Mat.SetShaderParameter("crack", (float)(1 - d.Hp / System.Math.Max(1, d.MaxHp)));
+            g.Mat.SetShaderParameter(TintName, echo ? EchoTint : Glass);
+            g.Mat.SetShaderParameter(FadeName, g.Fade * life * flick);
+            g.Mat.SetShaderParameter(CrackName, (float)(1 - d.Hp / System.Math.Max(1, d.MaxHp)));
             g.View.Place(d.X, heightAt(d.X, d.Z), d.Z, Mathf.Pi / 2 - d.Facing, true);
         }
         // An echo with no body of its own: a still figure where it was left.
@@ -103,9 +105,9 @@ public partial class Reflections : Node3D
             var g = Take(-2);
             g.Fade = Mathf.Min(1, g.Fade + fdt / 0.2f);
             float life = Mathf.Clamp((float)a.EchoT / 0.8f, 0, 1);
-            g.Mat.SetShaderParameter("tint", EchoTint);
-            g.Mat.SetShaderParameter("fade", g.Fade * life * 0.8f);
-            g.Mat.SetShaderParameter("crack", 0f);
+            g.Mat.SetShaderParameter(TintName, EchoTint);
+            g.Mat.SetShaderParameter(FadeName, g.Fade * life * 0.8f);
+            g.Mat.SetShaderParameter(CrackName, 0f);
             g.View.Place(a.EchoX, heightAt(a.EchoX, a.EchoZ), a.EchoZ, a.EchoFacing, true);
         }
         foreach (var g in ghosts)

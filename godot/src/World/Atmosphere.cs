@@ -76,8 +76,11 @@ public partial class Atmosphere : Node3D
     public override void _Process(double delta)
     {
         clock += delta;
-        RenderingServer.GlobalShaderParameterSet("sky_time", (float)clock);
+        RenderingServer.GlobalShaderParameterSet(SkyTime, (float)clock);
     }
+
+    // (A name made once, not a new one every frame for the collector.)
+    static readonly StringName SkyTime = "sky_time";
 
     static Color C(string hex) => new(hex);
 

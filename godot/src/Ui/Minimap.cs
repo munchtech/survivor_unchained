@@ -21,6 +21,8 @@ public partial class Minimap : Control
 {
     /// <summary>The disc's size on screen, and how many metres it spans.</summary>
     public const float Diameter = 200, Span = 120;
+    // (Names made once, not a new one every showing for the collector.)
+    static readonly StringName CentreName = "centre", DimName = "dim";
     readonly ColorRect disc;
     readonly ShaderMaterial mat;
     readonly Control marks;
@@ -100,8 +102,8 @@ public partial class Minimap : Control
             if (maskTex == null) { maskTex = ImageTexture.CreateFromImage(mask); mat.SetShaderParameter("seen", maskTex); }
             else maskTex.Update(mask);
         }
-        mat.SetShaderParameter("centre", new Vector2((float)(px / extent + 0.5), (float)(pz / extent + 0.5)));
-        mat.SetShaderParameter("dim", night ? 0.62f : 0.95f);
+        mat.SetShaderParameter(CentreName, new Vector2((float)(px / extent + 0.5), (float)(pz / extent + 0.5)));
+        mat.SetShaderParameter(DimName, night ? 0.62f : 0.95f);
         you.Rotation = (float)(Math.PI - facing);
         foreach (var c in marks.GetChildren()) c.QueueFree();
         float r = Diameter / 2, scale = Diameter / Span;

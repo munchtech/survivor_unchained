@@ -50,6 +50,9 @@ public partial class GameHud : CanvasLayer
     readonly Dictionary<string, WeaponSlot> slots = new();
     HBoxContainer dashPips = null!;
     static readonly StyleBoxFlat PipOn = Style.Box(new Color("#7ab0ff"), new Color("#cfe4ff"), 1, 3, 0), PipOff = Style.Box(new Color("#14121a"), Style.Line, 1, 3, 0);
+    // Names made once: a string given where a name is wanted is a new one each
+    // call, and the HUD's twelve frames a second left them to the collector.
+    internal static readonly StringName FontColor = "font_color", PanelName = "panel", MetaT = "t", MetaLife = "life";
     Control quick = null!;
     Label quickQty = null!;
     Ring abilityRing = null!;
@@ -199,7 +202,7 @@ public partial class GameHud : CanvasLayer
     {
         if (!UiArt.Has(id)) return;
         var c = new Panel { Position = bar.Position, Size = bar.Size, MouseFilter = Control.MouseFilterEnum.Ignore };
-        c.AddThemeStyleboxOverride("panel", UiArt.Frame(id, new StyleBoxEmpty()));
+        c.AddThemeStyleboxOverride(PanelName, UiArt.Frame(id, new StyleBoxEmpty()));
         parent.AddChild(c);
     }
 
@@ -211,13 +214,13 @@ public partial class GameHud : CanvasLayer
         s.ShadowSize = 10;
         if (art != null && UiArt.Art($"hud/{art}.png") is { } tex)
         {
-            p.AddThemeStyleboxOverride("panel", new StyleBoxEmpty());
+            p.AddThemeStyleboxOverride(PanelName, new StyleBoxEmpty());
             var r = new TextureRect { Texture = tex, ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize, MouseFilter = Control.MouseFilterEnum.Ignore, ShowBehindParent = true };
             r.Size = tex.GetSize();
             r.Position = (new Vector2(size, size) - r.Size) / 2;
             p.AddChild(r);
         }
-        else p.AddThemeStyleboxOverride("panel", s);
+        else p.AddThemeStyleboxOverride(PanelName, s);
         parent.AddChild(p);
         return p;
     }
@@ -235,7 +238,7 @@ public partial class GameHud : CanvasLayer
     {
         float w = 760 * K, x = (1920 - w) / 2;
         var track = new Panel { Position = new Vector2(x + 30, 23), Size = new Vector2(w - 30, 12), MouseFilter = Control.MouseFilterEnum.Ignore, ClipContents = true };
-        track.AddThemeStyleboxOverride("panel", UiArt.Frame("bar_track", Style.Box(Hex("#120c0a"), new Color(0.85f, 0.71f, 0.42f, 0.28f), 1, 5, 0)));
+        track.AddThemeStyleboxOverride(PanelName, UiArt.Frame("bar_track", Style.Box(Hex("#120c0a"), new Color(0.85f, 0.71f, 0.42f, 0.28f), 1, 5, 0)));
         combat.AddChild(track);
         Casing(combat, track, "bar_casing");
         emberFill = Fill("ember_fill", [Hex("#6a1e04"), Hex("#c24a0a"), Hex("#ff8a2a"), Hex("#ffd070")], [0, 0.45f, 0.85f, 1]);
@@ -286,7 +289,7 @@ public partial class GameHud : CanvasLayer
     {
         // The console: a forged plate along the foot, under the skills, the globe and the ring at its ends.
         var plate = new Panel { Position = new Vector2(consoleX, 1080 - 98), Size = new Vector2(consoleW, 130), MouseFilter = Control.MouseFilterEnum.Ignore };
-        plate.AddThemeStyleboxOverride("panel", UiArt.Frame("console", OrnateBox.Make(OrnateBox.Kind.Plate, 0)));
+        plate.AddThemeStyleboxOverride(PanelName, UiArt.Frame("console", OrnateBox.Make(OrnateBox.Kind.Plate, 0)));
         combat.AddChild(plate);
         consolePlate = plate;
         globe = new Globe(66) { Position = new Vector2(consoleX - 150, 1080 - 156) };
@@ -359,7 +362,7 @@ public partial class GameHud : CanvasLayer
         ab.AddChild(abilityCd);
         Hand(ab, Act.Ability, "", out abilityName);
         var q = new Panel { CustomMinimumSize = new Vector2(60, 60), MouseFilter = Control.MouseFilterEnum.Ignore };
-        q.AddThemeStyleboxOverride("panel", OrnateBox.Make(OrnateBox.Kind.Slab, 0));
+        q.AddThemeStyleboxOverride(PanelName, OrnateBox.Make(OrnateBox.Kind.Slab, 0));
         var qi = ItemPhotos.Icon("potion", 50, Hex("#ff8a80"));
         qi.Position = new Vector2(5, 3); qi.Size = new Vector2(50, 50);
         q.AddChild(qi);
@@ -402,7 +405,7 @@ public partial class GameHud : CanvasLayer
     {
         under = new Control { Size = new Vector2(76, 9), MouseFilter = Control.MouseFilterEnum.Ignore, Modulate = Colors.Transparent };
         var back = new Panel { Size = new Vector2(76, 9), MouseFilter = Control.MouseFilterEnum.Ignore, ClipContents = true };
-        back.AddThemeStyleboxOverride("panel", Style.Box(new Color(0.05f, 0.02f, 0.02f, 0.85f), new Color(0, 0, 0, 0.9f), 1, 3, 0));
+        back.AddThemeStyleboxOverride(PanelName, Style.Box(new Color(0.05f, 0.02f, 0.02f, 0.85f), new Color(0, 0, 0, 0.9f), 1, 3, 0));
         under.AddChild(back);
         underFill = new ColorRect { Color = Hex("#e8383a"), Position = new Vector2(1, 1), Size = new Vector2(74, 7), MouseFilter = Control.MouseFilterEnum.Ignore };
         back.AddChild(underFill);
@@ -507,7 +510,7 @@ public partial class GameHud : CanvasLayer
         bossTitle.Position = new Vector2(0, 32); bossTitle.Size = new Vector2(w, 20);
         bossBox.AddChild(bossTitle);
         var track = new Panel { Position = new Vector2(0, 58), Size = new Vector2(w, 16), ClipContents = true, MouseFilter = Control.MouseFilterEnum.Ignore };
-        track.AddThemeStyleboxOverride("panel", UiArt.Frame("bar_track_boss", Style.Box(Hex("#140808"), Style.GoldDim, 1, 3, 0)));
+        track.AddThemeStyleboxOverride(PanelName, UiArt.Frame("bar_track_boss", Style.Box(Hex("#140808"), Style.GoldDim, 1, 3, 0)));
         bossBox.AddChild(track);
         Casing(bossBox, track, "bar_casing_boss");
         bossTrack = track;
@@ -516,7 +519,7 @@ public partial class GameHud : CanvasLayer
         bossFill = new ColorRect { Color = Hex("#b0222a"), Position = new Vector2(1, 1), Size = new Vector2(w - 2, 14), MouseFilter = Control.MouseFilterEnum.Ignore };
         track.AddChild(bossFill);
         bossChannelBox = new Panel { Position = new Vector2(w * 0.2f, 82), Size = new Vector2(w * 0.6f, 20), ClipContents = true, MouseFilter = Control.MouseFilterEnum.Ignore };
-        bossChannelBox.AddThemeStyleboxOverride("panel", Style.Box(Hex("#0e0c12"), Hex("#ffcf8a") with { A = 0.6f }, 1, 3, 0));
+        bossChannelBox.AddThemeStyleboxOverride(PanelName, Style.Box(Hex("#0e0c12"), Hex("#ffcf8a") with { A = 0.6f }, 1, 3, 0));
         bossBox.AddChild(bossChannelBox);
         bossChannelFill = new ColorRect { Color = Hex("#ffb050") with { A = 0.6f }, Size = new Vector2(0, 20), MouseFilter = Control.MouseFilterEnum.Ignore };
         bossChannelBox.AddChild(bossChannelFill);
@@ -598,7 +601,7 @@ public partial class GameHud : CanvasLayer
         if (ember != barEmber) { barEmber = ember; barShown = e; }
         barWant = e;
         barWord.Text = ember ? "EMBER" : "EXPERIENCE";
-        barWord.AddThemeColorOverride("font_color", (ember ? Style.Ember : Style.Day) with { A = 0.85f });
+        barWord.AddThemeColorOverride(FontColor, (ember ? Style.Ember : Style.Day) with { A = 0.85f });
         // The fight's clock and its count belong to the night; by day they would only be noise.
         tallyTime.Visible = ember;
         killsChip.Visible = ember;
@@ -611,13 +614,13 @@ public partial class GameHud : CanvasLayer
             if (lv > shownLevel && ember == shownEmber) { levelPop = 1; barShown = 1; barFlash = 1; }
             shownLevel = lv; shownEmber = ember;
             emberLevel.Text = lv.ToString();
-            emberLevel.AddThemeColorOverride("font_color", ember ? Style.EmberHi : Hex("#d8ecff"));
+            emberLevel.AddThemeColorOverride(FontColor, ember ? Style.EmberHi : Hex("#d8ecff"));
         }
         // In an arena the clock counts down to what rules it; after, how long past the half hour.
         double shown = arenaLeft is double left && left > 0 ? left : arenaLeft is double past ? -past : b.Time;
         int m = (int)(shown / 60), s = (int)(shown % 60);
         tallyTime.Text = arenaLeft is double l2 && l2 <= 0 ? $"+{m}:{s:00}" : $"{m}:{s:00}";
-        tallyTime.AddThemeColorOverride("font_color", arenaLeft is double l3 && l3 > 0 && l3 < 60 ? Style.EmberHi : Hex("#efe3c8"));
+        tallyTime.AddThemeColorOverride(FontColor, arenaLeft is double l3 && l3 > 0 && l3 < 60 ? Style.EmberHi : Hex("#efe3c8"));
         tallyKills.Text = b.KillCount.ToString();
         // The count pops when it climbs, at most ten times a second.
         if (b.KillCount > killsShown && killPop <= 0.05) killPop = 0.15;
@@ -680,7 +683,7 @@ public partial class GameHud : CanvasLayer
         {
             bool on = j < p.DashCharges;
             var pip = dashPips.GetChild<Panel>(j);
-            pip.AddThemeStyleboxOverride("panel", on ? PipOn : PipOff);
+            pip.AddThemeStyleboxOverride(PanelName, on ? PipOn : PipOff);
             var fillRect = pip.GetChild<ColorRect>(0);
             float fill = j == p.DashCharges ? (float)Math.Clamp(p.DashRecharge / Abilities.Dash.Recharge, 0, 1) : 0;
             fillRect.Position = new Vector2(0, 34 * (1 - fill));
@@ -767,7 +770,7 @@ public partial class GameHud : CanvasLayer
     {
         var col = Style.RarityOf((int)bd.Rarity);
         var chip = new Panel { CustomMinimumSize = new Vector2(34, 34), MouseFilter = Control.MouseFilterEnum.Ignore };
-        chip.AddThemeStyleboxOverride("panel", UiArt.Frame("chip", Style.Box(Hex("#1a1720"), col with { A = 0.55f }, 1, bd.Kind == BoonKind.Blessing ? 6 : 17, 0)));
+        chip.AddThemeStyleboxOverride(PanelName, UiArt.Frame("chip", Style.Box(Hex("#1a1720"), col with { A = 0.55f }, 1, bd.Kind == BoonKind.Blessing ? 6 : 17, 0)));
         var gl = Glyphs.Icon(bd.Icon, 20, col);
         gl.Position = new Vector2(7, 7); gl.Size = new Vector2(20, 20);
         chip.AddChild(gl);
@@ -800,7 +803,7 @@ public partial class GameHud : CanvasLayer
             {
                 var col = s.Done ? Style.InkDim with { A = 0.6f } : s.Optional ? Style.InkDim : Style.Ink;
                 var box = new Panel { CustomMinimumSize = new Vector2(10, 10), MouseFilter = Control.MouseFilterEnum.Ignore };
-                box.AddThemeStyleboxOverride("panel", Style.Box(s.Done ? Style.Gold : new Color(0, 0, 0, 0.4f), col, 1, s.Optional ? 5 : 1, 0));
+                box.AddThemeStyleboxOverride(PanelName, Style.Box(s.Done ? Style.Gold : new Color(0, 0, 0, 0.4f), col, 1, s.Optional ? 5 : 1, 0));
                 var mark = new CenterContainer { CustomMinimumSize = new Vector2(12, 20), MouseFilter = Control.MouseFilterEnum.Ignore };
                 mark.AddChild(box);
                 HBoxContainer row;
@@ -872,7 +875,7 @@ public partial class GameHud : CanvasLayer
         {
             lt.Names.Add(t.Text);
             if (lt.Box.FindChild("Title", true, false) is Label title) title.Text = string.Join(", ", lt.Names);
-            lt.Box.SetMeta("t", 0.06);
+            lt.Box.SetMeta(MetaT, 0.06);
             lastToast = lt with { At = now };
             return;
         }
@@ -881,7 +884,7 @@ public partial class GameHud : CanvasLayer
         var box = new PanelContainer { MouseFilter = Control.MouseFilterEnum.Ignore, CustomMinimumSize = new Vector2(408, 0) };
         var s = Style.Box(new Color(0.047f, 0.04f, 0.055f, 0.82f), color, 0, 4, 8);
         s.BorderWidthLeft = 3;
-        box.AddThemeStyleboxOverride("panel", UiArt.Frame("toast", s));
+        box.AddThemeStyleboxOverride(PanelName, UiArt.Frame("toast", s));
         var row = Style.H(10, t.Icon != null ? ItemPhotos.Icon(t.Icon, 40, color) : Glyphs.Icon(glyph, 22, color));
         var head = Style.Label(t.Text, t.Kind == ToastKind.Quest ? Style.Display : Style.UiBold, 17, t.Kind == ToastKind.Quest ? Style.GoldHi : t.Rarity != null ? color : Hex("#f0e6d2"), true);
         head.Name = "Title";
@@ -890,8 +893,8 @@ public partial class GameHud : CanvasLayer
         words.SizeFlagsHorizontal = Control.SizeFlags.ExpandFill;
         row.AddChild(words);
         box.AddChild(row);
-        box.SetMeta("t", 0.0);
-        box.SetMeta("life", t.Life ?? 5.0);
+        box.SetMeta(MetaT, 0.0);
+        box.SetMeta(MetaLife, t.Life ?? 5.0);
         toasts.AddChild(box);
         lastToast = (box, t.Kind, new List<string> { t.Text }, now);
         while (toasts.GetChildCount() > 6) toasts.GetChild(0).Free();
@@ -905,7 +908,7 @@ public partial class GameHud : CanvasLayer
         annKicker.Visible = a.Kicker != null;
         annTitle.Text = a.Title.ToUpperInvariant();
         annTitle.AddThemeFontSizeOverride("font_size", a.Kind == "zone" ? 60 : a.Title.Length > 30 ? 31 : a.Title.Length > 20 ? 38 : a.Kind == "story" ? 41 : 50);
-        annTitle.AddThemeColorOverride("font_color", a.Kind switch { "danger" => Hex("#ff7a5a"), "boon" => Hex("#ffd46a"), "story" => Hex("#e2dac8"), _ => Hex("#f0c878") });
+        annTitle.AddThemeColorOverride(FontColor, a.Kind switch { "danger" => Hex("#ff7a5a"), "boon" => Hex("#ffd46a"), "story" => Hex("#e2dac8"), _ => Hex("#f0c878") });
         annSub.Text = a.Sub ?? "";
         announce.Position = new Vector2(360, 1080 * (a.Kind == "zone" ? 0.16f : 0.2f));
         annT = 0;
@@ -1021,7 +1024,7 @@ public partial class GameHud : CanvasLayer
         // A new phase pops in (docs/feel S-21: escalation as a story).
         if (left != null && word != tallyWord.Text) { tallyWord.PivotOffset = new Vector2(200, 9); tallyWord.Scale = new Vector2(1.35f, 1.35f); }
         tallyWord.Text = left == null ? "" : word;
-        tallyWord.AddThemeColorOverride("font_color", tone ?? Style.Ember);
+        tallyWord.AddThemeColorOverride(FontColor, tone ?? Style.Ember);
     }
 
     /// <summary>What matters off the screen, each frame.</summary>
@@ -1132,11 +1135,12 @@ public partial class GameHud : CanvasLayer
         else announce.Modulate = Colors.Transparent;
         // Nothing big over a choice being made.
         if (draft != null || talk != null) { announce.Modulate = Colors.Transparent; subtitle.Modulate = Colors.Transparent; }
-        foreach (var c in toasts.GetChildren())
+        // (By index: GetChildren makes a new array every frame.)
+        for (int ci = 0; ci < toasts.GetChildCount(); ci++)
         {
-            if (c is not Control box) continue;
-            double t = (double)box.GetMeta("t") + delta, life = (double)box.GetMeta("life");
-            box.SetMeta("t", t);
+            if (toasts.GetChild(ci) is not Control box) continue;
+            double t = (double)box.GetMeta(MetaT) + delta, life = (double)box.GetMeta(MetaLife);
+            box.SetMeta(MetaT, t);
             float k = (float)(t / life);
             box.Modulate = Colors.White with { A = k < 0.05f ? k / 0.05f : k > 0.88f ? (1 - k) / 0.12f : 1 };
             if (t >= life) box.QueueFree();
@@ -1248,7 +1252,7 @@ public partial class WeaponSlot : Panel
         strip.Size = new Vector2(59, 4);
         AddChild(strip);
         badge = new PanelContainer { MouseFilter = MouseFilterEnum.Ignore, Position = new Vector2(44, -7) };
-        badge.AddThemeStyleboxOverride("panel", Style.Box(new Color("#0d0c10"), Style.GoldDim, 1, 9, 4));
+        badge.AddThemeStyleboxOverride(GameHud.PanelName, Style.Box(new Color("#0d0c10"), Style.GoldDim, 1, 9, 4));
         rankText = Style.Label("1", Style.UiHeavy, Style.Badge, Style.GoldHi, false, HorizontalAlignment.Center);
         rankText.CustomMinimumSize = new Vector2(12, 0);
         badge.AddChild(rankText);
@@ -1286,9 +1290,9 @@ public partial class WeaponSlot : Panel
                 strip.AddChild(new ColorRect { Color = i < rank ? school : new Color("#15121a"), CustomMinimumSize = new Vector2(seg, 3), MouseFilter = MouseFilterEnum.Ignore });
             // The rank, gold on ember when it has evolved or is ready to (the rim says which: steady or breathing).
             rankText.Text = rank.ToString();
-            rankText.AddThemeColorOverride("font_color", evolved || canEvolve ? Style.EmberHi : Style.GoldHi);
-            badge.AddThemeStyleboxOverride("panel", Style.Box(new Color("#0d0c10"), evolved || canEvolve ? Style.Gold : Style.GoldDim, 1, 9, 4));
-            AddThemeStyleboxOverride("panel", UiArt.Frame("weapon_slot", Style.Box(new Color(0.1f, 0.09f, 0.12f).Lerp(school, 0.1f), evolved ? Style.Gold : canEvolve ? Style.GoldHi : Style.Line, evolved || canEvolve ? 2 : 1, 7, 0)));
+            rankText.AddThemeColorOverride(GameHud.FontColor, evolved || canEvolve ? Style.EmberHi : Style.GoldHi);
+            badge.AddThemeStyleboxOverride(GameHud.PanelName, Style.Box(new Color("#0d0c10"), evolved || canEvolve ? Style.Gold : Style.GoldDim, 1, 9, 4));
+            AddThemeStyleboxOverride(GameHud.PanelName, UiArt.Frame("weapon_slot", Style.Box(new Color(0.1f, 0.09f, 0.12f).Lerp(school, 0.1f), evolved ? Style.Gold : canEvolve ? Style.GoldHi : Style.Line, evolved || canEvolve ? 2 : 1, 7, 0)));
         }
         if (ready < lastReady - 0.4) flash = 1;
         lastReady = ready;
@@ -1310,7 +1314,7 @@ public partial class EmptySlot : Panel
         CustomMinimumSize = new Vector2(67, 67);
         MouseFilter = MouseFilterEnum.Ignore;
         // A place to come: the empty well (frames/slot.png) when painted, quieter than a held skill.
-        AddThemeStyleboxOverride("panel", UiArt.Frame("slot", Style.Box(new Color(0.08f, 0.07f, 0.09f, 0.55f), Style.Line with { A = 0.12f }, 1, 7, 0)));
+        AddThemeStyleboxOverride(GameHud.PanelName, UiArt.Frame("slot", Style.Box(new Color(0.08f, 0.07f, 0.09f, 0.55f), Style.Line with { A = 0.12f }, 1, 7, 0)));
         if (UiArt.Has("slot")) SelfModulate = new Color(1, 1, 1, 0.7f);
     }
 }

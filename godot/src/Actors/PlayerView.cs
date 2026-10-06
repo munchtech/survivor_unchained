@@ -27,6 +27,8 @@ public partial class PlayerView : Node3D
     readonly Loadout loadout;
     readonly People.Person person;
     readonly AnimationTree tree;
+    // (A name made once, not a new one every frame for the collector.)
+    static readonly StringName BlendPosition = "parameters/move/blend_position";
     readonly AnimationNodeAnimation upper, full;
     readonly AnimationNodeAnimation? idleNode, runNode;
     public readonly OmniLight3D Light;
@@ -430,7 +432,7 @@ public partial class PlayerView : Node3D
         speed = Mathf.Lerp(speed, sp, 1 - Mathf.Exp(-10 * (float)dt));
         if (mine) Rest(b, dt, sp);
         if (mine) Carry((float)dt, sp);
-        else tree.Set("parameters/move/blend_position", speed);
+        else tree.Set(BlendPosition, speed);
         // The carried light: steadier at full health, guttering when hurt.
         double hp = p.Hp / b.MaxHp;
         flare = Mathf.Max(0, flare - dt * 0.8);

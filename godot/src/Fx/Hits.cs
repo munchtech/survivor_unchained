@@ -13,6 +13,8 @@ public partial class Hits : Node3D
     readonly List<GpuParticles3D> sprays = new();
     readonly List<(Label3D Label, float T)> numbers = new();
     readonly List<(MeshInstance3D Mesh, ShaderMaterial Mat, float T, float Life)> arcs = new();
+    // (Names made once, not a new one every frame for the collector.)
+    static readonly StringName HeadName = "head", AlphaName = "alpha";
     /// <summary>A boss's words: its moves' names and the BREAK. Their own few, held as long as
     /// the mark they name: in the numbers' pool, a fast build's hits took them in a frame.</summary>
     readonly List<(Label3D Label, float T, float Life, Vector3 At)> words = new();
@@ -209,8 +211,8 @@ public partial class Hits : Node3D
             var (m, mat, t, life) = arcs[i];
             if (t >= 1) continue;
             t += dt / life;
-            mat.SetShaderParameter("head", Mathf.Min(1.1f, t / 0.55f));
-            mat.SetShaderParameter("alpha", 1 - Mathf.Max(0, (t - 0.5f) * 2));
+            mat.SetShaderParameter(HeadName, Mathf.Min(1.1f, t / 0.55f));
+            mat.SetShaderParameter(AlphaName, 1 - Mathf.Max(0, (t - 0.5f) * 2));
             if (t >= 1) m.Visible = false;
             arcs[i] = (m, mat, t, life);
         }

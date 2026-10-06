@@ -165,6 +165,8 @@ public partial class BattleFx : Node3D
     static Mesh Weapon(string id, float size) => Kept($"weapon:{id}:{size}", () => Merge(Arms.Make(id), size, null));
 
     static readonly Dictionary<string, Mesh> mergedOnce = new();
+    // (A name made once, not a new one every frame for the collector.)
+    static readonly StringName AlphaName = "alpha";
 
     /// <summary>Each merged mesh made once a session: the models loaded and
     /// merged again at every place entered cost half a second. (Nothing draws
@@ -1232,7 +1234,7 @@ public partial class BattleFx : Node3D
             var (m, mat, t, life) = beams[i];
             if (t >= 1) continue;
             t += fdt / life;
-            mat.SetShaderParameter("alpha", Mathf.Max(0, 1 - t));
+            mat.SetShaderParameter(AlphaName, Mathf.Max(0, 1 - t));
             if (t >= 1) m.Visible = false;
             beams[i] = (m, mat, t, life);
         }

@@ -112,6 +112,11 @@ public partial class Game : Node, IZoneHost
         // Prompts follow the device in hand: a screen, the HUD, the draft redraw with its keys.
         controls.DeviceChanged += () => { screens.Current?.Refresh(); hud.DeviceChanged(); };
         UiArt.Cursors();
+        // Every painted frame read now, while the game starts: read on a panel's first
+        // showing, the first draft of a fight held the frame 50-80 ms.
+        var warmFrom = System.Diagnostics.Stopwatch.GetTimestamp();
+        UiArt.Warm();
+        if (Perf.On) GD.Print($"perf the interface's frames read in {System.Diagnostics.Stopwatch.GetElapsedTime(warmFrom).TotalMilliseconds:0} ms");
         if (Args.Has("auto")) auto = new Autopilot(this) { Idle = Args.Get("auto") == "idle" };
         Settings.Current.ApplyWindow();
         ApplySettings();
@@ -940,8 +945,10 @@ public partial class Game : Node, IZoneHost
                 hud.PromptAt(camera.IsPositionBehind(np) ? null : camera.UnprojectPosition(np));
             }
             else hud.PromptAt(null);
+            Perf.Begin(Perf.Part.Labels);
             hud.Beyond(Overlay == null ? Offscreen(fb2) : new());
-            hud.Ground(Overlay == null ? Labels(fb2) : new());
+            hud.Ground(Overlay == null && !labelsOff ? Labels(fb2) : new());
+            Perf.End(Perf.Part.Labels);
         }
         {
             var sb = Battle;
@@ -1447,6 +1454,8 @@ public partial class Game : Node, IZoneHost
     /// <summary>--perf-flip lampshadows: the place's lights that cast shadows (and the place they are in).</summary>
     List<OmniLight3D>? shadowed;
     WorldScene? shadowedIn;
+    /// <summary>--perf-flip labels: loot's names on the ground not made or drawn.</summary>
+    bool labelsOff;
 
     /// <summary>--perf: the frame measured (Perf.cs), with the game's own
     /// numbers beside it: the horde, the dead, the gore, the sound's voices.</summary>
@@ -1471,7 +1480,7 @@ public partial class Game : Node, IZoneHost
         // seconds (default 1) and put back, the frame's "flip" counter 1 while
         // out. One run measures both ways under the same load from the GPU's
         // other users (it is shared): her, furshadow (her fur's shadows), crowd,
-        // grass, fires, lamps, lampshadows, pieces, sunshadows, ssao, msaa;
+        // grass, fires, lamps, lampshadows, pieces, labels, sunshadows, ssao, msaa;
         // or quality:Q, scale:S (that quality or resolution while out).
         if (Args.Get("perf-flip") is string flips)
         {
@@ -1502,6 +1511,7 @@ public partial class Game : Node, IZoneHost
                         ((MeshInstance3D)n).CastShadow = on ? GeometryInstance3D.ShadowCastingSetting.On : GeometryInstance3D.ShadowCastingSetting.Off;
                 if (flipped.Contains("crowd")) scene.Crowd.Visible = on;
                 if (flipped.Contains("grass") && scene.View.GetNodeOrNull<Node3D>("Grass") is { } g) g.Visible = on;
+                if (flipped.Contains("labels")) labelsOff = !on;
                 // A place's fires (their flames and lights), its lamps, its lamps' shadows, its pieces.
                 foreach (var c in scene.View.GetChildren())
                 {
