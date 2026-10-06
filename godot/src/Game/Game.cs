@@ -117,7 +117,10 @@ public partial class Game : Node, IZoneHost
         var warmFrom = System.Diagnostics.Stopwatch.GetTimestamp();
         UiArt.Warm();
         if (Perf.On) GD.Print($"perf the interface's frames read in {System.Diagnostics.Stopwatch.GetElapsedTime(warmFrom).TotalMilliseconds:0} ms");
-        if (Args.Has("auto")) auto = new Autopilot(this) { Idle = Args.Get("auto") == "idle", Toward = Args.Get("auto") == "toward" };
+        if (Args.Has("auto")) auto = new Autopilot(this) { Idle = Args.Get("auto") == "idle", Toward = Args.Get("auto") == "toward", Across = Args.Get("auto") == "across" };
+        // --probe: how smoothly she crosses the screen; --no-interp: drawn from the last step of the fight, as before (Interp).
+        if (Args.Has("probe")) Probe = new MotionProbe();
+        if (Args.Has("no-interp")) SurvivorUnchained.View.Interp.On = false;
         Settings.Current.ApplyWindow();
         ApplySettings();
         if (Args.Get("load") is string loadFile) LoadFile(loadFile);
@@ -900,6 +903,9 @@ public partial class Game : Node, IZoneHost
     }
 
     WorldState World => Journey.World;
+    /// <summary>--probe: her smoothness across the screen, measured.</summary>
+    MotionProbe? Probe;
+    static readonly StringName ViewFromName = "view_from";
     /// <summary>How long the camera stays turned to a boss (Ev.Focus).</summary>
     double focusT;
 
@@ -980,11 +986,18 @@ public partial class Game : Node, IZoneHost
         else if (camera.Fov != 34) camera.Fov = 34;
         scene.Update(dt);
         CinemaFrame(dt);
+        // Where the game's camera stands, for the see-through window (shaders/kit.gdshader):
+        // opened in this view only, never in a light's.
+        if (GetViewport().GetCamera3D() is { } seen)
+            RenderingServer.GlobalShaderParameterSet(ViewFromName, new Vector4(seen.GlobalPosition.X, seen.GlobalPosition.Y, seen.GlobalPosition.Z, Args.Get("see-through") == "old" ? 2 : 1));
         // The survivor's place on screen, for the health drawn under them; the prompt's thing; what matters off screen.
         if (Mode == "play" && Battle is { } fb2)
         {
-            var at = new Vector3((float)fb2.Player.X, (float)scene.HeightAt(fb2.Player.X, fb2.Player.Z), (float)fb2.Player.Z);
+            // (Where she is drawn, so what hangs under her moves as smoothly as she does.)
+            var at = scene.HerDrawn;
             hud.Follow(camera.IsPositionBehind(at) ? null : camera.UnprojectPosition(at));
+            Probe?.Frame(camera, at, dt);
+            if (Args.Has("shot")) Shots.Her = camera.IsPositionBehind(at) ? null : camera.UnprojectPosition(at + Vector3.Up * 1.1f);
             if (near != null)
             {
                 var np = new Vector3((float)near.X, (float)scene.HeightAt(near.X, near.Z) + 2.4f, (float)near.Z);
@@ -1596,8 +1609,8 @@ public partial class Game : Node, IZoneHost
         // seconds (default 1) and put back, the frame's "flip" counter 1 while
         // out. One run measures both ways under the same load from the GPU's
         // other users (it is shared): her, furshadow (her fur's shadows), crowd,
-        // grass, fires, lamps, lampshadows, pieces, labels, sunshadows, ssao, msaa;
-        // or quality:Q, scale:S (that quality or resolution while out).
+        // grass, fires, lamps, lampshadows, pieces, labels, sunshadows, ssao, msaa, interp;
+        // or quality:Q, scale:S, aa:A (that quality, resolution or smoothing while out).
         if (Args.Get("perf-flip") is string flips)
         {
             var flipped = flips.Split(',').ToHashSet();
@@ -1606,6 +1619,8 @@ public partial class Game : Node, IZoneHost
             bool outNow = false, wasOut = false;
             string q0 = Settings.Current.Quality, s0 = Settings.Current.Scale;
             string? qOut = flipped.FirstOrDefault(f => f.StartsWith("quality:"))?[8..], sOut = flipped.FirstOrDefault(f => f.StartsWith("scale:"))?[6..];
+            // aa:NAME: the edges smoothed so while out (Graphics.Aa); interp: drawn from the last step while out (Interp).
+            string? aOut = flipped.FirstOrDefault(f => f.StartsWith("aa:"))?[3..], a0 = Graphics.Aa;
             Perf.CounterNames = [.. Perf.CounterNames, "flip"];
             var counters = Perf.Counters;
             Perf.Counters = a => { counters(a); a[^1] = outNow ? 1 : 0; };
@@ -1614,12 +1629,14 @@ public partial class Game : Node, IZoneHost
                 if (scene == null) return;
                 outNow = (int)(clock.Elapsed.TotalSeconds / every) % 2 == 1;
                 bool on = !outNow;
-                if ((qOut ?? sOut) != null && outNow != wasOut)
+                if ((qOut ?? sOut ?? aOut) != null && outNow != wasOut)
                 {
                     Settings.Current.Quality = outNow ? qOut ?? q0 : q0;
                     Settings.Current.Scale = outNow ? sOut ?? s0 : s0;
+                    Graphics.Aa = outNow ? aOut ?? a0 : a0;
                     Graphics.Apply(Settings.Current, air, GetViewport(), scene);
                 }
+                if (flipped.Contains("interp")) SurvivorUnchained.View.Interp.On = on;
                 wasOut = outNow;
                 if (flipped.Contains("her") && scene.Player != null) scene.Player.Visible = on;
                 if (flipped.Contains("furshadow") && scene.Player != null)

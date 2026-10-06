@@ -929,16 +929,28 @@ public static class Vat
 
 /// <summary>
 /// One kind of creature, drawn as many times as there are of it this frame:
-/// a MultiMesh of its bake, filled from scratch every frame. The frame's
-/// bodies are written into one array and handed over in a single call: three
-/// calls into the engine for each body (its place, tint and clip) cost more
-/// than the rest of the crowd's frame.
+/// a MultiMesh of its bake, filled every frame. The frame's bodies are written
+/// into one array and handed over in a single call: three calls into the
+/// engine for each body (its place, tint and clip) cost more than the rest of
+/// the crowd's frame.
+///
+/// Each body keeps its own slot from frame to frame (by its key: the same for
+/// a creature living and for its body lying after). The renderer finds where a
+/// body was last frame in its slot's last contents, to know how it moved (the
+/// motion vectors the temporal smoothing follows). Filled in order, as it was,
+/// a death early in the list moved every later body down a slot, and each was
+/// smeared from its neighbour's place for that frame: in a horde, every frame.
 /// </summary>
 public partial class VatCrowd : MultiMeshInstance3D
 {
     public readonly VatAsset Asset;
-    int count, capacity, shown;
+    int capacity, top, shown, frame, anon;
     float[] buffer = Array.Empty<float>();
+    /// <summary>Each slot's body, the frame it was last drawn and the frame it was let go.</summary>
+    long[] slotKey = Array.Empty<long>();
+    int[] drawnAt = Array.Empty<int>(), freedAt = Array.Empty<int>();
+    readonly Dictionary<long, int> slotOf = new();
+    const long Empty = long.MinValue;
     /// <summary>A body's floats: its transform (12), colour (4) and custom data (4), as Godot lays a MultiMesh's buffer out.</summary>
     const int Stride = 20;
 
@@ -955,9 +967,14 @@ public partial class VatCrowd : MultiMeshInstance3D
 
     void Grow(int n)
     {
+        int was = capacity;
         capacity = n;
-        // Keep what is already placed this frame.
+        // Keep what is already placed this frame, and every body's slot.
         Array.Resize(ref buffer, n * Stride);
+        Array.Resize(ref slotKey, n);
+        Array.Resize(ref drawnAt, n);
+        Array.Resize(ref freedAt, n);
+        for (int i = was; i < n; i++) { slotKey[i] = Empty; freedAt[i] = int.MinValue / 2; }
         Multimesh = new MultiMesh
         {
             TransformFormat = MultiMesh.TransformFormatEnum.Transform3D, UseColors = true, UseCustomData = true,
@@ -965,13 +982,35 @@ public partial class VatCrowd : MultiMeshInstance3D
         };
     }
 
-    public void Begin() => count = 0;
+    public void Begin() { frame++; anon = 0; }
 
-    /// <summary>One body this frame, `t` seconds into its role's clip.</summary>
-    public void Push(Transform3D at, string role, double t, float flash, float dissolve, float frozen, float burning, Color tint, float glow)
+    /// <summary>A free slot for a new body: the lowest, and none let go this frame or the last (its
+    /// old body's place would be taken for where the new one came from).</summary>
+    int Take()
     {
-        if (count >= capacity) Grow(capacity * 2);
-        int o = count++ * Stride;
+        for (int i = 0; i < capacity; i++)
+            if (slotKey[i] == Empty && freedAt[i] < frame - 1) return i;
+        int s = capacity;
+        Grow(capacity * 2);
+        return s;
+    }
+
+    /// <summary>A body with no lasting name (a herd's spirit wolves): a slot for this frame only.</summary>
+    public void Push(Transform3D at, string role, double t, float flash, float dissolve, float frozen, float burning, Color tint, float glow) =>
+        Push(long.MaxValue - anon++, at, role, t, flash, dissolve, frozen, burning, tint, glow);
+
+    /// <summary>One body this frame (`key`: who it is, the same every frame), `t` seconds into its role's clip.</summary>
+    public void Push(long key, Transform3D at, string role, double t, float flash, float dissolve, float frozen, float burning, Color tint, float glow)
+    {
+        if (!slotOf.TryGetValue(key, out int s))
+        {
+            s = Take();
+            slotOf[key] = s;
+            slotKey[s] = key;
+        }
+        drawnAt[s] = frame;
+        if (s >= top) top = s + 1;
+        int o = s * Stride;
         var (f0, f1, blend) = Asset.Frame(role, t);
         static int Q(float v, int max) => (int)Math.Round(Math.Clamp(v, 0, 1) * max);
         int word = Q(flash, 255) | Q(dissolve, 255) << 8 | Q(frozen, 15) << 16 | Q(burning, 15) << 20;
@@ -987,8 +1026,19 @@ public partial class VatCrowd : MultiMeshInstance3D
     public void End()
     {
         // Nothing of this kind now or last frame: nothing to send.
-        if (count == 0 && shown == 0) return;
+        if (top == 0 && shown == 0) return;
+        // A body not drawn this frame is gone: its slot is emptied (a body of no size draws nothing)
+        // and let go.
+        for (int s = 0; s < top; s++)
+        {
+            if (drawnAt[s] == frame || slotKey[s] == Empty) continue;
+            slotOf.Remove(slotKey[s]);
+            slotKey[s] = Empty;
+            freedAt[s] = frame;
+            Array.Clear(buffer, s * Stride, Stride);
+        }
+        while (top > 0 && slotKey[top - 1] == Empty) top--;
         RenderingServer.MultimeshSetBuffer(Multimesh.GetRid(), new ReadOnlySpan<float>(buffer, 0, capacity * Stride));
-        Multimesh.VisibleInstanceCount = shown = count;
+        Multimesh.VisibleInstanceCount = shown = top;
     }
 }

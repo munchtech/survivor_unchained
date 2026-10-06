@@ -60,6 +60,10 @@ public partial class WorldScene : Node3D, IZoneLook
     const double Fall = 2.2;
     List<CombatEvent> frameEvents = new();
     public const double Step = 1.0 / 60;
+    /// <summary>Where what moves is drawn, between the steps (Interp): everything drawn reads it, not the fight's own places.</summary>
+    public readonly Interp Drawn = new();
+    /// <summary>Where she is drawn this frame (on the ground; Interp).</summary>
+    public Vector3 HerDrawn { get; private set; }
 
     public WorldScene(ZoneData data, FollowCamera cam)
     {
@@ -135,6 +139,8 @@ public partial class WorldScene : Node3D, IZoneLook
             while (acc >= Step)
             {
                 acc -= Step;
+                // (Before the frame's last step: what is drawn is placed from here toward its end.)
+                if (acc < Step) Drawn.Before(b);
                 var (mx, mz) = Move();
                 // A press a little early is kept for 120 ms and fires the moment it can, in the
                 // direction held then (S-05): the dash is where timing lives, and a dropped press
@@ -166,6 +172,7 @@ public partial class WorldScene : Node3D, IZoneLook
                 }
             }
         }
+        Drawn.After(acc, Step);
         Draw(dt, fightDt);
         if (frameEvents.Count > 0)
         {
@@ -210,25 +217,30 @@ public partial class WorldScene : Node3D, IZoneLook
         if (b != null)
         {
             var p = b.Player;
-            float y = (float)HeightAt(p.X, p.Z);
+            // Where she is drawn: between the last two steps (Interp), as everything else is.
+            var (hx, hz, leap) = Drawn.Her(b);
+            float y = (float)HeightAt(hx, hz);
+            HerDrawn = new Vector3((float)hx, y, (float)hz);
             // The living's own clock: the fight's, all but stopped while the world is held.
             double viewDt = fightDt * (1 - 0.97 * Math.Clamp(Hold, 0, 1));
             viewTime += viewDt;
             Perf.Begin(Perf.Part.Player);
-            Player?.Update(b, viewDt, viewTime, HeightAt);
+            Player?.Update(b, hx, hz, leap, viewDt, viewTime, HeightAt);
             Perf.End(Perf.Part.Player);
-            if (Showcase == null && !CameraHeld) cam.Update((float)dt, (float)p.X, y, (float)p.Z, (float)p.Vx, (float)p.Vz);
+            if (Showcase == null && !CameraHeld) cam.Update((float)dt, (float)hx, y, (float)hz, (float)p.Vx, (float)p.Vz);
             Perf.Begin(Perf.Part.Crowd);
             Crowd.Still = Hold;
+            Crowd.Drawn = Drawn;
             Crowd.Update(b, HeightAt, viewTime);
             Perf.End(Perf.Part.Crowd);
-            Fx.PlayerPos = new Vector3((float)p.X, y, (float)p.Z);
+            Fx.PlayerPos = HerDrawn;
+            Fx.Drawn = Drawn;
             Perf.Begin(Perf.Part.Fx);
             Fx.Update(b, fightDt, fightTime);
             Perf.End(Perf.Part.Fx);
-            RenderingServer.GlobalShaderParameterSet(SurvivorParam, new Vector4((float)p.X, y + 1.1f, (float)p.Z, 1));
+            RenderingServer.GlobalShaderParameterSet(SurvivorParam, new Vector4((float)hx, y + 1.1f, (float)hz, 1));
             // The meadow grows round the survivor as they go.
-            var at = new Vector2((float)p.X, (float)p.Z);
+            var at = new Vector2((float)hx, (float)hz);
             View.FollowGrass(at);
             // Taking a blow bruises the edges of the picture; so does being low.
             damageFlash = Math.Max(0, damageFlash - dt * 2.2);

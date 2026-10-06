@@ -33,8 +33,16 @@ public static class KitLook
         public static readonly Look Plain = new(0, null, null, 0, 0);
     }
 
-    static Shader? solid, twoSided;
+    static Shader? solid, twoSided, solidRim, twoSidedRim;
     static readonly Dictionary<string, ShaderMaterial> cache = new();
+
+    /// <summary>The see-through window's feathered rim (shaders/kit.gdshader): the same code
+    /// with REVEAL defined, blended, drawn as each kit material's next pass.</summary>
+    static Shader Rim(Shader of) => new()
+    {
+        Code = of.Code.Replace("shader_type spatial;", "shader_type spatial;\n#define REVEAL")
+            .Replace("render_mode ", "render_mode blend_mix, depth_draw_never, "),
+    };
 
     /// <summary>A kit material as the web game shades it.</summary>
     /// <param name="foot">Darker toward the piece's foot (the village kit
@@ -66,6 +74,17 @@ public static class KitLook
         m.SetShaderParameter("moss", foliage ? 0f : look.Moss);
         m.SetShaderParameter("jitter", foliage ? 0.14f : 0.08f);
         m.SetShaderParameter("foot", foot);
+        // The window's rim, drawn again over what the piece's own pass left open: every
+        // parameter the same, so the rim is the piece itself, fading.
+        solidRim ??= Rim(solid);
+        twoSidedRim ??= Rim(twoSided);
+        var rim = new ShaderMaterial { Shader = m.Shader == solid ? solidRim : twoSidedRim };
+        foreach (var u in m.Shader.GetShaderUniformList())
+        {
+            var name = (string)u.AsGodotDictionary()["name"];
+            rim.SetShaderParameter(name, m.GetShaderParameter(name));
+        }
+        m.NextPass = rim;
         cache[key] = m;
         return m;
     }

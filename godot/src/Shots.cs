@@ -115,7 +115,7 @@ public partial class Shots : Node
             DirAccess.MakeDirRecursiveAbsolute(d);
             var f = $"{d}/{name}_{tag}_{k}.png";
             GetViewport().GetTexture().GetImage().SavePng(f);
-            GD.Print($"saved {f} at {time:0.00}s");
+            GD.Print($"saved {f} at {time:0.00}s{HerAt()}");
         }
         if (until > 0 && time >= until) { GetTree().Quit(); return; }
         if (taken >= count) return;
@@ -125,12 +125,16 @@ public partial class Shots : Node
         DirAccess.MakeDirRecursiveAbsolute(dir);
         var file = every > 0 ? $"{dir}/{name}_{taken:00}.png" : $"{dir}/{name}.png";
         GetViewport().GetTexture().GetImage().SavePng(file);
-        GD.Print($"saved {file} at {time:0.00}s");
+        GD.Print($"saved {file} at {time:0.00}s{HerAt()}");
         // --navcheck: the open screen's focus routes walked as the picture is taken.
         if (Args.Has("navcheck")) Audit(GetTree().Root);
         taken++;
         if (taken >= count && until <= 0) GetTree().Quit();
     }
+
+    /// <summary>Where her chest is on the screen this frame (the game sets it while pictures are taken), for crops of her.</summary>
+    public static Vector2? Her;
+    static string HerAt() => Her is { } h ? $" her {h.X:0} {h.Y:0}" : "";
 
     static string Safe(string s)
     {
