@@ -72,9 +72,9 @@ Holloway, Brannoc and Sella, in that order.
 <!-- PACKETS -->
 | Character | Takes | Characters | Held |
 |---|---|---|---|
-| [The narrator](narrator.md) | 350 | 34,195 | 350 |
+| [The narrator](narrator.md) | 353 | 34,378 | 353 |
 | [Sella](sella.md) | 97 | 9,939 |  |
-| [Captain Holloway](holloway.md) | 108 | 9,684 | 108 |
+| [Captain Holloway](holloway.md) | 109 | 9,702 | 109 |
 | [Vonnra Ash-of-Morrow](vonnra.md) | 103 | 8,907 | 103 |
 | [Chid](chid.md) | 75 | 8,438 | 2 |
 | [Harlan Coyle](harlan.md) | 63 | 7,229 | 63 |

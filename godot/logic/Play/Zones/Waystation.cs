@@ -451,6 +451,14 @@ public sealed class Waystation : ZoneRuntime
             return;
         }
         G.AnnounceZone();
+        // A scene the story set for a morning or a dusk she spent elsewhere plays when she comes
+        // into the town on that side of the day (Journey.TakeScene).
+        bool evening = W.Time is TimeOfDay.Dusk or TimeOfDay.Night;
+        if (G.Journey.SceneWaiting(evening))
+        {
+            G.After(3.0, () => { if (G.Journey.TakeScene(evening) is { } scene) G.Talk(scene); });
+            return;
+        }
         if (!F("maps.told").Truthy && F("prologue.done").Truthy)
         {
             // Once the town knows you: someone new on the Old Road, selling maps.

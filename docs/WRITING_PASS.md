@@ -2215,3 +2215,62 @@ verbatim. Anything not named stands.
 - **Later, when the items are on the integration branch:** Holloway sees
   Corran's sword (`corrans_sword`): "(He looks at the sword a long time.)
   That's Corran's. ...Keep it oiled. He did."
+
+## 26. The approved rewrite, Act 1 (6 October; `docs/story/TREATMENT.md` §0)
+
+The owner's choices and the editor's notes, in the data. The rules a later edit
+must keep are held by `godot/tests/StoryRewriteTests.cs`.
+
+**Scenes on the trunk.** A morning or dusk scene is a conversation the town
+plays by itself (`Journey.TakeScene`): an overnight rule sets `scene.morning`
+or `scene.dusk`, and the host plays it at that turn of the clock in the
+Waystation, after a night at the inn, or when she next comes into the town on
+that side of the day (`Waystation.Begin`). One waits behind another. A
+person's own conversation can be a scene ("brannoc:dusk_call"): `scene.now`
+opens it at that node, and it is dropped if the moment has passed.
+
+| Rule | When | Scene |
+|---|---|---|
+| `holloway.waited` | the morning after her first night fight | `scene_gate_dawn` |
+| `holloway.count` | a later morning after a night fight, day 3 on | `scene_in_my_count` |
+| `holloway.knocking` | the first dusk from day 3 | `scene_knocking` (fact `holloway.confessed`) |
+| `maeca.heard` | the morning after the knocking | `scene_did_he` (fact `maeca.told_lid`: told, kept, silent) |
+| `maeca.cup` | that dusk | `scene_his_cup` (fact `holloway.cup_seen`) |
+| `brannoc.forge` | the first dusk from day 2, if he has not asked | `brannoc:dusk_call` |
+
+**Reports.** `decoy.rope` or `decoy.ledger` (the morning after her cup);
+`sallow.rider` (day 5); `ford.thanks` (day 2); `jory.home` ("Three in!");
+`nell.burial_with` (she walked the road with him: his hand round the light) or
+`nell.burial`; `brannoc.road_dark` (the next morning: the road dark, the hammer
+one-handed); `dawn.voice` (day 3), `dawn.word` (day 6).
+
+**New facts.** `holloway.confessed`, `holloway.cup_seen`, `maeca.told_lid`,
+`nell.road` (`with` / `alone`), `brannoc.knew_iron` (seed: Act 2's buyer),
+`brannoc.road_dark`, `mother.told`, `mother.word` (seed: Act 2's dawn),
+`warden.answer` (`nodded` / `silent`), `dusk.heard`, `scene.morning`,
+`scene.dusk`, `scene.now`.
+
+**Lines cut or changed** (each in `docs/voice/RERECORD.md` once its voice is
+signed off): every "Barefoot" (`maeca.first`, `maeca.barefoot`,
+`maeca.signed`, `sella.say_maeca`, the name in `npcs.json`, the journal,
+`redcowl`'s `once:barefoot` gate, Verge's plate); `holloway.ashford` (now the
+sober report), `holloway.maeca` (she tracks for him; he pays her);
+`holloway.post2` ("So somebody had ember, and irons to burn it in. And a
+reason."); `harlan.knew` (no "I did."); `pell.t_pell` (the lid, barred from
+the top; no boots); the fortune's `f_self` (cut: its "You have already died on
+this road" was Act 2's turn); `f_ember` and `f_pell` folded into `f_past` (the
+reading that mattered most); the duplicated calling remarks rewritten from
+each speaker's trade; "Don't tell" left with Sella.
+
+**Brannoc.** C07 reordered: `nell` → `nell_ditch` → (`nell_gone` | `nell_risen`
+→ `nell_quick` | `nell_slow`) → `nell_iron` (his eyes on the iron at her
+belt) → `nell_hand` or `nell_told` → `nell_letters` → `nell_thought` →
+`nell_shut` → `nell_lantern` ("You know the place.": `I'll show you` /
+`Not tonight`). His pride: the first meeting's "Irons on it. Mine. Ten. Best
+I've done.", and two barks while `nell.told` is unset.
+
+**The mother.** `rook.mother` → `mother2` ("She went in her sleep, pet.") →
+`mother_where` | `mother_short` | `mother_quiet` → `mother_room` (the ring on
+the nail; "It's been free a week."). The grave: `Waystation.cs`
+`mother_grave`. Chid's `names` → `names_write`. The quest `home` (mystery):
+`rook`, `grave`, `word`.

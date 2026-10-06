@@ -121,24 +121,50 @@ dusk, before the water (hood up, back to the camera: it must read as anyone);
 creation gives them a face. That night the Morrow's light in them let them do
 what no living traveller had: kill the Warden.
 
-**The survivor's mother.** Whatever their background, the survivor was coming
-home. Their mother lived in the valley (on a farm at the Verge's edge, for a
-hunter, and Rook knew her; elsewhere in Thornhollow for the rest: the
-background says where the survivor went, not where they came from). She is
-buried in the Quiet Garden behind the shrine, a week before Nell, under a
-plain wooden marker that nobody points out (C08); Rook, if she knew her, says
-nothing. The letter that brought the survivor home is in her coat in C01, the
-ink run to blue water. A letter
-found the survivor on the road that she was failing, and they came as fast as
-they could, and camped at the Low Ford at dusk a day short. She had died the
-week before. The survivor does not know. She is in the Morrow. Hers is the face
-that is not quite where they left it at dawn; hers is the name Chid asks for
-and the name the survivor says over and over in Sella's bed; and at the bottom
-of the stair she is saying the survivor's name, the way she did when they were
-small and late in from the yard. (The player may name her at creation; if not,
-the game never names her, and "Mam?" is enough.) They do not know they are dead. The town half suspects ("You were
-cold when they brought you in... Then you weren't"); the old orders would know
-at a glance; one person arranged it.
+**The survivor's mother** (the approved rewrite, `docs/story/TREATMENT.md`
+§0 and §3.3, §3.4). Whatever their background, the survivor was coming home.
+Their mother lived in the valley. When she knew she was failing she came down
+to the Waystation to be near the ford road, and took Rook's back room; she
+paid in a ring (it hangs on the nail behind Rook's bar, among the keys). Her
+hands were bad, so Rook wrote her last letter for her: *Come home by the Low
+Ford. I'll be at the water with a lamp, so you'll see me.* That is the letter
+in the survivor's coat in C01, its ink run to blue water. Rook, paid by Vonnra
+to report the road, reported that a traveller was expected on it; Vonnra paid
+her double, and kept the irons lit all that week for the traveller she had
+been told to expect. Every evening the mother went down to the north bank with
+a lamp. On the seventh she went to the water's edge, and the Warden took her:
+the twenty-sixth line in the ledger, written in Vonnra's register as "Rook's
+lodger." She rose with the drowned, and stood on the far bank facing up the
+road her child would come by, holding a lamp that had gone out. On the first
+night the survivor cut her down to reach the water (the prologue's path, every
+player); the narrator says nothing at the water's edge. Chid buried her in the
+Quiet Garden behind the shrine, under a plain marker with no name.
+- **Her word.** At dusk, when the survivor was small, she put the lamp in the
+  window and called from the door: "Lamp's lit, Spark. Stay where it reaches."
+  (The Order's evening call, made small and kept in one family; the name is
+  hers.) The first dawn quotes it; the dawns take it away, a piece at a time
+  (day 3, "Her voice is going the way her face went. You still have the
+  word."; Act 2, "Somebody used to call you something at dusk. One short
+  word. It was yours."; then nothing). On day 3, at Chid's asking, the
+  survivor writes it in her journal, so the player can see it in her own hand
+  after it means nothing to her.
+- **The kind lie.** On day 1, asked, Rook says: "She went in her sleep, pet. A
+  week since." The back room "has been free a week". The earth on the grave is
+  dark and has not settled (the one fair contradiction). Act 2's last scene
+  turns it (C32, Rook's kitchen).
+- **She is the narrator** (twist A, Act 3). When the survivor drowned, her
+  light came back up muddled with one other: her mother's, a week down, who
+  knew her and would not let go. The voice that has told the player
+  everything, "You get up.", is hers. She says what happens and what can be
+  seen, never what it means, because an Unchained who remembers too much
+  stops: the survivor would have sat down in the road to wait for her. Every
+  night's ember crowds her out (rule 5), so she says less from Act 2's turn
+  on. At the bottom of the stair her voice leaves the player and goes down.
+  (The player may name her at creation; if not, the game never names her, and
+  "Mam?" is enough.)
+They do not know they are dead. The town half suspects ("You were cold when
+they brought you in... Then you weren't"); the old orders would know at a
+glance; one person arranged it.
 
 **Why the lamps were lit.** The chain is failing. Ten years ago the ground
 under **Ashford**, a mining town up the valley, gave way into the Morrow's
@@ -157,10 +183,15 @@ one of them down; the smith's girl was the twenty-fifth. The drowned rose mindle
 called Wat; Brannoc's daughter Nell), until one night a light went out at the
 crossing, and then another came on. The survivor is her answer.
 
-**What the survivor did first.** Killing the Ford-Warden loosed its heart, one
-of the seven, and Grimtunnel carried it down the hole. The prologue's victory
-was the chain's first break. The tremors start there. Vonnra had meant the
-heart to stay in the ford: "I am not angry. I am arranging."
+**What the survivor did first.** Beaten, the Warden would have held his lamp out
+of the water until the river ran dry, and risen again at dusk. He asked "Is it
+morning?", and the survivor nodded, or said nothing (the game's first choice);
+either way he let go. The lamp went into the water, the heart came up, and
+Grimtunnel carried it down the hole. The prologue's victory, and her mercy,
+were the chain's first break. The tremors start there. Vonnra had meant the
+heart to stay in the ford: "I am not angry. I am arranging." At the fortune
+she says both halves: "You stopped the drowning, traveller. You also did
+this." (Act 1's twist.)
 
 ## 2. The shape of the game
 
@@ -285,10 +316,10 @@ What we do instead (C01, the prologue's captions, C09):
 | Nell | Brannoc's girl, safe at Low Kiln | Drowned at the ford a fortnight before the survivor; rose in the ditch; the survivor put her down | Act 1 (if Brannoc is told), or Act 2 |
 | Wat | A carter | Drowned on toll work, the "quick crossing" | Act 1 hint, Act 3 |
 | Corran, Dannet | Watch deserters | Corran died at his post; Dannet, his runner, went to the Toll Tower first and was sent back down the road at night | Act 1 (Corran), Act 2 (Dannet's body, a Toll Tower pass on it) |
-| Captain Holloway | A tired honest captain | Ashford's quartermaster who signed for boots that never came; holds a letter from the north asking for "the one from the ford" | Act 2 |
-| Maeca Barefoot | A hunter with a theory | Last of the Ashford garrison; the Pack saved her; half the Kerchiefs are her old neighbours | Act 1 (the Pack, if her lover), Act 2 |
+| Captain Holloway | A drunk who counts; the town's protector | Ashford's quartermaster, who held the shaft-head the night the ground went, and with the lamp in his eyes took the living on the ladder for the dead, and dropped the lid on ninety-one counted. His lid made the dead he feared. Holds a letter from Sallow asking for "the one from the ford", and his answer, "No.", never sent | Act 1 (what he did, to the player, at the gate), Act 2 (that it was a mistake, and who was under it) |
+| Maeca | His kindest friend: she walks him home | Was on the ladder, the next hand up: number ninety-two. Three days below the lid; finished the wounded, and the boy; the Pack found her at a cave mouth. Has waited ten years | Act 2 (the rope) |
 | Harlan Coyle | The grieving uncle | Has sold the Dig its blasting ember for two years | Act 1 (to the player), Act 2 (to everyone) |
-| Pell Varrow | The villain of the caravan | Paid to stop the ember reaching the Dig, and to ruin Coyle; holds the numbers that say when the chain breaks, and his sister's letter about the boots | Act 1 (why), Act 2 (the numbers, the letter) |
+| Pell Varrow | The villain of the caravan | Paid to stop the ember reaching the Dig, and to ruin Coyle; holds the numbers that say when the chain breaks; knows who barred the lid at Ashford, and is waiting for a price | Act 1 (why; that he knows), Act 2 (the numbers) |
 | Redcowl | A bandit with cages | Dunstan Cutwell, Rav's brother, leader of Ashford's dispossessed; the closest thing to a resistance | Act 1 (Ashford, unsaid; his name, if he dies), Act 2 |
 | Rav Cutwell | The defector, the outcast's friend | Redcowl's brother; gave him the night the wagons would come; stole the clerk's key himself | Act 1 (the brother, if Redcowl dies; "the little bird"), Act 2 |
 | Brannoc | A smith of few words | Forged the irons that woke the Warden that drowned his daughter | Act 1 |
@@ -302,7 +333,8 @@ What we do instead (C01, the prologue's captions, C09):
 | Tam Penhale | A farm boy nobody believes | Right, every time | Act 2 (the knocking) |
 | The Morrow | A thing praying under the Verge | Every death in the valley, held. It prays to be let die, which is its dead asking to be let go; close to, the praying is names. The chain has kept it alive and harvested for two thousand years. | Act 3 |
 | Ember | A mineral; the morning; the Morrow's pain | The held dead, leaking up | Act 3 (seeded from the first night) |
-| The survivor's mother | Someone the survivor cannot quite picture | Dead the week before the ford; in the Morrow | Act 3 (the bottom of the stair) |
+| The survivor's mother | Died in her sleep, a week before (Rook's kind lie) | Drowned at the Low Ford waiting with a lamp; rose; the survivor cut her down on the first night | Act 2's end (Rook's kitchen) |
+| The narrator | The game's voice: nobody | The survivor's mother, in her child's light | Act 3 (the bottom of the stair) |
 
 ## 4. Factions and their true aims
 
@@ -332,23 +364,45 @@ None of them says it.
   she turns, and the Last Lamp becomes the place the town hides its own. *Ends:*
   keeps the inn through anything; the last lamp lit in every ending but the
   break, where she lights a candle instead.
-- **Captain Holloway.** *Face:* a tired, honest captain. *Secret:* he was the
-  Ashford garrison's quartermaster. When the Fall came the Watch command turned
-  the relief wagons back, and Holloway signed for the boots and supplies as
-  delivered, to cover his commander. The garrison held the cave mouths
-  barefoot and died. Maeca is the last of it. He also holds a letter from
-  Sallow asking for "the one from the ford" (seen face down on his table in
-  Act 1). *Arc:* Act 2 makes him choose between the letter's money (his men
-  unpaid a year) and the survivor, and makes the boots come out. *Ends:* dies
-  holding the north gate against the Vigil; hands the survivor over and is
-  killed by Maeca; confesses, is forgiven by nobody, and keeps the gate anyway;
-  hanged by Redcowl's people.
-- **Maeca Barefoot.** *Face:* a hunter with a theory. *Secret:* the Pack saved
-  her life after Ashford, which is why she has never hunted a wolf. Half the
-  Kerchiefs are her old neighbours ("Fed some of them, once. Buried more.").
-  *Arc:* the boots. *Ends:* leaves with the Pack into the deep wood; takes the
-  Watch after Holloway; dies at the breakthrough's edge if the Pack is gone and
-  she has nothing left to hold; the survivor's lover, at the end, if both live.
+- **Captain Holloway** (the approved rewrite, `TREATMENT.md` §0 and §4). *Face:*
+  a drunk who counts the Waystation in at the gate every night and will not bar
+  it till the count is right ("Eleven of us, and the cat. I count the cat.").
+  *Secret:* ten years ago he was the Ashford garrison's quartermaster. The night
+  the lower town went into the ground, half the garrison held the cave mouths on
+  the hill and half went down the main shaft on the ladders. He held the
+  shaft-head: the windlass, the lamp, the iron lid. He counted them up with the
+  lamp in his eyes. At ninety-one he looked down and saw the dead climbing under
+  the last of the living, four hundred asleep behind him, and dropped the lid
+  and barred it and sat on it. They knocked for three days. What he saw were
+  the living from the lower workings, grey with slurry, too far gone to call
+  out; three days in the dark near ember made them the dead he feared. He wrote
+  the shaft party down with the hill party, "at the cave mouths", so the widows
+  were paid, and has paid their shortfall out of his own pay since. He never
+  learns it was a mistake; Maeca says it once, after. He also holds Sallow's
+  letter asking for "the one from the ford", and his answer, "No.", written and
+  never sent. *Arc:* the player loves him (four trunk scenes in Act 1), learns
+  what he did from him, drunk, at the gate, and goes on loving him; at the top
+  of Act 2 he goes down the hole at the Penhale farm drunk and shaking, counts
+  them up the rope, laughs for the first time, and is hauled up by Maeca and
+  the survivor; "Count's right."; she cuts the rope. *Fixed:* he dies at the
+  rope on every road. He rises at his own gate on the fourth dusk, and the
+  survivor lays him down. He never says sorry; it is written once in his
+  daybook.
+- **Maeca.** Just Maeca. *Face:* a hunter who tracks for the Watch ("before you
+  ask. Not wolves."), paid out of Holloway's pocket; his kindest friend, who
+  walks him home and buys his drink with his own money. *Secret:* she left her
+  post at the cave mouths and went down the shaft after the boy she was sleeping
+  with; she was on the ladder, the next hand up, number ninety-two, with her
+  face in the shaft-head lamp, when the lid came down. Three days below: she
+  finished the wounded before they could rise; on the third day she followed the
+  air up an old wolf-run with the boy, and finished him at the cave mouth, and an
+  old grey wolf lay down across the way in. The wet stone took two toes. Her
+  three words about Ashford are "The cave mouths.": her post, and his report's
+  lie. Half the Kerchiefs are her old neighbours ("Fed some of them, once.
+  Buried more."). *Arc:* every kindness is true and is a hunter waiting; told of
+  the lid, "...Did he."; at the rope, "Ninety-two." *Ends:* leaves with the Pack,
+  if they will have her; takes the Watch, and counts them in at the war in his
+  coat; dies at the breakthrough's edge.
 - **Old Wenna.** *Face:* a rude herbalist. *Secret:* she nursed the fever year,
   knows ember sickness by smell, and made the blightward mask for it. She has
   suspected for a decade that the fever came out of the ground. *Arc:* Act 2's
@@ -361,15 +415,25 @@ None of them says it.
   spared; his Pa alive or not; Tam grows up, and is right about that too.
 - **Brannoc.** *Face:* a smith of few words. *Secret:* he forged the Low
   Ford's new lamp-irons last winter for a buyer who paid in square coin and
-  never showed a face; ten of twelve were collected. He suspects whose coin.
+  never showed a face; ten of twelve were collected. He suspects whose coin. He
+  is proud of them: the one thing he talks about unasked ("Irons on it. Mine.
+  Ten. Best I've done."; "Girl's first new boots. Irons paid for 'em."; "Told
+  her: walk where it's lit. Nothing on that road you can't see.").
   *Arc:* his daughter Nell went south a fortnight before the survivor came up
   the road, with Wat the carter on toll work, and drowned at the ford, and rose
-  in the ditch, and the survivor put her down. Whether the survivor tells him
-  decides whether he forges the last two irons in Act 2 (and so whether a
-  second crossing is woken), and whether in Act 3 he makes the cage the
-  Warden's heart has to be carried in. *Ends:* breaks the last irons and hunts
-  the coin; forges them and learns too late; makes the heart's cage; never
-  works for the survivor again.
+  in the ditch, and the survivor put her down. From day 2 he asks, at dusk. On
+  the truth he holds his own iron, from the Warden's fist, and knows: "She'd
+  have thought I'd come for her." He puts out the last iron on the road with his
+  bare hand, buries her, and works one-handed after; he beats the last two irons
+  flat. On the lie ("I passed nobody", or "I didn't look") he goes on hoping
+  through Act 1, forges and sells the last two irons in Act 2, the Kiln Ford is
+  lit, and then Wat's grey mare comes up the south road with Nell's bundle, and
+  he sees the iron at her belt: "That's mine. ...You passed nobody." **The lie
+  costs his warmth, never play** (the owner): he works for her at the same
+  prices, commissions and masterworks as on the truth road, and talks to her as
+  if he hates her, or not at all. *Ends:* breaks the last irons and hunts the
+  coin; forges them and learns too late; makes the heart's cage (on the lie
+  road too, for what play needs, without a word to her).
 - **Harlan Coyle.** *Face:* the grieving uncle, the most sympathetic man in
   town. *Secret:* the Coyle Company has supplied the Dig's blasting ember for
   two years. He put Jory on the road with six crates he knew were bound for the
@@ -387,8 +451,9 @@ None of them says it.
   doing the wrong things for the right reason (and for profit, because he
   cannot help it). "I'm not a good man. I'm a careful one." He has two things
   Act 2 needs: the numbers (how much ember went into the hill, so how deep,
-  so which night the chain goes) and his sister's last letter, about the
-  garrison's boots "signed for full". *Ends:* keeps the evacuation ledger and
+  so which night the chain goes), and what he found at Ashford: the main
+  shaft's lid, barred from the top. He knows who barred it, and is a careful
+  man waiting for a price (the decoy, in red ink). *Ends:* keeps the evacuation ledger and
   saves the town by arithmetic; hangs; dies in Redcowl's cage; is never seen
   again.
 - **Rav Cutwell.** *Face:* the defector, the outcast's friend. *Secret:* Redcowl
@@ -485,8 +550,8 @@ has the reasoning.)
 |---|---|---|
 | Vonnra | Pride: she is the last of a line that kept the Legion's keys, and she cannot bear to be the one in whose time the chain broke. | "I am not angry. I am arranging." Her first feeling is for her arrangement. Act 3. |
 | Rook | She knew. Not all of it, but she watched the carters go down the south road and not come back, and took double for the survivor and asked nothing, because the Last Lamp was failing and she would not be the woman who lost Ashe's inn. Her Act 2 turn is a woman deciding she can no longer pretend, not one learning. | "Don't look like that, pet." Act 2. |
-| Holloway | The bible's own: he signed to cover his commander. Under it, nothing worse; the detail is that he still wears a garrison pair of boots. | His boots, seen, never mentioned. |
-| Maeca | At Ashford she finished the wounded who could not be carried, and one of them was a boy she had been sleeping with. The Pack is the only thing that saw it and did not look away. | Her romance's "I've lain with my ear to a lot of things to see if they'd live." Never said. |
+| Holloway | He saw what he was afraid of. The lamp was in his eyes, and he had the time it takes to breathe in, and he chose the four hundred; but he was also afraid, and the dead were what fear sees. | The roll at night: who each man left behind ("Abbot. Two bairns."). |
+| Maeca | Below the lid she finished the wounded before they could rise, and the last of them was the boy she had gone down for. She has never decided whether she keeps Holloway alive or keeps him. | Her romance's "I've lain with my ear to a lot of things to see if they'd live." Never said. |
 | Wenna | In the fever year there was not enough bitterroot, and she chose who got it; she was right about most, and wrong about Harlan's sister, whom she passed over for a man she liked better. She has never named the fever year's dead because one of the names is a decision. | Act 2's breakthrough, when she has to choose again. |
 | Harlan | He likes being the man who brings salt to the valley; the B.E. paid for the new sign over Coyle Trading; he has never once thought of the pipe-lads. | The sign. Act 2. |
 | Pell | He did not go up to Ashford after the Fall for his sister's books out of love; he went for her savings, and has counted ever since because counting is the only grief he can do. | Act 2, if asked the right way. |
@@ -524,11 +589,16 @@ One major turn an act, each a human choice, each planted at least twice, each
 said in one line, each landing on the debt to the dead. Fixed points the story
 never desecrates: Tam, Snib, Greymuzzle, and Rook's kitchen.
 
-| Act | Major | Minor |
-|---|---|---|
-| 1 | None: Nell, as written | — |
-| 2 | **Nell's boots** (Brannoc, above) | Keegan's mill-race; Wenna's choice; Jory and Ewan |
-| 3 | **Ember is the dead**: the player burned Nell, and hears her say "Da" | Chid's one line; "The smith's girl was the twenty-fifth." |
+Retired by the approved rewrite (the editor: "each said in one line" was the
+punch pulled in writing). Each act now has one devastation on the trunk,
+landed in full view, one twist, one elation and one laugh in its darkest
+stretch (`TREATMENT.md` §1):
+
+| Act | Devastation | Twist | Minor |
+|---|---|---|---|
+| 1 | **Brannoc knows**, his iron in his hands | **"You did this."** | Holloway's lid, told at the gate |
+| 2 | **Maeca cuts Holloway's rope** | **"Ninety-two."**, then **the woman with the lamp** | Keegan's mill-race; Wenna's choice; Harlan; what you are |
+| 3 | Her mother, found and lost; Chid at dawn | **The voice** | "Da", once, an echo |
 
 Rejected, and why: Vonnra choosing Nell (a third motive on one death, and it
 makes Nell a pawn); the survivor having taken toll work (it fights C01's
@@ -682,24 +752,28 @@ Each seed names the beat it pays (section 7 and 8). `WRITING_PASS.md` section
   binders sing it for longer than he admits to), and he moves up the bench for
   her though there is nobody else on it.
 
-**Ashford, the boots** (pays: Act 2, Holloway's letter and the boots)
-- `maeca.barefoot`, `maeca.signed`: boots signed for, never came; "Somebody
-  with a good hand and a ledger." Maeca never says "Ashford" on meeting, and
-  her plate says "Hunter, of the Hollow": the player hears the word from Rook
-  (`rook.valley`: "Don't ask Holloway about it. Don't ask Maeca."), Wenna and
-  Holloway first, and puts her boots and his count together themselves.
-- `holloway.maeca`, `holloway.ashford`: "I counted boots for the Ashford
-  garrison, once, and I was good at it."
-- `pell.t_pell`: his sister wrote the week before the Fall that the garrison's
-  boots "had come in short, and somebody had signed for them full". Where that
-  letter is in Act 2 depends on Pell's fate.
+**Ashford, the lid** (pays: Act 2, the rope; `TREATMENT.md` §4)
+- `maeca.watch`: Holloway pays her out of his own pocket; she buys his drink
+  with it. `maeca.ashford`: "The cave mouths." (her post; his report's lie).
+- `holloway.ashford` (sober): "That's the report." `holloway.roll` (night):
+  "Abbot. Two bairns. Ancell. His mam." `scene_knocking` (the first dusk after
+  the tremor, from day 4): the whole of it, in ledger syntax, with "Lamp in my
+  eyes." Fact `holloway.confessed`; his night bark "Ninety-one up."
+- `scene_gate_dawn`: Maeca's loaded crossbow across her knees over the sleeping
+  man, read as care; "That's your last." `scene_did_he`: "...Did he." (fact
+  `maeca.told_lid`). `scene_his_cup`: she fills his cup and sits with him.
+- The decoy: `decoy.rope` (a Kerchief: "a rope with the captain's name on it")
+  or `decoy.ledger` (Pell writing down every drink). `pell.t_pell`: the lid was
+  "barred from the top. Somebody barred it. I know who."
+- `sallow.rider`: a rider from the north, an hour in the Watch House; the
+  letter face down (`holloway.letter`). Act 2: his answer, "No."
 - `maeca.blind_morning` (romance): the Pack saved her after Ashford.
 - `maeca.cb_burned_roost`: "I was at Ashford." `maeca.kerchiefs`: "Fed some
   of them, once. Buried more."
 - `wenna.fever`: the fever year came the year after Ashford "went into the
   ground"; same smell as the slurry.
 - `redcowl.who`: "what's left when a town goes into the ground and the Watch
-  counts its boots and goes home". `redcowl.ashford`: say it once in his camp
+  writes it down and goes home". `redcowl.ashford`: say it once in his camp
   and he goes cold; fact `redcowl.ashford_said`.
 - `holloway.hub` (wolves at the gate): Aldo's wife is at Low Kiln.
 
@@ -1379,7 +1453,7 @@ All adults, all consenting; romance carries the intrigue.
   that, `maeca.hub` offers the Blind on any night while it lasts. *Reveals:*
   `maeca.blind_morning`, the first time: the Pack saved her after Ashford.
   *Costs:* everything, if Greymuzzle dies (`maeca.gone` names it); she will
-  learn who signed for the boots in Act 2, and you may be the one who tells her.
+  meet, in Act 2, the woman under the lid, and her hand is the one that pulls you up.
   Fact: `maeca.lover`.
 - **Keegan** (teased, not opened). `keegan.dinner`: chapter eleven,
   fraternisation, read four times. An Act 2 route, and a tragedy if it is
