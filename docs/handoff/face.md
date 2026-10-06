@@ -1,99 +1,108 @@
-# Handoff: the heroine's face, hair and creation's Look
+# Handoff: the heroine's face, hair and creation's Look (for v11)
 
-From agent a2f7b0f1283f6144a (took over from a6007bf07fd45ab0d at v8e).
-Read `docs/team/README.md`, `docs/team/RESUME.md`, then this page, then `docs/team/face.md`.
+From agent a7905c3e498df9528 (took over from a2f7b0f1283f6144a at v9b).
+Read `docs/team/README.md`, `docs/team/RESUME.md`, `docs/team/OWNER_NOTES.md` (the face's order and bar), then this page, then `docs/team/face.md`.
 
 ## The owner's words
-- "all of the pre made faces are kinda ugly"; "for premade faces generate beautiful ones with our local ai hookup".
-- "the customizations don't do enough to change".
-- The face must read at every in-game zoom except the farthest.
-- "face is doing a great job, keep up the work". "the face lead can keep improving till we run out of credits". The bar: "we are striving for perfection".
+- "we are striving for perfection". The bar for "perfect" (OWNER_NOTES, 5 October): at the Look close-up beside each face's reference, no "this is a render" tell; grain at least 0.9 of the photo's; tones and irises within a few per cent; no seams, bands or blobs; it holds at play distance.
+- The order: the face first (v10, v11...), then paints and sliders, then hair over many rounds.
+- "not seeing any face at long distance is tragic". The book frames her face. At play zoom she always has SOME face.
+- Freckles: "none is probably the preferred for most people but they are a fun rarity too"; "some of the presets can have freckles if they go with the reference".
 
 ## The brief
-- Keep improving her, and every preset face, at the Look close-up and at play zoom, in order of what most improves her. Each time a version is good enough to ship, tell the main session. It refits the outfits on this worktree's `tools/comfy/out/heroes/heroine_built.blend`, then merges. Any change to her head or body geometry, or to her normals, needs that refit. Paint and shader changes alone don't.
-- After a refit, rerun creation's portraits yourself on your branch (`heroine_paint.py brows`, then `creation_portraits.py --sex female`, then the Look shots), commit them and tell the main session.
-- The Look's light (`GameFront.PortraitLight`) ships as it is. Judge skin under `--rig-white` too, but ask the main session before changing the light.
+- Keep versioning her face until it clears the bar. Report honestly with numbers.
+- Any change to her head or body geometry, normals or body paint needs the main session's refit: it runs `heroine_outfits.py --body` on this worktree's `tools/comfy/out/heroes/heroine_built.blend`.
+- Paint in `head_tex`, shaders and C# need no refit.
+- After a refit, rerun creation's portraits (`portraits.ps1`) and the Look shots on your branch.
 - Rules:
   - Krea 2, TRELLIS 2 and MoGe-2 only.
   - Don't edit `heroine_outfits.py`.
   - Never commit `heroine.glb` or the outfits.
-  - Take turns with `tools/turn.py` (`gpu`, `blender`, `godot`).
-  - Batch shots and look once.
-  - British spelling.
+  - Don't commit the hair `.bin`/`.gltf` a rebuild re-exports unchanged (churn).
+  - Take turns with `tools/turn.py`.
+  - Batch your shots.
+  - Use British spelling.
   - Run `dotnet test` before every commit.
-  - At each milestone, commit, push and update the status page.
 
-## Done
-- **v9** (5094608d, merged): her lips meet again, because v7's `portrait-heroine.target` is back.
-- **Portraits** (3a60d682, merged): `creation_portraits.py` and `Portraits.cs` put each face on as `CreateLook.Choose` does: its `faceShape` key and painting, its skin and its eyes. Before that, all ten portraits were her own face.
-- **v9b, half done** (code committed; the main session has not refitted it). Her lips' white slivers at a turn are gone: `heroine_skin.gdshader` occludes her sheen by her AO (`SPECULAR *= smoothstep(0.45, 0.95, ao)`). They were the rim light on her lips' inner linings, not teeth; `teeth_probe2.py` sees no tooth from ±30 degrees yaw or ±20 pitch, any face. `heroine_head.py` joins her body's split normals along her middle (797 corners).
+## Done since v10 (on `worktree-agent-a7905c3e498df9528`)
+- **v10** (ba0797b4, refitted and merged at 6e1b272e):
+  - the v10 grain laid on all ten faces;
+  - her body takes her surface's own smooth normals, not the sculpt's faceted ones (the chest's shards);
+  - the graft smoothed down her middle (a crease and a fold under her throat);
+  - a skin light() with a soft, warm terminator;
+  - the cornea's sky reflection dimmed (`sky_wet`; it made the pupil-sized blob);
+  - creation's campfire taken off her face at the close-up (`ZoneView.LightNear`).
+- **The book** (4315e41c): Pack, Self and Arts frame her (`Overlay.BookFrame`, 28 deg, 3.9 m, 1.05 m; `--book-frame`). She turns to the camera and lifts her head (HeadTurn). Her face is about 80 px tall at 1080.
+- **v10b** (2eb5ff28, merged with the integration branch at bc8d2a38; **needs a refit for the body paint**):
+  - skin tones fitted per swatch (`People.HerToneFit`, linear factors, hers only);
+  - her hair copper `#7a4824` (`--hair-colour` tries others);
+  - her own brows dyed her hair's copper;
+  - no sandpaper grain laid into the body and graft paint (`heroine_head.py fill_in`);
+  - freckles as a layer: `heroine_freckles.py` writes the maps, the skin shader has `freckle_amount`, `Look.Freckles` sets it, and looks.json `faces[].freckles` holds each face's default (her own 0.3, Hard-won 0.25, Wildling 0.15, Fey 0.1, the rest 0);
+  - the portrait key 20 deg toward the camera (`Portraits.cs`, the main session's call).
+  - Before and after: `docs/team/face_sheets/v10b_face.jpg` and `v10b_neck_1to1.jpg`.
 
-## Next (worst first)
-1. **The throat band** (the portraits' dark vertical line down her throat and chest under their side key; the main session wants it gone before the portraits are merged again). Known:
-   - It comes with the key alone (`LIGHTS=1,0,0`), with the key's shadow off too, and is gone without the key.
-   - The NormalBuffer shows a step there.
-   - Joining her middle's split normals did not move it; nor did rounding her throat's normals across her middle (tried in `heroine_head.py`, reverted).
-   - Her throat's front is her head mesh down to her lower neck, then her body (`side_light.py` colours them).
-   - A clay render under a side light shows her upper chest's normals broken into faceted shards. These are the "pale patches on her upper chest" in the Look. Tell the main session, whose body it is.
-   - Next to try: the band in Blender under the portrait's exact light and camera (`side_light.py`, camera from her front at yaw -14); her head mesh's own neck normals (`normals_split_custom_set_from_vertices(hn)`); Godot's SSS (skin mode) at a terminator.
-   - Then rebuild (`build_v9.ps1 -rest`; the worktree's built blend still holds the reverted rounding), send the blend for one refit, and rerun the portraits on your branch (`portraits.ps1`) once it's refitted.
-2. **v10, skin grain.** The code is in `heroine_face.py`, committed with v9b.
-   - The fix: each view is split into broad colour, blended as before, and fine detail finer than `FACE_DETAIL_MM`, taken from the view that sees it most squarely (weights^6). `match` now cuts only the broad band's contrast. `FACE_DETAIL_GAIN` scales the detail.
-   - Her trial `quick_her.ps1 -gain 1.7 -mm 2.0` (shot q2) reaches about 0.87 of the portrait's grain at the mid scales (`fair_grain.py`).
-   - Run `lay_all.ps1 -gain 1.7 -mm 2.0`; it needs no GPU, because `FACE_LAY_ONLY` re-lays from the paintings in each `paint_<id>` folder. Then `build_v9.ps1 -rest`, `shots_v8.ps1 -tag v10 -nocal` and `shots_white.ps1 -tag v10`.
-3. **Preset tones.** Run `tone_fit.py v10` with the facefit python on the white-rig shots. It prints the factor each skin needs and new looks.json swatch colours: un-eased for Rose, Warm and Brown, and her own tone (`People.SkinTone`) for Fair.
-   - Under the white rig, Sunborn needs (0.88, 0.73, 0.59) in linear light; she is lighter and greyer than her portrait.
-   - Her own Fair is about 12% redder in R/G than her portrait, even under white light.
-   - Swatches change for every face that shares them, and the beads show them.
-4. **Hair, broad strokes.** The atlas's strands are under a texel wide, while a card is 256 texels across 1.2 to 4 cm. At the close-up about 3.3 texels fall to a pixel, so each card averages flat. The plan, in `heroine_hair.py draw_atlas`:
-   - Group each column's strands into wisps 1 to 3 mm wide, with a shared sway, a shade and an id per wisp, and thinner gaps between wisps.
-   - Run the hair with the `atlas` argument to redraw it.
-   - Also measure her default "as it grew" red (the shader's `colour` 0.56, 0.17, 0.07) against her_23's copper. It reads blood-red beside the portrait.
-5. **Eyes.**
-   - The key's catchlight is a white blob as big as her pupil (cornea `wet_rough` 0.035, a big spot light); the portrait's is small and crisp. Try `--eyeparam wet_rough=...`.
-   - Sloe and peat are a little dark.
-6. **Brows** read faint and grey beside her_23's copper brows. They are painted from the reference, and `heroine_paint.py brows` dyes them.
-7. A pale wedge under her jaw at a turn. Behind her neck, the Tail reads as a dark shape in front view; it is the tail, not a fault.
-
-## Measuring (scripts in the scratchpad's `face6/`; inputs in `face4/`; run the measures with `%LOCALAPPDATA%\facefit\.venv\Scripts\python.exe`)
-- `fair_grain.py`: grain with every face scaled to 380 px tall. `skin_sample.py`'s grain is relative to picture height, so a 1536 portrait shows grain a 1080p face can't.
-  - Portrait: 0.021 / 0.033 / 0.051 at s0.8 / s1.6 / s3.2.
-  - v9: 0.011 / 0.022 / 0.037.
-  - q2: 0.014 / 0.029 / 0.047.
-- `same_size.py`: faces side by side at one size.
-- `skin_ratio.py TAG`: each preset's skin against hers, beside the same ratio for the portraits.
-- `tone_fit.py TAG`: the new tones.
-- `teeth_probe2.py`: the whole mouth, every face, many views.
-- `seam_probe.py`: the normals along her middle.
-- `clay_views.py`: clay renders. `uv_front.py`: a texture seen unlit from the front.
-- `build_v9.ps1 -unpainted|-paint|-rest`, `quick_her.ps1` (her paint re-laid, head, shots), `lay_all.ps1`, `shots_v8.ps1`, `shots_white.ps1`, `portraits.ps1` (import, portraits, Look shots).
-- Shot flags: `--skinparam`, `--rig-white`, `--no-taa`, `--mipbias`, plus the older `--open-eyes`, `--unshaded`, `--debugdraw`, `--eyeparam`, `--rig`.
+## Open (worst first)
+1. **The v10b refit**, then the creation portraits and Look shots on your branch for the main session (`portraits.ps1`, then `shots_v8.ps1 -tag v11 -nocal` and `shots_white.ps1`). Tell the main session the blend is ready. After merging, a local `build_v9.ps1 -rest` restores your own glb (I discarded my local build to merge).
+2. **Tones:** round 2 of `HerToneFit` is applied but not re-measured. Run `shots_white.ps1 -tag X`, then `tone_fit.py X`, and multiply the factors in. Fair faces spread about ±5% (Fey's G 1.08, Vixen's L 0.95). Consider a per-face residual.
+3. **Brows:** the copper dye reads better but may be a touch dark and dense beside her_23 (`v10b_face.jpg`). Judge at 1:1 against the portrait; the paint shader's `dye` mix is in `People.HerPaint`.
+4. **Neck grain:** the speckle is gone, but her neck now reads smoother than her face (pores only). Match her face's v10 grain so the head/body seam can't be seen: `fair_grain.py` on a neck crop against a face crop.
+5. **Freckles:**
+   - verify each default against its portrait at 1:1, and at play zoom (do the mips darken her cheeks?);
+   - the Look's control is the paints and sliders pass;
+   - a face the player builds should start at none (CreateLook's draft has no freckles field yet).
+6. **The book by day:** her face reads washed out and pale. Is it the day's exposure on her, or her lamp? Maybe come a little nearer (upper body), or a soft key for the book.
+7. **The play-zoom face:** not started.
+   - Judge at the game's own camera, day and night: `shots_play.ps1` (the Waystation by day and night, an arena).
+   - The Verge's arrival is under trees, and arenas are at night.
+   - Levers: `heroine_features.py`, the skin shader's `far_*`, the eye shader's `far_*`.
+8. **Hair:** blood-red is fixed. Clumping and contrast are left: the portrait's hair has p90/p10 luminance 6.3, the game's 2.5 (`hair_fit.py`). A small flake on her left upper chest (a sculpt fold) remains.
+9. The Look's own light (GameFront.PortraitLight) is unchanged. Ask the main session before changing it.
 
 ## Findings that save time
-- Her paint, not the renderer, held half the grain. Mip bias (global or her paint's own) changed nothing. TAA removes the finest pixel-scale grain (about 0.6x at s0.8); that is the renderer's limit.
-- Under the white rig she is hardly pink. The pink in the Look is the warm key and the fire's edge light.
-- The portraits' dark band was there with the key alone and with its shadow off, and gone without the key. The NormalBuffer showed it: normals, not light or paint.
+- **The throat "band"** is the portrait key's terminator, not normals: the NormalBuffer is smooth there. Wider Godot SSS (`subsurface_scattering_scale` 0.15 to 0.4) blurred away her grain and barely softened the line.
+- **The iris blob** stayed with every light put out: it was the sky's radiance on the cornea. The emission glint (`catchlight`) is the small window.
+- **The fire stand-in** never worked before: ZoneView's `lit[]` is false for lights never lit, though they shine.
+- **The hair colour's response is non-linear** (about colour^1.4 per channel): fit by trying colours under `--rig-white`, not by one factor.
+- **freckle_score.py** counts pores too: every portrait scores about 0.7 per 1000 px, Hard-won 1.3. Judge freckles by eye at 2x.
+
+## Scripts (scratchpad `face7/`; the measures run with `%LOCALAPPDATA%\facefit\.venv\Scripts\python.exe`)
+- **Build:**
+  - `build_v9.ps1 -rest -tag T`: head, features, hair, teeth, outfits (local), import. About 15 min.
+  - `lay_all.ps1`: lays all ten paints again, no GPU.
+  - `head_try.ps1 -tag T`: builds the head into the scratchpad, then clay and the crease probe.
+  - `freckles.ps1`: the freckle maps.
+- **Shots:**
+  - `shot.ps1`, `shots_v8.ps1`, `shots_white.ps1`, `shots_book.ps1`, `shots_play.ps1`;
+  - `verify_v10b.ps1` (one batch of Look checks);
+  - `eye_try*.ps1`, `tone_try.ps1`.
+  - `pk.ps1` runs Portraits.cs jobs with LIGHTS, SKIN, DEBUGDRAW and KEYSHADOW. `gclay.ps1` is the game's clay. `band_probe.ps1`, `sss_probe.ps1`, `term_probe.ps1`.
+- **Blender clay:** `side2.py` (modes asis, dev, joined, flat, lap, mat; SIDE_VIEW chest, torso, back, under) through `clay_set.ps1`. `crease_probe.py`, `normals_probe.py`, `pairs_probe.py`.
+- **Measures:** `fair_grain.py`, `tone_fit.py TAG`, `hair_fit.py`, `freckle_score.py`, `rows.py`, `nbgrad.py`, `crops.py`, `grid6.py`.
+- **Repointing** to your own worktree: copy `face7` to `face8`, edit and run `repoint.py`.
 
 ## Gotchas
-- **ComfyUI may be down.** `heroine_face.py` then fails at Krea's detail and copies the old paint. Start it headless:
-  - Python: `C:\Users\munch\AppData\Local\Comfy-Desktop\ComfyUI-Installs\ComfyUI\ComfyUI\.venv\Scripts\python.exe main.py --listen 127.0.0.1 --port 8188 --extra-model-paths-config "%APPDATA%\Comfy Desktop\instance-model-paths\inst-1790761498447.yaml"`.
-  - Run it with `Start-Process` from that folder.
-- **`turn.py` queues you behind yourself.** Taking a turn under a name you already hold waits behind your own hold. Give it back before a script takes it again.
-- **The `godot/assets` junction.** It must point at this worktree's `public/assets`. Set `git update-index --skip-worktree godot/assets`.
-- **Copied `.import` files.** Copying `godot/.godot` from another worktree saves a long import, but about 1000 `.import` files then show as modified. Never commit them, but do commit the `.import` of a new file.
-- **Building with C# changes.** `dotnet build godot/SurvivorUnchained.csproj` after editing C#, before shots.
-- **The worktree guard.** It refuses git run through cd into another worktree, and complex heredocs. Write a small script file instead.
+- **The worktree guard:**
+  - It refuses compound or complex shell commands and `python -c` with variables.
+  - Write a script file, use literal paths, keep one git command per call.
+  - Python heredocs sometimes pass.
+- **PowerShell:**
+  - Variable names ignore case: `$t` overwrote `$T` (the turn.py path) and left a turn held.
+  - A single-item `if` result splats as characters: use `[string[]]`.
+- **A play shot can hang** (`--cam 12.5` in an arena once). Watch for it and stop that Godot process.
+- **`godot/assets`** is a junction to this worktree's `public/assets`, with `--skip-worktree` set.
+- **The main session copies the blend to refit.** Your rebuild can overwrite yours afterwards.
 
 ## Collaborators
-- The main session (coordinator) reviews, refits on the built blend and merges. Message it, not UI design, which is paused.
-- The male hero (paused) shares the eye shader.
+- The main session: reviews, refits and merges.
+- The male hero (paused): his skin uses the same shader (`terminator`, the freckle layer at 0) and the eye shader (`sky_wet`).
 
 ## Files to read first
-- `docs/team/face.md`
-- `tools/assets/heroine_face.py` (the laying)
-- `tools/assets/heroine_head.py` (`matched_base`, normals)
-- `godot/shaders/heroine_skin.gdshader`
-- `tools/assets/heroine_hair.py` (`draw_atlas`)
-- `face6/build_v9.ps1`, `face6/lay_all.ps1`
+- `docs/team/face.md`.
+- `godot/src/Actors/People.cs`: `HerTone`, `HerFreckles`, `HerPaint`, `Skin`.
+- `godot/shaders/heroine_skin.gdshader`: light(), freckles, `far_*`.
+- `godot/shaders/heroine_eye.gdshader`.
+- `tools/assets/heroine_head.py`: normals, the middle smoothing, `fill_in`.
+- `tools/assets/heroine_freckles.py`.
 
-HANDOFF READY: docs/handoff/face.md on worktree-agent-a2f7b0f1283f6144a@HEAD
+HANDOFF READY: docs/handoff/face.md on worktree-agent-a7905c3e498df9528@HEAD
