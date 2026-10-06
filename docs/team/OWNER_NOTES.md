@@ -33,6 +33,17 @@ The owner: "we need better writing", "we need emotional power", "a mind breaking
 - **Generally:** some beats are good already, but the gut-wrenching ones must land. Find the moments that should break the player's heart and build them up. Plant, pay off, let silence work.
 - **A twist:** the story needs a mind-breaking twist, one that re-reads what came before. Propose one or two that fit the Ember Watch, the Order of the Morning Light and her past, with where each is planted, for the owner's choice. Don't bolt one on.
 
+### The heroine's face, paints and hair: the order (5 October, later)
+
+- **Order:** the face to perfect first (v10, v11 and so on); then the face paints and sliders (the hand-drawn paints are "really bad": kohl lands on her forehead, ash is a smudge, and so on; the sliders "don't do enough"); then hair, over many rounds ("hair will need way more than 2-3 rounds").
+- **The bar for "perfect":**
+  - at the Look close-up, beside each face's reference, no obvious "this is a render" tell;
+  - grain at least 0.9 of the photo's;
+  - tones and irises within a few percent;
+  - no seams, bands or blobs;
+  - it holds at play distance.
+- **Distance:** "not seeing any face at long distance is tragic." When the book opens (Pack, Self, Arts), the camera comes in close enough that her face reads. At play zoom she always has SOME face: eyes, brows, a mouth.
+
 ### Sound
 
 - Every skill now has its own sounds (skills VFX), but no agent can hear them. The owner will say which sound bad after playing.
