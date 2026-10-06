@@ -214,6 +214,24 @@ public abstract partial class Overlay : Control
     /// <summary>How near the camera comes while this is open (1: as it was).</summary>
     public virtual float CameraNear => 1;
 
+    /// <summary>The camera's own view of the survivor while this is open (FollowCamera.ScreenFrame:
+    /// pitch in degrees, distance and the height on them it looks at, in metres), the survivor turned
+    /// to it; null leaves play's view, brought CameraNear nearer.</summary>
+    public virtual (float Pitch, float Distance, float Height)? CameraFrame => null;
+
+    /// <summary>The book's view of her (Pack, Self, Arts): from 28 degrees up and 3.9 m off, looking at
+    /// her middle, her whole figure beside the panel and her face 100 pixels tall at 1080: eyes, brows and
+    /// mouth read. (From play's 56 degrees and 13 m her face was a few pixels of the top of her head.)
+    /// --book-frame P,D,H tries another; --book-frame off, play's view as it was.</summary>
+    public static (float Pitch, float Distance, float Height)? BookFrame => Args.Get("book-frame") switch
+    {
+        "off" => null,
+        string f when f.Split(',') is [var p, var d, var h] => (Num(p), Num(d), Num(h)),
+        _ => (28, 3.9f, 1.05f),
+    };
+
+    static float Num(string s) => float.Parse(s, System.Globalization.CultureInfo.InvariantCulture);
+
     /// <summary>A place on the ground the view looks at while this is open, instead of the survivor
     /// (a counter: the keeper, live in the world between its two panels). Null: the survivor.</summary>
     public virtual (double X, double Z)? CameraLook => null;

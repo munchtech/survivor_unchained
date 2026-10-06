@@ -24,6 +24,7 @@ public partial class ArtsScreen : Overlay
     public override Act? Toggle => Act.Arts;
     public override float CameraShift => -330;
     public override float CameraNear => 0.56f;
+    public override (float Pitch, float Distance, float Height)? CameraFrame => BookFrame;
 
     public static readonly string[] Numerals = ["I", "II", "III", "IV", "V"];
     static readonly System.Collections.Generic.Dictionary<ArtRole, (string Name, Color Color)> Roles = new()
