@@ -40,6 +40,85 @@ It is not done yet. The notes below are ranked by what each problem costs the
 player's feeling. Items 1 and 2 protect the owner's two named demands, so do
 them first.
 
+## The owner's choices, folded in
+
+The owner has answered §10 (in `docs/team/OWNER_NOTES.md`):
+- all four twists: yes;
+- the narrator recast as a woman of about sixty: yes;
+- Holloway risen at his gate: keep;
+- the nod as a choice: yes;
+- the lamp-iron lantern: yes;
+- "Wick", with the lamplings renamed: yes.
+
+Two answers change the treatment.
+
+**The love scenes: write both**, as unvoiced narration text and as the
+lovers' own lines, for the owner to choose on the page. One thing for the
+writer to know before writing them: under twist A, unvoiced narration is
+still the narrator's prose. On the re-read, a player may decide the mother
+was in the room all along, only silent, and that undoes the plant ("she
+stops at the door") and invites the wrong laugh at the summit. The lovers'
+own lines keep the door fully shut. Most of the best romance writing is
+already the lovers' own ("Your hands are colder than my feet..."), so that
+version loses the least. Put this beside the two drafts when they go to the
+owner.
+
+**The lie to Brannoc no longer costs his trade.** The owner: "we need it,
+but it will make him hate us." On the lie route Brannoc works for her as a
+stranger: curt, full prices, no commissions or masterworks, no warmth. When
+the truth comes out, it lands harder for the lie. Here is what that
+unsettles:
+- **The treatment's own text.** §5 ("never works for her again") and §10
+  item 7 need rewriting. The bible's ending line for Brannoc ("never works
+  for the survivor again") changes too.
+- **Crafting.** `CRAFTING_DESIGN.md` §10.2 hands every forge verb to Snib's
+  bodgery on the lie route, and that has to go. The crafting lead must turn
+  "a stranger" into rules:
+  - his prices fixed at distrust;
+  - no commissions (§7.5);
+  - no respect-gated patterns;
+  - and his respect frozen. Today each craft raises it by 1, so without a
+    freeze the player could grind him back to warmth and undo the owner's
+    cost.
+  - "Masterworks" has no definition in the design yet. Crafting must define
+    it, and say whether the stranger state lasts into the endgame maps.
+- **The truth must still cost less at the forge than the lie.** The truth
+  route's burned hand and slower, one-handed hammer have to stay sound and
+  picture only. If they cost the player anything at the bench, the truth
+  becomes the dearer choice again.
+- **Act 3's cage and the stair.** The treatment gives every player Brannoc
+  making the heart's cage one-handed, and his look at her hands on the stair
+  after "Da". The bible makes both truth-route only ("only if he knows about
+  Nell and stood with the survivor"). That fits the owner's "no
+  commissions". Keep the bible's rule: on the lie route there is no cage, she
+  carries the heart bare and pays in names, and he isn't on the stair. That
+  is where the lie lands hardest, three acts later. The treatment must mark
+  both beats as conditional.
+- **The war at the gate (C31).** Decide whether the stranger comes. I would
+  have him there, for the town, never looking at her. It is the
+  relationship's cost made visible at the act's high point.
+- **The anvil tap (Act 2).** On the lie route it must not thaw him. Let him
+  stop at the second tap, then strike, and name the price.
+- **The "evaded" answer** (`nell.told = evaded`, "did not look") needs a
+  ruling: a stranger, or something cooler than the truth but fairer than the
+  lie.
+- **The second crossing is orphaned.** In the bible a lie meant he forged and
+  sold the last two irons, the Kiln Ford was lit, and Jory could drown there
+  and rise. In the treatment he learns the truth by the end of Act 1 on every
+  route and beats the irons flat, so the Kiln Ford, Jory's drowning ending
+  and Aldo's widow's line lose their trigger. Either cut them on purpose, or
+  bring the mare back later (in Act 2, after he has sold the irons). That
+  would also be the owner's "when the truth comes out later", and the
+  harshest version.
+
+**Settled by the owner, with my notes still standing as refinements** (the
+main session should confirm them with him):
+- **Holloway's call.** He approved it as written: "a great man's terrible
+  judgement call (the lid on the ladder; ninety-one counted)". Option (b) in
+  item 2 is now only an offer.
+- **Holloway at his gate.** His "keep" was to "the dusk after". Moving it to
+  the fourth dusk (item 6) changes what he approved.
+
 ## At a glance
 
 **The twists against the letter's six tests (§3.7):**
@@ -196,7 +275,9 @@ his eyes".
 - **Against:** it makes Maeca's act more just, and justice blunts shock. It
   doesn't blunt this one, because the player only learns it after the cut.
 
-I recommend (b). It is the owner's choice, so add it to §10.
+I recommend (b), but the owner has approved the call as written, so (b) is
+only an offer now. The main session can put it to him once, and drop it if he
+declines.
 
 **Boot details left over, and the one that reads silly.** Holloway still
 carries footwear:
@@ -318,8 +399,8 @@ start where the narrator has always been and then go down into the pale thing,
 so that the player hears her leave them. (As written, "I came up with you"
 contradicts where the sound is.)
 
-**For the owner's choice: A works without B,** but its best re-read (her
-silence at her own body) needs B. Take them together.
+**A and B go together.** The owner has taken both, which is right: A's best
+re-read (her silence at her own body) needs B.
 
 **Read "Wick" cold.** It is lovely, and true dialect: "wick" means alive, and
 it is also the thread a lamp burns on. Two checks:
@@ -356,8 +437,9 @@ Strengthen it, or it costs the others.
 
 This was the writer's worry. Act 2 doesn't have too many blows. It has one
 that comes too soon, and its laugh is in the wrong place.
-- **C20b, Holloway at his gate: keep the image, but move it off the day of the
-  kill.**
+- **C20b, Holloway at his gate: keep the image (the owner has kept it), but
+  move it off the day of the kill.** His keep was to "the dusk after", so the
+  move needs his yes.
   - On the same dusk it tramples the silence the kill needs, and it turns into
     a horror jump-scare.
   - Give the town two or three nights first: the gate barred, his stool empty,
@@ -501,23 +583,22 @@ last.
   here, and the endings' "Go on" turns it inside out. Make sure that is on
   purpose, and that players can hear it.
 
-## 10. On the owner's choices (§10)
+## 10. Still open for the owner
 
-1. **The twists:**
-   - "Ninety-two": yes. It is essential.
-   - The woman with the lamp and the voice: yes, taken together.
-   - "You did this": yes, if item 5 is done. It is what makes the rope the
-     player's fault.
-2. **The narrator recast:** yes, cast plain (item 4).
-3. **The love scenes as unvoiced text:** yes. It is the cheapest plant in the
-   game, and it heads off a "Mum was watching?" laugh at the summit.
-4. **Holloway at his gate:** keep it, on the fourth dusk (item 6).
-5. **The nod as a choice:** yes.
-6. **The lamp-iron as her night lantern:** yes. It is what makes Brannoc's
-   knowing unmissable.
-7. **The lie costs Brannoc's trade:** yes.
-8. **"Wick":** yes, after a cold read, and rename the lamplings.
-9. **New:** Holloway's call, either right but terrible (as written) or wrong
-   but defensible (item 2). I recommend wrong.
+Everything else in §10 is decided (see "The owner's choices, folded in",
+above). These are still his to settle:
+1. **Holloway's call:** as written (approved), or option (b), wrong but
+   defensible (item 2). It is an offer, made once.
+2. **Holloway at his gate:** the dusk after (approved), or the fourth dusk
+   (item 6).
+3. **The love scenes:** both versions on the page, with the risk to twist A
+   noted beside them.
+4. **The lie to Brannoc, at the edges:** whether the stranger state lasts
+   into the endgame; what "evaded" costs; and whether the Kiln Ford's second
+   crossing is cut, or kept by bringing the truth later, in Act 2.
+
+My recommendations on the decided items are unchanged where they still
+apply: cast the narrator plain (item 4); do item 5, so that "You did this"
+makes the rope the player's fault; and give "Wick" a cold read.
 
 — The story editor
