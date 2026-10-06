@@ -37,6 +37,13 @@ public sealed class FollowCamera
     /// the room her large figure had, so the world frames her nearer instead.</summary>
     public float ScreenNear = 1;
     float near = 1;
+    /// <summary>A side panel's own view of her (the book: Pack, Self, Arts): the view comes down from
+    /// play's steep angle to this pitch (degrees) and distance (metres), looking at this height on her,
+    /// so her face reads beside the panel. From play's own height and distance her face was a few
+    /// pixels of the top of her head. Null: play's view (ScreenNear still brings it nearer).</summary>
+    public (float Pitch, float Distance, float Height)? ScreenFrame;
+    (float Pitch, float Distance, float Height) frame = (56, 23, 0.8f);
+    float framed;
     float overrideBlend, leadX, leadZ, shakeT;
     Vector3 look;
     bool initialised;
@@ -112,22 +119,31 @@ public sealed class FollowCamera
         kickT += dt;
         // The view slides sideways, the angle unchanged: pixels to metres at the survivor's distance.
         near = Damp(near, ScreenNear, 5, dt);
-        float perPx = 2 * Distance * near * Mathf.Tan(Mathf.DegToRad(Camera.Fov) / 2) / 1080;
+        if (ScreenFrame is { } sf) frame = sf;
+        framed = Damp(framed, ScreenFrame != null ? 1 : 0, 3.5f, dt);
+        float perPx = 2 * Reach() * Mathf.Tan(Mathf.DegToRad(Camera.Fov) / 2) / 1080;
         Camera.HOffset = Damp(Camera.HOffset, -ScreenShift * perPx, 6, dt);
         shakeT += dt;
         Place();
     }
 
+    /// <summary>How far the camera stands from where it looks: play's distance, or a panel's framing
+    /// eased in (smoothed, so the view glides down to her rather than swinging).</summary>
+    float Reach() => Mathf.Lerp(Distance * near, frame.Distance, Mathf.SmoothStep(0, 1, framed));
+
     void Place()
     {
-        float cp = Mathf.Cos(Pitch), sp = Mathf.Sin(Pitch);
-        float d = Distance * near;
-        var pos = new Vector3(look.X + Mathf.Sin(Yaw) * cp * d, look.Y + sp * d, look.Z + Mathf.Cos(Yaw) * cp * d);
+        float k = Mathf.SmoothStep(0, 1, framed);
+        float pitch = Mathf.Lerp(Pitch, Mathf.DegToRad(frame.Pitch), k);
+        float cp = Mathf.Cos(pitch), sp = Mathf.Sin(pitch);
+        float d = Reach();
+        var aim = look + new Vector3(0, (frame.Height - 0.8f) * k, 0);
+        var pos = new Vector3(aim.X + Mathf.Sin(Yaw) * cp * d, aim.Y + sp * d, aim.Z + Mathf.Cos(Yaw) * cp * d);
         float s = Trauma * Trauma, t = shakeT * 22;
         float N(float a) => Mathf.Sin(t + a) * 0.5f + Mathf.Sin(t * 2.3f + a * 1.7f) * 0.3f + Mathf.Sin(t * 4.1f + a * 3.1f) * 0.2f;
         var lean = Kicked();
         var at = pos + lean + new Vector3(N(1) * s * 0.7f, N(2) * s * 0.5f, N(3) * s * 0.7f);
-        var target = new Vector3(look.X + N(4) * s * 0.25f, look.Y, look.Z + N(5) * s * 0.25f) + lean * 1.3f;
+        var target = new Vector3(aim.X + N(4) * s * 0.25f, aim.Y, aim.Z + N(5) * s * 0.25f) + lean * 1.3f;
         var basis = Basis.LookingAt(target - at, Vector3.Up);
         Camera.GlobalTransform = new Transform3D(basis.Rotated(basis.Z, N(6) * s * 0.025f), at);
     }

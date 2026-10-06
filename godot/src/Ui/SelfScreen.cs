@@ -25,6 +25,7 @@ public partial class SheetScreen : Overlay
     public override Act? Toggle => Act.Character;
     public override float CameraShift => -330;
     public override float CameraNear => 0.56f;
+    public override (float Pitch, float Distance, float Height)? CameraFrame => BookFrame;
 
     static readonly (string Id, string Name, string Text)[] Attrs =
     {

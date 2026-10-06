@@ -194,6 +194,21 @@ public partial class PlayerView : Node3D
     public Vector3 FigurePosition => person.Root.GlobalPosition;
     /// <summary>Out of the picture while a cinematic's double plays her.</summary>
     public bool Hidden;
+    /// <summary>The way she turns to while she stands (the book open: to the view); null: her own.</summary>
+    public float? Turned;
+    /// <summary>What she lifts her head to while she stands (the book open: the camera; her idle
+    /// carries her head low, and framed close her face was turned down from it); null lets it go.</summary>
+    public Node3D? Watch;
+    SurvivorUnchained.View.HeadTurn? headTurn;
+
+    void Watching(bool standing)
+    {
+        if (Watch == null && headTurn == null) return;
+        if (headTurn == null) person.Skeleton.AddChild(headTurn = new SurvivorUnchained.View.HeadTurn { Limit = 40, Rate = 1.5f });
+        bool on = Watch != null && standing && IsInstanceValid(Watch);
+        if (on) headTurn.Target = Watch!.GlobalPosition;
+        headTurn.Want = on ? 0.85f : 0;
+    }
 
     /// <summary>Handed her body by a cinematic: she stands where its double
     /// stood, facing as it faced (heading as NpcActor turns: 0 south, pi/2
@@ -366,6 +381,10 @@ public partial class PlayerView : Node3D
         if (p.AttackAnim is { } aa && fightTime - aa.T < 0.35 && !mine) Rotation = new Vector3(0, (float)(Mathf.Pi / 2 - aa.Angle), 0);
         // (In the air she keeps the facing she sprang with: her velocity is stale there.)
         else if (sp > 0.4f && p.Leap == null) Rotation = new Vector3(0, Mathf.LerpAngle(Rotation.Y, Mathf.Atan2((float)p.Vx, (float)p.Vz), 1 - Mathf.Exp(-14 * (float)dt)), 0);
+        // Turned to the view while a panel frames her (FollowCamera.ScreenFrame), standing.
+        if (Turned is float tw && sp < 0.4f && p.AttackAnim == null)
+            Rotation = new Vector3(0, Mathf.LerpAngle(Rotation.Y, tw, 1 - Mathf.Exp(-4 * (float)dt)), 0);
+        Watching(sp < 0.4f && p.AttackAnim == null);
         // Dash: a roll (hers: a low lunge).
         if (p.DashT > 0 && !dashing)
         {

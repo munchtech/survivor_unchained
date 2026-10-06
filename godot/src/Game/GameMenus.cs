@@ -89,6 +89,9 @@ public partial class Game
         scene.SimPaused = o is PauseScreen or CreditsScreen || zone?.Ember == true;
         cam.ScreenShift = o.CameraShift;
         cam.ScreenNear = o.CameraNear;
+        cam.ScreenFrame = o.CameraFrame;
+        // (framed so, she turns to the view, a little toward the panel she reads)
+        if (scene?.Player is { } pv) { pv.Turned = o.CameraFrame != null ? cam.Yaw + 0.35f : null; pv.Watch = o.CameraFrame != null ? cam.Camera : null; }
         LookFor(o.CameraLook);
         controls.Captured = true;
         hud.Prompt(promptShown = null);
@@ -119,6 +122,8 @@ public partial class Game
         zone?.Touched();
         cam.ScreenShift = 0;
         cam.ScreenNear = 1;
+        cam.ScreenFrame = null;
+        if (scene?.Player is { } pv) { pv.Turned = null; pv.Watch = null; }
         LookFor(null);
         if (scene != null && hudMode == null) scene.SimPaused = false;
         controls.Captured = false;

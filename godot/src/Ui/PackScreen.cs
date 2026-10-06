@@ -100,6 +100,7 @@ public partial class InventoryScreen : Overlay
     public override Act? Toggle => Act.Inventory;
     public override float CameraShift => -330;
     public override float CameraNear => 0.56f;
+    public override (float Pitch, float Distance, float Height)? CameraFrame => BookFrame;
     string? sel;
     bool filterOpen;
 

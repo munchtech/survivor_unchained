@@ -616,6 +616,21 @@ _g = g_cut(RV)
 _sm = ((s_split(RV) < -0.01) & (_g > 0.01) & (_g < 0.045)).astype(float)[:, None] * 0.5
 for _ in range(6):
     RV = RV + (_A @ RV - RV) * _sm
+# Down her middle in front, where her sculpt's two halves meet a little
+# apart, the graft laid on her took their crease down her throat and
+# breastbone and a fold under her throat (under a light from the side, a
+# line and a pale shard). Smoothed there (Taubin's way: smoothed and swelled
+# in turn, so her throat keeps its girth), easing out to 4 cm either side,
+# down from 6 mm under SPLIT, and not within 12 mm of CUT.
+_s, _g = s_split(RV), g_cut(RV)
+_mid = (smooth01(1 - np.abs(RV[:, 0]) / 0.04) * (RV[:, 1] < 0) * smooth01((-_s - 0.006) / 0.02)
+        * smooth01((_g - 0.012) / 0.02))[:, None]
+_before = RV.copy()
+for _ in range(30):
+    RV = RV + (_A @ RV - RV) * (0.5 * _mid)
+    RV = RV + (_A @ RV - RV) * (-0.53 * _mid)
+print("MIDDLE: %d graft points down her middle smoothed (%.1f mm at most)"
+      % ((_mid[:, 0] > 0.01).sum(), 1000 * np.linalg.norm(RV - _before, axis=1).max()))
 MOVE = RV - RV0
 _rc = np.array([RV[f].mean(0) for f in RF])
 HEAD_F = [i for i in range(len(RF)) if s_split(_rc[i:i + 1])[0] > 0]
@@ -675,8 +690,8 @@ def around(P, loop):
 bm = bmesh.new()
 bm.from_mesh(hme)
 bm.faces.ensure_lookup_table()
-# What is hers is marked (her own normals kept on her corners, her hair on
-# her faces), as cutting renumbers everything.
+# What is hers is marked (the sculpt's normals kept on her corners, for
+# where she folds; her hair on her faces), as cutting renumbers everything.
 NL = [bm.loops.layers.float.new(f"n{k}") for k in range(3)]
 RL = bm.faces.layers.int.new("hair_paint")
 NEW = bm.faces.layers.int.new("new")
@@ -978,11 +993,28 @@ if os.environ.get("HEAD_STOP") == "sewn":
 
 
 # ---------------------------------------------------------------- normals --
-def smooth_normals(parts):
+def smooth_normals(parts, near=(0, 0.0)):
     """Normals of the surfaces given as one, joined where their points meet
-    (her paint's seams, her head on her neck), so no seam shows in the light."""
+    (her paint's seams, her head on her neck), so no seam shows in the light.
+    near=(k, d): the points of part k within d of each other joined too (her
+    body's halves and seams meet a hair apart in places, and rounding to
+    1e-5 can part two points that meet exactly)."""
     allp = np.vstack([V for V, _ in parts])
     key = np.unique(np.round(allp / 1e-5).astype(np.int64), axis=0, return_inverse=True)[1].ravel()
+    if near[1] > 0:
+        base = sum(len(V) for V, _ in parts[:near[0]])
+        root = np.arange(key.max() + 1)
+
+        def find(i):
+            while root[i] != i:
+                root[i] = root[root[i]]
+                i = root[i]
+            return i
+        for a, b in cKDTree(parts[near[0]][0]).query_pairs(near[1]):
+            ra, rb = find(key[base + a]), find(key[base + b])
+            if ra != rb:
+                root[max(ra, rb)] = min(ra, rb)
+        key = np.unique(np.array([find(k) for k in key]), return_inverse=True)[1].ravel()
     acc = np.zeros((key.max() + 1, 3))
     base = 0
     for V, F in parts:
@@ -1004,7 +1036,7 @@ def smooth_normals(parts):
 
 BV = np.array([v.co[:] for v in hme.vertices])
 BF = [list(p.vertices) for p in hme.polygons]
-bn, hn = smooth_normals([(BV, BF), (HEAD_V, HEAD_FACES)])
+bn, hn = smooth_normals([(BV, BF), (HEAD_V, HEAD_FACES)], near=(0, 1e-4))
 _new = np.zeros(len(hme.polygons), int)
 hme.attributes["new"].data.foreach_get("value", _new)
 _old = np.stack([np.array([d.value for d in hme.attributes[f"n{k}"].data]) for k in range(3)], 1)
@@ -1012,22 +1044,23 @@ _lv = np.array([lp.vertex_index for lp in hme.loops])
 _lp = np.zeros(len(hme.loops), int)
 for p in hme.polygons:
     _lp[p.loop_start:p.loop_start + p.loop_total] = p.index
-# Her own normals kept, but on what is new and within 2 cm of CUT (where
-# she meets the graft), and where hers were lost in the cutting.
-_mine = (_new[_lp] == 0) & (g_cut(BV[_lv]) < -0.02) & (np.linalg.norm(_old, axis=1) > 0.5)
-_on = _old[_mine] / np.linalg.norm(_old[_mine], axis=1)[:, None]
-_ang = np.degrees(np.arccos(np.clip((_on * bn[_lv[_mine]]).sum(1), -1, 1)))
-print("NORMALS: hers differ from the joined smooth ones by %.1f deg on average (%.1f at the 99th percentile)"
+_fn = np.zeros((len(hme.polygons), 3))
+hme.polygons.foreach_get("normal", _fn.ravel())
+# Her normals are her surface's own, joined and smooth, all over her. The
+# sculpt's (as AccuRIG wrote them) lay flat to a few of her faces at a time:
+# under a light from the side her upper chest broke into pale shards, and
+# down her middle, where her halves meet, they leaned in toward the seam.
+_has = np.linalg.norm(_old, axis=1) > 0.5
+_on = _old / (np.linalg.norm(_old, axis=1)[:, None] + 1e-12)
+_ang = np.degrees(np.arccos(np.clip((_on * bn[_lv]).sum(1), -1, 1)))[_has & (_new[_lp] == 0)]
+print("NORMALS: the sculpt's differed from her surface's own by %.1f deg on average (%.1f at the 99th percentile)"
       % (_ang.mean(), np.percentile(_ang, 99)))
-# (but not along her middle where hers turn away from the joined ones: her
-# body's two halves meet there unjoined, and her own normals each side lean
-# in toward the seam, a V down the front of her throat and chest; under a
-# light from the side, half her neck fell into shade on a straight line)
-_bad = np.zeros(len(_mine), bool)
-_bad[np.where(_mine)[0]] = (_ang > 8) & (np.abs(BV[_lv[_mine], 0]) < 0.02)
-_mine &= ~_bad
-print("NORMALS: %d corners along her middle given the joined smooth normals (hers leaned in toward her seam)" % _bad.sum())
-LN = np.where(_mine[:, None], _old, bn[_lv])
+# (Only where her surface folds on itself, under her breasts, in her
+# armpits, between her toes, and a joined normal turns from its own face,
+# is the sculpt's kept, if it faces out.)
+_fold = ((bn[_lv] * _fn[_lp]).sum(1) < 0.2) & _has & ((_on * _fn[_lp]).sum(1) > 0.2)
+print("NORMALS: her surface's own on %d corners, the sculpt's where she folds on %d" % ((~_fold).sum(), _fold.sum()))
+LN = np.where(_fold[:, None], _on, bn[_lv])
 hme.normals_split_custom_set([tuple(n) for n in LN])
 head.data.normals_split_custom_set_from_vertices([tuple(n) for n in hn])
 for k in ("n0", "n1", "n2", "ox", "oy", "oz", "new"):
