@@ -133,8 +133,8 @@ public partial class HerFaceLife : Node
         }
         if (eyes != null)
         {
-            eyes.SetShaderParameter("gaze_a", gaze);
-            eyes.SetShaderParameter("gaze_b", gaze);
+            eyes.SetShaderParameter(GazeA, gaze);
+            eyes.SetShaderParameter(GazeB, gaze);
             if (cycle != null)
             {
                 float every = Args.Num("every", 1), first = Args.Num("seconds", 3);
@@ -145,6 +145,9 @@ public partial class HerFaceLife : Node
             }
         }
     }
+
+    // (Names made once, not a new one every frame for the collector.)
+    static readonly StringName GazeA = "gaze_a", GazeB = "gaze_b";
 
     static float Ease(float x) => x * x * (3 - 2 * x);
 }

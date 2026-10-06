@@ -40,9 +40,9 @@ public partial class Perf : Node
 
     /// <summary>Parts of the frame timed on their own (Begin and End round
     /// them; nothing is done when not measuring).</summary>
-    public enum Part { Sim, Player, Crowd, Fx, Hud, Sound, Zone, Events, Draft, Auto, Later, DraftUi }
-    const int Parts = 12;
-    static readonly string[] PartNames = { "sim", "player", "crowd", "fx", "hud", "sound", "zone", "events", "draft", "auto", "later", "draftui" };
+    public enum Part { Sim, Player, Crowd, Fx, Hud, Sound, Zone, Events, Draft, Auto, Later, DraftUi, Labels }
+    const int Parts = 13;
+    static readonly string[] PartNames = { "sim", "player", "crowd", "fx", "hud", "sound", "zone", "events", "draft", "auto", "later", "draftui", "labels" };
     static readonly double[] partMs = new double[Parts];
     static readonly long[] partFrom = new long[Parts];
     /// <summary>What each part allocated on the main thread, over the whole recording.</summary>

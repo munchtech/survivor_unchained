@@ -62,7 +62,7 @@ The main session keeps this current. It is the address list for SendMessage. Ret
 | Area | Agent | Status page |
 |---|---|---|
 | Voice (paused by the owner: no placeholders; final voices from ElevenLabs later) | a501b387a90d78b4e | docs/team/voice.md |
-| Story and writing (the writer) | a3047062bf0f80c54 | docs/team/story.md |
+| Story and writing (the writer: the approved rewrite, Act 1 first) | a38d66ae66583ace1 | docs/team/story.md |
 | Combat, encounters, bosses, balance (paused; handoff ready at af6452e1) | — | docs/team/combat.md |
 | Animation (paused; handoff ready at 85d0eaf9) | — | docs/team/animation.md |
 | UI design (paused; handoff ready at 09310365; portraits wait on the face) | — | docs/team/ui_design.md |
@@ -71,13 +71,13 @@ The main session keeps this current. It is the address list for SendMessage. Ret
 | Gameplay experience director | af2c026d86e1b532b | docs/team/experience.md |
 | Skills look and feel (VFX, under the main session) | a560452c597415545 | docs/team/skills.md |
 | Cinematics production | aece7b87e89b13f19 | docs/team/cinematics.md |
-| Performance | a0eb8c612c94d4aa5 | docs/team/performance.md |
+| Performance and rendering (clarity in motion first) | ad57a6dd0798688d7 | docs/team/performance.md |
 | Arena art | a0b61c278bdd5c994 | docs/team/arena_art.md |
 | Male hero (body, head, hair, outfits) | ab82cbe99e2937ddd | docs/team/hero_male.md |
-| Heroine face, hair and character creation's Look | a6007bf07fd45ab0d | docs/team/face.md |
+| Heroine face, hair and character creation's Look | a43570e07edbe40b2 | docs/team/face.md |
 | Asset provenance (what isn't ours, licences, credits, replacement plan) | a80ff0c7fd988b178 | docs/team/provenance.md |
 | Legal and Steam compliance (paused; docs/handoff/legal.md; wake before submission or for a new outfit) | — | docs/team/legal.md |
 | Loot and itemisation (paused, built and merged; docs/handoff/loot.md for a successor) | — | docs/team/loot.md |
 | Creatures and models (our own boar first, then MODELS_TO_MAKE.md) | af551cacc6292152f | docs/team/creatures.md |
-| Story editor (paused until the treatment; handoff ready at 7aa26c73) | — | docs/story/EDITORIAL_LETTER.md |
+| Story editor (paused; started fresh for each act's draft; handoff at 74280668) | — | docs/story/EDITORIAL_LETTER.md |
 | Heroine outfits | main session | — |

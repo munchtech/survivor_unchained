@@ -153,9 +153,13 @@ public partial class HairSway : Node
         for (int s = 0; s < mesh.Mesh.GetSurfaceCount(); s++)
             if (mesh.GetSurfaceOverrideMaterial(s) is ShaderMaterial m)
             {
-                m.SetShaderParameter("sway", sway);
-                m.SetShaderParameter("head", headAt);
-                m.SetShaderParameter("chain", swung);
+                m.SetShaderParameter(SwayName, sway);
+                m.SetShaderParameter(HeadName, headAt);
+                m.SetShaderParameter(ChainName, swung);
             }
     }
+
+    // The parameters' names made once: a string given where a name is wanted
+    // is a new name each call, and every frame's left for the collector.
+    static readonly StringName SwayName = "sway", HeadName = "head", ChainName = "chain";
 }

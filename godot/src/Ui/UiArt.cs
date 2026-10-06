@@ -161,6 +161,12 @@ public static class UiArt
 
     public static bool Has(string id) => Frames.TryGetValue(id, out var s) && Tex(s.File) != null;
 
+    /// <summary>Every frame's texture read ahead (once, as the game starts), so no panel reads one as it opens.</summary>
+    public static void Warm()
+    {
+        foreach (var s in Frames.Values) Tex(s.File);
+    }
+
     /// <summary>A frame by name, or the drawn one. The drawn one's content
     /// margins are kept, so nothing moves when the art arrives.</summary>
     public static StyleBox Frame(string id, StyleBox fallback)

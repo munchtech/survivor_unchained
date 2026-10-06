@@ -201,6 +201,9 @@ public partial class WorldScene : Node3D, IZoneLook
         if (s > 0) { hitstop = s; hitstopCd = s + 0.3; }
     }
 
+    // (A name made once, not a new one every frame for the collector.)
+    static readonly StringName SurvivorParam = "survivor";
+
     void Draw(double dt, double fightDt)
     {
         var b = Battle;
@@ -223,7 +226,7 @@ public partial class WorldScene : Node3D, IZoneLook
             Perf.Begin(Perf.Part.Fx);
             Fx.Update(b, fightDt, fightTime);
             Perf.End(Perf.Part.Fx);
-            RenderingServer.GlobalShaderParameterSet("survivor", new Vector4((float)p.X, y + 1.1f, (float)p.Z, 1));
+            RenderingServer.GlobalShaderParameterSet(SurvivorParam, new Vector4((float)p.X, y + 1.1f, (float)p.Z, 1));
             // The meadow grows round the survivor as they go.
             var at = new Vector2((float)p.X, (float)p.Z);
             View.FollowGrass(at);
