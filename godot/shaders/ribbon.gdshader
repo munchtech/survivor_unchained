@@ -51,10 +51,13 @@ void fragment() {
 		light = thread * (0.6 + 1.6 * pow(along, 4.0)) + body * 0.12 * along;
 		tint = mix(col, vec3(1.0), thread * pow(along, 2.0) * 0.6);
 	} else if (style == 5) {
-		// Frost: a pale core and glittering points that wink.
+		// Frost: a pale core and glittering points that wink. (Each glint a soft point in its cell:
+		// lit whole, the cells read as pale squares on a wide ribbon.)
 		vec2 cellp = vec2(along * 40.0, UV.y * 4.0);
 		float h = hash(floor(cellp));
-		float glint = step(0.86, h) * (0.5 + 0.5 * sin(TIME * 18.0 + h * 40.0)) * body;
+		vec2 f = fract(cellp) - 0.5;
+		float point = exp(-dot(f, f) * 28.0);
+		float glint = step(0.86, h) * point * (0.5 + 0.5 * sin(TIME * 18.0 + h * 40.0)) * body;
 		light = body * 0.55 + core * 0.9 + glint * 2.2;
 		tint = mix(col, vec3(1.0), core * 0.4 + glint * 0.6);
 	} else {

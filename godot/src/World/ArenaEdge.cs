@@ -30,17 +30,16 @@ public static class ArenaEdge
             // sheet of flowing water over the fight read as a smear from the arena camera.)
             if (z.Story) continue;
             root.AddChild(Stream(z, s));
-            // Mist lying along it, in two sheets, the lower thicker (none in a story place: its
-            // stream runs through the fight, and mist over a fight hides it).
-            if (z.Story) continue;
-            foreach (var (lift, op) in new[] { (0.45f, 0.16f), (1.3f, 0.08f) })
-                root.AddChild(MistSheet(z, s, 3.5f, lift, op, new Color(place.Air.MistColor)));
+            // (No sheets of mist along it: from the arena camera two sheets over the water hid its
+            // stones and its light under one grey smear, streaked like a blur of speed. The
+            // place's mist lies in its low ground as a fog, the water's among it.)
         }
         foreach (var r in z.Rails) root.AddChild(Rails(z, r));
         foreach (var v in z.Vents) root.AddChild(Vent(z, v, ember, new Color(place.Air.HazeColor)));
         foreach (var g in z.Gates) root.AddChild(Gate(z, g, ember));
-        // (A story place is a cut under the wood's edge: more of its sky is open.)
-        if (place.Air.Dapple > 0 && z.Splat3 != null) root.AddChild(Canopy(z, (float)place.Air.Dapple * (z.Story ? 0.7f : 1f)));
+        // (A story place is a cut under the wood's edge: more of its sky is open. At 0.7 of the
+        // wood's cover a quarter of its opening frame was flat black.)
+        if (place.Air.Dapple > 0 && z.Splat3 != null) root.AddChild(Canopy(z, (float)place.Air.Dapple * (z.Story ? 0.5f : 1f)));
         return root;
     }
 
@@ -53,19 +52,21 @@ public static class ArenaEdge
         var ramp = new Gradient();
         ramp.SetColor(0, new Color(ember.R, ember.G * 0.7f, ember.B * 0.5f, 0));
         ramp.SetColor(1, new Color(smoke.R * 0.8f, smoke.G * 0.8f, smoke.B * 0.8f, 0));
-        ramp.AddPoint(0.12f, new Color(ember.R * 0.85f, ember.G * 0.55f, ember.B * 0.4f, 0.5f));
-        ramp.AddPoint(0.4f, new Color(smoke.R * 1.6f + ember.R * 0.12f, smoke.G * 1.6f + ember.G * 0.06f, smoke.B * 1.6f, 0.42f));
+        // (A column out of the throat, not a lid over it: from the whole mouth, wide and lit
+        // ember-red, the smoke stood over the pit as one orange dome and hid the hole.)
+        ramp.AddPoint(0.12f, new Color(ember.R * 0.85f, ember.G * 0.55f, ember.B * 0.4f, 0.3f));
+        ramp.AddPoint(0.4f, new Color(smoke.R * 1.6f + ember.R * 0.05f, smoke.G * 1.6f + ember.G * 0.02f, smoke.B * 1.6f, 0.3f));
         var grow = new Curve();
         grow.AddPoint(new Vector2(0, 0.45f));
         grow.AddPoint(new Vector2(1, 1.6f));
         var proc = new ParticleProcessMaterial
         {
-            EmissionShape = ParticleProcessMaterial.EmissionShapeEnum.Sphere, EmissionSphereRadius = r,
-            Direction = Vector3.Up, Spread = 14,
-            InitialVelocityMin = 0.7f, InitialVelocityMax = 1.5f,
+            EmissionShape = ParticleProcessMaterial.EmissionShapeEnum.Sphere, EmissionSphereRadius = r * 0.35f,
+            Direction = Vector3.Up, Spread = 8,
+            InitialVelocityMin = 1.0f, InitialVelocityMax = 1.8f,
             Gravity = new Vector3(0.12f, 0.18f, 0.05f),
             TurbulenceEnabled = true, TurbulenceNoiseStrength = 0.6f, TurbulenceNoiseScale = 6f, TurbulenceInfluenceMin = 0.02f, TurbulenceInfluenceMax = 0.08f,
-            ScaleMin = 2.6f, ScaleMax = 4.4f, ScaleCurve = new CurveTexture { Curve = grow },
+            ScaleMin = 1.8f, ScaleMax = 3.0f, ScaleCurve = new CurveTexture { Curve = grow },
             AngleMin = 0, AngleMax = 360, AngularVelocityMin = -8, AngularVelocityMax = 8,
             ColorRamp = new GradientTexture1D { Gradient = ramp },
         };
@@ -78,7 +79,7 @@ public static class ArenaEdge
         };
         return new GpuParticles3D
         {
-            Name = "Vent", Amount = 48, Lifetime = 10, Preprocess = 10, ProcessMaterial = proc,
+            Name = "Vent", Amount = 32, Lifetime = 10, Preprocess = 10, ProcessMaterial = proc,
             DrawPass1 = new QuadMesh { Size = Vector2.One, Material = mat },
             Position = new Vector3(x, z.HeightAt(x, zz) - 3f, zz),
             VisibilityAabb = new Aabb(new Vector3(-20, -6, -20), new Vector3(40, 40, 40)),

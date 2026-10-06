@@ -266,9 +266,9 @@ def crotch_bridge(name, pos, tris, gap_at, mkey, thick, bevel, trim, lift):
     straight along the roof of the slot, overlapping the garment's bound
     edges in front and behind."""
     path = roof_path(GAP_F - 0.014, GAP_B + 0.014, 18, lift=0.002)
-    # (2.8 cm: at 1.3 her bare skin showed either side of it from below as
-    # she moved; what must be covered there is 2.4 cm across)
-    return ribbon(name + "_gusset", path, 0.028, mkey, lift=0.0, thick=thick, snap=False)
+    # (3.4 cm: what must be covered there is 2.4 cm across, and her thighs
+    # pull the skin beside it wider in a lunge or a leap, or lying on her back)
+    return ribbon(name + "_gusset", path, 0.034, mkey, lift=0.0, thick=thick, snap=False)
 
 
 def spline(pts, step=0.004):
@@ -1932,6 +1932,9 @@ ARM_BONES = [BI[n] for n in BONES if n.split("_")[0] in ("clavicle", "upperarm",
 BREAST_BONES = [BI[n] for n in ("breast_l", "breast_r") if n in BI]
 
 
+UNSTEADIED = set()  # pieces that keep her skin's own weights over her breasts (bandeau)
+
+
 def steady_on_breasts(wt, least=0.01, full=0.1):
     """Weights with her arms' share taken off where her breasts have any:
     none at `least` of her breasts' weight, all of it by `full` (that share
@@ -2082,7 +2085,7 @@ def finish(name, pos, wt, tris, mkey, thick, bevel, budget=3000, scraps=True):
     # skin's own weights, eased in over 3 cm: there her skin is seen, and
     # with her arm's share gone from the edge alone, her skin drew away from
     # under a plate cup's top as she ran, and you saw down into the cup.
-    steady = steady_on_breasts(wt)
+    steady = np.asarray(wt, float) if any(name.startswith(n) for n in UNSTEADIED) else steady_on_breasts(wt)
     if len(be):
         d_ = cKDTree(pos[np.unique(be)]).query(pos)[0]
         s_ = np.clip((d_ - 0.005) / 0.025, 0, 1)
@@ -2780,13 +2783,13 @@ def warden():
         # down the back from the belt.
         # (its front starts well under the plates' tucked tops, and lies
         # close, so they hang clear of it)
-        *piece("warden.thong", AND(FRONT - 0.3, np.minimum(0.012 + 0.42 * np.maximum(Z - CROTCH, 0), 0.034) - np.abs(X),
+        *piece("warden.thong", AND(FRONT - 0.3, np.minimum(0.015 + 0.42 * np.maximum(Z - CROTCH, 0), 0.034) - np.abs(X),
                                    (bz0 - 0.04) - Z, Z - (CROTCH - 0.03)), "darkleather", lift=0.0012, thick=0.0018, smooth=2,
                soften=0),
         *ribbon("warden.thong_back", thong_back, 0.02, "darkleather", lift=0.003, thick=0.003, snap=False),
         # (under her, a gusset wider than the string, as a thong's is: the
         # string alone left her bare either side there as she lay on her back)
-        *ribbon("warden.thong_gusset", roof_path(thong_back[-1][1] - 0.004, GAP_F - 0.006, 10), 0.028, "darkleather", lift=0.003,
+        *ribbon("warden.thong_gusset", roof_path(thong_back[-1][1] - 0.004, GAP_F - 0.006, 10), 0.034, "darkleather", lift=0.003,
                 thick=0.003, snap=False),
     ]
     # A skirt of steel plates hung all round from the belt, each its own (her
@@ -3036,7 +3039,7 @@ def ranger():
         band = qz - (UNDERBUST + 0.015 + 0.01 * u)
         side = front * fr + band * (1 - fr)
         rq = np.maximum(r, 0)
-        thong = (0.012 + 0.3 * rq) * fr + np.minimum(0.008 + 0.07 * rq, 0.018) * (1 - fr) - np.abs(qx)
+        thong = (0.015 + 0.3 * rq) * fr + np.minimum(0.015 + 0.07 * rq, 0.018) * (1 - fr) - np.abs(qx)
         right_q = np.where(qx < 0, np.maximum(side, thong), 1.0)
         slot = np.where((qz < lace_top + 0.018) & (qz > lace_bot - 0.045) & (fr > 0.5), np.abs(qx) - half, 1.0)
         # (and its foot under her crotch, cut with the rest, so the corner
@@ -3430,6 +3433,12 @@ def bandeau(name, mkey, zc, width, lift=0.004, thick=0.003, trim=None, rows=11, 
         R[1:-1] = (R[:-2] + 2 * R[1:-1] + R[2:]) / 4
         R = (np.roll(R, 1, 1) + 2 * R + np.roll(R, -1, 1)) / 4
     R = R + lift
+    # Its top and bottom edges pressed onto her, as a strap's edge bites:
+    # standing off by its lift, the camera above saw down behind its top.
+    R[0] -= lift + 0.001
+    R[-1] -= lift + 0.001
+    R[1] -= (lift + 0.001) * 0.4
+    R[-2] -= (lift + 0.001) * 0.4
     zz = np.repeat(zs[:, None], nu, 1)
     aa = np.repeat(a[None, :], rows, 0)
     pos = np.stack([cxy[0] + R * np.sin(aa), cxy[1] - R * np.cos(aa), zz], -1).reshape(-1, 3)
@@ -3443,6 +3452,9 @@ def bandeau(name, mkey, zc, width, lift=0.004, thick=0.003, trim=None, rows=11, 
     _, j = cKDTree(P).query(pos)
     edge = np.minimum(pos[:, 2] - zs[0], zs[-1] - pos[:, 2])
     at = np.hstack([nor, W[j].astype(float), edge[:, None]])
+    # (all of it on her skin's own weights, her arms' share kept: steadied, it
+    # stayed put as her arm drew the skin at her breasts' sides from under it)
+    UNSTEADIED.add(name)
     made = trimmed(name, pos, at, tris, mkey, thick, 0.001, trim)
     for o in made:
         o["hides"] = o is made[0]
@@ -3511,7 +3523,9 @@ def reaver():
     fang_out = np.array([SKIN_BVH.find_nearest(Vector(q))[1][:] for q in fang_at])
     fang_down = np.tile([0.0, 0.0, -1.0], (len(fang_at), 1))
     out = [
-        *bandeau("reaver.strap", "oldleather", nz - 0.01, 0.07, trim=edge()),
+        # (pulled tight: standing off her by 4 mm, the camera above saw down
+        # behind its top to her areola as she ran)
+        *bandeau("reaver.strap", "oldleather", nz - 0.01, 0.07, lift=0.0015, trim=edge()),
         *girdle("reaver.belt", lambda a: bz0 + 0.05 * np.clip(np.abs(0.17 * np.sin(a)) / 0.15, 0, 1) ** 2
                + 0.07 * ramp(-np.cos(a), -0.15, 0.35), 0.036, "oldleather", lift=0.006, thick=0.004, trim=edge(0.005)),
         *frame("reaver.buckle", buckle_at + buckle_n * 0.017, buckle_n, np.array([0, 0, 1.0]), 0.05, 0.042, "rust", r=0.0034,
@@ -3528,7 +3542,7 @@ def reaver():
         # (hidden by the panel) and a string down the back, both running up
         # into the belt, so belt and G-string are one piece of gear.
         *piece("reaver.gstring", OR(
-            AND(FRONT - 0.3, np.minimum(0.012 + 0.42 * np.maximum(Z - CROTCH, 0), 0.034) - np.abs(X), (belt_z + 0.005) - Z, Z - (CROTCH - 0.03)),
+            AND(FRONT - 0.3, np.minimum(0.015 + 0.42 * np.maximum(Z - CROTCH, 0), 0.034) - np.abs(X), (belt_z + 0.005) - Z, Z - (CROTCH - 0.03)),
             ), "oldleather", lift=0.002, smooth=2, soften=0),
         *ribbon("reaver.gstring_back", back_string(bz0 + 0.07, CROTCH + 0.012), 0.022, "oldleather", lift=0.003, thick=0.004,
                 trim=edge(0.004, "blackleather"), snap=False),
@@ -3713,7 +3727,7 @@ if BODY_OUT:
             if proud[v.index] and tree.ray_cast(co + n * 0.0005, -n, 0.015)[0] is not None:
                 vals[v.index, k] = 1
             elif hit[0] is not None:
-                vals[v.index, k] = np.clip((0.005 - hit[3] - 0.0005) / 0.004, 0, 1)
+                vals[v.index, k] = 0.8 * np.clip((0.005 - hit[3] - 0.0005) / 0.004, 0, 1)
             hid += vals[v.index, k] > 0
         # Tucked in gradually from the border, a third, two thirds, then all
         # the way, so her skin slopes under a piece's edge as if it pressed

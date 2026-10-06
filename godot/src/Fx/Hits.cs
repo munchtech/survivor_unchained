@@ -140,6 +140,19 @@ public partial class Hits : Node3D
         words[i] = (l, 0, Mathf.Max(0.6f, life), at);
     }
 
+    /// <summary>A move's name over a foe near the top of the screen is brought down to stand just
+    /// under the HUD's top stack (it was printed over the clock and the kill count).</summary>
+    Vector3 UnderTheBars(Vector3 p)
+    {
+        var cam = GetViewport()?.GetCamera3D();
+        if (cam == null || cam.IsPositionBehind(p)) return p;
+        var sp = cam.UnprojectPosition(p);
+        float clear = SurvivorUnchained.Ui.GameHud.TopClear + 34;
+        if (sp.Y >= clear) return p;
+        float depth = (p - cam.GlobalPosition).Dot(-cam.GlobalTransform.Basis.Z);
+        return cam.ProjectPosition(new Vector2(sp.X, clear), depth);
+    }
+
     /// <summary>The interface's heavy face, so a move's name reads as the HUD does.</summary>
     static Font? UiFont() => SurvivorUnchained.Ui.Style.UiHeavy;
 
@@ -200,7 +213,7 @@ public partial class Hits : Node3D
             t += dt / life;
             // In quickly, a slow lift while it holds, out over its last fifth.
             float a = Mathf.Min(1, t * life / 0.12f) * (t < 0.8f ? 1 : 1 - (t - 0.8f) / 0.2f);
-            l.GlobalPosition = at + Vector3.Up * 0.35f * t;
+            l.GlobalPosition = UnderTheBars(at + Vector3.Up * 0.35f * t);
             var c = l.Modulate; c.A = a; l.Modulate = c;
             l.OutlineModulate = new Color(l.OutlineModulate, a);
             if (t >= 1) l.Visible = false;

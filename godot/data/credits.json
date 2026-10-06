@@ -603,6 +603,23 @@
           ]
         },
         {
+          "title": "The camp on the Low Ford road, 2k",
+          "sub": true,
+          "links": [],
+          "notes": [],
+          "entries": [
+            {
+              "name": "Pine Bark",
+              "work": true,
+              "text": "by Dimitrios Savva: the camp's logs",
+              "links": [
+                "https://polyhaven.com/a/pine_bark"
+              ],
+              "lines": []
+            }
+          ]
+        },
+        {
           "title": "Outfit materials",
           "sub": true,
           "links": [],
@@ -1031,6 +1048,14 @@
               "text": "leaves_forest_ground: Poly Haven, CC0",
               "links": [
                 "https://polyhaven.com/a/leaves_forest_ground"
+              ],
+              "lines": []
+            },
+            {
+              "work": false,
+              "text": "forest_ground_06: Poly Haven, CC0",
+              "links": [
+                "https://polyhaven.com/a/forest_ground_06"
               ],
               "lines": []
             }

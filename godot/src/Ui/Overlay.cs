@@ -100,6 +100,7 @@ public abstract partial class Overlay : Control
     public override void _Input(InputEvent e)
     {
         // The mouse moving takes the ring away; the pointer is the focus now.
+        if (e is InputEventMouseMotion { Relative: var rel } && rel.Length() > 0.5f) Nav.MouseMotion();
         if (e is InputEventMouseMotion mm && mm.Relative.Length() > 6 && Nav.KeyMode) Nav.KeyMode = false;
     }
 
@@ -169,7 +170,15 @@ public abstract partial class Overlay : Control
         band.Size = new Vector2(1928, 100);
         band.MouseFilter = MouseFilterEnum.Ignore;
         AddChild(band);
-        if (InBook) BookTabs(new Vector2(40, 30));
+        // The book's tabs ride the same chain on a full page as on the panel, so turning from the
+        // Pack to the Journal keeps one object under the hand.
+        if (InBook)
+        {
+            int on = Array.FindIndex(Book, b => b.Kind == Kind);
+            var tabs = new ChainTabs(Book.Select(b => (b.Name, Controls.Instance?.KeyLabel(b.Key) ?? "")).ToArray(), on, k => { Sound.Sfx.Page(); G.Open(Book[k].Kind); })
+                { Position = new Vector2(40, 16) };
+            AddChild(tabs);
+        }
         var plaque = new Plaque(title, 34, 120);
         AddChild(plaque);
         plaque.Position = new Vector2((1920 - plaque.CustomMinimumSize.X) / 2, sub != null ? 14 : 26);
@@ -201,6 +210,31 @@ public abstract partial class Overlay : Control
     /// <summary>Where the survivor should stand across the screen while this is open, in
     /// pixels from the middle (a side panel: beside it, in view). 0 leaves them centred.</summary>
     public virtual float CameraShift => 0;
+
+    /// <summary>How near the camera comes while this is open (1: as it was).</summary>
+    public virtual float CameraNear => 1;
+
+    /// <summary>The camera's own view of the survivor while this is open (FollowCamera.ScreenFrame:
+    /// pitch in degrees, distance and the height on them it looks at, in metres), the survivor turned
+    /// to it; null leaves play's view, brought CameraNear nearer.</summary>
+    public virtual (float Pitch, float Distance, float Height)? CameraFrame => null;
+
+    /// <summary>The book's view of her (Pack, Self, Arts): from 28 degrees up and 3.9 m off, looking at
+    /// her middle, her whole figure beside the panel and her face 100 pixels tall at 1080: eyes, brows and
+    /// mouth read. (From play's 56 degrees and 13 m her face was a few pixels of the top of her head.)
+    /// --book-frame P,D,H tries another; --book-frame off, play's view as it was.</summary>
+    public static (float Pitch, float Distance, float Height)? BookFrame => Args.Get("book-frame") switch
+    {
+        "off" => null,
+        string f when f.Split(',') is [var p, var d, var h] => (Num(p), Num(d), Num(h)),
+        _ => (28, 3.9f, 1.05f),
+    };
+
+    static float Num(string s) => float.Parse(s, System.Globalization.CultureInfo.InvariantCulture);
+
+    /// <summary>A place on the ground the view looks at while this is open, instead of the survivor
+    /// (a counter: the keeper, live in the world between its two panels). Null: the survivor.</summary>
+    public virtual (double X, double Z)? CameraLook => null;
 
     /// <summary>
     /// A panel down one side of the screen (docs/UI_DESIGN.md 6, "Page or panel"):
@@ -252,6 +286,103 @@ public abstract partial class Overlay : Control
     }
 
     float sideX, sideW;
+
+    /* --------------------------------------------- the approved layouts -- */
+
+    /// <summary>The day's book's panel: its left edge and width (docs/ui_review/self_v2). The book
+    /// (Pack, Self, Arts) is one right-hand panel, so turning its tabs changes only what is in it.</summary>
+    public const float BookX = 1920 - 16 - BookW, BookW = 900;
+
+    /// <summary>The margin inside every panel, the same on all four sides.</summary>
+    public const int Margin = 28;
+
+    /// <summary>How much of the world shows through a panel's ground (the owner: "the whole
+    /// backdrop can get a ever so slight transparency"): evenly, everywhere, never in a fade.</summary>
+    public const float GroundAlpha = 0.93f;
+
+    /// <summary>
+    /// The day's book as a panel at the right, over the live world (the owner: "we like to see our
+    /// beautiful game"). It hugs what it holds and ends cleanly at its content with the same margin on
+    /// every side (the owner on the old taper: "the fade away isn't needed"); its ground lets the
+    /// world through ever so slightly. Its head carries the book's tabs on their chain and Close, then
+    /// the title when there is one (Self's name; the Pack's open tab says enough). Returns its column.
+    /// </summary>
+    protected VBoxContainer BookPanel(string? title, Action? close = null)
+    {
+        HideHud();
+        var shade = new TextureRect
+        {
+            Texture = new GradientTexture2D
+            {
+                Gradient = new Gradient { Colors = new[] { new Color(0.02f, 0.015f, 0.03f, 0), new Color(0.02f, 0.015f, 0.03f, 0.06f), new Color(0.02f, 0.015f, 0.03f, 0.3f), new Color(0.02f, 0.015f, 0.03f, 0.3f) }, Offsets = new[] { 0f, 0.3f, BookX / 1920f, 1f } },
+                Width = 256, Height = 4,
+            },
+            ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize, StretchMode = TextureRect.StretchModeEnum.Scale, MouseFilter = MouseFilterEnum.Ignore,
+            Position = Vector2.Zero, Size = new Vector2(1920, 1080),
+        };
+        AddChild(shade);
+        var panel = Style.Panel(Kit.Window(Margin, Margin, Margin));
+        panel.Position = new Vector2(BookX, 16);
+        panel.CustomMinimumSize = new Vector2(BookW, 0);
+        panel.MouseFilter = MouseFilterEnum.Stop;
+        // (only the ground is see-through: what is on it stays whole)
+        panel.SelfModulate = Colors.White with { A = GroundAlpha };
+        AddChild(panel);
+        var v = Style.V(Style.Gap3);
+        panel.AddChild(v);
+        var head = Style.H(Style.Gap3);
+        if (InBook)
+        {
+            int on = Array.FindIndex(Book, b => b.Kind == Kind);
+            head.AddChild(new ChainTabs(Book.Select(b => (b.Name, Controls.Instance?.KeyLabel(b.Key) ?? "")).ToArray(), on, k => { Sound.Sfx.Page(); G.Open(Book[k].Kind); }));
+        }
+        head.AddChild(new Control { SizeFlagsHorizontal = SizeFlags.ExpandFill, MouseFilter = MouseFilterEnum.Ignore });
+        var btn = Nav.Skip(CloseButton(Toggle is Act t ? G.Key(t) : "Esc", close ?? G.CloseOverlay));
+        btn.SizeFlagsVertical = SizeFlags.ShrinkBegin;
+        head.AddChild(btn);
+        v.AddChild(head);
+        if (title != null) v.AddChild(new Title(title, 30, false));
+        sideX = BookX; sideW = BookW;
+        return v;
+    }
+
+    /// <summary>A fitted panel at a counter (theirs at the left, yours at the right, the keeper live
+    /// in the world between): as tall as what it holds, the same margin on every side, its ground
+    /// ever so slightly see-through. Returns its column.</summary>
+    protected VBoxContainer Fitted(Vector2 at, float width, int gap = Style.Gap4)
+    {
+        var panel = Style.Panel(Kit.Window(Margin, Margin, Margin));
+        panel.Position = at;
+        panel.CustomMinimumSize = new Vector2(width, 0);
+        panel.MouseFilter = MouseFilterEnum.Stop;
+        panel.SelfModulate = Colors.White with { A = GroundAlpha };
+        AddChild(panel);
+        var v = Style.V(gap);
+        panel.AddChild(v);
+        return v;
+    }
+
+    /// <summary>A screen's prompts along the foot of the world, under its panels (a counter, the bench):
+    /// the world can be bright there, so a soft oval of shade lies behind them, darkest at their middle
+    /// and gone well before its edge, so no shape is seen. No plate.</summary>
+    protected void PromptsOnWorld(Control row)
+    {
+        float w = row.GetCombinedMinimumSize().X + 260;
+        var wash = new TextureRect
+        {
+            Texture = new GradientTexture2D
+            {
+                Fill = GradientTexture2D.FillEnum.Radial, FillFrom = new Vector2(0.5f, 0.5f), FillTo = new Vector2(1, 0.5f), Width = 128, Height = 128,
+                Gradient = new Gradient { Colors = new[] { new Color(0.02f, 0.015f, 0.02f, 0.78f), new Color(0.02f, 0.015f, 0.02f, 0.6f), new Color(0.02f, 0.015f, 0.02f, 0) }, Offsets = new[] { 0f, 0.5f, 1f } },
+            },
+            ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize, StretchMode = TextureRect.StretchModeEnum.Scale, MouseFilter = MouseFilterEnum.Ignore,
+            Position = new Vector2(960 - w / 2, 1016 - 50), Size = new Vector2(w, 100),
+        };
+        AddChild(wash);
+        var centre = new CenterContainer { MouseFilter = MouseFilterEnum.Ignore, Position = new Vector2(0, 1000), Size = new Vector2(1920, 32) };
+        centre.AddChild(row);
+        AddChild(centre);
+    }
 
     /// <summary>A side panel's prompts, along its foot.</summary>
     protected void SideFooter(Control row)
@@ -315,12 +446,18 @@ public abstract partial class Overlay : Control
     /// <summary>Close, with its key: a pad shows B, the keyboard the screen's own key.</summary>
     protected static Button CloseButton(string closeKey, Action close)
     {
-        var btn = Style.Button("", close, false, true);
-        var row = Style.H(Style.Gap2, Controls.Instance?.UsingPad == true ? Style.PadButton("B") : Style.Key(closeKey), Style.Label("Close", Style.UiBold, Style.Small, Style.GoldHi));
+        // Close as words with its key, not a button box (words as type, the owner's rule).
+        var btn = new Button { FocusMode = FocusModeEnum.None, MouseDefaultCursorShape = CursorShape.PointingHand, Flat = true };
+        foreach (var s in new[] { "normal", "hover", "pressed", "focus" }) btn.AddThemeStyleboxOverride(s, new StyleBoxEmpty());
+        btn.Pressed += close;
+        var word = Style.Label("Close", Style.UiBold, Style.Small, Kit.Ink2);
+        var row = Style.H(Style.Gap2, Controls.Instance?.UsingPad == true ? Style.PadButton("B") : Style.Key(closeKey), word);
         row.MouseFilter = MouseFilterEnum.Ignore;
-        row.Position = new Vector2(10, 5);
+        row.Position = new Vector2(0, 5);
         btn.AddChild(row);
-        btn.CustomMinimumSize = new Vector2(row.GetCombinedMinimumSize().X + 22, 36);
+        btn.MouseEntered += () => word.AddThemeColorOverride("font_color", Kit.Ink);
+        btn.MouseExited += () => word.AddThemeColorOverride("font_color", Kit.Ink2);
+        btn.CustomMinimumSize = new Vector2(row.GetCombinedMinimumSize().X, 36);
         Nav.Id(btn, "close");
         return btn;
     }
@@ -401,6 +538,45 @@ public abstract partial class Overlay : Control
         }
         Place();
         Callable.From(() => { Place(); if (IsInstanceValid(shown)) shown.Modulate = Colors.White; }).CallDeferred();
+    }
+
+    /// <summary>
+    /// A thing's card beside it, on the world's side of the panel it lies in (UI_RESEARCH 7: no
+    /// inspect panel; the card opens beside the thing, the worn piece beside that, so the eye goes
+    /// from the thing to its card to what it would replace). leftward: the cards open to the left
+    /// of edge (a panel at the screen's right); else to the right of it. The worn card goes on
+    /// further out where there is room, under the first where there is not.
+    /// </summary>
+    protected void TipBeside(Control? card, Control? worn, Control? over, bool leftward, float edge)
+    {
+        tip?.QueueFree();
+        tip = null;
+        if (card == null || over == null) return;
+        var holder = new Control { MouseFilter = MouseFilterEnum.Ignore, ZIndex = 40, Modulate = Colors.Transparent };
+        holder.AddChild(card);
+        if (worn != null) holder.AddChild(worn);
+        tip = holder;
+        AddChild(holder);
+        void Place()
+        {
+            if (!IsInstanceValid(holder) || holder != tip || !IsInstanceValid(over)) return;
+            var r = over.GetGlobalRect();
+            var vp = GetViewportRect().Size;
+            card.ResetSize();
+            var cs = card.Size;
+            float x = leftward ? edge - 14 - cs.X : edge + 14;
+            float y = Mathf.Max(8, Mathf.Min(r.Position.Y - 8, vp.Y - 8 - cs.Y));
+            card.Position = new Vector2(x, y);
+            if (worn == null) return;
+            worn.ResetSize();
+            var ws = worn.Size;
+            float wx = leftward ? x - 12 - ws.X : x + cs.X + 12;
+            bool beside = leftward ? wx >= 8 : wx + ws.X <= vp.X - 8;
+            // Beside it, its top a little lower, so the two read as a pair and not a wall; under it otherwise.
+            worn.Position = beside ? new Vector2(wx, Mathf.Max(8, Mathf.Min(y + 22, vp.Y - 8 - ws.Y))) : new Vector2(x, Mathf.Max(8, Mathf.Min(y + cs.Y + 10, vp.Y - 8 - ws.Y)));
+        }
+        Place();
+        Callable.From(() => { Place(); if (IsInstanceValid(holder)) holder.Modulate = Colors.White; }).CallDeferred();
     }
 }
 

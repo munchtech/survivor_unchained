@@ -27,7 +27,7 @@ from pathlib import Path
 import numpy as np
 
 import bvh as bvhlib
-from rig import Clip, Skeleton, qbetween, qinv, qmul, qnorm, qrot, qslerp, two_bone_ik
+from rig import Clip, Skeleton, qaxis, qbetween, qinv, qmul, qnorm, qrot, qslerp, two_bone_ik
 
 MOCAP = Path(r"C:\Users\munch\Tools\mocap")
 
@@ -451,31 +451,57 @@ def retarget(sk: Skeleton, src: Source, mapping=None, stance=0.8, lock=True, pos
             contacts[side] = c
             ankles[side] = lock_feet(ankles[side], c)
     # Legs reach for the ankles.
-    gl, gp = sk.fk(local, pos)
-    for side in "lr":
-        th, ca, fo = sk.i(f"thigh_{side}"), sk.i(f"calf_{side}"), sk.i(f"foot_{side}")
-        for t in range(T):
-            a, b_, c_ = gp[t, th], gp[t, ca], gp[t, fo]
-            # The knee bends the way the take bends it; a straight leg's
-            # knee points the way its foot does.
-            kd = b_ - (a + c_) / 2
-            toe = gp[t, sk.i(f"ball_{side}")] - c_
-            toe[1] = 0
-            toe = toe / max(np.linalg.norm(toe), 1e-6)
-            pole = kd / max(np.linalg.norm(kd), 1e-6) * min(1.0, np.linalg.norm(kd) / 0.03) + toe * 0.3
-            nb, nc = two_bone_ik(a, b_, c_, ankles[side][t], b_ + pole)
-            r1 = qbetween(b_ - a, nb - a)
-            gth = qmul(r1, gl[t, th])
-            gca0 = qmul(r1, gl[t, ca])
-            b2 = a + (nb - a)
-            c2 = b2 + qrot(r1, c_ - b_)
-            r2 = qbetween(c2 - b2, nc - b2)
-            gca = qmul(r2, gca0)
-            pth = gl[t, sk.parent[th]]
-            local[t, th] = qmul(qinv(pth), gth)
-            local[t, ca] = qmul(qinv(gth), gca)
-            # The foot keeps its turn in the world.
-            local[t, fo] = qmul(qinv(gca), gl[t, fo])
+    def legs(local):
+        local = local.copy()
+        gl, gp = sk.fk(local, pos)
+        for side in "lr":
+            th, ca, fo = sk.i(f"thigh_{side}"), sk.i(f"calf_{side}"), sk.i(f"foot_{side}")
+            for t in range(T):
+                a, b_, c_ = gp[t, th], gp[t, ca], gp[t, fo]
+                # The knee bends the way the take bends it; a straight leg's
+                # knee points the way its foot does.
+                kd = b_ - (a + c_) / 2
+                toe = gp[t, sk.i(f"ball_{side}")] - c_
+                toe[1] = 0
+                toe = toe / max(np.linalg.norm(toe), 1e-6)
+                pole = kd / max(np.linalg.norm(kd), 1e-6) * min(1.0, np.linalg.norm(kd) / 0.03) + toe * 0.3
+                nb, nc = two_bone_ik(a, b_, c_, ankles[side][t], b_ + pole)
+                r1 = qbetween(b_ - a, nb - a)
+                gth = qmul(r1, gl[t, th])
+                gca0 = qmul(r1, gl[t, ca])
+                b2 = a + (nb - a)
+                c2 = b2 + qrot(r1, c_ - b_)
+                r2 = qbetween(c2 - b2, nc - b2)
+                gca = qmul(r2, gca0)
+                pth = gl[t, sk.parent[th]]
+                local[t, th] = qmul(qinv(pth), gth)
+                local[t, ca] = qmul(qinv(gth), gca)
+                # The foot keeps its turn in the world.
+                local[t, fo] = qmul(qinv(gca), gl[t, fo])
+        return local
+
+    src_local = local
+    local = legs(src_local)
+    # A knee never goes into the ground, nor a seat: where the performer's
+    # knee came down onto it (a lunge, a landing) her longer thighs would
+    # drive hers in, and a performer sat on the floor sits lower than her
+    # hips are deep. The hips are lifted by what they lack (eased over a few
+    # frames) and the legs reach for the same planted ankles again.
+    pel, root = sk.i("pelvis"), sk.i("root")
+    for _ in range(3):
+        _, gp = sk.fk(local, pos)
+        knees = np.minimum(gp[:, sk.i("calf_l"), 1], gp[:, sk.i("calf_r"), 1])
+        lack = np.maximum(0.0, np.maximum(0.05 - knees, 0.09 - gp[:, pel, 1]))
+        if lack.max() < 0.005:
+            break
+        held = np.array([lack[max(0, t - 3):t + 4].max() for t in range(T)])
+        kern = np.exp(-0.5 * (np.arange(-4, 5) / 2.0) ** 2)
+        kern /= kern.sum()
+        lift = np.maximum(np.convolve(np.pad(held, 4, mode="edge"), kern, mode="valid"), lack)
+        world = qrot(sk.rest_rot[root], pos[:, pel])
+        world[:, 1] += lift
+        pos[:, pel] = qrot(qinv(sk.rest_rot[root]), world)
+        local = legs(src_local)
     return local, pos, {"scale": k, "contacts": contacts}
 
 
@@ -640,5 +666,76 @@ def lean_neck(rig, local):
     return L
 
 
+def spread_twist(sk: Skeleton, local, share=0.5):
+    """A take's forearm roll moved half into the forearm. Performers' rigs
+    put the roll of the forearm (the radius turning over the ulna) at the
+    wrist; on her, with no twist bones, all of it at the wrist wrings the
+    skin there like a sweet wrapper. Half in the forearm spreads it; the
+    hand's turn in the world is unchanged."""
+    L = local.copy()
+    for side in "lr":
+        la, ha = sk.i(f"lowerarm_{side}"), sk.i(f"hand_{side}")
+        axis = sk.rest_pos[ha] / np.linalg.norm(sk.rest_pos[ha])
+        rest = sk.rest_rot[ha]
+        for t in range(L.shape[0]):
+            d = qmul(L[t, ha], qinv(rest))  # the hand's turn from rest, in the forearm's frame
+            v = d[:3]
+            p = axis * np.dot(v, axis)
+            tw = np.array([p[0], p[1], p[2], d[3]])
+            n = np.linalg.norm(tw)
+            if n < 1e-9:
+                continue
+            tw = tw / n
+            if tw[3] < 0:
+                tw = -tw
+            part = qslerp(np.array([0, 0, 0, 1.0]), tw, share)
+            L[t, la] = qmul(L[t, la], part)
+            L[t, ha] = qmul(qinv(part), L[t, ha])
+    return L
+
+
+def keep_wrists(sk: Skeleton, local):
+    """A take's wrists brought within what a wrist can do (keyed.Rig's
+    range: far toward the palm and back, little to either side), read on
+    the wrist's own axes, which turn with the forearm's roll. A performer's
+    hand on another body's arm can land past them (her hands are smaller
+    and her forearms shorter); the hand then falls a little short."""
+    from keyed import Rig
+    L = local.copy()
+    for side in "lr":
+        ha = sk.i(f"hand_{side}")
+        mid = sk.i(f"middle_01_{side}")
+        y = sk.rest_pos[mid] / np.linalg.norm(sk.rest_pos[mid])
+        z = np.array([0, 0, 1.0]) - y * y[2]
+        z = z / np.linalg.norm(z)
+        x = np.cross(y, z)
+        sgn = 1.0 if side == "r" else -1.0
+        rest = sk.rest_rot[ha]
+        for t in range(L.shape[0]):
+            dh = qmul(qinv(rest), L[t, ha])
+            tw = np.array([*(y * np.dot(dh[:3], y)), dh[3]])
+            n = np.linalg.norm(tw)
+            if n < 1e-9:
+                continue
+            tw = tw / n
+            s = qmul(qinv(tw), dh)
+            if s[3] < 0:
+                s = -s
+            a = 2 * math.acos(min(1.0, s[3]))
+            if a < 1e-6 or np.linalg.norm(s[:3]) < 1e-9:
+                continue
+            ax = s[:3] / np.linalg.norm(s[:3])
+            d = math.degrees(a)
+            flex, dev = d * float(np.dot(ax, z)) * sgn, d * float(np.dot(ax, x))
+            f2, d2 = Rig._wrist_clamp(Rig, flex, dev)
+            if (f2, d2) == (flex, dev):
+                continue
+            v = f2 * sgn * z + d2 * x
+            ang = float(np.linalg.norm(v))
+            s2 = qaxis(v / ang, ang) if ang > 1e-6 else np.array([0, 0, 0, 1.0])
+            L[t, ha] = qmul(rest, qmul(tw, s2))
+    return L
+
+
 def clip_from(name, sk, local, pos, loop=False, meta=None):
-    return Clip(name, 30, local, pos, loop=loop, meta=meta or {})
+    return Clip(name, 30, keep_wrists(sk, spread_twist(sk, local)), pos, loop=loop, meta=meta or {})

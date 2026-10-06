@@ -1,21 +1,36 @@
-# Where we are, 5 October 2026: how to pick back up
+# Where we are: read this after README.md, before your handoff
 
-The team is running. The roster in `README.md` is the address list. Heavy work takes turns (`tools/turn.py`; see README). If you are picking up after a pause, resume the leads by SendMessage ("continue from your status page").
+The one page of what's current. Every lead starts from the latest `claude/vigilant-galileo-l6jqyx`. Merge it first and keep your own workflow; this page says what has changed around you. Updated by the main session, 5 October 2026.
 
-## The integration branch
+## How the team runs now (README has the detail)
 
-`claude/vigilant-galileo-l6jqyx`, 663 tests green, pushed. The main session merges leads' branches as they push, and at each handoff.
+- 3 to 5 leads at once. The rest are paused with their handoffs and resumed in turn.
+- Heavy work takes turns (`tools/turn.py`): `gpu` (ComfyUI, TRELLIS, MoGe, one at a time), `blender` (two), `godot` (three). A fair queue: ask again within 90 s to keep your place.
+- Batch shots and look once. Hand off at about 500k tokens of context. Lean handoffs.
+- Before you show the main session anything, run a strict self-critique at 1:1 and send the findings with it.
 
-## The heroine's outfits (main session)
+## The owner's standing decisions (newest first)
 
-- Done and committed: snug cups, the warden's straight straps, the stalker's top edge and binding, the arcanist's stockings, notch and neckline, soft nipple rises.
-- **In progress: her skin tucked in, not cut away.** Skin under fitted pieces used to be deleted, which opened holes when pieces swung off her. Now `shaders/heroine_skin.gdshader` tucks it 6 mm inward, graded over two rings from each piece's edge (`heroine_outfits.py` writes the grades; `People.TuckSkin` sets the channel). It's built and the tests are green. It still needs seeing in motion before it's committed. Build with `bash $TEMP/hs/turn_build.sh` (full_build in turns).
-- Then: the legal re-check on that build (the narrowed crotch strip, the areola-to-cup margins), then trimming cups to the smallest margin that holds; the arcanist's boot cuffs as level bands.
+- **UI:**
+  - Panels over the live world, not full pages ("we like to see our beautiful game").
+  - No fades: panels end cleanly, on a ground ever so slightly translucent (about 0.9).
+  - No "AI boxes": data is type on the page; stats are a ledger line.
+  - Minimal dead space, strict symmetry and grid.
+  - Soul through world objects that mean something: the chain (Survivor *Unchained*), coals, the watch-lamp, painted pieces, used sparingly.
+  - Toasts, tips and ground labels are stylised type on the world, with no plates.
+- **Sound:** CC0 is acceptable (logged in ASSET_PROVENANCE). Our own is best. The owner may send real recordings to `incoming/`.
+- **Coverage:** pixel-perfect. Cover exactly what must be covered (the areola, a 2.4 cm midline strip), show everything else, and never a hole or see-through. Her skin under garments is tucked in the shader, not cut. There were never genital issues. Fit means tighter, not bigger.
+- **Loot:** fewer, better drops; legendaries (some early) and sets; item level by zone; a filter; slotless stores (pouch, satchel, key ring, belt, purse).
+- **Story fights:** small, specialised arenas with ARPG bosses and no endless phase. A loss wakes her at Chid's a day on. Redcowl can be spared or killed. One rise in Act 1; later only via the rise skill.
+- **Models:** everything ours over time. The boar is ours (creatures lead). The heroine's and hero's bodies stay. Never Hunyuan3D, free web tools, or real people or others' art. Krea 2 is allowed (US$1M cap).
+- **Cinematics:** a cinematic ending in play hands over her exact pose and facing, mid-stride, with the camera easing into play.
+- **Animation:** natural, correct motion; be sceptical; sign off per clip.
+- **The bar:** "we are striving for perfection". Improved isn't enough.
 
-## The owner's standing decisions (see the memory and docs/legal)
+## Current state by area (handoffs have the detail)
 
-- **Coverage is pixel-perfect.** Show as much as possible, cover exactly the areola, and never hide extra skin. Holes or see-through are worse than anything they fix. There were never any genital issues: the Warden's thong is by design, so add no briefs.
-- **UI:** at most one ornamental frame per screen; layouts from research; greyboxes before art. Self, Pack, Storeroom and Trader are being redone.
-- **The bodies stay** (TRELLIS from our own Krea 2 picture). Krea 2's US$1M cap applies.
-- **Story fights:** small, specialised arenas with ARPG bosses and no endless phase. A loss wakes her at Chid's a day on. Redcowl can be spared or killed. Time passes outside fights. One rise in Act 1 only; later only with the rise skill.
-- **US resident; Steam with honest AI disclosure.** The hymn comes from Suno. Final voices come from ElevenLabs, with no placeholders shipped.
+- **Integration:** all tests green (see `dotnet test`).
+- **Ready for successors** (handoff pages in docs/handoff/): UI design, UI art, the experience director, combat, animation, crafting, loot (paused), legal (paused), skills VFX (cut off; its work is merged).
+- **Running:** the face (v7 and ten preset faces; don't merge the face branch until its art lands).
+- **Paused mid-work, to resume in turn:** arena art, creatures (the boar), cinematics, performance, story, the male hero, provenance, voice (paused by the owner: no placeholder voices).
+- **Main session:** the heroine's outfits. All four pass the legal motion check. A few sub-6 px slivers in extreme poses wait for the next outfit batch.

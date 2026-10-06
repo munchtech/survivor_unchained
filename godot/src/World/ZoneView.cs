@@ -51,13 +51,23 @@ public partial class ZoneView : Node3D
         AddChild(g);
         AddChild(Water.Build(z));
         Perf.Lap("ground and water");
-        AddChild(Dressing.Flora(z));
+        var flora = Dressing.Flora(z);
+        AddChild(flora);
+        // Nothing grows in a fire pit: neither the flora nor the meadow (GrowGrass).
+        foreach (var f in z.Meta.Fires)
+            if (f.Ring)
+            {
+                pits.Add(new Vector3((float)f.X, (float)f.Z, 0.95f * (float)f.Size));
+                Bare(flora, new Vector3((float)f.X, (float)f.Y, (float)f.Z), 0.95f * (float)f.Size);
+            }
         Perf.Lap("flora");
         props = Dressing.Props(z);
         AddChild(props);
         Perf.Lap("props");
         Landmarks = new Landmarks(z);
         AddChild(Landmarks.Root);
+        // The camp on the Low Ford road, made for its close-ups (Camp.cs).
+        if (z.Id == "lowford") AddChild(Camp.Dress(Landmarks.Root));
         Perf.Lap("landmarks");
         // An ember arena's ring, its mist and its streams.
         if (z.Place != null)
@@ -82,12 +92,13 @@ public partial class ZoneView : Node3D
         AddChild(fx);
         foreach (var f in meta.Fires)
         {
-            // The web game's ring of stones round it goes; the scanned pit takes its place.
+            // The web game's ring of stones round it goes; the fire's own ring takes its place.
             var fat = new Vector3((float)f.X, (float)f.Y, (float)f.Z);
             if (f.Ring) HideLandmarksNear(fat, 0.85f * (float)f.Size);
             var fire = Campfire.Build(fat, (float)f.Size, ring: f.Ring);
             fx.AddChild(fire);
             fires.Add((f.Light, fire));
+            if (f.Light >= 0 && f.Light < lights.Count) lights[f.Light].LightCullMask &= ~Campfire.CoalLayer;
             // The web game marks a fire's flame with a glowing ball; here the
             // fire has flames of its own, and the ball would only bloom white.
             if (f.Light >= 0 && f.Light < meta.Lights.Count)
@@ -175,14 +186,27 @@ public partial class ZoneView : Node3D
 
     readonly Dictionary<int, (float Level, float Rate)> levels = new();
 
+    /// <summary>How far a fire's light has sunk toward its coals (SetFire).</summary>
+    readonly Dictionary<int, float> lightDrop = new();
+
     /// <summary>A fire's flames scaled (0: embers only); its embers and smoke stay.</summary>
     public void SetFire(int light, float flames)
     {
         foreach (var (l, fire) in fires)
         {
             if (l != light || fire.GetNodeOrNull<Node3D>("Flames") is not Node3D f) continue;
+            // A fire burnt down throws up only the odd spark.
+            if (fire.GetNodeOrNull<GpuParticles3D>("Embers") is { } sparks) sparks.AmountRatio = Mathf.Lerp(0.2f, 1f, Mathf.Clamp(flames, 0, 1));
             f.Visible = flames > 0.02f;
             f.Scale = new Vector3(Mathf.Sqrt(Mathf.Max(flames, 0.02f)), Mathf.Max(flames, 0.02f), Mathf.Sqrt(Mathf.Max(flames, 0.02f)));
+            // Burnt down, the light comes from low over the coals, not from a
+            // flame a metre up (the coals' own glow lights what is just over them).
+            if (light >= 0 && light < lights.Count)
+            {
+                var at = specs[light].At;
+                lightDrop[light] = at.Y - Mathf.Lerp(fire.Position.Y + 0.18f, at.Y, Mathf.Clamp(flames, 0, 1));
+                lights[light].Position = at + Vector3.Down * lightDrop[light];
+            }
         }
     }
 
@@ -212,15 +236,18 @@ public partial class ZoneView : Node3D
         foreach (var c in fire.GetChildren()) if (c is GpuParticles3D p) p.Emitting = on;
     }
 
-    /// <summary>The lit light nearest a place, within so far (creation's portrait takes the fire's
-    /// light off her face, and lays its own warm edge in its place).</summary>
+    /// <summary>The shining light nearest a place, within so far (creation's portrait takes the fire's
+    /// light off her face, and lays its own warm edge in its place). Shining, not lit: a light no one
+    /// has lit or put out shines as it was made, and creation's campfire, never lit, was passed over,
+    /// so the fire still lit her face from below at the close-up, its reflection a white blob as big
+    /// as her pupil low on each iris.</summary>
     public OmniLight3D? LightNear(Vector3 at, float within)
     {
         OmniLight3D? best = null;
         float d = within;
         for (int i = 0; i < lights.Count; i++)
         {
-            if (!lit[i]) continue;
+            if (!lights[i].IsVisibleInTree()) continue;
             float di = lights[i].GlobalPosition.DistanceTo(at);
             if (di < d) { d = di; best = lights[i]; }
         }
@@ -288,6 +315,24 @@ public partial class ZoneView : Node3D
         }
     }
 
+    /// <summary>The fires' pits, (x, z, radius): bare of grass.</summary>
+    readonly List<Vector3> pits = new();
+
+    /// <summary>Every plant of the flora within r of a point taken away.</summary>
+    static void Bare(Node3D flora, Vector3 at, float r)
+    {
+        foreach (var mmi in flora.GetChildren().OfType<MultiMeshInstance3D>())
+        {
+            var mm = mmi.Multimesh;
+            for (int i = 0; i < mm.InstanceCount; i++)
+            {
+                var o = mm.GetInstanceTransform(i).Origin;
+                if (new Vector2(o.X - at.X, o.Z - at.Z).Length() < r)
+                    mm.SetInstanceTransform(i, new Transform3D(new Basis(Vector3.Zero, Vector3.Zero, Vector3.Zero), o));
+            }
+        }
+    }
+
     /// <summary>Hide the low landmark pieces within `radius` of a point on
     /// the ground (what a fire's scanned pit replaces).</summary>
     void HideLandmarksNear(Vector3 at, float radius)
@@ -301,7 +346,8 @@ public partial class ZoneView : Node3D
             var box = t * mi.GetAabb();
             var c = box.GetCenter();
             // Only what lies on the ground (stones, logs), not what hangs over it (a pot).
-            if (new Vector2(c.X - at.X, c.Z - at.Z).Length() < radius && box.Size.Y < 0.7f && box.Size.X < radius * 2.2f && box.Position.Y < at.Y + 0.25f) mi.Visible = false;
+            // (A stone turned on its side has a box taller than it is: 0.72 m for Lowford's.)
+            if (new Vector2(c.X - at.X, c.Z - at.Z).Length() < radius && box.Size.Y < 0.8f && box.Size.X < radius * 2.2f && box.Position.Y < at.Y + 0.25f) mi.Visible = false;
         }
     }
 
@@ -311,6 +357,12 @@ public partial class ZoneView : Node3D
         grass?.QueueFree();
         leaves?.QueueFree();
         grass = Grass.Build(Data, at, radius, grassCell);
+        if (pits.Count > 0 && grass.Multimesh.Mesh.SurfaceGetMaterial(0) is ShaderMaterial gm)
+        {
+            var bare = new Vector4[4];
+            for (int i = 0; i < Mathf.Min(4, pits.Count); i++) bare[i] = new Vector4(pits[i].X, pits[i].Y, pits[i].Z, 0);
+            gm.SetShaderParameter("bare_at", bare);
+        }
         grassAt = at;
         grassRadius = radius;
         AddChild(grass);
@@ -365,7 +417,7 @@ public partial class ZoneView : Node3D
             float ft = t * rate;
             float f = 1 + (Mathf.Sin(ft * 8.3f + ph) * 0.5f + Mathf.Sin(ft * 19.7f + ph * 1.7f) * 0.3f + Mathf.Sin(ft * 3.1f + ph) * 0.2f) * l.Flicker;
             lights[i].LightEnergy = l.Intensity / Mathf.Pi * f * level;
-            lights[i].Position = l.At + new Vector3(0, Mathf.Sin(t * 11 + ph) * 0.03f * l.Flicker, 0);
+            lights[i].Position = l.At + new Vector3(0, Mathf.Sin(t * 11 + ph) * 0.03f * l.Flicker - lightDrop.GetValueOrDefault(i), 0);
         }
     }
 }

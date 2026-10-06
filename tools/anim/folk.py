@@ -2,8 +2,9 @@
 the kit's bodies (the game's women and men, People.Build), packed into
 godot/art/anim/folk.res for People.Clip (FolkClips.cs); the crowd's
 own motion, keyed (crowd.py), which the crowd bakes (Vat.cs); and the
-Ford-Warden's cinematic clips on the man (clips/warden.py), which the
-cinematics play by name ("folk/m_rise_stiff").
+Ford-Warden's cinematic clips on the man (clips/warden.py) and Mother
+Rook's on the woman (clips/rook.py), which the cinematics play by name
+("folk/m_rise_stiff", "folk/f_unfold_arms").
 
     python tools/anim/folk.py [names]
 
@@ -26,7 +27,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 import crowd  # noqa: E402
 from build import GODOT  # noqa: E402
-from clips import warden  # noqa: E402
+from clips import rook, warden  # noqa: E402
 from clips.generated import make  # noqa: E402
 from keyed import Rig  # noqa: E402
 from rig import DATA, REPO, Skeleton, write_clip  # noqa: E402
@@ -60,7 +61,7 @@ def build(want):
     made = []
     for sex, sk_file in (("f", "folk_female_skeleton.json"), ("m", "folk_male_skeleton.json")):
         sk = Skeleton.load(DATA / sk_file)
-        rig = Rig(sk)
+        rig = Rig(sk, grips=False)
         for name, rows in FOLK.items():
             if want and not any(w in name for w in want):
                 continue
@@ -91,6 +92,17 @@ def build(want):
             write_clip(clip, sk, OUT)
             made.append(clip.name)
             print(f"  {clip.name:16s} {clip.frames:4d} frames {clip.length:5.2f} s  (the Warden, {time.time() - t0:.1f} s)")
+        # Mother Rook's cinematic clips, on the woman (clips/rook.py).
+        for name, fn in (rook.CLIPS.items() if sex == "f" else ()):
+            if want and not any(w in name for w in want):
+                continue
+            clip = fn(f"{sex}_{name}", rig)
+            if clip is None:
+                print(f"  {sex}_{name}: its take is not on this machine")
+                continue
+            write_clip(clip, sk, OUT)
+            made.append(clip.name)
+            print(f"  {clip.name:16s} {clip.frames:4d} frames {clip.length:5.2f} s  (Rook)")
         # The crowd's own motion, keyed (crowd.py).
         for name, fn in crowd.KEYED.items():
             if want and not any(w in name for w in want):

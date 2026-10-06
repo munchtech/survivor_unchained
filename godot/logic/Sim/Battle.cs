@@ -735,6 +735,7 @@ public sealed partial class Battle
         if (dl == 0) dl = 1;
         e.LastBlow = before > 0 ? dmg / Math.Max(1, before) : 0;
         e.LastCrit = crit;
+        e.LastDot = o.Dot;
         e.LastDx = dx / dl; e.LastDz = dz / dl;
         e.LastWeapon = o.Weapon?.Id;
         if (e.Disposition == Disposition.Neutral) Provoke(e);
@@ -1413,7 +1414,7 @@ public sealed partial class Battle
         e.RetargetT = Rng.Next() * 0.5;
         e.Slot = Rng.Next() * Tau;
         e.Seed = Rng.Next();
-        e.Burst = false; e.LastBlow = 0; e.LastCrit = false;
+        e.Burst = false; e.LastBlow = 0; e.LastCrit = false; e.LastDot = false;
         e.Status.Clear();
         e.Flash = 0;
         e.Anim = o.Style == SpawnStyle.Rise ? EnemyAnim.Rise : EnemyAnim.Move;
@@ -1636,13 +1637,17 @@ public sealed partial class Battle
         Events.Emit(new Ev.Telegraph { Id = id, Shape = TelegraphShape.Circle, Kind = TelegraphKind.Wall, Radius = 0.01, Duration = 0.01, Hostile = true });
     public IReadOnlyList<EnemyBlow> Blows => blows;
 
-    /// <summary>The creatures' own marked circles still to land (a brute's slam, a burst's fuse): where, how
-    /// wide, how long they were marked and how long is left, and what each does. For the hands that read
-    /// marks (BossSense): a relaxed player steps out of a circle marked under a brute as surely as a boss's.</summary>
+    /// <summary>The creatures' own marked circles still to land (a brute's slam, a burst's fuse, a lobbed pot's
+    /// landing): where, how wide, how long they were marked and how long is left, and what each does. For the
+    /// hands that read marks (BossSense): a relaxed player steps out of a circle marked under a brute as surely
+    /// as a boss's.</summary>
     public IEnumerable<(double X, double Z, double R, double Marked, double Left, double Damage)> EnemyStrikes()
     {
         foreach (var s in strikes)
             if (s.Owner == Side.Enemy) yield return (s.X, s.Z, s.R, s.Delay, s.T, s.Dmg);
+        // A pot in the air is a circle marked where it will land, read as any other (it is Firepot Nan's lesson).
+        foreach (var pr in Projectiles.Items)
+            if (pr.Alive && pr.Lob && pr.Owner == Side.Enemy) yield return (pr.LandX, pr.LandZ, 1.6, pr.Life, pr.Life - pr.Age, pr.Damage);
     }
     /// <summary>Every marked blow still to land is called off (she got up at a checkpoint).</summary>
     public void CancelBlows() => blows.Clear();
@@ -1987,6 +1992,7 @@ public sealed partial class Battle
                 var c = e.Status.Ensure(StatusKind.Chill, 0, 0, 0, 0);
                 c.T = Math.Max(c.T, z.Tick + 0.1);
                 c.Stacks = Math.Max(c.Stacks, (1 - z.Slow) * 8);
+                if (z.School != School.Frost) e.HeldUntil = Time + z.Tick + 0.1;
             }
         });
     }

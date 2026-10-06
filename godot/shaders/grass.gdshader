@@ -29,6 +29,8 @@ uniform float span = 80.0;
 uniform sampler2D heights : filter_linear, repeat_disable;
 uniform float h_size = 290.0;
 uniform float h_res = 256.0;
+// Where nothing grows (a fire's pit): x, z and radius; radius 0 is unused.
+uniform vec4 bare_at[4];
 
 varying float v_t;
 varying vec3 v_tint;
@@ -61,6 +63,7 @@ void vertex() {
 	float leafy = smoothstep(0.42, 0.78, texture(noise_tex, wp * 0.011).g * 0.7 + texture(noise_tex, wp * 0.061 + 0.37).a * 0.3 + leaves - 0.5);
 	dens *= 1.0 - leafy * 0.5;
 	float keep = step(h3, dens * density * edge);
+	for (int i = 0; i < 4; i++) keep *= step(bare_at[i].z, length(wp - bare_at[i].xy));
 	// Shorter than a meadow: the fight is read through it from above.
 	float hgt = mix(0.22, 0.5, nz.b) * (0.75 + 0.5 * h4) * keep;
 	float wid = (0.85 + 0.4 * h1) * keep;

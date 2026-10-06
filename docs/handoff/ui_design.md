@@ -1,151 +1,71 @@
 # Handoff: UI design lead
 
-For the next UI design lead of Survivor Unchained. This file and the repository are all you get.
+For the next UI design lead of Survivor Unchained. Read, in order:
+1. `docs/team/README.md`, then `docs/team/RESUME.md` (its UI rules are yours).
+2. This page.
+3. `docs/team/ui_design.md`: the one-page status.
+4. `docs/design/UI_RESEARCH.md`: the approved direction.
+5. `docs/ui_review/build8/`: what's built, as the player sees it (build7 for the earlier passes).
 
-Read these first:
-1. `docs/team/README.md`
-2. this file
-3. `docs/team/ui_design.md` (one page)
-4. `docs/design/UI_RESEARCH.md` (the approved direction)
-
-Branch: `worktree-agent-aab47bfdab5955dac`. It's pushed and has the integration branch `claude/vigilant-galileo-l6jqyx` merged. The main session merges it, and you open no PRs. 663 tests are green.
-
-Older handoffs are in git history: `git log -- docs/handoff/ui_design.md`.
-
----
+**Branch:** `worktree-agent-aa1f430bd64b8d1ce` (integration merged at 3b508b27). The main session merges it; open no PRs. 762 tests green. Older handoffs are in `git log -- docs/handoff/ui_design.md`.
 
 ## 1. The owner, in their words
+- **The bar:** "we are striving for perfection." Also: "have the ui dev continue to work on unnecesary dead space and good symetry".
+- **On boxes:** "the stat stuff in blocks still dosn't work for me ... they are still ai boxes." No dark rounded box may hold data, at any size.
+- **On full pages:** "we like to see our beautiful game." A page that stays is "slightly see through".
+- **On fades:** "the fade away isn't needed".
+- **On notices:** "transparent and stylized"; tips "a centered attention grabbing thing ... just stylized readable text".
+- **On the chain:** "thats the kinda soul were lookin for. SOUL".
+- **On the ledger:** "more like a dnd top bit which is much better".
 
-- **The bar:**
-  - "AAA standard", "strive for excellent, above and beyond"
-  - "I don't want to polish, I want to create perfection"
-  - "Do we have soul?"
-  - "we are striving for perfection"
-- **On the old frames:** they looked "a little drab and low effort and low def". Then:
-  - "those borders are just ugly, adding more of them dosn't make them better";
-  - the inventory and character page "not look rooted in ui research", "ai looking", in need of "considerable help".
-- **On the greyboxes:** "the ui layouts look better". Then:
-  - "we want to minimize wasted space. if were taking up a lot of extra space have it fade or taper out. or just waste less space altogether to begin with. don't have to be pixel perfect no waste space, but there is a lot of dead space that dosn't do anything, even with artwork."
-- **On inventory:** "a very intuitive inventory management is smart. things that can be tucked away like spellbooks or stuff is useful, inventory management is a very real concern in these games so we need it, but we also don't want to feel cheated with things that should stack, or should not even take up inventory spots directly either."
-- **On the art:** it "needs soul, maybe some chains or something. but those lame borders before were soulless slop". Chains are our motif, used with purpose.
-- **Standing rules:**
-  - Full-page screens pause the world only in arena combat, and are often not the best choice.
-  - Self is not merged into the Pack.
-  - Creation always shows her dressed.
-  - Heavy work takes turns: `python C:/Users/munch/Desktop/survivorsunchained/tools/turn.py take godot "ui design: <job>"`. Use `take gpu` for ComfyUI. Give the turn back the moment the job ends.
+## 2. The brief (this session's)
+1. Rebuild the old screens on the book's rules: pause, rest, chapter, credits and creation (creation first: the first impression, and her face is about to change). **Done** (build8).
+2. Portraits when the face lead (a6007bf07fd45ab0d) messages that her new head has landed: rerun `heroine_paint.py`'s brows and the creation portraits. **Waiting** (no message yet).
+3. UI art (paused): note that `book/ribbon.png` is unused and the map's drawing is soft at its opening zoom. **Done** (status page).
+4. Strict self-critique at 1:1 against UI_RESEARCH with every set of pictures; batch shots in one Godot turn.
 
-## 2. The brief (the coordinator's, current)
+## 3. Built this session (where to look)
+- **Creation** (`Front.cs` CreateScreen, `CreateLook.cs`): `Fitted` panels of `PanelW` 560 at `Inset` 16, mirrored. `Row` (a choice as a line of type; `Choice` and `Recall` use it), `Words` (choices as the house's tabs), `Foot` (`Kit.Keyed` back and on), `Plate` (the name as lettering at her feet), `D*`, `Line`, `Ledger` for the right panel. `Question` is each step's title. `GameFront.DressFigure` stands her at `Fire.X + 0.95` so she is in the middle of the screen.
+- **Pause** (`Menus.cs` PauseScreen): its panel and the settings or controls panel in an `HBoxContainer` (`Plate`), so each is as wide as it needs. `SettingsPanel` rows are `Kit.Tab` words; `ControlsPanel` is a ledger with movable keys as caps.
+- **Rest** (`Menus.cs` RestScreen): `Hush` (the world darkened, no shape), `Said` (what is said, ending above her head at `Over`), `Lay` (choices in equal columns from `Under`), `Choice` (key, word, line, price, refusal), `Morning`.
+- **Chapter** (`Menus.cs` ChapterScreen): one centred column; the `OpenBook` measured until its height holds (the Journal's way).
+- **Credits** (`Credits.cs`): the slab and seal unboxed. **Title** (`Front.cs` TitleScreen): its panels fitted, the name hidden while one is open; the adults' notice a fitted panel.
+- **Kit:** `Kit.Keyed` (key and word, measured again in the tree), `Kit.Tab`, `Kit.TabFlow` (words in centred lines), `Kit.Quiet` (let the pointer through). `WorldType.Keyed` (the same in lettering). `ChainTabs`: `on = -1` (none open, cold), `ends` (turning keys outside the eyes), `gap`; laid out in `_Ready`. `Glyphs.Icon(..., line: true)`.
+- **Switches:** `--sex male`, `--panel load|settings|controls`, `--adults`.
 
-1. **Build the approved layouts in the game.** Use plain tonal styles first, calling UI art's frame names (see 7), so their art drops in. The layouts are Self, Pack, Storeroom, Trader and the bench, in `docs/ui_review/greybox/` and "Our screens" plus "After the owner's first look" in UI_RESEARCH.md. Approved by the owner:
-   - Rook's shelves;
-   - the bench as two panels with the smith live in the world between them.
-2. **The day's clock** (experience director, ab406cf9ddd22b03b):
-   - **A day dial by the zone name:** an arc in four bands in proportion (dawn 1, day 9, dusk 2, night 6 minutes), with her mark moving round it.
-     - Dusk is ember-warm and night is moon-blue. The present band is lit.
-     - At night a pale moon rides the arc, and the tail cools after the nudge.
-     - It dims while the clock is still. No numbers.
-     - Data: `World.Clock`, `DayClock.DayAt/DuskAt/NightAt/NightEnds`, `Journey.ClockStarted`, `GameClock.FreePlay`.
-     - Judge at `--clock 590/710/890/1070` with `--fixed-fps 60`.
-   - **The fall's two choices** (`Game/GameFall.cs`):
-     - "Get up" and "Let the night go" as a held moment, with no page. The world is held and darkened on its own layer, and the HUD stays bright.
-     - Today it's the use-key prompt.
-     - Switches: `--quick warden --sex female --night hollow --stage 3 --auto idle --die 10,26 --choose rise` (or `--choose letgo --die 10`).
-3. **The map result and the Wayfinder's table and atlas.** Both are seen and poor:
-   - the result has two half-empty boxes, and its telling runs past 9 s, so the back button isn't up by then;
-   - the table is an iron plate with the HUD showing round it;
-   - the atlas's "The chart is used up" line is clipped under the parchment.
-   Redo them in the approved restraint. The crafting lead says the Wayfinder's table will also host chart crafting on the bench pattern.
-4. **The heroine's portraits.** When the main session says her head has changed, re-run `python tools/assets/heroine_paint.py` and `python tools/assets/creation_portraits.py`, then shoot the Look's parts.
-5. **The male hero's Look** with ab82cbe99e2937ddd, once his body lands: extend `Portraits.cs` and `creation_portraits.py --sex male`.
-6. **Loot lead (a9a9c345a35e1fcad).** They own stacking, the slotless stores and the item filter. You own the screens. A filter screen is coming.
+## 4. Next
+1. **Portraits** when the face lead messages: `python tools/assets/heroine_paint.py brows`, then `python tools/assets/creation_portraits.py` (takes a Godot turn), then shoot the Look's parts (`--new --sex female --step 1 --part 0..4`) and the calling (the invite's `look.png`). Sunborn, Moonlit and Saffron have no cameo yet (build8/3).
+2. **The male Look** waits for the male hero lead (his invite and cut cameos are glyphs: build8/10, 11).
+3. **Review at 1:1:** combat's new `StoryChoices` (`WorldType.cs`, the knee's choice, merged at 3b508b27) against the held-moment rules.
+4. **Candidates I judged and left:** the credits' reading measure (text wraps near 950 px while its heads' rules run the page's width); the creation rows' room to their right (a list's nature; a 2x2 grid was too narrow for the tags).
 
-## 3. Done this session (all pushed)
+## 5. Decisions (each with its why)
+- **Creation is two mirrored panels with her in the middle:** strict symmetry; she is the hero of the screen; the fire stays in view at her right hand.
+- **The chain means the tabs, wherever they are** (book, pause, creation's steps): one object under the hand; a title beside it has no chains of its own.
+- **Held moments are type over and under her, never a plate:** the fall set the language; the lamp and the morning follow it, the words above her head, the choices below her feet.
+- **The chapter's leaves split past from future:** the past (what was done, what the world says, the tally) on the left, the living and what waits on the right; it also evens their heights.
+- **Line glyphs in rows:** the painted glyph set mixes full colour and white line; a row of them looked unfinished.
+- **No glyphs on the lamp's choices:** the painted ones were purple beside a plain arrow; the fall has none either.
+- **The pause's chain is cold:** a heated link means an open page.
 
-| Commit | What |
-|---|---|
-| fdad746a | **The pack's swap flash.** Wearing a weapon flashed the world figure pale for one frame: the new PlayerView's carried light sat at its feet. `PlayerView.Follow` now copies the light, and the old figure hides at once. Seen frame by frame at 60 fps. The doll showed no T and no blink. |
-| c05e1bf6 | **The day clock on screen:** a smoke behind the line under the picture, narrator in italic, `[[act]]` tokens in tracked steps drawn as the key itself, the house's rule on fade cards, and dawn and nightfall glows (`hud.Fade(..., glow)`). Also a `--clock S` switch. |
-| 74c2df3b | `Style.PageTheme` (a slim scroll bar with a gold grip, on every Overlay) and `FadeEnds` (a scroll that fades at its ends). |
-| d9cbfafd | **The Look's portrait light** (`GameFront.PortraitLight`): key, fill, warm edge and cool rim at head and shoulders and nearer. The fire comes off her face through a stand-in light. `--rig K,F,E,R` sets the strengths. Before and after: `docs/ui_review/look_light_before_after.jpg`. |
-| 31d7a46f, 644fb432 | **UI_RESEARCH.md**, the greyboxes, and `tools/uigreybox`. |
-| 0042c324 | **The arena (draft) cards centred.** The words had risen to the plain card's inset, 18 px left of centre. Short text now centres in the card. **Credits:** the index wraps and drops "Used under", rail-less groups, a fading rule under heads, the OFL's headings set, and fading ends. Legal (af0973d59a5b2817a) passed the screen. |
-
-## 4. Next, in order
-
-The brief in 2. Start with Self or Pack in the game, plain, and shoot at 1920x1080 against the greybox.
-
-The crafting lead's new needs for the bench and table (Forge.cs on their branch):
-- Marks are a seam row with a violet grade badge, I to VI.
-- Chart crafting at the Wayfinder's table: the mods are rows with wax seals (red for the foe, violet for yours). Pin and Scrape are cards; Ink, Burn and redraw, and Annotate are tiles on the whole chart.
-- A crafter's first telling can run to seven lines.
-- Snib's slurry odds sit inside the Steep card.
-
-## 5. Decisions (one line each, with why)
-
-- **One frame per screen.** Hierarchy comes from tone, spacing, type and rules. Every boxed thing being framed meant nothing had hierarchy (the owner's "ugly borders").
-- **Colour is rarity, state, or the one primary action.** That's how the eye finds the rare thing in a grid.
-- **Empty is quiet.** A recessed tile with the name of what goes there; only filled slots carry colour.
-- **Panels hug.** Grids show the rows in use plus one, and the count says the rest. Surfaces that run on taper into the world (the owner on wasted space).
-- **The counters are two fitted panels, the keeper live in the world between.** It's not a full page (the owner's rule), and the world is live content.
-- **No inspect panel.** The card opens on the world's side, with the worn piece beside it and the deltas marked.
-- **Spend with a preview** (Elden Ring): green deltas everywhere until Confirm or Undo.
-- **Irreversible acts are held** (`Style.HoldButton`, built by crafting).
-- **Portrait light only from head and shoulders inward.** The full figure keeps the camp's light, so the shot stays honest.
-- **`hud.Say` narrator lines are italic.** That matches the cinematics.
-
-## 6. Failures and why
-
-- **PowerShell `Get-Content -Raw` / `Set-Content -Encoding utf8` mangled UTF-8** (· became Â·) and added a BOM to two `.cs` files. I restored them from git.
-  - Edit source only with the Edit tool.
-  - For small replacements in Python files use `[IO.File]::ReadAllText/WriteAllText`.
-- **A commit message with double quotes broke PowerShell's argument passing.** Write the message to a file and use `git commit -F`.
-- **Some `--clock` shots looked wrong** because I took dusk to be at 660. It's at 600 (dawn 60 + day 540). Also, without `--fixed-fps 60` the first load frame counts as play.
-- **The first greyboxes had tall half-empty panels.** The owner wanted no dead space; fitted and tapered panels fixed it.
-- **Key presses in shots on the title:** a mouse resting over the menu re-took the focus on every rebuild (MenuList's MouseEntered). It's a real bug with a resting mouse, not yet fixed: gate hover-focus on real mouse motion (`Nav.KeyMode`).
+## 6. Failures, and why
+- **Out-of-tree measures run wide:** a key cap measured before it is in the tree takes the default theme's type, so a button sized from it left its word 30 px short of the panel's edge, and a chain's width came out wrong. Measure again in `Ready` (`Kit.Keyed`, `ChainTabs.Lay`).
+- **A rich label expands by default:** the credits' seal took half its heading's line until set `ShrinkEnd` with its own width.
+- **The chapter measured once was short** (wrapped words settle late): a scroll bar showed and cut the tally. It now measures until it holds.
+- **`--keys` only presses once while the world is paused** (the tour's timer stops): use one `--clicks` for the pause's panels.
+- **One `--adults` run hung at start with no output;** the same run again went through (a stall, not the code). Run shots that might hang under a time limit.
+- **Clicks need `--open`:** without it the tour returns before them; hence `--sex male` and `--panel`.
 
 ## 7. Gotchas
+- **Worktree:** `godot/assets` is a junction to `public/assets` (skip-worktree); the `.godot` cache and the import sidecars were copied from a565196002a51af40's worktree (`scratchpad/uid8/copyimports.py`). Never commit the `.import` or `.uid` files the import dirties; stage your files by name.
+- **`CreateScreen` has a property `Hero`** (the hero's own look); `Kit` there is the static class.
+- **Shots:** `scratchpad/uid8/shot.ps1 NAME SECS [args]` (`$env:SHOT_RES`), `crop.py`, `grid.py OUT COLS W names...`, `review.py OUTDIR name=shot`, batches `b1.ps1` to `b7b.ps1`. `fortune.json` is a day-two save for `--load`; `poor.json` the same with 2 gold (the lamp refusing). PowerShell's `ReadAllText` with a relative path reads from the process's folder, not the location: use full paths.
+- **`G.After` stops while the sim is paused**; fonts: Alegreya Sans lacks →, ←, ▲ and ●.
 
-- **Setup:**
-  - Junction `godot/assets` to `public/assets` and set skip-worktree on it.
-  - `godot/override.cfg` sets the user folder (`SurvivorUnchainedUiLead5`).
-  - Copy `.godot` (without `mono`) and `public/assets/**/*.import` from a recent worktree, then run `dotnet build` and `--headless --import`. The first import took about 15 minutes; later ones about a minute.
-  - Never commit the `.import` files the import dirties (only new art's), nor `.uid` files.
-- **Shots:** `scratchpad/uid5/shot.ps1 NAME SECONDS [args]`. Set `$env:SHOT_ENGINE="--fixed-fps 60"` for frame-exact runs.
-  - Contact sheets: `scratchpad/uid5/sheet.py NAME OUT "x0,y0,x1,y1:w:h"...`.
-  - Crops: `trip.py NAME "box" OUT frames...`.
-  - Use `--sex female`: `--quick` alone builds the old male model.
-  - `--items "iron_helm:2,butchers_cleaver:1"`; `--clicks "1300:580,r1245:715"` (`r` is a right click, every `--click-every` s).
-  - `--open forge:brannoc` (not harlan); `--open draft` in `--zone arena`.
-- **Memory:** many agents run Godot. An out-of-memory shows as `Parameter "mem" is null`; take the turn and retry.
-- **Fonts:** Alegreya Sans lacks → ← ▲ ●. Draw them, or use Alegreya.
-- **UI art's frame names to call:**
-  - panel, row and row_on, well, slot and slot_0..5;
-  - rule_h and rule_v, side, tooltip, chip, price, button and its states, keycap;
-  - node_taken, node_next and node_later;
-  - round and round_hover;
-  - tab_hover and tab_pressed (still owed on the book's tabs).
-- **Files are CRLF.**
+## 8. Collaborators
+- **Main session:** relays the owner and merges.
+- **The face lead (a6007bf07fd45ab0d):** will message when her head lands, for the portraits. `CreateLook.cs` changed in presentation only.
+- **Combat (a427a874da78cba8b):** added `StoryChoices` to `WorldType.cs`.
+- **UI art (paused):** see the status page's notes.
 
-## 8. Collaborators (ids current at handoff)
-
-- **Main session (coordinator):** message `main`. It relays the owner and merges.
-- **UI art, a0bff3ffe4d3ad748:** dresses your layouts once they're built; owes the taper and the chain motif.
-- **Experience director, ab406cf9ddd22b03b:** the day dial and the fall's choices (2.2).
-- **Crafting, af01b0d61ef656dd4:**
-  - the shelves logic is at af01b0d61ef656dd4@012403dd (`Crafting.ShelfPrice` / `BuyShelf`, 24 a shelf);
-  - Forge.cs content for the bench and the table;
-  - `Style.HoldButton`.
-- **Loot and itemisation, a9a9c345a35e1fcad:** the stores, stacking and filter rules.
-- **Legal, af0973d59a5b2817a:** the credits pass; no reply needed unless section names change.
-- **Male hero, ab82cbe99e2937ddd.**
-- **Face lead:** a successor is starting; ask main for the id. They judge faces under `--rig`.
-
-## 9. Read first
-
-1. `docs/design/UI_RESEARCH.md` and `docs/ui_review/greybox/greybox_sheet.jpg`.
-2. `tools/uigreybox/screens.py`: the layouts in numbers (x, y, sizes) to build from.
-3. `godot/src/Ui/Overlay.cs` (Page, SidePanel, Pane), `Style.cs`, `Ornate.cs` (Backdrop, FadeEnds) and `UiArt.cs`.
-4. `godot/src/Ui/Pack.cs`, `Panels.cs` (the character page and the draft), `Forge.cs`, `MapResult.cs`, `MapTable.cs` and `GameHud.cs` (the corner, objectives and Say).
-5. `godot/src/Game/GameFront.cs` (creation, the portrait light), `GameClock.cs` and `GameFall.cs`.
-
-HANDOFF READY: docs/handoff/ui_design.md on worktree-agent-aab47bfdab5955dac (its tip)
+HANDOFF READY: docs/handoff/ui_design.md on worktree-agent-aa1f430bd64b8d1ce@(this commit)

@@ -12,7 +12,7 @@ namespace SurvivorUnchained.Sound;
 /// two-hundredth sword hit does not sound like the first played again. Pan
 /// and near (0..1, how close to the survivor) come from where it happened.
 /// </summary>
-public static class Sfx
+public static partial class Sfx
 {
     static Synth? A => Synth.Instance is { Live: true } s ? s : null;
     static double R(double a, double b) => Synth.R(a, b);
@@ -808,8 +808,8 @@ public static class Sfx
     }
 
     /// <summary>A people's tell, a moment before its rush (combat's charge
-    /// director): the Pack's howl, the Kerchiefs' drum, a Lampling's fuse, the
-    /// barrow's whistle. Recorded takes (tools/comfy/sfx_clips.py), heard over
+    /// director): the Pack's howl, the Kerchiefs' whistle, a Lampling's fuse, the
+    /// dead's horn. Recorded takes (tools/comfy/sfx_clips.py), heard over
     /// the fight and never quite the same twice; a made sound if a take is
     /// missing, so a tell is never silent.</summary>
     public static void Tell(string id)
@@ -817,6 +817,13 @@ public static class Sfx
         if (A is not { } a || !a.Gate("tell", 1, 900)) return;
         if (Recordings.Has(id))
         {
+            // "A horn, twice": each take is one long blast, so a second answers the first, lower.
+            if (id == "tell_horn")
+            {
+                a.Play(new Clip { Of = id, G = 0.6, Pitch = R(0.98, 1.02), Verb = 0.6 });
+                a.Play(new Clip { Of = id, T = Now + 1.5, G = 0.52, Pitch = R(0.9, 0.94), Verb = 0.65 });
+                return;
+            }
             a.Play(new Clip { Of = id, G = id == "tell_fuse" ? 0.5 : 0.62, Pitch = R(0.94, 1.05), Verb = id == "tell_fuse" ? 0.15 : 0.45 });
             return;
         }
@@ -830,6 +837,11 @@ public static class Sfx
                 break;
             case "tell_fuse":
                 a.Play(new Hiss { D = 1.1, G = 0.08, Hp = 3500, Verb = 0.1 });
+                break;
+            case "tell_horn":
+                // Two long low blasts, the second falling away (never the whistle: it is the dead's horn).
+                a.Play(new Fm { F = 98, Ratio = 1.002, Index = 1.6, D = 1.1, G = 0.09, Verb = 0.7 });
+                a.Play(new Fm { T = Now + 1.25, F = 98, F2 = 92, Ratio = 1.002, Index = 1.4, D = 1.5, G = 0.08, Verb = 0.75 });
                 break;
             default:
                 a.Play(new Fm { F = 1900, Ratio = 2.01, Index = 0.4, D = 0.6, G = 0.05, Verb = 0.6 });
@@ -871,6 +883,86 @@ public static class Sfx
     public static void Close() => A?.Play(new Clip { Of = "close", G = 0.16, Bus = Bus.Ui });
 
     public static void Page() { if (A is { } a && a.Gate("page", 1, 120)) a.Play(new Clip { Of = "bookFlip", G = 0.2, Pitch = R(0.95, 1.1), Bus = Bus.Ui }); }
+
+    /// <summary>An iron ring's bending modes, n(n^2-1)/sqrt(n^2+1) for n = 2..5, relative to the
+    /// first: a chain link is a stretched ring, so each is struck as two close partials.</summary>
+    static readonly double[] Ring = { 1.0, 2.83, 5.42, 8.77 };
+
+    /// <summary>One link of iron struck (modal): its ring's partials, each split, detuned and
+    /// decaying on its own and the higher ones faster, so no two links ring alike; a tick of
+    /// contact; a little low body under it.</summary>
+    static void Strike(Synth a, double t, double f0, double g, double decay = 0.13, double verb = 0.12, bool body = true)
+    {
+        for (int j = 0; j < Ring.Length; j++)
+            for (int split = -1; split <= 1; split += 2)
+            {
+                double f = f0 * Ring[j] * (1 + split * R(0.003, 0.009)) * (1 + R(-0.01, 0.01));
+                if (f > 15000) continue;
+                double amp = g * Math.Pow(0.9, j) * (j == 0 ? 1.15 : 1.0) * R(0.7, 1.1) * 0.5;
+                a.Play(new Tone { T = t, F = f, D = decay / (1 + 1.2 * j) * R(0.75, 1.25), G = amp, A = 0.0006, Verb = verb, Bus = Bus.Ui });
+            }
+        a.Play(new Hiss { T = t, A = 0.0004, D = R(0.004, 0.008), G = g * 1.3, Bp = f0 * R(4, 7), Q = 0.9, Bus = Bus.Ui });
+        if (body)
+        {
+            double fb = R(120, 165);
+            a.Play(new Tone { T = t, F = fb, F2 = fb * 0.85, D = R(0.07, 0.1), G = g * 0.55, Lp = 400, Bus = Bus.Ui });
+        }
+    }
+
+    /// <summary>The tab chain dragged to another tab (tools/uiforge/chainanim.py; heard first with
+    /// tools/uiforge/sfxpreview.py). Modal, not FM (the owner: "the sound still kinda sucks"): each
+    /// link that runs through the eyelet is a struck iron ring, timed as the chain moves on its
+    /// slide spring (slow off the mark, quickest early, easing), its neighbour knocking a beat
+    /// after; under them a bed of scrape grains, densest where it runs fastest. Then a sub-thump
+    /// through the band as it stops with the whole chain ringing low, a chink as it settles and a
+    /// softer one as it swings back, and a sizzle of tiny pops as the new links take the heat.
+    /// `links` is how many links pass; `secs` stretches the timing (0.32: the game's slide).</summary>
+    public static void ChainSlide(int links = 6, double secs = 0.32)
+    {
+        if (A is not { } a || !a.Gate("chain", 1, 120)) return;
+        int n = Math.Clamp(links, 2, 14);
+        double t0 = Now, k = secs / 0.32;
+        // Real chain where we have it (art/sound/chainLink_*, chainDrag_*, chainSettle_*: CC0
+        // recordings cut, pitched down and given body by tools/uiforge/chainsfx.py), one clink
+        // per link at the same spring-timed crossings; the modal iron below stands in without it.
+        if (Recordings.Has("chainLink"))
+        {
+            for (int i = 0; i < n; i++)
+            {
+                double u = (i + 0.5) / n;
+                double t = t0 + k * (0.025 + 0.2 * u + 0.04 * u * u) + R(-0.004, 0.004);
+                a.Play(new Clip { T = t, Of = "chainLink", G = 0.32 * (1 - 0.35 * u) * R(0.8, 1.1), Pitch = R(0.94, 1.06), Verb = 0.12, Bus = Bus.Ui });
+            }
+            if (Recordings.Has("chainDrag")) a.Play(new Clip { T = t0 + 0.02 * k, Of = "chainDrag", G = 0.16, Bus = Bus.Ui });
+            if (Recordings.Has("chainSettle")) a.Play(new Clip { T = t0 + 0.29 * k, Of = "chainSettle", G = 0.42, Verb = 0.25, Bus = Bus.Ui });
+            return;
+        }
+        for (int i = 0; i < n; i++)
+        {
+            double u = (i + 0.5) / n;
+            double t = t0 + k * (0.025 + 0.2 * u + 0.04 * u * u);
+            Strike(a, t + R(-0.004, 0.004), R(420, 640), 0.03 * (1.0 - 0.35 * u) * R(0.8, 1.15));
+            if (R(0, 1) < 0.5) Strike(a, t + R(0.012, 0.03), R(600, 900), 0.012 * R(0.7, 1.1), 0.08, 0.12, false);
+        }
+        double stop = t0 + 0.29 * k;
+        for (double t = t0 + 0.02 * k; t < stop;)
+        {
+            double speed = Math.Max(0.15, Math.Pow(Math.Sin(Math.Min(1, (t - t0) / (stop - t0)) * Math.PI), 0.7));
+            a.Play(new Hiss { T = t, A = 0.001, D = R(0.006, 0.018), G = 0.022 * speed * R(0.5, 1.1), Bp = R(1200, 3600), Q = R(2, 5), Bus = Bus.Ui });
+            t += R(0.008, 0.02) / speed;
+        }
+        a.Play(new Tone { T = stop, F = 62, F2 = 44, A = 0.003, D = 0.22, G = 0.12, Lp = 160, Bus = Bus.Ui });
+        a.Play(new Hiss { T = stop, A = 0.002, D = 0.06, G = 0.05, Lp = 300, Brown = true, Bus = Bus.Ui });
+        Strike(a, stop, R(300, 360), 0.05, 0.45, 0.28);
+        Strike(a, stop + 0.006, R(430, 520), 0.03, 0.3, 0.28, false);
+        Strike(a, stop + 0.17, R(640, 760), 0.02, 0.25, 0.25, false);
+        Strike(a, stop + 0.42, R(700, 860), 0.01, 0.2, 0.25, false);
+        for (double t = stop - 0.05; t < stop + 0.65; t += R(0.01, 0.045))
+        {
+            double f = 1 - (t - stop + 0.05) / 0.7;
+            a.Play(new Hiss { T = t, A = 0.0003, D = R(0.002, 0.005), G = 0.012 * f * R(0.4, 1.0), Hp = R(4500, 7000), Bus = Bus.Ui });
+        }
+    }
 
     public static void Pick()
     {

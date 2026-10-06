@@ -109,7 +109,7 @@ public static class Pilot
         // The boss's own fight, read last: it overrules the crowd.
         // Naive hands read only a boss's marks: the way in's (a drive's lane) they walk into, as a first-timer does.
         double hx = mx, hz = mz;
-        if (ReadsBosses && (boss != null || (b.Blows.Count > 0 || strikes && b.EnemyStrikes().Any()) && !naive)) Boss(b, boss, deft, ref mx, ref mz, goal, strikes && !naive, first);
+        if (ReadsBosses && (boss != null || (b.Blows.Count > 0 || strikes && (b.EnemyStrikes().Any() || BossSense.Underfoot(b))) && !naive)) Boss(b, boss, deft, ref mx, ref mz, goal, strikes && !naive, first);
         if (Debug) Console.Error.WriteLine($"   PILOT near {(nearest == null ? "-" : $"{nearest.Def.Id} {near:0.0}")} big {big != null} press {press.Count} goal {goal} stone {stone != null} hands ({hx:0.00},{hz:0.00}) after boss ({mx:0.00},{mz:0.00})");
         double ml = Math.Sqrt(mx * mx + mz * mz);
         if (ml > 1e-6) { mx /= ml; mz /= ml; }

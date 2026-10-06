@@ -46,7 +46,10 @@ def modules():
     for f in sorted((Path(__file__).resolve().parent / "clips").glob("*.py")):
         if f.name.startswith("_"):
             continue
-        yield importlib.import_module(f"clips.{f.stem}")
+        m = importlib.import_module(f"clips.{f.stem}")
+        # (Some modules make other bodies' clips, packed elsewhere: warden.py by folk.py.)
+        if hasattr(m, "clips"):
+            yield m
 
 
 def pack(out=OUT, stem="heroine"):

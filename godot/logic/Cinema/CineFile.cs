@@ -97,6 +97,10 @@ public sealed class CineEnd
     public string? Her;
     /// <summary>"follow": the game's camera; the last shot's move blends into it.</summary>
     public string Camera = "follow";
+    /// <summary>Cast whose bodies stay where it leaves them, still, after it hands
+    /// back (the Warden face down in the ford after C03), until the next
+    /// cinematic or until she leaves the place: nothing vanishes at the hand-over.</summary>
+    public List<string>? Keep;
 }
 
 /// <summary>Which survivors a shot or a cue is for (all of them, when unset).</summary>
@@ -206,6 +210,6 @@ public sealed class CineCue
     [
         "line", "music", "sfx", "place", "anim", "move", "face", "gaze", "lids", "look", "light", "lit", "fire",
         "atmosphere", "vfx", "spawn", "world", "bars", "title", "event", "fade", "hide", "wet", "hold", "prop", "prints", "glow", "frost",
-        "lamp", "head",
+        "lamp", "head", "play",
     ];
 }

@@ -1,141 +1,152 @@
-# Handoff: animation (the heroine, the hero, the crowd, the townsfolk, the cinematics)
+# Handoff: animation
 
-For the next animation lead in Survivor Unchained. Read `docs/team/README.md`
-first, then this page, then `docs/team/animation.md` (the one-page status).
-Written by agent a03acf30b3e9bdd70, branch `worktree-agent-a03acf30b3e9bdd70`,
-which took over from a435f4dd0ac80df75 (before it a1e3002b800ee55ac and
-aa4f5fc266b043035).
+For the next animation lead. Read `docs/team/README.md` and `docs/team/RESUME.md`, then this page, then `docs/team/animation.md` (status and the per-clip sign-off log). Written by the successor of a7dd95d00c4a6a017, on branch `worktree-agent-aa15f092820132274`. The leads before: a7dd95d00c4a6a017 and a03acf30b3e9bdd70.
 
-## 1. The owner's bar (quotes)
+## 1. The owner's bar
 
-- "AAA standard", "strive for excellent, above and beyond - not just good
-  enough". "Not polish, perfection." Never settle: remake rather than polish.
-- "we are striving for perfection." Improved is not enough: before you show
-  anything, ask whether it is the best version of this in any game, ground the
-  design in how the best games solve it, then make it ours (the main session,
-  passing on the owner).
-- "Do we have soul?" The aim is "one game in a million, not one soulless game of
-  many". For motion: "movement with personality, specific to her and to each
-  calling: a signature idle, the way she draws a weapon or catches her
-  breath, small human details. Stock-library motion fails, however clean."
+- "AAA", "we are striving for perfection", "not polish, perfection". Remake rather than polish.
 - Motion should be "weighty, characterful, readable at the game's camera".
-- Sex appeal and the male gaze drive the heroine, "tho not at the cost of
-  looking bad". The tone is 18+ (mature, not explicit).
-- Context: "accurate, efficient, on track, manage and engineer context.
-  deliberate. clean over chaos".
+- From the latest tests:
+  - "noticing a lot of reverse weird wrist motions ... stuff that isn't flowing naturally. it seems to be attempting to correct";
+  - "were looking for natural / correct movements. just want it to be skeptical".
+- Treat every clip as guilty until it is shown natural. The numbers are never the verdict: look at full resolution, at the game camera and at the cinematic's camera.
+- The heroine carries sex appeal, "tho not at the cost of looking bad". The tone is 18+.
 
 ## 2. The brief
 
-You own character animation in `godot/` (Godot 4.5.1 .NET), with the tools in
-`tools/anim/`:
-- her clips (`her/`, `heroine.res`) and the male hero's (`him/`, `hero.res`);
-- the townsfolk's clips and the crowd's own motion (`folk/`, `folk.res`; `crowd.py`);
-- the beasts' composed motion (`Beasts.cs`);
-- the cinematics' clips and gestures, including the Ford-Warden's (`clips/warden.py`, in `folk.res`).
+- You own character animation:
+  - her (`heroine.res`), the hero (`hero.res`) and the folk (`folk.res`);
+  - the crowd's keyed motion (`crowd.py`) and the beasts' (`Beasts.cs`);
+  - the cinematics' clips.
+- Tools are in `tools/anim/`. In `godot/src/Actors/`, change animation mapping and playback only. This round also touched:
+  - weapon mounts (`Arms.Hold`'s lean);
+  - `GameFall.cs` (her fall and get-up).
+- Take a turn for every Godot run, packs included (`tools/turn.py take godot "animation: ..." --wait N`).
+- Run `dotnet test` in `godot/tests` before commits (762 pass). Commit and push your branch. Open no PRs. Use British spelling.
 
-How to work:
-- Judge everything at full resolution as the player sees it: on sheets, in the running game at the default camera (1920x1080), and cinematic clips in their cinematic at its own cameras.
-- Reject takes that don't fit the game's action; don't bend them to fit.
-- In `godot/src/Actors/` change only animation mapping and playback. Hair, face, skin, outfits and the sim belong to others.
-- Keep `cd godot/tests && dotnet test` green (661 pass).
-- Commit and push at milestones; the main session merges. Open no PRs. British spelling. Short comments that say why. Don't stop to ask.
-- **Take a turn before any Godot run for pictures or clips** (packs too): `python C:/Users/munch/Desktop/survivorsunchained/tools/turn.py take godot "animation: <job>" --wait 10`, and `give godot "<same name>"` the moment it ends. Two heavy jobs at once have crashed the machine.
+## 3. Done this round (pushed: c21ea122, dd21d37b and the commit that adds this page)
 
-## 3. Done this session (all pushed; newest last)
-
-ffab4040, 926efa47, 3818c0e0 (status), 75cff887, 869a1d81.
-
-- **The slam** (`crowd.slam`, `slam_armed`; ffab4040). The predecessor's keyed draft read as a stretch from the game's camera, so it was remade:
-  - the lead foot planted in a gather; the fists locked (armed: the axe raised high, its head up and back where the camera above sees it); the back arched; a hang;
-  - the jack-knife with the body leading, the blow on frame 30 (1.0 s, a frame the 15 fps bake samples); held down glaring; up and settled 0.67 s after.
-  - Its own role `"slam"` (`Visuals.Clips.Slam`) on kerchief_brute (Barn-Door) and skeleton_minion (the Heap). `CrowdView` plays the windup so the blow lands with the sim's (`SlamImpact` = 1.0), then plays the rest of the clip after the cast.
-  - Judged on sheets (side, front, 64 degrees) and in the game.
-- **Kneel-to-shoot** (`crowd.kneel_aim`, `kneel_shot`; 926efa47): on the knee by 0.33 s, on the eye by 0.53 s, held; then the kick, a beat, the rise, standing by 0.63 s. Roles `"aim"` and `"shot"` (`Visuals.Kneels`) on skeleton_rogue and a new visual, **kerchief_crossbow** (the pillager's red hood with a crossbow). `CrowdView` plays the shot only after an aim (`Gait.Aimed`/`ShotT`), so a melee strike stays the library's. Judged in the game with levy_crossbow pointed at it locally.
-- **Vat v13.**
-- **`--on casts`** (Game.cs): fifteen frames a second through every marked cast, for judging casts in the game.
-- **The Ford-Warden's cinematic clips** (`tools/anim/clips/warden.py`, packed by `folk.py` as `m_<name>`, played as `folk/m_<name>`):
-  - C02: `rise_stiff` (Kimodo take 1, retimed, grounded, settled on its mark; the lamp keyed up out of the water) and `bend_lift` (take 1's bend cut and slowed into the stop; the lamp keyed out to her face with one bad tremble at 2.0 s; the head tilts as he looks).
-  - C03: `kneel_lamp`, `lamp_down`, `fold_forward`, all keyed (the takes were rejected).
-  - Each was judged in its cinematic by swapping the cues in locally (never committed). The exact cues are with the cinematics lead (§8).
-  - `People.Clip` passes `folk/...` names through, so any kit-built person can play the kit's own clips by name.
-  - `keyed.py` fingers take `"oppose"` (0..1): the thumb swung across the palm before it bends, so a fist closes over the thumb. The Warden's fists use it. Existing presets are unchanged.
+- **The wrist.** The single 80-degree wrist limit is gone.
+  - `keyed.Rig` sets FLEX 75, EXT 65, RADIAL 22 and ULNAR 38, read on the wrist's own axes, which turn with the forearm's roll (`_wrist_split`, `_wrist_clamp`, `_wrist_over`).
+  - The elbow's swivel search uses the same range.
+  - Retargeted takes are held to it (`retarget.keep_wrists`).
+  - 8,899 frames were past a wrist's range, as scratch `wrist.py` measures it with tight limits; 637 are now, most within a few degrees. The audit, with its wider limits, now flags none.
+- **The diagonal grip.**
+  - `keyed.GRIP` and `Arms.Spec.Lean`: sword 35 degrees; axe, daggers, mace and wand 30; staff and crossbow square.
+  - It applies to her and the hero only: `Rig.grips`, and `person.Own != null` in `Arms.Hold`. The folk also play the library's clips, held square.
+  - A clip's `meta.weapon` sets it (`grip_of`). `anim_review.gd` mounts the same lean.
+  - `_whole_aims` fills blade and knuckles in the grip's frame.
+- **The `thumb` control:** the wrist straight, the forearm rolled toward a direction.
+  - Used for carried blades (`run.blade_carry`), the reaver's twirl and `bull_rush`'s drawn-back sword.
+  - Thumb-only keys skip the swivel search.
+  - Mixed with blade keys, they are filled by `_whole_aims`.
+- **Re-keyed:**
+  - `warden_show`: the sword raised overhand, the point down over the rim at you, the face clear;
+  - the runs and sprints: the sword hand at her side and ahead; the sprint's arm capped at 85% reach;
+  - `bull_rush`;
+  - `chain_strike`: a frame for the axe to come down; contact moved to 3/30;
+  - `cast_raise`: the staff across overhead, then upright in both fists;
+  - the reaver's twirl;
+  - the folk's `die_front`.
+- **Ground:**
+  - `death`'s knees and shield, and `get_up`'s knees, no longer sink. The shield lies face up and the blade lies flat.
+  - Retargeted takes lift the hips where a knee or a seat would go into the ground, then re-reach for the planted ankles (`retarget.retarget`). This fixed leap's landing.
+  - `lie_side_wake`'s elbow dip is shortened.
+- **Her story fall:**
+  - `StoryNight.OnFall` keeps her at 1 HP, so she used to stand through her own fall.
+  - `PlayerView.Fall()` (from `GameFall.StoryFall`) now puts her down; `Revive()` (from `GetUp`) plays `get_up`.
+  - The UI's build7 shot was the male hero (green); pass `--sex female` for her.
+- **`flinch`:** a new gesture, a jolt of the back and head. It is laid over a run or a blow when she is moving or mid-blow; standing, the old upper-body `hit` plays.
+- **`audit.py`** flags a wrist past its range (FLEX 85, EXT 75, RADIAL 30, ULNAR 45: wider than the solver because its axis is the hand's, up to 13 degrees off the forearm on the hero).
+- **Audit totals:** 231 frames flagged, down from 894 when this round began. One clip spins over 90 degrees in a frame: the hero's `chain_strike`.
+- **Strikes:** judged at the arena camera at 1.6 times; they read and no flip shows.
+- **Strips:** sent to the main session as one batch (`anim5/sh/ba5_*.png`, plus the predecessor's `anim4/sh/ba_*.png`).
 
 ## 4. Next, in order
 
-1. **C04's `flask_drink`** (her), then C01's `letter`, `kneel_to_stand_snap`, `take_from_log` and `cup_hands`, then C04's rest (`wade_out`, `walk_uphill`, `unfold_arms`).
-   - Takes are in `C:/Users/munch/Tools/mocap/kimodo/<name>_<n>.bvh`, three of each.
-   - Judge whole takes first. The quickest triage is `stick.py take:<prompt>_<n> f` (scratch, §7). Then sheet the likely take, then judge it in the cinematic with a local cue swap.
-   - Her story clips belong in `clips/story.py` (`ALL`; `JUDGED` once judged), built by `build.py` into `heroine.res`. Kimodo-based ones go through `generated.make` (warp, place). Key over a take with `build(..., base=clip)` where its hands must hold something.
-   - Read the shooting script (`docs/cinematics/shoot/cNN.md`) and the written script (`docs/cinematics/cNN_*.md`) for each shot's beats. Use `--cinebones` (in `cine.py`) to measure where things are.
-2. **The Warden's remaining two:** `lie_arm_up` (C02 shots 3 and 4, lying under the river with the lamp up) and `wade_drag` (C02 shot 6, the wade with the greatsword dragging). `rise_stiff` starts from his left forearm held up off the elbow, so `lie_arm_up` should end in that pose.
-3. **Grimtunnel's** `burst_hug`, `sniff`, `laugh` and `dive` (C03), composed on the lampling rig in `Beasts.cs`. The lampling's slam (Grimtunnel, the Gaffer, the Ganger, the Sapper-Foreman) would be a `Beasts.cs` composition too.
-4. **Polish:** `chain_strike`'s low landing crouch reads as a kneel; and a heavier flinch while running (a `Gestures` gesture fired with the hit would layer over the run).
-5. **The male hero's library rebuild** once his body lands, with the male hero lead (ab82cbe99e2937ddd): re-dump `hero_skeleton.json` with `anim_skeleton.gd`, then `build.py --body hero`.
+1. **C01 and C04 in their cinematics,** once cinematics has blocked them in. Use a local cue swap (scratch `cue.py`, never committed). The hands that were keyed past a wrist's range now fall short: look at `cup_hands`, `letter`, `reach_coals` and `sit_back_heels` close up. `flask_drink`'s spout stays on her lips (scratch `contact.py`).
+2. **The Warden's `lie_arm_up` and `wade_drag` in C02.**
+3. **Grimtunnel's `burst_hug`, `sniff`, `laugh` and `dive`, and the lampling's slam** (`Beasts.cs` compositions). Nothing in the game asks for these roles yet, so agree the moments with combat first (`GrimtunnelStory`: Under, the burst, the lamps).
+4. **The male hero's library** with ab82cbe99e2937ddd. When his body lands, re-dump `hero_skeleton.json` and rebuild. Flagged on his skeleton:
+   - `chain_strike` spins 106 degrees at the blow;
+   - `lie_side_wake`'s forearm goes 16 cm into the ground;
+   - his story clips need fitting to his proportions.
+5. **Polish:**
+   - the chain haul's landing crouch;
+   - toes 3 to 8 cm into the ground in some folk takes and in `sit_back_heels` (a toe clamp in `retarget`);
+   - `death_back`'s shield edge, 5 cm in.
+6. **The boar** on the creatures lead's quadruped rig (af551cacc6292152f).
 
-## 5. Waiting on others
+## 5. Decisions and why
 
-- **Combat's successor** (queued as the first item of `docs/handoff/combat.md` §4.3, on worktree-agent-a708da2c97bf85c95@df6556e2):
-  - plant the slammer 0.65 s after its blow, and the shooter 0.7 s after an aimed shot. Until then the Heap strikes again over its get-up, and the crossbows skate as they rise.
-  - point levy_crossbow and mb_levy_sergeant at `kerchief_crossbow`, and add it to `EncounterTests`' rigs list.
-- **Cinematics** (a79b6d8c81e14dc63) blocks the Warden's clips into C02 and C03 once merged:
-  - moves C03's heart (he now falls toward her, his chest at about w plus (0, 0, +2));
-  - reframes C03's shot-4 insert;
-  - fixed the floating lamp in WardenView (a bail from `handslot.l`, plumb under the fist).
+- **The wrist is anisotropic and read on its own axes,** because a sideways bend of 60 to 80 degrees reads as broken. The swing is taken after the twist (`dh = twist * swing`), as the radius carries the wrist's axes when it rolls. Measuring it the other way round mixes flexion into deviation.
+- **Weapons sit in a diagonal grip,** because a sword held square needs a kinked wrist to point along the arm. The game and the solver must agree, so the lean lives in both places (`keyed.GRIP`, `Arms.Spec.Lean`) and nowhere else.
+- **Carried blades use `thumb`, not `blade`.** A hand behind her with a straight wrist can only point a blade down or across her, so a long blade's hand stays at her side and ahead.
+- **A clip keyed past anatomy is re-keyed, not clamped and passed.** The clamp only keeps it legal: where a hand falls short, look at the result.
+- **Retargeted takes are fixed at retarget,** for wrists, knees and seats, with planted feet kept.
+- **Story falls are shown:** the view falls and rises; the fight logic is untouched.
 
-## 6. Decisions and why
+## 6. Failures and why
 
-- **The slam and the kneel are roles of their own, not `cast` or `attack`.** A rally's cast loops and a slam's must not. A shot after an aim must not replace the crossbow's melee strike.
-- **A blow lands on a frame the bake samples** (15 fps), so it is never smeared between two.
-- **Wind-ups raise the weapon high.** From the game's camera a weapon hung behind the back is hidden by the body.
-- **The kneel is side-on to its mark.** The bolt's line reads from above.
-- **Cinematic clips are judged in the cinematic, at its cameras and with its staging.** A clip that looked right on a sheet (`bend_lift`'s first pass) folded him through her in C02. Measure the staging with `--cinebones`.
-- **Take what a take does well, key what it can't.** Kimodo's bodies have weight, but its hands hold nothing. Key the hands over the take (`build(..., base=...)`), and reset a take's fingers first (`_bare_hands`).
-- **The Warden's clips live in folk.res** (he is the kit man at 2.5 times), not in a library of his own.
-- Earlier: corpses lie three ways with weapons laid flat; his clips come from her code with a man's numbers; gestures are additive; Kimodo's slam was rejected.
+- **warden_show took four tries.**
+  1. Pointing the blade at the front camera crossed her face and read as nothing.
+  2. Close in, the forearm crossed the face.
+  3. Over the shoulder needed more than 95 degrees of forearm roll.
+  4. The overhand guard with the hand out to her right works.
+  - Check the creation screen's view (front, turned 14 degrees) before choosing a pose.
+- **The first run carry pointed the blade out and down**, so from the side it read as a cane. Down-forward with a steady hand reads as carried.
+- **A full build without names drops the clips modules build only when named** (the walks and C01). Always pass every name: `her_names.txt` and `hero_names.txt` in scratch.
 
-## 7. Failures and why
+## 7. Gotchas
 
-- **The first `bend_lift` folded him through her.** The take's bend is for a man looking at the ground; at 2.5 times, an arm's length from her, that put his head at her shoulder. It was cut at the right depth instead.
-- **The cinematic played Idle in place of `folk/...` clips.** `People.Resolve` maps any name the library lacks to Idle. Fixed in `People.Clip`.
-- **The Warden's lamp hand thumbed a lift.** The keyed fist bent the thumb but never brought it across. Fixed with `"oppose"`.
-- **`rise_stiff` lay through the ground and stood 0.7 m off his mark.** Retargeting doesn't ground a lying body, and the take travels as it rises. Fixed with `_grounded` and `_settled`.
-- **The disk filled briefly** (0 bytes free on C:, about 20:35 on 4 October; not ours). Every worktree's `godot/.godot` is about 1.8 GB.
+- **The worktree guard** refuses `cd ... && git` chains, heredocs that touch the worktree, variables in commands and computed `python` programmes. Write patch scripts to the scratchpad and run them plainly. PowerShell is the easy path for `python tools/anim/...`.
+- **`godot/assets` arrives as a text file.**
+  - Replace it with a junction: `New-Item -ItemType Junction` to `public/assets`. A symlink needs admin rights.
+  - Then run `git update-index --skip-worktree godot/assets`.
+  - Copy `godot/.godot` and the `public/assets` `*.import` and `*.uid` files from a warm worktree (robocopy) to skip a full import.
+- **`tools/anim/out` is not in git.** Copy it from a predecessor's worktree, or rebuild everything by name: about 40 minutes for her, as long for him, 10 for the folk, run in parallel in the background.
+- Build the C# (`dotnet build godot/SurvivorUnchained.csproj`) before a game run.
+- The audit's `angle()` has a 2 to 3 degree noise floor: the quaternions from FK drift off unit length.
+- `--quick` with no `--sex` starts the male hero.
+- Never commit `.uid` or `.import` files. Add files by name.
 
-## 8. Gotchas
+## 8. Scratch tools (`<scratchpad>/anim5`)
 
-- **Fresh worktree:**
-  - `godot/assets` checks out as a text file. Replace it with a junction to `public/assets`, then run `git update-index --assume-unchanged godot/assets`.
-  - Copy `public/assets` `*.import`/`*.uid`, `godot/.godot` and `tools/anim/out/{clips,folk,hero}` from a worktree that has them (robocopy).
-  - Run `--import` in the background. It segfaulted once part-way; running it again finished it.
-  - Restore `.import` churn with `git checkout -- "*.import"` before committing. Never commit `.uid` or `.import` files.
-- **This sandbox refuses** `cd ... && git` chains with heredocs or runtime-built programs, `sed` in loops, and `python -c` that touches git paths. Write patch scripts to the scratchpad and run them plainly.
-- **The scratchpad is shared by every agent.** Keep yours in a subfolder (mine: `scratchpad/anim3`).
-- **`folk.py <names>`** filters on the bare name ("slam", not "m_slam"). A name matching nothing packs nothing. Every pack takes every JSON in `out/folk`: move try-takes (`*_k_*`) out first (`repack.py` does it).
-- **The VAT cache `user://vat` is shared by every worktree.** Bump `Vat.Version` when a bake changes.
-- **In-game captures:** pass `--fixed-fps 30` (engine side, before `--`) so frames land on time. Use `--lab --give +vitality` so the creature isn't flashing white from blows. Spawn far enough away (`--dist 7`) that it doesn't overlap the survivor.
-- **Fingers in keys:** a preset name and a dict don't blend. Use dicts with the same keys throughout one clip.
-- **Combat's sim** sets `e.Anim` to Move or Idle on the tick after a cast, and only an Attack resets `e.AnimT`. Play post-cast tails on `AnimT` with view-side state (`CrowdView.Gait`), never on `e.Anim`.
-- **Scratch tools** (in `scratchpad/anim3`, each short to rewrite):
-  - `stick.py <keyed|take:prompt_n|warden:name> [m|f] [step]`: stick figures (side and front), the lowest joint per frame.
-  - `joints.py name sex frames...`: joint positions.
-  - `csheet.py`: CrowdSheet rows. `hsheet.py`: anim_review rows (`model=male`, `@crossbow`).
-  - `game.py name <args>`: the game at 1920x1080 with `--fixed-fps 30`. `tile.py`: crops of game frames tiled.
-  - `cine.py CINE NAME UNTIL [--stills N]`: a cinematic's stills with `--cinebones`. `board.py`: stills tiled.
-  - `cine_try.py` / `cine_try3.py on|off`: the local C02/C03 cue swaps.
-  - `try_takes.py`: whole Kimodo takes as `k_` clips. `repack.py`: moves `k_` JSONs aside and repacks under a turn.
+- **Renders:** `shots.py SET TAG [--pack --hero --folk]` renders a set of `anim_review` sheets in one Godot turn. The sets are `ws`, `wr`, `after`, `strikes`, `c01`, `flinch` and `fist`.
+- **Arm and wrist checks:**
+  - `spin.py N`: clips spinning a hand more than N degrees in a frame.
+  - `wrist.py [names] [--before]`: flexion and deviation per clip.
+  - `probe.py module fn [her|hero] step side`: arm geometry per frame.
+  - `runarm.py` and `runtry.py`: the run's forearm and blade per frame, and trying thumb carries.
+  - `twist.py`: the raw twist asked per frame.
+  - `jitter.py`: frame-to-frame bone turn.
+- **Body and prop checks:**
+  - `blade.py`: a held blade through her body.
+  - `groundall.py N [--before]`: every clip's worst sink into the ground. `groundj.py` checks one built clip.
+  - `guard.py`: `warden_show`'s guard geometry, with GRIP and BLADE env vars to convert targets to keys.
+  - `shield.py`: her shield's facing.
+  - `contact.py`: the flask on her lips.
+- **Before and after:** `out_before/` is the predecessor's built clips. `ba.py` stacks before and after strips.
+- **The game:** `gamerun.py NAME [--pack] args` takes a turn, packs, and runs the game for frames.
 
 ## 9. Collaborators
 
-- Main session: `main`.
-- Combat: a708da2c97bf85c95 handed off; their successor has the plants and the repoint (§5).
-- Cinematics: a79b6d8c81e14dc63 (new lead). The timelines are theirs; send clip names and cues.
-- Male hero: ab82cbe99e2937ddd (§4.5).
-- Experience director, performance: see the roster in `docs/team/README.md`.
+- The coordinator (main). It knows about the fall fix and has had the strips.
+- Combat (the successor of a739d6792d21f5efd) for Grimtunnel's roles.
+- Cinematics (a7a4c20bcfd7ccfd3) for C01, C02 and C04, and `chain_strike`'s contact at 3/30.
+- Skills VFX (abc6bbe020c7fe287): weapons now lean in her fist.
+- The male hero (ab82cbe99e2937ddd).
+- Creatures (af551cacc6292152f).
+- UI and experience: her fall now shows.
 
 ## 10. Read first
 
-1. `docs/team/animation.md`, then this page.
-2. `tools/anim/crowd.py` (the slam, the kneel, the fallen) and `tools/anim/clips/warden.py`.
-3. `godot/src/Actors/CrowdView.cs` (the Casting case and the tails in `default`), `Vat.cs` (`BakePerson`), `FolkClips.cs`, `Visuals.cs`.
-4. `tools/anim/keyed.py` (controls, `build(base=, post=)`, fingers), `clips/generated.py` (`make`, `warp`), `clips/story.py`, `folk.py`.
-5. For the next clips: `docs/cinematics/shoot/c01.md` and `c04a.md`, and `godot/data/cinematics/c01.json` and `c04a.json`.
+1. `docs/team/animation.md`
+2. `tools/anim/keyed.py`:
+   - `Rig.solve` (the hand step, `_wrist_*`, `want_for`, the thumb path);
+   - `GRIP` and `grip_of`;
+   - `_whole_aims`;
+   - `solve_frames`.
+3. `tools/anim/audit.py`, then `retarget.py` (`keep_wrists`, the knee floor in `retarget`).
+4. `tools/anim/clips/run.py` (`blade_carry`), `soul.py` (`warden_show`), `actions.py` (`death`, `_down_pose`, `get_up`, `cast_raise`).
+5. `godot/src/Actors/Arms.cs` (`Hold`) and `PlayerView.cs` (`Fall`, `Revive`, the flinch).

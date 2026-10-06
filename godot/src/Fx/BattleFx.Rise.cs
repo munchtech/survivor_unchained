@@ -29,6 +29,7 @@ public partial class BattleFx
     bool rose;
     double graceFrom, graceUntil = -1, handFrom = -1;
     bool graceEmber;
+    double coldFrom, coldUntil = -1;
     float handAngle;
 
     void Rise(Ev.Rise e)
@@ -36,9 +37,29 @@ public partial class BattleFx
         rose = true;
         float gy = Y(e.X, e.Z);
         var ground = V(e.X, gy, e.Z);
-        // The cold: ice standing at her feet, frost glinting on her. Brief: the fire is coming.
+        // The cold: ice standing up round her feet and frost running out over the ground from her,
+        // frost glinting on her, a cold light on her alone. Combat holds it a beat (Battle.RiseCold,
+        // about a second in the slowed world) before the ember catches, so it must be seen: a few
+        // small spikes under the crowd read as nothing happening.
         float cold = e.Ember ? (float)Math.Max(0.06, e.Delay) : 0.11f;
-        Erupt(e.X, e.Z, 0.4f, 1.0f, 10, SpikeKind.Ice, 0.45f, cold + 0.12f, IceDeep);
+        Erupt(e.X, e.Z, 0.3f, 1.0f, 12, SpikeKind.Ice, 0.75f, cold + 0.15f, IceDeep);
+        Erupt(e.X, e.Z, 0.9f, 1.8f, 14, SpikeKind.Ice, 0.5f, cold + 0.12f, IceDeep);
+        AddFront(ground, 2.4f, cold + 0.15f, 0.1f, Rime, 1.3f, Ribbons.Style.Frost, 0.1f);
+        // (Gone as the fire comes: lingering, it laid a milky haze under the burning crowd.)
+        Scars.Add("frost", ground, 1.5f, cold + 0.3f, 0);
+        Flash(ground + Vector3.Up * 1.3f, new Color("#8fc4ff"), 4, cold + 0.15f, 3.5f);
+        // Over the crowd's heads, where a packed crowd lets it be seen (the ice at her feet is under
+        // them): a ring of frost opening out at the height of their heads (StepRise), and snow
+        // coming down over them.
+        coldFrom = time;
+        coldUntil = time + cold + 0.1;
+        for (int i = 0; i < 46; i++)
+        {
+            float a = R() * Mathf.Tau, d = 0.4f + Mathf.Sqrt(R()) * 2.4f;
+            Sparks.Spawn(ground + new Vector3(Mathf.Cos(a) * d, 2.1f + R() * 1.1f, Mathf.Sin(a) * d), new Vector3((R() - 0.5f) * 0.3f, -0.9f - R() * 0.6f, (R() - 0.5f) * 0.3f),
+                cold + 0.35f + R() * 0.3f, 0.07f + R() * 0.06f, Hdr("#dff2ff", 1.4f), Hdr("#7ab8ff", 0.8f), 0.03f, 0, 0.6f,
+                sprite: i % 3 == 0 ? Sprites.Of("frost_star") : Sprites.Of("star"), spinV: 1.5f);
+        }
         for (int i = 0; i < 24; i++)
         {
             float a = R() * Mathf.Tau, h = 0.15f + R() * 1.55f, rr = 0.24f + R() * 0.14f;
@@ -117,8 +138,46 @@ public partial class BattleFx
     const float Dial = 2.7f, DialUp = 1.0f;
     /// <summary>The rise's fire: where from, how far, since when; drawn on one square.</summary>
     (Vector3 At, float R, double From)? fire;
-    MeshInstance3D? fireMesh;
-    ShaderMaterial? fireMat;
+    MeshInstance3D? fireMesh, wallMesh;
+    ShaderMaterial? fireMat, wallMat;
+    /// <summary>The wall of flame at its tallest, and how far apart its tongues stand (about).</summary>
+    const float WallHigh = 2.8f, WallTongue = 0.85f;
+    /// <summary>The cards the wall is drawn on, round the ring (fire_wall.gdshader).</summary>
+    const int WallCards = 160;
+
+    /// <summary>The wall's ring of cards: each a quad standing on the unit ring at its place round it,
+    /// turned to the camera in the shader (UV: across -1..1 and up 0..1; UV2.x: its place, 0..1).</summary>
+    static ArrayMesh FireCards(int n)
+    {
+        var verts = new Vector3[n * 4];
+        var uv = new Vector2[n * 4];
+        var uv2 = new Vector2[n * 4];
+        var idx = new int[n * 6];
+        for (int i = 0; i < n; i++)
+        {
+            float a = i * Mathf.Tau / n;
+            var at = new Vector3(Mathf.Cos(a), 0, Mathf.Sin(a));
+            for (int k = 0; k < 4; k++)
+            {
+                float x = k is 0 or 3 ? -1 : 1, y = k >= 2 ? 1 : 0;
+                verts[i * 4 + k] = at + Vector3.Up * y;
+                uv[i * 4 + k] = new Vector2(x, y);
+                uv2[i * 4 + k] = new Vector2(i / (float)n, 0);
+            }
+            int b = i * 4;
+            idx[i * 6] = b; idx[i * 6 + 1] = b + 1; idx[i * 6 + 2] = b + 2;
+            idx[i * 6 + 3] = b; idx[i * 6 + 4] = b + 2; idx[i * 6 + 5] = b + 3;
+        }
+        var arrays = new Godot.Collections.Array();
+        arrays.Resize((int)Mesh.ArrayType.Max);
+        arrays[(int)Mesh.ArrayType.Vertex] = verts;
+        arrays[(int)Mesh.ArrayType.TexUV] = uv;
+        arrays[(int)Mesh.ArrayType.TexUV2] = uv2;
+        arrays[(int)Mesh.ArrayType.Index] = idx;
+        var mesh = new ArrayMesh();
+        mesh.AddSurfaceFromArrays(Mesh.PrimitiveType.Triangles, arrays);
+        return mesh;
+    }
 
     void StartFire(Vector3 at, float r)
     {
@@ -135,6 +194,25 @@ public partial class BattleFx
         // The front about two thirds of a metre deep, whatever its reach.
         fireMat.SetShaderParameter("width", 0.65f / (r * FireRoom));
         fireMesh.Visible = true;
+        // The burning edge itself: tongues of flame standing all the way round the front (fire_wall).
+        if (wallMesh == null)
+        {
+            wallMat = new ShaderMaterial { Shader = GD.Load<Shader>("res://shaders/fire_wall.gdshader") };
+            wallMesh = new MeshInstance3D
+            {
+                Mesh = FireCards(WallCards),
+                MaterialOverride = wallMat, CastShadow = GeometryInstance3D.ShadowCastingSetting.Off,
+                CustomAabb = new Aabb(new Vector3(-1.5f, -0.5f, -1.5f), new Vector3(3, 2, 3)),
+            };
+            wallMat.SetShaderParameter("segs", (float)WallCards);
+            AddChild(wallMesh);
+        }
+        if (wallMesh != null && wallMat != null)
+        {
+            wallMat.SetShaderParameter("seed", R() * 100);
+            wallMat.SetShaderParameter("cells", Mathf.Max(8, Mathf.Round(Mathf.Tau * r / WallTongue)));
+            wallMesh.Visible = true;
+        }
         fire = (at, r, time);
         StepFire();
     }
@@ -143,14 +221,25 @@ public partial class BattleFx
     /// where it stopped while the char behind it cools.</summary>
     void StepFire()
     {
-        if (fire is not var (_, _, from) || fireMesh == null || fireMat == null) return;
+        if (fire is not var (at, r, from) || fireMesh == null || fireMat == null) return;
         float t = (float)(time - from);
-        if (t > FireRun + FireDown) { fire = null; fireMesh.Visible = false; return; }
+        if (t > FireRun + FireDown) { fire = null; fireMesh.Visible = false; if (wallMesh != null) wallMesh.Visible = false; return; }
+        // (Combat's Battle.RiseFront is this same curve: each body catches as the front reaches it.)
         float k = Mathf.Clamp(t / FireRun, 0, 1), ease = 1 - (1 - k) * (1 - k) * (1 - k);
         float down = Mathf.Clamp((t - FireRun) / FireDown, 0, 1);
         fireMat.SetShaderParameter("front", (0.03f + 0.97f * ease) / FireRoom);
         fireMat.SetShaderParameter("fade", 1 - down * down);
         fireMat.SetShaderParameter("cool", down);
+        if (wallMesh != null && wallMat != null)
+        {
+            // The wall rides the front, rising as it runs and standing tallest where it stops,
+            // then burning down there, lower and dimmer, its tongues guttering.
+            float reach = r * (0.03f + 0.97f * ease);
+            float high = WallHigh * (0.45f + 0.55f * ease) * (1 - down * down * 0.85f);
+            wallMesh.Position = at - Vector3.Up * 0.05f;
+            wallMesh.Scale = new Vector3(reach, high, reach);
+            wallMat.SetShaderParameter("burn", Mathf.Min(1, t / 0.04f) * (1 - down * down));
+        }
     }
 
     /// <summary>Not Yet: the Order's answer. A watch-lamp held over her; the watch's twelve
@@ -189,8 +278,23 @@ public partial class BattleFx
     {
         StepFire();
         var p = b.Player;
-        if (!p.Alive) { graceUntil = -1; handFrom = -1; return; }
+        if (!p.Alive) { graceUntil = -1; handFrom = -1; coldUntil = -1; return; }
         float gy = Y(p.X, p.Z);
+        if (time < coldUntil)
+        {
+            // The frost ring over their heads, opening out and fading as the ember catches.
+            float k = (float)((time - coldFrom) / Math.Max(0.05, coldUntil - coldFrom));
+            float rr = 0.9f + 1.7f * (1 - (1 - k) * (1 - k));
+            const int N = 44;
+            var ring = new Vector3[N + 1];
+            for (int j = 0; j <= N; j++)
+            {
+                float a = j / (float)N * Mathf.Tau;
+                ring[j] = V(p.X + Mathf.Cos(a) * rr, gy + 2.0, p.Z + Mathf.Sin(a) * rr);
+            }
+            // Ice blue, not white (at Rime's own pale it read as a chalk ring).
+            Ribbons.Now(ring, 0.13f, Hdr("#4aa0ff", 1f), 1.7f * Mathf.Min(1, k * 6) * (1 - k * k), Ribbons.Style.Frost);
+        }
         if (handFrom >= 0)
         {
             // Three hours wound back over its first third of a second, then held as it fades.

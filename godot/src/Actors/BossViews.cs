@@ -384,5 +384,6 @@ public partial class PieceView : Node3D, IOrb
     }
 
     public double Light { set { } }
+    public void Face(double yaw) => Rotation = new Vector3(0, (float)yaw, 0);
     void IOrb.Dispose() => QueueFree();
 }

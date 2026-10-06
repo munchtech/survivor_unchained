@@ -44,8 +44,10 @@ public partial class Game
         if (marks != null) foreach (var (k, v) in marks) file.Marks[k] = v.ToArray();
         // A timeline that cannot be laid out is not played (its schedule is built
         // before anything on screen changes), and the zone does without.
+        ClearKept();
         try { cine = new Cine(this, file, b, done); }
         catch (Exception e) { GD.PushError($"cinema: {id} not played: {e.Message}"); cine = null; return false; }
+        handoffId = id;
         return true;
     }
 
@@ -53,9 +55,59 @@ public partial class Game
         scene?.Battle != null && cine == null && !Args.Has("nocine") && !(quick && Args.Get("cine") != id)
         && FileAccess.FileExists($"res://data/cinematics/{id}.json");
 
+    /* The hand-over (docs/cinematics/README.md, 5a): from a cinematic's "play"
+     * cue her own body walks the rest of it, steered by the cinematic as if a
+     * player held the stick; at its end the walk carries on into play and
+     * eases to a stop over CarryFade unless the player takes it. */
+    (double X, double Z)? cineWalk;
+    /// <summary>Bodies a cinematic left in the world (end.keep), until the next one or the place goes.</summary>
+    readonly List<Node3D> kept = new();
+
+    void ClearKept()
+    {
+        foreach (var n in kept) if (IsInstanceValid(n)) n.QueueFree();
+        kept.Clear();
+    }
+    (double X, double Z) carry;
+    double carryT;
+    const double CarryFade = 0.7;
+
+    /// <summary>The move the fight is given: the cinematic's walk, the
+    /// player's own, or the walk a cinematic handed over, easing out.</summary>
+    (double X, double Z) PlayMove()
+    {
+        if (cineWalk is { } w) return w;
+        if (controls.Captured) return (0, 0);
+        double x = controls.MoveX, z = controls.MoveZ;
+        if (x * x + z * z > 0.01) carryT = 0;
+        else if (carryT > 0) { double k = carryT / CarryFade; return (carry.X * k, carry.Z * k); }
+        return (x, z);
+    }
+
+    /// <summary>--handoff (with --shot NAME): a frame every tenth of a second
+    /// from 1.5 s before a cinematic ends to 2.5 s into play, to judge the
+    /// hand-over (ho_ID_NNN).</summary>
+    double handoffLeft, handoffNext;
+    int handoffN;
+    string handoffId = "";
+
+    void HandoffFrames(double dt, double? toEnd)
+    {
+        if (!Args.Has("handoff")) return;
+        if (toEnd is double e && e <= 1.5) handoffLeft = Math.Max(handoffLeft, e + 2.5);
+        if (handoffLeft <= 0) return;
+        handoffLeft -= dt;
+        handoffNext -= dt;
+        if (handoffNext > 0) return;
+        handoffNext = 0.1;
+        Shots.Want($"ho_{handoffId}_{handoffN++:000}", 0);
+    }
+
     /// <summary>Each frame, after the world is drawn: the camera, the cast, the cues.</summary>
     void CinemaFrame(double dt)
     {
+        carryT = Math.Max(0, carryT - dt);
+        HandoffFrames(dt, cine?.ToEnd);
         if (cine == null) return;
         cine.Frame(dt);
         if (cine.Over) { var c = cine; cine = null; c.Finish(); }
@@ -91,6 +143,17 @@ public partial class Game
         readonly Dictionary<string, V3> camFixed = new();
         public bool Over { get; private set; }
         public bool ZoneHeld => file.World.ZoneHeld;
+        /// <summary>Seconds to its end.</summary>
+        public double ToEnd => player.S.Length - player.T;
+        /// <summary>Her own body has her ("play"): the double is gone, and her
+        /// moves steer the player as a stick would.</summary>
+        bool handed;
+        Vector3? walkTo;
+        double walkSpeed;
+        /// <summary>Where her double was a frame ago, and how fast it was going.</summary>
+        Vector3? herWas;
+        Vector3 herVel;
+        bool hudIn;
 
         sealed record Tween(double T0, double T1, Action<double> Apply);
         /// <summary>Free: through the air or the water (an exact place), not along the ground.</summary>
@@ -254,6 +317,20 @@ public partial class Game
                 else if (orbs.TryGetValue(m.Actor, out var o)) o.Position = p;
                 if (k >= 1) moves.Remove(m);
             }
+            // Her double's pace (what a hand-over at the end carries on).
+            if (!handed && people.TryGetValue("her", out var herNow))
+            {
+                var at = herNow.GlobalPosition;
+                if (herWas is Vector3 was && dt > 0) herVel = (at - was) / (float)dt;
+                herWas = at;
+            }
+            Steer();
+            // The play's HUD comes in as the bars go out, over the blend into the game's camera.
+            if (!hudIn && file.End.Her != null && player.T >= player.S.Length - Math.Max(0.4, file.Bars.Out))
+            {
+                hudIn = true;
+                g.hud.ShowPlay(true, (float)Math.Max(0.4, file.Bars.Out));
+            }
             foreach (var v in people.Values) v.Advance(dt);
             foreach (var w in bosses.Values) w.Shine(dt);
             foreach (var o in orbs.Values) o.Turn(dt);
@@ -274,6 +351,22 @@ public partial class Game
                     foreach (var name in people.Keys)
                         GD.Print($"cinebones {file.Id} s{shot.Id} {name} " + string.Join(" ", new[] { "head", "eyes", "chest", "hand_r", "hand_l", "foot_l", "foot_r" }
                             .Select(bn => ActorAt(name, bn) is V3 p ? $"{bn}=({p.X:0.00},{p.Y:0.00},{p.Z:0.00})" : "")));
+                // --cinenear X,Z,R: every visible mesh within R of a point, by path, at each
+                // shot's still (what is that in the frame? Lowford's stray ring stone was found so).
+                if (Args.Get("cinenear") is string near && stillK == 1)
+                {
+                    var q = near.Split(',');
+                    var c = new Vector3(float.Parse(q[0], System.Globalization.CultureInfo.InvariantCulture), 0, float.Parse(q[1], System.Globalization.CultureInfo.InvariantCulture));
+                    float rr = float.Parse(q[2], System.Globalization.CultureInfo.InvariantCulture);
+                    foreach (var n in g.GetTree().Root.FindChildren("*", "GeometryInstance3D", true, false))
+                        if (n is GeometryInstance3D gi && gi.IsVisibleInTree() && gi is not MultiMeshInstance3D)
+                        {
+                            var bb = gi.GlobalTransform * gi.GetAabb();
+                            var cc = bb.GetCenter();
+                            if (new Vector2(cc.X - c.X, cc.Z - c.Z).Length() < rr && bb.Size.Length() < 6)
+                                GD.Print($"cinenear s{shot.Id} {gi.GetPath()} at=({cc.X:0.00},{cc.Y:0.00},{cc.Z:0.00}) size=({bb.Size.X:0.00},{bb.Size.Y:0.00},{bb.Size.Z:0.00})");
+                        }
+                }
                 if (Args.Has("cinebones"))
                     foreach (var (name, w) in bosses)
                         GD.Print($"cinebones {file.Id} s{shot.Id} {name} lamp=({w.LampAt.X:0.00},{w.LampAt.Y:0.00},{w.LampAt.Z:0.00})");
@@ -314,8 +407,14 @@ public partial class Game
             {
                 var (fp, fl) = g.cam.PoseFor(end);
                 float k = (float)pose.FollowK;
+                // The way it looks turns from the shot's to the game's (a point far up a
+                // road, lerped toward her, kept the camera looking ahead until the last
+                // moment and lost her from the frame on the way).
+                Vector3 d0 = (at - pos).Normalized(), d1 = (fl - fp).Normalized();
+                float reach = Mathf.Lerp((at - pos).Length(), (fl - fp).Length(), k);
                 pos = pos.Lerp(fp, k);
-                at = at.Lerp(fl, k);
+                // The look turns ahead of the move (its square root), so she stays in the frame.
+                at = pos + (d0.Dot(d1) > 0.9999f ? d1 : d0.Slerp(d1, Mathf.Sqrt(k))) * reach;
                 hfov = Mathf.Lerp(hfov, FollowHfov(), k);
             }
             if (pose.Handheld > 0)
@@ -355,11 +454,47 @@ public partial class Game
             return Mathf.RadToDeg(2 * Mathf.Atan(Mathf.Tan(Mathf.DegToRad(saved.Fov) / 2) * size.X / size.Y));
         }
 
+        /// <summary>Where the game's camera takes over: on her as she really is
+        /// (her own body once handed over, else her double), so the blend lands
+        /// on the frame play begins with; on the end mark only if she is not there.</summary>
         Vector3? EndPoint()
         {
             if (file.End.Her is not string m) return null;
+            if (handed) return new Vector3((float)b.Player.X, (float)g.scene!.HeightAt(b.Player.X, b.Player.Z), (float)b.Player.Z);
+            if (!player.Skipped && people.TryGetValue("her", out var her) && her.Visible) return her.GlobalPosition;
             var p = places.Resolve(MarkEl(m));
             return new Vector3((float)p.X, (float)g.scene!.HeightAt(p.X, p.Z), (float)p.Z);
+        }
+
+        /// <summary>"play": her own body takes her double's place, where it
+        /// stands and facing as it faces (put it on a cut, so no pose is seen
+        /// to change). From here she is the player, steered by her moves.</summary>
+        void Handover()
+        {
+            if (handed || !people.TryGetValue("her", out var her) || g.scene?.Player is not { } pv) return;
+            handed = true;
+            var p = b.Player;
+            var at = her.GlobalPosition;
+            p.X = at.X; p.Z = at.Z; p.Facing = her.Rotation.Y; p.Vx = p.Vz = 0;
+            pv.Face(her.Rotation.Y, new Vector3(at.X, (float)g.scene.HeightAt(at.X, at.Z), at.Z));
+            pv.Hidden = false;
+            her.Visible = false;
+            moves.RemoveAll(mv => mv.Actor == "her");
+        }
+
+        /// <summary>Her own body, steered to where her last move goes, at its pace; it stops there.</summary>
+        void Steer()
+        {
+            if (!handed) return;
+            if (walkTo is not Vector3 goal) { g.cineWalk = null; return; }
+            var p = b.Player;
+            var d = new Vector2(goal.X - (float)p.X, goal.Z - (float)p.Z);
+            if (d.Length() < 0.12f) { walkTo = null; g.cineWalk = null; return; }
+            double top = Math.Max(0.1, b.Stats.Get(Stat.MoveSpeed) * p.SlowF);
+            // Slowing over her last half-metre, as anyone does who means to stop there.
+            double k = Math.Min(1, walkSpeed / top) * Math.Clamp(d.Length() / 0.45, 0.35, 1);
+            var dir = d.Normalized();
+            g.cineWalk = (dir.X * k, dir.Y * k);
         }
 
         static Vector3 V(V3 v) => new((float)v.X, (float)v.Y, (float)v.Z);
@@ -462,8 +597,20 @@ public partial class Game
                     v.Cue(clip, c.Num("from"), c.Num("speed", 1), c.Num("blend", 0.2));
                     break;
                 }
+                case "play":
+                    Handover();
+                    break;
                 case "move":
                 {
+                    if (handed && c.Actor == "her")
+                    {
+                        // Her own body walks it, at the pace the timeline asks.
+                        var goal = V(places.Resolve(c.Has("to") && c.Get("to").ValueKind != JsonValueKind.String ? c.Get("to") : MarkEl(c.Str("to")!)));
+                        var p0 = b.Player;
+                        walkTo = goal;
+                        walkSpeed = new Vector2(goal.X - (float)p0.X, goal.Z - (float)p0.Z).Length() / Math.Max(0.1, c.Num("dur", 1));
+                        break;
+                    }
                     if (NodeOf(c.Actor) is not { } n) break;
                     var toEl = c.Has("to") && c.Get("to").ValueKind != JsonValueKind.String ? c.Get("to") : MarkEl(c.Str("to")!);
                     var to = places.Resolve(toEl);
@@ -897,14 +1044,43 @@ public partial class Game
 
         public void Finish()
         {
+            // Play starts exactly where the cinematic leaves her, facing as she
+            // faces, and still walking if she was (docs/cinematics/README.md, 5a).
             var p = b.Player;
-            if (file.End.Her is string m)
+            var pv = g.scene!.Player;
+            if (handed)
+            {
+                // Her own body already: what she was doing carries on, easing out.
+                if (g.cineWalk is { } w) { g.carry = w; g.carryT = CarryFade; }
+                g.cineWalk = null;
+            }
+            else if (file.End.Her is string m)
             {
                 var (x, _, z, heading) = file.Mark(m);
-                p.X = x; p.Z = z; p.Facing = heading; p.Vx = p.Vz = 0;
+                float moving = 0;
+                if (!player.Skipped && people.TryGetValue("her", out var her) && her.Visible)
+                {
+                    // Where her double really is, and its pace (a walk carries on).
+                    var at = her.GlobalPosition;
+                    x = at.X; z = at.Z; heading = her.Rotation.Y;
+                    var v = new Vector2(herVel.X, herVel.Z);
+                    if (v.Length() > 0.4f)
+                    {
+                        moving = v.Length();
+                        double top = Math.Max(0.1, b.Stats.Get(Stat.MoveSpeed) * p.SlowF), k = Math.Min(1, moving / top);
+                        var dir = v.Normalized();
+                        g.carry = (dir.X * k, dir.Y * k);
+                        g.carryT = CarryFade;
+                    }
+                }
+                p.X = x; p.Z = z; p.Facing = heading;
+                p.Vx = moving > 0 ? herVel.X : 0; p.Vz = moving > 0 ? herVel.Z : 0;
+                pv?.Face((float)heading, new Vector3((float)x, (float)g.scene.HeightAt(x, z), (float)z), moving);
             }
-            foreach (var (name, v) in people) if (!bosses.ContainsKey(name)) v.QueueFree();
-            foreach (var w in bosses.Values) w.QueueFree();
+            // Who stays where it left them (a body in the river) stays, still, until the next one.
+            var keep = file.End.Keep ?? new List<string>();
+            foreach (var (name, v) in people) if (!bosses.ContainsKey(name)) { if (keep.Contains(name)) g.kept.Add(v); else v.QueueFree(); }
+            foreach (var (name, w) in bosses) { if (keep.Contains(name)) g.kept.Add(w); else w.QueueFree(); }
             foreach (var o in orbs.Values) o.QueueFree();
             bosses.Clear(); orbs.Clear(); groups.Clear(); later.Clear();
             foreach (var n in props.Values) n.QueueFree();
@@ -920,7 +1096,7 @@ public partial class Game
             g.sound.CineMood = null;
             g.controls.Captured = false;
             g.controls.ClearLatches();
-            g.hud.ShowPlay(true);
+            if (!hudIn) g.hud.ShowPlay(true, player.Skipped ? 0.3f : 0.6f);
             bars.QueueFree();
             if (!Settings.Current.SeenCinematics.Contains(file.Id)) { Settings.Current.SeenCinematics.Add(file.Id); Settings.Current.Save(); }
             GD.Print($"cinema: {file.Id} {(player.Skipped ? "skipped" : "done")}");

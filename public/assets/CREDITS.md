@@ -141,6 +141,10 @@ Building materials, 1k (`godot/art/materials`):
 - "Rock Boulder Dry" by Dimitrios Savva, Rico Cilliers (https://polyhaven.com/a/rock_boulder_dry): headstones, rock
 - "Rough Wood" by Rob Tuytel (https://polyhaven.com/a/rough_wood): posts, crosses, timber
 
+The camp on the Low Ford road, 2k (`godot/art/materials`):
+
+- "Pine Bark" by Dimitrios Savva (https://polyhaven.com/a/pine_bark): the camp's logs
+
 Outfit materials (`godot/art/outfit`, `godot/art/people/outfit_tex`; tinted copies `outfit_*_diff.jpg` made by `tools/assets/heroine_outfits.py`):
 
 - "Brown Leather" by Rob Tuytel (https://polyhaven.com/a/brown_leather)
@@ -200,6 +204,7 @@ The arenas' grounds (`godot/art/arena/<place>`, by `tools/godot/arena_ground.py`
 - grassy_cobblestone: Poly Haven (https://polyhaven.com/a/grassy_cobblestone), CC0
 - gray_rocks: Poly Haven (https://polyhaven.com/a/gray_rocks), CC0
 - leaves_forest_ground: Poly Haven (https://polyhaven.com/a/leaves_forest_ground), CC0
+- forest_ground_06: Poly Haven (https://polyhaven.com/a/forest_ground_06), CC0
 
 ## Poly Haven models (CC0)
 

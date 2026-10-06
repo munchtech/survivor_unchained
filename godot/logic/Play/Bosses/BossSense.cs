@@ -105,6 +105,10 @@ public static class BossSense
             case GrimtunnelStory { Flaring: >= 0, Under: false } gl when gl.E.Alive:
                 goal = (gl.E.X, gl.E.Z, Math.Max(2.2, Math.Min(reach * 0.7, 6)));
                 break;
+            // Dazed where he came up (the ground marks it safe): in on him while it lasts, as a player is.
+            case GrimtunnelStory { Dazed: true, Under: false } gd when gd.E.Alive:
+                goal = (gd.E.X, gd.E.Z, Math.Max(2.2, Math.Min(reach * 0.7, 6)));
+                break;
             case GrimtunnelStory { BarrelStill: true, BarrelAt: var (brx, brz), Under: false } gb when gb.E.Alive:
             {
                 double ux = brx - gb.E.X, uz = brz - gb.E.Z, ul = Math.Max(0.01, Math.Sqrt(ux * ux + uz * uz));
@@ -118,6 +122,13 @@ public static class BossSense
                 break;
             case BarrowLord { Laying: true } bl:
                 goal = (bl.E.X, bl.E.Z, 1.6);
+                break;
+            // The Barrow Lord down: stand over him. In his testudo: in on the standard at its heart.
+            case BarrowLordStory { Laying: true } bls:
+                goal = (bls.E.X, bls.E.Z, 1.6);
+                break;
+            case BarrowLordStory { Standard: { } st }:
+                goal = (st.X, st.Z, Math.Max(2.2, Math.Min(reach * 0.7, 5)));
                 break;
             case Grimtunnel { Flaring: >= 0 } g when g.E.Alive:
                 goal = (g.E.X, g.E.Z, Math.Max(2.2, Math.Min(reach * 0.7, 6)));
@@ -197,8 +208,11 @@ public static class BossSense
         foreach (var bl in b.Blows)
             if (Threat(bl, deft, first)) n++;
         if (strikes)
+        {
             foreach (var s in b.EnemyStrikes())
                 if (Threat(s, deft)) n++;
+            if (Burning(b, p.X, p.Z, p.Radius)) n++;
+        }
         if (n == 0) return;
         double speed = Math.Max(1, b.Stats.Get(Stat.MoveSpeed) * p.SlowF);
         // Candidates: the way it was going, standing, and sixteen bearings.
@@ -280,6 +294,7 @@ public static class BossSense
             first = Math.Min(first, bl.T);
         }
         if (strikes)
+        {
             foreach (var s in b.EnemyStrikes())
             {
                 if (!Threat(s, deft)) continue;
@@ -289,7 +304,22 @@ public static class BossSense
                 sum += 10 + s.Damage / Math.Max(1, b.MaxHp) * 40;
                 first = Math.Min(first, s.Left);
             }
+            // Ground of theirs that burns or sickens, half a second on: walked out of, not stood in. (Left in it,
+            // the hands took more from a pot's fire than from the pot on the Dig's way in.)
+            if (Burning(b, x + vx * 0.5, z + vz * 0.5, p.Radius * 0.5)) sum += 6;
+        }
         return sum;
+    }
+
+    /// <summary>She stands on ground of theirs that hurts.</summary>
+    public static bool Underfoot(Battle b) => Burning(b, b.Player.X, b.Player.Z, b.Player.Radius);
+
+    /// <summary>On ground of theirs that hurts (a pot's fire, a burst's slurry), within `r` of its edge.</summary>
+    static bool Burning(Battle b, double x, double z, double r)
+    {
+        foreach (var g in b.Zones.Living())
+            if (g.Owner == Side.Enemy && g.Dps > 0 && Dist(g.X, g.Z, x, z) < g.Radius + r) return true;
+        return false;
     }
 
     /// <summary>A creature's marked circle the hands answer: marked long enough to have been seen, and noticed

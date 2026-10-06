@@ -196,6 +196,35 @@ public partial class PlayerView : Node3D
     public Vector3 FigurePosition => person.Root.GlobalPosition;
     /// <summary>Out of the picture while a cinematic's double plays her.</summary>
     public bool Hidden;
+    /// <summary>The way she turns to while she stands (the book open: to the view); null: her own.</summary>
+    public float? Turned;
+    /// <summary>What she lifts her head to while she stands (the book open: the camera; her idle
+    /// carries her head low, and framed close her face was turned down from it); null lets it go.</summary>
+    public Node3D? Watch;
+    SurvivorUnchained.View.HeadTurn? headTurn;
+
+    void Watching(bool standing)
+    {
+        if (Watch == null && headTurn == null) return;
+        if (headTurn == null) person.Skeleton.AddChild(headTurn = new SurvivorUnchained.View.HeadTurn { Limit = 40, Rate = 1.5f });
+        bool on = Watch != null && standing && IsInstanceValid(Watch);
+        if (on) headTurn.Target = Watch!.GlobalPosition;
+        headTurn.Want = on ? 0.85f : 0;
+    }
+
+    /// <summary>Handed her body by a cinematic: she stands where its double
+    /// stood, facing as it faced (heading as NpcActor turns: 0 south, pi/2
+    /// east), already moving at `moving` m/s if it was walking. Her facing
+    /// otherwise follows only her own steps, so it would keep whatever it was
+    /// before the cinematic (C01 handed her back facing south, not north).</summary>
+    public void Face(float facing, Vector3 at, float moving = 0)
+    {
+        Position = at;
+        Rotation = new Vector3(0, facing, 0);
+        heading = facing;
+        speed = lastSpeed = moving;
+        aim = aimHold = 0;
+    }
 
     void Upper(string clip, double speed)
     {
@@ -285,10 +314,17 @@ public partial class PlayerView : Node3D
         if (UpperHer(clip, 1.5)) { Strike(angle); lastMuzzle = time; }
     }
 
-    /// <summary>Up again after a fall (the prologue's second chances).</summary>
+    /// <summary>A story fall: down as at a death and held there, though the
+    /// fight keeps her at a breath of life while the fall is staged
+    /// (StoryNight.OnFall); up again with Revive. (Without it she stood
+    /// through her own fall.)</summary>
+    public void Fall() => fallen = true;
+    bool fallen;
+
+    /// <summary>Up again after a fall (the prologue's second chances, a story fall's rise).</summary>
     public void Revive()
     {
-        dead = false;
+        dead = fallen = false;
         tree.Active = true;
         Full("Lie_StandUp", 1.2);
     }
@@ -319,7 +355,7 @@ public partial class PlayerView : Node3D
         Position = new Vector3((float)p.X, (float)y, (float)p.Z);
         Reflections.Update(b, dt, heightAt);
         Ghostly(p.Alive && b.Art.WraithT > 0);
-        if (!p.Alive)
+        if (!p.Alive || fallen)
         {
             if (!dead)
             {
@@ -347,6 +383,10 @@ public partial class PlayerView : Node3D
         if (p.AttackAnim is { } aa && fightTime - aa.T < 0.35 && !mine) Rotation = new Vector3(0, (float)(Mathf.Pi / 2 - aa.Angle), 0);
         // (In the air she keeps the facing she sprang with: her velocity is stale there.)
         else if (sp > 0.4f && p.Leap == null) Rotation = new Vector3(0, Mathf.LerpAngle(Rotation.Y, Mathf.Atan2((float)p.Vx, (float)p.Vz), 1 - Mathf.Exp(-14 * (float)dt)), 0);
+        // Turned to the view while a panel frames her (FollowCamera.ScreenFrame), standing.
+        if (Turned is float tw && sp < 0.4f && p.AttackAnim == null)
+            Rotation = new Vector3(0, Mathf.LerpAngle(Rotation.Y, tw, 1 - Mathf.Exp(-4 * (float)dt)), 0);
+        Watching(sp < 0.4f && p.AttackAnim == null);
         // Dash: a roll (hers: a low lunge).
         if (p.DashT > 0 && !dashing)
         {
@@ -426,7 +466,12 @@ public partial class PlayerView : Node3D
         if (p.HurtT > 0.25 && hurtSeen <= 0)
         {
             hurtSeen = 0.4;
-            if (!Busy) Upper("Hit_A", mine && own.Has("hit") ? 1.2 : 1.6);
+            // On the move or mid-blow, her own flinch is laid over what she is
+            // doing (the legs keep running, the arms keep their hold); standing,
+            // the whole of her upper body takes the hit.
+            bool jolt = mine && own.Has("flinch") && person.Gestures != null && (sp > 1.5f || Busy);
+            if (jolt) person.Gestures!.Play(person.Anim.GetAnimation(own.Prefix + "flinch"));
+            else if (!Busy) Upper("Hit_A", mine && own.Has("hit") ? 1.2 : 1.6);
         }
         hurtSeen -= dt;
         speed = Mathf.Lerp(speed, sp, 1 - Mathf.Exp(-10 * (float)dt));

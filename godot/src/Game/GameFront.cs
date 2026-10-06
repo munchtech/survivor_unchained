@@ -82,7 +82,9 @@ public partial class Game
         figureBody = d.BodyKey;
         figure = new PersonView(lo.Person, new Held { Right = lo.Arms.Right, Left = lo.Arms.Left, Forearm = lo.Arms.Forearm }, 0.8);
         scene!.AddChild(figure);
-        float x = Fire.X + 1.4f, z = Fire.Y + 1.0f;
+        // (where the camera looks: she stands in the middle of the screen, between creation's two
+        // panels, the fire behind her at her right hand, in view between her and the choices)
+        float x = Fire.X + 0.95f, z = Fire.Y + 1.0f;
         figure.Place(x, scene.HeightAt(x, z), z, FigureHeading + figTurnNow, true);
         figure.Loop(lo.Arms.Idle, 0);
         if (changedBody) figure.Flourish(d.Archetype switch { "arcanist" => "Spell_Simple_Enter", "reaver" => "Sword_Regular_A", "warden" => "Sword_Block", _ => "Pistol_Shoot" });
@@ -196,10 +198,13 @@ public partial class Game
             l.LookAt(target);
             l.LightEnergy = Mathf.Lerp(l.LightEnergy, energy, k);
         }
-        keyLight ??= Spot(new Color(1f, 0.93f, 0.86f), 20, true, 0.45f);
-        fillLight ??= Spot(new Color(0.88f, 0.92f, 1f), 26, false, 0.1f);
-        edgeLight ??= Spot(new Color(1f, 0.56f, 0.26f), 24, false, 0.35f);
-        rimLight ??= Spot(new Color(0.72f, 0.82f, 1f), 24, false, 0.5f);
+        // (--rig-white: every light of the rig white, a face's colours judged
+        // as a studio's light shows them, not only in the fire's warmth)
+        bool white = Args.Has("rig-white");
+        keyLight ??= Spot(white ? Colors.White : new Color(1f, 0.93f, 0.86f), 20, true, 0.45f);
+        fillLight ??= Spot(white ? Colors.White : new Color(0.88f, 0.92f, 1f), 26, false, 0.1f);
+        edgeLight ??= Spot(white ? Colors.White : new Color(1f, 0.56f, 0.26f), 24, false, 0.35f);
+        rimLight ??= Spot(white ? Colors.White : new Color(0.72f, 0.82f, 1f), 24, false, 0.5f);
         // --rig K,F,E,R: the four lights' strengths at the face, for judging them (pictures).
         if (rig == null)
         {
@@ -212,6 +217,11 @@ public partial class Game
         Aim(fillLight, eyes + dir * 1.8f + camLeft * 1.1f, eyes + Vector3.Down * 0.08f, rig[1] * p);
         Aim(edgeLight, eyes - dir * 1.3f + camLeft * 1.4f + Vector3.Up * 0.35f, eyes + Vector3.Down * 0.1f, rig[2] * p);
         Aim(rimLight, eyes - dir * 1.6f - camLeft * 1.0f + Vector3.Up * 1.1f, eyes + Vector3.Down * 0.12f, rig[3] * p);
+        // The sky's own light (the moon) off her from head and shoulders in: the
+        // portrait's lights are hers there. Left on, it was a fourth light, cold
+        // and flat across her face, and its reflection a white blob as big as her
+        // pupil on the lower edge of each iris.
+        air.Key.LightCullMask = p > 0.5f ? air.Key.LightCullMask & ~2u : air.Key.LightCullMask | 2u;
 
         // The fire lights her through a stand-in that fades as the portrait comes up; the fire
         // itself no longer reaches her (layer 2), so the camp around her stays as it is.
@@ -242,6 +252,7 @@ public partial class Game
         figureBody = "";
         foreach (var l in new Light3D?[] { keyLight, fillLight, edgeLight, rimLight, herFire }) l?.QueueFree();
         keyLight = fillLight = edgeLight = rimLight = null;
+        air.Key.LightCullMask |= 2u;                       // (the sky's light on her again)
         herFire = null;
         if (fireSrc != null && IsInstanceValid(fireSrc)) fireSrc.LightCullMask = fireMask;
         fireSrc = null;
@@ -270,6 +281,7 @@ public partial class Game
         draft = new CreationDraft();
         // --new --sex female: creation opens on a woman (pictures of her).
         if (Args.Get("sex") == "female") draft.Sex = Sex.Female;
+        else if (Args.Get("sex") == "male") draft.SetSex(Sex.Male);
         if (Args.Get("archetype") is string arch)
         {
             var a = SurvivorUnchained.Rpg.Callings.Archetype(arch);
@@ -297,6 +309,9 @@ public partial class Game
         var create = new CreateScreen(this, draft);
         screens.Show(create);
         create.FrameForStep();
+        // --turn DEGREES: the figure turned so far on the turntable (pictures of her from the side).
+        if (Args.Get("turn") is string tn && double.TryParse(tn, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var deg))
+            Turntable(Mathf.DegToRad((float)deg), 0);
     }
 
     public void CancelCreation()
@@ -338,11 +353,25 @@ public partial class Game
         });
     }
 
+    /// <summary>--load FILE: a journey read from a save file as it stands (pictures of a later day:
+    /// the journal written, people met), and never saved over (Save keeps out of it).</summary>
+    void LoadFile(string path)
+    {
+        var d = Saves.Parse(System.IO.File.ReadAllText(path));
+        if (d == null) return;
+        Journey = Journey.From(d, 0);
+        Hook();
+        EnterZone(d.Location.Zone == "map" ? "waystation" : d.Location.Zone, null, new Arrival(d.Location.X, d.Location.Z, d.Location.Facing));
+        hud.Fade(0, 0.5);
+    }
+
     public void QuitToTitle()
     {
         Save("quit");
         screens.Close();
         hudMode = null;
+        // (notices held over a fall or a chest are not carried into the next journey)
+        hud.HoldToasts = false;
         hud.Fade(1, 0.6);
         Wait(0.65, ShowTitle);
     }

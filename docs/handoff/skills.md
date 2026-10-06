@@ -1,127 +1,135 @@
 # Handoff: skills look and feel
 
-For the next skills lead. Read `docs/team/README.md` first, then this page, then
-`docs/team/skills.md` (status, grades, the exact next step). Branch:
-`worktree-agent-a94ac6b67f1279213` (pushed; not yet merged into the integration branch).
+For the next skills lead. Read in this order:
+
+1. `docs/team/README.md` (the bar, how we work, heavy work takes turns).
+2. `docs/team/RESUME.md`.
+3. This page.
+4. `docs/team/skills.md` (status, what is seen and what is not, the judgements waiting).
+
+Branch: `worktree-agent-ad059388f00c19f9f` (pushed). Merge `origin/claude/vigilant-galileo-l6jqyx`
+into your own worktree, then this branch if the main session hasn't merged it yet.
 
 ## The owner's words
 
-- "leveling up all our skills. revisiting ones we already made if they don't match our perfection
-  standard, moving on to others if they do. theres many we never got to. leverage our gpu as always
-  to create amazing effects and be careful of crop/squaring issues we had early on"
-- "I don't want to polish, I want to create perfection." "Do we have soul?" AAA, never settle. Judge
-  at full resolution: the owner caught square edges in thumbnails that others had dismissed.
+- "we are striving for perfection". "AAA standard". "I don't want to polish, I want to create
+  perfection." "Do we have soul?" Never settle: remake rather than skip.
+- "leveling up all our skills ... leverage our gpu as always to create amazing effects and be
+  careful of crop/squaring issues". Judge at full resolution, in a packed crowd.
+- On loot (relayed): the old beams were "solid pastel tubes"; the Legendary's "a huge solid cream
+  bar slanting across the screen". Lights must read as light, not geometry.
 
 ## The brief
 
-You own how every skill looks, sounds and feels in play: arts, auto-attacks, evolutions, blessings,
-the callings' own moves, her rise, and (combat's list) the enemy's own verbs. Each skill must read at
-a glance in a horde, keep one colour and shape language per school, land every hit with a flash,
-hit-stop, sound and mark, and grow with rank and evolution. No effect may show its sprite's square or
-be cut off at its frame's edge. Combat owns mechanics and numbers: propose, never change them. Send
-the main session before/after sheets of full-resolution frames from play for each batch. Commit and
-push your branch at milestones; the main session merges it. Run `dotnet test` before every commit.
+You own how every skill looks, sounds and feels in play: arts, auto-attacks, evolutions, unions,
+blessings, her rise, the enemy's verbs, loot's light (LOOT_DESIGN.md §8), and the story's looks that
+combat asks for. Each skill must read at a glance in a horde, keep its school's colour and shape,
+land every hit, and grow with rank. Combat owns mechanics and numbers: propose, never make them.
+Batch shots in one Godot turn and look once. Krea only through the `gpu` turn (the face lead uses
+it a lot: queue fairly). Commit and push at milestones; open no PRs. `dotnet test` (in
+`godot/tests`) before every commit. British spelling. Hand off at about 500k tokens.
 
-## Done this session (all pushed: c2b16600, f519680d)
+## The main session's rulings (applied)
 
-- **The main session's three findings, fixed and seen** in the packed crowd:
-  - numbers (`Hits.Numbers.cs`): 4 new a frame, 12 on screen, none over one still rising, the
-    weightiest first; no exceptions (in a crowd of the small dead every blow is "heavy");
-  - Hoarfrost no longer whites the crowd;
-  - glare round her: lights fade within 4 m of her unless lit where she stands (`Flash`);
-    `flipbook.gdshader` clears its smoke (alpha) over her as well as its light; a champion's fall
-    is Blast radius 1.3 (about 3 m across); the disc's body, sun and arcs held down within 3 m.
-- **The rise** (`BattleFx.Rise.cs`, `Ev.Rise` in `Events.cs`, emitted in `Battle.HurtPlayer`):
-  - the cold (ice spikes, frost glints, cold breath), the world slowed 1.1 s (`Game.cs`), haptics;
-  - Cold, Then Not: `shaders/fire_ring.gdshader` on one flat square (gradient noise in rings and
-    spokes, wrapping round so no seam; tongues out past the front, a char band with embers behind
-    it), a `smoulder` mark (Krea, `marks.py`), embers off the wall where it stops;
-  - Not Yet: a watch-lamp sprite over her and the painted dial (`art/fx/fb/watch_dial.*`, a
-    one-frame flipbook) held at the waist, turning back, a ribbon hand wound back three hours;
-  - the grace ring; `Sfx.Rise` (glassy breath, a heartbeat, then a fire rush or a deep bell);
-  - `--fall-at T` (dev): a killing blow at T, for pictures (give `+from_the_ashes` for the ember).
-- **Enemy looks seen** (`dig4`, `kerch3`, `dead3`, `pack3`): hostile marks scaled to 0.28 (boss 0.5);
-  the Dig's cream rings are gone at 0.38 (0.28 unseen). Rallies, summons and slams read.
-- Her dash is one ribbon streak plus a little dust. The dry dead's bone dust is grey, 4 a told kill.
-- **Experience's status look** (frozen and burning bodies) is judged by them and committed on their
-  branch (`worktree-agent-ab406cf9ddd22b03b@a3d42f7d`); my frames agree (frozen a clear win).
+- Elites are capped too: two flash white at once on top of the three ordinary bodies.
+- The Legendary's night foot glow about 180 px (measured 196, from 328).
+
+## Done this round (all seen at 1920×1080 unless marked)
+
+- **The night won** (`Ev.Victory` in `BattleFx.cs`): one ember-amber shaft with motes riding up it
+  (`loot_beam.gdshader` kind 7's parameter is now its motes), a warm flash. Its foot fades over a
+  breadth that goes with its width (it ended in a line across her feet). *The foot change is not
+  yet seen.*
+- **The way out** (`BattleFx.Story.cs`, `WayOut`): the cream hoop round her was ArenaRun's pulse,
+  drawn as a holy-gold decal band. Now loot's batch draws a soft cold-blue band (kind 8) that comes
+  2.4 s after the fall, as its prompt does. *The band is not yet seen at full strength (won5 queued).*
+- **A chest's column**: seen, a soft gold shaft (fine; its core goes a little cream).
+- **Moonbrand**: crescent glint at the hand (was a lilac sigil every cast); the brand silver on a
+  dark bed with violet jets (moonfire tongues are now the pack's crisp `muzzle` jets, not its
+  smoke-soft `flame`s); thinner trail; moonlight is silver-blue, moonfire deep violet.
+- **Firepot** (`PotBurst`): crack, flame jets turned along their way on the screen
+  (`Spin = atan2(-sx, sy)` from the camera's basis), burning powder, clay sherds, char smoke, a
+  small heart.
+- **Ticks are no blows** (`Enemy.LastDot`, view-only): no white flash, no flinch.
+- **A slow is not frost** (`Enemy.HeldUntil`, view-only): a non-frost ground's hold draws no rime.
+- **Fed deadfalls** (`BattleFx.Story.cs`): flame along the trunk (fire_wall cards pressed to a
+  line), embers, guttering smoke in the last 4 s, a rush when fed. `--lit S` lights them S seconds.
+- **"His age" / "She missed"**: the wolf's breath smokes in pale puffs with each pant.
+- **Unions**: Frostfire Comet's own art `frostfire` (ice heart, frost tail, half-flame half-frost
+  burst with ice round its rim, burning ground in a frost rim); Butcher's Wheel in steel arcs with a
+  blood wake; Rotwood `zone_rot` (rotten thorns in a blight stain); the Tempest and every storm bolt
+  electric blue (no white balls); a survivor's falling blow is marked by a faint gathering light,
+  never a ring.
+- **Frost ribbons** (`ribbon.gdshader` style 5): glints are soft points (lit cells were pale squares).
+- **Sound per skill** (`Audio/Sfx.Skills.cs`, routed in `SoundBridge`): a voice per art on cast, on
+  landing and on hit; strikes, chains and beams now sound. *Not heard: checked as spectrograms of
+  the game's own mix only (`--wav PATH` records it; `vfx/spec.py` draws it).*
+- Seen after the fixes: Gyrestorm's wind thinned; the shield's break a shockwave, not a ring;
+  Thunderclap's burst blue. Eight skills taped: no clipping after the palm and pot were lowered.
+- *Not yet seen*: Moonfall's arcane burst skipped (it was pink-white balls under each moon);
+  Frostfire's frost ribbon removed (it drew pale squares even with round glints); the won night's
+  softer shaft foot and the way out's band (`won5` was shot, not looked at).
 
 ## Next, in order
 
-1. See the hostile marks at 0.28 on the Dig (`dig5`) and the dash streak close.
-2. Gale Chakram (grade 2: two pale rings read as handcuffs): `python tools/comfy/fx_sprites.py cut
-   gale_ring=tools/comfy/out/fx_sprites/gale_ring_1_1_0.png wind_swirl=tools/comfy/out/fx_sprites/wind_swirl_2_2_0.png`,
-   import, then in `Flight` draw `Body(at, ..., "gale_ring", ...)` spun fast over a dark steel ring,
-   with `wind_swirl` behind it. (The four-blade candidates are set aside in `scratchpad/vfx/rejected/`.)
-3. `gpu_horn.sh` when 11 GB of RAM is free; add `tell_horn` to `sounds.json`. No leftover war horn
-   job was in ComfyUI's queue.
-4. Cinderfall's blast blooms cream round her (and the coal in flight is a cream pill); Umbral Bolt
-   and Moonbrand read as grey smoke (shadow_wisps tinted grey); the crit `sparks` burst is white
-   at her feet. Then Firepot, Iron Palms, Grave Tether, Gravecall, Spirit Herd, Thornbloom,
-   Blightfield; evolutions, unions, the arts, sound per skill; combat's asks (a fed deadfall, the
-   cold's band, the pale-blue "His age" ring).
-5. The rise could be richer still: filmed flame (an LTX "ring of fire spreading on the ground from
-   above" clip) over the shader's band; the fire's front is a band of orange more than tongues at
-   full resolution.
+1. Shoot and look: Moonfall, Frostfire Comet, `won5` (the way out late in the won night).
+2. The evolutions still wrong (all swept; sheets in `vfx/v1/`, triage sheets `vfx/v1a..d.png`,
+   rechecks `vfx/u3a.png`, `u3b.png`):
+   - hoops: Rend and Mend and The Harrowing (their opened sweeps still read as wide bright arcs:
+     thinner and darker, or a scythe seen to travel), Winter Ward and Absolute Zero (`nova_frost`
+     fronts), the Wild Hunt's green rings;
+   - white bars: Skybreak (`arc_sky`, a wide white column), Ford Ice (`spear_ice`, a white bar),
+     Sunlance (`beam_sun`, a thick cream beam);
+   - Dawn's Judgement's discs read as soft gold blobs; Barrow Host's knights as pale ghosts.
+3. The arts (Ev.Ability), then the arts' and the grounds' sound.
+4. The judgements on the status page (the struck flare's white; a listen to the sounds).
 
 ## Decisions (why)
 
-- **Nothing lights her but her own moments** (lights near her fade; effects cleared over her).
-- **A crowd is told by its first few**: numbers, deaths, dust, flashes, falls.
-- **Hues below AgX's knee** (cream past about 2). Fire's hot is (1.05, 0.5, 0.08).
-- **What must be seen over a packed crowd is held in the air**: a ground decal under seventy
-  bodies was invisible (the dial).
-- **Fire from above is a field**: upright flame sprites read as torches, flat ones as streaks.
-- **No four-armed turning blades** (they read as a hooked cross).
-- **Hostile marks near the ground's lit value**, hatched, never solid.
+- **No hoops**: a ring on the ground with a bright edge reads as interface or geometry. A band of
+  light is soft both sides, and only where a place must be marked (the way out). A fire's reach is
+  its own light: a flat disc of firelight out to 5 m read as an orange circle painted on the ground.
+- **Light upright on the screen, gaussians never an edge, held below the knee** (inherited).
+- **A union is its own thing**: never another skill's art borrowed whole.
+- **The view is told what a thing is** (`LastDot`, `HeldUntil`): never guess a tick from a blow.
+- **Measure**: warm-glow widths by R−B along a row (`vfx/warmth.py`); sound by spectrogram.
 
 ## Failures, and why
 
-- **Flames as sprites** (three tries): upright `fire_loop` read as torches, flat ones as sparse
-  streaks; the shader ring fixed it.
-- **The dial as a ground decal**: hidden under the crowd.
-- **The rise's first look lit the crowd cream**: a chest flash with a 12 m range. Lights near the
-  crowd must be low and short.
-- **Batch 11 lost frames**: disk C: fell under 2 GB and Godot wrote truncated PNGs. Check
-  `Get-PSDrive C` before a long batch; `grid.py` fails on a truncated frame.
-- **Krea skips a name it has made**: `krea.t2i_many` returns an existing file; move old candidates
-  aside before remaking one.
+- **Shader branch order**: kinds 8 and 9 fell into kind 7's `kind > 6.5` branch and drew as blue
+  shafts. Bound each branch both ways.
+- **The fire's room** (kind 9) read as a painted orange disc; removed.
+- **The deadfall as an ellipse** of cards was a hoop of flame round a cold log; pressed to a line.
+- **Two breath puffs** a pant were lost from 30 m up; three bigger, paler ones read.
+- **Big sheets cost context**: a 4×8 sheet is ~5k tokens. Use `vfx/pick.py` (one frame a run,
+  `max` picks the frame furthest from the run's mean) and `crops.py` at full resolution.
 
 ## Gotchas
 
-- Import after every merge and after adding textures (`--headless --path godot --import`; an
-  incremental one takes a minute or two). New textures get their sibling's import settings with
-  `scratchpad/vfx/import_like.py` (VRAM compressed, mipmapped), or Godot imports them lossless with
-  no mips.
-- `comfy_stat.py free` now frees only when the queue is empty (freeing under another lead's job makes
-  it reload). The face and UI leads use ComfyUI a lot; RAM is often 3 to 8 GB free.
-- `shot.py`, `sweep.py`, `shots.py`, `gpu_horn.sh`, `install_fb.py` point at this worktree;
-  `shots.py` also reads the previous lead's frames (`a63cd93...`) as "before" (`a9`, `s6`, `s7`).
-  `grid.py OUT COLS W,H[,DX,DY] globs` makes full-resolution crops.
-- `Shots.Want("rise", t)` saves frames at real seconds after a rise (`rise_ember_rise_N.png`).
-- Shader `TIME` is engine time (not slowed); `BattleFx.time` is the fight's.
-- `Color * float` scales alpha too; use `new Color(r*k, g*k, b*k, a)` where alpha matters.
-- Don't `dotnet build` the game while a capture runs; compile-check with `-o scratchpad/vfx/buildcheck`.
+- **Setting up a worktree** (as before): junction `godot/assets` → `public/assets` and
+  `git update-index --assume-unchanged godot/assets`; robocopy `.godot` from a recent skills
+  worktree (2 GB); copy `public/assets/**/*.import`; build and import twice (`vfx/imp.sh`).
+  `vfx/repoint3.py` is the model for pointing the tools at a new worktree.
+- **The worktree guard** refuses `cd X && git ...` chains and Python heredocs that write files.
+  Write `.py` files with the Write tool and run them; `vfx/ed.py` does exact replacements and keeps
+  each file's line endings (most files are CRLF in the worktree).
+- **Shots**: `--on boss` adds frames at each boss move (`NAME_<label>_N`), `--won` the fall
+  (`NAME_fall_N`); `--wav PATH` tapes the mix (works with `--shot`).
+- Godot picks up an edited `.gdshader` at its next launch, without an import.
 
 ## Collaborators
 
-- **Main session**: merges; sent the sheets listed below.
-- **Experience director** (`ab406cf9ddd22b03b`): owns `vat.gdshaderinc` (status and struck looks).
-- **Combat** (`a708da2c97bf85c95`): told of `Ev.Rise` and the delay proposal.
-- **Arena art** (`a26767f7f9955cb56`): given the Dig crop.
-- **Performance** (`a7145e18b3eb78294`): Blades is one MultiMesh; tell them before touching `Ribbons.cs`.
-
-## Sheets (in `scratchpad/vfx/`)
-
-`ba_a9_1.png`, `ba_s6_1.png`, `ba_s6_2.png` (the previous lead's); `ba_r1.png`, `ba_r2.png` (the three
-findings, before and after); `rise_ember_sheet.png`, `rise_ember_whole.png`, `rise_notyet_sheet.png`;
-`st_cmp.png` (status read); `dig_crop_for_arena.png`; `z_disc.png`.
+- **Main session**: merges; rules on judgements.
+- **Combat** (`a427a874da78cba8b`): the fed deadfall, "His age"; Rotwood's and Frostfire's art keys.
+- **UI design** (`aa1f430bd64b8d1ce`): the way out's band sits under their prompt.
+- **Animation** (`aa15f092820132274`): `CrowdView` (the flare caps, `LastDot`, `HeldUntil` are in it).
+- **Arena art** (`aba487928a1515c93`): the deadfalls; BattleFx draws the fed flame over their fires.
+- **Performance** (`a0eb8c612c94d4aa5`): costs on the status page.
 
 ## Files to read first
 
 1. `docs/team/skills.md`
-2. `godot/src/Fx/BattleFx.Rise.cs`, `BattleFx.Skills.cs`, `BattleFx.Enemies.cs`, `Hits.Numbers.cs`
-3. `godot/src/Fx/BattleFx.cs` (Handle, Flash, Blast, the telegraph handler)
-4. `godot/shaders/fire_ring.gdshader`, `flipbook.gdshader`, `hero_clear.gdshaderinc`, `blade.gdshader`
-5. `tools/comfy/marks.py`, `fx_sprites.py`, `fx_clips.py`, `flipbook.py`
-6. `scratchpad/vfx/shot.py`, `sweep.py`, `grid.py`, `ba.py`, `batch13.sh`
+2. `godot/src/Fx/BattleFx.Story.cs`, `BattleFx.Loot.cs`, `shaders/loot_beam.gdshader`
+3. `godot/src/Fx/BattleFx.Skills.cs` (flights, hits, `PotBurst`, `FrostfireBurst`, grounds)
+4. `godot/src/Audio/Sfx.Skills.cs`, `SoundBridge.cs`
+5. `godot/src/Actors/CrowdView.cs` (flare caps)

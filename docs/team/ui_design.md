@@ -1,39 +1,35 @@
 # UI design: status
 
-Agent aab47bfdab5955dac (handing off), on branch `worktree-agent-aab47bfdab5955dac`, which has the integration branch merged. The full brief for a successor is in `docs/handoff/ui_design.md`.
+Agent aa1f430bd64b8d1ce, on branch `worktree-agent-aa1f430bd64b8d1ce` (integration merged). Pictures: `docs/ui_review/build8/` (latest), build7 and earlier before it.
 
-## Current state
-- **Layouts approved by the owner** ("the ui layouts look better"). They were revised for no dead space.
-  - Research: `docs/design/UI_RESEARCH.md`.
-  - Greyboxes: `docs/ui_review/greybox/`, drawn by `python tools/uigreybox/screens.py OUTDIR`.
-  - Nothing is built in the game yet. That's next.
-- **Seen in the game at 1920x1080 and fixed:**
-  - the Look's face light (portrait rig, `GameFront.PortraitLight`);
-  - the pack's swap flash;
-  - the arena cards' centring;
-  - the licences index (legal passed the screen);
-  - the day clock's words, its key and the dawn fade;
-  - a slim scroll bar on every screen (`Style.PageTheme`), and `FadeEnds` for long readings.
-- **Seen and still poor** (fold into the build):
-  - the map result: two big half-empty boxes, and its telling runs past 9 s;
-  - the Wayfinder's table and atlas: an old iron plate with the HUD showing round it, and the atlas page's "used up" line clipped;
-  - Self, Pack, Forge: dead space, which the approved layouts answer.
+## Current state (built, seen at 1080; creation, pause and rest at 1440 too)
+- **Creation** (build8/1 to 12): two mirrored 560 px panels, her in the middle of the screen between them, the fire at her right hand in view.
+  - Left: the steps on the chain (the heated link under the step; `[` and `]` at its ends), the step's question as the title, the choices as lines of type (line glyph, name, what it is; the taken one marked with the ember diamond), the way on as words with their keys.
+  - Right: what the choice means; a calling's numbers as a ledger line.
+  - Her name and what she is, as lettering on the ground at her feet (hidden on the Look, which is near her face).
+  - The Look's parts as the house's tabs; cameos and beads in centred rows; the face's groups, palettes, cuts and hood as words.
+- **Pause** (13 to 15): a fitted panel at the left; where you stand, the menu as a centred block, the book's tabs on their chain (cold: no tab open). Settings and controls open in a panel beside it, rows as words. The HUD steps away, as the book does.
+- **The Last Lamp** (16 to 18): a held moment in type, as the fall's choices are: the lamp's name and Rook's question over her head, the three choices under her feet (1, 2, 3; Esc is "not yet"), the lamp's warmth breathing behind the first; refused, the price in red and why. The morning is told the same way.
+- **Chapter** (19): the 1440 book hugs its writing (measured until it holds). The past on the left (what was done, what the world says, the tally as a ledger line), what goes on on the right (who remembers you, what still waits). A name's word sits after it, never in a far column. The way on as words, mirrored about the middle.
+- **Credits** (20): checked at 1:1; its slab and button and the licence's seal lost their boxes.
+- **The title's panels and the adults' notice** (21 to 23): fitted panels, words for buttons.
+- Earlier passes (results, the fall, the Journal, the map, notices) as build7 shows.
 
 ## Next
-1. Build the approved layouts in the game with plain tonal styles, calling UI art's frame names: Self, Pack (with the stores tabs), Storeroom (shelves: crafting's logic is at af01b0d61ef656dd4@012403dd), Trader, and the bench (two panels, smith in the world).
-2. Experience's asks (ab406cf9ddd22b03b): the day dial by the zone name, and the fall's two choices as a held moment, not the use-key prompt.
-3. The map result and the table/atlas, in the same restraint.
-4. Heroine portraits after her new head (`heroine_paint.py`, `creation_portraits.py`); the male hero's Look with ab82cbe99e2937ddd.
+1. **Portraits** when the face lead messages: `python tools/assets/heroine_paint.py brows`, then `python tools/assets/creation_portraits.py` (a Godot turn), then shoot the Look (build8/2 to 6). Three faces have no cameo yet (Sunborn, Moonlit, Saffron: build8/3).
+2. The male Look's portrait and cameos wait for the male hero lead (build8/10, 11: a glyph stands in).
+3. Review combat's new `StoryChoices` (`WorldType.cs`) at 1:1 against the held-moment rules.
 
 ## Key decisions
-- **One frame per screen.** Inside it: tone, spacing, type and rules. Colour is rarity, state, or the one primary action.
-- **Panels hug their contents.** A surface that must run on tapers into the world behind it.
-- **Counters are two fitted panels**, theirs left and yours right, with the keeper live in the world between them.
-- **No inspect panels.** A hover or focus card opens on the world side, with the worn piece beside it.
-- **Irreversible acts are held.** Crafting built `Style.HoldButton`.
-- **Portrait light only at head and shoulders and nearer.** The fire reaches her through a stand-in light, so the camp keeps its light.
+- One frame per screen; inside it only type, rules and space. Colour means tier, state or the one action.
+- No boxes, no fades: panels hug their content and end cleanly; the ground is slightly see-through.
+- Creation is symmetric: two panels of one width, the figure in the middle (`GameFront.DressFigure` stands her where the camera looks).
+- The chain is the book's tabs wherever they are (the book's panel, the pause, creation's steps); a title beside a chain has none of its own.
+- A held moment (the fall, the lamp, the morning) is type on the world over and under her, never a plate.
+- A row of drawn glyphs is drawn in one hand (`Glyphs.Icon(..., line: true)`): the painted set mixes full colour and line.
+- Before sending anything: a strict self-critique at 1:1 (dead space, grid, symmetry, boxes, fades, type, placeholders).
 
 ## Notes for other areas
-- **Everyone:** the game's Alegreya Sans has no →, ←, ▲ or ● glyphs. Use Alegreya (serif) or draw them.
-- **Loot lead (a9a9c345a35e1fcad):** the stores (pouch, satchel, key ring) are tabs over one row in the Pack and at every counter. The filter sits beside Sort.
-- **UI art (a0bff3ffe4d3ad748):** needs a taper (the side panel and page ground fading at the foot), tab_hover and tab_pressed, and chains used with purpose.
+- **UI art (paused):** `book/ribbon.png` is no longer used (the Journal's sections are type). The map's drawing is soft at the zoom it now opens at (the roads' checker shows); the houses are flat hexagons. The calling and art glyphs' painted set is a mix of full colour (shield, moon, hourglass) and white line; creation now draws them as lines.
+- **The face lead:** `CreateLook.cs` changed in presentation only (the frame, heads, tabs, words for segments, centred rows); what is offered is untouched. The property `Kit` is now `Hero`.
+- **Developer switches added:** `--sex male` (creation on a man), `--panel load|settings|controls` (the title on a panel), `--adults` (the notice; never written back). `--keys` stops after its first press while the world is paused: use `--clicks` (one) there.

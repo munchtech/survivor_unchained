@@ -250,6 +250,7 @@ for _root, _, _files in os.walk(_TDIR):
             TARGET.setdefault(_f[:-10], os.path.join(_root, _f))
 for _f in os.listdir(os.path.join(_TDIR, "expression", "units", "caucasian")):
     TARGET["x:" + _f[:-10]] = os.path.join(_TDIR, "expression", "units", "caucasian", _f)
+TARGET.update(fs.portrait_paths())
 
 
 sides = fs.sides
@@ -257,11 +258,14 @@ sides = fs.sides
 
 # (her face's sculpts, ours, are laid on her points once MakeHuman's are
 # read, below: MV_HM)
+_PORTRAIT_KEYS = []
 for _t, _v in FACE.items():
     if _t in fs.SCULPTS:
         continue
     for _n in sides([_t]):
-        TargetService.load_target(hm, TARGET[_n], weight=_v)
+        _kb = TargetService.load_target(hm, TARGET[_n], weight=_v)
+        if _t.startswith("portrait-"):
+            _PORTRAIT_KEYS.append(_kb.name)
 # Every slider's and expression's targets too, at nothing (so they change
 # nothing yet), for what each does to her to be read off later: each key
 # its targets with their weights (a slider's reach is in them:
@@ -277,6 +281,14 @@ for _k in fs.SLIDERS:
     SHAPES[_k + "-"] = {n: w for t, w in _minus.items() for n in sides([t])}
 for _k, _ts in EXPRESSIONS.items():
     SHAPES[_k] = {"x:" + t: 1.0 for t in _ts}
+# Her other faces (the presets), each its own whole face laid on her from
+# a head TRELLIS made of its portrait (face_wrap.py: portrait-<id>), as a
+# key from her own face to it: face_<id> (the game sets the one chosen,
+# People.HerFaceKey; her sliders work on top of it).
+_own = next((t for t in FACE if t.startswith("portrait-")), None)
+for _t in sorted(fs.portrait_paths()):
+    if _t != _own:
+        SHAPES["face_" + _t[len("portrait-"):]] = {_t: 1.0, **({_own: -1.0} if _own else {})}
 # MakeHuman's woman is longer and slimmer of neck and lower of shoulder than
 # she is, and where her hair hid her skin there is nothing of hers to fit
 # to: her build set by BUILD (her face is placed on hers, so a shorter neck
@@ -311,6 +323,15 @@ def grab(o):
 
 
 MV, MF, MU = grab(hm)
+# (and without her portrait (face_wrap.py), for her head's size and place:
+# a face of another make, laid on by its own landmarks, would size her
+# whole head by its own nose and chin)
+for _k in _PORTRAIT_KEYS:
+    hm.data.shape_keys.key_blocks[_k].value = 0.0
+MV_PLACE = grab(hm)[0] if _PORTRAIT_KEYS else MV
+for _k in _PORTRAIT_KEYS:
+    hm.data.shape_keys.key_blocks[_k].value = 1.0
+bpy.context.view_layer.update()
 # (as MakeHuman has her, before she is placed on hers: what our sculpts are made on)
 MV_HM = MV.copy()
 # Her face's own sculpts (a narrower chin): made on her points as MakeHuman
@@ -331,15 +352,15 @@ print("MAKEHUMAN", len(MV), "points,", len(MF), "faces of skin")
 # ---- her face's place: scale from nose to chin, then turned and moved
 # till its surface lies on hers (an ICP at that scale).
 _top = MV[_inbody, 2].max()
-mn, mc = nose_chin(MV[_inbody & (MV[:, 2] > _top - 0.28)])
+mn, mc = nose_chin(MV_PLACE[_inbody & (MV_PLACE[:, 2] > _top - 0.28)])
 hn, hc = her_face_landmarks()
 S = np.linalg.norm(hn - hc) / np.linalg.norm(mn - mc)
 R = np.eye(3)
 T = hn - S * mn
 _hf = np.where(~RED[HTP] & (_tc[:, 2] > hc[2] - 0.003) & (_tc[:, 2] < 1.80) & (_tc[:, 1] < 0) & (np.abs(_tc[:, 0]) < 0.075))[0]
 _fbvh = BVHTree.FromPolygons([tuple(p) for p in HV], HT[_hf].tolist())
-_cand = MV[np.where(_inbody & (MV[:, 2] > mc[2] - 0.003) & (MV[:, 2] < mn[2] + 0.07) & (MV[:, 1] < mn[1] + 0.06)
-                    & (np.abs(MV[:, 0]) < 0.06))[0]]
+_cand = MV_PLACE[np.where(_inbody & (MV_PLACE[:, 2] > mc[2] - 0.003) & (MV_PLACE[:, 2] < mn[2] + 0.07)
+                          & (MV_PLACE[:, 1] < mn[1] + 0.06) & (np.abs(MV_PLACE[:, 0]) < 0.06))[0]]
 for _ in range(30):
     p = (S * (R @ _cand.T)).T + T
     q, k = [], []
@@ -595,6 +616,21 @@ _g = g_cut(RV)
 _sm = ((s_split(RV) < -0.01) & (_g > 0.01) & (_g < 0.045)).astype(float)[:, None] * 0.5
 for _ in range(6):
     RV = RV + (_A @ RV - RV) * _sm
+# Down her middle in front, where her sculpt's two halves meet a little
+# apart, the graft laid on her took their crease down her throat and
+# breastbone and a fold under her throat (under a light from the side, a
+# line and a pale shard). Smoothed there (Taubin's way: smoothed and swelled
+# in turn, so her throat keeps its girth), easing out to 4 cm either side,
+# down from 6 mm under SPLIT, and not within 12 mm of CUT.
+_s, _g = s_split(RV), g_cut(RV)
+_mid = (smooth01(1 - np.abs(RV[:, 0]) / 0.04) * (RV[:, 1] < 0) * smooth01((-_s - 0.006) / 0.02)
+        * smooth01((_g - 0.012) / 0.02))[:, None]
+_before = RV.copy()
+for _ in range(30):
+    RV = RV + (_A @ RV - RV) * (0.5 * _mid)
+    RV = RV + (_A @ RV - RV) * (-0.53 * _mid)
+print("MIDDLE: %d graft points down her middle smoothed (%.1f mm at most)"
+      % ((_mid[:, 0] > 0.01).sum(), 1000 * np.linalg.norm(RV - _before, axis=1).max()))
 MOVE = RV - RV0
 _rc = np.array([RV[f].mean(0) for f in RF])
 HEAD_F = [i for i in range(len(RF)) if s_split(_rc[i:i + 1])[0] > 0]
@@ -654,8 +690,8 @@ def around(P, loop):
 bm = bmesh.new()
 bm.from_mesh(hme)
 bm.faces.ensure_lookup_table()
-# What is hers is marked (her own normals kept on her corners, her hair on
-# her faces), as cutting renumbers everything.
+# What is hers is marked (the sculpt's normals kept on her corners, for
+# where she folds; her hair on her faces), as cutting renumbers everything.
 NL = [bm.loops.layers.float.new(f"n{k}") for k in range(3)]
 RL = bm.faces.layers.int.new("hair_paint")
 NEW = bm.faces.layers.int.new("new")
@@ -957,11 +993,28 @@ if os.environ.get("HEAD_STOP") == "sewn":
 
 
 # ---------------------------------------------------------------- normals --
-def smooth_normals(parts):
+def smooth_normals(parts, near=(0, 0.0)):
     """Normals of the surfaces given as one, joined where their points meet
-    (her paint's seams, her head on her neck), so no seam shows in the light."""
+    (her paint's seams, her head on her neck), so no seam shows in the light.
+    near=(k, d): the points of part k within d of each other joined too (her
+    body's halves and seams meet a hair apart in places, and rounding to
+    1e-5 can part two points that meet exactly)."""
     allp = np.vstack([V for V, _ in parts])
     key = np.unique(np.round(allp / 1e-5).astype(np.int64), axis=0, return_inverse=True)[1].ravel()
+    if near[1] > 0:
+        base = sum(len(V) for V, _ in parts[:near[0]])
+        root = np.arange(key.max() + 1)
+
+        def find(i):
+            while root[i] != i:
+                root[i] = root[root[i]]
+                i = root[i]
+            return i
+        for a, b in cKDTree(parts[near[0]][0]).query_pairs(near[1]):
+            ra, rb = find(key[base + a]), find(key[base + b])
+            if ra != rb:
+                root[max(ra, rb)] = min(ra, rb)
+        key = np.unique(np.array([find(k) for k in key]), return_inverse=True)[1].ravel()
     acc = np.zeros((key.max() + 1, 3))
     base = 0
     for V, F in parts:
@@ -983,7 +1036,7 @@ def smooth_normals(parts):
 
 BV = np.array([v.co[:] for v in hme.vertices])
 BF = [list(p.vertices) for p in hme.polygons]
-bn, hn = smooth_normals([(BV, BF), (HEAD_V, HEAD_FACES)])
+bn, hn = smooth_normals([(BV, BF), (HEAD_V, HEAD_FACES)], near=(0, 1e-4))
 _new = np.zeros(len(hme.polygons), int)
 hme.attributes["new"].data.foreach_get("value", _new)
 _old = np.stack([np.array([d.value for d in hme.attributes[f"n{k}"].data]) for k in range(3)], 1)
@@ -991,14 +1044,23 @@ _lv = np.array([lp.vertex_index for lp in hme.loops])
 _lp = np.zeros(len(hme.loops), int)
 for p in hme.polygons:
     _lp[p.loop_start:p.loop_start + p.loop_total] = p.index
-# Her own normals kept, but on what is new and within 2 cm of CUT (where
-# she meets the graft), and where hers were lost in the cutting.
-_mine = (_new[_lp] == 0) & (g_cut(BV[_lv]) < -0.02) & (np.linalg.norm(_old, axis=1) > 0.5)
-_on = _old[_mine] / np.linalg.norm(_old[_mine], axis=1)[:, None]
-_ang = np.degrees(np.arccos(np.clip((_on * bn[_lv[_mine]]).sum(1), -1, 1)))
-print("NORMALS: hers differ from the joined smooth ones by %.1f deg on average (%.1f at the 99th percentile)"
+_fn = np.zeros((len(hme.polygons), 3))
+hme.polygons.foreach_get("normal", _fn.ravel())
+# Her normals are her surface's own, joined and smooth, all over her. The
+# sculpt's (as AccuRIG wrote them) lay flat to a few of her faces at a time:
+# under a light from the side her upper chest broke into pale shards, and
+# down her middle, where her halves meet, they leaned in toward the seam.
+_has = np.linalg.norm(_old, axis=1) > 0.5
+_on = _old / (np.linalg.norm(_old, axis=1)[:, None] + 1e-12)
+_ang = np.degrees(np.arccos(np.clip((_on * bn[_lv]).sum(1), -1, 1)))[_has & (_new[_lp] == 0)]
+print("NORMALS: the sculpt's differed from her surface's own by %.1f deg on average (%.1f at the 99th percentile)"
       % (_ang.mean(), np.percentile(_ang, 99)))
-LN = np.where(_mine[:, None], _old, bn[_lv])
+# (Only where her surface folds on itself, under her breasts, in her
+# armpits, between her toes, and a joined normal turns from its own face,
+# is the sculpt's kept, if it faces out.)
+_fold = ((bn[_lv] * _fn[_lp]).sum(1) < 0.2) & _has & ((_on * _fn[_lp]).sum(1) > 0.2)
+print("NORMALS: her surface's own on %d corners, the sculpt's where she folds on %d" % ((~_fold).sum(), _fold.sum()))
+LN = np.where(_fold[:, None], _on, bn[_lv])
 hme.normals_split_custom_set([tuple(n) for n in LN])
 head.data.normals_split_custom_set_from_vertices([tuple(n) for n in hn])
 for k in ("n0", "n1", "n2", "ox", "oy", "oz", "new"):
@@ -1054,8 +1116,11 @@ def pad(img, filled):
 
 
 def fill_in(img, known, where):
-    """Texels not known painted from those around them, ever wider, with
-    her skin's own grain over the top."""
+    """Texels not known painted from those around them, ever wider. (No
+    grain laid over them: drawn from the paint's every edge, a texel's
+    noise, it read at a close-up as a sandpaper of tan dots over her throat,
+    collarbones and upper chest, where her hair had lain. Her skin's fine
+    grain is her pores' relief, in her skin's shader.)"""
     out = img.copy()
     todo = where & ~known
     m = known.astype(np.float32)
@@ -1067,12 +1132,6 @@ def fill_in(img, known, where):
         todo &= ~ok
     # (Any too far from skin to paint from: her skin's own colour.)
     out[todo, :3] = img[known, :3].mean(0)
-    hp = img[:, :, :3] - np.stack([ndimage.gaussian_filter(img[:, :, k], 3) for k in range(3)], 2)
-    grain = np.std(hp[known], 0)
-    noise = ndimage.gaussian_filter(np.random.default_rng(1).standard_normal(img.shape[:2]), 0.8)
-    noise /= noise.std() + 1e-9
-    gen = where & ~known
-    out[gen, :3] += noise[gen][:, None] * grain[None] * 0.4
     return out
 
 
@@ -1186,6 +1245,72 @@ FACE_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "heroine_fac
 FACE_PAINT = os.path.join(FACE_DIR, "face_paint.png")
 
 
+HEAD_T, HEAD_B = t_, b_
+_HEAD_TV = HT2[t_]                             # (each texel's triangle's three points)
+_HEAD_S = s_split(P_)
+
+
+def _to_points(vals, w=None):
+    """Texels' values (n x k) to her head's points: each point the mean of the
+    texels about it, by their weights toward it (and w)."""
+    wt = HEAD_B if w is None else HEAD_B * w[:, None]
+    nv = len(HEAD_V)
+    acc = np.zeros((nv, vals.shape[1]))
+    ws = np.zeros(nv)
+    for k in range(3):
+        ws += np.bincount(_HEAD_TV[:, k], wt[:, k], nv)
+        for ch in range(vals.shape[1]):
+            acc[:, ch] += np.bincount(_HEAD_TV[:, k], vals[:, ch] * wt[:, k], nv)
+    return acc / np.maximum(ws, 1e-9)[:, None], ws
+
+
+_e = np.array([(f[i], f[(i + 1) % len(f)]) for f in HEAD_FACES for i in range(len(f))])
+_HEAD_ADJ = sp.coo_matrix((np.ones(len(_e)), (_e[:, 0], _e[:, 1])), shape=(len(HEAD_V),) * 2).tocsr()
+_HEAD_ADJ = ((_HEAD_ADJ + _HEAD_ADJ.T) > 0).astype(float)
+_HEAD_LAP = sp.diags(np.asarray(_HEAD_ADJ.sum(1)).ravel()) - _HEAD_ADJ
+# (her body's skin at her neck's seam, a point at a time: where heroine_head.py
+# eases into it, the 6 mm above SPLIT)
+_seam_t = np.zeros(len(P_), bool)
+_seam_t[np.where(_near)[0][(_mix[:, 0] > 0.5) & (s_split(P_[_near]) < 0.006)]] = True
+_body_t = np.zeros((len(P_), 3))
+_body_t[np.where(_near)[0]] = _hc
+
+
+def matched_base(fp, a):
+    """Her head's own skin (MakeHuman's, in her colouring) brought to the face
+    painted over it and to her body at her neck: the difference at each, eased
+    across what lies between (a harmonic field over her head's points), so her
+    neck, ears and scalp are the colour of her face where they meet it and of
+    her body where they meet that. Left as it was, MakeHuman's skin, paler and
+    greyer than both, showed as a light band across her neck between her jaw
+    and her collar."""
+    nv = len(HEAD_V)
+    off_t = fp - HEAD_BASE
+    off_f, wf = _to_points(off_t, (a[:, 0] > 0.97).astype(float))
+    av, _ = _to_points(a)
+    face = (av[:, 0] > 0.97) & (wf > 0.3)
+    # (the face's difference smoothed over the face, so its brows and freckles
+    # are not carried out across her neck: only its colour)
+    A = sp.diags(1 / np.maximum(np.asarray(_HEAD_ADJ.sum(1)).ravel(), 1)) @ _HEAD_ADJ
+    for _ in range(40):
+        off_f = np.where(face[:, None], A @ np.where(face[:, None], off_f, 0) / np.maximum(A @ face.astype(float), 1e-6)[:, None], off_f)
+    off_b, wb = _to_points(_body_t - HEAD_BASE, _seam_t.astype(float))
+    body = wb > 0.3
+    fixed = face | body
+    val = np.where(face[:, None], off_f, off_b)
+    free = np.where(~fixed)[0]
+    fx = np.where(fixed)[0]
+    Lff = (_HEAD_LAP[free][:, free] + 1e-6 * sp.identity(len(free))).tocsc()     # (a piece touching neither: left as it is)
+    rhs = -_HEAD_LAP[free][:, fx] @ val[fx]
+    off = val.copy()
+    for ch in range(3):
+        off[free, ch] = spl.spsolve(Lff, rhs[:, ch])
+    off_t = (off[_HEAD_TV] * HEAD_B[:, :, None]).sum(1)
+    print("MATCHED her head's skin: %d points to her face, %d to her body at her neck; moved %.3f at most (mean %.3f)" % (
+        face.sum(), body.sum(), np.abs(off_t).max(), np.abs(off_t).mean()))
+    return np.clip(HEAD_BASE + off_t, 0, 1)
+
+
 def head_paint(face_paint, path):
     """Her head's texture with a face's paint laid over (none: MakeHuman's
     skin in her colouring), eased into her own skin at her neck, written to `path`."""
@@ -1195,6 +1320,7 @@ def head_paint(face_paint, path):
         fp = np.asarray(Image.open(face_paint).convert("RGBA"), np.float32)[::-1] / 255
         if fp.shape[0] == HSIZE:
             a = fp[HEAD_R, HEAD_C, 3:4]
+            c = matched_base(fp[HEAD_R, HEAD_C, :3], a)
             c = c * (1 - a) + fp[HEAD_R, HEAD_C, :3] * a
             print("FACE PAINT %s laid over %d%% of her head" % (os.path.basename(face_paint), 100 * (a > 0.5).mean()))
     c[_near] = c[_near] * (1 - _mix) + _hc * _mix
@@ -1253,6 +1379,9 @@ if _up:
     used = np.zeros(TEX.shape[:2], bool)
     used[r3, c3] = True
     TEX2 = fill_in(TEX, used & ~bad, bad)
+    # (and between her islands, the nearest of her skin: left red, it bled
+    # into her seams as the texture was drawn smaller)
+    TEX2 = pad(TEX2, used)
     # (Written out and loaded back: packing an image already packed keeps
     # the old paint, not the new.)
     _bp = os.path.join(os.path.dirname(OUT_BLEND), "heroine_body_paint.png")
@@ -1426,7 +1555,7 @@ if not os.environ.get("HEAD_UNPAINTED"):
             head_paint(os.path.join(FACE_DIR, _f), _p)
             _raw = heroine_face_fixes.RAW.replace(".jpg", f"_{_id}.jpg")
             shutil.copy(_p, _raw)
-            heroine_face_fixes.fix(head, _p, raw=_raw)
+            heroine_face_fixes.fix(head, _p, raw=_raw, key=f"face_{_id}")
 for _im in bpy.data.images:
     if bpy.path.abspath(_im.filepath) == hpath:
         if _im.packed_file:

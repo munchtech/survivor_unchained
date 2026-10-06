@@ -217,8 +217,10 @@
       "dur": 2.0,
       "note": "She stands in the ford with the dawn coming. Pull back and up into the follow camera. Bars out. Control.",
       "cam": {"pos": {"mark": "her", "off": [0.4, 1.8, 3.6]}, "at": {"mark": "her", "off": [0, 1.2, 0]}, "lens": 35, "move": {"pos": {"mark": "her", "off": [0, 9.0, 8.0]}, "ease": "inout", "follow": true}},
-      "cues": []
+      "cues": [
+        {"at": 0.0, "do": "play"}
+      ]
     }
   ],
-  "end": {"her": "her", "camera": "follow"}
+  "end": {"her": "her", "camera": "follow", "keep": ["warden"]}
 }

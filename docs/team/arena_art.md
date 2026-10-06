@@ -1,66 +1,59 @@
 # Arena art: how every arena looks, and reads
 
-Status page for arena art (branch `worktree-agent-a26767f7f9955cb56`). The lead
-(a26767f7f9955cb56) has handed off: read `docs/handoff/arena_art.md`. Sheets and
-concepts are in `docs/arena/`.
+Status page for arena art (branch `worktree-agent-aba487928a1515c93`). The lead `aba487928a1515c93`
+has **handed off**: read `docs/handoff/arena_art.md`. Sheets and concepts are in `docs/arena/`
+(latest: `hollow_night_2.jpg`, `dig_1.jpg`).
 
 ## The brief
 
-I own every arena's look: the ground, the dressing, the landmarks, the light and air,
-how readable the fight is on it, and how each place tells its part of the valley. That
-includes each story fight's own place, built to combat's outline. The endgame has two
-kinds of arena, each with its own look: the **ember scars** (survivors runs, `ArenaRun`)
-and the **Wayfinder's atlas** (permanent build maps, "like PoE").
+I own every arena's look: the ground, the dressing, the landmarks, the light and air, how readable
+the fight is on it, and how each place tells its part of the valley. That includes each story
+fight's own place, built to combat's outline, and the endgame's two kinds of arena: the **ember
+scars** (survivors runs) and the **Wayfinder's atlas** (permanent maps, "like PoE").
 
 ## Current state
 
 | Place | Grade | State |
 |---|---|---|
-| Hollow by Night (story) | ~3.5 | Built to combat's outline: gates, deadfalls with fires, the root plate over the den, reeds, still water, foxfire, moon pools. Start area 26% flat black. |
-| Hollow | ~3 | Canopy moon pools (real shadow) and broken moss. Litter softened but still reads as gravel. Pool edges blocky. |
-| Dig | ~3 | Tips of blasted rock, rust as a mottle, dry grass at the edges, timber stacks, a windlass and stakes at the pit. |
-| Barrow | ~3 | Tussock grass; the Legion's slab road. Howe and gate not yet judged on screen. |
-| Ruts | ~3 | Tussock grass; the cook pot on its tripod over a fire replaces the grey ball. |
-
-**Fixed for every arena:**
-- the ember plates' orange blobs;
-- the slurry glows in threads;
-- standing water lies level;
-- the litter's micro-contrast is controlled.
+| Hollow by Night (story) | ~3.5–4 | 5–19% flat black (was 26%). The banks read as wood now, not a void. Old Blue's knolls are stone. `PlaceBuilt` is set. |
+| Hollow | ~3.5 | The litter reads as leaves. Moss grows in cushions. The canopy pools are soft. The stream is still weak (dark, 36% black at the water). |
+| Dig | ~3.5 | The tips are heaps of coal and rock lumps. The pit is a throat with a red heart. The clay is lighter, and the rust and ballast are graded (no blots). Still: the slurry pool is too lime, and the tips are dark masses from afar. |
+| Barrow | ~3 | The tussock tips are warm. The howe has moved to the top of the picture, not yet judged. Still blue-grey all over. |
+| Ruts | ~3 | Not yet re-judged. |
 
 ## Key decisions
 
-- **A scar is its people's own ground.**
-- **Landmarks stand at the edge only; cover inside stays under 2.2 m.** Tests hold
-  this, for story places too.
-- **Readability comes from contrast and the place's own light, not a black ground.**
-  Flat black stays at or under a fifth of a frame (`black.py`).
-- **Grass is geometry in tussocks.** Moss stays small and broken.
-- **The canopy is real shadow,** shadows-only and subdivided, not painted dapple.
-- **A story place's way runs up the screen,** its landmark at the top. A gate is the
-  ember's line across a way.
+- **A scar is its people's own ground.** Landmarks stand at the edge; cover inside stays under 2.2 m.
+- **Flat black is measured, not guessed** (`black.py`): at most a fifth of a frame.
+- **The Hollow's litter is whole red-brown leaves** (dry_decay_leaves) over black earth
+  (forest_ground_06). leaves_forest_ground's pale chips read as gravel however they were toned.
+- **The canopy is real shadow with a soft rim.** The moon's 1.2° breadth (PCSS) blurs shadows cast
+  from 9 m up, and leaves contact shadows sharp. At 2.5° the pools washed out.
+- **Moss is cushions, each there or not by its own hash.** A threshold on the paint drew a
+  cut-out of carpet. No scanned moss clumps: they read as plastic rings.
+- **A story place's walls are its banks and the wood, seen whole:**
+  - char and scorch stay at the banks' feet;
+  - past the edge is only a quarter darker;
+  - no crown stands between the camera and the place;
+  - the lip burns in short stretches.
+- **No mist sheets over arena streams.** They hid the water under one grey smear.
 
 ## Next (in order)
 
-1. **Exact next step:**
-   - set the story canopy cover to ×0.5;
-   - drop the canopy's finest noise term (blocky pool edges);
-   - shoot `hs.txt` and `r10.txt` (scratchpad `arena3/`).
-2. The Hollow's litter: does it read as leaves from 30 m? If not, drop the geometric
-   leaves.
-3. The Dig: judge the tips, rust, grass, timber and windlass at the game camera, and
-   the bomb marks (skills, 0.28).
-4. The Barrow's howe and gate on screen; the Ruts' camp judged.
-5. The moonless mood carried by each place's own lights.
-6. Horde frames on all four; lift each to 4–5.
-7. The next story places (the Roost, the Dig's edge, the vault) once combat has their
-   outlines. Combat's successor may move the den's mouth to about 18 m from boss_start.
+1. **The Vault's hall** (combat built the fight; it has no place art: invisible walls, stand-in cover and standards). Build `Maps/Arenas/Vault.cs` to `VaultOpened.Ground`, then set `PlaceBuilt`.
+2. **The Roost**, built to `RaidOnTheRoost.Ground`.
+3. The Barrow's howe at its new end; the Dig's slurry and tips from afar; the Ruts.
+4. The Hollow at minute 25, and its stream.
+5. The atlas maps from each people's kit (experience's ask: nothing tall over a fight, the ground a quiet stage).
 
 ## Notes for other areas
 
-- **Combat:** `--night ID [--stage N] [--lit]`. The gates hide as `gate:ID`; the
-  deadfalls burn on `map.FireLights`.
-- **Performance:** new per Hollow: a subdivided shadows-only canopy (75×75 quads) and
-  leaf scatter (14 leaves per 0.6 m cell, in the meadow's ring). Grass is 0.72 ms in
-  the barrow (yours).
-- **Experience:** story Hollow 15–26%, round Hollow 11–21% flat black.
+- **Combat:** `HollowByNight.PlaceBuilt` is true (its pieces and cover are its own). Old Blue's
+  rocks are `arena/knoll` pieces sheathing the rise; his points are their tops.
+- **Performance:** the Hollow's moon now has `LightAngularDistance` 1.2 (PCSS) wherever a place
+  has a canopy. Please measure it with `--perf-flip`. The mist sheets over arena streams are gone.
+- **Experience:** Hollow by Night 5–19% flat black at the game camera; round Hollow 3%.
+- **Everyone:** the root scans (root_cluster_01/02, single_root, pine_roots) are toned down in
+  `Dressing.ScanTint`. They read as pale card from above.
+- **Tool:** `dotnet run -c Release --project godot/balance -- landmarks --people P --seed N`
+  prints where an arena's streams, rails and own pieces lie, for `--at X,Z`.

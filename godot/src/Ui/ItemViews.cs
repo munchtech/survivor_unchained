@@ -4,6 +4,7 @@ using System.Linq;
 using Godot;
 using SurvivorUnchained.Content;
 using SurvivorUnchained.Rpg;
+using SurvivorUnchained.Sim;
 
 namespace SurvivorUnchained.Ui;
 
@@ -96,6 +97,9 @@ void fragment() {
         [ItemKind.Consumable] = "Consumable", [ItemKind.Quest] = "Quest item", [ItemKind.Tool] = "Tool", [ItemKind.Trophy] = "Trophy",
     };
 
+    /// <summary>A kind of thing in words, as its tooltip names it ("Rare Head").</summary>
+    public static string KindName(ItemKind k) => KindNames.GetValueOrDefault(k, k.ToString());
+
     static readonly Dictionary<string, string> StatNames = new()
     {
         ["maxHealth"] = "Health", ["armor"] = "Armour", ["damage"] = "Damage", ["cooldown"] = "Weapon speed", ["area"] = "Area", ["critChance"] = "Critical chance",
@@ -122,94 +126,164 @@ void fragment() {
         return ($"{(p > 0 ? "+" : "")}{p}% {name}", d > 0);
     }
 
-    /// <summary>A soft pool of light, brightest in the middle.</summary>
-    static readonly GradientTexture2D Halo = new()
+    /// <summary>A change as a signed number alone ("+4", "+21%", "−0.2/s"), for the right of a line,
+    /// and whether it is for the better.</summary>
+    public static (string Text, bool Good) DeltaNumber(string key, double before, double after)
     {
-        Width = 64, Height = 64, Fill = GradientTexture2D.FillEnum.Radial, FillFrom = new Vector2(0.5f, 0.5f), FillTo = new Vector2(1f, 0.5f),
-        Gradient = new Gradient { Colors = new[] { Colors.White, Colors.White with { A = 0 } }, Offsets = new[] { 0f, 1f } },
+        var (text, good) = Delta(key, before, after);
+        int sp = text.IndexOf(' ');
+        return (sp > 0 ? text[..sp] : text, good);
+    }
+
+    /* ----------------------------------------------------------- tiers -- */
+
+    /// <summary>Each tier's colour (docs/design/LOOT_DESIGN.md 3): the band, everywhere the same, from
+    /// a tile's edge to a card's name to a label on the ground. Set is verdigris, old bronze's patina.</summary>
+    public static Color TierColour(LootTier t) => t switch
+    {
+        LootTier.Common => new("#c8c0b0"), LootTier.Uncommon => new("#6fd46a"), LootTier.Rare => new("#5aa8ff"),
+        LootTier.Epic => new("#c070ff"), LootTier.Set => SetColour, LootTier.Legendary => new("#ffb040"),
+        LootTier.Storied => new("#ff6a3a"), LootTier.Book or LootTier.Chart => new("#dccba4"), LootTier.Quest => new("#f3d9a0"),
+        _ => new("#c8c0b0"),
     };
 
-    /// <summary>One slot of a grid: empty, or an item rimmed in its rarity. A
-    /// click chooses it, a double click or a right click does its first thing
-    /// (wear, use, buy); with a name it can take focus, where A does that first
-    /// thing, X its second (onAlt), and its card shows beside it.</summary>
+    public static readonly Color SetColour = new("#3fd6c0");
+
+    /// <summary>A thing's colour: its tier's, except what is counted (a material, a draught) keeps its
+    /// own rarity's, so an ember shard still glints among pelts.</summary>
+    public static Color ColourOf(ItemInstance it)
+    {
+        var t = Drops.TierOf(it);
+        return t is LootTier.Material or LootTier.Draught ? Style.RarityOf(it.Rarity) : TierColour(t);
+    }
+
+    public static string TierName(LootTier t) => t switch
+    {
+        LootTier.Draught => "Draught", LootTier.Quest => "Quest", _ => t.ToString(),
+    };
+
+    /// <summary>What a thing is, in a word, after its tier ("Epic helm").</summary>
+    static readonly Dictionary<ItemKind, string> Nouns = new()
+    {
+        [ItemKind.Weapon] = "weapon", [ItemKind.Offhand] = "off-hand", [ItemKind.Head] = "helm", [ItemKind.Body] = "body armour", [ItemKind.Cloak] = "cloak",
+        [ItemKind.Amulet] = "amulet", [ItemKind.Ring] = "ring", [ItemKind.Relic] = "relic",
+    };
+
+    /// <summary>The line under a card's name: tier and kind, then for gear its level and make
+    /// ("Epic helm · level 14 · Wrought"); for what is counted, where it is kept.</summary>
+    public static string KindLine(ItemInstance it)
+    {
+        var def = Items.Get(it.Def);
+        var t = Drops.TierOf(it);
+        if (Items.SlotFor(def) != null)
+        {
+            string noun = def.Weapon is { } iw && Weapons.All.TryGetValue(iw.Id, out var w) ? w.Name.ToLowerInvariant() : Nouns.GetValueOrDefault(def.Kind, "piece");
+            string head = $"{TierName(t)} {noun}";
+            return Drops.Leveled(def) ? $"{head}  ·  level {Drops.LevelOf(it)}  ·  {Drops.MakeOf(it)}" : head;
+        }
+        return Drops.StoreOf(def, it) switch
+        {
+            Store.Pouch => def.Kind == ItemKind.Trophy ? "Trophy  ·  in the pouch" : "Material  ·  in the pouch",
+            Store.Belt => "Draught  ·  on the belt",
+            Store.Satchel => t == LootTier.Chart ? "Chart  ·  in the satchel" : "Book  ·  in the satchel",
+            Store.Keys => def.Kind == ItemKind.Quest ? "Quest  ·  on the key ring" : "Tool  ·  on the key ring",
+            _ => KindNames.GetValueOrDefault(def.Kind, def.Kind.ToString()),
+        };
+    }
+
+    /* ------------------------------------------------------------ tiles -- */
+
+    /// <summary>One tile of a grid (UI_RESEARCH 4: empty is quiet, a filled one carries its tier as
+    /// tint and edge). Its corners each say one thing: its level top left, an upgrade (or a better
+    /// make) top right, a set's link bottom left, how many or its price bottom right. A click chooses
+    /// it, a double or right click does its first thing (wear, use, buy); with a name it takes focus,
+    /// where A does that first thing and X its second (onAlt), and its card shows beside it. The
+    /// marks are judged against `ch` (what they wear), when given.</summary>
     public static SlotView Slot(ItemInstance? it, int size, bool selected = false, int? price = null, bool refused = false,
         Action? onClick = null, Action? onDouble = null, Action<Control?>? onHover = null, string? emptyGlyph = null, string? caption = null,
-        string? navId = null, Action? onAlt = null, bool fresh = false, bool dim = false, bool dear = false)
+        string? navId = null, Action? onAlt = null, bool fresh = false, bool dim = false, bool dear = false, CharacterData? ch = null, bool engraved = false)
     {
         var box = new SlotView { CustomMinimumSize = new Vector2(size, size), MouseFilter = Control.MouseFilterEnum.Stop, Item = it };
-        var rim = it != null ? Style.RarityOf(it.Rarity) with { A = selected ? 1 : 0.55f } : Style.Line with { A = 0.18f };
-        var bg = it != null ? new Color(0.08f, 0.07f, 0.09f, 0.95f).Lerp(Style.RarityOf(it.Rarity), 0.08f) : new Color(0.05f, 0.045f, 0.06f, 0.8f);
-        var flat = Style.Box(bg, rim, selected ? 2 : 1, 4, 0);
-        box.AddThemeStyleboxOverride("panel", UiArt.Frame(it != null ? $"slot_{Math.Clamp(it.Rarity, 0, 5)}" : "slot", flat));
+        // An empty place on the body is no box: the shape of what goes there, cut faintly into the page.
+        box.AddThemeStyleboxOverride("panel", it == null && engraved ? new StyleBoxEmpty() : Kit.TileBox(it, selected));
         if (it != null)
         {
             var def = Items.Get(it.Def);
-            // The finer the thing, the more light it sits in.
-            if (it.Rarity > 0)
-            {
-                var halo = new TextureRect
-                {
-                    Texture = Halo, Position = new Vector2(1, 1), Size = new Vector2(size - 2, size - 2), ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize,
-                    Modulate = Style.RarityOf(it.Rarity) with { A = 0.12f + 0.07f * it.Rarity }, MouseFilter = Control.MouseFilterEnum.Ignore,
-                };
-                box.AddChild(halo);
-            }
-            // Smaller over a caption, which stays readable under it.
-            float k = caption != null ? 0.72f : 0.86f;
-            var icon = ItemPhotos.Icon(def.Icon, (int)(size * k), Style.RarityOf(it.Rarity).Lightened(0.25f));
-            icon.Position = new Vector2(size * (1 - k) / 2, caption != null ? size * 0.02f : size * 0.05f);
+            var col = ColourOf(it);
+            float k = 0.8f;
+            var icon = ItemPhotos.Icon(def.Icon, (int)(size * k), col.Lightened(0.25f));
+            icon.Position = new Vector2(size * (1 - k) / 2, size * (1 - k) / 2);
             icon.Size = new Vector2(size * k, size * k);
             box.AddChild(icon);
             // Steeped: the veins run through it wherever it is seen.
             if (Crafting.Slurried(it)) Steeped(icon);
-            if (it.Qty > 1)
+            var tier = Drops.TierOf(it);
+            bool small = size < 60;
+            if (Drops.Leveled(def) && !small)
+                Corner(box, Style.Label($"{Drops.LevelOf(it)}", Style.UiBold, 12, Kit.Ink2), new Vector2(5, 2));
+            if (tier == LootTier.Set) Corner(box, new TileMark(TileMark.Kind.Link, SetColour), new Vector2(4, size - 18));
+            var marks = Style.H(2);
+            if (fresh) marks.AddChild(new TileMark(TileMark.Kind.Dot, Style.Ember));
+            if (ch != null && Items.SlotFor(def) != null && Inventory.Find(ch, it.Uid) is not { Worn: true })
             {
-                // How many, as a count (x3), never to be mistaken for a price.
-                var q = Style.Label($"×{it.Qty}", Style.UiHeavy, Style.Badge, Style.Ink);
-                q.HorizontalAlignment = HorizontalAlignment.Right;
-                q.Size = new Vector2(size - 6, 16);
-                q.Position = new Vector2(0, size - 18);
-                box.AddChild(q);
+                if (Drops.IsUpgrade(ch, it)) marks.AddChild(new TileMark(TileMark.Kind.Up, Style.Good));
+                else if (Drops.BetterMake(ch, it)) marks.AddChild(new TileMark(TileMark.Kind.Anvil, Kit.Ink2));
             }
-            if (Items.SlotFor(def) != null)
+            if (marks.GetChildCount() > 0)
             {
-                var dot = new ColorRect { Color = Style.Gold with { A = 0.7f }, Size = new Vector2(4, 4), Position = new Vector2(size - 8, 4), MouseFilter = Control.MouseFilterEnum.Ignore };
-                box.AddChild(dot);
+                box.AddChild(marks);
+                marks.Position = new Vector2(size - 4 - marks.GetCombinedMinimumSize().X, 4);
             }
             if (price is int p)
             {
-                // The price on a dark tag at the top, with its coin; red when it is more than you have.
+                // The price on a dark tag at the foot, with its coin; red when it is more than you have.
                 var pc = dear ? Style.Bad : Style.GoldHi;
-                var tag = Style.Panel(Style.Box(new Color(0.03f, 0.025f, 0.04f, 0.85f), dear ? Style.Bad with { A = 0.6f } : Style.GoldDim, 1, 3, 3), Style.H(2, Glyphs.Icon("coin", 11, pc), Style.Label($"{p}", Style.UiHeavy, Style.Badge, pc)));
+                var tagBox = new StyleBoxFlat { BgColor = new Color(0.04f, 0.035f, 0.045f, 0.9f), ContentMarginLeft = 4, ContentMarginRight = 4, ContentMarginTop = 0, ContentMarginBottom = 0 };
+                tagBox.SetCornerRadiusAll(3);
+                var tag = Style.Panel(UiArt.Frame("price", tagBox), Style.H(3, Glyphs.Icon("coin", 11, pc), Style.Label($"{p}", Style.UiHeavy, Style.Badge, pc, false, HorizontalAlignment.Left, false)));
                 tag.MouseFilter = Control.MouseFilterEnum.Ignore;
-                tag.Position = new Vector2(2, 2);
                 box.AddChild(tag);
+                tag.Position = new Vector2(size - 3 - tag.GetCombinedMinimumSize().X, size - 3 - tag.GetCombinedMinimumSize().Y);
+                if (it.Qty > 1) Corner(box, Style.Label($"×{it.Qty}", Style.UiHeavy, Style.Badge, Kit.Ink), new Vector2(5, 2));
             }
-            // New since the pack was last looked at: an ember mark until it is.
-            if (fresh)
+            else if (it.Qty > 1)
             {
-                var mark = Style.Panel(Style.Box(Style.Ember, Style.EmberHi, 1, 6, 3), Style.Label("NEW", Style.UiHeavy, 10, new Color("#2a1206"), false, HorizontalAlignment.Center, false));
-                mark.MouseFilter = Control.MouseFilterEnum.Ignore;
-                mark.Position = new Vector2(2, 2);
-                box.AddChild(mark);
+                // How many, as a count (x3), never to be mistaken for a price.
+                var q = Style.Label($"×{it.Qty}", Style.UiHeavy, small ? 12 : Style.Badge, Kit.Ink);
+                q.HorizontalAlignment = HorizontalAlignment.Right;
+                q.Size = new Vector2(size - 5, 16);
+                q.Position = new Vector2(0, size - 17);
+                box.AddChild(q);
             }
             if (refused || dim) box.Modulate = new Color(1, 1, 1, dim ? 0.25f : 0.4f);
         }
+        else if (engraved && emptyGlyph != null)
+        {
+            float g = size * 0.6f;
+            var cut = Glyphs.Icon(emptyGlyph, (int)g, new Color(0, 0, 0, 0.55f));
+            cut.Position = new Vector2((size - g) / 2 + 1, (size - g) / 2 + 1.5f);
+            cut.Size = new Vector2(g, g);
+            box.AddChild(cut);
+            var lit = Glyphs.Icon(emptyGlyph, (int)g, Kit.Glyph.Lightened(0.12f));
+            lit.Position = new Vector2((size - g) / 2, (size - g) / 2);
+            lit.Size = new Vector2(g, g);
+            box.AddChild(lit);
+            if (caption != null) box.TooltipText = Style.Cap1(caption.ToLowerInvariant());
+        }
+        else if (caption != null)
+        {
+            // An empty place on the body: its name, quiet, where the thing would go.
+            var c = Style.Label(caption.ToUpperInvariant(), Style.UiBold, size < 72 ? 10 : 12, Kit.Glyph, false, HorizontalAlignment.Center, false);
+            c.VerticalAlignment = VerticalAlignment.Center;
+            c.Size = new Vector2(size, size);
+            box.AddChild(c);
+        }
         else if (emptyGlyph != null)
         {
-            var icon = Glyphs.Icon(emptyGlyph, size / 2, Style.Gold with { A = 0.22f });
-            icon.Position = new Vector2(size / 4f, size / 4f - (caption != null ? 5 : 0));
+            var icon = Glyphs.Icon(emptyGlyph, size / 2, Kit.Glyph);
+            icon.Position = new Vector2(size / 4f, size / 4f);
             icon.Size = new Vector2(size / 2f, size / 2f);
             box.AddChild(icon);
-        }
-        if (caption != null)
-        {
-            var c = Style.Label(caption.ToUpperInvariant(), Style.UiHeavy, 11, Style.GoldDim, false, HorizontalAlignment.Center);
-            // Inside the painted well's lip, not on it.
-            c.Position = new Vector2(0, size - (UiArt.Has("slot") ? 23 : 16));
-            c.Size = new Vector2(size, 14);
-            box.AddChild(c);
         }
         box.GuiInput += e =>
         {
@@ -228,15 +302,23 @@ void fragment() {
         return box;
     }
 
-    /// <summary>A grid of slots (the pack, a shelf, the storeroom); with a name, each slot can take focus;
-    /// setup readies each cell for dragging and dropping (its index, its item, the slot).</summary>
+    static void Corner(Control box, Control mark, Vector2 at)
+    {
+        mark.MouseFilter = Control.MouseFilterEnum.Ignore;
+        mark.Position = at;
+        box.AddChild(mark);
+    }
+
+    /// <summary>A grid of tiles (the pack, a shelf, the storeroom); with a name, each tile can take focus;
+    /// setup readies each cell for dragging and dropping (its index, its item, the tile).</summary>
     public static GridContainer Grid(IEnumerable<ItemInstance?> items, int cols, int size, Func<ItemInstance, bool>? selected = null, Func<ItemInstance, int?>? price = null,
         Action<ItemInstance>? onClick = null, Action<ItemInstance>? onDouble = null, Action<ItemInstance?, Control?>? onHover = null,
-        string? nav = null, Action<ItemInstance>? onAlt = null, Action<int, ItemInstance?, SlotView>? setup = null, Func<ItemInstance, bool>? dear = null)
+        string? nav = null, Action<ItemInstance>? onAlt = null, Action<int, ItemInstance?, SlotView>? setup = null, Func<ItemInstance, bool>? dear = null,
+        CharacterData? ch = null, int gap = 8, Func<ItemInstance, bool>? fresh = null)
     {
         var g = new GridContainer { Columns = cols, MouseFilter = Control.MouseFilterEnum.Ignore };
-        g.AddThemeConstantOverride("h_separation", 5);
-        g.AddThemeConstantOverride("v_separation", 5);
+        g.AddThemeConstantOverride("h_separation", gap);
+        g.AddThemeConstantOverride("v_separation", gap);
         int i = 0;
         foreach (var it in items)
         {
@@ -244,12 +326,22 @@ void fragment() {
             var slot = Slot(it, size, it != null && selected?.Invoke(it) == true, p, it != null && price != null && p == null,
                 it != null && onClick != null ? () => onClick(it) : null, it != null && onDouble != null ? () => onDouble(it) : null,
                 onHover != null ? c => onHover(it, c) : null, null, null, nav != null ? $"{nav}:{i}" : null, it != null && onAlt != null ? () => onAlt(it) : null,
-                dear: it != null && dear?.Invoke(it) == true);
+                it != null && fresh?.Invoke(it) == true, false, it != null && dear?.Invoke(it) == true, ch);
             setup?.Invoke(i, it, slot);
             g.AddChild(slot);
             i++;
         }
         return g;
+    }
+
+    /// <summary>The rows a grid shows: those in use and one more (at least two), up to all it holds
+    /// (UI_RESEARCH, "Waste no space"): the count in the head says the rest.</summary>
+    public static int RowsShown(IReadOnlyList<ItemInstance?> places, int cols, int least = 2)
+    {
+        int last = -1;
+        for (int i = 0; i < places.Count; i++) if (places[i] != null) last = i;
+        int all = (places.Count + cols - 1) / cols;
+        return Math.Clamp(last / cols + 2, Math.Min(least, all), all);
     }
 
     /// <summary>The worn thing an item would replace, if any (the second ring's place when the first is taken).</summary>
@@ -262,104 +354,322 @@ void fragment() {
         return ch.Equipment[target];
     }
 
-    /// <summary>A hovered thing's card, with the worn one it would replace beside it
-    /// (the ARPGs' side-by-side comparison: docs/UI_RESEARCH.md 7.1).</summary>
-    public static Control Compare(ItemInstance it, CharacterData ch, bool compare)
+    /// <summary>A hovered thing's card and, for gear not worn, the worn piece it would replace
+    /// (docs/design/UI_RESEARCH.md 7): the screen lays them beside the thing (Overlay.TipBeside).</summary>
+    public static (Control Card, Control? Worn) Compare(ItemInstance it, CharacterData ch, bool compare, Control? prompts = null, int? price = null, bool dear = false)
     {
-        var card = Card(it, ch, compare);
-        if (!compare || Against(it, ch) is not { } worn) return card;
-        var h = Style.H(Style.Gap2, card);
-        var w = Style.V(4, Style.Label("WORN NOW", Style.UiHeavy, Style.Badge, Style.InkDim), Card(worn, ch, false, null, 300, true));
-        h.AddChild(w);
-        return h;
+        var card = Card(it, ch, compare, null, 330, false, prompts, price, dear);
+        if (!compare || Against(it, ch) is not { } worn) return (card, null);
+        return (card, Card(worn, ch, false, null, 290, true));
     }
 
-    /// <summary>Everything an item is, on one card (worn: the quieter card beside a comparison).</summary>
-    public static PanelContainer Card(ItemInstance it, CharacterData? ch, bool compare, Control? actions = null, int width = 340, bool worn = false)
+    /* ------------------------------------------------------------- card -- */
+
+    /// <summary>What a number on a piece says, in words: its base's numbers read as "Armour 7", the
+    /// rest as a change ("+8 health", "+12% fire resistance").</summary>
+    public static string ModText(StatMod m, bool implicitBase = false)
+    {
+        string name = Noun(m.Stat);
+        bool pct = m.Kind != ModKind.Flat || Percent(m.Stat);
+        double v = pct ? m.Value * 100 : m.Value;
+        string num = Math.Abs(v - Math.Round(v)) < 0.05 ? $"{Math.Round(v)}" : $"{v:0.#}";
+        if (implicitBase && m.Kind == ModKind.Flat && m.Stat == Stat.Armor) return $"Armour {num}";
+        string sign = v >= 0 ? "+" : "−";
+        num = num.TrimStart('-');
+        if (m.Kind == ModKind.More) return $"{num}% more {name}";
+        if (m.Stat == Stat.Regen && m.Kind == ModKind.Flat) return $"{sign}{num} health a second";
+        return $"{sign}{num}{(pct ? "%" : "")} {name}";
+    }
+
+    static bool Percent(string stat) => stat is "critChance" or "block" or "dodge" or "lifesteal" or "statusChance" or "executeThreshold" or "tenacity" || stat.StartsWith("resist.");
+
+    static string Noun(string stat)
+    {
+        if (StatNames.TryGetValue(stat, out var n)) return n.ToLowerInvariant() is var l && l == "armour" ? "armour" : Style.Lower1(n);
+        int dot = stat.IndexOf('.');
+        if (dot > 0)
+        {
+            string what = stat[(dot + 1)..].Replace('_', ' ');
+            return stat[..dot] switch
+            {
+                "vs" => $"damage to {Plural(what)}",
+                "from" => $"less harm from {Plural(what)}",
+                "resist" => $"{what} resistance",
+                "damage" => $"{what} damage",
+                _ => $"{stat[..dot]} {what}",
+            };
+        }
+        return stat switch
+        {
+            "lightRadius" => "light", "healing" => "healing", "block" => "block", "pierce" => "pierce", "critDamage" => "critical damage", "dodge" => "dodge",
+            "dashCharges" => "dashes", "pickupRadius" => "reach for what falls", "goldGain" => "gold found", "xpGain" => "experience", "luck" => "luck",
+            _ => stat,
+        };
+        static string Plural(string w) => w.EndsWith("s") || w == "undead" ? w : w.EndsWith("f") ? w[..^1] + "ves" : w + "s";
+    }
+
+    /// <summary>Everything a thing is, on one card (UI_RESEARCH 8: ordered and ruled). Its name in its
+    /// tier's colour over its kind, level and make; then what it does, a line each, with what wearing
+    /// it would change set at each line's end when compared; then its power, its set, its heat and
+    /// seams, what the world reads in it, its lore; then what it is worth and the keys for it, last.
+    /// worn: the quieter card of the piece now worn, beside a comparison.</summary>
+    public static PanelContainer Card(ItemInstance it, CharacterData? ch, bool compare, Control? actions = null, int width = 330, bool worn = false,
+        Control? prompts = null, int? price = null, bool dear = false)
     {
         var def = Items.Get(it.Def);
-        var col = Style.RarityOf(it.Rarity);
-        var card = Style.Panel(UiArt.Frame(worn ? "tooltip_worn" : "tooltip", Style.Box(new Color(0.07f, 0.062f, 0.08f, worn ? 0.94f : 0.98f), col with { A = worn ? 0.35f : 0.6f }, 1, 5, 14)));
+        var tier = Drops.TierOf(it);
+        var col = ColourOf(it);
+        var card = new PanelContainer { MouseFilter = Control.MouseFilterEnum.Ignore };
+        card.AddThemeStyleboxOverride("panel", new CardBox { Tier = col, Worn = worn });
         card.CustomMinimumSize = new Vector2(width, 0);
         var v = Style.V(6);
         card.AddChild(v);
-        var head = Style.H(10);
-        bool slurried = Crafting.Slurried(it);
-        var pic = ItemPhotos.Icon(def.Icon, 64, col.Lightened(0.25f));
-        if (slurried) Steeped(pic);
-        var photo = Style.Panel(Style.Box(new Color(0.03f, 0.03f, 0.04f), slurried ? SlurryGreen with { A = 0.5f } : col with { A = 0.35f }, 1, 4, 4), pic);
-        head.AddChild(photo);
-        var names = Style.V(2);
-        names.SizeFlagsHorizontal = Control.SizeFlags.ExpandFill;
-        names.AddChild(Style.Label(Inventory.Name(it), Style.TextBold, 19, col, true));
-        var kind = Style.H(Style.Gap2, Style.Label($"{Inventory.RarityName(it)} {KindNames.GetValueOrDefault(def.Kind, def.Kind.ToString())}{(def.Unique ? " · Unique" : "")}", Style.Ui, Style.Caption, Style.InkDim), Style.Gems(it.Rarity, 5));
-        kind.Alignment = BoxContainer.AlignmentMode.Begin;
-        // Made in a map: at its level (the harder the map, the finer its grades came).
-        if (it.Level is int lv) kind.AddChild(Style.Label($"·  item level {lv}", Style.Ui, Style.Caption, Style.InkDim));
-        names.AddChild(kind);
-        head.AddChild(names);
-        v.AddChild(head);
+        if (worn) v.AddChild(Style.Label("WORN NOW", Style.UiHeavy, 12, Kit.Dim, false, HorizontalAlignment.Left, false));
+        var name = Style.Label(Inventory.Name(it), Style.TextBold, worn ? 18 : 20, col, true);
+        if (tier == LootTier.Set)
+        {
+            var mark = new TileMark(TileMark.Kind.Link, SetColour, 24) { SizeFlagsVertical = Control.SizeFlags.ShrinkCenter };
+            v.AddChild(Style.H(8, mark, name));
+        }
+        else v.AddChild(name);
+        var kind = Style.Label(KindLine(it), Style.Ui, 14, Kit.Dim, true);
+        v.AddChild(kind);
         if (def.Weapon is { } iw && Weapons.All.TryGetValue(iw.Id, out var w))
-            v.AddChild(Style.H(6, Glyphs.Icon(w.Art, 15, SchoolColors[w.School]), Style.Label($"{w.Name} · rank {iw.Rank} · {w.School.ToString().ToLowerInvariant()}", Style.UiBold, 14, SchoolColors[w.School])));
-        v.AddChild(Style.Label(def.Description, Style.Text, Style.Small, Style.Ink, true));
-        // Each affix with its grade (I to IV: docs/CRAFTING_DESIGN.md 5.1); coals and worn skills have none.
-        var lines = it.Affixes.Select(a => (Def: Items.Affix(a.Id), a.Tier)).Where(x => x.Def != null && x.Def.Text(x.Tier) != "").ToList();
-        if (lines.Count > 0)
-            v.AddChild(Style.V(1, lines.Select(x =>
-            {
-                bool bright = x.Tier >= Crafting.Bright && x.Def!.Kindled == null && x.Def.Grants == null && !x.Def.Slurry;
-                if (x.Def!.Slurry)
-                {
-                    // The slurry's power, past the seams: its gift in green, its price after it in red.
-                    var parts = x.Def.Text(x.Tier).Split(';', 2);
-                    var row = Style.H(4, Glyphs.Icon("drop", 13, SlurryGreen), Style.Label(parts.Length > 1 ? $"{parts[0]};" : parts[0], Style.UiBold, Style.Caption, SlurryGreen));
-                    if (parts.Length > 1) row.AddChild(Style.Label(parts[1].Trim(), Style.UiBold, Style.Caption, Style.Bad));
-                    return (Control)row;
-                }
-                var text = Style.Label(x.Def.Text(x.Tier), Style.UiBold, Style.Caption, x.Def.Kindled != null ? Style.EmberHi : x.Def.Mark ? MarkInk : bright ? BrightGrade : new Color("#9ad8ff"), true);
-                if (x.Def.Kindled != null || x.Def.Grants != null) return text;
-                // The bright grade reads as a light, not as one more numeral.
-                var grade = Style.Label(Crafting.Grade(x.Tier), Style.Display, bright ? 14 : 12, bright ? BrightGrade : Style.GoldDim);
-                if (bright) { grade.AddThemeConstantOverride("outline_size", 4); grade.AddThemeColorOverride("font_outline_color", SlurryGreen with { A = 0.45f }); }
-                grade.CustomMinimumSize = new Vector2(22, 0);
-                return Style.H(4, grade, text);
-            }).ToArray()));
-        if (it.Heat != null && Crafting.OpenSeams(it) is int open && open > 0)
-            v.AddChild(Style.Label(open == 1 ? "An open seam: something can be worked into it" : $"{open} open seams: things can be worked into it", Style.TextItalic, Style.Caption, Style.GoldDim, true));
-        // (A steeped piece's veins say it is set, below; not twice.)
-        if (it.Heat is int heat && !(heat == 0 && slurried))
-            v.AddChild(Style.Label(heat > 0 ? $"Heat {heat} of {it.HeatFull ?? heat}: it can still be worked" : "Set: nothing more can be worked into it", Style.UiBold, Style.Caption, heat > 0 ? Style.Ember : Style.InkDim));
-        if (def.Downside != null) v.AddChild(Style.Label(def.Downside, Style.UiBold, Style.Caption, Style.Bad, true));
-        foreach (var t in (def.Tags ?? new()).Concat(it.Marks ?? new()).Distinct())
-            if (TagLines.TryGetValue(t, out var tl)) v.AddChild(Style.H(6, Glyphs.Icon("eye", 14, Style.Gold), Style.Label(tl, Style.TextItalic, Style.Caption, Style.GoldHi, true)));
-        if (def.Lore != null) v.AddChild(Style.Label(def.Lore, Style.TextItalic, Style.Caption, Style.InkDim, true));
-        if (it.History is { Count: > 0 } h) v.AddChild(Style.V(1, h.Select(x => (Control)Style.Label(x, Style.TextItalic, Style.Caption, Style.InkFaint, true)).ToArray()));
-        if (compare && ch != null && Items.SlotFor(def) is EquipSlot slot)
+            v.AddChild(Style.H(6, Glyphs.Icon(w.Art, 15, SchoolColors[w.School]), Style.Label($"{w.Name}  ·  rank {Inventory.WeaponRank(it)}  ·  {w.School.ToString().ToLowerInvariant()}", Style.UiBold, 14, SchoolColors[w.School])));
+
+        // What wearing it would change, set beside the line that changes it; what no line explains
+        // (what the worn piece gave and this does not) comes after.
+        var diffs = new Dictionary<string, (double Before, double After)>();
+        ItemInstance? against = null;
+        if (compare && ch != null && Items.SlotFor(def) is EquipSlot slot && !Enum.GetValues<EquipSlot>().Any(s => ch.Equipment[s]?.Uid == it.Uid))
         {
             var target = slot == EquipSlot.Ring1 && ch.Equipment.Ring1 != null && ch.Equipment.Ring2 == null ? EquipSlot.Ring2 : slot;
-            bool isWorn = Enum.GetValues<EquipSlot>().Any(s => ch.Equipment[s]?.Uid == it.Uid);
-            if (!isWorn)
-            {
-                var diffs = Character.Compare(ch, it, target);
-                if (diffs.Count > 0)
-                {
-                    v.AddChild(Style.Rule());
-                    var against = ch.Equipment[target];
-                    v.AddChild(Style.Label($"Instead of {(against != null ? Inventory.Name(against) : "nothing")}", Style.UiBold, Style.Caption, Style.InkDim));
-                    foreach (var (key, before, after) in diffs)
-                    {
-                        // Better or worse said three ways: colour, the sign, and a word.
-                        var (text, good) = Delta(key, before, after);
-                        v.AddChild(Style.H(6, Style.Label(good ? "better" : "worse", Style.UiHeavy, Style.Badge, good ? Style.Good : Style.Bad), Style.Label(text, Style.UiBold, Style.Small, good ? Style.Good : Style.Bad)));
-                    }
-                }
-            }
+            against = ch.Equipment[target];
+            foreach (var (key, before, after) in Character.Compare(ch, it, target)) diffs[key] = (before, after);
         }
+        var lines = Style.V(3);
+        var uses = new Dictionary<string, int>();
+        void Use(string k) => uses[k] = uses.GetValueOrDefault(k) + 1;
+        foreach (var m in Drops.Implicit(def, it.Level)) Use(m.Stat);
+        if (!def.Base) foreach (var m in def.Mods ?? new()) Use(m.Stat);
+        foreach (var a in it.Affixes) if (Items.Affix(a.Id) is { } ad0) foreach (var k in ad0.Mods(a.Tier).Select(m => m.Stat).Distinct()) Use(k);
+        Control Line(Control text, IEnumerable<string> keys)
+        {
+            text.SizeFlagsHorizontal = Control.SizeFlags.ExpandFill;
+            var row = Style.H(8, text);
+            // (a number two lines both move is said once, after them, not beside the first)
+            var key = keys.FirstOrDefault(k => diffs.ContainsKey(k) && uses.GetValueOrDefault(k) == 1);
+            if (key != null)
+            {
+                var (b, a) = diffs[key];
+                diffs.Remove(key);
+                var (d, good) = DeltaNumber(key, b, a);
+                var n = Kit.Num(d, 15, good ? Style.Good : Style.Bad);
+                n.SizeFlagsVertical = Control.SizeFlags.ShrinkBegin;
+                row.AddChild(n);
+            }
+            return row;
+        }
+        foreach (var m in Drops.Implicit(def, it.Level))
+            lines.AddChild(Line(Style.Label(ModText(m, true), Style.Ui, 15, Kit.Ink2, true), new[] { m.Stat }));
+        if (!def.Base)
+            foreach (var m in def.Mods ?? new())
+                lines.AddChild(Line(Style.Label(ModText(m), Style.Ui, 15, Kit.Ink2, true), new[] { m.Stat }));
+        // Each affix with its grade (I to V: docs/CRAFTING_DESIGN.md 5.1); coals and worn skills have none.
+        foreach (var a in it.Affixes)
+        {
+            if (Items.Affix(a.Id) is not { } ad || ad.Text(a.Tier) == "") continue;
+            var keys = ad.Mods(a.Tier).Select(m => m.Stat).ToList();
+            bool bright = a.Tier >= Crafting.Bright && ad.Kindled == null && ad.Grants == null && !ad.Slurry;
+            if (ad.Slurry)
+            {
+                // The slurry's power, past the seams: its gift in green, its price after it in red.
+                var parts = ad.Text(a.Tier).Split(';', 2);
+                var row = Style.H(4, Glyphs.Icon("drop", 13, SlurryGreen), Style.Label(parts.Length > 1 ? $"{parts[0]};" : parts[0], Style.UiBold, 15, SlurryGreen));
+                if (parts.Length > 1) row.AddChild(Style.Label(parts[1].Trim(), Style.UiBold, 15, Style.Bad));
+                lines.AddChild(row);
+                continue;
+            }
+            var text = Style.Label(ad.Text(a.Tier), Style.UiBold, 15, ad.Kindled != null ? Style.EmberHi : ad.Mark ? MarkInk : bright ? BrightGrade : Kit.Ink, true);
+            if (ad.Kindled != null || ad.Grants != null) { lines.AddChild(Line(text, keys)); continue; }
+            // The bright grade reads as a light, not as one more numeral.
+            var grade = Style.Label(Crafting.Grade(a.Tier), Style.Display, bright ? 14 : 12, bright ? BrightGrade : Kit.Dim);
+            if (bright) { grade.AddThemeConstantOverride("outline_size", 4); grade.AddThemeColorOverride("font_outline_color", SlurryGreen with { A = 0.45f }); }
+            grade.CustomMinimumSize = new Vector2(22, 0);
+            var g = Style.H(4, grade, text);
+            text.SizeFlagsHorizontal = Control.SizeFlags.ExpandFill;
+            lines.AddChild(Line(g, keys));
+        }
+        if (diffs.Count > 0 && lines.GetChildCount() > 0 || lines.GetChildCount() > 0)
+        {
+            v.AddChild(Kit.RuleH());
+            v.AddChild(lines);
+        }
+        if (diffs.Count > 0)
+        {
+            // What is lost from what is worn now: no line of this card says it.
+            var lost = Style.V(2, Style.Label(against != null ? $"In place of {Inventory.Name(against)}" : "Wearing it", Style.TextItalic, 14, Kit.Dim, true));
+            foreach (var (key, (b, a)) in diffs)
+            {
+                var (text, good) = Delta(key, b, a);
+                lost.AddChild(Style.Label(text, Style.UiBold, 15, good ? Style.Good : Style.Bad, true));
+            }
+            v.AddChild(lost);
+        }
+
+        // What it does that no number says: a Legendary's power, a draught's use, a thing's purpose.
+        if (def.Description != "")
+        {
+            bool power = tier is LootTier.Legendary or LootTier.Storied;
+            v.AddChild(Style.Label(def.Description, power ? Style.TextBold : Style.Text, 15, power ? col.Lightened(0.35f) : Kit.Ink2, true));
+        }
+        if (tier == LootTier.Set && Drops.SetOf(def) is { } set)
+        {
+            int wornN = ch != null ? Drops.SetsWorn(ch).GetValueOrDefault(set.Id) : 0;
+            var sv = Style.V(2, Style.H(8, Style.Label(set.Name.ToUpperInvariant(), Style.UiHeavy, 13, SetColour, false, HorizontalAlignment.Left, false),
+                Style.Label($"{wornN} of {set.Pieces.Count} worn", Style.Ui, 14, Kit.Dim, false, HorizontalAlignment.Left, false)));
+            foreach (var bonus in set.Bonuses)
+            {
+                bool lit = wornN >= bonus.Worn;
+                sv.AddChild(Style.H(8, Style.Label($"{bonus.Worn}", Style.UiHeavy, 14, lit ? SetColour : Kit.Faint, false, HorizontalAlignment.Right, false),
+                    Style.Label(bonus.Text, Style.Ui, 14, lit ? Kit.Ink : Kit.Faint, true)));
+            }
+            v.AddChild(Kit.RuleH());
+            v.AddChild(sv);
+        }
+        if (it.Heat != null && Crafting.OpenSeams(it) is int open && open > 0)
+            v.AddChild(Style.Label(open == 1 ? "An open seam: something can be worked into it" : $"{open} open seams: things can be worked into it", Style.TextItalic, 14, Kit.Dim, true));
+        // (A steeped piece's veins say it is set, below; not twice.)
+        bool slurried = Crafting.Slurried(it);
+        if (it.Heat is int heat && !(heat == 0 && slurried))
+            v.AddChild(Style.Label(heat > 0 ? $"Heat {heat} of {it.HeatFull ?? heat}: it can still be worked" : "Set: nothing more can be worked into it", Style.UiBold, 14, heat > 0 ? Style.Ember : Kit.Dim));
+        if (def.Downside != null) v.AddChild(Style.Label(def.Downside, Style.UiBold, 14, Style.Bad, true));
+        foreach (var t in (def.Tags ?? new()).Concat(it.Marks ?? new()).Distinct())
+            if (TagLines.TryGetValue(t, out var tl)) v.AddChild(Style.H(6, Glyphs.Icon("eye", 14, Style.Gold), Style.Label(tl, Style.TextItalic, 14, Style.GoldHi, true)));
+        if (def.Lore != null) v.AddChild(Style.Label(def.Lore, Style.TextItalic, 14, Kit.Dim, true));
+        if (it.History is { Count: > 0 } h) v.AddChild(Style.V(1, h.Select(x => (Control)Style.Label(x, Style.TextItalic, 14, Kit.Faint, true)).ToArray()));
+
+        // Last: what it is worth (or costs here) and the keys for it.
         var foot = Style.H(12);
-        if (it.Qty > 1) foot.AddChild(Style.Label($"×{it.Qty}", Style.UiBold, Style.Caption, Style.InkDim));
-        foot.AddChild(Style.H(4, Glyphs.Icon("coin", 14, Style.GoldHi), Style.Label($"{def.Value * Math.Max(1, it.Qty)}", Style.UiBold, Style.Caption, Style.GoldHi)));
-        v.AddChild(foot);
+        int worth = price ?? (int)Math.Round(def.Value * Math.Max(1, it.Qty));
+        var pc = dear ? Style.Bad : Style.GoldHi;
+        foot.AddChild(Style.H(4, Glyphs.Icon("coin", 14, pc), Style.Label(price != null ? $"{worth}" : $"{worth}", Style.UiBold, 14, pc)));
+        if (it.Qty > 1) foot.AddChild(Style.Label($"×{it.Qty}", Style.UiBold, 14, Kit.Dim));
+        if (dear && ch != null) foot.AddChild(Style.Label($"{worth - (int)Math.Floor(ch.Gold)} more than you have", Style.Ui, 14, Style.Bad));
+        if (!worn)
+        {
+            v.AddChild(Kit.RuleH());
+            v.AddChild(foot);
+        }
+        if (prompts != null && !worn) v.AddChild(prompts);
         if (actions != null) v.AddChild(actions);
         return card;
+    }
+}
+
+/// <summary>
+/// A card's ground (the coordinator: keep the backing a tooltip needs, but taper its edges into the
+/// world rather than a hard rectangle): a dark wash, solid where the words are and fading to
+/// nothing over its last <see cref="Soft"/> pixels, with no frame; the thing's tier is only the
+/// rule along its top, itself fading at its ends.
+/// </summary>
+public partial class CardBox : StyleBox
+{
+    public Color Tier = Colors.White;
+    public bool Worn;
+    /// <summary>How far in from its edge the wash is whole.</summary>
+    public const float Soft = 18;
+
+    public CardBox()
+    {
+        ContentMarginLeft = ContentMarginRight = 22;
+        ContentMarginTop = 22;
+        ContentMarginBottom = 20;
+    }
+
+    public override void _Draw(Rid ci, Rect2 r)
+    {
+        var c = Worn ? new Color(0.06f, 0.05f, 0.06f, 0.9f) : new Color(0.07f, 0.06f, 0.07f, 0.94f);
+        var o = c with { A = 0 };
+        float s = Soft, x0 = r.Position.X, y0 = r.Position.Y, x1 = r.End.X, y1 = r.End.Y;
+        Vector2 P(float x, float y) => new(x, y);
+        void Quad(Vector2 a, Vector2 b, Vector2 cc, Vector2 d, Color ca, Color cb, Color ccc, Color cd) =>
+            RenderingServer.CanvasItemAddPolygon(ci, new[] { a, b, cc, d }, new[] { ca, cb, ccc, cd });
+        // the whole middle, then each edge fading out, then each corner fading out from its inner point
+        RenderingServer.CanvasItemAddRect(ci, new Rect2(x0 + s, y0 + s, r.Size.X - 2 * s, r.Size.Y - 2 * s), c);
+        Quad(P(x0 + s, y0), P(x1 - s, y0), P(x1 - s, y0 + s), P(x0 + s, y0 + s), o, o, c, c);
+        Quad(P(x0 + s, y1 - s), P(x1 - s, y1 - s), P(x1 - s, y1), P(x0 + s, y1), c, c, o, o);
+        Quad(P(x0, y0 + s), P(x0 + s, y0 + s), P(x0 + s, y1 - s), P(x0, y1 - s), o, c, c, o);
+        Quad(P(x1 - s, y0 + s), P(x1, y0 + s), P(x1, y1 - s), P(x1 - s, y1 - s), c, o, o, c);
+        Quad(P(x0, y0), P(x0 + s, y0), P(x0 + s, y0 + s), P(x0, y0 + s), o, o, c, o);
+        Quad(P(x1 - s, y0), P(x1, y0), P(x1, y0 + s), P(x1 - s, y0 + s), o, o, o, c);
+        Quad(P(x0, y1 - s), P(x0 + s, y1 - s), P(x0 + s, y1), P(x0, y1), o, c, o, o);
+        Quad(P(x1 - s, y1 - s), P(x1, y1 - s), P(x1, y1), P(x1 - s, y1), c, o, o, o);
+        // The tier's rule along the top, inside the wash, fading at its ends.
+        var t = Tier with { A = Worn ? 0.5f : 0.95f };
+        var t0 = t with { A = 0 };
+        float ry = y0 + s * 0.55f, h = Worn ? 1.5f : 2, mid0 = x0 + s * 2.2f, mid1 = x1 - s * 2.2f;
+        Quad(P(x0 + s * 0.6f, ry), P(mid0, ry), P(mid0, ry + h), P(x0 + s * 0.6f, ry + h), t0, t, t, t0);
+        RenderingServer.CanvasItemAddRect(ci, new Rect2(mid0, ry, mid1 - mid0, h), t);
+        Quad(P(mid1, ry), P(x1 - s * 0.6f, ry), P(x1 - s * 0.6f, ry + h), P(mid1, ry + h), t, t0, t0, t);
+    }
+}
+
+
+/// <summary>The small marks in a tile's corners and before a card's name: the up-arrow of an upgrade,
+/// the anvil of a better make, a set's chain-link, the ember dot of something new. Painted marks
+/// (icons/glyph/link_set_14.png and its 24 px kin, up.png, anvil.png) win where they exist.</summary>
+public partial class TileMark : Control
+{
+    public enum Kind { Up, Anvil, Link, Dot }
+    readonly Kind kind;
+    readonly Color colour;
+    readonly int size;
+
+    public TileMark(Kind kind, Color colour, int size = 14)
+    {
+        this.kind = kind;
+        this.colour = colour;
+        this.size = size;
+        MouseFilter = MouseFilterEnum.Ignore;
+        CustomMinimumSize = new Vector2(kind == Kind.Dot ? 8 : size, size);
+    }
+
+    public override void _Draw()
+    {
+        string? art = kind switch { Kind.Link => $"link_set_{(size >= 20 ? 24 : 14)}", Kind.Up => "up", Kind.Anvil => "anvil", _ => null };
+        if (art != null && UiArt.Icon("glyph", art) is { } t)
+        {
+            DrawTextureRect(t, new Rect2(Vector2.Zero, new Vector2(size, size)), false, colour);
+            return;
+        }
+        float s = size;
+        var shade = new Color(0, 0, 0, 0.7f);
+        switch (kind)
+        {
+            case Kind.Dot:
+                DrawCircle(new Vector2(4, 4), 4.5f, shade);
+                DrawCircle(new Vector2(4, 4), 3.2f, colour);
+                break;
+            case Kind.Up:
+                var tri = new[] { new Vector2(s / 2, 1), new Vector2(s - 1, s * 0.62f), new Vector2(s * 0.66f, s * 0.62f), new Vector2(s * 0.66f, s - 1), new Vector2(s * 0.34f, s - 1), new Vector2(s * 0.34f, s * 0.62f), new Vector2(1, s * 0.62f) };
+                DrawColoredPolygon(tri.Select(p => p + new Vector2(0, 1)).ToArray(), shade);
+                DrawColoredPolygon(tri, colour);
+                break;
+            case Kind.Anvil:
+                // A smith's anvil in profile: the face, the waist, the foot.
+                DrawRect(new Rect2(1, s * 0.25f, s - 2, s * 0.22f), colour);
+                DrawColoredPolygon(new[] { new Vector2(1, s * 0.25f), new Vector2(-1, s * 0.12f), new Vector2(3, s * 0.25f) }, colour);
+                DrawRect(new Rect2(s * 0.36f, s * 0.47f, s * 0.28f, s * 0.24f), colour);
+                DrawRect(new Rect2(s * 0.2f, s * 0.71f, s * 0.6f, s * 0.18f), colour);
+                break;
+            case Kind.Link:
+                // Two links of chain, the second through the first.
+                DrawArc(new Vector2(s * 0.36f, s * 0.42f), s * 0.28f, 0, Mathf.Tau, 20, shade, 3.2f * s / 14, true);
+                DrawArc(new Vector2(s * 0.64f, s * 0.6f), s * 0.28f, 0, Mathf.Tau, 20, shade, 3.2f * s / 14, true);
+                DrawArc(new Vector2(s * 0.36f, s * 0.4f), s * 0.28f, 0, Mathf.Tau, 20, colour, 2 * s / 14, true);
+                DrawArc(new Vector2(s * 0.64f, s * 0.58f), s * 0.28f, Mathf.Pi * 1.1f, Mathf.Pi * 2.9f, 20, colour, 2 * s / 14, true);
+                break;
+        }
     }
 }

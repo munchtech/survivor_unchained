@@ -55,8 +55,8 @@
       "note": "The drowning, in sound only.",
       "cues": [
         {"do": "music", "mood": "silence"},
-        {"do": "fire", "light": 0, "flames": 0.12},
-        {"do": "light", "light": 0, "level": 0.34, "color": "#ff7430", "rate": 0.45},
+        {"do": "fire", "light": 0, "flames": 0.0},
+        {"do": "light", "light": 0, "level": 0.24, "color": "#ff7430", "rate": 0.45},
         {"do": "frost", "where": {"mark": "frost"}, "size": 44, "clear": {"mark": "fire"}, "radius": 3.4, "amount": 0.4, "trail": [{"mark": "verge"}, {"mark": "trail_in"}, [-9.0, 90.3]]},
         {"do": "prints", "from": {"mark": "verge"}, "to": {"mark": "trail_in"}, "stride": 0.8},
         {"do": "prints", "from": {"mark": "trail_in"}, "to": [-9.0, 90.3], "stride": 0.8},
@@ -99,8 +99,8 @@
       "type": "MS",
       "dur": 4.5,
       "still": 2.6,
-      "note": "Low on the fire's far side, through the embers: she pushes up. Her hair hangs.",
-      "cam": {"pos": [-10.35, 0.42, 88.6], "at": {"actor": "her", "bone": "chest", "off": [0, 0.1, 0]}, "lens": 40, "focus": {"actor": "her", "bone": "head"}, "fstop": 2.8},
+      "note": "From the fire's far (west) side, low, in the coals' light: she pushes up onto her elbow, her face down, her hair hanging.",
+      "cam": {"pos": [-11.6, 0.5, 91.05], "at": {"actor": "her", "bone": "chest", "off": [0, 0.1, 0]}, "lens": 45, "focus": {"actor": "her", "bone": "head"}, "fstop": 2.4},
       "cues": [
         {"at": 0.6, "do": "sfx", "name": "cloth_water", "gain": 0.8},
         {"at": 0.0, "do": "anim", "clip": "her/lie_side_wake", "from": 2.4, "speed": 1.0, "blend": 0.15}
@@ -111,8 +111,8 @@
       "type": "MS",
       "dur": 7.0,
       "still": 1.5,
-      "note": "Front three-quarter from her left, the fire's side: she sits on the log, facing the embers. She looks down at herself, the cord, the full flask; across at the bedroll, dry, its blanket folded. N1. (The letter and sitting back on her heels when Kimodo's clips come.)",
-      "cam": {"pos": [-11.1, 0.85, 91.6], "at": {"actor": "her", "bone": "chest", "off": [0, 0.0, 0], "track": true}, "lens": 40, "focus": {"actor": "her", "bone": "eyes", "track": true}, "fstop": 2.8},
+      "note": "Front three-quarter from her left, across the coals: she comes up onto her heels and looks down at her hands, the cord and the full flask; across at the bedroll, dry; down again. N1.",
+      "cam": {"pos": [-11.1, 0.85, 91.6], "at": {"actor": "her", "bone": "chest", "off": [0, 0.22, 0], "track": true}, "lens": 35, "focus": {"actor": "her", "bone": "eyes", "track": true}, "fstop": 2.8},
       "cues": [
         {"do": "anim", "clip": "her/sit_back_heels", "from": 0, "speed": 1.0, "blend": 0},
         {"do": "face", "keys": {"brows_sad": 0.3, "mouth_open": 0.08}, "over": 1.2},
@@ -131,7 +131,7 @@
       "dur": 3.0,
       "still": 2.0,
       "note": "The hand to the coals: kneeling, she holds her right hand out low over the embers, palm down, closer than anyone could bear, and it stays.",
-      "cam": {"pos": [-9.95, 0.75, 91.35], "at": [-10.15, 0.25, 90.6], "lens": 50, "focus": 0.8, "fstop": 2.0},
+      "cam": {"pos": [-9.95, 0.75, 91.35], "at": [-10.15, 0.25, 90.6], "lens": 50, "focus": {"actor": "her", "bone": "hand_r", "track": true}, "fstop": 2.0},
       "cues": [
         {"do": "anim", "clip": "her/reach_coals", "from": 0, "speed": 1.0, "blend": 0},
         {"at": 0.3, "do": "sfx", "name": "cloth_water", "gain": 0.3}
@@ -224,7 +224,7 @@
       "dur": 2.5,
       "still": 1.0,
       "note": "From the fire's side: her head turns hard toward the sound, screen left, as the risen was. On her feet in one movement.",
-      "cam": {"pos": [-10.4, 1.1, 92.1], "at": {"actor": "her", "bone": "head", "off": [0, 0.0, 0], "track": true}, "lens": 50, "focus": {"actor": "her", "bone": "eyes"}, "fstop": 2.8},
+      "cam": {"pos": [-10.4, 1.1, 92.1], "at": {"actor": "her", "bone": "head", "off": [0, 0.0, 0], "track": true}, "lens": 50, "focus": {"actor": "her", "bone": "eyes", "track": true}, "fstop": 2.8},
       "cues": [
         {"at": 0.12, "do": "head", "where": {"mark": "r1", "off": [0, 1.2, 0]}, "over": 0.18},
         {"do": "world", "rate": 0},
@@ -270,6 +270,7 @@
       "note": "From in front of her, the one crane of the scene: up and round behind her into the game's camera as R1 tears free and the rest come up. Bars out. Control.",
       "cam": {"pos": [-8.6, 1.25, 86.4], "at": {"mark": "end", "off": [0, 1.0, 0]}, "lens": 35, "move": {"path": [[-6.0, 2.6, 88.2], [-6.2, 9.5, 96.5]], "start": 0, "end": "end", "ease": "inout", "follow": true}},
       "cues": [
+        {"at": 0.0, "do": "play"},
         {"do": "move", "to": "end", "dur": 1.3, "clip": "Walk_Formal_Loop", "speed": 0.9},
         {"at": 1.3, "do": "anim", "clip": "@idle", "from": 0, "speed": 1, "blend": 0.3},
         {"do": "world", "rate": 0.25},

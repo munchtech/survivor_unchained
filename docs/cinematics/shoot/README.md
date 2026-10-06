@@ -98,6 +98,10 @@ places, and each one has a timeline the game plays. The chain:
     cinematic only), `spawn` (an enemy into the fight, `style` rise),
     `world` (`rate`).
   - Frame: `bars`, `fade`, `title` (a title card), `hide`.
+  - The hand-over: `play` (at 0 of the last shot, on its cut): her own body
+    takes her double's place and facing, and her later `move`s steer it as a
+    stick would; a walk still going at the end carries on into play
+    (`docs/cinematics/README.md` 5a).
   - The game: `event` (a hook in the zone's code).
 
   A `when` (`calling`, `background`, `hair`, `sex`, `facts`) limits a shot or

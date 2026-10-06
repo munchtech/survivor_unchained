@@ -22,7 +22,7 @@ using SurvivorUnchained.Rpg;
  *           (--tiers 1,2,3 --people all --seeds N --level L|tier --gear R --mods a+b --cap MIN)
  *   story   the story's nights, stage by stage and their bosses (docs/design/STORY_BOSSES.md 0.6)
  *           (--fight hollow|all --tiers 1,2,3,4 --seeds N --policies greedy,random --bot plain,deft
- *           --act2 --choice spare|finish --level N|tier --out PATH)
+ *           --act2 --choice spare|finish --level N|tier --crates --banes --out PATH)
  *
  * Options: --callings warden,reaver|all  --policies greedy,random,path:steel|paths
  *          --seeds N  --seed0 S  --tier T (or --tiers 1,2,3)  --people pack,dead|all
@@ -51,6 +51,7 @@ switch (cmd)
     case "map": Maps(); break;
     case "story": Story(); break;
     case "place": Place(); break;
+    case "landmarks": Landmarks(); break;
     default:
         Console.WriteLine("dotnet run -c Release --project godot/balance -- arena|probe|report [options]  (see Program.cs)");
         break;
@@ -127,6 +128,24 @@ void Arena()
 /* A story fight's place drawn in text, a metre a character (north up): its spaces (a letter each),
  * its walls (#), its shut gates (=) and its named points (digits, with a legend). For checking an
  * outline before arena art builds to it. */
+/// <summary>Where an arena's landmarks lie, for pointing the camera at them (arena art's
+/// shots, `--at X,Z`): `landmarks --people pack --seed 311`. Its streams' and rails' points
+/// nearest the middle, and the first of each of its own pieces.</summary>
+void Landmarks()
+{
+    var m = MapGen.Generate(new MapSpec { Seed = opt.Int("seed", 311), Arena = true, People = opt.Get("people", "pack") });
+    foreach (var (name, lines) in new[] { ("stream", m.Streams), ("rails", m.Rails) })
+        foreach (var l in lines)
+        {
+            var p = l.Where(q => Math.Abs(q.X) < 60 && Math.Abs(q.Z) < 60).OrderBy(q => q.X * q.X + q.Z * q.Z).FirstOrDefault();
+            Console.WriteLine($"{name} nearest the middle ({p.X:0}, {p.Z:0})");
+        }
+    foreach (var v in m.Vents) Console.WriteLine($"vent ({v.X:0}, {v.Z:0}) r {v.R:0.0}");
+    // (And anything there are only a few of: a place's landmarks, the howe's door, its standard.)
+    foreach (var g in m.Pieces.GroupBy(p => p.Id).Where(g => g.Key.StartsWith("arena/") || g.Count() <= 3))
+        Console.WriteLine($"{g.Key} x{g.Count()}: " + string.Join(" ", g.Take(4).Select(p => $"({p.X:0}, {p.Z:0})")));
+}
+
 void Place()
 {
     var ids = new Dictionary<string, string> { ["hollow"] = "hollow_by_night", ["roost"] = "roost_raid", ["dig"] = "dig_boils", ["vault"] = "vault_opened" };
@@ -171,7 +190,7 @@ void Story()
                     foreach (var h in hands)
                         for (int s = 0; s < seeds; s++)
                             specs.Add(new StoryRunSpec(seed0 + s, c, pol, f, tier, level == "tier" ? 1 + 3 * (tier - 1) : int.Parse(level), h == "deft",
-                                opt.Has("act2"), opt.Get("choice", "spare"), opt.Double("cap", 25), opt.Has("crates"), h == "naive", opt.Has("learned")));
+                                opt.Has("act2"), opt.Get("choice", "spare"), opt.Double("cap", 25), opt.Has("crates"), h == "naive", opt.Has("learned"), opt.Has("banes")));
     Console.WriteLine($"{specs.Count} story nights, {opt.Int("par", 16)} at a time");
     var results = new ConcurrentBag<StoryRunResult>();
     var sw = Stopwatch.StartNew();
