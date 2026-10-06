@@ -79,5 +79,5 @@ The main session keeps this current. It is the address list for SendMessage. Ret
 | Legal and Steam compliance (paused; docs/handoff/legal.md; wake before submission or for a new outfit) | — | docs/team/legal.md |
 | Loot and itemisation (paused, built and merged; docs/handoff/loot.md for a successor) | — | docs/team/loot.md |
 | Creatures and models (our own boar first, then MODELS_TO_MAKE.md) | af551cacc6292152f | docs/team/creatures.md |
-| Story editor (holds the writing to the owner's bar; notes, not prose) | a8d7dfe2856df399e | docs/story/EDITORIAL_LETTER.md |
+| Story editor (paused until the treatment; handoff ready at 7aa26c73) | — | docs/story/EDITORIAL_LETTER.md |
 | Heroine outfits | main session | — |
