@@ -62,7 +62,7 @@ The main session keeps this current. It is the address list for SendMessage. Ret
 | Area | Agent | Status page |
 |---|---|---|
 | Voice (paused by the owner: no placeholders; final voices from ElevenLabs later) | a501b387a90d78b4e | docs/team/voice.md |
-| Story and writing (the writer; paused awaiting the owner's choices on the treatment) | — | docs/team/story.md |
+| Story and writing (the writer: the approved rewrite, Act 1 first) | a38d66ae66583ace1 | docs/team/story.md |
 | Combat, encounters, bosses, balance (paused; handoff ready at af6452e1) | — | docs/team/combat.md |
 | Animation (paused; handoff ready at 85d0eaf9) | — | docs/team/animation.md |
 | UI design (paused; handoff ready at 09310365; portraits wait on the face) | — | docs/team/ui_design.md |
@@ -79,5 +79,5 @@ The main session keeps this current. It is the address list for SendMessage. Ret
 | Legal and Steam compliance (paused; docs/handoff/legal.md; wake before submission or for a new outfit) | — | docs/team/legal.md |
 | Loot and itemisation (paused, built and merged; docs/handoff/loot.md for a successor) | — | docs/team/loot.md |
 | Creatures and models (our own boar first, then MODELS_TO_MAKE.md) | af551cacc6292152f | docs/team/creatures.md |
-| Story editor (notes on the treatment) | ad7d2e659356b6dc5 | docs/story/EDITORIAL_LETTER.md |
+| Story editor (paused; started fresh for each act's draft; handoff at 74280668) | — | docs/story/EDITORIAL_LETTER.md |
 | Heroine outfits | main session | — |
