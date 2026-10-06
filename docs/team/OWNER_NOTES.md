@@ -52,6 +52,14 @@ For the owner's post-build work with professional artists:
 - a library of building blocks: standing, sitting, lying, kneeling and leaning, with transitions, and the vocabulary of romance (a kiss, an embrace, holding, lying entwined, sitting close, undressing to the game's existing nudity);
 - a two-character staging scene with cameras and light, and documentation.
 
+- **Asked for by name:** a paired "lift and kiss, then carry to the bed" sequence:
+  - he lifts her (or she jumps up), her legs round his waist and arms round his neck, his hands under her thighs;
+  - forehead to forehead, then a kiss, with a held loop;
+  - a carry walk loop with matched steps and weight, through a door;
+  - he lowers her onto the bed and leans over her, ending there.
+
+  The pair animate as one synced pair, with contacts locked. The owner's reference was a stock photo (pose reference only, never an asset).
+
 Not made by us: poses or animation whose purpose is a sex act. That's for the owner's artists.
 
 ### Sound
