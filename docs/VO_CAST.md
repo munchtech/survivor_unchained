@@ -15,10 +15,10 @@ below, plainly.
 <!-- CAST TABLE -->
 | Part | Wanted | Cast take | Heard as | Pitch | Pace | Moods | Lines (parts) | Recorded | Failed | Notes |
 |---|---|---|---|---|---|---|---|---|---|---|
-| The narrator (`narrator`) | 55 m, neutral southern English (RP) | c11 | england 1.00 | 101 Hz | 3.1 w/s | - | 287 | 0 | 0 |  |
+| The narrator (`narrator`) | 60 f, plain and dry, light northern valley accent (recast 6 October; not yet cast) | c11 | england 1.00 | 101 Hz | 3.1 w/s | - | 287 | 0 | 0 |  |
 | Mother Rook (`rook`) | 60 f, Yorkshire | c06 | england 1.00 | 208 Hz | 4.3 w/s | - | 43 | 0 | 0 |  |
 | Captain Holloway (`holloway`) | 45 m, Lancashire, flattened by the army | c08 | england 0.99 | 127 Hz | 3.4 w/s | - | 62 | 0 | 0 |  |
-| Maeca Barefoot (`maeca`) | 34 f, Welsh borders | c16 | scotland 0.91 | 156 Hz | 2.5 w/s | - | 65 | 0 | 0 | words wrong: ['tracks->trask']; cut off at the head; accent heard as scotland (0.91), want wales |
+| Maeca (`maeca`) | 34 f, Welsh borders | c16 | scotland 0.91 | 156 Hz | 2.5 w/s | - | 65 | 0 | 0 | words wrong: ['tracks->trask']; cut off at the head; accent heard as scotland (0.91), want wales |
 | Old Wenna (`wenna`) | 74 f, Somerset (West Country) | c02 | england 1.00 | 225 Hz | 4.0 w/s | - | 30 | 0 | 0 |  |
 | Tam (`tam`) | 9 m, Somerset (West Country) | c08 | canada 0.71 | 236 Hz | 3.3 w/s | - | 16 | 0 | 0 | accent heard as canada (0.71), want england |
 | Brannoc (`brannoc`) | 52 m, Cornish | c02 | england 0.77 | 106 Hz | 2.2 w/s | - | 50 | 0 | 0 |  |

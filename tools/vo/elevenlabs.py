@@ -27,7 +27,7 @@ from common import ROOT, cast  # noqa: E402
 OUT = os.path.join(ROOT, "docs", "voice", "elevenlabs")
 VOICES_MD = os.path.join(ROOT, "docs", "VOICES.md")
 # Where each part's sheet starts in docs/VOICES.md.
-SHEET = {"narrator": "The narrator.", "rook": "Mother Rook", "holloway": "Captain Holloway", "maeca": "Maeca Barefoot",
+SHEET = {"narrator": "The narrator.", "rook": "Mother Rook", "holloway": "Captain Holloway", "maeca": "Maeca",
          "wenna": "Old Wenna", "tam": "Tam", "brannoc": "Brannoc", "harlan": "Harlan Coyle", "pell": "Pell Varrow",
          "rav": "Rav Cutwell", "chid": "Chid", "vonnra": "Vonnra Ash-of-Morrow", "keegan": "Dame Keegan Orme", "sella": "Sella",
          "redcowl": "Redcowl", "snib": "Snib", "grimtunnel": "Grimtunnel", "warden": "The Ford-Warden.",
@@ -35,7 +35,14 @@ SHEET = {"narrator": "The narrator.", "rook": "Mother Rook", "holloway": "Captai
          "kerchief_woman": "The Kerchiefs.", "lampling": "The babbling lampling.", "jory": "Jory Coyle.",
          "ysolde": "Ysolde Marrow", "watchman": "Nell, Wat, Corran.", "warden_man": "The Ford-Warden."}
 # Held for the story lead's review (a7622ae77d19e31dc): whole parts, and kinds of line.
-HOLD_VOICES: dict = {"narrator": "the owner has asked whether Vonnra should be the narrator (the voice that calls the survivor to town in the prologue), given her twist; the story lead is deciding"}
+HOLD_VOICES: dict = {
+    "narrator": "recast as a woman of about sixty, plain and dry (the story rewrite, 6 October); cast her anew before recording",
+    "holloway": "the story rewrite changes most of his lines (docs/voice/RERECORD.md)",
+    "brannoc": "the story rewrite changes most of his lines (docs/voice/RERECORD.md)",
+    "maeca": "the story rewrite changes most of her lines (docs/voice/RERECORD.md)",
+    "vonnra": "the story rewrite changes the fortune (docs/voice/RERECORD.md)",
+    "harlan": "the story rewrite changes some of his lines (docs/voice/RERECORD.md)",
+}
 # Packets the story lead has checked and marked final (voice: date).
 FINAL = {"narrator": "2026-10-03", "rook": "2026-10-03", "holloway": "2026-10-03", "brannoc": "2026-10-03", "sella": "2026-10-03"}
 # Lines waiting on the story lead or the owner: (id prefix, why).
@@ -60,6 +67,23 @@ def sheet(voice: str) -> str:
         return ""
     j = text.find("\n\n", i)
     return re.sub(r"\s*\n\s*", " ", text[i: j if j > 0 else None]).strip()
+
+
+RERECORD_MD = os.path.join(ROOT, "docs", "voice", "RERECORD.md")
+
+
+def rerecord() -> set[str]:
+    """Takes the story lead has changed since the owner recorded them (docs/voice/RERECORD.md):
+    the ids in the first column of its "Changed" tables. New lines need no mark; they have no take."""
+    if not os.path.exists(RERECORD_MD):
+        return set()
+    ids, changed = set(), False
+    for row in open(RERECORD_MD, encoding="utf-8"):
+        if row.startswith("#"):
+            changed = row.lstrip("#").strip().lower().startswith("changed")
+        elif changed and row.startswith("| `"):
+            ids.add(row.split("`")[1])
+    return ids
 
 
 def held(line: dict, voice: str) -> str | None:
@@ -195,6 +219,7 @@ def file_name(line: dict, part: int) -> str:
 
 def packet(voice: str, man: list[dict]) -> tuple[str, dict]:
     v = cast()[voice]
+    again = rerecord()
     es, first = [], {}
     for e in entries(man, voice):
         key = e["seg"].get("acted", e["seg"]["text"])
@@ -270,7 +295,8 @@ def packet(voice: str, man: list[dict]) -> tuple[str, dict]:
         d = lines_mod.part_direction(l, s)
         aside = s["voice"] == "narrator" and l["voice"] != "narrator"
         hold = held(l, voice) if voice not in HOLD_VOICES else None  # a whole part on hold says so once, at the top
-        w.append(f"### {n}. `{file_name(l, k)}`" + (f"  HOLD: {hold}" if hold else ""))
+        redo = file_name(l, k)[:-4] in again or l["id"] in again
+        w.append(f"### {n}. `{file_name(l, k)}`" + (f"  HOLD: {hold}" if hold else "") + ("  **RE-RECORD: the words changed**" if redo else ""))
         w.append("")
         if e["also"]:
             w.append(f"*The same words are also* {', '.join(f'`{x}`' for x in e['also'])}*: record once; the importer copies the take.*")

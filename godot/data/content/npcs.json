@@ -276,12 +276,20 @@
       "fact": "redcowl",
       "eq": "spared"
      }
+    },
+    {
+     "text": "Ninety-one up.",
+     "night": true,
+     "when": {
+      "fact": "holloway.confessed",
+      "eq": true
+     }
     }
    ]
   },
   "maeca": {
    "id": "maeca",
-   "name": "Maeca Barefoot",
+   "name": "Maeca",
    "title": "Hunter, of the Hollow",
    "role": "Hunter",
    "model": "rogue",
@@ -571,7 +579,7 @@
      }
     },
     {
-     "text": "Two candles in for her. One's for Brannoc; don't tell him.",
+     "text": "Two candles in for her. One's for Brannoc. He'd only blow it out.",
      "night": true,
      "when": {
       "fact": "nell.buried",
@@ -1305,6 +1313,42 @@
        }
       ]
      }
+    },
+    {
+     "text": "Girl's first new boots. Irons paid for 'em.",
+     "night": false,
+     "when": {
+      "not": {
+       "fact": "nell.told",
+       "exists": true
+      }
+     }
+    },
+    {
+     "text": "Told her: walk where it's lit. Nothing on that road you can't see.",
+     "night": false,
+     "when": {
+      "not": {
+       "fact": "nell.told",
+       "exists": true
+      }
+     }
+    },
+    {
+     "text": "Pedlar says the Kiln road's dry. Good.",
+     "night": false,
+     "when": {
+      "any": [
+       {
+        "fact": "nell.told",
+        "eq": "lie"
+       },
+       {
+        "fact": "nell.told",
+        "eq": "evaded"
+       }
+      ]
+     }
     }
    ]
   },
@@ -1947,6 +1991,36 @@
    "name": "A voice up the road",
    "title": "",
    "glyph": "moon"
+  },
+  "scene_gate_dawn": {
+   "name": "The South Gate",
+   "title": "First light",
+   "glyph": "shield"
+  },
+  "scene_in_my_count": {
+   "name": "The South Gate",
+   "title": "Morning",
+   "glyph": "shield"
+  },
+  "scene_knocking": {
+   "name": "The South Gate",
+   "title": "Dusk",
+   "glyph": "moon"
+  },
+  "scene_did_he": {
+   "name": "The Well",
+   "title": "Morning",
+   "glyph": "howl"
+  },
+  "scene_his_cup": {
+   "name": "The South Gate",
+   "title": "Dusk",
+   "glyph": "moon"
+  },
+  "warden_answer": {
+   "name": "The Ford-Warden",
+   "title": "Keeper of the Low Crossing",
+   "glyph": "skull"
   }
  },
  "guards": [

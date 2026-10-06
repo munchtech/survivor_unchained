@@ -855,7 +855,7 @@ public sealed class Prologue : ZoneRuntime
                 G.Journey.Grew();
             });
         // Without C04 A the narrator's words are a caption; with it, they were said in it.
-        if (caption) G.After(1.2, () => G.Say("As the sun clears the trees, the ember goes out of you and back into the ground, and everything it gave you goes with it. What you carry, and what you have learned, are still yours. When the dark comes again, it will burn again, from nothing. You try to call up your mother's face, and find it is not quite where you left it.", null, 11));
+        if (caption) G.After(1.2, () => G.Say("As the sun clears the trees, the ember goes out of you and back into the ground, and everything it gave you goes with it. What you carry, and what you have learned, are still yours. When the dark comes again, it will burn again, from nothing. You try to call up your mother's face, and find it is not quite where you left it. Her voice is still there. \"Lamp's lit, Spark. Stay where it reaches.\"", null, 14));
         G.After(caption ? 11.5 : 9.5, () => Tip("day", "By day", $"By day the ember sleeps: you fight with what you carry, your art and your feet, and every fight teaches you ({Key("character")}). The ember is for the night.", [Key("character")], 14));
     }
 

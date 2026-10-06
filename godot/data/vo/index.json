@@ -96,22 +96,6 @@
    ],
    "voice": "guard"
   },
-  "dlg.cin_first_light.face.0": {
-   "file": "narrator/dlg.cin_first_light.face.0.ogg",
-   "hash": "8ae8a60be36e",
-   "placeholder": true,
-   "read": 5.12,
-   "sec": 5.12,
-   "segs": [
-    [
-     0.0,
-     5.12,
-     0.0,
-     1.0
-    ]
-   ],
-   "voice": "narrator"
-  },
   "dlg.cin_heart_goes_down.downstairs.0": {
    "file": "grimtunnel/dlg.cin_heart_goes_down.downstairs.0.ogg",
    "hash": "ca65f966df2d",

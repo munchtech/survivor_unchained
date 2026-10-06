@@ -57,6 +57,9 @@ public sealed class Waystation : ZoneRuntime
         // The smith stops at night.
         ["brannoc"] = [("""{ "time": "night" }""", null, "Idle")],
         ["maeca"] = [("""{ "time": "night" }""", new Spot { X = -11.6, Z = -4.4, Facing = Math.PI / 2 }, "Idle_B")],
+        // The captain sits the night out in the south gateway with his cup, his back to the west
+        // post, facing the road: he will not bar it till the count is right (the story's gate scenes).
+        ["holloway"] = [("""{ "time": "night" }""", new Spot { X = -3.0, Z = 31.2, Facing = 0 }, "Sit_Floor_Idle")],
     };
 
     /// <summary>Doors lead to whoever keeps them.</summary>
@@ -304,6 +307,20 @@ public sealed class Waystation : ZoneRuntime
                 G.Apply("""[{ "zone": { "id": "waystation", "key": "burial", "value": true } }]""");
                 G.Say("The whole town is in the Quiet Garden, round a fresh grave beside the old captain's stone. Brannoc kneels at its head with an iron marker and his hammer: three strokes, iron into earth. Rook sets the inn's lamp at its foot, lit, in broad daylight, and steps back, and back.", null, 7);
                 G.After(7.2, () => G.Talk("cin_iron_marker"));
+            },
+        });
+        // Her mother's grave, once Rook has told her where it is (the kind lie: "in her sleep, a week
+        // since"). The narrator describes it plainly; its earth has not settled (the fair contradiction).
+        I.Add(new()
+        {
+            Id = "mother_grave", X = garden.X - 3.2, Z = garden.Z + 1.2, R = 2.0, Verb = "Stand at it", Name = "A plain marker",
+            When = () => F("mother.told").Truthy,
+            Act = () =>
+            {
+                bool before = W.Zones.TryGetValue("waystation", out var zs) && zs.TryGetValue("grave", out var g) && g.Truthy;
+                if (before) { G.Say("You stand at it a while.", null, 3.5); return; }
+                G.Apply("""[{ "zone": { "id": "waystation", "key": "grave", "value": true } }, { "quest": { "id": "home", "entry": "grave" } }]""");
+                G.Say("A plain wooden marker, a few stones along from the old captain's. No name on it yet. The earth on it is dark, and has not settled.", null, 7);
             },
         });
         I.Add(new()

@@ -18,6 +18,9 @@ public sealed partial class Journey
     {
         /// <summary>The town's own evening call, at dusk (the gate guard's).</summary>
         public const string Dusk = "Lamps are lit. Stay where they reach.";
+        /// <summary>The first time she hears it, the narrator's one line after it. (Her mother said it
+        /// at a door: "Lamp's lit, Spark. Stay where it reaches.")</summary>
+        public const string DuskHeard = "You have heard that said at a door.";
         /// <summary>At dusk, after the call: the night's fight named, by StoryFights id ("" when none is called).</summary>
         public static readonly Dictionary<string, string> Tonight = new()
         {
@@ -40,6 +43,35 @@ public sealed partial class Journey
         /// <summary>The held key's words, and the card's for the night's other fights.</summary>
         public const string Answer = "Answer the night", AlsoOut = "Also out tonight:";
     }
+
+    /// <summary>True the first time the evening call is heard in the town, and never again.</summary>
+    public bool FirstDuskCall()
+    {
+        if (World.Fact("dusk.heard").Truthy) return false;
+        World.Facts["dusk.heard"] = true;
+        return true;
+    }
+
+    /// <summary>A scene the story has set for the next morning or dusk in the town ("scene.morning",
+    /// "scene.dusk", written by the overnight rules): a conversation that plays by itself, so the
+    /// beats that carry the act are on every road (the gate at dawn, the knocking, the forge at
+    /// dusk). "brannoc:nell" plays Brannoc only while he would still open on that node; a scene
+    /// whose moment has passed is dropped. Taking it clears it.</summary>
+    public string? TakeScene(bool dusk)
+    {
+        string key = dusk ? "scene.dusk" : "scene.morning";
+        var s = (dusk ? World.Fact("scene.dusk") : World.Fact("scene.morning")).Str;
+        World.Facts.Remove(key);
+        if (string.IsNullOrEmpty(s)) return null;
+        var parts = s.Split(':');
+        var convo = Dialogue.Find(parts[0]);
+        if (convo == null) return null;
+        if (parts.Length > 1 && convo.Entry.Find(e => Rules.Test(e.When, Ctx))?.Node != parts[1]) return null;
+        return parts[0];
+    }
+
+    /// <summary>Whether a scene is waiting for that turn (without taking it).</summary>
+    public bool SceneWaiting(bool dusk) => (dusk ? World.Fact("scene.dusk") : World.Fact("scene.morning")).Str is { Length: > 0 };
 
     /// <summary>A rise in a story fight: its words, the first one ever the prologue's, every one
     /// after it in a later fight a little less (counted in story.rises).</summary>

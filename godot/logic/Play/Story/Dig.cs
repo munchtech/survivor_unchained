@@ -14,7 +14,7 @@ namespace SurvivorUnchained.Play.Story;
  *
  *   the edge      three shaft heads boil lamplings until each windlass is
  *                 broken (she stands at it); the shaft falls in round it, and
- *                 leaves a hole. The Wick-Mother comes up with the second.
+ *                 leaves a hole. Old Gutter comes up with the second.
  *   the tub-way   ore tubs run down the rails at her (marked lanes that flatten
  *                 lamplings in them too), the Chucker lobbing from the
  *                 brake-house: out of reach until she has climbed to him.
@@ -95,11 +95,11 @@ public sealed class DigBoilsOver : StoryFight
 
     /// <summary>Three shaft heads along the edge, each boiling lamplings until its windlass is broken: she
     /// stands at it, and it goes over, and the shaft falls in on itself (a ring marked round it: step off it).
-    /// The Wick-Mother comes up with the second shaft's wave, and her wicks from below. It teaches what comes
+    /// Old Gutter comes up with the second shaft's wave, and her stubs from below. It teaches what comes
     /// up under her (his deep lamp, his Under) and ground that goes (his sinkholes).</summary>
     sealed class Edge : StoryBeat
     {
-        public override string Goal => Broken < shafts.Count ? $"Break the windlasses ({Broken} of {shafts.Count})" : "Bring down the Wick-Mother";
+        public override string Goal => Broken < shafts.Count ? $"Break the windlasses ({Broken} of {shafts.Count})" : "Bring down Old Gutter";
         public override string? Gate => "edge";
         public override double Minute => 2;
         public override string Start => "start";
@@ -179,7 +179,7 @@ public sealed class DigBoilsOver : StoryFight
         }
 
         /// <summary>The windlass goes over, and the shaft falls in on itself: the ground round its mouth goes
-        /// (marked a moment: off it), and leaves a hole. The first brings the Wick-Mother up out of the next.</summary>
+        /// (marked a moment: off it), and leaves a hole. The first brings Old Gutter up out of the next.</summary>
         void Fell(Shaft s)
         {
             var (mx, mz) = Mouth(s);

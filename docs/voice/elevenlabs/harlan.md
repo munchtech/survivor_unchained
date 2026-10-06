@@ -1,6 +1,6 @@
 # Harlan Coyle: ElevenLabs packet
 
-Voice id in the game: `harlan`. 63 takes to record (7,141 characters; about 21,423 credits at three tries a line). Status: **draft**, until the story lead (a7622ae77d19e31dc) checks every line and marks it final.
+Voice id in the game: `harlan`. 63 takes to record (7,229 characters; about 21,687 credits at three tries a line). Status: **on hold**: the story rewrite changes some of his lines (docs/voice/RERECORD.md). Do not record any of it yet.
 
 ## Who they are
 
@@ -182,9 +182,9 @@ Subtitle: Jory's round the back, pretending to count crates. Pretending! What ca
 *Note:* 'I heard. I heard.' Pause. A small fond detail that hurts most: sulking if supper was late. Then hollow kindness.
 
 ```
-[numb grief, quietly] I heard. I heard. ...They'd not been fed for a week, Holloway says. Jory used to sulk if supper was late. You needn't say anything. What do you want?
+[numb grief, quietly] I heard. I heard. ...They were fed, Holloway says. It was the cold that did it, in those cages, at night. Jory never could get warm of a night. I used to put a hot brick in his bed. You needn't say anything. What do you want?
 ```
-Subtitle: I heard. I heard. ...They'd not been fed for a week, Holloway says. Jory used to sulk if supper was late. You needn't say anything. What do you want?
+Subtitle: I heard. I heard. ...They were fed, Holloway says. It was the cold that did it, in those cages, at night. Jory never could get warm of a night. I used to put a hot brick in his bed. You needn't say anything. What do you want?
 
 ### 13. `dlg.harlan.hub.2.p1.wav`
 
@@ -293,9 +293,9 @@ Subtitle: Driven...? Wolves don't drive wagons. Who— no. Find out who. Please.
 *Note:* 'Alive. Alive!' the second almost a sob. Fumbling coins. Overflowing generosity. 'Don't tell anyone.' laughing.
 
 ```
-[overwhelming joy, loudly] Alive. Alive! I— here. A hundred, as I said, and that's the least of it. Whatever you need that I can sell you, you pay cost. Cost! Don't tell anyone.
+[overwhelming joy, loudly] Alive. Alive! I— here. A hundred, as I said, and that's the least of it. Whatever you need that I can sell you, you pay cost. Cost! And I'll swear blind I never said it.
 ```
-Subtitle: Alive. Alive! I— here. A hundred, as I said, and that's the least of it. Whatever you need that I can sell you, you pay cost. Cost! Don't tell anyone.
+Subtitle: Alive. Alive! I— here. A hundred, as I said, and that's the least of it. Whatever you need that I can sell you, you pay cost. Cost! And I'll swear blind I never said it.
 
 ### 23. `dlg.harlan.box.0.wav`
 
@@ -342,16 +342,16 @@ Subtitle: ...Six crates. For a buyer I won't name. Paid in advance, in gold, whi
 ```
 Subtitle: A customer. Customers have initials, friend; it's how you tell them from friends. Is there anything else? Only I've stock to count.
 
-### 27. `dlg.harlan.knew.0.wav`
+### 27. `dlg.harlan.knew.0.p0.wav`
 
-*Where:* dialogue.json harlan/knew#0
+*Where:* dialogue.json harlan/knew#0; part 1 of 2: **harlan: Jory? Jory knows salt from sugar on a good day. He didn't know. ...He didn't know.** / narrator: He goes back to counting the jars.
 *Played:* protective, then guilt; doing: Jory didn't know; pace: slow; volume: quiet.
 *Note:* Fond scorn for Jory. Repeats 'He didn't know.' quieter. Then the confession, barely said: 'I did.'
 
 ```
-[protective, then guilt, quietly] Jory? Jory knows salt from sugar on a good day. He didn't know. ...He didn't know. I did.
+[protective, then guilt, quietly] Jory? Jory knows salt from sugar on a good day. He didn't know. ...He didn't know.
 ```
-Subtitle: Jory? Jory knows salt from sugar on a good day. He didn't know. ...He didn't know. I did.
+Subtitle: Jory? Jory knows salt from sugar on a good day. He didn't know. ...He didn't know.
 
 ### 28. `dlg.harlan.betrayed.0.p0.wav`
 

@@ -1,6 +1,6 @@
 # Mother Rook: ElevenLabs packet
 
-Voice id in the game: `rook`. 45 takes to record (6,073 characters; about 18,219 credits at three tries a line). Status: **final** (the story lead, 2026-10-03): record it.
+Voice id in the game: `rook`. 54 takes to record (6,561 characters; about 19,683 credits at three tries a line). Status: **final** (the story lead, 2026-10-03): record it.
 
 ## Who they are
 
@@ -83,16 +83,16 @@ Subtitle: Another one off the Low Ford road. I'm Rook, and this is the Last Lamp
 ```
 Subtitle: Late. Stew's cold. Beds aren't.
 
-### 4. `dlg.rook.hub.1.wav`
+### 4. `dlg.rook.hub.1.wav`  **RE-RECORD: the words changed**
 
 *Where:* dialogue.json rook/hub#1
 *Played:* gruff fondness; doing: she saved you food; pace: measured; volume: quiet.
 *Note:* Conspiratorial on 'Don't tell the others.' Kindness said sideways.
 
 ```
-[gruff fondness, quietly] There you are. I kept a bowl back. Don't tell the others.
+[gruff fondness, quietly] There you are. I kept a bowl back. The others can whistle.
 ```
-Subtitle: There you are. I kept a bowl back. Don't tell the others.
+Subtitle: There you are. I kept a bowl back. The others can whistle.
 
 ### 5. `dlg.rook.hub.2.wav`
 
@@ -437,9 +437,63 @@ Subtitle: Good. Somebody had to, and it was never going to be me. ...Sit down. Y
 ```
 Subtitle: Ashford was. Half of it went to the Morrow in one night, pet, and the other half the year after, coughing. Don't ask Holloway about it. Don't ask Maeca. Don't ask a Kerchief, if you meet one. And don't ask me twice.
 
+### 36. `dlg.rook.mother.0.p1.wav`
+
+*Where:* dialogue.json rook/mother#0; part 2 of 2: narrator: She stops wiping the cup. She looks at your face a beat too long, and then out of the wind… / **rook: ...Sit down, pet.**
+
+```
+...Sit down, pet.
+```
+Subtitle: ...Sit down, pet.
+
+### 37. `dlg.rook.mother2.0.p0.wav`
+
+*Where:* dialogue.json rook/mother2#0; part 1 of 3: **rook: She went in her sleep, pet. A week since.** / narrator: She sets the cup down. / rook: Chid brought her down and saw to her. I sat with her, after.
+
+```
+She went in her sleep, pet. A week since.
+```
+Subtitle: She went in her sleep, pet. A week since.
+
+### 38. `dlg.rook.mother2.0.p2.wav`
+
+*Where:* dialogue.json rook/mother2#0; part 3 of 3: rook: She went in her sleep, pet. A week since. / narrator: She sets the cup down. / **rook: Chid brought her down and saw to her. I sat with her, after.**
+
+```
+Chid brought her down and saw to her. I sat with her, after.
+```
+Subtitle: Chid brought her down and saw to her. I sat with her, after.
+
+### 39. `dlg.rook.mother_where.0.wav`
+
+*Where:* dialogue.json rook/mother_where#0
+
+```
+Quiet Garden, behind the shrine. There's a marker. No name on it yet; you can tell Chid what to cut.
+```
+Subtitle: Quiet Garden, behind the shrine. There's a marker. No name on it yet; you can tell Chid what to cut.
+
+### 40. `dlg.rook.mother_short.0.p1.wav`
+
+*Where:* dialogue.json rook/mother_short#0; part 2 of 2: narrator: Something goes across her face, and is put away. / **rook: You came, pet. That's the part that counts.**
+
+```
+You came, pet. That's the part that counts.
+```
+Subtitle: You came, pet. That's the part that counts.
+
+### 41. `dlg.rook.mother_room.0.p1.wav`
+
+*Where:* dialogue.json rook/mother_room#0; part 2 of 2: narrator: She turns a ring on the nail behind the bar, among the keys, without looking at it. / **rook: Back room's yours, if you want it. It's been free a week.**
+
+```
+Back room's yours, if you want it. It's been free a week.
+```
+Subtitle: Back room's yours, if you want it. It's been free a week.
+
 ## Said in passing
 
-### 36. `bark.rook.day.0.wav`
+### 42. `bark.rook.day.0.wav`
 
 *Where:* npcs.json rook.barks[0]
 *Played:* proud, dry; pace: brisk; volume: level.
@@ -450,7 +504,7 @@ Subtitle: Ashford was. Half of it went to the Morrow in one night, pet, and the 
 ```
 Subtitle: Beds are dry and the stew's hot. That's more than most can say.
 
-### 37. `bark.rook.day.1.wav`
+### 43. `bark.rook.day.1.wav`
 
 *Where:* npcs.json rook.barks[1]
 *Played:* bossy; pace: brisk; volume: raised.
@@ -461,7 +515,7 @@ Subtitle: Beds are dry and the stew's hot. That's more than most can say.
 ```
 Subtitle: Wipe your boots.
 
-### 38. `bark.rook.day.2.wav`
+### 44. `bark.rook.day.2.wav`
 
 *Where:* npcs.json rook.barks[2]
 *Played:* dry, bossy; pace: brisk; volume: raised.
@@ -472,7 +526,7 @@ Subtitle: Wipe your boots.
 ```
 Subtitle: If you're bleeding, bleed outside.
 
-### 39. `bark.rook.day.3.wav`
+### 45. `bark.rook.day.3.wav`
 
 *Where:* npcs.json rook.barks[3]
 *Played:* dry, sly; pace: measured; volume: level.
@@ -483,7 +537,7 @@ Subtitle: If you're bleeding, bleed outside.
 ```
 Subtitle: Rooms upstairs by the night. By the hour, ask Sella.
 
-### 40. `bark.rook.night.0.wav`
+### 46. `bark.rook.night.0.wav`
 
 *Where:* npcs.json rook.nightBarks[0]
 *Played:* tired, firm; pace: measured; volume: quiet.
@@ -494,7 +548,7 @@ Subtitle: Rooms upstairs by the night. By the hour, ask Sella.
 ```
 Subtitle: Lamps stay lit till the last one's in.
 
-### 41. `bark.rook.night.1.wav`
+### 47. `bark.rook.night.1.wav`
 
 *Where:* npcs.json rook.nightBarks[1]
 *Played:* tired, warm; pace: measured; volume: quiet.
@@ -505,7 +559,7 @@ Subtitle: Lamps stay lit till the last one's in.
 ```
 Subtitle: Bed's warm if you want it. Stew's gone.
 
-### 42. `bark.rook.night.2.wav`
+### 48. `bark.rook.night.2.wav`
 
 *Where:* npcs.json rook.nightBarks[2]
 *Played:* hushing; pace: measured; volume: hushed.
@@ -516,7 +570,7 @@ Subtitle: Bed's warm if you want it. Stew's gone.
 ```
 Subtitle: Quietly, now. People are sleeping.
 
-### 43. `bark.rook.night.3.wav`
+### 49. `bark.rook.night.3.wav`
 
 *Where:* npcs.json rook.nightBarks[3]
 *Played:* dry, wicked; pace: measured; volume: quiet.
@@ -527,7 +581,7 @@ Subtitle: Quietly, now. People are sleeping.
 ```
 Subtitle: Going up to Sella's? Wipe your boots twice. She's particular about her floor and nothing else.
 
-### 44. `bark.rook.said.0.wav`
+### 50. `bark.rook.said.0.wav`
 
 *Where:* npcs.json rook.said[0]
 *Played:* worried, dry; doing: Harlan is grieving; pace: measured; volume: level.
@@ -538,7 +592,7 @@ Subtitle: Going up to Sella's? Wipe your boots twice. She's particular about her
 ```
 Subtitle: Harlan's not eating. I've sent bread. He's sent it back.
 
-### 45. `bark.rook.said.1.wav`
+### 51. `bark.rook.said.1.wav`
 
 *Where:* npcs.json rook.said[1]
 *Played:* quiet, closed; doing: Nell's hook by the door; pace: slow; volume: quiet.
@@ -548,4 +602,31 @@ Subtitle: Harlan's not eating. I've sent bread. He's sent it back.
 [quiet, closed, quietly] Hook's empty. I know. Leave it.
 ```
 Subtitle: Hook's empty. I know. Leave it.
+
+### 52. `bark.rook.said.2.wav`
+
+*Where:* npcs.json rook.said[2]
+
+```
+Lamp burned all night for you, pet. A night's ember. It's on your slate.
+```
+Subtitle: Lamp burned all night for you, pet. A night's ember. It's on your slate.
+
+### 53. `bark.rook.said.3.wav`
+
+*Where:* npcs.json rook.said[3]
+
+```
+Face like a wet week. Eat first. It'll still be there after.
+```
+Subtitle: Face like a wet week. Eat first. It'll still be there after.
+
+### 54. `bark.rook.said.4.wav`
+
+*Where:* npcs.json rook.said[4]
+
+```
+Sit down before you fall down. Again.
+```
+Subtitle: Sit down before you fall down. Again.
 

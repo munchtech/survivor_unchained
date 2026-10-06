@@ -1,6 +1,6 @@
 # Ysolde Marrow, the Wayfinder: ElevenLabs packet
 
-Voice id in the game: `ysolde`. 26 takes to record (3,142 characters; about 9,426 credits at three tries a line). Status: **draft**, until the story lead (a7622ae77d19e31dc) checks every line and marks it final.
+Voice id in the game: `ysolde`. 30 takes to record (3,403 characters; about 10,209 credits at three tries a line). Status: **draft**, until the story lead (a7622ae77d19e31dc) checks every line and marks it final.
 
 ## Who they are
 
@@ -98,9 +98,9 @@ Subtitle: Every map is sworn under something, written in the margin: the Long Wi
 *Note:* Rules laid out briskly. 'I sell them fewer maps.' deadpan.
 
 ```
-[matter-of-fact, gallows humour] Half an hour, give or take, and it only gets worse. The ember in you starts from nothing in there, same as every night. Last the half hour and whatever rules the place comes out to see who's been killing its people. Kill it and the way out opens where it fell. Stay past that if you like. Some do. I sell them fewer maps.
+[matter-of-fact, gallows humour] Half an hour, give or take, and it only gets worse. The ember in you starts from nothing in there, same as every night. Last till the dead of night and whatever rules the place comes out to see who's been killing its people. Kill it and the way out opens where it fell. Stay past that if you like. Some do. I sell them fewer maps.
 ```
-Subtitle: Half an hour, give or take, and it only gets worse. The ember in you starts from nothing in there, same as every night. Last the half hour and whatever rules the place comes out to see who's been killing its people. Kill it and the way out opens where it fell. Stay past that if you like. Some do. I sell them fewer maps.
+Subtitle: Half an hour, give or take, and it only gets worse. The ember in you starts from nothing in there, same as every night. Last till the dead of night and whatever rules the place comes out to see who's been killing its people. Kill it and the way out opens where it fell. Stay past that if you like. Some do. I sell them fewer maps.
 
 ### 6. `dlg.wayfinder.drawn.0.wav`
 
@@ -185,9 +185,9 @@ Subtitle: An arcanist. You'll burn brighter than most in there, and faster. I've
 *Note:* Pointing at the map. A joke at the reavers.
 
 ```
-[conspiratorial] A stalker. You'll want the maps with cover. Here, and here. Don't tell the reavers; they'll only stand in it.
+[conspiratorial] A stalker. You'll want the maps with cover. Here, and here. The reavers never ask; they'd only stand in it.
 ```
-Subtitle: A stalker. You'll want the maps with cover. Here, and here. Don't tell the reavers; they'll only stand in it.
+Subtitle: A stalker. You'll want the maps with cover. Here, and here. The reavers never ask; they'd only stand in it.
 
 ### 14. `dlg.wayfinder.t_wayfinder.0.wav`
 
@@ -332,4 +332,40 @@ Subtitle: The ink is still wet on this one. So is the blood.
 [dry] Night maps cost the same. They just feel dearer.
 ```
 Subtitle: Night maps cost the same. They just feel dearer.
+
+### 27. `bark.wayfinder.said.0.wav`
+
+*Where:* npcs.json wayfinder.said[0]
+
+```
+Your longest yet. That's going in the margin. Somebody will want to read it.
+```
+Subtitle: Your longest yet. That's going in the margin. Somebody will want to read it.
+
+### 28. `bark.wayfinder.said.1.wav`
+
+*Where:* npcs.json wayfinder.said[1]
+
+```
+Longer again. You're making my margins untidy.
+```
+Subtitle: Longer again. You're making my margins untidy.
+
+### 29. `bark.wayfinder.said.2.wav`
+
+*Where:* npcs.json wayfinder.said[2]
+
+```
+You stayed on past it. The ones who do, I usually end up drawing.
+```
+Subtitle: You stayed on past it. The ones who do, I usually end up drawing.
+
+### 30. `bark.wayfinder.said.3.wav`
+
+*Where:* npcs.json wayfinder.said[3]
+
+```
+You went down in there and came out anyway. I've a column for that.
+```
+Subtitle: You went down in there and came out anyway. I've a column for that.
 

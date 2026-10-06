@@ -1,6 +1,6 @@
 # Old Wenna: ElevenLabs packet
 
-Voice id in the game: `wenna`. 33 takes to record (3,978 characters; about 11,934 credits at three tries a line). Status: **draft**, until the story lead (a7622ae77d19e31dc) checks every line and marks it final.
+Voice id in the game: `wenna`. 34 takes to record (4,069 characters; about 12,207 credits at three tries a line). Status: **draft**, until the story lead (a7622ae77d19e31dc) checks every line and marks it final.
 
 ## Who they are
 
@@ -263,9 +263,9 @@ Subtitle: You've had that shoulder put back by somebody who didn't know what the
 *Note:* Comic grievance about the funeral smell.
 
 ```
-[irritable] Spark-hands. Don't touch the drying racks; the last one of you set my sage alight and I smelled like a funeral for a week.
+[irritable] Your hands smell of hot iron, child, and you've not been near a forge. I don't want to know. Comfrey, twice a day, and keep them off my drying racks.
 ```
-Subtitle: Spark-hands. Don't touch the drying racks; the last one of you set my sage alight and I smelled like a funeral for a week.
+Subtitle: Your hands smell of hot iron, child, and you've not been near a forge. I don't want to know. Comfrey, twice a day, and keep them off my drying racks.
 
 ### 21. `dlg.wenna.say_calling.3.wav`
 
@@ -407,4 +407,13 @@ Subtitle: Water's sweet again. I'd forgotten it could be.
 [bitter, dry] Clean water, and nothing left in the wood to drink it.
 ```
 Subtitle: Clean water, and nothing left in the wood to drink it.
+
+### 34. `bark.wenna.said.4.wav`
+
+*Where:* npcs.json wenna.said[4]
+
+```
+Hot stone on you, child. Last I smelled that was the fever year.
+```
+Subtitle: Hot stone on you, child. Last I smelled that was the fever year.
 

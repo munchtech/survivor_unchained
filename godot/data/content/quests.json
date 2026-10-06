@@ -16,7 +16,7 @@
   "entries": {
    "rumour": "Wolves are attacking travellers on the Old Road. Everyone in the Waystation has an opinion about why.",
    "holloway_bounty": "Captain Holloway pays five gold a pelt, and fifty for the fang of Greymuzzle, the old dog-wolf. \"They're bolder,\" he says.",
-   "maeca_theory": "Maeca Barefoot says the wolves are not hunting but running: something is driving them out of the deep wood.",
+   "maeca_theory": "Maeca says the wolves are not hunting but running: something is driving them out of the deep wood.",
    "wenna_request": "Old Wenna says the animals were never like this. She wants a sample of the Thornhollow stream to test.",
    "tam_plea": "Tam saw wolves drink from the stream and fall down. \"Something's killing them,\" he says. Nobody believes a child.",
    "harlan_view": "Harlan Coyle blames the wolves for his missing caravan. He wants them dead, all of them.",
@@ -149,6 +149,17 @@
    "notice": "On the notice board: carters wanted for the south road, toll work, paid double for a quick crossing. Apply at the Toll Tower. Someone has written underneath that quick means after dark.",
    "nell": "The girl holding the reins in the ditch on the Low Ford road, in new boots, was Nell, Brannoc's daughter: twelve, going south to her aunt with Wat the carter, on toll work.",
    "accused": "You told Vonnra she lit the lamps at the Low Ford. She did not say no. She said your name, and went on reading."
+  }
+ },
+ "home": {
+  "id": "home",
+  "name": "Home",
+  "mystery": true,
+  "summary": "A letter found you on the road and brought you home to Thornhollow by the Low Ford. The river has had the ink.",
+  "entries": {
+   "rook": "Mother Rook says your mother went in her sleep, a week before you came up the road. Chid buried her in the Quiet Garden, behind the shrine.",
+   "grave": "A plain wooden marker in the Quiet Garden, a few stones along from the old captain's. No name on it yet. The earth on it is dark, and has not settled.",
+   "word": "In your own hand, because Chid asked you to write the names down: \"Spark. What she called me, at dusk.\""
   }
  }
 }
