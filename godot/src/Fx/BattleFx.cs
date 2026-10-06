@@ -35,7 +35,10 @@ public partial class BattleFx : Node3D
     public FollowCamera? Cam;
     /// <summary>A blow landed on the survivor: how hard (0..1), for the edges of the picture.</summary>
     public Action<float> OnDamageFlash = _ => { };
+    /// <summary>Where she is drawn (between the fight's steps: Interp), on the ground.</summary>
     public Vector3 PlayerPos;
+    /// <summary>Where what flies and what is pulled to her is drawn (WorldScene's).</summary>
+    public Interp? Drawn;
     double time;
 
     readonly List<(OmniLight3D Light, float T, float Life, float Peak)> flashes = new();
@@ -1305,7 +1308,7 @@ public partial class BattleFx : Node3D
         Pickups(b, now);
         StepFronts(fdt);
         Blades.Step(fdt);
-        Hits.Flush(b0 is { } hb ? V(hb.Player.X, Y(hb.Player.X, hb.Player.Z) + 1.0, hb.Player.Z) : null);
+        Hits.Flush(b0 != null ? PlayerPos + Vector3.Up : null);
         StepSpikes(fdt);
         Ribbons.Step(fdt, GetViewport()?.GetCamera3D());
         Sparks.Step(fdt);
@@ -1330,8 +1333,7 @@ public partial class BattleFx : Node3D
         artT -= dt;
         bool tick = artT <= 0;
         if (tick) artT = 1 / 30f;
-        float gy = Y(p.X, p.Z);
-        var feet = V(p.X, gy + 0.15, p.Z);
+        var feet = PlayerPos + Vector3.Up * 0.15f;
         float sp = (float)Math.Sqrt(p.Vx * p.Vx + p.Vz * p.Vz);
         var back = sp > 0.3f ? new Vector3((float)-p.Vx, 0, (float)-p.Vz) / sp : Vector3.Zero;
         if (a.SprintT > 0 && tick && sp > 1)
@@ -1423,8 +1425,9 @@ public partial class BattleFx : Node3D
             var school = p.School == School.Physical ? Palette.OfArt(art) : p.School;
             var pal = Palette.Of(school);
             bool hostile = p.Owner == Sim.Side.Enemy;
-            float gy = Y(p.X, p.Z);
-            var at = V(p.X, gy + p.Y, p.Z);
+            var (qx, qy, qz) = Drawn?.Of(p) ?? (p.X, p.Y, p.Z);
+            float gy = Y(qx, qz);
+            var at = V(qx, gy + qy, qz);
             float heading = Mathf.Atan2((float)p.Vx, (float)p.Vz);
             float trail = 1;
             // Lifted to head height: from above, the bodies it passes through would hide it.
@@ -1506,7 +1509,8 @@ public partial class BattleFx : Node3D
         embers.Begin(); coins.Begin(); flasks.Begin(); lodestones.Begin(); sacks.Begin(); chests.Begin(); BeginLoot();
         foreach (var p in b.Pickups.Living())
         {
-            float gy = Y(p.X, p.Z);
+            var (kx, kz) = Drawn?.Of(p) ?? (p.X, p.Z);
+            float gy = Y(kx, kz);
             float bob = Mathf.Sin((float)(now * 3 + p.Id)) * 0.08f;
             var spin = new Godot.Basis(Vector3.Up, (float)(now * 2.2 + p.Id));
             switch (p.Kind)
@@ -1519,19 +1523,19 @@ public partial class BattleFx : Node3D
                     {
                         // The hoard stone: bigger, beating like a heart, with a red beam to find it by.
                         s *= 1 + 0.12f * Mathf.Sin((float)now * 5);
-                        HoardLight(p.X, gy, p.Z);
+                        HoardLight(kx, gy, kz);
                     }
-                    embers.Add(new Transform3D(spin.Scaled(Vector3.One * s), V(p.X, gy + 0.45 + bob, p.Z)), EmberTiers[tier]);
+                    embers.Add(new Transform3D(spin.Scaled(Vector3.One * s), V(kx, gy + 0.45 + bob, kz)), EmberTiers[tier]);
                     break;
                 }
                 case PickupKind.Gold:
-                    coins.Add(new Transform3D(spin * new Godot.Basis(Vector3.Right, Mathf.Pi / 2), V(p.X, gy + 0.35 + bob, p.Z)), new Color(1.0f, 0.75f, 0.3f));
+                    coins.Add(new Transform3D(spin * new Godot.Basis(Vector3.Right, Mathf.Pi / 2), V(kx, gy + 0.35 + bob, kz)), new Color(1.0f, 0.75f, 0.3f));
                     break;
                 case PickupKind.Heal:
-                    flasks.Add(new Transform3D(spin, V(p.X, gy + 0.35 + bob, p.Z)), Colors.White);
+                    flasks.Add(new Transform3D(spin, V(kx, gy + 0.35 + bob, kz)), Colors.White);
                     break;
                 case PickupKind.Magnet:
-                    lodestones.Add(new Transform3D(spin, V(p.X, gy + 0.5 + bob, p.Z)), Colors.White);
+                    lodestones.Add(new Transform3D(spin, V(kx, gy + 0.5 + bob, kz)), Colors.White);
                     break;
                 default:
                 {

@@ -129,7 +129,10 @@ public partial class BattleFx
         {
             // Hers among the dead: a small soul-flame at the breast, so the crowd tells them apart.
             if (e.Disposition == Disposition.Ally && e.Def.Family == Family.Undead)
-                Body(V(e.X, Y(e.X, e.Z) + 1.25 * (e.Def.Scale ?? 1), e.Z), 0.42f, "wisp", Soul * 0.8f, (float)time * 2 + e.Id);
+            {
+                var (ax, az) = Drawn?.Of(e) ?? (e.X, e.Z);
+                Body(V(ax, Y(ax, az) + 1.25 * (e.Def.Scale ?? 1), az), 0.42f, "wisp", Soul * 0.8f, (float)time * 2 + e.Id);
+            }
             if (buffBudget <= 0) continue;
             if (e.HasteT <= 0 && e.WardT <= 0) continue;
             var col = People(e.Faction);

@@ -598,7 +598,7 @@ public partial class BattleFx
                 // single faint wisp of a thread was not seen at all in a crowd.)
                 if (art.StartsWith("tether") && b0 != null)
                 {
-                    var hand = V(b0.Player.X, Y(b0.Player.X, b0.Player.Z) + 1.15, b0.Player.Z);
+                    var hand = PlayerPos + Vector3.Up * 1.15f;
                     var span = at - hand;
                     float len = Mathf.Max(0.3f, span.Length());
                     var along = span / len;
