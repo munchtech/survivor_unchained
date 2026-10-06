@@ -1,17 +1,15 @@
 # Heroine face, hair and creation's Look: status
 
-Agent a6007bf07fd45ab0d, branch `worktree-agent-a6007bf07fd45ab0d` (took over from a833b7942e978d994 at v7).
+Agent a2f7b0f1283f6144a, branch `worktree-agent-a2f7b0f1283f6144a` (took over from a6007bf07fd45ab0d at v8e).
 The handoff is `docs/handoff/face.md`.
 
 ## Current state (2026-10-05)
-- **v8e** (committed art; sheets `godot/.shots/sbs_default_v8e.jpg`, `presets_v8e.jpg`, uncommitted) answers the main session's v7 list: every preset's eyes open (0.89 to 1.05 of hers through the pupil, Blender; 0.88 to 1.08 by MediaPipe in the shots), no smudge on Saffron, no seam on Sunborn and her skin a brown of her portrait's lightness, irises within 3% of their portraits' lightness against the skin (frost blue-grey, not white; both of Moonlit's eyes alike), the neck band gone (AO under her jaw, skin matched), the hairline blended, the presets' lips clean.
+- **v9** (sheets `godot/.shots/sbs_default_v9.jpg`, `presets_v9.jpg`, uncommitted): her lips meet again. v7's `portrait-heroine.target` is back (v8's wrap parted her lips by half a millimetre at her middle); `teeth_probe.py` sees no tooth from in front on any of 789 rays, hers or a preset's. Everything else as v8e: v8e answered the v7 list (eyes open on every preset, Saffron's smudge and Sunborn's seam gone, irises true to the portraits, the neck band gone, the hairline blended, the presets' lips clean).
 - **Open, worst first:**
-  1. Her own (default) face shows the tips of her upper teeth between her closed lips at the close-up: a v8 regression (v7's lips met). Fix: put back v7's `portrait-heroine.target` (from commit 1970f5c3; v7's own wrap had none of her inside on her skin), or find why her lips part (`teeth_probe.py`); then `build_v8.ps1` and shots.
-  2. Sloe and peat eyes a little darker than their portraits (the dark range is not linear: v8d 3x too light, v8e 2x too dark; try the geometric mean of the two dyes).
-  3. A faint pale wedge under her jaw on her left.
-  4. Her skin pinker and smoother than her portrait under the Look's warm light (fine grain 0.02 against the portrait's 0.045).
-  5. Hair cards read as broad strokes at the close-up (hashed alpha; lock tints).
-  6. Pale patches on her upper chest (her body's paint, not the face's).
+  1. Her skin pinker and smoother than her portrait at the Look (grain 0.020 against the portrait's 0.043). Found: her paint itself holds half the grain of the photograph laid on her front (0.026 against 0.057, `heroine_face.py`: the front blended half and half with older side paintings over her cheeks, then its contrast cut to MakeHuman's skin by `match`); the Look's warm key and the fire's edge light make the pink (under a white rig she is 8% light, hardly pink).
+  2. Sunborn 1.2 times lighter than her portrait against hers (bluer still: 1.38 in blue); Doe, Saffron and Wildling 1.06 to 1.08. Every preset's paint is in her colouring; the skin tone (looks.json) makes the colour.
+  3. Hair cards read as broad strokes at the close-up: each card's strands average to one flat band (strands 1 texel wide, no clumps between a strand and a card).
+  4. Sloe and peat eyes a little dark; a pale wedge under her jaw (both sides, at a turn); pale patches on her upper chest (her body's paint: the main session's).
 - **heroine.glb and the outfits are not committed.** The main session rebuilds them with `heroine_outfits.py --body` from this worktree's `tools/comfy/out/heroes/heroine_built.blend`, and merges the art and the refit together.
 
 ## Key decisions (why)
@@ -25,12 +23,13 @@ The handoff is `docs/handoff/face.md`.
 - **Her head's AO baked** (`heroine_ao.png`, `ao_light` 0.55): the neck under her jaw was lit like her cheeks.
 - **Paint edges eased, her jaw's underside left to her head's own skin** (`heroine_face.py`): triangle-at-a-time visibility drew a pale stair under her jaw.
 - **Where her lips meet held hard to where TRELLIS's meet** (`face_wrap.py`, inner-lip landmarks at weight 5; the log's `LIPS MEET`): with her lips' linings carried, not laid on its skin, her lips parted a hair and the tips of her teeth showed.
+- **Her own face is v7's wrap** (`portrait-heroine.target` from 1970f5c3): even held so, v8's wrap left her lips half a millimetre apart at her middle and her teeth showed; v7's own wrap laid none of her inside on her skin (only the presets' did). The presets keep v8's wraps (each key is its target less hers, so their faces do not move with hers).
 
 ## Next
 1. The main session's review of v8; then its refit and merge. It runs the portrait steps itself (`heroine_paint.py brows`, `creation_portraits.py`, the Look shots: UI design is paused), which also fill creation's missing Sunborn, Moonlit and Saffron portraits. Message the main session, not UI design.
 
 ## Notes for other areas
-- **Everyone taking pictures of her:** `--open-eyes` (lids up, eyes ahead), `--unshaded` (paint without light), `--debugdraw Lighting` (any of Godot's views), `--eyeparam name=v,...` (her eye shader's numbers), `--eyecycle paint,#rrggbb,...` (her irises dyed in turn).
+- **Everyone taking pictures of her:** `--open-eyes` (lids up, eyes ahead), `--unshaded` (paint without light), `--debugdraw Lighting` (any of Godot's views), `--eyeparam name=v,...` (her eye shader's numbers), `--eyecycle paint,#rrggbb,...` (her irises dyed in turn), `--skinparam name=v|#rrggbb,...` (her skin shader's), `--rig-white` (the Look's lights all white), `--no-taa`, `--mipbias B`.
 - **Male hero:** the eye shader (shared) has `iris_light` (0.3: irises showed two and a half times too light against the skin) and `wet`/`wet_rough` (the cornea's sheen). The eye colours in looks.json are dyed for it, and his own `HisEyes` is the new flint.
 - **UI design (when back):** the eye colour beads are darker now (looks.json `eyes`), as the irises render; the Brown skin is lighter.
 - **Main session:** her body's paint is padded between its islands now (no red bleeding into her seams as it shrinks).

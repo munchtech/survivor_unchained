@@ -63,6 +63,26 @@ public partial class HerFaceLife : Node
             foreach (var kv in ep.Split(','))
                 if (kv.Split('=') is [var k, var v] && float.TryParse(v, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var f))
                     eyes.SetShaderParameter(k, f);
+        // --skinparam name=value,...: her skin shader's numbers (or #rrggbb
+        // colours) set on her head and body, each frame (her skin is remade
+        // as a look is chosen), for pictures of them tried.
+        if (Args.Get("skinparam") is string spar)
+            foreach (var kv in spar.Split(','))
+                if (kv.Split('=') is [var k, var v])
+                    skinParams.Add((k, v.StartsWith('#') ? new Color(v)
+                        : float.Parse(v, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture)));
+    }
+
+    readonly System.Collections.Generic.List<(string Name, Variant Value)> skinParams = new();
+
+    void SkinParams()
+    {
+        if (GetParent() is not Skeleton3D sk) return;
+        foreach (var c in sk.GetChildren())
+            if (c is MeshInstance3D mi)
+                for (int s = 0; mi.Mesh != null && s < mi.Mesh.GetSurfaceCount(); s++)
+                    if (mi.GetSurfaceOverrideMaterial(s) is ShaderMaterial m && m.Shader?.ResourcePath.EndsWith("heroine_skin.gdshader") == true)
+                        foreach (var (k, v) in skinParams) m.SetShaderParameter(k, v);
     }
 
     Color?[]? cycle;
@@ -70,6 +90,7 @@ public partial class HerFaceLife : Node
     public override void _Process(double delta)
     {
         t += delta;
+        if (skinParams.Count > 0) SkinParams();
         // A blink: the lid down in 70 ms, held a moment, up in 150 ms.
         if (t >= nextBlink && blinkAt < 0)
         {

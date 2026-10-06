@@ -100,6 +100,11 @@ public partial class Shots : Node
     public override void _Process(double delta)
     {
         time += delta;
+        // --no-taa, --mipbias B: the picture without TAA, or its textures
+        // sampled sharper (B < 0), to tell what softens fine detail (each
+        // frame: the graphics settings are applied after this wakes).
+        if (Args.Has("no-taa")) GetViewport().UseTaa = false;
+        if (Args.Get("mipbias") is string mb) GetViewport().TextureMipmapBias = float.Parse(mb, System.Globalization.CultureInfo.InvariantCulture);
         for (int i = wanted.Count - 1; i >= 0; i--)
         {
             if (time < wanted[i].At) continue;

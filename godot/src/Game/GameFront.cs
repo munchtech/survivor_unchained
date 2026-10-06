@@ -198,10 +198,13 @@ public partial class Game
             l.LookAt(target);
             l.LightEnergy = Mathf.Lerp(l.LightEnergy, energy, k);
         }
-        keyLight ??= Spot(new Color(1f, 0.93f, 0.86f), 20, true, 0.45f);
-        fillLight ??= Spot(new Color(0.88f, 0.92f, 1f), 26, false, 0.1f);
-        edgeLight ??= Spot(new Color(1f, 0.56f, 0.26f), 24, false, 0.35f);
-        rimLight ??= Spot(new Color(0.72f, 0.82f, 1f), 24, false, 0.5f);
+        // (--rig-white: every light of the rig white, a face's colours judged
+        // as a studio's light shows them, not only in the fire's warmth)
+        bool white = Args.Has("rig-white");
+        keyLight ??= Spot(white ? Colors.White : new Color(1f, 0.93f, 0.86f), 20, true, 0.45f);
+        fillLight ??= Spot(white ? Colors.White : new Color(0.88f, 0.92f, 1f), 26, false, 0.1f);
+        edgeLight ??= Spot(white ? Colors.White : new Color(1f, 0.56f, 0.26f), 24, false, 0.35f);
+        rimLight ??= Spot(white ? Colors.White : new Color(0.72f, 0.82f, 1f), 24, false, 0.5f);
         // --rig K,F,E,R: the four lights' strengths at the face, for judging them (pictures).
         if (rig == null)
         {
