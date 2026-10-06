@@ -250,6 +250,7 @@ for _root, _, _files in os.walk(_TDIR):
             TARGET.setdefault(_f[:-10], os.path.join(_root, _f))
 for _f in os.listdir(os.path.join(_TDIR, "expression", "units", "caucasian")):
     TARGET["x:" + _f[:-10]] = os.path.join(_TDIR, "expression", "units", "caucasian", _f)
+TARGET.update(fs.portrait_paths())
 
 
 sides = fs.sides
@@ -257,11 +258,14 @@ sides = fs.sides
 
 # (her face's sculpts, ours, are laid on her points once MakeHuman's are
 # read, below: MV_HM)
+_PORTRAIT_KEYS = []
 for _t, _v in FACE.items():
     if _t in fs.SCULPTS:
         continue
     for _n in sides([_t]):
-        TargetService.load_target(hm, TARGET[_n], weight=_v)
+        _kb = TargetService.load_target(hm, TARGET[_n], weight=_v)
+        if _t.startswith("portrait-"):
+            _PORTRAIT_KEYS.append(_kb.name)
 # Every slider's and expression's targets too, at nothing (so they change
 # nothing yet), for what each does to her to be read off later: each key
 # its targets with their weights (a slider's reach is in them:
@@ -277,6 +281,14 @@ for _k in fs.SLIDERS:
     SHAPES[_k + "-"] = {n: w for t, w in _minus.items() for n in sides([t])}
 for _k, _ts in EXPRESSIONS.items():
     SHAPES[_k] = {"x:" + t: 1.0 for t in _ts}
+# Her other faces (the presets), each its own whole face laid on her from
+# a head TRELLIS made of its portrait (face_wrap.py: portrait-<id>), as a
+# key from her own face to it: face_<id> (the game sets the one chosen,
+# People.HerFaceKey; her sliders work on top of it).
+_own = next((t for t in FACE if t.startswith("portrait-")), None)
+for _t in sorted(fs.portrait_paths()):
+    if _t != _own:
+        SHAPES["face_" + _t[len("portrait-"):]] = {_t: 1.0, **({_own: -1.0} if _own else {})}
 # MakeHuman's woman is longer and slimmer of neck and lower of shoulder than
 # she is, and where her hair hid her skin there is nothing of hers to fit
 # to: her build set by BUILD (her face is placed on hers, so a shorter neck
@@ -311,6 +323,15 @@ def grab(o):
 
 
 MV, MF, MU = grab(hm)
+# (and without her portrait (face_wrap.py), for her head's size and place:
+# a face of another make, laid on by its own landmarks, would size her
+# whole head by its own nose and chin)
+for _k in _PORTRAIT_KEYS:
+    hm.data.shape_keys.key_blocks[_k].value = 0.0
+MV_PLACE = grab(hm)[0] if _PORTRAIT_KEYS else MV
+for _k in _PORTRAIT_KEYS:
+    hm.data.shape_keys.key_blocks[_k].value = 1.0
+bpy.context.view_layer.update()
 # (as MakeHuman has her, before she is placed on hers: what our sculpts are made on)
 MV_HM = MV.copy()
 # Her face's own sculpts (a narrower chin): made on her points as MakeHuman
@@ -331,15 +352,15 @@ print("MAKEHUMAN", len(MV), "points,", len(MF), "faces of skin")
 # ---- her face's place: scale from nose to chin, then turned and moved
 # till its surface lies on hers (an ICP at that scale).
 _top = MV[_inbody, 2].max()
-mn, mc = nose_chin(MV[_inbody & (MV[:, 2] > _top - 0.28)])
+mn, mc = nose_chin(MV_PLACE[_inbody & (MV_PLACE[:, 2] > _top - 0.28)])
 hn, hc = her_face_landmarks()
 S = np.linalg.norm(hn - hc) / np.linalg.norm(mn - mc)
 R = np.eye(3)
 T = hn - S * mn
 _hf = np.where(~RED[HTP] & (_tc[:, 2] > hc[2] - 0.003) & (_tc[:, 2] < 1.80) & (_tc[:, 1] < 0) & (np.abs(_tc[:, 0]) < 0.075))[0]
 _fbvh = BVHTree.FromPolygons([tuple(p) for p in HV], HT[_hf].tolist())
-_cand = MV[np.where(_inbody & (MV[:, 2] > mc[2] - 0.003) & (MV[:, 2] < mn[2] + 0.07) & (MV[:, 1] < mn[1] + 0.06)
-                    & (np.abs(MV[:, 0]) < 0.06))[0]]
+_cand = MV_PLACE[np.where(_inbody & (MV_PLACE[:, 2] > mc[2] - 0.003) & (MV_PLACE[:, 2] < mn[2] + 0.07)
+                          & (MV_PLACE[:, 1] < mn[1] + 0.06) & (np.abs(MV_PLACE[:, 0]) < 0.06))[0]]
 for _ in range(30):
     p = (S * (R @ _cand.T)).T + T
     q, k = [], []
@@ -1186,6 +1207,72 @@ FACE_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "heroine_fac
 FACE_PAINT = os.path.join(FACE_DIR, "face_paint.png")
 
 
+HEAD_T, HEAD_B = t_, b_
+_HEAD_TV = HT2[t_]                             # (each texel's triangle's three points)
+_HEAD_S = s_split(P_)
+
+
+def _to_points(vals, w=None):
+    """Texels' values (n x k) to her head's points: each point the mean of the
+    texels about it, by their weights toward it (and w)."""
+    wt = HEAD_B if w is None else HEAD_B * w[:, None]
+    nv = len(HEAD_V)
+    acc = np.zeros((nv, vals.shape[1]))
+    ws = np.zeros(nv)
+    for k in range(3):
+        ws += np.bincount(_HEAD_TV[:, k], wt[:, k], nv)
+        for ch in range(vals.shape[1]):
+            acc[:, ch] += np.bincount(_HEAD_TV[:, k], vals[:, ch] * wt[:, k], nv)
+    return acc / np.maximum(ws, 1e-9)[:, None], ws
+
+
+_e = np.array([(f[i], f[(i + 1) % len(f)]) for f in HEAD_FACES for i in range(len(f))])
+_HEAD_ADJ = sp.coo_matrix((np.ones(len(_e)), (_e[:, 0], _e[:, 1])), shape=(len(HEAD_V),) * 2).tocsr()
+_HEAD_ADJ = ((_HEAD_ADJ + _HEAD_ADJ.T) > 0).astype(float)
+_HEAD_LAP = sp.diags(np.asarray(_HEAD_ADJ.sum(1)).ravel()) - _HEAD_ADJ
+# (her body's skin at her neck's seam, a point at a time: where heroine_head.py
+# eases into it, the 6 mm above SPLIT)
+_seam_t = np.zeros(len(P_), bool)
+_seam_t[np.where(_near)[0][(_mix[:, 0] > 0.5) & (s_split(P_[_near]) < 0.006)]] = True
+_body_t = np.zeros((len(P_), 3))
+_body_t[np.where(_near)[0]] = _hc
+
+
+def matched_base(fp, a):
+    """Her head's own skin (MakeHuman's, in her colouring) brought to the face
+    painted over it and to her body at her neck: the difference at each, eased
+    across what lies between (a harmonic field over her head's points), so her
+    neck, ears and scalp are the colour of her face where they meet it and of
+    her body where they meet that. Left as it was, MakeHuman's skin, paler and
+    greyer than both, showed as a light band across her neck between her jaw
+    and her collar."""
+    nv = len(HEAD_V)
+    off_t = fp - HEAD_BASE
+    off_f, wf = _to_points(off_t, (a[:, 0] > 0.97).astype(float))
+    av, _ = _to_points(a)
+    face = (av[:, 0] > 0.97) & (wf > 0.3)
+    # (the face's difference smoothed over the face, so its brows and freckles
+    # are not carried out across her neck: only its colour)
+    A = sp.diags(1 / np.maximum(np.asarray(_HEAD_ADJ.sum(1)).ravel(), 1)) @ _HEAD_ADJ
+    for _ in range(40):
+        off_f = np.where(face[:, None], A @ np.where(face[:, None], off_f, 0) / np.maximum(A @ face.astype(float), 1e-6)[:, None], off_f)
+    off_b, wb = _to_points(_body_t - HEAD_BASE, _seam_t.astype(float))
+    body = wb > 0.3
+    fixed = face | body
+    val = np.where(face[:, None], off_f, off_b)
+    free = np.where(~fixed)[0]
+    fx = np.where(fixed)[0]
+    Lff = (_HEAD_LAP[free][:, free] + 1e-6 * sp.identity(len(free))).tocsc()     # (a piece touching neither: left as it is)
+    rhs = -_HEAD_LAP[free][:, fx] @ val[fx]
+    off = val.copy()
+    for ch in range(3):
+        off[free, ch] = spl.spsolve(Lff, rhs[:, ch])
+    off_t = (off[_HEAD_TV] * HEAD_B[:, :, None]).sum(1)
+    print("MATCHED her head's skin: %d points to her face, %d to her body at her neck; moved %.3f at most (mean %.3f)" % (
+        face.sum(), body.sum(), np.abs(off_t).max(), np.abs(off_t).mean()))
+    return np.clip(HEAD_BASE + off_t, 0, 1)
+
+
 def head_paint(face_paint, path):
     """Her head's texture with a face's paint laid over (none: MakeHuman's
     skin in her colouring), eased into her own skin at her neck, written to `path`."""
@@ -1195,6 +1282,7 @@ def head_paint(face_paint, path):
         fp = np.asarray(Image.open(face_paint).convert("RGBA"), np.float32)[::-1] / 255
         if fp.shape[0] == HSIZE:
             a = fp[HEAD_R, HEAD_C, 3:4]
+            c = matched_base(fp[HEAD_R, HEAD_C, :3], a)
             c = c * (1 - a) + fp[HEAD_R, HEAD_C, :3] * a
             print("FACE PAINT %s laid over %d%% of her head" % (os.path.basename(face_paint), 100 * (a > 0.5).mean()))
     c[_near] = c[_near] * (1 - _mix) + _hc * _mix
@@ -1253,6 +1341,9 @@ if _up:
     used = np.zeros(TEX.shape[:2], bool)
     used[r3, c3] = True
     TEX2 = fill_in(TEX, used & ~bad, bad)
+    # (and between her islands, the nearest of her skin: left red, it bled
+    # into her seams as the texture was drawn smaller)
+    TEX2 = pad(TEX2, used)
     # (Written out and loaded back: packing an image already packed keeps
     # the old paint, not the new.)
     _bp = os.path.join(os.path.dirname(OUT_BLEND), "heroine_body_paint.png")
@@ -1426,7 +1517,7 @@ if not os.environ.get("HEAD_UNPAINTED"):
             head_paint(os.path.join(FACE_DIR, _f), _p)
             _raw = heroine_face_fixes.RAW.replace(".jpg", f"_{_id}.jpg")
             shutil.copy(_p, _raw)
-            heroine_face_fixes.fix(head, _p, raw=_raw)
+            heroine_face_fixes.fix(head, _p, raw=_raw, key=f"face_{_id}")
 for _im in bpy.data.images:
     if bpy.path.abspath(_im.filepath) == hpath:
         if _im.packed_file:

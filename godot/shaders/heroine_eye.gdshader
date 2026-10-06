@@ -33,17 +33,26 @@ uniform vec3 ring_colour : source_color = vec3(0.62, 0.42, 0.16);
 uniform float ring = 0.56;
 // The paint's mean light (linear), so a colour chosen comes out as itself.
 const float PAINT_LIGHT = 0.12;
+// The iris's light over all (painted or dyed), against her skin's: measured
+// in the game against the portraits (at 1, her irises showed two and a half
+// times as light against her cheek as her portrait's, and Fey's frost white;
+// the colours chosen are dyed for 0.3).
+uniform float iris_light = 0.3;
+// The cornea's wet sheen: its roughness and its reflectance.
+uniform float wet_rough = 0.035;
+uniform float wet = 0.42;
 // Where she is looking, each eye's iris slid over its ball (in irises'
 // radii: +x to her left, +y down; both eyes' paint the same way round).
 uniform vec2 gaze_a = vec2(0.0);
 uniform vec2 gaze_b = vec2(0.0);
 uniform float lids = 0.7;
-// A catchlight: the soft bright window every lit eye carries on its cornea
-// (what makes a face look alive on screen), up and to one side of the pupil,
+// A catchlight: the small soft window every lit eye carries on its cornea
+// (what makes a face look alive on screen; larger, it read as a white blob
+// and her eyes as staring), up and to one side of the pupil,
 // drifting a little as she is seen from elsewhere. Where on the iris (in its
 // radii) and how bright.
 uniform vec2 catch_at = vec2(-0.34, -0.36);
-uniform float catchlight = 0.9;
+uniform float catchlight = 0.55;
 // How small on screen the eye goes from itself to one dark mark: from a
 // pixel covering 2^far_from of its paint's texels to 2^far_to.
 uniform float far_from = 4.0;
@@ -87,10 +96,11 @@ void fragment() {
 		vec3 dyed = hue * (lum / PAINT_LIGHT) * mix(vec3(1.0), own, 0.15);
 		ir = mix(ir, dyed, recolour);
 	}
+	ir *= iris_light;
 	if (rr < pupil) ir = vec3(0.012);
 	vec3 col = mix(texture(eye, UV).rgb, ir * tint, in_iris);
 	// The limbal ring: the iris's edge dark, as the sclera meets it.
-	col *= 1.0 - 0.45 * smoothstep(0.78, 1.0, r) * (1.0 - smoothstep(1.0, 1.12, r));
+	col *= 1.0 - 0.62 * smoothstep(0.7, 0.98, r) * (1.0 - smoothstep(1.0, 1.1, r));
 	// The whites warmer and softer than the paint's, shadowed under the lid and at the corners.
 	float white = 1.0 - in_iris;
 	col = mix(col, col * vec3(0.9, 0.84, 0.8), white);
@@ -109,14 +119,15 @@ void fragment() {
 	ALBEDO = col * shade * (1.0 - 0.35 * far);
 	ALPHA = texture(eye, UV).a;
 	ALPHA_SCISSOR_THRESHOLD = 0.5;
-	// Wet: a sharp, bright highlight off the cornea's dome over the iris.
-	ROUGHNESS = 0.035;
-	SPECULAR = 0.65 * mix(1.0, 0.55, under_lid);
+	// Wet: a sharp highlight off the cornea's dome over the iris (no brighter:
+	// the portrait's broad key light made it a second blob).
+	ROUGHNESS = wet_rough;
+	SPECULAR = wet * mix(1.0, 0.55, under_lid);
 	vec2 slope = r < 1.0 ? -2.0 * dome * d : vec2(0.0);
 	NORMAL_MAP = normalize(vec3(-slope.x, slope.y, 1.0 / 0.35)) * 0.5 + 0.5;
 	NORMAL_MAP_DEPTH = 1.0;
 	SSS_STRENGTH = 0.2 * white;
 	vec2 at_c = catch_at + v.xy * vec2(0.3, -0.3);
-	float glint = 1.0 - smoothstep(0.07, 0.15, length((d - at_c) * vec2(1.0, 1.25)));
+	float glint = 1.0 - smoothstep(0.035, 0.085, length((d - at_c) * vec2(1.0, 1.25)));
 	EMISSION = vec3(0.95, 0.97, 1.0) * glint * catchlight * in_iris * (1.0 - under_lid * 0.7);
 }

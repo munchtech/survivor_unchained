@@ -112,7 +112,7 @@ public partial class Game : Node, IZoneHost
         // Prompts follow the device in hand: a screen, the HUD, the draft redraw with its keys.
         controls.DeviceChanged += () => { screens.Current?.Refresh(); hud.DeviceChanged(); };
         UiArt.Cursors();
-        if (Args.Has("auto")) auto = new Autopilot(this) { Idle = Args.Get("auto") == "idle" };
+        if (Args.Has("auto")) auto = new Autopilot(this) { Idle = Args.Get("auto") == "idle", Toward = Args.Get("auto") == "toward" };
         Settings.Current.ApplyWindow();
         ApplySettings();
         if (Args.Get("load") is string loadFile) LoadFile(loadFile);

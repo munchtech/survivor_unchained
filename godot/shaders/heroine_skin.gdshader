@@ -30,10 +30,18 @@ uniform float edge_rough = 0.0;
 // screen: from the game's camera her face is a few pixels across, and her
 // paint's mipmaps average her eyes, brows and lips into her skin. Measured
 // as how many of her paint's texels a pixel covers (2^far_from to 2^far_to).
+// (Begun sooner and darker since her face became a photograph's: its
+// features are softer than the old paint's, and at the nearest play zoom,
+// 12.5 m, her eyes had all but gone.)
 uniform sampler2D features : hint_default_black, filter_linear_mipmap;
-uniform float far_from = 3.5;
-uniform float far_to = 6.0;
-uniform float far_dark = 0.78;
+// Her head's own shade where light reaches it less (tools/assets/heroine_features.py's
+// heroine_ao.png: under her jaw and chin, her nostrils, the corners of her mouth),
+// on the light round her and on some of her lights' too (as a soft shadow).
+uniform sampler2D ao_map : hint_default_white, filter_linear_mipmap;
+uniform float ao_light = 0.0;
+uniform float far_from = 3.0;
+uniform float far_to = 5.0;
+uniform float far_dark = 0.86;
 uniform vec3 far_lips : source_color = vec3(0.62, 0.16, 0.15);
 // A body's own relief, baked from its sculpt (the hero's: every muscle and
 // vein his reduced mesh has only in paint), the pores laid over it.
@@ -46,6 +54,9 @@ uniform bool has_relief = false;
 uniform sampler2D shadow_mask : hint_default_black, filter_linear_mipmap;
 uniform float beard_shadow = 0.0;
 uniform float scalp_shadow = 0.0;
+// (his scalp shaved, its shadow the stubs of hairs; hers under her hair, an
+// even shade: broken into dots, her hairline read as speckled)
+uniform float scalp_stubs = 1.0;
 uniform vec3 shadow_colour : source_color = vec3(0.16, 0.12, 0.1);
 // His brows (painted with his face; the blue of shadow_mask) dyed his
 // hair's colour: their paint scaled from its own colour (brow_paint) to
@@ -97,7 +108,8 @@ void fragment() {
 		vec2 g = texture(shadow_mask, UV).rg;
 		// (the stubs: the pore tile's grain, finer, as dots)
 		float stubs = smoothstep(0.3, 0.7, texture(pores, UV * pore_scale * 1.62 + vec2(0.37, 0.11)).a);
-		stubble = clamp(g.r * beard_shadow + g.g * scalp_shadow, 0.0, 1.0) * mix(0.55, 1.0, stubs);
+		float dots = mix(0.55, 1.0, stubs);
+		stubble = clamp(g.r * beard_shadow * dots + g.g * scalp_shadow * mix(1.0, dots, scalp_stubs), 0.0, 1.0);
 		ALBEDO = mix(ALBEDO, ALBEDO * shadow_colour * 2.4, stubble * 0.85);
 	}
 	if (has_relief) {
@@ -115,6 +127,8 @@ void fragment() {
 	float edge = pow(1.0 - clamp(dot(NORMAL, VIEW), 0.0, 1.0), 3.0);
 	ROUGHNESS = clamp(rough + (q.a - 0.5) * 0.3 + stubble * 0.15 + edge_rough * edge, 0.0, 1.0);
 	SPECULAR = shine;
+	AO = texture(ao_map, UV).r;
+	AO_LIGHT_AFFECT = ao_light;
 	SSS_STRENGTH = scatter;
 	RIM = rim;
 	RIM_TINT = 0.6;
