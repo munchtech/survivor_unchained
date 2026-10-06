@@ -912,7 +912,16 @@ public static class People
         var m = new ShaderMaterial { Shader = skinShader2 };
         m.SetShaderParameter("paint", src.AlbedoTexture);
         m.SetShaderParameter("tone", who == "heroine" && own == null ? HerTone(look) : look.Skin is Color ? SkinTone(look) : own ?? SkinTone(look));
-        if (who == "heroine") m.SetShaderParameter("face_tone", FaceTone(look));
+        if (who == "heroine")
+        {
+            m.SetShaderParameter("face_tone", FaceTone(look));
+            // (her face's own fine grain on her neck and body: tools/assets/heroine_grain.py)
+            if (ResourceLoader.Exists("res://art/people/head_tex/heroine_grain.png"))
+            {
+                m.SetShaderParameter("grain", GD.Load<Texture2D>("res://art/people/head_tex/heroine_grain.png"));
+                m.SetShaderParameter("grain_amount", HerGrain);
+            }
+        }
         // A body's relief baked from its sculpt (the hero's), under the pores.
         if (src.NormalTexture != null)
         {
@@ -999,6 +1008,11 @@ public static class People
         ["fey"] = new(1.062f, 1.067f, 1.050f), ["doe"] = new(1.004f, 1.016f, 1.013f),
         ["wildling"] = new(0.992f, 0.969f, 0.957f), ["hardwon"] = new(1.004f, 1.016f, 1.032f),
     };
+
+    /// <summary>How much of her face's own grain her neck and body take (the skin shader's
+    /// grain_amount; 1 her face's paint's own spread): her portrait's neck has nearly half her
+    /// face's grain, and her neck's relief alone gave it a quarter. (--grain tries another.)</summary>
+    static readonly float HerGrain = SurvivorUnchained.Args.Has("grain") ? SurvivorUnchained.Args.Num("grain", 3f) : 3f;
 
     static Vector3 FaceTone(Look look) =>
         HerFaceTone.TryGetValue(string.IsNullOrEmpty(look.FaceShape) ? "own" : look.FaceShape, out var f) ? f : Vector3.One;

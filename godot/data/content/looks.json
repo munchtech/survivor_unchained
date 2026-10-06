@@ -162,7 +162,7 @@
     {"id": "sloe", "name": "Sloe", "color": "#221d10", "ring": "#2c2514"},
     {"id": "cornflower", "name": "Cornflower", "color": "#2b4755", "ring": "#635a2e"},
     {"id": "frost", "name": "Frost", "color": "#444844", "ring": "#514d41"},
-    {"id": "dove", "name": "Dove", "color": "#48473e", "ring": "#574b3b"},
+    {"id": "dove", "name": "Dove", "color": "#4c4b41", "ring": "#5b4f3e"},
     {"id": "flint", "name": "Flint", "color": "#3b4038", "ring": "#4a4530"},
     {"id": "heather", "name": "Heather", "color": "#443e4b", "ring": "#605d4b"}
    ],

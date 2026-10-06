@@ -16,6 +16,14 @@ uniform vec3 tone : source_color = vec3(1.0, 0.86, 0.74);
 uniform sampler2D pores : hint_default_white, filter_linear_mipmap_anisotropic, repeat_enable;
 uniform float pore_scale = 30.0;
 uniform float pore_depth = 0.6;
+// Her skin's own fine grain (tools/assets/heroine_grain.py: her face paint's
+// high frequencies, a 2.8 cm tile; 0.5 as she is, 0.25 a 6% change) on her
+// neck and body, whose paint is smooth: against her face their skin read as
+// another's, finer and flatter (her portrait's neck has nearly half her
+// face's grain; hers had a quarter). Not on her face (the features' blue),
+// which has its own. Two reads at two sizes, so the tile never shows.
+uniform sampler2D grain : hint_default_white, filter_linear_mipmap_anisotropic, repeat_enable;
+uniform float grain_amount = 0.0;
 uniform float rough = 0.5;
 uniform float shine = 0.42;
 uniform float scatter = 0.38;
@@ -146,6 +154,14 @@ void fragment() {
 	vec4 q = mix(texture(pores, UV * pore_scale), texture(pores, UV * pore_scale * 0.77 + vec2(0.53, 0.19)), 0.35);
 	float patchy = smoothstep(0.2, 0.8, texture(pores, UV * pore_scale * 0.07 + vec2(0.31, 0.67)).a);
 	float depth = pore_depth * mix(0.35, 1.0, patchy);
+	float ga = grain_amount * (1.0 - fm.b);
+	if (ga > 0.0) {
+		// (a tile every 28 mm: pore_scale is a tile every 9; the two reads' mean has
+		// 0.71 of one's spread, given back)
+		vec2 gu = UV * pore_scale * 0.321;
+		float gr = texture(grain, gu + vec2(0.37, 0.11)).r + texture(grain, gu * 0.71 + vec2(0.83, 0.59)).r - 1.0;
+		ALBEDO *= 1.0 + ga * gr * 0.707 * 0.24;
+	}
 	float stubble = 0.0;
 	if (beard_shadow > 0.0 || scalp_shadow > 0.0) {
 		vec2 g = texture(shadow_mask, UV).rg;
