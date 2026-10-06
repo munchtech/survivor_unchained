@@ -52,7 +52,7 @@ The owner asks: "accurate, efficient, on track, manage and engineer context. del
 - Only 3 to 5 leads run at once; the rest are paused with their handoff and status pages, never lost, and resumed in turn. Leads that work together run together, and a group has at most one GPU-heavy lead (face, creatures, UI art's ComfyUI batches).
 - Batch screenshots and renders: shoot everything a check needs in one turn, look once, fix in one pass.
 - Keep handoffs and status pages lean.
-- Effort: legal medium; performance measurement runs, story consistency checks, and provenance and licence logging high; everything else at its top. Every agent stays on the same model.
+- Effort (the owner, 6 October: "cut token use without lowering quality"): the lowest effort that gets the same result, raised freely whenever quality could be at risk. Leads are spawned as `su-lead-max` (judgement and taste: face, hair, story, UI, rendering diagnosis, new systems), `su-lead-high` (feature work to a spec: combat, animation, arena art, crafting, loot, cinematics, performance runs, story checks, provenance) or `su-worker-medium` (mechanical jobs). If your task proves harder than your setting, say so. Earlier settings: legal medium; performance measurement runs, story consistency checks, and provenance and licence logging high; everything else at its top. Every agent stays on the same model.
 - Running now: the face, the story writer and the story editor (and the main session's outfits). Next: UI design and UI art (the HUD keystone), combat and animation (the crowd and her run), the experience director, then the rest.
 
 ## Roster
