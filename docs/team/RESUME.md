@@ -27,10 +27,15 @@ The one page of what's current. Every lead starts from the latest `claude/vigila
 - **Animation:** natural, correct motion; be sceptical; sign off per clip.
 - **The bar:** "we are striving for perfection". Improved isn't enough.
 
-## Current state by area (handoffs have the detail)
+## Current state by area: wound down 6 October 2026 (usage low); restart here
 
-- **Integration:** all tests green (see `dotnet test`).
-- **Ready for successors** (handoff pages in docs/handoff/): UI design, UI art, the experience director, combat, animation, crafting, loot (paused), legal (paused), skills VFX (cut off; its work is merged).
-- **Running:** the face (v7 and ten preset faces; don't merge the face branch until its art lands).
-- **Paused mid-work, to resume in turn:** arena art, creatures (the boar), cinematics, performance, story, the male hero, provenance, voice (paused by the owner: no placeholder voices).
-- **Main session:** the heroine's outfits. All four pass the legal motion check. A few sub-6 px slivers in extreme poses wait for the next outfit batch.
+Integration is green (774 tests) and pushed. Every lead below stopped at a clean point with a handoff; start each as a fresh successor from its handoff (the main session checks context on every report and hands off at 500k).
+
+**Restart in this order** (3 to 5 at a time, see README):
+1. **The face** (docs/handoff/face.md): v11 was being finished at wind-down; its last report says whether her blend needs the main session's refit (copy the face worktree's `tools/comfy/out/heroes/heroine_built.blend` to the main checkout, merge, `bash $TEMP/hs/turn_build.sh`, commit heroine.glb and outfits). Then v12 to the owner's bar (OWNER_NOTES), then face paints and sliders (freckles as a Look control), then hair (many rounds).
+2. **Story** (docs/handoff/story.md): Act 1 rewritten in the data (e5d65111). Next: a fresh editor reads the Act 1 draft; the owner picks the love scenes (docs/story/LOVE_SCENES.md, A or B; the writer recommends the lovers' own lines); then Act 2, then Act 3. Voice: docs/voice/RERECORD.md lists Sella's and Rook's re-records; hold Holloway, Brannoc, Maeca, Vonnra, Harlan and the narrator.
+3. **Rendering** (docs/handoff/performance.md): her motion judder found and fixed (positions drawn between ticks, bb86717b). Next: merge `perf-seethrough-wip` (the soft see-through, untested), run the A/B batch, choose the AA (expected: keep a temporal AA as the base for hair), exact motion data for her hair.
+4. **The owner's HUD notes** (OWNER_NOTES: the HUD as the keystone, Journal and Map in the half panel, tips at full size): UI design and UI art, from their handoffs.
+5. Then combat and animation (the crowd push), the experience director, arena art (the Vault's hall, the Roost), creatures (the boar), cinematics, skills VFX, crafting, loot, the male hero.
+
+**Deferred by the owner:** the artists' kit (OWNER_NOTES); legal (paused until submission).
