@@ -44,6 +44,8 @@ The owner loved the editor's letter. On the treatment:
 6. **The lamp-iron** as her night lantern: yes.
 7. **The lie to Brannoc:** "this sounds not great, we need it, but it will make him hate us." So the lie must not cost his trade (crafting stays). It costs the relationship: he works for her as a stranger (curt, full prices, no commissions or masterworks, no warmth), and when the truth comes out later it lands harder for the lie. Confirm with the owner if in doubt.
 8. **"Wick"** for her, and the lamplings renamed (not "Wick" or "Wick-Mother"; the writer suggested "Stub"): yes.
+- **Holloway's act (owner, after the editor's notes):** option (b): with the lamp in his eyes, he took the living on the ladder for the dead, and his lid made the dead he feared. A great man's true mistake: "its a decision we can make which makes it more horrifying". Cut boots from Holloway entirely.
+- **"Wick" replaced** (players hear John Wick): "maybe something else like flame or spark". The main session suggests "Spark" ("Lamp's lit, Spark."); the writer reads Spark and Flame aloud in her lines and picks. The lamplings are renamed either way.
 - **Boots:** nobody dies because of footwear. Holloway's act is a great man's terrible judgement call (the lid on the ladder; ninety-one counted). The editor checks that no boot detail still reads as silly.
 
 ### The heroine's face, paints and hair: the order (5 October, later)
