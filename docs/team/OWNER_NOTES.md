@@ -60,7 +60,17 @@ For the owner's post-build work with professional artists:
 
   The pair animate as one synced pair, with contacts locked. The owner's reference was a stock photo (pose reference only, never an asset).
 
-Not made by us: poses or animation whose purpose is a sex act. That's for the owner's artists.
+- **Undressing gestures, up to just before nudity beyond what the game already shows:**
+  - reaching behind to unhook a clasp;
+  - a strap slipping off a shoulder;
+  - unlacing a corset;
+  - unbuckling a belt;
+  - a cloak or shirt coming off;
+  - his or her hands at the fastenings.
+
+  Each ends at the moment before exposure. This needs garment control bones on the outfits' clasps, straps and laces, so a piece can open, slip or loosen, in the rig for the artists too.
+
+Not made by us: poses or animation whose purpose is a sex act, or that show nudity beyond the game's own coverage rules. That's for the owner's artists.
 
 ### Sound
 
