@@ -95,6 +95,9 @@ section of `docs/team/OWNER_NOTES.md`, then this page, then
     readable ledger;
   - cast the narrator plain, and make her thin across the game, so C43 turns
     twice.
+- **The owner's §10 answers** (in `OWNER_NOTES.md`) are folded into notes
+  01. The lie to Brannoc costs the relationship, not his trade, and the
+  notes list what that unsettles in the treatment and in crafting.
 - **I praised and protected:** the romances, C07, C14's images, the comedy
   (Snib, Keegan, Chid, Sella), ember-is-the-dead, C09's eyeline rule, and
   "Them first."

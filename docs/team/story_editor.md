@@ -24,9 +24,16 @@ rewrite scenes. Branch `worktree-agent-ad7d2e659356b6dc5` (the second editor).
 - **Boots:** no death turns on footwear now. Cut boots from Holloway entirely
   (the roll's boot sizes read as the old boots coming back). Keep Nell's new
   boots as the one boot image.
-- **A new owner's choice:** Holloway's call right but terrible (as written),
-  or wrong and defensible (the lamp in his eyes: the owner's word was
-  "poor"). I recommend wrong.
+- **The owner's §10 answers are folded in:** all four twists, the recast,
+  the nod, the lantern, "Wick", and Holloway at his gate. The love scenes are
+  written both ways; I noted that unvoiced narration risks twist A. The lie
+  to Brannoc now costs the relationship, not the trade. I flagged what that
+  unsettles: crafting §10.2, freezing his respect, defining "masterworks",
+  Act 3's cage and the stair (truth route only), the "evaded" answer, and
+  the orphaned Kiln Ford crossing.
+- **Offers still open:** Holloway's call as wrong but defensible (the owner
+  approved it as written), and his risen return on the fourth dusk rather
+  than the first.
 - **Twist B needs a named false belief:** a kind lie from Rook on day 1 ("She
   went in her sleep, pet"), which also fixes the survivor never looking for
   her mother. The readable ledger's "A woman with a lamp" gives it away.
@@ -42,5 +49,8 @@ rewrite scenes. Branch `worktree-agent-ad7d2e659356b6dc5` (the second editor).
 
 - **Cinematics and experience:** C20's staging (the haul, the light, the
   music cut, a red kerchief at the lip) is in the notes, item 1.
-- **Voice (paused):** if the narrator is recast, cast her plain and dry with
+- **Crafting (paused):** the owner has changed the lie route. Brannoc now
+  works for her as a stranger rather than not at all, so §10.2's handover to
+  Snib goes. See notes 01, "The owner's choices, folded in".
+- **Voice (paused):** the narrator is recast, cast her plain and dry, with
   a light valley accent, not "warm, a winter's tale" (notes, item 4).
