@@ -1,0 +1,1 @@
+R = [("  - the zone's Warden shows again, lying where he fell, until he fades.", "  - her own body from the cut (`play`), and the cinematic's Warden stays face down in the ford where he fell (`end.keep`), still, until C04 A clears the ford: nothing vanishes at the hand-over.")]

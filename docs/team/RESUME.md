@@ -29,7 +29,7 @@ The one page of what's current. Every lead starts from the latest `claude/vigila
 
 ## Current state by area: wound down 6 October 2026 (usage low); restart here
 
-Integration is green (774 tests) and pushed. Every lead below stopped at a clean point with a handoff; start each as a fresh successor from its handoff (the main session checks context on every report and hands off at 500k).
+Integration is green (774 tests) and pushed. **A new coordinator reads docs/handoff/coordinator.md first** (its procedures, merge and context-check scripts in tools/scratch/coordinator/, and the old scratchpad scripts mirrored in tools/scratch/). Every lead below stopped at a clean point with a handoff; start each as a fresh successor from its handoff (the main session checks context on every report and hands off at 500k).
 
 **Restart in this order** (3 to 5 at a time, see README):
 1. **The face** (docs/handoff/face.md): v11 merged (b8ab21f9; no refit needed). Tones and irises meet the bar; her eyes and mouth read at play zoom. Short of the bar: grain at the finest scale (0.65, the AA's limit), her lips thinner and paler than her portrait's, the other faces' brows too light, skin a little smooth. Her head carried 8 degrees up in play needs animation's sign-off. Next: v12 to the bar, then face paints and sliders (freckles as a Look control; defaults hers 0.18, Hard-won 0.12, Wildling 0.1, Fey 0.06), then hair (many rounds; the hair "helmet" and pale temples are the hair pass's).

@@ -1,0 +1,7 @@
+$S = "C:\Users\munch\AppData\Local\Temp\claude\C--Users-munch-Desktop-wowsurvivors\f1b9be14-0826-4f47-8004-f1d371f2c6a3\scratchpad\perf2"
+$B = "$S\dll_hud"
+Set-Location "C:\Users\munch\Desktop\survivorsunchained\.claude\worktrees\agent-a7145e18b3eb78294"
+python -u tools/perf/sweep.py hub prop-cell "16,24,48" --build $B --wait 0 --repeat 2 --tag cell *> "$S\sw_cell.log"
+python -u tools/perf/sweep.py hub flag "--merge-landmarks" --build $B --wait 0 --repeat 2 --tag lmh *> "$S\sw_lm_hub.log"
+python -u tools/perf/sweep.py verge flag "--merge-landmarks" --build $B --wait 0 --repeat 2 --tag lmv *> "$S\sw_lm_verge.log"
+"BATTERY1 DONE"
