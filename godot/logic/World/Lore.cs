@@ -159,6 +159,8 @@ public sealed class FaceShape
 {
     public string Id = "", Name = "", Words = "";
     public string? Skin, Eyes;
+    /// <summary>How freckled the face starts (0 none to 1 heavy), from its portrait.</summary>
+    public double Freckles;
     public Dictionary<string, double> Shape = new();
 }
 

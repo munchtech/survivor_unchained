@@ -49,6 +49,13 @@ uniform sampler2D features : hint_default_black, filter_linear_mipmap;
 // on the light round her and on some of her lights' too (as a soft shadow).
 uniform sampler2D ao_map : hint_default_white, filter_linear_mipmap;
 uniform float ao_light = 0.0;
+// Her freckles, a layer of their own (tools/assets/heroine_freckles.py: red
+// each freckle, soft at its edge; green its rank), none to heavy: at an
+// amount, those ranked under it show, deeper the more there are, in a warm
+// brown laid over her skin's own colour.
+uniform sampler2D freckles : hint_default_black, filter_linear_mipmap;
+uniform float freckle_amount = 0.0;
+uniform vec3 freckle_colour = vec3(0.62, 0.45, 0.33);
 uniform float far_from = 3.0;
 uniform float far_to = 5.0;
 uniform float far_dark = 0.86;
@@ -94,6 +101,11 @@ void vertex() {
 
 void fragment() {
 	ALBEDO = texture(paint, UV).rgb * tone;
+	if (freckle_amount > 0.001) {
+		vec2 fk = texture(freckles, UV).rg;
+		float fv = fk.r * (1.0 - smoothstep(freckle_amount - 0.04, freckle_amount + 0.04, fk.g));
+		ALBEDO = mix(ALBEDO, ALBEDO * freckle_colour, fv * mix(0.65, 1.0, freckle_amount));
+	}
 	if (brow_dye > 0.0) {
 		// (the hairs' own lightness kept, their black core lifted a little,
 		// so a fair or red man's brows are not black ones tinted)

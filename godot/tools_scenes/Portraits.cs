@@ -123,9 +123,11 @@ public partial class Portraits : Node3D
                     l.LightEnergy *= k;
         }
         // (short lighting: the key on the side of her face turned from the camera, which models it;
-        // the fill on the side toward it; the rim behind the other shoulder)
+        // the fill on the side toward it; the rim behind the other shoulder. The key 36 degrees off the
+        // camera's line, not 56: from there its terminator ran straight down the middle of her throat
+        // and breastbone, a dark line that read as a fault.)
         var side = Vector3.Up.Cross(toCam).Normalized();
-        var from = new[] { toCam * 1.0f + side * 1.5f + Vector3.Up * 1.2f, toCam * 1.6f - side * 1.3f + Vector3.Up * 0.1f, -toCam * 1.6f - side * 0.5f + Vector3.Up * 1.1f };
+        var from = new[] { toCam * 1.45f + side * 1.07f + Vector3.Up * 1.2f, toCam * 1.6f - side * 1.3f + Vector3.Up * 0.1f, -toCam * 1.6f - side * 0.5f + Vector3.Up * 1.1f };
         for (int i = 0; i < lights.Count; i++)
         {
             lights[i].GlobalPosition = eyes + from[i];

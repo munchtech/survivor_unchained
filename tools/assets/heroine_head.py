@@ -1116,8 +1116,11 @@ def pad(img, filled):
 
 
 def fill_in(img, known, where):
-    """Texels not known painted from those around them, ever wider, with
-    her skin's own grain over the top."""
+    """Texels not known painted from those around them, ever wider. (No
+    grain laid over them: drawn from the paint's every edge, a texel's
+    noise, it read at a close-up as a sandpaper of tan dots over her throat,
+    collarbones and upper chest, where her hair had lain. Her skin's fine
+    grain is her pores' relief, in her skin's shader.)"""
     out = img.copy()
     todo = where & ~known
     m = known.astype(np.float32)
@@ -1129,12 +1132,6 @@ def fill_in(img, known, where):
         todo &= ~ok
     # (Any too far from skin to paint from: her skin's own colour.)
     out[todo, :3] = img[known, :3].mean(0)
-    hp = img[:, :, :3] - np.stack([ndimage.gaussian_filter(img[:, :, k], 3) for k in range(3)], 2)
-    grain = np.std(hp[known], 0)
-    noise = ndimage.gaussian_filter(np.random.default_rng(1).standard_normal(img.shape[:2]), 0.8)
-    noise /= noise.std() + 1e-9
-    gen = where & ~known
-    out[gen, :3] += noise[gen][:, None] * grain[None] * 0.4
     return out
 
 

@@ -18,7 +18,7 @@ public static class People
         string Sex, string[] Outfit, string? Hair = null, bool Beard = false,
         Color? HairColor = null, Color? Skin = null, Color? Cloth = null, Color? Under = null, double Figure = 0,
         IReadOnlyDictionary<string, float>? Face = null, Color? Eyes = null, Color? EyeRing = null, string? Paint = null,
-        string? FaceShape = null);
+        string? FaceShape = null, float? Freckles = null);
 
     public static readonly string[] MaleRanger = { "Male_Ranger_Arms", "Male_Ranger_Body", "Male_Ranger_Legs", "Male_Ranger_Feet_Boots" };
     public static readonly string[] MalePeasant = { "Male_Peasant_Arms", "Male_Peasant_Body", "Male_Peasant_Legs", "Male_Peasant_Feet" };
@@ -121,7 +121,7 @@ public static class People
             HerFaceKey(p, look.FaceShape);
             Perf.Lap("play: her hair");
             if (look.Face != null) HerFace(p, look.Face);
-            HerPaint(p, look.Paint, look.HairColor);
+            HerPaint(p, look.Paint, look.HairColor ?? HerHairColour);
             p.FaceShape = look.FaceShape;                 // (its painting laid as her skin was made: Skin)
             Perf.Lap("play: her face and paint");
         }
@@ -446,8 +446,10 @@ public static class People
     /// fitted to her head), the first hers unless another is chosen.</summary>
     public static readonly string[] HerHairs = { "long", "ponytail", "braid", "bob", "pixie" };
 
-    /// <summary>Her own hair colour, a deep copper red.</summary>
-    public static readonly Color HerHairColour = new("#8f2d14");
+    /// <summary>Her own hair colour, copper, as her portrait has it (under a white light its median
+    /// within a few per cent of the portrait's; the old #8f2d14 rendered blood-red, its green and blue
+    /// a fifth of the portrait's). (--hair-colour #rrggbb tries another.)</summary>
+    public static readonly Color HerHairColour = SurvivorUnchained.Args.Get("hair-colour") is string hc ? new Color(hc) : new Color("#7a4824");
 
     /// <summary>A material of hers by its name (heroine_head.py names
     /// them): her skin, her eyes and the rest of her head.</summary>
@@ -608,7 +610,8 @@ public static class People
     /// moves with her face as it shapes and speaks. None: taken off.
     /// Under it, her brows dyed her hair's colour (art/people/paint/brows.png:
     /// her painted brows, found), since they are painted copper into her skin;
-    /// her hair as it grew keeps them as painted.</summary>
+    /// her hair as it grew dyes them too, her own copper (as painted they read
+    /// faint and grey beside her portrait's).</summary>
     public static void HerPaint(Person p, string? paint, Color? brow = null)
     {
         p.Paint = paint;
@@ -664,7 +667,7 @@ public static class People
                 if (mi.GetSurfaceOverrideMaterial(s) is ShaderMaterial m)
                 {
                     if (m.Shader == hairShader || m.Shader == hairSoftShader) m.SetShaderParameter("colour", colour);
-                    else if (m.Shader == skinShader2) m.SetShaderParameter("tone", SkinTone(look));
+                    else if (m.Shader == skinShader2) { m.SetShaderParameter("tone", HerTone(look)); m.SetShaderParameter("freckle_amount", HerFreckles(look)); }
                     else if (m.Shader == eyeShader) EyeColour(m, look.Eyes, look.EyeRing);
                 }
                 else if (mi.GetSurfaceOverrideMaterial(s) is StandardMaterial3D b && b.ResourceName == "brows") b.AlbedoColor = colour.Darkened(0.45f);
@@ -672,7 +675,7 @@ public static class People
         HerScalp(p, colour);
         HerFace(p, look.Face ?? new Dictionary<string, float>(), whole: true);
         HerFaceKey(p, look.FaceShape);
-        if (look.Paint != p.Paint || look.HairColor != p.Brow) HerPaint(p, look.Paint, look.HairColor);
+        if (look.Paint != p.Paint || (look.HairColor ?? HerHairColour) != p.Brow) HerPaint(p, look.Paint, look.HairColor ?? HerHairColour);
         if (look.FaceShape != p.FaceShape) HerHeadPaint(p, look.FaceShape);
     }
 
@@ -884,7 +887,7 @@ public static class People
         skinShader2 ??= GD.Load<Shader>("res://shaders/heroine_skin.gdshader");
         var m = new ShaderMaterial { Shader = skinShader2 };
         m.SetShaderParameter("paint", src.AlbedoTexture);
-        m.SetShaderParameter("tone", look.Skin is Color ? SkinTone(look) : own ?? SkinTone(look));
+        m.SetShaderParameter("tone", who == "heroine" && own == null ? HerTone(look) : look.Skin is Color ? SkinTone(look) : own ?? SkinTone(look));
         // A body's relief baked from its sculpt (the hero's), under the pores.
         if (src.NormalTexture != null)
         {
@@ -917,6 +920,13 @@ public static class People
                 m.SetShaderParameter("ao_light", 0.55f);
             }
         }
+        // Her freckles, a layer over her face, neck, shoulders and upper chest
+        // (tools/assets/heroine_freckles.py), as many as her face starts with.
+        if (who == "heroine" && FreckleFile(src.ResourceName) is string fp)
+        {
+            m.SetShaderParameter("freckles", GD.Load<Texture2D>(fp));
+            m.SetShaderParameter("freckle_amount", HerFreckles(look));
+        }
         // His skin, all of it, rougher than hers: at her sheen his deep
         // relief caught the light as wet plastic.
         if (who == "hero")
@@ -941,6 +951,46 @@ public static class People
     /// from photographs of women of that colouring.)</summary>
     static Color SkinTone(Look look) =>
         look.Skin is Color tone ? tone.Lerp(Colors.White, 0.35f * Mathf.Clamp(tone.Luminance * 1.1f, 0.25f, 1f)) : new Color(1.0f, 0.93f, 0.87f);
+
+    /// <summary>Her skin as each swatch should show on her (in linear light, on SkinTone's): under a
+    /// white light each face beside its portrait (tools: the face lead's tone_fit.py, every face shot
+    /// --rig-white). As SkinTone alone gave them, her fair skins rendered 8% too red, the rose and warm
+    /// ones 14%, and Sunborn's brown 1.2 times too light and too blue. Hers only: the swatches stay as
+    /// they are for the beads and for the folk.</summary>
+    static readonly Dictionary<string, Vector3> HerToneFit = new()
+    {
+        ["fair"] = new(0.900f, 1.087f, 1.009f), ["rose"] = new(0.852f, 1.045f, 0.837f),
+        ["warm"] = new(0.875f, 1.036f, 0.790f), ["brown"] = new(0.876f, 0.886f, 0.646f),
+    };
+
+    /// <summary>Her freckles' map for a part of her skin, if it has one: her head's, or the graft's (her
+    /// neck, shoulders and upper chest).</summary>
+    static string? FreckleFile(string part)
+    {
+        var f = part switch
+        {
+            "skin_head" => "res://art/people/head_tex/heroine_freckles.png",
+            "skin_graft" => "res://art/people/head_tex/heroine_freckles_graft.png",
+            _ => null,
+        };
+        return f != null && ResourceLoader.Exists(f) ? f : null;
+    }
+
+    /// <summary>How freckled she is (0 none to 1 heavy): as the Look sets it, else as her face starts
+    /// (looks.json's faces, each from its portrait: her own light, most none).</summary>
+    public static float HerFreckles(Look look) => look.Freckles ?? (float)(SurvivorUnchained.World.Lore.Her.Faces
+        .FirstOrDefault(f => f.Id == (string.IsNullOrEmpty(look.FaceShape) ? "own" : look.FaceShape))?.Freckles ?? 0);
+
+    static Color HerTone(Look look)
+    {
+        var t = SkinTone(look);
+        string id = look.Skin is Color c
+            ? SurvivorUnchained.World.Lore.Skins.FirstOrDefault(s => s.Color != "" && new Color(s.Color).IsEqualApprox(c))?.Id ?? ""
+            : "fair";
+        if (!HerToneFit.TryGetValue(id, out var f)) return t;
+        var l = t.SrgbToLinear();
+        return new Color(l.R * f.X, l.G * f.Y, l.B * f.Z).LinearToSrgb();
+    }
 
     static Shader? skinShader2;
     static readonly Dictionary<Mesh, float> poreScales = new();
