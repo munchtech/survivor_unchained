@@ -17,7 +17,7 @@ public partial class Game
     /// <summary>How much of her carried light lights her while the book frames her by day (--book-lamp
     /// tries another): at full, from just over her head with the sun on her too, her face was cream-white
     /// and flat beside the panel.</summary>
-    static float BookLampByDay => Args.Has("book-lamp") ? Args.Num("book-lamp", 0.3f) : 0.3f;
+    static float BookLampByDay => Args.Has("book-lamp") ? Args.Num("book-lamp", 0.5f) : 0.5f;
 
     /* ---------------------------------------------------------- actions -- */
 

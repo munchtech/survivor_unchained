@@ -153,17 +153,18 @@
    ],
    "eyes": [
     {"id": "moss", "name": "Moss", "color": "", "ring": ""},
-    {"id": "hazel", "name": "Hazel", "color": "#4d482f", "ring": "#6f4624"},
-    {"id": "lichen", "name": "Lichen", "color": "#4c4635", "ring": "#5e4d2d"},
-    {"id": "wolf", "name": "Wolf's gold", "color": "#6a4d1e", "ring": "#6f5d36"},
-    {"id": "chestnut", "name": "Chestnut", "color": "#2f2213", "ring": "#473117"},
-    {"id": "peat", "name": "Peat", "color": "#292014", "ring": "#3f2e19"},
-    {"id": "sloe", "name": "Sloe", "color": "#211c0f", "ring": "#2c2412"},
-    {"id": "cornflower", "name": "Cornflower", "color": "#304c55", "ring": "#6f5f2e"},
-    {"id": "frost", "name": "Frost", "color": "#4e5549", "ring": "#5d5a46"},
-    {"id": "dove", "name": "Dove", "color": "#56563f", "ring": "#675b3c"},
-    {"id": "flint", "name": "Flint", "color": "#454435", "ring": "#554a2d"},
-    {"id": "heather", "name": "Heather", "color": "#4d424b", "ring": "#6b634b"}
+    {"id": "hazel", "name": "Hazel", "color": "#3c4533", "ring": "#584327"},
+    {"id": "lichen", "name": "Lichen", "color": "#3d3c35", "ring": "#4c432d"},
+    {"id": "wolf", "name": "Wolf's gold", "color": "#5f481e", "ring": "#635836"},
+    {"id": "chestnut", "name": "Chestnut", "color": "#2b2013", "ring": "#412e17"},
+    {"id": "peat", "name": "Peat", "color": "#292114", "ring": "#3e301a"},
+    {"id": "umber", "name": "Umber", "color": "#251c11", "ring": "#3a2a16"},
+    {"id": "sloe", "name": "Sloe", "color": "#221d10", "ring": "#2c2514"},
+    {"id": "cornflower", "name": "Cornflower", "color": "#2b4755", "ring": "#635a2e"},
+    {"id": "frost", "name": "Frost", "color": "#444844", "ring": "#514d41"},
+    {"id": "dove", "name": "Dove", "color": "#48473e", "ring": "#574b3b"},
+    {"id": "flint", "name": "Flint", "color": "#3b4038", "ring": "#4a4530"},
+    {"id": "heather", "name": "Heather", "color": "#443e4b", "ring": "#605d4b"}
    ],
    "paints": [
     {"id": "none", "name": "Bare", "words": "Her own face, nothing on it."},
@@ -176,16 +177,16 @@
     {"id": "gilt", "name": "Gilt", "words": "Gold leaf pressed along her cheekbones, torn at its edges.", "rough": 0.3, "metal": 1.0}
    ],
    "faces": [
-    {"id": "own", "name": "As she is", "words": "Her own face, as the road left it.", "shape": {}, "skin": "fair", "eyes": "moss", "freckles": 0.3},
+    {"id": "own", "name": "As she is", "words": "Her own face, as the road left it.", "shape": {}, "skin": "fair", "eyes": "moss", "freckles": 0.18},
     {"id": "highborn", "name": "Highborn", "words": "Fine-boned and narrow, a long straight nose: a face for a portrait in a hall.", "shape": {}, "skin": "fair", "eyes": "frost"},
     {"id": "vixen", "name": "Vixen", "words": "Eyes tilted up under heavy lids, a full mouth, a small sharp chin.", "shape": {}, "skin": "fair", "eyes": "lichen"},
     {"id": "doe", "name": "Doe", "words": "Wide soft eyes, a small nose, a gentle jaw. People trust her before they should.", "shape": {}, "skin": "rose", "eyes": "chestnut"},
     {"id": "sunborn", "name": "Sunborn", "words": "Wide-set eyes, a full mouth, a face carved for the long light of the south roads.", "shape": {}, "skin": "brown", "eyes": "sloe"},
-    {"id": "moonlit", "name": "Moonlit", "words": "Almond eyes that give nothing away, a small mouth, skin like the inside of a shell.", "shape": {}, "skin": "fair", "eyes": "peat"},
+    {"id": "moonlit", "name": "Moonlit", "words": "Almond eyes that give nothing away, a small mouth, skin like the inside of a shell.", "shape": {}, "skin": "fair", "eyes": "umber"},
     {"id": "saffron", "name": "Saffron", "words": "Great dark eyes under strong brows, and a nose with a proud line to it.", "shape": {}, "skin": "warm", "eyes": "peat"},
-    {"id": "wildling", "name": "Wildling", "words": "A wide mouth made for laughing, a broad nose, cheekbones from the hill country.", "shape": {}, "skin": "rose", "eyes": "hazel", "freckles": 0.15},
-    {"id": "hardwon", "name": "Hard-won", "words": "A strong jaw, low straight brows, the bridge of a nose that has been broken.", "shape": {}, "skin": "rose", "eyes": "flint", "freckles": 0.25},
-    {"id": "fey", "name": "Fey", "words": "Wide-set eyes, a pointed chin, and ears that come to a point. The old blood shows.", "shape": {}, "skin": "fair", "eyes": "dove", "freckles": 0.1}
+    {"id": "wildling", "name": "Wildling", "words": "A wide mouth made for laughing, a broad nose, cheekbones from the hill country.", "shape": {}, "skin": "rose", "eyes": "hazel", "freckles": 0.1},
+    {"id": "hardwon", "name": "Hard-won", "words": "A strong jaw, low straight brows, the bridge of a nose that has been broken.", "shape": {}, "skin": "rose", "eyes": "flint", "freckles": 0.12},
+    {"id": "fey", "name": "Fey", "words": "Wide-set eyes, a pointed chin, and ears that come to a point. The old blood shows.", "shape": {}, "skin": "fair", "eyes": "dove", "freckles": 0.06}
    ],
    "sliders": [
     {"id": "forehead_height", "name": "Forehead", "group": "Head", "low": "Low", "high": "High"},

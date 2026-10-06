@@ -16,14 +16,6 @@ uniform vec3 tone : source_color = vec3(1.0, 0.86, 0.74);
 uniform sampler2D pores : hint_default_white, filter_linear_mipmap_anisotropic, repeat_enable;
 uniform float pore_scale = 30.0;
 uniform float pore_depth = 0.6;
-// Her skin's fine mottle in its colour (a relative spread; from the pores'
-// tile read ten times larger, a millimetre or two to its marks; on her face,
-// where the features' blue says, mottle_face): her face's paint is a
-// photograph's and has its own, her neck's and body's paint none (filled in
-// smooth), and lit from the front relief alone left her neck's grain a
-// quarter of her face's where her portrait's is nearly half.
-uniform float mottle = 0.0;
-uniform float mottle_face = 0.0;
 uniform float rough = 0.5;
 uniform float shine = 0.42;
 uniform float scatter = 0.38;
@@ -127,7 +119,7 @@ void fragment() {
 	if (freckle_amount > 0.001) {
 		vec2 fk = texture(freckles, UV).rg;
 		float fv = fk.r * (1.0 - smoothstep(freckle_amount - 0.04, freckle_amount + 0.04, fk.g));
-		ALBEDO = mix(ALBEDO, ALBEDO * freckle_colour, fv * mix(0.65, 1.0, freckle_amount));
+		ALBEDO = mix(ALBEDO, ALBEDO * freckle_colour, fv * mix(0.5, 1.0, freckle_amount));
 	}
 	if (brow_dye > 0.0) {
 		// (the hairs' own lightness kept, their black core lifted a little,
@@ -154,12 +146,6 @@ void fragment() {
 	vec4 q = mix(texture(pores, UV * pore_scale), texture(pores, UV * pore_scale * 0.77 + vec2(0.53, 0.19)), 0.35);
 	float patchy = smoothstep(0.2, 0.8, texture(pores, UV * pore_scale * 0.07 + vec2(0.31, 0.67)).a);
 	float depth = pore_depth * mix(0.35, 1.0, patchy);
-	float mo = mix(mottle, mottle_face, fm.b);
-	if (mo > 0.0) {
-		// (the tile's own spread is 0.048 about 0.514; two scales, so no repeat shows)
-		float mt = texture(pores, UV * pore_scale * 0.11 + vec2(0.13, 0.71)).a + texture(pores, UV * pore_scale * 0.083 + vec2(0.57, 0.29)).a - 1.028;
-		ALBEDO *= 1.0 + mo * mt / 0.068;
-	}
 	float stubble = 0.0;
 	if (beard_shadow > 0.0 || scalp_shadow > 0.0) {
 		vec2 g = texture(shadow_mask, UV).rg;

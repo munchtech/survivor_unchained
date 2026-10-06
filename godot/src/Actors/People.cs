@@ -440,7 +440,7 @@ public static class People
 
     /// <summary>His own eyes: flint grey, a little warmer round the pupil (Lore's flint,
     /// the iris's own colour, as hers are dyed).</summary>
-    static readonly (Color Iris, Color Ring) HisEyes = (new("#454435"), new("#554a2d"));
+    static readonly (Color Iris, Color Ring) HisEyes = (new("#3b4038"), new("#4a4530"));
 
     /// <summary>Her own iris as painted (moss, no colour chosen), put right against her portrait's
     /// under a white light (linear; the eye shader's tint): as painted it showed 1.6 times as light
@@ -912,12 +912,7 @@ public static class People
         var m = new ShaderMaterial { Shader = skinShader2 };
         m.SetShaderParameter("paint", src.AlbedoTexture);
         m.SetShaderParameter("tone", who == "heroine" && own == null ? HerTone(look) : look.Skin is Color ? SkinTone(look) : own ?? SkinTone(look));
-        if (who == "heroine")
-        {
-            m.SetShaderParameter("face_tone", FaceTone(look));
-            m.SetShaderParameter("mottle", HerMottle.Body);
-            m.SetShaderParameter("mottle_face", HerMottle.Face);
-        }
+        if (who == "heroine") m.SetShaderParameter("face_tone", FaceTone(look));
         // A body's relief baked from its sculpt (the hero's), under the pores.
         if (src.NormalTexture != null)
         {
@@ -1005,13 +1000,6 @@ public static class People
         ["wildling"] = new(0.992f, 0.969f, 0.957f), ["hardwon"] = new(1.004f, 1.016f, 1.032f),
     };
 
-    /// <summary>Her skin's fine mottle (the skin shader's `mottle`): her face's paint is a photograph's and
-    /// carries its own; her neck's and body's paint is smooth, and her neck read finer-grained than her
-    /// face, the seam between them a change of skin. (--mottle face,body tries others.)</summary>
-    static readonly (float Face, float Body) HerMottle = SurvivorUnchained.Args.Get("mottle") is string mo && mo.Split(',') is [var mh, var mb]
-        ? (float.Parse(mh, System.Globalization.CultureInfo.InvariantCulture), float.Parse(mb, System.Globalization.CultureInfo.InvariantCulture))
-        : (0f, 0.12f);
-
     static Vector3 FaceTone(Look look) =>
         HerFaceTone.TryGetValue(string.IsNullOrEmpty(look.FaceShape) ? "own" : look.FaceShape, out var f) ? f : Vector3.One;
 
@@ -1029,9 +1017,12 @@ public static class People
     }
 
     /// <summary>How freckled she is (0 none to 1 heavy): as the Look sets it, else as her face starts
-    /// (looks.json's faces, each from its portrait: her own light, most none).</summary>
-    public static float HerFreckles(Look look) => look.Freckles ?? (float)(SurvivorUnchained.World.Lore.Her.Faces
-        .FirstOrDefault(f => f.Id == (string.IsNullOrEmpty(look.FaceShape) ? "own" : look.FaceShape))?.Freckles ?? 0);
+    /// (looks.json's faces, each from its portrait: her own light, most none); a face the player has
+    /// shaped by hand is her own making, not the portrait's, and starts with none (the owner: "none is
+    /// probably the preferred for most people").</summary>
+    public static float HerFreckles(Look look) => look.Freckles ?? (look.Face?.Values.Any(v => Mathf.Abs(v) > 0.01f) == true ? 0f
+        : (float)(SurvivorUnchained.World.Lore.Her.Faces
+            .FirstOrDefault(f => f.Id == (string.IsNullOrEmpty(look.FaceShape) ? "own" : look.FaceShape))?.Freckles ?? 0));
 
     static Color HerTone(Look look)
     {
