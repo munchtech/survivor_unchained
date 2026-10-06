@@ -438,8 +438,9 @@ public static class People
     /// (HerPose.NeckPitch), till his own clips are made.</summary>
     const float HisNeckPitch = 22f;
 
-    /// <summary>His own eyes: flint grey, a little warmer round the pupil.</summary>
-    static readonly (Color Iris, Color Ring) HisEyes = (new("#727c84"), new("#8a8672"));
+    /// <summary>His own eyes: flint grey, a little warmer round the pupil (Lore's flint,
+    /// dyed for the eye shader's iris_light as hers are).</summary>
+    static readonly (Color Iris, Color Ring) HisEyes = (new("#434853"), new("#534f47"));
 
     /// <summary>Her hairstyles (tools/assets/heroine_head.py: a file each,
     /// fitted to her head), the first hers unless another is chosen.</summary>

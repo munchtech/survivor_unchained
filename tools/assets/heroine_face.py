@@ -541,7 +541,10 @@ if __name__ == "__main__":
         d = P - np.array(CENTRE)
         uv = np.stack([0.5 + (d @ right) / SCALE, 0.5 + d[:, 2] / SCALE], 1)
         vis = seen(V, N, -fwd)[T[tri]]
-        vis = (vis * bary).sum(1) > 0.99
+        # (eased in over a triangle as its points come into view, not all or
+        # nothing a triangle at a time: that stepped the paint's edges, as a
+        # pale stair under her jaw)
+        vis = np.clip(((vis * bary).sum(1) - 0.6) / 0.4, 0, 1)
         facing = np.clip(Nt @ -fwd, 0, 1)
         edge = np.clip(np.minimum.reduce([uv[:, 0], 1 - uv[:, 0], uv[:, 1], 1 - uv[:, 1]]) / 0.05, 0, 1)
         weights[name] = facing ** 4 * edge * vis * (1.0 if name == "front" else 0.8)
@@ -577,7 +580,10 @@ if __name__ == "__main__":
     front_mid = (np.abs(P[:, 0]) < 0.012) & (Nt[:, 1] < -0.6)
     chin_z = P[front_mid, 2].min() if front_mid.any() else eye_z - 0.11
     below_mouth = np.clip((eye_z - 0.095 - P[:, 2]) / 0.01, 0, 1)            # (her chin and below: not her lips' undersides)
-    cover *= 1 - below_mouth * np.clip((-Nt[:, 2] - 0.25) / 0.3, 0, 1)
+    # (nor her jaw's underside, from as soon as it turns down: the paintings lit
+    # it, and it showed pale under her jaw; her head's own skin there is brought
+    # to her face's colour and her body's by heroine_head.py)
+    cover *= 1 - below_mouth * np.clip((-Nt[:, 2] - 0.05) / 0.3, 0, 1)
     cover *= 1 - np.clip((chin_z + 0.003 - P[:, 2]) / 0.012, 0, 1)
     # And all of it coloured as her skin (her head's own, which heroine_head.py
     # matched to her body), over her cheeks, brow and neck seen square on.

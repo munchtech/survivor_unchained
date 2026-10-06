@@ -36,8 +36,11 @@ const float PAINT_LIGHT = 0.12;
 // The iris's light over all (painted or dyed), against her skin's: measured
 // in the game against the portraits (at 1, her irises showed two and a half
 // times as light against her cheek as her portrait's, and Fey's frost white;
-// the colours chosen are dyed for 0.4).
-uniform float iris_light = 0.4;
+// the colours chosen are dyed for 0.3).
+uniform float iris_light = 0.3;
+// The cornea's wet sheen: its roughness and its reflectance.
+uniform float wet_rough = 0.035;
+uniform float wet = 0.42;
 // Where she is looking, each eye's iris slid over its ball (in irises'
 // radii: +x to her left, +y down; both eyes' paint the same way round).
 uniform vec2 gaze_a = vec2(0.0);
@@ -47,11 +50,8 @@ uniform float lids = 0.7;
 // (what makes a face look alive on screen; larger, it read as a white blob
 // and her eyes as staring), up and to one side of the pupil,
 // drifting a little as she is seen from elsewhere. Where on the iris (in its
-// radii) and how bright. (Her paint's u and v run to her right and up her
-// eye, as she is seen: at (-0.34, -0.36) it sat under her pupil, on the far
-// side from her key light's own highlight, two white blobs to an eye; here
-// it lies with that one, above and to her right.)
-uniform vec2 catch_at = vec2(0.32, 0.34);
+// radii) and how bright.
+uniform vec2 catch_at = vec2(-0.34, -0.36);
 uniform float catchlight = 0.55;
 // How small on screen the eye goes from itself to one dark mark: from a
 // pixel covering 2^far_from of its paint's texels to 2^far_to.
@@ -121,8 +121,8 @@ void fragment() {
 	ALPHA_SCISSOR_THRESHOLD = 0.5;
 	// Wet: a sharp highlight off the cornea's dome over the iris (no brighter:
 	// the portrait's broad key light made it a second blob).
-	ROUGHNESS = 0.035;
-	SPECULAR = 0.42 * mix(1.0, 0.55, under_lid);
+	ROUGHNESS = wet_rough;
+	SPECULAR = wet * mix(1.0, 0.55, under_lid);
 	vec2 slope = r < 1.0 ? -2.0 * dome * d : vec2(0.0);
 	NORMAL_MAP = normalize(vec3(-slope.x, slope.y, 1.0 / 0.35)) * 0.5 + 0.5;
 	NORMAL_MAP_DEPTH = 1.0;

@@ -153,14 +153,14 @@
    ],
    "eyes": [
     {"id": "moss", "name": "Moss", "color": "", "ring": ""},
-    {"id": "hazel", "name": "Hazel", "color": "#595739", "ring": "#7f542b"},
-    {"id": "wolf", "name": "Wolf's gold", "color": "#8c500e", "ring": "#92611d"},
-    {"id": "peat", "name": "Peat", "color": "#261311", "ring": "#3a1d15"},
-    {"id": "sloe", "name": "Sloe", "color": "#201410", "ring": "#2b1b12"},
-    {"id": "cornflower", "name": "Cornflower", "color": "#2c4a71", "ring": "#655c3e"},
-    {"id": "flint", "name": "Flint", "color": "#505662", "ring": "#625e54"},
-    {"id": "frost", "name": "Frost", "color": "#68829d", "ring": "#7e8997"},
-    {"id": "heather", "name": "Heather", "color": "#4d3565", "ring": "#6b5065"}
+    {"id": "hazel", "name": "Hazel", "color": "#555336", "ring": "#7a5029"},
+    {"id": "wolf", "name": "Wolf's gold", "color": "#734109", "ring": "#784f16"},
+    {"id": "peat", "name": "Peat", "color": "#351d1b", "ring": "#4f2a20"},
+    {"id": "sloe", "name": "Sloe", "color": "#281a15", "ring": "#352218"},
+    {"id": "cornflower", "name": "Cornflower", "color": "#223c5c", "ring": "#524b32"},
+    {"id": "flint", "name": "Flint", "color": "#444954", "ring": "#545048"},
+    {"id": "frost", "name": "Frost", "color": "#455669", "ring": "#535b65"},
+    {"id": "heather", "name": "Heather", "color": "#3e2a52", "ring": "#574152"}
    ],
    "paints": [
     {"id": "none", "name": "Bare", "words": "Her own face, nothing on it."},

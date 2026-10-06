@@ -584,6 +584,12 @@ def _enclosed(i):
 
 
 INNER = np.array([_enclosed(i) for i in range(n)])
+# (but where her lips meet, the red of each lip turned to the other's, within
+# 2 mm of the line they meet on: laid as her lips' outsides are. Carried, her
+# lips parted a hair's breadth and the tips of her teeth showed between them.)
+_lipring = [61, 146, 91, 181, 84, 17, 314, 405, 321, 375, 291, 409, 270, 269, 267, 0, 37, 39, 40, 185]
+_lcen = L0[_lipring][:, [0, 2]].mean(0)
+INNER &= ~(inside(_lcen + (L0[_lipring][:, [0, 2]] - _lcen) * 1.15, Pi[:, [0, 2]]) & (Pi[:, 1] < L0[INNER_LIPS, 1].min() + 0.002))
 wsurf = wsurf * ~INNER
 print("INSIDE: %d of her points enclosed by her (her mouth's walls, nostrils, ...): carried along, not laid on its skin" % INNER.sum())
 # Landmarks: her nose's and lips' (her eyes have their own map; her face's
@@ -592,6 +598,9 @@ print("INSIDE: %d of her points enclosed by her (her mouth's walls, nostrils, ..
 lm_w = np.zeros(n_l)
 lm_w[[i for i in NOSE if i < n_l]] = 1.2
 lm_w[[i for i in LIPS if i < n_l]] = 1.6
+# (where her lips meet held hard to where TRELLIS's meet: her lips' linings
+# carried, not laid on its skin, they parted a hair and her teeth showed)
+lm_w[[i for i in INNER_LIPS if i < n_l]] = 5.0
 rows = np.arange(n_l)[hit[:n_l] & ok_t[:n_l] & (lm_w > 0)]
 Bm = sp.coo_matrix((bary[rows].ravel(), (np.repeat(np.arange(len(rows)), 3), loc[tri[rows]].ravel())), shape=(len(rows), n)).tocsr()
 wa = lm_w[rows]
@@ -692,6 +701,11 @@ for it, k_bend in enumerate((60.0, 25.0, 10.0, 5.0, 2.5, 1.5, 1.0, 0.7)):
         it, k_bend, (ws > 0.5).sum(), 1000 * np.sqrt((res ** 2).mean()), 1000 * np.abs(res).max(), 1000 * np.linalg.norm(D, axis=1).max()))
 got = Bm @ (Pi + D)
 print("LANDMARKS within %.2f mm (rms)" % (1000 * np.sqrt(((got - Lgoal) ** 2).sum(1).mean())))
+_pairs = [(13, 14), (82, 87), (81, 178), (312, 317), (311, 402)]
+_ri = {r: k for k, r in enumerate(rows)}
+_gaps = [(got[_ri[a], 2] - got[_ri[b], 2], Lt[a, 2] - Lt[b, 2]) for a, b in _pairs if a in _ri and b in _ri]
+if _gaps:
+    print("LIPS MEET: %.2f mm apart (TRELLIS's %.2f)" % tuple(1000 * np.mean(_gaps, 0)))
 # Her lips' moves smoothed among themselves (a few rounds of each point
 # toward its neighbours' mean, over her lips and 4 mm round them): her lips
 # are few points, and laid one by one on TRELLIS's they crumpled at their border.
@@ -788,6 +802,21 @@ for gname in ("helper-l-eyelashes-1", "helper-l-eyelashes-2", "helper-r-eyelashe
 _mouth = DD[tri[INNER_LIPS]].mean((0, 1))
 for gname in ("helper-upper-teeth", "helper-lower-teeth", "helper-tongue"):
     DD[member[gname]] = _mouth
+# Her teeth 2 mm further behind where her lips meet, at her middle, than on
+# MakeHuman's face: her lips, laid on a portrait's, meet a hair apart at rest,
+# and the tips of her upper teeth showed white between them.
+for gname, lm, with_ in (("helper-upper-teeth", 13, ()), ("helper-lower-teeth", 14, ("helper-tongue",))):
+    g = member[gname]
+    mid = np.abs(P[g, 0]) < 0.008
+    lip0 = (P[tri[lm]] * bary[lm][:, None]).sum(0)[1]
+    lip1 = ((P + DD)[tri[lm]] * bary[lm][:, None]).sum(0)[1]
+    gap0 = P[g][mid, 1].min() - lip0 + 0.002
+    gap1 = (P + DD)[g][mid, 1].min() - lip1
+    if gap1 < gap0:
+        for gg in (gname,) + with_:
+            DD[member[gg], 1] += gap0 - gap1
+    print("TEETH %s: %.1f mm behind her lips (wanted %.1f)%s" % (
+        gname.split("-")[1], 1000 * gap1, 1000 * gap0, ", set back %.1f mm" % (1000 * (gap0 - gap1)) if gap1 < gap0 else ""))
 
 # ------------------------------------------------------- 5. symmetrical --
 _mir = cKDTree(P).query(P * [-1, 1, 1])

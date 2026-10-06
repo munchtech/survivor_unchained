@@ -212,6 +212,11 @@ public partial class Game
         Aim(fillLight, eyes + dir * 1.8f + camLeft * 1.1f, eyes + Vector3.Down * 0.08f, rig[1] * p);
         Aim(edgeLight, eyes - dir * 1.3f + camLeft * 1.4f + Vector3.Up * 0.35f, eyes + Vector3.Down * 0.1f, rig[2] * p);
         Aim(rimLight, eyes - dir * 1.6f - camLeft * 1.0f + Vector3.Up * 1.1f, eyes + Vector3.Down * 0.12f, rig[3] * p);
+        // The sky's own light (the moon) off her from head and shoulders in: the
+        // portrait's lights are hers there. Left on, it was a fourth light, cold
+        // and flat across her face, and its reflection a white blob as big as her
+        // pupil on the lower edge of each iris.
+        air.Key.LightCullMask = p > 0.5f ? air.Key.LightCullMask & ~2u : air.Key.LightCullMask | 2u;
 
         // The fire lights her through a stand-in that fades as the portrait comes up; the fire
         // itself no longer reaches her (layer 2), so the camp around her stays as it is.
@@ -242,6 +247,7 @@ public partial class Game
         figureBody = "";
         foreach (var l in new Light3D?[] { keyLight, fillLight, edgeLight, rimLight, herFire }) l?.QueueFree();
         keyLight = fillLight = edgeLight = rimLight = null;
+        air.Key.LightCullMask |= 2u;                       // (the sky's light on her again)
         herFire = null;
         if (fireSrc != null && IsInstanceValid(fireSrc)) fireSrc.LightCullMask = fireMask;
         fireSrc = null;
