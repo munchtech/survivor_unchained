@@ -1,14 +1,11 @@
 # Performance
 
-Status page for the performance lead. The last lead was agent a0eb8c612c94d4aa5 on branch `worktree-agent-a0eb8c612c94d4aa5`. **Handed off at its context limit (2026-10-06): a successor starts from `docs/handoff/performance.md`.** The method and older numbers are in `docs/PERF_AUDIT.md`.
+Status page for the performance lead. The last lead was agent ad57a6dd0798688d7 on branch `worktree-agent-ad57a6dd0798688d7` (wound down early, 2026-10-06; before it a0eb8c612c94d4aa5). **A successor starts from `docs/handoff/performance.md`.** The method and older numbers are in `docs/PERF_AUDIT.md`.
 
 ## Current state (2026-10-06)
 
-- **Top priority (the owner):**
-  1. Her blur in motion: "we are blurry when moving in active action gameplay".
-  2. The see-through-trees dither is "pedestrian in its pixelation".
-
-  Not started; the brief and leads are in the handoff.
+- **Her blur in motion: cause found and fixed** (bb86717b). The fight steps at 60 Hz; the owner plays at 164 Hz; drawn from the last step, she shook 3.3 px rms frame to frame against the smooth camera (TAA then threw away its history on her, so her hair showed raw). Now everything that moves is drawn between steps (`Interp`): 0.02 px. No AA setting changed yet.
+- **In progress (`perf-seethrough-wip`, compiles, never run):** the designed see-through (a soft round window round her, feathered rim drawn translucent), and the crowd's stable MultiMesh slots (correct motion vectors in a horde). The A/B batch of AA modes (TAA, SMAA, FSR2) with crops and frame times is written and waiting for a Godot turn.
 - **Landed this round** (optimised C#, 2560x1440):
   - **The photoscans' mipmaps and BC7/BC5** (`tools_scenes/import_world.gd`, agreed by arena art).
     - Invisible at the game camera.
@@ -47,7 +44,7 @@ Status page for the performance lead. The last lead was agent a0eb8c612c94d4aa5 
 
 ## Next
 
-1. **Her blur, then the see-through cut-out** (handoff, "Top priority").
+1. **Run batch 1, choose the AA, land the see-through and the crowd's slots** (handoff, "Next").
 2. **A queued draft rebuilds its whole panel at every pick** (15-20 ms each; the autopilot shows it as 10-70 ms). Reuse the panel (UI design owns it).
 3. **First bakes still left:**
    - `skeleton_rogue` (`GenerateLods` on the kit meshes, 0.4-1.1 s);
@@ -59,7 +56,8 @@ Status page for the performance lead. The last lead was agent a0eb8c612c94d4aa5 
 - **Arena art (paused):**
   - The photoscans' mipmaps have landed; re-shoot after merging and run `--import` once.
   - Hollow by Night's pieces cost 1.15 ms of GPU (1.48M primitives): give them a visibility range or LODs when you're back.
-  - The see-through-trees effect (`shaders/kit.gdshader`, `hero_clear.gdshaderinc`) is being remade by performance as a soft, round, feathered cut-out with no dither. The trees' look is yours, so it will be shown to you first.
+  - The see-through-trees effect (`shaders/kit.gdshader`) is being remade by performance as a soft, round, feathered window with no dither (branch `perf-seethrough-wip`; every kit material gets a translucent next pass for the window's rim). The trees' look is yours, so it will be shown to you first.
+- **Face (hair):** her blur in motion was the fight's 60 Hz steps, now drawn between (bb86717b). The hair's sway uniforms still give TAA slightly wrong motion vectors; performance will propose exact ones (previous-uniform pairs or bones) with the AA choice.
 - **UI design:** the draft panel is rebuilt whole at every queued pick (`GameMenus.Present`), 15-20 ms a time.
 - **Creatures:** the boar's normal map goes in as a compile-time `VAT_NORMAL` variant. Send `--perf-flip` numbers.
 - **Skills:** BattleFx's pickup and weapon meshes and Gore's splat are made once a session (`BattleFx.Kept`).
