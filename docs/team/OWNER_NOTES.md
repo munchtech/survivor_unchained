@@ -1,0 +1,38 @@
+# The owner's notes waiting for the leads
+
+Every lead reads this after RESUME.md. When you take a note into your work, mark it done here with your commit. The main session keeps it current.
+
+## 5 October 2026 (from playing the build; the leads were stopped by the weekly limit, so these wait)
+
+### UI design and UI art: the HUD is the keystone
+
+The owner: "the bottom skill bar and health globes and stuff need to be incredible, its a keystone of that kind of game." The bottom area with the abilities "is a relic of our old garbage ui".
+
+- **Ember bar to the bottom** (or somewhere else). The boss's health bar then moves up to the top, where the ember bar was, so it never overlaps help text or a boss's banner. "ember on the bottom sliding the boss stuff up."
+- **Timer and stats** (the clock, kills, gold) move to a lower corner, out of the top centre.
+- **The skill bar, the draught, the dash and the art in hand need revisiting,** with symmetry: one composed group, not loose pieces. Health globe, skill slots, art, draught and dash must read as one designed instrument.
+- **The minimap** needs the same pass.
+- **"We still have bad texture bordering on a lot of UI elements"**: the skill bar's frame and the health globe's ring especially. Remake them in the restrained, soulful style (iron, chain, ember), with no muddy textured borders.
+- **Journal and Map** should not resize the panel to full screen ("feels bad"). Keep them in the same half-window panel as the rest of the book, with an option to expand. Cut their dead space; centre what's in them.
+- **The tab chain:** "I love the direction just needs polish."
+- **Help text** (the tips): no shrinking from big to small; "more distracting not less". Show it at its full size from the start. It shouldn't come up at bad times anyway; if it does, that gets revisited later.
+- **Liked:** "I'm a giant fan of some of the hexes or just lines you put on indicators for dodging. nice work." (Combat and skills VFX: keep that language for danger marks.)
+
+### Combat and animation: moving through the crowd
+
+- **"Pushing mobs by running into them seems awkward."** Rethink body-blocking and push as she runs into the horde: how the best survivors and ARPGs handle it (slip through, soft separation, brief knock-aside on a dash).
+- **"We don't look very smooth while running, a little blurry pixelated."** Find out why: TAA or motion-blur smearing, a low-resolution shadow or a crowd LOD near her, the camera's follow judder, or the run clip itself. Fix it so her run is crisp and smooth at the game camera. Performance, animation and the experience director share this.
+
+### Story: the writing needs emotional power
+
+The owner: "we need better writing", "we need emotional power", "a mind breaking twist dosn't exist at the moment, and gut wrenching stuff dosn't hit too hard."
+
+- **Maeca:** drop "Barefoot"; she is just Maeca. Her reason for wanting Holloway dead must be a real failing, far beyond "didn't get boots". "The barefoot thing is a little silly."
+- **Holloway:** he was a good man. Through great writing, he did something that got them all killed. Now he's a drunkard trying his best to forget, who still protects, because he is a GOOD man.
+- **Brannoc:** his arc, that he made the very thing that got his daughter killed, "needs to hit HARD. so hard."
+- **Generally:** some beats are good already, but the gut-wrenching ones must land. Find the moments that should break the player's heart and build them up. Plant, pay off, let silence work.
+- **A twist:** the story needs a mind-breaking twist, one that re-reads what came before. Propose one or two that fit the Ember Watch, the Order of the Morning Light and her past, with where each is planted, for the owner's choice. Don't bolt one on.
+
+### Sound
+
+- Every skill now has its own sounds (skills VFX), but no agent can hear them. The owner will say which sound bad after playing.
