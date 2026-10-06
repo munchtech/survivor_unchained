@@ -33,6 +33,19 @@ The owner: "we need better writing", "we need emotional power", "a mind breaking
 - **Generally:** some beats are good already, but the gut-wrenching ones must land. Find the moments that should break the player's heart and build them up. Plant, pay off, let silence work.
 - **A twist:** the story needs a mind-breaking twist, one that re-reads what came before. Propose one or two that fit the Ember Watch, the Order of the Morning Light and her past, with where each is planted, for the owner's choice. Don't bolt one on.
 
+### Story: the owner's choices on the treatment (docs/story/TREATMENT.md §10)
+
+The owner loved the editor's letter. On the treatment:
+1. **The twists:** all four, yes. §3.1 "You did this", §3.2 and §4 "Ninety-two", §3.3 the woman with the lamp, §3.4 the voice.
+2. **The narrator** recast as a woman of about sixty: yes.
+3. **Love scenes under §3.4:** undecided. Write both, the narration as unvoiced text and the lovers' own lines, for the owner to choose on the page.
+4. **Holloway risen at his own gate** the dusk after: keep.
+5. **The nod** as the game's first choice: yes.
+6. **The lamp-iron** as her night lantern: yes.
+7. **The lie to Brannoc:** "this sounds not great, we need it, but it will make him hate us." So the lie must not cost his trade (crafting stays). It costs the relationship: he works for her as a stranger (curt, full prices, no commissions or masterworks, no warmth), and when the truth comes out later it lands harder for the lie. Confirm with the owner if in doubt.
+8. **"Wick"** for her, and the lamplings renamed (not "Wick" or "Wick-Mother"; the writer suggested "Stub"): yes.
+- **Boots:** nobody dies because of footwear. Holloway's act is a great man's terrible judgement call (the lid on the ladder; ninety-one counted). The editor checks that no boot detail still reads as silly.
+
 ### The heroine's face, paints and hair: the order (5 October, later)
 
 - **Order:** the face to perfect first (v10, v11 and so on); then the face paints and sliders (the hand-drawn paints are "really bad": kohl lands on her forehead, ash is a smudge, and so on; the sliders "don't do enough"); then hair, over many rounds ("hair will need way more than 2-3 rounds").
