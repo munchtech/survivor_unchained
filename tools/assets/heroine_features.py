@@ -123,6 +123,13 @@ for k, (grow, soft) in ((0, (4, 3.0)), (1, (3, 2.0))):
     ch = ndimage.gaussian_filter(ch, soft)
     out[..., k] = np.clip(np.maximum(out[..., k], ch) * inside, 0, 1)
 from PIL import Image  # noqa: E402
+# Blue: where her face's own paint lies (heroine_face/face_paint.png's alpha,
+# softened over 3 mm), for the game to set each face's colour against its
+# portrait's there alone (People.HerFaceTone), her neck and body as they are.
+_fp = os.path.join(os.path.dirname(os.path.abspath(__file__)), "heroine_face", "face_paint.png")
+if os.path.exists(_fp):
+    _a = np.asarray(Image.open(_fp).convert("RGBA").resize((SIZE, SIZE), Image.BILINEAR), np.float32)[..., 3] / 255
+    out[..., 2] = np.clip(ndimage.gaussian_filter(_a, 6), 0, 1)[::-1]
 os.makedirs(OUT, exist_ok=True)
 path = os.path.join(OUT, "heroine_features.png")
 Image.fromarray((out[::-1] * 255 + 0.5).astype(np.uint8)).save(path)

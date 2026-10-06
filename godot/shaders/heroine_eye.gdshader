@@ -33,11 +33,13 @@ uniform vec3 ring_colour : source_color = vec3(0.62, 0.42, 0.16);
 uniform float ring = 0.56;
 // The paint's mean light (linear), so a colour chosen comes out as itself.
 const float PAINT_LIGHT = 0.12;
-// The iris's light over all (painted or dyed), against her skin's: measured
-// in the game against the portraits (at 1, her irises showed two and a half
-// times as light against her cheek as her portrait's, and Fey's frost white;
-// the colours chosen are dyed for 0.3).
-uniform float iris_light = 0.3;
+// The iris's light over all (painted or dyed): a colour chosen is the iris's
+// own albedo (Lore's eye swatches, fitted under a white light so each face's
+// irises stand to its cheek as its portrait's do). (It was 0.3 while the
+// sky's reflection on the cornea lit every iris; with that dimmed, at 0.3
+// every iris rendered a third to a fiftieth as light as its portrait's, the
+// brown ones black.)
+uniform float iris_light = 1.0;
 // The cornea's wet sheen: its roughness and its reflectance, for the lights
 // on her (light(), below); `sky_wet` the reflectance of the sky round her.
 // (Her sky's radiance is bright where its glow is, and on a cornea that

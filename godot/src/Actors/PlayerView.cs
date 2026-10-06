@@ -41,6 +41,11 @@ public partial class PlayerView : Node3D
     bool dashing, dead;
     float speed;
     const float LightBase = 5;
+    /// <summary>How much of her carried light lights her (1: all): the book open by day dims it
+    /// (GameMenus), eased. Under the sun as well, from a hand's breadth over her head it lit her
+    /// face flat and cream-white, washed out beside the panel.</summary>
+    public float LampScale = 1;
+    float lamp = 1;
     // Their own clips (hers, or his) and carriage.
     readonly bool mine;
     readonly OwnClips own = OwnClips.Her;
@@ -369,7 +374,7 @@ public partial class PlayerView : Node3D
                     death = own.Prefix + "death_back";
                 person.Anim.Play(death, 0.1);
                 if (person.Pose != null) person.Pose.Native = death.StartsWith(own.Prefix) ? 1 : 0;
-                if (carriage != null) carriage.Aim = carriage.Bank = carriage.Tilt = 0;
+                if (carriage != null) carriage.Aim = carriage.Bank = carriage.Tilt = carriage.HeadLevel = 0;
             }
             Light.LightEnergy = Mathf.Lerp(Light.LightEnergy, 0.6f / Mathf.Pi, 1 - Mathf.Exp(-2 * (float)dt));
             return;
@@ -480,7 +485,8 @@ public partial class PlayerView : Node3D
         double hp = p.Hp / b.MaxHp;
         flare = Mathf.Max(0, flare - dt * 0.8);
         double flicker = Mathf.Sin((float)(time * 7.3)) * 0.25 + Mathf.Sin((float)(time * 17.1)) * 0.15 + (hp < 0.35 ? Mathf.Sin((float)(time * 31)) * 0.6 : 0);
-        Light.LightEnergy = (float)((LightBase * (0.7 + 0.3 * hp) + flicker + flare * 20) / Mathf.Pi);
+        lamp = Mathf.Lerp(lamp, LampScale, 1 - Mathf.Exp(-3 * (float)dt));
+        Light.LightEnergy = (float)((LightBase * (0.7 + 0.3 * hp) + flicker + flare * 20) / Mathf.Pi) * lamp;
         // A lantern carries further; under the Oath of the Moonless, not far at all.
         Light.OmniRange = (float)((11 + flare * 6) * b.Stats.Get(Stat.LightRadius) * b.Rules.Light);
         Light.Position = new Vector3(0, 2.4f, 0.4f);
@@ -570,5 +576,11 @@ public partial class PlayerView : Node3D
         // Her back to the blow while it lasts, then home.
         float aimTo = aimHold > 0 ? aim : 0;
         carriage.Aim = Mathf.Lerp(carriage.Aim, aimTo, 1 - Mathf.Exp((aimHold > 0 ? -30 : -8) * dt));
+        // Her head carried up, her eyes on the way ahead (HerCarriage.HeadLevel).
+        carriage.HeadLevel = Mathf.Lerp(carriage.HeadLevel, HeadLevel, 1 - Mathf.Exp(-4 * dt));
     }
+
+    /// <summary>How much of her clips' bowed head is taken back toward level in play (--head-level tries
+    /// another): from play's camera her face then shows eyes and a mouth, not the crown of her hair.</summary>
+    static readonly float HeadLevel = SurvivorUnchained.Args.Has("head-level") ? SurvivorUnchained.Args.Num("head-level", 0.8f) : 0.8f;
 }

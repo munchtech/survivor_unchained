@@ -140,7 +140,8 @@ public partial class HerFaceLife : Node
                 float every = Args.Num("every", 1), first = Args.Num("seconds", 3);
                 int i = Mathf.Clamp((int)Mathf.Floor((float)(Shots.Clock - first + every / 2) / every), 0, cycle.Length - 1);
                 eyes.SetShaderParameter("recolour", cycle[i] == null ? 0f : 1f);
-                if (cycle[i] is Color c) { eyes.SetShaderParameter("iris_colour", c); eyes.SetShaderParameter("ring_colour", c); }
+                // (a dye as itself: her painted iris's own correction, the tint, left off)
+                if (cycle[i] is Color c) { eyes.SetShaderParameter("iris_colour", c); eyes.SetShaderParameter("ring_colour", c); eyes.SetShaderParameter("tint", Colors.White); }
             }
         }
     }

@@ -1,12 +1,12 @@
 [
  {"id": "own", "name": "As she is", "words": "Her own face, as the road left it.", "shape": {}, "skin": "fair", "eyes": "moss", "ref": "front/her_23"},
  {"id": "highborn", "name": "Highborn", "words": "Fine-boned and narrow, a long straight nose: a face for a portrait in a hall.", "ref": "front/highborn_23", "skin": "fair", "eyes": "frost", "shape": {}},
- {"id": "vixen", "name": "Vixen", "words": "Eyes tilted up under heavy lids, a full mouth, a small sharp chin.", "ref": "front/vixen_23", "skin": "fair", "eyes": "flint", "shape": {}},
- {"id": "doe", "name": "Doe", "words": "Wide soft eyes, a small nose, a gentle jaw. People trust her before they should.", "ref": "front/doe_37", "skin": "rose", "eyes": "peat", "shape": {}},
+ {"id": "vixen", "name": "Vixen", "words": "Eyes tilted up under heavy lids, a full mouth, a small sharp chin.", "ref": "front/vixen_23", "skin": "fair", "eyes": "lichen", "shape": {}},
+ {"id": "doe", "name": "Doe", "words": "Wide soft eyes, a small nose, a gentle jaw. People trust her before they should.", "ref": "front/doe_37", "skin": "rose", "eyes": "chestnut", "shape": {}},
  {"id": "sunborn", "name": "Sunborn", "words": "Wide-set eyes, a full mouth, a face carved for the long light of the south roads.", "ref": "front/sunborn_23", "skin": "brown", "eyes": "sloe", "shape": {}},
- {"id": "moonlit", "name": "Moonlit", "words": "Almond eyes that give nothing away, a small mouth, skin like the inside of a shell.", "ref": "front/moonlit_37", "skin": "fair", "eyes": "sloe", "shape": {}},
+ {"id": "moonlit", "name": "Moonlit", "words": "Almond eyes that give nothing away, a small mouth, skin like the inside of a shell.", "ref": "front/moonlit_37", "skin": "fair", "eyes": "peat", "shape": {}},
  {"id": "saffron", "name": "Saffron", "words": "Great dark eyes under strong brows, and a nose with a proud line to it.", "ref": "front/saffron_23", "skin": "warm", "eyes": "peat", "shape": {}},
  {"id": "wildling", "name": "Wildling", "words": "A wide mouth made for laughing, a broad nose, cheekbones from the hill country.", "ref": "front/wildling_37", "skin": "rose", "eyes": "hazel", "shape": {}},
  {"id": "hardwon", "name": "Hard-won", "words": "A strong jaw, low straight brows, the bridge of a nose that has been broken.", "ref": "front/hardwon_11", "skin": "rose", "eyes": "flint", "shape": {}},
- {"id": "fey", "name": "Fey", "words": "Wide-set eyes, a pointed chin, and ears that come to a point. The old blood shows.", "ref": "front/fey_37", "skin": "fair", "eyes": "frost", "shape": {}}
+ {"id": "fey", "name": "Fey", "words": "Wide-set eyes, a pointed chin, and ears that come to a point. The old blood shows.", "ref": "front/fey_37", "skin": "fair", "eyes": "dove", "shape": {}}
 ]
