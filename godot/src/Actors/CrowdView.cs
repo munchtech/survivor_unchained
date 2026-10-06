@@ -91,6 +91,9 @@ public partial class CrowdView : Node3D
 
     public CrowdView() { Name = "Crowd"; }
 
+    /// <summary>Where each is drawn, between the fight's steps (WorldScene's).</summary>
+    public Interp? Drawn;
+
     /// <summary>Whether a creature is under the ground by its script's say (set by the view; null: none is).</summary>
     public static Func<Enemy, bool>? Under;
 
@@ -179,7 +182,8 @@ public partial class CrowdView : Node3D
             gaits[e.Id] = g = new Gait { Seed = e.Seed, Phase = e.Seed * 7, Facing = e.Facing };
         g.Seen = true;
         string role = "idle";
-        double t = e.AnimT, y = heightAt(e.X, e.Z);
+        var (ex, ez) = Drawn?.Of(e) ?? (e.X, e.Z);
+        double t = e.AnimT, y = heightAt(ex, ez);
         float dissolve = 0;
         double speed = Math.Sqrt(e.Vx * e.Vx + e.Vz * e.Vz);
         // Walking or standing, with a margin between the two, so a creature
@@ -199,7 +203,7 @@ public partial class CrowdView : Node3D
                 t = e.DieT * Math.Max(1, asset.Duration(role) / (Ai.DieTime * 0.62));
                 // Summons fade; the rest fall and stay.
                 if (e.Disposition == Disposition.Ally) dissolve = Smooth(e.DieT, Ai.DieTime * 0.55, Ai.DieTime);
-                else if (e.DieT >= Ai.DieTime - 0.12) { LayOut(e, g.Facing, role); return; }
+                else if (e.DieT >= Ai.DieTime - 0.12) { LayOut(e, ex, ez, g.Facing, role); return; }
                 break;
             }
             case EnemyState.Burrowed:
@@ -301,7 +305,7 @@ public partial class CrowdView : Node3D
             && (e.Elite ? ++eliteFlashes > EliteFlashes : ++whiteFlashes > WhiteFlashes)) flare = FlashRimOnly;
         // The flinch along the blow: big enough to read from thirty metres up, twice on a critical (S-17).
         float push = e.LastCrit ? 0.45f : 0.25f;
-        var at = new Vector3((float)(e.X + e.LastDx * f * push), (float)y, (float)(e.Z + e.LastDz * f * push));
+        var at = new Vector3((float)(ex + e.LastDx * f * push), (float)y, (float)(ez + e.LastDz * f * push));
         var basis = new Godot.Basis(Vector3.Up, (float)(Math.PI / 2 - g.Facing)) * Godot.Basis.FromScale(new Vector3(sc * (1 + f * 0.1f), sc * (1 - f * 0.1f), sc * (1 + f * 0.1f)));
         // (Held by a ground that is not the cold, a thicket's or a rot's: its slow is no rime.)
         bool held = battle != null && e.HeldUntil > battle.Time;
@@ -331,13 +335,13 @@ public partial class CrowdView : Node3D
     }
 
     /// <summary>The body stays where it fell when the fight lets it go.</summary>
-    void LayOut(Enemy e, double facing, string role)
+    void LayOut(Enemy e, double x, double z, double facing, string role)
     {
         if (!laidOut.Add((e.Id, e.Seed))) return;
         var (tint, glow) = Visuals.Tint(e.Def.Visual);
         if (e.Def.Tint is var (tr, tg, tb)) tint *= new Color((float)tr, (float)tg, (float)tb);
         if (e.Def.Glow is { } dg) glow = Math.Max(glow, (float)dg);
-        corpses.Add(new Corpse(e.Def.Visual, role, (float)e.X, (float)e.Z, (float)facing, (float)(e.Def.Scale ?? 1) * Beasts.Size(e.Def.Visual), tint, glow * 0.3f, time));
+        corpses.Add(new Corpse(e.Def.Visual, role, (float)x, (float)z, (float)facing, (float)(e.Def.Scale ?? 1) * Beasts.Size(e.Def.Visual), tint, glow * 0.3f, time));
         while (corpses.Count > CorpseMax) corpses.RemoveAt(0);
     }
 

@@ -345,14 +345,15 @@ public partial class PlayerView : Node3D
         aimHold = 0.45f;
     }
 
-    public void Update(Battle b, double dt, double fightTime, System.Func<double, double, double> heightAt)
+    /// <summary>A frame of her: drawn at x, z (between the fight's steps: Interp), `leap` through a leap (-1: none).</summary>
+    public void Update(Battle b, double x, double z, double leap, double dt, double fightTime, System.Func<double, double, double> heightAt)
     {
         time += dt;
         if (mine) tree.Advance(dt);
         var p = b.Player;
-        double y = heightAt(p.X, p.Z);
-        if (p.Leap is { } leap) y += Mathf.Sin((float)(Mathf.Min(1, leap.T / leap.Dur) * Mathf.Pi)) * 2.2;
-        Position = new Vector3((float)p.X, (float)y, (float)p.Z);
+        double y = heightAt(x, z);
+        if (leap >= 0) y += Mathf.Sin((float)(leap * Mathf.Pi)) * 2.2;
+        Position = new Vector3((float)x, (float)y, (float)z);
         Reflections.Update(b, dt, heightAt);
         Ghostly(p.Alive && b.Art.WraithT > 0);
         if (!p.Alive || fallen)

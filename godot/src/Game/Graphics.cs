@@ -91,6 +91,24 @@ public static class Graphics
         vp.Scaling3DScale = scale;
         vp.UseTaa = !fsr;
         vp.Msaa3D = fsr ? Viewport.Msaa.Disabled : t.Msaa;
+        vp.ScreenSpaceAA = Viewport.ScreenSpaceAAEnum.Disabled;
+        // --aa (a developer's switch, and --perf-flip aa:NAME): the edges smoothed another way, to compare.
+        switch (Aa)
+        {
+            case "smaa" or "fxaa":
+                vp.UseTaa = false;
+                vp.ScreenSpaceAA = Aa == "smaa" ? Viewport.ScreenSpaceAAEnum.Smaa : Viewport.ScreenSpaceAAEnum.Fxaa;
+                break;
+            case "msaa":
+                vp.UseTaa = false;
+                break;
+            case "fsr2":
+                vp.Scaling3DMode = Viewport.Scaling3DModeEnum.Fsr2;
+                vp.Scaling3DScale = Mathf.Min(scale, 1f);
+                vp.UseTaa = false;
+                vp.Msaa3D = Viewport.Msaa.Disabled;
+                break;
+        }
 
         Sparks.Density = t.Effects;
         if (scene == null) return;
@@ -99,6 +117,9 @@ public static class Graphics
         scene.Crowd.Shadows = t.CrowdShadows;
         scene.Crowd.CorpseMax = t.Corpses;
     }
+
+    /// <summary>The edges smoothed another way than the tier's (--aa: smaa, fxaa, msaa, fsr2), to compare; null: the tier's.</summary>
+    public static string? Aa = Args.Get("aa");
 
     /// <summary>The quality in force (for what is built later: a lamp lit in play).</summary>
     public static Tier Current { get; private set; } = High;
