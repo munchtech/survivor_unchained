@@ -61,6 +61,7 @@ The owner loved the editor's letter. On the treatment:
   - it holds at play distance.
 - **Freckles as a Look choice** (paints and sliders pass): an amount from none to heavy, each preset follows its own portrait (freckles where the reference shows them, at its amount; "some of the presets can have freckles if they go with the reference"), a face the player builds starts at none ("none is probably the preferred for most people but they are a fun rarity too"), and the amount is always adjustable. The face lead designs the freckles themselves from her_23 (sparse, soft, varied, sun-placed).
 - **Distance:** "not seeing any face at long distance is tragic." When the book opens (Pack, Self, Arts), the camera comes in close enough that her face reads. At play zoom she always has SOME face: eyes, brows, a mouth.
+- *Taken up in face v11 (worktree-agent-a43570e07edbe40b2): tones and irises within a few per cent, her face at play zoom, freckle defaults per portrait; grain and the other faces' brows still short of the bar (docs/team/face.md).*
 
 ### Animation: an artists' kit for later (after the face, paints and hair)
 
