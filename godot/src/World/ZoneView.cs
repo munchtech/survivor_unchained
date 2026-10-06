@@ -236,15 +236,18 @@ public partial class ZoneView : Node3D
         foreach (var c in fire.GetChildren()) if (c is GpuParticles3D p) p.Emitting = on;
     }
 
-    /// <summary>The lit light nearest a place, within so far (creation's portrait takes the fire's
-    /// light off her face, and lays its own warm edge in its place).</summary>
+    /// <summary>The shining light nearest a place, within so far (creation's portrait takes the fire's
+    /// light off her face, and lays its own warm edge in its place). Shining, not lit: a light no one
+    /// has lit or put out shines as it was made, and creation's campfire, never lit, was passed over,
+    /// so the fire still lit her face from below at the close-up, its reflection a white blob as big
+    /// as her pupil low on each iris.</summary>
     public OmniLight3D? LightNear(Vector3 at, float within)
     {
         OmniLight3D? best = null;
         float d = within;
         for (int i = 0; i < lights.Count; i++)
         {
-            if (!lit[i]) continue;
+            if (!lights[i].IsVisibleInTree()) continue;
             float di = lights[i].GlobalPosition.DistanceTo(at);
             if (di < d) { d = di; best = lights[i]; }
         }

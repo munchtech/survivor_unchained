@@ -21,6 +21,16 @@ uniform float shine = 0.42;
 uniform float scatter = 0.38;
 // The soft rim the fine down on skin gives against a light from behind.
 uniform float rim = 0.25;
+// Where her lit side ends, light carried under the skin reaches a little
+// past where the surface turns from the lamp, red furthest, so the edge is
+// soft and warm, never a hard grey line: each channel's reach past it, in
+// N.L (beyond it her light is Godot's own). (Under the portraits' side key
+// her lit side's edge ran straight down the middle of her throat as a dark
+// line; Godot's screen-space scattering spreads a few pixels at a close-up,
+// and spread wider it blurred away her skin's grain.)
+uniform vec3 terminator = vec3(0.32, 0.15, 0.1);
+// Her sheen's strength (SPECULAR), for her light() to read.
+varying float sheen;
 // Rougher where the skin is seen edge on: there a light from behind
 // glanced off it as a hard white band (the Fresnel peak a matte skin's fine
 // hairs and pores break up).
@@ -131,10 +141,53 @@ void fragment() {
 	// inner linings showed as white slivers along their line at a turn)
 	float ao = texture(ao_map, UV).r;
 	SPECULAR = shine * smoothstep(0.45, 0.95, ao);
+	sheen = SPECULAR;
 	AO = ao;
 	AO_LIGHT_AFFECT = ao_light;
 	SSS_STRENGTH = scatter;
-	RIM = rim;
-	RIM_TINT = 0.6;
 	BACKLIGHT = ALBEDO * vec3(1.0, 0.45, 0.35) * 0.18;
+}
+
+// Each lamp's light on her, as Godot's own (Burley's diffuse, GGX's sheen,
+// the rim, the light through her) but for where her lit side ends (see
+// `terminator`).
+float schlick(float u) {
+	float m = clamp(1.0 - u, 0.0, 1.0);
+	float m2 = m * m;
+	return m2 * m2 * m;
+}
+
+void light() {
+	float ndl = dot(NORMAL, LIGHT);
+	float c_ndl = max(ndl, 0.0);
+	float c_ndv = max(dot(NORMAL, VIEW), 1e-4);
+	vec3 h = normalize(VIEW + LIGHT);
+	float c_ndh = clamp(dot(NORMAL, h), 0.0, 1.0);
+	float c_ldh = clamp(dot(LIGHT, h), 0.0, 1.0);
+	// (the edge eased over each channel's reach, C1 with the light either side:
+	// (n + w)^2 / 4w from -w to w, n itself beyond)
+	vec3 w = max(terminator, vec3(1e-4));
+	vec3 n = vec3(ndl);
+	vec3 t = clamp(n + w, vec3(0.0), 2.0 * w);
+	vec3 soft = mix(t * t / (4.0 * w), n, step(w, n));
+	float fd90 = 2.0 * c_ldh * c_ldh * ROUGHNESS - 0.5;
+	float burley = (1.0 + fd90 * schlick(c_ndv)) * (1.0 + fd90 * schlick(c_ndl));
+	vec3 diffuse = soft * burley / PI;
+	DIFFUSE_LIGHT += LIGHT_COLOR * diffuse * ATTENUATION;
+	// the fine down at her edges
+	float rim_light = pow(max(1e-4, 1.0 - c_ndv), max(0.0, (1.0 - ROUGHNESS) * 16.0));
+	DIFFUSE_LIGHT += rim_light * rim * mix(vec3(1.0), ALBEDO, 0.6) * LIGHT_COLOR * ATTENUATION;
+	// light through her where she is thin
+	DIFFUSE_LIGHT += LIGHT_COLOR * max(vec3(1.0 / PI) - diffuse, vec3(0.0)) * BACKLIGHT * ATTENUATION;
+	if (c_ndl > 0.0) {
+		float a = ROUGHNESS * ROUGHNESS;
+		float da = c_ndh * a;
+		float k = a / (1.0 - c_ndh * c_ndh + da * da);
+		float d_ggx = k * k / PI;
+		float v_ggx = 0.5 / mix(2.0 * c_ndl * c_ndv, c_ndl + c_ndv, a);
+		float f0 = 0.16 * sheen * sheen;
+		float f90 = clamp(f0 * 50.0, 0.0, 1.0);
+		float f = f0 + (f90 - f0) * schlick(c_ldh);
+		SPECULAR_LIGHT += c_ndl * d_ggx * f * v_ggx * LIGHT_COLOR * ATTENUATION * SPECULAR_AMOUNT;
+	}
 }

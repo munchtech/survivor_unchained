@@ -38,9 +38,15 @@ const float PAINT_LIGHT = 0.12;
 // times as light against her cheek as her portrait's, and Fey's frost white;
 // the colours chosen are dyed for 0.3).
 uniform float iris_light = 0.3;
-// The cornea's wet sheen: its roughness and its reflectance.
+// The cornea's wet sheen: its roughness and its reflectance, for the lights
+// on her (light(), below); `sky_wet` the reflectance of the sky round her.
+// (Her sky's radiance is bright where its glow is, and on a cornea that
+// sharp, even at a tenth of `wet`, its reflection was a white blob as big as
+// her pupil low on each iris with every light on her put out: the eye's
+// tell of a render. The lights' own highlights are the small crisp windows.)
 uniform float wet_rough = 0.035;
 uniform float wet = 0.42;
+uniform float sky_wet = 0.04;
 // Where she is looking, each eye's iris slid over its ball (in irises'
 // radii: +x to her left, +y down; both eyes' paint the same way round).
 uniform vec2 gaze_a = vec2(0.0);
@@ -60,6 +66,8 @@ uniform float far_to = 6.0;
 
 varying float under_lid;
 varying float corner;
+// The cornea's reflectance for the lights on her (fragment() to light()).
+varying float sheen;
 
 void vertex() {
 	// (the eyeball's own normal: up under the upper lid, out to the side at the corners)
@@ -122,7 +130,8 @@ void fragment() {
 	// Wet: a sharp highlight off the cornea's dome over the iris (no brighter:
 	// the portrait's broad key light made it a second blob).
 	ROUGHNESS = wet_rough;
-	SPECULAR = wet * mix(1.0, 0.55, under_lid);
+	sheen = wet * mix(1.0, 0.55, under_lid);
+	SPECULAR = sky_wet * mix(1.0, 0.55, under_lid);
 	vec2 slope = r < 1.0 ? -2.0 * dome * d : vec2(0.0);
 	NORMAL_MAP = normalize(vec3(-slope.x, slope.y, 1.0 / 0.35)) * 0.5 + 0.5;
 	NORMAL_MAP_DEPTH = 1.0;
@@ -130,4 +139,33 @@ void fragment() {
 	vec2 at_c = catch_at + v.xy * vec2(0.3, -0.3);
 	float glint = 1.0 - smoothstep(0.035, 0.085, length((d - at_c) * vec2(1.0, 1.25)));
 	EMISSION = vec3(0.95, 0.97, 1.0) * glint * catchlight * in_iris * (1.0 - under_lid * 0.7);
+}
+
+float schlick(float u) {
+	float m = clamp(1.0 - u, 0.0, 1.0);
+	float m2 = m * m;
+	return m2 * m2 * m;
+}
+
+// Each light on her eye as Godot's own (Burley's diffuse, GGX's sheen), the
+// sheen at the cornea's own reflectance (`sheen`), not the sky's.
+void light() {
+	float c_ndl = clamp(dot(NORMAL, LIGHT), 0.0, 1.0);
+	float c_ndv = max(dot(NORMAL, VIEW), 1e-4);
+	vec3 h = normalize(VIEW + LIGHT);
+	float c_ndh = clamp(dot(NORMAL, h), 0.0, 1.0);
+	float c_ldh = clamp(dot(LIGHT, h), 0.0, 1.0);
+	float fd90 = 2.0 * c_ldh * c_ldh * ROUGHNESS - 0.5;
+	float burley = (1.0 + fd90 * schlick(c_ndv)) * (1.0 + fd90 * schlick(c_ndl));
+	DIFFUSE_LIGHT += LIGHT_COLOR * (c_ndl * burley / PI) * ATTENUATION;
+	if (c_ndl > 0.0) {
+		float a = ROUGHNESS * ROUGHNESS;
+		float da = c_ndh * a;
+		float k = a / (1.0 - c_ndh * c_ndh + da * da);
+		float d_ggx = k * k / PI;
+		float v_ggx = 0.5 / mix(2.0 * c_ndl * c_ndv, c_ndl + c_ndv, a);
+		float f0 = 0.16 * sheen * sheen;
+		float f = f0 + (clamp(f0 * 50.0, 0.0, 1.0) - f0) * schlick(c_ldh);
+		SPECULAR_LIGHT += c_ndl * d_ggx * f * v_ggx * LIGHT_COLOR * ATTENUATION * SPECULAR_AMOUNT;
+	}
 }

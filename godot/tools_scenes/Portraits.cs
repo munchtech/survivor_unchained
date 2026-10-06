@@ -16,6 +16,10 @@ namespace SurvivorUnchained.Tools;
 /// OUT=a folder; SIZE=pixels (square). A picture a job, saved when her hair
 /// has settled and the frame has gathered (the hair is cut by hashed alpha,
 /// which the TAA smooths over frames).
+/// For judging her skin: SKIN=name=value,... sets her skin shader's numbers
+/// (or #rrggbb colours) on every job; DEBUGDRAW=one of Godot's views
+/// (NormalBuffer, Lighting, Unshaded...); LIGHTS=k,f,r scales each light;
+/// KEYSHADOW=0 takes the key's shadow away.
 /// </summary>
 public partial class Portraits : Node3D
 {
@@ -41,6 +45,8 @@ public partial class Portraits : Node3D
             Size = new Vector2I(size, size), UseTaa = true, Msaa3D = Viewport.Msaa.Msaa4X, RenderTargetUpdateMode = SubViewport.UpdateMode.Always,
             ScreenSpaceAA = Viewport.ScreenSpaceAAEnum.Disabled,
         };
+        if (OS.GetEnvironment("DEBUGDRAW") is { Length: > 0 } dd && System.Enum.TryParse<Viewport.DebugDrawEnum>(dd, out var draw))
+            vp.DebugDraw = draw;
         AddChild(vp);
         cam = new Camera3D { Current = true };
         vp.AddChild(cam);
@@ -109,6 +115,8 @@ public partial class Portraits : Node3D
             lights.Add(new DirectionalLight3D { LightColor = new Color(0.62f, 0.7f, 0.92f), LightEnergy = 0.3f });
             lights.Add(new DirectionalLight3D { LightColor = new Color(0.78f, 0.86f, 1f), LightEnergy = 2.6f, LightSpecular = 0.7f });
             foreach (var l in lights) AddChild(l);
+            // KEYSHADOW=0: the key casts no shadow (to tell its shadow from its terminator).
+            if (OS.GetEnvironment("KEYSHADOW") == "0") lights[0].ShadowEnabled = false;
             // LIGHTS=k,f,r: each light's energy scaled (to judge them one at a time).
             if (OS.GetEnvironment("LIGHTS") is { Length: > 0 } ls)
                 foreach (var (l, k) in lights.Zip(ls.Split(',').Select(x => float.Parse(x, System.Globalization.CultureInfo.InvariantCulture))))
@@ -179,5 +187,19 @@ public partial class Portraits : Node3D
             C(d, "hairColor"), C(d, "skin"), null, null, 1, face, C(d, "eyes"), C(d, "eyeRing"), d.ContainsKey("paint") ? (string)d["paint"] : null,
             shape);
         People.HerRestyle(her!, look);
+        SkinParams();
+    }
+
+    /// <summary>SKIN=name=value,...: her skin shader's numbers set on her head and body.</summary>
+    void SkinParams()
+    {
+        if (her == null || OS.GetEnvironment("SKIN") is not { Length: > 0 } spec) return;
+        foreach (var mi in her.Skeleton.GetChildren().OfType<MeshInstance3D>())
+            for (int s = 0; mi.Mesh != null && s < mi.Mesh.GetSurfaceCount(); s++)
+                if (mi.GetSurfaceOverrideMaterial(s) is ShaderMaterial m && m.Shader?.ResourcePath.EndsWith("heroine_skin.gdshader") == true)
+                    foreach (var kv in spec.Split(','))
+                        if (kv.Split('=') is [var k, var v])
+                            m.SetShaderParameter(k, v.StartsWith('#') ? new Color(v)
+                                : float.Parse(v, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture));
     }
 }
