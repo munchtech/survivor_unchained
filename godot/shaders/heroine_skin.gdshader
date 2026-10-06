@@ -16,6 +16,14 @@ uniform vec3 tone : source_color = vec3(1.0, 0.86, 0.74);
 uniform sampler2D pores : hint_default_white, filter_linear_mipmap_anisotropic, repeat_enable;
 uniform float pore_scale = 30.0;
 uniform float pore_depth = 0.6;
+// Her skin's own fine grain (tools/assets/heroine_grain.py: her face paint's
+// high frequencies, a 2.8 cm tile; 0.5 as she is, 0.25 a 6% change) on her
+// neck and body, whose paint is smooth: against her face their skin read as
+// another's, finer and flatter (her portrait's neck has nearly half her
+// face's grain; hers had a quarter). Not on her face (the features' blue),
+// which has its own. Two reads at two sizes, so the tile never shows.
+uniform sampler2D grain : hint_default_white, filter_linear_mipmap_anisotropic, repeat_enable;
+uniform float grain_amount = 0.0;
 uniform float rough = 0.5;
 uniform float shine = 0.42;
 uniform float scatter = 0.38;
@@ -39,10 +47,9 @@ uniform float edge_rough = 0.0;
 // eyes and brows, green her lips), deepened the smaller her face is on
 // screen: from the game's camera her face is a few pixels across, and her
 // paint's mipmaps average her eyes, brows and lips into her skin. Measured
-// as how many of her paint's texels a pixel covers (2^far_from to 2^far_to).
-// (Begun sooner and darker since her face became a photograph's: its
-// features are softer than the old paint's, and at the nearest play zoom,
-// 12.5 m, her eyes had all but gone.)
+// as how many of her paint's texels a pixel covers (2^far_from to 2^far_to):
+// none at the book's view (her face 100 pixels tall, where it read as a
+// shadow round her eyes), all of it at play's (8 to 16 pixels).
 uniform sampler2D features : hint_default_black, filter_linear_mipmap;
 // Her head's own shade where light reaches it less (tools/assets/heroine_features.py's
 // heroine_ao.png: under her jaw and chin, her nostrils, the corners of her mouth),
@@ -56,10 +63,21 @@ uniform float ao_light = 0.0;
 uniform sampler2D freckles : hint_default_black, filter_linear_mipmap;
 uniform float freckle_amount = 0.0;
 uniform vec3 freckle_colour = vec3(0.62, 0.45, 0.33);
-uniform float far_from = 3.0;
-uniform float far_to = 5.0;
+uniform float far_from = 4.5;
+uniform float far_to = 6.5;
 uniform float far_dark = 0.86;
 uniform vec3 far_lips : source_color = vec3(0.62, 0.16, 0.15);
+// The features' mask read at this pixel's own level of detail, but never
+// coarser than far_mip of its own mipmaps, and drawn far_bold times as
+// strong: at play zoom (her face 8 pixels across) a mip that fits the pixel
+// averages each eye into a texel of skin, and her face was a blank. Coarser
+// than this the marks blur into one another; finer, they flicker.
+uniform float far_mip = 3.0;
+uniform float far_bold = 3.0;
+// Her face's own colour against her portrait's (People.HerFaceTone, in
+// linear light), laid where her face's paint is (the features' blue): each
+// face's paint a few per cent off its portrait, her neck and body untouched.
+uniform vec3 face_tone = vec3(1.0);
 // A body's own relief, baked from its sculpt (the hero's: every muscle and
 // vein his reduced mesh has only in paint), the pores laid over it.
 uniform sampler2D relief : hint_normal, filter_linear_mipmap_anisotropic;
@@ -100,11 +118,16 @@ void vertex() {
 }
 
 void fragment() {
-	ALBEDO = texture(paint, UV).rgb * tone;
+	vec2 tx = UV * vec2(textureSize(paint, 0));
+	float lod = 0.5 * log2(max(dot(dFdx(tx), dFdx(tx)), dot(dFdy(tx), dFdy(tx))));
+	float far = smoothstep(far_from, far_to, lod);
+	float fl = clamp(lod - log2(float(textureSize(paint, 0).x) / float(max(textureSize(features, 0).x, 1))), 0.0, far_mip);
+	vec3 fm = textureLod(features, UV, fl).rgb;
+	ALBEDO = texture(paint, UV).rgb * tone * mix(vec3(1.0), face_tone, fm.b);
 	if (freckle_amount > 0.001) {
 		vec2 fk = texture(freckles, UV).rg;
 		float fv = fk.r * (1.0 - smoothstep(freckle_amount - 0.04, freckle_amount + 0.04, fk.g));
-		ALBEDO = mix(ALBEDO, ALBEDO * freckle_colour, fv * mix(0.65, 1.0, freckle_amount));
+		ALBEDO = mix(ALBEDO, ALBEDO * freckle_colour, fv * mix(0.5, 1.0, freckle_amount));
 	}
 	if (brow_dye > 0.0) {
 		// (the hairs' own lightness kept, their black core lifted a little,
@@ -114,10 +137,16 @@ void fragment() {
 		float l = dot(ALBEDO, lw) / max(dot(brow_paint * tone, lw), 0.02);
 		ALBEDO = mix(ALBEDO, brow_colour * tone * pow(clamp(l, 0.0, 1.15), 0.5), bm);
 	}
-	vec2 tx = UV * vec2(textureSize(paint, 0));
-	float lod = 0.5 * log2(max(dot(dFdx(tx), dFdx(tx)), dot(dFdy(tx), dFdy(tx))));
-	float far = smoothstep(far_from, far_to, lod);
-	vec2 f = texture(features, UV).rg * far;
+	vec2 f = fm.rg;
+	if (far > 0.0) {
+		// (the marks grown to the pixel: the most of them anywhere in it, from its
+		// corners, so an eye a third of a pixel high still darkens a whole one;
+		// sampled at its middle, her eyes at play zoom were missed one frame in two)
+		vec2 hx = 0.5 * dFdx(UV), hy = 0.5 * dFdy(UV);
+		f = max(max(f, textureLod(features, UV + hx + hy, fl).rg), max(textureLod(features, UV + hx - hy, fl).rg,
+			max(textureLod(features, UV - hx + hy, fl).rg, textureLod(features, UV - hx - hy, fl).rg)));
+	}
+	f = clamp(f * far_bold, 0.0, 1.0) * far;
 	ALBEDO *= 1.0 - far_dark * f.x;
 	ALBEDO = mix(ALBEDO, far_lips * tone, 0.75 * f.y);
 	// (two offset tiles, so no grid shows, their depth varying over her in
@@ -125,6 +154,14 @@ void fragment() {
 	vec4 q = mix(texture(pores, UV * pore_scale), texture(pores, UV * pore_scale * 0.77 + vec2(0.53, 0.19)), 0.35);
 	float patchy = smoothstep(0.2, 0.8, texture(pores, UV * pore_scale * 0.07 + vec2(0.31, 0.67)).a);
 	float depth = pore_depth * mix(0.35, 1.0, patchy);
+	float ga = grain_amount * (1.0 - fm.b);
+	if (ga > 0.0) {
+		// (a tile every 28 mm: pore_scale is a tile every 9; the two reads' mean has
+		// 0.71 of one's spread, given back)
+		vec2 gu = UV * pore_scale * 0.321;
+		float gr = texture(grain, gu + vec2(0.37, 0.11)).r + texture(grain, gu * 0.71 + vec2(0.83, 0.59)).r - 1.0;
+		ALBEDO *= 1.0 + ga * gr * 0.707 * 0.24;
+	}
 	float stubble = 0.0;
 	if (beard_shadow > 0.0 || scalp_shadow > 0.0) {
 		vec2 g = texture(shadow_mask, UV).rg;

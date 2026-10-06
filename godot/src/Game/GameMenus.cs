@@ -14,6 +14,11 @@ namespace SurvivorUnchained.Play;
  * conversations. Each holds the world still while it is up. */
 public partial class Game
 {
+    /// <summary>How much of her carried light lights her while the book frames her by day (--book-lamp
+    /// tries another): at full, from just over her head with the sun on her too, her face was cream-white
+    /// and flat beside the panel.</summary>
+    static float BookLampByDay => Args.Has("book-lamp") ? Args.Num("book-lamp", 0.5f) : 0.5f;
+
     /* ---------------------------------------------------------- actions -- */
 
     bool OnAction(Act a)
@@ -91,7 +96,13 @@ public partial class Game
         cam.ScreenNear = o.CameraNear;
         cam.ScreenFrame = o.CameraFrame;
         // (framed so, she turns to the view, a little toward the panel she reads)
-        if (scene?.Player is { } pv) { pv.Turned = o.CameraFrame != null ? cam.Yaw + 0.35f : null; pv.Watch = o.CameraFrame != null ? cam.Camera : null; }
+        if (scene?.Player is { } pv)
+        {
+            pv.Turned = o.CameraFrame != null ? cam.Yaw + 0.35f : null;
+            pv.Watch = o.CameraFrame != null ? cam.Camera : null;
+            // (by day her carried light is dimmed while the book frames her: the sun models her face)
+            pv.LampScale = o.CameraFrame != null && scene.View.Night != true ? BookLampByDay : 1;
+        }
         LookFor(o.CameraLook);
         controls.Captured = true;
         hud.Prompt(promptShown = null);
@@ -123,7 +134,7 @@ public partial class Game
         cam.ScreenShift = 0;
         cam.ScreenNear = 1;
         cam.ScreenFrame = null;
-        if (scene?.Player is { } pv) { pv.Turned = null; pv.Watch = null; }
+        if (scene?.Player is { } pv) { pv.Turned = null; pv.Watch = null; pv.LampScale = 1; }
         LookFor(null);
         if (scene != null && hudMode == null) scene.SimPaused = false;
         controls.Captured = false;

@@ -1,33 +1,33 @@
 # Heroine face, hair and creation's Look: status
 
-Agent a7905c3e498df9528 (handing off at v10b), branch `worktree-agent-a7905c3e498df9528`.
-The handoff for v11 is `docs/handoff/face.md`.
+Agent a43570e07edbe40b2 (handing off at v11), branch `worktree-agent-a43570e07edbe40b2`.
+The handoff for v12 is `docs/handoff/face.md`.
 
-## Current state (2026-10-05)
-- **v10b** (this branch, 2eb5ff28; **needs a refit for her body's paint**): her tones fitted per swatch to the portraits (round 2 not yet re-measured); copper hair (#7a4824) and copper brows; the sandpaper speckle gone from her neck and upper chest; freckles as a layer (`freckle_amount`, each face's default from its portrait: her own 0.3, Hard-won 0.25, Wildling 0.15, Fey 0.1, the rest none); the portrait key 20 degrees toward the camera. Before and after: `face_sheets/v10b_face.jpg`, `face_sheets/v10b_neck_1to1.jpg`.
-- **v10** (refitted and merged, 6e1b272e): her grain laid on all ten faces; her body's normals her own surface's, her middle smoothed; her skin's terminator soft and warm; her eyes' sky blob gone; the book frames her face.
-  - Grain at the Look, beside her portrait (`fair_grain.py`, face 380 px): s0.8 0.64-0.73, s1.6 0.81-0.92, s3.2 0.88-0.97 of the photo's (v9: 0.52 / 0.67 / 0.73). The finest is the TAA's limit.
-  - Tones under the white rig (`tone_fit.py v10`): renders 8-15% too red in R against every portrait; Sunborn 1.2x too light and 1.6x too blue. Not yet applied.
-  - Proofs: `face_sheets/v10_normals_clay.jpg` (Blender clay, side key, before and after), `face_sheets/v10_normals_game.jpg` (the game's own clay, key alone and all lights).
-- **The throat band, found:** two things, neither paint.
-  - Her chest's shards were the sculpt's own normals (as AccuRIG wrote them), faceted, 46 degrees off her surface at the 99th percentile. `heroine_head.py` now gives her body her surface's own joined smooth normals (the sculpt's kept only where she folds, 294 corners).
-  - The graft (MakeHuman's neck and upper chest, fitted to her sculpt) took the sculpt's crease down her middle and a fold under her throat. Smoothed there (Taubin, 4 cm either side).
-  - The dark line itself is the portraits' key's terminator: their short key lights her from 90 degrees to her throat's front, so its edge runs down her middle (the NormalBuffer shows no step there). Godot's scattering is a few pixels at a close-up, so the edge was a hard grey line; `heroine_skin.gdshader` now has its own light() with each channel reaching past the edge (red furthest, `terminator`), Godot's own light elsewhere.
-- **The catchlight blob** was her sky's radiance on the sharp cornea, not any light (it stayed with every light on her put out). The eye shader's light() keeps the lights' highlights; the sky's reflection is at `sky_wet` 0.04. The small glint remains. Also fixed: creation's campfire was never taken off her face at the close-up (`ZoneView.LightNear` skipped lights never lit).
-- **heroine.glb and the outfits are not committed.** The main session rebuilds them with `heroine_outfits.py --body` from this worktree's `tools/comfy/out/heroes/heroine_built.blend`.
+## Current state (2026-10-06)
+- **v11** (this branch, through 93f66173; no geometry or blend paint changed, **no refit needed**). Merged with the integration branch's v10b refit (19dca97e); creation's portraits rerun on it (a3369938).
+- Against the bar (`face_sheets/v11_face.jpg`, `v11_presets.jpg`, `v11_play_zoom.png`):
+  - **Tones** under the white rig: every face within 3.3% per channel of its portrait (`tone_fit.py v11e`).
+  - **Irises**: every face within 5% per channel of its portrait (were a third to a fiftieth as light; `iris_fit.py`).
+  - **Grain** at the Look: face s0.8 / s1.6 / s3.2 = 0.65 / 0.82 / 0.89 of the photo's. Not 0.9 yet (the finest is TAA's).
+  - **Neck grain**: neck over face 0.36 / 0.29 / 0.25 at the Look (was 0.26 / 0.22 / 0.23; the portrait's 0.46 / 0.45 / 0.39).
+  - **Brows** (hers): dark third over skin L 0.74, hair 0.27 (portrait 0.76, 0.28; were 0.35, 0.41).
+  - **Play zoom**: eyes and a mouth read at the game's camera, day, night and arena (were a blank); brows read at 12.5 m, merged with the eyes at 23 m.
+  - **Book by day**: her lamp at half while the book frames her; still flat (the sun is frontal).
+- **Tells left at the close-up**: skin a touch smooth and even; lips thinner and paler than her portrait's; the hair (a helmet, a pale strip at the temples; the hair pass); the other faces' brows 1.3 to 1.8 times too light against their portraits.
 
 ## Key decisions (why)
-- **Her body's normals her surface's own** (not the sculpt's): the sculpt's were faceted, the source of the chest's shards.
-- **A skin terminator of our own** (not wider screen-space scattering): scattering 0.15 to 0.4 softened the edge little and blurred away her grain.
-- **The cornea's sky reflection dimmed, its lights' sheen kept**: the radiance map is coarse and bright; the lights give small crisp windows.
-- **The book (Pack, Self, Arts) frames her** from 28 degrees and 3.9 m, her whole figure beside the panel, her head lifted to the camera (HeadTurn) and her body turned to it: her face about 80 px tall at 1080 (from play's view it was the top of her head). `--book-frame P,D,H|off` tries others.
-- Earlier decisions stand (in git history of this page): the wrap keeps her inside inside; eyes at least 0.89 of hers; preset skins from their portraits; her hairline blended; shots hold her eyes open; the moon off her face at the close-up; her head's AO baked.
+- **Eye swatches are the iris's own colour** (`iris_light` 1): the sky's cornea reflection that lit them at 0.3 was dimmed in v10. Fey, Vixen, Doe and Moonlit have swatches of their own (Dove, Lichen, Chestnut, Umber): shared, two faces were 20 to 50% apart.
+- **Each face's paint has its own tone** (`face_tone`, laid by the features' blue on the face alone), the swatch fit for the body.
+- **Only her own face's brows are dyed** to her hair: her brow mask on another face dyed its lid crease. Each hair keeps its painted darkness, in the dye's hue.
+- **Play zoom**: the features' marks read at a capped mip and grown to the pixel; her head carried 8 degrees up in play (`HerCarriage.HeadLevel`; play only, the animation lead to sign off).
+- **Her neck's grain is her face paint's own** (`heroine_grain.py`, a tile): the pores' tile read as sandpaper.
+- **Freckles**: lower defaults (hers 0.18, Hard-won 0.12, Wildling 0.1, Fey 0.06), softer at low amounts; a face shaped by hand starts with none.
 
 ## Next
-1. The v10b refit (`heroine_built.blend`), then the creation portraits and Look shots on this branch (`portraits.ps1`).
-2. The bar, worst first (detail in the handoff): tones re-measured; the brows' copper judged at 1:1; her neck's grain matched to her face's; freckle defaults checked against each portrait and at play zoom; the book's face washed out by day; her face at play zoom (some face always, day and night); hair clumping and contrast.
+See the handoff: the other faces' brows, the face's finest grain, the lips, the book's light, the chest flake (not found at the Look on the refit), then the paints and sliders pass.
 
 ## Notes for other areas
-- **Everyone taking pictures of her:** shots: `--open-eyes`, `--unshaded`, `--debugdraw`, `--eyeparam`, `--eyecycle`, `--skinparam`, `--rig-white`, `--no-taa`, `--mipbias`, `--book-frame`. Portraits.cs: `SKIN=name=v,...`, `DEBUGDRAW=view`, `LIGHTS=k,f,r`, `KEYSHADOW=0`.
-- **Male hero:** the skin shader (shared) has its own light() now (`terminator`, his too); the eye shader's `sky_wet`.
-- **UI design (when back):** the book screens now frame her close (`Overlay.BookFrame`, `CameraFrame`); a screen that wants play's view leaves `CameraFrame` null.
+- **Male hero:** the eye shader's `iris_light` is 1 now; his flint is refitted (`People.HisEyes`). His irises were as dark as hers.
+- **Animation:** `HerCarriage.HeadLevel` lifts her head 8 degrees above level in play (`--head-level`, `--head-ease`). Please judge it in motion.
+- **Arena art / experience:** at the Verge's arrival the canopy hides her entirely from play's camera.
+- **Shots:** `--book-lamp`, `--grain`, `--brows soften,sat`, `--head-level`, `--head-ease` try values.
