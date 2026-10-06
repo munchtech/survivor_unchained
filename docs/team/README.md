@@ -80,4 +80,4 @@ The main session keeps this current. It is the address list for SendMessage. Ret
 | Loot and itemisation (paused, built and merged; docs/handoff/loot.md for a successor) | — | docs/team/loot.md |
 | Creatures and models (our own boar first, then MODELS_TO_MAKE.md) | af551cacc6292152f | docs/team/creatures.md |
 | Story editor (paused; started fresh for each act's draft; handoff at 74280668) | — | docs/story/EDITORIAL_LETTER.md |
-| Heroine outfits | main session | — |
+| Heroine body and outfits (now a lead of its own, su-lead-max; was the main session's) | (to start; docs/handoff/outfits.md) | docs/team/outfits.md |
