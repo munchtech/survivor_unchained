@@ -44,6 +44,16 @@ The owner: "we need better writing", "we need emotional power", "a mind breaking
   - it holds at play distance.
 - **Distance:** "not seeing any face at long distance is tragic." When the book opens (Pack, Self, Arts), the camera comes in close enough that her face reads. At play zoom she always has SOME face: eyes, brows, a mouth.
 
+### Animation: an artists' kit for later (after the face, paints and hair)
+
+For the owner's post-build work with professional artists:
+- animator-friendly Blender rigs for her and the hero: IK/FK, hands and fingers, face keys, jiggle bones, one shared skeleton;
+- the round trip back into the game: FBX or glTF in, through our retargeting and import;
+- a library of building blocks: standing, sitting, lying, kneeling and leaning, with transitions, and the vocabulary of romance (a kiss, an embrace, holding, lying entwined, sitting close, undressing to the game's existing nudity);
+- a two-character staging scene with cameras and light, and documentation.
+
+Not made by us: poses or animation whose purpose is a sex act. That's for the owner's artists.
+
 ### Sound
 
 - Every skill now has its own sounds (skills VFX), but no agent can hear them. The owner will say which sound bad after playing.
