@@ -70,6 +70,10 @@ For the owner's post-build work with professional artists:
 
   Each ends at the moment before exposure. This needs garment control bones on the outfits' clasps, straps and laces, so a piece can open, slip or loosen, in the rig for the artists too.
 
+- **Cinematic versions** (the cinematics lead with animation): each romance sequence (the lift, kiss and carry; the undressing gestures; lying together) also staged in-engine in the game's cinematic system.
+  - Shot lists, cameras, lighting, blocking and timing, each ending at the fade.
+  - They serve as the game's own love-scene cinematics (which fade to black; "Warmed" only notes it happened) and as staged templates the owner's artists continue from: the same cameras and lights, exportable with the rigs.
+
 Not made by us: poses or animation whose purpose is a sex act, or that show nudity beyond the game's own coverage rules. That's for the owner's artists.
 
 ### Sound
