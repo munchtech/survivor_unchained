@@ -1,67 +1,82 @@
 # Story and writing: status
 
 The writer: owner of the canon, the words and the story data. Agent
-a3047062bf0f80c54 (the seventh story lead), branch
-`worktree-agent-a3047062bf0f80c54`. Works with the story editor (a separate
-lead, `docs/story/EDITORIAL_LETTER.md`). A fresh successor starts from
+a38d66ae66583ace1 (the eighth story lead), branch
+`worktree-agent-a38d66ae66583ace1`. Works with the story editor, a fresh one
+started for each act's draft (`docs/story/notes/`). A successor starts from
 `docs/handoff/story.md`.
 
-## State (5 October)
+## State (6 October)
 
-- **The owner's brief:** emotional power; twists that twist the knife or
-  leave you giddy; Maeca just Maeca; Holloway a good man whose act got them
-  all killed, now a drunk who still protects; Brannoc's arc to hit "so hard";
-  Maeca killing Holloway "a HOLY SHIT WHAT THE FUCK kinda thing"; the whole
-  story deepened, Acts 1 to 3.
-- **Written, waiting for the owner:**
-  - `docs/story/EMOTIONAL_PASS.md`: Act 1's beats rated 1 to 5 and why they
-    don't land harder; the techniques from the best games and fiction.
-  - `docs/story/TREATMENT.md`: the spine per act (one trunk devastation,
-    one twist, one elation, one laugh); four twists ("You did this";
-    "Ninety-two"; the woman with the lamp; the narrator is her mother); Maeca
-    kills Holloway, built from Act 1's plants to the aftermath; Brannoc
-    knowing in front of her; every other arc; §10 lists the owner's choices.
-- **No game data has changed.** The rewrite starts after the owner's yes,
-  Act 1 first (its plants ship first).
+- **The treatment is approved** (`docs/story/TREATMENT.md` §0 lists the
+  owner's choices and the editor's notes as applied).
+- **Act 1 is rewritten in the data** (first pass, pushed). Key scenes, for the
+  owner and the editor:
+  - `scene_gate_dawn`, `scene_in_my_count`, `scene_knocking` (the confession,
+    mid Act 1), `scene_did_he`, `scene_his_cup` (dialogue.json);
+  - Brannoc's C07, reordered: `brannoc.dusk_call`, `nell` to `nell_lantern`;
+    the road in rules.json `nell.burial_with`;
+  - Rook's kind lie: `rook.mother` to `mother_room`; the grave
+    (`Waystation.cs` `mother_grave`); the mystery page Home;
+  - the fortune: `vonnra.f_ford`, `f_did`, the readable ledger in `f_chart`;
+  - the dawns: rules `dawn.voice`, `dawn.word`; the first dawn's "Lamp's lit,
+    Spark."; the dusk call's first hearing (`DayLines.DuskHeard`).
+- **Love scenes:** both versions in `docs/story/LOVE_SCENES.md`, for the owner.
+- **Voice:** `docs/voice/RERECORD.md` keeps every changed line by character;
+  Sella's and Rook's lists are ready. Holloway, Brannoc, Maeca, Vonnra, Harlan
+  and the narrator are on HOLD in their packets.
+- **Next:** Act 2 (the rope with the player's hands on it, Holloway at his gate
+  on the fourth dusk, the woman with the lamp), then Act 3 (the voice).
 
 ## Key decisions (why)
 
-- **Setups hidden, payoffs loud** (the editor's letter): every secret is
-  planted as kindness, pride or small talk, and lands framed and said once.
-- **One devastation per act on the trunk:** choices bend how it lands, never
-  whether.
-- **Nell is Act 1's full wound only;** Acts 2 and 3 take their wounds from
-  people the player has laughed with (Holloway; Chid; the mother).
-- **Holloway's act is a good man's:** he dropped the lid on the ladder to
-  save four hundred above. The player would have done it.
-- **Maeca's motive is hidden behind kindness,** and the visible threat to
-  Holloway is dressed in red (Redcowl, Pell).
+- **Scenes on the trunk:** the beats that carry Act 1 play by themselves at a
+  morning or a dusk in the town (`Journey.TakeScene`, set by overnight rules),
+  so no kind or careless road misses them.
+- **"Spark", not "Wick":** read aloud, "Flame" doubles the fire and carries "old
+  flame"; "Spark" is dry and a child's name. The lamplings are Stub and Old
+  Gutter.
+- **The confession never points at a survivor:** "Does anyone else know?" names
+  Pell; the decoy is red, or a ledger.
+- **No cost at the bench for either answer to Brannoc** (the owner): the truth
+  costs a slower hammer and a dark road, heard, never paid.
+- **The ledger's line 26 is "Rook's lodger.":** innocent until Act 2's end.
 
-## Proposed cinematic staging changes (cinematics is paused; none built)
+## Staging changes for cinematics (paused; none built)
 
-C03 the nod becomes a choice; C04 Holloway's coat, Rook's look, the dropped
-lamp; C07 extended on the truth (his iron in his hands); C08 a two-day-old
-marker; C09 three readings, "You did this", the ledger readable; C14 he puts
-out one iron with his bare hand; C20 rebuilt as a story night with Holloway
-and the rope; a new C20b (Holloway at his gate at dusk); C22 his table; C32
-Rook's kitchen before "Come down with me"; C43 the narrator's voice from
-below. Details: `TREATMENT.md` §3 to §5 and §9.
-
-## Next
-
-1. The owner's choices on `TREATMENT.md` §10 (through the main session), with
-   the fresh editor's notes.
-2. Then Act 1's rewrite: Holloway, Maeca (every "Barefoot" out), Brannoc,
-   Rook, the fortune, the narrator's dawn lines; tests and StoryLint with it.
-3. Then the Act 2 and Act 3 outlines rewritten to the treatment.
+- **C03:** after "Is it morning?" the shot holds on the lamp at her face for her
+  answer: `warden_answer` (Nod / Say nothing; fact `warden.answer`). Either way
+  he lets go. Show her taking the lamp-iron out of the shallows afterwards.
+- **C04 A7:** the line is longer now (the mother's words added); hold the 3 s
+  of silence after it. Cast it in the recast narrator's plain voice.
+- **C04 B:** Holloway on the gate after his night: he puts his coat round her
+  shoulders without a word and walks off; a guard to his mate, "That's his
+  only coat." (a new line for C04 B2). There is one coat: she leaves it on his
+  stool at the gate that evening; he wears it from then on; after the rope
+  Maeca takes it off the empty stool, and wears it at the war. Rook at her door looks at the survivor's face one beat too long, then
+  at the tower. On the stones at the water's edge, a dropped lamp, gone out.
+- **The prologue:** the last of the drowned at the water's edge is a woman who
+  lifts a dead lamp to the survivor's face and does not strike; the narrator
+  says nothing while the player cuts her down (combat and experience).
+- **C07:** the forge at dusk; the camera on his thumb finding the mark; no
+  music; the bar from orange to grey at the very end; the lantern taken down.
+- **C14:** one action, held: under the last iron he closes his bare hand round
+  the light. No "reads his own bracket". No irons laid in the road.
+- **C08:** cut Rook turning toward the mother's marker. The marker is just
+  there, a few stones along.
+- **C09:** the ledger readable, framed on the last page: twenty-six lines
+  struck, "Nell, the smith's girl. With Wat.", "Rook's lodger.", and
+  "From the ford. Got up." not struck.
+- **The gate scenes** (`scene_*`) play as conversations today. Holloway sits
+  the night in the south gateway (`Waystation.cs` routine). A staged version
+  would want: Maeca on the step with the crossbow, the bottle poured out.
 
 ## For other areas
 
-- **Combat:** if the owner says yes, the prologue gains a drowned woman with
-  a dead lamp at the water's edge; C20 becomes a story night with Holloway as
-  an ally; the lampling "Wick" and "The Wick-Mother" want new names ("Stub").
-- **Crafting and UI:** the Warden's lamp-iron as her night lantern, hung at
-  her belt (`TREATMENT.md` §9).
-- **Voice (paused):** the narrator would be recast as a woman of about sixty.
-  The sixth lead's packet notes are in this page's history (`99b39184`); many
-  lines will change in the rewrite, so packets wait for it.
+- **Combat:** the lamplings renamed (Stub, Old Gutter), done in `Enemies.cs`,
+  `Dig.cs`, `Journey.cs`. The prologue's woman with the dead lamp (above).
+- **Crafting (paused):** the lie to Brannoc costs no prices, commissions or
+  masterworks (the owner overrode "full prices"); his warmth goes, in words
+  only. Snib does not take his forge work. Nothing to build.
+- **Voice (paused):** the narrator recast as a woman of about sixty, plain and
+  dry, light valley accent (`VOICES.md`, `VO_CAST.md`).

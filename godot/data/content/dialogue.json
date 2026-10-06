@@ -3426,7 +3426,7 @@
    },
    "cb_freed_teamsters": {
     "id": "cb_freed_teamsters",
-    "text": "Three teamsters walked in through my gate, thin as rakes and alive. You did what eleven Watchmen couldn't. Don't let it go to your head; eleven Watchmen can't do much.",
+    "text": "(He's been drinking since dawn, and he's not hiding it.) Three in! I was on the gate. Three in, and the count's— hell, I don't know what the count is. (He sits down hard.) Don't let it go to your head. Eleven Watchmen couldn't do it. Eleven Watchmen can't do much.",
     "effects": [
      {
       "npcFlag": {
@@ -7020,33 +7020,25 @@
     "when": {
      "all": [
       {
-       "time": "dusk"
+       "fact": "scene.now",
+       "eq": "brannoc"
       },
       {
-       "all": [
-        {
-         "met": "brannoc"
-        },
-        {
-         "day": {
-          "gte": 2
-         }
-        },
-        {
-         "not": {
-          "time": "night"
-         }
-        },
-        {
-         "not": {
-          "npcFlag": {
-           "npc": "brannoc",
-           "key": "asked_nell",
-           "eq": true
-          }
-         }
+       "met": "brannoc"
+      },
+      {
+       "day": {
+        "gte": 2
+       }
+      },
+      {
+       "not": {
+        "npcFlag": {
+         "npc": "brannoc",
+         "key": "asked_nell",
+         "eq": true
         }
-       ]
+       }
       }
      ]
     },
@@ -8109,8 +8101,25 @@
    "dusk_call": {
     "id": "dusk_call",
     "speaker": "narrator",
-    "text": "As the light goes, the hammer at the smithy stops. Brannoc calls you over, without looking up.",
-    "next": "nell"
+    "text": [
+     {
+      "when": {
+       "time": "night"
+      },
+      "text": "The forge is banked, but Brannoc is still at the anvil, and when you pass he calls you over without looking up."
+     },
+     {
+      "text": "As the light goes, the hammer at the smithy stops. Brannoc calls you over, without looking up."
+     }
+    ],
+    "next": "nell",
+    "effects": [
+     {
+      "set": {
+       "scene.now": ""
+      }
+     }
+    ]
    }
   }
  },

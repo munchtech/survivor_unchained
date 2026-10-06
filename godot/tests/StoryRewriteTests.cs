@@ -203,6 +203,33 @@ public class StoryRewriteTests
     }
 
     [Fact]
+    public void Brannoc_calls_her_over_at_dusk_so_every_road_hears_his_question()
+    {
+        // C07 on the trunk (the treatment §5): from day 2, at the first dusk in the town, he asks; she
+        // does not have to come to him. Never by day as a scene, and dropped once she has been asked.
+        var s = Q();
+        s.World.Npc("brannoc").Flags["met"] = true;
+        s.World.Day = 1;
+        Simulation.AdvanceDay(s.C, () => 0.5);
+        Assert.Equal("brannoc:dusk_call", s.World.Fact("scene.dusk").Str);
+        s.World.Time = TimeOfDay.Day;
+        Assert.Equal("nell", new DialogueRunner(Convo("brannoc"), s.C).Start()!.Node.Id);
+        s.World.Time = TimeOfDay.Dusk;
+        Assert.Equal("brannoc", Journey.TakeScene(s.C, dusk: true));
+        var r = new DialogueRunner(Convo("brannoc"), s.C);
+        var p = r.Start()!;
+        Assert.Equal("dusk_call", p.Node.Id);
+        Assert.Equal("nell", r.Advance()!.Node.Id);
+        // Asked by day first: the dusk's scene has passed, and is dropped.
+        var t = Q();
+        t.World.Npc("brannoc").Flags["met"] = true;
+        t.World.Npc("brannoc").Flags["asked_nell"] = true;
+        t.World.Facts["scene.dusk"] = "brannoc:dusk_call";
+        Assert.Null(Journey.TakeScene(t.C, dusk: true));
+        Assert.False(t.World.Fact("scene.dusk").Truthy);
+    }
+
+    [Fact]
     public void Brannoc_is_proud_of_his_irons_until_he_knows()
     {
         var s = Q();

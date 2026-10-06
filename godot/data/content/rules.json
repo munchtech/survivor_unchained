@@ -1045,6 +1045,15 @@
    "report": "Out in the Verge the violet went out an hour before dawn, all at once, like a door shutting. Old Oswin says he heard marching first, a long way off, going down."
   },
   {
+   "id": "jory.home",
+   "once": true,
+   "when": {
+    "history": "freed_teamsters"
+   },
+   "effect": [],
+   "report": "When the teamsters came up the Old Road, thin as rakes and walking, Holloway was on the gate, and the whole square heard him: \"Three in! Count's— hell, I don't know what the count is!\" Harlan ran the length of the street in his apron."
+  },
+  {
    "id": "jory.nights",
    "once": true,
    "when": {
@@ -1514,18 +1523,24 @@
    "when": {
     "all": [
      {
-      "fact": "tremor.felt",
-      "eq": true
+      "day": {
+       "gte": 3
+      }
      },
      {
-      "day": {
-       "gte": 4
-      }
+      "fact": "prologue.done",
+      "eq": true
      },
      {
       "not": {
        "fact": "scene.dusk",
        "exists": true
+      }
+     },
+     {
+      "not": {
+       "fact": "holloway.confessed",
+       "eq": true
       }
      }
     ]
