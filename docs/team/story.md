@@ -1,10 +1,36 @@
 # Story and writing: status
 
-The writer: owner of the canon, the words and the story data. Agent
-a38d66ae66583ace1 (the eighth story lead), branch
-`worktree-agent-a38d66ae66583ace1`. Works with the story editor, a fresh one
-started for each act's draft (`docs/story/notes/`). A successor starts from
-`docs/handoff/story.md`.
+The writer: owner of the canon, the words and the story data. The ninth story
+lead, branch `worktree-agent-a67ad095680c3d65b` (paused 6 October by the
+owner). Works with the story editor, a fresh one started for each act's draft
+(`docs/story/notes/`). A successor starts from `docs/handoff/story.md`, then
+the paused line below, then `docs/story/notes/02_act1_draft.md` (the work list).
+
+**Paused here (6 October):** the lie to Brannoc costs nothing in play
+(notes 02 §6.7) is done and tested. **Next**, in the editor's order (§12):
+1. "Three days" out of Maeca's mouth: `maeca.blind_morning` [1] becomes "The
+   Pack found me, after Ashford. A cave mouth, and a lad I'd been fond of
+   dying in it."; `maeca.told_true` [3] "I held a cave mouth for nobody
+   coming." (Holloway's "Three days, they knocked." and Brannoc's "Low Kiln's
+   three days." stay.)
+2. The ledger's "Rook's lodger." and the lie it rests on (§2): the lie onto
+   the trunk; separate the room from the lie; "I was a day short." against
+   "A week since."; keep one look at the tower (C04 B's).
+3. The road: C14 a played dusk scene, then the burial (C08) a trunk scene.
+4. The rest of notes 02 (§4 to §11), protecting §8.
+
+**The owner's decisions since notes 02** (via the coordinator, 6 October; in
+OWNER_NOTES once pushed): love scenes **B**, with the editor's four conditions
+(§10), A kept only as the fallback. Built as cinematics: C14 (Brannoc's
+realisation on the road) and the lid on the ladder (the night of
+"Ninety-two") as **illustrated story cinematics** (Diablo III's drawn act
+cinematics as the touchstone: painted, inked layers, slow camera moves,
+parallax, living touches, cut and scored like film), scripted shot by shot in
+`docs/story/storybook/<scene>.md` (per shot: the image and the faces, the
+camera move and its duration, what moves in it, the lines, the sound and the
+silence); the burial (C08) realistic, in-engine, as a shot list for the
+cinematics lead. The game plays all three, with placeholders until the art
+exists. Report to the coordinator when the two scripts are ready.
 
 ## State (6 October)
 
@@ -21,7 +47,8 @@ started for each act's draft (`docs/story/notes/`). A successor starts from
   - the fortune: `vonnra.f_ford`, `f_did`, the readable ledger in `f_chart`;
   - the dawns: rules `dawn.voice`, `dawn.word`; the first dawn's "Lamp's lit,
     Spark."; the dusk call's first hearing (`DayLines.DuskHeard`).
-- **Love scenes:** both versions in `docs/story/LOVE_SCENES.md`, for the owner.
+- **Love scenes:** both versions in `docs/story/LOVE_SCENES.md`; the owner
+  chose B (above), not yet applied in the data.
 - **Voice:** `docs/voice/RERECORD.md` keeps every changed line by character;
   Sella's and Rook's lists are ready. Holloway, Brannoc, Maeca, Vonnra, Harlan
   and the narrator are on HOLD in their packets.
@@ -38,8 +65,11 @@ started for each act's draft (`docs/story/notes/`). A successor starts from
   Gutter.
 - **The confession never points at a survivor:** "Does anyone else know?" names
   Pell; the decoy is red, or a ledger.
-- **No cost at the bench for either answer to Brannoc** (the owner): the truth
-  costs a slower hammer and a dark road, heard, never paid.
+- **No cost in play for any answer to Brannoc** (the owner): every first
+  answer to his question gives the same standing (trust +25, respect +15, the
+  truth's best), and the truth's gossip warms nobody's prices. His warmth is
+  in his words only (`nell.told`). Held by
+  `StoryRewriteTests.The_lie_to_Brannoc_costs_nothing_in_play`.
 - **The ledger's line 26 is "Rook's lodger.":** innocent until Act 2's end.
 
 ## Staging changes for cinematics (paused; none built)
@@ -77,6 +107,8 @@ started for each act's draft (`docs/story/notes/`). A successor starts from
   `Dig.cs`, `Journey.cs`. The prologue's woman with the dead lamp (above).
 - **Crafting (paused):** the lie to Brannoc costs no prices, commissions or
   masterworks (the owner overrode "full prices"); his warmth goes, in words
-  only. Snib does not take his forge work. Nothing to build.
+  only. Snib does not take his forge work. Every answer to his question now
+  gives trust +25 and respect +15, so his respect-20 commissions open the
+  same way on every route.
 - **Voice (paused):** the narrator recast as a woman of about sixty, plain and
   dry, light valley accent (`VOICES.md`, `VO_CAST.md`).
