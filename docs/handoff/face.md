@@ -49,7 +49,11 @@ From agent aed215ba3ca60cc29 (took over from a43570e07edbe40b2 at v11). Read `do
 
 ## Scripts and collaborators
 - Scripts: `tools/scratch/face9` (this session's: `fair.py`, `headpose.py`, `irisw.py`, `speck.py`, `regions.py`, `lay_probe.ps1`, `preview_front.py`, `clay_now.py`, `mouth_probe.py`, batches) and `tools/scratch/face8`. Copy both to your scratchpad and run `repoint9.py` (edit its paths first). Measures run with `%LOCALAPPDATA%\facefit\.venv\Scripts\python.exe`.
-- Collaborators: main (reviews, merges, refits); rendering a20bdef993e00f26b (the AA, the TAA's share of the finest grain); outfits afb34c385770877d3 (told about the skin).
+- Collaborators: main (reviews, merges, refits); outfits afb34c385770877d3 (told about the skin).
+- Rendering (a20bdef993e00f26b, wound down; `docs/handoff/performance.md` on its branch @37155093).
+  - Its Look grain (`fair_grain.py`, scatter 0.38): TAA 0.0126 / 0.0258 / 0.0430; FSR 2 at native with its sharpening off 0.0174 / 0.0314 / 0.0475, keeping all the detail. Its frames at scatter 0.1 are `godot/.shots/b3_look_*_sc_00.png` in its worktree.
+  - It leans to FSR 2, but her hashed hair crawls under it (0.8% of hair pixels a frame, against TAA's 0.02%). Its `--coverage` switch (off by default) fixes the lashes, not the hair.
+  - It suggests blended hair cards with a depth prepass. The AA choice is main's; plan the hair pass with it.
 
 ## Files (read these sections)
 - `People.cs`: Skin, HerScatter, HerGrain, HeadPaintFile, HerPaint.
