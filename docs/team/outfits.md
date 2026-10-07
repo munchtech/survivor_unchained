@@ -23,6 +23,6 @@ Lead: su-lead-max (first lead, 6 October 2026; wound down for usage). Handoff: `
 
 ## Notes for other areas
 - Rendering lead (a20bdef993e00f26b): TAA throws an out-of-gamut pixel at a gold edge against the background (Warden vault, chest view, frame 10, near (591, 323)); the MSAA ones are fixed in the outfit shader.
-- Animation lead (a9a80800a7dae2519): garments must keep the skin's weights under them; send per-outfit deviations after the helper bones.
+- Animation (successor of a9a80800a7dae2519): the helper bones stay off (no `--helpers`) until the garment-against-skin weight check arrives; garments must keep the weights of the skin under them.
 - Face lead (aed215ba3ca60cc29): paint and sculpt may be a little out of register (nipple bumps 8 to 9 mm above the areola centres); to confirm by eye.
 - Any lead: the worktree-import recipe and every check script are in `tools/scratch/outfits/` and the handoff.
