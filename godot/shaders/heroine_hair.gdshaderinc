@@ -1,5 +1,6 @@
 // Her hair's shading, for heroine_hair.gdshader (cut to its strands by hashed
-// alpha) and heroine_hair_soft.gdshader (blended: SOFT).
+// alpha), heroine_hair_coverage.gdshader (cut by a threshold moved every frame:
+// COVERAGE) and heroine_hair_soft.gdshader (blended: SOFT).
 
 uniform sampler2D strands : source_color, filter_linear_mipmap_anisotropic, repeat_enable;
 uniform vec3 colour : source_color = vec3(0.56, 0.17, 0.07);
@@ -29,22 +30,35 @@ uniform vec3 head = vec3(0.0, 1.6, 0.0);
 // much it moves with it): how far each of the chain's points has swung
 // from where it hangs at rest, in the mesh's own space.
 uniform vec3 chain[8];
+// The three as they were last frame, for the motion vectors (motion.gdshaderinc):
+// so the temporal smoothing follows the swing, not only her head.
+uniform vec3 sway_then = vec3(0.0);
+uniform vec3 head_then = vec3(0.0, 1.6, 0.0);
+uniform vec3 chain_then[8];
+
+#include "res://shaders/motion.gdshaderinc"
+#ifdef COVERAGE
+#include "res://shaders/coverage.gdshaderinc"
+#endif
 
 varying vec3 strand;
 varying float sparkle;
 varying float fibre;
 
 void vertex() {
-	float hang = clamp((head.y - VERTEX.y) / 0.35, 0.0, 1.0);
+	bool past = last_frame(TIME);
+	float hang = clamp(((past ? head_then.y : head.y) - VERTEX.y) / 0.35, 0.0, 1.0);
 	float tip = (cap || tie) ? 1.0 : smoothstep(0.0, 1.0, UV.y);
 	float moves = (cap && COLOR.b < 0.5) ? 0.0 : 1.0;           // (not the cap on her scalp; a braid's strands, yes)
 	vec3 air = vec3(sin(TIME * 1.1 + VERTEX.y * 5.0), 0.0, cos(TIME * 0.9 + VERTEX.x * 7.0)) * 0.0025;
 	if (UV2.y > 0.0) {
 		float s = clamp(UV2.x, 0.0, 1.0) * 7.0;
 		int i = min(int(floor(s)), 6);
-		VERTEX += (mix(chain[i], chain[i + 1], s - float(i)) + air * UV2.x) * UV2.y;
+		vec3 a = past ? chain_then[i] : chain[i];
+		vec3 b = past ? chain_then[i + 1] : chain[i + 1];
+		VERTEX += (mix(a, b, s - float(i)) + air * UV2.x) * UV2.y;
 	} else {
-		VERTEX += (sway + air) * hang * hang * tip * moves;
+		VERTEX += ((past ? sway_then : sway) + air) * hang * hang * tip * moves;
 	}
 }
 
@@ -61,6 +75,7 @@ void fragment() {
 	strand = normalize(BINORMAL);                                 // along its V: root to tip
 	sparkle = t.g;
 	fibre = t.r * (cap ? 0.35 : 1.0);                            // (the cap's under the hair: little highlight)
+	float cover = 1.0;
 	if (tie) {
 		ALBEDO = vec3(0.055, 0.035, 0.024);
 		fibre = 0.6;
@@ -70,14 +85,20 @@ void fragment() {
 		// (a rope of hair, a braid's strand (its blue), as bright as hair, deep in it darker)
 		float rope = COLOR.b;
 		ALBEDO = tint * t.r * mix(0.85, 0.5, smoothstep(0.4, 1.0, fade) * (1.0 - rope)) * mix(1.0, mix(0.55, 1.0, depth), rope);
-		ALPHA = max(fade * fade, t.a * smoothstep(0.0, 0.7, fade));
+		cover = max(fade * fade, t.a * smoothstep(0.0, 0.7, fade));
 	} else {
 		float along = UV.y;                                       // 0 at the root, 1 at the tip
 		ALBEDO = tint * t.r * mix(1.0 - roots, 1.0, smoothstep(0.0, 0.1, along)) * mix(0.55, 1.0, depth);
 		// (its root's blunt end softened; the baby hairs at her hairline faint: its vertex alpha)
-		ALPHA = t.a * smoothstep(0.0, 0.012, along) * COLOR.a;
+		cover = t.a * smoothstep(0.0, 0.012, along) * COLOR.a;
 	}
-#ifndef SOFT
+#if defined(SOFT)
+	ALPHA = cover;
+#elif defined(COVERAGE)
+	// (cut by a threshold moved every frame: coverage.gdshaderinc)
+	if (cover < coverage_cut(FRAGCOORD.xy)) discard;
+#else
+	ALPHA = cover;
 	ALPHA_HASH_SCALE = 1.0;
 #endif
 	ROUGHNESS = 0.7;

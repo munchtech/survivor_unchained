@@ -944,11 +944,11 @@ public static class Vat
 public partial class VatCrowd : MultiMeshInstance3D
 {
     public readonly VatAsset Asset;
-    int capacity, top, shown, frame, anon;
+    int capacity, top, shown, frame;
     float[] buffer = Array.Empty<float>();
-    /// <summary>Each slot's body, the frame it was last drawn and the frame it was let go.</summary>
+    /// <summary>Each slot's body, and the frame it was last drawn.</summary>
     long[] slotKey = Array.Empty<long>();
-    int[] drawnAt = Array.Empty<int>(), freedAt = Array.Empty<int>();
+    int[] drawnAt = Array.Empty<int>();
     readonly Dictionary<long, int> slotOf = new();
     const long Empty = long.MinValue;
     /// <summary>A body's floats: its transform (12), colour (4) and custom data (4), as Godot lays a MultiMesh's buffer out.</summary>
@@ -973,8 +973,7 @@ public partial class VatCrowd : MultiMeshInstance3D
         Array.Resize(ref buffer, n * Stride);
         Array.Resize(ref slotKey, n);
         Array.Resize(ref drawnAt, n);
-        Array.Resize(ref freedAt, n);
-        for (int i = was; i < n; i++) { slotKey[i] = Empty; freedAt[i] = int.MinValue / 2; }
+        for (int i = was; i < n; i++) slotKey[i] = Empty;
         Multimesh = new MultiMesh
         {
             TransformFormat = MultiMesh.TransformFormatEnum.Transform3D, UseColors = true, UseCustomData = true,
@@ -982,22 +981,17 @@ public partial class VatCrowd : MultiMeshInstance3D
         };
     }
 
-    public void Begin() { frame++; anon = 0; }
+    public void Begin() => frame++;
 
-    /// <summary>A free slot for a new body: the lowest, and none let go this frame or the last (its
-    /// old body's place would be taken for where the new one came from).</summary>
+    /// <summary>A free slot for a new body: the lowest.</summary>
     int Take()
     {
         for (int i = 0; i < capacity; i++)
-            if (slotKey[i] == Empty && freedAt[i] < frame - 1) return i;
+            if (slotKey[i] == Empty) return i;
         int s = capacity;
         Grow(capacity * 2);
         return s;
     }
-
-    /// <summary>A body with no lasting name (a herd's spirit wolves): a slot for this frame only.</summary>
-    public void Push(Transform3D at, string role, double t, float flash, float dissolve, float frozen, float burning, Color tint, float glow) =>
-        Push(long.MaxValue - anon++, at, role, t, flash, dissolve, frozen, burning, tint, glow);
 
     /// <summary>One body this frame (`key`: who it is, the same every frame), `t` seconds into its role's clip.</summary>
     public void Push(long key, Transform3D at, string role, double t, float flash, float dissolve, float frozen, float burning, Color tint, float glow)
@@ -1007,6 +1001,10 @@ public partial class VatCrowd : MultiMeshInstance3D
             s = Take();
             slotOf[key] = s;
             slotKey[s] = key;
+            // A new body's first frame is placed but not seen (wholly dissolved: the shader
+            // discards it in every pass). Seen from its second, it moved from its own place,
+            // not from whatever its slot held (nothing, or another body).
+            dissolve = 1;
         }
         drawnAt[s] = frame;
         if (s >= top) top = s + 1;
@@ -1034,7 +1032,6 @@ public partial class VatCrowd : MultiMeshInstance3D
             if (drawnAt[s] == frame || slotKey[s] == Empty) continue;
             slotOf.Remove(slotKey[s]);
             slotKey[s] = Empty;
-            freedAt[s] = frame;
             Array.Clear(buffer, s * Stride, Stride);
         }
         while (top > 0 && slotKey[top - 1] == Empty) top--;

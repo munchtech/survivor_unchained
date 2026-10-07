@@ -48,7 +48,10 @@ const vec3 LW = vec3(0.2126, 0.7152, 0.0722);
 // distance (so it is round, and the same at every zoom). Only what stands
 // nearer the camera than she does, and above her ankles (never the floor at
 // her feet), is opened, each eased in, so no line is drawn across a piece she
-// stands in.
+// stands in: a point only partly in the way has a smaller window, never a
+// fainter one, so the window is always clear and only its rim is see-through
+// (a piece drawn faint across the window, on the rim's translucent pass, lost
+// its shading and stood pale in it: a roof's underside, a gable).
 float see_through(vec3 vpos, mat4 view, mat4 inv_view, mat4 proj, vec3 cam) {
 	// (A light's view stands far from the camera's: a lamp's at most a few metres up, the sun's far off.)
 	if (survivor.w <= 0.0 || view_from.w <= 0.0 || distance(cam, view_from.xyz) > 1.0) return 1.0;
@@ -60,9 +63,12 @@ float see_through(vec3 vpos, mat4 view, mat4 inv_view, mat4 proj, vec3 cam) {
 	vec4 a = proj * vec4(vpos, 1.0);
 	vec4 b = proj * vec4(her, 1.0);
 	vec2 d = a.xy / a.w - b.xy / b.w;
-	d.x *= proj[1][1] / proj[0][0];
-	float metres = length(d) * -her.z / proj[1][1];
-	return 1.0 - open * (1.0 - smoothstep(1.45, 2.5, metres));
+	// (The projection's own scales, not their signs: Vulkan's is flipped in y, and a
+	// negative distance opened all that stands before her, at any distance.)
+	float fy = abs(proj[1][1]);
+	d.x *= fy / abs(proj[0][0]);
+	float metres = length(d) * -her.z / fy;
+	return smoothstep(1.45 * open, 2.5 * open, metres);
 }
 
 void vertex() {
@@ -87,35 +93,8 @@ void vertex() {
 #endif
 }
 
-float bayer(vec2 p) {
-	ivec2 q = ivec2(mod(floor(p), 4.0));
-	int i = q.x + q.y * 4;
-	int[16] m = int[](0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5);
-	return (float(m[i]) + 0.5) / 16.0;
-}
-
 void fragment() {
 	float kept = see_through(VERTEX, VIEW_MATRIX, INV_VIEW_MATRIX, PROJECTION_MATRIX, CAMERA_POSITION_WORLD);
-	// TEMPORARY (--see-through old, for before and after pictures): the old dithered tunnel.
-	if (view_from.w > 1.5) {
-#ifdef REVEAL
-		discard;
-#else
-		kept = 1.0;
-		vec3 wp = (INV_VIEW_MATRIX * vec4(VERTEX, 1.0)).xyz;
-		vec3 cam = CAMERA_POSITION_WORLD;
-		vec3 d = survivor.xyz - cam;
-		float len = length(d);
-		vec3 dir = d / len;
-		float t = dot(wp - cam, dir);
-		if (survivor.w > 0.0 && t < len - 1.0) {
-			float r = length((wp - cam) - dir * t);
-			float radius = mix(1.2, 3.4, clamp(t / len, 0.0, 1.0));
-			float fade = (1.0 - smoothstep(radius * 0.7, radius, r)) * 0.94;
-			if (bayer(FRAGCOORD.xy) < fade) discard;
-		}
-#endif
-	}
 #ifdef REVEAL
 	// Only the feathered rim (the piece's whole part is drawn by the first pass).
 	if (kept >= 0.999 || kept <= 0.004) discard;
