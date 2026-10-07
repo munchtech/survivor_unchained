@@ -53,7 +53,7 @@ The owner asks: "accurate, efficient, on track, manage and engineer context. del
 - Batch screenshots and renders: shoot everything a check needs in one turn, look once, fix in one pass.
 - Keep handoffs and status pages lean.
 - Effort (the owner, 6 October: "cut token use without lowering quality"): the lowest effort that gets the same result, raised freely whenever quality could be at risk. Leads are spawned as `su-lead-max` (judgement and taste: face, hair, story, UI, rendering diagnosis, new systems), `su-lead-high` (feature work to a spec: combat, animation, arena art, crafting, loot, cinematics, performance runs, story checks, provenance) or `su-worker-medium` (mechanical jobs). If your task proves harder than your setting, say so. Earlier settings: legal medium; performance measurement runs, story consistency checks, and provenance and licence logging high; everything else at its top. Every agent stays on the same model.
-- Running now (from 6 October): the face, body and outfits, rendering, and the story editor (Act 1 read). Next: UI design and UI art (the HUD keystone), then the writer (after the editor's notes), combat and animation (the crowd and her run), the experience director, then the rest.
+- Running now (from 6 October): the face, body and outfits, rendering, the writer (notes 02) and UI design (the HUD). Next: UI art (when the GPU is lighter), combat and animation (the crowd and her run), the experience director, then the rest.
 
 ## Roster
 
@@ -62,10 +62,10 @@ The main session keeps this current. It is the address list for SendMessage. Ret
 | Area | Agent | Status page |
 |---|---|---|
 | Voice (paused by the owner: no placeholders; final voices from ElevenLabs later) | a501b387a90d78b4e | docs/team/voice.md |
-| Story and writing (the writer: the approved rewrite, Act 1 first) | a38d66ae66583ace1 | docs/team/story.md |
+| Story and writing (the writer: the approved rewrite, Act 1 first) | a67ad095680c3d65b | docs/team/story.md |
 | Combat, encounters, bosses, balance (paused; handoff ready at af6452e1) | — | docs/team/combat.md |
 | Animation (paused; handoff ready at 85d0eaf9) | — | docs/team/animation.md |
-| UI design (paused; handoff ready at 09310365; portraits wait on the face) | — | docs/team/ui_design.md |
+| UI design (the HUD keystone; portraits wait on the face) | adba22c3df8f39418 | docs/team/ui_design.md |
 | UI art (paused; handoff ready at cd0f4ab6) | — | docs/team/ui_art.md |
 | Crafting (research, design, build) (paused; handoff ready at ed429efb) | — | docs/team/crafting.md |
 | Gameplay experience director | af2c026d86e1b532b | docs/team/experience.md |
@@ -79,5 +79,5 @@ The main session keeps this current. It is the address list for SendMessage. Ret
 | Legal and Steam compliance (paused; docs/handoff/legal.md; wake before submission or for a new outfit) | — | docs/team/legal.md |
 | Loot and itemisation (paused, built and merged; docs/handoff/loot.md for a successor) | — | docs/team/loot.md |
 | Creatures and models (our own boar first, then MODELS_TO_MAKE.md) | af551cacc6292152f | docs/team/creatures.md |
-| Story editor (fresh for each act's draft; reading Act 1, then paused) | a26ee4f2d03cb1031 | docs/story/EDITORIAL_LETTER.md |
+| Story editor (paused after notes 02 at 435k; a fresh editor reads the next draft) | — | docs/story/EDITORIAL_LETTER.md |
 | Heroine body and outfits (now a lead of its own, su-lead-max; was the main session's) | afb34c385770877d3 | docs/team/outfits.md |

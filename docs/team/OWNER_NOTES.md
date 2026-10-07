@@ -2,6 +2,22 @@
 
 Every lead reads this after RESUME.md. When you take a note into your work, mark it done here with your commit. The main session keeps it current.
 
+## 6 October 2026 (after the editor's notes 02 on Act 1)
+
+### Story: love scenes and showing, not telling
+
+- **Love scenes: B** (the lovers' own lines over black). Apply the editor's four conditions (notes 02 §10); A stays only as the fallback.
+- **"Absolutely"** to the editor's verdict that the heaviest moments are told, not shown. Build them as cinematics.
+
+### Cinematics: a second, storybook style
+
+The owner: "lets introduce another cheaper, but stylisticly and artistically STILL PERFECT version of like a storybook type cinematic drawings that can show true anguish much better like a flip book."
+- **Storybook (new):** the owner, correcting: "well not a flipbook, but I think you know the kind of cinematic i'm talking about". That is the illustrated story cinematic of the best ARPGs (Diablo III's drawn act cinematics are the touchstone): painted, inked illustrations in layers, with slow camera moves, parallax, and living touches (fire, smoke, cloth, rain, ink that spreads), cut and scored like film. Cheaper to make, never cheaper-looking. Its job is anguish that the realistic engine can't carry: faces drawn at the height of grief.
+  - **Brannoc's realisation** (C14, the walk to the ford): storybook.
+  - **Holloway locking everyone out** (the lid on the ladder, Ninety-two's night): storybook.
+- **Realistic (as before):** **the burial** (C08, made a trunk scene) stays an in-engine cinematic.
+- The drawings carry our own soul (rooted in the Ember Watch, not generic fantasy illustration), with no AI look; any generated art follows the provenance rules (ours, local, logged).
+
 ## 5 October 2026 (from playing the build; the leads were stopped by the weekly limit, so these wait)
 
 ### UI design and UI art: the HUD is the keystone
