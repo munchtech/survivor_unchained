@@ -312,6 +312,9 @@ public partial class Game
         // --turn DEGREES: the figure turned so far on the turntable (pictures of her from the side).
         if (Args.Get("turn") is string tn && double.TryParse(tn, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var deg))
             Turntable(Mathf.DegToRad((float)deg), 0);
+        // --zoom Z: framed so near (0 all of her, 0.55 head and shoulders, 1 her face), in the portrait's light from
+        // head and shoulders in (pictures of her skin at the bust).
+        if (Args.Has("zoom")) figZoom = Mathf.Clamp(Args.Num("zoom", figZoom), 0, 1);
     }
 
     public void CancelCreation()

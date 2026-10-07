@@ -105,6 +105,16 @@ public partial class Shots : Node
         // frame: the graphics settings are applied after this wakes).
         if (Args.Has("no-taa")) GetViewport().UseTaa = false;
         if (Args.Get("mipbias") is string mb) GetViewport().TextureMipmapBias = float.Parse(mb, System.Globalization.CultureInfo.InvariantCulture);
+        // --tonemap linear|reinhardt|filmic|aces|agx, --grade off: the picture through
+        // another tone curve, or without the colour grade, to tell what each does to a
+        // face's darks (her brows, lashes, the line of her lips).
+        if (Args.Get("tonemap") is string tm || Args.Get("grade") == "off")
+            foreach (var we in GetTree().Root.FindChildren("*", "WorldEnvironment", true, false))
+                if (((WorldEnvironment)we).Environment is { } env)
+                {
+                    if (Args.Get("tonemap") is string t && System.Enum.TryParse<Godot.Environment.ToneMapper>(t, true, out var mode)) env.TonemapMode = mode;
+                    if (Args.Get("grade") == "off") env.AdjustmentEnabled = false;
+                }
         for (int i = wanted.Count - 1; i >= 0; i--)
         {
             if (time < wanted[i].At) continue;

@@ -9,13 +9,15 @@ paint is finer or coarser: a redhead's, as her portrait has them (her_23),
 densest in a band over her nose and across her cheeks, lighter on her
 forehead, chin and ears, a few on her neck, and a sun-dusting over her
 shoulders and upper chest, thinning to none before her body's own paint
-begins. Each is soft-edged and uneven (two overlapping spots), 0.6 to 3 mm
+begins, and none over her breasts. Each is soft-edged and uneven (two overlapping spots), 0.6 to 3 mm
 across, of its own depth, and has a rank: at an amount a, those ranked under
 a show, so a light dusting is the same freckles as a heavy one, fewer.
 
 Written to <out>: heroine_freckles.png (her head's UVs, 2048) and
 heroine_freckles_graft.png (the graft's: her neck, shoulders and upper chest,
-1024): red each texel's freckle (its depth, soft at its edge), green its rank.
+1024): red each texel's freckle (its depth, soft at its edge), green its rank,
+blue how much of her face's grain her skin takes there (all of her head and
+neck, none from her collarbones down).
 Run again when her head is rebuilt (heroine_head.py).
 """
 import os
@@ -164,7 +166,9 @@ nC = FN[tri][cKDTree(P).query(C)[1]] if len(C) else np.zeros((0, 3))
 spots = freckles(C, nC)
 print("FRECKLES face: %d (in her band over nose and cheeks %d)" % (len(C), int((np.exp(-(((C - mid)[:, 0] / 0.052) ** 2)
       - ((((C - mid)[:, 2] + 0.024) / 0.02) ** 2)) > 0.5).sum())))
-save(draw(P, spots, SIZE, rows, cols), os.path.join(OUT, "heroine_freckles.png"))
+img = draw(P, spots, SIZE, rows, cols)
+img[..., 2] = 1                       # (blue: her face's grain on all of her head, her face aside: the skin shader's)
+save(img, os.path.join(OUT, "heroine_freckles.png"))
 
 # ---------------------------------------------- her neck, shoulders, chest --
 her = bpy.data.objects["Heroine"]
@@ -180,9 +184,33 @@ fade = smooth((off - 0.01) / 0.03)
 # sun on her shoulders' tops and her upper chest and back, a few on her neck
 sun = smooth((N[:, 2] + 0.1) / 0.6) * 0.6 + smooth((-N[:, 1] - 0.2) / 0.5) * 0.4
 neck = P[:, 2] > mid[2] - 0.17
-dens = np.where(neck, 0.05e5, 0.4e5 * sun) * fade
+# None over her breasts: a sun-dusting thins down her chest, and breasts, clothed most days, are pale; laid over
+# them, the freckles read as a speckle (the owner, 6 October: "we want smooth skin aside from pores / freckles",
+# "the breasts must look magnificent"). In front, none from her collarbones down (13 to 18 cm over her nipples'
+# height, from her body's foremost points: on her upper chest, at the Look's close-up, they too read as specks over
+# her breasts); her shoulders, back and neck keep theirs.
+BV = np.array([v.co[:] for v in her.data.vertices]) @ np.array(her.matrix_world)[:3, :3].T + np.array(her.matrix_world)[:3, 3]
+nips = []
+for sd in (1, -1):
+    m = (BV[:, 0] * sd > 0.04) & (BV[:, 0] * sd < 0.16) & (BV[:, 2] > 1.34) & (BV[:, 2] < 1.50)
+    nips.append(BV[m][np.argmin(BV[m][:, 1])])
+nip_z = float(np.mean([q[2] for q in nips]))
+front = smooth((-P[:, 1] - 0.02) / 0.04) * (1 - smooth((np.abs(P[:, 0]) - 0.17) / 0.04))
+breasts = front * (1 - smooth((P[:, 2] - (nip_z + 0.13)) / 0.05))
+dens = np.where(neck, 0.05e5, 0.4e5 * sun) * fade * (1 - breasts)
 C = sow(P, tri, area, dens)
 nC = GFN[tri][cKDTree(P).query(C)[1]] if len(C) else np.zeros((0, 3))
 spots = freckles(C, nC)
-print("FRECKLES shoulders and chest: %d" % len(C))
-save(draw(P, spots, GSIZE, rows, cols), os.path.join(OUT, "heroine_freckles_graft.png"))
+print("FRECKLES shoulders and chest: %d (none over her breasts: nipples at %.3f m)" % (len(C), nip_z))
+img = draw(P, spots, GSIZE, rows, cols)
+# Blue: how much of her face's grain (heroine_grain.png, the skin shader's grain_amount) her skin takes here: all of
+# it up her neck, to her face's paint, none from her collarbones down. (Laid over her whole body it was the speckle
+# over her breasts: her neck's grain is her face's, her body is smooth but for its pores and freckles.)
+img[rows, cols, 2] = smooth((P[:, 2] - 1.47) / 0.08)
+# (carried past the islands' edges, so a mipmap never draws a seam of less grain along them)
+from scipy import ndimage  # noqa: E402
+known = np.zeros(img.shape[:2], bool)
+known[rows, cols] = True
+_, (iy, ix) = ndimage.distance_transform_edt(~known, return_indices=True)
+img[..., 2] = img[..., 2][iy, ix]
+save(img, os.path.join(OUT, "heroine_freckles_graft.png"))
