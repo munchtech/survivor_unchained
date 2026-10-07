@@ -53,7 +53,7 @@ The owner asks: "accurate, efficient, on track, manage and engineer context. del
 - Batch screenshots and renders: shoot everything a check needs in one turn, look once, fix in one pass.
 - Keep handoffs and status pages lean.
 - Effort (the owner, 6 October: "cut token use without lowering quality"): the lowest effort that gets the same result, raised freely whenever quality could be at risk. Leads are spawned as `su-lead-max` (judgement and taste: face, hair, story, UI, rendering diagnosis, new systems), `su-lead-high` (feature work to a spec: combat, animation, arena art, crafting, loot, cinematics, performance runs, story checks, provenance) or `su-worker-medium` (mechanical jobs). If your task proves harder than your setting, say so. Earlier settings: legal medium; performance measurement runs, story consistency checks, and provenance and licence logging high; everything else at its top. Every agent stays on the same model.
-- Running now (from 6 October): the face, body and outfits, rendering, the writer (notes 02) and UI design (the HUD). Next: UI art (when the GPU is lighter), combat and animation (the crowd and her run), the experience director, then the rest.
+- Running now (from 6 October): the face, body and outfits, rendering, UI design (the HUD) and animation (joints). The writer is paused by the owner. Next: UI art (when the GPU is lighter), combat and animation (the crowd and her run), the experience director, then the rest.
 
 ## Roster
 
@@ -64,7 +64,7 @@ The main session keeps this current. It is the address list for SendMessage. Ret
 | Voice (paused by the owner: no placeholders; final voices from ElevenLabs later) | a501b387a90d78b4e | docs/team/voice.md |
 | Story and writing (the writer: the approved rewrite, Act 1 first) | a67ad095680c3d65b | docs/team/story.md |
 | Combat, encounters, bosses, balance (paused; handoff ready at af6452e1) | — | docs/team/combat.md |
-| Animation (paused; handoff ready at 85d0eaf9) | — | docs/team/animation.md |
+| Animation (joints to perfection: wrists, follow-through, elbows, arms through body, sliding) | a9a80800a7dae2519 | docs/team/animation.md |
 | UI design (the HUD keystone; portraits wait on the face) | adba22c3df8f39418 | docs/team/ui_design.md |
 | UI art (paused; handoff ready at cd0f4ab6) | — | docs/team/ui_art.md |
 | Crafting (research, design, build) (paused; handoff ready at ed429efb) | — | docs/team/crafting.md |
