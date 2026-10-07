@@ -905,6 +905,7 @@ public partial class Game : Node, IZoneHost
     WorldState World => Journey.World;
     /// <summary>--probe: her smoothness across the screen, measured.</summary>
     MotionProbe? Probe;
+    static readonly StringName ViewFromName = "view_from";
     /// <summary>How long the camera stays turned to a boss (Ev.Focus).</summary>
     double focusT;
 
@@ -985,6 +986,10 @@ public partial class Game : Node, IZoneHost
         else if (camera.Fov != 34) camera.Fov = 34;
         scene.Update(dt);
         CinemaFrame(dt);
+        // Where the game's camera stands, for the see-through window (shaders/kit.gdshader):
+        // opened in this view only, never in a light's.
+        if (GetViewport().GetCamera3D() is { } seen)
+            RenderingServer.GlobalShaderParameterSet(ViewFromName, new Vector4(seen.GlobalPosition.X, seen.GlobalPosition.Y, seen.GlobalPosition.Z, Args.Get("see-through") == "old" ? 2 : 1));
         // The survivor's place on screen, for the health drawn under them; the prompt's thing; what matters off screen.
         if (Mode == "play" && Battle is { } fb2)
         {
