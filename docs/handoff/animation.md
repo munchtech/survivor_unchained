@@ -100,4 +100,4 @@ Run with `tools/anim/motion.py` (see 4). Only 6 of her clips have been audited; 
 3. `tools/anim/motion.py` and `skin.py`
 4. `tools/anim/keyed.py`: `Rig.solve` (the twist "share"), `solve_frames`, `build`
 
-HANDOFF READY: docs/handoff/animation.md on worktree-agent-a9a80800a7dae2519 (commit below)
+HANDOFF READY: docs/handoff/animation.md on worktree-agent-a9a80800a7dae2519@404b00cf
