@@ -1,0 +1,21 @@
+# Batch 3. Today's smoothing (TAA with MSAA) and none (MSAA alone) on the fixed scene: her running, the still camera
+b3_run_taa | 2560x1440 | 164 | --quick warden --sex female --zone verge --time day --auto across --shot b3_run_taa --seconds 9 --every 0.006 --count 10
+b3_idle_taa | 2560x1440 | 164 | --quick warden --sex female --zone verge --time day --auto idle --shot b3_idle_taa --seconds 8 --every 0.006 --count 10
+b3_run_msaa | 2560x1440 | 164 | --quick warden --sex female --zone verge --time day --auto across --aa msaa --shot b3_run_msaa --seconds 9 --every 0.006 --count 10
+b3_idle_msaa | 2560x1440 | 164 | --quick warden --sex female --zone verge --time day --auto idle --aa msaa --shot b3_idle_msaa --seconds 8 --every 0.006 --count 10
+# FSR 2 at native, sharpening off, her hair, brows and lashes cut by the moving threshold (--coverage)
+b3_run_fc | 2560x1440 | 164 | --quick warden --sex female --zone verge --time day --auto across --aa fsr2 --fsr-sharpness 2.0 --coverage --shot b3_run_fc --seconds 9 --every 0.006 --count 10
+b3_idle_fc | 2560x1440 | 164 | --quick warden --sex female --zone verge --time day --auto idle --aa fsr2 --fsr-sharpness 2.0 --coverage --shot b3_idle_fc --seconds 8 --every 0.006 --count 10
+b3_look_fc | 1920x1080 | 164 | --new --sex female --step 1 --part 1 --open-eyes --hair ponytail --aa fsr2 --fsr-sharpness 2.0 --coverage --shot b3_look_fc --seconds 8 --every 0.006 --count 6
+b3_l1440_fc | 2560x1440 | 164 | --new --sex female --step 1 --part 1 --open-eyes --hair ponytail --aa fsr2 --fsr-sharpness 2.0 --coverage --shot b3_l1440_fc --seconds 8 --every 0.006 --count 6
+# Today's TAA with the moving threshold (does it change TAA's hair?)
+b3_look_tc | 1920x1080 | 164 | --new --sex female --step 1 --part 1 --open-eyes --hair ponytail --coverage --shot b3_look_tc --seconds 8 --every 0.006 --count 6
+# The Look as the face lead will have it (her skin's scattering 0.1): today's TAA, FSR 2 with the moving threshold, none
+b3_look_taa_sc | 1920x1080 | 164 | --new --sex female --step 1 --part 1 --open-eyes --hair ponytail --skinparam scatter=0.1 --shot b3_look_taa_sc --seconds 8 --every 0.006 --count 6
+b3_look_fc_sc | 1920x1080 | 164 | --new --sex female --step 1 --part 1 --open-eyes --hair ponytail --skinparam scatter=0.1 --aa fsr2 --fsr-sharpness 2.0 --coverage --shot b3_look_fc_sc --seconds 8 --every 0.006 --count 6
+b3_look_msaa_sc | 1920x1080 | 164 | --new --sex female --step 1 --part 1 --open-eyes --hair ponytail --skinparam scatter=0.1 --aa msaa --shot b3_look_msaa_sc --seconds 8 --every 0.006 --count 6
+b3_l1440_taa_sc | 2560x1440 | 164 | --new --sex female --step 1 --part 1 --open-eyes --hair ponytail --skinparam scatter=0.1 --shot b3_l1440_taa_sc --seconds 8 --every 0.006 --count 6
+b3_l1440_fc_sc | 2560x1440 | 164 | --new --sex female --step 1 --part 1 --open-eyes --hair ponytail --skinparam scatter=0.1 --aa fsr2 --fsr-sharpness 2.0 --coverage --shot b3_l1440_fc_sc --seconds 8 --every 0.006 --count 6
+# The see-through after its second fix (a smaller window, never a fainter one), FSR 2
+b3_house_fc | 2560x1440 | 164 | --quick warden --sex female --zone waystation --time day --at 9,25.6 --auto idle --aa fsr2 --fsr-sharpness 2.0 --coverage --shot b3_house_fc --seconds 4
+b3_trees_fc | 2560x1440 | 164 | --quick warden --sex female --zone verge --time day --at -137,14.5 --auto across --aa fsr2 --fsr-sharpness 2.0 --coverage --shot b3_trees_fc --seconds 1 --every 0.05 --count 30

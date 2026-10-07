@@ -1,53 +1,65 @@
-# Handoff: performance lead
+# Handoff: performance and rendering lead
 
-For a fresh successor. Read `docs/team/README.md`, `RESUME.md`, `OWNER_NOTES.md`, then this page, then `docs/team/performance.md`. Older method and numbers: `docs/PERF_AUDIT.md`; the round before this one is in git history of this page (680f2a0d).
+For a fresh successor. Read `docs/team/README.md`, `RESUME.md`, `OWNER_NOTES.md`, this page, then `docs/team/performance.md`. Older rounds: git history of this page (4b95fa43, 680f2a0d) and `docs/PERF_AUDIT.md`.
 
-Written by agent ad57a6dd0798688d7, 2026-10-06, wound down early (the owner ran low on usage). Before it: a0eb8c612c94d4aa5.
+Written by agent a20bdef993e00f26b, 2026-10-06, wound down by the coordinator (usage low). Before it: ad57a6dd0798688d7.
 
 ## The owner's words
 
-- "the pixel blur while running is that intentional or something we can fix?", "we are blurry when moving in active action gameplay." She sent zoomed crops of her head while running: smeared and blocky.
+- "the pixel blur while running is that intentional or something we can fix?", "we are blurry when moving in active action gameplay."
 - "the filter to see through trees and stuff is also a little pedestrian in its pixelation."
 - "we are striving for perfection." Her detail is never traded for frames.
 
-## The brief (main session)
+## The brief
 
-1. Find the true cause of her blur; measure motion vectors per material, TAA history and jitter, the camera's judder.
-2. Make her crisp in motion without bringing back shimmer on grass and specular. One A/B batch with `--perf-flip` and frame times: (a) correct motion vectors for vertex-animated materials, (b) TAA off with MSAA 4x and a light post AA, (c) FSR2 at native. Send before/after crops of her sprinting at 1080 and 1440, plus grass and crowd in motion, with a recommendation. Choose an AA that the coming hair pass can build on.
-3. Replace the see-through dither with a designed one: a soft, feathered, round cut-out round her, smooth and stable in motion, no screen-door, working under the chosen AA. Arena art (paused) owns the trees: note the change for them.
+Choose the AA: her crisp at 164 Hz and 1440, no shimmer return, a foundation for the hair pass. Exact motion vectors for her hair. Land the see-through and the crowd's slots.
 
-## Found: the true cause (measured)
+## What ran (three batches, all at 2560x1440 and 1920x1080, 164 Hz)
 
-- **The fight steps at 60 Hz with no interpolation** (`WorldScene.Step`); the owner plays at 2560x1440, **164 Hz**, quality High, native (her settings.json). Drawn from the last step, she stood still for a frame or two and then jumped a step, while the camera follows smoothly.
-  - `--probe` at a run, `--fixed-fps 164`: her chest shook **3.3 px rms frame to frame (worst 4.9)**. At 60 Hz it doesn't happen, which is why no shot ever showed it (every shot tool runs `--fixed-fps 60`).
-  - Knock-on effects: TAA rejects history on her when her speed changes every frame (its disocclusion test compares velocities), so her hashed-alpha hair shows raw: the "blocky"; her hair's sway (HairSway, per frame) got jerked each step, so its uniform-driven offsets jumped and its motion vectors were wrong by the jump: the "smear".
-- **Fixed (bb86717b): `Interp`** draws her, the camera's target, the HUD under her, the crowd, projectiles and moving pickups between the last two steps. Judder **0.02-0.05 px**. Tests 762 green. Smoke shot looks right.
-- **Godot 4.5's motion vectors (read from its source):** the vertex shader runs a second time with the previous TIME, model matrix, skinning and multimesh data. So TIME-driven motion (grass and kit wind, the hair's breath of air, fur) is correct. What is wrong:
-  - per-frame **uniforms**: hair `sway`/`head`/`chain`, grass `centre`/`pusher` (much smaller now that she moves smoothly);
-  - the **crowd's VAT MultiMesh slots**: filled in order each frame, so every death or spawn shifted later bodies (and all corpses) a slot, and each got its neighbour's place as "last frame": wrong vectors in a horde every frame. Fix written, not run (below).
-- Godot TAA (`taa_resolve.glsl`): Catmull-Rom history, 1/16 feedback, AABB clip sized by velocity, velocity-change disocclusion, no sharpening.
+Scripts: `tools/scratch/perf6/` (repoint the paths). Pictures (while the scratchpad lasts): `C:\Users\munch\AppData\Local\Temp\claude\C--Users-munch-Desktop-survivorsunchained\74e72383-70c7-41d5-8e96-2fad2ed58481\scratchpad\` `final/`, `b1/`, `b2/`; the frames themselves are in this worktree's `godot/.shots` (`b3_*`, `b2_*`, `run_*`). Measures: `crops.py sharp|shimmer`, `flick.py` (flicker in motion: |a-2b+c| over aligned ground tiles, medians), `look_noise.py`, `look_where.py`, the face lead's `fair_grain.py` (their venv: `%LOCALAPPDATA%\facefit\.venv`).
 
-## In progress: branch `perf-seethrough-wip` @ 4b95fa43 (compiles; never run)
+| 1440, 164 Hz | her detail running | still: change >12/255 | flicker in motion (hot %) | Look grain s0.8 (1080) | Look hair flicker >8 | dense GPU vs today |
+|---|---|---|---|---|---|---|
+| TAA + MSAA 4x (today) | 9.55 | 0.00% | 0.83 (0.000) | 0.0126 | 0.02% | 0 |
+| none (MSAA alone) | 13.53 | 0.06% | 1.91 (0.065) | 0.0178 | 1.68% | |
+| FSR 2 native, sharpening off | 11.78 | 0.04% | 1.22 (0.054) | 0.0174 | 0.83% (0.75% with --coverage) | -0.72 ms |
+| FSR 2, Godot's default sharpening 0.2 | 17.99 | 0.27% | 2.40 (0.543) | 0.0252 | 1.40% | -0.6 ms |
 
-- **See-through:** `shaders/kit.gdshader` opens a round window round her: measured on screen in metres at her distance, clear to 1.45 m, feathered to 2.5 m, only what stands nearer the camera than she does and above her ankles. The piece is cut in its own (opaque) pass; the feathered rim is drawn again translucent by a next pass (`KitLook.Rim`, the same code with `REVEAL`, blended; copies far from her line of sight are culled in its vertex stage). It opens only in the camera's own view (global `view_from`, set in `Game._Process`), so trees keep their whole shadows. There is a TEMPORARY `--see-through old` switch (view_from.w = 2) for before/after pictures: remove it once shot.
-- **Crowd:** `VatCrowd` keeps each body in its own slot by key (`CrowdView.KeyOf`: the same for the living and its corpse); freed slots are emptied and kept a frame before reuse.
-- **Risks to check first:** shader compile errors; the rim's seam where the opaque pass hands over (SSAO isn't on transparents); under TAA/FSR2 the rim has no motion vectors of its own, so tree texture inside the rim may smear a little; the cost of the next pass (flip it).
+- **Godot's TAA is the blur**: a ~50 px ghost of her behind her at a run (crops `final/run_1440_x2.png`), her detail 71% of the unsmoothed render, the Look's finest grain -29%. Its thresholds are fixed in the engine (`taa_resolve.glsl`: 2.5-sigma box at any speed a 164 Hz frame has, 2.5 px velocity test at 1%, an anti-flicker term that slows the blend on her edge). Not fixable from the game.
+- **FSR 2 at native, sharpening off** keeps the unsmoothed detail when still, no ghost, crisp VFX and crowd at 1:1, 0.72 ms GPU cheaper. Godot's default sharpening over-sharpens (133% of unsmoothed) and doubles the flicker: never use it at native.
+- **But alpha-cut detail crawls under FSR 2**: her hashed hair (0.83% of hair pixels per frame at the Look vs TAA 0.02%), her lashes (alpha to coverage needs MSAA), alpha-tested foliage. A cut moved every frame (`--coverage`: `coverage.gdshaderinc`, `heroine_hair_coverage.gdshader`, `heroine_cards.gdshader`, `Coverage.cs`) fixes the lashes (face flicker 1.22% to 0.42%) but not the hair (0.75%): FSR 2 damps accumulation wherever brightness oscillates.
+- Face lead's finding: her skin's scattering, not the AA, was the bigger blur at the Look (they're fixing it on her material, `scatter` ~0.1). Batch 3 shot the Look with `--skinparam scatter=0.1`: `b3_look_*_sc`.
+
+## The AA leaning
+
+FSR 2 at native with sharpening off, at every tier (MSAA off), as the base, once her hair has a technique that holds still under it. Not yet the default: the switches are `--aa fsr2 --fsr-sharpness 2.0 [--coverage]`.
+
+## Done (33e5df80)
+
+- **Hair motion vectors exact**: last frame's swing beside this frame's, chosen in Godot's motion-vector run by its TIME (`MotionClock`, `motion.gdshaderinc`). Verified: with a debug offset only the look-back run moved (`b2/hairmv.png`).
+- **See-through**: the dither is gone; a soft round window (merged from `perf-seethrough-wip`). Fixed: Vulkan's flipped projection opened everything in front of her; a piece partly in the way now gets a smaller window, not a fainter one. `--see-through old` removed. Arena art's notes written.
+- **Crowd**: each body keeps its slot (merged); a new body's first frame is placed unseen, so its vectors are exact from its first seen frame.
+- **Hollow's soft moon** (PCSS 1.2): 0.43 ms GPU at 1440 (`--perf-flip softshadow`).
 
 ## Next
 
-1. Merge `perf-seethrough-wip` into your branch, build, and run batch 1 in one Godot turn: `scratchpad/perf5/batch1.ps1` with `runs1.txt` (scratchpad is `C:\Users\munch\AppData\Local\Temp\claude\C--Users-munch-Desktop-wowsurvivors\f1b9be14-0826-4f47-8004-f1d371f2c6a3\scratchpad`). It does `--import` first (needed: newer assets are missing from this worktree's `.godot`), then her running at 164 Hz at 1440 and 1080 for TAA (with and without interp), SMAA, FSR2 and MSAA; Godot's motion-vector view; crowd frames; still-camera shimmer; the house (`waystation --at 9,25.6`) and pines (`verge --at -137,14.5`) see-through, old and new; and dense-fight `--perf-flip aa:smaa` and `aa:fsr2`. `crops.py her|sharp|shimmer` makes the crops and numbers. Look once.
-2. Recommend the AA. My expectation, to be checked against the shots: with the stepping gone, keep a temporal AA (TAA, or FSR2 at native if it's sharper and cheap) as the foundation for hair. Hair cards with hashed/dithered alpha need temporal resolve. Give hair exact vectors next: previous-uniform pairs in the hair shader, or move the sway onto bones. MSAA + SMAA is crisp but leaves hashed hair noisy and Medium (no MSAA, closed by the owner) aliased.
-3. Send the main session the crops and frame times with that recommendation and a strict 1:1 self-critique. Then show arena art the see-through.
+1. **Her hair under FSR 2** (with the face lead): try blended cards with a depth prepass (`blend_mix, depth_prepass_alpha`) instead of any cut; measure with `look_noise.py` and `fair_grain.py`. If it holds, make FSR 2 native (sharpening off) plus `--coverage` for brows and lashes the default, and remove the switches.
+2. **Foliage under FSR 2**: alpha-tested leaves flicker; test the moving cut or blended edges in `kit.gdshader` (arena art's look).
+3. **See-through**: a pale wedge (bottom) and arc (top) still show inside the window behind the Waystation house (`final/see_house.png`): find which pieces (not the kit shader, or the rim pass on a two-sided piece).
+4. Rethink the quality tiers once MSAA is gone (Medium's saving was mostly MSAA); measure FSR 2's sharpening for the lower resolution steps.
+5. Status page "Next" 2-4 (the draft panel, first bakes, loot beams).
 
 ## Gotchas
 
-- Worktree setup: `godot/assets` is a junction to `public/assets` (skip-worktree); `override.cfg` sets the perf user folder; `.godot` and generated `.import` files were copied from a0eb8c's worktree (`scratchpad/perf5/copy_imports.py`). Don't commit `*.import`/`*.uid`.
-- Don't build while a batch runs: every launch loads the DLL from `.godot/mono/temp/bin/Debug`.
-- A shot saves the previous frame's image; `Shots.Her` is this frame's place (off by one frame, fine for crops).
-- Isolation: git and bash must stay inside this worktree; PowerShell's .NET calls use a different current directory (use full paths).
+- Worktree setup: `godot/assets` junction to `public/assets` (skip-worktree), `override.cfg` (perf user folder), `.godot` copied from the main checkout (robocopy), generated `.import`/`.uid` via `copy_imports.py`. Never commit `.import` or `.uid` churn (new files' `.uid` are tracked).
+- Shots' `her` place is in the viewport's 1920x1080 units: scale to the picture (`crops.her_at`).
+- Phase correlation: the peak sits at minus the shift (numpy's inverse FFT).
+- Batch 1's TAA/MSAA references were shot with the see-through bug (trees before her removed); use batch 3's.
+- Don't edit shaders while a batch runs (they load from source); don't build either.
+- Worktree isolation: no `cd` before git, no heredocs into python, no xargs.
 
 ## Collaborators
 
-Main session (merges, relays the owner); arena art (paused; owns the trees' look); the face lead (hair; her import settings stay lossless); the writer.
+Main session; face lead aed215ba3ca60cc29 (hair, the Look's grain; told about `--coverage` and the bob and pixie: their UV2 is (0,1) everywhere, so those styles never move); body and outfits afb34c385770877d3; arena art (paused: the see-through and the Hollow's moon are in their notes).
 
-HANDOFF READY: docs/handoff/performance.md on worktree-agent-ad57a6dd0798688d7 (see the commit below)
+HANDOFF READY: docs/handoff/performance.md on worktree-agent-a20bdef993e00f26b (see the commit below)

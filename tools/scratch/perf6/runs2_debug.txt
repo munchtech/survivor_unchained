@@ -1,0 +1,3 @@
+# The hair's last-frame run raised half a metre (heroine_hair_debug.gdshaderinc): its arrows long, the hair itself in its place
+b2_hairmv_debug | 1920x1080 | 164 | --new --sex female --step 1 --part 1 --open-eyes --hair ponytail --debugdraw MotionVectors --shot b2_hairmv_debug --seconds 8
+b2_hairmv_rundebug | 2560x1440 | 164 | --quick warden --sex female --zone verge --time day --auto across --debugdraw MotionVectors --shot b2_hairmv_rundebug --seconds 9

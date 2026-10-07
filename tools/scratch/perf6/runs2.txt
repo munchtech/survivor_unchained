@@ -1,0 +1,34 @@
+# Batch 2. The see-through after the sign fix: behind a house (standing), past the pines (running); FSR 2 and TAA
+b2_house_fsr2 | 2560x1440 | 164 | --quick warden --sex female --zone waystation --time day --at 9,25.6 --auto idle --aa fsr2 --fsr-sharpness 1.0 --shot b2_house_fsr2 --seconds 4
+b2_house_taa | 2560x1440 | 164 | --quick warden --sex female --zone waystation --time day --at 9,25.6 --auto idle --shot b2_house_taa --seconds 4
+b2_trees_fsr2 | 2560x1440 | 164 | --quick warden --sex female --zone verge --time day --at -137,14.5 --auto across --aa fsr2 --fsr-sharpness 1.0 --shot b2_trees_fsr2 --seconds 1 --every 0.05 --count 30
+b2_trees_taa | 2560x1440 | 164 | --quick warden --sex female --zone verge --time day --at -137,14.5 --auto across --shot b2_trees_taa --seconds 1 --every 0.05 --count 30
+# FSR 2 at native, its sharpening swept (0 the most, 2 none; Godot's default 0.2): her running, the still camera, the Look
+b2_run_s02 | 2560x1440 | 164 | --quick warden --sex female --zone verge --time day --auto across --aa fsr2 --fsr-sharpness 0.2 --shot b2_run_s02 --seconds 9 --every 0.006 --count 10
+b2_run_s06 | 2560x1440 | 164 | --quick warden --sex female --zone verge --time day --auto across --aa fsr2 --fsr-sharpness 0.6 --shot b2_run_s06 --seconds 9 --every 0.006 --count 10
+b2_run_s10 | 2560x1440 | 164 | --quick warden --sex female --zone verge --time day --auto across --aa fsr2 --fsr-sharpness 1.0 --shot b2_run_s10 --seconds 9 --every 0.006 --count 10
+b2_run_s20 | 2560x1440 | 164 | --quick warden --sex female --zone verge --time day --auto across --aa fsr2 --fsr-sharpness 2.0 --shot b2_run_s20 --seconds 9 --every 0.006 --count 10
+b2_idle_s02 | 2560x1440 | 164 | --quick warden --sex female --zone verge --time day --auto idle --aa fsr2 --fsr-sharpness 0.2 --shot b2_idle_s02 --seconds 8 --every 0.006 --count 10
+b2_idle_s06 | 2560x1440 | 164 | --quick warden --sex female --zone verge --time day --auto idle --aa fsr2 --fsr-sharpness 0.6 --shot b2_idle_s06 --seconds 8 --every 0.006 --count 10
+b2_idle_s10 | 2560x1440 | 164 | --quick warden --sex female --zone verge --time day --auto idle --aa fsr2 --fsr-sharpness 1.0 --shot b2_idle_s10 --seconds 8 --every 0.006 --count 10
+b2_idle_s20 | 2560x1440 | 164 | --quick warden --sex female --zone verge --time day --auto idle --aa fsr2 --fsr-sharpness 2.0 --shot b2_idle_s20 --seconds 8 --every 0.006 --count 10
+b2_look_s02 | 1920x1080 | 164 | --new --sex female --step 1 --part 1 --open-eyes --hair ponytail --aa fsr2 --fsr-sharpness 0.2 --shot b2_look_s02 --seconds 8 --every 0.006 --count 6
+b2_look_s06 | 1920x1080 | 164 | --new --sex female --step 1 --part 1 --open-eyes --hair ponytail --aa fsr2 --fsr-sharpness 0.6 --shot b2_look_s06 --seconds 8 --every 0.006 --count 6
+b2_look_s10 | 1920x1080 | 164 | --new --sex female --step 1 --part 1 --open-eyes --hair ponytail --aa fsr2 --fsr-sharpness 1.0 --shot b2_look_s10 --seconds 8 --every 0.006 --count 6
+b2_look_s20 | 1920x1080 | 164 | --new --sex female --step 1 --part 1 --open-eyes --hair ponytail --aa fsr2 --fsr-sharpness 2.0 --shot b2_look_s20 --seconds 8 --every 0.006 --count 6
+b2_l1440_s02 | 2560x1440 | 164 | --new --sex female --step 1 --part 1 --open-eyes --hair ponytail --aa fsr2 --fsr-sharpness 0.2 --shot b2_l1440_s02 --seconds 8 --every 0.006 --count 6
+b2_l1440_s06 | 2560x1440 | 164 | --new --sex female --step 1 --part 1 --open-eyes --hair ponytail --aa fsr2 --fsr-sharpness 0.6 --shot b2_l1440_s06 --seconds 8 --every 0.006 --count 6
+b2_l1440_s10 | 2560x1440 | 164 | --new --sex female --step 1 --part 1 --open-eyes --hair ponytail --aa fsr2 --fsr-sharpness 1.0 --shot b2_l1440_s10 --seconds 8 --every 0.006 --count 6
+b2_l1440_s20 | 2560x1440 | 164 | --new --sex female --step 1 --part 1 --open-eyes --hair ponytail --aa fsr2 --fsr-sharpness 2.0 --shot b2_l1440_s20 --seconds 8 --every 0.006 --count 6
+# The Look's references, consecutive frames too: TAA with MSAA (today), MSAA alone (no smoothing over time)
+b2_look_taa | 1920x1080 | 164 | --new --sex female --step 1 --part 1 --open-eyes --hair ponytail --shot b2_look_taa --seconds 8 --every 0.006 --count 6
+b2_look_msaa | 1920x1080 | 164 | --new --sex female --step 1 --part 1 --open-eyes --hair ponytail --aa msaa --shot b2_look_msaa --seconds 8 --every 0.006 --count 6
+b2_l1440_taa | 2560x1440 | 164 | --new --sex female --step 1 --part 1 --open-eyes --hair ponytail --shot b2_l1440_taa --seconds 8 --every 0.006 --count 6
+# The crowd and the dense fight's effects at 1:1 (ghosting), FSR 2 and TAA; the crowd's motion vectors (stable slots, first frame unseen)
+b2_crowd_fsr2 | 2560x1440 | 164 | --quick warden --sex female --zone arena --tier 2 --minute 8 --auto across --aa fsr2 --fsr-sharpness 1.0 --shot b2_crowd_fsr2 --seconds 14 --every 0.006 --count 6
+b2_crowd_taa | 2560x1440 | 164 | --quick warden --sex female --zone arena --tier 2 --minute 8 --auto across --shot b2_crowd_taa --seconds 14 --every 0.006 --count 6
+b2_mv_crowd | 2560x1440 | 164 | --quick warden --sex female --zone arena --tier 2 --minute 8 --auto across --debugdraw MotionVectors --shot b2_mv_crowd --seconds 14 --every 0.006 --count 3
+b2_dense_fsr2 | 2560x1440 | 164 | --quick warden --sex female --zone arena --tier 3 --minute 27.5 --give oathblade:8,seeking_motes:8,cinderfall:8,arcweb:7,knifestorm:7,hallowed_ring:7,+might:3,+haste:2 --auto --aa fsr2 --fsr-sharpness 1.0 --shot b2_dense_fsr2 --seconds 20 --every 0.006 --count 6
+b2_dense_taa | 2560x1440 | 164 | --quick warden --sex female --zone arena --tier 3 --minute 27.5 --give oathblade:8,seeking_motes:8,cinderfall:8,arcweb:7,knifestorm:7,hallowed_ring:7,+might:3,+haste:2 --auto --shot b2_dense_taa --seconds 20 --every 0.006 --count 6
+# Her hair's motion vectors as made (Godot's view), at the Look and running
+b2_hairmv_real | 1920x1080 | 164 | --new --sex female --step 1 --part 1 --open-eyes --hair ponytail --debugdraw MotionVectors --shot b2_hairmv_real --seconds 8
