@@ -1025,6 +1025,8 @@ def bind_edges(name, pos, at, tris, key, width, height, overhang, thick, sigma=0
         # A walk that jumped across the sheet, or a hole too small to bind
         # (a finger's), is left as cut.
         if seg.max() > 0.015 or seg.sum() < 0.07:
+            print("UNBOUND %s: an edge loop of %d points left as cut (longest step %.1f mm, %.1f cm round)"
+                  % (name, len(loop), seg.max() * 1000, seg.sum() * 100))
             continue
         cur = smooth_closed(lp, sigma)
         # Back onto the sheet (its surface, not the plane of the nearest
@@ -2292,13 +2294,22 @@ def cups(cover=0.62, plunge=0.02, band=0.03, over=0.022, reach=0.088):
     return OR(*parts), ub
 
 
-def ribbon(name, ctrl, width, mkey, lift=0.0035, thick=0.0025, cols=5, trim=None, snap=True, centre=None):
+def ribbon(name, ctrl, width, mkey, lift=0.0035, thick=0.0025, cols=5, trim=None, snap=True, centre=None,
+           hides=False, follow=False, flare=None):
     """A strap as a strap is made: a ribbon of even width laid along a
     smooth curve on her skin, so its edges are two clean parallel lines.
     It moves with the skin under each point of it. With `centre` (a point
     inside her), it is laid on her by looking out from there through each
     point of it: the skin nearest a point inside her can jump from one
-    curve of her to another (from her breast to her chest), and kinked it."""
+    curve of her to another (from her breast to her chest), and kinked it.
+    `hides`: her skin under it is tucked in, as under a fitted piece (a
+    gusset or a thong's string, which she must never show through).
+    `follow`: each line along it moves with the skin under that line, as
+    stretched cloth does, rather than the whole width as one strap (a
+    gusset: her thighs part the skin under its edges, and a strap's edges,
+    staying put, let it out from under them). `flare` (width, length): the
+    ribbon widens to that width over that length at its end, as a thong's
+    string opens into its gusset."""
     def lay(pts):
         if centre is None:
             return np.array([SKIN_BVH.find_nearest(Vector(p))[0][:] for p in pts])
@@ -2310,7 +2321,7 @@ def ribbon(name, ctrl, width, mkey, lift=0.0035, thick=0.0025, cols=5, trim=None
             out_.append(np.array(hit[0][:]) if hit[0] is not None else np.array(SKIN_BVH.find_nearest(Vector(p))[0][:]))
         return np.array(out_)
     # (columns fine enough that a trim along its edges is a clean line)
-    cols = max(cols, int(np.ceil(width / 0.0015)) + 1)
+    cols = max(cols, int(np.ceil(max(width, flare[0] if flare else 0.0) / 0.0015)) + 1)
     # (a smooth curve through its points, not straight runs between them:
     # those met at corners, and a strap kinked at each)
     c = spline(ctrl, step=0.003)
@@ -2330,27 +2341,33 @@ def ribbon(name, ctrl, width, mkey, lift=0.0035, thick=0.0025, cols=5, trim=None
     tg /= np.linalg.norm(tg, axis=1)[:, None] + 1e-12
     bn = np.cross(nrm, tg)
     bn /= np.linalg.norm(bn, axis=1)[:, None] + 1e-12
-    off = np.linspace(-width / 2, width / 2, cols)
-    pos = (c[:, None, :] + nrm[:, None, :] * lift + bn[:, None, :] * off[None, :, None]).reshape(-1, 3)
+    off = np.linspace(-0.5, 0.5, cols)
+    wrow = np.full(len(c), width)
+    if flare:
+        run = np.r_[0, np.cumsum(np.linalg.norm(np.diff(c, axis=0), axis=1))]
+        wrow = width + (flare[0] - width) * ramp(run, run[-1] - flare[1], run[-1])
+    pos = (c[:, None, :] + nrm[:, None, :] * lift + bn[:, None, :] * (off[None, :] * wrow[:, None])[:, :, None]).reshape(-1, 3)
     tris = grid(len(c), cols)
     nor = vertex_normals(pos, tris)
     if (nor * np.repeat(nrm, cols, 0)).sum(1).mean() < 0:
         tris = tris[:, ::-1]
         nor = -nor
-    # (one set of weights across its width, eased along it: it moves as a strap)
+    # (one set of weights across its width, eased along it: it moves as a
+    # strap; or, following, each line along it its own)
     wt = soft_weights(pos).reshape(len(c), cols, -1)
-    wt[:] = wt.mean(1, keepdims=True)
+    if not follow:
+        wt[:] = wt.mean(1, keepdims=True)
     for _ in range(6):
         wt[1:-1] = (wt[:-2] + 2 * wt[1:-1] + wt[2:]) / 4
-    edge = np.tile(width / 2 - np.abs(off), len(c))
+    edge = (wrow[:, None] / 2 - np.abs(off[None, :] * wrow[:, None])).ravel()
     at = np.hstack([nor, wt.reshape(len(pos), -1), edge[:, None]])
     made = trimmed(name, pos, at, tris, mkey, thick, 0.0008, trim, budget=10 ** 7)
     for o in made:
-        o["hides"] = False
+        o["hides"] = hides and o is made[0]
     if kind(mkey) == "leather" and width >= 0.012:
         inset = 0.0028
         for k, sgn in enumerate((1, -1)):
-            ln = c + nrm * (lift + thick + 0.0001) + bn * (sgn * (width / 2 - inset))
+            ln = c + nrm * (lift + thick + 0.0001) + bn[:] * (sgn * (wrow[:, None] / 2 - inset))
             made += stitches(f"{name}_stitch{k}", ln, nrm, tg, pos, at[:, 3:3 + NB])
         made[0]["geo_stitch"] = True
     return made
@@ -3397,6 +3414,19 @@ def girdle(name, zfun, width, mkey, lift=0.004, thick=0.004, trim=None, rows=9, 
     return made
 
 
+def section(z, keep):
+    """Her outline at height z, as points (x, y): where her triangles whose
+    points are all `keep` cross that level."""
+    tri = TRI[keep[TRI].all(1)]
+    out = []
+    for i, j in ((0, 1), (1, 2), (2, 0)):
+        p, q = P[tri[:, i]], P[tri[:, j]]
+        s = (p[:, 2] - z) * (q[:, 2] - z) < 0
+        t = (z - p[s, 2]) / (q[s, 2] - p[s, 2])
+        out.append(p[s, :2] + t[:, None] * (q[s, :2] - p[s, :2]))
+    return np.vstack(out)
+
+
 def bandeau(name, mkey, zc, width, lift=0.004, thick=0.003, trim=None, rows=11, nu=120):
     """A strip of leather round her chest at height `zc`, `width` tall,
     pulled taut: each row of it lies on the convex hull of her body's
@@ -3411,8 +3441,12 @@ def bandeau(name, mkey, zc, width, lift=0.004, thick=0.003, trim=None, rows=11, 
     R = np.zeros((rows, nu))
     cxy = None
     for k, z in enumerate(zs):
-        m = body_pts & (np.abs(Z - z) < 0.01)
-        q = P[m][:, :2]
+        # Her outline at this row's own height, exactly (where her triangles
+        # cross it). (The hull of her points within a centimetre of it took
+        # the fuller breast below for the row above: the upper rows stood 5 to
+        # 20 mm off her upper breast, and a camera at her side saw in behind
+        # the band to her areola as she vaulted.)
+        q = section(z, body_pts)
         if cxy is None:
             cxy = q.mean(0)
         h = ConvexHull(q)
@@ -3683,6 +3717,95 @@ for name, build in OUTFITS.items():
         continue
     made += [o for o in build() if o]
 
+
+# ---------------------------------------------------- what must be covered --
+# The legal motion check's own regions (tools/legal/motioncheck/marks_section.py),
+# measured here at rest after every build: the strip a garment must cover (the
+# midline, 1.2 cm either side, from 2.3 cm behind the lowest point under her
+# crotch forward to just below the front of her mons, skin facing sideways left
+# out) and each areola (2.2 cm round the centre of its pigment). For each outfit,
+# how much of each is bare at rest, and how near bare skin comes to it: the margin
+# it has to move in before the check sees it. (The motion check proves it moving.)
+def _cover_regions():
+    mid = np.abs(X) < 0.003
+    down = mid & (Z > 0.6) & (Z < 1.1) & (N[:, 2] < -0.9) & (np.abs(N[:, 0]) < 0.6)
+    u = P[down][np.argmin(Z[down])]
+    fwd = mid & (Y < u[1]) & (Z > u[2]) & (Z < u[2] + 0.15) & (N[:, 1] < -0.8)
+    m = P[fwd][np.argmin(Z[fwd])]
+    strip = (np.abs(X) < 0.012) & (np.abs(N[:, 0]) < 0.7) & (Y < u[1] + 0.023) & (Z > u[2] - 0.005) & (Z < m[2] - 0.005)
+    # Her paint at each point (the darkest of a seam's sides), as the check reads it.
+    me = body.data
+    img = next(n.image for n in me.materials[0].node_tree.nodes if n.type == "TEX_IMAGE" and n.image)
+    w_, h_ = img.size
+    px = np.array(img.pixels[:]).reshape(h_, w_, 4)[:, :, :3]
+    lum_v = np.full(len(me.vertices), 9.0)
+    uvl = me.uv_layers.active.data
+    for l in me.loops:
+        uv_ = uvl[l.index].uv
+        c_ = px[min(max(int(uv_[1] * h_), 0), h_ - 1), min(max(int(uv_[0] * w_), 0), w_ - 1)]
+        lum_v[l.vertex_index] = min(lum_v[l.vertex_index], 0.3 * c_[0] + 0.59 * c_[1] + 0.11 * c_[2])
+    co = np.array([(body.matrix_world @ v.co)[:] for v in me.vertices])
+    _, jl = cKDTree(co).query(P)
+    lum = lum_v[jl]
+    areolas = {}
+    for sd in "lr":
+        bn = arm.data.bones[f"breast_{sd}"]
+        hd = np.array((arm.matrix_world @ bn.head_local)[:])
+        ax_ = np.array((arm.matrix_world @ bn.tail_local)[:]) - hd
+        ax_ /= np.linalg.norm(ax_)
+        own = W[:, BI[f"breast_{sd}"]] > 0.5
+        along = (P - hd) @ ax_
+        cand = own & (along >= 0.5 * along[own].max())
+        dark = cand & (lum < 0.8 * np.median(lum[cand]))
+        areolas[sd] = P[dark].mean(0)
+    print("COVER regions: strip %d points, from %.3f to %.3f deep and %.3f to %.3f high; areolas at %s and %s"
+          % (strip.sum(), u[1] + 0.023, P[strip, 1].min(), u[2] - 0.005, m[2] - 0.005,
+             areolas["l"].round(3), areolas["r"].round(3)))
+    return strip, areolas
+
+
+def cover_report(name, objs, tuck=None):
+    """How bare her strip and areolas are under one outfit at rest (see above),
+    her skin drawn tucked in as the game draws it (`tuck`: metres, each point)."""
+    Pt = P - N * (tuck[:, None] if tuck is not None else 0.0)
+    vs, fs = [], []
+    for o in objs:
+        key = o.data.materials[0].name if o.data.materials else ""
+        if key in SPEC and len(SPEC[key]) >= 7:   # (seen through: stockings, lace)
+            continue
+        base = len(vs)
+        vs += [tuple(o.matrix_world @ v.co) for v in o.data.vertices]
+        fs += [[base + i for i in p.vertices] for p in o.data.polygons]
+    if not fs:
+        return
+    tree = BVHTree.FromPolygons(vs, fs)
+    near = np.zeros(len(P), bool)
+    for c in [P[COVER_STRIP].mean(0)] + list(COVER_AREOLAS.values()):
+        near |= np.linalg.norm(P - c, axis=1) < 0.1
+    bare = np.zeros(len(P), bool)
+    for i in np.where(near)[0]:
+        bare[i] = tree.ray_cast(Vector(Pt[i] + N[i] * 0.0003), Vector(N[i]), 0.03)[0] is None
+    # (bare skin facing sideways, the walls of the slot between her thighs, is
+    # hidden in it and left out of the strip by the check too: not counted near it)
+    seen = bare & (np.abs(N[:, 0]) < 0.7)
+    regions = [("strip", COVER_STRIP, seen)] + [("areola %s" % sd, np.linalg.norm(P - c, axis=1) < 0.022, bare)
+                                                for sd, c in COVER_AREOLAS.items()]
+    for rname, reg, against in regions:
+        if not reg.any():
+            continue
+        bt = cKDTree(P[against]) if against.any() else None
+        if bt is None:
+            print("COVER %s %s: all of %d points covered; no bare skin within 10 cm" % (name, rname, reg.sum()))
+            continue
+        d, j = bt.query(P[reg])
+        k = int(np.argmin(d))
+        where = P[reg][k]
+        print("COVER %s %s: %d of %d points bare at rest; bare skin nearest %.1f mm away (at %s)"
+              % (name, rname, int((bare & reg).sum()), int(reg.sum()), d[k] * 1000, where.round(3)))
+
+
+COVER_STRIP, COVER_AREOLAS = _cover_regions()
+
 # Her skin under each outfit's fitted pieces is marked, one colour channel
 # an outfit (CHANNELS, as People.cs has them), for the game to draw tucked a
 # few millimetres in (shaders/heroine_skin.gdshader): a smooth cup need not
@@ -3751,6 +3874,13 @@ if BODY_OUT:
             vals[(hair[j] > 0.5) & (wsum("Head", "neck_01")[j] > 0.2), k] = 1
         print("HIDES", name, hid, "of", len(me.vertices), "vertices of her skin")
     col.data.foreach_set("color", vals.ravel())
+    # Each outfit's coverage at rest, her skin tucked as the game draws it
+    # (heroine_skin.gdshader: 10 mm times the outfit's channel).
+    _, jb = cKDTree(np.array([(body.matrix_world @ v.co)[:] for v in me.vertices])).query(P)
+    for name in OUTFITS:
+        objs = [o for o in made if o.name.startswith(name + ".")]
+        if objs and CHANNELS.index(name) <= 3:
+            cover_report(name, objs, 0.010 * vals[jb, CHANNELS.index(name)])
     _, jw = cKDTree(P).query(np.array([(body.matrix_world @ v.co)[:] for v in me.vertices]))
     changed = np.abs(W - W_AUTHORED).sum(1) > 1e-4
     groups = {vg.name: vg for vg in body.vertex_groups}
