@@ -68,7 +68,7 @@ The owner loved the editor's letter. On the treatment:
 4. **Holloway risen at his own gate** the dusk after: keep.
 5. **The nod** as the game's first choice: yes.
 6. **The lamp-iron** as her night lantern: yes.
-7. **The lie to Brannoc** (settled): "we can't get punished from gameplay perspective - he just talks to us like he hates us or ignores us but dosn't hamper gameplay core stuff with respect to crafting and maps." No gameplay cost at all: prices, commissions, masterworks, crafting and maps are as on the truth route. The cost is only in how he speaks to her: hatred or silence.
+7. **The lie to Brannoc** (settled): "we can't get punished from gameplay perspective - he just talks to us like he hates us or ignores us but dosn't hamper gameplay core stuff with respect to crafting and maps." No gameplay cost at all: prices, commissions, masterworks, crafting and maps are as on the truth route. The cost is only in how he speaks to her: hatred or silence. *Done (9b0cd04f): every first answer gives the truth's best standing; a test plays all four answers through four nights and checks prices, the bed, shelves, commissions, his terms and maps match. Act 2 must change his "starting to trust you" label once he learns.*
 - **Holloway risen at his gate:** on the fourth dusk, after three days of knocking (the editor's advice; the owner agreed).
 - **The second crossing:** the harshest version. The Kiln Ford comes back in Act 2, after he has sold the irons (the grey mare, Jory's drowning, Aldo's widow). "the harshest versions are what were aiming for."
 8. **"Wick"** for her, and the lamplings renamed (not "Wick" or "Wick-Mother"; the writer suggested "Stub"): yes.
