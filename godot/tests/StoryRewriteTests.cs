@@ -229,6 +229,73 @@ public class StoryRewriteTests
         Assert.False(t.World.Fact("scene.dusk").Truthy);
     }
 
+    /// <summary>Everything in play that her answer to Brannoc could reach: every person's standing,
+    /// every shop's prices, the inn's bed, Rook's shelves, his commissions and their heat, his terms
+    /// (the masterworks' standing among them), and the Wayfinder's maps.</summary>
+    static string InPlay(Route p)
+    {
+        var o = new List<string>();
+        foreach (var (id, n) in p.W.Npcs.OrderBy(x => x.Key, StringComparer.Ordinal))
+            o.Add($"{id}: trust {n.Trust}, respect {n.Respect}, affection {n.Affection}, fear {n.Fear}");
+        foreach (var shop in Lore.Shops.Keys.OrderBy(k => k, StringComparer.Ordinal)) o.Add($"{shop}'s prices x{p.J.PriceMod(shop):0.###}");
+        o.Add($"a bed: {p.J.RestCost} gold; a shelf: {Crafting.ShelfPrice(p.J.Craft)} gold");
+        foreach (var (def, open, _) in Crafting.Patterns(p.J.Craft))
+        {
+            var q = Crafting.Commission(p.J.Craft, def, "wolf_pelt", "of_the_wolf");
+            o.Add($"make {def}: {(open ? "open" : "locked")}, {q.Gold} gold, heat {q.HeatLo}-{q.HeatHi}, {q.Blocked ?? "can"}");
+        }
+        foreach (var t in Crafting.TermLadder("brannoc", p.C)) o.Add($"his terms: {t.Effect}: {(t.Met ? "given" : "to earn")}");
+        foreach (var m in SurvivorUnchained.Maps.MapOffers.Today(p.W.Day, 1, (int)p.W.Fact("map.drawn").Number))
+            o.Add($"a map: {m.People}, tier {m.Spec.Tier}, {m.Spec.Theme}, seed {m.Spec.Seed}");
+        return string.Join("\n", o);
+    }
+
+    [Fact]
+    public void The_lie_to_Brannoc_costs_nothing_in_play()
+    {
+        // The owner (settled): "we can't get punished from gameplay perspective - he just talks to us like he
+        // hates us or ignores us". Whatever she tells him, prices, commissions, masterworks, crafting and maps
+        // are as on the truth route. Only his words carry the answer (nell.told, and what he says).
+        string Answered(params string[] picks)
+        {
+            var p = Route.New();
+            foreach (var n in new[] { "brannoc", "rook", "chid" }) p.W.Npc(n).Flags["met"] = true;
+            p.W.Day = 2;
+            p.J.Ch.Gold = 1000;
+            p.Give("wolf_pelt", 3);
+            p.Give("old_iron", 6);
+            var r = new DialogueRunner(Convo("brannoc"), p.C);
+            var at = r.Start();
+            int i = 0;
+            while (at != null && i < picks.Length)
+            {
+                if (at.Choices.Count == 0) { at = r.Advance(); continue; }
+                var pick = picks[i++];
+                var c = at.Choices.FirstOrDefault(x => x.Text.Contains(pick, StringComparison.OrdinalIgnoreCase))
+                    ?? throw new InvalidOperationException($"no choice \"{pick}\" in [{string.Join(" | ", at.Choices.Select(x => x.Text))}]");
+                at = r.Choose(c.Index).Next;
+            }
+            Assert.Equal(picks.Length, i);
+            // Four nights: the town talks (a low roll, so every word that can spread does), and each morning
+            // she calls on everyone, so any welcome that warms to her, or cools, has had its say.
+            for (int d = 0; d < 4; d++)
+            {
+                Simulation.AdvanceDay(p.C, () => 0.1);
+                p.W.Time = TimeOfDay.Day;
+                foreach (var who in new[] { "brannoc", "rook", "chid", "holloway", "maeca", "harlan", "wenna", "rav", "vonnra", "pell", "tam" })
+                    new DialogueRunner(Convo(who), p.C).Start();
+            }
+            return InPlay(p);
+        }
+        var risen = Answered("A girl had the reins", "I put her down", "It was quick", "A lamp-iron", "It does", "show you");
+        Assert.Equal(risen, Answered("A girl had the reins", "The water took her", "A lamp-iron", "It does", "Not tonight"));
+        Assert.Equal(risen, Answered("I passed nobody"));
+        Assert.Equal(risen, Answered("I didn't look"));
+        // And no route is poorer than the truth's best was: his respect, at the forge, opens what it opened.
+        var fresh = Route.New().W.Npc("brannoc");
+        Assert.Contains($"brannoc: trust {fresh.Trust + 25}, respect {fresh.Respect + 15},", risen);
+    }
+
     [Fact]
     public void Brannoc_is_proud_of_his_irons_until_he_knows()
     {

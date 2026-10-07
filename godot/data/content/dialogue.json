@@ -831,13 +831,6 @@
        "key": "cb:told_brannoc",
        "value": true
       }
-     },
-     {
-      "rel": {
-       "npc": "rook",
-       "affection": 5
-      },
-      "quiet": true
      }
     ],
     "next": "hub"
@@ -7681,6 +7674,14 @@
          "key": "asked_nell",
          "value": true
         }
+       },
+       {
+        "rel": {
+         "npc": "brannoc",
+         "trust": 25,
+         "respect": 15
+        },
+        "quiet": true
        }
       ],
       "goto": "nell_ditch"
@@ -7694,6 +7695,14 @@
          "key": "asked_nell",
          "value": true
         }
+       },
+       {
+        "rel": {
+         "npc": "brannoc",
+         "trust": 25,
+         "respect": 15
+        },
+        "quiet": true
        },
        {
         "set": {
@@ -7739,6 +7748,14 @@
         }
        },
        {
+        "rel": {
+         "npc": "brannoc",
+         "trust": 25,
+         "respect": 15
+        },
+        "quiet": true
+       },
+       {
         "set": {
          "nell.told": "evaded"
         }
@@ -7772,13 +7789,6 @@
         }
        },
        {
-        "rel": {
-         "npc": "brannoc",
-         "trust": 15,
-         "respect": 5
-        }
-       },
-       {
         "history": {
          "id": "told_brannoc",
          "text": "told Brannoc his daughter drowned at the Low Ford",
@@ -7786,15 +7796,7 @@
           "nell",
           "lamps"
          ],
-         "spread": 1,
-         "reactions": {
-          "rook": {
-           "affection": 10
-          },
-          "chid": {
-           "respect": 10
-          }
-         }
+         "spread": 1
         },
         "witnesses": [
          "brannoc"
@@ -7812,13 +7814,6 @@
         }
        },
        {
-        "rel": {
-         "npc": "brannoc",
-         "trust": 25,
-         "respect": 15
-        }
-       },
-       {
         "history": {
          "id": "told_brannoc",
          "text": "told Brannoc his daughter drowned at the Low Ford",
@@ -7826,15 +7821,7 @@
           "nell",
           "lamps"
          ],
-         "spread": 1,
-         "reactions": {
-          "rook": {
-           "affection": 10
-          },
-          "chid": {
-           "respect": 10
-          }
-         }
+         "spread": 1
         },
         "witnesses": [
          "brannoc"
