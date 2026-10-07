@@ -1,152 +1,103 @@
 # Handoff: animation
 
-For the next animation lead. Read `docs/team/README.md` and `docs/team/RESUME.md`, then this page, then `docs/team/animation.md` (status and the per-clip sign-off log). Written by the successor of a7dd95d00c4a6a017, on branch `worktree-agent-aa15f092820132274`. The leads before: a7dd95d00c4a6a017 and a03acf30b3e9bdd70.
+For the next animation lead. Read `docs/team/README.md`, `RESUME.md` and `OWNER_NOTES.md` ("Animation: joints and motion to perfection"), then this page, then `docs/team/animation.md`. Written by a9a80800a7dae2519 (branch `worktree-agent-a9a80800a7dae2519`), stopped early by the owner's usage wind-down on 6 October. Earlier leads: aa15f092820132274, a7dd95d00c4a6a017, a03acf30b3e9bdd70.
 
-## 1. The owner's bar
+## 1. The owner's words and the brief
 
-- "AAA", "we are striving for perfection", "not polish, perfection". Remake rather than polish.
-- Motion should be "weighty, characterful, readable at the game's camera".
-- From the latest tests:
-  - "noticing a lot of reverse weird wrist motions ... stuff that isn't flowing naturally. it seems to be attempting to correct";
-  - "were looking for natural / correct movements. just want it to be skeptical".
-- Treat every clip as guilty until it is shown natural. The numbers are never the verdict: look at full resolution, at the game camera and at the cinematic's camera.
-- The heroine carries sex appeal, "tho not at the cost of looking bad". The tone is 18+.
+- "the motions that get scuffed are ... bad, unnatural movements with respect to wrists - follow through motion joint to joint, some elbow pinching or arms going through body or breast, some sliding. a lot is GOOD but we want perfection."
+- The brief (from main):
+  1. Audit every clip for her and the hero, in motion, at 1:1, jiggle on, in each of the four outfits. Measure wrists past natural limits, elbow volume loss, arm into torso and breast (against her actual mesh, not capsules), foot slide in cm per planted step, and overlap missing down the chain.
+  2. Fix at the root, worst first: skinning (twist and helper bones, correctives), then rig and solver (wrist limits, elbow swivel, follow-through), then clip contacts and foot locking.
+  3. Prove each fix with before and after numbers and a shot sheet.
+- Coordinate weight changes with the outfits lead (afb34c385770877d3) and ask them to rerun the motion check. Rendering (a20bdef993e00f26b) owns how motion is drawn; joints are ours.
 
-## 2. The brief
+## 2. Measured so far, worst first
 
-- You own character animation:
-  - her (`heroine.res`), the hero (`hero.res`) and the folk (`folk.res`);
-  - the crowd's keyed motion (`crowd.py`) and the beasts' (`Beasts.cs`);
-  - the cinematics' clips.
-- Tools are in `tools/anim/`. In `godot/src/Actors/`, change animation mapping and playback only. This round also touched:
-  - weapon mounts (`Arms.Hold`'s lean);
-  - `GameFall.cs` (her fall and get-up).
-- Take a turn for every Godot run, packs included (`tools/turn.py take godot "animation: ..." --wait N`).
-- Run `dotnet test` in `godot/tests` before commits (762 pass). Commit and push your branch. Open no PRs. Use British spelling.
+Run with `tools/anim/motion.py` (see 4). Only 6 of her clips have been audited; the full run was stopped at the wind-down.
 
-## 3. Done this round (pushed: c21ea122, dd21d37b and the commit that adds this page)
+1. **Elbows and knees fold.** The root cause: `build_heroine.py` folded AccuRIG's twist and share bones into the main bones (`FOLD`), so linear skinning has only two bones a joint.
+   - Elbow region (8 cm either side) keeps 70% of its volume at a 90-degree bend, 59% at 120 and 53% at 145 (synthetic sweep).
+   - In clips: run_warden 68/80% (l/r), sword_fore 67/80, cup_hands 73/75, cast_raise 79/80.
+   - Knee: 66% in the run. Seen at 1:1 in `cast_raise`, where the elbow narrows to a deflated crease.
+2. **Forearms wring.** The solver puts at least half of each wrist's turn into the forearm bone (`keyed.Rig.solve`, "share"), so the roll twists the elbow region: 25 to 48 degrees in the six clips. A ±80-degree turn costs the elbow 9% and the wrist 6 to 10%.
+3. **Arms through her.**
+   - run_warden: her left upper arm is 11 to 15 mm into the side of her chest (frames 0-5 and 16-21). Her hands pass through each other in front of her belly, up to 60 mm (frames 6-15). The shield hides this in play; it shows without one.
+   - sword_fore: the follow-through drives the right forearm through the left hand (seen at 1:1).
+   - cast_raise: the left forearm presses under her left breast (frames 9-12, seen).
+4. **Sliding.**
+   - In clips: warden_show's left foot glides 23 cm flat on the floor (frames 8-16, the creation screen) and 2 cm more (frames 51-66). run_warden slides 3.1 cm a step; sword_fore 1.1 cm.
+   - In the game (read from `PlayerView.Carry`, not yet simulated): every start and stop slides. Between 0.25 and 2.2 m/s idle is blended with a run clamped to at least 0.55 of its rate. The view's speed lags the body twice over (the fight's 14/s, the view's 10/s). Turns pivot planted feet. There is no walk cycle and no foot lock.
+5. **Wrists:** within range in the six clips (the predecessor's limits hold): idle_warden right ulnar 34, extension 42. The "correcting" motion is not yet isolated: look for wrists turning against the forearm's swing, and for flicks between frames.
+6. **Overlap:** the metric exists (`motion.overlap`: hand lag after the upper arm stops) but is not yet summarised. By construction, the keyed arms move as one piece: IK each frame, with every joint on the hand's timing.
 
-- **The wrist.** The single 80-degree wrist limit is gone.
-  - `keyed.Rig` sets FLEX 75, EXT 65, RADIAL 22 and ULNAR 38, read on the wrist's own axes, which turn with the forearm's roll (`_wrist_split`, `_wrist_clamp`, `_wrist_over`).
-  - The elbow's swivel search uses the same range.
-  - Retargeted takes are held to it (`retarget.keep_wrists`).
-  - 8,899 frames were past a wrist's range, as scratch `wrist.py` measures it with tight limits; 637 are now, most within a few degrees. The audit, with its wider limits, now flags none.
-- **The diagonal grip.**
-  - `keyed.GRIP` and `Arms.Spec.Lean`: sword 35 degrees; axe, daggers, mace and wand 30; staff and crossbow square.
-  - It applies to her and the hero only: `Rig.grips`, and `person.Own != null` in `Arms.Hold`. The folk also play the library's clips, held square.
-  - A clip's `meta.weapon` sets it (`grip_of`). `anim_review.gd` mounts the same lean.
-  - `_whole_aims` fills blade and knuckles in the grip's frame.
-- **The `thumb` control:** the wrist straight, the forearm rolled toward a direction.
-  - Used for carried blades (`run.blade_carry`), the reaver's twirl and `bull_rush`'s drawn-back sword.
-  - Thumb-only keys skip the swivel search.
-  - Mixed with blade keys, they are filled by `_whole_aims`.
-- **Re-keyed:**
-  - `warden_show`: the sword raised overhand, the point down over the rim at you, the face clear;
-  - the runs and sprints: the sword hand at her side and ahead; the sprint's arm capped at 85% reach;
-  - `bull_rush`;
-  - `chain_strike`: a frame for the axe to come down; contact moved to 3/30;
-  - `cast_raise`: the staff across overhead, then upright in both fists;
-  - the reaver's twirl;
-  - the folk's `die_front`.
-- **Ground:**
-  - `death`'s knees and shield, and `get_up`'s knees, no longer sink. The shield lies face up and the blade lies flat.
-  - Retargeted takes lift the hips where a knee or a seat would go into the ground, then re-reach for the planted ankles (`retarget.retarget`). This fixed leap's landing.
-  - `lie_side_wake`'s elbow dip is shortened.
-- **Her story fall:**
-  - `StoryNight.OnFall` keeps her at 1 HP, so she used to stand through her own fall.
-  - `PlayerView.Fall()` (from `GameFall.StoryFall`) now puts her down; `Revive()` (from `GetUp`) plays `get_up`.
-  - The UI's build7 shot was the male hero (green); pass `--sex female` for her.
-- **`flinch`:** a new gesture, a jolt of the back and head. It is laid over a run or a blow when she is moving or mid-blow; standing, the old upper-body `hit` plays.
-- **`audit.py`** flags a wrist past its range (FLEX 85, EXT 75, RADIAL 30, ULNAR 45: wider than the solver because its axis is the hand's, up to 13 degrees off the forearm on the hero).
-- **Audit totals:** 231 frames flagged, down from 894 when this round began. One clip spins over 90 degrees in a frame: the hero's `chain_strike`.
-- **Strikes:** judged at the arena camera at 1.6 times; they read and no flip shows.
-- **Strips:** sent to the main session as one batch (`anim5/sh/ba5_*.png`, plus the predecessor's `anim4/sh/ba_*.png`).
+## 3. Done (committed; the helpers are off until verified)
+
+- **Tools:**
+  - `tools/anim/skin.py`: her glTF body and outfits skinned in Python exactly as Godot does, with a port of HerJiggle's springs. `ANIM_PEOPLE`, `ANIM_SKELETONS` and `ANIM_OUT` point it at a "before" copy.
+  - `tools/anim/motion.py`: the audit. It measures contact against her real mesh, with each outfit's thickness laid on, the armpit apart, and a winding-number check; joint volumes; wrist bend and forearm roll; slide in cm per plant; and overlap lags. `--outfits`, `--hero`, `--save NAME`.
+- **Helper bones**, 6 a side: `upperarm_twist_01`, `lowerarm_twist_01/02`, `upperarm_share`, `lowerarm_share`, `calf_share`.
+  - `tools/anim/helpers.py` is the one spec. It also extends a skeleton, drives the bones, and splits weights as a field over space, so skin and garments split alike.
+  - `tools/assets/heroine_rig.py` adds the bones in Blender and splits every mesh. It is hooked into `heroine_outfits.py` just before the body and outfit exports, and is **inert unless the build is passed `--helpers`**.
+  - `godot/src/Actors/HerJoints.cs` drives them, as the last modifier, and does nothing on a body without them:
+    - it hands the forearm bone's roll to the hand and shares the hand's turn along the forearm (0.4 and 0.8);
+    - it half undoes the upper arm's turn at the shoulder;
+    - each share bone takes half its joint's bend; the elbow and knee ones also swell across the bend (1/cos(bend/2), at most 1.5, along their own Z, which `heroine_rig` turns onto the hinge).
+  - Wired into `People.Heroine` and `People.Hero`, `anim_review.gd` (`NOJOINTS=1` for before) and `lookdev.gd`, which also feeds the legal motion check. Data: `godot/art/people/rig_helpers.json`.
+- **Prototype results** (current weights split in Python; not yet seen in Godot):
+
+  | Measure | Before | After |
+  |---|---|---|
+  | Elbow volume at 90 / 120 / 145 degrees | 70 / 59 / 53% | 94 / 83 / 72% |
+  | Knee volume | 75 / 65 / 59% | 101 / 93 / 83% |
+  | Wrist under a ±80 turn | 90-94% | 98-100% |
+  | Upper arm turned ±70 | 76-78% | 85-86% |
+  | Arm raised 130 (shoulder share) | 73-81% | 95-107% |
+
+  The 107% may read as a swollen shoulder: check it.
 
 ## 4. Next, in order
 
-1. **C01 and C04 in their cinematics,** once cinematics has blocked them in. Use a local cue swap (scratch `cue.py`, never committed). The hands that were keyed past a wrist's range now fall short: look at `cup_hands`, `letter`, `reach_coals` and `sit_back_heels` close up. `flask_drink`'s spout stays on her lips (scratch `contact.py`).
-2. **The Warden's `lie_arm_up` and `wade_drag` in C02.**
-3. **Grimtunnel's `burst_hug`, `sniff`, `laugh` and `dive`, and the lampling's slam** (`Beasts.cs` compositions). Nothing in the game asks for these roles yet, so agree the moments with combat first (`GrimtunnelStory`: Under, the burst, the lamps).
-4. **The male hero's library** with ab82cbe99e2937ddd. When his body lands, re-dump `hero_skeleton.json` and rebuild. Flagged on his skeleton:
-   - `chain_strike` spins 106 degrees at the blow;
-   - `lie_side_wake`'s forearm goes 16 cm into the ground;
-   - his story clips need fitting to his proportions.
-5. **Polish:**
-   - the chain haul's landing crouch;
-   - toes 3 to 8 cm into the ground in some folk takes and in `sit_back_heels` (a toe clamp in `retarget`);
-   - `death_back`'s shield edge, 5 cm in.
-6. **The boar** on the creatures lead's quadruped rig (af551cacc6292152f).
+1. **Build and see the helpers.**
+   - Take a Blender turn, then: `blender -b <main checkout>/tools/comfy/out/heroes/heroine_built.blend --python <wt>/tools/assets/heroine_outfits.py -- <wt>/godot/art/people/x --body <wt>/godot/art/people/heroine.glb --helpers`. It is long; scratch `build_body.ps1` wraps it.
+   - Import, then re-dump `tools/anim/data/heroine_skeleton.json` (`anim_skeleton.gd`). The tools need the helper joints in it.
+   - Check that `helpers.hinge_turn` on the built skeleton is about 0 for each share bone (the bulge then lies across the bend).
+   - Render elbow, knee and shoulder sheets with and without `NOJOINTS=1`, at 1:1, and tune `bulge` and `amount` in `helpers.SPEC`.
+   - Then measure each garment point's split against its nearest skin point; the outfits lead asked for this, so send it to them.
+   - Then make `--helpers` the default, push, and ask the outfits lead to merge, rebuild and rerun the check.
+2. **The full baseline audit**, before and after the helpers: `ANIM_PEOPLE=<before copy> python -u tools/anim/motion.py --outfits --save base`, then `--hero`. Use `python -u`: buffered output was lost at the stop.
+3. **Solver and clips:**
+   - arm clearance against her mesh: an SDF of trunk and breasts, with outfit cover and a jiggle margin, in the chest's frame; swivel the elbow first, then push the hand;
+   - follow-through as a post-pass: lag and overshoot down shoulder, elbow, wrist and fingers, held off where hands hold or touch;
+   - foot locking in clips (warden_show first);
+   - the wrist's "correcting" motion.
+4. **In the game:**
+   - a stride simulator of `PlayerView.Carry` (starts, stops, turns);
+   - then a walk cycle, a run rate from the body's own speed, and a runtime foot lock.
+5. **The hero:** the same helpers in `hero_male_body.py` (with ab82cbe99e2937ddd), then his audit.
 
-## 5. Decisions and why
+## 5. Decisions
 
-- **The wrist is anisotropic and read on its own axes,** because a sideways bend of 60 to 80 degrees reads as broken. The swing is taken after the twist (`dh = twist * swing`), as the radius carries the wrist's axes when it rolls. Measuring it the other way round mixes flexion into deviation.
-- **Weapons sit in a diagonal grip,** because a sword held square needs a kinked wrist to point along the arm. The game and the solver must agree, so the lean lives in both places (`keyed.GRIP`, `Arms.Spec.Lean`) and nowhere else.
-- **Carried blades use `thumb`, not `blade`.** A hand behind her with a straight wrist can only point a blade down or across her, so a long blade's hand stays at her side and ahead.
-- **A clip keyed past anatomy is re-keyed, not clamped and passed.** The clamp only keeps it legal: where a hand falls short, look at the result.
-- **Retargeted takes are fixed at retarget,** for wrists, knees and seats, with planted feet kept.
-- **Story falls are shown:** the view falls and rises; the fight logic is untouched.
+- **Bones, not blend shapes, for joints.** Garments take bones through their weights. Correctives would need a copy for every garment.
+- **The driver unrolls the forearm bone whatever the clip did**, so library clips and retargets are fixed too. A shield on the forearm will then keep only the forearm's hinge: mount it on `lowerarm_twist_02` once the helpers are in, so it turns with the radius.
+- **The weight split is a field over space**, the same for skin and every garment.
 
-## 6. Failures and why
+## 6. Gotchas
 
-- **warden_show took four tries.**
-  1. Pointing the blade at the front camera crossed her face and read as nothing.
-  2. Close in, the forearm crossed the face.
-  3. Over the shoulder needed more than 95 degrees of forearm roll.
-  4. The overhand guard with the hand out to her right works.
-  - Check the creation screen's view (front, turned 14 degrees) before choosing a pose.
-- **The first run carry pointed the blade out and down**, so from the side it read as a cane. Down-forward with a steady hand reads as carried.
-- **A full build without names drops the clips modules build only when named** (the walks and C01). Always pass every name: `her_names.txt` and `hero_names.txt` in scratch.
+- The worktree guard refuses `cd && git` chains, `xargs`, and heredocs that touch git. Write scripts to the scratchpad.
+- In `anim_review.gd`, the shield stand-in (a 60 cm disc) hides her torso. Use `OUTFIT=none` and `WEAPON=sword` to see arms against her body.
+- In Blender, a new EditBone needs a length before `.matrix` takes.
+- Scratch tools are in `<scratchpad>/a6` (not kept): `batch.py` (sheets in one Godot turn), `crop.py`, `wax.py` (a quick numpy render), `t_helpers.py` (the volume sweep), `dbg_contact.py`, `dbg_slide.py`.
 
-## 7. Gotchas
+## 7. Collaborators
 
-- **The worktree guard** refuses `cd ... && git` chains, heredocs that touch the worktree, variables in commands and computed `python` programmes. Write patch scripts to the scratchpad and run them plainly. PowerShell is the easy path for `python tools/anim/...`.
-- **`godot/assets` arrives as a text file.**
-  - Replace it with a junction: `New-Item -ItemType Junction` to `public/assets`. A symlink needs admin rights.
-  - Then run `git update-index --skip-worktree godot/assets`.
-  - Copy `godot/.godot` and the `public/assets` `*.import` and `*.uid` files from a warm worktree (robocopy) to skip a full import.
-- **`tools/anim/out` is not in git.** Copy it from a predecessor's worktree, or rebuild everything by name: about 40 minutes for her, as long for him, 10 for the folk, run in parallel in the background.
-- Build the C# (`dotnet build godot/SurvivorUnchained.csproj`) before a game run.
-- The audit's `angle()` has a 2 to 3 degree noise floor: the quaternions from FK drift off unit length.
-- `--quick` with no `--sex` starts the male hero.
-- Never commit `.uid` or `.import` files. Add files by name.
+- The outfits lead (afb34c385770877d3) agreed the hooks stay on this branch. They want the garment-against-skin split measured. Their motion check builds from `lookdev.gd`.
+- The rendering lead (a20bdef993e00f26b); the hero (ab82cbe99e2937ddd).
 
-## 8. Scratch tools (`<scratchpad>/anim5`)
+## 8. Read first
 
-- **Renders:** `shots.py SET TAG [--pack --hero --folk]` renders a set of `anim_review` sheets in one Godot turn. The sets are `ws`, `wr`, `after`, `strikes`, `c01`, `flinch` and `fist`.
-- **Arm and wrist checks:**
-  - `spin.py N`: clips spinning a hand more than N degrees in a frame.
-  - `wrist.py [names] [--before]`: flexion and deviation per clip.
-  - `probe.py module fn [her|hero] step side`: arm geometry per frame.
-  - `runarm.py` and `runtry.py`: the run's forearm and blade per frame, and trying thumb carries.
-  - `twist.py`: the raw twist asked per frame.
-  - `jitter.py`: frame-to-frame bone turn.
-- **Body and prop checks:**
-  - `blade.py`: a held blade through her body.
-  - `groundall.py N [--before]`: every clip's worst sink into the ground. `groundj.py` checks one built clip.
-  - `guard.py`: `warden_show`'s guard geometry, with GRIP and BLADE env vars to convert targets to keys.
-  - `shield.py`: her shield's facing.
-  - `contact.py`: the flask on her lips.
-- **Before and after:** `out_before/` is the predecessor's built clips. `ba.py` stacks before and after strips.
-- **The game:** `gamerun.py NAME [--pack] args` takes a turn, packs, and runs the game for frames.
+1. `tools/anim/helpers.py`
+2. `godot/src/Actors/HerJoints.cs`
+3. `tools/anim/motion.py` and `skin.py`
+4. `tools/anim/keyed.py`: `Rig.solve` (the twist "share"), `solve_frames`, `build`
 
-## 9. Collaborators
-
-- The coordinator (main). It knows about the fall fix and has had the strips.
-- Combat (the successor of a739d6792d21f5efd) for Grimtunnel's roles.
-- Cinematics (a7a4c20bcfd7ccfd3) for C01, C02 and C04, and `chain_strike`'s contact at 3/30.
-- Skills VFX (abc6bbe020c7fe287): weapons now lean in her fist.
-- The male hero (ab82cbe99e2937ddd).
-- Creatures (af551cacc6292152f).
-- UI and experience: her fall now shows.
-
-## 10. Read first
-
-1. `docs/team/animation.md`
-2. `tools/anim/keyed.py`:
-   - `Rig.solve` (the hand step, `_wrist_*`, `want_for`, the thumb path);
-   - `GRIP` and `grip_of`;
-   - `_whole_aims`;
-   - `solve_frames`.
-3. `tools/anim/audit.py`, then `retarget.py` (`keep_wrists`, the knee floor in `retarget`).
-4. `tools/anim/clips/run.py` (`blade_carry`), `soul.py` (`warden_show`), `actions.py` (`death`, `_down_pose`, `get_up`, `cast_raise`).
-5. `godot/src/Actors/Arms.cs` (`Hold`) and `PlayerView.cs` (`Fall`, `Revive`, the flinch).
+HANDOFF READY: docs/handoff/animation.md on worktree-agent-a9a80800a7dae2519 (commit below)

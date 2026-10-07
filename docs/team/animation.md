@@ -1,22 +1,24 @@
 # Animation: status
 
-Agent: the successor of a7dd95d00c4a6a017 (this session), branch `worktree-agent-aa15f092820132274` (took over on 5 October). Brief: `docs/handoff/animation.md`.
+Agent: a9a80800a7dae2519 (6 October), branch `worktree-agent-a9a80800a7dae2519`; paused. Brief and handoff: `docs/handoff/animation.md`.
 
-## State (2026-10-05)
+## State (2026-10-06, paused by the wind-down)
 
-**The wrist pass, second round: a wrist now bends as a wrist does, and weapons sit in the hand as they are held.**
-- **What was still wrong** (the owner's "reverse weird wrist motions ... attempting to correct"):
-  - **The wrist could bend 80 degrees sideways.** The solver had one limit for any bend. A wrist bends far toward the palm and back (about 80 and 70), but little to either side (about 25 toward the thumb, 40 toward the little finger). 8,899 frames across 165 clips were past that.
-  - **Weapons sat square across the fist.** A sword's grip runs from the root of the forefinger to the heel of the hand, so the blade leans toward the fingers. Held square, every guard and cut needed the wrist kinked 60 to 80 degrees toward the little finger (the idle warden held it so all the time).
-  - **The runs asked for the impossible.** The sword was keyed up over her shoulder behind her, so the hand flapped from 80 degrees one way to 60 the other every stride (`anim5/sh/wr_run_cur.png`).
-- **What was done:**
-  - **Anatomical wrist limits** (`keyed.Rig`): flexion 75, extension 65, toward the thumb 22, toward the little finger 38, read on the wrist's own axes (they turn with the forearm). The elbow swings round to meet them; past that the hand falls short. Retargeted takes are held to the same range (`retarget.keep_wrists`).
-  - **The diagonal grip** (`keyed.GRIP`, `Arms.Spec.Lean`): swords 35 degrees, axes, daggers, mace and wand 30, staff and crossbow square. Her and the hero only (`Rig.grips`; `Arms.Hold` for people with their own clips): the folk also play the library's clips, held square. The game, the review scene and the solver use the same lean. A clip's `meta.weapon` sets it.
-  - **A `thumb` control:** the wrist left straight and the forearm rolled so the thumb side faces a way. A carried weapon goes where the arm takes it.
-  - **Re-keyed at the source:** the runs and sprints (the sword hand at her side and ahead, the blade out and forward; a sprint's arm no longer flung straight behind her); `warden_show`; `bull_rush`'s rebound; `chain_strike`'s blow (a frame for the axe to come down, contact 3/30); `cast_raise` (the staff across overhead, then upright in both fists); the reaver's twirl; the folk's `die_front`.
-  - **Her fall** (the coordinator's report from the UI shot): the `death` knees went 17 cm into the ground and the shield stood on its edge 18 cm deep; `get_up`'s knees 17 cm. Re-keyed: the knees rest on the ground, the shield lies face up, the blade flat. **And she never fell at a story fall:** `StoryNight.OnFall` holds her at a breath of life, so the view kept her standing. `PlayerView.Fall()` (called from `GameFall.StoryFall`) puts her down, and `Revive()` (from `GetUp`) brings her up with `get_up`.
-- **`audit.py`** also flags a wrist bent past its range. Totals: 894 flagged frames before this round (without the range check), **231 now with it**; one clip spins a hand over 90 degrees in a frame (the hero's `chain_strike`, 106, at the blow).
-- **Ground:** retargeted takes keep knees and seats out of the ground. Left: toes 3 to 8 cm into it in some folk takes and sit_back_heels.
+**The owner's joint notes (OWNER_NOTES, 6 October): measured, and the skinning fix built but off.** Agent a9a80800a7dae2519; handoff `docs/handoff/animation.md`.
+- **Measured** (`tools/anim/motion.py`, on her actual mesh with her springs; 6 clips so far):
+  - elbows keep 70% of their volume at 90 degrees and 59% at 120; 67-80% in clips; the knee 66% in the run;
+  - forearm roll at the elbow 25-48 degrees;
+  - run_warden's left arm 11-15 mm into her chest; her hands pass through each other (shield-hidden);
+  - warden_show's foot glides 23 cm;
+  - in the game, every start, stop and turn slides (no walk cycle, no foot lock).
+- **Root cause of the pinching:** the rig's twist and share bones were folded away when her body was built.
+- **Built (off until checked):** twist and share bones (`tools/anim/helpers.py`, `tools/assets/heroine_rig.py`, the outfits build's `--helpers`), driven by `HerJoints.cs`. In the Python prototype, elbows keep 94% at 90 degrees and 83% at 120; wrists 98-100% under a turn.
+
+## Next
+
+1. Build her body with `--helpers`, check it at 1:1, then turn it on. The outfits lead rebuilds and reruns the motion check.
+2. The full audit of her and the hero, then the solver: arm clearance against her mesh, follow-through down the arm, foot locking; in the game, a walk cycle and a runtime foot lock.
+3. The earlier list (C01 and C04 in their cinematics, Grimtunnel's roles, the hero's library) after the joints.
 
 ## Sign-off log (sceptical: guilty until shown natural)
 
@@ -24,8 +26,8 @@ Agent: the successor of a7dd95d00c4a6a017 (this session), branch `worktree-agent
 
 | Clip(s) | Checked | Fixed | Verdict |
 |---|---|---|---|
-| warden_show | Audit; blade; sheets front, three-quarter, side, close | Re-keyed: the sword raised overhand, the elbow out, the point down over the rim at you; chin up, eyes over the rim | Good on sheets: face clear, arm beside her head. To judge at the creation screen |
-| run_warden, sprint_warden | Audit; blade; the hand close every frame; side | The thumb carry; the hand at her side | Good: the wrist straight through the stride (was 80 one way, 60 the other) |
+| warden_show | Audit; blade; sheets front, three-quarter, side, close | Re-keyed: the sword raised overhand, the elbow out, the point down over the rim at you; chin up, eyes over the rim | **Reopened (6 Oct):** her left foot glides 23 cm flat on the floor (frames 8-16) |
+| run_warden, sprint_warden | Audit; blade; the hand close every frame; side | The thumb carry; the hand at her side | **Reopened (6 Oct):** the wrist is good; her left upper arm goes 11-15 mm into her chest, and her hands pass through each other in front of her (shield-hidden) |
 | Other runs and sprints | Audit; blade; sheets | The thumb carry; the sprint's arm kept bent | Good by numbers (sprint_reaver was 97 degrees in a frame) |
 | Strikes (sword, axe, axes, daggers), casts, throw, vault_back | Audit; close sheet of sword_fore; all at the arena camera at 1.6 times (`anim5/sh/strikes_all_s1.png`) | The grip's lean; the wrist's range | Good: the arcs read, no flip shows at the game camera. The cuts roll the hand 60 to 87 degrees in a frame for one or two frames, which is a cut |
 | Idles and breaks | Audit; close sheet (idle_warden) | The grip's lean; the reaver's twirl re-keyed | Good (idle_warden was 66 toward the little finger, always). The twirl rolls 36 a frame: it is a twirl |
@@ -40,14 +42,9 @@ Agent: the successor of a7dd95d00c4a6a017 (this session), branch `worktree-agent
 | The hero's chain_strike | Audit | — | **Flagged:** the blow spins his hand 106 degrees in a frame. His body is pending; fix with his rebuild |
 | Folk arms_crossed, talk (retargeted) | Audit | Held to the wrist's range | The tucked hand toward the thumb 35 before; to re-audit |
 
-## Next
-
-1. C01 and C04 in their cinematics, once blocked.
-2. Grimtunnel's four and the lampling's slam (`Beasts.cs`): nothing in the game asks for these roles yet; agree the moments with combat first. The chain haul's landing crouch.
-3. The male hero's library when his body lands (his chain_strike and lie_side_wake are flagged).
-4. Toes through the ground (a toe clamp in `retarget`).
-
 ## Notes for other areas
+
+- **Outfits:** her helper bones come in through `heroine_outfits.py`'s `--helpers` (off for now). The split is the same field for skin and every garment. The motion check needs nothing more: `lookdev.gd` adds HerJoints.
 
 - **Combat and skills VFX:** her and the hero's swords, axes, daggers, mace and wand sit 30 to 35 degrees leaned in the fist (`Arms.Spec.Lean`, people with their own clips only). Anything reading a weapon's tip from its mount follows it.
 - **Experience and UI:** at a story fall she now goes down (`PlayerView.Fall`) and gets up at the rise (`Revive`). The UI's build7 fall shot was a run as the male hero (green): `--sex female` for her.

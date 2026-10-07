@@ -183,6 +183,8 @@ func _init():
 		# NOLIFE=1: her face still (no blinks, no eyes moving), for side-by-side pictures.
 		if OS.get_environment("NOLIFE") == "":
 			skel.add_child(load("res://src/Actors/HerFaceLife.cs").new())
+		# Her helper bones, last of every layer, as People sets them.
+		skel.add_child(load("res://src/Actors/HerJoints.cs").new())
 		var ap = AnimationPlayer.new()
 		h.add_child(ap)
 		var lib = AnimationLibrary.new()
