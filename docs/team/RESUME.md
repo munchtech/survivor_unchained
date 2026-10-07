@@ -27,6 +27,16 @@ The one page of what's current. Every lead starts from the latest `claude/vigila
 - **Animation:** natural, correct motion; be sceptical; sign off per clip.
 - **The bar:** "we are striving for perfection". Improved isn't enough.
 
+## 6 October 2026, evening: stopped by the weekly limit (resets 10 October, 10pm Pacific)
+
+The first wave was running and stopped mid-task. **Resume each lead by SendMessage to its id** (the roster). Their context is intact and well under 500k. Check `ctx.py` first.
+- **Face** (aed215ba3ca60cc29): mid-measure on grain (Doe 0.61; it was testing mipmaps as the cause). Nothing committed yet.
+- **Body and outfits** (afb34c385770877d3): was running the arcanist's motion check. Nothing committed yet.
+- **Rendering** (a20bdef993e00f26b): merged perf-seethrough-wip (9599be3d) and was fixing two compile errors before batch 1.
+- **Writer** (a67ad095680c3d65b): Brannoc's truth/lie parity was done and green, but not yet committed. It was starting the "three days" leak.
+- **UI design** (adba22c3df8f39418): HUD research and shots under way (the minimap and the day dial). Nothing committed yet.
+- **Next slots:** animation (`su-lead-max`, the owner's joint notes in OWNER_NOTES), then a new storybook-cinematics lead once the writer's shot scripts exist, then UI art.
+
 ## Current state by area: wound down 6 October 2026 (usage low); restart here
 
 Integration is green (774 tests) and pushed. **A new coordinator reads docs/handoff/coordinator.md first** (its procedures, merge and context-check scripts in tools/scratch/coordinator/, and the old scratchpad scripts mirrored in tools/scratch/). Every lead below stopped at a clean point with a handoff; start each as a fresh successor from its handoff (the main session checks context on every report and hands off at 500k).

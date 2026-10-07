@@ -18,6 +18,16 @@ The owner: "lets introduce another cheaper, but stylisticly and artistically STI
 - **Realistic (as before):** **the burial** (C08, made a trunk scene) stays an in-engine cinematic.
 - The drawings carry our own soul (rooted in the Ember Watch, not generic fantasy illustration), with no AI look; any generated art follows the provenance rules (ours, local, logged).
 
+### Animation: joints and motion to perfection (6 October)
+
+Rendering fixes how motion is drawn; joints and rig are animation's (next free slot, raised to `su-lead-max`). The owner: "the motions that get scuffed are ... bad, unnatural movements with respect to wrists - follow through motion joint to joint, some elbow pinching or arms going through body or breast, some sliding. a lot is GOOD but we want perfection."
+- **Wrists:** unnatural bends and rolls.
+- **Follow-through, joint to joint:** motion should flow and overlap down the chain (shoulder to elbow to wrist to fingers), not move as one stiff piece.
+- **Elbows pinching** (skinning: weights, twist and helper bones, corrective shapes).
+- **Arms through her body or breasts:** collision-aware arm paths in every clip, with jiggle on. Check with the outfits lead, because the same weights carry the garments.
+- **Sliding:** planted feet that hold.
+- Audit her and the hero in every clip at 1:1, in motion; keep what's good.
+
 ## 5 October 2026 (from playing the build; the leads were stopped by the weekly limit, so these wait)
 
 ### UI design and UI art: the HUD is the keystone
