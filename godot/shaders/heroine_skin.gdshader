@@ -17,11 +17,13 @@ uniform sampler2D pores : hint_default_white, filter_linear_mipmap_anisotropic, 
 uniform float pore_scale = 30.0;
 uniform float pore_depth = 0.6;
 // Her skin's own fine grain (tools/assets/heroine_grain.py: her face paint's
-// high frequencies, a 2.8 cm tile; 0.5 as she is, 0.25 a 6% change) on her
-// neck and body, whose paint is smooth: against her face their skin read as
-// another's, finer and flatter (her portrait's neck has nearly half her
-// face's grain; hers had a quarter). Not on her face (the features' blue),
-// which has its own. Two reads at two sizes, so the tile never shows.
+// high frequencies, a 2.8 cm tile; 0.5 as she is, 0.25 a 6% change) up her
+// neck, whose paint is smooth: against her face it read as another's skin,
+// finer and flatter (her portrait's neck has nearly half her face's grain).
+// Not on her face (the features' blue), which has its own, and not from her
+// collarbones down (her freckles' map's blue): over her body it read as a
+// speckle on her breasts, whose skin is smooth but for its pores and
+// freckles. Two reads at two sizes, so the tile never shows.
 uniform sampler2D grain : hint_default_white, filter_linear_mipmap_anisotropic, repeat_enable;
 uniform float grain_amount = 0.0;
 uniform float rough = 0.5;
@@ -124,8 +126,8 @@ void fragment() {
 	float fl = clamp(lod - log2(float(textureSize(paint, 0).x) / float(max(textureSize(features, 0).x, 1))), 0.0, far_mip);
 	vec3 fm = textureLod(features, UV, fl).rgb;
 	ALBEDO = texture(paint, UV).rgb * tone * mix(vec3(1.0), face_tone, fm.b);
+	vec3 fk = texture(freckles, UV).rgb;
 	if (freckle_amount > 0.001) {
-		vec2 fk = texture(freckles, UV).rg;
 		float fv = fk.r * (1.0 - smoothstep(freckle_amount - 0.04, freckle_amount + 0.04, fk.g));
 		ALBEDO = mix(ALBEDO, ALBEDO * freckle_colour, fv * mix(0.5, 1.0, freckle_amount));
 	}
@@ -154,7 +156,8 @@ void fragment() {
 	vec4 q = mix(texture(pores, UV * pore_scale), texture(pores, UV * pore_scale * 0.77 + vec2(0.53, 0.19)), 0.35);
 	float patchy = smoothstep(0.2, 0.8, texture(pores, UV * pore_scale * 0.07 + vec2(0.31, 0.67)).a);
 	float depth = pore_depth * mix(0.35, 1.0, patchy);
-	float ga = grain_amount * (1.0 - fm.b);
+	// (where her freckles' map says, its blue: her head and up her neck, none from her collarbones down)
+	float ga = grain_amount * (1.0 - fm.b) * fk.b;
 	if (ga > 0.0) {
 		// (a tile every 28 mm: pore_scale is a tile every 9; the two reads' mean has
 		// 0.71 of one's spread, given back)

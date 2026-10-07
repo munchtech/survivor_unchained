@@ -1,33 +1,32 @@
 # Heroine face, hair and creation's Look: status
 
-Agent a43570e07edbe40b2 (handing off at v11), branch `worktree-agent-a43570e07edbe40b2`.
-The handoff for v12 is `docs/handoff/face.md`.
+Agent aed215ba3ca60cc29 (v12; took over from a43570e07edbe40b2 at v11), branch `worktree-agent-aed215ba3ca60cc29`.
+The handoff it started from is `docs/handoff/face.md`.
 
 ## Current state (2026-10-06)
-- **v11** (this branch, through 93f66173; no geometry or blend paint changed, **no refit needed**). Merged with the integration branch's v10b refit (19dca97e); creation's portraits rerun on it (a3369938).
-- Against the bar (`face_sheets/v11_face.jpg`, `v11_presets.jpg`, `v11_play_zoom.png`):
-  - **Tones** under the white rig: every face within 3.3% per channel of its portrait (`tone_fit.py v11e`).
-  - **Irises**: every face within 5% per channel of its portrait (were a third to a fiftieth as light; `iris_fit.py`).
-  - **Grain** at the Look: face s0.8 / s1.6 / s3.2 = 0.65 / 0.82 / 0.89 of the photo's. Not 0.9 yet (the finest is TAA's).
-  - **Neck grain**: neck over face 0.36 / 0.29 / 0.25 at the Look (was 0.26 / 0.22 / 0.23; the portrait's 0.46 / 0.45 / 0.39).
-  - **Brows** (hers): dark third over skin L 0.74, hair 0.27 (portrait 0.76, 0.28; were 0.35, 0.41).
-  - **Play zoom**: eyes and a mouth read at the game's camera, day, night and arena (were a blank); brows read at 12.5 m, merged with the eyes at 23 m.
-  - **Book by day**: her lamp at half while the book frames her; still flat (the sun is frontal).
-- **Tells left at the close-up**: skin a touch smooth and even; lips thinner and paler than her portrait's; the hair (a helmet, a pale strip at the temples; the hair pass); the other faces' brows 1.3 to 1.8 times too light against their portraits.
+- **v12, her skin (committed):**
+  - **No speckle over her breasts** (the owner's note, 6 October). The face-grain tile (93f66173) was laid at 3x over her whole body; it is now only up her neck (the freckle maps' blue), its dark outliers eased; the graft's freckles stop at her collarbones in front. Her bust at the Look: 0.26 specks per 1000 px to 0.06, the floor (`face_sheets/v12_breast_speckle.jpg`).
+  - **Her paint no longer smeared at the close-up:** her skin's scattering 0.38 to 0.1. Godot's screen-space SSS spreads the lit colour with her paint in it. Grain at the Look (s0.8 / 1.6 / 3.2 of her portrait's) 0.62 / 0.79 / 0.91 to 0.74 / 0.92 / 0.99; Doe's brows' darkness 0.30 to 0.20 (portrait 0.18).
+  - Mipmaps on the textures loaded from code (the presets' head paints, freckles, grain, AO, scalp).
+- **Short of the bar, found this round (worst first):**
+  1. **Every face's brows sit 22 to 37% too near its eyes** (in eye widths): the warp squashed each portrait's eye region onto the clay's narrower eyes. Fix written in `heroine_face.py` (brows pinned to the portrait's place over each eye; the laying's colour match made a linear tint; the front's features laid from it alone: brows +20% darker). Needs all ten paints re-laid (Krea detail pass) and laid onto the head paints without a rebuild.
+  2. **The eyes stare and read as a render:** the iris fully uncovered (a resting lid per face: Highborn about 0.18), irises 4 to 8% small and too contrasty, the lashes MakeHuman's black spiky band (and a faded rectangle in their paint).
+  3. **Upper lips 13 to 37% thinner than the portraits'** on most faces, in the sculpt itself (the clays). Sliders don't fill (lips_upper pouts). A sculpt per face: **a refit**, gathered with anything else of the head's.
+  4. AgX (the world's tone curve) pales her lips and lifts her darks unshaded; under the white rig her lips are close. Secondary.
+  5. Her neck's grain is half her portrait's neck's (0.0049 at s0.8 against 0.0094); the tile is clean now, so it can rise without speckle. The book by day; the jaw-edge spots.
 
 ## Key decisions (why)
-- **Eye swatches are the iris's own colour** (`iris_light` 1): the sky's cornea reflection that lit them at 0.3 was dimmed in v10. Fey, Vixen, Doe and Moonlit have swatches of their own (Dove, Lichen, Chestnut, Umber): shared, two faces were 20 to 50% apart.
-- **Each face's paint has its own tone** (`face_tone`, laid by the features' blue on the face alone), the swatch fit for the body.
-- **Only her own face's brows are dyed** to her hair: her brow mask on another face dyed its lid crease. Each hair keeps its painted darkness, in the dye's hue.
-- **Play zoom**: the features' marks read at a capped mip and grown to the pixel; her head carried 8 degrees up in play (`HerCarriage.HeadLevel`; play only, the animation lead to sign off).
-- **Her neck's grain is her face paint's own** (`heroine_grain.py`, a tile): the pores' tile read as sandpaper.
-- **Freckles**: lower defaults (hers 0.18, Hard-won 0.12, Wildling 0.1, Fey 0.06), softer at low amounts; a face shaped by hand starts with none.
+- **Scatter 0.1, hers only** (`People.HerScatter`): 0.2 smears as 0.38 does; at 0.1 the detail stays and the light's edge is still soft (the shader's own terminator). The hero shares the shader; his lead may want the same.
+- **Grain up her neck only, by the freckle maps' blue** (`heroine_freckles.py`): no new texture, no mesh change, no seam (the blue carried past the UV islands).
+- **No freckles on the front of her chest:** sun freckles thin down the chest; over her breasts they read as specks.
+- **Brow position by the paint, not the brows_height slider:** at 1.0 the slider moves the gap 0.52 to 0.60 (portrait 0.77) and looks surprised.
+- Dev switches for pictures: `--zoom Z` (the Look's framing), `--lids X`, `--tonemap linear|agx|...`, `--grade off`.
 
 ## Next
-See the handoff: the other faces' brows, the face's finest grain, the lips, the book's light, the chest flake (not found at the Look on the refit), then the paints and sliders pass.
+Re-lay the ten paints (brows) and lay them on the head paints; the eyes (resting lids, irises, lashes); the lips' sculpt (refit); then the handoff's list; then the paints and sliders pass (freckle control); then hair.
 
 ## Notes for other areas
-- **Male hero:** the eye shader's `iris_light` is 1 now; his flint is refitted (`People.HisEyes`). His irises were as dark as hers.
-- **Animation:** `HerCarriage.HeadLevel` lifts her head 8 degrees above level in play (`--head-level`, `--head-ease`). Please judge it in motion.
-- **Arena art / experience:** at the Verge's arrival the canopy hides her entirely from play's camera.
-- **Shots:** `--book-lamp`, `--grain`, `--brows soften,sat`, `--head-level`, `--head-ease` try values.
+- **Outfits:** her body takes no grain tile now (smooth below her collarbones, around and under garments too); her skin is sharper (scatter 0.1). No mesh or vertex-colour change.
+- **Male hero:** the same shader's scatter 0.38 smears his paint at close-ups too.
+- **Rendering:** her face's grain numbers are cleanest with `--skinparam scatter=0.1` (now her default).
+- **Shots:** an ember from the camp fire can drift in front of her at the Look (a soft orange disc); it's not her skin.

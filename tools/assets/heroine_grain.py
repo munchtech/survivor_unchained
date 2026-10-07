@@ -48,9 +48,17 @@ for y in range(0, S - T, 32):
             best, at = score, (y, x)
 y, x = at
 g = ratio[y:y + T, x:x + T] - 1
-# (freckles and blemishes, the few marks far past the grain's spread, clipped back into it)
+# (freckles, blemishes and pores' dark cores, the marks past the grain's spread, eased back into it: clipped at
+# 2.5 times the spread, the tile's darkest texels, three times over on her neck, read as dark specks)
 s = g.std()
-g = np.clip(g, -2.5 * s, 2.5 * s)
+K = 1.6 * s
+
+
+def soft(x):
+    return K * np.tanh(x / K)
+
+
+g = soft(g)
 g -= g.mean()
 # Seamless: the tile over itself shifted half its size, each where it is furthest from its own
 # edge, the spread kept where they blend.
@@ -58,7 +66,7 @@ h = np.roll(np.roll(g, T // 2, 0), T // 2, 1)
 e = np.minimum(np.arange(T), T - 1 - np.arange(T)) / (T / 2)
 w = np.minimum(e[:, None], e[None, :])
 w = np.clip(w * 2, 0, 1)
-t = (w * g + (1 - w) * h) / np.sqrt(w * w + (1 - w) * (1 - w))
+t = soft((w * g + (1 - w) * h) / np.sqrt(w * w + (1 - w) * (1 - w)))
 img = np.clip(0.5 + t / STEP * 0.25, 0, 1)
 Image.fromarray((img * 255 + 0.5).astype(np.uint8), 'L').save(OUT)
 print('GRAIN from her face paint at', at, 'spread %.4f (%.1f%%), written' % (s, 100 * s), OUT)

@@ -915,12 +915,7 @@ public static class People
         if (who == "heroine")
         {
             m.SetShaderParameter("face_tone", FaceTone(look));
-            // (her face's own fine grain on her neck and body: tools/assets/heroine_grain.py)
-            if (ResourceLoader.Exists("res://art/people/head_tex/heroine_grain.png"))
-            {
-                m.SetShaderParameter("grain", GD.Load<Texture2D>("res://art/people/head_tex/heroine_grain.png"));
-                m.SetShaderParameter("grain_amount", HerGrain);
-            }
+            m.SetShaderParameter("scatter", HerScatter);
         }
         // A body's relief baked from its sculpt (the hero's), under the pores.
         if (src.NormalTexture != null)
@@ -960,6 +955,13 @@ public static class People
         {
             m.SetShaderParameter("freckles", GD.Load<Texture2D>(fp));
             m.SetShaderParameter("freckle_amount", HerFreckles(look));
+            // (and her face's own fine grain up her neck, where the freckles' map's blue says: none from her
+            // collarbones down; tools/assets/heroine_grain.py)
+            if (ResourceLoader.Exists("res://art/people/head_tex/heroine_grain.png"))
+            {
+                m.SetShaderParameter("grain", GD.Load<Texture2D>("res://art/people/head_tex/heroine_grain.png"));
+                m.SetShaderParameter("grain_amount", HerGrain);
+            }
         }
         // His skin, all of it, rougher than hers: at her sheen his deep
         // relief caught the light as wet plastic.
@@ -971,6 +973,14 @@ public static class People
         }
         return m;
     }
+
+    /// <summary>How far light carried under her skin spreads on screen (the skin shader's `scatter`, Godot's
+    /// screen-space scattering). Godot spreads the lit colour with her paint in it, so at the Look's close-up its
+    /// 0.38 smeared her paint: brows paler than drawn (Doe's darkest third at 0.30 of her skin, her portrait's 0.18),
+    /// freckles and pores gone, her grain at 0.62 / 0.79 / 0.91 of her portrait's (s0.8 / 1.6 / 3.2). At 0.1 it is
+    /// 0.74 / 0.92 / 0.99 and Doe's brows 0.20; the soft edge of her lit side is the shader's own (`terminator`).
+    /// (0.2 smeared as 0.38 did.)</summary>
+    const float HerScatter = 0.1f;
 
     /// <summary>His skin's roughness, sheen, and the roughness it gains seen
     /// edge on (shaders/heroine_skin.gdshader).</summary>
@@ -1009,9 +1019,10 @@ public static class People
         ["wildling"] = new(0.992f, 0.969f, 0.957f), ["hardwon"] = new(1.004f, 1.016f, 1.032f),
     };
 
-    /// <summary>How much of her face's own grain her neck and body take (the skin shader's
-    /// grain_amount; 1 her face's paint's own spread): her portrait's neck has nearly half her
-    /// face's grain, and her neck's relief alone gave it a quarter. (--grain tries another.)</summary>
+    /// <summary>How much of her face's own grain her neck takes (the skin shader's grain_amount; 1 her face's
+    /// paint's own spread; none from her collarbones down, by her freckles' map's blue): her portrait's neck has
+    /// nearly half her face's grain, and her neck's relief alone gave it a quarter. (Over her body too, it was the
+    /// speckle over her breasts.) (--grain tries another.)</summary>
     static readonly float HerGrain = SurvivorUnchained.Args.Has("grain") ? SurvivorUnchained.Args.Num("grain", 3f) : 3f;
 
     static Vector3 FaceTone(Look look) =>

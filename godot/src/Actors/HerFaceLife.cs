@@ -53,6 +53,8 @@ public partial class HerFaceLife : Node
         // --open-eyes: a still of her face with her lids up and her eyes ahead
         // (a blink caught in a still read as a face with its eyes shut).
         if (Args.Has("open-eyes")) { Lids = 0; Wander = 0; }
+        // --lids X: her lids held so far down (0 open, 1 shut), for pictures of a lid at rest tried.
+        if (Args.Has("lids")) Lids = Args.Num("lids", 0);
         // --eyecycle paint,#rrggbb,...: her irises dyed each in turn, one a picture
         // (--seconds, then every --every): the eye shader's colours measured as
         // the game shows them, against the portraits' (paint: as painted).
