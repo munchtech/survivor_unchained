@@ -1,7 +1,7 @@
 # Heroine face, hair and creation's Look: status
 
-Agent aed215ba3ca60cc29 (v12; took over from a43570e07edbe40b2 at v11), branch `worktree-agent-aed215ba3ca60cc29`.
-The handoff it started from is `docs/handoff/face.md`.
+Agent aed215ba3ca60cc29 (v12; took over from a43570e07edbe40b2 at v11), branch `worktree-agent-aed215ba3ca60cc29`, handing off.
+The handoff for the rest of v12 is `docs/handoff/face.md`.
 
 ## Current state (2026-10-06)
 - **v12, her skin (committed):**
