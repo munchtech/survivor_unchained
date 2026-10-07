@@ -1,6 +1,6 @@
 """Reads the legal motion check's pictures (MARKS=1; see marks_section.py for the codes) and
 reports, per outfit:
-- frames where any areola shows (skin within 2.2 cm of a nipple tip: her texture's pigment);
+- frames where any areola shows (skin within 2.2 cm of an areola's centre, as her paint has it);
 - the margin: the closest visible skin to an areola's edge, for each breast and for each edge
   of its rim (upper, upper inner, inner and so on, as seen in that view, from the posed tip),
   with the clip, view and frame. A negative margin means the areola shows;
@@ -199,7 +199,7 @@ def margin(v):
     return '%+.2f cm' % (v - AREOLA)
 
 
-lines = ['Margins are past the areola\'s edge (2.2 cm from the tip): negative means the areola shows.',
+lines = ['Margins are past the areola\'s edge (2.2 cm from its centre): negative means the areola shows.',
          'Edges are as seen in that view, from the posed tip: "inner" is towards her midline.',
          'No near skin in view at all means every margin is past %.1f cm.' % (NEAR - AREOLA), '']
 for outfit in sorted({r[0].split('_')[0] for r in rows}):

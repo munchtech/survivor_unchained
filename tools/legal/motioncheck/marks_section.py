@@ -16,8 +16,12 @@
 #   under a garment) that comes into view: near a nipple, the blue code with green at exactly
 #   0.5 once the tuck is past half (the edge ring's 1/3 is not counted); elsewhere, cyan, paler
 #   the shallower the tuck (red = 0.9 * (1 - tuck)). Seen tucked skin is a dent or a gap.
-# The nipples are found as the sharpest bump on the front half of each breast (welded
-# neighbours, so UV seams can't fake one); the landmarks come from her untrimmed body.
+# Each areola is found from her paint (the skin painted darker than its breast's own, on the
+# breast's front half), and the distance is measured from its centre; the posed landmark is
+# her skin nearest that centre. Without a paint to read, the sharpest bump on the front half of
+# each breast stands in (welded neighbours, so UV seams can't fake one), with a warning. The
+# landmarks come from her untrimmed body. Calibrate (run.sh calib) after any body change: the
+# log says whether the two areolas are mirror images.
 
 GD = r'''
 # Where her landmarks fall on screen in a picture (count.py: which breast, which way). Each
@@ -70,22 +74,55 @@ func save_landmarks(c: Camera3D, path: String):
 	f.store_string(JSON.stringify(outj))
 	f.close()
 
+# Where a function's body ends in shader code: the brace closing the first one opened after
+# `head` (comments skipped).
+func _body_end(code: String, head: int) -> int:
+	var depth = 0
+	var i = code.find("{", head)
+	while i >= 0 and i < code.length():
+		if code.substr(i, 2) == "//":
+			i = code.find("\n", i)
+			continue
+		if code.substr(i, 2) == "/*":
+			i = code.find("*/", i) + 2
+			continue
+		var ch = code[i]
+		if ch == "{":
+			depth += 1
+		elif ch == "}":
+			depth -= 1
+			if depth == 0: return i
+		i += 1
+	return -1
+
 var _tinted: Shader
 func tinted_skin(base: Shader) -> Shader:
 	if _tinted != null: return _tinted
 	var code = base.code
-	var end = code.rfind("}")
-	var flat = "ALBEDO = vec3(0.0); SPECULAR = 0.0; ROUGHNESS = 1.0; METALLIC = 0.0; RIM = 0.0; SSS_STRENGTH = 0.0; BACKLIGHT = vec3(0.0); "
+	var flat = "ALBEDO = vec3(0.0); SPECULAR = 0.0; ROUGHNESS = 1.0; METALLIC = 0.0; RIM = 0.0; SSS_STRENGTH = 0.0; BACKLIGHT = vec3(0.0); legal_flat = 1.0; "
 	# (the outfit's channel of her vertex colours, as her shader's tuck reads it; -1: none)
 	var head = code.find("void fragment()")
-	code = code.substr(0, head) + "uniform int legal_tuck_ch = -1;\n" + code.substr(head)
-	end = code.rfind("}")
+	code = code.substr(0, head) + "uniform int legal_tuck_ch = -1;\nvarying float legal_flat;\n" + code.substr(head)
+	# The codes go at the end of fragment() itself, not of the file: her shader has its own
+	# light() after it (face v10), where COLOR is unknown and the codes never compiled.
+	head = code.find("void fragment()")
+	var end = _body_end(code, head)
 	code = code.substr(0, end) \
 		+ "\t// legal motion check (test codes, never in the game): see tools/legal/motioncheck\n" \
+		+ "\tlegal_flat = 0.0;\n" \
 		+ "\tfloat legal_th = legal_tuck_ch == 0 ? COLOR.r : legal_tuck_ch == 1 ? COLOR.g : legal_tuck_ch == 2 ? COLOR.b : legal_tuck_ch == 3 ? COLOR.a : 0.0;\n" \
 		+ "\tif (UV2.y > 0.5) { " + flat + "EMISSION = vec3(0.0, 1.0, 0.0); }\n" \
 		+ "\telse if (UV2.x < 0.995) { " + flat + "EMISSION = vec3(UV2.x * 0.9, legal_th > 0.5 ? 0.5 : 0.0, 1.0); }\n" \
-		+ "\telse if (legal_th > 0.02) { " + flat + "EMISSION = vec3((1.0 - legal_th) * 0.9, 1.0, 1.0); }\n}\n"
+		+ "\telse if (legal_th > 0.02) { " + flat + "EMISSION = vec3((1.0 - legal_th) * 0.9, 1.0, 1.0); }\n" \
+		+ code.substr(end)
+	# Her own light() adds a sheen from what fragment() had before the codes (a varying), so
+	# no lamp may light a coded pixel: the codes are read back exactly, as emission alone.
+	var lh = code.find("void light()")
+	if lh >= 0:
+		var lend = _body_end(code, lh)
+		code = code.substr(0, lend) \
+			+ "\tif (legal_flat > 0.5) { DIFFUSE_LIGHT = vec3(0.0); SPECULAR_LIGHT = vec3(0.0); }\n" \
+			+ code.substr(lend)
 	_tinted = Shader.new()
 	_tinted.code = code
 	return _tinted
@@ -159,21 +196,69 @@ func legal_marks(mi):
 					seen[ek] = true
 					nsum[kp] = nsum.get(kp, Vector3.ZERO) + vs[pair[1]]
 					ncount[kp] = ncount.get(kp, 0) + 1
+		# Each areola as her paint has it, which is what must be covered: on each breast's front
+		# half, the skin painted darker than that breast's own (under 0.8 of its median), and
+		# its centre. (The sharpest bump, all this once was, took a lump low on her right breast
+		# for the nipple on the v10/v11 body, 6 cm off, and her real areola went uncoded; on her
+		# left it took a point 9 mm off the areola's middle, and a disc round that missed pigment.)
+		var paint: Image = null
+		var ov = mi.get_surface_override_material(si)
+		if ov is ShaderMaterial and ov.get_shader_parameter("paint") is Texture2D:
+			paint = ov.get_shader_parameter("paint").get_image()
+			if paint != null and paint.is_compressed(): paint.decompress()
+		var uvs = arr[Mesh.ARRAY_TEX_UV]
+		var pig = {}
+		if paint != null and uvs.size() == vs.size():
+			var pw = paint.get_width()
+			var ph = paint.get_height()
+			var lum = {}
+			for i in vs.size():
+				var b = owner[i]
+				if b < 0 or along[i] < 0.5 * reach[b]: continue
+				var c = paint.get_pixel(clampi(int(uvs[i].x * pw), 0, pw - 1), clampi(int(uvs[i].y * ph), 0, ph - 1))
+				if not lum.has(b): lum[b] = []
+				lum[b].append([i, 0.3 * c.r + 0.59 * c.g + 0.11 * c.b])
+			for b in lum:
+				var ls = []
+				for e in lum[b]: ls.append(e[1])
+				ls.sort()
+				var med = ls[ls.size() / 2]
+				var acc = Vector3.ZERO
+				var n = 0
+				for e in lum[b]:
+					if e[1] < 0.8 * med:
+						acc += vs[e[0]]
+						n += 1
+				if n >= 8:
+					pig[b] = acc / n
+					print("legal marks: ", breast_name[b], " areola from her paint: ", n, " vertices, centre ", pig[b])
 		var best = {}
 		var bests = {}
 		var bidx = {}
 		for i in vs.size():
 			var b = owner[i]
 			if b < 0 or along[i] < 0.5 * reach[b]: continue
-			var kk = key.call(vs[i])
-			if not ncount.has(kk) or ncount[kk] < 3: continue
-			var score = -(nsum[kk] / float(ncount[kk]) - vs[i]).dot(ns[i].normalized())
+			var score = 0.0
+			if pig.has(b):
+				# (its landmark: her skin nearest the areola's centre)
+				score = -vs[i].distance_to(pig[b])
+			else:
+				var kk = key.call(vs[i])
+				if not ncount.has(kk) or ncount[kk] < 3: continue
+				score = -(nsum[kk] / float(ncount[kk]) - vs[i]).dot(ns[i].normalized())
 			if not bests.has(b) or score > bests[b]:
 				bests[b] = score
 				best[b] = vs[i]
 				bidx[b] = i
+		if pig.size() == 2:
+			var cs = pig.values()
+			print("legal marks: areolas level within %.1f cm, out from her middle alike within %.1f cm" % [abs(cs[0].y - cs[1].y) * 100.0, abs(abs(cs[0].x) - abs(cs[1].x)) * 100.0])
+			if abs(cs[0].y - cs[1].y) > 0.015 or abs(abs(cs[0].x) - abs(cs[1].x)) > 0.015:
+				print("legal marks: WARNING the two areolas are not mirror images: check the landmarks before trusting a count")
+		elif best.size() > 0:
+			print("legal marks: WARNING no paint read: the nipples are guessed as the sharpest bumps")
 		for b in best:
-			tips.append(best[b])
+			tips.append(pig[b] if pig.has(b) else best[b])
 			# (and the skin 2 cm above the tip and 2 cm in towards her midline, at rest, so the
 			# directions on screen come from her skin as drawn too)
 			# (and her skin 2 to 6 cm around it, split into its upper and lower halves and its
