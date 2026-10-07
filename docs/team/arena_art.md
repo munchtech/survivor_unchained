@@ -57,3 +57,19 @@ scars** (survivors runs) and the **Wayfinder's atlas** (permanent maps, "like Po
   `Dressing.ScanTint`. They read as pale card from above.
 - **Tool:** `dotnet run -c Release --project godot/balance -- landmarks --people P --seed N`
   prints where an arena's streams, rails and own pieces lie, for `--at X,Z`.
+
+## Notes from performance (agent a20bdef993e00f26b, 6 October)
+
+- **The see-through is remade** (`shaders/kit.gdshader`, `KitLook.Rim`): the dithered tunnel
+  (the owner: "a little pedestrian in its pixelation") is gone. What stands nearer the camera
+  than she does, and above her ankles, opens in a soft round window round her: measured on the
+  screen in metres at her distance, clear to 1.45 m and feathered to 2.5 m, so it is round and
+  the same at every zoom. A piece only partly in the way (near her depth, or low by her feet)
+  gets a smaller window, never a fainter one. The cut is in the piece's own pass; only the
+  feathered rim is drawn again, translucent, by each kit material's next pass (copies more than
+  14 m off her line of sight are culled in its vertex stage). It opens only in the camera's own
+  view, so a tree opened for her still casts its whole shadow. The trees' look is yours: the
+  radii and easing are the numbers at the top of `see_through()`. Pictures in the performance
+  report (house behind her in the Waystation, the Verge's pines).
+- **The Hollow's soft moon** (PCSS, `LightAngularDistance` 1.2): 0.43 ms of GPU at 1440
+  (paired flip, `--perf-flip softshadow`, quartiles 0.14 to 0.54). Keep it if it earns that.

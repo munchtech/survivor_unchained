@@ -44,6 +44,13 @@ public partial class HairSway : Node
     Vector3[] rest = [], x = [], xp = [];
     float[] link = [];
     Ball[] balls = [];
+    // This frame's: where the chain's points would hang, and the balls they are kept out of.
+    Vector3[] target = new Vector3[8], at = [];
+    // What the shader is given (in the mesh's space): this frame's swing and where her head
+    // is, and last frame's, for the motion vectors (MotionClock).
+    Vector3 sway, headAt;
+    Vector3[] swung = new Vector3[8], swungThen = new Vector3[8];
+    bool drawn;
 
     public HairSway() { Name = "HairSway"; }
 
@@ -88,14 +95,17 @@ public partial class HairSway : Node
         var local = mesh.GlobalTransform.AffineInverse();
         var world = sk.GlobalTransform;
         var pose = sk.GetBoneGlobalPose(head);
-        var sway = Vector3.Zero;
-        var swung = new Vector3[8];
+        // Last frame's swing is kept for the motion vectors' look back (MotionClock); this frame's is made afresh.
+        (swungThen, swung) = (swung, swungThen);
+        System.Array.Clear(swung);
+        var swayThen = sway;
+        var headThen = headAt;
+        sway = Vector3.Zero;
         if (bone >= 0 && rest.Length == 8)
         {
             var moved = world * Moved(bone);
-            var target = new Vector3[8];
             for (int i = 0; i < 8; i++) target[i] = moved * rest[i];
-            var at = new Vector3[balls.Length];
+            if (at.Length != balls.Length) at = new Vector3[balls.Length];
             for (int i = 0; i < balls.Length; i++) at[i] = world * (Moved(balls[i].Bone) * balls[i].At);
             if (!live || dt <= 0) { x = (Vector3[])target.Clone(); xp = (Vector3[])target.Clone(); live = true; }
             const int steps = 4;
@@ -136,30 +146,36 @@ public partial class HairSway : Node
         else
         {
             var turned = pose.Basis * sk.GetBoneGlobalRest(head).Basis.Inverse();
-            var target = world * (pose.Origin + turned * Hang);
-            if (!live || dt <= 0) { p = target; v = Vector3.Zero; live = true; }
+            var single = world * (pose.Origin + turned * Hang);
+            if (!live || dt <= 0) { p = single; v = Vector3.Zero; live = true; }
             const int steps = 4;
             float h = dt / steps;
             for (int i = 0; i < steps; i++)
             {
-                v += (Stiffness * (target - p) - Damping * v) * h;
+                v += (Stiffness * (single - p) - Damping * v) * h;
                 p += v * h;
             }
-            var off = p - target;
-            if (off.Length() > Reach) { off = off.Normalized() * Reach; p = target + off; }
+            var off = p - single;
+            if (off.Length() > Reach) { off = off.Normalized() * Reach; p = single + off; }
             sway = local.Basis * off * Amount;
         }
-        var headAt = local * (world * pose.Origin);
+        headAt = local * (world * pose.Origin);
+        // (Its first frame has no last: it stood as it stands.)
+        if (!drawn) { swayThen = sway; headThen = headAt; System.Array.Copy(swung, swungThen, 8); drawn = true; }
         for (int s = 0; s < mesh.Mesh.GetSurfaceCount(); s++)
             if (mesh.GetSurfaceOverrideMaterial(s) is ShaderMaterial m)
             {
                 m.SetShaderParameter(SwayName, sway);
                 m.SetShaderParameter(HeadName, headAt);
                 m.SetShaderParameter(ChainName, swung);
+                m.SetShaderParameter(SwayThenName, swayThen);
+                m.SetShaderParameter(HeadThenName, headThen);
+                m.SetShaderParameter(ChainThenName, swungThen);
             }
     }
 
     // The parameters' names made once: a string given where a name is wanted
     // is a new name each call, and every frame's left for the collector.
-    static readonly StringName SwayName = "sway", HeadName = "head", ChainName = "chain";
+    static readonly StringName SwayName = "sway", HeadName = "head", ChainName = "chain",
+        SwayThenName = "sway_then", HeadThenName = "head_then", ChainThenName = "chain_then";
 }

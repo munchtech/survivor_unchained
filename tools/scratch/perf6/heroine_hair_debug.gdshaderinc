@@ -1,6 +1,5 @@
 // Her hair's shading, for heroine_hair.gdshader (cut to its strands by hashed
-// alpha), heroine_hair_coverage.gdshader (cut by a threshold moved every frame:
-// COVERAGE) and heroine_hair_soft.gdshader (blended: SOFT).
+// alpha) and heroine_hair_soft.gdshader (blended: SOFT).
 
 uniform sampler2D strands : source_color, filter_linear_mipmap_anisotropic, repeat_enable;
 uniform vec3 colour : source_color = vec3(0.56, 0.17, 0.07);
@@ -37,9 +36,6 @@ uniform vec3 head_then = vec3(0.0, 1.6, 0.0);
 uniform vec3 chain_then[8];
 
 #include "res://shaders/motion.gdshaderinc"
-#ifdef COVERAGE
-#include "res://shaders/coverage.gdshaderinc"
-#endif
 
 varying vec3 strand;
 varying float sparkle;
@@ -60,6 +56,10 @@ void vertex() {
 	} else {
 		VERTEX += ((past ? sway_then : sway) + air) * hang * hang * tip * moves;
 	}
+	// DEBUG (motion pairs check): last frame's run raised half a metre.
+	if (past) {
+		VERTEX.y += 0.5;
+	}
 }
 
 void fragment() {
@@ -75,7 +75,6 @@ void fragment() {
 	strand = normalize(BINORMAL);                                 // along its V: root to tip
 	sparkle = t.g;
 	fibre = t.r * (cap ? 0.35 : 1.0);                            // (the cap's under the hair: little highlight)
-	float cover = 1.0;
 	if (tie) {
 		ALBEDO = vec3(0.055, 0.035, 0.024);
 		fibre = 0.6;
@@ -85,20 +84,14 @@ void fragment() {
 		// (a rope of hair, a braid's strand (its blue), as bright as hair, deep in it darker)
 		float rope = COLOR.b;
 		ALBEDO = tint * t.r * mix(0.85, 0.5, smoothstep(0.4, 1.0, fade) * (1.0 - rope)) * mix(1.0, mix(0.55, 1.0, depth), rope);
-		cover = max(fade * fade, t.a * smoothstep(0.0, 0.7, fade));
+		ALPHA = max(fade * fade, t.a * smoothstep(0.0, 0.7, fade));
 	} else {
 		float along = UV.y;                                       // 0 at the root, 1 at the tip
 		ALBEDO = tint * t.r * mix(1.0 - roots, 1.0, smoothstep(0.0, 0.1, along)) * mix(0.55, 1.0, depth);
 		// (its root's blunt end softened; the baby hairs at her hairline faint: its vertex alpha)
-		cover = t.a * smoothstep(0.0, 0.012, along) * COLOR.a;
+		ALPHA = t.a * smoothstep(0.0, 0.012, along) * COLOR.a;
 	}
-#if defined(SOFT)
-	ALPHA = cover;
-#elif defined(COVERAGE)
-	// (cut by a threshold moved every frame: coverage.gdshaderinc)
-	if (cover < coverage_cut(FRAGCOORD.xy)) discard;
-#else
-	ALPHA = cover;
+#ifndef SOFT
 	ALPHA_HASH_SCALE = 1.0;
 #endif
 	ROUGHNESS = 0.7;

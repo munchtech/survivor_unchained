@@ -63,3 +63,15 @@ body_rim={
 "type": "vec4",
 "value": Vector4(0.56, 0.7, 1, 0.55)
 }
+view_from={
+"type": "vec4",
+"value": Vector4(0, 0, 0, 0)
+}
+motion_then={
+"type": "float",
+"value": 0.0
+}
+motion_frame={
+"type": "float",
+"value": 0.0
+}

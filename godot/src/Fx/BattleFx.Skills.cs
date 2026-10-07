@@ -662,11 +662,13 @@ public partial class BattleFx
                 // Whole, lit from within (flaking, its edges burned orange and it read as a dark
                 // shape in a green streak).
                 var tint = hunt ? new Color(0.7f, 1.6f, 0.4f) : new Color(0.45f, 1.5f, 1.0f);
-                herdCrowd.Push(new Transform3D(basis, feet), "move", now * rate + p.Id * 0.37, 0, 0, 0, 0, tint, 2.2f);
+                // (Each keeps its own slot by its spirit's id, the echoes theirs, for its motion vectors.)
+                long herdKey = (long)p.Id << 2;
+                herdCrowd.Push(herdKey, new Transform3D(basis, feet), "move", now * rate + p.Id * 0.37, 0, 0, 0, 0, tint, 2.2f);
                 // A spirit leaves itself behind as it runs: two fading echoes a stride back, coming
                 // apart in flakes (a green wolf alone read as a dyed one, not a spirit).
                 for (int k = 1; k <= 2; k++)
-                    herdCrowd.Push(new Transform3D(basis, feet - fwd * 0.55f * k * sc), "move", (now - 0.07 * k) * rate + p.Id * 0.37, 0, 0.35f + 0.25f * k, 0, 0, tint * (1.1f - 0.2f * k), 2.6f);
+                    herdCrowd.Push(herdKey | (long)k, new Transform3D(basis, feet - fwd * 0.55f * k * sc), "move", (now - 0.07 * k) * rate + p.Id * 0.37, 0, 0.35f + 0.25f * k, 0, 0, tint * (1.1f - 0.2f * k), 2.6f);
                 var wild = hunt ? Hdr("#7aff3a", 1f) : Hdr("#4affa0", 1f);
                 Ribbons.Feed(key, feet + Vector3.Up * 0.5f * sc, 0.3f * sc, 0.14f, new Color(wild.R * 0.4f, wild.G * 0.4f, wild.B * 0.4f), 0.9f, Ribbons.Style.Wisp);
                 trailAcc.TryGetValue(p.Id, out var kick);

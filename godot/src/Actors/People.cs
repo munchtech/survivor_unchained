@@ -487,7 +487,7 @@ public static class People
                 if (src.ResourceName == "lashes")                  // (her lower lashes finer: tools/assets/heroine_eyes.py)
                     m.AlbedoTexture = GD.Load<Texture2D>("res://art/people/head_tex/heroine_lashes.png");
                 m.Roughness = 0.8f;
-                return m;
+                return Coverage.Cards(m);
             case "teeth" or "tongue":
                 m.Roughness = 0.35f;
                 return m;
@@ -684,7 +684,8 @@ public static class People
             {
                 if (mi.GetSurfaceOverrideMaterial(s) is ShaderMaterial m)
                 {
-                    if (m.Shader == hairShader || m.Shader == hairSoftShader) m.SetShaderParameter("colour", colour);
+                    if (m.Shader == hairShader || m.Shader == hairSoftShader || Coverage.On && m.Shader == Coverage.Hair) m.SetShaderParameter("colour", colour);
+                    else if (m.ResourceName == "brows") Coverage.Colour(m, colour.Darkened(0.45f));
                     else if (m.Shader == skinShader2)
                     {
                         m.SetShaderParameter("tone", HerTone(look));
@@ -775,7 +776,7 @@ public static class People
         // (the cap on her scalp and the fine hairs at her hairline blended, as
         // they thin out into her skin; the fine hairs over the cap)
         bool soft = src.ResourceName is "hair_cap" or "hair_fine";
-        var m = new ShaderMaterial { Shader = soft ? hairSoftShader : hairShader, RenderPriority = src.ResourceName == "hair_fine" ? 1 : 0 };
+        var m = new ShaderMaterial { Shader = soft ? hairSoftShader : Coverage.On ? Coverage.Hair : hairShader, RenderPriority = src.ResourceName == "hair_fine" ? 1 : 0 };
         m.SetShaderParameter("strands", src.AlbedoTexture);
         m.SetShaderParameter("colour", colour);
         m.SetShaderParameter("cap", src.ResourceName == "hair_cap");

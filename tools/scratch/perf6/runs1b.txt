@@ -1,0 +1,46 @@
+# Her judder at 164 Hz, drawn between steps and not (the probe's numbers)
+probe_on | 2560x1440 | 164 | --quick warden --sex female --zone verge --time day --auto across --probe --shot p_on --seconds 14
+# Her running across the Verge, ten consecutive frames at 164 Hz, each way of smoothing
+run_taa_old | 2560x1440 | 164 | --quick warden --sex female --zone verge --time day --auto across --no-interp --shot run_taa_old --seconds 9 --every 0.006 --count 10
+run_taa | 2560x1440 | 164 | --quick warden --sex female --zone verge --time day --auto across --shot run_taa --seconds 9 --every 0.006 --count 10
+run_taa1 | 2560x1440 | 164 | --quick warden --sex female --zone verge --time day --auto across --aa taa --shot run_taa1 --seconds 9 --every 0.006 --count 10
+run_smaa | 2560x1440 | 164 | --quick warden --sex female --zone verge --time day --auto across --aa smaa --shot run_smaa --seconds 9 --every 0.006 --count 10
+run_fsr2 | 2560x1440 | 164 | --quick warden --sex female --zone verge --time day --auto across --aa fsr2 --shot run_fsr2 --seconds 9 --every 0.006 --count 10
+run_msaa | 2560x1440 | 164 | --quick warden --sex female --zone verge --time day --auto across --aa msaa --shot run_msaa --seconds 9 --every 0.006 --count 10
+r1080_taa_old | 1920x1080 | 164 | --quick warden --sex female --zone verge --time day --auto across --no-interp --shot r1080_taa_old --seconds 9 --every 0.006 --count 10
+r1080_taa | 1920x1080 | 164 | --quick warden --sex female --zone verge --time day --auto across --shot r1080_taa --seconds 9 --every 0.006 --count 10
+r1080_smaa | 1920x1080 | 164 | --quick warden --sex female --zone verge --time day --auto across --aa smaa --shot r1080_smaa --seconds 9 --every 0.006 --count 10
+r1080_fsr2 | 1920x1080 | 164 | --quick warden --sex female --zone verge --time day --auto across --aa fsr2 --shot r1080_fsr2 --seconds 9 --every 0.006 --count 10
+# Godot's own view of the motion vectors (TAA on), drawn between steps and not
+mv_taa | 2560x1440 | 164 | --quick warden --sex female --zone verge --time day --auto across --debugdraw MotionVectors --shot mv_taa --seconds 9
+mv_taa_old | 2560x1440 | 164 | --quick warden --sex female --zone verge --time day --auto across --no-interp --debugdraw MotionVectors --shot mv_taa_old --seconds 9
+# The crowd in motion round her in an arena (each body in its own slot now)
+crowd_taa | 2560x1440 | 164 | --quick warden --sex female --zone arena --tier 2 --minute 8 --auto across --shot crowd_taa --seconds 12 --every 0.006 --count 6
+crowd_smaa | 2560x1440 | 164 | --quick warden --sex female --zone arena --tier 2 --minute 8 --auto across --aa smaa --shot crowd_smaa --seconds 12 --every 0.006 --count 6
+crowd_fsr2 | 2560x1440 | 164 | --quick warden --sex female --zone arena --tier 2 --minute 8 --auto across --aa fsr2 --shot crowd_fsr2 --seconds 12 --every 0.006 --count 6
+mv_crowd | 2560x1440 | 164 | --quick warden --sex female --zone arena --tier 2 --minute 8 --auto across --debugdraw MotionVectors --shot mv_crowd --seconds 12 --every 0.006 --count 4
+# Still camera (her standing): what shimmers frame to frame, each way of smoothing
+idle_taa | 2560x1440 | 164 | --quick warden --sex female --zone verge --time day --auto idle --shot idle_taa --seconds 8 --every 0.006 --count 10
+idle_taa1 | 2560x1440 | 164 | --quick warden --sex female --zone verge --time day --auto idle --aa taa --shot idle_taa1 --seconds 8 --every 0.006 --count 10
+idle_smaa | 2560x1440 | 164 | --quick warden --sex female --zone verge --time day --auto idle --aa smaa --shot idle_smaa --seconds 8 --every 0.006 --count 10
+idle_fsr2 | 2560x1440 | 164 | --quick warden --sex female --zone verge --time day --auto idle --aa fsr2 --shot idle_fsr2 --seconds 8 --every 0.006 --count 10
+idle_msaa | 2560x1440 | 164 | --quick warden --sex female --zone verge --time day --auto idle --aa msaa --shot idle_msaa --seconds 8 --every 0.006 --count 10
+# The Look's close-up (the face lead's grain): one picture after 8 s of real time, then two more
+look_taa | 1920x1080 | 0 | --new --sex female --step 1 --part 1 --open-eyes --hair ponytail --shot look_taa --seconds 8 --every 0.25 --count 3
+look_msaa | 1920x1080 | 0 | --new --sex female --step 1 --part 1 --open-eyes --hair ponytail --aa msaa --shot look_msaa --seconds 8 --every 0.25 --count 3
+look_smaa | 1920x1080 | 0 | --new --sex female --step 1 --part 1 --open-eyes --hair ponytail --aa smaa --shot look_smaa --seconds 8 --every 0.25 --count 3
+look_fsr2 | 1920x1080 | 0 | --new --sex female --step 1 --part 1 --open-eyes --hair ponytail --aa fsr2 --shot look_fsr2 --seconds 8 --every 0.25 --count 3
+look_taa1 | 1920x1080 | 0 | --new --sex female --step 1 --part 1 --open-eyes --hair ponytail --aa taa --shot look_taa1 --seconds 8 --every 0.25 --count 3
+l1440_taa | 2560x1440 | 0 | --new --sex female --step 1 --part 1 --open-eyes --hair ponytail --shot l1440_taa --seconds 8 --every 0.25 --count 3
+l1440_msaa | 2560x1440 | 0 | --new --sex female --step 1 --part 1 --open-eyes --hair ponytail --aa msaa --shot l1440_msaa --seconds 8 --every 0.25 --count 3
+l1440_fsr2 | 2560x1440 | 0 | --new --sex female --step 1 --part 1 --open-eyes --hair ponytail --aa fsr2 --shot l1440_fsr2 --seconds 8 --every 0.25 --count 3
+# The see-through: behind a house in the town, standing (old dither, new window under each smoothing)
+house_old | 2560x1440 | 164 | --quick warden --sex female --zone waystation --time day --at 9,25.6 --auto idle --see-through old --shot house_old --seconds 4
+house_taa | 2560x1440 | 164 | --quick warden --sex female --zone waystation --time day --at 9,25.6 --auto idle --shot house_taa --seconds 4
+house_smaa | 2560x1440 | 164 | --quick warden --sex female --zone waystation --time day --at 9,25.6 --auto idle --aa smaa --shot house_smaa --seconds 4
+house_fsr2 | 2560x1440 | 164 | --quick warden --sex female --zone waystation --time day --at 9,25.6 --auto idle --aa fsr2 --shot house_fsr2 --seconds 4
+# ...and running past the Verge's row of pines (a frame every 0.05 s)
+trees_old | 2560x1440 | 164 | --quick warden --sex female --zone verge --time day --at -137,14.5 --auto across --see-through old --shot trees_old --seconds 1 --every 0.05 --count 30
+trees_taa | 2560x1440 | 164 | --quick warden --sex female --zone verge --time day --at -137,14.5 --auto across --shot trees_taa --seconds 1 --every 0.05 --count 30
+trees_smaa | 2560x1440 | 164 | --quick warden --sex female --zone verge --time day --at -137,14.5 --auto across --aa smaa --shot trees_smaa --seconds 1 --every 0.05 --count 30
+trees_fsr2 | 2560x1440 | 164 | --quick warden --sex female --zone verge --time day --at -137,14.5 --auto across --aa fsr2 --shot trees_fsr2 --seconds 1 --every 0.05 --count 30

@@ -102,6 +102,9 @@ public static class Graphics
             case "msaa":
                 vp.UseTaa = false;
                 break;
+            case "taa":
+                vp.Msaa3D = Viewport.Msaa.Disabled;
+                break;
             case "fsr2":
                 vp.Scaling3DMode = Viewport.Scaling3DModeEnum.Fsr2;
                 vp.Scaling3DScale = Mathf.Min(scale, 1f);
@@ -109,6 +112,9 @@ public static class Graphics
                 vp.Msaa3D = Viewport.Msaa.Disabled;
                 break;
         }
+        // --fsr-sharpness S (to compare): FSR 2's own sharpening, 0 the most and 2 none
+        // (Godot hands it on as 1 - S/2; its default 0.2 is 0.9, near the most).
+        if (FsrSharpness is float fs) vp.FsrSharpness = fs;
 
         Sparks.Density = t.Effects;
         if (scene == null) return;
@@ -118,8 +124,12 @@ public static class Graphics
         scene.Crowd.CorpseMax = t.Corpses;
     }
 
-    /// <summary>The edges smoothed another way than the tier's (--aa: smaa, fxaa, msaa, fsr2), to compare; null: the tier's.</summary>
+    /// <summary>The edges smoothed another way than the tier's (--aa: smaa, fxaa, msaa, fsr2, or taa
+    /// alone without MSAA), to compare; null: the tier's.</summary>
     public static string? Aa = Args.Get("aa");
+
+    /// <summary>FSR 2's sharpening (--fsr-sharpness), to compare; null: Godot's own.</summary>
+    public static float? FsrSharpness = Args.Has("fsr-sharpness") ? (float)Args.Num("fsr-sharpness", 0.2f) : null;
 
     /// <summary>The quality in force (for what is built later: a lamp lit in play).</summary>
     public static Tier Current { get; private set; } = High;

@@ -45,7 +45,7 @@ public partial class CrowdSheet : Node
         for (int i = 0; i < n; i++)
         {
             var at = new Transform3D(new Basis(Vector3.Up, yaw + i * yawStep), new Vector3((i - (n - 1) / 2f) * cell, 0, 0));
-            crowd.Push(at, roles[i % roles.Length], start + i * step, 0, 0, 0, 0, Colors.White, 0);
+            crowd.Push(i, at, roles[i % roles.Length], start + i * step, 0, 0, 0, 0, Colors.White, 0);
         }
         crowd.End();
         // The floor, checked, so a foot that slides shows.

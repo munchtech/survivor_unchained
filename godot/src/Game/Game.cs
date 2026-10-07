@@ -71,6 +71,8 @@ public partial class Game : Node, IZoneHost
 
     public override void _Ready()
     {
+        // The renderer's clock followed from its first frame, for what moves by code (MotionClock).
+        SurvivorUnchained.View.MotionClock.Start(this);
         // The colour sheets as Godot should have them, before any model loads.
         SurvivorUnchained.View.Textures.Mend();
         // --icons: every item photographed afresh (user://icons), then quit.
@@ -905,6 +907,7 @@ public partial class Game : Node, IZoneHost
     WorldState World => Journey.World;
     /// <summary>--probe: her smoothness across the screen, measured.</summary>
     MotionProbe? Probe;
+    static readonly StringName ViewFromName = "view_from";
     /// <summary>How long the camera stays turned to a boss (Ev.Focus).</summary>
     double focusT;
 
@@ -985,6 +988,10 @@ public partial class Game : Node, IZoneHost
         else if (camera.Fov != 34) camera.Fov = 34;
         scene.Update(dt);
         CinemaFrame(dt);
+        // Where the game's camera stands, for the see-through window (shaders/kit.gdshader):
+        // opened in this view only, never in a light's.
+        if (GetViewport().GetCamera3D() is { } seen)
+            RenderingServer.GlobalShaderParameterSet(ViewFromName, new Vector4(seen.GlobalPosition.X, seen.GlobalPosition.Y, seen.GlobalPosition.Z, 1));
         // The survivor's place on screen, for the health drawn under them; the prompt's thing; what matters off screen.
         if (Mode == "play" && Battle is { } fb2)
         {
@@ -1578,6 +1585,9 @@ public partial class Game : Node, IZoneHost
     /// <summary>--perf-flip lampshadows: the place's lights that cast shadows (and the place they are in).</summary>
     List<OmniLight3D>? shadowed;
     WorldScene? shadowedIn;
+    /// <summary>--perf-flip softshadow: the key light's breadth while it is taken away.</summary>
+    float softAngle;
+    bool softSaid;
     /// <summary>--perf-flip labels: loot's names on the ground not made or drawn.</summary>
     bool labelsOff;
 
@@ -1604,7 +1614,7 @@ public partial class Game : Node, IZoneHost
         // seconds (default 1) and put back, the frame's "flip" counter 1 while
         // out. One run measures both ways under the same load from the GPU's
         // other users (it is shared): her, furshadow (her fur's shadows), crowd,
-        // grass, fires, lamps, lampshadows, pieces, labels, sunshadows, ssao, msaa, interp;
+        // grass, fires, lamps, lampshadows, pieces, labels, sunshadows, softshadow, ssao, msaa, interp;
         // or quality:Q, scale:S, aa:A (that quality, resolution or smoothing while out).
         if (Args.Get("perf-flip") is string flips)
         {
@@ -1664,6 +1674,18 @@ public partial class Game : Node, IZoneHost
                     foreach (var l in shadowed) if (IsInstanceValid(l)) l.ShadowEnabled = on;
                 }
                 var t = Graphics.Current;
+                // softshadow: the key light's breadth (the moon's soft-edged shadows under a canopy,
+                // PCSS, Atmosphere) taken away while out, and given back after.
+                if (flipped.Contains("softshadow"))
+                {
+                    if (!on && air.Key.LightAngularDistance > 0)
+                    {
+                        if (!softSaid) { GD.Print($"perf softshadow: the key light's breadth {air.Key.LightAngularDistance} taken away while out"); softSaid = true; }
+                        softAngle = air.Key.LightAngularDistance;
+                        air.Key.LightAngularDistance = 0;
+                    }
+                    else if (on && softAngle > 0) { air.Key.LightAngularDistance = softAngle; softAngle = 0; }
+                }
                 if (flipped.Contains("sunshadows")) air.Key.ShadowEnabled = on;
                 if (flipped.Contains("ssao")) air.Env.SsaoEnabled = on && t.Ssao;
                 if (flipped.Contains("msaa")) GetViewport().Msaa3D = on ? t.Msaa : Viewport.Msaa.Disabled;

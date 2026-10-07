@@ -56,7 +56,11 @@ public partial class CrowdView : Node3D
     /// windup is played to land exactly there as the sim's blow lands, however long the kind winds up.</summary>
     const double SlamImpact = 1.0;
 
-    sealed record Corpse(string Visual, string Role, float X, float Z, float Facing, float Scale, Color Tint, float Glow, double Born);
+    sealed record Corpse(long Key, string Visual, string Role, float X, float Z, float Facing, float Scale, Color Tint, float Glow, double Born);
+
+    /// <summary>Who a body is, for its slot in its kind's batch (VatCrowd): the same while it lives
+    /// and while it lies after, never another's (a creature's place in the fight's list is reused).</summary>
+    static long KeyOf(Enemy e) => ((long)e.Id << 32) ^ (BitConverter.DoubleToInt64Bits(e.Seed) & 0xffffffffL) ^ (BitConverter.DoubleToInt64Bits(e.Seed) >> 32);
 
     static readonly string[] Deaths = ["die", "die2", "die3"];
 
@@ -324,7 +328,7 @@ public partial class CrowdView : Node3D
             else glow = Math.Max(glow, 0.06f);
         }
         if (e.Disposition == Disposition.Neutral && !e.Provoked) tint *= new Color(0.95f, 0.95f, 0.95f);
-        crowd.Push(new Transform3D(basis, at), role, t, flare, dissolve, frozen, burning, tint, glow);
+        crowd.Push(KeyOf(e), new Transform3D(basis, at), role, t, flare, dissolve, frozen, burning, tint, glow);
         living++;
     }
 
@@ -341,7 +345,7 @@ public partial class CrowdView : Node3D
         var (tint, glow) = Visuals.Tint(e.Def.Visual);
         if (e.Def.Tint is var (tr, tg, tb)) tint *= new Color((float)tr, (float)tg, (float)tb);
         if (e.Def.Glow is { } dg) glow = Math.Max(glow, (float)dg);
-        corpses.Add(new Corpse(e.Def.Visual, role, (float)x, (float)z, (float)facing, (float)(e.Def.Scale ?? 1) * Beasts.Size(e.Def.Visual), tint, glow * 0.3f, time));
+        corpses.Add(new Corpse(KeyOf(e), e.Def.Visual, role, (float)x, (float)z, (float)facing, (float)(e.Def.Scale ?? 1) * Beasts.Size(e.Def.Visual), tint, glow * 0.3f, time));
         while (corpses.Count > CorpseMax) corpses.RemoveAt(0);
     }
 
@@ -362,7 +366,7 @@ public partial class CrowdView : Node3D
             float k = 1 - 0.5f * Smooth(age, 0.3, 1.3) - 0.15f * Smooth(age, 1.3, lie);
             var tint = c.Tint * new Color(k * 0.88f, k * 0.92f, k, 1);
             tint.A = 1;
-            crowd.Push(new Transform3D(basis, at), c.Role, crowd.Asset.Duration(c.Role) * 0.999, 0, sink > 0.6f ? (sink - 0.6f) * 2.5f : 0, 0, 0, tint, c.Glow);
+            crowd.Push(c.Key, new Transform3D(basis, at), c.Role, crowd.Asset.Duration(c.Role) * 0.999, 0, sink > 0.6f ? (sink - 0.6f) * 2.5f : 0, 0, 0, tint, c.Glow);
         }
     }
 
