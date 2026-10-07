@@ -27,15 +27,16 @@ The one page of what's current. Every lead starts from the latest `claude/vigila
 - **Animation:** natural, correct motion; be sceptical; sign off per clip.
 - **The bar:** "we are striving for perfection". Improved isn't enough.
 
-## 6 October 2026, evening: stopped by the weekly limit (resets 10 October, 10pm Pacific)
+## 6 October 2026, night: wound down (usage low); every lead handed off. Restart here
 
-The first wave was running and stopped mid-task. **Resume each lead by SendMessage to its id** (the roster). Their context is intact and well under 500k. Check `ctx.py` first.
-- **Face** (aed215ba3ca60cc29): mid-measure on grain (Doe 0.61; it was testing mipmaps as the cause). Nothing committed yet.
-- **Body and outfits** (afb34c385770877d3): was running the arcanist's motion check. Nothing committed yet.
-- **Rendering** (a20bdef993e00f26b): merged perf-seethrough-wip (9599be3d) and was fixing two compile errors before batch 1.
-- **Writer** (a67ad095680c3d65b): Brannoc's truth/lie parity was done and green, but not yet committed. It was starting the "three days" leak.
-- **UI design** (adba22c3df8f39418): HUD research and shots under way (the minimap and the day dial). Nothing committed yet.
-- **Next slots:** animation (`su-lead-max`, the owner's joint notes in OWNER_NOTES), then a new storybook-cinematics lead once the writer's shot scripts exist, then UI art.
+All merged and pushed. **Every area restarts as a fresh successor from its handoff** (each lead passed about 500k). Brief them to read by section, not whole files (see memory, agent-token-handoffs).
+1. **Face** (docs/handoff/face.md, su-lead-max): speckle on her breasts fixed; skin sharper (SSS 0.1). Next: brows re-laid (the code is ready, then a GPU turn), the eyes (a resting lid, irises, lashes), upper lips gathered into one refit, neck grain, then paints and sliders, then hair (blended cards, per rendering).
+2. **Body and outfits** (docs/handoff/outfits.md, su-lead-max): the motion check works again, and the true baselines fail in motion on all four outfits. Fixes are written on `outfits-lead-wip` @ 77b9eacc (unbuilt; don't merge until built and checked). Pauldron_l's rim is unbound (the jagged line).
+3. **Animation** (docs/handoff/animation.md, su-lead-max): elbows keep 59-70% of their volume (the helpers were folded out of her rig). Twist and helper bones are built but off (`--helpers`, HerJoints.cs); build them, see them at 1:1, then the outfits lead rebuilds and reruns the check. Then the full audit, arms through her body, follow-through, foot locking and a walk cycle in play.
+4. **Rendering** (docs/handoff/performance.md, su-lead-max): the blur is Godot's TAA (a 50 px ghost). The leaning is FSR 2 native, sharpening off, no MSAA, but hashed hair crawls under it, so blended hair cards with a depth prepass come first, with the face lead. A pale wedge remains in the see-through behind the Waystation. Crops in docs/team/perf_sheets/.
+5. **UI art** (docs/handoff/ui_art.md plus "For UI art" in docs/team/ui_design.md): paint the HUD instrument's real pieces. The coordinator's note: the skill slots still read as grey boxes, and the globes are glossy and generic. **UI design** (docs/handoff/ui_design.md): four fixes built but not shot; then its own Next.
+6. **Writer** (paused by the owner; docs/team/story.md "paused here"): "three days", the ledger lie, the road, the two illustrated-cinematic shot scripts, the burial shot list. Then a **storybook (illustrated) cinematics lead** (new, su-lead-max), then a fresh editor for the next draft.
+Then, as before: combat (the crowd push), the experience director, arena art, creatures (the boar; inputs in survivorsunchained_inputs/boar), cinematics (the burial), skills VFX, crafting, loot, the male hero.
 
 ## Current state by area: wound down 6 October 2026 (usage low); restart here
 

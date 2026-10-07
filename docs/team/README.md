@@ -53,7 +53,7 @@ The owner asks: "accurate, efficient, on track, manage and engineer context. del
 - Batch screenshots and renders: shoot everything a check needs in one turn, look once, fix in one pass.
 - Keep handoffs and status pages lean.
 - Effort (the owner, 6 October: "cut token use without lowering quality"): the lowest effort that gets the same result, raised freely whenever quality could be at risk. Leads are spawned as `su-lead-max` (judgement and taste: face, hair, story, UI, rendering diagnosis, new systems), `su-lead-high` (feature work to a spec: combat, animation, arena art, crafting, loot, cinematics, performance runs, story checks, provenance) or `su-worker-medium` (mechanical jobs). If your task proves harder than your setting, say so. Earlier settings: legal medium; performance measurement runs, story consistency checks, and provenance and licence logging high; everything else at its top. Every agent stays on the same model.
-- Running now (from 6 October): the face, body and outfits, rendering, UI design (the HUD) and animation (joints). The writer is paused by the owner. Next: UI art (when the GPU is lighter), combat and animation (the crowd and her run), the experience director, then the rest.
+- Running now: none (wound down 6 October, night). Restart per RESUME.md. Next: UI art (when the GPU is lighter), combat and animation (the crowd and her run), the experience director, then the rest.
 
 ## Roster
 
@@ -62,22 +62,22 @@ The main session keeps this current. It is the address list for SendMessage. Ret
 | Area | Agent | Status page |
 |---|---|---|
 | Voice (paused by the owner: no placeholders; final voices from ElevenLabs later) | a501b387a90d78b4e | docs/team/voice.md |
-| Story and writing (the writer: the approved rewrite, Act 1 first) | a67ad095680c3d65b | docs/team/story.md |
+| Story and writing (the writer: the approved rewrite, Act 1 first) | — (handoff ready) | docs/team/story.md |
 | Combat, encounters, bosses, balance (paused; handoff ready at af6452e1) | — | docs/team/combat.md |
-| Animation (joints to perfection: wrists, follow-through, elbows, arms through body, sliding) | a9a80800a7dae2519 | docs/team/animation.md |
-| UI design (the HUD keystone; portraits wait on the face) | adba22c3df8f39418 | docs/team/ui_design.md |
+| Animation (joints to perfection: wrists, follow-through, elbows, arms through body, sliding) | — (handoff ready) | docs/team/animation.md |
+| UI design (the HUD keystone; portraits wait on the face) | — (handoff ready) | docs/team/ui_design.md |
 | UI art (paused; handoff ready at cd0f4ab6) | — | docs/team/ui_art.md |
 | Crafting (research, design, build) (paused; handoff ready at ed429efb) | — | docs/team/crafting.md |
 | Gameplay experience director | af2c026d86e1b532b | docs/team/experience.md |
 | Skills look and feel (VFX, under the main session) | a560452c597415545 | docs/team/skills.md |
 | Cinematics production | aece7b87e89b13f19 | docs/team/cinematics.md |
-| Performance and rendering (clarity in motion first) | a20bdef993e00f26b | docs/team/performance.md |
+| Performance and rendering (clarity in motion first) | — (handoff ready) | docs/team/performance.md |
 | Arena art | a0b61c278bdd5c994 | docs/team/arena_art.md |
 | Male hero (body, head, hair, outfits) | ab82cbe99e2937ddd | docs/team/hero_male.md |
-| Heroine face, hair and character creation's Look | aed215ba3ca60cc29 | docs/team/face.md |
+| Heroine face, hair and character creation's Look | — (handoff ready) | docs/team/face.md |
 | Asset provenance (what isn't ours, licences, credits, replacement plan) | a80ff0c7fd988b178 | docs/team/provenance.md |
 | Legal and Steam compliance (paused; docs/handoff/legal.md; wake before submission or for a new outfit) | — | docs/team/legal.md |
 | Loot and itemisation (paused, built and merged; docs/handoff/loot.md for a successor) | — | docs/team/loot.md |
 | Creatures and models (our own boar first, then MODELS_TO_MAKE.md) | af551cacc6292152f | docs/team/creatures.md |
 | Story editor (paused after notes 02 at 435k; a fresh editor reads the next draft) | — | docs/story/EDITORIAL_LETTER.md |
-| Heroine body and outfits (now a lead of its own, su-lead-max; was the main session's) | afb34c385770877d3 | docs/team/outfits.md |
+| Heroine body and outfits (now a lead of its own, su-lead-max; was the main session's) | — (handoff ready) | docs/team/outfits.md |
