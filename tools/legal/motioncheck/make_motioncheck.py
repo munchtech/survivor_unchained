@@ -91,7 +91,8 @@ swap('\t\t\tget_root().get_texture().get_image().save_png(out.replace(".png", "_
      '\t\t\tfor vi in view_ports.size():\n'
      '\t\t\t\tvar tag = ("_" + view_names[vi]) if view_names[vi] != "" else ""\n'
      '\t\t\t\tview_ports[vi].get_texture().get_image().save_png(out.replace(".png", "%s_%02d.png" % [tag, k]))\n'
-     '\t\t\t\tif follow_skel != null: save_landmarks(view_cams[vi], out.replace(".png", "%s_%02d.json" % [tag, k]))\n')
+     '\t\t\t\tif follow_skel != null: save_landmarks(view_cams[vi], out.replace(".png", "%s_%02d.json" % [tag, k]))\n'
+     '\t\t\tif OS.get_environment("DUMP") != "" and follow_skel != null: dump_posed(out.replace(".png", "_%02d_posed" % k))\n')
 swap('\tt += delta\n',
      '\tt += delta\n'
      '\t# FOLLOW=1: every camera keeps its offset from her hips (taken at 0.5 s, once she has settled).\n'

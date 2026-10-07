@@ -95,6 +95,57 @@ func _body_end(code: String, head: int) -> int:
 		i += 1
 	return -1
 
+# DUMP=1: at each picture, her posed body and outfit as drawn this frame, for a look at a
+# flagged frame in three dimensions (tools/legal/motioncheck: posed.py reads them). Per
+# mesh: positions and normals (skinned, in the world), its triangles once, and for her body
+# its codes (UV2: areola distance / 6 cm, strip) and her tuck (the outfit's vertex colour).
+var _dumped_tris = {}
+func dump_posed(path: String):
+	var sk = follow_skel
+	var head = {"cams": [], "meshes": []}
+	for vi in view_cams.size():
+		var c: Camera3D = view_cams[vi]
+		var t = c.global_transform
+		head["cams"].append({"name": view_names[vi], "fov": c.fov, "size": [c.get_viewport().get_visible_rect().size.x, c.get_viewport().get_visible_rect().size.y],
+			"basis": [t.basis.x.x, t.basis.x.y, t.basis.x.z, t.basis.y.x, t.basis.y.y, t.basis.y.z, t.basis.z.x, t.basis.z.y, t.basis.z.z],
+			"origin": [t.origin.x, t.origin.y, t.origin.z]})
+	var f = FileAccess.open(path + ".bin", FileAccess.WRITE)
+	var off = 0
+	for mi in sk.get_children():
+		if not (mi is MeshInstance3D) or not mi.visible: continue
+		var baked: ArrayMesh = mi.bake_mesh_from_current_skeleton_pose()
+		var g = mi.global_transform
+		for si in baked.get_surface_count():
+			var arr = baked.surface_get_arrays(si)
+			var vs: PackedVector3Array = arr[Mesh.ARRAY_VERTEX]
+			var ns: PackedVector3Array = arr[Mesh.ARRAY_NORMAL]
+			var wv = PackedVector3Array()
+			wv.resize(vs.size())
+			var wn = PackedVector3Array()
+			wn.resize(ns.size())
+			for i in vs.size():
+				wv[i] = g * vs[i]
+				wn[i] = (g.basis * ns[i]).normalized()
+			var e = {"name": String(mi.name), "surface": si, "verts": vs.size(), "off": off}
+			f.store_buffer(wv.to_byte_array()); off += vs.size() * 12
+			f.store_buffer(wn.to_byte_array()); off += vs.size() * 12
+			var src = mi.mesh.surface_get_arrays(si)
+			if src[Mesh.ARRAY_TEX_UV2] != null and src[Mesh.ARRAY_TEX_UV2].size() == vs.size():
+				f.store_buffer(src[Mesh.ARRAY_TEX_UV2].to_byte_array()); e["uv2"] = off; off += vs.size() * 8
+			if src[Mesh.ARRAY_COLOR] != null and src[Mesh.ARRAY_COLOR].size() == vs.size():
+				f.store_buffer(src[Mesh.ARRAY_COLOR].to_byte_array()); e["color"] = off; off += vs.size() * 16
+			var key = String(mi.name) + "#" + str(si)
+			if not _dumped_tris.has(key):
+				var tf = FileAccess.open(path.get_base_dir().path_join("tris_" + key.replace("#", "_") + ".bin"), FileAccess.WRITE)
+				tf.store_buffer(PackedInt32Array(arr[Mesh.ARRAY_INDEX]).to_byte_array())
+				tf.close()
+				_dumped_tris[key] = true
+			head["meshes"].append(e)
+	f.close()
+	var hf = FileAccess.open(path + ".json", FileAccess.WRITE)
+	hf.store_string(JSON.stringify(head))
+	hf.close()
+
 var _tinted: Shader
 func tinted_skin(base: Shader) -> Shader:
 	if _tinted != null: return _tinted

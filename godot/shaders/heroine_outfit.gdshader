@@ -54,12 +54,27 @@ vec3 blend_normals(vec3 a, vec3 b, float k) {      // (two normal-map texels, th
 }
 
 void fragment() {
+	// Under MSAA the samples of a pixel on a piece's silhouette are shaded with
+	// its values carried on past the triangle's edge: there the normal can come
+	// out as no direction at all (no number once normalised), the tangents too,
+	// and the baked edge, sky and piece values out of their range. Unrepaired,
+	// such a sample's light went to no number and the pixel it was resolved into
+	// sparkled blue on her steel and trims as she moved.
+	if (!(dot(NORMAL, NORMAL) > 0.25)) NORMAL = VIEW;
+	// (and a normal carried round to face away from the eye, which no seen point
+	// of a closed piece has, laid back to the silhouette's own)
+	NORMAL = normalize(NORMAL - min(dot(NORMAL, VIEW), 0.0) * 1.01 * VIEW);
+	if (!(dot(TANGENT, TANGENT) > 0.25) || !(dot(BINORMAL, BINORMAL) > 0.25)) {
+		vec3 up = abs(NORMAL.y) < 0.99 ? vec3(0.0, 1.0, 0.0) : vec3(1.0, 0.0, 0.0);
+		TANGENT = normalize(cross(up, NORMAL));
+		BINORMAL = cross(NORMAL, TANGENT);
+	}
 	vec2 m = UV / repeats;                          // (metres)
 	vec3 col = texture(albedo, UV).rgb * tint;
 	vec3 nrm = texture(normal_map, UV).rgb;
 	float rough = has_orm ? texture(orm, UV).g : roughness_value;
 	float metal = has_orm ? mix(metallic_value, texture(orm, UV).b, step(0.5, metallic_value)) : metallic_value;
-	float edge = det.x, conv = det.y, sky = det.z, piece = det.w;
+	float edge = max(det.x, 0.0), conv = clamp(det.y, 0.0, 1.0), sky = clamp(det.z, 0.0, 1.0), piece = clamp(det.w, 0.0, 1.0);
 	float near_edge = 1.0 - smoothstep(0.0, 0.003, edge);
 	float bulge = smoothstep(0.55, 0.85, conv);
 	float hollow = smoothstep(0.45, 0.2, conv);
@@ -138,7 +153,7 @@ void fragment() {
 		rough = clamp(0.16 + 0.1 * macro + 0.1 * (1.0 - sky), 0.1, 0.4);
 		metal = 0.0;
 	}
-	ALBEDO = col * mix(0.55, 1.0, sky);
+	ALBEDO = clamp(col * mix(0.55, 1.0, sky), 0.0, 1.0);
 	NORMAL_MAP = nrm;
 	ROUGHNESS = rough;
 	METALLIC = metal;
