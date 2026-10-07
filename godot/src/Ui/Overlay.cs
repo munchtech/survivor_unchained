@@ -307,14 +307,18 @@ public abstract partial class Overlay : Control
     /// world through ever so slightly. Its head carries the book's tabs on their chain and Close, then
     /// the title when there is one (Self's name; the Pack's open tab says enough). Returns its column.
     /// </summary>
-    protected VBoxContainer BookPanel(string? title, Action? close = null)
+    protected VBoxContainer BookPanel(string? title, Action? close = null, float width = BookW, Action? expand = null, bool wide = false)
     {
         HideHud();
+        float x = 1920 - 16 - width;
+        // The world shaded toward the panel (evenly, under a panel opened wide).
         var shade = new TextureRect
         {
             Texture = new GradientTexture2D
             {
-                Gradient = new Gradient { Colors = new[] { new Color(0.02f, 0.015f, 0.03f, 0), new Color(0.02f, 0.015f, 0.03f, 0.06f), new Color(0.02f, 0.015f, 0.03f, 0.3f), new Color(0.02f, 0.015f, 0.03f, 0.3f) }, Offsets = new[] { 0f, 0.3f, BookX / 1920f, 1f } },
+                Gradient = x < 400
+                    ? new Gradient { Colors = new[] { new Color(0.02f, 0.015f, 0.03f, 0.3f), new Color(0.02f, 0.015f, 0.03f, 0.3f) }, Offsets = new[] { 0f, 1f } }
+                    : new Gradient { Colors = new[] { new Color(0.02f, 0.015f, 0.03f, 0), new Color(0.02f, 0.015f, 0.03f, 0.06f), new Color(0.02f, 0.015f, 0.03f, 0.3f), new Color(0.02f, 0.015f, 0.03f, 0.3f) }, Offsets = new[] { 0f, 0.3f, x / 1920f, 1f } },
                 Width = 256, Height = 4,
             },
             ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize, StretchMode = TextureRect.StretchModeEnum.Scale, MouseFilter = MouseFilterEnum.Ignore,
@@ -322,8 +326,8 @@ public abstract partial class Overlay : Control
         };
         AddChild(shade);
         var panel = Style.Panel(Kit.Window(Margin, Margin, Margin));
-        panel.Position = new Vector2(BookX, 16);
-        panel.CustomMinimumSize = new Vector2(BookW, 0);
+        panel.Position = new Vector2(x, 16);
+        panel.CustomMinimumSize = new Vector2(width, 0);
         panel.MouseFilter = MouseFilterEnum.Stop;
         // (only the ground is see-through: what is on it stays whole)
         panel.SelfModulate = Colors.White with { A = GroundAlpha };
@@ -337,14 +341,27 @@ public abstract partial class Overlay : Control
             head.AddChild(new ChainTabs(Book.Select(b => (b.Name, Controls.Instance?.KeyLabel(b.Key) ?? "")).ToArray(), on, k => { Sound.Sfx.Page(); G.Open(Book[k].Kind); }));
         }
         head.AddChild(new Control { SizeFlagsHorizontal = SizeFlags.ExpandFill, MouseFilter = MouseFilterEnum.Ignore });
+        // Open wide, or fold back into the panel (the Journal and the Map): its word and key before Close.
+        if (expand != null)
+        {
+            var wideWord = Nav.Skip(Kit.Keyed(Act.Expand, wide ? "Fold" : "Open wide", expand, Kit.Ink2, 15));
+            wideWord.SizeFlagsVertical = SizeFlags.ShrinkBegin;
+            Nav.Id(wideWord, "expand");
+            head.AddChild(wideWord);
+            head.AddChild(new Control { CustomMinimumSize = new Vector2(Style.Gap5, 0), MouseFilter = MouseFilterEnum.Ignore });
+        }
         var btn = Nav.Skip(CloseButton(Toggle is Act t ? G.Key(t) : "Esc", close ?? G.CloseOverlay));
         btn.SizeFlagsVertical = SizeFlags.ShrinkBegin;
         head.AddChild(btn);
         v.AddChild(head);
         if (title != null) v.AddChild(new Title(title, 30, false));
-        sideX = BookX; sideW = BookW;
+        sideX = x; sideW = width;
+        bookPanel = panel;
         return v;
     }
+
+    /// <summary>The book's panel as last built (a screen that settles its height after layout resizes it).</summary>
+    protected PanelContainer? bookPanel;
 
     /// <summary>A fitted panel at a counter (theirs at the left, yours at the right, the keeper live
     /// in the world between): as tall as what it holds, the same margin on every side, its ground

@@ -73,11 +73,8 @@ public static class UiArt
         // row's instead.
         ["crest_card"] = new("frames/crest_card.png", 40, 72, 40, 40, Tile: true, Out: 10),
         ["crest_row"] = new("frames/crest_row.png", 40, 36, 40, 28, Tile: true, Out: 8),
-        // Self's attribute pillars (188 by 340, the medallion in the crest at the head) and
-        // the HUD's console the skills sit on (130 high, 300 to 720 wide with the skill
-        // count; its foot runs off the screen). Both hang from the house's brackets.
+        // Self's attribute pillars (188 by 340, the medallion in the crest at the head).
         ["pillar"] = new("frames/pillar.png", 14, 14, 14, 14, Tile: true, Out: 6, Ground: "page/morocco.png", Tint: new Color(1f, 1f, 1f, 0.88f)),
-        ["console"] = new("frames/console.png", 48, 28, 48, 28, Tile: true, Out: 12, Clear: 0),
         ["tooltip"] = new("frames/tooltip.png", 14, 14, 14, 14, Tile: true, Out: 6, Ground: "page/morocco.png", Tint: new Color(1f, 1f, 1f, 0.97f)),
         ["tooltip_worn"] = new("frames/tooltip_worn.png", 16, 16, 16, 16, Tile: true),
         // Buttons, tabs, segments, keycaps.
@@ -117,12 +114,10 @@ public static class UiArt
         // The note: its nail and its drop of wax in corners wider than the text keeps from.
         ["hint"] = new("frames/hint.png", 40, 40, 40, 40, Tile: true, Clear: 14),
         ["chip"] = new("frames/chip.png", 8, 8, 8, 8, Ground: "page/morocco.png", Tint: new Color(1.1f, 1.08f, 1.05f, 0.85f)),
-        ["weapon_slot"] = new("frames/weapon_slot.png", 12, 12, 12, 12),
         ["bar_track"] = new("bars/track.png", 8, 6, 8, 6, Tile: true),
-        ["bar_track_boss"] = new("bars/track_boss.png", 24, 8, 24, 8),
-        // Casings over the bars (GameHud.Casing): iron round the groove, reaching past it.
-        ["bar_casing"] = new("bars/casing.png", 16, 8, 16, 8, Tile: true, Out: 6),
-        ["bar_casing_boss"] = new("bars/casing_boss.png", 64, 24, 64, 24, Tile: true, Out: 64, OutY: 24),
+        // A boss's bar along the top (GameHud.BuildBoss, 850 by 16): its forged groove, the iron clamps at
+        // its ends reaching 8 past it; its middle open where the fill shows (docs/team/ui_design.md).
+        ["boss_groove"] = new("hud/boss_groove.png", 16, 8, 16, 8, Tile: true, Out: 8),
         ["map_frame"] = new("frames/map_frame.png", 20, 20, 20, 20, Tile: true, Out: 8),
         // The reduced kit's own pieces (tools/uiforge/kit.py).
         ["panel"] = new("frames/panel.png", 14, 14, 14, 14, Tile: true, Out: 6, Ground: "page/morocco.png", Tint: new Color(1f, 1f, 1f, 0.88f)),

@@ -37,6 +37,8 @@ public partial class MapScreen : Overlay
 
     public MapScreen(Game g) : base(g)
     {
+        // (--map-wide: opened wide, for pictures)
+        if (Args.Has("map-wide")) wide = true;
         if (g.Zone?.MapFocus is var (x, z, zm) && g.Scene != null)
         {
             zoom = (float)zm;
@@ -249,14 +251,15 @@ public partial class MapScreen : Overlay
 
     /* --------------------------------------------------------- the atlas -- */
 
-    /// <summary>The drawing's size at zoom 1; the map's window and the list beside it, the two
-    /// centred on the page together between its bands (the sheet sat in the middle of all but the
-    /// list, a band of bare table either side of it and another before the list, which kept to the
-    /// screen's edge).</summary>
+    /// <summary>The drawing's size at zoom 1.</summary>
     const int F = 1080;
+    /// <summary>Opened wide (the owner: the Journal and the Map keep to the book's half-window panel,
+    /// "with an option to expand"); kept for the session, so the map opens as it was left.</summary>
+    static bool wide;
+    /// <summary>The map's window: in the panel, its width by most of its height; opened wide, the panel's
+    /// width less the list's column beside it.</summary>
+    Vector2 viewSize = new(844, 600);
     const float ListW = 440, Between = 32;
-    static readonly Rect2 View = new((1920 - 1040 - Between - ListW) / 2, 112, 1040, 904);
-    static Rect2 ListAt => new(View.End.X + Between, View.Position.Y, ListW, View.Size.Y);
     float minZoom = 0.6f;
     Vector2 panTo;
     bool gliding;
@@ -265,10 +268,17 @@ public partial class MapScreen : Overlay
     float extent = 1;
     Vector2 youAt;
 
+    // In the panel she stands in the world beside it, near enough that her face reads (as for the rest
+    // of the book); opened wide, the view is the map's.
+    public override float CameraShift => wide ? 0 : -330;
+    public override float CameraNear => wide ? 1 : 0.56f;
+    public override (float Pitch, float Distance, float Height)? CameraFrame => wide ? null : BookFrame;
+
     /// <summary>A mark the list can name: where, what, and its words.</summary>
     readonly record struct Entry(double X, double Z, MarkKind Kind, string Label);
 
-    /// <summary>The triggers zoom (or , and .); Y finds you; focus on a line of the list glides the map to it.</summary>
+    /// <summary>The triggers zoom (or , and .); Y finds you; Z (R3) opens it wide or folds it back; focus
+    /// on a line of the list glides the map to it.</summary>
     public override bool Key(Act a)
     {
         switch (a)
@@ -276,8 +286,16 @@ public partial class MapScreen : Overlay
             case Act.SubNext: zoom = Math.Min(4f, zoom * 1.25f); Place(F); return true;
             case Act.SubPrev: zoom = Math.Max(minZoom, zoom / 1.25f); Place(F); return true;
             case Act.Alt2: FindMe(); return true;
+            case Act.Expand: Widen(); return true;
         }
         return false;
+    }
+
+    void Widen()
+    {
+        wide = !wide;
+        Sound.Sfx.Page();
+        Refresh();
     }
 
     void FindMe()
@@ -323,11 +341,18 @@ public partial class MapScreen : Overlay
         var zone = G.Zone!;
         extent = Extent(scene.Data.Meta);
         names.Clear();
-        var page = Page(zone.Name, zone.Region, null, G.Key(Act.Map));
+        // The book's own panel, or the same panel opened across the screen; the place's name over its map.
+        float pw = wide ? 1920 - 32 : BookW, inner = pw - 2 * Margin;
+        var v = BookPanel(null, width: pw, expand: Widen, wide: wide);
+        var head = Style.V(0, new Title(zone.Name, 30, false));
+        if (zone.Region is string region && region != "") head.AddChild(Style.Label(region, Style.TextItalic, 15, Kit.Dim, false, HorizontalAlignment.Center));
+        v.AddChild(head);
+        viewSize = wide ? new Vector2(inner - ListW - Between, 830) : new Vector2(inner, 600);
+        var body = Style.H((int)Between);
+        v.AddChild(body);
         // The map in its window: the sheet on the table, cut cleanly at the window's edge.
-        var frame = new Control { Position = View.Position, Size = View.Size, ClipContents = true, MouseFilter = MouseFilterEnum.Stop };
-        AddChild(frame);
-        MoveChild(frame, 1);
+        var frame = new Control { CustomMinimumSize = viewSize, Size = viewSize, ClipContents = true, MouseFilter = MouseFilterEnum.Stop };
+        body.AddChild(frame);
         // Past the paper's edge, the table it lies on: dark leather, a little lit where the map lies.
         frame.AddChild(new TextureRect
         {
@@ -336,7 +361,7 @@ public partial class MapScreen : Overlay
                 Gradient = new Gradient { Colors = new[] { Dark.Lightened(0.12f), Dark, Dark.Darkened(0.45f) }, Offsets = new[] { 0f, 0.55f, 1f } },
                 Fill = GradientTexture2D.FillEnum.Radial, FillFrom = new Vector2(0.4f, 0.55f), FillTo = new Vector2(1.1f, 1.1f), Width = 256, Height = 256,
             },
-            Size = View.Size, ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize, StretchMode = TextureRect.StretchModeEnum.Scale, MouseFilter = MouseFilterEnum.Ignore,
+            Size = viewSize, ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize, StretchMode = TextureRect.StretchModeEnum.Scale, MouseFilter = MouseFilterEnum.Ignore,
         });
         world = new Control { Size = new Vector2(F, F), MouseFilter = MouseFilterEnum.Ignore };
         frame.AddChild(world);
@@ -371,33 +396,93 @@ public partial class MapScreen : Overlay
             world.AddChild(new Polygon2D { Polygon = new[] { new Vector2(0, -11), new Vector2(8, 8), new Vector2(0, 4), new Vector2(-8, 8) }, Color = new Color("#b8321e"), Position = youAt, Rotation = (float)(Math.PI - b.Player.Facing) });
         }
         frame.GuiInput += e => Input(e, F);
-        minZoom = Math.Min(View.Size.X, View.Size.Y) / F * 0.9f;
+        minZoom = Math.Min(viewSize.X, viewSize.Y) / F * 0.9f;
         // Opened on what is known, whatever the zone's own focus.
         Fit(seen);
         Place(F);
-
         // A compass in the window's corner, the way the old maps had one.
-        var rose = Glyphs.Icon("compass", 64, Style.Gold with { A = 0.75f });
-        rose.Position = View.Position + new Vector2(22, 40);
-        AddChild(rose);
+        var rose = Glyphs.Icon("compass", 56, Style.Gold with { A = 0.75f });
+        rose.Position = new Vector2(20, 38);
+        frame.AddChild(rose);
         var north = Style.Label("N", Style.Display, 18, Style.GoldHi, false, HorizontalAlignment.Center);
-        north.Position = View.Position + new Vector2(22, 16);
-        north.Size = new Vector2(64, 22);
-        AddChild(north);
+        north.Position = new Vector2(20, 14);
+        north.Size = new Vector2(56, 22);
+        frame.AddChild(north);
 
-        // The list beside it, as type on the page (its lines were boxes): where to go, what has been
+        var p0 = G.Battle?.Player;
+        IEnumerable<Entry> Near(IEnumerable<Entry> items) => items.OrderBy(e => p0 == null ? 0 : Math.Sqrt((e.X - p0.X) * (e.X - p0.X) + (e.Z - p0.Z) * (e.Z - p0.Z)));
+        // The legend, in the marks' own look (the corner map's too).
+        Control Legend(int columns)
+        {
+            var legend = new GridContainer { Columns = columns, MouseFilter = MouseFilterEnum.Ignore };
+            legend.AddThemeConstantOverride("h_separation", 22);
+            legend.AddThemeConstantOverride("v_separation", 6);
+            foreach (var (kind, text) in new[] { (MarkKind.Quest, "Someone needs you"), (MarkKind.Exit, "The way out"), (MarkKind.Danger, "Hostile"), (MarkKind.Mystery, "Unexplained") })
+                legend.AddChild(Style.H(6, Minimap.Mark(kind, 18), Style.Label(text, Style.Ui, Style.Caption, Style.Ink)));
+            return legend;
+        }
+        // Zoom and find-me as words (they were a slab of buttons on the drawing).
+        Control Tools()
+        {
+            var tools = Style.H(Style.Gap4);
+            Control Tool(string? pad, string text, Action go)
+            {
+                var wd = Kit.Word(text, go, Style.GoldHi, 15);
+                if (pad == null || !Controls.Instance.UsingPad) return Nav.Skip(wd);
+                var r = Style.H(6, Style.PadButton(pad), Nav.Skip(wd));
+                foreach (var c in r.GetChildren().OfType<Control>()) c.SizeFlagsVertical = SizeFlags.ShrinkCenter;
+                return r;
+            }
+            tools.AddChild(Tool("Y", "Find me", FindMe));
+            tools.AddChild(Tool("RT", "Closer", () => Key(Act.SubNext)));
+            tools.AddChild(Tool("LT", "Further", () => Key(Act.SubPrev)));
+            tools.AddChild(Tool(null, "All I know", () => { Fit(seen, cover: false); gliding = false; Place(F); }));
+            return tools;
+        }
+        Control Hints() => Controls.Instance.UsingPad
+            ? Style.Hints((Act.Up, "Choose"), (Act.Alt2, "Find me"), (Act.Expand, wide ? "Fold" : "Open wide"), (Act.Cancel, "Close"))
+            : Style.Label("Wheel to zoom · drag to move · a line to find it", Style.TextItalic, Style.Caption, Style.InkDim);
+
+        if (!wide)
+        {
+            // In the panel: under the map, the road she is on (the way out, who needs her), nearest first,
+            // in two columns; then the legend and the tools. The rest of the list is the wide map's.
+            var road = Near(entries.Where(e => e.Kind is MarkKind.Quest or MarkKind.Turn or MarkKind.Exit)).Take(4).ToList();
+            if (road.Count > 0)
+            {
+                v.AddChild(Kit.Head("Your road", "nearest first"));
+                var cols = new GridContainer { Columns = 2, MouseFilter = MouseFilterEnum.Ignore };
+                cols.AddThemeConstantOverride("h_separation", (int)Between);
+                cols.AddThemeConstantOverride("v_separation", 0);
+                foreach (var e in road)
+                {
+                    var line = Line(e, Px(e.X, e.Z));
+                    line.CustomMinimumSize = new Vector2((inner - Between) / 2, 34);
+                    cols.AddChild(line);
+                }
+                v.AddChild(cols);
+            }
+            var foot = Style.H(Style.Gap5, Legend(4));
+            foot.Alignment = BoxContainer.AlignmentMode.Center;
+            v.AddChild(foot);
+            var tools = Style.H(Style.Gap5, Tools(), Hints());
+            tools.Alignment = BoxContainer.AlignmentMode.Center;
+            foreach (var c in tools.GetChildren().OfType<Control>()) c.SizeFlagsVertical = SizeFlags.ShrinkCenter;
+            v.AddChild(tools);
+            return;
+        }
+
+        // Opened wide: the list beside the map, as type (its lines were boxes): where to go, what has been
         // found, what to beware of; each line glides the map to it.
         var col = Style.V(Style.Gap3);
-        col.Position = ListAt.Position - page.Position;
-        col.Size = ListAt.Size;
-        page.AddChild(col);
+        col.CustomMinimumSize = new Vector2(ListW, 0);
+        body.AddChild(col);
         col.AddChild(Kit.Head("Where to go", "nearest first"));
         var list = Style.V(0);
-        var p0 = G.Battle?.Player;
         bool first = true;
         void Group(string title, IEnumerable<Entry> items)
         {
-            var these = items.OrderBy(e => p0 == null ? 0 : Math.Sqrt((e.X - p0.X) * (e.X - p0.X) + (e.Z - p0.Z) * (e.Z - p0.Z))).ToList();
+            var these = Near(items).ToList();
             if (these.Count == 0) return;
             if (!first) list.AddChild(Style.Gap(Style.Gap4));
             first = false;
@@ -409,49 +494,24 @@ public partial class MapScreen : Overlay
         Group("Places", entries.Where(e => e.Kind == MarkKind.Place));
         Group("Danger and the strange", entries.Where(e => e.Kind is MarkKind.Danger or MarkKind.Mystery));
         if (entries.Count == 0) list.AddChild(Style.Label("Nothing found yet. The map fills in as you walk.", Style.TextItalic, Style.Body, Style.InkDim, true));
-        // The list hugs its lines, and scrolls only past the room the column has (one line on the
-        // Verge stood over a column of nothing, its legend at the foot).
+        // The list hugs its lines, and scrolls only past the room the column has.
         var scroll = Style.Scroll(list);
         scroll.SizeFlagsVertical = SizeFlags.Fill;
         col.AddChild(scroll);
         col.AddChild(Kit.RuleH());
-        // The legend, in the marks' own look (the corner map's too).
-        var legend = new GridContainer { Columns = 2, MouseFilter = MouseFilterEnum.Ignore };
-        legend.AddThemeConstantOverride("h_separation", 20);
-        legend.AddThemeConstantOverride("v_separation", 6);
-        foreach (var (kind, text) in new[] { (MarkKind.Quest, "Someone needs you"), (MarkKind.Exit, "The way out"), (MarkKind.Danger, "Hostile"), (MarkKind.Mystery, "Unexplained") })
-            legend.AddChild(Style.H(6, Minimap.Mark(kind, 18), Style.Label(text, Style.Ui, Style.Caption, Style.Ink)));
-        col.AddChild(legend);
-        // Zoom and find-me as words in the list's foot (they were a slab of buttons on the drawing),
-        // then the prompts.
-        var tools = Style.H(Style.Gap4);
-        Control Tool(string? pad, string text, Action go)
-        {
-            var wd = Kit.Word(text, go, Style.GoldHi, 15);
-            if (pad == null || !Controls.Instance.UsingPad) return Nav.Skip(wd);
-            var r = Style.H(6, Style.PadButton(pad), Nav.Skip(wd));
-            foreach (var c in r.GetChildren().OfType<Control>()) c.SizeFlagsVertical = SizeFlags.ShrinkCenter;
-            return r;
-        }
-        tools.AddChild(Tool("Y", "Find me", FindMe));
-        tools.AddChild(Tool("RT", "Closer", () => Key(Act.SubNext)));
-        tools.AddChild(Tool("LT", "Further", () => Key(Act.SubPrev)));
-        tools.AddChild(Tool(null, "All I know", () => { Fit(seen); gliding = false; Place(F); }));
-        col.AddChild(tools);
-        col.AddChild(Controls.Instance.UsingPad
-            ? Style.Hints((Act.Up, "Choose"), (Act.Alt2, "Find me"), (Act.Cancel, "Close"))
-            : Style.Label("Wheel to zoom · drag to move · a line to find it", Style.TextItalic, Style.Caption, Style.InkDim));
+        col.AddChild(Legend(2));
+        col.AddChild(Tools());
+        col.AddChild(Hints());
         // (none of the list's words wrap, so its height is known before it is laid out)
-        float room = ListAt.Size.Y - col.GetCombinedMinimumSize().Y;
+        float room = viewSize.Y - col.GetCombinedMinimumSize().Y;
         scroll.CustomMinimumSize = new Vector2(0, Math.Min(list.GetCombinedMinimumSize().Y, Math.Max(120, room)));
     }
-
     /// <summary>
     /// Frames what the survivor knows: every walked cell and where they stand,
     /// with a margin, as large as the view allows. The map opens on the known
     /// world, not on a square of blank paper with the zone at its edge.
     /// </summary>
-    void Fit(string seen)
+    void Fit(string seen, bool cover = true)
     {
         int n = Journey.FogN;
         float u0 = 1, v0 = 1, u1 = 0, v1 = 0;
@@ -472,8 +532,12 @@ public partial class MapScreen : Overlay
         // A margin, and never closer than a quarter of the zone.
         float cu = (u0 + u1) / 2, cv = (v0 + v1) / 2;
         float su = Math.Max(0.25f, (u1 - u0) * 1.15f), sv = Math.Max(0.25f, (v1 - v0) * 1.15f);
-        minZoom = Math.Min(View.Size.X, View.Size.Y) / F * 0.9f;
-        zoom = Math.Clamp(Math.Min(View.Size.X / (su * F), View.Size.Y / (sv * F)), minZoom, 4f);
+        minZoom = Math.Min(viewSize.X, viewSize.Y) / F * 0.9f;
+        // Opened, it fills its window with the known world (cover: a square town in a wide window would
+        // leave bands of bare table either side; what is cut off is reached by the list or a drag); "All I
+        // know" shows the whole of it at once (contain).
+        float kx = viewSize.X / (su * F), ky = viewSize.Y / (sv * F);
+        zoom = Math.Clamp(cover ? Math.Max(kx, ky) : Math.Min(kx, ky), minZoom, 4f);
         pan = new Vector2(0.5f - cu, 0.5f - cv);
     }
 
@@ -578,7 +642,7 @@ public partial class MapScreen : Overlay
         pan = Held(pan);
         world.Scale = new Vector2(zoom, zoom);
         // The point the pan names sits at the middle of the map's window.
-        var centre = View.Size / 2;
+        var centre = viewSize / 2;
         world.Position = centre - (new Vector2(0.5f, 0.5f) - pan) * frame * zoom;
         foreach (var c in world.GetChildren()) if (c is Control mk && mk is not TextureRect && mk is not ColorRect && mk is not MapInk && mk != ring) mk.Scale = new Vector2(1 / zoom, 1 / zoom);
         Declutter();
@@ -599,7 +663,7 @@ public partial class MapScreen : Overlay
             float lim = 0.5f - view / (2 * s);
             return Math.Clamp(v, -lim, lim);
         }
-        return new Vector2(Axis(p.X, View.Size.X), Axis(p.Y, View.Size.Y));
+        return new Vector2(Axis(p.X, viewSize.X), Axis(p.Y, viewSize.Y));
     }
 
     void Input(InputEvent e, int frame)
