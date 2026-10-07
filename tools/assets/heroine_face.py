@@ -307,7 +307,32 @@ def from_reference(ref):
     # them, and her reference's brows are kept as they are, carried by the
     # landmarks round them)
     use = np.setdiff1d(np.arange(len(pts["drawn"])), BROW_A + BROW_B)
-    tps = RBFInterpolator(pts["drawn"][use], pts["ref"][use], kernel="thin_plate_spline", smoothing=2.0)
+    src, dst = pts["drawn"][use], pts["ref"][use]
+    # Her brows pinned where the reference has them against each eye (in eye widths from the middle of its corners,
+    # the orbit's own measure): carried only by the landmarks round them, they were pulled down with the eye, every
+    # face's brows a quarter to a third nearer its eyes than its portrait's (the clay's eyes open less than the
+    # photographs'). (FACE_BROW_PIN=0: as before.)
+    if os.environ.get("FACE_BROW_PIN", "1") != "0":
+        add_s, add_d = [], []
+        for ring, (c0, c1) in ((BROW_A, (33, 133)), (BROW_B, (263, 362))):
+            def frame(P):
+                o = (P[c0] + P[c1]) / 2
+                e1 = P[c1] - P[c0]
+                w = np.linalg.norm(e1)
+                e1 = e1 / w
+                return o, e1, np.array([-e1[1], e1[0]]), w
+            o_r, e1_r, e2_r, w_r = frame(pts["ref"])
+            o_d, e1_d, e2_d, w_d = frame(pts["drawn"])
+            for b in ring:
+                d = pts["ref"][b] - o_r
+                u, v = d @ e1_r / w_r, d @ e2_r / w_r
+                add_s.append(o_d + w_d * (u * e1_d + v * e2_d))
+                add_d.append(pts["ref"][b])
+        src, dst = np.vstack([src, add_s]), np.vstack([dst, add_d])
+        moved = np.array(add_s) - pts["drawn"][BROW_A + BROW_B]
+        print("BROWS pinned to the reference's place over each eye: %.1f px from where the clay has them (mean), %.1f up" % (
+            np.linalg.norm(moved, axis=1).mean(), -moved[:, 1].mean()))
+    tps = RBFInterpolator(src, dst, kernel="thin_plate_spline", smoothing=2.0)
     step = 8
     gy, gx = np.mgrid[0:DRAW:step, 0:DRAW:step]
     g = tps(np.c_[gx.ravel(), gy.ravel()].astype(float)).reshape(gx.shape + (2,))
@@ -446,6 +471,43 @@ LIP_RING = [61, 185, 40, 39, 37, 0, 267, 269, 270, 409, 291, 375, 321, 405, 314,
 NOSTRILS = [98, 64, 48, 115, 220, 45, 4, 275, 440, 344, 278, 294, 327, 2]
 
 
+def front_features():
+    """Where the reference laid on the front has its features (its brows, its eyes with their lids and lashes, its
+    lips), in the front's pixels (rows from the bottom, as load() gives them), 0 to 1, soft at the edge. There the
+    front is laid alone: blended with the sides' paintings (Krea's, of another day, its brows MakeHuman's cards
+    painted higher), every face's brows came out at half their portrait's darkness and thin, a faint second brow
+    above them, and its lips thinner. The brows' outline grown well up, over where the sides painted theirs.
+    (FACE_FRONT_FEATURES=0: blended as before.) None if no face is found on the front."""
+    import json
+    import subprocess
+
+    from PIL import Image, ImageDraw
+    from scipy import ndimage
+    js = os.path.join(OUT, "marks_front.json")
+    if not os.path.exists(js):
+        py = os.path.join(os.environ.get("LOCALAPPDATA", ""), "facefit", ".venv", "Scripts", "python.exe")
+        fit = os.path.join(os.path.dirname(os.path.abspath(__file__)), "face_fit.py")
+        subprocess.run([py, fit, "marks", os.path.join(OUT, "painted_front.png"), js, "whole"], capture_output=True)
+    if not os.path.exists(js):
+        print("FRONT FEATURES: no face found on the front; blended as before")
+        return None
+    L = np.array(json.load(open(js))["points"])
+    m = Image.new("L", (DRAW, DRAW), 0)
+    d = ImageDraw.Draw(m)
+    # (each outline grown about its middle, across and up-down, and lifted by a share of its height: up is -y here)
+    # (the brows' grown down as well as up: the sides' paintings have theirs lower, where MakeHuman's are)
+    for ring, gx, gy, lift in ((BROW_A, 1.25, 3.4, 0.2), (BROW_B, 1.25, 3.4, 0.2), (EYE_RING_A, 1.3, 2.2, 0.2),
+                               (EYE_RING_B, 1.3, 2.2, 0.2), (LIP_RING, 1.12, 1.35, 0.0)):
+        p = L[ring]
+        c = p.mean(0)
+        q = c + (p - c) * np.array([gx, gy])
+        q[:, 1] -= lift * (p[:, 1].max() - p[:, 1].min())
+        d.polygon([tuple(v) for v in q], fill=255)
+    f = ndimage.gaussian_filter(np.asarray(m, np.float32) / 255, DRAW / 300)
+    print("FRONT FEATURES: brows, eyes and lips from the reference alone, %.1f%% of the front" % (100 * (f > 0.5).mean()))
+    return np.clip(f * 1.5, 0, 1)[::-1]
+
+
 def texels():
     """Every texel of her head's texture its faces cover: where it is on her
     and which way it faces (and its triangle and weights, for what else is
@@ -505,6 +567,27 @@ def match(src, ref, m):
     return mr + (src - ms) * np.clip(sr / ss, 0.8, 1.25)
 
 
+def _lin(c):
+    return np.where(c <= 0.04045, c / 12.92, ((np.maximum(c, 0) + 0.055) / 1.055) ** 2.4)
+
+
+def _srgb(c):
+    c = np.maximum(c, 0)
+    return np.where(c <= 0.0031308, c * 12.92, 1.055 * c ** (1 / 2.4) - 0.055)
+
+
+def tint_to(src, ref, m):
+    """src's skin brought to ref's colour over the texels m, as a light or a skin's pigment would: each channel scaled
+    in linear light, so every feature keeps its depth against the skin round it. (match() moved its mean by adding
+    and squeezed its spread toward her plain head's: a face's brows came out half their portrait's darkness against
+    its skin, and its lips half as red.) (FACE_MATCH=add: as match() did.)"""
+    if os.environ.get("FACE_MATCH") == "add":
+        return match(src, ref, m)
+    g = _lin(ref[m]).mean(0) / np.maximum(_lin(src[m]).mean(0), 1e-6)
+    print("TINTED to her skin: x %.3f %.3f %.3f (linear)" % tuple(g))
+    return _srgb(_lin(src) * g)
+
+
 def free():
     """The shared GPU given back (the server answers with nothing)."""
     import json
@@ -544,6 +627,8 @@ if __name__ == "__main__":
     from scipy import ndimage as _ndi
     _sg = float(os.environ.get("FACE_DETAIL_MM", "1.6")) / 1000 * DRAW / SCALE
     cols_v, fine_v, weights = {}, {}, {}
+    feat_img = front_features() if os.environ.get("FACE_REF") and os.environ.get("FACE_FRONT_FEATURES", "1") != "0" else None
+    feat = None
     for name, ang in VIEWS.items():
         a = math.radians(ang)
         fwd = np.array([-math.sin(a), math.cos(a), 0.0])
@@ -563,17 +648,35 @@ if __name__ == "__main__":
             # sides, painted another day, gave her redder lips and heavier
             # freckles seen from three-quarters)
             weights[name] = facing ** 1.5 * edge * vis * 1.5
+            if feat_img is not None:
+                # (its features where the front sees them at all)
+                feat = sample(feat_img[..., None], uv)[:, 0] * np.clip((vis - 0.5) / 0.5, 0, 1) * np.clip((facing - 0.15) / 0.2, 0, 1)
         ref_front = name == "front" and os.path.exists(os.path.join(OUT, "normals_front.png")) and os.environ.get("FACE_REF")
         img = delit_reference() if ref_front else delit(name)
         broad = np.stack([_ndi.gaussian_filter(img[..., k], _sg) for k in range(3)], 2)
         cols_v[name] = sample(broad, uv)
         fine_v[name] = sample(img - broad, uv)
+        if os.environ.get("FACE_DEBUG") and name == "front":
+            # (the front alone, laid as it is: view_front_uv.png)
+            from PIL import Image as _Im
+            _v = np.zeros((SIZE, SIZE, 3), np.float32)
+            _v[rows, cols] = np.clip(sample(img, uv), 0, 1)
+            _Im.fromarray((_v[::-1] * 255 + 0.5).astype(np.uint8)).save(os.path.join(OUT, "view_front_uv.png"))
         print("LAID", name, "%d texels seen" % (weights[name] > 0.05).sum())
     # The sides coloured as the front where both see her well.
     for name in ("left", "right"):
         both = (weights["front"] > 0.3) & (weights[name] > 0.3)
         if both.sum() > 500:
             cols_v[name] = match(cols_v[name], cols_v["front"], both)
+    if feat is not None:
+        # (the reference's features from it alone: front_features)
+        for name in ("left", "right"):
+            weights[name] = weights[name] * (1 - feat)
+        # (and where they lie on her head, in her head's UV: features_uv.png beside the paint)
+        from PIL import Image as _Im
+        _fu = np.zeros((SIZE, SIZE), np.float32)
+        _fu[rows, cols] = feat
+        _Im.fromarray((_fu[::-1] * 255 + 0.5).astype(np.uint8)).save(os.path.join(OUT, "features_uv.png"))
     wsum = sum(weights.values())
     col = sum(cols_v[n] * weights[n][:, None] for n in VIEWS) / np.maximum(wsum, 1e-6)[:, None]
     # (the detail's weights sharpened: where two views see a place almost as
@@ -609,7 +712,7 @@ if __name__ == "__main__":
     skin = (cover > 0.9) & (np.abs(col - np.median(col[cover > 0.9], 0)).max(1) < 0.08)
     # (broad colour to broad colour: her head's own skin as broad as the views' is, about 12 texels to their 1.6 mm)
     base_b = np.stack([_ndi.gaussian_filter(base[..., k], 12) for k in range(3)], 2)
-    col = match(col, base_b[rows, cols], skin)
+    col = tint_to(col, base_b[rows, cols], skin)
     # Her fine detail over it as the views have it (FACE_DETAIL_GAIN: a little
     # more, for what the game's filtering and light under her skin smooth away).
     col = col + fine * float(os.environ.get("FACE_DETAIL_GAIN", "1.0"))
