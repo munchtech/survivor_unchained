@@ -220,12 +220,19 @@ func _init():
 	sky.sky_material = sm
 	e.sky = sky
 	e.reflected_light_source = Environment.REFLECTION_SOURCE_SKY
+	# (to find what draws a stray pixel: NOSKYREFL=1 no sky in reflections, NOSHADOW=1 no
+	# shadow from the key, DEBUGDRAW=n the window's Viewport.DebugDraw mode)
+	if OS.get_environment("NOSKYREFL") != "": e.reflected_light_source = Environment.REFLECTION_SOURCE_DISABLED
+	if OS.get_environment("DEBUGDRAW") != "": get_root().debug_draw = int(OS.get_environment("DEBUGDRAW"))
+	# (NOMSAA=1, NOTAA=1: the window without the project's MSAA or TAA)
+	if OS.get_environment("NOMSAA") != "": get_root().msaa_3d = Viewport.MSAA_DISABLED
+	if OS.get_environment("NOTAA") != "": get_root().use_taa = false
 	env.environment = e
 	root.add_child(env)
 	var key = DirectionalLight3D.new()
 	key.rotation_degrees = Vector3(-35, 30, 0)
 	key.light_energy = 1.6
-	key.shadow_enabled = true
+	key.shadow_enabled = OS.get_environment("NOSHADOW") == ""
 	root.add_child(key)
 	var rim = DirectionalLight3D.new()
 	rim.rotation_degrees = Vector3(-20, 200, 0)

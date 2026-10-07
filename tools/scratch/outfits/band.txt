@@ -1,0 +1,5 @@
+reaver 45 1.45 0.75 1.40 22 v_45
+reaver 90 1.42 0.75 1.40 22 v_90
+reaver 20 1.80 0.65 1.40 26 v_over
+reaver -60 1.32 0.75 1.42 22 v_low_r
+reaver 0 1.42 0.85 1.38 22 v_front
