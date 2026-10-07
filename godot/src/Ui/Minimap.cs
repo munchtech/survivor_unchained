@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using Godot;
 using SurvivorUnchained.Play;
+using SurvivorUnchained.World;
 
 namespace SurvivorUnchained.Ui;
 
@@ -55,27 +56,118 @@ public partial class Minimap : Control
             a.Position = -a.Size / 2;
             you.AddChild(a);
         }
-        // The rim: painted (minimap/frame.png, a ring wider than the disc) or a gold hairline.
-        if (UiArt.Art("minimap/frame.png") is { } frame)
+        // The bezel: the cuffs' iron round the disc, the day's path riding over its top (Bezel).
+        bezel = new Bezel(this);
+        AddChild(bezel);
+    }
+
+    readonly Bezel bezel;
+    double? clock;
+    bool running;
+    float dim = 1;
+
+    /// <summary>The day's clock on the bezel (null where the clock does not run: the bezel is plain).</summary>
+    public void Clock(double? clock, bool running)
+    {
+        this.clock = clock is double c ? Math.Clamp(c, 0, DayClock.NightEnds) : null;
+        this.running = running;
+    }
+
+    public override void _Process(double delta)
+    {
+        dim = Mathf.MoveToward(dim, running ? 1 : 0.45f, (float)delta * 2);
+        bezel.QueueRedraw();
+    }
+
+    /// <summary>The disc's iron (minimap/bezel.png when UI art has made it, else drawn as the cuffs are),
+    /// north marked on it, and, where the day's clock runs, the day's path over its top as the sun's is
+    /// over the sky: dawn rising at the left, the day across the top, dusk and the night falling at the
+    /// right, the present stretch lit, what has passed dimmer, her ember (or the moon) where the day
+    /// stands. It is the experience director's dial (DayDial), set on the map's own iron.</summary>
+    partial class Bezel : Control
+    {
+        public const float Band = 9;
+        readonly Minimap m;
+
+        public Bezel(Minimap m)
         {
-            var f = new TextureRect { Texture = frame, ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize, MouseFilter = MouseFilterEnum.Ignore };
-            f.Size = frame.GetSize();
-            f.Position = (new Vector2(Diameter, Diameter) - f.Size) / 2;
-            AddChild(f);
+            this.m = m;
+            MouseFilter = MouseFilterEnum.Ignore;
+            Size = new Vector2(Diameter, Diameter);
+            TextureFilter = TextureFilterEnum.LinearWithMipmaps;
         }
-        else
+
+        /// <summary>A point on the day's path: from the bezel's left (dawn) over its top to its right.</summary>
+        static Vector2 At(Vector2 c, float r, double s)
         {
-            var ring = new Panel { Size = new Vector2(Diameter + 6, Diameter + 6), Position = new Vector2(-3, -3), MouseFilter = MouseFilterEnum.Ignore };
-            var s = Style.Box(new Color(0, 0, 0, 0), Style.GoldDim, 3, (int)(Diameter / 2 + 3), 0);
-            s.ShadowColor = new Color(0, 0, 0, 0.55f);
-            s.ShadowSize = 12;
-            ring.AddThemeStyleboxOverride("panel", s);
-            AddChild(ring);
+            float k = (float)(s / DayClock.NightEnds), a = Mathf.Lerp(Mathf.Pi * 1.08f, Mathf.Pi * 1.92f, k);
+            return c + new Vector2(Mathf.Cos(a), Mathf.Sin(a)) * r;
         }
-        var north = Style.Label("N", Style.Display, 14, Style.GoldHi, false, HorizontalAlignment.Center);
-        north.Size = new Vector2(20, 18);
-        north.Position = new Vector2(Diameter / 2 - 10, -4);
-        AddChild(north);
+
+        public override void _Draw()
+        {
+            var c = Size / 2;
+            float r = Diameter / 2;
+            if (UiArt.Art("minimap/bezel.png") is { } art)
+            {
+                var sz = art.GetSize();
+                DrawTexture(art, c - sz / 2);
+            }
+            else
+            {
+                DrawCircle(c + new Vector2(0, 4), r + Band + 3, new Color(0, 0, 0, 0.35f));
+                DrawCircle(c, r, new Color(0, 0, 0, 0));
+                Cuff.Band(this, c, r, Band);
+            }
+            // North: a small ember notch on the iron's top.
+            var n = c + new Vector2(0, -r - Band / 2);
+            DrawColoredPolygon(new[] { n + new Vector2(-4.5f, -3.5f), n + new Vector2(4.5f, -3.5f), n + new Vector2(0, 4.5f) }, Style.Ember);
+            if (m.clock is not double clock) return;
+            // The day's path, outside the iron, in its four stretches.
+            float pr = r + Band + 6, dim = m.dim;
+            var now = DayClock.At(clock);
+            int nowBand = (int)now;
+            bool late = now == TimeOfDay.Night && clock >= DayClock.NudgeAt;
+            for (int b = 0; b < Bands.Length; b++)
+            {
+                var (from, to, ink) = Bands[b];
+                bool lit = b == nowBand;
+                int steps = Math.Max(3, (int)((to - from) / DayClock.NightEnds * 64));
+                for (int i = 0; i < steps; i++)
+                {
+                    double s0 = from + (to - from) * i / steps, s1 = from + (to - from) * (i + 1) / steps;
+                    bool passed = s1 <= clock;
+                    var col = ink;
+                    if (b == 3 && late && !passed) col = col.Lerp(new Color("#c8ccd8"), (float)((s0 - DayClock.NudgeAt) / (DayClock.NightEnds - DayClock.NudgeAt)) * 0.7f);
+                    float a = passed ? 0.28f : lit ? 1f : 0.5f;
+                    DrawLine(At(c, pr, s0), At(c, pr, s1), new Color(0, 0, 0, 0.55f * dim), lit && !passed ? 5.5f : 4.5f, true);
+                    DrawLine(At(c, pr, s0), At(c, pr, s1), col with { A = a * dim }, lit && !passed ? 3.2f : 2.2f, true);
+                }
+                if (b > 0) DrawCircle(At(c, pr, from), 1.6f, new Color(0.9f, 0.85f, 0.75f, 0.5f * dim));
+            }
+            var p = At(c, pr, clock);
+            if (now == TimeOfDay.Night)
+            {
+                DrawCircle(p, 9, new Color(0.6f, 0.7f, 1f, 0.16f * dim));
+                DrawCircle(p, 5.5f, new Color("#e4ebff") with { A = dim });
+                DrawCircle(p + new Vector2(2.6f, -1.6f), 4.6f, new Color(0.06f, 0.07f, 0.12f, 0.92f * dim));
+            }
+            else
+            {
+                float br = 0.85f + 0.15f * Mathf.Sin(Time.GetTicksMsec() / 1000f * 2.2f);
+                DrawCircle(p, 10, Style.Ember with { A = 0.22f * br * dim });
+                DrawCircle(p, 4.4f, Style.Ember with { A = dim });
+                DrawCircle(p, 2, Style.EmberHi with { A = dim });
+            }
+        }
+
+        static readonly (double From, double To, Color Ink)[] Bands =
+        {
+            (0, DayClock.DayAt, new Color("#d8b8c8")),
+            (DayClock.DayAt, DayClock.DuskAt, new Color("#ecd9a6")),
+            (DayClock.DuskAt, DayClock.NightAt, new Color("#ff8a3a")),
+            (DayClock.NightAt, DayClock.NightEnds, new Color("#86a6e0")),
+        };
     }
 
     /// <summary>A new zone: its drawing and how wide it is.</summary>

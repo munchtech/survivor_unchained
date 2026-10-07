@@ -99,8 +99,8 @@ public partial class ChainTabs : Control
             var b = new Button { FocusMode = FocusModeEnum.None, MouseDefaultCursorShape = CursorShape.PointingHand, Flat = true };
             foreach (var s in new[] { "normal", "hover", "pressed", "focus" })
                 b.AddThemeStyleboxOverride(s, new StyleBoxEmpty { ContentMarginLeft = 0, ContentMarginRight = 0 });
-            var inner = Style.H(8, Style.Label(tabs[i].Name, Style.UiBold, 16, i == on || on < 0 ? Kit.Ink : Kit.Dim, false, HorizontalAlignment.Left, false));
-            if (!pad && tabs[i].Key != "") inner.AddChild(Style.Key(tabs[i].Key));
+            var inner = Style.H(6, Style.Label(tabs[i].Name, Style.UiBold, 16, i == on || on < 0 ? Kit.Ink : Kit.Dim, false, HorizontalAlignment.Left, false));
+            if (!pad && tabs[i].Key != "") inner.AddChild(QuietKey(tabs[i].Key, i == on));
             inner.MouseFilter = MouseFilterEnum.Ignore;
             b.AddChild(inner);
             b.CustomMinimumSize = inner.GetCombinedMinimumSize();
@@ -134,6 +134,17 @@ public partial class ChainTabs : Control
 
     (Control L, Control R)? caps;
 
+    /// <summary>A tab's key as a small cap, its letter quiet unless the tab is open: the names lead, the
+    /// keys are there for whoever looks for them.</summary>
+    static Control QuietKey(string key, bool open)
+    {
+        var k = Style.Key(key);
+        k.CustomMinimumSize = new Vector2(20, 19);
+        k.Modulate = open ? Colors.White : new Color(1, 1, 1, 0.55f);
+        k.SizeFlagsVertical = SizeFlags.ShrinkCenter;
+        return k;
+    }
+
     public override void _Ready() => Lay();
 
     /// <summary>Its room: the names' row stepped in from both ends so the eyes stay inside it, and
@@ -143,7 +154,7 @@ public partial class ChainTabs : Control
     {
         var min = row.GetCombinedMinimumSize();
         // (the chain hangs a little below the names, its links up to 44 high, so the row leaves it room)
-        chainY = min.Y + 14;
+        chainY = min.Y + 11;
         // Anchored, the eyelet past the first tab stays inside the panel: the names step in to leave it room.
         // (the eyelet is half a cell wide: its middle stays that far inside, past the first name by the run)
         // (the same at the last tab, so a chain set in the middle of a panel is centred, eyes and all)
@@ -209,8 +220,9 @@ public partial class ChainTabs : Control
 
     static readonly Dictionary<string, Texture2D?> sprites = new();
 
-    /// <summary>A link's picture with its mipmaps (made at twice its size, shown at half).</summary>
-    static Texture2D? Sprite(string name)
+    /// <summary>A link's picture with its mipmaps (made at twice its size, shown at half); the HUD's
+    /// ember chain hangs the same links.</summary>
+    internal static Texture2D? Sprite(string name)
     {
         if (sprites.TryGetValue(name, out var t)) return t;
         var path = $"{UiArt.Root}chain/{name}.png";
@@ -238,7 +250,8 @@ public partial class ChainTabs : Control
         if (n == 0) return;
         float x0 = Centre(0) - Run, x1 = Centre(n - 1) + Run, mid = (x0 + x1) / 2, half = (x1 - x0) / 2;
         // Through the eyes, the chain runs on to a tab each side; it hangs only between the eyes.
-        float t0 = F.Eye ? x0 - F.Tail : x0, t1 = F.Eye ? x1 + F.Tail : x1;
+        // (a link's length past the eye, its end held there)
+        float t0 = F.Eye ? x0 - Pitch * 0.6f : x0, t1 = F.Eye ? x1 + Pitch * 0.6f : x1;
         float Y(float at) { float t = (at - mid) / half; return Math.Abs(t) >= 1 ? chainY : chainY + sag * (1 - t * t); }
         int k0 = (int)Math.Floor((t0 - x) / Pitch) - 1, k1 = (int)Math.Ceiling((t1 - x) / Pitch) + 1;
         heated.Clear();
@@ -273,7 +286,7 @@ public partial class ChainTabs : Control
                 if (k == 0 && on >= 0 && Sprite("open") is { } open) DrawTexture(open, -open.GetSize() / 2, Colors.White with { A = a });
                 else if (Sprite($"{shape}_{variant}") is { } cold)
                 {
-                    DrawTexture(cold, -cold.GetSize() / 2, Colors.White with { A = a });
+                    DrawTexture(cold, -cold.GetSize() / 2, new Color(0.78f, 0.76f, 0.74f, a));
                     if (heat > 0 && Sprite($"warm_{shape}_{variant}") is { } warm)
                         DrawTexture(warm, -warm.GetSize() / 2, Colors.White with { A = a * Math.Min(1, heat / 0.6f) });
                     if (heat > 0.6f && Sprite($"hot_{shape}_{variant}") is { } hot)
@@ -352,7 +365,7 @@ public partial class ChainTabs : Control
         public override void _Draw()
         {
             if (chain.eyes is not { } e) return;
-            foreach (var (name, l, r) in new[] { ("eye_front", e.L, e.R), ("tab", e.TL, e.TR) })
+            foreach (var (name, l, r) in new[] { ("eye_front", e.L, e.R) })
             {
                 if (Sprite(name) is not { } t) continue;
                 DrawTexture(t, l - t.GetSize() / 2);

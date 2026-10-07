@@ -137,6 +137,37 @@ The greyboxes are in `docs/ui_review/greybox_*.png` (1920x1080). Each screen's c
 - **The bench's crafts** are two to a row, scrolling down, because a bind can offer ten. A crafter's first-time telling may run to seven lines.
 - **Self** gains its calling and origin as a row under the stats (calling, origin, what she knows, renown).
 
+## The HUD (October 2026)
+
+The owner, after playing: "the bottom skill bar and health globes and stuff need to be incredible, its a keystone of that kind of game"; the old foot "is a relic of our old garbage ui". The pieces were loose (a globe, a plate of slots, a ring, a flask, two pips), the top centre was a pile (the ember bar, the clock, the count, the night's word, a boss's name and bar, a tip, a banner), and the borders were muddy painted texture.
+
+**What the best do**
+- **Diablo III and IV.** Two vessels bracket one bar: life at the left, the resource at the right, the skills between them, the experience a thin line along the bar. The potion sits by life. Buffs sit just above. The whole is compact, centred and symmetric, and the vessels are glass with living liquid in sculpted metal.
+- **Path of Exile 1 and 2.** The same bracket at the screen's corners: flasks by the life globe, skills by the mana globe, experience in segments along the very foot.
+- **Last Epoch.** The bracket, smaller; the potion's charges as dots beside it.
+- **Lost Ark.** The skills centred in two rows, health a bar over them, consumables to their right.
+- **Vampire Survivors and its kin.** Experience across the top, the clock under it, kills and gold in a top corner, health a sliver under the character. In a horde game the eye lives on the character, so what is read at a glance stays small and at the edges.
+- **Hades.** Health and the cast low at the left, boons at the left edge; the hub hides the fight's instrument entirely.
+
+**Principles (with why)**
+1. **One instrument, symmetric.** Two equal rounds at the ends, what goes with each beside it, what fires by itself between. The eye learns one shape (Diablo's bracket), and the shape says "this is one thing".
+2. **Round is what you live and act by; square is what fires by itself.** The vessels, the draught and the dash are round; the six places are square. The kinds are told apart before anything is read.
+3. **Progress is long and low.** The ember is a long run under the six places (Diablo's line), never at the top, where only what can end her (a boss) belongs.
+4. **The top edge is the boss's.** Its bar takes the ember's old place; the tip and the boss's banner have the upper third below it, and never share it at once.
+5. **The tally waits in a corner.** The clock, the slain and the gold are glanced at, not watched: the lower right, level with the instrument's foot.
+6. **Soul from meaning, not ornament.** Her irons: two cuffs joined by a chain (Survivor *Unchained*). The chain heats link by link as the ember gathers; a lock at its middle bears the night's level and springs open as she rises. Nothing else on the HUD is ornamented.
+
+**Our layout (1920 by 1080; the code is src/Ui/Instrument.cs and GameHud.cs)**
+- **The instrument** spans 850 px, centred, its cuffs 30 px off the foot. Left, her life in a glass of 120 px in a forged cuff (13 px of iron, a hinge's knuckle outside, the chain's eye inside); right, the art in her hand in the mirrored cuff, its charge rising gold as it readies, its glyph in the glass, the seconds over it. Beside life, the draught (a small cuff, its count); beside the art, the dash (its charges as arcs round its glass). Between, six places of 58 px (a forged square, the glyph in its school's colour, the rank as eight rivets, gold when it can evolve): by night all six, the empty ones quiet seats; by day only what is carried, centred. The chain runs under them from eye to eye with a 4 px sag, the level's lock hanging at its middle. The passives sit over the six as glyphs; what is on her (burning, shielded) over her life; the art's state in a word over the art.
+- **By night** the chain's reached links glow a deep red and the last few burn bright; a level flares the whole chain and springs the lock. **By day** it is steel, brightened as far as she has grown.
+- **Always there**, at peace too: the keystone stays where it is (her wounds are carried into town).
+- **The top centre** is empty but for a boss: its name, the bar in a plain groove (850 px, the instrument's own measure), the stagger along its foot, its title and Break under it.
+- **The lower right**: the night's word, the clock (Cinzel 34), the slain and the gold.
+- **The upper right**: the minimap in a bezel of the cuffs' iron, north an ember notch, the day's path over its top as the sun's over the sky (the dial that floated by the place's name); under it the place, the day, and the quest's steps marked with the house's diamond (no checkbox).
+- **Tips** are shown at their full size from the first (the owner: shrinking was "more distracting not less"), below a boss's bar, and wait while a banner is up.
+
+**The book's Journal and Map** (the owner: no full screen, "feels bad"; the half-window panel, "with an option to expand", dead space cut, what is in them centred): both sit in the book's panel like the Pack, Self and Arts, with "Open wide" (Z, or R3) in the head. The Journal in the panel: its sections as tabs, the list and the page as two columns of type, hugging what is written; opened wide, the parchment book lies open over the world. The Map in the panel: the place's name over its window (844 by 600), filled edge to edge with what is known, the road she is on under it; opened wide, the panel spans the screen with the full list beside the map.
+
 ## Rules for the art pass
 
 - **The window.** One ornamental piece per screen: the window (or the side panel's edge and head).

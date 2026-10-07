@@ -18,6 +18,8 @@ public enum Act
     /// <summary>Held at night in the town or the wood: answer the night, the ember pulling her to
     /// the night's fight (docs/design/STORY_NIGHTS_AND_TIME.md).</summary>
     Answer,
+    /// <summary>The book's Journal or Map opened wide over the world, or folded back into its panel.</summary>
+    Expand,
 }
 
 /// <summary>
@@ -43,6 +45,7 @@ public partial class Controls : Node
         [Act.Reroll] = ["KeyX"], [Act.Banish] = ["KeyB"], [Act.Pick1] = ["Digit1"], [Act.Pick2] = ["Digit2"], [Act.Pick3] = ["Digit3"], [Act.Pick4] = ["Digit4"],
         [Act.TabNext] = ["BracketRight"], [Act.TabPrev] = ["BracketLeft"], [Act.Arts] = ["KeyK"], [Act.Skip] = ["KeyV"],
         [Act.Alt] = ["Delete"], [Act.Alt2] = [], [Act.SubPrev] = ["Comma"], [Act.SubNext] = ["Period"], [Act.Answer] = ["KeyN"],
+        [Act.Expand] = ["KeyZ"],
     };
 
     public static readonly Act[] Rebindable = [Act.Up, Act.Left, Act.Down, Act.Right, Act.Dash, Act.Ability, Act.Ultimate, Act.Interact, Act.Inventory, Act.Character, Act.Arts, Act.Journal, Act.Map, Act.Reroll, Act.Banish, Act.Skip, Act.Answer];
@@ -60,6 +63,8 @@ public partial class Controls : Node
         [Act.TabNext] = [JoyButton.RightShoulder], [Act.TabPrev] = [JoyButton.LeftShoulder], [Act.Reroll] = [JoyButton.X], [Act.Banish] = [JoyButton.Y],
         [Act.Skip] = [JoyButton.RightStick], [Act.Answer] = [JoyButton.LeftStick],
         [Act.Alt] = [JoyButton.X], [Act.Alt2] = [JoyButton.Y],
+        // (the right stick's click is the skip in play; in the book it opens a page wide)
+        [Act.Expand] = [JoyButton.RightStick],
     };
 
     /// <summary>In a menu one button means its menu meaning first: A is

@@ -22,10 +22,29 @@ public partial class JournalScreen : Overlay
     public override Act? Toggle => Act.Journal;
     string tab = "quests";
     string? quest;
-    static readonly Color Ink = Style.ParchmentInk, InkSoft = new("#5a4a36"), Red = new("#8a2a1a");
+    /// <summary>Opened wide: the book lying open over the world, its two parchment leaves (the owner:
+    /// the Journal and the Map keep to the book's half-window panel, "with an option to expand").
+    /// Kept for the session, so it opens as it was left.</summary>
+    static bool wide;
+    /// <summary>The ink: a hand's on the parchment, the book's own type on the panel.</summary>
+    Color Ink => wide ? Style.ParchmentInk : Kit.Ink;
+    Color InkSoft => wide ? new Color("#5a4a36") : Kit.Dim;
+    Color Red => wide ? new Color("#8a2a1a") : Style.Ember;
+    Color HeadInk => wide ? new Color("#3a2414") : Kit.Ink;
+    Color Good => wide ? new Color("#3a6a2a") : new Color("#8ac06a");
 
-    // (--journal people|deeds|codex: opened at that section, for pictures)
-    public JournalScreen(Game g) : base(g) { if (Args.Get("journal") is string t && Array.Exists(Sections, x => x.Id == t)) tab = t; }
+    // In the panel she stands beside it, near enough that her face reads (as for the rest of the book);
+    // with the book opened wide, the view is the book's.
+    public override float CameraShift => wide ? 0 : -330;
+    public override float CameraNear => wide ? 1 : 0.56f;
+    public override (float Pitch, float Distance, float Height)? CameraFrame => wide ? null : BookFrame;
+
+    // (--journal people|deeds|codex: opened at that section, for pictures; --journal-wide: opened wide)
+    public JournalScreen(Game g) : base(g)
+    {
+        if (Args.Get("journal") is string t && Array.Exists(Sections, x => x.Id == t)) tab = t;
+        if (Args.Has("journal-wide")) wide = true;
+    }
 
     static readonly (string Id, string Name)[] Sections = { ("quests", "Quests"), ("people", "People"), ("deeds", "Deeds"), ("codex", "Codex") };
 
@@ -35,6 +54,7 @@ public partial class JournalScreen : Overlay
         // Its own pages turn with LT and RT (, and .); LB and RB turn the book's.
         if (a == Act.SubNext) { tab = Sections[(i + 1) % Sections.Length].Id; Refresh(); Sound.Sfx.Page(); return true; }
         if (a == Act.SubPrev) { tab = Sections[(i + Sections.Length - 1) % Sections.Length].Id; Refresh(); Sound.Sfx.Page(); return true; }
+        if (a == Act.Expand) { Widen(); return true; }
         // Pages with nothing to choose on them scroll.
         if (a is Act.Up or Act.Down && tab is "deeds" or "codex" && page is { } sc && IsInstanceValid(sc))
         {
@@ -45,12 +65,24 @@ public partial class JournalScreen : Overlay
         return false;
     }
 
+    void Widen()
+    {
+        wide = !wide;
+        Sound.Sfx.Page();
+        Refresh();
+    }
+
     ScrollContainer? page;
 
-    /// <summary>The book's width (a reading measure, about 75 letters to a page's line; the full
-    /// screen's 1700 ran past 90) and its height's bounds: between them it hugs what is written in
-    /// the section open, measured once laid out (an empty book was a screen of blank parchment).</summary>
-    const float BookW = 1440, MinH = 520, MaxH = 852;
+    /// <summary>The open book's width (a reading measure, about 75 letters to a leaf's line) and its
+    /// height's bounds: between them it hugs what is written in the section open, measured once laid
+    /// out (an empty book was a screen of blank parchment).</summary>
+    const float OpenW = 1440, MinH = 520, MaxH = 820;
+    /// <summary>In the panel: the list's column and the page's beside it.</summary>
+    const float ListW = 250, Gutter = 28;
+    /// <summary>In the panel, the columns' height's bounds (the panel hugs what is written, up to the
+    /// screen's height less its head and foot).</summary>
+    const float ColMin = 220, ColMax = 800;
     readonly Dictionary<string, float> heights = new();
     readonly List<Control> measured = new();
     readonly List<ScrollContainer> leaves = new();
@@ -58,16 +90,20 @@ public partial class JournalScreen : Overlay
     /// frames left before the next measure, and how many measures it has taken.</summary>
     string? settling;
     int measuring, tries;
+    string Key2(string t) => (wide ? "w:" : "p:") + t;
 
     protected override void Build()
     {
-        var content = Page("Journal");
         page = null;
         measured.Clear();
         leaves.Clear();
-        if (!heights.ContainsKey(tab)) { settling = tab; tries = 0; }
-        // The sections as type over the book (the house's tabs: no silk boxes), the open one
-        // underlined in ember, LT and RT either side to turn them.
+        if (!heights.ContainsKey(Key2(tab))) { settling = Key2(tab); tries = 0; }
+        if (wide) BuildOpen(); else BuildPanel();
+    }
+
+    /// <summary>The sections as the house's tabs, LT and RT (, and .) either side to turn them.</summary>
+    Control SectionTabs()
+    {
         bool pad = Controls.Instance.UsingPad;
         int on = Array.FindIndex(Sections, x => x.Id == tab);
         var lt = pad ? Style.PadButton("LT") : Style.Key(G.Key(Act.SubPrev));
@@ -78,62 +114,137 @@ public partial class JournalScreen : Overlay
         var bar = Style.H(Style.Gap5, lt, tabs, rt);
         foreach (var c in bar.GetChildren().OfType<Control>()) c.SizeFlagsVertical = SizeFlags.ShrinkCenter;
         bar.Alignment = BoxContainer.AlignmentMode.Center;
-        bar.Size = new Vector2(content.Size.X, 0);
-        content.AddChild(bar);
+        return bar;
+    }
 
-        // The book lies open just under them, the two centred on the page together: the list on
-        // the left leaf, what is chosen on the right.
-        const float tabsH = 40, under = 16;
-        float h = heights.TryGetValue(tab, out var known) ? known : MaxH;
-        float y = Math.Max(0, (content.Size.Y - tabsH - under - h) / 2);
-        bar.Position = new Vector2(0, y);
-        var book = new OpenBook(new Vector2(BookW, h)) { Position = new Vector2((content.Size.X - BookW) / 2, y + tabsH + under) };
-        content.AddChild(book);
-        var (left, right, others) = tab switch { "people" => People(), "deeds" => Deeds(), "codex" => Codex(), _ => Quests() };
+    (Control Left, Control Right, List<Control> Others) Leaves() => tab switch { "people" => People(), "deeds" => Deeds(), "codex" => Codex(), _ => Quests() };
+
+    /// <summary>In the book's panel, as the Pack, Self and Arts are: the sections as tabs, then the list
+    /// at the left and what is chosen at the right, as type on the panel; the day and whose journal
+    /// along the foot. The columns hug what is written, measured once laid out.</summary>
+    void BuildPanel()
+    {
+        var v = BookPanel(null, expand: Widen, wide: false);
+        v.AddChild(SectionTabs());
+        var (left, right, others) = Leaves();
+        float pageW = BookW - 2 * Margin - ListW - Gutter;
+        float h = heights.TryGetValue(Key2(tab), out var known) ? known : ColMax;
+        var cols = Style.H((int)Gutter);
+        v.AddChild(cols);
+        cols.AddChild(Leaf(left, new Vector2(ListW, h)));
+        cols.AddChild(Leaf(right, new Vector2(pageW, h)));
+        var w = G.Journey.World;
+        var foot = Style.Label($"Day {w.Day}  ·  {G.Journey.Ch.Name}'s journal", Style.TextItalic, Style.Caption, Kit.Dim, false, HorizontalAlignment.Center);
+        v.AddChild(foot);
+        bool pad = Controls.Instance.UsingPad;
+        v.AddChild(pad
+            ? Kit.Prompts(Kit.Prompt(Act.SubNext, "Section"), Kit.Prompt(Act.Up, "Choose"), Kit.Prompt(Act.Expand, "Open wide"), Kit.Prompt(Act.TabNext, "Turn"), Kit.Prompt(Act.Cancel, "Close"))
+            : Kit.Prompts(Kit.Prompt("Click", "Choose"), Kit.Prompt(G.Key(Act.SubPrev) + " " + G.Key(Act.SubNext), "Section"), Kit.Prompt("[ ]", "Turn"), Kit.Prompt(G.Key(Act.Journal), "Close")));
+        Settle(new[] { left, right }, others, pageW);
+    }
+
+    /// <summary>Opened wide: the book lying open over the world, the chain and the sections over it, its
+    /// leaves the parchment's. The list on the left leaf, what is chosen on the right.</summary>
+    void BuildOpen()
+    {
+        HideHud();
+        var shade = new ColorRect { Color = new Color(0.02f, 0.015f, 0.03f, 0.45f), MouseFilter = MouseFilterEnum.Stop };
+        Style.Fill(shade);
+        AddChild(shade);
+        float h = heights.TryGetValue(Key2(tab), out var known) ? known : MaxH;
+        // The book's head over it: the chain and its tabs at the left, Fold and Close at the right; the
+        // sections under them; the book under those, the whole centred on the screen.
+        const float headH = 56, tabsH = 40, gap = 12;
+        float top = Math.Max(16, (1080 - headH - tabsH - gap * 2 - h) / 2), x = (1920 - OpenW) / 2;
+        var head = Style.H(Style.Gap3);
+        int on = Array.FindIndex(Book, b => b.Kind == Kind);
+        head.AddChild(new ChainTabs(Book.Select(b => (b.Name, Controls.Instance?.KeyLabel(b.Key) ?? "")).ToArray(), on, k => { Sound.Sfx.Page(); G.Open(Book[k].Kind); }));
+        head.AddChild(new Control { SizeFlagsHorizontal = SizeFlags.ExpandFill, MouseFilter = MouseFilterEnum.Ignore });
+        var fold = Nav.Skip(Kit.Keyed(Act.Expand, "Fold", Widen, Kit.Ink2, 15));
+        fold.SizeFlagsVertical = SizeFlags.ShrinkBegin;
+        head.AddChild(fold);
+        head.AddChild(new Control { CustomMinimumSize = new Vector2(Style.Gap5, 0), MouseFilter = MouseFilterEnum.Ignore });
+        var close = Nav.Skip(CloseButton(G.Key(Act.Journal), G.CloseOverlay));
+        close.SizeFlagsVertical = SizeFlags.ShrinkBegin;
+        head.AddChild(close);
+        head.Position = new Vector2(x, top);
+        head.Size = new Vector2(OpenW, headH);
+        AddChild(head);
+        var bar = SectionTabs();
+        bar.Position = new Vector2(x, top + headH + gap);
+        bar.Size = new Vector2(OpenW, tabsH);
+        AddChild(bar);
+        var book = new OpenBook(new Vector2(OpenW, h)) { Position = new Vector2(x, top + headH + gap + tabsH + gap) };
+        AddChild(book);
+        var (left, right, others) = Leaves();
         Fill(book.Left, left);
         Fill(book.Right, right);
         // The leaves' feet: the day on the left, whose book on the right.
         var w = G.Journey.World;
         Foot(book.Left, $"Day {w.Day}");
         Foot(book.Right, $"{G.Journey.Ch.Name}'s journal");
-        if (settling == tab)
+        if (settling == Key2(tab))
         {
-            // Measured before it is shown: this page and every page the list can open here (a
-            // quest chosen later scrolls in a book cut to the first), laid out at a page's width.
             book.Modulate = Colors.Transparent;
             measured.Add(left);
             measured.Add(right);
-            foreach (var o in others)
-            {
-                var holder = new Control { Position = new Vector2(-4000, 0), Size = book.Right.Size, Modulate = Colors.Transparent, MouseFilter = MouseFilterEnum.Ignore };
-                o.Size = new Vector2(book.Right.Size.X, 0);
-                holder.AddChild(o);
-                content.AddChild(holder);
-                measured.Add(o);
-            }
+            foreach (var o in others) Offstage(o, book.Right.Size.X);
             measuring = 4;
         }
-        if (pad)
-            PageFooter(Footer((Act.SubNext, "Turn to a section"), (Act.Up, "Choose"), (Act.TabPrev, "Arts"), (Act.TabNext, "Map"), (Act.Cancel, "Close")));
+        if (Controls.Instance.UsingPad)
+            PageFooter(Footer((Act.SubNext, "Turn to a section"), (Act.Up, "Choose"), (Act.Expand, "Fold"), (Act.TabNext, "Map"), (Act.Cancel, "Close")));
+    }
+
+    /// <summary>A column of the panel: its words in a scroll as tall as the column may be.</summary>
+    Control Leaf(Control words, Vector2 size)
+    {
+        var sc = words as ScrollContainer ?? Style.Scroll(words);
+        sc.CustomMinimumSize = size;
+        sc.HorizontalScrollMode = ScrollContainer.ScrollMode.Disabled;
+        leaves.Add(sc);
+        page ??= sc;
+        return sc;
+    }
+
+    /// <summary>Laid out at a column's width off the screen, to be measured with the page in view.</summary>
+    void Offstage(Control o, float width)
+    {
+        var holder = new Control { Position = new Vector2(-4000, 0), Size = new Vector2(width, 10), Modulate = Colors.Transparent, MouseFilter = MouseFilterEnum.Ignore };
+        o.Size = new Vector2(width, 0);
+        holder.AddChild(o);
+        AddChild(holder);
+        measured.Add(o);
+    }
+
+    /// <summary>The panel's columns measured before they are shown: this page and every page the list can
+    /// open here (a quest chosen later scrolls in a column cut to the first), at the page's width.</summary>
+    void Settle(Control[] shown, List<Control> others, float pageW)
+    {
+        if (settling != Key2(tab)) return;
+        if (bookPanel != null) bookPanel.Modulate = Colors.Transparent;
+        measured.AddRange(shown);
+        foreach (var o in others) Offstage(o, pageW);
+        measuring = 4;
     }
 
     public override void _Process(double delta)
     {
         base._Process(delta);
-        // Laid out: the book takes its writing's height, and is measured again at it until the
-        // height holds (wrapped words settle their lines a frame or two after the width they wrap
-        // to; a scroll bar, once shown, narrows them onto more), then shown.
-        if (measuring > 0 && --measuring == 0 && settling == tab)
+        // Laid out: the columns (or the open book) take their writing's height, measured again at it until
+        // it holds (wrapped words settle their lines a frame or two after the width they wrap to; a scroll
+        // bar, once shown, narrows them onto more), then shown.
+        if (measuring > 0 && --measuring == 0 && settling == Key2(tab))
         {
             float need = measured.Where(IsInstanceValid).Select(c => c.GetCombinedMinimumSize().Y)
                 .Concat(leaves.Where(IsInstanceValid).Select(s => (float)s.GetVScrollBar().MaxValue)).DefaultIfEmpty(0).Max();
-            float had = heights.GetValueOrDefault(tab, MaxH), now = Math.Clamp(need + OpenBook.Chrome + 16, MinH, MaxH);
+            float had = heights.GetValueOrDefault(Key2(tab), wide ? MaxH : ColMax);
+            float now = wide ? Math.Clamp(need + OpenBook.Chrome + 16, MinH, MaxH) : Math.Clamp(need + 8, ColMin, ColMax);
             // (it only grows once measured: cut short, a scroll bar wraps the words longer; grown, the bar goes
             // and they measure short again, and the two would take turns)
             if (tries > 0) now = Math.Max(now, had);
-            heights[tab] = now;
+            heights[Key2(tab)] = now;
             if (Math.Abs(now - had) <= 2 || ++tries >= 4) settling = null;
-            if (Args.Has("shot")) GD.Print($"journal {tab}: words {need:0}, book {now:0}{(settling == null ? ", held" : "")}");
+            if (Args.Has("shot")) GD.Print($"journal {(wide ? "open" : "panel")} {tab}: words {need:0}, height {now:0}{(settling == null ? ", held" : "")}");
             Refresh();
         }
     }
@@ -149,7 +260,7 @@ public partial class JournalScreen : Overlay
         page ??= sc;
     }
 
-    static void Foot(Control leaf, string text)
+    void Foot(Control leaf, string text)
     {
         var l = Style.Label($"~  {text}  ~", Style.TextItalic, Style.Caption, InkSoft, false, HorizontalAlignment.Center);
         l.Position = new Vector2(0, leaf.Size.Y - 18);
@@ -157,9 +268,10 @@ public partial class JournalScreen : Overlay
         leaf.AddChild(l);
     }
 
-    // Reading text on paper: body size, the ink of a hand that wrote it.
-    static Label P(string text, int size = Style.Body, Font? font = null, Color? color = null) => Style.Label(text, font ?? Style.Text, size, color ?? Ink, true, HorizontalAlignment.Left, false);
-    static Label H2(string text) => Style.Label(text, Style.Display, Style.Title, new Color("#3a2414"), true, HorizontalAlignment.Left, false);
+    // Reading text: body size, in the ink of the hand that wrote it (on the parchment) or the book's type.
+    Label P(string text, int size = Style.Body, Font? font = null, Color? color = null) => Style.Label(text, font ?? Style.Text, size, color ?? Ink, true, HorizontalAlignment.Left, false);
+    // (a size down in the panel, whose list's column is narrow: "Those you have met" broke its last word off)
+    Label H2(string text) => Style.Label(text, Style.Display, wide ? Style.Title : 20, HeadInk, true, HorizontalAlignment.Left, false);
 
     (Control, Control, List<Control>) Quests()
     {
@@ -211,13 +323,14 @@ public partial class JournalScreen : Overlay
     }
 
     /// <summary>A measure from -100 to 100 as a line with a mark: green for you, red against, the middle marked.</summary>
-    static Control Feel(double v, float w = 120)
+    Control Feel(double v, float w = 120)
     {
         var p = new Control { CustomMinimumSize = new Vector2(w, 14), MouseFilter = MouseFilterEnum.Ignore };
-        p.AddChild(new ColorRect { Color = new Color(0.35f, 0.25f, 0.12f, 0.35f), Position = new Vector2(0, 6), Size = new Vector2(w, 2), MouseFilter = MouseFilterEnum.Ignore });
-        p.AddChild(new ColorRect { Color = new Color(0.35f, 0.25f, 0.12f, 0.6f), Position = new Vector2(w / 2 - 1, 2), Size = new Vector2(2, 10), MouseFilter = MouseFilterEnum.Ignore });
+        var track = wide ? new Color(0.35f, 0.25f, 0.12f, 1) : Kit.Faint;
+        p.AddChild(new ColorRect { Color = track with { A = 0.35f }, Position = new Vector2(0, 6), Size = new Vector2(w, 2), MouseFilter = MouseFilterEnum.Ignore });
+        p.AddChild(new ColorRect { Color = track with { A = 0.6f }, Position = new Vector2(w / 2 - 1, 2), Size = new Vector2(2, 10), MouseFilter = MouseFilterEnum.Ignore });
         float x = (float)((Math.Clamp(v, -100, 100) + 100) / 200 * (w - 8));
-        var col = v >= 0 ? new Color("#3a6a2a") : new Color("#8a2a1a");
+        var col = v >= 0 ? Good : Red;
         // The stretch from the middle to the mark, then the mark.
         p.AddChild(new ColorRect { Color = col with { A = 0.35f }, Position = new Vector2(Math.Min(x + 4, w / 2), 5), Size = new Vector2(Math.Abs(x + 4 - w / 2), 4), MouseFilter = MouseFilterEnum.Ignore });
         p.AddChild(new ColorRect { Color = col, Position = new Vector2(x, 1), Size = new Vector2(8, 12), MouseFilter = MouseFilterEnum.Ignore });
@@ -309,7 +422,7 @@ public partial class JournalScreen : Overlay
         if (stand.Count == 0) right.AddChild(P("Nobody out here knows you yet.", 16, Style.TextItalic, InkSoft));
         foreach (var st in stand)
         {
-            var tone = st.Tone switch { StandingTone.Ally or StandingTone.Friend => new Color("#3a6a2a"), StandingTone.Hostile => Red, StandingTone.Wary => new Color("#8a5a1a"), _ => InkSoft };
+            var tone = st.Tone switch { StandingTone.Ally or StandingTone.Friend => Good, StandingTone.Hostile => Red, StandingTone.Wary => wide ? new Color("#8a5a1a") : new Color("#d8a050"), _ => InkSoft };
             right.AddChild(Style.V(1, Style.H(10, P(st.Name, Style.Body, Style.TextBold), P(st.Word, Style.Small, Style.TextItalic, tone)), P(st.Why, Style.Caption, Style.Text, InkSoft)));
         }
         right.AddChild(Style.Rule());

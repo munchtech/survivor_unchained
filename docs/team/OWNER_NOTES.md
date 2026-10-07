@@ -17,6 +17,7 @@ The owner: "the bottom skill bar and health globes and stuff need to be incredib
 - **The tab chain:** "I love the direction just needs polish."
 - **Help text** (the tips): no shrinking from big to small; "more distracting not less". Show it at its full size from the start. It shouldn't come up at bad times anyway; if it does, that gets revisited later.
 - **Liked:** "I'm a giant fan of some of the hexes or just lines you put on indicators for dodging. nice work." (Combat and skills VFX: keep that language for danger marks.)
+- *Taken up by UI design (worktree-agent-adba22c3df8f39418, docs/ui_review/build9): all seven built (her irons at the foot, the boss at the top, the tally in the lower right, the minimap's bezel, Journal and Map in the panel with "Open wide", tips full size, the chain polished). The iron is drawn until UI art's pieces land (the spec is in docs/team/ui_design.md).*
 
 ### Combat and animation: moving through the crowd
 

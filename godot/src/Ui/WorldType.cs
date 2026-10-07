@@ -440,14 +440,17 @@ public partial class StoryChoices : Control
 /// thing that is also not on a cheap looking backdrop and just stylized readable text"): the key
 /// line in display type, a quieter line under it, its keys drawn as the keys themselves. It burns
 /// in from an ember glow, holds long enough to read, then fades. One word, the tip's subject where
-/// it appears in the line, is marked in ember. Mid-fight it keeps small and high until a lull.
+/// it appears in the line, is marked in ember. It is shown at its full size from the first (the
+/// owner: shrinking from big to small was "more distracting not less"), and waits while a banner
+/// holds the upper third.
 /// </summary>
 public partial class TipLine : Control
 {
     public double T;
     readonly Control column;
     readonly TextureRect burn;
-    public bool Small;
+    /// <summary>Waiting (a banner holds the upper third): unseen, and its burning in not yet begun.</summary>
+    public bool Held;
 
     public TipLine(string title, string text, Control? keys)
     {
@@ -497,13 +500,13 @@ public partial class TipLine : Control
 
     public override void _Process(double delta)
     {
+        if (Held) { Modulate = Colors.Transparent; return; }
         T += delta;
         var s = column.GetCombinedMinimumSize();
         column.Size = s;
-        float scale = Small ? 0.72f : 1;
-        column.Scale = new Vector2(scale, scale);
-        column.Position = new Vector2(-s.X * scale / 2, 0);
-        burn.Position = new Vector2(-380, s.Y * scale / 2 - 75);
+        // Always at its full size (the owner: no shrinking from big to small).
+        column.Position = new Vector2(-s.X / 2, 0);
+        burn.Position = new Vector2(-380, s.Y / 2 - 75);
         // It burns in: the ember's glow first, the words coming up through it, then the glow cools away.
         float k = (float)Math.Clamp(T / 0.5, 0, 1);
         Modulate = Colors.White with { A = k };

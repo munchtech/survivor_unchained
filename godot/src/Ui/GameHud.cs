@@ -17,47 +17,28 @@ public sealed record MinimapView(string Zone, Texture2D Drawing, float Extent, s
 public sealed record PromptView(string Key, string Verb, string Target, string? Hint, string? Locked, Act For = Act.Interact);
 
 /// <summary>
-/// The heads-up display (the web game's ui/hud): arranged so the eye never
-/// has to hunt. What can kill you (health, the boss) is where the eye
-/// already rests; what you choose (ember, the next level) at the top edge;
-/// what fires by itself (the weapons) a quiet row at the bottom that lights
-/// up when something happens to it; what your hands do (dash, the skill,
-/// a draught) under your right thumb. Everything else (the place, the
-/// quest, the loot) comes and goes at the edges. The web game's sizes are
-/// for a 900-pixel-tall screen; here they are for 1080 (×1.2).
+/// The heads-up display (docs/design/UI_RESEARCH.md, "The HUD"). Her state is one instrument along
+/// the foot (<see cref="Instrument"/>): her life and the art in her hand in two cuffs, the draught and
+/// the dash beside them, what fires by itself between, the ember as heat along the chain that joins
+/// them. The top edge is kept for what can end her (a boss's bar, its banner); the night's tally (the
+/// clock, the slain, the gold) waits in the lower right corner; the place, the quest and the minimap in
+/// the upper right; what comes and goes (toasts, tips) on the world itself.
 /// </summary>
 public partial class GameHud : CanvasLayer
 {
-    const float K = 1.2f;
     Control root = null!, play = null!, combat = null!;
     ColorRect bruise = null!;
-    TextureRect emberFill = null!, growFill = null!;
-    Label emberLevel = null!, tallyTime = null!, tallyKills = null!, tallyGold = null!;
+    Label tallyTime = null!, tallyKills = null!, tallyGold = null!;
     int shownLevel;
     bool shownEmber = true;
-    double levelPop;
-    // Health as a globe at the console's left end (docs/UI_DESIGN.md, "HUD").
-    Globe globe = null!;
-    HBoxContainer statuses = null!;
-    Control heart = null!;
-    /// <summary>The console's span: as wide as the skills it holds (six places by night, what is carried by day),
-    /// the globe at its left end, the art's ring at its right.</summary>
-    float consoleX = 600, consoleW = 720;
-    int consolePlaces;
-    Control consolePlate = null!, arsenal = null!, hands = null!;
+    /// <summary>Her irons along the foot.</summary>
+    Instrument irons = null!;
     float hpShown = 1, trailShown = 1, trailWait;
-    HBoxContainer boons = null!, weapons = null!;
-    readonly Dictionary<string, WeaponSlot> slots = new();
-    HBoxContainer dashPips = null!;
-    static readonly StyleBoxFlat PipOn = Style.Box(new Color("#7ab0ff"), new Color("#cfe4ff"), 1, 3, 0), PipOff = Style.Box(new Color("#14121a"), Style.Line, 1, 3, 0);
     // Names made once: a string given where a name is wanted is a new one each
     // call, and the HUD's twelve frames a second left them to the collector.
     internal static readonly StringName FontColor = "font_color", PanelName = "panel";
-    Control quick = null!;
-    Label quickQty = null!;
-    Ring abilityRing = null!;
-    TextureRect abilityGlyph = null!;
-    Label abilityCd = null!, abilityName = null!;
+    /// <summary>The art's readiness last frame: crossing to ready, the vessel flares once.</summary>
+    double artReadyWas = 1, artPing;
     Label zoneName = null!;
     DayDial dial = null!;
     HBoxContainer zoneSub = null!;
@@ -80,14 +61,9 @@ public partial class GameHud : CanvasLayer
     DraftPanel? draft;
     TalkPanel? talk;
     public float FadeAmount => fade.Color.A;
-    // What changes with the device in hand: the hands' keys, the prompt, the hint.
-    readonly List<(Act Act, HBoxContainer Row)> handKeys = new();
     PromptView? promptView;
     Hint? hintView;
-    // The bar's word (ember or experience) and its bright leading edge.
-    Label barWord = null!;
-    ColorRect barTip = null!;
-    Control killsChip = null!;
+    Control killsChip = null!, tally = null!;
     // The survivor's own health, drawn under them in a night's fight.
     Control under = null!;
     ColorRect underFill = null!, underShield = null!;
@@ -99,12 +75,10 @@ public partial class GameHud : CanvasLayer
     // Discoveries in a burst become one toast that grows.
     (Notice Box, ToastKind Kind, List<string> Names, double At)? lastToast;
     TipLine? tipLine;
-    /// <summary>The fight is close round her (four or more near): a tip keeps small and high until a lull.</summary>
-    bool busy;
-    // The bar eased every frame toward its true value (docs/feel S-06): shown, wanted, the level's flash.
-    float barShown, barWant, barFlash;
+    // The chain's heat eased every frame toward its true value (docs/feel S-06): shown, wanted.
+    float barShown, barWant;
     bool barEmber = true;
-    ColorRect barGlow = null!;
+    int barLevel = 1;
     double killPop;
     int killsShown;
     // What matters off the screen; where the prompt's thing is on it; the arena's clock and its word.
@@ -140,10 +114,10 @@ public partial class GameHud : CanvasLayer
         edges = new EdgeMarks();
         Style.Fill(edges);
         combat.AddChild(edges);
-        BuildEmber();
-        BuildVitals();
-        BuildArsenal();
-        BuildHands();
+        // Her irons, by day and by night, at peace and in a fight: the keystone stays where it is.
+        irons = new Instrument();
+        play.AddChild(irons);
+        BuildTally();
         BuildCorner();
         BuildEdges();
         BuildBoss();
@@ -197,189 +171,33 @@ public partial class GameHud : CanvasLayer
         };
     }
 
-    /// <summary>A round medallion rimmed in gold (the ember's, the heart's);
-    /// painted (hud/NAME.png, drawn larger than the medallion, centred on it) when there is art.</summary>
-    /// <summary>A painted casing laid over a bar (bars/casing.png, casing_boss.png): forged iron
-    /// round the groove, reaching a little past it, its middle open so the fill shows. Added
-    /// after the bar so it sits over the fill's edge; nothing when there is no art.</summary>
-    static void Casing(Control parent, Control bar, string id)
+    /// <summary>The night's tally in the lower right corner (the owner: "the clock, kills, gold move to a
+    /// lower corner, out of the top centre"): what rules the night in a word, the clock under it, then the
+    /// slain and the gold, set to the right margin with its last line level with the cuffs' foot.</summary>
+    void BuildTally()
     {
-        if (!UiArt.Has(id)) return;
-        var c = new Panel { Position = bar.Position, Size = bar.Size, MouseFilter = Control.MouseFilterEnum.Ignore };
-        c.AddThemeStyleboxOverride(PanelName, UiArt.Frame(id, new StyleBoxEmpty()));
-        parent.AddChild(c);
-    }
-
-    static Panel Medal(Control parent, Vector2 at, float size, Color inner, string? art = null)
-    {
-        var p = new Panel { Position = at, Size = new Vector2(size, size), MouseFilter = Control.MouseFilterEnum.Ignore };
-        var s = Style.Box(inner, Style.GoldDim, 3, (int)(size / 2), 0);
-        s.ShadowColor = new Color(1f, 0.55f, 0.2f, 0.35f);
-        s.ShadowSize = 10;
-        if (art != null && UiArt.Art($"hud/{art}.png") is { } tex)
-        {
-            p.AddThemeStyleboxOverride(PanelName, new StyleBoxEmpty());
-            var r = new TextureRect { Texture = tex, ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize, MouseFilter = Control.MouseFilterEnum.Ignore, ShowBehindParent = true };
-            r.Size = tex.GetSize();
-            r.Position = (new Vector2(size, size) - r.Size) / 2;
-            p.AddChild(r);
-        }
-        else p.AddThemeStyleboxOverride(PanelName, s);
-        parent.AddChild(p);
-        return p;
-    }
-
-    /// <summary>A bar's fill: painted (bars/NAME.png, a strip that tiles along the bar, so it
-    /// is never squashed as the bar fills) or the drawn gradient.</summary>
-    static TextureRect Fill(string art, Color[] colors, float[] stops, bool vertical = false)
-    {
-        var r = GradientRect(colors, stops, vertical);
-        if (UiArt.Art($"bars/{art}.png") is { } tex) { r.Texture = tex; r.StretchMode = TextureRect.StretchModeEnum.Tile; }
-        return r;
-    }
-
-    void BuildEmber()
-    {
-        float w = 760 * K, x = (1920 - w) / 2;
-        var track = new Panel { Position = new Vector2(x + 30, 23), Size = new Vector2(w - 30, 12), MouseFilter = Control.MouseFilterEnum.Ignore, ClipContents = true };
-        track.AddThemeStyleboxOverride(PanelName, UiArt.Frame("bar_track", Style.Box(Hex("#120c0a"), new Color(0.85f, 0.71f, 0.42f, 0.28f), 1, 5, 0)));
-        combat.AddChild(track);
-        Casing(combat, track, "bar_casing");
-        emberFill = Fill("ember_fill", [Hex("#6a1e04"), Hex("#c24a0a"), Hex("#ff8a2a"), Hex("#ffd070")], [0, 0.45f, 0.85f, 1]);
-        emberFill.Position = new Vector2(1, 1);
-        emberFill.Size = new Vector2(0, 10);
-        track.AddChild(emberFill);
-        // By day the same bar is the survivor's own experience, cooler and slower.
-        growFill = Fill("experience_fill", [Hex("#16222e"), Hex("#34587a"), Hex("#86b0d8"), Hex("#e6f2ff")], [0, 0.45f, 0.85f, 1]);
-        growFill.Position = new Vector2(1, 1);
-        growFill.Size = new Vector2(0, 10);
-        track.AddChild(growFill);
-        for (int i = 1; i < 10; i++) track.AddChild(new ColorRect { Color = new Color(0, 0, 0, 0.55f), Position = new Vector2((w - 30) * i / 10f, 0), Size = new Vector2(1, 12), MouseFilter = Control.MouseFilterEnum.Ignore });
-        // The leading edge burns brighter as the next level nears (the goal in sight).
-        barTip = new ColorRect { Color = Colors.White, Size = new Vector2(4, 10), Position = new Vector2(1, 1), MouseFilter = Control.MouseFilterEnum.Ignore };
-        track.AddChild(barTip);
-        // Near the level the whole bar breathes.
-        barGlow = new ColorRect { Color = Style.EmberHi with { A = 0 }, Position = new Vector2(1, 1), Size = new Vector2(0, 10), MouseFilter = Control.MouseFilterEnum.Ignore };
-        track.AddChild(barGlow);
-        // What the bar is, in a word under its start: ember by night, experience by day.
-        barWord = Style.Label("EMBER", Style.UiHeavy, 13, Style.Ember with { A = 0.85f });
-        barWord.Position = new Vector2(x + 52, 37);
-        combat.AddChild(barWord);
-        var medal = Medal(combat, new Vector2(x, 6), 46, Hex("#3a2210"), "medal_level");
-        emberLevel = Style.Label("1", Style.Display, 20, Style.EmberHi, false, HorizontalAlignment.Center);
-        emberLevel.Size = new Vector2(46, 46);
-        emberLevel.PivotOffset = new Vector2(23, 23);
-        emberLevel.VerticalAlignment = VerticalAlignment.Center;
-        medal.AddChild(emberLevel);
-        tallyTime = Style.Label("0:00", Style.Display, 24, Hex("#efe3c8"), false, HorizontalAlignment.Center);
-        tallyTime.Position = new Vector2(860, 50); tallyTime.Size = new Vector2(200, 28);
-        combat.AddChild(tallyTime);
-        var row = Style.H(16);
-        tallyKills = Style.Label("0", Style.UiBold, 17, Hex("#cfc3ad"));
-        tallyGold = Style.Label("0", Style.UiBold, 17, Style.GoldHi);
-        killsChip = Style.H(4, Glyphs.Icon("skull", 17, Hex("#cfc3ad")), tallyKills);
-        row.AddChild(killsChip);
-        row.AddChild(Style.H(4, Glyphs.Icon("coin", 17, Style.GoldHi), tallyGold));
-        row.Alignment = BoxContainer.AlignmentMode.Center;
-        row.Position = new Vector2(860, 80); row.Size = new Vector2(200, 20);
-        combat.AddChild(row);
-        // Under the clock in an arena: what it counts to.
-        tallyWord = Style.Label("", Style.UiHeavy, Style.Badge, Style.Ember, false, HorizontalAlignment.Center);
-        tallyWord.Position = new Vector2(760, 104); tallyWord.Size = new Vector2(400, 18);
-        combat.AddChild(tallyWord);
-    }
-
-    void BuildVitals()
-    {
-        // The console: a forged plate along the foot, under the skills, the globe and the ring at its ends.
-        var plate = new Panel { Position = new Vector2(consoleX, 1080 - 98), Size = new Vector2(consoleW, 130), MouseFilter = Control.MouseFilterEnum.Ignore };
-        plate.AddThemeStyleboxOverride(PanelName, UiArt.Frame("console", OrnateBox.Make(OrnateBox.Kind.Plate, 0)));
-        combat.AddChild(plate);
-        consolePlate = plate;
-        globe = new Globe(66) { Position = new Vector2(consoleX - 150, 1080 - 156) };
-        globe.PivotOffset = globe.Size / 2;
-        heart = globe;
-        play.AddChild(globe);
-        // What is on you (burning, shielded, quickened), over the globe.
-        statuses = Style.H(6);
-        statuses.Position = new Vector2(consoleX - 150, 1080 - 156 - 40);
-        play.AddChild(statuses);
-    }
-
-    void BuildArsenal()
-    {
-        var col = Style.V(12);
+        const float w = 440, right = 1920 - 40, foot = 1080 - 24;
+        var col = Style.V(0);
         col.Alignment = BoxContainer.AlignmentMode.End;
-        col.Position = new Vector2(consoleX, 1080 - 14 - 150);
-        col.Size = new Vector2(consoleW, 150);
-        arsenal = col;
+        col.Position = new Vector2(right - w, foot - 120);
+        col.Size = new Vector2(w, 120);
+        col.MouseFilter = Control.MouseFilterEnum.Ignore;
         combat.AddChild(col);
-        boons = Style.H(5);
-        boons.Alignment = BoxContainer.AlignmentMode.Center;
-        col.AddChild(boons);
-        weapons = Style.H(10);
-        weapons.Alignment = BoxContainer.AlignmentMode.Center;
-        col.AddChild(weapons);
+        tally = col;
+        tallyWord = Style.Label("", Style.UiHeavy, Style.Badge, Style.Ember, false, HorizontalAlignment.Right);
+        tallyWord.PivotOffset = new Vector2(w, 9);
+        col.AddChild(tallyWord);
+        tallyTime = Style.Label("0:00", Style.Display, 34, Hex("#efe3c8"), false, HorizontalAlignment.Right);
+        col.AddChild(tallyTime);
+        var row = Style.H(18);
+        row.Alignment = BoxContainer.AlignmentMode.End;
+        tallyKills = Style.Label("0", Style.UiBold, 18, Hex("#cfc3ad"));
+        tallyGold = Style.Label("0", Style.UiBold, 18, Style.GoldHi);
+        killsChip = Style.H(5, Glyphs.Icon("skull", 18, Hex("#cfc3ad")), tallyKills);
+        row.AddChild(killsChip);
+        row.AddChild(Style.H(5, Glyphs.Icon("coin", 18, Style.GoldHi), tallyGold));
+        col.AddChild(row);
     }
-
-    void BuildHands()
-    {
-        // The art's ring at the console's right end, the draught and the dash beside it.
-        var h = Style.H(22);
-        h.Alignment = BoxContainer.AlignmentMode.Begin;
-        h.Position = new Vector2(consoleX + consoleW + 14, 1080 - 14 - 150);
-        h.Size = new Vector2(460, 150);
-        combat.AddChild(h);
-        hands = h;
-        Control Hand(Control art, Act key, string label, out Label name)
-        {
-            var v = Style.V(8);
-            v.Alignment = BoxContainer.AlignmentMode.End;
-            var c = new CenterContainer { MouseFilter = Control.MouseFilterEnum.Ignore };
-            c.AddChild(art);
-            v.AddChild(c);
-            name = Style.Label(label, Style.UiBold, Style.Caption, Style.Ink);
-            var row = Style.H(5, Style.Prompt(key), name);
-            row.Alignment = BoxContainer.AlignmentMode.Center;
-            handKeys.Add((key, row));
-            v.AddChild(row);
-            h.AddChild(v);
-            return v;
-        }
-        const float R = 116;
-        var ab = new Control { CustomMinimumSize = new Vector2(R, R), MouseFilter = Control.MouseFilterEnum.Ignore };
-        abilityRing = new Ring { Size = new Vector2(R, R), MouseFilter = Control.MouseFilterEnum.Ignore };
-        ab.AddChild(abilityRing);
-        // The art's ring painted over the drawn one (hud/ring_art.png, a ring with an empty middle).
-        if (UiArt.Art("hud/ring_art.png") is { } ringArt)
-        {
-            var rr = new TextureRect { Texture = ringArt, ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize, MouseFilter = Control.MouseFilterEnum.Ignore, Size = ringArt.GetSize() * (R / 89f) };
-            rr.Position = (new Vector2(R, R) - rr.Size) / 2;
-            ab.AddChild(rr);
-        }
-        abilityGlyph = Glyphs.Icon("shield", 54);
-        abilityGlyph.Position = new Vector2((R - 54) / 2, (R - 54) / 2); abilityGlyph.Size = new Vector2(54, 54);
-        ab.AddChild(abilityGlyph);
-        abilityCd = Style.Label("", Style.Display, 28, Colors.White, false, HorizontalAlignment.Center);
-        abilityCd.Size = new Vector2(R, R);
-        abilityCd.VerticalAlignment = VerticalAlignment.Center;
-        ab.AddChild(abilityCd);
-        Hand(ab, Act.Ability, "", out abilityName);
-        var q = new Panel { CustomMinimumSize = new Vector2(60, 60), MouseFilter = Control.MouseFilterEnum.Ignore };
-        q.AddThemeStyleboxOverride(PanelName, OrnateBox.Make(OrnateBox.Kind.Slab, 0));
-        var qi = ItemPhotos.Icon("potion", 50, Hex("#ff8a80"));
-        qi.Position = new Vector2(5, 3); qi.Size = new Vector2(50, 50);
-        q.AddChild(qi);
-        quickQty = Style.Label("", Style.UiHeavy, 14, Colors.White);
-        quickQty.Position = new Vector2(44, 40);
-        q.AddChild(quickQty);
-        quick = Hand(q, Act.Ultimate, "Draught", out _);
-        dashPips = Style.H(5);
-        Hand(dashPips, Act.Dash, "Dash", out _);
-    }
-
-    static readonly string[] Numerals = ["I", "II", "III", "IV", "V"];
-
     /// <summary>Soft shade behind the top-right corner and along the bottom, so
     /// the HUD's words read over bright cobbles as well as night grass.</summary>
     void BuildBackings()
@@ -418,9 +236,14 @@ public partial class GameHud : CanvasLayer
         combat.AddChild(under);
     }
 
+    /// <summary>The minimap's top: low enough that the day's path over its bezel clears the screen's edge.</summary>
+    const float MapY = 44;
+
+    /// <summary>The upper right: the minimap in its bezel, under it the place's name, the time and the
+    /// day, then what is being done, all set to the same right margin as the bezel's iron.</summary>
     void BuildCorner()
     {
-        minimap = new Minimap { Position = new Vector2(1920 - 36 - Minimap.Diameter, 28), Visible = false };
+        minimap = new Minimap { Position = new Vector2(1920 - 40 - Minimap.Diameter, MapY), Visible = false };
         play.AddChild(minimap);
         var c = Style.V(3);
         corner = c;
@@ -504,28 +327,51 @@ public partial class GameHud : CanvasLayer
         return r;
     }
 
+    /// <summary>A boss's bar along the top edge, where the ember's used to be (the owner: "ember on the
+    /// bottom sliding the boss stuff up"), so it never meets a tip or the boss's own banner under it: its
+    /// name over the bar, the bar in a plain forged groove (hud/boss_groove.png when UI art has made
+    /// it), the stagger as a thin line along its foot, its title and Break under that, a channel's bar
+    /// last.</summary>
     void BuildBoss()
     {
-        float w = 744, x = (1920 - w) / 2;
-        bossBox = Box(play, x, 115, w, 110);
+        float w = BossW, x = (1920 - w) / 2;
+        bossBox = Box(play, x, 14, w, 118);
         bossBox.Visible = false;
         bossName = Style.Label("", Style.Display, 26, Hex("#ffe0c0"), false, HorizontalAlignment.Center);
         bossName.Size = new Vector2(w, 32);
         bossBox.AddChild(bossName);
-        bossTitle = Style.Label("", Style.TextItalic, 16, Style.InkDim, false, HorizontalAlignment.Center);
-        bossTitle.Position = new Vector2(0, 32); bossTitle.Size = new Vector2(w, 20);
-        bossBox.AddChild(bossTitle);
-        var track = new Panel { Position = new Vector2(0, 58), Size = new Vector2(w, 16), ClipContents = true, MouseFilter = Control.MouseFilterEnum.Ignore };
-        track.AddThemeStyleboxOverride(PanelName, UiArt.Frame("bar_track_boss", Style.Box(Hex("#140808"), Style.GoldDim, 1, 3, 0)));
+        var track = new Panel { Position = new Vector2(0, 38), Size = new Vector2(w, 16), ClipContents = true, MouseFilter = Control.MouseFilterEnum.Ignore };
+        // The groove: near black, edged in the cuffs' iron, a hair of light along its top.
+        var groove = Style.Box(Hex("#0d0606"), Cuff.Iron(0.38f), 2, 2, 0);
+        groove.ShadowColor = new Color(0, 0, 0, 0.6f);
+        groove.ShadowSize = 6;
+        track.AddThemeStyleboxOverride(PanelName, UiArt.Frame("boss_groove", groove));
         bossBox.AddChild(track);
-        Casing(bossBox, track, "bar_casing_boss");
         bossTrack = track;
-        bossTrail = new ColorRect { Color = Hex("#e8c07a"), Position = new Vector2(1, 1), Size = new Vector2(w - 2, 14), MouseFilter = Control.MouseFilterEnum.Ignore };
+        bossTrail = new ColorRect { Color = Hex("#e8c07a"), Position = new Vector2(2, 2), Size = new Vector2(w - 4, 12), MouseFilter = Control.MouseFilterEnum.Ignore };
         track.AddChild(bossTrail);
-        bossFill = new ColorRect { Color = Hex("#b0222a"), Position = new Vector2(1, 1), Size = new Vector2(w - 2, 14), MouseFilter = Control.MouseFilterEnum.Ignore };
+        bossFill = new ColorRect { Color = Hex("#b0222a"), Position = new Vector2(2, 2), Size = new Vector2(w - 4, 12), MouseFilter = Control.MouseFilterEnum.Ignore };
         track.AddChild(bossFill);
-        bossChannelBox = new Panel { Position = new Vector2(w * 0.2f, 82), Size = new Vector2(w * 0.6f, 20), ClipContents = true, MouseFilter = Control.MouseFilterEnum.Ignore };
-        bossChannelBox.AddThemeStyleboxOverride(PanelName, Style.Box(Hex("#0e0c12"), Hex("#ffcf8a") with { A = 0.6f }, 1, 3, 0));
+        // (the bar's light: a pale line along its top and a shade along its foot, over the fill)
+        track.AddChild(new ColorRect { Color = new Color(1, 0.9f, 0.85f, 0.16f), Position = new Vector2(2, 2), Size = new Vector2(w - 4, 1), MouseFilter = Control.MouseFilterEnum.Ignore });
+        track.AddChild(new ColorRect { Color = new Color(0, 0, 0, 0.28f), Position = new Vector2(2, 10), Size = new Vector2(w - 4, 4), MouseFilter = Control.MouseFilterEnum.Ignore });
+        // An iron clamp over each end, the groove held between them (UI art's boss_groove.png has its own).
+        if (!UiArt.Has("boss_groove"))
+            foreach (float cx in new[] { -6f, w - 6 })
+            {
+                var clamp = new Panel { Position = new Vector2(cx, 34), Size = new Vector2(12, 24), MouseFilter = Control.MouseFilterEnum.Ignore };
+                var cs = Style.Box(Cuff.Iron(0.3f), new Color(0, 0, 0, 0.9f), 1, 2, 0);
+                cs.ShadowColor = new Color(0, 0, 0, 0.5f);
+                cs.ShadowSize = 3;
+                clamp.AddThemeStyleboxOverride(PanelName, cs);
+                clamp.AddChild(new ColorRect { Color = new Color(1, 0.94f, 0.82f, 0.22f), Position = new Vector2(2, 1), Size = new Vector2(8, 1), MouseFilter = Control.MouseFilterEnum.Ignore });
+                bossBox.AddChild(clamp);
+            }
+        bossTitle = Style.Label("", Style.TextItalic, 16, Style.InkDim, false, HorizontalAlignment.Center);
+        bossTitle.Position = new Vector2(0, 64); bossTitle.Size = new Vector2(w, 20);
+        bossBox.AddChild(bossTitle);
+        bossChannelBox = new Panel { Position = new Vector2(w * 0.2f, 92), Size = new Vector2(w * 0.6f, 20), ClipContents = true, MouseFilter = Control.MouseFilterEnum.Ignore };
+        bossChannelBox.AddThemeStyleboxOverride(PanelName, Style.Box(Hex("#0e0c12"), Hex("#ffcf8a") with { A = 0.6f }, 1, 2, 0));
         bossBox.AddChild(bossChannelBox);
         bossChannelFill = new ColorRect { Color = Hex("#ffb050") with { A = 0.6f }, Size = new Vector2(0, 20), MouseFilter = Control.MouseFilterEnum.Ignore };
         bossChannelBox.AddChild(bossChannelFill);
@@ -535,6 +381,8 @@ public partial class GameHud : CanvasLayer
         bossChannelBox.AddChild(bossChannel);
     }
 
+    /// <summary>The boss's bar's width: the instrument's own, so the top and the foot share their measure.</summary>
+    const float BossW = 2 * (Instrument.Reach + Instrument.R + Instrument.Band);
     static ShaderMaterial VignetteMaterial() => new()
     {
         Shader = new Shader
@@ -583,26 +431,21 @@ public partial class GameHud : CanvasLayer
         [ToastKind.Gold] = ("coin", Hex("#f3d9a0")), [ToastKind.Loot] = ("hand", Hex("#d9b56a")),
     };
 
-    /// <summary>The fight, as the HUD shows it (a dozen times a second).</summary>
+    /// <summary>The fight (or a walk at peace), as the HUD shows it (a dozen times a second).</summary>
     /// <param name="level">The survivor's own level, and how far into it (shown when the ember is out).</param>
     public void Frame(Battle? b, double gold, int draughts, (int Level, double K) level = default)
     {
         if (b == null) return;
         combat.Visible = b.Combat;
-        // In a fight the globe is the console's left end; at peace, with no console, it keeps to the corner.
-        var at = b.Combat ? new Vector2(consoleX - 150, 1080 - 156) : new Vector2(30, 1080 - 30 - globe.Size.Y);
-        if (globe.Position != at) { globe.Position = at; statuses.Position = at + new Vector2(0, -40); }
         var p = b.Player;
-        // (only while a tip is up: the count is not free)
-        busy = tipLine != null && b.Combat && b.HostilesInRadius(p.X, p.Z, 9).Count >= 4;
         double max = b.MaxHp;
         float k = (float)Math.Clamp(p.Hp / max, 0, 1);
         hpShown = k;
-        globe.Level = k;
-        globe.Shield = (float)Math.Clamp(p.Shield / max, 0, 1);
+        var life = irons.Life;
+        life.Level = k;
+        life.Shield = (float)Math.Clamp(p.Shield / max, 0, 1);
         double hpNum = Math.Ceiling(Math.Max(p.Hp, 0));
-        if (hpNum != globeNum) { globeNum = hpNum; globe.Number = $"{hpNum}"; }
-        globe.Changed();
+        if (hpNum != globeNum) { globeNum = hpNum; life.Number = $"{hpNum}"; }
         statusWant.Clear();
         statusLeft.Clear();
         void Status(string glyph, double left, bool good) { statusWant.Add((glyph, good)); statusLeft.Add(left); }
@@ -615,33 +458,91 @@ public partial class GameHud : CanvasLayer
         if (b.WorldRate < 1) Status("hourglass", b.WorldRateT, true);
         foreach (var (id, bf) in b.Buffs) Status(id == "warcry" ? "howl" : "arcane", bf.T, true);
         Statuses();
-        underWanted = false;
-        if (!b.Combat) return;
 
-        // The ember while it burns; by day, the survivor's own growing.
+        // The chain: the ember while it burns; by day, the survivor's own growing.
         bool ember = b.EmberOn;
         float e = (float)Math.Clamp(ember ? b.EmberXp / Math.Max(1, b.EmberNext) : level.K, 0, 1);
-        emberFill.Visible = ember;
-        growFill.Visible = !ember;
-        // The fill is eased every frame (_Process); a new level fills it, flashes, and drains to what carried over.
+        // The heat is eased every frame (_Process); a new level flares the chain and drains to what carried over.
         if (ember != barEmber) { barEmber = ember; barShown = e; }
         barWant = e;
-        barWord.Text = ember ? "EMBER" : "EXPERIENCE";
-        barWord.AddThemeColorOverride(FontColor, (ember ? Style.Ember : Style.Day) with { A = 0.85f });
-        // The fight's clock and its count belong to the night; by day they would only be noise.
-        tallyTime.Visible = ember;
-        killsChip.Visible = ember;
-        underK = k;
-        underShieldK = (float)Math.Clamp(p.Shield / max, 0, 1);
-        underWanted = ember && p.Alive && Settings.Current.UnderBar;
         int lv = ember ? b.EmberLevel : Math.Max(1, level.Level);
         if (lv != shownLevel || ember != shownEmber)
         {
-            if (lv > shownLevel && ember == shownEmber) { levelPop = 1; barShown = 1; barFlash = 1; }
+            if (lv > shownLevel && ember == shownEmber && shownLevel > 0) { barShown = 1; irons.Chain.Rise(); }
             shownLevel = lv; shownEmber = ember;
-            emberLevel.Text = lv.ToString();
-            emberLevel.AddThemeColorOverride(FontColor, ember ? Style.EmberHi : Hex("#d8ecff"));
+            barLevel = lv;
         }
+        underK = k;
+        underShieldK = (float)Math.Clamp(p.Shield / max, 0, 1);
+        underWanted = b.Combat && ember && p.Alive && Settings.Current.UnderBar;
+
+        // The six places: what fires by itself, in the order it came; the rest quiet.
+        var socks = irons.Sockets;
+        int i = 0;
+        foreach (var w in b.Weapons)
+        {
+            if (i >= socks.Length) break;
+            bool canEvolve = w.Evolution == null && w.Rank >= Weapons.MaxRank && LevelUp.EarnedBranches(b, w.Id).Count > 0;
+            socks[i++].Show(w.Id, w.Art, ItemViews.SchoolColors[w.School], b.WeaponReady(w), w.Rank, Weapons.MaxRank, w.Evolution != null, canEvolve);
+        }
+        for (; i < socks.Length; i++) socks[i].Empty();
+        irons.Lay(b.Weapons.Count, all: ember);
+
+        boonWant.Clear();
+        foreach (var (id, rank) in b.Boons)
+            if (rank > 0 && Boons.Find(id) != null) boonWant.Add((id, rank));
+        if (!Same(boonWant, boonHave))
+        {
+            boonHave.Clear();
+            boonHave.AddRange(boonWant);
+            foreach (var c in irons.Passives.GetChildren()) c.QueueFree();
+            foreach (var (id, rank) in boonWant) irons.Passives.AddChild(Passive(Boons.Find(id)!, rank));
+        }
+
+        // The dash's charges round its glass; the draughts left.
+        var dash = irons.Dash;
+        dash.Max = (int)Math.Round(b.Stats.Get(Stat.DashCharges));
+        dash.Count = p.DashCharges;
+        dash.Recharge = (float)Math.Clamp(p.DashRecharge / Abilities.Dash.Recharge, 0, 1);
+        irons.Draught.Count = draughts;
+
+        // The art: its charge rising in the right cuff as it readies, its glyph in the glass.
+        var art = irons.Art;
+        if (b.Ability is AbilityKind ak)
+        {
+            var def = Abilities.All[ak];
+            if (b.Art.EchoT > 0)
+            {
+                // An echo waits: the art is the way back into it, its violet draining as the chance does.
+                art.Liquid(new Color("#d8b8ff"), new Color("#4a2a7a"));
+                art.Level = (float)Math.Clamp(b.Art.EchoT / (b.Has("long_echo") ? 7 : 4), 0, 1);
+                art.Glyph = Glyphs.Texture(def.Icon, 96, Hex("#fff4ff"), line: true);
+                art.GlyphTint = Colors.White;
+                art.Number = "";
+                irons.ArtWord.Text = "STEP BACK";
+                artReadyWas = 1;
+            }
+            else
+            {
+                irons.ArtWord.Text = "";
+                art.Liquid(new Color("#ffc66a"), new Color("#8a3a08"));
+                double ready = 1 - p.AbilityCd / Math.Max(Math.Max(0.01, b.Art.CdFull), p.AbilityCd);
+                ready = Math.Clamp(ready, 0, 1);
+                // Readied this frame: a flare through the glass, once.
+                if (ready >= 1 && artReadyWas < 1) artPing = 1;
+                artReadyWas = ready;
+                art.Level = (float)ready;
+                art.Glyph = Glyphs.Texture(def.Icon, 96, Hex("#fff3dc"), line: true);
+                art.GlyphTint = ready >= 1 ? Colors.White : new Color(0.62f, 0.58f, 0.54f, 0.85f);
+                art.Number = ready >= 1 ? "" : p.AbilityCd >= 1 ? $"{Math.Ceiling(p.AbilityCd)}" : $"{p.AbilityCd:0.0}";
+            }
+        }
+        else { art.Level = 0; art.Glyph = null; art.Number = ""; irons.ArtWord.Text = ""; }
+
+        if (!b.Combat) return;
+        // The fight's clock and its count belong to the night; by day they would only be noise.
+        tallyTime.Visible = ember;
+        killsChip.Visible = ember;
         // In an arena the clock counts down to what rules it; after, how long past the half hour.
         double shown = arenaLeft is double left && left > 0 ? left : arenaLeft is double past ? -past : b.Time;
         int m = (int)(shown / 60), s = (int)(shown % 60);
@@ -652,94 +553,7 @@ public partial class GameHud : CanvasLayer
         if (b.KillCount > killsShown && killPop <= 0.05) killPop = 0.15;
         killsShown = b.KillCount;
         tallyGold.Text = $"{Math.Floor(gold + b.GoldGained - b.GoldBanked)}";
-
-        var alive = new HashSet<string>();
-        int i = 0;
-        foreach (var w in b.Weapons)
-        {
-            alive.Add(w.Id);
-            if (!slots.TryGetValue(w.Id, out var slot)) { slot = new WeaponSlot(); slots[w.Id] = slot; weapons.AddChild(slot); }
-            weapons.MoveChild(slot, i++);
-            bool canEvolve = w.Evolution == null && w.Rank >= Weapons.MaxRank && LevelUp.EarnedBranches(b, w.Id).Count > 0;
-            slot.Show(w.Art, ItemViews.SchoolColors[w.School], b.WeaponReady(w), w.Rank, Weapons.MaxRank, w.Evolution != null, canEvolve);
-        }
-        foreach (var id in slots.Keys.Where(x => !alive.Contains(x)).ToList()) { slots[id].QueueFree(); slots.Remove(id); }
-        // At night the empty places promise six; by day there are only what is carried, and the console fits them.
-        int empties = weapons.GetChildren().OfType<EmptySlot>().Count(), want = ember ? Math.Max(0, 6 - b.Weapons.Count) : 0;
-        int places = Math.Max(2, b.Weapons.Count + want);
-        if (places != consolePlaces)
-        {
-            consolePlaces = places;
-            consoleW = Math.Max(300, places * 77 + 70);
-            consoleX = (1920 - consoleW) / 2;
-            consolePlate.Position = new Vector2(consoleX, 1080 - 98);
-            consolePlate.Size = new Vector2(consoleW, 130);
-            arsenal.Position = new Vector2(consoleX, 1080 - 14 - 150);
-            arsenal.Size = new Vector2(consoleW, 150);
-            hands.Position = new Vector2(consoleX + consoleW + 14, 1080 - 14 - 150);
-            globe.Position = new Vector2(consoleX - 150, 1080 - 156);
-            statuses.Position = globe.Position + new Vector2(0, -40);
-        }
-        for (int j = empties; j < want; j++) weapons.AddChild(new EmptySlot());
-        foreach (var c in weapons.GetChildren().OfType<EmptySlot>().Skip(want)) c.QueueFree();
-
-        boonWant.Clear();
-        foreach (var (id, rank) in b.Boons)
-            if (rank > 0 && Boons.Find(id) != null) boonWant.Add((id, rank));
-        if (!Same(boonWant, boonHave))
-        {
-            boonHave.Clear();
-            boonHave.AddRange(boonWant);
-            foreach (var c in boons.GetChildren()) c.QueueFree();
-            foreach (var (id, rank) in boonWant) boons.AddChild(BoonChip(Boons.Find(id)!, rank));
-        }
-
-        int maxDash = (int)Math.Round(b.Stats.Get(Stat.DashCharges));
-        if (dashPips.GetChildCount() != maxDash)
-        {
-            foreach (var c in dashPips.GetChildren()) { dashPips.RemoveChild(c); c.QueueFree(); }
-            for (int j = 0; j < maxDash; j++)
-            {
-                var pip = new Panel { CustomMinimumSize = new Vector2(14, 34), MouseFilter = Control.MouseFilterEnum.Ignore, ClipContents = true };
-                pip.AddChild(new ColorRect { Color = new Color(0.47f, 0.67f, 1f, 0.35f), MouseFilter = Control.MouseFilterEnum.Ignore });
-                dashPips.AddChild(pip);
-            }
-        }
-        for (int j = 0; j < maxDash; j++)
-        {
-            bool on = j < p.DashCharges;
-            var pip = dashPips.GetChild<Panel>(j);
-            pip.AddThemeStyleboxOverride(PanelName, on ? PipOn : PipOff);
-            var fillRect = pip.GetChild<ColorRect>(0);
-            float fill = j == p.DashCharges ? (float)Math.Clamp(p.DashRecharge / Abilities.Dash.Recharge, 0, 1) : 0;
-            fillRect.Position = new Vector2(0, 34 * (1 - fill));
-            fillRect.Size = new Vector2(14, 34 * fill);
-        }
-        quick.Visible = draughts > 0;
-        quickQty.Text = draughts.ToString();
-        if (b.Ability is AbilityKind ak)
-        {
-            var def = Abilities.All[ak];
-            string rank = b.ArtRank > 1 ? $"  {Numerals[Math.Min(b.ArtRank, Numerals.Length) - 1]}" : "";
-            if (b.Art.EchoT > 0)
-            {
-                // An echo waits: the art is the way back into it.
-                abilityRing.Progress = (float)Math.Clamp(b.Art.EchoT / (b.Has("long_echo") ? 7 : 4), 0, 1);
-                abilityRing.Charged = true;
-                abilityGlyph.Texture = Glyphs.Texture(def.Icon, 82, Hex("#d8b8ff"));
-                abilityCd.Text = "";
-                abilityName.Text = "Step back";
-                return;
-            }
-            double ready = 1 - p.AbilityCd / Math.Max(Math.Max(0.01, b.Art.CdFull), p.AbilityCd);
-            abilityRing.Progress = (float)Math.Clamp(ready, 0, 1);
-            abilityRing.Charged = ready >= 1;
-            abilityGlyph.Texture = Glyphs.Texture(def.Icon, 82, ready >= 1 ? Hex("#ffe6b0") : Hex("#8a7f70"));
-            abilityCd.Text = ready >= 1 ? "" : p.AbilityCd >= 1 ? $"{Math.Ceiling(p.AbilityCd)}" : $"{p.AbilityCd:0.0}";
-            abilityName.Text = def.Name + rank;
-        }
     }
-
     // The chips over the globe and in the boons' row, as last built. They were
     // all remade on every call (twelve a second); now only when which there are
     // changes, a countdown set in place, so nothing shifts in between.
@@ -777,38 +591,41 @@ public partial class GameHud : CanvasLayer
         statusHave.AddRange(statusWant);
         statusText.Clear();
         statusShown.Clear();
-        foreach (var c in statuses.GetChildren()) c.QueueFree();
+        var row = irons.Statuses;
+        foreach (var c in row.GetChildren()) c.QueueFree();
         for (int i = 0; i < statusWant.Count; i++)
         {
             var (glyph, good) = statusWant[i];
             double n = Countdown(statusLeft[i]);
             var col = good ? Hex("#9ad4ff") : Hex("#ff8a6a");
-            var text = Style.Label(n < 0 ? "" : $"{n}", Style.UiBold, Style.Badge, col);
-            var chip = Style.Panel(UiArt.Frame("chip", Style.Box(new Color(0.04f, 0.03f, 0.05f, 0.8f), col, 1, 13, 5)), Style.H(3, Glyphs.Icon(glyph, 17, col), text));
-            chip.MouseFilter = Control.MouseFilterEnum.Ignore;
-            statuses.AddChild(chip);
+            // What is on her as its mark and its seconds, on the world over her life (no chip round it).
+            var text = Style.Label(n < 0 ? "" : $"{n}", Style.UiHeavy, Style.Badge, col);
+            var mark = Style.H(3, Glyphs.Icon(glyph, 20, col, line: true), text);
+            mark.MouseFilter = Control.MouseFilterEnum.Ignore;
+            row.AddChild(mark);
             statusText.Add(text);
             statusShown.Add(n);
         }
     }
 
-    static Panel BoonChip(BoonDef bd, int rank)
+    /// <summary>A passive over the six places: its glyph in its rarity's colour, its rank at its foot if
+    /// it has ranks, on the world (no chip round it).</summary>
+    static Control Passive(BoonDef bd, int rank)
     {
         var col = Style.RarityOf((int)bd.Rarity);
-        var chip = new Panel { CustomMinimumSize = new Vector2(34, 34), MouseFilter = Control.MouseFilterEnum.Ignore };
-        chip.AddThemeStyleboxOverride(PanelName, UiArt.Frame("chip", Style.Box(Hex("#1a1720"), col with { A = 0.55f }, 1, bd.Kind == BoonKind.Blessing ? 6 : 17, 0)));
-        var gl = Glyphs.Icon(bd.Icon, 20, col);
-        gl.Position = new Vector2(7, 7); gl.Size = new Vector2(20, 20);
-        chip.AddChild(gl);
+        var holder = new Control { CustomMinimumSize = new Vector2(26, 26), MouseFilter = Control.MouseFilterEnum.Ignore };
+        var gl = Glyphs.Icon(bd.Icon, 22, col, line: true);
+        gl.Position = new Vector2(2, 0);
+        gl.Size = new Vector2(22, 22);
+        holder.AddChild(gl);
         if (bd.Max > 1)
         {
-            var r = Style.Label($"{rank}", Style.UiHeavy, Style.Badge, Colors.White);
-            r.Position = new Vector2(23, 17);
-            chip.AddChild(r);
+            var r = Style.Label($"{rank}", Style.UiHeavy, 12, Colors.White);
+            r.Position = new Vector2(18, 12);
+            holder.AddChild(r);
         }
-        return chip;
+        return holder;
     }
-
     public void ZoneInfo(string name, string? region, int day, TimeOfDay time)
     {
         zoneName.Text = name.ToUpperInvariant();
@@ -854,15 +671,18 @@ public partial class GameHud : CanvasLayer
     /// <summary>The day's clock on its dial by the place's name (null: where the clock does not run).</summary>
     public void Clock(double? clock, bool running)
     {
-        bool on = clock != null;
-        if (on != dial.Visible)
-        {
-            dial.Visible = on;
-            // (the sun or moon glyph it stands in for comes or goes with it)
-            if (zoneSub.GetChildCount() > 1 && zoneSub.GetChild(1) is TextureRect g) g.Visible = !on;
-        }
-        if (clock is double c) dial.Set(c, running);
+        clockNow = (clock, running);
+        // On the map's bezel where there is a map (the day's path over its top); by the place's name
+        // where there is none.
+        minimap.Clock(clock, running);
+        bool onDial = clock != null && !minimap.Visible;
+        if (onDial != dial.Visible) dial.Visible = onDial;
+        // (the sun or moon glyph stands in where no clock runs at all)
+        if (zoneSub.GetChildCount() > 1 && zoneSub.GetChild(1) is TextureRect g) g.Visible = clock == null;
+        if (onDial && clock is double c) dial.Set(c, running);
     }
+
+    (double? Clock, bool Running) clockNow;
 
     public void Objectives(List<Tracked> list)
     {
@@ -875,10 +695,9 @@ public partial class GameHud : CanvasLayer
             foreach (var s in t.Steps)
             {
                 var col = s.Done ? Style.InkDim with { A = 0.6f } : s.Optional ? Style.InkDim : Style.Ink;
-                var box = new Panel { CustomMinimumSize = new Vector2(10, 10), MouseFilter = Control.MouseFilterEnum.Ignore };
-                box.AddThemeStyleboxOverride(PanelName, Style.Box(s.Done ? Style.Gold : new Color(0, 0, 0, 0.4f), col, 1, s.Optional ? 5 : 1, 0));
-                var mark = new CenterContainer { CustomMinimumSize = new Vector2(12, 20), MouseFilter = Control.MouseFilterEnum.Ignore };
-                mark.AddChild(box);
+                // The step's mark: the house's diamond, open while it waits and filled in gold once done; a
+                // small ring for what may be left (no checkbox: no box).
+                var mark = new StepMark(s.Done, s.Optional, col);
                 HBoxContainer row;
                 // "Answer the night: hold [[answer]]": the key itself, as the device in hand shows it.
                 var key = System.Text.RegularExpressions.Regex.Match(s.Text, @"\[\[(\w+)\]\]");
@@ -1012,11 +831,11 @@ public partial class GameHud : CanvasLayer
         bossName.Text = bar.Name.ToUpperInvariant();
         // A boss's Break (the damage past its phase marks) beside its title.
         bossTitle.Text = bar.Break >= 1 ? $"{bar.Title}   ·   Break {Math.Round(bar.Break):N0}" : bar.Title;
-        float w = 742;
+        float w = BossW - 4;
         float k = (float)Math.Clamp(bar.Hp / Math.Max(1, bar.MaxHp), 0, 1);
-        bossFill.Size = new Vector2(w * k, 14);
+        bossFill.Size = new Vector2(w * k, 12);
         bossFill.Color = bar.Shielded ? Hex("#8a8a9a") : Hex("#b0222a");
-        bossTrail.Size = new Vector2(Math.Max(bossTrail.Size.X - 2, w * k), 14);
+        bossTrail.Size = new Vector2(Math.Max(bossTrail.Size.X - 2, w * k), 12);
         // The phase marks, built when they change rather than every frame.
         string marks = bar.Phases == null ? "" : string.Join(",", bar.Phases);
         if (marks != bossMarks)
@@ -1025,24 +844,23 @@ public partial class GameHud : CanvasLayer
             foreach (var c in bossTrack.GetChildren()) if (c.HasMeta("phase")) c.QueueFree();
             foreach (var ph in bar.Phases ?? Array.Empty<double>())
             {
-                var mark = new ColorRect { Color = Style.GoldHi, Position = new Vector2(w * (float)ph, 0), Size = new Vector2(2, 16), MouseFilter = Control.MouseFilterEnum.Ignore };
+                var mark = new ColorRect { Color = Style.GoldHi, Position = new Vector2(2 + w * (float)ph - 1, 0), Size = new Vector2(2, 16), MouseFilter = Control.MouseFilterEnum.Ignore };
                 mark.SetMeta("phase", true);
                 bossTrack.AddChild(mark);
             }
         }
-        // The stagger bar: a thin line under the health, filled by what would lock a lesser
-        // creature. Its groove shows from the first second, so the player learns it is there.
-        // (It sat inside the health track, which clips, and was never seen.)
+        // The stagger: a thin line along the bar's foot, filled by what would lock a lesser creature.
+        // Its groove shows from the first second, so the player learns it is there.
         if (bossStagger == null)
         {
-            bossStaggerGroove = new ColorRect { Color = Hex("#1a1410") with { A = 0.85f }, Position = new Vector2(1, 76), Size = new Vector2(w, 5), MouseFilter = Control.MouseFilterEnum.Ignore };
+            bossStaggerGroove = new ColorRect { Color = Hex("#1a1410") with { A = 0.85f }, Position = new Vector2(2, 56), Size = new Vector2(w, 4), MouseFilter = Control.MouseFilterEnum.Ignore };
             bossBox.AddChild(bossStaggerGroove);
-            bossStagger = new ColorRect { Color = Hex("#e8c860"), Position = new Vector2(1, 76), Size = new Vector2(0, 5), MouseFilter = Control.MouseFilterEnum.Ignore };
+            bossStagger = new ColorRect { Color = Hex("#e8c860"), Position = new Vector2(2, 56), Size = new Vector2(0, 4), MouseFilter = Control.MouseFilterEnum.Ignore };
             bossBox.AddChild(bossStagger);
         }
         bossStaggerGroove!.Visible = bar.IsBoss;
         bossStagger.Visible = bar.IsBoss && bar.Stagger > 0;
-        bossStagger.Size = new Vector2(w * (float)Math.Clamp(bar.Stagger, 0, 1), 5);
+        bossStagger.Size = new Vector2(w * (float)Math.Clamp(bar.Stagger, 0, 1), 4);
         bossStagger.Color = bar.Stagger >= 1 ? Hex("#fff0a0") : Hex("#e8c860");
         bossChannelBox.Visible = bar.Channel != null;
         if (bar.Channel is var (label, prog))
@@ -1052,19 +870,23 @@ public partial class GameHud : CanvasLayer
         }
     }
 
+    /// <summary>Where a tip stands: in the upper third, centred, and always below a boss's bar.</summary>
+    static float TipY => Math.Max(1080 * 0.17f, TopClear + 30);
+
     public void Hint(Hint? h)
     {
         bool same = hintView != null && h != null && hintView.Id == h.Id;
         hintView = h;
         hintBox.Visible = false;
         // The tip, centred in the upper third and set on the world itself (the owner: "a centered
-        // attention grabbing thing that is also not on a cheap looking backdrop").
+        // attention grabbing thing that is also not on a cheap looking backdrop"), at its full size from
+        // the first (the owner: no shrinking from big to small, "more distracting not less").
         if (same && tipLine != null && IsInstanceValid(tipLine)) return;
         if (tipLine != null && IsInstanceValid(tipLine)) tipLine.QueueFree();
         tipLine = null;
         if (h == null) return;
         Control? keys = h.Keys.Count > 0 ? Style.H(6, HintKeys(h.Keys).ToArray()) : null;
-        tipLine = new TipLine(h.Title, h.Text, keys) { Position = new Vector2(960, 1080 * 0.17f), Small = busy };
+        tipLine = new TipLine(h.Title, h.Text, keys) { Position = new Vector2(960, TipY) };
         play.AddChild(tipLine);
     }
 
@@ -1082,15 +904,7 @@ public partial class GameHud : CanvasLayer
     /// <summary>The device in hand changed: every key shown redraws as its keys or buttons.</summary>
     public void DeviceChanged()
     {
-        foreach (var (act, row) in handKeys)
-        {
-            var old = row.GetChild(0);
-            row.RemoveChild(old);
-            old.QueueFree();
-            var k = Style.Prompt(act);
-            row.AddChild(k);
-            row.MoveChild(k, 0);
-        }
+        irons.Keys();
         Prompt(promptView);
         Hint(hintView);
         draft?.Prompts();
@@ -1124,6 +938,9 @@ public partial class GameHud : CanvasLayer
         ground.KeepOut.Clear();
         if (tipLine != null && IsInstanceValid(tipLine)) ground.KeepOut.Add(tipLine.Area.Grow(12));
         if (corner.IsVisibleInTree()) ground.KeepOut.Add(corner.GetGlobalRect().Grow(8));
+        // (and the instrument along the foot, and the night's tally in its corner)
+        ground.KeepOut.Add(Instrument.Bounds);
+        if (tally.IsVisibleInTree()) ground.KeepOut.Add(tally.GetGlobalRect().Grow(8));
         if (toasts.GetChildCount() > 0) ground.KeepOut.Add(toasts.GetGlobalRect().Grow(8));
         if (announce.Modulate.A > 0.05f) ground.KeepOut.Add(announce.GetGlobalRect());
         ground.Show(list);
@@ -1139,7 +956,9 @@ public partial class GameHud : CanvasLayer
         if (minimap.Visible != on)
         {
             minimap.Visible = on;
-            corner.Position = corner.Position with { Y = on ? 28 + Minimap.Diameter + 16 : 22 };
+            corner.Position = corner.Position with { Y = on ? MapY + Minimap.Diameter + 18 : 22 };
+            // (the day's clock moves between the map's bezel and the dial by the name)
+            Clock(clockNow.Clock, clockNow.Running);
         }
         if (m == null) return;
         minimap.Zone(m.Zone, m.Drawing, m.Extent);
@@ -1196,16 +1015,19 @@ public partial class GameHud : CanvasLayer
         root.AddChild(talk);
     }
 
-    /// <summary>A combat skill has evolved: its place on the bar is crowned.</summary>
-    public void Crown(string weaponId) { if (slots.TryGetValue(weaponId, out var s)) s.Crown(); }
+    /// <summary>A combat skill has evolved: its place on the instrument is crowned.</summary>
+    public void Crown(string weaponId) { foreach (var s in irons.Sockets) if (s.Id == weaponId) s.Crown(); }
 
     /// <summary>Something staged over the play (a chest opening), above the bars and under the screens.</summary>
     public void Over(Control c) => root.AddChild(c);
 
-    /// <summary>Where a held thing lives on screen: a combat skill's place in the arsenal, else the
+    /// <summary>Where a held thing lives on screen: a combat skill's place among the six, else the
     /// middle of the passives' row (a chest's things fly home to them).</summary>
-    public Vector2 PlaceOf(string id) =>
-        slots.TryGetValue(id, out var s) && s.IsInsideTree() ? s.GetGlobalRect().GetCenter() : boons.GetGlobalRect().GetCenter();
+    public Vector2 PlaceOf(string id)
+    {
+        foreach (var s in irons.Sockets) if (s.Id == id && s.IsInsideTree()) return s.GetGlobalRect().GetCenter();
+        return irons.Passives.GetGlobalRect().GetCenter();
+    }
 
     /// <summary>A key for the draft or the conversation, if one is up.</summary>
     public bool Key(Act a) => draft?.Key(a) ?? talk?.Key(a) ?? false;
@@ -1232,7 +1054,7 @@ public partial class GameHud : CanvasLayer
         // Nothing big over a choice being made.
         if (draft != null || talk != null) { announce.Modulate = Colors.Transparent; subtitle.Modulate = Colors.Transparent; }
         Banner = announce.Modulate.A > 0.05f ? BannerRect() : null;
-        TopClear = bossBox.Visible ? bossBox.GetGlobalRect().End.Y + 8 : 118;
+        TopClear = bossBox.Visible ? bossBox.GetGlobalRect().End.Y + 8 : 24;
         foreach (var c in toasts.GetChildren())
         {
             if (c is not Notice n) continue;
@@ -1240,20 +1062,17 @@ public partial class GameHud : CanvasLayer
             n.Modulate = HoldToasts ? Colors.Transparent : Colors.White;
             if (!HoldToasts && !n.Step(delta)) n.QueueFree();
         }
-        // A tip keeps small and high while the fight is close round her, and comes to its size in a lull.
-        if (tipLine != null && IsInstanceValid(tipLine)) tipLine.Small = busy;
-        // The bar flows toward its value; a level's flash fades over a tenth of a second.
-        barShown = barShown > barWant + 0.5f ? Mathf.MoveToward(barShown, barWant, dt * 6) : barShown + (barWant - barShown) * (1 - Mathf.Exp(-18 * dt));
-        float fw = (760 * K - 32) * Mathf.Clamp(barShown, 0, 1);
-        (barEmber ? emberFill : growFill).Size = new Vector2(fw, 10);
-        barFlash = Mathf.MoveToward(barFlash, 0, dt / 0.08f);
-        (barEmber ? emberFill : growFill).Modulate = Colors.White.Lerp(new Color(3, 3, 3), barFlash);
-        barTip.Position = new Vector2(Math.Max(1, fw - 3), 1);
-        barTip.Color = (barEmber ? Style.EmberHi : Style.DayHi) with { A = 0.3f + 0.7f * Mathf.SmoothStep(0.6f, 1f, barShown) };
-        barTip.Visible = barShown > 0.01f;
-        float t2 = Time.GetTicksMsec() / 1000f;
-        barGlow.Size = new Vector2(fw, 10);
-        barGlow.Color = (barEmber ? Style.EmberHi : Style.DayHi) with { A = barShown >= 0.85f ? 0.25f + 0.25f * Mathf.Sin(t2 * 8) : 0 };
+        // A tip waits while a banner is up (the two share the upper third and must never meet), then
+        // comes in whole; below a boss's bar whenever there is one.
+        if (tipLine != null && IsInstanceValid(tipLine))
+        {
+            tipLine.Held = Banner != null;
+            tipLine.Position = new Vector2(960, TipY);
+        }
+        // The chain's heat flows toward its value; a new level has already flared it and filled it,
+        // and it drains back to what carried over.
+        barShown = barShown > barWant + 0.5f ? Mathf.MoveToward(barShown, barWant, dt * 4) : barShown + (barWant - barShown) * (1 - Mathf.Exp(-18 * dt));
+        irons.Chain.Set(barShown, barEmber, barLevel);
         killPop = Math.Max(0, killPop - delta);
         tallyWord.Scale = tallyWord.Scale.Lerp(Vector2.One, 1 - Mathf.Exp(-8 * dt));
         float kp = 1 + (float)(killPop / 0.15) * 0.15f;
@@ -1274,19 +1093,23 @@ public partial class GameHud : CanvasLayer
         underFill.Size = new Vector2(74 * underK, 7);
         underFill.Color = underK < 0.35f ? Hex("#ff5a4a").Lerp(Colors.White, 0.25f * Mathf.Max(0, Mathf.Sin(Time.GetTicksMsec() / 1000f * 7))) : Hex("#e8383a");
         underShield.Size = new Vector2(74 * underShieldK, 3);
-        // The trail behind health catches up after a moment.
-        float trail = globe.Trail;
-        if (trail > hpShown) { trailWait += dt; trailShown = trailWait > 0.35f ? Mathf.MoveToward(trail, hpShown, dt * 1.6f) : trail; }
+        // The trail behind her life catches up after a moment.
+        if (trailShown > hpShown) { trailWait += dt; if (trailWait > 0.35f) trailShown = Mathf.MoveToward(trailShown, hpShown, dt * 1.6f); }
         else { trailWait = 0; trailShown = hpShown; }
-        globe.Trail = trailShown;
+        var life = irons.Life;
+        life.Trail = trailShown;
         bool low = hpShown < 0.35f && combat.Visible;
         float now = Time.GetTicksMsec() / 1000f;
-        // Low, the globe beats like a heart and its glass flushes.
-        float beat = low ? 1 + 0.06f * Mathf.Max(0, Mathf.Sin(now * 7)) : 1;
-        heart.Scale = new Vector2(beat, beat);
-        globe.Pulse = low ? 0.5f + 0.5f * Mathf.Sin(now * 7) : 0;
-        globe.Changed();
-        if (levelPop > 0) { levelPop = Math.Max(0, levelPop - delta / 0.6); float sc = 1 + 0.9f * (float)(levelPop * levelPop); emberLevel.Scale = new Vector2(sc, sc); }
+        // Low, her life's vessel beats like a heart and its glass flushes.
+        float beat = low ? 1 + 0.05f * Mathf.Max(0, Mathf.Sin(now * 7)) : 1;
+        life.Scale = new Vector2(beat, beat);
+        life.Pulse = low ? 0.5f + 0.5f * Mathf.Sin(now * 7) : 0;
+        // The art readied: its glass flares once and settles to its ready glow.
+        artPing = Math.Max(0, artPing - delta / 0.5);
+        var art = irons.Art;
+        bool armed = art.Level >= 1 && irons.ArtWord.Text == "";
+        art.Glow = armed ? 0.55f + 0.45f * (float)artPing + 0.08f * Mathf.Sin(now * 2.4f) : irons.ArtWord.Text != "" ? 0.6f : 0;
+        art.Scale = Vector2.One * (1 + 0.05f * (float)(artPing * artPing));
         if (pullT >= 0)
         {
             pullT += delta;
@@ -1319,118 +1142,32 @@ public partial class GameHud : CanvasLayer
     }
 }
 
-/// <summary>A weapon on the HUD: its glyph in its school's colour, a shade
-/// that sweeps off as it readies, a flash when it fires. Its rank is a
-/// number on a badge (read at a glance) over a strip of segments (how far
-/// to the top); at the top with what it evolves with, its rim pulses gold
-/// and the badge says so.</summary>
-public partial class WeaponSlot : Panel
+/// <summary>A quest step's mark in the corner: the house's diamond, open while the step waits and filled in
+/// gold once it is done; a small ring for a step that may be left. Drawn, so it is crisp at every size.</summary>
+public partial class StepMark : Control
 {
-    readonly TextureRect art;
-    readonly ColorRect sweep;
-    readonly HBoxContainer strip;
-    readonly PanelContainer badge;
-    readonly Label rankText;
-    double lastReady = 1, flash, t;
-    bool ripe;
-    string key = "";
+    readonly bool done, optional;
+    readonly Color ink;
 
-    public WeaponSlot()
+    public StepMark(bool done, bool optional, Color ink)
     {
-        CustomMinimumSize = new Vector2(67, 67);
+        this.done = done; this.optional = optional; this.ink = ink;
+        CustomMinimumSize = new Vector2(12, 20);
         MouseFilter = MouseFilterEnum.Ignore;
-        art = new TextureRect { Position = new Vector2(14, 12), Size = new Vector2(39, 39), ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize, StretchMode = TextureRect.StretchModeEnum.KeepAspectCentered, MouseFilter = MouseFilterEnum.Ignore };
-        AddChild(art);
-        sweep = new ColorRect { Color = new Color(0.016f, 0.012f, 0.03f, 0.62f), Position = new Vector2(1, 1), Size = new Vector2(65, 0), MouseFilter = MouseFilterEnum.Ignore };
-        AddChild(sweep);
-        strip = Style.H(2);
-        strip.Alignment = BoxContainer.AlignmentMode.Center;
-        strip.Position = new Vector2(4, 59);
-        strip.Size = new Vector2(59, 4);
-        AddChild(strip);
-        badge = new PanelContainer { MouseFilter = MouseFilterEnum.Ignore, Position = new Vector2(44, -7) };
-        badge.AddThemeStyleboxOverride(GameHud.PanelName, Style.Box(new Color("#0d0c10"), Style.GoldDim, 1, 9, 4));
-        rankText = Style.Label("1", Style.UiHeavy, Style.Badge, Style.GoldHi, false, HorizontalAlignment.Center);
-        rankText.CustomMinimumSize = new Vector2(12, 0);
-        badge.AddChild(rankText);
-        AddChild(badge);
     }
-
-    double crown = -1;
-
-    /// <summary>It has evolved: the slot swells and burns gold, settling over a second, so the
-    /// eye goes from the moment in the world to where the new thing lives.</summary>
-    public void Crown() => crown = 0;
-
-    public override void _Process(double delta)
-    {
-        if (crown < 0) return;
-        crown += delta;
-        float k = (float)Math.Clamp(crown / 1.3, 0, 1), e = (1 - k) * (1 - k);
-        PivotOffset = Size / 2;
-        Scale = Vector2.One * (1 + 0.5f * e * (0.75f + 0.25f * Mathf.Cos((float)crown * 18)));
-        Modulate = Colors.White.Lerp(new Color(2.4f, 1.9f, 1.0f), e);
-        if (crown >= 1.3) { crown = -1; Scale = Vector2.One; Modulate = Colors.White; }
-    }
-
-    public void Show(string glyph, Color school, double ready, int rank, int max, bool evolved, bool canEvolve)
-    {
-        var k = $"{glyph}|{school.ToHtml()}|{rank}|{evolved}|{canEvolve}";
-        if (k != key)
-        {
-            key = k;
-            ripe = canEvolve;
-            art.Texture = Glyphs.Texture(glyph, 78, school);
-            foreach (var c in strip.GetChildren()) c.QueueFree();
-            float seg = (59f - 2 * (max - 1)) / Math.Max(1, max);
-            for (int i = 0; i < max; i++)
-                strip.AddChild(new ColorRect { Color = i < rank ? school : new Color("#15121a"), CustomMinimumSize = new Vector2(seg, 3), MouseFilter = MouseFilterEnum.Ignore });
-            // The rank, gold on ember when it has evolved or is ready to (the rim says which: steady or breathing).
-            rankText.Text = rank.ToString();
-            rankText.AddThemeColorOverride(GameHud.FontColor, evolved || canEvolve ? Style.EmberHi : Style.GoldHi);
-            badge.AddThemeStyleboxOverride(GameHud.PanelName, Style.Box(new Color("#0d0c10"), evolved || canEvolve ? Style.Gold : Style.GoldDim, 1, 9, 4));
-            AddThemeStyleboxOverride(GameHud.PanelName, UiArt.Frame("weapon_slot", Style.Box(new Color(0.1f, 0.09f, 0.12f).Lerp(school, 0.1f), evolved ? Style.Gold : canEvolve ? Style.GoldHi : Style.Line, evolved || canEvolve ? 2 : 1, 7, 0)));
-        }
-        if (ready < lastReady - 0.4) flash = 1;
-        lastReady = ready;
-        sweep.Size = new Vector2(65, ready < 0.98 ? 65 * (float)(1 - ready) : 0);
-        art.Modulate = ready >= 0.98 ? new Color(1.3f, 1.3f, 1.3f) : Colors.White;
-        flash = Math.Max(0, flash - 0.05);
-        // Ready to evolve: the slot breathes gold until the draft offers it.
-        t += 1.0 / 12;
-        float glow = ripe ? 0.35f * (0.5f + 0.5f * Mathf.Sin((float)t * 5)) : 0;
-        SelfModulate = Colors.White.Lerp(new Color(1.6f, 1.4f, 1.1f), Math.Max((float)flash, glow));
-    }
-}
-
-/// <summary>An empty place for a weapon yet to come.</summary>
-public partial class EmptySlot : Panel
-{
-    public EmptySlot()
-    {
-        CustomMinimumSize = new Vector2(67, 67);
-        MouseFilter = MouseFilterEnum.Ignore;
-        // A place to come: the empty well (frames/slot.png) when painted, quieter than a held skill.
-        AddThemeStyleboxOverride(GameHud.PanelName, UiArt.Frame("slot", Style.Box(new Color(0.08f, 0.07f, 0.09f, 0.55f), Style.Line with { A = 0.12f }, 1, 7, 0)));
-        if (UiArt.Has("slot")) SelfModulate = new Color(1, 1, 1, 0.7f);
-    }
-}
-
-/// <summary>The skill's ring: gold round as far as it has readied.</summary>
-public partial class Ring : Control
-{
-    float progress = 1;
-    bool ready = true;
-    public float Progress { get => progress; set { if (Math.Abs(progress - value) > 0.002f) { progress = value; QueueRedraw(); } } }
-    public bool Charged { get => ready; set { if (ready != value) { ready = value; QueueRedraw(); } } }
 
     public override void _Draw()
     {
-        var c = Size / 2;
-        float r = Size.X / 2 - 4;
-        DrawCircle(c, r + 3, new Color("#0e0c11"));
-        DrawArc(c, r, 0, Mathf.Tau, 64, new Color(1, 1, 1, 0.06f), 5, true);
-        DrawArc(c, r, -Mathf.Pi / 2, -Mathf.Pi / 2 + Mathf.Tau * progress, 64, ready ? new Color("#f3d9a0") : new Color("#d9b56a"), 5, true);
-        DrawCircle(c, r - 6, ready ? new Color("#2a1a10") : new Color("#16131a"));
+        var c = new Vector2(6, 10.5f);
+        if (optional && !done)
+        {
+            DrawArc(c, 3.6f, 0, Mathf.Tau, 20, new Color(0, 0, 0, 0.6f), 3, true);
+            DrawArc(c, 3.6f, 0, Mathf.Tau, 20, ink, 1.3f, true);
+            return;
+        }
+        var d = new[] { c + new Vector2(0, -5), c + new Vector2(5, 0), c + new Vector2(0, 5), c + new Vector2(-5, 0), c + new Vector2(0, -5) };
+        if (done) DrawColoredPolygon(d[..4], Style.Gold);
+        DrawPolyline(d, new Color(0, 0, 0, 0.6f), 3, true);
+        DrawPolyline(d, done ? Style.GoldHi : ink, 1.3f, true);
     }
 }
