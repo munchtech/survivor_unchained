@@ -99,6 +99,11 @@ func _init():
 		var gsk: Skeleton3D = her.find_children("*", "Skeleton3D", true, false)[0]
 		gestures = load("res://src/Actors/Gestures.cs").new()
 		gsk.add_child(gestures)
+	# The helper bones (HerJoints) from the finished pose, as in the game:
+	# last of every layer. NOJOINTS=1 leaves them at rest (as before them).
+	if env("NOJOINTS", "") == "":
+		var jsk: Skeleton3D = her.find_children("*", "Skeleton3D", true, false)[0]
+		jsk.add_child(load("res://src/Actors/HerJoints.cs").new())
 	stage(root)
 
 var tree: AnimationTree

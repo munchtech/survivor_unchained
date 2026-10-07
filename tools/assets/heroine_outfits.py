@@ -42,6 +42,8 @@ OUT = ARGS[0]
 ONLY = ARGS[ARGS.index("--only") + 1] if "--only" in ARGS else None
 BODY_OUT = ARGS[ARGS.index("--body") + 1] if "--body" in ARGS else None
 TEX = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "godot", "art", "outfit")
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import heroine_rig as rig_helpers  # noqa: E402  (her helper bones, added just before export)
 
 arm = next(o for o in bpy.data.objects if o.type == "ARMATURE")
 body = bpy.data.objects["Heroine"]
@@ -3772,6 +3774,10 @@ if BODY_OUT:
         n_eased += 1
     print("BODY breast weights eased at", n_eased, "of her vertices")
     me.color_attributes.active_color = col
+    # Her helper bones (twists at the shoulders and down the forearms, shares
+    # at the shoulders, elbows and knees: tools/anim/helpers.py), her weights
+    # split onto them; her pieces take the same split below.
+    rig_helpers.apply(arm, [body])
     bpy.ops.object.select_all(action="DESELECT")
     arm.select_set(True)
     for o in [body] + HEAD_PARTS:
@@ -3787,6 +3793,8 @@ for o in [o for o in bpy.data.objects if o not in made and o not in (arm, body)]
 material_table(os.path.join(os.path.dirname(OUT), "outfit_materials.json"))
 # One file an outfit, so the game loads only what she wears.
 # (each outfit's pieces listed before any are joined: a joined piece is gone)
+# Every piece split onto her helper bones as her skin is, so they move as one.
+rig_helpers.apply(arm, made)
 pieces_of = {name: [o for o in made if o.name.startswith(name + ".")] for name in OUTFITS}
 for name in OUTFITS:
     mine = pieces_of[name]

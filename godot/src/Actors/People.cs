@@ -330,6 +330,8 @@ public static class People
         if (headBone >= 0) skel.SkeletonUpdated += () => person.HeadPose = skel.GetBoneGlobalPose(headBone);
         skel.AddChild(new HerJiggle());
         skel.AddChild(new HerFaceLife());
+        // Her twist and share bones, from the pose every layer above has made.
+        skel.AddChild(new HerJoints());
         foreach (var mi in skel.GetChildren().OfType<MeshInstance3D>())
         {
             person.Meshes.Add(mi);
@@ -374,6 +376,8 @@ public static class People
         int headBone = skel.FindBone("Head");
         if (headBone >= 0) skel.SkeletonUpdated += () => person.HeadPose = skel.GetBoneGlobalPose(headBone);
         skel.AddChild(new HerFaceLife());
+        // His twist and share bones, once his body is built with them (as hers).
+        skel.AddChild(new HerJoints());
         foreach (var mi in skel.GetChildren().OfType<MeshInstance3D>())
         {
             person.Meshes.Add(mi);

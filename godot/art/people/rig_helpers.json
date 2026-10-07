@@ -1,0 +1,88 @@
+{
+ "helpers": [
+  {
+   "name": "upperarm_twist_01_{s}",
+   "parent": "upperarm_{s}",
+   "kind": "counter_twist",
+   "bone": "upperarm_{s}",
+   "at": 0.25,
+   "amount": 0.5
+  },
+  {
+   "name": "lowerarm_twist_01_{s}",
+   "parent": "lowerarm_{s}",
+   "kind": "forearm_twist",
+   "bone": "hand_{s}",
+   "at": 0.4,
+   "amount": 0.4
+  },
+  {
+   "name": "lowerarm_twist_02_{s}",
+   "parent": "lowerarm_{s}",
+   "kind": "forearm_twist",
+   "bone": "hand_{s}",
+   "at": 0.8,
+   "amount": 0.8
+  },
+  {
+   "name": "upperarm_share_{s}",
+   "parent": "clavicle_{s}",
+   "kind": "share",
+   "bone": "upperarm_{s}",
+   "amount": 0.5,
+   "bulge": 0.0,
+   "bulge_max": 1.0,
+   "way": "front"
+  },
+  {
+   "name": "lowerarm_share_{s}",
+   "parent": "upperarm_{s}",
+   "kind": "share",
+   "bone": "lowerarm_{s}",
+   "amount": 0.5,
+   "bulge": 1.0,
+   "bulge_max": 1.5,
+   "way": "front"
+  },
+  {
+   "name": "calf_share_{s}",
+   "parent": "thigh_{s}",
+   "kind": "share",
+   "bone": "calf_{s}",
+   "amount": 0.5,
+   "bulge": 1.0,
+   "bulge_max": 1.5,
+   "way": "back"
+  }
+ ],
+ "unroll": [
+  "lowerarm_{s}"
+ ],
+ "weights": {
+  "shoulder_twist_to": 0.55,
+  "forearm_nodes": [
+   0.0,
+   0.4,
+   0.8
+  ],
+  "share": 1.0,
+  "pairs": [
+   [
+    "clavicle_{s}",
+    "upperarm_{s}",
+    "upperarm_share_{s}"
+   ],
+   [
+    "upperarm_{s}",
+    "lowerarm_{s}",
+    "lowerarm_share_{s}"
+   ],
+   [
+    "thigh_{s}",
+    "calf_{s}",
+    "calf_share_{s}"
+   ]
+  ],
+  "cap": 4
+ }
+}
