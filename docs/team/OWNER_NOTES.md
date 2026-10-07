@@ -18,6 +18,10 @@ The owner: "lets introduce another cheaper, but stylisticly and artistically STI
 - **Realistic (as before):** **the burial** (C08, made a trunk scene) stays an in-engine cinematic.
 - The drawings carry our own soul (rooted in the Ember Watch, not generic fantasy illustration), with no AI look; any generated art follows the provenance rules (ours, local, logged).
 
+### Face lead (skin): speckles over her breasts (6 October)
+
+The owner: "we removed specklage on our shoulder/upper chest before to success, but noticed in the face tests we have a lot of specklage over the breasts. we want smooth skin aside from pores / freckles. the specklage seemed unintended and still does - the breasts must look magnificent which they mostly do". Remove it at the root; keep the real pores and freckles. Sent to the face lead.
+
 ### Animation: joints and motion to perfection (6 October)
 
 Rendering fixes how motion is drawn; joints and rig are animation's (next free slot, raised to `su-lead-max`). The owner: "the motions that get scuffed are ... bad, unnatural movements with respect to wrists - follow through motion joint to joint, some elbow pinching or arms going through body or breast, some sliding. a lot is GOOD but we want perfection."
