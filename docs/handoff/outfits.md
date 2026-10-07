@@ -54,7 +54,7 @@ The old handoff's "Open" list, worst first: pixel-perfect coverage (tighten, nev
 - The isolation guard refuses shell commands with computed command names or variables in loops: put scripts in files and run `bash file`.
 - A Godot import re-imports any `.import` whose bytes changed (LF against CRLF counts).
 - `OUTFIT=warden_steel` in lookdev attaches one material's mesh; `HIDE` can't reach outfit pieces.
-- The animation lead's helper bones (heroine_rig.py, HerJoints.cs) split weights by position for skin and garments alike; merge their branch before building.
+- The animation lead's helper bones (heroine_rig.py, HerJoints.cs; worktree-agent-a9a80800a7dae2519@20bd5dc1) are inert unless the build is passed `--helpers`, so merging them changes nothing. Never pass `--helpers` until their successor sends the garment-against-skin weight check (docs/handoff/animation.md).
 
 ## Collaborators
-Face lead aed215ba3ca60cc29 (sculpt; v12 skin shader: no grain below the collarbones, SSS 0.1). Animation lead a9a80800a7dae2519 (helper bones; will report garment-against-skin weight deviations). Rendering lead a20bdef993e00f26b (AA, distance appeal; owed the TAA pixel). The main session does refits.
+Face lead aed215ba3ca60cc29 (sculpt; v12 skin shader: no grain below the collarbones, SSS 0.1). Animation lead (wound down; its successor owes the garment-against-skin weight check). Rendering lead a20bdef993e00f26b (AA, distance appeal; owed the TAA pixel). The main session does refits.
