@@ -307,32 +307,24 @@ def from_reference(ref):
     # them, and her reference's brows are kept as they are, carried by the
     # landmarks round them)
     use = np.setdiff1d(np.arange(len(pts["drawn"])), BROW_A + BROW_B)
-    src, dst = pts["drawn"][use], pts["ref"][use]
-    # Her brows pinned where the reference has them against each eye (in eye widths from the middle of its corners,
-    # the orbit's own measure): carried only by the landmarks round them, they were pulled down with the eye, every
-    # face's brows a quarter to a third nearer its eyes than its portrait's (the clay's eyes open less than the
-    # photographs'). (FACE_BROW_PIN=0: as before.)
-    if os.environ.get("FACE_BROW_PIN", "1") != "0":
-        add_s, add_d = [], []
-        for ring, (c0, c1) in ((BROW_A, (33, 133)), (BROW_B, (263, 362))):
-            def frame(P):
-                o = (P[c0] + P[c1]) / 2
-                e1 = P[c1] - P[c0]
-                w = np.linalg.norm(e1)
-                e1 = e1 / w
-                return o, e1, np.array([-e1[1], e1[0]]), w
-            o_r, e1_r, e2_r, w_r = frame(pts["ref"])
-            o_d, e1_d, e2_d, w_d = frame(pts["drawn"])
-            for b in ring:
-                d = pts["ref"][b] - o_r
-                u, v = d @ e1_r / w_r, d @ e2_r / w_r
-                add_s.append(o_d + w_d * (u * e1_d + v * e2_d))
-                add_d.append(pts["ref"][b])
-        src, dst = np.vstack([src, add_s]), np.vstack([dst, add_d])
-        moved = np.array(add_s) - pts["drawn"][BROW_A + BROW_B]
-        print("BROWS pinned to the reference's place over each eye: %.1f px from where the clay has them (mean), %.1f up" % (
-            np.linalg.norm(moved, axis=1).mean(), -moved[:, 1].mean()))
-    tps = RBFInterpolator(src, dst, kernel="thin_plate_spline", smoothing=2.0)
+    # (the warp's own points: from the drawing to the reference; `src` stays the reference's picture)
+    p_from, p_to = pts["drawn"][use], pts["ref"][use]
+    # Her brows pinned toward where the reference has them against each eye (in eye widths from the middle of its
+    # corners, the orbit's own measure): carried only by the landmarks round them, they were pulled down with the eye,
+    # every face's brows a quarter to a third nearer its eyes than its portrait's. Pinned with them, by the same
+    # measure, the forehead just over them and the lid's crease under them (MediaPipe's guesses on her clay too):
+    # the brows pinned alone were pulled up against those guessed points and the reference's brows folded into
+    # vertical streaks (Sunborn's, stretched twelve to twenty-five times over a band). FACE_BROW_PIN is how far, from
+    # where the clay has them (0, as before: the brows left out) to the reference's place (1).
+    pin = float(os.environ.get("FACE_BROW_PIN", "1"))
+    if pin > 0:
+        zone, at = brow_zone(pts["drawn"], pts["ref"], pin)
+        keep = np.setdiff1d(use, zone)
+        p_from, p_to = np.vstack([pts["drawn"][keep], at]), np.vstack([pts["ref"][keep], pts["ref"][zone]])
+        brows = np.isin(zone, BROW_A + BROW_B)
+        print("BROWS pinned %.2f of the way to the reference's place over each eye, with %d landmarks round them: %.1f px "
+              "up (mean)" % (pin, len(zone) - brows.sum(), -(at[brows] - pts["drawn"][zone[brows]])[:, 1].mean()))
+    tps = RBFInterpolator(p_from, p_to, kernel="thin_plate_spline", smoothing=2.0)
     step = 8
     gy, gx = np.mgrid[0:DRAW:step, 0:DRAW:step]
     g = tps(np.c_[gx.ravel(), gy.ravel()].astype(float)).reshape(gx.shape + (2,))
@@ -471,6 +463,33 @@ LIP_RING = [61, 185, 40, 39, 37, 0, 267, 269, 270, 409, 291, 375, 321, 405, 314,
 NOSTRILS = [98, 64, 48, 115, 220, 45, 4, 275, 440, 344, 278, 294, 327, 2]
 
 
+def brow_zone(drawn, ref, frac):
+    """Each eye's brow and the landmarks round it (from just over the lid's crease to a little over the brow's top,
+    across the brow's length), and where they go on the drawing: `frac` of the way from where MediaPipe has them on
+    the clay to where the reference has them against that eye (its frame: the middle of its corners, along them, and
+    its width). Rows from the top, as MediaPipe gives them."""
+    def frame(P, c0, c1):
+        o = (P[c0] + P[c1]) / 2
+        e1 = P[c1] - P[c0]
+        w = np.linalg.norm(e1)
+        e1 = e1 / w
+        return o, e1, np.array([e1[1], -e1[0]]) * (1 if e1[0] > 0 else -1), w       # (e2 up her face)
+    zone, at = [], []
+    for ring, (c0, c1) in ((BROW_A, (33, 133)), (BROW_B, (263, 362))):
+        o_r, e1_r, e2_r, w_r = frame(ref, c0, c1)
+        o_d, e1_d, e2_d, w_d = frame(drawn, c0, c1)
+        uv = np.c_[(ref - o_r) @ e1_r / w_r, (ref - o_r) @ e2_r / w_r]
+        top, span = uv[ring, 1].max(), uv[ring, 0]
+        near = np.where((uv[:, 1] > 0.42) & (uv[:, 1] < top + 0.32) & (uv[:, 0] > span.min() - 0.15) & (uv[:, 0] < span.max() + 0.15))[0]
+        for j in sorted(set(near) | set(ring)):
+            if j in zone:
+                continue                                  # (one place for a landmark both eyes' zones reach)
+            u, v = uv[j]
+            zone.append(j)
+            at.append(drawn[j] + frac * (o_d + w_d * (u * e1_d + v * e2_d) - drawn[j]))
+    return np.array(zone), np.array(at)
+
+
 def front_features():
     """Where the reference laid on the front has its features (its brows, its eyes with their lids and lashes, its
     lips), in the front's pixels (rows from the bottom, as load() gives them), 0 to 1, soft at the edge. There the
@@ -589,12 +608,17 @@ def tint_to(src, ref, m):
 
 
 def free():
-    """The shared GPU given back (the server answers with nothing)."""
+    """The shared GPU given back (the server answers with nothing). (No server running, as in a run that painted
+    nothing with Krea: nothing to give back.)"""
     import json
+    import urllib.error
     import urllib.request
     req = urllib.request.Request(comfy.URL + "/free", data=json.dumps({"unload_models": True, "free_memory": True}).encode(),
                                  headers={"Content-Type": "application/json"})
-    urllib.request.urlopen(req).read()
+    try:
+        urllib.request.urlopen(req, timeout=10).read()
+    except (urllib.error.URLError, OSError):
+        print("FREE: no ComfyUI to free")
 
 
 if __name__ == "__main__":

@@ -19,8 +19,11 @@ public partial class HerFaceLife : Node
     public Vector2 Look;
     /// <summary>How far her eyes wander round it.</summary>
     public float Wander = 0.13f;
-    /// <summary>Her lids held (1 shut, 0 open) by a cinematic, or null: she blinks on her own.</summary>
+    /// <summary>Her lids held (1 shut, 0 open at rest) by a cinematic, or null: she blinks on her own.</summary>
     public float? Lids;
+    /// <summary>Where her upper lids rest when open (0 wide to 1 shut): her face's own (Lore's faces, People.HerFaceKey).
+    /// A blink and a held lid run from it to shut.</summary>
+    public float Rest;
 
     /// <summary>Her eyes jump to where she is looking now (a cinematic's saccade), not at their next rest.</summary>
     public void Snap() => nextLook = t;
@@ -53,7 +56,7 @@ public partial class HerFaceLife : Node
         // --open-eyes: a still of her face with her lids up and her eyes ahead
         // (a blink caught in a still read as a face with its eyes shut).
         if (Args.Has("open-eyes")) { Lids = 0; Wander = 0; }
-        // --lids X: her lids held so far down (0 open, 1 shut), for pictures of a lid at rest tried.
+        // --lids X: her lids held so far down (0 at rest, 1 shut), for pictures of a lid tried.
         if (Args.Has("lids")) Lids = Args.Num("lids", 0);
         // --eyecycle paint,#rrggbb,...: her irises dyed each in turn, one a picture
         // (--seconds, then every --every): the eye shader's colours measured as
@@ -114,6 +117,9 @@ public partial class HerFaceLife : Node
                 nextBlink = t + (twice ? 0.08 : rng.RandfRange(2.0f, 6.0f));
             }
         }
+        // (from her lids' rest to shut; --rest-lid X tries another rest)
+        float rest = Args.Has("rest-lid") ? Args.Num("rest-lid", 0) : Rest;
+        shut = rest + (1 - rest) * shut;
         foreach (var (mi, l, r) in lids)
         {
             if (l >= 0) mi.SetBlendShapeValue(l, shut);
