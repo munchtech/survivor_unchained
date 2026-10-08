@@ -63,6 +63,6 @@ Turned 40 degrees, blended hair: 0.15 to 1.44% (long +40 is worst). TAA turned: 
 
 ## Collaborators
 
-Main session (reports, owner decisions). Face lead abe65bc929823a791: owns the hair; agreed the switch; won't touch `heroine_hair.gdshaderinc`, `heroine_hair.py` or `People.Hair()` this wave; is changing the lash paint and the "lashes" case (keep the blend in `HairDraw.Cards`); will sort cards per layer by distance from her scalp (inner first) in the hair pass. Animation ae2a9884e3e51609c; outfits a1f120018d8749c97.
+Main session (reports, owner decisions). Face lead abe65bc929823a791: owns the hair; agreed the switch; won't touch `heroine_hair.gdshaderinc`, `heroine_hair.py` or `People.Hair()` this wave; is changing the lash paint and the "lashes" case (keep the blend in `HairDraw.Cards`); will sort cards per layer by distance from her scalp (inner first) in the hair pass. The face lead also handed off (`docs/handoff/face.md` on worktree-agent-abe65bc929823a791 @ bf18266a): judging our `c1_look_*` sheets at 1:1 is their step 2, and their successor will answer ours. A new hand-painted lash texture (soft tips, no 0.35 cut) can be tried on the blended path with `--lashes PATH` (People.TryFile); `tools/assets/heroine_lashes.py` writes it. Animation ae2a9884e3e51609c; outfits a1f120018d8749c97.
 
 HANDOFF READY: docs/handoff/performance.md on worktree-agent-a7afb4d33cdd5efba (code 3adef6a8; this page is in the branch head)
