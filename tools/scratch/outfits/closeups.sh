@@ -3,8 +3,8 @@
 # out in $CU (default scratchpad hs/cu)/<name>.png. Run while holding a Godot turn
 # (TURN=1 takes and gives one itself). POSE=<clip> for a pose other than Idle; EXTRA="K=V ..."
 # passes more lookdev settings (FRAMES, NOJIGGLE= to turn jiggle on, and so on).
-WT=/c/Users/munch/Desktop/survivorsunchained/.claude/worktrees/agent-afb34c385770877d3
-S=/c/Users/munch/AppData/Local/Temp/claude/C--Users-munch-Desktop-survivorsunchained/74e72383-70c7-41d5-8e96-2fad2ed58481/scratchpad/hs
+WT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)"  # (this worktree)
+S="${OSCR:?set OSCR, the outfits scratch folder}/hs"
 T="python /c/Users/munch/Desktop/survivorsunchained/tools/turn.py"
 W="outfits lead: close-ups"
 [ -n "$TURN" ] && { until $T take godot "$W" --wait 60 >/dev/null 2>&1; do :; done; }

@@ -3,8 +3,8 @@
 # no outfit: they must read back), tuckcalib (each outfit's tucked skin), fp (each outfit
 # without codes: nothing may read as a code).   bash calib.sh <tag>
 TAG="$1"
-WT=/c/Users/munch/Desktop/survivorsunchained/.claude/worktrees/agent-afb34c385770877d3
-L=/c/Users/munch/AppData/Local/Temp/claude/C--Users-munch-Desktop-survivorsunchained/74e72383-70c7-41d5-8e96-2fad2ed58481/scratchpad/legal
+WT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)"  # (this worktree)
+L="${OSCR:?set OSCR, the outfits scratch folder}/legal"
 T="python /c/Users/munch/Desktop/survivorsunchained/tools/turn.py"
 N="outfits lead: motion check calibration ($TAG)"
 until $T take godot "$N" --wait 60 >/dev/null 2>&1; do :; done

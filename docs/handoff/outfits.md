@@ -1,60 +1,43 @@
 # Handoff: the heroine's body and outfits
 
-From the first outfits lead (su-lead-max), 6 October 2026, wound down for usage. Read `docs/team/README.md`, `RESUME.md` and `OWNER_NOTES.md` first, then this page, then `docs/team/outfits.md`.
+From the second outfits lead (su-lead-max), 7 October 2026, handed off at about 292k. Read `docs/team/README.md`, `RESUME.md` and `OWNER_NOTES.md` first, then this page, then `docs/team/outfits.md`. **Never read a whole file**: `heroine_outfits.py` is 4,000 lines. Grep, then `sed -n` the lines you need.
 
 ## The owner's words and bar
-- "AAA", "never settle", "we are striving for perfection"; edges "perfectly cut and tailored professionally".
-- Sex appeal drives it, "tho not at the cost of looking bad"; 18+. Full cups with "massive cleavage" are fine; the Reaver stays near-naked with underboob.
-- Coverage: "pixel perfect no extra stuff hidden at all. none. not even a few pixels"; "showing as much as we possibly can". Holes and see-through are "really distracting and bad". Fit means **tighter, not bigger**. There were never genital issues.
-- Distance: "at anything other than max zoom keep boobs and butts hd".
-- Per-outfit notes are in memory (`costume-design-direction`).
+- "AAA", "never settle", "we are striving for perfection"; edges "perfectly cut and tailored professionally". Sex appeal drives it, "tho not at the cost of looking bad"; full cups with "massive cleavage" are fine; the Reaver stays near-naked with underboob.
+- Coverage: "pixel perfect no extra stuff hidden at all. none. not even a few pixels". Holes and see-through are "really distracting and bad". Fit means **tighter, not bigger** (except where the check's 2.4 cm strip is wider than a garment: then just wide enough). There were never genital issues.
 
 ## Brief (the coordinator's)
-The old handoff's "Open" list, worst first: pixel-perfect coverage (tighten, never enlarge), proven by the motion check; then tailoring (the Arcanist's boot cuffs as level bands, kinks at bindings, the Warden's cup slivers in motion); then distance appeal (with the rendering lead); then confirm the chest flake. Added by the coordinator: the Warden's pauldron rim shows a jagged white sparkle line at the Look close-up (face lead's sheet `docs/team/face_sheets/v12_breast_speckle.jpg`).
+Build `outfits-lead-wip`, run the motion check on all four outfits against the true baselines, keep only what passes at 1:1 in motion. Bind pauldron_l's rim. Keep `--helpers` off until the animation lead (ae2a9884e3e51609c) has verified the helper bones; then rebuild with them and rerun the check (the coordinator relays).
 
-## Working setup (works; reuse it)
-- Worktree `agent-afb34c385770877d3`, branch `worktree-agent-afb34c385770877d3`. Its Godot import is a copy of main's `godot/.godot` plus main's `*.import`/`*.uid` sidecars (godot and public/assets), so nothing re-imports; `godot/assets` is a junction to the worktree's `public/assets`, hidden with `git update-index --skip-worktree`. The sidecars show as line-ending churn: never commit them; stage explicit paths only.
-- Scripts in `tools/scratch/outfits/` (repoint paths): `turn_build.sh` (build in turns: Blender then Godot import and sheets), `dry_build.sh` (build into a scratch folder: logs, no worktree change), `closeups.sh`, `run_outfit.sh <outfit> <tag> [clips]` (the check against the worktree), `calib.sh`, `clean.sh` (the check's frames rendered clean, to read a flagged frame), `bisect.sh` and `sparkle.sh` (render switches), `bindiff.py`, `nrmcheck.py`, `glbread.py`/`tips4.py`/`tunnel.py`/`roof.py` (offline body analysis).
-- The build takes 6 min in Blender. It reproduces heroine.glb byte for byte; the outfits differ only by UV float noise and 30 gold-trim triangles. A full check of one outfit is 6 min plus the count.
+## Setup
+- My scratch folder (`SO` below): `C:\Users\munch\AppData\Local\Temp\claude\C--Users-munch-Desktop-survivorsunchained\0b33992d-1e38-4eb8-80a1-d5c23b1a44e6\scratchpad\outfits\`: `setup_wt.ps1`, `cu_bind.txt`, `loops.py`, `dedup.py`, `refilter.py`, `hs/outfits.log` (the WIP build's log) and `hs/cost/sheet_<outfit>.png` (its turntables, not yet looked at).
+- A new worktree: `godot/assets` as a junction to its `public/assets` (`git update-index --skip-worktree godot/assets`), then robocopy main's `godot/.godot` and main's `*.import`/`*.uid` sidecars (godot, not through the junction, and public/assets): `SO\setup_wt.ps1` (repoint `$WT`). Never commit the sidecars (line-ending churn).
+- `tools/scratch/outfits/*.sh` now find their worktree themselves and take the scratch folder from `OSCR` (e.g. `OSCR=<scratchpad>/outfits bash tools/scratch/outfits/turn_build.sh`). Copy `tools/comfy/out/heroes/heroine_built.blend` (main checkout) to `$OSCR/hs/` first. **The session scratchpad is shared with other agents: keep yours in a subfolder.**
+- New: `compare.py <base> <new>` (per outfit: strip and areola frames, any pixel and 6+, worst frames, tucked-skin frames); `xsection.py <heroine.glb> <outfit.gltf> <png> y,y,y` (cross-sections at the crotch, Blender axes).
+- True baselines are in the first lead's scratchpad: `.../74e72383-70c7-41d5-8e96-2fad2ed58481/scratchpad/legal/base1/<outfit>/` (read-only; compare against it).
 
-## The motion check was blind; fixed (4934a39e, then this branch)
-- From face v10 her skin shader has its own light(); the check appended its codes inside it, the shader failed, and every count read 0. Codes now go at the end of fragment(), and lamps can't tint coded pixels.
-- Its nipple search took a lump low on her right breast on the v11 body. Areolas are now found from her paint (centres level within 0.2 cm; the log warns if not).
-- `DUMP=1` dumps each frame's posed body and outfit; `posed.py <dump> <view> <channel> <coded png>` casts rays through the coded pixels: skin hit first with a garment 1 to 4 mm behind means through it, and nothing behind means past its edge.
-- `count.py` still counts render artefacts: pure (0, 0, 255) pixels (red under 30 is impossible for real skin at her mesh spacing). Add an isolation filter.
+## Done (branch `worktree-agent-a1f120018d8749c97`)
+- `count.py`: a lone pixel reading the very tip (red under 30) with no neighbour within 5 mm is dropped as a render artefact. On base1 it removes only the 0.00 cm pixels (Warden 18 to 8 areola frames, Stalker 8 to 6; Arcanist and Reaver unchanged).
+- Baselines with that filter (frames: strip any px (6+ px), worst; areola frames; tucked seen 6+): Warden 47 (37), 46 px; 8; 12. Arcanist 603 (362), 247 px (vault_below_10); 7; 22. Stalker 84 (11), 52 px; 6; 148 (1,718 px in chain_haul_left_08: the corset's crotch parts from her and the tucked skin shows). Reaver 31 (17), 59 px; 4 (4 px); 5.
+- The remaining 1 px "areola" hits at 0.87 to 0.96 cm (Arcanist and Stalker, identical frames) are the sculpted nipple bump (8 to 9 mm above the paint's centre) coming through the cup.
 
-## True baselines (v11 body, corrected check, before any fix)
-- **Reaver:** areola 1 to 4 px on her right breast at 45° in vault_back, chain_haul, bull_rush (to 0.96 cm from centre). Strip up to 59 px (chain_haul), 53 (side), 28 to 32 (vault_back from below), 5 to 17 (chain_strike), 1 to 9 (death_back).
-- **Warden:** its "nipple-tip pokes" are not real: they were MSAA artefacts on steel (fixed). A 1 px rim at 45° in chain_haul (2.03 to 2.19 cm). Strip 46 and 29 (chain_haul), 6 to 21 (chain_strike), 15 to 25 (death_back from above), 8 to 10 (sit_log), 8 to 13 (vault_back below).
-- **Arcanist:** strip in 362 frames, up to 41 px (axe and axes clips, from below and at 45°). A 1 px nipple poke at the cup's outline in five frames (also in the Stalker's).
-- **Stalker:** strip in 11 frames; the same 1 px nipple poke.
-- At rest, all strips are covered, with 4.4 to 7.5 mm to bare skin: every strip exposure happens in motion.
-
-## Causes found
-- **Reaver band:** each row lay on the convex hull of a 2 cm slice of her chest, so the rows above her nipple stood 5 to 20 mm off her upper breast; side cameras saw in behind it.
-- **Strips:** gussets and back strings are ribbons, which never tuck the skin under them and take one averaged weight across their width. Skin pokes 1 to 4 mm through them as her thighs move (chain_haul), or slips out beside the back string (2.2 cm, against a 2.4 cm strip) in vault_back. The Warden's and Reaver's gussets hang about 6 mm under her (`roof_path` lowers 3 mm, then the ribbon lifts 3 mm more). The Arcanist's V is 1.9 cm wide at her crotch, narrower than the strip.
-- **Nipple pokes (Arcanist, Stalker):** under a raised cup the nipple tip is tucked only partly (proximity tuck); in motion it reaches the outline by 1 px.
-- **Sparkles:** MSAA shades silhouette samples with values carried past the triangle: a normal of no length or facing away, attributes out of range. Fixed in `heroine_outfit.gdshader` (5 to 0 in a test set). One TAA out-of-gamut pixel remains (chest view, a gold edge against the background): that's the rendering lead's.
-- **Warden left pauldron:** the build log says "BOUND warden.pauldron_l 2 edge loops" with no binding made. Both loops were rejected in `bind_edges`, so its rim is a raw jagged cut, which is the jagged white line on the face lead's sheet. Its inner edge also crumples at the armpit, and its brushed streaks read as scanlines up close.
-
-## In progress: branch `outfits-lead-wip` (heroine_outfits.py only; built once, then edited: build and check before merging)
-- `bandeau()`: rows from her exact section at their own height (`section()`). Offline, the band now sits within 1 mm of her over the areolas.
-- A coverage report after every build (`COVER ...` lines): the check's strip and areolas at rest, skin tucked as drawn, bare count and margin. Moved after the hide pass; not yet run there.
-- `ribbon(hides=, follow=, flare=)` added but not yet used by any call. Next: gussets `hides=True, follow=True` and lift about 1 mm (roof_path lift 1 mm, ribbon lift 0); back strings `hides=True, flare=(gusset width, 0.03)`; the Arcanist's V and `exact()` half-width 0.0095 to about 0.0145.
-- `bind_edges` prints `UNBOUND` with the reason for each rejected loop (for pauldron_l).
-- Not started: the nipple bump under any covering piece tucked fully (h = 1) in the hide pass.
+## Half-done: branch `outfits-lead-wip2` (heroine_outfits.py only; built once in my worktree, not yet checked in motion or seen)
+1. **Rims bound** (`weld` now calls `cancelled()`: triangles the weld folded onto the same three points cancel by winding). Before, they broke the rim walk and `bind_edges` left the rim as cut: warden pauldron_l (the jagged line), vambrace_l, sabaton_r, arcanist corset, gloves, stalker bracer_r, reaver bootfur_r. All now bound; **look at them at 1:1** (close-up list: `scratchpad/outfits/cu_bind.txt`, for `closeups.sh`). Still unbound: `ranger.pauldron1` (3 broken loops, 123 to 138 mm jumps: another fault; `DUMP=ranger.pauldron1 TEMP=<folder>` on a dry build, then `scratchpad/outfits/loops.py` and `dedup.py`), `ranger.glove_l` (2 small), `reaver.cape` (one 24 mm step).
+2. From the first lead: Reaver band rows from her exact section (`section()`); `COVER` lines after every build; `UNBOUND` lines with the reason.
+3. Gussets (Warden, Reaver; the Arcanist's `crotch_bridge`): 1 mm under her, `hides=True, follow=True`, begun 6 mm up the cleft; back strings `hides=True, flare=(gusset width, 0.03)`; the Arcanist's V foot 0.0095 to 0.0145 half-width in both `w` and `exact()`.
+4. Each nipple's bump (proud of `P_FILLED`, within 1.2 cm of `NIPPLE`) tucked fully under any covering piece (grep `bump =`).
+- **COVER at rest got worse:** Warden strip 1 of 244 points bare, Arcanist 2 (both at [-0.008, 0.024, 0.925]; before 0 bare, 7.4 and 4.4 mm margins); Reaver 0 bare but 3.5 mm (was 7.5). **Why** (`roof.py`, `xsection.py`): the top of the slot between her thighs is only 4 to 8 mm wide (at |x| = 4 mm the first skin seen from below is 15 to 59 mm lower). A flat gusset 1 mm under the midline crosses the slot's walls at |x| = 6 mm, and the walls' rounded shoulders below it (strip points: |N_x| < 0.7) are bare. Hung 6 mm low, it covered them along their normals but let skin through in motion.
+- **My plan for it:** make each gusset a conforming `piece()` over the strip region (|x| < 1.4 cm, |N_x| < 0.8, the strip's depth plus 1 cm either end, `slot=False`, lift 1 mm, bound, hiding), with the flared strings overlapping it; prove 0 bare and at least 2 mm margin with a dry build (`dry_build.sh <tag> --only warden`, 2.5 min), then build and run the full check (`NOIMPORT=1 OSCR=... bash tools/scratch/outfits/baseline.sh <tag> "reaver warden"` and the other pair in parallel, then `compare.py`).
 
 ## Next, in order
-1. Merge `outfits-lead-wip`, apply the ribbon calls above, build, read `COVER` and `UNBOUND`, and fix pauldron_l's loops. Import, then the full check of all four outfits. Iterate to zero, then the Warden's 1 px rim.
-2. Tailoring: the pauldron (bound rim, the crumple at the armpit, finer brushing); the Reaver band's binding folds into a Z where the cleavage bridge meets each breast; the Arcanist's boot cuffs; the Warden's cup slivers. Tattoos are 0.2 mm pieces that tuck her skin under them (their edge ring shows): make them paint, or stop them hiding.
-3. Distance appeal, with the rendering lead.
-4. The chest flake: closed (not seen at 1:1 on v11 or v12 by the face lead or this lead; face handoff a54bfa4f).
+1. The gusset as above, then the full check against base1; keep what passes at 1:1 (look at `crops/` and `clean.sh` frames). Then the Stalker's chain_haul gap, the Warden's 1 px rim at 45° in chain_haul (2.03 to 2.19 cm), the Reaver's 1 to 4 px areola at 45°.
+2. Tailoring: the new bindings at 1:1; the pauldron's crumple at the armpit and its brushing (`heroine_outfit.gdshader` line ~127: level streaks 0.55 mm apart read as scanlines); the Reaver band's Z fold; the Arcanist's boot cuffs; the Warden's cup slivers; tattoos (0.2 mm pieces that tuck her skin: make them paint or stop them hiding).
+3. Distance appeal with the rendering lead. When animation sends the helper check: rebuild with `--helpers`, rerun the check.
 
 ## Gotchas
-- The isolation guard refuses shell commands with computed command names or variables in loops: put scripts in files and run `bash file`.
-- A Godot import re-imports any `.import` whose bytes changed (LF against CRLF counts).
-- `OUTFIT=warden_steel` in lookdev attaches one material's mesh; `HIDE` can't reach outfit pieces.
-- The animation lead's helper bones (heroine_rig.py, HerJoints.cs; worktree-agent-a9a80800a7dae2519@20bd5dc1) are inert unless the build is passed `--helpers`, so merging them changes nothing. Never pass `--helpers` until their successor sends the garment-against-skin weight check (docs/handoff/animation.md).
+- The worktree guard refuses shell commands with variables in loops, heredocs near git, or `sed -i` on a glob: write a script file and run it. `heroine_outfits.py` has CRLF endings (the Edit tool copes; Python string replaces need `\r\n`).
+- `DUMP=<piece,...>` writes npz files to `$TEMP`: set `TEMP` to a folder for that one command (turn.py keeps its state in `~/.su_turns`, so it is unaffected).
+- `BOUND x n of m edge loops` now counts only bound loops.
 
 ## Collaborators
-Face lead aed215ba3ca60cc29 (sculpt; v12 skin shader: no grain below the collarbones, SSS 0.1). Animation lead (wound down; its successor owes the garment-against-skin weight check). Rendering lead a20bdef993e00f26b (AA, distance appeal; owed the TAA pixel). The main session does refits.
+Animation lead ae2a9884e3e51609c (helpers, weights; you share the rig). Face lead abe65bc929823a791. Rendering lead a7afb4d33cdd5efba (owed: one TAA out-of-gamut pixel, Warden vault, chest view, frame 10). Reports go to the main session.

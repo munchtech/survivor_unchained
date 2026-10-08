@@ -45,6 +45,16 @@ def codes(im):
     tucked_near = (b >= 250) & (g >= 182) & (g <= 194)
     near = (b >= 250) & ((g <= 8) | tucked_near)
     dist = np.where(near, srgb_to_linear(r) / 0.9 * NEAR, np.inf)
+    # A lone pixel reading her very tip (red under 30: within 0.8 mm of the areola's centre)
+    # with no neighbour within 5 mm of it is a render artefact (a silhouette sample shaded
+    # with values carried past its triangle), not skin: skin that near the tip is seen as a
+    # patch, its neighbours a pixel's width (about a millimetre) further out.
+    ring = np.ones((3, 3), bool)
+    ring[1, 1] = False
+    lone = near & (r < 30) & (ndimage.minimum_filter(dist, footprint=ring, mode='constant', cval=np.inf) > 0.5)
+    near &= ~lone
+    tucked_near &= ~lone
+    dist[lone] = np.inf
     genital = (g >= 250) & (r <= 8) & (b <= 8)
     tucked = (g >= 250) & (b >= 250)
     depth = np.where(tucked, 1.0 - srgb_to_linear(r) / 0.9, 0.0)  # (a clipped white reads below 0)

@@ -4,8 +4,8 @@
 # One Godot turn per call, given back the moment the clips end. Pictures stay in the scratchpad
 # (they carry test tints and, for calib, her bare: never commit or share them).
 O="$1"; TAG="$2"; shift 2
-WT=/c/Users/munch/Desktop/survivorsunchained/.claude/worktrees/agent-afb34c385770877d3
-L=/c/Users/munch/AppData/Local/Temp/claude/C--Users-munch-Desktop-survivorsunchained/74e72383-70c7-41d5-8e96-2fad2ed58481/scratchpad/legal
+WT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)"  # (this worktree)
+L="${OSCR:?set OSCR, the outfits scratch folder}/legal"
 NAME="outfits lead: motion check, $O ($TAG)"
 TURN="python /c/Users/munch/Desktop/survivorsunchained/tools/turn.py"
 until $TURN take godot "$NAME" --wait 60 >/dev/null 2>&1; do :; done

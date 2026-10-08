@@ -1,11 +1,12 @@
 """Her underside across the strip at rest: for points along the strip (front to back), the
 height of her skin seen straight from below at each distance from her midline.
     python roof.py <heroine.glb>"""
+import os
 import sys
 
 import numpy as np
 
-sys.path.insert(0, 'C:/Users/munch/Desktop/survivorsunchained/.claude/worktrees/agent-afb34c385770877d3/tools/legal/motioncheck')
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..', 'legal', 'motioncheck'))
 from glbread import Body
 from posed import first_hits
 
