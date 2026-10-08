@@ -18,7 +18,7 @@ foreach ($id in $ids) {
     $src = if ($id -eq 'own') { "$in7\paintL" } else { "$in7\paint_$id" }
     $out = "$sc\${tag}_$id"
     if (-not (Test-Path $out)) { Copy-Item $src $out -Recurse }
-    Remove-Item "$out\marks_front.json" -ErrorAction SilentlyContinue
+    if (Test-Path "$out\marks_front.json") { Add-Type -AssemblyName Microsoft.VisualBasic; [Microsoft.VisualBasic.FileIO.FileSystem]::DeleteFile("$out\marks_front.json", 'OnlyErrorDialogs', 'SendToRecycleBin') }
     $env:FACE_SHAPE = if (Test-Path "$out\shape.json") { "$out\shape.json" } else { '' }
     $env:FACE_REF = if ($id -eq 'own') { "$s4\from_face3\refs_her\her_23.png" } else { "$s4\refs_front\$($pick[$id]).png" }
     & $B -b "$H\heroine_unpainted.blend" --python "$w\tools\assets\heroine_face.py" -- $out *> "$out\pin.log"

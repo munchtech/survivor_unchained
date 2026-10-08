@@ -24,7 +24,7 @@ foreach ($id in $ids) {
     foreach ($f in $fracs) {
         $out = "$sc\${tag}_${id}_$f"
         if (-not (Test-Path $out)) { Copy-Item $src $out -Recurse }
-        Remove-Item "$out\marks_front.json" -ErrorAction SilentlyContinue
+        if (Test-Path "$out\marks_front.json") { Add-Type -AssemblyName Microsoft.VisualBasic; [Microsoft.VisualBasic.FileIO.FileSystem]::DeleteFile("$out\marks_front.json", 'OnlyErrorDialogs', 'SendToRecycleBin') }
         $env:FACE_SHAPE = $shp
         $env:FACE_REF = if ($id -eq 'own') { "$s4\from_face3\refs_her\her_23.png" } else { "$s4\refs_front\$($pick[$id]).png" }
         $env:FACE_BROW_PIN = $f
