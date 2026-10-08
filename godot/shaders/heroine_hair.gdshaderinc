@@ -1,6 +1,10 @@
 // Her hair's shading, for heroine_hair.gdshader (cut to its strands by hashed
 // alpha), heroine_hair_coverage.gdshader (cut by a threshold moved every frame:
-// COVERAGE) and heroine_hair_soft.gdshader (blended: SOFT).
+// COVERAGE), heroine_hair_soft.gdshader (blended: SOFT), and the two blended
+// ways tried under FSR 2 (src/Actors/HairDraw.cs): heroine_hair_blend.gdshader
+// (blended over a depth prepass of its solid parts: BLEND), and
+// heroine_hair_core.gdshader (its solid parts drawn opaque: CORE) under
+// heroine_hair_over.gdshader (the whole drawn again over them, blended: OVER).
 
 uniform sampler2D strands : source_color, filter_linear_mipmap_anisotropic, repeat_enable;
 uniform vec3 colour : source_color = vec3(0.56, 0.17, 0.07);
@@ -39,6 +43,11 @@ uniform vec3 chain_then[8];
 #include "res://shaders/motion.gdshaderinc"
 #ifdef COVERAGE
 #include "res://shaders/coverage.gdshaderinc"
+#endif
+#ifdef CORE
+// (the share of a pixel a strand must cover to be drawn solid, its depth and
+// motion written: near 1, so the blended pass over it shows no edge)
+uniform float core_cut = 0.9;
 #endif
 
 varying vec3 strand;
@@ -92,8 +101,15 @@ void fragment() {
 		// (its root's blunt end softened; the baby hairs at her hairline faint: its vertex alpha)
 		cover = t.a * smoothstep(0.0, 0.012, along) * COLOR.a;
 	}
-#if defined(SOFT)
+#if defined(SOFT) || defined(OVER)
 	ALPHA = cover;
+#elif defined(BLEND)
+	// (its shadow cut at half cover: as much shadow as hashed alpha cast on
+	// average, and still; Godot's prepass would cast all over a tenth)
+	ALPHA = IN_SHADOW_PASS ? step(0.5, cover) : cover;
+#elif defined(CORE)
+	ALPHA = cover;
+	ALPHA_SCISSOR_THRESHOLD = IN_SHADOW_PASS ? 0.5 : core_cut;
 #elif defined(COVERAGE)
 	// (cut by a threshold moved every frame: coverage.gdshaderinc)
 	if (cover < coverage_cut(FRAGCOORD.xy)) discard;

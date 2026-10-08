@@ -1,0 +1,36 @@
+# Cycle 1: her hair under FSR 2 at native (sharpening off), hashed today against blended
+# (--hair-draw blend: depth prepass; two: solid core, blended over), against today's TAA with MSAA 4x.
+# The Look, ponytail, 1080: today, FSR 2 hashed, FSR 2 blended both ways
+c1_lp_taa | 1920x1080 | 164 | --new --sex female --step 1 --part 1 --open-eyes --hair ponytail --shot c1_lp_taa --seconds 8 --every 0.006 --count 6
+c1_lp_fsr | 1920x1080 | 164 | --new --sex female --step 1 --part 1 --open-eyes --hair ponytail --aa fsr2 --fsr-sharpness 2.0 --shot c1_lp_fsr --seconds 8 --every 0.006 --count 6
+c1_lp_fb | 1920x1080 | 164 | --new --sex female --step 1 --part 1 --open-eyes --hair ponytail --aa fsr2 --fsr-sharpness 2.0 --hair-draw blend --shot c1_lp_fb --seconds 8 --every 0.006 --count 6
+c1_lp_ft | 1920x1080 | 164 | --new --sex female --step 1 --part 1 --open-eyes --hair ponytail --aa fsr2 --fsr-sharpness 2.0 --hair-draw two --shot c1_lp_ft --seconds 8 --every 0.006 --count 6
+# The Look, long (loose), 1080
+c1_ll_taa | 1920x1080 | 164 | --new --sex female --step 1 --part 1 --open-eyes --hair long --shot c1_ll_taa --seconds 8 --every 0.006 --count 6
+c1_ll_fb | 1920x1080 | 164 | --new --sex female --step 1 --part 1 --open-eyes --hair long --aa fsr2 --fsr-sharpness 2.0 --hair-draw blend --shot c1_ll_fb --seconds 8 --every 0.006 --count 6
+c1_ll_ft | 1920x1080 | 164 | --new --sex female --step 1 --part 1 --open-eyes --hair long --aa fsr2 --fsr-sharpness 2.0 --hair-draw two --shot c1_ll_ft --seconds 8 --every 0.006 --count 6
+# The Look turned 40 degrees either way (where the cards' order shows first)
+c1_lpr_taa | 1920x1080 | 164 | --new --sex female --step 1 --part 1 --open-eyes --hair ponytail --turn 40 --shot c1_lpr_taa --seconds 8 --every 0.006 --count 4
+c1_lpr_fb | 1920x1080 | 164 | --new --sex female --step 1 --part 1 --open-eyes --hair ponytail --turn 40 --aa fsr2 --fsr-sharpness 2.0 --hair-draw blend --shot c1_lpr_fb --seconds 8 --every 0.006 --count 4
+c1_lpl_fb | 1920x1080 | 164 | --new --sex female --step 1 --part 1 --open-eyes --hair ponytail --turn -40 --aa fsr2 --fsr-sharpness 2.0 --hair-draw blend --shot c1_lpl_fb --seconds 8 --every 0.006 --count 4
+c1_llr_taa | 1920x1080 | 164 | --new --sex female --step 1 --part 1 --open-eyes --hair long --turn 40 --shot c1_llr_taa --seconds 8 --every 0.006 --count 4
+c1_llr_fb | 1920x1080 | 164 | --new --sex female --step 1 --part 1 --open-eyes --hair long --turn 40 --aa fsr2 --fsr-sharpness 2.0 --hair-draw blend --shot c1_llr_fb --seconds 8 --every 0.006 --count 4
+c1_lll_fb | 1920x1080 | 164 | --new --sex female --step 1 --part 1 --open-eyes --hair long --turn -40 --aa fsr2 --fsr-sharpness 2.0 --hair-draw blend --shot c1_lll_fb --seconds 8 --every 0.006 --count 4
+# The Look at 1440
+c1_lp14_taa | 2560x1440 | 164 | --new --sex female --step 1 --part 1 --open-eyes --hair ponytail --shot c1_lp14_taa --seconds 8 --every 0.006 --count 6
+c1_lp14_fb | 2560x1440 | 164 | --new --sex female --step 1 --part 1 --open-eyes --hair ponytail --aa fsr2 --fsr-sharpness 2.0 --hair-draw blend --shot c1_lp14_fb --seconds 8 --every 0.006 --count 6
+# Her run in play, 1440: today, FSR 2 hashed, FSR 2 blended both ways
+c1_run_taa | 2560x1440 | 164 | --quick warden --sex female --zone verge --time day --auto across --shot c1_run_taa --seconds 9 --every 0.006 --count 10
+c1_run_fsr | 2560x1440 | 164 | --quick warden --sex female --zone verge --time day --auto across --aa fsr2 --fsr-sharpness 2.0 --shot c1_run_fsr --seconds 9 --every 0.006 --count 10
+c1_run_fb | 2560x1440 | 164 | --quick warden --sex female --zone verge --time day --auto across --aa fsr2 --fsr-sharpness 2.0 --hair-draw blend --shot c1_run_fb --seconds 9 --every 0.006 --count 10
+c1_run_ft | 2560x1440 | 164 | --quick warden --sex female --zone verge --time day --auto across --aa fsr2 --fsr-sharpness 2.0 --hair-draw two --shot c1_run_ft --seconds 9 --every 0.006 --count 10
+# Her run at 1080
+c1_r10_taa | 1920x1080 | 164 | --quick warden --sex female --zone verge --time day --auto across --shot c1_r10_taa --seconds 9 --every 0.006 --count 10
+c1_r10_fb | 1920x1080 | 164 | --quick warden --sex female --zone verge --time day --auto across --aa fsr2 --fsr-sharpness 2.0 --hair-draw blend --shot c1_r10_fb --seconds 9 --every 0.006 --count 10
+# Still camera (the world's shimmer)
+c1_idle_taa | 2560x1440 | 164 | --quick warden --sex female --zone verge --time day --auto idle --shot c1_idle_taa --seconds 8 --every 0.006 --count 10
+c1_idle_fb | 2560x1440 | 164 | --quick warden --sex female --zone verge --time day --auto idle --aa fsr2 --fsr-sharpness 2.0 --hair-draw blend --shot c1_idle_fb --seconds 8 --every 0.006 --count 10
+# The see-through: the Waystation house and the Verge's trees, FSR 2 blended
+c1_house_fb | 2560x1440 | 164 | --quick warden --sex female --zone waystation --time day --at 9,25.6 --auto idle --aa fsr2 --fsr-sharpness 2.0 --hair-draw blend --shot c1_house_fb --seconds 4
+c1_trees_fb | 2560x1440 | 164 | --quick warden --sex female --zone verge --time day --at -137,14.5 --auto across --aa fsr2 --fsr-sharpness 2.0 --hair-draw blend --shot c1_trees_fb --seconds 1 --every 0.05 --count 30
+c1_house_dbg | 2560x1440 | 164 | --quick warden --sex female --zone waystation --time day --at 9,25.6 --auto idle --aa fsr2 --fsr-sharpness 2.0 --hair-draw blend --see-debug --shot c1_house_dbg --seconds 4

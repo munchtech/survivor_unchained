@@ -163,15 +163,16 @@ public partial class HairSway : Node
         // (Its first frame has no last: it stood as it stands.)
         if (!drawn) { swayThen = sway; headThen = headAt; System.Array.Copy(swung, swungThen, 8); drawn = true; }
         for (int s = 0; s < mesh.Mesh.GetSurfaceCount(); s++)
-            if (mesh.GetSurfaceOverrideMaterial(s) is ShaderMaterial m)
-            {
-                m.SetShaderParameter(SwayName, sway);
-                m.SetShaderParameter(HeadName, headAt);
-                m.SetShaderParameter(ChainName, swung);
-                m.SetShaderParameter(SwayThenName, swayThen);
-                m.SetShaderParameter(HeadThenName, headThen);
-                m.SetShaderParameter(ChainThenName, swungThen);
-            }
+            if (mesh.GetSurfaceOverrideMaterial(s) is ShaderMaterial first)
+                foreach (var m in SurvivorUnchained.View.HairDraw.Passes(first))   // (a blended pass over its solid parts swings with them)
+                {
+                    m.SetShaderParameter(SwayName, sway);
+                    m.SetShaderParameter(HeadName, headAt);
+                    m.SetShaderParameter(ChainName, swung);
+                    m.SetShaderParameter(SwayThenName, swayThen);
+                    m.SetShaderParameter(HeadThenName, headThen);
+                    m.SetShaderParameter(ChainThenName, swungThen);
+                }
     }
 
     // The parameters' names made once: a string given where a name is wanted

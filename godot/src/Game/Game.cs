@@ -908,6 +908,7 @@ public partial class Game : Node, IZoneHost
     /// <summary>--probe: her smoothness across the screen, measured.</summary>
     MotionProbe? Probe;
     static readonly StringName ViewFromName = "view_from";
+    bool seeListed;
     /// <summary>How long the camera stays turned to a boss (Ev.Focus).</summary>
     double focusT;
 
@@ -991,7 +992,15 @@ public partial class Game : Node, IZoneHost
         // Where the game's camera stands, for the see-through window (shaders/kit.gdshader):
         // opened in this view only, never in a light's.
         if (GetViewport().GetCamera3D() is { } seen)
+        {
             RenderingServer.GlobalShaderParameterSet(ViewFromName, new Vector4(seen.GlobalPosition.X, seen.GlobalPosition.Y, seen.GlobalPosition.Z, 1));
+            // (--see-debug: what stands in the window, listed once the place has settled)
+            if (KitLook.SeeDebug && !seeListed && scene.Time > 2.5)
+            {
+                seeListed = true;
+                KitLook.Dump(scene, scene.HerDrawn + new Vector3(0, 1.1f, 0), seen.GlobalPosition);
+            }
+        }
         // The survivor's place on screen, for the health drawn under them; the prompt's thing; what matters off screen.
         if (Mode == "play" && Battle is { } fb2)
         {

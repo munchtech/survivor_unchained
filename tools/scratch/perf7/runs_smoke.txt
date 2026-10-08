@@ -1,0 +1,4 @@
+# Smoke test: the blended hair paths compile and draw; the see-through's debug tint and list
+s_look_blend | 1920x1080 | 164 | --new --sex female --step 1 --part 1 --open-eyes --hair ponytail --aa fsr2 --fsr-sharpness 2.0 --hair-draw blend --shot s_look_blend --seconds 6 --every 0.006 --count 2
+s_look_two | 1920x1080 | 164 | --new --sex female --step 1 --part 1 --open-eyes --hair ponytail --aa fsr2 --fsr-sharpness 2.0 --hair-draw two --shot s_look_two --seconds 6 --every 0.006 --count 2
+s_house_dbg | 2560x1440 | 164 | --quick warden --sex female --zone waystation --time day --at 9,25.6 --auto idle --aa fsr2 --fsr-sharpness 2.0 --hair-draw blend --see-debug --shot s_house_dbg --seconds 4
