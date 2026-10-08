@@ -768,6 +768,12 @@ def clip(f, pos, attr, tris):
 def weld(pos, attr, tris, r=0.0007):
     """Points closer than r made one (the cut leaves slivers by the vertices
     it passes close to); triangles that collapse are dropped."""
+    if os.environ.get("WELDDUMP"):  # SOLVER1 TEMP
+        global _WELD_N
+        _WELD_N = globals().get("_WELD_N", 0) + 1
+        _nm = sys._getframe(1).f_locals.get("name", sys._getframe(1).f_code.co_name)
+        np.savez(os.path.join(os.environ["WELDDUMP"], "weld_%04d_%s.npz" % (_WELD_N, _nm)), pos=pos, tris=tris, r=r,
+                 caller=sys._getframe(1).f_code.co_name, line=sys._getframe(1).f_lineno)
     parent = np.arange(len(pos))
 
     def find(i):
@@ -1832,6 +1838,7 @@ def piece(name, field, mkey, lift=0.003, thick=0.003, smooth=0, bevel=0.0012, tr
     # behind the slot between her thighs (`gap` is how far a point is out
     # of that box), and the two cut edges joined by a strip under her.
     gap = np.maximum.reduce([GAP_F - Y, Y - GAP_B, Z - GAP_Z, np.abs(X) - 0.07]) if bridge else np.ones(len(P))
+    dump(name, "0skin", P_FILLED if (dome or filled) else P, TRI, np.minimum(f, gap))  # SOLVER1 TEMP
     pos, at, tris = clip(np.minimum(f, gap), P_FILLED if (dome or filled) else P, np.hstack([attr, gap[:, None]]), TRI)
     if len(tris) == 0:
         print("EMPTY", name)
@@ -1871,6 +1878,7 @@ def piece(name, field, mkey, lift=0.003, thick=0.003, smooth=0, bevel=0.0012, tr
         dump(name, "3cut", pos, tris, at[:, -1])
     if not dome and not filled:
         pos = clear_of_skin(pos, lift if clear is None else clear)
+    dump(name, "3pre", pos, tris, at[:, -1])  # SOLVER1 TEMP
     # Every edge bound: in the trim's colour where one is asked, else in the
     # piece's own (a rolled hem). Sheer and painted pieces are left as cut.
     beads = []
