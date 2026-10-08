@@ -29,6 +29,15 @@ The one page of what's current. Every lead starts from the latest `claude/vigila
 - **Animation:** natural, correct motion; be sceptical; sign off per clip.
 - **The bar:** "we are striving for perfection". Improved isn't enough.
 
+## 7 October 2026, evening: stopped by the weekly limit (resets 10 October, 10pm Pacific). Restart here
+
+Wave 1 (four `su-lead-max` leads) handed off cleanly; all merged, 775 green, pushed (4a76f9f7). Their successors (`su-lead-high`, max judges) were cut off mid-step by the limit. **Nothing of theirs is merged or verified.** Each one's work-in-progress is committed (code and docs only; built art left in its worktree) and pushed on its own branch. **Restart each from its handoff page (current in integration), then merge its WIP branch first and pick up where it says:**
+1. **Face** (`worktree-agent-a6e8e6d0f539943bb`): eye shader and People.cs changes (lashes, resting lid, irises being shot). A max judge's verdict on rendering's c1 hair sheets went to rendering: blended hair is the direction; their side is side-hair mush (DOF, FSR depth), motion vectors and reactive mask, crown card order; ours is colour dilation (pale cheek ribbon, grey lash tips), hairline fine hairs, lock blocks, lashes. The brow pin A/B was shot and with a judge (verdict lost).
+2. **Outfits** (`worktree-agent-a4a8c84f9181d4acb`): gussets as skin-tight pieces (2a8981f8): 0 bare at rest, margins 3.9–7.4 mm, unverified; the motion check was running. Rerun it via a runner and judge.
+3. **Animation** (`worktree-agent-a8d33b2672b7be905`): the smooth-cut helper build was under way; rebuild and run the garment check (handoff step 1–2).
+4. **Rendering** (`worktree-agent-a6a04e32348559b6c`): the reactive-mask eraser (`--hair-erase`, erase shaders, HairDraw, People.Hair, KitLook) is built but untested; the c2 batch ran (its numbers are in the runner's output, tools/scratch/perf8/ if saved). Rerun c2 and judge.
+Then UI design and UI art. **Measure** the high-effort leads' token use per judged piece against wave 1 (README "Working lean").
+
 ## 6 October 2026, night: wound down (usage low); every lead handed off. Restart here
 
 All merged and pushed. **Every area restarts as a fresh successor from its handoff** (each lead passed about 500k). Brief them to read by section, not whole files (see memory, agent-token-handoffs).
