@@ -36,6 +36,7 @@ From the coordinator session that ran 3 to 6 October 2026. Read this after `docs
 - Usage: tokens are precious. Save everywhere it doesn't cost quality, and raise effort freely where it does.
 
 ## Starting fresh
+**Near a restart, don't start successors (the owner, 7 October).** Within about 50k of your 250k, or once a wrap-up is planned, a lead that hands off cleanly waits for the next coordinator: list it first in RESUME's restart order. A new coordinator can't reliably reach your agents, and a successor's ~50k onboarding would be wasted on a short stretch.
 The owner starts each new coordinator with the prompt in `docs/handoff/START.md`. Tell the owner in one line when it's time: at about 250k of your own context, at a new wave, or after a usage reset. Keep this page and RESUME current, so that a fresh start costs nothing extra.
 
 ## Wrapping up before a fresh start (always, before telling the owner it's time)

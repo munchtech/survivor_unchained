@@ -81,7 +81,7 @@ The main session keeps this current. It is the address list for SendMessage. Ret
 | Voice (paused by the owner: no placeholders; final voices from ElevenLabs later) | a501b387a90d78b4e | docs/team/voice.md |
 | Story and writing (the writer: the approved rewrite, Act 1 first) | — (handoff ready) | docs/team/story.md |
 | Combat, encounters, bosses, balance (paused; handoff ready at af6452e1) | — | docs/team/combat.md |
-| Animation (joints to perfection: wrists, follow-through, elbows, arms through body, sliding) | ae2a9884e3e51609c (wave 1, 7 Oct) | docs/team/animation.md |
+| Animation (joints to perfection: wrists, follow-through, elbows, arms through body, sliding) | a8d33b2672b7be905 (su-lead-high, 7 Oct) | docs/team/animation.md |
 | UI design (the HUD keystone; portraits wait on the face) | — (handoff ready) | docs/team/ui_design.md |
 | UI art (paused; handoff ready at cd0f4ab6) | — | docs/team/ui_art.md |
 | Crafting (research, design, build) (paused; handoff ready at ed429efb) | — | docs/team/crafting.md |
@@ -97,4 +97,4 @@ The main session keeps this current. It is the address list for SendMessage. Ret
 | Loot and itemisation (paused, built and merged; docs/handoff/loot.md for a successor) | — | docs/team/loot.md |
 | Creatures and models (our own boar first, then MODELS_TO_MAKE.md) | af551cacc6292152f | docs/team/creatures.md |
 | Story editor (paused after notes 02 at 435k; a fresh editor reads the next draft) | — | docs/story/EDITORIAL_LETTER.md |
-| Heroine body and outfits (now a lead of its own; was the main session's) | a1f120018d8749c97 (wave 1, 7 Oct) | docs/team/outfits.md |
+| Heroine body and outfits (now a lead of its own; was the main session's) | a4a8c84f9181d4acb (su-lead-high, 7 Oct) | docs/team/outfits.md |
