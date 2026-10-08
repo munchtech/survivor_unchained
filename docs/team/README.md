@@ -69,6 +69,7 @@ The week of 30 September to 7 October cost about US$6,000 at list price. Three t
   - **Solver:** a problem that resists one honest attempt (a root cause, a design call, a hard shader or rig fix) goes to a fresh max solver with a tight brief; it returns the answer or the fix.
   - **Authoring that is taste throughout** (story writing and editing, UI design briefs, the storybook cinematics' look) stays on `su-lead-max` as the lead itself.
   The main session measures each wave (tokens per finished piece) and reports the real saving.
+- **Always take the cheaper route that ends at the same quality (the owner, 7 October: "any drop in effort or even in agent ... is always worth it if we maintain the quality priority ... always").** Standing permission, no need to ask: pick the lowest effort and the smallest model that will reach the same result, and pass `effort` when you spawn (a trivial doc or roster edit can go to a worker at low effort; a pure wait or grep to Haiku). Any technique that saves tokens without costing quality is adopted at once and written here: smaller reads, shorter outputs, fewer pictures, cheaper stages. The opposite holds too: the moment quality is at risk, raise the effort or the model without asking. Taste and every look at a picture stay on Opus. Fable stays a last resort.
 - **The main session** starts fresh for each wave, stays under about 250k, merges, judges and escalates. A lead that is stuck after two honest attempts comes to the main session, which takes it at the top model.
 
 ## Roster
