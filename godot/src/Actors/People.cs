@@ -487,9 +487,11 @@ public static class People
                 m.AlphaScissorThreshold = 0.35f;
                 m.AlphaAntialiasingMode = BaseMaterial3D.AlphaAntiAliasing.AlphaToCoverageAndToOne;
                 m.CullMode = BaseMaterial3D.CullModeEnum.Disabled;
-                m.AlbedoColor = src.ResourceName == "brows" ? hair.Darkened(0.45f) : new Color(0.12f, 0.08f, 0.07f);
+                // (the lashes' own colour is in their paint, tools/assets/heroine_lashes.py: a dark brown, lighter
+                // toward the tips)
+                m.AlbedoColor = src.ResourceName == "brows" ? hair.Darkened(0.45f) : Colors.White;
                 if (src.ResourceName == "lashes")                  // (her lower lashes finer: tools/assets/heroine_eyes.py)
-                    m.AlbedoTexture = GD.Load<Texture2D>("res://art/people/head_tex/heroine_lashes.png");
+                    m.AlbedoTexture = TextureOrTry("res://art/people/head_tex/heroine_lashes.png", "lashes");
                 m.Roughness = 0.8f;
                 return Coverage.Cards(m);
             case "teeth" or "tongue":
@@ -748,6 +750,9 @@ public static class People
                 if (name.StartsWith("face_") && !name.EndsWith('+') && !name.EndsWith('-')) mi.SetBlendShapeValue(i, name == want ? 1f : 0f);
             }
         }
+        // (and her lids at that face's rest, as its portrait has them)
+        if (p.Skeleton.GetNodeOrNull<HerFaceLife>("HerFaceLife") is HerFaceLife life)
+            life.Rest = (float)(SurvivorUnchained.World.Lore.Her.Faces.FirstOrDefault(f => f.Id == (face is { Length: > 0 } ? face : "own"))?.Lid ?? 0);
     }
 
     /// <summary>Her head's painting for a face she started from (Lore.Her's
@@ -757,15 +762,35 @@ public static class People
     public static void HerHeadPaint(Person p, string? face)
     {
         p.FaceShape = face;
-        var file = HeadPaintFile(face);
+        var paint = HeadPaint(face);
         foreach (var mi in p.Meshes)
             for (int s = 0; mi.Mesh != null && s < mi.Mesh.GetSurfaceCount(); s++)
                 if (mi.Mesh.SurfaceGetMaterial(s)?.ResourceName == "skin_head" && mi.GetSurfaceOverrideMaterial(s) is ShaderMaterial skin)
-                    skin.SetShaderParameter("paint", file != null ? GD.Load<Texture2D>(file) : (mi.Mesh.SurfaceGetMaterial(s) as BaseMaterial3D)?.AlbedoTexture);
+                    skin.SetShaderParameter("paint", paint ?? (mi.Mesh.SurfaceGetMaterial(s) as BaseMaterial3D)?.AlbedoTexture);
     }
 
+    /// <summary>Her head's paint for a face (head_tex/heroine_head_ID.jpg); her own is heroine.glb's. (Her own from
+    /// head_tex/heroine_head.jpg, the same paint, would let it be laid again without a new glb: not yet seen in a
+    /// shot, so not yet.)</summary>
     static string? HeadPaintFile(string? face) =>
         face is { Length: > 0 } && ResourceLoader.Exists($"res://art/people/head_tex/heroine_head_{face}.jpg") ? $"res://art/people/head_tex/heroine_head_{face}.jpg" : null;
+
+    /// <summary>Her head's paint as a texture (HeadPaintFile). --head-paint PATH: a paint from any file instead, for
+    /// whichever face she wears, for pictures of a paint tried before it is laid in.</summary>
+    static Texture2D? HeadPaint(string? face) =>
+        TryFile("head-paint") ?? (HeadPaintFile(face) is string f ? GD.Load<Texture2D>(f) : null);
+
+    /// <summary>A texture of hers, or the file a developer's switch (--SWITCH PATH) names instead.</summary>
+    static Texture2D TextureOrTry(string res, string tryKey) => TryFile(tryKey) ?? GD.Load<Texture2D>(res);
+
+    /// <summary>The picture at the path a developer's switch names (--SWITCH PATH), mipmapped, or null.</summary>
+    static Texture2D? TryFile(string key)
+    {
+        if (SurvivorUnchained.Args.Get(key) is not string path || !System.IO.File.Exists(path)) return null;
+        var img = Image.LoadFromFile(path);
+        img.GenerateMipmaps();
+        return ImageTexture.CreateFromImage(img);
+    }
 
     static Shader? hairShader, hairSoftShader, eyeShader;
 
@@ -939,7 +964,7 @@ public static class People
         // (hers alone: his head's paint is laid out otherwise)
         if (src.ResourceName == "skin_head" && who == "heroine")
         {
-            if (HeadPaintFile(look.FaceShape) is string painted) m.SetShaderParameter("paint", GD.Load<Texture2D>(painted));
+            if (HeadPaint(look.FaceShape) is Texture2D painted) m.SetShaderParameter("paint", painted);
             m.SetShaderParameter("rough", 0.6f);
             m.SetShaderParameter("shine", 0.36f);
             // (her eyes, brows and lips deepened when her face is small on

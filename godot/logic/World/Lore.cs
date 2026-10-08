@@ -161,6 +161,9 @@ public sealed class FaceShape
     public string? Skin, Eyes;
     /// <summary>How freckled the face starts (0 none to 1 heavy), from its portrait.</summary>
     public double Freckles;
+    /// <summary>How far its upper lids rest down over its eyes (0 open to 1 shut), from its portrait: wide open, the
+    /// whole iris showed with white above it, and every face stared.</summary>
+    public double Lid;
     public Dictionary<string, double> Shape = new();
 }
 
