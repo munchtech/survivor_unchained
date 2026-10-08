@@ -31,4 +31,4 @@ For the next animation lead (`su-lead-max`). Read `docs/team/README.md` ("Workin
 ## 5. Read first
 `tools/anim/helpers.py` (`split`, `bulge`, `drive`), `godot/src/Actors/HerJoints.cs`, `tools/assets/heroine_rig.py` (`apply`), `tools/scratch/anim6/build_helpers.sh` and `shots1.sh`.
 
-HANDOFF READY: docs/handoff/animation.md on worktree-agent-ae2a9884e3e51609c@PENDING
+HANDOFF READY: docs/handoff/animation.md on worktree-agent-ae2a9884e3e51609c@332165d9
