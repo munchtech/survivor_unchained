@@ -4,8 +4,8 @@
 # shader is restored to hs/outfit_keep.gdshader afterwards.
 #   bash sparkle.sh <outdir> "<cam line: outfit angle camz dist targetz fov>" "<variant>" ...
 OUTD="$1"; CAM="$2"; shift 2
-WT=/c/Users/munch/Desktop/survivorsunchained/.claude/worktrees/agent-afb34c385770877d3
-S=/c/Users/munch/AppData/Local/Temp/claude/C--Users-munch-Desktop-survivorsunchained/74e72383-70c7-41d5-8e96-2fad2ed58481/scratchpad/hs
+WT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)"  # (this worktree)
+S="${OSCR:?set OSCR, the outfits scratch folder}/hs"
 T="python /c/Users/munch/Desktop/survivorsunchained/tools/turn.py"
 N="outfits lead: sparkle variants"
 G=/c/Users/munch/Desktop/Godot_v4.5.1-stable_mono_win64/Godot_v4.5.1-stable_mono_win64_console.exe

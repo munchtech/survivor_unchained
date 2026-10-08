@@ -3,8 +3,8 @@
 # log and compare its outputs with the committed ones without touching the worktree's art.
 #   bash dry_build.sh <tag> [extra args for heroine_outfits.py, e.g. --only reaver]
 TAG="$1"; shift
-WT=/c/Users/munch/Desktop/survivorsunchained/.claude/worktrees/agent-afb34c385770877d3
-S=/c/Users/munch/AppData/Local/Temp/claude/C--Users-munch-Desktop-survivorsunchained/74e72383-70c7-41d5-8e96-2fad2ed58481/scratchpad/hs
+WT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)"  # (this worktree)
+S="${OSCR:?set OSCR, the outfits scratch folder}/hs"
 D="$S/dry_$TAG"; mkdir -p "$D/godot/art/people"
 T="python /c/Users/munch/Desktop/survivorsunchained/tools/turn.py"
 W="outfits lead: dry build ($TAG)"

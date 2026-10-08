@@ -5,8 +5,8 @@
 #   bash turn_build.sh                  OUTFITS="warden reaver" limits the sheets; NOSHEETS=1 skips them
 #   AFTER="cmd" runs a command while the Godot turn is still held (close-ups, say)
 T="python /c/Users/munch/Desktop/survivorsunchained/tools/turn.py"
-WT=/c/Users/munch/Desktop/survivorsunchained/.claude/worktrees/agent-afb34c385770877d3
-S=/c/Users/munch/AppData/Local/Temp/claude/C--Users-munch-Desktop-survivorsunchained/74e72383-70c7-41d5-8e96-2fad2ed58481/scratchpad/hs
+WT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)"  # (this worktree)
+S="${OSCR:?set OSCR, the outfits scratch folder}/hs"
 W="outfits lead: rebuild"
 until $T take blender "$W" --wait 60 >/dev/null 2>&1; do :; done
 echo "blender turn $(date +%H:%M:%S)"

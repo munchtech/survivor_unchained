@@ -3,8 +3,8 @@
 # each switch, one Godot turn, then a count of isolated blue pixels per variant.
 #   bash bisect.sh <outfit> <clip> <tag> "<variant>" ...   (a variant: "NAME=1 NAME2=0" or "base")
 O="$1"; CLIP="$2"; TAG="$3"; shift 3
-WT=/c/Users/munch/Desktop/survivorsunchained/.claude/worktrees/agent-afb34c385770877d3
-L=/c/Users/munch/AppData/Local/Temp/claude/C--Users-munch-Desktop-survivorsunchained/74e72383-70c7-41d5-8e96-2fad2ed58481/scratchpad/legal
+WT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)"  # (this worktree)
+L="${OSCR:?set OSCR, the outfits scratch folder}/legal"
 OUT="$L/$TAG"; mkdir -p "$OUT"
 T="python /c/Users/munch/Desktop/survivorsunchained/tools/turn.py"
 N="outfits lead: render bisect ($TAG)"

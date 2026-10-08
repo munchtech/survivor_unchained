@@ -4,8 +4,8 @@
 #   bash clean.sh <outfit> <tag> <clip> [clip ...]        (FLOOR=1 for the lying-down views)
 #   RES=1920x1080 for full-size pictures (the coded ones are 960x540)
 O="$1"; TAG="$2"; shift 2
-WT=/c/Users/munch/Desktop/survivorsunchained/.claude/worktrees/agent-afb34c385770877d3
-L=/c/Users/munch/AppData/Local/Temp/claude/C--Users-munch-Desktop-survivorsunchained/74e72383-70c7-41d5-8e96-2fad2ed58481/scratchpad/legal
+WT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)"  # (this worktree)
+L="${OSCR:?set OSCR, the outfits scratch folder}/legal"
 OUT="$L/$TAG/$O"; mkdir -p "$OUT"
 T="python /c/Users/munch/Desktop/survivorsunchained/tools/turn.py"
 N="outfits lead: clean frames, $O ($TAG)"
