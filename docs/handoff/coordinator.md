@@ -35,5 +35,8 @@ From the coordinator session that ran 3 to 6 October 2026. Read this after `docs
   - never bare `git stash`.
 - Usage: tokens are precious. Save everywhere it doesn't cost quality, and raise effort freely where it does.
 
+## Starting fresh
+The owner starts each new coordinator with the prompt in `docs/handoff/START.md`. Tell the owner in one line when it's time: at about 250k of your own context, at a new wave, or after a usage reset. Keep this page and RESUME current, so that a fresh start costs nothing extra.
+
 ## State at handoff
-See RESUME.md. Everything is merged and green (774). No lead is running.
+From the coordinator of 6 and 7 October. Everything is merged and green (775); no lead is running. RESUME.md has the restart order. The new workflow (README "Working lean", 7 October) is in place: agent types by model, an hour's cache for subagents, handoff at 300k, and the weekly audit. The owner deleted docs/voice/samples on purpose: the final voices will be made with ElevenLabs.
