@@ -1,24 +1,19 @@
 # Animation: status
 
-Agent: a9a80800a7dae2519 (6 October), branch `worktree-agent-a9a80800a7dae2519`; paused. Brief and handoff: `docs/handoff/animation.md`.
+Agent: ae2a9884e3e51609c (7 October), branch `worktree-agent-ae2a9884e3e51609c`; handed off at about 320k. Brief and handoff: `docs/handoff/animation.md`.
 
-## State (2026-10-06, paused by the wind-down)
+## State (2026-10-07)
 
-**The owner's joint notes (OWNER_NOTES, 6 October): measured, and the skinning fix built but off.** Agent a9a80800a7dae2519; handoff `docs/handoff/animation.md`.
-- **Measured** (`tools/anim/motion.py`, on her actual mesh with her springs; 6 clips so far):
-  - elbows keep 70% of their volume at 90 degrees and 59% at 120; 67-80% in clips; the knee 66% in the run;
-  - forearm roll at the elbow 25-48 degrees;
-  - run_warden's left arm 11-15 mm into her chest; her hands pass through each other (shield-hidden);
-  - warden_show's foot glides 23 cm;
-  - in the game, every start, stop and turn slides (no walk cycle, no foot lock).
-- **Root cause of the pinching:** the rig's twist and share bones were folded away when her body was built.
-- **Built (off until checked):** twist and share bones (`tools/anim/helpers.py`, `tools/assets/heroine_rig.py`, the outfits build's `--helpers`), driven by `HerJoints.cs`. In the Python prototype, elbows keep 94% at 90 degrees and 83% at 120; wrists 98-100% under a turn.
+**Her helper bones: built, seen at 1:1, one fault found and fixed in the spec; still off (no `--helpers` by default).**
+- The first build (shares cut as a tent) fixed the pinched elbows, shoulders and wrung forearms, but brought her knee to a sharp point at 120-145 degrees and the elbow to a knob from behind. Now cut as a quadratic Bezier (`helpers.split`, "smooth") with a stretch of 2 - cos(bend/2) (`helpers.bulge`, `HerJoints.cs`): rounded, fuller than before, no point (`anim_sheets/helpers_split_knee_elbow.png`).
+- Volume kept, before -> now: elbow 90/120/145 73/61/54 -> 83/70/56; knee 75/65/59 -> 89/82/73; arm raised 130 72 -> 92; forearm turned 80, wrist 95 -> 100.
+- Owed: the face lead's sign-off on her head's carry in play (handoff step 3).
 
 ## Next
 
-1. Build her body with `--helpers`, check it at 1:1, then turn it on. The outfits lead rebuilds and reruns the motion check.
-2. The full audit of her and the hero, then the solver: arm clearance against her mesh, follow-through down the arm, foot locking; in the game, a walk cycle and a runtime foot lock.
-3. The earlier list (C01 and C04 in their cinematics, Grimtunnel's roles, the hero's library) after the joints.
+1. Rebuild with the smooth split, see it at 1:1 in motion in every outfit, rerun the garment check (`tools/scratch/anim6/gapcheck.py`), then helpers on by default and the outfits lead (a1f120018d8749c97) rebuilds and reruns the motion check.
+2. The head carry sign-off (HerCarriage.Level through rolls, leaps and get-ups).
+3. The full audit of her and the hero, then the solver (arm clearance, follow-through, foot locking) and in the game (stride, walk cycle, foot lock).
 
 ## Sign-off log (sceptical: guilty until shown natural)
 

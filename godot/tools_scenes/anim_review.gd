@@ -7,7 +7,8 @@ extends SceneTree
 #   godot --path godot --fixed-fps 30 --resolution 420x560 -s res://tools_scenes/anim_review.gd -- <clip> <out.png>
 #
 # The clip is a name from her library (res://art/anim/heroine.res, as
-# "her/<name>") or from the Universal Animation Libraries ("ual/<name>").
+# "her/<name>") or from the Universal Animation Libraries ("ual/<name>"), or a
+# path to one of tools/anim's JSON clips (unpacked: a test pose, a clip in work).
 # Options by environment:
 #   VIEW=front|side|back|three|top|game   where the camera stands (game: the arena's 64 degrees)
 #   FRAMES=n  STEP=k  START=s              n cells, every k-th frame, from s seconds in
@@ -21,6 +22,9 @@ extends SceneTree
 #   NOHERPOSE=1                            without her corrective pose layer
 #   GESTURE=her/nod GESTUREAT=s            a gesture laid over the clip (Gestures.cs) s seconds in
 #   FULL=1                                 save every frame as its own picture too (out_NN.png)
+#   BODYDIR=folder                         her body and outfits read from another build (before a change)
+#   NOJOINTS=1                             her helper bones left undriven (not her body before them:
+#                                          an elbow's share then follows the upper arm; use BODYDIR)
 var clip = ""
 var out = ""
 var her: Node3D
@@ -61,7 +65,7 @@ func _init():
 	elif model != "":
 		her = load("res://assets/people/Superhero_%s_FullBody.gltf" % model.capitalize()).instantiate()
 	else:
-		her = load("res://art/people/heroine.glb").instantiate()
+		her = people("heroine.glb")
 	root.add_child(her)
 	her.scale = Vector3.ONE * 1.04
 	if model == "hero": hero(her)
@@ -85,6 +89,14 @@ func _init():
 		ap.add_animation_library("folk", load("res://art/anim/folk.res"))
 	if ResourceLoader.exists("res://art/anim/hero.res"):
 		ap.add_animation_library("him", load("res://art/anim/hero.res"))
+	# A clip straight from tools/anim's JSON (a path ending .json), unpacked:
+	# a test pose or a clip being worked on, seen before it is packed.
+	if clip.ends_with(".json"):
+		var a = json_clip(clip)
+		var tl = AnimationLibrary.new()
+		tl.add_animation("clip", a)
+		ap.add_animation_library("test", tl)
+		clip = "test/clip"
 	if not ap.has_animation(clip):
 		push_error("no clip " + clip)
 		quit(1)
@@ -108,6 +120,28 @@ func _init():
 
 var tree: AnimationTree
 var gestures = null
+
+# A clip as tools/anim writes it (anim_pack.gd packs the same JSON).
+func json_clip(path):
+	var d = JSON.parse_string(FileAccess.get_file_as_string(path))
+	var a = Animation.new()
+	var fps = float(d["fps"])
+	a.length = float(d["length"])
+	a.step = 1.0 / fps
+	a.loop_mode = Animation.LOOP_LINEAR if d["loop"] else Animation.LOOP_NONE
+	for tr in d["tracks"]:
+		var rot = tr["type"] == "rot"
+		var i = a.add_track(Animation.TYPE_ROTATION_3D if rot else Animation.TYPE_POSITION_3D)
+		a.track_set_path(i, NodePath(d["path"] + ":" + tr["bone"]))
+		a.track_set_interpolation_type(i, Animation.INTERPOLATION_LINEAR)
+		a.track_set_interpolation_loop_wrap(i, true)
+		var keys = tr["keys"]
+		for k in keys.size():
+			var v = keys[k]
+			var t = min(k / fps, a.length)
+			if rot: a.rotation_track_insert_key(i, t, Quaternion(v[0], v[1], v[2], v[3]).normalized())
+			else: a.position_track_insert_key(i, t, Vector3(v[0], v[1], v[2]))
+	return a
 
 func overlay(over):
 	ap.stop()
@@ -145,6 +179,20 @@ func overlay(over):
 func env(k, d):
 	var v = OS.get_environment(k)
 	return v if v != "" else d
+
+# Her body or an outfit as the game has it, or (BODYDIR=folder) read at run
+# time from another build of them (a copy from before a change: no import).
+func people(file):
+	var dir = env("BODYDIR", "")
+	if dir == "":
+		return load("res://art/people/" + file).instantiate()
+	var doc = GLTFDocument.new()
+	var st = GLTFState.new()
+	st.use_named_skin_binds = true
+	if doc.append_from_file(dir.path_join(file), st) != OK:
+		push_error("can't read " + dir.path_join(file))
+		quit(1)
+	return doc.generate_scene(st)
 
 # A townsfolk body in the kit's clothes, as People.Build puts one together.
 func kit(h, parts):
@@ -203,7 +251,7 @@ func dress(h):
 				mi.set_surface_override_material(s, sk)
 	var outfit = env("OUTFIT", "warden")
 	if outfit != "none":
-		var o = load("res://art/people/heroine_outfit_%s.gltf" % outfit).instantiate()
+		var o = people("heroine_outfit_%s.gltf" % outfit)
 		var os_ = o.find_children("*", "Skeleton3D", true, false)[0]
 		for mi in os_.get_children():
 			if mi is MeshInstance3D and String(mi.name).begins_with(outfit + "_"):
@@ -237,7 +285,7 @@ func dress(h):
 	if env("NOHERPOSE", "") == "":
 		var hp = load("res://src/Actors/HerPose.cs").new()
 		skel.add_child(hp)
-		if clip.begins_with("her/"): hp.set("Native", 1.0)
+		if clip.begins_with("her/") or clip.ends_with(".json"): hp.set("Native", 1.0)
 	skel.add_child(load("res://src/Actors/HerJiggle.cs").new())
 	weapon(skel, env("WEAPON", ""))
 
