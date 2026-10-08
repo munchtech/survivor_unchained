@@ -7,7 +7,7 @@ import math
 import sys
 from pathlib import Path
 
-WT = Path(r"C:\Users\munch\Desktop\survivorsunchained\.claude\worktrees\agent-ae2a9884e3e51609c")
+WT = Path(r"C:\Users\munch\Desktop\survivorsunchained\.claude\worktrees\agent-a8d33b2672b7be905")
 S = Path(r"C:\Users\munch\AppData\Local\Temp\claude\C--Users-munch-Desktop-survivorsunchained\0b33992d-1e38-4eb8-80a1-d5c23b1a44e6\scratchpad\an")
 sys.path.insert(0, str(WT / "tools" / "anim"))
 

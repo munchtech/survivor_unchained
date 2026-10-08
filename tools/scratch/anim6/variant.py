@@ -5,7 +5,7 @@ import json
 import sys
 from pathlib import Path
 
-F = Path(r"C:\Users\munch\Desktop\survivorsunchained\.claude\worktrees\agent-ae2a9884e3e51609c\godot\art\people\rig_helpers.json")
+F = Path(r"C:\Users\munch\Desktop\survivorsunchained\.claude\worktrees\agent-a8d33b2672b7be905\godot\art\people\rig_helpers.json")
 d = json.loads(F.read_text())
 eb, em, kb, km = map(float, sys.argv[1:5])
 sb, sm = (float(sys.argv[5]), float(sys.argv[6])) if len(sys.argv) > 6 else (None, None)
