@@ -4,7 +4,9 @@
 // ways tried under FSR 2 (src/Actors/HairDraw.cs): heroine_hair_blend.gdshader
 // (blended over a depth prepass of its solid parts: BLEND), and
 // heroine_hair_core.gdshader (its solid parts drawn opaque: CORE) under
-// heroine_hair_over.gdshader (the whole drawn again over them, blended: OVER).
+// heroine_hair_over.gdshader (the whole drawn again over them, blended: OVER);
+// and heroine_hair_erase.gdshader drawn last over any of the blended ones, to
+// erase FSR 2's reactive mask under them (ERASE).
 
 uniform sampler2D strands : source_color, filter_linear_mipmap_anisotropic, repeat_enable;
 uniform vec3 colour : source_color = vec3(0.56, 0.17, 0.07);
@@ -48,6 +50,10 @@ uniform vec3 chain_then[8];
 // (the share of a pixel a strand must cover to be drawn solid, its depth and
 // motion written: near 1, so the blended pass over it shows no edge)
 uniform float core_cut = 0.9;
+#endif
+#ifdef ERASE
+// (how much of the blended alpha under it is kept: heroine_hair_erase.gdshader)
+uniform float keep = 0.0;
 #endif
 
 varying vec3 strand;
@@ -110,6 +116,10 @@ void fragment() {
 #elif defined(CORE)
 	ALPHA = cover;
 	ALPHA_SCISSOR_THRESHOLD = IN_SHADOW_PASS ? 0.5 : core_cut;
+#elif defined(ERASE)
+	// (white, multiplied: the colour kept; the alpha, FSR 2's reactive mask, scaled by keep)
+	ALBEDO = vec3(1.0);
+	ALPHA = keep;
 #elif defined(COVERAGE)
 	// (cut by a threshold moved every frame: coverage.gdshaderinc)
 	if (cover < coverage_cut(FRAGCOORD.xy)) discard;
