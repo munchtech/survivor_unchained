@@ -41,7 +41,7 @@
    "bone": "lowerarm_{s}",
    "amount": 0.5,
    "bulge": 1.0,
-   "bulge_max": 1.5,
+   "bulge_max": 2.0,
    "way": "front"
   },
   {
@@ -51,7 +51,7 @@
    "bone": "calf_{s}",
    "amount": 0.5,
    "bulge": 1.0,
-   "bulge_max": 1.5,
+   "bulge_max": 2.0,
    "way": "back"
   }
  ],
@@ -66,6 +66,7 @@
    0.8
   ],
   "share": 1.0,
+  "profile": "smooth",
   "pairs": [
    [
     "clavicle_{s}",

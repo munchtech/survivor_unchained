@@ -1,103 +1,34 @@
 # Handoff: animation
 
-For the next animation lead. Read `docs/team/README.md`, `RESUME.md` and `OWNER_NOTES.md` ("Animation: joints and motion to perfection"), then this page, then `docs/team/animation.md`. Written by a9a80800a7dae2519 (branch `worktree-agent-a9a80800a7dae2519`), stopped early by the owner's usage wind-down on 6 October. Earlier leads: aa15f092820132274, a7dd95d00c4a6a017, a03acf30b3e9bdd70.
+For the next animation lead (`su-lead-max`). Read `docs/team/README.md` ("Working lean", "Safety"), `RESUME.md`, `OWNER_NOTES.md` ("Animation: joints and motion to perfection"), then this page and `docs/team/animation.md`. Written by ae2a9884e3e51609c (branch `worktree-agent-ae2a9884e3e51609c`), handed off at about 320k on 7 October. **Read by section: grep, then `sed -n` the lines. Whole-file reads were this lead's largest context cost.** Earlier leads' ids are retired.
 
-## 1. The owner's words and the brief
-
+## 1. The owner and the brief
 - "the motions that get scuffed are ... bad, unnatural movements with respect to wrists - follow through motion joint to joint, some elbow pinching or arms going through body or breast, some sliding. a lot is GOOD but we want perfection."
-- The brief (from main):
-  1. Audit every clip for her and the hero, in motion, at 1:1, jiggle on, in each of the four outfits. Measure wrists past natural limits, elbow volume loss, arm into torso and breast (against her actual mesh, not capsules), foot slide in cm per planted step, and overlap missing down the chain.
-  2. Fix at the root, worst first: skinning (twist and helper bones, correctives), then rig and solver (wrist limits, elbow swivel, follow-through), then clip contacts and foot locking.
-  3. Prove each fix with before and after numbers and a shot sheet.
-- Coordinate weight changes with the outfits lead (afb34c385770877d3) and ask them to rerun the motion check. Rendering (a20bdef993e00f26b) owns how motion is drawn; joints are ours.
+- Brief (coordinator, 7 Oct): first the elbows: build the helper bones, see them at 1:1 in motion with jiggle on, prove the fix with before/after numbers and a sheet; when verified, tell the outfits lead **a1f120018d8749c97** directly (copy the main session) so they rebuild with helpers and rerun the motion check. Then the full audit (her and the hero, every clip, four outfits), arms through her body and breasts, follow-through, wrist limits, foot locking, a walk cycle in play. Sign off per clip. Rendering (a7afb4d33cdd5efba) owns how motion is drawn; joints are ours.
+- **Owed to the face lead (abe65bc929823a791): sign-off on her head's 8-degree carry in play** (step 3 below).
 
-## 2. Measured so far, worst first
+## 2. Done (committed; helpers still off: no `--helpers` by default)
+- Built her body and outfits with the helpers (4.5 min in Blender) and checked: positions, normals, UVs identical to the committed build; only weights changed; share bones lie on their hinges (`hinge.py`: 0.00 degrees). The skeleton dump then has 81 bones, helpers in hierarchy order (indices shift; Godot binds skins by name, so fine).
+- Seen at 1:1 against the true before body: elbows, shoulders, forearm turns clearly better. **But the knee came to a sharp point at 120-145 degrees, and the elbow a knob from behind at 145.** Cause: the share weights were cut as a tent (`2*min(Wa,Wb)`), so the skin over a joint is two straight runs meeting in a ridge. Not the bulge: with no bulge the point stayed.
+- **Fix, decided and committed in the spec** (`tools/anim/helpers.py`): `"profile": "smooth"` (weights as a quadratic Bezier's over the point's blend x: `(1-x)^2, 2x(1-x), x^2`; each point still turns x of the bend on average) and a new bulge law, stretch `2 - cos(bend/2)` (keeps the point halfway round at its rest distance: a rounded corner), elbow and knee `bulge 1, bulge_max 2` (`helpers.bulge`, mirrored in `HerJoints.cs`). Seen at 1:1 (body only, via `reweight.py`): rounded, fuller than before, no point: `docs/team/anim_sheets/helpers_split_knee_elbow.png` (rows: before, tent, smooth+bulge, smooth no bulge). The tent build's elbow side sheet: `helpers_tent_elbow_side.png`.
+- Volume kept (region round the joint, % of rest; `sweep2.py`), before -> smooth decided: elbow 90/120/145: 72.6/61.1/54.4 -> 83.3/70.4/56.1; knee 90/120/145: 74.5/64.5/59.1 -> 89.0/81.8/72.9; hip 110 knee 135: 67 -> 95; arm raised 130: 72 -> 92; upper arm turned 70: 74 -> 87; elbow 90 with the wrist turned 80: wrist 94.5 -> 100. (The tent kept more by this measure, 92/78/61 at the elbow, but its ridge is what shows.) Deep elbow volume is mostly the inner fold passing through itself, hidden.
+- Garment check on the **tent** build, warden only (`tools/scratch/anim6/gap_tent_warden.txt`): skin through garment at elbow 120/145 rose (678 -> 1173, 1123 -> 2282 points; deepest 9 -> 11 mm), and at knee 145 to 21.6 mm; it fell at wrist turns (239 -> 2), knee 90 (1107 -> 499), raise 100 (113 -> 16). Rerun on the smooth build.
+- Tools: `anim_review.gd` plays a JSON clip by path (test poses, unpacked clips) and reads her body and outfits from any build at run time (`BODYDIR=`, no import). Scratch tools in `tools/scratch/anim6/` (repoint `S`, `WT` paths): `build_helpers.sh` (Blender build with `--helpers`, import, skeleton dump), `rigtest.py` + `clips/` (elbow, shoulder, knee test poses; a rest frame first), `shots1.sh` (before/after sheets), `shots3.sh` + `variant.py` (spec strengths without an import), `reweight.py` (any split written into the built body: try weights without Blender; needs the helper-built body in godot/art/people), `sweep.py`/`sweep2.py` (volumes, ridges), `gapcheck.py` (garment split against skin, skin through garment per pose), `samebody.py`, `pair.py`, `rows.py`, `sidecars.py`.
 
-Run with `tools/anim/motion.py` (see 4). Only 6 of her clips have been audited; the full run was stopped at the wind-down.
+## 3. Next, in order
+1. Rebuild with `--helpers` (`build_helpers.sh`; it builds into the worktree's godot/art/people and dumps `tools/anim/data/heroine_skeleton.json`), run `samebody.py`, `sweep.py before built`, then `shots1.sh` (elbow, shoulder, knee, plus cast_raise, cup_hands, sword_fore) and the same clips in each outfit; judge at 1:1, jiggle on. Check the shoulder at raise 60-100 for swelling (volume 104%) and the forearm turns close (`LOOK=hand_l`).
+2. `gapcheck.py` on all four outfits (about 10 min an outfit; give it to a runner). Send the split agreement and the before/after table to the outfits lead (a1f120018d8749c97), copy the main session. Then make helpers the default (`heroine_rig.apply`: drop the `--helpers` gate), commit the built body, outfits and skeleton dump, and ask them to merge, rebuild and rerun the motion check.
+3. **The head carry** (face lead's ask): `HerCarriage.Level` lifts her face toward 8 degrees above level at `HeadLevel` 0.8 (`PlayerView` line ~588) in every play state but death: also through rolls, leaps, vaults and get-ups, where a tucked head lifted up to 28 degrees would look wrong. See it in play at 1:1 (run, idle, a strike, dash, leap, get_up) and likely ease `HeadLevel` to 0 while a full-body one-shot plays; then sign off to abe65bc929823a791.
+4. Then the old list: the full audit (`motion.py --outfits --save`, before via `ANIM_PEOPLE`), arm clearance against her mesh, follow-through as a post-pass, foot locking (warden_show first), the in-game stride, walk cycle and runtime foot lock, the hero's helpers (with ab82cbe99e2937ddd).
 
-1. **Elbows and knees fold.** The root cause: `build_heroine.py` folded AccuRIG's twist and share bones into the main bones (`FOLD`), so linear skinning has only two bones a joint.
-   - Elbow region (8 cm either side) keeps 70% of its volume at a 90-degree bend, 59% at 120 and 53% at 145 (synthetic sweep).
-   - In clips: run_warden 68/80% (l/r), sword_fore 67/80, cup_hands 73/75, cast_raise 79/80.
-   - Knee: 66% in the run. Seen at 1:1 in `cast_raise`, where the elbow narrows to a deflated crease.
-2. **Forearms wring.** The solver puts at least half of each wrist's turn into the forearm bone (`keyed.Rig.solve`, "share"), so the roll twists the elbow region: 25 to 48 degrees in the six clips. A ±80-degree turn costs the elbow 9% and the wrist 6 to 10%.
-3. **Arms through her.**
-   - run_warden: her left upper arm is 11 to 15 mm into the side of her chest (frames 0-5 and 16-21). Her hands pass through each other in front of her belly, up to 60 mm (frames 6-15). The shield hides this in play; it shows without one.
-   - sword_fore: the follow-through drives the right forearm through the left hand (seen at 1:1).
-   - cast_raise: the left forearm presses under her left breast (frames 9-12, seen).
-4. **Sliding.**
-   - In clips: warden_show's left foot glides 23 cm flat on the floor (frames 8-16, the creation screen) and 2 cm more (frames 51-66). run_warden slides 3.1 cm a step; sword_fore 1.1 cm.
-   - In the game (read from `PlayerView.Carry`, not yet simulated): every start and stop slides. Between 0.25 and 2.2 m/s idle is blended with a run clamped to at least 0.55 of its rate. The view's speed lags the body twice over (the fight's 14/s, the view's 10/s). Turns pivot planted feet. There is no walk cycle and no foot lock.
-5. **Wrists:** within range in the six clips (the predecessor's limits hold): idle_warden right ulnar 34, extension 42. The "correcting" motion is not yet isolated: look for wrists turning against the forearm's swing, and for flicks between frames.
-6. **Overlap:** the metric exists (`motion.overlap`: hand lag after the upper arm stops) but is not yet summarised. By construction, the keyed arms move as one piece: IK each frame, with every joint on the hand's timing.
+## 4. Gotchas
+- Worktree setup for Godot: `godot/assets` placeholder moved aside, a junction to `public/assets` made, `git update-index --skip-worktree godot/assets`; main's `godot/.godot` copied (robocopy, 2.6 GB); `sidecars.py` copies main's untracked `.import`/`.uid`; `dotnet build`. The first import still re-imported about 1000 files (10 min) and segfaulted once: retry. Tracked `.import` files then show as modified: never commit them; stage explicit paths.
+- `NOJOINTS=1` on a helper-built body is **not** the body before them (an elbow's share then follows the upper arm). Compare against a copy of the old build with `BODYDIR`.
+- anim_review photographs from the clip's second frame: test clips lead with a rest frame.
+- Her clips' JSON (`tools/anim/out/clips`, `out/hero`) are not in git: copy them from worktree agent-a9a80800a7dae2519.
+- The guard refuses heredocs and `cd && git` chains: write scripts to files.
 
-## 3. Done (committed; the helpers are off until verified)
+## 5. Read first
+`tools/anim/helpers.py` (`split`, `bulge`, `drive`), `godot/src/Actors/HerJoints.cs`, `tools/assets/heroine_rig.py` (`apply`), `tools/scratch/anim6/build_helpers.sh` and `shots1.sh`.
 
-- **Tools:**
-  - `tools/anim/skin.py`: her glTF body and outfits skinned in Python exactly as Godot does, with a port of HerJiggle's springs. `ANIM_PEOPLE`, `ANIM_SKELETONS` and `ANIM_OUT` point it at a "before" copy.
-  - `tools/anim/motion.py`: the audit. It measures contact against her real mesh, with each outfit's thickness laid on, the armpit apart, and a winding-number check; joint volumes; wrist bend and forearm roll; slide in cm per plant; and overlap lags. `--outfits`, `--hero`, `--save NAME`.
-- **Helper bones**, 6 a side: `upperarm_twist_01`, `lowerarm_twist_01/02`, `upperarm_share`, `lowerarm_share`, `calf_share`.
-  - `tools/anim/helpers.py` is the one spec. It also extends a skeleton, drives the bones, and splits weights as a field over space, so skin and garments split alike.
-  - `tools/assets/heroine_rig.py` adds the bones in Blender and splits every mesh. It is hooked into `heroine_outfits.py` just before the body and outfit exports, and is **inert unless the build is passed `--helpers`**.
-  - `godot/src/Actors/HerJoints.cs` drives them, as the last modifier, and does nothing on a body without them:
-    - it hands the forearm bone's roll to the hand and shares the hand's turn along the forearm (0.4 and 0.8);
-    - it half undoes the upper arm's turn at the shoulder;
-    - each share bone takes half its joint's bend; the elbow and knee ones also swell across the bend (1/cos(bend/2), at most 1.5, along their own Z, which `heroine_rig` turns onto the hinge).
-  - Wired into `People.Heroine` and `People.Hero`, `anim_review.gd` (`NOJOINTS=1` for before) and `lookdev.gd`, which also feeds the legal motion check. Data: `godot/art/people/rig_helpers.json`.
-- **Prototype results** (current weights split in Python; not yet seen in Godot):
-
-  | Measure | Before | After |
-  |---|---|---|
-  | Elbow volume at 90 / 120 / 145 degrees | 70 / 59 / 53% | 94 / 83 / 72% |
-  | Knee volume | 75 / 65 / 59% | 101 / 93 / 83% |
-  | Wrist under a ±80 turn | 90-94% | 98-100% |
-  | Upper arm turned ±70 | 76-78% | 85-86% |
-  | Arm raised 130 (shoulder share) | 73-81% | 95-107% |
-
-  The 107% may read as a swollen shoulder: check it.
-
-## 4. Next, in order
-
-1. **Build and see the helpers.**
-   - Take a Blender turn, then: `blender -b <main checkout>/tools/comfy/out/heroes/heroine_built.blend --python <wt>/tools/assets/heroine_outfits.py -- <wt>/godot/art/people/x --body <wt>/godot/art/people/heroine.glb --helpers`. It is long; scratch `build_body.ps1` wraps it.
-   - Import, then re-dump `tools/anim/data/heroine_skeleton.json` (`anim_skeleton.gd`). The tools need the helper joints in it.
-   - Check that `helpers.hinge_turn` on the built skeleton is about 0 for each share bone (the bulge then lies across the bend).
-   - Render elbow, knee and shoulder sheets with and without `NOJOINTS=1`, at 1:1, and tune `bulge` and `amount` in `helpers.SPEC`.
-   - Then measure each garment point's split against its nearest skin point; the outfits lead asked for this, so send it to them.
-   - Then make `--helpers` the default, push, and ask the outfits lead to merge, rebuild and rerun the check.
-2. **The full baseline audit**, before and after the helpers: `ANIM_PEOPLE=<before copy> python -u tools/anim/motion.py --outfits --save base`, then `--hero`. Use `python -u`: buffered output was lost at the stop.
-3. **Solver and clips:**
-   - arm clearance against her mesh: an SDF of trunk and breasts, with outfit cover and a jiggle margin, in the chest's frame; swivel the elbow first, then push the hand;
-   - follow-through as a post-pass: lag and overshoot down shoulder, elbow, wrist and fingers, held off where hands hold or touch;
-   - foot locking in clips (warden_show first);
-   - the wrist's "correcting" motion.
-4. **In the game:**
-   - a stride simulator of `PlayerView.Carry` (starts, stops, turns);
-   - then a walk cycle, a run rate from the body's own speed, and a runtime foot lock.
-5. **The hero:** the same helpers in `hero_male_body.py` (with ab82cbe99e2937ddd), then his audit.
-
-## 5. Decisions
-
-- **Bones, not blend shapes, for joints.** Garments take bones through their weights. Correctives would need a copy for every garment.
-- **The driver unrolls the forearm bone whatever the clip did**, so library clips and retargets are fixed too. A shield on the forearm will then keep only the forearm's hinge: mount it on `lowerarm_twist_02` once the helpers are in, so it turns with the radius.
-- **The weight split is a field over space**, the same for skin and every garment.
-
-## 6. Gotchas
-
-- The worktree guard refuses `cd && git` chains, `xargs`, and heredocs that touch git. Write scripts to the scratchpad.
-- In `anim_review.gd`, the shield stand-in (a 60 cm disc) hides her torso. Use `OUTFIT=none` and `WEAPON=sword` to see arms against her body.
-- In Blender, a new EditBone needs a length before `.matrix` takes.
-- Scratch tools are in `<scratchpad>/a6` (not kept): `batch.py` (sheets in one Godot turn), `crop.py`, `wax.py` (a quick numpy render), `t_helpers.py` (the volume sweep), `dbg_contact.py`, `dbg_slide.py`.
-
-## 7. Collaborators
-
-- The outfits lead (afb34c385770877d3) agreed the hooks stay on this branch. They want the garment-against-skin split measured. Their motion check builds from `lookdev.gd`.
-- The rendering lead (a20bdef993e00f26b); the hero (ab82cbe99e2937ddd).
-
-## 8. Read first
-
-1. `tools/anim/helpers.py`
-2. `godot/src/Actors/HerJoints.cs`
-3. `tools/anim/motion.py` and `skin.py`
-4. `tools/anim/keyed.py`: `Rig.solve` (the twist "share"), `solve_frames`, `build`
-
-HANDOFF READY: docs/handoff/animation.md on worktree-agent-a9a80800a7dae2519@404b00cf
+HANDOFF READY: docs/handoff/animation.md on worktree-agent-ae2a9884e3e51609c@332165d9

@@ -51,9 +51,9 @@ SPEC = {
         {"name": "upperarm_share_{s}", "parent": "clavicle_{s}", "kind": "share", "bone": "upperarm_{s}", "amount": 0.5,
          "bulge": 0.0, "bulge_max": 1.0, "way": "front"},
         {"name": "lowerarm_share_{s}", "parent": "upperarm_{s}", "kind": "share", "bone": "lowerarm_{s}", "amount": 0.5,
-         "bulge": 1.0, "bulge_max": 1.5, "way": "front"},
+         "bulge": 1.0, "bulge_max": 2.0, "way": "front"},
         {"name": "calf_share_{s}", "parent": "thigh_{s}", "kind": "share", "bone": "calf_{s}", "amount": 0.5,
-         "bulge": 1.0, "bulge_max": 1.5, "way": "back"},
+         "bulge": 1.0, "bulge_max": 2.0, "way": "back"},
     ],
     # The forearm bone's own roll on the elbow handed down to the hand.
     "unroll": ["lowerarm_{s}"],
@@ -67,6 +67,8 @@ SPEC = {
         # Shares: of a point's blend between the bones above and below, how
         # much the share bone takes (1: a half-and-half point is all its).
         "share": 1.0,
+        # The shares cut as a quadratic Bezier (smooth), not a tent: see split.
+        "profile": "smooth",
         # (above, below, share)
         "pairs": [["clavicle_{s}", "upperarm_{s}", "upperarm_share_{s}"], ["upperarm_{s}", "lowerarm_{s}", "lowerarm_share_{s}"],
                   ["thigh_{s}", "calf_{s}", "calf_share_{s}"]],
@@ -175,9 +177,13 @@ def forearm_turn(sk, h, hand_local):
 
 def bulge(bend, h):
     """How far the flesh round a joint bent `bend` degrees is pushed out
-    across the bend: a tube bent so is cut by the plane halfway into an
-    ellipse 1/cos(bend/2) long; `bulge` of that, at most `bulge_max`."""
-    k = 1.0 / max(math.cos(math.radians(min(bend, 170.0) / 2)), 1e-3)
+    across the bend, as a stretch along the share bone's Z. With the skin's
+    weights a quadratic Bezier over the joint (split, "smooth"), a point
+    halfway round lies at (cos(bend/2) + stretch) / 2 of its rest distance
+    from the joint, so a stretch of 2 - cos(bend/2) keeps it there: the
+    joint bends round as a rounded corner, neither cut across nor pushed to
+    a point. `bulge` of that stretch, at most `bulge_max`."""
+    k = 2.0 - math.cos(math.radians(min(bend, 180.0) / 2))
     return float(min(1.0 + h.get("bulge", 0.0) * (k - 1.0), h.get("bulge_max", 1.0)))
 
 
@@ -239,10 +245,26 @@ def split(W, P, index, heads):
             a, b, c = I.get(top.replace("{s}", s)), I.get(low.replace("{s}", s)), I.get(share.replace("{s}", s))
             if a is None or b is None or c is None:
                 continue
-            m = np.minimum(W[:, a], W[:, b]) * 2 * cfg["share"]
-            W[:, c] += m
-            W[:, a] -= m / 2
-            W[:, b] -= m / 2
+            if cfg.get("profile") == "smooth":
+                # As a quadratic Bezier's weights over the point's blend x
+                # toward the bone below: (1-x)^2, 2x(1-x), x^2. Each point
+                # turns on average as it did (x of the bend), and the skin
+                # round the joint is a smooth curve through the share's ring.
+                # (Weights cut as a tent, the most a share can take, leave
+                # it two straight runs meeting in a ridge: at a deep bend the
+                # knee came to a point.)
+                tot = W[:, a] + W[:, b]
+                x = np.where(tot > 1e-9, W[:, b] / np.maximum(tot, 1e-9), 0.0)
+                mid = tot * x * (1 - x)
+                k = cfg["share"]
+                W[:, c] += 2 * k * mid
+                W[:, a] = tot * (1 - x) ** 2 + (1 - k) * mid
+                W[:, b] = tot * x ** 2 + (1 - k) * mid
+            else:
+                m = np.minimum(W[:, a], W[:, b]) * 2 * cfg["share"]
+                W[:, c] += m
+                W[:, a] -= m / 2
+                W[:, b] -= m / 2
         # The shoulder's twist bone.
         ua, el = I[f"upperarm_{s}"], I[f"lowerarm_{s}"]
         sh, ax = np.asarray(heads[f"upperarm_{s}"], float), np.asarray(heads[f"lowerarm_{s}"], float) - np.asarray(heads[f"upperarm_{s}"], float)

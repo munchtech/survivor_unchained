@@ -146,11 +146,13 @@ public partial class HerJoints : SkeletonModifier3D
                         sk.SetBonePoseRotation(h.Bone, (rest * Quaternion.Identity.Slerp(bend, h.Amount) * h.Own).Normalized());
                         if (h.Bulge > 0)
                         {
-                            // A tube bent so is cut by the plane halfway into an
-                            // ellipse 1/cos(bend/2) long: that much of it, pushed
-                            // out along the share's Z (across the bend).
-                            float deg = 2 * Mathf.Acos(Mathf.Min(1f, Mathf.Abs(bend.W)));
-                            float k = 1f / Mathf.Max(Mathf.Cos(Mathf.Min(deg, Mathf.DegToRad(170)) / 2), 1e-3f);
+                            // The skin's weights over a joint are a quadratic
+                            // Bezier's, so a point halfway round lies at
+                            // (cos(bend/2) + stretch) / 2 of its rest distance: a
+                            // stretch of 2 - cos(bend/2) along the share's Z (across
+                            // the bend) keeps it there, a rounded corner (helpers.bulge).
+                            float rad = 2 * Mathf.Acos(Mathf.Min(1f, Mathf.Abs(bend.W)));
+                            float k = 2f - Mathf.Cos(rad / 2);
                             sk.SetBonePoseScale(h.Bone, new Vector3(1, 1, Mathf.Min(1 + h.Bulge * (k - 1), h.BulgeMax)));
                         }
                         break;
