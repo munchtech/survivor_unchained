@@ -269,10 +269,21 @@ def crotch_bridge(name, pos, tris, gap_at, mkey, thick, bevel, trim, lift):
     edges in front and behind."""
     # (close under her, her skin tucked under it, and each line of it moving
     # with the skin under that line, as the thongs' gussets)
-    path = roof_path(GAP_F - 0.014, GAP_B + 0.014, 18, lift=0.001)
-    # (3.4 cm: what must be covered there is 2.4 cm across, and her thighs
-    # pull the skin beside it wider in a lunge or a leap, or lying on her back)
-    return ribbon(name + "_gusset", path, 0.034, mkey, lift=0.0, thick=thick, snap=False, hides=True, follow=True)
+    # (cut from her own skin, as the thongs' gussets: see gusset())
+    return gusset(name + "_gusset", mkey, GAP_F - 0.014, GAP_B + 0.014, thick=thick)
+
+
+def gusset(name, mkey, y_front, y_back, half=0.016, steep=0.9, thick=0.0018):
+    """A gusset cut from her own skin under her crotch, skin-tight (1 mm off
+    her), its edges bound and her skin tucked under it: from y_front to
+    y_back, |x| under `half`, and up the walls of the slot between her thighs
+    only as far as they face down (|N_x| under `steep`). (A flat strip 1 mm
+    under the midline crossed the walls 6 mm out, the top of the slot being
+    only 4 to 8 mm wide, and left their rounded shoulders bare; hung lower,
+    her skin came through it as her thighs parted.)"""
+    field = AND(half - np.abs(X), (steep - np.abs(N[:, 0])) * 0.02, y_back - Y, Y - y_front,
+                Z - (CROTCH - 0.015), (CROTCH + 0.03) - Z)
+    return piece(name, field, mkey, lift=0.001, thick=thick, smooth=2, soften=0, slot=False)
 
 
 def spline(pts, step=0.004):
@@ -2843,8 +2854,7 @@ def warden():
         # moving as one strap, her skin came through it as her thighs parted)
         # (from 6 mm up into her cleft, under the string's foot: begun 4 mm
         # short of it, the turn between them was bare)
-        *ribbon("warden.thong_gusset", roof_path(thong_back[-1][1] + 0.006, GAP_F - 0.006, 12, lift=0.001), 0.034, "darkleather",
-                lift=0.0, thick=0.003, snap=False, hides=True, follow=True),
+        *gusset("warden.thong_gusset", "darkleather", GAP_F - 0.006, thong_back[-1][1] + 0.006),
     ]
     # A skirt of steel plates hung all round from the belt, each its own (her
     # legs move freely between them; each swings with the thigh it is over),
@@ -3623,9 +3633,7 @@ def reaver():
                 trim=edge(0.004, "blackleather"), snap=False, hides=True, flare=(0.028, 0.03)),
         # (under her a gusset wider than the string, close under her and
         # following her skin, as on the warden's thong)
-        *ribbon("reaver.gstring_gusset", roof_path(back_string(bz0 + 0.07, CROTCH + 0.012)[-1][1] + 0.006, GAP_F - 0.006, 12,
-                                                   lift=0.001),
-                0.028, "oldleather", lift=0.0, thick=0.004, snap=False, hides=True, follow=True),
+        *gusset("reaver.gstring_gusset", "oldleather", GAP_F - 0.006, back_string(bz0 + 0.07, CROTCH + 0.012)[-1][1] + 0.006),
         *piece("reaver.cape", cape, "fur", lift=0.012, thick=0.004, smooth=12, soften=10, keep_off=("Head",)),
         *piece("reaver.tattoo_arm", OR(zigzag_band("r", ELBOW_S - 0.12, legs=False), zigzag_band("r", ELBOW_S - 0.06, legs=False, amp=0.01, width=0.012)), "ink", lift=0.0012, thick=0.0002, bevel=0.0, soften=0, budget=10 ** 7),
         *piece("reaver.tattoo_thigh", OR(zigzag_band("l", 0.15), zigzag_band("l", 0.22, amp=0.01, width=0.013)), "ink", lift=0.0012, thick=0.0002, bevel=0.0, soften=0, budget=10 ** 7),
