@@ -38,5 +38,13 @@ From the coordinator session that ran 3 to 6 October 2026. Read this after `docs
 ## Starting fresh
 The owner starts each new coordinator with the prompt in `docs/handoff/START.md`. Tell the owner in one line when it's time: at about 250k of your own context, at a new wave, or after a usage reset. Keep this page and RESUME current, so that a fresh start costs nothing extra.
 
+## Wrapping up before a fresh start (always, before telling the owner it's time)
+A new coordinator can't reliably reach the old session's agents, so never switch mid-task:
+1. Bring every running lead to a clean point: finished piece committed and pushed, its handoff or status page current, any turns released. Use a full handoff for those past about 300k, and a "paused here; next:" line for the rest.
+2. Merge every branch, revert any import churn, run `dotnet test`, and push. Leave nothing uncommitted in the main checkout except files the owner is handling.
+3. Update RESUME.md: each area's exact state, what's half-built and on which branch, and the restart order. Update OWNER_NOTES with anything the owner said, marking what's done. Record the owner's pending decisions in both.
+4. Update memory with any new standing direction.
+5. Then tell the owner in one line, pointing at START.md. Give the line only when steps 1 to 4 are done.
+
 ## State at handoff
 From the coordinator of 6 and 7 October. Everything is merged and green (775); no lead is running. RESUME.md has the restart order. The new workflow (README "Working lean", 7 October) is in place: agent types by model, an hour's cache for subagents, handoff at 300k, and the weekly audit. The owner deleted docs/voice/samples on purpose: the final voices will be made with ElevenLabs.
