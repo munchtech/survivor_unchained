@@ -31,3 +31,8 @@ public/assets/**/*.uid
 /tools/anim/out/
 
 tools/uigreybox/fonts/
+
+# Claude Code: per-agent worktrees and local files stay out of git
+.claude/worktrees/
+.claude/agents_retired/
+.claude/settings.local.json

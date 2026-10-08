@@ -6,7 +6,7 @@ The one page of what's current. Every lead starts from the latest `claude/vigila
 
 - 3 to 5 leads at once. The rest are paused with their handoffs and resumed in turn.
 - Heavy work takes turns (`tools/turn.py`): `gpu` (ComfyUI, TRELLIS, MoGe, one at a time), `blender` (two), `godot` (three). A fair queue: ask again within 90 s to keep your place.
-- Batch shots and look once. Hand off at about 500k tokens of context. Lean handoffs.
+- Batch shots and look once. Hand off at about 300k tokens of context. Lean handoffs. See README "Working lean".
 - Before you show the main session anything, run a strict self-critique at 1:1 and send the findings with it.
 
 ## The owner's standing decisions (newest first)

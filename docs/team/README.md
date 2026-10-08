@@ -27,7 +27,7 @@ The owner asks: "accurate, efficient, on track, manage and engineer context. del
 - Don't read whole huge files or transcripts. Read the part you need. Look at images at the size you need.
 - Keep your status page `docs/team/<area>.md` to one page: current state, key decisions (one line each, with the why), next steps, blockers, and notes for other areas. Update it at milestones, and delete what's stale.
 - Talk to other areas through their status pages or by SendMessage (see the roster below). Send short written reports, not long prompts.
-- **Handoff:** when your context passes about 500k tokens, reach a clean checkpoint, commit and push. Then write `docs/handoff/<area>.md` for a fresh successor, covering:
+- **Handoff:** when your context passes about 300k tokens (the measured optimum: about twice what a fresh successor holds after onboarding; see "Working lean"), reach a clean checkpoint, commit and push. Then write `docs/handoff/<area>.md` for a fresh successor, covering:
   - the owner's quotes;
   - your full brief;
   - what's done, in progress and next;
@@ -52,8 +52,19 @@ The owner asks: "accurate, efficient, on track, manage and engineer context. del
 - Only 3 to 5 leads run at once; the rest are paused with their handoff and status pages, never lost, and resumed in turn. Leads that work together run together, and a group has at most one GPU-heavy lead (face, creatures, UI art's ComfyUI batches).
 - Batch screenshots and renders: shoot everything a check needs in one turn, look once, fix in one pass.
 - Keep handoffs and status pages lean.
-- Effort (the owner, 6 October: "cut token use without lowering quality"): the lowest effort that gets the same result, raised freely whenever quality could be at risk. Leads are spawned as `su-lead-max` (judgement and taste: face, hair, story, UI, rendering diagnosis, new systems), `su-lead-high` (feature work to a spec: combat, animation, arena art, crafting, loot, cinematics, performance runs, story checks, provenance) or `su-worker-medium` (mechanical jobs). If your task proves harder than your setting, say so. Earlier settings: legal medium; performance measurement runs, story consistency checks, and provenance and licence logging high; everything else at its top. Every agent stays on the same model.
+- Agent types and models (the owner, 7 October: "dosn't use a bazooka when a slingshot will get the exact same perfection done"; quality stays first): `su-lead-max` (Opus, max: taste and judgement: face, hair, outfits, story, UI, rendering diagnosis, animation quality, new systems), `su-lead-high` (Opus, high: spec work judged by eye or feel: combat, clips, arena art, cinematics staging, VFX), `su-lead-sonnet` (Sonnet, high: spec work with measurable acceptance and no taste: loot, crafting rules, story consistency checks, provenance, perf measurement runs, legal), `su-worker` (Sonnet, medium: a decided code or doc change), `su-runner` (Haiku, medium, no edits: run batches and tests, measure, grep, report numbers and paths). If your task proves harder than your setting, say so; effort can be raised mid-task without losing the cache.
 - Running now: none (wound down 6 October, night). Restart per RESUME.md. Next: UI art (when the GPU is lighter), combat and animation (the crowd and her run), the experience director, then the rest.
+
+## Working lean (7 October 2026, from a measured week)
+
+The week of 30 September to 7 October cost about US$6,000 at list price. Three things drove it: contexts held far past need (84% of cache reads were at over 300k tokens), the 5-minute subagent cache expiring while agents waited on renders (about 40% of spend went on re-writing whole contexts after a wait, median 9.5 minutes), and pictures kept in long contexts (about 10%). Output and thinking were small by comparison. So:
+- **The cache now lasts an hour for every agent** (`.claude/settings.json`, `subagentPromptCacheTtl`). Waiting on a render no longer costs a full re-read. Still don't poll: take a turn with `--wait`, or hand the wait to a runner.
+- **Hand off at about 300k.** A fresh successor holds about 120k after onboarding, and handing off at about twice that is cheapest. A backstop auto-compacts any agent at 400k; don't rely on it, because a deliberate handoff keeps more.
+- **Onboard small.** Read README, RESUME, OWNER_NOTES and your handoff, then only the sections and files your step needs (grep first). Handoffs stay about 60 lines and name exact files and functions.
+- **Delegate by weight.** A lead keeps taste, judgement and every look at a picture. Long batch runs (Godot, Blender, the motion check) go to a `su-runner` (Haiku), which waits, measures and returns numbers and paths; the lead then looks once at the final sheet. A decided, well-specified change goes to a `su-worker` (Sonnet), and the lead checks the diff.
+- **Pictures:** batch into one contact sheet at the size you need and look once. For bulk visual QA (dozens of frames), spawn a fresh Opus judge with the sheets and a checklist; it returns a written verdict, so the images don't ride in your context for hundreds of turns.
+- **Wide audits** (every clip, every outfit in every view, every icon): use a dynamic workflow with cheap stages (runner and worker) and an Opus verification stage, instead of one agent holding it all.
+- **The main session** starts fresh for each wave, stays under about 250k, merges, judges and escalates. A lead that is stuck after two honest attempts comes to the main session, which takes it at the top model.
 
 ## Roster
 

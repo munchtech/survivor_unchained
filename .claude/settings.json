@@ -1,0 +1,4 @@
+{
+  "subagentPromptCacheTtl": "1h",
+  "autoCompactWindow": 400000
+}
