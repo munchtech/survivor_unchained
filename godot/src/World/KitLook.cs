@@ -36,12 +36,57 @@ public static class KitLook
     static Shader? solid, twoSided, solidRim, twoSidedRim;
     static readonly Dictionary<string, ShaderMaterial> cache = new();
 
+    /// <summary>--see-debug (a developer's switch): the kit's pieces tinted green where whole and
+    /// red on the window's rim, and what else stands in the window listed (Dump), so a piece in
+    /// the window that is neither can be found.</summary>
+    public static readonly bool SeeDebug = SurvivorUnchained.Args.Has("see-debug");
+    // (whole: each copy its own tint, so pieces can be told apart; rim: opaque, coloured by how much
+    // is kept, blue none to red all)
+    const string Whole = "ALBEDO = col;",
+        WholeDebug = "ALBEDO = col * (0.45 + 0.55 * vec3(fract(v_jit * 7.0), fract(v_jit * 13.0), fract(v_jit * 29.0)));",
+        RimDebug = "ALBEDO = mix(vec3(0.0, 0.25, 1.0), vec3(1.0, 0.1, 0.0), kept); ALPHA = 1.0;";
+
     /// <summary>The see-through window's feathered rim (shaders/kit.gdshader): the same code
     /// with REVEAL defined, blended, drawn as each kit material's next pass.</summary>
     static Shader Rim(Shader of) => new()
     {
         Code = of.Code.Replace("shader_type spatial;", "shader_type spatial;\n#define REVEAL")
-            .Replace("render_mode ", "render_mode blend_mix, depth_draw_never, "),
+            .Replace("render_mode ", "render_mode blend_mix, depth_draw_never, ")
+            .Replace(WholeDebug, RimDebug),
+    };
+
+    /// <summary>(--see-debug) Every mesh standing between the survivor's chest and the camera,
+    /// within the window's reach of that line, with its materials: printed once.</summary>
+    public static void Dump(Node root, Vector3 her, Vector3 cam)
+    {
+        var line = cam - her;
+        float len = line.Length();
+        var dir = line / len;
+        foreach (var n in root.FindChildren("*", "GeometryInstance3D", true, false))
+        {
+            if (n is not GeometryInstance3D g || !g.IsVisibleInTree()) continue;
+            var box = g.GlobalTransform * g.GetAabb();
+            var c = box.GetCenter();
+            float t = Mathf.Clamp((c - her).Dot(dir), 0, len);
+            float off = (her + dir * t).DistanceTo(c) - box.Size.Length() * 0.5f;
+            if (off > 2.6f || (c - her).Dot(dir) < -box.Size.Length() * 0.5f) continue;
+            var mats = new List<string>();
+            if (g is MeshInstance3D mi && mi.Mesh != null)
+                for (int s = 0; s < mi.Mesh.GetSurfaceCount(); s++)
+                    mats.Add(Describe(mi.GetActiveMaterial(s)));
+            else if (g is MultiMeshInstance3D mm && mm.Multimesh?.Mesh is { } mesh)
+                for (int s = 0; s < mesh.GetSurfaceCount(); s++)
+                    mats.Add(Describe(g.MaterialOverride ?? mesh.SurfaceGetMaterial(s)) + $" x{mm.Multimesh.InstanceCount}");
+            GD.Print($"see-debug: {g.GetPath()} [{g.GetClass()}] at {c} size {box.Size} off-line {off:0.0} m along {t:0.0} m: {string.Join(" | ", mats)}");
+        }
+    }
+
+    static string Describe(Material? m) => m switch
+    {
+        null => "none",
+        ShaderMaterial sm => $"shader {sm.Shader?.ResourcePath}{(sm.Shader == solid || sm.Shader == twoSided ? " (kit)" : "")} '{sm.ResourceName}'{(sm.NextPass != null ? " +next" : "")}",
+        BaseMaterial3D b => $"{b.GetClass()} '{b.ResourceName}' transparency {b.Transparency} cull {b.CullMode}",
+        _ => m.GetClass(),
     };
 
     /// <summary>A kit material as the web game shades it.</summary>
@@ -53,7 +98,7 @@ public static class KitLook
         var foliage = Foliage.IsMatch(s.ResourceName);
         var key = $"{s.GetInstanceId()}|{look}|{foot}";
         if (cache.TryGetValue(key, out var m)) return m;
-        solid ??= GD.Load<Shader>("res://shaders/kit.gdshader");
+        solid ??= SeeDebug ? new Shader { Code = GD.Load<Shader>("res://shaders/kit.gdshader").Code.Replace(Whole, WholeDebug) } : GD.Load<Shader>("res://shaders/kit.gdshader");
         twoSided ??= new Shader { Code = solid.Code.Replace("render_mode diffuse_burley", "render_mode cull_disabled, diffuse_burley") };
         m = new ShaderMaterial { Shader = foliage || s.CullMode == BaseMaterial3D.CullModeEnum.Disabled ? twoSided : solid };
         m.SetShaderParameter("albedo_tex", s.AlbedoTexture);

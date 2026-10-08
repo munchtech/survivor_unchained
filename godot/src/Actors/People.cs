@@ -491,7 +491,7 @@ public static class People
                 if (src.ResourceName == "lashes")                  // (her lower lashes finer: tools/assets/heroine_eyes.py)
                     m.AlbedoTexture = GD.Load<Texture2D>("res://art/people/head_tex/heroine_lashes.png");
                 m.Roughness = 0.8f;
-                return Coverage.Cards(m);
+                return HairDraw.Cards(m) ?? Coverage.Cards(m);
             case "teeth" or "tongue":
                 m.Roughness = 0.35f;
                 return m;
@@ -688,7 +688,8 @@ public static class People
             {
                 if (mi.GetSurfaceOverrideMaterial(s) is ShaderMaterial m)
                 {
-                    if (m.Shader == hairShader || m.Shader == hairSoftShader || Coverage.On && m.Shader == Coverage.Hair) m.SetShaderParameter("colour", colour);
+                    if (m.Shader == hairShader || m.Shader == hairSoftShader || Coverage.On && m.Shader == Coverage.Hair || HairDraw.IsHair(m.Shader))
+                        foreach (var pass in HairDraw.Passes(m)) pass.SetShaderParameter("colour", colour);
                     else if (m.ResourceName == "brows") Coverage.Colour(m, colour.Darkened(0.45f));
                     else if (m.Shader == skinShader2)
                     {
@@ -780,11 +781,16 @@ public static class People
         // (the cap on her scalp and the fine hairs at her hairline blended, as
         // they thin out into her skin; the fine hairs over the cap)
         bool soft = src.ResourceName is "hair_cap" or "hair_fine";
-        var m = new ShaderMaterial { Shader = soft ? hairSoftShader : Coverage.On ? Coverage.Hair : hairShader, RenderPriority = src.ResourceName == "hair_fine" ? 1 : 0 };
-        m.SetShaderParameter("strands", src.AlbedoTexture);
-        m.SetShaderParameter("colour", colour);
-        m.SetShaderParameter("cap", src.ResourceName == "hair_cap");
-        m.SetShaderParameter("tie", src.ResourceName == "hair_tie");
+        // (--hair-draw: the cards blended, to choose the smoothing: HairDraw)
+        var m = (src.ResourceName == "hair" ? HairDraw.Hair() : null)
+            ?? new ShaderMaterial { Shader = soft ? hairSoftShader : Coverage.On ? Coverage.Hair : hairShader, RenderPriority = src.ResourceName == "hair_fine" ? (HairDraw.Blended ? 2 : 1) : 0 };
+        foreach (var pass in HairDraw.Passes(m))
+        {
+            pass.SetShaderParameter("strands", src.AlbedoTexture);
+            pass.SetShaderParameter("colour", colour);
+            pass.SetShaderParameter("cap", src.ResourceName == "hair_cap");
+            pass.SetShaderParameter("tie", src.ResourceName == "hair_tie");
+        }
         return m;
     }
 
