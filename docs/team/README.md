@@ -53,7 +53,7 @@ The owner asks: "accurate, efficient, on track, manage and engineer context. del
 - Batch screenshots and renders: shoot everything a check needs in one turn, look once, fix in one pass.
 - Keep handoffs and status pages lean.
 - Agent types and models (the owner, 7 October: "dosn't use a bazooka when a slingshot will get the exact same perfection done"; quality stays first): `su-lead-high` (Opus, high: every long-running lead except story, including face, hair, outfits, animation, rendering, UI, combat, arena art, cinematics staging, VFX), `su-lead-max` (Opus, max, in short bursts: judges, solvers, and the story writer and editor as leads; see "Max effort in short bursts"), `su-lead-sonnet` (Sonnet, high: spec work with measurable acceptance and no taste: loot, crafting rules, story consistency checks, provenance, perf measurement runs, legal), `su-worker` (Sonnet, medium: a decided code or doc change), `su-runner` (Haiku, medium, no edits: run batches and tests, measure, grep, report numbers and paths). If your task proves harder than your setting, say so; effort can be raised mid-task without losing the cache.
-- Running now (wave 1, 7 October): face (GPU), body and outfits, animation, rendering, started on `su-lead-max` before the 7 October rule; their successors go on `su-lead-high`. Next wave: UI design and UI art (when the GPU is lighter), then combat (the crowd and her run), the experience director, then the rest.
+- Running now (wave 1 successors, 7 October): face (GPU), body and outfits, animation, rendering, all on `su-lead-high` with `su-lead-max` judges. Next wave: UI design and UI art (when the GPU is lighter), then combat (the crowd and her run), the experience director, then the rest.
 
 ## Working lean (7 October 2026, from a measured week)
 
@@ -92,7 +92,7 @@ The main session keeps this current. It is the address list for SendMessage. Ret
 | Performance and rendering (clarity in motion first) | a6a04e32348559b6c (su-lead-high, 7 Oct) | docs/team/performance.md |
 | Arena art | a0b61c278bdd5c994 | docs/team/arena_art.md |
 | Male hero (body, head, hair, outfits) | ab82cbe99e2937ddd | docs/team/hero_male.md |
-| Heroine face, hair and character creation's Look | abe65bc929823a791 (wave 1, 7 Oct) | docs/team/face.md |
+| Heroine face, hair and character creation's Look | a6e8e6d0f539943bb (su-lead-high, 7 Oct) | docs/team/face.md |
 | Asset provenance (what isn't ours, licences, credits, replacement plan) | a80ff0c7fd988b178 | docs/team/provenance.md |
 | Legal and Steam compliance (paused; docs/handoff/legal.md; wake before submission or for a new outfit) | — | docs/team/legal.md |
 | Loot and itemisation (paused, built and merged; docs/handoff/loot.md for a successor) | — | docs/team/loot.md |
