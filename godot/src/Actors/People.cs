@@ -479,12 +479,7 @@ public static class People
                 // (his own, when none is chosen: flint grey, Lore.Eyes' "flint")
                 if (who == "hero" && look.Eyes == null) EyeColour(e, HisEyes.Iris, HisEyes.Ring);
                 else EyeColour(e, look.Eyes, look.EyeRing);
-                // (--eye-set "iris_r=0.13,pupil=0.24": a developer's switch, her eyes' uniforms tried without a build)
-                if (who != "hero" && SurvivorUnchained.Args.Get("eye-set") is string es)
-                    foreach (var kv in es.Split(','))
-                        if (kv.Split('=') is [var k, var v] && float.TryParse(v, System.Globalization.NumberStyles.Float,
-                                System.Globalization.CultureInfo.InvariantCulture, out var f))
-                            e.SetShaderParameter(k.Trim(), f);
+                if (who != "hero") HerEyes(e, look.FaceShape);
                 return e;
             case "brows" or "lashes":
                 // Cards cut out by their alpha, soft at the edges; brows
@@ -610,6 +605,41 @@ public static class People
     /// paint keeps its fibres and crypts, its light and dark, and takes the
     /// colour chosen, the ring round the pupil its own (as a blue eye's amber
     /// collarette); none chosen keeps the paint's own green.</summary>
+    /// <summary>Her eyes as her portraits have them (a judge's measures beside them, 10 October 2026),
+    /// the hero's left as they were: irises 0.13 of the paint (0.12 read 7-11% small on every face); a
+    /// thin limbal ring from 0.85 of the radius; the iris's blotches softened and its amber drawn in to
+    /// a thin collarette; a crisper, larger catchlight; pupils never black; the whites ivory and a fifth
+    /// darker (they outshone her cheek), the upper lid's shadow along its margin and a wet line on the
+    /// lower lid. Per face (looks.json faces): the pupil, and how light the whites stand.</summary>
+    static void HerEyes(ShaderMaterial e, string? face)
+    {
+        var f = SurvivorUnchained.World.Lore.Her.Faces.FirstOrDefault(x => x.Id == (face is { Length: > 0 } ? face : "own"));
+        e.SetShaderParameter("iris_r", 0.13f);
+        e.SetShaderParameter("pupil", f is { Pupil: > 0 } ? (float)f.Pupil : 0.28f);
+        e.SetShaderParameter("limbal", 0.42f);
+        e.SetShaderParameter("limbal_from", 0.85f);
+        e.SetShaderParameter("iris_contrast", 0.6f);
+        e.SetShaderParameter("ring_to", 0.45f);
+        e.SetShaderParameter("catch_size", 2.0f);
+        e.SetShaderParameter("catchlight", 0.8f);
+        e.SetShaderParameter("catch_soft", 0.5f);
+        e.SetShaderParameter("pupil_dark", 0.035f);
+        var w = f is { Whites: > 0 } ? (float)f.Whites : 1f;
+        e.SetShaderParameter("white_tint", new Vector3(0.74f, 0.68f, 0.58f) * w);
+        e.SetShaderParameter("corner_pink", 0.3f);
+        // (the lid's margin from the face's resting lid: a little above where it shows, so no unshadowed sliver)
+        e.SetShaderParameter("lid_shadow", 0.35f);
+        e.SetShaderParameter("lid_y", -0.85f + 1.1f * (float)(f?.Lid ?? 0));
+        e.SetShaderParameter("lid_fade", 0.6f);
+        e.SetShaderParameter("low_wet", 1.5f);
+        // (--eye-set "iris_r=0.13,pupil=0.24": a developer's switch, her eyes' uniforms tried without a build)
+        if (SurvivorUnchained.Args.Get("eye-set") is string es)
+            foreach (var kv in es.Split(','))
+                if (kv.Split('=') is [var k, var v] && float.TryParse(v, System.Globalization.NumberStyles.Float,
+                        System.Globalization.CultureInfo.InvariantCulture, out var x))
+                    e.SetShaderParameter(k.Trim(), x);
+    }
+
     static void EyeColour(ShaderMaterial e, Color? iris, Color? ring)
     {
         e.SetShaderParameter("recolour", iris != null ? 1f : 0f);
@@ -705,7 +735,11 @@ public static class People
                         m.SetShaderParameter("face_tone", FaceTone(look));
                         m.SetShaderParameter("freckle_amount", HerFreckles(look));
                     }
-                    else if (m.Shader == eyeShader) EyeColour(m, look.Eyes, look.EyeRing);
+                    else if (m.Shader == eyeShader)
+                    {
+                        EyeColour(m, look.Eyes, look.EyeRing);
+                        HerEyes(m, look.FaceShape);
+                    }
                 }
                 else if (mi.GetSurfaceOverrideMaterial(s) is StandardMaterial3D b && b.ResourceName == "brows") b.AlbedoColor = colour.Darkened(0.45f);
             }

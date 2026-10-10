@@ -474,19 +474,41 @@ def brow_zone(drawn, ref, frac):
         w = np.linalg.norm(e1)
         e1 = e1 / w
         return o, e1, np.array([e1[1], -e1[0]]) * (1 if e1[0] > 0 else -1), w       # (e2 up her face)
+    # (10 October, a judge on Sunborn at 1.0: point by point, the pin kinked her brow (a dip at its inner end, a hump
+    # at the arch) and left a muddy ghost band under it, and every pinned brow smeared grey past its tail. So each
+    # eye's move is one smooth curve along the brow (a quadratic in u, and linear in v, fitted to every point's own
+    # move), the brow's upper edge pinned harder than its lower (FACE_BROW_LOW of `frac` at and under its lower edge,
+    # all of it at and over its top: the brow grows to the portrait's thickness rather than the whole band sliding up
+    # and stretching the lid), and the zone reaches out over the temple past the tail, so the tail is carried, not
+    # torn from the skin beside it. FACE_BROW_SMOOTH=0 for the old point-by-point move.)
+    low = float(os.environ.get("FACE_BROW_LOW", "0.65"))
+    smooth = os.environ.get("FACE_BROW_SMOOTH", "1") != "0"
     zone, at = [], []
     for ring, (c0, c1) in ((BROW_A, (33, 133)), (BROW_B, (263, 362))):
         o_r, e1_r, e2_r, w_r = frame(ref, c0, c1)
         o_d, e1_d, e2_d, w_d = frame(drawn, c0, c1)
         uv = np.c_[(ref - o_r) @ e1_r / w_r, (ref - o_r) @ e2_r / w_r]
-        top, span = uv[ring, 1].max(), uv[ring, 0]
-        near = np.where((uv[:, 1] > 0.42) & (uv[:, 1] < top + 0.32) & (uv[:, 0] > span.min() - 0.15) & (uv[:, 0] < span.max() + 0.15))[0]
-        for j in sorted(set(near) | set(ring)):
-            if j in zone:
-                continue                                  # (one place for a landmark both eyes' zones reach)
-            u, v = uv[j]
-            zone.append(j)
-            at.append(drawn[j] + frac * (o_d + w_d * (u * e1_d + v * e2_d) - drawn[j]))
+        top, bot, span = uv[ring, 1].max(), uv[ring, 1].min(), uv[ring, 0]
+        # (u runs from the outer corner (c0) to the inner: the temple is u below the brow's span)
+        out_reach = 0.4 if smooth else 0.15
+        near = np.where((uv[:, 1] > 0.42) & (uv[:, 1] < top + 0.32) & (uv[:, 0] > span.min() - out_reach) & (uv[:, 0] < span.max() + 0.15))[0]
+        js = [j for j in sorted(set(near) | set(ring)) if j not in zone]   # (one place for a landmark both eyes' zones reach)
+        if not js:
+            continue
+        js = np.array(js)
+        goal = o_d + w_d * (uv[js, :1] * e1_d + uv[js, 1:] * e2_d)
+        move = goal - drawn[js]
+        if smooth and len(js) >= 6:
+            u, v = uv[js, 0], uv[js, 1]
+            A = np.c_[np.ones_like(u), u, u * u, v]
+            coef, *_ = np.linalg.lstsq(A, move, rcond=None)
+            move = A @ coef
+        if smooth:
+            f = frac * (low + (1 - low) * np.clip((uv[js, 1] - bot) / max(top - bot, 1e-3), 0, 1))
+        else:
+            f = np.full(len(js), frac)
+        zone += list(js)
+        at += list(drawn[js] + f[:, None] * move)
     return np.array(zone), np.array(at)
 
 

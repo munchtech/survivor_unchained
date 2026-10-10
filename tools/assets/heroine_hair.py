@@ -81,8 +81,15 @@ def draw_atlas(size=(4096, 2048), over=3):
         gather = {"dense": (0.1, 0.4), "loose": (0.0, 0.3), "lock": (0.6, 0.95), "wisp": (-0.3, 0.3)}[kind]
         strands = []
         for i in range(n):
-            x0 = np.clip(r.normal(0.5, spread), 0.03, 0.97) * cw
-            t0 = r.uniform(0.0, 0.015)
+            # (drawn again, not clipped, when off the card: clipped, they piled
+            # up along its sides, a hard straight edge to every card)
+            x0 = r.normal(0.5, spread)
+            while not 0.03 < x0 < 0.97:
+                x0 = r.normal(0.5, spread)
+            # (its root lower the further out it lies, and ragged: a card's
+            # root end rounded, never a straight edge across it)
+            t0 = r.uniform(0.0, 0.015) + r.uniform(0.2, 1.0) * 0.06 * abs(2 * x0 - 1) ** 1.5
+            x0 *= cw
             t1 = min(1.0, t0 + r.uniform(*reach))
             t = np.linspace(t0, t1, 140)
             f = (t - t0) / (t1 - t0)
@@ -91,8 +98,8 @@ def draw_atlas(size=(4096, 2048), over=3):
             if r.random() < (0.06 if kind != "wisp" else 0.5):     # a flyaway, drifting off the clump
                 xs += np.sign(x0 - cw / 2) * r.uniform(0.05, 0.25) * cw * f ** 2
             strands.append((xs, t * h, f, r.uniform(0.8, 1.5) * over, (0.5 + 0.5 * i / n) * r.uniform(0.8, 1.0), r.uniform(0.02, 0.98)))
-        shade, ident, alpha = (Image.new("L", (cw, h), 0) for _ in range(3))
-        ds, di, da = ImageDraw.Draw(shade), ImageDraw.Draw(ident), ImageDraw.Draw(alpha)
+        shade, ident, alpha, cov = (Image.new("L", (cw, h), 0) for _ in range(4))
+        ds, di, da, dc = ImageDraw.Draw(shade), ImageDraw.Draw(ident), ImageDraw.Draw(alpha), ImageDraw.Draw(cov)
         # (back to front: the later, lighter strands over the ones behind)
         for xs, ys, f, wd, sh, idv in strands:
             for c0 in range(0, len(xs) - 1, 20):
@@ -101,21 +108,28 @@ def draw_atlas(size=(4096, 2048), over=3):
                 pts = list(zip(xs[c0:c1], ys[c0:c1]))
                 ds.line(pts, fill=int(255 * sh * (0.9 + 0.1 * f[c0])), width=w, joint="curve")
                 di.line(pts, fill=int(255 * idv), width=w, joint="curve")
-        # Alpha: the strands' fading tips first, faintest first (where they
-        # cross, the stronger shows: no tip cuts into one behind it), then all
-        # their bodies over them.
+                dc.line(pts, fill=255, width=w, joint="curve")
+        # Alpha: the strands' fading tips (and roots) first, faintest first
+        # (where they cross, the stronger shows: no tip cuts into one behind
+        # it), then all their bodies over them.
         tips = []
         for xs, ys, f, wd, sh, idv in strands:
-            for k in np.nonzero(f > 0.9)[0][:-1]:
-                tips.append((int(255 * (1 - f[k]) / 0.1), (xs[k], ys[k]), (xs[k + 1], ys[k + 1]), max(1, int(round(wd * (1 - 0.5 * f[k]))))))
+            for k in np.nonzero((f > 0.9) | (f < 0.03))[0][:-1]:
+                fade = (1 - f[k]) / 0.1 if f[k] > 0.9 else f[k] / 0.03
+                tips.append((int(255 * fade), (xs[k], ys[k]), (xs[k + 1], ys[k + 1]), max(1, int(round(wd * (1 - 0.5 * f[k]))))))
         for a_, p0, p1, wd_ in sorted(tips, key=lambda q: q[0]):
             da.line([p0, p1], fill=a_, width=wd_)
         for xs, ys, f, wd, sh, idv in strands:
-            body_ = np.nonzero(f <= 0.9)[0]
+            body_ = np.nonzero((f <= 0.9) & (f >= 0.03))[0]
             for c0 in range(0, len(body_) - 1, 20):
                 seg = body_[c0:c0 + 21]
                 da.line(list(zip(xs[seg], ys[seg])), fill=255, width=max(1, int(round(wd * (1 - 0.5 * f[seg[0]])))), joint="curve")
-        small = [np.asarray(im.resize((cw // over, h // over), Image.LANCZOS), np.float32) for im in (shade, ident, alpha)]
+        small = [np.asarray(im.resize((cw // over, h // over), Image.LANCZOS), np.float32) for im in (shade, ident, alpha, cov)]
+        # (each strand's own shade and number to its very edge, not darkened
+        # by the empty card shrunk into it: blended, a strand's soft edge took
+        # the dark, and its mips too)
+        c = np.maximum(small[3], 1.0) / 255.0
+        small[0], small[1] = (np.where(small[3] > 8, np.minimum(s / c, 255.0), s) for s in small[:2])
         x = col * (size[0] // COLUMNS)
         out[:, x:x + cw // over] = np.stack([small[0], small[1], small[0], small[2]], 2)
     Image.fromarray(np.clip(padded(out), 0, 255).astype(np.uint8)).save(ATLAS)
@@ -141,6 +155,9 @@ def draw_scalp(size=1024, over=2):
             di.line(pts, fill=idv, width=wd, joint="curve")
             da.line(pts, fill=255, width=wd, joint="curve")
     small = [np.asarray(im.resize((size, size), Image.LANCZOS), np.float32) for im in (shade, ident, alpha)]
+    # (each strand's own shade to its edge: see draw_atlas)
+    c = np.maximum(small[2], 1.0) / 255.0
+    small[0], small[1] = (np.where(small[2] > 8, np.minimum(s / c, 255.0), s) for s in small[:2])
     img = padded(np.stack([small[0], small[1], small[0], small[2]], 2))
     Image.fromarray(np.clip(img, 0, 255).astype(np.uint8)).save(SCALP)
     print("SCALP", SCALP)

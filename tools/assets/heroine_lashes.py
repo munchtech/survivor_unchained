@@ -27,12 +27,15 @@ SEED = 23
 # Upper and lower lashes: how many to an eye; length (mm) along her lid from its inner corner (0) to its outer (1);
 # width at the root (mm); how far they lean toward the outer corner (degrees, along the lid); how deep the rows of
 # roots go behind the lid's edge (mm); opacity.
-UPPER = dict(count=128, length=((0.0, 4.2), (0.18, 6.6), (0.45, 9.0), (0.72, 10.2), (0.9, 9.6), (1.0, 8.4)),
-             width=0.085, lean=((0.0, -3.0), (0.3, 2.0), (0.7, 12.0), (0.9, 14.0), (1.0, 8.0)), rows=0.7, alpha=1.0,
-             start=0.04, end=0.97)
-LOWER = dict(count=42, length=((0.0, 2.2), (0.3, 3.6), (0.65, 5.2), (0.9, 5.8), (1.0, 5.0)),
-             width=0.055, lean=((0.0, 0.0), (0.5, 6.0), (0.9, 10.0), (1.0, 6.0)), rows=0.45, alpha=0.78,
-             start=0.12, end=0.95)
+# (10 October, a judge: the first paint, 128 lashes a tenth of a millimetre wide, carried 13% of MakeHuman's ink
+# and was gone by the mip the Look samples: her lids read bare. Now as many as read at the Look, in clumps of three
+# to five, wide enough at the root to hold four to six texels, over a near-opaque root band: the lash line.)
+UPPER = dict(count=300, length=((0.0, 4.2), (0.18, 6.6), (0.45, 8.6), (0.72, 10.0), (0.9, 9.8), (1.0, 8.6)),
+             width=0.28, lean=((0.0, -3.0), (0.3, 2.0), (0.7, 13.0), (0.9, 16.0), (1.0, 10.0)), rows=0.6, alpha=1.0,
+             start=0.04, end=0.97, clump=0.27, band=(0.42, 0.92))
+LOWER = dict(count=48, length=((0.0, 2.2), (0.3, 3.6), (0.65, 5.2), (0.9, 5.8), (1.0, 5.0)),
+             width=0.13, lean=((0.0, 0.0), (0.5, 6.0), (0.9, 10.0), (1.0, 6.0)), rows=0.45, alpha=0.7,
+             start=0.12, end=0.95, clump=0.45, band=(0.22, 0.6))
 ROOT_COL = np.array([0.105, 0.075, 0.062])      # (sRGB 0 to 1: a dark brown at the root)
 TIP_COL = np.array([0.215, 0.165, 0.135])       # (lighter and browner toward the tip)
 
@@ -174,7 +177,17 @@ def paint(grids, size=SIZE, ss=SS, seed=SEED):
         cdf /= cdf[-1]
         u = np.interp((np.arange(n) + rng.uniform(0.2, 0.8, n)) / n, cdf, grid_s)
         u = spec["start"] + (spec["end"] - spec["start"]) * u
-        clump = np.cumsum(rng.uniform(0, 1, n) < 0.45)                    # (twos and threes gathered)
+        clump = np.cumsum(rng.uniform(0, 1, n) < spec["clump"])           # (gathered: threes to fives above)
+        # The lash line: a band along the lid's edge, near opaque, its width wavering, where the roots crowd.
+        bw, ba = spec["band"]
+        m = 160
+        a_b = np.linspace(spec["start"], spec["end"], m) * lid_len
+        t_b = 0.12 + 0.05 * np.sin(np.linspace(0, 9.0, m) + rng.uniform(0, 6.3))
+        p_b = at(a_b, t_b)
+        mm_b = np.linalg.norm(np.diff(p_b, axis=0), axis=1).sum() / max(a_b[-1] - a_b[0], 1e-3)
+        ends = np.minimum(1.0, np.minimum(np.linspace(0, 1, m - 1), np.linspace(1, 0, m - 1)) / 0.08)   # (tapered ends)
+        w_b = np.maximum(bw * mm_b * (0.8 + 0.2 * np.sin(np.linspace(0, 23.0, m - 1))) * ends, 0.6 * ss / 4)
+        draw_lash(p_b, w_b, ba * (0.4 + 0.6 * ends), np.tile(ROOT_COL * 0.9, (m - 1, 1)))
         for i in range(n):
             s = u[i]                                                        # (its root: a share of the lid's length)
             a0 = s * lid_len
@@ -194,7 +207,8 @@ def paint(grids, size=SIZE, ss=SS, seed=SEED):
             # (kept on the card: past its ends a lash ran along the card's edge)
             p = at(np.clip(a0 + side_mm, 0.4, lid_len - 0.4), t_mm)
             mm_px = np.linalg.norm(p[-1] - p[0]) / max(L, 1e-3)              # (this lash's pixels per mm, roughly)
-            col = (ROOT_COL + (TIP_COL - ROOT_COL) * v[:, None] ** 1.3) * rng.uniform(0.85, 1.15)
+            # (dark brown, lightening only over its last third)
+            col = (ROOT_COL + (TIP_COL - ROOT_COL) * np.clip((v[:, None] - 0.67) / 0.33, 0, 1) ** 1.2) * rng.uniform(0.85, 1.15)
             vv = (v[:-1] + v[1:]) / 2
             widths = np.maximum(w0 * (1 - vv) ** 0.85 * mm_px, 0.6 * ss / 4)
             fades = spec["alpha"] * np.where(vv < 0.7, 1.0, 1 - (vv - 0.7) / 0.3 * 0.75)

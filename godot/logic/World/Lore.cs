@@ -164,6 +164,9 @@ public sealed class FaceShape
     /// <summary>How far its upper lids rest down over its eyes (0 open to 1 shut), from its portrait: wide open, the
     /// whole iris showed with white above it, and every face stared.</summary>
     public double Lid;
+    /// <summary>Its pupil (of the iris's radius; 0: 0.28) and how light its eyes' whites stand (0: as hers, 1),
+    /// from its portrait: under one light, one white outshone a darker cheek.</summary>
+    public double Pupil, Whites;
     public Dictionary<string, double> Shape = new();
 }
 
