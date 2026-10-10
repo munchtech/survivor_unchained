@@ -226,9 +226,12 @@ void light() {
 	float burley = (1.0 + fd90 * schlick(c_ndv)) * (1.0 + fd90 * schlick(c_ndl));
 	vec3 diffuse = soft * burley / PI;
 	DIFFUSE_LIGHT += LIGHT_COLOR * diffuse * ATTENUATION;
-	// the fine down at her edges
+	// the fine down at her edges, against a light from behind her only (lit
+	// from the front, it brightened every edge of her: a pale ribbon down her
+	// cheek where her dark hair met it, her temples white)
 	float rim_light = pow(max(1e-4, 1.0 - c_ndv), max(0.0, (1.0 - ROUGHNESS) * 16.0));
-	DIFFUSE_LIGHT += rim_light * rim * mix(vec3(1.0), ALBEDO, 0.6) * LIGHT_COLOR * ATTENUATION;
+	float behind = smoothstep(-0.1, 0.6, dot(-LIGHT, VIEW));
+	DIFFUSE_LIGHT += rim_light * behind * rim * mix(vec3(1.0), ALBEDO, 0.6) * LIGHT_COLOR * ATTENUATION;
 	// light through her where she is thin
 	DIFFUSE_LIGHT += LIGHT_COLOR * max(vec3(1.0 / PI) - diffuse, vec3(0.0)) * BACKLIGHT * ATTENUATION;
 	if (c_ndl > 0.0) {

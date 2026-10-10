@@ -97,7 +97,10 @@ def draw_atlas(size=(4096, 2048), over=3):
             xs = x0 + (cw / 2 - x0) * r.uniform(*gather) * f ** 2 + amp * np.sin(2 * np.pi * r.uniform(0.8, 2.5) * t + r.uniform(0, 6.3))
             if r.random() < (0.06 if kind != "wisp" else 0.5):     # a flyaway, drifting off the clump
                 xs += np.sign(x0 - cw / 2) * r.uniform(0.05, 0.25) * cw * f ** 2
-            strands.append((xs, t * h, f, r.uniform(0.8, 1.5) * over, (0.5 + 0.5 * i / n) * r.uniform(0.8, 1.0), r.uniform(0.02, 0.98)))
+            # (shade: the back of the clump darker, and strand to strand wider
+            # than it was (0.4 to 1): soft-edged now, the strands need their
+            # own light and dark to read as strands)
+            strands.append((xs, t * h, f, r.uniform(0.8, 1.5) * over, min(1.0, (0.5 + 0.6 * i / n) * r.uniform(0.65, 1.05)), r.uniform(0.02, 0.98)))
         shade, ident, alpha, cov = (Image.new("L", (cw, h), 0) for _ in range(4))
         ds, di, da, dc = ImageDraw.Draw(shade), ImageDraw.Draw(ident), ImageDraw.Draw(alpha), ImageDraw.Draw(cov)
         # (back to front: the later, lighter strands over the ones behind)
@@ -639,18 +642,26 @@ def hairline_hairs(comb, spacing=0.0026, points=8, sides=None):
     print("  hairline: %d cards" % len(pts))
     # Baby hairs: about her hairline's edge (6 mm either side), short, fine
     # and faint, each a little off the way it is combed, some curling.
+    # (10 October, a judge: none showed. They were drawn from the wisp
+    # columns, two dozen strands across a card, at a third to half their
+    # alpha: shrunk to the Look's mip, a tenth of cover. Now from the lock
+    # columns (a gathered few hairs, holding their cover as they shrink), at
+    # half to four fifths, sparser over her forehead, a few more astray.)
     pts, nrm = roots(0.0034, above=-0.006, below=0.006)
+    th = np.degrees(np.abs(np.arctan2(pts[:, 0] - CENTRE[0], -(pts[:, 1] - CENTRE[1]))))
+    keep = RNG.random(len(pts)) < np.interp(th, [0, 35, 60], [0.55, 0.8, 1.0])
+    pts, nrm = pts[keep], nrm[keep]
     n, k = len(pts), 6
-    turn = RNG.normal(0, 0.45, n) + np.where(RNG.random(n) < 0.15, RNG.normal(0, 1.0, n), 0)
+    turn = RNG.normal(0, 0.45, n) + np.where(RNG.random(n) < 0.22, RNG.normal(0, 1.1, n), 0)
 
     def astray(p, side=None):
         w = comb(p, side)
         return w * np.cos(turn)[:, None] + np.cross(nrm, w) * np.sin(turn)[:, None]
-    L = RNG.uniform(0.008, 0.022, n)
+    L = RNG.uniform(0.004, 0.014, n)
     P = lie(pts - nrm * 0.0005, combed(pts, nrm, astray(pts)), astray, L / (k - 1), np.full(n, k - 1), 0.0009,
             side=sides(pts) if sides else None, lift=RNG.uniform(0.0, 0.0025, n))
-    c = cards(P, RNG.uniform(0.0018, 0.0032, n), [14, 15], 0.0009, narrow=0.7)
-    c["alpha"] = np.repeat(RNG.uniform(0.3, 0.55, n), 3 * k)
+    c = cards(P, RNG.uniform(0.0012, 0.0024, n), [11, 12, 13], 0.0009, narrow=0.7)
+    c["alpha"] = np.repeat(RNG.uniform(0.5, 0.8, n), 3 * k)
     c["mat"] = 3
     out.append(c)
     print("  baby hairs: %d cards" % n)
