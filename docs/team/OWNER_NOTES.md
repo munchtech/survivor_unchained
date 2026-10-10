@@ -7,6 +7,11 @@ Every lead reads this after RESUME.md. When you take a note into your work, mark
 ### Face lead (skin): neck discolouration on every face
 The owner, with two crops (`docs/team/owner_crops/2026-10-10_neck_1.png`, `_2.png`): "leads are aware of neck discolorations on every face right?" Under the jaw and down the side of the neck the skin goes blotchy grey-violet, bruise-like, with a darker vertical band. Not yet tracked as such (the face list had only "neck grain" and "jaw-edge spots"; the hair judge saw shadow facets on Highborn's neck). Find the cause at the root on every face (likely candidates: the head-to-body paint graft or seam, the freckle-map blue that now carries the grain up her neck, AO or SSS tint, hair shadow), fix it, and judge each face's neck at 1:1 beside its portrait. Sent to the face lead; any shadow cause goes to rendering.
 
+### Outfits: nipple show-through and boots (the owner's answers to judge 1's taste calls on g2)
+- **Nipples:** "both arcanist and ranger could use less nipple poke through, and it should be equal on both". Reduce the nipple point through the cup on the arcanist and the ranger, and make left and right match. (Judge 1 saw the arcanist's uneven and the ranger's nipple point through its cup.)
+- **Boots:** "boots need work reaver, and ranger". The reaver's and ranger's boots need work, as well as the arcanist's white boots, which judge 1 found flat plastic. Material and shape to the AAA bar.
+- For the outfits lead; recorded with its "paused here" block (branch `worktree-agent-a5ca10091b08dc429`).
+
 ## 6 October 2026 (after the editor's notes 02 on Act 1)
 
 ### Story: love scenes and showing, not telling
