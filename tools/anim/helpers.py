@@ -21,7 +21,8 @@ spread the turn and the bend over the flesh as a body does:
 - **shares** (`upperarm_share`, `lowerarm_share`, `calf_share`): half the
   joint's bend, carrying the ring of flesh round the joint, so it bends
   round a corner instead of folding; at the elbow and knee also pushed out
-  across the bend as a bent tube is (`bulge`), so the crease keeps its flesh.
+  across the bend as a bent tube is (`bulge`, held on the crease side), and
+  kept off the crease itself, which folds in deep as it did (`crease`).
 
 They are children of the bones they help, laid along them, and bound where
 those bones' weight was, so a body without the driver moves as before.
@@ -51,9 +52,9 @@ SPEC = {
         {"name": "upperarm_share_{s}", "parent": "clavicle_{s}", "kind": "share", "bone": "upperarm_{s}", "amount": 0.5,
          "bulge": 0.0, "bulge_max": 1.0, "way": "front"},
         {"name": "lowerarm_share_{s}", "parent": "upperarm_{s}", "kind": "share", "bone": "lowerarm_{s}", "amount": 0.5,
-         "bulge": 1.0, "bulge_max": 2.0, "way": "front"},
+         "bulge": 0.45, "bulge_max": 1.45, "pivot": 0.047, "way": "front"},
         {"name": "calf_share_{s}", "parent": "thigh_{s}", "kind": "share", "bone": "calf_{s}", "amount": 0.5,
-         "bulge": 1.0, "bulge_max": 2.0, "way": "back"},
+         "bulge": 0.5, "bulge_max": 1.5, "pivot": 0.059, "way": "back"},
     ],
     # The forearm bone's own roll on the elbow handed down to the hand.
     "unroll": ["lowerarm_{s}"],
@@ -73,6 +74,15 @@ SPEC = {
         "pairs": [["clavicle_{s}", "upperarm_{s}", "upperarm_share_{s}"], ["upperarm_{s}", "lowerarm_{s}", "lowerarm_share_{s}"],
                   ["thigh_{s}", "calf_{s}", "calf_share_{s}"]],
         "cap": 4,
+        # The crease (the inside of the bend, the share's `way`): none of the
+        # share there, eased out from the joint's line to `reach` metres into
+        # the crease. A share there holds the crease's skin out at its rest
+        # distance, which leaves it just past the point where a bend folds
+        # it: a shallow fold, turned over at the skin itself, which shows at
+        # the crease's ends (the tick behind the knee at 120-145). Without
+        # it the crease folds in deep, with the bones each side, hidden
+        # under them as before the helpers; the share rounds the outside.
+        "crease": {"cut": 1.0, "reach": 0.035},
     },
 }
 
@@ -182,16 +192,24 @@ def bulge(bend, h):
     halfway round lies at (cos(bend/2) + stretch) / 2 of its rest distance
     from the joint, so a stretch of 2 - cos(bend/2) keeps it there: the
     joint bends round as a rounded corner, neither cut across nor pushed to
-    a point. `bulge` of that stretch, at most `bulge_max`."""
+    a point. `bulge` of that stretch, at most `bulge_max`.
+
+    With a `pivot` (metres along the share's Z: the flexor side, the inside
+    of the bend, which is +Z at the elbow and the knee) the stretch is about
+    that point, not the bone's line: the crease side is held where it is (a
+    stretch there pushed the crease's skin over itself: a fold-over tick
+    behind the knee), and the extensor side, twice as far from the pivot,
+    takes the whole push from half the bulge."""
     k = 2.0 - math.cos(math.radians(min(bend, 180.0) / 2))
     return float(min(1.0 + h.get("bulge", 0.0) * (k - 1.0), h.get("bulge_max", 1.0)))
 
 
-def drive(sk: Skeleton, rot, scale=None):
+def drive(sk: Skeleton, rot, scale=None, shift=None):
     """Her helpers posed from the pose (local rotations [J, 4], changed in
     place): the forearm's roll handed to the hand, the twists shared out, the
     shares half bent and swollen across the bend (`scale` [J, 3], if given,
-    takes their stretch). As HerJoints.cs does it, after every other layer."""
+    takes their stretch, and `shift` [J, 3] the move in the bone's own frame
+    that holds its pivot still). As HerJoints.cs does it, after every other layer."""
     I = sk.index
     ident = np.array([0, 0, 0, 1.0])
     for s in "lr":
@@ -221,18 +239,22 @@ def drive(sk: Skeleton, rot, scale=None):
                 rot[j] = qnorm(qmul(sk.rest_rot[b], qmul(qslerp(ident, swing, hh["amount"]), own)))
                 if scale is not None:
                     bend = 2 * math.degrees(math.acos(min(1.0, abs(float(swing[3])))))
-                    scale[j] = (1.0, 1.0, bulge(bend, hh))
+                    k = bulge(bend, hh)
+                    scale[j] = (1.0, 1.0, k)
+                    if shift is not None:
+                        shift[j] = (0.0, 0.0, (1.0 - k) * hh.get("pivot", 0.0))
     return rot
 
 
 # --------------------------------------------------------------- weights --
-def split(W, P, index, heads):
+def split(W, P, index, heads, front=None):
     """Weights [V, J] (columns by `index`, name to column, the helpers'
     included) shared onto the helpers by where each point lies (P [V, 3]),
     with `heads` each bone's head at rest (name to point), then cut back to
     `cap` bones a point (each weight less the point's (cap+1)-th, so
     neighbours cut alike) and made whole. The space is any: only lengths
-    along her bones are read."""
+    along her bones are read, and with `front` (her front in that space:
+    +Z in the game's, -Y in Blender's) which side of a joint is its crease."""
     W = np.array(W, float)
     I = index
     cfg = SPEC["weights"]
@@ -257,6 +279,19 @@ def split(W, P, index, heads):
                 x = np.where(tot > 1e-9, W[:, b] / np.maximum(tot, 1e-9), 0.0)
                 mid = tot * x * (1 - x)
                 k = cfg["share"]
+                hs = next(h for h in SPEC["helpers"] if h["name"] == share)
+                cr = cfg.get("crease")
+                if cr and front is not None and "pivot" in hs:
+                    # How far into the crease a point lies: along her front
+                    # (elbow) or back (knee), square to the bone above.
+                    j = np.asarray(heads[low.replace("{s}", s)], float)
+                    ax = j - np.asarray(heads[top.replace("{s}", s)], float)
+                    ax = ax / np.linalg.norm(ax)
+                    w = np.asarray(front, float) * (1.0 if hs["way"] == "front" else -1.0)
+                    w = w - ax * (w @ ax)
+                    w = w / np.linalg.norm(w)
+                    depth = np.clip(((P - j) @ w) / cr["reach"], 0.0, 1.0)
+                    k = k * (1.0 - cr["cut"] * depth * depth * (3 - 2 * depth))
                 W[:, c] += 2 * k * mid
                 W[:, a] = tot * (1 - x) ** 2 + (1 - k) * mid
                 W[:, b] = tot * x ** 2 + (1 - k) * mid

@@ -105,7 +105,7 @@ def split_mesh(arm, obj):
         for n, w in gs:
             if n in index:
                 W[r, index[n]] += w
-    W2 = hp.split(W, np.array(pts), index, heads)
+    W2 = hp.split(W, np.array(pts), index, heads, front=(0.0, -1.0, 0.0))
     groups = {g.name: g for g in obj.vertex_groups}
     for n in bones:
         if n not in groups and W2[:, index[n]].any():

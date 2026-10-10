@@ -3,7 +3,11 @@ against its nearest skin point's, and whether skin comes through a garment
 in set poses, before the helpers and with them.
 
     python -u gapcheck.py [outfits...]
+
+AFTERDIR=<folder holding people/ and heroine_skeleton.json> judges a helper
+build kept aside instead of the worktree's.
 """
+import os
 import sys
 import time
 from pathlib import Path
@@ -39,6 +43,11 @@ def load(which, outfit):
     if which == "before":
         sk = Skeleton.load(S / "before" / "data" / "heroine_skeleton.json")
         d = S / "before" / "people"
+    elif os.environ.get("AFTERDIR"):
+        # another helper build kept aside: a folder holding people/ and heroine_skeleton.json
+        base = Path(os.environ["AFTERDIR"])
+        sk = Skeleton.load(base / "heroine_skeleton.json")
+        d = base / "people"
     else:
         sk = Skeleton.load(WT / "tools" / "anim" / "data" / "heroine_skeleton.json")
         d = WT / "godot" / "art" / "people"

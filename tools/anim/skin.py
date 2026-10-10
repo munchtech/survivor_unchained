@@ -272,7 +272,7 @@ class Body:
             for k in range(4):
                 np.add.at(dense, (np.arange(len(self.P)), self.J[:, k]), self.W[:, k])
             heads = {n: self.rest[j][:3, 3] for n, j in sk.index.items()}
-            dense = hp.split(dense, self.P, sk.index, heads)
+            dense = hp.split(dense, self.P, sk.index, heads, front=(0.0, 0.0, 1.0))
             order = np.argsort(-dense, axis=1)[:, :4]
             self.J = order
             self.W = np.take_along_axis(dense, order, 1)
@@ -289,14 +289,15 @@ class Body:
         self.share = share
 
     @staticmethod
-    def _mats(grot, gpos, scale=None):
+    def _mats(grot, gpos, scale=None, shift=None):
         n = len(grot)
         M = np.tile(np.eye(4), (n, 1, 1))
         for j in range(n):
-            M[j, :3, :3] = qmatrix(grot[j])
+            R = qmatrix(grot[j])
+            M[j, :3, :3] = R
             if scale is not None:
-                M[j, :3, :3] = M[j, :3, :3] @ np.diag(scale[j])
-            M[j, :3, 3] = gpos[j]
+                M[j, :3, :3] = R @ np.diag(scale[j])
+            M[j, :3, 3] = gpos[j] if shift is None else gpos[j] + R @ shift[j]
         return M
 
     # -------------------------------------------------------- the factories --
@@ -344,14 +345,15 @@ class Body:
         """Bone globals [J, 4, 4] of frame f (no springs; her helpers driven
         as the game drives them)."""
         rot = clip.rot[f]
-        scale = None
+        scale = shift = None
         if self.helpers:
             import helpers as hp
             scale = np.ones((len(self.sk.names), 3))
-            rot = hp.drive(self.sk, rot.copy(), scale)
+            shift = np.zeros((len(self.sk.names), 3))
+            rot = hp.drive(self.sk, rot.copy(), scale, shift)
         grot, gpos = self.sk.fk(rot[None], clip.pos[f][None])
-        # (A bone's own scale reaches only itself: the helpers have no children.)
-        return self._mats(grot[0], gpos[0], scale)
+        # (A bone's own scale and shift reach only itself: the helpers have no children.)
+        return self._mats(grot[0], gpos[0], scale, shift)
 
     def world(self, clip: Clip, f):
         """Where the skeleton stands in the world at frame f: scaled as the

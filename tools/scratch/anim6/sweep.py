@@ -56,10 +56,21 @@ def bone_dir(sk, rot, a, c):
     return d / np.linalg.norm(d)
 
 
+def carried_front(sk, rot, bone):
+    """Her front as the bone above a joint carries it from rest: the hinge
+    is read across that bone and its own front, not the world's (with the
+    world's, a thigh lifted past level bent its knee backwards)."""
+    from rig import qrot
+    grot, _ = sk.fk(rot[None])
+    g0, _ = sk.rest_globals()
+    j = sk.index[bone]
+    return qrot(qmul(grot[0, j], qinv(g0[0, j])), FRONT)
+
+
 def elbow(s, deg):
     def f(sk, rot):
         u = bone_dir(sk, rot, f"upperarm_{s}", f"lowerarm_{s}")
-        h = np.cross(u, FRONT)
+        h = np.cross(u, carried_front(sk, rot, f"upperarm_{s}"))
         return turned(sk, rot, sk.index[f"lowerarm_{s}"], h, deg)
     return f
 
@@ -67,7 +78,7 @@ def elbow(s, deg):
 def knee(s, deg):
     def f(sk, rot):
         u = bone_dir(sk, rot, f"thigh_{s}", f"calf_{s}")
-        h = np.cross(u, -FRONT)
+        h = np.cross(u, -carried_front(sk, rot, f"thigh_{s}"))
         return turned(sk, rot, sk.index[f"calf_{s}"], h, deg)
     return f
 

@@ -3,6 +3,7 @@ anim_review.gd to play unpacked: elbows, shoulders, knees, wrists.
 
     python rigtest.py <out dir>
 """
+import os
 import sys
 from pathlib import Path
 
@@ -56,8 +57,13 @@ def main(out):
             rots.append(rot)
         # (a rest frame first: the review photographs from the second frame on)
         rot = np.array([sk.rest_rot.copy()] + rots)
+        # REPEAT=n: every pose held n frames (the review's camera, set on a
+        # bone, trails a frame: shoot mid-hold with STEP=n START=2/30)
+        n = int(os.environ.get("REPEAT", "1"))
+        if n > 1:
+            rot = np.repeat(rot, n, axis=0)
         pos = np.tile(sk.rest_pos, (len(rot), 1, 1))
-        write_clip(Clip(name, 30.0, rot, pos, False, {}), sk, Path(out))
+        write_clip(Clip(name + (f"_r{n}" if n > 1 else ""), 30.0, rot, pos, False, {}), sk, Path(out))
         print("wrote", name, len(rots), "poses")
 
 

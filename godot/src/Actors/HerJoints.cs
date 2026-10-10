@@ -31,6 +31,8 @@ public partial class HerJoints : SkeletonModifier3D
         public required string Kind;
         public required int Bone, Source;
         public required float Amount, Bulge, BulgeMax;
+        public float Pivot;         // metres along the share's Z its stretch holds still (the crease side)
+        public Vector3 RestOrigin;
         public Quaternion Own;      // a share's turn about its line, from the bone it shares
     }
 
@@ -85,6 +87,8 @@ public partial class HerJoints : SkeletonModifier3D
                     Kind = (string)h["kind"], Bone = bone, Source = src, Amount = (float)(double)h["amount"],
                     Bulge = h.ContainsKey("bulge") ? (float)(double)h["bulge"] : 0f,
                     BulgeMax = h.ContainsKey("bulge_max") ? (float)(double)h["bulge_max"] : 1f,
+                    Pivot = h.ContainsKey("pivot") ? (float)(double)h["pivot"] : 0f,
+                    RestOrigin = sk.GetBoneRest(bone).Origin,
                 };
                 if (helper.Kind == "share")
                     helper.Own = sk.GetBoneRest(src).Basis.GetRotationQuaternion().Inverse() * sk.GetBoneRest(bone).Basis.GetRotationQuaternion();
@@ -143,7 +147,8 @@ public partial class HerJoints : SkeletonModifier3D
                     {
                         var rest = sk.GetBoneRest(h.Source).Basis.GetRotationQuaternion();
                         var (bend, _, _) = TwistY(rest.Inverse() * sk.GetBonePoseRotation(h.Source));
-                        sk.SetBonePoseRotation(h.Bone, (rest * Quaternion.Identity.Slerp(bend, h.Amount) * h.Own).Normalized());
+                        var turned = (rest * Quaternion.Identity.Slerp(bend, h.Amount) * h.Own).Normalized();
+                        sk.SetBonePoseRotation(h.Bone, turned);
                         if (h.Bulge > 0)
                         {
                             // The skin's weights over a joint are a quadratic
@@ -153,7 +158,12 @@ public partial class HerJoints : SkeletonModifier3D
                             // the bend) keeps it there, a rounded corner (helpers.bulge).
                             float rad = 2 * Mathf.Acos(Mathf.Min(1f, Mathf.Abs(bend.W)));
                             float k = 2f - Mathf.Cos(rad / 2);
-                            sk.SetBonePoseScale(h.Bone, new Vector3(1, 1, Mathf.Min(1 + h.Bulge * (k - 1), h.BulgeMax)));
+                            float stretch = Mathf.Min(1 + h.Bulge * (k - 1), h.BulgeMax);
+                            sk.SetBonePoseScale(h.Bone, new Vector3(1, 1, stretch));
+                            // About its pivot (helpers.bulge): the crease side held still,
+                            // the stretch's push all on the outside of the bend.
+                            if (h.Pivot != 0)
+                                sk.SetBonePosePosition(h.Bone, h.RestOrigin + turned * new Vector3(0, 0, (1 - stretch) * h.Pivot));
                         }
                         break;
                     }
