@@ -18,7 +18,7 @@ namespace SurvivorUnchained.View;
 /// </summary>
 public static class HairDraw
 {
-    public static readonly string Mode = SurvivorUnchained.Args.Get("hair-draw") ?? "hash";
+    public static readonly string Mode = SurvivorUnchained.Args.Get("hair-draw") ?? "two";
 
     /// <summary>Blended (either way).</summary>
     public static bool Blended => Mode is "blend" or "two";
@@ -30,29 +30,50 @@ public static class HairDraw
     /// reactive mask, so blended hair showed as the near-raw jittered frame and
     /// moved frame to frame at the Look; erased (0), FSR 2 accumulates it as it
     /// does her skin. Negative (the default): no eraser.</summary>
-    public static readonly float EraseKeep = SurvivorUnchained.Args.Num("hair-erase", -1f);
+    public static readonly float EraseKeep = SurvivorUnchained.Args.Num("hair-erase", 0f);
 
     /// <summary>--hair-core-cut C: with "two", the cover a strand needs to be drawn
     /// solid (its depth and motion written); 0.9 by default.</summary>
-    public static readonly float CoreCut = SurvivorUnchained.Args.Num("hair-core-cut", 0.9f);
+    public static readonly float CoreCut = SurvivorUnchained.Args.Num("hair-core-cut", 0.5f);
 
     /// <summary>--hair-erase-from F: with "two", the cards' eraser works fully where
     /// the strands cover F or more (the core's cut: only what wrote her hair's own
     /// motion is accumulated), easing out over the 0.25 below it (so the mask can't
     /// flip with the jitter at the core's edge); the thin fringe stays reactive. 0 by default.</summary>
-    public static readonly float EraseFrom = SurvivorUnchained.Args.Num("hair-erase-from", 0f);
+    public static readonly float EraseFrom = SurvivorUnchained.Args.Num("hair-erase-from", 0.5f);
 
     /// <summary>--hair-bias B: a bias on the strands' and lashes' mip level
     /// (0.5 cancels the smoothing's -0.5 on strands thinner than a pixel). 0 by default.</summary>
     public static readonly float Bias = SurvivorUnchained.Args.Num("hair-bias", 0f);
 
-    static Shader? blend, core, over, cards, hairErase, cardsErase;
+    static Shader? blend, core, coreA2c, over, cards, hairErase, cardsErase;
+
+    // (each core made, to swap its shader as MSAA comes and goes: Msaa)
+    static readonly List<WeakRef> cores = new();
+    static bool msaa;
+
+    /// <summary>MSAA on or off in the view (Graphics.Apply): the hair's solid parts
+    /// drawn with alpha to coverage under it (heroine_hair_core_a2c), plainly cut without.</summary>
+    public static void Msaa(bool on)
+    {
+        if (on == msaa) return;
+        msaa = on;
+        cores.RemoveAll(w => w.GetRef().Obj is not ShaderMaterial);
+        foreach (var w in cores)
+            if (w.GetRef().Obj is ShaderMaterial m) m.Shader = CoreShader();
+    }
+
+    static Shader CoreShader() => msaa
+        ? coreA2c ??= GD.Load<Shader>("res://shaders/heroine_hair_core_a2c.gdshader")
+        : core ??= GD.Load<Shader>("res://shaders/heroine_hair_core.gdshader");
+
+    static bool IsCore(Shader? s) => s != null && (s == core || s == coreA2c);
 
     /// <summary>The material with the hair eraser added as its last pass (when
     /// --hair-erase is given): it takes the hair's parameters, so it swings with it.</summary>
     public static ShaderMaterial WithErase(ShaderMaterial m)
     {
-        bool cards = m.Shader != null && m.Shader == core;
+        bool cards = IsCore(m.Shader);
         if (EraseKeep >= 0f)
         {
             hairErase ??= GD.Load<Shader>("res://shaders/heroine_hair_erase.gdshader");
@@ -87,16 +108,17 @@ public static class HairDraw
                 blend ??= GD.Load<Shader>("res://shaders/heroine_hair_blend.gdshader");
                 return new ShaderMaterial { Shader = blend, RenderPriority = 1 };
             case "two":
-                core ??= GD.Load<Shader>("res://shaders/heroine_hair_core.gdshader");
                 over ??= GD.Load<Shader>("res://shaders/heroine_hair_over.gdshader");
-                return new ShaderMaterial { Shader = core, NextPass = new ShaderMaterial { Shader = over, RenderPriority = 1 } };
+                var c = new ShaderMaterial { Shader = CoreShader(), NextPass = new ShaderMaterial { Shader = over, RenderPriority = 1 } };
+                cores.Add(GodotObject.WeakRef(c));
+                return c;
             default:
                 return null;
         }
     }
 
     /// <summary>Whether a shader is one of these ways of drawing her hair.</summary>
-    public static bool IsHair(Shader? s) => s != null && (s == blend || s == core || s == over);
+    public static bool IsHair(Shader? s) => s != null && (s == blend || IsCore(s) || s == over);
 
     /// <summary>A material and each pass after it (each takes the same parameters).</summary>
     public static IEnumerable<ShaderMaterial> Passes(ShaderMaterial m)

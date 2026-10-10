@@ -96,7 +96,9 @@ public partial class Game
     // of her, 0.55 head and shoulders, 1 her face): asked, and as it is now.
     float figTurn, figTurnNow, figZoom;
     CameraAttributesPractical? portrait;
-    static readonly bool NoDof = Args.Has("no-dof");
+    // (--look-dof: the portrait's depth of field, off since 10 October 2026: blended
+    // hair took the backdrop's depth and blurred, and the focus edge moved every frame)
+    static readonly bool LookDof = Args.Has("look-dof");
     SpotLight3D? keyLight;
 
     /// <summary>How near the figure is asked to be framed (0 all of her, 1 her face).</summary>
@@ -148,8 +150,7 @@ public partial class Game
         Pose(pos, look, false, fov, Mathf.Lerp(1, 0.08f, Mathf.Clamp(z * 1.6f, 0, 1)));
         PortraitLight(dt, eyes, dir, z, y);
         // A close portrait: what is behind her softened, the more the nearer.
-        // (--no-dof: none, to test what the blur does to her hair)
-        if (z > 0.05f && !NoDof)
+        if (z > 0.05f && LookDof)
         {
             portrait ??= new CameraAttributesPractical { DofBlurFarEnabled = true, DofBlurFarTransition = 2.5f };
             float dist = pos.DistanceTo(look);
@@ -259,6 +260,15 @@ public partial class Game
         if (fireSrc != null && IsInstanceValid(fireSrc)) fireSrc.LightCullMask = fireMask;
         fireSrc = null;
         if (camera.Attributes == portrait) camera.Attributes = null;
+        LookView(false);
+    }
+
+    /// <summary>The Look's own smoothing on or off (Graphics.AtLook).</summary>
+    void LookView(bool on)
+    {
+        if (Graphics.AtLook == on) return;
+        Graphics.AtLook = on;
+        Graphics.Apply(Settings.Current, air, GetViewport(), scene);
     }
 
     static CreationChoice WithName(CreationChoice c) { c.Name = "Nameless"; return c; }
@@ -280,6 +290,7 @@ public partial class Game
     public void NewJourney()
     {
         Mode = "create";
+        LookView(true);
         draft = new CreationDraft();
         // --new --sex female: creation opens on a woman (pictures of her).
         if (Args.Get("sex") == "female") draft.Sex = Sex.Female;

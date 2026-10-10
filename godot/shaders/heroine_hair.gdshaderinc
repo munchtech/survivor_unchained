@@ -122,7 +122,17 @@ void fragment() {
 	ALPHA = IN_SHADOW_PASS ? step(0.5, cover) : cover;
 #elif defined(CORE)
 	ALPHA = cover;
+#ifdef CORE_A2C
+	// (under MSAA, the cut's edge spread over the samples over a pixel round
+	// core_cut: alpha to coverage, heroine_hair_core_a2c.gdshader; cut first a
+	// quarter below it, as Godot cuts before it spreads)
+	float cut0 = max(core_cut - 0.25, 0.05);
+	ALPHA_SCISSOR_THRESHOLD = IN_SHADOW_PASS ? 0.5 : cut0;
+	ALPHA_ANTIALIASING_EDGE = IN_SHADOW_PASS ? 0.0 : core_cut - cut0;
+	ALPHA_TEXTURE_COORDINATE = UV * vec2(textureSize(strands, 0));
+#else
 	ALPHA_SCISSOR_THRESHOLD = IN_SHADOW_PASS ? 0.5 : core_cut;
+#endif
 #elif defined(ERASE)
 	// (white, multiplied: the colour kept; the alpha, FSR 2's reactive mask, scaled by keep
 	// where the strands cover erase_from or more, eased out over the 0.25 below it)
