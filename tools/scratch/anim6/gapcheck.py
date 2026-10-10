@@ -57,6 +57,8 @@ def dense(b, idx):
 def run(outfit):
     out = {}
     res = {}
+    fixed = None   # the same garment points judged in both builds (the before's limb set)
+    masks = {}
     for which in ("before", "after"):
         t0 = time.time()
         b = load(which, outfit)
@@ -70,6 +72,11 @@ def run(outfit):
         dist0, ns = tree.query(b.P[gar], k=1)
         ns = skin[ns]
         limb = (b.part[ns] != 0) | (b.part[gar] != 0)
+        if fixed is None:
+            fixed = limb
+        else:
+            assert len(fixed) == len(limb), "garment point counts differ between builds"
+            limb = fixed
         gar, ns, dist0 = gar[limb], ns[limb], dist0[limb]
         if which == "after":
             # The split's agreement: helper weight on a garment point against
@@ -92,10 +99,13 @@ def run(outfit):
             d, _ = surf.signed(P, P[gar])
             ok = np.isfinite(d) & np.isfinite(d_rest) & (d_rest > 0.0005)
             inside = ok & (d < 0)
+            masks[(which, name)] = inside
             res[which][name] = (int(inside.sum()), float(-d[inside].min()) * 1000 if inside.any() else 0.0,
                                 float(np.percentile((d - d_rest)[ok], 1)) * 1000)
         print(f"  {outfit} {which}: {time.time() - t0:.0f} s", flush=True)
     out["poses"] = res
+    out["moved"] = {n: (int((masks[("after", n)] & ~masks[("before", n)]).sum()),
+                        int((masks[("before", n)] & ~masks[("after", n)]).sum())) for n in POSES}
     return out
 
 
@@ -106,7 +116,7 @@ if __name__ == "__main__":
         s = r["split"]
         print(f"{o}: split on {s['points']} limb points ({s['within_2cm']} within 2 cm of skin): helper weight off its skin point's "
               f"median {s['helper_L1_median']:.3f}, p95 {s['helper_L1_p95']:.3f}, max {s['helper_L1_max']:.3f} (all weights p95 {s['all_L1_p95']:.3f})")
-        print(f"  {'pose':26s} | skin through garment: before (points, deepest mm, gap 1st pct change mm) | after")
+        print(f"  {'pose':26s} | skin through garment: before (points, deepest mm, gap 1st pct change mm) | after | new, cured")
         for name in POSES:
             a, b_ = r["poses"]["before"][name], r["poses"]["after"][name]
-            print(f"  {name:26s} | {a[0]:6d} {a[1]:5.1f} {a[2]:6.1f} | {b_[0]:6d} {b_[1]:5.1f} {b_[2]:6.1f}")
+            print(f"  {name:26s} | {a[0]:6d} {a[1]:5.1f} {a[2]:6.1f} | {b_[0]:6d} {b_[1]:5.1f} {b_[2]:6.1f} | {r['moved'][name][0]:6d} {r['moved'][name][1]:6d}")

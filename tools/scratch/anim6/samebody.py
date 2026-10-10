@@ -3,12 +3,12 @@ normals, UVs and triangle lists per mesh; joints listed; weights changed where."
 import sys
 from pathlib import Path
 
-sys.path.insert(0, r"C:\Users\munch\Desktop\survivorsunchained\.claude\worktrees\agent-a8d33b2672b7be905\tools\anim")
+sys.path.insert(0, r"C:\Users\munch\Desktop\survivorsunchained\.claude\worktrees\agent-af8dbda3195e438e4\tools\anim")
 import numpy as np  # noqa: E402
 from skin import Gltf  # noqa: E402
 
-S = Path(r"C:\Users\munch\AppData\Local\Temp\claude\C--Users-munch-Desktop-survivorsunchained\0b33992d-1e38-4eb8-80a1-d5c23b1a44e6\scratchpad\an")
-WT = Path(r"C:\Users\munch\Desktop\survivorsunchained\.claude\worktrees\agent-a8d33b2672b7be905")
+S = Path(r"C:\Users\munch\AppData\Local\Temp\claude\C--Users-munch-Desktop-survivorsunchained\181eef02-779f-45de-b419-31a949a4d27e\scratchpad\an")
+WT = Path(r"C:\Users\munch\Desktop\survivorsunchained\.claude\worktrees\agent-af8dbda3195e438e4")
 
 
 def meshes(path):

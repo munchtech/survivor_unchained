@@ -3,8 +3,8 @@
 # then imported and her skeleton re-dumped (a Godot turn).
 #   bash build_helpers.sh            NOIMPORT=1 skips the Godot half
 T="python /c/Users/munch/Desktop/survivorsunchained/tools/turn.py"
-WT=/c/Users/munch/Desktop/survivorsunchained/.claude/worktrees/agent-ae2a9884e3e51609c
-S=/c/Users/munch/AppData/Local/Temp/claude/C--Users-munch-Desktop-survivorsunchained/0b33992d-1e38-4eb8-80a1-d5c23b1a44e6/scratchpad/an
+WT=/c/Users/munch/Desktop/survivorsunchained/.claude/worktrees/agent-af8dbda3195e438e4
+S=/c/Users/munch/AppData/Local/Temp/claude/C--Users-munch-Desktop-survivorsunchained/181eef02-779f-45de-b419-31a949a4d27e/scratchpad/an
 B=/c/Users/munch/Tools/blender-4.5.14-windows-x64/blender.exe
 G="/c/Users/munch/Desktop/Godot_v4.5.1-stable_mono_win64/Godot_v4.5.1-stable_mono_win64_console.exe"
 W="animation: helpers build"

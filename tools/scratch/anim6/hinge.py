@@ -2,12 +2,12 @@
 turn about its own line that would bring it there; about 0 when built
 right), and the twist bones' rests."""
 import sys
-sys.path.insert(0, r"C:\Users\munch\Desktop\survivorsunchained\.claude\worktrees\agent-a8d33b2672b7be905\tools\anim")
+sys.path.insert(0, r"C:\Users\munch\Desktop\survivorsunchained\.claude\worktrees\agent-af8dbda3195e438e4\tools\anim")
 import numpy as np  # noqa: E402
 from rig import Skeleton, qrot  # noqa: E402
 import helpers as hp  # noqa: E402
 
-sk = Skeleton.load(r"C:\Users\munch\Desktop\survivorsunchained\.claude\worktrees\agent-a8d33b2672b7be905\tools\anim\data\heroine_skeleton.json")
+sk = Skeleton.load(r"C:\Users\munch\Desktop\survivorsunchained\.claude\worktrees\agent-af8dbda3195e438e4\tools\anim\data\heroine_skeleton.json")
 grot, gpos = sk.rest_globals()
 I = sk.index
 for h in hp.SPEC["helpers"]:
