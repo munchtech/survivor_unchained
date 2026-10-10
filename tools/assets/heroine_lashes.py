@@ -30,14 +30,20 @@ SEED = 23
 # (10 October, a judge: the first paint, 128 lashes a tenth of a millimetre wide, carried 13% of MakeHuman's ink
 # and was gone by the mip the Look samples: her lids read bare. Now as many as read at the Look, in clumps of three
 # to five, wide enough at the root to hold four to six texels, over a near-opaque root band: the lash line.)
-UPPER = dict(count=300, length=((0.0, 4.2), (0.18, 6.6), (0.45, 8.6), (0.72, 10.0), (0.9, 9.8), (1.0, 8.6)),
-             width=0.28, lean=((0.0, -3.0), (0.3, 2.0), (0.7, 13.0), (0.9, 16.0), (1.0, 10.0)), rows=0.6, alpha=1.0,
-             start=0.04, end=0.97, clump=0.27, band=(0.42, 0.92))
+# (10 October, round 2's judge: lit at last like her lid (the cards' shader), the paint is a portrait's dark brown,
+# not near black; clumps of two or three, not a comb of stubby spikes; each tip fading over its last 40%; the root
+# band at most 0.85 and faded in over the inner 30%, where a portrait's line is lighter; and no solid wedge past
+# the outer corner (it read as winged eyeliner): the outer lashes fanned out, sparser and fainter.)
+UPPER = dict(count=260, length=((0.0, 4.2), (0.18, 6.6), (0.45, 8.6), (0.72, 9.6), (0.88, 8.8), (1.0, 6.4)),
+             width=0.26, lean=((0.0, -3.0), (0.3, 2.0), (0.7, 12.0), (0.85, 18.0), (1.0, 30.0)), rows=0.6, alpha=0.95,
+             start=0.04, end=0.93, clump=0.42, band=(0.4, 0.85), fan=(0.8, 0.6), inner=0.3,
+             dens=((0.0, 0.5), (0.25, 1.0), (0.8, 1.0), (1.0, 0.55)))
 LOWER = dict(count=48, length=((0.0, 2.2), (0.3, 3.6), (0.65, 5.2), (0.9, 5.8), (1.0, 5.0)),
-             width=0.13, lean=((0.0, 0.0), (0.5, 6.0), (0.9, 10.0), (1.0, 6.0)), rows=0.45, alpha=0.7,
-             start=0.12, end=0.95, clump=0.45, band=(0.22, 0.6))
-ROOT_COL = np.array([0.105, 0.075, 0.062])      # (sRGB 0 to 1: a dark brown at the root)
-TIP_COL = np.array([0.215, 0.165, 0.135])       # (lighter and browner toward the tip)
+             width=0.13, lean=((0.0, 0.0), (0.5, 6.0), (0.9, 10.0), (1.0, 6.0)), rows=0.45, alpha=0.6,
+             start=0.12, end=0.92, clump=0.5, band=(0.22, 0.5), fan=(0.85, 0.5), inner=0.3,
+             dens=((0.0, 0.5), (0.25, 1.0), (1.0, 1.0)))
+ROOT_COL = np.array([0.15, 0.10, 0.075])        # (sRGB 0 to 1: a portrait's dark brown at the root, as lit)
+TIP_COL = np.array([0.25, 0.17, 0.125])         # (lighter and browner toward the tip)
 
 
 def curve(points, x):
@@ -172,12 +178,12 @@ def paint(grids, size=SIZE, ss=SS, seed=SEED):
         # (roots spread evenly along the lid, each jittered within its share, sparser at the inner end, where lashes
         # are few: random roots left bald gaps and bunches)
         grid_s = np.linspace(0, 1, 200)
-        dens = np.interp(grid_s, (0.0, 0.25, 1.0), (0.5, 1.0, 1.0))
+        dens = curve(spec["dens"], grid_s)
         cdf = np.r_[0, np.cumsum((dens[1:] + dens[:-1]) / 2)]
         cdf /= cdf[-1]
         u = np.interp((np.arange(n) + rng.uniform(0.2, 0.8, n)) / n, cdf, grid_s)
         u = spec["start"] + (spec["end"] - spec["start"]) * u
-        clump = np.cumsum(rng.uniform(0, 1, n) < spec["clump"])           # (gathered: threes to fives above)
+        clump = np.cumsum(rng.uniform(0, 1, n) < spec["clump"])           # (gathered: twos and threes)
         # The lash line: a band along the lid's edge, near opaque, its width wavering, where the roots crowd.
         bw, ba = spec["band"]
         m = 160
@@ -186,17 +192,23 @@ def paint(grids, size=SIZE, ss=SS, seed=SEED):
         p_b = at(a_b, t_b)
         mm_b = np.linalg.norm(np.diff(p_b, axis=0), axis=1).sum() / max(a_b[-1] - a_b[0], 1e-3)
         ends = np.minimum(1.0, np.minimum(np.linspace(0, 1, m - 1), np.linspace(1, 0, m - 1)) / 0.08)   # (tapered ends)
-        w_b = np.maximum(bw * mm_b * (0.8 + 0.2 * np.sin(np.linspace(0, 23.0, m - 1))) * ends, 0.6 * ss / 4)
-        draw_lash(p_b, w_b, ba * (0.4 + 0.6 * ends), np.tile(ROOT_COL * 0.9, (m - 1, 1)))
+        sb = np.linspace(spec["start"], spec["end"], m - 1)
+        # (lighter over the inner 30%, as a portrait's lash line is, and thinning out where the outer lashes fan)
+        inner = 0.35 + 0.65 * np.clip((sb - spec["start"]) / spec["inner"], 0, 1) ** 1.5
+        outer = 1 - 0.5 * np.clip((sb - spec["fan"][0]) / (spec["end"] - spec["fan"][0]), 0, 1)
+        w_b = np.maximum(bw * mm_b * (0.8 + 0.2 * np.sin(np.linspace(0, 23.0, m - 1))) * ends * outer, 0.6 * ss / 4)
+        draw_lash(p_b, w_b, ba * (0.4 + 0.6 * ends) * inner * outer, np.tile(ROOT_COL * 0.9, (m - 1, 1)))
         for i in range(n):
             s = u[i]                                                        # (its root: a share of the lid's length)
             a0 = s * lid_len
-            L = curve(spec["length"], s) * rng.uniform(0.78, 1.12)
+            L = curve(spec["length"], s) * rng.uniform(0.75, 1.25)
             maxlen = np.interp(col_at(a0), np.arange(nc), out_mm[:, -1]) * 0.97
             L = min(L, maxlen)
-            lean = math.radians(curve(spec["lean"], s) + rng.normal(0, 2.5))
+            # (fanned at the outer corner: each lash its own angle, spread wider the further out)
+            fan = np.clip((s - spec["fan"][0]) / (1 - spec["fan"][0]), 0, 1)
+            lean = math.radians(curve(spec["lean"], s) + rng.normal(0, 2.5 + 7.0 * fan))
             mates = np.where(clump == clump[i])[0]
-            pull = (u[mates].mean() - s) * lid_len * 0.25                 # (tips drawn toward the clump's middle, mm)
+            pull = (u[mates].mean() - s) * lid_len * 0.25 * (1 - fan)     # (tips drawn toward the clump's middle, mm)
             t0 = rng.uniform(0, spec["rows"])
             w0 = spec["width"] * rng.uniform(0.75, 1.15)
             bend = rng.normal(0, 0.03)                                     # (a slight sideways curve of its own)
@@ -211,7 +223,9 @@ def paint(grids, size=SIZE, ss=SS, seed=SEED):
             col = (ROOT_COL + (TIP_COL - ROOT_COL) * np.clip((v[:, None] - 0.67) / 0.33, 0, 1) ** 1.2) * rng.uniform(0.85, 1.15)
             vv = (v[:-1] + v[1:]) / 2
             widths = np.maximum(w0 * (1 - vv) ** 0.85 * mm_px, 0.6 * ss / 4)
-            fades = spec["alpha"] * np.where(vv < 0.7, 1.0, 1 - (vv - 0.7) / 0.3 * 0.75)
+            fades = spec["alpha"] * np.where(vv < 0.6, 1.0, 1 - (vv - 0.6) / 0.4 * 0.9)
+            fades = fades * (1 - (1 - spec["fan"][1]) * fan)               # (the fanned outer lashes fainter)
+            fades = fades * (0.6 + 0.4 * np.clip((s - spec["start"]) / spec["inner"], 0, 1))   # (and the inner third)
             draw_lash(p, widths, fades, col)
     a = np.asarray(alpha.resize((size, size), Image.BOX), np.float32) / 255
     c = np.asarray(colour.resize((size, size), Image.BOX), np.float32) / 255

@@ -97,14 +97,19 @@ void fragment() {
 		// (at her hairline as light as her hair, not a darker band over it;
 		// and its strands ending each at its own height, by its number (the
 		// atlas's green), a ragged line, not a smooth fade along an arc)
-		ALBEDO = tint * t.r * mix(1.0, 0.5, smoothstep(0.4, 1.0, fade) * (1.0 - rope)) * mix(1.0, mix(0.55, 1.0, depth), rope);
-		cover = max(fade * fade, t.a * smoothstep(0.05, 0.4, fade + (t.g - 0.5) * 0.35));
+		// (darker only well under the cards (fade 0.85 to 1): from 0.4 it drew a dark band just over her
+		// hairline, where the cards do not yet cover; and thinned strand by strand over most of its fade, its
+		// cover about 0.3 to 0.9 over 7 to 10 mm, not all in its first 3)
+		ALBEDO = tint * t.r * mix(1.0, 0.5, smoothstep(0.85, 1.0, fade) * (1.0 - rope)) * mix(1.0, mix(0.55, 1.0, depth), rope);
+		cover = max(fade * fade, t.a * smoothstep(0.0, 0.8, fade + (t.g - 0.5) * 0.35));
 	} else {
 		float along = UV.y;                                       // 0 at the root, 1 at the tip
 		// (layer by layer only a little darker within, and a root dark only
 		// where it lies deep: an outer card's root, begun mid-crown, drew a dark
 		// band, and an outer card at 1.8 times an inner one's light a block)
 		ALBEDO = tint * t.r * mix(1.0 - roots * (1.0 - depth), 1.0, smoothstep(0.0, 0.1, along)) * mix(0.75, 1.0, depth);
+		// (the baby hairs at her hairline (their blue): a lighter copper, sunlit fine hair, not grey strokes)
+		ALBEDO = mix(ALBEDO, light * mix(0.8, 1.0, t.r), COLOR.b * 0.7);
 		// (its root's blunt end softened; the baby hairs at her hairline faint: its vertex alpha)
 		cover = t.a * smoothstep(0.0, 0.012, along) * COLOR.a;
 	}

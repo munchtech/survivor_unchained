@@ -449,7 +449,7 @@ public static class People
     /// <summary>Her own iris as painted (moss, no colour chosen), put right against her portrait's
     /// under a white light (linear; the eye shader's tint): as painted it showed 1.6 times as light
     /// as her portrait's and yellower.</summary>
-    static readonly Vector3 HerPaintedIris = new(0.615f, 0.651f, 1.04f);
+    static readonly Vector3 HerPaintedIris = new(0.816f, 0.766f, 1.071f);
 
     /// <summary>Her hairstyles (tools/assets/heroine_head.py: a file each,
     /// fitted to her head), the first hers unless another is chosen.</summary>
@@ -491,7 +491,7 @@ public static class People
                 // (the lashes' own colour is in their paint, tools/assets/heroine_lashes.py: a dark brown, lighter
                 // toward the tips)
                 m.AlbedoColor = src.ResourceName == "brows" ? hair.Darkened(0.45f) : Colors.White;
-                if (src.ResourceName == "lashes")                  // (her lower lashes finer: tools/assets/heroine_eyes.py)
+                if (src.ResourceName == "lashes")                  // (painted hair by hair: tools/assets/heroine_lashes.py)
                     m.AlbedoTexture = TextureOrTry("res://art/people/head_tex/heroine_lashes.png", "lashes");
                 m.Roughness = 0.8f;
                 return HairDraw.Cards(m) ?? Coverage.Cards(m);
@@ -605,33 +605,47 @@ public static class People
     /// paint keeps its fibres and crypts, its light and dark, and takes the
     /// colour chosen, the ring round the pupil its own (as a blue eye's amber
     /// collarette); none chosen keeps the paint's own green.</summary>
-    /// <summary>Her eyes as her portraits have them (a judge's measures beside them, 10 October 2026),
-    /// the hero's left as they were: irises 0.13 of the paint (0.12 read 7-11% small on every face); a
-    /// thin limbal ring from 0.85 of the radius; the iris's blotches softened and its amber drawn in to
-    /// a thin collarette; a crisper, larger catchlight; pupils never black; the whites ivory and a fifth
-    /// darker (they outshone her cheek), the upper lid's shadow along its margin and a wet line on the
-    /// lower lid. Per face (looks.json faces): the pupil, and how light the whites stand.</summary>
+    /// <summary>Her eyes as her portraits have them (a judge's measures beside them, round 2, 10 October 2026: iris
+    /// edges fitted, not MediaPipe's guesses on a render), the hero's left as they were: irises 0.117 of the paint
+    /// (0.13 read 7-21% big against pupil distance and face width); a thin limbal ring from 0.85 of the radius,
+    /// lighter on a dyed iris; the iris's blotches softened, its amber drawn in to a thin collarette darker than
+    /// the outer iris (lighter, it read as a starburst); the catchlight a cool window at the pupil's edge, taking
+    /// the iris's colour out under it (added, it read pink); pupils near black after the iris's tint (lighter
+    /// than a brown iris, they read as cataracts); the whites ivory, lit from below, the upper lid's shadow at
+    /// its visible margin, a wet line on the lower lid. Per face (looks.json faces): the iris's size, the pupil,
+    /// how light the whites stand, and where the lid covers the iris.</summary>
     static void HerEyes(ShaderMaterial e, string? face)
     {
         var f = SurvivorUnchained.World.Lore.Her.Faces.FirstOrDefault(x => x.Id == (face is { Length: > 0 } ? face : "own"));
-        e.SetShaderParameter("iris_r", 0.13f);
+        e.SetShaderParameter("iris_r", f is { Iris: > 0 } ? (float)f.Iris : 0.117f);
         e.SetShaderParameter("pupil", f is { Pupil: > 0 } ? (float)f.Pupil : 0.28f);
-        e.SetShaderParameter("limbal", 0.42f);
+        bool dyed = e.GetShaderParameter("recolour").AsSingle() > 0f;
+        e.SetShaderParameter("limbal", dyed ? 0.32f : 0.42f);
         e.SetShaderParameter("limbal_from", 0.85f);
-        e.SetShaderParameter("iris_contrast", 0.6f);
-        e.SetShaderParameter("ring_to", 0.45f);
+        e.SetShaderParameter("iris_contrast", 0.45f);
+        e.SetShaderParameter("ring_to", 0.35f);
+        e.SetShaderParameter("ring_light", 0.8f);
+        e.SetShaderParameter("iris_light", 1.3f);
         e.SetShaderParameter("catch_size", 2.0f);
-        e.SetShaderParameter("catchlight", 0.8f);
+        e.SetShaderParameter("catchlight", 0.9f);
         e.SetShaderParameter("catch_soft", 0.5f);
-        e.SetShaderParameter("pupil_dark", 0.035f);
+        e.SetShaderParameter("catch_at", new Vector2(-0.15f, -0.33f));
+        e.SetShaderParameter("catch_colour", new Vector3(0.9f, 0.95f, 1.08f));
+        e.SetShaderParameter("catch_dim", 0.8f);
+        e.SetShaderParameter("pupil_dark", 0.020f);
         var w = f is { Whites: > 0 } ? (float)f.Whites : 1f;
         e.SetShaderParameter("white_tint", new Vector3(0.74f, 0.68f, 0.58f) * w);
+        e.SetShaderParameter("white_grad", 0.22f);
         e.SetShaderParameter("corner_pink", 0.3f);
-        // (the lid's margin from the face's resting lid: a little above where it shows, so no unshadowed sliver)
-        e.SetShaderParameter("lid_shadow", 0.35f);
-        e.SetShaderParameter("lid_y", -0.85f + 1.1f * (float)(f?.Lid ?? 0));
-        e.SetShaderParameter("lid_fade", 0.6f);
+        // (the lid's shadow from where the face's lid covers its iris: its margin a twentieth of a radius above
+        // where it shows, so no unshadowed sliver, and none hidden above it under the lashes)
+        float cover = f is { Cover: > 0 } ? (float)f.Cover : 0.2f;
+        e.SetShaderParameter("lid_shadow", 0.5f);
+        e.SetShaderParameter("lid_y", 2f * cover - 1.05f);
+        e.SetShaderParameter("lid_fade", 0.8f);
         e.SetShaderParameter("low_wet", 1.5f);
+        e.SetShaderParameter("low_y", 0.95f);
+        e.SetShaderParameter("low_lift", 0.12f);
         // (--eye-set "iris_r=0.13,pupil=0.24": a developer's switch, her eyes' uniforms tried without a build)
         if (SurvivorUnchained.Args.Get("eye-set") is string es)
             foreach (var kv in es.Split(','))

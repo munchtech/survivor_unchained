@@ -167,6 +167,9 @@ public sealed class FaceShape
     /// <summary>Its pupil (of the iris's radius; 0: 0.28) and how light its eyes' whites stand (0: as hers, 1),
     /// from its portrait: under one light, one white outshone a darker cheek.</summary>
     public double Pupil, Whites;
+    /// <summary>Its iris's radius (of the eye's paint; 0: 0.117) and how much of the iris its upper lid covers at
+    /// rest (0 to 1, its portrait's), where the lid's shadow on the eye is laid.</summary>
+    public double Iris, Cover;
     public Dictionary<string, double> Shape = new();
 }
 

@@ -31,6 +31,7 @@ public static class Coverage
         var c = new ShaderMaterial { Shader = cards, ResourceName = m.ResourceName };
         c.SetShaderParameter(AlbedoTex, m.AlbedoTexture);
         c.SetShaderParameter(AlbedoColour, m.AlbedoColor);
+        c.SetShaderParameter("skin_lit", m.ResourceName == "lashes" ? 1f : 0f);
         return c;
     }
 

@@ -25,8 +25,6 @@ ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 SRC = os.path.join(ROOT, "godot", "art", "people", "head_tex", "green_eye.png")
 DST = os.path.join(ROOT, "godot", "art", "people", "head_tex", "heroine_eye.png")
 IRIS = os.path.join(ROOT, "godot", "art", "people", "head_tex", "heroine_iris.png")
-LASH_SRC = os.path.join(ROOT, "godot", "art", "people", "head_tex", "eyelashes03.png")
-LASHES = os.path.join(ROOT, "godot", "art", "people", "head_tex", "heroine_lashes.png")
 OUT = os.path.join(ROOT, "tools", "comfy", "out", "heroes", "eyes")
 SEED = int(sys.argv[1]) if len(sys.argv) > 1 else 21
 SIZE = 2048
@@ -126,25 +124,8 @@ def compose(iris):
     print("WRITTEN", DST, "and", IRIS)
 
 
-def lashes():
-    """Her lashes' paint: MakeHuman's (its upper lashes, the top half, as
-    they are), its lower lashes (the bottom half) a good deal finer and
-    fainter, as lower lashes are, not a dark band under her eyes."""
-    from scipy import ndimage
-    im = np.asarray(Image.open(LASH_SRC).convert("RGBA"), np.float32)
-    h = im.shape[0]
-    a = im[..., 3]
-    low = np.zeros_like(a, bool)
-    low[int(h * 0.54):] = True
-    thin = ndimage.grey_erosion(a, size=(1, 2))                  # (each lash narrower)
-    a = np.where(low, thin * 0.55, a)
-    im[..., 3] = a
-    Image.fromarray(np.clip(im, 0, 255).astype(np.uint8)).save(LASHES)
-    print("WRITTEN", LASHES)
-
-
 if __name__ == "__main__":
-    lashes()
+    # (her lashes are painted by heroine_lashes.py, hair by hair, onto head_tex/heroine_lashes.png)
     # (with IRIS_KEEP set, the iris painted before is laid in again, unpainted)
     kept = os.path.join(OUT, "iris_painted.png")
     compose(Image.open(kept).convert("RGB") if os.environ.get("IRIS_KEEP") and os.path.exists(kept) else paint(guide()))

@@ -201,7 +201,16 @@ public partial class Game
         // (--rig-white: every light of the rig white, a face's colours judged
         // as a studio's light shows them, not only in the fire's warmth)
         bool white = Args.Has("rig-white");
-        keyLight ??= Spot(white ? Colors.White : new Color(1f, 0.93f, 0.86f), 20, true, 0.45f);
+        if (keyLight == null)
+        {
+            keyLight = Spot(white ? Colors.White : new Color(1f, 0.93f, 0.86f), 20, true, 0.45f);
+            // --key-shadow off | SIZE: the key's shadow off, or its light size (softness), for judging what it casts (pictures).
+            if (Args.Get("key-shadow") is string ks)
+            {
+                if (ks == "off") { keyLight.ShadowEnabled = false; keyLight.LightSize = 0; }
+                else if (float.TryParse(ks, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var sz)) keyLight.LightSize = sz;
+            }
+        }
         fillLight ??= Spot(white ? Colors.White : new Color(0.88f, 0.92f, 1f), 26, false, 0.1f);
         edgeLight ??= Spot(white ? Colors.White : new Color(1f, 0.56f, 0.26f), 24, false, 0.35f);
         rimLight ??= Spot(white ? Colors.White : new Color(0.72f, 0.82f, 1f), 24, false, 0.5f);

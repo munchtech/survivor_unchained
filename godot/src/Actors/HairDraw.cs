@@ -61,6 +61,7 @@ public static class HairDraw
         var c = new ShaderMaterial { Shader = cards, ResourceName = m.ResourceName };
         c.SetShaderParameter("albedo_tex", m.AlbedoTexture);
         c.SetShaderParameter("albedo_color", m.AlbedoColor);
+        c.SetShaderParameter("skin_lit", m.ResourceName == "lashes" ? 1f : 0f);
         return c;
     }
 }

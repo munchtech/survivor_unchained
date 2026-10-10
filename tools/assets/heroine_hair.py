@@ -647,22 +647,30 @@ def hairline_hairs(comb, spacing=0.0026, points=8, sides=None):
     # alpha: shrunk to the Look's mip, a tenth of cover. Now from the lock
     # columns (a gathered few hairs, holding their cover as they shrink), at
     # half to four fifths, sparser over her forehead, a few more astray.)
-    pts, nrm = roots(0.0034, above=-0.006, below=0.006)
+    # (10 October, round 2's judge: they showed, but as dark grey strokes lying
+    # across her forehead every way and crossing in X's. Now short (2 to 7 mm),
+    # rooted in the hairline's first 3 mm and gone about 4 mm out onto her
+    # skin, combed nearly as her hair is (0.2 rad, one in twelve astray and
+    # never more than 0.7 rad) with a gentle curl, a lighter copper with no
+    # darkening at the root or within (flat: their vertex colour's blue), and
+    # fainter (0.3 to 0.55), denser at the edge.)
+    pts, nrm = roots(0.0026, above=0.0, below=0.003)
     th = np.degrees(np.abs(np.arctan2(pts[:, 0] - CENTRE[0], -(pts[:, 1] - CENTRE[1]))))
-    keep = RNG.random(len(pts)) < np.interp(th, [0, 35, 60], [0.55, 0.8, 1.0])
+    keep = RNG.random(len(pts)) < np.interp(th, [0, 35, 60], [0.6, 0.85, 1.0])
     pts, nrm = pts[keep], nrm[keep]
     n, k = len(pts), 6
-    turn = RNG.normal(0, 0.45, n) + np.where(RNG.random(n) < 0.22, RNG.normal(0, 1.1, n), 0)
+    turn = RNG.normal(0, 0.2, n) + np.where(RNG.random(n) < 0.08, np.clip(RNG.normal(0, 0.5, n), -0.7, 0.7), 0)
 
     def astray(p, side=None):
         w = comb(p, side)
         return w * np.cos(turn)[:, None] + np.cross(nrm, w) * np.sin(turn)[:, None]
-    L = RNG.uniform(0.004, 0.014, n)
+    L = RNG.uniform(0.002, 0.007, n)
     P = lie(pts - nrm * 0.0005, combed(pts, nrm, astray(pts)), astray, L / (k - 1), np.full(n, k - 1), 0.0009,
-            side=sides(pts) if sides else None, lift=RNG.uniform(0.0, 0.0025, n))
-    c = cards(P, RNG.uniform(0.0012, 0.0024, n), [11, 12, 13], 0.0009, narrow=0.7)
-    c["alpha"] = np.repeat(RNG.uniform(0.5, 0.8, n), 3 * k)
+            side=sides(pts) if sides else None, lift=RNG.uniform(0.0, 0.0012, n))
+    c = cards(P, RNG.uniform(0.0012, 0.0022, n), [11, 12, 13], 0.0009, narrow=0.7)
+    c["alpha"] = np.repeat(RNG.uniform(0.3, 0.55, n), 3 * k)
     c["mat"] = 3
+    c["flat"] = True
     out.append(c)
     print("  baby hairs: %d cards" % n)
     return out
@@ -1194,6 +1202,15 @@ def build(style):
     Ch = np.vstack(C)
     rope = np.concatenate([np.full(len(c["V"]), c.get("mat", 0) == 1) for c in layers])
     Ch[:, 0] = np.where(hairy, np.where(rope, 0.6 + 0.4 * depth, 0.25 + 0.75 * depth), 1.0)   # (a braid's strands shade each other less)
+    # (10 October, round 2's judge: a dark band ran just over her hairline, half her hair's light in clumps, where a
+    # portrait's is lighter (skin through thinning hair). A card rooted within 10 mm of her hairline lies on her
+    # skin with nothing over it: no depth, root or AO darkening there, eased back in from 6 to 10 mm.)
+    rr = np.concatenate([c.get("root_rise", np.ones(len(c["V"]))) for c in layers])
+    Ch[:, 0] = np.maximum(Ch[:, 0], np.where(hairy & ~rope, 1 - np.clip((rr - 0.006) / 0.004, 0, 1), 0))
+    # (the baby hairs flat: no darkening at all, and the shader's lighter copper by their blue)
+    flat = np.concatenate([np.full(len(c["V"]), bool(c.get("flat"))) for c in layers])
+    Ch[flat, 0] = 1.0
+    Ch[flat, 2] = 1.0
     C = [Ch]
     cp = cap(comb, sides)
     V.append(cp["V"]), N.append(cp["N"]), UV.append(cp["UV"])

@@ -37,6 +37,8 @@ SCALE = 0.25                       # metres across each drawing
 DRAW = 1536                        # its pixels across
 CENTRE = Vector((0.0, -0.02, 1.735))
 VIEWS = {"front": 0.0, "left": 55.0, "right": -55.0}
+# (her face's outline from one angle of her jaw round her chin to the other, by the face landmarks: under_jaw)
+JAW_LINE = [132, 58, 172, 136, 150, 149, 176, 148, 152, 377, 400, 378, 379, 365, 397, 288, 361]
 DENOISE = 0.45                     # more and her features move away from her head's
 SEED = int(os.environ.get("FACE_SEED", "7"))
 # A beauty campaign's photograph, as her reference faces were painted
@@ -463,7 +465,116 @@ LIP_RING = [61, 185, 40, 39, 37, 0, 267, 269, 270, 409, 291, 375, 321, 405, 314,
 NOSTRILS = [98, 64, 48, 115, 220, 45, 4, 275, 440, 344, 278, 294, 327, 2]
 
 
+BROW_EDGES = {  # (lower edge, upper edge), each from the outer end to the inner (MediaPipe's numbers)
+    "A": ([46, 53, 52, 65, 55], [70, 63, 105, 66, 107]),
+    "B": ([276, 283, 282, 295, 285], [300, 293, 334, 296, 336]),
+}
+
+
 def brow_zone(drawn, ref, frac):
+    """Each eye's brow and the landmarks round it (the lid's crease under it, the temple past its tail, the
+    forehead over it), and where they go on the drawing: the brow `frac` of the way from where MediaPipe has it on
+    the clay to where the reference has it against that eye (its frame: the middle of its corners, along them, and
+    its width), its neighbours carried with it. Rows from the top, as MediaPipe gives them.
+    FACE_BROW_SMOOTH=1: round 1's split (one quadratic over brow and neighbours, shares by height); 0: point by point."""
+    mode = os.environ.get("FACE_BROW_SMOOTH", "2")
+    if mode != "2":
+        return brow_zone_v1(drawn, ref, frac, smooth=mode != "0")
+    # (10 October, round 2's judge, on Doe and Sunborn at 1.0: three faults in round 1's split. (a) Its share was
+    # by height across the whole brow, and a tail lies low everywhere, so tails moved at the lower share and drooped
+    # 0.15 to 0.2 eye widths under the portraits'; now each landmark's share is by where it sits between the
+    # brow's own lower and upper edges at that point along it. (b) The forehead over the brow stayed put, so the
+    # brow's top was squeezed under it (1.8 to 3.6 times; Sunborn's 104 flipped over 103), which made the dip; now
+    # the forehead moves with the brow's top, easing to nothing two eye widths over it. (c) One straight fit
+    # across brow and neighbours under-moved the brow and over-moved the crease (peaking the lid); now the brow is
+    # fitted alone along its length (a cubic), and the crease to its own goals.)
+    low = float(os.environ.get("FACE_BROW_LOW", "0.65"))
+    # (how far over the brow's top the forehead moves, in eye widths: at 1.0 the first gap over the brow was still
+    # squeezed 1.3 times on the saved landmarks; at 2.0 it is the portrait's (0.92 to 1.11) and the rest is spread
+    # over the bare forehead, 0.72 to 0.9)
+    over = float(os.environ.get("FACE_BROW_OVER", "2.0"))
+
+    def frame(P, c0, c1):
+        o = (P[c0] + P[c1]) / 2
+        e1 = P[c1] - P[c0]
+        w = np.linalg.norm(e1)
+        e1 = e1 / w
+        return o, e1, np.array([e1[1], -e1[0]]) * (1 if e1[0] > 0 else -1), w       # (e2 up her face)
+
+    def smoothstep(a, b, x):
+        t = np.clip((x - a) / (b - a), 0, 1)
+        return t * t * (3 - 2 * t)
+    acc, wsum = {}, {}
+
+    def add(js, mv):
+        for j, m in zip(js, mv):
+            acc[j] = acc.get(j, 0) + m
+            wsum[j] = wsum.get(j, 0) + 1
+    for side, ring, (c0, c1) in (("A", BROW_A, (33, 133)), ("B", BROW_B, (263, 362))):
+        lo_ids, up_ids = BROW_EDGES[side]
+        o_r, e1_r, e2_r, w_r = frame(ref, c0, c1)
+        o_d, e1_d, e2_d, w_d = frame(drawn, c0, c1)
+        uv = np.c_[(ref - o_r) @ e1_r / w_r, (ref - o_r) @ e2_r / w_r]
+
+        def goal(js):
+            return o_d + w_d * (uv[js, :1] * e1_d + uv[js, 1:] * e2_d)
+
+        def edge(ids, u):
+            k = np.argsort(uv[ids, 0])
+            return np.interp(u, uv[ids, 0][k], uv[ids, 1][k])
+        span = uv[ring, 0]
+        u0, u1 = span.min(), span.max()                # (u runs from the outer corner (c0) to the inner)
+        # The brow: its own goals, one smooth cubic along it (and linear across it), each landmark's share by
+        # where it sits between the brow's own lower and upper edges there.
+        jb = np.array(ring)
+        u, v = uv[jb, 0], uv[jb, 1]
+        A = np.c_[np.ones_like(u), u, u * u, u ** 3, v]
+        coef, *_ = np.linalg.lstsq(A, goal(jb) - drawn[jb], rcond=None)
+
+        def brow_move(uq, vq):
+            uq = np.clip(uq, u0, u1)
+            return np.c_[np.ones_like(uq), uq, uq * uq, uq ** 3, vq] @ coef
+
+        def share(uq, vq):
+            lo, up = edge(lo_ids, uq), edge(up_ids, uq)
+            return np.clip((vq - lo) / np.maximum(up - lo, 1e-3), 0, 1)
+        add(jb, brow_move(u, v) * (frac * (low + (1 - low) * share(u, v)))[:, None])
+        # Its neighbours: from the crease (0.42 eye widths over the eye's middle) to `over` above the brow's top,
+        # from 0.4 past its tail to 0.15 past its inner end, eased out past its ends.
+        lo_all, up_all = edge(lo_ids, uv[:, 0]), edge(up_ids, uv[:, 0])
+        near = np.where((uv[:, 1] > 0.42) & (uv[:, 1] < up_all + over) & (uv[:, 0] > u0 - 0.4) & (uv[:, 0] < u1 + 0.15))[0]
+        near = np.array([j for j in near if j not in ring], int)
+        if not len(near):
+            continue
+        un, vn = uv[near, 0], uv[near, 1]
+        out_by = np.where(un < u0, (u0 - un) / 0.4, np.where(un > u1, (un - u1) / 0.15, 0.0))
+        ease_u = 1 - smoothstep(0, 1, out_by)
+        below, above = vn < lo_all[near], vn > up_all[near]
+        mid = ~below & ~above
+        # (the crease under it to its own goals, fitted alone, at the lower share: about half the brow's move)
+        if below.any():
+            jc = near[below]
+            mc = goal(jc) - drawn[jc]
+            if len(jc) >= 6:
+                Ac = np.c_[np.ones(len(jc)), un[below], un[below] ** 2, vn[below]]
+                cc, *_ = np.linalg.lstsq(Ac, mc, rcond=None)
+                mc = Ac @ cc
+            add(jc, mc * (frac * low * ease_u[below])[:, None])
+        # (past its ends at the brow's own height: as the brow's end moves, by their place across it)
+        if mid.any():
+            jm = near[mid]
+            add(jm, brow_move(un[mid], vn[mid]) * (frac * (low + (1 - low) * share(un[mid], vn[mid])) * ease_u[mid])[:, None])
+        # (the forehead over it: as the brow's top moves there, easing to nothing `over` above it)
+        if above.any():
+            ja = near[above]
+            ease_v = 1 - smoothstep(0, over, vn[above] - up_all[ja])
+            add(ja, brow_move(un[above], up_all[ja]) * (frac * ease_v * ease_u[above])[:, None])
+    zone = np.array(sorted(acc))
+    at = np.array([drawn[j] + acc[j] / wsum[j] for j in zone])
+    return zone, at
+
+
+def brow_zone_v1(drawn, ref, frac, smooth=True):
     """Each eye's brow and the landmarks round it (from just over the lid's crease to a little over the brow's top,
     across the brow's length), and where they go on the drawing: `frac` of the way from where MediaPipe has them on
     the clay to where the reference has them against that eye (its frame: the middle of its corners, along them, and
@@ -482,7 +593,6 @@ def brow_zone(drawn, ref, frac):
     # and stretching the lid), and the zone reaches out over the temple past the tail, so the tail is carried, not
     # torn from the skin beside it. FACE_BROW_SMOOTH=0 for the old point-by-point move.)
     low = float(os.environ.get("FACE_BROW_LOW", "0.65"))
-    smooth = os.environ.get("FACE_BROW_SMOOTH", "1") != "0"
     zone, at = [], []
     for ring, (c0, c1) in ((BROW_A, (33, 133)), (BROW_B, (263, 362))):
         o_r, e1_r, e2_r, w_r = frame(ref, c0, c1)
@@ -510,6 +620,72 @@ def brow_zone(drawn, ref, frac):
         zone += list(js)
         at += list(drawn[js] + f[:, None] * move)
     return np.array(zone), np.array(at)
+
+
+def front_hair(img):
+    """Where the reference laid on the front shows its own hair or backdrop over her temples and forehead (rows from
+    the bottom, as load() gives them), 0 to 1, feathered: not skin-coloured (by linear chromaticity against its
+    cheeks') or much darker than its skin, from its brows' level up and beside its eyes' outer corners down to its mouth, never its
+    brows or eyes. Laid there, its hairline's edge and the strays over her temple took the tint and turned blue-grey
+    (brows round 2's judge). Saved as hair_front.png. None if no face is found on the front."""
+    import json
+
+    from PIL import Image, ImageDraw
+    from scipy import ndimage
+    js = os.path.join(OUT, "marks_front.json")
+    if not os.path.exists(js):
+        return None
+    L = np.array(json.load(open(js))["points"])[:, :2]
+    h = img.shape[0]
+    c = _lin(np.clip(img, 0, 1))
+    ch = c / np.maximum(c.sum(2, keepdims=True), 1e-6)
+    y = c @ np.array([0.2126, 0.7152, 0.0722])
+    # (its cheeks' skin: a box under each eye)
+    ys, xs = np.mgrid[0:h, 0:img.shape[1]]
+    yy = h - 1 - ys                                                   # (rows from the top, as the landmarks)
+    box = np.zeros(y.shape, bool)
+    for a, b in ((50, 205), (280, 425)):
+        q0, q1 = np.minimum(L[a], L[b]), np.maximum(L[a], L[b])
+        box |= (xs >= q0[0]) & (xs <= q1[0]) & (yy >= q0[1]) & (yy <= q1[1])
+    if box.sum() < 50:
+        return None
+    d = np.linalg.norm(ch - np.median(ch[box], 0), axis=2)
+    ym = np.median(y[box])
+    # (hair: much darker than its skin, or not skin-coloured and no lighter than it (a sheen is lighter, and
+    # is skin); the backdrop: off its head (normals_front.png))
+    hairy = (y < 0.35 * ym) | ((d > 0.1) & (y < 0.8 * ym))
+    nf = os.path.join(OUT, "normals_front.png")
+    if os.path.exists(nf):
+        n = np.asarray(Image.open(nf).convert("RGB").resize((img.shape[1], h)), np.float32)[::-1] / 255 * 2 - 1
+        hairy |= np.linalg.norm(n, axis=2) < 0.5
+    # (only over her temples and forehead: from its brows' lower edge up, and beside its eyes' outer corners)
+    brow_y = min(L[BROW_A][:, 1].max(), L[BROW_B][:, 1].max())
+    ew = np.linalg.norm(L[133] - L[33])
+    side = (xs < min(L[33, 0], L[263, 0]) - 0.25 * ew) | (xs > max(L[33, 0], L[263, 0]) + 0.25 * ew)
+    region = (yy < brow_y) | (side & (yy < L[13, 1]))
+    m = Image.new("L", (img.shape[1], h), 0)
+    dr = ImageDraw.Draw(m)
+    # (each brow's outline swept about, more up than down: its sparse top hairs are the brow's, not her hair;
+    # scaled about its middle instead, an arched brow's outline folded and left the brow itself out)
+    for ring in (BROW_A, BROW_B):
+        p = L[ring]
+        bw, bh = np.ptp(p[:, 0]), np.ptp(p[:, 1])
+        for dx in np.linspace(-0.12, 0.12, 5) * bw:
+            for dy in np.linspace(-1.0, 0.5, 9) * bh:
+                dr.polygon([tuple(v) for v in p + np.array([dx, dy])], fill=255)
+    for ring in (EYE_RING_A, EYE_RING_B):
+        p = L[ring]
+        cc = p.mean(0)
+        dr.polygon([tuple(v) for v in cc + (p - cc) * np.array([1.5, 2.4])], fill=255)
+    keep_out = (np.asarray(m) > 0)[::-1]
+    hm = (hairy & region & ~keep_out).astype(np.float32)
+    # (no specks: a freckle or a pore is not hair)
+    hm = ndimage.gaussian_filter(hm, h / 250)
+    hm = np.clip((hm - 0.35) / 0.3, 0, 1)
+    hm = np.clip(ndimage.gaussian_filter(hm, h / 150) * 1.4, 0, 1)
+    Image.fromarray((hm[::-1] * 255 + 0.5).astype(np.uint8)).save(os.path.join(OUT, "hair_front.png"))
+    print("FRONT HAIR: the photograph's hair and backdrop kept off %.1f%% of the front" % (100 * (hm > 0.5).mean()))
+    return hm
 
 
 def front_features():
@@ -601,6 +777,55 @@ def seen(V, N, toward):
     return np.array([bvh.ray_cast(Vector(p) + Vector(n) * 0.0008 + d * 0.0005, d, 2.0)[0] is None for p, n in zip(V, N)])
 
 
+def under_jaw(V, N, T, tri, bary, eye_z):
+    """Her neck under her jaw and her jaw's underside, 0 to 1 a texel (eased over a few mm): what no painting of a
+    face should lay its colour on. The portraits' necks there are in their jaws' shadow; laid on her, that shadow
+    showed as a grey-violet patch with a stepped edge down the front and sides of her neck on every face (the owner,
+    10 October 2026), a second shadow under the one the game casts. (The lay's own cut below her chin missed it: its
+    chin, the lowest point turned forward down her middle, was her neck's.)
+      - Her neck: below her jaw's line as her head is drawn from the front (its outline's lower half,
+        marks_drawn.json beside the drawings, found as front_features finds the front's; FACE_JAW_MARKS another),
+        from 2 mm over the line to 4 mm under it; beyond the angles of her jaw, below their height.
+      - Her jaw's underside: turned down, below her mouth's corners, off her lips and her chin's middle (the chin's
+        own cut is the lay's).
+    None of her is cut if no face is found on the drawing."""
+    import json
+    import subprocess
+    me = head.data
+    js = os.environ.get("FACE_JAW_MARKS") or os.path.join(OUT, "marks_drawn.json")
+    if not os.path.exists(js):
+        py = os.path.join(os.environ.get("LOCALAPPDATA", ""), "facefit", ".venv", "Scripts", "python.exe")
+        fit = os.path.join(os.path.dirname(os.path.abspath(__file__)), "face_fit.py")
+        subprocess.run([py, fit, "marks", os.path.join(OUT, "drawn_front.png"), js, "whole"], capture_output=True)
+    if not os.path.exists(js):
+        print("UNDER JAW: no face found on the drawing; nothing cut")
+        return np.zeros(len(tri))
+    L = np.array(json.load(open(js))["points"])[:, :2]
+    line = L[JAW_LINE]
+    line = line[np.argsort(line[:, 0])]
+    # (her points as the front drawing has them: across, and down from its top, in its pixels)
+    d = V - np.array(CENTRE)
+    px = (0.5 + d[:, 0] / SCALE) * DRAW
+    py = (0.5 - d[:, 2] / SCALE) * DRAW
+    below = (py - np.interp(px, line[:, 0], line[:, 1])) * SCALE / DRAW          # (metres under her jaw's line)
+    def ramp(x, a, b):
+        return np.clip((x - a) / (b - a), 0, 1)
+    neck = ramp(below, -0.002, 0.004)
+    jaw = ramp(-N[:, 2], 0.3, 0.6) * ramp(eye_z - 0.06 - V[:, 2], 0, 0.01) * ramp(np.abs(V[:, 0]), 0.025, 0.035)
+    cut = np.maximum(neck, jaw)
+    # (eased over a ring or two of her points: not a stepped edge)
+    nv = len(V)
+    e = np.array([(f[k], f[(k + 1) % len(f)]) for f in (list(p.vertices) for p in me.polygons) for k in range(len(f))])
+    import scipy.sparse as _sp
+    adj = _sp.coo_matrix((np.ones(len(e)), (e[:, 0], e[:, 1])), shape=(nv, nv)).tocsr()
+    adj = ((adj + adj.T) > 0).astype(float)
+    A = _sp.diags(1 / np.maximum(np.asarray(adj.sum(1)).ravel(), 1)) @ adj
+    for _ in range(int(os.environ.get("FACE_JAW_EASE", "3"))):
+        cut = 0.5 * cut + 0.5 * (A @ cut)
+    print("UNDER JAW: %d of her points under her jaw's line, %d on its underside" % ((neck > 0.5).sum(), (jaw > 0.5).sum()))
+    return (cut[T[tri]] * bary).sum(1)
+
+
 def match(src, ref, m):
     """src's colouring made ref's, over the texels m."""
     ms, ss = src[m].mean(0), src[m].std(0) + 1e-6
@@ -617,16 +842,39 @@ def _srgb(c):
     return np.where(c <= 0.0031308, c * 12.92, 1.055 * c ** (1 / 2.4) - 0.055)
 
 
-def tint_to(src, ref, m):
+def skin_like(col, m):
+    """How like her skin each texel's colour is (1 to 0), by its linear chromaticity against the median of the
+    texels m, and dark texels (hair) less so."""
+    c = _lin(np.clip(col, 0, 1))
+    ch = c / np.maximum(c.sum(1, keepdims=True), 1e-6)
+    d = np.linalg.norm(ch - np.median(ch[m], 0), axis=1)
+    y = c @ np.array([0.2126, 0.7152, 0.0722])
+    ym = np.median(y[m])
+    return (1 - np.clip((d - 0.06) / 0.08, 0, 1)) * np.clip((y / ym - 0.15) / 0.25, 0, 1)
+
+
+def tint_to(src, ref, m, like=None):
     """src's skin brought to ref's colour over the texels m, as a light or a skin's pigment would: each channel scaled
     in linear light, so every feature keeps its depth against the skin round it. (match() moved its mean by adding
     and squeezed its spread toward her plain head's: a face's brows came out half their portrait's darkness against
-    its skin, and its lips half as red.) (FACE_MATCH=add: as match() did.)"""
+    its skin, and its lips half as red.) (FACE_MATCH=add: as match() did.)
+    (10 October, brows round 2's judge: the per-channel gains (Sunborn's x1.93/3.15/4.60) turned every grey or black
+    texel the photograph laid on her temple (its hair's edge, sparse tail hairs, its studio sheen) blue-grey or
+    lavender, and the gains differed lay to lay (the texels fitted on were picked by colour, from the colours being
+    fitted). So the gains are fitted on m's middle 80% of light (no sheen, no shadow) as medians, and with `like`
+    (skin_like), only skin-like texels take the colour shift; the rest take the light's gain alone.)"""
     if os.environ.get("FACE_MATCH") == "add":
         return match(src, ref, m)
-    g = _lin(ref[m]).mean(0) / np.maximum(_lin(src[m]).mean(0), 1e-6)
-    print("TINTED to her skin: x %.3f %.3f %.3f (linear)" % tuple(g))
-    return _srgb(_lin(src) * g)
+    ls, lr = _lin(src[m]), _lin(ref[m])
+    w = np.array([0.2126, 0.7152, 0.0722])
+    y = ls @ w
+    mid = (y > np.percentile(y, 10)) & (y < np.percentile(y, 90))
+    g = np.median(lr[mid], 0) / np.maximum(np.median(ls[mid], 0), 1e-6)
+    gy = float(np.median(lr[mid] @ w) / max(np.median(y[mid]), 1e-6))
+    print("TINTED to her skin: x %.3f %.3f %.3f (linear), light alone x %.3f, over %d texels" % (*g, gy, mid.sum()))
+    if like is None:
+        return _srgb(_lin(src) * g)
+    return _srgb(_lin(src) * (gy + like[:, None] * (g - gy)))
 
 
 def free():
@@ -643,7 +891,124 @@ def free():
         print("FREE: no ComfyUI to free")
 
 
-if __name__ == "__main__":
+if __name__ == "__main__" and os.environ.get("FACE_JAW_ONLY"):
+    # (FACE_JAW_ONLY=1: nothing painted; under_jaw's cut written to <out>/jaw_cut.png and her head's own skin, with
+    # the texels her head covers as its alpha, to <out>/base_skin.png, both as the face paint lies (rows from the
+    # top): tools/assets/heroine_jaw_cut.py takes the paint off a built head with them, without building her again.
+    # With FACE_JAW_HEAD (that head's paint) also what her own skin is brought by where the paint comes off:
+    # <out>/jaw_field.npz, as matched_base in heroine_head.py brings it, a smooth field over her head's points,
+    # held to the head's paint where nothing is cut and to her body's skin (nothing added) over the 6 mm above
+    # SPLIT, eased between (over her points, so across her texture's seams as on her))
+    from PIL import Image
+    import scipy.sparse as _sp
+    import scipy.sparse.linalg as _spl
+    if not os.environ.get("FACE_JAW_MARKS") and not os.path.exists(os.path.join(OUT, "marks_drawn.json")) \
+            and not os.path.exists(os.path.join(OUT, "drawn_front.png")):
+        draw()                                   # (her jaw's line is found on the front drawing)
+    rows, cols, T, tri, bary, V, N, P, Nt = texels()
+    eye_z = float(np.mean([(bpy.data.objects["HeroineEyes"].matrix_world @ v.co).z
+                           for v in bpy.data.objects["HeroineEyes"].data.vertices]))
+    ct = under_jaw(V, N, T, tri, bary, eye_z)
+    jc = np.zeros((SIZE, SIZE), np.float32)
+    jc[rows, cols] = ct
+    Image.fromarray((jc[::-1] * 255 + 0.5).astype(np.uint8)).save(os.path.join(OUT, "jaw_cut.png"))
+    bs = SKIN_AS_IS.copy() if SKIN_AS_IS is not None else \
+        np.array(head.data.materials[0].node_tree.nodes["Image Texture"].image.pixels[:], np.float32).reshape(SIZE, SIZE, 4)
+    bs[..., 3] = 0
+    bs[rows, cols, 3] = 1
+    Image.fromarray((np.clip(bs[::-1], 0, 1) * 255 + 0.5).astype(np.uint8)).save(os.path.join(OUT, "base_skin.png"))
+    if os.environ.get("FACE_JAW_HEAD"):
+        # (her neck where the paint comes off: one smooth colour field over her head's points, held to the head's
+        # paint (its broad colour) where nothing is cut and to her body's own skin (its broad colour, as her body's
+        # texture has it a little under SPLIT) along her head's edge at SPLIT, eased between. Her head's own skin was
+        # tried first, brought by a field as matched_base brings it: MakeHuman's skin is greyer than hers and
+        # mauve under her jaw, and heroine_head.py's easing into her body at her neck had left lighter lobes along
+        # SPLIT; the game's pores and grain give her neck its fine detail.)
+        from scipy.spatial import cKDTree
+        hd = np.asarray(Image.open(os.environ["FACE_JAW_HEAD"]).convert("RGB"), np.float32)[::-1] / 255
+        nv = len(V)
+        tv = T[tri]
+
+        def to_points(vals, w):
+            acc = np.zeros((nv, vals.shape[1]))
+            ws = np.zeros(nv)
+            for k in range(3):
+                wk = bary[:, k] * w
+                ws += np.bincount(tv[:, k], wk, nv)
+                for ch in range(vals.shape[1]):
+                    acc[:, ch] += np.bincount(tv[:, k], vals[:, ch] * wk, nv)
+            return acc / np.maximum(ws, 1e-9)[:, None], ws
+        col_v, wk = to_points(hd[rows, cols], (ct < 0.02).astype(float))
+        cut_v, _ = to_points(ct[:, None], np.ones(len(ct)))
+        e = np.array([(f[k], f[(k + 1) % len(f)]) for f in (list(p.vertices) for p in head.data.polygons) for k in range(len(f))])
+        adj = _sp.coo_matrix((np.ones(len(e)), (e[:, 0], e[:, 1])), shape=(nv, nv)).tocsr()
+        adj = ((adj + adj.T) > 0).astype(float)
+        lap = (_sp.diags(np.asarray(adj.sum(1)).ravel()) - adj).tocsr()
+
+        def split(p):
+            return 1.625 + 0.27 * (p[:, 1] + 0.02)
+        seam = V[:, 2] - split(V) < 0.006
+        known = (wk > 0.3) & (cut_v[:, 0] < 0.02) & ~seam
+        # (the paint's broad colour: its freckles and pores not carried in)
+        Am = _sp.diags(1 / np.maximum(np.asarray(adj.sum(1)).ravel(), 1)) @ adj
+        for _ in range(10):
+            col_v = np.where(known[:, None], (Am @ np.where(known[:, None], col_v, 0)) / np.maximum(Am @ known.astype(float), 1e-6)[:, None], col_v)
+        # (her body's skin under her neck's edge: her body's faces there, each sampled at its corners and middle)
+        body = bpy.data.objects["Heroine"]
+        BV, _ = as_shaped(body)
+        bme = body.data
+        uvb = bme.uv_layers.active.data
+        pix = {}
+        pts, cs = [], []
+        for p in bme.polygons:
+            vs = list(p.vertices)
+            cen = BV[vs].mean(0)
+            s = cen[2] - (1.625 + 0.27 * (cen[1] + 0.02))
+            if not (-0.04 < s < -0.002) or abs(cen[0]) > 0.14:
+                continue
+            mat = body.material_slots[p.material_index].material if p.material_index < len(body.material_slots) else None
+            img = next((n.image for n in mat.node_tree.nodes if n.type == "TEX_IMAGE" and n.image), None) if mat and mat.use_nodes else None
+            if img is None:
+                continue
+            if img.name not in pix:
+                w_, h_ = img.size
+                pix[img.name] = np.array(img.pixels[:], np.float32).reshape(h_, w_, 4)
+            px_ = pix[img.name]
+            uvs = np.array([uvb[li].uv[:] for li in p.loop_indices])
+            for q, u in list(zip(BV[vs], uvs)) + [(cen, uvs.mean(0))]:
+                x = int(np.clip((u[0] % 1.0) * px_.shape[1], 0, px_.shape[1] - 1))
+                y = int(np.clip((u[1] % 1.0) * px_.shape[0], 0, px_.shape[0] - 1))
+                pts.append(q)
+                cs.append(px_[y, x, :3])
+        pts, cs = np.array(pts), np.array(cs)
+        tree = cKDTree(pts)
+        si = np.where(seam)[0]
+        body_c = np.zeros((len(si), 3))
+        for n, i in enumerate(si):
+            near = tree.query_ball_point(V[i] - np.array([0, 0, 0.006]), 0.015)
+            if near:
+                d2 = ((pts[near] - (V[i] - np.array([0, 0, 0.006]))) ** 2).sum(1)
+                w_ = np.exp(-d2 / (2 * 0.007 ** 2))
+                body_c[n] = (cs[near] * w_[:, None]).sum(0) / w_.sum()
+            else:
+                body_c[n] = col_v[i]
+        val = col_v.copy()
+        val[si] = body_c
+        fixed = known | seam
+        fr, fx = np.where(~fixed)[0], np.where(fixed)[0]
+        rhs = -lap[fr][:, fx] @ val[fx]
+        A = (lap[fr][:, fr] + 1e-6 * _sp.identity(len(fr))).tocsc()
+        out_v = val.copy()
+        for ch in range(3):
+            out_v[fr, ch] = _spl.spsolve(A, rhs[:, ch])
+        f_t = (out_v[tv] * bary[:, :, None]).sum(1)
+        m = ct > 0.001
+        np.savez_compressed(os.path.join(OUT, "jaw_field.npz"), rows=(SIZE - 1 - rows[m]).astype(np.int16),
+                            cols=cols[m].astype(np.int16), colour=np.clip(f_t[m], 0, 1).astype(np.float32))
+        print("JAW FIELD: %d of her points held to the paint, %d to her body at SPLIT (%d samples of it, mean %s), %d eased" % (
+            known.sum(), seam.sum(), len(pts), np.round(body_c.mean(0) * 255).astype(int), len(fr)))
+    print("JAW CUT written", OUT)
+elif __name__ == "__main__":
     # (FACE_LAY_ONLY=1: the drawings and paintings already in <out>, say the
     # best view of each of several seeds gathered there, only laid back on)
     if not os.environ.get("FACE_LAY_ONLY"):
@@ -699,6 +1064,11 @@ if __name__ == "__main__":
                 feat = sample(feat_img[..., None], uv)[:, 0] * np.clip((vis - 0.5) / 0.5, 0, 1) * np.clip((facing - 0.15) / 0.2, 0, 1)
         ref_front = name == "front" and os.path.exists(os.path.join(OUT, "normals_front.png")) and os.environ.get("FACE_REF")
         img = delit_reference() if ref_front else delit(name)
+        if ref_front and os.environ.get("FACE_HAIR_MASK", "1") != "0":
+            # (the photograph's own hair and backdrop not laid on her: front_hair())
+            hm = front_hair(img)
+            if hm is not None:
+                weights[name] = weights[name] * (1 - sample(hm[..., None], uv)[:, 0])
         broad = np.stack([_ndi.gaussian_filter(img[..., k], _sg) for k in range(3)], 2)
         cols_v[name] = sample(broad, uv)
         fine_v[name] = sample(img - broad, uv)
@@ -753,12 +1123,21 @@ if __name__ == "__main__":
     # to her face's colour and her body's by heroine_head.py)
     cover *= 1 - below_mouth * np.clip((-Nt[:, 2] - 0.05) / 0.3, 0, 1)
     cover *= 1 - np.clip((chin_z + 0.003 - P[:, 2]) / 0.012, 0, 1)
+    # (nor her neck under her jaw at its sides, nor her jaw's underside: under_jaw; FACE_JAW_CUT=0 as before)
+    if os.environ.get("FACE_JAW_CUT", "1") != "0":
+        cover *= 1 - under_jaw(V, N, T, tri, bary, eye_z)
     # And all of it coloured as her skin (her head's own, which heroine_head.py
     # matched to her body), over her cheeks, brow and neck seen square on.
-    skin = (cover > 0.9) & (np.abs(col - np.median(col[cover > 0.9], 0)).max(1) < 0.08)
+    # (the texels it is fitted on by where they are, not picked by a tight colour window from the colours being
+    # fitted: all her painted face but her features, then only those near the median colour (a mole, a lash out))
+    feat_t = feat if feat is not None else np.zeros(len(col))
+    # (all her painted face, as before, so its edge meets her head's own skin: fitted on her cheeks alone, the
+    # front's lighter skin set the gains and her face's edge stood 1.3 to 1.6% off her head's against 0.7%)
+    place = (cover > 0.9) & (feat_t < 0.05)
+    skin = place & (np.abs(col - np.median(col[place], 0)).max(1) < 0.12)
     # (broad colour to broad colour: her head's own skin as broad as the views' is, about 12 texels to their 1.6 mm)
     base_b = np.stack([_ndi.gaussian_filter(base[..., k], 12) for k in range(3)], 2)
-    col = tint_to(col, base_b[rows, cols], skin)
+    col = tint_to(col, base_b[rows, cols], skin, skin_like(col, skin) if os.environ.get("FACE_TINT_SKIN", "1") != "0" else None)
     # Her fine detail over it as the views have it (FACE_DETAIL_GAIN: a little
     # more, for what the game's filtering and light under her skin smooth away).
     col = col + fine * float(os.environ.get("FACE_DETAIL_GAIN", "1.0"))
