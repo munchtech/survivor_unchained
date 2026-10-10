@@ -36,6 +36,9 @@ uniform bool foot = false;
 global uniform vec4 survivor;
 global uniform vec4 view_from;
 
+// (foliage: its leaves' undersides are not a roof's; KitLook)
+uniform bool leaves = false;
+
 varying float v_up;
 varying float v_jit;
 varying float v_y;
@@ -52,14 +55,16 @@ const vec3 LW = vec3(0.2126, 0.7152, 0.0722);
 // fainter one, so the window is always clear and only its rim is see-through
 // (a piece drawn faint across the window, on the rim's translucent pass, lost
 // its shading and stood pale in it: a roof's underside, a gable).
-float see_through(vec3 vpos, mat4 view, mat4 inv_view, mat4 proj, vec3 cam) {
+// (Its two parts: how far from her on the screen, in metres at her distance, and how far the
+// point is opened, 0 none; see_through below puts them together.)
+vec2 see_parts(vec3 vpos, mat4 view, mat4 inv_view, mat4 proj, vec3 cam) {
 	// (A light's view stands far from the camera's: a lamp's at most a few metres up, the sun's far off.)
-	if (survivor.w <= 0.0 || view_from.w <= 0.0 || distance(cam, view_from.xyz) > 1.0) return 1.0;
+	if (survivor.w <= 0.0 || view_from.w <= 0.0 || distance(cam, view_from.xyz) > 1.0) return vec2(0.0);
 	vec3 her = (view * vec4(survivor.xyz, 1.0)).xyz;
 	float front = smoothstep(0.3, 1.3, vpos.z - her.z);
 	float above = smoothstep(0.25, 0.7, (inv_view * vec4(vpos, 1.0)).y - (survivor.y - 1.1));
 	float open = front * above;
-	if (open <= 0.0) return 1.0;
+	if (open <= 0.0) return vec2(0.0);
 	vec4 a = proj * vec4(vpos, 1.0);
 	vec4 b = proj * vec4(her, 1.0);
 	vec2 d = a.xy / a.w - b.xy / b.w;
@@ -68,7 +73,11 @@ float see_through(vec3 vpos, mat4 view, mat4 inv_view, mat4 proj, vec3 cam) {
 	float fy = abs(proj[1][1]);
 	d.x *= fy / abs(proj[0][0]);
 	float metres = length(d) * -her.z / fy;
-	return smoothstep(1.45 * open, 2.5 * open, metres);
+	return vec2(metres, open);
+}
+
+float see_through(vec2 mo) {
+	return mo.y <= 0.0 ? 1.0 : smoothstep(1.45 * mo.y, 2.5 * mo.y, mo.x);
 }
 
 void vertex() {
@@ -94,12 +103,42 @@ void vertex() {
 }
 
 void fragment() {
-	float kept = see_through(VERTEX, VIEW_MATRIX, INV_VIEW_MATRIX, PROJECTION_MATRIX, CAMERA_POSITION_WORLD);
+	vec2 mo = see_parts(VERTEX, VIEW_MATRIX, INV_VIEW_MATRIX, PROJECTION_MATRIX, CAMERA_POSITION_WORLD);
+	float kept = see_through(mo);
+#ifdef SEE_SCREEN
+	// (The feather held to its width on the screen where how far the piece is opened
+	// varies across it: the distance to the window's edge rescaled to change as fast
+	// on the screen as the distance from her does.)
+	float edge = mo.x - 2.5 * mo.y;
+	float rate = min(fwidth(mo.x) / max(fwidth(edge), 1e-5), 8.0);
+	if (mo.y > 0.0) kept = smoothstep(-1.05 * mo.y, 0.0, edge * rate);
+#endif
 #ifdef REVEAL
 	// Only the feathered rim (the piece's whole part is drawn by the first pass).
 	if (kept >= 0.999 || kept <= 0.004) discard;
+#ifdef SEE_NORIM
+	discard;
+#endif
+#ifdef SEE_BACK
+	// (a face seen from behind, inside the window, cut whole: no rim)
+	if (!FRONT_FACING) discard;
+#endif
+#ifdef SEE_UNDERCUT
+	// (an underside, a ceiling or a roof's inside, seen only through the window: no rim)
+	if (!leaves && v_up < -0.2) discard;
+#endif
+#ifdef SEE_UNDER
+	// (an underside, a ceiling or a roof's inside, seen only through the window, under its
+	// roof: the rim's translucent pass has no ambient occlusion, so it is given back here,
+	// or the underside stands pale and flat in the rim)
+	if (!leaves) AO = mix(1.0, 0.3, smoothstep(0.0, 0.6, -v_up));
+#endif
 #else
 	if (kept < 0.999) discard;
+#ifdef SEE_UNDERCUT
+	// (its window wider, cut whole, so its edge lies under what still covers it)
+	if (!leaves && v_up < -0.2 && mo.y > 0.0 && mo.x < 3.4 * sqrt(mo.y)) discard;
+#endif
 #endif
 	vec4 c = texture(albedo_tex, UV) * albedo_color;
 	if (use_vcolor) c *= COLOR;

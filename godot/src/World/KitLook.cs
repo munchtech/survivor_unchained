@@ -44,7 +44,17 @@ public static class KitLook
     // is kept, blue none to red all)
     const string Whole = "ALBEDO = col;",
         WholeDebug = "ALBEDO = col * (0.45 + 0.55 * vec3(fract(v_jit * 7.0), fract(v_jit * 13.0), fract(v_jit * 29.0)));",
-        RimDebug = "ALBEDO = mix(vec3(0.0, 0.25, 1.0), vec3(1.0, 0.1, 0.0), kept); ALPHA = 1.0;";
+        RimDebug = "ALBEDO = FRONT_FACING ? mix(vec3(0.0, 0.25, 1.0), vec3(1.0, 0.1, 0.0), kept) : vec3(0.1, 1.0, 0.2); ALPHA = 1.0;";
+
+    /// <summary>--see-fix back,screen (a developer's switch while the window's pale wedge is
+    /// fixed; shaders/kit.gdshader SEE_BACK, SEE_SCREEN): faces seen from behind cut whole
+    /// inside the window, with no rim; the feather held to its width on the screen where
+    /// how far a piece is opened varies across it. (--see-debug draws the rim's back faces green.)</summary>
+    static readonly string SeeFix = SurvivorUnchained.Args.Get("see-fix") ?? "";
+
+    static string Fixed(string code) => code.Replace("shader_type spatial;", "shader_type spatial;"
+        + (SeeFix.Contains("back") ? "\n#define SEE_BACK" : "") + (SeeFix.Contains("screen") ? "\n#define SEE_SCREEN" : "")
+        + (SeeFix.Contains("underao") ? "\n#define SEE_UNDER" : "") + (SeeFix.Contains("undercut") ? "\n#define SEE_UNDERCUT" : "") + (SeeFix.Contains("norim") ? "\n#define SEE_NORIM" : ""));
 
     /// <summary>The see-through window's feathered rim (shaders/kit.gdshader): the same code
     /// with REVEAL defined, blended, drawn as each kit material's next pass.</summary>
@@ -98,7 +108,7 @@ public static class KitLook
         var foliage = Foliage.IsMatch(s.ResourceName);
         var key = $"{s.GetInstanceId()}|{look}|{foot}";
         if (cache.TryGetValue(key, out var m)) return m;
-        solid ??= SeeDebug ? new Shader { Code = GD.Load<Shader>("res://shaders/kit.gdshader").Code.Replace(Whole, WholeDebug) } : GD.Load<Shader>("res://shaders/kit.gdshader");
+        solid ??= SeeDebug || SeeFix != "" ? new Shader { Code = Fixed(GD.Load<Shader>("res://shaders/kit.gdshader").Code).Replace(Whole, SeeDebug ? WholeDebug : Whole) } : GD.Load<Shader>("res://shaders/kit.gdshader");
         twoSided ??= new Shader { Code = solid.Code.Replace("render_mode diffuse_burley", "render_mode cull_disabled, diffuse_burley") };
         m = new ShaderMaterial { Shader = foliage || s.CullMode == BaseMaterial3D.CullModeEnum.Disabled ? twoSided : solid };
         m.SetShaderParameter("albedo_tex", s.AlbedoTexture);
@@ -119,6 +129,7 @@ public static class KitLook
         m.SetShaderParameter("moss", foliage ? 0f : look.Moss);
         m.SetShaderParameter("jitter", foliage ? 0.14f : 0.08f);
         m.SetShaderParameter("foot", foot);
+        m.SetShaderParameter("leaves", foliage);
         // The window's rim, drawn again over what the piece's own pass left open: every
         // parameter the same, so the rim is the piece itself, fading.
         solidRim ??= Rim(solid);

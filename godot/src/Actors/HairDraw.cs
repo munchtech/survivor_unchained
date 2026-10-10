@@ -23,7 +23,34 @@ public static class HairDraw
     /// <summary>Blended (either way).</summary>
     public static bool Blended => Mode is "blend" or "two";
 
-    static Shader? blend, core, over, cards;
+    /// <summary>--hair-erase KEEP: each blended pass of her hair, cap, fine
+    /// hairs, lashes and brows is followed by an eraser (shaders/heroine_hair_erase
+    /// and heroine_cards_erase: the colour multiplied by white, the alpha by KEEP),
+    /// drawn after all of them. Godot hands FSR 2 the colour's alpha as its
+    /// reactive mask, so blended hair showed as the near-raw jittered frame and
+    /// moved frame to frame at the Look; erased (0), FSR 2 accumulates it as it
+    /// does her skin. Negative (the default): no eraser.</summary>
+    public static readonly float EraseKeep = SurvivorUnchained.Args.Num("hair-erase", -1f);
+
+    static Shader? blend, core, over, cards, hairErase, cardsErase;
+
+    /// <summary>The material with the hair eraser added as its last pass (when
+    /// --hair-erase is given): it takes the hair's parameters, so it swings with it.</summary>
+    public static ShaderMaterial WithErase(ShaderMaterial m)
+    {
+        if (EraseKeep < 0f) return m;
+        hairErase ??= GD.Load<Shader>("res://shaders/heroine_hair_erase.gdshader");
+        Last(m).NextPass = new ShaderMaterial { Shader = hairErase, RenderPriority = 3 };
+        ((ShaderMaterial)Last(m)).SetShaderParameter("keep", EraseKeep);
+        return m;
+    }
+
+    static ShaderMaterial Last(ShaderMaterial m)
+    {
+        var p = m;
+        while (p.NextPass is ShaderMaterial n) p = n;
+        return p;
+    }
 
     /// <summary>Her hair cards' material (not the cap, fine hairs or tie), its
     /// passes unset; null when drawn as today. Blended hair is drawn after the
@@ -61,6 +88,13 @@ public static class HairDraw
         var c = new ShaderMaterial { Shader = cards, ResourceName = m.ResourceName };
         c.SetShaderParameter("albedo_tex", m.AlbedoTexture);
         c.SetShaderParameter("albedo_color", m.AlbedoColor);
+        if (EraseKeep >= 0f)
+        {
+            cardsErase ??= GD.Load<Shader>("res://shaders/heroine_cards_erase.gdshader");
+            var e = new ShaderMaterial { Shader = cardsErase, RenderPriority = 3 };
+            e.SetShaderParameter("keep", EraseKeep);
+            c.NextPass = e;
+        }
         return c;
     }
 }
