@@ -32,16 +32,43 @@ public static class HairDraw
     /// does her skin. Negative (the default): no eraser.</summary>
     public static readonly float EraseKeep = SurvivorUnchained.Args.Num("hair-erase", -1f);
 
+    /// <summary>--hair-core-cut C: with "two", the cover a strand needs to be drawn
+    /// solid (its depth and motion written); 0.9 by default.</summary>
+    public static readonly float CoreCut = SurvivorUnchained.Args.Num("hair-core-cut", 0.9f);
+
+    /// <summary>--hair-erase-from F: with "two", the cards' eraser works only where
+    /// the strands cover F or more (the core's cut: only what wrote her hair's own
+    /// motion is accumulated; the thin fringe stays reactive). 0 by default.</summary>
+    public static readonly float EraseFrom = SurvivorUnchained.Args.Num("hair-erase-from", 0f);
+
+    /// <summary>--hair-bias B: a bias on the strands' and lashes' mip level
+    /// (0.5 cancels the smoothing's -0.5 on strands thinner than a pixel). 0 by default.</summary>
+    public static readonly float Bias = SurvivorUnchained.Args.Num("hair-bias", 0f);
+
+    /// <summary>--lash-erase-from F: the lashes' and brows' eraser works only where
+    /// their paint covers F or more. 0 by default.</summary>
+    public static readonly float LashEraseFrom = SurvivorUnchained.Args.Num("lash-erase-from", 0f);
+
     static Shader? blend, core, over, cards, hairErase, cardsErase;
 
     /// <summary>The material with the hair eraser added as its last pass (when
     /// --hair-erase is given): it takes the hair's parameters, so it swings with it.</summary>
     public static ShaderMaterial WithErase(ShaderMaterial m)
     {
-        if (EraseKeep < 0f) return m;
-        hairErase ??= GD.Load<Shader>("res://shaders/heroine_hair_erase.gdshader");
-        Last(m).NextPass = new ShaderMaterial { Shader = hairErase, RenderPriority = 3 };
-        ((ShaderMaterial)Last(m)).SetShaderParameter("keep", EraseKeep);
+        bool cards = m.Shader != null && m.Shader == core;
+        if (EraseKeep >= 0f)
+        {
+            hairErase ??= GD.Load<Shader>("res://shaders/heroine_hair_erase.gdshader");
+            var e = new ShaderMaterial { Shader = hairErase, RenderPriority = 3 };
+            e.SetShaderParameter("keep", EraseKeep);
+            e.SetShaderParameter("erase_from", cards ? EraseFrom : 0f);
+            Last(m).NextPass = e;
+        }
+        foreach (var p in Passes(m))
+        {
+            p.SetShaderParameter("strand_bias", Bias);
+            if (cards) p.SetShaderParameter("core_cut", CoreCut);
+        }
         return m;
     }
 
@@ -88,11 +115,14 @@ public static class HairDraw
         var c = new ShaderMaterial { Shader = cards, ResourceName = m.ResourceName };
         c.SetShaderParameter("albedo_tex", m.AlbedoTexture);
         c.SetShaderParameter("albedo_color", m.AlbedoColor);
+        c.SetShaderParameter("lash_bias", Bias);
         if (EraseKeep >= 0f)
         {
             cardsErase ??= GD.Load<Shader>("res://shaders/heroine_cards_erase.gdshader");
             var e = new ShaderMaterial { Shader = cardsErase, RenderPriority = 3 };
             e.SetShaderParameter("keep", EraseKeep);
+            e.SetShaderParameter("albedo_tex", m.AlbedoTexture);
+            e.SetShaderParameter("erase_from", LashEraseFrom);
             c.NextPass = e;
         }
         return c;

@@ -96,6 +96,7 @@ public partial class Game
     // of her, 0.55 head and shoulders, 1 her face): asked, and as it is now.
     float figTurn, figTurnNow, figZoom;
     CameraAttributesPractical? portrait;
+    static readonly bool NoDof = Args.Has("no-dof");
     SpotLight3D? keyLight;
 
     /// <summary>How near the figure is asked to be framed (0 all of her, 1 her face).</summary>
@@ -147,7 +148,8 @@ public partial class Game
         Pose(pos, look, false, fov, Mathf.Lerp(1, 0.08f, Mathf.Clamp(z * 1.6f, 0, 1)));
         PortraitLight(dt, eyes, dir, z, y);
         // A close portrait: what is behind her softened, the more the nearer.
-        if (z > 0.05f)
+        // (--no-dof: none, to test what the blur does to her hair)
+        if (z > 0.05f && !NoDof)
         {
             portrait ??= new CameraAttributesPractical { DofBlurFarEnabled = true, DofBlurFarTransition = 2.5f };
             float dist = pos.DistanceTo(look);

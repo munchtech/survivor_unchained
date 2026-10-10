@@ -52,9 +52,16 @@ uniform vec3 chain_then[8];
 uniform float core_cut = 0.9;
 #endif
 #ifdef ERASE
-// (how much of the blended alpha under it is kept: heroine_hair_erase.gdshader)
+// (how much of the blended alpha under it is kept: heroine_hair_erase.gdshader;
+// erased only where the strands cover at least erase_from: with "two", the core's
+// cut, so only what wrote her hair's own motion is accumulated, and the thin
+// fringe stays reactive)
 uniform float keep = 0.0;
+uniform float erase_from = 0.0;
 #endif
+// (a bias on the strands' mip level: 0.5 cancels the smoothing's -0.5 on strands
+// thinner than a pixel; --hair-bias, HairDraw)
+uniform float strand_bias = 0.0;
 
 varying vec3 strand;
 varying float sparkle;
@@ -78,7 +85,7 @@ void vertex() {
 }
 
 void fragment() {
-	vec4 t = texture(strands, UV);
+	vec4 t = texture(strands, UV, strand_bias);
 	// (its shade kept from going too dark or too light, strand to strand)
 	t.r = mix(0.15, 0.85, t.r);
 	// Strand by strand (the atlas's green) and lock by lock (the card's green),
@@ -117,6 +124,7 @@ void fragment() {
 	ALPHA = cover;
 	ALPHA_SCISSOR_THRESHOLD = IN_SHADOW_PASS ? 0.5 : core_cut;
 #elif defined(ERASE)
+	if (cover < erase_from) discard;
 	// (white, multiplied: the colour kept; the alpha, FSR 2's reactive mask, scaled by keep)
 	ALBEDO = vec3(1.0);
 	ALPHA = keep;

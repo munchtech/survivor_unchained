@@ -113,6 +113,10 @@ void fragment() {
 	float rate = min(fwidth(mo.x) / max(fwidth(edge), 1e-5), 8.0);
 	if (mo.y > 0.0) kept = smoothstep(-1.05 * mo.y, 0.0, edge * rate);
 #endif
+#ifdef SEE_NARROW
+	// (a narrow feather, 0.35 m at her distance, the clear radius kept)
+	if (mo.y > 0.0) kept = smoothstep(1.45 * mo.y, 1.45 * mo.y + 0.35, mo.x);
+#endif
 #ifdef REVEAL
 	// Only the feathered rim (the piece's whole part is drawn by the first pass).
 	if (kept >= 0.999 || kept <= 0.004) discard;

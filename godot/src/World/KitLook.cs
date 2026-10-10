@@ -54,7 +54,8 @@ public static class KitLook
 
     static string Fixed(string code) => code.Replace("shader_type spatial;", "shader_type spatial;"
         + (SeeFix.Contains("back") ? "\n#define SEE_BACK" : "") + (SeeFix.Contains("screen") ? "\n#define SEE_SCREEN" : "")
-        + (SeeFix.Contains("underao") ? "\n#define SEE_UNDER" : "") + (SeeFix.Contains("undercut") ? "\n#define SEE_UNDERCUT" : "") + (SeeFix.Contains("norim") ? "\n#define SEE_NORIM" : ""));
+        + (SeeFix.Contains("underao") ? "\n#define SEE_UNDER" : "") + (SeeFix.Contains("undercut") ? "\n#define SEE_UNDERCUT" : "") + (SeeFix.Contains("norim") ? "\n#define SEE_NORIM" : "")
+        + (SeeFix.Contains("narrow") ? "\n#define SEE_NARROW" : ""));
 
     /// <summary>The see-through window's feathered rim (shaders/kit.gdshader): the same code
     /// with REVEAL defined, blended, drawn as each kit material's next pass.</summary>
