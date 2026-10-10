@@ -1023,14 +1023,19 @@ def edge_loops(tris):
     """A sheet's edge as loops, found in one pass: each edge of a triangle
     whose reverse no triangle has is on the rim, and following those edges
     the way the triangles wind brings each walk home, pinched corners and
-    all, with no searching."""
-    from collections import defaultdict
+    all, with no searching. Edges are counted by direction, and an edge is
+    on the rim as many times as it runs one way more than the other: so the
+    rim is always closed, even where the weld left three or four triangles
+    on one edge (counted as present or not, such an edge dropped out of the
+    rim and the walk stopped short: the ranger's left glove, a loop's last
+    step 27 mm back to its start)."""
+    from collections import Counter, defaultdict
     e = np.vstack([tris[:, [0, 1]], tris[:, [1, 2]], tris[:, [2, 0]]]).tolist()
-    have = set(map(tuple, e))
+    count = Counter(map(tuple, e))
     out = defaultdict(list)
-    for a, b in e:
-        if (b, a) not in have:
-            out[a].append(b)
+    for (a, b), n in count.items():
+        out[a].extend([b] * max(n - count.get((b, a), 0), 0))
+    out = defaultdict(list, {a: v for a, v in out.items() if v})
     loops = []
     while out:
         start = next(iter(out))
@@ -1774,19 +1779,49 @@ def mirrored(pos, at, tris):
     return np.vstack([p, mp]), np.vstack([a, ma]), np.vstack([t, t[:, ::-1] + len(p)])
 
 
-def clear_of_skin(pos, lift):
-    """At least `lift` off her skin everywhere."""
-    moved = 0
+def pushes_off_skin(pos, lift):
+    """How far, and which way, each point must move to stand `lift` off her skin."""
+    push = np.zeros_like(pos)
     for i in range(len(pos)):
         q, n, _, _ = BVH.find_nearest(Vector(pos[i]))
         if q is None:
             continue
         d = (Vector(pos[i]) - q).dot(n)
         if d < lift:
-            pos[i] = (Vector(pos[i]) + n * (lift - d))[:]
-            moved += 1
-    if moved:
-        print("CLEAR pushed", moved, "of", len(pos))
+            push[i] = (n * (lift - d))[:]
+    return push
+
+
+def clear_of_skin(pos, lift, tris=None, spread=0.003, rounds=20, fall=0.9):
+    """At least `lift` off her skin everywhere. With `tris`, the part of any
+    push over `spread` is smoothed over the sheet, its way averaged with its
+    neighbours' and its size never less than the point's own need, nor less
+    than `fall` of theirs (so it fades out round the pushed patch): a plate
+    lifted off a hollow moves as one piece. (Pushed point by point, each
+    along its own nearest normal, the neck side of the ranger's second
+    pauldron, 19 mm off her over the rise of her neck, was torn from 5 mm
+    steps to 24 mm and its rim could not be bound.) Pushes under `spread`
+    (every skin-tight piece's) are left exactly as they were."""
+    push = pushes_off_skin(pos, lift)
+    size = np.linalg.norm(push, axis=1)
+    if tris is not None and len(tris) and size.max() > spread:
+        over = push * (np.maximum(size - spread, 0) / np.maximum(size, 1e-12))[:, None]
+        need = np.linalg.norm(over, axis=1)
+        A = adjacency(len(pos), tris)
+        eased = over.copy()
+        for _ in range(rounds):
+            m = A @ eased
+            ml = np.linalg.norm(m, axis=1)
+            mag = np.maximum(ml * fall, need)
+            eased = np.where((ml > 1e-12)[:, None], m / np.maximum(ml, 1e-12)[:, None] * mag[:, None], eased)
+        pos = pos + (push - over) + eased
+        # (an eased push can lean off a point's own normal: made up here)
+        push = pushes_off_skin(pos, lift)
+        size = np.linalg.norm(push, axis=1)
+        print("CLEAR eased pushes over %.0f mm (largest %.1f mm) out over the sheet" % (spread * 1000, np.linalg.norm(over, axis=1).max() * 1000 + spread * 1000))
+    pos = pos + push
+    if (size > 0).any():
+        print("CLEAR pushed", int((size > 0).sum()), "of", len(pos))
     return pos
 
 
@@ -1877,7 +1912,7 @@ def piece(name, field, mkey, lift=0.003, thick=0.003, smooth=0, bevel=0.0012, tr
         pos = relax(pos, tris, interior=0)
         dump(name, "3cut", pos, tris, at[:, -1])
     if not dome and not filled:
-        pos = clear_of_skin(pos, lift if clear is None else clear)
+        pos = clear_of_skin(pos, lift if clear is None else clear, tris)
     dump(name, "3pre", pos, tris, at[:, -1])  # SOLVER1 TEMP
     # Every edge bound: in the trim's colour where one is asked, else in the
     # piece's own (a rolled hem). Sheer and painted pieces are left as cut.
