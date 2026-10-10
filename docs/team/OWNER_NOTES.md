@@ -2,6 +2,11 @@
 
 Every lead reads this after RESUME.md. When you take a note into your work, mark it done here with your commit. The main session keeps it current.
 
+## 10 October 2026
+
+### Face lead (skin): neck discolouration on every face
+The owner, with two crops (`docs/team/owner_crops/2026-10-10_neck_1.png`, `_2.png`): "leads are aware of neck discolorations on every face right?" Under the jaw and down the side of the neck the skin goes blotchy grey-violet, bruise-like, with a darker vertical band. Not yet tracked as such (the face list had only "neck grain" and "jaw-edge spots"; the hair judge saw shadow facets on Highborn's neck). Find the cause at the root on every face (likely candidates: the head-to-body paint graft or seam, the freckle-map blue that now carries the grain up her neck, AO or SSS tint, hair shadow), fix it, and judge each face's neck at 1:1 beside its portrait. Sent to the face lead; any shadow cause goes to rendering.
+
 ## 6 October 2026 (after the editor's notes 02 on Act 1)
 
 ### Story: love scenes and showing, not telling
