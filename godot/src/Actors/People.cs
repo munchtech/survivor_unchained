@@ -671,6 +671,8 @@ public static class People
                     m.SetShaderParameter("metal", (float)def.Metal);
                     Then(m);
                 }
+                // (--hair-erase: FSR 2's reactive mask erased under the brows and paint too: HairDraw)
+                if (last != null && HairDraw.Eraser() is { } er) Then(er);
                 skin.NextPass = first;
             }
     }

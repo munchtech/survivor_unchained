@@ -36,18 +36,15 @@ public static class HairDraw
     /// solid (its depth and motion written); 0.9 by default.</summary>
     public static readonly float CoreCut = SurvivorUnchained.Args.Num("hair-core-cut", 0.9f);
 
-    /// <summary>--hair-erase-from F: with "two", the cards' eraser works only where
+    /// <summary>--hair-erase-from F: with "two", the cards' eraser works fully where
     /// the strands cover F or more (the core's cut: only what wrote her hair's own
-    /// motion is accumulated; the thin fringe stays reactive). 0 by default.</summary>
+    /// motion is accumulated), easing out over the 0.25 below it (so the mask can't
+    /// flip with the jitter at the core's edge); the thin fringe stays reactive. 0 by default.</summary>
     public static readonly float EraseFrom = SurvivorUnchained.Args.Num("hair-erase-from", 0f);
 
     /// <summary>--hair-bias B: a bias on the strands' and lashes' mip level
     /// (0.5 cancels the smoothing's -0.5 on strands thinner than a pixel). 0 by default.</summary>
     public static readonly float Bias = SurvivorUnchained.Args.Num("hair-bias", 0f);
-
-    /// <summary>--lash-erase-from F: the lashes' and brows' eraser works only where
-    /// their paint covers F or more. 0 by default.</summary>
-    public static readonly float LashEraseFrom = SurvivorUnchained.Args.Num("lash-erase-from", 0f);
 
     static Shader? blend, core, over, cards, hairErase, cardsErase;
 
@@ -107,6 +104,18 @@ public static class HairDraw
         for (var p = m; p != null; p = p.NextPass as ShaderMaterial) yield return p;
     }
 
+    /// <summary>A pass erasing FSR 2's reactive mask under what was drawn before it on
+    /// the same surface (lashes, brow cards, her brows and face paint); null without
+    /// --hair-erase or blended hair.</summary>
+    public static ShaderMaterial? Eraser()
+    {
+        if (EraseKeep < 0f || !Blended) return null;
+        cardsErase ??= GD.Load<Shader>("res://shaders/heroine_cards_erase.gdshader");
+        var e = new ShaderMaterial { Shader = cardsErase, RenderPriority = 3 };
+        e.SetShaderParameter("keep", EraseKeep);
+        return e;
+    }
+
     /// <summary>Brows or lashes blended to their paint's alpha; null when drawn as today.</summary>
     public static ShaderMaterial? Cards(StandardMaterial3D m)
     {
@@ -118,12 +127,7 @@ public static class HairDraw
         c.SetShaderParameter("lash_bias", Bias);
         if (EraseKeep >= 0f)
         {
-            cardsErase ??= GD.Load<Shader>("res://shaders/heroine_cards_erase.gdshader");
-            var e = new ShaderMaterial { Shader = cardsErase, RenderPriority = 3 };
-            e.SetShaderParameter("keep", EraseKeep);
-            e.SetShaderParameter("albedo_tex", m.AlbedoTexture);
-            e.SetShaderParameter("erase_from", LashEraseFrom);
-            c.NextPass = e;
+            c.NextPass = Eraser();
         }
         return c;
     }

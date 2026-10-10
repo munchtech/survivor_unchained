@@ -53,7 +53,7 @@ uniform float core_cut = 0.9;
 #endif
 #ifdef ERASE
 // (how much of the blended alpha under it is kept: heroine_hair_erase.gdshader;
-// erased only where the strands cover at least erase_from: with "two", the core's
+// erased fully only where the strands cover at least erase_from: with "two", the core's
 // cut, so only what wrote her hair's own motion is accumulated, and the thin
 // fringe stays reactive)
 uniform float keep = 0.0;
@@ -124,10 +124,10 @@ void fragment() {
 	ALPHA = cover;
 	ALPHA_SCISSOR_THRESHOLD = IN_SHADOW_PASS ? 0.5 : core_cut;
 #elif defined(ERASE)
-	if (cover < erase_from) discard;
-	// (white, multiplied: the colour kept; the alpha, FSR 2's reactive mask, scaled by keep)
+	// (white, multiplied: the colour kept; the alpha, FSR 2's reactive mask, scaled by keep
+	// where the strands cover erase_from or more, eased out over the 0.25 below it)
 	ALBEDO = vec3(1.0);
-	ALPHA = keep;
+	ALPHA = erase_from > 0.0 ? mix(1.0, keep, smoothstep(erase_from - 0.25, erase_from, cover)) : keep;
 #elif defined(COVERAGE)
 	// (cut by a threshold moved every frame: coverage.gdshaderinc)
 	if (cover < coverage_cut(FRAGCOORD.xy)) discard;
