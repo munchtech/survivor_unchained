@@ -479,6 +479,12 @@ public static class People
                 // (his own, when none is chosen: flint grey, Lore.Eyes' "flint")
                 if (who == "hero" && look.Eyes == null) EyeColour(e, HisEyes.Iris, HisEyes.Ring);
                 else EyeColour(e, look.Eyes, look.EyeRing);
+                // (--eye-set "iris_r=0.13,pupil=0.24": a developer's switch, her eyes' uniforms tried without a build)
+                if (who != "hero" && SurvivorUnchained.Args.Get("eye-set") is string es)
+                    foreach (var kv in es.Split(','))
+                        if (kv.Split('=') is [var k, var v] && float.TryParse(v, System.Globalization.NumberStyles.Float,
+                                System.Globalization.CultureInfo.InvariantCulture, out var f))
+                            e.SetShaderParameter(k.Trim(), f);
                 return e;
             case "brows" or "lashes":
                 // Cards cut out by their alpha, soft at the edges; brows

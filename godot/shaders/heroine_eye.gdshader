@@ -20,6 +20,9 @@ uniform float iris_r = 0.12;
 uniform float depth = 0.12;
 uniform float dome = 0.55;
 uniform float pupil = 0.28;
+// The limbal ring: how dark the iris's edge goes, and from where (in its radii).
+uniform float limbal = 0.62;
+uniform float limbal_from = 0.7;
 // Her iris's colour, over its paint's (white keeps it as painted).
 uniform vec3 tint : source_color = vec3(1.0);
 // Her eyes' colour chosen (People.EyeColour): the paint's fibres and crypts,
@@ -61,6 +64,7 @@ uniform float lids = 0.7;
 // radii) and how bright.
 uniform vec2 catch_at = vec2(-0.34, -0.36);
 uniform float catchlight = 0.55;
+uniform float catch_size = 1.0;
 // How small on screen the eye goes from itself to one dark mark: from a
 // pixel covering 2^far_from of its paint's texels to 2^far_to.
 uniform float far_from = 4.0;
@@ -110,7 +114,7 @@ void fragment() {
 	if (rr < pupil) ir = vec3(0.012);
 	vec3 col = mix(texture(eye, UV).rgb, ir * tint, in_iris);
 	// The limbal ring: the iris's edge dark, as the sclera meets it.
-	col *= 1.0 - 0.62 * smoothstep(0.7, 0.98, r) * (1.0 - smoothstep(1.0, 1.1, r));
+	col *= 1.0 - limbal * smoothstep(limbal_from, 0.98, r) * (1.0 - smoothstep(1.0, 1.1, r));
 	// The whites warmer and softer than the paint's, shadowed under the lid and at the corners.
 	float white = 1.0 - in_iris;
 	col = mix(col, col * vec3(0.9, 0.84, 0.8), white);
@@ -139,7 +143,7 @@ void fragment() {
 	NORMAL_MAP_DEPTH = 1.0;
 	SSS_STRENGTH = 0.2 * white;
 	vec2 at_c = catch_at + v.xy * vec2(0.3, -0.3);
-	float glint = 1.0 - smoothstep(0.035, 0.085, length((d - at_c) * vec2(1.0, 1.25)));
+	float glint = 1.0 - smoothstep(0.035 * catch_size, 0.085 * catch_size, length((d - at_c) * vec2(1.0, 1.25)));
 	EMISSION = vec3(0.95, 0.97, 1.0) * glint * catchlight * in_iris * (1.0 - under_lid * 0.7);
 }
 
