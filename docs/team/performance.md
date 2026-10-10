@@ -23,7 +23,7 @@ Sheets: scratchpad `181eef02-...\scratchpad\perf9\c10\` to `c13\` (paths in the 
 
 - Never Godot's default FSR 2 sharpening at native: it over-sharpens (133%) and doubles the flicker.
 - The see-through opens a smaller window for a piece partly in the way, never a fainter one.
-- Hair draw \"two\" is the default on the branch (judged); the face lead owns the hair's look and mesh.
+- Hair draw "two" is the default on the branch (judged); the face lead owns the hair's look and mesh.
 - Paired flips (`--perf-flip`) for GPU costs; her detail is never traded; only invisible changes unless the owner or the owning lead agrees.
 
 ## Next
