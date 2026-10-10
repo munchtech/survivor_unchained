@@ -1,36 +1,37 @@
 # Performance and rendering
 
-Status page. The last lead was agent a7afb4d33cdd5efba on branch `worktree-agent-a7afb4d33cdd5efba` (handed off 2026-10-07; before it a20bdef993e00f26b, ad57a6dd0798688d7). **A successor starts from `docs/handoff/performance.md`.** Method and older numbers: `docs/PERF_AUDIT.md`.
+Status page. The last lead was agent a4e0c353e61cca6dc on branch `worktree-agent-a4e0c353e61cca6dc` (wound down 2026-10-10; before it a6a04e32348559b6c, a7afb4d33cdd5efba). **A successor starts from `docs/handoff/performance.md`.** Method and older numbers: `docs/PERF_AUDIT.md`.
 
-## Current state (2026-10-07)
+## Current state (2026-10-10, on the branch, not merged)
 
-- **Her blur while running: explained, and the cure is measured.** Godot's TAA leaves a ghost of her about 50 px long and keeps 71 to 80% of her detail. FSR 2 at native (sharpening off, MSAA off) keeps 23 to 26% more of her detail in motion with no ghost (cycle 1, 1440 and 1080, 164 Hz).
-- **Her hair under FSR 2:** blended cards (`--hair-draw blend`, a switch) replace the hashed speckle with clean strands, and the lashes come out full and soft. They still change 0.4 to 0.7% of hair pixels a frame at the Look, against TAA's 0.02%: FSR 2 treats the blended alpha as reactive. Next: erase the reactive mask there.
-- **See-through:** the window works (merged). The pale wedge and arc at the Waystation are pieces in the rim's wide feather (1.45 to 2.5 m), drawn translucent without SSAO. Fixes to try are in the handoff.
+- **Her blur while running:** FSR 2 at native (sharpening off, MSAA off) removes TAA's 50-60 px ghost and keeps 22-26% more of her detail (1440 and 1080). Judged shippable as play's default; the flip in `Graphics.Apply` is the next step, then two gates (a 60 fps fight, wolves' fur).
+- **Her hair:** drawn "two" by default: an opaque core at cover 0.5 (depth and motion vectors with its sway) and a blended pass over it, FSR 2's reactive mask erased under it from cover 0.5, lashes, brows and paint erased. In play it matches blended hair's detail with no dotted strands.
+- **The Look:** always TAA + MSAA 4x (per view), no depth of field (it caused the side-hair mush). Hair 0.00% flicker, face 0.02%. The core's alpha-to-coverage edge in turned views still needs one fix (handoff Next 2).
+- **See-through:** `--see-fix back,norim` removes the pale wedge and arc but cuts a hard circle; a v2 design is in the handoff.
 
-## Measured (cycle 1, 164 Hz)
+## Measured (164 Hz, cycles 10-13)
 
-| | her detail running (1440) | ground flicker in motion | Look hair flicker | Look face flicker |
-|---|---|---|---|---|
-| TAA + MSAA 4x (today) | 9.58 | 0.83 | 0.02% | 0.05% |
-| FSR 2 native, hashed hair | 11.80 | 1.22 | 0.83% | 1.22% |
-| FSR 2 native, blended hair | 11.73 | 1.22 | 0.43% | 0.68% |
+| | Look hair / face flicker | her detail running (1440) |
+|---|---|---|
+| TAA + MSAA, hashed (old default) | 0.02% / 0.05% | 9.58 |
+| TAA + MSAA, "two" + A2C, no DOF (new Look) | 0.00% / 0.02% | |
+| FSR 2, "two" 0.5 + eraser (new play) | 0.25% / 0.22% | 11.69 |
 
-Crops: `docs/team/perf_sheets/c1_run_1440_x2.png`, `c1_look_pony_x2.png`, `c1_look_long_turned.png`, `c1_house_debug.png`.
+Sheets: scratchpad `181eef02-...\scratchpad\perf9\c10\` to `c13\` (paths in the handoff).
 
 ## Key decisions
 
 - Never Godot's default FSR 2 sharpening at native: it over-sharpens (133%) and doubles the flicker.
 - The see-through opens a smaller window for a piece partly in the way, never a fainter one.
-- Hair draw is a developer's switch until the face lead and the main session sign it off. The face lead owns the hair's look and mesh (card sort per layer by distance from her scalp, in their hair pass).
+- Hair draw \"two\" is the default on the branch (judged); the face lead owns the hair's look and mesh.
 - Paired flips (`--perf-flip`) for GPU costs; her detail is never traded; only invisible changes unless the owner or the owning lead agrees.
 
 ## Next
 
-1. The reactive mask erased under hair and lashes, then the Look again. Then the AA default (FSR 2 native + blended hair), with the switches retired and the tiers rethought.
-2. The pale wedge (narrower feather, back faces cut, or the feather held to its screen width).
-3. Alpha-cut surfaces under FSR 2: foliage (`kit.gdshader`), fur (`fur_shell.gdshader`), crowd cut-outs (`vat.gdshaderinc`).
-4. FSR 2's sharpening at the lower resolution steps; the draft panel rebuilt at every pick; first bakes; loot beams.
+1. Play to FSR 2 native; gates: a 60 fps fight, a wolves fight.
+2. The Look's A2C hair edge (`ALPHA_TEXTURE_COORDINATE = UV`, core cut 0.9 at the Look).
+3. Ground fizz under FSR 2 (arena ground and litter).
+4. See-through v2 (opaque, irregular world-space radius, roofs lifted whole).
 
 ## Notes for other areas
 

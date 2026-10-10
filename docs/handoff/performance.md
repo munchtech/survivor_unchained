@@ -2,67 +2,59 @@
 
 For a fresh successor. Read `docs/team/README.md` ("Working lean", "Safety"), `RESUME.md`, `OWNER_NOTES.md`, this page, then `docs/team/performance.md`. **Never Read a whole big file: grep, then `sed -n` the lines.** Older rounds: git history of this page and `docs/PERF_AUDIT.md`.
 
-Written by agent a7afb4d33cdd5efba, 2026-10-07 (handed off at the main session's context check). Before it: a20bdef993e00f26b, ad57a6dd0798688d7.
+Written by agent a4e0c353e61cca6dc, 2026-10-10 (wound down at the owner's word). Before it: a6a04e32348559b6c (cut off by the limit), a7afb4d33cdd5efba, a20bdef993e00f26b, ad57a6dd0798688d7. Branch `worktree-agent-a4e0c353e61cca6dc` @ c4beebaf + this page; 775 tests pass.
 
 ## The owner's words
 
-- "the pixel blur while running is that intentional or something we can fix?", "we are blurry when moving in active action gameplay."
-- "the filter to see through trees and stuff is also a little pedestrian in its pixelation."
-- "we are striving for perfection." Her detail is never traded for frames.
+- "we are blurry when moving in active action gameplay." "the filter to see through trees and stuff is also a little pedestrian in its pixelation." "we are striving for perfection." Her detail is never traded for frames.
 
-## The brief (this wave)
+## Paused here; next:
 
-Clarity in motion first. The blur is Godot's TAA (a 50 px ghost). Choose the AA (leaning FSR 2 native, sharpening off, no MSAA), but hashed hair crawls under it, so blended hair cards with a depth prepass come first, designed with the face lead (who owns the hair). Fix the pale wedge in the see-through behind the Waystation. Judge at 1:1 in motion at 2560x1440 and 1920x1080. `perf-seethrough-wip` was already merged (33e5df80 is in the integration branch); the batch re-tests it.
+State (all on this branch, none merged yet):
+- **Hair defaults flipped** (c4beebaf, `godot/src/Actors/HairDraw.cs`): `--hair-draw two` (opaque core at cover `--hair-core-cut 0.5`, writing depth and motion vectors incl. sway; blended over pass), FSR 2's reactive mask erased under hair (`--hair-erase 0`, eased in from `--hair-erase-from 0.5` over the 0.25 below), lashes and brows and face paint erased too (`HairDraw.Eraser`, `People.cs` paint chain). Under MSAA the core swaps to `heroine_hair_core_a2c.gdshader` (alpha to coverage; `HairDraw.Msaa`, called from `Graphics.Apply`). `--hair-bias` exists, judged no gain: leave 0.
+- **The Look** (creation) is always TAA + MSAA 4x, whatever play uses (`Graphics.AtLook`, set by `GameFront.LookView` on NewJourney/EndCreate), and has **no depth of field** (it caused the side-hair mush and edge flicker; `--look-dof` brings it back). Per-view verified bit-identical.
+- **Play's AA is still TAA by default.** The judge (c13) says flip play to FSR 2 native now: in `Graphics.Apply`, at scale 1.0 use FSR 2, `FsrSharpness = 2.0` (sharpening off), MSAA off. Not done: do it first, then the two gates below.
+- See-through: no fix is default. `--see-fix back,norim` is the judged stopgap (wedge and arc gone, crisp), but it is a cookie-cutter circle ("pedestrian"). Switches: back, screen, narrow, underao, undercut, norim (`KitLook.Fixed`, `kit.gdshader` SEE_*).
 
-## Done (3adef6a8 code; docs and crops in the commit after it; 775 tests pass)
+Next, in order:
+1. **Flip play to FSR 2 native** (above). Then two gates, FSR 2 vs TAA, deterministic: a fight at a 60 fps cap (`--fixed-fps 60`), and a fight with wolves on screen (fur shells, `fur_shell.gdshader`; c13's "pack" showed only risen).
+2. **The Look's hair edge under A2C** (c13: staircase gone, but the edge is darker, 0.3–1 px wider, a dotted double line on the +40 jaw, 3x the shimmer of tt5n). Fix in `heroine_hair.gdshaderinc` CORE_A2C: `ALPHA_TEXTURE_COORDINATE = UV;` (turns off Godot's +25%/mip coverage boost), and at the Look put `core_cut` back to 0.9 (per view, via `HairDraw.Msaa`), the over pass carrying true cover. Alternative (keep 0.5): over pass under MSAA `c = clamp((cover - core_cut)/max(fwidth(cover),1e-4)+0.5,0,1)*step(cut0,cover); ALPHA = max(cover-c,0)/max(1-c,1e-3)`. Pass on llr/llrn: jag ≤ 0.10, rim darkness ≤ tbn + 3, edge within 1 px of tbn, edge share >8/255 ≤ 0.1% (judge scripts `rim3.py`, `tband.py` in scratchpad `judge_c13b\`).
+3. **Ground fizz under FSR 2** (arena, low severity, fuses at 164 Hz, test at 60): `arena_ground.gdshader` detail layers sampled 0.25–0.5 mip blurrier (derivatives × 1.19–1.41), specular AA before ROUGHNESS (`k = min(0.5*(|dFdx n|²+|dFdy n|²), 0.18); rough = sqrt(rough²+k)`), `arena_leaves.gdshader` leaves under ~4 px faded to the ground's tone. Pass: lit-litter temporal noise ≤ 1.3 (`tspec.py`).
+4. **See-through v2** (cycle 11 judge's design; opaque only, the REVEAL pass deleted): radius fixed to each piece in world space `R = (1.55 + 0.35*fbm(world.xz*1.1 + v_jit*17))*open`; foliage thins along its leaves (`ALPHA_SCISSOR_THRESHOLD = mix(1.02, alpha_scissor, smoothstep(R-0.5, R+0.25, metres))`, alpha sampled at mip +1.5); solids `discard` inside R with a soft darkening at the cut; roofs lifted whole (KitLook tags roofs; CPU line test sets an instance uniform `lift` eased over 0.15 s; world-noise dissolve); the radius eased in and out over 0.2 s.
+5. The face judge's items for rendering (main session's scratchpad `judge_hr2\verdict.md`): the hair cut where it crosses the strap at her right ear; DOF softness at the crown (likely gone with the Look's DOF: confirm); hair shadow facets on Highborn's neck (shadows are cut at half cover, `IN_SHADOW_PASS`); card order (c11/c12 judges saw no wrong-order cards).
+6. Smaller: Godot never resets FSR 2 history on camera cuts (`reset_accumulation = false; // FIXME`, render_forward_clustered.cpp): check frames after cinematic cuts. Cinematics' DOF (GameCinema) will mush blended hair the same way. A smoke billboard notches the slash VFX with quad edges (`art/fx/sprites.png` frame borders?). Retire `--hair-draw blend|hash`, `--coverage`, `--aa` switches once FSR 2 ships.
 
-- **`--hair-draw hash|blend|two`** (`godot/src/Actors/HairDraw.cs`; default unchanged, hashed). blend = `heroine_hair_blend.gdshader` (`blend_mix, depth_prepass_alpha`); two = `heroine_hair_core.gdshader` (opaque, scissor 0.9, writes her depth and motion) with `heroine_hair_over.gdshader` as its next pass (blended). Both add BLEND/CORE/OVER branches at the end of `heroine_hair.gdshaderinc`; shading untouched. Hair shadows are cut at half cover (`IN_SHADOW_PASS`). Lashes are blended to their paint's alpha (`heroine_cards_blend.gdshader`, +25% per mip far off). Priorities: cap 0, hair 1, fine hairs 2. HairSway and the dye set every pass (`HairDraw.Passes`).
-- **`--see-debug`** (`KitLook.SeeDebug`, `KitLook.Dump`, called once from `Game.cs`): kit pieces tinted per copy, the window's rim drawn opaque and coloured by how much is kept (blue 0 to red 1), and every mesh in the window printed.
+For other leads (via the main session): face: the strand atlas darkens as cover drops (dark rim on every card edge; spread the strands' shade into partial texels), card edges end in wide alpha ramps (a 3–5 px see-through band) instead of strand tips, plank-like locks, hairline band, lash comb; the eye shader's hard pupil and sub-pixel iris edge and catchlight flicker under FSR 2 (`heroine_eye.gdshader`: fwidth edges). Combat/creatures: the risen horde moves in lockstep. UI: the Blessing picker hides the world behind a black page.
 
-## Cycle 1 (the AA A/B batch, 27 runs, 164 Hz; `tools/scratch/perf7/runs_c1.txt`)
+## Measured (164 Hz; share of pixels changing >8/255 between consecutive frames, hair / face)
 
-Frames: this worktree's `godot/.shots/c1_*`. Sheets: scratchpad `...\0b33992d-1e38-4eb8-80a1-d5c23b1a44e6\scratchpad\c1\`; the key crops are committed in `docs/team/perf_sheets/c1_*.png`.
+| | Look pony 1080 | Look long +40 | her detail running 1440 / 1080 |
+|---|---|---|---|
+| TAA + MSAA, hashed (old default) | 0.02 / 0.05 | 0.03 / 0.51 | 9.58 / 9.07 (50–60 px ghost) |
+| TAA + MSAA, blended, no DOF | 0.00 / 0.02 | 0.00 / 0.13 | |
+| TAA + MSAA, "two" 0.5 + A2C, no DOF (new Look) | 0.00 / 0.02 | 0.00 / 0.18 | |
+| FSR 2, blended, no eraser | 0.43 / 0.68 | | 11.73 / 11.42 |
+| FSR 2, blended, whole hair erased (c10; dotted strands running) | 0.24 / 0.23 | 0.78 / 0.97 | 11.77 / 11.44 |
+| FSR 2, "two" 0.5, eraser from 0.5 (new play) | 0.25 / 0.22 | 0.74 / 0.65 | 11.69 / 11.40 |
+| same + bias 0.5 | 0.08 / 0.17 | 0.13 / 0.59 | (no gain in play) |
 
-| | her detail running 1440 / 1080 | ground flicker in motion (hot %) | still shimmer (>12) | Look hair >8/255 pony / long / pony 1440 | Look face >8 |
-|---|---|---|---|---|---|
-| TAA + MSAA 4x (today) | 9.58 / 9.07 | 0.83 (0.000) | 0.16 (0.00%) | 0.02% / 0.03% / 0.03% | 0.05% |
-| FSR 2 native, hashed hair | 11.80 / | 1.22 (0.054) | | 0.83% | 1.22% |
-| FSR 2 native, blend | 11.73 / 11.42 | 1.22 (0.054) | 0.34 (0.04%) | 0.43% / 0.68% / 0.40% | 0.68% |
-| FSR 2 native, two | 11.76 / | 1.22 (0.054) | | 0.42% / 0.50% | 0.68% |
+Fight (arena, 60 horde, 1440): ground flicker TAA 1.09–1.13 (0% hot) vs FSR 2 2.21–3.54 (1–2.8% hot): fine fizz on ground and litter, judged low severity.
 
-Turned 40 degrees, blended hair: 0.15 to 1.44% (long +40 is worst). TAA turned: 0.03 to 0.05%.
+## Where things are
 
-- **In motion, FSR 2 wins clearly**: her detail +23% (1440) and +26% (1080), and no ghost. TAA's pale smear trails her in `c1_run_1440_x2.png`. The hair draw doesn't matter in play.
-- **At the Look, blended hair is cleaner than hashed**: no speckle, crisp strands, and the hair-to-cheek edge clean where TAA's is dotted (`c1_look_long_turned.png`). Lashes are full and soft, where FSR 2 broke the A2C lashes into dots (`c1_look_pony_x2.png`). No card-order errors I could see at plus or minus 40. "two" is no better than "blend", so drop it.
-- **But it still moves frame to frame**: hair 0.4 to 0.7% against TAA's 0.02%. Why: Godot hands FSR 2 the blended alpha as its reactive mask (clamped to 0.9), so FSR 2 shows the hair as the near-raw jittered frame. The side hair against the dark background also reads soft (many faint layers averaged).
-- Next idea, untested: **erase the reactive mask where hair and lashes are drawn**, so FSR 2 accumulates them on the velocity of the head behind. One way is a `blend_mul` pass (white, ALPHA 0) after them; check Godot's BLEND_MODE_MUL alpha factors first (not in the fetched files). The other is a POST_TRANSPARENT CompositorEffect scaling the colour alpha, but that would hit VFX too.
-- The ground flicker under FSR 2 (0.054% hot) is the alpha-cut foliage and grass (Next 3).
-
-## The pale wedge: diagnosed, not yet fixed
-
-- `--see-debug` (`c1_house_debug.png`: left is the debug, right the final). Every piece in the window is a kit piece (Dump listed nothing else). The window is mostly rim: its feather runs from 1.45 to 2.5 m (42% of the radius), drawn by the blended rim pass (no SSAO, `depth_draw_never`). The wedge (bottom) and arc (top) are pieces inside that band, kept at about 0.6 to 0.95, so nearly opaque but shaded as translucent: pale and flat, maybe an underside or a gable seen from inside. Straight edges in the band mark pieces with a different `open`.
-- Fixes to try, each judged with `--see-debug` and then the trees (`c1_trees_fb`): (1) a narrower feather (about 0.35 m, keeping the clear radius); (2) faces seen from behind (`!FRONT_FACING`) cut whole inside the window, with no rim; (3) the feather kept at its nominal width on the screen where `open` varies (`kept = smoothstep(-band, 0, s * min(fwidth(metres) / max(fwidth(s), 1e-5), 8))` with `s = metres - 2.5*open`, computed in fragment).
-
-## Next
-
-1. The reactive eraser for hair and lashes (cycle 1, last bullet), then the Look's numbers again. If they near TAA's: FSR 2 native (sharpening off, MSAA off) plus blended hair becomes the default, the `--aa`, `--fsr-sharpness`, `--coverage` and "two" switches are retired, and the tiers are rethought (Medium's saving was mostly MSAA). Fallback if it can't be held: FSR 2 in play and in cinematics, TAA at the Look's still close-up, applied per view in `Graphics.Apply` (main and owner's call).
-2. The wedge fix above.
-3. Alpha-cut surfaces left under FSR 2: foliage (`kit.gdshader` scissor), creature fur (`fur_shell.gdshader` discards, the creatures lead's), crowd cut-outs (`vat.gdshaderinc`). Shoot each under FSR 2 at 1:1 in motion.
-4. FSR 2's sharpening at the lower resolution steps; status page "Next" 4 (draft panel, first bakes, loot beams).
-
-## Engine facts (Godot 4.5.1 source in the scratchpad's `godot_src/`; fetch with `tools/scratch/perf6/fetch_src.py` and `perf7/fetch_src2.py`)
-
-- FSR 2's reactive mask is the internal colour's alpha, clamped to 0.9. The opaque pass writes alpha 0 and the transparent pass writes the blended alpha, so blended hair is about 0.9 reactive: little history, little ghost.
-- The transparent pass writes no motion vectors. `depth_prepass_alpha` writes depth (and normal-roughness) for alpha 0.99 and up in the prepass, and casts shadows for alpha 0.1 and up. Motion vectors of (-1,-1) or below are derived from depth.
+- Scripts: my scratchpad `C:\Users\munch\AppData\Local\Temp\claude\C--Users-munch-Desktop-survivorsunchained\181eef02-779f-45de-b419-31a949a4d27e\scratchpad\perf9\` (batch.ps1 takes the godot turn; shoot.py; `runs_c10`–`c13.txt`; `mk_c1x.py` write runs and `sheets_c1x.py`; look_noise, crops sharp, mres, flick, look_where). Sheets in `perf9\c10\`–`c13\`. Judges' crops and measuring scripts: `judge_c10\`, `judge_c11\`, `judge_c12\`, `judge_c13b\` beside it. Frames: this worktree's `godot/.shots`.
+- Repoint the scripts to a new worktree with a copy of `setup9.py` (same scratchpad).
 
 ## Gotchas
 
-- Worktree setup: `godot/assets` as a junction (PowerShell `New-Item -ItemType Junction`) to the worktree's `public/assets`, then `git update-index --skip-worktree godot/assets`; `godot/override.cfg` (perf user folder, in .gitignore); robocopy `.godot` from the main checkout (2.6 GB, 35 s); `perf7/copy_imports.py`; the first import takes about 4 minutes. Never commit `.import` or others' `.uid` churn.
-- Scripts: `tools/scratch/perf7` (batch.ps1 takes the godot turn itself; shoot.py; runs files; sheets_c1.py; box.py). The measures are perf6's (crops, flick, look_noise, look_where, mres), repointed by `perf7/repoint.py`. Use plain `python` (numpy is in the user site, not under `-I`).
-- Don't edit shaders or build while a batch runs. Worktree-isolated git: plain commands, no `cd` chains, no loops.
+- Worktree setup: delete the `godot/assets` placeholder file, make it a junction (`New-Item -ItemType Junction`) to the worktree's `public/assets`, `git update-index --skip-worktree godot/assets`; copy `godot/override.cfg` (perf user folder); robocopy `godot/.godot` from a worktree that has imported; copy `.import`/`.uid` (setup9.py); `dotnet build` in `godot/` after every C# change (the game runs the built assembly). The editor import crashed (access violation) at 94 s once; the game ran fine on the cache; use `-NoImport`. Never commit `.import`/`.uid` churn.
+- **Never merge a WIP branch whole**: a6a04's WIP commit had replaced the `godot/assets` symlink with 850 copied asset files. Apply its code with `git diff A^ A -- paths | git apply -3`.
+- batch.ps1's give-back sometimes leaves the godot entry listed; check `turn.py show` and give it back by its exact listed name.
+- `--auto` is needed for fights (else the Blessing picker pauses); the autopilot's 1440 run path is not repeatable (two bias runs went off course).
+- Engine facts (Godot 4.5.1 source in scratchpad `0b33992d-...\scratchpad\godot_src\`): FSR 2's reactive mask is the colour's alpha (clamped 0.9); the transparent pass writes no motion vectors; `blend_mul` alpha = src × dst (so the eraser works); alpha antialiasing cuts at the scissor first, then ramps at scissor + edge with a +25%/mip boost.
 
 ## Collaborators
 
-Main session (reports, owner decisions). Face lead abe65bc929823a791: owns the hair; agreed the switch; won't touch `heroine_hair.gdshaderinc`, `heroine_hair.py` or `People.Hair()` this wave; is changing the lash paint and the "lashes" case (keep the blend in `HairDraw.Cards`); will sort cards per layer by distance from her scalp (inner first) in the hair pass. The face lead also handed off (`docs/handoff/face.md` on worktree-agent-abe65bc929823a791 @ bf18266a): judging our `c1_look_*` sheets at 1:1 is their step 2, and their successor will answer ours. A new hand-painted lash texture (soft tips, no 0.35 cut) can be tried on the blended path with `--lashes PATH` (People.TryFile); `tools/assets/heroine_lashes.py` writes it. Animation ae2a9884e3e51609c; outfits a1f120018d8749c97.
+Main session (reports, owner decisions; relays to the face lead, who owns the hair's look and mesh, eyes and lashes). Outfits and animation leads share the godot turn.
 
-HANDOFF READY: docs/handoff/performance.md on worktree-agent-a7afb4d33cdd5efba (code 3adef6a8; this page is in the branch head)
+HANDOFF READY: docs/handoff/performance.md on worktree-agent-a4e0c353e61cca6dc
