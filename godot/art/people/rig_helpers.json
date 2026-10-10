@@ -40,8 +40,9 @@
    "kind": "share",
    "bone": "lowerarm_{s}",
    "amount": 0.5,
-   "bulge": 1.0,
-   "bulge_max": 2.0,
+   "bulge": 0.45,
+   "bulge_max": 1.45,
+   "pivot": 0.047,
    "way": "front"
   },
   {
@@ -50,8 +51,9 @@
    "kind": "share",
    "bone": "calf_{s}",
    "amount": 0.5,
-   "bulge": 1.0,
-   "bulge_max": 2.0,
+   "bulge": 0.5,
+   "bulge_max": 1.5,
+   "pivot": 0.059,
    "way": "back"
   }
  ],
@@ -84,6 +86,10 @@
     "calf_share_{s}"
    ]
   ],
-  "cap": 4
+  "cap": 4,
+  "crease": {
+   "cut": 1.0,
+   "reach": 0.035
+  }
  }
 }
