@@ -125,9 +125,6 @@ def subdivide(P, N, W, TRI):
     return P2, N2, W2, T2
 
 
-# (her own triangles kept, before they are divided: the game draws her skin
-# by them, so a piece that is to move exactly as she does is weighted by them)
-N_OWN, TRI_OWN = len(P), TRI.copy()
 P, N, W, TRI = subdivide(P, N, W, TRI)
 BVH = BVHTree.FromPolygons([tuple(p) for p in P], TRI.tolist())
 # Her hair, by its paint (it is part of her mesh, and some strands are
@@ -460,50 +457,6 @@ _fifth = -np.partition(-W, 4, axis=1)[:, 4]
 W = np.maximum(W - _fifth[:, None], 0)
 W = W / np.maximum(W.sum(1, keepdims=True), 1e-9)
 print("SKIN WEIGHTS eased over", _rounds, "rounds, all but", int(_keep.sum()), "points of her hands and head")
-# Her skin as the game moves it: these weights at her own points (the
-# export takes them as they are), carried across her own triangles. A piece
-# lying on her takes them at each of its points (skin_weights_at), so it
-# moves exactly as the skin under it does. Eased again for the piece, they
-# were near hers but not hers: where her skin's weights blend two bones that
-# part (her thighs at her crotch, thigh and hip at the fold under her
-# cheeks), a tenth of a weight moved her 1 to 2.5 cm from under a gusset or
-# a pant leg in a lunge, and her skin came through it, tucked in or not.
-_own = TRI_OWN[(HAIR[TRI_OWN] < 0.5).all(1)]
-SKIN_OWN, SKIN_OWN_BVH = _own, BVHTree.FromPolygons([tuple(p) for p in P[:N_OWN]], _own.tolist())
-
-
-def skin_weights_at(pts):
-    """Her skin's weights where it is nearest each point (as her triangles
-    carry them between her points), and how far away that is."""
-    pts = np.asarray(pts, float)
-    loc = np.zeros((len(pts), 3))
-    fi = np.zeros(len(pts), int)
-    dist = np.full(len(pts), np.inf)
-    for i, q in enumerate(pts):
-        if not np.isfinite(q).all():
-            continue
-        hit = SKIN_OWN_BVH.find_nearest(Vector(q))
-        if hit[0] is not None:
-            loc[i], fi[i], dist[i] = hit[0][:], hit[2], hit[3]
-    tri = SKIN_OWN[fi]
-    a = P[tri[:, 0]]
-    v0, v1, v2 = P[tri[:, 1]] - a, P[tri[:, 2]] - a, loc - a
-    d00, d01, d11 = (v0 * v0).sum(1), (v0 * v1).sum(1), (v1 * v1).sum(1)
-    d20, d21 = (v2 * v0).sum(1), (v2 * v1).sum(1)
-    den = np.maximum(d00 * d11 - d01 * d01, 1e-18)
-    v = (d11 * d20 - d01 * d21) / den
-    w = (d00 * d21 - d01 * d20) / den
-    bc = np.clip(np.c_[1 - v - w, v, w], 0, 1)
-    bc /= np.maximum(bc.sum(1, keepdims=True), 1e-12)
-    return (W[tri].astype(float) * bc[:, :, None]).sum(1), dist
-
-
-def on_skin(dist):
-    """How fully a point this far from her takes her skin's weights: all of
-    them to 1 cm (a piece lying on her, its binding, trim and stitches over
-    it), none past 1.6 cm (a cape, a hat: what hangs clear of her moves as
-    it was made to)."""
-    return 1.0 - ramp(dist, 0.010, 0.016)
 
 
 # Within 4 cm of the skin heroine_head.py made anew over her shoulders
@@ -1061,7 +1014,7 @@ def tube(name, curve, nrm, outward, mkey, width, height, overhang, thick, src_po
     wt = np.repeat(ring, nv, 0)
     if not closed:
         wt = np.vstack([wt, ring[[0, -1]]])
-    obj = finish(name, pts, wt, tris, mkey, 0.0, 0.0, 10 ** 7, exact=True)
+    obj = finish(name, pts, wt, tris, mkey, 0.0, 0.0, 10 ** 7)
     obj["hides"] = False
     return obj
 
@@ -1368,7 +1321,7 @@ def stitches(name, line, nrm, tg, src_pos, src_wt, step=0.004, length=0.0026, wi
     d_, j_ = np.reshape(d_, (len(base), kk)), np.reshape(j_, (len(base), kk))
     g_ = np.exp(-0.5 * (d_ / 0.006) ** 2) + 1e-12
     w_ = (np.asarray(src_wt, float)[j_] * g_[:, :, None]).sum(1) / g_.sum(1)[:, None]
-    obj = finish(name, pts, np.repeat(w_, per, 0), tris, mkey, 0.0, 0.0, 10 ** 7, scraps=False, exact=True)
+    obj = finish(name, pts, np.repeat(w_, per, 0), tris, mkey, 0.0, 0.0, 10 ** 7, scraps=False)
     obj["hides"] = False
     return [obj]
 
@@ -1964,10 +1917,8 @@ def piece(name, field, mkey, lift=0.003, thick=0.003, smooth=0, bevel=0.0012, tr
     # Every edge bound: in the trim's colour where one is asked, else in the
     # piece's own (a rolled hem). Sheer and painted pieces are left as cut.
     beads = []
-    # (eased before its edge is bound, so the binding moves as the edge does;
-    # where it lies on her, her skin's own, so it moves exactly as she does,
-    # and its studs and stitches with it)
-    at[:, 3:3 + NB] = four_bones(fitted_weights(pos, eased_weights(pos, tris, at[:, 3:3 + NB]), mkey))
+    # (eased before its edge is bound, so the binding moves as the edge does)
+    at[:, 3:3 + NB] = four_bones(eased_weights(pos, tris, at[:, 3:3 + NB]))
     if bind and len(SPEC[mkey]) < 7 and mkey != "ink":
         if trim:
             tkey, w, h, tt = trim
@@ -1978,7 +1929,7 @@ def piece(name, field, mkey, lift=0.003, thick=0.003, smooth=0, bevel=0.0012, tr
                                 stitch=kind(mkey) == "leather")
         dump(name, "4bound", pos, tris, at[:, -1])
         trim = None
-    made = [finish(name, pos, at[:, 3:3 + NB], tris, mkey, thick, bevel, budget or (8000 if dome else 3000), exact=True)] + beads
+    made = [finish(name, pos, at[:, 3:3 + NB], tris, mkey, thick, bevel, budget or (8000 if dome else 3000))] + beads
     if any("_stitch" in o.name for o in beads):
         made[0]["geo_stitch"] = True
     if bridge:
@@ -1991,7 +1942,7 @@ def piece(name, field, mkey, lift=0.003, thick=0.003, smooth=0, bevel=0.0012, tr
         if len(tr):
             tp, ta, tr = weld(tp, ta, tr)
             tp = relax(tp + vertex_normals(tp, tr) * (thick + h), tr, edge=30)
-            made.append(finish(name + "_trim", tp, ta[:, 3:3 + NB], tr, tkey, tt, bevel, 1500, exact=True))
+            made.append(finish(name + "_trim", tp, ta[:, 3:3 + NB], tr, tkey, tt, bevel, 1500))
     # Only the piece itself hides her skin: its binding, trim, studs and
     # stitches overhang its edge, and skin hidden under them showed as holes
     # in her just past it.
@@ -2175,17 +2126,7 @@ def pinholes_filled(name, pos, wt, tris, most=0.03):
     return np.vstack([pos, add_p]), np.vstack([wt, add_w]), np.vstack([tris, np.array(add_t, int)])
 
 
-def fitted_weights(pos, wt, mkey):
-    """A sheet's weights where it lies on her made her skin's own (see
-    skin_weights_at); plate, and whatever stands clear of her, keep `wt`."""
-    if kind(mkey) == "metal" or not len(pos):
-        return wt
-    we, dist = skin_weights_at(pos)
-    e_ = on_skin(dist)[:, None]
-    return we * e_ + np.asarray(wt, float) * (1 - e_)
-
-
-def finish(name, pos, wt, tris, mkey, thick, bevel, budget=3000, scraps=True, exact=False):
+def finish(name, pos, wt, tris, mkey, thick, bevel, budget=3000, scraps=True):
     """A sheet made a piece: her weights, its texture laid out at true size,
     a thickness and a rounded edge, bound to her skeleton. The sheet is
     first thinned to `budget` triangles (cut from a finely divided skin,
@@ -2228,30 +2169,16 @@ def finish(name, pos, wt, tris, mkey, thick, bevel, budget=3000, scraps=True, ex
     # skin's own weights, eased in over 3 cm: there her skin is seen, and
     # with her arm's share gone from the edge alone, her skin drew away from
     # under a plate cup's top as she ran, and you saw down into the cup.
-    unsteady = any(name.startswith(n) for n in UNSTEADIED)
-    s_ = None
+    steady = np.asarray(wt, float) if any(name.startswith(n) for n in UNSTEADIED) else steady_on_breasts(wt)
     if len(be):
         d_ = cKDTree(pos[np.unique(be)]).query(pos)[0]
         s_ = np.clip((d_ - 0.005) / 0.025, 0, 1)
         s_ = (s_ * s_ * (3 - 2 * s_))[:, None]
-
-    def steadied(w_):
-        w_ = np.asarray(w_, float)
-        st = w_ if unsteady else steady_on_breasts(w_)
-        return st if s_ is None else st * s_ + w_ * (1 - s_)
-    old = steadied(wt)
+        wt = steady * s_ + np.asarray(wt, float) * (1 - s_)
+    else:
+        wt = steady
     if scraps:
-        old = eased_weights(pos, tris, old)
-    wt = old
-    # Where it lies on her (`exact`: a sheet cut from her, its binding,
-    # trim and stitches), her skin's own weights at each point, steadied on
-    # her breasts as above, and not eased again: it moves exactly as the
-    # skin under it (see skin_weights_at). Plate keeps its own: rigid, it
-    # would bend with her.
-    if exact and kind(mkey) != "metal" and len(pos):
-        we, dist = skin_weights_at(pos)
-        e_ = on_skin(dist)[:, None]
-        wt = steadied(we) * e_ + old * (1 - e_)
+        wt = eased_weights(pos, tris, wt)
     # No point left without a bone (it would stay behind when she moves):
     # those take the weights of her skin nearest them.
     tot = wt.sum(1)
@@ -2676,14 +2603,14 @@ def plate_cups(name, mkey, top, lift=0.003, thick=0.003, trim=None, studs=None, 
 def trimmed(name, pos, at, tris, mkey, thick, bevel, trim, budget=3000):
     """A sheet and, if asked, the gold along its edge (the field in `at`'s
     last column is the distance in from the edge)."""
-    made = [finish(name, pos, at[:, 3:3 + NB], tris, mkey, thick, bevel, budget, exact=True)]
+    made = [finish(name, pos, at[:, 3:3 + NB], tris, mkey, thick, bevel, budget)]
     if trim:
         tkey, w, h, tt = trim
         tp, ta, tr = clip(w - at[:, -1], pos, at, tris)
         if len(tr):
             tp, ta, tr = weld(tp, ta, tr)
             tp = relax(tp + vertex_normals(tp, tr) * (thick + h), tr, edge=30)
-            made.append(finish(name + "_trim", tp, ta[:, 3:3 + NB], tr, tkey, tt, bevel, exact=True))
+            made.append(finish(name + "_trim", tp, ta[:, 3:3 + NB], tr, tkey, tt, bevel))
     return made
 
 
