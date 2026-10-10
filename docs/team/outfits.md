@@ -1,11 +1,10 @@
 # Heroine body and outfits: status
 
-Lead: su-lead-max (second lead, 7 October 2026; handed off at about 292k). Handoff: `docs/handoff/outfits.md`. Branches: `worktree-agent-a1f120018d8749c97` (finished: the check's artefact filter and tools; merge it), `outfits-lead-wip2` (heroine_outfits.py in progress: built once, not checked; never merge or build it into the game until checked).
+Lead: su-lead-high (third lead, 10 October 2026; wound down by the owner). Handoff: `docs/handoff/outfits.md`. Branch: `worktree-agent-a5ca10091b08dc429` (pushed; code only, unjudged in full: never build it into the game until it passes).
 
-## Now
-- Every piece's rim can now be bound: the weld left folded duplicate triangles that broke the walk round a rim, so the Warden's left pauldron (the jagged line), left vambrace, right sabaton, the Arcanist's corset and gloves, the Stalker's right bracer and the Reaver's right boot fur were left as raw cuts. Built on the WIP branch; not yet seen at 1:1.
-- The motion check no longer counts lone tip pixels (render artefacts). True baselines, recounted: strip frames (6+ px) Warden 37, Arcanist 362, Stalker 11, Reaver 17; areola 1 to 4 px in a few frames each.
-- The gussets moved 1 mm under her (as planned) bare 1 to 2 strip points at rest, because the top of the slot between her thighs is only 4 to 8 mm wide. Next: gussets as conforming pieces over the strip region (handoff).
+## Now (paused)
+- Gussets as skin-tight pieces and every rim bound: strip frames fell (Warden 47 to 6, Arcanist 603 to 29, Reaver 31 to 13); areolas 0 to 1 px; 0 bare at rest. Judge 1 failed g2 on tucked skin seen in motion (worst: the Ranger's pant leg and corset in chain_haul/chain_strike; a bump of skin at the gusset-to-string junction; slits at the Warden cups' inner edges and the Reaver band) and on binding corners (Warden pauldrons, Arcanist plunge, Ranger lames).
+- Weights are ruled out as the cause (two trials, 5-10%).
 
 ## Key decisions
 - Coverage fixes tighten, never enlarge, except where the 2.4 cm strip is wider than the garment (the Arcanist's V foot: 1.9 to 2.9 cm).
@@ -14,12 +13,12 @@ Lead: su-lead-max (second lead, 7 October 2026; handed off at about 292k). Hando
 - Unchecked work stays on a WIP branch: the coordinator's refits build `heroine_outfits.py` from integration.
 
 ## Next
-1. Conforming gussets, dry-built to 0 bare at rest, then the full motion check against base1; keep what passes at 1:1.
-2. The new bindings at 1:1; `ranger.pauldron1` still unbound; the pauldron's armpit crumple and scanline brushing; tattoos.
-3. Distance appeal; the `--helpers` rebuild when animation sends its weight check.
+1. A max solver on tucked skin in motion (rule out a rig fold first).
+2. The binding sweep: smooth rims, closed loops, rounded corners.
+3. Tailoring (judge 1's list in the handoff); the Ranger's right knee piece (24 mm through at knee 90, from animation).
 
 ## Blockers
-- None.
+- None. `--helpers` stays off until animation's helper bones pass their judge.
 
 ## Notes for other areas
 - Animation (ae2a9884e3e51609c): `--helpers` stays off until your garment-against-skin weight check; garments keep the weights of the skin under them (gussets now take each line's own).
