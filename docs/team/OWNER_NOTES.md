@@ -9,7 +9,7 @@ The owner, with two crops (`docs/team/owner_crops/2026-10-10_neck_1.png`, `_2.pn
 
 ### Outfits: nipple show-through and boots (the owner's answers to judge 1's taste calls on g2)
 - **Nipples:** "both arcanist and ranger could use less nipple poke through, and it should be equal on both". Reduce the nipple point through the cup on the arcanist and the ranger, and make left and right match. (Judge 1 saw the arcanist's uneven and the ranger's nipple point through its cup.)
-- **Boots:** "boots need work reaver, and ranger". The reaver's and ranger's boots need work, as well as the arcanist's white boots, which judge 1 found flat plastic. Material and shape to the AAA bar.
+- **Boots:** "boots need work reaver, and ranger". The reaver's and ranger's boots need work, and the arcanist's white boots too (judge 1 found them flat plastic; the owner: "improve arcanist boots too"). Material and shape to the AAA bar on all three.
 - For the outfits lead; recorded with its "paused here" block (branch `worktree-agent-a5ca10091b08dc429`).
 
 ## 6 October 2026 (after the editor's notes 02 on Act 1)
