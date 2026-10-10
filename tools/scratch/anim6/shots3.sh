@@ -2,7 +2,7 @@
 # Weight variants (reweight.py, read at run time) with the round bulge law.
 #   bash shots3.sh <out subdir> <variant dir under var/> <elbow b> <elbow max> <knee b> <knee max> [<variant dir> <eb> <em> <kb> <km>]...
 T="python /c/Users/munch/Desktop/survivorsunchained/tools/turn.py"
-WT=/c/Users/munch/Desktop/survivorsunchained/.claude/worktrees/agent-ae2a9884e3e51609c
+WT=/c/Users/munch/Desktop/survivorsunchained/.claude/worktrees/agent-a8d33b2672b7be905
 S=/c/Users/munch/AppData/Local/Temp/claude/C--Users-munch-Desktop-survivorsunchained/0b33992d-1e38-4eb8-80a1-d5c23b1a44e6/scratchpad/an
 SW=C:/Users/munch/AppData/Local/Temp/claude/C--Users-munch-Desktop-survivorsunchained/0b33992d-1e38-4eb8-80a1-d5c23b1a44e6/scratchpad/an
 G="/c/Users/munch/Desktop/Godot_v4.5.1-stable_mono_win64/Godot_v4.5.1-stable_mono_win64_console.exe"

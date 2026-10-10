@@ -1,7 +1,7 @@
 #!/bin/bash
 # Joint sheets with and without her helper bones, in one Godot turn.
 T="python /c/Users/munch/Desktop/survivorsunchained/tools/turn.py"
-WT=/c/Users/munch/Desktop/survivorsunchained/.claude/worktrees/agent-ae2a9884e3e51609c
+WT=/c/Users/munch/Desktop/survivorsunchained/.claude/worktrees/agent-a8d33b2672b7be905
 S=/c/Users/munch/AppData/Local/Temp/claude/C--Users-munch-Desktop-survivorsunchained/0b33992d-1e38-4eb8-80a1-d5c23b1a44e6/scratchpad/an
 G="/c/Users/munch/Desktop/Godot_v4.5.1-stable_mono_win64/Godot_v4.5.1-stable_mono_win64_console.exe"
 O=$S/sh2
