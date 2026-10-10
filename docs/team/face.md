@@ -1,9 +1,14 @@
 # Heroine face, hair and creation's Look: status
 
-Agent abe65bc929823a791 (v12, continued; took over from aed215ba3ca60cc29), branch `worktree-agent-abe65bc929823a791`, handing off.
-The handoff for the rest of v12 is `docs/handoff/face.md`.
+Agent afb7deb41dbb5d904 (took over from a6e8e6d0f539943bb), branch `worktree-agent-afb7deb41dbb5d904`, handing off. The handoff is `docs/handoff/face.md`.
 
-## Current state (2026-10-07)
+## 10 October 2026: round 2 judged, the fix pass next
+- **Hair:** the new strand atlas ships (soft ragged roots, unclipped sides, straight shade; hard lock blocks gone), blended drawing the direction. Round 2 (baby hairs, ragged cap hairline, card tone, strand contrast, skin rim behind only) built and with a judge.
+- **Eyes:** the shader takes every judged control (iris contrast, collarette, pupil darkness, whites, lid shadow, wet line, catchlight); round 2's judge reversed round 1's iris size and lids (MediaPipe mismeasures renders) and gave exact per-face values: not yet applied, so nothing merged.
+- **Brows:** the pin smoothed and split; Doe's setting chosen (1.0, lower 0.65); three `brow_zone` fixes and a tint fix before the GPU re-lay.
+- **Lashes:** the new paint has the ink now, but the cards are unlit: redo.
+
+## Earlier state (2026-10-07)
 - **v12 continued (ca7efb10; nothing shipped changes yet):** the brow pin runs and no longer folds the warp (`heroine_face.py` `brow_zone`, `FACE_BROW_PIN` a fraction); a face's paint can be laid on its head without a build (`heroine_face_relay.py`); her lashes painted hair by hair (`heroine_lashes.py`, a trial paint); a resting lid per face (looks.json faces "lid", none set yet). Doe's brows re-laid flat (no Krea) are dark and full like her portrait's. **Not yet seen in the game.**
 - **v12, her skin (committed):**
   - **No speckle over her breasts** (the owner's note, 6 October). The face-grain tile (93f66173) was laid at 3x over her whole body; it is now only up her neck (the freckle maps' blue), its dark outliers eased; the graft's freckles stop at her collarbones in front. Her bust at the Look: 0.26 specks per 1000 px to 0.06, the floor (`face_sheets/v12_breast_speckle.jpg`).
