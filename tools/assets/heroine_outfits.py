@@ -886,7 +886,7 @@ SPEC = {
     # (the linen scan is blue, about (145, 171, 205): these two are tinted from
     # it to a colour, warm ivory and a light saddle brown)
     "bone": ("rough_linen", (1.376, 1.099, 0.779), 183, 12, 0.0, 0.5),
-    "browncloth": ("rough_linen", (0.606, 0.573, 0.234), 78, 18, 0.0, 0.8),
+    "browncloth": ("rough_linen", (0.75, 0.55, 0.36), 78, 18, 0.0, 0.8),  # (a light brown: the old tint read olive)
     "forestleather": ("Leather026", (0.42, 0.66, 0.42), 40, 3, 0.0, None),
     "thread": ("rough_linen", (1.349, 1.034, 0.682), 170, 60, 0.0, 0.5),
 }
