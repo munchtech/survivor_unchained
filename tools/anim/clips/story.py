@@ -23,6 +23,7 @@ import numpy as np
 from clips.actions import arm
 from held import contact_build, forearm_on_ground, knee_clear, slerp_dir
 from keyed import build, merge, smoothstep_
+from rig import qeuler, qfrom_basis, qinv, qmatrix, qmul, qrot, qslerp
 
 
 def _f(curl, thumb, cascade=0.25, spread=0.0):
@@ -138,18 +139,198 @@ def _heels(look=1.0, hands=1.0, breath=0.0):
 
 
 def _zsit(lean=1.0):
-    """Sat up sideways on her right hip, the legs folded round to her left
-    (the right shin across in front, the left foot back by her left hip),
-    leaning on her right hand on the ground; the head bowed."""
+    """Sat sideways on her right hip, the legs folded under to her left as if
+    she had knelt and slid off her heels (both shins back, the feet behind
+    her left hip, their tops down), leaning on her right hand; the head
+    bowed. From here she only has to lift her hips up and over onto her
+    knees: no leg has to be drawn round under her."""
     return {
-        "hips": {"pos": (-0.04, -0.94, 0.0), "rot": (-22, -4, 16)},
-        "spine": (12, 6 + 4 * lean, -8 - 4 * lean), "neck": (6, 12, -2), "head": (4, 16, -2),
-        "foot_r": {"pos": (0.20, -0.045, 0.24), "rot": (78, 20, -70), "pole": (0.2, 0.3, 1)},
-        "foot_l": {"pos": (0.44, -0.05, -0.20), "rot": (-10, 140, 0), "pole": (0.6, 0.0, 1)},
-        "hand_r": {"pos": (-0.36, 0.05, 0.04), "pole": (-0.5, 0, -1), "knuckles": (-0.4, 0, 1)},
-        "hand_l": {"pos": (0.16, 0.28, 0.20), "pole": (0.6, -0.5, -0.4), "knuckles": (0.1, -0.5, 1)},
+        "hips": {"pos": _SBH_HIPS[0][1], "rot": _SBH_HIPS[0][2]},
+        "spine": (-10, 6 + 4 * lean, -6 - 2 * lean), "neck": (6, 12, -2), "head": (4, 16, -2),
+        "foot_r": _sbh_foot("r", 58), "foot_l": _sbh_foot("l", 58),
+        "hand_r": {"pos": (-0.60, 0.05, 0.10), "pole": (-0.5, 0, -1), "knuckles": (-0.4, 0, 1)},
+        "hand_l": {"pos": (-0.10, 0.22, 0.12), "pole": (0.6, -0.5, -0.4), "knuckles": (0.1, -0.5, 1)},
         "clav_l": (0, 6), "clav_r": (10, 2), "fingers_l": RELAXED, "fingers_r": OPEN,
     }
+
+
+# sit_back_heels' legs from lying on her side to her heels (f34-f96), laid
+# by hand rather than left to the keys' blend and knee_clear (whose pick of
+# the knee's side flipped from one edge to the other as an ankle swept
+# under her: the right knee thrown 68 cm in a frame). Per side: (frame,
+# ankle as a foot control's pos, foot turn or None, the knee's place). The
+# knees come forward as the feet are drawn back along the ground, settle
+# on the ground in the side-sit, and stay there, barely moving, while the
+# hips go up over them and back down onto the heels; the feet, unweighted
+# then, lift a little and come in behind them.
+_SBH_LEGS = {
+    "r": [(46, (0.30, -0.01, 0.08), None, (0.06, 0.12, 0.40)),
+          (58, (-0.13, -0.05, -0.11), (-2, 140, 0), (-0.15, 0.06, 0.341)),
+          (64, (-0.13, -0.05, -0.11), (-2, 140, 0), (-0.15, 0.06, 0.341)),
+          (78, (-0.115, -0.03, -0.115), (-1, 140, 0), (-0.15, 0.06, 0.341)),
+          (88, (-0.115, -0.03, -0.115), (-1, 140, 0), (-0.15, 0.06, 0.341))],
+    "l": [(46, (0.36, 0.02, 0.12), None, (0.10, 0.17, 0.42)),
+          (58, (0.03, -0.05, -0.15), (-4, 140, 0), (0.0, 0.07, 0.30)),
+          (64, (0.03, -0.05, -0.15), (-4, 140, 0), (0.0, 0.07, 0.30)),
+          (71, (0.08, -0.02, -0.13), (0, 140, 0), (0.08, 0.10, 0.33)),
+          (78, (0.11, -0.03, -0.115), (1, 140, 0), (0.15, 0.06, 0.341)),
+          (88, (0.11, -0.03, -0.115), (1, 140, 0), (0.15, 0.06, 0.341))],
+}
+
+# Her hips from the side-sit up over her knees and back down onto her heels
+# (frame, the hips control's pos, rot): each a thigh's length from where the
+# right knee is planted (tools/scratch: worked out from the rig's rest hip),
+# so the knee stays put as they go round it. Laid over the keys from f58 to
+# f96 (the keys alone cut the corner and pushed the knees through the floor).
+_SBH_HIPS = [
+    (58, (-0.327, -0.920, -0.077), (12, -4, 14)),
+    (64, (-0.327, -0.920, -0.077), (12, -4, 14)),
+    (68, (-0.257, -0.795, -0.069), (9, 1, 11)),
+    (71, (-0.173, -0.687, -0.024), (6, 6, 8)),
+    (74, (-0.080, -0.605, 0.054), (3, 11, 5)),
+    (78, (0.011, -0.560, 0.161), (0, 16, 2)),
+    (84, (0.013, -0.618, 0.062), (0, 12.7, 1.3)),
+    (90, (0.009, -0.702, -0.022), (0, 9.3, 0.7)),
+    (96, (0.0, -0.80, -0.08), (0, 6, 0)),
+]
+
+
+def _sbh_hips(fr):
+    """The hips control along _SBH_HIPS."""
+    return {"pos": tuple(float(v) for v in _hermite(fr, [(f, q) for f, q, _ in _SBH_HIPS])),
+            "rot": tuple(float(v) for v in _hermite(fr, [(f, r) for f, _, r in _SBH_HIPS]))}
+
+
+def _hip_at(rig, side, hips):
+    """Where a hips control puts a hip joint."""
+    I = rig.I
+    p0 = rig.prest[I["pelvis"]]
+    return p0 + np.asarray(hips["pos"], float) + qrot(qeuler(*hips["rot"]), rig.prest[I[f"thigh_{side}"]] - p0)
+
+
+def _sbh_foot(side, fr):
+    """A foot control at one of _SBH_LEGS' frames, for the keys."""
+    for f, pos, rot, knee in _SBH_LEGS[side]:
+        if f == fr:
+            return {"pos": pos, "rot": rot, "pole": (0.1 if side == "l" else -0.1, 0, 1)}
+    raise KeyError(fr)
+
+
+def _hermite(fr, pts):
+    """A value along (frame, value) points: still at the first and last and
+    wherever two points hold the same value, Catmull-Rom between."""
+    ts = [t for t, _ in pts]
+    vs = [np.asarray(v, float) for _, v in pts]
+    if fr <= ts[0]:
+        return vs[0]
+    if fr >= ts[-1]:
+        return vs[-1]
+    k = max(i for i in range(len(ts) - 1) if ts[i] <= fr)
+
+    def tan(i):
+        if i == 0 or i == len(ts) - 1 or np.allclose(vs[i], vs[i - 1]) or np.allclose(vs[i], vs[i + 1]):
+            return np.zeros_like(vs[i])
+        return (vs[i + 1] - vs[i - 1]) / (ts[i + 1] - ts[i - 1])
+
+    h = ts[k + 1] - ts[k]
+    u = (fr - ts[k]) / h
+    h00, h10, h01, h11 = 2 * u ** 3 - 3 * u ** 2 + 1, u ** 3 - 2 * u ** 2 + u, -2 * u ** 3 + 3 * u ** 2, u ** 3 - u ** 2
+    return h00 * vs[k] + h10 * h * tan(k) + h01 * vs[k + 1] + h11 * h * tan(k + 1)
+
+
+def _euler(q):
+    """(yaw, pitch, roll) of a turn: rig.qeuler undone."""
+    m = qmatrix(q)
+    return (math.degrees(math.atan2(m[0, 2], m[2, 2])), math.degrees(math.asin(max(-1.0, min(1.0, -m[1, 2])))),
+            math.degrees(math.atan2(m[1, 0], m[1, 1])))
+
+
+def _sbh_leg(rig, p, fr, side, first, last):
+    """A foot control for sit_back_heels between its keys' f34 and f96
+    (`first`, `last`: those keys' foot controls), along _SBH_LEGS: the ankle
+    and the knee's place eased through the points; the knee put on the
+    circle its hip and ankle allow nearest that place (_knee_on), so it goes
+    round with the leg and never across; and the foot riding the shin, its
+    turn on it blended between the points (a foot turned in the world
+    between two far-apart ways points its toes into the ground on the way
+    as the shin swings round)."""
+    I = rig.I
+    th = I[f"thigh_{side}"]
+    rest_y = rig.prest[I[f"foot_{side}"]][1]
+    s = 1 if side == "l" else -1
+
+    def hip_of(f):
+        return _hip_at(rig, side, _sbh_hips(f)) if f >= 58 else p[f, th]
+
+    def ankle_of(pos):
+        return np.array([pos[0] + s * rig.feet_out, rest_y + pos[1], pos[2]])
+
+    def knee_of(f, spec):
+        return (p[f, th] + ankle_of(spec["pos"])) / 2 + np.asarray(knee_clear(rig, p, f, side, spec)["pole"], float) / 10.0
+
+    pts = [(34, first["pos"], first["rot"], knee_of(34, first))] + _SBH_LEGS[side] + [(96, last["pos"], last["rot"], knee_of(96, last))]
+
+    def leg(f):
+        pos = _hermite(f, [(g, a) for g, a, _, _ in pts])
+        hip, ankle = hip_of(f), ankle_of(pos)
+        return pos, hip, _knee_on(rig, side, hip, ankle, _hermite(f, [(g, k) for g, _, _, k in pts])), ankle
+
+    def shin(hip, knee, ankle):
+        # The shin's own axes: across the knee's bend, and along it.
+        y = (ankle - knee) / np.linalg.norm(ankle - knee)
+        x = np.cross(knee - hip, ankle - knee)
+        x = x / np.linalg.norm(x)
+        return qfrom_basis(x, y, np.cross(x, y))
+
+    def on_shin(f, rot):
+        _, hip, knee, ankle = leg(f)
+        return qmul(qinv(shin(hip, knee, ankle)), qeuler(*rot))
+
+    turns = [(f, r) for f, _, r, _ in pts if r is not None]
+    k = max(i for i in range(len(turns) - 1) if turns[i][0] <= fr)
+    (f0, r0), (f1, r1) = turns[k], turns[k + 1]
+    pos, hip, knee, ankle = leg(fr)
+    rel = qslerp(on_shin(f0, r0), on_shin(f1, r1), smoothstep_((fr - f0) / (f1 - f0)))
+    rot = _euler(qmul(shin(hip, knee, ankle), rel))
+    return {"pos": tuple(float(v) for v in pos), "rot": rot, "pole": tuple(10.0 * (knee - (hip + ankle) / 2))}
+
+
+def _knee_on(rig, side, hip, ankle, want, floor=0.05):
+    """Where a knee goes for a hip and an ankle: on the circle they allow,
+    nearest `want`, and, if that is under `floor`, turned round the circle
+    the shorter way until it is on it (so it leaves and meets the ground
+    by degrees, never by a pick from one edge to the other)."""
+    I = rig.I
+    l1 = np.linalg.norm(rig.prest[I[f"calf_{side}"]] - rig.prest[I[f"thigh_{side}"]])
+    l2 = np.linalg.norm(rig.prest[I[f"foot_{side}"]] - rig.prest[I[f"calf_{side}"]])
+    d = ankle - hip
+    dist = min(max(np.linalg.norm(d), abs(l1 - l2) + 1e-4), (l1 + l2) * 0.9995)
+    u = d / max(np.linalg.norm(d), 1e-9)
+    a = (l1 * l1 - l2 * l2 + dist * dist) / (2 * dist)
+    c = hip + u * a
+    r = math.sqrt(max(0.0, l1 * l1 - a * a))
+    e1 = (want - c) - u * np.dot(want - c, u)
+    if np.linalg.norm(e1) < 1e-6:
+        return want
+    e1 = e1 / np.linalg.norm(e1)
+    e2 = np.cross(u, e1)
+    at = lambda th: c + r * (math.cos(th) * e1 + math.sin(th) * e2)
+    if at(0.0)[1] >= floor:
+        return at(0.0)
+    for k in range(1, 181):
+        for sg in (1, -1):
+            th = math.radians(sg * k)
+            if at(th)[1] >= floor:
+                lo, hi = math.radians(sg * (k - 1)), th
+                for _ in range(20):
+                    m = 0.5 * (lo + hi)
+                    lo, hi = (lo, m) if at(m)[1] >= floor else (m, hi)
+                return at(hi)
+    return at(0.0)
+
+
+# Where sit_back_heels' hip limit starts to press and what it tends to.
+HIP_SOFT = (55.0, 85.0)
 
 
 def sit_back_heels(rig):
@@ -168,13 +349,15 @@ def sit_back_heels(rig):
         (64, merge(z, spine=(10, 14, -8), neck=(4, 10, -2), head=(2, 12, 0)), "auto"),
         # Over onto her knees: the hips up off the ground and over them, the
         # right leg drawn under; the right hand pushes off the ground.
-        (78, {"hips": {"pos": (0.0, -0.66, -0.02), "rot": (-6, 30, 4)}, "spine": (4, 22, -2), "neck": (0, 8, 0), "head": (0, 10, 0),
-              "foot_l": {"pos": (0.14, -0.055, -0.30), "rot": (2, 140, 0), "pole": (0.15, 0, 1)},
-              "foot_r": {"pos": (-0.10, -0.04, -0.24), "rot": (-6, 135, 0), "pole": (-0.1, 0, 1)},
+        (78, {"hips": {"pos": _SBH_HIPS[5][1], "rot": _SBH_HIPS[5][2]}, "spine": (2, 18, -2), "neck": (0, 8, 0), "head": (0, 10, 0),
+              "foot_l": _sbh_foot("l", 78), "foot_r": _sbh_foot("r", 78),
               "hand_r": {"pos": (-0.16, 0.30, 0.22), "pole": (-0.6, -0.5, -0.4), "knuckles": (-0.1, -0.4, 1)},
               "hand_l": {"pos": (0.15, 0.32, 0.20), "pole": (0.7, -0.5, -0.3), "knuckles": (0.1, -0.5, 1)},
               "clav_l": (0, 6), "clav_r": (4, 6), "fingers_l": RELAXED, "fingers_r": RELAXED}, "auto"),
-        # Back onto her heels, the hands to her thighs; a breath.
+        # Back onto her heels, the hips going round on the planted knees (a
+        # thigh's length from them all the way down), the hands to her thighs;
+        # a breath.
+        (87, merge(_heels(look=0.2, hands=0.0, breath=0.5), hips={"pos": (0.011, -0.66, 0.016), "rot": (0, 10, 1)}), "auto"),
         (96, _heels(look=0.3, hands=0.0, breath=1.0), "ease"),
         (118, _heels(look=0.5, hands=0.0, breath=-0.5), "ease"),
         # The hands come up before her, and she looks down at them.
@@ -184,6 +367,13 @@ def sit_back_heels(rig):
     def contacts(fr, g, p, pose):
         # The knees kept on the ground, not through it, whatever the legs do.
         out = {f"foot_{s}": knee_clear(rig, p, fr, s, pose[f"foot_{s}"]) for s in "lr" if f"foot_{s}" in pose}
+        # From her side to her heels the legs go as laid by hand.
+        if 34 < fr < 96:
+            last = _heels(look=0.3, hands=0.0, breath=1.0)
+            hips = _sbh_hips(fr) if fr >= 58 else None
+            if hips:
+                out["hips"] = hips
+            out.update({f"foot_{s}": _sbh_leg(rig, p, fr, s, start[f"foot_{s}"], last[f"foot_{s}"]) for s in "lr"})
         # The right forearm on the ground as she starts up off it.
         if fr < 30:
             w = 1.0 - smoothstep_((fr - 6) / 24.0)
@@ -194,9 +384,16 @@ def sit_back_heels(rig):
                              "knuckles": tuple(slerp_dir(keyed.get("knuckles", PROP_TOWARD), PROP_TOWARD, w))}
         return out
 
-    return contact_build("sit_back_heels", rig, keys, contacts,
-                         meta={"layer": "full", "hold": True, "source": "keyed (tools/anim/clips/story.py)", "licence": "own work",
-                               "note": "keyed (C01): from the forearm to sitting sideways, onto her knees and back on her heels, looking at her hands"})
+    # The side-sit turns her right hip out 64-77 degrees, past the rig's hard
+    # 45: here the limit is eased in (Rig._hip_soft) so the knee's swing
+    # grows with the turn instead of switching on in a frame.
+    rig.hip_soft = HIP_SOFT
+    try:
+        return contact_build("sit_back_heels", rig, keys, contacts,
+                             meta={"layer": "full", "hold": True, "source": "keyed (tools/anim/clips/story.py)", "licence": "own work",
+                                   "note": "keyed (C01): from the forearm to sitting sideways, onto her knees and back on her heels, looking at her hands"})
+    finally:
+        rig.hip_soft = None
 
 
 def reach_coals(rig):

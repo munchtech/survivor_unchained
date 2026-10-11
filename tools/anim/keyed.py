@@ -235,6 +235,8 @@ class Rig:
         right over to the wrong side comes out straight over the shin, and
         the turn never jumps as the keyed knee passes round (no switch).
         Within the range nothing changes."""
+        if getattr(self, "hip_soft", None):
+            return self._hip_soft(side, d_top, d_mid, d_par, S, W)
         lim = self.HIP_ROT
         g = self.hip_rot(side, d_top, d_par)
         if abs(g) <= lim:
@@ -275,6 +277,52 @@ class Rig:
             else:
                 hi = mid_
         w = qaxis(a, 0.5 * (lo + hi))
+        return qmul(w, d_top), qmul(w, d_mid)
+
+    def _hip_soft(self, side, d_top, d_mid, d_par, S, W):
+        """_hip_within eased in, for a clip that sets `hip_soft = (lo, hi)`
+        (a leg drawn through a wide turn, as from a side-sit onto the knees).
+        The hard limit lets a turn past it through untouched wherever no
+        swing reaches 45 and grabs it in the frame one first does: the knee
+        thrown across in a frame. Here a turn past `lo` is pressed toward
+        `hi` along a curve that leaves `lo` at the turn's own rate (tanh), and
+        the swing is the nearest that comes closest to it, found by walking
+        out from none, so the knee's swing grows and shrinks with the turn
+        frame to frame instead of switching on."""
+        lo, hi = self.hip_soft
+        g = self.hip_rot(side, d_top, d_par)
+        if abs(g) <= lo:
+            return d_top, d_mid
+        want = lo + (hi - lo) * math.tanh((abs(g) - lo) / (hi - lo))
+        # A knee keyed right over to the wrong side folds back toward neutral
+        # (at half round, none), as in _hip_within.
+        want = math.copysign(want * min(1.0, (180.0 - abs(g)) / 60.0), g)
+        a = W - S
+        if np.linalg.norm(a) < 1e-9:
+            return d_top, d_mid
+        a = a / np.linalg.norm(a)
+
+        def err(psi):
+            e = self.hip_rot(side, qmul(qaxis(a, psi), d_top), d_par) - want
+            return abs((e + 180.0) % 360.0 - 180.0)
+
+        e0 = err(0.0)
+        sgn = 1.0 if err(1.0) < err(-1.0) else -1.0
+        psi, e = 0.0, e0
+        for k in range(1, 181):
+            e1 = err(sgn * k)
+            if e1 >= e:
+                break
+            psi, e = sgn * k, e1
+        if psi == 0.0:
+            return d_top, d_mid
+        # Down to a tenth of a degree about the best whole one.
+        best = psi
+        for step in (0.5, 0.25, 0.1):
+            for c in (best - step, best + step):
+                if err(c) < e:
+                    best, e = c, err(c)
+        w = qaxis(a, best)
         return qmul(w, d_top), qmul(w, d_mid)
 
     def _strain(self, d_la, want, ha, fa, side):
