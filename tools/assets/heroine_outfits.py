@@ -1151,7 +1151,8 @@ def relax(pos, tris, interior=0, edge=12):
 SPEC = {
     "steel": ("Metal038", (1.0, 1.0, 1.02), 175, 2.5, 1.0, None),
     "darksteel": ("Metal046B", (1.0, 1.0, 1.05), 95, 2.5, 1.0, None),
-    "iron": ("Metal046B", (0.92, 0.84, 0.74), 88, 2.5, 1.0, 0.5),   # (rivets: warm dark iron, an even sheen; at 72 they read as black dots beside the plate, judge 6)
+    "iron": ("Metal046B", (0.92, 0.84, 0.74), 88, 2.5, 1.0, 0.5),
+    "rivetbronze": ("Metal046B", (1.0, 0.8, 0.6), 100, 2.5, 1.0, 0.48),   # (the spaulder's rivets dark bronze, not black dots, judge 7)   # (rivets: warm dark iron, an even sheen; at 72 they read as black dots beside the plate, judge 6)
     "gold": ("Metal048C", (1.0, 0.92, 0.8), None, 3, 1.0, None),
     "rust": ("Metal053C", (1, 1, 1), None, 2.5, 0.8, None),
     "leather": ("Leather037", (1, 1, 1), None, 4, 0.0, None),
@@ -1197,7 +1198,7 @@ def mat(key):
     col = col * np.array(tint)
     if mean:
         col = col * (mean / col.mean())
-    if key in ("steel", "darksteel", "iron", "gold", "bronze"):
+    if key in ("steel", "darksteel", "iron", "gold", "bronze", "rivetbronze"):
         # Scratches and flecks in the scan read as white specks at this scale.
         med = np.median(col.reshape(-1, 3), 0)
         col = np.clip(col, med * 0.8, med * 1.18)
@@ -4279,7 +4280,7 @@ def ranger_spaulder():
                 pts.append(pd[j])
                 nrs.append(nr_[j])
             pts, nrs = np.array(pts), np.array(nrs)
-        made += rivets(nm, pd, None, td, 0.0015, "darksteel", spots=(pts, nrs, np.repeat(row[None], len(pts), 0)))
+        made += rivets(nm, pd, None, td, 0.0015, "rivetbronze", spots=(pts, nrs, np.repeat(row[None], len(pts), 0)))
         PL_SPOTS.extend((nm, p) for p in pts)
         pl_one_blend([o for o in made if o is not None], row)
         PL_ROWS[nm] = row
@@ -4587,6 +4588,10 @@ def ranger():
     # leather spaulder with riveted plates)
     out += ranger_spaulder() if os.environ.get("PAULDRON") == "leather" else ranger_pauldron()
     for sd in "lr":
+        # (the bracers satin and brushed round her forearm as the plates are
+        # round her arm, judge 7)
+        fa = head(f"lowerarm_{sd}")
+        RIGID_UV[f"ranger.bracer_{sd}"] = (fa, (head(f"hand_{sd}") - fa) / np.linalg.norm(head(f"hand_{sd}") - fa), True)
         cz = leg_z(sd, tops[sd] + 0.02)
         # (the right boot, over her knee in front, cut 8 cm lower behind, as a
         # riding boot is, its cuff with it: cut level, the cuff stood 24 mm
@@ -5034,7 +5039,7 @@ OUTFITS = {"warden": warden, "arcanist": arcanist, "ranger": ranger, "reaver": r
 # leather (grain, burnished edges, stitching), metal (forged, polished at
 # the edges, dark in the crevices), cloth (weave, sheen), gloss (latex,
 # satin: clean). Fur and sheer stockings have shaders of their own.
-KIND = {"steel": "metal", "darksteel": "metal", "iron": "metal", "gold": "metal", "bronze": "metal", "rust": "metal",
+KIND = {"steel": "metal", "darksteel": "metal", "iron": "metal", "rivetbronze": "metal", "gold": "metal", "bronze": "metal", "rust": "metal",
         "velvet": "cloth", "arcvelvet": "cloth", "linen": "cloth", "lace": "cloth", "ink": "cloth",
         "browncloth": "twill", "thread": "gloss", "satin": "gloss", "bone": "leather", "fur": "fur", "down": "fur", "stocking": "sheer"}
 
@@ -5141,7 +5146,7 @@ def detail(objs, rays=20, reach=0.03):
         painted = 0.0 if o.get("geo_stitch") else 1.0
         # (alpha, a flag for the shader: 0 a rolled binding, drawn matte if leather;
         # 0.5 a pauldron plate laid out round her arm, brushed along its UVs)
-        flag = 0.0 if "_bind" in o.name else 0.5 if re.fullmatch(r"ranger\.pauldron\d", o.name) else 1.0
+        flag = 0.0 if "_bind" in o.name else 0.5 if re.fullmatch(r"ranger\.(pauldron\d|bracer_[lr])", o.name) else 1.0
         col.data.foreach_set("color", np.c_[ao, np.full(len(V), rnd), np.full(len(V), painted), np.full(len(V), flag)].astype(np.float32).ravel())
         me.color_attributes.active_color = col
     print("DETAIL", len(objs), "pieces")

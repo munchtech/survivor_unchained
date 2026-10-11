@@ -43,6 +43,17 @@ float noise(vec2 p) {
 	return mix(mix(hash(i), hash(i + vec2(1, 0)), u.x), mix(hash(i + vec2(0, 1)), hash(i + vec2(1, 1)), u.x), u.y);
 }
 float fbm(vec2 p) { return 0.5 * noise(p) + 0.3 * noise(p * 2.13 + 7.1) + 0.2 * noise(p * 4.37 + 3.3); }
+// Brushed metal: hairline rows 0.4 mm apart (st.y, metres), each varying
+// smoothly along the stroke (st.x) at its own phase, so no cell ends line up
+// across rows (value noise on one grid read as rectangular blocks, judge 7);
+// eased to its mean where a pixel spans more than a row or two, so it never
+// shimmers at a distance.
+float brushed(vec2 st) {
+	float row = floor(st.y * 2500.0);
+	float ph = hash(vec2(row, 3.7)) * 64.0;
+	float v = 0.6 * noise(vec2(st.x * 55.0 + ph, row * 0.37)) + 0.4 * noise(vec2(st.x * 210.0 + ph * 1.7, row * 0.11 + 5.0));
+	return mix(v, 0.5, smoothstep(0.0003, 0.0009, fwidth(st.y)));
+}
 
 void vertex() {
 	det = vec4(UV2.x, UV2.y, COLOR.r, COLOR.g);
@@ -138,13 +149,15 @@ void fragment() {
 		nrm = dent;
 		float polish = max(near_edge, bulge);
 		// (brushed along one way: fine streaks in its roughness)
-		float brush = noise(vec2(opos.y * 1800.0, (opos.x + opos.z) * 40.0));   // (fine level streaks, one way over the whole piece)
+		float brush = brushed(vec2(opos.x + opos.z, opos.y));   // (fine level streaks, one way over the whole piece)
 		// (a plate laid out round her arm brushed along it, by its UVs: on a dome's
 		// top, where the level streaks run flat, they showed as rotated blocks, judge 6)
-		if (flag > 0.25 && flag < 0.75) brush = noise(vec2(m.y * 1800.0, m.x * 40.0));
+		if (flag > 0.25 && flag < 0.75) brush = brushed(m);
 		rough = clamp(mix(0.3, 0.18, polish) + 0.1 * hollow + 0.14 * (1.0 - sky) + 0.06 * (brush - 0.5), 0.12, 0.6);
 		// (the pauldron's broad plates satin, not polished: at the Look they
 		// blew out 5.7% of the lower frame, face lead)
+		// (the bracers too, so the set matches: polished beside the satin cap,
+		// judge 7)
 		if (flag > 0.25 && flag < 0.75) rough = clamp(rough + 0.14, 0.32, 0.62);
 		col *= mix(0.7, 1.0, sky) * mix(1.0, 1.1, polish);
 		metal = 1.0;   // (all metal: the scan's metal map has rust and dirt in it, and each patch of it showed as a pale fleck)
