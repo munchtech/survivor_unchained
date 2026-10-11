@@ -31,6 +31,8 @@ The one page of what's current. Every lead starts from the latest `claude/vigila
 
 ## 10 October 2026, late: wave 1 resumed, then paused for a fresh coordinator. Restart here
 
+**Update, 10 October night:** the coordinator compacted instead of restarting, so the wave carries on: face and outfits resumed (about 205k each), and fresh successors started for rendering (Night grade fix first) and animation. Roster in README. If you're a new coordinator reading this, check each lead's "Paused here" block and `ctx.py` before restarting anyone.
+
 Each lead runs in its predecessor's worktree (built art kept); read the "Paused here" block on its branch.
 **Restart order:**
 1. **Rendering** (successor needed; handoff `docs/handoff/performance.md` @ 048fdf87, worktree agent-a4e0c353e61cca6dc). **READY TO MERGE at 5f2e667c, together with face** (FSR 2 native for play; the Look's hair edge; ground blur 2.0; seeded picture runs; judge c14 PASS WITH FIXES, `181eef02 scratchpad\judge_c14\verdict.md`). The owner has seen sheet `perf9\c16\fight60_x1.png`. Don't merge 048fdf87's 0a85d850 (crowd mipmaps, unjudged). Next: the wolf fur sparkle (607 to 362 so far; target about 70); **the Night grade fix the face lead waits on** (dark browns purple at the Look); ground blur 2.4; see-through v2; face's hair items.
