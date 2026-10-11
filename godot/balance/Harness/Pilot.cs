@@ -148,7 +148,10 @@ public static class Pilot
             bool low = p.Hp < b.MaxHp * 0.25;
             // A boss in its phase transition can't be hurt (TakenMul 0): spare the Flare unless health is low.
             bool bossNear = b.HostilesInRadius(p.X, p.Z, 10).Any(e => e.Boss && (low || e.TakenMul > 0));
-            if (low || bossNear || near >= 8 || (near >= 4 && b.Time - readyAt >= 8))
+            // A kiting caster with a small Stand (the Drowned Moon, 5 m) rarely has four inside it: after
+            // fifteen seconds, four within ten metres will do (the Stand follows her in).
+            if (low || bossNear || near >= 8 || (near >= 4 && b.Time - readyAt >= 8) ||
+                (b.Time - readyAt >= 15 && b.HostilesInRadius(p.X, p.Z, 10).Count >= 4))
             {
                 b.UseFlare(mx, mz);
                 readyIn = null;

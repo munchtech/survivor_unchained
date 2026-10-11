@@ -16,6 +16,8 @@ public sealed class LampLoadout
     public bool Night;
     /// <summary>The type: the road chosen.</summary>
     public string Type = "";
+    /// <summary>How many lamps are lit (the Flare burns as bright as the board: Flare.LampGlow).</summary>
+    public int Lit;
     public readonly List<StatMod> Mods = new();
     /// <summary>Attribute points from the attribute lamps (by day and in maps).</summary>
     public readonly Dictionary<string, int> Attributes = new();

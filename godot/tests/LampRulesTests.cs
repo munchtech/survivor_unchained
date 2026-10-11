@@ -338,6 +338,41 @@ public sealed class LampRulesTests
     }
 
     [Fact]
+    public void A_motes_mark_lifts_the_marked_by_a_quarter_of_its_day_size_by_night()
+    {
+        double Mark(bool night)
+        {
+            var b = BattleTests.Arena(1, ("seeking_motes", 1));
+            b.Lamps = new LampLoadout { Night = night };
+            b.Lamps.Add(Rule("moonmarked", ("passes", 1)));
+            var e = b.SpawnEnemy("wolf", b.Player.X + 5, b.Player.Z)!;
+            e.MaxHp = e.Hp = 1e6;
+            b.HitEnemy(e, 10, School.Arcane, [Tag.Spell, Tag.Projectile], new HitOpts { Weapon = b.Weapons[0], NoCrit = true });
+            return e.Status[StatusKind.Mark]!.Power;
+        }
+        Assert.Equal(1, Mark(false), 6);
+        Assert.Equal(0.25, Mark(true), 6);
+    }
+
+    [Fact]
+    public void A_crowded_sky_the_night_leaves_nothing_to_loose_stays_dark_its_seeking_with_its_price()
+    {
+        double Homing(bool night, bool many)
+        {
+            var b = BattleTests.Arena(1, ("rimeshard", 1));
+            b.Lamps = new LampLoadout { Night = night };
+            if (many) b.Lamps.Add(new LampEffect { Do = LampDo.Rule, Rule = "tags.projectiles", Tags = [Tag.Spell], Args = new() { ["add"] = 1 } });
+            b.Lamps.Add(Rule("crowded_sky", ("add", 2), ("weaker", 0.35)));
+            var pr = new Projectile(0);
+            b.ArcanistLaunched(pr, b.Weapons[0]);
+            return pr.Homing;
+        }
+        Assert.Equal(5.5, Homing(false, true));
+        Assert.Equal(5.5, Homing(true, false));
+        Assert.Equal(0, Homing(true, true));
+    }
+
+    [Fact]
     public void The_echos_wait_is_kept_in_full_by_night_and_unbound_casting_waits_a_quarter_less_by_night()
     {
         double Wait(bool night, params LampEffect[] lamps)

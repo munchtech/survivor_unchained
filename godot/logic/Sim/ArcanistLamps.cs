@@ -33,8 +33,10 @@ public sealed partial class Battle
     double RawOn(string rule, string arg, WeaponInst w) =>
         Lamps.SizeOn(rule, arg, w.Def.Id, w.Tags) / (Lamps.Night ? Content.Lamps.NightSize : 1);
 
-    /// <summary>Spells with projectiles, while the Crowded Sky is lit.</summary>
-    bool CrowdOn(WeaponInst w) => Lamp("crowded_sky") && w.Tags.Has(Tag.Spell) && w.Tags.Has(Tag.Projectile);
+    /// <summary>Spells with projectiles, while the Crowded Sky is lit and truly looses one more: when the
+    /// night's count cap leaves it nothing to give (Many Lights holds the one extra), the sky stays dark,
+    /// its seeking with its price (a blue lamp is never a gift without its cost).</summary>
+    bool CrowdOn(WeaponInst w) => Lamp("crowded_sky") && w.Tags.Has(Tag.Spell) && w.Tags.Has(Tag.Projectile) && CrowdShare(w) > 0;
 
     /// <summary>How much of the Crowded Sky's gift the cast really has: the night caps counts
     /// (a lit Many Lights may already hold the one extra), and its price, "each weaker", is
@@ -254,8 +256,9 @@ public sealed partial class Battle
         if (o.Dot || o.Summon || l.Rules.Count == 0 || !e.Alive) return;
         if (o.Weapon?.Def.Id == "seeking_motes")
         {
-            // moonweaver.moonmarked (design pick: a mark of 4 s, as Moonbrand's).
-            if (l.Has("moonmarked")) ApplyStatus(e, new StatusPayload(StatusKind.Mark, 1, 1, 4), dmg, o.Depth + 1);
+            // moonweaver.moonmarked (design pick: a mark of 4 s, as Moonbrand's). The mark's +30% is a size, so by
+            // night it is a quarter (§2.10); at full it lifted every blow on the marked crowd by a third.
+            if (l.Has("moonmarked")) ApplyStatus(e, new StatusPayload(StatusKind.Mark, 1, l.Night ? Content.Lamps.NightSize : 1, 4), dmg, o.Depth + 1);
             // arcanist.bridge.cold_moon (design pick: half a chill's worth, 2.5 s).
             if (l.Has("cold_moon")) ApplyStatus(e, new StatusPayload(StatusKind.Chill, 1, 0.5, 2.5), dmg, o.Depth + 1);
         }
