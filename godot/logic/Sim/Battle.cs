@@ -749,17 +749,18 @@ public sealed partial class Battle
         }
         if (e.TakenMul < 0.7) blocked = true;
         // Criticals.
-        bool crit = o.Crit;
+        // roadknife.adders_patience: no *sure* strike (true = sure crit); the build's own crit chance still rolls.
+        bool noTrue = StalkerNoTrue;
+        bool crit = o.Crit && !noTrue;
         if (!crit && !o.NoCrit && !o.Dot)
         {
-            double chance = st.Get(Stat.CritChance) + (Player.SureCritT > 0 ? 1 : 0) + (o.Weapon?.CritBonus ?? 0) + StalkerCritAdd(e, tags, o);
+            double chance = st.Get(Stat.CritChance) + (!noTrue && Player.SureCritT > 0 ? 1 : 0) + (o.Weapon?.CritBonus ?? 0) + (noTrue ? 0 : StalkerCritAdd(e, tags, o));
             // The Hunters' Blind: the first blow on anything unhurt.
             if (e.Hp >= e.MaxHp && Boons.TryGetValue("hunters_blind", out int blind)) chance += blind >= 2 ? 1 : 0.5;
             // Night-Eyes: the far ones, in the dark, are seen best.
             if (Boons.TryGetValue("precision", out int eyes) && Dist(e.X, e.Z, Player.X, Player.Z) > 6) chance += 0.03 * eyes;
             crit = Rng.Next() < chance;
         }
-        if (crit && StalkerNoTrue) crit = false; // roadknife.adders_patience
         if (crit) dmg *= st.Get(Stat.CritDamage) * (e.Hp < e.MaxHp * 0.5 && Boons.TryGetValue("ferocity", out int tooth) ? 1 + 0.12 * tooth : 1);
         else if ((Rules.IronSkin > 0 || e.Def.IronSkin > 0) && e.Disposition == Disposition.Hostile) { dmg *= 1 - Math.Max(Rules.IronSkin, e.Def.IronSkin); blocked = true; }
         dmg = Math.Max(0.5, dmg);
@@ -1817,7 +1818,7 @@ public sealed partial class Battle
                 if (pr.Homing > 0 && pr.Owner != Side.Enemy)
                 {
                     Enemy? t = pr.Target >= 0 ? Enemies.Items[pr.Target] : null;
-                    if (t == null || !Targetable(t) || pr.Hits.Contains(t.Id))
+                    if (t == null || !Targetable(t) || pr.Hits.Contains(t.Id) || VolleyTaken(pr, t.Id))
                     {
                         t = PickSeekTarget(pr);
                         pr.Target = t?.Id ?? -2;

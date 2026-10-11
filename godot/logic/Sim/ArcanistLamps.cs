@@ -85,6 +85,9 @@ public sealed partial class Battle
     {
         double m = 1;
         castingW = w;
+        // Each cast is its own volley (a burst still firing must not run into the next cast's: the
+        // 0.3 s window alone chained quick casters into one volley that hit each enemy only once).
+        volleyOf.Remove(w.Id);
         if (Lamps.Rules.Count > 0 && w.Tags.Has(Tag.Spell))
         {
             // moonweaver.the_echo: the second cast is at a share of the first.

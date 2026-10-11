@@ -39,9 +39,13 @@ public sealed class LampLoadout
 
     public bool Has(string rule) => Rules.ContainsKey(rule);
 
+    /// <summary>Debug switch for bisecting: LAMPS_OFF=id1,id2 leaves those rule ids unlit (read once).</summary>
+    static readonly HashSet<string> Off = new((Environment.GetEnvironmentVariable("LAMPS_OFF") ?? "")
+        .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries));
+
     public void Add(LampEffect e)
     {
-        if (e.Rule == null) return;
+        if (e.Rule == null || Off.Contains(e.Rule)) return;
         Rules.TryAdd(e.Rule, e);
         if (!Each.TryGetValue(e.Rule, out var l)) Each[e.Rule] = l = new();
         l.Add(e);
