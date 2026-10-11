@@ -133,8 +133,21 @@ public static class Pilot
                     break;
                 }
         if (p.DashCharges > 0 && b.HostilesInRadius(p.X, p.Z, 2.2).Count >= 3) b.Dash(mx, mz);
-        // The Flare: a boss within ten metres, a crowd of eight within six, or health below a quarter.
-        if (b.FlareReady && (p.Hp < b.MaxHp * 0.25 || b.HostilesInRadius(p.X, p.Z, 10).Any(e => e.Boss) || b.HostilesInRadius(p.X, p.Z, 6).Count >= 8)) b.UseFlare(mx, mz);
+        // The Flare: a boss within ten metres, a crowd of eight within its reach, or health below a quarter;
+        // and nobody sits on a full meter: after eight seconds ready, four within its reach will do.
+        // (A crowd of eight within six metres kept a kiting caster's meter full for minutes.)
+        if (b.FlareReady)
+        {
+            if (readyIn != b) { readyIn = b; readyAt = b.Time; }
+            double reach = Math.Max(6, b.Flare?.Radius ?? 6);
+            int near = b.HostilesInRadius(p.X, p.Z, reach).Count;
+            if (p.Hp < b.MaxHp * 0.25 || b.HostilesInRadius(p.X, p.Z, 10).Any(e => e.Boss) || near >= 8 || (near >= 4 && b.Time - readyAt >= 8))
+            {
+                b.UseFlare(mx, mz);
+                readyIn = null;
+            }
+        }
+        else readyIn = null;
         if (p.Hp >= b.MaxHp * 0.33) return false;
         double before = p.Hp;
         j.Quaff(b);
@@ -208,6 +221,9 @@ public static class Pilot
 
     /// <summary>Off (--bossread 0) for the numbers of the hands before they knew the bosses.</summary>
     public static bool ReadsBosses = true;
+    /// <summary>When this run's Flare came ready (each run plays on one thread).</summary>
+    [ThreadStatic] static Battle? readyIn;
+    [ThreadStatic] static double readyAt;
 
     /// <summary>The boss read as a player who has died to it once (Play/Bosses/BossSense.cs,
     /// shared with the game's autopilot).</summary>

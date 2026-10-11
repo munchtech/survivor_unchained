@@ -769,7 +769,8 @@ public sealed partial class Battle
         double before = e.Hp;
         e.Hp -= dmg;
         // A boss's gate: it stops at its phase's mark; the rest is its Break.
-        if (e.HpFloor > 0 && e.Hp < e.HpFloor) { e.Overflow += e.HpFloor - e.Hp; e.Hp = e.HpFloor; }
+        double broke = 0;
+        if (e.HpFloor > 0 && e.Hp < e.HpFloor) { broke = e.HpFloor - e.Hp; e.Overflow += broke; e.Hp = e.HpFloor; }
         // A boss struck many times a second would never stop flashing white and its body
         // would be lost in it: a softer flash, so it stays itself under the build's blows.
         e.Flash = e.Boss ? Math.Max(e.Flash, 0.4) : 1;
@@ -789,7 +790,10 @@ public sealed partial class Battle
         if (o.Weapon != null) o.Weapon.DamageDealt += Math.Min(dmg, before);
         string by = o.Weapon?.Id ?? o.Credit ?? (o.Summon ? "summon" : credit ?? "other");
         DamageBy[by] = DamageBy.GetValueOrDefault(by) + Math.Min(dmg, Math.Max(0, before));
-        FlareOnDealt(e, Math.Min(dmg, Math.Max(0, before)), by);
+        // Health it lost, and a gate's Break only up to the tenth of its health the Break itself rewards:
+        // uncapped, poison ticking on a gated boss filled 30 Flares a fight.
+        double breakCap = 0.1 * e.MaxHp;
+        FlareOnDealt(e, Math.Max(0, before - Math.Max(0, e.Hp)) + Math.Max(0, Math.Min(e.Overflow, breakCap) - Math.Min(e.Overflow - broke, breakCap)), by);
         if (e.Boss) BossDamageBy[by] = BossDamageBy.GetValueOrDefault(by) + Math.Min(dmg, Math.Max(0, before));
         if (tags.Has(Tag.Spell) && !o.Dot) OnSpellHit(by);
         // Where the damage is coming from, for the director.

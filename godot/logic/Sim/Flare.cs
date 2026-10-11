@@ -56,7 +56,7 @@ public sealed partial class Battle
         return got;
     }
     /// <summary>The fill table, tuned by the harness (CLASSES.md §3.2).</summary>
-    public const double FillHurt = 0.55, FillAnswer = 35, FillPerfect = 10, FillBlock = 6, FillBoss = 0.8,
+    public const double FillHurt = 0.55, FillAnswer = 35, FillPerfect = 10, FillBlock = 6, FillBoss = 1.8,
         FillChampion = 2, FillChampionRate = 0.6, FillKill = 0.1, FillKillRate = 0.65;
     bool answeredTwice;
 
@@ -125,7 +125,7 @@ public sealed partial class Battle
         if (from is { } e && (e.Elite || e.Boss)) FillFlare(FillBlock, "block");
     }
 
-    /// <summary>Damage she dealt: a boss +0.8 for each 1% of its health (the Flare's own never refills it).</summary>
+    /// <summary>Damage she dealt: a boss +1.8 for each 1% of its health (the Flare's own never refills it).</summary>
     void FlareOnDealt(Enemy e, double dealt, string by)
     {
         if (Flare == null || by == "flare" || dealt <= 0 || e.MaxHp <= 0) return;
