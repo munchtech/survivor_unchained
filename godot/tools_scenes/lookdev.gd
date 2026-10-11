@@ -240,6 +240,19 @@ func _init():
 	rim.rotation_degrees = Vector3(-20, 200, 0)
 	rim.light_energy = 0.0 if OS.get_environment("NORIM") != "" else 1.2
 	root.add_child(rim)
+	# LIGHTS=mirror: the whole rig mirrored left for right, to judge one side
+	# under the light the other had (a mirrored camera alone is not that).
+	# LIGHTS=side: two matched lights raking from either side, no rim.
+	var lights = OS.get_environment("LIGHTS")
+	if lights == "mirror":
+		key.rotation_degrees.y = -key.rotation_degrees.y
+		rim.rotation_degrees.y = -rim.rotation_degrees.y
+	elif lights == "side":
+		key.rotation_degrees = Vector3(-25, 70, 0)
+		key.light_energy = 1.1
+		rim.rotation_degrees = Vector3(-25, -70, 0)
+		rim.light_energy = 1.1
+		rim.shadow_enabled = key.shadow_enabled
 
 # As People.OutfitMaterials: her outfit's pieces by shaders/heroine_outfit.gdshader
 # (OLDOUTFIT=1: as exported, to compare).

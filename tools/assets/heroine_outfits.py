@@ -467,6 +467,13 @@ def AND(*f):
     return np.minimum.reduce(f)
 
 
+def ANDR(a, b, r=0.01):
+    """Two fields' overlap (metres, positive inside) with its corners
+    rounded `r`, where AND leaves them sharp."""
+    qa, qb = np.maximum(r - a, 0.0), np.maximum(r - b, 0.0)
+    return r - np.hypot(qa, qb) - np.minimum(np.maximum(r - a, r - b), 0.0)
+
+
 def OR(*f):
     return np.maximum.reduce(f)
 
@@ -947,6 +954,7 @@ def relax(pos, tris, interior=0, edge=12):
 SPEC = {
     "steel": ("Metal038", (1.0, 1.0, 1.02), 175, 2.5, 1.0, None),
     "darksteel": ("Metal046B", (1.0, 1.0, 1.05), 95, 2.5, 1.0, None),
+    "iron": ("Metal046B", (1.0, 0.98, 0.96), 82, 2.5, 1.0, 0.42),
     "gold": ("Metal048C", (1.0, 0.92, 0.8), None, 3, 1.0, None),
     "rust": ("Metal053C", (1, 1, 1), None, 2.5, 0.8, None),
     "leather": ("Leather037", (1, 1, 1), None, 4, 0.0, None),
@@ -964,7 +972,7 @@ SPEC = {
     "darkpurple": ("Leather026", (0.55, 0.2, 0.9), 26, 3, 0.0, 0.35),
     "satin": ("rough_linen", (1.652, 1.379, 1.12), 235, 10, 0.0, 0.3),
     "greenleather": ("Leather026", (0.42, 0.85, 0.45), 52, 3, 0.0, None),
-    "bronze": ("Metal048C", (0.72, 0.58, 0.46), 95, 3, 1.0, 0.42),
+    "bronze": ("Brushed", (0.72, 0.58, 0.46), 95, 3, 1.0, 0.42),  # (our own brushing, along u: tools/assets/brushed_metal.py)
     "ink": ("rough_linen", (0.22, 0.26, 0.34), 22, 10, 0.0, 0.65),
     "stocking": ("rough_linen", (1.624, 1.356, 1.11), 232, 14, 0.0, 0.45, 0.42),
     # (the linen scan is blue, about (145, 171, 205): these two are tinted from
@@ -990,7 +998,7 @@ def mat(key):
     col = col * np.array(tint)
     if mean:
         col = col * (mean / col.mean())
-    if key in ("steel", "darksteel", "gold", "bronze"):
+    if key in ("steel", "darksteel", "iron", "gold", "bronze"):
         # Scratches and flecks in the scan read as white specks at this scale.
         med = np.median(col.reshape(-1, 3), 0)
         col = np.clip(col, med * 0.8, med * 1.18)
@@ -1267,7 +1275,7 @@ def bind_edges(name, pos, at, tris, key, width, height, overhang, thick, sigma=0
     return pos, beads
 
 
-def domes(name, pts, nrms, mkey, r=0.0028, src=None):
+def domes(name, pts, nrms, mkey, r=0.0028, src=None, rise=0.7):
     """Small domed studs (eyelets, rivets) at points, standing on normals."""
     P2, T2 = [], []
     nu, nv = 12, 4
@@ -1277,12 +1285,12 @@ def domes(name, pts, nrms, mkey, r=0.0028, src=None):
         t /= np.linalg.norm(t)
         b = np.cross(n, t)
         o = sum(len(x) for x in P2)
-        q = [p0 + n * r * 0.7]
+        q = [p0 + n * r * rise]
         for k in range(1, nv + 1):
             th = (np.pi / 2) * k / nv
             for j in range(nu):
                 ph = 2 * np.pi * j / nu
-                q.append(p0 + (np.cos(ph) * t + np.sin(ph) * b) * r * np.sin(th) + n * r * 0.7 * np.cos(th))
+                q.append(p0 + (np.cos(ph) * t + np.sin(ph) * b) * r * np.sin(th) + n * r * rise * np.cos(th))
         tri = [(o, o + 1 + j, o + 1 + (j + 1) % nu) for j in range(nu)]
         for k in range(nv - 1):
             a0, b0 = o + 1 + k * nu, o + 1 + (k + 1) * nu
@@ -1458,7 +1466,9 @@ def studs_on(name, objs, aims, mkey, r=0.0026):
             nrms.append(n)
     if not pts:
         return []
-    made = domes(name, pts, nrms, mkey, r=r)
+    # (judge 4: rivets read as black plastic beads: dark iron, lower and
+    # flatter headed, an even sheen in place of the scan's blotched one)
+    made = domes(name, pts, nrms, "iron" if mkey == "darksteel" else mkey, r=r, rise=0.42)
     for o_ in made:
         o_["hides"] = False
     return made
@@ -2086,6 +2096,9 @@ def over_nipples(pos, tris, least=0.0007, s=0.008, dome=0.065, rim_reach=0.02, f
     return out
 
 
+SHEET = {}   # (each piece's sheet as finished: points, triangles, weights, thickness)
+
+
 def piece(name, field, mkey, lift=0.003, thick=0.003, smooth=0, bevel=0.0012, trim=None, clear=None, soften=3, dome=False, keep_off=("Head", "neck_01"), cut=None, iron=0, hull=None, studs=None, budget=None, filled=False, edge=30, slot=True, bridge=False, bind=True, rigid=None, stiff=None):
     """A region of her skin made into a piece of her outfit. `rigid`, a
     centre, makes it a rigid plate: a fair dome round that centre (shell())
@@ -2192,6 +2205,7 @@ def piece(name, field, mkey, lift=0.003, thick=0.003, smooth=0, bevel=0.0012, tr
                                 stitch=kind(mkey) == "leather")
         dump(name, "4bound", pos, tris, at[:, -1])
         trim = None
+    SHEET[name] = (pos.copy(), tris.copy(), at[:, 3:3 + NB].copy(), thick)
     made = [finish(name, pos, at[:, 3:3 + NB], tris, mkey, thick, bevel, budget or (8000 if dome else 3000))] + beads
     if any("_stitch" in o.name for o in beads):
         made[0]["geo_stitch"] = True
@@ -2500,7 +2514,8 @@ def finish(name, pos, wt, tris, mkey, thick, bevel, budget=3000, scraps=True):
             top = -ax_
             th = np.arccos(np.clip((d_ / np.linalg.norm(d_, axis=1)[:, None]) @ top, -1, 1))
             phi = np.arctan2(d_ @ e2, d_ @ np.cross(e2, top))
-            uvv = np.c_[np.cos(phi), np.sin(phi)] * (th * R_)[:, None]
+            # (u round her arm, as on the lames: the brushing runs the same way)
+            uvv = np.c_[np.sin(phi), np.cos(phi)] * (th * R_)[:, None]
         for poly in me.polygons:
             for li in poly.loop_indices:
                 uv[li].uv = tuple(float(t) for t in uvv[me.loops[li].vertex_index])
@@ -2667,7 +2682,7 @@ def cups(cover=0.62, plunge=0.02, band=0.03, over=0.022, reach=0.088):
 
 
 def ribbon(name, ctrl, width, mkey, lift=0.0035, thick=0.0025, cols=5, trim=None, snap=True, centre=None,
-           hides=False, follow=False, flare=None):
+           hides=False, follow=False, flare=None, onto=None):
     """A strap as a strap is made: a ribbon of even width laid along a
     smooth curve on her skin, so its edges are two clean parallel lines.
     It moves with the skin under each point of it. With `centre` (a point
@@ -2681,8 +2696,22 @@ def ribbon(name, ctrl, width, mkey, lift=0.0035, thick=0.0025, cols=5, trim=None
     gusset: her thighs part the skin under its edges, and a strap's edges,
     staying put, let it out from under them). `flare` (width, length): the
     ribbon widens to that width over that length at its end, as a thong's
-    string opens into its gusset."""
+    string opens into its gusset. `onto`, a piece made before it: laid on
+    that piece's outside as seen from ahead, `lift` off it, moving with it
+    (a boning channel on a suit)."""
+    if onto is not None:
+        s_pos, s_tris, s_wt, s_thick = SHEET[onto]
+        s_bvh = BVHTree.FromPolygons([tuple(p) for p in s_pos], s_tris.tolist())
+        s_nrm = vertex_normals(s_pos, s_tris)
+        lift = lift + s_thick
+
     def lay(pts):
+        if onto is not None:
+            out_ = []
+            for p in pts:
+                hit = s_bvh.ray_cast(Vector((p[0], -0.6, p[2])), Vector((0, 1, 0)), 1.2)
+                out_.append(np.array(hit[0][:]) if hit[0] is not None else np.asarray(p, float))
+            return np.array(out_)
         if centre is None:
             return np.array([SKIN_BVH.find_nearest(Vector(p))[0][:] for p in pts])
         o = np.asarray(centre, float)
@@ -2705,7 +2734,11 @@ def ribbon(name, ctrl, width, mkey, lift=0.0035, thick=0.0025, cols=5, trim=None
         c[1:-1] = (c[:-2] + 2 * c[1:-1] + c[2:]) / 4
         if snap:
             c = lay(c)
-    nrm = np.array([SKIN_BVH.find_nearest(Vector(p))[1][:] for p in c])
+    if onto is not None:
+        # (its normal the sheet's own, outward as it was lifted)
+        nrm = s_nrm[cKDTree(s_pos).query(c)[1]]
+    else:
+        nrm = np.array([SKIN_BVH.find_nearest(Vector(p))[1][:] for p in c])
     for _ in range(4):
         nrm[1:-1] = (nrm[:-2] + 2 * nrm[1:-1] + nrm[2:]) / 4
     nrm /= np.linalg.norm(nrm, axis=1)[:, None]
@@ -2726,7 +2759,13 @@ def ribbon(name, ctrl, width, mkey, lift=0.0035, thick=0.0025, cols=5, trim=None
         nor = -nor
     # (one set of weights across its width, eased along it: it moves as a
     # strap; or, following, each line along it its own)
-    wt = soft_weights(pos).reshape(len(c), cols, -1)
+    if onto is not None:
+        # (the sheet's own weights under each point: it moves as the sheet does)
+        dq, jq = cKDTree(s_pos).query(pos, k=4)
+        wq = 1.0 / np.maximum(dq, 1e-5)
+        wt = ((s_wt[jq] * wq[:, :, None]).sum(1) / wq.sum(1)[:, None]).reshape(len(c), cols, -1)
+    else:
+        wt = soft_weights(pos).reshape(len(c), cols, -1)
     if not follow:
         wt[:] = wt.mean(1, keepdims=True)
     for _ in range(6):
@@ -3333,6 +3372,12 @@ def arcanist():
     # A boned front from her underbust to below her navel: stiff, so it no
     # longer shows every muscle of her stomach (judge 2), the rest still
     # skin-tight.
+    # (judge 4: a small round blister over each collarbone: fitted as the
+    # stomach is, the bone's knob no longer cast in the leather)
+    nz0 = head("neck_01")[2]
+    def collar(q):
+        return (ramp(q[:, 2], NIPPLE["l"][2] + 0.05, NIPPLE["l"][2] + 0.08) * ramp(-q[:, 2], -(nz0 + 0.012), -(nz0 - 0.008))
+                * ramp(-np.abs(q[:, 0]), -0.17, -0.14) * ramp(-q[:, 1], -(q[:, 1].mean() + 0.02), -q[:, 1].mean()))
     def front_panel(q):
         return (ramp(q[:, 2], WAIST - 0.11, WAIST - 0.08) * ramp(-q[:, 2], -(UNDERBUST - 0.005), -(UNDERBUST - 0.025))
                 * ramp(-np.abs(q[:, 0]), -0.12, -0.09) * ramp(-q[:, 1], -(q[:, 1].mean() + 0.02), -q[:, 1].mean()))
@@ -3401,7 +3446,14 @@ def arcanist():
         *ribbon("arcanist.thong", back_string(CROTCH + 0.155, CROTCH + 0.012), 0.016, "plumleather", lift=0.003, thick=0.003,
                trim=gold(0.004), snap=False, hides=True, flare=(0.034, 0.03)),
         *piece("arcanist.corset", corset, "plumleather", lift=0.0035, smooth=8, iron=60, trim=gold(0.008), keep_off=("Head",), filled=True, edge=120, soften=80,
-               bridge=True, cut=exact, stiff=[(0.03, front_panel), taut_gore]),
+               bridge=True, cut=exact, stiff=[(0.03, front_panel), (0.03, collar), taut_gore]),
+        # (judge 4: the front read as moulded latex. Four stitched boning
+        # channels, as a corset's front is made, from under her cups to
+        # her hips, raised on the suit and moving with it.)
+        *[o for k, x in enumerate((-0.088, -0.044, 0.044, 0.088))
+          for o in ribbon(f"arcanist.boning{'abcd'[k]}",
+                          [np.array([x + (x * 0.82 - x) * t, 0.0, (UNDERBUST - 0.024) + (1.03 - UNDERBUST + 0.024) * t]) for t in np.linspace(0, 1, 7)],
+                          0.012, "plumleather", lift=0.0002, thick=0.0007, onto="arcanist.corset")],
         *piece("arcanist.choker", choker, "blackleather", lift=0.002, soften=0, keep_off=("Head",)),
         *witch_hat("arcanist.hat", "plumleather", "darkpurple"),
     ]
@@ -3653,12 +3705,37 @@ def ranger():
     NEST.pop("ranger.pauldron", None)
     PL_LAP = 0.01
     plates = [(0.0, 0.11, 0.018), (-0.045, 0.1, 0.015), (-0.09, 0.09, 0.012), (-0.13, 0.08, 0.009)]
-    zones = [AND(cap(sh + np.array([0.02 * k, 0, dz]), r), Z - (sh[2] + dz - r * 0.55)) for k, (dz, r, _) in enumerate(plates)]
+    cut_z = [sh[2] + dz - r * 0.55 for dz, r, _ in plates]
+    # (judge 4: each lame was cut wider than the plate above it, so its ends
+    # stood out beside that plate, above its lower rim: a sliver and a kink
+    # at the dome's back, and every corner a sharp point the rolled rim
+    # ended in. Each plate's corners are now rounded `PL_ROUND`, and each
+    # lame's arc round her arm ends `PL_TUCK` inside the straight lower rim
+    # of the plate above, so both its ends go under that plate.)
+    PL_ROUND, PL_TUCK = 0.011, 0.012
+    ax_ = arm_ax / np.linalg.norm(arm_ax)
+    d_ = P - ctr
+    rad_ = d_ - np.outer(d_ @ ax_, ax_)
+    e0 = (sh - ctr) - ax_ * ((sh - ctr) @ ax_)
+    e0 /= np.linalg.norm(e0)
+    th_ = np.arctan2(rad_ @ np.cross(ax_, e0), rad_ @ e0)
+    rho_ = np.linalg.norm(rad_, axis=1)
+    zones = []
+    for k, (dz, r, _) in enumerate(plates):
+        z_ = ANDR(cap(sh + np.array([0.02 * k, 0, dz]), r), Z - cut_z[k], r=PL_ROUND)
+        if k:
+            # (the plate above's lower rim, where it is the straight cut)
+            rim = (np.abs(zones[k - 1]) < 0.003) & (Z < cut_z[k - 1] + 0.003) & (rho_ < 0.12)
+            lo, hi = th_[rim].min(), th_[rim].max()
+            arc = np.minimum(th_ - lo, hi - th_) * rho_ - PL_TUCK
+            print("PAULDRON lame %d: under plate %d from %.0f to %.0f deg round her arm" % (k, k - 1, np.degrees(lo), np.degrees(hi)))
+            # (a lame is a band: under the plate above only by its 10 mm overlap)
+            z_ = ANDR(ANDR(z_, PL_LAP - zones[k - 1], r=PL_ROUND), arc, r=PL_ROUND)
+        zones.append(z_)
     for k in reversed(range(len(plates))):
         lft = plates[k][2]
-        RIGID_UV[f"ranger.pauldron{k}"] = (ctr, arm_ax / np.linalg.norm(arm_ax), k > 0)
-        # (a lame is a band: under the plate above only by its 10 mm overlap)
-        zone = zones[k] if k == 0 else AND(zones[k], PL_LAP - zones[k - 1])
+        RIGID_UV[f"ranger.pauldron{k}"] = (ctr, ax_, k > 0)
+        zone = zones[k]
         # (a lame's centre on her arm at its own height: about the shoulder's
         # ball, a band down her arm fitted badly, 8 mm rms)
         ax_ = arm_ax / np.linalg.norm(arm_ax)
@@ -4105,7 +4182,7 @@ OUTFITS = {"warden": warden, "arcanist": arcanist, "ranger": ranger, "reaver": r
 # leather (grain, burnished edges, stitching), metal (forged, polished at
 # the edges, dark in the crevices), cloth (weave, sheen), gloss (latex,
 # satin: clean). Fur and sheer stockings have shaders of their own.
-KIND = {"steel": "metal", "darksteel": "metal", "gold": "metal", "bronze": "metal", "rust": "metal",
+KIND = {"steel": "metal", "darksteel": "metal", "iron": "metal", "gold": "metal", "bronze": "metal", "rust": "metal",
         "velvet": "cloth", "arcvelvet": "cloth", "linen": "cloth", "lace": "cloth", "ink": "cloth",
         "browncloth": "twill", "thread": "gloss", "satin": "gloss", "bone": "leather", "fur": "fur", "stocking": "sheer"}
 
