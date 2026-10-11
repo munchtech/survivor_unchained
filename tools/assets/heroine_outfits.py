@@ -2335,8 +2335,13 @@ def piece(name, field, mkey, lift=0.003, thick=0.003, smooth=0, bevel=0.0012, tr
                 # taut gore)
                 pos = st(pos, tris)
                 continue
-            wide, zone = st
+            wide, zone = st[:2]
             sw = zone(pos)
+            if len(st) > 2 and st[2] > 0:
+                # (faded to nothing over the last `st[2]` before its edge: fitted
+                # up to the edge, the plunge's foot stood 7 mm off her and its
+                # bound edge came out toothed, judge 6)
+                sw = sw * ramp(at[:, -1], 0.0, st[2])
             pos = mls_flat(pos, sw, (0.0, -1.0, 0.0), wide)
             # (lifted as a whole, where stiff, onto what it now bridges: pushed
             # off point by point it took the shape back)
@@ -3478,6 +3483,7 @@ def warden():
 PLUNGE_FOOT = float(os.environ.get("PLUNGE_FOOT", 0.022))   # (the round foot's radius)
 PLUNGE_FLARE = float(os.environ.get("PLUNGE_FLARE", 1.8))   # (how late its sides ease out: 1 straight)
 PLUNGE_FOLD = float(os.environ.get("PLUNGE_FOLD", 0.04))    # (how wide the cloth is fitted over the fold beside its foot)
+PLUNGE_FADE = float(os.environ.get("PLUNGE_FADE", 0.015))    # (the fit faded to nothing over this, before its edge)
 PLUNGE_TAUT = float(os.environ.get("PLUNGE_TAUT", 0.03))    # (the gore at its foot: the round its cloth spans her folds by)
 
 
@@ -3658,7 +3664,7 @@ def arcanist():
         *ribbon("arcanist.thong", back_string(CROTCH + 0.155, CROTCH + 0.012), 0.016, "plumleather", lift=0.003, thick=0.003,
                trim=gold(0.004), snap=False, hides=True, flare=(0.034, 0.03)),
         *piece("arcanist.corset", corset, "plumleather", lift=0.0035, smooth=8, iron=60, trim=gold(0.008), keep_off=("Head",), filled=True, edge=120, soften=80,
-               bridge=True, cut=exact, stiff=[(0.03, front_panel), (0.03, collar), (PLUNGE_FOLD, fold), taut_gore]),
+               bridge=True, cut=exact, stiff=[(0.03, front_panel), (0.03, collar), (PLUNGE_FOLD, fold, PLUNGE_FADE), taut_gore]),
         # (judge 4: the front read as moulded latex. Four stitched boning
         # channels, as a corset's front is made, from under her cups to
         # her hips, raised on the suit and moving with it.)
