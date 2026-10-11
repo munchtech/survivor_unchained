@@ -2,7 +2,26 @@
 
 From agent afb7deb41dbb5d904 (took over from a6e8e6d0f539943bb, cut off 7 October). Read `docs/team/README.md` ("Working lean", "Safety"), `RESUME.md`, `OWNER_NOTES.md` (the face's order and bar), this page, then `docs/team/face.md`. Read by section (grep, then line ranges). Hand off at about 300k.
 
-## Start here (11 Oct, agent a411e6c81f22f5c18 handing off; branch `worktree-agent-a2d632df7c7f21ec0`)
+## Start here (11 Oct, later; the successor handing off at 300k; branch `worktree-agent-a2d632df7c7f21ec0`)
+Scratch G = `C:\Users\munch\AppData\Local\Temp\claude\C--Users-munch-Desktop-survivorsunchained\91211d34-e079-4956-a2a0-7b52c04594a8\scratchpad\f14` (scripts diag*.ps1, set8.ps1, crops.py, boxes.py, lmbox.py, keyprof.py; shots `godot/.shots/d1_..d6_, g8_*`).
+**Latest judge: `G\judge_n1\verdict.md`, neck FAIL overall.** From the front it's close: the violet and the stubble are gone on all ten (under-jaw hue 41-48°, portraits 46-52°). Grade (rendering 70cdaef7, cherry-picked) PASS at 1:1. Lit-cheek drift +0-5° accepted.
+- **Done and committed (775 green):**
+  - Diagnosis: the grey-violet was light, not paint. Flat paint showed the same violet. With `--grade off` hue went 31° to 49°. The Night grade's KeepHue missed low-chroma skin; rendering fixed it, cherry-picked 075824d4 and 39ac8e4d.
+  - Skin shader `ambient_tint`: her colour in the sky's light, lamps divided back out. `People.HerAmbientTint` = 1.3/1.0/0.7.
+  - Grain halved under the jaw: `tools/assets/heroine_grain_jaw.py` (blender, unpainted blend) writes heroine_freckles.png's blue from `tools/assets/heroine_face/jaw_zone.png`, the union of the ten faces' cuts. Rerun it after heroine_freckles.py.
+  - `--skin-set k=a/b/c` sets vec3s. Look dev switches `--bounce E,F,D` and `--ssao off|R,I`; a bounce lights the cheek as much as the jaw, so no.
+  - Own's head paint verified loading (mask debug paint shows the cut).
+  - Outfits' ragged chest edge: their heroine_built.blend lost 9 image links, so the glb had no graft or head paint. `tools/assets/blend_relink.py` fixed it; outfits ran it and has been told. Mine is relinked too (`.prerelink.blend` backup).
+- **Next, worst first (judge n1's list, exact values in the verdict):**
+  1. The seam in profile (80°) on all ten: a grain step (the ramp ends at full grain at SPLIT, the graft has none from the collarbones but full up the neck: check the graft's blue and `HerGrain` there) and a tone/sheen step. Split the causes with grain 0 + flat paint at 80°. Done when no line at 2x and dE < 0.01 across.
+  2. Sunborn: her own ambient_tint about 0.9/1.0/0.8 (per face or per skin tone: add it per swatch next to HerToneFit), lit red x0.90, face L +0.04. Targets in the verdict.
+  3. Throat keys (Saffron worst, then Highborn's notch and bulge, Moonlit, Hard-won). `G\keyprof.py face_saffron` shows the key moves the throat 13 mm forward, ramped over the 2 cm above SPLIT. Re-ease the keys' deltas over the whole chin-to-SPLIT region (biharmonic in the jaw zone, delta 0 at SPLIT, recompute normal deltas as n_geo(shaped) - n_geo(base)) as a glb post-step beside heroine_seam.py, or cap at 5 mm. A solver if one pass fails.
+  4. Per-face ambient tint for the pale faces (about 1.5/1.0/0.58; per-face list in the verdict).
+  5. A dark core under the jaw (Highborn, Vixen): AO pooling, lift 30-40%. 6. A salmon line along the jaw's underside (terminator). 7. A lilac sheen on the upper chest and shoulders (body rough +0.05-0.1).
+  8. Then the f6 list below (lids, Moonlit's temple arc, brows) and the iris recalibration under `--rig-white` (judge ng1's advice: browns dE >= 0.03, pattern above sRGB 30).
+- Fey's 80° shot has a hair wisp in front of her throat; reshoot it. Faint pale patches low on her breasts in lookdev: unexamined.
+
+## Earlier start-here (11 Oct, agent a411e6c81f22f5c18 handing off)
 Scratch F = `C:\Users\munch\AppData\Local\Temp\claude\C--Users-munch-Desktop-survivorsunchained\181eef02-779f-45de-b419-31a949a4d27e\scratchpad\f13`. Integration and rendering 38cb3391 are merged (hair "two", the Look TAA+MSAA without DOF); 775 green at cf9e2888.
 **Latest judge: `F\judge_f6\verdict.md`: neck FAIL, lids PASS WITH FIXES.** Its sheets and numbers are beside it.
 - **Done:**
