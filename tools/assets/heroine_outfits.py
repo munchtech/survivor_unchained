@@ -2103,7 +2103,13 @@ def piece(name, field, mkey, lift=0.003, thick=0.003, smooth=0, bevel=0.0012, tr
         # (judge 3: Taubin's smoothing keeps every wave longer than a few
         # edges, so her abs stayed; a quadric fit `stiff[0]` wide drops them.)
         # (several zones, each fitted and lifted on its own: (width, field))
-        for wide, zone in (stiff if isinstance(stiff, list) else [stiff]):
+        for st in (stiff if isinstance(stiff, list) else [stiff]):
+            if callable(st):
+                # (or a piece's own shaping, handed its sheet: the arcanist's
+                # taut gore)
+                pos = st(pos, tris)
+                continue
+            wide, zone = st
             sw = zone(pos)
             pos = mls_flat(pos, sw, (0.0, -1.0, 0.0), wide)
             # (lifted as a whole, where stiff, onto what it now bridges: pushed
@@ -3173,7 +3179,7 @@ def warden():
 
 PLUNGE_FOOT = float(os.environ.get("PLUNGE_FOOT", 0.022))   # (the round foot's radius)
 PLUNGE_FLARE = float(os.environ.get("PLUNGE_FLARE", 1.8))   # (how late its sides ease out: 1 straight)
-PLUNGE_TAUT = float(os.environ.get("PLUNGE_TAUT", 0.015))   # (the gore at its foot: how wide a fold it spans)
+PLUNGE_TAUT = float(os.environ.get("PLUNGE_TAUT", 0.03))    # (the gore at its foot: the round its cloth spans her folds by)
 
 
 def arcanist():
@@ -3242,6 +3248,18 @@ def arcanist():
     def vhalf(z):
         return np.nan_to_num(_vh(np.clip(z, v_lo, v_hi)))
     print("PLUNGE U: foot round %.1f mm, %.1f cm across at %.1f cm above its foot" % (R_u * 1000, 2 * wt_ * 100, (zt - v_lo) * 100))
+    # The U cut by its signed distance, front on, from one line mirrored, its
+    # foot a true circle (cut by |x| - vhalf, which jumped where its foot
+    # began, the clip set the foot flat on a row of her points).
+    def uhalf(z):
+        r_ = np.clip(z - v_lo, 0.0, R_u)
+        return np.where(z < v_lo + R_u, np.sqrt(np.maximum(R_u * R_u - (R_u - r_) ** 2, 0.0)), vhalf(z))
+    zz_ = np.r_[v_lo + R_u * (1 - np.cos(np.linspace(0, np.pi / 2, 400))), np.arange(v_lo + R_u + 0.0002, v_hi + 0.15, 0.0002)]
+    xx_ = uhalf(zz_)
+    u_tree = cKDTree(np.r_[np.c_[-xx_[::-1], zz_[::-1]], np.c_[xx_, zz_]])
+    def u_dist(qx, qz):
+        d = u_tree.query(np.c_[qx, qz])[0]
+        return np.where((qz >= v_lo) & (np.abs(qx) < uhalf(qz)), -d, d)
     v_half = vhalf(Z)
     plunge = np.where(FRONT > 0.5, np.abs(X) - v_half, 1.0)
     plunge = np.where(Z < v_lo, 1.0, plunge)
@@ -3256,8 +3274,7 @@ def arcanist():
         r = qz - CROTCH
         wq = (0.0145 + 0.42 * np.maximum(r, 0)) * fr + (-0.01 + 1.5 * np.maximum(r - 0.13, 0)) * (1 - fr)
         legs = np.maximum(qz - 1.13, wq - np.abs(qx))
-        vh = vhalf(qz)
-        pl = np.where((fr > 0.5) & (qz >= v_lo), np.abs(qx) - vh, 1.0)
+        pl = np.where(fr > 0.5, u_dist(qx, qz), 1.0)
         return np.minimum(legs, pl)
     # A boned front from her underbust to below her navel: stiff, so it no
     # longer shows every muscle of her stomach (judge 2), the rest still
@@ -3265,14 +3282,55 @@ def arcanist():
     def front_panel(q):
         return (ramp(q[:, 2], WAIST - 0.11, WAIST - 0.08) * ramp(-q[:, 2], -(UNDERBUST - 0.005), -(UNDERBUST - 0.025))
                 * ramp(-np.abs(q[:, 0]), -0.12, -0.09) * ramp(-q[:, 1], -(q[:, 1].mean() + 0.02), -q[:, 1].mean()))
-    # The plunge's foot laid on a taut gore, as fabric spans there: not down
-    # into the fold under her breasts, where any line crossing it kinked
-    # (judge 3: a flat strip across her sternum, a corner at each side).
-    foot_c = np.array([0.0, 0.0, v_lo + 0.015])
-    def plunge_gore(q):
-        d = np.hypot(q[:, 0] / 1.3, q[:, 2] - foot_c[2])
-        t = np.clip(1 - d / 0.05, 0, 1)
-        return t ** 3 * (t * (6 * t - 15) + 10) * ramp(-q[:, 1], -(q[:, 1].mean() + 0.02), -q[:, 1].mean())
+    # The plunge's foot on a taut gore, as cloth spans there: not down into
+    # the fold under her breasts, where any line crossing it kinked (judge 3:
+    # a flat strip across her sternum, a corner at each side; fitted locally,
+    # a notch and a step seen from above, the fold kept). Her sheet, front
+    # on, is closed by a disc `PLUNGE_TAUT` round rolled up and down it (the
+    # fold spanned; her cleavage, which the U opens, not bridged), and across
+    # it below the foot (the groove of her sternum spanned); that lift, the
+    # same both sides, is laid on her sheet round the foot. It only lifts.
+    def taut_gore(pos, tris):
+        from scipy.ndimage import grey_closing, gaussian_filter
+        from scipy.interpolate import RegularGridInterpolator
+        g, R = 0.001, PLUNGE_TAUT
+        gx = np.linspace(-0.1, 0.1, 201)
+        gz = np.arange(v_lo - 0.07, v_lo + 0.12 + 1e-9, g)
+        def front_depth(pp, tt):
+            box = (np.abs(pp[:, 0]) < 0.13) & (np.abs(pp[:, 2] - v_lo - 0.025) < 0.13) & (pp[:, 1] < pp[:, 1].mean())
+            bvh = BVHTree.FromPolygons([tuple(p) for p in pp], tt[box[tt].all(1)].tolist())
+            y0 = pp[:, 1].min() - 0.3
+            d = np.full((len(gz), len(gx)), np.nan)
+            for i, j in np.ndindex(d.shape):
+                hit = bvh.ray_cast(Vector((gx[j], y0, gz[i])), Vector((0.0, 1.0, 0.0)))[0]
+                if hit is not None:
+                    d[i, j] = -hit[1]
+            return d
+        hs, hk = front_depth(pos, tris), front_depth(P_FILLED, TRI)
+        both = ~np.isnan(hs) & ~np.isnan(hk)
+        h = np.where(np.isnan(hs), hk + np.median(hs[both] - hk[both]), hs)
+        h = np.where(np.isnan(h), np.nanmin(h), h)
+        k = int(round(R / g))
+        s = np.sqrt(np.maximum(R * R - (np.arange(-k, k + 1) * g) ** 2, 0.0))
+        up = grey_closing(h, structure=s[:, None], mode="nearest")
+        across = grey_closing(h, structure=s[None, :], mode="nearest")
+        def sstep(t):
+            t = np.clip(t, 0.0, 1.0)
+            return t ** 3 * (t * (6 * t - 15) + 10)
+        below = sstep((v_lo + 0.012 - gz) / 0.012)[:, None]
+        c = np.maximum(up, h + below * (across - h))
+        c = np.maximum(c, c[:, ::-1])
+        lift_ = gaussian_filter(c - h, 2.0)
+        lf = RegularGridInterpolator((gz, gx), lift_, bounds_error=False, fill_value=0.0)
+        w = (sstep((0.085 - np.abs(pos[:, 0])) / 0.035) * sstep((pos[:, 2] - (v_lo - 0.065)) / 0.03)
+             * sstep((v_lo + 0.115 - pos[:, 2]) / 0.04) * ramp(-pos[:, 1], -(pos[:, 1].mean() + 0.02), -pos[:, 1].mean()))
+        lv = lf(np.c_[pos[:, 2], pos[:, 0]]) * w
+        probe = lambda x_, dz: float(lf([[v_lo + dz, x_]])[0]) * 1000
+        print("TAUT GORE: disc %.0f mm; lifted up to %.1f mm; at its foot %.1f, 15 mm below %.1f, beside it (25 mm out, 15 up) %.1f / %.1f, (35 out, 15 up) %.1f / %.1f"
+              % (R * 1000, lv.max() * 1000, probe(0, 0), probe(0, -0.015), probe(-0.025, 0.015), probe(0.025, 0.015), probe(-0.035, 0.015), probe(0.035, 0.015)))
+        out = pos.copy()
+        out[:, 1] -= lv
+        return out
     belt_z = 1.0 + 0.035 * X / 0.18
     belt = AND(0.016 - np.abs(Z - belt_z), 0.3 - arms)
     bones = OR(*[front_line(x, UNDERBUST - 0.022, x * 0.8, 1.025 - 0.025 * (abs(x) < 0.05), 0.009)
@@ -3289,7 +3347,7 @@ def arcanist():
         *ribbon("arcanist.thong", back_string(CROTCH + 0.155, CROTCH + 0.012), 0.016, "plumleather", lift=0.003, thick=0.003,
                trim=gold(0.004), snap=False, hides=True, flare=(0.034, 0.03)),
         *piece("arcanist.corset", corset, "plumleather", lift=0.0035, smooth=8, iron=60, trim=gold(0.008), keep_off=("Head",), filled=True, edge=120, soften=80,
-               bridge=True, cut=exact, stiff=[(0.03, front_panel), (PLUNGE_TAUT, plunge_gore)]),
+               bridge=True, cut=exact, stiff=[(0.03, front_panel), taut_gore]),
         *piece("arcanist.choker", choker, "blackleather", lift=0.002, soften=0, keep_off=("Head",)),
         *witch_hat("arcanist.hat", "plumleather", "darkpurple"),
     ]
