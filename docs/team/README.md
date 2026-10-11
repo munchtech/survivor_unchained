@@ -84,8 +84,8 @@ The main session keeps this current. It is the address list for SendMessage. Ret
 | Area | Agent | Status page |
 |---|---|---|
 | Voice (paused by the owner: no placeholders; final voices from ElevenLabs later) | a501b387a90d78b4e | docs/team/voice.md |
-| Story and writing (the writer: the approved rewrite, Act 1 first) | ac0c41b1b8a3813b5 (11 Oct night: 160 early lines LOCKED for recording (merged 9cbc654c); now day-cycle voice ids, A/B/toll into the treatment and bible, the sophistication pass, TOLL_SPEC judged) | docs/team/story.md |
-| Classes design (two types per calling, skill trees, ultimates on Q / right-click; plan only until the owner approves) | a7bf244a8d7dd3e67 (phase 1 session 2, worktree agent-a2a42cd8430929a76, branch classes/phase1; session 1 merged c9806045: board, lamp book, Act renames, tags, Bound. Now: Battle wiring (dash forms, reflexes, the Flare), harness, acceptance numbers) | docs/design/CLASSES.md |
+| Story and writing (the writer: the approved rewrite, Act 1 first) | a29c05b453e33b062 (12 Oct: 162 lines locked; canon in treatment and bible; TOLL_SPEC judged. Now: apply the sophistication pass, settle TOLL_SPEC, direct the 30 narration lines, lock Holloway, Maeca, Chid, narrator) | docs/team/story.md |
+| Classes design (two types per calling, skill trees, ultimates on Q / right-click; plan only until the owner approves) | a58dbbc2f5e2563fa (phase 1 session 3, worktree agent-a2a42cd8430929a76, branch classes/phase1; sessions 1-2 merged d05cd4f5: board, dash forms, reflexes, the Flare, warden rules. Now: reaver, arcanist, stalker rules, off-calling run, sweep, judge) | docs/design/CLASSES.md |
 | Combat, encounters, bosses, balance (paused; handoff ready at af6452e1) | — | docs/team/combat.md |
 | Animation (joints to perfection: wrists, follow-through, elbows, arms through body, sliding) | a4e62fc358dc5214a (successor 5, 11 Oct night, in worktree agent-af8dbda3195e438e4 @ 14fb9b71: death and get_up rekeyed, hand-speck cause fixed, all unjudged; next rebuild, throw axe, judge 12, crotch cut, death_back pop) | docs/team/animation.md |
 | UI design (the HUD keystone; portraits wait on the face) | — (handoff ready) | docs/team/ui_design.md |
@@ -97,7 +97,7 @@ The main session keeps this current. It is the address list for SendMessage. Ret
 | Performance and rendering (clarity in motion first) | PAUSED 11 Oct night (merged b87ad0c7: grade toe, portrait rig, LOD code; LOD art uncommitted in worktree agent-a4e0c353e61cca6dc). Next: oldleather LOD blob and re-judge, wilds toe, moonlight pass, fur round 2 (docs/handoff/performance.md "Paused here"). Resumes when a lead slot frees. On resume: her body now has two blend shapes (elbow_point_l/_r, from animation); the LOD must keep them | docs/team/performance.md |
 | Arena art | a0b61c278bdd5c994 | docs/team/arena_art.md |
 | Male hero (body, head, hair, outfits) | ab82cbe99e2937ddd | docs/team/hero_male.md |
-| Heroine face, hair and character creation's Look | a9e79acd9eb319d23 (successor 4, 11 Oct night, in worktree agent-a2d632df7c7f21ec0 @ 4aa76ffe: merge the grade toe and portrait rig, iris patch, neck re-measure, salmon line, the neck-length sheet for the owner) | docs/team/face.md |
+| Heroine face, hair and character creation's Look | a564d5c3b5d4dac62 (successor 5, 12 Oct, in worktree agent-a2d632df7c7f21ec0 @ 6fc6b368; jaw shade, salmon line, irises, ears passed; now owns the Look portrait rig for the orange skin, then the nape crack (heroine_seam.py weights), then the neck-length sheet (judges favor -1.5 cm)) | docs/team/face.md |
 | Asset provenance (what isn't ours, licences, credits, replacement plan) | a80ff0c7fd988b178 | docs/team/provenance.md |
 | Legal and Steam compliance (paused; docs/handoff/legal.md; wake before submission or for a new outfit) | — | docs/team/legal.md |
 | Loot and itemisation (paused, built and merged; docs/handoff/loot.md for a successor) | — | docs/team/loot.md |
