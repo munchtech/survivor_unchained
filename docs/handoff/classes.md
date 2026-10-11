@@ -49,3 +49,5 @@ Battle wiring (dash forms, reflexes, the Flare's meter, window and clutch, Q fir
 - Sweep (12 seeds, ~50 min): A = `--callings all --type both --seeds 12 --policies greedy --people pack --bot deft --beyond 0 --par 16`; `arena A --lamps full|empty --tiers 1,2,3,4 --level tier`, the same with `--tiers 4 --level 30`, and `--lamps full --tiers 1,2,3,4 --level tier --offcalling`; concatenate full+empty into fe.jsonl, `report --in` it, then `python godot/balance/classes_summary.py <dir>` (needs off.jsonl, full.jsonl, fe.md, fe30.md).
 - Last numbers: scratchpad `sweep12c\summary.txt` (won't survive the scratch sweep).
 
+
+HANDOFF READY: docs/handoff/classes.md on classes/phase1@1fb99f6f
