@@ -117,6 +117,23 @@ class Rig:
         rest_u = rest_u / np.linalg.norm(rest_u)
         rest_f = self.prest[end] - self.prest[mid]
         rest_f = rest_f / np.linalg.norm(rest_f)
+        if kind == "leg":
+            # A knee bends one way only. Placed on the wrong side of the line
+            # from hip to ankle (a foot keyed forward under a low hip), its
+            # hinge would be met by turning the thigh half round about its
+            # length: the knee bends right over the shin, but the thigh is
+            # wrung 150-180 degrees against the pelvis and the skin at the
+            # hip and groin turns inside out (chain_strike, chain_haul).
+            # Then the knee goes to its mirror across that line instead.
+            r1_ = qbetween(qrot(d_top, rest_u), E - S)
+            u_ = (E - S) / np.linalg.norm(E - S)
+            n_ = np.cross(E - S, W - E)
+            h_ = qrot(qmul(r1_, d_top), self.hinge[(kind, side)])
+            hp_, nn_ = h_ - u_ * np.dot(h_, u_), n_ - u_ * np.dot(n_, u_)
+            if np.linalg.norm(hp_) > 1e-6 and np.linalg.norm(nn_) > 1e-6:
+                if abs(math.atan2(np.dot(np.cross(hp_, nn_), u_), np.dot(hp_, nn_))) > math.radians(100):
+                    a_ = (W - S) / max(np.linalg.norm(W - S), 1e-9)
+                    E = S + 2 * a_ * np.dot(E - S, a_) - (E - S)
         r1 = qbetween(qrot(d_top, rest_u), E - S)
         d_top, d_mid = qmul(r1, d_top), qmul(r1, d_mid)
         u = (E - S) / np.linalg.norm(E - S)
