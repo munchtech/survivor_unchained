@@ -75,7 +75,8 @@ def main():
     k, b = used // 1000, budget // 1000
     if over:
         msg = (f"Context budget: you are at {k}k of {b}k. Wrap up now: no new experiments. Write your findings "
-               f"to a file, then return your report (or hand off, if you're a lead).")
+               f"to a file, then return your report (or hand off, if you're a lead). Never cut quality to fit: "
+               f"if the work needs more to reach the bar, say so and what's left.")
     else:
         msg = f"Context budget: {k}k of {b}k. Plan to finish and report before {b}k."
     print(json.dumps({"hookSpecificOutput": {"hookEventName": "PostToolUse", "additionalContext": msg}}))
