@@ -3755,7 +3755,7 @@ def pl_rim(pos, tris, F_):
     return g_[a0:b0 + 1], lo[a0:b0 + 1], rr[a0:b0 + 1]
 
 
-def pl_lame(name, above, F_, row, O, V, E=0.016, tuck=0.0045, taper=-0.04, flare=0.004, joggle=0.004,
+def pl_lame(name, above, F_, row, O, V, E=0.016, tuck=0.0045, taper=-0.04, flare=0.004, joggle=0.003,
             rc=0.010, thick=0.0015, rv_end=0.022, rv_up=0.009):
     """A lame: a band round her arm under the rim of the plate above it, built
     in her arm's frame and never drawn on her skin (an outline on her skin,
@@ -3816,7 +3816,7 @@ def pl_lame(name, above, F_, row, O, V, E=0.016, tuck=0.0045, taper=-0.04, flare
     jog = joggle * np.clip(-d_ / O, 0, 1) ** 2
     fl = flare * np.clip((d_ - (V - 0.012)) / 0.012, 0, 1) ** 2
     ov = (field > -0.003) & (d_ < 0.001) & np.isfinite(rad_above)
-    bound = rad_above - tuck - taper * d_ + jog
+    bound = rad_above - tuck - taper * d_
     lo_t, hi_t = th_g[ov].min(), th_g[ov].max()
 
     def xb(th):
