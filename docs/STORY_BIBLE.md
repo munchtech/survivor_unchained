@@ -1648,5 +1648,6 @@ The sophistication pass (11 October): `mother.cut` (`mam`, `plain` or `none`:
 what Chid cuts on the marker, `chid.cut`; read by his hub, which offers `none`
 the way back, by the marker's later text, and by the overnight rule
 `mother.carved`, which the marker reads for MAM; Act 2's `scene_still_plain`
-reads `none`, and sets `mother.chisel` on a second silence, which closes his hub's offer; C41 may read it)
+reads `none`, and sets `mother.chisel` on a second silence; C41 may read it;
+`mother.chisel` closes his hub's offer)
 and the overnight rule `decoy.north`.

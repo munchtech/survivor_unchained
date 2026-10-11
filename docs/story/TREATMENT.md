@@ -349,8 +349,8 @@ you something at dusk..."), a trunk scene, `scene_still_plain`:
 Why here: the dawn has just taken the last of her mother's voice, and the
 stone is the one place a word could still be kept; "It'll keep" is shown not
 to. Under A every line holds a second way: he sat up all night with the woman
-he walked to the edge; "I know who's in it": he did, by name; and the man who never stops
-talking answers her silence with his own. C32 needs no branch: Rook's "She was
+he walked to the edge; "I know who's in it": he did, by name; and the man
+who never stops talking answers her silence with his own. C32 needs no branch: Rook's "She was
 your mam, pet." gives back the word the player cut, or the one they kept from
 the stone.
 

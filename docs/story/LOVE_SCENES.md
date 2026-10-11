@@ -32,9 +32,10 @@ Maeca five or six), and the narrated nodes in the room rewritten as below.
 Nothing else in the romances changes.
 
 **Where the door is.** Sella: from the blue room (`sella.stairs_room` on) to
-the morning after. Maeca: from under the hides (`maeca.blind` on) to the grey
+the morning after. Maeca: from under the hides (`maeca.blind` on) to the gray
 light. Any narrator sentence that sees the bed is behind the door, the
-mornings after included (the editor-judge's ruling, 11 October).
+mornings after included (the story lead's ruling, on the editor-judge's
+advice, 11 October).
 `maeca.blind_morning` stays outside: she is up and barefoot in the frost. The
 walk to the Blind, the fire, and Keegan's and Rav's suppers stay narrated:
 they are not bedrooms.
