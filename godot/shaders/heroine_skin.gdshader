@@ -117,6 +117,13 @@ uniform vec3 soft_tone = vec3(1.0);
 // the fill can't reach, the far side of her neck under her jaw went blue-grey (hue -61), and in the moon her whole body
 // lavender under a peach face (the owner, 10 October 2026; face 21). 1 as before.
 uniform vec3 key_tone = vec3(1.0);
+// Her neck and body richer where she turns from the lens (People.HerEdgeTone, linear, on key_tone, its lightness kept):
+// her portraits' neck sides are richer than their lit fronts (Oklab C 1.6 times), ours were 0.7-0.8 times at every
+// key_tone, the far side of her neck lit by the key at 0.8 of her lit neck's light (face 22). Weighted by
+// 1 - smoothstep(edge_from, edge_to, n.v), below her head (ao_map's seam ease), so her face and ears keep theirs.
+uniform vec3 edge_tone = vec3(1.0);
+uniform float edge_from = 0.2;
+uniform float edge_to = 0.7;
 // A body's own relief, baked from its sculpt (the hero's: every muscle and
 // vein his reduced mesh has only in paint), the pores laid over it.
 uniform sampler2D relief : hint_normal, filter_linear_mipmap_anisotropic;
@@ -184,9 +191,14 @@ uniform float rim_tint = 0.6;
 // The sheen a lamp behind her gives, against one in front (People.HerBackSpec): skin's fine relief breaks up a light
 // that grazes it from behind; at full, the cool rim lamp lay over her collarbones and upper chest as a lilac sheen.
 uniform float back_spec = 1.0;
+// (a developer's view, --skin-set *:dbg_gate=1 with --look-ambient 0 --tonemap linear --grade off: each lamp's light at
+// the point, shadow and its angle in (ATTENUATION times ndl, times dbg_gate), red the key's path in front of her, green
+// the soft lamps, blue the lamps behind her)
+uniform float dbg_gate = 0.0;
 varying float shade_w;
 varying float lift_w;
 varying float soft_w;
+varying float edge_w;
 
 void vertex() {
 	if (tuck_channel >= 0) {
@@ -279,8 +291,12 @@ void fragment() {
 	float wd = (INV_VIEW_MATRIX * vec4(NORMAL, 0.0)).y;
 	shade_w = mix(1.0, smoothstep(down_from, down_to, -wd), shade_down) * mix(1.0, aot.a, shade_zone);
 	soft_w = 1.0 - fm.b;
+	edge_w = (seam_ease ? 1.0 - aot.g : 1.0) * (1.0 - smoothstep(edge_from, edge_to, dot(NORMAL, VIEW)));
 	lift_w = (seam_ease ? 1.0 - aot.g : 1.0) * smoothstep(lift_from, lift_to, wd);
 	ALBEDO *= ambient_tint;
+	if (dbg_gate > 0.0) { ALBEDO = vec3(1.0); SPECULAR = 0.0; BACKLIGHT = vec3(0.0); }
+	// (dbg_gate 3+: her maps instead, emitted: red ao_map's shade, green its seam ease, blue the face's paint (features' blue))
+	if (dbg_gate > 2.5) { ALBEDO = vec3(0.0); EMISSION = (dbg_gate - 3.0) * vec3(aot.r, aot.g, fm.b); }
 }
 
 // Each lamp's light on her, as Godot's own (Burley's diffuse, GGX's sheen,
@@ -295,6 +311,12 @@ float schlick(float u) {
 void light() {
 	float ndl = dot(NORMAL, LIGHT);
 	float c_ndl = max(ndl, 0.0);
+	if (dbg_gate > 0.0) {
+		float kw = mix(1.0, smoothstep(shade_from, shade_to, SPECULAR_AMOUNT), shade_by_soft);
+		float bh = step(0.25, dot(-LIGHT, VIEW));
+		DIFFUSE_LIGHT += (dbg_gate > 1.5 ? (dbg_gate - 2.0) * vec3(c_ndl * kw * (1.0 - bh), ATTENUATION * kw * (1.0 - bh), 0.0)
+			: dbg_gate * ATTENUATION * c_ndl * vec3(kw * (1.0 - bh), 1.0 - kw, kw * bh));
+	} else {
 	float c_ndv = max(dot(NORMAL, VIEW), 1e-4);
 	vec3 h = normalize(VIEW + LIGHT);
 	float c_ndh = clamp(dot(NORMAL, h), 0.0, 1.0);
@@ -327,6 +349,11 @@ void light() {
 		vec3 klw = vec3(0.2126, 0.7152, 0.0722);
 		kt = mix(vec3(1.0), key_tone * dot(ka, klw) / max(dot(ka * key_tone, klw), 1e-4), key_w * soft_w);
 	}
+	if (any(notEqual(edge_tone, vec3(1.0)))) {
+		vec3 ea = ALBEDO * un * kt;
+		vec3 elw = vec3(0.2126, 0.7152, 0.0722);
+		kt *= mix(vec3(1.0), edge_tone * dot(ea, elw) / max(dot(ea * edge_tone, elw), 1e-4), key_w * soft_w * edge_w);
+	}
 	DIFFUSE_LIGHT += LIGHT_COLOR * diffuse * ATTENUATION * un * rich * kt * mix(1.0, body_lift, key_w * lift_w * (1.0 - behind))
 		* mix(vec3(1.0), soft_tone, (1.0 - key_w) * soft_w * shade_by_soft);
 	// the fine down at her edges, against a light from behind her only (lit
@@ -347,5 +374,6 @@ void light() {
 		float f90 = clamp(f0 * 50.0, 0.0, 1.0);
 		float f = f0 + (f90 - f0) * schlick(c_ldh);
 		SPECULAR_LIGHT += c_ndl * d_ggx * f * v_ggx * LIGHT_COLOR * ATTENUATION * SPECULAR_AMOUNT * mix(1.0, back_spec, behind);
+	}
 	}
 }

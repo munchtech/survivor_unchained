@@ -755,6 +755,7 @@ public static class People
                         m.SetShaderParameter("body_lift", BodyLift(look));
                         m.SetShaderParameter("soft_tone", SoftTone(look));
                         m.SetShaderParameter("key_tone", KeyTone(look));
+                        m.SetShaderParameter("edge_tone", EdgeTone(look));
                         m.SetShaderParameter("freckle_amount", HerFreckles(look));
                         HerShade(m, look);
                     }
@@ -1023,6 +1024,7 @@ public static class People
             m.SetShaderParameter("body_lift", BodyLift(look));
             m.SetShaderParameter("soft_tone", SoftTone(look));
             m.SetShaderParameter("key_tone", KeyTone(look));
+            m.SetShaderParameter("edge_tone", EdgeTone(look));
             m.SetShaderParameter("scatter", HerScatter);
             m.SetShaderParameter("back_spec", HerBackSpec);
         }
@@ -1305,15 +1307,30 @@ public static class People
     /// are left as they were. (--key-tone R,G,B: another, for judging it.)</summary>
     static readonly Dictionary<string, Vector3> HerKeyTone = new()
     {
-        // (0.6 of the far neck's fit (r9, in log): at all of it her lit neck went yellow and rich, Oklab C .058 h61 against
-        // her portrait's .035 h56, own; s10b)
-        ["own"] = new(1.179f, 0.956f, 0.764f), ["highborn"] = new(1.117f, 0.967f, 0.805f), ["vixen"] = new(1.138f, 0.963f, 0.764f),
-        ["moonlit"] = new(1.144f, 0.957f, 0.790f), ["fey"] = new(1.127f, 0.967f, 0.784f),
+        // (r11: her lit neck to her portrait's (own C .034 h52 against .035 h56); r10's 0.6 of the far neck's fit left it
+        // rich, C .045 h58. The richer far side of her neck is HerEdgeTone's. Own fitted (s11b), the others scaled as own.)
+        ["own"] = new(1.080f, 0.985f, 0.870f), ["highborn"] = new(1.053f, 0.985f, 0.890f), ["vixen"] = new(1.062f, 0.983f, 0.870f),
+        ["moonlit"] = new(1.065f, 0.981f, 0.880f), ["fey"] = new(1.057f, 0.985f, 0.880f),
     };
 
     static Vector3 KeyTone(Look look) => SurvivorUnchained.Args.Get("key-tone") is string kt && kt.Split(',') is [var r, var g, var b2]
         ? new(float.Parse(r, System.Globalization.CultureInfo.InvariantCulture), float.Parse(g, System.Globalization.CultureInfo.InvariantCulture), float.Parse(b2, System.Globalization.CultureInfo.InvariantCulture))
         : ToneTrim && HerKeyTone.TryGetValue(FaceId(look), out var v) ? v : Vector3.One;
+
+    /// <summary>Her neck and body richer where she turns from the lens (the skin shader's edge_tone, on key_tone, linear,
+    /// its lightness kept; below her head). Her portraits' neck sides are 1.6 times as rich as their lit fronts (Oklab C);
+    /// ours were 0.7-0.8 times at every key tone, as the key lights the far side of her neck at 0.8 of her lit neck's light
+    /// (face 22, s11a). (--edge-tone R,G,B: another, for judging it.)</summary>
+    static readonly Dictionary<string, Vector3> HerEdgeTone = new()
+    {
+        // (own fitted at the Look, r9 pose (s11b: far neck C .046 h50 against her portrait's shade .056 h56); the others as own)
+        ["own"] = new(1.45f, 0.90f, 0.54f), ["highborn"] = new(1.45f, 0.90f, 0.54f), ["vixen"] = new(1.45f, 0.90f, 0.54f),
+        ["moonlit"] = new(1.45f, 0.90f, 0.54f), ["fey"] = new(1.45f, 0.90f, 0.54f),
+    };
+
+    static Vector3 EdgeTone(Look look) => SurvivorUnchained.Args.Get("edge-tone") is string et && et.Split(',') is [var r, var g, var b2]
+        ? new(float.Parse(r, System.Globalization.CultureInfo.InvariantCulture), float.Parse(g, System.Globalization.CultureInfo.InvariantCulture), float.Parse(b2, System.Globalization.CultureInfo.InvariantCulture))
+        : ToneTrim && HerEdgeTone.TryGetValue(FaceId(look), out var v) ? v : Vector3.One;
 
     static float BodyLift(Look look) => SurvivorUnchained.Args.Has("body-lift") ? (float)SurvivorUnchained.Args.Num("body-lift", 1f)
         : ToneTrim && HerBodyLift.TryGetValue(FaceId(look), out var v) ? v : 1f;
