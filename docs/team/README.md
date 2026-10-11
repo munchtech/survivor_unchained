@@ -87,7 +87,7 @@ The main session keeps this current. It is the address list for SendMessage. Ret
 | Story and writing (the writer: the approved rewrite, Act 1 first) | a17db00d9ec9596ca (11 Oct: A and B approved; three WTF premise twists for the owner, then the early lines locked for ElevenLabs) | docs/team/story.md |
 | Classes design (two types per calling, skill trees, ultimates on Q / right-click; plan only until the owner approves) | a24056785568e24a5 (11 Oct: research PoE, Last Epoch, Diablo, Grim Dawn; docs/design/CLASSES.md) | docs/design/CLASSES.md |
 | Combat, encounters, bosses, balance (paused; handoff ready at af6452e1) | — | docs/team/combat.md |
-| Animation (joints to perfection: wrists, follow-through, elbows, arms through body, sliding) | a20d622060130a90a (successor 10 Oct night, in worktree agent-af8dbda3195e438e4) | docs/team/animation.md |
+| Animation (joints to perfection: wrists, follow-through, elbows, arms through body, sliding) | a8e3b95318cc82e94 (successor 11 Oct evening, in worktree agent-af8dbda3195e438e4: bracer rim, throw left arm, thigh, elbow corrective) | docs/team/animation.md |
 | UI design (the HUD keystone; portraits wait on the face) | — (handoff ready) | docs/team/ui_design.md |
 | UI art (paused; handoff ready at cd0f4ab6) | — | docs/team/ui_art.md |
 | Crafting (research, design, build) (paused; handoff ready at ed429efb) | — | docs/team/crafting.md |
