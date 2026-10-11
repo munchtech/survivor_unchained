@@ -19,14 +19,15 @@ woman of about sixty).
 
 **Locked for recording (11 October):** the narrator's prologue lines and C01 to C04, Vonnra's far voice in the prologue, the Warden's, Grimtunnel's, the dead Watchman's and the gate guard's prologue lines, and Rook's and Brannoc's Act 1 lines (with the narrator's parts inside them). Each is marked **LOCKED FOR RECORDING** in its packet (`tools/vo/locked.json`; `python tools/vo/lock.py --list`). The rest of the narrator, Vonnra and Brannoc stays on hold. A locked line whose words change later shows **HOLD** again until the story lead re-locks it.
 
+**Locked for recording (11 October, later): the love scenes, B, after their judge.** Sella's blue room whole (the stairs up, the dark nights, the stop and the paid sleep, the mornings) and Maeca's Blind whole (the walk, the fire, under the hides, both gray lights, the heart), with the narrator's one line behind the door: the bolt, heard from the stairs (`dlg.sella.free_bolt.0.p0`, one take that also serves `free_sleep_bed`). Nothing else of the narrator's behind the door is ever recorded: `tools/vo/elevenlabs.py` holds any narrator part there for good, locked or not (`BOLT`, `behind_door`).
+
 ---
 
 ## Sella (ready)
 
-Two lines change, two takes only need renaming, and two barks are new. Five
-more are new **only if the owner chooses the lovers' own lines** for the love
-scenes (see `docs/story/LOVE_SCENES.md`); with the other version (the
-narration as unvoiced text) Sella records nothing more.
+Two lines change, two takes only need renaming, and two barks are new. The
+love scenes are B (the owner, 6 October: the lovers' own lines), so the blue
+room's lines are new takes too: see "The love scenes (B)" below.
 
 The packet the owner recorded from was a little behind the game's data
 (regenerated now, 6 October): one line had been reworded on 4 October, two
@@ -60,26 +61,31 @@ remark ("You came up behind me without a sound") stays, and the other
 speakers' copies of it are rewritten instead; "Holloway's drinking more than
 he's paying" stays, and now plants that someone else pays for his drink.
 
-### New, only if the owner chooses the lovers' own lines
+### The love scenes (B)
 
-In this version the narrator stops at the blue room's door, and the night
-plays on a dark screen in Sella's voice alone. Each line replaces the
-narration of one night. The two short takes already recorded inside the
-narration ("Don't," and "You told me anyway,") are folded into the new
-lines, so they would be re-recorded as part of them.
+The narrator stops at the blue room's door, and the room is Sella's alone:
+the nights on a dark screen, the mornings lit. Every line below is a new take
+(the old "Don't," and "You told me anyway," inside the narration fold into
+`night.0` and `free_night.0`; the narrator's asides in the mornings became her
+own directions, so those lines are one take now, not parts). Record them only
+when each shows **LOCKED FOR RECORDING** in `sella.md`; the directions are
+there (`tools/vo/direction/love_b.json`). In the dark: low and close, nearly
+a whisper, never breathy; each "..." a real silence of two to four seconds
+(the importer keeps up to four for these); a laugh that sounds made is cut.
+The room's sounds (water, buckles, coins, the step, the bolt) are the game's.
 
-| Id | Old | New | Why |
-|---|---|---|---|
-| `dlg.sella.night.2` (the first night) | narration | NEW: Bath's warm. Was warm. ...Leave it, love. Come here. There. Now, any hand of mine that's not welcome, you say, and I'll find it somewhere it is. ...That's it. Slow. Nobody's paying me to hurry. ...Listen. Can't hear the road from up here. Can't hear the river. That's what the fifteen's for. | The lovers' own lines, in place of the narrator in the room. |
-| `dlg.sella.night.1` (three nights or more) | narration | NEW: That's the floor, then. ...Not with my shift, you great— give it here. ...Right. I'll tell you what I'm going to do, love, and then I'm going to do it. First I'm going to— ...First. ...You know. Come here. | As above; the gaps she doesn't finish are the scene. |
-| `dlg.sella.night.0` (the cold bath) | narration, with "Don't," | NEW: Water's gone cold. ...Leave it. I'm not walking three steps for a bed; bring the quilt. ...Easy. Easy, love. ...Don't. ...Don't look at me. ...I'm not getting dressed. Don't ask me why. | As above; replaces the "Don't," take. |
-| `dlg.sella.free_night.0` (she was told knowing) | narration, with "You told me anyway," | NEW: Hold still. My hands don't know what they're doing. ...Seven years, love, and I can't undo a lace. Don't you laugh. Don't you dare— ...Wait. ...All right. All right. ...You told me anyway. | As above; replaces the "You told me anyway," take. |
-| `dlg.sella.free_night.1` | narration | NEW: No talking. I talk for money. ...Stay like that. Let me look. ...I'm not making a joke of it. Don't you make one. ...Yes. | As above. |
+`sella.stairs_room.4`, `sella.stairs_room.5`, `sella.stairs_room.6`, `sella.stairs_room.7`, `sella.stairs_room.0`, `sella.stairs_room.1`, `sella.stairs_room.2`, `sella.stairs_room.3`, `sella.stairs_rules.0`, `sella.stairs_rules.1`, `sella.rest_bed.0`, `sella.night.2`, `sella.night.1`, `sella.night.0`, `sella.stop_paid.0`, `sella.rest_night_paid.0`, `sella.rest_dark.0`, `sella.free_door.0`, `sella.free_door.1`, `sella.free_want.0`, `sella.free_stop.0`, `sella.free_sit.0`, `sella.free_sleep.0`, `sella.free_sleep_bed.0`, `sella.free_bolt.0`, `sella.free_night.0`, `sella.free_night.1`, `sella.morning.0`, `sella.rest_morning.0`, `sella.rest_morning.1`, `sella.free_morning.0`, `sella.free_m_downstairs.0`, `sella.free_m_who.0`, `sella.free_m_kiss.0`, `sella.sleeptalk.0`, `sella.door.0`, `sella.door_years.0`, `sella.door_south.0`, `sella.past.0`, `sella.past.1`, `sella.past.2`, `sella.past.3`, `sella.past.4`, `sella.past.5`, `sella.past.6`, `sella.past.7` (46 takes; the ids drop `dlg.`). `stairs_rules.1` and `rest_bed.0` keep their words but are on the dark screen now, so any old take of them is too loud: take them again.
 
-Directions for these five, if they are recorded: low and close, a dark room,
-nearly a whisper but never breathy; she laughs on the first two and does not
-on the last three. Each "..." is a real silence of two to four seconds, cut
-in the edit.
+---
+
+## Maeca (the Blind, B: locked 11 October; the rest of her waits)
+
+Her love scenes are B too: under the hides she speaks for herself, and the
+narrator only opens the gray light outside. These are locked for recording
+(each shows **LOCKED FOR RECORDING** in `maeca.md`), ahead of the rest of
+her; the directions are in `love_b.json`, as for Sella's.
+
+`maeca.blind.0`, `maeca.blind.1`, `maeca.blind_morning.1`, `maeca.blind_dark.0`, `maeca.blind2_feet.0`, `maeca.blind2_let.0`, `maeca.blind_dark.1`, `maeca.blind_dark.2`, `maeca.blind_dark.3`, `maeca.told_true.0`, `maeca.told_true.1`, `maeca.told_true.2`, `maeca.told_true.3`, `maeca.told_little.0`, `maeca.blind3_morning.0` (15 takes).
 
 ---
 

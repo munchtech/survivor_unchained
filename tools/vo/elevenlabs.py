@@ -47,18 +47,7 @@ HOLD_VOICES: dict = {
 # Packets the story lead has checked and marked final (voice: date).
 FINAL = {"narrator": "2026-10-03", "rook": "2026-10-03", "holloway": "2026-10-03", "brannoc": "2026-10-03", "sella": "2026-10-03"}
 # Lines waiting on the story lead or the owner: (id prefix, why).
-_ROOM = "the love scenes go to B (the owner, 6 October): the narrator stops at the door, and these are rewritten as the lovers' own lines"
-HOLD_LINES = (("dlg.keegan.vonnra.", "the story lead's confirmation of Keegan's kenning"),
-              # Behind the door (docs/story/LOVE_SCENES.md "Where the door is"): never the narrator's to record.
-              # Any narrator sentence that sees the bed is behind it, the mornings after included.
-              *((p, _ROOM) for p in ("dlg.maeca.blind.", "dlg.maeca.blind_dark.", "dlg.maeca.blind2_", "dlg.maeca.told_",
-                                     "dlg.sella.stairs_room.", "dlg.sella.stairs_rules.", "dlg.sella.night.", "dlg.sella.stop_",
-                                     "dlg.sella.rest_night", "dlg.sella.rest_bed.", "dlg.sella.rest_dark.", "dlg.sella.free_night.",
-                                     "dlg.sella.free_door.", "dlg.sella.free_want.", "dlg.sella.free_stop.", "dlg.sella.free_sit.",
-                                     "dlg.sella.free_sleep", "dlg.sella.free_bolt.", "dlg.sella.free_m_",
-                                     "dlg.sella.morning.", "dlg.sella.rest_morning.", "dlg.sella.free_morning.", "dlg.sella.past.",
-                                     "dlg.sella.sleeptalk.", "dlg.sella.door.", "dlg.sella.door_years.", "dlg.sella.door_south.",
-                                     "dlg.maeca.blind3_morning.")))
+HOLD_LINES = (("dlg.keegan.vonnra.", "the story lead's confirmation of Keegan's kenning"),)
 TAG = {"beat": "…", "breath": "[inhales]", "laugh": "[laughs]", "laughs": "[laughs]", "chuckle": "[chuckles]",
        "sigh": "[sighs]", "sighs": "[sighs]", "sniff": "[sniffs]", "gasp": "[gasps]", "silence": "[long pause]", "name": "",
        "whisper": "[whispers]"}
@@ -107,7 +96,40 @@ def lock_state(line: dict) -> str:
     return "broken" if st == "gone" else st
 
 
+# Behind the door (docs/story/LOVE_SCENES.md "Where the door is"; the owner chose B, 6 October): only
+# the lovers speak there. The narrator stops at the door, so a narrator's part behind it is never
+# recorded, locked or not. The one exception is the bolt, which she hears from the stairs.
+DOOR = ("dlg.sella.stairs_room.", "dlg.sella.stairs_rules.", "dlg.sella.night.", "dlg.sella.stop_",
+        "dlg.sella.rest_night_paid.", "dlg.sella.rest_bed.", "dlg.sella.rest_dark.", "dlg.sella.rest_morning.",
+        "dlg.sella.morning.", "dlg.sella.free_night.", "dlg.sella.free_morning.", "dlg.sella.past.",
+        "dlg.sella.sleeptalk.", "dlg.sella.door.", "dlg.sella.door_years.", "dlg.sella.door_south.",
+        "dlg.sella.free_door.", "dlg.sella.free_want.", "dlg.sella.free_stop.", "dlg.sella.free_sit.",
+        "dlg.sella.free_sleep.", "dlg.sella.free_sleep_bed.", "dlg.sella.free_bolt.", "dlg.sella.free_m_",
+        "dlg.maeca.blind.", "dlg.maeca.blind_dark.", "dlg.maeca.blind2_", "dlg.maeca.told_",
+        "dlg.maeca.blind3_")
+DOOR_BOLT = ("dlg.sella.free_bolt.0", "dlg.sella.free_sleep_bed.0")
+# The exception is this sentence, not those ids: anything else the narrator says in them (A's "Her
+# forehead is against the door", pasted back after the bolt) is behind the door like the rest.
+BOLT = ("Behind the door, the bolt sticks halfway; nobody has ever shot it. Swearing, and a shoulder to it, and then "
+        "it goes home, with a sound like the last coin put down on a counter.")
+DOOR_WHY = "behind the door: the narrator stops at the door (docs/story/LOVE_SCENES.md); never recorded"
+
+
+def behind_door(line: dict, voice: str) -> bool:
+    """A narrator's part behind the door: held for good, whatever the lock says. The bolt is exempt
+    only where every narrator part of the line is exactly BOLT (a line without its segments can't
+    show that, so it is held)."""
+    if voice != "narrator" or not line["id"].startswith(DOOR):
+        return False
+    if line["id"] not in DOOR_BOLT:
+        return True
+    told = [s["text"] for s in line.get("segments") or [] if s["voice"] == "narrator"]
+    return not told or any(t != BOLT for t in told)
+
+
 def held(line: dict, voice: str) -> str | None:
+    if behind_door(line, voice):
+        return DOOR_WHY
     st = lock_state(line)
     if st == "ok":
         return None  # locked: recorded now, whatever else holds the voice
@@ -255,17 +277,27 @@ def packet(voice: str, man: list[dict]) -> tuple[str, dict]:
     v = cast()[voice]
     again = rerecord()
     es, first = [], {}
+    def aside(e):
+        return e["seg"]["voice"] == "narrator" and e["line"]["voice"] != "narrator"
+
     for e in entries(man, voice):
         key = e["seg"].get("acted", e["seg"]["text"])
-        if key in first:
-            first[key]["also"].append(file_name(e["line"], e["part"]))
-            if lock_state(e["line"]) == "ok":
-                first[key]["locked"] = True
-            continue
-        e["also"] = []
-        e["locked"] = lock_state(e["line"]) == "ok"
-        first[key] = e
-        es.append(e)
+        e["locked"] = lock_state(e["line"]) == "ok" and not behind_door(e["line"], voice)
+        f = first.get(key)
+        if f is None:
+            e["also"] = []
+            first[key] = e
+            es.append(e)
+        elif aside(f) and not aside(e):
+            # The same words as an aside and as a line of their own (the bolt, heard from the
+            # stairs): the take is listed once, under the line's own direction.
+            e["also"] = f["also"] + [file_name(f["line"], f["part"])]
+            e["locked"] = e["locked"] or f["locked"]
+            es[es.index(f)] = e
+            first[key] = e
+        else:
+            f["also"].append(file_name(e["line"], e["part"]))
+            f["locked"] = f["locked"] or e["locked"]
     chars = sum(len(e["seg"]["text"]) for e in es)
     holds = [e for e in es if held(e["line"], voice)]
     locked = [e for e in es if e["locked"]]
@@ -343,8 +375,10 @@ def packet(voice: str, man: list[dict]) -> tuple[str, dict]:
         aside = s["voice"] == "narrator" and l["voice"] != "narrator"
         # a whole part on hold says so once, at the top, unless some of it is locked: then each take says which
         hold = held(l, voice) if voice not in HOLD_VOICES or locked else None
-        is_locked = e["locked"]
-        if is_locked:
+        is_locked = e["locked"] and not behind_door(l, voice)
+        if behind_door(l, voice):
+            hold = DOOR_WHY
+        elif is_locked:
             hold = None
         redo = file_name(l, k)[:-4] in again or l["id"] in again
         w.append(f"### {n}. `{file_name(l, k)}`" + (f"  HOLD: {hold}" if hold else "") + ("  **RE-RECORD: the words changed**" if redo else "")
