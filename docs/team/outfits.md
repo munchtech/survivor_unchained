@@ -13,7 +13,7 @@ Lead: su-lead-high (successor 4 of the outfits lead, 11 October 2026). Handoff: 
 - The check runs against this lead's own worktree build and import, never the main checkout's.
 
 ## Blockers
-- None. Waiting on animation's elbow corrective shape and rendering's LOD hook (both to carry onto the garments).
+- The Ranger pauldron needs the main session (two solvers out of context). Rendering's LOD hook still to come.
 
 ## Notes for other areas
 - Any lead: `lookdev.gd` now takes LIGHTS=mirror (the whole rig mirrored) and LIGHTS=side (two matched raking lights).
