@@ -1153,7 +1153,7 @@ SPEC = {
     "darksteel": ("Metal046B", (1.0, 1.0, 1.05), 95, 2.5, 1.0, None),
     "iron": ("Metal046B", (0.92, 0.84, 0.74), 88, 2.5, 1.0, 0.5),
     "rivetbronze": ("Metal046B", (1.0, 0.8, 0.6), 100, 2.5, 1.0, 0.48),   # (the spaulder's rivets dark bronze, not black dots, judge 7)   # (rivets: warm dark iron, an even sheen; at 72 they read as black dots beside the plate, judge 6)
-    "gold": ("Metal048C", (1.0, 0.92, 0.8), None, 3, 1.0, None),
+    "gold": ("Metal048C", (1.0, 0.88, 0.7), None, 3, 1.0, None),   # (warmer: it read olive, judge 8)
     "rust": ("Metal053C", (1, 1, 1), None, 2.5, 0.8, None),
     "leather": ("Leather037", (1, 1, 1), None, 4, 0.0, None),
     "darkleather": ("Leather026", (1.0, 0.8, 0.65), 30, 3, 0.0, None),
@@ -1169,7 +1169,7 @@ SPEC = {
     "lace": ("rough_linen", (1.652, 1.379, 1.12), 235, 14, 0.0, 0.5, 0.85),
     "darkpurple": ("Leather026", (0.55, 0.2, 0.9), 26, 3, 0.0, 0.35),
     "satin": ("rough_linen", (1.652, 1.379, 1.12), 235, 10, 0.0, 0.3),
-    "amethyst": ("rough_linen", (0.62, 0.18, 0.64), 70, 10, 0.0, 0.12),   # (the clasp's violet stone: deep and glossy)
+    "amethyst": ("rough_linen", (0.62, 0.18, 0.64), 100, 10, 0.0, 0.12),   # (the clasp's violet stone: deep and glossy)
     "greenleather": ("Leather026", (0.42, 0.85, 0.45), 52, 3, 0.0, None),
     "bronze": ("Brushed", (0.72, 0.58, 0.46), 95, 3, 1.0, 0.42),  # (our own brushing, along u: tools/assets/brushed_metal.py)
     "ink": ("rough_linen", (0.22, 0.26, 0.34), 22, 10, 0.0, 0.65),
@@ -3841,8 +3841,23 @@ def arcanist():
         # (front on: columns round the foot, rows across the crescent)
         nth, nr = 61, 9
         th = np.linspace(-TH0, TH0, nth)
-        wid = W0 * np.sqrt(np.clip(1 - (np.abs(th) / TH0) ** 4, 0.0, 1.0)) + 0.0006
-        rr = R_IN + wid[:, None] * np.linspace(0, 1, nr)[None, :]
+        # (a boss under the stone tapering to 2.5 mm at its tips, judge 8; the
+        # horns follow the binding's own inner edge on each side, found by
+        # walking out from the foot's centre until the cloth begins, so both
+        # tips lie on it: a round of one radius ran one under the cup and left
+        # the other on her skin)
+        s_ = np.abs(th) / TH0
+        wid = (0.0025 + 0.0085 * (1 - s_) ** 1.5) * np.sqrt(np.clip(1 - s_ ** 12, 0.0225, 1.0))
+        r_e = np.empty(nth)
+        for a in range(nth):
+            for r_ in np.arange(0.5 * R_u, 2.0 * R_u, 0.00025):
+                if not np.isnan(front(r_ * np.sin(th[a]), cz - r_ * np.cos(th[a]))):
+                    break
+            r_e[a] = r_
+        for _ in range(6):
+            r_e[1:-1] = 0.25 * r_e[:-2] + 0.5 * r_e[1:-1] + 0.25 * r_e[2:]
+        R_IN = r_e - 0.001
+        rr = R_IN[:, None] + wid[:, None] * np.linspace(0, 1, nr)[None, :]
         X = rr * np.sin(th)[:, None]
         Zc = cz - rr * np.cos(th)[:, None]
         Y = np.array([[front(X[a, b], Zc[a, b]) for b in range(nr)] for a in range(nth)])
@@ -3865,7 +3880,7 @@ def arcanist():
             fit = A @ np.linalg.lstsq(A, tgt, rcond=None)[0]
             tgt = np.minimum(Y0.ravel(), fit)
         Y = fit.reshape(Y0.shape)
-        Y = Y + min(0.0, float((Y0 - Y).min())) - float(os.environ.get("CLASP_OFF", 0.003))
+        Y = Y + min(0.0, float((Y0 - Y).min())) - float(os.environ.get("CLASP_OFF", 0.001))
         gap = (Y0 - Y) * 1000
         print(f"CLASP: back off the cloth {gap.min():.2f} to {gap.max():.2f} mm (median {np.median(gap):.2f}; its rim {np.median(np.r_[gap[:, 0], gap[:, -1]]):.2f})")
         t = np.linspace(0, 1, nr)[None, :]
@@ -3925,7 +3940,33 @@ def arcanist():
         _, jn = cKDTree(cp).query(bp)
         made.append(finish("arcanist.clasp_bezel", bp, sk(bp), bt, "gold", 0.0, 0.0, 10 ** 6, scraps=False))
         print("CLASP: crescent %.0f mm across, horns %.0f deg round the foot, %.1f mm wide at its foot; stone at z %.3f"
-              % (2 * (R_IN + W0) * np.sin(TH0) * 1000, CLASP_TH, W0 * 1000, c0[2]))
+              % ((X.max() - X.min()) * 1000, CLASP_TH, wid[nth // 2] * 1000, c0[2]))
+        # (the cloth, binding and stitches under it cut away 1 mm inside its
+        # edge: lumps of the cloth came through a rigid clasp seated close in
+        # her idle, and 3 mm off it showed a dark slot round it, judge 8)
+        yb, ncut = float(back[..., 1].max()) + 0.012, 0
+        for o in obs:
+            mw = o.matrix_world
+            bm = bmesh.new()
+            bm.from_mesh(o.data)
+            gone = []
+            for f in bm.faces:
+                ins = True
+                for v in f.verts:
+                    q = mw @ v.co
+                    r_, t_ = math.hypot(q.x, cz - q.z), math.atan2(q.x, cz - q.z)
+                    ri, wi = np.interp(t_, th, R_IN), np.interp(t_, th, wid)
+                    if abs(t_) >= TH0 * 0.97 or q.y > yb or not (ri + 0.001 < r_ < ri + wi - 0.001):
+                        ins = False
+                        break
+                if ins:
+                    gone.append(f)
+            if gone:
+                bmesh.ops.delete(bm, geom=gone, context="FACES")
+                bm.to_mesh(o.data)
+            bm.free()
+            ncut += len(gone)
+        print("CLASP: %d faces of cloth, binding and stitches cut away under it" % ncut)
         return made
 
     def down_tube():
