@@ -147,6 +147,16 @@ uniform float shade_down = 0.0;
 uniform float down_from = 0.0;
 uniform float down_to = 0.6;
 uniform float shade_zone = 0.0;
+// (shade_by_light 1: the gate is each lamp's own light at the point (its colour's luminance times ndl and attenuation,
+// shadow included), not ndl: under her jaw the fill reaches her at a high ndl but weakly, and the key's soft shadow
+// falls there, so ndl called it lit and her body's tone (set for lit skin) greyed it; the key at a low angle on her
+// lower cheek is still strong, so that stays as fitted)
+uniform float shade_by_light = 0.0;
+// (shade_by_soft 1: the gate is the lamp's own sheen (SPECULAR_AMOUNT, 2x its light_specular): the Look's fill (0.1)
+// and bounce (0) are its soft lamps, and her shade is theirs, so they show her paint's own colour and the key (0.3)
+// her body's tone at every angle; by light, the key's weak light at her jaw's edge took her paint's colour, an
+// orange band along it)
+uniform float shade_by_soft = 0.0;
 // Her rim (`rim`) kept to where the lamp reaches her (rim_gate: smoothstep(0, 0.3, ndl)), and how much of her colour.
 uniform float rim_gate = 0.0;
 uniform float rim_tint = 0.6;
@@ -279,7 +289,8 @@ void light() {
 		vec3 al = ALBEDO * un;
 		vec3 lw = vec3(0.2126, 0.7152, 0.0722);
 		vec3 tn = shade_tint * dot(al, lw) / max(dot(al * shade_tint, lw), 1e-4);
-		rich = mix(vec3(1.0), tn, shade_w * (1.0 - smoothstep(shade_from, shade_to, ndl)));
+		float lit = mix(mix(ndl, dot(LIGHT_COLOR * vec3(ATTENUATION), lw) * c_ndl, shade_by_light), SPECULAR_AMOUNT, shade_by_soft);
+		rich = mix(vec3(1.0), tn, shade_w * (1.0 - smoothstep(shade_from, shade_to, lit)));
 	}
 	DIFFUSE_LIGHT += LIGHT_COLOR * diffuse * ATTENUATION * un * rich;
 	// the fine down at her edges, against a light from behind her only (lit

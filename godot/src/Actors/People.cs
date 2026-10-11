@@ -1139,14 +1139,27 @@ public static class People
     static void HerShade(ShaderMaterial m, Look look)
     {
         m.SetShaderParameter("ambient_tint", HerAmbient(look));
-        if (!SurvivorUnchained.Args.Has("shade-tint")) return;
+        // Her soft lamps (the Look's fill and bounce, their sheen 0.1 and 0: SPECULAR_AMOUNT 0.2 and 0) show her paint's
+        // own colour, all of her; the key, the fire and the sun her body's tone. (Tried 11 October 2026 (r6a): held
+        // to where she faces down and gated by ndl, the shade at the side of her neck stayed grey (own jaw chroma
+        // 0.015, portrait's 0.051); gated by each lamp's light at the point, it went warm (0.040) but the key's weak
+        // light along her jaw's edge took her paint's colour too, an orange band. --shade-tint off | ndl | light |
+        // soft (the default) and --shade-gate FROM,TO, for judging them (pictures).)
+        var mode = SurvivorUnchained.Args.Get("shade-tint") is string st && st != "" ? st : "soft";
+        if (mode == "off") return;
         var b = BodyTone(look);
         m.SetShaderParameter("shade_tint", new Vector3(1 / b.X, 1 / b.Y, 1 / b.Z));
-        m.SetShaderParameter("shade_down", 1f);
+        bool down = mode == "ndl" || SurvivorUnchained.Args.Get("shade-down") == "on";
+        m.SetShaderParameter("shade_down", down ? 1f : 0f);
         m.SetShaderParameter("down_from", 0.05f);
         m.SetShaderParameter("down_to", 0.45f);
-        m.SetShaderParameter("shade_from", 0.85f);
-        m.SetShaderParameter("shade_to", 1f);
+        var gate = mode switch { "ndl" => new Vector2(0.85f, 1f), "light" => new Vector2(0.8f, 1.6f), _ => new Vector2(0.25f, 0.45f) };
+        if (SurvivorUnchained.Args.Get("shade-gate") is string sg && sg.Split(',') is [var g0, var g1])
+            gate = new Vector2(float.Parse(g0, System.Globalization.CultureInfo.InvariantCulture), float.Parse(g1, System.Globalization.CultureInfo.InvariantCulture));
+        m.SetShaderParameter("shade_by_light", mode == "light" ? 1f : 0f);
+        m.SetShaderParameter("shade_by_soft", mode == "soft" ? 1f : 0f);
+        m.SetShaderParameter("shade_from", gate.X);
+        m.SetShaderParameter("shade_to", gate.Y);
     }
 
     static Vector3 HerAmbient(Look look)
@@ -1188,27 +1201,27 @@ public static class People
     {
         // (11 October 2026, the Look's rig made near white: each face's cheek taken to its portrait's chroma and hue,
         // on top of HerBodyTone below, which these partly undo on the face; judge j2's trims, measured at the Look)
-        ["own"] = new(1.225f, 0.918f, 0.706f), ["highborn"] = new(1.139f, 0.914f, 0.795f),
-        ["vixen"] = new(1.138f, 0.881f, 0.738f), ["moonlit"] = new(1.096f, 0.969f, 0.872f),
-        ["fey"] = new(1.277f, 0.982f, 0.809f), ["doe"] = new(1.153f, 0.940f, 0.826f),
-        ["wildling"] = new(1.110f, 0.912f, 0.780f), ["hardwon"] = new(1.141f, 0.951f, 0.821f),
-        ["saffron"] = new(1.061f, 0.961f, 0.925f),
+        ["own"] = new(1.221f, 0.924f, 0.741f), ["highborn"] = new(1.129f, 0.918f, 0.843f),
+        ["vixen"] = new(1.110f, 0.896f, 0.765f), ["moonlit"] = new(1.082f, 0.976f, 0.898f),
+        ["fey"] = new(1.262f, 0.990f, 0.847f), ["doe"] = new(1.115f, 0.964f, 0.851f),
+        ["wildling"] = new(1.088f, 0.926f, 0.810f), ["hardwon"] = new(1.123f, 0.961f, 0.869f),
+        ["saffron"] = new(1.048f, 0.972f, 0.946f),
         // (Sunborn: her face lighter, a little less red, against her body: her cheek at 0.86 of her portrait's
         // lightness against 0.92-0.97 for the others, her head darker than her neck; judge n1, 11 October 2026)
-        ["sunborn"] = new(1.184f, 1.236f, 1.420f),
+        ["sunborn"] = new(1.175f, 1.246f, 1.414f),
     };
 
     /// <summary>Her skin's own colour for each face, all of her (linear, on her swatch's HerTone): her neck and
     /// body at the portrait's neck-to-cheek chroma (0.56-0.80 of the cheek's, Sunborn 0.97) and its cheek's hue.
     /// Under the Look's warm rig every face read a fake tan, her neck as saturated as her cheek and 40-80% over
-    /// her portrait's (judge j1, 11 October 2026). (--tone-trim off: none, and the faces' tones as before.) Measured twice at the Look and refitted (r1, r3).</summary>
+    /// her portrait's (judge j1, 11 October 2026). (--tone-trim off: none, and the faces' tones as before.) Measured at the Look and refitted (r1, r3; r6b with BodyK 1 and the soft lamps' shade).</summary>
     static readonly Dictionary<string, Vector3> HerBodyTone = new()
     {
-        ["own"] = new(0.801f, 1.084f, 1.648f), ["highborn"] = new(0.840f, 1.068f, 1.550f),
-        ["doe"] = new(0.826f, 1.100f, 1.567f), ["sunborn"] = new(1.009f, 0.987f, 1.052f),
-        ["vixen"] = new(0.824f, 1.079f, 1.548f), ["moonlit"] = new(0.831f, 1.076f, 1.513f),
-        ["saffron"] = new(0.901f, 1.062f, 1.427f), ["wildling"] = new(0.860f, 1.076f, 1.510f),
-        ["hardwon"] = new(0.838f, 1.084f, 1.631f), ["fey"] = new(0.815f, 1.083f, 1.573f),
+        ["own"] = new(0.763f, 1.102f, 1.790f), ["highborn"] = new(0.814f, 1.081f, 1.638f),
+        ["doe"] = new(0.814f, 1.102f, 1.697f), ["sunborn"] = new(1.020f, 0.972f, 1.116f),
+        ["vixen"] = new(0.806f, 1.084f, 1.663f), ["moonlit"] = new(0.810f, 1.084f, 1.614f),
+        ["saffron"] = new(0.888f, 1.068f, 1.527f), ["wildling"] = new(0.846f, 1.081f, 1.617f),
+        ["hardwon"] = new(0.816f, 1.095f, 1.766f), ["fey"] = new(0.791f, 1.093f, 1.694f),
     };
 
     static readonly Dictionary<string, Vector3> HerFaceToneUntrimmed = new()
@@ -1224,9 +1237,9 @@ public static class People
 
     /// <summary>How much of HerBodyTone her body takes (0 none to 1 all; the rest goes to her face's tone, so her
     /// cheek is as fitted either way). (--body-k K: another, for judging it (pictures).)</summary>
-    /// (0.5 for now, unjudged: at 1 her lit neck matched her portraits' but the shade under her jaw went grey-violet
-    /// (chroma 0.015, hue 30, own); at 0 her neck kept the fake tan (chroma 0.068 against 0.035).)
-    static readonly float BodyK = SurvivorUnchained.Args.Has("body-k") ? (float)SurvivorUnchained.Args.Num("body-k", 0.5f) : 0.5f;
+    /// (All of it: her soft lamps' light shows her paint's own colour (HerShade), so the shade under her jaw keeps its
+    /// warmth. Before that, at 1 the shade went grey-violet (chroma 0.015, hue 30, own) and it shipped at 0.5.)
+    static readonly float BodyK = SurvivorUnchained.Args.Has("body-k") ? (float)SurvivorUnchained.Args.Num("body-k", 1f) : 1f;
 
     static Vector3 Pow(Vector3 v, float k) => new(Mathf.Pow(v.X, k), Mathf.Pow(v.Y, k), Mathf.Pow(v.Z, k));
 

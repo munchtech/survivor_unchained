@@ -42,13 +42,20 @@ def smooth(a, b, x):
     return t * t * (3 - 2 * t)
 
 
-def tones():
-    s = open(PEOPLE, encoding="utf-8").read()
-    # (HerFaceTone's own block: her body's tone multiplies ear and cheek alike, so only the face's counts here)
-    s = s[s.index("Dictionary<string, Vector3> HerFaceTone = new()"):]
+def _block(s, name):
+    s = s[s.index("Dictionary<string, Vector3> %s = new()" % name):]
     s = s[:s.index("};")]
     return {k: np.array([float(a), float(b), float(c)]) for k, a, b, c in
             re.findall(r'\["(\w+)"\] = new\(([\d.]+)f, ([\d.]+)f, ([\d.]+)f\)', s)}
+
+
+def tones():
+    """Each face's tone where the features' blue lays it, as People.FaceTone gives it: HerFaceTone times the share
+    of HerBodyTone her body doesn't take (BodyK). Her body's share multiplies ear and cheek alike, so it doesn't count."""
+    s = open(PEOPLE, encoding="utf-8").read()
+    k = float(re.search(r'float BodyK = .*?: ([\d.]+)f;', s).group(1))
+    face, body = _block(s, "HerFaceTone"), _block(s, "HerBodyTone")
+    return {f: t * body.get(f, np.ones(3)) ** (1 - k) for f, t in face.items()}
 
 
 def main(faces):
