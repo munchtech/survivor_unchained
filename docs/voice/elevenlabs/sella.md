@@ -2,6 +2,8 @@
 
 Voice id in the game: `sella`. 97 takes to record (9,964 characters; about 29,892 credits at three tries a line). Status: **final** (the story lead, 2026-10-03): record it.
 
+**Hold 26 of these** (marked HOLD below, with why); the rest can be recorded now.
+
 ## Who they are
 
 **Sella** (the blue room). Low, amused, intimate; heavy contractions; "love". Frank about sex and money and about which is which; never coy, never pitiful, never sorry for her work. Sells talk as well as company and says so. *Casting:* late 20s, softened Cockney; warmth that is also work. Adult, never breathy.
@@ -181,7 +183,7 @@ Subtitle: Clever. Everybody, love. Pell pays for what his rivals say. Holloway p
 ```
 Subtitle: Fifteen gold, up front. For that you get the blue room, a bath that's warm at least to start with, and me, until morning. Anything you'd rather I didn't do, say so. Anything you'd rather I did, say that too.
 
-### 13. `dlg.sella.night.0.p1.wav`
+### 13. `dlg.sella.night.0.p1.wav`  HOLD: the love scenes go to B (the owner, 6 October): the narrator stops at the door, and these are rewritten as the lovers' own lines
 
 *Where:* dialogue.json sella/night#0; part 2 of 3: narrator: The water's gone cool by the time either of you notices, and she drags the quilt off the b… / **sella: Don't,** / narrator: and kisses you so you can't. After, you lie on the floor of the blue room with the lamp tu…
 
@@ -371,7 +373,7 @@ Subtitle: A house in the south with a door that locks from the inside, and someb
 ```
 Subtitle: Put your purse away. Tonight I'm not working. ...Don't look at me like that. Don't make it strange.
 
-### 30. `dlg.sella.free_night.0.p1.wav`
+### 30. `dlg.sella.free_night.0.p1.wav`  HOLD: the love scenes go to B (the owner, 6 October): the narrator stops at the door, and these are rewritten as the lovers' own lines
 
 *Where:* dialogue.json sella/free_night#0; part 2 of 3: narrator: She doesn't talk the way she talks for money. She doesn't talk at all, at first. She undre… / **sella: You told me anyway,** / narrator: and nothing else, and then she sleeps.
 
@@ -572,7 +574,7 @@ Subtitle: Mind the fourth. And the ninth. Rook says they're for the drunks. I sa
 ```
 Subtitle: In you go. Bath's run. It's warm, I promise. For a bit.
 
-### 48. `dlg.sella.stairs_room.0.p1.wav`
+### 48. `dlg.sella.stairs_room.0.p1.wav`  HOLD: the love scenes go to B (the owner, 6 October): the narrator stops at the door, and these are rewritten as the lovers' own lines
 
 *The same words are also* `dlg.sella.stairs_room.4.p1.wav`*: record once; the importer copies the take.*
 *Where:* dialogue.json sella/stairs_room#0; part 2 of 2: narrator: The blue room again: the quilt, the jug, the bath, her, all of it blue. Your buckles take … / **sella: All that steel, and under it, look. A person.**
@@ -584,7 +586,7 @@ Subtitle: In you go. Bath's run. It's warm, I promise. For a bit.
 ```
 Subtitle: All that steel, and under it, look. A person.
 
-### 49. `dlg.sella.stairs_room.1.p1.wav`
+### 49. `dlg.sella.stairs_room.1.p1.wav`  HOLD: the love scenes go to B (the owner, 6 October): the narrator stops at the door, and these are rewritten as the lovers' own lines
 
 *The same words are also* `dlg.sella.stairs_room.5.p1.wav`*: record once; the importer copies the take.*
 *Where:* dialogue.json sella/stairs_room#1; part 2 of 2: narrator: The blue room again: the quilt, the jug, the bath, her, all of it blue. She takes your han… / **sella: Gently, upstairs. I mean it. I like this jug.**
@@ -596,7 +598,7 @@ Subtitle: All that steel, and under it, look. A person.
 ```
 Subtitle: Gently, upstairs. I mean it. I like this jug.
 
-### 50. `dlg.sella.stairs_room.2.p1.wav`
+### 50. `dlg.sella.stairs_room.2.p1.wav`  HOLD: the love scenes go to B (the owner, 6 October): the narrator stops at the door, and these are rewritten as the lovers' own lines
 
 *The same words are also* `dlg.sella.stairs_room.6.p1.wav`*: record once; the importer copies the take.*
 *Where:* dialogue.json sella/stairs_room#2; part 2 of 2: narrator: The blue room again: the quilt, the jug, the bath, her, all of it blue. She lays her palm … / **sella: Your hands are hot and the rest of you's a cellar floor. Pick one, love.**
@@ -608,7 +610,7 @@ Subtitle: Gently, upstairs. I mean it. I like this jug.
 ```
 Subtitle: Your hands are hot and the rest of you's a cellar floor. Pick one, love.
 
-### 51. `dlg.sella.stairs_room.3.p1.wav`
+### 51. `dlg.sella.stairs_room.3.p1.wav`  HOLD: the love scenes go to B (the owner, 6 October): the narrator stops at the door, and these are rewritten as the lovers' own lines
 
 *The same words are also* `dlg.sella.stairs_room.7.p1.wav`*: record once; the importer copies the take.*
 *Where:* dialogue.json sella/stairs_room#3; part 2 of 3: narrator: The blue room again: the quilt, the jug, the bath, her, all of it blue. She comes round be… / **sella: There. Now you know what it's like,** / narrator: and you jump. She's delighted.
@@ -620,7 +622,7 @@ Subtitle: Your hands are hot and the rest of you's a cellar floor. Pick one, lov
 ```
 Subtitle: There. Now you know what it's like,
 
-### 52. `dlg.sella.stairs_rules.0.p1.wav`
+### 52. `dlg.sella.stairs_rules.0.p1.wav`  HOLD: the love scenes go to B (the owner, 6 October): the narrator stops at the door, and these are rewritten as the lovers' own lines
 
 *Where:* dialogue.json sella/stairs_rules#0; part 2 of 2: narrator: In the bath she slides her hands down your arms, and stops. Under the warm water you are c… / **sella: ...Right. Rules. Anything you'd rather I didn't, say so. Anything you'd rather I did, say …**
 *Played:* shaken, then professional; doing: you're cold as the river; pace: slow; volume: quiet.
@@ -631,7 +633,7 @@ Subtitle: There. Now you know what it's like,
 ```
 Subtitle: ...Right. Rules. Anything you'd rather I didn't, say so. Anything you'd rather I did, say it louder.
 
-### 53. `dlg.sella.stairs_rules.1.wav`
+### 53. `dlg.sella.stairs_rules.1.wav`  HOLD: the love scenes go to B (the owner, 6 October): the narrator stops at the door, and these are rewritten as the lovers' own lines
 
 *Where:* dialogue.json sella/stairs_rules#1
 *Played:* frank, wry; doing: her rules; pace: measured; volume: quiet.
@@ -642,7 +644,7 @@ Subtitle: ...Right. Rules. Anything you'd rather I didn't, say so. Anything you'
 ```
 Subtitle: Right. Rules. Anything you'd rather I didn't, say so. Anything you'd rather I did, say it louder; Rook's walls are thin, but she's deaf in the left ear.
 
-### 54. `dlg.sella.stop_paid.0.p1.wav`
+### 54. `dlg.sella.stop_paid.0.p1.wav`  HOLD: the love scenes go to B (the owner, 6 October): the narrator stops at the door, and these are rewritten as the lovers' own lines
 
 *Where:* dialogue.json sella/stop_paid#0; part 2 of 4: narrator: She sits back on her heels, and doesn't sulk, and doesn't ask why. / **sella: Then I'll have the bath. It's paid for.** / narrator: She counts thirteen coins back into your palm and closes your fingers on them. / sella: Two for the water. That's Rook's rule, not mine. ...You'll come back when you want to. Or …
 *Played:* graceful, kind; doing: you stop; pace: measured; volume: quiet.
@@ -653,7 +655,7 @@ Subtitle: Right. Rules. Anything you'd rather I didn't, say so. Anything you'd r
 ```
 Subtitle: Then I'll have the bath. It's paid for.
 
-### 55. `dlg.sella.stop_paid.0.p3.wav`
+### 55. `dlg.sella.stop_paid.0.p3.wav`  HOLD: the love scenes go to B (the owner, 6 October): the narrator stops at the door, and these are rewritten as the lovers' own lines
 
 *Where:* dialogue.json sella/stop_paid#0; part 4 of 4: narrator: She sits back on her heels, and doesn't sulk, and doesn't ask why. / sella: Then I'll have the bath. It's paid for. / narrator: She counts thirteen coins back into your palm and closes your fingers on them. / **sella: Two for the water. That's Rook's rule, not mine. ...You'll come back when you want to. Or …**
 *Played:* graceful, kind; doing: you stop; pace: measured; volume: quiet.
@@ -664,7 +666,7 @@ Subtitle: Then I'll have the bath. It's paid for.
 ```
 Subtitle: Two for the water. That's Rook's rule, not mine. ...You'll come back when you want to. Or you won't. Either's all right, love. Go on.
 
-### 56. `dlg.sella.rest_night.0.p0.wav`
+### 56. `dlg.sella.rest_night.0.p0.wav`  HOLD: the love scenes go to B (the owner, 6 October): the narrator stops at the door, and these are rewritten as the lovers' own lines
 
 *The same words are also* `dlg.sella.rest_night_paid.0.p0.wav`*: record once; the importer copies the take.*
 *Where:* dialogue.json sella/rest_night#0; part 1 of 3: **sella: Sleep.** / narrator: She looks at you as if you'd asked her to recite something in a foreign tongue. / sella: You've paid fifteen gold to sleep.
@@ -676,7 +678,7 @@ Subtitle: Two for the water. That's Rook's rule, not mine. ...You'll come back w
 ```
 Subtitle: Sleep.
 
-### 57. `dlg.sella.rest_night.0.p2.wav`
+### 57. `dlg.sella.rest_night.0.p2.wav`  HOLD: the love scenes go to B (the owner, 6 October): the narrator stops at the door, and these are rewritten as the lovers' own lines
 
 *The same words are also* `dlg.sella.rest_night_paid.0.p2.wav`*: record once; the importer copies the take.*
 *Where:* dialogue.json sella/rest_night#0; part 3 of 3: sella: Sleep. / narrator: She looks at you as if you'd asked her to recite something in a foreign tongue. / **sella: You've paid fifteen gold to sleep.**
@@ -688,7 +690,7 @@ Subtitle: Sleep.
 ```
 Subtitle: You've paid fifteen gold to sleep.
 
-### 58. `dlg.sella.rest_bed.0.wav`
+### 58. `dlg.sella.rest_bed.0.wav`  HOLD: the love scenes go to B (the owner, 6 October): the narrator stops at the door, and these are rewritten as the lovers' own lines
 
 *Where:* dialogue.json sella/rest_bed#0
 *Played:* bossy, wry; doing: lie down, then; pace: brisk; volume: quiet.
@@ -843,7 +845,7 @@ Subtitle: Go on. Rook's stew's still warm.
 ```
 Subtitle: I said I'd not ask twice. I never said I'd not answer. ...Come on, then. Before I think better of it. I'm thinking better of it already. Come on.
 
-### 72. `dlg.sella.free_door.0.p0.wav`
+### 72. `dlg.sella.free_door.0.p0.wav`  HOLD: the love scenes go to B (the owner, 6 October): the narrator stops at the door, and these are rewritten as the lovers' own lines
 
 *Where:* dialogue.json sella/free_door#0; part 1 of 3: **sella: I keep thinking about you sitting on my bed telling me where you're from. Knowing who'd he…** / narrator: She shakes her head. / sella: Nobody does that. Nobody's ever done that.
 *Played:* moved, wondering; doing: nobody does that; pace: slow; volume: quiet.
@@ -854,7 +856,7 @@ Subtitle: I said I'd not ask twice. I never said I'd not answer. ...Come on, the
 ```
 Subtitle: I keep thinking about you sitting on my bed telling me where you're from. Knowing who'd hear it by morning.
 
-### 73. `dlg.sella.free_door.0.p2.wav`
+### 73. `dlg.sella.free_door.0.p2.wav`  HOLD: the love scenes go to B (the owner, 6 October): the narrator stops at the door, and these are rewritten as the lovers' own lines
 
 *Where:* dialogue.json sella/free_door#0; part 3 of 3: sella: I keep thinking about you sitting on my bed telling me where you're from. Knowing who'd he… / narrator: She shakes her head. / **sella: Nobody does that. Nobody's ever done that.**
 *Played:* moved, wondering; doing: nobody does that; pace: slow; volume: quiet.
@@ -865,7 +867,7 @@ Subtitle: I keep thinking about you sitting on my bed telling me where you're fr
 ```
 Subtitle: Nobody does that. Nobody's ever done that.
 
-### 74. `dlg.sella.free_door.1.wav`
+### 74. `dlg.sella.free_door.1.wav`  HOLD: the love scenes go to B (the owner, 6 October): the narrator stops at the door, and these are rewritten as the lovers' own lines
 
 *Where:* dialogue.json sella/free_door#1
 *Played:* nervous, honest; doing: she doesn't know how; pace: slow; volume: quiet.
@@ -876,7 +878,7 @@ Subtitle: Nobody does that. Nobody's ever done that.
 ```
 Subtitle: I don't know how to do this one. ...That's a lie. I know how. I don't know how to do it like this.
 
-### 75. `dlg.sella.free_want.0.p0.wav`
+### 75. `dlg.sella.free_want.0.p0.wav`  HOLD: the love scenes go to B (the owner, 6 October): the narrator stops at the door, and these are rewritten as the lovers' own lines
 
 *Where:* dialogue.json sella/free_want#0; part 1 of 3: **sella: Ask me that again and I'll cry, and I don't cry, so don't.** / narrator: She takes a breath. / sella: Yes. ...Yes. There. Said it. Come here.
 *Played:* dry, then decided; doing: yes; pace: slow; volume: quiet.
@@ -887,7 +889,7 @@ Subtitle: I don't know how to do this one. ...That's a lie. I know how. I don't 
 ```
 Subtitle: Ask me that again and I'll cry, and I don't cry, so don't.
 
-### 76. `dlg.sella.free_want.0.p2.wav`
+### 76. `dlg.sella.free_want.0.p2.wav`  HOLD: the love scenes go to B (the owner, 6 October): the narrator stops at the door, and these are rewritten as the lovers' own lines
 
 *Where:* dialogue.json sella/free_want#0; part 3 of 3: sella: Ask me that again and I'll cry, and I don't cry, so don't. / narrator: She takes a breath. / **sella: Yes. ...Yes. There. Said it. Come here.**
 *Played:* dry, then decided; doing: yes; pace: slow; volume: quiet.
@@ -898,7 +900,7 @@ Subtitle: Ask me that again and I'll cry, and I don't cry, so don't.
 ```
 Subtitle: Yes. ...Yes. There. Said it. Come here.
 
-### 77. `dlg.sella.free_stop.0.p1.wav`
+### 77. `dlg.sella.free_stop.0.p1.wav`  HOLD: the love scenes go to B (the owner, 6 October): the narrator stops at the door, and these are rewritten as the lovers' own lines
 
 *Where:* dialogue.json sella/free_stop#0; part 2 of 4: narrator: She lets out a breath she's been holding since the stairs. / **sella: All right.** / narrator: And it is; you can see it is. / sella: All right. ...Sit with me, then. Just sit. I've never just sat in here with anybody. Rook'…
 *Played:* relief, tender; doing: just sit; pace: slow; volume: quiet.
@@ -909,7 +911,7 @@ Subtitle: Yes. ...Yes. There. Said it. Come here.
 ```
 Subtitle: All right.
 
-### 78. `dlg.sella.free_stop.0.p3.wav`
+### 78. `dlg.sella.free_stop.0.p3.wav`  HOLD: the love scenes go to B (the owner, 6 October): the narrator stops at the door, and these are rewritten as the lovers' own lines
 
 *Where:* dialogue.json sella/free_stop#0; part 4 of 4: narrator: She lets out a breath she's been holding since the stairs. / sella: All right. / narrator: And it is; you can see it is. / **sella: All right. ...Sit with me, then. Just sit. I've never just sat in here with anybody. Rook'…**
 *Played:* relief, tender; doing: just sit; pace: slow; volume: quiet.
@@ -920,7 +922,7 @@ Subtitle: All right.
 ```
 Subtitle: All right. ...Sit with me, then. Just sit. I've never just sat in here with anybody. Rook'd think we'd died.
 
-### 79. `dlg.sella.free_sleep.0.p1.wav`
+### 79. `dlg.sella.free_sleep.0.p1.wav`  HOLD: the love scenes go to B (the owner, 6 October): the narrator stops at the door, and these are rewritten as the lovers' own lines
 
 *Where:* dialogue.json sella/free_sleep#0; part 2 of 2: narrator: She laughs, properly, the first time tonight. / **sella: You and your sleeping. ...Yes. All right. Yes.**
 *Played:* delighted, shy; doing: yes, sleep; pace: measured; volume: quiet.
@@ -931,7 +933,7 @@ Subtitle: All right. ...Sit with me, then. Just sit. I've never just sat in here
 ```
 Subtitle: You and your sleeping. ...Yes. All right. Yes.
 
-### 80. `dlg.sella.free_bolt.0.p1.wav`
+### 80. `dlg.sella.free_bolt.0.p1.wav`  HOLD: the love scenes go to B (the owner, 6 October): the narrator stops at the door, and these are rewritten as the lovers' own lines
 
 *Where:* dialogue.json sella/free_bolt#0; part 2 of 2: narrator: She reaches behind her without looking and finds the bolt. It sticks halfway; nobody has e… / **sella: ...There.**
 *Played:* barely voiced; doing: the bolt; pace: slow; volume: quiet.
@@ -942,7 +944,7 @@ Subtitle: You and your sleeping. ...Yes. All right. Yes.
 ```
 Subtitle: ...There.
 
-### 81. `dlg.sella.free_m_downstairs.0.p1.wav`
+### 81. `dlg.sella.free_m_downstairs.0.p1.wav`  HOLD: the love scenes go to B (the owner, 6 October): the narrator stops at the door, and these are rewritten as the lovers' own lines
 
 *Where:* dialogue.json sella/free_m_downstairs#0; part 2 of 2: narrator: She laughs. / **sella: Downstairs Rook hears everything and charges nobody. You'd be better off with me. ...No. Y…**
 *Played:* wry, then honest; doing: go on; pace: measured; volume: quiet.
@@ -953,7 +955,7 @@ Subtitle: ...There.
 ```
 Subtitle: Downstairs Rook hears everything and charges nobody. You'd be better off with me. ...No. You wouldn't. That's the point, love. Go on.
 
-### 82. `dlg.sella.free_m_who.0.p0.wav`
+### 82. `dlg.sella.free_m_who.0.p0.wav`  HOLD: the love scenes go to B (the owner, 6 October): the narrator stops at the door, and these are rewritten as the lovers' own lines
 
 *Where:* dialogue.json sella/free_m_who#0; part 1 of 3: **sella: You know who. Everybody pays; she pays most.** / narrator: She pulls the quilt up to her chin. / sella: I said don't tell me. I didn't say I'd sell it. ...I didn't say I wouldn't, either. I don'…
 *Played:* honest, uncomfortable; doing: Vonnra pays; pace: slow; volume: quiet.
@@ -964,7 +966,7 @@ Subtitle: Downstairs Rook hears everything and charges nobody. You'd be better o
 ```
 Subtitle: You know who. Everybody pays; she pays most.
 
-### 83. `dlg.sella.free_m_who.0.p2.wav`
+### 83. `dlg.sella.free_m_who.0.p2.wav`  HOLD: the love scenes go to B (the owner, 6 October): the narrator stops at the door, and these are rewritten as the lovers' own lines
 
 *Where:* dialogue.json sella/free_m_who#0; part 3 of 3: sella: You know who. Everybody pays; she pays most. / narrator: She pulls the quilt up to her chin. / **sella: I said don't tell me. I didn't say I'd sell it. ...I didn't say I wouldn't, either. I don'…**
 *Played:* honest, uncomfortable; doing: Vonnra pays; pace: slow; volume: quiet.
@@ -975,7 +977,7 @@ Subtitle: You know who. Everybody pays; she pays most.
 ```
 Subtitle: I said don't tell me. I didn't say I'd sell it. ...I didn't say I wouldn't, either. I don't know. That's the honest answer, and I'm out of practice at those. Don't make me practise before breakfast.
 
-### 84. `dlg.sella.free_m_kiss.0.p1.wav`
+### 84. `dlg.sella.free_m_kiss.0.p1.wav`  HOLD: the love scenes go to B (the owner, 6 October): the narrator stops at the door, and these are rewritten as the lovers' own lines
 
 *Where:* dialogue.json sella/free_m_kiss#0; part 2 of 3: narrator: She lets you. Then she pushes you off by the face, gently, with the flat of her hand. / **sella: Out. Before I get used to it.** / narrator: She's smiling. She doesn't stop smiling until you're down the stairs, and you know that be…
 *Played:* smiling; doing: out; pace: measured; volume: quiet.

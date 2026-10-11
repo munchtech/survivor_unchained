@@ -72,14 +72,14 @@ Holloway, Brannoc and Sella, in that order.
 <!-- PACKETS -->
 | Character | Takes | Characters | Held | Locked |
 |---|---|---|---|---|
-| [The narrator](narrator.md) | 391 | 37,107 | 175 | 216 |
-| [Sella](sella.md) | 97 | 9,964 |  |  |
-| [Captain Holloway](holloway.md) | 110 | 9,714 | 40 | 70 |
+| [The narrator](narrator.md) | 395 | 37,300 | 145 | 251 |
+| [Sella](sella.md) | 97 | 9,964 | 26 |  |
+| [Captain Holloway](holloway.md) | 110 | 9,714 |  | 110 |
 | [Vonnra Ash-of-Morrow](vonnra.md) | 104 | 8,939 | 103 | 1 |
-| [Chid](chid.md) | 82 | 8,712 |  | 53 |
+| [Chid](chid.md) | 84 | 8,735 |  | 82 |
 | [Harlan Coyle](harlan.md) | 63 | 7,229 | 63 |  |
 | [Mother Rook](rook.md) | 54 | 6,558 |  | 54 |
-| [Maeca](maeca.md) | 87 | 6,262 | 23 | 64 |
+| [Maeca](maeca.md) | 87 | 6,262 | 17 | 70 |
 | [Rav Cutwell](rav.md) | 61 | 6,007 |  |  |
 | [Dame Keegan Orme](keegan.md) | 48 | 5,218 | 1 |  |
 | [Redcowl](redcowl.md) | 45 | 4,337 |  |  |
