@@ -44,7 +44,20 @@ public sealed partial class Battle
     /// <summary>For the harness and the toll: casts, their times, clutch casts (falls the Flare kept from happening).</summary>
     public int FlareCasts, FlareClutches;
     public readonly List<double> FlareTimes = new();
-    double emberAnsweredAt = -99, killFillSecond = -1, killFillInSecond;
+    double emberAnsweredAt = -99;
+    /// <summary>The horde can't spam it: each of its sources draws on a purse that refills at its rate a second.</summary>
+    readonly double[] purse = new double[4], purseAt = new double[4];
+    double Draw(int i, double want, double rate, double most)
+    {
+        purse[i] = Math.Min(most, purse[i] + (Time - purseAt[i]) * rate + (purseAt[i] == 0 && purse[i] == 0 ? most : 0));
+        purseAt[i] = Math.Max(Time, 1e-9);
+        double got = Math.Min(want, purse[i]);
+        purse[i] -= got;
+        return got;
+    }
+    /// <summary>The fill table, tuned by the harness (CLASSES.md §3.2).</summary>
+    public const double FillHurt = 0.65, FillAnswer = 35, FillPerfect = 10, FillBlock = 6, FillBoss = 0.8,
+        FillChampion = 2, FillChampionRate = 0.6, FillKill = 0.1, FillKillRate = 0.5;
     bool answeredTwice;
 
     public int FlareCharges => Lamp("flare.banked") ? (int)Lamps.Full("flare.banked", "charges", 2) : 1;
@@ -77,7 +90,7 @@ public sealed partial class Battle
 
     /* ------------------------------------------------------- how it fills -- */
 
-    /// <summary>A blow reached her: +1.2 for each 1% of health lost, doubled below a third; the first drop
+    /// <summary>A blow reached her: +0.65 for each 1% of health lost, doubled below a third; the first drop
     /// below a quarter, the ember answers (+35, once in 45 s).</summary>
     void FlareOnHurt(double dmg, double hpBefore, string source)
     {
@@ -86,7 +99,7 @@ public sealed partial class Battle
         if (source == "always bleeding") return;
         var p = Player;
         double pct = dmg / MaxHp * 100;
-        double fill = 1.2 * pct * (p.Hp < MaxHp / 3 ? 2 : 1);
+        double fill = FillHurt * pct * (p.Hp < MaxHp / 3 ? 2 : 1);
         if (Lamp("flare.hurt_fill")) fill *= 1 + Lamps.Full("flare.hurt_fill", "more", 0.2);
         FillFlare(fill, "hurt");
         if (hpBefore >= MaxHp * FlareClutch && p.Hp < MaxHp * FlareClutch && p.Hp > 0)
@@ -99,45 +112,41 @@ public sealed partial class Battle
             else if (Time - emberAnsweredAt >= 45)
             {
                 emberAnsweredAt = Time;
-                FillFlare(35, "answers");
+                FillFlare(FillAnswer, "answers");
             }
         }
     }
 
     void FlareOnPerfect() =>
-        FillFlare(10 * (Lamp("flare.perfect_fill") ? 1 + Lamps.Full("flare.perfect_fill", "more", 0.5) : 1), "perfect");
+        FillFlare(FillPerfect * (Lamp("flare.perfect_fill") ? 1 + Lamps.Full("flare.perfect_fill", "more", 0.5) : 1), "perfect");
 
     void FlareOnBlock(Enemy? from)
     {
-        if (from is { } e && (e.Elite || e.Boss)) FillFlare(6, "block");
+        if (from is { } e && (e.Elite || e.Boss)) FillFlare(FillBlock, "block");
     }
 
-    /// <summary>Damage she dealt: a boss +1 for each 1% of its health, a champion +0.25 (the Flare's own never refills it).</summary>
+    /// <summary>Damage she dealt: a boss +0.8 for each 1% of its health (the Flare's own never refills it).</summary>
     void FlareOnDealt(Enemy e, double dealt, string by)
     {
         if (Flare == null || by == "flare" || dealt <= 0 || e.MaxHp <= 0) return;
-        if (e.Boss) FillFlare(dealt / e.MaxHp * 100, "boss");
-        else if (e.Elite) FillFlare(0.25 * dealt / e.MaxHp * 100, "champion");
+        if (e.Boss) FillFlare(FillBoss * dealt / e.MaxHp * 100, "boss");
     }
 
-    /// <summary>A kill: a champion's +8; the horde's +0.25 each, at most +1 a second; a bleed's kill with Blood for the Flare.</summary>
+    /// <summary>A kill: a champion's +2, at most +0.6 a second; the horde's +0.1 each, at most +0.5 a second; a bleed's kill with Blood for the Flare.</summary>
     void FlareOnKill(Enemy e, bool byBleed)
     {
         if (Flare == null) return;
-        if (e.Elite && !e.Boss) { FillFlare(8, "champion"); return; }
         if (e.Boss) return;
-        double sec = Math.Floor(Time);
-        if (sec != killFillSecond) { killFillSecond = sec; killFillInSecond = 0; }
-        double add = Math.Min(0.25, 1 - killFillInSecond);
-        if (add > 0) { killFillInSecond += add; FillFlare(add, "kills"); }
-        if (byBleed && Lamp("flare.bleed_kill")) FillFlare(Lamps.Full("flare.bleed_kill", "fill", 0.8), "bleed");
+        if (e.Elite) { FillFlare(Draw(0, FillChampion, FillChampionRate, FillChampion), "champion"); return; }
+        FillFlare(Draw(1, FillKill, FillKillRate, FillKillRate), "kills");
+        if (byBleed && Lamp("flare.bleed_kill")) FillFlare(Draw(2, Lamps.Full("flare.bleed_kill", "fill", 0.2), FillKillRate, FillKillRate), "bleed");
     }
 
     /// <summary>A spell of hers struck this many at once (Kindling: three or more fill it a little).</summary>
     public void FlareOnSpell(int struck)
     {
         if (struck >= (int)Lamps.Full("flare.spell_fill", "count", 3) && Lamp("flare.spell_fill"))
-            FillFlare(Lamps.Full("flare.spell_fill", "fill", 0.5), "spells");
+            FillFlare(Draw(3, Lamps.Full("flare.spell_fill", "fill", 0.5), FillKillRate, 1), "spells");
     }
 
     /* ----------------------------------------------------------- the cast -- */

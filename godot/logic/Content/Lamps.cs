@@ -197,6 +197,6 @@ public static class Lamps
     public static bool IsCount(string stat) => stat is Sim.Stat.Projectiles or Sim.Stat.Pierce or Sim.Stat.DashCharges;
 
     /// <summary>A Flare's damage scales with level (the character's by day and in maps, the ember's at night),
-    /// as a weapon's does with its ranks: a fifth again for every four levels.</summary>
-    public static double FlarePower(FlareDef f, int level) => f.Power * (1 + 0.05 * Math.Max(0, level - 1));
+    /// by the rule every ember-scaled blow of hers follows (Battle.BaseOf's flat damage, Rise Fire, thorns): +8% a level.</summary>
+    public static double FlarePower(FlareDef f, int level) => f.Power * (1 + 0.08 * Math.Max(0, level - 1));
 }
