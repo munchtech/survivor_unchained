@@ -785,7 +785,7 @@ def under_jaw(V, N, T, tri, bary, eye_z):
     chin, the lowest point turned forward down her middle, was her neck's.)
       - Her neck: below her jaw's line as her head is drawn from the front (its outline's lower half,
         marks_drawn.json beside the drawings, found as front_features finds the front's; FACE_JAW_MARKS another),
-        from 2 mm over the line to 4 mm under it; beyond the angles of her jaw, below their height.
+        from 4 mm over the line to 8 mm under it; beyond the angles of her jaw, below their height.
       - Her jaw's underside: turned down, below her mouth's corners, off her lips and her chin's middle (the chin's
         own cut is the lay's).
     None of her is cut if no face is found on the drawing."""
@@ -803,27 +803,29 @@ def under_jaw(V, N, T, tri, bary, eye_z):
     L = np.array(json.load(open(js))["points"])[:, :2]
     line = L[JAW_LINE]
     line = line[np.argsort(line[:, 0])]
-    # (her points as the front drawing has them: across, and down from its top, in its pixels)
-    d = V - np.array(CENTRE)
+    # (each texel's own place and way on her, from its triangle's corners: the cut a smooth function of them, so its
+    # edge is a curve on her. Made at her points and eased over a ring or two of them, its partial edge under her jaw
+    # followed her triangles, and through it the portraits' jaw shadow showed as a grey patch with a stepped edge under
+    # her ear (her own face and Highborn's, the owner, 10 October 2026).)
+    P = (V[T[tri]] * bary[:, :, None]).sum(1)
+    Nt = (N[T[tri]] * bary[:, :, None]).sum(1)
+    Nt /= np.linalg.norm(Nt, axis=1)[:, None] + 1e-12
+    # (her texels as the front drawing has them: across, and down from its top, in its pixels)
+    d = P - np.array(CENTRE)
     px = (0.5 + d[:, 0] / SCALE) * DRAW
     py = (0.5 - d[:, 2] / SCALE) * DRAW
     below = (py - np.interp(px, line[:, 0], line[:, 1])) * SCALE / DRAW          # (metres under her jaw's line)
+
     def ramp(x, a, b):
         return np.clip((x - a) / (b - a), 0, 1)
-    neck = ramp(below, -0.002, 0.004)
-    jaw = ramp(-N[:, 2], 0.3, 0.6) * ramp(eye_z - 0.06 - V[:, 2], 0, 0.01) * ramp(np.abs(V[:, 0]), 0.025, 0.035)
+    # (ramps as wide as the old ones eased over her rings: from 4 mm over her jaw's line to 8 mm under it; her jaw's
+    # underside from a fifth turned down to a little over half, up to 15 mm under her mouth's corners' height)
+    neck = ramp(below, -0.004, 0.008)
+    jaw = ramp(-Nt[:, 2], 0.2, 0.55) * ramp(eye_z - 0.06 - P[:, 2], -0.005, 0.015) * ramp(np.abs(P[:, 0]), 0.02, 0.04)
     cut = np.maximum(neck, jaw)
-    # (eased over a ring or two of her points: not a stepped edge)
-    nv = len(V)
-    e = np.array([(f[k], f[(k + 1) % len(f)]) for f in (list(p.vertices) for p in me.polygons) for k in range(len(f))])
-    import scipy.sparse as _sp
-    adj = _sp.coo_matrix((np.ones(len(e)), (e[:, 0], e[:, 1])), shape=(nv, nv)).tocsr()
-    adj = ((adj + adj.T) > 0).astype(float)
-    A = _sp.diags(1 / np.maximum(np.asarray(adj.sum(1)).ravel(), 1)) @ adj
-    for _ in range(int(os.environ.get("FACE_JAW_EASE", "3"))):
-        cut = 0.5 * cut + 0.5 * (A @ cut)
-    print("UNDER JAW: %d of her points under her jaw's line, %d on its underside" % ((neck > 0.5).sum(), (jaw > 0.5).sum()))
-    return (cut[T[tri]] * bary).sum(1)
+    cut = cut * cut * (3 - 2 * cut)
+    print("UNDER JAW: %d of her texels under her jaw's line, %d on its underside" % ((neck > 0.5).sum(), (jaw > 0.5).sum()))
+    return cut
 
 
 def match(src, ref, m):
