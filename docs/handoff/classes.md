@@ -55,4 +55,4 @@ Battle wiring (dash forms, reflexes, the Flare's meter, window and clutch, Q fir
 - Read first: `godot/logic/Sim/Forms.cs`, `godot/logic/Sim/Flare.cs`, `godot/logic/Sim/LampLoadout.cs`, `docs/handoff/classes_rules_brief.md`, CLASSES.md §2.10, §3.2-3.4 and §7.
 - Sweep (from the worktree): `dotnet run -c Release --no-build --project godot/balance -- arena --callings all --type both --lamps full|empty --tiers 1,2,3,4 --level tier --seeds 3 --policies greedy --people pack --bot deft --beyond 0 --par 16 --out <f>.jsonl`; the same with `--tiers 4 --level 30` for the end-game board; then `-- report --in <f>.jsonl`. The baseline reports are in the session scratchpad `sweep\` (they won't survive the scratch sweep, so regenerate them).
 
-HANDOFF READY: docs/handoff/classes.md on classes/phase1@NEXT
+HANDOFF READY: docs/handoff/classes.md on classes/phase1@b8ec84dd
