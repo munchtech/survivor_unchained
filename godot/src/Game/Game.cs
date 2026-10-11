@@ -1263,6 +1263,11 @@ public partial class Game : Node, IZoneHost
         {
             minuteDone = true;
             sn2.SkipTo((int)Args.Num("stage", 0), floors: true);
+            // (--at still says where she stands for the picture: the stage would set her at its start.)
+            if (Args.Get("at") is string sa && sa.Split(',') is [var sx, var sz]
+                && double.TryParse(sx, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var ax)
+                && double.TryParse(sz, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var az))
+            { Battle.Player.X = ax; Battle.Player.Z = az; }
         }
         // --lit: a story night's deadfalls all burning (pictures of them alight).
         if (!litDone && Args.Has("lit") && zone is StoryNight sn3 && Battle != null)

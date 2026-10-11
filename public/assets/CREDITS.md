@@ -205,6 +205,11 @@ The arenas' grounds (`godot/art/arena/<place>`, by `tools/godot/arena_ground.py`
 - gray_rocks: Poly Haven (https://polyhaven.com/a/gray_rocks), CC0
 - leaves_forest_ground: Poly Haven (https://polyhaven.com/a/leaves_forest_ground), CC0
 - forest_ground_06: Poly Haven (https://polyhaven.com/a/forest_ground_06), CC0
+- brick_gravel: Poly Haven (https://polyhaven.com/a/brick_gravel), CC0
+- sandstone_cracks: Poly Haven (https://polyhaven.com/a/sandstone_cracks), CC0
+- castle_brick_broken_06: Poly Haven (https://polyhaven.com/a/castle_brick_broken_06), CC0
+- rabdentse_ruins_wall: Poly Haven (https://polyhaven.com/a/rabdentse_ruins_wall), CC0
+- seaside_rock: Poly Haven (https://polyhaven.com/a/seaside_rock), CC0
 
 ## Poly Haven models (CC0)
 

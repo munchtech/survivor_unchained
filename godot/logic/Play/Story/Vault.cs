@@ -66,6 +66,9 @@ public sealed class VaultOpened : StoryFight
     ];
 
     public override StoryPlace Place => Ground;
+    // Arena art's hall (Maps/Arenas/Vault): its walls, its floor, the stair's mouth.
+    public override bool PlaceBuilt => true;
+    public override string? Setting => "vault";
     public override string Arrive => "start";
     public override Func<StoryBeat>[] Beats => [() => new SouthEnd(), () => new HallLength(), () => new Standards()];
     public override string Pull => "Through the door: a long hall, and the head of a stair. On the stair, something is coming up in step.";
@@ -84,18 +87,16 @@ public sealed class VaultOpened : StoryFight
     public override string Kicker => "The Seventh Legion";
     public override StoryBoss Boss(IStoryArena a) => new BarrowLordStory(a);
 
-    /// <summary>The cover down the hall, solid and drawn.</summary>
+    /// <summary>The cover down the hall, solid and drawn: arena art's fallen beams and opened sarcophagi
+    /// (View/Pieces.Hall), each made to its collider, lying across the hall.</summary>
     public override void Furnish(IStoryArena a)
     {
+        int k = 0;
         foreach (var (x, z, hw, hd, beam) in Cover)
         {
             a.B.Collision.AddBox(x, z, hw, hd, 0, new ColliderOpts(Tag: "cover"));
-            // Stand-ins sized to the colliders until arena art builds the hall: a toppled column lying across
-            // the hall for a fallen beam, a broken grave for a sarcophagus.
-            var v = a.Piece(beam ? "dungeon/pillar" : "halloween/grave_A_destroyed", 1);
-            // (The column stands on its foot: laid over and turned, it runs four metres east of where it is put.)
-            v.Place(beam ? x - 2 : x, a.HeightAt(x, z) + (beam ? 0.75 : 0), z, beam ? Math.PI / 2 : 0, beam ? 1 : 1.15);
-            if (beam) v.Face(Math.PI / 2);
+            var v = a.Piece((beam ? "arena/beam:" : "arena/sarcophagus:") + k++, 1);
+            v.Place(x, a.HeightAt(x, z), z, 0, 1);
             v.Visible = true;
         }
     }
@@ -127,9 +128,9 @@ public sealed class VaultOpened : StoryFight
             e.MaxHp = e.Hp = hp;
             e.Named = new Named { Title = "The standard" };
             var s = new Standard { E = e, seed = e.Seed, X = x, Z = z };
-            // The kit's flag is a hand high: at eleven times, a pole a man and a half high and its rag.
-            s.view = a.Piece("hex_nature/flag_red", 11);
-            s.view.Place(x, a.HeightAt(x, z), z, 0, 11);
+            // The Legion's standard (arena art's): a pole a man and a half high, its discs and its rag.
+            s.view = a.Piece("arena/standard:" + (int)(Math.Abs(x * 7 + z * 13)), 1);
+            s.view.Place(x, a.HeightAt(x, z), z, 0, 1);
             s.view.Visible = true;
             return s;
         }

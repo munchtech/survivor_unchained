@@ -81,6 +81,19 @@ PLACES = {
         ('burnt', 'burned_ground_01'),      # ember-burnt
         ('face', 'excavated_soil_wall'),    # the working's cut walls
     ],
+    # Behind the Sealed Door: the Seventh Legion's hall under its howe, the roof
+    # fallen in and the howe's turf come down with it. The floor's slabs are the
+    # shader's (laid in world space, each its own patch of the stone); this is
+    # what they and the rest are made of.
+    'vault': [
+        ('turf', 'withered_grass'),         # the howe's dead turf, over the walls and slid in
+        ('earth', 'ground_grey'),           # earth where the slabs are gone
+        ('flags', 'seaside_rock'),          # the slabs' stone: grey, fine, worn, no joints of its own
+        ('rubble', 'rocky_trail'),          # the walls' rubble at their feet
+        ('tiles', 'brick_gravel'),          # the roof's tiles, broken, drifted over the floor
+        ('slide', 'brown_mud_02'),          # the howe's earth where it came in through the walls
+        ('face', 'dark_rock'),
+    ],
 }
 
 IMPORT = """[remap]

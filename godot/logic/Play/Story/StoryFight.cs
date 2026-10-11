@@ -199,6 +199,9 @@ public abstract class StoryFight
     /// <summary>Arena art has built the place to this outline (its own ground and cover): until then the old
     /// arena's props inside it are cleared (StoryNight.Begin). Arena art sets it as each place lands.</summary>
     public virtual bool PlaceBuilt => false;
+    /// <summary>The arena place whose ground, light and air it is drawn in (Maps/ArenaPlaces), where that is
+    /// not its people's: the Legion's hall is a building, not the barrow field over it.</summary>
+    public virtual string? Setting => null;
     /// <summary>The sight as the way back shuts behind her on the boss's ground.</summary>
     public virtual string? ShutSight => null;
     /// <summary>The boss's own ground: the gate that opens on it (null: the last stage's ground),

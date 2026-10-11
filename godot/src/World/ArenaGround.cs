@@ -58,6 +58,12 @@ public static class ArenaGround
             // (The rust as light as the clay and lying at its height: the stain is a shift of
             // hue, never a darker blot with a ledge round it, which read as camouflage.)
             new(0.12f, 0.85f, Con: 1.0f, Lift: 0.02f, Bump: 0.08f), new(0.035f, 0.5f), new(0.08f, 0.9f)],
+        // turf, earth, flags, rubble, tiles, slide, face: the Legion's hall. Its slabs a cold
+        // limestone grey under the moon (the scan's sandstone all but drained of its orange), the
+        // lightest ground in the place and still below the dead's bone; the roof's tiles a dark
+        // fired red in drifts over them; the howe's turf and earth where they came in.
+        ["vault"] = [new(0.07f, 0.55f, Lift: 0.04f, Bump: 0.08f), new(0.058f, 0.45f, Lift: -0.01f), new(0.088f, 0.16f, Con: 1.15f, Lift: 0.03f, Bump: 0.05f, Size: 1.3f),
+            new(0.075f, 0.35f, Lift: 0.06f, Bump: 0.12f), new(0.055f, 0.6f, Lift: 0.03f, Bump: 0.08f, Size: 0.8f), new(0.05f, 0.6f, Lift: 0.02f), new(0.05f, 0.6f)],
     };
 
     /// <summary>The standing water's tint, place by place.</summary>
@@ -65,6 +71,7 @@ public static class ArenaGround
     {
         ["barrow"] = new Color(0.62f, 0.64f, 0.66f), ["hollow"] = new Color(0.6f, 0.6f, 0.5f),
         ["ruts"] = new Color(0.62f, 0.6f, 0.56f), ["dig"] = new Color(0.7f, 0.6f, 0.46f),
+        ["vault"] = new Color(0.62f, 0.64f, 0.68f),
     };
 
     /// <summary>A place's moss, how much its slurry glows (the Dig cooks
@@ -77,6 +84,8 @@ public static class ArenaGround
         ["hollow"] = (new Color("#304620"), 0.16f, 1.6f),
         ["ruts"] = (new Color("#3b4826"), 0f, 0f),
         ["dig"] = (new Color("#3d4228"), 0.22f, 0f),
+        // The hall's: dark, close, in the damp at the walls' feet.
+        ["vault"] = (new Color("#343c28"), 0f, 0f),
     };
 
     public static ShaderMaterial Material(ZoneData z)
@@ -139,6 +148,27 @@ public static class ArenaGround
         mat.SetShaderParameter("dapple", 0f);
         mat.SetShaderParameter("ember", new Color(place.Air.Ember));
         mat.SetShaderParameter("ember_glow", (float)place.Air.EmberGlow);
+        if (place.Id == "vault")
+        {
+            // The hall's floor is laid (the shader's slabs), its way kerbed down the middle and
+            // the chain inlaid in it to the stair (Maps/Arenas/Vault).
+            var (ax, ahw, az0, az1) = SurvivorUnchained.Maps.Arenas.Vault.Aisle;
+            var (cx0, cz0, cx1, cz1, links) = SurvivorUnchained.Maps.Arenas.Vault.Chain;
+            mat.SetShaderParameter("flag_layer", 2);
+            mat.SetShaderParameter("flag_aisle", new Vector4((float)ax, (float)ahw, (float)az0, (float)az1));
+            mat.SetShaderParameter("chain_line", new Vector4((float)cx0, (float)cz0, (float)cx1, (float)cz1));
+            mat.SetShaderParameter("chain_links", (float)links);
+            var (dz, dreach, ddepth) = SurvivorUnchained.Maps.Arenas.Vault.Dust;
+            var (px0, pz0, px1, pz1) = SurvivorUnchained.Maps.Arenas.Vault.Prints;
+            mat.SetShaderParameter("dust", new Vector4(0, (float)dz, (float)dreach, (float)ddepth));
+            mat.SetShaderParameter("prints", new Vector4((float)px0, (float)pz0, (float)px1, (float)pz1));
+            var (rx, rz, rfrom, rw) = SurvivorUnchained.Maps.Arenas.Vault.Rings;
+            mat.SetShaderParameter("flag_ring", new Vector4((float)rx, (float)rz, (float)rfrom, (float)rw));
+            // Its edge is its walls: the floor at their feet only a little heat-killed, and the lip
+            // (under the walls' stone) not burning.
+            mat.SetShaderParameter("scorch_reach", 1.4f);
+            mat.SetShaderParameter("lip_glow", 0f);
+        }
         return mat;
     }
 
@@ -163,6 +193,8 @@ public static class ArenaGround
         ["ruts"] = new(1f, 24, 0.016f, 0.45f, new(0.3f, 0.7f), 1.2f, "#0a0b07", "#40482a", "#8e8a5c", "#34502a", 0.55f),
         // Dry yellow tufts on the working's spoil and edges, where nobody walks.
         ["dig"] = new(0.8f, 12, 0.022f, 0.55f, new(0.25f, 0.6f), 0.9f, "#0e0a06", "#6a5632", "#c4a466", "#4a4a2a", 0.1f),
+        // The howe's dead grass over the walls and down its slides: the barrow field's own.
+        ["vault"] = new(1f, 24, 0.016f, 0.42f, new(0.35f, 0.8f), 1.2f, "#0c0a07", "#4e3e26", "#8c7448", "#3e462a", 0.3f),
     };
 
     public static GrassLook GrassOf(string place) => Grasses[place];

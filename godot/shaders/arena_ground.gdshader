@@ -77,6 +77,25 @@ uniform float scorch_out = 1000.0;
 // them are its walls, seen close, and must read as wood, not as a void.
 uniform float past_dark = 0.6;
 
+// A paved floor (the Legion's hall): the layer that is its stone (-1: none). The slabs are laid
+// here, in world space, in courses across the floor, each slab its own patch of the stone, its
+// own shade, a few cracked, a few gone where the paint thins; never a photograph's joints, which
+// repeat as a grid from thirty metres up.
+uniform int flag_layer = -1;
+// The way down the middle (x, half-width, z from, z to): long slabs laid along it, kerbed.
+uniform vec4 flag_aisle = vec4(0.0, -1.0, 0.0, 0.0);
+// A floor laid in rings about a point (x, z) north of a line (z), each ring so wide (w): the
+// boss's ground, set apart from the hall's courses (0 wide: none).
+uniform vec4 flag_ring = vec4(0.0, 0.0, -1000.0, 0.0);
+// A chain of links inlaid in bronze gone green down the way (x0, z0, x1, z1), and how many.
+uniform vec4 chain_line = vec4(0.0);
+uniform float chain_links = 0.0;
+uniform vec3 chain_color : source_color = vec3(0.3, 0.37, 0.32);
+// Dust blown in at a door, lying on the slabs from (x, z) for so many metres (z1) and so deep (w):
+// and a trail of bootprints in it from one point to another (only going in).
+uniform vec4 dust = vec4(0.0, 0.0, 0.0, 0.0);
+uniform vec4 prints = vec4(0.0);
+
 varying vec3 w_pos;
 varying vec3 w_nrm;
 varying float w_in;
@@ -112,6 +131,111 @@ vec3 plates(vec2 x) {
 			else if (d < d2) d2 = d;
 		}
 	return vec3((d2 - d1) * 0.5, hash2(id));
+}
+
+float h1(float n) {
+	return fract(sin(n * 127.1 + 0.37) * 43758.5453);
+}
+
+// A line of joints a step apart, each jittered: the joints either side of x, and the span's index.
+vec3 span(float x, float s, float j, float salt) {
+	float k = floor(x / s);
+	float b0 = k * s + (h1(k + salt) - 0.5) * j;
+	float b1 = (k + 1.0) * s + (h1(k + 1.0 + salt) - 0.5) * j;
+	if (x < b0) return vec3((k - 1.0) * s + (h1(k - 1.0 + salt) - 0.5) * j, b0, k - 1.0);
+	// (Past the next joint, jittered back into this cell: the next span's.)
+	if (x >= b1) return vec3(b1, (k + 2.0) * s + (h1(k + 2.0 + salt) - 0.5) * j, k + 1.0);
+	return vec3(b0, b1, k);
+}
+
+// The slab a point lies on: metres to its nearest joint, its two hashes, metres to a crack
+// across it (if it has one) and which side of it, and its own place in it (for its patch).
+struct Slab { float edge; vec2 h; float crack; float side; vec2 c; };
+
+Slab slab(vec2 w) {
+	Slab s;
+	float ax = abs(w.x - flag_aisle.x);
+	bool aisle = ax < flag_aisle.y && w.y > flag_aisle.z && w.y < flag_aisle.w;
+	vec2 id;
+	if (flag_ring.w > 0.0 && w.y < flag_ring.z) {
+		// The boss's ground: rings of slabs about its middle, each ring cut into slabs a long
+		// stride along it; a round stone at the middle.
+		vec2 q = w - flag_ring.xy;
+		float r = length(q), a = atan(q.y, q.x);
+		float ring = floor(r / flag_ring.w);
+		float r0 = ring * flag_ring.w, r1 = r0 + flag_ring.w;
+		float n = max(1.0, floor(6.2832 * (r0 + flag_ring.w * 0.5) / 1.7));
+		float ta = (a / 6.2832 + 0.5) * n + h1(ring * 7.7) * 3.0;
+		float k = floor(ta);
+		float arc = 6.2832 * (r0 + flag_ring.w * 0.5) / n;
+		s.edge = ring < 1.0 ? r1 - r : min(min(r - r0, r1 - r), min(ta - k, k + 1.0 - ta) * arc);
+		id = vec2(mod(k, n), ring + 300.0);
+		float am = ((k + 0.5 - h1(ring * 7.7) * 3.0) / n - 0.5) * 6.2832;
+		s.c = flag_ring.xy + vec2(cos(am), sin(am)) * (r0 + flag_ring.w * 0.5) * step(1.0, ring);
+	} else if (aisle && ax > flag_aisle.y - 0.42) {
+		// The kerb: narrow stones along the way's edges, set on end.
+		float side = sign(w.x - flag_aisle.x);
+		vec3 r = span(w.y, 0.85, 0.25, 71.0 + side * 13.0);
+		s.edge = min(min(w.y - r.x, r.y - w.y), min(ax - (flag_aisle.y - 0.42), flag_aisle.y - ax));
+		id = vec2(r.z, 900.0 + side);
+		s.c = vec2(w.x, (r.x + r.y) * 0.5);
+	} else if (aisle) {
+		// The way: two files of long slabs laid along it.
+		float col = w.x < flag_aisle.x ? 0.0 : 1.0;
+		float hw = flag_aisle.y - 0.42;
+		vec3 r = span(w.y + col * 1.1, 2.3, 0.7, 101.0 + col * 31.0);
+		s.edge = min(min(w.y + col * 1.1 - r.x, r.y - w.y - col * 1.1), min(ax, hw - ax));
+		id = vec2(r.z, 700.0 + col);
+		s.c = vec2(flag_aisle.x + (col - 0.5) * hw, (r.x + r.y) * 0.5 - col * 1.1);
+	} else {
+		// The floor: courses across the hall, each its own run of slabs, the courses and the slabs
+		// all of different sizes (an empire's quarry, not a tiler's).
+		vec3 r = span(w.y, 1.35, 0.55, 17.0);
+		float xs = w.x + h1(r.z * 3.1) * 2.0;
+		vec3 c = span(xs, 2.0, 1.2, r.z * 13.7 + 5.0);
+		s.edge = min(min(w.y - r.x, r.y - w.y), min(xs - c.x, c.y - xs));
+		id = vec2(c.z, r.z);
+		s.c = vec2((c.x + c.y) * 0.5 - h1(r.z * 3.1) * 2.0, (r.x + r.y) * 0.5);
+	}
+	s.h = hash2(id + 0.5);
+	// About one slab in three is cracked across, the halves settled a little apart.
+	s.crack = 9.0;
+	s.side = 0.0;
+	if (s.h.y > 0.66) {
+		float a = s.h.x * 6.2832;
+		vec2 dir = vec2(cos(a), sin(a));
+		vec2 q = w - s.c - dir.yx * vec2(1.0, -1.0) * (s.h.y - 0.83) * 0.8;
+		float d = dot(q, vec2(-dir.y, dir.x)) + 0.03 * sin(dot(q, dir) * 9.0 + s.h.x * 20.0);
+		s.crack = abs(d);
+		s.side = sign(d);
+	}
+	return s;
+}
+
+// Metres to the chain's inlay (its links, each a band round a long slot), and whether the
+// link is the broken one.
+float chain_d(vec2 w) {
+	if (chain_links < 1.0) return 9.0;
+	vec2 a = chain_line.xy, b = chain_line.zw;
+	vec2 ab = b - a;
+	float len = length(ab);
+	vec2 u = ab / len, v = vec2(-u.y, u.x);
+	float L = len / (chain_links * 0.78 + 0.22), pitch = L * 0.78;
+	float t = dot(w - a, u), q = dot(w - a, v);
+	float best = 9.0;
+	float k0 = floor((t - L * 0.5) / pitch);
+	for (float k = k0 - 1.0; k <= k0 + 1.0; k += 1.0) {
+		if (k < 0.0 || k > chain_links - 1.0) continue;
+		float c = k * pitch + L * 0.5;
+		float rr = 0.21 * L, hl = 0.5 * L - rr;
+		// A stadium: a slot of half-length hl, round ends of radius rr.
+		float x = max(abs(t - c) - hl, 0.0);
+		float d = abs(length(vec2(x, q)) - rr);
+		// The last link, at the stair, is broken open on its far side.
+		if (k > chain_links - 1.5 && t - c > hl * 0.2 && q > 0.0) d = 9.0;
+		best = min(best, d);
+	}
+	return best;
 }
 
 vec2 g_uv(int i, vec3 p, vec3 n, out mat3 tbn) {
@@ -158,6 +282,8 @@ vec3 nor2(vec2 uv, int i, Pick p) {
 
 void fragment() {
 	vec2 w = w_pos.xz;
+	// (A pixel's width on the ground, taken here where every pixel runs: derivatives in a branch are not.)
+	float fpx = max(fwidth(w.x), fwidth(w.y));
 	vec4 nL = texture(noise_tex, w * 0.011);
 	vec4 nM = texture(noise_tex, w * 0.061 + 0.37);
 	vec4 nF = texture(noise_tex, w * 0.29 + 0.71);
@@ -187,6 +313,24 @@ void fragment() {
 	for (int k = 0; k < NL; k++) gw[k] *= 1.0 - wr;
 	gw[FACE] += wr;
 
+	// The paving: where its paint thins, its slabs go one by one (each by its own hash against
+	// the paint), the earth under them showing; the joints are a finger wide, dark with dirt.
+	Slab fl = Slab(9.0, vec2(0.0), 9.0, 0.0, vec2(0.0));
+	float joint = 0.0;
+	if (flag_layer >= 0) {
+		fl = slab(w);
+		float wf = gw[flag_layer];
+		if (wf > 0.003) {
+			float keep = step(fl.h.y * 0.8 + 0.12, smoothstep(0.15, 0.85, wf));
+			gw[1] += wf * (1.0 - keep);
+			gw[flag_layer] = wf * keep;
+		}
+		float jpx = fpx;
+		float jw = 0.01 + 0.008 * fl.h.x;
+		joint = 1.0 - smoothstep(jw, jw + max(0.015, jpx * 1.1), fl.edge);
+		joint = max(joint, (1.0 - smoothstep(0.006, 0.006 + max(0.014, jpx * 1.5), fl.crack)) * 0.55);
+	}
+
 	// Heights decide at the edges: the taller material shows. Decided on the
 	// heights seen a few mips up, so an edge follows clumps of stones, not
 	// each stone: from thirty metres a stone is three pixels, and an edge
@@ -201,12 +345,14 @@ void fragment() {
 		mat3 tbn;
 		vec2 uv = g_uv(k, w_pos, n_geo, tbn);
 		Pick pk = pick(uv, w, k);
+		// Each slab its own patch of the stone.
+		if (k == flag_layer) { pk.a = fl.h * 9.7 + fl.h.yx * 3.1; pk.b = pk.a; pk.t = 0.0; }
 		arhs[k] = tex2(g_arh, uv, k, pk);
 		Pick coarse = pk;
 		coarse.dx *= 12.0;
 		coarse.dy *= 12.0;
 		float hb = tex2(g_arh, uv, k, coarse).b;
-		hs[k] = gw[k] + mix(arhs[k].b, hb, 0.75) * BLEND_DEPTH;
+		hs[k] = gw[k] + mix(arhs[k].b, hb, 0.75) * BLEND_DEPTH * (k == flag_layer ? 1.0 - joint * 0.7 : 1.0);
 		best = max(best, hs[k]);
 	}
 	float tot = 0.0;
@@ -216,21 +362,68 @@ void fragment() {
 	}
 	vec3 albedo = vec3(0.0);
 	vec3 n_w = vec3(0.0);
-	float rough = 0.0, ao = 0.0, hgt = 0.0, H = 0.0;
+	float rough = 0.0, ao = 0.0, hgt = 0.0, H = 0.0, wflag = 0.0;
 	for (int k = 0; k < NL; k++) {
 		float wk = gw[k] / tot;
 		if (wk < 0.004) continue;
+		if (k == flag_layer) wflag = wk;
 		mat3 tbn;
 		vec2 uv = g_uv(k, w_pos, n_geo, tbn);
 		Pick p = pick(uv, w, k);
+		if (k == flag_layer) { p.a = fl.h * 9.7 + fl.h.yx * 3.1; p.b = p.a; p.t = 0.0; }
 		vec4 arh = arhs[k];
 		vec3 a = tex2(g_alb, uv, k, p).rgb;
 		float la = dot(a, vec3(0.2126, 0.7152, 0.0722));
 		a *= pow(max(la, 1e-4) / g_mean[k], g_con[k] - 1.0);
 		a = mix(vec3(dot(a, vec3(0.2126, 0.7152, 0.0722))), a, g_sat[k]);
+		float lift = 0.0;
+		if (k == flag_layer) {
+			// Each slab a shade of its own, warmer or colder; the halves of a cracked one apart.
+			a *= 0.86 + 0.24 * fl.h.x + 0.05 * fl.side;
+			a = mix(a, a * vec3(1.06, 1.0, 0.9), smoothstep(0.5, 1.0, fract(fl.h.x * 7.3)) * 0.6);
+			a = mix(a, a * vec3(0.92, 0.98, 1.06), smoothstep(0.5, 1.0, fract(fl.h.y * 5.1)) * 0.5);
+			// Grime lying across the slabs in drifts, joints and all: a floor of centuries, not
+			// a set of tiles each its own.
+			float grime = smoothstep(0.35, 0.8, nM.a * 0.6 + nF.r * 0.25 + nL.g * 0.3);
+			a *= mix(1.0, 0.72, grime) * vec3(1.0, 0.98, 0.95);
+			// Lichen in pale crusts, a thumb to a palm across, where feet never came (the edges).
+			vec2 lc = floor(w * 4.0);
+			vec2 lh = hash2(lc + 17.0);
+			float ld = length(fract(w * 4.0) - 0.25 - lh * 0.5) / 4.0;
+			float lich = step(0.86 - s2.b * 0.3, hash2(lc + 4.1).x) * (1.0 - smoothstep(0.02 + 0.045 * lh.y, 0.03 + 0.045 * lh.y + fpx, ld));
+			a = mix(a, a * vec3(1.5, 1.6, 1.3), lich * (1.0 - joint) * 0.8);
+			// Dirt in the joints, a finger wide.
+			a = mix(a, a * vec3(0.6, 0.55, 0.48), joint);
+			// The dust blown in at the door, thinning up the hall, deepest at the walls' feet; and
+			// in it, one man's bootprints going in, and none coming out.
+			if (dust.w > 0.0) {
+				float dd = clamp(1.0 - (dust.y - w.y) / dust.z, 0.0, 1.0) * step(w.y, dust.y + 1.0);
+				float film = smoothstep(0.0, 0.8, dd + (nM.g - 0.5) * 0.5 + (nF.b - 0.5) * 0.2) * dust.w;
+				float pr = 0.0;
+				vec2 pd = prints.zw - prints.xy;
+				float pl = length(pd);
+				if (pl > 0.1) {
+					vec2 pu = pd / pl, pv = vec2(-pu.y, pu.x);
+					float t = dot(w - prints.xy, pu), q = dot(w - prints.xy, pv);
+					float i = floor(t / 0.37);
+					float side = mod(i, 2.0) < 0.5 ? -1.0 : 1.0;
+					vec2 lp = vec2(t - (i + 0.5) * 0.37 - (h1(i * 1.7) - 0.5) * 0.04, q - side * 0.1 - (h1(i) - 0.5) * 0.05);
+					float sole = length((lp - vec2(0.04, 0.0)) / vec2(0.115, 0.047));
+					float heel = length((lp - vec2(-0.095, 0.0)) / vec2(0.045, 0.042));
+					pr = (1.0 - smoothstep(0.8, 1.05, min(sole, heel))) * step(0.0, t) * step(t, pl) * step(0.1, h1(i * 3.3));
+				}
+				a = mix(a, a * 1.3 + vec3(0.012, 0.011, 0.01), film * (1.0 - joint * 0.5));
+				a = mix(a, a * 0.62, pr * smoothstep(0.1, 0.5, film));
+			}
+			// Each slab settled a little on its own (the halves of a cracked one apart), its
+			// arrises worn round, sunk a finger at the joints.
+			lift = (fl.h.y - 0.5) * 0.03 + fl.side * 0.008 - joint * 0.035 - (1.0 - smoothstep(0.0, 0.07, fl.edge)) * 0.012;
+		}
 		albedo += a * g_tone[k] * wk;
-		H += wk * (g_lift[k] + (arh.b - 0.5) * g_bump[k]);
+		H += wk * (g_lift[k] + (arh.b - 0.5) * g_bump[k] + lift);
 		n_w += tbn * nor2(uv, k, p) * wk;
+		// (Each slab tilted a hair as it settled: the moon catches them one by one.)
+		if (k == flag_layer) n_w += vec3(fl.h.x - 0.5, 0.0, fract(fl.h.y * 3.7) - 0.5) * 0.07 * wk * (1.0 - joint);
 		rough += arh.g * wk;
 		ao += arh.r * wk;
 		hgt += arh.b * wk;
@@ -240,6 +433,18 @@ void fragment() {
 	// Slow variation over tens of metres, so a field is never one colour.
 	albedo *= 0.78 + 0.3 * nL.r;
 	albedo = mix(albedo, albedo * vec3(1.04, 1.0, 0.9), smoothstep(0.55, 0.8, nL.b) * 0.4);
+
+	// The chain inlaid down the way: bronze gone green, dark where it is worn, lying in its
+	// slabs and gone with them.
+	float ink = 0.0;
+	if (chain_links > 0.0) {
+		float cpx = max(fwidth(w.x), fwidth(w.y));
+		ink = (1.0 - smoothstep(0.055, 0.055 + max(0.02, cpx * 1.2), chain_d(w))) * smoothstep(0.35, 0.75, wflag);
+		vec3 bronze = mix(chain_color, chain_color * vec3(0.5, 0.42, 0.32), smoothstep(0.45, 0.75, nF.b * 0.7 + nM.r * 0.3));
+		albedo = mix(albedo, bronze, ink);
+		rough = mix(rough, 0.48, ink);
+		H -= 0.006 * ink;
+	}
 
 	// Moss grows in clumps, each a little dome: lit on top, dark in the
 	// creases between, its own green from yellow to deep. Domes at two sizes
@@ -415,6 +620,7 @@ void fragment() {
 	ROUGHNESS = clamp(rough, 0.04, 1.0);
 	AO = mix(1.0, ao, 0.85);
 	AO_LIGHT_AFFECT = 0.25;
+	METALLIC = ink * 0.45;
 	SPECULAR = mix(0.35, 0.6, pool);
 	NORMAL = normalize((VIEW_MATRIX * vec4(n, 0.0)).xyz);
 	// Standing water gives the sky back, broken by the wind on it.

@@ -67,6 +67,11 @@ public abstract class ArenaShape
     public virtual bool Closed(double x, double z) => false;
     /// <summary>How much of the banks rise outside the edge at a point (1 all; less where a stream cuts through).</summary>
     public virtual double Bank(double x, double z) => 1;
+    /// <summary>A built floor (a hall's) lies dead level inside its walls: none of the clearing's roll.</summary>
+    public virtual bool Level => false;
+    /// <summary>How deep the ember's ring chars the edge (1 a place's banks; less where the edge is a
+    /// wall, and the char at its foot reads as soot).</summary>
+    public virtual double Scorch => 1;
     /// <summary>The paint at a point; `inn` is metres inside the edge (negative outside).</summary>
     public abstract void Paint(double x, double z, double inn, ref ArenaPaint p);
     /// <summary>The wall's dressing at a point `d` metres outside the edge.</summary>
@@ -99,16 +104,18 @@ public static class ArenaGen
     static ArenaShape? StoryShapeFor(string story) => story switch
     {
         "hollow_by_night" => new Arenas.HollowNight(),
+        "vault_opened" => new Arenas.Vault(),
         _ => null,
     };
 
     public static MapBuild Generate(MapSpec spec)
     {
-        var place = ArenaPlaces.For(spec);
         var story = spec.Story != "" ? Play.Story.StoryScripts.For(spec.Story) : null;
+        var place = ArenaPlaces.For(spec, story?.Setting);
         // A story place is small and walled by its banks and the wood over them: the moon
         // stands higher over it, or a low moon's shadows of the trees fill it to the brim.
-        if (story != null) place = place with { Night = place.Night with { KeyElevation = Math.Max(place.Night.KeyElevation, 62) } };
+        // (A story fight in its own setting keeps that place's moon: the hall's walls are not a wood.)
+        if (story != null && story.Setting == null) place = place with { Night = place.Night with { KeyElevation = Math.Max(place.Night.KeyElevation, 62) } };
         var shape = (story != null ? StoryShapeFor(spec.Story) : null) ?? ShapeFor(place.Id);
         var b = new Builder(spec, place) { Outline = story?.Place, Story = story };
         shape.Bind(b);
@@ -231,7 +238,9 @@ public static class ArenaGen
                     if (Outline == null && d > R + 20) continue;
                     double k = Outline != null ? 1 - MathX.Smoothstep(0, 10, Outside[j * Res + i]) : 1 - MathX.Smoothstep(R * 0.7, R + 6, d);
                     float h = Heights[j * Res + i];
-                    Heights[j * Res + i] = (float)MathX.Lerp(h, h0 + Math.Min(0, h - h0) * 0.3, k * 0.85);
+                    Heights[j * Res + i] = shape.Level
+                        ? (float)MathX.Lerp(h, h0, 1 - MathX.Smoothstep(0, 2.5, Outside[j * Res + i]))
+                        : (float)MathX.Lerp(h, h0 + Math.Min(0, h - h0) * 0.3, k * 0.85);
                 }
             for (int j = 0; j < Res; j++)
                 for (int i = 0; i < Res; i++)
@@ -254,7 +263,7 @@ public static class ArenaGen
                     // Every place's ground in broad patches of its two materials.
                     p.BaseB = MathX.Smoothstep(-0.25, 0.35, Noise.Fbm(x * 0.018 + 40, z * 0.018 - 13, 3));
                     shape.Paint(x, z, inn, ref p);
-                    p.Char = Math.Max(p.Char, RingChar(x, z, inn));
+                    p.Char = Math.Max(p.Char, RingChar(x, z, inn) * shape.Scorch);
                     int o = (j * SplatRes + i) * 4;
                     splat[o] = MapGen.B(p.L2); splat[o + 1] = MapGen.B(p.L3); splat[o + 2] = MapGen.B(p.L4); splat[o + 3] = MapGen.B(p.L5);
                     splat2[o] = MapGen.B(p.Wet); splat2[o + 1] = MapGen.B(p.Char); splat2[o + 2] = MapGen.B(p.Trod); splat2[o + 3] = MapGen.B(p.BaseB);
@@ -309,6 +318,13 @@ public static class ArenaGen
             var k = Kinds[kind];
             Flora.Add(new FloraPlace(kind, k.Pieces[Rng.Int(0, k.Pieces.Length - 1)], x, HeightAt(x, z) - sink, z,
                 Rng.Range(0, Math.PI * 2), k.Scale * scale * Rng.Range(0.85, 1.2)));
+        }
+
+        /// <summary>A piece of flora on something standing, at its height (grass on a wall's top).</summary>
+        public void PutOn(string kind, double x, double y, double z, double scale = 1)
+        {
+            var k = Kinds[kind];
+            Flora.Add(new FloraPlace(kind, k.Pieces[Rng.Int(0, k.Pieces.Length - 1)], x, y, z, Rng.Range(0, Math.PI * 2), k.Scale * scale * Rng.Range(0.85, 1.2)));
         }
 
         /// <summary>A piece of flora turned as asked (a trunk laid along a line).</summary>

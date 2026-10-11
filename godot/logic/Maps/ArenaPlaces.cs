@@ -87,9 +87,10 @@ public static class ArenaPlaces
         return "";
     }
 
-    public static ArenaPlace For(MapSpec spec)
+    /// <summary>`setting`: a story fight's own place (StoryFight.Setting), where it is not its people's.</summary>
+    public static ArenaPlace For(MapSpec spec, string? setting = null)
     {
-        string id = IdFor(spec.People);
+        string id = setting ?? IdFor(spec.People);
         string mood = spec.Mood != "" ? spec.Mood : MoodOf(spec.Name);
         // The Risen's barrow field burned by the blight theme of old: the same as ashen.
         if (mood == "" && spec.Theme == "blight") mood = "ashen";
@@ -160,6 +161,20 @@ public static class ArenaPlaces
             FogColor = "#1e1610", FogDensity = 0.005, Exposure = 1.6, Rim = "#b0bce0", RimStrength = 0.78,
             Grade = Grade with { ShadowTint = "#36404e", HighlightTint = "#ffa04c", TintStrength = 0.26, Saturation = 0.95 },
         }, new ArenaAir("#8a7a68", 0.02, 0.5, 2.0, 1.6, "#2e2218", 0, "#ff6a24", 1.1)),
+        // The Legion's hall under its howe (a story fight's own place, Behind the Sealed Door):
+        // roofless, the moon high and whole over it from the south-west, so the west wall lays
+        // its shadow along the floor and the stair's wall at the far end stands lit; the stone
+        // cold, a little mist on the floor.
+        "vault" => (Atmospheres.Night with
+        {
+            Sky = Atmospheres.Night.Sky with { Glow = "#34445e" },
+            // (The walls' shadows lie wide across the floor: the sky's light fills them well, or the
+            // dead standing in them are holes in the picture.)
+            KeyColor = "#b4c6e8", KeyIntensity = 4.4, KeyElevation = 55, KeyAzimuth = 150, ShadowStrength = 0.72,
+            HemiSky = "#3c4e6c", HemiGround = "#24201c", HemiIntensity = 2.3, EnvIntensity = 0.95,
+            FogColor = "#121824", FogDensity = 0.004, Exposure = 1.62, Rim = "#a8c0f0", RimStrength = 0.8,
+            Grade = Grade with { ShadowTint = "#2a3e58", HighlightTint = "#ffb070", Saturation = 0.9 },
+        }, new ArenaAir("#8a96a8", 0.03, 0.6, 1.6, 1.0, "#1a2230", 0, "#ff5a22", 1.0)),
         _ => throw new ArgumentException($"no arena place {place}"),
     };
 

@@ -15,8 +15,16 @@ public static partial class Pieces
 {
     static Node3D? Arena(string name, int seed, Func<Vector3, float>? ground)
     {
+        // "name:N": which of its kind it is, where the fight sets pieces down itself.
+        if (name.Split(':') is [var bare, var n] && int.TryParse(n, out var given)) (name, seed) = (bare, given);
         Node3D? made = name switch
         {
+            "hall" => Hall(),
+            "beam" => FallenBeam(seed),
+            "sarcophagus" => Sarcophagus(seed),
+            "standard" => Standard(seed),
+            "scutum" => Scutum(seed),
+            "tumble" => Tumble(seed),
             "headframe" => Headframe(ground),
             "tub" => Tub(seed),
             "rootplate" => RootPlate(ground),

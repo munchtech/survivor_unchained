@@ -132,6 +132,38 @@ public class ArenaPlaceTests
     }
 
     [Fact]
+    public void The_vault_is_the_Legion_s_hall_built_to_the_outline_it_is_fought_in()
+    {
+        // Behind the Sealed Door is drawn in its own place (the hall, not the barrow field over it):
+        // the ground stood on is the fight's outline, its gates are drawn, its floor lies level, the
+        // hall is built, and nothing of its dressing stands on a point the fight is staged from.
+        var place = SurvivorUnchained.Play.Story.VaultOpened.Ground;
+        var m = MapGen.Generate(new MapSpec { Seed = 947, Arena = true, People = "dead", Story = "vault_opened" });
+        Assert.Equal("vault", m.Place!.Id);
+        for (double z = -50; z <= 35; z += 1.5)
+            for (double x = -25; x <= 25; x += 1.5)
+            {
+                double d = place.Dist(x, z);
+                if (d < -1) Assert.True(m.CanStand(x, z), $"inside the outline, but not stood on: {x},{z}");
+                if (d > 1) Assert.False(m.CanStand(x, z), $"outside the outline, but stood on: {x},{z}");
+            }
+        Assert.Equal(place.Gates.Length, m.Gates.Count);
+        Assert.Single(m.Pieces, p => p.Id == "arena/hall");
+        double h0 = m.Ground.HeightAt(0, 0);
+        foreach (var (x, z) in new[] { (0.0, 15.0), (5.0, -30.0), (-8.0, -25.0), (3.0, -14.0), (0.0, -36.0) })
+            Assert.InRange(m.Ground.HeightAt(x, z) - h0, -0.03, 0.03);
+        foreach (var (pid, (px, pz)) in place.Points)
+            Assert.DoesNotContain(m.Pieces, p => p.Id != "arena/hall" && MathX.Dist(p.X, p.Z, px, pz) < 0.8);
+        // The plan's walls stand on the outline's edge, never in it.
+        foreach (var r in SurvivorUnchained.Maps.Arenas.Vault.Runs)
+            for (double t = 0; t <= 1; t += 0.05)
+            {
+                double x = r.Ax + (r.Bx - r.Ax) * t + r.Nx * 0.05, z = r.Az + (r.Bz - r.Az) * t + r.Nz * 0.05;
+                Assert.True(place.Dist(x, z) > -0.3, $"a wall's face inside the fight at {x:0.0},{z:0.0}");
+            }
+    }
+
+    [Fact]
     public void The_ember_ring_chars_the_edge_all_the_way_round()
     {
         var m = MapGen.Generate(new MapSpec { Seed = 8, Arena = true, People = "pack" });
