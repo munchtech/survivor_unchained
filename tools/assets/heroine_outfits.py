@@ -3878,7 +3878,7 @@ def arcanist():
         if (vertex_normals(pp, tt)[:n0, 1] > 0).mean() > 0.5:
             tt = tt[:, ::-1]
         _, jn = cKDTree(cp).query(pp)
-        made = [finish("arcanist.clasp", pp, cw[jn], tt, "gold", 0.0, 0.0005, 10 ** 6, scraps=False)]
+        made = [finish("arcanist.clasp", pp, cw[jn], tt, "gold", 0.0, 0.0, 10 ** 6, scraps=False)]
         # (the stone: an oval cabochon at the foot, 10 x 8 mm, 3.2 mm high, in
         # a gold bezel ring 1 mm proud of the crescent)
         c0 = frnt[nth // 2, nr // 2]
