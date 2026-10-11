@@ -71,7 +71,11 @@ public partial class HairSway : Node
     // This frame's: where the chain's points would hang, and the balls they are kept out of.
     Vector3[] target = new Vector3[8], pushed = new Vector3[8], corr = new Vector3[8], at = [], back = [], across = [];
     float[] hold = new float[8], grip = new float[8], free = new float[8];
-    Vector3[] vel = new Vector3[8], touch = new Vector3[8];
+    Vector3[] vel = new Vector3[8], touch = new Vector3[8], start = new Vector3[8], surf = new Vector3[8];
+    // Last frame's balls: how fast a surface it touches moves (contact keeps pace with her body falling away from it:
+    // stopped dead in the world, long hair was left 6-14 cm in the air as her back fell away at 2 m/s, death c8).
+    Vector3[] atThen = [], acrossThen = [];
+    int stepsNow = 1;
     bool[] grounded = new bool[8];
     // How long since any of it lay on the ground, and since each point's rest last stopped hanging down.
     float offFloor = 1e3f;
@@ -81,6 +85,11 @@ public partial class HairSway : Node
     // is, and last frame's, for the motion vectors (MotionClock).
     Vector3 sway, headAt;
     Vector3[] swung = new Vector3[8], swungThen = new Vector3[8];
+    // And the chain at rest (where it hangs, carried by its bone) and how each place along it has turned, so the shader
+    // turns her hair with it, not only moves it (moved only, a braid swung sideways went edge-on flat, and cards burst
+    // where it bent).
+    Vector3[] restAt = new Vector3[8], restThen = new Vector3[8];
+    Vector4[] turnAt = new Vector4[8], turnThen = new Vector4[8];
     bool drawn;
 
     public HairSway() { Name = "HairSway"; }
@@ -166,6 +175,7 @@ public partial class HairSway : Node
     /// <summary>A point kept out of the balls (i: the chain's point it is, which then touches; -1 none).</summary>
     Vector3 Out(Vector3 q, float scale, int i)
     {
+        var q0 = q;
         for (int b = 0; b < balls.Length; b++)
         {
             // (the nearest point of its line across her back)
@@ -176,10 +186,18 @@ public partial class HairSway : Node
             float r = balls[b].R * scale;
             if (off.LengthSquared() >= r * r) continue;
             // (in front of a ball down her back: mirrored behind it, then out)
-            if (balls[b].Behind && off.Dot(back[b]) < 0) { off -= 2 * off.Dot(back[b]) * back[b]; }
+            // (but not one that was in front of it already, lying beside her as she lies face down, once the hold has let
+            // go: mirrored, a braid by her shoulder jumped 10 cm up onto her back, death c13)
+            if (balls[b].Behind && off.Dot(back[b]) < 0 && !(i > 0 && free[i] > 0.5f && (start[i] - c).Dot(back[b]) < 0))
+                off -= 2 * off.Dot(back[b]) * back[b];
             var n = off.LengthSquared() > 1e-10f ? off.Normalized() : back[b];
             q = c + n * r;
-            if (i > 0) { touch[i] = n; grip[i] = Mathf.Max(grip[i], 0.1f); }
+            if (i > 0)
+            {
+                touch[i] = n; grip[i] = Mathf.Max(grip[i], 0.1f);
+                float t = ww > 0 ? Mathf.Clamp((q0 - at[b]).Dot(w) / ww, -1f, 1f) : 0;
+                surf[i] = atThen.Length == balls.Length ? (c - (atThen[b] + acrossThen[b] * t)) / stepsNow : Vector3.Zero;
+            }
         }
         return q;
     }
@@ -203,6 +221,10 @@ public partial class HairSway : Node
         // Last frame's swing is kept for the motion vectors' look back (MotionClock); this frame's is made afresh.
         (swungThen, swung) = (swung, swungThen);
         System.Array.Clear(swung);
+        (restThen, restAt) = (restAt, restThen);
+        (turnThen, turnAt) = (turnAt, turnThen);
+        System.Array.Fill(turnAt, new Vector4(0, 0, 0, 1));
+        System.Array.Clear(restAt);
         var swayThen = sway;
         var headThen = headAt;
         sway = Vector3.Zero;
@@ -232,7 +254,10 @@ public partial class HairSway : Node
             offFloor = lying ? 0 : offFloor + dt;
             for (int i = 1; i < 8; i++)
             {
-                float u = Mathf.SmoothStep(0.35f, 0.85f, (target[i] - target[0]).Normalized().Dot(Vector3.Down));
+                // (and none at all by 57 degrees: held so, a braid hanging from her bowed head stood off her back as a
+                // rod as she dropped to her knees, death c4; from 40 degrees down as it was, so a run or a throw is unchanged)
+                float dn = (target[i] - target[0]).Normalized().Dot(Vector3.Down);
+                float u = Mathf.SmoothStep(0.35f, 0.85f, dn) * Mathf.SmoothStep(0.55f, 0.77f, dn);
                 float want = stiff * u;
                 hungFor[i] = u > 0.98f ? hungFor[i] + dt : 0;
                 if (!live || want <= hold[i]) hold[i] = want;
@@ -243,7 +268,7 @@ public partial class HairSway : Node
             float scale = world.Basis.Scale.X;
             if (!live || dt <= 0)
             {
-                x = (Vector3[])target.Clone(); xp = (Vector3[])target.Clone(); rootThen = target[0]; offFloor = 1e3f; live = true;
+                x = (Vector3[])target.Clone(); xp = (Vector3[])target.Clone(); rootThen = target[0]; offFloor = 1e3f; live = true; atThen = [];
                 for (int i = 1; i < 8; i++) link[i] = target[i].DistanceTo(target[i - 1]);
             }
             if (OS.HasEnvironment("HAIRDUMP")) Dump(dt, world.Origin.Y);
@@ -251,6 +276,7 @@ public partial class HairSway : Node
             // stiffness and the damping are per step, so at 60 fps four steps held it twice as stiff.
             int steps = Mathf.Max(1, Mathf.CeilToInt(dt * 120f - 1e-3f));
             float h = dt / steps;
+            stepsNow = steps;
             var fall = new Vector3(0, -9.8f, 0) * h * h;
             // (the ground she stands or lies on: her skeleton's own floor)
             float floor = world.Origin.Y + 0.015f;
@@ -275,6 +301,7 @@ public partial class HairSway : Node
                 for (int i = 1; i < 8; i++)
                 {
                     var was = x[i];
+                    start[i] = was;
                     vel[i] = (x[i] - xp[i]) * 0.985f;
                     var rel = (vel[i] - rootStep) * (1f - Drag * free[i]);
                     if (rel.LengthSquared() > most * most) rel = rel.Normalized() * most;
@@ -305,7 +332,7 @@ public partial class HairSway : Node
                         corr[i] = to - x[i];
                         x[i] = to;
                         x[i] = Out(x[i], scale, i);
-                        if (x[i].Y < floor) { x[i].Y = floor; touch[i] = Vector3.Up; grip[i] = 0.5f; grounded[i] = true; }
+                        if (x[i].Y < floor) { x[i].Y = floor; touch[i] = Vector3.Up; grip[i] = 0.5f; grounded[i] = true; surf[i] = Vector3.Zero; }
                         if (i < 7) turn = new Quaternion(restDir, (x[i] - x[i - 1]).Normalized());
                     }
                 }
@@ -315,12 +342,20 @@ public partial class HairSway : Node
                 for (int i = 1; i < 8; i++)
                 {
                     if (grip[i] == 0) continue;
-                    var v = vel[i] - touch[i] * Mathf.Min(0f, vel[i].Dot(touch[i]));
-                    xp[i] = x[i] - v * (1f - grip[i]);
-                    grip[i] = 0;
+                    // Once the hold has let go, against her body as it moves: a surface falling away from it carries it at
+                    // its own pace along the normal (one coming at it still gives it no speed: no fling).
+                    var n = touch[i];
+                    var u = n * Mathf.Min(0f, surf[i].Dot(n)) * Mathf.SmoothStep(0.1f, 0.5f, free[i]);
+                    var r = vel[i] - u;
+                    r -= n * Mathf.Min(0f, r.Dot(n));
+                    xp[i] = x[i] - u - r * (1f - grip[i]);
+                    grip[i] = 0; surf[i] = Vector3.Zero;
                 }
             }
+            if (atThen.Length != balls.Length) { atThen = new Vector3[balls.Length]; acrossThen = new Vector3[balls.Length]; }
+            System.Array.Copy(at, atThen, balls.Length); System.Array.Copy(across, acrossThen, balls.Length);
             for (int i = 0; i < 8; i++) swung[i] = local.Basis * (x[i] - target[i]) * Amount;
+            Turn(local);
             if (OS.HasEnvironment("HAIRDRAW")) Draw();
             if (OS.HasEnvironment("HAIRBODY"))
             {
@@ -364,7 +399,7 @@ public partial class HairSway : Node
             arms[2 * a + 1] = has ? local * (world * (Moved(fistBone[a]) * fistRest[a])) : Vector3.Zero;
         }
         // (Its first frame has no last: it stood as it stands.)
-        if (!drawn) { swayThen = sway; headThen = headAt; System.Array.Copy(swung, swungThen, 8); System.Array.Copy(arms, armsThen, 4); drawn = true; }
+        if (!drawn) { swayThen = sway; headThen = headAt; System.Array.Copy(swung, swungThen, 8); System.Array.Copy(arms, armsThen, 4); System.Array.Copy(restAt, restThen, 8); System.Array.Copy(turnAt, turnThen, 8); drawn = true; }
         for (int s = 0; s < mesh.Mesh.GetSurfaceCount(); s++)
             if (mesh.GetSurfaceOverrideMaterial(s) is ShaderMaterial first)
                 foreach (var m in SurvivorUnchained.View.HairDraw.Passes(first))   // (a blended pass over its solid parts swings with them)
@@ -378,6 +413,10 @@ public partial class HairSway : Node
                     m.SetShaderParameter(ArmsName, arms);
                     m.SetShaderParameter(ArmsThenName, armsThen);
                     m.SetShaderParameter(ArmRName, foreBone.Length > 0 ? ForearmR : 0f);
+                    m.SetShaderParameter(RestName, restAt);
+                    m.SetShaderParameter(RestThenName, restThen);
+                    m.SetShaderParameter(TurnName, turnAt);
+                    m.SetShaderParameter(TurnThenName, turnThen);
                 }
     }
 
@@ -429,5 +468,40 @@ public partial class HairSway : Node
     // is a new name each call, and every frame's left for the collector.
     static readonly StringName SwayName = "sway", HeadName = "head", ChainName = "chain",
         SwayThenName = "sway_then", HeadThenName = "head_then", ChainThenName = "chain_then",
-        ArmsName = "arms", ArmsThenName = "arms_then", ArmRName = "arm_r";
+        ArmsName = "arms", ArmsThenName = "arms_then", ArmRName = "arm_r",
+        RestName = "chain_rest", RestThenName = "chain_rest_then", TurnName = "chain_turn", TurnThenName = "chain_turn_then";
+
+    /// <summary>The chain at rest and how far each place along it has turned, in the mesh's space. Each link's turn is
+    /// carried down from the root (each joint's bend now, less its bend at rest, laid on the link before's turn), so a
+    /// twist doesn't build up as it would from each link's own shortest turn, and no link flips as it swings past
+    /// half a turn from its rest. Each point takes the mean of its two links'; the root none (her hair at the tie is held).</summary>
+    void Turn(Transform3D local)
+    {
+        var seg = new Quaternion[7];
+        for (int i = 0; i < 8; i++) restAt[i] = local * target[i];
+        Vector3 d0 = Vector3.Zero, e0 = Vector3.Zero;
+        for (int j = 0; j < 7; j++)
+        {
+            Vector3 d = restAt[j + 1] - restAt[j], e = d + swung[j + 1] - swung[j];
+            if (d.LengthSquared() < 1e-12f || e.LengthSquared() < 1e-12f) { seg[j] = j > 0 ? seg[j - 1] : Quaternion.Identity; continue; }
+            d = d.Normalized(); e = e.Normalized();
+            seg[j] = j == 0 ? Arc(d, e) : (Arc(e0, e) * seg[j - 1] * Arc(d0, d).Inverse()).Normalized();
+            d0 = d; e0 = e;
+        }
+        turnAt[0] = new Vector4(0, 0, 0, 1);
+        for (int i = 1; i < 8; i++)
+        {
+            var q = i == 7 ? seg[6] : seg[i - 1].Slerp(seg[i], 0.5f);
+            turnAt[i] = new Vector4(q.X, q.Y, q.Z, q.W);
+        }
+    }
+
+    /// <summary>The shortest turn from one direction to another (both of unit length).</summary>
+    static Quaternion Arc(Vector3 a, Vector3 b)
+    {
+        float c = a.Dot(b);
+        if (c > 0.999999f) return Quaternion.Identity;
+        if (c < -0.999999f) return new Quaternion(a.Cross(Mathf.Abs(a.X) < 0.9f ? Vector3.Right : Vector3.Up).Normalized(), Mathf.Pi);
+        return new Quaternion(a, b);
+    }
 }
