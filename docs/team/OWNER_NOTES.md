@@ -9,7 +9,7 @@ Every lead reads this after RESUME.md. When you take a note into your work, mark
 - Each calling gets two types: warden two-hander and shield tank; stalker dual-wield melee and ranged; arcanist two caster styles; reaver two of its own.
 - Skill trees: "as simple to figure out as just clicking and having fun, but as complex to master to have fun planning". Study PoE, Last Epoch, Diablo and Grim Dawn.
 - In arenas, anyone can do anything (as in PoE), but on-calling choices are easier or better. More skills, mostly synergy.
-- Q / right-click stops being a dash and becomes a customisable ULTIMATE: it charges up, works as a limit-break life-saver, and is the heart of class identity. "it should be AWESOME. it should look AWESOME."
+- Q / right-click stops being a dash and becomes a customizable ULTIMATE: it charges up, works as a limit-break life-saver, and is the heart of class identity. "it should be AWESOME. it should look AWESOME."
 - Plan first (docs/design/CLASSES.md); the owner approves before code.
 
 ### Outfits: trim at the bust (an option, sent to the outfits lead)
