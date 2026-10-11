@@ -221,7 +221,7 @@
 	},
 	"get_up": {
 		"layer": "full",
-		"length": 1.83333337306976,
+		"length": 2.03333330154419,
 		"licence": "own work",
 		"loop": false,
 		"source": "keyed (tools/anim)"
