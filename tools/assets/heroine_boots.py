@@ -1,6 +1,6 @@
 """Her boots made as a bootmaker makes them, not her skin lifted off her
-(WIP, not yet wired into heroine_outfits.py and never yet run: see the
-plan at the end). The shaft and foot of each boot are one surface laid out
+(WIP: the Ranger's are built by boot(); what is still to come is at the
+end). The shaft and foot of each boot are one surface laid out
 as horizontal rings: each ring is the convex outline of her leg's cross
 section at that height (no hollow between muscles is followed), stood off
 by a clearance, and eased up and down the leg with a rising envelope, so no
@@ -10,8 +10,9 @@ outline, where the welt and sole go on.
 
 heroine_outfits.py calls bind(globals()) once its helpers exist."""
 import numpy as np
-from scipy.ndimage import gaussian_filter1d, maximum_filter1d
-from scipy.spatial import ConvexHull
+from scipy import sparse
+from scipy.ndimage import gaussian_filter1d, maximum_filter1d, minimum_filter1d
+from scipy.spatial import ConvexHull, cKDTree
 
 G = None
 M = 180                                    # directions each outline is held in
@@ -140,20 +141,24 @@ def ring(poly, back, n):
     return np.c_[np.interp(q, L, loop[:, 0]), np.interp(q, L, loop[:, 1])]
 
 
-def rings(leg, st, z_top, s_min, n=144, step=0.003, dz_most=0.006):
+def rings(leg, st, z_top, s_min, n=144, step=0.003, dz_most=0.006, fit=None):
     """The boot's inner surface as rings, top down to the floor: chosen from
     cuts 1 mm apart so no ring moves more than `step` from the last (close
-    over the instep and toe, far apart up the plain shaft). Returns the
-    rings' heights and points (n each, round from the back)."""
+    over the instep and toe, far apart up the plain shaft). `fit(zs, H, Hs)`
+    may change the shaped supports (a fitted top). Returns the rings'
+    heights and points (n each, round from the back), and their supports
+    and middles."""
     zs, H, inner, _ = sections(leg, 0.0015, z_top, s_min)
     Hs = shaped(leg, st, zs, H)
+    if fit is not None:
+        Hs = fit(zs, H, Hs)
     R = [ring(outline(Hs[k], inner[k]), -leg.f, n) for k in range(len(zs))]
     pick, last = [len(zs) - 1], len(zs) - 1
     for k in range(len(zs) - 2, -1, -1):
         if np.abs(R[k] - R[last]).max() > step or zs[last] - zs[k] >= dz_most or k == 0:
             pick.append(k)
             last = k
-    return zs[pick], np.array([R[k] for k in pick])
+    return zs[pick], np.array([R[k] for k in pick]), Hs[pick], inner[pick]
 
 
 def grid(zr, R):
@@ -171,24 +176,244 @@ def grid(zr, R):
     return pos, tris
 
 
-# ---------------------------------------------------------------- the plan --
-# Still to build (measured on her: ball on the floor, heel pad 4 mm up, arch
-# 8-10 mm up outside and 13-21 mm inside, toe tip 27 mm tall, foot 27 cm):
-#  - clip the grid with clip(): its top by the leg's S (front dip per outfit),
-#    its foot at the welt line z_w(yf) - 1.2 mm; within ~6 cm of the top blend
-#    each ring toward her skin's own cut + 2.5 mm (a fitted top, skin weights).
-#  - the sole as a cup (her foot stays flat, so a sole under her would be under
-#    the floor): outline = bottom ring's supports + thick + 3 mm; bottom z_b(yf)
-#    = -sink, toe spring rising ahead of the ball, shank rising to the breast;
-#    top z_w = z_b + t_sole. Heel block under it behind the breast, 3 lifts.
-#    Welt: tube() on the welt line, stitches() on its top.
-#  - weights: shaft from her skin's, smoothed along her (ADJ) wider at the
-#    ankle; the foot, sole and heel only foot/ball by yf; heel block foot.
+# ------------------------------------------------------------ the boot --
+# Measured on her: ball on the floor, heel pad 4 mm up, arch 8-10 mm up
+# outside and 13-21 mm inside, toe tip 27 mm tall, foot 27 cm. Her foot
+# stays flat, so a sole under her would be under the floor: the sole is a
+# solid cup round the bottom of her foot instead, its edge above the floor.
+
+# The Ranger's: a plain riding boot. Clearances (c_*) and envelopes (w_*) as
+# shaped() takes them; `wall`, the height the foot is one upright outline
+# below; the sole sunk `sink` under the floor, `t_fore` thick ahead (so its
+# top edge, the welt line, stands t_fore - sink up), the heel block's top
+# `heel` up and the sole `t_heel` thick over it; the breast `breast` of the
+# foot's length from the back of her heel; toe spring `spring` at the tip;
+# the shank kept `margin` under her skin; the welt `welt_out` proud of the
+# upper and `welt_h` tall.
+RANGER = dict(wall=0.025, c_foot=0.003, c_ankle=0.0035, c_shaft=0.004, c_top=0.0035, toe=0.012, toe_point=0.003,
+              w_foot=0.012, w_ankle=0.03, w_shaft=0.05,
+              sink=0.002, t_fore=0.0065, heel=0.0095, t_heel=0.0055, breast=0.27, spring=0.004, margin=0.0015,
+              welt_out=0.0035, welt_h=0.0025)
+SHELL = {}       # each leg's upper as cut (its inner sheet: points, triangles), for what is fixed on it
+
+
+def top_heights(leg, top_s, dip):
+    """The boot's top edge: its height in each of the M directions round her
+    leg, seen from the edge's middle (in plan), and that middle. The edge
+    runs `top_s` down her leg (metres from the hip) in front, `dip` further
+    down behind."""
+    P, S = G["P"], G["LEG_S"][leg.sd]
+    at = top_s + dip * (1 - G["FRONT"])
+    Q = P[(G["LEGW"][leg.sd] > 0.5) & (np.abs(S - at) < 0.004)]
+    c = Q[:, :2].mean(0)
+    j = np.round(np.arctan2(Q[:, 1] - c[1], Q[:, 0] - c[0]) / (2 * np.pi / M)).astype(int) % M
+    w = np.bincount(j, minlength=M)
+    z = np.bincount(j, Q[:, 2], minlength=M) / np.maximum(w, 1)
+    k, have = np.arange(M), np.where(w > 0)[0]
+    z = np.interp(k, np.r_[have - M, have, have + M], np.tile(z[have], 3))
+    return gaussian_filter1d(z, 4, mode="wrap"), c
+
+
+def at_angle(zt, c, p):
+    """The top edge's height over points p (round its middle c)."""
+    a = np.mod(np.arctan2(p[:, 1] - c[1], p[:, 0] - c[0]), 2 * np.pi)
+    return np.interp(a, np.arange(M + 1) * 2 * np.pi / M, np.r_[zt, zt[:1]])
+
+
+class Sole:
+    """The sole's lines along her foot (by yf): the welt line `zw` (its top
+    edge, where the welt sits) and its bottom `zb`: sunk `sink` under the
+    floor ahead, toe spring ahead of the ball, the shank rising behind it to
+    the heel block's top at the breast `br`, but never within `margin` of
+    her skin above (her arch is low outside)."""
+    def __init__(self, leg, st):
+        self.leg = leg
+        yb, yh, yt = leg.ball_yf, leg.heel_yf, leg.toe_yf
+        self.br = yh + st["breast"] * (yt - yh)
+        ys = self.ys = np.arange(yh - 0.04, yt + 0.06, 0.001)
+        fore = ramp(ys, self.br + 0.005, yb - 0.03)
+        zw = st["heel"] + st["t_heel"] + (st["t_fore"] - st["sink"] - st["heel"] - st["t_heel"]) * fore
+        zb = st["heel"] + (-st["sink"] - st["heel"]) * fore
+        end = yt + st["toe"] + 0.009
+        spring = st["spring"] * np.clip((ys - yb - 0.01) / (end - yb - 0.01), 0, 1) ** 2
+        zw, zb = zw + spring, zb + spring
+        P = G["P"]
+        Q = P[(G["LEGW"][leg.sd] > 0.5) & (P[:, 2] < 0.06)]
+        yq, zq = leg.yf(Q), Q[:, 2]
+        low = np.full(len(ys), np.inf)
+        for i, y in enumerate(ys):
+            m = np.abs(yq - y) < 0.005
+            if m.any():
+                low[i] = zq[m].min()
+        zb = np.where(ys < self.br - 0.004, zb, np.minimum(zb, low - st["margin"]))
+        zb = gaussian_filter1d(minimum_filter1d(zb, 9, mode="nearest"), 2.5, mode="nearest")
+        self.zb, self.zw = np.maximum(zb, -st["sink"]), zw
+
+    def w(self, p):
+        return np.interp(self.leg.yf(p), self.ys, self.zw)
+
+    def b(self, p):
+        return np.interp(self.leg.yf(p), self.ys, self.zb)
+
+
+def rim(O):
+    """A closed outline's outward normals and its way round (in plan)."""
+    t = np.roll(O, -1, 0) - np.roll(O, 1, 0)
+    t /= np.linalg.norm(t, axis=1)[:, None] + 1e-12
+    n = np.c_[t[:, 1], -t[:, 0]]
+    if ((O - O.mean(0)) * n).sum() < 0:
+        n = -n
+    return n, t
+
+
+def behind(O, leg, y):
+    """The part of a convex outline behind yf = y, closed by the straight
+    line there (a heel's breast)."""
+    v = leg.yf(O) - y
+    out = []
+    for i in range(len(O)):
+        j = (i + 1) % len(O)
+        if v[i] <= 0:
+            out.append(O[i])
+        if v[i] * v[j] < 0:
+            out.append(O[i] + (O[j] - O[i]) * (v[i] / (v[i] - v[j])))
+    return np.array(out)
+
+
+def loft(loops, bottom, top):
+    """A closed solid from loops of points (n each, in order from its bottom
+    pole to its top pole): quads between loops, fans at the poles, faces
+    out."""
+    L = np.asarray(loops)
+    K, n = L.shape[:2]
+    pos = np.vstack([bottom[None], L.reshape(-1, 3), top[None]])
+    i = np.arange(n)
+    j = (i + 1) % n
+    tris = [np.c_[np.zeros(n, int), 1 + j, 1 + i]]
+    for k in range(K - 1):
+        a, b = 1 + k * n + i, 1 + k * n + j
+        tris += [np.c_[a, b, b + n], np.c_[a, b + n, a + n]]
+    e = len(pos) - 1
+    tris.append(np.c_[np.full(n, e), 1 + (K - 1) * n + i, 1 + (K - 1) * n + j])
+    tris = np.vstack(tris)
+    if np.einsum("ij,ij->i", pos[tris[:, 0]], np.cross(pos[tris[:, 1]], pos[tris[:, 2]])).sum() < 0:
+        tris = tris[:, ::-1]
+    return pos, tris
+
+
+def rigid(leg, p):
+    """Weights that hold a part rigid on her foot, bending only across the
+    ball (the toe break)."""
+    B = G["BONES"]
+    w = np.zeros((len(p), len(B)))
+    wb = ramp(leg.yf(p), leg.ball_yf - 0.012, leg.ball_yf + 0.012)
+    w[:, B.index(f"foot_{leg.sd}")] = 1 - wb
+    w[:, B.index(f"ball_{leg.sd}")] = wb
+    return w
+
+
+def skin_weights(sd, pos, sigma=0.008, k=24):
+    """Her leg's skin weights under each point, weighed by nearness."""
+    P, W = G["P"], G["W"]
+    legv = np.where(G["LEGW"][sd] > 0.3)[0]
+    d, j = cKDTree(P[legv]).query(pos, k=k)
+    g = np.exp(-0.5 * (d / sigma) ** 2) + 1e-12
+    A = sparse.csr_matrix((g.ravel(), (np.repeat(np.arange(len(pos)), k), j.ravel())), shape=(len(pos), len(legv)))
+    return (A @ np.asarray(W[legv], float)) / g.sum(1)[:, None]
+
+
+def boot(name, sd, top_s, dip, st, mkey, sole_key="darkleather", thick=0.0025, bevel=0.001, budget=16000):
+    """A boot: its upper (shaft and foot, one sheet from rings()), cut at
+    its top edge (`top_s` down her leg in front, `dip` lower behind) and
+    down into the sole; the sole a solid cup round the bottom of her foot,
+    its welt on top stitched; the heel block, three lifts, under the back.
+    The sole, heel and the upper's foot and toe box ride her foot rigidly
+    (bending only at the ball); the shaft takes her skin's weights, eased.
+    Each part hides her skin deep under it (its 'deep_*' keys)."""
+    g = G
+    leg = Leg(sd)
+    za, yb = leg.ankle[2], leg.ball_yf
+    zt, tc = top_heights(leg, top_s, dip)
+    sole = Sole(leg, st)
+
+    # (a fitted top: from 6 cm under the edge up, the shaft closes in to her
+    # own outline, `c_top` off it)
+    def fit(zs, H, Hs):
+        t = 1 - ramp(zt[None, :] - zs[:, None], 0.015, 0.06)
+        return Hs * (1 - t) + np.minimum(Hs, H + st["c_top"]) * t
+    zr, R, Hr, Ir = rings(leg, st, zt.max() + 0.015, top_s - 0.06, fit=fit)
+    pos, tris = grid(zr, R)
+    z, yf = pos[:, 2], leg.yf(pos)
+    kr = np.maximum(1 - ramp(z, za - 0.035, za - 0.005), ramp(yf, yb - 0.035, yb - 0.01) * (1 - ramp(z, 0.05, 0.08)))
+    wt = skin_weights(sd, pos) * (1 - kr)[:, None] + rigid(leg, pos) * kr[:, None]
+    f = np.minimum(at_angle(zt, tc, pos) - z, z - (sole.w(pos) - 0.0012))
+    pos, wt, tris = g["clip"](f, pos, wt, tris)
+    pos, wt, tris = g["weld"](pos, wt, tris)
+    SHELL[sd] = (pos.copy(), tris.copy())
+    wt = g["four_bones"](g["eased_weights"](pos, tris, wt, over=0.012))
+    made = [g["finish"](name, pos, wt, tris, mkey, thick, bevel, budget)]
+
+    # The sole: under the upright foot's outline, `thick` + welt_out out.
+    k0 = int(np.argmin(np.abs(zr - 0.012)))
+    reach = thick + st["welt_out"]
+    O = ring(outline(Hr[k0] + reach, Ir[k0]), -leg.f, 220)
+    on, _ = rim(O)
+    c = O.mean(0)
+    bev = 0.0008
+    loops = [np.c_[q, sole.b(q)] for q in (c + (O - on * bev - c) * s for s in np.linspace(0.1, 0.92, 9))]
+    loops += [np.c_[O - on * bev, sole.b(O)], np.c_[O, sole.b(O) + bev], np.c_[O, sole.w(O) - bev * 0.6],
+              np.c_[O - on * bev * 0.6, sole.w(O)]]
+    loops += [np.c_[q, sole.w(q)] for q in (c + (O - on * bev - c) * s for s in np.linspace(0.92, 0.1, 5))]
+    spos, stris = loft(loops, np.r_[c, sole.b(c[None])[0]], np.r_[c, sole.w(c[None])[0]])
+    swt = rigid(leg, spos)
+    made.append(g["finish"](name + "_sole", spos, swt, stris, sole_key, 0.0, 0.0, 10 ** 7))
+
+    # The heel block: three lifts, under the sole behind the breast (its top
+    # inside the sole), a hair inside the sole's edge.
+    Oh = ring(behind(ring(outline(Hr[k0] + reach - 0.0004, Ir[k0]), -leg.f, 240), leg, sole.br), -leg.f, 180)
+    hn, _ = rim(Oh)
+    ch = Oh.mean(0)
+    z0, z1 = -st["sink"], st["heel"] + 0.0005
+    hb = 0.0007
+    full = lambda v: np.full(len(Oh), v)
+    loops = [np.c_[ch + (Oh - hn * hb - ch) * s, full(z0)] for s in np.linspace(0.12, 0.92, 6)]
+    loops += [np.c_[Oh - hn * hb, full(z0)], np.c_[Oh, full(z0 + hb)]]
+    for zl in z0 + (st["heel"] - z0) * np.array([1 / 3, 2 / 3]):
+        loops += [np.c_[Oh, full(zl - 0.0003)], np.c_[Oh - hn * 0.00035, full(zl)], np.c_[Oh, full(zl + 0.0003)]]
+    loops += [np.c_[Oh, full(z1)]]
+    loops += [np.c_[ch + (Oh - ch) * s, full(z1)] for s in np.linspace(0.85, 0.12, 4)]
+    hpos, htris = loft(loops, np.r_[ch, z0], np.r_[ch, z1])
+    made.append(g["finish"](name + "_heel", hpos, rigid(leg, hpos), htris, sole_key, 0.0, 0.0, 10 ** 7))
+
+    # The welt, on the sole's top edge round the upper, and its stitching.
+    wl = R[k0]
+    wn, _ = rim(wl)
+    curve = np.c_[wl, sole.w(wl)]
+    up = np.tile([0.0, 0.0, 1.0], (len(wl), 1))
+    out3 = np.c_[wn, np.zeros(len(wl))]
+    tg = np.roll(curve, -1, 0) - np.roll(curve, 1, 0)
+    tg /= np.linalg.norm(tg, axis=1)[:, None] + 1e-12
+    made.append(g["tube"](name + "_welt", curve, up, out3, sole_key, st["welt_out"] + 0.001, 0.0, reach, st["welt_h"],
+                          spos, swt, closed=True, nv=12))
+    made += g["stitches"](name + "_weltstitch", curve + out3 * (thick + st["welt_out"] * 0.55) + up * (st["welt_h"] - 0.0001),
+                          up, tg, spos, swt, step=0.0035, length=0.0024, closed=True)
+    for o in made:
+        o["hides"] = o is made[0] or o.name.endswith(("_sole", "_heel"))
+        if o["hides"]:
+            o["deep_zt"] = [float(v) for v in zt]
+            o["deep_c"] = [float(v) for v in tc]
+            o["deep_side"] = sd
+    print("BOOT %s: rings %d, sole sunk %.1f mm, welt line %.1f mm ahead and %.1f mm at the heel, shank %.1f mm up at the breast"
+          % (name, len(zr), -1000 * sole.zb.min(), 1000 * float(np.interp(yb, sole.ys, sole.zw)),
+             1000 * float(sole.zw[0]), 1000 * float(np.interp(sole.br + 0.002, sole.ys, sole.zb))))
+    return made
+
+
+# ------------------------------------------------------------ still to come --
 #  - creases as outward ridges (ankle stacking, toe break), back seam tube +
-#    stitches, toe cap and heel counter overlays, cuffs (turned down, a fold
-#    tube along the top), ranger laces (grommets + cords on the shaft),
+#    stitches, toe cap and heel counter overlays; the top edge bound;
 #    reaver garters (helical straps, hide bulging between).
-#  - her skin inside tucked whole: the tuck rule today stops at 4.5 mm off a
-#    piece; boots need a "deep" rule (ray 30 mm, eased in below the top).
 #  - grime from the floor up in the vertex colour's alpha (1 everywhere today)
-#    and wear/polish/flat from outfit_materials.json into the shader.
+#    and wear/polish/flat from outfit_materials.json into the shader; scuffs.
+#  - the Arcanist's and Reaver's boots on boot() (their own specs: a heel,
+#    a pointed toe, a softer sole).

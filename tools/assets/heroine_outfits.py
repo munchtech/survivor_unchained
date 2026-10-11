@@ -42,6 +42,11 @@ OUT = ARGS[0]
 ONLY = ARGS[ARGS.index("--only") + 1] if "--only" in ARGS else None
 BODY_OUT = ARGS[ARGS.index("--body") + 1] if "--body" in ARGS else None
 TEX = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "godot", "art", "outfit")
+# Her boots, made as a bootmaker makes them (heroine_boots.py, on this
+# script's helpers: it reads them from here when it is called).
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import heroine_boots as BOOTS
+BOOTS.bind(globals())
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import heroine_rig as rig_helpers  # noqa: E402  (her helper bones, added just before export)
 
@@ -3475,8 +3480,7 @@ def ranger():
                    soften=10, trim=edge(0.006, "brownleather"), studs="darksteel"),
             *piece(f"ranger.glove_{sd}", AND(limb(sd, WRIST_S - 0.03, 9.9, legs=False), 0.4 - fingers), "forestleather", lift=0.0015,
                    thick=0.0012, bevel=0.0004, soften=8),
-            *piece(f"ranger.boot_{sd}", limb(sd, tops[sd], 9.9, front_dip=-dip[sd]), "forestleather", lift=0.005 if sd == "r" else 0.0065, smooth=8,
-                   iron=300, hull=LEG_S[sd] - ANKLE_S - 0.03, soften=10),
+            *BOOTS.boot(f"ranger.boot_{sd}", sd, tops[sd], dip[sd], BOOTS.RANGER, "forestleather"),
             *girdle(f"ranger.cuff_{sd}", lambda a, cz=cz, d=dip[sd]: cz - d * (1 - np.cos(a)) / 2, 0.06, "forestleather",
                     lift=0.01 if sd == "r" else 0.012, thick=0.003, trim=edge(0.005),
                     mask=(LEGW[sd] > 0.6) & (np.abs(Z - cz) < 0.07 + dip[sd]), flare=0.012),
@@ -3487,14 +3491,15 @@ def ranger():
     z0, z1 = LEG["r"][2][2] + 0.07, leg_z("r", tops["r"] + 0.02) - 0.04
     lz = np.linspace(z1, z0, 9)
     bl = {}
+    # (laid on the boot's shaft: 1.5 mm off its outer face)
+    shell = BVHTree.FromPolygons([tuple(p) for p in BOOTS.SHELL["r"][0]], BOOTS.SHELL["r"][1].tolist())
     for sgn in (1, -1):
         e = []
         for z in lz:
             t = (LEG["r"][1][2] - z) / (LEG["r"][1][2] - LEG["r"][2][2])
             x = kx + (ax0 - kx) * t + 0.013 * sgn
-            q = front_point(x, z)
-            n = np.array(SKIN_BVH.find_nearest(Vector(q))[1][:])
-            e.append(q + n * 0.0095)
+            loc, n, _, _ = shell.find_nearest(Vector(front_point(x, z)))
+            e.append(np.array(loc[:]) + np.array(n[:]) * (0.0025 + 0.0015))
         bl[sgn] = e
     for i in range(len(lz) - 1):
         for sg in (1, -1):
@@ -4124,13 +4129,16 @@ if BODY_OUT:
         objs = [o for o in made if o.name.startswith(name + ".") and o.get("hides")]
         if not objs or k > 3:
             continue
-        vs, fs, cap = [], [], []
+        vs, fs, cap, deep = [], [], [], []
         for o in objs:
             base = len(vs)
             vs += [tuple(o.matrix_world @ v.co) for v in o.data.vertices]
             fs += [[base + i for i in p.vertices] for p in o.data.polygons]
             cap += [o.get("tuck", 1.0)] * len(o.data.polygons)
+            # (a boot's parts: its top edge's heights round its middle, and its leg)
+            deep += [(np.array(o["deep_zt"][:]), np.array(o["deep_c"][:]), o["deep_side"]) if "deep_zt" in o else None] * len(o.data.polygons)
         tree = BVHTree.FromPolygons(vs, fs)
+        reach = 0.03 if any(d is not None for d in deep) else 0.012
         hid = 0
         # Her skin under a piece (it faces the piece, within 12 mm), and
         # where her skin stands proud of the filled form the pieces are cut
@@ -4155,11 +4163,24 @@ if BODY_OUT:
         for v in me.vertices:
             co = body.matrix_world @ v.co
             n = (mw3 @ v.normal).normalized()
-            hit = tree.ray_cast(co + n * 0.0005, n, 0.012)
+            hit = tree.ray_cast(co + n * 0.0005, n, reach)
+            # A boot (its parts keep 'deep_*') tucks her skin all the way
+            # under it, through a 30 mm ray, from 1 to 3.5 cm under its top
+            # edge down (the standard rule above that): it stands well off
+            # her, and her calf, ankle and toes came through it as she moved.
+            # Every other piece keeps the standard rule and its 12 mm ray.
+            dp = deep[hit[2]] if hit[0] is not None else None
+            if hit[0] is not None and hit[3] > 0.012 and (dp is None or LEGW[dp[2]][jj[v.index]] < 0.3):
+                hit, dp = (None, None, None, None), None
             if proud[v.index] and tree.ray_cast(co + n * 0.0005, -n, 0.015)[0] is not None:
                 vals[v.index, k] = 1
             elif hit[0] is not None:
                 vals[v.index, k] = 1.0 if bump[v.index] else min(cap[hit[2]], 0.8 * np.clip((0.005 - hit[3] - 0.0005) / 0.004, 0, 1))
+                if dp is not None:
+                    h_ = np.array(hit[0][:])
+                    a_ = np.mod(np.arctan2(h_[1] - dp[1][1], h_[0] - dp[1][0]), 2 * np.pi)
+                    t_ = ramp(np.interp(a_, np.arange(len(dp[0]) + 1) * 2 * np.pi / len(dp[0]), np.r_[dp[0], dp[0][:1]]) - h_[2], 0.01, 0.035)
+                    vals[v.index, k] = vals[v.index, k] * (1 - t_) + t_
             hid += vals[v.index, k] > 0
         # Tucked in gradually from the border, a third, two thirds, then all
         # the way, so her skin slopes under a piece's edge as if it pressed
