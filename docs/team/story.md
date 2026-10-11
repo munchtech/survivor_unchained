@@ -66,8 +66,9 @@ exists. Report to the coordinator when the two scripts are ready.
   - the fortune: `vonnra.f_ford`, `f_did`, the readable ledger in `f_chart`;
   - the dawns: rules `dawn.voice`, `dawn.word`; the first dawn's "Lamp's lit,
     Spark."; the dusk call's first hearing (`DayLines.DuskHeard`).
-- **Love scenes:** both versions in `docs/story/LOVE_SCENES.md`; the owner
-  chose B (above), not yet applied in the data.
+- **Love scenes:** B in the data and directed (`tools/vo/direction/love_b.json`);
+  the editor-judge passed it with 15 fixes (scratchpad `s17/verdict_b.md`), not yet
+  applied; the room lines stay HOLD until they are and B is locked (handoff).
 - **Voice:** `docs/voice/RERECORD.md` keeps every changed line by character;
   Sella's and Rook's lists are ready. Holloway, Brannoc, Maeca, Vonnra, Harlan
   and the narrator are on HOLD in their packets.

@@ -24,15 +24,21 @@ the story data and the cinematic scripts, and you sign off voice packets.
   - Docs: LOVE_SCENES (B as built, the rules, the sounds for cinematics and
     sound, A = fd0b8a9b as the fallback), TREATMENT, RERECORD (B's take list),
     VOICES (captions rule).
-- **The editor-judge on B is running** (su-lead-max, spawned by writer 14; its
-  verdict file: `<scratch>\s17\verdict_b.md`). If it isn't there, re-spawn one
-  with the same checklist (the brief is in writer 14's transcript; the
-  checklist: the four conditions, voice, 18+ taste, the door and captions,
-  directions, recordability, continuity).
+- **The editor-judge on B: PASS WITH FIXES, 15 fixes**, exact old -> new text
+  in `<scratch>\s17\verdict_b.md` (keep that folder). All four conditions met;
+  the door holds; every caption on black is heard or how it is said. Worst:
+  the "(Let her.)" choice lost its referent ("(Let her take them back.)");
+  "colder than my feet" three times on the hold-them path (cut it from
+  blind2_feet); "barefoot" back in both gray lights and blind3_morning (drop
+  it, notes 02 section 6.2); the narrator's bolt to vol "level" (a hushed
+  narrator at the door reads as listening); Sella's "Hold still" cut (Maeca
+  has it); the guard's bolt exemption to match the exact sentence, not the id;
+  the C# door list found by walking the graph. Keep the writer's six open
+  choices (reasons in the file).
 
 ## Next, in order
 
-1. Apply the judge's fixes (data through `lib.py`; directions in
+1. Apply the judge's 15 fixes (data through `lib.py`; directions in
    `build_b.py`'s SPEC, rerun it), then `python <scratch>\s17\lock_b.py`
    (locks B and the room's other lines, re-locks free_stairs.0, trims
    HOLD_LINES to Keegan's kenning). Then `lines.py`, `elevenlabs.py`,
