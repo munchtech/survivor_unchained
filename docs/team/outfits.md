@@ -1,20 +1,21 @@
 # Heroine body and outfits: status
 
-Lead: su-lead-high (successor 4 of the outfits lead, 11 October 2026). Handoff: `docs/handoff/outfits.md`. Branch: `worktree-agent-a5ca10091b08dc429` (pushed; code only, unjudged: never build it into the game until it passes).
+Lead: su-lead-high (successor 5 of the outfits lead, 11 October 2026). Handoff: `docs/handoff/outfits.md`. Branch: `worktree-agent-a5ca10091b08dc429` (pushed; code only, unjudged: never build it into the game until it passes).
 
-## Now (paused 11 October, handed off; judge 5 on h1: FAIL)
-- Passed judge 5: the Arcanist stomach in the game look, its boning channels, nipples equal both sides, collarbone, skin paint on all four outfits.
-- Open: the Ranger pauldron (two solvers ran out of context; a plan in the handoff, for the main session), rivets, Reaver and Ranger top bindings, the plunge foot (fold fitted, unjudged), animation's judge 11 items B1, B2, B4.
-- Built in the worktree: h2 (animation's elbow corrective merged), unjudged.
+## Now (11 October; judge 6 on h3: FAIL, fixes committed, h4 not built)
+- The Ranger pauldron, rebuilt as bands round the arm (third solver), passed most of judge 6. Left: lame 1's back corner and the dome's medial stand-off at the game's idle pose (a solver is on them), and leather straps at the lame ends.
+- Passed judge 6: the Reaver binding, the rivet shape, B4, and every judge 5 pass. Fixed since, not yet built: the Ranger's pale binding line, the dome's brushing, the rivets' contact shadow, B1 (elbow), B2 (breast fold).
+- The Arcanist plunge foot: one more solver (taut-string rim); if it doesn't land, a feathery trim, judged side by side for the owner.
 
 ## Key decisions
 - Coverage fixes tighten, never enlarge, except where the 2.4 cm strip is wider than a garment.
-- Rigid plates: corners rounded in the field before the cut, so the rolled rim runs on round.
-- The check runs against this lead's own worktree build and import, never the main checkout's.
+- Rigid plates get only rigid corrections (judge 5); pauldron lames are built in the arm's frame under the plate above.
+- Pieces are cut from her mended body, the one the game shows.
+- Shader flags ride in vertex colour alpha (matte bindings; UV-brushed plates), so there's no per-material plumbing.
 
 ## Blockers
-- The Ranger pauldron needs the main session (two solvers out of context). Rendering's LOD hook still to come.
+- None. Rendering's LOD hook is still to come.
 
 ## Notes for other areas
-- Any lead: `lookdev.gd` now takes LIGHTS=mirror (the whole rig mirrored) and LIGHTS=side (two matched raking lights).
-- Main session: the context hook reads this lead's budget as 120k (README's example line?), while the brief says 300k.
+- Face: our branch carries your heroine_seam.py, heroine_throat.py and jaw_zone.png from 0cface69.
+- Any lead: closeups take OUTFITVIEW=1, NORIM=1 and NOSKYREFL=1 for diagnosing a material.
