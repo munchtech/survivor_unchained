@@ -17,7 +17,9 @@ Line ids:
   bark.<npc>.said.<i>          the same, only while the world is a certain way (npcs.json "said")
   guard.<i>                    a gate guard (npcs.json)
   folk.<i>                     a passer-by (folk.json)
-  say.<hash>                   the narrator, or a voice, from the zone code
+  say.<hash>                   the narrator, or a voice, from the zone code; also the
+                               clock's DayLines (Journey.Day.cs) and the story
+                               fights' pulls and sights (Play/Story/*.cs)
   cbark.<hash>                 a named voice in a fight (the zone code)
   name.<voice>.<Name>          the survivor's name in that voice, spliced into
                                the lines that say it (one per name the creation
@@ -343,12 +345,111 @@ def from_code(lines: list):
                     lines.append(line)
 
 
+DAYLINES_CS = os.path.join(LOGIC, "Play", "Journey.Day.cs")
+# Tracker labels (GameClock.WithTonight), never spoken.
+DAYLINES_UNSAID = {"Answer", "AlsoOut"}
+# Who says a DayLines constant (the rest is the narrator's).
+DAYLINES_VOICE = {"Dusk": "guard"}
+DAYLINES_WHO = {"Dusk": "Gate guard"}
+
+
+def from_daylines(lines: list):
+    """The clock's lines (Journey.Day.cs DayLines): constants said through
+    Game.Say -> VoiceOver.Narrate, which finds a take by say.<hash of text>."""
+    src = open(DAYLINES_CS, encoding="utf-8").read()
+    rel = os.path.relpath(DAYLINES_CS, ROOT).replace("\\", "/")
+    m = re.search(r"static class DayLines\s*\{", src)
+    assert m, "DayLines was not found in Journey.Day.cs"
+    depth, i = 1, m.end()
+    while i < len(src) and depth:
+        if src[i] == '"':
+            s = re.compile(_STR).match(src, i)
+            if s:
+                i = s.end(); continue
+        depth += {"{": 1, "}": -1}.get(src[i], 0)
+        i += 1
+    body = src[m.end():i - 1]
+    have = {l["id"] for l in lines}
+    found = 0
+
+    def add(text, voice, who, const):
+        nonlocal found
+        found += 1
+        lid = f"say.{text_hash(text)}"
+        if lid in have:
+            return
+        have.add(lid)
+        lines.append({"id": lid, "kind": "say", "voice": voice, "text": text, "who": who, "where": rel, "const": const})
+
+    for cm in re.finditer(r"\bconst\s+string\s+([^;]*);", body):
+        for d in re.finditer(r"(\w+)\s*=\s*(" + _STR + ")", cm.group(1)):
+            name = d.group(1)
+            if name in DAYLINES_UNSAID:
+                continue
+            add(_unescape(d.group(2)), DAYLINES_VOICE.get(name, "narrator"), DAYLINES_WHO.get(name), f"DayLines.{name}")
+    for dm in re.finditer(r"\[(" + _STR + r")\]\s*=\s*(" + _STR + ")", body):
+        add(_unescape(dm.group(2)), "narrator", None, f"DayLines.Tonight[{_unescape(dm.group(1))}]")
+    assert found >= 11, f"only {found} DayLines found in Journey.Day.cs: was DayLines renamed or reshaped?"
+
+
+_STORY_MEMBER = re.compile(r"override\s+string\??(?:\[\])?\s+(Pull|Between|BetweenSight)\b[^=;{]*=>")
+
+
+def from_story_fights(lines: list):
+    """What a story fight's night says through G.Say (StoryNight.cs): the
+    pull, the lines between stages, the sights. Plain literals only."""
+    have = {l["id"] for l in lines}
+    pulls = 0
+    for dirpath, _, files in os.walk(LOGIC):
+        for f in sorted(files):
+            if not f.endswith(".cs"):
+                continue
+            path = os.path.join(dirpath, f)
+            src = open(path, encoding="utf-8").read()
+            rel = os.path.relpath(path, ROOT).replace("\\", "/")
+            for m in _STORY_MEMBER.finditer(src):
+                cls = [c.group(1) for c in re.finditer(r"\bclass\s+(\w+)", src[:m.start()])]
+                assert cls, f"no class before {m.group(1)} in {rel}"
+                depth, i, expr = 0, m.end(), []
+                while i < len(src):
+                    ch = src[i]
+                    if ch == '"':
+                        s = re.compile(_STR).match(src, i)
+                        if s:
+                            # an interpolated string ($"...") is not a plain literal
+                            # nor a switch arm's pattern ("dead" =>) or a call's argument (FactOf("x")): keys, not speech
+                            if not (i > 0 and src[i - 1] == "$") and not re.match(r"\s*=>", src[s.end():s.end() + 8]) \
+                                    and src[:i].rstrip()[-1:] != "(":
+                                expr.append(s.group(0))
+                            i = s.end(); continue
+                    if ch in "([{":
+                        depth += 1
+                    elif ch in ")]}":
+                        depth -= 1
+                    elif ch == ";" and depth == 0:
+                        break
+                    i += 1
+                for lit in expr:
+                    t = _unescape(lit)
+                    lid = f"say.{text_hash(t)}"
+                    if m.group(1) == "Pull":
+                        pulls += 1
+                    if lid in have:
+                        continue
+                    have.add(lid)
+                    lines.append({"id": lid, "kind": "say", "voice": "narrator", "text": t, "who": None, "where": rel,
+                                  "const": f"{cls[-1]}.{m.group(1)}"})
+    assert pulls >= 4, f"only {pulls} story-fight Pull lines found under godot/logic: was StoryFight reshaped?"
+
+
 def build() -> list[dict]:
     lines: list[dict] = []
     from_dialogue(lines)
     from_npcs(lines)
     from_folk(lines)
     from_code(lines)
+    from_daylines(lines)
+    from_story_fights(lines)
     for l in lines:
         l["hash"] = text_hash(l["text"])
         if l.get("skip"):
