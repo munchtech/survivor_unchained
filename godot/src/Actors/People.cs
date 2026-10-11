@@ -1271,8 +1271,10 @@ public static class People
     /// (--body-lift X: another, for judging it (pictures).)</summary>
     static readonly Dictionary<string, float> HerBodyLift = new()
     {
-        ["own"] = 1.39f, ["highborn"] = 1.08f, ["doe"] = 1.23f, ["sunborn"] = 1f, ["vixen"] = 1.10f,
-        ["moonlit"] = 1.18f, ["saffron"] = 1.21f, ["wildling"] = 1.08f, ["hardwon"] = 1.21f, ["fey"] = 1.05f,
+        // (refitted on a band, 0.3-0.8 pupil-chin below the chin, at both neck lengths on the same anatomy, after the
+        // lift was kept off lamps behind her and its fade widened; WIP, judge j7 next: tools/scratch/face19/bandfit.py)
+        ["own"] = 1.30f, ["highborn"] = 1.03f, ["doe"] = 1.22f, ["sunborn"] = 1.32f, ["vixen"] = 1.07f,
+        ["moonlit"] = 1.26f, ["saffron"] = 1.27f, ["wildling"] = 1.07f, ["hardwon"] = 1.21f, ["fey"] = 1.09f,
     };
 
     /// <summary>Her shade's colour off her face (the skin shader's soft_tone, linear): the soft lamps' light on her neck

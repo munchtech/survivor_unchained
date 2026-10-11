@@ -27,7 +27,7 @@ def blob(mask, near=None):
 def lit(a, m):
     px = a[m]
     oks = np.array([meas.ok(c) for c in px[:: max(1, len(px) // 4000)]])
-    top = oks[oks[:, 0] >= np.percentile(oks[:, 0], 60)]
+    top = oks[oks[:, 0] >= np.percentile(oks[:, 0], float(os.environ.get("TOP", "60")))]
     L, A, B = np.median(top, 0)
     return L, np.hypot(A, B), np.degrees(np.arctan2(B, A)) % 360
 

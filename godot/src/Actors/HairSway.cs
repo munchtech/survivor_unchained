@@ -38,9 +38,9 @@ public partial class HairSway : Node
     sealed class Ball { public int Bone; public Vector3 At; public float R; public bool Behind; }
 
     // Her forearms, from the elbow to past the fist, in the skeleton's space at rest: the shader pushes her hair out of
-    // them (a lock by her ear as her throwing arm comes past her head, animation judge 20), and balls along them and her
+    // them (a lock by her ear as her throwing arm comes past her head, animation judge 20), and balls at her shoulders and
     // upper arms keep the chain out (a braid falling beside her as she lies face down). The balls' radii are her limb's
-    // with its pauldron or bracer and half a braid; the shader's her forearm's with its bracer, as her hair is its surface.
+    // with its pauldron and half a braid; the shader's her forearm's with its bracer, as her hair is its surface.
     int[] foreBone = [], fistBone = [];
     Vector3[] elbowRest = [], fistRest = [];
     const float ForearmR = 0.05f;
@@ -66,6 +66,8 @@ public partial class HairSway : Node
     Vector3[] target = new Vector3[8], at = [], back = [];
     float[] hold = new float[8], grip = new float[8];
     Vector3[] vel = new Vector3[8], touch = new Vector3[8];
+    bool[] grounded = new bool[8];
+    Vector3 rootThen;
     // What the shader is given (in the mesh's space): this frame's swing and where her head
     // is, and last frame's, for the motion vectors (MotionClock).
     Vector3 sway, headAt;
@@ -105,14 +107,13 @@ public partial class HairSway : Node
             var name = (string)b["bone"];
             list.Add(new Ball { Bone = sk.FindBone(name), At = Vec(b["at"]), R = (float)b["r"], Behind = name.StartsWith("neck") || name.StartsWith("spine") });
         }
-        foreach (var (shoulder, elbow, fist) in Limbs())
+        // (her shoulders and upper arms only: her forearm and fist sweeping past her head as she threw kicked the chain
+        // up over her head, hair judge hj1; the shader keeps her hair out of her forearms)
+        foreach (var (shoulder, elbow, _) in Limbs())
         {
-            Vector3 s = sk.GetBoneGlobalRest(shoulder).Origin, e = sk.GetBoneGlobalRest(elbow).Origin, f = sk.GetBoneGlobalRest(fist).Origin;
+            Vector3 s = sk.GetBoneGlobalRest(shoulder).Origin, e = sk.GetBoneGlobalRest(elbow).Origin;
             list.Add(new Ball { Bone = shoulder, At = s, R = 0.08f });
             list.Add(new Ball { Bone = shoulder, At = s.Lerp(e, 0.5f), R = 0.065f });
-            list.Add(new Ball { Bone = elbow, At = e, R = 0.06f });
-            list.Add(new Ball { Bone = elbow, At = e.Lerp(f, 0.5f), R = 0.055f });
-            list.Add(new Ball { Bone = fist, At = f + (f - e).Normalized() * 0.04f, R = 0.055f });
         }
         balls = list.ToArray();
     }
@@ -177,12 +178,16 @@ public partial class HairSway : Node
             // How stiff each point is held to its rest: all of it while its rest hangs down from the root (within about
             // 30 degrees: she leans into a run or a throw, and long hair lies on her back as it did), the root's share only
             // (keep) once that rest is level or up (lying, folded forward, her head tipped back).
+            // It is let go at once, but taken back over half a second, and not while it lies on the ground: taken back
+            // at once, a braid lying by her face as her head rolled over was snatched up into a rod (hair judge hj1).
             for (int i = 1; i < 8; i++)
             {
                 float u = Mathf.SmoothStep(0.35f, 0.85f, (target[i] - target[0]).Normalized().Dot(Vector3.Down));
-                hold[i] = stiff * (keep[i] + (1f - keep[i]) * u);
+                float want = stiff * (keep[i] + (1f - keep[i]) * u);
+                hold[i] = !live || want <= hold[i] ? want : grounded[i] ? hold[i] : Mathf.Min(want, hold[i] + stiff * dt / 0.5f);
+                grounded[i] = false;
             }
-            if (!live || dt <= 0) { x = (Vector3[])target.Clone(); xp = (Vector3[])target.Clone(); live = true; }
+            if (!live || dt <= 0) { x = (Vector3[])target.Clone(); xp = (Vector3[])target.Clone(); rootThen = target[0]; live = true; }
             // Steps of about 1/120 s whatever the frame rate (four at 30 fps, as it was tuned and judged): the
             // stiffness and the damping are per step, so at 60 fps four steps held it twice as stiff.
             int steps = Mathf.Max(1, Mathf.CeilToInt(dt * 120f - 1e-3f));
@@ -190,12 +195,20 @@ public partial class HairSway : Node
             var fall = new Vector3(0, -9.8f, 0) * h * h;
             // (the ground she stands or lies on: her skeleton's own floor)
             float floor = world.Origin.Y + 0.015f;
+            // Its root's own step, and how fast the rest may move against it: 2.5 m/s (a whipped tail's tip moves about
+            // that fast against her head); pushed by her arm or snatched back to its rest, it was thrown 70 cm in two
+            // frames (hair judge hj1, throw).
+            var rootStep = (target[0] - rootThen) / steps;
+            rootThen = target[0];
+            float most = 2.5f * h;
             for (int s = 0; s < steps; s++)
             {
                 for (int i = 1; i < 8; i++)
                 {
                     var was = x[i];
                     vel[i] = (x[i] - xp[i]) * 0.985f;
+                    var rel = vel[i] - rootStep;
+                    if (rel.LengthSquared() > most * most) vel[i] = rootStep + rel.Normalized() * most;
                     x[i] += vel[i] + fall;
                     xp[i] = was;
                 }
@@ -216,7 +229,7 @@ public partial class HairSway : Node
                             x[i] = at[b] + n * r;
                             touch[i] = n; grip[i] = Mathf.Max(grip[i], 0.1f);
                         }
-                        if (x[i].Y < floor) { x[i].Y = floor; touch[i] = Vector3.Up; grip[i] = 0.5f; }
+                        if (x[i].Y < floor) { x[i].Y = floor; touch[i] = Vector3.Up; grip[i] = 0.5f; grounded[i] = true; }
                     }
                 // What touches her or the ground is stopped going into it, not thrown back out (being pushed out of her
                 // was a velocity: a tail lying by her head as it settled was flung up off the floor), and slowed along it.
