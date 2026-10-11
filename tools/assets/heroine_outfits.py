@@ -1359,6 +1359,30 @@ def rounded(cur, rmin, rounds=400):
     return cur
 
 
+MIRROR_BIND = {"arcanist.corset"}   # (bound edges made the same both sides: the arcanist's plunge, cut on a mesh that is not, stood 0.63 mm apart at its foot, solver 11 October)
+
+
+def mirror_line(cur):
+    """A closed line made the same both sides of her middle (x = 0): each
+    point taken halfway to the mirror of the line's nearest place to its own
+    mirror, wherever the line is within 3 mm of symmetric already."""
+    flip = np.array([-1.0, 1.0, 1.0])
+    m = cur * flip
+    a, e = cur, np.roll(cur, -1, 0) - cur
+    j = cKDTree(cur).query(m)[1]
+    best, bd = None, None
+    for jj in ((j - 1) % len(cur), j):
+        t = np.clip(((m - a[jj]) * e[jj]).sum(1) / ((e[jj] * e[jj]).sum(1) + 1e-30), 0, 1)
+        q = a[jj] + e[jj] * t[:, None]
+        d = np.linalg.norm(q - m, axis=1)
+        if best is None:
+            best, bd = q, d
+        else:
+            best, bd = np.where((d < bd)[:, None], q, best), np.minimum(d, bd)
+    w = np.clip((0.003 - bd) / 0.001, 0, 1)[:, None]
+    return cur + w * 0.5 * (best * flip - cur)
+
+
 def bind_edges(name, pos, at, tris, key, width, height, overhang, thick, sigma=0.012, stitch=False, rmin=None):
     """A sheet's cut outline made fair and bound: each edge loop eased into
     one smooth curve, the sheet's own edge points moved onto it, and a
@@ -1406,6 +1430,8 @@ def bind_edges(name, pos, at, tris, key, width, height, overhang, thick, sigma=0
         for _ in range(6):
             mv = (np.roll(mv, 1, 0) + 2 * mv + np.roll(mv, -1, 0)) / 4
         cur = cur + mv
+        if name in MIRROR_BIND:
+            cur = mirror_line(cur)
         tg = np.roll(cur, -1, 0) - np.roll(cur, 1, 0)
         tg /= np.linalg.norm(tg, axis=1)[:, None] + 1e-12
         nrm = nrm - tg * (nrm * tg).sum(1)[:, None]
@@ -3494,6 +3520,9 @@ PLUNGE_FLARE = float(os.environ.get("PLUNGE_FLARE", 1.8))   # (how late its side
 PLUNGE_FOLD = float(os.environ.get("PLUNGE_FOLD", 0.04))    # (how wide the cloth is fitted over the fold beside its foot)
 PLUNGE_FADE = float(os.environ.get("PLUNGE_FADE", 0.0))    # (the fit faded to nothing over this, before its edge; off: at 15 mm, on the U's true distance, the crease came back, 72-80 deg, and the sheet stood 6 mm up through the binding)
 PLUNGE_TAUT = float(os.environ.get("PLUNGE_TAUT", 0.03))    # (the gore at its foot: the round its cloth spans her folds by)
+PLUNGE_RIM = float(os.environ.get("PLUNGE_RIM", 0.0015))    # (the U's rim, its lower part, this far off her: on a taut string along it)
+PLUNGE_STRING = float(os.environ.get("PLUNGE_STRING", 0.035))  # (that string's least round, both ways: it spans her folds, never kinks)
+PLUNGE_BAND = float(os.environ.get("PLUNGE_BAND", 0.028))   # (how far from the rim the cloth eases back into the fitted sheet)
 
 
 def arcanist():
@@ -3644,6 +3673,9 @@ def arcanist():
             t = np.clip(t, 0.0, 1.0)
             return t ** 3 * (t * (6 * t - 15) + 10)
         below = sstep((v_lo + 0.012 - gz) / 0.012)[:, None]
+        # (not within 20 mm of the U: the rim is pinned there, plunge_rim)
+        mx, mz = np.meshgrid(gx, gz)
+        below = below * sstep((u_dist(mx.ravel(), mz.ravel()).reshape(mx.shape) - 0.01) / 0.01)
         c = np.maximum(up, h + below * (across - h))
         c = np.maximum(c, c[:, ::-1])
         lift_ = gaussian_filter(c - h, 2.0)
@@ -3654,6 +3686,92 @@ def arcanist():
         probe = lambda x_, dz: float(lf([[v_lo + dz, x_]])[0]) * 1000
         print("TAUT GORE: disc %.0f mm; lifted up to %.1f mm; at its foot %.1f, 15 mm below %.1f, beside it (25 mm out, 15 up) %.1f / %.1f, (35 out, 15 up) %.1f / %.1f"
               % (R * 1000, lv.max() * 1000, probe(0, 0), probe(0, -0.015), probe(-0.025, 0.015), probe(0.025, 0.015), probe(-0.035, 0.015), probe(0.035, 0.015)))
+        out = pos.copy()
+        out[:, 1] -= lv
+        return out
+    # (the fold beside the plunge's foot fitted `PLUNGE_FOLD` wide as before,
+    # but lifted off her by a smooth field of what each place needs: lifted
+    # as one by the most any place needed, 7.4 mm, its foot stood 16 mm in
+    # front of her sternum, a flat shelf; solver, 11 October)
+    def plunge_fold(pos, tris):
+        sw = fold(pos)
+        pos = mls_flat(pos, sw, (0.0, -1.0, 0.0), PLUNGE_FOLD)
+        on = np.where(sw > 1e-3)[0]
+        need = np.linalg.norm(pushes_off_skin(pos[on], 0.0035), axis=1)
+        tr = cKDTree(pos[on])
+        env = np.array([need[j].max() for j in tr.query_ball_point(pos[on], 0.015)])
+        sm = np.empty(len(on))
+        for i, j in enumerate(tr.query_ball_point(pos[on], 0.018)):
+            g_ = np.exp(-0.5 * (np.linalg.norm(pos[on][j] - pos[on][i], axis=1) / 0.006) ** 2)
+            sm[i] = (env[j] * g_).sum() / g_.sum()
+        lv = np.zeros(len(pos))
+        lv[on] = sm * sw[on]
+        print("PLUNGE FOLD: fitted %.0f mm wide, lifted %.1f to %.1f mm (median %.1f)"
+              % (PLUNGE_FOLD * 1000, sm.min() * 1000, sm.max() * 1000, np.median(sm) * 1000))
+        return pos + vertex_normals(pos, tris) * lv[:, None]
+    # The U's rim, its lower part, pinned onto her as a bound edge lies: on a
+    # taut string along the U (her skin's depth along it closed and opened by
+    # a round `PLUNGE_STRING`: it spans the fold under each breast without
+    # dipping into it, and never kinks) `PLUNGE_RIM` off her. From it to the
+    # fitted sheet the cloth is a membrane over her (it spans, never goes
+    # through her), eased back into the sheet by `PLUNGE_BAND` from the rim;
+    # the same both sides. (The fit faded before the rim instead, its crease
+    # came back, solver 11 October.)
+    def rim_depth(pp, tt, gx, gz):
+        box = (np.abs(pp[:, 0]) < 0.13) & (np.abs(pp[:, 2] - v_lo - 0.025) < 0.13) & (pp[:, 1] < pp[:, 1].mean())
+        bvh = BVHTree.FromPolygons([tuple(p) for p in pp], tt[box[tt].all(1)].tolist())
+        y0 = pp[:, 1].min() - 0.3
+        d = np.full((len(gz), len(gx)), np.nan)
+        for i, j in np.ndindex(d.shape):
+            hit = bvh.ray_cast(Vector((gx[j], y0, gz[i])), Vector((0.0, 1.0, 0.0)))[0]
+            if hit is not None:
+                d[i, j] = -hit[1]
+        return d
+    def plunge_rim(pos, tris):
+        from scipy.ndimage import grey_closing, grey_opening
+        from scipy.interpolate import RegularGridInterpolator
+        def sstep(t):
+            t = np.clip(t, 0.0, 1.0)
+            return t ** 3 * (t * (6 * t - 15) + 10)
+        g = 0.001
+        gx = np.linspace(-0.09, 0.09, 181)
+        gz = np.arange(v_lo - 0.05, v_lo + 0.1 + 1e-9, g)
+        GX, GZ = np.meshgrid(gx, gz)
+        hs, hk = rim_depth(pos, tris, gx, gz), rim_depth(P_FILLED, TRI, gx, gz)
+        hk = np.where(np.isnan(hk), np.nanmin(hk), hk)
+        hs = np.where(np.isnan(hs), hk + 0.0035, hs)
+        hs_m, hk_m = (hs + hs[:, ::-1]) / 2, (hk + hk[:, ::-1]) / 2
+        # (the string, along the U from its foot, in mm)
+        sl = np.r_[0, np.cumsum(np.linalg.norm(np.diff(np.c_[xx_, zz_], axis=0), axis=1))]
+        s = np.arange(0, sl[-1], g)
+        xu, zu = np.interp(s, sl, xx_), np.interp(s, sl, zz_)
+        keep = zu < gz[-1] - 0.002
+        xu, zu = xu[keep], zu[keep]
+        f = RegularGridInterpolator((gz, gx), hk_m)(np.c_[zu, xu]) * 1000
+        sh = RegularGridInterpolator((gz, gx), hs_m)(np.c_[zu, xu]) * 1000
+        R = PLUNGE_STRING * 1000
+        k = int(R)
+        ball = np.sqrt(np.maximum(R * R - np.arange(-k, k + 1) ** 2, 0.0))
+        full = np.r_[f[:0:-1], f]
+        T = grey_opening(grey_closing(full, structure=ball, mode="nearest"), structure=ball, mode="nearest")[len(f) - 1:] + PLUNGE_RIM * 1000
+        a = sstep((v_lo + 0.08 - zu) / 0.03)
+        Tr = (a * T + (1 - a) * sh) / 1000
+        # (each place: its way from the rim, front on, and the rim's place nearest it)
+        ud = u_dist(GX.ravel(), GZ.ravel()).reshape(GX.shape)
+        near = cKDTree(np.c_[xu, zu]).query(np.c_[np.abs(GX.ravel()), GZ.ravel()])[1].reshape(GX.shape)
+        fixed = (ud <= 0) | (ud >= PLUNGE_BAND)
+        fixed[[0, -1], :] = True
+        fixed[:, [0, -1]] = True
+        D = np.where(ud <= 0, Tr[near], hs_m)
+        floor_ = hk_m + PLUNGE_RIM * 0.8
+        for _ in range(3000):
+            av = 0.25 * (np.roll(D, 1, 0) + np.roll(D, -1, 0) + np.roll(D, 1, 1) + np.roll(D, -1, 1))
+            D = np.where(fixed, D, np.maximum(av, floor_))
+        w = np.where(ud < 0, sstep((ud + 0.012) / 0.006), 1 - sstep((ud - 0.01) / (PLUNGE_BAND - 0.01))) * a[near]
+        lf = RegularGridInterpolator((gz, gx), w * (D - hs), bounds_error=False, fill_value=0.0)
+        lv = lf(np.c_[pos[:, 2], pos[:, 0]]) * ramp(-pos[:, 1], -(pos[:, 1].mean() + 0.02), -pos[:, 1].mean())
+        print("PLUNGE RIM: string %.0f mm round, rim %.1f mm off her (at its foot the string %.1f over her, the sheet was %.1f); moved %.1f to %.1f mm"
+              % (R, PLUNGE_RIM * 1000, T[0] - f[0], sh[0] - f[0], lv.min() * 1000, lv.max() * 1000))
         out = pos.copy()
         out[:, 1] -= lv
         return out
@@ -3673,7 +3791,7 @@ def arcanist():
         *ribbon("arcanist.thong", back_string(CROTCH + 0.155, CROTCH + 0.012), 0.016, "plumleather", lift=0.003, thick=0.003,
                trim=gold(0.004), snap=False, hides=True, flare=(0.034, 0.03)),
         *piece("arcanist.corset", corset, "plumleather", lift=0.0035, smooth=8, iron=60, trim=gold(0.008), keep_off=("Head",), filled=True, edge=120, soften=80,
-               bridge=True, cut=exact, stiff=[(0.03, front_panel), (0.03, collar), (PLUNGE_FOLD, fold, PLUNGE_FADE), taut_gore]),
+               bridge=True, cut=exact, stiff=[(0.03, front_panel), (0.03, collar), plunge_fold, taut_gore, plunge_rim]),
         # (judge 4: the front read as moulded latex. Four stitched boning
         # channels, as a corset's front is made, from under her cups to
         # her hips, raised on the suit and moving with it.)
