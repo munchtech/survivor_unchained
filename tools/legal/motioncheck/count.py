@@ -42,7 +42,11 @@ def codes(im):
     """The codes, read exactly (unlit, linear tonemapper; see marks_section.py)."""
     a = np.asarray(im).astype(np.int32)
     r, g, b = a[..., 0], a[..., 1], a[..., 2]
-    tucked_near = (b >= 250) & (g >= 182) & (g <= 194)
+    # (a real code's red is at most 0.9 linear, 243 in sRGB: a brighter pixel with this green is
+    # untucked near skin blended at an edge with a white highlight on a piece's binding, about
+    # three parts highlight to one of skin, not tucked skin; such blends lined the warden's cup
+    # bindings in g2, nine in ten of what was read there as tucked skin)
+    tucked_near = (b >= 250) & (g >= 182) & (g <= 194) & (r <= 245)
     near = (b >= 250) & ((g <= 8) | tucked_near)
     dist = np.where(near, srgb_to_linear(r) / 0.9 * NEAR, np.inf)
     # A lone pixel reading her very tip (red under 30: within 0.8 mm of the areola's centre)
