@@ -1942,12 +1942,16 @@ def shell(name, pos, centre, clear, most=0.006):
     # (fitted again without the points far off it, a scrap or a fold, which
     # then keep their own distance within 4 mm of the dome's)
     keep = np.ones(len(r), bool)
+    # (ridged: a plate covering a narrow spread of directions left the fit
+    # ill-posed, and it ran off by a metre at its fringe)
     for _ in range(4):
-        coef = np.linalg.lstsq(B[keep], r[keep], rcond=None)[0]
+        Bk = B[keep]
+        coef = np.linalg.solve(Bk.T @ Bk + 1e-4 * len(Bk) * np.diag([0] + [1] * (B.shape[1] - 1)), Bk.T @ r[keep])
         rf = B @ coef
         res = np.abs(rf - r)
         keep = res < max(3 * np.sqrt((res[keep] ** 2).mean()), 0.004)
-    rf = np.where(keep, rf, np.clip(r, rf - 0.004, rf + 0.004))
+    # (and no point moved more than 12 mm from where it was cast)
+    rf = np.clip(np.where(keep, rf, np.clip(r, rf - 0.004, rf + 0.004)), r - 0.012, r + 0.012)
     print("SHELL %s: %d of %d points off the dome, eased to within 4 mm of it" % (name, (~keep).sum(), len(r)))
     up = 0.0
     for _ in range(6):
