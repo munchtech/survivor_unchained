@@ -93,7 +93,7 @@ public static class Charts
             new("restless", "Restless", "Its ruler comes again, at half its strength", true, 0.12, 0.12, 0.0),
             new("hardened", "Hardened", "Every pack is led by one wearing its people's Sign", true, 0.10, 0.08, 0.05),
             new("thin_blood", "of Thin Blood", "You mend a third less", false, 0.08, 0.05, 0.05, r => r.HealCut = Math.Max(r.HealCut, 0.33)),
-            new("brittle", "of the Brittle", "Your armour counts for two fifths less", false, 0.08, 0.05, 0.05, r => r.ArmourMul *= 0.6),
+            new("brittle", "of the Brittle", "Your armor counts for two fifths less", false, 0.08, 0.05, 0.05, r => r.ArmourMul *= 0.6),
             new("leaden", "of Lead", "Your dash comes back two fifths slower", false, 0.08, 0.05, 0.05, r => r.DashRecharge *= 0.6),
             new("sleepless", "of No Rest", "You do not regenerate", false, 0.08, 0.05, 0.05, r => r.RegenMul = 0),
             new("moonless", "of the Moonless", "Your light carries half as far", false, 0.10, 0.08, 0.0, r => r.Light *= 0.5),

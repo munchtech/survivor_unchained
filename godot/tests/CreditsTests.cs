@@ -74,7 +74,7 @@ public class CreditsTests
         Assert.Equal("by Roo", wolf.Text);
         Assert.Equal(new[] { "https://sketchfab.com/roo3d", "https://sketchfab.com/3d-models/animated-wolf-scene-5d55506494e5460eaadf04370e07cd5c" }, wolf.Links);
         var mace = works.Single(w => w.Name == "Medieval Mace");
-        Assert.Equal("designed by Kama Modeling; modelled and textured by Yavuz Temel", mace.Text);
+        Assert.Equal("designed by Kama Modeling; modeled and textured by Yavuz Temel", mace.Text);
         // A change on the work's own line stays with it, and the whole kind's are on its group.
         Assert.Contains(works.Single(w => w.Name == "Goblin Ghoul").Lines, l => l.StartsWith("Changes: the lamplings' hats"));
         Assert.Contains(by.Groups.Single(g => g.Title == "Weapons, from Sketchfab").Notes, n => n.StartsWith("Changes for every weapon: turned and scaled to one grip convention in code; photographed"));
@@ -86,7 +86,7 @@ public class CreditsTests
     {
         var book = Book;
         Assert.StartsWith("Survivor Unchained is made by Munchtech.", book.Intro[0]);
-        Assert.Equal(new[] { "Engine and runtime", "Typefaces", "Used under Creative Commons Attribution 4.0", "Used under service terms or model licences", "Third-party works under CC0", "Made with AI tools", "Made for the game" },
+        Assert.Equal(new[] { "Engine and runtime", "Typefaces", "Used under Creative Commons Attribution 4.0", "Used under service terms or model licenses", "Third-party works under CC0", "Made with AI tools", "Made for the game" },
             book.Sections.Select(s => s.Short));
         var godot = book.Sections[0].Groups[0].Entries[0];
         Assert.Equal("Godot Engine", godot.Name);

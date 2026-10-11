@@ -371,7 +371,7 @@ public sealed class Verge : ZoneRuntime
             else if (F("redcowl").Str is not ("dead" or "furious")) PlaceRedcowl();
             if (KerchiefsFriendly())
             {
-                G.Say("Red cloth at every tent, washing on a line, children with a wooden sword. They see your colours and go back to what they were doing.", null, 4.5);
+                G.Say("Red cloth at every tent, washing on a line, children with a wooden sword. They see your colors and go back to what they were doing.", null, 4.5);
                 // C06 (cin_forty_one_mouths), the once it matters, until the cinematic plays it.
                 if (!W.Zone("verge").TryGetValue("roost_kitchen", out var k) || !k.Truthy)
                 {
@@ -591,7 +591,7 @@ public sealed class Verge : ZoneRuntime
             Act = () =>
             {
                 G.Apply("""[{ "give": "blasting_ember" }, { "set": { "crates.charge_taken": true } }]""");
-                G.Say("You prise one charge out of the straw. The rest sit there and wait, the way they have waited for everyone.", null, 5);
+                G.Say("You pry one charge out of the straw. The rest sit there and wait, the way they have waited for everyone.", null, 5);
             },
         });
         I.Add(new()
@@ -697,7 +697,7 @@ public sealed class Verge : ZoneRuntime
     /// <summary>What each teamster does as his cage opens: by day here, or in a raid on the Roost by night.</summary>
     public static readonly string[] CageLines =
     [
-        "A teamster, thin and grey, stumbles out and grips your arm. His nails are broken to the quick from the bars.",
+        "A teamster, thin and gray, stumbles out and grips your arm. His nails are broken to the quick from the bars.",
         "A woman who will not stop saying thank you.",
         "A young man, freckled, still holding the bars after the door is open.",
     ];
@@ -931,7 +931,7 @@ public sealed class Verge : ZoneRuntime
                 var e = battle.SpawnEnemy("wolf", entry.X + 6 + i, entry.Z + 2, new Battle.SpawnOpts { Level = Level(), Disposition = Disposition.Ally, Faction = Faction.Ally, Tag = "packmate" });
                 if (e != null) e.Named = new Named { Title = "Of the Pack" };
             }
-            G.Say("Four grey shapes fall in beside you at the edge of the wood.", null, 4);
+            G.Say("Four gray shapes fall in beside you at the edge of the wood.", null, 4);
         }
         // What you left behind, and what took it.
         var c = wd.Corpse;

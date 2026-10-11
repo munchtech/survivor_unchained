@@ -837,13 +837,13 @@
    "id": "dlg.rook.clerk.0",
    "kind": "dialogue",
    "voice": "rook",
-   "text": "Clerks don't buy rounds. Jessop bought three, the night Coyle's wagons went missing, and kept telling the room he'd \"done somebody a favour\". Rav was there; Rav's always there. ...Jessop's not been in since. He still owes me for the third.",
+   "text": "Clerks don't buy rounds. Jessop bought three, the night Coyle's wagons went missing, and kept telling the room he'd \"done somebody a favor\". Rav was there; Rav's always there. ...Jessop's not been in since. He still owes me for the third.",
    "where": "dialogue.json rook/clerk#0",
-   "hash": "dd4777a109f7",
+   "hash": "c241de3e3ce1",
    "segments": [
     {
      "voice": "rook",
-     "text": "Clerks don't buy rounds. Jessop bought three, the night Coyle's wagons went missing, and kept telling the room he'd \"done somebody a favour\". Rav was there; Rav's always there. ...Jessop's not been in since. He still owes me for the third."
+     "text": "Clerks don't buy rounds. Jessop bought three, the night Coyle's wagons went missing, and kept telling the room he'd \"done somebody a favor\". Rav was there; Rav's always there. ...Jessop's not been in since. He still owes me for the third."
     }
    ],
    "direction": {
@@ -855,7 +855,7 @@
    },
    "take": {
     "file": "rook/dlg.rook.clerk.0.ogg",
-    "hash": "dd4777a109f7",
+    "hash": "c241de3e3ce1",
     "sec": 19.47,
     "segs": [
      [
@@ -910,13 +910,13 @@
    "id": "dlg.rook.town.0",
    "kind": "dialogue",
    "voice": "rook",
-   "text": "Three roads meet here, and everyone on them stops at my door. South's the Low Ford. East's the Old Road and the Verge. North's shut, and a girl in shiny armour will tell you why, at length. Everybody else you'll meet whether you want to or not.",
+   "text": "Three roads meet here, and everyone on them stops at my door. South's the Low Ford. East's the Old Road and the Verge. North's shut, and a girl in shiny armor will tell you why, at length. Everybody else you'll meet whether you want to or not.",
    "where": "dialogue.json rook/town#0",
-   "hash": "5388cad4478f",
+   "hash": "af6dc3cb4e65",
    "segments": [
     {
      "voice": "rook",
-     "text": "Three roads meet here, and everyone on them stops at my door. South's the Low Ford. East's the Old Road and the Verge. North's shut, and a girl in shiny armour will tell you why, at length. Everybody else you'll meet whether you want to or not."
+     "text": "Three roads meet here, and everyone on them stops at my door. South's the Low Ford. East's the Old Road and the Verge. North's shut, and a girl in shiny armor will tell you why, at length. Everybody else you'll meet whether you want to or not."
     }
    ],
    "direction": {
@@ -928,7 +928,7 @@
    },
    "take": {
     "file": "rook/dlg.rook.town.0.ogg",
-    "hash": "5388cad4478f",
+    "hash": "af6dc3cb4e65",
     "sec": 15.01,
     "segs": [
      [
@@ -2893,13 +2893,13 @@
    "id": "dlg.holloway.wolves.0",
    "kind": "dialogue",
    "voice": "holloway",
-   "text": "They're bolder. Two nights ago they came right up to the east gate. Five a pelt, fifty for the old grey one they call Greymuzzle. Bring me proof and I'll pay. Bring me stories and I won't. I've eleven men and four of them can hold a spear the right way round; I'm not spending them on stories.",
+   "text": "They're bolder. Two nights ago they came right up to the east gate. Five a pelt, fifty for the old gray one they call Greymuzzle. Bring me proof and I'll pay. Bring me stories and I won't. I've eleven men and four of them can hold a spear the right way round; I'm not spending them on stories.",
    "where": "dialogue.json holloway/wolves#0",
-   "hash": "6cf5cfde006c",
+   "hash": "5c0b3daa3498",
    "segments": [
     {
      "voice": "holloway",
-     "text": "They're bolder. Two nights ago they came right up to the east gate. Five a pelt, fifty for the old grey one they call Greymuzzle. Bring me proof and I'll pay. Bring me stories and I won't. I've eleven men and four of them can hold a spear the right way round; I'm not spending them on stories."
+     "text": "They're bolder. Two nights ago they came right up to the east gate. Five a pelt, fifty for the old gray one they call Greymuzzle. Bring me proof and I'll pay. Bring me stories and I won't. I've eleven men and four of them can hold a spear the right way round; I'm not spending them on stories."
     }
    ],
    "direction": {
@@ -3764,13 +3764,13 @@
    "id": "dlg.holloway.cb_killed_greymuzzle.0",
    "kind": "dialogue",
    "voice": "holloway",
-   "text": "I hear you put the old grey one down. I'd stopped paying for it. You did it anyway. I'm trying to work out what that makes you.",
+   "text": "I hear you put the old gray one down. I'd stopped paying for it. You did it anyway. I'm trying to work out what that makes you.",
    "where": "dialogue.json holloway/cb_killed_greymuzzle#0",
-   "hash": "9482fab38673",
+   "hash": "d7a4836723b0",
    "segments": [
     {
      "voice": "holloway",
-     "text": "I hear you put the old grey one down. I'd stopped paying for it. You did it anyway. I'm trying to work out what that makes you."
+     "text": "I hear you put the old gray one down. I'd stopped paying for it. You did it anyway. I'm trying to work out what that makes you."
     }
    ],
    "direction": {
@@ -4263,9 +4263,9 @@
    "id": "dlg.holloway.post.0",
    "kind": "dialogue",
    "voice": "holloway",
-   "text": "(He says nothing for long enough that you think he hasn't heard.) Grey beard, proud of it? Bad hip? ...Corran. He had that post before I had this one. I wrote him down as a deserter in the spring. Him and his runner, Dannet. Dannet never came up the road, so I wrote him down too.",
+   "text": "(He says nothing for long enough that you think he hasn't heard.) Gray beard, proud of it? Bad hip? ...Corran. He had that post before I had this one. I wrote him down as a deserter in the spring. Him and his runner, Dannet. Dannet never came up the road, so I wrote him down too.",
    "where": "dialogue.json holloway/post#0",
-   "hash": "9899faa9cbbc",
+   "hash": "fa61ee2804af",
    "segments": [
     {
      "voice": "narrator",
@@ -4273,7 +4273,7 @@
     },
     {
      "voice": "holloway",
-     "text": "Grey beard, proud of it? Bad hip? ...Corran. He had that post before I had this one. I wrote him down as a deserter in the spring. Him and his runner, Dannet. Dannet never came up the road, so I wrote him down too."
+     "text": "Gray beard, proud of it? Bad hip? ...Corran. He had that post before I had this one. I wrote him down as a deserter in the spring. Him and his runner, Dannet. Dannet never came up the road, so I wrote him down too."
     }
    ],
    "direction": {
@@ -5038,14 +5038,14 @@
    "id": "dlg.maeca.thanks.0",
    "kind": "dialogue",
    "voice": "maeca",
-   "text": "The Hollow's quiet. The Pack's eating again: deer, not travellers. I've been a hunter all my life, {name}, and I've never once saved anything. ...Thank you.",
+   "text": "The Hollow's quiet. The Pack's eating again: deer, not travelers. I've been a hunter all my life, {name}, and I've never once saved anything. ...Thank you.",
    "where": "dialogue.json maeca/thanks#0",
-   "hash": "622313a38ed4",
+   "hash": "b8605dd88371",
    "name_elided": true,
    "segments": [
     {
      "voice": "maeca",
-     "text": "The Hollow's quiet. The Pack's eating again: deer, not travellers. I've been a hunter all my life, and I've never once saved anything. ...Thank you."
+     "text": "The Hollow's quiet. The Pack's eating again: deer, not travelers. I've been a hunter all my life, and I've never once saved anything. ...Thank you."
     }
    ],
    "direction": {
@@ -5409,13 +5409,13 @@
    "id": "dlg.maeca.blind_morning.0",
    "kind": "dialogue",
    "voice": "maeca",
-   "text": "(Grey light. She's already up, barefoot in the frost, listening.) Go on, then. The wood's awake, and so's Holloway, and he'll count us both.",
+   "text": "(Gray light. She's already up, barefoot in the frost, listening.) Go on, then. The wood's awake, and so's Holloway, and he'll count us both.",
    "where": "dialogue.json maeca/blind_morning#0",
-   "hash": "585713e8e25b",
+   "hash": "95ad0b6b0e41",
    "segments": [
     {
      "voice": "narrator",
-     "text": "Grey light. She's already up, barefoot in the frost, listening."
+     "text": "Gray light. She's already up, barefoot in the frost, listening."
     },
     {
      "voice": "maeca",
@@ -5435,17 +5435,17 @@
    "id": "dlg.maeca.blind_morning.1",
    "kind": "dialogue",
    "voice": "maeca",
-   "text": "(Grey light. She's already up, barefoot in the frost, listening to the wood.) The Pack found me, after Ashford. Three days in a cave mouth with the garrison dead round me, and the old grey one came and lay down across the way in. Kept the cold off. Kept everything off. ...That's why. That's all of why. Don't make it a story.",
+   "text": "(Gray light. She's already up, barefoot in the frost, listening to the wood.) The Pack found me, after Ashford. Three days in a cave mouth with the garrison dead round me, and the old gray one came and lay down across the way in. Kept the cold off. Kept everything off. ...That's why. That's all of why. Don't make it a story.",
    "where": "dialogue.json maeca/blind_morning#1",
-   "hash": "c154e9555051",
+   "hash": "3f16babad7fb",
    "segments": [
     {
      "voice": "narrator",
-     "text": "Grey light. She's already up, barefoot in the frost, listening to the wood."
+     "text": "Gray light. She's already up, barefoot in the frost, listening to the wood."
     },
     {
      "voice": "maeca",
-     "text": "The Pack found me, after Ashford. Three days in a cave mouth with the garrison dead round me, and the old grey one came and lay down across the way in. Kept the cold off. Kept everything off. ...That's why. That's all of why. Don't make it a story."
+     "text": "The Pack found me, after Ashford. Three days in a cave mouth with the garrison dead round me, and the old gray one came and lay down across the way in. Kept the cold off. Kept everything off. ...That's why. That's all of why. Don't make it a story."
     }
    ],
    "direction": {
@@ -6320,14 +6320,14 @@
    "id": "dlg.maeca.blind3_morning.0",
    "kind": "dialogue",
    "voice": "maeca",
-   "text": "(Grey light. She's awake before you, as always, but she hasn't got up. Her head is still on your chest. Her face is very still.) Your heart's going like a hare's. (She doesn't lift her head.) All night it was a bear's in January. I counted between. ...I've lain with my ear to a lot of things to see if they'd live, {name}. (She gets up, then, and goes out barefoot into the frost, and stands there listening to the wood with her back to you.) Go on. Holloway'll count us.",
+   "text": "(Gray light. She's awake before you, as always, but she hasn't got up. Her head is still on your chest. Her face is very still.) Your heart's going like a hare's. (She doesn't lift her head.) All night it was a bear's in January. I counted between. ...I've lain with my ear to a lot of things to see if they'd live, {name}. (She gets up, then, and goes out barefoot into the frost, and stands there listening to the wood with her back to you.) Go on. Holloway'll count us.",
    "where": "dialogue.json maeca/blind3_morning#0",
-   "hash": "c175af38dc72",
+   "hash": "4c77528e7a85",
    "name_elided": true,
    "segments": [
     {
      "voice": "narrator",
-     "text": "Grey light. She's awake before you, as always, but she hasn't got up. Her head is still on your chest. Her face is very still."
+     "text": "Gray light. She's awake before you, as always, but she hasn't got up. Her head is still on your chest. Her face is very still."
     },
     {
      "voice": "maeca",
@@ -7903,13 +7903,13 @@
    "id": "dlg.tam.cb_killed_greymuzzle.0",
    "kind": "dialogue",
    "voice": "tam",
-   "text": "Did you kill the big grey one? ...Was he sick too?",
+   "text": "Did you kill the big gray one? ...Was he sick too?",
    "where": "dialogue.json tam/cb_killed_greymuzzle#0",
-   "hash": "8c3e77d94eba",
+   "hash": "fbb1aa26e31d",
    "segments": [
     {
      "voice": "tam",
-     "text": "Did you kill the big grey one? ...Was he sick too?"
+     "text": "Did you kill the big gray one? ...Was he sick too?"
     }
    ],
    "direction": {
@@ -8659,13 +8659,13 @@
    "id": "dlg.brannoc.cb_killed_greymuzzle.0",
    "kind": "dialogue",
    "voice": "brannoc",
-   "text": "Grey one's dead. Should've brought him here. Fang like that.",
+   "text": "Gray one's dead. Should've brought him here. Fang like that.",
    "where": "dialogue.json brannoc/cb_killed_greymuzzle#0",
-   "hash": "fe998df47006",
+   "hash": "53d668be264a",
    "segments": [
     {
      "voice": "brannoc",
-     "text": "Grey one's dead. Should've brought him here. Fang like that."
+     "text": "Gray one's dead. Should've brought him here. Fang like that."
     }
    ],
    "direction": {
@@ -8996,9 +8996,9 @@
    "id": "dlg.brannoc.nell.0",
    "kind": "dialogue",
    "voice": "brannoc",
-   "text": "(He doesn't look up from the anvil, and he doesn't stop.) You came up the Low Ford road. ...Carter went south a fortnight back. Wat, with the grey mare. Toll work. Said he'd be over the ford by dark. Girl with him. Twelve. Red hair. New boots. Going to her aunt at Low Kiln. (The hammer stops.) Mine. Nell. ...You pass them?",
+   "text": "(He doesn't look up from the anvil, and he doesn't stop.) You came up the Low Ford road. ...Carter went south a fortnight back. Wat, with the gray mare. Toll work. Said he'd be over the ford by dark. Girl with him. Twelve. Red hair. New boots. Going to her aunt at Low Kiln. (The hammer stops.) Mine. Nell. ...You pass them?",
    "where": "dialogue.json brannoc/nell#0",
-   "hash": "48d66b7a4e0e",
+   "hash": "2a33d44d1dc9",
    "segments": [
     {
      "voice": "narrator",
@@ -9006,7 +9006,7 @@
     },
     {
      "voice": "brannoc",
-     "text": "You came up the Low Ford road. ...Carter went south a fortnight back. Wat, with the grey mare. Toll work. Said he'd be over the ford by dark. Girl with him. Twelve. Red hair. New boots. Going to her aunt at Low Kiln."
+     "text": "You came up the Low Ford road. ...Carter went south a fortnight back. Wat, with the gray mare. Toll work. Said he'd be over the ford by dark. Girl with him. Twelve. Red hair. New boots. Going to her aunt at Low Kiln."
     },
     {
      "voice": "narrator",
@@ -10591,13 +10591,13 @@
    "id": "dlg.harlan.cb_killed_greymuzzle.0",
    "kind": "dialogue",
    "voice": "harlan",
-   "text": "They say the old grey wolf's dead. It wasn't wolves that took my wagons, I know that now. But it was wolves on that road every other night, and I'll not pretend to weep.",
+   "text": "They say the old gray wolf's dead. It wasn't wolves that took my wagons, I know that now. But it was wolves on that road every other night, and I'll not pretend to weep.",
    "where": "dialogue.json harlan/cb_killed_greymuzzle#0",
-   "hash": "21a7269b9015",
+   "hash": "b3e912475af9",
    "segments": [
     {
      "voice": "harlan",
-     "text": "They say the old grey wolf's dead. It wasn't wolves that took my wagons, I know that now. But it was wolves on that road every other night, and I'll not pretend to weep."
+     "text": "They say the old gray wolf's dead. It wasn't wolves that took my wagons, I know that now. But it was wolves on that road every other night, and I'll not pretend to weep."
     }
    ],
    "direction": {
@@ -11416,9 +11416,9 @@
    "id": "dlg.pell.confront.0",
    "kind": "dialogue",
    "voice": "pell",
-   "text": "Where did you— the clerk. Of course. (He studies your face, and something in his own unclenches.) ...You don't know what you're holding, do you? How refreshing. Let's be civilised. There's gold in this for you, a good deal of gold, if that book were to go in the fire.",
+   "text": "Where did you— the clerk. Of course. (He studies your face, and something in his own unclenches.) ...You don't know what you're holding, do you? How refreshing. Let's be civilized. There's gold in this for you, a good deal of gold, if that book were to go in the fire.",
    "where": "dialogue.json pell/confront#0",
-   "hash": "ba96a59911d8",
+   "hash": "19d2cb6ede69",
    "segments": [
     {
      "voice": "pell",
@@ -11430,7 +11430,7 @@
     },
     {
      "voice": "pell",
-     "text": "...You don't know what you're holding, do you? How refreshing. Let's be civilised. There's gold in this for you, a good deal of gold, if that book were to go in the fire."
+     "text": "...You don't know what you're holding, do you? How refreshing. Let's be civilized. There's gold in this for you, a good deal of gold, if that book were to go in the fire."
     }
    ],
    "direction": {
@@ -11446,13 +11446,13 @@
    "id": "dlg.pell.confront.1",
    "kind": "dialogue",
    "voice": "pell",
-   "text": "Where did you— the clerk. Of course. Let's be civilised. There's gold in this for you, a good deal of gold, if that book were to go in the fire.",
+   "text": "Where did you— the clerk. Of course. Let's be civilized. There's gold in this for you, a good deal of gold, if that book were to go in the fire.",
    "where": "dialogue.json pell/confront#1",
-   "hash": "9ca9827cca7e",
+   "hash": "f9eb98cbc364",
    "segments": [
     {
      "voice": "pell",
-     "text": "Where did you— the clerk. Of course. Let's be civilised. There's gold in this for you, a good deal of gold, if that book were to go in the fire."
+     "text": "Where did you— the clerk. Of course. Let's be civilized. There's gold in this for you, a good deal of gold, if that book were to go in the fire."
     }
    ],
    "direction": {
@@ -11814,13 +11814,13 @@
    "id": "dlg.pell.say_calling.0",
    "kind": "dialogue",
    "voice": "pell",
-   "text": "Armour like that costs more than most of this street. Whoever paid for it, I'd very much like to meet them.",
+   "text": "Armor like that costs more than most of this street. Whoever paid for it, I'd very much like to meet them.",
    "where": "dialogue.json pell/say_calling#0",
-   "hash": "5a2779f5fb3b",
+   "hash": "339c4c45231c",
    "segments": [
     {
      "voice": "pell",
-     "text": "Armour like that costs more than most of this street. Whoever paid for it, I'd very much like to meet them."
+     "text": "Armor like that costs more than most of this street. Whoever paid for it, I'd very much like to meet them."
     }
    ],
    "direction": {
@@ -12364,13 +12364,13 @@
    "id": "dlg.rav.clerk.0",
    "kind": "dialogue",
    "voice": "rav",
-   "text": "A toll clerk bought the room a round the night the caravan vanished. Clerks don't buy rounds. Jessop, his name is; Vonnra's. He'd \"done somebody a favour\": told Coyle's teamsters the road was shut and sent them down the forest track. Between us, he'd also a key he shouldn't have. Pell's warehouse. Showed it me like a boy with a frog. ...Not seen him since. He wasn't the type to buy rounds, either.",
+   "text": "A toll clerk bought the room a round the night the caravan vanished. Clerks don't buy rounds. Jessop, his name is; Vonnra's. He'd \"done somebody a favor\": told Coyle's teamsters the road was shut and sent them down the forest track. Between us, he'd also a key he shouldn't have. Pell's warehouse. Showed it me like a boy with a frog. ...Not seen him since. He wasn't the type to buy rounds, either.",
    "where": "dialogue.json rav/clerk#0",
-   "hash": "d81b30a4d564",
+   "hash": "3ee07937b2a2",
    "segments": [
     {
      "voice": "rav",
-     "text": "A toll clerk bought the room a round the night the caravan vanished. Clerks don't buy rounds. Jessop, his name is; Vonnra's. He'd \"done somebody a favour\": told Coyle's teamsters the road was shut and sent them down the forest track. Between us, he'd also a key he shouldn't have. Pell's warehouse. Showed it me like a boy with a frog. ...Not seen him since. He wasn't the type to buy rounds, either."
+     "text": "A toll clerk bought the room a round the night the caravan vanished. Clerks don't buy rounds. Jessop, his name is; Vonnra's. He'd \"done somebody a favor\": told Coyle's teamsters the road was shut and sent them down the forest track. Between us, he'd also a key he shouldn't have. Pell's warehouse. Showed it me like a boy with a frog. ...Not seen him since. He wasn't the type to buy rounds, either."
     }
    ],
    "direction": {
@@ -12386,13 +12386,13 @@
    "id": "dlg.rav.clerk.1",
    "kind": "dialogue",
    "voice": "rav",
-   "text": "A toll clerk bought the room a round the night the caravan vanished. Clerks don't buy rounds. Jessop, his name is; Vonnra's. He'd \"done somebody a favour\": told Coyle's teamsters the road was shut and sent them down the forest track. Draw your own lines, pal. ...Not seen him since, now I think of it.",
+   "text": "A toll clerk bought the room a round the night the caravan vanished. Clerks don't buy rounds. Jessop, his name is; Vonnra's. He'd \"done somebody a favor\": told Coyle's teamsters the road was shut and sent them down the forest track. Draw your own lines, pal. ...Not seen him since, now I think of it.",
    "where": "dialogue.json rav/clerk#1",
-   "hash": "891af00fc31f",
+   "hash": "6d22a052778b",
    "segments": [
     {
      "voice": "rav",
-     "text": "A toll clerk bought the room a round the night the caravan vanished. Clerks don't buy rounds. Jessop, his name is; Vonnra's. He'd \"done somebody a favour\": told Coyle's teamsters the road was shut and sent them down the forest track. Draw your own lines, pal. ...Not seen him since, now I think of it."
+     "text": "A toll clerk bought the room a round the night the caravan vanished. Clerks don't buy rounds. Jessop, his name is; Vonnra's. He'd \"done somebody a favor\": told Coyle's teamsters the road was shut and sent them down the forest track. Draw your own lines, pal. ...Not seen him since, now I think of it."
     }
    ],
    "direction": {
@@ -16273,9 +16273,9 @@
    "id": "dlg.vonnra.hub.2",
    "kind": "dialogue",
    "voice": "vonnra",
-   "text": "(Her lamp is lit, and she is looking south, toward the ford.) Traveller. The road was quiet tonight. It will not always be. Payment, always.",
+   "text": "(Her lamp is lit, and she is looking south, toward the ford.) Traveler. The road was quiet tonight. It will not always be. Payment, always.",
    "where": "dialogue.json vonnra/hub#2",
-   "hash": "05b9763d40fa",
+   "hash": "208f54ce5f80",
    "segments": [
     {
      "voice": "narrator",
@@ -16283,7 +16283,7 @@
     },
     {
      "voice": "vonnra",
-     "text": "Traveller. The road was quiet tonight. It will not always be. Payment, always."
+     "text": "Traveler. The road was quiet tonight. It will not always be. Payment, always."
     }
    ],
    "direction": {
@@ -17181,13 +17181,13 @@
    "id": "dlg.vonnra.f_beasts.2",
    "kind": "dialogue",
    "voice": "vonnra",
-   "text": "I see wolves running beside you, not at you. The old grey one lets you walk in front. Holloway sleeps with his sword across his knees now. Be careful what you have taught them to follow.",
+   "text": "I see wolves running beside you, not at you. The old gray one lets you walk in front. Holloway sleeps with his sword across his knees now. Be careful what you have taught them to follow.",
    "where": "dialogue.json vonnra/f_beasts#2",
-   "hash": "f3c399d59a1a",
+   "hash": "505a7fdc622c",
    "segments": [
     {
      "voice": "vonnra",
-     "text": "I see wolves running beside you, not at you. The old grey one lets you walk in front. Holloway sleeps with his sword across his knees now. Be careful what you have taught them to follow."
+     "text": "I see wolves running beside you, not at you. The old gray one lets you walk in front. Holloway sleeps with his sword across his knees now. Be careful what you have taught them to follow."
     }
    ],
    "direction": {
@@ -17203,13 +17203,13 @@
    "id": "dlg.vonnra.f_beasts.3",
    "kind": "dialogue",
    "voice": "vonnra",
-   "text": "I see pelts. A great many pelts, and a grey one on top of the pile. The road is safe and the wood is quiet. Something that was sick got sicker, and then there was nothing left of it to be sick.",
+   "text": "I see pelts. A great many pelts, and a gray one on top of the pile. The road is safe and the wood is quiet. Something that was sick got sicker, and then there was nothing left of it to be sick.",
    "where": "dialogue.json vonnra/f_beasts#3",
-   "hash": "5304eaf7870f",
+   "hash": "34195b8162f4",
    "segments": [
     {
      "voice": "vonnra",
-     "text": "I see pelts. A great many pelts, and a grey one on top of the pile. The road is safe and the wood is quiet. Something that was sick got sicker, and then there was nothing left of it to be sick."
+     "text": "I see pelts. A great many pelts, and a gray one on top of the pile. The road is safe and the wood is quiet. Something that was sick got sicker, and then there was nothing left of it to be sick."
     }
    ],
    "direction": {
@@ -17772,13 +17772,13 @@
    "id": "dlg.vonnra.cb_opened_vault.0",
    "kind": "dialogue",
    "voice": "vonnra",
-   "text": "You opened it. ...Do not sit, traveller. I would rather you stood. What did you see on the stair?",
+   "text": "You opened it. ...Do not sit, traveler. I would rather you stood. What did you see on the stair?",
    "where": "dialogue.json vonnra/cb_opened_vault#0",
-   "hash": "cedb8974ccad",
+   "hash": "ff7f0f83efc3",
    "segments": [
     {
      "voice": "vonnra",
-     "text": "You opened it. ...Do not sit, traveller. I would rather you stood. What did you see on the stair?"
+     "text": "You opened it. ...Do not sit, traveler. I would rather you stood. What did you see on the stair?"
     }
    ],
    "direction": {
@@ -17846,13 +17846,13 @@
    "id": "dlg.vonnra.cb_vault3.0",
    "kind": "dialogue",
    "voice": "vonnra",
-   "text": "Yours, for now. Payment, always, traveller; even for silence. You will find I collect.",
+   "text": "Yours, for now. Payment, always, traveler; even for silence. You will find I collect.",
    "where": "dialogue.json vonnra/cb_vault3#0",
-   "hash": "4e619a6f8a96",
+   "hash": "439607f7865a",
    "segments": [
     {
      "voice": "vonnra",
-     "text": "Yours, for now. Payment, always, traveller; even for silence. You will find I collect."
+     "text": "Yours, for now. Payment, always, traveler; even for silence. You will find I collect."
     }
    ],
    "direction": {
@@ -17922,13 +17922,13 @@
    "id": "dlg.vonnra.say_calling.0",
    "kind": "dialogue",
    "voice": "vonnra",
-   "text": "Shields. Gates. Walls. You believe things can be kept out, traveller. It is a lovely belief.",
+   "text": "Shields. Gates. Walls. You believe things can be kept out, traveler. It is a lovely belief.",
    "where": "dialogue.json vonnra/say_calling#0",
-   "hash": "78e50bbf1f1b",
+   "hash": "aab154c3812a",
    "segments": [
     {
      "voice": "vonnra",
-     "text": "Shields. Gates. Walls. You believe things can be kept out, traveller. It is a lovely belief."
+     "text": "Shields. Gates. Walls. You believe things can be kept out, traveler. It is a lovely belief."
     }
    ],
    "direction": {
@@ -18073,13 +18073,13 @@
    "id": "dlg.vonnra.risen.0",
    "kind": "dialogue",
    "voice": "vonnra",
-   "text": "You came back. Most do not, the first time. ...Do not thank Chid. Do not thank anyone. Payment, always, traveller, and for that above all; you will find out who holds the note.",
+   "text": "You came back. Most do not, the first time. ...Do not thank Chid. Do not thank anyone. Payment, always, traveler, and for that above all; you will find out who holds the note.",
    "where": "dialogue.json vonnra/risen#0",
-   "hash": "062f6bb9fb5a",
+   "hash": "6491e5be638a",
    "segments": [
     {
      "voice": "vonnra",
-     "text": "You came back. Most do not, the first time. ...Do not thank Chid. Do not thank anyone. Payment, always, traveller, and for that above all; you will find out who holds the note."
+     "text": "You came back. Most do not, the first time. ...Do not thank Chid. Do not thank anyone. Payment, always, traveler, and for that above all; you will find out who holds the note."
     }
    ],
    "direction": {
@@ -18095,9 +18095,9 @@
    "id": "dlg.vonnra.jessop.0",
    "kind": "dialogue",
    "voice": "vonnra",
-   "text": "Gone south. On the toll's business. (She turns a page of the ledger that does not need turning.) Clerks go south, traveller. It is the direction they fall in.",
+   "text": "Gone south. On the toll's business. (She turns a page of the ledger that does not need turning.) Clerks go south, traveler. It is the direction they fall in.",
    "where": "dialogue.json vonnra/jessop#0",
-   "hash": "402e62fa3f68",
+   "hash": "24ccfe40e1b4",
    "segments": [
     {
      "voice": "vonnra",
@@ -18109,7 +18109,7 @@
     },
     {
      "voice": "vonnra",
-     "text": "Clerks go south, traveller. It is the direction they fall in."
+     "text": "Clerks go south, traveler. It is the direction they fall in."
     }
    ],
    "direction": {
@@ -19203,13 +19203,13 @@
    "id": "dlg.keegan.dinner.0",
    "kind": "dialogue",
    "voice": "keegan",
-   "text": "Chapter eleven. Fraternisation. I have not read it. ...That is a lie. I have read it four times. The answer is no. The answer is very nearly no. Good day.",
+   "text": "Chapter eleven. Fraternization. I have not read it. ...That is a lie. I have read it four times. The answer is no. The answer is very nearly no. Good day.",
    "where": "dialogue.json keegan/dinner#0",
-   "hash": "8df83b3e1439",
+   "hash": "fd3ae0708aa3",
    "segments": [
     {
      "voice": "keegan",
-     "text": "Chapter eleven. Fraternisation. I have not read it. ...That is a lie. I have read it four times. The answer is no. The answer is very nearly no. Good day."
+     "text": "Chapter eleven. Fraternization. I have not read it. ...That is a lie. I have read it four times. The answer is no. The answer is very nearly no. Good day."
     }
    ],
    "direction": {
@@ -20060,10 +20060,10 @@
    "id": "dlg.board.read.0",
    "kind": "dialogue",
    "voice": "narrator",
-   "text": "WOLF BOUNTY — five gold the pelt, fifty for the grey alpha. Capt. Holloway, the Watch.",
+   "text": "WOLF BOUNTY — five gold the pelt, fifty for the gray alpha. Capt. Holloway, the Watch.",
    "where": "dialogue.json board/read#0",
    "skip": "a notice, read not heard",
-   "hash": "4a721fbb47a9",
+   "hash": "ef1aee679448",
    "status": "skip"
   },
   {
@@ -20100,10 +20100,10 @@
    "id": "dlg.board.read.4",
    "kind": "dialogue",
    "voice": "narrator",
-   "text": "NOTICE: Travellers keep to the road. The Watch will not answer for wolves that WALK WITH PEOPLE. Capt. Holloway.",
+   "text": "NOTICE: Travelers keep to the road. The Watch will not answer for wolves that WALK WITH PEOPLE. Capt. Holloway.",
    "where": "dialogue.json board/read#4",
    "skip": "a notice, read not heard",
-   "hash": "2937b582539d",
+   "hash": "06b0d8cd39bf",
    "status": "skip"
   },
   {
@@ -20180,10 +20180,10 @@
    "id": "dlg.board.read.12",
    "kind": "dialogue",
    "voice": "narrator",
-   "text": "WANTED: a traveller seen selling Coyle goods. The likeness is poor, but not poor enough.",
+   "text": "WANTED: a traveler seen selling Coyle goods. The likeness is poor, but not poor enough.",
    "where": "dialogue.json board/read#12",
    "skip": "a notice, read not heard",
-   "hash": "0497c99d2756",
+   "hash": "4f7cc10fe5ff",
    "status": "skip"
   },
   {
@@ -20220,10 +20220,10 @@
    "id": "dlg.board.read.16",
    "kind": "dialogue",
    "voice": "narrator",
-   "text": "Has anyone seen my cat? Grey. Answers to nothing. M.",
+   "text": "Has anyone seen my cat? Gray. Answers to nothing. M.",
    "where": "dialogue.json board/read#16",
    "skip": "a notice, read not heard",
-   "hash": "9af34980d96b",
+   "hash": "e9c35be44b65",
    "status": "skip"
   },
   {
@@ -22087,13 +22087,13 @@
    "id": "dlg.sella.stairs_room.4",
    "kind": "dialogue",
    "voice": "narrator",
-   "text": "The blue room is blue because the lamp glass is, and everything in it takes the colour: the quilt, the jug, the bath, her. She tests the water with her elbow like somebody's mother, and then tips your chin up with one finger like nobody's mother at all. Your buckles take an age. She undoes them as if she has done a great many, and laughs at the last one, which is stuck. \"All that steel, and under it, look. A person.\"",
+   "text": "The blue room is blue because the lamp glass is, and everything in it takes the color: the quilt, the jug, the bath, her. She tests the water with her elbow like somebody's mother, and then tips your chin up with one finger like nobody's mother at all. Your buckles take an age. She undoes them as if she has done a great many, and laughs at the last one, which is stuck. \"All that steel, and under it, look. A person.\"",
    "where": "dialogue.json sella/stairs_room#4",
-   "hash": "442322a89e3e",
+   "hash": "2ffd34b4e317",
    "segments": [
     {
      "voice": "narrator",
-     "text": "The blue room is blue because the lamp glass is, and everything in it takes the colour: the quilt, the jug, the bath, her. She tests the water with her elbow like somebody's mother, and then tips your chin up with one finger like nobody's mother at all. Your buckles take an age. She undoes them as if she has done a great many, and laughs at the last one, which is stuck."
+     "text": "The blue room is blue because the lamp glass is, and everything in it takes the color: the quilt, the jug, the bath, her. She tests the water with her elbow like somebody's mother, and then tips your chin up with one finger like nobody's mother at all. Your buckles take an age. She undoes them as if she has done a great many, and laughs at the last one, which is stuck."
     },
     {
      "voice": "sella",
@@ -22118,13 +22118,13 @@
    "id": "dlg.sella.stairs_room.5",
    "kind": "dialogue",
    "voice": "narrator",
-   "text": "The blue room is blue because the lamp glass is, and everything in it takes the colour: the quilt, the jug, the bath, her. She tests the water with her elbow like somebody's mother, and then tips your chin up with one finger like nobody's mother at all. She takes your hands, one and then the other, and turns them over, and looks at the knuckles. \"Gently, upstairs. I mean it. I like this jug.\"",
+   "text": "The blue room is blue because the lamp glass is, and everything in it takes the color: the quilt, the jug, the bath, her. She tests the water with her elbow like somebody's mother, and then tips your chin up with one finger like nobody's mother at all. She takes your hands, one and then the other, and turns them over, and looks at the knuckles. \"Gently, upstairs. I mean it. I like this jug.\"",
    "where": "dialogue.json sella/stairs_room#5",
-   "hash": "49785d7b9d21",
+   "hash": "097f2bace28b",
    "segments": [
     {
      "voice": "narrator",
-     "text": "The blue room is blue because the lamp glass is, and everything in it takes the colour: the quilt, the jug, the bath, her. She tests the water with her elbow like somebody's mother, and then tips your chin up with one finger like nobody's mother at all. She takes your hands, one and then the other, and turns them over, and looks at the knuckles."
+     "text": "The blue room is blue because the lamp glass is, and everything in it takes the color: the quilt, the jug, the bath, her. She tests the water with her elbow like somebody's mother, and then tips your chin up with one finger like nobody's mother at all. She takes your hands, one and then the other, and turns them over, and looks at the knuckles."
     },
     {
      "voice": "sella",
@@ -22148,13 +22148,13 @@
    "id": "dlg.sella.stairs_room.6",
    "kind": "dialogue",
    "voice": "narrator",
-   "text": "The blue room is blue because the lamp glass is, and everything in it takes the colour: the quilt, the jug, the bath, her. She tests the water with her elbow like somebody's mother, and then tips your chin up with one finger like nobody's mother at all. She lays her palm flat on your chest and takes it away again, fast, then puts it back, slower. \"Your hands are hot and the rest of you's a cellar floor. Pick one, love.\"",
+   "text": "The blue room is blue because the lamp glass is, and everything in it takes the color: the quilt, the jug, the bath, her. She tests the water with her elbow like somebody's mother, and then tips your chin up with one finger like nobody's mother at all. She lays her palm flat on your chest and takes it away again, fast, then puts it back, slower. \"Your hands are hot and the rest of you's a cellar floor. Pick one, love.\"",
    "where": "dialogue.json sella/stairs_room#6",
-   "hash": "8489698e6169",
+   "hash": "62c9686ddc22",
    "segments": [
     {
      "voice": "narrator",
-     "text": "The blue room is blue because the lamp glass is, and everything in it takes the colour: the quilt, the jug, the bath, her. She tests the water with her elbow like somebody's mother, and then tips your chin up with one finger like nobody's mother at all. She lays her palm flat on your chest and takes it away again, fast, then puts it back, slower."
+     "text": "The blue room is blue because the lamp glass is, and everything in it takes the color: the quilt, the jug, the bath, her. She tests the water with her elbow like somebody's mother, and then tips your chin up with one finger like nobody's mother at all. She lays her palm flat on your chest and takes it away again, fast, then puts it back, slower."
     },
     {
      "voice": "sella",
@@ -22178,13 +22178,13 @@
    "id": "dlg.sella.stairs_room.7",
    "kind": "dialogue",
    "voice": "narrator",
-   "text": "The blue room is blue because the lamp glass is, and everything in it takes the colour: the quilt, the jug, the bath, her. She tests the water with her elbow like somebody's mother, and then tips your chin up with one finger like nobody's mother at all. She comes round behind you to start on the laces, and says into your ear, \"There. Now you know what it's like,\" and you jump. She's delighted.",
+   "text": "The blue room is blue because the lamp glass is, and everything in it takes the color: the quilt, the jug, the bath, her. She tests the water with her elbow like somebody's mother, and then tips your chin up with one finger like nobody's mother at all. She comes round behind you to start on the laces, and says into your ear, \"There. Now you know what it's like,\" and you jump. She's delighted.",
    "where": "dialogue.json sella/stairs_room#7",
-   "hash": "d3556c665fc8",
+   "hash": "8a3b79ecd963",
    "segments": [
     {
      "voice": "narrator",
-     "text": "The blue room is blue because the lamp glass is, and everything in it takes the colour: the quilt, the jug, the bath, her. She tests the water with her elbow like somebody's mother, and then tips your chin up with one finger like nobody's mother at all. She comes round behind you to start on the laces, and says into your ear,"
+     "text": "The blue room is blue because the lamp glass is, and everything in it takes the color: the quilt, the jug, the bath, her. She tests the water with her elbow like somebody's mother, and then tips your chin up with one finger like nobody's mother at all. She comes round behind you to start on the laces, and says into your ear,"
     },
     {
      "voice": "sella",
@@ -22979,13 +22979,13 @@
    "id": "dlg.sella.free_sit.0",
    "kind": "dialogue",
    "voice": "narrator",
-   "text": "You sit on the bed with your backs to the wall, and she tells you about the house in the south: which room faces the sun; the colour of the door; the knock. Then she sends you down the stairs, and stands at the top to watch you skip the fourth.",
+   "text": "You sit on the bed with your backs to the wall, and she tells you about the house in the south: which room faces the sun; the color of the door; the knock. Then she sends you down the stairs, and stands at the top to watch you skip the fourth.",
    "where": "dialogue.json sella/free_sit#0",
-   "hash": "c4d411a458a2",
+   "hash": "2e4ee62c4783",
    "segments": [
     {
      "voice": "narrator",
-     "text": "You sit on the bed with your backs to the wall, and she tells you about the house in the south: which room faces the sun; the colour of the door; the knock. Then she sends you down the stairs, and stands at the top to watch you skip the fourth."
+     "text": "You sit on the bed with your backs to the wall, and she tells you about the house in the south: which room faces the sun; the color of the door; the knock. Then she sends you down the stairs, and stands at the top to watch you skip the fourth."
     }
    ],
    "direction": {
@@ -23300,13 +23300,13 @@
    "id": "dlg.greymuzzle.first.0",
    "kind": "dialogue",
    "voice": "narrator",
-   "text": "The old wolf comes out of the rocks alone. He is grey to the eyes, and thin, and he does not growl. He looks at you for a long time. Behind him, in the shadow of the stones, wolves lie in the dirt and do not get up.",
+   "text": "The old wolf comes out of the rocks alone. He is gray to the eyes, and thin, and he does not growl. He looks at you for a long time. Behind him, in the shadow of the stones, wolves lie in the dirt and do not get up.",
    "where": "dialogue.json greymuzzle/first#0",
-   "hash": "77a47a821541",
+   "hash": "c524578a54ea",
    "segments": [
     {
      "voice": "narrator",
-     "text": "The old wolf comes out of the rocks alone. He is grey to the eyes, and thin, and he does not growl. He looks at you for a long time. Behind him, in the shadow of the stones, wolves lie in the dirt and do not get up."
+     "text": "The old wolf comes out of the rocks alone. He is gray to the eyes, and thin, and he does not growl. He looks at you for a long time. Behind him, in the shadow of the stones, wolves lie in the dirt and do not get up."
     }
    ],
    "direction": {
@@ -23593,13 +23593,13 @@
    "id": "dlg.redcowl.first.1",
    "kind": "dialogue",
    "voice": "redcowl",
-   "text": "Look at the colours on you. You're not one of mine, and you're not daft enough to be one of Holloway's. Redcowl. You're standing in my Roost. Talk.",
+   "text": "Look at the colors on you. You're not one of mine, and you're not daft enough to be one of Holloway's. Redcowl. You're standing in my Roost. Talk.",
    "where": "dialogue.json redcowl/first#1",
-   "hash": "35656356be33",
+   "hash": "fabc7dc525be",
    "segments": [
     {
      "voice": "redcowl",
-     "text": "Look at the colours on you. You're not one of mine, and you're not daft enough to be one of Holloway's. Redcowl. You're standing in my Roost. Talk."
+     "text": "Look at the colors on you. You're not one of mine, and you're not daft enough to be one of Holloway's. Redcowl. You're standing in my Roost. Talk."
     }
    ],
    "direction": {
@@ -24092,13 +24092,13 @@
    "id": "dlg.redcowl.favour.0",
    "kind": "dialogue",
    "voice": "redcowl",
-   "text": "Is it, now. The howling's been keeping my lot up nights, I'll admit. ...Fine. The teamsters, for the favour. The box you still pay for. Fifty, for a friend.",
+   "text": "Is it, now. The howling's been keeping my lot up nights, I'll admit. ...Fine. The teamsters, for the favor. The box you still pay for. Fifty, for a friend.",
    "where": "dialogue.json redcowl/favour#0",
-   "hash": "e48fc095f817",
+   "hash": "f5496d15e1ce",
    "segments": [
     {
      "voice": "redcowl",
-     "text": "Is it, now. The howling's been keeping my lot up nights, I'll admit. ...Fine. The teamsters, for the favour. The box you still pay for. Fifty, for a friend."
+     "text": "Is it, now. The howling's been keeping my lot up nights, I'll admit. ...Fine. The teamsters, for the favor. The box you still pay for. Fifty, for a friend."
     }
    ],
    "direction": {
@@ -28746,13 +28746,13 @@
    "id": "bark.holloway.night.2",
    "kind": "bark",
    "voice": "holloway",
-   "text": "Go to bed, traveller.",
+   "text": "Go to bed, traveler.",
    "where": "npcs.json holloway.nightBarks[2]",
-   "hash": "23d9499f81c9",
+   "hash": "0b3c6dd2c26c",
    "segments": [
     {
      "voice": "holloway",
-     "text": "Go to bed, traveller."
+     "text": "Go to bed, traveler."
     }
    ],
    "direction": {
@@ -28806,13 +28806,13 @@
    "id": "bark.holloway.said.0",
    "kind": "bark",
    "voice": "holloway",
-   "text": "Five a pelt. Fifty for the old grey one.",
+   "text": "Five a pelt. Fifty for the old gray one.",
    "where": "npcs.json holloway.said[0]",
-   "hash": "a20883ce1674",
+   "hash": "5b4c0dec70eb",
    "segments": [
     {
      "voice": "holloway",
-     "text": "Five a pelt. Fifty for the old grey one."
+     "text": "Five a pelt. Fifty for the old gray one."
     }
    ],
    "direction": {
@@ -32383,13 +32383,13 @@
    "id": "folk.27.f",
    "kind": "folk",
    "voice": "folk_f1",
-   "text": "You smell like the dead. No offence. Everybody does, lately.",
+   "text": "You smell like the dead. No offense. Everybody does, lately.",
    "where": "folk.json lines[27]",
-   "hash": "6a47acb7e419",
+   "hash": "071346856829",
    "segments": [
     {
      "voice": "folk_f1",
-     "text": "You smell like the dead. No offence. Everybody does, lately."
+     "text": "You smell like the dead. No offense. Everybody does, lately."
     }
    ],
    "sex": "f",
@@ -32404,13 +32404,13 @@
    "id": "folk.27.m",
    "kind": "folk",
    "voice": "folk_m2",
-   "text": "You smell like the dead. No offence. Everybody does, lately.",
+   "text": "You smell like the dead. No offense. Everybody does, lately.",
    "where": "folk.json lines[27]",
-   "hash": "6a47acb7e419",
+   "hash": "071346856829",
    "segments": [
     {
      "voice": "folk_m2",
-     "text": "You smell like the dead. No offence. Everybody does, lately."
+     "text": "You smell like the dead. No offense. Everybody does, lately."
     }
    ],
    "sex": "m",
@@ -33349,13 +33349,13 @@
    "id": "folk.50.f",
    "kind": "folk",
    "voice": "folk_f2",
-   "text": "Pell Varrow, selling his own neighbours. I bought eggs from that man.",
+   "text": "Pell Varrow, selling his own neighbors. I bought eggs from that man.",
    "where": "folk.json lines[50]",
-   "hash": "f01bc370da66",
+   "hash": "51572b3a8a1b",
    "segments": [
     {
      "voice": "folk_f2",
-     "text": "Pell Varrow, selling his own neighbours. I bought eggs from that man."
+     "text": "Pell Varrow, selling his own neighbors. I bought eggs from that man."
     }
    ],
    "sex": "f",
@@ -33370,13 +33370,13 @@
    "id": "folk.50.m",
    "kind": "folk",
    "voice": "folk_m1",
-   "text": "Pell Varrow, selling his own neighbours. I bought eggs from that man.",
+   "text": "Pell Varrow, selling his own neighbors. I bought eggs from that man.",
    "where": "folk.json lines[50]",
-   "hash": "f01bc370da66",
+   "hash": "51572b3a8a1b",
    "segments": [
     {
      "voice": "folk_m1",
-     "text": "Pell Varrow, selling his own neighbours. I bought eggs from that man."
+     "text": "Pell Varrow, selling his own neighbors. I bought eggs from that man."
     }
    ],
    "sex": "m",
@@ -34042,13 +34042,13 @@
    "id": "folk.67.f",
    "kind": "folk",
    "voice": "folk_child_f",
-   "text": "Mum says not to talk to you.",
+   "text": "Mom says not to talk to you.",
    "where": "folk.json lines[67]",
-   "hash": "d43bf587ae63",
+   "hash": "3ad6d415255d",
    "segments": [
     {
      "voice": "folk_child_f",
-     "text": "Mum says not to talk to you."
+     "text": "Mom says not to talk to you."
     }
    ],
    "sex": "f",
@@ -34063,13 +34063,13 @@
    "id": "folk.67.m",
    "kind": "folk",
    "voice": "folk_child_m",
-   "text": "Mum says not to talk to you.",
+   "text": "Mom says not to talk to you.",
    "where": "folk.json lines[67]",
-   "hash": "d43bf587ae63",
+   "hash": "3ad6d415255d",
    "segments": [
     {
      "voice": "folk_child_m",
-     "text": "Mum says not to talk to you."
+     "text": "Mom says not to talk to you."
     }
    ],
    "sex": "m",
@@ -34294,13 +34294,13 @@
    "id": "folk.73.m",
    "kind": "folk",
    "voice": "guard",
-   "text": "Walk on, traveller.",
+   "text": "Walk on, traveler.",
    "where": "folk.json lines[73]",
-   "hash": "799c676c9fb5",
+   "hash": "ec68adce376e",
    "segments": [
     {
      "voice": "guard",
-     "text": "Walk on, traveller."
+     "text": "Walk on, traveler."
     }
    ],
    "sex": "m",
@@ -34315,13 +34315,13 @@
    "id": "folk.73.f",
    "kind": "folk",
    "voice": "guard_f",
-   "text": "Walk on, traveller.",
+   "text": "Walk on, traveler.",
    "where": "folk.json lines[73]",
-   "hash": "799c676c9fb5",
+   "hash": "ec68adce376e",
    "segments": [
     {
      "voice": "guard_f",
-     "text": "Walk on, traveller."
+     "text": "Walk on, traveler."
     }
    ],
    "sex": "f",
@@ -35862,17 +35862,17 @@
    "status": "skip"
   },
   {
-   "id": "say.dabd6c78b40d",
+   "id": "say.8caf4a838291",
    "kind": "say",
    "voice": "narrator",
-   "text": "A Watchman, grey-bearded and a long time dead, sitting against the post as if he had only stopped for breath. Something has had his eyes. In his belt-book, three lines in a hand that worsens as it goes: \"Lamps at the Low Ford lit again, and not by us. Not oil. Wrong colour.\" \"Sent Dannet for the captain. Dannet not back.\" \"The Warden is walking. I can hear it singing in the water.\"",
+   "text": "A Watchman, gray-bearded and a long time dead, sitting against the post as if he had only stopped for breath. Something has had his eyes. In his belt-book, three lines in a hand that worsens as it goes: \"Lamps at the Low Ford lit again, and not by us. Not oil. Wrong color.\" \"Sent Dannet for the captain. Dannet not back.\" \"The Warden is walking. I can hear it singing in the water.\"",
    "who": null,
    "where": "godot/logic/Play/Zones/Prologue.cs",
-   "hash": "dabd6c78b40d",
+   "hash": "8caf4a838291",
    "segments": [
     {
      "voice": "narrator",
-     "text": "A Watchman, grey-bearded and a long time dead, sitting against the post as if he had only stopped for breath. Something has had his eyes. In his belt-book, three lines in a hand that worsens as it goes: \"Lamps at the Low Ford lit again, and not by us. Not oil. Wrong colour.\" \"Sent Dannet for the captain. Dannet not back.\" \"The Warden is walking. I can hear it singing in the water.\""
+     "text": "A Watchman, gray-bearded and a long time dead, sitting against the post as if he had only stopped for breath. Something has had his eyes. In his belt-book, three lines in a hand that worsens as it goes: \"Lamps at the Low Ford lit again, and not by us. Not oil. Wrong color.\" \"Sent Dannet for the captain. Dannet not back.\" \"The Warden is walking. I can hear it singing in the water.\""
     }
    ],
    "direction": {
@@ -35883,8 +35883,8 @@
     "note": "The book's three lines read as written words, plainly, one after another."
    },
    "take": {
-    "file": "narrator/say.dabd6c78b40d.ogg",
-    "hash": "dabd6c78b40d",
+    "file": "narrator/say.8caf4a838291.ogg",
+    "hash": "8caf4a838291",
     "sec": 40.82,
     "segs": [
      [
@@ -36183,17 +36183,17 @@
    "status": "done"
   },
   {
-   "id": "say.77eb67f9e183",
+   "id": "say.4a0952027e25",
    "kind": "say",
    "voice": "narrator",
-   "text": "Something in old armour is standing guard over the dead watchman. It turns to look at you.",
+   "text": "Something in old armor is standing guard over the dead watchman. It turns to look at you.",
    "who": null,
    "where": "godot/logic/Play/Zones/Prologue.cs",
-   "hash": "77eb67f9e183",
+   "hash": "4a0952027e25",
    "segments": [
     {
      "voice": "narrator",
-     "text": "Something in old armour is standing guard over the dead watchman. It turns to look at you."
+     "text": "Something in old armor is standing guard over the dead watchman. It turns to look at you."
     }
    ],
    "direction": {
@@ -36204,8 +36204,8 @@
     "note": "Even; the last sentence slower: it turns to look at you."
    },
    "take": {
-    "file": "narrator/say.77eb67f9e183.ogg",
-    "hash": "77eb67f9e183",
+    "file": "narrator/say.4a0952027e25.ogg",
+    "hash": "4a0952027e25",
     "sec": 6.22,
     "segs": [
      [
@@ -36509,17 +36509,17 @@
    "status": "done"
   },
   {
-   "id": "say.3eba0841cd10",
+   "id": "say.3beaff2ef058",
    "kind": "say",
    "voice": "narrator",
-   "text": "Grey light, then gold. Up the road, the Waystation's gate is opening.",
+   "text": "Gray light, then gold. Up the road, the Waystation's gate is opening.",
    "who": null,
    "where": "godot/logic/Play/Zones/Prologue.cs",
-   "hash": "3eba0841cd10",
+   "hash": "3beaff2ef058",
    "segments": [
     {
      "voice": "narrator",
-     "text": "Grey light, then gold. Up the road, the Waystation's gate is opening."
+     "text": "Gray light, then gold. Up the road, the Waystation's gate is opening."
     }
    ],
    "direction": {
@@ -36530,8 +36530,8 @@
     "note": "Dawn, plainly; 'then gold' given room, no warmer than the rest."
    },
    "take": {
-    "file": "narrator/say.3eba0841cd10.ogg",
-    "hash": "3eba0841cd10",
+    "file": "narrator/say.3beaff2ef058.ogg",
+    "hash": "3beaff2ef058",
     "sec": 7.74,
     "segs": [
      [
@@ -37295,17 +37295,17 @@
    "status": "done"
   },
   {
-   "id": "say.f45eec417fcc",
+   "id": "say.0762cf80c852",
    "kind": "say",
    "voice": "narrator",
-   "text": "Red cloth at every tent, washing on a line, children with a wooden sword. They see your colours and go back to what they were doing.",
+   "text": "Red cloth at every tent, washing on a line, children with a wooden sword. They see your colors and go back to what they were doing.",
    "who": null,
    "where": "godot/logic/Play/Zones/Verge.cs",
-   "hash": "f45eec417fcc",
+   "hash": "0762cf80c852",
    "segments": [
     {
      "voice": "narrator",
-     "text": "Red cloth at every tent, washing on a line, children with a wooden sword. They see your colours and go back to what they were doing."
+     "text": "Red cloth at every tent, washing on a line, children with a wooden sword. They see your colors and go back to what they were doing."
     }
    ],
    "direction": {
@@ -37316,8 +37316,8 @@
     "note": "Plain; the ordinary details do it."
    },
    "take": {
-    "file": "narrator/say.f45eec417fcc.ogg",
-    "hash": "f45eec417fcc",
+    "file": "narrator/say.0762cf80c852.ogg",
+    "hash": "0762cf80c852",
     "sec": 10.58,
     "segs": [
      [
@@ -38001,17 +38001,17 @@
    "status": "done"
   },
   {
-   "id": "say.48cdd82e6c0b",
+   "id": "say.3cc85cd8c414",
    "kind": "say",
    "voice": "narrator",
-   "text": "You prise one charge out of the straw. The rest sit there and wait, the way they have waited for everyone.",
+   "text": "You pry one charge out of the straw. The rest sit there and wait, the way they have waited for everyone.",
    "who": null,
    "where": "godot/logic/Play/Zones/Verge.cs",
-   "hash": "48cdd82e6c0b",
+   "hash": "3cc85cd8c414",
    "segments": [
     {
      "voice": "narrator",
-     "text": "You prise one charge out of the straw. The rest sit there and wait, the way they have waited for everyone."
+     "text": "You pry one charge out of the straw. The rest sit there and wait, the way they have waited for everyone."
     }
    ],
    "direction": {
@@ -38025,8 +38025,8 @@
     "from": "cloud voice pass"
    },
    "take": {
-    "file": "narrator/say.48cdd82e6c0b.ogg",
-    "hash": "48cdd82e6c0b",
+    "file": "narrator/say.3cc85cd8c414.ogg",
+    "hash": "3cc85cd8c414",
     "sec": 8.89,
     "segs": [
      [
@@ -38659,17 +38659,17 @@
    "status": "done"
   },
   {
-   "id": "say.1a95cdeef839",
+   "id": "say.ca6fbefec176",
    "kind": "say",
    "voice": "narrator",
-   "text": "A teamster, thin and grey, stumbles out and grips your arm. His nails are broken to the quick from the bars.",
+   "text": "A teamster, thin and gray, stumbles out and grips your arm. His nails are broken to the quick from the bars.",
    "who": null,
    "where": "godot/logic/Play/Zones/Verge.cs",
-   "hash": "1a95cdeef839",
+   "hash": "ca6fbefec176",
    "segments": [
     {
      "voice": "narrator",
-     "text": "A teamster, thin and grey, stumbles out and grips your arm. His nails are broken to the quick from the bars."
+     "text": "A teamster, thin and gray, stumbles out and grips your arm. His nails are broken to the quick from the bars."
     }
    ],
    "direction": {
@@ -38680,8 +38680,8 @@
     "note": "Plain; the nails are the detail."
    },
    "take": {
-    "file": "narrator/say.1a95cdeef839.ogg",
-    "hash": "1a95cdeef839",
+    "file": "narrator/say.ca6fbefec176.ogg",
+    "hash": "ca6fbefec176",
     "sec": 9.64,
     "segs": [
      [
@@ -39145,17 +39145,17 @@
    "status": "done"
   },
   {
-   "id": "say.cc4a3505429e",
+   "id": "say.3f7b7c5bd5a4",
    "kind": "say",
    "voice": "narrator",
-   "text": "Four grey shapes fall in beside you at the edge of the wood.",
+   "text": "Four gray shapes fall in beside you at the edge of the wood.",
    "who": null,
    "where": "godot/logic/Play/Zones/Verge.cs",
-   "hash": "cc4a3505429e",
+   "hash": "3f7b7c5bd5a4",
    "segments": [
     {
      "voice": "narrator",
-     "text": "Four grey shapes fall in beside you at the edge of the wood."
+     "text": "Four gray shapes fall in beside you at the edge of the wood."
     }
    ],
    "direction": {
@@ -39166,8 +39166,8 @@
     "note": "Still and slow."
    },
    "take": {
-    "file": "narrator/say.cc4a3505429e.ogg",
-    "hash": "cc4a3505429e",
+    "file": "narrator/say.3f7b7c5bd5a4.ogg",
+    "hash": "3f7b7c5bd5a4",
     "sec": 3.81,
     "segs": [
      [
