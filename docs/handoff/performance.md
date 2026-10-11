@@ -18,7 +18,7 @@ Done:
   - Dark browns no longer go purple: in the eye region, magenta among dark pixels went from 29% to 5%.
   - Greys, cool colours and greens keep the old blue and teal.
   - Warm near-greys lose their violet toward navy.
-  - Commits: 13d87d5a, 075824d4, 39ac8e4d. The face lead asked for 39ac8e4d: skin in shade keeps its hue, with mid-tones held from saturation 0.025-0.06. Face's neck judge checks it. Face cherry-picks all three.
+  - Commits: 13d87d5a, 075824d4, 39ac8e4d. The face lead asked for 39ac8e4d: skin in shade keeps its hue, with mid-tones held from saturation 0.025-0.06. Face's neck judge n1 passed it at 1:1 on all ten faces (under-jaw hue 15-37 went to 41-48; portraits 46-52); keep the hue hold as is. Face has cherry-picked them.
   - Flags: `--grade-old`; `--grade-dump FILE` (check the dump with `N\ng\lut.py` and `f1.py`); `--grade-sat-lo` and `--grade-sat-hi`; `--hair-colour ID`.
 - **The wolf fur sparkle.** Judge fur1 gave PASS WITH FIXES and said "merge as a step". The wolf arena doesn't sign off yet.
   - 0a85d850: the crowd's textures get mips.
