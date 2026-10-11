@@ -19,6 +19,7 @@ heroine_head.py and heroine_outfits.py run it on every heroine.glb they write. R
 on one already done (its head's extras say seam_band) it does nothing.
 """
 import json
+import os
 import struct
 import sys
 
@@ -167,6 +168,18 @@ def seam(path, out=None, band=BAND):
     if "seam_band" in hm.get("extras", {}):
         print("SEAM: already done in", path, "(band %.0f mm) - nothing done" % (hm["extras"]["seam_band"] * 1000))
         return
+    # (first her keys' moves under her jaw made smooth down to SPLIT: heroine_throat.py; then read anew, its
+    # accessors being in new views)
+    import heroine_throat
+    if heroine_throat.throat(js, binc, chunks, hm, hp, shared):
+        import tempfile
+        tmp = os.path.join(tempfile.gettempdir(), "heroine_seam_%d.glb" % os.getpid())
+        _save(tmp, js, chunks)
+        js, binc = _load(tmp)
+        os.remove(tmp)
+        chunks = {i: binc[bv.get("byteOffset", 0):bv.get("byteOffset", 0) + bv["byteLength"]] for i, bv in enumerate(js["bufferViews"])}
+        mats = [m.get("name") for m in js.get("materials", [])]
+        hm, hp = prim_of("skin_head")
     turned, moved = [], 0.0
     hn = _read(js, binc, hp["attributes"]["NORMAL"])
     for k, t in enumerate(hp["targets"]):
