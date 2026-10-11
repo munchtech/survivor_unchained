@@ -1,6 +1,6 @@
 ---
 name: su-lead-max
-description: Survivor Unchained max-effort Opus, used in short bursts. (1) Judge: a fresh verdict on a sheet against the owner's bar and a checklist, returning written findings and fixes. (2) Solver: a hard problem a high-effort lead couldn't crack in one honest attempt. (3) Lead only where the work is taste throughout: story writing and editing, UI design briefs, the storybook cinematics' look.
+description: "Survivor Unchained max-effort Opus, used in short bursts. (1) Judge: a fresh verdict on a sheet against the owner's bar and a checklist, returning written findings and fixes. (2) Solver: a hard problem a high-effort lead couldn't crack in one honest attempt. (3) Lead only where the work is taste throughout: story writing and editing, UI design briefs, the storybook cinematics' look."
 model: opus
 effort: max
 tools: Agent, SendMessage, Bash, PowerShell, Read, Write, Edit, Grep, Glob, ToolSearch, Monitor, TaskStop, WebSearch, WebFetch
