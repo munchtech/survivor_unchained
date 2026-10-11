@@ -25,7 +25,7 @@ public partial class HerLod : Node
     /// drawn whole again (a conversation brings the camera to 12.5 m, a chest to 12-13.5).</summary>
     public const float Far = 18f, Near = 16f;
     /// <summary>Fur shells at range (a pile of 8 mm is under a pixel at the play camera; the full model grows 20).</summary>
-    public const int FurShells = 6;
+    public static readonly int FurShells = (int)Args.Num("lod-fur", 6);   // (--lod-fur N: for pictures)
     static readonly string Mode = Args.Get("lod") ?? "auto";
 
     readonly List<(MeshInstance3D Full, MeshInstance3D Lod, int[] Map, bool[] Own)> pairs = new();

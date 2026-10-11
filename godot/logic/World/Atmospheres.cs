@@ -16,7 +16,7 @@ public static class Atmospheres
     // toward blue so nothing sinks to black, and the fires left as the only
     // warmth (AgX in Godot sits darker than the web game's tone mapping).
     static readonly GradeSettings NightGrade = new([0.02, 0.035, 0.07], [1.0, 1.0, 1.03], [1.02, 1.0, 0.98],
-        "#2f5a86", "#ffad5c", 0.24, 1.06, 0.2, 1.14);
+        "#2f5a86", "#ffad5c", 0.24, 1.06, 0.2, 1.14) { Toe = 0.75 };
 
     public static readonly AtmospherePreset Night = new(
         new SkySettings("#040814", "#1c2a4c", "#07090f", "#4a6ea8", 20, 1, 1),
@@ -34,9 +34,13 @@ public static class Atmospheres
         Grade = NightGrade with
         {
             Lift = [0.01, 0.018, 0.035], ShadowTint = "#2a4a66", HighlightTint = "#ffa34e", TintStrength = 0.3,
-            Saturation = 0.98, Vibrance = 0.16, Contrast = 1.22,
+            Saturation = 0.98, Vibrance = 0.16, Contrast = 1.22, Toe = 0.5,
         },
     };
+
+    /// <summary>The title and the Look: night, with the grade's toe held whole, so her irises, brows and dark hair keep
+    /// their colour at the camera that judges them.</summary>
+    public static readonly AtmospherePreset Front = Night with { Grade = NightGrade with { Toe = 1 } };
 
     // The golden hour going blue: a low warm sun with long shadows, the shade lifted toward violet,
     // and the light between day's and the moon's. The day's clock shows it every evening; at 18
@@ -84,7 +88,7 @@ public static class Atmospheres
         new GradeSettings(Lerp3(a.Grade.Lift, b.Grade.Lift, t), Lerp3(a.Grade.Gamma, b.Grade.Gamma, t), Lerp3(a.Grade.Gain, b.Grade.Gain, t),
             Mix(a.Grade.ShadowTint, b.Grade.ShadowTint, t), Mix(a.Grade.HighlightTint, b.Grade.HighlightTint, t),
             Lerp(a.Grade.TintStrength, b.Grade.TintStrength, t), Lerp(a.Grade.Saturation, b.Grade.Saturation, t),
-            Lerp(a.Grade.Vibrance, b.Grade.Vibrance, t), Lerp(a.Grade.Contrast, b.Grade.Contrast, t)));
+            Lerp(a.Grade.Vibrance, b.Grade.Vibrance, t), Lerp(a.Grade.Contrast, b.Grade.Contrast, t)) { Toe = Lerp(a.Grade.Toe, b.Grade.Toe, t) });
 
     /* ------------------------------------------------------------ colour -- */
 

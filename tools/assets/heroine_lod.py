@@ -44,7 +44,7 @@ KEEP = 0.05          # (m: what lies within this of anything seen, along its own
 # (a vertex with another of her surfaces near along its normal (a garment over skin, one garment over another, a strand
 # of hair on her) is simplified within a third of that gap, so neither passes through the other: gaps under these, these
 # errors)
-CLOSE = ((0.0015, 0.00005), (0.003, 0.0002), (0.005, 0.0005))
+CLOSE = ((0.0015, 0.0001), (0.003, 0.0005), (0.005, 0.001))
 HEADWEAR = 0.3       # (her outfit's pieces weighted this much to her head (a hat, a hood) are kept whole, as her head is)
 BLEND = 0.80         # (a vertex whose largest weight is under this blends over a joint: never removed)
 RAYS = 64            # (directions tried from each point of a triangle)
@@ -367,7 +367,7 @@ def lod(folder, outfit):
             whole |= decal_tree.query(pos, distance_upper_bound=DECAL_NEAR)[0] < DECAL_NEAR
         vis = seen(scene, pos, tris)
         hold = vis | (big < BLEND)[tris].any(1) | whole[tris].any(1)
-        keep = grow(pos, tris, hold, KEEP) if not os.environ.get("LOD_KEEP_ALL") else np.ones(len(tris), bool)
+        keep = grow(pos, tris, hold, KEEP) if not (os.environ.get("LOD_KEEP_ALL") or os.environ.get("LOD_EXACT")) else np.ones(len(tris), bool)
         kept.append((kind, mat, attrs, tris, keep, whole, int(vis.sum())))
     # How near each vertex lies to another of her surfaces along its normal: what is kept of the others, her head, and
     # every hair she can wear (never its own surface: a garment's own thickness is no other layer).
@@ -408,7 +408,7 @@ def lod(folder, outfit):
         t2 = tris[keep]
         # (her body's colours are how far each outfit tucks her skin in (heroine_skin.gdshader: up to TUCK): weighed
         # as the shape they make)
-        t3 = simplify(pos, attrs, t2, dense, gap, whole, FLAT, DENSE, TUCK if kind == "body" else 0.004) if len(t2) else t2
+        t3 = simplify(pos, attrs, t2, dense, gap, whole, FLAT, DENSE, TUCK if kind == "body" else 0.004) if len(t2) and not os.environ.get("LOD_EXACT") and mat not in os.environ.get("LOD_EXACT_MATS", "").split(",") else t2
         used = np.unique(t2)
         report[f"{kind}.{mat}"] = (len(tris), nv, len(t2), len(t3))
         print(f"  {kind}.{mat}: {len(tris)} tris, {nv} seen, {len(t2)} kept, {len(t3)} after simplifying "
