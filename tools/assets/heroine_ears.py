@@ -44,6 +44,9 @@ def smooth(a, b, x):
 
 def tones():
     s = open(PEOPLE, encoding="utf-8").read()
+    # (HerFaceTone's own block: her body's tone multiplies ear and cheek alike, so only the face's counts here)
+    s = s[s.index("Dictionary<string, Vector3> HerFaceTone = new()"):]
+    s = s[:s.index("};")]
     return {k: np.array([float(a), float(b), float(c)]) for k, a, b, c in
             re.findall(r'\["(\w+)"\] = new\(([\d.]+)f, ([\d.]+)f, ([\d.]+)f\)', s)}
 

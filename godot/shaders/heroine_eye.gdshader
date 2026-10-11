@@ -71,6 +71,8 @@ uniform float catch_soft = 1.0;
 // replaces what is behind it, it is not added to it, and added it read pink-warm over a brown iris)
 uniform vec3 catch_colour = vec3(0.95, 0.97, 1.0);
 uniform float catch_dim = 0.0;
+// (its shape: 0 round; 1 a soft-cornered window, wider than tall, as a softbox or a window shows in the portraits)
+uniform float catch_window = 0.0;
 // The iris's fibres and crypts, their light and dark about the paint's mean
 // (1 as painted; less, softer: a painted iris's blotches read as a render).
 uniform float iris_contrast = 1.0;
@@ -192,7 +194,9 @@ void fragment() {
 	float lw = low_y + 0.2 * d0.x * d0.x;
 	float wet_line = smoothstep(lw - 0.12, lw - 0.03, d0.y) * (1.0 - smoothstep(lw - 0.03, lw + 0.04, d0.y));
 	vec2 at_c = catch_at + v.xy * vec2(0.3, -0.3);
-	float glint = 1.0 - smoothstep((0.06 - 0.025 * catch_soft) * catch_size, (0.06 + 0.025 * catch_soft) * catch_size, length((d - at_c) * vec2(1.0, 1.25)));
+	vec2 dc = abs((d - at_c) * vec2(1.0, 1.25));
+	float cr = mix(length(dc), pow(pow(dc.x, 4.0) + pow(dc.y, 4.0), 0.25), catch_window);
+	float glint = 1.0 - smoothstep((0.06 - 0.025 * catch_soft) * catch_size, (0.06 + 0.025 * catch_soft) * catch_size, cr);
 	glint *= in_iris * (1.0 - under_lid * 0.7);
 	ALBEDO = col * shade * (1.0 - 0.35 * far) * (1.0 + low_lift * wet_line) * (1.0 - catch_dim * glint);
 	ALPHA = texture(eye, UV).a;

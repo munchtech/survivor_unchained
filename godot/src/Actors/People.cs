@@ -626,10 +626,13 @@ public static class People
         e.SetShaderParameter("ring_to", 0.35f);
         e.SetShaderParameter("ring_light", 0.8f);
         e.SetShaderParameter("iris_light", 1.3f);
-        e.SetShaderParameter("catch_size", 2.0f);
-        e.SetShaderParameter("catchlight", 0.9f);
-        e.SetShaderParameter("catch_soft", 0.5f);
-        e.SetShaderParameter("catch_at", new Vector2(-0.15f, -0.33f));
+        // (the catchlight a soft window over the pupil's upper edge, 11 to 1 o'clock as in the portraits, about a
+        // sixth of the iris's radius across; a small hard dot at 10 to 11 read as a render, judge j2)
+        e.SetShaderParameter("catch_size", 2.8f);
+        e.SetShaderParameter("catchlight", 0.8f);
+        e.SetShaderParameter("catch_soft", 1.0f);
+        e.SetShaderParameter("catch_window", 1.0f);
+        e.SetShaderParameter("catch_at", new Vector2(0.06f, -0.32f));
         e.SetShaderParameter("catch_colour", new Vector3(0.9f, 0.95f, 1.08f));
         e.SetShaderParameter("catch_dim", 0.8f);
         e.SetShaderParameter("pupil_dark", 0.020f);
@@ -750,6 +753,7 @@ public static class People
                         m.SetShaderParameter("tone", HerTone(look));
                         m.SetShaderParameter("face_tone", FaceTone(look));
                         m.SetShaderParameter("freckle_amount", HerFreckles(look));
+                        HerShade(m, look);
                     }
                     else if (m.Shader == eyeShader)
                     {
@@ -1054,7 +1058,7 @@ public static class People
             }
         }
         // (her skin warmer in the sky's light than in the lamps': HerAmbientTint)
-        if (who == "heroine") m.SetShaderParameter("ambient_tint", HerAmbient(look));
+        if (who == "heroine") HerShade(m, look);
         // Her freckles, a layer over her face, neck, shoulders and upper chest
         // (tools/assets/heroine_freckles.py), as many as her face starts with.
         if (who == "heroine" && FreckleFile(src.ResourceName) is string fp)
@@ -1124,7 +1128,32 @@ public static class People
         ["brown"] = new(1.0f, 1.0f, 0.8f),
     };
 
-    static Vector3 HerAmbient(Look look) => HerAmbientTints.TryGetValue(HerSkinId(look), out var a) ? a : HerAmbientTint;
+    /// <summary>The ambient tint, and HerBodyTone taken back out of it: her skin's own colour for a face is set for
+    /// the lamps' light; in the sky's light alone (the shade under her jaw) it greyed her (jaw chroma 0.014 against
+    /// her portrait's 0.051, own).</summary>
+    /// <summary>Her skin's colour out of the lamps' direct light, for her face and swatch: the ambient tint, and where
+    /// she faces down (under her jaw and chin, lit there only by the fill at a slant) HerBodyTone taken back out by
+    /// the shader's shade_tint, its lightness kept. Her body's tone is set for lit skin (her portraits' lit necks are
+    /// pale); applied in her shade too, it greyed the shade under her jaw (chroma 0.014 against her portrait's 0.051,
+    /// own; skin in shade keeps its colour, the light coming back out of it).</summary>
+    static void HerShade(ShaderMaterial m, Look look)
+    {
+        m.SetShaderParameter("ambient_tint", HerAmbient(look));
+        if (!SurvivorUnchained.Args.Has("shade-tint")) return;
+        var b = BodyTone(look);
+        m.SetShaderParameter("shade_tint", new Vector3(1 / b.X, 1 / b.Y, 1 / b.Z));
+        m.SetShaderParameter("shade_down", 1f);
+        m.SetShaderParameter("down_from", 0.05f);
+        m.SetShaderParameter("down_to", 0.45f);
+        m.SetShaderParameter("shade_from", 0.85f);
+        m.SetShaderParameter("shade_to", 1f);
+    }
+
+    static Vector3 HerAmbient(Look look)
+    {
+        var a = HerAmbientTints.TryGetValue(HerSkinId(look), out var t) ? t : HerAmbientTint;
+        return a / BodyTone(look);
+    }
 
     /// <summary>His skin's roughness, sheen, and the roughness it gains seen
     /// edge on (shaders/heroine_skin.gdshader).</summary>
@@ -1157,14 +1186,52 @@ public static class People
     /// beside it the face read a shade wrong while its neck was right.</summary>
     static readonly Dictionary<string, Vector3> HerFaceTone = new()
     {
+        // (11 October 2026, the Look's rig made near white: each face's cheek taken to its portrait's chroma and hue,
+        // on top of HerBodyTone below, which these partly undo on the face; judge j2's trims, measured at the Look)
+        ["own"] = new(1.225f, 0.918f, 0.706f), ["highborn"] = new(1.139f, 0.914f, 0.795f),
+        ["vixen"] = new(1.138f, 0.881f, 0.738f), ["moonlit"] = new(1.096f, 0.969f, 0.872f),
+        ["fey"] = new(1.277f, 0.982f, 0.809f), ["doe"] = new(1.153f, 0.940f, 0.826f),
+        ["wildling"] = new(1.110f, 0.912f, 0.780f), ["hardwon"] = new(1.141f, 0.951f, 0.821f),
+        ["saffron"] = new(1.061f, 0.961f, 0.925f),
+        // (Sunborn: her face lighter, a little less red, against her body: her cheek at 0.86 of her portrait's
+        // lightness against 0.92-0.97 for the others, her head darker than her neck; judge n1, 11 October 2026)
+        ["sunborn"] = new(1.184f, 1.236f, 1.420f),
+    };
+
+    /// <summary>Her skin's own colour for each face, all of her (linear, on her swatch's HerTone): her neck and
+    /// body at the portrait's neck-to-cheek chroma (0.56-0.80 of the cheek's, Sunborn 0.97) and its cheek's hue.
+    /// Under the Look's warm rig every face read a fake tan, her neck as saturated as her cheek and 40-80% over
+    /// her portrait's (judge j1, 11 October 2026). (--tone-trim off: none, and the faces' tones as before.) Measured twice at the Look and refitted (r1, r3).</summary>
+    static readonly Dictionary<string, Vector3> HerBodyTone = new()
+    {
+        ["own"] = new(0.801f, 1.084f, 1.648f), ["highborn"] = new(0.840f, 1.068f, 1.550f),
+        ["doe"] = new(0.826f, 1.100f, 1.567f), ["sunborn"] = new(1.009f, 0.987f, 1.052f),
+        ["vixen"] = new(0.824f, 1.079f, 1.548f), ["moonlit"] = new(0.831f, 1.076f, 1.513f),
+        ["saffron"] = new(0.901f, 1.062f, 1.427f), ["wildling"] = new(0.860f, 1.076f, 1.510f),
+        ["hardwon"] = new(0.838f, 1.084f, 1.631f), ["fey"] = new(0.815f, 1.083f, 1.573f),
+    };
+
+    static readonly Dictionary<string, Vector3> HerFaceToneUntrimmed = new()
+    {
         ["own"] = new(1.004f, 0.995f, 0.985f), ["highborn"] = new(0.981f, 0.981f, 0.969f),
         ["vixen"] = new(0.982f, 0.940f, 0.922f), ["moonlit"] = new(0.972f, 1.021f, 1.080f),
         ["fey"] = new(1.062f, 1.067f, 1.050f), ["doe"] = new(1.004f, 1.016f, 1.013f),
         ["wildling"] = new(0.992f, 0.969f, 0.957f), ["hardwon"] = new(1.004f, 1.016f, 1.032f),
-        // (Sunborn: her face lighter, a little less red, against her body: her cheek at 0.86 of her portrait's
-        // lightness against 0.92-0.97 for the others, her head darker than her neck; judge n1, 11 October 2026)
         ["sunborn"] = new(1.20f, 1.23f, 1.23f),
     };
+
+    static readonly bool ToneTrim = SurvivorUnchained.Args.Get("tone-trim") != "off";
+
+    /// <summary>How much of HerBodyTone her body takes (0 none to 1 all; the rest goes to her face's tone, so her
+    /// cheek is as fitted either way). (--body-k K: another, for judging it (pictures).)</summary>
+    /// (0.5 for now, unjudged: at 1 her lit neck matched her portraits' but the shade under her jaw went grey-violet
+    /// (chroma 0.015, hue 30, own); at 0 her neck kept the fake tan (chroma 0.068 against 0.035).)
+    static readonly float BodyK = SurvivorUnchained.Args.Has("body-k") ? (float)SurvivorUnchained.Args.Num("body-k", 0.5f) : 0.5f;
+
+    static Vector3 Pow(Vector3 v, float k) => new(Mathf.Pow(v.X, k), Mathf.Pow(v.Y, k), Mathf.Pow(v.Z, k));
+
+    /// <summary>Her body's tone for her face, as much of it as BodyK says (one when untrimmed).</summary>
+    static Vector3 BodyTone(Look look) => ToneTrim && HerBodyTone.TryGetValue(FaceId(look), out var b) ? Pow(b, BodyK) : Vector3.One;
 
     /// <summary>How much of her face's own grain her neck takes (the skin shader's grain_amount; 1 her face's
     /// paint's own spread; none from her collarbones down, by her freckles' map's blue): her portrait's neck has
@@ -1172,8 +1239,13 @@ public static class People
     /// speckle over her breasts.) (--grain tries another.)</summary>
     static readonly float HerGrain = SurvivorUnchained.Args.Has("grain") ? SurvivorUnchained.Args.Num("grain", 3f) : 3f;
 
-    static Vector3 FaceTone(Look look) =>
-        HerFaceTone.TryGetValue(string.IsNullOrEmpty(look.FaceShape) ? "own" : look.FaceShape, out var f) ? f : Vector3.One;
+    static Vector3 FaceTone(Look look)
+    {
+        var f = (ToneTrim ? HerFaceTone : HerFaceToneUntrimmed).TryGetValue(FaceId(look), out var t) ? t : Vector3.One;
+        return ToneTrim && HerBodyTone.TryGetValue(FaceId(look), out var b) ? f * Pow(b, 1 - BodyK) : f;
+    }
+
+    static string FaceId(Look look) => string.IsNullOrEmpty(look.FaceShape) ? "own" : look.FaceShape;
 
     /// <summary>Her freckles' map for a part of her skin, if it has one: her head's, or the graft's (her
     /// neck, shoulders and upper chest).</summary>
@@ -1205,7 +1277,8 @@ public static class People
     {
         var t = SkinTone(look);
         string id = HerSkinId(look);
-        if (!HerToneFit.TryGetValue(id, out var f)) return t;
+        var f = HerToneFit.TryGetValue(id, out var fit) ? fit : Vector3.One;
+        f *= BodyTone(look);
         var l = t.SrgbToLinear();
         return new Color(l.R * f.X, l.G * f.Y, l.B * f.Z).LinearToSrgb();
     }
