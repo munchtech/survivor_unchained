@@ -1,5 +1,5 @@
 # Remove a finished agent worktree safely (CLAUDE.md, "Disk and worktrees").
-#   powershell -NoProfile -File tools/scratch/coordinator/wt_remove.ps1 <worktree path> [-Force]
+#   powershell -NoProfile -ExecutionPolicy Bypass -File tools/scratch/coordinator/wt_remove.ps1 <worktree path> [-Force]
 # Links (junctions, symlinks) inside it are removed first, the link only, so no delete can
 # follow one into real assets (some worktrees linked godot/assets into the main checkout).
 # -Force only when its uncommitted edits were checked and are discarded on purpose.

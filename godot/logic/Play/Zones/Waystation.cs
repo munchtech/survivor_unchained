@@ -26,7 +26,7 @@ public sealed class Waystation : ZoneRuntime
     static readonly Dictionary<string, string[]> StallCalls = new()
     {
         ["produce"] = ["Apples! Morrow pippins, crisp as frost!", "Turnips, onions, the last of the beans!", "Two for a copper, and I'm robbing myself!"],
-        ["cloth"] = ["Wool from the south, warm as a bed!", "Mend your cloak, traveller? It needs it.", "Dyed in the Morrow, never fades!"],
+        ["cloth"] = ["Wool from the south, warm as a bed!", "Mend your cloak, traveler? It needs it.", "Dyed in the Morrow, never fades!"],
         ["herbs"] = ["Feverfew, woundwort, sleep-easy!", "Wenna's not the only one who knows a leaf.", "Something for the cough? Everyone's got the cough."],
         ["pots"] = ["Pots! Pans! Things to put things in!", "Fired in Low Kiln, sound as a bell. Hear that?", "You look like someone who needs a pot."],
     };

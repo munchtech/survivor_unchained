@@ -115,7 +115,7 @@ public static class ArenaPlaces
     // it, so the living read against it and the survivor's own light is the
     // brightest thing in the middle of the picture. Each place keeps its own.
     static readonly GradeSettings Grade = new([0.012, 0.02, 0.04], [1.0, 1.0, 1.03], [1.03, 1.0, 0.97],
-        "#2a4a66", "#ffad5c", 0.22, 1.0, 0.16, 1.16);
+        "#2a4a66", "#ffad5c", 0.22, 1.0, 0.16, 1.16) { Toe = 0.5 };
 
     static (AtmospherePreset, ArenaAir) Light(string place) => place switch
     {

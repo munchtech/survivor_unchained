@@ -129,7 +129,7 @@ public class StoryPlay(ITestOutputHelper log)
         };
     }
 
-    [Theory]
+    [ProbeTheory("STORY_PLAY", "1")]
     [InlineData(42, "warden", 2, 1)]
     [InlineData(7, "stalker", 2, 1)]
     [InlineData(99, "arcanist", 3, 2)]
@@ -140,5 +140,6 @@ public class StoryPlay(ITestOutputHelper log)
         var r = Walk(seed, calling, level, day, Environment.GetEnvironmentVariable("STORY_TRACE") == "1" ? log : null);
         log.WriteLine($"seed {seed} {calling} level {level} day {day}: {(r.Died ? "FELL" : "came back")} after {r.Minutes:0.0} min,  {r.Places} packs " +
             $"{r.Kills} kills, +{r.Xp:0} xp (+{r.Levels} levels), lowest health {r.LowHp:P0} {r.Note}");
+        Assert.True(r.Minutes > 0, "the walk ended having taken some time");
     }
 }

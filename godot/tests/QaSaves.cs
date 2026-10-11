@@ -19,7 +19,7 @@ public class QaSaves
         File.WriteAllText(Path.Combine(dir, $"{name}.json"), Json.Write(p.J.ToSave(new SaveLocation { Zone = zone, X = x, Z = z })));
     }
 
-    [Fact]
+    [ProbeFact("QA_SAVES")]
     public void Write_the_moments_worth_seeing()
     {
         var dir = Environment.GetEnvironmentVariable("QA_SAVES");
@@ -82,5 +82,6 @@ public class QaSaves
         d.Apply("""[{ "quest": { "id": "caravan", "status": "active", "entry": "roost_found" } }]""");
         d.W.Facts["caravan.days"] = 2;
         Write(dir, "harlan_roost", d, "waystation", 32.5, 1.4);
+        Assert.True(File.Exists(Path.Combine(dir, "harlan_roost.json")));
     }
 }

@@ -126,7 +126,7 @@
   },
   {
    "id": "grey",
-   "name": "Grey",
+   "name": "Gray",
    "color": "#a8a4a0"
   }
  ],
@@ -172,7 +172,7 @@
     {"id": "rouge", "name": "Kohl and rouge", "words": "Kohl, and her lips stained the red of crushed rosehip.", "rough": 0.45},
     {"id": "woad", "name": "Woad", "words": "The old blue of the hill people, banded over her brow and down her cheeks.", "rough": 0.85},
     {"id": "ochre", "name": "Hunter's ochre", "words": "A band of red earth across the eyes, temple to temple, laid on with two fingers.", "rough": 0.8},
-    {"id": "ash", "name": "Ash", "words": "Grey from a dead fire, thumbed under the eyes. Mourning, or a promise.", "rough": 0.9},
+    {"id": "ash", "name": "Ash", "words": "Gray from a dead fire, thumbed under the eyes. Mourning, or a promise.", "rough": 0.9},
     {"id": "blood", "name": "Blood oath", "words": "Three fingers of blood drawn down over her left eye, brow to jaw.", "rough": 0.5},
     {"id": "gilt", "name": "Gilt", "words": "Gold leaf pressed along her cheekbones, torn at its edges.", "rough": 0.3, "metal": 1.0}
    ],

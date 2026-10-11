@@ -131,7 +131,7 @@ public class HordeBench(ITestOutputHelper log)
         Assert.True(r.BytesPerTick < 8 * 1024, $"{r.BytesPerTick / 1024:F1} KB a tick");
     }
 
-    [Fact]
+    [ProbeFact("HORDE_BENCH", "1")]
     public void HordeBench_Run()
     {
         if (Environment.GetEnvironmentVariable("HORDE_BENCH") != "1") return;
@@ -141,6 +141,7 @@ public class HordeBench(ITestOutputHelper log)
         {
             var r = Play(horde, ticks);
             log.WriteLine($"{r.Horde,6} {r.MeanMs,8:F3} {r.P95Ms,7:F3} {r.BytesPerTick / 1024,8:F1} {r.Gen0,5} {r.Kills,6}  {r.Fingerprint}");
+            Assert.Equal(horde, r.Horde);
         }
     }
 }

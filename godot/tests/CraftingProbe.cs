@@ -31,7 +31,7 @@ public class CraftingProbe(ITestOutputHelper log)
         return s.Count == 0 ? double.NaN : s[s.Count / 2];
     }
 
-    [Fact]
+    [ProbeFact("CRAFT_PROBE")]
     public void Nights()
     {
         if (Env("CRAFT_PROBE", "") == "") return;
@@ -48,6 +48,7 @@ public class CraftingProbe(ITestOutputHelper log)
         var done = new ConcurrentBag<RunResult>();
         Parallel.ForEach(specs, sp => done.Add(ArenaSim.Play(sp)));
         var runs = done.ToList();
+        Assert.Equal(specs.Count, runs.Count);
         var outLines = new List<string>();
         void Log(string s) { log.WriteLine(s); outLines.Add(s); }
         foreach (var r in runs.OrderBy(r => r.Spec.Tier).ThenBy(r => r.Spec.People))

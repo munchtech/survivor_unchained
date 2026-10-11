@@ -27,7 +27,8 @@ public partial class Game
         hud.Dialogue(null);
         hud.ShowPlay(false);
         var s = Stage("lowford");
-        air.Set(Atmospheres.Night);
+        // (the title and the Look hold the grade's whole toe: her irises and dark hair keep their colour (Atmospheres.Front))
+        air.Set(Atmospheres.Front);
         s.View.SetNight(true);
         Seat(Stranger());
         PoseTitle(true);
@@ -216,14 +217,18 @@ public partial class Game
                 else if (float.TryParse(ks, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var sz)) keyLight.LightSize = sz;
             }
         }
-        fillLight ??= Spot(white ? Colors.White : new Color(0.88f, 0.92f, 1f), 26, false, 0.1f);
+        // The fill is warm-white, not cool: it reaches the shade under her jaw about as squarely as her cheek, and cool
+        // it turned that shade grey. A warm bounce from below (her chest and collar giving back the key) and a rim
+        // whose sheen is half its light (at full, a lilac sheen along her collar). (--rig-old: the rig before, for pictures.)
+        bool old = Args.Has("rig-old");
+        fillLight ??= Spot(white ? Colors.White : old ? new Color(0.88f, 0.92f, 1f) : new Color(1f, 0.95f, 0.9f), 26, false, 0.1f);
         edgeLight ??= Spot(white ? Colors.White : new Color(1f, 0.56f, 0.26f), 24, false, 0.35f);
-        rimLight ??= Spot(white ? Colors.White : new Color(0.72f, 0.82f, 1f), 24, false, 0.5f);
+        rimLight ??= Spot(white ? Colors.White : new Color(0.72f, 0.82f, 1f), 24, false, old ? 0.5f : 0.25f);
         // (--bounce E: a warm light from below, as her chest and collar give back the key, for judging it (pictures);
         // --ssao off | RADIUS,INTENSITY: the world's ambient occlusion at the Look, likewise)
         if (bounce < 0)
         {
-            bounce = 0;
+            bounce = old ? 0 : 0.18f;
             if (Args.Get("bounce") is string bs && bs.Split(',') is { } bp)
             {
                 float F(int i, float d) => i < bp.Length ? float.Parse(bp[i], System.Globalization.CultureInfo.InvariantCulture) : d;

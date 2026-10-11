@@ -302,7 +302,7 @@ public class CinematicTests
         Talk(Convo("keegan"), s.C, "bye");
         s.Ch.Knowledge.Add("lore.warden");
         Assert.Contains("Ember wakes it.", Talk(Convo("keegan"), s.C, "ford-warden")!.Text);
-        Assert.Contains("Not oil. Wrong colour.", Lore.Quests["lamps"].Entries["book"]);
+        Assert.Contains("Not oil. Wrong color.", Lore.Quests["lamps"].Entries["book"]);
     }
 
     [Fact]

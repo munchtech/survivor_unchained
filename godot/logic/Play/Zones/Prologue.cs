@@ -122,7 +122,7 @@ public sealed class Prologue : ZoneRuntime
             Id = "watchman", X = man.X, Z = man.Z, R = 2.4, Verb = "Examine", Name = "Dead Watchman",
             Act = () =>
             {
-                G.Say("A Watchman, grey-bearded and a long time dead, sitting against the post as if he had only stopped for breath. Something has had his eyes. In his belt-book, three lines in a hand that worsens as it goes: \"Lamps at the Low Ford lit again, and not by us. Not oil. Wrong colour.\" \"Sent Dannet for the captain. Dannet not back.\" \"The Warden is walking. I can hear it singing in the water.\"", null, 10);
+                G.Say("A Watchman, gray-bearded and a long time dead, sitting against the post as if he had only stopped for breath. Something has had his eyes. In his belt-book, three lines in a hand that worsens as it goes: \"Lamps at the Low Ford lit again, and not by us. Not oil. Wrong color.\" \"Sent Dannet for the captain. Dannet not back.\" \"The Warden is walking. I can hear it singing in the water.\"", null, 10);
                 // The book is the first page of the lamps' mystery.
                 G.Apply("""[{ "learn": "lore.warden", "text": "The lamps at the ford burn ember, and the Warden drinks it." }, { "quest": { "id": "lamps", "status": "active", "entry": "book" } }]""");
                 // The devout hear the dead, a little.
@@ -453,7 +453,7 @@ public sealed class Prologue : ZoneRuntime
                     checkpoint = new XZ(post.X - 6, post.Z + 4);
                     knight = B.SpawnEnemy("barrow_knight", post.X - 1, post.Z - 1.5, new Battle.SpawnOpts { Level = 1, Tag = "knight", Style = SpawnStyle.Rise });
                     for (int i = 0; i < 4; i++) SpawnAround("risen", 1, 5, 9, 0, 2);
-                    G.Say("Something in old armour is standing guard over the dead watchman. It turns to look at you.", null, 5);
+                    G.Say("Something in old armor is standing guard over the dead watchman. It turns to look at you.", null, 5);
                     Objective([("Survive the ambush at the wagon", true, false), ("Put down the Barrow Knight", false, false), ("Search the old Watch-post", false, false)]);
                     Tip("elite", "Elites", "Bigger, tougher, and worth it: elites carry better things. When a red line appears on the ground, it is about to come down it. Be off the line.", null, 12);
                 }
@@ -804,7 +804,7 @@ public sealed class Prologue : ZoneRuntime
         if (B == null) return;
         Go(Stage.Dawn);
         B.Collision.RemoveTagged("gate");
-        G.Say("Grey light, then gold. Up the road, the Waystation's gate is opening.", null, 6);
+        G.Say("Gray light, then gold. Up the road, the Waystation's gate is opening.", null, 6);
         Objective([("Walk up the road to the Waystation", false, false)]);
         W.Time = TimeOfDay.Dawn;
     }
@@ -932,7 +932,7 @@ public sealed class Prologue : ZoneRuntime
         G.After(3.2, () => G.Say("Prints in the frost, your own. They come up from the river. None go down to it.", null, 5));
         G.After(8.4, () => G.Say("Far up the road one lamp burns high in the dark, and a voice comes down to you over the frost, close as if she stood at your shoulder.", null, 5.5));
         // Vonnra, unnamed: the fortune opens on the same words (docs/STORY_BIBLE.md, "Who tells it").
-        G.After(14.1, () => G.Say("Come up, traveller. ...No charge, this once.", "A voice up the road", 4));
+        G.After(14.1, () => G.Say("Come up, traveler. ...No charge, this once.", "A voice up the road", 4));
         G.After(18.3, () => G.Say("Past the firelight, the frost is breaking.", null, 3.5));
     }
 

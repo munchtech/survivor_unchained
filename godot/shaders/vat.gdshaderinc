@@ -18,6 +18,13 @@ uniform vec3 glow_color = vec3(0.0);
 uniform float rim_amount = 0.45;
 uniform float rim_tint = 0.35;
 uniform float alpha_cut = 0.45;
+// Moving foes keep about a frame of FSR 2's history, so each frame must be smooth on its own
+// (the wolf's fur sparkled): a moving body's paint is read up to this many mips softer, and shine and rim fade
+// where the normal turns faster than a pixel can show. (Fading cards edge-on thinned the fur's
+// outline and gained nothing at 1.5 mips: dropped.)
+// (fading them, not widening the lobe: a rougher lobe spread the sparkle over more pixels).
+uniform float tex_bias = 0.0;
+uniform float shine_aa = 0.0;
 
 // The cloth's dye, as the person shader has it (shaders/person.gdshader).
 uniform bool use_dye = false;
@@ -39,6 +46,8 @@ vec3 dye_hsv(vec3 c) {
 
 varying flat vec4 fx;
 varying vec3 vat_local;
+// How fast the body moves (0 still, 1 fast): FSR 2 keeps little history on it.
+varying flat float vat_pace;
 
 // Value noise on the body's own shape (its bake space), so a status's patches stay on the body as
 // it moves rather than swimming over it.
@@ -58,6 +67,7 @@ ivec2 vat_coord(int frame, int vid) {
 void vertex() {
 	int vid = vat_offset + VERTEX_ID;
 	int f0 = int(INSTANCE_CUSTOM.x + 0.5);
+	vat_pace = clamp(fract(INSTANCE_CUSTOM.x) / 0.45, 0.0, 1.0);
 	int f1 = int(INSTANCE_CUSTOM.y + 0.5);
 	float k = INSTANCE_CUSTOM.z;
 	vec3 p0 = texelFetch(vat_pos, vat_coord(f0, vid), 0).xyz;
@@ -76,7 +86,7 @@ void fragment() {
 	float dn = fract(sin(dot(floor(vat_local * 18.0), vec3(12.9898, 78.233, 37.719))) * 43758.5453);
 	if (fx.y > 0.0 && dn < fx.y) discard;
 	vec3 c = albedo.rgb;
-	vec4 tex = use_tex ? texture(albedo_tex, UV) : vec4(1.0);
+	vec4 tex = use_tex ? texture(albedo_tex, UV, tex_bias * vat_pace) : vec4(1.0);
 	c *= tex.rgb;
 #ifdef VAT_CUT
 	// Fur and hair cards: cut where the paint is clear.
@@ -123,9 +133,12 @@ void fragment() {
 		e += vec3(1.0, 0.3, 0.03) * tongue + vec3(1.0, 0.42, 0.08) * pow(rim, 3.0) * fx.w * 0.5;
 	}
 	ALBEDO = c;
+	vec3 dnx = dFdx(NORMAL), dny = dFdy(NORMAL);
+	float busy = shine_aa * smoothstep(0.02, 0.3, 0.5 * (dot(dnx, dnx) + dot(dny, dny)));
 	ROUGHNESS = rough;
+	SPECULAR = 0.5 * (1.0 - busy);
 	METALLIC = metallic;
-	RIM = rim_amount;
+	RIM = rim_amount * (1.0 - busy);
 	RIM_TINT = rim_tint;
 	// Struck: a warm flare that lives at the rim, so the body keeps its shape
 	// from thirty metres up, with only an instant's glow across the whole of it

@@ -328,7 +328,7 @@ public class StoryRewriteTests
     [Fact]
     public void Vonnra_says_both_halves_and_quotes_her_answer_at_the_ford()
     {
-        Assert.EndsWith("You stopped the drowning, traveller. You also did this.", Convo("vonnra").Nodes["f_did"].Text[0].Text);
+        Assert.EndsWith("You stopped the drowning, traveler. You also did this.", Convo("vonnra").Nodes["f_did"].Text[0].Text);
         var s = Q();
         Assert.EndsWith("You told him it was morning.", Dialogue.PickText(Convo("vonnra").Nodes["f_ford"].Text, s.C));
         Play("warden_answer", s, "(Say nothing.)");
