@@ -96,7 +96,7 @@ The main session keeps this current. It is the address list for SendMessage. Ret
 | Performance and rendering (clarity in motion first) | aef18c288dd0fa17d (successor 10 Oct night, in worktree agent-a4e0c353e61cca6dc; 5f2e667c merges with face) | docs/team/performance.md |
 | Arena art | a0b61c278bdd5c994 | docs/team/arena_art.md |
 | Male hero (body, head, hair, outfits) | ab82cbe99e2937ddd | docs/team/hero_male.md |
-| Heroine face, hair and character creation's Look | a411e6c81f22f5c18 (restarted 10 Oct, in worktree agent-a2d632df7c7f21ec0) | docs/team/face.md |
+| Heroine face, hair and character creation's Look | a4191540b1568bc53 (successor 11 Oct, in worktree agent-a2d632df7c7f21ec0; judge f6: lids pass with fixes, neck fail) | docs/team/face.md |
 | Asset provenance (what isn't ours, licences, credits, replacement plan) | a80ff0c7fd988b178 | docs/team/provenance.md |
 | Legal and Steam compliance (paused; docs/handoff/legal.md; wake before submission or for a new outfit) | — | docs/team/legal.md |
 | Loot and itemisation (paused, built and merged; docs/handoff/loot.md for a successor) | — | docs/team/loot.md |
