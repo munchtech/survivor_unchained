@@ -72,21 +72,21 @@ Holloway, Brannoc and Sella, in that order.
 <!-- PACKETS -->
 | Character | Takes | Characters | Held | Locked |
 |---|---|---|---|---|
-| [The narrator](narrator.md) | 386 | 37,226 | 320 | 66 |
-| [Sella](sella.md) | 97 | 9,938 |  |  |
-| [Captain Holloway](holloway.md) | 110 | 9,700 | 110 |  |
+| [The narrator](narrator.md) | 391 | 37,107 | 175 | 216 |
+| [Sella](sella.md) | 97 | 9,964 |  |  |
+| [Captain Holloway](holloway.md) | 110 | 9,714 | 40 | 70 |
 | [Vonnra Ash-of-Morrow](vonnra.md) | 104 | 8,939 | 103 | 1 |
-| [Chid](chid.md) | 77 | 8,436 | 2 |  |
+| [Chid](chid.md) | 82 | 8,712 |  | 53 |
 | [Harlan Coyle](harlan.md) | 63 | 7,229 | 63 |  |
 | [Mother Rook](rook.md) | 54 | 6,558 |  | 54 |
-| [Maeca](maeca.md) | 87 | 6,294 | 87 |  |
+| [Maeca](maeca.md) | 87 | 6,262 | 23 | 64 |
 | [Rav Cutwell](rav.md) | 61 | 6,007 |  |  |
 | [Dame Keegan Orme](keegan.md) | 48 | 5,218 | 1 |  |
 | [Redcowl](redcowl.md) | 45 | 4,337 |  |  |
 | [Old Wenna](wenna.md) | 34 | 4,069 |  |  |
 | [Pell Varrow](pell.md) | 32 | 3,621 |  |  |
 | [Ysolde Marrow, the Wayfinder](ysolde.md) | 30 | 3,403 |  |  |
-| [Townsman, middle-aged](folk_m1.md) | 47 | 3,080 |  |  |
+| [Townsman, middle-aged](folk_m1.md) | 48 | 3,277 |  |  |
 | [Townswoman, young](folk_f2.md) | 47 | 3,055 |  |  |
 | [Townswoman, middle-aged](folk_f1.md) | 46 | 2,721 |  |  |
 | [Brannoc](brannoc.md) | 63 | 2,621 | 2 | 62 |
@@ -94,7 +94,7 @@ Holloway, Brannoc and Sella, in that order.
 | [Snib](snib.md) | 15 | 2,199 |  |  |
 | [Tam](tam.md) | 21 | 2,020 |  |  |
 | [Jory Coyle](jory.md) | 14 | 877 |  |  |
-| [A Watchman at the gate](guard.md) | 13 | 546 |  | 1 |
+| [A Watchman at the gate](guard.md) | 13 | 546 |  | 2 |
 | [Grimtunnel](grimtunnel.md) | 7 | 442 |  | 3 |
 | [The babbling lampling](lampling.md) | 2 | 421 |  |  |
 | [A Watchwoman](guard_f.md) | 9 | 405 |  |  |

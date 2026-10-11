@@ -150,7 +150,7 @@ def paste(seg_text: str, d: dict, narrator_aside: bool, plain: bool = False, act
     how = [] if narrator_aside or plain else [re.split(r";", d.get("emo", ""))[0].strip()]
     vol = "quiet" if narrator_aside else d.get("vol", "level")
     if plain and vol == "hushed" and not d.get("whisper"):
-        vol = "quiet"  # the narrator whispers only where his direction says so
+        vol = "quiet"  # the narrator whispers only where her direction says so
     if VOL_TAG.get(vol) and not any(VOL_TAG[vol] in h for h in how):  # "very quietly" already says it
         how.append(VOL_TAG[vol])
     tag = ", ".join(h for h in how if h)
@@ -305,7 +305,7 @@ def packet(voice: str, man: list[dict]) -> tuple[str, dict]:
         w += ["## The effect", "",
               "Record every take dry, with no effect or reverb: the game adds it. " +
               " ".join(f"For {'every line' if k == v.get('fx') else 'the lines that say so'}, it {FX_SAYS[k]}." for k in fxs) +
-              (" So read a little quicker than he should finally sound." if any(k in ("giant", "underwater") for k in fxs) else ""),
+              (" So read a little quicker than the voice should finally sound." if any(k in ("giant", "underwater") for k in fxs) else ""),
               ""]
     if lex:
         w += ["## Saying the names", "", "The text to paste already respells these; keep the respelling: " +

@@ -2,6 +2,14 @@
 
 The one page of what's current. Every lead starts from the latest `claude/vigilant-galileo-l6jqyx`. Merge it first and keep your own workflow; this page says what has changed around you. Updated by the main session, 5 October 2026.
 
+## 12 October, early: state for the next coordinator
+
+- Running (5): face a564d5c3b5d4dac62 (owns the Look portrait rig for the orange skin, then the nape crack, then the neck-length sheet), outfits af07affeb22637bb5 (pauldron: one last solver, else a simpler design for the owner), animation a4e62fc358dc5214a (death and get_up rebuild and judge 12, throw axe, crotch cut, death_back pop), classes a58dbbc2f5e2563fa (phase 1 session 3: remaining quarters' rules, sweep, judge), writer a29c05b453e33b062 (sophistication pass, then lock Holloway, Maeca, Chid, narrator).
+- Paused: rendering (performance.md "Paused here": oldleather LOD blob, wilds toe, moonlight pass, fur round 2; the LOD must keep elbow_point_l/_r; face changes the Look rig meanwhile).
+- Owner decisions today: classes plan approved (all 8); twists A + B + "It takes less than it did" (TWIST_WTF option 1); 162 early lines locked for ElevenLabs (bark.brannoc.day.2 to re-record); the neck length is an open question (OWNER_NOTES).
+- Merged up to ae229a30 (791 tests). Worktree agent-ac6f417ab08f069bd is merged but locked by the app: remove it in the sweep.
+- Helpers' completion notices come to the main session, not their lead: relay them (coordinator.md).
+
 ## How the team runs now (README has the detail)
 
 - **Tokens and quality, always (the owner, 7 October):** the cheapest route that ends at the same quality, as standing permission. Long-running leads are `su-lead-high`; max effort goes to short-lived `su-lead-max` judges and solvers (story writer and editor stay `su-lead-max` leads). Pass `effort` on every spawn. README "Working lean".
