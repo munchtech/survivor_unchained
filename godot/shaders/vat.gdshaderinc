@@ -19,11 +19,11 @@ uniform float rim_amount = 0.45;
 uniform float rim_tint = 0.35;
 uniform float alpha_cut = 0.45;
 // Moving foes keep about a frame of FSR 2's history, so each frame must be smooth on its own
-// (the wolf's fur sparkled): the paint is read this many mips softer, and cut cards fade out
-// edge-on, and shine and rim fade where the normal turns faster than a pixel can show
+// (the wolf's fur sparkled): the paint is read this many mips softer, and shine and rim fade
+// where the normal turns faster than a pixel can show. (Fading cards edge-on thinned the fur's
+// outline and gained nothing at 1.5 mips: dropped.)
 // (fading them, not widening the lobe: a rougher lobe spread the sparkle over more pixels).
 uniform float tex_bias = 0.0;
-uniform float edge_fade = 0.0;
 uniform float shine_aa = 0.0;
 
 // The cloth's dye, as the person shader has it (shaders/person.gdshader).
@@ -88,8 +88,6 @@ void fragment() {
 #ifdef VAT_CUT
 	// Fur and hair cards: cut where the paint is clear.
 	ALPHA = tex.a * albedo.a;
-	// A card seen edge-on is thinner than a pixel and breaks into a crawling line: it fades out.
-	ALPHA *= mix(1.0, smoothstep(0.06, 0.25, abs(dot(NORMAL, VIEW))), edge_fade);
 	ALPHA_SCISSOR_THRESHOLD = alpha_cut;
 #endif
 	if (use_dye) {

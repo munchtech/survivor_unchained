@@ -743,11 +743,11 @@ public static class Vat
         return Build(baked);
     }
 
-    /// <summary>--vat-bias MIPS, --vat-edge-fade 0..1, --vat-shine-aa 0..1: the crowd's paint read
-    /// softer, its cards faded edge-on and its shine faded where the normal turns fast, against
-    /// FSR 2's short history on moving foes (the wolf's fur sparkle, 299 to 90).</summary>
+    /// <summary>--vat-bias MIPS, --vat-shine-aa 0..1: the crowd's paint read softer and its shine
+    /// faded where the normal turns fast, against FSR 2's short history on moving foes (the
+    /// wolf's fur sparkle, 299 to 89).</summary>
     static readonly float TexBias = SurvivorUnchained.Args.Num("vat-bias", 1.5f),
-        EdgeFade = SurvivorUnchained.Args.Num("vat-edge-fade", 1f), ShineAa = SurvivorUnchained.Args.Num("vat-shine-aa", 1f);
+        ShineAa = SurvivorUnchained.Args.Num("vat-shine-aa", 1f);
 
     static VatAsset Build(Baked b)
     {
@@ -779,7 +779,6 @@ public static class Vat
             var m = new ShaderMaterial { Shader = s.Cut >= 0 ? cutShader : shader };
             if (s.Cut >= 0) m.SetShaderParameter("alpha_cut", s.Cut);
             m.SetShaderParameter("tex_bias", TexBias);
-            m.SetShaderParameter("edge_fade", EdgeFade);
             m.SetShaderParameter("shine_aa", ShineAa);
             m.SetShaderParameter("vat_pos", posTex);
             m.SetShaderParameter("vat_nor", norTex);
