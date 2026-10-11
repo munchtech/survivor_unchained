@@ -290,7 +290,7 @@ moon = road("arcanist", ar, "moonweaver", "Road of the Moonweaver", "Moonlight t
      ("Many Lights", "Spells loose one more projectile.", [R("tags.projectiles", tags="spell", add=1)], ["seeking_motes", "moonwell"]),
      ("Moon-Drawn", "Motes seek the marked first.", [R("moon_drawn")], ["seeking_motes"]),
      ("Still Water", "Moonwell lasts 50% longer and fires 30% faster.", [R("still_water", phase=5)], ["moonwell"]),
-     ("Moonfire", "A mark that passes burns violet: the new bearer takes moonfire.", [R("moonfire", share=0.2)], ["seeking_motes", "lantern_man"])],
+     ("Moonfire", "A mark that passes flares violet: the new bearer takes a tenth of the dead one's health as moonfire.", [R("moonfire", share=0.1)], ["seeking_motes", "lantern_man"])],
     [("The Echo", "Every spell fires again 0.5 s later at half strength. Spells wait 25% longer.", [R("the_echo", delay=0.5, share=0.5, longer=0.25)]),
      ("Crowded Sky", "Spells with projectiles loose two more, all seeking, and no two strike the same thing; each is 35% weaker.", [R("crowded_sky", add=2, weaker=0.35)])],
     ("the_branding", "The Branding", [

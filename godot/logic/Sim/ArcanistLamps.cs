@@ -139,8 +139,9 @@ public sealed partial class Battle
             if (l.Has("unbound_casting")) m *= 1 - Math.Min(0.9, l.Size("unbound_casting", "sooner"));
             // kindler.stand_in_your_fire: spells come sooner in her burning ground.
             if (inYourFire && l.Has("stand_in_fire")) m *= 1 - Math.Min(0.9, l.Size("stand_in_fire", "sooner"));
-            // moonweaver.the_echo: spells wait longer (a price).
-            if (l.Has("the_echo")) m *= 1 + l.Full("the_echo", "longer", 0.25);
+            // moonweaver.the_echo: spells wait longer (a price). By night the price shrinks with the echo it
+            // pays for (a quarter), as the Crowded Sky's and the Butcher's Count's do; in full it was a net loss.
+            if (l.Has("the_echo")) m *= 1 + l.Size("the_echo", "longer", 0.25);
         }
         // moonweaver.seeking_motes.swift_motes (skill.sooner; Iron Palms' side is ReaverCooldownMul's).
         if (w.Def.Id == "seeking_motes" && l.SizeOn("skill.sooner", "sooner", w.Def.Id, w.Tags) is var sooner and > 0) m /= 1 + sooner;
@@ -283,7 +284,7 @@ public sealed partial class Battle
     }
 
     /// <summary>A death: the mark passes on, and a marked thing's death mends.</summary>
-    void ArcanistOnDeath(Enemy e, bool credited)
+    void ArcanistOnDeath(Enemy e, bool credited, int depth)
     {
         var l = Lamps;
         if (l.Rules.Count == 0 || e.Status[StatusKind.Mark] is not { } mark) return;
@@ -299,8 +300,13 @@ public sealed partial class Battle
         {
             ApplyStatus(near[i], new StatusPayload(StatusKind.Mark, 1, mark.Power != 0 ? mark.Power : 1, 4), 0, 2);
             Events.Emit(new Ev.Chain { Points = [e.X, e.Z, near[i].X, near[i].Z], School = School.Arcane });
-            // moonweaver.moonfire: the new bearer burns (a share of the dead one's health over 3 s; burning is fire here).
-            if (l.Has("moonfire")) ApplyStatus(near[i], new StatusPayload(StatusKind.Burn, 1, l.Size("moonfire", "share", 0.2), 3), e.MaxHp, 2);
+            // moonweaver.moonfire: the new bearer takes moonfire, a share of the dead one's health at once. It is
+            // arcane, not a Burn: as a Burn it seeded every fire chain (Pyre Burst's share of damage doubled, 8% to
+            // 17%), which put the moonweaver's board far over the others' at T3-T4. Fire's chains are the kindler's.
+            // Its kills pass the mark at once, so it stops at depth 3, as procs do.
+            if (l.Has("moonfire") && depth < 3)
+                HitEnemy(near[i], e.MaxHp * l.Size("moonfire", "share", 0.1), School.Arcane, [Tag.Arcane, Tag.Spell],
+                    new HitOpts { NoCrit = true, NoProcs = true, Depth = depth + 1, Credit = "moonfire" });
         }
     }
 

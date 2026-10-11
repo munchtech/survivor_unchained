@@ -886,7 +886,7 @@ public sealed partial class Battle
         e.Credit = byPlayer || e.Credit;
         bool credited = e.Credit;
         if (weapon != null) { weapon.Kills++; ReaverWeaponKill(weapon); }
-        ArcanistOnDeath(e, e.Credit);
+        ArcanistOnDeath(e, e.Credit, depth);
         StalkerOnDeath(e);
         if (credited && e.Disposition != Disposition.Ally)
         {

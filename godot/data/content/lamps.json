@@ -5596,13 +5596,13 @@
     "lantern_man"
    ],
    "gate": 6,
-   "text": "A mark that passes burns violet: the new bearer takes moonfire.",
+   "text": "A mark that passes flares violet: the new bearer takes a tenth of the dead one's health as moonfire.",
    "effects": [
     {
      "do": "rule",
      "rule": "moonfire",
      "args": {
-      "share": 0.2
+      "share": 0.1
      }
     }
    ]
