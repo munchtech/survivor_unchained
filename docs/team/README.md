@@ -84,7 +84,7 @@ The main session keeps this current. It is the address list for SendMessage. Ret
 | Area | Agent | Status page |
 |---|---|---|
 | Voice (paused by the owner: no placeholders; final voices from ElevenLabs later) | a501b387a90d78b4e | docs/team/voice.md |
-| Story and writing (the writer: the approved rewrite, Act 1 first) | a81b550b25ab6b672 (11 Oct: twist options first, then the early lines locked for ElevenLabs) | docs/team/story.md |
+| Story and writing (the writer: the approved rewrite, Act 1 first) | a17db00d9ec9596ca (11 Oct: A and B approved; three WTF premise twists for the owner, then the early lines locked for ElevenLabs) | docs/team/story.md |
 | Classes design (two types per calling, skill trees, ultimates on Q / right-click; plan only until the owner approves) | a24056785568e24a5 (11 Oct: research PoE, Last Epoch, Diablo, Grim Dawn; docs/design/CLASSES.md) | docs/design/CLASSES.md |
 | Combat, encounters, bosses, balance (paused; handoff ready at af6452e1) | — | docs/team/combat.md |
 | Animation (joints to perfection: wrists, follow-through, elbows, arms through body, sliding) | a20d622060130a90a (successor 10 Oct night, in worktree agent-af8dbda3195e438e4) | docs/team/animation.md |
