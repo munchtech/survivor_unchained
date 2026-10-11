@@ -9,9 +9,11 @@ render_mode blend_mix, depth_prepass_alpha, cull_disabled;
 
 uniform sampler2D albedo_tex : source_color, filter_linear_mipmap, repeat_enable;
 uniform vec4 albedo_color : source_color = vec4(1.0);
+// (a bias on the paint's mip level: --hair-bias, HairDraw)
+uniform float lash_bias = 0.0;
 
 void fragment() {
-	vec4 c = texture(albedo_tex, UV) * albedo_color;
+	vec4 c = texture(albedo_tex, UV, lash_bias) * albedo_color;
 	if (c.a < 0.004) discard;
 	vec2 tc = UV * vec2(textureSize(albedo_tex, 0));
 	vec2 dx = dFdx(tc), dy = dFdy(tc);
