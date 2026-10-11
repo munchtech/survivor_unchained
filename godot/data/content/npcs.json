@@ -159,13 +159,13 @@
    "nightBarks": [
     "Curfew's not law. Yet.",
     "Two on the walls, one on each gate. It's not enough.",
-    "Go to bed, traveller.",
+    "Go to bed, traveler.",
     "Every night I bury somebody's son. Go home.",
     "Quiet on the wall. I hate it quiet."
    ],
    "said": [
     {
-     "text": "Five a pelt. Fifty for the old grey one.",
+     "text": "Five a pelt. Fifty for the old gray one.",
      "night": false,
      "when": {
       "not": {

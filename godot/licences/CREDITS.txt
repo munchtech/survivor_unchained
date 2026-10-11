@@ -1,14 +1,14 @@
 SURVIVOR UNCHAINED
-Credits and licences
+Credits and licenses
 
 Survivor Unchained is made by Munchtech. Its world, lore and combat roots are The Ember Watch.
 
-These credits list everything in the game that others made, with each licence. Works under CC BY are used with the credit required below. Works under CC0 need no credit, and we give it with thanks.
+These credits list everything in the game that others made, with each license. Works under CC BY are used with the credit required below. Works under CC0 need no credit, and we give it with thanks.
 
-The licence texts are in this folder:
-    GODOT_LICENSE.txt               Godot Engine, under the MIT licence
-    GODOT_COPYRIGHT.txt             the parts of Godot made by others, and their licences
-    DOTNET_LICENSE.TXT              the .NET runtime, under the MIT licence
+The license texts are in this folder:
+    GODOT_LICENSE.txt               Godot Engine, under the MIT license
+    GODOT_COPYRIGHT.txt             the parts of Godot made by others, and their licenses
+    DOTNET_LICENSE.TXT              the .NET runtime, under the MIT license
     DOTNET_THIRD-PARTY-NOTICES.TXT  the parts of the .NET runtime made by others, and their notices
     OFL-Cinzel.txt                  the Cinzel typeface, under the SIL Open Font License 1.1
     OFL-Alegreya.txt                the Alegreya typeface, under the SIL Open Font License 1.1
@@ -19,8 +19,8 @@ ENGINE AND RUNTIME
 ========================================================================
 
 * Godot Engine 4.5 (with C# support). Copyright (c) 2014-present Godot Engine contributors; copyright (c) 2007-2014 Juan Linietsky, Ariel Manzur.
-    MIT licence
-    It includes third-party components under their own licences, listed in Godot's COPYRIGHT.txt. Among them are Jolt Physics (MIT), FreeType, HarfBuzz, ICU, mbedTLS and ENet.
+    MIT license
+    It includes third-party components under their own licenses, listed in Godot's COPYRIGHT.txt. Among them are Jolt Physics (MIT), FreeType, HarfBuzz, ICU, mbedTLS and ENet.
     https://godotengine.org/license
 * .NET 8 runtime and GodotSharp. .NET Foundation and contributors; MIT. Third-party notices are in .NET's THIRD-PARTY-NOTICES.TXT.
 
@@ -39,7 +39,7 @@ TYPEFACES (SIL OPEN FONT LICENSE 1.1)
 USED UNDER CREATIVE COMMONS ATTRIBUTION 4.0 (CREDIT REQUIRED)
 ========================================================================
 
-Licence: https://creativecommons.org/licenses/by/4.0/. Each work is provided as is, without warranty, by its creator. Our changes are listed with it.
+License: https://creativecommons.org/licenses/by/4.0/. Each work is provided as is, without warranty, by its creator. Our changes are listed with it.
 
 Weapons, from Sketchfab
 ------------------------------------------------------------------------
@@ -49,57 +49,57 @@ Changes for every weapon: turned and scaled to one grip convention in code; phot
 * "Chevalier Sword" by rubenve
     Source: https://sketchfab.com/3d-models/chevalier-sword-b2662f2666a844e8a1bd0e7c4a7672d8
     Creator: https://sketchfab.com/rubenve
-    Licence: CC BY 4.0, https://creativecommons.org/licenses/by/4.0/
+    License: CC BY 4.0, https://creativecommons.org/licenses/by/4.0/
     Modified: turned and scaled to one grip convention in code; photographed in the game, and the photograph painted over, for its item icon.
 * "Viking Sword (Game Model)" by Michael Makivic
     Source: https://sketchfab.com/3d-models/viking-sword-game-model-a05d0bd73e9e4508b873ffd7b6a6238d
     Creator: https://sketchfab.com/makivic
-    Licence: CC BY 4.0, https://creativecommons.org/licenses/by/4.0/
+    License: CC BY 4.0, https://creativecommons.org/licenses/by/4.0/
     Modified: turned and scaled to one grip convention in code; photographed in the game, and the photograph painted over, for its item icon.
 * "medieval sword" by LowSeb
     Source: https://sketchfab.com/3d-models/medieval-sword-da574cba504e4b83a3293f3d3bd067fb
     Creator: https://sketchfab.com/lowseb
-    Licence: CC BY 4.0, https://creativecommons.org/licenses/by/4.0/
+    License: CC BY 4.0, https://creativecommons.org/licenses/by/4.0/
     Modified: turned and scaled to one grip convention in code; photographed in the game, and the photograph painted over, for its item icon.
 * "Zweihander" by Siesta
     Source: https://sketchfab.com/3d-models/zweihander-bde0f0351bf443f6bed68aeff84b4129
     Creator: https://sketchfab.com/siesta
-    Licence: CC BY 4.0, https://creativecommons.org/licenses/by/4.0/
+    License: CC BY 4.0, https://creativecommons.org/licenses/by/4.0/
     Modified: turned and scaled to one grip convention in code; photographed in the game, and the photograph painted over, for its item icon.
-* "Medieval Mace" designed by Kama Modeling; modelled and textured by Yavuz Temel
+* "Medieval Mace" designed by Kama Modeling; modeled and textured by Yavuz Temel
     Source: https://sketchfab.com/3d-models/medieval-mace-83217215a0c541b2956a8e87a4ae62fe
     Creator: https://sketchfab.com/KamaModeling
-    Licence: CC BY 4.0, https://creativecommons.org/licenses/by/4.0/
+    License: CC BY 4.0, https://creativecommons.org/licenses/by/4.0/
     Modified: turned and scaled to one grip convention in code; photographed in the game, and the photograph painted over, for its item icon.
 * "Viking battle axe" by Mikhail Antonov
     Source: https://sketchfab.com/3d-models/viking-battle-axe-b7123192adbf40f68043c57dd8ddcd15
     Creator: https://sketchfab.com/xeofox
-    Licence: CC BY 4.0, https://creativecommons.org/licenses/by/4.0/
+    License: CC BY 4.0, https://creativecommons.org/licenses/by/4.0/
     Modified: turned and scaled to one grip convention in code; photographed in the game, and the photograph painted over, for its item icon.
 * "Snake Axe" by Ashley Jay Thornton
     Source: https://sketchfab.com/3d-models/snake-axe-ace485ac031c4ee0a918e99d2b80560b
     Creator: https://sketchfab.com/AshleyJay
-    Licence: CC BY 4.0, https://creativecommons.org/licenses/by/4.0/
+    License: CC BY 4.0, https://creativecommons.org/licenses/by/4.0/
     Modified: turned and scaled to one grip convention in code; photographed in the game, and the photograph painted over, for its item icon.
 * "Mage Staff" by RMBehan
     Source: https://sketchfab.com/3d-models/mage-staff-a172d06792734bbc9b11272b4f497c2c
     Creator: https://sketchfab.com/RMBehan
-    Licence: CC BY 4.0, https://creativecommons.org/licenses/by/4.0/
+    License: CC BY 4.0, https://creativecommons.org/licenses/by/4.0/
     Modified: turned and scaled to one grip convention in code; photographed in the game, and the photograph painted over, for its item icon.
 * "Medieval Crossbow" by iedalton
     Source: https://sketchfab.com/3d-models/medieval-crossbow-cc36ed347db340d59bd2ec7b06ae0d63
     Creator: https://sketchfab.com/iedalton
-    Licence: CC BY 4.0, https://creativecommons.org/licenses/by/4.0/
+    License: CC BY 4.0, https://creativecommons.org/licenses/by/4.0/
     Modified: turned and scaled to one grip convention in code; photographed in the game, and the photograph painted over, for its item icon.
 * "Medieval Shield" by Artem Mykhailov
     Source: https://sketchfab.com/3d-models/medieval-shield-b98b8f64d935415aab0fe9b70074511f
     Creator: https://sketchfab.com/CGArtem
-    Licence: CC BY 4.0, https://creativecommons.org/licenses/by/4.0/
+    License: CC BY 4.0, https://creativecommons.org/licenses/by/4.0/
     Modified: turned and scaled to one grip convention in code; photographed in the game, and the photograph painted over, for its item icon.
 * "Silver Bladed weapons - Fantasy weapon set" by Peter Nox (listed as Asylum Nox when downloaded)
     Source: https://sketchfab.com/3d-models/silver-bladed-weapons-fantasy-weapon-set-d5189211a1d348b0a9d7ddc052a22989
     Creator: https://sketchfab.com/Peter.Nox
-    Licence: CC BY 4.0, https://creativecommons.org/licenses/by/4.0/
+    License: CC BY 4.0, https://creativecommons.org/licenses/by/4.0/
     Modified: turned and scaled to one grip convention in code; photographed in the game, and the photograph painted over, for its item icon.
 
 Creatures, from Sketchfab
@@ -110,17 +110,17 @@ Changes: scaled and tinted per kind. Each creature plays its own clips, and move
 * "Animated Wolf Scene" by Roo
     Source: https://sketchfab.com/3d-models/animated-wolf-scene-5d55506494e5460eaadf04370e07cd5c
     Creator: https://sketchfab.com/roo3d
-    Licence: CC BY 4.0, https://creativecommons.org/licenses/by/4.0/
+    License: CC BY 4.0, https://creativecommons.org/licenses/by/4.0/
     Modified: scaled and tinted per kind. Each creature plays its own clips, and moves it lacks are composed in code over its poses. It is baked into the crowd's animation textures.
 * "Animated Realistic Boar – 3D Animal Model" by AnimalMesh 3D
     Source: https://sketchfab.com/3d-models/animated-realistic-boar-3d-animal-model-f672a7fd93e84997b80a54ba30956111
     Creator: https://sketchfab.com/AnimalMesh3D
-    Licence: CC BY 4.0, https://creativecommons.org/licenses/by/4.0/
+    License: CC BY 4.0, https://creativecommons.org/licenses/by/4.0/
     Modified: scaled and tinted per kind. Each creature plays its own clips, and moves it lacks are composed in code over its poses. It is baked into the crowd's animation textures.
 * "Goblin Ghoul" by Rodrigo Bento
     Source: https://sketchfab.com/3d-models/goblin-ghoul-a6c6fffee3d34823b6d87a7054782577
     Creator: https://sketchfab.com/rodrigobento
-    Licence: CC BY 4.0, https://creativecommons.org/licenses/by/4.0/
+    License: CC BY 4.0, https://creativecommons.org/licenses/by/4.0/
     Modified: scaled and tinted per kind. Each creature plays its own clips, and moves it lacks are composed in code over its poses. It is baked into the crowd's animation textures. The lamplings' hats, lamps and satchels are made in code and carried on its bones.
 
 Motion: the heroine's idles
@@ -128,12 +128,12 @@ Motion: the heroine's idles
 
 * 100STYLE dataset by Ian Mason, Sebastian Starke and Taku Komura, "Real-Time Style Modelling of Human Locomotion via Feature-Wise Transformations and Local Motion Phases" (2022)
     Source: https://zenodo.org/records/8127870
-    Licence: CC BY 4.0, https://creativecommons.org/licenses/by/4.0/
-    Modified: retargeted to her skeleton; feet locked; looped; centred; arms re-keyed to hold her weapons.
+    License: CC BY 4.0, https://creativecommons.org/licenses/by/4.0/
+    Modified: retargeted to her skeleton; feet locked; looped; centered; arms re-keyed to hold her weapons.
     Takes used: Heavyset, Strutting, Angry and Crouched (and Followed as reference for one glance).
 
 ========================================================================
-USED UNDER SERVICE TERMS OR MODEL LICENCES
+USED UNDER SERVICE TERMS OR MODEL LICENSES
 ========================================================================
 
 * Adobe Mixamo motion, used in the game under Mixamo's terms; the raw files are not distributed
@@ -457,5 +457,5 @@ MADE FOR THE GAME
 * The interface's art: frames, cards, slots, bars, medallions, ornaments, the logo, cursors, pad buttons, map marks and every icon
     Most of it was then painted over on the local ComfyUI (Krea 2 turbo with the darkbrush LoRA; see above).
     The item icons paint over the game's own photographs of its item models.
-* The heroine's hair, outfits and face-paint designs, the skin's pores, the town well, the glyphs, the app icon, the shaders, the synthesised sounds and music, and every keyed animation
+* The heroine's hair, outfits and face-paint designs, the skin's pores, the town well, the glyphs, the app icon, the shaders, the synthesized sounds and music, and every keyed animation
 * The heroine's body comes from a figure given to the game by its owner

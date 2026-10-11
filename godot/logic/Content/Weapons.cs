@@ -263,7 +263,7 @@ public static class Weapons
             Description = "A rapid volley of small seeking motes that curve through the crowd on their own.",
             Evolutions =
             [
-                new() { Id = "mote_cascade", Name = "Fen Lights", Description = "The motes multiply like the lights over the fen that lead travellers off the road, and each one splits in two when it strikes.",
+                new() { Id = "mote_cascade", Name = "Fen Lights", Description = "The motes multiply like the lights over the fen that lead travelers off the road, and each one splits in two when it strikes.",
                     Catalysts = ["duplicity"], Mods = new() { Damage = 1.06, Projectiles = 3 }, Set = new() { SplitOnHit = 2 }, Art = "mote_cascade" },
                 new() { Id = "starseeker", Name = "Starseeker", Description = "Motes hunt the strongest thing on the field, and one in four strikes true.",
                     Catalysts = ["precision"], Mods = new() { Damage = 1.73, Cooldown = 0.85 }, Set = new() { Homing = 9, Seek = Seek.Strongest, Crit = 0.25 }, Art = "mote_star" },
@@ -279,7 +279,7 @@ public static class Weapons
             [
                 new() { Id = "moonfall", Name = "Moonfall", Description = "Moons fall wherever the enemy gathers.",
                     Catalysts = ["greed", "expanse"], Mods = new() { Damage = 0.51 }, Behavior = WeaponBehavior.Storm, Set = new() { Strikes = 5, StormRadius = 5.75, Splash = 1.5 }, Art = "moonfall" },
-                new() { Id = "lunar_brand", Name = "Lunar Brand", Description = "Every moon marks, and a marked thing that dies throws the mark to two of its neighbours.",
+                new() { Id = "lunar_brand", Name = "Lunar Brand", Description = "Every moon marks, and a marked thing that dies throws the mark to two of its neighbors.",
                     Catalysts = ["fortune"], Mods = new() { Damage = 1.63, Projectiles = 1 }, Set = new() { Status = S(Mark, 1, 1, 6) }, Art = "moon_brand",
                     Triggers = [T(TriggerEvent.Kill, [new Effect.Spread(Mark, 4, 2)], new() { TargetStatus = Mark }, icd: 0.05)] },
             ],

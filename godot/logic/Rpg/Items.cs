@@ -156,7 +156,7 @@ public static class Items
     public static readonly AffixDef[] Affixes =
     [
         new() { Id = "sturdy", Name = "Sturdy", Prefix = true, Slots = [ItemKind.Head, ItemKind.Body, ItemKind.Cloak, ItemKind.Offhand],
-            Mods = t => [M(Stat.Armor, ModKind.Flat, 1 + t)], Text = t => $"+{1 + t} armour" },
+            Mods = t => [M(Stat.Armor, ModKind.Flat, 1 + t)], Text = t => $"+{1 + t} armor" },
         new() { Id = "hale", Name = "Hale", Prefix = true, Slots = [ItemKind.Body, ItemKind.Amulet, ItemKind.Ring, ItemKind.Head],
             Mods = t => [M(Stat.MaxHealth, ModKind.Flat, 10 + t * 8)], Text = t => $"+{10 + t * 8} maximum health" },
         new() { Id = "fleet", Name = "Fleet", Prefix = true, Slots = [ItemKind.Cloak, ItemKind.Ring, ItemKind.Amulet],

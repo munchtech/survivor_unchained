@@ -3,7 +3,7 @@
   "makeFrom": [1, 8, 16, 24, 32],
   "makeMult": [1, 1.8, 2.8, 4.0, 5.5],
   "makeDamage": [0, 0.1, 0.25, 0.45, 0.7],
-  "_curves": "A stat's own make curve where the general one is too steep: armour saturates (armour / (armour + 20)), so a full Heartwrought set at x5.5 was about 75% reduction (combat). 'trigger' scales a piece's flat rule damage (Kell's Lamp by day).",
+  "_curves": "A stat's own make curve where the general one is too steep: armor saturates (armor / (armor + 20)), so a full Heartwrought set at x5.5 was about 75% reduction (combat). 'trigger' scales a piece's flat rule damage (Kell's Lamp by day).",
   "curves": { "armor": [1, 1.8, 2.8, 3.4, 4.0], "trigger": [1, 1.8, 2.8, 4.0, 5.5] },
   "unscaled": ["block", "moveSpeed"],
   "maxLevel": 40,
@@ -46,7 +46,7 @@
       "pieces": ["watch_coif", "watch_hauberk", "watch_shield"],
       "lore": "Eleven men on a wall built for sixty, and every one of them still oils his mail.",
       "bonuses": [
-        { "worn": 2, "text": "+25% armour; your light carries 25% further",
+        { "worn": 2, "text": "+25% armor; your light carries 25% further",
           "mods": [{ "stat": "armor", "kind": "inc", "value": 0.25, "source": "set" }, { "stat": "lightRadius", "kind": "inc", "value": 0.25, "source": "set" }] },
         { "worn": 3, "text": "Standing still, you block a blow every six seconds, as a shield-wall does. The Watch takes you for one of its own",
           "mods": [{ "stat": "block", "kind": "flat", "value": 2, "source": "set", "when": "still" }],
@@ -56,7 +56,7 @@
     "levy_red": {
       "id": "levy_red", "name": "The Levy Red",
       "pieces": ["roost_hood", "levy_colours", "kerchief_knives"],
-      "lore": "Red was a town's colour before it was a gang's. Nobody in the Roost will tell you which town.",
+      "lore": "Red was a town's color before it was a gang's. Nobody in the Roost will tell you which town.",
       "bonuses": [
         { "worn": 2, "text": "+6% critical chance; Kerchiefs take you for one of theirs",
           "mods": [{ "stat": "critChance", "kind": "flat", "value": 0.06, "source": "set" }],

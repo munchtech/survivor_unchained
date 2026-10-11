@@ -66,7 +66,7 @@ public sealed class HollowByNight : StoryFight
     public override string[] Between =>
     [
         "The howling stops. In the quiet you can hear the stream, and something in the brush coughing.",
-        "The deadfalls burn. Past them is the den's mouth, and in it, grey shapes that do not get up.",
+        "The deadfalls burn. Past them is the den's mouth, and in it, gray shapes that do not get up.",
         "The wolves back away from you, low, into a ring. Something is coming out of the den.",
     ];
     public override string BossAt => "den_mouth";
