@@ -2404,32 +2404,39 @@ def piece(name, field, mkey, lift=0.003, thick=0.003, smooth=0, bevel=0.0012, tr
     return made
 
 
-def rivets(name, pos, at, tris, thick, mkey, spacing=0.028, inset=0.011, r=0.0032, off=None):
+def rivets(name, pos, at, tris, thick, mkey, spacing=0.028, inset=0.011, r=0.0032, off=None, spots=None):
     """Domed rivets set in from a piece's edge every `spacing`, on its
-    outer face: the detail that makes a plate read as made."""
-    f = at[:, -1]
-    cand = np.where(np.abs(f - inset) < 0.0025)[0]
-    if off is not None and len(cand):
-        # (none under or within 4 mm of the plate over this one: the plate's
-        # rim sliced them, judge 5)
-        cand = cand[off[cKDTree(P).query(pos[cand])[1]] < -0.004]
-    if len(cand) == 0:
+    outer face: the detail that makes a plate read as made. `spots`, as
+    (points on the sheet, their normals, their weights), sets them where a
+    piece has laid out its own rows instead."""
+    if spots is None:
+        f = at[:, -1]
+        cand = np.where(np.abs(f - inset) < 0.0025)[0]
+        if off is not None and len(cand):
+            # (none under or within 4 mm of the plate over this one: the plate's
+            # rim sliced them, judge 5)
+            cand = cand[off[cKDTree(P).query(pos[cand])[1]] < -0.004]
+        if len(cand) == 0:
+            return []
+        picked = []
+        tree_p = []
+        for i in cand[np.argsort(pos[cand, 2])]:
+            if all(np.linalg.norm(pos[i] - q) >= spacing for q in tree_p):
+                picked.append(i)
+                tree_p.append(pos[i])
+        nor = vertex_normals(pos, tris)
+        spots = (pos[picked], nor[picked], at[picked, 3:3 + NB])
+    spot_p, spot_n, spot_w = (np.asarray(x, float) for x in spots)
+    if len(spot_p) == 0:
         return []
-    picked = []
-    tree_p = []
-    for i in cand[np.argsort(pos[cand, 2])]:
-        if all(np.linalg.norm(pos[i] - q) >= spacing for q in tree_p):
-            picked.append(i)
-            tree_p.append(pos[i])
-    nor = vertex_normals(pos, tris)
     P2, W2, T2 = [], [], []
     nu, nv = 12, 4
-    for i in picked:
-        n = nor[i]
+    for i in range(len(spot_p)):
+        n = spot_n[i] / np.linalg.norm(spot_n[i])
         t = np.cross(n, [0, 0, 1.0]) if abs(n[2]) < 0.9 else np.cross(n, [1.0, 0, 0])
         t /= np.linalg.norm(t)
         b = np.cross(n, t)
-        base = pos[i] + n * (thick + 0.0003)
+        base = spot_p[i] + n * (thick + 0.0003)
         # (judge 5: near half-spheres read as beads: a dome 30% of its
         # width high, on a thin flange)
         fl = 0.08 * r
@@ -2448,14 +2455,14 @@ def rivets(name, pos, at, tris, thick, mkey, spacing=0.028, inset=0.011, r=0.003
                 j1 = (j + 1) % nu
                 tri += [(a0 + j, b0 + j, b0 + j1), (a0 + j, b0 + j1, a0 + j1)]
         P2.append(np.array(pts))
-        W2.append(np.repeat(at[i:i + 1, 3:3 + NB], len(pts), 0))
+        W2.append(np.repeat(spot_w[i:i + 1], len(pts), 0))
         T2.append(np.array(tri))
     if not P2:
         return []
     pp, ww, tt = np.vstack(P2), np.vstack(W2), np.vstack(T2)
-    if (vertex_normals(pp, tt) * (pp - np.repeat(np.array([pos[i] for i in picked]), ((nv + 2) * nu + 1), 0))).sum(1).mean() < 0:
+    if (vertex_normals(pp, tt) * (pp - np.repeat(spot_p, ((nv + 2) * nu + 1), 0))).sum(1).mean() < 0:
         tt = tt[:, ::-1]
-    print("RIVETS", name, len(picked))
+    print("RIVETS", name, len(spot_p))
     return [finish(name + "_rivets", pp, ww, tt, "iron" if mkey == "darksteel" else mkey, 0.0002, 0.0, 10 ** 7, scraps=False)]  # (each rivet is a part: scraps dropped them all past 50, animation)
 
 
@@ -2693,11 +2700,14 @@ def finish(name, pos, wt, tris, mkey, thick, bevel, budget=3000, scraps=True):
             rad = np.linalg.norm(d_ - np.outer(d_ @ ax_, ax_), axis=1).mean()
             uvv = np.c_[phi * rad, d_ @ ax_]
         else:
-            top = -ax_
-            th = np.arccos(np.clip((d_ / np.linalg.norm(d_, axis=1)[:, None]) @ top, -1, 1))
-            phi = np.arctan2(d_ @ e2, d_ @ np.cross(e2, top))
-            # (u round her arm, as on the lames: the brushing runs the same way)
-            uvv = np.c_[np.sin(phi), np.cos(phi)] * (th * R_)[:, None]
+            # (judge 5: flattened about the top of her arm, the brushing's
+            # blocks turned with the bearing, rotated patches. Now laid out as
+            # the lames are: u round her arm, v down the meridians from its
+            # axis (the angle from it, times the dome's radius))
+            th = np.arccos(np.clip((d_ / np.linalg.norm(d_, axis=1)[:, None]) @ -ax_, -1, 1))
+            phi = np.arctan2(d_ @ e2, d_ @ e1)
+            rho_ = np.linalg.norm(d_ - np.outer(d_ @ ax_, ax_), axis=1)
+            uvv = np.c_[phi * np.median(rho_), th * R_]
         for poly in me.polygons:
             for li in poly.loop_indices:
                 uv[li].uv = tuple(float(t) for t in uvv[me.loops[li].vertex_index])
