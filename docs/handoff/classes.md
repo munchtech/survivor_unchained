@@ -1,6 +1,6 @@
 # Handoff: classes (phase 1, systems: the Lamps, the Flare, dash forms, reflexes)
 
-Written by the third classes lead for its successor. Branch `classes/phase1`, worktree `.claude/worktrees/agent-a2a42cd8430929a76`. See the last line for the commit.
+Written by the fourth classes lead for its successor. Branch `classes/phase1`, worktree `.claude/worktrees/agent-a2a42cd8430929a76`. See the last line for the commit.
 
 ## 1. The owner's words
 
@@ -19,21 +19,25 @@ Battle wiring (dash forms, reflexes, the Flare's meter, window and clutch, Q fir
 - Fixes from the sweep: crowded_sky/the_echo/moon_drawn crippled motes; adders_patience cancelled every crit; boss fill counted a gate's whole Break (now health + Break up to 10% of health); the pilot fires the Flare by its reach (kiting casters sat full) and spares a shielded boss; path probes at 12 seeds.
 - A su-lead-max judge (verdict "pass with fixes") then: block chance and Long Chain reach read in full by night (new §2.10 sentence: a rule's defining number stays in full); every block (Warding too) lays a stone; the lull is 6 s of calm, stones fall one a second, Mortar holds; Butcher's Count price shrinks with its gain; nights and maps start at 25, FillHurt 0.40, FillBoss 1.8, Strike powers raised (Burns Twice 1160, Branding 2100, Road's Toll 700, Drag Them Under 1590). A solver made the rebuke max health x10 x (1+8%/level) and the harness pilot plays a Bulwark standing its ground. 811 tests green.
 
-## 4. Measured (12 seeds before the judge's fixes; Flare after them)
+## 3b. Session 4
 
-- Types (tiers 1-4): in band but T2 chainbound 0.72 and T4 moonweaver 1.42 (full). Level 30: arcanists 1.50, reavers 0.69-0.76. The empty-board spread is the night skills' (combat, phases 5 and 7); the judge says moonweaver's lamps add 8-13% more than the median type's, and chainbound's less (Long Chain reach now fixed).
-- Full vs empty: 0.86-1.20 at tiers 1-4 (bulwark T4 1.26-1.34 after the solver, seed noise per it).
-- On-calling, fitted home term: 0.87-1.20, median ~1.03. Never over x1.25; under 1.00 in 13 of 32 cells.
-- Flare (ad68ee76): first 72-126 s (reavers 72 s: hurt fill), gap 66-81 s, boss casts 2.5-3.1, share 15-19%.
-- Bulwark (7b97858e): 1.8-6.3 blocks/min, 5-17 rebukes a night, rebuke share 0.05-0.83% (judge asked 8-15%: the solver says unreachable without more rebukes or a wider one, a design question; CLASSES §2.8 has it).
+- `--flare stand` (harness; carries the road's Stand). The pilot fires a ready Flare after 15 s with four foes within 10 m (a kiting moonweaver sat full with its 5 m Stand).
+- Game fixes: **the Flare grows 2% a lamp lit** (`Flare.FlareLampGlow`, `LampLoadout.Lit`; the full board's boss share had fallen to 14% at T4 and 9% at L30); **Moonmarked's mark is a quarter by night** (`ArcanistOnHit`; it lifted every blow on the marked by 30% at night); **a Crowded Sky the cap leaves nothing to loose stays dark** (`CrowdOn`; it was seeking for free beside Many Lights). CLASSES §2.10, §3.2 and §7 "Phase 1, measured" carry them. 813 tests green.
+- Checks: Bulwark T4 and chainbound T2 full/empty are noise (x1.00, x1.01 at 48 seeds). Seeking Motes on arcanists isn't weak (probe: highest of all hosts); in runs it fuses into Starfall and the arcanist's other spells take the crowd first.
+- Re-judge (su-lead-max, verdict in the main session's scratchpad `cl4berdict.md`): PASS WITH FIXES. F1-F3 done: chainbound 48 seeds x1.01; Banked Flame is the sunderer's slow T4 (gap 105 s, 72 s off); story bosses fall 14-29% sooner than on main (deft hands; listed, risk 4).
+
+## 4. Measured (12 seeds, 1f4bc98f; scratchpad `cl4b\`: summary.txt, flare_table.txt, extras.txt)
+
+See CLASSES §7 "Phase 1, measured". Types: butcher 0.72 (night skills), moonweaver 1.37-1.40 at T3-T4 and 1.46 at L30. Full/empty median x1.00. On-calling home 0.85-1.22. Flare first 54-123 s, gap 52-81 s, 3 per boss, 15-23% of boss damage.
 
 ## 5. Next, in order
 
-1. **A full 12-seed re-sweep** (runner; commands in §7) on the current head, then `classes_summary.py`.
-2. **The judge's remaining measurements:** e3 damage by source full vs empty for moonweaver T4 and kindler L30 (which rule gives +10-17%); e5 naive-hands (`--bot plain`) rows at T2-T3 (clutches, answers, falls); e6 `Probe.Lamped` for Oathblade, Axe Gyre, Dawnpulse full vs empty by night (over x2 means a rule does a size's job); e7 a Butcher's Hour (Stand) row: the harness carries only Strikes, so add a `--flare stand` option.
-3. Moonweaver's motes in arenas are still 0.4-0.97 of other callings' (the probe says fixed): look at Starseeker (single-target evolution) vs Mote Cascade in the arcanist's drafts.
-4. A short re-judge (su-lead-max) of the new numbers, the reavers' 72 s first Flare and the rebuke share question; then the main session takes the rebuke share and "home under 1.00" to the owner if the judge agrees.
-5. Status page, roster, report.
+1. If the main session hasn't merged classes/phase1, ask it (the judge passed).
+2. **L1, before phase 3: the Echo.** In `ArcanistLamps.cs` `WaitMul` (~line 143) its wait shrinks with its echo by night: `m *= 1 + l.Full("the_echo", "longer", 0.25) * (l.Night ? Content.Lamps.NightSize : 1);` (a test beside `The_echos_wait_is_kept_in_full_by_night...`, which changes). Then moonweaver full vs empty at T3-T4, 48 seeds, and a trim if over x1.25 (Many Lights' +1 on a one-projectile spell is the next biggest: Rimeshard x1.25 in the probe). A short judge.
+3. L2 (phase 2's pilot): bank when Banked Flame is lit; ask the owner (via the main session) whether "Light my way" should light it.
+4. L3 (phase 2): why the Road's Toll misses the boss on a full board (per-cast boss damage, full vs empty).
+5. L4-L5: the glow by day in maps; every blue lamp's net effect by night (phase 7).
+6. Owner questions still open: the rebuke share; home x1.03.
 
 ## 6. Gotchas
 
@@ -46,8 +50,7 @@ Battle wiring (dash forms, reflexes, the Flare's meter, window and clutch, Q fir
 ## 7. Files and commands
 
 - Read first: the four `*Lamps.cs`, `Flare.cs` (fill table ~59), `godot/balance/Harness/Pilot.cs` (Flare policy, Bulwark stance), `classes_summary.py`, CLASSES §2.7, §2.10, §3.2, §7.
-- Sweep (12 seeds, ~50 min): A = `--callings all --type both --seeds 12 --policies greedy --people pack --bot deft --beyond 0 --par 16`; `arena A --lamps full|empty --tiers 1,2,3,4 --level tier`, the same with `--tiers 4 --level 30`, and `--lamps full --tiers 1,2,3,4 --level tier --offcalling`; concatenate full+empty into fe.jsonl, `report --in` it, then `python godot/balance/classes_summary.py <dir>` (needs off.jsonl, full.jsonl, fe.md, fe30.md).
-- Last numbers: scratchpad `sweep12c\summary.txt` (won't survive the scratch sweep).
+- Sweep (12 seeds, ~50 min): A = `--callings all --type both --seeds 12 --policies greedy --people pack --bot deft --beyond 0 --par 16`; `arena A --lamps full|empty --tiers 1,2,3,4 --level tier`, the same with `--tiers 4 --level 30`, and `--lamps full --tiers 1,2,3,4 --level tier --offcalling`; concatenate full+empty into fe.jsonl, `report --in` it (pipe through `iconv -f cp1252 -t utf-8` or the summary can't read it), then `python godot/balance/classes_summary.py <dir>` (needs off.jsonl, full.jsonl, fe.md, fe30.md).
+- Last numbers: main session scratchpad `cl4b\` (and `cl4c\`: the 48-seed and story checks; `mainh\` is main's harness, exported by git archive, delete it when done).
 
 
-HANDOFF READY: docs/handoff/classes.md on classes/phase1@1fb99f6f

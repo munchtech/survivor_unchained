@@ -1,6 +1,6 @@
 # Classes (phase 1: systems)
 
-**State (12 October, end of session 3):** the Battle runs the classes design: the Kin rides the dash, the calling arts fire as reflexes, the Flare fills, casts, clutches and burns missiles, and **all 133 phase-1 lamp rules are wired** (one file per quarter, `*Lamps.cs`). The harness measures types, lamps, Flares and on-calling (`--offcalling`, `classes_summary.py`). A max judge passed it with fixes; the fixes are in. Next: a 12-seed re-sweep, the judge's remaining measurements, a short re-judge. Handoff: `docs/handoff/classes.md`.
+**State (12 October, end of session 4):** the Battle runs the classes design: the Kin rides the dash, the calling arts fire as reflexes, the Flare fills, casts, clutches and burns missiles, and all 133 phase-1 lamp rules are wired (`*Lamps.cs`). A 12-seed re-sweep, the judge's extra rows and three fixes are in (the Flare grows 2% a lamp lit; Moonmarked's mark a quarter by night; a capped Crowded Sky stays dark). Re-judge: PASS WITH FIXES, fixes done; **ready to merge**. Next: the Echo fix with a moonweaver re-run (before phase 3). Handoff: `docs/handoff/classes.md`.
 
 **Key decisions**
 - The art in hand is the dash form; the Kin's facets come only from lamps (no double source).
@@ -10,10 +10,11 @@
 - On-calling is measured as a fitted home term (calling + road + home x road), because raw on/off mostly measures each calling's base strength.
 - The Bulwark's rebuke: max health x10, growing 8% a level like the Flare ("the wall answers as hard as it is thick"); every block, the draft's Warding too, lays a stone; stones fall after 6 s of calm unless Mortar holds them.
 
-**Measured** (12 seeds; details in the handoff §4)
-- Types within x1.35 at tiers 1-4 except T2 chainbound 0.72 and T4 moonweaver 1.42; arcanists 1.5 at level 30 (night skills' balance).
-- Full vs empty 0.86-1.20. On-calling home term 0.87-1.20 (never over x1.25).
-- Flare: first 72-126 s, gap 66-81 s, 2.5-3.1 per boss, 15-19% of boss damage.
+**Measured** (12 seeds; CLASSES §7 "Phase 1, measured")
+- Full vs empty in band (median x1.00; the two cells out read x1.00 and x1.01 at 48 seeds). On-calling home term 0.85-1.22.
+- Flare: first 54-123 s, gap 52-81 s, 3 per boss, 15-23% of boss damage by tier.
+- Types: butcher 0.72 (night skills), moonweaver 1.37-1.40 at T3-T4 (half its board's: the Echo fix and a trim come next).
+- Open (CLASSES §7): the Echo, Banked Flame and the pilot, the Road's Toll on bosses, story bosses 14-29% faster than on main.
 
 **Open questions (for the owner, via the main session)**
 - The rebuke is under 1% of a Bulwark's night damage; a judge asked 8-15%. Getting there needs more rebukes or a wider one (phase 5's "Wider Rebuke"), not a bigger number.

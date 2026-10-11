@@ -888,6 +888,13 @@ Sizes are in lead sessions. One session is about 300k tokens of a `su-lead-high`
 - Flare timing: the first by about 2 minutes, then one every 60 to 90 s at night, and two or three in a boss fight. Flares do 15 to 25% of a boss's damage.
 - Every Flare is judged at 1:1 in a packed horde and on a boss, against §3.5's laws.
 
+**Phase 1, measured (12 October; 12 seeds a cell, deft hands; one 12-seed cell of damage at minute 25 swings about ±25%, so a starred cell is re-run at 48 seeds before it counts):**
+- A full board against an empty one: in band (median ×1.00). Bulwark T4 and chainbound T2, the two cells out, read ×1.00 and ×1.01 at 48 seeds.
+- On-calling: the fitted home term is 0.85 to 1.22, never over ×1.25.
+- The Flare: first at 54 to 123 s, then every 52 to 81 s, three per boss (except the sunderer at T4: 176 s, every 105 s, two per boss; see Banked Flame below); 15 to 23% of a boss's damage by tier (median of the types).
+- The types: out in four cells at tiers 1-4. The butcher (0.72) tracks its empty board, so it's the night skills' (phases 5 and 7). The moonweaver (1.37 to 1.40 at T3-T4) is half its board's: at T3 its empty board is in band (1.07).
+- Open: (1) **The Echo** is a net loss by night: its echo is quartered, its wait is not. It is fixed before phase 3 (its wait shrinks with its echo), together with a moonweaver re-run and trim, because the fix lifts the moonweaver. (2) **Banked Flame** (each hearth's gate-6 blue lamp) costs the harness its price without its gift, because the pilot never banks. It caused the sunderer's slow T4 Flare: gap 105 s, 72 s with it off. The pilot learns to bank in phase 2; should "Light my way" light it at all? (3) **The Road's Toll** lands little on a boss on a full board (8 to 11% at T3-T4, 29% at T1). That's targeting, not power, so phase 2 diagnoses it before building it. (4) The reavers' and roadknife's Strikes reach 24 to 30% at T1-T2. (5) Story bosses fall faster than on main (deft hands: Roost 24%, Vault 29%, Hollow 17%, Dig 14% sooner; nobody falls more). Raising their health is risk 4's call. (6) The glow is measured only by night; maps by day are unmeasured. (7) The Stands are measured in their plain form only (pulses round her). Butcher's Hour: three per boss, 11 to 15% of its damage.
+
 **Risks:**
 1. **Animation is the long pole.** That's 16 Flare clips and about 22 grip clips, all twice over. Phase 2 proves the beat on grips we already have.
 2. **Performance.** Sixteen Flares over 300 creatures. The rendering lead budgets each Flare (particles, lights, overdraw) before it's built.
