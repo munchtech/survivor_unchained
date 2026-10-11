@@ -104,7 +104,7 @@ public static class Firing
 {
     public static double CooldownOf(Battle b, WeaponInst w)
     {
-        double c = (w.Def.Base.Cooldown ?? 1) * b.Stats.Get(Stat.Cooldown) * w.Mods.Cooldown;
+        double c = (w.Def.Base.Cooldown ?? 1) * b.Stats.Get(Stat.Cooldown) * w.Mods.Cooldown * b.ReaverCooldownMul(w);
         if (w.Evolution != null) c *= w.Evolution.Mods.Cooldown ?? 1;
         return Math.Max(0.08, Math.Min(20, c));
     }
@@ -114,15 +114,15 @@ public static class Firing
         double a = baseValue * b.Stats.Get(Stat.Area) * (1 + Content.Weapons.AreaStep * (w.Rank - 1)) * w.Mods.Area;
         if (w.Evolution != null) a *= w.Evolution.Mods.Area ?? 1;
         // sunderer.skill.area / tags.area: the skill's lamps and its tags' lamps reach wider.
-        a *= 1 + b.Lamps.SizeOn("skill.area", "inc", w.Def.Id, w.Def.Tags) + b.Lamps.SizeOn("tags.area", "inc", w.Def.Id, w.Def.Tags);
+        a *= 1 + b.Lamps.SizeOn("skill.area", "inc", w.Def.Id, w.Def.Tags) + b.Lamps.SizeOn("tags.area", "inc", w.Def.Id, w.Def.Tags) + b.StormReach(w);
         return a;
     }
 
     /// <summary>bulwark.skill.reach: metres of reach a skill's lamp adds (Oathblade, 1.5).</summary>
-    static double ReachAdd(Battle b, WeaponInst w) => b.Lamps.SizeOn("skill.reach", "add", w.Def.Id, w.Def.Tags);
+    static double ReachAdd(Battle b, WeaponInst w) => b.Lamps.SizeOn("skill.reach", "add", w.Def.Id, w.Def.Tags) + b.ChainReach(w);
 
     /// <summary>The status a skill strikes with: its own, or the one its lamp gives (sunderer.skill.status).</summary>
-    static StatusPayload? StatusWith(Battle b, WeaponInst w) =>
+    public static StatusPayload? StatusWith(Battle b, WeaponInst w) =>
         w.StatusOf ?? (b.Lamps.HasOn("skill.status", w.Def.Id, w.Def.Tags) && b.Lamps.Each["skill.status"].Find(e => e.Status != null && (e.Skill == w.Def.Id)) is { Status: { } k } ? new StatusPayload(k, 1, 1, 3) : null);
 
     public static double DurationOf(Battle b, WeaponInst w, double baseValue)
@@ -318,7 +318,7 @@ public static class Firing
     static bool FireNova(Battle b, WeaponInst w)
     {
         var p = b.Player;
-        double r = AreaOf(b, w, w.Num(s => s.Radius) ?? 3.5);
+        double r = AreaOf(b, w, w.Num(s => s.Radius) ?? 3.5) + ReachAdd(b, w);
         if (b.NearestHostile(p.X, p.Z, r + 1) == null) return false;
         int rings = 1 + (w.Rank >= Content.Weapons.ProjRankA ? 1 : 0) + (w.Rank >= Content.Weapons.ProjRankB ? 1 : 0);
         b.Events.Emit(new Ev.Nova { X = p.X, Z = p.Z, Radius = r, School = w.School, Duration = w.Num(s => s.ExpandTime) ?? 0.35, Rings = rings, Art = w.Art, Rank = w.Rank });
@@ -430,14 +430,14 @@ public static class Firing
         if (w.Id == "axe_gyre" && b.Marked(Marks.Gyre, out double gyre))
             n += Math.Min(3, (int)(b.HostilesInRadius(b.Player.X, b.Player.Z, 5).Count / Marks.Lerp(6, 3, gyre)));
         double life = DurationOf(b, w, w.Num(s => s.Duration) ?? 3);
-        double radius = AreaOf(b, w, w.Num(s => s.OrbitRadius) ?? 2);
+        double radius = AreaOf(b, w, w.Num(s => s.OrbitRadius) ?? 2) + ReachAdd(b, w);
         double speed = w.Num(s => s.OrbitSpeed) ?? 4;
         for (int i = 0; i < n; i++)
         {
             var pr = b.SpawnProjectile(Side.Player, b.Player.X, b.Player.Z, w.Damage, w.School);
             if (pr == null) continue;
             pr.Y = 1; pr.Tags = w.Tags; pr.Radius = (w.Num(s => s.Radius) ?? 0.5) * Math.Sqrt(b.Stats.Get(Stat.Area));
-            pr.Pierce = 999; pr.Life = life; pr.Weapon = w.Id; pr.Art = w.Art; pr.Status = w.StatusOf;
+            pr.Pierce = 999; pr.Life = life; pr.Weapon = w.Id; pr.Art = w.Art; pr.Status = StatusWith(b, w);
             pr.Knockback = 0.25; pr.Rank = w.Rank; pr.BossDamage = w.BossDamage;
             pr.OrbitR = radius;
             pr.OrbitW = speed;
@@ -454,6 +454,7 @@ public static class Firing
         var p = b.Player;
         var targets = b.HostilesInRadius(p.X, p.Z, area * b.Stats.Get(Stat.Area) + 3);
         if (targets.Count == 0) return false;
+        targets = b.BoundFirst(w, targets); // chainbound.lightning_rod
         for (int i = 0; i < strikes; i++)
         {
             var t = targets[b.Rng.Int(0, targets.Count - 1)];
@@ -503,18 +504,20 @@ public static class Firing
     static bool FirePalm(Battle b, WeaponInst w)
     {
         var p = b.Player;
-        double reach = AreaOf(b, w, w.Num(s => s.Reach) ?? 2.9);
+        double reach = AreaOf(b, w, w.Num(s => s.Reach) ?? 2.9) + ReachAdd(b, w);
         var targets = b.HostilesInRadius(p.X, p.Z, reach + 0.6);
-        if (targets.Count == 0) return false;
+        var far = b.IronReachTargets(w, reach + 0.6); // chainbound.iron_reach: Bound things out of the palm's own reach
+        if (targets.Count == 0 && far.Count == 0) return false;
         targets.Sort((a, c) => ((a.X - p.X) * (a.X - p.X) + (a.Z - p.Z) * (a.Z - p.Z)).CompareTo((c.X - p.X) * (c.X - p.X) + (c.Z - p.Z) * (c.Z - p.Z)));
         int n = CountOf(b, w);
         double arc = w.Num(s => s.Arc) ?? 1.25;
-        for (int i = 0; i < n; i++)
+        for (int i = 0; i < n && targets.Count > 0; i++)
         {
             var t = targets[i % targets.Count];
             double a = Math.Atan2(t.Z - p.Z, t.X - p.X) + (i >= targets.Count ? (i - targets.Count + 1) * 0.6 : 0);
             ConeHit(b, w, a, arc, reach, w.Damage);
         }
+        for (int i = 0; i < n && i < far.Count; i++) b.PalmFromAfar(w, far[i], StatusWith(b, w));
         return true;
     }
 
@@ -524,17 +527,21 @@ public static class Firing
         b.Events.Emit(new Ev.Slash { X = p.X, Z = p.Z, Angle = a, Arc = arc, Reach = reach, School = w.School, Art = w.Art, Rank = w.Rank });
         double kb = w.Num(s => s.Knockback) ?? 0;
         bool any = false;
+        Enemy? last = null;
+        var hitStatus = StatusWith(b, w);
         b.ForEachHostileInRadius(p.X, p.Z, reach, (e, d) =>
         {
             double da = Wrap(Math.Atan2(e.Z - p.Z, e.X - p.X) - a);
             if (Math.Abs(da) > arc / 2 + Math.Atan2(e.Radius, Math.Max(d, 0.1))) return;
             any = true;
+            last = e;
             double dd = d == 0 ? 1 : d;
             b.HitEnemy(e, dmg, w.School, w.Tags, new HitOpts
             {
-                Weapon = w, Knockback = kb, DirX = (e.X - p.X) / dd, DirZ = (e.Z - p.Z) / dd, Status = w.StatusOf, BossDamage = w.Def.BossDamage,
+                Weapon = w, Knockback = kb, DirX = (e.X - p.X) / dd, DirZ = (e.Z - p.Z) / dd, Status = hitStatus, BossDamage = w.Def.BossDamage,
             });
         });
+        if (last != null) b.HookLast(w, last); // chainbound.the_long_chain
         return any;
     }
 

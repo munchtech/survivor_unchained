@@ -33,6 +33,8 @@ public enum Verdict { Hidden, Shown, Emphasised }
 public sealed class StatusSlot
 {
     public double T, Stacks, Power, Tick;
+    /// <summary>Seconds it has been on (open_vein reads a bleed's age).</summary>
+    public double Age;
     /// <summary>Whose it is (Battle.DamageBy's key): what its damage is credited to.</summary>
     public string? From;
     public StatusSlot(double t, double stacks, double power, double tick) { T = t; Stacks = stacks; Power = power; Tick = tick; }

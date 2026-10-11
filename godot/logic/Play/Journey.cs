@@ -429,6 +429,7 @@ public sealed partial class Journey
     public void Quaff(Battle? b)
     {
         if (b == null || !b.Player.Alive) return;
+        if (b.NoDraught) { Warn("You have no draught"); return; } // reaver.nothing_spared
         if (Draughts == 0) { Warn("No draughts left"); return; }
         if (b.Player.Hp >= b.MaxHp - 0.5) { Warn("You are unhurt"); return; }
         bool deep = 1 - b.Player.Hp / b.MaxHp >= 0.55, moon = Inventory.Count(Ch, Moonpetal) > 0, plain = Inventory.Count(Ch, Draught) > 0;
@@ -466,6 +467,7 @@ public sealed partial class Journey
         if (def.Kind != ItemKind.Consumable || def.Consumable is not { } c) { if (loc.InPack) Equip(uid, null, b); return; }
         if (c.Heal is double heal && b != null)
         {
+            if (b.NoDraught) { Warn("You have no draught"); return; } // reaver.nothing_spared
             if (b.Player.Hp >= b.MaxHp - 0.5) { Warn("You are unhurt"); return; }
             b.HealPlayer(b.MaxHp * heal, "draught");
         }

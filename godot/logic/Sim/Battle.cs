@@ -451,6 +451,7 @@ public sealed partial class Battle
         }
 
         TickStones(dt);
+        TickReaver(dt);
         // Warding light recharges.
         int blockRank = RoundInt(st.Get(Stat.Block));
         if (blockRank > 0 && p.BlockT > 0) p.BlockT = Math.Max(0, p.BlockT - dt);
@@ -525,7 +526,7 @@ public sealed partial class Battle
         }
         condScratch.Clear();
         condScratch.Add(p.Moving ? ModWhen.Moving : ModWhen.Still);
-        if (p.Hp < MaxHp * 0.35) condScratch.Add(ModWhen.LowHealth);
+        if (p.Hp < MaxHp * 0.35 || Lamp("always_bleeding")) condScratch.Add(ModWhen.LowHealth); // butcher.always_bleeding counts as low
         if (p.Hp >= MaxHp - 0.01) condScratch.Add(ModWhen.FullHealth);
         if (p.Hp > MaxHp * 0.8) condScratch.Add(ModWhen.Healthy);
         // What gear asks of the moment: the dark, beasts close, fire underfoot, a dash just done.
@@ -728,6 +729,7 @@ public sealed partial class Battle
         if (s.Has(StatusKind.Shock) && !o.Dot) { dmg *= 1.35 + st.Get(Stat.ShockBonus); if (!Boons.ContainsKey("static_charge")) s.Remove(StatusKind.Shock); }
         dmg *= e.TakenMul;
         dmg *= LampDamageMul(e, school, tags, o);
+        dmg *= ReaverDamageMul(e, school, tags, o);
         // Warded by its own kind's lamp or drum.
         if (e.WardT > 0) dmg *= 1 - e.Ward;
         // Resistances.
@@ -820,6 +822,7 @@ public sealed partial class Battle
             if (crit) Fire(TriggerEvent.Crit, ctx);
         }
 
+        ReaverOnHit(e, o);
         if (e.Boss) Hooks.OnBossHit?.Invoke(e, school, dmg);
         if (e.Hp <= 0 && e.Alive && e.State != EnemyState.Dying) KillEnemy(e, true, o.Weapon, depth);
         else ArtOnHit(e);
@@ -867,10 +870,11 @@ public sealed partial class Battle
         e.AnimT = 0;
         e.Credit = byPlayer || e.Credit;
         bool credited = e.Credit;
-        if (weapon != null) weapon.Kills++;
+        if (weapon != null) { weapon.Kills++; ReaverWeaponKill(weapon); }
         if (credited && e.Disposition != Disposition.Ally)
         {
             FlareOnKill(e, e.Status.Has(StatusKind.Bleed) && e.LastWeapon == null);
+            ReaverOnKill(e);
             KillCount++;
             KillsByFamily[e.Def.Family] = KillsByFamily.GetValueOrDefault(e.Def.Family) + 1;
             if (e.Elite && !e.Boss) ChampionsByFamily[e.Def.Family] = ChampionsByFamily.GetValueOrDefault(e.Def.Family) + 1;
@@ -952,7 +956,7 @@ public sealed partial class Battle
         double sd = Stats.Get(Stat.StatusDamage) * Stats.Get(Stat.StatusDamageOf(p.Kind));
         double dps = hitDamage * p.Power / Math.Max(0.5, p.Duration) * sd;
         // Longer burning is more burning: the rate holds, the time stretches.
-        double dur = p.Duration * Stats.Get(Stat.StatusDurationOf(p.Kind));
+        double dur = ReaverStatusDuration(e, p.Kind, p.Duration * Stats.Get(Stat.StatusDurationOf(p.Kind)));
         from ??= credit;
         switch (p.Kind)
         {
@@ -1031,6 +1035,7 @@ public sealed partial class Battle
             }
         }
         if (p.Kind is StatusKind.Mark or StatusKind.Bound) MoonOnTheChain(e);
+        ReaverAfterStatus(e, p, hitDamage, depth);
         Events.Emit(new Ev.Status { Target = e.Id, Kind = p.Kind, X = e.X, Z = e.Z });
         if (depth < 3) Fire(TriggerEvent.Status, new ProcCtx { Target = e, X = e.X, Z = e.Z, Damage = hitDamage, School = School.Physical, Tags = Array.Empty<Tag>(), Applied = p.Kind, Depth = depth + 1 });
     }
@@ -1047,6 +1052,7 @@ public sealed partial class Battle
             var slot = s[k];
             if (slot == null) continue;
             slot.T -= dt;
+            slot.Age += dt;
             if (k == StatusKind.Burn || k == StatusKind.Bleed || k == StatusKind.Poison || (k == StatusKind.Sear && e.Def.Family == Family.Undead))
             {
                 slot.Tick -= dt;
@@ -1177,6 +1183,7 @@ public sealed partial class Battle
         if (Art.WraithT > 0) dmg *= 0.5;
         // Grounding: part of the blow goes to earth (its lightning is the blessing's Hurt rule).
         if (Boons.TryGetValue("grounding", out int ground)) dmg *= ground >= 2 ? 0.67 : 0.8;
+        dmg *= ReaverTakenMul(school);
         return HurtPlayerRaw(FlareGuard(dmg), school, source, from);
     }
 
@@ -1424,9 +1431,9 @@ public sealed partial class Battle
     {
         var p = Player;
         if (!p.Alive) return;
-        double h = amount * Stats.Get(Stat.Healing) * (1 - Rules.HealCut) * (source == "draught" ? Rules.DraughtMul : 1);
+        double h = amount * Stats.Get(Stat.Healing) * (1 - Rules.HealCut) * (source == "draught" ? Rules.DraughtMul : 1) * ReaverMendMul(source);
         double before = p.Hp;
-        p.Hp = Math.Min(MaxHp, p.Hp + h);
+        p.Hp = Math.Min(MendCeiling(), p.Hp + h);
         if (!silent && p.Hp - before > 0.5) Events.Emit(new Ev.PlayerHeal { Amount = p.Hp - before });
     }
 
