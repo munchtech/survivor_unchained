@@ -535,6 +535,20 @@
     2.6
    ],
    "maya": "Realistic male voice in the 60s age with british accent, a tired old soldier. Low pitch, dry worn hoarse timbre, slow pacing, tired lost tone."
+  },
+  "penhale": {
+   "name": "Penhale, Tam's Pa",
+   "sex": "m",
+   "age": 45,
+   "accent": "Somerset (West Country)",
+   "design": "A Somerset hill farmer in his forties with a loud, rough, chesty voice and a broad West Country accent. Profane, furious and alive; grateful only by accident.",
+   "ref_text": "My father ploughed that. And his. And you took your bloody time, the lot of you!",
+   "room": "outdoor",
+   "tempo": [
+    2.8,
+    3.8
+   ],
+   "maya": "Realistic male voice in the 40s age with british accent, a West Country farmer. Low pitch, rough chesty timbre, fast pacing, loud furious tone."
   }
  }
 }

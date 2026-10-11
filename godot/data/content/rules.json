@@ -1856,6 +1856,167 @@
      "arena.last.ago": 1
     }
    }
+  },
+  {
+   "id": "act2.stopped",
+   "once": true,
+   "when": {
+    "all": [
+     {
+      "fact": "chapter.done",
+      "eq": true
+     },
+     {
+      "not": {
+       "fact": "scene.morning",
+       "exists": true
+      }
+     }
+    ]
+   },
+   "effect": [
+    {
+     "set": {
+      "scene.morning": "scene_it_stopped"
+     }
+    }
+   ]
+  },
+  {
+   "id": "act2.ground",
+   "once": true,
+   "when": {
+    "all": [
+     {
+      "fact": "act2.stopped",
+      "eq": true
+     },
+     {
+      "not": {
+       "fact": "farm.gone",
+       "eq": true
+      }
+     },
+     {
+      "not": {
+       "fact": "scene.dusk",
+       "exists": true
+      }
+     }
+    ]
+   },
+   "effect": [
+    {
+     "set": {
+      "scene.dusk": "scene_ground_opens"
+     }
+    }
+   ]
+  },
+  {
+   "id": "hole.morning",
+   "once": true,
+   "when": {
+    "all": [
+     {
+      "fact": "hole.down",
+      "eq": true
+     },
+     {
+      "not": {
+       "fact": "scene.morning",
+       "exists": true
+      }
+     }
+    ]
+   },
+   "effect": [
+    {
+     "set": {
+      "scene.morning": "scene_count_right"
+     }
+    }
+   ]
+  },
+  {
+   "id": "holloway.barred",
+   "when": {
+    "all": [
+     {
+      "fact": "holloway.dead",
+      "eq": true
+     },
+     {
+      "not": {
+       "fact": "holloway.dusks",
+       "gte": 3
+      }
+     },
+     {
+      "not": {
+       "fact": "scene.dusk",
+       "exists": true
+      }
+     }
+    ]
+   },
+   "effect": [
+    {
+     "set": {
+      "scene.dusk": "scene_barred"
+     }
+    }
+   ]
+  },
+  {
+   "id": "holloway.risen",
+   "once": true,
+   "when": {
+    "all": [
+     {
+      "fact": "holloway.dusks",
+      "gte": 3
+     },
+     {
+      "not": {
+       "fact": "scene.dusk",
+       "exists": true
+      }
+     }
+    ]
+   },
+   "effect": [
+    {
+     "set": {
+      "scene.dusk": "scene_one_in"
+     }
+    }
+   ]
+  },
+  {
+   "id": "holloway.table",
+   "once": true,
+   "when": {
+    "all": [
+     {
+      "fact": "holloway.laid",
+      "eq": true
+     },
+     {
+      "not": {
+       "fact": "scene.morning",
+       "exists": true
+      }
+     }
+    ]
+   },
+   "effect": [
+    {
+     "set": {
+      "scene.morning": "scene_his_table"
+     }
+    }
+   ]
   }
  ],
  "social": {

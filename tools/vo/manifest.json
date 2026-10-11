@@ -7111,6 +7111,183 @@
    "status": "skip"
   },
   {
+   "id": "dlg.maeca.k_after.0",
+   "kind": "dialogue",
+   "voice": "maeca",
+   "text": "(His coat, and his step. She doesn't get up.) Sit, if you're sitting.",
+   "where": "dialogue.json maeca/k_after#0",
+   "hash": "3508b9493026",
+   "segments": [
+    {
+     "voice": "narrator",
+     "text": "His coat, and his step. She doesn't get up."
+    },
+    {
+     "voice": "maeca",
+     "text": "Sit, if you're sitting."
+    }
+   ],
+   "status": "todo"
+  },
+  {
+   "id": "dlg.maeca.k_after.1",
+   "kind": "dialogue",
+   "voice": "maeca",
+   "text": "(She doesn't look up from the road.) If you've come to ask, ask.",
+   "where": "dialogue.json maeca/k_after#1",
+   "hash": "67c0103b8a7b",
+   "segments": [
+    {
+     "voice": "narrator",
+     "text": "She doesn't look up from the road."
+    },
+    {
+     "voice": "maeca",
+     "text": "If you've come to ask, ask."
+    }
+   ],
+   "status": "todo"
+  },
+  {
+   "id": "ply.maeca.k_after.0",
+   "kind": "choice",
+   "voice": "survivor",
+   "text": "Why then? Why at the top?",
+   "where": "dialogue.json maeca/k_after choice 0",
+   "skip": "the survivor's replies are voiced in a later pass",
+   "hash": "f4a5c268ef44",
+   "status": "skip"
+  },
+  {
+   "id": "ply.maeca.k_after.1",
+   "kind": "choice",
+   "voice": "survivor",
+   "text": "What happened at Ashford?",
+   "where": "dialogue.json maeca/k_after choice 1",
+   "skip": "the survivor's replies are voiced in a later pass",
+   "hash": "f672190b6c21",
+   "status": "skip"
+  },
+  {
+   "id": "ply.maeca.k_after.2",
+   "kind": "choice",
+   "voice": "survivor",
+   "text": "(Sit with her.)",
+   "where": "dialogue.json maeca/k_after choice 2",
+   "skip": "the survivor's replies are voiced in a later pass",
+   "hash": "673757f898e6",
+   "status": "skip"
+  },
+  {
+   "id": "ply.maeca.k_after.3",
+   "kind": "choice",
+   "voice": "survivor",
+   "text": "Goodbye.",
+   "where": "dialogue.json maeca/k_after choice 3",
+   "skip": "the survivor's replies are voiced in a later pass",
+   "hash": "619bc388fc15",
+   "status": "skip"
+  },
+  {
+   "id": "dlg.maeca.k_why.0",
+   "kind": "dialogue",
+   "voice": "maeca",
+   "text": "(She looks down the road a long time.) ...I was at the top.",
+   "where": "dialogue.json maeca/k_why#0",
+   "hash": "84e4aa7f584e",
+   "segments": [
+    {
+     "voice": "narrator",
+     "text": "She looks down the road a long time."
+    },
+    {
+     "voice": "maeca",
+     "text": "...I was at the top."
+    }
+   ],
+   "status": "todo"
+  },
+  {
+   "id": "ply.maeca.k_why.0",
+   "kind": "choice",
+   "voice": "survivor",
+   "text": "(Sit with her.)",
+   "where": "dialogue.json maeca/k_why choice 0",
+   "skip": "the survivor's replies are voiced in a later pass",
+   "hash": "673757f898e6",
+   "status": "skip"
+  },
+  {
+   "id": "ply.maeca.k_why.1",
+   "kind": "choice",
+   "voice": "survivor",
+   "text": "Goodbye.",
+   "where": "dialogue.json maeca/k_why choice 1",
+   "skip": "the survivor's replies are voiced in a later pass",
+   "hash": "619bc388fc15",
+   "status": "skip"
+  },
+  {
+   "id": "dlg.maeca.k_ladder.0",
+   "kind": "dialogue",
+   "voice": "maeca",
+   "text": "The ladder.",
+   "where": "dialogue.json maeca/k_ladder#0",
+   "hash": "39f99b257dc9",
+   "segments": [
+    {
+     "voice": "maeca",
+     "text": "The ladder."
+    }
+   ],
+   "status": "todo"
+  },
+  {
+   "id": "ply.maeca.k_ladder.0",
+   "kind": "choice",
+   "voice": "survivor",
+   "text": "(Sit with her.)",
+   "where": "dialogue.json maeca/k_ladder choice 0",
+   "skip": "the survivor's replies are voiced in a later pass",
+   "hash": "673757f898e6",
+   "status": "skip"
+  },
+  {
+   "id": "ply.maeca.k_ladder.1",
+   "kind": "choice",
+   "voice": "survivor",
+   "text": "Goodbye.",
+   "where": "dialogue.json maeca/k_ladder choice 1",
+   "skip": "the survivor's replies are voiced in a later pass",
+   "hash": "619bc388fc15",
+   "status": "skip"
+  },
+  {
+   "id": "dlg.maeca.k_sit.0",
+   "kind": "dialogue",
+   "voice": "narrator",
+   "text": "You sit. She lets you. Neither of you says anything, and the road gets dark.",
+   "where": "dialogue.json maeca/k_sit#0",
+   "hash": "69106c97fb1a",
+   "segments": [
+    {
+     "voice": "narrator",
+     "text": "You sit. She lets you. Neither of you says anything, and the road gets dark."
+    }
+   ],
+   "status": "todo"
+  },
+  {
+   "id": "ply.maeca.k_sit.0",
+   "kind": "choice",
+   "voice": "survivor",
+   "text": "(Go.)",
+   "where": "dialogue.json maeca/k_sit choice 0",
+   "skip": "the survivor's replies are voiced in a later pass",
+   "hash": "a1b6da8bad7f",
+   "status": "skip"
+  },
+  {
    "id": "dlg.wenna.first.0",
    "kind": "dialogue",
    "voice": "wenna",
@@ -31415,6 +31592,1666 @@
    "where": "dialogue.json warden_answer/wait choice 1",
    "skip": "the survivor's replies are voiced in a later pass",
    "hash": "929dd54c8a8d",
+   "status": "skip"
+  },
+  {
+   "id": "dlg.scene_it_stopped.well.0",
+   "kind": "dialogue",
+   "voice": "narrator",
+   "text": "Tam is sitting on the edge of the well with his head on one side, listening to the ground.",
+   "where": "dialogue.json scene_it_stopped/well#0",
+   "hash": "a24c172e7e3c",
+   "segments": [
+    {
+     "voice": "narrator",
+     "text": "Tam is sitting on the edge of the well with his head on one side, listening to the ground."
+    }
+   ],
+   "status": "todo"
+  },
+  {
+   "id": "dlg.scene_it_stopped.tam.0",
+   "kind": "dialogue",
+   "voice": "tam",
+   "text": "It stopped. The knocking. In the night. Pa said good riddance and went to sleep, and I didn't, because it didn't stop like moles stop. It stopped like when you hold your breath to listen.",
+   "where": "dialogue.json scene_it_stopped/tam#0",
+   "hash": "3f0bf490e24f",
+   "segments": [
+    {
+     "voice": "tam",
+     "text": "It stopped. The knocking. In the night. Pa said good riddance and went to sleep, and I didn't, because it didn't stop like moles stop. It stopped like when you hold your breath to listen."
+    }
+   ],
+   "status": "todo"
+  },
+  {
+   "id": "ply.scene_it_stopped.tam.0",
+   "kind": "choice",
+   "voice": "survivor",
+   "text": "I'll walk you home, and bring your Pa in for a night or two.",
+   "where": "dialogue.json scene_it_stopped/tam choice 0",
+   "skip": "the survivor's replies are voiced in a later pass",
+   "hash": "25c8cb6cdd5f",
+   "status": "skip"
+  },
+  {
+   "id": "ply.scene_it_stopped.tam.1",
+   "kind": "choice",
+   "voice": "survivor",
+   "text": "Moles stop, Tam.",
+   "where": "dialogue.json scene_it_stopped/tam choice 1",
+   "skip": "the survivor's replies are voiced in a later pass",
+   "hash": "91d920bccbae",
+   "status": "skip"
+  },
+  {
+   "id": "ply.scene_it_stopped.tam.2",
+   "kind": "choice",
+   "voice": "survivor",
+   "text": "(Say nothing.)",
+   "where": "dialogue.json scene_it_stopped/tam choice 2",
+   "skip": "the survivor's replies are voiced in a later pass",
+   "hash": "929dd54c8a8d",
+   "status": "skip"
+  },
+  {
+   "id": "dlg.scene_it_stopped.fetch.0",
+   "kind": "dialogue",
+   "voice": "narrator",
+   "text": "You walk Tam home past the Old Road, and his Pa calls you the same things as last time, and some new ones. Then he stands in the barn door looking at the floor a long time, and gets the cart out. The dog won't get up on it. It lies down in the yard and won't be called.",
+   "where": "dialogue.json scene_it_stopped/fetch#0",
+   "hash": "e8d774b6654e",
+   "segments": [
+    {
+     "voice": "narrator",
+     "text": "You walk Tam home past the Old Road, and his Pa calls you the same things as last time, and some new ones. Then he stands in the barn door looking at the floor a long time, and gets the cart out. The dog won't get up on it. It lies down in the yard and won't be called."
+    }
+   ],
+   "status": "todo"
+  },
+  {
+   "id": "dlg.scene_it_stopped.fetch.1",
+   "kind": "dialogue",
+   "voice": "narrator",
+   "text": "You walk Tam home past the Old Road, and his Pa calls you several things across the yard. Then he stands in the barn door looking at the floor a long time, and gets the cart out. The dog won't get up on it. It lies down in the yard and won't be called.",
+   "where": "dialogue.json scene_it_stopped/fetch#1",
+   "hash": "17ba3341f5f5",
+   "segments": [
+    {
+     "voice": "narrator",
+     "text": "You walk Tam home past the Old Road, and his Pa calls you several things across the yard. Then he stands in the barn door looking at the floor a long time, and gets the cart out. The dog won't get up on it. It lies down in the yard and won't be called."
+    }
+   ],
+   "status": "todo"
+  },
+  {
+   "id": "ply.scene_it_stopped.fetch.0",
+   "kind": "choice",
+   "voice": "survivor",
+   "text": "(Go.)",
+   "where": "dialogue.json scene_it_stopped/fetch choice 0",
+   "skip": "the survivor's replies are voiced in a later pass",
+   "hash": "a1b6da8bad7f",
+   "status": "skip"
+  },
+  {
+   "id": "dlg.scene_it_stopped.moles.0",
+   "kind": "dialogue",
+   "voice": "tam",
+   "text": "Not all at once they don't.",
+   "where": "dialogue.json scene_it_stopped/moles#0",
+   "hash": "ad81ffaa94ea",
+   "segments": [
+    {
+     "voice": "tam",
+     "text": "Not all at once they don't."
+    }
+   ],
+   "status": "todo"
+  },
+  {
+   "id": "ply.scene_it_stopped.moles.0",
+   "kind": "choice",
+   "voice": "survivor",
+   "text": "(Go.)",
+   "where": "dialogue.json scene_it_stopped/moles choice 0",
+   "skip": "the survivor's replies are voiced in a later pass",
+   "hash": "a1b6da8bad7f",
+   "status": "skip"
+  },
+  {
+   "id": "dlg.scene_it_stopped.quiet.0",
+   "kind": "dialogue",
+   "voice": "narrator",
+   "text": "He goes on listening. So do you.",
+   "where": "dialogue.json scene_it_stopped/quiet#0",
+   "hash": "f644f965a784",
+   "segments": [
+    {
+     "voice": "narrator",
+     "text": "He goes on listening. So do you."
+    }
+   ],
+   "status": "todo"
+  },
+  {
+   "id": "ply.scene_it_stopped.quiet.0",
+   "kind": "choice",
+   "voice": "survivor",
+   "text": "(Go.)",
+   "where": "dialogue.json scene_it_stopped/quiet choice 0",
+   "skip": "the survivor's replies are voiced in a later pass",
+   "hash": "a1b6da8bad7f",
+   "status": "skip"
+  },
+  {
+   "id": "dlg.scene_ground_opens.bell.0",
+   "kind": "dialogue",
+   "voice": "narrator",
+   "text": "The bell on the Watch-house starts, and doesn't stop. Out past the Old Road the lamps at the Penhale farm go down one after another, like someone carrying them down a stair.",
+   "where": "dialogue.json scene_ground_opens/bell#0",
+   "hash": "706a9545b110",
+   "segments": [
+    {
+     "voice": "narrator",
+     "text": "The bell on the Watch-house starts, and doesn't stop. Out past the Old Road the lamps at the Penhale farm go down one after another, like someone carrying them down a stair."
+    }
+   ],
+   "status": "todo"
+  },
+  {
+   "id": "dlg.scene_ground_opens.lip.0",
+   "kind": "dialogue",
+   "voice": "narrator",
+   "text": "By the time you get there the barn is gone, and the back of the house with it. Where the yard was there's a hole, and cold coming up out of it. The town is at the edge with lamps. Somebody has a rope round the gatepost.",
+   "where": "dialogue.json scene_ground_opens/lip#0",
+   "hash": "a7ab501f9a6d",
+   "segments": [
+    {
+     "voice": "narrator",
+     "text": "By the time you get there the barn is gone, and the back of the house with it. Where the yard was there's a hole, and cold coming up out of it. The town is at the edge with lamps. Somebody has a rope round the gatepost."
+    }
+   ],
+   "status": "todo"
+  },
+  {
+   "id": "dlg.scene_ground_opens.tam.0",
+   "kind": "dialogue",
+   "voice": "tam",
+   "text": "(He's at the edge, held back by the collar.) Pa went back for the dog.",
+   "where": "dialogue.json scene_ground_opens/tam#0",
+   "hash": "0245edb410b1",
+   "segments": [
+    {
+     "voice": "narrator",
+     "text": "He's at the edge, held back by the collar."
+    },
+    {
+     "voice": "tam",
+     "text": "Pa went back for the dog."
+    }
+   ],
+   "status": "todo"
+  },
+  {
+   "id": "dlg.scene_ground_opens.tam.1",
+   "kind": "dialogue",
+   "voice": "tam",
+   "text": "(He's at the edge, held back by the collar.) I said it knocked. I said. ...Pa's in the kitchen.",
+   "where": "dialogue.json scene_ground_opens/tam#1",
+   "hash": "8eaf4632ba30",
+   "segments": [
+    {
+     "voice": "narrator",
+     "text": "He's at the edge, held back by the collar."
+    },
+    {
+     "voice": "tam",
+     "text": "I said it knocked. I said. ...Pa's in the kitchen."
+    }
+   ],
+   "status": "todo"
+  },
+  {
+   "id": "dlg.scene_ground_opens.count.0",
+   "kind": "dialogue",
+   "voice": "holloway",
+   "text": "(He's on his knees at the edge with a lamp, very drunk and very white, and the lamp is shaking.) Three down. Penhale. Cotter. Wray. (He swallows.) ...Posted them. Boy said it knocked.",
+   "where": "dialogue.json scene_ground_opens/count#0",
+   "hash": "4d15a6e2eff5",
+   "segments": [
+    {
+     "voice": "narrator",
+     "text": "He's on his knees at the edge with a lamp, very drunk and very white, and the lamp is shaking."
+    },
+    {
+     "voice": "holloway",
+     "text": "Three down. Penhale. Cotter. Wray."
+    },
+    {
+     "voice": "narrator",
+     "text": "He swallows."
+    },
+    {
+     "voice": "holloway",
+     "text": "...Posted them. Boy said it knocked."
+    }
+   ],
+   "status": "todo"
+  },
+  {
+   "id": "ply.scene_ground_opens.count.0",
+   "kind": "choice",
+   "voice": "survivor",
+   "text": "I'll go down.",
+   "where": "dialogue.json scene_ground_opens/count choice 0",
+   "skip": "the survivor's replies are voiced in a later pass",
+   "hash": "67138bd1aad9",
+   "status": "skip"
+  },
+  {
+   "id": "ply.scene_ground_opens.count.1",
+   "kind": "choice",
+   "voice": "survivor",
+   "text": "Captain. You're drunk.",
+   "where": "dialogue.json scene_ground_opens/count choice 1",
+   "skip": "the survivor's replies are voiced in a later pass",
+   "hash": "f182dcdf6384",
+   "status": "skip"
+  },
+  {
+   "id": "ply.scene_ground_opens.count.2",
+   "kind": "choice",
+   "voice": "survivor",
+   "text": "(Take the rope.)",
+   "where": "dialogue.json scene_ground_opens/count choice 2",
+   "skip": "the survivor's replies are voiced in a later pass",
+   "hash": "b3f45d0dee96",
+   "status": "skip"
+  },
+  {
+   "id": "dlg.scene_ground_opens.no.0",
+   "kind": "dialogue",
+   "voice": "holloway",
+   "text": "No. (He gets up, holding the rope.) ...No. I'm going.",
+   "where": "dialogue.json scene_ground_opens/no#0",
+   "hash": "a4e14450aa39",
+   "segments": [
+    {
+     "voice": "holloway",
+     "text": "No."
+    },
+    {
+     "voice": "narrator",
+     "text": "He gets up, holding the rope."
+    },
+    {
+     "voice": "holloway",
+     "text": "...No. I'm going."
+    }
+   ],
+   "status": "todo"
+  },
+  {
+   "id": "dlg.scene_ground_opens.coat.0",
+   "kind": "dialogue",
+   "voice": "narrator",
+   "text": "He takes off his coat and puts it round Tam's shoulders. Then he hooks the lamp on his belt and goes over the edge on the rope, drunk and shaking, and the light goes down with him.",
+   "where": "dialogue.json scene_ground_opens/coat#0",
+   "hash": "fc436db29e21",
+   "segments": [
+    {
+     "voice": "narrator",
+     "text": "He takes off his coat and puts it round Tam's shoulders. Then he hooks the lamp on his belt and goes over the edge on the rope, drunk and shaking, and the light goes down with him."
+    }
+   ],
+   "status": "todo"
+  },
+  {
+   "id": "dlg.scene_ground_opens.post.0",
+   "kind": "dialogue",
+   "voice": "maeca",
+   "text": "(She has the rope's end round the post, and her foot against it. She doesn't look at you.) Go on. I've got him.",
+   "where": "dialogue.json scene_ground_opens/post#0",
+   "hash": "d951d1cf65d2",
+   "segments": [
+    {
+     "voice": "narrator",
+     "text": "She has the rope's end round the post, and her foot against it. She doesn't look at you."
+    },
+    {
+     "voice": "maeca",
+     "text": "Go on. I've got him."
+    }
+   ],
+   "status": "todo"
+  },
+  {
+   "id": "ply.scene_ground_opens.post.0",
+   "kind": "choice",
+   "voice": "survivor",
+   "text": "(Go down after him.)",
+   "where": "dialogue.json scene_ground_opens/post choice 0",
+   "skip": "the survivor's replies are voiced in a later pass",
+   "hash": "baa1f2c26c89",
+   "status": "skip"
+  },
+  {
+   "id": "dlg.scene_count_right.last.0",
+   "kind": "dialogue",
+   "voice": "holloway",
+   "text": "(At the rope's foot, in the slurry to his knees, he holds the rope out to you.) Up. Go on. I'm last. Count's not right till you're up.",
+   "where": "dialogue.json scene_count_right/last#0",
+   "hash": "f600408d16f3",
+   "segments": [
+    {
+     "voice": "narrator",
+     "text": "At the rope's foot, in the slurry to his knees, he holds the rope out to you."
+    },
+    {
+     "voice": "holloway",
+     "text": "Up. Go on. I'm last. Count's not right till you're up."
+    }
+   ],
+   "status": "todo"
+  },
+  {
+   "id": "ply.scene_count_right.last.0",
+   "kind": "choice",
+   "voice": "survivor",
+   "text": "(Climb.)",
+   "where": "dialogue.json scene_count_right/last choice 0",
+   "skip": "the survivor's replies are voiced in a later pass",
+   "hash": "3f9cf1d0e885",
+   "status": "skip"
+  },
+  {
+   "id": "ply.scene_count_right.last.1",
+   "kind": "choice",
+   "voice": "survivor",
+   "text": "After you, Captain.",
+   "where": "dialogue.json scene_count_right/last choice 1",
+   "skip": "the survivor's replies are voiced in a later pass",
+   "hash": "8bc67ba0cd05",
+   "status": "skip"
+  },
+  {
+   "id": "dlg.scene_count_right.after.0",
+   "kind": "dialogue",
+   "voice": "holloway",
+   "text": "(He puts the rope in your hands, and closes your fingers on it.) Up.",
+   "where": "dialogue.json scene_count_right/after#0",
+   "hash": "6cfa4da1df03",
+   "segments": [
+    {
+     "voice": "narrator",
+     "text": "He puts the rope in your hands, and closes your fingers on it."
+    },
+    {
+     "voice": "holloway",
+     "text": "Up."
+    }
+   ],
+   "status": "todo"
+  },
+  {
+   "id": "ply.scene_count_right.after.0",
+   "kind": "choice",
+   "voice": "survivor",
+   "text": "(Climb.)",
+   "where": "dialogue.json scene_count_right/after choice 0",
+   "skip": "the survivor's replies are voiced in a later pass",
+   "hash": "3f9cf1d0e885",
+   "status": "skip"
+  },
+  {
+   "id": "dlg.scene_count_right.lip.0",
+   "kind": "dialogue",
+   "voice": "narrator",
+   "text": "At the top a hand comes down out of the grey light and takes yours, and pulls you over the lip. It's Maeca's. You know it before you see her.",
+   "where": "dialogue.json scene_count_right/lip#0",
+   "hash": "530e3d8c58f5",
+   "segments": [
+    {
+     "voice": "narrator",
+     "text": "At the top a hand comes down out of the grey light and takes yours, and pulls you over the lip. It's Maeca's. You know it before you see her."
+    }
+   ],
+   "status": "todo"
+  },
+  {
+   "id": "dlg.scene_count_right.lip.1",
+   "kind": "dialogue",
+   "voice": "narrator",
+   "text": "At the top a hand comes down out of the grey light and takes yours, and pulls you over the lip. It's Maeca's.",
+   "where": "dialogue.json scene_count_right/lip#1",
+   "hash": "1e54ffca43e8",
+   "segments": [
+    {
+     "voice": "narrator",
+     "text": "At the top a hand comes down out of the grey light and takes yours, and pulls you over the lip. It's Maeca's."
+    }
+   ],
+   "status": "todo"
+  },
+  {
+   "id": "dlg.scene_count_right.four.0",
+   "kind": "dialogue",
+   "voice": "holloway",
+   "text": "(from down the hole) Four.",
+   "where": "dialogue.json scene_count_right/four#0",
+   "hash": "5ba89cf3d07f",
+   "segments": [
+    {
+     "voice": "holloway",
+     "text": "Four.",
+     "acted": "[from down the hole] Four."
+    }
+   ],
+   "status": "todo"
+  },
+  {
+   "id": "dlg.scene_count_right.pa.0",
+   "kind": "dialogue",
+   "voice": "penhale",
+   "text": "(On his back in the mud, he gets up on one elbow and bawls down the hole.) And you took your bloody time, Captain!",
+   "where": "dialogue.json scene_count_right/pa#0",
+   "hash": "1528cb63d172",
+   "segments": [
+    {
+     "voice": "narrator",
+     "text": "On his back in the mud, he gets up on one elbow and bawls down the hole."
+    },
+    {
+     "voice": "penhale",
+     "text": "And you took your bloody time, Captain!"
+    }
+   ],
+   "status": "todo"
+  },
+  {
+   "id": "dlg.scene_count_right.laugh.0",
+   "kind": "dialogue",
+   "voice": "holloway",
+   "text": "(down in the dark, a laugh: a real one, out of him before he can stop it) ...I did.",
+   "where": "dialogue.json scene_count_right/laugh#0",
+   "hash": "f62996884c3d",
+   "segments": [
+    {
+     "voice": "holloway",
+     "text": "...I did.",
+     "acted": "[down in the dark, a laugh: a real one, out of him before he can stop it] ...I did."
+    }
+   ],
+   "status": "todo"
+  },
+  {
+   "id": "dlg.scene_count_right.haul.0",
+   "kind": "dialogue",
+   "voice": "narrator",
+   "text": "He hooks the lamp on his belt and starts up. Maeca has made the rope fast round the post. She has her hands on it, and so do you.",
+   "where": "dialogue.json scene_count_right/haul#0",
+   "hash": "c5ee29f08345",
+   "segments": [
+    {
+     "voice": "narrator",
+     "text": "He hooks the lamp on his belt and starts up. Maeca has made the rope fast round the post. She has her hands on it, and so do you."
+    }
+   ],
+   "status": "todo"
+  },
+  {
+   "id": "ply.scene_count_right.haul.0",
+   "kind": "choice",
+   "voice": "survivor",
+   "text": "(Haul.)",
+   "where": "dialogue.json scene_count_right/haul choice 0",
+   "skip": "the survivor's replies are voiced in a later pass",
+   "hash": "d497a225cb83",
+   "status": "skip"
+  },
+  {
+   "id": "dlg.scene_count_right.haul2.0",
+   "kind": "dialogue",
+   "voice": "narrator",
+   "text": "He comes up hand over hand, and you take his weight between you. The post creaks. Across the hole, someone in a red kerchief has come out of the trees, and is watching.",
+   "where": "dialogue.json scene_count_right/haul2#0",
+   "hash": "46558e8cd451",
+   "segments": [
+    {
+     "voice": "narrator",
+     "text": "He comes up hand over hand, and you take his weight between you. The post creaks. Across the hole, someone in a red kerchief has come out of the trees, and is watching."
+    }
+   ],
+   "status": "todo"
+  },
+  {
+   "id": "ply.scene_count_right.haul2.0",
+   "kind": "choice",
+   "voice": "survivor",
+   "text": "(Haul.)",
+   "where": "dialogue.json scene_count_right/haul2 choice 0",
+   "skip": "the survivor's replies are voiced in a later pass",
+   "hash": "d497a225cb83",
+   "status": "skip"
+  },
+  {
+   "id": "dlg.scene_count_right.face.0",
+   "kind": "dialogue",
+   "voice": "narrator",
+   "text": "His face comes up into the lamplight, a body-length under you. He looks up. Not at you. At her.",
+   "where": "dialogue.json scene_count_right/face#0",
+   "hash": "2b9a2604dc68",
+   "segments": [
+    {
+     "voice": "narrator",
+     "text": "His face comes up into the lamplight, a body-length under you. He looks up. Not at you. At her."
+    }
+   ],
+   "status": "todo"
+  },
+  {
+   "id": "dlg.scene_count_right.right.0",
+   "kind": "dialogue",
+   "voice": "holloway",
+   "text": "(He grins up at Maeca.) Count's right.",
+   "where": "dialogue.json scene_count_right/right#0",
+   "hash": "145b7b0bb607",
+   "segments": [
+    {
+     "voice": "narrator",
+     "text": "He grins up at Maeca."
+    },
+    {
+     "voice": "holloway",
+     "text": "Count's right."
+    }
+   ],
+   "status": "todo"
+  },
+  {
+   "id": "dlg.scene_count_right.cut.0",
+   "kind": "dialogue",
+   "voice": "narrator",
+   "text": "Maeca cuts the rope at the post. One stroke.",
+   "where": "dialogue.json scene_count_right/cut#0",
+   "hash": "8c1f1d250257",
+   "segments": [
+    {
+     "voice": "narrator",
+     "text": "Maeca cuts the rope at the post. One stroke."
+    }
+   ],
+   "status": "todo"
+  },
+  {
+   "id": "dlg.scene_count_right.run.0",
+   "kind": "dialogue",
+   "voice": "narrator",
+   "text": "The rope goes out through your hands and takes the skin with it. He doesn't cry out. The lamp at his belt goes down the dark, very small, and goes out.",
+   "where": "dialogue.json scene_count_right/run#0",
+   "hash": "b278ca8ee555",
+   "segments": [
+    {
+     "voice": "narrator",
+     "text": "The rope goes out through your hands and takes the skin with it. He doesn't cry out. The lamp at his belt goes down the dark, very small, and goes out."
+    }
+   ],
+   "status": "todo"
+  },
+  {
+   "id": "dlg.scene_count_right.ninety.0",
+   "kind": "dialogue",
+   "voice": "maeca",
+   "text": "(She puts the knife away.) Ninety-two.",
+   "where": "dialogue.json scene_count_right/ninety#0",
+   "hash": "1f6727fa66e4",
+   "segments": [
+    {
+     "voice": "narrator",
+     "text": "She puts the knife away."
+    },
+    {
+     "voice": "maeca",
+     "text": "Ninety-two."
+    }
+   ],
+   "status": "todo"
+  },
+  {
+   "id": "ply.scene_count_right.ninety.0",
+   "kind": "choice",
+   "voice": "survivor",
+   "text": "Maeca.",
+   "where": "dialogue.json scene_count_right/ninety choice 0",
+   "skip": "the survivor's replies are voiced in a later pass",
+   "hash": "69e063a63b80",
+   "status": "skip"
+  },
+  {
+   "id": "ply.scene_count_right.ninety.1",
+   "kind": "choice",
+   "voice": "survivor",
+   "text": "Maeca.",
+   "where": "dialogue.json scene_count_right/ninety choice 1",
+   "skip": "the survivor's replies are voiced in a later pass",
+   "hash": "69e063a63b80",
+   "status": "skip"
+  },
+  {
+   "id": "ply.scene_count_right.ninety.2",
+   "kind": "choice",
+   "voice": "survivor",
+   "text": "(Take hold of her.)",
+   "where": "dialogue.json scene_count_right/ninety choice 2",
+   "skip": "the survivor's replies are voiced in a later pass",
+   "hash": "c5f82b5b918c",
+   "status": "skip"
+  },
+  {
+   "id": "ply.scene_count_right.ninety.3",
+   "kind": "choice",
+   "voice": "survivor",
+   "text": "(Say nothing.)",
+   "where": "dialogue.json scene_count_right/ninety choice 3",
+   "skip": "the survivor's replies are voiced in a later pass",
+   "hash": "929dd54c8a8d",
+   "status": "skip"
+  },
+  {
+   "id": "dlg.scene_count_right.were_up.0",
+   "kind": "dialogue",
+   "voice": "maeca",
+   "text": "(She looks at you.) You were up.",
+   "where": "dialogue.json scene_count_right/were_up#0",
+   "hash": "df30bd94be56",
+   "segments": [
+    {
+     "voice": "narrator",
+     "text": "She looks at you."
+    },
+    {
+     "voice": "maeca",
+     "text": "You were up."
+    }
+   ],
+   "status": "todo"
+  },
+  {
+   "id": "dlg.scene_count_right.looks.0",
+   "kind": "dialogue",
+   "voice": "narrator",
+   "text": "She looks at you. She doesn't say anything.",
+   "where": "dialogue.json scene_count_right/looks#0",
+   "hash": "fb131afa26b8",
+   "segments": [
+    {
+     "voice": "narrator",
+     "text": "She looks at you. She doesn't say anything."
+    }
+   ],
+   "status": "todo"
+  },
+  {
+   "id": "dlg.scene_count_right.hold.0",
+   "kind": "dialogue",
+   "voice": "narrator",
+   "text": "She doesn't pull away. After a while her hand comes up and takes your wrist, hard, and stays there.",
+   "where": "dialogue.json scene_count_right/hold#0",
+   "hash": "add684f9e563",
+   "segments": [
+    {
+     "voice": "narrator",
+     "text": "She doesn't pull away. After a while her hand comes up and takes your wrist, hard, and stays there."
+    }
+   ],
+   "status": "todo"
+  },
+  {
+   "id": "dlg.scene_count_right.hold.1",
+   "kind": "dialogue",
+   "voice": "narrator",
+   "text": "She doesn't pull away. She stands there in your hands, as still as the post.",
+   "where": "dialogue.json scene_count_right/hold#1",
+   "hash": "da5df5869715",
+   "segments": [
+    {
+     "voice": "narrator",
+     "text": "She doesn't pull away. She stands there in your hands, as still as the post."
+    }
+   ],
+   "status": "todo"
+  },
+  {
+   "id": "dlg.scene_count_right.nothing.0",
+   "kind": "dialogue",
+   "voice": "narrator",
+   "text": "Nobody says anything. The rope's end lies in the mud by the post.",
+   "where": "dialogue.json scene_count_right/nothing#0",
+   "hash": "07ea783a9b1a",
+   "segments": [
+    {
+     "voice": "narrator",
+     "text": "Nobody says anything. The rope's end lies in the mud by the post."
+    }
+   ],
+   "status": "todo"
+  },
+  {
+   "id": "dlg.scene_count_right.under.0",
+   "kind": "dialogue",
+   "voice": "maeca",
+   "text": "The ones under me weren't dead. (She's looking down the hole, not at you.) Not when he shut it.",
+   "where": "dialogue.json scene_count_right/under#0",
+   "hash": "d10589c68602",
+   "segments": [
+    {
+     "voice": "maeca",
+     "text": "The ones under me weren't dead."
+    },
+    {
+     "voice": "narrator",
+     "text": "She's looking down the hole, not at you."
+    },
+    {
+     "voice": "maeca",
+     "text": "Not when he shut it."
+    }
+   ],
+   "status": "todo"
+  },
+  {
+   "id": "dlg.scene_count_right.pack.0",
+   "kind": "dialogue",
+   "voice": "narrator",
+   "text": "The Pack has lain all night in the frost at the edge of the trees. Greymuzzle gets up, and looks at Maeca a long time, and turns away into the wood. The others go after him.",
+   "where": "dialogue.json scene_count_right/pack#0",
+   "hash": "7e3bd2c4ca63",
+   "segments": [
+    {
+     "voice": "narrator",
+     "text": "The Pack has lain all night in the frost at the edge of the trees. Greymuzzle gets up, and looks at Maeca a long time, and turns away into the wood. The others go after him."
+    }
+   ],
+   "status": "todo"
+  },
+  {
+   "id": "dlg.scene_count_right.pack.1",
+   "kind": "dialogue",
+   "voice": "narrator",
+   "text": "Nobody at the edge goes near her. They hold their lamps up, and look.",
+   "where": "dialogue.json scene_count_right/pack#1",
+   "hash": "ab6631953b31",
+   "segments": [
+    {
+     "voice": "narrator",
+     "text": "Nobody at the edge goes near her. They hold their lamps up, and look."
+    }
+   ],
+   "status": "todo"
+  },
+  {
+   "id": "dlg.scene_count_right.tam.0",
+   "kind": "dialogue",
+   "voice": "tam",
+   "text": "(He has hold of his Pa's sleeve, and he's looking at the hole.) It started the night the ford went dark.",
+   "where": "dialogue.json scene_count_right/tam#0",
+   "hash": "c5bedd0c6834",
+   "segments": [
+    {
+     "voice": "narrator",
+     "text": "He has hold of his Pa's sleeve, and he's looking at the hole."
+    },
+    {
+     "voice": "tam",
+     "text": "It started the night the ford went dark."
+    }
+   ],
+   "status": "todo"
+  },
+  {
+   "id": "dlg.scene_count_right.watch.0",
+   "kind": "dialogue",
+   "voice": "narrator",
+   "text": "The Watch come round the edge of the hole with their lamps. Tolley stands in front of them and counts them with his finger.",
+   "where": "dialogue.json scene_count_right/watch#0",
+   "hash": "ca6e54476aff",
+   "segments": [
+    {
+     "voice": "narrator",
+     "text": "The Watch come round the edge of the hole with their lamps. Tolley stands in front of them and counts them with his finger."
+    }
+   ],
+   "status": "todo"
+  },
+  {
+   "id": "dlg.scene_count_right.ten.0",
+   "kind": "dialogue",
+   "voice": "guard",
+   "text": "...Nine.",
+   "where": "dialogue.json scene_count_right/ten#0",
+   "hash": "1a6843315874",
+   "segments": [
+    {
+     "voice": "guard",
+     "text": "...Nine."
+    }
+   ],
+   "status": "todo"
+  },
+  {
+   "id": "dlg.scene_count_right.ten.1",
+   "kind": "dialogue",
+   "voice": "guard",
+   "text": "...Ten.",
+   "where": "dialogue.json scene_count_right/ten#1",
+   "hash": "2676b616ef01",
+   "segments": [
+    {
+     "voice": "guard",
+     "text": "...Ten."
+    }
+   ],
+   "status": "todo"
+  },
+  {
+   "id": "dlg.scene_count_right.take.0",
+   "kind": "dialogue",
+   "voice": "guard",
+   "text": "(He looks at Maeca, and his voice goes up, and he brings it down.) Maeca. ...You'll come with us.",
+   "where": "dialogue.json scene_count_right/take#0",
+   "hash": "76d1a2df3882",
+   "segments": [
+    {
+     "voice": "narrator",
+     "text": "He looks at Maeca, and his voice goes up, and he brings it down."
+    },
+    {
+     "voice": "guard",
+     "text": "Maeca. ...You'll come with us."
+    }
+   ],
+   "status": "todo"
+  },
+  {
+   "id": "ply.scene_count_right.take.0",
+   "kind": "choice",
+   "voice": "survivor",
+   "text": "Take her, then.",
+   "where": "dialogue.json scene_count_right/take choice 0",
+   "skip": "the survivor's replies are voiced in a later pass",
+   "hash": "47440535c0aa",
+   "status": "skip"
+  },
+  {
+   "id": "ply.scene_count_right.take.1",
+   "kind": "choice",
+   "voice": "survivor",
+   "text": "She's in my count.",
+   "where": "dialogue.json scene_count_right/take choice 1",
+   "skip": "the survivor's replies are voiced in a later pass",
+   "hash": "55116f5f4dea",
+   "status": "skip"
+  },
+  {
+   "id": "ply.scene_count_right.take.2",
+   "kind": "choice",
+   "voice": "survivor",
+   "text": "Let her go.",
+   "where": "dialogue.json scene_count_right/take choice 2",
+   "skip": "the survivor's replies are voiced in a later pass",
+   "hash": "2f6f9d81a035",
+   "status": "skip"
+  },
+  {
+   "id": "dlg.scene_count_right.held.0",
+   "kind": "dialogue",
+   "voice": "narrator",
+   "text": "Maeca holds her wrists out before anyone can touch her. They take her away down the road between their lamps, and she doesn't look back at the hole.",
+   "where": "dialogue.json scene_count_right/held#0",
+   "hash": "d70f7592c06d",
+   "segments": [
+    {
+     "voice": "narrator",
+     "text": "Maeca holds her wrists out before anyone can touch her. They take her away down the road between their lamps, and she doesn't look back at the hole."
+    }
+   ],
+   "status": "todo"
+  },
+  {
+   "id": "dlg.scene_count_right.stood.0",
+   "kind": "dialogue",
+   "voice": "narrator",
+   "text": "You stand between her and the lamps. Nobody comes through you. After a long time Tolley lowers his, and the rest of them do.",
+   "where": "dialogue.json scene_count_right/stood#0",
+   "hash": "e1a03e928564",
+   "segments": [
+    {
+     "voice": "narrator",
+     "text": "You stand between her and the lamps. Nobody comes through you. After a long time Tolley lowers his, and the rest of them do."
+    }
+   ],
+   "status": "todo"
+  },
+  {
+   "id": "dlg.scene_count_right.gone.0",
+   "kind": "dialogue",
+   "voice": "narrator",
+   "text": "Nobody stops her. She walks away up the road toward the wood with the rope's end still in her hand, and nobody goes after her.",
+   "where": "dialogue.json scene_count_right/gone#0",
+   "hash": "460f43f76b6f",
+   "segments": [
+    {
+     "voice": "narrator",
+     "text": "Nobody stops her. She walks away up the road toward the wood with the rope's end still in her hand, and nobody goes after her."
+    }
+   ],
+   "status": "todo"
+  },
+  {
+   "id": "dlg.scene_count_right.coat.0",
+   "kind": "dialogue",
+   "voice": "narrator",
+   "text": "Tam is still wearing the captain's coat. It comes down past his boots.",
+   "where": "dialogue.json scene_count_right/coat#0",
+   "hash": "42016262e9ca",
+   "segments": [
+    {
+     "voice": "narrator",
+     "text": "Tam is still wearing the captain's coat. It comes down past his boots."
+    }
+   ],
+   "status": "todo"
+  },
+  {
+   "id": "ply.scene_count_right.coat.0",
+   "kind": "choice",
+   "voice": "survivor",
+   "text": "(Go.)",
+   "where": "dialogue.json scene_count_right/coat choice 0",
+   "skip": "the survivor's replies are voiced in a later pass",
+   "hash": "a1b6da8bad7f",
+   "status": "skip"
+  },
+  {
+   "id": "dlg.scene_barred.dusk.0",
+   "kind": "dialogue",
+   "voice": "narrator",
+   "text": "At dusk Tolley bars the south gate, and doesn't count anyone in. The captain's stool stands in the gateway with his coat folded on it; Tam brought it back. Nobody moves it, and nobody sits on it.",
+   "where": "dialogue.json scene_barred/dusk#0",
+   "hash": "f6db1e48a28e",
+   "segments": [
+    {
+     "voice": "narrator",
+     "text": "At dusk Tolley bars the south gate, and doesn't count anyone in. The captain's stool stands in the gateway with his coat folded on it; Tam brought it back. Nobody moves it, and nobody sits on it."
+    }
+   ],
+   "status": "todo"
+  },
+  {
+   "id": "dlg.scene_barred.dusk.1",
+   "kind": "dialogue",
+   "voice": "narrator",
+   "text": "Out past the Old Road, the hole at the Penhale farm is quiet. In the square, people keep stopping to listen to it.",
+   "where": "dialogue.json scene_barred/dusk#1",
+   "hash": "86a9a88fb9f6",
+   "segments": [
+    {
+     "voice": "narrator",
+     "text": "Out past the Old Road, the hole at the Penhale farm is quiet. In the square, people keep stopping to listen to it."
+    }
+   ],
+   "status": "todo"
+  },
+  {
+   "id": "dlg.scene_barred.dusk.2",
+   "kind": "dialogue",
+   "voice": "narrator",
+   "text": "Three nights now the hole has been quiet. The Watch bars the gate before the lamps are lit, and stands well back from it.",
+   "where": "dialogue.json scene_barred/dusk#2",
+   "hash": "a103a8d9fd4d",
+   "segments": [
+    {
+     "voice": "narrator",
+     "text": "Three nights now the hole has been quiet. The Watch bars the gate before the lamps are lit, and stands well back from it."
+    }
+   ],
+   "status": "todo"
+  },
+  {
+   "id": "ply.scene_barred.dusk.0",
+   "kind": "choice",
+   "voice": "survivor",
+   "text": "(Go.)",
+   "where": "dialogue.json scene_barred/dusk choice 0",
+   "skip": "the survivor's replies are voiced in a later pass",
+   "hash": "a1b6da8bad7f",
+   "status": "skip"
+  },
+  {
+   "id": "dlg.scene_one_in.road.0",
+   "kind": "dialogue",
+   "voice": "narrator",
+   "text": "At dusk someone is standing in the road outside the south gate, facing it, in the last of the light. The gate is barred. Inside it, Maeca sits on the step by the empty stool with her crossbow across her knees, the way she always sat.",
+   "where": "dialogue.json scene_one_in/road#0",
+   "hash": "25a00607f51b",
+   "segments": [
+    {
+     "voice": "narrator",
+     "text": "At dusk someone is standing in the road outside the south gate, facing it, in the last of the light. The gate is barred. Inside it, Maeca sits on the step by the empty stool with her crossbow across her knees, the way she always sat."
+    }
+   ],
+   "status": "todo"
+  },
+  {
+   "id": "dlg.scene_one_in.road.1",
+   "kind": "dialogue",
+   "voice": "narrator",
+   "text": "At dusk someone is standing in the road outside the south gate, facing it, in the last of the light. The gate is barred.",
+   "where": "dialogue.json scene_one_in/road#1",
+   "hash": "80625ab7b8b8",
+   "segments": [
+    {
+     "voice": "narrator",
+     "text": "At dusk someone is standing in the road outside the south gate, facing it, in the last of the light. The gate is barred."
+    }
+   ],
+   "status": "todo"
+  },
+  {
+   "id": "dlg.scene_one_in.wall.0",
+   "kind": "dialogue",
+   "voice": "narrator",
+   "text": "Up on the wall Tolley is holding a lamp out over the road, and it isn't steady. Further along, Chid has come up with his own lamp, and is standing very still.",
+   "where": "dialogue.json scene_one_in/wall#0",
+   "hash": "1cd3009cccf5",
+   "segments": [
+    {
+     "voice": "narrator",
+     "text": "Up on the wall Tolley is holding a lamp out over the road, and it isn't steady. Further along, Chid has come up with his own lamp, and is standing very still."
+    }
+   ],
+   "status": "todo"
+  },
+  {
+   "id": "dlg.scene_one_in.tolley.0",
+   "kind": "dialogue",
+   "voice": "guard",
+   "text": "(He doesn't look away from the road.) He's been there since the bell. Just stood. Not knocking. Not anything. (His voice goes.) Captain never once barred it on anybody.",
+   "where": "dialogue.json scene_one_in/tolley#0",
+   "hash": "96a7c2c05434",
+   "segments": [
+    {
+     "voice": "narrator",
+     "text": "He doesn't look away from the road."
+    },
+    {
+     "voice": "guard",
+     "text": "He's been there since the bell. Just stood. Not knocking. Not anything."
+    },
+    {
+     "voice": "narrator",
+     "text": "His voice goes."
+    },
+    {
+     "voice": "guard",
+     "text": "Captain never once barred it on anybody."
+    }
+   ],
+   "status": "todo"
+  },
+  {
+   "id": "ply.scene_one_in.tolley.0",
+   "kind": "choice",
+   "voice": "survivor",
+   "text": "Open it.",
+   "where": "dialogue.json scene_one_in/tolley choice 0",
+   "skip": "the survivor's replies are voiced in a later pass",
+   "hash": "1d4dd1c250ee",
+   "status": "skip"
+  },
+  {
+   "id": "dlg.scene_one_in.open.0",
+   "kind": "dialogue",
+   "voice": "guard",
+   "text": "(He comes down off the wall and lifts the bar himself.) ...Somebody's still out.",
+   "where": "dialogue.json scene_one_in/open#0",
+   "hash": "e3d521132c14",
+   "segments": [
+    {
+     "voice": "narrator",
+     "text": "He comes down off the wall and lifts the bar himself."
+    },
+    {
+     "voice": "guard",
+     "text": "...Somebody's still out."
+    }
+   ],
+   "status": "todo"
+  },
+  {
+   "id": "dlg.scene_one_in.out.0",
+   "kind": "dialogue",
+   "voice": "narrator",
+   "text": "You go out, and the gate shuts behind you. He doesn't lift his hands. His lips are moving. You have to get close to hear it.",
+   "where": "dialogue.json scene_one_in/out#0",
+   "hash": "227f8ad0a549",
+   "segments": [
+    {
+     "voice": "narrator",
+     "text": "You go out, and the gate shuts behind you. He doesn't lift his hands. His lips are moving. You have to get close to hear it."
+    }
+   ],
+   "status": "todo"
+  },
+  {
+   "id": "dlg.scene_one_in.count.0",
+   "kind": "dialogue",
+   "voice": "holloway",
+   "text": "(close, flat, a dead man's whisper, every number the same) ...Ninety. Ninety-one. (a breath that isn't one) ...Ninety-two.",
+   "where": "dialogue.json scene_one_in/count#0",
+   "hash": "a2b3243af30d",
+   "segments": [
+    {
+     "voice": "holloway",
+     "text": "...Ninety. Ninety-one. ...Ninety-two.",
+     "acted": "[close, flat, a dead man's whisper, every number the same] ...Ninety. Ninety-one. [a breath that isn't one] ...Ninety-two."
+    }
+   ],
+   "status": "todo"
+  },
+  {
+   "id": "dlg.scene_one_in.hands.0",
+   "kind": "dialogue",
+   "voice": "narrator",
+   "text": "Then he lifts his hands, and comes at you.",
+   "where": "dialogue.json scene_one_in/hands#0",
+   "hash": "c088cfbda742",
+   "segments": [
+    {
+     "voice": "narrator",
+     "text": "Then he lifts his hands, and comes at you."
+    }
+   ],
+   "status": "todo"
+  },
+  {
+   "id": "ply.scene_one_in.hands.0",
+   "kind": "choice",
+   "voice": "survivor",
+   "text": "(Lay him down.)",
+   "where": "dialogue.json scene_one_in/hands choice 0",
+   "skip": "the survivor's replies are voiced in a later pass",
+   "hash": "01e247fea088",
+   "status": "skip"
+  },
+  {
+   "id": "dlg.scene_one_in.laid.0",
+   "kind": "dialogue",
+   "voice": "narrator",
+   "text": "You lay him down in the road outside his own gate. Behind you the bar comes off, and the gate opens.",
+   "where": "dialogue.json scene_one_in/laid#0",
+   "hash": "b113cd161612",
+   "segments": [
+    {
+     "voice": "narrator",
+     "text": "You lay him down in the road outside his own gate. Behind you the bar comes off, and the gate opens."
+    }
+   ],
+   "status": "todo"
+  },
+  {
+   "id": "ply.scene_one_in.laid.0",
+   "kind": "choice",
+   "voice": "survivor",
+   "text": "(Go in.)",
+   "where": "dialogue.json scene_one_in/laid choice 0",
+   "skip": "the survivor's replies are voiced in a later pass",
+   "hash": "e83bb3e9d104",
+   "status": "skip"
+  },
+  {
+   "id": "ply.scene_one_in.laid.1",
+   "kind": "choice",
+   "voice": "survivor",
+   "text": "(Go in.)",
+   "where": "dialogue.json scene_one_in/laid choice 1",
+   "skip": "the survivor's replies are voiced in a later pass",
+   "hash": "e83bb3e9d104",
+   "status": "skip"
+  },
+  {
+   "id": "dlg.scene_one_in.in_maeca.0",
+   "kind": "dialogue",
+   "voice": "maeca",
+   "text": "(She's in the gateway with the bar in her hands. She doesn't look at him.) ...One in. (She takes his coat off the stool, and puts it on.)",
+   "where": "dialogue.json scene_one_in/in_maeca#0",
+   "hash": "41069f876b6f",
+   "segments": [
+    {
+     "voice": "narrator",
+     "text": "She's in the gateway with the bar in her hands. She doesn't look at him."
+    },
+    {
+     "voice": "maeca",
+     "text": "...One in."
+    },
+    {
+     "voice": "narrator",
+     "text": "She takes his coat off the stool, and puts it on."
+    }
+   ],
+   "status": "todo"
+  },
+  {
+   "id": "ply.scene_one_in.in_maeca.0",
+   "kind": "choice",
+   "voice": "survivor",
+   "text": "(Go.)",
+   "where": "dialogue.json scene_one_in/in_maeca choice 0",
+   "skip": "the survivor's replies are voiced in a later pass",
+   "hash": "a1b6da8bad7f",
+   "status": "skip"
+  },
+  {
+   "id": "dlg.scene_one_in.in_tolley.0",
+   "kind": "dialogue",
+   "voice": "guard",
+   "text": "(He holds the gate for you, and doesn't look at him.) ...One in.",
+   "where": "dialogue.json scene_one_in/in_tolley#0",
+   "hash": "41feb2365c7b",
+   "segments": [
+    {
+     "voice": "narrator",
+     "text": "He holds the gate for you, and doesn't look at him."
+    },
+    {
+     "voice": "guard",
+     "text": "...One in."
+    }
+   ],
+   "status": "todo"
+  },
+  {
+   "id": "ply.scene_one_in.in_tolley.0",
+   "kind": "choice",
+   "voice": "survivor",
+   "text": "(Go.)",
+   "where": "dialogue.json scene_one_in/in_tolley choice 0",
+   "skip": "the survivor's replies are voiced in a later pass",
+   "hash": "a1b6da8bad7f",
+   "status": "skip"
+  },
+  {
+   "id": "dlg.scene_his_table.bury.0",
+   "kind": "dialogue",
+   "voice": "narrator",
+   "text": "At first light the Watch bury the captain in the Quiet Garden. Tolley stands at the gate of it and counts everyone in.",
+   "where": "dialogue.json scene_his_table/bury#0",
+   "hash": "aeb8fbb27199",
+   "segments": [
+    {
+     "voice": "narrator",
+     "text": "At first light the Watch bury the captain in the Quiet Garden. Tolley stands at the gate of it and counts everyone in."
+    }
+   ],
+   "status": "todo"
+  },
+  {
+   "id": "dlg.scene_his_table.door.0",
+   "kind": "dialogue",
+   "voice": "guard",
+   "text": "Somebody's got to go through his table. The lads won't, and I can't. (He holds the Watch-house door open, and doesn't go in.) He said you were in his count.",
+   "where": "dialogue.json scene_his_table/door#0",
+   "hash": "4041f6a6abdc",
+   "segments": [
+    {
+     "voice": "guard",
+     "text": "Somebody's got to go through his table. The lads won't, and I can't."
+    },
+    {
+     "voice": "narrator",
+     "text": "He holds the Watch-house door open, and doesn't go in."
+    },
+    {
+     "voice": "guard",
+     "text": "He said you were in his count."
+    }
+   ],
+   "status": "todo"
+  },
+  {
+   "id": "ply.scene_his_table.door.0",
+   "kind": "choice",
+   "voice": "survivor",
+   "text": "(Go in.)",
+   "where": "dialogue.json scene_his_table/door choice 0",
+   "skip": "the survivor's replies are voiced in a later pass",
+   "hash": "e83bb3e9d104",
+   "status": "skip"
+  },
+  {
+   "id": "dlg.scene_his_table.table.0",
+   "kind": "dialogue",
+   "voice": "narrator",
+   "text": "His table is a plank on two barrels: a cup, a lamp, a chewed pen. Under the cup, the letter with the silver seal: his, from the north, about the north.",
+   "where": "dialogue.json scene_his_table/table#0",
+   "hash": "e56a4ceb1cbd",
+   "segments": [
+    {
+     "voice": "narrator",
+     "text": "His table is a plank on two barrels: a cup, a lamp, a chewed pen. Under the cup, the letter with the silver seal: his, from the north, about the north."
+    }
+   ],
+   "status": "todo"
+  },
+  {
+   "id": "dlg.scene_his_table.table.1",
+   "kind": "dialogue",
+   "voice": "narrator",
+   "text": "His table is a plank on two barrels: a cup, a lamp, a chewed pen. Under the cup, a letter with a silver seal.",
+   "where": "dialogue.json scene_his_table/table#1",
+   "hash": "bcd0a9288948",
+   "segments": [
+    {
+     "voice": "narrator",
+     "text": "His table is a plank on two barrels: a cup, a lamp, a chewed pen. Under the cup, a letter with a silver seal."
+    }
+   ],
+   "status": "todo"
+  },
+  {
+   "id": "dlg.scene_his_table.letter.0",
+   "kind": "dialogue",
+   "voice": "narrator",
+   "text": "It's from Silverstair, in a clerk's good hand, and sorry for the trouble. The Vigil will settle the Watch's arrears in full, fourteen months, on delivery of the one from the Low Ford.",
+   "where": "dialogue.json scene_his_table/letter#0",
+   "hash": "52dce949c27a",
+   "segments": [
+    {
+     "voice": "narrator",
+     "text": "It's from Silverstair, in a clerk's good hand, and sorry for the trouble. The Vigil will settle the Watch's arrears in full, fourteen months, on delivery of the one from the Low Ford."
+    }
+   ],
+   "status": "todo"
+  },
+  {
+   "id": "dlg.scene_his_table.no.0",
+   "kind": "dialogue",
+   "voice": "narrator",
+   "text": "Under it, his answer, written out fair, folded, and never sent. It says: No. Then his name, and his rank.",
+   "where": "dialogue.json scene_his_table/no#0",
+   "hash": "7c0db4d17a80",
+   "segments": [
+    {
+     "voice": "narrator",
+     "text": "Under it, his answer, written out fair, folded, and never sent. It says: No. Then his name, and his rank."
+    }
+   ],
+   "status": "todo"
+  },
+  {
+   "id": "dlg.scene_his_table.book.0",
+   "kind": "dialogue",
+   "voice": "narrator",
+   "text": "His daybook is under that, an army book gone soft at the corners. The front of it is this winter: a name for every morning since the ford went dark, and beside each, what took them. Fever. Frost. The Dig. Beside some there's only a dash.",
+   "where": "dialogue.json scene_his_table/book#0",
+   "hash": "69bfe44be8c3",
+   "segments": [
+    {
+     "voice": "narrator",
+     "text": "His daybook is under that, an army book gone soft at the corners. The front of it is this winter: a name for every morning since the ford went dark, and beside each, what took them. Fever. Frost. The Dig. Beside some there's only a dash."
+    }
+   ],
+   "status": "todo"
+  },
+  {
+   "id": "dlg.scene_his_table.dogs.0",
+   "kind": "dialogue",
+   "voice": "narrator",
+   "text": "A loose page is tucked in at the back: dogs' names, one under another, every one crossed out. Corran is crossed out hardest; the pen went through. At the bottom, one he let stand. Dog.",
+   "where": "dialogue.json scene_his_table/dogs#0",
+   "hash": "be9061463629",
+   "segments": [
+    {
+     "voice": "narrator",
+     "text": "A loose page is tucked in at the back: dogs' names, one under another, every one crossed out. Corran is crossed out hardest; the pen went through. At the bottom, one he let stand. Dog."
+    }
+   ],
+   "status": "todo"
+  },
+  {
+   "id": "dlg.scene_his_table.lid.0",
+   "kind": "dialogue",
+   "voice": "narrator",
+   "text": "In the middle of the book is the garrison's last entry, ten years old: 91 up. Lid down. Under it, in a newer hand that runs downhill, the names, each with who they left. Abbot. Two bairns. Ancell. His mam. On down the page.",
+   "where": "dialogue.json scene_his_table/lid#0",
+   "hash": "a1e12f0676b9",
+   "segments": [
+    {
+     "voice": "narrator",
+     "text": "In the middle of the book is the garrison's last entry, ten years old: 91 up. Lid down. Under it, in a newer hand that runs downhill, the names, each with who they left. Abbot. Two bairns. Ancell. His mam. On down the page."
+    }
+   ],
+   "status": "todo"
+  },
+  {
+   "id": "dlg.scene_his_table.foot.0",
+   "kind": "dialogue",
+   "voice": "narrator",
+   "text": "At the foot of the page there's a number with no name to it. 92.",
+   "where": "dialogue.json scene_his_table/foot#0",
+   "hash": "b57756a2f8a1",
+   "segments": [
+    {
+     "voice": "narrator",
+     "text": "At the foot of the page there's a number with no name to it. 92."
+    }
+   ],
+   "status": "todo"
+  },
+  {
+   "id": "dlg.scene_his_table.sorry.0",
+   "kind": "dialogue",
+   "voice": "narrator",
+   "text": "Beside it, very small, one word. Sorry.",
+   "where": "dialogue.json scene_his_table/sorry#0",
+   "hash": "c46ac879f87c",
+   "segments": [
+    {
+     "voice": "narrator",
+     "text": "Beside it, very small, one word. Sorry."
+    }
+   ],
+   "status": "todo"
+  },
+  {
+   "id": "ply.scene_his_table.sorry.0",
+   "kind": "choice",
+   "voice": "survivor",
+   "text": "(Take it to Maeca.)",
+   "where": "dialogue.json scene_his_table/sorry choice 0",
+   "skip": "the survivor's replies are voiced in a later pass",
+   "hash": "053b3e8e64b1",
+   "status": "skip"
+  },
+  {
+   "id": "ply.scene_his_table.sorry.1",
+   "kind": "choice",
+   "voice": "survivor",
+   "text": "(Take it up to the Roost, to Redcowl.)",
+   "where": "dialogue.json scene_his_table/sorry choice 1",
+   "skip": "the survivor's replies are voiced in a later pass",
+   "hash": "c064376b399b",
+   "status": "skip"
+  },
+  {
+   "id": "ply.scene_his_table.sorry.2",
+   "kind": "choice",
+   "voice": "survivor",
+   "text": "(Burn it.)",
+   "where": "dialogue.json scene_his_table/sorry choice 2",
+   "skip": "the survivor's replies are voiced in a later pass",
+   "hash": "b25c6d0a8cea",
+   "status": "skip"
+  },
+  {
+   "id": "dlg.scene_his_table.to_maeca.0",
+   "kind": "dialogue",
+   "voice": "narrator",
+   "text": "Tolley takes you down to the cells himself, and waits at the top of the steps with his back turned. Maeca is sitting on the floor of her cell with her boots off.",
+   "where": "dialogue.json scene_his_table/to_maeca#0",
+   "hash": "58f300ac8bb4",
+   "segments": [
+    {
+     "voice": "narrator",
+     "text": "Tolley takes you down to the cells himself, and waits at the top of the steps with his back turned. Maeca is sitting on the floor of her cell with her boots off."
+    }
+   ],
+   "status": "todo"
+  },
+  {
+   "id": "dlg.scene_his_table.to_maeca.1",
+   "kind": "dialogue",
+   "voice": "narrator",
+   "text": "Maeca is on the step at the gate, in his coat, with her crossbow across her knees.",
+   "where": "dialogue.json scene_his_table/to_maeca#1",
+   "hash": "801ef2e40dcb",
+   "segments": [
+    {
+     "voice": "narrator",
+     "text": "Maeca is on the step at the gate, in his coat, with her crossbow across her knees."
+    }
+   ],
+   "status": "todo"
+  },
+  {
+   "id": "dlg.scene_his_table.to_maeca.2",
+   "kind": "dialogue",
+   "voice": "narrator",
+   "text": "You find her at the Blind, with her boots off and no fire lit.",
+   "where": "dialogue.json scene_his_table/to_maeca#2",
+   "hash": "44c43dd6b345",
+   "segments": [
+    {
+     "voice": "narrator",
+     "text": "You find her at the Blind, with her boots off and no fire lit."
+    }
+   ],
+   "status": "todo"
+  },
+  {
+   "id": "dlg.scene_his_table.reads.0",
+   "kind": "dialogue",
+   "voice": "narrator",
+   "text": "You give her the book. She reads it the way she reads ground, slowly, with her finger, to the foot of the page. She stops there.",
+   "where": "dialogue.json scene_his_table/reads#0",
+   "hash": "eecba9671035",
+   "segments": [
+    {
+     "voice": "narrator",
+     "text": "You give her the book. She reads it the way she reads ground, slowly, with her finger, to the foot of the page. She stops there."
+    }
+   ],
+   "status": "todo"
+  },
+  {
+   "id": "dlg.scene_his_table.counted.0",
+   "kind": "dialogue",
+   "voice": "maeca",
+   "text": "(a long time) ...He counted me.",
+   "where": "dialogue.json scene_his_table/counted#0",
+   "hash": "6b9d8e8210a3",
+   "segments": [
+    {
+     "voice": "maeca",
+     "text": "...He counted me.",
+     "acted": "[a long time] ...He counted me."
+    }
+   ],
+   "status": "todo"
+  },
+  {
+   "id": "ply.scene_his_table.counted.0",
+   "kind": "choice",
+   "voice": "survivor",
+   "text": "(Leave her with it.)",
+   "where": "dialogue.json scene_his_table/counted choice 0",
+   "skip": "the survivor's replies are voiced in a later pass",
+   "hash": "bc52c07010ba",
+   "status": "skip"
+  },
+  {
+   "id": "dlg.scene_his_table.to_redcowl.0",
+   "kind": "dialogue",
+   "voice": "narrator",
+   "text": "Redcowl reads it by his fire, with his finger under the words and his lips moving. At the lid, he stops.",
+   "where": "dialogue.json scene_his_table/to_redcowl#0",
+   "hash": "356d464d768d",
+   "segments": [
+    {
+     "voice": "narrator",
+     "text": "Redcowl reads it by his fire, with his finger under the words and his lips moving. At the lid, he stops."
+    }
+   ],
+   "status": "todo"
+  },
+  {
+   "id": "dlg.scene_his_table.bairns.0",
+   "kind": "dialogue",
+   "voice": "redcowl",
+   "text": "So that's the man kept my bairns alive. And I robbed his road for ten years. (He shuts the book on his thumb.) ...Oh, Mam.",
+   "where": "dialogue.json scene_his_table/bairns#0",
+   "hash": "dcccfbec0cce",
+   "segments": [
+    {
+     "voice": "redcowl",
+     "text": "So that's the man kept my bairns alive. And I robbed his road for ten years."
+    },
+    {
+     "voice": "narrator",
+     "text": "He shuts the book on his thumb."
+    },
+    {
+     "voice": "redcowl",
+     "text": "...Oh, Mam."
+    }
+   ],
+   "status": "todo"
+  },
+  {
+   "id": "ply.scene_his_table.bairns.0",
+   "kind": "choice",
+   "voice": "survivor",
+   "text": "(Go.)",
+   "where": "dialogue.json scene_his_table/bairns choice 0",
+   "skip": "the survivor's replies are voiced in a later pass",
+   "hash": "a1b6da8bad7f",
+   "status": "skip"
+  },
+  {
+   "id": "dlg.scene_his_table.burn.0",
+   "kind": "dialogue",
+   "voice": "narrator",
+   "text": "You put it in his stove. It's slow to catch. The last page to go has a number at the foot of it, and no name.",
+   "where": "dialogue.json scene_his_table/burn#0",
+   "hash": "ed2fb446d9a4",
+   "segments": [
+    {
+     "voice": "narrator",
+     "text": "You put it in his stove. It's slow to catch. The last page to go has a number at the foot of it, and no name."
+    }
+   ],
+   "status": "todo"
+  },
+  {
+   "id": "ply.scene_his_table.burn.0",
+   "kind": "choice",
+   "voice": "survivor",
+   "text": "(Go.)",
+   "where": "dialogue.json scene_his_table/burn choice 0",
+   "skip": "the survivor's replies are voiced in a later pass",
+   "hash": "a1b6da8bad7f",
    "status": "skip"
   },
   {

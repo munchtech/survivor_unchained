@@ -1,6 +1,8 @@
 # Redcowl: ElevenLabs packet
 
-Voice id in the game: `redcowl`. 45 takes to record (4,337 characters; about 13,011 credits at three tries a line). Status: **draft**, until the story lead (a7622ae77d19e31dc) checks every line and marks it final.
+Voice id in the game: `redcowl`. 47 takes to record (4,424 characters; about 13,272 credits at three tries a line). Status: **draft**, until the story lead (a7622ae77d19e31dc) checks every line and marks it final.
+
+**Hold 2 of these** (marked HOLD below, with why); the rest can be recorded now.
 
 ## Who they are
 
@@ -490,9 +492,29 @@ Subtitle: Go home. Stay off the square tonight.
 ```
 Subtitle: I'll find him. Men like Varrow leave a smell of ink wherever they go.
 
+## Conversations: Scene_his_table
+
+### 42. `dlg.scene_his_table.bairns.0.p0.wav`  HOLD: Act 2: held until the editor and the owner pass it
+
+*Where:* dialogue.json scene_his_table/bairns#0; part 1 of 3: **redcowl: So that's the man kept my bairns alive. And I robbed his road for ten years.** / narrator: He shuts the book on his thumb. / redcowl: ...Oh, Mam.
+
+```
+So that's the man kept my bairns alive. And I robbed his road for ten years.
+```
+Subtitle: So that's the man kept my bairns alive. And I robbed his road for ten years.
+
+### 43. `dlg.scene_his_table.bairns.0.p2.wav`  HOLD: Act 2: held until the editor and the owner pass it
+
+*Where:* dialogue.json scene_his_table/bairns#0; part 3 of 3: redcowl: So that's the man kept my bairns alive. And I robbed his road for ten years. / narrator: He shuts the book on his thumb. / **redcowl: ...Oh, Mam.**
+
+```
+...Oh, Mam.
+```
+Subtitle: ...Oh, Mam.
+
 ## Said in passing
 
-### 42. `bark.redcowl.day.0.wav`
+### 44. `bark.redcowl.day.0.wav`
 
 *Where:* npcs.json redcowl.barks[0]
 *Played:* gruff; pace: measured; volume: level.
@@ -502,7 +524,7 @@ Subtitle: I'll find him. Men like Varrow leave a smell of ink wherever they go.
 ```
 Subtitle: Keep walking.
 
-### 43. `bark.redcowl.day.1.wav`
+### 45. `bark.redcowl.day.1.wav`
 
 *Where:* npcs.json redcowl.barks[1]
 *Played:* gruff; pace: measured; volume: level.
@@ -512,7 +534,7 @@ Subtitle: Keep walking.
 ```
 Subtitle: Salvage is salvage.
 
-### 44. `bark.redcowl.day.2.wav`
+### 46. `bark.redcowl.day.2.wav`
 
 *Where:* npcs.json redcowl.barks[2]
 *Played:* threat; pace: measured; volume: level.
@@ -522,7 +544,7 @@ Subtitle: Salvage is salvage.
 ```
 Subtitle: Talk or bleed. Your choice.
 
-### 45. `bark.redcowl.day.3.wav`
+### 47. `bark.redcowl.day.3.wav`
 
 *Where:* npcs.json redcowl.barks[3]
 *Played:* dark humour; pace: measured; volume: level.

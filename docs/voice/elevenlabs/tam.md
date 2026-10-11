@@ -1,6 +1,8 @@
 # Tam: ElevenLabs packet
 
-Voice id in the game: `tam`. 21 takes to record (2,020 characters; about 6,060 credits at three tries a line). Status: **draft**, until the story lead (a7622ae77d19e31dc) checks every line and marks it final.
+Voice id in the game: `tam`. 26 takes to record (2,349 characters; about 7,047 credits at three tries a line). Status: **draft**, until the story lead (a7622ae77d19e31dc) checks every line and marks it final.
+
+**Hold 5 of these** (marked HOLD below, with why); the rest can be recorded now.
 
 ## Who they are
 
@@ -188,9 +190,60 @@ Subtitle: No. Her name was Clover and she ate a whole hat once. Pa says the wolv
 ```
 Subtitle: The ground knocks. At night. Tock, and then tock, under the floor, like somebody wanting to come in, and Pa says it's moles, and I said moles don't knock, and he said go to sleep Tam, so I did, but it kept knocking. Pa says the moles can knock on somebody else's bloody floor. I'm not to say bloody.
 
+## Conversations: Scene_it_stopped
+
+### 14. `dlg.scene_it_stopped.tam.0.wav`  HOLD: Act 2: held until the editor and the owner pass it
+
+*Where:* dialogue.json scene_it_stopped/tam#0
+
+```
+It stopped. The knocking. In the night. Pa said good riddance and went to sleep, and I didn't, because it didn't stop like moles stop. It stopped like when you hold your breath to listen.
+```
+Subtitle: It stopped. The knocking. In the night. Pa said good riddance and went to sleep, and I didn't, because it didn't stop like moles stop. It stopped like when you hold your breath to listen.
+
+### 15. `dlg.scene_it_stopped.moles.0.wav`  HOLD: Act 2: held until the editor and the owner pass it
+
+*Where:* dialogue.json scene_it_stopped/moles#0
+
+```
+Not all at once they don't.
+```
+Subtitle: Not all at once they don't.
+
+## Conversations: Scene_ground_opens
+
+### 16. `dlg.scene_ground_opens.tam.0.p1.wav`  HOLD: Act 2: held until the editor and the owner pass it
+
+*Where:* dialogue.json scene_ground_opens/tam#0; part 2 of 2: narrator: He's at the edge, held back by the collar. / **tam: Pa went back for the dog.**
+
+```
+Pa went back for the dog.
+```
+Subtitle: Pa went back for the dog.
+
+### 17. `dlg.scene_ground_opens.tam.1.p1.wav`  HOLD: Act 2: held until the editor and the owner pass it
+
+*Where:* dialogue.json scene_ground_opens/tam#1; part 2 of 2: narrator: He's at the edge, held back by the collar. / **tam: I said it knocked. I said. ...Pa's in the kitchen.**
+
+```
+I said it knocked. I said. ...Pa's in the kitchen.
+```
+Subtitle: I said it knocked. I said. ...Pa's in the kitchen.
+
+## Conversations: Scene_count_right
+
+### 18. `dlg.scene_count_right.tam.0.p1.wav`  HOLD: Act 2: held until the editor and the owner pass it
+
+*Where:* dialogue.json scene_count_right/tam#0; part 2 of 2: narrator: He has hold of his Pa's sleeve, and he's looking at the hole. / **tam: It started the night the ford went dark.**
+
+```
+It started the night the ford went dark.
+```
+Subtitle: It started the night the ford went dark.
+
 ## Said in passing
 
-### 14. `bark.tam.day.0.wav`
+### 19. `bark.tam.day.0.wav`
 
 *Where:* npcs.json tam.barks[0]
 *Played:* earnest; pace: quick; volume: level.
@@ -200,7 +253,7 @@ Subtitle: The ground knocks. At night. Tock, and then tock, under the floor, lik
 ```
 Subtitle: Pa says stay in town.
 
-### 15. `bark.tam.said.0.wav`
+### 20. `bark.tam.said.0.wav`
 
 *Where:* npcs.json tam.said[0]
 *Played:* earnest; doing: what he saw; pace: quick; volume: level.
@@ -211,7 +264,7 @@ Subtitle: Pa says stay in town.
 ```
 Subtitle: They drank from the stream and fell down.
 
-### 16. `bark.tam.said.1.wav`
+### 21. `bark.tam.said.1.wav`
 
 *Where:* npcs.json tam.said[1]
 *Played:* aggrieved; doing: nobody believed him; pace: quick; volume: level.
@@ -222,7 +275,7 @@ Subtitle: They drank from the stream and fell down.
 ```
 Subtitle: I told the Watch. The Watch laughed.
 
-### 17. `bark.tam.said.2.wav`
+### 22. `bark.tam.said.2.wav`
 
 *Where:* npcs.json tam.said[2]
 *Played:* triumphant; doing: he was right; pace: quick; volume: raised.
@@ -233,7 +286,7 @@ Subtitle: I told the Watch. The Watch laughed.
 ```
 Subtitle: The stream's clear and Pa says I was right, and I was.
 
-### 18. `bark.tam.said.3.wav`
+### 23. `bark.tam.said.3.wav`
 
 *Where:* npcs.json tam.said[3]
 *Played:* troubled; doing: the wolves were all killed; pace: measured; volume: level.
@@ -244,7 +297,7 @@ Subtitle: The stream's clear and Pa says I was right, and I was.
 ```
 Subtitle: Somebody killed all the wolves. Even the ones that were only sick.
 
-### 19. `bark.tam.said.4.wav`
+### 24. `bark.tam.said.4.wav`
 
 *Where:* npcs.json tam.said[4]
 *Played:* spooked, earnest; doing: knocking under the barn; pace: quick; volume: level.
@@ -255,7 +308,7 @@ Subtitle: Somebody killed all the wolves. Even the ones that were only sick.
 ```
 Subtitle: Still knocking under our floor. Pa's stopped saying it's moles.
 
-### 20. `bark.tam.said.5.wav`
+### 25. `bark.tam.said.5.wav`
 
 *Where:* npcs.json tam.said[5]
 
@@ -264,7 +317,7 @@ The hill lit up last night and Pa said marsh-lights and it was you.
 ```
 Subtitle: The hill lit up last night and Pa said marsh-lights and it was you.
 
-### 21. `bark.tam.said.6.wav`
+### 26. `bark.tam.said.6.wav`
 
 *Where:* npcs.json tam.said[6]
 

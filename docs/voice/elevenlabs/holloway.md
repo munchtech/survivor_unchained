@@ -1,6 +1,6 @@
 # Captain Holloway: ElevenLabs packet
 
-Voice id in the game: `holloway`. 110 takes to record (9,714 characters; about 29,142 credits at three tries a line). Status: **on hold, except the 110 takes marked LOCKED FOR RECORDING** (the story lead, 2026-10-11): record those now and hold the rest (the story rewrite changes most of his lines (docs/voice/RERECORD.md)).
+Voice id in the game: `holloway`. 119 takes to record (9,912 characters; about 29,736 credits at three tries a line). Status: **on hold, except the 110 takes marked LOCKED FOR RECORDING** (the story lead, 2026-10-11): record those now and hold the rest (the story rewrite changes most of his lines (docs/voice/RERECORD.md)).
 
 ## Who they are
 
@@ -39,7 +39,7 @@ python tools/vo/import_takes.py ~/Downloads/su_vo --voice holloway
 
 ## Saying the names
 
-The text to paste already respells these; keep the respelling: Greymuzzle as *Grey-muzzle*, Maeca as *Mayka*, Redcowl as *Red-cowl*, Vonnra as *Vonra*.
+The text to paste already respells these; keep the respelling: Greymuzzle as *Grey-muzzle*, Maeca as *Mayka*, Penhale as *Pen-hale*, Redcowl as *Red-cowl*, Vonnra as *Vonra*.
 
 ## The lines
 
@@ -784,6 +784,7 @@ Subtitle: ...One in.
 
 ### 66. `dlg.scene_gate_dawn.wake.0.p2.wav`  **LOCKED FOR RECORDING**
 
+*The same words are also* `dlg.scene_count_right.right.0.p1.wav`*: record once; the importer copies the take.*
 *Where:* dialogue.json scene_gate_dawn/wake#0; part 3 of 3: holloway: ...One in. / narrator: He looks past you at the empty road. / **holloway: Count's right.**
 *Played:* awake at once; doing: counts you in; pace: measured; volume: level.
 *Note:* Hoarse from sleep; 'One in.' a soldier's report; 'Count's right.' relief he won't show.
@@ -1094,9 +1095,96 @@ Subtitle: Go to bed.
 ```
 Subtitle: Somebody's still out. ...Always somebody still out.
 
+## Conversations: Scene_ground_opens
+
+### 94. `dlg.scene_ground_opens.count.0.p1.wav`  HOLD: the story rewrite changes most of his lines (docs/voice/RERECORD.md)
+
+*Where:* dialogue.json scene_ground_opens/count#0; part 2 of 4: narrator: He's on his knees at the edge with a lamp, very drunk and very white, and the lamp is shak… / **holloway: Three down. Penhale. Cotter. Wray.** / narrator: He swallows. / holloway: ...Posted them. Boy said it knocked.
+
+```
+Three down. Pen-hale. Cotter. Wray.
+```
+Subtitle: Three down. Penhale. Cotter. Wray.
+
+### 95. `dlg.scene_ground_opens.count.0.p3.wav`  HOLD: the story rewrite changes most of his lines (docs/voice/RERECORD.md)
+
+*Where:* dialogue.json scene_ground_opens/count#0; part 4 of 4: narrator: He's on his knees at the edge with a lamp, very drunk and very white, and the lamp is shak… / holloway: Three down. Penhale. Cotter. Wray. / narrator: He swallows. / **holloway: ...Posted them. Boy said it knocked.**
+
+```
+...Posted them. Boy said it knocked.
+```
+Subtitle: ...Posted them. Boy said it knocked.
+
+### 96. `dlg.scene_ground_opens.no.0.p0.wav`  HOLD: the story rewrite changes most of his lines (docs/voice/RERECORD.md)
+
+*Where:* dialogue.json scene_ground_opens/no#0; part 1 of 3: **holloway: No.** / narrator: He gets up, holding the rope. / holloway: ...No. I'm going.
+
+```
+No.
+```
+Subtitle: No.
+
+### 97. `dlg.scene_ground_opens.no.0.p2.wav`  HOLD: the story rewrite changes most of his lines (docs/voice/RERECORD.md)
+
+*Where:* dialogue.json scene_ground_opens/no#0; part 3 of 3: holloway: No. / narrator: He gets up, holding the rope. / **holloway: ...No. I'm going.**
+
+```
+...No. I'm going.
+```
+Subtitle: ...No. I'm going.
+
+## Conversations: Scene_count_right
+
+### 98. `dlg.scene_count_right.last.0.p1.wav`  HOLD: the story rewrite changes most of his lines (docs/voice/RERECORD.md)
+
+*Where:* dialogue.json scene_count_right/last#0; part 2 of 2: narrator: At the rope's foot, in the slurry to his knees, he holds the rope out to you. / **holloway: Up. Go on. I'm last. Count's not right till you're up.**
+
+```
+Up. Go on. I'm last. Count's not right till you're up.
+```
+Subtitle: Up. Go on. I'm last. Count's not right till you're up.
+
+### 99. `dlg.scene_count_right.after.0.p1.wav`  HOLD: the story rewrite changes most of his lines (docs/voice/RERECORD.md)
+
+*Where:* dialogue.json scene_count_right/after#0; part 2 of 2: narrator: He puts the rope in your hands, and closes your fingers on it. / **holloway: Up.**
+
+```
+Up.
+```
+Subtitle: Up.
+
+### 100. `dlg.scene_count_right.four.0.wav`  HOLD: the story rewrite changes most of his lines (docs/voice/RERECORD.md)
+
+*Where:* dialogue.json scene_count_right/four#0
+
+```
+[from down the hole] Four.
+```
+Subtitle: Four.
+
+### 101. `dlg.scene_count_right.laugh.0.wav`  HOLD: the story rewrite changes most of his lines (docs/voice/RERECORD.md)
+
+*Where:* dialogue.json scene_count_right/laugh#0
+
+```
+[down in the dark, a laugh: a real one, out of him before he can stop it] ...I did.
+```
+Subtitle: ...I did.
+
+## Conversations: Scene_one_in
+
+### 102. `dlg.scene_one_in.count.0.wav`  HOLD: the story rewrite changes most of his lines (docs/voice/RERECORD.md)
+
+*Where:* dialogue.json scene_one_in/count#0
+
+```
+[close, flat, a dead man's whisper, every number the same] ...Ninety. Ninety-one. [a breath that isn't one] ...Ninety-two.
+```
+Subtitle: ...Ninety. Ninety-one. ...Ninety-two.
+
 ## Said in passing
 
-### 94. `bark.holloway.day.0.wav`  **LOCKED FOR RECORDING**
+### 103. `bark.holloway.day.0.wav`  **LOCKED FOR RECORDING**
 
 *Where:* npcs.json holloway.barks[0]
 *Played:* curt; pace: brisk; volume: level.
@@ -1106,7 +1194,7 @@ Subtitle: Somebody's still out. ...Always somebody still out.
 ```
 Subtitle: Keep to the road, and keep your blade where I can see it.
 
-### 95. `bark.holloway.day.1.wav`  **LOCKED FOR RECORDING**
+### 104. `bark.holloway.day.1.wav`  **LOCKED FOR RECORDING**
 
 *Where:* npcs.json holloway.barks[1]
 *Played:* curt; pace: brisk; volume: level.
@@ -1116,7 +1204,7 @@ Subtitle: Keep to the road, and keep your blade where I can see it.
 ```
 Subtitle: Three caravans this month. Three.
 
-### 96. `bark.holloway.night.0.wav`  **LOCKED FOR RECORDING**
+### 105. `bark.holloway.night.0.wav`  **LOCKED FOR RECORDING**
 
 *Where:* npcs.json holloway.nightBarks[0]
 *Played:* tired; pace: measured; volume: quiet.
@@ -1126,7 +1214,7 @@ Subtitle: Three caravans this month. Three.
 ```
 Subtitle: Curfew's not law. Yet.
 
-### 97. `bark.holloway.night.1.wav`  **LOCKED FOR RECORDING**
+### 106. `bark.holloway.night.1.wav`  **LOCKED FOR RECORDING**
 
 *Where:* npcs.json holloway.nightBarks[1]
 *Played:* tired; pace: measured; volume: quiet.
@@ -1136,7 +1224,7 @@ Subtitle: Curfew's not law. Yet.
 ```
 Subtitle: Two on the walls, one on each gate. It's not enough.
 
-### 98. `bark.holloway.night.2.wav`  **LOCKED FOR RECORDING**
+### 107. `bark.holloway.night.2.wav`  **LOCKED FOR RECORDING**
 
 *Where:* npcs.json holloway.nightBarks[2]
 *Played:* tired; pace: measured; volume: quiet.
@@ -1146,7 +1234,7 @@ Subtitle: Two on the walls, one on each gate. It's not enough.
 ```
 Subtitle: Go to bed, traveler.
 
-### 99. `bark.holloway.night.3.wav`  **LOCKED FOR RECORDING**
+### 108. `bark.holloway.night.3.wav`  **LOCKED FOR RECORDING**
 
 *Where:* npcs.json holloway.nightBarks[3]
 *Played:* tired; pace: measured; volume: quiet.
@@ -1156,7 +1244,7 @@ Subtitle: Go to bed, traveler.
 ```
 Subtitle: Every night I bury somebody's son. Go home.
 
-### 100. `bark.holloway.night.4.wav`  **LOCKED FOR RECORDING**
+### 109. `bark.holloway.night.4.wav`  **LOCKED FOR RECORDING**
 
 *Where:* npcs.json holloway.nightBarks[4]
 *Played:* tired; pace: measured; volume: quiet.
@@ -1166,7 +1254,7 @@ Subtitle: Every night I bury somebody's son. Go home.
 ```
 Subtitle: Quiet on the wall. I hate it quiet.
 
-### 101. `bark.holloway.said.0.wav`  **LOCKED FOR RECORDING**
+### 110. `bark.holloway.said.0.wav`  **LOCKED FOR RECORDING**
 
 *Where:* npcs.json holloway.said[0]
 *Played:* businesslike; doing: the pelt bounty; pace: measured; volume: level.
@@ -1177,7 +1265,7 @@ Subtitle: Quiet on the wall. I hate it quiet.
 ```
 Subtitle: Five a pelt. Fifty for the old gray one.
 
-### 102. `bark.holloway.said.1.wav`  **LOCKED FOR RECORDING**
+### 111. `bark.holloway.said.1.wav`  **LOCKED FOR RECORDING**
 
 *Where:* npcs.json holloway.said[1]
 *Played:* dry relief; doing: the bounty's done; pace: measured; volume: level.
@@ -1188,7 +1276,7 @@ Subtitle: Five a pelt. Fifty for the old gray one.
 ```
 Subtitle: Pelt book's closed. I'll not miss writing in it.
 
-### 103. `bark.holloway.said.2.wav`  **LOCKED FOR RECORDING**
+### 112. `bark.holloway.said.2.wav`  **LOCKED FOR RECORDING**
 
 *Where:* npcs.json holloway.said[2]
 *Played:* grim, private; doing: Corran buried; pace: slow; volume: quiet.
@@ -1200,7 +1288,7 @@ Subtitle: Pelt book's closed. I'll not miss writing in it.
 ```
 Subtitle: Corran's in the ground. That's one debt paid.
 
-### 104. `bark.holloway.said.3.wav`  **LOCKED FOR RECORDING**
+### 113. `bark.holloway.said.3.wav`  **LOCKED FOR RECORDING**
 
 *Where:* npcs.json holloway.said[3]
 *Played:* weary, grateful; doing: one caravan came home; pace: measured; volume: level.
@@ -1211,7 +1299,7 @@ Subtitle: Corran's in the ground. That's one debt paid.
 ```
 Subtitle: One caravan home. I'll take it.
 
-### 105. `bark.holloway.said.4.wav`  **LOCKED FOR RECORDING**
+### 114. `bark.holloway.said.4.wav`  **LOCKED FOR RECORDING**
 
 *Where:* npcs.json holloway.said[4]
 *Played:* gruff relief; doing: you're back; pace: quick; volume: level.
@@ -1222,7 +1310,7 @@ Subtitle: One caravan home. I'll take it.
 ```
 Subtitle: One in. Count's right, for once.
 
-### 106. `bark.holloway.said.5.wav`  **LOCKED FOR RECORDING**
+### 115. `bark.holloway.said.5.wav`  **LOCKED FOR RECORDING**
 
 *Where:* npcs.json holloway.said[5]
 *Played:* grudging respect; doing: you killed what rules out there; pace: measured; volume: level.
@@ -1233,7 +1321,7 @@ Subtitle: One in. Count's right, for once.
 ```
 Subtitle: Heard you put down what rules out there. Proof it can be done.
 
-### 107. `bark.holloway.said.6.wav`  **LOCKED FOR RECORDING**
+### 116. `bark.holloway.said.6.wav`  **LOCKED FOR RECORDING**
 
 *Where:* npcs.json holloway.said[6]
 *Played:* dry, warm under it; doing: you're off the missing list; pace: measured; volume: level.
@@ -1244,7 +1332,7 @@ Subtitle: Heard you put down what rules out there. Proof it can be done.
 ```
 Subtitle: Seven nights out, seven back. I've taken you out of the missing column.
 
-### 108. `bark.holloway.said.7.wav`  **LOCKED FOR RECORDING**
+### 117. `bark.holloway.said.7.wav`  **LOCKED FOR RECORDING**
 
 *Where:* npcs.json holloway.said[7]
 *Played:* gruff; doing: don't die again; pace: measured; volume: level.
@@ -1255,7 +1343,7 @@ Subtitle: Seven nights out, seven back. I've taken you out of the missing column
 ```
 Subtitle: Count was one short last night. It's right this morning. Don't make me write it twice.
 
-### 109. `bark.holloway.said.8.wav`  **LOCKED FOR RECORDING**
+### 118. `bark.holloway.said.8.wav`  **LOCKED FOR RECORDING**
 
 *Where:* npcs.json holloway.said[8]
 *Played:* grudging; doing: you spared Redcowl; pace: measured; volume: level.
@@ -1266,7 +1354,7 @@ Subtitle: Count was one short last night. It's right this morning. Don't make me
 ```
 Subtitle: Had Redcowl on his knee and let him up. Road's quiet. I'll give you that.
 
-### 110. `bark.holloway.said.9.wav`  **LOCKED FOR RECORDING**
+### 119. `bark.holloway.said.9.wav`  **LOCKED FOR RECORDING**
 
 *Where:* npcs.json holloway.said[9]
 *Played:* drunk, far off; doing: the count; pace: slow; volume: quiet.

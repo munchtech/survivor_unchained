@@ -1,6 +1,6 @@
 # Maeca: ElevenLabs packet
 
-Voice id in the game: `maeca`. 83 takes to record (6,560 characters; about 19,680 credits at three tries a line). Status: **on hold, except the 83 takes marked LOCKED FOR RECORDING** (the story lead, 2026-10-11): record those now and hold the rest (the story rewrite changes most of her lines (docs/voice/RERECORD.md)).
+Voice id in the game: `maeca`. 94 takes to record (6,762 characters; about 20,286 credits at three tries a line). Status: **on hold, except the 83 takes marked LOCKED FOR RECORDING** (the story lead, 2026-10-11): record those now and hold the rest (the story rewrite changes most of her lines (docs/voice/RERECORD.md)).
 
 ## Who they are
 
@@ -753,9 +753,45 @@ Subtitle: I take it. Every week. ...He'd pay me double, if I let him. I don't le
 ```
 Subtitle: The cave mouths.
 
+### 64. `dlg.maeca.k_after.0.p1.wav`  HOLD: the story rewrite changes most of her lines (docs/voice/RERECORD.md)
+
+*Where:* dialogue.json maeca/k_after#0; part 2 of 2: narrator: His coat, and his step. She doesn't get up. / **maeca: Sit, if you're sitting.**
+
+```
+Sit, if you're sitting.
+```
+Subtitle: Sit, if you're sitting.
+
+### 65. `dlg.maeca.k_after.1.p1.wav`  HOLD: the story rewrite changes most of her lines (docs/voice/RERECORD.md)
+
+*Where:* dialogue.json maeca/k_after#1; part 2 of 2: narrator: She doesn't look up from the road. / **maeca: If you've come to ask, ask.**
+
+```
+If you've come to ask, ask.
+```
+Subtitle: If you've come to ask, ask.
+
+### 66. `dlg.maeca.k_why.0.p1.wav`  HOLD: the story rewrite changes most of her lines (docs/voice/RERECORD.md)
+
+*Where:* dialogue.json maeca/k_why#0; part 2 of 2: narrator: She looks down the road a long time. / **maeca: ...I was at the top.**
+
+```
+...I was at the top.
+```
+Subtitle: ...I was at the top.
+
+### 67. `dlg.maeca.k_ladder.0.wav`  HOLD: the story rewrite changes most of her lines (docs/voice/RERECORD.md)
+
+*Where:* dialogue.json maeca/k_ladder#0
+
+```
+The ladder.
+```
+Subtitle: The ladder.
+
 ## Conversations: Scene_gate_dawn
 
-### 64. `dlg.scene_gate_dawn.maeca.0.wav`  **LOCKED FOR RECORDING**
+### 68. `dlg.scene_gate_dawn.maeca.0.wav`  **LOCKED FOR RECORDING**
 
 *Where:* dialogue.json scene_gate_dawn/maeca#0
 *Played:* dry; doing: he waited up for you; pace: measured; volume: quiet.
@@ -766,7 +802,7 @@ Subtitle: The cave mouths.
 ```
 Subtitle: Waits up for you. Somebody waits up for him.
 
-### 65. `dlg.scene_gate_dawn.last.0.wav`  **LOCKED FOR RECORDING**
+### 69. `dlg.scene_gate_dawn.last.0.wav`  **LOCKED FOR RECORDING**
 
 *Where:* dialogue.json scene_gate_dawn/last#0
 *Played:* level, final; doing: his last bottle; pace: slow; volume: quiet.
@@ -779,7 +815,7 @@ Subtitle: That's your last.
 
 ## Conversations: Scene_did_he
 
-### 66. `dlg.scene_did_he.well.0.p1.wav`  **LOCKED FOR RECORDING**
+### 70. `dlg.scene_did_he.well.0.p1.wav`  **LOCKED FOR RECORDING**
 
 *Where:* dialogue.json scene_did_he/well#0; part 2 of 2: narrator: She's waiting for you at the well. / **maeca: He talked to you. Last night. At the gate.**
 *Played:* level, hard; doing: he talked to you; pace: slow; volume: quiet.
@@ -790,7 +826,7 @@ Subtitle: That's your last.
 ```
 Subtitle: He talked to you. Last night. At the gate.
 
-### 67. `dlg.scene_did_he.did.0.wav`  **LOCKED FOR RECORDING**
+### 71. `dlg.scene_did_he.did.0.wav`  **LOCKED FOR RECORDING**
 
 *Where:* dialogue.json scene_did_he/did#0
 *Played:* quiet, final; doing: so he did; pace: slow; volume: quiet.
@@ -801,9 +837,80 @@ Subtitle: He talked to you. Last night. At the gate.
 ```
 Subtitle: ...Did he.
 
+## Conversations: Scene_ground_opens
+
+### 72. `dlg.scene_ground_opens.post.0.p1.wav`  HOLD: the story rewrite changes most of her lines (docs/voice/RERECORD.md)
+
+*Where:* dialogue.json scene_ground_opens/post#0; part 2 of 2: narrator: She has the rope's end round the post, and her foot against it. She doesn't look at you. / **maeca: Go on. I've got him.**
+
+```
+Go on. I've got him.
+```
+Subtitle: Go on. I've got him.
+
+## Conversations: Scene_count_right
+
+### 73. `dlg.scene_count_right.ninety.0.p1.wav`  HOLD: the story rewrite changes most of her lines (docs/voice/RERECORD.md)
+
+*Where:* dialogue.json scene_count_right/ninety#0; part 2 of 2: narrator: She puts the knife away. / **maeca: Ninety-two.**
+
+```
+Ninety-two.
+```
+Subtitle: Ninety-two.
+
+### 74. `dlg.scene_count_right.were_up.0.p1.wav`  HOLD: the story rewrite changes most of her lines (docs/voice/RERECORD.md)
+
+*Where:* dialogue.json scene_count_right/were_up#0; part 2 of 2: narrator: She looks at you. / **maeca: You were up.**
+
+```
+You were up.
+```
+Subtitle: You were up.
+
+### 75. `dlg.scene_count_right.under.0.p0.wav`  HOLD: the story rewrite changes most of her lines (docs/voice/RERECORD.md)
+
+*Where:* dialogue.json scene_count_right/under#0; part 1 of 3: **maeca: The ones under me weren't dead.** / narrator: She's looking down the hole, not at you. / maeca: Not when he shut it.
+
+```
+The ones under me weren't dead.
+```
+Subtitle: The ones under me weren't dead.
+
+### 76. `dlg.scene_count_right.under.0.p2.wav`  HOLD: the story rewrite changes most of her lines (docs/voice/RERECORD.md)
+
+*Where:* dialogue.json scene_count_right/under#0; part 3 of 3: maeca: The ones under me weren't dead. / narrator: She's looking down the hole, not at you. / **maeca: Not when he shut it.**
+
+```
+Not when he shut it.
+```
+Subtitle: Not when he shut it.
+
+## Conversations: Scene_one_in
+
+### 77. `dlg.scene_one_in.in_maeca.0.p1.wav`  HOLD: the story rewrite changes most of her lines (docs/voice/RERECORD.md)
+
+*Where:* dialogue.json scene_one_in/in_maeca#0; part 2 of 3: narrator: She's in the gateway with the bar in her hands. She doesn't look at him. / **maeca: ...One in.** / narrator: She takes his coat off the stool, and puts it on.
+
+```
+...One in.
+```
+Subtitle: ...One in.
+
+## Conversations: Scene_his_table
+
+### 78. `dlg.scene_his_table.counted.0.wav`  HOLD: the story rewrite changes most of her lines (docs/voice/RERECORD.md)
+
+*Where:* dialogue.json scene_his_table/counted#0
+
+```
+[a long time] ...He counted me.
+```
+Subtitle: ...He counted me.
+
 ## Said in passing
 
-### 68. `bark.maeca.day.0.wav`  **LOCKED FOR RECORDING**
+### 79. `bark.maeca.day.0.wav`  **LOCKED FOR RECORDING**
 
 *Where:* npcs.json maeca.barks[0]
 *Played:* terse; pace: measured; volume: quiet.
@@ -813,7 +920,7 @@ Subtitle: ...Did he.
 ```
 Subtitle: Mind the east road after dark.
 
-### 69. `bark.maeca.night.0.wav`  **LOCKED FOR RECORDING**
+### 80. `bark.maeca.night.0.wav`  **LOCKED FOR RECORDING**
 
 *Where:* npcs.json maeca.nightBarks[0]
 *Played:* tired; pace: slow; volume: quiet.
@@ -823,7 +930,7 @@ Subtitle: Mind the east road after dark.
 ```
 Subtitle: Hear that? No. Neither do I. That's what worries me.
 
-### 70. `bark.maeca.night.1.wav`  **LOCKED FOR RECORDING**
+### 81. `bark.maeca.night.1.wav`  **LOCKED FOR RECORDING**
 
 *Where:* npcs.json maeca.nightBarks[1]
 *Played:* tired; pace: slow; volume: quiet.
@@ -833,7 +940,7 @@ Subtitle: Hear that? No. Neither do I. That's what worries me.
 ```
 Subtitle: One more, then I sleep.
 
-### 71. `bark.maeca.said.0.wav`  **LOCKED FOR RECORDING**
+### 82. `bark.maeca.said.0.wav`  **LOCKED FOR RECORDING**
 
 *Where:* npcs.json maeca.said[0]
 *Played:* certain, quiet; doing: the wolves are running; pace: measured; volume: quiet.
@@ -844,7 +951,7 @@ Subtitle: One more, then I sleep.
 ```
 Subtitle: They're not hunting. They're running.
 
-### 72. `bark.maeca.said.1.wav`  **LOCKED FOR RECORDING**
+### 83. `bark.maeca.said.1.wav`  **LOCKED FOR RECORDING**
 
 *Where:* npcs.json maeca.said[1]
 *Played:* uneasy, watchful; doing: the wood is wrong; pace: measured; volume: quiet.
@@ -855,7 +962,7 @@ Subtitle: They're not hunting. They're running.
 ```
 Subtitle: Something's got the whole wood on edge.
 
-### 73. `bark.maeca.said.2.wav`  **LOCKED FOR RECORDING**
+### 84. `bark.maeca.said.2.wav`  **LOCKED FOR RECORDING**
 
 *Where:* npcs.json maeca.said[2]
 *Played:* quiet, attentive; doing: the Pack tonight; pace: measured; volume: quiet.
@@ -866,7 +973,7 @@ Subtitle: Something's got the whole wood on edge.
 ```
 Subtitle: The Pack's loud tonight.
 
-### 74. `bark.maeca.said.3.wav`  **LOCKED FOR RECORDING**
+### 85. `bark.maeca.said.3.wav`  **LOCKED FOR RECORDING**
 
 *Where:* npcs.json maeca.said[3]
 *Played:* attentive, tender; doing: an old wolf coughing; pace: slow; volume: quiet.
@@ -877,7 +984,7 @@ Subtitle: The Pack's loud tonight.
 ```
 Subtitle: Somewhere out there an old wolf's coughing. Listen.
 
-### 75. `bark.maeca.said.4.wav`  **LOCKED FOR RECORDING**
+### 86. `bark.maeca.said.4.wav`  **LOCKED FOR RECORDING**
 
 *Where:* npcs.json maeca.said[4]
 *Played:* quiet satisfaction; doing: the Pack hunts again; pace: measured; volume: quiet.
@@ -888,7 +995,7 @@ Subtitle: Somewhere out there an old wolf's coughing. Listen.
 ```
 Subtitle: Hear that? They're hunting again. Deer.
 
-### 76. `bark.maeca.said.5.wav`  **LOCKED FOR RECORDING**
+### 87. `bark.maeca.said.5.wav`  **LOCKED FOR RECORDING**
 
 *Where:* npcs.json maeca.said[5]
 *Played:* plain, protective; doing: the Pack lying up; pace: measured; volume: quiet.
@@ -899,7 +1006,7 @@ Subtitle: Hear that? They're hunting again. Deer.
 ```
 Subtitle: The Pack's lying up by the east wall. Leave them be.
 
-### 77. `bark.maeca.said.6.wav`  **LOCKED FOR RECORDING**
+### 88. `bark.maeca.said.6.wav`  **LOCKED FOR RECORDING**
 
 *Where:* npcs.json maeca.said[6]
 *Played:* flat, hollow; doing: the Hollow is empty; pace: slow; volume: quiet.
@@ -910,7 +1017,7 @@ Subtitle: The Pack's lying up by the east wall. Leave them be.
 ```
 Subtitle: Nothing calls in the Hollow now.
 
-### 78. `bark.maeca.said.7.wav`  **LOCKED FOR RECORDING**
+### 89. `bark.maeca.said.7.wav`  **LOCKED FOR RECORDING**
 
 *Where:* npcs.json maeca.said[7]
 *Played:* level; doing: how many?; pace: measured; volume: quiet.
@@ -921,7 +1028,7 @@ Subtitle: Nothing calls in the Hollow now.
 ```
 Subtitle: Heard you out by the Hollow last night. From the Blind. How many?
 
-### 79. `bark.maeca.said.8.wav`  **LOCKED FOR RECORDING**
+### 90. `bark.maeca.said.8.wav`  **LOCKED FOR RECORDING**
 
 *Where:* npcs.json maeca.said[8]
 *Played:* cold; doing: not my wolves; pace: measured; volume: quiet.
@@ -932,7 +1039,7 @@ Subtitle: Heard you out by the Hollow last night. From the Blind. How many?
 ```
 Subtitle: Mine don't run at fire. Whatever came at you last night wasn't mine.
 
-### 80. `bark.maeca.said.9.wav`  **LOCKED FOR RECORDING**
+### 91. `bark.maeca.said.9.wav`  **LOCKED FOR RECORDING**
 
 *Where:* npcs.json maeca.said[9]
 *Played:* hard; doing: what were you killing?; pace: slow; volume: quiet.
@@ -943,7 +1050,7 @@ Subtitle: Mine don't run at fire. Whatever came at you last night wasn't mine.
 ```
 Subtitle: There's no Pack left. I counted the pelts. So what were you killing?
 
-### 81. `bark.maeca.said.10.wav`  **LOCKED FOR RECORDING**
+### 92. `bark.maeca.said.10.wav`  **LOCKED FOR RECORDING**
 
 *Where:* npcs.json maeca.said[10]
 *Played:* cold, hurt; doing: his coat on you; pace: slow; volume: quiet.
@@ -954,7 +1061,7 @@ Subtitle: There's no Pack left. I counted the pelts. So what were you killing?
 ```
 Subtitle: That's his. Wear it where I can't see it.
 
-### 82. `bark.maeca.said.11.wav`  **LOCKED FOR RECORDING**
+### 93. `bark.maeca.said.11.wav`  **LOCKED FOR RECORDING**
 
 *Where:* npcs.json maeca.said[11]
 *Played:* level, puzzled; doing: they left you; pace: measured; volume: quiet.
@@ -965,7 +1072,7 @@ Subtitle: That's his. Wear it where I can't see it.
 ```
 Subtitle: Heard you go down in the Hollow. Heard them walk away after. They don't leave meat.
 
-### 83. `bark.maeca.said.12.wav`  **LOCKED FOR RECORDING**
+### 94. `bark.maeca.said.12.wav`  **LOCKED FOR RECORDING**
 
 *Where:* npcs.json maeca.said[12]
 *Played:* quiet approval; doing: you spared Redcowl; pace: slow; volume: quiet.

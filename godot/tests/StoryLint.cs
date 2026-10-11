@@ -218,6 +218,8 @@ public class StoryLint
         // when he knew (Act 2's hooded buyer, "Tell her no"); her word, written in her own hand (Act 2's
         // dawn: "One short word. It was yours.", with the journal still holding it).
         "brannoc.knew_iron", "mother.word",
+        // Act 2 (writer 16): where Holloway's daybook went (C22), for C26 and the war at the gate.
+        "daybook.to",
         // The last night, for the town to talk about (docs/EXPERIENCE_AUDIT.md, finding 5): the
         // story's lines read them next; take each off this list as it is read.
         "arena.last.tier", "arena.last.minutes", "arena.last.day", "arena.last.killer",

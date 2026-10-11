@@ -39,7 +39,10 @@ public sealed class Waystation : ZoneRuntime
         // A farm boy goes home at night.
         ["tam"] = """{ "not": { "time": "night" } }""",
         // Maeca hunts the Verge by day once you know her; she drinks here at night.
-        ["maeca"] = """{ "any": [{ "not": { "met": "maeca" } }, { "time": "night" }, { "time": "dusk" }, { "fact": "beasts.outcome", "eq": "slaughtered" }] }""",
+        // After the rope (Act 2, C20) she is in the town only if the survivor stood between her and the Watch.
+        ["maeca"] = """{ "all": [{ "any": [{ "not": { "met": "maeca" } }, { "time": "night" }, { "time": "dusk" }, { "fact": "beasts.outcome", "eq": "slaughtered" }] }, { "not": { "fact": "maeca.after", "eq": "held" } }, { "not": { "fact": "maeca.after", "eq": "gone" } }] }""",
+        // The captain is dead after the rope (C20).
+        ["holloway"] = """{ "not": { "fact": "holloway.dead", "eq": true } }""",
     };
 
     /// <summary>Where people are, by the hour and by what has happened to

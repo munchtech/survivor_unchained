@@ -2021,6 +2021,46 @@
    "name": "The Ford-Warden",
    "title": "Keeper of the Low Crossing",
    "glyph": "skull"
+  },
+  "tolley": {
+   "name": "Tolley",
+   "title": "The Waystation Watch",
+   "glyph": "shield"
+  },
+  "penhale": {
+   "name": "Penhale",
+   "title": "Tam's Pa",
+   "glyph": "campfire"
+  },
+  "scene_it_stopped": {
+   "name": "The Well",
+   "title": "Morning",
+   "glyph": "howl"
+  },
+  "scene_ground_opens": {
+   "name": "The Penhale Farm",
+   "title": "Dusk",
+   "glyph": "moon"
+  },
+  "scene_count_right": {
+   "name": "The Penhale Farm",
+   "title": "First light",
+   "glyph": "sun"
+  },
+  "scene_barred": {
+   "name": "The South Gate",
+   "title": "Dusk",
+   "glyph": "moon"
+  },
+  "scene_one_in": {
+   "name": "The South Gate",
+   "title": "Dusk",
+   "glyph": "moon"
+  },
+  "scene_his_table": {
+   "name": "The Watch-house",
+   "title": "Morning",
+   "glyph": "shield"
   }
  },
  "guards": [

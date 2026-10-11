@@ -3731,6 +3731,13 @@
   "entry": [
    {
     "when": {
+     "fact": "holloway.dead",
+     "eq": true
+    },
+    "node": "k_after"
+   },
+   {
+    "when": {
      "fact": "beasts.outcome",
      "eq": "slaughtered"
     },
@@ -5663,6 +5670,80 @@
      },
      {
       "text": "Goodbye.",
+      "end": true
+     }
+    ]
+   },
+   "k_after": {
+    "id": "k_after",
+    "text": [
+     {
+      "when": {
+       "fact": "maeca.counted",
+       "eq": true
+      },
+      "text": "(His coat, and his step. She doesn't get up.) Sit, if you're sitting."
+     },
+     {
+      "text": "(She doesn't look up from the road.) If you've come to ask, ask."
+     }
+    ],
+    "choices": [
+     {
+      "text": "Why then? Why at the top?",
+      "once": "k_why",
+      "goto": "k_why"
+     },
+     {
+      "text": "What happened at Ashford?",
+      "once": "k_ladder",
+      "goto": "k_ladder"
+     },
+     {
+      "text": "(Sit with her.)",
+      "goto": "k_sit"
+     },
+     {
+      "text": "Goodbye.",
+      "end": true
+     }
+    ]
+   },
+   "k_why": {
+    "id": "k_why",
+    "text": "(She looks down the road a long time.) ...I was at the top.",
+    "choices": [
+     {
+      "text": "(Sit with her.)",
+      "goto": "k_sit"
+     },
+     {
+      "text": "Goodbye.",
+      "end": true
+     }
+    ]
+   },
+   "k_ladder": {
+    "id": "k_ladder",
+    "text": "The ladder.",
+    "choices": [
+     {
+      "text": "(Sit with her.)",
+      "goto": "k_sit"
+     },
+     {
+      "text": "Goodbye.",
+      "end": true
+     }
+    ]
+   },
+   "k_sit": {
+    "id": "k_sit",
+    "speaker": "narrator",
+    "text": "You sit. She lets you. Neither of you says anything, and the road gets dark.",
+    "choices": [
+     {
+      "text": "(Go.)",
       "end": true
      }
     ]
@@ -22477,6 +22558,986 @@
         }
        }
       ],
+      "end": true
+     }
+    ]
+   }
+  }
+ },
+ "scene_it_stopped": {
+  "npc": "scene_it_stopped",
+  "entry": [
+   {
+    "node": "well"
+   }
+  ],
+  "nodes": {
+   "well": {
+    "id": "well",
+    "speaker": "narrator",
+    "text": "Tam is sitting on the edge of the well with his head on one side, listening to the ground.",
+    "effects": [
+     {
+      "set": {
+       "act2.stopped": true
+      }
+     }
+    ],
+    "next": "tam"
+   },
+   "tam": {
+    "id": "tam",
+    "speaker": "tam",
+    "text": "It stopped. The knocking. In the night. Pa said good riddance and went to sleep, and I didn't, because it didn't stop like moles stop. It stopped like when you hold your breath to listen.",
+    "choices": [
+     {
+      "text": "I'll walk you home, and bring your Pa in for a night or two.",
+      "goto": "fetch"
+     },
+     {
+      "text": "Moles stop, Tam.",
+      "goto": "moles"
+     },
+     {
+      "text": "(Say nothing.)",
+      "goto": "quiet"
+     }
+    ]
+   },
+   "fetch": {
+    "id": "fetch",
+    "speaker": "narrator",
+    "text": [
+     {
+      "when": {
+       "fact": "tam.pa_in",
+       "eq": true
+      },
+      "text": "You walk Tam home past the Old Road, and his Pa calls you the same things as last time, and some new ones. Then he stands in the barn door looking at the floor a long time, and gets the cart out. The dog won't get up on it. It lies down in the yard and won't be called."
+     },
+     {
+      "text": "You walk Tam home past the Old Road, and his Pa calls you several things across the yard. Then he stands in the barn door looking at the floor a long time, and gets the cart out. The dog won't get up on it. It lies down in the yard and won't be called."
+     }
+    ],
+    "effects": [
+     {
+      "set": {
+       "tam.brought": true
+      }
+     },
+     {
+      "rel": {
+       "npc": "tam",
+       "affection": 10
+      },
+      "quiet": true
+     },
+     {
+      "if": {
+       "not": {
+        "fact": "scene.dusk",
+        "exists": true
+       }
+      },
+      "then": [
+       {
+        "set": {
+         "scene.dusk": "scene_ground_opens"
+        }
+       }
+      ]
+     }
+    ],
+    "choices": [
+     {
+      "text": "(Go.)",
+      "end": true
+     }
+    ]
+   },
+   "moles": {
+    "id": "moles",
+    "speaker": "tam",
+    "text": "Not all at once they don't.",
+    "effects": [
+     {
+      "if": {
+       "not": {
+        "fact": "scene.dusk",
+        "exists": true
+       }
+      },
+      "then": [
+       {
+        "set": {
+         "scene.dusk": "scene_ground_opens"
+        }
+       }
+      ]
+     }
+    ],
+    "choices": [
+     {
+      "text": "(Go.)",
+      "end": true
+     }
+    ]
+   },
+   "quiet": {
+    "id": "quiet",
+    "speaker": "narrator",
+    "text": "He goes on listening. So do you.",
+    "effects": [
+     {
+      "if": {
+       "not": {
+        "fact": "scene.dusk",
+        "exists": true
+       }
+      },
+      "then": [
+       {
+        "set": {
+         "scene.dusk": "scene_ground_opens"
+        }
+       }
+      ]
+     }
+    ],
+    "choices": [
+     {
+      "text": "(Go.)",
+      "end": true
+     }
+    ]
+   }
+  }
+ },
+ "scene_ground_opens": {
+  "npc": "scene_ground_opens",
+  "entry": [
+   {
+    "node": "bell"
+   }
+  ],
+  "nodes": {
+   "bell": {
+    "id": "bell",
+    "speaker": "narrator",
+    "text": "The bell on the Watch-house starts, and doesn't stop. Out past the Old Road the lamps at the Penhale farm go down one after another, like someone carrying them down a stair.",
+    "effects": [
+     {
+      "set": {
+       "farm.gone": true
+      }
+     }
+    ],
+    "next": "lip"
+   },
+   "lip": {
+    "id": "lip",
+    "speaker": "narrator",
+    "text": "By the time you get there the barn is gone, and the back of the house with it. Where the yard was there's a hole, and cold coming up out of it. The town is at the edge with lamps. Somebody has a rope round the gatepost.",
+    "next": "tam"
+   },
+   "tam": {
+    "id": "tam",
+    "speaker": "tam",
+    "text": [
+     {
+      "when": {
+       "fact": "tam.brought",
+       "eq": true
+      },
+      "text": "(He's at the edge, held back by the collar.) Pa went back for the dog."
+     },
+     {
+      "text": "(He's at the edge, held back by the collar.) I said it knocked. I said. ...Pa's in the kitchen."
+     }
+    ],
+    "next": "count"
+   },
+   "count": {
+    "id": "count",
+    "speaker": "holloway",
+    "text": "(He's on his knees at the edge with a lamp, very drunk and very white, and the lamp is shaking.) Three down. Penhale. Cotter. Wray. (He swallows.) ...Posted them. Boy said it knocked.",
+    "choices": [
+     {
+      "text": "I'll go down.",
+      "goto": "no"
+     },
+     {
+      "text": "Captain. You're drunk.",
+      "goto": "no"
+     },
+     {
+      "text": "(Take the rope.)",
+      "goto": "no"
+     }
+    ]
+   },
+   "no": {
+    "id": "no",
+    "speaker": "holloway",
+    "text": "No. (He gets up, holding the rope.) ...No. I'm going.",
+    "next": "coat"
+   },
+   "coat": {
+    "id": "coat",
+    "speaker": "narrator",
+    "text": "He takes off his coat and puts it round Tam's shoulders. Then he hooks the lamp on his belt and goes over the edge on the rope, drunk and shaking, and the light goes down with him.",
+    "next": "post"
+   },
+   "post": {
+    "id": "post",
+    "speaker": "maeca",
+    "text": "(She has the rope's end round the post, and her foot against it. She doesn't look at you.) Go on. I've got him.",
+    "choices": [
+     {
+      "text": "(Go down after him.)",
+      "effects": [
+       {
+        "set": {
+         "hole.down": true
+        }
+       }
+      ],
+      "end": true
+     }
+    ]
+   }
+  }
+ },
+ "scene_count_right": {
+  "npc": "scene_count_right",
+  "entry": [
+   {
+    "node": "last"
+   }
+  ],
+  "nodes": {
+   "last": {
+    "id": "last",
+    "speaker": "holloway",
+    "text": "(At the rope's foot, in the slurry to his knees, he holds the rope out to you.) Up. Go on. I'm last. Count's not right till you're up.",
+    "choices": [
+     {
+      "text": "(Climb.)",
+      "goto": "lip"
+     },
+     {
+      "text": "After you, Captain.",
+      "goto": "after"
+     }
+    ]
+   },
+   "after": {
+    "id": "after",
+    "speaker": "holloway",
+    "text": "(He puts the rope in your hands, and closes your fingers on it.) Up.",
+    "choices": [
+     {
+      "text": "(Climb.)",
+      "goto": "lip"
+     }
+    ]
+   },
+   "lip": {
+    "id": "lip",
+    "speaker": "narrator",
+    "text": [
+     {
+      "when": {
+       "fact": "maeca.lover",
+       "eq": true
+      },
+      "text": "At the top a hand comes down out of the grey light and takes yours, and pulls you over the lip. It's Maeca's. You know it before you see her."
+     },
+     {
+      "text": "At the top a hand comes down out of the grey light and takes yours, and pulls you over the lip. It's Maeca's."
+     }
+    ],
+    "next": "four"
+   },
+   "four": {
+    "id": "four",
+    "speaker": "holloway",
+    "text": "(from down the hole) Four.",
+    "next": "pa"
+   },
+   "pa": {
+    "id": "pa",
+    "speaker": "penhale",
+    "text": "(On his back in the mud, he gets up on one elbow and bawls down the hole.) And you took your bloody time, Captain!",
+    "next": "laugh"
+   },
+   "laugh": {
+    "id": "laugh",
+    "speaker": "holloway",
+    "text": "(down in the dark, a laugh: a real one, out of him before he can stop it) ...I did.",
+    "next": "haul"
+   },
+   "haul": {
+    "id": "haul",
+    "speaker": "narrator",
+    "text": "He hooks the lamp on his belt and starts up. Maeca has made the rope fast round the post. She has her hands on it, and so do you.",
+    "choices": [
+     {
+      "text": "(Haul.)",
+      "goto": "haul2"
+     }
+    ]
+   },
+   "haul2": {
+    "id": "haul2",
+    "speaker": "narrator",
+    "text": "He comes up hand over hand, and you take his weight between you. The post creaks. Across the hole, someone in a red kerchief has come out of the trees, and is watching.",
+    "choices": [
+     {
+      "text": "(Haul.)",
+      "goto": "face"
+     }
+    ]
+   },
+   "face": {
+    "id": "face",
+    "speaker": "narrator",
+    "text": "His face comes up into the lamplight, a body-length under you. He looks up. Not at you. At her.",
+    "next": "right"
+   },
+   "right": {
+    "id": "right",
+    "speaker": "holloway",
+    "text": "(He grins up at Maeca.) Count's right.",
+    "next": "cut"
+   },
+   "cut": {
+    "id": "cut",
+    "speaker": "narrator",
+    "text": "Maeca cuts the rope at the post. One stroke.",
+    "next": "run"
+   },
+   "run": {
+    "id": "run",
+    "speaker": "narrator",
+    "text": "The rope goes out through your hands and takes the skin with it. He doesn't cry out. The lamp at his belt goes down the dark, very small, and goes out.",
+    "effects": [
+     {
+      "set": {
+       "holloway.dead": true
+      }
+     }
+    ],
+    "next": "ninety"
+   },
+   "ninety": {
+    "id": "ninety",
+    "speaker": "maeca",
+    "text": "(She puts the knife away.) Ninety-two.",
+    "choices": [
+     {
+      "text": "Maeca.",
+      "show": {
+       "fact": "maeca.lover",
+       "eq": true
+      },
+      "goto": "were_up"
+     },
+     {
+      "text": "Maeca.",
+      "show": {
+       "not": {
+        "fact": "maeca.lover",
+        "eq": true
+       }
+      },
+      "goto": "looks"
+     },
+     {
+      "text": "(Take hold of her.)",
+      "goto": "hold"
+     },
+     {
+      "text": "(Say nothing.)",
+      "goto": "nothing"
+     }
+    ]
+   },
+   "were_up": {
+    "id": "were_up",
+    "speaker": "maeca",
+    "text": "(She looks at you.) You were up.",
+    "next": "under"
+   },
+   "looks": {
+    "id": "looks",
+    "speaker": "narrator",
+    "text": "She looks at you. She doesn't say anything.",
+    "next": "under"
+   },
+   "hold": {
+    "id": "hold",
+    "speaker": "narrator",
+    "text": [
+     {
+      "when": {
+       "fact": "maeca.lover",
+       "eq": true
+      },
+      "text": "She doesn't pull away. After a while her hand comes up and takes your wrist, hard, and stays there."
+     },
+     {
+      "text": "She doesn't pull away. She stands there in your hands, as still as the post."
+     }
+    ],
+    "next": "under"
+   },
+   "nothing": {
+    "id": "nothing",
+    "speaker": "narrator",
+    "text": "Nobody says anything. The rope's end lies in the mud by the post.",
+    "next": "under"
+   },
+   "under": {
+    "id": "under",
+    "speaker": "maeca",
+    "text": "The ones under me weren't dead. (She's looking down the hole, not at you.) Not when he shut it.",
+    "next": "pack"
+   },
+   "pack": {
+    "id": "pack",
+    "speaker": "narrator",
+    "text": [
+     {
+      "when": {
+       "all": [
+        {
+         "any": [
+          {
+           "fact": "beasts.outcome",
+           "eq": "cured"
+          },
+          {
+           "fact": "beasts.outcome",
+           "eq": "allied"
+          }
+         ]
+        },
+        {
+         "not": {
+          "fact": "greymuzzle",
+          "eq": "dead"
+         }
+        }
+       ]
+      },
+      "text": "The Pack has lain all night in the frost at the edge of the trees. Greymuzzle gets up, and looks at Maeca a long time, and turns away into the wood. The others go after him."
+     },
+     {
+      "text": "Nobody at the edge goes near her. They hold their lamps up, and look."
+     }
+    ],
+    "next": "tam"
+   },
+   "tam": {
+    "id": "tam",
+    "speaker": "tam",
+    "text": "(He has hold of his Pa's sleeve, and he's looking at the hole.) It started the night the ford went dark.",
+    "next": "watch"
+   },
+   "watch": {
+    "id": "watch",
+    "speaker": "narrator",
+    "text": "The Watch come round the edge of the hole with their lamps. Tolley stands in front of them and counts them with his finger.",
+    "next": "ten"
+   },
+   "ten": {
+    "id": "ten",
+    "speaker": "tolley",
+    "text": [
+     {
+      "when": {
+       "fact": "wolves.at_gate",
+       "eq": true
+      },
+      "text": "...Nine."
+     },
+     {
+      "text": "...Ten."
+     }
+    ],
+    "next": "take"
+   },
+   "take": {
+    "id": "take",
+    "speaker": "tolley",
+    "text": "(He looks at Maeca, and his voice goes up, and he brings it down.) Maeca. ...You'll come with us.",
+    "choices": [
+     {
+      "text": "Take her, then.",
+      "effects": [
+       {
+        "set": {
+         "maeca.after": "held"
+        }
+       }
+      ],
+      "goto": "held"
+     },
+     {
+      "text": "She's in my count.",
+      "effects": [
+       {
+        "set": {
+         "maeca.after": "stood"
+        }
+       },
+       {
+        "rel": {
+         "npc": "maeca",
+         "trust": 20
+        },
+        "quiet": true
+       }
+      ],
+      "goto": "stood"
+     },
+     {
+      "text": "Let her go.",
+      "effects": [
+       {
+        "set": {
+         "maeca.after": "gone"
+        }
+       }
+      ],
+      "goto": "gone"
+     }
+    ]
+   },
+   "held": {
+    "id": "held",
+    "speaker": "narrator",
+    "text": "Maeca holds her wrists out before anyone can touch her. They take her away down the road between their lamps, and she doesn't look back at the hole.",
+    "next": "coat"
+   },
+   "stood": {
+    "id": "stood",
+    "speaker": "narrator",
+    "text": "You stand between her and the lamps. Nobody comes through you. After a long time Tolley lowers his, and the rest of them do.",
+    "next": "coat"
+   },
+   "gone": {
+    "id": "gone",
+    "speaker": "narrator",
+    "text": "Nobody stops her. She walks away up the road toward the wood with the rope's end still in her hand, and nobody goes after her.",
+    "next": "coat"
+   },
+   "coat": {
+    "id": "coat",
+    "speaker": "narrator",
+    "text": "Tam is still wearing the captain's coat. It comes down past his boots.",
+    "effects": [
+     {
+      "if": {
+       "not": {
+        "fact": "scene.dusk",
+        "exists": true
+       }
+      },
+      "then": [
+       {
+        "set": {
+         "scene.dusk": "scene_barred"
+        }
+       }
+      ]
+     }
+    ],
+    "choices": [
+     {
+      "text": "(Go.)",
+      "end": true
+     }
+    ]
+   }
+  }
+ },
+ "scene_barred": {
+  "npc": "scene_barred",
+  "entry": [
+   {
+    "node": "dusk"
+   }
+  ],
+  "nodes": {
+   "dusk": {
+    "id": "dusk",
+    "speaker": "narrator",
+    "text": [
+     {
+      "when": {
+       "fact": "holloway.dusks",
+       "eq": 1
+      },
+      "text": "At dusk Tolley bars the south gate, and doesn't count anyone in. The captain's stool stands in the gateway with his coat folded on it; Tam brought it back. Nobody moves it, and nobody sits on it."
+     },
+     {
+      "when": {
+       "fact": "holloway.dusks",
+       "eq": 2
+      },
+      "text": "Out past the Old Road, the hole at the Penhale farm is quiet. In the square, people keep stopping to listen to it."
+     },
+     {
+      "text": "Three nights now the hole has been quiet. The Watch bars the gate before the lamps are lit, and stands well back from it."
+     }
+    ],
+    "effects": [
+     {
+      "add": {
+       "holloway.dusks": 1
+      }
+     }
+    ],
+    "choices": [
+     {
+      "text": "(Go.)",
+      "end": true
+     }
+    ]
+   }
+  }
+ },
+ "scene_one_in": {
+  "npc": "scene_one_in",
+  "entry": [
+   {
+    "node": "road"
+   }
+  ],
+  "nodes": {
+   "road": {
+    "id": "road",
+    "speaker": "narrator",
+    "text": [
+     {
+      "when": {
+       "fact": "maeca.after",
+       "eq": "stood"
+      },
+      "text": "At dusk someone is standing in the road outside the south gate, facing it, in the last of the light. The gate is barred. Inside it, Maeca sits on the step by the empty stool with her crossbow across her knees, the way she always sat."
+     },
+     {
+      "text": "At dusk someone is standing in the road outside the south gate, facing it, in the last of the light. The gate is barred."
+     }
+    ],
+    "next": "wall"
+   },
+   "wall": {
+    "id": "wall",
+    "speaker": "narrator",
+    "text": "Up on the wall Tolley is holding a lamp out over the road, and it isn't steady. Further along, Chid has come up with his own lamp, and is standing very still.",
+    "next": "tolley"
+   },
+   "tolley": {
+    "id": "tolley",
+    "speaker": "tolley",
+    "text": "(He doesn't look away from the road.) He's been there since the bell. Just stood. Not knocking. Not anything. (His voice goes.) Captain never once barred it on anybody.",
+    "choices": [
+     {
+      "text": "Open it.",
+      "goto": "open"
+     }
+    ]
+   },
+   "open": {
+    "id": "open",
+    "speaker": "tolley",
+    "text": "(He comes down off the wall and lifts the bar himself.) ...Somebody's still out.",
+    "next": "out"
+   },
+   "out": {
+    "id": "out",
+    "speaker": "narrator",
+    "text": "You go out, and the gate shuts behind you. He doesn't lift his hands. His lips are moving. You have to get close to hear it.",
+    "next": "count"
+   },
+   "count": {
+    "id": "count",
+    "speaker": "holloway",
+    "text": "(close, flat, a dead man's whisper, every number the same) ...Ninety. Ninety-one. (a breath that isn't one) ...Ninety-two.",
+    "next": "hands"
+   },
+   "hands": {
+    "id": "hands",
+    "speaker": "narrator",
+    "text": "Then he lifts his hands, and comes at you.",
+    "choices": [
+     {
+      "text": "(Lay him down.)",
+      "goto": "laid"
+     }
+    ]
+   },
+   "laid": {
+    "id": "laid",
+    "speaker": "narrator",
+    "text": "You lay him down in the road outside his own gate. Behind you the bar comes off, and the gate opens.",
+    "effects": [
+     {
+      "set": {
+       "holloway.laid": true
+      }
+     }
+    ],
+    "choices": [
+     {
+      "text": "(Go in.)",
+      "show": {
+       "fact": "maeca.after",
+       "eq": "stood"
+      },
+      "goto": "in_maeca"
+     },
+     {
+      "text": "(Go in.)",
+      "show": {
+       "not": {
+        "fact": "maeca.after",
+        "eq": "stood"
+       }
+      },
+      "goto": "in_tolley"
+     }
+    ]
+   },
+   "in_maeca": {
+    "id": "in_maeca",
+    "speaker": "maeca",
+    "text": "(She's in the gateway with the bar in her hands. She doesn't look at him.) ...One in. (She takes his coat off the stool, and puts it on.)",
+    "choices": [
+     {
+      "text": "(Go.)",
+      "end": true
+     }
+    ]
+   },
+   "in_tolley": {
+    "id": "in_tolley",
+    "speaker": "tolley",
+    "text": "(He holds the gate for you, and doesn't look at him.) ...One in.",
+    "choices": [
+     {
+      "text": "(Go.)",
+      "end": true
+     }
+    ]
+   }
+  }
+ },
+ "scene_his_table": {
+  "npc": "scene_his_table",
+  "entry": [
+   {
+    "node": "bury"
+   }
+  ],
+  "nodes": {
+   "bury": {
+    "id": "bury",
+    "speaker": "narrator",
+    "text": "At first light the Watch bury the captain in the Quiet Garden. Tolley stands at the gate of it and counts everyone in.",
+    "next": "door"
+   },
+   "door": {
+    "id": "door",
+    "speaker": "tolley",
+    "text": "Somebody's got to go through his table. The lads won't, and I can't. (He holds the Watch-house door open, and doesn't go in.) He said you were in his count.",
+    "choices": [
+     {
+      "text": "(Go in.)",
+      "goto": "table"
+     }
+    ]
+   },
+   "table": {
+    "id": "table",
+    "speaker": "narrator",
+    "text": [
+     {
+      "when": {
+       "fact": "holloway.letter_seen",
+       "eq": true
+      },
+      "text": "His table is a plank on two barrels: a cup, a lamp, a chewed pen. Under the cup, the letter with the silver seal: his, from the north, about the north."
+     },
+     {
+      "text": "His table is a plank on two barrels: a cup, a lamp, a chewed pen. Under the cup, a letter with a silver seal."
+     }
+    ],
+    "next": "letter"
+   },
+   "letter": {
+    "id": "letter",
+    "speaker": "narrator",
+    "text": "It's from Silverstair, in a clerk's good hand, and sorry for the trouble. The Vigil will settle the Watch's arrears in full, fourteen months, on delivery of the one from the Low Ford.",
+    "next": "no"
+   },
+   "no": {
+    "id": "no",
+    "speaker": "narrator",
+    "text": "Under it, his answer, written out fair, folded, and never sent. It says: No. Then his name, and his rank.",
+    "next": "book"
+   },
+   "book": {
+    "id": "book",
+    "speaker": "narrator",
+    "text": "His daybook is under that, an army book gone soft at the corners. The front of it is this winter: a name for every morning since the ford went dark, and beside each, what took them. Fever. Frost. The Dig. Beside some there's only a dash.",
+    "next": "dogs"
+   },
+   "dogs": {
+    "id": "dogs",
+    "speaker": "narrator",
+    "text": "A loose page is tucked in at the back: dogs' names, one under another, every one crossed out. Corran is crossed out hardest; the pen went through. At the bottom, one he let stand. Dog.",
+    "next": "lid"
+   },
+   "lid": {
+    "id": "lid",
+    "speaker": "narrator",
+    "text": "In the middle of the book is the garrison's last entry, ten years old: 91 up. Lid down. Under it, in a newer hand that runs downhill, the names, each with who they left. Abbot. Two bairns. Ancell. His mam. On down the page.",
+    "next": "foot"
+   },
+   "foot": {
+    "id": "foot",
+    "speaker": "narrator",
+    "text": "At the foot of the page there's a number with no name to it. 92.",
+    "next": "sorry"
+   },
+   "sorry": {
+    "id": "sorry",
+    "speaker": "narrator",
+    "text": "Beside it, very small, one word. Sorry.",
+    "choices": [
+     {
+      "text": "(Take it to Maeca.)",
+      "goto": "to_maeca"
+     },
+     {
+      "text": "(Take it up to the Roost, to Redcowl.)",
+      "show": {
+       "not": {
+        "any": [
+         {
+          "fact": "redcowl",
+          "eq": "dead"
+         },
+         {
+          "fact": "redcowl",
+          "eq": "tricked"
+         },
+         {
+          "fact": "redcowl",
+          "eq": "furious"
+         }
+        ]
+       }
+      },
+      "goto": "to_redcowl"
+     },
+     {
+      "text": "(Burn it.)",
+      "goto": "burn"
+     }
+    ]
+   },
+   "to_maeca": {
+    "id": "to_maeca",
+    "speaker": "narrator",
+    "text": [
+     {
+      "when": {
+       "fact": "maeca.after",
+       "eq": "held"
+      },
+      "text": "Tolley takes you down to the cells himself, and waits at the top of the steps with his back turned. Maeca is sitting on the floor of her cell with her boots off."
+     },
+     {
+      "when": {
+       "fact": "maeca.after",
+       "eq": "stood"
+      },
+      "text": "Maeca is on the step at the gate, in his coat, with her crossbow across her knees."
+     },
+     {
+      "text": "You find her at the Blind, with her boots off and no fire lit."
+     }
+    ],
+    "next": "reads"
+   },
+   "reads": {
+    "id": "reads",
+    "speaker": "narrator",
+    "text": "You give her the book. She reads it the way she reads ground, slowly, with her finger, to the foot of the page. She stops there.",
+    "next": "counted"
+   },
+   "counted": {
+    "id": "counted",
+    "speaker": "maeca",
+    "text": "(a long time) ...He counted me.",
+    "effects": [
+     {
+      "set": {
+       "daybook.to": "maeca",
+       "maeca.counted": true
+      }
+     }
+    ],
+    "choices": [
+     {
+      "text": "(Leave her with it.)",
+      "end": true
+     }
+    ]
+   },
+   "to_redcowl": {
+    "id": "to_redcowl",
+    "speaker": "narrator",
+    "text": "Redcowl reads it by his fire, with his finger under the words and his lips moving. At the lid, he stops.",
+    "next": "bairns"
+   },
+   "bairns": {
+    "id": "bairns",
+    "speaker": "redcowl",
+    "text": "So that's the man kept my bairns alive. And I robbed his road for ten years. (He shuts the book on his thumb.) ...Oh, Mam.",
+    "effects": [
+     {
+      "set": {
+       "daybook.to": "redcowl"
+      }
+     }
+    ],
+    "choices": [
+     {
+      "text": "(Go.)",
+      "end": true
+     }
+    ]
+   },
+   "burn": {
+    "id": "burn",
+    "speaker": "narrator",
+    "text": "You put it in his stove. It's slow to catch. The last page to go has a number at the foot of it, and no name.",
+    "effects": [
+     {
+      "set": {
+       "daybook.to": "burned"
+      }
+     }
+    ],
+    "choices": [
+     {
+      "text": "(Go.)",
       "end": true
      }
     ]

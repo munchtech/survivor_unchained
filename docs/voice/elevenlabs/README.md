@@ -72,17 +72,17 @@ Holloway, Brannoc and Sella, in that order.
 <!-- PACKETS -->
 | Character | Takes | Characters | Held | Locked |
 |---|---|---|---|---|
-| [The narrator](narrator.md) | 333 | 27,246 | 79 | 255 |
+| [The narrator](narrator.md) | 409 | 34,932 | 155 | 255 |
 | [Sella](sella.md) | 95 | 13,007 |  | 52 |
-| [Captain Holloway](holloway.md) | 110 | 9,714 |  | 110 |
+| [Captain Holloway](holloway.md) | 119 | 9,912 | 9 | 110 |
 | [Vonnra Ash-of-Morrow](vonnra.md) | 104 | 8,939 | 103 | 1 |
 | [Chid](chid.md) | 84 | 8,735 |  | 84 |
 | [Harlan Coyle](harlan.md) | 63 | 7,229 | 63 |  |
-| [Maeca](maeca.md) | 83 | 6,560 |  | 83 |
+| [Maeca](maeca.md) | 94 | 6,762 | 11 | 83 |
 | [Mother Rook](rook.md) | 54 | 6,558 |  | 54 |
 | [Rav Cutwell](rav.md) | 61 | 6,007 |  |  |
 | [Dame Keegan Orme](keegan.md) | 48 | 5,218 | 1 |  |
-| [Redcowl](redcowl.md) | 45 | 4,337 |  |  |
+| [Redcowl](redcowl.md) | 47 | 4,424 | 2 |  |
 | [Old Wenna](wenna.md) | 34 | 4,069 |  |  |
 | [Pell Varrow](pell.md) | 32 | 3,621 |  |  |
 | [Ysolde Marrow, the Wayfinder](ysolde.md) | 30 | 3,403 |  |  |
@@ -91,10 +91,10 @@ Holloway, Brannoc and Sella, in that order.
 | [Townswoman, middle-aged](folk_f1.md) | 46 | 2,721 |  |  |
 | [Brannoc](brannoc.md) | 63 | 2,621 | 2 | 62 |
 | [Townsman, old](folk_m2.md) | 43 | 2,470 |  |  |
+| [Tam](tam.md) | 26 | 2,349 | 5 |  |
 | [Snib](snib.md) | 15 | 2,199 |  |  |
-| [Tam](tam.md) | 21 | 2,020 |  |  |
 | [Jory Coyle](jory.md) | 14 | 877 |  |  |
-| [A Watchman at the gate](guard.md) | 13 | 546 |  | 2 |
+| [A Watchman at the gate](guard.md) | 22 | 834 | 9 | 2 |
 | [Grimtunnel](grimtunnel.md) | 7 | 442 |  | 3 |
 | [The babbling lampling](lampling.md) | 2 | 421 |  |  |
 | [A Watchwoman](guard_f.md) | 9 | 405 |  |  |
@@ -103,6 +103,7 @@ Holloway, Brannoc and Sella, in that order.
 | [The Ford-Warden](warden.md) | 5 | 142 |  | 5 |
 | [The dead Watchman](watchman.md) | 1 | 45 |  | 1 |
 | [The Legion's dead, behind the door](barrow_lord.md) | 5 | 41 |  |  |
+| [Penhale, Tam's Pa](penhale.md) | 1 | 39 | 1 |  |
 | [The bones](bones.md) | 1 | 37 |  |  |
 | [The Ford-Warden, the man under him](warden_man.md) | 1 | 14 |  | 1 |
 | [The Red Hand](red_hand.md) | 1 | 13 |  |  |

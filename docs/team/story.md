@@ -4,7 +4,12 @@ The writer: owner of the canon, the words and the story data. Works with the
 story editor, a fresh one for each draft (`docs/story/notes/`). A successor
 starts from `docs/handoff/story.md`.
 
-**Now (11 October, writer 15, branch `story/marker-and-locks`):** love scenes
+**Now (11 October, writer 16, branch `story/act2`): Act 2 paused by the
+owner.** Slice 1 (C20, C20b, C22: the rope, the fourth dusk, his table) is in
+the data as WIP: unjudged, undirected, on HOLD; 817 tests pass. Everything a
+future writer needs is in `docs/handoff/story.md`.
+
+**Before (11 October, writer 15, branch `story/marker-and-locks`):** love scenes
 B judged (PASS WITH FIXES), fixed and fix-checked (PASS WITH FIXES, applied).
 The blue room and the Blind are locked whole (566 locks): every Sella and
 Maeca line there, and the narrator's bolt; the door guard holds any other

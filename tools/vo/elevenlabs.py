@@ -47,7 +47,8 @@ HOLD_VOICES: dict = {
 # Packets the story lead has checked and marked final (voice: date).
 FINAL = {"narrator": "2026-10-03", "rook": "2026-10-03", "holloway": "2026-10-03", "brannoc": "2026-10-03", "sella": "2026-10-03"}
 # Lines waiting on the story lead or the owner: (id prefix, why).
-HOLD_LINES = (("dlg.keegan.vonnra.", "the story lead's confirmation of Keegan's kenning"),)
+A2 = "Act 2: held until the editor and the owner pass it"
+HOLD_LINES = (("dlg.keegan.vonnra.", "the story lead's confirmation of Keegan's kenning"), ("dlg.scene_it_stopped.", A2), ("dlg.scene_ground_opens.", A2), ("dlg.scene_count_right.", A2), ("dlg.scene_barred.", A2), ("dlg.scene_one_in.", A2), ("dlg.scene_his_table.", A2), ("dlg.maeca.k_.", A2))
 TAG = {"beat": "…", "breath": "[inhales]", "laugh": "[laughs]", "laughs": "[laughs]", "chuckle": "[chuckles]",
        "sigh": "[sighs]", "sighs": "[sighs]", "sniff": "[sniffs]", "gasp": "[gasps]", "silence": "[long pause]", "name": "",
        "whisper": "[whispers]"}

@@ -1,8 +1,10 @@
 # A Watchman at the gate: ElevenLabs packet
 
-Voice id in the game: `guard`. 13 takes to record (546 characters; about 1,638 credits at three tries a line). Status: **draft, except the 2 takes marked LOCKED FOR RECORDING** (the story lead, 2026-10-11): record those now.
+Voice id in the game: `guard`. 22 takes to record (834 characters; about 2,502 credits at three tries a line). Status: **draft, except the 2 takes marked LOCKED FOR RECORDING** (the story lead, 2026-10-11): record those now.
 
 **2 takes are LOCKED FOR RECORDING** (marked below).
+
+**Hold 9 of these** (marked HOLD below, with why); the rest can be recorded now.
 
 ## Who they are
 
@@ -37,6 +39,10 @@ Then bring them into the game (it trims, levels, mixes and replaces the placehol
 python tools/vo/import_takes.py ~/Downloads/su_vo --voice guard
 ```
 
+## Saying the names
+
+The text to paste already respells these; keep the respelling: Maeca as *Mayka*.
+
 ## The lines
 
 Each: what is going on, how it is played, then the text to paste (the bracketed tags are ElevenLabs audio tags: they are acted, not spoken), the words the subtitle shows (what the take must say), and the file name.
@@ -68,9 +74,96 @@ Subtitle: Dawn arrivals. We don't get many that live.
 ```
 Subtitle: Lamps are lit. Stay where they reach.
 
+## Conversations: Scene_count_right
+
+### 3. `dlg.scene_count_right.ten.0.wav`  HOLD: Act 2: held until the editor and the owner pass it
+
+*Where:* dialogue.json scene_count_right/ten#0
+
+```
+...Nine.
+```
+Subtitle: ...Nine.
+
+### 4. `dlg.scene_count_right.ten.1.wav`  HOLD: Act 2: held until the editor and the owner pass it
+
+*Where:* dialogue.json scene_count_right/ten#1
+
+```
+...Ten.
+```
+Subtitle: ...Ten.
+
+### 5. `dlg.scene_count_right.take.0.p1.wav`  HOLD: Act 2: held until the editor and the owner pass it
+
+*Where:* dialogue.json scene_count_right/take#0; part 2 of 2: narrator: He looks at Maeca, and his voice goes up, and he brings it down. / **guard: Maeca. ...You'll come with us.**
+
+```
+Mayka. ...You'll come with us.
+```
+Subtitle: Maeca. ...You'll come with us.
+
+## Conversations: Scene_one_in
+
+### 6. `dlg.scene_one_in.tolley.0.p1.wav`  HOLD: Act 2: held until the editor and the owner pass it
+
+*Where:* dialogue.json scene_one_in/tolley#0; part 2 of 4: narrator: He doesn't look away from the road. / **guard: He's been there since the bell. Just stood. Not knocking. Not anything.** / narrator: His voice goes. / guard: Captain never once barred it on anybody.
+
+```
+He's been there since the bell. Just stood. Not knocking. Not anything.
+```
+Subtitle: He's been there since the bell. Just stood. Not knocking. Not anything.
+
+### 7. `dlg.scene_one_in.tolley.0.p3.wav`  HOLD: Act 2: held until the editor and the owner pass it
+
+*Where:* dialogue.json scene_one_in/tolley#0; part 4 of 4: narrator: He doesn't look away from the road. / guard: He's been there since the bell. Just stood. Not knocking. Not anything. / narrator: His voice goes. / **guard: Captain never once barred it on anybody.**
+
+```
+Captain never once barred it on anybody.
+```
+Subtitle: Captain never once barred it on anybody.
+
+### 8. `dlg.scene_one_in.open.0.p1.wav`  HOLD: Act 2: held until the editor and the owner pass it
+
+*Where:* dialogue.json scene_one_in/open#0; part 2 of 2: narrator: He comes down off the wall and lifts the bar himself. / **guard: ...Somebody's still out.**
+
+```
+...Somebody's still out.
+```
+Subtitle: ...Somebody's still out.
+
+### 9. `dlg.scene_one_in.in_tolley.0.p1.wav`  HOLD: Act 2: held until the editor and the owner pass it
+
+*Where:* dialogue.json scene_one_in/in_tolley#0; part 2 of 2: narrator: He holds the gate for you, and doesn't look at him. / **guard: ...One in.**
+
+```
+...One in.
+```
+Subtitle: ...One in.
+
+## Conversations: Scene_his_table
+
+### 10. `dlg.scene_his_table.door.0.p0.wav`  HOLD: Act 2: held until the editor and the owner pass it
+
+*Where:* dialogue.json scene_his_table/door#0; part 1 of 3: **guard: Somebody's got to go through his table. The lads won't, and I can't.** / narrator: He holds the Watch-house door open, and doesn't go in. / guard: He said you were in his count.
+
+```
+Somebody's got to go through his table. The lads won't, and I can't.
+```
+Subtitle: Somebody's got to go through his table. The lads won't, and I can't.
+
+### 11. `dlg.scene_his_table.door.0.p2.wav`  HOLD: Act 2: held until the editor and the owner pass it
+
+*Where:* dialogue.json scene_his_table/door#0; part 3 of 3: guard: Somebody's got to go through his table. The lads won't, and I can't. / narrator: He holds the Watch-house door open, and doesn't go in. / **guard: He said you were in his count.**
+
+```
+He said you were in his count.
+```
+Subtitle: He said you were in his count.
+
 ## Said in passing
 
-### 3. `guard.1.wav`
+### 12. `guard.1.wav`
 
 *Where:* npcs.json guards[1]
 *Played:* bored, matter-of-fact; pace: measured; volume: level.
@@ -80,7 +173,7 @@ Subtitle: Lamps are lit. Stay where they reach.
 ```
 Subtitle: Keep your weapon sheathed in town.
 
-### 4. `guard.2.wav`
+### 13. `guard.2.wav`
 
 *Where:* npcs.json guards[2]
 *Played:* bored, matter-of-fact; pace: measured; volume: level.
@@ -92,7 +185,7 @@ Subtitle: East road. Mind the wolves.
 
 ## Passers-by
 
-### 5. `folk.71.m.wav`
+### 14. `folk.71.m.wav`
 
 *Where:* folk.json lines[71]
 *Played:* curt; pace: measured; volume: level.
@@ -102,7 +195,7 @@ Subtitle: East road. Mind the wolves.
 ```
 Subtitle: All quiet. Keep it that way.
 
-### 6. `folk.72.m.wav`
+### 15. `folk.72.m.wav`
 
 *Where:* folk.json lines[72]
 *Played:* curt; pace: measured; volume: level.
@@ -112,7 +205,7 @@ Subtitle: All quiet. Keep it that way.
 ```
 Subtitle: Gates are shut till dawn.
 
-### 7. `folk.73.m.wav`
+### 16. `folk.73.m.wav`
 
 *Where:* folk.json lines[73]
 *Played:* curt; pace: measured; volume: level.
@@ -122,7 +215,7 @@ Subtitle: Gates are shut till dawn.
 ```
 Subtitle: Walk on, traveler.
 
-### 8. `folk.74.m.wav`
+### 17. `folk.74.m.wav`
 
 *Where:* folk.json lines[74]
 *Played:* rough; pace: measured; volume: level.
@@ -132,7 +225,7 @@ Subtitle: Walk on, traveler.
 ```
 Subtitle: Piss off home. It's past curfew.
 
-### 9. `folk.75.m.wav`
+### 18. `folk.75.m.wav`
 
 *Where:* folk.json lines[75]
 *Played:* threatening; pace: measured; volume: level.
@@ -142,7 +235,7 @@ Subtitle: Piss off home. It's past curfew.
 ```
 Subtitle: Keep that blade sheathed or I'll sheathe it for you.
 
-### 10. `folk.76.m.wav`
+### 19. `folk.76.m.wav`
 
 *Where:* folk.json lines[76]
 *Played:* tired; pace: measured; volume: level.
@@ -152,7 +245,7 @@ Subtitle: Keep that blade sheathed or I'll sheathe it for you.
 ```
 Subtitle: Captain's doubled the gate. Wolves.
 
-### 11. `folk.81.m.wav`
+### 20. `folk.81.m.wav`
 
 *Where:* folk.json lines[81]
 *Played:* uneasy; pace: measured; volume: level.
@@ -162,7 +255,7 @@ Subtitle: Captain's doubled the gate. Wolves.
 ```
 Subtitle: Captain says to let you be. Captain says it like he's not sure.
 
-### 12. `folk.94.m.wav`
+### 21. `folk.94.m.wav`
 
 *Where:* folk.json lines[94]
 *Played:* rough threat; pace: measured; volume: level.
@@ -172,7 +265,7 @@ Subtitle: Captain says to let you be. Captain says it like he's not sure.
 ```
 Subtitle: Indoors, before I find a reason. I'm good at finding reasons.
 
-### 13. `folk.106.m.wav`
+### 22. `folk.106.m.wav`
 
 *Where:* folk.json lines[106]
 *Played:* uneasy; pace: measured; volume: level.
