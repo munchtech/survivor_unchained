@@ -228,6 +228,39 @@ public sealed class LampRulesTests
     }
 
     [Fact]
+    public void The_rebuke_is_as_hard_as_the_wall_is_thick_and_grows_with_the_ember_as_the_flare_does()
+    {
+        var b = BattleTests.Arena(3);
+        b.Lamps = NightWith(Rule("shield_arm", ("block", 0.15), ("stones", 10), ("radius", 4), ("rebuke", 10), ("per_level", 0.08)));
+        // Its defining number is in full by night: ten times max health at the ember's first level.
+        b.EmberLevel = 1;
+        Assert.Equal(b.MaxHp * 10, b.RebukePower(), 6);
+        // And 8% more a level, as the Flare's power (Lamps.FlarePower): at the ember's 51st, six times as hard.
+        b.EmberLevel = 51;
+        Assert.Equal(b.MaxHp * 10 * 5, b.RebukePower(), 6);
+        // By day (no ember) the survivor's own level stands in for it.
+        b.EmberOn = false;
+        b.Level = 11;
+        Assert.Equal(b.MaxHp * 10 * 1.8, b.RebukePower(), 6);
+        // The lamp's own number, as the board builds it.
+        var arm = Lamps.Get("bulwark.shield_arm").Effects[0];
+        Assert.Equal(10, arm.Arg("rebuke", 0), 6);
+        Assert.Equal(0.08, arm.Arg("per_level", 0), 6);
+
+        // Ten stones: the rebuke lands its power through the build's damage on what stands near, and none past its reach.
+        var w = BattleTests.Arena(3);
+        w.Lamps = NightWith(Rule("shield_arm", ("block", 0.0), ("stones", 10), ("radius", 4), ("rebuke", 10), ("per_level", 0.08)));
+        w.AddBoon("warding");
+        var near = System.Array.Find(w.Enemies.Items, e => e != null && e.Alive && Dist(e, w) < 3.5);
+        for (int i = 0; i < 10; i++) { w.Player.Iframes = 0; w.Player.BlockT = 0; w.HurtPlayer(1, School.Physical, "test", null); }
+        Assert.Equal(1, w.Rebukes);
+        Assert.Equal(0, w.Stones);
+        if (near != null) Assert.True(w.DamageBy.GetValueOrDefault("rebuke") > 0);
+    }
+
+    static double Dist(Enemy e, Battle b) => System.Math.Sqrt((e.X - b.Player.X) * (e.X - b.Player.X) + (e.Z - b.Player.Z) * (e.Z - b.Player.Z));
+
+    [Fact]
     public void The_long_chains_reach_is_in_full_by_night()
     {
         var b = BattleTests.Arena(3);

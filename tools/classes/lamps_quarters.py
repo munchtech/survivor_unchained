@@ -82,7 +82,7 @@ sund = road("warden", w, "sunderer", "Road of the Sunderer", "Slow, huge blows t
 
 bulw = road("warden", w, "bulwark", "Road of the Bulwark", "Walk in, let them hit you, and they break on it.",
     ("Shield Arm", "Your shield turns one blow in seven. Each block lays a stone, up to ten; at ten, the wall answers with a rebuke of holy light all around you.",
-     [R("shield_arm", block=0.15, stones=10, radius=4, lull=6, rebuke=0.3)], ["oathblade"]),
+     [R("shield_arm", block=0.15, stones=10, radius=4, lull=6, rebuke=10, per_level=0.08)], ["oathblade"]),
     [("+5% block while you stand still.", [R("block.still", add=0.05)]),
      ("+5% block against champions' and bosses' blows.", [R("block.champions", add=0.05)]),
      ("+2 Resolve.", [A("resolve")]),

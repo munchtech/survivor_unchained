@@ -94,7 +94,7 @@ public sealed partial class Battle
         var p = Player;
         var l = Lamps;
         double r = l.Full("shield_arm", "radius", 4) * Math.Sqrt(Stats.Get(Stat.Area));
-        double dmg = MaxHp * l.Full("shield_arm", "rebuke", 0.3) + bearerStore;
+        double dmg = RebukePower() + bearerStore;
         Rebukes++;
         bearerStore = 0;
         Events.Emit(new Ev.Nova { X = p.X, Z = p.Z, Radius = r, School = School.Holy, Duration = 0.3, Rings = 1 });
@@ -104,6 +104,14 @@ public sealed partial class Battle
             double m = e.Elite || e.Boss ? 1 + l.Size("rebuke.champions", "more") : 1;
             HitEnemy(e, dmg * m, School.Holy, [Tag.Holy, Tag.Area, Tag.Shield], new HitOpts { Knockback = 1.2, DirX = (e.X - p.X) / dd, DirZ = (e.Z - p.Z) / dd, NoProcs = true, Credit = "rebuke" });
         });
+    }
+
+    /// <summary>The rebuke's blow before the build's damage: as hard as the wall is thick (a share of max health), grown by
+    /// the level as the Flare's power is (8% a level; the ember's level by night, the survivor's by day). CLASSES.md 2.8.</summary>
+    public double RebukePower()
+    {
+        int level = EmberOn ? EmberLevel : Level;
+        return MaxHp * Lamps.Full("shield_arm", "rebuke", 10) * (1 + Lamps.Full("shield_arm", "per_level", 0.08) * Math.Max(0, level - 1));
     }
 
     /// <summary>The lull is in the fight: no blow taken or blocked and no hostile within 3 m for `lull` seconds, then stones
