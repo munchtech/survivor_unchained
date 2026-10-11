@@ -41,6 +41,8 @@ public sealed class WeaponInst
     /// <summary>Taken from the hand for a while (the Red Hand's toll): it does not fire.</summary>
     public double DisabledT;
     public int Swing;
+    /// <summary>The strength of the cast now in hand (the Ledger, the Crowded Sky, the Echo): a multiplier on its projectiles.</summary>
+    public double CastMul = 1;
     Tag[]? tags;
 
     public WeaponInst(string id, int rank, int slot)
@@ -104,7 +106,7 @@ public static class Firing
 {
     public static double CooldownOf(Battle b, WeaponInst w)
     {
-        double c = (w.Def.Base.Cooldown ?? 1) * b.Stats.Get(Stat.Cooldown) * w.Mods.Cooldown * b.ReaverCooldownMul(w);
+        double c = (w.Def.Base.Cooldown ?? 1) * b.Stats.Get(Stat.Cooldown) * w.Mods.Cooldown * b.ReaverCooldownMul(w) * b.ArcanistCooldownMul(w);
         if (w.Evolution != null) c *= w.Evolution.Mods.Cooldown ?? 1;
         return Math.Max(0.08, Math.Min(20, c));
     }
@@ -127,7 +129,7 @@ public static class Firing
 
     public static double DurationOf(Battle b, WeaponInst w, double baseValue)
     {
-        double d = baseValue * b.Stats.Get(Stat.Duration) * (1 + Content.Weapons.DurationStep * (w.Rank - 1)) * w.Mods.Duration;
+        double d = baseValue * b.Stats.Get(Stat.Duration) * (1 + Content.Weapons.DurationStep * (w.Rank - 1)) * w.Mods.Duration * (1 + b.ZoneLonger(w));
         if (w.Evolution != null) d *= w.Evolution.Mods.Duration ?? 1;
         return d;
     }
@@ -137,14 +139,14 @@ public static class Firing
         int n = baseCount ?? w.Def.Base.Projectiles ?? 1;
         if (w.Rank >= Content.Weapons.ProjRankA) n++;
         if (w.Rank >= Content.Weapons.ProjRankB) n++;
-        n += RoundInt(b.Stats.Get(Stat.Projectiles)) + w.Mods.Projectiles;
+        n += RoundInt(b.Stats.Get(Stat.Projectiles)) + w.Mods.Projectiles + b.ArcanistProjectiles(w);
         if (w.Evolution != null) n += w.Evolution.Mods.Projectiles ?? 0;
         return Math.Max(1, n);
     }
 
     public static double SpeedOf(Battle b, WeaponInst w)
     {
-        double s = (w.Def.Base.Speed ?? 9) * b.Stats.Get(Stat.ProjectileSpeed) * w.Mods.Speed;
+        double s = (w.Def.Base.Speed ?? 9) * b.Stats.Get(Stat.ProjectileSpeed) * w.Mods.Speed * b.ArcanistSpeedMul(w);
         if (w.Evolution != null) s *= w.Evolution.Mods.Speed ?? 1;
         return s;
     }
@@ -172,13 +174,18 @@ public static class Firing
         }
         if (w.Timer > 0) return;
         int kills0 = w.Kills;
+        b.ArcanistBeforeCast(w);
         bool fired = Fire(b, w);
+        b.ArcanistAfterCast(w, fired);
         // Nothing in range: look again soon rather than waiting a whole cooldown.
         w.Timer = fired ? CooldownOf(b, w) : 0.25;
         // sunderer.momentum: a melee swing that kills enough brings the skill's next swing sooner.
         if (fired && w.Tags.Has(Tag.Melee) && b.Lamp("momentum") && w.Kills - kills0 >= b.Lamps.Full("momentum", "kills", 3))
             w.Timer *= 1 - Math.Min(0.9, b.Lamps.Size("momentum", "sooner"));
     }
+
+    /// <summary>moonweaver.the_echo: the spell fires again.</summary>
+    public static bool Echo(Battle b, WeaponInst w) => Fire(b, w);
 
     static bool Fire(Battle b, WeaponInst w) => w.Behavior switch
     {
@@ -234,7 +241,7 @@ public static class Firing
     {
         var p = b.Player;
         double sp = SpeedOf(b, w) * speedMul;
-        var pr = b.SpawnProjectile(Side.Player, x ?? p.X + Math.Cos(angle) * 0.5, z ?? p.Z + Math.Sin(angle) * 0.5, DamageFor(w), w.School);
+        var pr = b.SpawnProjectile(Side.Player, x ?? p.X + Math.Cos(angle) * 0.5, z ?? p.Z + Math.Sin(angle) * 0.5, DamageFor(w) * w.CastMul, w.School);
         if (pr != null)
         {
             pr.Y = 1.1;
@@ -245,10 +252,11 @@ public static class Firing
             pr.Bounces = (int)(w.Num(s => s.Bounces) ?? 0) + (w.Evolution?.Mods.Bounces ?? 0);
             pr.Life = life ?? DurationOf(b, w, w.Num(s => s.Life) ?? 2.0) / (1 + Content.Weapons.DurationStep * (w.Rank - 1));
             pr.Homing = (w.Num(s => s.Homing) ?? 0) + w.Mods.Homing;
-            pr.Seek = SeekOf(w);
+            pr.Seek = b.ArcanistSeek(w, SeekOf(w));
             // A hunter of the strongest or the marked picks its own prey in flight.
             pr.Target = pr.Seek is Seek.Strongest or Seek.Elite or Seek.Marked ? -2 : target ?? -2;
             pr.Weapon = w.Id;
+            b.ArcanistLaunched(pr, w);
             pr.Art = w.Art;
             pr.Status = w.StatusOf;
             var splash = w.Num(s => s.Splash);

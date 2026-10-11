@@ -177,4 +177,107 @@ public sealed class LampRulesTests
         Assert.Equal(plain * 1.1, Taken(false), 4);
         Assert.Equal(plain * 1.1, Taken(true), 4);
     }
+
+    // ---- the arcanist quarter ----
+
+    [Fact]
+    public void Frozen_things_take_more_from_fire_and_by_night_a_quarter_of_it()
+    {
+        double Fire(LampLoadout? l)
+        {
+            var b = BattleTests.Arena(2);
+            if (l != null) b.Lamps = l;
+            var e = b.SpawnEnemy("wolf", b.Player.X + 5, b.Player.Z)!;
+            e.MaxHp = e.Hp = 1e6;
+            e.Status[StatusKind.Frozen] = new StatusSlot(10, 1, 0, 0);
+            return b.HitEnemy(e, 100, School.Fire, [Tag.Spell], new HitOpts { NoCrit = true });
+        }
+        LampLoadout Lit(bool night) { var l = new LampLoadout { Night = night }; l.Add(Rule("frozen.fire", ("more", 0.1))); return l; }
+        double plain = Fire(null);
+        Assert.Equal(plain * 1.1, Fire(Lit(false)), 4);
+        Assert.Equal(plain * 1.025, Fire(Lit(true)), 4);
+    }
+
+    [Fact]
+    public void Standing_in_her_ground_takes_less_with_ash_walker_and_the_price_is_kept_in_full_by_night()
+    {
+        foreach (bool night in new[] { false, true })
+        {
+            double Taken(bool inGround)
+            {
+                var b = BattleTests.Arena(3);
+                b.Lamps = new LampLoadout { Night = night };
+                b.Lamps.Add(Rule("ash_walker", ("less", 0.4), ("weaker", 0.15)));
+                if (inGround) b.SpawnZone(Side.Player, b.Player.X, b.Player.Z, 3, 30, 0, School.Fire);
+                b.Tick(0.3, 0, 0);
+                b.Player.Hp = b.MaxHp;
+                return b.HurtPlayer(100, School.Physical, "test", null);
+            }
+            double out_ = Taken(false), in_ = Taken(true);
+            Assert.Equal(1 - 0.4 * (night ? 0.25 : 1), in_ / out_, 3);
+        }
+        // Outside the ground a spell is 15% weaker, in full by day and by night.
+        foreach (bool night in new[] { false, true })
+        {
+            var b = BattleTests.Arena(2);
+            double plain = b.HitEnemy(b.SpawnEnemy("wolf", b.Player.X + 5, b.Player.Z)!, 100, School.Fire, [Tag.Spell], new HitOpts { NoCrit = true });
+            var c = BattleTests.Arena(2);
+            c.Lamps = new LampLoadout { Night = night };
+            c.Lamps.Add(Rule("ash_walker", ("less", 0.4), ("weaker", 0.15)));
+            double weak = c.HitEnemy(c.SpawnEnemy("wolf", c.Player.X + 5, c.Player.Z)!, 100, School.Fire, [Tag.Spell], new HitOpts { NoCrit = true });
+            Assert.Equal(plain * 0.85, weak, 4);
+        }
+    }
+
+    [Fact]
+    public void Spells_loose_at_most_one_projectile_more_by_night_however_many_the_lamps_add()
+    {
+        int Count(bool night, bool crowd)
+        {
+            var b = BattleTests.Arena(1, ("seeking_motes", 1));
+            b.Lamps = new LampLoadout { Night = night };
+            b.Lamps.Add(new LampEffect { Do = LampDo.Rule, Rule = "tags.projectiles", Tags = [Tag.Spell], Args = new() { ["add"] = 1 } });
+            if (crowd) b.Lamps.Add(Rule("crowded_sky", ("add", 2), ("weaker", 0.35)));
+            return Firing.CountOf(b, b.Weapons[0]);
+        }
+        int bare = Firing.CountOf(BattleTests.Arena(1, ("seeking_motes", 1)), BattleTests.Arena(1, ("seeking_motes", 1)).Weapons[0]);
+        Assert.Equal(bare + 1, Count(false, false));
+        Assert.Equal(bare + 3, Count(false, true));
+        Assert.Equal(bare + 1, Count(true, true));
+    }
+
+    [Fact]
+    public void The_echos_wait_is_kept_in_full_by_night_and_unbound_casting_waits_a_quarter_less_by_night()
+    {
+        double Wait(bool night, params LampEffect[] lamps)
+        {
+            var b = BattleTests.Arena(1, ("seeking_motes", 1));
+            b.Lamps = new LampLoadout { Night = night };
+            foreach (var x in lamps) b.Lamps.Add(x);
+            return Firing.CooldownOf(b, b.Weapons[0]);
+        }
+        double bare = Wait(false);
+        var echo = Rule("the_echo", ("delay", 0.5), ("share", 0.5), ("longer", 0.25));
+        var unbound = Rule("unbound_casting", ("sooner", 0.3));
+        Assert.Equal(bare * 1.25, Wait(false, echo), 6);
+        Assert.Equal(bare * 1.25, Wait(true, echo), 6);
+        Assert.Equal(bare * 0.7, Wait(false, unbound), 6);
+        Assert.Equal(bare * (1 - 0.3 * 0.25), Wait(true, unbound), 6);
+    }
+
+    [Fact]
+    public void Fire_on_a_frozen_thing_shatters_it_onto_its_neighbours()
+    {
+        var b = BattleTests.Arena(2);
+        b.Lamps = new LampLoadout();
+        b.Lamps.Add(Rule("fire_on_ice", ("radius", 2), ("share", 0.5)));
+        var a = b.SpawnEnemy("wolf", b.Player.X + 5, b.Player.Z)!;
+        var n = b.SpawnEnemy("wolf", b.Player.X + 6, b.Player.Z)!;
+        a.MaxHp = a.Hp = 1e6; n.MaxHp = n.Hp = 1e6;
+        b.Tick(0.05, 0, 0);
+        a.Status[StatusKind.Frozen] = new StatusSlot(10, 1, 0, 0);
+        b.HitEnemy(a, 100, School.Fire, [Tag.Spell], new HitOpts { NoCrit = true });
+        Assert.False(a.Status.Has(StatusKind.Frozen));
+        Assert.True(n.Hp < n.MaxHp);
+    }
 }

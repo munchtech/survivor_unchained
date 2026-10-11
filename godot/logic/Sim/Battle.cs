@@ -452,6 +452,7 @@ public sealed partial class Battle
 
         TickStones(dt);
         TickReaver(dt);
+        TickArcanist(dt);
         // Warding light recharges.
         int blockRank = RoundInt(st.Get(Stat.Block));
         if (blockRank > 0 && p.BlockT > 0) p.BlockT = Math.Max(0, p.BlockT - dt);
@@ -730,6 +731,7 @@ public sealed partial class Battle
         dmg *= e.TakenMul;
         dmg *= LampDamageMul(e, school, tags, o);
         dmg *= ReaverDamageMul(e, school, tags, o);
+        dmg *= ArcanistDamageMul(e, school, tags, o);
         // Warded by its own kind's lamp or drum.
         if (e.WardT > 0) dmg *= 1 - e.Ward;
         // Resistances.
@@ -812,7 +814,9 @@ public sealed partial class Battle
         }
 
         // Status payloads ride the hit.
+        statusWeapon = o.Weapon;
         if (o.Status != null) ApplyStatus(e, o.Status, dmg, o.Depth, by);
+        statusWeapon = null;
 
         int depth = o.Depth;
         if (!o.NoProcs && depth < 3)
@@ -823,6 +827,7 @@ public sealed partial class Battle
         }
 
         ReaverOnHit(e, o);
+        ArcanistOnHit(e, school, tags, o, dmg);
         if (e.Boss) Hooks.OnBossHit?.Invoke(e, school, dmg);
         if (e.Hp <= 0 && e.Alive && e.State != EnemyState.Dying) KillEnemy(e, true, o.Weapon, depth);
         else ArtOnHit(e);
@@ -871,6 +876,7 @@ public sealed partial class Battle
         e.Credit = byPlayer || e.Credit;
         bool credited = e.Credit;
         if (weapon != null) { weapon.Kills++; ReaverWeaponKill(weapon); }
+        ArcanistOnDeath(e, e.Credit);
         if (credited && e.Disposition != Disposition.Ally)
         {
             FlareOnKill(e, e.Status.Has(StatusKind.Bleed) && e.LastWeapon == null);
@@ -956,7 +962,7 @@ public sealed partial class Battle
         double sd = Stats.Get(Stat.StatusDamage) * Stats.Get(Stat.StatusDamageOf(p.Kind));
         double dps = hitDamage * p.Power / Math.Max(0.5, p.Duration) * sd;
         // Longer burning is more burning: the rate holds, the time stretches.
-        double dur = ReaverStatusDuration(e, p.Kind, p.Duration * Stats.Get(Stat.StatusDurationOf(p.Kind)));
+        double dur = ArcanistStatusDuration(p.Kind, ReaverStatusDuration(e, p.Kind, p.Duration * Stats.Get(Stat.StatusDurationOf(p.Kind))));
         from ??= credit;
         switch (p.Kind)
         {
@@ -993,7 +999,7 @@ public sealed partial class Battle
                 // The frozen stay frozen only as long as the freeze: more cold does not lock them for good.
                 if (s.Has(StatusKind.Frozen)) break;
                 var cur = s.Ensure(StatusKind.Chill, 0, 0, 0, 0);
-                cur.Stacks += p.Power * (Boons.ContainsKey("deep_chill") ? 2 : 1) * Stats.Get(Stat.StatusPowerOf(StatusKind.Chill));
+                cur.Stacks += p.Power * (Boons.ContainsKey("deep_chill") ? 2 : 1) * Stats.Get(Stat.StatusPowerOf(StatusKind.Chill)) * ArcanistChillMul(e);
                 cur.T = Math.Max(cur.T, dur);
                 if (cur.Stacks >= 5 && e.Boss) { cur.Stacks = 2; AddStagger(e, 0.12); }
                 if (cur.Stacks >= 5 && !e.Boss && e.ThawT <= 0)
@@ -1183,7 +1189,7 @@ public sealed partial class Battle
         if (Art.WraithT > 0) dmg *= 0.5;
         // Grounding: part of the blow goes to earth (its lightning is the blessing's Hurt rule).
         if (Boons.TryGetValue("grounding", out int ground)) dmg *= ground >= 2 ? 0.67 : 0.8;
-        dmg *= ReaverTakenMul(school);
+        dmg *= ReaverTakenMul(school) * ArcanistTakenMul();
         return HurtPlayerRaw(FlareGuard(dmg), school, source, from);
     }
 
@@ -1549,6 +1555,7 @@ public sealed partial class Battle
         if (zn == null) return null;
         zn.Reset();
         zn.Owner = owner; zn.X = x; zn.Z = z; zn.Radius = radius; zn.Life = life; zn.Dps = dps; zn.School = school; zn.Credit = credit;
+        ArcanistZoneSpawned(zn);
         return zn;
     }
 
@@ -1879,7 +1886,7 @@ public sealed partial class Battle
             foreach (var id in qProj)
             {
                 var e = Enemies.Items[id];
-                if (!Targetable(e)) continue;
+                if (!Targetable(e) || VolleyTaken(pr, e.Id)) continue;
                 double rr = pr.Radius + e.Radius;
                 if ((e.X - pr.X) * (e.X - pr.X) + (e.Z - pr.Z) * (e.Z - pr.Z) > rr * rr) continue;
                 int k = pr.Hits.IndexOf(e.Id);
@@ -1917,7 +1924,7 @@ public sealed partial class Battle
             var m = HostilesInRadius(pr.X, pr.Z, range).FirstOrDefault(e => e.Status.Has(StatusKind.Mark) && !pr.Hits.Contains(e.Id));
             if (m != null) return m;
         }
-        return NearestHostile(pr.X, pr.Z, range, e => !pr.Hits.Contains(e.Id));
+        return NearestHostile(pr.X, pr.Z, range, e => !pr.Hits.Contains(e.Id) && !VolleyTaken(pr, e.Id));
     }
 
     WeaponInst? WeaponById(string? id)
@@ -1938,6 +1945,7 @@ public sealed partial class Battle
         });
         if (pr.Heal != 0) HealPlayer(pr.Heal, "weapon", true);
         pr.HitCount++;
+        ArcanistOnProjectileHit(pr, e, weapon);
         if (pr.Splash > 0) Explode(pr.X, pr.Z, pr.Splash, pr.Damage * 0.75, pr.School, pr.Tags, weapon, pr.Depth, e.Id);
         if (pr.GroundOnHit is { } g)
         {
