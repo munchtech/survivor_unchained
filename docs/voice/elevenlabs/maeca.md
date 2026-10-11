@@ -1,6 +1,6 @@
 # Maeca: ElevenLabs packet
 
-Voice id in the game: `maeca`. 87 takes to record (6,262 characters; about 18,786 credits at three tries a line). Status: **on hold, except the 64 takes marked LOCKED FOR RECORDING** (the story lead, 2026-10-11): record those now and hold the rest (the story rewrite changes most of her lines (docs/voice/RERECORD.md)).
+Voice id in the game: `maeca`. 87 takes to record (6,262 characters; about 18,786 credits at three tries a line). Status: **on hold, except the 67 takes marked LOCKED FOR RECORDING** (the story lead, 2026-10-11): record those now and hold the rest (the story rewrite changes most of her lines (docs/voice/RERECORD.md)).
 
 ## Who they are
 
@@ -393,7 +393,7 @@ Subtitle: He let you. ...He doesn't let me, and he's known me ten years.
 ```
 Subtitle: Not with that on you. Wash. River's that way. ...Or sleep, and come tomorrow. The night takes it off. It took it off me.
 
-### 32. `dlg.maeca.blind_walk.0.p1.wav`  HOLD: the story rewrite changes most of her lines (docs/voice/RERECORD.md)
+### 32. `dlg.maeca.blind_walk.0.p1.wav`  **LOCKED FOR RECORDING**
 
 *Where:* dialogue.json maeca/blind_walk#0; part 2 of 3: narrator: She goes out by the east gate without a lamp, and you follow her along the Old Road past t… / **maeca: Him. And the bitch with the white foot.** / narrator: She walks on.
 *Played:* plain; doing: the walk to the Blind; pace: slow; volume: quiet.
@@ -448,7 +448,7 @@ Subtitle: You kept quiet.
 ```
 Subtitle: Most can't.
 
-### 37. `dlg.maeca.blind_dark.1.p1.wav`  **LOCKED FOR RECORDING**
+### 37. `dlg.maeca.blind_dark.1.p1.wav`  HOLD: the story rewrite changes most of her lines (docs/voice/RERECORD.md)
 
 *Where:* dialogue.json maeca/blind_dark#1; part 2 of 6: narrator: Later, with the fire down, she lies with her head on your chest, listening the way she lis… / **maeca: They don't do that. Not for me. Not for anyone.** / narrator: She lies back down, her ear where it was. / maeca: You walk quiet. You came into my Hollow and knelt to him, and he let you. You never talk a… / narrator: Against your chest you feel her lips move, without a sound. / maeca: What were you?
 *Played:* plain; doing: the Pack lies down round you; she asks what you were; pace: slow; volume: quiet.
@@ -460,7 +460,7 @@ Subtitle: Most can't.
 ```
 Subtitle: They don't do that. Not for me. Not for anyone.
 
-### 38. `dlg.maeca.blind_dark.1.p3.wav`  **LOCKED FOR RECORDING**
+### 38. `dlg.maeca.blind_dark.1.p3.wav`  HOLD: the story rewrite changes most of her lines (docs/voice/RERECORD.md)
 
 *Where:* dialogue.json maeca/blind_dark#1; part 4 of 6: narrator: Later, with the fire down, she lies with her head on your chest, listening the way she lis… / maeca: They don't do that. Not for me. Not for anyone. / narrator: She lies back down, her ear where it was. / **maeca: You walk quiet. You came into my Hollow and knelt to him, and he let you. You never talk a…** / narrator: Against your chest you feel her lips move, without a sound. / maeca: What were you?
 *Played:* plain; doing: the Pack lies down round you; she asks what you were; pace: slow; volume: quiet.
@@ -472,7 +472,7 @@ Subtitle: They don't do that. Not for me. Not for anyone.
 ```
 Subtitle: You walk quiet. You came into my Hollow and knelt to him, and he let you. You never talk about before.
 
-### 39. `dlg.maeca.blind_dark.1.p5.wav`  **LOCKED FOR RECORDING**
+### 39. `dlg.maeca.blind_dark.1.p5.wav`  HOLD: the story rewrite changes most of her lines (docs/voice/RERECORD.md)
 
 *The same words are also* `dlg.maeca.blind_dark.2.p3.wav`*: record once; the importer copies the take.*
 *Where:* dialogue.json maeca/blind_dark#1; part 6 of 6: narrator: Later, with the fire down, she lies with her head on your chest, listening the way she lis… / maeca: They don't do that. Not for me. Not for anyone. / narrator: She lies back down, her ear where it was. / maeca: You walk quiet. You came into my Hollow and knelt to him, and he let you. You never talk a… / narrator: Against your chest you feel her lips move, without a sound. / **maeca: What were you?**
@@ -485,7 +485,7 @@ Subtitle: You walk quiet. You came into my Hollow and knelt to him, and he let y
 ```
 Subtitle: What were you?
 
-### 40. `dlg.maeca.blind_dark.2.p1.wav`  **LOCKED FOR RECORDING**
+### 40. `dlg.maeca.blind_dark.2.p1.wav`  HOLD: the story rewrite changes most of her lines (docs/voice/RERECORD.md)
 
 *Where:* dialogue.json maeca/blind_dark#2; part 2 of 4: narrator: Later, with the fire down, she lies with her head on your chest, listening the way she lis… / **maeca: You walk quiet. You never talk about before.** / narrator: Against your chest you feel her lips move, without a sound. / maeca: What were you?
 *Played:* plain; doing: she asks what you were; pace: slow; volume: quiet.
@@ -497,7 +497,7 @@ Subtitle: What were you?
 ```
 Subtitle: You walk quiet. You never talk about before.
 
-### 41. `dlg.maeca.blind2_feet.0.p1.wav`  **LOCKED FOR RECORDING**
+### 41. `dlg.maeca.blind2_feet.0.p1.wav`  HOLD: the story rewrite changes most of her lines (docs/voice/RERECORD.md)
 
 *Where:* dialogue.json maeca/blind2_feet#0; part 2 of 4: narrator: You take one in your hands. The sole is hard as boot leather, and scarred: old white lines… / **maeca: Your hands are colder than my feet.** / narrator: She doesn't take them back. / maeca: Hold them anyway. ...Nobody's held those.
 *Played:* plain; doing: her scarred feet; pace: slow; volume: quiet.
@@ -508,7 +508,7 @@ Subtitle: You walk quiet. You never talk about before.
 ```
 Subtitle: Your hands are colder than my feet.
 
-### 42. `dlg.maeca.blind2_feet.0.p3.wav`  **LOCKED FOR RECORDING**
+### 42. `dlg.maeca.blind2_feet.0.p3.wav`  HOLD: the story rewrite changes most of her lines (docs/voice/RERECORD.md)
 
 *Where:* dialogue.json maeca/blind2_feet#0; part 4 of 4: narrator: You take one in your hands. The sole is hard as boot leather, and scarred: old white lines… / maeca: Your hands are colder than my feet. / narrator: She doesn't take them back. / **maeca: Hold them anyway. ...Nobody's held those.**
 *Played:* plain; doing: her scarred feet; pace: slow; volume: quiet.
@@ -585,7 +585,7 @@ Subtitle: Walking away's a skill. Most never learn it. They stay till it's too l
 ```
 Subtitle: Lamps. Nobody coming. I held a cave mouth for nobody coming. We'd have got on.
 
-### 49. `dlg.maeca.told_little.0.p1.wav`  **LOCKED FOR RECORDING**
+### 49. `dlg.maeca.told_little.0.p1.wav`  HOLD: the story rewrite changes most of her lines (docs/voice/RERECORD.md)
 
 *Where:* dialogue.json maeca/told_little#0; part 2 of 4: narrator: She doesn't push. / **maeca: All right.** / narrator: And it is. / maeca: ...Keep it, then. I keep mine.
 *Played:* accepting; doing: she doesn't push; pace: slow; volume: quiet.
@@ -596,7 +596,7 @@ Subtitle: Lamps. Nobody coming. I held a cave mouth for nobody coming. We'd have
 ```
 Subtitle: All right.
 
-### 50. `dlg.maeca.told_little.0.p3.wav`  **LOCKED FOR RECORDING**
+### 50. `dlg.maeca.told_little.0.p3.wav`  HOLD: the story rewrite changes most of her lines (docs/voice/RERECORD.md)
 
 *Where:* dialogue.json maeca/told_little#0; part 4 of 4: narrator: She doesn't push. / maeca: All right. / narrator: And it is. / **maeca: ...Keep it, then. I keep mine.**
 *Played:* accepting; doing: she doesn't push; pace: slow; volume: quiet.
@@ -607,7 +607,7 @@ Subtitle: All right.
 ```
 Subtitle: ...Keep it, then. I keep mine.
 
-### 51. `dlg.maeca.blind3_morning.0.p1.wav`  **LOCKED FOR RECORDING**
+### 51. `dlg.maeca.blind3_morning.0.p1.wav`  HOLD: the story rewrite changes most of her lines (docs/voice/RERECORD.md)
 
 *Where:* dialogue.json maeca/blind3_morning#0; part 2 of 6: narrator: Gray light. She's awake before you, as always, but she hasn't got up. Her head is still on… / **maeca: Your heart's going like a hare's.** / narrator: She doesn't lift her head. / maeca: All night it was a bear's in January. I counted between. ...I've lain with my ear to a lot… / narrator: She gets up, then, and goes out barefoot into the frost, and stands there listening to the… / maeca: Go on. Holloway'll count us.
 *Played:* tender, frightened, hiding it; doing: she heard your heart change; pace: slow; volume: hushed.
@@ -618,7 +618,7 @@ Subtitle: ...Keep it, then. I keep mine.
 ```
 Subtitle: Your heart's going like a hare's.
 
-### 52. `dlg.maeca.blind3_morning.0.p3.wav`  **LOCKED FOR RECORDING**
+### 52. `dlg.maeca.blind3_morning.0.p3.wav`  HOLD: the story rewrite changes most of her lines (docs/voice/RERECORD.md)
 
 *Where:* dialogue.json maeca/blind3_morning#0; part 4 of 6: narrator: Gray light. She's awake before you, as always, but she hasn't got up. Her head is still on… / maeca: Your heart's going like a hare's. / narrator: She doesn't lift her head. / **maeca: All night it was a bear's in January. I counted between. ...I've lain with my ear to a lot…** / narrator: She gets up, then, and goes out barefoot into the frost, and stands there listening to the… / maeca: Go on. Holloway'll count us.
 *Played:* tender, frightened, hiding it; doing: she heard your heart change; pace: slow; volume: hushed.
@@ -629,7 +629,7 @@ Subtitle: Your heart's going like a hare's.
 ```
 Subtitle: All night it was a bear's in January. I counted between. ...I've lain with my ear to a lot of things to see if they'd live.
 
-### 53. `dlg.maeca.blind3_morning.0.p5.wav`  **LOCKED FOR RECORDING**
+### 53. `dlg.maeca.blind3_morning.0.p5.wav`  HOLD: the story rewrite changes most of her lines (docs/voice/RERECORD.md)
 
 *Where:* dialogue.json maeca/blind3_morning#0; part 6 of 6: narrator: Gray light. She's awake before you, as always, but she hasn't got up. Her head is still on… / maeca: Your heart's going like a hare's. / narrator: She doesn't lift her head. / maeca: All night it was a bear's in January. I counted between. ...I've lain with my ear to a lot… / narrator: She gets up, then, and goes out barefoot into the frost, and stands there listening to the… / **maeca: Go on. Holloway'll count us.**
 *Played:* tender, frightened, hiding it; doing: she heard your heart change; pace: slow; volume: hushed.
@@ -726,30 +726,36 @@ Subtitle: We'll see.
 ```
 Subtitle: That's an answer.
 
-### 62. `dlg.maeca.shed_fur_offer.0.wav`  HOLD: the story rewrite changes most of her lines (docs/voice/RERECORD.md)
+### 62. `dlg.maeca.shed_fur_offer.0.wav`  **LOCKED FOR RECORDING**
 
 *Where:* dialogue.json maeca/shed_fur_offer#0
+*Played:* quiet, shy under it; doing: offers to make you something; pace: measured; volume: quiet.
+*Note:* 'For you, I think.' as a tracker's reading, not a compliment. 'Give me an evening.' plain.
 
 ```
-They've been leaving fur on the thorn by the Blind. For you, I think. Give me an evening.
+[quiet, shy under it, quietly] They've been leaving fur on the thorn by the Blind. For you, I think. Give me an evening.
 ```
 Subtitle: They've been leaving fur on the thorn by the Blind. For you, I think. Give me an evening.
 
-### 63. `dlg.maeca.shed_fur_braid.0.p1.wav`  HOLD: the story rewrite changes most of her lines (docs/voice/RERECORD.md)
+### 63. `dlg.maeca.shed_fur_braid.0.p1.wav`  **LOCKED FOR RECORDING**
 
 *Where:* dialogue.json maeca/shed_fur_braid#0; part 2 of 2: narrator: She sits with her back to the fire and braids it on her knee, gray and gray and white, the… / **maeca: Next to the skin. They'll know you in the dark.**
+*Played:* tender, unspoken; doing: gives you the braid; pace: slow; volume: quiet.
+*Note:* Narrator plain and dry, level; says what is seen, never what it means. Maeca: two short sentences, practical; the gift is in the fact.
 
 ```
-Next to the skin. They'll know you in the dark.
+[tender, unspoken, quietly] Next to the skin. They'll know you in the dark.
 ```
 Subtitle: Next to the skin. They'll know you in the dark.
 
-### 64. `dlg.maeca.fire.0.p1.wav`  HOLD: the story rewrite changes most of her lines (docs/voice/RERECORD.md)
+### 64. `dlg.maeca.fire.0.p1.wav`  **LOCKED FOR RECORDING**
 
 *Where:* dialogue.json maeca/fire#0; part 2 of 2: narrator: She looks at you for a long time. / **maeca: If you're going in there with a blade, I'll not help you. ...Take fire, and feed it. They …**
+*Played:* hard, then fierce; doing: won't help you kill them; pace: slow; volume: quiet.
+*Note:* Narrator plain and dry, level; says what is seen, never what it means. Maeca: contempt quiet and final; 'That's not for your sake. It's so they don't have to.' level, for the wolves.
 
 ```
-If you're going in there with a blade, I'll not help you. ...Take fire, and feed it. They won't come near a fire that's fed. That's not for your sake. It's so they don't have to.
+[hard, then fierce, quietly] If you're going in there with a blade, I'll not help you. ...Take fire, and feed it. They won't come near a fire that's fed. That's not for your sake. It's so they don't have to.
 ```
 Subtitle: If you're going in there with a blade, I'll not help you. ...Take fire, and feed it. They won't come near a fire that's fed. That's not for your sake. It's so they don't have to.
 
@@ -794,41 +800,49 @@ Subtitle: The cave mouths.
 
 ## Conversations: Scene_gate_dawn
 
-### 68. `dlg.scene_gate_dawn.maeca.0.wav`  HOLD: the story rewrite changes most of her lines (docs/voice/RERECORD.md)
+### 68. `dlg.scene_gate_dawn.maeca.0.wav`  **LOCKED FOR RECORDING**
 
 *Where:* dialogue.json scene_gate_dawn/maeca#0
+*Played:* dry; doing: he waited up for you; pace: measured; volume: quiet.
+*Note:* A half-voice; the second sentence about herself, though she doesn't say so.
 
 ```
-[a nod at him] Waits up for you. [a beat] Somebody waits up for him.
+[dry, quietly] [a nod at him] Waits up for you. [a beat] Somebody waits up for him.
 ```
 Subtitle: Waits up for you. Somebody waits up for him.
 
-### 69. `dlg.scene_gate_dawn.last.0.wav`  HOLD: the story rewrite changes most of her lines (docs/voice/RERECORD.md)
+### 69. `dlg.scene_gate_dawn.last.0.wav`  **LOCKED FOR RECORDING**
 
 *Where:* dialogue.json scene_gate_dawn/last#0
+*Played:* level, final; doing: his last bottle; pace: slow; volume: quiet.
+*Note:* Three words, quiet; not a kindness, not a threat.
 
 ```
-That's your last.
+[level, final, quietly] That's your last.
 ```
 Subtitle: That's your last.
 
 ## Conversations: Scene_did_he
 
-### 70. `dlg.scene_did_he.well.0.p1.wav`  HOLD: the story rewrite changes most of her lines (docs/voice/RERECORD.md)
+### 70. `dlg.scene_did_he.well.0.p1.wav`  **LOCKED FOR RECORDING**
 
 *Where:* dialogue.json scene_did_he/well#0; part 2 of 2: narrator: She's waiting for you at the well. / **maeca: He talked to you. Last night. At the gate.**
+*Played:* level, hard; doing: he talked to you; pace: slow; volume: quiet.
+*Note:* Narrator plain and dry, level; says what is seen, never what it means. Maeca: three short statements, a tracker reading signs.
 
 ```
-He talked to you. Last night. At the gate.
+[level, hard, quietly] He talked to you. Last night. At the gate.
 ```
 Subtitle: He talked to you. Last night. At the gate.
 
-### 71. `dlg.scene_did_he.did.0.wav`  HOLD: the story rewrite changes most of her lines (docs/voice/RERECORD.md)
+### 71. `dlg.scene_did_he.did.0.wav`  **LOCKED FOR RECORDING**
 
 *Where:* dialogue.json scene_did_he/did#0
+*Played:* quiet, final; doing: so he did; pace: slow; volume: quiet.
+*Note:* Barely voiced; no question in it.
 
 ```
-...Did he.
+[quiet, final, quietly] ...Did he.
 ```
 Subtitle: ...Did he.
 
@@ -941,57 +955,69 @@ Subtitle: The Pack's lying up by the east wall. Leave them be.
 ```
 Subtitle: Nothing calls in the Hollow now.
 
-### 82. `bark.maeca.said.7.wav`  HOLD: the story rewrite changes most of her lines (docs/voice/RERECORD.md)
+### 82. `bark.maeca.said.7.wav`  **LOCKED FOR RECORDING**
 
 *Where:* npcs.json maeca.said[7]
+*Played:* level; doing: how many?; pace: measured; volume: quiet.
+*Note:* A tracker's question.
 
 ```
-Heard you out by the Hollow last night. From the Blind. How many?
+[level, quietly] Heard you out by the Hollow last night. From the Blind. How many?
 ```
 Subtitle: Heard you out by the Hollow last night. From the Blind. How many?
 
-### 83. `bark.maeca.said.8.wav`  HOLD: the story rewrite changes most of her lines (docs/voice/RERECORD.md)
+### 83. `bark.maeca.said.8.wav`  **LOCKED FOR RECORDING**
 
 *Where:* npcs.json maeca.said[8]
+*Played:* cold; doing: not my wolves; pace: measured; volume: quiet.
+*Note:* Quiet, final.
 
 ```
-Mine don't run at fire. Whatever came at you last night wasn't mine.
+[cold, quietly] Mine don't run at fire. Whatever came at you last night wasn't mine.
 ```
 Subtitle: Mine don't run at fire. Whatever came at you last night wasn't mine.
 
-### 84. `bark.maeca.said.9.wav`  HOLD: the story rewrite changes most of her lines (docs/voice/RERECORD.md)
+### 84. `bark.maeca.said.9.wav`  **LOCKED FOR RECORDING**
 
 *Where:* npcs.json maeca.said[9]
+*Played:* hard; doing: what were you killing?; pace: slow; volume: quiet.
+*Note:* Accusation kept low.
 
 ```
-There's no Pack left. I counted the pelts. So what were you killing?
+[hard, quietly] There's no Pack left. I counted the pelts. So what were you killing?
 ```
 Subtitle: There's no Pack left. I counted the pelts. So what were you killing?
 
-### 85. `bark.maeca.said.10.wav`  HOLD: the story rewrite changes most of her lines (docs/voice/RERECORD.md)
+### 85. `bark.maeca.said.10.wav`  **LOCKED FOR RECORDING**
 
 *Where:* npcs.json maeca.said[10]
+*Played:* cold, hurt; doing: his coat on you; pace: slow; volume: quiet.
+*Note:* Quiet; don't play the hurt.
 
 ```
-That's his. Wear it where I can't see it.
+[cold, hurt, quietly] That's his. Wear it where I can't see it.
 ```
 Subtitle: That's his. Wear it where I can't see it.
 
-### 86. `bark.maeca.said.11.wav`  HOLD: the story rewrite changes most of her lines (docs/voice/RERECORD.md)
+### 86. `bark.maeca.said.11.wav`  **LOCKED FOR RECORDING**
 
 *Where:* npcs.json maeca.said[11]
+*Played:* level, puzzled; doing: they left you; pace: measured; volume: quiet.
+*Note:* 'They don't leave meat.' a fact she can't fit.
 
 ```
-Heard you go down in the Hollow. Heard them walk away after. They don't leave meat.
+[level, puzzled, quietly] Heard you go down in the Hollow. Heard them walk away after. They don't leave meat.
 ```
 Subtitle: Heard you go down in the Hollow. Heard them walk away after. They don't leave meat.
 
-### 87. `bark.maeca.said.12.wav`  HOLD: the story rewrite changes most of her lines (docs/voice/RERECORD.md)
+### 87. `bark.maeca.said.12.wav`  **LOCKED FOR RECORDING**
 
 *Where:* npcs.json maeca.said[12]
+*Played:* quiet approval; doing: you spared Redcowl; pace: slow; volume: quiet.
+*Note:* '...Good.' after a breath, almost warm.
 
 ```
-Heard you let the red one walk. ...Good.
+[quiet approval, quietly] Heard you let the red one walk. ...Good.
 ```
 Subtitle: Heard you let the red one walk. ...Good.
 

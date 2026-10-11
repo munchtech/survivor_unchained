@@ -408,4 +408,47 @@ public class StoryRewriteTests
         Assert.Contains(Simulation.AdvanceDay(n.C, () => 0.5).Lines, l => l.Contains("The town says the north wants him gone."));
         Assert.DoesNotContain(Simulation.DailyRules, r => r.Report?.Contains("Holloway laughed") == true);
     }
+
+    [Fact]
+    public void The_marker_waits_for_what_she_could_not_say()
+    {
+        // Chid's "Come and tell me when it comes to you" is a promise kept: the player who said
+        // nothing can come back to tell him, and "Mam." is cut that night, where the town can hear it.
+        var s = Q();
+        s.World.Npc("chid").Flags["met"] = true;
+        s.World.Npc("chid").Flags["say:calling"] = true;
+        s.World.Facts["mother.told"] = true;
+        s.World.Zones["waystation"] = new() { ["grave"] = true };
+        var (wait, hub) = Play("chid", s, "(Say nothing.)");
+        Assert.Contains(wait, t => t.EndsWith("Come and tell me when it comes to you."));
+        Assert.Equal("none", s.World.Fact("mother.cut").Str);
+        Assert.Contains(hub!.Choices, c => c.Text == "The marker. It's come to me.");
+        // Back, and still unable to say it: he keeps it.
+        var (still, _) = Play("chid", s, "It's come to me", "(Say nothing.)");
+        Assert.Contains(still, t => t.EndsWith("It'll keep."));
+        Assert.Equal("none", s.World.Fact("mother.cut").Str);
+        // Back, and saying it.
+        var (came, after) = Play("chid", s, "It's come to me", "Mam.");
+        Assert.Contains(came, t => t.EndsWith("I'll cut it tonight."));
+        Assert.Equal("mam", s.World.Fact("mother.cut").Str);
+        Assert.DoesNotContain(after!.Choices, c => c.Text.Contains("It's come to me"));
+        Assert.False(s.World.Fact("mother.carved").Truthy);
+        Assert.Contains(Simulation.AdvanceDay(s.C, () => 0.5).Lines, l => l.Contains("a tap, and a long wait, and a tap"));
+        Assert.True(s.World.Fact("mother.carved").Truthy);
+        // A player who answered the first time is never asked again.
+        var p = Q();
+        p.World.Npc("chid").Flags["met"] = true;
+        p.World.Npc("chid").Flags["say:calling"] = true;
+        p.World.Facts["mother.told"] = true;
+        p.World.Zones["waystation"] = new() { ["grave"] = true };
+        var (_, plainHub) = Play("chid", p, "Leave it plain.");
+        Assert.DoesNotContain(plainHub!.Choices, c => c.Text.Contains("It's come to me"));
+        Assert.DoesNotContain(Simulation.AdvanceDay(p.C, () => 0.5).Lines, l => l.Contains("a tap, and a long wait"));
+        // Act 2's second silence ends with "Mam." cut on screen, in daylight (scene_still_plain sets
+        // mother.carved itself): no report of a night's work the player watched him do.
+        var a2 = Q();
+        a2.World.Facts["mother.cut"] = "mam";
+        a2.World.Facts["mother.carved"] = true;
+        Assert.DoesNotContain(Simulation.AdvanceDay(a2.C, () => 0.5).Lines, l => l.Contains("a tap, and a long wait"));
+    }
 }
