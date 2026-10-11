@@ -178,7 +178,7 @@
 	"death": {
 		"hold": true,
 		"layer": "full",
-		"length": 1.13333332538605,
+		"length": 1.5,
 		"licence": "own work",
 		"loop": false,
 		"source": "keyed (tools/anim)"
@@ -221,7 +221,14 @@
 	},
 	"get_up": {
 		"layer": "full",
-		"length": 1.46666669845581,
+		"length": 1.83333337306976,
+		"licence": "own work",
+		"loop": false,
+		"source": "keyed (tools/anim)"
+	},
+	"get_up_back": {
+		"layer": "full",
+		"length": 1.66666662693024,
 		"licence": "own work",
 		"loop": false,
 		"source": "keyed (tools/anim)"
@@ -654,9 +661,9 @@
 		"source": "keyed (tools/anim)"
 	},
 	"throw": {
-		"contact": 0.0833333333333333,
+		"contact": 0.116666666666667,
 		"layer": "upper",
-		"length": 0.666666686534882,
+		"length": 0.699999988079071,
 		"licence": "own work",
 		"loop": false,
 		"source": "keyed (tools/anim)",
