@@ -954,7 +954,7 @@ def relax(pos, tris, interior=0, edge=12):
 SPEC = {
     "steel": ("Metal038", (1.0, 1.0, 1.02), 175, 2.5, 1.0, None),
     "darksteel": ("Metal046B", (1.0, 1.0, 1.05), 95, 2.5, 1.0, None),
-    "iron": ("Metal046B", (1.0, 0.98, 0.96), 82, 2.5, 1.0, 0.42),
+    "iron": ("Metal046B", (0.92, 0.84, 0.74), 72, 2.5, 1.0, 0.5),   # (rivets: warm dark iron, an even sheen)
     "gold": ("Metal048C", (1.0, 0.92, 0.8), None, 3, 1.0, None),
     "rust": ("Metal053C", (1, 1, 1), None, 2.5, 0.8, None),
     "leather": ("Leather037", (1, 1, 1), None, 4, 0.0, None),
@@ -1973,7 +1973,10 @@ def shell(name, pos, centre, clear, most=0.006, nest=None):
         res = np.abs(rf - r)
         keep = res < max(3 * np.sqrt((res[keep] ** 2).mean()), 0.004)
     # (and no point moved more than 12 mm from where it was cast)
-    rf = np.clip(np.where(keep, rf, np.clip(r, rf - 0.004, rf + 0.004)), r - 0.012, r + 0.012)
+    if nest is None:
+        rf = np.clip(np.where(keep, rf, np.clip(r, rf - 0.004, rf + 0.004)), r - 0.012, r + 0.012)
+    # (a set's plate is the dome exactly: points left off it within 4 mm
+    # dented lame 2 and waved its rim, judge 5)
     print("SHELL %s: %d of %d points off the dome, eased to within 4 mm of it" % (name, (~keep).sum(), len(r)))
     up = 0.0
     for _ in range(6):
@@ -2099,7 +2102,7 @@ def over_nipples(pos, tris, least=0.0007, s=0.008, dome=0.065, rim_reach=0.02, f
 SHEET = {}   # (each piece's sheet as finished: points, triangles, weights, thickness)
 
 
-def piece(name, field, mkey, lift=0.003, thick=0.003, smooth=0, bevel=0.0012, trim=None, clear=None, soften=3, dome=False, keep_off=("Head", "neck_01"), cut=None, iron=0, hull=None, studs=None, budget=None, filled=False, edge=30, slot=True, bridge=False, bind=True, rigid=None, stiff=None):
+def piece(name, field, mkey, lift=0.003, thick=0.003, smooth=0, bevel=0.0012, trim=None, clear=None, soften=3, dome=False, keep_off=("Head", "neck_01"), cut=None, iron=0, hull=None, studs=None, budget=None, filled=False, edge=30, slot=True, bridge=False, bind=True, rigid=None, stiff=None, studs_off=None):
     """A region of her skin made into a piece of her outfit. `rigid`, a
     centre, makes it a rigid plate: a fair dome round that centre (shell())
     on one blend of bones throughout, so it moves as one piece. `trim`, as
@@ -2212,7 +2215,7 @@ def piece(name, field, mkey, lift=0.003, thick=0.003, smooth=0, bevel=0.0012, tr
     if bridge:
         made += crotch_bridge(name, pos, tris, gap_at, mkey, thick, bevel, trim, lift)
     if studs:
-        made += rivets(name, pos, at, tris, thick, studs)
+        made += rivets(name, pos, at, tris, thick, studs, off=studs_off)
     if trim:
         tkey, w, h, tt = trim
         tp, ta, tr = clip(w - at[:, -1], pos, at, tris)
@@ -2230,11 +2233,15 @@ def piece(name, field, mkey, lift=0.003, thick=0.003, smooth=0, bevel=0.0012, tr
     return made
 
 
-def rivets(name, pos, at, tris, thick, mkey, spacing=0.028, inset=0.011, r=0.0032):
+def rivets(name, pos, at, tris, thick, mkey, spacing=0.028, inset=0.011, r=0.0032, off=None):
     """Domed rivets set in from a piece's edge every `spacing`, on its
     outer face: the detail that makes a plate read as made."""
     f = at[:, -1]
     cand = np.where(np.abs(f - inset) < 0.0025)[0]
+    if off is not None and len(cand):
+        # (none under or within 4 mm of the plate over this one: the plate's
+        # rim sliced them, judge 5)
+        cand = cand[off[cKDTree(P).query(pos[cand])[1]] < -0.004]
     if len(cand) == 0:
         return []
     picked = []
@@ -2252,15 +2259,19 @@ def rivets(name, pos, at, tris, thick, mkey, spacing=0.028, inset=0.011, r=0.003
         t /= np.linalg.norm(t)
         b = np.cross(n, t)
         base = pos[i] + n * (thick + 0.0003)
-        pts = [base + n * r * 0.75]
-        for k in range(1, nv + 1):
-            th = (np.pi / 2) * k / nv
+        # (judge 5: near half-spheres read as beads: a dome 30% of its
+        # width high, on a thin flange)
+        fl = 0.08 * r
+        pts = [base + n * (fl + r * 0.52)]
+        rings = [(r * np.sin((np.pi / 2) * k / nv), fl + r * 0.52 * np.cos((np.pi / 2) * k / nv)) for k in range(1, nv + 1)]
+        rings += [(r * 1.3, fl), (r * 1.3, 0.0)]
+        for rr, hh in rings:
             for j in range(nu):
                 ph = 2 * np.pi * j / nu
-                pts.append(base + (np.cos(ph) * t + np.sin(ph) * b) * r * np.sin(th) + n * r * 0.75 * np.cos(th))
+                pts.append(base + (np.cos(ph) * t + np.sin(ph) * b) * rr + n * hh)
         o = sum(len(x) for x in P2)
         tri = [(o, o + 1 + j, o + 1 + (j + 1) % nu) for j in range(nu)]
-        for k in range(nv - 1):
+        for k in range(nv + 1):
             a0, b0 = o + 1 + k * nu, o + 1 + (k + 1) * nu
             for j in range(nu):
                 j1 = (j + 1) % nu
@@ -2271,10 +2282,10 @@ def rivets(name, pos, at, tris, thick, mkey, spacing=0.028, inset=0.011, r=0.003
     if not P2:
         return []
     pp, ww, tt = np.vstack(P2), np.vstack(W2), np.vstack(T2)
-    if (vertex_normals(pp, tt) * (pp - np.repeat(np.array([pos[i] for i in picked]), (nv * nu + 1), 0))).sum(1).mean() < 0:
+    if (vertex_normals(pp, tt) * (pp - np.repeat(np.array([pos[i] for i in picked]), ((nv + 2) * nu + 1), 0))).sum(1).mean() < 0:
         tt = tt[:, ::-1]
     print("RIVETS", name, len(picked))
-    return [finish(name + "_rivets", pp, ww, tt, mkey, 0.0002, 0.0, 10 ** 7)]
+    return [finish(name + "_rivets", pp, ww, tt, "iron" if mkey == "darksteel" else mkey, 0.0002, 0.0, 10 ** 7)]
 
 
 def islands(pos, tris, keep_frac=0.02):
@@ -3272,6 +3283,7 @@ def warden():
 
 PLUNGE_FOOT = float(os.environ.get("PLUNGE_FOOT", 0.022))   # (the round foot's radius)
 PLUNGE_FLARE = float(os.environ.get("PLUNGE_FLARE", 1.8))   # (how late its sides ease out: 1 straight)
+PLUNGE_FOLD = float(os.environ.get("PLUNGE_FOLD", 0.04))    # (how wide the cloth is fitted over the fold beside its foot)
 PLUNGE_TAUT = float(os.environ.get("PLUNGE_TAUT", 0.03))    # (the gore at its foot: the round its cloth spans her folds by)
 
 
@@ -3378,6 +3390,12 @@ def arcanist():
     def collar(q):
         return (ramp(q[:, 2], NIPPLE["l"][2] + 0.05, NIPPLE["l"][2] + 0.08) * ramp(-q[:, 2], -(nz0 + 0.012), -(nz0 - 0.008))
                 * ramp(-np.abs(q[:, 0]), -0.17, -0.14) * ramp(-q[:, 1], -(q[:, 1].mean() + 0.02), -q[:, 1].mean()))
+    # (the plunge's foot: the fold under each breast ran into the U's sides
+    # as a crease, which the gore lifted but kept (a solver, 11 October).
+    # Fitted wide there, the cloth spans the fold as it would.)
+    def fold(q):
+        return (ramp(-np.abs(q[:, 0]), -0.09, -0.065) * ramp(q[:, 2], v_lo - 0.03, v_lo - 0.012)
+                * ramp(-q[:, 2], -(v_lo + 0.075), -(v_lo + 0.05)) * ramp(-q[:, 1], -(q[:, 1].mean() + 0.02), -q[:, 1].mean()))
     def front_panel(q):
         return (ramp(q[:, 2], WAIST - 0.11, WAIST - 0.08) * ramp(-q[:, 2], -(UNDERBUST - 0.005), -(UNDERBUST - 0.025))
                 * ramp(-np.abs(q[:, 0]), -0.12, -0.09) * ramp(-q[:, 1], -(q[:, 1].mean() + 0.02), -q[:, 1].mean()))
@@ -3446,7 +3464,7 @@ def arcanist():
         *ribbon("arcanist.thong", back_string(CROTCH + 0.155, CROTCH + 0.012), 0.016, "plumleather", lift=0.003, thick=0.003,
                trim=gold(0.004), snap=False, hides=True, flare=(0.034, 0.03)),
         *piece("arcanist.corset", corset, "plumleather", lift=0.0035, smooth=8, iron=60, trim=gold(0.008), keep_off=("Head",), filled=True, edge=120, soften=80,
-               bridge=True, cut=exact, stiff=[(0.03, front_panel), (0.03, collar), taut_gore]),
+               bridge=True, cut=exact, stiff=[(0.03, front_panel), (0.03, collar), (PLUNGE_FOLD, fold), taut_gore]),
         # (judge 4: the front read as moulded latex. Four stitched boning
         # channels, as a corset's front is made, from under her cups to
         # her hips, raised on the suit and moving with it.)
@@ -3713,6 +3731,7 @@ def ranger():
     # lame's arc round her arm ends `PL_TUCK` inside the straight lower rim
     # of the plate above, so both its ends go under that plate.)
     PL_ROUND, PL_TUCK = 0.011, 0.012
+    P_TREE = cKDTree(P)
     ax_ = arm_ax / np.linalg.norm(arm_ax)
     d_ = P - ctr
     rad_ = d_ - np.outer(d_ @ ax_, ax_)
@@ -3724,11 +3743,15 @@ def ranger():
     for k, (dz, r, _) in enumerate(plates):
         z_ = ANDR(cap(sh + np.array([0.02 * k, 0, dz]), r), Z - cut_z[k], r=PL_ROUND)
         if k:
-            # (the plate above's lower rim, where it is the straight cut)
-            rim = (np.abs(zones[k - 1]) < 0.003) & (Z < cut_z[k - 1] + 0.003) & (rho_ < 0.12)
-            lo, hi = th_[rim].min(), th_[rim].max()
-            arc = np.minimum(th_ - lo, hi - th_) * rho_ - PL_TUCK
-            print("PAULDRON lame %d: under plate %d from %.0f to %.0f deg round her arm" % (k, k - 1, np.degrees(lo), np.degrees(hi)))
+            # (judge 5: an arc round her arm still let lame 1 out beside the
+            # dome at its back, where the dome's rim is its round, not its
+            # cut. So a lame keeps only what, slid up her arm by its own
+            # height, lies `PL_TUCK` inside the plate above: in that
+            # plate's shadow, its top edge under it everywhere.)
+            # (any slide from 5 to 90 mm: a band above is hit by whatever
+            # lies under it, at whatever height)
+            arc = np.max([zones[k - 1][P_TREE.query(P - ax_ * sl)[1]] for sl in np.arange(0.005, 0.0901, 0.005)], axis=0) - PL_TUCK
+            print("PAULDRON lame %d: kept in plate %d's shadow up her arm" % (k, k - 1))
             # (a lame is a band: under the plate above only by its 10 mm overlap)
             z_ = ANDR(ANDR(z_, PL_LAP - zones[k - 1], r=PL_ROUND), arc, r=PL_ROUND)
         zones.append(z_)
@@ -3741,7 +3764,8 @@ def ranger():
         ax_ = arm_ax / np.linalg.norm(arm_ax)
         cen = ctr if k == 0 else ctr + ax_ * max(0.0, float((P[zone > 0].mean(0) - ctr) @ ax_))
         out += piece(f"ranger.pauldron{k}", zone, "bronze", lift=lft, thick=0.0015, smooth=14,
-                     soften=10, studs="darksteel", rigid=(cen, "ranger.pauldron", 0.0028))
+                     soften=10, studs="darksteel", rigid=(cen, "ranger.pauldron", 0.0028),
+                     studs_off=zones[k - 1] if k else None)
     for sd in "lr":
         cz = leg_z(sd, tops[sd] + 0.02)
         # (the right boot, over her knee in front, cut 8 cm lower behind, as a
