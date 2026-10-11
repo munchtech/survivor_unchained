@@ -7,6 +7,9 @@ Every lead reads this after RESUME.md. When you take a note into your work, mark
 ### Outfits: trim at the bust (an option, sent to the outfits lead)
 "can add leather trim to ranger, and white feathery trim to arcanist parts of their clothing in the bust if it makes it easier to clean them up nicely - just only increase the skin we cover slightly if you do decide to do that route." Leather trim for the Ranger, white feathery trim for the Arcanist, on the bust edges, where it gives a cleaner edge; the extra coverage stays slight.
 
+### Rendering: the heroine's triangle budget (approved, after the wolf fur)
+The owner asked whether her detail (about 1M triangles and 95+ draws in Warden, at about 150 px tall in play) will lag with a full crowd, and suggested AAA-style models by distance that keep what matters. Their answer to the plan: "all those ideas seem worthwhile!" So: a gameplay LOD that keeps the bust, hips, gear effects and weapon dense and cuts elsewhere; body hidden under each outfit removed; the lowest LOD for shadows; pieces merged by material; fewer fur shells at range. Full detail always at the title, in creation, in conversations, close-ups and cinematics ("we worked very hard on these models so they show there no matter what"). Measured first (`--perf-off her`), judged so play size looks the same. The rendering lead builds it as a post-export step.
+
 ### Spelling
 The owner is American: the "British spelling" rule is dropped. The game's player-facing text is being switched to American spelling (the voiced lines' audio is renamed to match).
 
