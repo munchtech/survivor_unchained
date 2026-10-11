@@ -361,8 +361,13 @@ def throw(rig):
     """Overhand: the hand already back behind her head, whipped through,
     released high and in front, the arm following through across her."""
     keys = [
-        (0, body(stance(0.07, weight=-0.4), hips=(-16, -2, 0), spine=(-26, -8, 0), head=(30, -2, 0),
-                 hand_r=arm((-0.14, 0.20, -0.16), (-0.6, -0.3, 0.6), blade=_n(-0.2, 0.6, -0.8)),
+        # The wind-up (the owner, 11 October: the arm went straight up at the
+        # ball joint, twisted thin, the forearm over her crown and the wrist
+        # bent back hard): the shoulder shrugged and drawn back, the elbow
+        # out to the side at shoulder height, the hand behind her ear, the
+        # wrist straight with the forearm until the release.
+        (0, body(stance(0.07, weight=-0.4), hips=(-16, -2, 0), spine=(-26, -8, 0), head=(30, -2, 0), clav_r=(16, -6),
+                 hand_r=arm((-0.24, 0.18, -0.12), (-0.9, 0.0, -0.2), blade=_n(0.3, 0.9, -0.2)),
                  hand_l=arm((0.06, -0.08, 0.36), (0.8, -0.5, -0.2)), fingers_r="grip", fingers_l="open"), "fast"),
         (2.5, body(stance(0.08), hips=(-2, 6, 0), spine=(0, 8, 0), head=(4, -4, 0),
                    hand_r=arm((-0.04, 0.10, 0.44), (-0.8, -0.3, -0.2), blade=_n(0.0, 0.3, 1.0)),
