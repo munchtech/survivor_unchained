@@ -14,7 +14,10 @@ import lines as L  # noqa: E402
 DIALOGUE = os.path.join(HERE, "..", "..", "godot", "data", "content", "dialogue.json")
 # Where the door opens: the paid room, the free night, the Blind. Every node reached from them is
 # behind it, but the gray light at the Blind, which opens outside, in the frost.
-ROOTS = (("sella", ("stairs_room", "free_door")), ("maeca", ("blind",)))
+ROOTS = (("sella", ("stairs_room", "free_door", "rest_bed")), ("maeca", ("blind",)))
+# The only edges from outside into the door. A new way in fails until someone decides its side.
+WAYS_IN = {("sella", "stairs_say", "stairs_room"), ("sella", "free_stairs", "free_door"),
+           ("sella", "rest_night", "rest_bed"), ("maeca", "blind_ask", "blind")}
 OUTSIDE = ("dlg.maeca.blind_morning.",)
 
 
@@ -80,6 +83,20 @@ class DoorTests(unittest.TestCase):
             for nid in seen:
                 lid = f"dlg.{conv}.{nid}."
                 self.assertTrue(lid.startswith(E.DOOR + OUTSIDE), f"{conv}.{nid} is behind the door but not in DOOR")
+
+    def test_the_ways_in_are_known(self):
+        with open(DIALOGUE, encoding="utf-8") as f:
+            d = json.load(f)
+        ways = set()
+        for conv, _ in ROOTS:
+            nodes = d[conv]["nodes"]
+            inside = {k for k in nodes if f"dlg.{conv}.{k}.".startswith(E.DOOR)}
+            for k, n in nodes.items():
+                if k not in inside:
+                    for x in [n.get("next")] + [c.get("goto") for c in n.get("choices", [])]:
+                        if x in inside:
+                            ways.add((conv, k, x))
+        self.assertEqual(ways, WAYS_IN)
 
 
 if __name__ == "__main__":

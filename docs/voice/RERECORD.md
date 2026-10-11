@@ -19,7 +19,7 @@ woman of about sixty).
 
 **Locked for recording (11 October):** the narrator's prologue lines and C01 to C04, Vonnra's far voice in the prologue, the Warden's, Grimtunnel's, the dead Watchman's and the gate guard's prologue lines, and Rook's and Brannoc's Act 1 lines (with the narrator's parts inside them). Each is marked **LOCKED FOR RECORDING** in its packet (`tools/vo/locked.json`; `python tools/vo/lock.py --list`). The rest of the narrator, Vonnra and Brannoc stays on hold. A locked line whose words change later shows **HOLD** again until the story lead re-locks it.
 
-**Locked for recording (11 October, later): the love scenes, B, after their judge.** Sella's blue room whole (the stairs up, the dark nights, the stop and the paid sleep, the mornings) and Maeca's Blind whole (the walk, the fire, under the hides, both gray lights, the heart), with the narrator's one line in them: the bolt, heard from the stairs (`dlg.sella.free_bolt.0.p0`, one take that also serves `free_sleep_bed`). Nothing else of the narrator's behind the door is ever recorded: `tools/vo/elevenlabs.py` holds any narrator part there for good, locked or not (`BOLT`, `behind_door`).
+**Locked for recording (11 October, later): the love scenes, B, after their judge.** Sella's blue room whole (the stairs up, the dark nights, the stop and the paid sleep, the mornings) and Maeca's Blind whole (the walk, the fire, under the hides, both gray lights, the heart), with the narrator's one line behind the door: the bolt, heard from the stairs (`dlg.sella.free_bolt.0.p0`, one take that also serves `free_sleep_bed`). Nothing else of the narrator's behind the door is ever recorded: `tools/vo/elevenlabs.py` holds any narrator part there for good, locked or not (`BOLT`, `behind_door`).
 
 ---
 

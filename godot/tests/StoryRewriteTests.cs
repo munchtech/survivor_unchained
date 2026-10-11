@@ -476,7 +476,7 @@ public class StoryRewriteTests
         var bolt = Convo("sella").Nodes["free_bolt"];
         Assert.Equal("narrator", bolt.Speaker);
         Assert.Equal(Bolt + " \"...There.\"", bolt.Text.Single().Text);
-        var aside = new Regex(@"\(\s*([A-Z][^()]*)\)");
+        var aside = new Regex(@"\(\s*([^a-z\s)][^()]*)\)"); // lines.py: any parenthesis not opening lower-case
         foreach (var (conv, ids) in door)
             foreach (var id in ids)
             {
@@ -493,7 +493,7 @@ public class StoryRewriteTests
             v => Assert.Equal(new[] { "(" + Bolt + ")" }, aside.Matches(v.Text).Select(m => m.Value)));
         // The list is by hand, so walk the scenes from where the door opens: a node added behind it later
         // can't go unchecked. Only the gray light at the Blind is reached and stays outside.
-        foreach (var (conv, roots) in new[] { ("sella", new[] { "stairs_room", "free_door" }), ("maeca", new[] { "blind" }) })
+        foreach (var (conv, roots) in new[] { ("sella", new[] { "stairs_room", "free_door", "rest_bed" }), ("maeca", new[] { "blind" }) })
         {
             var nodes = Convo(conv).Nodes;
             var seen = new HashSet<string>();
@@ -509,6 +509,13 @@ public class StoryRewriteTests
             }
             seen.Remove("blind_morning");
             Assert.Equal(door[conv].OrderBy(x => x), seen.OrderBy(x => x));
+            // And the ways in from outside are exactly these: a new one fails until its side is decided.
+            var ways = nodes.Where(kv => !door[conv].Contains(kv.Key))
+                .SelectMany(kv => (kv.Value.Choices ?? new()).Select(c => c.Goto).Append(kv.Value.Next)
+                    .Where(t => t != null && door[conv].Contains(t)).Select(t => kv.Key + ">" + t))
+                .OrderBy(x => x);
+            Assert.Equal(conv == "sella" ? new[] { "free_stairs>free_door", "rest_night>rest_bed", "stairs_say>stairs_room" }
+                : new[] { "blind_ask>blind" }, ways);
         }
         // The mornings at the Blind open outside, in the frost: the plant for the rope stays the narrator's.
         Assert.Contains("one hand on the crossbow and the other on you", Convo("maeca").Nodes["blind_morning"].Text.Last().Text);
