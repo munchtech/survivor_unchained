@@ -131,7 +131,8 @@ def try_take(kind, who):
 
 def give(kind, who=None):
     hs = holders(kind)
-    mine = [d for d, w in hs if w["who"] == who] or ([d for d, _ in hs] if len(hs) == 1 else [])
+    # A wrong label never frees someone else's turn; with no label, the only holder is freed.
+    mine = [d for d, w in hs if w["who"] == who] or ([d for d, _ in hs] if who is None and len(hs) == 1 else [])
     if not mine and hs:
         sys.exit(f"{kind}: name the turn to give back, as you took it: " + "; ".join(w["who"] for _, w in hs))
     for d in mine[:1]:
