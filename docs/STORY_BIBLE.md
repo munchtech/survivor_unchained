@@ -63,6 +63,17 @@ and one of the drowned was Nell. The rules, which never bend:
    out their own. A vessel holds so much. This is why the survivor forgets: the
    names first, then the faces. Every night's ember is somebody else's memory
    pushing in.
+6. A rising is paid for (canon, the owner, 11 October: `docs/story/TWIST_WTF.md`
+   option 1, built by `docs/story/TOLL_SPEC.md`). The survivor's first rising
+   cost the twenty-six Vonnra drowned; every rising since (a fall in a fight or
+   by day, never the prologue's) costs one life in the valley. Someone dies
+   quietly before the next light, in a chair or in their sleep, and the next
+   night walks out unlit to the survivor's light, lifts its face to her and
+   never strikes, and she burns it. The town's other deaths have a cause, so
+   nobody sees a pattern; Vonnra writes each paid one in her ledger from line
+   twenty-eight, and nobody says it until C41. "You get up. It takes less than
+   it did." is the plain truth every time, in the one voice that may never say
+   what it means.
 Why one in a great many rises with their mind is **never said**. Chid hopes it
 is because someone down there would not let go of them; the game neither
 confirms nor denies it, and no rule depends on it. (It must never become a
@@ -126,13 +137,16 @@ what no living traveller had: kill the Warden.
 Their mother lived in the valley. When she knew she was failing she came down
 to the Waystation to be near the ford road, and took Rook's back room; she
 paid in a ring (it hangs on the nail behind Rook's bar, among the keys). Her
-hands were bad, so Rook wrote her last letter for her: *Come home by the Low
-Ford. I'll be at the water with a lamp, so you'll see me.* That is the letter
-in the survivor's coat in C01, its ink run to blue water. Rook, paid by Vonnra
-to report the road, reported that a traveller was expected on it; Vonnra paid
-her double, and kept the irons lit all that week for the traveller she had
-been told to expect. Every evening the mother went down to the north bank with
-a lamp. On the seventh she went to the water's edge, and the Warden took her:
+hands were bad, so Chid wrote her last letter for her, and chose its words
+(canon "Not yet"; see Chid, §5): *Come home by the Low Ford. I'll be at the
+water with a lamp, so you'll see me.* Rook took it to the carrier. That is the
+letter in the survivor's coat in C01, its ink run to blue water. Rook, paid by
+Vonnra to report the road, reported that a traveller was expected on it;
+Vonnra paid her double, and kept the irons lit all that week for the
+traveller she had been told to expect. Every evening the mother went down to
+the north bank with a lamp. On the seventh Chid walked her down to the
+water's edge and held her hand while the Warden took her, so that she would
+be down there first when her child came:
 the twenty-sixth line in the ledger, written in Vonnra's register as "Rook's
 lodger." She rose with the drowned, and stood on the far bank facing up the
 road her child would come by, holding a lamp that had gone out. On the first
@@ -152,7 +166,7 @@ Quiet Garden behind the shrine, under a plain marker with no name.
   week since." The back room "has been free a week". The earth on the grave is
   dark and has not settled (the one fair contradiction). Act 2's last scene
   turns it (C32, Rook's kitchen).
-- **She is the narrator** (twist A, Act 3). When the survivor drowned, her
+- **She is the narrator** (the voice, Act 3). When the survivor drowned, her
   light came back up muddled with one other: her mother's, a week down, who
   knew her and would not let go. The voice that has told the player
   everything, "You get up.", is hers. She says what happens and what can be
@@ -310,14 +324,14 @@ What we do instead (C01, the prologue's captions, C09):
 | Who | Seems | Is | Comes out |
 |---|---|---|---|
 | The survivor | A lucky traveller | Unchained: drowned at the Low Ford, risen with their mind | Act 2 (the Vigil's ledger, Keegan, Chid) |
-| Vonnra Ash-of-Morrow | Toll-keeper, far seer | Last binder. Lit the lamps, made the survivor, let the caravan go, sent her clerk through the door. Her "sight" is old lore and bought talk. | Act 3 (sooner, and in her own words, if accused in Act 1) |
-| Chid | A cheerful fool of a priest | An Unchained of the Order's day, near two hundred years old; "C." of the note in Ashe's trunk; goes to the ford when the lamps are lit, and was there the night the survivor rose | Act 3 |
+| Vonnra Ash-of-Morrow | Toll-keeper, far seer | Last binder. Lit the lamps and drowned the twenty-six, and believes that made the survivor; let the caravan go; sent her clerk through the door; keeps the ledger of what every rising since has cost. Her "sight" is old lore and bought talk. | Act 3 (sooner, and in her own words, if accused in Act 1); the ledger past twenty-seven, C41 |
+| Chid | A cheerful fool of a priest | An Unchained of the Order's day, near two hundred years old; "C." of the note in Ashe's trunk; goes to the ford when the lamps are lit, and was there the night the survivor rose. Wrote the mother's letter and walked her to the water's edge, so she would be down there first (canon "Not yet") | Act 3 (C42; his hand in it, C43) |
 | Jessop | Vonnra's toll clerk, gone south | Bought by Pell to turn the Coyle wagons; Vonnra let it happen, then sent him through the sealed door to see if a living man could pass. His are the bootprints going in. | Act 3 (on the stair) |
 | Nell | Brannoc's girl, safe at Low Kiln | Drowned at the ford a fortnight before the survivor; rose in the ditch; the survivor put her down | Act 1 (if Brannoc is told), or Act 2 |
 | Wat | A carter | Drowned on toll work, the "quick crossing" | Act 1 hint, Act 3 |
 | Corran, Dannet | Watch deserters | Corran died at his post; Dannet, his runner, went to the Toll Tower first and was sent back down the road at night | Act 1 (Corran), Act 2 (Dannet's body, a Toll Tower pass on it) |
-| Captain Holloway | A drunk who counts; the town's protector | Ashford's quartermaster, who held the shaft-head the night the ground went, and with the lamp in his eyes took the living on the ladder for the dead, and dropped the lid on ninety-one counted. His lid made the dead he feared. Holds a letter from Sallow asking for "the one from the ford", and his answer, "No.", never sent | Act 1 (what he did, to the player, at the gate), Act 2 (that it was a mistake, and who was under it) |
-| Maeca | His kindest friend: she walks him home | Was on the ladder, the next hand up: number ninety-two. Three days below the lid; finished the wounded, and the boy; the Pack found her at a cave mouth. Has waited ten years | Act 2 (the rope) |
+| Captain Holloway | A drunk who counts; the town's protector | Ashford's quartermaster, who held the shaft-head the night the ground went, and with the lamp in his eyes took the living on the ladder for the dead, and dropped the lid on ninety-one counted. His lid made the dead he feared, and he knows it: he saw Maeca's face as it came down (canon "Count's right"). Holds a letter from Sallow asking for "the one from the ford", and his answer, "No.", never sent | Act 1 (what he did, to the player, at the gate), Act 2 (that it was a mistake, and who was under it; that he knew, after his death: C20b, C22) |
+| Maeca | His kindest friend: she walks him home | Was on the ladder, the next hand up: number ninety-two. Three days below the lid; finished the wounded, and the boy; the Pack found her at a cave mouth. Has waited ten years, not knowing he saw her | Act 2 (the rope) |
 | Harlan Coyle | The grieving uncle | Has sold the Dig its blasting ember for two years | Act 1 (to the player), Act 2 (to everyone) |
 | Pell Varrow | The villain of the caravan | Paid to stop the ember reaching the Dig, and to ruin Coyle; holds the numbers that say when the chain breaks; knows who barred the lid at Ashford, and is waiting for a price | Act 1 (why; that he knows), Act 2 (the numbers) |
 | Redcowl | A bandit with cages | Dunstan Cutwell, Rav's brother, leader of Ashford's dispossessed; the closest thing to a resistance | Act 1 (Ashford, unsaid; his name, if he dies), Act 2 |
@@ -333,7 +347,8 @@ What we do instead (C01, the prologue's captions, C09):
 | Tam Penhale | A farm boy nobody believes | Right, every time | Act 2 (the knocking) |
 | The Morrow | A thing praying under the Verge | Every death in the valley, held. It prays to be let die, which is its dead asking to be let go; close to, the praying is names. The chain has kept it alive and harvested for two thousand years. | Act 3 |
 | Ember | A mineral; the morning; the Morrow's pain | The held dead, leaking up | Act 3 (seeded from the first night) |
-| The survivor's mother | Died in her sleep, a week before (Rook's kind lie) | Drowned at the Low Ford waiting with a lamp; rose; the survivor cut her down on the first night | Act 2's end (Rook's kitchen) |
+| Getting up | Free: the night is the only cost | Paid: twenty-six lives for the first, one in the valley for each since, and each comes to her light the next night (rule 6) | Act 3 (C41, Vonnra's ledger) |
+| The survivor's mother | Died in her sleep, a week before (Rook's kind lie) | Walked to the Low Ford's edge by Chid, who held her hand while the Warden took her; rose; the survivor cut her down on the first night | Act 2's end (Rook's kitchen); Chid's hand in it, Act 3 (C43) |
 | The narrator | The game's voice: nobody | The survivor's mother, in her child's light | Act 3 (the bottom of the stair) |
 
 ## 4. Factions and their true aims
@@ -377,17 +392,22 @@ None of them says it.
   the living from the lower workings, grey with slurry, too far gone to call
   out; three days in the dark near ember made them the dead he feared. He wrote
   the shaft party down with the hill party, "at the cave mouths", so the widows
-  were paid, and has paid their shortfall out of his own pay since. He never
-  learns it was a mistake; Maeca says it once, after. He also holds Sallow's
+  were paid, and has paid their shortfall out of his own pay since. He knew it
+  was a mistake as the lid came down: he saw Maeca's face, ninety-two, turned up
+  into his lamp (canon "Count's right", `docs/story/TWIST_OPTIONS.md` B), and
+  everything since is for her. Maeca, who thinks he never knew, says it once,
+  after. He also holds Sallow's
   letter asking for "the one from the ford", and his answer, "No.", written and
   never sent. *Arc:* the player loves him (four trunk scenes in Act 1), learns
   what he did from him, drunk, at the gate, and goes on loving him; at the top
   of Act 2 he goes down the hole at the Penhale farm drunk and shaking, counts
   them up the rope, laughs for the first time, and is hauled up by Maeca and
-  the survivor; "Count's right."; she cuts the rope. *Fixed:* he dies at the
-  rope on every road. He rises at his own gate on the fourth dusk, and the
-  survivor lays him down. He never says sorry; it is written once in his
-  daybook.
+  the survivor to a body-length below the lip, where he looks up at her and
+  grins: "Count's right." She cuts the rope, and he knew she would: he climbed
+  to her knife on purpose. *Fixed:* he dies at the rope on every road. He rises at his own gate on the fourth dusk, and the
+  survivor lays him down; his lips are counting, to ninety-two. He never says
+  sorry; it is written once in his daybook, at the foot of the roll: "92.", no
+  name, and "Sorry."
 - **Maeca.** Just Maeca. *Face:* a hunter who tracks for the Watch ("before you
   ask. Not wolves."), paid out of Holloway's pocket; his kindest friend, who
   walks him home and buys his drink with his own money. *Secret:* she left her
@@ -400,7 +420,8 @@ None of them says it.
   three words about Ashford are "The cave mouths.": her post, and his report's
   lie. Half the Kerchiefs are her old neighbours ("Fed some of them, once.
   Buried more."). *Arc:* every kindness is true and is a hunter waiting; told of
-  the lid, "...Did he."; at the rope, "Ninety-two." *Ends:* leaves with the Pack,
+  the lid, "...Did he."; at the rope, "Ninety-two."; over his daybook, "...He
+  counted me." *Ends:* leaves with the Pack,
   if they will have her; takes the Watch, and counts them in at the war in his
   coat; dies at the breakthrough's edge.
 - **Old Wenna.** *Face:* a rude herbalist. *Secret:* she nursed the fever year,
@@ -467,13 +488,21 @@ None of them says it.
   of the Order's day, near two hundred years old, who cannot stay dead and does
   not age. He wrote the note in Ashe's trunk ("Keep the lights lit. — C.") to a
   friend. He has seen the dead get up before; he knows what the survivor is, and
-  is the gentlest person who knows. Every time the survivor dies, it is Chid who
-  goes out and carries them in, by night as readily as by day: "a carter found
-  you" is his white lie, and it wears thinner with every death (`chid.woke`,
-  `chid.carter`; a folk line asks who, since no carts run on the Old Road).
-  *Ends:* see the endings: goes dark at dawn;
-  lies down in the chain in the survivor's place; is given the coin and ages
-  at last; kneels to a new god, or will not.
+  is the gentlest person who knows. **He also made them** (canon "Not yet",
+  `docs/story/TWIST_OPTIONS.md` A): he wrote the mother's letter and chose its
+  words, and on the seventh evening walked her to the water's edge and held her
+  hand while the Warden took her, so that she would be down there first,
+  holding on, when her child came. Everything he does for the survivor is true
+  kindness, and it is tending what he made. Every time the survivor dies, it is
+  Chid who goes out and carries them in, by night as readily as by day: "a
+  carter found you" is his white lie, and it wears thinner with every death
+  (`chid.woke`, `chid.carter`; a folk line asks who, since no carts run on the
+  Old Road). Under the toll (rule 6) he has watched every one of those risings
+  paid for, and put the kettle on. *Ends:* see the endings: goes dark at dawn;
+  lies down in the chain in the survivor's place; is given the coin and ages at
+  last; kneels to a new god, or will not. Then the coda, at his bench at dawn:
+  he asks "Is it morning?", and the player may give him the Order's answer,
+  "Not yet.", and leave him to sit up alone for good, as he left Tobin.
 - **Vonnra Ash-of-Morrow.** *Face:* toll-keeper, far seer, the one who reads
   your fortune. *Secret:* she relit the ford lamps to make an Unchained and
   means to use the survivor to re-forge the chain: to walk them down through
@@ -483,7 +512,10 @@ None of them says it.
   ruined Coyle sells no more ember to the Dig, and then she sent Jessop through
   the sealed door to learn whether a living man could pass. Her far sight is
   old lore and bought talk (Rook, Sella, Pell): the fortune quotes what the
-  survivor said in Sella's bed. Her grandmother's coin, square, stamped VII, is
+  survivor said in Sella's bed. She believes her twenty-six made the survivor,
+  and never learns Chid's part; from line twenty-eight her ledger is the toll,
+  each of the survivor's risings and the life it cost, in her hand (C41).
+  Her grandmother's coin, square, stamped VII, is
   the Legion's own token: the toll at the inner door, and it buys one return.
   *Arc:* the trusted figure with the deepest secret, and good reasons. *Ends:*
   binds the survivor; is refused; drowns herself at the Low Ford to rise and
@@ -550,7 +582,7 @@ has the reasoning.)
 |---|---|---|
 | Vonnra | Pride: she is the last of a line that kept the Legion's keys, and she cannot bear to be the one in whose time the chain broke. | "I am not angry. I am arranging." Her first feeling is for her arrangement. Act 3. |
 | Rook | She knew. Not all of it, but she watched the carters go down the south road and not come back, and took double for the survivor and asked nothing, because the Last Lamp was failing and she would not be the woman who lost Ashe's inn. Her Act 2 turn is a woman deciding she can no longer pretend, not one learning. | "Don't look like that, pet." Act 2. |
-| Holloway | He saw what he was afraid of. The lamp was in his eyes, and he had the time it takes to breathe in, and he chose the four hundred; but he was also afraid, and the dead were what fear sees. | The roll at night: who each man left behind ("Abbot. Two bairns."). |
+| Holloway | He saw what he was afraid of. The lamp was in his eyes, and he had the time it takes to breathe in, and he chose the four hundred; but he was also afraid, and the dead were what fear sees. Then he saw her face, and has known for ten years. | The roll at night: who each man left behind ("Abbot. Two bairns."). |
 | Maeca | Below the lid she finished the wounded before they could rise, and the last of them was the boy she had gone down for. She has never decided whether she keeps Holloway alive or keeps him. | Her romance's "I've lain with my ear to a lot of things to see if they'd live." Never said. |
 | Wenna | In the fever year there was not enough bitterroot, and she chose who got it; she was right about most, and wrong about Harlan's sister, whom she passed over for a man she liked better. She has never named the fever year's dead because one of the names is a decision. | Act 2's breakthrough, when she has to choose again. |
 | Harlan | He likes being the man who brings salt to the valley; the B.E. paid for the new sign over Coyle Trading; he has never once thought of the pipe-lads. | The sign. Act 2. |
@@ -561,7 +593,7 @@ has the reasoning.)
 | Jory | In the cage, when the Kerchiefs asked which of the four would make trouble, he pointed at Ewan. That is why he shouts the name in his sleep. | Act 2, from Redcowl or Rav, to the survivor only. |
 | Keegan | She has done it before: in her first month, in the north, she returned a girl of fourteen who had drowned in a mill-race and got up. By the handbook, with the prayer. Then she was posted to a gate nobody uses. | Act 2, at the gate: "Once. She thanked me. They do, the first time. They're frightened." |
 | Brannoc | He suspected whose square coin it was, and did not ask, because the irons paid well and Nell's boots had holes in them. The irons that drowned her bought the new boots she drowned in. | Act 2's major extreme (below). |
-| Chid | He goes to the ford when the lamps are lit. He was there, in the reeds, the night the survivor rose, and every night before it. He could not have stopped it. He did not try. He wanted to see one get up. | One line in Act 3, if asked. |
+| Chid | Loneliness: two hundred years since anyone answered him at the end of a watch. He goes to the ford when the lamps are lit, to see one get up, and when a dying woman asked him to write to her child, he gave it a way to. | One line in Act 3, if asked ("I wanted to see one get up."); the rest from her, at the stair (C43), and from him in the coda: "I only wanted somebody to answer." |
 
 Untouched, on purpose: Tam (nine, and right), Snib (no secret at all),
 Greymuzzle (an animal), Grimtunnel (his sincerity is his whole horror), and the
@@ -1082,6 +1114,14 @@ explains a fee.
 the stair, risen and held by the dead, Varrow silver and a Toll Tower token in
 his purse: the bootprints' end.
 
+**The ledger, past twenty-seven** (C41; rule 6). Vonnra reads her ledger aloud
+to "From the ford. Got up." and turns the page. Twenty-eight is the baker, who
+sat down at her trough before light; then one line for every time this
+player got up, each dated to a night they remember, from the save. "Twenty-six
+for the first. One each, since. ...No charge, this once. I always tell people
+the price." Minutes later the survivor falls, and the narrator says what she
+has always said. (`docs/story/TOLL_SPEC.md` §6.)
+
 **The heart.** At the bottom Grimtunnel holds the Warden's heart up to
 something praying. To re-forge the chain the heart must go back into its
 place, and it must be carried. In the cage Brannoc made for it (only if he
@@ -1098,7 +1138,13 @@ asked every night at the end of the watch whether it was morning and was told
 ...Good. Somebody should have." And if she asks who else knew what the lamps
 were for, his one line, the gentlest man in the valley's worst thing, said
 plainly: "I go when the lamps are lit. I couldn't have stopped it. I didn't
-try. I wanted to see one get up."
+try. I wanted to see one get up." Asked about her mother, he tells the truth
+and it sounds like comfort: "I sat with her at the edge. I held her hand.
+...She wasn't on her own." (C42.) At the bottom of the stair, asked how she
+got down there, the voice says the rest, as plainly as all her lines: "The
+kind one walked me to the edge. He'd written that I'd be at the water, so
+you'd see me. ...He held my hand while it took me. He said you'd come up
+yourself, if I was down here first." (C43; canon "Not yet".)
 
 **The inner door and the coin.** The dead at the inner door take a toll: one
 square coin of the Legion, stamped VII. Vonnra's grandmother's. It buys one
@@ -1207,6 +1253,11 @@ the story's view of them, so that the nights tell the story the days write.
   dark, and everything that has lost a light still coming to her. Nobody says so;
   the Wayfinder's "Stay past that if you like. Some do. I sell them fewer maps."
   is all the story says about it.
+- **The toll in the endless** (rule 6; `docs/story/TOLL_SPEC.md` §7). After
+  ending A every death in a run is paid, and the result screen names who
+  ("Paid tonight: Hobb, the drover's boy."); they come out in the next run.
+  After B the risen die properly and nobody pays. After C she pays it herself
+  ("Paid tonight: you.").
 - **Bosses speak as themselves.** A story boss's lines are its cinematic's
   (C10 to C14): Greymuzzle wordless, Redcowl's bairns and his last words,
   Grimtunnel's faith, the Barrow Lord's one-word orders, Wat's silence. No
@@ -1544,3 +1595,7 @@ The story fights (the owner's decisions, 4 October): `redcowl` = `spared`;
 deed `spared_redcowl` and the entry `caravan/roost_spared`; the banes
 `bane.fires` and `bane.pole`, read now by Chid's waking. The fortune's chart
 is a change of its own (`{ "chart": ... }`). `WRITING_PASS.md` §22 has them all.
+
+The toll (rule 6; to build, `docs/story/TOLL_SPEC.md` §2): `toll.rises` (every
+paid rising) and `toll.ledger` (one entry each: `n` from 28, `who`, `day`,
+`kind`, `place`, `came`, `burned`).
