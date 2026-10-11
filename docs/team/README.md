@@ -84,10 +84,10 @@ The main session keeps this current. It is the address list for SendMessage. Ret
 | Area | Agent | Status page |
 |---|---|---|
 | Voice (paused by the owner: no placeholders; final voices from ElevenLabs later) | a501b387a90d78b4e | docs/team/voice.md |
-| Story and writing (the writer: the approved rewrite, Act 1 first) | a29c05b453e33b062 (12 Oct: 162 lines locked; canon in treatment and bible; TOLL_SPEC judged. Now: apply the sophistication pass, settle TOLL_SPEC, direct the 30 narration lines, lock Holloway, Maeca, Chid, narrator) | docs/team/story.md |
+| Story and writing (the writer: the approved rewrite, Act 1 first) | DONE 12 Oct (merged f4a819ae: sophistication pass, 424 lines locked; 46 undirected lines held in docs/voice/undirected_held.txt; TOLL_SPEC ready for a code lead). Next writer: direct and lock the held lines | docs/team/story.md |
 | Classes design (two types per calling, skill trees, ultimates on Q / right-click; plan only until the owner approves) | a58dbbc2f5e2563fa (phase 1 session 3, worktree agent-a2a42cd8430929a76, branch classes/phase1; sessions 1-2 merged d05cd4f5: board, dash forms, reflexes, the Flare, warden rules. Now: reaver, arcanist, stalker rules, off-calling run, sweep, judge) | docs/design/CLASSES.md |
 | Combat, encounters, bosses, balance (paused; handoff ready at af6452e1) | — | docs/team/combat.md |
-| Animation (joints to perfection: wrists, follow-through, elbows, arms through body, sliding) | a4e62fc358dc5214a (successor 5, 11 Oct night, in worktree agent-af8dbda3195e438e4 @ 14fb9b71: death and get_up rekeyed, hand-speck cause fixed, all unjudged; next rebuild, throw axe, judge 12, crotch cut, death_back pop) | docs/team/animation.md |
+| Animation (joints to perfection: wrists, follow-through, elbows, arms through body, sliding) | a5c71732fd52cd58a (successor 6, 12 Oct, worktree agent-af8dbda3195e438e4 @ fa167f3a: throw PASSED (judged sheet to the owner next); death and get_up toe tips and hips; get_up_back failed first look; crotch cut) | docs/team/animation.md |
 | UI design (the HUD keystone; portraits wait on the face) | — (handoff ready) | docs/team/ui_design.md |
 | UI art (paused; handoff ready at cd0f4ab6) | — | docs/team/ui_art.md |
 | Crafting (research, design, build) (paused; handoff ready at ed429efb) | — | docs/team/crafting.md |
