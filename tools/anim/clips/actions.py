@@ -339,7 +339,10 @@ def death(rig):
     # forearm stood too steep for the wrist to lay the hand flat, and the
     # fingers went 5 cm into the ground.)
     touch_l = {"pos": (0.27, 0.074, 0.77), "pole": (1, 0.3, -0.4), "knuckles": (0.2, 0, 1), "blade": (-0.9, 0.35, 0.2), "plant": 1.0, "ext": PUSH_EXT}
-    touch_r = {"pos": (-0.25, 0.06, 0.76), "pole": (-0.3, 0.5, -0.8), "knuckles": (-0.2, 0, 1), "blade": (0.9, 0.35, 0.2), "plant": 1.0, "ext": PUSH_EXT}
+    # (Judge 17: keyed higher, the plant only half drew the wrist down and the
+    # heel of the hand stood off the ground; the left keeps its height: drawn
+    # down, the forearm's swing slid it 3-4 cm.)
+    touch_r = {"pos": (-0.25, 0.04, 0.76), "pole": (-0.3, 0.5, -0.8), "knuckles": (-0.2, 0, 1), "blade": (0.9, 0.35, 0.2), "plant": 1.0, "ext": PUSH_EXT}
     reach_l, reach_r = merge(touch_l, pos=(0.27, 0.20, 0.68), plant=0.0), merge(touch_r, pos=(-0.21, 0.19, 0.68), plant=0.0)
     # (The left slides out to where it is flung as the elbow gives; the
     # right is under her as she comes down on it.)
@@ -876,7 +879,7 @@ def throw(rig):
         # her left, the blade up and out, clear of her outline from above.)
         # (Judge 18: out past her thigh's edge at the game cameras; the blade
         # already turning down as the hips lead, so it doesn't turn in a frame.)
-        hand_l = held((0.27 - 0.08 * c, -0.16, 0.26), (0.8, -0.5, -0.2), (0.45 - 0.05 * c, 0.8 - 0.4 * c, 0.35 + 0.4 * c))
+        hand_l = held((0.29 - 0.10 * max(0.0, 2 * c - 1), -0.16, 0.26), (0.8, -0.5, -0.2), (0.45 - 0.05 * c, 0.8 - 0.4 * c, 0.35 + 0.4 * c))
         return body(stance(0.07, weight=-0.4), hips=(-16, -2 - 2 * c, 0), spine=(-26, -8 - 3 * c, 0), head=(30, -2 + 4 * c, 0),
                     clav_r=(16, -6), hand_r=hand_r, hand_l=hand_l, fingers_r=fist, fingers_l=fist)
 
@@ -888,12 +891,15 @@ def throw(rig):
         # key left at once read only as the in-between; the hips lead
         # 1.5 frames, so the hold runs two and the release comes a frame later.)
         (0, windup(0.0), "ease"),
+        # (Judge 19: the left fist went out and back over f1-f3: a key between
+        # holds it out until the release pulls it in.)
+        (1, windup(0.5), "auto"),
         (2.0, windup(1.0), "fast"),
         # The release: the fist high and ahead, the blade still up and ahead;
         # it is snapped over to ahead and down by the follow-through key.
         (3.5, body(stance(0.08), hips=(-2, 6, 0), spine=(0, 8, 0), head=(4, -4, 0),
                    hand_r=held((-0.04, 0.10, 0.44), (-0.8, -0.3, -0.2), (0.05, 0.35, 1.0)),
-                   hand_l=held((0.06, -0.30, 0.18), (0.6, -0.2, -0.6), (0.3, -0.2, 0.93)),
+                   hand_l=held((0.10, -0.29, 0.18), (0.6, -0.2, -0.6), (0.3, -0.2, 0.93)),
                    fingers_r=fist, fingers_l=fist), "linear"),
         # The follow-through: the right arm long, the fist ahead of her and
         # low, the blade pointing ahead and down at where the knife went (a
