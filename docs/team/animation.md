@@ -1,6 +1,12 @@
 # Animation: status
 
-Agent: ae2a9884e3e51609c (7 October), branch `worktree-agent-ae2a9884e3e51609c`; handed off at about 320k. Brief and handoff: `docs/handoff/animation.md`.
+Lead 8 (11 October), branch `worktree-agent-af8dbda3195e438e4`. Next steps: `docs/handoff/animation.md` section 0.
+
+## State (2026-10-11, lead 8)
+
+**Judges 16-21: throw, death, get_up, get_up_back PASS (polish left: judge 21); merged 6c3fbb22; library repacked 2b89f6c7. Hair swing faults (judge 20) are the face lead's.** Owner sheet, judged fit: `anim_sheets/owner_death_getup_throw_2026-10-11.jpg`.
+- Throw: the right hand stays right of her midline after the release (wrist 23-32 cm right), the blade forward-out, settling level at her right hip; the wind-up's left fist reaches forward and out to her left (it projected onto her groin at the game cameras).
+- Death: palms stay where they meet the ground while the chest goes down between them, then flop out lifted (`_hop`); the shin flick peaks at 0.23 m. get_up: hands peel and carry low. get_up_back: the hand lifts before it moves; heel-first release. death_back's left hand on the floor.
 
 ## State (2026-10-07)
 

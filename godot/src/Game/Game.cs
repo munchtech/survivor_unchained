@@ -921,6 +921,8 @@ public partial class Game : Node, IZoneHost
         controls.MenuMode = screens.Current != null || hudMode != null;
         // --pad (pictures of pad play): the pad stays in hand whatever the window's mouse does.
         if (Args.Has("pad") && keyI > 0) controls.UsingPad = true;
+        // Her gameplay model only in play: never in a conversation, an overlay, a held camera or a cinematic.
+        View.HerLod.InPlay = Mode == "play" && !showing && !InCinematic && hudMode == null;
         if (scene == null) return;
         double dt = Math.Min(delta, 0.1);
         playedT += delta;
@@ -1407,7 +1409,7 @@ public partial class Game : Node, IZoneHost
         {
             castDone = true;
             cb.Aim = null;
-            cb.UseAbility(Args.Has("still") ? 0 : 1, 0);
+            cb.UseFlare(Args.Has("still") ? 0 : 1, 0);
         }
         // --die T: T seconds in, a risen at arm's length before her (--behind:
         // at her back) fells her where she stands (a picture of her fall).

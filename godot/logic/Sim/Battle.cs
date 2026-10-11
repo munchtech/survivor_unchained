@@ -93,6 +93,9 @@ public sealed class MapRules
     /// <summary>A map's suffixes on the survivor: armour counted for less, a dash slower to come
     /// back, regeneration, and what a draught mends (docs/SKILLS_DESIGN.md §17.2).</summary>
     public double ArmourMul = 1, DashRecharge = 1, RegenMul = 1, DraughtMul = 1;
+    /// <summary>Smothered: the Flare fills slower. Bright: a Flare cast mends nothing (CLASSES.md §5).</summary>
+    public double FlareFill = 1;
+    public bool FlareMends = true;
 }
 
 public sealed class BattleHooks
@@ -154,6 +157,12 @@ public sealed class BattleSetup
     /// <summary>Carried ember from an expedition that did not end.</summary>
     public (int Level, double Xp)? Ember;
     public double? Hp;
+    /// <summary>What the lit lamps bring (Rpg/LampBook.Loadout), the reflexes' ranks (ArtBook), the
+    /// survivor's level (the Flare's damage by day), and the Flare's starting charge (story fights: half).</summary>
+    public LampLoadout? Lamps;
+    public Dictionary<string, int>? ReflexRanks;
+    public int Level = 1;
+    public double FlareStart;
 }
 
 public enum OfferKind { Weapon, Rank, Boon, Evolve, Heal, Gold, Hone, Union }
@@ -274,6 +283,8 @@ public sealed partial class Battle
     /// damage over time goes to whatever put it there. For the damage meter
     /// and the balance harness.</summary>
     public readonly Dictionary<string, double> DamageBy = new();
+    /// <summary>The same, on bosses alone: the Flare's share of a boss's damage (CLASSES.md §7).</summary>
+    public readonly Dictionary<string, double> BossDamageBy = new();
     /// <summary>Who is dealing damage while no weapon is: the rule firing, the art.</summary>
     string? credit;
     public int KillCount;
@@ -355,6 +366,10 @@ public sealed partial class Battle
         };
         foreach (var (id, rank) in s.Weapons) AddWeapon(id, rank);
         foreach (var (def, source) in s.Triggers) AddTrigger(def, source);
+        Level = Math.Max(1, s.Level);
+        if (s.Lamps != null) SetLamps(s.Lamps, s.ReflexRanks);
+        Flare = Content.Lamps.Flare(Lamps.Flare);
+        FlareMeter = Flare != null ? Math.Clamp(s.FlareStart, 0, FlareFull * FlareCharges) : 0;
         if (s.Ember is { } em)
         {
             EmberLevel = em.Level;
@@ -385,6 +400,8 @@ public sealed partial class Battle
             foreach (var w in Weapons.ToArray()) Firing.Tick(this, w, dt);
             TickAuras(dt);
             TickTriggers(dt);
+            TickReflexes(dt);
+            TickFlare(dt);
         }
         foreach (var e in Enemies.Items) if (e.Alive) Ai.Update(this, e, wdt);
         UpdateProjectiles(dt, wdt);
@@ -433,6 +450,7 @@ public sealed partial class Battle
             if (p.DashRecharge >= Abilities.Dash.Recharge) { p.DashRecharge = 0; p.DashCharges++; }
         }
 
+        TickStones(dt);
         // Warding light recharges.
         int blockRank = RoundInt(st.Get(Stat.Block));
         if (blockRank > 0 && p.BlockT > 0) p.BlockT = Math.Max(0, p.BlockT - dt);
@@ -446,6 +464,8 @@ public sealed partial class Battle
         if (p.PoisonT > 0) { p.PoisonT -= dt * cure; Dot(ref p.PoisonSum, p.PoisonDps * dt, School.Nature, "poison", dt); }
         if (!p.Alive) return;
         if (TickArt(dt)) return;
+        // A Strike holds the controls while it plays (the Flare, CLASSES.md §3.3).
+        if (FlareHold > 0) { p.Vx = p.Vz = 0; p.Moving = false; return; }
 
         // Leaping: an arc through the air, untouchable until landing.
         if (p.Leap is { } leap)
@@ -456,7 +476,7 @@ public sealed partial class Battle
             p.Z = leap.Z0 + (leap.Z1 - leap.Z0) * k;
             p.Iframes = Math.Max(p.Iframes, 0.05);
             if (k >= 1) { p.Leap = null; LandLeap(leap); }
-            Collision.Resolve(ref p.X, ref p.Z, p.Radius, true);
+            Collision.Resolve(ref p.X, ref p.Z, p.Radius, true, overGaps: true);
             return;
         }
 
@@ -464,7 +484,7 @@ public sealed partial class Battle
         if (p.DashT > 0)
         {
             p.DashT -= dt;
-            double dsp = Abilities.Dash.Distance / Abilities.Dash.Time;
+            double dsp = Abilities.Dash.Distance * DashLength() / Abilities.Dash.Time;
             p.X += p.DashDX * dsp * dt;
             p.Z += p.DashDZ * dsp * dt;
             // Over a gap in the ground (a crack, a sinkhole) a dash carries her; walls still stop it.
@@ -538,7 +558,7 @@ public sealed partial class Battle
     public bool Dash(double dirX, double dirZ)
     {
         var p = Player;
-        if (!p.Alive || p.DashCharges <= 0 || p.DashT > 0 || p.Leap != null || Art.Rush != null) return false;
+        if (!p.Alive || p.DashCharges <= 0 || p.DashT > 0 || p.Leap != null || Art.Rush != null || FlareHold > 0) return false;
         double dx = dirX, dz = dirZ;
         if (Len(dx, dz) < 0.1) { dx = Math.Sin(p.Facing); dz = Math.Cos(p.Facing); }
         double m = Len(dx, dz);
@@ -550,11 +570,21 @@ public sealed partial class Battle
         p.PerfectThisDash = false;
         p.DashCharges--;
         double x0 = p.X, z0 = p.Z;
-        Events.Emit(new Ev.Dash { X0 = x0, Z0 = z0, X1 = x0 + p.DashDX * Abilities.Dash.Distance, Z1 = z0 + p.DashDZ * Abilities.Dash.Distance });
+        // The dash form rides it after its own wait; a form that carries her itself takes the dash's motion.
+        if (DashForm(p.DashDX, p.DashDZ)) p.DashT = 0;
+        else
+        {
+            double len = Abilities.Dash.Distance * DashLength();
+            Events.Emit(new Ev.Dash { X0 = x0, Z0 = z0, X1 = x0 + p.DashDX * len, Z1 = z0 + p.DashDZ * len });
+        }
         Fire(TriggerEvent.Dash, new ProcCtx { X = p.X, Z = p.Z });
         OpenGate(x0, z0);
         return true;
     }
+
+    /// <summary>The dash's length: Hold Fast and Light Step shorten it (prices, kept in full by night).</summary>
+    double DashLength() =>
+        (1 - Lamps.Full("hold_fast", "dash")) * (1 - Lamps.Full("light_step", "shorter"));
 
     /// <summary>Stop a channel or cast in progress.</summary>
     public void Interrupt(Enemy e)
@@ -670,6 +700,10 @@ public sealed partial class Battle
 
     /* ========================================================= damage in == */
 
+    /// <summary>Bound (docs/design/CLASSES.md §1): how far a tethered thing can strain from where it
+    /// was caught, and how much more it takes from what strikes an area.</summary>
+    public const double BoundSlack = 0.8, BoundArea = 0.2;
+
     /// <summary>Everything the survivor's side does to a creature passes through here.</summary>
     public double HitEnemy(Enemy e, double baseDamage, School school, Tag[] tags, HitOpts o = default)
     {
@@ -690,8 +724,10 @@ public sealed partial class Battle
         if (s[StatusKind.Mark] is { } mark) dmg *= 1 + 0.3 * (mark.Power != 0 ? mark.Power : 1);
         if (s.Has(StatusKind.Frozen)) dmg *= Boons.ContainsKey("deep_chill") ? 1.35 : 1.15;
         if (s.Has(StatusKind.Sear) && school == School.Holy) dmg *= 1.3;
+        if (s.Has(StatusKind.Bound) && tags.Has(Tag.Area)) dmg *= 1 + BoundArea;
         if (s.Has(StatusKind.Shock) && !o.Dot) { dmg *= 1.35 + st.Get(Stat.ShockBonus); if (!Boons.ContainsKey("static_charge")) s.Remove(StatusKind.Shock); }
         dmg *= e.TakenMul;
+        dmg *= LampDamageMul(e, school, tags, o);
         // Warded by its own kind's lamp or drum.
         if (e.WardT > 0) dmg *= 1 - e.Ward;
         // Resistances.
@@ -719,6 +755,7 @@ public sealed partial class Battle
         if (crit) dmg *= st.Get(Stat.CritDamage) * (e.Hp < e.MaxHp * 0.5 && Boons.TryGetValue("ferocity", out int tooth) ? 1 + 0.12 * tooth : 1);
         else if ((Rules.IronSkin > 0 || e.Def.IronSkin > 0) && e.Disposition == Disposition.Hostile) { dmg *= 1 - Math.Max(Rules.IronSkin, e.Def.IronSkin); blocked = true; }
         dmg = Math.Max(0.5, dmg);
+        LightningLeaps(e, baseDamage, school, tags, o);
 
         double before = e.Hp;
         e.Hp -= dmg;
@@ -743,6 +780,9 @@ public sealed partial class Battle
         if (o.Weapon != null) o.Weapon.DamageDealt += Math.Min(dmg, before);
         string by = o.Weapon?.Id ?? o.Credit ?? (o.Summon ? "summon" : credit ?? "other");
         DamageBy[by] = DamageBy.GetValueOrDefault(by) + Math.Min(dmg, Math.Max(0, before));
+        FlareOnDealt(e, Math.Min(dmg, Math.Max(0, before)), by);
+        if (e.Boss) BossDamageBy[by] = BossDamageBy.GetValueOrDefault(by) + Math.Min(dmg, Math.Max(0, before));
+        if (tags.Has(Tag.Spell) && !o.Dot) OnSpellHit(by);
         // Where the damage is coming from, for the director.
         if (tags.Has(Tag.Summon) || o.Summon) Profile.Summon += dmg;
         else if (tags.Has(Tag.Projectile)) Profile.Projectile += dmg;
@@ -830,6 +870,7 @@ public sealed partial class Battle
         if (weapon != null) weapon.Kills++;
         if (credited && e.Disposition != Disposition.Ally)
         {
+            FlareOnKill(e, e.Status.Has(StatusKind.Bleed) && e.LastWeapon == null);
             KillCount++;
             KillsByFamily[e.Def.Family] = KillsByFamily.GetValueOrDefault(e.Def.Family) + 1;
             if (e.Elite && !e.Boss) ChampionsByFamily[e.Def.Family] = ChampionsByFamily.GetValueOrDefault(e.Def.Family) + 1;
@@ -961,6 +1002,17 @@ public sealed partial class Battle
                 }
                 break;
             }
+            case StatusKind.Bound:
+            {
+                // Tethered where it stands when first caught; caught again, it stays tied there.
+                if (!s.Has(StatusKind.Bound)) { e.BoundX = e.X; e.BoundZ = e.Z; }
+                var cur = s.Ensure(StatusKind.Bound, 0, 1, p.Power, 0);
+                cur.From ??= from;
+                // night_road.marked.bound_longer: a marked thing is Bound longer.
+                cur.T = Math.Max(cur.T, dur + (s.Has(StatusKind.Mark) ? Lamps.Size("marked.bound_longer", "seconds") : 0));
+                Events.Emit(new Ev.Status { Target = e.Id, Kind = StatusKind.Bound, X = e.X, Z = e.Z });
+                break;
+            }
             case StatusKind.Stun:
             case StatusKind.Fear:
             case StatusKind.Charm:
@@ -978,6 +1030,7 @@ public sealed partial class Battle
                 break;
             }
         }
+        if (p.Kind is StatusKind.Mark or StatusKind.Bound) MoonOnTheChain(e);
         Events.Emit(new Ev.Status { Target = e.Id, Kind = p.Kind, X = e.X, Z = e.Z });
         if (depth < 3) Fire(TriggerEvent.Status, new ProcCtx { Target = e, X = e.X, Z = e.Z, Damage = hitDamage, School = School.Physical, Tags = Array.Empty<Tag>(), Applied = p.Kind, Depth = depth + 1 });
     }
@@ -1080,10 +1133,12 @@ public sealed partial class Battle
         {
             p.BlockT = new[] { 12.0, 9, 6 }[Math.Min(3, blockRank) - 1];
             p.Iframes = 0.25;
+            FlareOnBlock(from);
             Events.Emit(new Ev.PlayerHit { X = p.X, Z = p.Z, Amount = 0, School = school, Source = source, Blocked = true });
             Fire(TriggerEvent.Block, new ProcCtx { X = p.X, Z = p.Z });
             return 0;
         }
+        if (TryLampBlock(amount, school, source, from)) return 0;
         // Watch Mail counts: every tenth blow that reaches the survivor glances off.
         if (Boons.ContainsKey("ironhide") && ++p.MailCount >= 10)
         {
@@ -1122,7 +1177,7 @@ public sealed partial class Battle
         if (Art.WraithT > 0) dmg *= 0.5;
         // Grounding: part of the blow goes to earth (its lightning is the blessing's Hurt rule).
         if (Boons.TryGetValue("grounding", out int ground)) dmg *= ground >= 2 ? 0.67 : 0.8;
-        return HurtPlayerRaw(dmg, school, source, from);
+        return HurtPlayerRaw(FlareGuard(dmg), school, source, from);
     }
 
     double thornsAt = -9;
@@ -1166,6 +1221,9 @@ public sealed partial class Battle
         });
         if (from is { Alive: true }) Interrupt(from);
         Events.Emit(new Ev.PerfectDodge { X = p.X, Z = p.Z });
+        FlareOnPerfect();
+        LampsOnPerfect();
+        Reflex("perfect");
         Fire(TriggerEvent.PerfectDodge, new ProcCtx { X = p.X, Z = p.Z });
     }
 
@@ -1301,8 +1359,14 @@ public sealed partial class Battle
         }
         if (!silent) p.UnstruckT = 0;
         if (dmg <= 0) return 0;
+        double hpBefore = p.Hp;
         p.Hp -= dmg;
         DamageTaken += dmg;
+        if (!silent && !dot)
+        {
+            FlareOnHurt(dmg, hpBefore, source);
+            if (p.Hp > 0) ReflexOnBlow(dmg, from);
+        }
         if (!silent)
         {
             // The Survivors contract: a crowd is dangerous, not instantly
@@ -1630,6 +1694,8 @@ public sealed partial class Battle
     {
         int id = 900000 + blowIds++;
         Events.Emit(new Ev.Telegraph { Id = id, Shape = TelegraphShape.Circle, Kind = kind, X = x, Z = z, Radius = r, Duration = duration, Hostile = true, Boss = true });
+        // A champion's mark closing on her: the dire reflex (Time Slip) answers.
+        if (kind == TelegraphKind.Blow && Dist(x, z, Player.X, Player.Z) < r + Player.Radius) Reflex("dire", 1);
         return id;
     }
 
@@ -1761,6 +1827,9 @@ public sealed partial class Battle
                 pr.X += pr.Vx * step;
                 pr.Z += pr.Vz * step;
                 pr.AimAlongVelocity();
+                // firebreak.fire_arrows: an arrow passing through the survivor's burning ground catches fire.
+                if (pr.Owner == Side.Player && pr.Status?.Kind != StatusKind.Burn && pr.School != School.Fire && Lamp("fire_arrows") && OnBurningGround(pr.X, pr.Z))
+                    pr.Status = new StatusPayload(StatusKind.Burn, 1, 0.8, 3);
                 // Walls stop bolts; hitting a tagged prop tells the world.
                 if (!pr.Chakram && Collision.Blocked(pr.X, pr.Z, 0.05, false))
                 {
@@ -1784,6 +1853,14 @@ public sealed partial class Battle
                     }
                     var src = pr.OwnerId >= 0 ? Enemies.Items[pr.OwnerId] : null;
                     HurtPlayer(pr.Damage, pr.School, pr.Art, src is { Alive: true } ? src : null, true);
+                    // bulwark.turned_arrows: a blocked missile flies back at whoever loosed it.
+                    if (lampBlocked && Lamp("turned_arrows") && src is { Alive: true })
+                    {
+                        lampBlocked = false;
+                        pr.Owner = Side.Player; pr.Vx *= -1; pr.Vz *= -1; pr.Homing = 6; pr.Target = pr.OwnerId; pr.Age = 0;
+                        pr.Tags = Reflected;
+                        continue;
+                    }
                     if (pr.Status?.Kind == StatusKind.Chill) SlowPlayer(0.6, pr.Status.Duration);
                     Projectiles.Release(pr);
                 }

@@ -42,6 +42,17 @@ public static class ArtBook
         return ch.Known;
     }
 
+    /// <summary>A calling's art held in hand becomes the calling's Kin: the hand holds the dash form now,
+    /// and the calling's arts fire themselves as reflexes (docs/design/CLASSES.md §0).</summary>
+    public static void HoldKin(CharacterData ch)
+    {
+        if (Abilities.Find(ch.Ability) is { Movement: false } def && def.Calling == ch.Archetype && Abilities.Kin.TryGetValue(ch.Archetype, out var kin))
+        {
+            ch.Ability = kin;
+            if (!Known(ch).Contains(kin)) ch.Known.Add(kin);
+        }
+    }
+
     public static bool Knows(CharacterData ch, string id) => Known(ch).Contains(id);
 
     public static bool CanLearn(CharacterData ch, string id) =>

@@ -26,9 +26,14 @@ public enum Tag
     Projectile, Area, Melee, Summon, Aura, Beam, Chain, Orbit, Nova, Zone, Storm, Bounce, Ranged, Dot,
     Explosion, Trap, Heal, Thrown, Spell, Steel,
     Physical, Fire, Frost, Nature, Arcane, Holy, Shadow,
+    /// <summary>The callings' types (docs/design/CLASSES.md §4): a heavy blow (it staggers), a shield's,
+    /// twin blades or axes, a hook on a chain. Appended, so older keys keep their places.</summary>
+    Heavy, Shield, Twin, Hook,
 }
 
-public enum StatusKind { Burn, Bleed, Chill, Frozen, Poison, Shock, Mark, Sear, Stun, Fear, Charm }
+/// <summary>Bound (docs/design/CLASSES.md §1, the Chainbound's): tethered where it was caught, it
+/// can't move away, and it takes more from what strikes an area.</summary>
+public enum StatusKind { Burn, Bleed, Chill, Frozen, Poison, Shock, Mark, Sear, Stun, Fear, Charm, Bound }
 
 public static class Keys
 {

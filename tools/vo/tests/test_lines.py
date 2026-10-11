@@ -6,7 +6,7 @@ import sys
 import unittest
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from lines import segments  # noqa: E402
+from lines import segments, build, text_hash  # noqa: E402
 
 
 class SegmentTests(unittest.TestCase):
@@ -38,6 +38,40 @@ class SegmentTests(unittest.TestCase):
     def test_narration_without_an_owner_keeps_its_quotes(self):
         t = 'In his belt-book: "Lamps at the Low Ford lit again." "Dannet not back."'
         self.assertEqual(segments(t, "narrator"), [{"voice": "narrator", "text": t}])
+
+
+class CodeLineTests(unittest.TestCase):
+    """The clock's DayLines and the story fights' pulls are in the manifest."""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.lines = build()
+
+    def test_a_clock_line_is_the_narrators(self):
+        t = "You get up. It takes less than it did."
+        hits = [l for l in self.lines if l["id"] == "say." + text_hash(t)]
+        self.assertEqual(len(hits), 1)
+        self.assertEqual(hits[0]["voice"], "narrator")
+        self.assertEqual(hits[0]["const"], "DayLines.RiseAgain")
+
+    def test_dusk_is_the_gate_guards(self):
+        t = "Lamps are lit. Stay where they reach."
+        hits = [l for l in self.lines if l["id"].startswith("say.") and l["text"] == t]
+        self.assertEqual(len(hits), 1)
+        self.assertEqual(hits[0]["voice"], "guard")
+        self.assertEqual(hits[0]["who"], "Gate guard")
+
+    def test_tracker_labels_are_not_lines(self):
+        texts = {l["text"] for l in self.lines}
+        self.assertNotIn("Answer the night", texts)
+        self.assertNotIn("Also out tonight:", texts)
+
+    def test_story_fight_pulls_are_found(self):
+        self.assertGreaterEqual(sum(1 for l in self.lines if l.get("const", "").endswith(".Pull")), 4)
+
+    def test_ids_are_unique(self):
+        ids = [l["id"] for l in self.lines]
+        self.assertEqual(len(ids), len(set(ids)))
 
 
 if __name__ == "__main__":

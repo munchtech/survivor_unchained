@@ -19,7 +19,7 @@ uniform float rim_amount = 0.45;
 uniform float rim_tint = 0.35;
 uniform float alpha_cut = 0.45;
 // Moving foes keep about a frame of FSR 2's history, so each frame must be smooth on its own
-// (the wolf's fur sparkled): the paint is read this many mips softer, and shine and rim fade
+// (the wolf's fur sparkled): a moving body's paint is read up to this many mips softer, and shine and rim fade
 // where the normal turns faster than a pixel can show. (Fading cards edge-on thinned the fur's
 // outline and gained nothing at 1.5 mips: dropped.)
 // (fading them, not widening the lobe: a rougher lobe spread the sparkle over more pixels).
@@ -46,6 +46,8 @@ vec3 dye_hsv(vec3 c) {
 
 varying flat vec4 fx;
 varying vec3 vat_local;
+// How fast the body moves (0 still, 1 fast): FSR 2 keeps little history on it.
+varying flat float vat_pace;
 
 // Value noise on the body's own shape (its bake space), so a status's patches stay on the body as
 // it moves rather than swimming over it.
@@ -65,6 +67,7 @@ ivec2 vat_coord(int frame, int vid) {
 void vertex() {
 	int vid = vat_offset + VERTEX_ID;
 	int f0 = int(INSTANCE_CUSTOM.x + 0.5);
+	vat_pace = clamp(fract(INSTANCE_CUSTOM.x) / 0.45, 0.0, 1.0);
 	int f1 = int(INSTANCE_CUSTOM.y + 0.5);
 	float k = INSTANCE_CUSTOM.z;
 	vec3 p0 = texelFetch(vat_pos, vat_coord(f0, vid), 0).xyz;
@@ -83,7 +86,7 @@ void fragment() {
 	float dn = fract(sin(dot(floor(vat_local * 18.0), vec3(12.9898, 78.233, 37.719))) * 43758.5453);
 	if (fx.y > 0.0 && dn < fx.y) discard;
 	vec3 c = albedo.rgb;
-	vec4 tex = use_tex ? texture(albedo_tex, UV, tex_bias) : vec4(1.0);
+	vec4 tex = use_tex ? texture(albedo_tex, UV, tex_bias * vat_pace) : vec4(1.0);
 	c *= tex.rgb;
 #ifdef VAT_CUT
 	// Fur and hair cards: cut where the paint is clear.

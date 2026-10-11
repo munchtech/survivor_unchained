@@ -401,16 +401,18 @@ By night, every lamp keeps its rule but not its size. This keeps the night the e
 
 ### 3.2 How it fills: a dopamine life-saver
 
-The meter runs from 0 to 100. It fills **fastest when you're in trouble**, and slowest from simply killing (`notes/classes_ultimates.md`: FF's limit break, Hades' Call). Starting numbers, for the harness to tune:
+The meter runs from 0 to 100. It fills **fastest when you're in trouble**, and slowest from simply killing (`notes/classes_ultimates.md`: FF's limit break, Hades' Call). Tuned by the harness, 11 October 2026 (30-minute nights, tiers 1-4, deft hands, full lamps):
 
 | Source | Fill | Why |
 |---|---|---|
-| Blows taken | +1.2 for each 1% of health lost; doubled below a third of health | Being hurt is when you need it |
+| Blows taken | +0.55 for each 1% of health lost; doubled below a third of health | Being hurt is when you need it |
 | **Close calls** | a perfect dash +10; blocking a champion's or boss's blow +6 | Rewards the skill the dash already teaches |
 | **The ember answers** | the first drop below a quarter of health: +35 (at most once every 45 s) | The life-saver: a half-full Flare is ready just as you're nearly dead |
-| Bosses | +1 for each 1% of their health you deal | Two or three Flares in a boss fight, from fighting it well |
-| Champions | +0.25 for each 1% of their health you deal; +8 on the kill | A champion is a step, not a full Flare |
-| Ordinary kills | +0.25 each, at most +1 a second | The horde can't spam it |
+| Bosses | +0.8 for each 1% of their health you deal (the Flare's own never counts) | Two or three Flares in a boss fight, from fighting it well |
+| Champions | +2 a kill, at most +0.6 a second (no fill from damage: about 40 champions fall a minute) | A champion is a step, not a full Flare |
+| Ordinary kills | +0.1 each, at most +0.65 a second | The horde can't spam it |
+
+Hearth lamps that fill it from the horde (Blood for the Flare, Kindling) draw on their own purse at the kills' rate, so the horde still can't spam it.
 
 *Always Bleeding* never counts as low health for the meter.
 
@@ -436,7 +438,7 @@ The meter runs from 0 to 100. It fills **fastest when you're in trouble**, and s
 - **Four per calling:** one **Strike** (instant: one decisive moment) and one **Stand** (a timed state) for each type. A road's Strike opens at depth 3, and its Stand at depth 12. The type chosen at creation gives its Strike from level 1.
 - **One carried at a time.** Change it in the book by day, or at a night's start before the first draft.
 - **Three modifier lamps each,** on the road beside it, plus the hearth's two Flare lamps and Banked Flame (two charges).
-- **Damage scales with level:** the character's level by day and in maps, the ember's at night. A Flare counts as its type's tags (The Long Cut is heavy), so the road's lamps feed it.
+- **Damage scales with level:** the character's level by day and in maps, the ember's at night, +8% a level, the rule every ember-scaled blow follows (Battle.BaseOf). A Flare counts as its type's tags (The Long Cut is heavy), so the road's lamps feed it.
 - **Four new great blessings at night** touch the Flare, one per role:
   - **Bright Hour** (power): the Flare is 40% larger.
   - **The Ember Answers Twice** (ward): below a quarter of health the Flare fills to full, once a night.
@@ -793,7 +795,7 @@ A warden who drafts Volley and Moonbrand all night plays a full ember build: pos
 
 **Endless (past the boss, the long night).** Truly endless means the power must keep growing as the horde does:
 - Every five minutes past the half hour, the Flare **grows a rank**. Its damage climbs with no cap. Its size grows until it fills the screen and then stops, so it stays readable.
-- The kill fill's cap stays at +1 a second, so danger still fills the meter faster than killing does, and the deep night's danger makes Flares come often.
+- The kill fill's cap stays at +0.65 a second, so danger still fills the meter faster than killing does, and the deep night's danger makes Flares come often.
 - **Banked Flame** (two charges) comes into its own: one Flare spent on a close call, and another ready.
 - Honing (SKILLS_DESIGN §8.5) and the Flare's ranks are the open axes, so the hundredth minute still has something growing.
 
@@ -894,6 +896,8 @@ Sizes are in lead sessions. One session is about 300k tokens of a `su-lead-high`
 ---
 
 ## 8. Open questions for the owner
+
+**Decided (the owner, 11 October 2026): "go with all 8 recommendations".** All eight below are answered as recommended. Phase 1 (systems) starts now.
 
 1. **Should ultimates be locked to the calling?** *Recommend yes:* they're the identity, and the only hard lock. Everything else stays open to everyone.
 2. **Free respec by day at any town lamp-post, with two saved layouts?** *Recommend yes:* planning is only fun when trying is free.

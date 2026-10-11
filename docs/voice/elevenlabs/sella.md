@@ -1,6 +1,6 @@
 # Sella: ElevenLabs packet
 
-Voice id in the game: `sella`. 97 takes to record (9,939 characters; about 29,817 credits at three tries a line). Status: **final** (the story lead, 2026-10-03): record it.
+Voice id in the game: `sella`. 97 takes to record (9,964 characters; about 29,892 credits at three tries a line). Status: **final** (the story lead, 2026-10-03): record it.
 
 ## Who they are
 
@@ -309,9 +309,9 @@ Subtitle: Big hands. Be gentle with them upstairs, or you'll be paying for the f
 *Note:* Puzzled, then laughing: 'You're a little bit on fire.'
 
 ```
-[startled, amused] Something on you's smouldering, love. Are you on fire? You're a little bit on fire.
+[startled, amused] Something on you's smoldering, love. Are you on fire? You're a little bit on fire.
 ```
-Subtitle: Something on you's smouldering, love. Are you on fire? You're a little bit on fire.
+Subtitle: Something on you's smoldering, love. Are you on fire? You're a little bit on fire.
 
 ### 25. `dlg.sella.say_calling.3.wav`
 
@@ -321,9 +321,9 @@ Subtitle: Something on you's smouldering, love. Are you on fire? You're a little
 *Note:* A real start, covered with a joke.
 
 ```
-[startled, then wry] You came up behind me without a sound. Do that upstairs and you'll get a candlestick in the ear.
+[startled, then wry] Nobody's looked at you once since you came in. Not once. I'd pay good money for that, love. Some nights I'd pay all of it.
 ```
-Subtitle: You came up behind me without a sound. Do that upstairs and you'll get a candlestick in the ear.
+Subtitle: Nobody's looked at you once since you came in. Not once. I'd pay good money for that, love. Some nights I'd pay all of it.
 
 ### 26. `dlg.sella.say_woman.0.wav`
 
@@ -382,7 +382,7 @@ Subtitle: You told me anyway,
 
 ### 31. `dlg.sella.free_morning.0.p1.wav`
 
-*Where:* dialogue.json sella/free_morning#0; part 2 of 2: narrator: She's still there when you wake, which she never is. / **sella: Don't tell Rook; she'll want a third of nothing, on principle. ...And don't tell me anythi…**
+*Where:* dialogue.json sella/free_morning#0; part 2 of 2: narrator: She's still there when you wake. / **sella: Don't tell Rook; she'll want a third of nothing, on principle. ...And don't tell me anythi…**
 *Played:* tender, then serious; doing: a warning out of love; pace: slow; volume: quiet.
 *Note:* Narrator: she's still there. A joke about Rook, soft. Then serious: the Vonnra warning. 'It's the kindest thing I've said to anyone in a year.' nearly shy.
 

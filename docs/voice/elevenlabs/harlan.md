@@ -37,7 +37,7 @@ python tools/vo/import_takes.py ~/Downloads/su_vo --voice harlan
 
 ## Saying the names
 
-The text to paste already respells these; keep the respelling: Thornhollow as *Thorn-hollow*.
+The text to paste already respells these; keep the respelling: Thornhollow as *Thorn-hollow*, Vonnra as *Vonra*.
 
 ## The lines
 
@@ -238,7 +238,7 @@ Subtitle: The wolves, that's what. Three caravans this month. A hundred gold to 
 *Note:* Facts he has repeated too often. 'Nobody saw them.' deflated.
 
 ```
-[anxious, precise] The east road. The Old Road, through Thorn-hollow. They should've come through Vonnra's gate at dusk, a week ago now. Holloway had men on the road. Nobody saw them.
+[anxious, precise] The east road. The Old Road, through Thorn-hollow. They should've come through Vonra's gate at dusk, a week ago now. Holloway had men on the road. Nobody saw them.
 ```
 Subtitle: The east road. The Old Road, through Thornhollow. They should've come through Vonnra's gate at dusk, a week ago now. Holloway had men on the road. Nobody saw them.
 
@@ -249,7 +249,7 @@ Subtitle: The east road. The Old Road, through Thornhollow. They should've come 
 *Note:* As route.0.
 
 ```
-[anxious, precise] The east road. The Old Road, through Thorn-hollow. They should've come through Vonnra's gate at dusk, six days back. Holloway had men on the road. Nobody saw them.
+[anxious, precise] The east road. The Old Road, through Thorn-hollow. They should've come through Vonra's gate at dusk, six days back. Holloway had men on the road. Nobody saw them.
 ```
 Subtitle: The east road. The Old Road, through Thornhollow. They should've come through Vonnra's gate at dusk, six days back. Holloway had men on the road. Nobody saw them.
 
@@ -260,7 +260,7 @@ Subtitle: The east road. The Old Road, through Thornhollow. They should've come 
 *Note:* As route.0.
 
 ```
-[anxious, precise] The east road. The Old Road, through Thorn-hollow. They should've come through Vonnra's gate at dusk, five days back. Holloway had men on the road. Nobody saw them.
+[anxious, precise] The east road. The Old Road, through Thorn-hollow. They should've come through Vonra's gate at dusk, five days back. Holloway had men on the road. Nobody saw them.
 ```
 Subtitle: The east road. The Old Road, through Thornhollow. They should've come through Vonnra's gate at dusk, five days back. Holloway had men on the road. Nobody saw them.
 
@@ -271,7 +271,7 @@ Subtitle: The east road. The Old Road, through Thornhollow. They should've come 
 *Note:* As route.0.
 
 ```
-[anxious, precise] The east road. The Old Road, through Thorn-hollow. They should've come through Vonnra's gate at dusk, four days back. Holloway had men on the road. Nobody saw them.
+[anxious, precise] The east road. The Old Road, through Thorn-hollow. They should've come through Vonra's gate at dusk, four days back. Holloway had men on the road. Nobody saw them.
 ```
 Subtitle: The east road. The Old Road, through Thornhollow. They should've come through Vonnra's gate at dusk, four days back. Holloway had men on the road. Nobody saw them.
 
@@ -426,9 +426,9 @@ Subtitle: Word is you sold Pell what the Dig was doing to the stream, and he sol
 *Note:* Fair-minded, then hard: 'I'll not pretend to weep.'
 
 ```
-[hard, unrepentant] They say the old grey wolf's dead. It wasn't wolves that took my wagons, I know that now. But it was wolves on that road every other night, and I'll not pretend to weep.
+[hard, unrepentant] They say the old gray wolf's dead. It wasn't wolves that took my wagons, I know that now. But it was wolves on that road every other night, and I'll not pretend to weep.
 ```
-Subtitle: They say the old grey wolf's dead. It wasn't wolves that took my wagons, I know that now. But it was wolves on that road every other night, and I'll not pretend to weep.
+Subtitle: They say the old gray wolf's dead. It wasn't wolves that took my wagons, I know that now. But it was wolves on that road every other night, and I'll not pretend to weep.
 
 ### 35. `dlg.harlan.say_calling.0.wav`
 
@@ -562,7 +562,7 @@ Subtitle: Get him out. Whatever it costs. Whatever they want, I'll pay it twice.
 *Note:* Narrator: his finger stops. 'That's the night.' twice, the second hollow. Reading. Narrator: he looks up. Questions. Then pleading; the last line a frightening honesty.
 
 ```
-[shock, fury restrained, quietly] That's the night. That's the night Jory's wagons went. Forty to "R." Ten to Jessop: that's Vonnra's clerk. "For the road."
+[shock, fury restrained, quietly] That's the night. That's the night Jory's wagons went. Forty to "R." Ten to Jessop: that's Vonra's clerk. "For the road."
 ```
 Subtitle: That's the night. That's the night Jory's wagons went. Forty to "R." Ten to Jessop: that's Vonnra's clerk. "For the road."
 

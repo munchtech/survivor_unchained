@@ -331,8 +331,12 @@ public partial class PlayerView : Node3D
     {
         dead = fallen = false;
         tree.Active = true;
-        Full("Lie_StandUp", 1.2);
+        // Up from where the fall left her: off her back if she went over
+        // onto it (get_up starts face down: from her back it popped).
+        Full(onBack && mine && own.Has("get_up_back") ? own.Prefix + "get_up_back" : "Lie_StandUp", 1.2);
+        onBack = false;
     }
+    bool onBack;
 
     /// <summary>A blow aimed at `angle` (the fight's: atan2(z, x)): her back
     /// turns to it if it is within reach of a turn of the waist, else she
@@ -375,6 +379,7 @@ public partial class PlayerView : Node3D
                 if (mine && p.FellTo == null && p.LastKiller is { } k && own.Has("death_back")
                     && (k.X - p.X) * Mathf.Sin(Rotation.Y) + (k.Z - p.Z) * Mathf.Cos(Rotation.Y) > 0)
                     death = own.Prefix + "death_back";
+                onBack = death.EndsWith("death_back");
                 person.Anim.Play(death, 0.1);
                 if (person.Pose != null) person.Pose.Native = death.StartsWith(own.Prefix) ? 1 : 0;
                 if (carriage != null) carriage.Aim = carriage.Bank = carriage.Tilt = carriage.HeadLevel = 0;

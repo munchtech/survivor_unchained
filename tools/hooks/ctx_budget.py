@@ -39,10 +39,21 @@ def tail_usage(path):
 
 
 def brief_budget(path):
+    # The brief only: the transcript's first user message. (Searching the whole head matched
+    # README's own example "Context budget: 120k", which every agent reads early; 11 October.)
     with open(path, "rb") as f:
-        head = f.read(200_000).decode("utf-8", "replace")
-    m = re.search(r"Context budget:\s*(\d+)\s*k", head, re.I)
-    return int(m.group(1)) * 1000 if m else None
+        for line in f:
+            try:
+                m = json.loads(line).get("message") or {}
+            except ValueError:
+                continue
+            if m.get("role") != "user":
+                continue
+            c = m.get("content")
+            brief = c if isinstance(c, str) else " ".join(p.get("text", "") for p in c if isinstance(p, dict))
+            b = re.search(r"Context budget:?\s*(\d+)\s*k", brief, re.I)
+            return int(b.group(1)) * 1000 if b else None
+    return None
 
 
 def main():

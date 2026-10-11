@@ -24,6 +24,8 @@ public enum AbilityKind
     ShieldBash, Bulwark, Leap, Warcry, Blink, TimeSlip, MarkPrey, SmokeBomb,
     Sprint, MirrorStep, BullRush, WraithWalk, CinderTrail, Grapple, EchoStep, Vault,
     ColdThenNot,
+    /// <summary>Reflexes only (docs/design/CLASSES.md §2.9): the reaver's red roar, the arcanist's ward.</summary>
+    RedTide, Spellward,
 }
 
 /// <summary>How it is aimed: toward the pointer or facing, around you, at a target.</summary>
@@ -119,6 +121,13 @@ public static class Abilities
         new() { Kind = AbilityKind.ColdThenNot, Id = "cold_then_not", Name = "Not Yet", Icon = "embers", Cooldown = 0, Aim = AbilityAim.Self,
             Role = ArtRole.Tank,
             Description = "Held in your art's place, it asks nothing of your hands and gives them nothing. Once a fight, a blow that would end you does not: you go down, something answers for you, not yet, and you are up with half your health. Once a fight, however many ways you carry it." },
+        /* Reflexes only: they fire themselves when their moment comes (docs/design/CLASSES.md §2.9). */
+        new() { Kind = AbilityKind.RedTide, Id = "red_tide", Name = "Red Tide", Icon = "howl", Cooldown = 25, Aim = AbilityAim.Self,
+            Role = ArtRole.Healing, Calling = "reaver",
+            Description = "Below a third of your health: a red roar that mends 10% of your health and drives you 30% harder for 4 s." },
+        new() { Kind = AbilityKind.Spellward, Id = "spellward", Name = "Spellward", Icon = "aegis", Cooldown = 8, Aim = AbilityAim.Self,
+            Role = ArtRole.Tank, Calling = "arcanist",
+            Description = "Whenever three of your spells land in one second: a barrier of 10% of your health." },
         /* ------------------------------------------------ ways of moving -- */
         new() { Kind = AbilityKind.Leap, Id = "leap", Name = "Crashing Leap", Icon = "leap", Cooldown = 9, Aim = AbilityAim.Direction, Interrupts = true,
             Movement = true, Role = ArtRole.Damage,

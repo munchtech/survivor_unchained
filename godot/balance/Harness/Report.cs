@@ -19,6 +19,8 @@ public static class Report
         return s.Count == 0 ? double.NaN : s.Count % 2 == 1 ? s[s.Count / 2] : (s[s.Count / 2 - 1] + s[s.Count / 2]) / 2;
     }
 
+    static double Mean(IEnumerable<double> xs) { var l = xs.Where(x => !double.IsNaN(x)).ToList(); return l.Count == 0 ? double.NaN : l.Average(); }
+
     static double Rate(IEnumerable<RunResult> rs, Func<RunResult, bool> f)
     {
         var l = rs.ToList();
@@ -62,6 +64,36 @@ public static class Report
         if (runs.Select(r => r.Spec.Tier).Distinct().Count() > 1) Summary(sb, "tier", runs.GroupBy(r => $"tier {r.Spec.Tier}"));
         if (runs.Select(r => Oath(r)).Distinct().Count() > 1) Summary(sb, "oath", runs.GroupBy(Oath));
         if (runs.Select(r => r.Spec.Level).Distinct().Count() > 1) Summary(sb, "level", runs.GroupBy(r => $"level {r.Spec.Level}"));
+
+        if (runs.Any(r => r.FlareCasts > 0 || r.Road != ""))
+        {
+            sb.AppendLine("### Flare (means; first cast in minutes, gap in seconds)\n");
+            Head(sb, "calling/type", "lamps", "runs", "casts", "first cast (min)", "gap (s)", "boss casts", "Flare share of boss damage", "clutches", "fills by source");
+            foreach (var g in runs.GroupBy(r => $"{r.Spec.Calling}/{(r.Road == "" ? "-" : r.Road)}").OrderBy(g => g.Key))
+            {
+                var l = g.ToList();
+                var fills = l.SelectMany(r => r.FlareFills).GroupBy(kv => kv.Key).OrderByDescending(x => x.Sum(kv => kv.Value));
+                Row(sb, g.Key, F(l.Average(r => (double)r.LampsLit), "0"), l.Count, F(l.Average(r => (double)r.FlareCasts)), F(Mean(l.Select(r => r.FlareFirst))),
+                    F(Mean(l.Select(r => r.FlareGap)), "0"), F(l.Average(r => (double)r.FlareBossCasts)), Pct(Mean(l.Select(r => r.FlareBossShare))),
+                    F(l.Average(r => (double)r.FlareClutches)), string.Join(" ", fills.Select(x => $"{x.Key} {x.Sum(kv => kv.Value) / l.Count:0}")));
+            }
+            sb.AppendLine();
+        }
+        // The types against each other: the power figure of the summary tables (damage a minute at minute 25),
+        // as a ratio to the median of all types, per tier.
+        if (runs.Any(r => r.Spec.Type != ""))
+        {
+            sb.AppendLine("### Types (dmg/min at minute 25, ratio to the median of all types in the tier)\n");
+            Head(sb, "tier", "lamps", "calling/type", "runs", "dmg/min 25", "ratio", "won", "fell");
+            foreach (var tg in runs.Where(r => r.Spec.Type != "").GroupBy(r => (r.Spec.Tier, r.Spec.Lamps)).OrderBy(g => g.Key))
+            {
+                var per = tg.GroupBy(r => $"{r.Spec.Calling}/{r.Road}").OrderBy(g => g.Key).Select(g => (Key: g.Key, L: g.ToList(), Dps: Median(g.Select(r => At(r, 25, m => m.Damage))))).ToList();
+                double all = Median(per.Select(x => x.Dps));
+                foreach (var x in per)
+                    Row(sb, tg.Key.Tier, tg.Key.Lamps, x.Key, x.L.Count, F(x.Dps / 1000, "0.0") + "k", F(x.Dps / all, "0.00"), Pct(Rate(x.L, r => r.Won)), Pct(Rate(x.L, r => r.Died)));
+            }
+            sb.AppendLine();
+        }
 
         // How the losses come: before the boss, by five minutes; to the boss, with what was left of it.
         var lost = runs.Where(r => r.Died && !r.Won).ToList();

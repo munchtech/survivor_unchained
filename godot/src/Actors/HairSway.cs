@@ -30,7 +30,12 @@ public partial class HairSway : Node
     // faces +Z): a hand below it and a little behind.
     static readonly Vector3 Hang = new(0, -0.25f, -0.08f);
 
-    sealed class Ball { public int Bone; public Vector3 At; public float R; }
+    /// <summary>A ball the chain is kept out of. Behind: one down her neck and back, which pushes it out behind her
+    /// only. (On all fours in chain_haul, her head up, where her tail would hang from her head runs through her
+    /// chest; pushed out the nearest way, the chain came out of her front. What hangs from her head is never in
+    /// front of her chest. The tip that showed in her plunge, outfits judge h1, 11 October 2026, was her tail not
+    /// swinging at all: its weights reached the shader upside down, tools/scratch/face17/uv2flip.py.)</summary>
+    sealed class Ball { public int Bone; public Vector3 At; public float R; public bool Behind; }
 
     MeshInstance3D? mesh;
     Skeleton3D? sk;
@@ -45,7 +50,7 @@ public partial class HairSway : Node
     float[] link = [];
     Ball[] balls = [];
     // This frame's: where the chain's points would hang, and the balls they are kept out of.
-    Vector3[] target = new Vector3[8], at = [];
+    Vector3[] target = new Vector3[8], at = [], back = [];
     // What the shader is given (in the mesh's space): this frame's swing and where her head
     // is, and last frame's, for the motion vectors (MotionClock).
     Vector3 sway, headAt;
@@ -75,7 +80,8 @@ public partial class HairSway : Node
         for (int i = 0; i < balls.Length; i++)
         {
             var b = bs[i].AsGodotDictionary();
-            balls[i] = new Ball { Bone = sk.FindBone((string)b["bone"]), At = Vec(b["at"]), R = (float)b["r"] };
+            var name = (string)b["bone"];
+            balls[i] = new Ball { Bone = sk.FindBone(name), At = Vec(b["at"]), R = (float)b["r"], Behind = name.StartsWith("neck") || name.StartsWith("spine") };
         }
     }
 
@@ -105,8 +111,13 @@ public partial class HairSway : Node
         {
             var moved = world * Moved(bone);
             for (int i = 0; i < 8; i++) target[i] = moved * rest[i];
-            if (at.Length != balls.Length) at = new Vector3[balls.Length];
-            for (int i = 0; i < balls.Length; i++) at[i] = world * (Moved(balls[i].Bone) * balls[i].At);
+            if (at.Length != balls.Length) { at = new Vector3[balls.Length]; back = new Vector3[balls.Length]; }
+            for (int i = 0; i < balls.Length; i++)
+            {
+                var mv = Moved(balls[i].Bone);
+                at[i] = world * (mv * balls[i].At);
+                back[i] = (world.Basis * mv.Basis * Vector3.Forward).Normalized();   // (her back: -z at rest)
+            }
             if (!live || dt <= 0) { x = (Vector3[])target.Clone(); xp = (Vector3[])target.Clone(); live = true; }
             const int steps = 4;
             float h = dt / steps;
@@ -129,7 +140,10 @@ public partial class HairSway : Node
                         {
                             var off = x[i] - at[b];
                             float r = balls[b].R;
-                            if (off.LengthSquared() < r * r) x[i] = at[b] + off.Normalized() * r;
+                            if (off.LengthSquared() >= r * r) continue;
+                            // (in front of a ball down her back: mirrored behind it, then out)
+                            if (balls[b].Behind && off.Dot(back[b]) < 0) off -= 2 * off.Dot(back[b]) * back[b];
+                            x[i] = at[b] + (off.LengthSquared() > 1e-10f ? off.Normalized() : back[b]) * r;
                         }
                     }
             }

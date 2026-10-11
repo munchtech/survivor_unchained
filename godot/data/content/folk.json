@@ -871,8 +871,17 @@
    }
   },
   {
-   "text": "Maeca pays the captain's slate at the Flagon. Every week. He thinks it's the Watch.",
+   "text": "The captain pays Maeca out of his own pocket, and she spends it on his slate. Round and round.",
    "night": false
+  },
+  {
+   "text": "Wat's gray mare won't take a bit in winter. He warms it in his armpit.",
+   "when": {
+    "not": {
+     "fact": "nell.buried",
+     "eq": true
+    }
+   }
   }
  ]
 }

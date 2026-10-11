@@ -142,12 +142,12 @@ hides. ...Quiet. I said quiet.
 
 ### The first night, otherwise (`maeca.blind`, the second variant)
 
-**A:** *She doesn't talk, and then neither of you needs to. She undoes your
-boots before anything else, and sets them side by side outside the hides, and
-that seems to be a decision.* (as now)
+**A:** *She doesn't talk, and then neither of you needs to. She comes round
+the fire to you, and that seems to be a decision.* (as now; your boots cut,
+notes 02 §6.2)
 
-**B:** Boots. *(two boots set down outside the hides, side by side)* There.
-...Slow. I'll stop if you stop. *(far off, the Pack calls; she goes still
+**B:** *(the fire shifts; she comes round it, close)* ...Hold still. Slow.
+I'll stop if you stop. *(far off, the Pack calls; she goes still
 until it's done)* ...All right.
 
 ### After (`maeca.blind_dark`, `blind2_feet`, `blind2_let`)

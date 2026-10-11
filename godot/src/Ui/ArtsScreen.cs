@@ -156,6 +156,7 @@ public partial class ArtsScreen : Overlay
             words.AddChild(Style.Label("Not yet learned. A manual teaches it: the thing that rules an arena carries one, and they turn up in the packs of the dead.", Style.TextItalic, 15, Kit.Dim, true));
         // (in hand, or the way to take it in hand, on the name's line: one line less)
         else if (held) nameRow.AddChild(Style.Label("in hand", Style.TextItalic, 17, Style.EmberHi));
+        else if (!a.Movement && a.Id != "cold_then_not") words.AddChild(Style.Label("Fires itself: see the Lamps.", Style.TextItalic, 15, Kit.Dim, true));
         else if (Safe) nameRow.AddChild(Nav.Id(Kit.Word("Take it in hand", () => G.Gear((j, b) => j.HoldArt(a.Id, b)), Style.EmberHi, 16), "hold"));
         else words.AddChild(Style.Label("Take it in hand somewhere safe: the Waystation, a quiet road.", Style.TextItalic, 15, Kit.Dim, true));
         head.AddChild(words);

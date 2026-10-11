@@ -43,7 +43,7 @@ public sealed record SlotInfo(int Slot, string Name, int Level, string Archetype
 /// <summary>The save slots, as files in a folder (the game's user folder).</summary>
 public sealed class Saves
 {
-    public const int Version = 4;
+    public const int Version = 5;
     public const int SlotCount = 3;
     readonly string dir;
 
@@ -105,6 +105,10 @@ public sealed class Saves
         foreach (var it in d.World.Stash) Heat(it);
         foreach (var it in d.World.Nemesis?.Carries ?? new()) Heat(it);
         foreach (var it in d.World.Corpse?.Items ?? new()) Heat(it);
+        // 5: the Lamps (docs/design/CLASSES.md §2). A survivor from before them gets every lamp they
+        // have earned back to light (a full refund). (The art in hand becoming the dash form joins
+        // this step with the Battle's dash forms: docs/handoff/classes.md §4.)
+        if (d.Version < 5) { LampBook.State(ch); ArtBook.HoldKin(ch); }
         d.Version = Version;
         return d;
     }

@@ -35,7 +35,9 @@ public class StoryLint
             .Select(f => (Path.GetRelativePath(GodotDir, f).Replace('\\', '/'), File.ReadAllText(f))).ToList());
 
     /// <summary>Facts the game writes from outside the story (the settings screen).</summary>
-    static bool Outside(string fact) => fact.StartsWith("settings.");
+    /// <summary>Facts the story doesn't write: the settings, and the atlas's lamps (its milestones set
+    /// them when the experience lead places them, docs/design/CLASSES.md §2.4).</summary>
+    static bool Outside(string fact) => fact.StartsWith("settings.") || fact == "lamps.atlas";
 
     /* ------------------------------------------------------------ the JSON -- */
 
@@ -216,6 +218,9 @@ public class StoryLint
         // when he knew (Act 2's hooded buyer, "Tell her no"); her word, written in her own hand (Act 2's
         // dawn: "One short word. It was yours.", with the journal still holding it).
         "brannoc.knew_iron", "mother.word",
+        // What Chid cut on her mother's marker ("Mam.", plain, or nothing): Act 2's marker and C32,
+        // and Vonnra's "...Her name?" at C41 (the sophistication pass, 11 October).
+        "mother.cut",
         // The last night, for the town to talk about (docs/EXPERIENCE_AUDIT.md, finding 5): the
         // story's lines read them next; take each off this list as it is read.
         "arena.last.tier", "arena.last.minutes", "arena.last.day", "arena.last.killer",
