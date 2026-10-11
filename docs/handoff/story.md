@@ -134,3 +134,5 @@ combat or story-code lead (the main session assigns it).
 
 1. This page; `TREATMENT.md` §0 (the top block); `TOLL_SPEC.md` if on the toll.
 2. For the pass: notes 02 §2 to §11 by section, then each node in `showc.py`.
+
+HANDOFF READY: docs/handoff/story.md on story-writer-successor@eea7d462
