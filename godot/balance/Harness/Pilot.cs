@@ -141,7 +141,10 @@ public static class Pilot
             if (readyIn != b) { readyIn = b; readyAt = b.Time; }
             double reach = Math.Max(6, b.Flare?.Radius ?? 6);
             int near = b.HostilesInRadius(p.X, p.Z, reach).Count;
-            if (p.Hp < b.MaxHp * 0.25 || b.HostilesInRadius(p.X, p.Z, 10).Any(e => e.Boss) || near >= 8 || (near >= 4 && b.Time - readyAt >= 8))
+            bool low = p.Hp < b.MaxHp * 0.25;
+            // A boss in its phase transition can't be hurt (TakenMul 0): spare the Flare unless health is low.
+            bool bossNear = b.HostilesInRadius(p.X, p.Z, 10).Any(e => e.Boss && (low || e.TakenMul > 0));
+            if (low || bossNear || near >= 8 || (near >= 4 && b.Time - readyAt >= 8))
             {
                 b.UseFlare(mx, mz);
                 readyIn = null;

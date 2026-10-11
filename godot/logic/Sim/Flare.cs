@@ -56,7 +56,8 @@ public sealed partial class Battle
         return got;
     }
     /// <summary>The fill table, tuned by the harness (CLASSES.md §3.2).</summary>
-    public const double FillHurt = 0.55, FillAnswer = 35, FillPerfect = 10, FillBlock = 6, FillBoss = 1.8,
+    public const double FlareStartNight = 25;
+    public const double FillHurt = 0.40, FillAnswer = 35, FillPerfect = 10, FillBlock = 6, FillBoss = 1.8,
         FillChampion = 2, FillChampionRate = 0.6, FillKill = 0.1, FillKillRate = 0.65;
     bool answeredTwice;
 

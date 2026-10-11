@@ -405,7 +405,7 @@ The meter runs from 0 to 100. It fills **fastest when you're in trouble**, and s
 
 | Source | Fill | Why |
 |---|---|---|
-| Blows taken | +0.55 for each 1% of health lost; doubled below a third of health | Being hurt is when you need it |
+| Blows taken | +0.40 for each 1% of health lost; doubled below a third of health | Being hurt is when you need it |
 | **Close calls** | a perfect dash +10; blocking a champion's or boss's blow +6 | Rewards the skill the dash already teaches |
 | **The ember answers** | the first drop below a quarter of health: +35 (at most once every 45 s) | The life-saver: a half-full Flare is ready just as you're nearly dead |
 | Bosses | +1.8 for each 1% of their health you deal, a gate's Break counting up to a tenth of its health (the Flare's own never counts) | Two or three Flares in a boss fight, from fighting it well |
@@ -422,7 +422,7 @@ Hearth lamps that fill it from the horde (Blood for the Flare, Kindling) draw on
 - two or three in a boss fight;
 - faster when it's going badly.
 
-**Starting charge:** nights and maps start empty, and story fights start at half (they're short). In a map, the meter carries between areas.
+**Starting charge:** nights and maps start at 20 to 25 (a quarter of the way: 25), and story fights start at half (they're short). In a map, the meter carries between areas.
 
 ### 3.3 The window
 
