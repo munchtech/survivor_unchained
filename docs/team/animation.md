@@ -1,10 +1,12 @@
 # Animation: status
 
-Lead 7 (11 October), branch `worktree-agent-af8dbda3195e438e4`; handed off at about 260k. Current state and next steps: `docs/handoff/animation.md` section 0.
+Lead 8 (11 October), branch `worktree-agent-af8dbda3195e438e4`. Next steps: `docs/handoff/animation.md` section 0.
 
-## State (2026-10-11)
+## State (2026-10-11, lead 8)
 
-**Judge 15:** death, get_up, get_up_back PASS WITH FIXES (palms skating at death f28-32 and get_up f1-4; the death shin flick too big; a floating hand at death_back's end); the dagger throw FAILS (the right fist and blade over her crotch f7-f19). Planted hands solved (keyed.py "plant", `Rig._lay`): fingers on the floor, not in it. Library not packed yet.
+**Judges 16-19: throw, death, get_up, get_up_back PASS (death and the throw's wind-up with non-blocking polish); library packed (58ca1e75).** Owner sheet, judged fit: `anim_sheets/owner_death_getup_throw_2026-10-11.jpg`.
+- Throw: the right hand stays right of her midline after the release (wrist 23-32 cm right), the blade forward-out, settling level at her right hip; the wind-up's left fist reaches forward and out to her left (it projected onto her groin at the game cameras).
+- Death: palms stay where they meet the ground while the chest goes down between them, then flop out lifted (`_hop`); the shin flick peaks at 0.23 m. get_up: hands peel and carry low. get_up_back: the hand lifts before it moves; heel-first release. death_back's left hand on the floor.
 
 ## State (2026-10-07)
 
