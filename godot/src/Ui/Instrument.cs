@@ -110,8 +110,8 @@ public partial class Instrument : Control
             holder.Size = Vector2.Zero;
             holder.Position = at;
         }
-        Put(artKey, Act.Ability, ArtAt + new Vector2(0, R + Band - 2));
-        Put(draughtKey, Act.Ultimate, DraughtAt + new Vector2(0, SmallR + SmallBand - 1));
+        Put(artKey, Act.Flare, ArtAt + new Vector2(0, R + Band - 2));
+        Put(draughtKey, Act.Draught, DraughtAt + new Vector2(0, SmallR + SmallBand - 1));
         Put(dashKey, Act.Dash, DashAt + new Vector2(0, SmallR + SmallBand - 1));
     }
 

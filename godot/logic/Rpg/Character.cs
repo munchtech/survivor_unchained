@@ -151,6 +151,8 @@ public sealed class CharacterData
     public List<string> Known = new();
     /// <summary>How far each art has come, and its facets.</summary>
     public Dictionary<string, ArtState> Arts = new();
+    /// <summary>The Lamps lit, in two layouts (Rpg/LampBook.cs); null in a save from before them.</summary>
+    public LampState? Lamps;
     public List<Condition> Conditions = new();
     /// <summary>Kills with each weapon, across every expedition.</summary>
     public Dictionary<string, int> Mastery = new();

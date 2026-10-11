@@ -670,6 +670,10 @@ public sealed partial class Battle
 
     /* ========================================================= damage in == */
 
+    /// <summary>Bound (docs/design/CLASSES.md §1): how far a tethered thing can strain from where it
+    /// was caught, and how much more it takes from what strikes an area.</summary>
+    public const double BoundSlack = 0.8, BoundArea = 0.2;
+
     /// <summary>Everything the survivor's side does to a creature passes through here.</summary>
     public double HitEnemy(Enemy e, double baseDamage, School school, Tag[] tags, HitOpts o = default)
     {
@@ -690,6 +694,7 @@ public sealed partial class Battle
         if (s[StatusKind.Mark] is { } mark) dmg *= 1 + 0.3 * (mark.Power != 0 ? mark.Power : 1);
         if (s.Has(StatusKind.Frozen)) dmg *= Boons.ContainsKey("deep_chill") ? 1.35 : 1.15;
         if (s.Has(StatusKind.Sear) && school == School.Holy) dmg *= 1.3;
+        if (s.Has(StatusKind.Bound) && tags.Has(Tag.Area)) dmg *= 1 + BoundArea;
         if (s.Has(StatusKind.Shock) && !o.Dot) { dmg *= 1.35 + st.Get(Stat.ShockBonus); if (!Boons.ContainsKey("static_charge")) s.Remove(StatusKind.Shock); }
         dmg *= e.TakenMul;
         // Warded by its own kind's lamp or drum.
@@ -959,6 +964,16 @@ public sealed partial class Battle
                     Events.Emit(new Ev.Status { Target = e.Id, Kind = StatusKind.Frozen, X = e.X, Z = e.Z });
                     if (depth < 3) Fire(TriggerEvent.Freeze, new ProcCtx { Target = e, X = e.X, Z = e.Z, Damage = hitDamage, School = School.Frost, Tags = Array.Empty<Tag>(), Depth = depth + 1 });
                 }
+                break;
+            }
+            case StatusKind.Bound:
+            {
+                // Tethered where it stands when first caught; caught again, it stays tied there.
+                if (!s.Has(StatusKind.Bound)) { e.BoundX = e.X; e.BoundZ = e.Z; }
+                var cur = s.Ensure(StatusKind.Bound, 0, 1, p.Power, 0);
+                cur.From ??= from;
+                cur.T = Math.Max(cur.T, dur);
+                Events.Emit(new Ev.Status { Target = e.Id, Kind = StatusKind.Bound, X = e.X, Z = e.Z });
                 break;
             }
             case StatusKind.Stun:

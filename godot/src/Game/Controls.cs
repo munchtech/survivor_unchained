@@ -9,7 +9,7 @@ namespace SurvivorUnchained.Play;
 /// <summary>What the player can ask for, whatever key or button means it.</summary>
 public enum Act
 {
-    Up, Down, Left, Right, Dash, Ability, Ultimate, Interact, Inventory, Character, Journal, Map,
+    Up, Down, Left, Right, Dash, Flare, Draught, Interact, Inventory, Character, Journal, Map,
     Pause, Confirm, Cancel, Reroll, Banish, Pick1, Pick2, Pick3, Pick4, TabNext, TabPrev, Arts, Skip,
     /// <summary>A menu's second and third thing to do with what has focus (pad X and Y).</summary>
     Alt, Alt2,
@@ -39,7 +39,7 @@ public partial class Controls : Node
     public static readonly Dictionary<Act, string[]> Defaults = new()
     {
         [Act.Up] = ["KeyW", "ArrowUp"], [Act.Down] = ["KeyS", "ArrowDown"], [Act.Left] = ["KeyA", "ArrowLeft"], [Act.Right] = ["KeyD", "ArrowRight"],
-        [Act.Dash] = ["Space", "ShiftLeft"], [Act.Ability] = ["KeyQ", "Mouse2"], [Act.Ultimate] = ["KeyR"], [Act.Interact] = ["KeyE", "KeyF"],
+        [Act.Dash] = ["Space", "ShiftLeft"], [Act.Flare] = ["KeyQ", "Mouse2"], [Act.Draught] = ["KeyR"], [Act.Interact] = ["KeyE", "KeyF"],
         [Act.Inventory] = ["KeyI", "Tab"], [Act.Character] = ["KeyC"], [Act.Journal] = ["KeyJ"], [Act.Map] = ["KeyM"],
         [Act.Pause] = ["Escape", "KeyP"], [Act.Confirm] = ["Enter", "NumpadEnter"], [Act.Cancel] = ["Escape", "Backspace"],
         [Act.Reroll] = ["KeyX"], [Act.Banish] = ["KeyB"], [Act.Pick1] = ["Digit1"], [Act.Pick2] = ["Digit2"], [Act.Pick3] = ["Digit3"], [Act.Pick4] = ["Digit4"],
@@ -48,7 +48,7 @@ public partial class Controls : Node
         [Act.Expand] = ["KeyZ"],
     };
 
-    public static readonly Act[] Rebindable = [Act.Up, Act.Left, Act.Down, Act.Right, Act.Dash, Act.Ability, Act.Ultimate, Act.Interact, Act.Inventory, Act.Character, Act.Arts, Act.Journal, Act.Map, Act.Reroll, Act.Banish, Act.Skip, Act.Answer];
+    public static readonly Act[] Rebindable = [Act.Up, Act.Left, Act.Down, Act.Right, Act.Dash, Act.Flare, Act.Draught, Act.Interact, Act.Inventory, Act.Character, Act.Arts, Act.Journal, Act.Map, Act.Reroll, Act.Banish, Act.Skip, Act.Answer];
     static readonly string[] Reserved = ["Escape", "Enter", "NumpadEnter", "Backspace", "Digit1", "Digit2", "Digit3", "Digit4", "BracketLeft", "BracketRight", "Comma", "Period", "Delete"];
 
     /// <summary>The standard pad layout: View opens the pack, whose tabs
@@ -57,7 +57,7 @@ public partial class Controls : Node
     /// focus, the triggers turn a screen's pages.</summary>
     static readonly Dictionary<Act, JoyButton[]> Pad = new()
     {
-        [Act.Dash] = [JoyButton.A], [Act.Ability] = [JoyButton.X], [Act.Ultimate] = [JoyButton.Y], [Act.Interact] = [JoyButton.B],
+        [Act.Dash] = [JoyButton.A], [Act.Flare] = [JoyButton.Y], [Act.Draught] = [JoyButton.X], [Act.Interact] = [JoyButton.B],
         [Act.Confirm] = [JoyButton.A], [Act.Cancel] = [JoyButton.B], [Act.Inventory] = [JoyButton.Back], [Act.Pause] = [JoyButton.Start],
         [Act.Up] = [JoyButton.DpadUp], [Act.Down] = [JoyButton.DpadDown], [Act.Left] = [JoyButton.DpadLeft], [Act.Right] = [JoyButton.DpadRight],
         [Act.TabNext] = [JoyButton.RightShoulder], [Act.TabPrev] = [JoyButton.LeftShoulder], [Act.Reroll] = [JoyButton.X], [Act.Banish] = [JoyButton.Y],
@@ -310,6 +310,8 @@ public partial class Controls : Node
             if (saved == null) return;
             foreach (var a in Rebindable)
                 if (saved.TryGetValue(Key(a), out var v) && v.Length > 0) Bindings[a] = v;
+                else if (a == Act.Flare && saved.TryGetValue("ability", out var oldArt) && oldArt.Length > 0) Bindings[a] = oldArt;
+                else if (a == Act.Draught && saved.TryGetValue("ultimate", out var old) && old.Length > 0) Bindings[a] = old;
         }
         catch (JsonException) { /* nothing sensible in it */ }
     }
@@ -321,7 +323,7 @@ public partial class Controls : Node
         f?.StoreString(JsonSerializer.Serialize(o));
     }
 
-    /// <summary>The web game's name for an action ('ability').</summary>
+    /// <summary>The web game's name for an action ('flare', once 'ability'; LoadBindings reads the old keys).</summary>
     static string Key(Act a) => char.ToLowerInvariant(a.ToString()[0]) + a.ToString()[1..];
 
     /* ------------------------------------------------------------- names -- */

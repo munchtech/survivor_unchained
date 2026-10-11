@@ -12,7 +12,7 @@ namespace SurvivorUnchained.Play;
 public partial class Game
 {
     /// <summary>The keys of a choice's answers, in order: the use key, then her art's (pad B, then X).</summary>
-    public static readonly Act[] ChoiceKeys = [Act.Interact, Act.Ability];
+    public static readonly Act[] ChoiceKeys = [Act.Interact, Act.Flare];
     /// <summary>Its keys count only this long after it comes up, and are held this long to choose.</summary>
     const double ChoiceArm = 0.8, ChoiceHold = 0.6;
     StoryChoice? choiceUp;
