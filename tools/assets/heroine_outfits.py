@@ -2346,8 +2346,11 @@ def piece(name, field, mkey, lift=0.003, thick=0.003, smooth=0, bevel=0.0012, tr
             if len(st) > 2 and st[2] > 0:
                 # (faded to nothing over the last `st[2]` before its edge: fitted
                 # up to the edge, the plunge's foot stood 7 mm off her and its
-                # bound edge came out toothed, judge 6)
-                sw = sw * ramp(at[:, -1], 0.0, st[2])
+                # bound edge came out toothed, judge 6; the distance to the
+                # edge is the exact cut's where one is given: the field the
+                # sheet was cut from stands 20 mm past the plunge, so it
+                # never faded there)
+                sw = sw * ramp(np.minimum(at[:, -1], cut(pos)) if callable(cut) else at[:, -1], 0.0, st[2])
             pos = mls_flat(pos, sw, (0.0, -1.0, 0.0), wide)
             # (lifted as a whole, where stiff, onto what it now bridges: pushed
             # off point by point it took the shape back)
@@ -3489,7 +3492,7 @@ def warden():
 PLUNGE_FOOT = float(os.environ.get("PLUNGE_FOOT", 0.022))   # (the round foot's radius)
 PLUNGE_FLARE = float(os.environ.get("PLUNGE_FLARE", 1.8))   # (how late its sides ease out: 1 straight)
 PLUNGE_FOLD = float(os.environ.get("PLUNGE_FOLD", 0.04))    # (how wide the cloth is fitted over the fold beside its foot)
-PLUNGE_FADE = float(os.environ.get("PLUNGE_FADE", 0.015))    # (the fit faded to nothing over this, before its edge)
+PLUNGE_FADE = float(os.environ.get("PLUNGE_FADE", 0.0))    # (the fit faded to nothing over this, before its edge; off: at 15 mm, on the U's true distance, the crease came back, 72-80 deg, and the sheet stood 6 mm up through the binding)
 PLUNGE_TAUT = float(os.environ.get("PLUNGE_TAUT", 0.03))    # (the gore at its foot: the round its cloth spans her folds by)
 
 
