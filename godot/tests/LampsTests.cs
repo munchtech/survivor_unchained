@@ -223,7 +223,9 @@ public class LampsTests
         Assert.Equal(6, night.KinWait);
         Assert.True(night.Has("opening"));
         Assert.Equal(2, night.Full("opening", "seconds"));
-        Assert.Equal(0.25 * 0.08, night.Size("poison.dash_faster", "inc"), 6);
+        // A small lamp's rule sleeps by night: its road leans the draft instead (CLASSES.md §2.10).
+        Assert.Equal(0.08, day.Size("poison.dash_faster", "inc"), 6);
+        Assert.Equal(0, night.Size("poison.dash_faster", "inc"));
         Assert.Equal("roadknife", night.Lean);
     }
 
