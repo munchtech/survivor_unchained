@@ -41,6 +41,7 @@ The owner asks: "accurate, efficient, on track, manage and engineer context. del
 
 ## Safety and the owner's machine
 
+- **Disk and worktrees (the owner, 10 October):** the seven rules in `CLAUDE.md` at the repo root. Commit as you go; a merged worktree is removed at once (`tools/scratch/coordinator/wt_remove.ps1`, links first); at most 8 worktrees; never link a worktree into the main checkout; check C: before any job over 5 GB.
 - Never print or commit tokens or keys. Use environment variables, and ask the owner to set them. The owner signs into sites themselves; never enter a password.
 - Downloads are consented ("you have my consent to download and use whatever you need always"). Name what you fetch, and use reputable sources only. Every download in the built-in browser needs the owner to click Save, so batch them and warn the main session first.
 - **Voice cloning:** only voices we have the right to. That means the owner's own voice, performances the owner approves, or datasets licensed for cloning. Never clone a real, identifiable person.

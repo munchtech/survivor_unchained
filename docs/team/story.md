@@ -112,3 +112,16 @@ exists. Report to the coordinator when the two scripts are ready.
   same way on every route.
 - **Voice (paused):** the narrator recast as a woman of about sixty, plain and
   dry, light valley accent (`VOICES.md`, `VO_CAST.md`).
+
+## Late notes recovered from unmerged branches (10 October cleanup)
+
+Written by woken leads on 4 and 5 October after this page, and never merged. Check each against the code and later pages before acting; some may be done or stale.
+
+From `worktree-agent-a035208561a66c171` (2026-10-04 8b5f51d8):
+
+  Phase 2's lines went to the new lead, a7debf1459f14dfe7, to wire verbatim:
+  - Wenna's tinctures, brewing and moonpetal;
+  - the flask report;
+  - Brannoc's commissions;
+  - the fang choice;
+  - the shed-fur braid's card.

@@ -29,6 +29,19 @@ The one page of what's current. Every lead starts from the latest `claude/vigila
 - **Animation:** natural, correct motion; be sceptical; sign off per clip.
 - **The bar:** "we are striving for perfection". Improved isn't enough.
 
+## 10 October 2026, night: disk cleanup (the owner). Read if you restart a paused area
+
+Worktrees left after merging filled C: (13 GB free); the rules are now in `CLAUDE.md`. Every unmerged worktree was checked, and its wanted edits committed to its own branch and pushed. **Successors merge their area's WIP commit first** (unverified, on an old base):
+- Arena art `worktree-agent-a0b61c278bdd5c994` @ e3c46db6 (the Vault's arena: ArenaGen, ArenaPlaces, StoryFight, Vault.cs, arena_ground, Game.cs; vault textures; four new materials: log their provenance).
+- Skills VFX `worktree-agent-a560452c597415545` @ 41c39033 (Weapons, Battle, blade and loot_beam shaders, BattleFx.*). The older `a8bafe3cd8a229639` @ 5a9d55f6 is superseded by it.
+- Cinematics `worktree-agent-aece7b87e89b13f19` @ 8a0bd34b (c01/c04a json, CineFile, GameCinema, PersonView, tests).
+- Experience `worktree-agent-af2c026d86e1b532b` @ 214391f0 (kit shader, Hits, FollowCamera, Game.cs, GameFall, HUD, Voices, WorldType).
+- Creatures `claude/creatures-boar` @ 77835e56 (Beasts.cs, boar_build, boar_config).
+- Male hero `worktree-agent-ab82cbe99e2937ddd` @ a3e18a30 (his head textures, never committed before).
+- Late notes from woken leads (4-5 October) are appended to the combat, UI design, UI art and crafting handoffs and the story status page ("Late notes recovered").
+- Voice `worktree-agent-a501b387a90d78b4e` stays unmerged: its placeholder lines go against the owner's "no placeholders", and its packets predate the Act 1 rewrite. A future voice lead takes the direction packets and legal's ElevenLabs rules from it selectively.
+- The old wowsurvivors scratch (`f1b9be14`) is in the Recycle Bin; its scripts and texts (legal's included) are at `C:\Users\munch\Desktop\survivorsunchained_inputs\scratch_f1b9be14\`.
+
 ## 10 October 2026, early morning: wound down by the owner after a usage stop. Restart here
 
 The four wave-1 successors ran about three hours, then the weekly limit stopped them; the owner switched to usage credit, then asked for a wind-down. **Nothing is merged into integration: no area has passed its judge.** Each lead stopped cleanly with a "Paused here; next:" block at the top of its handoff **on its own branch** (the integration copy of the handoff is older). Restart each as a fresh successor (`su-lead-high`, max judges in the foreground): merge its branch first, read the block, pick up.
