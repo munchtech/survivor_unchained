@@ -32,11 +32,13 @@ def det(im):
     if l is None: l = ff.detect(np.asarray(im.resize((im.width * 2, im.height * 2), Image.LANCZOS))); l = None if l is None else l / 2
     return l
 def notch(im, box):
-    # (the notch: the strongest dip in lightness down her midline, 0.3-1.0 pupil-to-chin below her chin)
+    # (the notch: the strongest dip in lightness down her midline, 0.6-1.5 pupil-to-chin below her chin; from 0.3 it
+    # took the jaw's shade edge)
     a = np.asarray(im.convert('L'), np.float32); l = det(im)[:, :2]
     p = (l[468] + l[473]) / 2; c = l[152]; uu = c[1] - p[1]; x0 = int(c[0]); w = max(2, int(0.04 * uu))
-    ys = np.arange(int(c[1] + 0.3 * uu), min(a.shape[0] - 1, int(c[1] + 1.0 * uu)))
+    ys = np.arange(int(c[1] + float(os.environ.get("NOTCH_FROM", "0.6")) * uu), min(a.shape[0] - 1, int(c[1] + float(os.environ.get("NOTCH_TO", "1.5")) * uu)))
     d2 = gaussian_filter1d(gaussian_filter1d(a[ys, x0 - w:x0 + w].mean(1), 0.02 * uu), 0.03 * uu, order=2)
+    print("notch", (ys[int(np.argmax(d2))] - c[1]) / uu)
     return (ys[int(np.argmax(d2))] - box[1]) * W / (box[2] - box[0]), (x0 - box[0]) * W / (box[2] - box[0])
 def tick(t, y, x):
     dd = ImageDraw.Draw(t); dd.line((x - 34, y, x + 34, y), fill=(255, 210, 60), width=3)
@@ -48,7 +50,7 @@ if ny:
     for t in front[:4]:
         dd = ImageDraw.Draw(t)
         for x0 in range(0, W, 14): dd.line((x0, gy, x0 + 8, gy), fill=(120, 230, 255), width=2)
-rows = [("At the Look, front (dashed: today's collarbone; yellow: each one's own notch; right: her portrait, scaled to the same pupil-to-chin)", front),
+rows = [("At the Look, front (%syellow: each one's own notch; right: her portrait, scaled to the same pupil-to-chin)" % ("dashed: today's collarbone; " if ny else ""), front),
         ('At the Look, profile', [fit(img('%s_nk%s_p' % (tag, n)).crop(pbox), W) for n in L]),
         ('In play facing the camera (camera 12), 3x. Her head is bowed in this pose, so her neck hardly shows: the four read alike from the front too.',
          [fit(img('%s_pf_nk%s' % (tag, n)).crop(qbox), W) for n in L])]
