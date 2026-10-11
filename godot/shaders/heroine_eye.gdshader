@@ -74,6 +74,9 @@ uniform float catch_dim = 0.0;
 // The iris's fibres and crypts, their light and dark about the paint's mean
 // (1 as painted; less, softer: a painted iris's blotches read as a render).
 uniform float iris_contrast = 1.0;
+// (a dark swatch's pattern at this share of iris_contrast: a near-black brown's spokes stood out as a regular rosette
+// where her portraits' dark irises read velvety, judge j1, 11 October 2026; full by a swatch of linear lightness 0.04)
+uniform float dark_contrast = 0.5;
 // Where the paint's amber (inside `ring`) gives way to its green, as seen (in
 // the iris's radii; 0 as painted): smaller, a thinner collarette.
 uniform float ring_to = 0.0;
@@ -144,7 +147,8 @@ void fragment() {
 	vec3 ir = texture(iris, vec2(0.5) + dd / max(rr, 1e-4) * src * 0.412).rgb;
 	if (iris_contrast != 1.0) {
 		float l0 = dot(ir, vec3(0.2126, 0.7152, 0.0722));
-		ir *= max(PAINT_LIGHT + (l0 - PAINT_LIGHT) * iris_contrast, 0.0) / max(l0, 1e-4);
+		float dk = recolour > 0.0 ? 1.0 - smoothstep(0.018, 0.04, dot(iris_colour, vec3(0.2126, 0.7152, 0.0722))) : 0.0;
+		ir *= max(PAINT_LIGHT + (l0 - PAINT_LIGHT) * iris_contrast * mix(1.0, dark_contrast, dk), 0.0) / max(l0, 1e-4);
 	}
 	if (recolour > 0.0) {
 		float lum = dot(ir, vec3(0.2126, 0.7152, 0.0722));

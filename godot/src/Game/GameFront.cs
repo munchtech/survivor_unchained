@@ -221,7 +221,12 @@ public partial class Game
         // it turned that shade grey. A warm bounce from below (her chest and collar giving back the key) and a rim
         // whose sheen is half its light (at full, a lilac sheen along her collar). (--rig-old: the rig before, for pictures.)
         bool old = Args.Has("rig-old");
-        fillLight ??= Spot(white ? Colors.White : old ? new Color(0.88f, 0.92f, 1f) : new Color(1f, 0.95f, 0.9f), 26, false, 0.1f);
+        // (--fill-colour R,G,B: the fill's colour for judging it (pictures))
+        var fillC = old ? new Color(0.88f, 0.92f, 1f) : new Color(1f, 0.95f, 0.9f);
+        if (Args.Get("fill-colour") is string fcs && fcs.Split(',') is { Length: 3 } fp)
+            fillC = new Color(float.Parse(fp[0], System.Globalization.CultureInfo.InvariantCulture),
+                float.Parse(fp[1], System.Globalization.CultureInfo.InvariantCulture), float.Parse(fp[2], System.Globalization.CultureInfo.InvariantCulture));
+        fillLight ??= Spot(white ? Colors.White : fillC, 26, false, 0.1f);
         edgeLight ??= Spot(white ? Colors.White : new Color(1f, 0.56f, 0.26f), 24, false, 0.35f);
         rimLight ??= Spot(white ? Colors.White : new Color(0.72f, 0.82f, 1f), 24, false, old ? 0.5f : 0.25f);
         // (--bounce E: a warm light from below, as her chest and collar give back the key, for judging it (pictures);
