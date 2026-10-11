@@ -59,6 +59,61 @@ HAIR_DEFAULT = bpy.data.objects.get("hair_long")
 BONES = [b.name for b in arm.data.bones]
 BI = {n: i for i, n in enumerate(BONES)}
 
+# ------------------------------------------------------------ her mending --
+# Three flaws in the body heroine_head.py saves, mended before anything reads
+# her (her vertices stay as they are, so every map by vertex still holds):
+# a fin, a sliver standing off an edge three faces share (under her left
+# breast, at the back of her pelvis), and a pocket, a sliver lying back to
+# back with half of a graft quad at her left armpit (the speck there). Found
+# by position, her seams splitting her vertices.
+def mend_body(me):
+    import collections
+    import itertools
+    mb = bmesh.new()
+    mb.from_mesh(me)
+    mb.faces.ensure_lookup_table()
+    mb.normal_update()
+    key = [tuple(round(c, 5) for c in v.co) for v in mb.verts]
+    use = collections.Counter()
+    for f in mb.faces:
+        ks = [key[v.index] for v in f.verts]
+        use.update(frozenset(e) for e in zip(ks, ks[1:] + ks[:1]))
+    fins, pockets, mends = [], [], []
+    for f in mb.faces:
+        ks = [key[v.index] for v in f.verts]
+        n = [use[frozenset(e)] for e in zip(ks, ks[1:] + ks[:1])]
+        if len(ks) == 3 and n.count(1) >= 2 and max(n) > 2:
+            fins.append(f)
+    by3 = collections.defaultdict(list)
+    for f in mb.faces:
+        for c in itertools.combinations([key[v.index] for v in f.verts], 3):
+            by3[frozenset(c)].append(f)
+    for f in mb.faces:
+        if len(f.verts) != 3:
+            continue
+        for g in by3[frozenset(key[v.index] for v in f.verts)]:
+            if g is not f and len(g.verts) == 4 and f.normal.dot(g.normal) < 0:
+                tri = set(key[v.index] for v in f.verts)
+                inner = [l for l in g.loops if all(key[v.index] in tri for v in (l.link_loop_prev.vert, l.vert, l.link_loop_next.vert))]
+                if len(inner) == 1:
+                    pockets.append(f)
+                    mends.append((g, inner[0]))
+    uv = mb.loops.layers.uv
+    for g, drop in mends:
+        keep = [l for l in g.loops if l is not drop]
+        h = mb.faces.new([l.vert for l in keep], g)
+        for lo, li in zip(h.loops, keep):
+            for lay in uv.values():
+                lo[lay].uv = li[lay].uv
+    bmesh.ops.delete(mb, geom=fins + pockets + [g for g, _ in mends], context="FACES_ONLY")
+    mb.to_mesh(me)
+    me.update()
+    mb.free()
+    print("MEND her body: %d fins, %d pockets" % (len(fins), len(pockets)))
+
+
+mend_body(body.data)
+
 # ------------------------------------------------------------ her surface --
 # Welded (the paint's seams split her vertices) and in triangles.
 bm = bmesh.new()
