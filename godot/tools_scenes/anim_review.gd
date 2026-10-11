@@ -184,6 +184,38 @@ func env(k, d):
 
 # Her body or an outfit as the game has it, or (BODYDIR=folder) read at run
 # time from another build of them (a copy from before a change: no import).
+# (OUTFITSHADER=1) an outfit piece drawn as the game draws it, as
+# People.OutfitMaterials does (heroine_outfit.gdshader from
+# outfit_materials.json), not in the file's own materials.
+func game_outfit(mi):
+	var table = JSON.parse_string(FileAccess.get_file_as_string("res://art/people/outfit_materials.json"))
+	var sh = load("res://shaders/heroine_outfit.gdshader")
+	for s in mi.mesh.get_surface_count():
+		var src = mi.mesh.surface_get_material(s)
+		if not (src is StandardMaterial3D) or not table.has(src.resource_name):
+			continue
+		var e = table[src.resource_name]
+		var kind = {"leather": 0, "metal": 1, "cloth": 2, "gloss": 3, "twill": 4}.get(e["kind"], -1)
+		if kind < 0:
+			continue
+		src.vertex_color_use_as_albedo = false
+		var m = ShaderMaterial.new()
+		m.shader = sh
+		m.set_shader_parameter("kind", kind)
+		m.set_shader_parameter("albedo", src.albedo_texture)
+		m.set_shader_parameter("normal_map", src.normal_texture)
+		m.set_shader_parameter("orm", src.roughness_texture)
+		m.set_shader_parameter("has_orm", src.roughness_texture != null)
+		m.set_shader_parameter("roughness_value", src.roughness)
+		m.set_shader_parameter("metallic_value", src.metallic)
+		m.set_shader_parameter("repeats", float(e["repeats"]))
+		if e.has("pull"):
+			m.set_shader_parameter("view_pull", float(e["pull"]))
+		if e.has("drop_folded"):
+			m.set_shader_parameter("drop_folded", bool(e["drop_folded"]))
+		mi.set_surface_override_material(s, m)
+
+
 func people(file):
 	var dir = env("BODYDIR", "")
 	if dir == "":
@@ -271,6 +303,9 @@ void fragment() { ALBEDO = vec3(UV.x, UV.y, FRONT_FACING ? 0.0 : 1.0); }"
 				sk.set_shader_parameter("paint", src.albedo_texture)
 				sk.set_shader_parameter("pores", load("res://art/people/skin_pores.png"))
 				sk.set_shader_parameter("pore_scale", 50.0)
+				# (OUTFITSHADER=1: her skin under the outfit tucked in, as People.TuckSkin has it)
+				if env("OUTFITSHADER", "") != "":
+					sk.set_shader_parameter("tuck_channel", ["warden", "arcanist", "reaver", "ranger"].find(env("OUTFIT", "warden")))
 				mi.set_surface_override_material(s, sk)
 	var outfit = env("OUTFIT", "warden")
 	if outfit != "none":
@@ -282,6 +317,8 @@ void fragment() { ALBEDO = vec3(UV.x, UV.y, FRONT_FACING ? 0.0 : 1.0); }"
 				mi.owner = null
 				skel.add_child(mi)
 				mi.skeleton = NodePath("..")
+				if env("OUTFITSHADER", "") != "":
+					game_outfit(mi)
 		o.free()
 	var style = env("HAIR", "ponytail")
 	if style != "none":
