@@ -15,7 +15,7 @@ The owner asked for a wind-down: classes stops after the Echo fix, the Act 2 wri
 
 ### Stopped (filled in as each lead stops)
 - classes: running (session 5, branch classes/phase1b, own worktree)
-- Act 2 writer: running (branch story/act2, own worktree)
+- Act 2 writer: STOPPED at story/act2@5190bf0c (worktree agent-a6bea546976448116 stays; NOT merged, hold it): Act 2's first slice (C20, C20b, C22: the rope, the fourth dusk, his table) is in the data, WIP, unjudged, every line on hold; Holloway dies in play once merged. To finish: editor-judge, fixes, directions, locks, merge. Needs other leads: the fight in the hole, hauling as a held input, the cut as a cinematic; Tam's Pa needs a new cast voice. Handoff docs/handoff/story.md on that branch; build script scratchpad s18uild_c20.py.
 - outfits: running (worktree agent-a5ca10091b08dc429)
 - animation: STOPPED at worktree-agent-af8dbda3195e438e4@77338d02 (all WIP, not merged; the worktree stays). sit_back_heels remade f35-f96 with a per-clip soft hip limit (Rig.hip_soft; no other clip changed); judge 23 PASS WITH FIXES twice (knee jump 682 to 29 mm, toes 188 to 33 mm under the floor); fixes G2, G5, G1, G4, G3 open in the handoff; the library is not repacked. Then get_up's hand skim (route in the handoff), then the hair re-shoots after face's hair-only merge.
 - face: running (worktree agent-a2d632df7c7f21ec0)
