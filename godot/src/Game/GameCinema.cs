@@ -85,7 +85,7 @@ public partial class Game
     }
 
     /// <summary>--handoff (with --shot NAME): a frame every tenth of a second
-    /// from 1.5 s before a cinematic ends to 2.5 s into play, to judge the
+    /// from 1.5 s (--handoffbefore S: S) before a cinematic ends to 2.5 s into play, to judge the
     /// hand-over (ho_ID_NNN).</summary>
     double handoffLeft, handoffNext;
     int handoffN;
@@ -94,7 +94,7 @@ public partial class Game
     void HandoffFrames(double dt, double? toEnd)
     {
         if (!Args.Has("handoff")) return;
-        if (toEnd is double e && e <= 1.5) handoffLeft = Math.Max(handoffLeft, e + 2.5);
+        if (toEnd is double e && e <= Args.Num("handoffbefore", 1.5f)) handoffLeft = Math.Max(handoffLeft, e + 2.5);
         if (handoffLeft <= 0) return;
         handoffLeft -= dt;
         handoffNext -= dt;
@@ -181,6 +181,8 @@ public partial class Game
             g.scene!.CameraHeld = true;
             if (g.scene.Player != null) g.scene.Player.Hidden = true;
             b.WorldRate = file.World.Rate; b.WorldRateT = 1e9;
+            // She does not fight while she is the cinematic's (her arcanist's motes went off in C01 shot 11).
+            b.HoldFire = true;
             foreach (var (name, c) in file.Cast) Cast(name, c);
             GD.Print($"cinema: {file.Id} ({player.S.Length:0.0} s, {player.S.Shots.Count} shots)");
             Dispatch(player.Advance(0));
@@ -193,7 +195,10 @@ public partial class Game
             if (c.Kind == "survivor")
             {
                 var lo = Loadouts.Of(g.Journey.Ch);
-                var v = new PersonView(lo.Person, new Held { Right = lo.Arms.Right, Left = lo.Arms.Left, Forearm = lo.Arms.Forearm }, 0.8) { Name = "CineSurvivor" };
+                var v = new PersonView(lo.Person, new Held { Right = lo.Arms.Right, Left = lo.Arms.Left, Forearm = lo.Arms.Forearm }, 0.8)
+                {
+                    Name = "CineSurvivor", Ground = (x, z) => (float)g.scene!.HeightAt(x, z),
+                };
                 // The townsfolk's clips too (sitting on the floor, arms folded): made on the
                 // same skeleton, they stand in until her own cinematic motion comes.
                 if (FolkClips.Library() is { } folk && !v.Person.Anim.HasAnimationLibrary("folk")) v.Person.Anim.AddAnimationLibrary("folk", folk);
@@ -346,10 +351,11 @@ public partial class Game
             {
                 stillK++;
                 Shots.Want($"{file.Id}_s{shot.Id}", 0.05);
-                // --cinebones: where the cast's bones are at each still, for framing shots on them.
+                // --cinebones: where the cast's bones are at each still, for framing shots on them
+                // (--bones a,b: any others too, by the rig's names: thumb_03_l, index_03_l).
                 if (Args.Has("cinebones"))
                     foreach (var name in people.Keys)
-                        GD.Print($"cinebones {file.Id} s{shot.Id} {name} " + string.Join(" ", new[] { "head", "eyes", "chest", "hand_r", "hand_l", "foot_l", "foot_r" }
+                        GD.Print($"cinebones {file.Id} s{shot.Id} {name} " + string.Join(" ", new[] { "head", "eyes", "chest", "hand_r", "hand_l", "foot_l", "foot_r" }.Concat(Args.Get("bones")?.Split(',') ?? [])
                             .Select(bn => ActorAt(name, bn) is V3 p ? $"{bn}=({p.X:0.00},{p.Y:0.00},{p.Z:0.00})" : "")));
                 // --cinenear X,Z,R: every visible mesh within R of a point, by path, at each
                 // shot's still (what is that in the frame? Lowford's stray ring stone was found so).
@@ -473,6 +479,7 @@ public partial class Game
         {
             if (handed || !people.TryGetValue("her", out var her) || g.scene?.Player is not { } pv) return;
             handed = true;
+            b.HoldFire = false;
             var p = b.Player;
             var at = her.GlobalPosition;
             p.X = at.X; p.Z = at.Z; p.Facing = her.Rotation.Y; p.Vx = p.Vz = 0;
@@ -760,10 +767,19 @@ public partial class Game
                         string? piece = c.Str("piece") switch
                         {
                             "@own" => slot switch { "handslot.l" => arms.Left, "forearm.l" => arms.Forearm, _ => arms.Right },
+                            // Her first light, in her focus's school (C01, the arcanist).
+                            "@palms" => "palms:#" + Keepsakes.School(g.Journey.Ch.Equipment.Weapon?.Def ?? SurvivorUnchained.Rpg.Callings.Archetype(g.Journey.Ch.Archetype).Weapons[0]).ToHtml(false),
                             var s => s,
                         };
                         v.Hold(slot, null, piece);
                     }
+                    break;
+                }
+                case "pass":
+                {
+                    // A thing, or a part of one, from where it is to another of her bones, where it
+                    // is now: the gourd's cork from its neck to her teeth, then to her left hand.
+                    if (people.TryGetValue(c.Actor, out var v) && c.Str("what") is string what) v.Pass(what, c.Str("to") ?? "hand_l");
                     break;
                 }
                 case "prop":
@@ -772,6 +788,14 @@ public partial class Game
                     var arms = Loadouts.Of(g.Journey.Ch).Arms;
                     string? piece = c.Str("piece") switch { "@weapon" => arms.Right ?? arms.Left, "@shield" => arms.Forearm, var s => s };
                     string name = c.Str("name") ?? piece ?? "prop";
+                    // "to": taken up into a hand where it lies, and settling into her grip over
+                    // "over" seconds (a sword lifted off the log does not jump into the hand).
+                    if (c.Str("to") is string slot)
+                    {
+                        if (props.Remove(name, out var it) && propIds.TryGetValue(name, out var id) && people.TryGetValue(c.Actor, out var hv))
+                            hv.Take(slot, id, it, (float)Math.Max(0.05, over));
+                        break;
+                    }
                     if (props.Remove(name, out var old)) old.QueueFree();
                     if (piece == null || !Arms.All.ContainsKey(piece) || c.Bool("remove")) break;
                     var node = Arms.Make(piece);
@@ -782,6 +806,7 @@ public partial class Game
                     node.Scale = Vector3.One * (float)c.Num("scale", 1);
                     g.scene!.AddChild(node);
                     props[name] = node;
+                    propIds[name] = piece;
                     break;
                 }
                 case "prints":
@@ -932,6 +957,7 @@ public partial class Game
         }
 
         readonly Dictionary<string, Node3D> props = new();
+        readonly Dictionary<string, string> propIds = new();
         static GradientTexture2D? halo;
 
         /// <summary>A soft round halo, bright at the middle and gone at the edge.</summary>
@@ -1044,6 +1070,7 @@ public partial class Game
 
         public void Finish()
         {
+            b.HoldFire = false;
             // Play starts exactly where the cinematic leaves her, facing as she
             // faces, and still walking if she was (docs/cinematics/README.md, 5a).
             var p = b.Player;

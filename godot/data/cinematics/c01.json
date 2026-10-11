@@ -13,16 +13,19 @@
     "seat": [-8.5, 90.75, -1.5708],
     "seat_nw": [-8.5, 90.75, -2.356],
     "stand": [-8.95, 90.55, -1.75],
-    "reach": [-8.95, 89.3, 1.5708],
+    "reach": [-8.908, 89.615, 1.2217],
     "end": [-8.9, 88.3, 3.1416],
     "bedroll": [-11.6, 94.8],
     "verge": [-6.0, 72.0],
     "trail_in": [-8.6, 79.0],
     "frost": [-8.0, 84.0],
-    "r1": [-17.0, 90.0],
+    "r1": [-15.14, 91.29],
     "r2": [-3.5, 82.0],
     "r3": [-14.0, 98.0],
-    "r4": [-2.0, 97.0]
+    "r4": [-2.0, 97.0],
+    "took": [-9.0, 89.43, 3.1416],
+    "stood": [-9.86, 90.95, -1.3342],
+    "kneel10": [-9.65, 90.9, -2.2942]
   },
   "cast": {
     "her": {"kind": "survivor", "mark": "lie"},
@@ -40,7 +43,8 @@
       "note": "Creation's last frame: her, dry, by the high fire. The UI is gone.",
       "cues": [
         {"do": "hold", "slot": "all", "piece": null},
-        {"do": "prop", "name": "weapon", "piece": "@weapon", "where": [-8.33, 0.42, 89.05], "rot": [0, 90, 72]},
+        {"do": "hold", "slot": "wrist.r", "piece": "gourd_hung"},
+        {"do": "prop", "name": "weapon", "piece": "@weapon", "where": [-8.425, 0.78, 89.897], "rot": [-30.0, 77.4, 180.0]},
         {"do": "prop", "name": "shield", "piece": "@shield", "where": [-8.05, 0.3, 89.55], "rot": [0, 80, 78], "when": {"calling": ["warden"]}},
         {"do": "anim", "clip": "her/lie_side_wake", "from": 0, "speed": 0, "blend": 0},
         {"do": "lids", "value": 1, "over": 0},
@@ -109,20 +113,17 @@
     {
       "id": "6",
       "type": "MS",
-      "dur": 7.0,
-      "still": 1.5,
-      "note": "Front three-quarter from her left, across the coals: she comes up onto her heels and looks down at her hands, the cord and the full flask; across at the bedroll, dry; down again. N1.",
+      "dur": 5.2,
+      "still": 3.6,
+      "note": "Front three-quarter from her left, across the coals: she comes up off her elbow onto her knees and back on her heels, and her hands come up before her, palms up; she looks down at them.",
       "cam": {"pos": [-11.1, 0.85, 91.6], "at": {"actor": "her", "bone": "chest", "off": [0, 0.22, 0], "track": true}, "lens": 35, "focus": {"actor": "her", "bone": "eyes", "track": true}, "fstop": 2.8},
       "cues": [
         {"do": "anim", "clip": "her/sit_back_heels", "from": 0, "speed": 1.0, "blend": 0},
         {"do": "face", "keys": {"brows_sad": 0.3, "mouth_open": 0.08}, "over": 1.2},
         {"do": "gaze", "look": [0, 0.8], "wander": 0.04},
-        {"at": 0.8, "do": "line", "id": "cin_drowned_fire.bedroll"},
-        {"at": 1.6, "do": "gaze", "look": [0.5, 0.35]},
-        {"at": 3.4, "do": "gaze", "look": [0, 0.7]},
-        {"at": 4.8, "do": "lids", "value": 1, "over": 0.2},
-        {"at": 5.15, "do": "lids", "value": null},
-        {"at": 5.4, "do": "gaze", "look": [0.2, 0.2]}
+        {"at": 3.3, "do": "lids", "value": 1, "over": 0.2},
+        {"at": 3.65, "do": "lids", "value": null},
+        {"at": 4.2, "do": "gaze", "look": [0, 0.75]}
       ]
     },
     {
@@ -138,6 +139,38 @@
       ]
     },
     {
+      "id": "6b",
+      "type": "MCU",
+      "dur": 4.4,
+      "still": 4.2,
+      "note": "Low across the coals, under her eyes, so she is lit from below and the night is behind her: the hand comes back from the coals; she turns the wrist up to the cord wound on it and the full gourd; across at the bedroll, dry (N1); then from inside her top the letter, folded, and both hands open it below her face. She looks.",
+      "cam": {"pos": [-11.01, 0.6, 90.72], "at": [-9.78, 0.82, 90.86], "lens": 35, "focus": {"actor": "her", "bone": "eyes", "track": true}, "fstop": 2.8},
+      "cues": [
+        {"do": "anim", "clip": "her/letter", "from": 0, "speed": 1.0, "blend": 0.35},
+        {"do": "gaze", "look": [0, 0.85], "wander": 0.03},
+        {"at": 0.6, "do": "sfx", "name": "cloth_water", "gain": 0.3},
+        {"at": 1.35, "do": "gaze", "look": [0.55, 0.3]},
+        {"at": 1.4, "do": "line", "id": "cin_drowned_fire.bedroll"},
+        {"at": 2.7, "do": "gaze", "look": [0, 0.6]},
+        {"at": 3.05, "do": "hold", "slot": "letter", "piece": "letter"},
+        {"at": 3.3, "do": "gaze", "look": [0, 0.75]},
+        {"at": 3.8, "do": "hold", "slot": "letter", "piece": "letter_open"},
+        {"at": 3.9, "do": "sfx", "name": "cloth", "gain": 0.25},
+        {"at": 4.0, "do": "face", "keys": {"brows_sad": 0.42, "mouth_open": 0.1}, "over": 0.5}
+      ]
+    },
+    {
+      "id": "6c",
+      "type": "INSERT",
+      "dur": 2.0,
+      "still": 0.8,
+      "note": "Close over her right shoulder, down onto the open letter: wet through, the ink run to blue water down the lines it was, no word left. She folds it.",
+      "cam": {"pos": [-9.63, 1.06, 90.61], "at": [-9.95, 0.58, 90.79], "lens": 50, "focus": {"abs": [-9.95, 0.58, 90.79]}, "fstop": 4.0},
+      "cues": [
+        {"at": 1.5, "do": "hold", "slot": "letter", "piece": "letter"}
+      ]
+    },
+    {
       "id": "7",
       "type": "OTS",
       "dur": 7.5,
@@ -148,6 +181,7 @@
       "cam": {"pos": [-9.55, 1.12, 91.45], "at": [-8.9, 0.0, 86.5], "lens": 28, "focus": 3.0, "fstop": 4.0, "move": {"at": [-6.6, 1.2, 72.0], "start": 0.4, "end": "end-0.6", "ease": "slow", "focus": {"abs": [-6.6, 1.2, 72.0]}}},
       "cues": [
         {"at": 0.0, "do": "head", "where": [-8.9, 0.3, 86.5], "over": 1.2},
+        {"at": 0.15, "do": "hold", "slot": "letter", "piece": null},
         {"do": "gaze", "look": [0, 0.5], "wander": 0.03},
         {"at": 0.6, "do": "line", "id": "cin_drowned_fire.prints"}
       ]
@@ -207,7 +241,7 @@
       "dur": 5.0,
       "still": 4.0,
       "note": "Low from the south-east: the camp, her small on the log by the embers. Background left, past the firelight, the frost darkens and a head comes up through it like a swimmer. She has not seen. N3.",
-      "cam": {"pos": [-4.6, 0.95, 95.6], "at": [-9.6, 0.6, 90.0], "lens": 24, "focus": 6.5, "fstop": 5.6},
+      "cam": {"pos": [-4.3, 1.5, 94.6], "at": [-10.0, 0.6, 92.3], "lens": 24, "focus": 6.5, "fstop": 5.6},
       "cues": [
         {"at": 1.3, "do": "world", "rate": 0.11},
         {"at": 1.3, "do": "spawn", "actor": "r1", "def": "risen", "mark": "r1", "style": "rise"},
@@ -223,16 +257,17 @@
       "type": "MCU",
       "dur": 2.5,
       "still": 1.0,
-      "note": "From the fire's side: her head turns hard toward the sound, screen left, as the risen was. On her feet in one movement.",
-      "cam": {"pos": [-10.4, 1.1, 92.1], "at": {"actor": "her", "bone": "head", "off": [0, 0.0, 0], "track": true}, "lens": 50, "focus": {"actor": "her", "bone": "eyes", "track": true}, "fstop": 2.8},
+      "note": "From the fire's side: her head snaps round to the sound and she is up off her heels in one movement, without her hands, square to it: it is behind the camera, a little to its side.",
+      "cam": {"pos": [-10.56, 1.35, 92.13], "at": {"actor": "her", "bone": "head", "off": [-0.24, 0.0, 0.06], "track": true}, "lens": 50, "focus": {"actor": "her", "bone": "eyes", "track": true}, "fstop": 2.8},
       "cues": [
-        {"at": 0.12, "do": "head", "where": {"mark": "r1", "off": [0, 1.2, 0]}, "over": 0.18},
+        {"do": "place", "mark": "kneel10"},
         {"do": "world", "rate": 0},
+        {"do": "anim", "clip": "her/kneel_to_stand_snap", "from": 0, "speed": 1, "blend": 0.15},
+        {"at": 0.1, "do": "head", "amount": 0, "over": 0.15},
         {"at": 0.12, "do": "gaze", "look": [0.45, -0.05], "wander": 0.02},
         {"at": 0.12, "do": "face", "keys": {"eyes_wide": 0.6, "brows_sad": 0, "brows_angry": 0.2, "mouth_open": 0.1}, "over": 0.2},
-        {"at": 0.75, "do": "anim", "clip": "@idle", "from": 0, "speed": 1, "blend": 0.4},
-        {"at": 0.75, "do": "move", "to": "stand", "dur": 0.45, "heading": -1.75},
-        {"at": 1.4, "do": "head", "amount": 0, "over": 0.5}
+        {"at": 0.35, "do": "gaze", "look": [0.05, 0.0], "wander": 0.02},
+        {"at": 0.85, "do": "head", "where": {"mark": "r1", "off": [0, 1.3, 0]}, "amount": 0.8, "over": 0.4}
       ]
     },
     {
@@ -240,17 +275,14 @@
       "type": "MLS",
       "dur": 3.5,
       "still": 1.8,
-      "note": "Side-on and wide enough for all of her: she takes her weapon from the log and comes round with it ready. On three sides the frost breaks.",
-      "cam": {"pos": [-8.6, 1.05, 93.9], "at": [-8.85, 0.95, 89.4], "lens": 35, "focus": {"mark": "reach", "off": [0, 1.0, 0]}, "fstop": 4.0},
+      "note": "From the north-east, low, across the log's end: she steps in, takes her weapon up off the log, and comes round 110 degrees onto the road, low and ready, toward camera. Behind her, south-west, the frost breaks.",
+      "cam": {"pos": [-6.07, 1.1, 86.77], "at": [-8.85, 1.0, 89.5], "lens": 35, "focus": {"mark": "reach", "off": [0, 1.0, 0]}, "fstop": 4.0},
+      "when": {"calling": ["warden", "reaver", "stalker"]},
       "cues": [
-        {"do": "move", "to": "reach", "dur": 0.7, "heading": 1.5708},
-        {"at": 0.7, "do": "anim", "clip": "PickUp_Table", "from": 0, "speed": 1.1, "blend": 0.15, "when": {"calling": ["warden", "reaver", "stalker"]}},
-        {"at": 1.25, "do": "prop", "name": "weapon", "remove": true, "when": {"calling": ["warden", "reaver", "stalker"]}},
-        {"at": 1.25, "do": "prop", "name": "shield", "remove": true},
-        {"at": 1.25, "do": "hold", "slot": "all", "piece": "@own", "when": {"calling": ["warden", "reaver", "stalker"]}},
-        {"at": 0.7, "do": "anim", "clip": "Spell_Simple_Enter", "from": 0, "speed": 0.9, "blend": 0.15, "when": {"calling": ["arcanist"]}},
-        {"at": 1.6, "do": "face", "keys": {"smile": 0.15}, "over": 0.15, "when": {"calling": ["arcanist"]}},
-        {"at": 2.1, "do": "face", "keys": {"smile": 0, "brows_angry": 0.3}, "over": 0.2, "when": {"calling": ["arcanist"]}},
+        {"do": "head", "amount": 0, "over": 0.3},
+        {"do": "place", "mark": "reach"},
+        {"do": "anim", "clip": "her/take_from_log", "from": 0, "speed": 1, "blend": 0},
+        {"at": 0.55, "do": "prop", "name": "weapon", "to": "handslot.r", "over": 0.35},
         {"at": 1.4, "do": "sfx", "name": "hit"},
         {"at": 1.4, "do": "face", "keys": {"eyes_wide": 0.2, "brows_angry": 0.35, "mouth_open": 0.12}, "over": 0.3},
         {"at": 1.0, "do": "world", "rate": 0.05},
@@ -258,8 +290,31 @@
         {"at": 1.15, "do": "spawn", "actor": "r3", "def": "risen", "mark": "r3", "style": "rise"},
         {"at": 1.3, "do": "spawn", "actor": "r4", "def": "risen", "mark": "r4", "style": "rise"},
         {"at": 1.0, "do": "sfx", "name": "frost_crack", "where": {"mark": "r2"}, "gain": 0.6},
-        {"at": 1.2, "do": "sfx", "name": "frost_crack", "where": {"mark": "r3"}, "gain": 0.6},
-        {"at": 2.6, "do": "anim", "clip": "@idle", "from": 0, "speed": 1, "blend": 0.3}
+        {"at": 1.2, "do": "sfx", "name": "frost_crack", "where": {"mark": "r3"}, "gain": 0.6}
+      ]
+    },
+    {
+      "id": "11m",
+      "type": "MCU",
+      "dur": 3.5,
+      "still": 1.8,
+      "note": "The arcanist, where she rose: low before her, her hands in the foreground: she cups them, and waits; nothing; then a spark catches and her palms fill with light in her school's colour, lighting her face from below. A smile, half a second, gone.",
+      "cam": {"pos": [-10.6, 1.02, 91.28], "at": [-10.03, 1.48, 90.99], "lens": 35, "focus": {"abs": [-10.15, 1.2, 91.02]}, "fstop": 2.8},
+      "when": {"calling": ["arcanist"]},
+      "cues": [
+        {"do": "head", "amount": 0, "over": 0.3},
+        {"do": "anim", "clip": "her/cup_hands", "from": 0, "speed": 1, "blend": 0.25},
+        {"do": "gaze", "look": [0, 0.7], "wander": 0.02},
+        {"at": 1.4, "do": "hold", "slot": "palms", "piece": "@palms"},
+        {"at": 1.6, "do": "face", "keys": {"smile": 0.15, "eyes_wide": 0.3}, "over": 0.15},
+        {"at": 2.1, "do": "face", "keys": {"smile": 0, "brows_angry": 0.3}, "over": 0.2},
+        {"at": 1.4, "do": "sfx", "name": "hit"},
+        {"at": 1.0, "do": "world", "rate": 0.05},
+        {"at": 1.0, "do": "spawn", "actor": "r2", "def": "risen", "mark": "r2", "style": "rise"},
+        {"at": 1.15, "do": "spawn", "actor": "r3", "def": "risen", "mark": "r3", "style": "rise"},
+        {"at": 1.3, "do": "spawn", "actor": "r4", "def": "risen", "mark": "r4", "style": "rise"},
+        {"at": 1.0, "do": "sfx", "name": "frost_crack", "where": {"mark": "r2"}, "gain": 0.6},
+        {"at": 1.2, "do": "sfx", "name": "frost_crack", "where": {"mark": "r3"}, "gain": 0.6}
       ]
     },
     {
@@ -268,8 +323,13 @@
       "dur": 3.5,
       "still": 1.2,
       "note": "From in front of her, the one crane of the scene: up and round behind her into the game's camera as R1 tears free and the rest come up. Bars out. Control.",
-      "cam": {"pos": [-8.6, 1.25, 86.4], "at": {"mark": "end", "off": [0, 1.0, 0]}, "lens": 35, "move": {"path": [[-6.0, 2.6, 88.2], [-6.2, 9.5, 96.5]], "start": 0, "end": "end", "ease": "inout", "follow": true}},
+      "cam": {"pos": [-8.6, 1.25, 86.4], "at": {"mark": "end", "off": [0, 1.4, 0]}, "lens": 35, "move": {"path": [[-6.0, 2.6, 88.2], [-6.2, 9.5, 96.5]], "start": 0, "end": "end", "ease": "inout", "follow": true}},
       "cues": [
+        {"at": 0.0, "do": "place", "mark": "took", "when": {"calling": ["warden", "reaver", "stalker"]}},
+        {"at": 0.0, "do": "place", "mark": "stood", "when": {"calling": ["arcanist"]}},
+        {"at": 0.0, "do": "prop", "name": "weapon", "remove": true, "when": {"calling": ["arcanist"]}},
+        {"at": 0.0, "do": "prop", "name": "shield", "remove": true},
+        {"at": 0.0, "do": "hold", "slot": "palms", "piece": null, "when": {"calling": ["arcanist"]}},
         {"at": 0.0, "do": "play"},
         {"do": "move", "to": "end", "dur": 1.3, "clip": "Walk_Formal_Loop", "speed": 0.9},
         {"at": 1.3, "do": "anim", "clip": "@idle", "from": 0, "speed": 1, "blend": 0.3},

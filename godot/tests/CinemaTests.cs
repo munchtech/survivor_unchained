@@ -224,8 +224,11 @@ public class CinemaTests
     public void A_shot_for_one_calling_is_played_only_for_it()
     {
         var f = CineFile.Load("c01");
-        bool Casts(string calling) => Lay(f, calling).Cues.Any(c => c.Cue.Do == "anim" && c.Cue.Str("clip") == "Spell_Simple_Enter");
-        Assert.True(Casts("arcanist"));
-        Assert.False(Casts("warden"));
+        bool Plays(string calling, string clip) => Lay(f, calling).Cues.Any(c => c.Cue.Do == "anim" && c.Cue.Str("clip") == clip);
+        // The arcanist cups her hands; every other calling takes her weapon off the log.
+        Assert.True(Plays("arcanist", "her/cup_hands"));
+        Assert.False(Plays("warden", "her/cup_hands"));
+        Assert.True(Plays("warden", "her/take_from_log"));
+        Assert.False(Plays("arcanist", "her/take_from_log"));
     }
 }

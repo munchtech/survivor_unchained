@@ -242,6 +242,9 @@ public sealed partial class Battle
     public readonly FlowField Flow;
     public Func<double, double, double> HeightAt;
     public bool Combat;
+    /// <summary>Her weapons, auras and triggers wait (a cinematic is playing and has not handed her
+    /// back): the world may run slowly under it, but she does not fight until she is hers again.</summary>
+    public bool HoldFire;
     public BattleHooks Hooks = new();
     public AbilityKind? Ability;
     public Dictionary<Faction, Faction[]> War;
@@ -380,7 +383,7 @@ public sealed partial class Battle
         Charges.Tick(this, wdt);
         UpdatePlayer(dt, moveX, moveZ);
         Flow.Update(Player.X, Player.Z);
-        if (Combat)
+        if (Combat && !HoldFire)
         {
             foreach (var w in Weapons.ToArray()) Firing.Tick(this, w, dt);
             TickAuras(dt);

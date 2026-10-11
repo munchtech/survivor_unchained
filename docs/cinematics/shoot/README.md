@@ -79,7 +79,19 @@ places, and each one has a timeline the game plays. The chain:
     dead), `sfx` (`name`, optional `where`, `gain`, `pan`).
   - People: `place`, `anim` (`clip`, `from`, `speed`, `loop`, `hold`,
     `blend`), `move` (`to`, `dur`, `clip`), `look` (`where`), `hold` (a hand's
-    piece, null, or `@own`), `prop` (`@weapon` set down `where`).
+    piece, null, or `@own`), `prop` (`@weapon` set down `where`; with `to` a
+    hand's slot, taken up where it lies and settling into her grip over
+    `over`, so a weapon lifted off a log never jumps into the hand).
+  - Her keepsakes (`src/Actors/Keepsakes.cs`), held by `hold` in their own
+    slots and placed by her own finger bones: `gourd` (slot `handslot.r`, in
+    her fist as animation keyed it), `gourd_hung` (slot `wrist.r`: on its cord
+    from her right wrist, swinging, lying on the ground when she does),
+    `letter` and `letter_open` (slot `letter`: folded in her left hand's
+    pinch, or open between both hands' pinches, unfolding as they part),
+    `@palms` (slot `palms`: the arcanist's first light, in her focus's
+    school). `pass` (`what`, `to` a bone) hands a held thing, or a part of one
+    by name, to another bone where it is now: the gourd's `cork` to her
+    `head` (her teeth), then to `hand_l`.
   - The survivor's face: `face` (`keys` of her expression shapes, `over`),
     `gaze` (`look` [x,y], `wander`), `lids` (`value`, or null to let her
     blink again), `wet`.

@@ -178,10 +178,21 @@ public partial class PersonView : Node3D, INpcView
         if (loop == "") loop = "Idle";
     }
 
+    /// <summary>The ground's height at a place, for what she carries that can come to rest on it
+    /// (the gourd hung from her wrist lies on the ground beside her when she does).</summary>
+    public System.Func<float, float, float>? Ground;
+
     public void Hold(string slot, string? pack, string? piece)
     {
+        // The letter opens and folds again in the same hands.
+        if (slot == "letter" && piece is "letter" or "letter_open" && held.TryGetValue(slot, out var had) && had is Keepsakes.Letter letter)
+        {
+            letter.Open = piece == "letter_open";
+            return;
+        }
         if (held.Remove(slot, out var old)) old.QueueFree();
         if (piece == null) return;
+        if (Keepsakes.Is(piece)) { held[slot] = Keepsakes.Make(person, piece, Ground); return; }
         var bone = slot switch { "handslot.l" => "hand_l", "forearm.l" => "lowerarm_l", _ => "hand_r" };
         if (Arms.All.ContainsKey(piece)) { held[slot] = Arms.Hold(person, piece, bone); return; }
         // The kits' small things (a torch, a bucket) as simple stand-ins
@@ -192,6 +203,68 @@ public partial class PersonView : Node3D, INpcView
             person.Skeleton.AddChild(at);
             at.AddChild(thing);
             held[slot] = at;
+        }
+    }
+
+    /// <summary>A held thing, or a part of one by its name (the gourd's "cork"), handed to another
+    /// of her bones where it is now: the cork from the gourd to her teeth, and on to her left hand.</summary>
+    public void Pass(string what, string bone)
+    {
+        Node3D? n = null;
+        foreach (var h in held.Values)
+            if ((h.Name == what ? h : h.FindChild(what, true, false)) is Node3D c) { n = c; break; }
+        if (n == null) return;
+        var att = Keepsakes.Attach(person.Skeleton, bone);
+        n.Reparent(att, true);
+        if (held.TryGetValue(what, out var was) && was != att && was.GetChildCount() == 0) was.QueueFree();
+        held[what] = att;
+    }
+
+    /// <summary>A thing that lay in the world (a weapon on a log) taken up into a hand: it is
+    /// mounted as Arms.Hold mounts it, but starts where it lay and settles into the grip over
+    /// `over` seconds, as the hand lifts it.</summary>
+    public void Take(string slot, string id, Node3D thing, float over)
+    {
+        if (held.Remove(slot, out var old)) old.QueueFree();
+        var bone = slot switch { "handslot.l" => "hand_l", "forearm.l" => "lowerarm_l", _ => "hand_r" };
+        var mount = Arms.Hold(person, id, bone);
+        var made = mount.GetChild<Node3D>(0);
+        var grip = made.Transform;
+        mount.RemoveChild(made);
+        made.QueueFree();
+        if (mount.GetParent() is BoneAttachment3D att)
+        {
+            // The attachment is placed now, so the thing keeps where it lies this frame.
+            int i = person.Skeleton.FindBone(bone);
+            if (i >= 0) att.GlobalTransform = person.Skeleton.GlobalTransform * person.Skeleton.GetBoneGlobalPose(i);
+        }
+        thing.Reparent(mount, true);
+        mount.AddChild(new IntoGrip(thing, grip, over));
+        held[slot] = mount;
+    }
+
+    /// <summary>Eases a node's own transform to where it belongs (slerped, smoothly), then goes.</summary>
+    sealed partial class IntoGrip : Node
+    {
+        readonly Node3D what;
+        readonly Transform3D from, to;
+        readonly float over;
+        float t;
+
+        public IntoGrip(Node3D what, Transform3D to, float over)
+        {
+            this.what = what;
+            from = what.Transform;
+            this.to = to;
+            this.over = over;
+        }
+
+        public override void _Process(double delta)
+        {
+            t += (float)delta;
+            float k = Mathf.SmoothStep(0, 1, Mathf.Clamp(t / over, 0, 1));
+            if (IsInstanceValid(what)) what.Transform = from.InterpolateWith(to, k);
+            if (k >= 1) QueueFree();
         }
     }
 

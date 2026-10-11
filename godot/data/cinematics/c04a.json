@@ -26,6 +26,7 @@
       "cam": {"pos": [1.9, 0.3, -52.5], "at": {"abs": [0.8, -0.7, -47.0]}, "lens": 35},
       "when": {"facts": ["!prologue.dawn_south"]},
       "cues": [
+        {"do": "hold", "slot": "wrist.r", "piece": "gourd_hung"},
         {"do": "event", "name": "ford_clear"},
         {"do": "atmosphere", "preset": "dawn", "from": "night", "k1": 0.2},
         {"do": "music", "mood": "night", "intensity": 0.2},
@@ -44,6 +45,7 @@
       "note": "Still south, looting the ford: an MS of her standing in the shallows, turning toward the light that is starting in the east.",
       "cam": {"pos": {"abs": [-1.2, -0.3, -43.6]}, "at": {"actor": "her", "bone": "chest"}, "lens": 35},
       "cues": [
+        {"do": "hold", "slot": "wrist.r", "piece": "gourd_hung"},
         {"do": "event", "name": "ford_clear"},
         {"do": "atmosphere", "preset": "dawn", "from": "night", "k1": 0.2},
         {"do": "music", "mood": "night", "intensity": 0.2},
@@ -114,10 +116,17 @@
       "id": "A6",
       "type": "MCU",
       "dur": 5.0,
-      "note": "She lifts the flask on its cord, pulls the cork with her teeth, and stops: smells it. The river. She drinks anyway, long, eyes shut; water on her chin. She lowers it.",
-      "cam": {"pos": {"actor": "her", "bone": "eyes", "off": [0.5, -0.15, -1.9]}, "at": {"actor": "her", "bone": "eyes", "off": [0, -0.12, 0]}, "lens": 50},
+      "note": "From her front-left, the drinking arm away from camera: she lifts the gourd on its cord, bites the cork and pulls it, and her left hand takes it from her teeth; under her nose she stops: the river. She drinks anyway, long, eyes shut. She lowers it.",
+      "cam": {"pos": {"actor": "her", "bone": "eyes", "off": [-0.6, -0.1, -1.8]}, "at": {"actor": "her", "bone": "eyes", "off": [0, -0.1, 0]}, "lens": 50, "focus": {"actor": "her", "bone": "eyes", "track": true}, "fstop": 2.8},
       "cues": [
+        {"do": "hold", "slot": "wrist.r", "piece": null},
+        {"do": "hold", "slot": "cork", "piece": null},
+        {"do": "hold", "slot": "all", "piece": null},
+        {"do": "hold", "slot": "handslot.r", "piece": "gourd"},
+        {"do": "anim", "clip": "her/flask_drink", "from": 0, "speed": 1, "blend": 0.3},
+        {"at": 0.95, "do": "pass", "what": "cork", "to": "head"},
         {"at": 1.0, "do": "sfx", "name": "click", "gain": 0.5},
+        {"at": 1.25, "do": "pass", "what": "cork", "to": "hand_l"},
         {"at": 1.5, "do": "face", "keys": {"nose_wrinkle": 0.3, "squint": 0, "frown": 0}, "over": 0.3},
         {"at": 2.3, "do": "lids", "value": 1, "over": 0.3},
         {"at": 4.3, "do": "lids", "value": null}
@@ -144,7 +153,7 @@
       "type": "LS",
       "dur": 5.5,
       "note": "Low behind her on the road, looking north up the hill: she walks away from camera into the light; at the top of the hill the gate stands open. Her own body from the cut (play). Over the last 3 s the camera cranes up over her, tilting down into the game's view; she walks on into play. Bars out over the last 0.8 s; then the Douse announcement and the day tip.",
-      "cam": {"pos": {"mark": "road", "off": [0.6, 0.6, 3.0]}, "at": [0.0, 4.0, -110.0], "lens": 28, "move": {"start": "end-3.0", "ease": "inout", "follow": true}},
+      "cam": {"pos": {"mark": "road", "off": [0.6, 0.6, 3.0]}, "at": [0.0, 4.0, -110.0], "lens": 28, "move": {"at": {"actor": "her", "bone": "chest", "track": true}, "start": "end-3.0", "ease": "inout", "follow": true}},
       "cues": [
         {"at": 0.0, "do": "play"},
         {"do": "move", "to": "top", "dur": 6.5, "clip": "Walk_Formal_Loop", "speed": 0.8},
