@@ -47,10 +47,11 @@ void vertex() {
 	det = vec4(UV2.x, UV2.y, COLOR.r, COLOR.g);
 	painted = COLOR.b;
 	opos = VERTEX;
+	// (moved toward the camera in its own space, not by writing POSITION:
+	// written, Godot uses it for every vertex, and its motion vectors differ)
 	if (view_pull > 0.0) {
-		vec4 v = MODELVIEW_MATRIX * vec4(VERTEX, 1.0);
-		v.xyz -= normalize(v.xyz) * view_pull;
-		POSITION = PROJECTION_MATRIX * v;
+		vec3 cam = (inverse(MODEL_MATRIX) * vec4(CAMERA_POSITION_WORLD, 1.0)).xyz;
+		VERTEX += normalize(cam - VERTEX) * view_pull;
 	}
 }
 
