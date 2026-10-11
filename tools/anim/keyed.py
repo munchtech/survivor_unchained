@@ -19,7 +19,9 @@ origin facing +Z, her left at +X, up +Y; metres and degrees):
                "thumb": (x, y, z) instead of blade and knuckles: the wrist
                       left straight, the forearm rolled so the thumb side
                       faces as near this way as it can (a carried weapon),
-               "frame": "char" | "chest" (which space blade/knuckles/pos use)}
+               "frame": "char" | "chest" (which space blade/knuckles/pos use),
+               "ext": degrees the wrist may bend back (a hand on the ground
+                      under her weight; default EXT)}
     foot_l/r  {"pos": (x, y, z) the ankle (y 0 = flat on the ground),
                "rot": (yaw, pitch, roll), "pole": (x, y, z) the knee's way,
                "toe": degrees the toes bend up}
@@ -47,6 +49,37 @@ from rig import (Clip, Skeleton, qaxis, qbetween, qeuler, qfrom_basis, qinv, qmu
 
 SPINE = (("spine_01", 0.22), ("spine_02", 0.33), ("spine_03", 0.45))
 FINGERS = ("index", "middle", "ring", "pinky")
+
+# A hand planted on the ground (a hand's "plant"), measured off her skin
+# (metres, rig units; another body's are scaled by his hand's length,
+# HAND_LEN from the wrist to the middle finger's knuckle). Her palm bulges
+# at the ball of the thumb: laid level it stood on that alone, the little
+# finger's side 1.5 cm up and its knuckles 3-4 cm, so the fingers had to bend
+# down to reach the ground. Rolled PLANT_ROLL onto the little finger's side
+# and tipped PLANT_PITCH fingers-down, it lies on the ball of the thumb, the
+# heel of the little finger and the pads under the knuckles together, every
+# knuckle about a finger's thickness up, and the fingers lie along the ground
+# nearly straight. PALM_DEPTH: the wrist's joint over the lowest palm skin,
+# so laid (her hands are not alike).
+HAND_LEN, PLANT_PITCH, PLANT_ROLL = 0.1283, 10.0, 10.0
+PALM_DEPTH = {"l": 0.0412, "r": 0.0454}
+# Per finger: how far the pad reaches below each bone's line toward the
+# palm (the three bones), and the tip's skin past the last joint. The rest
+# thumb is turned in under the palm (its tip 3.5 cm below the palm's skin),
+# so a flat palm's thumb went into the ground unless laid out (Rig._lay).
+PADS = {"thumb": (0.0173, 0.0149, 0.0128, 0.0280), "index": (0.0172, 0.0163, 0.0131, 0.0278),
+        "middle": (0.0162, 0.0149, 0.0123, 0.0340), "ring": (0.0159, 0.0125, 0.0112, 0.0313),
+        "pinky": (0.0168, 0.0095, 0.0090, 0.0259)}
+# How far each joint of a laid finger may bend (degrees from straight on the
+# bone before it; + toward the palm): a knuckle bends back a little under
+# weight, the middle joint hardly, the last a little more.
+LAY_RANGE = {1: (-30.0, 80.0), 2: (-5.0, 95.0), 3: (-15.0, 70.0)}
+THUMB_RANGE = {1: (-15.0, 50.0), 2: (-20.0, 60.0), 3: (-25.0, 80.0)}
+# How stiffly each joint holds the bend the fingers' preset gave it (the
+# middle joint most), against resting on the ground (a 4 mm gap under the
+# finger weighs as a 10 degree bend of the knuckle; more than a centimetre
+# is not reached for) and against going into it (1 mm weighs as 30 degrees).
+LAY_STIFF = (1.0, 2.0, 1.5)
 
 
 class Rig:
@@ -93,9 +126,21 @@ class Rig:
         # The swivel each arm last needed (degrees about shoulder-to-wrist from
         # the keyed elbow), so a strained wrist is eased the same way frame to frame.
         self.swivel = {}
+        # Each hip's frame at rest, for reading the thigh's turn about its own
+        # length as the hip joint does (hip_rot): x her front square to the
+        # thigh, y up the thigh (knee to hip), z = x cross y (her right).
+        self.hip_frame = {}
+        for side in "lr":
+            y = self.prest[self.I[f"thigh_{side}"]] - self.prest[self.I[f"calf_{side}"]]
+            y = y / np.linalg.norm(y)
+            x = np.array([0.0, 0.0, 1.0]) - y * y[2]
+            x = x / np.linalg.norm(x)
+            self.hip_frame[side] = (x, np.cross(x, y))
         # How far a held weapon's shaft leans in each fist (degrees; GRIP),
         # for the clip being solved.
         self.grip = {}
+        # Her hand's measures (PADS, PALM_DEPTH) to this body's.
+        self.hand_scale = float(np.linalg.norm(self.prest[self.I["middle_01_l"]] - self.prest[self.I["hand_l"]])) / HAND_LEN
 
     # Anatomy, degrees: how far the forearm turns about its length from the
     # hand's rest (pronation and supination, about neutral either way), and how
@@ -109,7 +154,13 @@ class Rig:
     TWIST_LIMIT = 95.0
     FLEX, EXT, RADIAL, ULNAR = 75.0, 65.0, 22.0, 38.0
 
-    def _bend(self, kind, side, top, mid, end, d_top, d_mid, S, E, W, pole):
+    # How far a hip turns the thigh about its own length, either way
+    # (degrees; internal and external rotation, both about 45 in an adult:
+    # AAOS normal range). A knee keyed past it is swung round the line from
+    # hip to ankle back within it (Rig._hip_within).
+    HIP_ROT = 45.0
+
+    def _bend(self, kind, side, top, mid, end, d_top, d_mid, S, E, W, pole, d_par=None):
         """The upper and lower bones' turns (character-space deltas) that put
         the joint at E and the end at W, the upper bone turned about its length
         so the joint's hinge lies across the bend (no sideways elbow or knee)."""
@@ -154,7 +205,77 @@ class Rig:
             w = qaxis(u, math.degrees(ang))
             d_top, d_mid = qmul(w, d_top), qmul(w, d_mid)
         r2 = qbetween(qrot(d_mid, rest_f), f)
-        return d_top, qmul(r2, d_mid)
+        d_mid = qmul(r2, d_mid)
+        if kind == "leg" and d_par is not None:
+            d_top, d_mid = self._hip_within(side, d_top, d_mid, d_par, S, W)
+        return d_top, d_mid
+
+    def hip_rot(self, side, d_top, d_par):
+        """The hip's axial rotation (degrees, + internal) for a thigh turned
+        d_top under a pelvis turned d_par: the third angle of the hip's joint
+        coordinate system (ISB, Wu et al. 2002: flexion about the pelvis's
+        side-to-side axis, abduction about the floating axis, rotation about
+        the femur), from her rest. Unlike a twist read straight off the
+        thigh's turn, it stays near zero for a thigh lifted and spread wide
+        with the knee over the shin (sitting, a leg swung over a log)."""
+        x, z = self.hip_frame[side]
+        q = qmul(qinv(d_par), d_top)
+        g = math.degrees(math.atan2(-np.dot(z, qrot(q, x)), np.dot(z, qrot(q, z))))
+        return g if side == "r" else -g
+
+    def _hip_within(self, side, d_top, d_mid, d_par, S, W):
+        """A leg whose thigh turns past HIP_ROT about its length, swung round
+        the line from hip to ankle (the ankle stays put) until it is within.
+        The knee is placed by a pole in her space, so where the line from hip
+        to ankle runs near the pole's way (a foot forward under a low hip, a
+        leg flung up) the knee can land on the wrong side of it, and the
+        thigh is wrung up to half round to bend it there: the skin at the hip
+        and groin turns inside out. How far past the range it was keyed
+        folds back toward neutral (at half round, none), so a knee keyed
+        right over to the wrong side comes out straight over the shin, and
+        the turn never jumps as the keyed knee passes round (no switch).
+        Within the range nothing changes."""
+        lim = self.HIP_ROT
+        g = self.hip_rot(side, d_top, d_par)
+        if abs(g) <= lim:
+            return d_top, d_mid
+        want = math.copysign(lim * (180.0 - abs(g)) / (180.0 - lim), g)
+        a = W - S
+        if np.linalg.norm(a) < 1e-9:
+            return d_top, d_mid
+        a = a / np.linalg.norm(a)
+
+        def err(psi):
+            e = self.hip_rot(side, qmul(qaxis(a, psi), d_top), d_par) - want
+            return (e + 180.0) % 360.0 - 180.0
+
+        # The nearest swing that meets it: out both ways in 5-degree steps,
+        # then halved down onto the crossing.
+        e0 = err(0.0)
+        prev = {1: (0.0, e0), -1: (0.0, e0)}
+        hit = None
+        for k in range(1, 37):
+            for sgn in (1, -1):
+                p0, ep = prev[sgn]
+                p1 = sgn * 5.0 * k
+                e1 = err(p1)
+                prev[sgn] = (p1, e1)
+                if hit is None and (ep == 0 or (ep > 0) != (e1 > 0)) and abs(e1 - ep) < 90:
+                    hit = (p0, ep, p1)
+            if hit is not None:
+                break
+        if hit is None:
+            return d_top, d_mid
+        lo, elo, hi = hit
+        for _ in range(30):
+            mid_ = 0.5 * (lo + hi)
+            em = err(mid_)
+            if (em > 0) == (elo > 0):
+                lo, elo = mid_, em
+            else:
+                hi = mid_
+        w = qaxis(a, 0.5 * (lo + hi))
+        return qmul(w, d_top), qmul(w, d_mid)
 
     def _strain(self, d_la, want, ha, fa, side):
         """How a hand keyed to `want` sits on its forearm: the turn about the
@@ -296,6 +417,9 @@ class Rig:
                     gpos[j] = gpos[p] + qrot(grot[p], lp)
         refresh()
         chest = delta[I["spine_03"]]
+        # The hands keyed with a "plant" (side: (plant, ground)): their
+        # fingers are laid on the ground, or kept out of it (Rig._lay).
+        laid = {}
 
         # Arms.
         for side in "lr":
@@ -304,6 +428,9 @@ class Rig:
                 continue
             ua, la, ha = I[f"upperarm_{side}"], I[f"lowerarm_{side}"], I[f"hand_{side}"]
             frame = chest if spec.get("frame", "char") == "chest" else np.array([0, 0, 0, 1.0])
+            # A hand pushing on the ground under her weight bends back further
+            # than she would hold it ("ext"): a push-up's wrist is at 85-90.
+            self.EXT = float(spec.get("ext", Rig.EXT))
             sh = gpos[ua]
             arc_t = pos_t = None
             if "arc" in spec:
@@ -323,6 +450,19 @@ class Rig:
                 target = pos_t
             else:
                 target = gpos[ha]
+            # A hand planted on the ground ("plant", 0..1, on "ground" at
+            # that height): laid flat on it, the wrist at the palm's depth
+            # over it whatever height the key gave (Rig._planted, Rig._lay).
+            plant = float(spec.get("plant", 0.0))
+            if plant > 0:
+                # (Let go of as the key lifts the hand away, wholly by 6 cm up,
+                # so a hand leaving the ground rises as keyed.)
+                target = np.array(target, float)
+                rest = float(spec.get("ground", 0.0)) + PALM_DEPTH[side] * self.hand_scale
+                pull = min(1.0, plant) * min(1.0, max(0.0, 1.0 - (target[1] - rest) / (0.06 * self.hand_scale)))
+                target[1] += pull * (rest - target[1])
+            if "plant" in spec:
+                laid[side] = (plant, float(spec.get("ground", 0.0)))
             s = 1 if side == "l" else -1
             pole = np.array(spec.get("pole", (s * 0.6, -0.3, -1.0)), float)
             pole = qrot(frame, pole) if spec.get("frame") == "chest" else pole
@@ -334,7 +474,7 @@ class Rig:
                 eb, wr = two_bone_ik(gpos[ua], gpos[la], gpos[ha], target, S + elbow_at[side])
             else:
                 eb, wr = two_bone_ik(gpos[ua], gpos[la], gpos[ha], target, gpos[la] + pole)
-            aimed = "blade" in spec or "knuckles" in spec or "thumb" in spec
+            aimed = "blade" in spec or "knuckles" in spec or "thumb" in spec or plant > 0
             # A weapon is held in a diagonal grip: its shaft crosses the palm
             # from the root of the forefinger to the heel of the hand, so it
             # leans from square to the fingers toward them (Rig.grip, from the
@@ -344,6 +484,16 @@ class Rig:
             lq = qaxis([1.0, 0, 0], -lean) if lean else None
 
             def want_for(d_la):
+                """The hand's wanted turn: as keyed, or (planted) toward lying
+                flat on the ground. (Keyed by its fingers' way alone, a hand on
+                the ground kept the roll it had riding the forearm, and stood on
+                its little finger's edge, the fingers 9 cm into the ground.)"""
+                want = want_keyed(d_la)
+                if plant <= 0:
+                    return want
+                return qslerp(want, self._planted(side, spec, frame, qmul(d_la, self.grest[ha])), min(1.0, plant))
+
+            def want_keyed(d_la):
                 """The hand's wanted turn in her space (blade and knuckles; what
                 is not given is kept from the hand riding the forearm)."""
                 if "thumb" in spec and "blade" not in spec and "knuckles" not in spec:
@@ -405,7 +555,7 @@ class Rig:
                 phi = force[side]
                 if phi:
                     d_ua, d_la = config(phi)
-            elif "blade" in spec or "knuckles" in spec:
+            elif "blade" in spec or "knuckles" in spec or plant > 0:
                 # A wrist keyed past what it can do: swing the elbow round (as
                 # little, and as like the last frame, as will do) until it can.
                 # (Not for a thumb's way alone: the wrist is straight, and the
@@ -496,6 +646,7 @@ class Rig:
                 for j in [ha] + self._below(ha):
                     delta[j] = delta[la]
                 refresh()
+        self.EXT = Rig.EXT
 
         # Legs.
         for side in "lr":
@@ -512,7 +663,8 @@ class Rig:
             kb, an = two_bone_ik(gpos[th], gpos[ca], gpos[fo], target, gpos[ca] + pole)
             # The thigh turned about its length so the knee bends straight
             # over the shin, never out to the side.
-            delta[th], delta[ca] = self._bend("leg", side, th, ca, fo, delta[th], delta[ca], gpos[th].copy(), kb, an, pole)
+            delta[th], delta[ca] = self._bend("leg", side, th, ca, fo, delta[th], delta[ca], gpos[th].copy(), kb, an, pole,
+                                        d_par=delta[sk.parent[th]])
             refresh()
             # The foot keeps its own turn in the world, whatever the leg does.
             fq = qeuler(*spec.get("rot", (0, 0, 0)))
@@ -552,9 +704,106 @@ class Rig:
                 for f, w in (("index", 1), ("middle", 0.3), ("ring", -0.4), ("pinky", -1)):
                     j = I[f"{f}_01_{side}"]
                     local[j] = qmul(local[j], qaxis(np.cross([0, 1, 0], self.finger_axis[j]), sp_ * w))
+            if side in laid:
+                self._lay(side, local, grot, gpos, *laid[side])
         pos = self.sk.rest_pos.copy()
         pos[pel] = qrot(qinv(self.grest[sk.parent[pel]]), self.prest[pel] + hp - self.prest[sk.parent[pel]])
         return local, pos
+
+    def _planted(self, side, spec, frame, cur):
+        """A hand lying flat on the ground: palm down, the fingers along the
+        knuckles' way over the ground (else the way they point now), rolled
+        PLANT_ROLL onto the little finger's side and tipped PLANT_PITCH
+        fingers-down."""
+        y = qrot(cur, [0, 1.0, 0])
+        if "knuckles" in spec:
+            y = np.array(spec["knuckles"], float)
+            y = qrot(frame, y) if spec.get("frame") == "chest" else y
+        y = np.array([y[0], 0.0, y[2]])
+        y = y / np.linalg.norm(y) if np.linalg.norm(y) > 1e-6 else np.array([0, 0, 1.0])
+        # Palm down: the hand's +X is the palm's normal on her left, the back's on her right.
+        x = np.array([0.0, -1.0 if side == "l" else 1.0, 0.0])
+        z = np.cross(x, y)
+        # The thumb's side (+Z) rolled up, then the fingers tipped down.
+        roll = PLANT_ROLL if np.cross(y, z)[1] > 0 else -PLANT_ROLL
+        return qmul(qaxis(np.cross(y, [0, -1.0, 0]), PLANT_PITCH), qmul(qaxis(y, roll), qfrom_basis(x, y, z)))
+
+    def _lay(self, side, local, grot, gpos, w, ground):
+        """The fingers and thumb of a hand down at the ground: each finger's
+        three joints bent together (about the line square to its first bone
+        and the palm's normal), as little as keeps every pad (PADS) out of the
+        ground and, by the plant w, brings the finger down to rest on it
+        (LAY_STIFF). (Joint by joint, a knuckle bent down until its own bone's
+        pad touched drove the rest of the finger 2 cm into the ground: the
+        joints beyond cannot bend back that far.) Within LAY_RANGE
+        (THUMB_RANGE); what a joint cannot do is left."""
+        I, k = self.I, self.hand_scale
+        ha = I[f"hand_{side}"]
+        if gpos[ha][1] - ground > 0.32 * k:
+            return
+        palm = qrot(grot[ha], [1.0 if side == "l" else -1.0, 0, 0])
+        floor = ground + 0.002 * k
+        w = min(1.0, max(0.0, w))
+        for f, pads in PADS.items():
+            js = [I[f"{f}_0{n}_{side}"] for n in (1, 2, 3)]
+            rng = THUMB_RANGE if f == "thumb" else LAY_RANGE
+            gs = [qmul(grot[ha], local[js[0]])]
+            for j in js[1:]:
+                gs.append(qmul(gs[-1], local[j]))
+            offs = [qrot(qinv(self.grest[js[n]]), self.prest[js[n + 1]] - self.prest[js[n]]) for n in (0, 1)]
+            offs.append(np.array([0.0, 0.75 * pads[3] * k, 0.0]))
+            vs = [qrot(g, o) for g, o in zip(gs, offs)]
+            a = np.cross(vs[0], palm)
+            if np.linalg.norm(a) < 1e-9:
+                continue
+            a = a / np.linalg.norm(a)
+            # Each joint's bend now (from the bone before it, about a) and
+            # the turns it may take.
+            grids, back = [], qrot(grot[ha], [0, 1.0, 0])
+            for n, v in enumerate(vs):
+                bp = back - a * np.dot(back, a)
+                th0 = math.degrees(math.atan2(float(np.dot(np.cross(bp, v), a)), float(np.dot(bp, v))))
+                lo = max(-40.0, min(0.0, rng[n + 1][0] - th0))
+                hi = min(60.0, max(0.0, rng[n + 1][1] - th0))
+                grids.append((lo, hi))
+                back = v / np.linalg.norm(v)
+            # Turned about a by the sums of the joints' turns, each bone's drop
+            # and its pad's lowest point (at its far end) over the ground.
+            A = [(v[1], np.cross(a, v)[1], a[1] * np.dot(a, v), np.linalg.norm(v)) for v in vs]
+            R = [pads[n] * k for n in range(3)]
+
+            def cost(t1, t2, t3):
+                y, pen, gap, c = gpos[js[0]][1] - floor, 0.0, None, 0.0
+                for n, C in enumerate((t1, t1 + t2, t1 + t2 + t3)):
+                    vy, cy, ay, L = A[n]
+                    cr, sr = np.cos(np.radians(C)), np.sin(np.radians(C))
+                    d = vy * cr + cy * sr + ay * (1 - cr)
+                    y = y + d
+                    low = y - R[n] * np.sqrt(np.maximum(0.0, 1.0 - (d / L) ** 2))
+                    pen = pen + np.maximum(0.0, -low)
+                    gap = low  # (the tip's pad: the finger rests along the ground to it)
+                mm = 0.001 * k
+                gap = np.minimum(np.maximum(gap, 0.0), 10 * mm)
+                for n, t in enumerate((t1, t2, t3)):
+                    c = c + LAY_STIFF[n] * (t / 10.0) ** 2
+                return c + w * (gap / (4 * mm)) ** 2 + 10.0 * (pen / mm) ** 2
+
+            best = None
+            for step, span in ((3.0, None), (1.0, 3.0)):
+                axes = []
+                for n, (lo, hi) in enumerate(grids):
+                    if span is None:
+                        g = np.arange(lo, hi + 1e-6, step)
+                    else:
+                        g = np.arange(max(lo, best[n] - span), min(hi, best[n] + span) + 1e-6, step)
+                    axes.append(np.unique(np.r_[g, 0.0] if lo <= 0.0 <= hi else g))
+                T = np.meshgrid(*axes, indexing="ij")
+                E = cost(*T)
+                i = np.unravel_index(int(np.argmin(E)), E.shape)
+                best = [float(T[n][i]) for n in range(3)]
+            for n, t in enumerate(best):
+                if t:
+                    local[js[n]] = qmul(local[js[n]], qaxis(qrot(qinv(gs[n]), a), t))
 
     def _below(self, j):
         if not hasattr(self, "_below_cache"):
@@ -607,6 +856,8 @@ FINGER_PRESETS = {
     "rest": {"curl": 0, "thumb": 0},
     "relaxed": {"curl": 0.28, "thumb": 0.15, "cascade": 0.25},
     "open": {"curl": 0.05, "thumb": 0.0, "spread": 4},
+    # Pressed flat on the ground under her weight: bent back a little.
+    "flat": {"curl": -0.12, "thumb": 0.0, "spread": 6},
     "spread": {"curl": 0.0, "thumb": -0.1, "spread": 10},
     "claw": {"curl": 0.45, "thumb": 0.2, "spread": 9, "tip": 0.6},
     "grip": {"curl": 0.9, "thumb": 0.65, "cascade": 0.08},
@@ -748,7 +999,8 @@ def smoothstep_(x):
 
 def _zero_default(n):
     head = n.split("#")[0]
-    return head.startswith(("hips.", "spine", "neck", "head", "clav_")) or head.endswith((".rot", ".toe"))
+    # (A hand a key does not plant is off the ground there.)
+    return head.startswith(("hips.", "spine", "neck", "head", "clav_")) or head.endswith((".rot", ".toe", ".plant"))
 
 
 class Track:

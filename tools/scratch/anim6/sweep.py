@@ -7,8 +7,8 @@ import math
 import sys
 from pathlib import Path
 
-WT = Path(r"C:\Users\munch\Desktop\survivorsunchained\.claude\worktrees\agent-ae2a9884e3e51609c")
-S = Path(r"C:\Users\munch\AppData\Local\Temp\claude\C--Users-munch-Desktop-survivorsunchained\0b33992d-1e38-4eb8-80a1-d5c23b1a44e6\scratchpad\an")
+WT = Path(r"C:\Users\munch\Desktop\survivorsunchained\.claude\worktrees\agent-af8dbda3195e438e4")
+S = Path(r"C:\Users\munch\AppData\Local\Temp\claude\C--Users-munch-Desktop-survivorsunchained\181eef02-779f-45de-b419-31a949a4d27e\scratchpad\an")
 sys.path.insert(0, str(WT / "tools" / "anim"))
 
 import numpy as np  # noqa: E402
@@ -56,10 +56,21 @@ def bone_dir(sk, rot, a, c):
     return d / np.linalg.norm(d)
 
 
+def carried_front(sk, rot, bone):
+    """Her front as the bone above a joint carries it from rest: the hinge
+    is read across that bone and its own front, not the world's (with the
+    world's, a thigh lifted past level bent its knee backwards)."""
+    from rig import qrot
+    grot, _ = sk.fk(rot[None])
+    g0, _ = sk.rest_globals()
+    j = sk.index[bone]
+    return qrot(qmul(grot[0, j], qinv(g0[0, j])), FRONT)
+
+
 def elbow(s, deg):
     def f(sk, rot):
         u = bone_dir(sk, rot, f"upperarm_{s}", f"lowerarm_{s}")
-        h = np.cross(u, FRONT)
+        h = np.cross(u, carried_front(sk, rot, f"upperarm_{s}"))
         return turned(sk, rot, sk.index[f"lowerarm_{s}"], h, deg)
     return f
 
@@ -67,7 +78,7 @@ def elbow(s, deg):
 def knee(s, deg):
     def f(sk, rot):
         u = bone_dir(sk, rot, f"thigh_{s}", f"calf_{s}")
-        h = np.cross(u, -FRONT)
+        h = np.cross(u, -carried_front(sk, rot, f"thigh_{s}"))
         return turned(sk, rot, sk.index[f"calf_{s}"], h, deg)
     return f
 
