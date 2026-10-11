@@ -77,3 +77,30 @@ if os.path.exists(os.path.join(D, "off.jsonl")) and os.path.exists(os.path.join(
             raw = val[hc] / st.median([val[c] for c in C if c != hc])
             norm = (val[hc] / base[hc]) / st.median([val[c] / base[c] for c in C if c != hc])
             print(f'{road:12} T{t}   {raw:5.2f}      {norm:5.2f}{"" if norm <= 1.25 else " *"}')
+
+
+# The judge's fit (12 Oct): log dmg/min at 25 = calling + road drafted + home x road, per tier, over the
+# off-calling runs and the greedy runs (road "greedy"). exp(home x road) is what home adds to the same
+# skills, free of each calling's base strength. Target 1.00-1.25 ("home is easier and better", at most x1.25).
+try:
+    import numpy as np, math
+    if os.path.exists(os.path.join(D, "off.jsonl")) and os.path.exists(os.path.join(D, "full.jsonl")):
+        runs = [json.loads(l) for f in ("off.jsonl", "full.jsonl") for l in open(os.path.join(D, f)) if l.strip()]
+        print("== on-calling, fitted home term per road (calling + road + home x road, per tier); target 1.00-1.25")
+        callings = ["warden", "reaver", "arcanist", "stalker"]
+        roads = list(home)
+        for t in (1, 2, 3, 4):
+            rows, ys = [], []
+            for r in runs:
+                if r["Spec"]["Tier"] != t or len(r["ByMinute"]) < 25: continue
+                road = r["Spec"].get("For") or "greedy"
+                c = r["Spec"]["Calling"]
+                x = [1.0 if c == k else 0.0 for k in callings] + [1.0 if road == k else 0.0 for k in roads]
+                x += [1.0 if (road == k and home[k] == c) else 0.0 for k in roads]
+                rows.append(x); ys.append(math.log(max(1.0, r["ByMinute"][24]["Damage"])))
+            if not rows: continue
+            beta = np.linalg.lstsq(np.array(rows), np.array(ys), rcond=None)[0]
+            h = beta[len(callings) + len(roads):]
+            print(f"T{t}: " + " | ".join(f"{k} {math.exp(v):.2f}{'' if 1.0 <= math.exp(v) <= 1.25 else '*'}" for k, v in zip(roads, h)))
+except ImportError:
+    print("(numpy missing: no fitted on-calling)")
