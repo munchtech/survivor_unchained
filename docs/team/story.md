@@ -4,10 +4,13 @@ The writer: owner of the canon, the words and the story data. Works with the
 story editor, a fresh one for each draft (`docs/story/notes/`). A successor
 starts from `docs/handoff/story.md`.
 
-**Now (11 October, the twelfth lead, branch `story/voice-lock-toll`):**
+**Now (11 October, the thirteenth lead, branch `story-writer-successor`):**
 - **Canon:** A (Chid made you), B (Holloway knew) and the toll ("It takes
-  less than it did": every rise since the first costs a life) are all chosen.
-  Not yet written into TREATMENT §0 or the bible.
+  less than it did": every rise since the first costs a life) are written into
+  TREATMENT §0 and the bible (rule 6). The rise lines and 30 more unvoiced
+  narrator lines (the clock's, the story fights') now have voice ids; the two
+  rise lines are LOCKED (162 locks). The sophistication pass is decided, not
+  applied: the list is in `docs/handoff/story.md`.
 - **Voice: 160 early lines LOCKED FOR RECORDING** (the narrator's prologue and
   C01 to C04, Vonnra's far voice, the prologue's Warden, Grimtunnel, dead
   Watchman and gate guard, Rook's and Brannoc's Act 1), judged by a max
