@@ -234,7 +234,7 @@ def _folded(mb, weld, nw):
     return out
 
 
-def mend_folds(me, obj=None):
+def mend_folds(me, obj=None, free=None, normals=True):
     nl = len(me.loops)
     cn = np.empty(nl * 3, np.float32)
     me.corner_normals.foreach_get("vector", cn)
@@ -267,7 +267,7 @@ def mend_folds(me, obj=None):
         bad = _folded(mb, weld, len(key))
         if first is None:
             first = len(bad)
-        move = {weld[v.index] for f in bad for v in f.verts} - still
+        move = {weld[v.index] for f in bad for v in f.verts if free is None or free(v.co)} - still
         if not move:
             break
         new = {k: sum((copies[r][0].co for r in ring[k]), Vector()) / max(len(ring[k]), 1) for k in move}
@@ -280,6 +280,9 @@ def mend_folds(me, obj=None):
     mb.to_mesh(me)
     me.update()
     mb.free()
+    if not normals:
+        print("MEND her folds (before cutting): %d folded, %d left, %d points moved" % (first, left, len(moved)))
+        return
     # each corner against the mean normal of the corners at the places round it
     lw = weld[lv]
     S = np.zeros((len(key), 3))
@@ -307,7 +310,11 @@ def mend_folds(me, obj=None):
 # for her normals): cut from the unmended surface, the Arcanist's suit kept
 # the pinched fold at her upper-outer left breast that the mend took out of
 # her skin (animation's judge 11, B2; judge 6).
-mend_folds(body.data, body)
+# OFF by default (MEND_PRECUT=1): it broke the Warden's plate cups (they ran
+# together across her cleavage and lost a binding, h4), and still did with
+# only positions off her cleavage mended. B2 wants another way.
+if os.environ.get("MEND_PRECUT", "0") == "1":
+    mend_folds(body.data, body, free=lambda co: abs(co.x) > 0.05, normals=False)
 
 # ------------------------------------------------------------ her surface --
 # Welded (the paint's seams split her vertices) and in triangles.
@@ -3793,22 +3800,82 @@ def arcanist():
     mantle = OR(cap(shoulder("l"), 0.14), cap(shoulder("r"), 0.14),
                 AND(Z - 1.43, (Y - 0.0), 0.3 - arms))
     # The owner's option (11 October): a white feathery trim along the plunge,
-    # "only increase the skin we cover slightly": DOWN_IN over her skin,
-    # DOWN_OUT over the corset, a soft roll standing on the corset (its fold
-    # stands up to 12 mm off her at the foot) with fur shells grown on it.
-    ud_ = np.where(FRONT > 0.5, u_dist(X, Z), 1.0)
-    down_field = AND(np.minimum(ud_ + DOWN_IN, DOWN_OUT - ud_), (neck_top - 0.006) - Z, Z - (v_lo - 0.03))
-
-    def down_roll(pos, tris):
-        cp, ct, _, cth = SHEET["arcanist.corset"]
+    # "only increase the skin we cover slightly". A soft roll swept along the
+    # corset's own bound edge (smoothed), DOWN_IN over her skin and DOWN_OUT
+    # over the corset, flat beneath, fur shells grown on it (tuned as down),
+    # tapered to nothing at her neck. (Cut from her skin as a band, it came
+    # out as torn paper ribbons, h4.)
+    def down_tube():
+        cp, ct, cw, cth = SHEET["arcanist.corset"]
         cn = vertex_normals(cp, ct)
-        _, j_ = cKDTree(cp).query(pos)
-        above = ((pos - cp[j_] - cn[j_] * cth) * cn[j_]).sum(1)
+        best = None
+        for lp in edge_loops(ct):
+            lp = np.array(lp)
+            q = cp[lp]
+            on = (np.abs(u_dist(q[:, 0], q[:, 2])) < 0.008) & (q[:, 2] > v_lo - 0.02) & (q[:, 2] < head("neck_01")[2] + 0.05) & (q[:, 1] < 0)
+            if on.sum() > (0 if best is None else best[1].sum()):
+                best = (lp, on)
+        lp, on = best
+        # (the longest run round the loop that is on the plunge)
+        k0 = int(np.argmin(on))
+        lp, on = np.roll(lp, -k0), np.roll(on, -k0)
+        runs, s0 = [], None
+        for k, v in enumerate(np.r_[on, False]):
+            if v and s0 is None:
+                s0 = k
+            if not v and s0 is not None:
+                runs.append((s0, k))
+                s0 = None
+        a0, a1 = max(runs, key=lambda r: r[1] - r[0])
+        C = cp[lp[a0:a1]]
+        C = C[C[:, 2] <= min(C[0, 2], C[-1, 2]) + 1e-6]   # (both ends as high, so it mirrors onto itself)
+        L = np.r_[0, np.cumsum(np.linalg.norm(np.diff(C, axis=0), axis=1))]
+        t = np.arange(0, L[-1], 0.0015)
+        C = np.stack([np.interp(t, L, C[:, k]) for k in range(3)], 1)
+        # (made the same both sides, its mirror's average, and eased over about
+        # 15 mm: along the edge as bound, the foot's kinks came through, h4)
+        C = 0.5 * (C + C[::-1] * np.array([-1.0, 1.0, 1.0]))
+        for _ in range(200):
+            C[1:-1] = 0.25 * C[:-2] + 0.5 * C[1:-1] + 0.25 * C[2:]
+        _, jn = cKDTree(cp).query(C)
+        n_ = cn[jn]
+        T_ = np.gradient(C, axis=0)
+        T_ /= np.linalg.norm(T_, axis=1)[:, None]
+        b_ = np.cross(T_, n_)
+        b_ /= np.linalg.norm(b_, axis=1)[:, None]
+        # (b toward the corset: the side its sheet lies on)
+        mid = cp[cKDTree(cp).query(C + b_ * 0.006)[1]] - C
+        if ((mid * b_).sum(1) < 0).mean() > 0.5:
+            b_ = -b_
+        n_ = np.cross(b_, T_)
+        w_ = (DOWN_IN + DOWN_OUT) / 2
+        off = (DOWN_OUT - DOWN_IN) / 2
+        s_ = np.r_[0, np.cumsum(np.linalg.norm(np.diff(C, axis=0), axis=1))]
+        taper = np.clip(np.minimum(s_, s_[-1] - s_) / 0.015, 0.03, 1.0)
+        taper = taper * taper * (3 - 2 * taper)
+        nseg = 18
+        ph = np.linspace(0, 2 * np.pi, nseg, endpoint=False)
+        cx, cy = np.cos(ph), np.maximum(np.sin(ph), -0.25)
+        cen = C + n_ * (cth + 0.0022) + b_ * off * taper[:, None]
+        pos = (cen[:, None, :] + (b_[:, None, :] * cx[None, :, None] * w_ + n_[:, None, :] * cy[None, :, None] * 0.0042) * taper[:, None, None]).reshape(-1, 3)
+        rows = len(C)
+        tris = []
+        for r in range(rows - 1):
+            for k in range(nseg):
+                a, b2, c2, d = r * nseg + k, r * nseg + (k + 1) % nseg, (r + 1) * nseg + k, (r + 1) * nseg + (k + 1) % nseg
+                tris += [(a, c2, b2), (b2, c2, d)]
+        tris = np.array(tris)
         nr_ = vertex_normals(pos, tris)
-        pos = pos + nr_ * np.maximum(0.0035 - above, 0)[:, None]
-        d = u_dist(pos[:, 0], pos[:, 2])
-        t = np.clip((d - (DOWN_OUT - DOWN_IN) / 2) / ((DOWN_OUT + DOWN_IN) / 2), -1, 1)
-        return pos + nr_ * (0.004 * np.sqrt(1 - t * t))[:, None]
+        if ((nr_.reshape(rows, nseg, 3) * (pos.reshape(rows, nseg, 3) - cen[:, None, :])).sum(2).mean() < 0):
+            tris = tris[:, ::-1]
+        # (its weights the corset's under it, eased along it)
+        wt = cw[jn].astype(float)
+        for _ in range(30):
+            wt[1:-1] = 0.25 * wt[:-2] + 0.5 * wt[1:-1] + 0.25 * wt[2:]
+        wt = four_bones(np.repeat(wt, nseg, 0))
+        print("DOWN arcanist.down: %.0f mm along the plunge, %d rings" % (s_[-1] * 1000, rows))
+        return [finish("arcanist.down", pos, wt, tris, "down", 0.0, 0.0, 10 ** 6, scraps=False)]
+
     global GARTER_Z
     GARTER_Z = CROTCH + 0.2
     out = [
@@ -3817,8 +3884,7 @@ def arcanist():
                trim=gold(0.004), snap=False, hides=True, flare=(0.034, 0.03)),
         *piece("arcanist.corset", corset, "plumleather", lift=0.0035, smooth=8, iron=60, trim=gold(0.008), keep_off=("Head",), filled=True, edge=120, soften=80,
                bridge=True, cut=exact, stiff=[(0.03, front_panel), (0.03, collar), plunge_fold, taut_gore, plunge_rim]),
-        *(piece("arcanist.down", down_field, "down", lift=0.0075, thick=0.0015, smooth=6, soften=4, bind=False, keep_off=("Head",),
-                stiff=[down_roll]) if PLUNGE_TRIM == "down" else []),
+        *(down_tube() if PLUNGE_TRIM == "down" else []),
         # (judge 4: the front read as moulded latex. Four stitched boning
         # channels, as a corset's front is made, from under her cups to
         # her hips, raised on the suit and moving with it.)

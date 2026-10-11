@@ -311,7 +311,8 @@ func fur(mi, shells = 20):
 			sm.shader = load("res://shaders/sheer.gdshader")
 			mi.set_surface_override_material(si, sm)
 			continue
-		if src == null or src.resource_name != "fur": continue
+		if src == null or (src.resource_name != "fur" and src.resource_name != "down"): continue
+		var down = src.resource_name == "down"   # (as People.Fur: the arcanist's feathery trim)
 		var first = null
 		var last = null
 		for i in shells + 1:
@@ -320,6 +321,9 @@ func fur(mi, shells = 20):
 			m.set_shader_parameter("albedo_tex", src.albedo_texture)
 			m.set_shader_parameter("tint", src.albedo_color)
 			m.set_shader_parameter("layer", float(i) / shells)
+			if down:
+				for kv in [["fur_length", 0.009], ["density", 520.0], ["clump", 0.15], ["root_dark", 0.78], ["backlight", 0.6], ["droop", 0.12]]:
+					m.set_shader_parameter(kv[0], kv[1])
 			if last: last.next_pass = m
 			else: first = m
 			last = m
