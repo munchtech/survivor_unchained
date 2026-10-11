@@ -3375,15 +3375,20 @@ def ranger():
                      soften=10, studs="darksteel")
     for sd in "lr":
         cz = leg_z(sd, tops[sd] + 0.02)
+        # (the right boot, over her knee in front, cut 8 cm lower behind, as a
+        # riding boot is, its cuff with it: cut level, the cuff stood 24 mm
+        # into the back of her knee as she knelt)
+        dip = {"r": 0.08, "l": 0.0}
         out += [
             *piece(f"ranger.bracer_{sd}", limb(sd, ELBOW_S + 0.04, WRIST_S - 0.015, legs=False), "bronze", lift=0.007, smooth=8,
                    soften=10, trim=edge(0.006, "brownleather"), studs="darksteel"),
             *piece(f"ranger.glove_{sd}", AND(limb(sd, WRIST_S - 0.03, 9.9, legs=False), 0.4 - fingers), "forestleather", lift=0.0015,
                    thick=0.0012, bevel=0.0004, soften=8),
-            *piece(f"ranger.boot_{sd}", limb(sd, tops[sd], 9.9), "forestleather", lift=0.005 if sd == "r" else 0.0065, smooth=8,
+            *piece(f"ranger.boot_{sd}", limb(sd, tops[sd], 9.9, front_dip=-dip[sd]), "forestleather", lift=0.005 if sd == "r" else 0.0065, smooth=8,
                    iron=300, hull=LEG_S[sd] - ANKLE_S - 0.03, soften=10),
-            *girdle(f"ranger.cuff_{sd}", lambda a, cz=cz: np.full_like(a, cz), 0.06, "forestleather", lift=0.01 if sd == "r" else 0.012,
-                    thick=0.003, trim=edge(0.005), mask=(LEGW[sd] > 0.6) & (np.abs(Z - cz) < 0.07), flare=0.012),
+            *girdle(f"ranger.cuff_{sd}", lambda a, cz=cz, d=dip[sd]: cz - d * (1 - np.cos(a)) / 2, 0.06, "forestleather",
+                    lift=0.01 if sd == "r" else 0.012, thick=0.003, trim=edge(0.005),
+                    mask=(LEGW[sd] > 0.6) & (np.abs(Z - cz) < 0.07 + dip[sd]), flare=0.012),
         ]
     # The right boot laced up the front of her shin, below its cuff.
     kx = LEG["r"][1][0]
