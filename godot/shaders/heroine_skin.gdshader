@@ -128,6 +128,30 @@ uniform vec3 brow_colour : source_color = vec3(0.2, 0.15, 0.12);
 uniform int tuck_channel = -1;
 uniform float tuck = 0.010;
 
+// The light through her (BACKLIGHT): how much, its colour, and how far it is kept to lamps behind her (it has no
+// thickness mask: from a lamp in front it lit the underside of her jaw, away from it, red).
+uniform float backlight = 0.18;
+uniform vec3 backlight_colour = vec3(1.0, 0.45, 0.35);
+uniform float backlight_behind = 0.0;
+// Her shade richer (a lamp's light where it reaches her at a low angle, ndl shade_from to shade_to, times shade_tint,
+// its lightness kept): where she faces down (shade_down, world normal's -y from down_from to down_to) and where
+// ao_map's blue says (shade_zone). (Tried 11 October 2026: ungated it misses the shade under her jaw, lit there
+// by the fill at a high ndl; a test switch, 1 none.)
+uniform vec3 shade_tint = vec3(1.0);
+uniform float shade_from = -0.2;
+uniform float shade_to = 0.5;
+uniform float shade_down = 0.0;
+uniform float down_from = 0.0;
+uniform float down_to = 0.6;
+uniform float shade_zone = 0.0;
+// Her rim (`rim`) kept to where the lamp reaches her (rim_gate: smoothstep(0, 0.3, ndl)), and how much of her colour.
+uniform float rim_gate = 0.0;
+uniform float rim_tint = 0.6;
+// The sheen a lamp behind her gives, against one in front (People.HerBackSpec): skin's fine relief breaks up a light
+// that grazes it from behind; at full, the cool rim lamp lay over her collarbones and upper chest as a lilac sheen.
+uniform float back_spec = 1.0;
+varying float shade_w;
+
 void vertex() {
 	if (tuck_channel >= 0) {
 		float h = tuck_channel == 0 ? COLOR.r : tuck_channel == 1 ? COLOR.g : tuck_channel == 2 ? COLOR.b : COLOR.a;
@@ -215,7 +239,9 @@ void fragment() {
 	AO = ao;
 	AO_LIGHT_AFFECT = ao_light;
 	SSS_STRENGTH = scatter;
-	BACKLIGHT = ALBEDO * vec3(1.0, 0.45, 0.35) * 0.18;
+	BACKLIGHT = ALBEDO * backlight_colour * backlight;
+	float wd = (INV_VIEW_MATRIX * vec4(NORMAL, 0.0)).y;
+	shade_w = mix(1.0, smoothstep(down_from, down_to, -wd), shade_down) * mix(1.0, aot.b, shade_zone);
 	ALBEDO *= ambient_tint;
 }
 
@@ -245,15 +271,23 @@ void light() {
 	float burley = (1.0 + fd90 * schlick(c_ndv)) * (1.0 + fd90 * schlick(c_ndl));
 	vec3 diffuse = soft * burley / PI;
 	vec3 un = 1.0 / max(ambient_tint, vec3(1e-3));        // (the lamps' light on her as without the tint)
-	DIFFUSE_LIGHT += LIGHT_COLOR * diffuse * ATTENUATION * un;
+	vec3 rich = vec3(1.0);
+	if (shade_w > 0.0 && any(notEqual(shade_tint, vec3(1.0)))) {
+		vec3 al = ALBEDO * un;
+		vec3 lw = vec3(0.2126, 0.7152, 0.0722);
+		vec3 tn = shade_tint * dot(al, lw) / max(dot(al * shade_tint, lw), 1e-4);
+		rich = mix(vec3(1.0), tn, shade_w * (1.0 - smoothstep(shade_from, shade_to, ndl)));
+	}
+	DIFFUSE_LIGHT += LIGHT_COLOR * diffuse * ATTENUATION * un * rich;
 	// the fine down at her edges, against a light from behind her only (lit
 	// from the front, it brightened every edge of her: a pale ribbon down her
 	// cheek where her dark hair met it, her temples white)
 	float rim_light = pow(max(1e-4, 1.0 - c_ndv), max(0.0, (1.0 - ROUGHNESS) * 16.0));
 	float behind = smoothstep(-0.1, 0.6, dot(-LIGHT, VIEW));
-	DIFFUSE_LIGHT += rim_light * behind * rim * mix(vec3(1.0), ALBEDO * un, 0.6) * LIGHT_COLOR * ATTENUATION * un;
+	rim_light *= mix(1.0, smoothstep(0.0, 0.3, ndl), rim_gate);
+	DIFFUSE_LIGHT += rim_light * behind * rim * mix(vec3(1.0), ALBEDO * un, rim_tint) * LIGHT_COLOR * ATTENUATION * un;
 	// light through her where she is thin
-	DIFFUSE_LIGHT += LIGHT_COLOR * max(vec3(1.0 / PI) - diffuse, vec3(0.0)) * BACKLIGHT * ATTENUATION * un;
+	DIFFUSE_LIGHT += LIGHT_COLOR * max(vec3(1.0 / PI) - diffuse, vec3(0.0)) * BACKLIGHT * ATTENUATION * un * mix(1.0, behind, backlight_behind);
 	if (c_ndl > 0.0) {
 		float a = ROUGHNESS * ROUGHNESS;
 		float da = c_ndh * a;
@@ -263,6 +297,6 @@ void light() {
 		float f0 = 0.16 * sheen * sheen;
 		float f90 = clamp(f0 * 50.0, 0.0, 1.0);
 		float f = f0 + (f90 - f0) * schlick(c_ldh);
-		SPECULAR_LIGHT += c_ndl * d_ggx * f * v_ggx * LIGHT_COLOR * ATTENUATION * SPECULAR_AMOUNT;
+		SPECULAR_LIGHT += c_ndl * d_ggx * f * v_ggx * LIGHT_COLOR * ATTENUATION * SPECULAR_AMOUNT * mix(1.0, back_spec, behind);
 	}
 }

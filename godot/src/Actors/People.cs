@@ -1012,6 +1012,7 @@ public static class People
         {
             m.SetShaderParameter("face_tone", FaceTone(look));
             m.SetShaderParameter("scatter", HerScatter);
+            m.SetShaderParameter("back_spec", HerBackSpec);
         }
         // A body's relief baked from its sculpt (the hero's), under the pores.
         if (src.NormalTexture != null)
@@ -1098,6 +1099,12 @@ public static class People
     /// 0.74 / 0.92 / 0.99 and Doe's brows 0.20; the soft edge of her lit side is the shader's own (`terminator`).
     /// (0.2 smeared as 0.38 did.)</summary>
     const float HerScatter = 0.1f;
+
+    /// <summary>Her sheen from a lamp behind her, against one in front (the skin shader's back_spec): the Look's cool
+    /// rim lamp lay over her collarbones and upper chest by her armour as a lilac sheen on every face (Oklab hue 34°
+    /// against her skin's 54° round it, 0.06 lighter; judge n2, 11 October 2026). At 0.3: hue 46°, 0.02 lighter
+    /// (Highborn), her lit cheek as it was. Every part of her alike, so no step at her neck's seam.</summary>
+    const float HerBackSpec = 0.3f;
 
     /// <summary>Her skin in the sky's light against the lamps' (the skin shader's ambient_tint): light from all
     /// round goes deeper into skin and comes out redder. Without it, under her jaw, in the key's shadow, the night
