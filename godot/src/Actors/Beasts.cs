@@ -115,54 +115,35 @@ public static class Beasts
 
     /* -------------------------------------------------------------- boar -- */
 
-    const string BHips = "Hips_04", BChest = "Spine1_06", BHead = "Head_021", BForeL = "LEFT_FrontLeg_HipSHJnt_08", BForeR = "RIGHT_FrontLeg_HipSHJnt_013",
-        BHindR = "RIGHT_HindLeg_HipSHJnt_046", BTail = "Tail_01_01SHJnt_00", BHindL = "LEFT_HindLeg_HipSHJnt_041",
-        BKneeL = "LEFT_FrontLeg_KneeSHJnt_09", BKneeR = "RIGHT_FrontLeg_KneeSHJnt_014", BHockL = "LEFT_HindLeg_Knee1SHJnt_042", BHockR = "RIGHT_HindLeg_Knee1SHJnt_047";
-
-    static readonly Def Boar = new("beast_boar", "res://art/beasts/boar.glb", 0.9f, BHips, BHead, new()
+    /// <summary>The Verge's tusker: ours, made from our own sculpt and painted, rigged on the
+    /// four-legged skeleton the wolf will share, with clips keyed for each thing it does
+    /// (tools/creatures: boar_build.py, quadruped.py, boar_clips.py). A length of 0 plays the
+    /// whole clip. Its trot and its gallop carry it at Pace and ChargePace, so the crowd runs
+    /// them at the speed it goes.</summary>
+    static readonly Def Boar = new("beast_boar", "res://art/beasts/boar.gltf", 0.82f, "Pelvis", "Head", new()
     {
-        new("move", "Armature|run", 0, 0.53),
-        new("idle", "Armature|observing", 2.5, 3.5, Seam: true),
-        new("rise", "Armature|observing", 2.5, 3.5, Seam: true),
-        // Pawing the ground, head down, tail lashing.
-        new("windup", "Armature|observing", 2.5, 0.6, t =>
-        {
-            double a = t * Math.Tau;
-            return new Vat.Moves { Move = new(0, -0.04f, 0) }.Bone(BHips, 0.1).Bone(BHead, 0.35)
-                .Bone(BForeL, -0.6 + Math.Max(0, Math.Sin(a * 2)) * 0.9).Bone(BForeR, 0.1).Bone(BTail, -0.4, Math.Sin(a * 6) * 0.3);
-        }, Hold: true),
-        // The charge's hook: tusks up through whatever is there.
-        new("attack", "Armature|run", 0.1, 0.45, t =>
-        {
-            double k = Math.Sin(t * Math.PI);
-            return new Vat.Moves().Bone(BHead, -0.5 * k).Shift(BHead, 0, 0.05 * k, 0.1 * k).Bone(BChest, -0.1 * k).Bone(BForeL, -0.4 * k).Bone(BForeR, -0.4 * k);
-        }, Hold: true),
-        new("hit", "Armature|observing", 2.5, 0.3, t =>
-        {
-            double k = Math.Sin(t * Math.PI);
-            return new Vat.Moves().Bone(BChest, 0, 0, 0.12 * k).Bone(BHead, -0.3 * k);
-        }, Hold: true),
-        // Three ways down (VatAsset.Death): keeled over onto one side, onto
-        // the other with the legs gone stiff, or sunk onto its belly.
-        new("die", "Armature|observing", 2.5, 0.8, t =>
-        {
-            double e = Ease(t, 1.4);
-            return new Vat.Moves { Turn = new(0, 0, (float)(-1.5 * e)) }.Shift(BHips, 0, -0.15 * e, 0).Bone(BHead, 0.3 * e).Bone(BForeL, 0.6 * e).Bone(BHindR, -0.5 * e);
-        }, Hold: true),
-        new("die2", "Armature|observing", 2.5, 0.8, t =>
-        {
-            double e = Ease(t, 1.4);
-            return new Vat.Moves { Turn = new(0, 0, (float)(1.5 * e)) }.Shift(BHips, 0, -0.15 * e, 0).Bone(BHead, -0.35 * e).Bone(BChest, 0, 0, -0.1 * e)
-                .Bone(BForeL, -0.45 * e).Bone(BForeR, -0.6 * e).Bone(BHindL, 0.5 * e).Bone(BHindR, 0.35 * e).Bone(BTail, 0.5 * e);
-        }, Hold: true),
-        new("die3", "Armature|observing", 2.5, 0.8, t =>
-        {
-            double e = Ease(t, 1.6);
-            return new Vat.Moves { Turn = new(0, 0, (float)(0.42 * e)), Move = new(0, (float)(-0.26 * e), 0) }.Bone(BHead, 0.45 * e, 0.35 * e, 0.3 * e)
-                .Bone(BForeL, 0.9 * e).Bone(BForeR, 0.8 * e).Bone(BKneeL, -1.8 * e).Bone(BKneeR, -1.6 * e)
-                .Bone(BHindL, -0.8 * e).Bone(BHindR, -0.7 * e).Bone(BHockL, 1.6 * e).Bone(BHockR, 1.5 * e).Bone(BTail, 0.4 * e);
-        }, Hold: true),
-    });
+        new("move", "trot", 0, 0),
+        // Down the lane (EnemyState.Lunging): head low, the back gathering and stretching.
+        new("charge", "gallop", 0, 0),
+        new("idle", "idle", 0, 0),
+        new("rise", "idle", 0, 0),
+        // Head down, tusks low, a forehoof raking the ground: looped for however long it plants.
+        new("windup", "paw", 0, 0, Loop: true),
+        // The hook: down, then the tusks thrown up and out.
+        new("attack", "gore", 0, 0),
+        new("hit", "flinch", 0, 0),
+        // Run into a tree and stunned: the head shaken, the legs wandering.
+        new("stun", "dazed", 0, 0, Loop: true),
+        // Three ways down (VatAsset.Death): over onto its left side, slack; onto its right
+        // with the legs stiff; sunk onto its belly.
+        new("die", "die", 0, 0),
+        new("die2", "die2", 0, 0),
+        new("die3", "die3", 0, 0),
+    }, Pace: BoarPace, ChargePace: BoarChargePace);
+
+    /// <summary>How fast the boar's trot and gallop carry it at their natural rate, at its
+    /// height (boar_build.py prints them).</summary>
+    const double BoarPace = 1.115, BoarChargePace = 4.114;
 
     /* --------------------------------------------------------- lamplings -- */
 

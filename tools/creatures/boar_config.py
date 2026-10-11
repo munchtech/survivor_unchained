@@ -19,7 +19,7 @@ CONFIG = {
     "cut": {
         "tail_y": 0.665,                              # behind the rump (the tail hangs there)
         "ears": [(0.24, -0.38, 0.75, 0.12)],          # (x, y, z, radius)
-        "tusks": (-0.58, 0.06, 0.40, 0.62),           # forward of y, outside |x|, between z
+        "tusks": (-0.74, -0.55, 0.095, 0.33, 0.62),   # between y, outside |x|, between z
     },
     # The back's line under the crest: anything this far above it, near the
     # spine, is crest and is cut (the cards make it).

@@ -133,103 +133,120 @@ def duplicate(obj, name):
 
 
 def stage_form():
-    """The body's forms without TRELLIS's crust of fur flakes: the sculpt
-    remeshed into one closed solid (its flakes swallowed into a coat a
-    centimetre or two thick, which is what a boar's outline is), the parts
-    we make ourselves cut away from it (the tail, the ears, the tusks and
-    the crest's flakes, each rebuilt as our own pieces), and smoothed: hard
-    over the body, lightly over the face and the lower legs, whose shapes
-    are the sculpt's own. It is what the low mesh is laid over and what its
-    normal map is baked from; the paint is still taken from the sculpt."""
+    """The body's forms, clean: the sculpt as a solid in voxels (filled by
+    casting through its closed remesh), where it is worked as clay is. What
+    we remake is cut away (the tail, the ears, the tusks, the crest), the
+    solid is opened (anything thinner than a few centimetres goes: the fur's
+    flakes, the crest's spikes) and closed (small pits fill), and its surface
+    is smoothed. It is what the low mesh is laid over and its normals' source;
+    the paint is still taken from the sculpt."""
+    import numpy as np
+    from scipy import ndimage
+    from mathutils.bvhtree import BVHTree
     load("prep.blend")
     sculpt = bpy.data.objects["Sculpt"]
     symmetrise(sculpt, CONFIG["mirror"])
-    form = duplicate(sculpt, "Form")
-    only(form)
-    form.data.materials.clear()
-    form.data.remesh_voxel_size = CONFIG.get("voxel", 0.014)
+    shell = duplicate(sculpt, "Shell")
+    only(shell)
+    shell.data.materials.clear()
+    vox = CONFIG.get("voxel", 0.005)
+    # (Coarse enough that the remesh closes the sculpt's gaps: the mouth, the pores.)
+    shell.data.remesh_voxel_size = CONFIG.get("shell", 0.012)
     bpy.ops.object.voxel_remesh()
-    print("REMESHED", len(form.data.vertices))
-    cutters = []
-
-    def cutter(obj):
-        cutters.append(obj)
-        mod = form.modifiers.new(obj.name, "BOOLEAN")
-        mod.operation = "DIFFERENCE"
-        mod.solver = "MANIFOLD"  # (EXACT emptied the remeshed body here)
-        mod.object = obj
-
+    tree = BVHTree.FromObject(shell, bpy.context.evaluated_depsgraph_get())
+    lo = Vector([min(v.co[i] for v in shell.data.vertices) for i in range(3)]) - Vector((0.04, 0.04, 0.04))
+    hi_ = Vector([max(v.co[i] for v in shell.data.vertices) for i in range(3)]) + Vector((0.04, 0.04, 0.04))
+    dims = [int(math.ceil((hi_[i] - lo[i]) / vox)) for i in range(3)]
+    X = np.array([lo.x + (i + 0.5) * vox for i in range(dims[0])])
+    Y = np.array([lo.y + (j + 0.5) * vox for j in range(dims[1])])
+    Z = np.array([lo.z + (k + 0.5) * vox for k in range(dims[2])])
+    # Inside: everything the outside can't reach. The closed remesh is
+    # marked into the voxels as a wall (densely: its corners, edges' and
+    # faces' middles), the empty space flooded from the box's edge, and the
+    # rest is the solid (thin double walls become slabs the opening removes).
+    me = shell.data
+    co = np.empty(len(me.vertices) * 3, np.float32)
+    me.vertices.foreach_get("co", co)
+    co = co.reshape(-1, 3)
+    me.calc_loop_triangles()
+    tri = np.empty(len(me.loop_triangles) * 3, np.int32)
+    me.loop_triangles.foreach_get("vertices", tri)
+    tri = tri.reshape(-1, 3)
+    ta, tb, tc = co[tri[:, 0]], co[tri[:, 1]], co[tri[:, 2]]
+    # Every triangle sampled finer than the voxels, so the wall has no gaps.
+    n = max(2, int(math.ceil(CONFIG.get("shell", 0.012) * 2 / vox)))
+    bary = [(i / n, j / n) for i in range(n + 1) for j in range(n + 1 - i)]
+    pts = np.concatenate([ta + (tb - ta) * u + (tc - ta) * w for u, w in bary])
+    ijk = np.floor((pts - np.array(lo)) / vox).astype(int)
+    wall = np.zeros(dims, bool)
+    wall[ijk[:, 0], ijk[:, 1], ijk[:, 2]] = True
+    wall = ndimage.binary_dilation(wall)
+    lab, n = ndimage.label(~wall)
+    outside = lab == lab[0, 0, 0]
+    solid = ~outside
+    bpy.data.objects.remove(shell)
+    print("FILLED", int(solid.sum()))
+    gx, gy, gz = np.meshgrid(X, Y, Z, indexing="ij")
     cut = CONFIG.get("cut", {})
     if "tail_y" in cut:
-        bpy.ops.mesh.primitive_cube_add(size=1, location=(0, cut["tail_y"] + 0.5, 0.5))
-        c = bpy.context.active_object
-        c.name = "cut_tail"
-        cutter(c)
-    for i, (ex, ey, ez, er) in enumerate(cut.get("ears", [])):
+        solid &= ~(gy > cut["tail_y"])
+    for (ex, ey, ez, er) in cut.get("ears", []):
         for s in (1, -1):
-            bpy.ops.mesh.primitive_uv_sphere_add(radius=er, location=(s * ex, ey, ez), segments=24, ring_count=12)
-            c = bpy.context.active_object
-            c.name = f"cut_ear{i}{s}"
-            cutter(c)
+            solid &= ~((gx - s * ex) ** 2 + (gy - ey) ** 2 + (gz - ez) ** 2 < er * er)
     if "tusks" in cut:
-        ty, tx, z0, z1 = cut["tusks"]
-        for s in (1, -1):
-            bpy.ops.mesh.primitive_cube_add(size=1, location=(s * (tx + 0.25), ty - 0.25, (z0 + z1) / 2))
-            c = bpy.context.active_object
-            c.scale = (0.5, 0.5, z1 - z0)
-            c.name = f"cut_tusk{s}"
-            cutter(c)
+        y0, y1, ax, z0, z1 = cut["tusks"]
+        solid &= ~((gy > y0) & (gy < y1) & (np.abs(gx) > ax) & (gz > z0) & (gz < z1))
     back = CONFIG.get("backline")
     if back:
-        # The crest's cutter: the back's line raised, extruded across the spine and up.
-        pts = back["line"]
-        me = bpy.data.meshes.new("cut_crest")
-        vs, fs = [], []
-        for (y, z) in pts:
-            for x in (-back["half"], back["half"]):
-                vs.append((x, y, z + back["over"]))
-                vs.append((x, y, z + 1.0))
-        n = len(pts)
-        # Each station: 0 (-x,low) 1 (-x,high) 2 (+x,low) 3 (+x,high).
-        for i in range(n - 1):
-            a, b = 4 * i, 4 * (i + 1)
-            fs += [(a, b, b + 2, a + 2), (a + 1, a + 3, b + 3, b + 1), (a, a + 1, b + 1, b), (a + 2, b + 2, b + 3, a + 3)]
-        fs += [(0, 2, 3, 1), (4 * (n - 1), 4 * (n - 1) + 1, 4 * (n - 1) + 3, 4 * (n - 1) + 2)]
-        me.from_pydata(vs, [], fs)
-        me.validate()
-        c = bpy.data.objects.new("cut_crest", me)
-        bpy.context.scene.collection.objects.link(c)
-        only(c)
-        bpy.ops.object.mode_set(mode="EDIT")
-        bpy.ops.mesh.select_all(action="SELECT")
-        bpy.ops.mesh.normals_make_consistent(inside=False)
-        bpy.ops.object.mode_set(mode="OBJECT")
-        cutter(c)
+        line = np.array([interp(back["line"], y) for y in Y])
+        solid &= ~((np.abs(gx) < back["half"]) & (gz > line[None, :, None] + back["over"]))
+    del gx, gy, gz
+    edt = ndimage.distance_transform_edt
+    r_open, r_close = CONFIG.get("open", 0.015) / vox, CONFIG.get("close", 0.01) / vox
+    # (edt(A): each voxel of A's distance to the nearest voxel outside it.)
+    solid = edt(~(edt(solid) > r_open)) <= r_open    # opened: what is thinner than 2r goes
+    solid = edt(edt(~solid) <= r_close) > r_close    # closed: gaps narrower than 2r fill
+    lab, n = ndimage.label(solid)
+    if n > 1:
+        sizes = ndimage.sum(solid, lab, range(1, n + 1))
+        solid = lab == (1 + int(np.argmax(sizes)))
+    print("SOLID", dims, int(solid.sum()), "voxels")
+    # Its faces where solid meets empty, as a blocky mesh, remeshed and smoothed.
+    verts, faces, vid = [], [], {}
+
+    def vert(i, j, k):
+        key = (i, j, k)
+        if key not in vid:
+            vid[key] = len(verts)
+            verts.append((lo.x + i * vox, lo.y + j * vox, lo.z + k * vox))
+        return vid[key]
+    pad = np.pad(solid, 1)
+    for axis in range(3):
+        d = np.diff(pad.astype(np.int8), axis=axis)
+        for sign in (1, -1):
+            for (i, j, k) in np.argwhere(d == sign):
+                p = [i - 1, j - 1, k - 1]
+                p[axis] += 1
+                u, v = [(1, 2), (0, 2), (0, 1)][axis]
+                q = [list(p) for _ in range(4)]
+                q[1][u] += 1
+                q[2][u] += 1
+                q[2][v] += 1
+                q[3][v] += 1
+                f = [vert(*c) for c in q]
+                faces.append(f if (sign == -1) ^ (axis == 1) else f[::-1])
+    mesh = bpy.data.meshes.new("Form")
+    mesh.from_pydata(verts, [], faces)
+    form = bpy.data.objects.new("Form", mesh)
+    bpy.context.scene.collection.objects.link(form)
     only(form)
-    for name in [m.name for m in form.modifiers]:
-        bpy.ops.object.modifier_apply(modifier=name)
-        print("CUT", name, len(form.data.vertices))
-    for c in cutters:
-        bpy.data.objects.remove(c)
-    # Closed again after the cuts, finer, and smoothed.
-    form.data.remesh_voxel_size = CONFIG.get("fine", 0.007)
+    form.data.remesh_voxel_size = CONFIG.get("fine", 0.006)
     bpy.ops.object.voxel_remesh()
-    vg = form.vertex_groups.new(name="smooth")
-    for v in form.data.vertices:
-        x, y, z = v.co
-        head = smoothstep(CONFIG.get("head_y", -0.5), CONFIG.get("head_y", -0.5) + 0.14, y)
-        leg = smoothstep(CONFIG.get("leg_z", 0.26), CONFIG.get("leg_z", 0.26) + 0.14, z)
-        vg.add([v.index], max(0.12, min(head, leg)), "REPLACE")
     sm = form.modifiers.new("smooth", "LAPLACIANSMOOTH")
-    sm.iterations = CONFIG.get("smooth", 25)
+    sm.iterations = CONFIG.get("smooth", 10)
     sm.lambda_factor = 0.5
     sm.use_volume_preserve = True
-    sm.vertex_group = "smooth"
     bpy.ops.object.modifier_apply(modifier="smooth")
-    sm = form.modifiers.new("even", "SMOOTH")
-    sm.factor = 0.5
-    sm.iterations = 4
-    bpy.ops.object.modifier_apply(modifier="even")
     bpy.ops.object.shade_smooth()
     symmetrise(form, CONFIG["mirror"])
     print("FORM", len(form.data.vertices), "verts")
