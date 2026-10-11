@@ -4933,12 +4933,12 @@ if BODY_OUT:
             ring[nxt], reached = r_, reached | nxt
         vals[:, k] *= np.where(ring > 0, ring / 3, 1.0)
         if name == "arcanist":
-            # (her forearm under the glove tucked all the way, from 2.5 cm inside
-            # its top to 1 cm short of her wrist: with her elbow shut and her wrist
-            # turned 80 degrees its underside came through the glove, animation's
-            # judge 11; her hand is left as it was, a full tuck would cross a finger)
+            # (her forearm and elbow under the sleeve and glove tucked all the way,
+            # from 5 cm above her elbow to 1 cm short of her wrist: with her elbow
+            # shut to 145 degrees its inside came through, animation's judge 11 and
+            # judge 6; her hand is left as it was, a full tuck would cross a finger)
             for sd in ("l", "r"):
-                fa = (ARM_S[sd][jj] > WRIST_S - 0.055) & (ARM_S[sd][jj] < WRIST_S - 0.01) & (ARMW[sd][jj] > 0.5)
+                fa = (ARM_S[sd][jj] > ELBOW_S - 0.05) & (ARM_S[sd][jj] < WRIST_S - 0.01) & (ARMW[sd][jj] > 0.5)
                 vals[fa & (vals[:, k] > 0), k] = 1.0
         if name in BALD:
             # Her hair is part of her body: hidden under a hat that is to carry the look.
