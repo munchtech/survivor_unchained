@@ -32,6 +32,8 @@ using SurvivorUnchained.Rpg;
  *          --charges 0 (every charger on its own clock, as before the charge director)
  *          --minutes 20 (a story's night: twenty minutes, ending on its boss)
  *          --type <road id>|both (the survivor's type)  --lamps empty|suggested|full (the board lit)
+ *          --offcalling (with --type both|<road>: each road's skills drafted (policy road:T, --policies ignored) on its
+ *          own calling and on each other calling; the report's on-calling table, target <= x1.25)
  *
  * This is the one balance tool: the balance lab's sweep (godot/tests/BalanceLab.cs,
  * BALANCE_LAB=arena) runs these same arenas through these same hands. */
@@ -90,6 +92,26 @@ void Arena()
     // --type road|both ("" = the calling's first road, key unchanged); --lamps empty|suggested|full.
     string typeOpt = opt.Get("type", ""), lampsOpt = opt.Get("lamps", "empty");
     string[] TypesOf(string c) => typeOpt == "" ? [""] : typeOpt == "both" ? Lamps.RoadsOf(c).Select(x => x.Id).ToArray() : [typeOpt];
+    if (opt.Has("offcalling"))
+    {
+        // Each road T of calling C: on-calling (C, type T) and off-calling (each other calling C', its first road), all drafting road T's skills.
+        string[] all4 = ["warden", "reaver", "arcanist", "stalker"];
+        foreach (var c in Callers())
+          foreach (var ty in TypesOf(c))
+            foreach (var host in all4)
+              foreach (int tier in tiers)
+                foreach (var oath in oaths)
+                  for (int s = 0; s < seeds; s++)
+                  {
+                      int nw = allWeapons ? Callings.Archetype(host).Weapons.Count : 1;
+                      for (int w = 0; w < nw; w++)
+                          specs.Add(new RunSpec(seed0 + s, host, "road:" + ty, tier, peoples[(s + w) % peoples.Length], Sworn(oath, tier, seed0 + s),
+                              opt.Double("cap", 40), opt.Double("beyond", 0), allWeapons ? w : s % Callings.Archetype(host).Weapons.Count,
+                              Level: level == "tier" ? 1 + 3 * (tier - 1) : int.Parse(level), Deft: deft, Minutes: opt.Double("minutes", 30),
+                              Type: host == c ? ty : Lamps.RoadsOf(host).First().Id, Lamps: lampsOpt, For: ty));
+                  }
+    }
+    else
     foreach (var c in Callers())
       foreach (var ty in TypesOf(c))
         foreach (var pol in Policies())

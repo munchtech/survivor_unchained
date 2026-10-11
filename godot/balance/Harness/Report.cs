@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using System.Text;
+using SurvivorUnchained.Content;
 
 namespace SurvivorUnchained.Balance;
 
@@ -91,6 +92,33 @@ public static class Report
                 double all = Median(per.Select(x => x.Dps));
                 foreach (var x in per)
                     Row(sb, tg.Key.Tier, tg.Key.Lamps, x.Key, x.L.Count, F(x.Dps / 1000, "0.0") + "k", F(x.Dps / all, "0.00"), Pct(Rate(x.L, r => r.Won)), Pct(Rate(x.L, r => r.Died)));
+            }
+            sb.AppendLine();
+        }
+
+        // The target of docs/design/CLASSES.md 2.7: on its own roads a type plays at most x1.25 better than the same skills off-calling.
+        if (runs.Any(r => r.Spec.For != ""))
+        {
+            sb.AppendLine("### On-calling (the road's skills on their own calling vs drafted off it; target <= x1.25)\n");
+            Head(sb, "tier", "lamps", "road", "runs on", "runs off", "sig dmg/min on", "sig dmg/min off", "ratio", "dmg/min 25 on", "dmg/min 25 off", "ratio 25");
+            foreach (var tg in runs.Where(r => r.Spec.For != "").GroupBy(r => (r.Spec.Tier, r.Spec.Lamps)).OrderBy(g => g.Key))
+            {
+                var maxes = new List<double>();
+                foreach (var rg in tg.GroupBy(r => r.Spec.For).OrderBy(g => g.Key))
+                {
+                    var skills = Lamps.Roads.TryGetValue(rg.Key, out var rd) ? rd.Skills : [];
+                    // DamageBy is keyed by the weapon's id, which an evolution keeps: the base skill's key already counts its evolutions.
+                    double Sig(RunResult r) => skills.Sum(k => r.DamageBy.GetValueOrDefault(k)) / Math.Max(0.01, r.Minutes);
+                    var on = rg.Where(r => r.Spec.Calling == Lamps.Roads[rg.Key].Calling).ToList();
+                    var offs = rg.Where(r => r.Spec.Calling != Lamps.Roads[rg.Key].Calling).GroupBy(r => r.Spec.Calling).Select(g => g.ToList()).ToList();
+                    if (on.Count == 0 || offs.Count == 0) continue;
+                    double sOn = Median(on.Select(Sig)), sOff = Median(offs.Select(l => Median(l.Select(Sig))));
+                    double dOn = Median(on.Select(r => At(r, 25, m => m.Damage))), dOff = Median(offs.Select(l => Median(l.Select(r => At(r, 25, m => m.Damage)))));
+                    maxes.Add(sOn / sOff);
+                    Row(sb, tg.Key.Tier, tg.Key.Lamps, rg.Key, on.Count, offs.Sum(l => l.Count), F(sOn, "0"), F(sOff, "0"), F(sOn / sOff, "0.00"),
+                        F(dOn / 1000, "0.0") + "k", F(dOff / 1000, "0.0") + "k", F(dOn / dOff, "0.00"));
+                }
+                if (maxes.Count > 0) sb.AppendLine($"\nTier {tg.Key.Tier}, lamps {tg.Key.Lamps}: max signature ratio {maxes.Max():0.00} (target <= 1.25).");
             }
             sb.AppendLine();
         }

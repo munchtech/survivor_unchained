@@ -18,11 +18,11 @@ namespace SurvivorUnchained.Balance;
 /// player who knows the fight does: a death is then the game's, not the bot's).</summary>
 public sealed record RunSpec(int Seed, string Calling, string Policy, int Tier = 1, string People = "pack", string[]? Oaths = null,
     double Cap = 40, double Beyond = 0, int Weapon = 0, int Art = 0, int Level = 1, bool Deft = false, double Minutes = 30,
-    string Type = "", string Lamps = "empty")
+    string Type = "", string Lamps = "empty", string For = "")
 {
     public string Key => $"{Calling}/{Policy}/t{Tier}/{People}/s{Seed}/w{Weapon}" + (Level > 1 ? $"/L{Level}" : "") + (Deft ? "/deft" : "") +
         (Oaths is { Length: > 0 } ? $"/{string.Join("+", Oaths)}" : "") + (Minutes != 30 ? $"/m{Minutes:0}" : "") +
-        (Type != "" ? $"/{Type}" : "") + (Lamps != "empty" ? $"/lamps-{Lamps}" : "");
+        (Type != "" ? $"/{Type}" : "") + (Lamps != "empty" ? $"/lamps-{Lamps}" : "") + (For != "" ? $"/for-{For}" : "");
 }
 
 /// <summary>A minute of the fight, as the harness saw it.</summary>
