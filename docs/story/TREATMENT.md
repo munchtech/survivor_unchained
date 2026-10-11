@@ -323,6 +323,35 @@ prologue's path, just before C02.
   steps back from Nell's grave and turns away, toward it.
 - C09's stinger: line twenty-six, readable.
 
+**The marker, kept open (Act 2; only if she said nothing).** At the marker
+(`chid.cut`) a player may say nothing, and Chid answers "It'll keep. Come and
+tell me when it comes to you." In Act 1 his hub keeps the way open ("The
+marker. It's come to me.", built). If she never comes, he comes to her: the
+first free morning after the dawn that takes the word ("Somebody used to call
+you something at dusk..."), a trunk scene, `scene_still_plain`:
+- The narrator: "In the Quiet Garden, Chid is kneeling at the plain marker,
+  with the mallet and the chisel in the grass. His lamp is still lit beside
+  him, in broad daylight."
+- Chid: "I said it would keep. (He turns the chisel over in his hands.) It
+  won't, will it. It always takes the names first. ...What do I cut?"
+- "Mam." (`mother.cut` `mam`, `mother.carved`): "(He cuts it while you watch:
+  three letters, deep, and he brushes them clean with his thumb.) There.
+  That'll keep."
+- "Leave it plain." (`plain`): "(He lays the chisel down in the grass.)
+  Plain. ...She didn't ask for much, at the end."
+- "(Say nothing.)" (`mother.chisel`): he says nothing either. The narrator:
+  "He waits a long time. Then he lays the chisel on top of the marker, and
+  takes up his lamp, and goes in." From then on the marker reads "Chid's
+  chisel is lying on top of it. You stand at it a while."
+
+Why here: the dawn has just taken the last of her mother's voice, and the
+stone is the one place a word could still be kept; "It'll keep" is shown not
+to. Under A every line holds a second way: he sat up all night with the woman
+he walked to the edge; "at the end", he was there; and the man who never stops
+talking answers her silence with his own. C32 needs no branch: Rook's "She was
+your mam, pet." gives back the word the player cut, or the one they kept from
+the stone.
+
 **The payoff: Act 2's last scene (C32, before "Come down with me").** Rook's
 kitchen, the night after the war at the gate. Rook, who never says sorry and
 never cries in front of anyone, does neither:
@@ -837,6 +866,7 @@ as only Nell did. He stops. It is a gift, not a wound.
 | Silverstair: the cages; Edric and Ysolde | joy | C29 |
 | What you are: Chid tells her | irony landing | C30 |
 | The dawns stop saying "Spark" | loss, noticed | dawns |
+| The stone still plain: "I said it would keep." (only if she said nothing at the marker) | grief, given a second chance | `scene_still_plain` |
 | The war at the gate: the line breaks, then they come; his empty stool; Maeca in his coat counting them in | **elation and grief at once** | C31 |
 | Rook's kitchen: the woman with the lamp; the player's own blow; the narrator silent | **the knife** | C32 |
 | "Come down with me." She goes, with her mother's killer | dread | C32 |
