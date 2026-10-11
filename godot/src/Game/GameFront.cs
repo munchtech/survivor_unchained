@@ -342,6 +342,8 @@ public partial class Game
                 if (kv.Split('=') is [var k, var v] && double.TryParse(v, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var x))
                     draft.Face[k] = x;
         if (Args.Get("hair") is string hs) draft.HairStyle = hs;
+        // --hair-colour ID: pictures of her with that hair (and brows) colour.
+        if (Args.Get("hair-colour") is string hc) draft.Hair = hc;
         // --preset ID: one of her faces to start from (its sliders and painting); --skin ID, --eyes ID
         if (Args.Get("preset") is string ps && Loadouts.HeroKit(draft.Sex)?.Faces.FirstOrDefault(f => f.Id == ps) is { } pf)
         {
