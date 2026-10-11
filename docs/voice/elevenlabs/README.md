@@ -72,7 +72,7 @@ Holloway, Brannoc and Sella, in that order.
 <!-- PACKETS -->
 | Character | Takes | Characters | Held | Locked |
 |---|---|---|---|---|
-| [The narrator](narrator.md) | 355 | 34,557 | 291 | 64 |
+| [The narrator](narrator.md) | 386 | 37,226 | 320 | 66 |
 | [Sella](sella.md) | 97 | 9,938 |  |  |
 | [Captain Holloway](holloway.md) | 110 | 9,700 | 110 |  |
 | [Vonnra Ash-of-Morrow](vonnra.md) | 104 | 8,939 | 103 | 1 |
@@ -94,7 +94,7 @@ Holloway, Brannoc and Sella, in that order.
 | [Snib](snib.md) | 15 | 2,199 |  |  |
 | [Tam](tam.md) | 21 | 2,020 |  |  |
 | [Jory Coyle](jory.md) | 14 | 877 |  |  |
-| [A Watchman at the gate](guard.md) | 12 | 509 |  | 1 |
+| [A Watchman at the gate](guard.md) | 13 | 546 |  | 1 |
 | [Grimtunnel](grimtunnel.md) | 7 | 442 |  | 3 |
 | [The babbling lampling](lampling.md) | 2 | 421 |  |  |
 | [A Watchwoman](guard_f.md) | 9 | 405 |  |  |

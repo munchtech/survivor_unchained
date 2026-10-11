@@ -215,6 +215,11 @@ def entries(man: list[dict], voice: str) -> list[dict]:
 
 def scene(l: dict) -> str:
     i, where = l["id"], l.get("where", "")
+    if l.get("const"):
+        # the clock's lines, or a story fight's (named by its file: Hollow, Roost, Dig, Vault)
+        if l["const"].startswith("DayLines"):
+            return "Scenes: the clock (dusk, night, getting up)"
+        return f"Scenes: the {os.path.splitext(os.path.basename(where))[0]} at night"
     if i.startswith("say."):
         return "Scenes: " + re.sub(r"(?<=[a-z])(?=[A-Z])", " ", os.path.splitext(os.path.basename(where))[0])
     if i.startswith("dlg.cin_"):

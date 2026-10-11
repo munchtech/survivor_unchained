@@ -43148,6 +43148,564 @@
    "status": "skip"
   },
   {
+   "id": "say.9790cd22614c",
+   "kind": "say",
+   "voice": "guard",
+   "text": "Lamps are lit. Stay where they reach.",
+   "who": "Gate guard",
+   "where": "godot/logic/Play/Journey.Day.cs",
+   "const": "DayLines.Dusk",
+   "hash": "9790cd22614c",
+   "segments": [
+    {
+     "voice": "guard",
+     "text": "Lamps are lit. Stay where they reach."
+    }
+   ],
+   "status": "todo"
+  },
+  {
+   "id": "say.9dc671546463",
+   "kind": "say",
+   "voice": "narrator",
+   "text": "You have heard that said at a door.",
+   "who": null,
+   "where": "godot/logic/Play/Journey.Day.cs",
+   "const": "DayLines.DuskHeard",
+   "hash": "9dc671546463",
+   "segments": [
+    {
+     "voice": "narrator",
+     "text": "You have heard that said at a door."
+    }
+   ],
+   "status": "todo"
+  },
+  {
+   "id": "say.10bf2fd84dd3",
+   "kind": "say",
+   "voice": "narrator",
+   "text": "You get up.",
+   "who": null,
+   "where": "godot/logic/Play/Journey.Day.cs",
+   "const": "DayLines.Rise",
+   "hash": "10bf2fd84dd3",
+   "segments": [
+    {
+     "voice": "narrator",
+     "text": "You get up."
+    }
+   ],
+   "direction": {
+    "emo": "plain",
+    "intent": "gets her child up",
+    "pace": "measured",
+    "vol": "quiet",
+    "note": "Three words, the way you'd say them at a bedside before light: not a cheer, not an order, no surprise. The player has just died, and nothing in her voice says so."
+   },
+   "status": "todo"
+  },
+  {
+   "id": "say.c4c1c1ee88e3",
+   "kind": "say",
+   "voice": "narrator",
+   "text": "You get up. It takes less than it did.",
+   "who": null,
+   "where": "godot/logic/Play/Journey.Day.cs",
+   "const": "DayLines.RiseAgain",
+   "hash": "c4c1c1ee88e3",
+   "segments": [
+    {
+     "voice": "narrator",
+     "text": "You get up. It takes less than it did."
+    }
+   ],
+   "direction": {
+    "emo": "plain",
+    "intent": "tells the price without naming it",
+    "pace": "measured",
+    "vol": "quiet",
+    "note": "The line the game turns on, and it must sound like nothing. The first rising cost twenty-six lives; every one since costs one, someone in the valley, and she knows it. Say it as plainly as the weather, the second sentence no heavier than the first: no warning, no irony, no comfort. The player should hear \"it gets easier\" every time until the stair, and hear the price on a replay."
+   },
+   "status": "todo"
+  },
+  {
+   "id": "say.c8db02ffeab0",
+   "kind": "say",
+   "voice": "narrator",
+   "text": "Half the night is gone. Up on the Toll Tower, the one lamp is still lit.",
+   "who": null,
+   "where": "godot/logic/Play/Journey.Day.cs",
+   "const": "DayLines.Nudge",
+   "hash": "c8db02ffeab0",
+   "segments": [
+    {
+     "voice": "narrator",
+     "text": "Half the night is gone. Up on the Toll Tower, the one lamp is still lit."
+    }
+   ],
+   "status": "todo"
+  },
+  {
+   "id": "say.977de4be60a3",
+   "kind": "say",
+   "voice": "narrator",
+   "text": "You see the night out on your feet. At first light the warmth comes back into your hands.",
+   "who": null,
+   "where": "godot/logic/Play/Journey.Day.cs",
+   "const": "DayLines.NightOut",
+   "hash": "977de4be60a3",
+   "segments": [
+    {
+     "voice": "narrator",
+     "text": "You see the night out on your feet. At first light the warmth comes back into your hands."
+    }
+   ],
+   "status": "todo"
+  },
+  {
+   "id": "say.fda6ac6c6045",
+   "kind": "say",
+   "voice": "narrator",
+   "text": "You do not go back to the lamps. You go on.",
+   "who": null,
+   "where": "godot/logic/Play/Journey.Day.cs",
+   "const": "DayLines.StraightOn",
+   "hash": "fda6ac6c6045",
+   "segments": [
+    {
+     "voice": "narrator",
+     "text": "You do not go back to the lamps. You go on."
+    }
+   ],
+   "status": "todo"
+  },
+  {
+   "id": "say.5cbd1ba39848",
+   "kind": "say",
+   "voice": "narrator",
+   "text": "Out past the lamps, the Pack has stopped howling.",
+   "who": null,
+   "where": "godot/logic/Play/Journey.Day.cs",
+   "const": "DayLines.Tonight[hollow]",
+   "hash": "5cbd1ba39848",
+   "segments": [
+    {
+     "voice": "narrator",
+     "text": "Out past the lamps, the Pack has stopped howling."
+    }
+   ],
+   "status": "todo"
+  },
+  {
+   "id": "say.1ad34f33a2b4",
+   "kind": "say",
+   "voice": "narrator",
+   "text": "Up the Old Road the Kerchiefs' fires are lit all along the ravine, the way a town lights its windows.",
+   "who": null,
+   "where": "godot/logic/Play/Journey.Day.cs",
+   "const": "DayLines.Tonight[roost]",
+   "hash": "1ad34f33a2b4",
+   "segments": [
+    {
+     "voice": "narrator",
+     "text": "Up the Old Road the Kerchiefs' fires are lit all along the ravine, the way a town lights its windows."
+    }
+   ],
+   "status": "todo"
+  },
+  {
+   "id": "say.f9f2c5cad405",
+   "kind": "say",
+   "voice": "narrator",
+   "text": "On the hill over the Dig, the lamps are all moving the same way.",
+   "who": null,
+   "where": "godot/logic/Play/Journey.Day.cs",
+   "const": "DayLines.Tonight[dig]",
+   "hash": "f9f2c5cad405",
+   "segments": [
+    {
+     "voice": "narrator",
+     "text": "On the hill over the Dig, the lamps are all moving the same way."
+    }
+   ],
+   "status": "todo"
+  },
+  {
+   "id": "say.87df61b27292",
+   "kind": "say",
+   "voice": "narrator",
+   "text": "Out in the Verge, the sealed door has woken. Its light is violet.",
+   "who": null,
+   "where": "godot/logic/Play/Journey.Day.cs",
+   "const": "DayLines.Tonight[vault]",
+   "hash": "87df61b27292",
+   "segments": [
+    {
+     "voice": "narrator",
+     "text": "Out in the Verge, the sealed door has woken. Its light is violet."
+    }
+   ],
+   "status": "todo"
+  },
+  {
+   "id": "say.fdad90e14306",
+   "kind": "say",
+   "voice": "narrator",
+   "text": "Out in the Verge, the ember is coming up.",
+   "who": null,
+   "where": "godot/logic/Play/Journey.Day.cs",
+   "const": "DayLines.Tonight[]",
+   "hash": "fdad90e14306",
+   "segments": [
+    {
+     "voice": "narrator",
+     "text": "Out in the Verge, the ember is coming up."
+    }
+   ],
+   "status": "todo"
+  },
+  {
+   "id": "say.cddfb7c98244",
+   "kind": "say",
+   "voice": "narrator",
+   "text": "The ember takes you to the edge of the Dig. Every lamp in the hole is coming up at once.",
+   "who": null,
+   "where": "godot/logic/Play/Story/Dig.cs",
+   "const": "DigBoilsOver.Pull",
+   "hash": "cddfb7c98244",
+   "segments": [
+    {
+     "voice": "narrator",
+     "text": "The ember takes you to the edge of the Dig. Every lamp in the hole is coming up at once."
+    }
+   ],
+   "status": "todo"
+  },
+  {
+   "id": "say.18e64cad88a1",
+   "kind": "say",
+   "voice": "narrator",
+   "text": "The last windlass goes over. Down the tub-way the brake-house lamp is lit, and the rails are singing.",
+   "who": null,
+   "where": "godot/logic/Play/Story/Dig.cs",
+   "const": "DigBoilsOver.BetweenSight",
+   "hash": "18e64cad88a1",
+   "segments": [
+    {
+     "voice": "narrator",
+     "text": "The last windlass goes over. Down the tub-way the brake-house lamp is lit, and the rails are singing."
+    }
+   ],
+   "status": "todo"
+  },
+  {
+   "id": "say.a89cdacbc1f4",
+   "kind": "say",
+   "voice": "narrator",
+   "text": "Past the brake-house stands the pump-house, and every lampling between you and it is carrying a crate.",
+   "who": null,
+   "where": "godot/logic/Play/Story/Dig.cs",
+   "const": "DigBoilsOver.BetweenSight",
+   "hash": "a89cdacbc1f4",
+   "segments": [
+    {
+     "voice": "narrator",
+     "text": "Past the brake-house stands the pump-house, and every lampling between you and it is carrying a crate."
+    }
+   ],
+   "status": "todo"
+  },
+  {
+   "id": "say.0f4d56f97d68",
+   "kind": "say",
+   "voice": "narrator",
+   "text": "Past the brake-house stands the pump-house. Somebody inside is lighting lamps, one after another.",
+   "who": null,
+   "where": "godot/logic/Play/Story/Dig.cs",
+   "const": "DigBoilsOver.BetweenSight",
+   "hash": "0f4d56f97d68",
+   "segments": [
+    {
+     "voice": "narrator",
+     "text": "Past the brake-house stands the pump-house. Somebody inside is lighting lamps, one after another."
+    }
+   ],
+   "status": "todo"
+  },
+  {
+   "id": "say.8ea79d1dcdf1",
+   "kind": "say",
+   "voice": "narrator",
+   "text": "Every lampling left on the lip lies down flat, with its hands over its lamp.",
+   "who": null,
+   "where": "godot/logic/Play/Story/Dig.cs",
+   "const": "DigBoilsOver.BetweenSight",
+   "hash": "8ea79d1dcdf1",
+   "segments": [
+    {
+     "voice": "narrator",
+     "text": "Every lampling left on the lip lies down flat, with its hands over its lamp."
+    }
+   ],
+   "status": "todo"
+  },
+  {
+   "id": "say.44a50d15b7fa",
+   "kind": "say",
+   "voice": "narrator",
+   "text": "The ember takes you down the clough, into the Hollow. The stream is loud here, and it smells wrong.",
+   "who": null,
+   "where": "godot/logic/Play/Story/Hollow.cs",
+   "const": "HollowByNight.Pull",
+   "hash": "44a50d15b7fa",
+   "segments": [
+    {
+     "voice": "narrator",
+     "text": "The ember takes you down the clough, into the Hollow. The stream is loud here, and it smells wrong."
+    }
+   ],
+   "status": "todo"
+  },
+  {
+   "id": "say.59a5da567e47",
+   "kind": "say",
+   "voice": "narrator",
+   "text": "The howling stops. In the quiet you can hear the stream, and something in the brush coughing.",
+   "who": null,
+   "where": "godot/logic/Play/Story/Hollow.cs",
+   "const": "HollowByNight.Between",
+   "hash": "59a5da567e47",
+   "segments": [
+    {
+     "voice": "narrator",
+     "text": "The howling stops. In the quiet you can hear the stream, and something in the brush coughing."
+    }
+   ],
+   "status": "todo"
+  },
+  {
+   "id": "say.1394532b178f",
+   "kind": "say",
+   "voice": "narrator",
+   "text": "The deadfalls burn. Past them is the den's mouth, and in it, gray shapes that do not get up.",
+   "who": null,
+   "where": "godot/logic/Play/Story/Hollow.cs",
+   "const": "HollowByNight.Between",
+   "hash": "1394532b178f",
+   "segments": [
+    {
+     "voice": "narrator",
+     "text": "The deadfalls burn. Past them is the den's mouth, and in it, gray shapes that do not get up."
+    }
+   ],
+   "status": "todo"
+  },
+  {
+   "id": "say.648f54abf56c",
+   "kind": "say",
+   "voice": "narrator",
+   "text": "The wolves back away from you, low, into a ring. Something is coming out of the den.",
+   "who": null,
+   "where": "godot/logic/Play/Story/Hollow.cs",
+   "const": "HollowByNight.Between",
+   "hash": "648f54abf56c",
+   "segments": [
+    {
+     "voice": "narrator",
+     "text": "The wolves back away from you, low, into a ring. Something is coming out of the den."
+    }
+   ],
+   "status": "todo"
+  },
+  {
+   "id": "say.54d6b6c86b5d",
+   "kind": "say",
+   "voice": "narrator",
+   "text": "The ember takes you up the ruts below the Roost. Somewhere above, a whistle, and another answering.",
+   "who": null,
+   "where": "godot/logic/Play/Story/Roost.cs",
+   "const": "RaidOnTheRoost.Pull",
+   "hash": "54d6b6c86b5d",
+   "segments": [
+    {
+     "voice": "narrator",
+     "text": "The ember takes you up the ruts below the Roost. Somewhere above, a whistle, and another answering."
+    }
+   ],
+   "status": "todo"
+  },
+  {
+   "id": "say.884076412b80",
+   "kind": "say",
+   "voice": "narrator",
+   "text": "Three whistles, and none answering. Ahead, the cage yard: four empty cages, and somebody very big still standing guard on them.",
+   "who": null,
+   "where": "godot/logic/Play/Story/Roost.cs",
+   "const": "RaidOnTheRoost.BetweenSight",
+   "hash": "884076412b80",
+   "segments": [
+    {
+     "voice": "narrator",
+     "text": "Three whistles, and none answering. Ahead, the cage yard: four empty cages, and somebody very big still standing guard on them."
+    }
+   ],
+   "status": "todo"
+  },
+  {
+   "id": "say.c12346388d1c",
+   "kind": "say",
+   "voice": "narrator",
+   "text": "Three whistles, and none answering. Ahead, the cage yard: four empty cages, and three mounds of new earth beside them.",
+   "who": null,
+   "where": "godot/logic/Play/Story/Roost.cs",
+   "const": "RaidOnTheRoost.BetweenSight",
+   "hash": "c12346388d1c",
+   "segments": [
+    {
+     "voice": "narrator",
+     "text": "Three whistles, and none answering. Ahead, the cage yard: four empty cages, and three mounds of new earth beside them."
+    }
+   ],
+   "status": "todo"
+  },
+  {
+   "id": "say.8f4acfe90f92",
+   "kind": "say",
+   "voice": "narrator",
+   "text": "Three whistles, and none answering. Ahead, the cage yard: four cages, and the fourth stands open with nobody in it.",
+   "who": null,
+   "where": "godot/logic/Play/Story/Roost.cs",
+   "const": "RaidOnTheRoost.BetweenSight",
+   "hash": "8f4acfe90f92",
+   "segments": [
+    {
+     "voice": "narrator",
+     "text": "Three whistles, and none answering. Ahead, the cage yard: four cages, and the fourth stands open with nobody in it."
+    }
+   ],
+   "status": "todo"
+  },
+  {
+   "id": "say.ed1ff5a67b8c",
+   "kind": "say",
+   "voice": "narrator",
+   "text": "Past the cages, the camp's fires, and the levy forming up the way they were taught: in step, pikes level.",
+   "who": null,
+   "where": "godot/logic/Play/Story/Roost.cs",
+   "const": "RaidOnTheRoost.BetweenSight",
+   "hash": "ed1ff5a67b8c",
+   "segments": [
+    {
+     "voice": "narrator",
+     "text": "Past the cages, the camp's fires, and the levy forming up the way they were taught: in step, pikes level."
+    }
+   ],
+   "status": "todo"
+  },
+  {
+   "id": "say.c52914d98baf",
+   "kind": "say",
+   "voice": "narrator",
+   "text": "Where the crates stood there is a hole in the yard. Beyond it, the Kerchiefs fall back to the big fire and stand there with their torches up. Then they part.",
+   "who": null,
+   "where": "godot/logic/Play/Story/Roost.cs",
+   "const": "RaidOnTheRoost.BetweenSight",
+   "hash": "c52914d98baf",
+   "segments": [
+    {
+     "voice": "narrator",
+     "text": "Where the crates stood there is a hole in the yard. Beyond it, the Kerchiefs fall back to the big fire and stand there with their torches up. Then they part."
+    }
+   ],
+   "status": "todo"
+  },
+  {
+   "id": "say.cbc22a062d1e",
+   "kind": "say",
+   "voice": "narrator",
+   "text": "The Kerchiefs fall back to the big fire and stand there with their torches up. Then they part.",
+   "who": null,
+   "where": "godot/logic/Play/Story/Roost.cs",
+   "const": "RaidOnTheRoost.BetweenSight",
+   "hash": "cbc22a062d1e",
+   "segments": [
+    {
+     "voice": "narrator",
+     "text": "The Kerchiefs fall back to the big fire and stand there with their torches up. Then they part."
+    }
+   ],
+   "status": "todo"
+  },
+  {
+   "id": "say.def83ed2ca1b",
+   "kind": "say",
+   "voice": "narrator",
+   "text": "Through the door: a long hall, and the head of a stair. On the stair, something is coming up in step.",
+   "who": null,
+   "where": "godot/logic/Play/Story/Vault.cs",
+   "const": "VaultOpened.Pull",
+   "hash": "def83ed2ca1b",
+   "segments": [
+    {
+     "voice": "narrator",
+     "text": "Through the door: a long hall, and the head of a stair. On the stair, something is coming up in step."
+    }
+   ],
+   "status": "todo"
+  },
+  {
+   "id": "say.9bf57b5df8e4",
+   "kind": "say",
+   "voice": "narrator",
+   "text": "The first ranks are down. The hall runs on ahead, long and straight, and at the end of it something is winding a great bow.",
+   "who": null,
+   "where": "godot/logic/Play/Story/Vault.cs",
+   "const": "VaultOpened.Between",
+   "hash": "9bf57b5df8e4",
+   "segments": [
+    {
+     "voice": "narrator",
+     "text": "The first ranks are down. The hall runs on ahead, long and straight, and at the end of it something is winding a great bow."
+    }
+   ],
+   "status": "todo"
+  },
+  {
+   "id": "say.a83f4948df17",
+   "kind": "say",
+   "voice": "narrator",
+   "text": "Down the hall, three standards go up one after another, and the dead turn to face them.",
+   "who": null,
+   "where": "godot/logic/Play/Story/Vault.cs",
+   "const": "VaultOpened.Between",
+   "hash": "a83f4948df17",
+   "segments": [
+    {
+     "voice": "narrator",
+     "text": "Down the hall, three standards go up one after another, and the dead turn to face them."
+    }
+   ],
+   "status": "todo"
+  },
+  {
+   "id": "say.4350b3e997df",
+   "kind": "say",
+   "voice": "narrator",
+   "text": "The last standard goes down. Along the walls, the dead stand to attention, all at once, with one sound.",
+   "who": null,
+   "where": "godot/logic/Play/Story/Vault.cs",
+   "const": "VaultOpened.Between",
+   "hash": "4350b3e997df",
+   "segments": [
+    {
+     "voice": "narrator",
+     "text": "The last standard goes down. Along the walls, the dead stand to attention, all at once, with one sound."
+    }
+   ],
+   "status": "todo"
+  },
+  {
    "id": "name.vonnra.Alder",
    "kind": "name",
    "voice": "vonnra",
