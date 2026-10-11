@@ -1049,7 +1049,7 @@ public static class People
             }
         }
         // (her skin warmer in the sky's light than in the lamps': HerAmbientTint)
-        if (who == "heroine") m.SetShaderParameter("ambient_tint", HerAmbientTint);
+        if (who == "heroine") m.SetShaderParameter("ambient_tint", HerAmbient(look));
         // Her freckles, a layer over her face, neck, shoulders and upper chest
         // (tools/assets/heroine_freckles.py), as many as her face starts with.
         if (who == "heroine" && FreckleFile(src.ResourceName) is string fp)
@@ -1105,6 +1105,16 @@ public static class People
     /// portraits' 51°; with it and the grade keeping skin's hue in shade, 46-47°). Her lit face is as fitted.</summary>
     static readonly Vector3 HerAmbientTint = new(1.3f, 1.0f, 0.7f);
 
+    /// <summary>The ambient tint by her skin's swatch, where it is not HerAmbientTint. Brown: at 1.3/1.0/0.7 her shade
+    /// under her jaw and chin read copper against the blue night (Oklab chroma 31-36% over her portrait's; judge n1,
+    /// 11 October 2026), as darker skin gives back less of the red light carried through it.</summary>
+    static readonly Dictionary<string, Vector3> HerAmbientTints = new()
+    {
+        ["brown"] = new(1.0f, 1.0f, 0.8f),
+    };
+
+    static Vector3 HerAmbient(Look look) => HerAmbientTints.TryGetValue(HerSkinId(look), out var a) ? a : HerAmbientTint;
+
     /// <summary>His skin's roughness, sheen, and the roughness it gains seen
     /// edge on (shaders/heroine_skin.gdshader).</summary>
     static readonly (float Rough, float Shine, float Edge) HisSkin = (0.62f, 0.3f, 0.45f);
@@ -1127,7 +1137,7 @@ public static class People
     static readonly Dictionary<string, Vector3> HerToneFit = new()
     {
         ["fair"] = new(0.897f, 1.094f, 1.009f), ["rose"] = new(0.849f, 1.062f, 0.827f),
-        ["warm"] = new(0.886f, 1.054f, 0.791f), ["brown"] = new(0.877f, 0.887f, 0.629f),
+        ["warm"] = new(0.886f, 1.054f, 0.791f), ["brown"] = new(0.789f, 0.887f, 0.629f),
     };
 
     /// <summary>Each face's own paint against its portrait, once its swatch is fitted (linear, the
@@ -1140,6 +1150,9 @@ public static class People
         ["vixen"] = new(0.982f, 0.940f, 0.922f), ["moonlit"] = new(0.972f, 1.021f, 1.080f),
         ["fey"] = new(1.062f, 1.067f, 1.050f), ["doe"] = new(1.004f, 1.016f, 1.013f),
         ["wildling"] = new(0.992f, 0.969f, 0.957f), ["hardwon"] = new(1.004f, 1.016f, 1.032f),
+        // (Sunborn: her face lighter, a little less red, against her body: her cheek at 0.86 of her portrait's
+        // lightness against 0.92-0.97 for the others, her head darker than her neck; judge n1, 11 October 2026)
+        ["sunborn"] = new(1.20f, 1.23f, 1.23f),
     };
 
     /// <summary>How much of her face's own grain her neck takes (the skin shader's grain_amount; 1 her face's
@@ -1172,12 +1185,15 @@ public static class People
         : (float)(SurvivorUnchained.World.Lore.Her.Faces
             .FirstOrDefault(f => f.Id == (string.IsNullOrEmpty(look.FaceShape) ? "own" : look.FaceShape))?.Freckles ?? 0));
 
+    /// <summary>Her skin's swatch (Lore.Skins' id; "fair", her own, when none is chosen).</summary>
+    static string HerSkinId(Look look) => look.Skin is Color c
+        ? SurvivorUnchained.World.Lore.Skins.FirstOrDefault(s => s.Color != "" && new Color(s.Color).IsEqualApprox(c))?.Id ?? ""
+        : "fair";
+
     static Color HerTone(Look look)
     {
         var t = SkinTone(look);
-        string id = look.Skin is Color c
-            ? SurvivorUnchained.World.Lore.Skins.FirstOrDefault(s => s.Color != "" && new Color(s.Color).IsEqualApprox(c))?.Id ?? ""
-            : "fair";
+        string id = HerSkinId(look);
         if (!HerToneFit.TryGetValue(id, out var f)) return t;
         var l = t.SrgbToLinear();
         return new Color(l.R * f.X, l.G * f.Y, l.B * f.Z).LinearToSrgb();
