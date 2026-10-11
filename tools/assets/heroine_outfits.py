@@ -199,7 +199,13 @@ mend_hole(body)
 # Then every corner moved, and every corner more than 60 degrees from the
 # skin round it, takes the mean of its neighbours' own normals: the normals
 # drawn round it, so no mark (an average of face normals was up to 70
-# degrees off where the faces are slivers).
+# degrees off where the faces are slivers). Her hands are never moved: their
+# folds are the creases between the fingers and the thumb's tip, and drawn
+# in they left a glint on the thumb tip and a speck in the palm (judge 11);
+# their corners still take their neighbours' normals.
+HAND_BONES = ("hand_", "thumb_", "index_", "middle_", "ring_", "pinky_")
+
+
 def _folded(mb, weld, nw):
     A = np.zeros((nw, 3))
     fn = [f.normal * f.calc_area() for f in mb.faces]
@@ -222,7 +228,7 @@ def _folded(mb, weld, nw):
     return out
 
 
-def mend_folds(me):
+def mend_folds(me, obj=None):
     nl = len(me.loops)
     cn = np.empty(nl * 3, np.float32)
     me.corner_normals.foreach_get("vector", cn)
@@ -243,15 +249,21 @@ def mend_folds(me):
         if a != b:
             ring[a].add(b)
             ring[b].add(a)
+    still = set()
+    if obj is not None:
+        hand = {g.index for g in obj.vertex_groups if g.name.startswith(HAND_BONES)}
+        for v in me.vertices:
+            if sum(g.weight for g in v.groups if g.group in hand) > 0.3:
+                still.add(weld[v.index])
     moved, first = set(), None
     for it in range(12):
         mb.normal_update()
         bad = _folded(mb, weld, len(key))
         if first is None:
             first = len(bad)
-        if not bad:
+        move = {weld[v.index] for f in bad for v in f.verts} - still
+        if not move:
             break
-        move = {weld[v.index] for f in bad for v in f.verts}
         new = {k: sum((copies[r][0].co for r in ring[k]), Vector()) / max(len(ring[k]), 1) for k in move}
         for k, p in new.items():
             for v in copies[k]:
@@ -282,8 +294,8 @@ def mend_folds(me):
     ok = np.linalg.norm(R2[lw], axis=1) > 1e-9
     out[target & ok] = R2[lw[target & ok]] / np.linalg.norm(R2[lw[target & ok]], axis=1, keepdims=True)
     me.normals_split_custom_set([tuple(v) for v in out])
-    print("MEND her folds: %d folded, %d left after %d passes, %d points moved; %d corners given their neighbours' normal"
-          % (first, left, it + 1, len(moved), int((target & ok).sum())))
+    print("MEND her folds: %d folded, %d left after %d passes (%d hand points kept), %d points moved; %d corners given their neighbours' normal"
+          % (first, left, it + 1, len(still), len(moved), int((target & ok).sum())))
 
 # ------------------------------------------------------------ her surface --
 # Welded (the paint's seams split her vertices) and in triangles.
@@ -4019,7 +4031,7 @@ if BODY_OUT:
     # Her helper bones (twists at the shoulders and down the forearms, shares
     # at the shoulders, elbows and knees: tools/anim/helpers.py), her weights
     # split onto them; her pieces take the same split below.
-    mend_folds(me)
+    mend_folds(me, body)
     rig_helpers.apply(arm, [body])
     bpy.ops.object.select_all(action="DESELECT")
     arm.select_set(True)
