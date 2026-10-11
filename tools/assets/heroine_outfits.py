@@ -1169,7 +1169,7 @@ SPEC = {
     "lace": ("rough_linen", (1.652, 1.379, 1.12), 235, 14, 0.0, 0.5, 0.85),
     "darkpurple": ("Leather026", (0.55, 0.2, 0.9), 26, 3, 0.0, 0.35),
     "satin": ("rough_linen", (1.652, 1.379, 1.12), 235, 10, 0.0, 0.3),
-    "amethyst": ("rough_linen", (0.42, 0.16, 0.78), 70, 10, 0.0, 0.12),   # (the clasp's violet stone: deep and glossy)
+    "amethyst": ("rough_linen", (0.62, 0.18, 0.64), 70, 10, 0.0, 0.12),   # (the clasp's violet stone: deep and glossy)
     "greenleather": ("Leather026", (0.42, 0.85, 0.45), 52, 3, 0.0, None),
     "bronze": ("Brushed", (0.72, 0.58, 0.46), 95, 3, 1.0, 0.42),  # (our own brushing, along u: tools/assets/brushed_metal.py)
     "ink": ("rough_linen", (0.22, 0.26, 0.34), 22, 10, 0.0, 0.65),
@@ -3851,9 +3851,10 @@ def arcanist():
             ok = ~np.isnan(Y[a])
             Y[a] = np.where(ok, Y[a], np.nanmin(Y[a]) if ok.any() else np.nanmin(Y))
         Y = np.minimum.accumulate(Y[:, ::-1], axis=1)[:, ::-1]   # (never behind what lies outside it)
+        Y0 = Y.copy()   # (the easing must never pull it behind the cloth it lies on: its horns sank)
         for _ in range(30):
             Y[1:-1] = 0.25 * Y[:-2] + 0.5 * Y[1:-1] + 0.25 * Y[2:]
-        Y = Y - 0.0006
+        Y = np.minimum(Y, Y0) - 0.0006
         bump = 0.0016 * np.sin(np.pi * np.linspace(0, 1, nr))[None, :] * (wid[:, None] / W0) ** 0.5
         back = np.stack([X, Y, Zc], -1)
         frnt = np.stack([X, Y - 0.0008 - bump, Zc], -1)
