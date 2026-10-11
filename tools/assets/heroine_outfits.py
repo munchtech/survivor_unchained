@@ -1167,6 +1167,8 @@ SPEC = {
     "stocking": ("rough_linen", (1.624, 1.356, 1.11), 232, 14, 0.0, 0.45, 0.42),
     # (the linen scan is blue, about (145, 171, 205): these two are tinted from
     # it to a colour, warm ivory and a light saddle brown)
+    # (the arcanist's feathery trim: soft white, drawn as fur shells, finer and longer)
+    "down": ("rough_linen", (1.45, 1.24, 1.03), 228, 3, 0.0, 0.9),
     "bone": ("rough_linen", (1.376, 1.099, 0.779), 183, 12, 0.0, 0.5),
     "browncloth": ("rough_linen", (0.75, 0.55, 0.36), 78, 18, 0.0, 0.8),  # (a light brown: the old tint read olive)
     "forestleather": ("Leather026", (0.42, 0.66, 0.42), 40, 3, 0.0, None),
@@ -3527,6 +3529,8 @@ PLUNGE_TAUT = float(os.environ.get("PLUNGE_TAUT", 0.03))    # (the gore at its f
 PLUNGE_RIM = float(os.environ.get("PLUNGE_RIM", 0.0015))    # (the U's rim, its lower part, this far off her: on a taut string along it)
 PLUNGE_STRING = float(os.environ.get("PLUNGE_STRING", 0.035))  # (that string's least round, both ways: it spans her folds, never kinks)
 PLUNGE_BAND = float(os.environ.get("PLUNGE_BAND", 0.028))   # (how far from the rim the cloth eases back into the fitted sheet)
+PLUNGE_TRIM = os.environ.get("PLUNGE_TRIM", "")   # ("down": the owner's option, a white feathery trim along the plunge, for the side-by-side)
+DOWN_IN, DOWN_OUT = 0.004, 0.012   # (how far the trim reaches over her skin, and over the corset, from the cut)
 
 
 def arcanist():
@@ -3788,6 +3792,23 @@ def arcanist():
     choker = AND(0.009 - np.abs(Z - (nz + 0.035)), wsum("neck_01", "Head") - 0.4, 0.3 - wsum("Head") + wsum("neck_01") * 0, 0.3 - arms)
     mantle = OR(cap(shoulder("l"), 0.14), cap(shoulder("r"), 0.14),
                 AND(Z - 1.43, (Y - 0.0), 0.3 - arms))
+    # The owner's option (11 October): a white feathery trim along the plunge,
+    # "only increase the skin we cover slightly": DOWN_IN over her skin,
+    # DOWN_OUT over the corset, a soft roll standing on the corset (its fold
+    # stands up to 12 mm off her at the foot) with fur shells grown on it.
+    ud_ = np.where(FRONT > 0.5, u_dist(X, Z), 1.0)
+    down_field = AND(np.minimum(ud_ + DOWN_IN, DOWN_OUT - ud_), (neck_top - 0.006) - Z, Z - (v_lo - 0.03))
+
+    def down_roll(pos, tris):
+        cp, ct, _, cth = SHEET["arcanist.corset"]
+        cn = vertex_normals(cp, ct)
+        _, j_ = cKDTree(cp).query(pos)
+        above = ((pos - cp[j_] - cn[j_] * cth) * cn[j_]).sum(1)
+        nr_ = vertex_normals(pos, tris)
+        pos = pos + nr_ * np.maximum(0.0035 - above, 0)[:, None]
+        d = u_dist(pos[:, 0], pos[:, 2])
+        t = np.clip((d - (DOWN_OUT - DOWN_IN) / 2) / ((DOWN_OUT + DOWN_IN) / 2), -1, 1)
+        return pos + nr_ * (0.004 * np.sqrt(1 - t * t))[:, None]
     global GARTER_Z
     GARTER_Z = CROTCH + 0.2
     out = [
@@ -3796,6 +3817,8 @@ def arcanist():
                trim=gold(0.004), snap=False, hides=True, flare=(0.034, 0.03)),
         *piece("arcanist.corset", corset, "plumleather", lift=0.0035, smooth=8, iron=60, trim=gold(0.008), keep_off=("Head",), filled=True, edge=120, soften=80,
                bridge=True, cut=exact, stiff=[(0.03, front_panel), (0.03, collar), plunge_fold, taut_gore, plunge_rim]),
+        *(piece("arcanist.down", down_field, "down", lift=0.0075, thick=0.0015, smooth=6, soften=4, bind=False, keep_off=("Head",),
+                stiff=[down_roll]) if PLUNGE_TRIM == "down" else []),
         # (judge 4: the front read as moulded latex. Four stitched boning
         # channels, as a corset's front is made, from under her cups to
         # her hips, raised on the suit and moving with it.)
@@ -4888,7 +4911,7 @@ OUTFITS = {"warden": warden, "arcanist": arcanist, "ranger": ranger, "reaver": r
 # satin: clean). Fur and sheer stockings have shaders of their own.
 KIND = {"steel": "metal", "darksteel": "metal", "iron": "metal", "gold": "metal", "bronze": "metal", "rust": "metal",
         "velvet": "cloth", "arcvelvet": "cloth", "linen": "cloth", "lace": "cloth", "ink": "cloth",
-        "browncloth": "twill", "thread": "gloss", "satin": "gloss", "bone": "leather", "fur": "fur", "stocking": "sheer"}
+        "browncloth": "twill", "thread": "gloss", "satin": "gloss", "bone": "leather", "fur": "fur", "down": "fur", "stocking": "sheer"}
 
 
 # Decals laid on her skin, drawn this far toward the camera so they never
