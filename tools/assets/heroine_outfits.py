@@ -1394,6 +1394,9 @@ def mirror_line(cur):
     return cur + w * 0.5 * (best * flip - cur)
 
 
+BIND_RMIN = {}   # (a piece's name: no bend of its binding tighter than this)
+
+
 def bind_edges(name, pos, at, tris, key, width, height, overhang, thick, sigma=0.012, stitch=False, rmin=None):
     """A sheet's cut outline made fair and bound: each edge loop eased into
     one smooth curve, the sheet's own edge points moved onto it, and a
@@ -1421,7 +1424,7 @@ def bind_edges(name, pos, at, tris, key, width, height, overhang, thick, sigma=0
         bound += 1
         cur = smooth_closed(lp, sigma)
         # (no bend tighter than twice the rolled edge's radius: see rounded())
-        cur = rounded(cur, rmin or width)
+        cur = rounded(cur, rmin or BIND_RMIN.get(name) or width)
         # Back onto the sheet (its surface, not the plane of the nearest
         # point: that changed from point to point and stepped the line in
         # depth, unseen face-on, kinked at a glancing view), the move eased
@@ -2665,6 +2668,7 @@ def pinholes_filled(name, pos, wt, tris, most=0.03):
 
 
 RIGID_UV = {}   # (a plate's name: (centre, arm axis, unrolled round the arm?))
+ONE_ISLAND = set()   # (sheets laid out whole, one island with no seams)
 
 
 def finish(name, pos, wt, tris, mkey, thick, bevel, budget=3000, scraps=True):
@@ -2781,6 +2785,17 @@ def finish(name, pos, wt, tris, mkey, thick, bevel, budget=3000, scraps=True):
         for poly in me.polygons:
             for li in poly.loop_indices:
                 uv[li].uv = tuple(float(t) for t in uvv[me.loops[li].vertex_index])
+    elif name in ONE_ISLAND:
+        # (a sheet wrapped round a joint every way, laid out whole with no
+        # seams, as little stretched as can be)
+        bpy.ops.object.mode_set(mode="EDIT")
+        bpy.ops.mesh.select_all(action="SELECT")
+        bpy.ops.mesh.mark_seam(clear=True)
+        try:
+            bpy.ops.uv.unwrap(method="MINIMUM_STRETCH", margin=0.0)
+        except TypeError:
+            bpy.ops.uv.unwrap(method="ANGLE_BASED", margin=0.0)
+        bpy.ops.object.mode_set(mode="OBJECT")
     elif np.percentile(facing, 2) > 0.15:
         u = np.cross(ax, [0, 0, 1] if abs(ax[2]) < 0.9 else [1, 0, 0])
         u /= np.linalg.norm(u)
@@ -4385,7 +4400,17 @@ def ranger_spaulder():
     LKEY = os.environ.get("SP_LEATHER", "forestleather")
     FAR, *FAR_W = sp_env("SP_FAR", "0.016,0.016,0.006")   # (past these from any plate the leather takes her skin's shape; past the cap and the bands, her skin's bones)
     CLR = LIFT + THK + GAP
-    CAP_UP, = sp_env("SP_CAP_UP", "0.004")            # (the cap stands further off: her shoulder swells under it at her idle)
+    CAP_UP, = sp_env("SP_CAP_UP", "0.0045")           # (the cap stands further off: her shoulder swells under it at her idle; 4 mm left band 1 1.17 mm under it, judge 8)
+    # (the hem away from the cap: how close it lies on her, the strip along
+    # it on one set of weights, and the width under a band over which the
+    # leather goes from the band's row to her skin's, hidden by the band)
+    HEM_LIFT, STRIP, TRANS = sp_env("SP_HEM", "0.0015,0.012,0.0")
+    # (how far the leather runs past band 2: 11 mm, and the change from the
+    # band's row to her skin's in that strip folded it at her idle, judge 8;
+    # made under the band instead, the leather on her skin's weights rose
+    # 4.8 mm through it at her idle, so the leather ends just past the band
+    # and moves with it, sp9)
+    TONGUE, = sp_env("SP_TONGUE", "0.006")
     s_, th_, rho_ = pl_frame(P, F_)
     line = S0 + C2 * th_ ** 2
     # (never round into her armpit; a distance, not a step: cut on a step,
@@ -4402,7 +4427,7 @@ def ranger_spaulder():
     def band(k):
         top = line + G + (k - 1) * (H + G)
         return ANDR(np.minimum(s_ - top, top + H - s_), (THB - np.abs(th_)) * rho_, r=0.009)
-    bot = line + 2 * (H + G) + 0.011
+    bot = line + 2 * (H + G) + TONGUE
     # (the leather shows only toward her neck, between the bands and below
     # them; round the rest of the cap plate it ends hidden under its rim)
     tongue = ANDR(ANDR(bot - s_, (THB - np.abs(th_)) * rho_ + 0.011, r=0.014), s_ - (line - 0.02), r=0.004)
@@ -4414,7 +4439,9 @@ def ranger_spaulder():
     MARGIN, TRAP = sp_env("SP_MARGIN", "0.008,0.01")
     under = OR(ANDR(cap(sh, R_CAP + MARGIN), line - s_ + MARGIN, r=0.008),
                ANDR(ANDR(cap(sh, R_CAP + TRAP), Z - (sh[2] - 0.0605), r=0.012), (S_MED + 0.02) - s_, r=0.012))
-    leaf = ANDR(OR(under, tongue), side, r=0.008)
+    # (its corners round, 16-18 mm: at 8 the neck corner's binding turned
+    # tight and curled up off her trapezius, judge 8)
+    leaf = ANDR(OR(under, tongue), side, r=0.016)
     # The plates first: the leather is shaped under them.
     names = ["ranger.pauldron0", "ranger.pauldron1", "ranger.pauldron2"]
     base = W[capf > 0].mean(0)
@@ -4441,8 +4468,18 @@ def ranger_spaulder():
             nr_ = vertex_normals(pd, td)
             arc = (hi - lo) * float(np.median(rp_)) - 0.03
             n = max(2, int(round(arc / 0.028)) + 1)
-            for t in np.linspace(lo + 0.015 / np.median(rp_), hi - 0.015 / np.median(rp_), n):
-                j = np.argmin(np.abs(tp_ - t) * rp_ + np.abs(sp_ - mid) * 1.0)
+            # (each at its bearing on the band's own middle, the point there
+            # farthest from the plate's rim, and none nearer it than 8.2 mm
+            # (its edge 2 mm inside the rolled rim's inner edge):
+            # on the band's median height overall, the end rivet sat on the
+            # rolled rim where the band curves up, half off it in a ring,
+            # judge 8)
+            ein_ = cKDTree(pd[max(edge_loops(td), key=len)]).query(pd)[0]
+            for t in np.linspace(lo + 0.018 / np.median(rp_), hi - 0.018 / np.median(rp_), n):
+                near_ = np.where(np.abs(tp_ - t) * rp_ < 0.002)[0]
+                j = near_[np.argmax(ein_[near_])] if len(near_) else int(np.argmin(np.abs(tp_ - t)))
+                if ein_[j] < 0.0082:
+                    continue
                 pts.append(pd[j])
                 nrs.append(nr_[j])
             pts, nrs = np.array(pts), np.array(nrs)
@@ -4453,6 +4490,7 @@ def ranger_spaulder():
         SHEET[nm] = (pd, td, np.repeat(row[None], len(pd), 0), 0.0015)
         loop = max(edge_loops(td), key=len)
         ein = cKDTree(pd[loop]).query(pd)[0]
+        print("SPAULDER %s: rivet nearest its plate's edge %.1f mm" % (nm, cKDTree(pd[loop]).query(pts)[0].min() * 1000))
         plates.append((pd, vertex_normals(pd, td), ein, cKDTree(pd), row))
         out += made
         print("SPAULDER %s: %d points, rivets %d, upper arm %.2f" % (nm, len(pd), len(pts), W_[k]))
@@ -4511,14 +4549,30 @@ def ranger_spaulder():
         # behind her armpit and flared 8-13 mm off her arm, judge 7)
         hem = np.unique(np.concatenate(edge_loops(tris)))
         hem = hem[own[hem] < 0]
+        # (away from the cap it lies close on her, HEM_LIFT, as a tailored
+        # edge does, rising to LIFT over the strip along it: held 3 mm off,
+        # its rear corner stood off her arm as a tongue with a void under
+        # it, and its neck corner curled up off her trapezius, judge 8)
+        far_ = np.clip((past[0] - FAR_W[0] / 2) / (FAR_W[0] / 2), 0, 1) * np.clip((past[1:].min(0) - STRIP) / STRIP, 0, 1)
         for i in hem:
             q, n, _, _ = BVH.find_nearest(Vector(pos[i]))
             if q is not None:
-                disp[i] = np.array(n) * (LIFT - (Vector(pos[i]) - q).dot(n))
+                disp[i] = np.array(n) * (LIFT - (LIFT - HEM_LIFT) * far_[i] - (Vector(pos[i]) - q).dot(n))
         known[hem] = True
         disp = fill(tris, disp, known)
+        out_ = pos + disp
+        # (and nothing of it nearer her than that: piece() clears it only by
+        # HEM_LIFT now, so the rest is cleared by LIFT here, as before)
+        d_e, j_e = cKDTree(out_[hem]).query(out_)
+        need = LIFT - (LIFT - HEM_LIFT) * far_[hem][j_e] * np.clip(1 - d_e / STRIP, 0, 1)
+        for i in np.where(own < 0)[0]:
+            q, n, _, _ = BVH.find_nearest(Vector(out_[i]))
+            if q is not None:
+                d = (Vector(out_[i]) - q).dot(n)
+                if d < need[i]:
+                    out_[i] = out_[i] + np.array(n) * (need[i] - d)
         print("SPAULDER leather held under the plates at %d of %d points, eased at %d" % ((own >= 0).sum(), len(pos), (~known).sum()))
-        return pos + disp
+        return out_
 
     def weigh(pos, wt):
         own, _, past = owned(pos)
@@ -4527,9 +4581,39 @@ def ranger_spaulder():
         # she is, rose over the rim, judge 7)
         rows = np.array([pl[4] for pl in plates])
         known = (own >= 0) | ((past[0] > FAR_W[0]) & (past[1:].min(0) > FAR_W[1]))
-        return fill(TRIS_L[0], np.where((own >= 0)[:, None], rows[np.maximum(own, 0)], wt), known)
+        vals = np.where((own >= 0)[:, None], rows[np.maximum(own, 0)], wt)
+        # (its hem strip away from the cap, the last STRIP of it, binding and
+        # all, on one set of weights across it: her skin's at the edge, eased
+        # along it. Under band 2 it took the band's row and 7-11 mm lower her
+        # skin's, and the sheet folded just inside the binding: a ragged edge
+        # with her skin at its notch, judge 8. The change from a band's row to
+        # her skin's is made under the band, over TRANS, hidden by it)
+        tris = TRIS_L[0]
+        hp, hw = [], []
+        for lp in edge_loops(tris):
+            lp = np.asarray(lp)
+            w_ = np.asarray(wt, float)[lp]
+            for _ in range(30):
+                w_ = (np.roll(w_, 1, 0) + 2 * w_ + np.roll(w_, -1, 0)) / 4
+            keep = (past[0][lp] > FAR_W[0]) & (past[1:, lp].min(0) > STRIP + 0.004)
+            hp.append(lp[keep])
+            hw.append(w_[keep])
+        hp, hw = np.concatenate(hp), np.vstack(hw)
+        if len(hp):
+            d_e, j_e = cKDTree(pos[hp]).query(pos)
+            strip = d_e < STRIP
+            vals[strip] = hw[j_e[strip]]
+            known |= strip
+            known &= ~((own >= 1) & ~strip & (d_e < STRIP + TRANS))
+            print("SPAULDER hem strip on its edge's weights at %d points, eased from the bands' rows at %d" % (
+                strip.sum(), ((own >= 1) & ~strip & (d_e < STRIP + TRANS)).sum()))
+        return fill(tris, vals, known)
 
-    lm = piece("ranger.spaulder", leaf, LKEY, lift=LIFT, thick=THK, smooth=10, soften=10, iron=20,
+    # (laid out whole, one island: cut into four by smart_project, it showed
+    # a pale line across it near her neck, judge 8)
+    ONE_ISLAND.add("ranger.spaulder")
+    BIND_RMIN["ranger.spaulder"] = 0.012
+    lm = piece("ranger.spaulder", leaf, LKEY, lift=LIFT, thick=THK, smooth=10, soften=10, iron=20, clear=HEM_LIFT,
                trim=("darkleather", 0.006, 0.0006, 0.0013), stiff=[conform], weigh=weigh)
     # (its binding and stitches on the weights the leather's edge ends with:
     # the binding took the sheet's weights before finish() eased them again,
