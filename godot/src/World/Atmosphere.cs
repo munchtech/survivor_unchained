@@ -158,6 +158,7 @@ public partial class Atmosphere : Node3D
         var gain = new Vector3((float)g.Gain[0], (float)g.Gain[1], (float)g.Gain[2]);
         // The web game's uniforms take three.js colours: linear.
         var shT = Lin(Hex(g.ShadowTint)); var hiT = Lin(Hex(g.HighlightTint));
+        float tintHue = Oklab(shT).Z;
         float tint = (float)g.TintStrength, sat = (float)g.Saturation, vibr = (float)g.Vibrance, con = (float)g.Contrast;
         var slices = new Godot.Collections.Array<Image>();
         for (int b = 0; b < LutSize; b++)
@@ -189,15 +190,71 @@ public partial class Atmosphere : Node3D
                     l = Luma(p);
                     p = new Vector3(l, l, l).Lerp(p, 1 - mute * (1 - keep));
                     var outLin = Pow(p.Clamp(Vector3.Zero, Vector3.One), 2.2f);
+                    if (!OldGrade) outLin = KeepHue(c, outLin, tintHue);
                     var o = Srgb(outLin);
                     img.SetPixel(r, gi, new Color(o.X, o.Y, o.Z));
                 }
             slices.Add(img);
         }
+        // --grade-dump FILE: the table's bytes (blue-major slices, RGB8), to check it outside the game.
+        if (SurvivorUnchained.Args.Get("grade-dump") is { } dump)
+        {
+            var bytes = new List<byte>();
+            foreach (var im in slices) bytes.AddRange(im.GetData());
+            System.IO.File.WriteAllBytes(dump, bytes.ToArray());
+        }
         var tex = new ImageTexture3D();
         tex.Create(Image.Format.Rgb8, LutSize, LutSize, LutSize, false, slices);
         luts[key] = tex;
         return tex;
+    }
+
+    /// <summary>--grade-old: the grade before KeepHue, for before-and-after pictures.</summary>
+    static readonly bool OldGrade = SurvivorUnchained.Args.Has("grade-old");
+
+    /// <summary>The shadow tint adds blue in gamma (the web game's sum), and in the dark it outweighs a
+    /// colour's own chroma: dark browns (irises, lashes, brows, leather) came out purple. Here the
+    /// grade keeps its brightness and its blue on greys and cool colours, but a colour's hue may
+    /// turn at most 6 degrees (Oklab), and where the grade darkens it, it may not grow more
+    /// saturated than it came in (the blue shade reads as a darker, greyer brown, not a purple).</summary>
+    static Vector3 KeepHue(Vector3 inLin, Vector3 outLin, float tintHue)
+    {
+        var i = Oklab(inLin); var o = Oklab(outLin);
+        float sat = i.Y / Mathf.Max(i.X, 1e-4f);
+        float away = Mathf.Abs(Mathf.Wrap(i.Z - tintHue, -180, 180));
+        // Greys have no hue to keep; colours near the tint's own hue may go bluer.
+        float w = Smooth(0.04f, 0.12f, sat) * Smooth(45, 90, away);
+        if (w <= 0) return outLin;
+        float turn = Mathf.Clamp(Mathf.Wrap(o.Z - i.Z, -180, 180), -6, 6);
+        // The cap fades in over 0.02 of lightness as the grade starts to darken, so no step shows.
+        float chroma = Mathf.Lerp(o.Y, Mathf.Min(o.Y, sat * o.X), Smooth(0, 0.02f, i.X - o.X));
+        float h0 = Mathf.DegToRad(o.Z), h1 = Mathf.DegToRad(i.Z + turn);
+        float a = Mathf.Lerp(o.Y * Mathf.Cos(h0), chroma * Mathf.Cos(h1), w);
+        float b = Mathf.Lerp(o.Y * Mathf.Sin(h0), chroma * Mathf.Sin(h1), w);
+        return FromOklab(o.X, a, b).Clamp(Vector3.Zero, Vector3.One);
+    }
+
+    /// <summary>Linear sRGB to Oklab as (L, chroma, hue in degrees).</summary>
+    static Vector3 Oklab(Vector3 c)
+    {
+        float l = Mathf.Pow(Mathf.Max(0.4122214708f * c.X + 0.5363325363f * c.Y + 0.0514459929f * c.Z, 0), 1 / 3f);
+        float m = Mathf.Pow(Mathf.Max(0.2119034982f * c.X + 0.6806995451f * c.Y + 0.1073969566f * c.Z, 0), 1 / 3f);
+        float s = Mathf.Pow(Mathf.Max(0.0883024619f * c.X + 0.2817188376f * c.Y + 0.6299787005f * c.Z, 0), 1 / 3f);
+        float L = 0.2104542553f * l + 0.7936177850f * m - 0.0040720468f * s;
+        float A = 1.9779984951f * l - 2.4285922050f * m + 0.4505937099f * s;
+        float B = 0.0259040371f * l + 0.7827717662f * m - 0.8086757660f * s;
+        return new(L, Mathf.Sqrt(A * A + B * B), Mathf.RadToDeg(Mathf.Atan2(B, A)));
+    }
+
+    static Vector3 FromOklab(float L, float A, float B)
+    {
+        float l = L + 0.3963377774f * A + 0.2158037573f * B;
+        float m = L - 0.1055613458f * A - 0.0638541728f * B;
+        float s = L - 0.0894841775f * A - 1.2914855480f * B;
+        l *= l * l; m *= m * m; s *= s * s;
+        return new(4.0767416621f * l - 3.3077115913f * m + 0.2309699292f * s,
+            -1.2684380046f * l + 2.6097574011f * m - 0.3413193965f * s,
+            -0.0041960863f * l - 0.7034186147f * m + 1.7076147010f * s);
     }
 
     static float Luma(Vector3 c) => c.X * 0.2126f + c.Y * 0.7152f + c.Z * 0.0722f;
