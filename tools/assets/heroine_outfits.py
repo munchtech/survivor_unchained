@@ -3785,6 +3785,9 @@ if BODY_OUT:
     bpy.context.view_layer.objects.active = arm
     bpy.ops.export_scene.gltf(filepath=BODY_OUT, export_format="GLB", use_selection=True, export_skins=True, export_animations=False,
                               export_yup=True, export_vertex_color="ACTIVE")
+    # (her head's keys' normals held to her neck's at SPLIT, as the exporter does not: heroine_seam.py)
+    import heroine_seam
+    heroine_seam.seam(BODY_OUT)
     print("BODY", BODY_OUT)
 
 # Nothing else rides along (the scene may hold strays).

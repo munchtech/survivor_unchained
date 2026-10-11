@@ -18,16 +18,36 @@ her body's skin over the 6 mm above SPLIT, as heroine_head.py's matched_base bri
 and that field over the head's paint by the cut, in her head's paint and its raw copy (before heroine_face_fixes,
 which touch only her lids, nostrils and lips), and writes the face paint's alpha as cut, so a build or a relay
 after lays it as the head now has it. (OUT_DIR: all three written there by their own names, for a look first.)
+Every texel outside her head's faces is then given the nearest inside's colour again (heroine_head.py's pad): left
+as it was, the old paint about her UVs' islands was drawn in along their edges, a thin stepped line under her ear.
+A head already cut has its edges done alone with: python tools/assets/heroine_jaw_cut.py --pad ID DIR
 """
 import os
 import sys
 
 import numpy as np
 from PIL import Image
+from scipy import ndimage
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 from heroine_face_relay import paths  # noqa: E402
+
+
+def pad(h, d):
+    """h with every texel outside her head's faces (DIR/base_skin.png's alpha) given the nearest inside's colour."""
+    inside = np.asarray(Image.open(os.path.join(d, "base_skin.png")).convert("RGBA"))[..., 3] > 127
+    _, (iy, ix) = ndimage.distance_transform_edt(~inside, return_indices=True)
+    return h[iy, ix]
+
+
+def repad(face, d):
+    """A head already cut (its paint and raw copy): its edges done alone."""
+    _, raw_p, tex_p = paths(face)
+    for p in (raw_p, tex_p):
+        h = np.asarray(Image.open(p).convert("RGB"), np.float32) / 255
+        Image.fromarray((pad(h, d) * 255 + 0.5).astype(np.uint8)).save(p, quality=95, subsampling=0)
+        print("PADDED", p)
 
 
 def cut(face, d, out_dir=None, head_in=None):
@@ -42,7 +62,7 @@ def cut(face, d, out_dir=None, head_in=None):
     print("JAW CUT %s: her neck's own colour laid over %.2f%% of her head" % (face, 100 * (c > 0.5).mean()))
     for p in ((head_in,) if head_in else (raw_p, tex_p)):
         h = np.asarray(Image.open(p).convert("RGB"), np.float32) / 255
-        h2 = h * (1 - c[..., None]) + base * c[..., None]
+        h2 = pad(h * (1 - c[..., None]) + base * c[..., None], d)
         q = os.path.join(out_dir, os.path.basename(p)) if out_dir else p
         Image.fromarray((h2 * 255 + 0.5).astype(np.uint8)).save(q, quality=95, subsampling=0)
         print("  written", q)
@@ -56,4 +76,7 @@ def cut(face, d, out_dir=None, head_in=None):
 
 
 if __name__ == "__main__":
-    cut(*sys.argv[1:5])
+    if sys.argv[1] == "--pad":
+        repad(sys.argv[2], sys.argv[3])
+    else:
+        cut(*sys.argv[1:5])

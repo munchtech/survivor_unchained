@@ -1065,6 +1065,15 @@ public static class People
             m.SetShaderParameter("shine", HisSkin.Shine);
             m.SetShaderParameter("edge_rough", HisSkin.Edge);
         }
+        // (--skin-set "skin_head:ao_light=0;skin_graft:shine=0.36": a developer's switch, a part's skin uniforms
+        // tried without a build; a part "*" for every part)
+        if (SurvivorUnchained.Args.Get("skin-set") is string ss)
+            foreach (var part in ss.Split(';'))
+                if (part.Split(':') is [var who2, var kvs] && (who2 == "*" || who2 == src.ResourceName))
+                    foreach (var kv in kvs.Split(','))
+                        if (kv.Split('=') is [var k, var v] && float.TryParse(v, System.Globalization.NumberStyles.Float,
+                                System.Globalization.CultureInfo.InvariantCulture, out var x))
+                            m.SetShaderParameter(k.Trim(), x);
         return m;
     }
 
