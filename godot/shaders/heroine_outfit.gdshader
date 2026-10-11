@@ -158,7 +158,9 @@ void fragment() {
 		// blew out 5.7% of the lower frame, face lead)
 		// (the bracers too, so the set matches: polished beside the satin cap,
 		// judge 7)
-		if (flag > 0.25 && flag < 0.75) rough = clamp(rough + 0.14, 0.32, 0.62);
+		// (and no hotter than 0.38: the bracers' round caught the key light as a hot
+		// streak along their top at 0.32, judge 7)
+		if (flag > 0.25 && flag < 0.75) rough = clamp(rough + 0.14, 0.38, 0.62);
 		col *= mix(0.7, 1.0, sky) * mix(1.0, 1.1, polish);
 		metal = 1.0;   // (all metal: the scan's metal map has rust and dirt in it, and each patch of it showed as a pale fleck)
 	} else if (kind == 2 || kind == 4) {

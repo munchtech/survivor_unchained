@@ -2509,7 +2509,9 @@ def rivets(name, pos, at, tris, thick, mkey, spacing=0.028, inset=0.011, r=0.003
         fl = 0.08 * r
         pts = [base + n * (fl + r * 0.52)]
         rings = [(r * np.sin((np.pi / 2) * k / nv), fl + r * 0.52 * np.cos((np.pi / 2) * k / nv)) for k in range(1, nv + 1)]
-        rings += [(r * 1.3, fl), (r * 1.3, 0.0)]
+        # (the flange just past the head: 1.3 r wide it caught the light as a pale
+        # washer, a halo, and edge-on round a dark head it read as a hole, judge 7)
+        rings += [(r * 1.12, fl), (r * 1.12, 0.0)]
         for rr, hh in rings:
             for j in range(nu):
                 ph = 2 * np.pi * j / nu
