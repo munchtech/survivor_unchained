@@ -644,6 +644,13 @@ def get_up(rig):
                 f["toe"] = toe
             pose = {**pose, "foot_l": f}
         return planted(fr, pose)
+    # The hands' first lift and carry drawn out over 7 frames, not 4 (judge
+    # 22: a hand 15 cm a frame, the elbows snapping up after it); every key
+    # after, and the frames the passes above name, OPEN later.
+    OPEN = 3
+    keys = [(k * (4 + OPEN) / 4 if k <= 4 else k + OPEN, pose, e) for k, pose, e in keys]
+    post_ = post
+    post = lambda fr, pose: post_(fr - OPEN if fr > 4 + OPEN else min(fr, 4), pose)
     # Handed over from where death left her: settled with the frames after
     # it (solve_frames), get_up's first frame took its left elbow 9 cm up
     # toward the hands' lift (the upper arm 50 degrees off death's last
@@ -653,11 +660,11 @@ def get_up(rig):
     # The arms, solved fresh where death's came from its frames before, are
     # left 6 degrees apart even so: eased in, hands and all, as the hands
     # first lift (over 4 frames the lift lagged 3-4 cm behind its path).
-    clip = build("get_up", rig, keys, meta={"layer": "full"}, post=post, pin_first=True)
+    clip = build("get_up", rig, keys, meta={"layer": "full"}, post=post, pin_first=5)
     end = death(rig)
     of = lambda *parts: [j for j, b in enumerate(rig.sk.names) if b.split("_")[0] in parts]
     _ease_from(clip, end.rot[-1], 8, of("thigh", "calf", "foot", "ball"))
-    _ease_from(clip, end.rot[-1], 3, of("upperarm", "lowerarm", "hand", "thumb", "index", "middle", "ring", "pinky"))
+    _ease_from(clip, end.rot[-1], 4, of("upperarm", "lowerarm", "hand", "thumb", "index", "middle", "ring", "pinky"))
     return clip
 
 
