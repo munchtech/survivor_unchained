@@ -133,9 +133,12 @@ uniform float tuck = 0.010;
 uniform float backlight = 0.18;
 uniform vec3 backlight_colour = vec3(1.0, 0.45, 0.35);
 uniform float backlight_behind = 0.0;
+// (how far the light through her is kept to where she is thin, by ao_map's blue (heroine_thin.py: her ears, the
+// wings of her nose): unmasked, the underside of her jaw, turned from the key, took a salmon line along its edge)
+uniform float thin_map = 0.0;
 // Her shade richer (a lamp's light where it reaches her at a low angle, ndl shade_from to shade_to, times shade_tint,
 // its lightness kept): where she faces down (shade_down, world normal's -y from down_from to down_to) and where
-// ao_map's blue says (shade_zone). (Tried 11 October 2026: ungated it misses the shade under her jaw, lit there
+// ao_map's alpha says (shade_zone). (Tried 11 October 2026: ungated it misses the shade under her jaw, lit there
 // by the fill at a high ndl; a test switch, 1 none.)
 uniform vec3 shade_tint = vec3(1.0);
 uniform float shade_from = -0.2;
@@ -239,9 +242,9 @@ void fragment() {
 	AO = ao;
 	AO_LIGHT_AFFECT = ao_light;
 	SSS_STRENGTH = scatter;
-	BACKLIGHT = ALBEDO * backlight_colour * backlight;
+	BACKLIGHT = ALBEDO * backlight_colour * backlight * mix(1.0, aot.b, thin_map);
 	float wd = (INV_VIEW_MATRIX * vec4(NORMAL, 0.0)).y;
-	shade_w = mix(1.0, smoothstep(down_from, down_to, -wd), shade_down) * mix(1.0, aot.b, shade_zone);
+	shade_w = mix(1.0, smoothstep(down_from, down_to, -wd), shade_down) * mix(1.0, aot.a, shade_zone);
 	ALBEDO *= ambient_tint;
 }
 

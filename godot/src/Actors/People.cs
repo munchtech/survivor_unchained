@@ -1049,6 +1049,8 @@ public static class People
                 // (her head's skin eased into the graft's over the 3 cm above her neck's seam: the shader's seam_*,
                 // at the graft's rough, shine and pore depth, set above as every body part's)
                 m.SetShaderParameter("seam_ease", true);
+                // (the light through her kept to her ears and her nose's wings: the map's blue, heroine_thin.py)
+                m.SetShaderParameter("thin_map", 1f);
             }
         }
         // (her skin warmer in the sky's light than in the lamps': HerAmbientTint)
