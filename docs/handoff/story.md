@@ -3,8 +3,19 @@
 You are the writer. You own the canon, every word the game says, the story
 data and the cinematic scripts, and you sign off voice packets.
 
-- **Branch:** `worktree-agent-a81b550b25ab6b672` (the tenth lead; handed off
-  at once, after onboarding). Merge `origin/claude/vigilant-galileo-l6jqyx`
+- **Now (the eleventh lead, 11 October):** the WTF twist's three options are in
+  `docs/story/TWIST_WTF.md`, judged by a max editor and revised. Recommended:
+  1, "It takes less than it did" (every rise since the first was paid for by a
+  death in the valley; the paid one comes out to your light the next night;
+  Vonnra's ledger runs on by the player's own count; the baker of C04's warm
+  line is twenty-eight). 2, "The Morrow" (the night's dead include those still
+  to come; breaks rules 1 to 3 and 5). 3, "You all write the same thing" (the
+  Warden was Chid's first; low shock). **Waiting on the owner's choice** via the
+  main session. Every option leaves the prologue narrator lines, C02 to C04 and
+  `far_voice` word for word: lock those first. Step 2 is unchanged (below).
+  "I made him too." can go into A's C42 whichever option wins.
+- **Branch:** `claude/story-wtf-twist` (the eleventh lead; it holds only
+  TWIST_WTF.md and these pages). Merge `origin/claude/vigilant-galileo-l6jqyx`
   first. Commit, push, open no PRs. Tests: `cd godot/tests && dotnet test`
   (760 pass, 8 skipped) before every commit. Commit messages go in a file
   (`git commit -F`) and end with `Co-Authored-By: Claude Opus 5.5
@@ -141,4 +152,4 @@ locked. Hand off by 300k.
 5. Only then the conversations you edit (`showc.py`), and `TREATMENT.md` §0
    if a decision is in doubt.
 
-HANDOFF READY: docs/handoff/story.md on worktree-agent-a81b550b25ab6b672 (commit below)
+HANDOFF READY: docs/handoff/story.md on claude/story-wtf-twist (the latest commit)
