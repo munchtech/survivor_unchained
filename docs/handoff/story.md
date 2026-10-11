@@ -38,7 +38,7 @@ data and the cinematic scripts, and you sign off voice packets.
 
 ## Next, in order
 
-1. Apply any judge fixes not yet in (status page).
+1. The judge passed the pass with four fixes, all applied (status page). Give Chid's marker a return in Act 2 or C32 for `mother.cut` `none`.
 2. Direct the held lines (narrator plain and dry, VOICES.md), then lock them
    with `lock.py` (pass ids through Python: a shell `$(cat)` of a CRLF list
    locks nothing). Prefixes match by `startswith`: `dlg.x.hub.1` also locks

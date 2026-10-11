@@ -1,6 +1,6 @@
 # Captain Holloway: ElevenLabs packet
 
-Voice id in the game: `holloway`. 110 takes to record (9,718 characters; about 29,154 credits at three tries a line). Status: **on hold, except the 70 takes marked LOCKED FOR RECORDING** (the story lead, 2026-10-11): record those now and hold the rest (the story rewrite changes most of his lines (docs/voice/RERECORD.md)).
+Voice id in the game: `holloway`. 110 takes to record (9,714 characters; about 29,142 credits at three tries a line). Status: **on hold, except the 70 takes marked LOCKED FOR RECORDING** (the story lead, 2026-10-11): record those now and hold the rest (the story rewrite changes most of his lines (docs/voice/RERECORD.md)).
 
 ## Who they are
 
@@ -920,25 +920,25 @@ Subtitle: Ninety-one. Then I looked down.
 
 ### 82. `dlg.scene_knocking.saw.0.p0.wav`  HOLD: the story rewrite changes most of his lines (docs/voice/RERECORD.md)
 
-*Where:* dialogue.json scene_knocking/saw#0; part 1 of 7: **holloway: Dead. Climbing. Gray, all of them, and not a sound out of them. Under the last of ours, cl…** / narrator: He holds one hand flat over the other. / holloway: Four hundred behind me, asleep. Bairns. / narrator: He drinks. / holloway: Lid down. Bar across. Sat on it. / narrator: He breathes out, a long way. / holloway: Three days, they knocked.
+*Where:* dialogue.json scene_knocking/saw#0; part 1 of 7: **holloway: Dead. Climbing. Under the last of ours, close as that.** / narrator: He holds one hand flat over the other. / holloway: Gray, all of them. Not a sound out of them. Four hundred behind me, asleep. Bairns. / narrator: He drinks. / holloway: Lid down. Bar across. Sat on it. / narrator: He breathes out, a long way. / holloway: Three days, they knocked.
 
 ```
-Dead. Climbing. Gray, all of them, and not a sound out of them. Under the last of ours, close as that.
+Dead. Climbing. Under the last of ours, close as that.
 ```
-Subtitle: Dead. Climbing. Gray, all of them, and not a sound out of them. Under the last of ours, close as that.
+Subtitle: Dead. Climbing. Under the last of ours, close as that.
 
 ### 83. `dlg.scene_knocking.saw.0.p2.wav`  HOLD: the story rewrite changes most of his lines (docs/voice/RERECORD.md)
 
-*Where:* dialogue.json scene_knocking/saw#0; part 3 of 7: holloway: Dead. Climbing. Gray, all of them, and not a sound out of them. Under the last of ours, cl… / narrator: He holds one hand flat over the other. / **holloway: Four hundred behind me, asleep. Bairns.** / narrator: He drinks. / holloway: Lid down. Bar across. Sat on it. / narrator: He breathes out, a long way. / holloway: Three days, they knocked.
+*Where:* dialogue.json scene_knocking/saw#0; part 3 of 7: holloway: Dead. Climbing. Under the last of ours, close as that. / narrator: He holds one hand flat over the other. / **holloway: Gray, all of them. Not a sound out of them. Four hundred behind me, asleep. Bairns.** / narrator: He drinks. / holloway: Lid down. Bar across. Sat on it. / narrator: He breathes out, a long way. / holloway: Three days, they knocked.
 
 ```
-Four hundred behind me, asleep. Bairns.
+Gray, all of them. Not a sound out of them. Four hundred behind me, asleep. Bairns.
 ```
-Subtitle: Four hundred behind me, asleep. Bairns.
+Subtitle: Gray, all of them. Not a sound out of them. Four hundred behind me, asleep. Bairns.
 
 ### 84. `dlg.scene_knocking.saw.0.p4.wav`  HOLD: the story rewrite changes most of his lines (docs/voice/RERECORD.md)
 
-*Where:* dialogue.json scene_knocking/saw#0; part 5 of 7: holloway: Dead. Climbing. Gray, all of them, and not a sound out of them. Under the last of ours, cl… / narrator: He holds one hand flat over the other. / holloway: Four hundred behind me, asleep. Bairns. / narrator: He drinks. / **holloway: Lid down. Bar across. Sat on it.** / narrator: He breathes out, a long way. / holloway: Three days, they knocked.
+*Where:* dialogue.json scene_knocking/saw#0; part 5 of 7: holloway: Dead. Climbing. Under the last of ours, close as that. / narrator: He holds one hand flat over the other. / holloway: Gray, all of them. Not a sound out of them. Four hundred behind me, asleep. Bairns. / narrator: He drinks. / **holloway: Lid down. Bar across. Sat on it.** / narrator: He breathes out, a long way. / holloway: Three days, they knocked.
 
 ```
 Lid down. Bar across. Sat on it.
@@ -947,7 +947,7 @@ Subtitle: Lid down. Bar across. Sat on it.
 
 ### 85. `dlg.scene_knocking.saw.0.p6.wav`  HOLD: the story rewrite changes most of his lines (docs/voice/RERECORD.md)
 
-*Where:* dialogue.json scene_knocking/saw#0; part 7 of 7: holloway: Dead. Climbing. Gray, all of them, and not a sound out of them. Under the last of ours, cl… / narrator: He holds one hand flat over the other. / holloway: Four hundred behind me, asleep. Bairns. / narrator: He drinks. / holloway: Lid down. Bar across. Sat on it. / narrator: He breathes out, a long way. / **holloway: Three days, they knocked.**
+*Where:* dialogue.json scene_knocking/saw#0; part 7 of 7: holloway: Dead. Climbing. Under the last of ours, close as that. / narrator: He holds one hand flat over the other. / holloway: Gray, all of them. Not a sound out of them. Four hundred behind me, asleep. Bairns. / narrator: He drinks. / holloway: Lid down. Bar across. Sat on it. / narrator: He breathes out, a long way. / **holloway: Three days, they knocked.**
 
 ```
 Three days, they knocked.

@@ -385,7 +385,7 @@ public class StoryRewriteTests
         // The confession's plant, true of the dead and of the living too far gone to call out (b).
         var (knock, _) = Play("scene_knocking", Q(), "(Listen.)", "Go home", "(Wait.)");
         Assert.Contains(knock, t => t.EndsWith("...Sit down. I'll tell you who."));
-        Assert.Contains(knock, t => t.StartsWith("Dead. Climbing. Gray, all of them, and not a sound out of them."));
+        Assert.Contains(knock, t => t.StartsWith("Dead. Climbing. Under the last of ours") && t.Contains("Gray, all of them. Not a sound out of them. Four hundred behind me"));
         // §6.2: the boots thinned.
         Assert.DoesNotContain(Convo("maeca").Nodes["blind"].Text, v => v.Text.Contains("boots"));
         Assert.Contains(Simulation.DailyRules, r => r.Id == "kerchief.raid" && r.Report!.Contains("took his mule"));

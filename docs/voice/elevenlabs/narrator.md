@@ -4067,7 +4067,7 @@ Subtitle: He counts on his fingers, loses his place, and starts again.
 
 ### 381. `dlg.scene_knocking.saw.0.p1.wav`  HOLD: recast as a woman of about sixty, plain and dry (the story rewrite, 6 October); cast her anew before recording
 
-*Where:* dialogue.json scene_knocking/saw#0; part 2 of 7: holloway: Dead. Climbing. Gray, all of them, and not a sound out of them. Under the last of ours, cl… / **narrator: He holds one hand flat over the other.** / holloway: Four hundred behind me, asleep. Bairns. / narrator: He drinks. / holloway: Lid down. Bar across. Sat on it. / narrator: He breathes out, a long way. / holloway: Three days, they knocked.
+*Where:* dialogue.json scene_knocking/saw#0; part 2 of 7: holloway: Dead. Climbing. Under the last of ours, close as that. / **narrator: He holds one hand flat over the other.** / holloway: Gray, all of them. Not a sound out of them. Four hundred behind me, asleep. Bairns. / narrator: He drinks. / holloway: Lid down. Bar across. Sat on it. / narrator: He breathes out, a long way. / holloway: Three days, they knocked.
 *Played:* the narrator's aside inside someone else's line: plain, quiet, observant; the narrator never shows a feeling.
 
 ```
@@ -4077,7 +4077,7 @@ Subtitle: He holds one hand flat over the other.
 
 ### 382. `dlg.scene_knocking.saw.0.p5.wav`  HOLD: recast as a woman of about sixty, plain and dry (the story rewrite, 6 October); cast her anew before recording
 
-*Where:* dialogue.json scene_knocking/saw#0; part 6 of 7: holloway: Dead. Climbing. Gray, all of them, and not a sound out of them. Under the last of ours, cl… / narrator: He holds one hand flat over the other. / holloway: Four hundred behind me, asleep. Bairns. / narrator: He drinks. / holloway: Lid down. Bar across. Sat on it. / **narrator: He breathes out, a long way.** / holloway: Three days, they knocked.
+*Where:* dialogue.json scene_knocking/saw#0; part 6 of 7: holloway: Dead. Climbing. Under the last of ours, close as that. / narrator: He holds one hand flat over the other. / holloway: Gray, all of them. Not a sound out of them. Four hundred behind me, asleep. Bairns. / narrator: He drinks. / holloway: Lid down. Bar across. Sat on it. / **narrator: He breathes out, a long way.** / holloway: Three days, they knocked.
 *Played:* the narrator's aside inside someone else's line: plain, quiet, observant; the narrator never shows a feeling.
 
 ```

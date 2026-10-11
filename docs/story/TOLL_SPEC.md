@@ -120,7 +120,7 @@ and the mark the paid one carries at night.
 | hebble | Annis Hebble, knitting. | Annis Hebble's daughter found her by the window with the needles still in her hands. She'd dropped a stitch, and never picked it up. | One of them trails a skein of wool behind it. |
 | dowd | The miller's widow. | Mercy Dowd, the miller's widow, didn't come to her door this morning. The cat had been crying at it since before light. | One of them is in a nightgown, and has one slipper on. |
 | maud | Maud, who swept the shrine. | Maud, who swept the shrine for Chid, was found on the shrine step with her broom across her knees. Chid swept the step himself this morning. Twice. | One of them has a broom. |
-| ashby | The thatcher. | Tom Ashby, the thatcher, took his bread up onto a roof ridge at first light, and never came down. They had to fetch him down on a rope. | One of them has a bundle of reed on its back. |
+| ashby | The thatcher. | Tom Ashby, the thatcher, took his bread up onto a roof ridge at first light. They had to fetch him down on a rope. | One of them has a bundle of reed on its back. |
 | carrow | The Widow Carrow. | The Widow Carrow's boy couldn't wake her this morning. Holloway paid for the box himself, and stood at the back. (Gate: Holloway alive. After him: "The Widow Carrow's boy couldn't wake her this morning. With the captain gone, Maeca paid for the box.") | One of them is holding a child's mitten. |
 | hollis | The cooper's lad. | Bran Hollis, the cooper's lad, didn't wake on his wedding morning. The girl has been at the shrine since. | One of them is in its wedding shirt. |
 | penhale | Gran Penhale. | Gran Penhale died in the night with the dog lying across her feet. It growled at the men who came for her. | One of them has a shawl over its head, the way the old women wear them. |
@@ -131,7 +131,7 @@ and the mark the paid one carries at night.
 | haig | Mother Haig. | Mother Haig, ninety if a day, has gone. Everyone says it was her time, and says it a little too quickly. | One of them is bent nearly double. |
 | tolley | Jem Tolley, at the Flagon. | Jem Tolley put his head down on the Flagon's corner table with a full cup in front of him, and that was all. Rav says it's the first full cup he ever left. | One of them has a tankard hooked on one finger. |
 | pip | The shepherd. | Pip, the Penhales' shepherd, went on the hill with his dog beside him. The dog brought the sheep home by itself. | One of them has a crook. |
-| dorrie | Dorrie Hale. Four. | Little Dorrie Hale went in her sleep. She was four. Wenna sat with the mother all morning, and for once said nothing at all. | One of them is very small. |
+| dorrie | Dorrie Hale. Four. | Little Dorrie Hale went in her sleep. She was four. Wenna sat with the mother all morning and said nothing. | One of them is very small. |
 | tull | The washerwoman. | Mother Tull, who did the Watch's washing, lay down for a minute after the copper was lit, and went. The copper boiled dry. | One of them has its sleeves rolled to the shoulder. |
 
 Gate the entries that need someone alive: carrow (Holloway alive, see her text), agnes (Harlan alive). Hester is always first. Keep Dorrie out of the first ten draws. Two take

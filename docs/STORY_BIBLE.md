@@ -812,7 +812,7 @@ Each seed names the beat it pays (section 7 and 8). `WRITING_PASS.md` section
   "Abbot. Two bairns. Ancell. His mam." `holloway.roll2` stops on "Gale.
   ...Gale." (Maeca's lad). `scene_knocking` (the first dusk after the tremor,
   from day 4): the whole of it, in ledger syntax, with "Lamp in my eyes." and
-  "Gray, all of them, and not a sound out of them." (true of the dead, and of
+  "Gray, all of them. Not a sound out of them." (true of the dead, and of
   the living too far gone to call out: (b)); "Three days, they knocked." turns
   on rule 7. Fact `holloway.confessed`; his night bark "Ninety-one up."
 - `scene_in_my_count`: one voice in the crowd says the town's fear, and it is

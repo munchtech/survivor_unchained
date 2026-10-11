@@ -1,6 +1,6 @@
 # Townsman, middle-aged: ElevenLabs packet
 
-Voice id in the game: `folk_m1`. 48 takes to record (3,286 characters; about 9,858 credits at three tries a line). Status: **draft**, until the story lead (a7622ae77d19e31dc) checks every line and marks it final.
+Voice id in the game: `folk_m1`. 48 takes to record (3,277 characters; about 9,831 credits at three tries a line). Status: **draft**, until the story lead (a7622ae77d19e31dc) checks every line and marks it final.
 
 ## Who they are
 
@@ -50,9 +50,9 @@ Each: what is going on, how it is played, then the text to paste (the bracketed 
 *Where:* dialogue.json scene_in_my_count/say#0
 
 ```
-Every night you go out in the dark. Every morning you walk back in without a mark on you. And every morning since you came, there's somebody up the street didn't wake. ...You'll be out of that gate by dark.
+Every night you go out in the dark. Every morning you bring it back in with you. And every morning since you came, there's somebody up the street didn't wake. ...You'll be out of that gate by dark.
 ```
-Subtitle: Every night you go out in the dark. Every morning you walk back in without a mark on you. And every morning since you came, there's somebody up the street didn't wake. ...You'll be out of that gate by dark.
+Subtitle: Every night you go out in the dark. Every morning you bring it back in with you. And every morning since you came, there's somebody up the street didn't wake. ...You'll be out of that gate by dark.
 
 ## Passers-by
 

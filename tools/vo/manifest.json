@@ -30461,13 +30461,13 @@
    "id": "dlg.scene_in_my_count.say.0",
    "kind": "dialogue",
    "voice": "folk_m1",
-   "text": "Every night you go out in the dark. Every morning you walk back in without a mark on you. And every morning since you came, there's somebody up the street didn't wake. ...You'll be out of that gate by dark.",
+   "text": "Every night you go out in the dark. Every morning you bring it back in with you. And every morning since you came, there's somebody up the street didn't wake. ...You'll be out of that gate by dark.",
    "where": "dialogue.json scene_in_my_count/say#0",
-   "hash": "1b891d0390b1",
+   "hash": "35803026ba61",
    "segments": [
     {
      "voice": "folk_m1",
-     "text": "Every night you go out in the dark. Every morning you walk back in without a mark on you. And every morning since you came, there's somebody up the street didn't wake. ...You'll be out of that gate by dark."
+     "text": "Every night you go out in the dark. Every morning you bring it back in with you. And every morning since you came, there's somebody up the street didn't wake. ...You'll be out of that gate by dark."
     }
    ],
    "status": "todo"
@@ -30812,13 +30812,13 @@
    "id": "dlg.scene_knocking.saw.0",
    "kind": "dialogue",
    "voice": "holloway",
-   "text": "Dead. Climbing. Gray, all of them, and not a sound out of them. Under the last of ours, close as that. (He holds one hand flat over the other.) Four hundred behind me, asleep. Bairns. (He drinks.) Lid down. Bar across. Sat on it. (He breathes out, a long way.) Three days, they knocked.",
+   "text": "Dead. Climbing. Under the last of ours, close as that. (He holds one hand flat over the other.) Gray, all of them. Not a sound out of them. Four hundred behind me, asleep. Bairns. (He drinks.) Lid down. Bar across. Sat on it. (He breathes out, a long way.) Three days, they knocked.",
    "where": "dialogue.json scene_knocking/saw#0",
-   "hash": "3addfeeb820f",
+   "hash": "fc35b82c2f47",
    "segments": [
     {
      "voice": "holloway",
-     "text": "Dead. Climbing. Gray, all of them, and not a sound out of them. Under the last of ours, close as that."
+     "text": "Dead. Climbing. Under the last of ours, close as that."
     },
     {
      "voice": "narrator",
@@ -30826,7 +30826,7 @@
     },
     {
      "voice": "holloway",
-     "text": "Four hundred behind me, asleep. Bairns."
+     "text": "Gray, all of them. Not a sound out of them. Four hundred behind me, asleep. Bairns."
     },
     {
      "voice": "narrator",

@@ -74,7 +74,7 @@ Holloway, Brannoc and Sella, in that order.
 |---|---|---|---|---|
 | [The narrator](narrator.md) | 391 | 37,107 | 175 | 216 |
 | [Sella](sella.md) | 97 | 9,964 |  |  |
-| [Captain Holloway](holloway.md) | 110 | 9,718 | 40 | 70 |
+| [Captain Holloway](holloway.md) | 110 | 9,714 | 40 | 70 |
 | [Vonnra Ash-of-Morrow](vonnra.md) | 104 | 8,939 | 103 | 1 |
 | [Chid](chid.md) | 82 | 8,712 |  | 53 |
 | [Harlan Coyle](harlan.md) | 63 | 7,229 | 63 |  |
@@ -86,7 +86,7 @@ Holloway, Brannoc and Sella, in that order.
 | [Old Wenna](wenna.md) | 34 | 4,069 |  |  |
 | [Pell Varrow](pell.md) | 32 | 3,621 |  |  |
 | [Ysolde Marrow, the Wayfinder](ysolde.md) | 30 | 3,403 |  |  |
-| [Townsman, middle-aged](folk_m1.md) | 48 | 3,286 |  |  |
+| [Townsman, middle-aged](folk_m1.md) | 48 | 3,277 |  |  |
 | [Townswoman, young](folk_f2.md) | 47 | 3,055 |  |  |
 | [Townswoman, middle-aged](folk_f1.md) | 46 | 2,721 |  |  |
 | [Brannoc](brannoc.md) | 63 | 2,621 | 2 | 62 |

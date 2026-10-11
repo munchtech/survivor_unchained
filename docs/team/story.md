@@ -14,7 +14,7 @@ starts from `docs/handoff/story.md`.
   narration lines (directed today) and the gate guard's dusk call. Held: 46
   undirected lines (`docs/voice/undirected_held.txt`) and the pass's edited
   lines, to direct and lock next.
-- **Editor-judge verdict:** pending at writing.
+- **Editor-judge (max): pass with fixes, all four applied** (the crowd says "you bring it back in with you", not "without a mark"; the (b) plant moved after the hands as fragments; TOLL_SPEC dorrie and ashby). Its note: Act 2 or C32 should offer Chid's marker again to a player who said nothing (`mother.cut` `none`).
 
 The ninth lead's state follows (paused 6 October; still true unless the lines
 above say otherwise).
