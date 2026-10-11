@@ -4,11 +4,11 @@ The writer: owner of the canon, the words and the story data. Works with the
 story editor, a fresh one for each draft (`docs/story/notes/`). A successor
 starts from `docs/handoff/story.md`.
 
-**Now (12 October, branch `story/marker-and-locks`):** the marker work and the
-held lines judged and fixed (merge requested at fd0b8a9b; 498 locks). Love
-scenes B written into the data on top (unjudged WIP; everything behind the
-door stays on HOLD). Next: B's directions, docs, a judge, then locks
-(`docs/handoff/story.md`).
+**Now (11 October, writer 15, branch `story/marker-and-locks`):** love scenes
+B judged (PASS WITH FIXES), fixed and fix-checked (PASS WITH FIXES, applied).
+The blue room and the Blind are locked whole (566 locks): every Sella and
+Maeca line there, and the narrator's bolt; the door guard holds any other
+narrator part behind the door for good. Next: Act 2 (`docs/handoff/story.md`).
 
 **Before (11 October, the fourteenth lead, branch `story/sophistication-pass`):**
 - **The sophistication pass (Act 1) is applied** (list in `docs/handoff/story.md`),

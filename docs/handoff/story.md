@@ -24,8 +24,13 @@ the story data and the cinematic scripts, and you sign off voice packets.
   `StoryRewriteTests.The_narrator_stops_at_the_door` matches the bolt exactly
   and walks the graph against its hand list. Maeca's lines can't say
   "barefoot" again (`Maeca_is_just_Maeca`).
-- **Fix-check judge:** RESULT (`<scratch>\s17\verdict_fixcheck.md`).
-- **Merge:** MERGE.
+- **Fix-check judge: PASS WITH FIXES, all four applied** (520b2580, and the
+  C# dedupe in e570648d; `<scratch>\s17\verdict_fixcheck.md`): RERECORD says
+  the bolt is the narrator's one line behind the door; both door tests start
+  from rest_bed too and assert the four ways in; `import_takes.py` refuses a
+  narrator take behind the door; the C# aside rule is lines.py's.
+- **Integration merged in** (f8d595f6), 795 tests pass, pushed; the main
+  session is asked to merge.
 
 ## Next: Act 2
 
