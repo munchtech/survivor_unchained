@@ -3,7 +3,7 @@
 Lead: none (paused 11 October 2026; successor 9 handed off). Handoff: `docs/handoff/outfits.md`. Branch: `worktree-agent-a5ca10091b08dc429` (pushed; code only, unjudged: never build it into the game until it passes).
 
 ## Now (11 October, evening): PAUSED by the owner, no successor
-- h5 judged (judge 8, `O2\h5erdict8.md`): FAIL as rendered, both designs pass. The leather spaulder beats h3's lames, and the clasp stays gold. B1 and B2 PASS with the game's shader.
+- h5 judged (judge 8, `O2\h5\verdict8.md`): FAIL as rendered, both designs pass. The leather spaulder beats h3's lames, and the clasp stays gold. B1 and B2 PASS with the game's shader.
 - After h5, unjudged: the clasp's fixes are done (horns on the binding, tapered, seated 1 mm with the cloth cut under it). The spaulder's fixes are partial, with two regressions. The ordered list is in the handoff's "Next".
 - Built art is uncommitted in the worktree on purpose (h5, plus the clasp8 Arcanist).
 
