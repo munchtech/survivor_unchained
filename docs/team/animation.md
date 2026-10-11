@@ -2,7 +2,7 @@
 
 Lead 10 (12 October), branch `worktree-agent-af8dbda3195e438e4`. Next steps: `docs/handoff/animation.md` section 0.
 
-## State (2026-10-12, lead 10)
+## State (2026-10-12, lead 10): PAUSED by the owner, no successor
 
 **sit_back_heels (C01) remade f35-f96 (judge 23 rounds a and b: PASS WITH FIXES; G1-G5 one pass made, unjudged, v14).** A side-sit with both shins back, the hips laid round planted knees, feet on their edges in the draw-up, the left hand on and beside its thigh; a per-clip soft hip limit (`Rig.hip_soft`), so no other clip changed. Before -> after: knee jump 682 -> 29 mm, toes -188 -> -33 mm, knee gap 867 -> 322 mm.
 - Next: get_up's left-hand skim (the fingers come from `_mix` and `_ease_from`; handoff 0), hair re-shoots on hold.
