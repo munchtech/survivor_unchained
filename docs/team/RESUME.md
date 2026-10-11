@@ -42,6 +42,10 @@ Each lead runs in its predecessor's worktree (built art kept); read the "Paused 
 eckrows.py`; `F` = `181eef02 scratchpad\f13`.
 **New since this morning:** context budgets are enforced by a hook (README "Working lean": `Context budget: NNk` in every brief); agent types list only their tools, so spawns should start near 15k (coordinator.md: check it on your first spawn); disk rules in `CLAUDE.md`.
 
+## 11 October, evening: state for the next coordinator
+
+Coordinator 91211d34 compacted twice and kept the wave running. Running (roster in README): face a8b147f78b1db794b (seam and throats pass; jaw shade, salmon rim, lilac sheen open), outfits a29607fc2e88f0a18 (judge 3 failed, closer), rendering a71fc38b0095fd45a (heroine LOD PASS WITH FIXES; Reaver ink strip), animation a20d622060130a90a (round 9, then the elbow corrective shape), writer a81b550b25ab6b672 (three twist options for the owner first, then the early lines locked for ElevenLabs). Merged today: rendering up to 2d9b6922, American spelling, honest probe tests; 20 branches archived as `archive/*` tags; 24 scratch folders removed (docs/audit/LEDGER_2026-10-11.md). Next coordinator job: relay the twist options to the owner; merge each area as its judge passes.
+
 ## Marionette: planned in, not started (the owner, 11 October)
 
 The owner's character app (`C:\Users\munch\Desktop\Marionette`, its own git repo, `main`, no remote, no worktrees) becomes a team tool for the crowd and secondary cast (`docs/art/MODELS_TO_MAKE.md`) on the same MakeHuman base. Goal, rules and state: its `HANDOFF.md` "Start here" and `docs/HISTORY.md` "The goal". Every step is judged against both bars, Meshy's ease and Maya's quality; a step isn't done until it's a click in the app that gives a good result.
