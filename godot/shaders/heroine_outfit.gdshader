@@ -143,6 +143,9 @@ void fragment() {
 		// top, where the level streaks run flat, they showed as rotated blocks, judge 6)
 		if (flag > 0.25 && flag < 0.75) brush = noise(vec2(m.y * 1800.0, m.x * 40.0));
 		rough = clamp(mix(0.3, 0.18, polish) + 0.1 * hollow + 0.14 * (1.0 - sky) + 0.06 * (brush - 0.5), 0.12, 0.6);
+		// (the pauldron's broad plates satin, not polished: at the Look they
+		// blew out 5.7% of the lower frame, face lead)
+		if (flag > 0.25 && flag < 0.75) rough = clamp(rough + 0.14, 0.32, 0.62);
 		col *= mix(0.7, 1.0, sky) * mix(1.0, 1.1, polish);
 		metal = 1.0;   // (all metal: the scan's metal map has rust and dirt in it, and each patch of it showed as a pale fleck)
 	} else if (kind == 2 || kind == 4) {

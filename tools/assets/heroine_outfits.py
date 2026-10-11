@@ -2318,7 +2318,7 @@ def over_nipples(pos, tris, least=0.0007, s=0.008, dome=0.065, rim_reach=0.02, f
 SHEET = {}   # (each piece's sheet as finished: points, triangles, weights, thickness)
 
 
-def piece(name, field, mkey, lift=0.003, thick=0.003, smooth=0, bevel=0.0012, trim=None, clear=None, soften=3, dome=False, keep_off=("Head", "neck_01"), cut=None, iron=0, hull=None, studs=None, budget=None, filled=False, edge=30, slot=True, bridge=False, bind=True, rigid=None, stiff=None, studs_off=None):
+def piece(name, field, mkey, lift=0.003, thick=0.003, smooth=0, bevel=0.0012, trim=None, clear=None, soften=3, dome=False, keep_off=("Head", "neck_01"), cut=None, iron=0, hull=None, studs=None, budget=None, filled=False, edge=30, slot=True, bridge=False, bind=True, rigid=None, stiff=None, studs_off=None, weigh=None):
     """A region of her skin made into a piece of her outfit. `rigid`, a
     centre, makes it a rigid plate: a fair dome round that centre (shell())
     on one blend of bones throughout, so it moves as one piece. `trim`, as
@@ -2422,6 +2422,10 @@ def piece(name, field, mkey, lift=0.003, thick=0.003, smooth=0, bevel=0.0012, tr
     beads = []
     # (eased before its edge is bound, so the binding moves as the edge does)
     at[:, 3:3 + NB] = four_bones(eased_weights(pos, tris, at[:, 3:3 + NB]))
+    # (`weigh`: the piece's own weights over its skin's; the spaulder's
+    # leather takes each plate's blend where riveted under it)
+    if weigh is not None:
+        at[:, 3:3 + NB] = four_bones(weigh(pos, at[:, 3:3 + NB]))
     if bind and len(SPEC[mkey]) < 7 and mkey != "ink":
         if trim:
             tkey, w, h, tt = trim
@@ -4094,6 +4098,127 @@ def ranger_pauldron():
     return out
 
 
+def sp_env(k, d):
+    return tuple(float(x) for x in os.environ.get(k, d).split(","))
+
+
+def ranger_spaulder():
+    """The simpler pauldron (PAULDRON=leather, for the owner beside the lames):
+    a leather spaulder over her left shoulder, skinned as her other leathers
+    are, so its neck end lies on her trapezius (the rigid dome stood 17-26 mm
+    off it), with a bronze cap plate and two bronze bands riveted onto it,
+    spaced and never overlapping, so no plate can rise through another (lame
+    1 rose through the dome at her idle, judge 6). The leather under each
+    plate takes its shape and its one blend of bones, so they move as one
+    where riveted."""
+    out = []
+    sh = shoulder("l")
+    ctr = head("upperarm_l")
+    ax_ = head("lowerarm_l") - ctr
+    ax_ /= np.linalg.norm(ax_)
+    e0 = (sh - ctr) - ax_ * ((sh - ctr) @ ax_)
+    e0 /= np.linalg.norm(e0)
+    F_ = (ctr, ax_, e0, np.cross(ax_, e0))
+    S0, C2 = sp_env("SP_LINE", "0.012,0.012")          # (the cap plate's lower edge: s = S0 + C2 th^2 down her arm)
+    G, H = sp_env("SP_BAND", "0.007,0.026")            # (gap between plates; band height)
+    THB, = sp_env("SP_THB", "1.55")                    # (bands' half-span round her arm, radians)
+    S_MED, = sp_env("SP_MED", "-0.075")                # (the cap plate stops here toward her neck)
+    R_CAP, = sp_env("SP_R", "0.105")                   # (the cap plate's reach over her shoulder)
+    LIFT, THK, GAP = sp_env("SP_LIFT", "0.003,0.0025,0.0012")
+    W_ = sp_env("SP_W", "0.45,0.6,0.7")                # (upper arm's share in the cap and each band)
+    LKEY = os.environ.get("SP_LEATHER", "forestleather")
+    CLR = LIFT + THK + GAP
+    s_, th_, rho_ = pl_frame(P, F_)
+    line = S0 + C2 * th_ ** 2
+    side = (np.abs(th_) < np.radians(115)).astype(float) * 2 - 1      # (never round into her armpit)
+    capf = ANDR(ANDR(cap(sh, R_CAP), line - s_, r=0.008), s_ - S_MED, r=0.012)
+    capf = np.minimum(capf, side * 0.05)
+
+    def band(k):
+        top = line + G + (k - 1) * (H + G)
+        return ANDR(np.minimum(s_ - top, top + H - s_), (THB - np.abs(th_)) * rho_, r=0.009)
+    bot = line + 2 * (H + G) + 0.011
+    # (the leather shows only toward her neck, between the bands and below
+    # them; round the rest of the cap plate it ends hidden under its rim)
+    tongue = ANDR(ANDR(bot - s_, (THB - np.abs(th_)) * rho_ + 0.011, r=0.014), s_ - (line - 0.02), r=0.004)
+    under = OR(ANDR(cap(sh, R_CAP - 0.007), line - s_ + 0.003, r=0.008),
+               ANDR(ANDR(cap(sh, R_CAP + 0.01), Z - (sh[2] - 0.0605), r=0.012), (S_MED + 0.02) - s_, r=0.012))
+    leaf = np.minimum(OR(under, tongue), side * 0.05)
+    # The plates first: the leather is shaped under them.
+    names = ["ranger.pauldron0", "ranger.pauldron1", "ranger.pauldron2"]
+    base = W[capf > 0].mean(0)
+    plates = []
+    for k, (nm, fld) in enumerate(zip(names, [capf, band(1), band(2)])):
+        if k == 0:
+            cen = ctr
+            RIGID_UV[nm] = (ctr, ax_, False)
+        else:
+            sm = float(np.median(s_[fld > 0]))
+            cen = ctr + ax_ * sm
+            RIGID_UV[nm] = (ctr, ax_, True)
+        made = piece(nm, fld, "bronze", lift=CLR, clear=CLR, thick=0.0015, smooth=14, soften=6 if k == 0 else 3, rigid=cen)
+        pd, td, wd, _ = SHEET[nm]
+        row = pl_row(base, W_[k])
+        if k == 0:
+            pts, nrs = pl_border_spots(pd, td, F_)
+        else:
+            sp_, tp_, rp_ = pl_frame(pd, F_)
+            mid = float(np.median(sp_))
+            lo, hi = tp_.min(), tp_.max()
+            pts, nrs = [], []
+            nr_ = vertex_normals(pd, td)
+            arc = (hi - lo) * float(np.median(rp_)) - 0.03
+            n = max(2, int(round(arc / 0.028)) + 1)
+            for t in np.linspace(lo + 0.015 / np.median(rp_), hi - 0.015 / np.median(rp_), n):
+                j = np.argmin(np.abs(tp_ - t) * rp_ + np.abs(sp_ - mid) * 1.0)
+                pts.append(pd[j])
+                nrs.append(nr_[j])
+            pts, nrs = np.array(pts), np.array(nrs)
+        made += rivets(nm, pd, None, td, 0.0015, "darksteel", spots=(pts, nrs, np.repeat(row[None], len(pts), 0)))
+        PL_SPOTS.extend((nm, p) for p in pts)
+        pl_one_blend([o for o in made if o is not None], row)
+        PL_ROWS[nm] = row
+        SHEET[nm] = (pd, td, np.repeat(row[None], len(pd), 0), 0.0015)
+        loop = max(edge_loops(td), key=len)
+        ein = cKDTree(pd[loop]).query(pd)[0]
+        plates.append((pd, vertex_normals(pd, td), ein, cKDTree(pd), row))
+        out += made
+        print("SPAULDER %s: %d points, rivets %d, upper arm %.2f" % (nm, len(pd), len(pts), W_[k]))
+
+    def reach(pos):
+        """How much each plate owns each point of the leather (1 under it,
+        fading to 0 over 10 mm past its edge), and the leather's place
+        under it there."""
+        bs, tg = [], []
+        for pd, nd, ein, kd, row in plates:
+            _, j = kd.query(pos)
+            d = pos - pd[j]
+            dn = (d * nd[j]).sum(1)
+            tan = np.linalg.norm(d - nd[j] * dn[:, None], axis=1)
+            sd = np.where(ein[j] > 0.0025, ein[j], -tan)
+            q = np.clip((sd + 0.004) / 0.010, 0, 1)   # (from 4 mm past its edge to 6 mm inside: past it, its tangent plane flew off her)
+            bs.append(q * q * (3 - 2 * q) * (np.abs(dn) < 0.03))
+            tg.append(pos - nd[j] * (dn + GAP + THK)[:, None])
+        return np.array(bs), np.array(tg)
+
+    def conform(pos, tris):
+        b, t = reach(pos)
+        B = b.max(0)
+        tgt = (b[:, :, None] * t).sum(0) / np.maximum(b.sum(0), 1e-9)[:, None]
+        print("SPAULDER leather conformed under the plates at %d of %d points" % ((B > 0.5).sum(), len(pos)))
+        return pos + B[:, None] * (tgt - pos)
+
+    def weigh(pos, wt):
+        b, _ = reach(pos)
+        B = b.max(0)
+        rw = sum(b[k][:, None] * plates[k][4][None] for k in range(len(plates))) / np.maximum(b.sum(0), 1e-9)[:, None]
+        return (1 - B)[:, None] * wt + B[:, None] * rw
+
+    out = piece("ranger.spaulder", leaf, LKEY, lift=LIFT, thick=THK, smooth=10, soften=10, iron=20,
+                trim=("darkleather", 0.006, 0.0006, 0.0013), stiff=[conform], weigh=weigh) + out
+    return out
+
+
 def ranger():
     """The stalker: a corset that holds her. It is strapless, with a
     sweetheart line over her breasts (hugged tight, on their perfect form),
@@ -4310,7 +4435,9 @@ def ranger():
     for _ in range(4):
         seam[1:-1] = (seam[:-2] + 2 * seam[1:-1] + seam[2:]) / 4
     out += ribbon("ranger.pant_seam", list(seam), 0.005, "brownleather", lift=0.0022, thick=0.0012)
-    out += ranger_pauldron()
+    # (two pauldrons for the owner to choose between: the lamed one, and the
+    # leather spaulder with riveted plates)
+    out += ranger_spaulder() if os.environ.get("PAULDRON") == "leather" else ranger_pauldron()
     for sd in "lr":
         cz = leg_z(sd, tops[sd] + 0.02)
         # (the right boot, over her knee in front, cut 8 cm lower behind, as a
