@@ -17,4 +17,4 @@ done
 echo "merging $b ($(git log --oneline -1 "$b"))"
 git merge --no-edit "$b" || { echo "CONFLICT: resolve, then git add and git commit --no-edit"; git diff --name-only --diff-filter=U; exit 2; }
 echo "merged; now: cd godot/tests && dotnet test, then git push origin claude/vigilant-galileo-l6jqyx"
-echo "if the lead's work is finished: powershell -NoProfile -File tools/scratch/coordinator/wt_remove.ps1 .claude/worktrees/agent-$1 (CLAUDE.md rule 1)"
+echo "if the lead's work is finished: powershell -NoProfile -ExecutionPolicy Bypass -File tools/scratch/coordinator/wt_remove.ps1 .claude/worktrees/agent-$1 (CLAUDE.md rule 1)"
