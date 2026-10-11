@@ -1,8 +1,8 @@
 # Chid: ElevenLabs packet
 
-Voice id in the game: `chid`. 82 takes to record (8,712 characters; about 26,136 credits at three tries a line). Status: **draft, except the 53 takes marked LOCKED FOR RECORDING** (the story lead, 2026-10-11): record those now.
+Voice id in the game: `chid`. 84 takes to record (8,735 characters; about 26,205 credits at three tries a line). Status: **draft, except the 84 takes marked LOCKED FOR RECORDING** (the story lead, 2026-10-11): record those now.
 
-**53 takes are LOCKED FOR RECORDING** (marked below).
+**84 takes are LOCKED FOR RECORDING** (marked below).
 
 ## Who they are
 
@@ -550,246 +550,320 @@ Subtitle: ...You know, I never asked his name. I should ask his name. Next time.
 ```
 Subtitle: Drink that. It's only hot water. There's nothing in it but hot.
 
-### 44. `dlg.chid.legion.0.wav`
+### 44. `dlg.chid.legion.0.wav`  **LOCKED FOR RECORDING**
 
 *Where:* dialogue.json chid/legion#0
+*Played:* delighted scholarship; doing: tells you about the Seventh; pace: quick; volume: level.
+*Note:* Runs on, delighted by 'the pole'; the choir image a joke he enjoys. The last two sentences sudden and puzzled at himself, older than he looks.
 
 ```
-Soldiers! The Seventh, the Order's books called them. Very tidy, very old, very... thorough. Oh, and this is the part I liked: they never followed a man. Never. They followed the pole. A bronze hand on a pole, a standard, and wherever it went they went, and if it went down they stood about like a choir that's lost its place. ...I don't know why I'm telling you that. It's a very old book.
+[delighted scholarship] Soldiers! The Seventh, the Order's books called them. Very tidy, very old, very... thorough. Oh, and this is the part I liked: they never followed a man. Never. They followed the pole. A bronze hand on a pole, a standard, and wherever it went they went, and if it went down they stood about like a choir that's lost its place. ...I don't know why I'm telling you that. It's a very old book.
 ```
 Subtitle: Soldiers! The Seventh, the Order's books called them. Very tidy, very old, very... thorough. Oh, and this is the part I liked: they never followed a man. Never. They followed the pole. A bronze hand on a pole, a standard, and wherever it went they went, and if it went down they stood about like a choir that's lost its place. ...I don't know why I'm telling you that. It's a very old book.
 
-### 45. `dlg.chid.carried_chid.0.p0.wav`
+### 45. `dlg.chid.carried_chid.0.p0.wav`  **LOCKED FOR RECORDING**
 
 *The same words are also* `dlg.chid.carried_chid.1.p0.wav`, `dlg.chid.carried_chid.2.p0.wav`, `dlg.chid.carried_chid.3.p0.wav`, `dlg.chid.carried_chid.4.p0.wav`, `dlg.chid.carried_chid.5.p0.wav`, `dlg.chid.carried_chid.6.p0.wav`, `dlg.chid.carried_chid.7.p0.wav`, `dlg.chid.carried_chid.8.p0.wav`, `dlg.chid.carried_chid.9.p0.wav`*: record once; the importer copies the take.*
 *Where:* dialogue.json chid/carried_chid#0; part 1 of 5: **chid: You're awake! Good. Good. It's morning, and you've slept the whole night on my bench, and …** / narrator: He doesn't look at you. / chid: Somebody brought you in. A carter, I expect. / narrator: He has a small book in both hands, held the way you hold a bird. / chid: I was keeping this for you. It's only an old office, what the keepers said at night. There…
+*Played:* relieved, fussing; doing: you're back; gives you the office; pace: quick; volume: level.
+*Note:* Bright and breathless; the narrator's asides plain. 'Please.' at the end small and serious.
 
 ```
-You're awake! Good. Good. It's morning, and you've slept the whole night on my bench, and that's all it's cost you: a night. They come round again; it's the one thing you can say for them.
+[relieved, fussing] You're awake! Good. Good. It's morning, and you've slept the whole night on my bench, and that's all it's cost you: a night. They come round again; it's the one thing you can say for them.
 ```
 Subtitle: You're awake! Good. Good. It's morning, and you've slept the whole night on my bench, and that's all it's cost you: a night. They come round again; it's the one thing you can say for them.
 
-### 46. `dlg.chid.carried_chid.0.p2.wav`
+### 46. `dlg.chid.carried_chid.0.p2.wav`  **LOCKED FOR RECORDING**
 
 *The same words are also* `dlg.chid.carried_chid.9.p2.wav`*: record once; the importer copies the take.*
 *Where:* dialogue.json chid/carried_chid#0; part 3 of 5: chid: You're awake! Good. Good. It's morning, and you've slept the whole night on my bench, and … / narrator: He doesn't look at you. / **chid: Somebody brought you in. A carter, I expect.** / narrator: He has a small book in both hands, held the way you hold a bird. / chid: I was keeping this for you. It's only an old office, what the keepers said at night. There…
+*Played:* relieved, fussing; doing: you're back; gives you the office; pace: quick; volume: level.
+*Note:* Bright and breathless; the narrator's asides plain. 'Please.' at the end small and serious.
 
 ```
-Somebody brought you in. A carter, I expect.
+[relieved, fussing] Somebody brought you in. A carter, I expect.
 ```
 Subtitle: Somebody brought you in. A carter, I expect.
 
-### 47. `dlg.chid.carried_chid.0.p4.wav`
+### 47. `dlg.chid.carried_chid.0.p4.wav`  **LOCKED FOR RECORDING**
 
 *Where:* dialogue.json chid/carried_chid#0; part 5 of 5: chid: You're awake! Good. Good. It's morning, and you've slept the whole night on my bench, and … / narrator: He doesn't look at you. / chid: Somebody brought you in. A carter, I expect. / narrator: He has a small book in both hands, held the way you hold a bird. / **chid: I was keeping this for you. It's only an old office, what the keepers said at night. There…**
+*Played:* relieved, fussing; doing: you're back; gives you the office; pace: quick; volume: level.
+*Note:* Bright and breathless; the narrator's asides plain. 'Please.' at the end small and serious.
 
 ```
-I was keeping this for you. It's only an old office, what the keepers said at night. There's a bit at the end. ...Read it before you go out again. Please.
+[relieved, fussing] I was keeping this for you. It's only an old office, what the keepers said at night. There's a bit at the end. ...Read it before you go out again. Please.
 ```
 Subtitle: I was keeping this for you. It's only an old office, what the keepers said at night. There's a bit at the end. ...Read it before you go out again. Please.
 
-### 48. `dlg.chid.carried_chid.1.p2.wav`
+### 48. `dlg.chid.carried_chid.1.p2.wav`  **LOCKED FOR RECORDING**
 
 *Where:* dialogue.json chid/carried_chid#1; part 3 of 3: chid: You're awake! Good. Good. It's morning, and you've slept the whole night on my bench, and … / narrator: He doesn't look at you. / **chid: Somebody brought you in off the Hollow road. A carter, I expect. ...Maeca was at the door …**
+*Played:* relieved, fussing; doing: you're back; pace: quick; volume: level.
+*Note:* Bright and breathless; the narrator plain. 'A carter, I expect.' too quick. Maeca's visit said as news he's pleased to give.
 
 ```
-Somebody brought you in off the Hollow road. A carter, I expect. ...Mayka was at the door at first light, asking after you. She wouldn't come in. If anybody knows those wolves, it's Mayka.
+[relieved, fussing] Somebody brought you in off the Hollow road. A carter, I expect. ...Mayka was at the door at first light, asking after you. She wouldn't come in. If anybody knows those wolves, it's Mayka.
 ```
 Subtitle: Somebody brought you in off the Hollow road. A carter, I expect. ...Maeca was at the door at first light, asking after you. She wouldn't come in. If anybody knows those wolves, it's Maeca.
 
-### 49. `dlg.chid.carried_chid.2.p2.wav`
+### 49. `dlg.chid.carried_chid.2.p2.wav`  **LOCKED FOR RECORDING**
 
 *Where:* dialogue.json chid/carried_chid#2; part 3 of 3: chid: You're awake! Good. Good. It's morning, and you've slept the whole night on my bench, and … / narrator: He doesn't look at you. / **chid: Somebody brought you in off the Hollow road. A carter, I expect. They get everywhere, cart…**
+*Played:* relieved, fussing; doing: you're back; pace: quick; volume: level.
+*Note:* Bright; 'A carter, I expect.' too quick; the last line a little joke to cover it.
 
 ```
-Somebody brought you in off the Hollow road. A carter, I expect. They get everywhere, carters.
+[relieved, fussing] Somebody brought you in off the Hollow road. A carter, I expect. They get everywhere, carters.
 ```
 Subtitle: Somebody brought you in off the Hollow road. A carter, I expect. They get everywhere, carters.
 
-### 50. `dlg.chid.carried_chid.3.p2.wav`
+### 50. `dlg.chid.carried_chid.3.p2.wav`  **LOCKED FOR RECORDING**
 
 *Where:* dialogue.json chid/carried_chid#3; part 3 of 3: chid: You're awake! Good. Good. It's morning, and you've slept the whole night on my bench, and … / narrator: He doesn't look at you. / **chid: Somebody brought you down off the Roost road. A carter, I expect. ...Rav was in before it …**
+*Played:* relieved, fussing; doing: you're back; pace: quick; volume: level.
+*Note:* Bright; Rav's visit as gossip he approves of.
 
 ```
-Somebody brought you down off the Roost road. A carter, I expect. ...Rav was in before it was light. He sat with you a while and didn't say much, which isn't like him. He knows that camp, you know. He's stitched up half of it.
+[relieved, fussing] Somebody brought you down off the Roost road. A carter, I expect. ...Rav was in before it was light. He sat with you a while and didn't say much, which isn't like him. He knows that camp, you know. He's stitched up half of it.
 ```
 Subtitle: Somebody brought you down off the Roost road. A carter, I expect. ...Rav was in before it was light. He sat with you a while and didn't say much, which isn't like him. He knows that camp, you know. He's stitched up half of it.
 
-### 51. `dlg.chid.carried_chid.4.p2.wav`
+### 51. `dlg.chid.carried_chid.4.p2.wav`  **LOCKED FOR RECORDING**
 
 *Where:* dialogue.json chid/carried_chid#4; part 3 of 3: chid: You're awake! Good. Good. It's morning, and you've slept the whole night on my bench, and … / narrator: He doesn't look at you. / **chid: Somebody brought you down off the Roost road. A carter, I expect. ...Rav was in before it …**
+*Played:* relieved, fussing; doing: you're back; pace: quick; volume: level.
+*Note:* Bright; Rav's quiet noted fondly.
 
 ```
-Somebody brought you down off the Roost road. A carter, I expect. ...Rav was in before it was light. He sat with you a while and didn't say much, which isn't like him.
+[relieved, fussing] Somebody brought you down off the Roost road. A carter, I expect. ...Rav was in before it was light. He sat with you a while and didn't say much, which isn't like him.
 ```
 Subtitle: Somebody brought you down off the Roost road. A carter, I expect. ...Rav was in before it was light. He sat with you a while and didn't say much, which isn't like him.
 
-### 52. `dlg.chid.carried_chid.5.p2.wav`
+### 52. `dlg.chid.carried_chid.5.p2.wav`  **LOCKED FOR RECORDING**
 
 *Where:* dialogue.json chid/carried_chid#5; part 3 of 3: chid: You're awake! Good. Good. It's morning, and you've slept the whole night on my bench, and … / narrator: He doesn't look at you. / **chid: Somebody brought you down off the Dig's hill. A carter, I expect. ...That old lamp of your…**
+*Played:* relieved, puzzled; doing: you're back; your lamp was lit; pace: quick; volume: level.
+*Note:* Bright; the lamp a small mystery he finds charming.
 
 ```
-Somebody brought you down off the Dig's hill. A carter, I expect. ...That old lamp of yours was lit when you came in. I didn't light it. Those little fellows must have been very taken with it.
+[relieved, puzzled] Somebody brought you down off the Dig's hill. A carter, I expect. ...That old lamp of yours was lit when you came in. I didn't light it. Those little fellows must have been very taken with it.
 ```
 Subtitle: Somebody brought you down off the Dig's hill. A carter, I expect. ...That old lamp of yours was lit when you came in. I didn't light it. Those little fellows must have been very taken with it.
 
-### 53. `dlg.chid.carried_chid.6.p2.wav`
+### 53. `dlg.chid.carried_chid.6.p2.wav`  **LOCKED FOR RECORDING**
 
 *Where:* dialogue.json chid/carried_chid#6; part 3 of 3: chid: You're awake! Good. Good. It's morning, and you've slept the whole night on my bench, and … / narrator: He doesn't look at you. / **chid: Somebody brought you down off the Dig's hill. A carter, I expect. I've put the kettle on.**
+*Played:* relieved, fussing; doing: you're back; pace: quick; volume: level.
+*Note:* Bright; the kettle as comfort.
 
 ```
-Somebody brought you down off the Dig's hill. A carter, I expect. I've put the kettle on.
+[relieved, fussing] Somebody brought you down off the Dig's hill. A carter, I expect. I've put the kettle on.
 ```
 Subtitle: Somebody brought you down off the Dig's hill. A carter, I expect. I've put the kettle on.
 
-### 54. `dlg.chid.carried_chid.7.p2.wav`
+### 54. `dlg.chid.carried_chid.7.p2.wav`  **LOCKED FOR RECORDING**
 
 *The same words are also* `dlg.chid.carried_chid.8.p2.wav`*: record once; the importer copies the take.*
 *Where:* dialogue.json chid/carried_chid#7; part 3 of 5: chid: You're awake! Good. Good. It's morning, and you've slept the whole night on my bench, and … / narrator: He doesn't look at you. / **chid: Somebody brought you in from the old door. A carter, I expect.** / narrator: He's quiet a moment, which isn't like him. / chid: I've read about the ones behind that door. In a very old book. Ask me, when you've eaten.
+*Played:* relieved, then sober; doing: you're back from the old door; pace: measured; volume: level.
+*Note:* Bright, then the narrator's quiet; 'I've read about the ones behind that door.' lower and older.
 
 ```
-Somebody brought you in from the old door. A carter, I expect.
+[relieved, then sober] Somebody brought you in from the old door. A carter, I expect.
 ```
 Subtitle: Somebody brought you in from the old door. A carter, I expect.
 
-### 55. `dlg.chid.carried_chid.7.p4.wav`
+### 55. `dlg.chid.carried_chid.7.p4.wav`  **LOCKED FOR RECORDING**
 
 *Where:* dialogue.json chid/carried_chid#7; part 5 of 5: chid: You're awake! Good. Good. It's morning, and you've slept the whole night on my bench, and … / narrator: He doesn't look at you. / chid: Somebody brought you in from the old door. A carter, I expect. / narrator: He's quiet a moment, which isn't like him. / **chid: I've read about the ones behind that door. In a very old book. Ask me, when you've eaten.**
+*Played:* relieved, then sober; doing: you're back from the old door; pace: measured; volume: level.
+*Note:* Bright, then the narrator's quiet; 'I've read about the ones behind that door.' lower and older.
 
 ```
-I've read about the ones behind that door. In a very old book. Ask me, when you've eaten.
+[relieved, then sober] I've read about the ones behind that door. In a very old book. Ask me, when you've eaten.
 ```
 Subtitle: I've read about the ones behind that door. In a very old book. Ask me, when you've eaten.
 
-### 56. `dlg.chid.carried_chid.8.p4.wav`
+### 56. `dlg.chid.carried_chid.8.p4.wav`  **LOCKED FOR RECORDING**
 
 *Where:* dialogue.json chid/carried_chid#8; part 5 of 5: chid: You're awake! Good. Good. It's morning, and you've slept the whole night on my bench, and … / narrator: He doesn't look at you. / chid: Somebody brought you in from the old door. A carter, I expect. / narrator: He's quiet a moment, which isn't like him. / **chid: They followed the pole, you know. Always the pole.**
+*Played:* relieved, then far off; doing: you're back from the old door; pace: measured; volume: level.
+*Note:* Bright, then quiet; 'Always the pole.' half to himself.
 
 ```
-They followed the pole, you know. Always the pole.
+[relieved, then far off] They followed the pole, you know. Always the pole.
 ```
 Subtitle: They followed the pole, you know. Always the pole.
 
-### 57. `dlg.chid.carried_who.0.p0.wav`
+### 57. `dlg.chid.carried_who.0.p0.wav`  **LOCKED FOR RECORDING**
 
 *Where:* dialogue.json chid/carried_who#0; part 1 of 3: **chid: Oh, somebody kind. There are more of them about at night than you'd think.** / narrator: He busies himself with the kettle. / chid: ...Eat something. The day's yours.
+*Played:* evasive, kind; doing: who brought me?; pace: measured; volume: level.
+*Note:* Light and warm; busy with the kettle to avoid it. 'The day's yours.' a gift.
 
 ```
-Oh, somebody kind. There are more of them about at night than you'd think.
+[evasive, kind] Oh, somebody kind. There are more of them about at night than you'd think.
 ```
 Subtitle: Oh, somebody kind. There are more of them about at night than you'd think.
 
-### 58. `dlg.chid.carried_who.0.p2.wav`
+### 58. `dlg.chid.carried_who.0.p2.wav`  **LOCKED FOR RECORDING**
 
 *Where:* dialogue.json chid/carried_who#0; part 3 of 3: chid: Oh, somebody kind. There are more of them about at night than you'd think. / narrator: He busies himself with the kettle. / **chid: ...Eat something. The day's yours.**
+*Played:* evasive, kind; doing: who brought me?; pace: measured; volume: level.
+*Note:* Light and warm; busy with the kettle to avoid it. 'The day's yours.' a gift.
 
 ```
-...Eat something. The day's yours.
+[evasive, kind] ...Eat something. The day's yours.
 ```
 Subtitle: ...Eat something. The day's yours.
 
-### 59. `dlg.chid.office.0.p0.wav`
+### 59. `dlg.chid.office.0.p0.wav`  **LOCKED FOR RECORDING**
 
 *Where:* dialogue.json chid/office#0; part 1 of 5: **chid: You've been up the Tower.** / narrator: He doesn't ask what she told you. He has a small book in both hands, held the way you hold… / chid: I want you to have this. It's only an old office: the watch-hours, what the keepers said a… / narrator: He opens it at the last page, and doesn't look at it. / chid: There's a bit at the end. You'll know it when you need it. ...Not now. It reads better in …
+*Played:* tender, careful; doing: gives you the keepers' office; pace: slow; volume: quiet.
+*Note:* Hushed, as if the book might wake; 'Not now.' quick; 'It reads better in the dark.' gentle and very old.
 
 ```
-You've been up the Tower.
+[tender, careful, quietly] You've been up the Tower.
 ```
 Subtitle: You've been up the Tower.
 
-### 60. `dlg.chid.office.0.p2.wav`
+### 60. `dlg.chid.office.0.p2.wav`  **LOCKED FOR RECORDING**
 
 *Where:* dialogue.json chid/office#0; part 3 of 5: chid: You've been up the Tower. / narrator: He doesn't ask what she told you. He has a small book in both hands, held the way you hold… / **chid: I want you to have this. It's only an old office: the watch-hours, what the keepers said a…** / narrator: He opens it at the last page, and doesn't look at it. / chid: There's a bit at the end. You'll know it when you need it. ...Not now. It reads better in …
+*Played:* tender, careful; doing: gives you the keepers' office; pace: slow; volume: quiet.
+*Note:* Hushed, as if the book might wake; 'Not now.' quick; 'It reads better in the dark.' gentle and very old.
 
 ```
-I want you to have this. It's only an old office: the watch-hours, what the keepers said at night. Nobody's said them in a long while.
+[tender, careful, quietly] I want you to have this. It's only an old office: the watch-hours, what the keepers said at night. Nobody's said them in a long while.
 ```
 Subtitle: I want you to have this. It's only an old office: the watch-hours, what the keepers said at night. Nobody's said them in a long while.
 
-### 61. `dlg.chid.office.0.p4.wav`
+### 61. `dlg.chid.office.0.p4.wav`  **LOCKED FOR RECORDING**
 
 *Where:* dialogue.json chid/office#0; part 5 of 5: chid: You've been up the Tower. / narrator: He doesn't ask what she told you. He has a small book in both hands, held the way you hold… / chid: I want you to have this. It's only an old office: the watch-hours, what the keepers said a… / narrator: He opens it at the last page, and doesn't look at it. / **chid: There's a bit at the end. You'll know it when you need it. ...Not now. It reads better in …**
+*Played:* tender, careful; doing: gives you the keepers' office; pace: slow; volume: quiet.
+*Note:* Hushed, as if the book might wake; 'Not now.' quick; 'It reads better in the dark.' gentle and very old.
 
 ```
-There's a bit at the end. You'll know it when you need it. ...Not now. It reads better in the dark.
+[tender, careful, quietly] There's a bit at the end. You'll know it when you need it. ...Not now. It reads better in the dark.
 ```
 Subtitle: There's a bit at the end. You'll know it when you need it. ...Not now. It reads better in the dark.
 
-### 62. `dlg.chid.office_end.0.p1.wav`
+### 62. `dlg.chid.office_end.0.p1.wav`  **LOCKED FOR RECORDING**
 
 *Where:* dialogue.json chid/office_end#0; part 2 of 2: narrator: He puts his hand over yours, flat on the cover. / **chid: Not now, I said! ...It's the end of the watch. One keeper asks, and the other one answers,…**
+*Played:* sharp, then tender; doing: what the office is for; pace: slow; volume: quiet.
+*Note:* 'Not now, I said!' a real flash; then the keepers' rule softly, plainly. 'Somebody answering.' the heart of him.
 
 ```
-Not now, I said! ...It's the end of the watch. One keeper asks, and the other one answers, so nobody has to sit up the whole night on their own. That's what an office is, really. Somebody answering.
+[sharp, then tender, quietly] Not now, I said! ...It's the end of the watch. One keeper asks, and the other one answers, so nobody has to sit up the whole night on their own. That's what an office is, really. Somebody answering.
 ```
 Subtitle: Not now, I said! ...It's the end of the watch. One keeper asks, and the other one answers, so nobody has to sit up the whole night on their own. That's what an office is, really. Somebody answering.
 
-### 63. `dlg.chid.office_who.0.wav`
+### 63. `dlg.chid.office_who.0.wav`  **LOCKED FOR RECORDING**
 
 *Where:* dialogue.json chid/office_who#0
+*Played:* light, hiding; doing: who wrote it?; pace: quick; volume: level.
+*Note:* Airy, too airy; 'Lovely hand, hasn't he?' pleased; the C line fond.
 
 ```
-Oh, a keeper. One of the old ones. Lovely hand, hasn't he? Nobody makes a C like that any more.
+[light, hiding] Oh, a keeper. One of the old ones. Lovely hand, hasn't he? Nobody makes a C like that any more.
 ```
 Subtitle: Oh, a keeper. One of the old ones. Lovely hand, hasn't he? Nobody makes a C like that any more.
 
-### 64. `dlg.chid.names_write.0.p1.wav`
+### 64. `dlg.chid.names_write.0.p1.wav`  **LOCKED FOR RECORDING**
 
 *Where:* dialogue.json chid/names_write#0; part 2 of 2: narrator: He watches you write it, and doesn't look at what. / **chid: Good. Keep it somewhere dry.**
+*Played:* gentle; doing: she writes the word down; pace: slow; volume: quiet.
+*Note:* Narrator plain and dry, level; says what is seen, never what it means. Chid: 'Good.' warm; 'Keep it somewhere dry.' plain care.
 
 ```
-Good. Keep it somewhere dry.
+[gentle, quietly] Good. Keep it somewhere dry.
 ```
 Subtitle: Good. Keep it somewhere dry.
 
-### 65. `dlg.chid.cut.0.p1.wav`
+### 65. `dlg.chid.cut.0.p1.wav`  **LOCKED FOR RECORDING**
 
 *Where:* dialogue.json chid/cut#0; part 2 of 2: narrator: There is a mallet and a chisel on the bench beside him, and he doesn't pick them up. / **chid: You've been to the garden. I saw. ...It wants a name, that marker. My hand's still steady,…**
+*Played:* gentle, careful; doing: asks what to cut on her mother's marker; pace: slow; volume: quiet.
+*Note:* Narrator plain and dry, level; says what is seen, never what it means. Chid: no bustle; 'I saw.' soft; the steady hand a small joke against Rook. 'What do I cut?' simply, and wait.
 
 ```
-You've been to the garden. I saw. ...It wants a name, that marker. My hand's still steady, whatever Rook says. What do I cut?
+[gentle, careful, quietly] You've been to the garden. I saw… ...It wants a name, that marker. My hand's still steady, whatever Rook says… What do I cut?
 ```
 Subtitle: You've been to the garden. I saw. ...It wants a name, that marker. My hand's still steady, whatever Rook says. What do I cut?
 
-### 66. `dlg.chid.cut_mam.0.p0.wav`
+### 66. `dlg.chid.cut_mam.0.p0.wav`  **LOCKED FOR RECORDING**
 
 *Where:* dialogue.json chid/cut_mam#0; part 1 of 3: **chid: Mam.** / narrator: He says it over, under his breath, as if it might get away. / chid: That's the first name anybody has. I'll cut it tonight.
+*Played:* moved, hushed; doing: takes the word; pace: slow; volume: quiet.
+*Note:* 'Mam.' repeated under his breath, careful; 'That's the first name anybody has.' plain and very old. 'I'll cut it tonight.' a promise.
 
 ```
-Mam.
+[moved, hushed, quietly] Mam.
 ```
 Subtitle: Mam.
 
-### 67. `dlg.chid.cut_mam.0.p2.wav`
+### 67. `dlg.chid.cut_mam.0.p2.wav`  **LOCKED FOR RECORDING**
 
 *Where:* dialogue.json chid/cut_mam#0; part 3 of 3: chid: Mam. / narrator: He says it over, under his breath, as if it might get away. / **chid: That's the first name anybody has. I'll cut it tonight.**
+*Played:* moved, hushed; doing: takes the word; pace: slow; volume: quiet.
+*Note:* 'Mam.' repeated under his breath, careful; 'That's the first name anybody has.' plain and very old. 'I'll cut it tonight.' a promise.
 
 ```
-That's the first name anybody has. I'll cut it tonight.
+[moved, hushed, quietly] That's the first name anybody has. I'll cut it tonight.
 ```
 Subtitle: That's the first name anybody has. I'll cut it tonight.
 
-### 68. `dlg.chid.cut_plain.0.p1.wav`
+### 68. `dlg.chid.cut_plain.0.p1.wav`  **LOCKED FOR RECORDING**
 
 *Where:* dialogue.json chid/cut_plain#0; part 2 of 2: narrator: He nods. / **chid: Plain, then. The ground knows who's in it.**
+*Played:* gentle; doing: accepts plain; pace: measured; volume: quiet.
+*Note:* Narrator plain and dry, level; says what is seen, never what it means. Chid: plain comfort, no sadness put on.
 
 ```
-Plain, then. The ground knows who's in it.
+[gentle, quietly] Plain, then. The ground knows who's in it.
 ```
 Subtitle: Plain, then. The ground knows who's in it.
 
-### 69. `dlg.chid.cut_wait.0.p1.wav`
+### 69. `dlg.chid.cut_wait.0.p1.wav`  **LOCKED FOR RECORDING**
 
 *Where:* dialogue.json chid/cut_wait#0; part 2 of 2: narrator: He waits, and then he puts the chisel away. / **chid: It'll keep. Come and tell me when it comes to you.**
+*Played:* patient, kind; doing: lets her not answer; pace: slow; volume: quiet.
+*Note:* Narrator plain and dry, level; says what is seen, never what it means. Chid: 'It'll keep.' easy; the invitation warm, no pressure.
 
 ```
-It'll keep. Come and tell me when it comes to you.
+[patient, kind, quietly] It'll keep. Come and tell me when it comes to you.
 ```
 Subtitle: It'll keep. Come and tell me when it comes to you.
 
+### 70. `dlg.chid.cut_came.0.p1.wav`  **LOCKED FOR RECORDING**
+
+*Where:* dialogue.json chid/cut_came#0; part 2 of 2: narrator: He has the chisel out again before you've finished. / **chid: Go on, then.**
+*Played:* eager, held in; doing: she's come back to tell him; pace: measured; volume: quiet.
+*Note:* Narrator plain and dry, level; says what is seen, never what it means. Chid: two words, hushed; the man who never stops talking, waiting.
+
+```
+[eager, held in, quietly] Go on, then.
+```
+Subtitle: Go on, then.
+
+### 71. `dlg.chid.cut_still.0.p1.wav`  **LOCKED FOR RECORDING**
+
+*Where:* dialogue.json chid/cut_still#0; part 2 of 2: narrator: He waits, and puts it away again. / **chid: It'll keep.**
+*Played:* patient; doing: she still can't say it; pace: slow; volume: quiet.
+*Note:* Narrator plain and dry, level; says what is seen, never what it means. Chid: 'It'll keep.' the same easy kindness as before.
+
+```
+[patient, quietly] It'll keep.
+```
+Subtitle: It'll keep.
+
 ## Said in passing
 
-### 70. `bark.chid.day.0.wav`  **LOCKED FOR RECORDING**
+### 72. `bark.chid.day.0.wav`  **LOCKED FOR RECORDING**
 
 *Where:* npcs.json chid.barks[0]
 *Played:* wistful, cheerful; pace: measured; volume: level.
@@ -799,7 +873,7 @@ Subtitle: It'll keep. Come and tell me when it comes to you.
 ```
 Subtitle: The light's patient. I'm trying to be.
 
-### 71. `bark.chid.day.1.wav`  **LOCKED FOR RECORDING**
+### 73. `bark.chid.day.1.wav`  **LOCKED FOR RECORDING**
 
 *Where:* npcs.json chid.barks[1]
 *Played:* gently rueful; pace: measured; volume: level.
@@ -809,7 +883,7 @@ Subtitle: The light's patient. I'm trying to be.
 ```
 Subtitle: Morning comes. It always has. I should know.
 
-### 72. `bark.chid.night.0.wav`  **LOCKED FOR RECORDING**
+### 74. `bark.chid.night.0.wav`  **LOCKED FOR RECORDING**
 
 *Where:* npcs.json chid.nightBarks[0]
 *Played:* gentle hope; pace: slow; volume: quiet.
@@ -819,7 +893,7 @@ Subtitle: Morning comes. It always has. I should know.
 ```
 Subtitle: Even in the dark, the morning's on its way.
 
-### 73. `bark.chid.night.1.wav`  **LOCKED FOR RECORDING**
+### 75. `bark.chid.night.1.wav`  **LOCKED FOR RECORDING**
 
 *Where:* npcs.json chid.nightBarks[1]
 *Played:* kind; pace: slow; volume: quiet.
@@ -829,7 +903,7 @@ Subtitle: Even in the dark, the morning's on its way.
 ```
 Subtitle: I leave a candle lit. Somebody might need it.
 
-### 74. `bark.chid.night.2.wav`  **LOCKED FOR RECORDING**
+### 76. `bark.chid.night.2.wav`  **LOCKED FOR RECORDING**
 
 *Where:* npcs.json chid.nightBarks[2]
 *Played:* friendly, sleepless; pace: measured; volume: quiet.
@@ -839,7 +913,7 @@ Subtitle: I leave a candle lit. Somebody might need it.
 ```
 Subtitle: Can't sleep either?
 
-### 75. `bark.chid.night.3.wav`  **LOCKED FOR RECORDING**
+### 77. `bark.chid.night.3.wav`  **LOCKED FOR RECORDING**
 
 *Where:* npcs.json chid.nightBarks[3]
 *Played:* reciting, then rueful; pace: slow; volume: quiet.
@@ -850,7 +924,7 @@ Subtitle: Can't sleep either?
 ```
 Subtitle: The dark's only the part of the day that hasn't happened yet. ...It's taking its time tonight.
 
-### 76. `bark.chid.said.0.wav`  **LOCKED FOR RECORDING**
+### 78. `bark.chid.said.0.wav`  **LOCKED FOR RECORDING**
 
 *Where:* npcs.json chid.said[0]
 *Played:* cheerful; doing: the shrine used to work; pace: measured; volume: level.
@@ -861,7 +935,7 @@ Subtitle: The dark's only the part of the day that hasn't happened yet. ...It's 
 ```
 Subtitle: It used to work, you know. The shrine.
 
-### 77. `bark.chid.said.1.wav`  **LOCKED FOR RECORDING**
+### 79. `bark.chid.said.1.wav`  **LOCKED FOR RECORDING**
 
 *Where:* npcs.json chid.said[1]
 *Played:* delighted; doing: the shrine works again; pace: quick; volume: raised.
@@ -872,7 +946,7 @@ Subtitle: It used to work, you know. The shrine.
 ```
 Subtitle: It works! It works. I keep checking.
 
-### 78. `bark.chid.said.2.wav`  **LOCKED FOR RECORDING**
+### 80. `bark.chid.said.2.wav`  **LOCKED FOR RECORDING**
 
 *Where:* npcs.json chid.said[2]
 *Played:* bright, fond; doing: you're up; pace: quick; volume: level.
@@ -883,7 +957,7 @@ Subtitle: It works! It works. I keep checking.
 ```
 Subtitle: Up and about! Up's very good.
 
-### 79. `bark.chid.said.3.wav`  **LOCKED FOR RECORDING**
+### 81. `bark.chid.said.3.wav`  **LOCKED FOR RECORDING**
 
 *Where:* npcs.json chid.said[3]
 *Played:* quiet, tender; doing: candles for Nell; pace: measured; volume: quiet.
@@ -894,30 +968,36 @@ Subtitle: Up and about! Up's very good.
 ```
 Subtitle: Two candles in for her. One's for Brannoc. He'd only blow it out.
 
-### 80. `bark.chid.said.4.wav`
+### 82. `bark.chid.said.4.wav`  **LOCKED FOR RECORDING**
 
 *Where:* npcs.json chid.said[4]
+*Played:* fussing; doing: you're cold; pace: quick; volume: level.
+*Note:* Bright; 'Colder than usual, I mean.' a slip he covers.
 
 ```
-Oh, you're cold! Colder than usual, I mean. Come and sit by the flame.
+[fussing] Oh, you're cold! Colder than usual, I mean. Come and sit by the flame.
 ```
 Subtitle: Oh, you're cold! Colder than usual, I mean. Come and sit by the flame.
 
-### 81. `bark.chid.said.5.wav`
+### 83. `bark.chid.said.5.wav`  **LOCKED FOR RECORDING**
 
 *Where:* npcs.json chid.said[5]
+*Played:* delighted; doing: you're back; pace: quick; volume: level.
+*Note:* Bright; the flame line fond.
 
 ```
-Back again! You always are. Sit, sit; the flame likes company.
+[delighted] Back again! You always are. Sit, sit; the flame likes company.
 ```
 Subtitle: Back again! You always are. Sit, sit; the flame likes company.
 
-### 82. `bark.chid.said.6.wav`
+### 84. `bark.chid.said.6.wav`  **LOCKED FOR RECORDING**
 
 *Where:* npcs.json chid.said[6]
+*Played:* delighted, wondering; doing: a long night; pace: quick; volume: level.
+*Note:* Bright; the moths image a pleasure to him.
 
 ```
-Out ever so long! The whole dark was up, like moths round a candle.
+[delighted, wondering] Out ever so long! The whole dark was up, like moths round a candle.
 ```
 Subtitle: Out ever so long! The whole dark was up, like moths round a candle.
 

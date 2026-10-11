@@ -318,7 +318,16 @@ public sealed class Waystation : ZoneRuntime
             Act = () =>
             {
                 bool before = W.Zones.TryGetValue("waystation", out var zs) && zs.TryGetValue("grave", out var g) && g.Truthy;
-                if (before) { G.Say("You stand at it a while.", null, 3.5); return; }
+                // Later visits keep what she told Chid: the word he cut overnight (rule mother.carved),
+                // or, if she said nothing, the name it still hasn't got (he asked her to come back).
+                if (before)
+                {
+                    bool carved = F("mother.carved").Truthy, unsaid = F("mother.cut").Str == "none";
+                    G.Say(carved ? "It says MAM now, cut deep and straight. You stand at it a while."
+                        : unsaid ? "Still no name on it. You stand at it a while."
+                        : "You stand at it a while.", null, carved || unsaid ? 5.5 : 3.5);
+                    return;
+                }
                 G.Apply("""[{ "zone": { "id": "waystation", "key": "grave", "value": true } }, { "quest": { "id": "home", "entry": "grave" } }]""");
                 G.Say("A plain wooden marker, a few stones along from the old captain's. No name on it yet. The earth on it is dark, and has not settled.", null, 7);
             },

@@ -12167,6 +12167,14 @@
     ],
     "choices": [
      {
+      "text": "The marker. It's come to me.",
+      "when": {
+       "fact": "mother.cut",
+       "eq": "none"
+      },
+      "goto": "cut_came"
+     },
+     {
       "text": "Used to work?",
       "goto": "shrine"
      },
@@ -13274,6 +13282,43 @@
    "cut_wait": {
     "id": "cut_wait",
     "text": "(He waits, and then he puts the chisel away.) It'll keep. Come and tell me when it comes to you.",
+    "next": "hub"
+   },
+   "cut_came": {
+    "id": "cut_came",
+    "text": "(He has the chisel out again before you've finished.) Go on, then.",
+    "choices": [
+     {
+      "text": "Mam.",
+      "effects": [
+       {
+        "set": {
+         "mother.cut": "mam"
+        }
+       }
+      ],
+      "goto": "cut_mam"
+     },
+     {
+      "text": "Leave it plain.",
+      "effects": [
+       {
+        "set": {
+         "mother.cut": "plain"
+        }
+       }
+      ],
+      "goto": "cut_plain"
+     },
+     {
+      "text": "(Say nothing.)",
+      "goto": "cut_still"
+     }
+    ]
+   },
+   "cut_still": {
+    "id": "cut_still",
+    "text": "(He waits, and puts it away again.) It'll keep.",
     "next": "hub"
    }
   }
