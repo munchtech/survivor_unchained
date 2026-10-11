@@ -277,10 +277,11 @@ def _down_pose():
         # (Each hand rolled a little onto its little finger's side, the thumb
         # lying on the ground: flat, the thumb stood 2-3 cm into it.)
         "hand_l": {"pos": (0.56, 0.05, 0.16 + d), "pole": (0.5, -1.0, -0.3), "knuckles": (0.6, 0, 0.8), "blade": (-0.8, 0.2, 0.6),
-                   "twist": 1.0},
+                   "twist": 1.0, "plant": 1.0},
         # (Judge 12: the hand under her chin read as a claw held in the air:
         # it lies flat beside her face, palm down, the elbow out on the ground.)
-        "hand_r": {"pos": (-0.30, 0.05, 0.34 + d), "pole": (-1, -0.4, -0.4), "knuckles": (0.1, 0, 1), "blade": (1, 0.25, 0.1)},
+        "hand_r": {"pos": (-0.30, 0.05, 0.34 + d), "pole": (-1, -0.4, -0.4), "knuckles": (0.1, 0, 1), "blade": (1, 0.25, 0.1),
+                   "plant": 1.0},
         "fingers_l": "open", "fingers_r": "open",
     }
 
@@ -327,9 +328,9 @@ def death(rig):
     # (The left set down as far ahead as the right: 6 cm nearer her, its
     # forearm stood too steep for the wrist to lay the hand flat, and the
     # fingers went 5 cm into the ground.)
-    touch_l = {"pos": (0.27, 0.074, 0.77), "pole": (1, 0.3, -0.4), "knuckles": (0.2, 0, 1), "blade": (-0.9, 0.35, 0.2)}
-    touch_r = {"pos": (-0.25, 0.06, 0.76), "pole": (-1, 0.3, -0.4), "knuckles": (-0.2, 0, 1)}
-    reach_l, reach_r = merge(touch_l, pos=(0.27, 0.20, 0.68)), merge(touch_r, pos=(-0.21, 0.19, 0.68))
+    touch_l = {"pos": (0.27, 0.074, 0.77), "pole": (1, 0.3, -0.4), "knuckles": (0.2, 0, 1), "blade": (-0.9, 0.35, 0.2), "plant": 1.0}
+    touch_r = {"pos": (-0.25, 0.06, 0.76), "pole": (-1, 0.3, -0.4), "knuckles": (-0.2, 0, 1), "plant": 1.0}
+    reach_l, reach_r = merge(touch_l, pos=(0.27, 0.20, 0.68), plant=0.0), merge(touch_r, pos=(-0.21, 0.19, 0.68), plant=0.0)
     # (The left slides out to where it is flung as the elbow gives; the
     # right is under her as she comes down on it.)
     # (Judge 12: the right one ended under her chin; it gives out to the side,
@@ -428,7 +429,7 @@ def _back_pose(settle=0.0):
         "foot_l": {"pos": (0.04, 0.07, -0.02), "rot": (60, -30, 50), "pole": (1, 0.15, 0.3)},
         "foot_r": {"pos": (-0.17, 0.07, 0.31), "rot": (-24, -55, -10), "pole": (-0.4, 1, 0)},
         "hand_l": {"pos": (0.52, 0.05, -1.30), "pole": (1, 0.4, 0), "knuckles": (0.4, 0, -1)},
-        "hand_r": {"pos": (-0.40, 0.04, -0.62), "pole": (-1, 0.4, 0), "knuckles": (-0.2, 0, 1)},
+        "hand_r": {"pos": (-0.40, 0.04, -0.62), "pole": (-1, 0.4, 0), "knuckles": (-0.2, 0, 1), "plant": 1.0},
         "fingers_l": "open", "fingers_r": "relaxed",
     }
 
@@ -506,8 +507,8 @@ def get_up(rig):
                          "head": (0, -16, 0),
                          "foot_l": {"pos": (0.16, 0, 0), "rot": (6, 135, 0), "toe": -15},
                          "foot_r": {"pos": (-0.14, 0, 0), "rot": (-6, 135, 0), "toe": -15},
-                         "hand_l": {"pos": PUSH_L, "pole": PUSH_POLE_L, "knuckles": (0.1, 0, 1), "ext": PUSH_EXT},
-                         "hand_r": {"pos": PUSH_R, "pole": PUSH_POLE_R, "knuckles": (-0.1, 0, 1), "ext": PUSH_EXT},
+                         "hand_l": {"pos": PUSH_L, "pole": PUSH_POLE_L, "knuckles": (0.1, 0, 1), "ext": PUSH_EXT, "plant": 1.0},
+                         "hand_r": {"pos": PUSH_R, "pole": PUSH_POLE_R, "knuckles": (-0.1, 0, 1), "ext": PUSH_EXT, "plant": 1.0},
                          "fingers_l": FLAT, "fingers_r": FLAT}, a=14)
     down = _down_pose()
     # The hands under the shoulders, palms down (the one under her drawn
@@ -643,8 +644,8 @@ def get_up_back(rig):
     fl = {"pos": (0.14, 0.0, -0.30), **flat_l}
     fr = {"pos": (-0.15, 0.0, -0.25), **flat_r}
     # The hands planted behind her hips as she sits, pushing.
-    pl = {"pos": (0.25, 0.04, -0.86), "pole": (1, 0.3, -0.8), "knuckles": (0.3, 0, 1), "ext": PUSH_EXT}
-    pr = {"pos": (-0.25, 0.04, -0.86), "pole": (-1, 0.3, -0.8), "knuckles": (-0.3, 0, 1), "ext": PUSH_EXT}
+    pl = {"pos": (0.25, 0.04, -0.86), "pole": (1, 0.3, -0.8), "knuckles": (0.3, 0, 1), "ext": PUSH_EXT, "plant": 1.0}
+    pr = {"pos": (-0.25, 0.04, -0.86), "pole": (-1, 0.3, -0.8), "knuckles": (-0.3, 0, 1), "ext": PUSH_EXT, "plant": 1.0}
 
     def sit(fr_, hips_y, hips_z, pitch, spine, neck, head, hl, hr, feet=(fl, fr), fingers=("relaxed", "relaxed")):
         return {"hips": {"pos": (0.0, hips_y, hips_z), "rot": (0, pitch, 0)}, "spine": (0, spine, 0), "neck": (0, neck, 0),
@@ -658,13 +659,16 @@ def get_up_back(rig):
                   foot_l={"pos": (0.10, 0.06, -0.10), "rot": (30, -15, 25), "pole": (0.8, 0.6, 0.3)},
                   foot_r={"pos": (-0.16, 0.06, 0.12), "rot": (-15, -30, -5), "pole": (-0.4, 1, 0.3)},
                   hand_l={"pos": (0.68, 0.16, -1.12), "pole": (1, 0.4, -0.2), "knuckles": (0.6, 0, -0.6)},
-                  hand_r={"pos": (-0.40, 0.10, -0.70), "pole": (-1, 0.4, -0.2), "knuckles": (-0.3, 0, -1)},
+                  # (Lifting off: no longer planted; the fingers forward, as the
+                  # forearm points: pointed back at her head, the wrist could
+                  # not bend that far and drove them into the ground.)
+                  hand_r={"pos": (-0.40, 0.10, -0.70), "pole": (-1, 0.4, -0.2), "knuckles": (-0.3, -0.3, 0.9), "plant": 0.0},
                   fingers_l="relaxed", fingers_r="relaxed"), "auto"),
         # Up on her elbows' way, the knees up, the feet flat; the arms coming
         # down at her sides to plant behind her.
         (6, sit(6, -0.95, -0.62, -70, 18, 18, 8,
-                {"pos": (0.40, 0.13, -0.90), "pole": (1, 0.3, -0.6), "knuckles": (0.4, 0, -0.8)},
-                {"pos": (-0.36, 0.12, -0.80), "pole": (-1, 0.3, -0.6), "knuckles": (-0.3, 0, -1)},
+                {"pos": (0.40, 0.13, -0.90), "pole": (1, 0.3, -0.6), "knuckles": (0.4, 0, 0.9)},
+                {"pos": (-0.36, 0.12, -0.80), "pole": (-1, 0.3, -0.6), "knuckles": (-0.4, 0, 0.9)},
                 feet=({"pos": (0.13, 0.0, -0.24), **flat_l}, {"pos": (-0.15, 0.0, -0.18), **flat_r})), "auto"),
         (8, sit(8, -0.95, -0.62, -55, 16, 14, 6, pl, pr, fingers=("flat", "flat")), "auto"),
         # Sat up, leaning back on her hands.

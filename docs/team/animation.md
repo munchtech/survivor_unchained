@@ -1,6 +1,10 @@
 # Animation: status
 
-Agent: ae2a9884e3e51609c (7 October), branch `worktree-agent-ae2a9884e3e51609c`; handed off at about 320k. Brief and handoff: `docs/handoff/animation.md`.
+Lead 7 (11 October), branch `worktree-agent-af8dbda3195e438e4`; handed off at about 260k. Current state and next steps: `docs/handoff/animation.md` section 0.
+
+## State (2026-10-11)
+
+**Judge 15:** death, get_up, get_up_back PASS WITH FIXES (palms skating at death f28-32 and get_up f1-4; the death shin flick too big; a floating hand at death_back's end); the dagger throw FAILS (the right fist and blade over her crotch f7-f19). Planted hands solved (keyed.py "plant", `Rig._lay`): fingers on the floor, not in it. Library not packed yet.
 
 ## State (2026-10-07)
 

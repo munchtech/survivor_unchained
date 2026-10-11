@@ -52,12 +52,17 @@ FINGERS = ("index", "middle", "ring", "pinky")
 
 # A hand planted on the ground (a hand's "plant"), measured off her skin
 # (metres, rig units; another body's are scaled by his hand's length,
-# HAND_LEN from the wrist to the middle finger's knuckle). Laid level, the
-# palm stands on its thenar pad and the hand bears on the side it is rolled
-# to; tipped PLANT_PITCH fingers-down it bears on the heel and the knuckle
-# pads together, and the wrist bends back that much less. PALM_DEPTH: the
-# wrist's joint over the lowest palm skin, so tipped.
-HAND_LEN, PLANT_PITCH, PALM_DEPTH = 0.1283, 5.0, 0.0393
+# HAND_LEN from the wrist to the middle finger's knuckle). Her palm bulges
+# at the ball of the thumb: laid level it stood on that alone, the little
+# finger's side 1.5 cm up and its knuckles 3-4 cm, so the fingers had to bend
+# down to reach the ground. Rolled PLANT_ROLL onto the little finger's side
+# and tipped PLANT_PITCH fingers-down, it lies on the ball of the thumb, the
+# heel of the little finger and the pads under the knuckles together, every
+# knuckle about a finger's thickness up, and the fingers lie along the ground
+# nearly straight. PALM_DEPTH: the wrist's joint over the lowest palm skin,
+# so laid (her hands are not alike).
+HAND_LEN, PLANT_PITCH, PLANT_ROLL = 0.1283, 10.0, 10.0
+PALM_DEPTH = {"l": 0.0412, "r": 0.0454}
 # Per finger: how far the pad reaches below each bone's line toward the
 # palm (the three bones), and the tip's skin past the last joint. The rest
 # thumb is turned in under the palm (its tip 3.5 cm below the palm's skin),
@@ -70,6 +75,11 @@ PADS = {"thumb": (0.0173, 0.0149, 0.0128, 0.0280), "index": (0.0172, 0.0163, 0.0
 # weight, the middle joint hardly, the last a little more.
 LAY_RANGE = {1: (-30.0, 80.0), 2: (-5.0, 95.0), 3: (-15.0, 70.0)}
 THUMB_RANGE = {1: (-15.0, 50.0), 2: (-20.0, 60.0), 3: (-25.0, 80.0)}
+# How stiffly each joint holds the bend the fingers' preset gave it (the
+# middle joint most), against resting on the ground (a 4 mm gap under the
+# finger weighs as a 10 degree bend of the knuckle; more than a centimetre
+# is not reached for) and against going into it (1 mm weighs as 30 degrees).
+LAY_STIFF = (1.0, 2.0, 1.5)
 
 
 class Rig:
@@ -445,8 +455,12 @@ class Rig:
             # over it whatever height the key gave (Rig._planted, Rig._lay).
             plant = float(spec.get("plant", 0.0))
             if plant > 0:
+                # (Let go of as the key lifts the hand away, wholly by 6 cm up,
+                # so a hand leaving the ground rises as keyed.)
                 target = np.array(target, float)
-                target[1] += plant * (float(spec.get("ground", 0.0)) + PALM_DEPTH * self.hand_scale - target[1])
+                rest = float(spec.get("ground", 0.0)) + PALM_DEPTH[side] * self.hand_scale
+                pull = min(1.0, plant) * min(1.0, max(0.0, 1.0 - (target[1] - rest) / (0.06 * self.hand_scale)))
+                target[1] += pull * (rest - target[1])
             if "plant" in spec:
                 laid[side] = (plant, float(spec.get("ground", 0.0)))
             s = 1 if side == "l" else -1
@@ -698,8 +712,9 @@ class Rig:
 
     def _planted(self, side, spec, frame, cur):
         """A hand lying flat on the ground: palm down, the fingers along the
-        knuckles' way over the ground (else the way they point now), tipped
-        PLANT_PITCH fingers-down."""
+        knuckles' way over the ground (else the way they point now), rolled
+        PLANT_ROLL onto the little finger's side and tipped PLANT_PITCH
+        fingers-down."""
         y = qrot(cur, [0, 1.0, 0])
         if "knuckles" in spec:
             y = np.array(spec["knuckles"], float)
@@ -708,71 +723,87 @@ class Rig:
         y = y / np.linalg.norm(y) if np.linalg.norm(y) > 1e-6 else np.array([0, 0, 1.0])
         # Palm down: the hand's +X is the palm's normal on her left, the back's on her right.
         x = np.array([0.0, -1.0 if side == "l" else 1.0, 0.0])
-        return qmul(qaxis(np.cross(y, [0, -1.0, 0]), PLANT_PITCH), qfrom_basis(x, y, np.cross(x, y)))
+        z = np.cross(x, y)
+        # The thumb's side (+Z) rolled up, then the fingers tipped down.
+        roll = PLANT_ROLL if np.cross(y, z)[1] > 0 else -PLANT_ROLL
+        return qmul(qaxis(np.cross(y, [0, -1.0, 0]), PLANT_PITCH), qmul(qaxis(y, roll), qfrom_basis(x, y, z)))
 
     def _lay(self, side, local, grot, gpos, w, ground):
-        """The fingers and thumb of a hand down at the ground: each joint in
-        turn bent (about the line square to its bone and the palm's normal)
-        so its bone's pad (PADS) is out of the ground, as little as will do;
-        and if it is clear, by the plant w down until it rests on it. Within
-        LAY_RANGE (THUMB_RANGE): what a joint cannot do is left."""
+        """The fingers and thumb of a hand down at the ground: each finger's
+        three joints bent together (about the line square to its first bone
+        and the palm's normal), as little as keeps every pad (PADS) out of the
+        ground and, by the plant w, brings the finger down to rest on it
+        (LAY_STIFF). (Joint by joint, a knuckle bent down until its own bone's
+        pad touched drove the rest of the finger 2 cm into the ground: the
+        joints beyond cannot bend back that far.) Within LAY_RANGE
+        (THUMB_RANGE); what a joint cannot do is left."""
         I, k = self.I, self.hand_scale
         ha = I[f"hand_{side}"]
         if gpos[ha][1] - ground > 0.32 * k:
             return
         palm = qrot(grot[ha], [1.0 if side == "l" else -1.0, 0, 0])
         floor = ground + 0.002 * k
-        deg = np.arange(-60.0, 100.5, 1.0)
-        ca, sa = np.cos(np.radians(deg)), np.sin(np.radians(deg))
-        zero = int(np.argmin(np.abs(deg)))
-        for f, (r1, r2, r3, tip) in PADS.items():
+        w = min(1.0, max(0.0, w))
+        for f, pads in PADS.items():
             js = [I[f"{f}_0{n}_{side}"] for n in (1, 2, 3)]
             rng = THUMB_RANGE if f == "thumb" else LAY_RANGE
-            g = qmul(grot[ha], local[js[0]])
-            p = gpos[js[0]].copy()
-            back = qrot(grot[ha], [0, 1.0, 0])
-            for n, j in enumerate(js):
-                r = (r1, r2, r3)[n] * k
-                off = (qrot(qinv(self.grest[j]), self.prest[js[n + 1]] - self.prest[j]) if n < 2
-                       else np.array([0.0, 0.75 * tip * k, 0.0]))
-                v = qrot(g, off)
-                L = float(np.linalg.norm(v))
-                a = np.cross(v, palm)
-                if np.linalg.norm(a) < 1e-9:
-                    break
-                a = a / np.linalg.norm(a)
-                # The bone's far end turned about a by each candidate (v is
-                # square to a): its pad's lowest point over the ground.
-                vy = v[1] * ca + np.cross(a, v)[1] * sa
-                low = p[1] + vy - r * np.sqrt(np.maximum(0.0, 1.0 - (vy / L) ** 2)) - floor
-                # The joint's bend now, from the bone before it, about a.
+            gs = [qmul(grot[ha], local[js[0]])]
+            for j in js[1:]:
+                gs.append(qmul(gs[-1], local[j]))
+            offs = [qrot(qinv(self.grest[js[n]]), self.prest[js[n + 1]] - self.prest[js[n]]) for n in (0, 1)]
+            offs.append(np.array([0.0, 0.75 * pads[3] * k, 0.0]))
+            vs = [qrot(g, o) for g, o in zip(gs, offs)]
+            a = np.cross(vs[0], palm)
+            if np.linalg.norm(a) < 1e-9:
+                continue
+            a = a / np.linalg.norm(a)
+            # Each joint's bend now (from the bone before it, about a) and
+            # the turns it may take.
+            grids, back = [], qrot(grot[ha], [0, 1.0, 0])
+            for n, v in enumerate(vs):
                 bp = back - a * np.dot(back, a)
                 th0 = math.degrees(math.atan2(float(np.dot(np.cross(bp, v), a)), float(np.dot(bp, v))))
-                ok = (deg >= min(0.0, rng[n + 1][0] - th0)) & (deg <= max(0.0, rng[n + 1][1] - th0))
-                turn = 0.0
-                if low[zero] < 0:
-                    # In the ground: out of it the least way, or as far out as it goes.
-                    clear = ok & (low >= 0)
-                    turn = float(deg[clear][np.argmin(np.abs(deg[clear]))]) if clear.any() else float(deg[ok][np.argmax(low[ok])])
-                elif w > 0:
-                    # Clear of it: down onto it, through the run of clear turns about this one.
-                    run = ok & (low >= 0)
-                    lo_, hi_ = zero, zero
-                    while lo_ > 0 and run[lo_ - 1]:
-                        lo_ -= 1
-                    while hi_ < len(deg) - 1 and run[hi_ + 1]:
-                        hi_ += 1
-                    i = lo_ + int(np.argmin(low[lo_:hi_ + 1]))
-                    if low[i] < 0.004 * k:
-                        turn = float(deg[i]) * min(1.0, w)
-                if turn:
-                    local[j] = qmul(local[j], qaxis(qrot(qinv(g), a), turn))
-                    g = qmul(qaxis(a, turn), g)
-                    v = qrot(g, off)
-                back = v / L
-                if n < 2:
-                    p = p + v
-                    g = qmul(g, local[js[n + 1]])
+                lo = max(-40.0, min(0.0, rng[n + 1][0] - th0))
+                hi = min(60.0, max(0.0, rng[n + 1][1] - th0))
+                grids.append((lo, hi))
+                back = v / np.linalg.norm(v)
+            # Turned about a by the sums of the joints' turns, each bone's drop
+            # and its pad's lowest point (at its far end) over the ground.
+            A = [(v[1], np.cross(a, v)[1], a[1] * np.dot(a, v), np.linalg.norm(v)) for v in vs]
+            R = [pads[n] * k for n in range(3)]
+
+            def cost(t1, t2, t3):
+                y, pen, gap, c = gpos[js[0]][1] - floor, 0.0, None, 0.0
+                for n, C in enumerate((t1, t1 + t2, t1 + t2 + t3)):
+                    vy, cy, ay, L = A[n]
+                    cr, sr = np.cos(np.radians(C)), np.sin(np.radians(C))
+                    d = vy * cr + cy * sr + ay * (1 - cr)
+                    y = y + d
+                    low = y - R[n] * np.sqrt(np.maximum(0.0, 1.0 - (d / L) ** 2))
+                    pen = pen + np.maximum(0.0, -low)
+                    gap = low  # (the tip's pad: the finger rests along the ground to it)
+                mm = 0.001 * k
+                gap = np.minimum(np.maximum(gap, 0.0), 10 * mm)
+                for n, t in enumerate((t1, t2, t3)):
+                    c = c + LAY_STIFF[n] * (t / 10.0) ** 2
+                return c + w * (gap / (4 * mm)) ** 2 + 10.0 * (pen / mm) ** 2
+
+            best = None
+            for step, span in ((3.0, None), (1.0, 3.0)):
+                axes = []
+                for n, (lo, hi) in enumerate(grids):
+                    if span is None:
+                        g = np.arange(lo, hi + 1e-6, step)
+                    else:
+                        g = np.arange(max(lo, best[n] - span), min(hi, best[n] + span) + 1e-6, step)
+                    axes.append(np.unique(np.r_[g, 0.0] if lo <= 0.0 <= hi else g))
+                T = np.meshgrid(*axes, indexing="ij")
+                E = cost(*T)
+                i = np.unravel_index(int(np.argmin(E)), E.shape)
+                best = [float(T[n][i]) for n in range(3)]
+            for n, t in enumerate(best):
+                if t:
+                    local[js[n]] = qmul(local[js[n]], qaxis(qrot(qinv(gs[n]), a), t))
 
     def _below(self, j):
         if not hasattr(self, "_below_cache"):
