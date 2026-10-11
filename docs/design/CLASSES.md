@@ -16,7 +16,7 @@ The classes plan covers what makes the four callings different, the skill tree, 
 
 **Q / right-click becomes the Flare: your ultimate.** It fills fastest when you're in trouble. You're untouchable while it plays, and casting it near death heals you. Each calling has four (a big instant *Strike* and a timed *Stand* per type), with three lamps each that reshape it. Each one has its own staged look, a frozen key pose and hitstop. The movement art moves into the dash.
 
-**Price:** about 22 lead sessions. Every Flare and every new weapon is animated for both heroes. The Flare is new power at night, so the nights get rebalanced.
+**Price:** about 22 lead sessions. Every Flare and new weapon is animated for both heroes. The Flare is new power at night, so the nights get rebalanced.
 
 ---
 
