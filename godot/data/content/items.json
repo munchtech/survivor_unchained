@@ -302,7 +302,7 @@
    "rarity": 3,
    "icon": "armor_heavy",
    "value": 160,
-   "description": "+8 armour. 40% fire resistance. +20% fire damage. Standing in fire grants 8 more armour.",
+   "description": "+8 armor. 40% fire resistance. +20% fire damage. Standing in fire grants 8 more armor.",
    "mods": [
     {
      "stat": "armor",
@@ -742,13 +742,13 @@
   },
   "travelers_cloak": {
    "id": "travelers_cloak",
-   "name": "Traveller's Cloak",
+   "name": "Traveler's Cloak",
    "kind": "cloak",
    "rarity": 0,
    "icon": "cloak",
    "value": 10,
    "base": true,
-   "description": "Grey wool.",
+   "description": "Gray wool.",
    "mods": [
     {
      "stat": "moveSpeed",
@@ -863,7 +863,7 @@
    "icon": "pelt",
    "value": 12,
    "stack": 20,
-   "description": "Thick grey fur. Brannoc pays for these; Holloway counts them."
+   "description": "Thick gray fur. Brannoc pays for these; Holloway counts them."
   },
   "boar_hide": {
    "id": "boar_hide",
@@ -1039,7 +1039,7 @@
      "source": "item"
     }
    ],
-   "lore": "Grey and grey and white, bitten off at the end."
+   "lore": "Gray and gray and white, bitten off at the end."
   },
   "stream_sample": {
    "id": "stream_sample",
@@ -1739,7 +1739,7 @@
    "tags": [
     "pack_pelt"
    ],
-   "lore": "Grey to the roots, and stitched from more than one wolf. Maeca could tell you whose, and won't."
+   "lore": "Gray to the roots, and stitched from more than one wolf. Maeca could tell you whose, and won't."
   },
   "watch_coif": {
    "id": "watch_coif",
@@ -1778,7 +1778,7 @@
    "homes": [
     "dead"
    ],
-   "description": "+3 armour. The Watch's Kit.",
+   "description": "+3 armor. The Watch's Kit.",
    "mods": [
     {
      "stat": "armor",
@@ -1842,7 +1842,7 @@
   },
   "levy_colours": {
    "id": "levy_colours",
-   "name": "Levy Colours",
+   "name": "Levy Colors",
    "kind": "cloak",
    "rarity": 3,
    "set": "levy_red",

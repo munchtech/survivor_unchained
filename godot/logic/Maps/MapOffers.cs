@@ -44,7 +44,7 @@ public static class MapOffers
         new("champions", "Oath of Champions", "Twice the champions", "More gear from them", Elites: 2, Gear: 1.3,
             Answer: "critical strikes, a mark", Lean: ["keen", "cruel"]),
         new("deep", "Oath of the Deep Dark", "Foes two levels stronger", "Better gear", Levels: 2, Gear: 1.4, Ember: 1.2,
-            Answer: "health and armour", Lean: ["hale", "sturdy"]),
+            Answer: "health and armor", Lean: ["hale", "sturdy"]),
         new("vigil", "Oath of the Long Vigil", "The horde's turns come twice as often", "More champions, and finer gear", Waves: 1, Gear: 1.3,
             Answer: "area and mending", Lean: ["of_reach", "of_mending"]),
         new("winter", "Oath of the Long Winter", "Their blows chill you to a crawl", "Gear half again as fine", Gear: 1.5,
@@ -60,7 +60,7 @@ public static class MapOffers
         new("moonless", "Oath of the Moonless", "Your light carries half as far", "Champions, and what they carry", Elites: 1.3, Gear: 1.3,
             Answer: "a lantern's reach", Lean: ["of_the_lantern"], Rule: r => r.Light = 0.5),
         new("ruin", "Oath of Ruin", "Their dead may burst where they fall", "Half again the ember", Ember: 1.5,
-            Answer: "reach, armour, a dash in time", Lean: ["sturdy", "of_reach"], Rule: r => r.DeathBurst = true),
+            Answer: "reach, armor, a dash in time", Lean: ["sturdy", "of_reach"], Rule: r => r.DeathBurst = true),
     };
 
     public static OathDef Oath(string id) => Oaths.First(o => o.Id == id);

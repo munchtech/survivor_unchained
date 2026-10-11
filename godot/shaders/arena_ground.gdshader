@@ -133,6 +133,11 @@ vec2 g_uv(int i, vec3 p, vec3 n, out mat3 tbn) {
 // gradients are the unshifted uv's, so the mip level never jumps at a seam.
 struct Pick { vec2 a; vec2 b; float t; vec2 dx; vec2 dy; };
 
+// (The photographs read a little softer than their pixels ask: 1.3 is about a third of a
+// mip level. FSR 2 keeps more of each frame's raw detail than TAA did, and the litter's
+// finest grains, under a pixel, fizzed as she moved.)
+uniform float detail_blur = 2.0;
+
 Pick pick(vec2 uv, vec2 w, int i) {
 	Pick p;
 	float k = texture(noise_tex, w * 0.09 + vec2(float(i) * 0.137, float(i) * 0.291)).r;
@@ -141,8 +146,8 @@ Pick pick(vec2 uv, vec2 w, int i) {
 	p.a = sin(vec2(3.0, 7.0) * ia);
 	p.b = sin(vec2(3.0, 7.0) * (ia + 1.0));
 	p.t = smoothstep(0.25, 0.75, fract(l));
-	p.dx = dFdx(uv);
-	p.dy = dFdy(uv);
+	p.dx = dFdx(uv) * detail_blur;
+	p.dy = dFdy(uv) * detail_blur;
 	return p;
 }
 
@@ -412,6 +417,12 @@ void fragment() {
 	albedo *= 1.0 - past_dark * past;
 
 	ALBEDO = albedo;
+	// Specular antialiasing: where the normal turns faster than a pixel can show, the
+	// highlight is spread (rough widened by the normal's change across the pixel), so
+	// grains don't glint on and off frame to frame.
+	vec3 ndx = dFdx(n), ndy = dFdy(n);
+	float spec_k = min(0.5 * (dot(ndx, ndx) + dot(ndy, ndy)), 0.18);
+	rough = sqrt(rough * rough + spec_k);
 	ROUGHNESS = clamp(rough, 0.04, 1.0);
 	AO = mix(1.0, ao, 0.85);
 	AO_LIGHT_AFFECT = 0.25;

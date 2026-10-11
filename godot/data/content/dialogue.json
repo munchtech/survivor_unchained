@@ -474,7 +474,7 @@
    },
    "clerk": {
     "id": "clerk",
-    "text": "Clerks don't buy rounds. Jessop bought three, the night Coyle's wagons went missing, and kept telling the room he'd \"done somebody a favour\". Rav was there; Rav's always there. ...Jessop's not been in since. He still owes me for the third.",
+    "text": "Clerks don't buy rounds. Jessop bought three, the night Coyle's wagons went missing, and kept telling the room he'd \"done somebody a favor\". Rav was there; Rav's always there. ...Jessop's not been in since. He still owes me for the third.",
     "choices": [
      {
       "text": "Something else.",
@@ -488,7 +488,7 @@
    },
    "town": {
     "id": "town",
-    "text": "Three roads meet here, and everyone on them stops at my door. South's the Low Ford. East's the Old Road and the Verge. North's shut, and a girl in shiny armour will tell you why, at length. Everybody else you'll meet whether you want to or not.",
+    "text": "Three roads meet here, and everyone on them stops at my door. South's the Low Ford. East's the Old Road and the Verge. North's shut, and a girl in shiny armor will tell you why, at length. Everybody else you'll meet whether you want to or not.",
     "choices": [
      {
       "text": "Who runs the place?",
@@ -2121,7 +2121,7 @@
    },
    "wolves": {
     "id": "wolves",
-    "text": "They're bolder. Two nights ago they came right up to the east gate. Five a pelt, fifty for the old grey one they call Greymuzzle. Bring me proof and I'll pay. Bring me stories and I won't. I've eleven men and four of them can hold a spear the right way round; I'm not spending them on stories.",
+    "text": "They're bolder. Two nights ago they came right up to the east gate. Five a pelt, fifty for the old gray one they call Greymuzzle. Bring me proof and I'll pay. Bring me stories and I won't. I've eleven men and four of them can hold a spear the right way round; I'm not spending them on stories.",
     "effects": [
      {
       "if": {
@@ -3379,7 +3379,7 @@
        "fact": "bounty.stopped",
        "eq": true
       },
-      "text": "I hear you put the old grey one down. I'd stopped paying for it. You did it anyway. I'm trying to work out what that makes you."
+      "text": "I hear you put the old gray one down. I'd stopped paying for it. You did it anyway. I'm trying to work out what that makes you."
      },
      {
       "text": "Greymuzzle's dead, they tell me. Maeca won't speak to me for a month and I've slept better for it already. ...Twenty years that wolf's had the run of this valley. Odd, missing a thing you hated."
@@ -3622,7 +3622,7 @@
    },
    "post": {
     "id": "post",
-    "text": "(He says nothing for long enough that you think he hasn't heard.) Grey beard, proud of it? Bad hip? ...Corran. He had that post before I had this one. I wrote him down as a deserter in the spring. Him and his runner, Dannet. Dannet never came up the road, so I wrote him down too.",
+    "text": "(He says nothing for long enough that you think he hasn't heard.) Gray beard, proud of it? Bad hip? ...Corran. He had that post before I had this one. I wrote him down as a deserter in the spring. Him and his runner, Dannet. Dannet never came up the road, so I wrote him down too.",
     "effects": [
      {
       "quest": {
@@ -4594,7 +4594,7 @@
    },
    "thanks": {
     "id": "thanks",
-    "text": "The Hollow's quiet. The Pack's eating again: deer, not travellers. I've been a hunter all my life, {name}, and I've never once saved anything. ...Thank you.",
+    "text": "The Hollow's quiet. The Pack's eating again: deer, not travelers. I've been a hunter all my life, {name}, and I've never once saved anything. ...Thank you.",
     "effects": [
      {
       "rel": {
@@ -4835,10 +4835,10 @@
         "eq": true
        }
       },
-      "text": "(Grey light. She's already up, barefoot in the frost, listening.) Go on, then. The wood's awake, and so's Holloway, and he'll count us both."
+      "text": "(Gray light. She's already up, barefoot in the frost, listening.) Go on, then. The wood's awake, and so's Holloway, and he'll count us both."
      },
      {
-      "text": "(Grey light. She's already up, barefoot in the frost, listening to the wood.) The Pack found me, after Ashford. Three days, and then a cave mouth, and a lad I'd been fond of dying in it. The old grey one came and lay down across the way in. Kept the cold off. Kept everything off. ...That's why. That's all of why. Don't make it a story."
+      "text": "(Gray light. She's already up, barefoot in the frost, listening to the wood.) The Pack found me, after Ashford. Three days, and then a cave mouth, and a lad I'd been fond of dying in it. The old gray one came and lay down across the way in. Kept the cold off. Kept everything off. ...That's why. That's all of why. Don't make it a story."
      }
     ],
     "effects": [
@@ -5441,7 +5441,7 @@
    },
    "blind3_morning": {
     "id": "blind3_morning",
-    "text": "(Grey light. She's awake before you, as always, but she hasn't got up. Her head is still on your chest. Her face is very still.) Your heart's going like a hare's. (She doesn't lift her head.) All night it was a bear's in January. I counted between. ...I've lain with my ear to a lot of things to see if they'd live, {name}. (She gets up, then, and goes out barefoot into the frost, and stands there listening to the wood with her back to you.) Go on. Holloway'll count us.",
+    "text": "(Gray light. She's awake before you, as always, but she hasn't got up. Her head is still on your chest. Her face is very still.) Your heart's going like a hare's. (She doesn't lift her head.) All night it was a bear's in January. I counted between. ...I've lain with my ear to a lot of things to see if they'd live, {name}. (She gets up, then, and goes out barefoot into the frost, and stands there listening to the wood with her back to you.) Go on. Holloway'll count us.",
     "effects": [
      {
       "set": {
@@ -5599,7 +5599,7 @@
    },
    "shed_fur_braid": {
     "id": "shed_fur_braid",
-    "text": "(She sits with her back to the fire and braids it on her knee, grey and grey and white, the way you'd braid a child's hair. She doesn't talk. When it's done she bites the end off.) Next to the skin. They'll know you in the dark.",
+    "text": "(She sits with her back to the fire and braids it on her knee, gray and gray and white, the way you'd braid a child's hair. She doesn't talk. When it's done she bites the end off.) Next to the skin. They'll know you in the dark.",
     "effects": [
      {
       "give": "shed_fur_braid",
@@ -6923,7 +6923,7 @@
    },
    "cb_killed_greymuzzle": {
     "id": "cb_killed_greymuzzle",
-    "text": "Did you kill the big grey one? ...Was he sick too?",
+    "text": "Did you kill the big gray one? ...Was he sick too?",
     "effects": [
      {
       "npcFlag": {
@@ -7496,7 +7496,7 @@
    },
    "cb_killed_greymuzzle": {
     "id": "cb_killed_greymuzzle",
-    "text": "Grey one's dead. Should've brought him here. Fang like that.",
+    "text": "Gray one's dead. Should've brought him here. Fang like that.",
     "effects": [
      {
       "npcFlag": {
@@ -7654,7 +7654,7 @@
    },
    "nell": {
     "id": "nell",
-    "text": "(He doesn't look up from the anvil, and he doesn't stop.) You came up the Low Ford road. ...Carter went south a fortnight back. Wat, with the grey mare. Toll work. Said he'd be over the ford by dark. Girl with him. Twelve. Red hair. New boots. Going to her aunt at Low Kiln. (The hammer stops.) Mine. Nell. ...You pass them?",
+    "text": "(He doesn't look up from the anvil, and he doesn't stop.) You came up the Low Ford road. ...Carter went south a fortnight back. Wat, with the gray mare. Toll work. Said he'd be over the ford by dark. Girl with him. Twelve. Red hair. New boots. Going to her aunt at Low Kiln. (The hammer stops.) Mine. Nell. ...You pass them?",
     "effects": [
      {
       "quest": {
@@ -8027,10 +8027,10 @@
       "when": {
        "hasItem": "wardens_lampiron"
       },
-      "text": "(Nothing. Then he gives you the iron back, carefully, the way you'd hand someone a thing that was still hot. On the anvil the bar goes from orange to grey.) Forge is shut."
+      "text": "(Nothing. Then he gives you the iron back, carefully, the way you'd hand someone a thing that was still hot. On the anvil the bar goes from orange to gray.) Forge is shut."
      },
      {
-      "text": "(Nothing. On the anvil the bar goes from orange to grey.) Forge is shut."
+      "text": "(Nothing. On the anvil the bar goes from orange to gray.) Forge is shut."
      }
     ],
     "next": "nell_lantern"
@@ -9651,7 +9651,7 @@
    },
    "cb_killed_greymuzzle": {
     "id": "cb_killed_greymuzzle",
-    "text": "They say the old grey wolf's dead. It wasn't wolves that took my wagons, I know that now. But it was wolves on that road every other night, and I'll not pretend to weep.",
+    "text": "They say the old gray wolf's dead. It wasn't wolves that took my wagons, I know that now. But it was wolves on that road every other night, and I'll not pretend to weep.",
     "effects": [
      {
       "npcFlag": {
@@ -10415,10 +10415,10 @@
         ]
        }
       },
-      "text": "Where did you— the clerk. Of course. (He studies your face, and something in his own unclenches.) ...You don't know what you're holding, do you? How refreshing. Let's be civilised. There's gold in this for you, a good deal of gold, if that book were to go in the fire."
+      "text": "Where did you— the clerk. Of course. (He studies your face, and something in his own unclenches.) ...You don't know what you're holding, do you? How refreshing. Let's be civilized. There's gold in this for you, a good deal of gold, if that book were to go in the fire."
      },
      {
-      "text": "Where did you— the clerk. Of course. Let's be civilised. There's gold in this for you, a good deal of gold, if that book were to go in the fire."
+      "text": "Where did you— the clerk. Of course. Let's be civilized. There's gold in this for you, a good deal of gold, if that book were to go in the fire."
      }
     ],
     "choices": [
@@ -10689,7 +10689,7 @@
       "when": {
        "archetype": "warden"
       },
-      "text": "Armour like that costs more than most of this street. Whoever paid for it, I'd very much like to meet them."
+      "text": "Armor like that costs more than most of this street. Whoever paid for it, I'd very much like to meet them."
      },
      {
       "when": {
@@ -11214,10 +11214,10 @@
       "when": {
        "knows": "underworld"
       },
-      "text": "A toll clerk bought the room a round the night the caravan vanished. Clerks don't buy rounds. Jessop, his name is; Vonnra's. He'd \"done somebody a favour\": told Coyle's teamsters the road was shut and sent them down the forest track. Between us, he'd also a key he shouldn't have. Pell's warehouse. Showed it me like a boy with a frog. ...Not seen him since. He wasn't the type to buy rounds, either."
+      "text": "A toll clerk bought the room a round the night the caravan vanished. Clerks don't buy rounds. Jessop, his name is; Vonnra's. He'd \"done somebody a favor\": told Coyle's teamsters the road was shut and sent them down the forest track. Between us, he'd also a key he shouldn't have. Pell's warehouse. Showed it me like a boy with a frog. ...Not seen him since. He wasn't the type to buy rounds, either."
      },
      {
-      "text": "A toll clerk bought the room a round the night the caravan vanished. Clerks don't buy rounds. Jessop, his name is; Vonnra's. He'd \"done somebody a favour\": told Coyle's teamsters the road was shut and sent them down the forest track. Draw your own lines, pal. ...Not seen him since, now I think of it."
+      "text": "A toll clerk bought the room a round the night the caravan vanished. Clerks don't buy rounds. Jessop, his name is; Vonnra's. He'd \"done somebody a favor\": told Coyle's teamsters the road was shut and sent them down the forest track. Draw your own lines, pal. ...Not seen him since, now I think of it."
      }
     ],
     "effects": [
@@ -13540,7 +13540,7 @@
       "when": {
        "time": "night"
       },
-      "text": "(Her lamp is lit, and she is looking south, toward the ford.) Traveller. The road is quiet tonight. It will not always be. Payment, always."
+      "text": "(Her lamp is lit, and she is looking south, toward the ford.) Traveler. The road is quiet tonight. It will not always be. Payment, always."
      },
      {
       "when": {
@@ -14469,7 +14469,7 @@
        "fact": "beasts.outcome",
        "eq": "allied"
       },
-      "text": "I see wolves running beside you, not at you. The old grey one lets you walk in front. Holloway sleeps with his sword across his knees now. Be careful what you have taught them to follow."
+      "text": "I see wolves running beside you, not at you. The old gray one lets you walk in front. Holloway sleeps with his sword across his knees now. Be careful what you have taught them to follow."
      },
      {
       "when": {
@@ -14484,7 +14484,7 @@
         }
        ]
       },
-      "text": "I see pelts. A great many pelts, and a grey one on top of the pile. The road is safe and the wood is quiet. Something that was sick got sicker, and then there was nothing left of it to be sick."
+      "text": "I see pelts. A great many pelts, and a gray one on top of the pile. The road is safe and the wood is quiet. Something that was sick got sicker, and then there was nothing left of it to be sick."
      },
      {
       "when": {
@@ -14682,7 +14682,7 @@
       "text": "(She takes a folded chart from under the ledger and lays it between you. It is in the Wayfinder's hand, and its margins are written full.) That would be ten gold. This once, no charge. The rest you will walk into yourself, and you will, because you are the kind that does. (The ledger lies open under her hand at its last page, and from where you sit you can read it. Twenty-six lines, every one struck through. The twenty-fifth: Nell, the smith's girl. With Wat. The twenty-sixth: Rook's lodger. And under them a twenty-seventh, not struck: From the ford. Got up.)"
      },
      {
-      "text": "(She takes a folded chart from under the ledger and lays it between you. It is in the Wayfinder's hand, and its margins are written full.) That would be ten gold, traveller. This once, no charge. The rest you will walk into yourself, and you will, because you are the kind that does. (The ledger lies open under her hand at its last page, and from where you sit you can read it. Twenty-six lines, every one struck through. The twenty-fifth: Nell, the smith's girl. With Wat. The twenty-sixth: Rook's lodger. And under them a twenty-seventh, not struck: From the ford. Got up.)"
+      "text": "(She takes a folded chart from under the ledger and lays it between you. It is in the Wayfinder's hand, and its margins are written full.) That would be ten gold, traveler. This once, no charge. The rest you will walk into yourself, and you will, because you are the kind that does. (The ledger lies open under her hand at its last page, and from where you sit you can read it. Twenty-six lines, every one struck through. The twenty-fifth: Nell, the smith's girl. With Wat. The twenty-sixth: Rook's lodger. And under them a twenty-seventh, not struck: From the ford. Got up.)"
      }
     ],
     "effects": [
@@ -14704,7 +14704,7 @@
    },
    "cb_opened_vault": {
     "id": "cb_opened_vault",
-    "text": "You opened it. ...Do not sit, traveller. I would rather you stood. What did you see on the stair?",
+    "text": "You opened it. ...Do not sit, traveler. I would rather you stood. What did you see on the stair?",
     "effects": [
      {
       "npcFlag": {
@@ -14737,7 +14737,7 @@
    },
    "cb_vault3": {
     "id": "cb_vault3",
-    "text": "Yours, for now. Payment, always, traveller; even for silence. You will find I collect.",
+    "text": "Yours, for now. Payment, always, traveler; even for silence. You will find I collect.",
     "choices": [
      {
       "text": "Goodbye.",
@@ -14780,7 +14780,7 @@
       "when": {
        "archetype": "warden"
       },
-      "text": "Shields. Gates. Walls. You believe things can be kept out, traveller. It is a lovely belief."
+      "text": "Shields. Gates. Walls. You believe things can be kept out, traveler. It is a lovely belief."
      },
      {
       "when": {
@@ -14798,10 +14798,10 @@
       "when": {
        "archetype": "stalker"
       },
-      "text": "You paid no toll the first time you passed my tower, traveller. Nobody saw you pass. I have added it to your account."
+      "text": "You paid no toll the first time you passed my tower, traveler. Nobody saw you pass. I have added it to your account."
      },
      {
-      "text": "You paid no toll the first time you passed my tower, traveller. Nobody saw you pass. I have added it to your account."
+      "text": "You paid no toll the first time you passed my tower, traveler. Nobody saw you pass. I have added it to your account."
      }
     ],
     "effects": [
@@ -14840,7 +14840,7 @@
    },
    "risen": {
     "id": "risen",
-    "text": "You came back. Most do not, the first time. ...Do not thank Chid. Do not thank anyone. Payment, always, traveller, and for that above all; you will find out who holds the note.",
+    "text": "You came back. Most do not, the first time. ...Do not thank Chid. Do not thank anyone. Payment, always, traveler, and for that above all; you will find out who holds the note.",
     "effects": [
      {
       "npcFlag": {
@@ -14854,7 +14854,7 @@
    },
    "jessop": {
     "id": "jessop",
-    "text": "Gone south. On the toll's business. (She turns a page of the ledger that does not need turning.) Clerks go south, traveller. It is the direction they fall in.",
+    "text": "Gone south. On the toll's business. (She turns a page of the ledger that does not need turning.) Clerks go south, traveler. It is the direction they fall in.",
     "effects": [
      {
       "set": {
@@ -15077,17 +15077,17 @@
        "fact": "warden.answer",
        "eq": "silent"
       },
-      "text": "And the ford. (She turns the cup over on the table.) He would have held that lamp out of the water until the river ran dry, traveller. Two hundred years he held it, and he would have held it two hundred more, and got up every dusk to hold it again. You did not even tell him it was morning. He let go anyway."
+      "text": "And the ford. (She turns the cup over on the table.) He would have held that lamp out of the water until the river ran dry, traveler. Two hundred years he held it, and he would have held it two hundred more, and got up every dusk to hold it again. You did not even tell him it was morning. He let go anyway."
      },
      {
-      "text": "And the ford. (She turns the cup over on the table.) He would have held that lamp out of the water until the river ran dry, traveller. Two hundred years he held it, and he would have held it two hundred more, and got up every dusk to hold it again. You told him it was morning."
+      "text": "And the ford. (She turns the cup over on the table.) He would have held that lamp out of the water until the river ran dry, traveler. Two hundred years he held it, and he would have held it two hundred more, and got up every dusk to hold it again. You told him it was morning."
      }
     ],
     "next": "f_did"
    },
    "f_did": {
     "id": "f_did",
-    "text": "When the lamp went into the water, his heart came up out of it, and a little lamp-person was waiting to carry it away down a hole. The ground has turned over every night since. The Dig digs faster. The Penhale boy's floor knocks. (She lays her hand flat on the cup.) You stopped the drowning, traveller. You also did this.",
+    "text": "When the lamp went into the water, his heart came up out of it, and a little lamp-person was waiting to carry it away down a hole. The ground has turned over every night since. The Dig digs faster. The Penhale boy's floor knocks. (She lays her hand flat on the cup.) You stopped the drowning, traveler. You also did this.",
     "next": "f_below"
    }
   }
@@ -15593,7 +15593,7 @@
    },
    "dinner": {
     "id": "dinner",
-    "text": "Chapter eleven. Fraternisation. I have not read it. ...That is a lie. I have read it four times. The answer is no. The answer is very nearly no. Good day.",
+    "text": "Chapter eleven. Fraternization. I have not read it. ...That is a lie. I have read it four times. The answer is no. The answer is very nearly no. Good day.",
     "effects": [
      {
       "rel": {
@@ -16030,7 +16030,7 @@
         }
        ]
       },
-      "text": "WOLF BOUNTY — five gold the pelt, fifty for the old grey dog-wolf. Capt. Holloway, the Watch."
+      "text": "WOLF BOUNTY — five gold the pelt, fifty for the old gray dog-wolf. Capt. Holloway, the Watch."
      },
      {
       "when": {
@@ -16072,7 +16072,7 @@
        "fact": "beasts.outcome",
        "eq": "allied"
       },
-      "text": "NOTICE: Travellers keep to the road. The Watch will not answer for wolves that WALK WITH PEOPLE. Capt. Holloway."
+      "text": "NOTICE: Travelers keep to the road. The Watch will not answer for wolves that WALK WITH PEOPLE. Capt. Holloway."
      },
      {
       "add": true,
@@ -16138,7 +16138,7 @@
        "fact": "player.wanted",
        "eq": true
       },
-      "text": "WANTED: a traveller seen selling Coyle goods. The likeness is poor, but not poor enough."
+      "text": "WANTED: a traveler seen selling Coyle goods. The likeness is poor, but not poor enough."
      },
      {
       "add": true,
@@ -16163,7 +16163,7 @@
         "lte": 3
        }
       },
-      "text": "Has anyone seen my cat? Grey. Answers to nothing. M."
+      "text": "Has anyone seen my cat? Gray. Answers to nothing. M."
      },
      {
       "add": true,
@@ -17296,7 +17296,7 @@
       "when": {
        "archetype": "arcanist"
       },
-      "text": "Something on you's smouldering, love. Are you on fire? You're a little bit on fire."
+      "text": "Something on you's smoldering, love. Are you on fire? You're a little bit on fire."
      },
      {
       "when": {
@@ -17714,22 +17714,22 @@
       "when": {
        "archetype": "warden"
       },
-      "text": "The blue room is blue because the lamp glass is, and everything in it takes the colour: the quilt, the jug, the bath, her. She tests the water with her elbow like somebody's mother, and then tips your chin up with one finger like nobody's mother at all. Your buckles take an age. She undoes them as if she has done a great many, and laughs at the last one, which is stuck. \"All that steel, and under it, look. A person.\""
+      "text": "The blue room is blue because the lamp glass is, and everything in it takes the color: the quilt, the jug, the bath, her. She tests the water with her elbow like somebody's mother, and then tips your chin up with one finger like nobody's mother at all. Your buckles take an age. She undoes them as if she has done a great many, and laughs at the last one, which is stuck. \"All that steel, and under it, look. A person.\""
      },
      {
       "when": {
        "archetype": "reaver"
       },
-      "text": "The blue room is blue because the lamp glass is, and everything in it takes the colour: the quilt, the jug, the bath, her. She tests the water with her elbow like somebody's mother, and then tips your chin up with one finger like nobody's mother at all. She takes your hands, one and then the other, and turns them over, and looks at the knuckles. \"Gently, upstairs. I mean it. I like this jug.\""
+      "text": "The blue room is blue because the lamp glass is, and everything in it takes the color: the quilt, the jug, the bath, her. She tests the water with her elbow like somebody's mother, and then tips your chin up with one finger like nobody's mother at all. She takes your hands, one and then the other, and turns them over, and looks at the knuckles. \"Gently, upstairs. I mean it. I like this jug.\""
      },
      {
       "when": {
        "archetype": "arcanist"
       },
-      "text": "The blue room is blue because the lamp glass is, and everything in it takes the colour: the quilt, the jug, the bath, her. She tests the water with her elbow like somebody's mother, and then tips your chin up with one finger like nobody's mother at all. She lays her palm flat on your chest and takes it away again, fast, then puts it back, slower. \"Your hands are hot and the rest of you's a cellar floor. Pick one, love.\""
+      "text": "The blue room is blue because the lamp glass is, and everything in it takes the color: the quilt, the jug, the bath, her. She tests the water with her elbow like somebody's mother, and then tips your chin up with one finger like nobody's mother at all. She lays her palm flat on your chest and takes it away again, fast, then puts it back, slower. \"Your hands are hot and the rest of you's a cellar floor. Pick one, love.\""
      },
      {
-      "text": "The blue room is blue because the lamp glass is, and everything in it takes the colour: the quilt, the jug, the bath, her. She tests the water with her elbow like somebody's mother, and then tips your chin up with one finger like nobody's mother at all. She comes round behind you to start on the laces, and says into your ear, \"There. Now you know what it's like,\" and you jump. She's delighted."
+      "text": "The blue room is blue because the lamp glass is, and everything in it takes the color: the quilt, the jug, the bath, her. She tests the water with her elbow like somebody's mother, and then tips your chin up with one finger like nobody's mother at all. She comes round behind you to start on the laces, and says into your ear, \"There. Now you know what it's like,\" and you jump. She's delighted."
      }
     ],
     "next": "stairs_rules"
@@ -18233,7 +18233,7 @@
    "free_sit": {
     "id": "free_sit",
     "speaker": "narrator",
-    "text": "You sit on the bed with your backs to the wall, and she tells you about the house in the south: which room faces the sun; the colour of the door; the knock. Then she sends you down the stairs, and stands at the top to watch you skip the fourth.",
+    "text": "You sit on the bed with your backs to the wall, and she tells you about the house in the south: which room faces the sun; the color of the door; the knock. Then she sends you down the stairs, and stands at the top to watch you skip the fourth.",
     "choices": [
      {
       "text": "Goodnight, Sella.",
@@ -18385,7 +18385,7 @@
    "first": {
     "id": "first",
     "speaker": "narrator",
-    "text": "The old wolf comes out of the rocks alone. He is grey to the eyes, and thin, and he does not growl. He looks at you for a long time. Behind him, in the shadow of the stones, wolves lie in the dirt and do not get up.",
+    "text": "The old wolf comes out of the rocks alone. He is gray to the eyes, and thin, and he does not growl. He looks at you for a long time. Behind him, in the shadow of the stones, wolves lie in the dirt and do not get up.",
     "choices": [
      {
       "text": "Kneel, and hold out an empty hand.",
@@ -18711,7 +18711,7 @@
       "when": {
        "hasTag": "kerchief_colors"
       },
-      "text": "Look at the colours on you. You're not one of mine, and you're not daft enough to be one of Holloway's. Redcowl. You're standing in my Roost. Talk."
+      "text": "Look at the colors on you. You're not one of mine, and you're not daft enough to be one of Holloway's. Redcowl. You're standing in my Roost. Talk."
      },
      {
       "when": {
@@ -19311,7 +19311,7 @@
    },
    "favour": {
     "id": "favour",
-    "text": "Is it, now. The howling's been keeping my lot up nights, I'll admit. ...Fine. The teamsters, for the favour. The box you still pay for. Fifty, for a friend.",
+    "text": "Is it, now. The howling's been keeping my lot up nights, I'll admit. ...Fine. The teamsters, for the favor. The box you still pay for. Fifty, for a friend.",
     "effects": [
      {
       "set": {
@@ -21476,7 +21476,7 @@
    "call": {
     "id": "call",
     "speaker": "far_voice",
-    "text": "Come up, traveller. ...No charge, this once.",
+    "text": "Come up, traveler. ...No charge, this once.",
     "next": "frost"
    },
    "frost": {

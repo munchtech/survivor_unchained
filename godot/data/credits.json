@@ -1,7 +1,7 @@
 {
   "intro": [
     "Survivor Unchained is made by Munchtech. Its world, lore and combat roots are The Ember Watch.",
-    "These credits list everything in the game that others made, with each licence. Works under CC BY are used with the credit required below. Works under CC0 need no credit, and we give it with thanks."
+    "These credits list everything in the game that others made, with each license. Works under CC BY are used with the credit required below. Works under CC0 need no credit, and we give it with thanks."
   ],
   "sections": [
     {
@@ -22,8 +22,8 @@
                 "https://godotengine.org/license"
               ],
               "lines": [
-                "MIT licence",
-                "It includes third-party components under their own licences, listed in Godot's COPYRIGHT.txt. Among them are Jolt Physics (MIT), FreeType, HarfBuzz, ICU, mbedTLS and ENet."
+                "MIT license",
+                "It includes third-party components under their own licenses, listed in Godot's COPYRIGHT.txt. Among them are Jolt Physics (MIT), FreeType, HarfBuzz, ICU, mbedTLS and ENet."
               ]
             },
             {
@@ -84,7 +84,7 @@
       "licence": "CC BY 4.0",
       "licenceLink": "https://creativecommons.org/licenses/by/4.0/",
       "notes": [
-        "Licence: https://creativecommons.org/licenses/by/4.0/. Each work is provided as is, without warranty, by its creator. Our changes are listed with it."
+        "License: https://creativecommons.org/licenses/by/4.0/. Each work is provided as is, without warranty, by its creator. Our changes are listed with it."
       ],
       "groups": [
         {
@@ -138,7 +138,7 @@
             {
               "name": "Medieval Mace",
               "work": true,
-              "text": "designed by Kama Modeling; modelled and textured by Yavuz Temel",
+              "text": "designed by Kama Modeling; modeled and textured by Yavuz Temel",
               "links": [
                 "https://sketchfab.com/KamaModeling",
                 "https://sketchfab.com/3d-models/medieval-mace-83217215a0c541b2956a8e87a4ae62fe"
@@ -263,7 +263,7 @@
               ],
               "lines": [
                 "Takes used: Heavyset, Strutting, Angry and Crouched (and Followed as reference for one glance).",
-                "Changes: retargeted to her skeleton; feet locked; looped; centred; arms re-keyed to hold her weapons."
+                "Changes: retargeted to her skeleton; feet locked; looped; centered; arms re-keyed to hold her weapons."
               ]
             }
           ]
@@ -271,8 +271,8 @@
       ]
     },
     {
-      "title": "Used under service terms or model licences",
-      "short": "Used under service terms or model licences",
+      "title": "Used under service terms or model licenses",
+      "short": "Used under service terms or model licenses",
       "notes": [],
       "groups": [
         {
@@ -1530,7 +1530,7 @@
             },
             {
               "work": false,
-              "text": "The heroine's hair, outfits and face-paint designs, the skin's pores, the town well, the glyphs, the app icon, the shaders, the synthesised sounds and music, and every keyed animation",
+              "text": "The heroine's hair, outfits and face-paint designs, the skin's pores, the town well, the glyphs, the app icon, the shaders, the synthesized sounds and music, and every keyed animation",
               "links": [],
               "lines": []
             },

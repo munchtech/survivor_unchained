@@ -594,7 +594,7 @@ whether or not anyone was in its cages.
 ## 11. Code spec
 
 Each item: what, where, the exact data, and how to prove it. Keep the house
-style (`godot/README.md`): comments in short British prose that say why.
+style (`godot/README.md`): comments in short prose that say why.
 
 ### C1. The strongbox, found, says whose it is and where to take it [CODE, done]
 

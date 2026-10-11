@@ -201,7 +201,7 @@ public class ArenaPlay(ITestOutputHelper log)
 
     static double Dist(double ax, double az, double bx, double bz) => Math.Sqrt((ax - bx) * (ax - bx) + (az - bz) * (az - bz));
 
-    [Theory]
+    [ProbeTheory("ARENA_PLAY", "1")]
     [InlineData(42, "warden", 1, "pack")]
     [InlineData(7, "stalker", 1, "dead")]
     [InlineData(99, "arcanist", 1, "kerchiefs")]
@@ -223,5 +223,6 @@ public class ArenaPlay(ITestOutputHelper log)
         log.WriteLine($"  ember by minute [{string.Join(" ", r.EmberAt)}]");
         log.WriteLine($"  {r.Build}");
         if (r.Note != "") log.WriteLine($"  {r.Note}");
+        Assert.True(r.Minutes > 0, "the arena run ended having played some time");
     }
 }

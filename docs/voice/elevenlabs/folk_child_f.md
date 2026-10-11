@@ -67,9 +67,9 @@ Subtitle: Tag! You're it!
 *Played:* shy, child; pace: measured; volume: level.
 
 ```
-[shy, child] Mum says not to talk to you.
+[shy, child] Mom says not to talk to you.
 ```
-Subtitle: Mum says not to talk to you.
+Subtitle: Mom says not to talk to you.
 
 ### 4. `folk.68.f.wav`
 

@@ -5,7 +5,7 @@
    "name": "Warden",
    "tagline": "Hold the line.",
    "model": "knight",
-   "description": "Armoured and patient. Wardens stand where others run, and the blows that reach them land on steel.",
+   "description": "Armored and patient. Wardens stand where others run, and the blows that reach them land on steel.",
    "base": {
     "maxHealth": 170,
     "moveSpeed": 5,
@@ -308,7 +308,7 @@
    "id": "hunter",
    "name": "Hunter",
    "summary": "You read the ground and the animals on it.",
-   "story": "You grew up following tracks through Thornhollow with a bow you were too small for. Animals are not mysteries to you; they are neighbours with reasons.",
+   "story": "You grew up following tracks through Thornhollow with a bow you were too small for. Animals are not mysteries to you; they are neighbors with reasons.",
    "knowledge": [
     "beastlore"
    ],
@@ -598,7 +598,7 @@
    "id": "stout_heart",
    "name": "Stout Heart",
    "source": "levelup",
-   "text": "+3 armour and +10% healing received.",
+   "text": "+3 armor and +10% healing received.",
    "mods": [
     {
      "stat": "armor",

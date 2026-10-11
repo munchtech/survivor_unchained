@@ -4,7 +4,9 @@
 // ways tried under FSR 2 (src/Actors/HairDraw.cs): heroine_hair_blend.gdshader
 // (blended over a depth prepass of its solid parts: BLEND), and
 // heroine_hair_core.gdshader (its solid parts drawn opaque: CORE) under
-// heroine_hair_over.gdshader (the whole drawn again over them, blended: OVER).
+// heroine_hair_over.gdshader (the whole drawn again over them, blended: OVER);
+// and heroine_hair_erase.gdshader drawn last over any of the blended ones, to
+// erase FSR 2's reactive mask under them (ERASE).
 
 uniform sampler2D strands : source_color, filter_linear_mipmap_anisotropic, repeat_enable;
 uniform vec3 colour : source_color = vec3(0.56, 0.17, 0.07);
@@ -48,7 +50,23 @@ uniform vec3 chain_then[8];
 // (the share of a pixel a strand must cover to be drawn solid, its depth and
 // motion written: near 1, so the blended pass over it shows no edge)
 uniform float core_cut = 0.9;
+#ifdef CORE_A2C
+// (under MSAA, at the Look: its own cut, near 1, so the core's samples and the blended
+// pass over them don't both cover the edge, which drew it darker and wider)
+uniform float a2c_cut = 0.9;
 #endif
+#endif
+#ifdef ERASE
+// (how much of the blended alpha under it is kept: heroine_hair_erase.gdshader;
+// erased fully only where the strands cover at least erase_from: with "two", the core's
+// cut, so only what wrote her hair's own motion is accumulated, and the thin
+// fringe stays reactive)
+uniform float keep = 0.0;
+uniform float erase_from = 0.0;
+#endif
+// (a bias on the strands' mip level: 0.5 cancels the smoothing's -0.5 on strands
+// thinner than a pixel; --hair-bias, HairDraw)
+uniform float strand_bias = 0.0;
 
 varying vec3 strand;
 varying float sparkle;
@@ -72,7 +90,7 @@ void vertex() {
 }
 
 void fragment() {
-	vec4 t = texture(strands, UV);
+	vec4 t = texture(strands, UV, strand_bias);
 	// (its shade kept from going too dark or too light, strand to strand)
 	t.r = mix(0.15, 0.85, t.r);
 	// Strand by strand (the atlas's green) and lock by lock (the card's green),
@@ -109,7 +127,24 @@ void fragment() {
 	ALPHA = IN_SHADOW_PASS ? step(0.5, cover) : cover;
 #elif defined(CORE)
 	ALPHA = cover;
+#ifdef CORE_A2C
+	// (under MSAA, the cut's edge spread over the samples over a pixel round
+	// a2c_cut: alpha to coverage, heroine_hair_core_a2c.gdshader; cut first a
+	// quarter below it, as Godot cuts before it spreads. The texture coordinate
+	// is the plain UV, whose tiny derivatives turn off Godot's boost of the
+	// alpha by a quarter per mip level, which widened the cut)
+	float cut0 = max(a2c_cut - 0.25, 0.05);
+	ALPHA_SCISSOR_THRESHOLD = IN_SHADOW_PASS ? 0.5 : cut0;
+	ALPHA_ANTIALIASING_EDGE = IN_SHADOW_PASS ? 0.0 : a2c_cut - cut0;
+	ALPHA_TEXTURE_COORDINATE = UV;
+#else
 	ALPHA_SCISSOR_THRESHOLD = IN_SHADOW_PASS ? 0.5 : core_cut;
+#endif
+#elif defined(ERASE)
+	// (white, multiplied: the colour kept; the alpha, FSR 2's reactive mask, scaled by keep
+	// where the strands cover erase_from or more, eased out over the 0.25 below it)
+	ALBEDO = vec3(1.0);
+	ALPHA = erase_from > 0.0 ? mix(1.0, keep, smoothstep(erase_from - 0.25, erase_from, cover)) : keep;
 #elif defined(COVERAGE)
 	// (cut by a threshold moved every frame: coverage.gdshaderinc)
 	if (cover < coverage_cut(FRAGCOORD.xy)) discard;

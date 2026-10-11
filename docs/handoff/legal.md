@@ -18,7 +18,6 @@ Rules:
 - Cite primary sources, and say where the law is unsettled.
 - Commit and push your own branch at milestones; the main session merges. Open no PRs.
 - Run `dotnet test` in `godot/tests` before every commit.
-- British spelling.
 - Heavy work takes turns: `python C:/Users/munch/Desktop/survivorsunchained/tools/turn.py take godot "legal: <job>"`. Give the turn back the moment the batch ends; keep batches under an hour, one outfit per turn.
 - At about 500k tokens of context, hand off.
 

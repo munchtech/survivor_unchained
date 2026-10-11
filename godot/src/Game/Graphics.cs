@@ -83,38 +83,42 @@ public static class Graphics
         RenderingServer.SubSurfaceScatteringSetQuality(t.Skin);
         vp.MeshLodThreshold = t.LodThreshold;
 
-        // The resolution: FSR 2.2 below the screen's own, which brings its own
-        // temporal smoothing (TAA and MSAA would only blur it twice).
+        // The smoothing and the resolution: FSR 2.2 at every scale, native included. Its
+        // temporal pass keeps her detail while she moves where TAA left a 50-60 px trail
+        // behind her (judged 10 October 2026, cycles 10-13: detail 9.6 to 11.7 running).
+        // TAA and MSAA would only blur it twice. Sharpening off: it ringed her edges.
         float scale = ScaleOf(s.Scale);
-        bool fsr = scale < 0.999f;
-        vp.Scaling3DMode = fsr ? Viewport.Scaling3DModeEnum.Fsr2 : Viewport.Scaling3DModeEnum.Bilinear;
+        vp.Scaling3DMode = Viewport.Scaling3DModeEnum.Fsr2;
         vp.Scaling3DScale = scale;
-        vp.UseTaa = !fsr;
-        vp.Msaa3D = fsr ? Viewport.Msaa.Disabled : t.Msaa;
+        vp.UseTaa = false;
+        vp.Msaa3D = Viewport.Msaa.Disabled;
         vp.ScreenSpaceAA = Viewport.ScreenSpaceAAEnum.Disabled;
-        // --aa (a developer's switch, and --perf-flip aa:NAME): the edges smoothed another way, to compare.
-        switch (Aa)
+        vp.FsrSharpness = 2f;
+        // --aa (a developer's switch, and --perf-flip aa:NAME): the edges smoothed another way, to
+        // compare (all at the native resolution): smaa, fxaa, msaa (the tier's), taa (alone), or
+        // old (TAA with the tier's MSAA: play's default until 10 October 2026).
+        if (Aa is "smaa" or "fxaa" or "msaa" or "taa" or "old")
         {
-            case "smaa" or "fxaa":
-                vp.UseTaa = false;
+            vp.Scaling3DMode = Viewport.Scaling3DModeEnum.Bilinear;
+            vp.Scaling3DScale = 1f;
+            vp.UseTaa = Aa is "taa" or "old";
+            vp.Msaa3D = Aa is "msaa" or "old" ? t.Msaa : Viewport.Msaa.Disabled;
+            if (Aa is "smaa" or "fxaa")
                 vp.ScreenSpaceAA = Aa == "smaa" ? Viewport.ScreenSpaceAAEnum.Smaa : Viewport.ScreenSpaceAAEnum.Fxaa;
-                break;
-            case "msaa":
-                vp.UseTaa = false;
-                break;
-            case "taa":
-                vp.Msaa3D = Viewport.Msaa.Disabled;
-                break;
-            case "fsr2":
-                vp.Scaling3DMode = Viewport.Scaling3DModeEnum.Fsr2;
-                vp.Scaling3DScale = Mathf.Min(scale, 1f);
-                vp.UseTaa = false;
-                vp.Msaa3D = Viewport.Msaa.Disabled;
-                break;
         }
         // --fsr-sharpness S (to compare): FSR 2's own sharpening, 0 the most and 2 none
-        // (Godot hands it on as 1 - S/2; its default 0.2 is 0.9, near the most).
+        // (Godot hands it on as 1 - S/2).
         if (FsrSharpness is float fs) vp.FsrSharpness = fs;
+        // The Look (creation's still close-up): TAA and MSAA whatever play uses. FSR 2 at
+        // native left her eyes' edges and the hair's edge moving in a still portrait, where
+        // TAA has no ghost to leave (judged 10 October 2026, cycle 12).
+        if (AtLook && vp.Scaling3DMode == Viewport.Scaling3DModeEnum.Fsr2 && vp.Scaling3DScale >= 0.999f)
+        {
+            vp.Scaling3DMode = Viewport.Scaling3DModeEnum.Bilinear;
+            vp.UseTaa = true;
+            vp.Msaa3D = t.Msaa == Viewport.Msaa.Disabled ? Viewport.Msaa.Msaa4X : t.Msaa;
+        }
+        HairDraw.Msaa(vp.Msaa3D != Viewport.Msaa.Disabled);
 
         Sparks.Density = t.Effects;
         if (scene == null) return;
@@ -124,9 +128,12 @@ public static class Graphics
         scene.Crowd.CorpseMax = t.Corpses;
     }
 
-    /// <summary>The edges smoothed another way than the tier's (--aa: smaa, fxaa, msaa, fsr2, or taa
-    /// alone without MSAA), to compare; null: the tier's.</summary>
+    /// <summary>The edges smoothed another way than FSR 2's (--aa: smaa, fxaa, msaa, taa alone, or
+    /// old: TAA with the tier's MSAA), to compare; null (or fsr2): FSR 2.</summary>
     public static string? Aa = Args.Get("aa");
+
+    /// <summary>At the Look (creation): its own smoothing (Apply). Set by GameFront.</summary>
+    public static bool AtLook;
 
     /// <summary>FSR 2's sharpening (--fsr-sharpness), to compare; null: Godot's own.</summary>
     public static float? FsrSharpness = Args.Has("fsr-sharpness") ? (float)Args.Num("fsr-sharpness", 0.2f) : null;

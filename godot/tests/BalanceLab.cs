@@ -64,7 +64,7 @@ public class BalanceLab(ITestOutputHelper log)
         return d?.FullName ?? Directory.GetCurrentDirectory();
     }
 
-    [Fact]
+    [ProbeFact("BALANCE_LAB")]
     public void Sweep()
     {
         string mode = Env("BALANCE_LAB", "");
@@ -77,6 +77,7 @@ public class BalanceLab(ITestOutputHelper log)
         File.WriteAllText(Path.Combine(dir, "summary.md"), sum.ToString());
         log.WriteLine(sum.ToString());
         log.WriteLine($"written to {dir}");
+        Assert.True(File.Exists(Path.Combine(dir, "summary.md")));
     }
 
     /* ------------------------------------------------------------ the arena -- */

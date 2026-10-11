@@ -1,4 +1,18 @@
 {
   "subagentPromptCacheTtl": "1h",
-  "autoCompactWindow": 400000
+  "autoCompactWindow": 400000,
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python C:/Users/munch/Desktop/survivorsunchained/tools/hooks/ctx_budget.py",
+            "timeout": 10
+          }
+        ]
+      }
+    ]
+  }
 }
