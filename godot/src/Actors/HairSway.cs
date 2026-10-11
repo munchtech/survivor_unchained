@@ -208,6 +208,7 @@ public partial class HairSway : Node
                 else if (offFloor > 0.5f && hungFor[i] > 0.5f) hold[i] = Mathf.Min(want, hold[i] + stiff * dt / 0.5f);
             }
             if (!live || dt <= 0) { x = (Vector3[])target.Clone(); xp = (Vector3[])target.Clone(); rootThen = target[0]; offFloor = 1e3f; live = true; }
+            if (OS.HasEnvironment("HAIRDUMP")) Dump(dt, world.Origin.Y);
             // Steps of about 1/120 s whatever the frame rate (four at 30 fps, as it was tuned and judged): the
             // stiffness and the damping are per step, so at 60 fps four steps held it twice as stiff.
             int steps = Mathf.Max(1, Mathf.CeilToInt(dt * 120f - 1e-3f));
@@ -324,6 +325,26 @@ public partial class HairSway : Node
                     m.SetShaderParameter(ArmsThenName, armsThen);
                     m.SetShaderParameter(ArmRName, foreBone.Length > 0 ? ForearmR : 0f);
                 }
+    }
+
+    // (env HAIRDUMP: each frame's inputs and the chain as it starts, for an offline replica)
+    void Dump(float dt, float ground)
+    {
+        static string V(Vector3 a) => $"[{a.X:F5},{a.Y:F5},{a.Z:F5}]";
+        var sb = new System.Text.StringBuilder($"HAIRDUMP {{\"f\":{Engine.GetProcessFrames()},\"dt\":{dt:F6},\"ground\":{ground:F5}");
+        sb.Append(",\"target\":[").Append(string.Join(",", System.Array.ConvertAll(target, V))).Append(']');
+        sb.Append(",\"x\":[").Append(string.Join(",", System.Array.ConvertAll(x, V))).Append(']');
+        sb.Append(",\"xp\":[").Append(string.Join(",", System.Array.ConvertAll(xp, V))).Append(']');
+        sb.Append(",\"at\":[").Append(string.Join(",", System.Array.ConvertAll(at, V))).Append(']');
+        sb.Append(",\"back\":[").Append(string.Join(",", System.Array.ConvertAll(back, V))).Append(']');
+        sb.Append(",\"across\":[").Append(string.Join(",", System.Array.ConvertAll(across, V))).Append(']');
+        sb.Append(",\"r\":[").Append(string.Join(",", System.Array.ConvertAll(balls, b => b.R.ToString("F5")))).Append(']');
+        sb.Append(",\"behind\":[").Append(string.Join(",", System.Array.ConvertAll(balls, b => b.Behind ? "1" : "0"))).Append(']');
+        var hb = sk!.GetBoneGlobalPose(head);
+        sb.Append(",\"head\":[").Append(V(sk.GlobalTransform * hb.Origin)).Append(',').Append(V(sk.GlobalTransform.Basis * hb.Basis.X))
+          .Append(',').Append(V(sk.GlobalTransform.Basis * hb.Basis.Y)).Append(',').Append(V(sk.GlobalTransform.Basis * hb.Basis.Z)).Append(']');
+        sb.Append(",\"stiff\":").Append(stiff.ToString("F5")).Append('}');
+        GD.Print(sb.ToString());
     }
 
     // A debugging view (env HAIRDRAW): the chain's points drawn over everything (yellow, the tip red) and its balls
