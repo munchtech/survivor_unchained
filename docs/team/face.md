@@ -1,6 +1,12 @@
 # Heroine face, hair and creation's Look: status
 
-Face successor 7, branch `worktree-agent-a2d632df7c7f21ec0`, handing off. The handoff is `docs/handoff/face.md` ("Start here").
+Face successor 8 handing off, branch `worktree-agent-a2d632df7c7f21ec0`, handing off. The handoff is `docs/handoff/face.md` ("Start here").
+
+## 11 October 2026, midday (successor 8; hair judges hj1, hj2)
+- Hair swing: gravity now wins when she lies or folds (no sticks off her back), no flings, her arms and the floor collide, and it behaves the same at any frame rate. Passed: run, stop, get_up, get_up_back, throw (ponytail, long). Still failing: the braid and ponytail as she lies face down in death (a rod, a hook), and the braid in the throw (inside her back). Fixing next.
+- Skin (unjudged): the lit neck's lift kept off lamps behind her, a wider fade, refitted at both neck lengths; the Look's fire edge lamp raised to 1.3 m.
+- For animation: re-shoot run, stop, get_up, get_up_back and the throw (ponytail, long) once this branch merges (the swing works only with this branch's hair .bin). Death and the throw braid wait. `HairSway.Settle()` re-hangs her hair after a cut (the review harness calls it).
+- For rendering: the Look's edge lamp now defaults to 1.3 m (GameFront).
 
 ## 11 October 2026, late morning (successor 7; judge j6)
 - Lit neck: her lit neck and body now paler than her face, per face, in the key's light only (the shade under her chin untouched). Right at -3 cm on every face (j6); at today's length still a little dark: the fade is too strict (fix named).
