@@ -93,7 +93,7 @@ public class StoryExplorerTests(ITestOutputHelper log)
         }
     }
 
-    [Fact]
+    [ProbeFact("STORY_PROBE")]
     public void Probe()
     {
         if (Environment.GetEnvironmentVariable("STORY_PROBE") is not { } n) return;
@@ -102,9 +102,10 @@ public class StoryExplorerTests(ITestOutputHelper log)
         o.MaxStates = int.Parse(n);
         var x = new StoryExplorer(o).Run();
         Tell(x);
+        Assert.NotEmpty(x.Nodes);
     }
 
-    [Fact]
+    [ProbeFact("STORY_EXPLORE", "full")]
     public void The_whole_story_explored_finds_nothing_new()
     {
         if (Environment.GetEnvironmentVariable("STORY_EXPLORE") != "full") return;

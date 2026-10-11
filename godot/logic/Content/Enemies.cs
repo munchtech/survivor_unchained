@@ -210,7 +210,7 @@ public static class Enemies
             Health = 520, Speed = 5.4, Damage = 18, Radius = 0.85, Mass = 5, Xp = 55, Resists = Beast, Behavior = Behavior.Pack,
             Lunge = new(9, 4.8, 0.6, 0.45, 19),
             Elite = true, Loot = "alpha", AttackEvery = 0.8,
-            Note = "The pack's oldest. Grey to the eyes and in no hurry. The others follow him because he has never once been wrong about where to go." },
+            Note = "The pack's oldest. Gray to the eyes and in no hurry. The others follow him because he has never once been wrong about where to go." },
         new() { Id = "boar", Name = "Thicket Tusker", Family = Family.Boar, Faction = Faction.Wild, Visual = "boar",
             Health = 44, Speed = 3.2, Damage = 12, Radius = 0.6, Mass = 2.5, Xp = 5, Resists = Beast, Behavior = Behavior.Charger,
             Charge = new(10, 4.5, 0.9, 1.0, 13),
@@ -288,7 +288,7 @@ public static class Enemies
             Aura = new(7, 11, 4.5, Haste: 1.35, Word: "Howl"), Summon = new(12, 5, "wolf", 1.4, SpawnStyle.Walk, 9, AtTarget: true, Max: 20, Word: "Awoooo"),
             Elite = true, Miniboss = true, Loot = "miniboss", Tags = [Tag.Nature],
             Lesson = "While it howls the Pack runs faster, and more come. Find it behind them.",
-            Note = "Grey-blue and old, and never at the front. It calls the Pack in from the trees and sets it running." },
+            Note = "Gray-blue and old, and never at the front. It calls the Pack in from the trees and sets it running." },
 
         // The Risen.
         new() { Id = "bone_heap", Name = "Bone-Heap", Family = Family.Undead, Faction = Faction.Dead, Visual = "skeleton_minion", Scale = 1.45, Tint = (1.12, 1.06, 0.9),
@@ -371,7 +371,7 @@ public static class Enemies
             Ranged = new() { Range = 10, Cooldown = 3.4, Speed = 8, School = School.Fire, Lob = true, Count = 3, Spread = 0.45, Zone = new(1.8, 3.5, 0.35), Art = "firepot" },
             Burst = new(3, 1.2, 0.8, School.Fire, StatusKind.Burn), Elite = true, Miniboss = true, Loot = "miniboss",
             Lesson = "Three pots at a time. Where they land, it burns.",
-            Note = "The Dig's best thrower, which is to say its worst neighbour. Three pots in the air before the first has landed." },
+            Note = "The Dig's best thrower, which is to say its worst neighbor. Three pots in the air before the first has landed." },
         new() { Id = "mb_lamplighter", Name = "The Lamplighter", Family = Family.Lampling, Faction = Faction.Lampling, Visual = "lampling", Scale = 1.7, Tint = (0.8, 0.95, 1.4), Glow = 0.45,
             // (Measured: 35 s at 480.)
             Health = 380, Speed = 2.6, Damage = 9, Radius = 0.85, Mass = 5, Xp = 40, Behavior = Behavior.Ranged, Resists = new() { [School.Fire] = 0.5, [School.Frost] = -0.3 },
@@ -434,7 +434,7 @@ public static class Enemies
             Aura = new(6, 12, 4.5, Haste: 1.3, Word: "Drum"), Summon = new(12, 6, "footpad", 1.2, SpawnStyle.Walk, 13, AtTarget: true, Max: 30, Word: "To me!"),
             Elite = true, Miniboss = true, Loot = "miniboss", AttackEvery = 1.0,
             Lesson = "It beats the levy in from every side and quickens them. Find the drum.",
-            Note = "The levy's drum-major, in red to the elbows, the old colour. Where the drum goes the Kerchiefs go, quicker than you would think." },
+            Note = "The levy's drum-major, in red to the elbows, the old color. Where the drum goes the Kerchiefs go, quicker than you would think." },
 
         /* ------------------------------------- what rules a people, at the half hour -- */
         // The arena's bosses (Play/Bosses/ArenaBosses.cs): their people's champion's body made

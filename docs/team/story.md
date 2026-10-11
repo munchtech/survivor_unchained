@@ -1,10 +1,24 @@
 # Story and writing: status
 
-The writer: owner of the canon, the words and the story data. The ninth story
-lead, branch `worktree-agent-a67ad095680c3d65b` (paused 6 October by the
-owner). Works with the story editor, a fresh one started for each act's draft
-(`docs/story/notes/`). A successor starts from `docs/handoff/story.md`, then
-the paused line below, then `docs/story/notes/02_act1_draft.md` (the work list).
+The writer: owner of the canon, the words and the story data. Works with the
+story editor, a fresh one for each draft (`docs/story/notes/`). A successor
+starts from `docs/handoff/story.md`.
+
+**Now (11 October, the tenth lead, branch `worktree-agent-a81b550b25ab6b672`):**
+- **The twist:** three options for the owner are in `docs/story/TWIST_OPTIONS.md`.
+  A, "Not yet": Chid made you (recommended). B, "Count's right": Holloway knew.
+  C, "She went in first". **The owner chose A and B together.** He still
+  wants a real "WHAT THE FUCK" moment, a twist that re-reads the whole game
+  ("those are just like 'ohhh yeahhh'"). It comes next, before the early
+  lines lock (see the handoff).
+- **Next:** settle the Prologue and the opening of Act 1 for ElevenLabs. Plant
+  the chosen seeds and make the sophistication pass. A fresh editor (max)
+  checks the lines before they're marked LOCKED FOR RECORDING. Then
+  RERECORD.md, the packets and `check_ids.py`. The handoff page lists the
+  scenes no option touches; do those first.
+
+The ninth lead's state follows (paused 6 October; still true unless the lines
+above say otherwise).
 
 **Paused here (6 October):** the lie to Brannoc costs nothing in play
 (notes 02 §6.7) is done and tested. **Next**, in the editor's order (§12):
@@ -112,3 +126,16 @@ exists. Report to the coordinator when the two scripts are ready.
   same way on every route.
 - **Voice (paused):** the narrator recast as a woman of about sixty, plain and
   dry, light valley accent (`VOICES.md`, `VO_CAST.md`).
+
+## Late notes recovered from unmerged branches (10 October cleanup)
+
+Written by woken leads on 4 and 5 October after this page, and never merged. Check each against the code and later pages before acting; some may be done or stale.
+
+From `worktree-agent-a035208561a66c171` (2026-10-04 8b5f51d8):
+
+  Phase 2's lines went to the new lead, a7debf1459f14dfe7, to wire verbatim:
+  - Wenna's tinctures, brewing and moonpetal;
+  - the flask report;
+  - Brannoc's commissions;
+  - the fang choice;
+  - the shed-fur braid's card.

@@ -225,7 +225,7 @@
    "text": "Keep walking, hero. I've had my fill of heroes."
   },
   {
-   "text": "You smell like the dead. No offence. Everybody does, lately."
+   "text": "You smell like the dead. No offense. Everybody does, lately."
   },
   {
    "text": "Came up the Low Ford at night? You're brave or daft.",
@@ -456,7 +456,7 @@
    }
   },
   {
-   "text": "Pell Varrow, selling his own neighbours. I bought eggs from that man.",
+   "text": "Pell Varrow, selling his own neighbors. I bought eggs from that man.",
    "when": {
     "fact": "caravan.pell",
     "eq": "exposed"
@@ -559,7 +559,7 @@
    "child": true
   },
   {
-   "text": "Mum says not to talk to you.",
+   "text": "Mom says not to talk to you.",
    "child": true
   },
   {
@@ -604,7 +604,7 @@
    "night": true
   },
   {
-   "text": "Walk on, traveller.",
+   "text": "Walk on, traveler.",
    "watch": true
   },
   {

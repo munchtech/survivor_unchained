@@ -2,7 +2,7 @@
 
 Survivor Unchained is made by Munchtech. Its world, lore and combat roots are The Ember Watch.
 
-These credits list everything in the game that others made, with each licence. The audit behind it, with sources, risks and what we plan to replace, is `docs/legal/ASSET_PROVENANCE.md` (2026-10-04). Works under CC BY are used with the credit required below. Works under CC0 need no credit, and we give it with thanks.
+These credits list everything in the game that others made, with each license. The audit behind it, with sources, risks and what we plan to replace, is `docs/legal/ASSET_PROVENANCE.md` (2026-10-04). Works under CC BY are used with the credit required below. Works under CC0 need no credit, and we give it with thanks.
 
 Some lines below are written by the fetch tools and checked by them before they add another, so keep their exact form:
 
@@ -14,13 +14,13 @@ Some lines below are written by the fetch tools and checked by them before they 
 ## Engine and runtime
 
 - **Godot Engine** 4.5 (with C# support). Copyright (c) 2014-present Godot Engine contributors; copyright (c) 2007-2014 Juan Linietsky, Ariel Manzur.
-  - MIT licence: https://godotengine.org/license
-  - It includes third-party components under their own licences, listed in Godot's `COPYRIGHT.txt`. Among them are Jolt Physics (MIT), FreeType, HarfBuzz, ICU, mbedTLS and ENet.
+  - MIT license: https://godotengine.org/license
+  - It includes third-party components under their own licenses, listed in Godot's `COPYRIGHT.txt`. Among them are Jolt Physics (MIT), FreeType, HarfBuzz, ICU, mbedTLS and ENet.
 - **.NET** 8 runtime and GodotSharp. .NET Foundation and contributors; MIT. Third-party notices are in .NET's `THIRD-PARTY-NOTICES.TXT`.
 
 ## Typefaces (SIL Open Font License 1.1)
 
-All three ship in `godot/art/fonts`, each beside its licence, `OFL-*.txt`.
+All three ship in `godot/art/fonts`, each beside its license, `OFL-*.txt`.
 
 - **Cinzel**: Copyright 2020 The Cinzel Project Authors (https://github.com/NDISCOVER/Cinzel).
 - **Alegreya**: Copyright 2011 The Alegreya Project Authors (https://github.com/huertatipografica/Alegreya).
@@ -28,7 +28,7 @@ All three ship in `godot/art/fonts`, each beside its licence, `OFL-*.txt`.
 
 ## Used under Creative Commons Attribution 4.0 (credit required)
 
-Licence: https://creativecommons.org/licenses/by/4.0/. Each work is provided as is, without warranty, by its creator. Our changes are listed with it.
+License: https://creativecommons.org/licenses/by/4.0/. Each work is provided as is, without warranty, by its creator. Our changes are listed with it.
 
 ### Weapons, from Sketchfab (`public/assets/weapons`)
 
@@ -41,7 +41,7 @@ Changes for every weapon:
 - "Viking Sword (Game Model)" by Michael Makivic (https://sketchfab.com/makivic), https://sketchfab.com/3d-models/viking-sword-game-model-a05d0bd73e9e4508b873ffd7b6a6238d -> viking_sword.glb
 - "medieval sword" by LowSeb (https://sketchfab.com/lowseb), https://sketchfab.com/3d-models/medieval-sword-da574cba504e4b83a3293f3d3bd067fb -> longsword.glb
 - "Zweihander" by Siesta (https://sketchfab.com/siesta), https://sketchfab.com/3d-models/zweihander-bde0f0351bf443f6bed68aeff84b4129 -> zweihander.glb
-- "Medieval Mace": designed by Kama Modeling (https://sketchfab.com/KamaModeling); modelled and textured by Yavuz Temel. https://sketchfab.com/3d-models/medieval-mace-83217215a0c541b2956a8e87a4ae62fe -> mace.glb
+- "Medieval Mace": designed by Kama Modeling (https://sketchfab.com/KamaModeling); modeled and textured by Yavuz Temel. https://sketchfab.com/3d-models/medieval-mace-83217215a0c541b2956a8e87a4ae62fe -> mace.glb
 - "Viking battle axe" by Mikhail Antonov (https://sketchfab.com/xeofox), https://sketchfab.com/3d-models/viking-battle-axe-b7123192adbf40f68043c57dd8ddcd15 -> viking_axe.glb
 - "Snake Axe" by Ashley Jay Thornton (https://sketchfab.com/AshleyJay), https://sketchfab.com/3d-models/snake-axe-ace485ac031c4ee0a918e99d2b80560b -> snake_axe.glb
 - "Mage Staff" by RMBehan (https://sketchfab.com/RMBehan), https://sketchfab.com/3d-models/mage-staff-a172d06792734bbc9b11272b4f497c2c -> mage_staff.glb
@@ -65,11 +65,11 @@ Changes: scaled and tinted per kind. Each creature plays its own clips, and move
     - retargeted to her skeleton;
     - feet locked;
     - looped;
-    - centred;
+    - centered;
     - arms re-keyed to hold her weapons.
   - Each take and stretch is recorded in `tools/anim/manifest.json`.
 
-## Used under service terms or model licences
+## Used under service terms or model licenses
 
 - **Adobe Mixamo** motion, used in the game under Mixamo's terms; the raw files are not distributed.
   - The heroine's Crashing Leap: "Standing Melee Run Jump Attack", retargeted and retimed.
@@ -93,7 +93,7 @@ Changes: scaled and tinted per kind. Each creature plays its own clips, and move
 
 ### KayKit by Kay Lousberg (https://www.kaylousberg.com)
 
-Gathered by `tools/assets/build.mjs`. Their meshes are also inside the zones' landmarks (`godot/data/zones/*/landmarks.glb`). The Adventurers' licence file is `public/assets/LICENSE-KayKit.txt`.
+Gathered by `tools/assets/build.mjs`. Their meshes are also inside the zones' landmarks (`godot/data/zones/*/landmarks.glb`). The Adventurers' license file is `public/assets/LICENSE-KayKit.txt`.
 
 - KayKit Character Pack: Adventures 1.0 -> `public/assets/characters/{barbarian,knight,mage,rogue,rogue_hooded}.glb`, `props/adventure_items.glb`, `anim/humanoid.glb`
 - KayKit Character Pack: Skeletons 1.0 -> `public/assets/characters/skeleton_*.glb`
@@ -261,7 +261,7 @@ Outfit leathers and metals (`godot/art/outfit`, `godot/art/people/outfit_tex`; f
 
 ## Made with AI tools (disclosure)
 
-Parts of the game were made with generative AI during development. Some images, 3D models, effects, sounds, motion and text in it were generated by AI, then reviewed and edited by the developer. Nothing is generated by AI while you play. Each tool's licence is listed in `docs/legal/ASSET_PROVENANCE.md`; what this list names (only what the release ships), and when a line joins it, is in `docs/legal/STEAM_CHECKLIST.md` section E.
+Parts of the game were made with generative AI during development. Some images, 3D models, effects, sounds, motion and text in it were generated by AI, then reviewed and edited by the developer. Nothing is generated by AI while you play. Each tool's license is listed in `docs/legal/ASSET_PROVENANCE.md`; what this list names (only what the release ships), and when a line joins it, is in `docs/legal/STEAM_CHECKLIST.md` section E.
 
 - **Images:** most of the interface's painted art and icons, the ground marks of blows and spells, the heroine's face paint and irises, and the picture her body was sculpted from were made with Krea 2 (Krea 2 Community License); the interface's with Krea's darkbrush LoRA. Cut-outs used BiRefNet (MIT).
 - **3D:** the heroine's base body was sculpted by TRELLIS 2 (Microsoft, MIT) with DINOv3 (Meta), then rebuilt and rigged for the game.
@@ -272,10 +272,10 @@ Parts of the game were made with generative AI during development. Some images, 
 ## Made for the game
 
 - The interface's art: frames, cards, slots, bars, medallions, ornaments, the logo, cursors, pad buttons, map marks and every icon.
-  - Forged in code and modelled in Blender by `tools/uiforge`.
+  - Forged in code and modeled in Blender by `tools/uiforge`.
   - Most of it was then painted over on the local ComfyUI (Krea 2 turbo with the darkbrush LoRA; see above).
   - The item icons paint over the game's own photographs of its item models.
-- The heroine's hair, outfits and face-paint designs, the skin's pores, the town well, the glyphs, the app icon, the shaders, the synthesised sounds and music, and every keyed animation.
+- The heroine's hair, outfits and face-paint designs, the skin's pores, the town well, the glyphs, the app icon, the shaders, the synthesized sounds and music, and every keyed animation.
 - The heroine's body comes from a figure given to the game by its owner (provenance under review: `docs/legal/ASSET_PROVENANCE.md`, PE-06). It was rigged with AccuRIG and laid on the Quaternius skeleton by `tools/assets/build_heroine.py`.
 
 ## The web game only (not in the Godot build)

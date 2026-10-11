@@ -63,9 +63,9 @@ public static class Credits
     /// <summary>The licence texts shipped beside the game, each with what it covers.</summary>
     public static readonly (string File, string What)[] Texts =
     {
-        ("GODOT_LICENSE.txt", "Godot Engine, under the MIT licence"),
-        ("GODOT_COPYRIGHT.txt", "the parts of Godot made by others, and their licences"),
-        ("DOTNET_LICENSE.TXT", "the .NET runtime, under the MIT licence"),
+        ("GODOT_LICENSE.txt", "Godot Engine, under the MIT license"),
+        ("GODOT_COPYRIGHT.txt", "the parts of Godot made by others, and their licenses"),
+        ("DOTNET_LICENSE.TXT", "the .NET runtime, under the MIT license"),
         ("DOTNET_THIRD-PARTY-NOTICES.TXT", "the parts of the .NET runtime made by others, and their notices"),
         ("OFL-Cinzel.txt", "the Cinzel typeface, under the SIL Open Font License 1.1"),
         ("OFL-Alegreya.txt", "the Alegreya typeface, under the SIL Open Font License 1.1"),
@@ -474,10 +474,10 @@ public static class Credits
         void L(string s = "") => sb.Append(s).Append("\r\n");
         string rule = new('=', 72), thin = new('-', 72);
         L("SURVIVOR UNCHAINED");
-        L("Credits and licences");
+        L("Credits and licenses");
         L();
         foreach (var p in book.Intro) { L(p); L(); }
-        L("The licence texts are in this folder:");
+        L("The license texts are in this folder:");
         int w = Texts.Max(t => t.File.Length);
         foreach (var (file, what) in Texts) L($"    {file.PadRight(w)}  {what}");
         L();
@@ -505,7 +505,7 @@ public static class Credits
                         var source = e.Links.LastOrDefault();
                         if (source != null) L("    Source: " + source);
                         foreach (var c in e.Links.Take(Math.Max(0, e.Links.Count - 1))) L("    Creator: " + c);
-                        L($"    Licence: {s.Licence}, {s.LicenceLink}");
+                        L($"    License: {s.Licence}, {s.LicenceLink}");
                         var changed = Changes(g.Notes).Concat(Changes(e.Lines)).ToList();
                         if (changed.Count > 0) L("    Modified: " + string.Join(" ", changed.Select((c, i) => i == 0 || c.Length == 0 ? c : char.ToUpperInvariant(c[0]) + c[1..])));
                         foreach (var x in e.Lines.Where(x => !x.StartsWith("Changes", StringComparison.Ordinal))) L("    " + x);

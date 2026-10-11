@@ -100,3 +100,24 @@ All of it is on this branch and applied with `python tools/uiforge/kit.py --appl
 ## 8. Read first
 
 `kit.py`, `chain.py`, `chainanim.py`, `UiArt.cs` (Slice, GroundBox), `Sfx.ChainSlide`, and `docs/legal/ASSET_PROVENANCE.md` AU-06.
+
+## Late notes recovered from unmerged branches (10 October cleanup)
+
+Written by woken leads on 4 and 5 October after this page, and never merged. Check each against the code and later pages before acting; some may be done or stale.
+
+From `worktree-agent-a72467cac33063d3a` (2026-10-04 4fdfe898):
+
+0. **First: the UI design lead's (a69858664f1d3dd29) requests on the owner's "drab, low effort,
+   low def" note.** It is cutting frame nesting: panes lose their frames, full pages show the live
+   world blurred behind them, boxed sub-panels become group headers, and frames are kept only on
+   things you act on. It asks for, at true resolution:
+   (a) a **column divider**, vertical, about 24 px wide, tileable in height (e.g. a gold line with a
+   stone at its middle; the stone must sit outside the tiled part);
+   (b) **one heavy frame for the hero plate** (the figure on each page);
+   (c) a **lighter card frame** for cards and tooltips;
+   (d) a **backdrop texture layer**: RGBA, mostly transparent (grain, a little smoke at the edges,
+   ember light) laid over the blurred world, not an opaque fill;
+   (e) a **section-header ornament** if `plaque_rule` is wrong for small headers.
+   It will message when the frameless layout is pushed; merge it and paint to where the pieces
+   sit. `pieces.iron_card` (strap, wire, coins, brackets as options) and `relief.bar` / `relief.coin`
+   are the quickest starts for (a)-(c).

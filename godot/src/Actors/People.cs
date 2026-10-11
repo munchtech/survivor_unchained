@@ -671,6 +671,8 @@ public static class People
                     m.SetShaderParameter("metal", (float)def.Metal);
                     Then(m);
                 }
+                // (--hair-erase: FSR 2's reactive mask erased under the brows and paint too: HairDraw)
+                if (last != null && HairDraw.Eraser() is { } er) Then(er);
                 skin.NextPass = first;
             }
     }
@@ -809,6 +811,8 @@ public static class People
         // (--hair-draw: the cards blended, to choose the smoothing: HairDraw)
         var m = (src.ResourceName == "hair" ? HairDraw.Hair() : null)
             ?? new ShaderMaterial { Shader = soft ? hairSoftShader : Coverage.On ? Coverage.Hair : hairShader, RenderPriority = src.ResourceName == "hair_fine" ? (HairDraw.Blended ? 2 : 1) : 0 };
+        // (--hair-erase: FSR 2's reactive mask erased under the blended ones: HairDraw)
+        if (soft || src.ResourceName == "hair" && HairDraw.Blended) m = HairDraw.WithErase(m);
         foreach (var pass in HairDraw.Passes(m))
         {
             pass.SetShaderParameter("strands", src.AlbedoTexture);

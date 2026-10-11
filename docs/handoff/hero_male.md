@@ -25,7 +25,7 @@ Make the man the player can be the heroine's equal, from the owner's AccuRIG act
    - They are male counterparts in spirit, not copies.
    - Build them in a male outfit tool of your own: read `tools/assets/heroine_outfits.py` but never edit it (it belongs to the main session, which reviews).
 5. How to work:
-   - Don't stop to ask; keep tests green; use British spelling.
+   - Don't stop to ask; keep tests green.
    - Commit and push at milestones with render sheets.
    - Keep the status in `docs/team/hero_male.md`; hand off past about 500k context.
 

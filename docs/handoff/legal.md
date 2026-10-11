@@ -18,7 +18,6 @@ Rules:
 - Cite primary sources, and say where the law is unsettled.
 - Commit and push your own branch at milestones; the main session merges. Open no PRs.
 - Run `dotnet test` in `godot/tests` before every commit.
-- British spelling.
 - Heavy work takes turns: `python C:/Users/munch/Desktop/survivorsunchained/tools/turn.py take godot "legal: <job>"`. Give the turn back the moment the batch ends; keep batches under an hour, one outfit per turn.
 - At about 500k tokens of context, hand off.
 
@@ -118,7 +117,7 @@ The main session builds outfits with her skin tucked in rather than cut away. `h
 - **Run Godot from the main checkout** (`PROJECT=`): the worktree has no import. The main checkout's import can lag. On 5 Oct it lacked `art/ui/page/vellum.png`, so the pages lost their backdrop. The main session also rebuilds outfits there: never run while it imports or rebuilds. Check the Godot processes and `turn.py show`.
 - **Never delete files**, even your own shots: give each run a fresh name or folder.
 - **Calibration pictures show her bare:** scratchpad only, never committed or published.
-- **The scratchpad** is `C:\Users\munch\AppData\Local\Temp\claude\C--Users-munch-Desktop-wowsurvivors\f1b9be14-0826-4f47-8004-f1d371f2c6a3\scratchpad\`:
+- **The scratchpad** was `...\Temp\claude\C--Users-munch-Desktop-wowsurvivors\f1b9be14-...\scratchpad\` (renders sent to the Recycle Bin at the 10 October cleanup); its scripts and texts are backed up to `C:\Users\munch\Desktop\survivorsunchained_inputs\scratch_f1b9be14\` (same layout):
   - `legal3\` is mine: the batch scripts (`tuck_a.sh`, `run_outfit.sh`, `test4.sh`), `lmcheck.py` (landmarks against the code's minimum), `relief.py` (clay renders of a glTF), `dumptex.gd` (save imported textures), `hf_licences.py`, and the run folders t1 to t6;
   - `legal\` is my predecessor's: licence and policy texts.
 - **Fetching:** curl works where Python's certificates fail. Sketchfab's API gives a model's licence and description. Fab is behind Cloudflare: don't try to get past it.

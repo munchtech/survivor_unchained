@@ -35,7 +35,7 @@ The research is `docs/CRAFTING_RESEARCH.md` (C1–C30).
 Crafting lead: research, design and build crafting, playable end to end, and seen in the running game at
 1920×1080.
 - Don't stop to ask. Keep `dotnet test` in `godot/tests` green before every commit.
-- British spelling, and short comments that say why.
+- Short comments that say why.
 - Commit and push your own branch at milestones. The main session merges it; open no PRs.
 - Take a turn for Godot (`tools/turn.py`) and give it back the moment the shots are done.
 - Hand off at about 500k tokens of context.
@@ -178,3 +178,17 @@ Crafting lead: research, design and build crafting, playable end to end, and see
 - Tests: `godot/tests/KitsTests.cs`, `AtlasPayTests.cs`, `CraftingTests.cs`, `CraftersTests.cs`, `CraftingEconomy.cs`.
 - The lab: `godot/balance/Harness/MapSim.cs`; run `dotnet run -c Release -- map --tiers 1,4,7 --seeds 2
   --callings warden,arcanist --par 4` in `godot/balance`.
+
+## Late notes recovered from unmerged branches (10 October cleanup)
+
+Written by woken leads on 4 and 5 October after this page, and never merged. Check each against the code and later pages before acting; some may be done or stale.
+
+From `worktree-agent-a97e32948c5bf419d` (2026-10-04 5732a6bb):
+
+4. **Endgame builds** (design 20.6). Combat has built the charts (`Maps/Charts.cs`: tier, people,
+   seed, rarity, prefixes and suffixes, each paying quantity, rarity and pack size), and the
+   experience director (`ad1f5623590e09883`) has set a map's shape (`docs/EXPERIENCE_AUDIT.md`,
+   "A map's shape", on `worktree-agent-ad1f5623590e09883`). Design the chart verbs (20.4) against
+   both. Their ask: working a chart is a choice about risk (which mod to live with for which
+   pay), never a tax; check Ink and Burn against that (Pin and Scrape already are). They also note
+   Kerchief maps pay about 700 gold at the day's rate: weigh it in `CraftingEconomy` once maps run.

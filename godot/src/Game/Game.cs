@@ -35,7 +35,9 @@ public partial class Game : Node, IZoneHost
     public Journey Journey { get; private set; } = null!;
     public Battle? Battle => scene?.Battle;
     public IZoneLook Look => scene!;
-    public Random Rng { get; } = new();
+    // (In pictures, seeded (--seed, else 1): a run is shot again the same, frame for frame,
+    // so two ways of drawing can be compared on one fight.)
+    public Random Rng { get; } = Args.Has("shot") ? new((int)Args.Num("seed", 1)) : new();
     public Hint? CurrentHint { get; private set; }
     public ZoneRuntime? Zone => zone;
     public WorldScene? Scene => scene;
@@ -787,7 +789,7 @@ public partial class Game : Node, IZoneHost
 
     /// <summary>The pad's rumble (S-14).</summary>
     public readonly Haptics Haptics = new();
-    double critFeltAt, kickedAt;
+    double critFeltAt, kickedAt, playedT;
 
     /// <summary>What of the fight is felt through the pad: weight on the low motor (a blow taken, a
     /// champion or boss down), snap on the high (a critical, a dodge slipped at the last moment).</summary>
@@ -797,7 +799,8 @@ public partial class Game : Node, IZoneHost
         // Her own heavy blows lean the view toward where they landed (S-17): her arts' impacts,
         // a big blast, a critical that takes a third of something big. Never on the crowd's
         // small deaths (late in a night every critical kills), and not oftener than a third of a second.
-        double now = Time.GetTicksMsec() / 1000.0;
+        // (The game's own time: in pictures, run at a fixed rate, the clock's would differ run to run.)
+        double now = playedT;
         if (b != null && now - kickedAt > 0.33)
         {
             Vector3? toward = e switch
@@ -920,6 +923,7 @@ public partial class Game : Node, IZoneHost
         if (Args.Has("pad") && keyI > 0) controls.UsingPad = true;
         if (scene == null) return;
         double dt = Math.Min(delta, 0.1);
+        playedT += delta;
         if (focusT > 0 && (focusT -= dt) <= 0 && hudMode == null) cam.FocusOverride = null;
         if (Mode == "play" && zone != null)
         {

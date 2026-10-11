@@ -25,8 +25,8 @@ legendaries and sets, item level and zone scaling, drop rates, stacking and slot
 filter, presentation, loot across story arenas, maps, survivors arenas and crafting), then the rules
 in logic with tests, then content (first Legendaries, some early; one or two sets; trimmed commons).
 Each Legendary must change how you play and fit the world (`docs/STORY_BIBLE.md`). Legal: our own
-art and sound only. Heavy work takes turns (`tools/turn.py take godot "loot: ..."`). British
-spelling; comments short prose saying why; `dotnet test` in `godot/tests` before every commit.
+art and sound only. Heavy work takes turns (`tools/turn.py take godot "loot: ..."`). Comments
+short prose saying why; `dotnet test` in `godot/tests` before every commit.
 
 ## Done (all on the branch, last db75a39f, 699 tests green)
 

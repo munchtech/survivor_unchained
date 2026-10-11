@@ -2,6 +2,32 @@
 
 Every lead reads this after RESUME.md. When you take a note into your work, mark it done here with your commit. The main session keeps it current.
 
+## 11 October 2026
+
+### Neck length
+
+- On the neck fixes (seam, grey jaw shade): "the neck might have been too long anyway, maybe the bug helps find the perfect". Then: "said might :) It could be perfect - and maybe a design boon that lets helmets be cool later without taking bust view". So it is an open question, not a change: the length may be right, and a long neck leaves room for helmets, gorgets and high collars without covering the bust. The face lead shows today's neck beside one or two shorter lengths (front and profile, at the Look and in play), with a helmet or gorget silhouette on each if one is to hand, and the judge weighs both looks. The owner picks; today's length is a full option. Outfits and animation are told before any change ships.
+
+### Classes, trees and ultimates
+
+- Each calling gets two types: warden two-hander and shield tank; stalker dual-wield melee and ranged; arcanist two caster styles; reaver two of its own.
+- Skill trees: "as simple to figure out as just clicking and having fun, but as complex to master to have fun planning". Study PoE, Last Epoch, Diablo and Grim Dawn.
+- In arenas, anyone can do anything (as in PoE), but on-calling choices are easier or better. More skills, mostly synergy.
+- Q / right-click stops being a dash and becomes a customizable ULTIMATE: it charges up, works as a limit-break life-saver, and is the heart of class identity. "it should be AWESOME. it should look AWESOME."
+- Plan first (docs/design/CLASSES.md); the owner approves before code.
+
+### Outfits: trim at the bust (an option, sent to the outfits lead)
+"can add leather trim to ranger, and white feathery trim to arcanist parts of their clothing in the bust if it makes it easier to clean them up nicely - just only increase the skin we cover slightly if you do decide to do that route." Leather trim for the Ranger, white feathery trim for the Arcanist, on the bust edges, where it gives a cleaner edge; the extra coverage stays slight.
+
+### Rendering: the heroine's triangle budget (approved, after the wolf fur)
+The owner asked whether her detail (about 1M triangles and 95+ draws in Warden, at about 150 px tall in play) will lag with a full crowd, and suggested AAA-style models by distance that keep what matters. Their answer to the plan: "all those ideas seem worthwhile!" So: a gameplay LOD that keeps the bust, hips, gear effects and weapon dense and cuts elsewhere; body hidden under each outfit removed; the lowest LOD for shadows; pieces merged by material; fewer fur shells at range. Full detail always at the title, in creation, in conversations, close-ups and cinematics ("we worked very hard on these models so they show there no matter what"). No measuring phase (the owner: "we can skip measuring and move to implementing"); judged so play size looks the same. The rendering lead builds it as a post-export step.
+
+### Story: a big twist, sophistication, and early lines settled for voicing
+"lets fire up the writer - we need a big twist nobody sees coming, maybe chid being evil? and another pass of sophistication. also I would like to get some of the early lines mostly settled so I can truly begin my elevenlabs voices" The writer brings three twist options first (Chid evil among them), because a twist is planted in the early lines. Then the Prologue and the opening of Act 1 are locked for recording, after an editor's pass.
+
+### Spelling
+The owner is American: the "British spelling" rule is dropped. The game's player-facing text is being switched to American spelling (the voiced lines' audio is renamed to match).
+
 ## 10 October 2026
 
 ### Face lead (skin): neck discolouration on every face

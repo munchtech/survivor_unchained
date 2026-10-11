@@ -308,7 +308,7 @@ public class RouteTests
         Assert.True(p.F("player.wanted").Truthy);
         Assert.Equal(QuestStatus.Resolved, p.Status("caravan"));
         Same(p, q => Assert.True(q.F("player.wanted").Truthy));
-        Assert.Contains("WANTED: a traveller", p.Greet("board").Said);
+        Assert.Contains("WANTED: a traveler", p.Greet("board").Said);
         p.Talk("holloway", "pay the hundred");
         Assert.True(p.F("player.fined").Truthy);
         Assert.Equal("Rescued, and robbed", Chapter.Summary(p.J.Ch, p.W).Threads[1].Verdict);
@@ -556,7 +556,7 @@ public class RouteTests
         // The first chart, priced and waived; accused, she calls her neither traveller nor by name for it.
         var chart = r.Advance()!;
         Assert.Contains("ten gold. This once, no charge.", chart.Text);
-        Assert.DoesNotContain("traveller", chart.Text);
+        Assert.DoesNotContain("traveler", chart.Text);
         Assert.DoesNotContain("Wren", chart.Text);
         Assert.True(SurvivorUnchained.Maps.Atlas.IsOpen(p.W, p.J.Ch));
         Assert.Equal("fortune", r.Choose(chart.Choices[0].Index).Action);
@@ -613,7 +613,7 @@ public class RouteTests
         // The fortune's close gives the first chart, and the Wayfinder's atlas opens with it.
         var chart = r.Advance()!;
         Assert.Equal("f_chart", chart.Node.Id);
-        Assert.Contains("That would be ten gold, traveller. This once, no charge.", chart.Text);
+        Assert.Contains("That would be ten gold, traveler. This once, no charge.", chart.Text);
         Assert.Contains(p.J.Ch.Satchel, it => it.Chart is { Tier: 1, People: "dead", Name: "The Lampless Howes" });
         Assert.True(SurvivorUnchained.Maps.Atlas.IsOpen(p.W, p.J.Ch));
         Assert.Equal("fortune", r.Choose(chart.Choices[0].Index).Action);
