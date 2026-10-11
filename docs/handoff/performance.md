@@ -10,44 +10,40 @@ Written by agent a4e0c353e61cca6dc, 2026-10-10 (wound down at the owner's word).
 
 ## Paused here; next:
 
-Written by the successor lead a1 (11 October, at the context budget). The branch is at the commit after fb3adb43, and 775 tests pass. N = `C:\Users\munch\AppData\Local\Temp\claude\C--Users-munch-Desktop-survivorsunchained\91211d34-e079-4956-a2a0-7b52c04594a8\scratchpad` (this lead's scratch: `ng\` for the grade, `fur\` for the fur; the tools are there).
-Spelling: the owner is American, and the British-spelling rule is dropped.
+Written by lead a3 (11 October, at the context budget). Branch @ e06744f4 + this page. 775 tests passed before e06744f4's last grade tweaks; rerun them. N = scratchpad `C:\Users\munch\AppData\Local\Temp\claude\C--Users-munch-Desktop-survivorsunchained\91211d34-e079-4956-a2a0-7b52c04594a8\scratchpad` (`lod\` LOD tools, `ng\` grade and portrait tools).
 
-Done:
-- **The Night grade (judged PASS, ng3):** `Atmosphere.KeepHue` (Atmosphere.cs), baked into the grade LUT.
-  - Dark browns no longer go purple: in the eye region, magenta among dark pixels went from 29% to 5%.
-  - Greys, cool colours and greens keep the old blue and teal.
-  - Warm near-greys lose their violet toward navy.
-  - Commits: 13d87d5a, 075824d4, 39ac8e4d. The face lead asked for 39ac8e4d: skin in shade keeps its hue, with mid-tones held from saturation 0.025-0.06. Face's neck judge n1 passed it at 1:1 on all ten faces (under-jaw hue 15-37 went to 41-48; portraits 46-52); keep the hue hold as is. Face has cherry-picked them.
-  - Flags: `--grade-old`; `--grade-dump FILE` (check the dump with `N\ng\lut.py` and `f1.py`); `--grade-sat-lo` and `--grade-sat-hi`; `--hair-colour ID`.
-- **The wolf fur sparkle.** Judge fur1 gave PASS WITH FIXES and said "merge as a step". The wolf arena doesn't sign off yet.
-  - 0a85d850: the crowd's textures get mips.
-  - 8ac7d1f9: the paint is read 1.5 mips softer, and shine and rim fade where the normal turns fast (vat.gdshaderinc).
-  - 2d9b6922: the edge-on card fade is dropped. It thinned the outline and gained nothing.
-  - fb3adb43 (unjudged): the bias scales with each body's pace (cm moved per frame), so still foes stay crisp.
-  - Results: crowd sparkle went from 299 to about 90, against a target of about 70 (TAA scores 7). Split it with `N\split.py TAG`: paint alone scores 103, and adding the shine fade brings it to 89.
-  - Ruled out: the frozen-only glint, and the engine's mip bias (0 at native).
-  - Motion vectors: Godot reruns the vertex shader with the previous frame's custom data and time, so the VAT limbs should get motion vectors. If the sparkle stays, confirm this on a motion-vector view.
+Done this round (426cea72, e06744f4):
+- **Night grade toe** (face's ask: dark irises and hair crushed to black). Atmosphere.GradeLut holds the shadow tint's darkening in the toe (`GradeSettings.Toe`; the hold fades in over 0-0.14 gamma luma and out by 0.35). Then `ToeColour` keeps a dark's own hue (neutral share `--toe-own` 0.45, chroma ramp `--toe-chroma` 0.04).
+  - Strengths: Night (wilds) 0.75; NightTown and ArenaPlaces 0.5; `Atmospheres.Front` (title and Look, GameFront) 1.0.
+  - Doe's iris 56,22,12 now stays 56,22,12 at the Look (was 25,6,4). Neutral, brown and navy ramps are smooth.
+  - Judge aad08911f5aa24415: round 1 PASS WITH FIXES; round 2 verdict: VERDICT2.
+  - Flags: `--grade-toe X`, `--toe-foot/-own/-chroma`, `--grade off`. Check a `--grade-dump` with `N\ng\lutcheck.py LUT.bin`; sheets with `N\ng\nt_sheet2.py OUT PREFIX`.
+- **Portrait light** (GameFront.PortraitLight, face's ask): fill 1.0/0.95/0.9, a warm bounce of 0.18 from below, rim specular 0.25. Face's `--bounce`, `--key-shadow` and `--ssao` switches are brought in; `--rig-old` gives the before.
+  - Judge a57930a5a677ca5ce: PASS WITH FIXES, ship as built once its checks pass. Measured with `N\ng\pl_meas.py pl1`:
+    - Under-jaw shade hue 42-48 to 46-51 (cheek 53-58).
+    - Shade C/L against the cheek's: 0.76-0.90 to 0.89-1.07.
+    - Catchlights kept, no second catchlight.
+    - Cheek spread shrinks 9%, order unchanged.
+    - Sclera chroma +0.011-0.013 (target under 0.01; the box may catch lashes).
+    - The jaw-step and collar-lilac boxes missed (the right shade box lands on hair).
+  - For face: the judge saw ears paler and greyer than the face, and a pale scalp wedge at the temple. Face's HerBackSpec (c3f549ec, back_spec 0.3) isn't on this branch; with it, the rim's skin sheen is 0.25 x 0.3, so check the two together.
+- **LOD:**
+  - The Reaver's ink and her skin within 2 cm of it are kept as built (`DECALS`). Outfits also fixed the ink z-fight in their shader (view_pull 1.5 mm, 2560896e/4c757428), which the LOD shares through HerLod's material copy.
+  - Close tiers loosened to 0.1/0.5/1 mm: Warden 400k to 323k, Arcanist 247k to 209k, Ranger 302k to 245k, Reaver 181k to 156k. The play-size sweep is as clean as tight: s5 blobs Warden 22, Arcanist 7, Ranger 10, Reaver 25 (skipping gib frames 7, 8 and 11).
+  - The built art in godot/art/people is this version, uncommitted and unjudged. The tight build is in `N\lod\art_tight\`.
 
-Next, in the coordinator's order:
-1. **The heroine's gameplay LOD: built, judge 1 PASS WITH FIXES, fixes half done** (lead a2, 11 October, handed off at the context budget). The owner approved all five pieces with no measuring phase; full detail always at the title, creation, conversations, chests, close-ups and cinematics ("we worked very hard on these models so they show there no matter what").
-   - **Built:** `tools/assets/heroine_lod.py FOLDER [SET...]` (pure glTF, no Blender: numpy, scipy, `meshoptimizer` and `embreex` from pip, already installed in the user site). It writes `heroine_outfit_SET_lod.gltf/.bin/.gltf.import` beside each outfit with: `lod_MAT` (each outfit mesh), `lod_body` (her body for that outfit), `lod_shadow` (body+outfit welded, 2.5 mm, inset 1.5 mm). The method: rays decide what's unseen (sheer stocking never occludes), kept within 5 cm of anything seen, at joint blends and on headwear (Head weight > 0.3, kept whole). Then meshoptimizer keeps the original vertices: the close-layer tiers (another surface within 1.5/3/5 mm along the normal, or within 4 cm of any hair: 0.05/0.2/0.5 mm), then bust/hips/butt at 0.5 mm, then the rest at 1 mm, with normals weighted at 0.06 m per unit and body colours (the tuck) at 0.01 m per unit. Takes about 1 min per outfit.
-   - **Runtime:** `godot/src/Actors/HerLod.cs`, hooked at the end of `People.HerOutfit` (`HerLod.Attach`) and in `Game._Process` (`HerLod.InPlay`). LOD only in play with no hud mode, held camera or cinematic, camera beyond 18 m (back to full under 16). It copies the full meshes' override materials, overlay and transparency each frame. Fur gets 6 shells. `--lod off|on|mesh|auto` (mesh = LOD meshes with the full shadow). Logs checked: auto at `--cam 8` stays full; the blessing overlay is full.
-   - **Commits:** bf83e587 (WIP) and the WIP after it. The built `*_lod.*` art in `godot/art/people` is uncommitted (unjudged). Regenerate it with the tool; it is the current version.
-   - **Now:** Warden 755k -> 400k triangles, Ranger 690k -> 302k, Arcanist 487k -> 247k, Reaver 421k -> 181k; shadow about 12k each (was the full model in every pass). The first version was 14-18%, but judge 1 found layers crossing, so the close-layer tiers bought it back. The successor's call: loosen the tiers where the sweep stays clean (thread on leather is 70-95% in the 1.5 mm tier).
-   - **Judge 1 (agent a5229310acdb6cf45; verdict in this lead's report):** shadows PASS; fur at 6 shells PASS; at 1:1 the same. Its fixes: (1) a Reaver torso strip; (2) the Arcanist hat (now kept whole, so it's fixed); (3) layers poking through (the close tiers; the stocking-greying was the sheer stocking hiding skin, now fixed). It wants for the re-judge: one frame per sheet at 2000 px or under; the sweep's worst 6 at 6x; 8-frame strips; and the switch frames.
-   - **Open: the Reaver torso strip.** It is still there after removal off (LOD_KEEP_ALL=1), the tight close tiers and the tuck weight. It's the dark `ink` decal down her chest and side: in the full model it is half sunk (dotted); in the LOD it is solid, or the other way round. Next, test with ink and the body under it kept unsimplified (or skip `ink` and the skin within 5 mm of it). Also tell the outfits lead: the Reaver's ink z-fights with her skin in the full model.
-   - **Tools (N\lod\):** `batch.ps1 RUNS "rendering: X" [-NoImport]` (godot turn; needs `-ExecutionPolicy Bypass`), `shoot.py`, `cmp.py OUT a+b ...` (BOX=WxH env), `sweep.py OUTDIR PREFIX OUTFITS` (needs the off frames under the same prefix; copy s1 off). Runs: `runs_s1.txt` (12-frame sweep, 4 outfits, off/on). Frames in `godot/.shots` (s1_, s2_, s3_). The window caps at 2526x1421: for "4K", use `--cam 15`. `--time night` does nothing in the arena: the town (`--quick X` without `--zone`) is night. Frames 7, 8 and 11 of the Reaver sweep have nondeterministic gibs and sparks; ignore those blobs.
-   - **After the pass:** send the outfits lead (ace45ae43386569ed) the hook line for `heroine_outfits.py` after the outfits export: `import heroine_lod; heroine_lod.main([os.path.dirname(OUT)])`. Commit the built art. Gear effects: the outfits have no emissive parts; weapons are separate and untouched. Body morphs: her body has no shape keys (only her head), so creation can't break the LOD.
-   - Integration has merged this branch to 2d9b6922; merge integration in when it suits. fb3adb43 is still unjudged (fur round 2 below).
-2. **Fur, round 2** (judge fur1's fixes 1, 3 and 5):
+Next:
+1. **LOD: one blob left at the 18 m switch.** In s6, Reaver frame 0 has a 206 px blob: a dark leather flap at her hip reads darker and wider in the LOD.
+   - Bisected with `N\lod\rtest.sh TAG` and the env switches `LOD_EXACT_MATS=a,b` and `LOD_EXACT=1` in heroine_lod.py. It isn't removal, the shadow mesh, the fur shells or the body. It clears with all three leathers exact and stays with blackleather or darkleather alone exact, so it's **oldleather** (168k triangles).
+   - Next: try a tighter error on oldleather near that flap, or a heavier normals weight. Confirm with rtest.
+   - Then the re-judge: per-outfit worst6 (`sweep.py` with `SKIP="reaver:7 reaver:8 reaver:11"`), the strips, and the s6 18 m frames. Shoot everything with `--grade-toe 0`, because the arena grade changed under the old off frames.
+   - After the pass: commit the art, including the `*_lod.gltf.import` files. Send outfits lead **a8f5db2bb06ceb5c5** the hook line for `heroine_outfits.py`, after the outfits export: `import heroine_lod; heroine_lod.main([os.path.dirname(OUT)])`. Tell the coordinator the commits.
+2. **The moonlight pass** (the toe judge's fix 1): give the town and arenas a dim cool moon fill, so unlit ground is blue before the grade (dark hue 230-270 at low chroma, lamp pools still amber). Then re-judge the town and arenas at toe 0.5.
+3. **Fur, round 2** (judge fur1's fixes 1, 3 and 5). State: crowd sparkle went from 299 to about 90 (target about 70, TAA 7); fb3adb43 (bias by pace) is unjudged. The detail is in lead a1's block in this page's git history (99cb2f8c).
    - View the motion vectors on a running wolf.
    - Fade only cards under 1 px on screen, if that keeps the outline.
    - Limit the rim at grazing angles on the thin legs and the tail.
    - Then re-judge, adding a lit-arena crop where the foes are dense, at bias 0 against 1.5.
-3. **The night moonlight pass** (judges ng1 and ng2): night arenas and the town read black and amber instead of moonlit blue, because unlit ground falls into the grade's toe.
-   - Try a moon fill or a toe floor. Warm darks should reach navy through grey.
-   - Pale wood looks lilac in the Verge, with the old grade too. Sample its colour before the grade first.
 4. **Ground:** `detail_blur` 2.4, but only if detail stays at or above TAA's (judge c14, fix 2).
 5. **See-through v2:** the design is unchanged; see this page's git history, the 10 October block.
 6. **The face judge's hair items** (main scratchpad `judge_hr2\verdict.md`):
