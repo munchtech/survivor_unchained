@@ -568,7 +568,16 @@ public partial class HairSway : Node
         {
             var q = i == 7 ? seg[6] : seg[i - 1].Slerp(seg[i], 0.5f);
             if (q.W < 0) q = -q;
-            if (2 * Mathf.Acos(Mathf.Min(q.W, 1f)) > most) q = new Quaternion(q.GetAxis(), most);
+            if (2 * Mathf.Acos(Mathf.Min(q.W, 1f)) > most)
+            {
+                // (its axis scaled to the cap's half-angle by hand: Godot's Quaternion(axis, angle) throws in a debug build
+                // when the axis is a hair off unit length, as GetAxis()'s often is, and that frame's swing never reached the
+                // shader: her hair was drawn with the last frame's chain on this frame's pose, a strand standing 5 cm off
+                // her back as she fell, death c8-c9, hair solver 7)
+                var axis = new Vector3(q.X, q.Y, q.Z);
+                axis *= Mathf.Sin(most / 2) / axis.Length();
+                q = new Quaternion(axis.X, axis.Y, axis.Z, Mathf.Cos(most / 2));
+            }
             turnAt[i] = new Vector4(q.X, q.Y, q.Z, q.W);
         }
     }
