@@ -284,7 +284,7 @@ public sealed partial class Battle
     }
 
     /// <summary>A death: the mark passes on, and a marked thing's death mends.</summary>
-    void ArcanistOnDeath(Enemy e, bool credited)
+    void ArcanistOnDeath(Enemy e, bool credited, int depth)
     {
         var l = Lamps;
         if (l.Rules.Count == 0 || e.Status[StatusKind.Mark] is not { } mark) return;
@@ -303,9 +303,10 @@ public sealed partial class Battle
             // moonweaver.moonfire: the new bearer takes moonfire, a share of the dead one's health at once. It is
             // arcane, not a Burn: as a Burn it seeded every fire chain (Pyre Burst's share of damage doubled, 8% to
             // 17%), which put the moonweaver's board far over the others' at T3-T4. Fire's chains are the kindler's.
-            if (l.Has("moonfire"))
+            // Its kills pass the mark at once, so it stops at depth 3, as procs do.
+            if (l.Has("moonfire") && depth < 3)
                 HitEnemy(near[i], e.MaxHp * l.Size("moonfire", "share", 0.1), School.Arcane, [Tag.Arcane, Tag.Spell],
-                    new HitOpts { NoCrit = true, NoProcs = true, Depth = 2, Credit = "moonfire" });
+                    new HitOpts { NoCrit = true, NoProcs = true, Depth = depth + 1, Credit = "moonfire" });
         }
     }
 

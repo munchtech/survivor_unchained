@@ -383,6 +383,24 @@ public sealed class LampRulesTests
     }
 
     [Fact]
+    public void Moonfire_kills_pass_the_mark_at_once_but_the_chain_stops_at_depth_three()
+    {
+        var b = BattleTests.Arena(1, ("seeking_motes", 1));
+        b.Lamps = new LampLoadout();
+        b.Lamps.Add(Rule("moonmarked", ("passes", 1)));
+        b.Lamps.Add(Rule("moonfire", ("share", 2)));
+        var w = new Enemy[5];
+        for (int i = 0; i < 5; i++) { w[i] = b.SpawnEnemy("wolf", b.Player.X + 5 + i, b.Player.Z)!; w[i].MaxHp = w[i].Hp = 100; }
+        b.Tick(0.05, 0, 0); // the neighbours' grid
+        foreach (var x in w) x.Hp = x.MaxHp;
+        b.HitEnemy(w[0], 1, School.Arcane, [Tag.Spell, Tag.Projectile], new HitOpts { Weapon = b.Weapons[0], NoCrit = true });
+        b.KillEnemy(w[0], true, b.Weapons[0]);
+        for (int i = 1; i <= 3; i++) Assert.False(w[i].Alive && w[i].State != EnemyState.Dying, $"wolf {i + 1} should die");
+        Assert.True(w[4].Status.Has(StatusKind.Mark));
+        Assert.Equal(w[4].MaxHp, w[4].Hp, 6);
+    }
+
+    [Fact]
     public void A_crowded_sky_the_night_leaves_nothing_to_loose_stays_dark_its_seeking_with_its_price()
     {
         double Homing(bool night, bool many)
