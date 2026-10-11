@@ -3848,10 +3848,11 @@ def arcanist():
         # the other on her skin)
         s_ = np.abs(th) / TH0
         wid = (0.0025 + 0.0085 * (1 - s_) ** 1.5) * np.sqrt(np.clip(1 - s_ ** 12, 0.0225, 1.0))
+        y_ft = front(0.0, v_lo - 0.004)   # (the cloth just below the foot: the front layer's depth)
         r_e = np.empty(nth)
         for a in range(nth):
             for r_ in np.arange(0.5 * R_u, 2.0 * R_u, 0.00025):
-                if not np.isnan(front(r_ * np.sin(th[a]), cz - r_ * np.cos(th[a]))):
+                if front(r_ * np.sin(th[a]), cz - r_ * np.cos(th[a])) < y_ft + 0.04:   # (nan is never less: the opening; her back's cloth is far behind)
                     break
             r_e[a] = r_
         for _ in range(6):
