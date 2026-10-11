@@ -187,9 +187,10 @@ def measure(b, G, joint_bone, view, zoom, reach=0.17, png=None, label=""):
     counted = np.linalg.norm(P[T].mean(1) - target, axis=1) < reach
     # Skinned normals as the game skins them (the blended matrix, scale and all).
     Sm = b.skin_mats(G)
+    N0 = b.rest_normals(b.N, G)      # (her corrective shapes' normals in, as the game blends them)
     Nn = np.zeros_like(b.N)
     for k in range(4):
-        Nn += b.W[:, k:k + 1] * np.einsum("nij,nj->ni", Sm[b.J[:, k], :3, :3], b.N)
+        Nn += b.W[:, k:k + 1] * np.einsum("nij,nj->ni", Sm[b.J[:, k], :3, :3], N0)
     Nn /= np.maximum(np.linalg.norm(Nn, axis=1, keepdims=True), 1e-12)
     E, f, r, u = camera(target, view, zoom)
     ids, depth, bary = raster(P, T, E, f, r, u)

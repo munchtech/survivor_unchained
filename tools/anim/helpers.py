@@ -34,7 +34,7 @@ import math
 
 import numpy as np
 
-from rig import REPO, Skeleton, qaxis, qinv, qmul, qnorm, qrot, qslerp
+from rig import REPO, Skeleton, qaxis, qinv, qmatrix, qmul, qnorm, qrot, qslerp
 
 SPEC_FILE = REPO / "godot" / "art" / "people" / "rig_helpers.json"
 
@@ -106,6 +106,29 @@ SPEC = {
         # out); reach/feather: along the bone either side of `at`, metres.
         "point": {"lowerarm_point_{s}": {"half": 20, "fade": 40, "at": 0.008, "reach": 0.0, "feather": 0.03}},
     },
+    # Corrective shapes (pose-space, as Maya's): a move of her skin at rest
+    # that a joint's bend eases in, made here (corrective), built into her
+    # body and every piece she wears near it as a shape key
+    # (heroine_rig.py) and set in the game from the same bend (HerJoints.cs).
+    # Bones only blend matrices, so a point standing out of the joint (the
+    # olecranon) is beyond them: three helper-bone tries left the elbow,
+    # seen from behind, a blunt round cap.
+    "correctives": [
+        # The elbow's point: bent `full` degrees (bend: drive's measure), the
+        # skin at the far side of the bend from the crease pushed out along
+        # the bend's outward line (between the upper arm's line and the
+        # forearm's, reversed; `lean` -1..1 turns it toward the upper arm or
+        # the forearm) by `amount` metres at the tip, falling off smoothly
+        # ((1 - r^2)^3: a rounded tip, soft flanks) over `radius` metres:
+        # across the hinge, along the bend's plane, and in depth. The tip is
+        # her skin's furthest point out along that line within `near` of it.
+        # The shape's weight: smoothstep from `from` to `to` degrees of bend
+        # (none below `from`). Pieces she wears take the skin's move at the
+        # nearest skin point, whole within garment[0] metres of the skin,
+        # easing out to none at garment[1].
+        {"name": "elbow_point_{s}", "bone": "lowerarm_{s}", "way": "front", "full": 145, "from": 90, "to": 145,
+         "amount": 0.006, "radius": [0.018, 0.026, 0.02], "lean": 0.0, "near": 0.008, "garment": [0.02, 0.04]},
+    ],
 }
 
 
@@ -212,6 +235,38 @@ def forearm_turn(sk, h, hand_local):
     return math.degrees(math.atan2(float(np.dot(np.cross(t0, t), a)), float(np.dot(t0, t))))
 
 
+def _swing_deg(swing):
+    """Degrees a swing (no turn about the bone's own line) turns."""
+    return 2 * math.degrees(math.acos(min(1.0, abs(float(swing[3])))))
+
+
+def bend(sk: Skeleton, rot, bone):
+    """Degrees the joint above `bone` is bent in the pose (local rotations):
+    the bone's swing from its rest, its turn about its own line left out.
+    The shares are driven by it and the correctives keyed on it."""
+    j = sk.index[bone]
+    swing, _, _ = _twist_y(qmul(qinv(sk.rest_rot[j]), rot[j]))
+    return _swing_deg(swing)
+
+
+def corrective_weight(c, deg):
+    """A corrective shape's weight at `deg` degrees of its joint's bend:
+    eased in (smoothstep) from c["from"] to c["to"], none below."""
+    t = min(max((deg - c["from"]) / (c["to"] - c["from"]), 0.0), 1.0)
+    return t * t * (3 - 2 * t)
+
+
+def corrective_weights(sk: Skeleton, rot):
+    """{shape name: weight} for the pose (local rotations, as drive takes them)."""
+    out = {}
+    for c in SPEC.get("correctives", []):
+        for s in "lr":
+            b = c["bone"].replace("{s}", s)
+            if b in sk.index:
+                out[c["name"].replace("{s}", s)] = corrective_weight(c, bend(sk, rot, b))
+    return out
+
+
 def bulge(bend, h):
     """How far the flesh round a joint bent `bend` degrees is pushed out
     across the bend, as a stretch along the share bone's Z. With the skin's
@@ -285,13 +340,13 @@ def drive(sk: Skeleton, rot, scale=None, shift=None):
                 own = qmul(qinv(sk.rest_rot[b]), sk.rest_rot[j])        # its turn about the line
                 rot[j] = qnorm(qmul(sk.rest_rot[b], qmul(qslerp(ident, swing, hh["amount"]), own)))
                 if scale is not None:
-                    bend = 2 * math.degrees(math.acos(min(1.0, abs(float(swing[3])))))
+                    deg = _swing_deg(swing)
                     hs = hh if hh["kind"] == "share" else next(x for x in SPEC["helpers"] if x["name"] == hh["share"])
-                    k = bulge(bend, hs)
-                    q = point_squeeze(bend, hh)
+                    k = bulge(deg, hs)
+                    q = point_squeeze(deg, hh)
                     scale[j] = (1.0 - q, 1.0, k)
                     if shift is not None:
-                        shift[j] = (q * hh.get("squeeze_x", 0.0), 0.0, (1.0 - k) * hs.get("pivot", 0.0) - point_push(bend, hh))
+                        shift[j] = (q * hh.get("squeeze_x", 0.0), 0.0, (1.0 - k) * hs.get("pivot", 0.0) - point_push(deg, hh))
     return rot
 
 
@@ -402,6 +457,110 @@ def split(W, P, index, heads, front=None):
         nth = -np.partition(-W, cap, axis=1)[:, cap]
         W = np.maximum(W - nth[:, None], 0)
     return W / np.maximum(W.sum(1, keepdims=True), 1e-12)
+
+
+# ----------------------------------------------------------- correctives --
+def mats(grot, gpos, scale=None, shift=None):
+    """Bone globals [J, 4, 4] from global rotations and positions, a
+    helper's stretch (`scale` [J, 3]) and move (`shift` [J, 3]) in its own
+    frame, as the game and skin.Body build them."""
+    M = np.tile(np.eye(4), (len(grot), 1, 1))
+    for j in range(len(grot)):
+        R = qmatrix(grot[j])
+        M[j, :3, :3] = R if scale is None else R @ np.diag(scale[j])
+        M[j, :3, 3] = gpos[j] if shift is None else gpos[j] + R @ shift[j]
+    return M
+
+
+def bent(sk: Skeleton, bone, deg, front=(0, 0, 1.0), way="front"):
+    """Her rest pose with the joint above `bone` bent `deg` degrees as bend
+    reads it, about its hinge (across the bone above and her front, or her
+    back for a knee: `way`), as the review's test poses bend it."""
+    j = sk.index[bone]
+    p = sk.parent[j]
+    grot, gpos = sk.rest_globals()
+    u = gpos[0, j] - gpos[0, p]
+    u = u / np.linalg.norm(u)
+    h = np.cross(u, np.asarray(front, float) * (1.0 if way == "front" else -1.0))
+    h = h / np.linalg.norm(h)
+
+    def at(a):
+        rot = sk.rest_rot.copy()
+        rot[j] = qmul(qinv(grot[0, p]), qmul(qaxis(h, a), grot[0, j]))
+        return rot
+    a = float(deg)
+    for _ in range(4):          # (a hinge a little off the bone's own frame reads a little less)
+        a += deg - bend(sk, at(a), bone)
+    return at(a)
+
+
+def corrective(P, W, sk: Skeleton, front=(0, 0, 1.0)):
+    """Her corrective shapes as moves of her points at rest: {name: [V, 3]}.
+    P [V, 3] her rest points, W [V, J] their weights (the helpers' split in,
+    columns by sk's bones), both in sk's space; `front` her front there (+Z
+    in the game's, -Y in Blender's). Each shape is made where it is whole:
+    the joint bent c["full"] degrees and her helpers driven as the game
+    drives them; the move wanted there, posed, is carried back to rest
+    through the inverse of each point's blended skin matrix, so skinned at
+    that bend the shape is exactly that move, and at other bends it turns
+    with the limb."""
+    P = np.asarray(P, float)
+    W = np.asarray(W, float)
+    front = np.asarray(front, float)
+    grot0, gpos0 = sk.rest_globals()
+    rest_inv = np.linalg.inv(mats(grot0[0], gpos0[0]))
+    out = {}
+    for c in SPEC.get("correctives", []):
+        for s in "lr":
+            name, bone = c["name"].replace("{s}", s), c["bone"].replace("{s}", s)
+            if bone not in sk.index:
+                continue
+            j = sk.index[bone]
+            p = sk.parent[j]
+            kid = sk.index[MAIN_CHILD[bone.split("_")[0]] + "_" + s]
+            rot = bent(sk, bone, c["full"], front, c.get("way", "front"))
+            scale, shift = np.ones((len(sk.names), 3)), np.zeros((len(sk.names), 3))
+            rot = drive(sk, rot, scale, shift)
+            grot, gpos = sk.fk(rot[None])
+            S = mats(grot[0], gpos[0], scale, shift) @ rest_inv
+            # This limb's points round the joint (the bones each side of it,
+            # their helpers, the one below): only they move.
+            heads = (sk.names[p].split("_")[0], bone.split("_")[0], sk.names[kid].split("_")[0])
+            cols = [k for k, n in enumerate(sk.names) if n.endswith("_" + s) and n.split("_")[0] in heads]
+            limb = W[:, cols].sum(1)
+            cand = np.nonzero((limb > 0.02) & (np.linalg.norm(P - gpos0[0, j], axis=1) < 0.15))[0]
+            A = np.einsum("vk,kab->vab", W[cand], S)
+            q = np.einsum("vab,vb->va", A[:, :3, :3], P[cand]) + A[:, :3, 3]
+            cj = gpos[0, j]
+            u = cj - gpos[0, p]
+            u = u / np.linalg.norm(u)
+            f = gpos[0, kid] - cj
+            f = f / np.linalg.norm(f)
+            lean = c.get("lean", 0.0)
+            n = (1 - lean) * u - (1 + lean) * f
+            n = n / np.linalg.norm(n)
+            h = np.cross(u, f)
+            h = h / np.linalg.norm(h)
+            t = np.cross(n, h)
+            rel = q - cj
+            along = rel @ n
+            off = np.linalg.norm(rel - along[:, None] * n, axis=1)
+            ray = off < c["near"]
+            tip = cj + n * (along[ray].max() if ray.any() else along.max())
+            d = q - tip
+            rh, rt, rn = c["radius"]
+            r2 = (d @ h / rh) ** 2 + (d @ t / rt) ** 2 + (d @ n / rn) ** 2
+            fall = np.clip(1.0 - r2, 0.0, 1.0) ** 3 * np.clip(limb[cand], 0.0, 1.0)
+            mv = fall > 0
+            delta = np.zeros_like(P)
+            want = c["amount"] * fall[mv, None] * n[None, :]
+            delta[cand[mv]] = np.linalg.solve(A[mv, :3, :3], want[..., None])[..., 0]
+            out[name] = delta
+    return out
+
+
+def corrective_names():
+    return [n for c in SPEC.get("correctives", []) for n in each(c["name"])]
 
 
 if __name__ == "__main__":
