@@ -94,10 +94,10 @@ The main session keeps this current. It is the address list for SendMessage. Ret
 | Gameplay experience director | af2c026d86e1b532b | docs/team/experience.md |
 | Skills look and feel (VFX, under the main session) | a560452c597415545 | docs/team/skills.md |
 | Cinematics production | aece7b87e89b13f19 | docs/team/cinematics.md |
-| Performance and rendering (clarity in motion first) | a71fc38b0095fd45a (successor 3, 11 Oct, in worktree agent-a4e0c353e61cca6dc; heroine LOD judged PASS WITH FIXES, the Reaver ink strip open) | docs/team/performance.md |
+| Performance and rendering (clarity in motion first) | PAUSED 11 Oct night (merged b87ad0c7: grade toe, portrait rig, LOD code; LOD art uncommitted in worktree agent-a4e0c353e61cca6dc). Next: oldleather LOD blob and re-judge, wilds toe, moonlight pass, fur round 2 (docs/handoff/performance.md "Paused here"). Resumes when a lead slot frees | docs/team/performance.md |
 | Arena art | a0b61c278bdd5c994 | docs/team/arena_art.md |
 | Male hero (body, head, hair, outfits) | ab82cbe99e2937ddd | docs/team/hero_male.md |
-| Heroine face, hair and character creation's Look | PAUSED 11 Oct evening (handoff docs/handoff/face.md "Start here", worktree agent-a2d632df7c7f21ec0 @ 4103afd0). Waiting on rendering: Night grade toe (irises crushed) and PortraitLight fill/bounce/rim (grey jaw shade, lilac sheen). Then: iris patch (tools/scratch/face15), salmon jaw line (thickness mask); and the owner asks whether the neck "might" be too long, or is right and leaves room for helmets without covering the bust: show today's length beside shorter ones, owner picks (OWNER_NOTES 11 Oct, "Neck length") | docs/team/face.md |
+| Heroine face, hair and character creation's Look | a9e79acd9eb319d23 (successor 4, 11 Oct night, in worktree agent-a2d632df7c7f21ec0 @ 4aa76ffe: merge the grade toe and portrait rig, iris patch, neck re-measure, salmon line, the neck-length sheet for the owner) | docs/team/face.md |
 | Asset provenance (what isn't ours, licences, credits, replacement plan) | a80ff0c7fd988b178 | docs/team/provenance.md |
 | Legal and Steam compliance (paused; docs/handoff/legal.md; wake before submission or for a new outfit) | — | docs/team/legal.md |
 | Loot and itemisation (paused, built and merged; docs/handoff/loot.md for a successor) | — | docs/team/loot.md |
