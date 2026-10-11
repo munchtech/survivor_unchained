@@ -1936,7 +1936,10 @@ def clear_of_skin(pos, lift, tris=None, spread=0.003, rounds=20, fall=0.9):
     return pos
 
 
-def shell(name, pos, centre, clear, most=0.006):
+NEST = {}   # (plates nested in a set: their directions and radii so far)
+
+
+def shell(name, pos, centre, clear, most=0.006, nest=None):
     """A rigid plate's surface: its distance from `centre` (the ball of her
     shoulder) fitted, over the directions it covers, by a smooth quadric in
     them, so the plate is one fair dome and no longer a cast of the muscle
@@ -1971,7 +1974,30 @@ def shell(name, pos, centre, clear, most=0.006):
         up = min(most, up + need * 1.15)
     print("SHELL %s: fair dome, %.1f mm rms off the cast (largest %.1f), lifted %.1f mm" %
           (name, np.sqrt(((rf - r) ** 2).mean()) * 1000, np.abs(rf - r).max() * 1000, up * 1000))
-    return centre + u * (rf + up)[:, None]
+    rf = rf + up
+    if nest is not None:
+        # (lames, built from the lowest up: each lifted as a whole until it
+        # stands `step` outside every plate under it wherever it overlaps
+        # them, so one never cuts through another; fitted alone, they did)
+        # (compared in the world, along this plate's own rays: each plate
+        # has its own centre, on her arm at its height)
+        group, step = nest
+        if group in NEST:
+            q = NEST[group]
+            here = centre + u * rf[:, None]
+            dist, j = cKDTree(q).query(here, distance_upper_bound=0.03)
+            ok = np.isfinite(dist)
+            dd = here[ok] - q[j[ok]]
+            radial = (dd * u[ok]).sum(1)
+            lateral = np.linalg.norm(dd - radial[:, None] * u[ok], axis=1)
+            over = lateral < 0.004
+            need = max(0.0, float((step - radial[over]).max())) if over.any() else 0.0
+            rf = rf + need
+            print("SHELL %s: nested %.1f mm out over the %d points it overlaps" % (name, need * 1000, over.sum()))
+            NEST[group] = np.vstack([q, centre + u * rf[:, None]])
+        else:
+            NEST[group] = centre + u * rf[:, None]
+    return centre + u * rf[:, None]
 
 
 def dump(name, stage, pos, tris, field):
@@ -2142,7 +2168,10 @@ def piece(name, field, mkey, lift=0.003, thick=0.003, smooth=0, bevel=0.0012, tr
         pos = relax(pos, tris, interior=0)
         dump(name, "3cut", pos, tris, at[:, -1])
     if rigid is not None:
-        pos = shell(name, pos, np.asarray(rigid, float), lift if clear is None else clear)
+        if isinstance(rigid, tuple):
+            pos = shell(name, pos, np.asarray(rigid[0], float), lift if clear is None else clear, nest=rigid[1:])
+        else:
+            pos = shell(name, pos, np.asarray(rigid, float), lift if clear is None else clear)
         # (one blend for the whole plate, its skin's mean: it moves rigidly)
         at[:, 3:3 + NB] = four_bones(at[:, 3:3 + NB].mean(0, keepdims=True))
     if not dome and not filled:
@@ -2362,6 +2391,9 @@ def pinholes_filled(name, pos, wt, tris, most=0.03):
     return np.vstack([pos, add_p]), np.vstack([wt, add_w]), np.vstack([tris, np.array(add_t, int)])
 
 
+RIGID_UV = {}   # (a plate's name: (centre, arm axis, unrolled round the arm?))
+
+
 def finish(name, pos, wt, tris, mkey, thick, bevel, budget=3000, scraps=True):
     """A sheet made a piece: her weights, its texture laid out at true size,
     a thickness and a rounded edge, bound to her skeleton. The sheet is
@@ -2450,7 +2482,29 @@ def finish(name, pos, wt, tris, mkey, thick, bevel, budget=3000, scraps=True):
     ax /= np.linalg.norm(ax) + 1e-12
     facing = (fn / (np.linalg.norm(fn, axis=1)[:, None] + 1e-12)) @ ax
     uv = me.uv_layers.new().data
-    if np.percentile(facing, 2) > 0.15:
+    if name in RIGID_UV:
+        # (a plate round a joint, laid out round it, one island: a lame
+        # unrolled round her arm, a dome flattened about its middle;
+        # projected flat, its sides stretched and the brushing went blocky)
+        c_, ax_, ring = RIGID_UV[name]
+        d_ = np.array([v.co[:] for v in me.vertices]) - c_
+        mid = d_.mean(0) - ax_ * (d_.mean(0) @ ax_)
+        e1 = mid / np.linalg.norm(mid)
+        e2 = np.cross(ax_, e1)
+        R_ = np.linalg.norm(d_, axis=1).mean()
+        if ring:
+            phi = np.arctan2(d_ @ e2, d_ @ e1)
+            rad = np.linalg.norm(d_ - np.outer(d_ @ ax_, ax_), axis=1).mean()
+            uvv = np.c_[phi * rad, d_ @ ax_]
+        else:
+            top = -ax_
+            th = np.arccos(np.clip((d_ / np.linalg.norm(d_, axis=1)[:, None]) @ top, -1, 1))
+            phi = np.arctan2(d_ @ e2, d_ @ np.cross(e2, top))
+            uvv = np.c_[np.cos(phi), np.sin(phi)] * (th * R_)[:, None]
+        for poly in me.polygons:
+            for li in poly.loop_indices:
+                uv[li].uv = tuple(float(t) for t in uvv[me.loops[li].vertex_index])
+    elif np.percentile(facing, 2) > 0.15:
         u = np.cross(ax, [0, 0, 1] if abs(ax[2]) < 0.9 else [1, 0, 0])
         u /= np.linalg.norm(u)
         v = np.cross(ax, u)
@@ -3590,10 +3644,27 @@ def ranger():
         seam[1:-1] = (seam[:-2] + 2 * seam[1:-1] + seam[2:]) / 4
     out += ribbon("ranger.pant_seam", list(seam), 0.005, "brownleather", lift=0.0022, thick=0.0012)
     sh = shoulder("l")
-    for k, (dz, r, lft) in enumerate(((0.0, 0.11, 0.024), (-0.045, 0.1, 0.019), (-0.09, 0.09, 0.014), (-0.13, 0.08, 0.009))):
-        c = sh + np.array([0.02 * k, 0, dz])
-        out += piece(f"ranger.pauldron{k}", AND(cap(c, r), Z - (c[2] - r * 0.55)), "bronze", lift=lft, thick=0.004, smooth=14,
-                     soften=10, studs="darksteel", rigid=head("upperarm_l"))
+    # (judge 3: each plate fitted on its own, the lames cut through one
+    # another and the one above (a gash at the top). Now built from the
+    # lowest up, each a fair dome lifted until it stands clear outside those
+    # under it (its 1.5 mm and a 1.3 mm gap), and laid out round her arm.)
+    ctr = head("upperarm_l")
+    arm_ax = head("lowerarm_l") - ctr
+    NEST.pop("ranger.pauldron", None)
+    PL_LAP = 0.01
+    plates = [(0.0, 0.11, 0.018), (-0.045, 0.1, 0.015), (-0.09, 0.09, 0.012), (-0.13, 0.08, 0.009)]
+    zones = [AND(cap(sh + np.array([0.02 * k, 0, dz]), r), Z - (sh[2] + dz - r * 0.55)) for k, (dz, r, _) in enumerate(plates)]
+    for k in reversed(range(len(plates))):
+        lft = plates[k][2]
+        RIGID_UV[f"ranger.pauldron{k}"] = (ctr, arm_ax / np.linalg.norm(arm_ax), k > 0)
+        # (a lame is a band: under the plate above only by its 10 mm overlap)
+        zone = zones[k] if k == 0 else AND(zones[k], PL_LAP - zones[k - 1])
+        # (a lame's centre on her arm at its own height: about the shoulder's
+        # ball, a band down her arm fitted badly, 8 mm rms)
+        ax_ = arm_ax / np.linalg.norm(arm_ax)
+        cen = ctr if k == 0 else ctr + ax_ * max(0.0, float((P[zone > 0].mean(0) - ctr) @ ax_))
+        out += piece(f"ranger.pauldron{k}", zone, "bronze", lift=lft, thick=0.0015, smooth=14,
+                     soften=10, studs="darksteel", rigid=(cen, "ranger.pauldron", 0.0028))
     for sd in "lr":
         cz = leg_z(sd, tops[sd] + 0.02)
         # (the right boot, over her knee in front, cut 8 cm lower behind, as a
