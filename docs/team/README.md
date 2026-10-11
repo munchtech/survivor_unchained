@@ -102,4 +102,4 @@ The main session keeps this current. It is the address list for SendMessage. Ret
 | Loot and itemisation (paused, built and merged; docs/handoff/loot.md for a successor) | — | docs/team/loot.md |
 | Creatures and models (our own boar first, then MODELS_TO_MAKE.md) | af551cacc6292152f | docs/team/creatures.md |
 | Story editor (paused after notes 02 at 435k; a fresh editor reads the next draft) | — | docs/story/EDITORIAL_LETTER.md |
-| Heroine body and outfits (now a lead of its own; was the main session's) | a5fc8651282268920 (restarted 10 Oct, in worktree agent-a5ca10091b08dc429) | docs/team/outfits.md |
+| Heroine body and outfits (now a lead of its own; was the main session's) | ace45ae43386569ed (successor 11 Oct, in worktree agent-a5ca10091b08dc429; judge 2 on g5 failed) | docs/team/outfits.md |
