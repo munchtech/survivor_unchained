@@ -38,8 +38,8 @@ for half, fs in (('a', faces[:5]), ('b', faces[5:])):
     grid(rows, 'skin_%s.jpg' % half)
 rows = []
 for f in ('own', 'highborn'):
-    old = 't2_%s' % f if img('t2_%s' % f) else 't5_%s' % f
-    rows.append([('%s shipped rig (%s)' % (f, old.split('_')[0]), face_crop(old, W)), ('%s new rig, untrimmed' % f, face_crop('%s_%s_untrim' % (tag, f), W)),
+    old = '%s_%s_was' % (tag, f)
+    rows.append([('%s before (body tone half, no shade tint)' % f, face_crop(old, W)), ('%s untrimmed' % f, face_crop('%s_%s_untrim' % (tag, f), W)),
                  ('%s new rig + trims' % f, face_crop('%s_%s' % (tag, f), W)), ('%s portrait' % f, face_crop(REF.get(f, f + '_11'), W))])
 grid(rows, 'trim_ab.jpg')
 # turned 40: the ear and cheek (fixed crop round her ear side)

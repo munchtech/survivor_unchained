@@ -1,6 +1,12 @@
 # Heroine face, hair and creation's Look: status
 
-Face successor 4, branch `worktree-agent-a2d632df7c7f21ec0`, handing off. The handoff is `docs/handoff/face.md` ("Start here").
+Face successor 6, branch `worktree-agent-a2d632df7c7f21ec0`, handing off. The handoff is `docs/handoff/face.md` ("Start here").
+
+## 11 October 2026, midday (successor 6; judge j5)
+- Hair: her tail never swung (its chain weights reached the shader upside down); fixed, the chain_haul tuft gone (PASS). The .bin files need a reimport after merge.
+- Skin: her body's full tone, with her shade lit by the soft lamps keeping her paint's colour: no grey-violet on any face, cheeks at the bar (PASS). Open: the lit neck too dark on all ten (FAIL), the under-jaw shade still grey on the fair faces, a rim along the jaw.
+- Neck length sheet built; the judge wants (a)/(c) fixed and four sheet fixes before the owner sees it.
+- For outfits: the pauldron's polished metal blows 5.7% of the Look's lower frame (raise its roughness).
 
 ## 11 October 2026: the neck after rendering's rig
 - Grey-violet under the jaw gone on all ten (judge j1). Salmon jaw edge PASS (thin_map). Collar sheen PASS. Dark irises on target (PASS). Ears repainted (PASS own, Highborn).
