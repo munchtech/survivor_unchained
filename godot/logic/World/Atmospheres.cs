@@ -16,7 +16,7 @@ public static class Atmospheres
     // toward blue so nothing sinks to black, and the fires left as the only
     // warmth (AgX in Godot sits darker than the web game's tone mapping).
     static readonly GradeSettings NightGrade = new([0.02, 0.035, 0.07], [1.0, 1.0, 1.03], [1.02, 1.0, 0.98],
-        "#2f5a86", "#ffad5c", 0.24, 1.06, 0.2, 1.14) { Toe = 0.75 };
+        "#2f5a86", "#ffad5c", 0.24, 1.06, 0.2, 1.14) { Toe = 0 };   // (the wilds: 0.75 once ToeColour keeps their moon blue, judge round 2; see the rendering handoff)
 
     public static readonly AtmospherePreset Night = new(
         new SkySettings("#040814", "#1c2a4c", "#07090f", "#4a6ea8", 20, 1, 1),
