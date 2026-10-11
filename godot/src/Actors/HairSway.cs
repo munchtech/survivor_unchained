@@ -64,11 +64,13 @@ public partial class HairSway : Node
     static readonly float Cap = Mathf.DegToRad(60), Cone = Mathf.DegToRad(75);
     // Each correction that keeps it its length is mostly not made a speed (0.9, "dynamic follow the leader", Müller
     // 2012): made one, the chain whipped and knotted as her head fell 1.5 m at 2.3 m/s. And its speed against her head
-    // dies 3% a step, as hair moves with the air about her.
+    // dies 3% a step, as hair moves with the air about her. Both, the push of its rest out of her, the bend and the
+    // limits act only as far as the hold has let go: held, a braid's swing over her shoulder as she threw was 5 cm
+    // smaller, and the tie's limit cut a tail's swing by 8 (hair judge hj2 passed them held).
     const float Follow = 0.9f, Drag = 0.03f;
     // This frame's: where the chain's points would hang, and the balls they are kept out of.
     Vector3[] target = new Vector3[8], pushed = new Vector3[8], corr = new Vector3[8], at = [], back = [], across = [];
-    float[] hold = new float[8], grip = new float[8];
+    float[] hold = new float[8], grip = new float[8], free = new float[8];
     Vector3[] vel = new Vector3[8], touch = new Vector3[8];
     bool[] grounded = new bool[8];
     // How long since any of it lay on the ground, and since each point's rest last stopped hanging down.
@@ -254,8 +256,14 @@ public partial class HairSway : Node
             float floor = world.Origin.Y + 0.015f;
             // Where it's held to: its rest, but out of her and off the ground (as she folds, its rest lies inside her
             // back, and the hold drew it in, to be pushed out each pass, a knot at the root).
-            for (int i = 0; i < 8; i++) pushed[i] = i == 0 ? target[0] : Out(target[i], scale, -1);
-            for (int i = 1; i < 8; i++) pushed[i].Y = Mathf.Max(pushed[i].Y, floor);
+            for (int i = 0; i < 8; i++) free[i] = stiff > 0 ? 1f - hold[i] / stiff : 1f;
+            pushed[0] = target[0];
+            for (int i = 1; i < 8; i++)
+            {
+                var q = Out(target[i], scale, -1);
+                q.Y = Mathf.Max(q.Y, floor);
+                pushed[i] = target[i] + (q - target[i]) * free[i];
+            }
             // Its root's own step, and how fast the rest may move against it: 2.5 m/s (a whipped tail's tip moves about
             // that fast against her head); pushed by her arm or snatched back to its rest, it was thrown 70 cm in two
             // frames (hair judge hj1, throw).
@@ -268,7 +276,7 @@ public partial class HairSway : Node
                 {
                     var was = x[i];
                     vel[i] = (x[i] - xp[i]) * 0.985f;
-                    var rel = (vel[i] - rootStep) * (1f - Drag);
+                    var rel = (vel[i] - rootStep) * (1f - Drag * free[i]);
                     if (rel.LengthSquared() > most * most) rel = rel.Normalized() * most;
                     vel[i] = rootStep + rel;
                     x[i] += vel[i] + fall;
@@ -287,9 +295,11 @@ public partial class HairSway : Node
                         var dir = (x[i] - x[i - 1]).Normalized();
                         // Bent back toward its rest as far as the hold has let go, without that becoming a speed (made
                         // one, a tail swaying as she stopped was pumped into swinging side to side).
-                        float free = stiff > 0 ? 1f - hold[i] / stiff : 1f, kb = i == 1 ? 0 : bend * free;
+                        float kb = i == 1 ? 0 : bend * free[i];
                         var bent = kb > 0 ? (dir + (wantDir - dir) * kb).Normalized() : dir;
-                        if (free > 0.02f) bent = Within(bent, wantDir, i == 1 ? Cone : Cap);
+                        // (the limit opens out toward none as the hold comes back)
+                        float limit = (i == 1 ? Cone : Cap) + (Mathf.Pi - (i == 1 ? Cone : Cap)) * (1f - free[i]);
+                        if (free[i] > 0.02f && limit < Mathf.Pi - 1e-6f) bent = Within(bent, wantDir, limit);
                         xp[i] += (bent - dir) * link[i];
                         var to = x[i - 1] + bent * link[i];
                         corr[i] = to - x[i];
@@ -299,7 +309,7 @@ public partial class HairSway : Node
                         if (i < 7) turn = new Quaternion(restDir, (x[i] - x[i - 1]).Normalized());
                     }
                 }
-                for (int i = 1; i < 7; i++) xp[i] += Follow * corr[i + 1];
+                for (int i = 1; i < 7; i++) xp[i] += Follow * free[i] * corr[i + 1];
                 // What touches her or the ground is stopped going into it, not thrown back out (being pushed out of her
                 // was a velocity: a tail lying by her head as it settled was flung up off the floor), and slowed along it.
                 for (int i = 1; i < 8; i++)
