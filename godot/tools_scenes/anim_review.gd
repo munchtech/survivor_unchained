@@ -481,14 +481,16 @@ func place_camera():
 	if env("OFF", "") != "":
 		var o = env("OFF", "").split_floats(",")
 		off = Vector3(o[0], o[1], o[2])
-	if env("LOOKOFF", "") != "":
-		var lo = env("LOOKOFF", "").split_floats(",")
-		c += Vector3(lo[0], lo[1], lo[2])
 	if view == "game": cam.fov = 26
 	if view in ["day", "arena"]:
 		cam.fov = rad_to_deg(2 * atan(tan(deg_to_rad(17)) * vp.size.y / 1080.0))
 		her.rotation_degrees.y = float(env("YAW", "0"))
 		c = her.position + Vector3(0, 0.9, 0)
+	# (After the game cameras' own look point, so LOOKOFF frames a body
+	# that has moved off its spot, a fall's end, under them too.)
+	if env("LOOKOFF", "") != "":
+		var lo = env("LOOKOFF", "").split_floats(",")
+		c += Vector3(lo[0], lo[1], lo[2])
 	cam.look_at_from_position(c + off / float(env("ZOOM", "1")), c)
 
 func _process(delta):
