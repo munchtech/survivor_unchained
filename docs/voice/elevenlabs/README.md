@@ -72,14 +72,14 @@ Holloway, Brannoc and Sella, in that order.
 <!-- PACKETS -->
 | Character | Takes | Characters | Held | Locked |
 |---|---|---|---|---|
-| [The narrator](narrator.md) | 391 | 37,107 | 325 | 66 |
+| [The narrator](narrator.md) | 391 | 37,107 | 175 | 216 |
 | [Sella](sella.md) | 97 | 9,964 |  |  |
-| [Captain Holloway](holloway.md) | 110 | 9,718 | 110 |  |
+| [Captain Holloway](holloway.md) | 110 | 9,718 | 40 | 70 |
 | [Vonnra Ash-of-Morrow](vonnra.md) | 104 | 8,939 | 103 | 1 |
-| [Chid](chid.md) | 82 | 8,712 | 2 |  |
+| [Chid](chid.md) | 82 | 8,712 |  | 53 |
 | [Harlan Coyle](harlan.md) | 63 | 7,229 | 63 |  |
 | [Mother Rook](rook.md) | 54 | 6,558 |  | 54 |
-| [Maeca](maeca.md) | 87 | 6,262 | 87 |  |
+| [Maeca](maeca.md) | 87 | 6,262 | 23 | 64 |
 | [Rav Cutwell](rav.md) | 61 | 6,007 |  |  |
 | [Dame Keegan Orme](keegan.md) | 48 | 5,218 | 1 |  |
 | [Redcowl](redcowl.md) | 45 | 4,337 |  |  |
@@ -94,7 +94,7 @@ Holloway, Brannoc and Sella, in that order.
 | [Snib](snib.md) | 15 | 2,199 |  |  |
 | [Tam](tam.md) | 21 | 2,020 |  |  |
 | [Jory Coyle](jory.md) | 14 | 877 |  |  |
-| [A Watchman at the gate](guard.md) | 13 | 546 |  | 1 |
+| [A Watchman at the gate](guard.md) | 13 | 546 |  | 2 |
 | [Grimtunnel](grimtunnel.md) | 7 | 442 |  | 3 |
 | [The babbling lampling](lampling.md) | 2 | 421 |  |  |
 | [A Watchwoman](guard_f.md) | 9 | 405 |  |  |

@@ -1,6 +1,6 @@
 # The narrator: ElevenLabs packet
 
-Voice id in the game: `narrator`. 391 takes to record (37,107 characters; about 111,321 credits at three tries a line). Status: **on hold, except the 66 takes marked LOCKED FOR RECORDING** (the story lead, 2026-10-11): record those now and hold the rest (recast as a woman of about sixty, plain and dry (the story rewrite, 6 October); cast her anew before recording).
+Voice id in the game: `narrator`. 391 takes to record (37,107 characters; about 111,321 credits at three tries a line). Status: **on hold, except the 216 takes marked LOCKED FOR RECORDING** (the story lead, 2026-10-11): record those now and hold the rest (recast as a woman of about sixty, plain and dry (the story rewrite, 6 October); cast her anew before recording).
 
 ## Who they are
 
@@ -304,7 +304,7 @@ Subtitle: Somewhere up the street, someone is baking.
 
 ## Scenes: Verge
 
-### 23. `say.ac8270282f9f.wav`  HOLD: recast as a woman of about sixty, plain and dry (the story rewrite, 6 October); cast her anew before recording
+### 23. `say.ac8270282f9f.wav`  **LOCKED FOR RECORDING**
 
 *Where:* godot/logic/Play/Zones/Verge.cs
 *Played:* plain; doing: the Pack lets you pass; pace: slow; volume: quiet.
@@ -315,7 +315,7 @@ Subtitle: Somewhere up the street, someone is baking.
 ```
 Subtitle: The wolves watch you come. None of them move to stop you.
 
-### 24. `say.3ff82d4e2ac7.wav`  HOLD: recast as a woman of about sixty, plain and dry (the story rewrite, 6 October); cast her anew before recording
+### 24. `say.3ff82d4e2ac7.wav`  **LOCKED FOR RECORDING**
 
 *Where:* godot/logic/Play/Zones/Verge.cs
 *Played:* plain; doing: the wolf cloak has damned you; pace: measured; volume: quiet.
@@ -326,7 +326,7 @@ Subtitle: The wolves watch you come. None of them move to stop you.
 ```
 Subtitle: They smell the cloak before they see you. Every wolf in the Hollow is on its feet.
 
-### 25. `say.3869640818fe.wav`  HOLD: recast as a woman of about sixty, plain and dry (the story rewrite, 6 October); cast her anew before recording
+### 25. `say.3869640818fe.wav`  **LOCKED FOR RECORDING**
 
 *Where:* godot/logic/Play/Zones/Verge.cs
 *Played:* plain; doing: the Pack knows what you did; pace: measured; volume: quiet.
@@ -337,7 +337,7 @@ Subtitle: They smell the cloak before they see you. Every wolf in the Hollow is 
 ```
 Subtitle: They smell the blood on you before they see you: one of theirs, since you last slept.
 
-### 26. `say.6ea507a14576.wav`  HOLD: recast as a woman of about sixty, plain and dry (the story rewrite, 6 October); cast her anew before recording
+### 26. `say.6ea507a14576.wav`  **LOCKED FOR RECORDING**
 
 *Where:* godot/logic/Play/Zones/Verge.cs
 *Played:* plain; doing: you are surrounded; pace: slow; volume: quiet.
@@ -348,7 +348,7 @@ Subtitle: They smell the blood on you before they see you: one of theirs, since 
 ```
 Subtitle: Low growling from every side of the Hollow.
 
-### 27. `say.0762cf80c852.wav`  HOLD: recast as a woman of about sixty, plain and dry (the story rewrite, 6 October); cast her anew before recording
+### 27. `say.0762cf80c852.wav`  **LOCKED FOR RECORDING**
 
 *Where:* godot/logic/Play/Zones/Verge.cs
 *Played:* plain; doing: the Kerchief camp is ordinary; pace: measured; volume: quiet.
@@ -359,7 +359,7 @@ Subtitle: Low growling from every side of the Hollow.
 ```
 Subtitle: Red cloth at every tent, washing on a line, children with a wooden sword. They see your colors and go back to what they were doing.
 
-### 28. `say.2133e8a51219.wav`  HOLD: recast as a woman of about sixty, plain and dry (the story rewrite, 6 October); cast her anew before recording
+### 28. `say.2133e8a51219.wav`  **LOCKED FOR RECORDING**
 
 *Where:* godot/logic/Play/Zones/Verge.cs
 *Played:* plain; doing: a woman feeds the caged; pace: measured; volume: quiet.
@@ -379,7 +379,7 @@ The camp is struck: cold fires, and pale squares in the grass where the tents st
 ```
 Subtitle: The camp is struck: cold fires, and pale squares in the grass where the tents stood. They took everything that would carry. The Coyle wagons they left where they stood.
 
-### 30. `say.060466d9cefd.wav`  HOLD: recast as a woman of about sixty, plain and dry (the story rewrite, 6 October); cast her anew before recording
+### 30. `say.060466d9cefd.wav`  **LOCKED FOR RECORDING**
 
 *Where:* godot/logic/Play/Zones/Verge.cs
 *Played:* plain; doing: the thing in the pit; pace: slow; volume: quiet.
@@ -390,7 +390,7 @@ Subtitle: The camp is struck: cold fires, and pale squares in the grass where th
 ```
 Subtitle: The ground shivers. At the bottom of the pit lies something pale and segmented, bigger than a house. It does not move. You watch it long enough to be sure, and you are not.
 
-### 31. `say.b76e3053dc5f.wav`  HOLD: recast as a woman of about sixty, plain and dry (the story rewrite, 6 October); cast her anew before recording
+### 31. `say.b76e3053dc5f.wav`  **LOCKED FOR RECORDING**
 
 *Where:* godot/logic/Play/Zones/Verge.cs
 *Played:* plain; doing: the Morrow is alive; pace: very slow; volume: hushed.
@@ -401,7 +401,7 @@ Subtitle: The ground shivers. At the bottom of the pit lies something pale and s
 ```
 Subtitle: Under the silence you hear it, for as long as a held breath: slow, patient, enormous. Not breathing. Praying.
 
-### 32. `say.0b5e75f9dfa0.wav`  HOLD: recast as a woman of about sixty, plain and dry (the story rewrite, 6 October); cast her anew before recording
+### 32. `say.0b5e75f9dfa0.wav`  **LOCKED FOR RECORDING**
 
 *Where:* godot/logic/Play/Zones/Verge.cs
 *Played:* plain; doing: the caravan was robbed, not eaten; pace: measured; volume: level.
@@ -412,7 +412,7 @@ Three wagons, dragged off the road into the trees. Wolves do not drive wagons.
 ```
 Subtitle: Three wagons, dragged off the road into the trees. Wolves do not drive wagons.
 
-### 33. `say.e6c4fb3a8998.wav`  HOLD: recast as a woman of about sixty, plain and dry (the story rewrite, 6 October); cast her anew before recording
+### 33. `say.e6c4fb3a8998.wav`  **LOCKED FOR RECORDING**
 
 *Where:* godot/logic/Play/Zones/Verge.cs
 *Played:* plain; doing: clues at the wreck; pace: measured; volume: quiet.
@@ -423,7 +423,7 @@ Subtitle: Three wagons, dragged off the road into the trees. Wolves do not drive
 ```
 Subtitle: Kerchief arrows in the sideboards, red-fletched. The strongbox bolts are sprung, the box gone. Under the seat: a torn manifest.
 
-### 34. `say.20dc615919d1.wav`  HOLD: recast as a woman of about sixty, plain and dry (the story rewrite, 6 October); cast her anew before recording
+### 34. `say.20dc615919d1.wav`  **LOCKED FOR RECORDING**
 
 *Where:* godot/logic/Play/Zones/Verge.cs
 *Played:* plain; doing: the trail leads to the ravine; pace: measured; volume: quiet.
@@ -434,7 +434,7 @@ Subtitle: Kerchief arrows in the sideboards, red-fletched. The strongbox bolts a
 ```
 Subtitle: Deep ruts, heavy wagons, driven south-east into the trees. Toward the ravine.
 
-### 35. `say.cfa493798ba7.wav`  HOLD: recast as a woman of about sixty, plain and dry (the story rewrite, 6 October); cast her anew before recording
+### 35. `say.cfa493798ba7.wav`  **LOCKED FOR RECORDING**
 
 *Where:* godot/logic/Play/Zones/Verge.cs
 *Played:* plain; doing: a moment of safety; pace: slow; volume: quiet.
@@ -445,7 +445,7 @@ Subtitle: Deep ruts, heavy wagons, driven south-east into the trees. Toward the 
 ```
 Subtitle: The old fire takes. For a little while, this is a safe place.
 
-### 36. `say.8e845892b699.wav`  HOLD: recast as a woman of about sixty, plain and dry (the story rewrite, 6 October); cast her anew before recording
+### 36. `say.8e845892b699.wav`  **LOCKED FOR RECORDING**
 
 *Where:* godot/logic/Play/Zones/Verge.cs
 *Played:* plain; doing: the wolf was poisoned; pace: measured; volume: quiet.
@@ -456,7 +456,7 @@ Subtitle: The old fire takes. For a little while, this is a safe place.
 ```
 Subtitle: No wound. Black gums, milky eyes, ribs like a washboard, and the belly swollen hard. It drank something that rotted it from the inside.
 
-### 37. `say.52d0f1dfa274.wav`  HOLD: recast as a woman of about sixty, plain and dry (the story rewrite, 6 October); cast her anew before recording
+### 37. `say.52d0f1dfa274.wav`  **LOCKED FOR RECORDING**
 
 *Where:* godot/logic/Play/Zones/Verge.cs
 *Played:* plain; doing: a wolf dead of no wound; pace: measured; volume: quiet.
@@ -467,7 +467,7 @@ Subtitle: No wound. Black gums, milky eyes, ribs like a washboard, and the belly
 ```
 Subtitle: A wolf, dead, with no wound on it. Its eyes have gone milky.
 
-### 38. `say.7197a1b189a3.wav`  HOLD: recast as a woman of about sixty, plain and dry (the story rewrite, 6 October); cast her anew before recording
+### 38. `say.7197a1b189a3.wav`  **LOCKED FOR RECORDING**
 
 *Where:* godot/logic/Play/Zones/Verge.cs
 *Played:* plain; doing: the stream is wrong; pace: slow; volume: quiet.
@@ -478,7 +478,7 @@ Subtitle: A wolf, dead, with no wound on it. Its eyes have gone milky.
 ```
 Subtitle: The water is warm, and faintly green, and smells like a chapel lamp.
 
-### 39. `say.84f6c2c74004.wav`  HOLD: recast as a woman of about sixty, plain and dry (the story rewrite, 6 October); cast her anew before recording
+### 39. `say.84f6c2c74004.wav`  **LOCKED FOR RECORDING**
 
 *Where:* godot/logic/Play/Zones/Verge.cs
 *Played:* plain; doing: the source of the poison; pace: measured; volume: quiet.
@@ -489,7 +489,7 @@ Subtitle: The water is warm, and faintly green, and smells like a chapel lamp.
 ```
 Subtitle: Riveted iron, warm to the touch, spilling glowing slurry into the stream. Small clawed prints all round it, and the drag-marks of lamps.
 
-### 40. `say.3cc85cd8c414.wav`  HOLD: recast as a woman of about sixty, plain and dry (the story rewrite, 6 October); cast her anew before recording
+### 40. `say.3cc85cd8c414.wav`  **LOCKED FOR RECORDING**
 
 *Where:* godot/logic/Play/Zones/Verge.cs
 *Played:* plain; doing: to make the player feel one charge's weight in the hand; pace: slow; volume: quiet.
@@ -501,7 +501,7 @@ Subtitle: Riveted iron, warm to the touch, spilling glowing slurry into the stre
 ```
 Subtitle: You pry one charge out of the straw. The rest sit there and wait, the way they have waited for everyone.
 
-### 41. `say.4acad56ca838.wav`  HOLD: recast as a woman of about sixty, plain and dry (the story rewrite, 6 October); cast her anew before recording
+### 41. `say.4acad56ca838.wav`  **LOCKED FOR RECORDING**
 
 *Where:* godot/logic/Play/Zones/Verge.cs
 *Played:* plain; doing: to let the relief arrive in the silence; pace: slow; volume: quiet.
@@ -513,7 +513,7 @@ Subtitle: You pry one charge out of the straw. The rest sit there and wait, the 
 ```
 Subtitle: You roll them down into the ravine's water one at a time, and listen to each one not go off.
 
-### 42. `say.769a1c759f88.wav`  HOLD: recast as a woman of about sixty, plain and dry (the story rewrite, 6 October); cast her anew before recording
+### 42. `say.769a1c759f88.wav`  **LOCKED FOR RECORDING**
 
 *Where:* godot/logic/Play/Zones/Verge.cs
 *Played:* plain; doing: get clear; pace: quick; volume: level.
@@ -524,7 +524,7 @@ The fuse fizzes. You have a few seconds. Run.
 ```
 Subtitle: The fuse fizzes. You have a few seconds. Run.
 
-### 43. `say.384c340b6b6d.wav`  HOLD: recast as a woman of about sixty, plain and dry (the story rewrite, 6 October); cast her anew before recording
+### 43. `say.384c340b6b6d.wav`  **LOCKED FOR RECORDING**
 
 *Where:* godot/logic/Play/Zones/Verge.cs
 *Played:* plain; doing: the sigil wakes; pace: slow; volume: quiet.
@@ -535,7 +535,7 @@ Subtitle: The fuse fizzes. You have a few seconds. Run.
 ```
 Subtitle: The fragment fits one notch of the seven, and under your hand the whole sigil wakes, violet, like an eye opening. The door is listening.
 
-### 44. `say.9757e1dab88e.wav`  HOLD: recast as a woman of about sixty, plain and dry (the story rewrite, 6 October); cast her anew before recording
+### 44. `say.9757e1dab88e.wav`  **LOCKED FOR RECORDING**
 
 *Where:* godot/logic/Play/Zones/Verge.cs
 *Played:* plain; doing: the sigil waits for night; pace: measured; volume: quiet.
@@ -546,7 +546,7 @@ Subtitle: The fragment fits one notch of the seven, and under your hand the whol
 ```
 Subtitle: The fragment fits one notch of the seven, and the stone warms under it. Whatever the sigil is waiting for, it is not daylight.
 
-### 45. `say.66cdbe61b828.wav`  HOLD: recast as a woman of about sixty, plain and dry (the story rewrite, 6 October); cast her anew before recording
+### 45. `say.66cdbe61b828.wav`  **LOCKED FOR RECORDING**
 
 *Where:* godot/logic/Play/Zones/Verge.cs
 *Played:* plain; doing: reading the Legion's words; pace: slow; volume: quiet.
@@ -557,7 +557,7 @@ Subtitle: The fragment fits one notch of the seven, and the stone warms under it
 ```
 Subtitle: Old-empire script over the door. Here the Seventh Legion buried what it could not burn. Below it, a sigil with seven notches, all empty.
 
-### 46. `say.20b15596c09c.wav`  HOLD: recast as a woman of about sixty, plain and dry (the story rewrite, 6 October); cast her anew before recording
+### 46. `say.20b15596c09c.wav`  **LOCKED FOR RECORDING**
 
 *Where:* godot/logic/Play/Zones/Verge.cs
 *Played:* plain; doing: the sealed door; pace: slow; volume: quiet.
@@ -568,7 +568,7 @@ Subtitle: Old-empire script over the door. Here the Seventh Legion buried what i
 ```
 Subtitle: A door of black stone, smooth as glass. Cut over it, words in a dead tongue: hic legio septima sepelivit quod urere non potuit. Under them, a violet sigil you cannot read. It hums against your teeth.
 
-### 47. `say.82b1e8294244.wav`  HOLD: recast as a woman of about sixty, plain and dry (the story rewrite, 6 October); cast her anew before recording
+### 47. `say.82b1e8294244.wav`  **LOCKED FOR RECORDING**
 
 *Where:* godot/logic/Play/Zones/Verge.cs
 *Played:* plain; doing: a key-stone in dead hands; pace: slow; volume: quiet.
@@ -579,7 +579,7 @@ Subtitle: A door of black stone, smooth as glass. Cut over it, words in a dead t
 ```
 Subtitle: In the bones of one hand, a wedge of black stone cut to fit something.
 
-### 48. `say.8591ecfe4019.wav`  HOLD: recast as a woman of about sixty, plain and dry (the story rewrite, 6 October); cast her anew before recording
+### 48. `say.8591ecfe4019.wav`  **LOCKED FOR RECORDING**
 
 *Where:* godot/logic/Play/Zones/Verge.cs
 *Played:* plain; doing: the skull turns; pace: slow; volume: hushed.
@@ -590,7 +590,7 @@ Subtitle: In the bones of one hand, a wedge of black stone cut to fit something.
 ```
 Subtitle: The skull turns, very slightly, toward you.
 
-### 49. `say.6e1fab16785e.wav`  HOLD: recast as a woman of about sixty, plain and dry (the story rewrite, 6 October); cast her anew before recording
+### 49. `say.6e1fab16785e.wav`  **LOCKED FOR RECORDING**
 
 *Where:* godot/logic/Play/Zones/Verge.cs
 *Played:* plain; doing: someone went in and did not come out; pace: measured; volume: quiet.
@@ -601,7 +601,7 @@ Subtitle: The skull turns, very slightly, toward you.
 ```
 Subtitle: Bootprints in the mud, fresh, going up to the door. None coming away. Trodden into one heel-print: a copper toll-token, stamped with three roads.
 
-### 50. `say.b40ac14379d8.wav`  HOLD: recast as a woman of about sixty, plain and dry (the story rewrite, 6 October); cast her anew before recording
+### 50. `say.b40ac14379d8.wav`  **LOCKED FOR RECORDING**
 
 *Where:* godot/logic/Play/Zones/Verge.cs
 *Played:* plain; doing: a treasure where wolves go to die; pace: slow; volume: quiet.
@@ -612,7 +612,7 @@ Subtitle: Bootprints in the mud, fresh, going up to the door. None coming away. 
 ```
 Subtitle: Under the brambles, where the wolves go when one of them is dying: a circlet of moonsilver, cold as snow.
 
-### 51. `say.ca6fbefec176.wav`  HOLD: recast as a woman of about sixty, plain and dry (the story rewrite, 6 October); cast her anew before recording
+### 51. `say.ca6fbefec176.wav`  **LOCKED FOR RECORDING**
 
 *Where:* godot/logic/Play/Zones/Verge.cs
 *Played:* plain; doing: a freed prisoner; pace: measured; volume: quiet.
@@ -623,7 +623,7 @@ Subtitle: Under the brambles, where the wolves go when one of them is dying: a c
 ```
 Subtitle: A teamster, thin and gray, stumbles out and grips your arm. His nails are broken to the quick from the bars.
 
-### 52. `say.75abd0854536.wav`  HOLD: recast as a woman of about sixty, plain and dry (the story rewrite, 6 October); cast her anew before recording
+### 52. `say.75abd0854536.wav`  **LOCKED FOR RECORDING**
 
 *Where:* godot/logic/Play/Zones/Verge.cs
 *Played:* plain; doing: a freed prisoner; pace: measured; volume: quiet.
@@ -634,7 +634,7 @@ Subtitle: A teamster, thin and gray, stumbles out and grips your arm. His nails 
 ```
 Subtitle: A woman who will not stop saying thank you.
 
-### 53. `say.fccd00002739.wav`  HOLD: recast as a woman of about sixty, plain and dry (the story rewrite, 6 October); cast her anew before recording
+### 53. `say.fccd00002739.wav`  **LOCKED FOR RECORDING**
 
 *Where:* godot/logic/Play/Zones/Verge.cs
 *Played:* plain; doing: Jory in the cage; pace: measured; volume: quiet.
@@ -645,7 +645,7 @@ Subtitle: A woman who will not stop saying thank you.
 ```
 Subtitle: A young man, freckled, still holding the bars after the door is open.
 
-### 54. `say.f1bc8c3f22ed.wav`  HOLD: recast as a woman of about sixty, plain and dry (the story rewrite, 6 October); cast her anew before recording
+### 54. `say.f1bc8c3f22ed.wav`  **LOCKED FOR RECORDING**
 
 *Where:* godot/logic/Play/Zones/Verge.cs
 *Played:* plain; doing: the pump breaks; pace: measured; volume: quiet.
@@ -656,7 +656,7 @@ Subtitle: A young man, freckled, still holding the bars after the door is open.
 ```
 Subtitle: Something snaps inside the pump with a sound like a bone. The wheel stops. The slurry stops.
 
-### 55. `say.a4755c96100b.wav`  HOLD: recast as a woman of about sixty, plain and dry (the story rewrite, 6 October); cast her anew before recording
+### 55. `say.a4755c96100b.wav`  **LOCKED FOR RECORDING**
 
 *Where:* godot/logic/Play/Zones/Verge.cs
 *Played:* plain; doing: the cost of the blast; pace: slow; volume: quiet.
@@ -667,7 +667,7 @@ Subtitle: Something snaps inside the pump with a sound like a bone. The wheel st
 ```
 Subtitle: When the dust comes down, the hillside is a wound. Small shapes crawl out of it with their lamps still lit. Some of them are on fire. Most of them do not crawl far.
 
-### 56. `say.26621b48a47e.wav`  HOLD: recast as a woman of about sixty, plain and dry (the story rewrite, 6 October); cast her anew before recording
+### 56. `say.26621b48a47e.wav`  **LOCKED FOR RECORDING**
 
 *Where:* godot/logic/Play/Zones/Verge.cs
 *Played:* plain; doing: the cost of the fire; pace: slow; volume: quiet.
@@ -678,7 +678,7 @@ Subtitle: When the dust comes down, the hillside is a wound. Small shapes crawl 
 ```
 Subtitle: The fire takes the tents, and then the cages. There is screaming, and the smell, and hands through the bars; and then there is only the fire.
 
-### 57. `say.0622cbb5851c.wav`  HOLD: recast as a woman of about sixty, plain and dry (the story rewrite, 6 October); cast her anew before recording
+### 57. `say.0622cbb5851c.wav`  **LOCKED FOR RECORDING**
 
 *Where:* godot/logic/Play/Zones/Verge.cs
 *Played:* plain; doing: a hidden glade; pace: measured; volume: quiet.
@@ -689,7 +689,7 @@ Subtitle: The fire takes the tents, and then the cages. There is screaming, and 
 ```
 Subtitle: The brambles go up like paper. Beyond them, a glade full of pale light.
 
-### 58. `say.005625eee2b8.wav`  HOLD: recast as a woman of about sixty, plain and dry (the story rewrite, 6 October); cast her anew before recording
+### 58. `say.005625eee2b8.wav`  **LOCKED FOR RECORDING**
 
 *Where:* godot/logic/Play/Zones/Verge.cs
 *Played:* plain; doing: a hidden glade; pace: measured; volume: quiet.
@@ -700,7 +700,7 @@ Subtitle: The brambles go up like paper. Beyond them, a glade full of pale light
 ```
 Subtitle: You hack a way through the brambles. Beyond them, a glade full of pale light.
 
-### 59. `say.3f7b7c5bd5a4.wav`  HOLD: recast as a woman of about sixty, plain and dry (the story rewrite, 6 October); cast her anew before recording
+### 59. `say.3f7b7c5bd5a4.wav`  **LOCKED FOR RECORDING**
 
 *Where:* godot/logic/Play/Zones/Verge.cs
 *Played:* plain; doing: the Pack runs with you; pace: slow; volume: quiet.
@@ -711,7 +711,7 @@ Subtitle: You hack a way through the brambles. Beyond them, a glade full of pale
 ```
 Subtitle: Four gray shapes fall in beside you at the edge of the wood.
 
-### 60. `say.e08ae8c1e46c.wav`  HOLD: recast as a woman of about sixty, plain and dry (the story rewrite, 6 October); cast her anew before recording
+### 60. `say.e08ae8c1e46c.wav`  **LOCKED FOR RECORDING**
 
 *Where:* godot/logic/Play/Zones/Verge.cs
 *Played:* plain; doing: your fallen things, found; pace: measured; volume: quiet.
@@ -724,7 +724,7 @@ Subtitle: Where you fell. The ground has kept your things for you, most of them.
 
 ## Scenes: Waystation
 
-### 61. `say.6947705bd0e4.wav`  HOLD: recast as a woman of about sixty, plain and dry (the story rewrite, 6 October); cast her anew before recording
+### 61. `say.6947705bd0e4.wav`  **LOCKED FOR RECORDING**
 
 *Where:* godot/logic/Play/Zones/Waystation.cs
 *Played:* plain; doing: a small human mark on the well; pace: measured; volume: quiet.
@@ -735,7 +735,7 @@ Subtitle: Where you fell. The ground has kept your things for you, most of them.
 ```
 Subtitle: The water is a long way down, and clean. Somebody has scratched M and J into the stone.
 
-### 62. `say.8b004f74544d.wav`  HOLD: recast as a woman of about sixty, plain and dry (the story rewrite, 6 October); cast her anew before recording
+### 62. `say.8b004f74544d.wav`  **LOCKED FOR RECORDING**
 
 *Where:* godot/logic/Play/Zones/Waystation.cs
 *Played:* plain; doing: the warehouse opens; pace: measured; volume: quiet.
@@ -746,7 +746,7 @@ Subtitle: The water is a long way down, and clean. Somebody has scratched M and 
 ```
 Subtitle: The clerk's key turns sweetly. Inside: crates, dust, and a ledger Pell should have burned.
 
-### 63. `say.ff981a5b72be.wav`  HOLD: recast as a woman of about sixty, plain and dry (the story rewrite, 6 October); cast her anew before recording
+### 63. `say.ff981a5b72be.wav`  **LOCKED FOR RECORDING**
 
 *Where:* godot/logic/Play/Zones/Waystation.cs
 *Played:* plain; doing: the warehouse opens; pace: measured; volume: quiet.
@@ -757,7 +757,7 @@ Subtitle: The clerk's key turns sweetly. Inside: crates, dust, and a ledger Pell
 ```
 Subtitle: The lock gives under your picks. Inside: crates, dust, and a ledger Pell should have burned.
 
-### 64. `say.546ec60933f6.wav`  HOLD: recast as a woman of about sixty, plain and dry (the story rewrite, 6 October); cast her anew before recording
+### 64. `say.546ec60933f6.wav`  **LOCKED FOR RECORDING**
 
 *Where:* godot/logic/Play/Zones/Waystation.cs
 *Played:* plain; doing: Nell's burial; pace: slow; volume: quiet.
@@ -786,7 +786,7 @@ A plain wooden marker, a few stones along from the old captain's. No name on it 
 ```
 Subtitle: A plain wooden marker, a few stones along from the old captain's. No name on it yet. The earth on it is dark, and has not settled.
 
-### 67. `say.a5b99f61e011.wav`  HOLD: recast as a woman of about sixty, plain and dry (the story rewrite, 6 October); cast her anew before recording
+### 67. `say.a5b99f61e011.wav`  **LOCKED FOR RECORDING**
 
 *Where:* godot/logic/Play/Zones/Waystation.cs
 *Played:* plain; doing: an old captain's trunk; pace: slow; volume: quiet.
@@ -797,7 +797,7 @@ Subtitle: A plain wooden marker, a few stones along from the old captain's. No n
 ```
 Subtitle: Beside the old captain's stone, sunk in the nettles, a trunk the Watch forgot: ember shards, a purse, and a note. Keep the lights lit. C.
 
-### 68. `say.8c1f7c369819.wav`  HOLD: recast as a woman of about sixty, plain and dry (the story rewrite, 6 October); cast her anew before recording
+### 68. `say.8c1f7c369819.wav`  **LOCKED FOR RECORDING**
 
 *Where:* godot/logic/Play/Zones/Waystation.cs
 *Played:* plain; doing: arrival in town; pace: measured; volume: level.
@@ -808,7 +808,7 @@ The Waystation: walls, smoke, the smell of bread. People stop to look at you. Ne
 ```
 Subtitle: The Waystation: walls, smoke, the smell of bread. People stop to look at you. News travels fast here.
 
-### 69. `say.a49e30d2ba1e.wav`  HOLD: recast as a woman of about sixty, plain and dry (the story rewrite, 6 October); cast her anew before recording
+### 69. `say.a49e30d2ba1e.wav`  **LOCKED FOR RECORDING**
 
 *Where:* godot/logic/Play/Zones/Waystation.cs
 *Played:* plain; doing: a new stall in town; pace: measured; volume: level.
@@ -821,7 +821,7 @@ Subtitle: A cartographer has set up a stall on the Old Road, by the east gate: m
 
 ## Scenes: the clock (dusk, night, getting up)
 
-### 70. `say.9dc671546463.wav`  HOLD: recast as a woman of about sixty, plain and dry (the story rewrite, 6 October); cast her anew before recording
+### 70. `say.9dc671546463.wav`  **LOCKED FOR RECORDING**
 
 *Where:* godot/logic/Play/Journey.Day.cs
 *Played:* plain; doing: lets the dusk call land on a memory she won't name; pace: slow; volume: quiet.
@@ -854,7 +854,7 @@ Subtitle: You get up.
 ```
 Subtitle: You get up. It takes less than it did.
 
-### 73. `say.c8db02ffeab0.wav`  HOLD: recast as a woman of about sixty, plain and dry (the story rewrite, 6 October); cast her anew before recording
+### 73. `say.c8db02ffeab0.wav`  **LOCKED FOR RECORDING**
 
 *Where:* godot/logic/Play/Journey.Day.cs
 *Played:* plain; doing: marks the middle of the night; pace: measured; volume: level.
@@ -865,7 +865,7 @@ Half the night is gone. Up on the Toll Tower, the one lamp is still lit.
 ```
 Subtitle: Half the night is gone. Up on the Toll Tower, the one lamp is still lit.
 
-### 74. `say.977de4be60a3.wav`  HOLD: recast as a woman of about sixty, plain and dry (the story rewrite, 6 October); cast her anew before recording
+### 74. `say.977de4be60a3.wav`  **LOCKED FOR RECORDING**
 
 *Where:* godot/logic/Play/Journey.Day.cs
 *Played:* plain; doing: ends a night the survivor stood through; pace: measured; volume: level.
@@ -876,7 +876,7 @@ You see the night out on your feet. At first light the warmth comes back into yo
 ```
 Subtitle: You see the night out on your feet. At first light the warmth comes back into your hands.
 
-### 75. `say.fda6ac6c6045.wav`  HOLD: recast as a woman of about sixty, plain and dry (the story rewrite, 6 October); cast her anew before recording
+### 75. `say.fda6ac6c6045.wav`  **LOCKED FOR RECORDING**
 
 *Where:* godot/logic/Play/Journey.Day.cs
 *Played:* plain; doing: she goes on into the dark; pace: measured; volume: level.
@@ -887,7 +887,7 @@ You do not go back to the lamps. You go on.
 ```
 Subtitle: You do not go back to the lamps. You go on.
 
-### 76. `say.5cbd1ba39848.wav`  HOLD: recast as a woman of about sixty, plain and dry (the story rewrite, 6 October); cast her anew before recording
+### 76. `say.5cbd1ba39848.wav`  **LOCKED FOR RECORDING**
 
 *Where:* godot/logic/Play/Journey.Day.cs
 *Played:* plain; doing: reports the Pack gone quiet; pace: measured; volume: quiet.
@@ -898,7 +898,7 @@ Subtitle: You do not go back to the lamps. You go on.
 ```
 Subtitle: Out past the lamps, the Pack has stopped howling.
 
-### 77. `say.1ad34f33a2b4.wav`  HOLD: recast as a woman of about sixty, plain and dry (the story rewrite, 6 October); cast her anew before recording
+### 77. `say.1ad34f33a2b4.wav`  **LOCKED FOR RECORDING**
 
 *Where:* godot/logic/Play/Journey.Day.cs
 *Played:* plain; doing: shows the Kerchiefs' fires from far off; pace: measured; volume: level.
@@ -909,7 +909,7 @@ Up the Old Road the Kerchiefs' fires are lit all along the ravine, the way a tow
 ```
 Subtitle: Up the Old Road the Kerchiefs' fires are lit all along the ravine, the way a town lights its windows.
 
-### 78. `say.f9f2c5cad405.wav`  HOLD: recast as a woman of about sixty, plain and dry (the story rewrite, 6 October); cast her anew before recording
+### 78. `say.f9f2c5cad405.wav`  **LOCKED FOR RECORDING**
 
 *Where:* godot/logic/Play/Journey.Day.cs
 *Played:* plain; doing: something is wrong at the Dig; pace: measured; volume: level.
@@ -920,7 +920,7 @@ On the hill over the Dig, the lamps are all moving the same way.
 ```
 Subtitle: On the hill over the Dig, the lamps are all moving the same way.
 
-### 79. `say.87df61b27292.wav`  HOLD: recast as a woman of about sixty, plain and dry (the story rewrite, 6 October); cast her anew before recording
+### 79. `say.87df61b27292.wav`  **LOCKED FOR RECORDING**
 
 *Where:* godot/logic/Play/Journey.Day.cs
 *Played:* plain; doing: the sealed door has woken; pace: slow; volume: quiet.
@@ -931,7 +931,7 @@ Subtitle: On the hill over the Dig, the lamps are all moving the same way.
 ```
 Subtitle: Out in the Verge, the sealed door has woken. Its light is violet.
 
-### 80. `say.fdad90e14306.wav`  HOLD: recast as a woman of about sixty, plain and dry (the story rewrite, 6 October); cast her anew before recording
+### 80. `say.fdad90e14306.wav`  **LOCKED FOR RECORDING**
 
 *Where:* godot/logic/Play/Journey.Day.cs
 *Played:* plain; doing: the Verge's night begins; pace: measured; volume: level.
@@ -944,7 +944,7 @@ Subtitle: Out in the Verge, the ember is coming up.
 
 ## Scenes: the Dig at night
 
-### 81. `say.cddfb7c98244.wav`  HOLD: recast as a woman of about sixty, plain and dry (the story rewrite, 6 October); cast her anew before recording
+### 81. `say.cddfb7c98244.wav`  **LOCKED FOR RECORDING**
 
 *Where:* godot/logic/Play/Story/Dig.cs
 *Played:* plain; doing: opens the Dig's night; pace: measured; volume: level.
@@ -955,7 +955,7 @@ The ember takes you to the edge of the Dig. Every lamp in the hole is coming up 
 ```
 Subtitle: The ember takes you to the edge of the Dig. Every lamp in the hole is coming up at once.
 
-### 82. `say.18e64cad88a1.wav`  HOLD: recast as a woman of about sixty, plain and dry (the story rewrite, 6 October); cast her anew before recording
+### 82. `say.18e64cad88a1.wav`  **LOCKED FOR RECORDING**
 
 *Where:* godot/logic/Play/Story/Dig.cs
 *Played:* plain; doing: the first stage done; the next one waits; pace: measured; volume: level.
@@ -966,7 +966,7 @@ The last windlass goes over. Down the tub-way the brake-house lamp is lit, and t
 ```
 Subtitle: The last windlass goes over. Down the tub-way the brake-house lamp is lit, and the rails are singing.
 
-### 83. `say.a89cdacbc1f4.wav`  HOLD: recast as a woman of about sixty, plain and dry (the story rewrite, 6 October); cast her anew before recording
+### 83. `say.a89cdacbc1f4.wav`  **LOCKED FOR RECORDING**
 
 *Where:* godot/logic/Play/Story/Dig.cs
 *Played:* plain; doing: shows the lamplings carrying the crates; pace: measured; volume: level.
@@ -977,7 +977,7 @@ Past the brake-house stands the pump-house, and every lampling between you and i
 ```
 Subtitle: Past the brake-house stands the pump-house, and every lampling between you and it is carrying a crate.
 
-### 84. `say.0f4d56f97d68.wav`  HOLD: recast as a woman of about sixty, plain and dry (the story rewrite, 6 October); cast her anew before recording
+### 84. `say.0f4d56f97d68.wav`  **LOCKED FOR RECORDING**
 
 *Where:* godot/logic/Play/Story/Dig.cs
 *Played:* plain; doing: someone is in the pump-house; pace: measured; volume: quiet.
@@ -988,7 +988,7 @@ Subtitle: Past the brake-house stands the pump-house, and every lampling between
 ```
 Subtitle: Past the brake-house stands the pump-house. Somebody inside is lighting lamps, one after another.
 
-### 85. `say.8ea79d1dcdf1.wav`  HOLD: recast as a woman of about sixty, plain and dry (the story rewrite, 6 October); cast her anew before recording
+### 85. `say.8ea79d1dcdf1.wav`  **LOCKED FOR RECORDING**
 
 *Where:* godot/logic/Play/Story/Dig.cs
 *Played:* plain; doing: the lamplings give up; pace: slow; volume: quiet.
@@ -1001,7 +1001,7 @@ Subtitle: Every lampling left on the lip lies down flat, with its hands over its
 
 ## Scenes: the Hollow at night
 
-### 86. `say.44a50d15b7fa.wav`  HOLD: recast as a woman of about sixty, plain and dry (the story rewrite, 6 October); cast her anew before recording
+### 86. `say.44a50d15b7fa.wav`  **LOCKED FOR RECORDING**
 
 *Where:* godot/logic/Play/Story/Hollow.cs
 *Played:* plain; doing: opens the Hollow's night; pace: measured; volume: level.
@@ -1012,7 +1012,7 @@ The ember takes you down the clough, into the Hollow. The stream is loud here, a
 ```
 Subtitle: The ember takes you down the clough, into the Hollow. The stream is loud here, and it smells wrong.
 
-### 87. `say.59a5da567e47.wav`  HOLD: recast as a woman of about sixty, plain and dry (the story rewrite, 6 October); cast her anew before recording
+### 87. `say.59a5da567e47.wav`  **LOCKED FOR RECORDING**
 
 *Where:* godot/logic/Play/Story/Hollow.cs
 *Played:* plain; doing: the Pack falls quiet; a sick thing is near; pace: slow; volume: quiet.
@@ -1023,7 +1023,7 @@ Subtitle: The ember takes you down the clough, into the Hollow. The stream is lo
 ```
 Subtitle: The howling stops. In the quiet you can hear the stream, and something in the brush coughing.
 
-### 88. `say.1394532b178f.wav`  HOLD: recast as a woman of about sixty, plain and dry (the story rewrite, 6 October); cast her anew before recording
+### 88. `say.1394532b178f.wav`  **LOCKED FOR RECORDING**
 
 *Where:* godot/logic/Play/Story/Hollow.cs
 *Played:* plain; doing: the den, and the sick wolves in it; pace: slow; volume: quiet.
@@ -1034,7 +1034,7 @@ Subtitle: The howling stops. In the quiet you can hear the stream, and something
 ```
 Subtitle: The deadfalls burn. Past them is the den's mouth, and in it, gray shapes that do not get up.
 
-### 89. `say.648f54abf56c.wav`  HOLD: recast as a woman of about sixty, plain and dry (the story rewrite, 6 October); cast her anew before recording
+### 89. `say.648f54abf56c.wav`  **LOCKED FOR RECORDING**
 
 *Where:* godot/logic/Play/Story/Hollow.cs
 *Played:* plain; doing: the boss is coming; pace: measured; volume: level.
@@ -1047,7 +1047,7 @@ Subtitle: The wolves back away from you, low, into a ring. Something is coming o
 
 ## Scenes: the Roost at night
 
-### 90. `say.54d6b6c86b5d.wav`  HOLD: recast as a woman of about sixty, plain and dry (the story rewrite, 6 October); cast her anew before recording
+### 90. `say.54d6b6c86b5d.wav`  **LOCKED FOR RECORDING**
 
 *Where:* godot/logic/Play/Story/Roost.cs
 *Played:* plain; doing: opens the Roost's night; pace: measured; volume: level.
@@ -1058,7 +1058,7 @@ The ember takes you up the ruts below the Roost. Somewhere above, a whistle, and
 ```
 Subtitle: The ember takes you up the ruts below the Roost. Somewhere above, a whistle, and another answering.
 
-### 91. `say.884076412b80.wav`  HOLD: recast as a woman of about sixty, plain and dry (the story rewrite, 6 October); cast her anew before recording
+### 91. `say.884076412b80.wav`  **LOCKED FOR RECORDING**
 
 *Where:* godot/logic/Play/Story/Roost.cs
 *Played:* plain; doing: the cage yard, held; pace: measured; volume: level.
@@ -1069,7 +1069,7 @@ Three whistles, and none answering. Ahead, the cage yard: four empty cages, and 
 ```
 Subtitle: Three whistles, and none answering. Ahead, the cage yard: four empty cages, and somebody very big still standing guard on them.
 
-### 92. `say.c12346388d1c.wav`  HOLD: recast as a woman of about sixty, plain and dry (the story rewrite, 6 October); cast her anew before recording
+### 92. `say.c12346388d1c.wav`  **LOCKED FOR RECORDING**
 
 *Where:* godot/logic/Play/Story/Roost.cs
 *Played:* plain; doing: the cage yard, and three graves; pace: slow; volume: quiet.
@@ -1080,7 +1080,7 @@ Subtitle: Three whistles, and none answering. Ahead, the cage yard: four empty c
 ```
 Subtitle: Three whistles, and none answering. Ahead, the cage yard: four empty cages, and three mounds of new earth beside them.
 
-### 93. `say.8f4acfe90f92.wav`  HOLD: recast as a woman of about sixty, plain and dry (the story rewrite, 6 October); cast her anew before recording
+### 93. `say.8f4acfe90f92.wav`  **LOCKED FOR RECORDING**
 
 *Where:* godot/logic/Play/Story/Roost.cs
 *Played:* plain; doing: the cage yard, one cage empty; pace: measured; volume: quiet.
@@ -1091,7 +1091,7 @@ Subtitle: Three whistles, and none answering. Ahead, the cage yard: four empty c
 ```
 Subtitle: Three whistles, and none answering. Ahead, the cage yard: four cages, and the fourth stands open with nobody in it.
 
-### 94. `say.ed1ff5a67b8c.wav`  HOLD: recast as a woman of about sixty, plain and dry (the story rewrite, 6 October); cast her anew before recording
+### 94. `say.ed1ff5a67b8c.wav`  **LOCKED FOR RECORDING**
 
 *Where:* godot/logic/Play/Story/Roost.cs
 *Played:* plain; doing: the levy forms up; pace: measured; volume: level.
@@ -1102,7 +1102,7 @@ Past the cages, the camp's fires, and the levy forming up the way they were taug
 ```
 Subtitle: Past the cages, the camp's fires, and the levy forming up the way they were taught: in step, pikes level.
 
-### 95. `say.c52914d98baf.wav`  HOLD: recast as a woman of about sixty, plain and dry (the story rewrite, 6 October); cast her anew before recording
+### 95. `say.c52914d98baf.wav`  **LOCKED FOR RECORDING**
 
 *Where:* godot/logic/Play/Story/Roost.cs
 *Played:* plain; doing: the crates are gone; the camp falls back; pace: measured; volume: level.
@@ -1113,7 +1113,7 @@ Where the crates stood there is a hole in the yard. Beyond it, the Kerchiefs fal
 ```
 Subtitle: Where the crates stood there is a hole in the yard. Beyond it, the Kerchiefs fall back to the big fire and stand there with their torches up. Then they part.
 
-### 96. `say.cbc22a062d1e.wav`  HOLD: recast as a woman of about sixty, plain and dry (the story rewrite, 6 October); cast her anew before recording
+### 96. `say.cbc22a062d1e.wav`  **LOCKED FOR RECORDING**
 
 *Where:* godot/logic/Play/Story/Roost.cs
 *Played:* plain; doing: the camp falls back for its chief; pace: measured; volume: level.
@@ -1126,7 +1126,7 @@ Subtitle: The Kerchiefs fall back to the big fire and stand there with their tor
 
 ## Scenes: the Vault at night
 
-### 97. `say.def83ed2ca1b.wav`  HOLD: recast as a woman of about sixty, plain and dry (the story rewrite, 6 October); cast her anew before recording
+### 97. `say.def83ed2ca1b.wav`  **LOCKED FOR RECORDING**
 
 *Where:* godot/logic/Play/Story/Vault.cs
 *Played:* plain; doing: opens the vault's night; pace: slow; volume: quiet.
@@ -1137,7 +1137,7 @@ Subtitle: The Kerchiefs fall back to the big fire and stand there with their tor
 ```
 Subtitle: Through the door: a long hall, and the head of a stair. On the stair, something is coming up in step.
 
-### 98. `say.9bf57b5df8e4.wav`  HOLD: recast as a woman of about sixty, plain and dry (the story rewrite, 6 October); cast her anew before recording
+### 98. `say.9bf57b5df8e4.wav`  **LOCKED FOR RECORDING**
 
 *Where:* godot/logic/Play/Story/Vault.cs
 *Played:* plain; doing: the next stage: a bow at the hall's end; pace: measured; volume: level.
@@ -1148,7 +1148,7 @@ The first ranks are down. The hall runs on ahead, long and straight, and at the 
 ```
 Subtitle: The first ranks are down. The hall runs on ahead, long and straight, and at the end of it something is winding a great bow.
 
-### 99. `say.a83f4948df17.wav`  HOLD: recast as a woman of about sixty, plain and dry (the story rewrite, 6 October); cast her anew before recording
+### 99. `say.a83f4948df17.wav`  **LOCKED FOR RECORDING**
 
 *Where:* godot/logic/Play/Story/Vault.cs
 *Played:* plain; doing: the standards go up; pace: measured; volume: level.
@@ -1159,7 +1159,7 @@ Down the hall, three standards go up one after another, and the dead turn to fac
 ```
 Subtitle: Down the hall, three standards go up one after another, and the dead turn to face them.
 
-### 100. `say.4350b3e997df.wav`  HOLD: recast as a woman of about sixty, plain and dry (the story rewrite, 6 October); cast her anew before recording
+### 100. `say.4350b3e997df.wav`  **LOCKED FOR RECORDING**
 
 *Where:* godot/logic/Play/Story/Vault.cs
 *Played:* plain; doing: the vault's dead come to attention; pace: slow; volume: quiet.
@@ -1234,7 +1234,7 @@ Subtitle: She turns a ring on the nail behind the bar, among the keys, without l
 
 ## Conversations: Chid
 
-### 107. `dlg.chid.first.0.p1.wav`  HOLD: recast as a woman of about sixty, plain and dry (the story rewrite, 6 October); cast her anew before recording
+### 107. `dlg.chid.first.0.p1.wav`  **LOCKED FOR RECORDING**
 
 *Where:* dialogue.json chid/first#0; part 2 of 3: chid: Oh! A lantern of the Order! Lit! / **narrator: He looks from the lantern to you, a moment longer than people do.** / chid: Oh, sit down, sit, sit. I'm Chid. They call me the Fool, which is fair. This is the shrine…
 *Played:* the narrator's aside inside someone else's line: plain, quiet, observant; the narrator never shows a feeling.
@@ -1244,7 +1244,7 @@ Subtitle: She turns a ring on the nail behind the bar, among the keys, without l
 ```
 Subtitle: He looks from the lantern to you, a moment longer than people do.
 
-### 108. `dlg.chid.first.1.p1.wav`  HOLD: recast as a woman of about sixty, plain and dry (the story rewrite, 6 October); cast her anew before recording
+### 108. `dlg.chid.first.1.p1.wav`  **LOCKED FOR RECORDING**
 
 *Where:* dialogue.json chid/first#1; part 2 of 3: chid: Oh! A visitor. Hello! / **narrator: He looks at you a moment longer than people do.** / chid: I'm Chid. They call me the Fool, which is fair. This is the shrine of the Morning Light. I…
 *Played:* the narrator's aside inside someone else's line: plain, quiet, observant; the narrator never shows a feeling.
@@ -1254,7 +1254,7 @@ Subtitle: He looks from the lantern to you, a moment longer than people do.
 ```
 Subtitle: He looks at you a moment longer than people do.
 
-### 109. `dlg.chid.woke.0.p1.wav`  HOLD: recast as a woman of about sixty, plain and dry (the story rewrite, 6 October); cast her anew before recording
+### 109. `dlg.chid.woke.0.p1.wav`  **LOCKED FOR RECORDING**
 
 *Where:* dialogue.json chid/woke#0; part 2 of 3: chid: Up again. / **narrator: He has the kettle on already.** / chid: The carter sends his regards. You'll be sore a day or two. Whatever did it has your things…
 *Played:* the narrator's aside inside someone else's line: plain, quiet, observant; the narrator never shows a feeling.
@@ -1264,7 +1264,7 @@ Subtitle: He looks at you a moment longer than people do.
 ```
 Subtitle: He has the kettle on already.
 
-### 110. `dlg.chid.woke.1.p1.wav`  HOLD: recast as a woman of about sixty, plain and dry (the story rewrite, 6 October); cast her anew before recording
+### 110. `dlg.chid.woke.1.p1.wav`  **LOCKED FOR RECORDING**
 
 *Where:* dialogue.json chid/woke#1; part 2 of 3: chid: You're up. A carter brought you in. / **narrator: He isn't looking at you.** / chid: ...Well. Someone did. You'll be sore a day or two, and whatever did this still has your th…
 *Played:* the narrator's aside inside someone else's line: plain, quiet, observant; the narrator never shows a feeling.
@@ -1274,7 +1274,7 @@ Subtitle: He has the kettle on already.
 ```
 Subtitle: He isn't looking at you.
 
-### 111. `dlg.chid.woke.2.p1.wav`  HOLD: recast as a woman of about sixty, plain and dry (the story rewrite, 6 October); cast her anew before recording
+### 111. `dlg.chid.woke.2.p1.wav`  **LOCKED FOR RECORDING**
 
 *Where:* dialogue.json chid/woke#2; part 2 of 3: chid: You're awake! A carter found you. The same carter, as it happens; he's starting to think y… / **narrator: He laughs, and stops.** / chid: You'll be sore a day or two. Whatever did this is still out there. It'll have your things.
 *Played:* the narrator's aside inside someone else's line: plain, quiet, observant; the narrator never shows a feeling.
@@ -1284,7 +1284,7 @@ Subtitle: He isn't looking at you.
 ```
 Subtitle: He laughs, and stops.
 
-### 112. `dlg.chid.relight.0.wav`  HOLD: recast as a woman of about sixty, plain and dry (the story rewrite, 6 October); cast her anew before recording
+### 112. `dlg.chid.relight.0.wav`  **LOCKED FOR RECORDING**
 
 *Where:* dialogue.json chid/relight#0
 *Played:* plain; doing: the shrine is lit again; pace: slow; volume: quiet.
@@ -1295,7 +1295,7 @@ Subtitle: He laughs, and stops.
 ```
 Subtitle: You open your lantern and say the words you learned at seven, the ones about the dark being only the part of the day that hasn't happened yet. The shrine takes the flame as if it had been waiting for it. Chid makes a sound like a kettle.
 
-### 113. `dlg.chid.note.0.p1.wav`  HOLD: recast as a woman of about sixty, plain and dry (the story rewrite, 6 October); cast her anew before recording
+### 113. `dlg.chid.note.0.p1.wav`  **LOCKED FOR RECORDING**
 
 *Where:* dialogue.json chid/note#0; part 2 of 5: chid: Was there! / **narrator: He's suddenly very interested in a candle.** / chid: A C. Lovely. Lots of people start with C. Cuthbert. Cressida. There was a Cormac, once, wh… / narrator: He stops. / chid: It's a lovely old hand, whoever it was. Nobody makes a C like that any more. Nobody's made…
 *Played:* the narrator's aside inside someone else's line: plain, quiet, observant; the narrator never shows a feeling.
@@ -1305,7 +1305,7 @@ Subtitle: You open your lantern and say the words you learned at seven, the ones
 ```
 Subtitle: He's suddenly very interested in a candle.
 
-### 114. `dlg.chid.note.0.p3.wav`  HOLD: recast as a woman of about sixty, plain and dry (the story rewrite, 6 October); cast her anew before recording
+### 114. `dlg.chid.note.0.p3.wav`  **LOCKED FOR RECORDING**
 
 *Where:* dialogue.json chid/note#0; part 4 of 5: chid: Was there! / narrator: He's suddenly very interested in a candle. / chid: A C. Lovely. Lots of people start with C. Cuthbert. Cressida. There was a Cormac, once, wh… / **narrator: He stops.** / chid: It's a lovely old hand, whoever it was. Nobody makes a C like that any more. Nobody's made…
 *Played:* the narrator's aside inside someone else's line: plain, quiet, observant; the narrator never shows a feeling.
@@ -1315,7 +1315,7 @@ Subtitle: He's suddenly very interested in a candle.
 ```
 Subtitle: He stops.
 
-### 115. `dlg.chid.cb_nell.0.p1.wav`  HOLD: recast as a woman of about sixty, plain and dry (the story rewrite, 6 October); cast her anew before recording
+### 115. `dlg.chid.cb_nell.0.p1.wav`  **LOCKED FOR RECORDING**
 
 *The same words are also* `dlg.chid.cb_nell.1.p1.wav`*: record once; the importer copies the take.*
 *Where:* dialogue.json chid/cb_nell#0; part 2 of 4: chid: I sang it flat. I always have. There's always somebody who has the tune. / **narrator: He is quiet, which he never is.** / chid: She was very light. ...Sit down a minute. / narrator: He moves up the bench, though there's nobody else on it.
@@ -1326,7 +1326,7 @@ Subtitle: He stops.
 ```
 Subtitle: He is quiet, which he never is.
 
-### 116. `dlg.chid.cb_nell.0.p3.wav`  HOLD: recast as a woman of about sixty, plain and dry (the story rewrite, 6 October); cast her anew before recording
+### 116. `dlg.chid.cb_nell.0.p3.wav`  **LOCKED FOR RECORDING**
 
 *The same words are also* `dlg.chid.cb_nell.1.p3.wav`*: record once; the importer copies the take.*
 *Where:* dialogue.json chid/cb_nell#0; part 4 of 4: chid: I sang it flat. I always have. There's always somebody who has the tune. / narrator: He is quiet, which he never is. / chid: She was very light. ...Sit down a minute. / **narrator: He moves up the bench, though there's nobody else on it.**
@@ -1337,7 +1337,7 @@ Subtitle: He is quiet, which he never is.
 ```
 Subtitle: He moves up the bench, though there's nobody else on it.
 
-### 117. `dlg.chid.carter.0.p1.wav`  HOLD: recast as a woman of about sixty, plain and dry (the story rewrite, 6 October); cast her anew before recording
+### 117. `dlg.chid.carter.0.p1.wav`  **LOCKED FOR RECORDING**
 
 *Where:* dialogue.json chid/carter#0; part 2 of 3: chid: ...You know, I never asked his name. I should ask his name. Next time. / **narrator: He puts a cup in your hands.** / chid: Drink that. It's only hot water. There's nothing in it but hot.
 *Played:* the narrator's aside inside someone else's line: plain, quiet, observant; the narrator never shows a feeling.
@@ -1874,7 +1874,7 @@ Subtitle: As the light goes, the hammer at the smithy stops. Brannoc calls you o
 
 ## Conversations: Holloway
 
-### 170. `dlg.holloway.first.1.p1.wav`  HOLD: recast as a woman of about sixty, plain and dry (the story rewrite, 6 October); cast her anew before recording
+### 170. `dlg.holloway.first.1.p1.wav`  **LOCKED FOR RECORDING**
 
 *Where:* dialogue.json holloway/first#1; part 2 of 3: holloway: You're the one put the Ford-Warden down. / **narrator: He looks at you a moment longer than he means to.** / holloway: The Watch kept that crossing, once. Then we couldn't. ...Thank you. Holloway. Captain of w…
 *Played:* the narrator's aside inside someone else's line: plain, quiet, observant; the narrator never shows a feeling.
@@ -1884,7 +1884,7 @@ Subtitle: As the light goes, the hammer at the smithy stops. Brannoc calls you o
 ```
 Subtitle: He looks at you a moment longer than he means to.
 
-### 171. `dlg.holloway.hub.0.p0.wav`  HOLD: recast as a woman of about sixty, plain and dry (the story rewrite, 6 October); cast her anew before recording
+### 171. `dlg.holloway.hub.0.p0.wav`  **LOCKED FOR RECORDING**
 
 *Where:* dialogue.json holloway/hub#0; part 1 of 2: **narrator: A letter lies open on his knee under the gate-lamp, a silver seal broken on it. He turns i…** / holloway: What.
 *Played:* the narrator's aside inside someone else's line: plain, quiet, observant; the narrator never shows a feeling.
@@ -1894,7 +1894,7 @@ Subtitle: He looks at you a moment longer than he means to.
 ```
 Subtitle: A letter lies open on his knee under the gate-lamp, a silver seal broken on it. He turns it over when you come, and puts his cup on it.
 
-### 172. `dlg.holloway.hub.1.p0.wav`  HOLD: recast as a woman of about sixty, plain and dry (the story rewrite, 6 October); cast her anew before recording
+### 172. `dlg.holloway.hub.1.p0.wav`  **LOCKED FOR RECORDING**
 
 *Where:* dialogue.json holloway/hub#1; part 1 of 4: **narrator: On the ground in the gateway, his back to the post, a cup in his fist.** / holloway: Gate open. Count short. Cup empty. / narrator: He finds you. / holloway: You. What.
 *Played:* the narrator's aside inside someone else's line: plain, quiet, observant; the narrator never shows a feeling.
@@ -1904,7 +1904,7 @@ Subtitle: A letter lies open on his knee under the gate-lamp, a silver seal brok
 ```
 Subtitle: On the ground in the gateway, his back to the post, a cup in his fist.
 
-### 173. `dlg.holloway.hub.1.p2.wav`  HOLD: recast as a woman of about sixty, plain and dry (the story rewrite, 6 October); cast her anew before recording
+### 173. `dlg.holloway.hub.1.p2.wav`  **LOCKED FOR RECORDING**
 
 *The same words are also* `dlg.holloway.roll.0.p2.wav`*: record once; the importer copies the take.*
 *Where:* dialogue.json holloway/hub#1; part 3 of 4: narrator: On the ground in the gateway, his back to the post, a cup in his fist. / holloway: Gate open. Count short. Cup empty. / **narrator: He finds you.** / holloway: You. What.
@@ -1915,7 +1915,7 @@ Subtitle: On the ground in the gateway, his back to the post, a cup in his fist.
 ```
 Subtitle: He finds you.
 
-### 174. `dlg.holloway.hub.2.p0.wav`  HOLD: recast as a woman of about sixty, plain and dry (the story rewrite, 6 October); cast her anew before recording
+### 174. `dlg.holloway.hub.2.p0.wav`  **LOCKED FOR RECORDING**
 
 *Where:* dialogue.json holloway/hub#2; part 1 of 4: **narrator: On the ground in the gateway, his back to the post, a cup in his fist, counting under his …** / holloway: ...Forty-four. Forty— / narrator: He loses it, and starts again at one. / holloway: What.
 *Played:* the narrator's aside inside someone else's line: plain, quiet, observant; the narrator never shows a feeling.
@@ -1925,7 +1925,7 @@ Subtitle: He finds you.
 ```
 Subtitle: On the ground in the gateway, his back to the post, a cup in his fist, counting under his breath.
 
-### 175. `dlg.holloway.hub.2.p2.wav`  HOLD: recast as a woman of about sixty, plain and dry (the story rewrite, 6 October); cast her anew before recording
+### 175. `dlg.holloway.hub.2.p2.wav`  **LOCKED FOR RECORDING**
 
 *Where:* dialogue.json holloway/hub#2; part 3 of 4: narrator: On the ground in the gateway, his back to the post, a cup in his fist, counting under his … / holloway: ...Forty-four. Forty— / **narrator: He loses it, and starts again at one.** / holloway: What.
 *Played:* the narrator's aside inside someone else's line: plain, quiet, observant; the narrator never shows a feeling.
@@ -1935,7 +1935,7 @@ Subtitle: On the ground in the gateway, his back to the post, a cup in his fist,
 ```
 Subtitle: He loses it, and starts again at one.
 
-### 176. `dlg.holloway.hub.6.p0.wav`  HOLD: recast as a woman of about sixty, plain and dry (the story rewrite, 6 October); cast her anew before recording
+### 176. `dlg.holloway.hub.6.p0.wav`  **LOCKED FOR RECORDING**
 
 *Where:* dialogue.json holloway/hub#6; part 1 of 2: **narrator: He straightens when you come in, and then looks annoyed that he did.** / holloway: You. What is it?
 *Played:* the narrator's aside inside someone else's line: plain, quiet, observant; the narrator never shows a feeling.
@@ -1945,7 +1945,7 @@ Subtitle: He loses it, and starts again at one.
 ```
 Subtitle: He straightens when you come in, and then looks annoyed that he did.
 
-### 177. `dlg.holloway.ashford.0.p1.wav`  HOLD: recast as a woman of about sixty, plain and dry (the story rewrite, 6 October); cast her anew before recording
+### 177. `dlg.holloway.ashford.0.p1.wav`  **LOCKED FOR RECORDING**
 
 *The same words are also* `dlg.rav.cb_killed_redcowl.0.p0.wav`*: record once; the importer copies the take.*
 *Where:* dialogue.json holloway/ashford#0; part 2 of 5: holloway: Then don't. / **narrator: He doesn't look up.** / holloway: ...Garrison town, up the valley. The ground went one night, and the lower town with it. I … / narrator: He picks up the cup. / holloway: That's the report.
@@ -1956,7 +1956,7 @@ Subtitle: He straightens when you come in, and then looks annoyed that he did.
 ```
 Subtitle: He doesn't look up.
 
-### 178. `dlg.holloway.ashford.0.p3.wav`  HOLD: recast as a woman of about sixty, plain and dry (the story rewrite, 6 October); cast her anew before recording
+### 178. `dlg.holloway.ashford.0.p3.wav`  **LOCKED FOR RECORDING**
 
 *Where:* dialogue.json holloway/ashford#0; part 4 of 5: holloway: Then don't. / narrator: He doesn't look up. / holloway: ...Garrison town, up the valley. The ground went one night, and the lower town with it. I … / **narrator: He picks up the cup.** / holloway: That's the report.
 *Played:* the narrator's aside inside someone else's line: plain, quiet, observant; the narrator never shows a feeling.
@@ -1966,7 +1966,7 @@ Subtitle: He doesn't look up.
 ```
 Subtitle: He picks up the cup.
 
-### 179. `dlg.holloway.cb_freed_teamsters.0.p0.wav`  HOLD: recast as a woman of about sixty, plain and dry (the story rewrite, 6 October); cast her anew before recording
+### 179. `dlg.holloway.cb_freed_teamsters.0.p0.wav`  **LOCKED FOR RECORDING**
 
 *Where:* dialogue.json holloway/cb_freed_teamsters#0; part 1 of 4: **narrator: He's been drinking since dawn, and he's not hiding it.** / holloway: Three in! I was on the gate. Three in, and the count's— hell, I don't know what the count … / narrator: He sits down hard. / holloway: Don't let it go to your head. Eleven Watchmen couldn't do it. Eleven Watchmen can't do muc…
 *Played:* the narrator's aside inside someone else's line: plain, quiet, observant; the narrator never shows a feeling.
@@ -1976,7 +1976,7 @@ Subtitle: He picks up the cup.
 ```
 Subtitle: He's been drinking since dawn, and he's not hiding it.
 
-### 180. `dlg.holloway.cb_freed_teamsters.0.p2.wav`  HOLD: recast as a woman of about sixty, plain and dry (the story rewrite, 6 October); cast her anew before recording
+### 180. `dlg.holloway.cb_freed_teamsters.0.p2.wav`  **LOCKED FOR RECORDING**
 
 *Where:* dialogue.json holloway/cb_freed_teamsters#0; part 3 of 4: narrator: He's been drinking since dawn, and he's not hiding it. / holloway: Three in! I was on the gate. Three in, and the count's— hell, I don't know what the count … / **narrator: He sits down hard.** / holloway: Don't let it go to your head. Eleven Watchmen couldn't do it. Eleven Watchmen can't do muc…
 *Played:* the narrator's aside inside someone else's line: plain, quiet, observant; the narrator never shows a feeling.
@@ -1986,7 +1986,7 @@ Subtitle: He's been drinking since dawn, and he's not hiding it.
 ```
 Subtitle: He sits down hard.
 
-### 181. `dlg.holloway.say_calling.2.p1.wav`  HOLD: recast as a woman of about sixty, plain and dry (the story rewrite, 6 October); cast her anew before recording
+### 181. `dlg.holloway.say_calling.2.p1.wav`  **LOCKED FOR RECORDING**
 
 *Where:* dialogue.json holloway/say_calling#2; part 2 of 3: holloway: Burns, does it? What's it run on? / **narrator: He looks at your hands.** / holloway: Everything runs on something. I'll want it written down.
 *Played:* the narrator's aside inside someone else's line: plain, quiet, observant; the narrator never shows a feeling.
@@ -1996,7 +1996,7 @@ Subtitle: He sits down hard.
 ```
 Subtitle: He looks at your hands.
 
-### 182. `dlg.holloway.ledger_early.0.p0.wav`  HOLD: recast as a woman of about sixty, plain and dry (the story rewrite, 6 October); cast her anew before recording
+### 182. `dlg.holloway.ledger_early.0.p0.wav`  **LOCKED FOR RECORDING**
 
 *Where:* dialogue.json holloway/ledger_early#0; part 1 of 4: **narrator: He reads it standing up. Then he sits down and reads it again.** / holloway: Two payments, one night. Forty to "R." Ten to Jessop, "for the road": that's Vonnra's cler… / narrator: He shuts it. / holloway: Don't tell me where you got it. If you tell me, I have to do something about it.
 *Played:* the narrator's aside inside someone else's line: plain, quiet, observant; the narrator never shows a feeling.
@@ -2006,7 +2006,7 @@ Subtitle: He looks at your hands.
 ```
 Subtitle: He reads it standing up. Then he sits down and reads it again.
 
-### 183. `dlg.holloway.ledger_early.0.p2.wav`  HOLD: recast as a woman of about sixty, plain and dry (the story rewrite, 6 October); cast her anew before recording
+### 183. `dlg.holloway.ledger_early.0.p2.wav`  **LOCKED FOR RECORDING**
 
 *Where:* dialogue.json holloway/ledger_early#0; part 3 of 4: narrator: He reads it standing up. Then he sits down and reads it again. / holloway: Two payments, one night. Forty to "R." Ten to Jessop, "for the road": that's Vonnra's cler… / **narrator: He shuts it.** / holloway: Don't tell me where you got it. If you tell me, I have to do something about it.
 *Played:* the narrator's aside inside someone else's line: plain, quiet, observant; the narrator never shows a feeling.
@@ -2016,7 +2016,7 @@ Subtitle: He reads it standing up. Then he sits down and reads it again.
 ```
 Subtitle: He shuts it.
 
-### 184. `dlg.holloway.post.0.p0.wav`  HOLD: recast as a woman of about sixty, plain and dry (the story rewrite, 6 October); cast her anew before recording
+### 184. `dlg.holloway.post.0.p0.wav`  **LOCKED FOR RECORDING**
 
 *Where:* dialogue.json holloway/post#0; part 1 of 2: **narrator: He says nothing for long enough that you think he hasn't heard.** / holloway: Gray beard, proud of it? Bad hip? ...Corran. He had that post before I had this one. I wro…
 *Played:* the narrator's aside inside someone else's line: plain, quiet, observant; the narrator never shows a feeling.
@@ -2026,7 +2026,7 @@ Subtitle: He shuts it.
 ```
 Subtitle: He says nothing for long enough that you think he hasn't heard.
 
-### 185. `dlg.holloway.post2.0.p1.wav`  HOLD: recast as a woman of about sixty, plain and dry (the story rewrite, 6 October); cast her anew before recording
+### 185. `dlg.holloway.post2.0.p1.wav`  **LOCKED FOR RECORDING**
 
 *Where:* dialogue.json holloway/post2#0; part 2 of 3: holloway: Not by us. We've not had oil for those lamps since my first winter, and nobody's asked me … / **narrator: He writes something down, and crosses it out.** / holloway: So somebody had ember, and irons to burn it in. And a reason. ...I'll send two men down wi…
 *Played:* the narrator's aside inside someone else's line: plain, quiet, observant; the narrator never shows a feeling.
@@ -2036,7 +2036,7 @@ Subtitle: He says nothing for long enough that you think he hasn't heard.
 ```
 Subtitle: He writes something down, and crosses it out.
 
-### 186. `dlg.holloway.letter.0.p1.wav`  HOLD: recast as a woman of about sixty, plain and dry (the story rewrite, 6 October); cast her anew before recording
+### 186. `dlg.holloway.letter.0.p1.wav`  **LOCKED FOR RECORDING**
 
 *Where:* dialogue.json holloway/letter#0; part 2 of 3: holloway: Mine. From the north, about the north. / **narrator: The cup doesn't move.** / holloway: Read your own post, if anybody writes to you.
 *Played:* the narrator's aside inside someone else's line: plain, quiet, observant; the narrator never shows a feeling.
@@ -2068,7 +2068,7 @@ Subtitle: He stops on it, and drinks, and starts again at Abbot.
 
 ## Conversations: Tam
 
-### 189. `dlg.tam.fetch.0.wav`  HOLD: recast as a woman of about sixty, plain and dry (the story rewrite, 6 October); cast her anew before recording
+### 189. `dlg.tam.fetch.0.wav`  **LOCKED FOR RECORDING**
 
 *Where:* dialogue.json tam/fetch#0
 *Played:* plain; doing: bringing Tam's father home; pace: measured; volume: level.
@@ -2081,7 +2081,7 @@ Subtitle: You walk the boy as far as the fence where his Pa lost the goat, and g
 
 ## Conversations: Maeca
 
-### 190. `dlg.maeca.hub.0.p0.wav`  HOLD: recast as a woman of about sixty, plain and dry (the story rewrite, 6 October); cast her anew before recording
+### 190. `dlg.maeca.hub.0.p0.wav`  **LOCKED FOR RECORDING**
 
 *The same words are also* `dlg.maeca.say_sella.0.p1.wav`, `dlg.maeca.ashford.0.p0.wav`*: record once; the importer copies the take.*
 *Where:* dialogue.json maeca/hub#0; part 1 of 2: **narrator: She doesn't look up from her cup.** / maeca: It's late. Say it.
@@ -2092,7 +2092,7 @@ Subtitle: You walk the boy as far as the fence where his Pa lost the goat, and g
 ```
 Subtitle: She doesn't look up from her cup.
 
-### 191. `dlg.maeca.invite.0.p0.wav`  HOLD: recast as a woman of about sixty, plain and dry (the story rewrite, 6 October); cast her anew before recording
+### 191. `dlg.maeca.invite.0.p0.wav`  **LOCKED FOR RECORDING**
 
 *Where:* dialogue.json maeca/invite#0; part 1 of 2: **narrator: She finishes her cup and stands.** / maeca: I'm going out to the Blind. The fire's big enough for two, if you can keep quiet. Most can…
 *Played:* the narrator's aside inside someone else's line: plain, quiet, observant; the narrator never shows a feeling.
@@ -2151,7 +2151,7 @@ Subtitle: Gray light. She's already up, barefoot in the frost, listening.
 ```
 Subtitle: Gray light. She's already up, barefoot in the frost, listening to the wood.
 
-### 197. `dlg.maeca.kerchiefs.0.p1.wav`  HOLD: recast as a woman of about sixty, plain and dry (the story rewrite, 6 October); cast her anew before recording
+### 197. `dlg.maeca.kerchiefs.0.p1.wav`  **LOCKED FOR RECORDING**
 
 *Where:* dialogue.json maeca/kerchiefs#0; part 2 of 3: maeca: Some. / **narrator: She drinks, and looks at the cup instead of you.** / maeca: Fed some of them, once. Buried more. ...Ask me about wolves.
 *Played:* the narrator's aside inside someone else's line: plain, quiet, observant; the narrator never shows a feeling.
@@ -2161,7 +2161,7 @@ Subtitle: Gray light. She's already up, barefoot in the frost, listening to the 
 ```
 Subtitle: She drinks, and looks at the cup instead of you.
 
-### 198. `dlg.maeca.cb_knelt.0.p1.wav`  HOLD: recast as a woman of about sixty, plain and dry (the story rewrite, 6 October); cast her anew before recording
+### 198. `dlg.maeca.cb_knelt.0.p1.wav`  **LOCKED FOR RECORDING**
 
 *Where:* dialogue.json maeca/cb_knelt#0; part 2 of 3: maeca: You went into the Hollow with nothing on your hands and knelt to him. I was on the ridge. / **narrator: She looks at your knees.** / maeca: He let you. ...He doesn't let me, and he's known me ten years.
 *Played:* the narrator's aside inside someone else's line: plain, quiet, observant; the narrator never shows a feeling.
@@ -2171,7 +2171,7 @@ Subtitle: She drinks, and looks at the cup instead of you.
 ```
 Subtitle: She looks at your knees.
 
-### 199. `dlg.maeca.blood.0.p0.wav`  HOLD: recast as a woman of about sixty, plain and dry (the story rewrite, 6 October); cast her anew before recording
+### 199. `dlg.maeca.blood.0.p0.wav`  **LOCKED FOR RECORDING**
 
 *Where:* dialogue.json maeca/blood#0; part 1 of 2: **narrator: At the edge of the Hollow she stops, and sniffs, once, and turns round.** / maeca: Not with that on you. Wash. River's that way. ...Or sleep, and come tomorrow. The night ta…
 *Played:* the narrator's aside inside someone else's line: plain, quiet, observant; the narrator never shows a feeling.
@@ -2214,7 +2214,7 @@ Subtitle: She walks on.
 ```
 Subtitle: The Old Road, the wreck, the frost. You know the way now, and she lets you walk in front.
 
-### 203. `dlg.maeca.blind_fire.0.wav`  HOLD: recast as a woman of about sixty, plain and dry (the story rewrite, 6 October); cast her anew before recording
+### 203. `dlg.maeca.blind_fire.0.wav`  **LOCKED FOR RECORDING**
 
 *Where:* dialogue.json maeca/blind_fire#0
 *Played:* plain; doing: the Blind; pace: slow; volume: quiet.
@@ -2225,7 +2225,7 @@ Subtitle: The Old Road, the wreck, the frost. You know the way now, and she lets
 ```
 Subtitle: The Hunters' Blind is a lean-to of hides against a fallen oak, with a fire the size of a hat. She sits, and pulls her boots off first thing, and sets her bare feet flat on the cold ground, as if she were listening through them. She feeds the fire one stick at a time. She doesn't talk. After a while she takes the crossbow off her back, and checks it, and lays it down by her right hand, and turns and looks at you across the fire as if you were a track she has been following for days.
 
-### 204. `dlg.maeca.blind_ask.1.wav`  HOLD: recast as a woman of about sixty, plain and dry (the story rewrite, 6 October); cast her anew before recording
+### 204. `dlg.maeca.blind_ask.1.wav`  **LOCKED FOR RECORDING**
 
 *Where:* dialogue.json maeca/blind_ask#1
 *Played:* the narrator's aside inside someone else's line: plain, quiet, observant; the narrator never shows a feeling.
@@ -2235,7 +2235,7 @@ Subtitle: The Hunters' Blind is a lean-to of hides against a fallen oak, with a 
 ```
 Subtitle: She holds out her hand. That's all.
 
-### 205. `dlg.maeca.blind_leave.0.p0.wav`  HOLD: recast as a woman of about sixty, plain and dry (the story rewrite, 6 October); cast her anew before recording
+### 205. `dlg.maeca.blind_leave.0.p0.wav`  **LOCKED FOR RECORDING**
 
 *Where:* dialogue.json maeca/blind_leave#0; part 1 of 2: **narrator: She nods at the fire.** / maeca: Mind the frost on the Old Road. It's worse by the wreck.
 *Played:* the narrator's aside inside someone else's line: plain, quiet, observant; the narrator never shows a feeling.
@@ -2245,7 +2245,7 @@ Subtitle: She holds out her hand. That's all.
 ```
 Subtitle: She nods at the fire.
 
-### 206. `dlg.maeca.watch_only.0.wav`  HOLD: recast as a woman of about sixty, plain and dry (the story rewrite, 6 October); cast her anew before recording
+### 206. `dlg.maeca.watch_only.0.wav`  **LOCKED FOR RECORDING**
 
 *Where:* dialogue.json maeca/watch_only#0
 *Played:* plain; doing: a night keeping watch; pace: slow; volume: quiet.
@@ -2256,7 +2256,7 @@ Subtitle: She nods at the fire.
 ```
 Subtitle: You keep the fire. She keeps the dark. Some time after midnight she comes in from the edge of the light and sits down with her back against yours, and you can feel her breathing, slow, and listening. You sleep like that, sitting up. In the morning the frost is on both your shoulders and not between them.
 
-### 207. `dlg.maeca.watch_morning.0.p1.wav`  HOLD: recast as a woman of about sixty, plain and dry (the story rewrite, 6 October); cast her anew before recording
+### 207. `dlg.maeca.watch_morning.0.p1.wav`  **LOCKED FOR RECORDING**
 
 *Where:* dialogue.json maeca/watch_morning#0; part 2 of 3: maeca: You kept quiet. / **narrator: She stands, and stretches, and looks at the Hollow, not you.** / maeca: Most can't.
 *Played:* the narrator's aside inside someone else's line: plain, quiet, observant; the narrator never shows a feeling.
@@ -2266,7 +2266,7 @@ Subtitle: You keep the fire. She keeps the dark. Some time after midnight she co
 ```
 Subtitle: She stands, and stretches, and looks at the Hollow, not you.
 
-### 208. `dlg.maeca.blind_dark.0.wav`  HOLD: recast as a woman of about sixty, plain and dry (the story rewrite, 6 October); cast her anew before recording
+### 208. `dlg.maeca.blind_dark.0.wav`  **LOCKED FOR RECORDING**
 
 *Where:* dialogue.json maeca/blind_dark#0
 *Played:* plain; doing: you're cold; pace: slow; volume: quiet.
@@ -2277,7 +2277,7 @@ Subtitle: She stands, and stretches, and looks at the Hollow, not you.
 ```
 Subtitle: Afterwards, in the dark under the hides, she puts her feet against your legs, and flinches: you're colder than they are. She starts to take them back.
 
-### 209. `dlg.maeca.blind_dark.1.p0.wav`  HOLD: recast as a woman of about sixty, plain and dry (the story rewrite, 6 October); cast her anew before recording
+### 209. `dlg.maeca.blind_dark.1.p0.wav`  **LOCKED FOR RECORDING**
 
 *Where:* dialogue.json maeca/blind_dark#1; part 1 of 6: **narrator: Later, with the fire down, she lies with her head on your chest, listening the way she lis…** / maeca: They don't do that. Not for me. Not for anyone. / narrator: She lies back down, her ear where it was. / maeca: You walk quiet. You came into my Hollow and knelt to him, and he let you. You never talk a… / narrator: Against your chest you feel her lips move, without a sound. / maeca: What were you?
 *Played:* plain; doing: the Pack lies down round you; she asks what you were; pace: slow; volume: quiet.
@@ -2289,7 +2289,7 @@ Subtitle: Afterwards, in the dark under the hides, she puts her feet against you
 ```
 Subtitle: Later, with the fire down, she lies with her head on your chest, listening the way she listens to the Hollow. Outside, in the frost, you hear them come: soft feet, a long way round, and then a sigh, and then another. The Pack, lying down round the Blind in the dark. She lifts her head.
 
-### 210. `dlg.maeca.blind_dark.1.p2.wav`  HOLD: recast as a woman of about sixty, plain and dry (the story rewrite, 6 October); cast her anew before recording
+### 210. `dlg.maeca.blind_dark.1.p2.wav`  **LOCKED FOR RECORDING**
 
 *Where:* dialogue.json maeca/blind_dark#1; part 3 of 6: narrator: Later, with the fire down, she lies with her head on your chest, listening the way she lis… / maeca: They don't do that. Not for me. Not for anyone. / **narrator: She lies back down, her ear where it was.** / maeca: You walk quiet. You came into my Hollow and knelt to him, and he let you. You never talk a… / narrator: Against your chest you feel her lips move, without a sound. / maeca: What were you?
 *Played:* plain; doing: the Pack lies down round you; she asks what you were; pace: slow; volume: quiet.
@@ -2301,7 +2301,7 @@ Subtitle: Later, with the fire down, she lies with her head on your chest, liste
 ```
 Subtitle: She lies back down, her ear where it was.
 
-### 211. `dlg.maeca.blind_dark.1.p4.wav`  HOLD: recast as a woman of about sixty, plain and dry (the story rewrite, 6 October); cast her anew before recording
+### 211. `dlg.maeca.blind_dark.1.p4.wav`  **LOCKED FOR RECORDING**
 
 *The same words are also* `dlg.maeca.blind_dark.2.p2.wav`*: record once; the importer copies the take.*
 *Where:* dialogue.json maeca/blind_dark#1; part 5 of 6: narrator: Later, with the fire down, she lies with her head on your chest, listening the way she lis… / maeca: They don't do that. Not for me. Not for anyone. / narrator: She lies back down, her ear where it was. / maeca: You walk quiet. You came into my Hollow and knelt to him, and he let you. You never talk a… / **narrator: Against your chest you feel her lips move, without a sound.** / maeca: What were you?
@@ -2314,7 +2314,7 @@ Subtitle: She lies back down, her ear where it was.
 ```
 Subtitle: Against your chest you feel her lips move, without a sound.
 
-### 212. `dlg.maeca.blind_dark.2.p0.wav`  HOLD: recast as a woman of about sixty, plain and dry (the story rewrite, 6 October); cast her anew before recording
+### 212. `dlg.maeca.blind_dark.2.p0.wav`  **LOCKED FOR RECORDING**
 
 *Where:* dialogue.json maeca/blind_dark#2; part 1 of 4: **narrator: Later, with the fire down, she lies with her head on your chest, listening the way she lis…** / maeca: You walk quiet. You never talk about before. / narrator: Against your chest you feel her lips move, without a sound. / maeca: What were you?
 *Played:* plain; doing: she asks what you were; pace: slow; volume: quiet.
@@ -2326,7 +2326,7 @@ Subtitle: Against your chest you feel her lips move, without a sound.
 ```
 Subtitle: Later, with the fire down, she lies with her head on your chest, listening the way she listens to the Hollow.
 
-### 213. `dlg.maeca.blind_dark.3.wav`  HOLD: recast as a woman of about sixty, plain and dry (the story rewrite, 6 October); cast her anew before recording
+### 213. `dlg.maeca.blind_dark.3.wav`  **LOCKED FOR RECORDING**
 
 *Where:* dialogue.json maeca/blind_dark#3
 *Played:* plain; doing: quiet; pace: slow; volume: quiet.
@@ -2337,7 +2337,7 @@ Subtitle: Later, with the fire down, she lies with her head on your chest, liste
 ```
 Subtitle: The fire's down to embers. Far off, the Pack is quiet.
 
-### 214. `dlg.maeca.blind2_feet.0.p0.wav`  HOLD: recast as a woman of about sixty, plain and dry (the story rewrite, 6 October); cast her anew before recording
+### 214. `dlg.maeca.blind2_feet.0.p0.wav`  **LOCKED FOR RECORDING**
 
 *Where:* dialogue.json maeca/blind2_feet#0; part 1 of 4: **narrator: You take one in your hands. The sole is hard as boot leather, and scarred: old white lines…** / maeca: Your hands are colder than my feet. / narrator: She doesn't take them back. / maeca: Hold them anyway. ...Nobody's held those.
 *Played:* plain; doing: her scarred feet; pace: slow; volume: quiet.
@@ -2348,7 +2348,7 @@ Subtitle: The fire's down to embers. Far off, the Pack is quiet.
 ```
 Subtitle: You take one in your hands. The sole is hard as boot leather, and scarred: old white lines across the ball of the foot, a ridge along the heel where something cut it to the bone a long time ago and it healed badly in the cold. She lets you hold it. She lets you hold the other. She lies very still, the way she lay still when the Pack called, and doesn't say anything for a long time. Then, into the dark, very low:
 
-### 215. `dlg.maeca.blind2_feet.0.p2.wav`  HOLD: recast as a woman of about sixty, plain and dry (the story rewrite, 6 October); cast her anew before recording
+### 215. `dlg.maeca.blind2_feet.0.p2.wav`  **LOCKED FOR RECORDING**
 
 *Where:* dialogue.json maeca/blind2_feet#0; part 3 of 4: narrator: You take one in your hands. The sole is hard as boot leather, and scarred: old white lines… / maeca: Your hands are colder than my feet. / **narrator: She doesn't take them back.** / maeca: Hold them anyway. ...Nobody's held those.
 *Played:* plain; doing: her scarred feet; pace: slow; volume: quiet.
@@ -2359,7 +2359,7 @@ Subtitle: You take one in your hands. The sole is hard as boot leather, and scar
 ```
 Subtitle: She doesn't take them back.
 
-### 216. `dlg.maeca.blind2_let.0.wav`  HOLD: recast as a woman of about sixty, plain and dry (the story rewrite, 6 October); cast her anew before recording
+### 216. `dlg.maeca.blind2_let.0.wav`  **LOCKED FOR RECORDING**
 
 *Where:* dialogue.json maeca/blind2_let#0
 *Played:* plain; doing: she curls up; pace: slow; volume: quiet.
@@ -2390,7 +2390,7 @@ Subtitle: She almost smiles.
 ```
 Subtitle: She thinks about it.
 
-### 219. `dlg.maeca.told_little.0.p0.wav`  HOLD: recast as a woman of about sixty, plain and dry (the story rewrite, 6 October); cast her anew before recording
+### 219. `dlg.maeca.told_little.0.p0.wav`  **LOCKED FOR RECORDING**
 
 *Where:* dialogue.json maeca/told_little#0; part 1 of 4: **narrator: She doesn't push.** / maeca: All right. / narrator: And it is. / maeca: ...Keep it, then. I keep mine.
 *Played:* the narrator's aside inside someone else's line: plain, quiet, observant; the narrator never shows a feeling.
@@ -2400,7 +2400,7 @@ Subtitle: She thinks about it.
 ```
 Subtitle: She doesn't push.
 
-### 220. `dlg.maeca.told_little.0.p2.wav`  HOLD: recast as a woman of about sixty, plain and dry (the story rewrite, 6 October); cast her anew before recording
+### 220. `dlg.maeca.told_little.0.p2.wav`  **LOCKED FOR RECORDING**
 
 *Where:* dialogue.json maeca/told_little#0; part 3 of 4: narrator: She doesn't push. / maeca: All right. / **narrator: And it is.** / maeca: ...Keep it, then. I keep mine.
 *Played:* the narrator's aside inside someone else's line: plain, quiet, observant; the narrator never shows a feeling.
@@ -2410,7 +2410,7 @@ Subtitle: She doesn't push.
 ```
 Subtitle: And it is.
 
-### 221. `dlg.maeca.blind3_morning.0.p0.wav`  HOLD: recast as a woman of about sixty, plain and dry (the story rewrite, 6 October); cast her anew before recording
+### 221. `dlg.maeca.blind3_morning.0.p0.wav`  **LOCKED FOR RECORDING**
 
 *Where:* dialogue.json maeca/blind3_morning#0; part 1 of 6: **narrator: Gray light. She's awake before you, as always, but she hasn't got up. Her head is still on…** / maeca: Your heart's going like a hare's. / narrator: She doesn't lift her head. / maeca: All night it was a bear's in January. I counted between. ...I've lain with my ear to a lot… / narrator: She gets up, then, and goes out barefoot into the frost, and stands there listening to the… / maeca: Go on. Holloway'll count us.
 *Played:* the narrator's aside inside someone else's line: plain, quiet, observant; the narrator never shows a feeling.
@@ -2420,7 +2420,7 @@ Subtitle: And it is.
 ```
 Subtitle: Gray light. She's awake before you, as always, but she hasn't got up. Her head is still on your chest. Her face is very still.
 
-### 222. `dlg.maeca.blind3_morning.0.p2.wav`  HOLD: recast as a woman of about sixty, plain and dry (the story rewrite, 6 October); cast her anew before recording
+### 222. `dlg.maeca.blind3_morning.0.p2.wav`  **LOCKED FOR RECORDING**
 
 *Where:* dialogue.json maeca/blind3_morning#0; part 3 of 6: narrator: Gray light. She's awake before you, as always, but she hasn't got up. Her head is still on… / maeca: Your heart's going like a hare's. / **narrator: She doesn't lift her head.** / maeca: All night it was a bear's in January. I counted between. ...I've lain with my ear to a lot… / narrator: She gets up, then, and goes out barefoot into the frost, and stands there listening to the… / maeca: Go on. Holloway'll count us.
 *Played:* the narrator's aside inside someone else's line: plain, quiet, observant; the narrator never shows a feeling.
@@ -2430,7 +2430,7 @@ Subtitle: Gray light. She's awake before you, as always, but she hasn't got up. 
 ```
 Subtitle: She doesn't lift her head.
 
-### 223. `dlg.maeca.blind3_morning.0.p4.wav`  HOLD: recast as a woman of about sixty, plain and dry (the story rewrite, 6 October); cast her anew before recording
+### 223. `dlg.maeca.blind3_morning.0.p4.wav`  **LOCKED FOR RECORDING**
 
 *Where:* dialogue.json maeca/blind3_morning#0; part 5 of 6: narrator: Gray light. She's awake before you, as always, but she hasn't got up. Her head is still on… / maeca: Your heart's going like a hare's. / narrator: She doesn't lift her head. / maeca: All night it was a bear's in January. I counted between. ...I've lain with my ear to a lot… / **narrator: She gets up, then, and goes out barefoot into the frost, and stands there listening to the…** / maeca: Go on. Holloway'll count us.
 *Played:* the narrator's aside inside someone else's line: plain, quiet, observant; the narrator never shows a feeling.
@@ -2440,7 +2440,7 @@ Subtitle: She doesn't lift her head.
 ```
 Subtitle: She gets up, then, and goes out barefoot into the frost, and stands there listening to the wood with her back to you.
 
-### 224. `dlg.maeca.say_sella.1.p1.wav`  HOLD: recast as a woman of about sixty, plain and dry (the story rewrite, 6 October); cast her anew before recording
+### 224. `dlg.maeca.say_sella.1.p1.wav`  **LOCKED FOR RECORDING**
 
 *Where:* dialogue.json maeca/say_sella#1; part 2 of 3: maeca: You go up Sella's stairs. Rook talks. / **narrator: A shrug.** / maeca: She's honest about what she charges. That's more than most.
 *Played:* the narrator's aside inside someone else's line: plain, quiet, observant; the narrator never shows a feeling.
@@ -2450,7 +2450,7 @@ Subtitle: She gets up, then, and goes out barefoot into the frost, and stands th
 ```
 Subtitle: A shrug.
 
-### 225. `dlg.maeca.say_sella_both.0.p0.wav`  HOLD: recast as a woman of about sixty, plain and dry (the story rewrite, 6 October); cast her anew before recording
+### 225. `dlg.maeca.say_sella_both.0.p0.wav`  **LOCKED FOR RECORDING**
 
 *Where:* dialogue.json maeca/say_sella_both#0; part 1 of 2: **narrator: A nod.** / maeca: Good. Now I know.
 *Played:* the narrator's aside inside someone else's line: plain, quiet, observant; the narrator never shows a feeling.
@@ -2460,7 +2460,7 @@ Subtitle: A shrug.
 ```
 Subtitle: A nod.
 
-### 226. `dlg.maeca.say_sella_you.0.p0.wav`  HOLD: recast as a woman of about sixty, plain and dry (the story rewrite, 6 October); cast her anew before recording
+### 226. `dlg.maeca.say_sella_you.0.p0.wav`  **LOCKED FOR RECORDING**
 
 *Where:* dialogue.json maeca/say_sella_you#0; part 1 of 2: **narrator: She looks at you, long, the way she looks at a track that might be lying.** / maeca: We'll see.
 *Played:* the narrator's aside inside someone else's line: plain, quiet, observant; the narrator never shows a feeling.
@@ -2491,7 +2491,7 @@ Subtitle: She sits with her back to the fire and braids it on her knee, gray and
 ```
 Subtitle: She looks at you for a long time.
 
-### 229. `dlg.maeca.watch.0.p1.wav`  HOLD: recast as a woman of about sixty, plain and dry (the story rewrite, 6 October); cast her anew before recording
+### 229. `dlg.maeca.watch.0.p1.wav`  **LOCKED FOR RECORDING**
 
 *Where:* dialogue.json maeca/watch#0; part 2 of 3: maeca: Men. Deserters, mostly, and the ones the road loses. The Watch won't pay for it, so Hollow… / **narrator: She drinks.** / maeca: I take it. Every week. ...He'd pay me double, if I let him. I don't let him.
 *Played:* the narrator's aside inside someone else's line: plain, quiet, observant; the narrator never shows a feeling.
@@ -2745,7 +2745,7 @@ and kisses you so you can't. After, you lie on the floor of the blue room with t
 ```
 Subtitle: and kisses you so you can't. After, you lie on the floor of the blue room with the lamp turned down to a bead, and she doesn't get up to dress, and you don't ask why. You wake with her hair across your chest and the sun already up. She is dressed, and counting, and she counts it twice.
 
-### 254. `dlg.sella.night.1.wav`  HOLD: recast as a woman of about sixty, plain and dry (the story rewrite, 6 October); cast her anew before recording
+### 254. `dlg.sella.night.1.wav`  **LOCKED FOR RECORDING**
 
 *Where:* dialogue.json sella/night#1
 *Played:* plain; doing: a night with Sella; pace: slow; volume: quiet.
@@ -2756,7 +2756,7 @@ Subtitle: and kisses you so you can't. After, you lie on the floor of the blue r
 ```
 Subtitle: She laughs when the water slops over the side, and again when you try to mop it with her shift. Then the lamp is down to a bead, and the blue room is a small warm place with the whole night outside it. She talks the way she always talks, low against your ear, telling you exactly what she means to do next and then doing it, and she's good at it and likes it and makes no secret of either. But there are gaps, tonight. Places where she stops mid-sentence and doesn't finish, and you don't need her to. You wake with her hair across your chest and the sun already up. She is dressed, and counting.
 
-### 255. `dlg.sella.night.2.wav`  HOLD: recast as a woman of about sixty, plain and dry (the story rewrite, 6 October); cast her anew before recording
+### 255. `dlg.sella.night.2.wav`  **LOCKED FOR RECORDING**
 
 *Where:* dialogue.json sella/night#2
 *Played:* plain; doing: a night with Sella; pace: slow; volume: quiet.
@@ -2795,7 +2795,7 @@ and nothing else, and then she sleeps.
 ```
 Subtitle: and nothing else, and then she sleeps.
 
-### 259. `dlg.sella.free_night.1.wav`  HOLD: recast as a woman of about sixty, plain and dry (the story rewrite, 6 October); cast her anew before recording
+### 259. `dlg.sella.free_night.1.wav`  **LOCKED FOR RECORDING**
 
 *Where:* dialogue.json sella/free_night#1
 *Played:* plain; doing: a night Sella gives; pace: slow; volume: quiet.
@@ -2881,7 +2881,7 @@ Subtitle: You tell her. She listens properly, chin on her fist, the way she does
 ```
 Subtitle: She shrugs one shoulder.
 
-### 267. `dlg.sella.stairs.0.wav`  HOLD: recast as a woman of about sixty, plain and dry (the story rewrite, 6 October); cast her anew before recording
+### 267. `dlg.sella.stairs.0.wav`  **LOCKED FOR RECORDING**
 
 *Where:* dialogue.json sella/stairs#0
 *Played:* plain; doing: a regular now; pace: measured; volume: quiet.
@@ -2892,7 +2892,7 @@ Subtitle: She shrugs one shoulder.
 ```
 Subtitle: She doesn't take your hand any more; she takes your sleeve, the way you'd take a regular's. Rook's stairs creak on the fourth step and the ninth. On the fourth she looks back, to check you're stepping over it. You are.
 
-### 268. `dlg.sella.stairs.1.wav`  HOLD: recast as a woman of about sixty, plain and dry (the story rewrite, 6 October); cast her anew before recording
+### 268. `dlg.sella.stairs.1.wav`  **LOCKED FOR RECORDING**
 
 *Where:* dialogue.json sella/stairs#1
 *Played:* plain; doing: up the stairs; pace: measured; volume: quiet.
@@ -2903,7 +2903,7 @@ Subtitle: She doesn't take your hand any more; she takes your sleeve, the way yo
 ```
 Subtitle: She takes the coins first and your hand second, and leads you up Rook's narrow stairs. They creak on the fourth step and the ninth, and she steps over both without looking.
 
-### 269. `dlg.sella.stairs.2.wav`  HOLD: recast as a woman of about sixty, plain and dry (the story rewrite, 6 October); cast her anew before recording
+### 269. `dlg.sella.stairs.2.wav`  **LOCKED FOR RECORDING**
 
 *Where:* dialogue.json sella/stairs#2
 *Played:* plain; doing: you're learning; pace: brisk; volume: quiet.
@@ -3049,7 +3049,7 @@ Subtitle: She counts thirteen coins back into your palm and closes your fingers 
 ```
 Subtitle: She looks at you as if you'd asked her to recite something in a foreign tongue.
 
-### 283. `dlg.sella.rest_dark.0.wav`  HOLD: recast as a woman of about sixty, plain and dry (the story rewrite, 6 October); cast her anew before recording
+### 283. `dlg.sella.rest_dark.0.wav`  **LOCKED FOR RECORDING**
 
 *Where:* dialogue.json sella/rest_dark#0
 *Played:* plain; doing: she watches you sleep; pace: slow; volume: quiet.
@@ -3130,7 +3130,7 @@ Subtitle: She pats your cheek, once, like a regular's.
 ```
 Subtitle: She looks at you for a long moment, as if you were a coin she was checking for clipping.
 
-### 291. `dlg.sella.free_stairs.0.wav`  HOLD: recast as a woman of about sixty, plain and dry (the story rewrite, 6 October); cast her anew before recording
+### 291. `dlg.sella.free_stairs.0.wav`  **LOCKED FOR RECORDING**
 
 *Where:* dialogue.json sella/free_stairs#0
 *Played:* plain; doing: she forgets the step; pace: slow; volume: quiet.
@@ -3181,7 +3181,7 @@ Subtitle: She lets out a breath she's been holding since the stairs.
 ```
 Subtitle: And it is; you can see it is.
 
-### 296. `dlg.sella.free_sit.0.wav`  HOLD: recast as a woman of about sixty, plain and dry (the story rewrite, 6 October); cast her anew before recording
+### 296. `dlg.sella.free_sit.0.wav`  **LOCKED FOR RECORDING**
 
 *Where:* dialogue.json sella/free_sit#0
 *Played:* plain; doing: sitting together; pace: slow; volume: quiet.
@@ -3202,7 +3202,7 @@ Subtitle: You sit on the bed with your backs to the wall, and she tells you abou
 ```
 Subtitle: She laughs, properly, the first time tonight.
 
-### 298. `dlg.sella.free_sleep_bed.0.wav`  HOLD: recast as a woman of about sixty, plain and dry (the story rewrite, 6 October); cast her anew before recording
+### 298. `dlg.sella.free_sleep_bed.0.wav`  **LOCKED FOR RECORDING**
 
 *Where:* dialogue.json sella/free_sleep_bed#0
 *Played:* plain; doing: she sleeps; pace: slow; volume: quiet.
@@ -3341,7 +3341,7 @@ Subtitle: He drinks.
 ```
 Subtitle: He puts the cup down, very carefully, as if it were full.
 
-### 311. `dlg.rav.back_room.0.wav`  HOLD: recast as a woman of about sixty, plain and dry (the story rewrite, 6 October); cast her anew before recording
+### 311. `dlg.rav.back_room.0.wav`  **LOCKED FOR RECORDING**
 
 *Where:* dialogue.json rav/back_room#0
 *Played:* plain; doing: Rav's surgery; pace: measured; volume: quiet.
@@ -3591,7 +3591,7 @@ Subtitle: She looks at you very carefully, from your boots upwards, and back dow
 ```
 Subtitle: She looks at the bread in her hand, which she has evidently been holding for some time.
 
-### 335. `dlg.keegan.supper_table.0.wav`  HOLD: recast as a woman of about sixty, plain and dry (the story rewrite, 6 October); cast her anew before recording
+### 335. `dlg.keegan.supper_table.0.wav`  **LOCKED FOR RECORDING**
 
 *Where:* dialogue.json keegan/supper_table#0
 *Played:* plain; doing: supper at the gate; pace: slow; volume: quiet.
@@ -3746,7 +3746,7 @@ Subtitle: She looks at you over the pen for a moment, then writes.
 
 ## Conversations: Greymuzzle
 
-### 350. `dlg.greymuzzle.first.0.wav`  HOLD: recast as a woman of about sixty, plain and dry (the story rewrite, 6 October); cast her anew before recording
+### 350. `dlg.greymuzzle.first.0.wav`  **LOCKED FOR RECORDING**
 
 *Where:* dialogue.json greymuzzle/first#0
 *Played:* plain; doing: meeting the old wolf; pace: slow; volume: quiet.
@@ -3757,7 +3757,7 @@ Subtitle: She looks at you over the pen for a moment, then writes.
 ```
 Subtitle: The old wolf comes out of the rocks alone. He is gray to the eyes, and thin, and he does not growl. He looks at you for a long time. Behind him, in the shadow of the stones, wolves lie in the dirt and do not get up.
 
-### 351. `dlg.greymuzzle.show.0.wav`  HOLD: recast as a woman of about sixty, plain and dry (the story rewrite, 6 October); cast her anew before recording
+### 351. `dlg.greymuzzle.show.0.wav`  **LOCKED FOR RECORDING**
 
 *Where:* dialogue.json greymuzzle/show#0
 *Played:* plain; doing: the sick Pack; pace: slow; volume: quiet.
@@ -3768,7 +3768,7 @@ Subtitle: The old wolf comes out of the rocks alone. He is gray to the eyes, and
 ```
 Subtitle: He comes close enough to smell your hand, then your face, and his lip lifts off his teeth, and goes down again. Then your collar, for longer; and his tail moves, once. He turns and walks into the Hollow, and you follow. The sick ones' eyes are milky; their gums are black. One of them tries to stand when it sees you, and cannot. Greymuzzle looks east, toward the stream, then back at you, and waits.
 
-### 352. `dlg.greymuzzle.show.1.wav`  HOLD: recast as a woman of about sixty, plain and dry (the story rewrite, 6 October); cast her anew before recording
+### 352. `dlg.greymuzzle.show.1.wav`  **LOCKED FOR RECORDING**
 
 *Where:* dialogue.json greymuzzle/show#1
 *Played:* plain; doing: the sick Pack; pace: slow; volume: quiet.
@@ -3779,7 +3779,7 @@ Subtitle: He comes close enough to smell your hand, then your face, and his lip 
 ```
 Subtitle: He comes close enough to smell your hand, then your face, and his lip lifts off his teeth, and goes down again. He turns and walks into the Hollow, and you follow. The sick ones' eyes are milky; their gums are black. One of them tries to stand when it sees you, and cannot. Greymuzzle looks east, toward the stream, then back at you, and waits.
 
-### 353. `dlg.greymuzzle.ally.0.wav`  HOLD: recast as a woman of about sixty, plain and dry (the story rewrite, 6 October); cast her anew before recording
+### 353. `dlg.greymuzzle.ally.0.wav`  **LOCKED FOR RECORDING**
 
 *Where:* dialogue.json greymuzzle/ally#0
 *Played:* plain; doing: the Pack's answer; pace: slow; volume: quiet.
@@ -3790,7 +3790,7 @@ Subtitle: He comes close enough to smell your hand, then your face, and his lip 
 ```
 Subtitle: Greymuzzle lifts his head and howls, once. Four of the strongest get up and come to stand beside you. The old wolf lies back down among the sick. He is not coming. They are his answer.
 
-### 354. `dlg.greymuzzle.again.0.wav`  HOLD: recast as a woman of about sixty, plain and dry (the story rewrite, 6 October); cast her anew before recording
+### 354. `dlg.greymuzzle.again.0.wav`  **LOCKED FOR RECORDING**
 
 *Where:* dialogue.json greymuzzle/again#0
 *Played:* plain; doing: the Pack has turned its back; pace: slow; volume: quiet.
@@ -3801,7 +3801,7 @@ Subtitle: Greymuzzle lifts his head and howls, once. Four of the strongest get u
 ```
 Subtitle: Greymuzzle comes out of the rocks, looks at you for a long moment, and lies down with his back to you. Behind him, the others do the same.
 
-### 355. `dlg.greymuzzle.again.1.wav`  HOLD: recast as a woman of about sixty, plain and dry (the story rewrite, 6 October); cast her anew before recording
+### 355. `dlg.greymuzzle.again.1.wav`  **LOCKED FOR RECORDING**
 
 *Where:* dialogue.json greymuzzle/again#1
 *Played:* plain; doing: the Pack is dying; pace: slow; volume: quiet.
@@ -3812,7 +3812,7 @@ Subtitle: Greymuzzle comes out of the rocks, looks at you for a long moment, and
 ```
 Subtitle: Greymuzzle doesn't come out. Two of the wolves you saw lying in the dirt are not there any more. The others watch you the way they watch weather.
 
-### 356. `dlg.greymuzzle.again.2.wav`  HOLD: recast as a woman of about sixty, plain and dry (the story rewrite, 6 October); cast her anew before recording
+### 356. `dlg.greymuzzle.again.2.wav`  **LOCKED FOR RECORDING**
 
 *Where:* dialogue.json greymuzzle/again#2
 *Played:* plain; doing: the Pack is well; pace: measured; volume: quiet.
@@ -3823,7 +3823,7 @@ Subtitle: Greymuzzle doesn't come out. Two of the wolves you saw lying in the di
 ```
 Subtitle: Greymuzzle is on his feet. So are the others. He looks at you, and then away, which from a wolf is as good as thanks.
 
-### 357. `dlg.greymuzzle.again.3.wav`  HOLD: recast as a woman of about sixty, plain and dry (the story rewrite, 6 October); cast her anew before recording
+### 357. `dlg.greymuzzle.again.3.wav`  **LOCKED FOR RECORDING**
 
 *Where:* dialogue.json greymuzzle/again#3
 *Played:* plain; doing: the old wolf waits; pace: slow; volume: quiet.
