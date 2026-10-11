@@ -1,5 +1,7 @@
 # The "what the fuck" twist: three options for the owner
 
+**Decided (the owner, 11 October 2026): option 1, "It takes less than it did".** It joins A and B as canon, along with the four approved twists. Option 3's line "I made him too." may still go into A's Act 3 scene with Chid, at the writer's call.
+
 The writer (eleventh lead), 11 October 2026, after a max-effort editor's pass.
 The owner took A ("Not yet": Chid made you) and B ("Count's right": Holloway
 knew), then said: "I'm still missing a WHAT THE FUCK kinda moment - those are
