@@ -1833,11 +1833,12 @@ def bubble(pos, tris, clear, out, ref=None):
     return x
 
 
-def taubin(pos, tris, rounds=40):
+def taubin(pos, tris, rounds=40, w=None):
     """Creases, lumps and uneven patches taken out of a sheet without
     shrinking it (Taubin's smoothing: a step in, a slightly larger step back
     out); the more rounds, the larger the unevenness ironed out, while the
-    size and fit stay. The edge stays put."""
+    size and fit stay. The edge stays put. `w` (0 to 1 a point) irons only
+    where it is asked, easing out round it."""
     e = np.vstack([tris[:, [0, 1]], tris[:, [1, 2]], tris[:, [2, 0]]])
     uk, c = np.unique(np.sort(e, 1), axis=0, return_counts=True)
     onb = np.zeros(len(pos), bool)
@@ -1845,7 +1846,7 @@ def taubin(pos, tris, rounds=40):
     A = adjacency(len(pos), tris)
     for _ in range(rounds):
         for k in (0.5, -0.53):
-            pos = np.where(onb[:, None], pos, pos + k * (A @ pos - pos))
+            pos = np.where(onb[:, None], pos, pos + k * (1.0 if w is None else w[:, None]) * (A @ pos - pos))
     return pos
 
 
@@ -2012,7 +2013,7 @@ def over_nipples(pos, tris, least=0.0007, s=0.008, dome=0.035):
     return out
 
 
-def piece(name, field, mkey, lift=0.003, thick=0.003, smooth=0, bevel=0.0012, trim=None, clear=None, soften=3, dome=False, keep_off=("Head", "neck_01"), cut=None, iron=0, hull=None, studs=None, budget=None, filled=False, edge=30, slot=True, bridge=False, bind=True, rigid=None):
+def piece(name, field, mkey, lift=0.003, thick=0.003, smooth=0, bevel=0.0012, trim=None, clear=None, soften=3, dome=False, keep_off=("Head", "neck_01"), cut=None, iron=0, hull=None, studs=None, budget=None, filled=False, edge=30, slot=True, bridge=False, bind=True, rigid=None, stiff=None):
     """A region of her skin made into a piece of her outfit. `rigid`, a
     centre, makes it a rigid plate: a fair dome round that centre (shell())
     on one blend of bones throughout, so it moves as one piece. `trim`, as
@@ -2049,6 +2050,17 @@ def piece(name, field, mkey, lift=0.003, thick=0.003, smooth=0, bevel=0.0012, tr
     pos = relax(pos, tris, interior=smooth, edge=edge)
     if iron:
         pos = taubin(pos, tris, rounds=iron)
+    if stiff is not None:
+        # (a stiffened panel: ironed far more where `stiff` asks, then held
+        # off her skin below, so it bridges what it no longer follows)
+        sw = stiff[1](pos)
+        pos = taubin(pos, tris, rounds=stiff[0], w=sw)
+        # (lifted as a whole, where stiff, onto what it now bridges: pushed
+        # off point by point it took the shape back)
+        need = np.linalg.norm(pushes_off_skin(pos, lift), axis=1)
+        up = np.percentile(need[sw > 0.5], 95) if (sw > 0.5).any() else 0.0
+        pos = pos + vertex_normals(pos, tris) * (sw * up)[:, None]
+        print("STIFF %s: ironed %d rounds, lifted %.1f mm" % (name, stiff[0], up * 1000))
     dump(name, "2shaped", pos, tris, at[:, -1])
     if filled and not dome:
         pos = over_nipples(pos, tris)
@@ -3183,6 +3195,12 @@ def arcanist():
         vh = vhalf(qz)
         pl = np.where((fr > 0.5) & (qz >= v_lo), np.abs(qx) - vh, 1.0)
         return np.minimum(legs, pl)
+    # A boned front from her underbust to below her navel: stiff, so it no
+    # longer shows every muscle of her stomach (judge 2), the rest still
+    # skin-tight.
+    def front_panel(q):
+        return (ramp(q[:, 2], WAIST - 0.11, WAIST - 0.08) * ramp(-q[:, 2], -(UNDERBUST - 0.005), -(UNDERBUST - 0.025))
+                * ramp(-np.abs(q[:, 0]), -0.12, -0.09) * ramp(-q[:, 1], -(q[:, 1].mean() + 0.02), -q[:, 1].mean()))
     belt_z = 1.0 + 0.035 * X / 0.18
     belt = AND(0.016 - np.abs(Z - belt_z), 0.3 - arms)
     bones = OR(*[front_line(x, UNDERBUST - 0.022, x * 0.8, 1.025 - 0.025 * (abs(x) < 0.05), 0.009)
@@ -3199,7 +3217,7 @@ def arcanist():
         *ribbon("arcanist.thong", back_string(CROTCH + 0.155, CROTCH + 0.012), 0.016, "plumleather", lift=0.003, thick=0.003,
                trim=gold(0.004), snap=False, hides=True, flare=(0.034, 0.03)),
         *piece("arcanist.corset", corset, "plumleather", lift=0.0035, smooth=8, iron=60, trim=gold(0.008), keep_off=("Head",), filled=True, edge=120, soften=80,
-               bridge=True, cut=exact),
+               bridge=True, cut=exact, stiff=(400, front_panel)),
         *piece("arcanist.choker", choker, "blackleather", lift=0.002, soften=0, keep_off=("Head",)),
         *witch_hat("arcanist.hat", "plumleather", "darkpurple"),
     ]
