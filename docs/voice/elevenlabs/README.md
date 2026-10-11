@@ -70,43 +70,43 @@ Holloway, Brannoc and Sella, in that order.
 ## The packets
 
 <!-- PACKETS -->
-| Character | Takes | Characters | Held |
-|---|---|---|---|
-| [The narrator](narrator.md) | 353 | 34,378 | 353 |
-| [Sella](sella.md) | 97 | 9,939 |  |
-| [Captain Holloway](holloway.md) | 109 | 9,702 | 109 |
-| [Vonnra Ash-of-Morrow](vonnra.md) | 103 | 8,907 | 103 |
-| [Chid](chid.md) | 75 | 8,438 | 2 |
-| [Harlan Coyle](harlan.md) | 63 | 7,229 | 63 |
-| [Mother Rook](rook.md) | 54 | 6,561 |  |
-| [Maeca](maeca.md) | 87 | 6,295 | 87 |
-| [Rav Cutwell](rav.md) | 61 | 6,009 |  |
-| [Dame Keegan Orme](keegan.md) | 48 | 5,218 | 1 |
-| [Redcowl](redcowl.md) | 45 | 4,339 |  |
-| [Old Wenna](wenna.md) | 34 | 4,069 |  |
-| [Pell Varrow](pell.md) | 32 | 3,622 |  |
-| [Ysolde Marrow, the Wayfinder](ysolde.md) | 30 | 3,403 |  |
-| [Townsman, middle-aged](folk_m1.md) | 47 | 3,081 |  |
-| [Townswoman, young](folk_f2.md) | 47 | 3,056 |  |
-| [Townswoman, middle-aged](folk_f1.md) | 46 | 2,721 |  |
-| [Brannoc](brannoc.md) | 63 | 2,635 | 63 |
-| [Townsman, old](folk_m2.md) | 43 | 2,470 |  |
-| [Snib](snib.md) | 15 | 2,199 |  |
-| [Tam](tam.md) | 21 | 2,020 |  |
-| [Jory Coyle](jory.md) | 14 | 877 |  |
-| [A Watchman at the gate](guard.md) | 12 | 510 |  |
-| [Grimtunnel](grimtunnel.md) | 7 | 442 |  |
-| [The babbling lampling](lampling.md) | 2 | 421 |  |
-| [A Watchwoman](guard_f.md) | 9 | 406 |  |
-| [A town girl](folk_child_f.md) | 7 | 205 |  |
-| [A town boy](folk_child_m.md) | 7 | 205 |  |
-| [The Ford-Warden](warden.md) | 6 | 164 |  |
-| [The dead Watchman](watchman.md) | 1 | 45 |  |
-| [The Legion's dead, behind the door](barrow_lord.md) | 5 | 41 |  |
-| [The bones](bones.md) | 1 | 37 |  |
-| [The Ford-Warden, the man under him](warden_man.md) | 1 | 14 |  |
-| [The Red Hand](red_hand.md) | 1 | 13 |  |
-| [A Kerchief woman](kerchief_woman.md) | 1 | 11 |  |
+| Character | Takes | Characters | Held | Locked |
+|---|---|---|---|---|
+| [The narrator](narrator.md) | 355 | 34,557 | 291 | 64 |
+| [Sella](sella.md) | 97 | 9,938 |  |  |
+| [Captain Holloway](holloway.md) | 110 | 9,700 | 110 |  |
+| [Vonnra Ash-of-Morrow](vonnra.md) | 104 | 8,939 | 103 | 1 |
+| [Chid](chid.md) | 77 | 8,436 | 2 |  |
+| [Harlan Coyle](harlan.md) | 63 | 7,229 | 63 |  |
+| [Mother Rook](rook.md) | 54 | 6,558 |  | 54 |
+| [Maeca](maeca.md) | 87 | 6,294 | 87 |  |
+| [Rav Cutwell](rav.md) | 61 | 6,007 |  |  |
+| [Dame Keegan Orme](keegan.md) | 48 | 5,218 | 1 |  |
+| [Redcowl](redcowl.md) | 45 | 4,337 |  |  |
+| [Old Wenna](wenna.md) | 34 | 4,069 |  |  |
+| [Pell Varrow](pell.md) | 32 | 3,621 |  |  |
+| [Ysolde Marrow, the Wayfinder](ysolde.md) | 30 | 3,403 |  |  |
+| [Townsman, middle-aged](folk_m1.md) | 47 | 3,080 |  |  |
+| [Townswoman, young](folk_f2.md) | 47 | 3,055 |  |  |
+| [Townswoman, middle-aged](folk_f1.md) | 46 | 2,721 |  |  |
+| [Brannoc](brannoc.md) | 63 | 2,621 | 2 | 62 |
+| [Townsman, old](folk_m2.md) | 43 | 2,470 |  |  |
+| [Snib](snib.md) | 15 | 2,199 |  |  |
+| [Tam](tam.md) | 21 | 2,020 |  |  |
+| [Jory Coyle](jory.md) | 14 | 877 |  |  |
+| [A Watchman at the gate](guard.md) | 12 | 509 |  | 1 |
+| [Grimtunnel](grimtunnel.md) | 7 | 442 |  | 3 |
+| [The babbling lampling](lampling.md) | 2 | 421 |  |  |
+| [A Watchwoman](guard_f.md) | 9 | 405 |  |  |
+| [A town girl](folk_child_f.md) | 7 | 205 |  |  |
+| [A town boy](folk_child_m.md) | 7 | 205 |  |  |
+| [The Ford-Warden](warden.md) | 5 | 142 |  | 5 |
+| [The dead Watchman](watchman.md) | 1 | 45 |  | 1 |
+| [The Legion's dead, behind the door](barrow_lord.md) | 5 | 41 |  |  |
+| [The bones](bones.md) | 1 | 37 |  |  |
+| [The Ford-Warden, the man under him](warden_man.md) | 1 | 14 |  | 1 |
+| [The Red Hand](red_hand.md) | 1 | 13 |  |  |
+| [A Kerchief woman](kerchief_woman.md) | 1 | 11 |  |  |
 <!-- /PACKETS -->
 
 "Takes" counts every part the character speaks. A line shared with the

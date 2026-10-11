@@ -23,6 +23,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import lines as lines_mod  # noqa: E402
 from analyse import lexicon  # noqa: E402
 from common import ROOT, cast  # noqa: E402
+import lock as lock_mod  # noqa: E402
 
 OUT = os.path.join(ROOT, "docs", "voice", "elevenlabs")
 VOICES_MD = os.path.join(ROOT, "docs", "VOICES.md")
@@ -86,7 +87,21 @@ def rerecord() -> set[str]:
     return ids
 
 
+BROKEN_WHY = "the words changed after the lock; wait for the story lead"
+
+
+def lock_state(line: dict) -> str:
+    """ok (locked for recording), broken (the words changed after the lock), or '' (not locked)."""
+    st = lock_mod.status(lock_mod.load(), line["id"], line.get("hash"))
+    return "broken" if st == "gone" else st
+
+
 def held(line: dict, voice: str) -> str | None:
+    st = lock_state(line)
+    if st == "ok":
+        return None  # locked: recorded now, whatever else holds the voice
+    if st == "broken":
+        return BROKEN_WHY
     if "iron_marker" in line["id"] and ".verse" in line["id"]:
         return "the owner's choice of how the hymn is sung (README)"
     if voice in HOLD_VOICES:
@@ -102,7 +117,7 @@ def say(text: str) -> str:
     placeholders use)."""
     lex = lexicon().get("say", {})
     for k in sorted(lex, key=len, reverse=True):
-        text = re.sub(rf"(?<![\w']){re.escape(k)}(?![\w'])", lex[k], text)
+        text = re.sub(rf"(?<![\w']){re.escape(k)}(?:(?![\w'])|(?='s(?![\w'])))", lex[k], text)
     return text
 
 
@@ -110,7 +125,8 @@ def words(t: str) -> list[str]:
     return re.findall(r"[a-z']+", re.sub(r"\[[^\]]*\]", " ", t.lower()))
 
 
-ACTED = {"a sniff": "sniffs", "a laugh": "laughs", "a sigh": "sighs", "a gasp": "gasps"}
+ACTED = {"a sniff": "sniffs", "a laugh": "laughs", "a sigh": "sighs", "a gasp": "gasps", "a breath": "exhales",
+         "a long breath, through the nose": "exhales slowly"}
 
 
 def acted_tag(m) -> str:
@@ -123,7 +139,7 @@ def paste(seg_text: str, d: dict, narrator_aside: bool, plain: bool = False, act
     """What to paste into ElevenLabs: a direction tag, then the words with
     the writer's beats as audio tags where a beats part says exactly them."""
     text = re.sub(r"\[([^\]]+)\]", acted_tag, acted) if acted else seg_text
-    if not narrator_aside:
+    if not narrator_aside and not acted:
         for part in (d.get("beats") or "").split("|"):
             if words(part) and words(part) == words(seg_text):
                 text = re.sub(r"\[([a-z]+)[^\]]*\]", lambda m: TAG.get(m.group(1), ""), part)
@@ -135,9 +151,11 @@ def paste(seg_text: str, d: dict, narrator_aside: bool, plain: bool = False, act
     vol = "quiet" if narrator_aside else d.get("vol", "level")
     if plain and vol == "hushed" and not d.get("whisper"):
         vol = "quiet"  # the narrator whispers only where his direction says so
-    if VOL_TAG.get(vol):
+    if VOL_TAG.get(vol) and not any(VOL_TAG[vol] in h for h in how):  # "very quietly" already says it
         how.append(VOL_TAG[vol])
     tag = ", ".join(h for h in how if h)
+    if plain:
+        text = text.replace('"', "").replace("\u201c", "").replace("\u201d", "")  # the narrator's quotes are not acted as quotes
     return (f"[{tag}] " if tag else "") + say(text)
 
 
@@ -148,7 +166,7 @@ def brief(voice: str, v: dict) -> str:
     region = next((r for k, r in REGION.items() if k.lower() in v.get("accent", "").lower()), "British")
     # Maya1's description names the persona in the clause that is not about the voice.
     clauses = v.get("maya", "").split(". ")[0].split(", ")
-    persona = next((c for c in reversed(clauses) if "voice" not in c), v["name"])
+    persona = v.get("persona") or next((c for c in reversed(clauses) if "voice" not in c), v["name"])
     # The accents are a palette, not a caricature (VOICES.md): broad at most,
     # and a softened, flattened or tinged one asked for lightly.
     light = any(w in v.get("accent", "").lower() for w in ("tinge", "soft", "flatten", "worn", "light"))
@@ -225,19 +243,32 @@ def packet(voice: str, man: list[dict]) -> tuple[str, dict]:
         key = e["seg"].get("acted", e["seg"]["text"])
         if key in first:
             first[key]["also"].append(file_name(e["line"], e["part"]))
+            if lock_state(e["line"]) == "ok":
+                first[key]["locked"] = True
             continue
         e["also"] = []
+        e["locked"] = lock_state(e["line"]) == "ok"
         first[key] = e
         es.append(e)
     chars = sum(len(e["seg"]["text"]) for e in es)
     holds = [e for e in es if held(e["line"], voice)]
+    locked = [e for e in es if e["locked"]]
+    lk = lock_mod.load().get(locked[0]["line"]["id"], {}) if locked else {}
+    if locked and not lk:
+        lk = next((x for x in (lock_mod.load().get(i) for i in [e["line"]["id"] for e in entries(man, voice)]) if x), {})
     spoken = " ".join(e["seg"]["text"] for e in es)
-    lex = {k: x for k, x in lexicon().get("say", {}).items() if k != x and re.search(rf"(?<![\w']){re.escape(k)}(?![\w'])", spoken)}
+    lex = {k: x for k, x in lexicon().get("say", {}).items() if k != x and re.search(rf"(?<![\w']){re.escape(k)}(?:(?![\w'])|(?='s(?![\w'])))", spoken)}
     w = [f"# {v['name']}: ElevenLabs packet", "",
          f"Voice id in the game: `{voice}`. {len(es)} take{'s' if len(es) != 1 else ''} to record ({chars:,} characters; about {chars * 3:,} credits at three "
-         f"tries a line). " + (f"Status: **on hold**: {HOLD_VOICES[voice]}. Do not record any of it yet." if voice in HOLD_VOICES else
+         f"tries a line). " + (f"Status: **on hold, except the {len(locked)} take{"" if len(locked) == 1 else "s"} marked LOCKED FOR RECORDING** ({lk.get('by')}, {lk.get('date')}): "
+                                  f"record those now and hold the rest ({HOLD_VOICES[voice]})." if voice in HOLD_VOICES and locked else
+                               f"Status: **on hold**: {HOLD_VOICES[voice]}. Do not record any of it yet." if voice in HOLD_VOICES else
                                f"Status: **final** (the story lead, {FINAL[voice]}): record it." if voice in FINAL else
+                               f"Status: **draft, except the {len(locked)} take{'' if len(locked) == 1 else 's'} marked LOCKED FOR RECORDING** "
+                               f"({lk.get('by')}, {lk.get('date')}): record those now." if locked else
                                "Status: **draft**, until the story lead (a7622ae77d19e31dc) checks every line and marks it final."), ""]
+    if locked and voice not in HOLD_VOICES:
+        w += [f"**{len(locked)} take{'s are' if len(locked) != 1 else ' is'} LOCKED FOR RECORDING** (marked below).", ""]
     if holds and voice not in HOLD_VOICES:
         w += [f"**Hold {len(holds)} of these** (marked HOLD below, with why); the rest can be recorded now.", ""]
     w += ["## Who they are", "", sheet(voice) or v["design"], ""]
@@ -275,8 +306,8 @@ def packet(voice: str, man: list[dict]) -> tuple[str, dict]:
         w += ["## Saying the names", "", "The text to paste already respells these; keep the respelling: " +
               ", ".join(f"{k} as *{x}*" for k, x in sorted(lex.items())) + ".", ""]
     if voice == "narrator":
-        w += ["## How he reads", "", "The narrator never shows a feeling: plain, the same pace throughout, and the facts do "
-              "the work (the story lead's rule). The notes say what each line is doing; play none of it. His tags say only "
+        w += ["## How she reads", "", "The narrator never shows a feeling: plain, the same pace throughout, and the facts do "
+              "the work (the story lead's rule). The notes say what each line is doing; play none of it. Her tags say only "
               "how loud.", ""]
     w += ["## The lines", "",
           "Each: what is going on, how it is played, then the text to paste (the bracketed tags are ElevenLabs audio tags: "
@@ -294,9 +325,14 @@ def packet(voice: str, man: list[dict]) -> tuple[str, dict]:
                       "leaves the pause empty. Keep each the same in tone, so it fits all of them.", ""]
         d = lines_mod.part_direction(l, s)
         aside = s["voice"] == "narrator" and l["voice"] != "narrator"
-        hold = held(l, voice) if voice not in HOLD_VOICES else None  # a whole part on hold says so once, at the top
+        # a whole part on hold says so once, at the top, unless some of it is locked: then each take says which
+        hold = held(l, voice) if voice not in HOLD_VOICES or locked else None
+        is_locked = e["locked"]
+        if is_locked:
+            hold = None
         redo = file_name(l, k)[:-4] in again or l["id"] in again
-        w.append(f"### {n}. `{file_name(l, k)}`" + (f"  HOLD: {hold}" if hold else "") + ("  **RE-RECORD: the words changed**" if redo else ""))
+        w.append(f"### {n}. `{file_name(l, k)}`" + (f"  HOLD: {hold}" if hold else "") + ("  **RE-RECORD: the words changed**" if redo else "")
+                 + ("  **LOCKED FOR RECORDING**" if is_locked else ""))
         w.append("")
         if e["also"]:
             w.append(f"*The same words are also* {', '.join(f'`{x}`' for x in e['also'])}*: record once; the importer copies the take.*")
@@ -329,7 +365,7 @@ def packet(voice: str, man: list[dict]) -> tuple[str, dict]:
                      "said it." if k == 0 else "*The name:* the survivor's name comes just before this take, in the pause; "
                      "start as if she had just said it.")
         w += ["", "```", text, "```", f"Subtitle: {s['text']}", ""]
-    return "\n".join(w) + "\n", {"voice": voice, "name": v["name"], "takes": len(es), "chars": chars, "held": len(holds)}
+    return "\n".join(w) + "\n", {"voice": voice, "name": v["name"], "takes": len(es), "chars": chars, "held": len(holds), "locked": len(locked)}
 
 
 def main(argv):
@@ -346,11 +382,11 @@ def main(argv):
         rows.append(info)
         print(f"{voice:16s} {info['takes']:4d} takes {info['chars']:7,d} chars {info['held']:3d} held")
     if not argv:
-        table = "\n".join(f"| [{r['name']}]({r['voice']}.md) | {r['takes']} | {r['chars']:,} | {r['held'] or ''} |" for r in
+        table = "\n".join(f"| [{r['name']}]({r['voice']}.md) | {r['takes']} | {r['chars']:,} | {r['held'] or ''} | {r['locked'] or ''} |" for r in
                           sorted(rows, key=lambda r: -r["chars"]))
         readme = os.path.join(OUT, "README.md")
         old = open(readme, encoding="utf-8").read() if os.path.exists(readme) else ""
-        block = "<!-- PACKETS -->\n| Character | Takes | Characters | Held |\n|---|---|---|---|\n" + table + "\n<!-- /PACKETS -->"
+        block = "<!-- PACKETS -->\n| Character | Takes | Characters | Held | Locked |\n|---|---|---|---|---|\n" + table + "\n<!-- /PACKETS -->"
         new = re.sub(r"<!-- PACKETS -->.*?<!-- /PACKETS -->", lambda _: block, old, flags=re.S) if "<!-- PACKETS -->" in old else old
         open(readme, "w", encoding="utf-8", newline="\n").write(new)
 

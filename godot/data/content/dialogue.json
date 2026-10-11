@@ -380,7 +380,7 @@
         }
        ]
       },
-      "text": "Nothing you don't know already, pet; you did half of it. Holloway's counting what's left, Harlan's counting what came back, and the Penhales say their dog won't go in the barn any more. Stands at the door and whines at the floor, and won't be told."
+      "text": "Nothing you don't know already, pet; you did half of it. Holloway's counting what's left, Harlan's counting what came back, and the Penhales say their dog won't go in the barn anymore. Stands at the door and whines at the floor, and won't be told."
      },
      {
       "when": {
@@ -474,7 +474,7 @@
    },
    "clerk": {
     "id": "clerk",
-    "text": "Clerks don't buy rounds. Jessop bought three, the night Coyle's wagons went missing, and kept telling the room he'd \"done somebody a favor\". Rav was there; Rav's always there. ...Jessop's not been in since. He still owes me for the third.",
+    "text": "Clerks don't buy rounds. Jessop bought three, the night Coyle's wagons went missing, and kept telling the room he'd \"done somebody a favor.\" Rav was there; Rav's always there. ...Jessop's not been in since. He still owes me for the third.",
     "choices": [
      {
       "text": "Something else.",
@@ -7174,10 +7174,10 @@
       "when": {
        "bg": "hunter"
       },
-      "text": "Hunter. Good. You'll know a clean pelt. Brannoc. Iron, and things with fur on. (The hammer. He looks at you properly.) ...Came up the Low Ford road? Irons on it. Mine. Ten. (The hammer.) Best I've done."
+      "text": "Hunter. Good. You'll know a clean pelt. Brannoc. Iron, and things with fur on. (The hammer. He looks you over.) ...Came up the Low Ford road? Irons on it. Mine. Ten. (The hammer.) Best I've done."
      },
      {
-      "text": "Brannoc. I make things of iron. I buy things with fur on. Which? (The hammer. He looks at you properly.) ...Came up the Low Ford road? Irons on it. Mine. Ten. (The hammer.) Best I've done."
+      "text": "Brannoc. I make things of iron. I buy things with fur on. Which? (The hammer. He looks you over.) ...Came up the Low Ford road? Irons on it. Mine. Ten. (The hammer.) Best I've done."
      }
     ],
     "choices": [
@@ -7839,7 +7839,7 @@
    },
    "nell_risen": {
     "id": "nell_risen",
-    "text": "(He looks at you then. Properly, for the first time.) Got up. (He says it the way he tests an edge: weighing it.) Got up, and you put her down. ...Was it quick?",
+    "text": "(He looks at you then. Properly, for the first time.) Got up. (He says it the way he tests an edge.) Got up, and you put her down. ...Was it quick?",
     "choices": [
      {
       "text": "It was quick.",
@@ -8066,7 +8066,7 @@
    "nell_with": {
     "id": "nell_with",
     "speaker": "narrator",
-    "text": "He doesn't wait for anything else. He goes out, and you go with him, down toward the south gate in the last of the light.",
+    "text": "He doesn't wait for anything else. He goes out, and you go with him, down toward the south gate.",
     "choices": [
      {
       "text": "(Go with him.)",
@@ -12024,10 +12024,10 @@
       "when": {
        "bg": "devout"
       },
-      "text": "Oh! A lantern of the Order! Lit! Oh, sit down, sit, sit. I'm Chid. They call me the Fool, which is fair. This is the shrine of the Morning Light. It used to work."
+      "text": "Oh! A lantern of the Order! Lit! (He looks from the lantern to you, a moment longer than people do.) Oh, sit down, sit, sit. I'm Chid. They call me the Fool, which is fair. This is the shrine of the Morning Light. It used to work."
      },
      {
-      "text": "Oh! A visitor. Hello! I'm Chid. They call me the Fool, which is fair. This is the shrine of the Morning Light. It used to work."
+      "text": "Oh! A visitor. Hello! (He looks at you a moment longer than people do.) I'm Chid. They call me the Fool, which is fair. This is the shrine of the Morning Light. It used to work."
      }
     ],
     "choices": [
@@ -22158,7 +22158,7 @@
    "knows": {
     "id": "knows",
     "speaker": "holloway",
-    "text": "(He looks into the cup.) Pell. Went up after, for his sister's money. Found the lid barred from the top. (He drinks.) He's a careful man. He's waiting for a price.",
+    "text": "Pell. (His eyes go past you, to the step, and come back to the cup.) Went up after, for his sister's money. Found the lid barred from the top. (He drinks.) He's a careful man. He's waiting for a price.",
     "next": "wrote"
    },
    "silent": {
@@ -22288,7 +22288,7 @@
    "cup": {
     "id": "cup",
     "speaker": "narrator",
-    "text": "At the gate, Holloway is on the ground with his back to the post, counting. Maeca comes down the street, and takes the cup out of his hand, and fills it from her own flask, and gives it back. Then she sits down beside him with her crossbow across her knees, and he leans on her a little, and she lets him.",
+    "text": "At the gate, Holloway is on the ground with his back to the post, counting. He gets as far as ninety-one, and starts again. Maeca comes down the street, and takes the cup out of his hand, and fills it from her own flask, and gives it back. He drinks without looking at it. Then she sits down beside him with her crossbow across her knees, and he leans on her a little, and she lets him.",
     "effects": [
      {
       "set": {

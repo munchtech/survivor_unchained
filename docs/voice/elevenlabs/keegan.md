@@ -252,9 +252,9 @@ Subtitle: It does not say what to do if one forgets. ...Halt. Belatedly.
 *Note:* Prim citation; caught lying; confession; the answer wobbles: 'very nearly no.' Hasty 'Good day.'
 
 ```
-[flustered, tempted] Chapter eleven. Fraternisation. I have not read it. ...That is a lie. I have read it four times. The answer is no. The answer is very nearly no. Good day.
+[flustered, tempted] Chapter eleven. Fraternization. I have not read it. ...That is a lie. I have read it four times. The answer is no. The answer is very nearly no. Good day.
 ```
-Subtitle: Chapter eleven. Fraternisation. I have not read it. ...That is a lie. I have read it four times. The answer is no. The answer is very nearly no. Good day.
+Subtitle: Chapter eleven. Fraternization. I have not read it. ...That is a lie. I have read it four times. The answer is no. The answer is very nearly no. Good day.
 
 ### 20. `dlg.keegan.t_keegan.0.wav`
 
