@@ -157,8 +157,8 @@ public sealed partial class Journey
             StartX = x, StartZ = z, StartFacing = facing, Weapons = kit.Weapons, Triggers = kit.Triggers, Ability = kit.Ability,
             ArtRank = kit.ArtRank, Facets = kit.Facets,
             Lamps = kit.Lamps, ReflexRanks = kit.ReflexRanks, Level = Ch.Level,
-            // Story fights are short: the Flare starts at half (CLASSES.md §3.2). Nights and maps start empty.
-            FlareStart = combat && ember && !arena ? Battle.FlareFull / 2 : 0,
+            // Story fights are short: the Flare starts at half (CLASSES.md §3.2). Nights and maps (arena runs) start at a fifth.
+            FlareStart = combat && ember && !arena ? Battle.FlareFull / 2 : combat && arena ? Battle.FlareStartNight : 0,
             Hp = exp != null ? Math.Min(exp.Hp, kit.Stats.Get(Stat.MaxHealth)) : null,
         });
         b.EmberOn = combat && (arena || ember);
@@ -429,6 +429,7 @@ public sealed partial class Journey
     public void Quaff(Battle? b)
     {
         if (b == null || !b.Player.Alive) return;
+        if (b.NoDraught) { Warn("You have no draught"); return; } // reaver.nothing_spared
         if (Draughts == 0) { Warn("No draughts left"); return; }
         if (b.Player.Hp >= b.MaxHp - 0.5) { Warn("You are unhurt"); return; }
         bool deep = 1 - b.Player.Hp / b.MaxHp >= 0.55, moon = Inventory.Count(Ch, Moonpetal) > 0, plain = Inventory.Count(Ch, Draught) > 0;
@@ -466,6 +467,7 @@ public sealed partial class Journey
         if (def.Kind != ItemKind.Consumable || def.Consumable is not { } c) { if (loc.InPack) Equip(uid, null, b); return; }
         if (c.Heal is double heal && b != null)
         {
+            if (b.NoDraught) { Warn("You have no draught"); return; } // reaver.nothing_spared
             if (b.Player.Hp >= b.MaxHp - 0.5) { Warn("You are unhurt"); return; }
             b.HealPlayer(b.MaxHp * heal, "draught");
         }

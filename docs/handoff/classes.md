@@ -1,6 +1,6 @@
 # Handoff: classes (phase 1, systems: the Lamps, the Flare, dash forms, reflexes)
 
-Written by the second classes lead for its successor. Branch `classes/phase1`, worktree `.claude/worktrees/agent-a2a42cd8430929a76`. See the last line for the commit.
+Written by the fourth classes lead for its successor. Branch `classes/phase1`, worktree `.claude/worktrees/agent-a2a42cd8430929a76`. See the last line for the commit.
 
 ## 1. The owner's words
 
@@ -11,48 +11,46 @@ Written by the second classes lead for its successor. Branch `classes/phase1`, w
 
 Battle wiring (dash forms, reflexes, the Flare's meter, window and clutch, Q firing it), the harness taught types, lamps and Flares, a plain debug readout, the road lean, the four Flare great blessings, and **every acceptance number in §7 measured**: types within ×1.35 of the median at tiers 1-4; on-calling at most ×1.25; a full board at night within ×1.25 of an empty one; Flare timing (first by ~2 min, then every 60-90 s at night, 2-3 per boss fight, 15-25% of a boss's damage). Names stay drafts for the story lead.
 
-## 3. Done (sessions 1-2)
+## 3. Done (sessions 1-3)
 
-- Session 1: the board (`tools/classes/lamps_build.py` → `lamps.json`), `LampBook`, `LampLoadout`, Act renames, tags, Bound, save v5.
-- **Dash forms** (`logic/Sim/Forms.cs` `DashForm`, called from `Battle.Dash`): the Kin rides the dash after its own wait (lamp's KinWait; learned forms: the art's Cooldown). Bull Rush 6 m behind 15% (Iron Hide 25%). Grapple's miss is a plain dash and the wait isn't spent. Vault goes the way of the dash. Mirror Step, Sprint, Wraith (1.5 s), Cinder and Echo ride the dash, and a second dash recalls the echo. The Kin's facets come only from lamps (`Character.Kit`); a learned form keeps ArtBook's.
-- **Reflexes** (`Forms.cs`): `ReflexRun`, triggers crowd, swarm, low and every (ticked), big_blow and dire (on a blow; dire also when a Blow mark lands on her), swarm (a champion's blow), spells, perfect. A reflex borrows `p.AbilityCd` while it runs. Red Tide and Spellward are built. `Runs(kind)` and `HastenArt` replace the old `Ability ==` checks.
-- **The Flare** (`logic/Sim/Flare.cs`): meter, Banked Flame charges, fills (hooks in HurtPlayerRaw, PerfectDodge, the warding-light block, HitEnemy, KillEnemy, spells), `UseFlare` (Strike holds ≤1.2 s, untouchable +0.4 s; Stand 1.5 s grace, pulses, guard cut/mend), burns missiles within 6 m, interrupts and staggers bosses, clutch below 25% (mends 20% over 1 s, reach +25%), hearth low-lamps, `Ev.Flare` Ready/Press/Blow/End, `FlareFreeze` 0.22 with the static `FlareFreezeScale`. Fill table tuned (solver 8b0a0fc0, then pass 3 at 482124f0); CLASSES §3.2 holds the tuned table. Damage: +8% a level, base powers ×11.5.
-- Q / right-click calls `UseFlare` (WorldScene, Game). The HUD art slot shows the meter, and the `ArtNote` line shows form and reflex waits. `ArtBook.HoldKin` turns a held calling art into the Kin (in Create and the v5 migration). The Arts screen marks non-movement arts as "fires itself".
-- `Character.Kit(ch, night)` folds the lamps; `Journey.StartBattle` passes `Lamps`, `ReflexRanks`, `Level`, and `FlareStart` (story fights start at 50).
-- `LampLoadout`: rules stack across lamps (`Each`), with `HasOn`/`SizeOn` by skill and tags. A small lamp's rule sleeps by night.
-- Road lean (`LevelUp.RoadLeaned`, ×1.25, clamp ×2 with the path lean). The four Flare greats (`Boons.FlareGreat`, offered only with a Flare). Map mods Smothered and "of the Bright" (Charts.cs). Endless: `EndlessFrom` set at the arena's Victory. MapRun is one Battle, so the meter carries between areas.
-- The harness (`godot/balance`): `--type <road>|both`, `--lamps empty|suggested|full`, the Flare cast policy in `Pilot.Act`, and Flare and Types tables in the report. `Battle.BossDamageBy`.
-- Tests: 787 green (HandsTests, ClassesDraftTests and LampsTests among them).
+- Sessions 1-2: the board, `LampBook`, `LampLoadout`, dash forms, reflexes, the Flare (`Flare.cs`), Q, `Character.Kit`, road lean, Flare greats, the harness's types/lamps/Flares (details in git log and CLASSES §2-3).
+- Session 3: **all 133 phase-1 rules wired**, one file per quarter: `WardenLamps.cs`, `ReaverLamps.cs`, `ArcanistLamps.cs`, `StalkerLamps.cs` (thin hooks in Battle/Weapons/Arts/Forms). `LampsTests.Every_phase_one_rule_is_read_by_the_fight`. Debug switch `LAMPS_OFF=id,id` (LampLoadout) for bisecting.
+- Harness: `--offcalling` (policy `road:<id>` holds to a road's signature skills, `RunSpec.For`), `godot/balance/classes_summary.py <dir>` (types, full/empty, on-calling three ways incl. the judge's calling x road fit), `Probe.Lamped` (fixed-build probe: `dotnet godot/balance/bin/Release/net8.0/Balance.dll lamped --seeds 12 [--evo mote_cascade]`).
+- Fixes from the sweep: crowded_sky/the_echo/moon_drawn crippled motes; adders_patience cancelled every crit; boss fill counted a gate's whole Break (now health + Break up to 10% of health); the pilot fires the Flare by its reach (kiting casters sat full) and spares a shielded boss; path probes at 12 seeds.
+- A su-lead-max judge (verdict "pass with fixes") then: block chance and Long Chain reach read in full by night (new §2.10 sentence: a rule's defining number stays in full); every block (Warding too) lays a stone; the lull is 6 s of calm, stones fall one a second, Mortar holds; Butcher's Count price shrinks with its gain; nights and maps start at 25, FillHurt 0.40, FillBoss 1.8, Strike powers raised (Burns Twice 1160, Branding 2100, Road's Toll 700, Drag Them Under 1590). A solver made the rebuke max health x10 x (1+8%/level) and the harness pilot plays a Bulwark standing its ground. 811 tests green.
 
-## 4. In progress
+## 3b. Session 4
 
-- Nothing running. **Warden quarter and crossings wired** (0981f48c, 31 rules; report in its commit body). It adds a block chance, stones and the rebuke (`godot/logic/Sim/WardenLamps.cs`). Two picks need a design look: the rebuke deals 30% of max health as holy, and stones lapse after 8 s without a block unless Mortar is lit. The Watch Bell doesn't exist yet. Tests: 791 green.
+- `--flare stand` (harness; carries the road's Stand). The pilot fires a ready Flare after 15 s with four foes within 10 m (a kiting moonweaver sat full with its 5 m Stand).
+- Game fixes: **the Flare grows 2% a lamp lit** (`Flare.FlareLampGlow`, `LampLoadout.Lit`; the full board's boss share had fallen to 14% at T4 and 9% at L30); **Moonmarked's mark is a quarter by night** (`ArcanistOnHit`; it lifted every blow on the marked by 30% at night); **a Crowded Sky the cap leaves nothing to loose stays dark** (`CrowdOn`; it was seeking for free beside Many Lights). CLASSES §2.10, §3.2 and §7 "Phase 1, measured" carry them. 813 tests green.
+- Checks: Bulwark T4 and chainbound T2 full/empty are noise (x1.00, x1.01 at 48 seeds). Seeking Motes on arcanists isn't weak (probe: highest of all hosts); in runs it fuses into Starfall and the arcanist's other spells take the crowd first.
+- Re-judge (su-lead-max; verdict in the main session's scratchpad, folder cl4b, file verdict.md): PASS WITH FIXES. F1-F3 done: chainbound 48 seeds x1.01; Banked Flame is the sunderer's slow T4 (gap 105 s, 72 s off); story bosses fall 14-29% sooner than on main (deft hands; listed, risk 4).
+
+## 4. Measured (12 seeds, 1f4bc98f; scratchpad `cl4b\`: summary.txt, flare_table.txt, extras.txt)
+
+See CLASSES §7 "Phase 1, measured". Types: butcher 0.72 (night skills), moonweaver 1.37-1.40 at T3-T4 and 1.46 at L30. Full/empty median x1.00. On-calling home 0.85-1.22. Flare first 54-123 s, gap 52-81 s, 3 per boss, 15-23% of boss damage.
 
 ## 5. Next, in order
 
-1. **Wire the remaining phase-1 rules:** reaver (32), arcanist (33), stalker (31) (warden and crossings done), one su-worker per quarter, **one at a time** (they all edit Battle.cs). The shared brief is `docs/handoff/classes_rules_brief.md` (replace <CALLING>). Then add the test that every phase-1 rule id appears as a string literal in godot/logic/Sim (the generator script is in that brief's command). Check each worker's diff: sizes through `Size` (quarter by night), prices and thresholds through `Full`, counts capped at +1 by night.
-2. **Re-run the acceptance sweep** (the runner's commands are in §7 below) once all rules are wired. Today's numbers (482124f0, rules mostly unwired) are a baseline only.
-3. **Fix what's out of band**, then send it to a fresh `su-lead-max` judge with the reports, §7's targets and the owner's words. Known so far:
-   - Casters' Flare gap is 104-116 s (target 60-90). Casters are rarely hurt. Consider a caster-friendly fill (Kindling-like spell fill in the base table) rather than raising the kill cap, which speeds up the reavers (already at 63-68 s).
-   - The first Flare comes at 1.3-2.5 min. Clutches are about 0 (the deft bot is rarely low; a less deft bot would show them).
-   - Types out of band: verge_hunter T4 ×1.96 and T1 ×1.39, roadknife T3 ×1.42, butcher T3 ×0.66, bulwark T2 ×0.68. Mostly the draft lean toward each road's signature skills (the skills' own balance) plus lamps without their gains. Re-measure after wiring; the skills' balance belongs to combat, so talk to them.
-   - Full vs empty: today 0.63-1.24 (roadknife at level 30 is 0.63). Prices are in, gains are not. Re-measure.
-   - On-calling ≤ ×1.25: not measured yet. The harness needs an off-calling run (the same skills drafted by another calling); add it.
-   - Stands are unmeasured (the harness carries Strikes), as are story fights and maps.
-4. Status page, roster and report.
+1. If the main session hasn't merged classes/phase1, ask it (the judge passed).
+2. **L1, before phase 3: the Echo.** In `ArcanistLamps.cs` `WaitMul` (~line 143) its wait shrinks with its echo by night: `m *= 1 + l.Full("the_echo", "longer", 0.25) * (l.Night ? Content.Lamps.NightSize : 1);` (a test beside `The_echos_wait_is_kept_in_full_by_night...`, which changes). Then moonweaver full vs empty at T3-T4, 48 seeds, and a trim if over x1.25 (Many Lights' +1 on a one-projectile spell is the next biggest: Rimeshard x1.25 in the probe). A short judge.
+3. L2 (phase 2's pilot): bank when Banked Flame is lit; ask the owner (via the main session) whether "Light my way" should light it.
+4. L3 (phase 2): why the Road's Toll misses the boss on a full board (per-cast boss damage, full vs empty).
+5. L4-L5: the glow by day in maps; every blue lamp's net effect by night (phase 7).
+6. Owner questions still open: the rebuke share; home x1.03.
 
 ## 6. Gotchas
 
-- Workers' completion notices go to the main session, not to you: ask them to put the report in the commit body.
-- `dotnet test` takes 3-5 min. Two agents building godot/tests at once lock `bin/`: run them in turn. The harness: `dotnet build -c Release godot/balance`, then `dotnet run -c Release --no-build ...`.
-- Don't let workers build with `-o <dir>`: art-path tests (Fx, Export) fail there.
-- Python edits to CRLF files are fine (git normalizes to LF).
-- The context hook reads README's "Context budget: 120k" example as yours; the brief's 300k is the real one.
-- Warden tests needing the Flare to fill use a reaver: Bull Rush's barrier soaks the damage.
+- Workers' and judges' completion notices go to the main session: spawn them foreground (`run_in_background: false`) so the report returns to you.
+- `dotnet test` takes 3-5 min; one build at a time in this worktree (workers run in turn). Harness: `dotnet build -c Release godot/balance`, then `dotnet run -c Release --no-build ...`. Never `-o`.
+- lamps.json is generated: edit tools/classes/lamps_quarters.py and regenerate.
+- Greedy arena runs are noisy (+-30% per run): 6 seeds for a look, 12 for a verdict. Python here needs C:/ paths.
+- Signature skills: only one of each road's three exists; unions (Starfall) and evolutions change what a road's skill looks like in DamageBy (unions have their own id; evolutions keep the base id).
 
 ## 7. Files and commands
 
-- Read first: `godot/logic/Sim/Forms.cs`, `godot/logic/Sim/Flare.cs`, `godot/logic/Sim/LampLoadout.cs`, `docs/handoff/classes_rules_brief.md`, CLASSES.md §2.10, §3.2-3.4 and §7.
-- Sweep (from the worktree): `dotnet run -c Release --no-build --project godot/balance -- arena --callings all --type both --lamps full|empty --tiers 1,2,3,4 --level tier --seeds 3 --policies greedy --people pack --bot deft --beyond 0 --par 16 --out <f>.jsonl`; the same with `--tiers 4 --level 30` for the end-game board; then `-- report --in <f>.jsonl`. The baseline reports are in the session scratchpad `sweep\` (they won't survive the scratch sweep, so regenerate them).
+- Read first: the four `*Lamps.cs`, `Flare.cs` (fill table ~59), `godot/balance/Harness/Pilot.cs` (Flare policy, Bulwark stance), `classes_summary.py`, CLASSES §2.7, §2.10, §3.2, §7.
+- Sweep (12 seeds, ~50 min): A = `--callings all --type both --seeds 12 --policies greedy --people pack --bot deft --beyond 0 --par 16`; `arena A --lamps full|empty --tiers 1,2,3,4 --level tier`, the same with `--tiers 4 --level 30`, and `--lamps full --tiers 1,2,3,4 --level tier --offcalling`; concatenate full+empty into fe.jsonl, `report --in` it (pipe through `iconv -f cp1252 -t utf-8` or the summary can't read it), then `python godot/balance/classes_summary.py <dir>` (needs off.jsonl, full.jsonl, fe.md, fe30.md).
+- Last numbers: main session scratchpad `cl4b\` (and `cl4c\`: the 48-seed and story checks; `mainh\` is main's harness, exported by git archive, delete it when done).
 
-HANDOFF READY: docs/handoff/classes.md on classes/phase1@b8ec84dd
+

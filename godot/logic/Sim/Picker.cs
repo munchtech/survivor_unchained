@@ -31,6 +31,9 @@ public abstract class Picker
         "random" => new RandomPicker(),
         "greedy" => new GreedyPicker(null),
         _ when spec.StartsWith("path:") => new GreedyPicker(Paths.Find(spec[5..]) ?? throw new ArgumentException($"no path {spec[5..]}")),
+        _ when spec.StartsWith("road:") => new GreedyPicker(Lamps.Roads.TryGetValue(spec[5..], out var rd)
+            ? new PathDef { Id = "road:" + rd.Id, Name = rd.Name, Weapons = rd.Skills }
+            : throw new ArgumentException($"no road {spec[5..]}")),
         _ => throw new ArgumentException($"no policy {spec}"),
     };
 }

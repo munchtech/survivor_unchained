@@ -239,7 +239,7 @@ public static class LampBook
     public static LampLoadout Loadout(CharacterData ch, bool night)
     {
         var l = Now(ch);
-        var o = new LampLoadout { Night = night, Type = l.Type, Flare = Carried(ch) };
+        var o = new LampLoadout { Night = night, Type = l.Type, Flare = Carried(ch), Lit = l.Lit.Count };
         var counts = new Dictionary<string, double>();
         foreach (var id in l.Lit)
         {

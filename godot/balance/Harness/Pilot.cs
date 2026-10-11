@@ -39,12 +39,13 @@ public static class Pilot
     {
         var p = b.Player;
         double mx, mz;
-        // Close fighters stand in the press and give ground only to a crush.
+        // Close fighters stand in the press and give ground only to a crush; the wall gives none.
+        bool wall = Wall(b);
         double reach = Reach(b);
-        bool close = reach < 4.5;
+        bool close = wall || reach < 4.5;
         var press = b.HostilesInRadius(p.X, p.Z, close ? 2.0 : 3.4);
         int crowded = close ? 4 : 2;
-        double engage = close ? Math.Max(1.6, reach * 0.7) : 6;
+        double engage = wall ? 1.8 : close ? Math.Max(1.6, reach * 0.7) : 6;
         Enemy? nearest = null;
         double nd = double.MaxValue;
         foreach (var e in b.Enemies.Items)
@@ -78,7 +79,7 @@ public static class Pilot
             double cl = Math.Max(0.01, Math.Sqrt(cx * cx + cz * cz));
             mx = -cx / cl * 0.8 - cz / cl * 0.6; mz = -cz / cl * 0.8 + cx / cl * 0.6;
         }
-        else if (press.Count >= crowded)
+        else if (press.Count >= crowded && !wall)
         {
             double cx = press.Average(e => e.X) - p.X, cz = press.Average(e => e.Z) - p.Z;
             double cl = Math.Max(0.01, Math.Sqrt(cx * cx + cz * cz));
@@ -93,6 +94,8 @@ public static class Pilot
         }
         else if (stone != null && near > engage + 1) { mx = stone.X - p.X; mz = stone.Z - p.Z; }
         else if (nearest != null && near > engage) { mx = nearest.X - p.X; mz = nearest.Z - p.Z; }
+        // In the press the wall stands: still, where Planted and The Wall Holds pay and every blow is a chance at a stone.
+        else if (nearest != null && wall) { mx = 0; mz = 0; }
         else if (nearest != null) { mx = -(nearest.Z - p.Z); mz = nearest.X - p.X; }
         else if (onward is var (ox, oz)) { mx = ox - p.X; mz = oz - p.Z; }
         else { mx = -p.X; mz = -p.Z; }
@@ -132,9 +135,29 @@ public static class Pilot
                     b.Dash(-dz / l, dx / l);
                     break;
                 }
-        if (p.DashCharges > 0 && b.HostilesInRadius(p.X, p.Z, 2.2).Count >= 3) b.Dash(mx, mz);
-        // The Flare: a boss within ten metres, a crowd of eight within six, or health below a quarter.
-        if (b.FlareReady && (p.Hp < b.MaxHp * 0.25 || b.HostilesInRadius(p.X, p.Z, 10).Any(e => e.Boss) || b.HostilesInRadius(p.X, p.Z, 6).Count >= 8)) b.UseFlare(mx, mz);
+        // Out of a crush (the wall stays in it: the crush is what it came for).
+        if (p.DashCharges > 0 && !Wall(b) && b.HostilesInRadius(p.X, p.Z, 2.2).Count >= 3) b.Dash(mx, mz);
+        // The Flare: a boss within ten metres, a crowd of eight within its reach, or health below a quarter;
+        // and nobody sits on a full meter: after eight seconds ready, four within its reach will do.
+        // (A crowd of eight within six metres kept a kiting caster's meter full for minutes.)
+        if (b.FlareReady)
+        {
+            if (readyIn != b) { readyIn = b; readyAt = b.Time; }
+            double reach = Math.Max(6, b.Flare?.Radius ?? 6);
+            int near = b.HostilesInRadius(p.X, p.Z, reach).Count;
+            bool low = p.Hp < b.MaxHp * 0.25;
+            // A boss in its phase transition can't be hurt (TakenMul 0): spare the Flare unless health is low.
+            bool bossNear = b.HostilesInRadius(p.X, p.Z, 10).Any(e => e.Boss && (low || e.TakenMul > 0));
+            // A kiting caster with a small Stand (the Drowned Moon, 5 m) rarely has four inside it: after
+            // fifteen seconds, four within ten metres will do (the Stand follows her in).
+            if (low || bossNear || near >= 8 || (near >= 4 && b.Time - readyAt >= 8) ||
+                (b.Time - readyAt >= 15 && b.HostilesInRadius(p.X, p.Z, 10).Count >= 4))
+            {
+                b.UseFlare(mx, mz);
+                readyIn = null;
+            }
+        }
+        else readyIn = null;
         if (p.Hp >= b.MaxHp * 0.33) return false;
         double before = p.Hp;
         j.Quaff(b);
@@ -203,11 +226,34 @@ public static class Pilot
             if (e.Def.Id == "ember_core" && e.State != EnemyState.Dying && Dist(e.X, e.Z, p.X, p.Z) > 2.5) { mx = e.X - p.X; mz = e.Z - p.Z; return; }
     }
 
+    /// <summary>The Bulwark's stance (docs/design/CLASSES.md 2.8, "walk in, let them hit you, and they break on it"): a player
+    /// on the shield road walks into the press and holds it, since the road pays for blows taken (a stone for each one turned,
+    /// Planted and The Wall Holds for standing). They give ground when low, under two-fifths of health, until mended to
+    /// two-thirds; a champion at arm's length is given ground below half, as by any blade. Every other road keeps the plain hands.</summary>
+    public static bool Wall(Battle b)
+    {
+        if (b.Lamps.Type != "bulwark") return false;
+        var p = b.Player;
+        if (steppedBack == b)
+        {
+            if (p.Hp < b.MaxHp * WallBack) return false;
+            steppedBack = null;
+        }
+        if (p.Hp < b.MaxHp * WallLow) { steppedBack = b; return false; }
+        return true;
+    }
+    public static double WallLow = 0.4, WallBack = 0.67;
+    /// <summary>The run in which the wall stepped back to mend (each run plays on one thread).</summary>
+    [ThreadStatic] static Battle? steppedBack;
+
     /// <summary>A trace of the hands' choices, each step (one traced run, single-threaded).</summary>
     [ThreadStatic] public static bool Debug;
 
     /// <summary>Off (--bossread 0) for the numbers of the hands before they knew the bosses.</summary>
     public static bool ReadsBosses = true;
+    /// <summary>When this run's Flare came ready (each run plays on one thread).</summary>
+    [ThreadStatic] static Battle? readyIn;
+    [ThreadStatic] static double readyAt;
 
     /// <summary>The boss read as a player who has died to it once (Play/Bosses/BossSense.cs,
     /// shared with the game's autopilot).</summary>

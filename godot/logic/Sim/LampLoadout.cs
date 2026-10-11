@@ -16,6 +16,8 @@ public sealed class LampLoadout
     public bool Night;
     /// <summary>The type: the road chosen.</summary>
     public string Type = "";
+    /// <summary>How many lamps are lit (the Flare burns as bright as the board: Flare.LampGlow).</summary>
+    public int Lit;
     public readonly List<StatMod> Mods = new();
     /// <summary>Attribute points from the attribute lamps (by day and in maps).</summary>
     public readonly Dictionary<string, int> Attributes = new();
@@ -39,9 +41,13 @@ public sealed class LampLoadout
 
     public bool Has(string rule) => Rules.ContainsKey(rule);
 
+    /// <summary>Debug switch for bisecting: LAMPS_OFF=id1,id2 leaves those rule ids unlit (read once).</summary>
+    static readonly HashSet<string> Off = new((Environment.GetEnvironmentVariable("LAMPS_OFF") ?? "")
+        .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries));
+
     public void Add(LampEffect e)
     {
-        if (e.Rule == null) return;
+        if (e.Rule == null || Off.Contains(e.Rule)) return;
         Rules.TryAdd(e.Rule, e);
         if (!Each.TryGetValue(e.Rule, out var l)) Each[e.Rule] = l = new();
         l.Add(e);

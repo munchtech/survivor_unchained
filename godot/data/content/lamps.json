@@ -243,7 +243,7 @@
    "length": 0.8,
    "radius": 14,
    "blows": 2,
-   "power": 1265,
+   "power": 1590,
    "school": "physical",
    "tags": [
     "melee",
@@ -281,7 +281,7 @@
    "length": 1.1,
    "radius": 14,
    "blows": 3,
-   "power": 920,
+   "power": 1160,
    "school": "fire",
    "tags": [
     "spell",
@@ -319,7 +319,7 @@
    "length": 1.0,
    "radius": 14,
    "blows": 2,
-   "power": 1150,
+   "power": 2100,
    "school": "arcane",
    "tags": [
     "spell",
@@ -356,7 +356,7 @@
    "length": 1.2,
    "radius": 12,
    "blows": 12,
-   "power": 345,
+   "power": 700,
    "school": "physical",
    "tags": [
     "melee",
@@ -1454,7 +1454,10 @@
      "args": {
       "block": 0.15,
       "stones": 10,
-      "radius": 4
+      "radius": 4,
+      "lull": 6,
+      "rebuke": 10,
+      "per_level": 0.08
      }
     }
    ]
