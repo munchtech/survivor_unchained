@@ -58,7 +58,12 @@ SPEC = {
         # to `to` degrees of bend; it takes the share's weight on the
         # patch weights.point gives it.
         {"name": "lowerarm_point_{s}", "parent": "upperarm_{s}", "kind": "point", "bone": "lowerarm_{s}", "amount": 0.5,
-         "share": "lowerarm_share_{s}", "push": 0.03, "from": 70, "to": 145, "way": "front"},
+         "share": "lowerarm_share_{s}", "push": 0.03, "from": 70, "to": 145, "way": "front",
+         # and drawn in across the bend (its X, the hinge axis) toward
+         # `squeeze_x` metres along it, losing `squeeze` of its width there
+         # by `to` degrees, eased in from `squeeze_from`: from behind, the
+         # tip narrows to a point in line with the forearm's back edge.
+         "squeeze": 0.0, "squeeze_x": 0.0, "squeeze_from": 100},
         {"name": "calf_share_{s}", "parent": "thigh_{s}", "kind": "share", "bone": "calf_{s}", "amount": 0.5,
          "bulge": 0.5, "bulge_max": 1.5, "pivot": 0.059, "way": "back"},
     ],
@@ -236,6 +241,16 @@ def point_push(bend, h):
     return float(h["push"] * t * t * (3 - 2 * t))
 
 
+def point_squeeze(bend, h):
+    """How much of a point bone's width along its X (the hinge axis) is drawn
+    in toward h["squeeze_x"], eased in from h["squeeze_from"] to h["to"]
+    degrees of bend. Nothing for a share."""
+    if h["kind"] != "point" or not h.get("squeeze"):
+        return 0.0
+    t = min(max((bend - h["squeeze_from"]) / (h["to"] - h["squeeze_from"]), 0.0), 1.0)
+    return float(h["squeeze"] * t * t * (3 - 2 * t))
+
+
 def drive(sk: Skeleton, rot, scale=None, shift=None):
     """Her helpers posed from the pose (local rotations [J, 4], changed in
     place): the forearm's roll handed to the hand, the twists shared out, the
@@ -273,9 +288,10 @@ def drive(sk: Skeleton, rot, scale=None, shift=None):
                     bend = 2 * math.degrees(math.acos(min(1.0, abs(float(swing[3])))))
                     hs = hh if hh["kind"] == "share" else next(x for x in SPEC["helpers"] if x["name"] == hh["share"])
                     k = bulge(bend, hs)
-                    scale[j] = (1.0, 1.0, k)
+                    q = point_squeeze(bend, hh)
+                    scale[j] = (1.0 - q, 1.0, k)
                     if shift is not None:
-                        shift[j] = (0.0, 0.0, (1.0 - k) * hs.get("pivot", 0.0) - point_push(bend, hh))
+                        shift[j] = (q * hh.get("squeeze_x", 0.0), 0.0, (1.0 - k) * hs.get("pivot", 0.0) - point_push(bend, hh))
     return rot
 
 
