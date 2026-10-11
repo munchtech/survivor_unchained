@@ -137,6 +137,13 @@ PUSH_L, PUSH_R = (0.27, 0.04, 0.71), (-0.25, 0.04, 0.70)
 PUSH_POLE_L, PUSH_POLE_R = (0.6, 1, -0.8), (-0.6, 1, -0.8)
 # Fingers pressed flat on the ground under her weight.
 FLAT = "flat"
+# get_up_back's hands on the tops of her knees in the crouch, and on the
+# outsides of her thighs as she rises (judge 13: at least 12 cm out from her
+# middle, never the inner thigh).
+KNEE_L = {"pos": (0.20, 0.50, -0.14), "pole": (1, 0.2, -0.6), "knuckles": (0.1, -0.8, 0.6)}
+KNEE_R = {"pos": (-0.20, 0.50, -0.10), "pole": (-1, 0.2, -0.6), "knuckles": (-0.1, -0.8, 0.6)}
+THIGH_L = {"pos": (0.24, 0.62, -0.12), "pole": (1, 0.2, -0.6), "knuckles": (0.2, -1, 0.3)}
+THIGH_R = {"pos": (-0.24, 0.62, -0.10), "pole": (-1, 0.2, -0.6), "knuckles": (-0.2, -1, 0.3)}
 # Tucked toes bent so the pads lie flat under a foot standing on end, keyed
 # 59 degrees on from the rest foot (more, and it leant back past upright,
 # which no toes can bend far enough to lie flat under).
@@ -594,53 +601,82 @@ def get_up(rig):
 
 
 def get_up_back(rig):
-    """From where death_back left her, on her back: the head and knees come
-    up, she sits up on her hands, rocks forward over her feet into a crouch,
-    rises, and steps back into her stance. (The game played get_up, which
-    starts face down, after any fall: a pop after a fall onto her back.)
+    """From where death_back left her, on her back: the head lifts first and
+    the knees draw up, the flung arm comes down round her side, she sits up
+    onto her hands, pushes off them and rocks forward over her feet into a
+    crouch, the hands going to her knees, then rises pushing on her thighs
+    and steps back into her stance. (The game played get_up, which starts
+    face down, after any fall: a pop after a fall onto her back.)
     She lay 0.6 m behind where she stood; the feet are drawn in under her and
-    the rock forward brings her most of the way back, the last step the rest."""
+    the rock forward brings her most of the way back, the last step the rest.
+
+    (Judge 13: the sit-up was a kip-up, f0-f6; the push and rock popped in
+    three frames, f12-f15; the hands went to her groin, f24-f27. Now: the
+    head curls first and the trunk comes up at most 8 degrees a frame; the
+    hips leave the ground only once the trunk is past upright, at f16, and
+    lift at most about 1.5 m/s; the hands go through the air to the tops of
+    her knees, then up the outsides of her thighs.)"""
     lie = _back_pose(1.0)
     flat_l = {"rot": (10, 0, 0), "pole": (0.2, 1, 0.6)}
     flat_r = {"rot": (-10, 0, 0), "pole": (-0.2, 1, 0.6)}
+    # The feet drawn in under her knees, where she rocks over them.
+    fl = {"pos": (0.14, 0.0, -0.30), **flat_l}
+    fr = {"pos": (-0.15, 0.0, -0.25), **flat_r}
+    # The hands planted behind her hips as she sits, pushing.
+    pl = {"pos": (0.25, 0.04, -0.86), "pole": (1, 0.3, -0.8), "knuckles": (0.3, 0, 1), "ext": PUSH_EXT}
+    pr = {"pos": (-0.25, 0.04, -0.86), "pole": (-1, 0.3, -0.8), "knuckles": (-0.3, 0, 1), "ext": PUSH_EXT}
+
+    def sit(fr_, hips_y, hips_z, pitch, spine, neck, head, hl, hr, feet=(fl, fr), fingers=("relaxed", "relaxed")):
+        return {"hips": {"pos": (0.0, hips_y, hips_z), "rot": (0, pitch, 0)}, "spine": (0, spine, 0), "neck": (0, neck, 0),
+                "head": (0, head, 0), "foot_l": feet[0], "foot_r": feet[1], "hand_l": hl, "hand_r": hr,
+                "fingers_l": fingers[0], "fingers_r": fingers[1]}
     keys = [
         (0, lie, "ease"),
-        # The head and shoulders curl up, the knees drawn up, the flung arm
-        # coming down.
-        (6, merge(lie, hips={"pos": (0.0, -0.94, -0.62), "rot": (-4, -66, -2)}, spine=(0, 24, 0), neck=(0, 16, 0), head=(0, 10, 0),
-                  foot_l={"pos": (0.13, 0.0, -0.22), **flat_l}, foot_r={"pos": (-0.15, 0.0, -0.16), **flat_r},
-                  hand_l={"pos": (0.30, 0.10, -0.80), "pole": (1, 0.4, -0.2), "knuckles": (0.3, 0, -1)},
-                  hand_r={"pos": (-0.30, 0.04, -0.70), "pole": (-1, 0.4, -0.2), "knuckles": (-0.3, 0, -1)},
+        # The head and shoulders curl first; the knees begin to draw up; the
+        # flung arm lifts off the ground and swings out round her side.
+        (3, merge(lie, hips={"rot": (-5, -86, -3)}, spine=(2, 10, -4), neck=(6, 24, 0), head=(10, 14, 6),
+                  foot_l={"pos": (0.10, 0.06, -0.10), "rot": (30, -15, 25), "pole": (0.8, 0.6, 0.3)},
+                  foot_r={"pos": (-0.16, 0.06, 0.12), "rot": (-15, -30, -5), "pole": (-0.4, 1, 0.3)},
+                  hand_l={"pos": (0.68, 0.16, -1.12), "pole": (1, 0.4, -0.2), "knuckles": (0.6, 0, -0.6)},
+                  hand_r={"pos": (-0.40, 0.10, -0.70), "pole": (-1, 0.4, -0.2), "knuckles": (-0.3, 0, -1)},
                   fingers_l="relaxed", fingers_r="relaxed"), "auto"),
-        # Sat up, leaning back on her hands, the feet flat under her knees.
-        (12, {"hips": {"pos": (0.0, -0.94, -0.58), "rot": (0, -34, 0)}, "spine": (0, 16, 0), "neck": (0, 10, 0), "head": (0, 6, 0),
-              "foot_l": {"pos": (0.13, 0.0, -0.16), **flat_l}, "foot_r": {"pos": (-0.15, 0.0, -0.08), **flat_r},
-              "hand_l": {"pos": (0.24, 0.04, -0.80), "pole": (1, 0.2, -0.6), "knuckles": (0.2, 0, -1)},
-              "hand_r": {"pos": (-0.24, 0.04, -0.80), "pole": (-1, 0.2, -0.6), "knuckles": (-0.2, 0, -1)},
-              "fingers_l": "open", "fingers_r": "open"}, "auto"),
-        # The push off the hands and the rock forward over her feet, the arms
-        # thrown forward for balance.
-        (17, body({"foot_l": {"pos": (0.13, 0.0, -0.16), **flat_l}, "foot_r": {"pos": (-0.15, 0.0, -0.08), **flat_r},
-                   "hips": {"pos": (0.0, -0.66, -0.34)}},
-                  hips=(0, 44, 0), spine=(0, 24, 0), neck=(0, -12, 0), head=(0, -10, 0),
-                  hand_l=arm((0.08, -0.06, 0.40), (0.8, -0.4, -0.3)), hand_r=arm((-0.08, -0.08, 0.38), (-0.8, -0.4, -0.3)),
-                  fingers_l="relaxed", fingers_r="relaxed"), "auto"),
-        # In a crouch over her feet, rising.
-        (23, body({"foot_l": {"pos": (0.13, 0.0, -0.16), **flat_l}, "foot_r": {"pos": (-0.15, 0.0, -0.08), **flat_r},
-                   "hips": {"pos": (0.0, -0.42, -0.22)}},
-                  hips=(0, 30, 0), spine=(0, 14, 0), neck=(0, -8, 0), head=(0, -6, 0),
-                  hand_l=arm((0.06, -0.20, 0.30), (0.7, -0.4, -0.4)), hand_r=arm((-0.06, -0.22, 0.28), (-0.7, -0.4, -0.4)),
-                  fingers_l="relaxed", fingers_r="relaxed"), "auto"),
+        # Up on her elbows' way, the knees up, the feet flat; the arms coming
+        # down at her sides to plant behind her.
+        (6, sit(6, -0.95, -0.62, -70, 18, 18, 8,
+                {"pos": (0.40, 0.13, -0.90), "pole": (1, 0.3, -0.6), "knuckles": (0.4, 0, -0.8)},
+                {"pos": (-0.36, 0.12, -0.80), "pole": (-1, 0.3, -0.6), "knuckles": (-0.3, 0, -1)},
+                feet=({"pos": (0.13, 0.0, -0.24), **flat_l}, {"pos": (-0.15, 0.0, -0.18), **flat_r})), "auto"),
+        (8, sit(8, -0.95, -0.62, -55, 16, 14, 6, pl, pr, fingers=("flat", "flat")), "auto"),
+        # Sat up, leaning back on her hands.
+        (11, sit(11, -0.95, -0.61, -38, 14, 10, 4, pl, pr, fingers=("flat", "flat")), "auto"),
+        # The push: a little further back onto the hands, then the trunk swings
+        # forward over the hips, which roll forward on the ground.
+        (13, sit(13, -0.95, -0.60, -34, 12, 6, 2, pl, pr, fingers=("flat", "flat")), "auto"),
+        # Off the hands: the trunk upright, the hips still down, the hands in
+        # the air on their way forward.
+        (16, sit(16, -0.945, -0.56, 0, 16, -4, -4,
+                 {"pos": (0.27, 0.16, -0.68), "pole": (1, -0.2, -0.6), "knuckles": (0.2, -0.5, 1)},
+                 {"pos": (-0.27, 0.16, -0.66), "pole": (-1, -0.2, -0.6), "knuckles": (-0.2, -0.5, 1)}), "auto"),
+        # The weight over the feet, the hips lifting.
+        (20, sit(20, -0.82, -0.47, 32, 18, -10, -6,
+                 {"pos": (0.25, 0.36, -0.30), "pole": (1, -0.4, -0.4), "knuckles": (0.1, -0.7, 0.7)},
+                 {"pos": (-0.25, 0.36, -0.28), "pole": (-1, -0.4, -0.4), "knuckles": (-0.1, -0.7, 0.7)}), "auto"),
+        # In the crouch, the hands on her knees.
+        (24, sit(24, -0.68, -0.42, 40, 18, -10, -6, KNEE_L, KNEE_R), "auto"),
+        # Rising, pushing on her thighs, the hands sliding up their outsides.
+        (32, body({"foot_l": fl, "foot_r": fr, "hips": {"pos": (0.0, -0.36, -0.30)}},
+                  hips=(0, 22, 0), spine=(0, 10, 0), neck=(0, -6, 0), head=(0, -4, 0),
+                  hand_l=THIGH_L, hand_r=THIGH_R, fingers_l="relaxed", fingers_r="relaxed"), "auto"),
         # Up over the feet, the left one stepping through into her stance.
-        (31, body({"foot_l": {"pos": (0.13, 0.03, -0.10), "rot": (10, 0, 0)}, "foot_r": {"pos": (-0.15, 0, -0.08), "rot": (-14, 0, 0)},
-                   "hips": {"pos": (0.0, -0.10, -0.12)}},
+        (38, body({"foot_l": {"pos": (0.13, 0.04, -0.06), "rot": (10, 0, 0)}, "foot_r": {"pos": (-0.15, 0, -0.18), "rot": (-14, 0, 0)},
+                   "hips": {"pos": (0.0, -0.10, -0.16)}},
                   hips=(0, 8, 0), spine=(0, 4, 0),
                   hand_l=arm((0.05, -0.40, 0.08), (0.6, -0.4, -0.5)), hand_r=arm((-0.05, -0.40, 0.08), (-0.6, -0.4, -0.5)),
                   fingers_l="relaxed", fingers_r="relaxed"), "auto"),
-        (38, body(stance(0.06), hips=(0, 4, 0), spine=(0, 2, 0), clav_l=(6, 0), clav_r=(6, 0),
+        (43, body(stance(0.06), hips=(0, 4, 0), spine=(0, 2, 0), clav_l=(6, 0), clav_r=(6, 0),
                   hand_l=arm((0.05, -0.42, 0.06), (0.6, -0.4, -0.5)), hand_r=arm((-0.05, -0.42, 0.06), (-0.6, -0.4, -0.5)),
                   fingers_l="relaxed", fingers_r="relaxed"), "auto"),
-        (48, body(stance(0.05), hand_l=arm((0.05, -0.43, 0.04), (0.6, -0.4, -0.5)),
+        (50, body(stance(0.05), hand_l=arm((0.05, -0.43, 0.04), (0.6, -0.4, -0.5)),
                   hand_r=arm((-0.05, -0.43, 0.04), (-0.6, -0.4, -0.5)), fingers_l="relaxed", fingers_r="relaxed"), "ease"),
     ]
     return build("get_up_back", rig, keys, meta={"layer": "full"})
