@@ -64,6 +64,16 @@ uniform sampler2D features : hint_default_black, filter_linear_mipmap;
 // on the light round her and on some of her lights' too (as a soft shadow).
 uniform sampler2D ao_map : hint_default_white, filter_linear_mipmap;
 uniform float ao_light = 0.0;
+// Her head's own skin eased into her graft's over the 3 cm above her neck's seam (SPLIT), by ao_map's green
+// (1 on her head, 0 at SPLIT: tools/assets/heroine_ao_seam.py): side on, her head's more matte, deeper-pored,
+// grained skin met the graft's as a stair-stepped line across her neck (judge n1, 11 October 2026).
+uniform bool seam_ease = false;
+uniform float seam_rough = 0.5;
+uniform float seam_shine = 0.42;
+uniform float seam_depth = 0.4;
+// (her grain's tiles to a UV unit, over pore_scale: a surface's own, set by People.Skin, as a mesh's pore_scale is
+// the mean of its surfaces' and on her graft, a small part of her body's mesh, put her grain's tile at 9 mm, not 28)
+uniform float grain_scale = 0.0;
 // Her freckles, a layer of their own (tools/assets/heroine_freckles.py: red
 // each freckle, soft at its edge; green its rank), none to heavy: at an
 // amount, those ranked under it show, deeper the more there are, in a warm
@@ -131,6 +141,8 @@ void fragment() {
 	float far = smoothstep(far_from, far_to, lod);
 	float fl = clamp(lod - log2(float(textureSize(paint, 0).x) / float(max(textureSize(features, 0).x, 1))), 0.0, far_mip);
 	vec3 fm = textureLod(features, UV, fl).rgb;
+	vec4 aot = texture(ao_map, UV);
+	float hw = seam_ease ? aot.g : 1.0;
 	ALBEDO = texture(paint, UV).rgb * tone * mix(vec3(1.0), face_tone, fm.b);
 	vec3 fk = texture(freckles, UV).rgb;
 	if (freckle_amount > 0.001) {
@@ -161,13 +173,13 @@ void fragment() {
 	// soft patches as real pores do)
 	vec4 q = mix(texture(pores, UV * pore_scale), texture(pores, UV * pore_scale * 0.77 + vec2(0.53, 0.19)), 0.35);
 	float patchy = smoothstep(0.2, 0.8, texture(pores, UV * pore_scale * 0.07 + vec2(0.31, 0.67)).a);
-	float depth = pore_depth * mix(0.35, 1.0, patchy);
+	float depth = mix(seam_depth, pore_depth, hw) * mix(0.35, 1.0, patchy);
 	// (where her freckles' map says, its blue: her head and up her neck, none from her collarbones down)
 	float ga = grain_amount * (1.0 - fm.b) * fk.b;
 	if (ga > 0.0) {
 		// (a tile every 28 mm: pore_scale is a tile every 9; the two reads' mean has
 		// 0.71 of one's spread, given back)
-		vec2 gu = UV * pore_scale * 0.321;
+		vec2 gu = UV * (grain_scale > 0.0 ? grain_scale : pore_scale * 0.321);
 		float gr = texture(grain, gu + vec2(0.37, 0.11)).r + texture(grain, gu * 0.71 + vec2(0.83, 0.59)).r - 1.0;
 		ALBEDO *= 1.0 + ga * gr * 0.707 * 0.24;
 	}
@@ -193,12 +205,12 @@ void fragment() {
 		NORMAL_MAP_DEPTH = depth;
 	}
 	float edge = pow(1.0 - clamp(dot(NORMAL, VIEW), 0.0, 1.0), 3.0);
-	ROUGHNESS = clamp(rough + (q.a - 0.5) * 0.3 + stubble * 0.15 + edge_rough * edge, 0.0, 1.0);
+	ROUGHNESS = clamp(mix(seam_rough, rough, hw) + (q.a - 0.5) * 0.3 + stubble * 0.15 + edge_rough * edge, 0.0, 1.0);
 	// (no sheen where her head's own shade is deep: in the crease where her
 	// lips meet and the mouth behind, the rim light's reflection on her lips'
 	// inner linings showed as white slivers along their line at a turn)
-	float ao = texture(ao_map, UV).r;
-	SPECULAR = shine * smoothstep(0.45, 0.95, ao);
+	float ao = aot.r;
+	SPECULAR = mix(seam_shine, shine, hw) * smoothstep(0.45, 0.95, ao);
 	sheen = SPECULAR;
 	AO = ao;
 	AO_LIGHT_AFFECT = ao_light;

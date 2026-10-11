@@ -11,7 +11,8 @@ skin's shader to darken and redden by, the more the smaller she is
 Written to <out>/heroine_features.png: red, her eyes (their lash lines
 deepest) and brows, to darken; green, her lips, to deepen to their red;
 blue, where her face's own paint lies, for each face's tone (none at SPLIT).
-Run again when her head is rebuilt (heroine_head.py).
+Run again when her head is rebuilt (heroine_head.py), then tools/assets/heroine_ao_seam.py (heroine_ao.png's
+green: her head's nearness to her neck's seam).
 """
 import os
 import sys

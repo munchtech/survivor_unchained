@@ -1043,6 +1043,9 @@ public static class People
             {
                 m.SetShaderParameter("ao_map", GD.Load<Texture2D>("res://art/people/head_tex/heroine_ao.png"));
                 m.SetShaderParameter("ao_light", 0.55f);
+                // (her head's skin eased into the graft's over the 3 cm above her neck's seam: the shader's seam_*,
+                // at the graft's rough, shine and pore depth, set above as every body part's)
+                m.SetShaderParameter("seam_ease", true);
             }
         }
         // (her skin warmer in the sky's light than in the lamps': HerAmbientTint)
@@ -1059,6 +1062,7 @@ public static class People
             {
                 m.SetShaderParameter("grain", GD.Load<Texture2D>("res://art/people/head_tex/heroine_grain.png"));
                 m.SetShaderParameter("grain_amount", HerGrain);
+                m.SetShaderParameter("grain_scale", SurfacePoreScale(mesh, src) * 0.321f);
             }
         }
         // His skin, all of it, rougher than hers: at her sheen his deep
@@ -1191,20 +1195,44 @@ public static class People
         double area = 0, uvArea = 0;
         for (int s = 0; s < mesh.GetSurfaceCount(); s++)
         {
-            var arr = mesh.SurfaceGetArrays(s);
-            if (arr[(int)Mesh.ArrayType.TexUV].VariantType == Variant.Type.Nil) continue;
-            var v = arr[(int)Mesh.ArrayType.Vertex].AsVector3Array();
-            var uv = arr[(int)Mesh.ArrayType.TexUV].AsVector2Array();
-            var idx = arr[(int)Mesh.ArrayType.Index].AsInt32Array();
-            for (int t = 0; t + 2 < idx.Length; t += 3)
-            {
-                area += (v[idx[t + 1]] - v[idx[t]]).Cross(v[idx[t + 2]] - v[idx[t]]).Length() / 2;
-                uvArea += Mathf.Abs((uv[idx[t + 1]] - uv[idx[t]]).Cross(uv[idx[t + 2]] - uv[idx[t]])) / 2;
-            }
+            var (a, u) = SurfaceAreas(mesh, s);
+            area += a;
+            uvArea += u;
         }
         k = uvArea > 0 ? (float)(Math.Sqrt(area / uvArea) / 0.009) : 50f;
         poreScales[mesh] = k;
         return k;
+    }
+
+    /// <summary>A surface's own pore scale (as PoreScale, its surface alone): her graft, a small part of her
+    /// body's mesh, has UVs laid at a ninth of her body's (0.63 m to a UV unit against 5.7), so the mesh's mean put
+    /// its tiles at a third of their size. Her grain takes it (the skin shader's grain_scale); her pores are left
+    /// as they were judged.</summary>
+    public static float SurfacePoreScale(Mesh mesh, Material src)
+    {
+        for (int s = 0; s < mesh.GetSurfaceCount(); s++)
+            if (mesh.SurfaceGetMaterial(s) == src)
+            {
+                var (a, u) = SurfaceAreas(mesh, s);
+                return u > 0 ? (float)(Math.Sqrt(a / u) / 0.009) : PoreScale(mesh);
+            }
+        return PoreScale(mesh);
+    }
+
+    static (double Area, double UvArea) SurfaceAreas(Mesh mesh, int s)
+    {
+        double area = 0, uvArea = 0;
+        var arr = mesh.SurfaceGetArrays(s);
+        if (arr[(int)Mesh.ArrayType.TexUV].VariantType == Variant.Type.Nil) return (0, 0);
+        var v = arr[(int)Mesh.ArrayType.Vertex].AsVector3Array();
+        var uv = arr[(int)Mesh.ArrayType.TexUV].AsVector2Array();
+        var idx = arr[(int)Mesh.ArrayType.Index].AsInt32Array();
+        for (int t = 0; t + 2 < idx.Length; t += 3)
+        {
+            area += (v[idx[t + 1]] - v[idx[t]]).Cross(v[idx[t + 2]] - v[idx[t]]).Length() / 2;
+            uvArea += Mathf.Abs((uv[idx[t + 1]] - uv[idx[t]]).Cross(uv[idx[t + 2]] - uv[idx[t]])) / 2;
+        }
+        return (area, uvArea);
     }
 
     /// <summary>Her paint's own skin (lit, not in its shadows), hair and suit,
