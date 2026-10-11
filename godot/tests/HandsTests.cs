@@ -190,35 +190,35 @@ public class HandsTests
         b.HurtPlayer(5, School.Physical, "t", null, telegraphed: true);
         Assert.Equal(10, b.FlareMeter, 3);
 
-        // 10% of health lost: +6.5; below a third, +13.
+        // 10% of health lost: +5.5; below a third, +11.
         b.FlareMeter = 0;
         p.Hp = b.MaxHp * 0.5;
         b.HurtPlayerRaw(b.MaxHp * 0.1, School.Physical, "t", null);
-        Assert.Equal(6.5, b.FlareMeter, 3);
+        Assert.Equal(5.5, b.FlareMeter, 3);
         b.FlareMeter = 0;
         p.Hp = b.MaxHp * 0.4;
         b.HurtPlayerRaw(b.MaxHp * 0.1, School.Physical, "t", null);
-        Assert.Equal(13, b.FlareMeter, 3);
+        Assert.Equal(11, b.FlareMeter, 3);
 
         // The first drop below a quarter: the ember answers (+35), once in 45 s.
         b.FlareMeter = 0;
         p.Hp = b.MaxHp * 0.3;
         b.HurtPlayerRaw(b.MaxHp * 0.1, School.Physical, "t", null);
-        Assert.Equal(13 + 35, b.FlareMeter, 3);
+        Assert.Equal(11 + 35, b.FlareMeter, 3);
         b.FlareMeter = 0;
         p.Hp = b.MaxHp * 0.3;
         b.HurtPlayerRaw(b.MaxHp * 0.1, School.Physical, "t", null);
-        Assert.Equal(13, b.FlareMeter, 3);
+        Assert.Equal(11, b.FlareMeter, 3);
     }
 
     [Fact]
-    public void Kills_fill_at_most_half_a_second_and_a_story_fight_starts_at_half()
+    public void Kills_fill_at_most_their_rate_and_a_story_fight_starts_at_half()
     {
         var b = Flaring();
         var foes = Enumerable.Range(0, 12).Select(i => Foe(b, 8 + i * 0.1, 8)).ToList();
         foreach (var e in foes) b.HitEnemy(e, 1e6, School.Physical, [Tag.Physical]);
         double kills = b.FlareFills.GetValueOrDefault("kills");
-        Assert.InRange(kills, 0.1 - 1e-9, 0.5 + 1e-9);
+        Assert.InRange(kills, 0.1 - 1e-9, Battle.FillKillRate + 1e-9);
 
         Assert.Equal(50, Fight(Survivor("warden", Ultimate("warden")), flareStart: 50).FlareMeter, 3);
     }

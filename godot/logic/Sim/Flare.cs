@@ -56,8 +56,8 @@ public sealed partial class Battle
         return got;
     }
     /// <summary>The fill table, tuned by the harness (CLASSES.md §3.2).</summary>
-    public const double FillHurt = 0.65, FillAnswer = 35, FillPerfect = 10, FillBlock = 6, FillBoss = 0.8,
-        FillChampion = 2, FillChampionRate = 0.6, FillKill = 0.1, FillKillRate = 0.5;
+    public const double FillHurt = 0.55, FillAnswer = 35, FillPerfect = 10, FillBlock = 6, FillBoss = 0.8,
+        FillChampion = 2, FillChampionRate = 0.6, FillKill = 0.1, FillKillRate = 0.65;
     bool answeredTwice;
 
     public int FlareCharges => Lamp("flare.banked") ? (int)Lamps.Full("flare.banked", "charges", 2) : 1;
@@ -90,7 +90,7 @@ public sealed partial class Battle
 
     /* ------------------------------------------------------- how it fills -- */
 
-    /// <summary>A blow reached her: +0.65 for each 1% of health lost, doubled below a third; the first drop
+    /// <summary>A blow reached her: +0.55 for each 1% of health lost, doubled below a third; the first drop
     /// below a quarter, the ember answers (+35, once in 45 s).</summary>
     void FlareOnHurt(double dmg, double hpBefore, string source)
     {
@@ -132,7 +132,7 @@ public sealed partial class Battle
         if (e.Boss) FillFlare(FillBoss * dealt / e.MaxHp * 100, "boss");
     }
 
-    /// <summary>A kill: a champion's +2, at most +0.6 a second; the horde's +0.1 each, at most +0.5 a second; a bleed's kill with Blood for the Flare.</summary>
+    /// <summary>A kill: a champion's +2, at most +0.6 a second; the horde's +0.1 each, at most +0.65 a second; a bleed's kill with Blood for the Flare.</summary>
     void FlareOnKill(Enemy e, bool byBleed)
     {
         if (Flare == null) return;

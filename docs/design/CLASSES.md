@@ -405,12 +405,12 @@ The meter runs from 0 to 100. It fills **fastest when you're in trouble**, and s
 
 | Source | Fill | Why |
 |---|---|---|
-| Blows taken | +0.65 for each 1% of health lost; doubled below a third of health | Being hurt is when you need it |
+| Blows taken | +0.55 for each 1% of health lost; doubled below a third of health | Being hurt is when you need it |
 | **Close calls** | a perfect dash +10; blocking a champion's or boss's blow +6 | Rewards the skill the dash already teaches |
 | **The ember answers** | the first drop below a quarter of health: +35 (at most once every 45 s) | The life-saver: a half-full Flare is ready just as you're nearly dead |
 | Bosses | +0.8 for each 1% of their health you deal (the Flare's own never counts) | Two or three Flares in a boss fight, from fighting it well |
 | Champions | +2 a kill, at most +0.6 a second (no fill from damage: about 40 champions fall a minute) | A champion is a step, not a full Flare |
-| Ordinary kills | +0.1 each, at most +0.5 a second | The horde can't spam it |
+| Ordinary kills | +0.1 each, at most +0.65 a second | The horde can't spam it |
 
 Hearth lamps that fill it from the horde (Blood for the Flare, Kindling) draw on their own purse at the kills' rate, so the horde still can't spam it.
 
@@ -795,7 +795,7 @@ A warden who drafts Volley and Moonbrand all night plays a full ember build: pos
 
 **Endless (past the boss, the long night).** Truly endless means the power must keep growing as the horde does:
 - Every five minutes past the half hour, the Flare **grows a rank**. Its damage climbs with no cap. Its size grows until it fills the screen and then stops, so it stays readable.
-- The kill fill's cap stays at +0.5 a second, so danger still fills the meter faster than killing does, and the deep night's danger makes Flares come often.
+- The kill fill's cap stays at +0.65 a second, so danger still fills the meter faster than killing does, and the deep night's danger makes Flares come often.
 - **Banked Flame** (two charges) comes into its own: one Flare spent on a close call, and another ready.
 - Honing (SKILLS_DESIGN §8.5) and the Flare's ranks are the open axes, so the hundredth minute still has something growing.
 
