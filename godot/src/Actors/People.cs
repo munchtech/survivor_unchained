@@ -858,6 +858,8 @@ public static class People
         int ch = System.Array.IndexOf(OutfitChannels, set);
         foreach (var mi in p.Skeleton.GetChildren().OfType<MeshInstance3D>())
             if (!mi.Name.ToString().Contains('.') && !mi.Name.ToString().Contains('_')) TuckSkin(mi, ch);
+        // Her gameplay model beside it, drawn only at the play camera (HerLod).
+        HerLod.Attach(p, set);
     }
 
     static Shader? furShader, sheerShader, outfitShader;
