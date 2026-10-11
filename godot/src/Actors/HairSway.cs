@@ -106,6 +106,17 @@ public partial class HairSway : Node
     const float DownLo = 0.45f, DownHi = 0.95f, FlatLo = 0.3f, FlatHi = 0.7f, UpLo = 1.1f, UpHi = 1.35f, UprightLo = 0.8f, UprightHi = 0.95f,
         DownRise = 0.7f, DownFall = 0.5f, DrapeStep = 0.02f;
     const int DrapePasses = 4;
+    // The round carry (hair solver 8). Getting up from all fours, her neck came up into the tail or braid hanging below her
+    // face, and the drape (carried with her move, not her turn) kept it down the front of her throat until she stood, then
+    // flipped it behind her in a frame (hair judge hj4, get_up c8-c14). So once she has been fully down and is rising (her
+    // head over 70 cm up, her spine past 0.45 upright), what hangs in front of her neck and chest is swung round her near
+    // side about her spine's line through her neck (pushed out of her sideways, never through her neck) to her back, at
+    // most 180 degrees in 0.35 s, and the swing is not given back until it is round. Only a tail or a braid (tied at her
+    // head): long hair falling forward over both shoulders is natural, and passed.
+    bool laidFull; int side; int fileBalls;
+    readonly bool[] round = new bool[8];
+    const float RoundLo = 0.45f, RoundHi = 0.85f, RoundHead = 0.7f, RoundFront = 0.015f, RoundTop = 0.12f, RoundTime = 0.35f;
+    static readonly float RoundTo = Mathf.DegToRad(60);
 
     public HairSway() { Name = "HairSway"; }
 
@@ -152,6 +163,7 @@ public partial class HairSway : Node
             list.Add(new Ball { Bone = shoulder, At = s.Lerp(e, 0.5f), R = 0.065f });
         }
         balls = list.ToArray();
+        fileBalls = bs.Count;
         int[] Of(string n) { var l = new System.Collections.Generic.List<int>(); for (int k = 0; k < bs.Count; k++) if ((string)bs[k].AsGodotDictionary()["bone"] == n) l.Add(k); return l.ToArray(); }
         neckBalls = Of("neck_01"); backBalls = Of("spine_03"); lowBalls = Of("spine_01");
     }
@@ -452,23 +464,60 @@ public partial class HairSway : Node
         float headH = (sk!.GlobalTransform * sk.GetBoneGlobalPose(head).Origin).Y - ground;
         float d = (1 - Mathf.SmoothStep(DownLo, DownHi, backH)) * (1 - Mathf.SmoothStep(FlatLo, FlatHi, upright));
         float up = Mathf.SmoothStep(UpLo, UpHi, headH) * Mathf.SmoothStep(UprightLo, UprightHi, upright);
+        bool carrying = System.Array.IndexOf(round, true) >= 0;
         if (first || justSettled) down = d;
         else if (d > down) down = Mathf.Min(d, down + dt / DownRise);
-        else down = Mathf.Max(0, down - up * dt / DownFall);
+        else if (!carrying) down = Mathf.Max(0, down - up * dt / DownFall);
+        if (down >= 1 - 1e-4f) laidFull = true;
+        else if (down <= 0) { laidFull = false; side = 0; System.Array.Clear(round); }
         if (first || justSettled || down <= 0) System.Array.Copy(x, drape, 8);
         else
         {
             var carry = target[0] - drapeRoot;
             for (int i = 0; i < 8; i++) drape[i] += carry;
             drape[0] = target[0];
+            var upAx = (neck - low).Normalized();
+            var bk = back[neckBalls[0]]; bk = (bk - upAx * bk.Dot(upAx)).Normalized();
+            var ac = upAx.Cross(bk);
+            bool armed = laidFull && bone == head && upright > RoundLo && headH > RoundHead;
+            float thMax = Mathf.Pi - (Mathf.Pi - RoundTo) * Mathf.SmoothStep(RoundLo, RoundHi, upright), turnMost = Mathf.Pi * dt / RoundTime / DrapePasses;
+            // (the angle round her spine from straight behind her, toward the side it goes round; in front on the far side
+            // it goes round the near side too)
+            float Round(Vector3 q, out float hg, out float b, out float rho)
+            {
+                var r = q - neck; hg = r.Dot(upAx); float a = r.Dot(ac); b = r.Dot(bk); rho = Mathf.Sqrt(a * a + b * b);
+                float th = Mathf.Atan2(side * a, b);
+                return th < -Mathf.Pi / 2 ? th + 2 * Mathf.Pi : th;
+            }
+            if (armed)
+            {
+                if (side == 0)
+                {
+                    float sa = 0;
+                    for (int i = 1; i < 8; i++) { var r = drape[i] - neck; if (r.Dot(bk) < -RoundFront && r.Dot(upAx) < RoundTop) sa += r.Dot(ac); }
+                    side = sa >= 0 ? 1 : -1;
+                }
+                for (int i = 1; i < 8; i++)
+                {
+                    float th = Round(drape[i], out float hg, out float b, out float rho);
+                    if (rho < 0.02f) continue;
+                    if (!round[i] && b < -RoundFront && hg < RoundTop) round[i] = true;
+                    if (round[i] && th <= RoundTo + 1e-3f) round[i] = false;
+                }
+            }
             for (int k = 0; k < DrapePasses; k++)
                 for (int i = 1; i < 8; i++)
                 {
                     var came = drape[i];
                     drape[i].Y -= DrapeStep;
                     drape[i] = drape[i - 1] + (drape[i] - drape[i - 1]).Normalized() * link[i];
-                    drape[i] = Out(drape[i], scale, -1, came);
+                    drape[i] = round[i] ? Sideways(drape[i], upAx, scale) : Out(drape[i], scale, -1, came);
                     drape[i].Y = Mathf.Max(drape[i].Y, floor);
+                    if (armed && round[i])
+                    {
+                        float th = Round(drape[i], out _, out _, out _);
+                        if (th > thMax) drape[i] = neck + (drape[i] - neck).Rotated(upAx, -side * Mathf.Min(th - thMax, turnMost));
+                    }
                 }
         }
         drapeRoot = target[0];
@@ -487,6 +536,24 @@ public partial class HairSway : Node
         justSettled = false;
     }
     bool justSettled;
+
+    /// <summary>A point being carried round her (the round carry) kept out of her neck and back sideways, square to her
+    /// spine, so it goes round her and is never pushed back the way it came.</summary>
+    Vector3 Sideways(Vector3 q, Vector3 upAx, float scale)
+    {
+        for (int b = 0; b < fileBalls; b++)
+        {
+            var w = across[b];
+            float ww = w.LengthSquared(), r = balls[b].R * scale;
+            var c = ww > 0 ? at[b] + w * Mathf.Clamp((q - at[b]).Dot(w) / ww, -1f, 1f) : at[b];
+            var off = q - c;
+            if (off.LengthSquared() >= r * r) continue;
+            var u = upAx * off.Dot(upAx); var flat = off - u;
+            if (flat.LengthSquared() < 1e-10f || u.LengthSquared() >= r * r) continue;
+            q = c + u + flat.Normalized() * Mathf.Sqrt(r * r - u.LengthSquared());
+        }
+        return q;
+    }
     Vector3[] lay = new Vector3[8];
 
     // (env HAIRDUMP: each frame's inputs and the chain as it starts, for an offline replica)
