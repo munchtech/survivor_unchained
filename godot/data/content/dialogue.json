@@ -4834,10 +4834,10 @@
         "eq": true
        }
       },
-      "text": "(Gray light. She's already up, barefoot in the frost, listening.) Go on, then. The wood's awake, and so's Holloway, and he'll count us both."
+      "text": "(Gray light. She's already up, out in the frost, listening.) Go on, then. The wood's awake, and so's Holloway, and he'll count us both."
      },
      {
-      "text": "(Gray light. She's already up, crouched barefoot in the frost at the mouth of the Blind, listening to the wood: one hand on the crossbow and the other on you.) The Pack found me, after Ashford. A cave mouth, and a lad I'd been fond of dying in it. The old gray one came and lay down across the way in. Kept the cold off. Kept everything off. ...That's why. That's all of why. Don't make it a story."
+      "text": "(Gray light. She's already up, crouched in the frost at the mouth of the Blind, listening to the wood: one hand on the crossbow and the other on you.) The Pack found me, after Ashford. A cave mouth, and a lad I'd been fond of dying in it. The old gray one came and lay down across the way in. Kept the cold off. Kept everything off. ...That's why. That's all of why. Don't make it a story."
      }
     ],
     "effects": [
@@ -5162,7 +5162,7 @@
       "goto": "blind2_feet"
      },
      {
-      "text": "(Let her.)",
+      "text": "(Let her take them back.)",
       "show": {
        "fact": "maeca.blind_nights",
        "eq": 2
@@ -5372,7 +5372,7 @@
    },
    "blind2_feet": {
     "id": "blind2_feet",
-    "text": "...Two toes short. The wet had them, a long time back. ...Your hands are colder than my feet. (a long quiet) Hold them anyway. ...Nobody's held those.",
+    "text": "...Two toes short. The wet had them, a long time back. (a long quiet) ...Hold them anyway. ...Nobody's held those.",
     "effects": [
      {
       "rel": {
@@ -5386,7 +5386,7 @@
    },
    "blind2_let": {
     "id": "blind2_let",
-    "text": "(a long quiet; then, half asleep, close) ...Mm. Keep still. ...They're only feet.",
+    "text": "(a long quiet; then, half asleep, close) ...Keep still. ...They're only feet.",
     "next": "blind_morning"
    },
    "told_true": {
@@ -5437,7 +5437,7 @@
    },
    "blind3_morning": {
     "id": "blind3_morning",
-    "text": "(gray light; awake before you, as always, but not up; her head still on your chest, her face very still) Your heart's going like a hare's. (not lifting her head) All night it was a bear's in January. I counted between. ...I've lain with my ear to a lot of things to see if they'd live, {name}. (up, then, and out barefoot into the frost; she stands listening to the wood with her back to you) Go on. Holloway'll count us.",
+    "text": "(gray light; awake before you, as always, but not up; her head still on your chest, her face very still) Your heart's going like a hare's. (not lifting her head) All night it was a bear's in January. I counted between. ...I've lain with my ear to a lot of things to see if they'd live, {name}. (up, then, and out into the frost; she stands listening to the wood with her back to you) Go on. Holloway'll count us.",
     "effects": [
      {
       "set": {
@@ -17525,7 +17525,7 @@
        "fact": "sella.told_knowing",
        "eq": true
       },
-      "text": "Hold still. My hands don't know what they're doing. ...Seven years, love, and I can't undo a lace. Don't you laugh. Don't you dare— (she laughs, and can't stop, and then she does) ...Wait. ...All right. All right. (much later; into your shoulder) ...You told me anyway."
+      "text": "My hands don't know what they're doing. ...Seven years, love, and I can't undo a lace. Don't you laugh. Don't you dare— (she laughs, and can't stop, and then she does) ...Wait. ...All right. All right. (much later; into your shoulder) ...You told me anyway."
      },
      {
       "text": "No talking. I talk for money. ...Stay like that. Let me look. ...I'm not making a joke of it. Don't you make one. ...Yes."

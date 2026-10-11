@@ -68,8 +68,10 @@ public class StoryRewriteTests
     public void Maeca_is_just_Maeca()
     {
         // The owner: "she is just Maeca"; "the barefoot thing is a little silly". Her feet stay hers, at
-        // the Blind, as a word in the prose; never her name, never a grievance.
+        // the Blind: bare on the ground at the fire, held in the dark (notes 02 section 6.2); never her
+        // name, never a grievance, and never the word in her lines again (it crept back into three once).
         Assert.DoesNotContain(ContentStrings(), t => t.Contains("Barefoot"));
+        Assert.DoesNotContain(Convo("maeca").Nodes.Values.SelectMany(n => n.Text), v => v.Text.Contains("barefoot"));
         Assert.Equal("Maeca", Lore.Person("maeca")!.Name);
         Assert.DoesNotContain("barefoot", Convo("maeca").Nodes.Keys);
         Assert.Contains("I track for the Watch, before you ask.", Convo("maeca").Nodes["first"].Text[0].Text);
@@ -455,7 +457,8 @@ public class StoryRewriteTests
     /// <summary>Love scenes B (the owner, 6 October; docs/story/LOVE_SCENES.md): the narrator stops at the
     /// door. Behind it only the lovers speak, in the dark and in the mornings after: no narrated node and no
     /// narrator's aside (a capitalized parenthesis). The bolt is the one exception: she hears it from the
-    /// stairs (free_bolt, and the same sentence opening free_sleep_bed), and then she is silent.</summary>
+    /// stairs (free_bolt, and the same sentence opening free_sleep_bed), and then she is silent. The
+    /// exception is that sentence word for word (tools/vo/elevenlabs.py BOLT), not the two nodes.</summary>
     [Fact]
     public void The_narrator_stops_at_the_door()
     {
@@ -468,11 +471,11 @@ public class StoryRewriteTests
             ["maeca"] = new[] { "blind", "blind_dark", "blind2_feet", "blind2_let", "told_true", "told_little",
                 "blind3_morning", "blind3_m_no" },
         };
+        const string Bolt = "Behind the door, the bolt sticks halfway; nobody has ever shot it. Swearing, and a shoulder to "
+            + "it, and then it goes home, with a sound like the last coin put down on a counter.";
         var bolt = Convo("sella").Nodes["free_bolt"];
         Assert.Equal("narrator", bolt.Speaker);
-        string heard = bolt.Text.Single().Text;
-        Assert.StartsWith("Behind the door, the bolt", heard);
-        Assert.EndsWith("\"...There.\"", heard);
+        Assert.Equal(Bolt + " \"...There.\"", bolt.Text.Single().Text);
         var aside = new Regex(@"\(\s*([A-Z][^()]*)\)");
         foreach (var (conv, ids) in door)
             foreach (var id in ids)
@@ -482,9 +485,31 @@ public class StoryRewriteTests
                 Assert.True(n.Speaker is null || n.Speaker == conv, $"{conv}.{id} is narrated behind the door");
                 foreach (var v in n.Text)
                     foreach (Match m in aside.Matches(v.Text))
-                        Assert.True(id == "free_sleep_bed" && heard.StartsWith(m.Groups[1].Value),
+                        Assert.True(id == "free_sleep_bed" && m.Value == "(" + Bolt + ")",
                             $"{conv}.{id}: the narrator's aside {m.Value} is behind the door");
             }
+        // Falling asleep, the bolt is the one aside, and it is there.
+        Assert.All(Convo("sella").Nodes["free_sleep_bed"].Text,
+            v => Assert.Equal(new[] { "(" + Bolt + ")" }, aside.Matches(v.Text).Select(m => m.Value)));
+        // The list is by hand, so walk the scenes from where the door opens: a node added behind it later
+        // can't go unchecked. Only the gray light at the Blind is reached and stays outside.
+        foreach (var (conv, roots) in new[] { ("sella", new[] { "stairs_room", "free_door" }), ("maeca", new[] { "blind" }) })
+        {
+            var nodes = Convo(conv).Nodes;
+            var seen = new HashSet<string>();
+            var todo = new Stack<string>(roots);
+            while (todo.Count > 0)
+            {
+                var id = todo.Pop();
+                if (!seen.Add(id)) continue;
+                var n = nodes[id];
+                if (n.Next != null) todo.Push(n.Next);
+                foreach (var c in n.Choices ?? new())
+                    if (c.Goto != null) todo.Push(c.Goto);
+            }
+            seen.Remove("blind_morning");
+            Assert.Equal(door[conv].OrderBy(x => x), seen.OrderBy(x => x));
+        }
         // The mornings at the Blind open outside, in the frost: the plant for the rope stays the narrator's.
         Assert.Contains("one hand on the crossbow and the other on you", Convo("maeca").Nodes["blind_morning"].Text.Last().Text);
     }

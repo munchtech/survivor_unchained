@@ -5733,7 +5733,7 @@
     {
      "voice": "maeca",
      "text": "...Hear that? They're eating. ...Down. On the hides. ...Quiet. I said quiet.",
-     "acted": "...Hear that? [laughs] They're eating. ...Down. On the hides. ...Quiet. I said quiet."
+     "acted": "...Hear that? [a short laugh, surprised] They're eating. ...Down. On the hides. ...Quiet. [amused, barely voiced] I said quiet."
     }
    ],
    "direction": {
@@ -5774,13 +5774,13 @@
    "id": "dlg.maeca.blind_morning.0",
    "kind": "dialogue",
    "voice": "maeca",
-   "text": "(Gray light. She's already up, barefoot in the frost, listening.) Go on, then. The wood's awake, and so's Holloway, and he'll count us both.",
+   "text": "(Gray light. She's already up, out in the frost, listening.) Go on, then. The wood's awake, and so's Holloway, and he'll count us both.",
    "where": "dialogue.json maeca/blind_morning#0",
-   "hash": "95ad0b6b0e41",
+   "hash": "590a651c760e",
    "segments": [
     {
      "voice": "narrator",
-     "text": "Gray light. She's already up, barefoot in the frost, listening."
+     "text": "Gray light. She's already up, out in the frost, listening."
     },
     {
      "voice": "maeca",
@@ -5800,13 +5800,13 @@
    "id": "dlg.maeca.blind_morning.1",
    "kind": "dialogue",
    "voice": "maeca",
-   "text": "(Gray light. She's already up, crouched barefoot in the frost at the mouth of the Blind, listening to the wood: one hand on the crossbow and the other on you.) The Pack found me, after Ashford. A cave mouth, and a lad I'd been fond of dying in it. The old gray one came and lay down across the way in. Kept the cold off. Kept everything off. ...That's why. That's all of why. Don't make it a story.",
+   "text": "(Gray light. She's already up, crouched in the frost at the mouth of the Blind, listening to the wood: one hand on the crossbow and the other on you.) The Pack found me, after Ashford. A cave mouth, and a lad I'd been fond of dying in it. The old gray one came and lay down across the way in. Kept the cold off. Kept everything off. ...That's why. That's all of why. Don't make it a story.",
    "where": "dialogue.json maeca/blind_morning#1",
-   "hash": "ccb695c4668e",
+   "hash": "aa0537f43d34",
    "segments": [
     {
      "voice": "narrator",
-     "text": "Gray light. She's already up, crouched barefoot in the frost at the mouth of the Blind, listening to the wood: one hand on the crossbow and the other on you."
+     "text": "Gray light. She's already up, crouched in the frost at the mouth of the Blind, listening to the wood: one hand on the crossbow and the other on you."
     },
     {
      "voice": "maeca",
@@ -6403,10 +6403,10 @@
    "id": "ply.maeca.blind_dark.2",
    "kind": "choice",
    "voice": "survivor",
-   "text": "(Let her.)",
+   "text": "(Let her take them back.)",
    "where": "dialogue.json maeca/blind_dark choice 2",
    "skip": "the survivor's replies are voiced in a later pass",
-   "hash": "f00bc0d32ce7",
+   "hash": "f243984e87f5",
    "status": "skip"
   },
   {
@@ -6463,14 +6463,14 @@
    "id": "dlg.maeca.blind2_feet.0",
    "kind": "dialogue",
    "voice": "maeca",
-   "text": "...Two toes short. The wet had them, a long time back. ...Your hands are colder than my feet. (a long quiet) Hold them anyway. ...Nobody's held those.",
+   "text": "...Two toes short. The wet had them, a long time back. (a long quiet) ...Hold them anyway. ...Nobody's held those.",
    "where": "dialogue.json maeca/blind2_feet#0",
-   "hash": "8af8dfaec6c4",
+   "hash": "0a556b4cf2a2",
    "segments": [
     {
      "voice": "maeca",
-     "text": "...Two toes short. The wet had them, a long time back. ...Your hands are colder than my feet. Hold them anyway. ...Nobody's held those.",
-     "acted": "...Two toes short. The wet had them, a long time back. ...Your hands are colder than my feet. [long pause] Hold them anyway. ...Nobody's held those."
+     "text": "...Two toes short. The wet had them, a long time back. ...Hold them anyway. ...Nobody's held those.",
+     "acted": "...Two toes short. The wet had them, a long time back. [long pause] ...Hold them anyway. ...Nobody's held those."
     }
    ],
    "direction": {
@@ -6478,7 +6478,7 @@
     "intent": "lets you hold her feet",
     "pace": "slow",
     "vol": "quiet",
-    "note": "Dark room: low and close, nearly a whisper, never breathy. Each '...' is a real silence of two to four seconds. A laugh that sounds made is cut: leave it out. Her scarred feet in your hands. 'Two toes short. The wet had them, a long time back.' a fact about ground and weather, flat, the way she says everything about herself. 'Your hands are colder than my feet.' very low; nearly funny, not played. A long quiet. 'Hold them anyway.' the hardest thing she has asked anyone. 'Nobody's held those.' barely there: no self-pity, no tremble put on.",
+    "note": "Dark room: low and close, nearly a whisper, never breathy. Each '...' is a real silence of two to four seconds. A laugh that sounds made is cut: leave it out. Her scarred feet in your hands. 'Two toes short. The wet had them, a long time back.' a fact about ground and weather, flat, the way she says everything about herself. A long quiet. 'Hold them anyway.' the hardest thing she has asked anyone: anyway, ruined as they are. 'Nobody's held those.' barely there: no self-pity, no tremble put on.",
     "gap": 4.0
    },
    "status": "todo"
@@ -6487,14 +6487,14 @@
    "id": "dlg.maeca.blind2_let.0",
    "kind": "dialogue",
    "voice": "maeca",
-   "text": "(a long quiet; then, half asleep, close) ...Mm. Keep still. ...They're only feet.",
+   "text": "(a long quiet; then, half asleep, close) ...Keep still. ...They're only feet.",
    "where": "dialogue.json maeca/blind2_let#0",
-   "hash": "ecd1d498126c",
+   "hash": "0a82e22de252",
    "segments": [
     {
      "voice": "maeca",
-     "text": "...Mm. Keep still. ...They're only feet.",
-     "acted": "...Mm. Keep still. ...They're only feet."
+     "text": "...Keep still. ...They're only feet.",
+     "acted": "...Keep still. ...They're only feet."
     }
    ],
    "direction": {
@@ -6502,7 +6502,7 @@
     "intent": "puts her feet back against you, trying it out",
     "pace": "slow",
     "vol": "quiet",
-    "note": "Dark room: low and close, nearly a whisper, never breathy. Each '...' is a real silence of two to four seconds. A laugh that sounds made is cut: leave it out. In the night, half asleep, she puts them back against you. 'Mm.' a sleepy sound, never a moan. 'Keep still.' dry. 'They're only feet.' as if you'd made the fuss; it's she who has.",
+    "note": "Dark room: low and close, nearly a whisper, never breathy. Each '...' is a real silence of two to four seconds. A laugh that sounds made is cut: leave it out. In the night, half asleep, she puts them back against you. 'Keep still.' dry. 'They're only feet.' as if you'd made the fuss; it's she who has.",
     "gap": 4.0
    },
    "status": "todo"
@@ -6630,9 +6630,9 @@
    "id": "dlg.maeca.blind3_morning.0",
    "kind": "dialogue",
    "voice": "maeca",
-   "text": "(gray light; awake before you, as always, but not up; her head still on your chest, her face very still) Your heart's going like a hare's. (not lifting her head) All night it was a bear's in January. I counted between. ...I've lain with my ear to a lot of things to see if they'd live, {name}. (up, then, and out barefoot into the frost; she stands listening to the wood with her back to you) Go on. Holloway'll count us.",
+   "text": "(gray light; awake before you, as always, but not up; her head still on your chest, her face very still) Your heart's going like a hare's. (not lifting her head) All night it was a bear's in January. I counted between. ...I've lain with my ear to a lot of things to see if they'd live, {name}. (up, then, and out into the frost; she stands listening to the wood with her back to you) Go on. Holloway'll count us.",
    "where": "dialogue.json maeca/blind3_morning#0",
-   "hash": "e6b44b99b7bd",
+   "hash": "5c11aa0cd847",
    "name_elided": true,
    "segments": [
     {
@@ -6646,7 +6646,7 @@
     "intent": "she heard your heart change",
     "pace": "slow",
     "vol": "quiet",
-    "note": "Morning in the room: close and quiet, not hushed. Gray light; her head still on your chest, her face very still. Close: the hare and the bear. 'I counted between.' A pause where the name would be. Then she gets up and goes out barefoot into the frost, her back to you: 'Go on. Holloway'll count us.' steadier, from further off.",
+    "note": "Morning in the room: close and quiet, not hushed. Gray light; her head still on your chest, her face very still. Close: the hare and the bear. 'I counted between.' A pause where the name would be. Then she gets up and goes out into the frost, her back to you: 'Go on. Holloway'll count us.' steadier, from further off.",
     "gap": 4.0
    },
    "status": "todo"
@@ -22791,7 +22791,7 @@
     "intent": "the night she stops working and can't let you see it",
     "pace": "slow",
     "vol": "quiet",
-    "note": "Dark room: low and close, nearly a whisper, never breathy. Each '...' is a real silence of two to four seconds. A laugh that sounds made is cut: leave it out. No laugh anywhere in this one. 'I'm not walking three steps for a bed; bring the quilt.' tired, fond. 'Easy. Easy, love.' the way you gentle a skittish horse; it's you she's gentling, and herself. 'Don't. ...Don't look at me.' caught and close, nearly a plea (the old 'Don't' take folds in here). 'I'm not getting dressed. Don't ask me why.' the last thing before sleep, plain, a door closing. The coins, counted twice in the morning, are the game's.",
+    "note": "Dark room: low and close, nearly a whisper, never breathy. Each '...' is a real silence of two to four seconds. A laugh that sounds made is cut: leave it out. No laugh anywhere in this one. 'I'm not walking three steps for a bed; bring the quilt.' tired, fond. 'Easy. Easy, love.' the way you gentle a skittish horse; it's you she's gentling, and herself. 'Don't. ...Don't look at me.' close and soft, not a plea: she stops your look the way she'd stop a hand (the old 'Don't' take folds in here). 'I'm not getting dressed. Don't ask me why.' the last thing before sleep, plain, a door closing. The coins, counted twice in the morning, are the game's.",
     "gap": 4.0
    },
    "status": "todo"
@@ -22807,7 +22807,7 @@
     {
      "voice": "sella",
      "text": "That's the floor, then. ...Not with my shift, you great— give it here. ...Right. I'll tell you what I'm going to do, love, and then I'm going to do it. First I'm going to— ...First. ...You know. Come here.",
-     "acted": "[laughs] That's the floor, then. ...Not with my shift, you great— give it here. ...Right. I'll tell you what I'm going to do, love, and then I'm going to do it. First I'm going to— ...First. [long pause] ...You know. Come here."
+     "acted": "[laughs softly] That's the floor, then. ...Not with my shift, you great— give it here. ...Right. I'll tell you what I'm going to do, love, and then I'm going to do it. First I'm going to— ...First. [long pause] ...You know. Come here."
     }
    ],
    "direction": {
@@ -22815,7 +22815,7 @@
     "intent": "a regular's night that stops being work in the gaps",
     "pace": "slow",
     "vol": "quiet",
-    "note": "Dark room: low and close, nearly a whisper, never breathy. Each '...' is a real silence of two to four seconds. A laugh that sounds made is cut: leave it out. Starts on a real laugh: the bath has gone over the side (if the laugh comes out made, start on 'That's the floor, then.'). 'you great—' cut off by her own laugh. 'I'll tell you what I'm going to do, love, and then I'm going to do it.' her trade, low and wicked. Then 'First I'm going to— ...First.' she loses it, and the gaps are the scene: don't fill them, don't play them sad. 'You know. Come here.' softer than anything before it.",
+    "note": "Dark room: low and close, nearly a whisper, never breathy. Each '...' is a real silence of two to four seconds. A laugh that sounds made is cut: leave it out. Starts on a real laugh: the bath has gone over the side (if the laugh comes out made, start on 'That's the floor, then.'). 'you great—' cut off by her own laugh. 'I'll tell you what I'm going to do, love, and then I'm going to do it.' her trade, low and wicked. Then 'First I'm going to— ...First.' she loses it, and the gaps are the scene: don't fill them, don't play them sad. Not coy and not shy: the patter simply isn't there tonight. 'You know. Come here.' softer than anything before it.",
     "gap": 4.0
    },
    "status": "todo"
@@ -23322,14 +23322,14 @@
    "id": "dlg.sella.free_night.0",
    "kind": "dialogue",
    "voice": "sella",
-   "text": "Hold still. My hands don't know what they're doing. ...Seven years, love, and I can't undo a lace. Don't you laugh. Don't you dare— (she laughs, and can't stop, and then she does) ...Wait. ...All right. All right. (much later; into your shoulder) ...You told me anyway.",
+   "text": "My hands don't know what they're doing. ...Seven years, love, and I can't undo a lace. Don't you laugh. Don't you dare— (she laughs, and can't stop, and then she does) ...Wait. ...All right. All right. (much later; into your shoulder) ...You told me anyway.",
    "where": "dialogue.json sella/free_night#0",
-   "hash": "4f2085831aca",
+   "hash": "cd54f1d06db4",
    "segments": [
     {
      "voice": "sella",
-     "text": "Hold still. My hands don't know what they're doing. ...Seven years, love, and I can't undo a lace. Don't you laugh. Don't you dare— ...Wait. ...All right. All right. ...You told me anyway.",
-     "acted": "Hold still. My hands don't know what they're doing. ...Seven years, love, and I can't undo a lace. Don't you laugh. Don't you dare— [laughs] ...Wait. ...All right. All right. [long pause] ...You told me anyway."
+     "text": "My hands don't know what they're doing. ...Seven years, love, and I can't undo a lace. Don't you laugh. Don't you dare— ...Wait. ...All right. All right. ...You told me anyway.",
+     "acted": "My hands don't know what they're doing. ...Seven years, love, and I can't undo a lace. Don't you laugh. Don't you dare— [laughs helplessly, muffled] ...Wait. ...All right. All right. [long pause] ...You told me anyway."
     }
    ],
    "direction": {
@@ -23360,7 +23360,7 @@
     "intent": "looks at you as if learning your face",
     "pace": "slow",
     "vol": "quiet",
-    "note": "Dark room: low and close, nearly a whisper, never breathy. Each '...' is a real silence of two to four seconds. A laugh that sounds made is cut: leave it out. No laugh and no performance: the voice she doesn't sell. 'No talking. I talk for money.' a rule, close and plain. 'Stay like that. Let me look.' slow; she is learning your face. 'I'm not making a joke of it. Don't you make one.' almost fierce, very low. '...Yes.' to herself as much as to you: a decision, never a moan.",
+    "note": "Dark room: low and close, nearly a whisper, never breathy. Each '...' is a real silence of two to four seconds. A laugh that sounds made is cut: leave it out. No laugh and no performance: the voice she doesn't sell. 'No talking. I talk for money.' a rule, close and plain. 'Stay like that. Let me look.' slow; she is learning your face. 'I'm not making a joke of it. Don't you make one.' almost fierce, very low. '...Yes.' to herself as much as to you: a decision, never a moan. If no take of '...Yes.' sounds like a decision and not a breath, cut the word, from the text as well (the story lead's change): the line ends on 'Don't you make one.'",
     "gap": 4.0
    },
    "status": "todo"
@@ -23617,7 +23617,7 @@
     "intent": "to honor what they told her",
     "pace": "slow",
     "vol": "quiet",
-    "wants": "to honour what they told her",
+    "wants": "to honor what they told her",
     "note": "Morning in the room: close and quiet, not hushed. Chin on her fist. Quiet a moment before the second sentence. 'Saddest thing' said without performance; the last clause keeps it from tipping into pity.",
     "intensity": 3,
     "from": "cloud voice pass"
@@ -23808,7 +23808,7 @@
     {
      "voice": "sella",
      "text": "Blue room again. Same jug, same quilt. ...Same me. I've undone a few of these, love. All that steel, and under it, look. A person.",
-     "acted": "Blue room again. Same jug, same quilt. ...Same me. I've undone a few of these, love. [laughs] All that steel, and under it, look. A person."
+     "acted": "Blue room again. Same jug, same quilt. ...Same me. I've undone a few of these, love. [laughs softly] All that steel, and under it, look. A person."
     }
    ],
    "direction": {
@@ -23880,7 +23880,7 @@
     {
      "voice": "sella",
      "text": "Blue room again. Same jug, same quilt. ...Same me. There. Now you know what it's like. You jumped.",
-     "acted": "Blue room again. Same jug, same quilt. ...Same me. [whispers] There. Now you know what it's like. [laughs] You jumped."
+     "acted": "Blue room again. Same jug, same quilt. ...Same me. [whispers] There. Now you know what it's like. [laughs softly] You jumped."
     }
    ],
    "direction": {
@@ -23904,7 +23904,7 @@
     {
      "voice": "sella",
      "text": "It's the lamp glass. Everyone asks. Everything up here comes out blue. ...Warm. Told you. Chin up. Let me look at you. I've undone a few of these, love. All that steel, and under it, look. A person.",
-     "acted": "It's the lamp glass. Everyone asks. Everything up here comes out blue. ...Warm. Told you. Chin up. Let me look at you. I've undone a few of these, love. [laughs] All that steel, and under it, look. A person."
+     "acted": "It's the lamp glass. Everyone asks. Everything up here comes out blue. ...Warm. Told you. Chin up. Let me look at you. I've undone a few of these, love. [laughs softly] All that steel, and under it, look. A person."
     }
    ],
    "direction": {
@@ -23976,7 +23976,7 @@
     {
      "voice": "sella",
      "text": "It's the lamp glass. Everyone asks. Everything up here comes out blue. ...Warm. Told you. Chin up. Let me look at you. There. Now you know what it's like. You jumped.",
-     "acted": "It's the lamp glass. Everyone asks. Everything up here comes out blue. ...Warm. Told you. Chin up. Let me look at you. [whispers] There. Now you know what it's like. [laughs] You jumped."
+     "acted": "It's the lamp glass. Everyone asks. Everything up here comes out blue. ...Warm. Told you. Chin up. Let me look at you. [whispers] There. Now you know what it's like. [laughs softly] You jumped."
     }
    ],
    "direction": {
@@ -24028,10 +24028,11 @@
    ],
    "direction": {
     "emo": "frank, wry",
-    "intent": "her rules",
-    "pace": "measured",
+    "intent": "her rules, the first night",
+    "pace": "unhurried",
     "vol": "quiet",
-    "note": "The deaf-ear joke deadpan."
+    "note": "Dark room: low and close, nearly a whisper, never breathy. Each '...' is a real silence of two to four seconds. A laugh that sounds made is cut: leave it out. Her house rules: patter she has said a hundred times and still enjoys. 'Anything you'd rather I didn't, say so.' plain, and meant. 'Anything you'd rather I did, say it louder;' low and wicked. 'Rook's walls are thin, but she's deaf in the left ear.' deadpan: the joke left for you to find.",
+    "gap": 4.0
    },
    "status": "todo"
   },
@@ -24199,7 +24200,8 @@
     "intent": "lie down, then",
     "pace": "brisk",
     "vol": "quiet",
-    "note": "Rapid little orders; the chair line dry."
+    "note": "Dark room: low and close, nearly a whisper, never breathy. Each '...' is a real silence of two to four seconds. A laugh that sounds made is cut: leave it out. Rapid little orders, low, arranging you for sleep: bossy because it's easier than tender. 'No. Boots off; Rook'll have my hide.' quick. 'I'm not sitting up all night in a chair.' dry. 'I've done that for worse money.' drier, and true, and left there.",
+    "gap": 4.0
    },
    "status": "todo"
   },
@@ -24546,8 +24548,8 @@
     "emo": "plain",
     "intent": "she forgets the step",
     "pace": "slow",
-    "vol": "quiet",
-    "note": "The narrator on the stairs: the last of the night she tells. 'loud as a shout' given its beat; then quieter. Played level: she stops here, outside the room, and the next thing she tells is the bolt."
+    "vol": "level",
+    "note": "The narrator on the stairs: the last of the night she tells. 'loud as a shout' given its beat, then back to her ordinary level, never lowered: she isn't listening at a door. She stops here, outside the room, and the next thing she tells is the bolt."
    },
    "status": "todo"
   },
@@ -24759,7 +24761,7 @@
     "intent": "she sleeps, with your arm over her",
     "pace": "slow",
     "vol": "quiet",
-    "note": "The narrator's aside is the bolt, heard from the stairs (one take with free_bolt's). Then Sella in the dark: Dark room: low and close, nearly a whisper, never breathy. Each '...' is a real silence of two to four seconds. A laugh that sounds made is cut: leave it out. 'Shift over. Arm.' half asleep already, arranging you. 'Your arm, love, over. Like a blanket.' 'There.' content.",
+    "note": "The narrator's aside is the bolt, heard from the stairs (one take with free_bolt's). Then Sella in the dark, low and close, nearly a whisper, never breathy. Each '...' is a real silence of two to four seconds. 'Shift over. Arm.' half asleep already, arranging you. 'Your arm, love, over. Like a blanket.' 'There.' content.",
     "gap": 4.0
    },
    "status": "todo"
@@ -24785,8 +24787,8 @@
     "emo": "plain",
     "intent": "the bolt: the last thing she tells",
     "pace": "slow",
-    "vol": "quiet",
-    "note": "From the stairs: the narrator hears it; she isn't in the room. Level and unhurried. 'like the last coin put down on a counter' plain: the image does the work. After it she is silent until you come back down the stairs. Don't play it knowing.",
+    "vol": "level",
+    "note": "From the stairs: the narrator hears it; she isn't in the room. Her ordinary level, never lowered: she isn't listening at a door. She hears it go home, and stops. Unhurried; 'like the last coin put down on a counter' plain: the image does the work. After it she is silent until you come back down the stairs. Don't play it knowing.",
     "quote": {
      "emo": "barely voiced",
      "vol": "quiet",
@@ -24873,7 +24875,7 @@
     {
      "voice": "sella",
      "text": "Out. Before I get used to it. ...I'm not watching you go. Go on.",
-     "acted": "Out. Before I get used to it. [long pause] ...I'm not watching you go. Go on."
+     "acted": "Out. Before I get used to it. [long pause] [calling down softly, amused] ...I'm not watching you go. Go on."
     }
    ],
    "direction": {
@@ -24881,7 +24883,7 @@
     "intent": "out, before she gets used to it",
     "pace": "measured",
     "vol": "quiet",
-    "note": "Morning in the room: close and quiet, not hushed. She lets you kiss her, then pushes you off by the face with the flat of her hand: 'Out. Before I get used to it.' smiling, the truth under the joke. The ninth step creaks behind you (the game's sound): she came down two steps to watch you go. '...I'm not watching you go.' caught, and denying it with a grin. 'Go on.'"
+    "note": "Morning in the room. She lets you kiss her, then pushes you off by the face with the flat of her hand. 'Out. Before I get used to it.' close, smiling: the truth under the joke. The ninth step creaks behind you (the game's sound). '...I'm not watching you go.' called down after you from two steps down: pitched to carry, never raised; caught, and grinning about it. 'Go on.'"
    },
    "status": "todo"
   },

@@ -72,13 +72,13 @@ Holloway, Brannoc and Sella, in that order.
 <!-- PACKETS -->
 | Character | Takes | Characters | Held | Locked |
 |---|---|---|---|---|
-| [The narrator](narrator.md) | 333 | 27,260 | 83 | 251 |
-| [Sella](sella.md) | 95 | 13,019 | 51 |  |
+| [The narrator](narrator.md) | 333 | 27,246 | 79 | 255 |
+| [Sella](sella.md) | 95 | 13,007 |  | 52 |
 | [Captain Holloway](holloway.md) | 110 | 9,714 |  | 110 |
 | [Vonnra Ash-of-Morrow](vonnra.md) | 104 | 8,939 | 103 | 1 |
 | [Chid](chid.md) | 84 | 8,735 |  | 84 |
 | [Harlan Coyle](harlan.md) | 63 | 7,229 | 63 |  |
-| [Maeca](maeca.md) | 83 | 6,600 | 16 | 67 |
+| [Maeca](maeca.md) | 83 | 6,560 |  | 83 |
 | [Mother Rook](rook.md) | 54 | 6,558 |  | 54 |
 | [Rav Cutwell](rav.md) | 61 | 6,007 |  |  |
 | [Dame Keegan Orme](keegan.md) | 48 | 5,218 | 1 |  |

@@ -26,7 +26,10 @@ voice close in the dark has the stronger sex appeal.
    the fallback** for any take that can't be made to sound like a person: the
    narration as it stood at `fd0b8a9b` (`git show
    fd0b8a9b:godot/data/content/dialogue.json`, the same node ids), shown as
-   unvoiced text over one held object.
+   unvoiced text over one held object (`stairs_room` without the
+   elbow-and-chin sentence, "She tests the water with her elbow like
+   somebody's mother...", which under twist A puts a mother in the room;
+   `free_bolt` is B's in either version).
 
 ## The rules behind the door
 
@@ -96,7 +99,7 @@ voice close in the dark has the stronger sex appeal.
 
 ### Her free night (`free_night`: if she told her knowing it would be sold; otherwise)
 
-> Hold still. My hands don't know what they're doing. ...Seven years, love, and I can't undo a lace. Don't you laugh. Don't you dare— (she laughs, and can't stop, and then she does) ...Wait. ...All right. All right. (much later; into your shoulder) ...You told me anyway.
+> My hands don't know what they're doing. ...Seven years, love, and I can't undo a lace. Don't you laugh. Don't you dare— (she laughs, and can't stop, and then she does) ...Wait. ...All right. All right. (much later; into your shoulder) ...You told me anyway.
 >
 > No talking. I talk for money. ...Stay like that. Let me look. ...I'm not making a joke of it. Don't you make one. ...Yes.
 
@@ -122,9 +125,9 @@ voice close in the dark has the stronger sex appeal.
 
 > ...You're colder than my feet. (the hides rustle) How are you colder than my feet.
 >
-> ...Two toes short. The wet had them, a long time back. ...Your hands are colder than my feet. (a long quiet) Hold them anyway. ...Nobody's held those.
+> ...Two toes short. The wet had them, a long time back. (a long quiet) ...Hold them anyway. ...Nobody's held those.
 >
-> (a long quiet; then, half asleep, close) ...Mm. Keep still. ...They're only feet.
+> (a long quiet; then, half asleep, close) ...Keep still. ...They're only feet.
 >
 > (outside, in the frost: soft feet, a long way round; a sigh; another) ...They don't do that. Not for me. Not for anyone. (low, against your chest) You walk quiet. You came into my Hollow and knelt to him, and he let you. You never talk about before. (almost no sound) ...What were you?
 >
@@ -132,4 +135,4 @@ voice close in the dark has the stronger sex appeal.
 
 ### The gray light (`blind_morning`, outside the door: the narrator opens it)
 
-> (Gray light. She's already up, crouched barefoot in the frost at the mouth of the Blind, listening to the wood: one hand on the crossbow and the other on you.) The Pack found me, after Ashford. A cave mouth, and a lad I'd been fond of dying in it. The old gray one came and lay down across the way in. Kept the cold off. Kept everything off. ...That's why. That's all of why. Don't make it a story.
+> (Gray light. She's already up, crouched in the frost at the mouth of the Blind, listening to the wood: one hand on the crossbow and the other on you.) The Pack found me, after Ashford. A cave mouth, and a lad I'd been fond of dying in it. The old gray one came and lay down across the way in. Kept the cold off. Kept everything off. ...That's why. That's all of why. Don't make it a story.

@@ -1,6 +1,6 @@
 # The narrator: ElevenLabs packet
 
-Voice id in the game: `narrator`. 333 takes to record (27,260 characters; about 81,780 credits at three tries a line). Status: **on hold, except the 251 takes marked LOCKED FOR RECORDING** (the story lead, 2026-10-11): record those now and hold the rest (recast as a woman of about sixty, plain and dry (the story rewrite, 6 October); cast her anew before recording).
+Voice id in the game: `narrator`. 333 takes to record (27,246 characters; about 81,738 credits at three tries a line). Status: **on hold, except the 255 takes marked LOCKED FOR RECORDING** (the story lead, 2026-10-11): record those now and hold the rest (recast as a woman of about sixty, plain and dry (the story rewrite, 6 October); cast her anew before recording).
 
 ## Who they are
 
@@ -2160,25 +2160,25 @@ Subtitle: She doesn't look up from her cup.
 ```
 Subtitle: She finishes her cup and stands.
 
-### 196. `dlg.maeca.blind_morning.0.p0.wav`  HOLD: recast as a woman of about sixty, plain and dry (the story rewrite, 6 October); cast her anew before recording
+### 196. `dlg.maeca.blind_morning.0.p0.wav`  **LOCKED FOR RECORDING**
 
-*Where:* dialogue.json maeca/blind_morning#0; part 1 of 2: **narrator: Gray light. She's already up, barefoot in the frost, listening.** / maeca: Go on, then. The wood's awake, and so's Holloway, and he'll count us both.
+*Where:* dialogue.json maeca/blind_morning#0; part 1 of 2: **narrator: Gray light. She's already up, out in the frost, listening.** / maeca: Go on, then. The wood's awake, and so's Holloway, and he'll count us both.
 *Played:* the narrator's aside inside someone else's line: plain, quiet, observant; the narrator never shows a feeling.
 
 ```
-[quietly] Gray light. She's already up, barefoot in the frost, listening.
+[quietly] Gray light. She's already up, out in the frost, listening.
 ```
-Subtitle: Gray light. She's already up, barefoot in the frost, listening.
+Subtitle: Gray light. She's already up, out in the frost, listening.
 
-### 197. `dlg.maeca.blind_morning.1.p0.wav`  HOLD: recast as a woman of about sixty, plain and dry (the story rewrite, 6 October); cast her anew before recording
+### 197. `dlg.maeca.blind_morning.1.p0.wav`  **LOCKED FOR RECORDING**
 
-*Where:* dialogue.json maeca/blind_morning#1; part 1 of 2: **narrator: Gray light. She's already up, crouched barefoot in the frost at the mouth of the Blind, li…** / maeca: The Pack found me, after Ashford. A cave mouth, and a lad I'd been fond of dying in it. Th…
+*Where:* dialogue.json maeca/blind_morning#1; part 1 of 2: **narrator: Gray light. She's already up, crouched in the frost at the mouth of the Blind, listening t…** / maeca: The Pack found me, after Ashford. A cave mouth, and a lad I'd been fond of dying in it. Th…
 *Played:* the narrator's aside inside someone else's line: plain, quiet, observant; the narrator never shows a feeling.
 
 ```
-[quietly] Gray light. She's already up, crouched barefoot in the frost at the mouth of the Blind, listening to the wood: one hand on the crossbow and the other on you.
+[quietly] Gray light. She's already up, crouched in the frost at the mouth of the Blind, listening to the wood: one hand on the crossbow and the other on you.
 ```
-Subtitle: Gray light. She's already up, crouched barefoot in the frost at the mouth of the Blind, listening to the wood: one hand on the crossbow and the other on you.
+Subtitle: Gray light. She's already up, crouched in the frost at the mouth of the Blind, listening to the wood: one hand on the crossbow and the other on you.
 
 ### 198. `dlg.maeca.kerchiefs.0.p1.wav`  **LOCKED FOR RECORDING**
 
@@ -2660,26 +2660,26 @@ Subtitle: She pats your cheek, once, like a regular's.
 ```
 Subtitle: She looks at you for a long moment, as if you were a coin she was checking for clipping.
 
-### 244. `dlg.sella.free_stairs.0.wav`  HOLD: the words changed after the lock; wait for the story lead
+### 244. `dlg.sella.free_stairs.0.wav`  **LOCKED FOR RECORDING**
 
 *Where:* dialogue.json sella/free_stairs#0
-*Played:* plain; doing: she forgets the step; pace: slow; volume: quiet.
-*Note:* The narrator on the stairs: the last of the night she tells. 'loud as a shout' given its beat; then quieter. Played level: she stops here, outside the room, and the next thing she tells is the bolt.
+*Played:* plain; doing: she forgets the step; pace: slow; volume: level.
+*Note:* The narrator on the stairs: the last of the night she tells. 'loud as a shout' given its beat, then back to her ordinary level, never lowered: she isn't listening at a door. She stops here, outside the room, and the next thing she tells is the bolt.
 
 ```
-[quietly] She doesn't take your hand on the stairs, or your sleeve. She goes up ahead of you, and on the fourth step she forgets to step over it, and it creaks, loud as a shout, and she stops dead with one foot on it and laughs at herself, and that's worse, somehow, than if she hadn't.
+She doesn't take your hand on the stairs, or your sleeve. She goes up ahead of you, and on the fourth step she forgets to step over it, and it creaks, loud as a shout, and she stops dead with one foot on it and laughs at herself, and that's worse, somehow, than if she hadn't.
 ```
 Subtitle: She doesn't take your hand on the stairs, or your sleeve. She goes up ahead of you, and on the fourth step she forgets to step over it, and it creaks, loud as a shout, and she stops dead with one foot on it and laughs at herself, and that's worse, somehow, than if she hadn't.
 
-### 245. `dlg.sella.free_bolt.0.p0.wav`  HOLD: recast as a woman of about sixty, plain and dry (the story rewrite, 6 October); cast her anew before recording
+### 245. `dlg.sella.free_bolt.0.p0.wav`  **LOCKED FOR RECORDING**
 
 *The same words are also* `dlg.sella.free_sleep_bed.0.p0.wav`*: record once; the importer copies the take.*
 *Where:* dialogue.json sella/free_bolt#0; part 1 of 2: **narrator: Behind the door, the bolt sticks halfway; nobody has ever shot it. Swearing, and a shoulde…** / sella: ...There.
-*Played:* plain; doing: the bolt: the last thing she tells; pace: slow; volume: quiet.
-*Note:* From the stairs: the narrator hears it; she isn't in the room. Level and unhurried. 'like the last coin put down on a counter' plain: the image does the work. After it she is silent until you come back down the stairs. Don't play it knowing.
+*Played:* plain; doing: the bolt: the last thing she tells; pace: slow; volume: level.
+*Note:* From the stairs: the narrator hears it; she isn't in the room. Her ordinary level, never lowered: she isn't listening at a door. She hears it go home, and stops. Unhurried; 'like the last coin put down on a counter' plain: the image does the work. After it she is silent until you come back down the stairs. Don't play it knowing.
 
 ```
-[quietly] Behind the door, the bolt sticks halfway; nobody has ever shot it. Swearing, and a shoulder to it, and then it goes home, with a sound like the last coin put down on a counter.
+Behind the door, the bolt sticks halfway; nobody has ever shot it. Swearing, and a shoulder to it, and then it goes home, with a sound like the last coin put down on a counter.
 ```
 Subtitle: Behind the door, the bolt sticks halfway; nobody has ever shot it. Swearing, and a shoulder to it, and then it goes home, with a sound like the last coin put down on a counter.
 

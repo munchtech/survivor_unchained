@@ -1,6 +1,6 @@
 # Maeca: ElevenLabs packet
 
-Voice id in the game: `maeca`. 83 takes to record (6,600 characters; about 19,800 credits at three tries a line). Status: **on hold, except the 67 takes marked LOCKED FOR RECORDING** (the story lead, 2026-10-11): record those now and hold the rest (the story rewrite changes most of her lines (docs/voice/RERECORD.md)).
+Voice id in the game: `maeca`. 83 takes to record (6,560 characters; about 19,680 credits at three tries a line). Status: **on hold, except the 83 takes marked LOCKED FOR RECORDING** (the story lead, 2026-10-11): record those now and hold the rest (the story rewrite changes most of her lines (docs/voice/RERECORD.md)).
 
 ## Who they are
 
@@ -284,18 +284,18 @@ Subtitle: You walk like you've done this. Heel last, weight back. ...Who taught 
 ```
 Subtitle: I'm going out to the Blind. The fire's big enough for two, if you can keep quiet. Most can't.
 
-### 22. `dlg.maeca.blind.0.wav`  HOLD: the story rewrite changes most of her lines (docs/voice/RERECORD.md)
+### 22. `dlg.maeca.blind.0.wav`  **LOCKED FOR RECORDING**
 
 *Where:* dialogue.json maeca/blind#0
 *Played:* low, surprised; into a laugh, then sure; doing: the first night, the Pack fed: she lets herself have it; pace: slow; volume: quiet.
 *Note:* Dark room: low and close, nearly a whisper, never breathy. Each '...' is a real silence of two to four seconds. A laugh that sounds made is cut: leave it out. Her half-voice, close. '...Hear that?' she has stopped dead to listen (the Pack far off is the game's). The laugh is short and surprised out of her, as if she'd trodden on something: real or cut. 'They're eating.' wonder, almost private. Then the snare-setter: 'Down. On the hides.' low, plain. 'Quiet. I said quiet.' a hunter's hush with a smile under it, never a scold.
 
 ```
-[low, surprised, quietly] ...Hear that? [laughs] They're eating. ...Down. On the hides. ...Quiet. I said quiet.
+[low, surprised, quietly] ...Hear that? [a short laugh, surprised] They're eating. ...Down. On the hides. ...Quiet. [amused, barely voiced] I said quiet.
 ```
 Subtitle: ...Hear that? They're eating. ...Down. On the hides. ...Quiet. I said quiet.
 
-### 23. `dlg.maeca.blind.1.wav`  HOLD: the story rewrite changes most of her lines (docs/voice/RERECORD.md)
+### 23. `dlg.maeca.blind.1.wav`  **LOCKED FOR RECORDING**
 
 *Where:* dialogue.json maeca/blind#1
 *Played:* low, careful, listening; doing: careful the way she is with a snare; pace: slow; volume: quiet.
@@ -306,9 +306,9 @@ Subtitle: ...Hear that? They're eating. ...Down. On the hides. ...Quiet. I said 
 ```
 Subtitle: ...Hold still. Slow. Say stop and I stop. ...All right.
 
-### 24. `dlg.maeca.blind_morning.0.p1.wav`  HOLD: the story rewrite changes most of her lines (docs/voice/RERECORD.md)
+### 24. `dlg.maeca.blind_morning.0.p1.wav`  **LOCKED FOR RECORDING**
 
-*Where:* dialogue.json maeca/blind_morning#0; part 2 of 2: narrator: Gray light. She's already up, barefoot in the frost, listening. / **maeca: Go on, then. The wood's awake, and so's Holloway, and he'll count us both.**
+*Where:* dialogue.json maeca/blind_morning#0; part 2 of 2: narrator: Gray light. She's already up, out in the frost, listening. / **maeca: Go on, then. The wood's awake, and so's Holloway, and he'll count us both.**
 *Played:* quiet warmth, dry; doing: morning after; pace: measured; volume: quiet.
 *Note:* Narrator for the frost. Then softer than usual; dry joke on Holloway counting.
 
@@ -317,9 +317,9 @@ Subtitle: ...Hold still. Slow. Say stop and I stop. ...All right.
 ```
 Subtitle: Go on, then. The wood's awake, and so's Holloway, and he'll count us both.
 
-### 25. `dlg.maeca.blind_morning.1.p1.wav`  HOLD: the story rewrite changes most of her lines (docs/voice/RERECORD.md)
+### 25. `dlg.maeca.blind_morning.1.p1.wav`  **LOCKED FOR RECORDING**
 
-*Where:* dialogue.json maeca/blind_morning#1; part 2 of 2: narrator: Gray light. She's already up, crouched barefoot in the frost at the mouth of the Blind, li… / **maeca: The Pack found me, after Ashford. A cave mouth, and a lad I'd been fond of dying in it. Th…**
+*Where:* dialogue.json maeca/blind_morning#1; part 2 of 2: narrator: Gray light. She's already up, crouched in the frost at the mouth of the Blind, listening t… / **maeca: The Pack found me, after Ashford. A cave mouth, and a lad I'd been fond of dying in it. Th…**
 *Played:* confession, raw but steady; doing: tells you why she never hunts wolves; pace: slow; volume: quiet.
 *Wants:* you to know, and not to pity her
 *Note:* The narrator opens on the gray light outside, and her last words are the crossbow and you: let them sit. Maeca: the story told plainly, present tense feel. 'Kept everything off.' near breaking. A pause. 'That's all of why.' firm. 'Don't make it a story.' a plea disguised as an order.
@@ -461,7 +461,7 @@ Subtitle: You kept quiet.
 ```
 Subtitle: Most can't.
 
-### 38. `dlg.maeca.blind_dark.0.wav`  HOLD: the story rewrite changes most of her lines (docs/voice/RERECORD.md)
+### 38. `dlg.maeca.blind_dark.0.wav`  **LOCKED FOR RECORDING**
 
 *Where:* dialogue.json maeca/blind_dark#0
 *Played:* dry, nearly funny; doing: you're cold; pace: slow; volume: quiet.
@@ -472,7 +472,7 @@ Subtitle: Most can't.
 ```
 Subtitle: ...You're colder than my feet. How are you colder than my feet.
 
-### 39. `dlg.maeca.blind_dark.1.wav`  HOLD: the story rewrite changes most of her lines (docs/voice/RERECORD.md)
+### 39. `dlg.maeca.blind_dark.1.wav`  **LOCKED FOR RECORDING**
 
 *Where:* dialogue.json maeca/blind_dark#1
 *Played:* hushed wonder; then a hunter's question; doing: the Pack lies down round you; she asks what you were; pace: slow; volume: quiet.
@@ -484,7 +484,7 @@ Subtitle: ...You're colder than my feet. How are you colder than my feet.
 ```
 Subtitle: ...They don't do that. Not for me. Not for anyone. You walk quiet. You came into my Hollow and knelt to him, and he let you. You never talk about before. ...What were you?
 
-### 40. `dlg.maeca.blind_dark.2.wav`  HOLD: the story rewrite changes most of her lines (docs/voice/RERECORD.md)
+### 40. `dlg.maeca.blind_dark.2.wav`  **LOCKED FOR RECORDING**
 
 *Where:* dialogue.json maeca/blind_dark#2
 *Played:* hushed; a hunter's question; doing: she asks what you were; pace: slow; volume: quiet.
@@ -496,7 +496,7 @@ Subtitle: ...They don't do that. Not for me. Not for anyone. You walk quiet. You
 ```
 Subtitle: You walk quiet. You never talk about before. ...What were you?
 
-### 41. `dlg.maeca.blind_dark.3.wav`  HOLD: the story rewrite changes most of her lines (docs/voice/RERECORD.md)
+### 41. `dlg.maeca.blind_dark.3.wav`  **LOCKED FOR RECORDING**
 
 *Where:* dialogue.json maeca/blind_dark#3
 *Played:* drowsy, level; doing: the Pack is quiet; she lets the watch go; pace: slow; volume: quiet.
@@ -507,29 +507,29 @@ Subtitle: You walk quiet. You never talk about before. ...What were you?
 ```
 Subtitle: ...They've settled. Sleep.
 
-### 42. `dlg.maeca.blind2_feet.0.wav`  HOLD: the story rewrite changes most of her lines (docs/voice/RERECORD.md)
+### 42. `dlg.maeca.blind2_feet.0.wav`  **LOCKED FOR RECORDING**
 
 *Where:* dialogue.json maeca/blind2_feet#0
 *Played:* very still, plain; then undone; doing: lets you hold her feet; pace: slow; volume: quiet.
-*Note:* Dark room: low and close, nearly a whisper, never breathy. Each '...' is a real silence of two to four seconds. A laugh that sounds made is cut: leave it out. Her scarred feet in your hands. 'Two toes short. The wet had them, a long time back.' a fact about ground and weather, flat, the way she says everything about herself. 'Your hands are colder than my feet.' very low; nearly funny, not played. A long quiet. 'Hold them anyway.' the hardest thing she has asked anyone. 'Nobody's held those.' barely there: no self-pity, no tremble put on.
+*Note:* Dark room: low and close, nearly a whisper, never breathy. Each '...' is a real silence of two to four seconds. A laugh that sounds made is cut: leave it out. Her scarred feet in your hands. 'Two toes short. The wet had them, a long time back.' a fact about ground and weather, flat, the way she says everything about herself. A long quiet. 'Hold them anyway.' the hardest thing she has asked anyone: anyway, ruined as they are. 'Nobody's held those.' barely there: no self-pity, no tremble put on.
 
 ```
-[very still, plain, quietly] ...Two toes short. The wet had them, a long time back. ...Your hands are colder than my feet. [long pause] Hold them anyway. ...Nobody's held those.
+[very still, plain, quietly] ...Two toes short. The wet had them, a long time back. [long pause] ...Hold them anyway. ...Nobody's held those.
 ```
-Subtitle: ...Two toes short. The wet had them, a long time back. ...Your hands are colder than my feet. Hold them anyway. ...Nobody's held those.
+Subtitle: ...Two toes short. The wet had them, a long time back. ...Hold them anyway. ...Nobody's held those.
 
-### 43. `dlg.maeca.blind2_let.0.wav`  HOLD: the story rewrite changes most of her lines (docs/voice/RERECORD.md)
+### 43. `dlg.maeca.blind2_let.0.wav`  **LOCKED FOR RECORDING**
 
 *Where:* dialogue.json maeca/blind2_let#0
 *Played:* half asleep, dry; doing: puts her feet back against you, trying it out; pace: slow; volume: quiet.
-*Note:* Dark room: low and close, nearly a whisper, never breathy. Each '...' is a real silence of two to four seconds. A laugh that sounds made is cut: leave it out. In the night, half asleep, she puts them back against you. 'Mm.' a sleepy sound, never a moan. 'Keep still.' dry. 'They're only feet.' as if you'd made the fuss; it's she who has.
+*Note:* Dark room: low and close, nearly a whisper, never breathy. Each '...' is a real silence of two to four seconds. A laugh that sounds made is cut: leave it out. In the night, half asleep, she puts them back against you. 'Keep still.' dry. 'They're only feet.' as if you'd made the fuss; it's she who has.
 
 ```
-[half asleep, dry, quietly] ...Mm. Keep still. ...They're only feet.
+[half asleep, dry, quietly] ...Keep still. ...They're only feet.
 ```
-Subtitle: ...Mm. Keep still. ...They're only feet.
+Subtitle: ...Keep still. ...They're only feet.
 
-### 44. `dlg.maeca.told_true.0.wav`  HOLD: the story rewrite changes most of her lines (docs/voice/RERECORD.md)
+### 44. `dlg.maeca.told_true.0.wav`  **LOCKED FOR RECORDING**
 
 *Where:* dialogue.json maeca/told_true#0
 *Played:* dry, warm under it; doing: you were a hunter; pace: measured; volume: quiet.
@@ -540,7 +540,7 @@ Subtitle: ...Mm. Keep still. ...They're only feet.
 ```
 Subtitle: Thought so. You put your feet down like you're asking the ground first. I'd have liked you, then. Probably would have shot you for poaching.
 
-### 45. `dlg.maeca.told_true.1.wav`  HOLD: the story rewrite changes most of her lines (docs/voice/RERECORD.md)
+### 45. `dlg.maeca.told_true.1.wav`  **LOCKED FOR RECORDING**
 
 *Where:* dialogue.json maeca/told_true#1
 *Played:* curious, soft; doing: you were a scholar; pace: slow; volume: quiet.
@@ -551,7 +551,7 @@ Subtitle: Thought so. You put your feet down like you're asking the ground first
 ```
 Subtitle: Letters. ...Tracks for people who sit still. ...Read me something, one day. Not now.
 
-### 46. `dlg.maeca.told_true.2.wav`  HOLD: the story rewrite changes most of her lines (docs/voice/RERECORD.md)
+### 46. `dlg.maeca.told_true.2.wav`  **LOCKED FOR RECORDING**
 
 *Where:* dialogue.json maeca/told_true#2
 *Played:* respect; doing: you walked away; pace: measured; volume: quiet.
@@ -562,7 +562,7 @@ Subtitle: Letters. ...Tracks for people who sit still. ...Read me something, one
 ```
 Subtitle: Walking away's a skill. Most never learn it. They stay till it's too late, out of pride.
 
-### 47. `dlg.maeca.told_true.3.wav`  HOLD: the story rewrite changes most of her lines (docs/voice/RERECORD.md)
+### 47. `dlg.maeca.told_true.3.wav`  **LOCKED FOR RECORDING**
 
 *Where:* dialogue.json maeca/told_true#3
 *Played:* kinship, grief; doing: you lit lamps for nobody; pace: slow; volume: quiet.
@@ -573,7 +573,7 @@ Subtitle: Walking away's a skill. Most never learn it. They stay till it's too l
 ```
 Subtitle: Lamps. Nobody coming. I held a cave mouth for nobody coming. We'd have got on.
 
-### 48. `dlg.maeca.told_little.0.wav`  HOLD: the story rewrite changes most of her lines (docs/voice/RERECORD.md)
+### 48. `dlg.maeca.told_little.0.wav`  **LOCKED FOR RECORDING**
 
 *Where:* dialogue.json maeca/told_little#0
 *Played:* accepting; doing: she doesn't push; pace: slow; volume: quiet.
@@ -584,11 +584,11 @@ Subtitle: Lamps. Nobody coming. I held a cave mouth for nobody coming. We'd have
 ```
 Subtitle: All right. ...Keep it, then. I keep mine.
 
-### 49. `dlg.maeca.blind3_morning.0.wav`  HOLD: the story rewrite changes most of her lines (docs/voice/RERECORD.md)
+### 49. `dlg.maeca.blind3_morning.0.wav`  **LOCKED FOR RECORDING**
 
 *Where:* dialogue.json maeca/blind3_morning#0
 *Played:* tender, hiding fear; doing: she heard your heart change; pace: slow; volume: quiet.
-*Note:* Morning in the room: close and quiet, not hushed. Gray light; her head still on your chest, her face very still. Close: the hare and the bear. 'I counted between.' A pause where the name would be. Then she gets up and goes out barefoot into the frost, her back to you: 'Go on. Holloway'll count us.' steadier, from further off.
+*Note:* Morning in the room: close and quiet, not hushed. Gray light; her head still on your chest, her face very still. Close: the hare and the bear. 'I counted between.' A pause where the name would be. Then she gets up and goes out into the frost, her back to you: 'Go on. Holloway'll count us.' steadier, from further off.
 
 ```
 [tender, hiding fear, quietly] Your heart's going like a hare's. [short pause] All night it was a bear's in January. I counted between. ...I've lain with my ear to a lot of things to see if they'd live. [long pause] Go on. Holloway'll count us.

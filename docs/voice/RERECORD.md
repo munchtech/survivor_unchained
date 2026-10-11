@@ -19,6 +19,8 @@ woman of about sixty).
 
 **Locked for recording (11 October):** the narrator's prologue lines and C01 to C04, Vonnra's far voice in the prologue, the Warden's, Grimtunnel's, the dead Watchman's and the gate guard's prologue lines, and Rook's and Brannoc's Act 1 lines (with the narrator's parts inside them). Each is marked **LOCKED FOR RECORDING** in its packet (`tools/vo/locked.json`; `python tools/vo/lock.py --list`). The rest of the narrator, Vonnra and Brannoc stays on hold. A locked line whose words change later shows **HOLD** again until the story lead re-locks it.
 
+**Locked for recording (11 October, later): the love scenes, B, after their judge.** Sella's blue room whole (the stairs up, the dark nights, the stop and the paid sleep, the mornings) and Maeca's Blind whole (the walk, the fire, under the hides, both gray lights, the heart), with the narrator's one line in them: the bolt, heard from the stairs (`dlg.sella.free_bolt.0.p0`, one take that also serves `free_sleep_bed`). Nothing else of the narrator's behind the door is ever recorded: `tools/vo/elevenlabs.py` holds any narrator part there for good, locked or not (`BOLT`, `behind_door`).
+
 ---
 
 ## Sella (ready)
@@ -72,16 +74,16 @@ a whisper, never breathy; each "..." a real silence of two to four seconds
 (the importer keeps up to four for these); a laugh that sounds made is cut.
 The room's sounds (water, buckles, coins, the step, the bolt) are the game's.
 
-`sella.stairs_room.4`, `sella.stairs_room.5`, `sella.stairs_room.6`, `sella.stairs_room.7`, `sella.stairs_room.0`, `sella.stairs_room.1`, `sella.stairs_room.2`, `sella.stairs_room.3`, `sella.stairs_rules.0`, `sella.night.2`, `sella.night.1`, `sella.night.0`, `sella.stop_paid.0`, `sella.rest_night_paid.0`, `sella.rest_dark.0`, `sella.free_door.0`, `sella.free_door.1`, `sella.free_want.0`, `sella.free_stop.0`, `sella.free_sit.0`, `sella.free_sleep.0`, `sella.free_sleep_bed.0`, `sella.free_bolt.0`, `sella.free_night.0`, `sella.free_night.1`, `sella.morning.0`, `sella.rest_morning.0`, `sella.rest_morning.1`, `sella.free_morning.0`, `sella.free_m_downstairs.0`, `sella.free_m_who.0`, `sella.free_m_kiss.0`, `sella.sleeptalk.0`, `sella.door.0`, `sella.door_years.0`, `sella.door_south.0`, `sella.past.0`, `sella.past.1`, `sella.past.2`, `sella.past.3`, `sella.past.4`, `sella.past.5`, `sella.past.6`, `sella.past.7` (44 takes; the ids drop `dlg.`).
+`sella.stairs_room.4`, `sella.stairs_room.5`, `sella.stairs_room.6`, `sella.stairs_room.7`, `sella.stairs_room.0`, `sella.stairs_room.1`, `sella.stairs_room.2`, `sella.stairs_room.3`, `sella.stairs_rules.0`, `sella.stairs_rules.1`, `sella.rest_bed.0`, `sella.night.2`, `sella.night.1`, `sella.night.0`, `sella.stop_paid.0`, `sella.rest_night_paid.0`, `sella.rest_dark.0`, `sella.free_door.0`, `sella.free_door.1`, `sella.free_want.0`, `sella.free_stop.0`, `sella.free_sit.0`, `sella.free_sleep.0`, `sella.free_sleep_bed.0`, `sella.free_bolt.0`, `sella.free_night.0`, `sella.free_night.1`, `sella.morning.0`, `sella.rest_morning.0`, `sella.rest_morning.1`, `sella.free_morning.0`, `sella.free_m_downstairs.0`, `sella.free_m_who.0`, `sella.free_m_kiss.0`, `sella.sleeptalk.0`, `sella.door.0`, `sella.door_years.0`, `sella.door_south.0`, `sella.past.0`, `sella.past.1`, `sella.past.2`, `sella.past.3`, `sella.past.4`, `sella.past.5`, `sella.past.6`, `sella.past.7` (46 takes; the ids drop `dlg.`). `stairs_rules.1` and `rest_bed.0` keep their words but are on the dark screen now, so any old take of them is too loud: take them again.
 
 ---
 
-## Maeca (the Blind, B: held with the rest of her)
+## Maeca (the Blind, B: locked 11 October; the rest of her waits)
 
 Her love scenes are B too: under the hides she speaks for herself, and the
-narrator only opens the gray light outside. Like all of Maeca these wait until
-each shows **LOCKED FOR RECORDING** in `maeca.md`; the directions are in
-`love_b.json`, as for Sella's.
+narrator only opens the gray light outside. These are locked for recording
+(each shows **LOCKED FOR RECORDING** in `maeca.md`), ahead of the rest of
+her; the directions are in `love_b.json`, as for Sella's.
 
 `maeca.blind.0`, `maeca.blind.1`, `maeca.blind_morning.1`, `maeca.blind_dark.0`, `maeca.blind2_feet.0`, `maeca.blind2_let.0`, `maeca.blind_dark.1`, `maeca.blind_dark.2`, `maeca.blind_dark.3`, `maeca.told_true.0`, `maeca.told_true.1`, `maeca.told_true.2`, `maeca.told_true.3`, `maeca.told_little.0`, `maeca.blind3_morning.0` (15 takes).
 
