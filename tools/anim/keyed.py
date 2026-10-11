@@ -93,6 +93,16 @@ class Rig:
         # The swivel each arm last needed (degrees about shoulder-to-wrist from
         # the keyed elbow), so a strained wrist is eased the same way frame to frame.
         self.swivel = {}
+        # Each hip's frame at rest, for reading the thigh's turn about its own
+        # length as the hip joint does (hip_rot): x her front square to the
+        # thigh, y up the thigh (knee to hip), z = x cross y (her right).
+        self.hip_frame = {}
+        for side in "lr":
+            y = self.prest[self.I[f"thigh_{side}"]] - self.prest[self.I[f"calf_{side}"]]
+            y = y / np.linalg.norm(y)
+            x = np.array([0.0, 0.0, 1.0]) - y * y[2]
+            x = x / np.linalg.norm(x)
+            self.hip_frame[side] = (x, np.cross(x, y))
         # How far a held weapon's shaft leans in each fist (degrees; GRIP),
         # for the clip being solved.
         self.grip = {}
@@ -109,7 +119,13 @@ class Rig:
     TWIST_LIMIT = 95.0
     FLEX, EXT, RADIAL, ULNAR = 75.0, 65.0, 22.0, 38.0
 
-    def _bend(self, kind, side, top, mid, end, d_top, d_mid, S, E, W, pole):
+    # How far a hip turns the thigh about its own length, either way
+    # (degrees; internal and external rotation, both about 45 in an adult:
+    # AAOS normal range). A knee keyed past it is swung round the line from
+    # hip to ankle back within it (Rig._hip_within).
+    HIP_ROT = 45.0
+
+    def _bend(self, kind, side, top, mid, end, d_top, d_mid, S, E, W, pole, d_par=None):
         """The upper and lower bones' turns (character-space deltas) that put
         the joint at E and the end at W, the upper bone turned about its length
         so the joint's hinge lies across the bend (no sideways elbow or knee)."""
@@ -117,23 +133,6 @@ class Rig:
         rest_u = rest_u / np.linalg.norm(rest_u)
         rest_f = self.prest[end] - self.prest[mid]
         rest_f = rest_f / np.linalg.norm(rest_f)
-        if kind == "leg":
-            # A knee bends one way only. Placed on the wrong side of the line
-            # from hip to ankle (a foot keyed forward under a low hip), its
-            # hinge would be met by turning the thigh half round about its
-            # length: the knee bends right over the shin, but the thigh is
-            # wrung 150-180 degrees against the pelvis and the skin at the
-            # hip and groin turns inside out (chain_strike, chain_haul).
-            # Then the knee goes to its mirror across that line instead.
-            r1_ = qbetween(qrot(d_top, rest_u), E - S)
-            u_ = (E - S) / np.linalg.norm(E - S)
-            n_ = np.cross(E - S, W - E)
-            h_ = qrot(qmul(r1_, d_top), self.hinge[(kind, side)])
-            hp_, nn_ = h_ - u_ * np.dot(h_, u_), n_ - u_ * np.dot(n_, u_)
-            if np.linalg.norm(hp_) > 1e-6 and np.linalg.norm(nn_) > 1e-6:
-                if abs(math.atan2(np.dot(np.cross(hp_, nn_), u_), np.dot(hp_, nn_))) > math.radians(100):
-                    a_ = (W - S) / max(np.linalg.norm(W - S), 1e-9)
-                    E = S + 2 * a_ * np.dot(E - S, a_) - (E - S)
         r1 = qbetween(qrot(d_top, rest_u), E - S)
         d_top, d_mid = qmul(r1, d_top), qmul(r1, d_mid)
         u = (E - S) / np.linalg.norm(E - S)
@@ -171,7 +170,77 @@ class Rig:
             w = qaxis(u, math.degrees(ang))
             d_top, d_mid = qmul(w, d_top), qmul(w, d_mid)
         r2 = qbetween(qrot(d_mid, rest_f), f)
-        return d_top, qmul(r2, d_mid)
+        d_mid = qmul(r2, d_mid)
+        if kind == "leg" and d_par is not None:
+            d_top, d_mid = self._hip_within(side, d_top, d_mid, d_par, S, W)
+        return d_top, d_mid
+
+    def hip_rot(self, side, d_top, d_par):
+        """The hip's axial rotation (degrees, + internal) for a thigh turned
+        d_top under a pelvis turned d_par: the third angle of the hip's joint
+        coordinate system (ISB, Wu et al. 2002: flexion about the pelvis's
+        side-to-side axis, abduction about the floating axis, rotation about
+        the femur), from her rest. Unlike a twist read straight off the
+        thigh's turn, it stays near zero for a thigh lifted and spread wide
+        with the knee over the shin (sitting, a leg swung over a log)."""
+        x, z = self.hip_frame[side]
+        q = qmul(qinv(d_par), d_top)
+        g = math.degrees(math.atan2(-np.dot(z, qrot(q, x)), np.dot(z, qrot(q, z))))
+        return g if side == "r" else -g
+
+    def _hip_within(self, side, d_top, d_mid, d_par, S, W):
+        """A leg whose thigh turns past HIP_ROT about its length, swung round
+        the line from hip to ankle (the ankle stays put) until it is within.
+        The knee is placed by a pole in her space, so where the line from hip
+        to ankle runs near the pole's way (a foot forward under a low hip, a
+        leg flung up) the knee can land on the wrong side of it, and the
+        thigh is wrung up to half round to bend it there: the skin at the hip
+        and groin turns inside out. How far past the range it was keyed
+        folds back toward neutral (at half round, none), so a knee keyed
+        right over to the wrong side comes out straight over the shin, and
+        the turn never jumps as the keyed knee passes round (no switch).
+        Within the range nothing changes."""
+        lim = self.HIP_ROT
+        g = self.hip_rot(side, d_top, d_par)
+        if abs(g) <= lim:
+            return d_top, d_mid
+        want = math.copysign(lim * (180.0 - abs(g)) / (180.0 - lim), g)
+        a = W - S
+        if np.linalg.norm(a) < 1e-9:
+            return d_top, d_mid
+        a = a / np.linalg.norm(a)
+
+        def err(psi):
+            e = self.hip_rot(side, qmul(qaxis(a, psi), d_top), d_par) - want
+            return (e + 180.0) % 360.0 - 180.0
+
+        # The nearest swing that meets it: out both ways in 5-degree steps,
+        # then halved down onto the crossing.
+        e0 = err(0.0)
+        prev = {1: (0.0, e0), -1: (0.0, e0)}
+        hit = None
+        for k in range(1, 37):
+            for sgn in (1, -1):
+                p0, ep = prev[sgn]
+                p1 = sgn * 5.0 * k
+                e1 = err(p1)
+                prev[sgn] = (p1, e1)
+                if hit is None and (ep == 0 or (ep > 0) != (e1 > 0)) and abs(e1 - ep) < 90:
+                    hit = (p0, ep, p1)
+            if hit is not None:
+                break
+        if hit is None:
+            return d_top, d_mid
+        lo, elo, hi = hit
+        for _ in range(30):
+            mid_ = 0.5 * (lo + hi)
+            em = err(mid_)
+            if (em > 0) == (elo > 0):
+                lo, elo = mid_, em
+            else:
+                hi = mid_
+        w = qaxis(a, 0.5 * (lo + hi))
+        return qmul(w, d_top), qmul(w, d_mid)
 
     def _strain(self, d_la, want, ha, fa, side):
         """How a hand keyed to `want` sits on its forearm: the turn about the
@@ -529,7 +598,8 @@ class Rig:
             kb, an = two_bone_ik(gpos[th], gpos[ca], gpos[fo], target, gpos[ca] + pole)
             # The thigh turned about its length so the knee bends straight
             # over the shin, never out to the side.
-            delta[th], delta[ca] = self._bend("leg", side, th, ca, fo, delta[th], delta[ca], gpos[th].copy(), kb, an, pole)
+            delta[th], delta[ca] = self._bend("leg", side, th, ca, fo, delta[th], delta[ca], gpos[th].copy(), kb, an, pole,
+                                        d_par=delta[sk.parent[th]])
             refresh()
             # The foot keeps its own turn in the world, whatever the leg does.
             fq = qeuler(*spec.get("rot", (0, 0, 0)))
