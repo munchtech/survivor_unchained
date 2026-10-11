@@ -67,7 +67,7 @@ public sealed partial class Battle
         }
         return (bx, bz);
     }
-    double ArtPower => Stats.Get(Stat.AbilityPower) * Abilities.RankPower(ArtRank);
+    double ArtPower => Stats.Get(Stat.AbilityPower) * Abilities.RankPower(rankNow > 0 ? rankNow : ArtRank);
 
     static readonly Tag[] RushTags = [Tag.Melee, Tag.Physical], FrostTags = [Tag.Spell, Tag.Frost, Tag.Area],
         ShadowTags = [Tag.Spell, Tag.Shadow], ArcaneTags = [Tag.Spell, Tag.Arcane, Tag.Area], FireTags = [Tag.Fire, Tag.Area, Tag.Zone],
@@ -170,7 +170,8 @@ public sealed partial class Battle
     {
         var p = Player;
         double reach = Has("long_leap") ? 11 : 7;
-        double dist = Math.Min(reach, Aim is { } a ? Dist(a.X, a.Z, p.X, p.Z) : reach);
+        // As the dash's form it goes its full length along the dash.
+        double dist = asForm ? reach : Math.Min(reach, Aim is { } a ? Dist(a.X, a.Z, p.X, p.Z) : reach);
         var (x1, z1) = Reach(ax, az, dist);
         p.Leap = new Leap { T = 0, Dur = 0.42, X0 = p.X, Z0 = p.Z, X1 = x1, Z1 = z1 };
         Events.Emit(new Ev.Ability { Id = def.Id, X = x1, Z = z1, Angle = angle, Radius = 3 });
@@ -294,7 +295,8 @@ public sealed partial class Battle
     {
         var p = Player;
         double x0 = p.X, z0 = p.Z;
-        (p.X, p.Z) = Reach(ax, az, 5);
+        // As the dash's form the dash's own step carries her; the reflections stay where she stood.
+        if (!asForm) (p.X, p.Z) = Reach(ax, az, 5);
         p.Iframes = Math.Max(p.Iframes, 0.25);
         int n = Has("three_mirrors") ? 3 : 2;
         // Side by side across the way you went, facing what you left.
@@ -306,7 +308,7 @@ public sealed partial class Battle
             Reflect(x0 + sx * off - ax * back, z0 + sz * off - az * back, 5, Math.Atan2(-az, -ax));
         }
         Events.Emit(new Ev.Ability { Id = def.Id, X = x0, Z = z0, X1 = p.X, Z1 = p.Z, Angle = angle, Radius = 2 });
-        Events.Emit(new Ev.Dash { X0 = x0, Z0 = z0, X1 = p.X, Z1 = p.Z });
+        if (!asForm) Events.Emit(new Ev.Dash { X0 = x0, Z0 = z0, X1 = p.X, Z1 = p.Z });
         return true;
     }
 
@@ -364,7 +366,8 @@ public sealed partial class Battle
     bool WraithWalk(AbilityDef def, double angle)
     {
         var p = Player;
-        Art.WraithT = Has("long_night") ? 4 : 2.5;
+        // Riding the dash, half a ghost for 1.5 s after it (CLASSES.md §0).
+        Art.WraithT = asForm ? (Has("long_night") ? 2.5 : 1.5) : Has("long_night") ? 4 : 2.5;
         Art.Drains = 0;
         AddBuff("wraith", Stat.MoveSpeed, 0.25, ModKind.Inc, Art.WraithT, 1);
         Events.Emit(new Ev.Ability { Id = def.Id, X = p.X, Z = p.Z, Angle = angle, Radius = 2.4 });
@@ -446,7 +449,9 @@ public sealed partial class Battle
             StartRush(AbilityKind.Grapple, ax, az, gap, gap / 28);
             return true;
         }
-        // Nothing to bite: the chain falls short, and is quickly back.
+        // Nothing to bite: as the dash's form it is a plain dash, and the wait is not spent.
+        if (asForm) return false;
+        // Otherwise the chain falls short, and is quickly back.
         Events.Emit(new Ev.Ability { Id = "grapple_miss", X = p.X, Z = p.Z, X1 = p.X + ax * reach, Z1 = p.Z + az * reach, Angle = angle, Radius = reach });
         p.AbilityCd = 1;
         return true;
@@ -595,7 +600,7 @@ public sealed partial class Battle
                 ForEachHostileInRadius(p.X, p.Z, 5, (e, _) => HitEnemy(e, 30 * power, School.Holy, HolyTags));
             }
         }
-        if (WorldRateT > 0 && Ability == AbilityKind.TimeSlip && Has("stolen_moments")) HealPlayer(MaxHp * 0.03 * dt, "stolen moments", true);
+        if (WorldRateT > 0 && Runs(AbilityKind.TimeSlip) && Has("stolen_moments")) HealPlayer(MaxHp * 0.03 * dt, "stolen moments", true);
 
         if (a.SprintT > 0)
         {
@@ -786,10 +791,10 @@ public sealed partial class Battle
         if (e.Prey)
         {
             e.Prey = false;
-            if (Ability == AbilityKind.MarkPrey)
+            if (Runs(AbilityKind.MarkPrey))
             {
                 bool quarry = Has("quarry");
-                p.AbilityCd *= quarry ? 0 : 0.5;
+                HastenArt(AbilityKind.MarkPrey, quarry ? 0 : 0.5);
                 if (quarry) HealPlayer(MaxHp * 0.1, "quarry");
             }
         }
@@ -818,7 +823,7 @@ public sealed partial class Battle
     {
         double h = 1;
         if (Art.SprintT > 0 && Has("tailwind")) h *= 2;
-        if (WorldRateT > 0 && Ability == AbilityKind.TimeSlip && Has("borrowed_time")) h *= 3;
+        if (WorldRateT > 0 && Runs(AbilityKind.TimeSlip) && Has("borrowed_time")) h *= 3;
         return h;
     }
 }

@@ -18,6 +18,7 @@ public enum TelegraphShape { Circle, Line, Cone, Ring }
 public enum TelegraphKind { Blow, Ground, Safe, Wall }
 public enum SpawnStyle { Rise, Burrow, Walk, Drop }
 public enum Tone { Danger, Info, Boon, Story }
+public enum FlarePhase { Ready, Press, Blow, End }
 
 public static class Ev
 {
@@ -95,6 +96,13 @@ public static class Ev
     /// <summary>An art used, or a moment of one. X1, Z1: its other end (a
     /// chain's bite, a step's landing, a drain's thread).</summary>
     public sealed class Ability : CombatEvent { public string Id = ""; public double X, Z, X1, Z1, Angle, Radius; public bool Wide; public int Who = -1; }
+    /// <summary>A reflex fired itself (its art's own Ability event says what it did).</summary>
+    public sealed class Reflex : CombatEvent { public string Art = ""; public double X, Z; }
+    /// <summary>The Flare (docs/design/CLASSES.md §3): Ready when the meter fills, Press at the cast (the
+    /// shared beat's freeze and push begin here), Blow for each blow or pulse, End when it lets go.
+    /// Clutch: cast below a quarter of health (it mends): a fall the Flare kept from happening, for
+    /// whatever counts the survivor's rises (the toll, docs/story/TOLL_SPEC.md).</summary>
+    public sealed class Flare : CombatEvent { public FlarePhase Phase; public string Id = ""; public double X, Z, Radius, Angle; public bool Clutch, Stand; public int Blow; }
     public sealed class Bark : CombatEvent { public double X, Z; public string Text = ""; public string? Speaker; }
     public sealed class Announce : CombatEvent { public string Title = ""; public string? Subtitle, Kicker; public Tone? Tone; }
     public sealed class Shake : CombatEvent { public double Amount; }

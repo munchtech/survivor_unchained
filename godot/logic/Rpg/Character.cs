@@ -533,6 +533,9 @@ public sealed class CombatKit
     public AbilityKind Ability;
     public int ArtRank = 1;
     public List<string> Facets = new();
+    /// <summary>What the lit lamps bring (by day or by night), and the reflexes' ranks (ArtBook's).</summary>
+    public LampLoadout Lamps = LampLoadout.None;
+    public Dictionary<string, int> ReflexRanks = new();
     /// <summary>The Marks the gear carries (docs/items/CATALOGUE.md §4), each at its strength 0-1, and
     /// numbers on single skills, by skill id: worn in the Wayfinder's maps (Battle.Wear). Crafting
     /// fills them from the items.</summary>
@@ -622,12 +625,28 @@ public static class Character
     public static double OwnHealth(CharacterData ch) => Callings.Archetype(ch.Archetype).Base.MaxHealth + (ch.Level - 1) * 8;
 
     /// <summary>The survivor as the Battle needs them: stats with every source folded in.</summary>
-    public static CombatKit Kit(CharacterData ch)
+    /// <param name="night">The lamps by night (the table's arenas, story fights): sizes at a quarter (CLASSES.md §2.10).</param>
+    public static CombatKit Kit(CharacterData ch, bool night = false)
     {
         var a = Callings.Archetype(ch.Archetype);
-        var kit = new CombatKit { Ability = ch.AbilityKind, ArtRank = ArtBook.Rank(ch, ch.Ability), Facets = ArtBook.Facets(ch, ch.Ability) };
+        var lamps = LampBook.Loadout(ch, night);
+        // The art in hand is the dash form. The calling's Kin takes its facets from the lamps alone; a
+        // learned form keeps the facets its ranks opened (ArtBook).
+        var kit = new CombatKit
+        {
+            Ability = ch.AbilityKind, ArtRank = ArtBook.Rank(ch, ch.Ability), Lamps = lamps,
+            Facets = ch.Ability == lamps.Kin ? new() : ArtBook.Facets(ch, ch.Ability),
+        };
+        foreach (var r in lamps.Reflexes) kit.ReflexRanks[r.Art] = ArtBook.Rank(ch, r.Art);
         var st = kit.Stats;
-        var at = ch.Attributes;
+        // The attribute lamps add their points by day and in maps (by night they only lean the draft).
+        var at = new Attributes
+        {
+            Might = ch.Attributes.Might + lamps.Attributes.GetValueOrDefault("might"),
+            Finesse = ch.Attributes.Finesse + lamps.Attributes.GetValueOrDefault("finesse"),
+            Wits = ch.Attributes.Wits + lamps.Attributes.GetValueOrDefault("wits"),
+            Resolve = ch.Attributes.Resolve + lamps.Attributes.GetValueOrDefault("resolve"),
+        };
         st.SetBase(new Dictionary<string, double>
         {
             [Stat.MaxHealth] = OwnHealth(ch), [Stat.Regen] = a.Base.Regen, [Stat.Armor] = a.Base.Armor,
@@ -702,6 +721,7 @@ public static class Character
             if (td.Tags?.Contains("revive") == true) kit.Revives++;
             if (td.Tags?.Contains("reroll") == true) kit.Rerolls++;
         }
+        st.AddAll(lamps.Mods);
         // Cold, Then Not held in the art's place: once a fight, a killing blow does not end her.
         if (ch.Ability == "cold_then_not") kit.Revives = Math.Max(kit.Revives, 1);
         foreach (var c in ch.Conditions)
