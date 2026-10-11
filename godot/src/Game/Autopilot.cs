@@ -144,7 +144,7 @@ public sealed class Autopilot
         Steer(dt, tx - p.X + rx * 1.4, tz - p.Z + rz * 1.4, p, tx, tz);
         dashT -= dt; abilityT -= dt; drinkT -= dt;
         if (near >= 5 && dashT <= 0) { Press(Act.Dash); dashT = 1.2; }
-        if (near >= 3 && abilityT <= 0) { Press(Act.Ability); abilityT = 2; }
+        if (near >= 3 && abilityT <= 0) { Press(Act.Flare); abilityT = 2; }
         if (p.Hp < b.MaxHp * 0.35 && drinkT <= 0) { Controls.Instance.Press(Act.Draught); drinkT = 1.5; }
     }
 
@@ -204,7 +204,7 @@ public sealed class Autopilot
         Steer(dt, mx, mz, p, tx, tz);
         dashT -= dt; abilityT -= dt; drinkT -= dt;
         if ((ring >= 6 || close >= 4) && dashT <= 0 && p.DashCharges > 0) { Press(Act.Dash); dashT = 0.8; }
-        if (close >= 3 && abilityT <= 0) { Press(Act.Ability); abilityT = 1.5; }
+        if (close >= 3 && abilityT <= 0) { Press(Act.Flare); abilityT = 1.5; }
         if (p.Hp < b.MaxHp * 0.33 && drinkT <= 0) { Controls.Instance.Press(Act.Draught); drinkT = 1.5; }
     }
 
