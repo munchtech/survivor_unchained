@@ -5725,22 +5725,15 @@
   {
    "id": "dlg.maeca.blind.0",
    "kind": "dialogue",
-   "voice": "narrator",
-   "text": "Off in the Hollow the Pack is loud, a long tangle of voices, and she stops with her hands on your buckle and listens, and then she laughs: a short surprised sound, as if she'd trodden on something. \"They're eating.\" She pulls you down onto the hides. Her hands are hard and careful, the way they are with a snare, and then they're not careful. The fire goes down to embers. Neither of you feeds it. Later, under the hides, she sleeps like a hunter: lightly, one hand on the crossbow and the other on you.",
+   "voice": "maeca",
+   "text": "(far off, the Pack, loud) ...Hear that? (a short laugh, surprised out of her) They're eating. ...Down. On the hides. ...Quiet. I said quiet.",
    "where": "dialogue.json maeca/blind#0",
-   "hash": "5e7f9e3a11c1",
+   "hash": "1734cb15e193",
    "segments": [
     {
-     "voice": "narrator",
-     "text": "Off in the Hollow the Pack is loud, a long tangle of voices, and she stops with her hands on your buckle and listens, and then she laughs: a short surprised sound, as if she'd trodden on something."
-    },
-    {
      "voice": "maeca",
-     "text": "They're eating."
-    },
-    {
-     "voice": "narrator",
-     "text": "She pulls you down onto the hides. Her hands are hard and careful, the way they are with a snare, and then they're not careful. The fire goes down to embers. Neither of you feeds it. Later, under the hides, she sleeps like a hunter: lightly, one hand on the crossbow and the other on you."
+     "text": "...Hear that? They're eating. ...Down. On the hides. ...Quiet. I said quiet.",
+     "acted": "[far off, the Pack, loud] ...Hear that? [a short laugh, surprised out of her] They're eating. ...Down. On the hides. ...Quiet. I said quiet."
     }
    ],
    "status": "todo"
@@ -5748,14 +5741,15 @@
   {
    "id": "dlg.maeca.blind.1",
    "kind": "dialogue",
-   "voice": "narrator",
-   "text": "She doesn't talk, and then neither of you needs to. She comes round the fire to you, and that seems to be a decision. Her hands are hard and careful, the way they are with a snare: slow, listening, ready to stop. They become sure. Once, far off, the Pack calls, and she goes still against you until it's done. Later, under the hides, she sleeps like a hunter: lightly, one hand on the crossbow and the other on you.",
+   "voice": "maeca",
+   "text": "(the fire shifts; then her voice, close) ...Hold still. Slow. I'll stop if you stop. (far off, the Pack calls; nothing, until it's done) ...All right.",
    "where": "dialogue.json maeca/blind#1",
-   "hash": "7db9b58e55bb",
+   "hash": "cf016443f1f4",
    "segments": [
     {
-     "voice": "narrator",
-     "text": "She doesn't talk, and then neither of you needs to. She comes round the fire to you, and that seems to be a decision. Her hands are hard and careful, the way they are with a snare: slow, listening, ready to stop. They become sure. Once, far off, the Pack calls, and she goes still against you until it's done. Later, under the hides, she sleeps like a hunter: lightly, one hand on the crossbow and the other on you."
+     "voice": "maeca",
+     "text": "...Hold still. Slow. I'll stop if you stop. ...All right.",
+     "acted": "[the fire shifts; then her voice, close] ...Hold still. Slow. I'll stop if you stop. [far off, the Pack calls; nothing, until it's done] ...All right."
     }
    ],
    "direction": {
@@ -5797,13 +5791,13 @@
    "id": "dlg.maeca.blind_morning.1",
    "kind": "dialogue",
    "voice": "maeca",
-   "text": "(Gray light. She's already up, barefoot in the frost, listening to the wood.) The Pack found me, after Ashford. A cave mouth, and a lad I'd been fond of dying in it. The old gray one came and lay down across the way in. Kept the cold off. Kept everything off. ...That's why. That's all of why. Don't make it a story.",
+   "text": "(Gray light. She's already up, barefoot in the frost at the mouth of the Blind, listening to the wood: one hand on the crossbow and the other on you.) The Pack found me, after Ashford. A cave mouth, and a lad I'd been fond of dying in it. The old gray one came and lay down across the way in. Kept the cold off. Kept everything off. ...That's why. That's all of why. Don't make it a story.",
    "where": "dialogue.json maeca/blind_morning#1",
-   "hash": "bb07189f2e12",
+   "hash": "485465132317",
    "segments": [
     {
      "voice": "narrator",
-     "text": "Gray light. She's already up, barefoot in the frost, listening to the wood."
+     "text": "Gray light. She's already up, barefoot in the frost at the mouth of the Blind, listening to the wood: one hand on the crossbow and the other on you."
     },
     {
      "voice": "maeca",
@@ -6281,14 +6275,15 @@
   {
    "id": "dlg.maeca.blind_dark.0",
    "kind": "dialogue",
-   "voice": "narrator",
-   "text": "Afterwards, in the dark under the hides, she puts her feet against your legs, and flinches: you're colder than they are. She starts to take them back.",
+   "voice": "maeca",
+   "text": "...You're colder than my feet. (the hides rustle) How are you colder than my feet.",
    "where": "dialogue.json maeca/blind_dark#0",
-   "hash": "ae6ca86cef49",
+   "hash": "faf00689a67b",
    "segments": [
     {
-     "voice": "narrator",
-     "text": "Afterwards, in the dark under the hides, she puts her feet against your legs, and flinches: you're colder than they are. She starts to take them back."
+     "voice": "maeca",
+     "text": "...You're colder than my feet. How are you colder than my feet.",
+     "acted": "...You're colder than my feet. [the hides rustle] How are you colder than my feet."
     }
    ],
    "direction": {
@@ -6304,34 +6299,15 @@
   {
    "id": "dlg.maeca.blind_dark.1",
    "kind": "dialogue",
-   "voice": "narrator",
-   "text": "Later, with the fire down, she lies with her head on your chest, listening the way she listens to the Hollow. Outside, in the frost, you hear them come: soft feet, a long way round, and then a sigh, and then another. The Pack, lying down round the Blind in the dark. She lifts her head. \"They don't do that. Not for me. Not for anyone.\" She lies back down, her ear where it was. \"You walk quiet. You came into my Hollow and knelt to him, and he let you. You never talk about before.\" Against your chest you feel her lips move, without a sound. \"What were you?\"",
+   "voice": "maeca",
+   "text": "(outside, in the frost: soft feet, a long way round; a sigh; another) ...They don't do that. Not for me. Not for anyone. (low, against your chest) You walk quiet. You came into my Hollow and knelt to him, and he let you. You never talk about before. (almost no sound) ...What were you?",
    "where": "dialogue.json maeca/blind_dark#1",
-   "hash": "bc1d5dcb96d4",
+   "hash": "54edf00d8c7e",
    "segments": [
     {
-     "voice": "narrator",
-     "text": "Later, with the fire down, she lies with her head on your chest, listening the way she listens to the Hollow. Outside, in the frost, you hear them come: soft feet, a long way round, and then a sigh, and then another. The Pack, lying down round the Blind in the dark. She lifts her head."
-    },
-    {
      "voice": "maeca",
-     "text": "They don't do that. Not for me. Not for anyone."
-    },
-    {
-     "voice": "narrator",
-     "text": "She lies back down, her ear where it was."
-    },
-    {
-     "voice": "maeca",
-     "text": "You walk quiet. You came into my Hollow and knelt to him, and he let you. You never talk about before."
-    },
-    {
-     "voice": "narrator",
-     "text": "Against your chest you feel her lips move, without a sound."
-    },
-    {
-     "voice": "maeca",
-     "text": "What were you?"
+     "text": "...They don't do that. Not for me. Not for anyone. You walk quiet. You came into my Hollow and knelt to him, and he let you. You never talk about before. ...What were you?",
+     "acted": "[outside, in the frost: soft feet, a long way round; a sigh; another] ...They don't do that. Not for me. Not for anyone. [low, against your chest] You walk quiet. You came into my Hollow and knelt to him, and he let you. You never talk about before. [almost no sound] ...What were you?"
     }
    ],
    "direction": {
@@ -6348,26 +6324,15 @@
   {
    "id": "dlg.maeca.blind_dark.2",
    "kind": "dialogue",
-   "voice": "narrator",
-   "text": "Later, with the fire down, she lies with her head on your chest, listening the way she listens to the Hollow. \"You walk quiet. You never talk about before.\" Against your chest you feel her lips move, without a sound. \"What were you?\"",
+   "voice": "maeca",
+   "text": "(low, against your chest) You walk quiet. You never talk about before. (almost no sound) ...What were you?",
    "where": "dialogue.json maeca/blind_dark#2",
-   "hash": "bc2ce580f6f1",
+   "hash": "fabfc1279787",
    "segments": [
     {
-     "voice": "narrator",
-     "text": "Later, with the fire down, she lies with her head on your chest, listening the way she listens to the Hollow."
-    },
-    {
      "voice": "maeca",
-     "text": "You walk quiet. You never talk about before."
-    },
-    {
-     "voice": "narrator",
-     "text": "Against your chest you feel her lips move, without a sound."
-    },
-    {
-     "voice": "maeca",
-     "text": "What were you?"
+     "text": "You walk quiet. You never talk about before. ...What were you?",
+     "acted": "[low, against your chest] You walk quiet. You never talk about before. [almost no sound] ...What were you?"
     }
    ],
    "direction": {
@@ -6384,14 +6349,15 @@
   {
    "id": "dlg.maeca.blind_dark.3",
    "kind": "dialogue",
-   "voice": "narrator",
-   "text": "The fire's down to embers. Far off, the Pack is quiet.",
+   "voice": "maeca",
+   "text": "(the fire, down to embers) ...They've settled. (her breathing slowing) Sleep.",
    "where": "dialogue.json maeca/blind_dark#3",
-   "hash": "ea475daa0781",
+   "hash": "3228b6f7a095",
    "segments": [
     {
-     "voice": "narrator",
-     "text": "The fire's down to embers. Far off, the Pack is quiet."
+     "voice": "maeca",
+     "text": "...They've settled. Sleep.",
+     "acted": "[the fire, down to embers] ...They've settled. [her breathing slowing] Sleep."
     }
    ],
    "direction": {
@@ -6486,26 +6452,15 @@
   {
    "id": "dlg.maeca.blind2_feet.0",
    "kind": "dialogue",
-   "voice": "narrator",
-   "text": "You take one in your hands. The sole is hard as boot leather, and scarred: old white lines across the ball of the foot, a ridge along the heel where something cut it to the bone a long time ago and it healed badly in the cold. She lets you hold it. She lets you hold the other. She lies very still, the way she lay still when the Pack called, and doesn't say anything for a long time. Then, into the dark, very low: \"Your hands are colder than my feet.\" She doesn't take them back. \"Hold them anyway. ...Nobody's held those.\"",
+   "voice": "maeca",
+   "text": "...Two toes short. The wet had them, a long time back. ...Your hands are colder than my feet. (a long quiet) Hold them anyway. ...Nobody's held those.",
    "where": "dialogue.json maeca/blind2_feet#0",
-   "hash": "5b808cea6007",
+   "hash": "8af8dfaec6c4",
    "segments": [
     {
-     "voice": "narrator",
-     "text": "You take one in your hands. The sole is hard as boot leather, and scarred: old white lines across the ball of the foot, a ridge along the heel where something cut it to the bone a long time ago and it healed badly in the cold. She lets you hold it. She lets you hold the other. She lies very still, the way she lay still when the Pack called, and doesn't say anything for a long time. Then, into the dark, very low:"
-    },
-    {
      "voice": "maeca",
-     "text": "Your hands are colder than my feet."
-    },
-    {
-     "voice": "narrator",
-     "text": "She doesn't take them back."
-    },
-    {
-     "voice": "maeca",
-     "text": "Hold them anyway. ...Nobody's held those."
+     "text": "...Two toes short. The wet had them, a long time back. ...Your hands are colder than my feet. Hold them anyway. ...Nobody's held those.",
+     "acted": "...Two toes short. The wet had them, a long time back. ...Your hands are colder than my feet. [a long quiet] Hold them anyway. ...Nobody's held those."
     }
    ],
    "direction": {
@@ -6520,14 +6475,15 @@
   {
    "id": "dlg.maeca.blind2_let.0",
    "kind": "dialogue",
-   "voice": "narrator",
-   "text": "She tucks them up under her instead, the way a dog curls its nose under its tail, and goes to sleep. In the night, half awake, you feel her put them back against you, slowly, as if she was trying it out.",
+   "voice": "maeca",
+   "text": "(a long quiet; then, half asleep, close) ...Mm. Keep still. ...They're only feet.",
    "where": "dialogue.json maeca/blind2_let#0",
-   "hash": "dc5674c73ccf",
+   "hash": "ecd1d498126c",
    "segments": [
     {
-     "voice": "narrator",
-     "text": "She tucks them up under her instead, the way a dog curls its nose under its tail, and goes to sleep. In the night, half awake, you feel her put them back against you, slowly, as if she was trying it out."
+     "voice": "maeca",
+     "text": "...Mm. Keep still. ...They're only feet.",
+     "acted": "[a long quiet; then, half asleep, close] ...Mm. Keep still. ...They're only feet."
     }
    ],
    "direction": {
@@ -6648,25 +6604,14 @@
    "id": "dlg.maeca.told_little.0",
    "kind": "dialogue",
    "voice": "maeca",
-   "text": "(She doesn't push.) All right. (And it is.) ...Keep it, then. I keep mine.",
+   "text": "(not pushing) All right. (meaning it) ...Keep it, then. I keep mine.",
    "where": "dialogue.json maeca/told_little#0",
-   "hash": "7ad515a42fd4",
+   "hash": "582630848e5b",
    "segments": [
     {
-     "voice": "narrator",
-     "text": "She doesn't push."
-    },
-    {
      "voice": "maeca",
-     "text": "All right."
-    },
-    {
-     "voice": "narrator",
-     "text": "And it is."
-    },
-    {
-     "voice": "maeca",
-     "text": "...Keep it, then. I keep mine."
+     "text": "All right. ...Keep it, then. I keep mine.",
+     "acted": "[not pushing] All right. [meaning it] ...Keep it, then. I keep mine."
     }
    ],
    "direction": {
@@ -6682,34 +6627,15 @@
    "id": "dlg.maeca.blind3_morning.0",
    "kind": "dialogue",
    "voice": "maeca",
-   "text": "(Gray light. She's awake before you, as always, but she hasn't got up. Her head is still on your chest. Her face is very still.) Your heart's going like a hare's. (She doesn't lift her head.) All night it was a bear's in January. I counted between. ...I've lain with my ear to a lot of things to see if they'd live, {name}. (She gets up, then, and goes out barefoot into the frost, and stands there listening to the wood with her back to you.) Go on. Holloway'll count us.",
+   "text": "(gray light; awake before you, as always, but not up; her head still on your chest, her face very still) Your heart's going like a hare's. (not lifting her head) All night it was a bear's in January. I counted between. ...I've lain with my ear to a lot of things to see if they'd live, {name}. (up, then, and out barefoot into the frost; she stands listening to the wood with her back to you) Go on. Holloway'll count us.",
    "where": "dialogue.json maeca/blind3_morning#0",
-   "hash": "4c77528e7a85",
+   "hash": "e6b44b99b7bd",
    "name_elided": true,
    "segments": [
     {
-     "voice": "narrator",
-     "text": "Gray light. She's awake before you, as always, but she hasn't got up. Her head is still on your chest. Her face is very still."
-    },
-    {
      "voice": "maeca",
-     "text": "Your heart's going like a hare's."
-    },
-    {
-     "voice": "narrator",
-     "text": "She doesn't lift her head."
-    },
-    {
-     "voice": "maeca",
-     "text": "All night it was a bear's in January. I counted between. ...I've lain with my ear to a lot of things to see if they'd live."
-    },
-    {
-     "voice": "narrator",
-     "text": "She gets up, then, and goes out barefoot into the frost, and stands there listening to the wood with her back to you."
-    },
-    {
-     "voice": "maeca",
-     "text": "Go on. Holloway'll count us."
+     "text": "Your heart's going like a hare's. All night it was a bear's in January. I counted between. ...I've lain with my ear to a lot of things to see if they'd live. Go on. Holloway'll count us.",
+     "acted": "[gray light; awake before you, as always, but not up; her head still on your chest, her face very still] Your heart's going like a hare's. [not lifting her head] All night it was a bear's in January. I counted between. ...I've lain with my ear to a lot of things to see if they'd live. [up, then, and out barefoot into the frost; she stands listening to the wood with her back to you] Go on. Holloway'll count us."
     }
    ],
    "direction": {
@@ -22845,22 +22771,15 @@
   {
    "id": "dlg.sella.night.0",
    "kind": "dialogue",
-   "voice": "narrator",
-   "text": "The water's gone cool by the time either of you notices, and she drags the quilt off the bed and onto the floor rather than walk three steps. She is slower tonight. She keeps a hand flat on you the whole time, the way you'd keep a hand on a horse you'd been told was skittish, and when you look at her she says, \"Don't,\" and kisses you so you can't. After, you lie on the floor of the blue room with the lamp turned down to a bead, and she doesn't get up to dress, and you don't ask why. You wake with her hair across your chest and the sun already up. She is dressed, and counting, and she counts it twice.",
+   "voice": "sella",
+   "text": "Water's gone cold. ...Leave it. I'm not walking three steps for a bed; bring the quilt. ...Easy. Easy, love. ...Don't. ...Don't look at me. ...I'm not getting dressed. Don't ask me why. (morning: coins, counted, and counted again)",
    "where": "dialogue.json sella/night#0",
-   "hash": "4dcb04dfce0d",
+   "hash": "2ede74022f41",
    "segments": [
     {
-     "voice": "narrator",
-     "text": "The water's gone cool by the time either of you notices, and she drags the quilt off the bed and onto the floor rather than walk three steps. She is slower tonight. She keeps a hand flat on you the whole time, the way you'd keep a hand on a horse you'd been told was skittish, and when you look at her she says,"
-    },
-    {
      "voice": "sella",
-     "text": "Don't,"
-    },
-    {
-     "voice": "narrator",
-     "text": "and kisses you so you can't. After, you lie on the floor of the blue room with the lamp turned down to a bead, and she doesn't get up to dress, and you don't ask why. You wake with her hair across your chest and the sun already up. She is dressed, and counting, and she counts it twice."
+     "text": "Water's gone cold. ...Leave it. I'm not walking three steps for a bed; bring the quilt. ...Easy. Easy, love. ...Don't. ...Don't look at me. ...I'm not getting dressed. Don't ask me why.",
+     "acted": "Water's gone cold. ...Leave it. I'm not walking three steps for a bed; bring the quilt. ...Easy. Easy, love. ...Don't. ...Don't look at me. ...I'm not getting dressed. Don't ask me why. [morning: coins, counted, and counted again]"
     }
    ],
    "status": "todo"
@@ -22868,14 +22787,15 @@
   {
    "id": "dlg.sella.night.1",
    "kind": "dialogue",
-   "voice": "narrator",
-   "text": "She laughs when the water slops over the side, and again when you try to mop it with her shift. Then the lamp is down to a bead, and the blue room is a small warm place with the whole night outside it. She talks the way she always talks, low against your ear, telling you exactly what she means to do next and then doing it, and she's good at it and likes it and makes no secret of either. But there are gaps, tonight. Places where she stops mid-sentence and doesn't finish, and you don't need her to. You wake with her hair across your chest and the sun already up. She is dressed, and counting.",
+   "voice": "sella",
+   "text": "(water slopping over the side; she laughs) That's the floor, then. ...Not with my shift, you great— give it here. ...Right. I'll tell you what I'm going to do, love, and then I'm going to do it. First I'm going to— ...First. ...You know. Come here. (morning: coins, counted)",
    "where": "dialogue.json sella/night#1",
-   "hash": "46cd299aefad",
+   "hash": "00593beeef2b",
    "segments": [
     {
-     "voice": "narrator",
-     "text": "She laughs when the water slops over the side, and again when you try to mop it with her shift. Then the lamp is down to a bead, and the blue room is a small warm place with the whole night outside it. She talks the way she always talks, low against your ear, telling you exactly what she means to do next and then doing it, and she's good at it and likes it and makes no secret of either. But there are gaps, tonight. Places where she stops mid-sentence and doesn't finish, and you don't need her to. You wake with her hair across your chest and the sun already up. She is dressed, and counting."
+     "voice": "sella",
+     "text": "That's the floor, then. ...Not with my shift, you great— give it here. ...Right. I'll tell you what I'm going to do, love, and then I'm going to do it. First I'm going to— ...First. ...You know. Come here.",
+     "acted": "[water slopping over the side; she laughs] That's the floor, then. ...Not with my shift, you great— give it here. ...Right. I'll tell you what I'm going to do, love, and then I'm going to do it. First I'm going to— ...First. ...You know. Come here. [morning: coins, counted]"
     }
    ],
    "direction": {
@@ -22895,14 +22815,15 @@
   {
    "id": "dlg.sella.night.2",
    "kind": "dialogue",
-   "voice": "narrator",
-   "text": "The blue room smells of lavender and lamp oil, and the bath is warm, at least to begin with. After that the door is shut, and what happens behind it is slow, and warm, and funny, and nobody's business but yours: her hair coming down, her mouth at your ear, her hands everywhere they're welcome and nowhere they're not. For a few hours the road and the dead on it are a long way off. You wake with her hair across your chest and the sun already up. She is dressed, and counting.",
+   "voice": "sella",
+   "text": "Bath's warm. Was warm. ...Leave it, love. Come here. There. Now, any hand of mine that's not welcome, you say, and I'll find it somewhere it is. ...That's it. Slow. Nobody's paying me to hurry. ...Listen. Can't hear the road from up here. Can't hear the river. That's what the fifteen's for. (morning: coins, counted)",
    "where": "dialogue.json sella/night#2",
-   "hash": "cc7f8da42f3b",
+   "hash": "503b286d0b45",
    "segments": [
     {
-     "voice": "narrator",
-     "text": "The blue room smells of lavender and lamp oil, and the bath is warm, at least to begin with. After that the door is shut, and what happens behind it is slow, and warm, and funny, and nobody's business but yours: her hair coming down, her mouth at your ear, her hands everywhere they're welcome and nowhere they're not. For a few hours the road and the dead on it are a long way off. You wake with her hair across your chest and the sun already up. She is dressed, and counting."
+     "voice": "sella",
+     "text": "Bath's warm. Was warm. ...Leave it, love. Come here. There. Now, any hand of mine that's not welcome, you say, and I'll find it somewhere it is. ...That's it. Slow. Nobody's paying me to hurry. ...Listen. Can't hear the road from up here. Can't hear the river. That's what the fifteen's for.",
+     "acted": "Bath's warm. Was warm. ...Leave it, love. Come here. There. Now, any hand of mine that's not welcome, you say, and I'll find it somewhere it is. ...That's it. Slow. Nobody's paying me to hurry. ...Listen. Can't hear the road from up here. Can't hear the river. That's what the fifteen's for. [morning: coins, counted]"
     }
    ],
    "direction": {
@@ -22918,17 +22839,14 @@
    "id": "dlg.sella.morning.0",
    "kind": "dialogue",
    "voice": "sella",
-   "text": "(She's sitting on the edge of the bed, frowning, with her palm flat on your breastbone.) You were cold as the river all night, love. Like sleeping next to a stone. And now look at you: warm as toast. ...Rook's got a word for that. It's not a nice word. Get up and eat something.",
+   "text": "(on the edge of the bed, frowning, her palm flat on your breastbone) You were cold as the river all night, love. Like sleeping next to a stone. And now look at you: warm as toast. ...Rook's got a word for that. It's not a nice word. Get up and eat something.",
    "where": "dialogue.json sella/morning#0",
-   "hash": "9b2a6f5fbfc5",
+   "hash": "4a7dd9c87d1d",
    "segments": [
     {
-     "voice": "narrator",
-     "text": "She's sitting on the edge of the bed, frowning, with her palm flat on your breastbone."
-    },
-    {
      "voice": "sella",
-     "text": "You were cold as the river all night, love. Like sleeping next to a stone. And now look at you: warm as toast. ...Rook's got a word for that. It's not a nice word. Get up and eat something."
+     "text": "You were cold as the river all night, love. Like sleeping next to a stone. And now look at you: warm as toast. ...Rook's got a word for that. It's not a nice word. Get up and eat something.",
+     "acted": "[on the edge of the bed, frowning, her palm flat on your breastbone] You were cold as the river all night, love. Like sleeping next to a stone. And now look at you: warm as toast. ...Rook's got a word for that. It's not a nice word. Get up and eat something."
     }
    ],
    "direction": {
@@ -23394,22 +23312,15 @@
   {
    "id": "dlg.sella.free_night.0",
    "kind": "dialogue",
-   "voice": "narrator",
-   "text": "She doesn't talk the way she talks for money. She doesn't talk at all, at first. She undresses you as if she's never done it before, which is absurd, and she knows it's absurd, and halfway through she laughs into your neck and can't stop. Then she does stop, and the laugh goes somewhere else. She's slower than on her working nights, and less sure, and once she stops altogether with her forehead against yours and just breathes, and you wait, and she goes on. The lamp burns down on its own. Nobody turns it. In the dark, much later, she says into your shoulder, \"You told me anyway,\" and nothing else, and then she sleeps.",
+   "voice": "sella",
+   "text": "Hold still. My hands don't know what they're doing. ...Seven years, love, and I can't undo a lace. Don't you laugh. Don't you dare— (she laughs, and can't stop, and then she does) ...Wait. ...All right. All right. (much later; into your shoulder) ...You told me anyway.",
    "where": "dialogue.json sella/free_night#0",
-   "hash": "22d777c6949f",
+   "hash": "4f2085831aca",
    "segments": [
     {
-     "voice": "narrator",
-     "text": "She doesn't talk the way she talks for money. She doesn't talk at all, at first. She undresses you as if she's never done it before, which is absurd, and she knows it's absurd, and halfway through she laughs into your neck and can't stop. Then she does stop, and the laugh goes somewhere else. She's slower than on her working nights, and less sure, and once she stops altogether with her forehead against yours and just breathes, and you wait, and she goes on. The lamp burns down on its own. Nobody turns it. In the dark, much later, she says into your shoulder,"
-    },
-    {
      "voice": "sella",
-     "text": "You told me anyway,"
-    },
-    {
-     "voice": "narrator",
-     "text": "and nothing else, and then she sleeps."
+     "text": "Hold still. My hands don't know what they're doing. ...Seven years, love, and I can't undo a lace. Don't you laugh. Don't you dare— ...Wait. ...All right. All right. ...You told me anyway.",
+     "acted": "Hold still. My hands don't know what they're doing. ...Seven years, love, and I can't undo a lace. Don't you laugh. Don't you dare— [she laughs, and can't stop, and then she does] ...Wait. ...All right. All right. [much later; into your shoulder] ...You told me anyway."
     }
    ],
    "status": "todo"
@@ -23417,14 +23328,14 @@
   {
    "id": "dlg.sella.free_night.1",
    "kind": "dialogue",
-   "voice": "narrator",
-   "text": "The blue room, and the lamp, and the bolt, which she shot herself. She doesn't talk the way she talks for money. For a while neither of you talks at all. She is slower than you have known her, and less sure, and there is a moment when she stops with her hands on your face and just looks, as if she is learning it, and doesn't make a joke of it. Later she lies awake, and you can feel her deciding something, and then she sleeps.",
+   "voice": "sella",
+   "text": "No talking. I talk for money. ...Stay like that. Let me look. ...I'm not making a joke of it. Don't you make one. ...Yes.",
    "where": "dialogue.json sella/free_night#1",
-   "hash": "da6771252289",
+   "hash": "5a666cf96da0",
    "segments": [
     {
-     "voice": "narrator",
-     "text": "The blue room, and the lamp, and the bolt, which she shot herself. She doesn't talk the way she talks for money. For a while neither of you talks at all. She is slower than you have known her, and less sure, and there is a moment when she stops with her hands on your face and just looks, as if she is learning it, and doesn't make a joke of it. Later she lies awake, and you can feel her deciding something, and then she sleeps."
+     "voice": "sella",
+     "text": "No talking. I talk for money. ...Stay like that. Let me look. ...I'm not making a joke of it. Don't you make one. ...Yes."
     }
    ],
    "direction": {
@@ -23445,17 +23356,14 @@
    "id": "dlg.sella.free_morning.0",
    "kind": "dialogue",
    "voice": "sella",
-   "text": "(She's still there when you wake.) Don't tell Rook; she'll want a third of nothing, on principle. ...And don't tell me anything up here you'd not want Vonnra to hear. I mean that kindly. It's the kindest thing I've said to anyone in a year.",
+   "text": "(still there when you wake) Don't tell Rook; she'll want a third of nothing, on principle. ...And don't tell me anything up here you'd not want Vonnra to hear. I mean that kindly. It's the kindest thing I've said to anyone in a year.",
    "where": "dialogue.json sella/free_morning#0",
-   "hash": "1aac2b328414",
+   "hash": "edf1c74b386c",
    "segments": [
     {
-     "voice": "narrator",
-     "text": "She's still there when you wake."
-    },
-    {
      "voice": "sella",
-     "text": "Don't tell Rook; she'll want a third of nothing, on principle. ...And don't tell me anything up here you'd not want Vonnra to hear. I mean that kindly. It's the kindest thing I've said to anyone in a year."
+     "text": "Don't tell Rook; she'll want a third of nothing, on principle. ...And don't tell me anything up here you'd not want Vonnra to hear. I mean that kindly. It's the kindest thing I've said to anyone in a year.",
+     "acted": "[still there when you wake] Don't tell Rook; she'll want a third of nothing, on principle. ...And don't tell me anything up here you'd not want Vonnra to hear. I mean that kindly. It's the kindest thing I've said to anyone in a year."
     }
    ],
    "direction": {
@@ -23511,25 +23419,14 @@
    "id": "dlg.sella.past.0",
    "kind": "dialogue",
    "voice": "sella",
-   "text": "(She goes still when you start. You know who buys what's said up here; she knows you know. You tell her anyway. She listens properly, chin on her fist, the way she does everything.) A hunter. Out of these woods, with a bow too big for you, I'll bet, and mud to the knees. ...I'd not have guessed. I'd have guessed, but not that. ...You know where that goes, love. You know exactly where. (She doesn't say anything else for a while. Then:) Go on. Out. Before I start charging you for the sentiment.",
+   "text": "(she goes still when you start; then she listens properly, chin on her fist) A hunter. Out of these woods, with a bow too big for you, I'll bet, and mud to the knees. ...I'd not have guessed. I'd have guessed, but not that. ...You know where that goes, love. You know exactly where. (nothing, for a while; then) Go on. Out. Before I start charging you for the sentiment.",
    "where": "dialogue.json sella/past#0",
-   "hash": "8effde0736a7",
+   "hash": "e46b4af89ba5",
    "segments": [
     {
-     "voice": "narrator",
-     "text": "She goes still when you start. You know who buys what's said up here; she knows you know. You tell her anyway. She listens properly, chin on her fist, the way she does everything."
-    },
-    {
      "voice": "sella",
-     "text": "A hunter. Out of these woods, with a bow too big for you, I'll bet, and mud to the knees. ...I'd not have guessed. I'd have guessed, but not that. ...You know where that goes, love. You know exactly where."
-    },
-    {
-     "voice": "narrator",
-     "text": "She doesn't say anything else for a while. Then:"
-    },
-    {
-     "voice": "sella",
-     "text": "Go on. Out. Before I start charging you for the sentiment."
+     "text": "A hunter. Out of these woods, with a bow too big for you, I'll bet, and mud to the knees. ...I'd not have guessed. I'd have guessed, but not that. ...You know where that goes, love. You know exactly where. Go on. Out. Before I start charging you for the sentiment.",
+     "acted": "[she goes still when you start; then she listens properly, chin on her fist] A hunter. Out of these woods, with a bow too big for you, I'll bet, and mud to the knees. ...I'd not have guessed. I'd have guessed, but not that. ...You know where that goes, love. You know exactly where. [nothing, for a while; then] Go on. Out. Before I start charging you for the sentiment."
     }
    ],
    "direction": {
@@ -23545,25 +23442,14 @@
    "id": "dlg.sella.past.1",
    "kind": "dialogue",
    "voice": "sella",
-   "text": "(She goes still when you start. You know who buys what's said up here; she knows you know. You tell her anyway. She listens properly, chin on her fist, the way she does everything.) A cloister rat. Four years in a cellar reading dead men's letters, and you walked out with their lens in your pocket. ...Good for you, love. ...You know where that goes, love. You know exactly where. (She doesn't say anything else for a while. Then:) Go on. Out. Before I start charging you for the sentiment.",
+   "text": "(she goes still when you start; then she listens properly, chin on her fist) A cloister rat. Four years in a cellar reading dead men's letters, and you walked out with their lens in your pocket. ...Good for you, love. ...You know where that goes, love. You know exactly where. (nothing, for a while; then) Go on. Out. Before I start charging you for the sentiment.",
    "where": "dialogue.json sella/past#1",
-   "hash": "8bddb8884e2a",
+   "hash": "aa0c08761984",
    "segments": [
     {
-     "voice": "narrator",
-     "text": "She goes still when you start. You know who buys what's said up here; she knows you know. You tell her anyway. She listens properly, chin on her fist, the way she does everything."
-    },
-    {
      "voice": "sella",
-     "text": "A cloister rat. Four years in a cellar reading dead men's letters, and you walked out with their lens in your pocket. ...Good for you, love. ...You know where that goes, love. You know exactly where."
-    },
-    {
-     "voice": "narrator",
-     "text": "She doesn't say anything else for a while. Then:"
-    },
-    {
-     "voice": "sella",
-     "text": "Go on. Out. Before I start charging you for the sentiment."
+     "text": "A cloister rat. Four years in a cellar reading dead men's letters, and you walked out with their lens in your pocket. ...Good for you, love. ...You know where that goes, love. You know exactly where. Go on. Out. Before I start charging you for the sentiment.",
+     "acted": "[she goes still when you start; then she listens properly, chin on her fist] A cloister rat. Four years in a cellar reading dead men's letters, and you walked out with their lens in your pocket. ...Good for you, love. ...You know where that goes, love. You know exactly where. [nothing, for a while; then] Go on. Out. Before I start charging you for the sentiment."
     }
    ],
    "direction": {
@@ -23579,33 +23465,14 @@
    "id": "dlg.sella.past.2",
    "kind": "dialogue",
    "voice": "sella",
-   "text": "(She goes still when you start. You know who buys what's said up here; she knows you know. You tell her anyway. She listens properly, chin on her fist, the way she does everything.) Worse company than the Kerchiefs, and you walked away from it. (She laughs, low.) Takes one to know one. Don't tell Rook. ...You know where that goes, love. You know exactly where. (She doesn't say anything else for a while. Then:) Go on. Out. Before I start charging you for the sentiment.",
+   "text": "(she goes still when you start; then she listens properly, chin on her fist) Worse company than the Kerchiefs, and you walked away from it. (a low laugh) Takes one to know one. Don't tell Rook. ...You know where that goes, love. You know exactly where. (nothing, for a while; then) Go on. Out. Before I start charging you for the sentiment.",
    "where": "dialogue.json sella/past#2",
-   "hash": "133701cd48de",
+   "hash": "c8241e118450",
    "segments": [
     {
-     "voice": "narrator",
-     "text": "She goes still when you start. You know who buys what's said up here; she knows you know. You tell her anyway. She listens properly, chin on her fist, the way she does everything."
-    },
-    {
      "voice": "sella",
-     "text": "Worse company than the Kerchiefs, and you walked away from it."
-    },
-    {
-     "voice": "narrator",
-     "text": "She laughs, low."
-    },
-    {
-     "voice": "sella",
-     "text": "Takes one to know one. Don't tell Rook. ...You know where that goes, love. You know exactly where."
-    },
-    {
-     "voice": "narrator",
-     "text": "She doesn't say anything else for a while. Then:"
-    },
-    {
-     "voice": "sella",
-     "text": "Go on. Out. Before I start charging you for the sentiment."
+     "text": "Worse company than the Kerchiefs, and you walked away from it. Takes one to know one. Don't tell Rook. ...You know where that goes, love. You know exactly where. Go on. Out. Before I start charging you for the sentiment.",
+     "acted": "[she goes still when you start; then she listens properly, chin on her fist] Worse company than the Kerchiefs, and you walked away from it. [a low laugh] Takes one to know one. Don't tell Rook. ...You know where that goes, love. You know exactly where. [nothing, for a while; then] Go on. Out. Before I start charging you for the sentiment."
     }
    ],
    "direction": {
@@ -23621,33 +23488,14 @@
    "id": "dlg.sella.past.3",
    "kind": "dialogue",
    "voice": "sella",
-   "text": "(She goes still when you start. You know who buys what's said up here; she knows you know. You tell her anyway. She listens properly, chin on her fist, the way she does everything.) Chapel lamps, with nobody to see them but you, and you lit them anyway. (She's quiet a moment.) That's the saddest thing anyone's told me up here, love, and they tell me some sad things. ...You know where that goes, love. You know exactly where. (She doesn't say anything else for a while. Then:) Go on. Out. Before I start charging you for the sentiment.",
+   "text": "(she goes still when you start; then she listens properly, chin on her fist) Chapel lamps, with nobody to see them but you, and you lit them anyway. (quiet a moment) That's the saddest thing anyone's told me up here, love, and they tell me some sad things. ...You know where that goes, love. You know exactly where. (nothing, for a while; then) Go on. Out. Before I start charging you for the sentiment.",
    "where": "dialogue.json sella/past#3",
-   "hash": "9282eaacd12b",
+   "hash": "e0ba526a1822",
    "segments": [
     {
-     "voice": "narrator",
-     "text": "She goes still when you start. You know who buys what's said up here; she knows you know. You tell her anyway. She listens properly, chin on her fist, the way she does everything."
-    },
-    {
      "voice": "sella",
-     "text": "Chapel lamps, with nobody to see them but you, and you lit them anyway."
-    },
-    {
-     "voice": "narrator",
-     "text": "She's quiet a moment."
-    },
-    {
-     "voice": "sella",
-     "text": "That's the saddest thing anyone's told me up here, love, and they tell me some sad things. ...You know where that goes, love. You know exactly where."
-    },
-    {
-     "voice": "narrator",
-     "text": "She doesn't say anything else for a while. Then:"
-    },
-    {
-     "voice": "sella",
-     "text": "Go on. Out. Before I start charging you for the sentiment."
+     "text": "Chapel lamps, with nobody to see them but you, and you lit them anyway. That's the saddest thing anyone's told me up here, love, and they tell me some sad things. ...You know where that goes, love. You know exactly where. Go on. Out. Before I start charging you for the sentiment.",
+     "acted": "[she goes still when you start; then she listens properly, chin on her fist] Chapel lamps, with nobody to see them but you, and you lit them anyway. [quiet a moment] That's the saddest thing anyone's told me up here, love, and they tell me some sad things. ...You know where that goes, love. You know exactly where. [nothing, for a while; then] Go on. Out. Before I start charging you for the sentiment."
     }
    ],
    "direction": {
@@ -23663,17 +23511,14 @@
    "id": "dlg.sella.past.4",
    "kind": "dialogue",
    "voice": "sella",
-   "text": "(You tell her. She listens properly, chin on her fist, the way she does everything.) A hunter. Out of these woods, with a bow too big for you, I'll bet, and mud to the knees. ...I'd not have guessed. I'd have guessed, but not that.",
+   "text": "(she listens properly, chin on her fist) A hunter. Out of these woods, with a bow too big for you, I'll bet, and mud to the knees. ...I'd not have guessed. I'd have guessed, but not that.",
    "where": "dialogue.json sella/past#4",
-   "hash": "1ce4b7308dc2",
+   "hash": "bd7ea40e98ba",
    "segments": [
     {
-     "voice": "narrator",
-     "text": "You tell her. She listens properly, chin on her fist, the way she does everything."
-    },
-    {
      "voice": "sella",
-     "text": "A hunter. Out of these woods, with a bow too big for you, I'll bet, and mud to the knees. ...I'd not have guessed. I'd have guessed, but not that."
+     "text": "A hunter. Out of these woods, with a bow too big for you, I'll bet, and mud to the knees. ...I'd not have guessed. I'd have guessed, but not that.",
+     "acted": "[she listens properly, chin on her fist] A hunter. Out of these woods, with a bow too big for you, I'll bet, and mud to the knees. ...I'd not have guessed. I'd have guessed, but not that."
     }
    ],
    "direction": {
@@ -23692,17 +23537,14 @@
    "id": "dlg.sella.past.5",
    "kind": "dialogue",
    "voice": "sella",
-   "text": "(You tell her. She listens properly, chin on her fist, the way she does everything.) A cloister rat. Four years in a cellar reading dead men's letters, and you walked out with their lens in your pocket. ...Good for you, love.",
+   "text": "(she listens properly, chin on her fist) A cloister rat. Four years in a cellar reading dead men's letters, and you walked out with their lens in your pocket. ...Good for you, love.",
    "where": "dialogue.json sella/past#5",
-   "hash": "1e31bdb9902a",
+   "hash": "c667438e5cd9",
    "segments": [
     {
-     "voice": "narrator",
-     "text": "You tell her. She listens properly, chin on her fist, the way she does everything."
-    },
-    {
      "voice": "sella",
-     "text": "A cloister rat. Four years in a cellar reading dead men's letters, and you walked out with their lens in your pocket. ...Good for you, love."
+     "text": "A cloister rat. Four years in a cellar reading dead men's letters, and you walked out with their lens in your pocket. ...Good for you, love.",
+     "acted": "[she listens properly, chin on her fist] A cloister rat. Four years in a cellar reading dead men's letters, and you walked out with their lens in your pocket. ...Good for you, love."
     }
    ],
    "direction": {
@@ -23721,25 +23563,14 @@
    "id": "dlg.sella.past.6",
    "kind": "dialogue",
    "voice": "sella",
-   "text": "(You tell her. She listens properly, chin on her fist, the way she does everything.) Worse company than the Kerchiefs, and you walked away from it. (She laughs, low.) Takes one to know one. Don't tell Rook.",
+   "text": "(she listens properly, chin on her fist) Worse company than the Kerchiefs, and you walked away from it. (a low laugh) Takes one to know one. Don't tell Rook.",
    "where": "dialogue.json sella/past#6",
-   "hash": "ba4e6b9d5f72",
+   "hash": "ba6473b4e4f3",
    "segments": [
     {
-     "voice": "narrator",
-     "text": "You tell her. She listens properly, chin on her fist, the way she does everything."
-    },
-    {
      "voice": "sella",
-     "text": "Worse company than the Kerchiefs, and you walked away from it."
-    },
-    {
-     "voice": "narrator",
-     "text": "She laughs, low."
-    },
-    {
-     "voice": "sella",
-     "text": "Takes one to know one. Don't tell Rook."
+     "text": "Worse company than the Kerchiefs, and you walked away from it. Takes one to know one. Don't tell Rook.",
+     "acted": "[she listens properly, chin on her fist] Worse company than the Kerchiefs, and you walked away from it. [a low laugh] Takes one to know one. Don't tell Rook."
     }
    ],
    "direction": {
@@ -23758,25 +23589,14 @@
    "id": "dlg.sella.past.7",
    "kind": "dialogue",
    "voice": "sella",
-   "text": "(You tell her. She listens properly, chin on her fist, the way she does everything.) Chapel lamps, with nobody to see them but you, and you lit them anyway. (She's quiet a moment.) That's the saddest thing anyone's told me up here, love, and they tell me some sad things.",
+   "text": "(she listens properly, chin on her fist) Chapel lamps, with nobody to see them but you, and you lit them anyway. (quiet a moment) That's the saddest thing anyone's told me up here, love, and they tell me some sad things.",
    "where": "dialogue.json sella/past#7",
-   "hash": "f519efe9ff49",
+   "hash": "d9dece1a9f76",
    "segments": [
     {
-     "voice": "narrator",
-     "text": "You tell her. She listens properly, chin on her fist, the way she does everything."
-    },
-    {
      "voice": "sella",
-     "text": "Chapel lamps, with nobody to see them but you, and you lit them anyway."
-    },
-    {
-     "voice": "narrator",
-     "text": "She's quiet a moment."
-    },
-    {
-     "voice": "sella",
-     "text": "That's the saddest thing anyone's told me up here, love, and they tell me some sad things."
+     "text": "Chapel lamps, with nobody to see them but you, and you lit them anyway. That's the saddest thing anyone's told me up here, love, and they tell me some sad things.",
+     "acted": "[she listens properly, chin on her fist] Chapel lamps, with nobody to see them but you, and you lit them anyway. [quiet a moment] That's the saddest thing anyone's told me up here, love, and they tell me some sad things."
     }
    ],
    "direction": {
@@ -23805,21 +23625,14 @@
    "id": "dlg.sella.sleeptalk.0",
    "kind": "dialogue",
    "voice": "sella",
-   "text": "You said a name. Over and over, like you'd got hold of it in the dark and didn't want to let go. (She shrugs one shoulder.) Didn't catch it. I don't think you did either.",
+   "text": "You said a name. Over and over, like you'd got hold of it in the dark and didn't want to let go. (a one-shouldered shrug) Didn't catch it. I don't think you did either.",
    "where": "dialogue.json sella/sleeptalk#0",
-   "hash": "afe922aada23",
+   "hash": "f0bd0d3e05d2",
    "segments": [
     {
      "voice": "sella",
-     "text": "You said a name. Over and over, like you'd got hold of it in the dark and didn't want to let go."
-    },
-    {
-     "voice": "narrator",
-     "text": "She shrugs one shoulder."
-    },
-    {
-     "voice": "sella",
-     "text": "Didn't catch it. I don't think you did either."
+     "text": "You said a name. Over and over, like you'd got hold of it in the dark and didn't want to let go. Didn't catch it. I don't think you did either.",
+     "acted": "You said a name. Over and over, like you'd got hold of it in the dark and didn't want to let go. [a one-shouldered shrug] Didn't catch it. I don't think you did either."
     }
    ],
    "direction": {
@@ -23974,18 +23787,15 @@
   {
    "id": "dlg.sella.stairs_room.0",
    "kind": "dialogue",
-   "voice": "narrator",
-   "text": "The blue room again: the quilt, the jug, the bath, her, all of it blue. Your buckles take an age. She undoes them as if she has done a great many, and laughs at the last one, which is stuck. \"All that steel, and under it, look. A person.\"",
+   "voice": "sella",
+   "text": "(water poured) Blue room again. Same jug, same quilt. ...Same me. (buckles, quick, one after another) I've undone a few of these, love. (one sticks; she laughs) All that steel, and under it, look. A person.",
    "where": "dialogue.json sella/stairs_room#0",
-   "hash": "2dfed5bf3942",
+   "hash": "4540d27b7ad2",
    "segments": [
     {
-     "voice": "narrator",
-     "text": "The blue room again: the quilt, the jug, the bath, her, all of it blue. Your buckles take an age. She undoes them as if she has done a great many, and laughs at the last one, which is stuck."
-    },
-    {
      "voice": "sella",
-     "text": "All that steel, and under it, look. A person."
+     "text": "Blue room again. Same jug, same quilt. ...Same me. I've undone a few of these, love. All that steel, and under it, look. A person.",
+     "acted": "[water poured] Blue room again. Same jug, same quilt. ...Same me. [buckles, quick, one after another] I've undone a few of these, love. [one sticks; she laughs] All that steel, and under it, look. A person."
     }
    ],
    "direction": {
@@ -24005,18 +23815,15 @@
   {
    "id": "dlg.sella.stairs_room.1",
    "kind": "dialogue",
-   "voice": "narrator",
-   "text": "The blue room again: the quilt, the jug, the bath, her, all of it blue. She takes your hands, one and then the other, and turns them over, and looks at the knuckles. \"Gently, upstairs. I mean it. I like this jug.\"",
+   "voice": "sella",
+   "text": "(water poured) Blue room again. Same jug, same quilt. ...Same me. Give me your hands. ...The other one. ...Look at these knuckles. Gently, upstairs. I mean it. I like this jug.",
    "where": "dialogue.json sella/stairs_room#1",
-   "hash": "41cbcae43be1",
+   "hash": "10a72fe92d0c",
    "segments": [
     {
-     "voice": "narrator",
-     "text": "The blue room again: the quilt, the jug, the bath, her, all of it blue. She takes your hands, one and then the other, and turns them over, and looks at the knuckles."
-    },
-    {
      "voice": "sella",
-     "text": "Gently, upstairs. I mean it. I like this jug."
+     "text": "Blue room again. Same jug, same quilt. ...Same me. Give me your hands. ...The other one. ...Look at these knuckles. Gently, upstairs. I mean it. I like this jug.",
+     "acted": "[water poured] Blue room again. Same jug, same quilt. ...Same me. Give me your hands. ...The other one. ...Look at these knuckles. Gently, upstairs. I mean it. I like this jug."
     }
    ],
    "direction": {
@@ -24035,18 +23842,15 @@
   {
    "id": "dlg.sella.stairs_room.2",
    "kind": "dialogue",
-   "voice": "narrator",
-   "text": "The blue room again: the quilt, the jug, the bath, her, all of it blue. She lays her palm flat on your chest and takes it away again, fast, then puts it back, slower. \"Your hands are hot and the rest of you's a cellar floor. Pick one, love.\"",
+   "voice": "sella",
+   "text": "(water poured) Blue room again. Same jug, same quilt. ...Same me. (a sharp breath, through her teeth) Your hands are hot and the rest of you's a cellar floor. Pick one, love.",
    "where": "dialogue.json sella/stairs_room#2",
-   "hash": "7c6f8122c103",
+   "hash": "118437fde52e",
    "segments": [
     {
-     "voice": "narrator",
-     "text": "The blue room again: the quilt, the jug, the bath, her, all of it blue. She lays her palm flat on your chest and takes it away again, fast, then puts it back, slower."
-    },
-    {
      "voice": "sella",
-     "text": "Your hands are hot and the rest of you's a cellar floor. Pick one, love."
+     "text": "Blue room again. Same jug, same quilt. ...Same me. Your hands are hot and the rest of you's a cellar floor. Pick one, love.",
+     "acted": "[water poured] Blue room again. Same jug, same quilt. ...Same me. [a sharp breath, through her teeth] Your hands are hot and the rest of you's a cellar floor. Pick one, love."
     }
    ],
    "direction": {
@@ -24066,22 +23870,15 @@
   {
    "id": "dlg.sella.stairs_room.3",
    "kind": "dialogue",
-   "voice": "narrator",
-   "text": "The blue room again: the quilt, the jug, the bath, her, all of it blue. She comes round behind you to start on the laces, and says into your ear, \"There. Now you know what it's like,\" and you jump. She's delighted.",
+   "voice": "sella",
+   "text": "(water poured) Blue room again. Same jug, same quilt. ...Same me. (close at your ear, from behind) There. Now you know what it's like. (a laugh) You jumped.",
    "where": "dialogue.json sella/stairs_room#3",
-   "hash": "008ad621cdef",
+   "hash": "b830ebfa680c",
    "segments": [
     {
-     "voice": "narrator",
-     "text": "The blue room again: the quilt, the jug, the bath, her, all of it blue. She comes round behind you to start on the laces, and says into your ear,"
-    },
-    {
      "voice": "sella",
-     "text": "There. Now you know what it's like,"
-    },
-    {
-     "voice": "narrator",
-     "text": "and you jump. She's delighted."
+     "text": "Blue room again. Same jug, same quilt. ...Same me. There. Now you know what it's like. You jumped.",
+     "acted": "[water poured] Blue room again. Same jug, same quilt. ...Same me. [close at your ear, from behind] There. Now you know what it's like. [a laugh] You jumped."
     }
    ],
    "direction": {
@@ -24100,18 +23897,15 @@
   {
    "id": "dlg.sella.stairs_room.4",
    "kind": "dialogue",
-   "voice": "narrator",
-   "text": "The blue room is blue because the lamp glass is, and everything in it takes the color: the quilt, the jug, the bath, her. She tests the water with her elbow like somebody's mother, and then tips your chin up with one finger like nobody's mother at all. Your buckles take an age. She undoes them as if she has done a great many, and laughs at the last one, which is stuck. \"All that steel, and under it, look. A person.\"",
+   "voice": "sella",
+   "text": "(water poured) It's the lamp glass. Everyone asks. Everything up here comes out blue. ...Warm. Told you. Chin up. Let me look at you. (buckles, quick, one after another) I've undone a few of these, love. (one sticks; she laughs) All that steel, and under it, look. A person.",
    "where": "dialogue.json sella/stairs_room#4",
-   "hash": "2ffd34b4e317",
+   "hash": "13ad9bb6dbca",
    "segments": [
     {
-     "voice": "narrator",
-     "text": "The blue room is blue because the lamp glass is, and everything in it takes the color: the quilt, the jug, the bath, her. She tests the water with her elbow like somebody's mother, and then tips your chin up with one finger like nobody's mother at all. Your buckles take an age. She undoes them as if she has done a great many, and laughs at the last one, which is stuck."
-    },
-    {
      "voice": "sella",
-     "text": "All that steel, and under it, look. A person."
+     "text": "It's the lamp glass. Everyone asks. Everything up here comes out blue. ...Warm. Told you. Chin up. Let me look at you. I've undone a few of these, love. All that steel, and under it, look. A person.",
+     "acted": "[water poured] It's the lamp glass. Everyone asks. Everything up here comes out blue. ...Warm. Told you. Chin up. Let me look at you. [buckles, quick, one after another] I've undone a few of these, love. [one sticks; she laughs] All that steel, and under it, look. A person."
     }
    ],
    "direction": {
@@ -24131,18 +23925,15 @@
   {
    "id": "dlg.sella.stairs_room.5",
    "kind": "dialogue",
-   "voice": "narrator",
-   "text": "The blue room is blue because the lamp glass is, and everything in it takes the color: the quilt, the jug, the bath, her. She tests the water with her elbow like somebody's mother, and then tips your chin up with one finger like nobody's mother at all. She takes your hands, one and then the other, and turns them over, and looks at the knuckles. \"Gently, upstairs. I mean it. I like this jug.\"",
+   "voice": "sella",
+   "text": "(water poured) It's the lamp glass. Everyone asks. Everything up here comes out blue. ...Warm. Told you. Chin up. Let me look at you. Give me your hands. ...The other one. ...Look at these knuckles. Gently, upstairs. I mean it. I like this jug.",
    "where": "dialogue.json sella/stairs_room#5",
-   "hash": "097f2bace28b",
+   "hash": "4acf4ec4fd13",
    "segments": [
     {
-     "voice": "narrator",
-     "text": "The blue room is blue because the lamp glass is, and everything in it takes the color: the quilt, the jug, the bath, her. She tests the water with her elbow like somebody's mother, and then tips your chin up with one finger like nobody's mother at all. She takes your hands, one and then the other, and turns them over, and looks at the knuckles."
-    },
-    {
      "voice": "sella",
-     "text": "Gently, upstairs. I mean it. I like this jug."
+     "text": "It's the lamp glass. Everyone asks. Everything up here comes out blue. ...Warm. Told you. Chin up. Let me look at you. Give me your hands. ...The other one. ...Look at these knuckles. Gently, upstairs. I mean it. I like this jug.",
+     "acted": "[water poured] It's the lamp glass. Everyone asks. Everything up here comes out blue. ...Warm. Told you. Chin up. Let me look at you. Give me your hands. ...The other one. ...Look at these knuckles. Gently, upstairs. I mean it. I like this jug."
     }
    ],
    "direction": {
@@ -24161,18 +23952,15 @@
   {
    "id": "dlg.sella.stairs_room.6",
    "kind": "dialogue",
-   "voice": "narrator",
-   "text": "The blue room is blue because the lamp glass is, and everything in it takes the color: the quilt, the jug, the bath, her. She tests the water with her elbow like somebody's mother, and then tips your chin up with one finger like nobody's mother at all. She lays her palm flat on your chest and takes it away again, fast, then puts it back, slower. \"Your hands are hot and the rest of you's a cellar floor. Pick one, love.\"",
+   "voice": "sella",
+   "text": "(water poured) It's the lamp glass. Everyone asks. Everything up here comes out blue. ...Warm. Told you. Chin up. Let me look at you. (a sharp breath, through her teeth) Your hands are hot and the rest of you's a cellar floor. Pick one, love.",
    "where": "dialogue.json sella/stairs_room#6",
-   "hash": "62c9686ddc22",
+   "hash": "429b8b931233",
    "segments": [
     {
-     "voice": "narrator",
-     "text": "The blue room is blue because the lamp glass is, and everything in it takes the color: the quilt, the jug, the bath, her. She tests the water with her elbow like somebody's mother, and then tips your chin up with one finger like nobody's mother at all. She lays her palm flat on your chest and takes it away again, fast, then puts it back, slower."
-    },
-    {
      "voice": "sella",
-     "text": "Your hands are hot and the rest of you's a cellar floor. Pick one, love."
+     "text": "It's the lamp glass. Everyone asks. Everything up here comes out blue. ...Warm. Told you. Chin up. Let me look at you. Your hands are hot and the rest of you's a cellar floor. Pick one, love.",
+     "acted": "[water poured] It's the lamp glass. Everyone asks. Everything up here comes out blue. ...Warm. Told you. Chin up. Let me look at you. [a sharp breath, through her teeth] Your hands are hot and the rest of you's a cellar floor. Pick one, love."
     }
    ],
    "direction": {
@@ -24191,22 +23979,15 @@
   {
    "id": "dlg.sella.stairs_room.7",
    "kind": "dialogue",
-   "voice": "narrator",
-   "text": "The blue room is blue because the lamp glass is, and everything in it takes the color: the quilt, the jug, the bath, her. She tests the water with her elbow like somebody's mother, and then tips your chin up with one finger like nobody's mother at all. She comes round behind you to start on the laces, and says into your ear, \"There. Now you know what it's like,\" and you jump. She's delighted.",
+   "voice": "sella",
+   "text": "(water poured) It's the lamp glass. Everyone asks. Everything up here comes out blue. ...Warm. Told you. Chin up. Let me look at you. (close at your ear, from behind) There. Now you know what it's like. (a laugh) You jumped.",
    "where": "dialogue.json sella/stairs_room#7",
-   "hash": "8a3b79ecd963",
+   "hash": "22827c1b56f0",
    "segments": [
     {
-     "voice": "narrator",
-     "text": "The blue room is blue because the lamp glass is, and everything in it takes the color: the quilt, the jug, the bath, her. She tests the water with her elbow like somebody's mother, and then tips your chin up with one finger like nobody's mother at all. She comes round behind you to start on the laces, and says into your ear,"
-    },
-    {
      "voice": "sella",
-     "text": "There. Now you know what it's like,"
-    },
-    {
-     "voice": "narrator",
-     "text": "and you jump. She's delighted."
+     "text": "It's the lamp glass. Everyone asks. Everything up here comes out blue. ...Warm. Told you. Chin up. Let me look at you. There. Now you know what it's like. You jumped.",
+     "acted": "[water poured] It's the lamp glass. Everyone asks. Everything up here comes out blue. ...Warm. Told you. Chin up. Let me look at you. [close at your ear, from behind] There. Now you know what it's like. [a laugh] You jumped."
     }
    ],
    "direction": {
@@ -24226,17 +24007,14 @@
    "id": "dlg.sella.stairs_rules.0",
    "kind": "dialogue",
    "voice": "sella",
-   "text": "(In the bath she slides her hands down your arms, and stops. Under the warm water you are cold: not chilled, cold, like something brought up off the riverbed. She doesn't make a joke of it. She keeps her hands where they are for a long time, as if that would help.) ...Right. Rules. Anything you'd rather I didn't, say so. Anything you'd rather I did, say it louder.",
+   "text": "(the bath water moving; then still) ...You're cold. Not chilled, love. Cold. Under warm water. (a long quiet; no joke in it) ...Right. Rules. Anything you'd rather I didn't, say so. Anything you'd rather I did, say it louder.",
    "where": "dialogue.json sella/stairs_rules#0",
-   "hash": "4d27b6becfeb",
+   "hash": "a4e0823b3227",
    "segments": [
     {
-     "voice": "narrator",
-     "text": "In the bath she slides her hands down your arms, and stops. Under the warm water you are cold: not chilled, cold, like something brought up off the riverbed. She doesn't make a joke of it. She keeps her hands where they are for a long time, as if that would help."
-    },
-    {
      "voice": "sella",
-     "text": "...Right. Rules. Anything you'd rather I didn't, say so. Anything you'd rather I did, say it louder."
+     "text": "...You're cold. Not chilled, love. Cold. Under warm water. ...Right. Rules. Anything you'd rather I didn't, say so. Anything you'd rather I did, say it louder.",
+     "acted": "[the bath water moving; then still] ...You're cold. Not chilled, love. Cold. Under warm water. [a long quiet; no joke in it] ...Right. Rules. Anything you'd rather I didn't, say so. Anything you'd rather I did, say it louder."
     }
    ],
    "direction": {
@@ -24314,25 +24092,14 @@
    "id": "dlg.sella.stop_paid.0",
    "kind": "dialogue",
    "voice": "sella",
-   "text": "(She sits back on her heels, and doesn't sulk, and doesn't ask why.) Then I'll have the bath. It's paid for. (She counts thirteen coins back into your palm and closes your fingers on them.) Two for the water. That's Rook's rule, not mine. ...You'll come back when you want to. Or you won't. Either's all right, love. Go on.",
+   "text": "(easy, no sulk in it) Then I'll have the bath. It's paid for. (coins, counted back into your palm: thirteen) Two for the water. That's Rook's rule, not mine. ...You'll come back when you want to. Or you won't. Either's all right, love. Go on.",
    "where": "dialogue.json sella/stop_paid#0",
-   "hash": "2470010384d6",
+   "hash": "8f3b7f831a6e",
    "segments": [
     {
-     "voice": "narrator",
-     "text": "She sits back on her heels, and doesn't sulk, and doesn't ask why."
-    },
-    {
      "voice": "sella",
-     "text": "Then I'll have the bath. It's paid for."
-    },
-    {
-     "voice": "narrator",
-     "text": "She counts thirteen coins back into your palm and closes your fingers on them."
-    },
-    {
-     "voice": "sella",
-     "text": "Two for the water. That's Rook's rule, not mine. ...You'll come back when you want to. Or you won't. Either's all right, love. Go on."
+     "text": "Then I'll have the bath. It's paid for. Two for the water. That's Rook's rule, not mine. ...You'll come back when you want to. Or you won't. Either's all right, love. Go on.",
+     "acted": "[easy, no sulk in it] Then I'll have the bath. It's paid for. [coins, counted back into your palm: thirteen] Two for the water. That's Rook's rule, not mine. ...You'll come back when you want to. Or you won't. Either's all right, love. Go on."
     }
    ],
    "direction": {
@@ -24398,21 +24165,14 @@
    "id": "dlg.sella.rest_night_paid.0",
    "kind": "dialogue",
    "voice": "sella",
-   "text": "Sleep. (She looks at you as if you'd asked her to recite something in a foreign tongue.) You've paid fifteen gold to sleep.",
+   "text": "(as if it's a word in a foreign tongue) Sleep. ...You've paid fifteen gold to sleep.",
    "where": "dialogue.json sella/rest_night_paid#0",
-   "hash": "3fda76aafd6f",
+   "hash": "417b4a33f0ab",
    "segments": [
     {
      "voice": "sella",
-     "text": "Sleep."
-    },
-    {
-     "voice": "narrator",
-     "text": "She looks at you as if you'd asked her to recite something in a foreign tongue."
-    },
-    {
-     "voice": "sella",
-     "text": "You've paid fifteen gold to sleep."
+     "text": "Sleep. ...You've paid fifteen gold to sleep.",
+     "acted": "[as if it's a word in a foreign tongue] Sleep. ...You've paid fifteen gold to sleep."
     }
    ],
    "direction": {
@@ -24459,14 +24219,15 @@
   {
    "id": "dlg.sella.rest_dark.0",
    "kind": "dialogue",
-   "voice": "narrator",
-   "text": "She lies down on top of the quilt with all her clothes on, and you under it, and for a while she talks: about Rook, about Holloway's feet, about a man from Low Kiln who wanted her to bark. You don't hear the end of the man from Low Kiln. Some time in the night you half wake and she isn't talking. She's lying on her side, watching you, the way you'd watch weather.",
+   "voice": "sella",
+   "text": "Rook says the stairs— no, I'll tell you about Rook. ...There was a man from Low Kiln, wanted me to bark. Like a dog. I said— (she breaks off; softer) ...Go on, then. Sleep. I'll watch the weather.",
    "where": "dialogue.json sella/rest_dark#0",
-   "hash": "cb0547ba03cf",
+   "hash": "9154f98a55d5",
    "segments": [
     {
-     "voice": "narrator",
-     "text": "She lies down on top of the quilt with all her clothes on, and you under it, and for a while she talks: about Rook, about Holloway's feet, about a man from Low Kiln who wanted her to bark. You don't hear the end of the man from Low Kiln. Some time in the night you half wake and she isn't talking. She's lying on her side, watching you, the way you'd watch weather."
+     "voice": "sella",
+     "text": "Rook says the stairs— no, I'll tell you about Rook. ...There was a man from Low Kiln, wanted me to bark. Like a dog. I said— ...Go on, then. Sleep. I'll watch the weather.",
+     "acted": "Rook says the stairs— no, I'll tell you about Rook. ...There was a man from Low Kiln, wanted me to bark. Like a dog. I said— [she breaks off; softer] ...Go on, then. Sleep. I'll watch the weather."
     }
    ],
    "direction": {
@@ -24482,17 +24243,14 @@
    "id": "dlg.sella.rest_morning.0",
    "kind": "dialogue",
    "voice": "sella",
-   "text": "(She's sitting on the edge of the bed with her hand flat on your chest.) You were cold as the river all night. Like lying next to a stone. And now look at you: warm as toast. ...Fifteen gold to lie awake next to a stone. Best money I ever made. Don't tell anyone.",
+   "text": "(on the edge of the bed, her hand flat on your chest) You were cold as the river all night. Like lying next to a stone. And now look at you: warm as toast. ...Fifteen gold to lie awake next to a stone. Best money I ever made. Don't tell anyone.",
    "where": "dialogue.json sella/rest_morning#0",
-   "hash": "9e080560d451",
+   "hash": "38ede4e4ac05",
    "segments": [
     {
-     "voice": "narrator",
-     "text": "She's sitting on the edge of the bed with her hand flat on your chest."
-    },
-    {
      "voice": "sella",
-     "text": "You were cold as the river all night. Like lying next to a stone. And now look at you: warm as toast. ...Fifteen gold to lie awake next to a stone. Best money I ever made. Don't tell anyone."
+     "text": "You were cold as the river all night. Like lying next to a stone. And now look at you: warm as toast. ...Fifteen gold to lie awake next to a stone. Best money I ever made. Don't tell anyone.",
+     "acted": "[on the edge of the bed, her hand flat on your chest] You were cold as the river all night. Like lying next to a stone. And now look at you: warm as toast. ...Fifteen gold to lie awake next to a stone. Best money I ever made. Don't tell anyone."
     }
    ],
    "direction": {
@@ -24509,21 +24267,14 @@
    "id": "dlg.sella.rest_morning.1",
    "kind": "dialogue",
    "voice": "sella",
-   "text": "Fifteen gold to watch you snore. Best money I ever made. (She's already dressed. She doesn't count it.) Don't tell anyone. They'll all want it, and then where will I be? Rich and bored.",
+   "text": "Fifteen gold to watch you snore. Best money I ever made. (already dressed; she doesn't count it) Don't tell anyone. They'll all want it, and then where will I be? Rich and bored.",
    "where": "dialogue.json sella/rest_morning#1",
-   "hash": "f747ebac6de0",
+   "hash": "9b4b6dc236aa",
    "segments": [
     {
      "voice": "sella",
-     "text": "Fifteen gold to watch you snore. Best money I ever made."
-    },
-    {
-     "voice": "narrator",
-     "text": "She's already dressed. She doesn't count it."
-    },
-    {
-     "voice": "sella",
-     "text": "Don't tell anyone. They'll all want it, and then where will I be? Rich and bored."
+     "text": "Fifteen gold to watch you snore. Best money I ever made. Don't tell anyone. They'll all want it, and then where will I be? Rich and bored.",
+     "acted": "Fifteen gold to watch you snore. Best money I ever made. [already dressed; she doesn't count it] Don't tell anyone. They'll all want it, and then where will I be? Rich and bored."
     }
    ],
    "direction": {
@@ -24589,21 +24340,14 @@
    "id": "dlg.sella.door.0",
    "kind": "dialogue",
    "voice": "sella",
-   "text": "That? It's Rook's. (She sits on the bed to do up her boots, and doesn't look up.) Working nights it stays drawn back. Rook's got a key and a cudgel, and if a man turns funny she's up those stairs before he's finished turning. I've needed her twice in seven years. Once for a drover. Once for one of the Watch, and I'll not say which. ...So, no. I've never shot it. It's not my door. Nothing in here's my door.",
+   "text": "That? It's Rook's. (on the bed, doing up her boots; she doesn't look up) Working nights it stays drawn back. Rook's got a key and a cudgel, and if a man turns funny she's up those stairs before he's finished turning. I've needed her twice in seven years. Once for a drover. Once for one of the Watch, and I'll not say which. ...So, no. I've never shot it. It's not my door. Nothing in here's my door.",
    "where": "dialogue.json sella/door#0",
-   "hash": "6b7ec039e79e",
+   "hash": "41937b970ea1",
    "segments": [
     {
      "voice": "sella",
-     "text": "That? It's Rook's."
-    },
-    {
-     "voice": "narrator",
-     "text": "She sits on the bed to do up her boots, and doesn't look up."
-    },
-    {
-     "voice": "sella",
-     "text": "Working nights it stays drawn back. Rook's got a key and a cudgel, and if a man turns funny she's up those stairs before he's finished turning. I've needed her twice in seven years. Once for a drover. Once for one of the Watch, and I'll not say which. ...So, no. I've never shot it. It's not my door. Nothing in here's my door."
+     "text": "That? It's Rook's. Working nights it stays drawn back. Rook's got a key and a cudgel, and if a man turns funny she's up those stairs before he's finished turning. I've needed her twice in seven years. Once for a drover. Once for one of the Watch, and I'll not say which. ...So, no. I've never shot it. It's not my door. Nothing in here's my door.",
+     "acted": "That? It's Rook's. [on the bed, doing up her boots; she doesn't look up] Working nights it stays drawn back. Rook's got a key and a cudgel, and if a man turns funny she's up those stairs before he's finished turning. I've needed her twice in seven years. Once for a drover. Once for one of the Watch, and I'll not say which. ...So, no. I've never shot it. It's not my door. Nothing in here's my door."
     }
    ],
    "direction": {
@@ -24649,21 +24393,14 @@
    "id": "dlg.sella.door_years.0",
    "kind": "dialogue",
    "voice": "sella",
-   "text": "Twenty-two, and sure I was cleverer than everyone in the valley. I was right about most of them. (She laughs, low.) I'm twenty-nine, love, since you're doing sums. Seven years at the top of Rook's stairs, and I've only fallen down them twice.",
+   "text": "Twenty-two, and sure I was cleverer than everyone in the valley. I was right about most of them. (a low laugh) I'm twenty-nine, love, since you're doing sums. Seven years at the top of Rook's stairs, and I've only fallen down them twice.",
    "where": "dialogue.json sella/door_years#0",
-   "hash": "987830179d03",
+   "hash": "36dab6f8b826",
    "segments": [
     {
      "voice": "sella",
-     "text": "Twenty-two, and sure I was cleverer than everyone in the valley. I was right about most of them."
-    },
-    {
-     "voice": "narrator",
-     "text": "She laughs, low."
-    },
-    {
-     "voice": "sella",
-     "text": "I'm twenty-nine, love, since you're doing sums. Seven years at the top of Rook's stairs, and I've only fallen down them twice."
+     "text": "Twenty-two, and sure I was cleverer than everyone in the valley. I was right about most of them. I'm twenty-nine, love, since you're doing sums. Seven years at the top of Rook's stairs, and I've only fallen down them twice.",
+     "acted": "Twenty-two, and sure I was cleverer than everyone in the valley. I was right about most of them. [a low laugh] I'm twenty-nine, love, since you're doing sums. Seven years at the top of Rook's stairs, and I've only fallen down them twice."
     }
    ],
    "direction": {
@@ -24699,21 +24436,14 @@
    "id": "dlg.sella.door_south.0",
    "kind": "dialogue",
    "voice": "sella",
-   "text": "I told you. A house in the south. A door that locks from the inside. (She stands, and checks her hair in the jug, and doesn't look at you.) And somebody who knocks.",
+   "text": "I told you. A house in the south. A door that locks from the inside. (standing, checking her hair in the jug; she doesn't look at you) And somebody who knocks.",
    "where": "dialogue.json sella/door_south#0",
-   "hash": "a698bfe0c5ce",
+   "hash": "08e398cdbabd",
    "segments": [
     {
      "voice": "sella",
-     "text": "I told you. A house in the south. A door that locks from the inside."
-    },
-    {
-     "voice": "narrator",
-     "text": "She stands, and checks her hair in the jug, and doesn't look at you."
-    },
-    {
-     "voice": "sella",
-     "text": "And somebody who knocks."
+     "text": "I told you. A house in the south. A door that locks from the inside. And somebody who knocks.",
+     "acted": "I told you. A house in the south. A door that locks from the inside. [standing, checking her hair in the jug; she doesn't look at you] And somebody who knocks."
     }
    ],
    "direction": {
@@ -24814,13 +24544,13 @@
    "id": "dlg.sella.free_stairs.0",
    "kind": "dialogue",
    "voice": "narrator",
-   "text": "She doesn't take your hand on the stairs, or your sleeve. She goes up ahead of you, and on the fourth step she forgets to step over it, and it creaks, loud as a shout, and she stops dead with one foot on it and laughs at herself, and that's worse, somehow, than if she hadn't. In the blue room she turns the lamp up, not down. She stands with her back against the door as if somebody might try it.",
+   "text": "She doesn't take your hand on the stairs, or your sleeve. She goes up ahead of you, and on the fourth step she forgets to step over it, and it creaks, loud as a shout, and she stops dead with one foot on it and laughs at herself, and that's worse, somehow, than if she hadn't.",
    "where": "dialogue.json sella/free_stairs#0",
-   "hash": "b9a373decb75",
+   "hash": "ffc294ac4cf4",
    "segments": [
     {
      "voice": "narrator",
-     "text": "She doesn't take your hand on the stairs, or your sleeve. She goes up ahead of you, and on the fourth step she forgets to step over it, and it creaks, loud as a shout, and she stops dead with one foot on it and laughs at herself, and that's worse, somehow, than if she hadn't. In the blue room she turns the lamp up, not down. She stands with her back against the door as if somebody might try it."
+     "text": "She doesn't take your hand on the stairs, or your sleeve. She goes up ahead of you, and on the fourth step she forgets to step over it, and it creaks, loud as a shout, and she stops dead with one foot on it and laughs at herself, and that's worse, somehow, than if she hadn't."
     }
    ],
    "direction": {
@@ -24836,21 +24566,13 @@
    "id": "dlg.sella.free_door.0",
    "kind": "dialogue",
    "voice": "sella",
-   "text": "I keep thinking about you sitting on my bed telling me where you're from. Knowing who'd hear it by morning. (She shakes her head.) Nobody does that. Nobody's ever done that.",
+   "text": "Lamp stays up tonight. ...I keep thinking about you sitting on my bed telling me where you're from. Knowing who'd hear it by morning. ...Nobody does that. Nobody's ever done that.",
    "where": "dialogue.json sella/free_door#0",
-   "hash": "af009257dff4",
+   "hash": "814f10780976",
    "segments": [
     {
      "voice": "sella",
-     "text": "I keep thinking about you sitting on my bed telling me where you're from. Knowing who'd hear it by morning."
-    },
-    {
-     "voice": "narrator",
-     "text": "She shakes her head."
-    },
-    {
-     "voice": "sella",
-     "text": "Nobody does that. Nobody's ever done that."
+     "text": "Lamp stays up tonight. ...I keep thinking about you sitting on my bed telling me where you're from. Knowing who'd hear it by morning. ...Nobody does that. Nobody's ever done that."
     }
    ],
    "direction": {
@@ -24867,13 +24589,13 @@
    "id": "dlg.sella.free_door.1",
    "kind": "dialogue",
    "voice": "sella",
-   "text": "I don't know how to do this one. ...That's a lie. I know how. I don't know how to do it like this.",
+   "text": "Lamp stays up tonight. ...I don't know how to do this one. ...That's a lie. I know how. I don't know how to do it like this.",
    "where": "dialogue.json sella/free_door#1",
-   "hash": "8eb7d577cc6c",
+   "hash": "871a02d32602",
    "segments": [
     {
      "voice": "sella",
-     "text": "I don't know how to do this one. ...That's a lie. I know how. I don't know how to do it like this."
+     "text": "Lamp stays up tonight. ...I don't know how to do this one. ...That's a lie. I know how. I don't know how to do it like this."
     }
    ],
    "direction": {
@@ -24929,21 +24651,14 @@
    "id": "dlg.sella.free_want.0",
    "kind": "dialogue",
    "voice": "sella",
-   "text": "Ask me that again and I'll cry, and I don't cry, so don't. (She takes a breath.) Yes. ...Yes. There. Said it. Come here.",
+   "text": "Ask me that again and I'll cry, and I don't cry, so don't. (a breath) Yes. ...Yes. There. Said it. Come here.",
    "where": "dialogue.json sella/free_want#0",
-   "hash": "63f97f01fa6d",
+   "hash": "368d1d9399d4",
    "segments": [
     {
      "voice": "sella",
-     "text": "Ask me that again and I'll cry, and I don't cry, so don't."
-    },
-    {
-     "voice": "narrator",
-     "text": "She takes a breath."
-    },
-    {
-     "voice": "sella",
-     "text": "Yes. ...Yes. There. Said it. Come here."
+     "text": "Ask me that again and I'll cry, and I don't cry, so don't. Yes. ...Yes. There. Said it. Come here.",
+     "acted": "Ask me that again and I'll cry, and I don't cry, so don't. [a breath] Yes. ...Yes. There. Said it. Come here."
     }
    ],
    "direction": {
@@ -24959,25 +24674,14 @@
    "id": "dlg.sella.free_stop.0",
    "kind": "dialogue",
    "voice": "sella",
-   "text": "(She lets out a breath she's been holding since the stairs.) All right. (And it is; you can see it is.) All right. ...Sit with me, then. Just sit. I've never just sat in here with anybody. Rook'd think we'd died.",
+   "text": "(a breath out, held since the stairs) All right. (meaning it) All right. ...Sit with me, then. Just sit. I've never just sat in here with anybody. Rook'd think we'd died.",
    "where": "dialogue.json sella/free_stop#0",
-   "hash": "ea4676a89a93",
+   "hash": "d9396c4d3d36",
    "segments": [
     {
-     "voice": "narrator",
-     "text": "She lets out a breath she's been holding since the stairs."
-    },
-    {
      "voice": "sella",
-     "text": "All right."
-    },
-    {
-     "voice": "narrator",
-     "text": "And it is; you can see it is."
-    },
-    {
-     "voice": "sella",
-     "text": "All right. ...Sit with me, then. Just sit. I've never just sat in here with anybody. Rook'd think we'd died."
+     "text": "All right. All right. ...Sit with me, then. Just sit. I've never just sat in here with anybody. Rook'd think we'd died.",
+     "acted": "[a breath out, held since the stairs] All right. [meaning it] All right. ...Sit with me, then. Just sit. I've never just sat in here with anybody. Rook'd think we'd died."
     }
    ],
    "direction": {
@@ -24992,14 +24696,15 @@
   {
    "id": "dlg.sella.free_sit.0",
    "kind": "dialogue",
-   "voice": "narrator",
-   "text": "You sit on the bed with your backs to the wall, and she tells you about the house in the south: which room faces the sun; the color of the door; the knock. Then she sends you down the stairs, and stands at the top to watch you skip the fourth.",
+   "voice": "sella",
+   "text": "The house. In the south. ...Kitchen faces the sun. Green door. Not blue; nothing in it blue. (a breath) And somebody who knocks. ...Go on, then. Down you go. Mind the fourth.",
    "where": "dialogue.json sella/free_sit#0",
-   "hash": "2e4ee62c4783",
+   "hash": "3da1e064e389",
    "segments": [
     {
-     "voice": "narrator",
-     "text": "You sit on the bed with your backs to the wall, and she tells you about the house in the south: which room faces the sun; the color of the door; the knock. Then she sends you down the stairs, and stands at the top to watch you skip the fourth."
+     "voice": "sella",
+     "text": "The house. In the south. ...Kitchen faces the sun. Green door. Not blue; nothing in it blue. And somebody who knocks. ...Go on, then. Down you go. Mind the fourth.",
+     "acted": "The house. In the south. ...Kitchen faces the sun. Green door. Not blue; nothing in it blue. [a breath] And somebody who knocks. ...Go on, then. Down you go. Mind the fourth."
     }
    ],
    "direction": {
@@ -25025,17 +24730,14 @@
    "id": "dlg.sella.free_sleep.0",
    "kind": "dialogue",
    "voice": "sella",
-   "text": "(She laughs, properly, the first time tonight.) You and your sleeping. ...Yes. All right. Yes.",
+   "text": "(she laughs, properly, the first time tonight) You and your sleeping. ...Yes. All right. Yes.",
    "where": "dialogue.json sella/free_sleep#0",
-   "hash": "237609985236",
+   "hash": "fc9400e877d7",
    "segments": [
     {
-     "voice": "narrator",
-     "text": "She laughs, properly, the first time tonight."
-    },
-    {
      "voice": "sella",
-     "text": "You and your sleeping. ...Yes. All right. Yes."
+     "text": "You and your sleeping. ...Yes. All right. Yes.",
+     "acted": "[she laughs, properly, the first time tonight] You and your sleeping. ...Yes. All right. Yes."
     }
    ],
    "direction": {
@@ -25050,14 +24752,18 @@
   {
    "id": "dlg.sella.free_sleep_bed.0",
    "kind": "dialogue",
-   "voice": "narrator",
-   "text": "She reaches behind her without looking and finds the bolt, and shoots it. Then she gets into the bed in her shift, and you get in beside her, and she lies with her back against you and pulls your arm over her like a blanket. She's asleep before you are. She's still there when you wake.",
+   "voice": "sella",
+   "text": "(Behind the door, the bolt sticks halfway; nobody has ever shot it. Swearing, and a shoulder to it, and then it goes home, with a sound like the last coin put down on a counter.) Shift over. Arm. ...Your arm, love, over. Like a blanket. There.",
    "where": "dialogue.json sella/free_sleep_bed#0",
-   "hash": "fc7eff81b302",
+   "hash": "a98423e8ac17",
    "segments": [
     {
      "voice": "narrator",
-     "text": "She reaches behind her without looking and finds the bolt, and shoots it. Then she gets into the bed in her shift, and you get in beside her, and she lies with her back against you and pulls your arm over her like a blanket. She's asleep before you are. She's still there when you wake."
+     "text": "Behind the door, the bolt sticks halfway; nobody has ever shot it. Swearing, and a shoulder to it, and then it goes home, with a sound like the last coin put down on a counter."
+    },
+    {
+     "voice": "sella",
+     "text": "Shift over. Arm. ...Your arm, love, over. Like a blanket. There."
     }
    ],
    "direction": {
@@ -25073,13 +24779,13 @@
    "id": "dlg.sella.free_bolt.0",
    "kind": "dialogue",
    "voice": "narrator",
-   "text": "She reaches behind her without looking and finds the bolt. It sticks halfway; nobody has ever shot it. She has to turn round and put her shoulder to it, swearing, and it goes home with a sound like the last coin put down on a counter. (Her back is still to you. Her forehead is against the door.) \"...There.\"",
+   "text": "Behind the door, the bolt sticks halfway; nobody has ever shot it. Swearing, and a shoulder to it, and then it goes home, with a sound like the last coin put down on a counter. \"...There.\"",
    "where": "dialogue.json sella/free_bolt#0",
-   "hash": "12caf75800ad",
+   "hash": "cc8f6ea9b936",
    "segments": [
     {
      "voice": "narrator",
-     "text": "She reaches behind her without looking and finds the bolt. It sticks halfway; nobody has ever shot it. She has to turn round and put her shoulder to it, swearing, and it goes home with a sound like the last coin put down on a counter. Her back is still to you. Her forehead is against the door."
+     "text": "Behind the door, the bolt sticks halfway; nobody has ever shot it. Swearing, and a shoulder to it, and then it goes home, with a sound like the last coin put down on a counter."
     },
     {
      "voice": "sella",
@@ -25104,17 +24810,14 @@
    "id": "dlg.sella.free_m_downstairs.0",
    "kind": "dialogue",
    "voice": "sella",
-   "text": "(She laughs.) Downstairs Rook hears everything and charges nobody. You'd be better off with me. ...No. You wouldn't. That's the point, love. Go on.",
+   "text": "(a laugh) Downstairs Rook hears everything and charges nobody. You'd be better off with me. ...No. You wouldn't. That's the point, love. Go on.",
    "where": "dialogue.json sella/free_m_downstairs#0",
-   "hash": "fba650fca119",
+   "hash": "dcc3d40c0a53",
    "segments": [
     {
-     "voice": "narrator",
-     "text": "She laughs."
-    },
-    {
      "voice": "sella",
-     "text": "Downstairs Rook hears everything and charges nobody. You'd be better off with me. ...No. You wouldn't. That's the point, love. Go on."
+     "text": "Downstairs Rook hears everything and charges nobody. You'd be better off with me. ...No. You wouldn't. That's the point, love. Go on.",
+     "acted": "[a laugh] Downstairs Rook hears everything and charges nobody. You'd be better off with me. ...No. You wouldn't. That's the point, love. Go on."
     }
    ],
    "direction": {
@@ -25140,22 +24843,15 @@
    "id": "dlg.sella.free_m_who.0",
    "kind": "dialogue",
    "voice": "sella",
-   "text": "You know who. Everybody pays; she pays most. (She pulls the quilt up to her chin.) I said don't tell me. I didn't say I'd sell it. ...I didn't say I wouldn't, either. I don't know, {name}. That's the honest answer, and I'm out of practice at those. Don't make me practise before breakfast.",
+   "text": "You know who. Everybody pays; she pays most. (pulling the quilt up to her chin) I said don't tell me. I didn't say I'd sell it. ...I didn't say I wouldn't, either. I don't know, {name}. That's the honest answer, and I'm out of practice at those. Don't make me practise before breakfast.",
    "where": "dialogue.json sella/free_m_who#0",
-   "hash": "0d27c7d5a835",
+   "hash": "e68e70ba2e66",
    "name_elided": true,
    "segments": [
     {
      "voice": "sella",
-     "text": "You know who. Everybody pays; she pays most."
-    },
-    {
-     "voice": "narrator",
-     "text": "She pulls the quilt up to her chin."
-    },
-    {
-     "voice": "sella",
-     "text": "I said don't tell me. I didn't say I'd sell it. ...I didn't say I wouldn't, either. I don't know. That's the honest answer, and I'm out of practice at those. Don't make me practise before breakfast."
+     "text": "You know who. Everybody pays; she pays most. I said don't tell me. I didn't say I'd sell it. ...I didn't say I wouldn't, either. I don't know. That's the honest answer, and I'm out of practice at those. Don't make me practise before breakfast.",
+     "acted": "You know who. Everybody pays; she pays most. [pulling the quilt up to her chin] I said don't tell me. I didn't say I'd sell it. ...I didn't say I wouldn't, either. I don't know. That's the honest answer, and I'm out of practice at those. Don't make me practise before breakfast."
     }
    ],
    "direction": {
@@ -25180,22 +24876,15 @@
   {
    "id": "dlg.sella.free_m_kiss.0",
    "kind": "dialogue",
-   "voice": "narrator",
-   "text": "She lets you. Then she pushes you off by the face, gently, with the flat of her hand. \"Out. Before I get used to it.\" She's smiling. She doesn't stop smiling until you're down the stairs, and you know that because the ninth step creaks behind you: she came down two steps to watch you go, and forgot it.",
+   "voice": "sella",
+   "text": "(she lets you; then pushes you off by the face, gently, with the flat of her hand) Out. Before I get used to it. (smiling, all the way to the stairs; behind you, the ninth step creaks) ...I'm not watching you go. Go on.",
    "where": "dialogue.json sella/free_m_kiss#0",
-   "hash": "463e27e0a4da",
+   "hash": "5a7d26a6cd88",
    "segments": [
     {
-     "voice": "narrator",
-     "text": "She lets you. Then she pushes you off by the face, gently, with the flat of her hand."
-    },
-    {
      "voice": "sella",
-     "text": "Out. Before I get used to it."
-    },
-    {
-     "voice": "narrator",
-     "text": "She's smiling. She doesn't stop smiling until you're down the stairs, and you know that because the ninth step creaks behind you: she came down two steps to watch you go, and forgot it."
+     "text": "Out. Before I get used to it. ...I'm not watching you go. Go on.",
+     "acted": "[she lets you; then pushes you off by the face, gently, with the flat of her hand] Out. Before I get used to it. [smiling, all the way to the stairs; behind you, the ninth step creaks] ...I'm not watching you go. Go on."
     }
    ],
    "direction": {

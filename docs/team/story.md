@@ -4,12 +4,11 @@ The writer: owner of the canon, the words and the story data. Works with the
 story editor, a fresh one for each draft (`docs/story/notes/`). A successor
 starts from `docs/handoff/story.md`.
 
-**Now (11 October, later, branch `story/marker-and-locks`):** Chid's marker
-kept open for `mother.cut` `none` (Act 1 built; Act 2's `scene_still_plain`
-written in TREATMENT §3.3); the 46 held lines and the gate scenes directed and
-locked (495 locks); love scenes B found unapplied, so 13 narrator lines behind
-the door were unlocked and held. Judge pending; next: its fixes, then B into
-the data (`docs/handoff/story.md`).
+**Now (12 October, branch `story/marker-and-locks`):** the marker work and the
+held lines judged and fixed (merge requested at fd0b8a9b; 498 locks). Love
+scenes B written into the data on top (unjudged WIP; everything behind the
+door stays on HOLD). Next: B's directions, docs, a judge, then locks
+(`docs/handoff/story.md`).
 
 **Before (11 October, the fourteenth lead, branch `story/sophistication-pass`):**
 - **The sophistication pass (Act 1) is applied** (list in `docs/handoff/story.md`),

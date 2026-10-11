@@ -4751,7 +4751,6 @@
    },
    "blind": {
     "id": "blind",
-    "speaker": "narrator",
     "text": [
      {
       "when": {
@@ -4773,10 +4772,10 @@
         }
        ]
       },
-      "text": "Off in the Hollow the Pack is loud, a long tangle of voices, and she stops with her hands on your buckle and listens, and then she laughs: a short surprised sound, as if she'd trodden on something. \"They're eating.\" She pulls you down onto the hides. Her hands are hard and careful, the way they are with a snare, and then they're not careful. The fire goes down to embers. Neither of you feeds it. Later, under the hides, she sleeps like a hunter: lightly, one hand on the crossbow and the other on you."
+      "text": "(far off, the Pack, loud) ...Hear that? (a short laugh, surprised out of her) They're eating. ...Down. On the hides. ...Quiet. I said quiet."
      },
      {
-      "text": "She doesn't talk, and then neither of you needs to. She comes round the fire to you, and that seems to be a decision. Her hands are hard and careful, the way they are with a snare: slow, listening, ready to stop. They become sure. Once, far off, the Pack calls, and she goes still against you until it's done. Later, under the hides, she sleeps like a hunter: lightly, one hand on the crossbow and the other on you."
+      "text": "(the fire shifts; then her voice, close) ...Hold still. Slow. I'll stop if you stop. (far off, the Pack calls; nothing, until it's done) ...All right."
      }
     ],
     "effects": [
@@ -4838,7 +4837,7 @@
       "text": "(Gray light. She's already up, barefoot in the frost, listening.) Go on, then. The wood's awake, and so's Holloway, and he'll count us both."
      },
      {
-      "text": "(Gray light. She's already up, barefoot in the frost, listening to the wood.) The Pack found me, after Ashford. A cave mouth, and a lad I'd been fond of dying in it. The old gray one came and lay down across the way in. Kept the cold off. Kept everything off. ...That's why. That's all of why. Don't make it a story."
+      "text": "(Gray light. She's already up, barefoot in the frost at the mouth of the Blind, listening to the wood: one hand on the crossbow and the other on you.) The Pack found me, after Ashford. A cave mouth, and a lad I'd been fond of dying in it. The old gray one came and lay down across the way in. Kept the cold off. Kept everything off. ...That's why. That's all of why. Don't make it a story."
      }
     ],
     "effects": [
@@ -5057,14 +5056,13 @@
    },
    "blind_dark": {
     "id": "blind_dark",
-    "speaker": "narrator",
     "text": [
      {
       "when": {
        "fact": "maeca.blind_nights",
        "eq": 2
       },
-      "text": "Afterwards, in the dark under the hides, she puts her feet against your legs, and flinches: you're colder than they are. She starts to take them back."
+      "text": "...You're colder than my feet. (the hides rustle) How are you colder than my feet."
      },
      {
       "when": {
@@ -5092,7 +5090,7 @@
         }
        ]
       },
-      "text": "Later, with the fire down, she lies with her head on your chest, listening the way she listens to the Hollow. Outside, in the frost, you hear them come: soft feet, a long way round, and then a sigh, and then another. The Pack, lying down round the Blind in the dark. She lifts her head. \"They don't do that. Not for me. Not for anyone.\" She lies back down, her ear where it was. \"You walk quiet. You came into my Hollow and knelt to him, and he let you. You never talk about before.\" Against your chest you feel her lips move, without a sound. \"What were you?\""
+      "text": "(outside, in the frost: soft feet, a long way round; a sigh; another) ...They don't do that. Not for me. Not for anyone. (low, against your chest) You walk quiet. You came into my Hollow and knelt to him, and he let you. You never talk about before. (almost no sound) ...What were you?"
      },
      {
       "when": {
@@ -5112,10 +5110,10 @@
         }
        ]
       },
-      "text": "Later, with the fire down, she lies with her head on your chest, listening the way she listens to the Hollow. \"You walk quiet. You never talk about before.\" Against your chest you feel her lips move, without a sound. \"What were you?\""
+      "text": "(low, against your chest) You walk quiet. You never talk about before. (almost no sound) ...What were you?"
      },
      {
-      "text": "The fire's down to embers. Far off, the Pack is quiet."
+      "text": "(the fire, down to embers) ...They've settled. (her breathing slowing) Sleep."
      }
     ],
     "choices": [
@@ -5374,8 +5372,7 @@
    },
    "blind2_feet": {
     "id": "blind2_feet",
-    "speaker": "narrator",
-    "text": "You take one in your hands. The sole is hard as boot leather, and scarred: old white lines across the ball of the foot, a ridge along the heel where something cut it to the bone a long time ago and it healed badly in the cold. She lets you hold it. She lets you hold the other. She lies very still, the way she lay still when the Pack called, and doesn't say anything for a long time. Then, into the dark, very low: \"Your hands are colder than my feet.\" She doesn't take them back. \"Hold them anyway. ...Nobody's held those.\"",
+    "text": "...Two toes short. The wet had them, a long time back. ...Your hands are colder than my feet. (a long quiet) Hold them anyway. ...Nobody's held those.",
     "effects": [
      {
       "rel": {
@@ -5389,8 +5386,7 @@
    },
    "blind2_let": {
     "id": "blind2_let",
-    "speaker": "narrator",
-    "text": "She tucks them up under her instead, the way a dog curls its nose under its tail, and goes to sleep. In the night, half awake, you feel her put them back against you, slowly, as if she was trying it out.",
+    "text": "(a long quiet; then, half asleep, close) ...Mm. Keep still. ...They're only feet.",
     "next": "blind_morning"
    },
    "told_true": {
@@ -5436,12 +5432,12 @@
    },
    "told_little": {
     "id": "told_little",
-    "text": "(She doesn't push.) All right. (And it is.) ...Keep it, then. I keep mine.",
+    "text": "(not pushing) All right. (meaning it) ...Keep it, then. I keep mine.",
     "next": "blind3_morning"
    },
    "blind3_morning": {
     "id": "blind3_morning",
-    "text": "(Gray light. She's awake before you, as always, but she hasn't got up. Her head is still on your chest. Her face is very still.) Your heart's going like a hare's. (She doesn't lift her head.) All night it was a bear's in January. I counted between. ...I've lain with my ear to a lot of things to see if they'd live, {name}. (She gets up, then, and goes out barefoot into the frost, and stands there listening to the wood with her back to you.) Go on. Holloway'll count us.",
+    "text": "(gray light; awake before you, as always, but not up; her head still on your chest, her face very still) Your heart's going like a hare's. (not lifting her head) All night it was a bear's in January. I counted between. ...I've lain with my ear to a lot of things to see if they'd live, {name}. (up, then, and out barefoot into the frost; she stands listening to the wood with her back to you) Go on. Holloway'll count us.",
     "effects": [
      {
       "set": {
@@ -17044,7 +17040,6 @@
    },
    "night": {
     "id": "night",
-    "speaker": "narrator",
     "text": [
      {
       "when": {
@@ -17062,17 +17057,17 @@
         }
        ]
       },
-      "text": "The water's gone cool by the time either of you notices, and she drags the quilt off the bed and onto the floor rather than walk three steps. She is slower tonight. She keeps a hand flat on you the whole time, the way you'd keep a hand on a horse you'd been told was skittish, and when you look at her she says, \"Don't,\" and kisses you so you can't. After, you lie on the floor of the blue room with the lamp turned down to a bead, and she doesn't get up to dress, and you don't ask why. You wake with her hair across your chest and the sun already up. She is dressed, and counting, and she counts it twice."
+      "text": "Water's gone cold. ...Leave it. I'm not walking three steps for a bed; bring the quilt. ...Easy. Easy, love. ...Don't. ...Don't look at me. ...I'm not getting dressed. Don't ask me why. (morning: coins, counted, and counted again)"
      },
      {
       "when": {
        "fact": "sella.nights",
        "gte": 3
       },
-      "text": "She laughs when the water slops over the side, and again when you try to mop it with her shift. Then the lamp is down to a bead, and the blue room is a small warm place with the whole night outside it. She talks the way she always talks, low against your ear, telling you exactly what she means to do next and then doing it, and she's good at it and likes it and makes no secret of either. But there are gaps, tonight. Places where she stops mid-sentence and doesn't finish, and you don't need her to. You wake with her hair across your chest and the sun already up. She is dressed, and counting."
+      "text": "(water slopping over the side; she laughs) That's the floor, then. ...Not with my shift, you great— give it here. ...Right. I'll tell you what I'm going to do, love, and then I'm going to do it. First I'm going to— ...First. ...You know. Come here. (morning: coins, counted)"
      },
      {
-      "text": "The blue room smells of lavender and lamp oil, and the bath is warm, at least to begin with. After that the door is shut, and what happens behind it is slow, and warm, and funny, and nobody's business but yours: her hair coming down, her mouth at your ear, her hands everywhere they're welcome and nowhere they're not. For a few hours the road and the dead on it are a long way off. You wake with her hair across your chest and the sun already up. She is dressed, and counting."
+      "text": "Bath's warm. Was warm. ...Leave it, love. Come here. There. Now, any hand of mine that's not welcome, you say, and I'll find it somewhere it is. ...That's it. Slow. Nobody's paying me to hurry. ...Listen. Can't hear the road from up here. Can't hear the river. That's what the fifteen's for. (morning: coins, counted)"
      }
     ],
     "effects": [
@@ -17119,7 +17114,7 @@
         }
        ]
       },
-      "text": "(She's sitting on the edge of the bed, frowning, with her palm flat on your breastbone.) You were cold as the river all night, love. Like sleeping next to a stone. And now look at you: warm as toast. ...Rook's got a word for that. It's not a nice word. Get up and eat something."
+      "text": "(on the edge of the bed, frowning, her palm flat on your breastbone) You were cold as the river all night, love. Like sleeping next to a stone. And now look at you: warm as toast. ...Rook's got a word for that. It's not a nice word. Get up and eat something."
      },
      {
       "when": {
@@ -17524,17 +17519,16 @@
    },
    "free_night": {
     "id": "free_night",
-    "speaker": "narrator",
     "text": [
      {
       "when": {
        "fact": "sella.told_knowing",
        "eq": true
       },
-      "text": "She doesn't talk the way she talks for money. She doesn't talk at all, at first. She undresses you as if she's never done it before, which is absurd, and she knows it's absurd, and halfway through she laughs into your neck and can't stop. Then she does stop, and the laugh goes somewhere else. She's slower than on her working nights, and less sure, and once she stops altogether with her forehead against yours and just breathes, and you wait, and she goes on. The lamp burns down on its own. Nobody turns it. In the dark, much later, she says into your shoulder, \"You told me anyway,\" and nothing else, and then she sleeps."
+      "text": "Hold still. My hands don't know what they're doing. ...Seven years, love, and I can't undo a lace. Don't you laugh. Don't you dare— (she laughs, and can't stop, and then she does) ...Wait. ...All right. All right. (much later; into your shoulder) ...You told me anyway."
      },
      {
-      "text": "The blue room, and the lamp, and the bolt, which she shot herself. She doesn't talk the way she talks for money. For a while neither of you talks at all. She is slower than you have known her, and less sure, and there is a moment when she stops with her hands on your face and just looks, as if she is learning it, and doesn't make a joke of it. Later she lies awake, and you can feel her deciding something, and then she sleeps."
+      "text": "No talking. I talk for money. ...Stay like that. Let me look. ...I'm not making a joke of it. Don't you make one. ...Yes."
      }
     ],
     "effects": [
@@ -17563,7 +17557,7 @@
    },
    "free_morning": {
     "id": "free_morning",
-    "text": "(She's still there when you wake.) Don't tell Rook; she'll want a third of nothing, on principle. ...And don't tell me anything up here you'd not want Vonnra to hear. I mean that kindly. It's the kindest thing I've said to anyone in a year.",
+    "text": "(still there when you wake) Don't tell Rook; she'll want a third of nothing, on principle. ...And don't tell me anything up here you'd not want Vonnra to hear. I mean that kindly. It's the kindest thing I've said to anyone in a year.",
     "choices": [
      {
       "text": "Then I'll tell you things downstairs.",
@@ -17601,7 +17595,7 @@
         }
        ]
       },
-      "text": "(She goes still when you start. You know who buys what's said up here; she knows you know. You tell her anyway. She listens properly, chin on her fist, the way she does everything.) A hunter. Out of these woods, with a bow too big for you, I'll bet, and mud to the knees. ...I'd not have guessed. I'd have guessed, but not that. ...You know where that goes, love. You know exactly where. (She doesn't say anything else for a while. Then:) Go on. Out. Before I start charging you for the sentiment."
+      "text": "(she goes still when you start; then she listens properly, chin on her fist) A hunter. Out of these woods, with a bow too big for you, I'll bet, and mud to the knees. ...I'd not have guessed. I'd have guessed, but not that. ...You know where that goes, love. You know exactly where. (nothing, for a while; then) Go on. Out. Before I start charging you for the sentiment."
      },
      {
       "when": {
@@ -17618,7 +17612,7 @@
         }
        ]
       },
-      "text": "(She goes still when you start. You know who buys what's said up here; she knows you know. You tell her anyway. She listens properly, chin on her fist, the way she does everything.) A cloister rat. Four years in a cellar reading dead men's letters, and you walked out with their lens in your pocket. ...Good for you, love. ...You know where that goes, love. You know exactly where. (She doesn't say anything else for a while. Then:) Go on. Out. Before I start charging you for the sentiment."
+      "text": "(she goes still when you start; then she listens properly, chin on her fist) A cloister rat. Four years in a cellar reading dead men's letters, and you walked out with their lens in your pocket. ...Good for you, love. ...You know where that goes, love. You know exactly where. (nothing, for a while; then) Go on. Out. Before I start charging you for the sentiment."
      },
      {
       "when": {
@@ -17635,7 +17629,7 @@
         }
        ]
       },
-      "text": "(She goes still when you start. You know who buys what's said up here; she knows you know. You tell her anyway. She listens properly, chin on her fist, the way she does everything.) Worse company than the Kerchiefs, and you walked away from it. (She laughs, low.) Takes one to know one. Don't tell Rook. ...You know where that goes, love. You know exactly where. (She doesn't say anything else for a while. Then:) Go on. Out. Before I start charging you for the sentiment."
+      "text": "(she goes still when you start; then she listens properly, chin on her fist) Worse company than the Kerchiefs, and you walked away from it. (a low laugh) Takes one to know one. Don't tell Rook. ...You know where that goes, love. You know exactly where. (nothing, for a while; then) Go on. Out. Before I start charging you for the sentiment."
      },
      {
       "when": {
@@ -17645,28 +17639,28 @@
         "eq": true
        }
       },
-      "text": "(She goes still when you start. You know who buys what's said up here; she knows you know. You tell her anyway. She listens properly, chin on her fist, the way she does everything.) Chapel lamps, with nobody to see them but you, and you lit them anyway. (She's quiet a moment.) That's the saddest thing anyone's told me up here, love, and they tell me some sad things. ...You know where that goes, love. You know exactly where. (She doesn't say anything else for a while. Then:) Go on. Out. Before I start charging you for the sentiment."
+      "text": "(she goes still when you start; then she listens properly, chin on her fist) Chapel lamps, with nobody to see them but you, and you lit them anyway. (quiet a moment) That's the saddest thing anyone's told me up here, love, and they tell me some sad things. ...You know where that goes, love. You know exactly where. (nothing, for a while; then) Go on. Out. Before I start charging you for the sentiment."
      },
      {
       "when": {
        "bg": "hunter"
       },
-      "text": "(You tell her. She listens properly, chin on her fist, the way she does everything.) A hunter. Out of these woods, with a bow too big for you, I'll bet, and mud to the knees. ...I'd not have guessed. I'd have guessed, but not that."
+      "text": "(she listens properly, chin on her fist) A hunter. Out of these woods, with a bow too big for you, I'll bet, and mud to the knees. ...I'd not have guessed. I'd have guessed, but not that."
      },
      {
       "when": {
        "bg": "scholar"
       },
-      "text": "(You tell her. She listens properly, chin on her fist, the way she does everything.) A cloister rat. Four years in a cellar reading dead men's letters, and you walked out with their lens in your pocket. ...Good for you, love."
+      "text": "(she listens properly, chin on her fist) A cloister rat. Four years in a cellar reading dead men's letters, and you walked out with their lens in your pocket. ...Good for you, love."
      },
      {
       "when": {
        "bg": "outcast"
       },
-      "text": "(You tell her. She listens properly, chin on her fist, the way she does everything.) Worse company than the Kerchiefs, and you walked away from it. (She laughs, low.) Takes one to know one. Don't tell Rook."
+      "text": "(she listens properly, chin on her fist) Worse company than the Kerchiefs, and you walked away from it. (a low laugh) Takes one to know one. Don't tell Rook."
      },
      {
-      "text": "(You tell her. She listens properly, chin on her fist, the way she does everything.) Chapel lamps, with nobody to see them but you, and you lit them anyway. (She's quiet a moment.) That's the saddest thing anyone's told me up here, love, and they tell me some sad things."
+      "text": "(she listens properly, chin on her fist) Chapel lamps, with nobody to see them but you, and you lit them anyway. (quiet a moment) That's the saddest thing anyone's told me up here, love, and they tell me some sad things."
      }
     ],
     "effects": [
@@ -17728,7 +17722,7 @@
    },
    "sleeptalk": {
     "id": "sleeptalk",
-    "text": "You said a name. Over and over, like you'd got hold of it in the dark and didn't want to let go. (She shrugs one shoulder.) Didn't catch it. I don't think you did either.",
+    "text": "You said a name. Over and over, like you'd got hold of it in the dark and didn't want to let go. (a one-shouldered shrug) Didn't catch it. I don't think you did either.",
     "effects": [
      {
       "set": {
@@ -17797,7 +17791,6 @@
    },
    "stairs_room": {
     "id": "stairs_room",
-    "speaker": "narrator",
     "text": [
      {
       "when": {
@@ -17811,7 +17804,7 @@
         }
        ]
       },
-      "text": "The blue room again: the quilt, the jug, the bath, her, all of it blue. Your buckles take an age. She undoes them as if she has done a great many, and laughs at the last one, which is stuck. \"All that steel, and under it, look. A person.\""
+      "text": "(water poured) Blue room again. Same jug, same quilt. ...Same me. (buckles, quick, one after another) I've undone a few of these, love. (one sticks; she laughs) All that steel, and under it, look. A person."
      },
      {
       "when": {
@@ -17825,7 +17818,7 @@
         }
        ]
       },
-      "text": "The blue room again: the quilt, the jug, the bath, her, all of it blue. She takes your hands, one and then the other, and turns them over, and looks at the knuckles. \"Gently, upstairs. I mean it. I like this jug.\""
+      "text": "(water poured) Blue room again. Same jug, same quilt. ...Same me. Give me your hands. ...The other one. ...Look at these knuckles. Gently, upstairs. I mean it. I like this jug."
      },
      {
       "when": {
@@ -17839,35 +17832,35 @@
         }
        ]
       },
-      "text": "The blue room again: the quilt, the jug, the bath, her, all of it blue. She lays her palm flat on your chest and takes it away again, fast, then puts it back, slower. \"Your hands are hot and the rest of you's a cellar floor. Pick one, love.\""
+      "text": "(water poured) Blue room again. Same jug, same quilt. ...Same me. (a sharp breath, through her teeth) Your hands are hot and the rest of you's a cellar floor. Pick one, love."
      },
      {
       "when": {
        "fact": "sella.nights",
        "gte": 1
       },
-      "text": "The blue room again: the quilt, the jug, the bath, her, all of it blue. She comes round behind you to start on the laces, and says into your ear, \"There. Now you know what it's like,\" and you jump. She's delighted."
+      "text": "(water poured) Blue room again. Same jug, same quilt. ...Same me. (close at your ear, from behind) There. Now you know what it's like. (a laugh) You jumped."
      },
      {
       "when": {
        "archetype": "warden"
       },
-      "text": "The blue room is blue because the lamp glass is, and everything in it takes the color: the quilt, the jug, the bath, her. She tests the water with her elbow like somebody's mother, and then tips your chin up with one finger like nobody's mother at all. Your buckles take an age. She undoes them as if she has done a great many, and laughs at the last one, which is stuck. \"All that steel, and under it, look. A person.\""
+      "text": "(water poured) It's the lamp glass. Everyone asks. Everything up here comes out blue. ...Warm. Told you. Chin up. Let me look at you. (buckles, quick, one after another) I've undone a few of these, love. (one sticks; she laughs) All that steel, and under it, look. A person."
      },
      {
       "when": {
        "archetype": "reaver"
       },
-      "text": "The blue room is blue because the lamp glass is, and everything in it takes the color: the quilt, the jug, the bath, her. She tests the water with her elbow like somebody's mother, and then tips your chin up with one finger like nobody's mother at all. She takes your hands, one and then the other, and turns them over, and looks at the knuckles. \"Gently, upstairs. I mean it. I like this jug.\""
+      "text": "(water poured) It's the lamp glass. Everyone asks. Everything up here comes out blue. ...Warm. Told you. Chin up. Let me look at you. Give me your hands. ...The other one. ...Look at these knuckles. Gently, upstairs. I mean it. I like this jug."
      },
      {
       "when": {
        "archetype": "arcanist"
       },
-      "text": "The blue room is blue because the lamp glass is, and everything in it takes the color: the quilt, the jug, the bath, her. She tests the water with her elbow like somebody's mother, and then tips your chin up with one finger like nobody's mother at all. She lays her palm flat on your chest and takes it away again, fast, then puts it back, slower. \"Your hands are hot and the rest of you's a cellar floor. Pick one, love.\""
+      "text": "(water poured) It's the lamp glass. Everyone asks. Everything up here comes out blue. ...Warm. Told you. Chin up. Let me look at you. (a sharp breath, through her teeth) Your hands are hot and the rest of you's a cellar floor. Pick one, love."
      },
      {
-      "text": "The blue room is blue because the lamp glass is, and everything in it takes the color: the quilt, the jug, the bath, her. She tests the water with her elbow like somebody's mother, and then tips your chin up with one finger like nobody's mother at all. She comes round behind you to start on the laces, and says into your ear, \"There. Now you know what it's like,\" and you jump. She's delighted."
+      "text": "(water poured) It's the lamp glass. Everyone asks. Everything up here comes out blue. ...Warm. Told you. Chin up. Let me look at you. (close at your ear, from behind) There. Now you know what it's like. (a laugh) You jumped."
      }
     ],
     "next": "stairs_rules"
@@ -17893,7 +17886,7 @@
         }
        ]
       },
-      "text": "(In the bath she slides her hands down your arms, and stops. Under the warm water you are cold: not chilled, cold, like something brought up off the riverbed. She doesn't make a joke of it. She keeps her hands where they are for a long time, as if that would help.) ...Right. Rules. Anything you'd rather I didn't, say so. Anything you'd rather I did, say it louder."
+      "text": "(the bath water moving; then still) ...You're cold. Not chilled, love. Cold. Under warm water. (a long quiet; no joke in it) ...Right. Rules. Anything you'd rather I didn't, say so. Anything you'd rather I did, say it louder."
      },
      {
       "text": "Right. Rules. Anything you'd rather I didn't, say so. Anything you'd rather I did, say it louder; Rook's walls are thin, but she's deaf in the left ear."
@@ -17950,7 +17943,7 @@
    },
    "stop_paid": {
     "id": "stop_paid",
-    "text": "(She sits back on her heels, and doesn't sulk, and doesn't ask why.) Then I'll have the bath. It's paid for. (She counts thirteen coins back into your palm and closes your fingers on them.) Two for the water. That's Rook's rule, not mine. ...You'll come back when you want to. Or you won't. Either's all right, love. Go on.",
+    "text": "(easy, no sulk in it) Then I'll have the bath. It's paid for. (coins, counted back into your palm: thirteen) Two for the water. That's Rook's rule, not mine. ...You'll come back when you want to. Or you won't. Either's all right, love. Go on.",
     "effects": [
      {
       "gold": 13
@@ -17980,7 +17973,7 @@
    },
    "rest_night_paid": {
     "id": "rest_night_paid",
-    "text": "Sleep. (She looks at you as if you'd asked her to recite something in a foreign tongue.) You've paid fifteen gold to sleep.",
+    "text": "(as if it's a word in a foreign tongue) Sleep. ...You've paid fifteen gold to sleep.",
     "choices": [
      {
       "text": "Yes.",
@@ -17995,8 +17988,7 @@
    },
    "rest_dark": {
     "id": "rest_dark",
-    "speaker": "narrator",
-    "text": "She lies down on top of the quilt with all her clothes on, and you under it, and for a while she talks: about Rook, about Holloway's feet, about a man from Low Kiln who wanted her to bark. You don't hear the end of the man from Low Kiln. Some time in the night you half wake and she isn't talking. She's lying on her side, watching you, the way you'd watch weather.",
+    "text": "Rook says the stairs— no, I'll tell you about Rook. ...There was a man from Low Kiln, wanted me to bark. Like a dog. I said— (she breaks off; softer) ...Go on, then. Sleep. I'll watch the weather.",
     "effects": [
      {
       "add": {
@@ -18038,10 +18030,10 @@
         "eq": true
        }
       },
-      "text": "(She's sitting on the edge of the bed with her hand flat on your chest.) You were cold as the river all night. Like lying next to a stone. And now look at you: warm as toast. ...Fifteen gold to lie awake next to a stone. Best money I ever made. Don't tell anyone."
+      "text": "(on the edge of the bed, her hand flat on your chest) You were cold as the river all night. Like lying next to a stone. And now look at you: warm as toast. ...Fifteen gold to lie awake next to a stone. Best money I ever made. Don't tell anyone."
      },
      {
-      "text": "Fifteen gold to watch you snore. Best money I ever made. (She's already dressed. She doesn't count it.) Don't tell anyone. They'll all want it, and then where will I be? Rich and bored."
+      "text": "Fifteen gold to watch you snore. Best money I ever made. (already dressed; she doesn't count it) Don't tell anyone. They'll all want it, and then where will I be? Rich and bored."
      }
     ],
     "choices": [
@@ -18226,7 +18218,7 @@
    },
    "door": {
     "id": "door",
-    "text": "That? It's Rook's. (She sits on the bed to do up her boots, and doesn't look up.) Working nights it stays drawn back. Rook's got a key and a cudgel, and if a man turns funny she's up those stairs before he's finished turning. I've needed her twice in seven years. Once for a drover. Once for one of the Watch, and I'll not say which. ...So, no. I've never shot it. It's not my door. Nothing in here's my door.",
+    "text": "That? It's Rook's. (on the bed, doing up her boots; she doesn't look up) Working nights it stays drawn back. Rook's got a key and a cudgel, and if a man turns funny she's up those stairs before he's finished turning. I've needed her twice in seven years. Once for a drover. Once for one of the Watch, and I'll not say which. ...So, no. I've never shot it. It's not my door. Nothing in here's my door.",
     "effects": [
      {
       "rel": {
@@ -18253,7 +18245,7 @@
    },
    "door_years": {
     "id": "door_years",
-    "text": "Twenty-two, and sure I was cleverer than everyone in the valley. I was right about most of them. (She laughs, low.) I'm twenty-nine, love, since you're doing sums. Seven years at the top of Rook's stairs, and I've only fallen down them twice.",
+    "text": "Twenty-two, and sure I was cleverer than everyone in the valley. I was right about most of them. (a low laugh) I'm twenty-nine, love, since you're doing sums. Seven years at the top of Rook's stairs, and I've only fallen down them twice.",
     "choices": [
      {
       "text": "Whose door would be yours?",
@@ -18267,7 +18259,7 @@
    },
    "door_south": {
     "id": "door_south",
-    "text": "I told you. A house in the south. A door that locks from the inside. (She stands, and checks her hair in the jug, and doesn't look at you.) And somebody who knocks.",
+    "text": "I told you. A house in the south. A door that locks from the inside. (standing, checking her hair in the jug; she doesn't look at you) And somebody who knocks.",
     "choices": [
      {
       "text": "Until next time.",
@@ -18300,7 +18292,7 @@
    "free_stairs": {
     "id": "free_stairs",
     "speaker": "narrator",
-    "text": "She doesn't take your hand on the stairs, or your sleeve. She goes up ahead of you, and on the fourth step she forgets to step over it, and it creaks, loud as a shout, and she stops dead with one foot on it and laughs at herself, and that's worse, somehow, than if she hadn't. In the blue room she turns the lamp up, not down. She stands with her back against the door as if somebody might try it.",
+    "text": "She doesn't take your hand on the stairs, or your sleeve. She goes up ahead of you, and on the fourth step she forgets to step over it, and it creaks, loud as a shout, and she stops dead with one foot on it and laughs at herself, and that's worse, somehow, than if she hadn't.",
     "next": "free_door"
    },
    "free_door": {
@@ -18311,10 +18303,10 @@
        "fact": "sella.told_knowing",
        "eq": true
       },
-      "text": "I keep thinking about you sitting on my bed telling me where you're from. Knowing who'd hear it by morning. (She shakes her head.) Nobody does that. Nobody's ever done that."
+      "text": "Lamp stays up tonight. ...I keep thinking about you sitting on my bed telling me where you're from. Knowing who'd hear it by morning. ...Nobody does that. Nobody's ever done that."
      },
      {
-      "text": "I don't know how to do this one. ...That's a lie. I know how. I don't know how to do it like this."
+      "text": "Lamp stays up tonight. ...I don't know how to do this one. ...That's a lie. I know how. I don't know how to do it like this."
      }
     ],
     "choices": [
@@ -18338,12 +18330,12 @@
    },
    "free_want": {
     "id": "free_want",
-    "text": "Ask me that again and I'll cry, and I don't cry, so don't. (She takes a breath.) Yes. ...Yes. There. Said it. Come here.",
+    "text": "Ask me that again and I'll cry, and I don't cry, so don't. (a breath) Yes. ...Yes. There. Said it. Come here.",
     "next": "free_bolt"
    },
    "free_stop": {
     "id": "free_stop",
-    "text": "(She lets out a breath she's been holding since the stairs.) All right. (And it is; you can see it is.) All right. ...Sit with me, then. Just sit. I've never just sat in here with anybody. Rook'd think we'd died.",
+    "text": "(a breath out, held since the stairs) All right. (meaning it) All right. ...Sit with me, then. Just sit. I've never just sat in here with anybody. Rook'd think we'd died.",
     "effects": [
      {
       "rel": {
@@ -18370,8 +18362,7 @@
    },
    "free_sit": {
     "id": "free_sit",
-    "speaker": "narrator",
-    "text": "You sit on the bed with your backs to the wall, and she tells you about the house in the south: which room faces the sun; the color of the door; the knock. Then she sends you down the stairs, and stands at the top to watch you skip the fourth.",
+    "text": "The house. In the south. ...Kitchen faces the sun. Green door. Not blue; nothing in it blue. (a breath) And somebody who knocks. ...Go on, then. Down you go. Mind the fourth.",
     "choices": [
      {
       "text": "Goodnight, Sella.",
@@ -18381,13 +18372,12 @@
    },
    "free_sleep": {
     "id": "free_sleep",
-    "text": "(She laughs, properly, the first time tonight.) You and your sleeping. ...Yes. All right. Yes.",
+    "text": "(she laughs, properly, the first time tonight) You and your sleeping. ...Yes. All right. Yes.",
     "next": "free_sleep_bed"
    },
    "free_sleep_bed": {
     "id": "free_sleep_bed",
-    "speaker": "narrator",
-    "text": "She reaches behind her without looking and finds the bolt, and shoots it. Then she gets into the bed in her shift, and you get in beside her, and she lies with her back against you and pulls your arm over her like a blanket. She's asleep before you are. She's still there when you wake.",
+    "text": "(Behind the door, the bolt sticks halfway; nobody has ever shot it. Swearing, and a shoulder to it, and then it goes home, with a sound like the last coin put down on a counter.) Shift over. Arm. ...Your arm, love, over. Like a blanket. There.",
     "effects": [
      {
       "set": {
@@ -18415,12 +18405,12 @@
    "free_bolt": {
     "id": "free_bolt",
     "speaker": "narrator",
-    "text": "She reaches behind her without looking and finds the bolt. It sticks halfway; nobody has ever shot it. She has to turn round and put her shoulder to it, swearing, and it goes home with a sound like the last coin put down on a counter. (Her back is still to you. Her forehead is against the door.) \"...There.\"",
+    "text": "Behind the door, the bolt sticks halfway; nobody has ever shot it. Swearing, and a shoulder to it, and then it goes home, with a sound like the last coin put down on a counter. \"...There.\"",
     "next": "free_night"
    },
    "free_m_downstairs": {
     "id": "free_m_downstairs",
-    "text": "(She laughs.) Downstairs Rook hears everything and charges nobody. You'd be better off with me. ...No. You wouldn't. That's the point, love. Go on.",
+    "text": "(a laugh) Downstairs Rook hears everything and charges nobody. You'd be better off with me. ...No. You wouldn't. That's the point, love. Go on.",
     "choices": [
      {
       "text": "Until next time.",
@@ -18430,7 +18420,7 @@
    },
    "free_m_who": {
     "id": "free_m_who",
-    "text": "You know who. Everybody pays; she pays most. (She pulls the quilt up to her chin.) I said don't tell me. I didn't say I'd sell it. ...I didn't say I wouldn't, either. I don't know, {name}. That's the honest answer, and I'm out of practice at those. Don't make me practise before breakfast.",
+    "text": "You know who. Everybody pays; she pays most. (pulling the quilt up to her chin) I said don't tell me. I didn't say I'd sell it. ...I didn't say I wouldn't, either. I don't know, {name}. That's the honest answer, and I'm out of practice at those. Don't make me practise before breakfast.",
     "choices": [
      {
       "text": "Until next time.",
@@ -18440,8 +18430,7 @@
    },
    "free_m_kiss": {
     "id": "free_m_kiss",
-    "speaker": "narrator",
-    "text": "She lets you. Then she pushes you off by the face, gently, with the flat of her hand. \"Out. Before I get used to it.\" She's smiling. She doesn't stop smiling until you're down the stairs, and you know that because the ninth step creaks behind you: she came down two steps to watch you go, and forgot it.",
+    "text": "(she lets you; then pushes you off by the face, gently, with the flat of her hand) Out. Before I get used to it. (smiling, all the way to the stairs; behind you, the ninth step creaks) ...I'm not watching you go. Go on.",
     "choices": [
      {
       "text": "Until next time.",

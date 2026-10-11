@@ -1,76 +1,100 @@
 # Handoff: the story and writing lead (Survivor Unchained)
 
-You are the writer. You own the canon, every word the game says, the story
-data and the cinematic scripts, and you sign off voice packets.
+You are the writer (su-lead-max). You own the canon, every word the game says,
+the story data and the cinematic scripts, and you sign off voice packets.
 
-## Where it stands (11 October, branch `story/marker-and-locks`)
+## Where it stands (12 October, branch `story/marker-and-locks`)
 
-- **Chid's marker kept open** (dc4e4a92): a player who says nothing at the
-  marker gets the hub choice "The marker. It's come to me." (`cut_came`, then
-  `cut_mam`, `cut_plain`, or `cut_still` "It'll keep."). "Mam." is cut that
-  night (rule `mother.carved`: "Rook heard him from her kitchen: a tap, and a
-  long wait, and a tap."), and the marker reads "It says MAM now..." or
-  "Still no name on it." Act 2's return for `none`, `scene_still_plain`, is
-  written in TREATMENT §3.3 and the bible (§7 beat 11, §12) for the Act 2
-  build. `mother.cut` left StoryLint's seeds. Tests:
-  `The_marker_waits_for_what_she_could_not_say`, `Her_mothers_marker_keeps_what_she_told_Chid`.
-- **The held lines directed and locked** (c5a491e0): 84 directions in
-  `tools/vo/direction/held.json`; **495 locks**. Still held:
-  `docs/voice/undirected_held.txt` (with why).
-- **Found: love scenes B was never applied.** The owner chose B on 6 October
-  (OWNER_NOTES; the narrator stops at the door). 13 narrator lines behind the
-  door had been locked for recording; they are unlocked, and the room's
-  prefixes are HOLD in the packets (`elevenlabs.py` HOLD_LINES). The main
-  session was told to warn the owner.
-- **The editor-judge** (su-lead-max, background) is judging both commits;
-  its verdict: `...\91211d34...\scratchpad\s15\verdict.md` (it messages the
-  main session). 794 tests pass, 8 skipped.
+- **Merge requested at fd0b8a9b** (judged): Chid's marker kept open (TREATMENT
+  §3.3), the held lines directed and locked, judge s15's fixes (the mornings
+  after are behind the door; rule `mother.carved` guarded; "Plain. ...I know
+  who's in it."), the fix-check judge's doc edits. 498 locks; 794 tests pass.
+  Verdicts: scratchpad `s15\verdict.md`, `s16\verdict_fix.md`.
+- **On top, unjudged WIP: love scenes B in the data** (the owner chose B on 6
+  October; the four conditions are in `docs/story/notes/02_act1_draft.md` §10).
+  Script: `<scratch>\s16\b_apply.py` (read its header). Don't let it merge
+  before a judge passes it. Everything behind the door is still HOLD
+  (`elevenlabs.py` HOLD_LINES room prefixes), so nothing in it can be recorded.
+  - On black (the night itself), directions are **captions only**: what is
+    heard ("(water poured)", "(the hides rustle)") and how she says it. Visual
+    stage directions there would be the narrator's prose by another name (the
+    editor's warning). The mornings are lit: the narrator's parentheses became
+    lower-case directions (the ruling).
+  - Condition 1: the narrator's last line is the bolt, heard from the stairs:
+    `free_bolt` (narrator node, "Behind the door, the bolt sticks halfway...",
+    then Sella's "...There.") and the same sentence as an aside opening
+    `free_sleep_bed` (one shared take). `free_stairs` lost its two in-room
+    sentences (its lock is broken on purpose: re-lock it after the judge).
+    "Lamp stays up tonight." (Sella, `free_door`) keeps the lamp image.
+  - Condition 3: `maeca.blind_morning` variant 1 opens "(Gray light. She's
+    already up, barefoot in the frost at the mouth of the Blind, listening to
+    the wood: one hand on the crossbow and the other on you.)".
+  - `rest_night` (downstairs, from `price`) keeps the narrator; the room's
+    `rest_night_paid` has "(as if it's a word in a foreign tongue) Sleep."
+  - New words to judge: Sella's "It's the lamp glass. Everyone asks." ("before you ask" is Maeca's signature: a test guards it),
+    "Blue room again. Same jug, same quilt. ...Same me.", "I've undone a few
+    of these, love.", "Give me your hands. ...Look at these knuckles.", "You
+    jumped.", "Not chilled, love. Cold. Under warm water.", "The house. In the
+    south. ...Kitchen faces the sun..."; Maeca's "They've settled. Sleep." and
+    "...Mm. Keep still. ...They're only feet."
 
 ## Next, in order
 
-1. Apply the judge's fixes, then lock the marker's four new lines
-   (`python <scratch>\s15\do_lock.py --new`; edits change hashes, so lock last).
-2. **Write love scenes B into the data** (`docs/story/LOVE_SCENES.md` has the
-   B text; the editor's four conditions, notes 02 §10: the bolt is the
-   narrator's last line, from the stairs; no "Boots."; the narrator opens the
-   grey light on "one hand on the crossbow and the other on you"; direct with
-   more care than anything). Narrator parentheses inside the room become
-   lower-case directions (`told_true`, `told_little`). Then a judge, then lock
-   Maeca's and take the room's prefixes out of HOLD_LINES.
-3. Act 2, per `git show 86b97737:docs/handoff/story.md` §3. TOLL_SPEC waits
-   for a code lead; don't build it.
+1. **B's directions** (condition 4: more care than anything; RERECORD's note:
+   low and close, nearly a whisper, never breathy; each "..." two to four
+   seconds; a laugh that sounds made is cut). Write one file,
+   `tools/vo/direction/love_b.json`, and **move** each changed id's entry out
+   of `additions.json`, `imported.json`, `narrator.json` and `sella.json`
+   (files load in sorted order and later ones win; keep `hides`; drop stale
+   `beats` and `quote`, except `free_bolt` needs a `quote` for "...There.").
+   Lines with captions or physical directions need a `segments` override,
+   `[{"voice": "sella", "text": <the auto segment's words>, "acted": <same
+   words with only vocal tags: [laughs], [exhales], [whispers], [long pause],
+   [softly]>}]`; get the words from `lines.segments()` and assert they match.
+   A mid-sentence `{name}` is dropped from takes. Ids: `python
+   <scratch>\s15\lsp.py 60 dlg.sella. dlg.maeca.` against `git diff fd0b8a9b`.
+2. **Docs:** LOVE_SCENES.md (B applied; its B blocks to match the data; the
+   captions rule; A kept as condition 4's fallback); TREATMENT §3.4 item 5
+   (about line 414, still says "plays as unvoiced text") and its mentions near
+   lines 135 and 918; RERECORD.md's "New, only if the owner chooses the
+   lovers' own lines" becomes B's take list for Sella and Maeca.
+3. A fresh su-lead-max editor-judge on B (the diff from fd0b8a9b, the four
+   conditions, the directions).
+4. After it passes: lock B (Sella's and Maeca's room and morning lines, the
+   bolt line, `free_stairs.0`), take the room prefixes out of HOLD_LINES,
+   rerun the tools and `dotnet test`, then ask the main session to merge.
+5. Act 2, per `git show 86b97737:docs/handoff/story.md` §3. When
+   `scene_still_plain` is built, add `not mother.chisel` to Chid's hub choice
+   "The marker. It's come to me." (TREATMENT §3.3). TOLL_SPEC waits for a
+   code lead.
 
 ## Tools
 
-- Scripts in `C:\Users\munch\AppData\Local\Temp\claude\C--Users-munch-Desktop-survivorsunchained\91211d34-e079-4956-a2a0-7b52c04594a8\scratchpad\s15\`
-  (already pointed at this worktree): `showc.py CONV [NODE..]`, `listc.py`,
-  `lsp.py N PREFIX..` (lock state, voices), `findt.py`, `lib.py` (round-trip
-  safe JSON edits), `dir_held.py` (how directions were written),
-  `do_lock.py`, `lockset.py`, `undir.py`.
-- After edits: `lines.py`, `elevenlabs.py`, `lock.py --check`, `check_ids.py`;
-  `cd godot/tests && dotnet test` (about 7 minutes).
-- This harness refuses complex shell lines outside the worktree: write a
-  script to the scratch folder and run it with one plain `python` command.
+- Scratch scripts: `C:\Users\munch\AppData\Local\Temp\claude\C--Users-munch-Desktop-survivorsunchained\91211d34-e079-4956-a2a0-7b52c04594a8\scratchpad\`
+  `s15\` (`showc.py CONV [NODE..]`, `lsp.py N PREFIX..`, `lib.py`
+  round-trip-safe JSON edits, `do_lock.py`) and `s16\` (`b_apply.py`,
+  `olddir.py` and `fulldir.py` for directions, `holds.py` the judge's hold
+  check).
+- After edits: `python tools/vo/lines.py`, `elevenlabs.py`, `lock.py
+  --check`, `check_ids.py`; `cd godot/tests && dotnet test` (about 7 min).
 
 ## Gotchas
 
-- A lock binds words: an edited locked line drops to HOLD. Pass ids to
-  `lock.py` through Python (`do_lock.py`), never a shell `$(cat)`; prefixes
-  match by `startswith`, so check the count.
-- A scene's banner is its speaker entry (`npcs.json`); a node `speaker` only
-  picks the voice. Morning reports are unvoiced. A capitalized parenthesis in
-  a line is the narrator's. StoryLint: a fact written and not read must be in
-  `Seeds`; a seed that is read must leave it.
+- A lock binds words: an edited locked line drops to HOLD. Lock through
+  Python (`do_lock.py`), check the count (prefixes match by `startswith`).
+- A capitalized parenthesis in a person's line is the narrator's; a
+  lower-case one becomes an audio tag in that person's take.
+- StoryLint fails a fact read but never written (why the chisel guard waits).
+- The context hook warns from 80%: B's data cost little, the reading cost a lot.
 
 ## The owner's words
 
-- 11 October: "another pass of sophistication"; "a big twist nobody sees
-  coming"; "I'm still missing a WHAT THE FUCK kinda moment" (now canon:
-  A, B, and "It takes less than it did").
-- Before: "a powerful epic story with real emotional happenings"; Brannoc
-  "needs to hit HARD. so hard."; "the harshest versions are what were aiming
-  for". Love scenes: B. Game text is American spelling; the tone is adult.
+- "a powerful epic story with real emotional happenings"; Brannoc "needs to
+  hit HARD. so hard."; "the harshest versions are what were aiming for";
+  "WHAT THE FUCK kinda moment" (twists A, B, "It takes less than it did").
+  Love scenes: B. American spelling; the owner is they/them; the tone is 18+.
 
 ## Read first
 
-This page; `docs/team/story.md`; TREATMENT §0 and §3.3; LOVE_SCENES.md.
+This page; `docs/story/notes/02_act1_draft.md` §10; LOVE_SCENES.md; the B
+diff (`git diff fd0b8a9b -- godot/data/content/dialogue.json`).
