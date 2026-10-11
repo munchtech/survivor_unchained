@@ -751,8 +751,15 @@ public static class Vat
         shader ??= GD.Load<Shader>("res://shaders/vat.gdshader");
         cutShader ??= GD.Load<Shader>("res://shaders/vat_cut.gdshader");
         var mesh = new ArrayMesh();
+        var mipped = new Dictionary<(Texture2D, float), Texture2D>();
         foreach (var s in b.Surfs)
         {
+            if (s.Tex != null)
+            {
+                var k = (s.Tex, s.Cut);
+                if (!mipped.TryGetValue(k, out var t)) mipped[k] = t = Mipped(s.Tex, s.Cut);
+                s.Tex = t;
+            }
             var arrays = new Godot.Collections.Array();
             arrays.Resize((int)Mesh.ArrayType.Max);
             arrays[(int)Mesh.ArrayType.Vertex] = s.V;
@@ -791,6 +798,127 @@ public static class Vat
         mesh.CustomAabb = new Aabb(new Vector3(-2.5f, -1.5f, -2.5f), new Vector3(5, Math.Max(3, b.Height + 2), 5));
         return new VatAsset { Key = b.Key, Mesh = mesh, Width = b.Width, Rows = b.Rows, Clips = b.Clips, Height = b.Height };
     }
+
+    /// <summary>
+    /// A texture with its mip chain. A model's own images (a glTF's, embedded
+    /// uncompressed: the beasts' coats, the Kerchiefs' clothes) come without one, so
+    /// drawn smaller than it was painted, each pixel took a single texel of the
+    /// full-size paint, a different one with each of the temporal smoothing's jitters:
+    /// under FSR 2 a wolf's fur glittered, bright pixels by near-black ones, and changed
+    /// every frame (TAA had blurred it to a grey mass). The chain is averaged in linear
+    /// light, as the screen averages, each texel's colour weighted by its alpha (a clear
+    /// texel's paint is never seen); on fur and hair cut by alpha, each level's alpha is
+    /// scaled so as much of it passes the cut as at full size, so a coat neither thins
+    /// nor thickens with distance. A texture that has its chain (one imported from a
+    /// file) is kept as it is.
+    /// </summary>
+    static Texture2D Mipped(Texture2D tex, float cut)
+    {
+        if (tex is not ImageTexture) return tex;
+        var img = tex.GetImage();
+        if (img == null || img.IsEmpty() || img.HasMipmaps() || img.IsCompressed()) return tex;
+        var fmt = img.GetFormat();
+        if (fmt != Image.Format.Rgb8 && fmt != Image.Format.Rgba8)
+        {
+            img.GenerateMipmaps();
+            return ImageTexture.CreateFromImage(img);
+        }
+        int ch = fmt == Image.Format.Rgba8 ? 4 : 3;
+        int w = img.GetWidth(), h = img.GetHeight();
+        var src = img.GetData();
+        // The levels as Godot lays a chain out: each side halved (to one texel at least), down to 1 x 1.
+        var sizes = new List<(int W, int H)> { (w, h) };
+        while (sizes[^1] != (1, 1)) sizes.Add((Math.Max(1, sizes[^1].W >> 1), Math.Max(1, sizes[^1].H >> 1)));
+        int total = 0;
+        foreach (var (lw, lh) in sizes) total += lw * lh * ch;
+        var data = new byte[total];
+        Buffer.BlockCopy(src, 0, data, 0, w * h * ch);
+        if (srgbToLinear == null)
+        {
+            srgbToLinear = new float[256];
+            for (int i = 0; i < 256; i++)
+            {
+                double c = i / 255.0;
+                srgbToLinear[i] = (float)(c <= 0.04045 ? c / 12.92 : Math.Pow((c + 0.055) / 1.055, 2.4));
+            }
+            linearToSrgb = new byte[LinearSteps + 1];
+            for (int i = 0; i <= LinearSteps; i++)
+            {
+                double l = i / (double)LinearSteps;
+                linearToSrgb[i] = (byte)Math.Round(255 * (l <= 0.0031308 ? l * 12.92 : 1.055 * Math.Pow(l, 1 / 2.4) - 0.055));
+            }
+        }
+        // The level above, in linear light, and its alpha as averaged (unscaled).
+        int n0 = w * h;
+        var col = new float[n0 * 3];
+        var alpha = new float[n0];
+        for (int i = 0; i < n0; i++)
+        {
+            for (int c = 0; c < 3; c++) col[i * 3 + c] = srgbToLinear[src[i * ch + c]];
+            alpha[i] = ch == 4 ? src[i * 4 + 3] / 255f : 1;
+        }
+        // How much of the full-size paint passes the cut.
+        bool cutout = ch == 4 && cut >= 0;
+        float cover = 0;
+        if (cutout)
+        {
+            int passed = 0;
+            foreach (var a in alpha) if (a >= cut) passed++;
+            cover = passed / (float)n0;
+        }
+        var hist = cutout ? new int[AlphaSteps] : null;
+        int at = n0 * ch, pw = w, ph = h;
+        for (int l = 1; l < sizes.Count; l++)
+        {
+            var (lw, lh) = sizes[l];
+            int sx = pw > lw ? 2 : 1, sy = ph > lh ? 2 : 1, n = lw * lh;
+            var ncol = new float[n * 3];
+            var nal = new float[n];
+            for (int y = 0; y < lh; y++)
+                for (int x = 0; x < lw; x++)
+                {
+                    float r = 0, g = 0, bl = 0, wr = 0, wg = 0, wb = 0, asum = 0;
+                    for (int dy = 0; dy < sy; dy++)
+                        for (int dx = 0; dx < sx; dx++)
+                        {
+                            int p = (y * sy + dy) * pw + x * sx + dx;
+                            float a = alpha[p], cr = col[p * 3], cg = col[p * 3 + 1], cb = col[p * 3 + 2];
+                            r += cr; g += cg; bl += cb;
+                            wr += cr * a; wg += cg * a; wb += cb * a; asum += a;
+                        }
+                    int q = y * lw + x;
+                    float inv = 1f / (sx * sy);
+                    // A wholly clear block keeps its paint's plain average (filtering still blends it in at a cut's edge).
+                    if (asum > 1e-3f) { ncol[q * 3] = wr / asum; ncol[q * 3 + 1] = wg / asum; ncol[q * 3 + 2] = wb / asum; }
+                    else { ncol[q * 3] = r * inv; ncol[q * 3 + 1] = g * inv; ncol[q * 3 + 2] = bl * inv; }
+                    nal[q] = asum * inv;
+                }
+            // Cut cards: the alpha this level passes as much of as the full size did is brought to the cut.
+            float scale = 1;
+            if (hist != null)
+            {
+                Array.Clear(hist);
+                foreach (var a in nal) hist[Math.Min(AlphaSteps - 1, (int)(a * AlphaSteps))]++;
+                int want = (int)Math.Round(cover * n), seen = 0, bin = AlphaSteps - 1;
+                for (; bin > 0; bin--) { seen += hist[bin]; if (seen >= want) break; }
+                float edge = bin / (float)AlphaSteps;
+                if (want > 0 && edge > 0) scale = cut / edge;
+            }
+            for (int q = 0; q < n; q++)
+            {
+                int o = at + q * ch;
+                for (int c = 0; c < 3; c++) data[o + c] = linearToSrgb![(int)(Math.Clamp(ncol[q * 3 + c], 0, 1) * LinearSteps + 0.5f)];
+                if (ch == 4) data[o + 3] = (byte)Math.Round(Math.Clamp(nal[q] * scale, 0, 1) * 255);
+            }
+            at += n * ch;
+            col = ncol; alpha = nal; pw = lw; ph = lh;
+        }
+        return ImageTexture.CreateFromImage(Image.CreateFromData(w, h, true, fmt, data));
+    }
+
+    const int LinearSteps = 16383, AlphaSteps = 1024;
+    static float[]? srgbToLinear;
+    static byte[]? linearToSrgb;
 
     /* -------------------------------------------------------------- cache -- */
 
