@@ -24,6 +24,7 @@ each outfit's own.
 """
 import math
 import os
+import re
 import sys
 
 import bmesh
@@ -4721,7 +4722,10 @@ def detail(objs, rays=20, reach=0.03):
         rnd = (zlib.crc32(o.name.split(".")[-1].split("_")[0].encode()) % 1000) / 1000.0
         col = me.color_attributes.new("detail", "FLOAT_COLOR", "POINT")
         painted = 0.0 if o.get("geo_stitch") else 1.0
-        col.data.foreach_set("color", np.c_[ao, np.full(len(V), rnd), np.full(len(V), painted), np.ones(len(V))].astype(np.float32).ravel())
+        # (alpha, a flag for the shader: 0 a rolled binding, drawn matte if leather;
+        # 0.5 a pauldron plate laid out round her arm, brushed along its UVs)
+        flag = 0.0 if "_bind" in o.name else 0.5 if re.fullmatch(r"ranger\.pauldron\d", o.name) else 1.0
+        col.data.foreach_set("color", np.c_[ao, np.full(len(V), rnd), np.full(len(V), painted), np.full(len(V), flag)].astype(np.float32).ravel())
         me.color_attributes.active_color = col
     print("DETAIL", len(objs), "pieces")
 

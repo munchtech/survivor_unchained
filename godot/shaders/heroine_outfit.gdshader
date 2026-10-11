@@ -33,6 +33,7 @@ uniform int debug_view = 0;                        // (1 edge distance, 2 convex
 
 varying vec4 det;                                  // (edge distance m, convexity 0..1, sky seen, piece)
 varying float painted;                             // (1 where stitches are painted; 0 where the piece is sewn with thread of its own)
+varying float flag;                                // (COLOR.a: 0 a rolled binding, drawn matte if leather; 0.5 a plate brushed along its UVs' u; 1 neither)
 varying vec3 opos;                                 // (the point in the piece's own space: metal is brushed by it, not by its UV islands)
 
 float hash(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
@@ -46,6 +47,7 @@ float fbm(vec2 p) { return 0.5 * noise(p) + 0.3 * noise(p * 2.13 + 7.1) + 0.2 * 
 void vertex() {
 	det = vec4(UV2.x, UV2.y, COLOR.r, COLOR.g);
 	painted = COLOR.b;
+	flag = COLOR.a;
 	opos = VERTEX;
 	// (moved toward the camera in its own space, not by writing POSITION:
 	// written, Godot uses it for every vertex, and its motion vectors differ)
@@ -114,6 +116,9 @@ void fragment() {
 		float st = row * dash * painted;
 		col = mix(col, thread * (0.85 + 0.15 * macro), st);
 		rough = mix(rough, 0.7, st);
+		// (a rolled binding matte: satin, its top caught the backlight edge-on as a
+		// pale line along the Ranger's neckline that read as a gap, judges 5 and 6)
+		if (flag < 0.25) rough = max(rough, 0.8);
 		metal = 0.0;
 	} else if (kind == 1) {
 		// Metal: the scan's grain kept faint, a hammered unevenness, its
@@ -134,6 +139,9 @@ void fragment() {
 		float polish = max(near_edge, bulge);
 		// (brushed along one way: fine streaks in its roughness)
 		float brush = noise(vec2(opos.y * 1800.0, (opos.x + opos.z) * 40.0));   // (fine level streaks, one way over the whole piece)
+		// (a plate laid out round her arm brushed along it, by its UVs: on a dome's
+		// top, where the level streaks run flat, they showed as rotated blocks, judge 6)
+		if (flag > 0.25 && flag < 0.75) brush = noise(vec2(m.y * 1800.0, m.x * 40.0));
 		rough = clamp(mix(0.3, 0.18, polish) + 0.1 * hollow + 0.14 * (1.0 - sky) + 0.06 * (brush - 0.5), 0.12, 0.6);
 		col *= mix(0.7, 1.0, sky) * mix(1.0, 1.1, polish);
 		metal = 1.0;   // (all metal: the scan's metal map has rust and dirt in it, and each patch of it showed as a pale fleck)
