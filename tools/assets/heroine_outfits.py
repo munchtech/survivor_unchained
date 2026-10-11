@@ -3794,7 +3794,7 @@ material_table(os.path.join(os.path.dirname(OUT), "outfit_materials.json"))
 # One file an outfit, so the game loads only what she wears.
 # (each outfit's pieces listed before any are joined: a joined piece is gone)
 # Every piece split onto her helper bones as her skin is, so they move as one.
-rig_helpers.apply(arm, made, skin=lambda p: SKIN_BVH.find_nearest(Vector(p))[0][:])
+rig_helpers.apply(arm, made, skin=lambda p: SKIN_BVH.find_nearest(Vector(p))[0][:], body=body)
 pieces_of = {name: [o for o in made if o.name.startswith(name + ".")] for name in OUTFITS}
 for name in OUTFITS:
     mine = pieces_of[name]

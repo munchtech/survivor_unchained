@@ -17,7 +17,7 @@ import sys
 
 import bpy
 import numpy as np
-from mathutils import Matrix
+from mathutils import Matrix, Vector
 
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "anim"))
 import helpers as hp  # noqa: E402
@@ -77,7 +77,7 @@ def add_bones(arm):
     return made
 
 
-def split_mesh(arm, obj, skin=None):
+def split_mesh(arm, obj, skin=None, body=None):
     """The mesh's weights onto the helpers (helpers.split), its other vertex
     groups left as they are. With `skin` (a point to the nearest point of her
     skin, in world space), a piece she wears is split where the skin under it
@@ -119,6 +119,15 @@ def split_mesh(arm, obj, skin=None):
             if n in index:
                 W[r, index[n]] += w
     W2 = hp.split(W, np.array(pts), index, heads, front=(0.0, -1.0, 0.0))
+    if skin is not None and body is not None:
+        # Split where the skin lies is not enough: the split reads the
+        # piece's own blend between the bones above and below a joint, and a
+        # sleeve weighted 60/40 over skin weighted 80/20 still took another
+        # share (judge 6: the mismatch's p95 stayed at 0.09, and skin came
+        # through behind the knee and at the elbow). So near her, the limb's
+        # weight is shared out as the skin's under it is: the piece keeps how
+        # much it rides the limb, the skin says on which of its bones.
+        W2 = _as_skin(W2, near, t, body, index, src)
     groups = {g.name: g for g in obj.vertex_groups}
     for n in bones:
         if n not in groups and W2[:, index[n]].any():
@@ -138,15 +147,75 @@ def split_mesh(arm, obj, skin=None):
 SKIN_NEAR = 0.03
 
 
-def apply(arm, meshes, skin=None):
+def skin_sampler(arm, body):
+    """Her skin's weights (helpers included) by point: (BVH of her triangles,
+    their corners [T, 3], corner points, weights [V, J] by the armature's bone
+    order). A body not yet split is split here, in memory, as split_mesh
+    would split it."""
+    from mathutils.bvhtree import BVHTree
+    bones = [b.name for b in arm.data.bones]
+    index = {n: i for i, n in enumerate(bones)}
+    me = body.data
+    me.calc_loop_triangles()
+    mw = body.matrix_world
+    P = np.array([(mw @ v.co)[:] for v in me.vertices])
+    T = np.array([lt.vertices[:] for lt in me.loop_triangles])
+    gname = {g.index: g.name for g in body.vertex_groups}
+    W = np.zeros((len(P), len(bones)))
+    for v in me.vertices:
+        for g in v.groups:
+            n = gname.get(g.group)
+            if n in index:
+                W[v.index, index[n]] += g.weight
+    if not any(n in gname.values() for n in hp.names()):
+        heads = {b.name: np.array((arm.matrix_world @ b.head_local)[:]) for b in arm.data.bones}
+        W = hp.split(W, P, index, heads, front=FRONT)
+    return BVHTree.FromPolygons([tuple(p) for p in P], T.tolist()), T, P, W
+
+
+def _as_skin(W2, near, t, body, index, src):
+    """W2's weight on the limb's bones (those the helpers help, and the
+    helpers) shared out as her skin's at `near`, eased back to W2's own as t
+    goes 0 to 1."""
+    bvh, T, P, W = body
+    chain = sorted({index[n] for n in set(src) | set(hp.names()) if n in index})
+    tri = np.zeros(len(near), int)
+    q = np.zeros((len(near), 3))
+    for i, p in enumerate(near):
+        hit = bvh.find_nearest(Vector(p))
+        q[i], tri[i] = hit[0][:], hit[2]
+    a, b, c = P[T[tri, 0]], P[T[tri, 1]], P[T[tri, 2]]
+    # Barycentric weights of q in its triangle.
+    v0, v1, v2 = b - a, c - a, q - a
+    d00, d01, d11 = (v0 * v0).sum(1), (v0 * v1).sum(1), (v1 * v1).sum(1)
+    d20, d21 = (v2 * v0).sum(1), (v2 * v1).sum(1)
+    den = np.maximum(d00 * d11 - d01 * d01, 1e-18)
+    bv = np.clip((d11 * d20 - d01 * d21) / den, 0, 1)
+    bw = np.clip((d00 * d21 - d01 * d20) / den, 0, 1)
+    bu = np.clip(1 - bv - bw, 0, 1)
+    s = bu + bv + bw
+    Ws = (W[T[tri, 0]][:, chain] * (bu / s)[:, None] + W[T[tri, 1]][:, chain] * (bv / s)[:, None]
+          + W[T[tri, 2]][:, chain] * (bw / s)[:, None])
+    ssum, gsum = Ws.sum(1), W2[:, chain].sum(1)
+    ok = (ssum > 1e-6) & (gsum > 1e-6) & (t < 1.0)
+    out = W2.copy()
+    target = Ws[ok] * (gsum[ok] / ssum[ok])[:, None]
+    tt = t[ok][:, None]
+    out[np.ix_(ok.nonzero()[0], chain)] = tt * W2[ok][:, chain] + (1 - tt) * target
+    return out
+
+
+def apply(arm, meshes, skin=None, body=None):
     # Off until a built body has been checked in the game (docs/handoff/animation.md):
     # pass --helpers after the build's "--" to build them in.
     if "--helpers" not in sys.argv:
         print("RIG helpers: off (pass --helpers to build them in)")
         return
     made = add_bones(arm)
+    # (her skin's split, read once, for the pieces she wears to share as it)
+    sampler = skin_sampler(arm, body) if (skin is not None and body is not None) else None
     total = 0
     for o in meshes:
         if o.type == "MESH":
-            total += split_mesh(arm, o, skin)
+            total += split_mesh(arm, o, skin, sampler)
     print(f"RIG helpers: {made} bones added; {total} points split onto them")
