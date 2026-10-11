@@ -52,7 +52,7 @@ public partial class Instrument : Control
     /// <summary>The passives over the six places; what is on her (burning, shielded) over her life; the
     /// art's state in a word over the art.</summary>
     public readonly HBoxContainer Passives, Statuses;
-    public readonly Label ArtWord;
+    public readonly Label ArtWord, ArtNote;
     readonly Control lifeKey = new(), artKey = new(), draughtKey = new(), dashKey = new();
 
     public Instrument()
@@ -90,6 +90,11 @@ public partial class Instrument : Control
         ArtWord.Position = new Vector2(ArtAt.X - 150, VY - R - Band - 30);
         ArtWord.Size = new Vector2(300, 20);
         AddChild(ArtWord);
+        // A plain debug line under the Flare's slot (the dash form and the reflexes' waits) until the real HUD.
+        ArtNote = Style.Label("", Style.Ui, 13, new Color("#d8c8a8"), false, HorizontalAlignment.Center);
+        ArtNote.Position = new Vector2(ArtAt.X - 200, VY - R - Band - 50);
+        ArtNote.Size = new Vector2(400, 18);
+        AddChild(ArtNote);
         foreach (var k in new[] { lifeKey, artKey, draughtKey, dashKey }) { k.MouseFilter = MouseFilterEnum.Ignore; AddChild(k); }
         Keys();
     }

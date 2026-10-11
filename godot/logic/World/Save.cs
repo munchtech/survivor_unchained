@@ -108,7 +108,7 @@ public sealed class Saves
         // 5: the Lamps (docs/design/CLASSES.md §2). A survivor from before them gets every lamp they
         // have earned back to light (a full refund). (The art in hand becoming the dash form joins
         // this step with the Battle's dash forms: docs/handoff/classes.md §4.)
-        if (d.Version < 5) LampBook.State(ch);
+        if (d.Version < 5) { LampBook.State(ch); ArtBook.HoldKin(ch); }
         d.Version = Version;
         return d;
     }

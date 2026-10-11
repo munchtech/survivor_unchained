@@ -1186,6 +1186,7 @@ public sealed class ArenaRun : ZoneRuntime, IBossArena
         boss = null;
         // The long night runs in real minutes, whatever the night before it.
         B!.Rules.EmberGain /= Pace;
+        if (!Spec.Story) B.EndlessFrom = B.Time;
         nextHerald = Seconds + 300;
         nextDark = Seconds + 300;
         nextReturn = Seconds + 900;

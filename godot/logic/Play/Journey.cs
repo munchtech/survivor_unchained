@@ -148,7 +148,7 @@ public sealed partial class Journey
     {
         // The kit goes on with the place: the night's wherever the ember burns, where its coals work.
         Kits.Wear(Ch, combat && (arena || ember) ? KitKind.Night : KitKind.Day);
-        var kit = Character.Kit(Ch);
+        var kit = Character.Kit(Ch, combat && (arena || ember));
         InArena = arena;
         var exp = combat && !arena ? Expedition : null;
         var b = new Battle(new BattleSetup
@@ -156,6 +156,9 @@ public sealed partial class Journey
             Seed = seed, Combat = combat, Collision = col, HeightAt = heightAt, Stats = kit.Stats,
             StartX = x, StartZ = z, StartFacing = facing, Weapons = kit.Weapons, Triggers = kit.Triggers, Ability = kit.Ability,
             ArtRank = kit.ArtRank, Facets = kit.Facets,
+            Lamps = kit.Lamps, ReflexRanks = kit.ReflexRanks, Level = Ch.Level,
+            // Story fights are short: the Flare starts at half (CLASSES.md §3.2). Nights and maps start empty.
+            FlareStart = combat && ember && !arena ? Battle.FlareFull / 2 : 0,
             Hp = exp != null ? Math.Min(exp.Hp, kit.Stats.Get(Stat.MaxHealth)) : null,
         });
         b.EmberOn = combat && (arena || ember);

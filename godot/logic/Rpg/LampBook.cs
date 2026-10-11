@@ -262,7 +262,11 @@ public static class LampBook
                     case LampDo.Attr when e.Attr != null:
                         if (!night) o.Attributes[e.Attr] = o.Attributes.GetValueOrDefault(e.Attr) + (int)e.Value;
                         break;
-                    case LampDo.Rule when e.Rule != null: o.Rules[e.Rule] = e; break;
+                    // By night a small lamp gives nothing but its road's lean (CLASSES.md §2.10).
+                    case LampDo.Rule when e.Rule != null:
+                        if (night && small) break;
+                        o.Add(e);
+                        break;
                     case LampDo.Facet when e.Facet != null: o.Facets.Add(e.Facet); break;
                     case LampDo.Form when e.Art != null: o.Kin = e.Art; o.KinWait = e.Wait; break;
                     case LampDo.Reflex when e.Art != null: o.Reflexes.Add(new ReflexDef(e.Art, e.Trigger ?? "", e.Wait, e.Args)); break;

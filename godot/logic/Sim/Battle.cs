@@ -93,6 +93,9 @@ public sealed class MapRules
     /// <summary>A map's suffixes on the survivor: armour counted for less, a dash slower to come
     /// back, regeneration, and what a draught mends (docs/SKILLS_DESIGN.md §17.2).</summary>
     public double ArmourMul = 1, DashRecharge = 1, RegenMul = 1, DraughtMul = 1;
+    /// <summary>Smothered: the Flare fills slower. Bright: a Flare cast mends nothing (CLASSES.md §5).</summary>
+    public double FlareFill = 1;
+    public bool FlareMends = true;
 }
 
 public sealed class BattleHooks
@@ -154,6 +157,12 @@ public sealed class BattleSetup
     /// <summary>Carried ember from an expedition that did not end.</summary>
     public (int Level, double Xp)? Ember;
     public double? Hp;
+    /// <summary>What the lit lamps bring (Rpg/LampBook.Loadout), the reflexes' ranks (ArtBook), the
+    /// survivor's level (the Flare's damage by day), and the Flare's starting charge (story fights: half).</summary>
+    public LampLoadout? Lamps;
+    public Dictionary<string, int>? ReflexRanks;
+    public int Level = 1;
+    public double FlareStart;
 }
 
 public enum OfferKind { Weapon, Rank, Boon, Evolve, Heal, Gold, Hone, Union }
@@ -274,6 +283,8 @@ public sealed partial class Battle
     /// damage over time goes to whatever put it there. For the damage meter
     /// and the balance harness.</summary>
     public readonly Dictionary<string, double> DamageBy = new();
+    /// <summary>The same, on bosses alone: the Flare's share of a boss's damage (CLASSES.md §7).</summary>
+    public readonly Dictionary<string, double> BossDamageBy = new();
     /// <summary>Who is dealing damage while no weapon is: the rule firing, the art.</summary>
     string? credit;
     public int KillCount;
@@ -355,6 +366,10 @@ public sealed partial class Battle
         };
         foreach (var (id, rank) in s.Weapons) AddWeapon(id, rank);
         foreach (var (def, source) in s.Triggers) AddTrigger(def, source);
+        Level = Math.Max(1, s.Level);
+        if (s.Lamps != null) SetLamps(s.Lamps, s.ReflexRanks);
+        Flare = Content.Lamps.Flare(Lamps.Flare);
+        FlareMeter = Flare != null ? Math.Clamp(s.FlareStart, 0, FlareFull * FlareCharges) : 0;
         if (s.Ember is { } em)
         {
             EmberLevel = em.Level;
@@ -385,6 +400,8 @@ public sealed partial class Battle
             foreach (var w in Weapons.ToArray()) Firing.Tick(this, w, dt);
             TickAuras(dt);
             TickTriggers(dt);
+            TickReflexes(dt);
+            TickFlare(dt);
         }
         foreach (var e in Enemies.Items) if (e.Alive) Ai.Update(this, e, wdt);
         UpdateProjectiles(dt, wdt);
@@ -446,6 +463,8 @@ public sealed partial class Battle
         if (p.PoisonT > 0) { p.PoisonT -= dt * cure; Dot(ref p.PoisonSum, p.PoisonDps * dt, School.Nature, "poison", dt); }
         if (!p.Alive) return;
         if (TickArt(dt)) return;
+        // A Strike holds the controls while it plays (the Flare, CLASSES.md §3.3).
+        if (FlareHold > 0) { p.Vx = p.Vz = 0; p.Moving = false; return; }
 
         // Leaping: an arc through the air, untouchable until landing.
         if (p.Leap is { } leap)
@@ -456,7 +475,7 @@ public sealed partial class Battle
             p.Z = leap.Z0 + (leap.Z1 - leap.Z0) * k;
             p.Iframes = Math.Max(p.Iframes, 0.05);
             if (k >= 1) { p.Leap = null; LandLeap(leap); }
-            Collision.Resolve(ref p.X, ref p.Z, p.Radius, true);
+            Collision.Resolve(ref p.X, ref p.Z, p.Radius, true, overGaps: true);
             return;
         }
 
@@ -464,7 +483,7 @@ public sealed partial class Battle
         if (p.DashT > 0)
         {
             p.DashT -= dt;
-            double dsp = Abilities.Dash.Distance / Abilities.Dash.Time;
+            double dsp = Abilities.Dash.Distance * DashLength() / Abilities.Dash.Time;
             p.X += p.DashDX * dsp * dt;
             p.Z += p.DashDZ * dsp * dt;
             // Over a gap in the ground (a crack, a sinkhole) a dash carries her; walls still stop it.
@@ -538,7 +557,7 @@ public sealed partial class Battle
     public bool Dash(double dirX, double dirZ)
     {
         var p = Player;
-        if (!p.Alive || p.DashCharges <= 0 || p.DashT > 0 || p.Leap != null || Art.Rush != null) return false;
+        if (!p.Alive || p.DashCharges <= 0 || p.DashT > 0 || p.Leap != null || Art.Rush != null || FlareHold > 0) return false;
         double dx = dirX, dz = dirZ;
         if (Len(dx, dz) < 0.1) { dx = Math.Sin(p.Facing); dz = Math.Cos(p.Facing); }
         double m = Len(dx, dz);
@@ -550,11 +569,21 @@ public sealed partial class Battle
         p.PerfectThisDash = false;
         p.DashCharges--;
         double x0 = p.X, z0 = p.Z;
-        Events.Emit(new Ev.Dash { X0 = x0, Z0 = z0, X1 = x0 + p.DashDX * Abilities.Dash.Distance, Z1 = z0 + p.DashDZ * Abilities.Dash.Distance });
+        // The dash form rides it after its own wait; a form that carries her itself takes the dash's motion.
+        if (DashForm(p.DashDX, p.DashDZ)) p.DashT = 0;
+        else
+        {
+            double len = Abilities.Dash.Distance * DashLength();
+            Events.Emit(new Ev.Dash { X0 = x0, Z0 = z0, X1 = x0 + p.DashDX * len, Z1 = z0 + p.DashDZ * len });
+        }
         Fire(TriggerEvent.Dash, new ProcCtx { X = p.X, Z = p.Z });
         OpenGate(x0, z0);
         return true;
     }
+
+    /// <summary>The dash's length: Hold Fast and Light Step shorten it (prices, kept in full by night).</summary>
+    double DashLength() =>
+        (1 - Lamps.Full("hold_fast", "dash")) * (1 - Lamps.Full("light_step", "shorter"));
 
     /// <summary>Stop a channel or cast in progress.</summary>
     public void Interrupt(Enemy e)
@@ -748,6 +777,9 @@ public sealed partial class Battle
         if (o.Weapon != null) o.Weapon.DamageDealt += Math.Min(dmg, before);
         string by = o.Weapon?.Id ?? o.Credit ?? (o.Summon ? "summon" : credit ?? "other");
         DamageBy[by] = DamageBy.GetValueOrDefault(by) + Math.Min(dmg, Math.Max(0, before));
+        FlareOnDealt(e, Math.Min(dmg, Math.Max(0, before)), by);
+        if (e.Boss) BossDamageBy[by] = BossDamageBy.GetValueOrDefault(by) + Math.Min(dmg, Math.Max(0, before));
+        if (tags.Has(Tag.Spell) && !o.Dot) OnSpellHit(by);
         // Where the damage is coming from, for the director.
         if (tags.Has(Tag.Summon) || o.Summon) Profile.Summon += dmg;
         else if (tags.Has(Tag.Projectile)) Profile.Projectile += dmg;
@@ -835,6 +867,7 @@ public sealed partial class Battle
         if (weapon != null) weapon.Kills++;
         if (credited && e.Disposition != Disposition.Ally)
         {
+            FlareOnKill(e, e.Status.Has(StatusKind.Bleed) && e.LastWeapon == null);
             KillCount++;
             KillsByFamily[e.Def.Family] = KillsByFamily.GetValueOrDefault(e.Def.Family) + 1;
             if (e.Elite && !e.Boss) ChampionsByFamily[e.Def.Family] = ChampionsByFamily.GetValueOrDefault(e.Def.Family) + 1;
@@ -1095,6 +1128,7 @@ public sealed partial class Battle
         {
             p.BlockT = new[] { 12.0, 9, 6 }[Math.Min(3, blockRank) - 1];
             p.Iframes = 0.25;
+            FlareOnBlock(from);
             Events.Emit(new Ev.PlayerHit { X = p.X, Z = p.Z, Amount = 0, School = school, Source = source, Blocked = true });
             Fire(TriggerEvent.Block, new ProcCtx { X = p.X, Z = p.Z });
             return 0;
@@ -1137,7 +1171,7 @@ public sealed partial class Battle
         if (Art.WraithT > 0) dmg *= 0.5;
         // Grounding: part of the blow goes to earth (its lightning is the blessing's Hurt rule).
         if (Boons.TryGetValue("grounding", out int ground)) dmg *= ground >= 2 ? 0.67 : 0.8;
-        return HurtPlayerRaw(dmg, school, source, from);
+        return HurtPlayerRaw(FlareGuard(dmg), school, source, from);
     }
 
     double thornsAt = -9;
@@ -1181,6 +1215,8 @@ public sealed partial class Battle
         });
         if (from is { Alive: true }) Interrupt(from);
         Events.Emit(new Ev.PerfectDodge { X = p.X, Z = p.Z });
+        FlareOnPerfect();
+        Reflex("perfect");
         Fire(TriggerEvent.PerfectDodge, new ProcCtx { X = p.X, Z = p.Z });
     }
 
@@ -1316,8 +1352,14 @@ public sealed partial class Battle
         }
         if (!silent) p.UnstruckT = 0;
         if (dmg <= 0) return 0;
+        double hpBefore = p.Hp;
         p.Hp -= dmg;
         DamageTaken += dmg;
+        if (!silent && !dot)
+        {
+            FlareOnHurt(dmg, hpBefore, source);
+            if (p.Hp > 0) ReflexOnBlow(dmg, from);
+        }
         if (!silent)
         {
             // The Survivors contract: a crowd is dangerous, not instantly
@@ -1645,6 +1687,8 @@ public sealed partial class Battle
     {
         int id = 900000 + blowIds++;
         Events.Emit(new Ev.Telegraph { Id = id, Shape = TelegraphShape.Circle, Kind = kind, X = x, Z = z, Radius = r, Duration = duration, Hostile = true, Boss = true });
+        // A champion's mark closing on her: the dire reflex (Time Slip) answers.
+        if (kind == TelegraphKind.Blow && Dist(x, z, Player.X, Player.Z) < r + Player.Radius) Reflex("dire", 1);
         return id;
     }
 
