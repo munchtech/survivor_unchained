@@ -114,5 +114,5 @@ Where the last session left off:
 - **Secrets:** never commit or print API tokens. Pass them through
   environment variables (e.g. `SKETCHFAB_TOKEN`) and ask the owner to set
   them.
-- **Style:** match the codebase. Comments are short prose in British
-  spelling ("colour") that say why. Keep the READMEs and credits current.
+- **Style:** match the codebase. Comments are short prose that say
+  why. Keep the READMEs and credits current.

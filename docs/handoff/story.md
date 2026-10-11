@@ -10,8 +10,7 @@ the staging notes for cinematics).
 - **Tests:** `cd godot/tests && dotnet test` (774 pass). Run them before every
   commit.
 - **Commits:** write the message to a file and use `git commit -F`. End it with
-  `Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>`. Use British
-  spelling.
+  `Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>`.
 - **Scripts:** the worktree guard refuses complex bash (heredocs into python,
   variables as commands). Put Python in the scratchpad
   (`.../scratchpad/story7/`) and run `python <abs path>`. In `lib_s7.py`:

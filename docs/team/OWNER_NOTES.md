@@ -2,6 +2,14 @@
 
 Every lead reads this after RESUME.md. When you take a note into your work, mark it done here with your commit. The main session keeps it current.
 
+## 11 October 2026
+
+### Outfits: trim at the bust (an option, sent to the outfits lead)
+"can add leather trim to ranger, and white feathery trim to arcanist parts of their clothing in the bust if it makes it easier to clean them up nicely - just only increase the skin we cover slightly if you do decide to do that route." Leather trim for the Ranger, white feathery trim for the Arcanist, on the bust edges, where it gives a cleaner edge; the extra coverage stays slight.
+
+### Spelling
+The owner is American: the "British spelling" rule is dropped. The game's player-facing text is being switched to American spelling (the voiced lines' audio is renamed to match).
+
 ## 10 October 2026
 
 ### Face lead (skin): neck discolouration on every face

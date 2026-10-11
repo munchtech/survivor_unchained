@@ -26,7 +26,7 @@ For the agent taking over voice for Survivor Unchained. Branch
    - Prologue and the most-heard lines first.
    - Don't rewrite dialogue: notes for the writer go in `docs/VO_CAST.md`.
    - Don't touch `tools/assets/`, `godot/art/people/`, `godot/shaders/` or `godot/src/Actors/`.
-   - Keep `cd godot/tests && dotnet test` green. British spelling. Commits end `Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>`.
+   - Keep `cd godot/tests && dotnet test` green. Commits end `Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>`.
    - No paid cloud services (that was before the owner chose ElevenLabs; the owner runs it by hand). Never print or commit secrets.
 2. **"Commit and push often."** Fix `godot/assets` if it is a text file (a junction to `public\assets`).
 3. **"Do we have soul?"**: hold every voice to it.

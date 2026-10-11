@@ -17,7 +17,7 @@ Read this first, then `docs/team/RESUME.md` (what's current: the owner's latest 
 - Our repo is munchtech/survivor_unchained. The integration branch is `claude/vigilant-galileo-l6jqyx`.
 - You work in your own worktree. Merge `origin/claude/vigilant-galileo-l6jqyx` in first, and again often. Commit and push your own branch; the main session merges it in. Open no PRs.
 - Run `dotnet test` in `godot/tests` before every commit, and keep it green.
-- Use British spelling. Comments are short prose that say why.
+- Comments are short prose that say why.
 - Check your work as the player sees it: screenshots, renders and runs at full resolution. Never claim what you haven't seen.
 
 ## Context engineering
@@ -71,6 +71,7 @@ The week of 30 September to 7 October cost about US$6,000 at list price. Three t
   - **Authoring that is taste throughout** (story writing and editing, UI design briefs, the storybook cinematics' look) stays on `su-lead-max` as the lead itself.
   The main session measures each wave (tokens per finished piece) and reports the real saving.
 - **Context budgets are enforced (10 October).** Agents can't see their own context, so a budget in a brief was a wish: a solver briefed for 100k ran to 350k. A hook (`tools/hooks/ctx_budget.py`, in `.claude/settings.json`) now tells each agent its real size from 80% of its budget, and to wrap up once over. Put the line `Context budget: 120k` in every judge, solver, runner and worker brief; without it the default is by type (judges and solvers 150k, leads 300k, runners 100k, workers 150k, the main session 250k). Every spawn starts at about 53k, so count from there; 100k leaves a solver less than 50k of work. The hook costs no model tokens; it only adds one short line when it speaks.
+- **Stay warm while you wait (10 October).** The cache lasts an hour from your last turn. Going cold costs one re-write of your whole context at the write price (about 2x); a short check-in only re-reads it at about 0.1x. So when a job or a turn queue will keep you waiting past 55 minutes, wait with Monitor or a check loop that wakes every 55 minutes (timed from your last turn, never longer), and keep each wake to one check that returns in seconds: the hour counts to your next request, so a slow check eats the margin. When a wait will run for hours with nothing to check, hand off or pause instead.
 - **Lean judges (10 October, measured: judges and solvers were 70% of a wave's spend, each filling 180-366k).** Measuring is not judging. Before a judge, a runner or the lead's own scripts produce the numbers (fits, deltas, per-clip sums) and one contact sheet per question at the size needed. The max judge gets the sheet, the numbers, the owner's words and a checklist, looks once, and returns its verdict well under about 150k; it doesn't write its own measuring scripts or open dozens of crops. A judge that needs new measurements asks for them in its verdict, and a runner makes them for the next round. Solvers keep a tight brief and hand back at about 200k.
 - **Always take the cheaper route that ends at the same quality (the owner, 7 October: "any drop in effort or even in agent ... is always worth it if we maintain the quality priority ... always").** Standing permission, no need to ask: pick the lowest effort and the smallest model that will reach the same result, and pass `effort` when you spawn (a trivial doc or roster edit can go to a worker at low effort; a pure wait or grep to Haiku). Any technique that saves tokens without costing quality is adopted at once and written here: smaller reads, shorter outputs, fewer pictures, cheaper stages. The opposite holds too: the moment quality is at risk, raise the effort or the model without asking. Taste and every look at a picture stay on Opus. Fable stays a last resort.
 - **Time is not the cost; tokens are (the owner, 7 October: "I have zero issue with slow ... if slower agents do the job at a fraction of the price and the same quality in the end thats always good").** Prefer the slower, cheaper route whenever it ends at the same quality: a smaller model with a judge, a runner that waits, sequential instead of parallel.
@@ -85,20 +86,20 @@ The main session keeps this current. It is the address list for SendMessage. Ret
 | Voice (paused by the owner: no placeholders; final voices from ElevenLabs later) | a501b387a90d78b4e | docs/team/voice.md |
 | Story and writing (the writer: the approved rewrite, Act 1 first) | — (handoff ready) | docs/team/story.md |
 | Combat, encounters, bosses, balance (paused; handoff ready at af6452e1) | — | docs/team/combat.md |
-| Animation (joints to perfection: wrists, follow-through, elbows, arms through body, sliding) | aa341360121fb52b7 (restarted 10 Oct, in worktree agent-af8dbda3195e438e4) | docs/team/animation.md |
+| Animation (joints to perfection: wrists, follow-through, elbows, arms through body, sliding) | a20d622060130a90a (successor 10 Oct night, in worktree agent-af8dbda3195e438e4) | docs/team/animation.md |
 | UI design (the HUD keystone; portraits wait on the face) | — (handoff ready) | docs/team/ui_design.md |
 | UI art (paused; handoff ready at cd0f4ab6) | — | docs/team/ui_art.md |
 | Crafting (research, design, build) (paused; handoff ready at ed429efb) | — | docs/team/crafting.md |
 | Gameplay experience director | af2c026d86e1b532b | docs/team/experience.md |
 | Skills look and feel (VFX, under the main session) | a560452c597415545 | docs/team/skills.md |
 | Cinematics production | aece7b87e89b13f19 | docs/team/cinematics.md |
-| Performance and rendering (clarity in motion first) | a3123dd8bb0182789 (restarted 10 Oct, in worktree agent-a4e0c353e61cca6dc) | docs/team/performance.md |
+| Performance and rendering (clarity in motion first) | aef18c288dd0fa17d (successor 10 Oct night, in worktree agent-a4e0c353e61cca6dc; 5f2e667c merges with face) | docs/team/performance.md |
 | Arena art | a0b61c278bdd5c994 | docs/team/arena_art.md |
 | Male hero (body, head, hair, outfits) | ab82cbe99e2937ddd | docs/team/hero_male.md |
-| Heroine face, hair and character creation's Look | a411e6c81f22f5c18 (restarted 10 Oct, in worktree agent-a2d632df7c7f21ec0) | docs/team/face.md |
+| Heroine face, hair and character creation's Look | a4191540b1568bc53 (successor 11 Oct, in worktree agent-a2d632df7c7f21ec0; judge f6: lids pass with fixes, neck fail) | docs/team/face.md |
 | Asset provenance (what isn't ours, licences, credits, replacement plan) | a80ff0c7fd988b178 | docs/team/provenance.md |
 | Legal and Steam compliance (paused; docs/handoff/legal.md; wake before submission or for a new outfit) | — | docs/team/legal.md |
 | Loot and itemisation (paused, built and merged; docs/handoff/loot.md for a successor) | — | docs/team/loot.md |
 | Creatures and models (our own boar first, then MODELS_TO_MAKE.md) | af551cacc6292152f | docs/team/creatures.md |
 | Story editor (paused after notes 02 at 435k; a fresh editor reads the next draft) | — | docs/story/EDITORIAL_LETTER.md |
-| Heroine body and outfits (now a lead of its own; was the main session's) | a5fc8651282268920 (restarted 10 Oct, in worktree agent-a5ca10091b08dc429) | docs/team/outfits.md |
+| Heroine body and outfits (now a lead of its own; was the main session's) | ace45ae43386569ed (successor 11 Oct, in worktree agent-a5ca10091b08dc429; judge 2 on g5 failed) | docs/team/outfits.md |
