@@ -43,3 +43,5 @@ In this page's history: successor 5 (214249ec: rig, nape weld, trims at 0.5), su
 - The worktree guard refuses computed paths, variables, heredocs and compound commands in Bash: write scripts and call them with literal paths.
 - Godot's import rewrites hundreds of `.import` sidecars and adds `.uid`s: never commit them (stage files by name). `godot/assets` is a junction with `--skip-worktree`.
 - A fresh worktree needs main's `godot/.godot` (robocopy), `f12\sidecars.py`, and a first `-import` (about 8 minutes).
+
+HANDOFF READY: docs/handoff/face.md on worktree-agent-a2d632df7c7f21ec0@18e9a7f8 (+ this line)
