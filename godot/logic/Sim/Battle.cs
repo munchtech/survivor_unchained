@@ -1138,6 +1138,7 @@ public sealed partial class Battle
     {
         var p = Player;
         if (!p.Alive || !Combat) return 0;
+        stoneLull = 0;
         if (p.Iframes > 0 || p.Leap != null)
         {
             if (telegraphed && p.DodgeWindow > 0 && !p.PerfectThisDash) PerfectDodge(from);
@@ -1160,6 +1161,7 @@ public sealed partial class Battle
             FlareOnBlock(from);
             Events.Emit(new Ev.PlayerHit { X = p.X, Z = p.Z, Amount = 0, School = school, Source = source, Blocked = true });
             Fire(TriggerEvent.Block, new ProcCtx { X = p.X, Z = p.Z });
+            OnBlocked(amount, from);
             return 0;
         }
         if (TryLampBlock(amount, school, source, from)) return 0;

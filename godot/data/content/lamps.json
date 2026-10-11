@@ -1454,7 +1454,9 @@
      "args": {
       "block": 0.15,
       "stones": 10,
-      "radius": 4
+      "radius": 4,
+      "lull": 6,
+      "rebuke": 0.3
      }
     }
    ]

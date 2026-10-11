@@ -161,7 +161,7 @@ public sealed class LampRulesTests
     }
 
     [Fact]
-    public void The_butchers_count_price_is_kept_in_full_by_night()
+    public void The_butchers_count_price_is_in_full_by_night_but_its_per_stack_number_is_a_size()
     {
         double Taken(bool night)
         {
@@ -175,7 +175,65 @@ public sealed class LampRulesTests
         var bare = BattleTests.Arena(3);
         double plain = bare.HurtPlayer(100, School.Physical, "test", null);
         Assert.Equal(plain * 1.1, Taken(false), 4);
-        Assert.Equal(plain * 1.1, Taken(true), 4);
+        Assert.Equal(plain * 1.025, Taken(true), 4); // the per-stack number is a size (a quarter by night); only the half is in full
+    }
+
+    static LampLoadout NightWith(params LampEffect[] rules) { var l = new LampLoadout { Night = true }; foreach (var r in rules) l.Add(r); return l; }
+
+    [Fact]
+    public void The_shield_arms_chance_is_in_full_by_night_and_its_riders_are_sizes()
+    {
+        var b = BattleTests.Arena(3);
+        b.Lamps = NightWith(Rule("shield_arm", ("block", 0.15)), Rule("block.still", ("add", 0.2)));
+        b.Player.StillT = 1;
+        // Reflection-free: the blocks over many blows sit near 0.15 + 0.05, not the quarter-sized 0.0375 + 0.05.
+        for (int i = 0; i < 400; i++) { b.Player.Iframes = 0; b.Player.Hp = b.MaxHp; b.HurtPlayer(10, School.Physical, "test", null); }
+        // 0.15 + 0.05 = 0.20 in full; a quarter-sized chance would give 0.0375 + 0.05 = 0.0875 (dodge adds nothing here: no Blocks).
+        Assert.InRange(b.Blocks, 400 * 0.14, 400 * 0.27);
+    }
+
+    [Fact]
+    public void A_warding_block_lays_a_stone()
+    {
+        var b = BattleTests.Arena(3);
+        b.Lamps = new LampLoadout();
+        b.Lamps.Add(Rule("shield_arm", ("block", 0.0), ("stones", 10)));
+        b.AddBoon("warding");
+        b.Player.Iframes = 0;
+        Assert.Equal(0, b.HurtPlayer(10, School.Physical, "test", null));
+        Assert.Equal(1, b.Stones);
+        Assert.Equal(1, b.Blocks);
+    }
+
+    [Fact]
+    public void Stones_fall_one_a_second_after_the_lull_and_never_with_the_mortar()
+    {
+        foreach (bool mortar in new[] { false, true })
+        {
+            var b = BattleTests.Arena(3);
+            b.Lamps = new LampLoadout();
+            b.Lamps.Add(Rule("shield_arm", ("block", 0.0), ("stones", 10), ("lull", 6)));
+            if (mortar) b.Lamps.Add(Rule("mortar", ("barrier", 0.01)));
+            b.AddBoon("warding");
+            for (int i = 0; i < 4; i++) { b.Player.Iframes = 0; b.Player.BlockT = 0; b.HurtPlayer(10, School.Physical, "test", null); }
+            Assert.Equal(4, b.Stones);
+            for (int i = 0; i < 55; i++) b.Tick(0.1, 0, 0);
+            Assert.Equal(4, b.Stones); // still inside the lull
+            for (int i = 0; i < 30; i++) b.Tick(0.1, 0, 0); // 3 more seconds
+            if (mortar) Assert.Equal(4, b.Stones);
+            else Assert.InRange(b.Stones, 1, 3); // falling singly, not all at once
+            for (int i = 0; i < 100; i++) b.Tick(0.1, 0, 0);
+            Assert.Equal(mortar ? 4 : 0, b.Stones);
+        }
+    }
+
+    [Fact]
+    public void The_long_chains_reach_is_in_full_by_night()
+    {
+        var b = BattleTests.Arena(3);
+        b.Lamps = NightWith(Rule("long_chain", ("reach", 3), ("weaker", 0.2)));
+        b.AddWeapon("oathblade", 1);
+        Assert.Equal(3, b.ChainReach(b.Weapons[0]), 6);
     }
 
     // ---- the arcanist quarter ----

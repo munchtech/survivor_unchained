@@ -381,7 +381,7 @@ Same shape: the hearth's dash form and reflexes, two roads, the bridge.
 | **By day and in maps** | in full | in full | in full | in full |
 | **By night** (the table's arenas and story fights) | **in full**: they wake on whatever the draft brings | **at a quarter**; a blue lamp's *price* stays in full | at most +1 each from the whole board | become a **×1.25 lean** toward the road's cards, as the Edge does (SKILLS_DESIGN §14.2) |
 
-By night, every lamp keeps its rule but not its size. This keeps the night the ember's ("power from nothing, gone at dawn"; SKILLS_DESIGN principle 8): identity crosses into the night and numbers barely do. The harness holds a full 50-lamp board at night within ×1.25 of an empty one.
+By night, every lamp keeps its rule but not its size. A rule's defining number (a chance, reach or count without which it can't fire) stays in full by night; its +% riders are sizes. This keeps the night the ember's ("power from nothing, gone at dawn"; SKILLS_DESIGN principle 8): identity crosses into the night and numbers barely do. The harness holds a full 50-lamp board at night within ×1.25 of an empty one.
 
 **Leans.** The calling's path lean (×1.3 to ×1.5) and the road's lean multiply, and they are clamped at ×2.
 

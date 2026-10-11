@@ -101,7 +101,7 @@ public sealed partial class Battle
         Lamp("bound.storm_reach") && w.Tags.Has(Tag.Storm) && boundTotal >= (int)Lamps.Full("bound.storm_reach", "at", 3) ? Lamps.Size("bound.storm_reach", "inc") : 0;
 
     /// <summary>chainbound.the_long_chain: melee skills reach further (metres).</summary>
-    public double ChainReach(WeaponInst w) => Lamp("long_chain") && w.Tags.Has(Tag.Melee) ? Lamps.Size("long_chain", "reach", 3) : 0;
+    public double ChainReach(WeaponInst w) => Lamp("long_chain") && w.Tags.Has(Tag.Melee) ? Lamps.Full("long_chain", "reach", 3) : 0;
 
     /// <summary>chainbound.the_long_chain: the last thing a melee blow struck is hooked toward the survivor
     /// (design pick: the pull of a knockback of 0.8, backward).</summary>
@@ -278,7 +278,7 @@ public sealed partial class Battle
         if (l.Rules.Count == 0) return 1;
         double m = 1;
         if (l.Has("butchers_count") && Buffs.TryGetValue("butchers_count", out var count))
-            m += l.Full("butchers_count", "price", 0.5) * count.Stacks * l.Full("butchers_count", "per", 0.01);
+            m += l.Full("butchers_count", "price", 0.5) * count.Stacks * l.Size("butchers_count", "per", 0.01);
         if (l.Has("lightning_rod") && school is School.Storm or School.Fire) m += l.Full("lightning_rod", "price", 0.15);
         return m;
     }

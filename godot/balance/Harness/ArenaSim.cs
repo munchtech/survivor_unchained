@@ -85,6 +85,8 @@ public sealed class RunResult
     /// <summary>The Flare: casts, the first cast's minute, the mean gap between casts (s), casts while a boss was up,
     /// its share of the damage done to bosses, clutch casts, and the meter's fill by source.</summary>
     public int FlareCasts, FlareBossCasts, FlareClutches;
+    /// <summary>The Bulwark's wall: blocks, rebukes, the most stones held at once.</summary>
+    public int Blocks, Rebukes, StonesPeak;
     public double FlareFirst = double.NaN, FlareGap = double.NaN, FlareBossShare = double.NaN;
     public Dictionary<string, double> FlareFills = new();
 
@@ -300,6 +302,7 @@ public static class ArenaSim
         r.Road = LampBook.Now(j.Ch).Type;
         r.LampsLit = LampBook.Now(j.Ch).Lit.Count;
         r.FlareCasts = b.FlareCasts;
+        r.Blocks = b.Blocks; r.Rebukes = b.Rebukes; r.StonesPeak = b.StonesPeak;
         r.FlareClutches = b.FlareClutches;
         r.FlareFills = new Dictionary<string, double>(b.FlareFills);
         if (b.FlareTimes.Count > 0) r.FlareFirst = b.FlareTimes[0] / 60;
