@@ -107,14 +107,12 @@ public partial class HerPose : SkeletonModifier3D
         }
         if (neck >= 0 && head >= 0 && (NeckLength != 0 || NeckWidth != 0 || NeckShift != 0))
         {
-            // (her head bone lies along her neck bone's own length, its y: the neck scaled along it, so all of her
-            // neck shortens or lengthens evenly. Moving her head bone alone slid the skin weighted to it past her
-            // neck's: at 1.5 cm shorter a black fold showed on her nape behind her ear, judge j1, 11 October 2026)
-            float len = Mathf.Max(sk.GetBoneRest(head).Origin.Length(), 1e-3f);
-            float along = Mathf.Max(0.5f, 1 + (NeckLength * NeckReach + NeckShift) / len);
-            var s = new Vector3(1 + NeckWidth * NeckBreadth, along, 1 + NeckWidth * NeckBreadth * 0.5f);
-            sk.SetBonePoseScale(neck, sk.GetBonePoseScale(neck) * s);
-            sk.SetBonePoseScale(head, sk.GetBonePoseScale(head) / s);
+            // (her head bone lies along her neck bone's own length: its y)
+            var along = sk.GetBoneRest(head).Origin.Normalized();
+            sk.SetBonePosePosition(head, sk.GetBonePosePosition(head) + along * (NeckLength * NeckReach + NeckShift));
+            var across = new Vector3(1 + NeckWidth * NeckBreadth, 1, 1 + NeckWidth * NeckBreadth * 0.5f);
+            sk.SetBonePoseScale(neck, sk.GetBonePoseScale(neck) * across);
+            sk.SetBonePoseScale(head, sk.GetBonePoseScale(head) / across);
         }
     }
 

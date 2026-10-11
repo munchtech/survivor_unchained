@@ -10,6 +10,7 @@ cols = []
 for n, lab in ns:
     tiles = [Image.open(S + '%s_nk%s%s.png' % (tag, n, r)).convert('RGB').crop(b) for r, b, _ in rows]
     p = Image.open(S + 't1_play12_nk%s.png' % n).convert('RGB').crop((880, 330, 1027, 530)).resize((441, 600), Image.LANCZOS)
+    ImageDraw.Draw(p).text((8, 8), 'in play, conversation camera, 3x (hair covers the neck: same in play)', fill=(255, 255, 255), font=ImageFont.truetype('arial.ttf', 15))
     tiles.append(p)
     w = max(t.width for t in tiles); h = sum(t.height for t in tiles) + 40
     c = Image.new('RGB', (w, h), (20, 20, 20)); d = ImageDraw.Draw(c); d.text((8, 8), lab, fill=(255, 255, 255), font=font)

@@ -6,7 +6,7 @@ sys.path.insert(0, r"C:\Users\munch\Desktop\survivorsunchained\.claude\worktrees
 import face_fit as ff  # noqa
 S = r"C:\Users\munch\Desktop\survivorsunchained\.claude\worktrees\agent-a2d632df7c7f21ec0\godot\.shots"
 R = r"C:\Users\munch\Desktop\survivorsunchained_inputs\face4\refs_front"
-O = r"C:\Users\munch\AppData\Local\Temp\claude\C--Users-munch-Desktop-survivorsunchained\91211d34-e079-4956-a2a0-7b52c04594a8\scratchpad\f17\j1"
+O = os.environ['SHEETS']
 font = ImageFont.truetype('arial.ttf', 20)
 def img(n):
     p = os.path.join(S, n + '.png') if os.path.exists(os.path.join(S, n + '.png')) else os.path.join(R, n + '.png')
@@ -37,6 +37,7 @@ FACES = [('own', 't2_own', None), ('highborn', 't2_highborn', 'highborn_11'), ('
          ('vixen', 't4_vixen', 'vixen_11'), ('moonlit', 't3_moonlit', 'moonlit_11'), ('saffron', 't3_saffron', 'saffron_11'),
          ('wildling', 't3_wildling', 'wildling_11'), ('hardwon', 't4_hardwon', 'hardwon_11'), ('fey', 't4_fey', 'fey_11')]
 which = sys.argv[1]
+if len(sys.argv) > 2: FACES = [(f, sys.argv[2] + '_' + f, r) for f, _, r in FACES]
 if which == 'neck':
     for half, fs in (('a', FACES[:5]), ('b', FACES[5:])):
         rows = []
