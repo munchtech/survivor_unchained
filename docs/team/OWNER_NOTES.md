@@ -10,6 +10,9 @@ Every lead reads this after RESUME.md. When you take a note into your work, mark
 ### Rendering: the heroine's triangle budget (approved, after the wolf fur)
 The owner asked whether her detail (about 1M triangles and 95+ draws in Warden, at about 150 px tall in play) will lag with a full crowd, and suggested AAA-style models by distance that keep what matters. Their answer to the plan: "all those ideas seem worthwhile!" So: a gameplay LOD that keeps the bust, hips, gear effects and weapon dense and cuts elsewhere; body hidden under each outfit removed; the lowest LOD for shadows; pieces merged by material; fewer fur shells at range. Full detail always at the title, in creation, in conversations, close-ups and cinematics ("we worked very hard on these models so they show there no matter what"). No measuring phase (the owner: "we can skip measuring and move to implementing"); judged so play size looks the same. The rendering lead builds it as a post-export step.
 
+### Story: a big twist, sophistication, and early lines settled for voicing
+"lets fire up the writer - we need a big twist nobody sees coming, maybe chid being evil? and another pass of sophistication. also I would like to get some of the early lines mostly settled so I can truly begin my elevenlabs voices" The writer brings three twist options first (Chid evil among them), because a twist is planted in the early lines. Then the Prologue and the opening of Act 1 are locked for recording, after an editor's pass.
+
 ### Spelling
 The owner is American: the "British spelling" rule is dropped. The game's player-facing text is being switched to American spelling (the voiced lines' audio is renamed to match).
 
