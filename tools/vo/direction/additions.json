@@ -163,5 +163,6 @@
  "dlg.brannoc.nell_alone.0": {"vol": "quiet"},
  "dlg.brannoc.dusk_call.0": {"vol": "quiet"},
  "dlg.brannoc.dusk_call.1": {"vol": "quiet"},
- "dlg.warden_answer.wait.0": {"vol": "quiet"}
+ "dlg.warden_answer.wait.0": {"vol": "quiet"},
+ "say.9790cd22614c": {"emo": "plain", "intent": "calls the town in at dusk, as every evening", "pace": "measured", "vol": "raised", "note": "Called from the gate, out over the road: the Order's evening call, worn smooth by use. Two sentences at the same pitch, no tune in it, no warmth or warning. (The survivor's mother said it small, at a door; he does not know that.)"}
 }

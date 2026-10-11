@@ -440,7 +440,7 @@ Subtitle: The door is not for sale. That is all I see for free.
 
 ### 36. `dlg.vonnra.f_chart.0.p1.wav`  HOLD: the story rewrite changes the fortune (docs/voice/RERECORD.md)
 
-*Where:* dialogue.json vonnra/f_chart#0; part 2 of 3: narrator: She takes a folded chart from under the ledger and lays it between you. It is in the Wayfi… / **vonnra: That would be ten gold. This once, no charge. The rest you will walk into yourself, and yo…** / narrator: The ledger lies open under her hand at its last page, and from where you sit you can read …
+*Where:* dialogue.json vonnra/f_chart#0; part 2 of 3: narrator: She takes a folded chart from under the ledger and lays it between you. It is in the Wayfi… / **vonnra: That would be ten gold. This once, no charge. The rest you will walk into yourself, and yo…** / narrator: The ledger lies open, her hand flat on the right-hand page, and from where you sit you can…
 
 ```
 That would be ten gold. This once, no charge. The rest you will walk into yourself, and you will, because you are the kind that does.
@@ -449,7 +449,7 @@ Subtitle: That would be ten gold. This once, no charge. The rest you will walk i
 
 ### 37. `dlg.vonnra.f_chart.1.p1.wav`  HOLD: the story rewrite changes the fortune (docs/voice/RERECORD.md)
 
-*Where:* dialogue.json vonnra/f_chart#1; part 2 of 3: narrator: She takes a folded chart from under the ledger and lays it between you. It is in the Wayfi… / **vonnra: That would be ten gold, traveler. This once, no charge. The rest you will walk into yourse…** / narrator: The ledger lies open under her hand at its last page, and from where you sit you can read …
+*Where:* dialogue.json vonnra/f_chart#1; part 2 of 3: narrator: She takes a folded chart from under the ledger and lays it between you. It is in the Wayfi… / **vonnra: That would be ten gold, traveler. This once, no charge. The rest you will walk into yourse…** / narrator: The ledger lies open, her hand flat on the right-hand page, and from where you sit you can…
 
 ```
 That would be ten gold, traveler. This once, no charge. The rest you will walk into yourself, and you will, because you are the kind that does.

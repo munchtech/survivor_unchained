@@ -1,8 +1,8 @@
 # A Watchman at the gate: ElevenLabs packet
 
-Voice id in the game: `guard`. 13 takes to record (546 characters; about 1,638 credits at three tries a line). Status: **draft, except the 1 take marked LOCKED FOR RECORDING** (the story lead, 2026-10-11): record those now.
+Voice id in the game: `guard`. 13 takes to record (546 characters; about 1,638 credits at three tries a line). Status: **draft, except the 2 takes marked LOCKED FOR RECORDING** (the story lead, 2026-10-11): record those now.
 
-**1 take is LOCKED FOR RECORDING** (marked below).
+**2 takes are LOCKED FOR RECORDING** (marked below).
 
 ## Who they are
 
@@ -57,12 +57,14 @@ Subtitle: Dawn arrivals. We don't get many that live.
 
 ## Scenes: the clock (dusk, night, getting up)
 
-### 2. `say.9790cd22614c.wav`
+### 2. `say.9790cd22614c.wav`  **LOCKED FOR RECORDING**
 
 *Where:* godot/logic/Play/Journey.Day.cs
+*Played:* plain; doing: calls the town in at dusk, as every evening; pace: measured; volume: raised.
+*Note:* Called from the gate, out over the road: the Order's evening call, worn smooth by use. Two sentences at the same pitch, no tune in it, no warmth or warning. (The survivor's mother said it small, at a door; he does not know that.)
 
 ```
-Lamps are lit. Stay where they reach.
+[plain, loudly] Lamps are lit. Stay where they reach.
 ```
 Subtitle: Lamps are lit. Stay where they reach.
 

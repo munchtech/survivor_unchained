@@ -39,7 +39,7 @@ python tools/vo/import_takes.py ~/Downloads/su_vo --voice warden
 
 ## The effect
 
-Record every take dry, with no effect or reverb: the game adds it. For every line, it slows it by a quarter (lower and larger), lays a voice an octave down under it, and puts it in a cave with water in it. For the lines that say so, it does the same, and hears it through the river: the top gone, the surface moving over it. So read a little quicker than he should finally sound.
+Record every take dry, with no effect or reverb: the game adds it. For every line, it slows it by a quarter (lower and larger), lays a voice an octave down under it, and puts it in a cave with water in it. For the lines that say so, it does the same, and hears it through the river: the top gone, the surface moving over it. So read a little quicker than the voice should finally sound.
 
 ## The lines
 

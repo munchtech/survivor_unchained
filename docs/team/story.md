@@ -4,21 +4,17 @@ The writer: owner of the canon, the words and the story data. Works with the
 story editor, a fresh one for each draft (`docs/story/notes/`). A successor
 starts from `docs/handoff/story.md`.
 
-**Now (11 October, the thirteenth lead, branch `story-writer-successor`):**
-- **Canon:** A (Chid made you), B (Holloway knew) and the toll ("It takes
-  less than it did": every rise since the first costs a life) are written into
-  TREATMENT §0 and the bible (rule 6). The rise lines and 30 more unvoiced
-  narrator lines (the clock's, the story fights') now have voice ids; the two
-  rise lines are LOCKED (162 locks). The sophistication pass is decided, not
-  applied: the list is in `docs/handoff/story.md`.
-- **Voice: 160 early lines LOCKED FOR RECORDING** (the narrator's prologue and
-  C01 to C04, Vonnra's far voice, the prologue's Warden, Grimtunnel, dead
-  Watchman and gate guard, Rook's and Brannoc's Act 1), judged by a max
-  editor and fixed. Marked in the packets; `tools/vo/lock.py --list`.
-- **The toll's build spec:** `docs/story/TOLL_SPEC.md`, for a combat or
-  story-code lead (not yet judged).
-- **Next:** the sophistication pass through Act 1 and Act 2; then lock
-  Holloway, Maeca, Chid and the rest of the narrator.
+**Now (11 October, the fourteenth lead, branch `story/sophistication-pass`):**
+- **The sophistication pass (Act 1) is applied** (list in `docs/handoff/story.md`),
+  with bible rule 7 (the dead don't knock) and Gale settled. TOLL_SPEC is
+  settled and ready for a combat or story-code lead (Vonnra's close: "...No
+  charge, this once. Not to you.").
+- **Voice: 424 lines LOCKED FOR RECORDING** (was 162): every directed line of
+  Holloway, Maeca, Chid and the narrator, the 30 clock and story-fight
+  narration lines (directed today) and the gate guard's dusk call. Held: 46
+  undirected lines (`docs/voice/undirected_held.txt`) and the pass's edited
+  lines, to direct and lock next.
+- **Editor-judge (max): pass with fixes, all four applied** (the crowd says "you bring it back in with you", not "without a mark"; the (b) plant moved after the hands as fragments; TOLL_SPEC dorrie and ashby). Its note: Act 2 or C32 should offer Chid's marker again to a player who said nothing (`mother.cut` `none`).
 
 The ninth lead's state follows (paused 6 October; still true unless the lines
 above say otherwise).
@@ -87,7 +83,7 @@ exists. Report to the coordinator when the two scripts are ready.
   truth's best), and the truth's gossip warms nobody's prices. His warmth is
   in his words only (`nell.told`). Held by
   `StoryRewriteTests.The_lie_to_Brannoc_costs_nothing_in_play`.
-- **The ledger's line 26 is "Rook's lodger.":** innocent until Act 2's end.
+- **The ledger's line 26 is "A woman. No name.":** the back room is in Rook's lie, so the line never says Rook (notes 02 §2).
 
 ## Staging changes for cinematics (paused; none built)
 
@@ -112,7 +108,7 @@ exists. Report to the coordinator when the two scripts are ready.
 - **C08:** cut Rook turning toward the mother's marker. The marker is just
   there, a few stones along.
 - **C09:** the ledger readable, framed on the last page: twenty-six lines
-  struck, "Nell, the smith's girl. With Wat.", "Rook's lodger.", and
+  struck, "Nell, the smith's girl. With Wat.", "A woman. No name.", and
   "From the ford. Got up." not struck.
 - **The gate scenes** (`scene_*`) play as conversations today. Holloway sits
   the night in the south gateway (`Waystation.cs` routine). A staged version

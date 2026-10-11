@@ -893,7 +893,7 @@
      "kerchief.raids": 1
     }
    },
-   "report": "The Kerchiefs stopped a peddler on the Old Road and took his boots. The Watch is stretched thin."
+   "report": "The Kerchiefs stopped a peddler on the Old Road and took his mule. The Watch is stretched thin."
   },
   {
    "id": "aldo.buried",
@@ -996,7 +996,7 @@
     "history": "opened_vault"
    },
    "effect": [],
-   "report": "Vonnra came down from the toll tower before dawn, which nobody has seen her do, and walked out along the Verge road and back. She paid the gate-guard for his trouble, and told him he had not seen her."
+   "report": "Vonnra came down from the toll tower before dawn and walked out along the Verge road and back. She paid the gate-guard for his trouble, and told him he had not seen her."
   },
   {
    "id": "roost.flitted",
@@ -1649,7 +1649,7 @@
     ]
    },
    "effect": [],
-   "report": "A Kerchief came into the Flagon last night, which they never do, and drank alone in the corner, and told the room on his way out that the Roost has a rope with the captain's name on it. Rav put him out. Holloway laughed when he heard, and then he didn't."
+   "report": "A Kerchief came into the Flagon last night and drank alone in the corner, and told the room on his way out that the Roost has a rope with the captain's name on it. Rav put him out. Holloway said nothing, and drank."
   },
   {
    "id": "decoy.ledger",
@@ -1701,6 +1701,55 @@
    },
    "effect": [],
    "report": "Pell Varrow sat in the Flagon's window until late last night with his ledger open, and Rav says he wrote something down every time the captain drank."
+  },
+  {
+   "id": "decoy.north",
+   "once": true,
+   "when": {
+    "all": [
+     {
+      "fact": "holloway.cup_seen",
+      "eq": true
+     },
+     {
+      "any": [
+       {
+        "fact": "redcowl",
+        "eq": "dead"
+       },
+       {
+        "fact": "redcowl",
+        "eq": "spared"
+       },
+       {
+        "fact": "roost.cleared",
+        "eq": true
+       },
+       {
+        "history": "burned_roost"
+       }
+      ]
+     },
+     {
+      "any": [
+       {
+        "fact": "caravan.pell",
+        "eq": "exposed"
+       },
+       {
+        "fact": "caravan.pell",
+        "eq": "fled"
+       },
+       {
+        "fact": "pell.fate",
+        "exists": true
+       }
+      ]
+     }
+    ]
+   },
+   "effect": [],
+   "report": "Two strangers in good northern wool sat late in the Flagon last night, asking Rav who would keep the gate if anything happened to the captain. The town says the north wants him gone. Holloway counted them out of the door."
   },
   {
    "id": "sallow.rider",
