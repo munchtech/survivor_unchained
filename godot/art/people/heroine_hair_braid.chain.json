@@ -1,6 +1,7 @@
 {
  "bone": "Head",
  "stiff": 0.012,
+ "bend": 0.03,
  "points": [
   [
    0.0,

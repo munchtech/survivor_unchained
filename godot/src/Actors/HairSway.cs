@@ -54,16 +54,20 @@ public partial class HairSway : Node
     // The chain: its bone, its points at rest (skeleton space), now and a
     // step ago (world), its links' lengths, what it is kept out of.
     int bone = -1;
-    float stiff;
+    float stiff, bend;
     Vector3[] rest = [], x = [], xp = [];
     float[] link = [];
-    // Each point's share of the chain's stiffness that stays when its rest no longer hangs down: its rest shape is how
-    // it hangs as she stands, gravity's shape, so lying face down or folding forward that shape is let go from the root
-    // out, and gravity wins (judge 20: a braid stood off her back as a stick; tails rigid as rods as she folded).
-    float[] keep = [];
     Ball[] balls = [];
+    // Its own stiffness once the hold has let go (bend, from its file: a braid's a little more than a tail's or long
+    // hair's), kept within 60 degrees at each joint and its first link within 75 of how it leaves her head: with none it
+    // buckled into knots and coils as she fell, and hooked at the tie (hair judge hj2, death).
+    static readonly float Cap = Mathf.DegToRad(60), Cone = Mathf.DegToRad(75);
+    // Each correction that keeps it its length is mostly not made a speed (0.9, "dynamic follow the leader", Müller
+    // 2012): made one, the chain whipped and knotted as her head fell 1.5 m at 2.3 m/s. And its speed against her head
+    // dies 3% a step, as hair moves with the air about her.
+    const float Follow = 0.9f, Drag = 0.03f;
     // This frame's: where the chain's points would hang, and the balls they are kept out of.
-    Vector3[] target = new Vector3[8], at = [], back = [], across = [];
+    Vector3[] target = new Vector3[8], pushed = new Vector3[8], corr = new Vector3[8], at = [], back = [], across = [];
     float[] hold = new float[8], grip = new float[8];
     Vector3[] vel = new Vector3[8], touch = new Vector3[8];
     bool[] grounded = new bool[8];
@@ -95,13 +99,12 @@ public partial class HairSway : Node
         var d = Json.ParseString(FileAccess.GetFileAsString(file)).AsGodotDictionary();
         bone = sk.FindBone((string)d["bone"]);
         stiff = (float)d["stiff"];
+        bend = d.ContainsKey("bend") ? (float)d["bend"] : 0.03f;
         var pts = d["points"].AsGodotArray();
         rest = new Vector3[pts.Count];
         for (int i = 0; i < rest.Length; i++) rest[i] = Vec(pts[i]);
         link = new float[rest.Length];
         for (int i = 1; i < rest.Length; i++) link[i] = rest[i].DistanceTo(rest[i - 1]);
-        keep = new float[rest.Length];
-        for (int i = 0; i < rest.Length; i++) keep[i] = Mathf.Pow(1f - i / (rest.Length - 1f), 3);
         var bs = d["spheres"].AsGodotArray();
         var list = new System.Collections.Generic.List<Ball>();
         for (int i = 0; i < bs.Count; i++)
@@ -158,6 +161,36 @@ public partial class HairSway : Node
     /// <summary>A bone's move from rest, in the skeleton's space.</summary>
     Transform3D Moved(int b) => sk!.GetBoneGlobalPose(b) * sk.GetBoneGlobalRest(b).AffineInverse();
 
+    /// <summary>A point kept out of the balls (i: the chain's point it is, which then touches; -1 none).</summary>
+    Vector3 Out(Vector3 q, float scale, int i)
+    {
+        for (int b = 0; b < balls.Length; b++)
+        {
+            // (the nearest point of its line across her back)
+            var w = across[b];
+            float ww = w.LengthSquared();
+            var c = ww > 0 ? at[b] + w * Mathf.Clamp((q - at[b]).Dot(w) / ww, -1f, 1f) : at[b];
+            var off = q - c;
+            float r = balls[b].R * scale;
+            if (off.LengthSquared() >= r * r) continue;
+            // (in front of a ball down her back: mirrored behind it, then out)
+            if (balls[b].Behind && off.Dot(back[b]) < 0) { off -= 2 * off.Dot(back[b]) * back[b]; }
+            var n = off.LengthSquared() > 1e-10f ? off.Normalized() : back[b];
+            q = c + n * r;
+            if (i > 0) { touch[i] = n; grip[i] = Mathf.Max(grip[i], 0.1f); }
+        }
+        return q;
+    }
+
+    /// <summary>A direction kept within an angle of another (both of unit length).</summary>
+    static Vector3 Within(Vector3 dir, Vector3 want, float most)
+    {
+        if (dir.Dot(want) >= Mathf.Cos(most)) return dir;
+        var axis = want.Cross(dir);
+        if (axis.LengthSquared() < 1e-12f) axis = want.Cross(Mathf.Abs(want.X) < 0.9f ? Vector3.Right : Vector3.Back);
+        return want.Rotated(axis.Normalized(), most);
+    }
+
     public override void _Process(double delta)
     {
         if (mesh == null || sk == null || head < 0) return;
@@ -184,30 +217,33 @@ public partial class HairSway : Node
                 across[i] = world.Basis * mv.Basis * new Vector3(balls[i].W, 0, 0);    // (her left to right, its half-width)
             }
             // How stiff each point is held to its rest: all of it while its rest hangs down from the root (within about
-            // 30 degrees: she leans into a run or a throw, and long hair lies on her back as it did), the root's share only
-            // (keep) once that rest is level or up (lying, folded forward, her head tipped back).
+            // 30 degrees: she leans into a run or a throw, and long hair lies on her back as it did), none once that rest
+            // is level or up (lying, folded forward, her head tipped back): its rest is gravity's shape as she stands,
+            // and held to it as she lay or folded it stood off her as a rod (judge 20, hair judge hj2).
             // It is let go at once, but taken back over half a second, and not while it lies on the ground: taken back
             // at once, a braid lying by her face as her head rolled over was snatched up into a rod (hair judge hj1).
-            // A link whose rest points up (her head face down, tipped back) lets go of the root's share too, for every point
-            // past it (the first link, in the tie, keeps half): a braid stood up off the back of her head as a rod (hj2).
             // And it's taken back for the whole chain or not at all: not while any of it lies on the ground or for half a
             // second after (a tail's free end stiffened and hooked up off its middle pinned on the floor), and at each point
             // only once its rest has hung down for half a second unbroken.
             bool lying = false;
             for (int i = 1; i < 8; i++) { lying |= grounded[i]; grounded[i] = false; }
             offFloor = lying ? 0 : offFloor + dt;
-            float level = 1;
             for (int i = 1; i < 8; i++)
             {
                 float u = Mathf.SmoothStep(0.35f, 0.85f, (target[i] - target[0]).Normalized().Dot(Vector3.Down));
-                level = Mathf.Min(level, Mathf.SmoothStep(-0.3f, 0.1f, (target[i] - target[i - 1]).Normalized().Dot(Vector3.Down)));
-                float k = keep[i] * (i == 1 ? 0.5f + 0.5f * level : level);
-                float want = stiff * (k + (1f - k) * u);
+                float want = stiff * u;
                 hungFor[i] = u > 0.98f ? hungFor[i] + dt : 0;
                 if (!live || want <= hold[i]) hold[i] = want;
                 else if (offFloor > 0.5f && hungFor[i] > 0.5f) hold[i] = Mathf.Min(want, hold[i] + stiff * dt / 0.5f);
             }
-            if (!live || dt <= 0) { x = (Vector3[])target.Clone(); xp = (Vector3[])target.Clone(); rootThen = target[0]; offFloor = 1e3f; live = true; }
+            // (her skeleton is scaled: its links' lengths and the balls' sizes are taken as she is drawn, not from the
+            // file, which left the chain 4% short, its tip 2 cm high)
+            float scale = world.Basis.Scale.X;
+            if (!live || dt <= 0)
+            {
+                x = (Vector3[])target.Clone(); xp = (Vector3[])target.Clone(); rootThen = target[0]; offFloor = 1e3f; live = true;
+                for (int i = 1; i < 8; i++) link[i] = target[i].DistanceTo(target[i - 1]);
+            }
             if (OS.HasEnvironment("HAIRDUMP")) Dump(dt, world.Origin.Y);
             // Steps of about 1/120 s whatever the frame rate (four at 30 fps, as it was tuned and judged): the
             // stiffness and the damping are per step, so at 60 fps four steps held it twice as stiff.
@@ -216,6 +252,10 @@ public partial class HairSway : Node
             var fall = new Vector3(0, -9.8f, 0) * h * h;
             // (the ground she stands or lies on: her skeleton's own floor)
             float floor = world.Origin.Y + 0.015f;
+            // Where it's held to: its rest, but out of her and off the ground (as she folds, its rest lies inside her
+            // back, and the hold drew it in, to be pushed out each pass, a knot at the root).
+            for (int i = 0; i < 8; i++) pushed[i] = i == 0 ? target[0] : Out(target[i], scale, -1);
+            for (int i = 1; i < 8; i++) pushed[i].Y = Mathf.Max(pushed[i].Y, floor);
             // Its root's own step, and how fast the rest may move against it: 2.5 m/s (a whipped tail's tip moves about
             // that fast against her head); pushed by her arm or snatched back to its rest, it was thrown 70 cm in two
             // frames (hair judge hj1, throw).
@@ -228,34 +268,38 @@ public partial class HairSway : Node
                 {
                     var was = x[i];
                     vel[i] = (x[i] - xp[i]) * 0.985f;
-                    var rel = vel[i] - rootStep;
-                    if (rel.LengthSquared() > most * most) vel[i] = rootStep + rel.Normalized() * most;
+                    var rel = (vel[i] - rootStep) * (1f - Drag);
+                    if (rel.LengthSquared() > most * most) rel = rel.Normalized() * most;
+                    vel[i] = rootStep + rel;
                     x[i] += vel[i] + fall;
                     xp[i] = was;
                 }
                 x[0] = target[0];
                 for (int k = 0; k < 3; k++)
+                {
+                    // (how each link turned from its rest, carried down the chain: the next link's rest bend is kept from it)
+                    var turn = Quaternion.Identity;
                     for (int i = 1; i < 8; i++)
                     {
-                        x[i] += (target[i] - x[i]) * hold[i];
-                        x[i] = x[i - 1] + (x[i] - x[i - 1]).Normalized() * link[i];
-                        for (int b = 0; b < balls.Length; b++)
-                        {
-                            // (the nearest point of its line across her back)
-                            var w = across[b];
-                            float ww = w.LengthSquared();
-                            var c = ww > 0 ? at[b] + w * Mathf.Clamp((x[i] - at[b]).Dot(w) / ww, -1f, 1f) : at[b];
-                            var off = x[i] - c;
-                            float r = balls[b].R;
-                            if (off.LengthSquared() >= r * r) continue;
-                            // (in front of a ball down her back: mirrored behind it, then out)
-                            if (balls[b].Behind && off.Dot(back[b]) < 0) { off -= 2 * off.Dot(back[b]) * back[b]; }
-                            var n = off.LengthSquared() > 1e-10f ? off.Normalized() : back[b];
-                            x[i] = c + n * r;
-                            touch[i] = n; grip[i] = Mathf.Max(grip[i], 0.1f);
-                        }
+                        x[i] += (pushed[i] - x[i]) * hold[i];
+                        var restDir = (target[i] - target[i - 1]).Normalized();
+                        var wantDir = turn * restDir;
+                        var dir = (x[i] - x[i - 1]).Normalized();
+                        // Bent back toward its rest as far as the hold has let go, without that becoming a speed (made
+                        // one, a tail swaying as she stopped was pumped into swinging side to side).
+                        float free = stiff > 0 ? 1f - hold[i] / stiff : 1f, kb = i == 1 ? 0 : bend * free;
+                        var bent = kb > 0 ? (dir + (wantDir - dir) * kb).Normalized() : dir;
+                        if (free > 0.02f) bent = Within(bent, wantDir, i == 1 ? Cone : Cap);
+                        xp[i] += (bent - dir) * link[i];
+                        var to = x[i - 1] + bent * link[i];
+                        corr[i] = to - x[i];
+                        x[i] = to;
+                        x[i] = Out(x[i], scale, i);
                         if (x[i].Y < floor) { x[i].Y = floor; touch[i] = Vector3.Up; grip[i] = 0.5f; grounded[i] = true; }
+                        if (i < 7) turn = new Quaternion(restDir, (x[i] - x[i - 1]).Normalized());
                     }
+                }
+                for (int i = 1; i < 7; i++) xp[i] += Follow * corr[i + 1];
                 // What touches her or the ground is stopped going into it, not thrown back out (being pushed out of her
                 // was a velocity: a tail lying by her head as it settled was flung up off the floor), and slowed along it.
                 for (int i = 1; i < 8; i++)
