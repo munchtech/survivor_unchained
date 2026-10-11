@@ -5495,14 +5495,14 @@
     "seeking_motes"
    ],
    "gate": 6,
-   "text": "Marks pass to two, and the marked take 10% more.",
+   "text": "Marks pass to two, and the marked take 5% more.",
    "effects": [
     {
      "do": "rule",
      "rule": "silvered",
      "args": {
       "passes": 2,
-      "more": 0.1
+      "more": 0.05
      }
     }
    ]
@@ -5602,7 +5602,7 @@
      "do": "rule",
      "rule": "moonfire",
      "args": {
-      "share": 0.2
+      "share": 0.1
      }
     }
    ]
