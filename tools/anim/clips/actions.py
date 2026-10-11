@@ -122,7 +122,7 @@ DOWN_DZ = 0.66
 TUCK_Y, ON_END_Y = 0.16, 0.19
 # High enough that a foot hanging straight down from it clears the ground
 # with its toes (the ankle to the toe tip is about 0.19).
-FLIP_Y = 0.31
+FLIP_Y = 0.22
 # How far a hand flat on the ground under her weight bends back at the wrist
 # (held to 65, the hands under her shoulders went in up to the knuckles).
 PUSH_EXT = 108.0
@@ -244,6 +244,16 @@ def _mix(a, b, t):
     return _unflatten(out)
 
 
+def _hop(a, b, t, up):
+    """A hand on its way from one spot on the ground to another, lifted:
+    a fraction t of the way, its wrist `up` over the higher end, aimed as
+    at b and no longer planted (judge 15: flat palms carried along the
+    ground read as skating)."""
+    pa, pb = a["pos"], b["pos"]
+    return {**{k: v for k, v in b.items() if k != "plant"},
+            "pos": (pa[0] + (pb[0] - pa[0]) * t, max(pa[1], pb[1]) + up, pa[2] + (pb[2] - pa[2]) * t), "plant": 0.0}
+
+
 def _down_pose():
     """Face down where she fell, one arm under her, one flung out, her legs
     long on the ground: the end of the fall, and the start of rising. Laid
@@ -328,14 +338,17 @@ def death(rig):
     # (The left set down as far ahead as the right: 6 cm nearer her, its
     # forearm stood too steep for the wrist to lay the hand flat, and the
     # fingers went 5 cm into the ground.)
-    touch_l = {"pos": (0.27, 0.074, 0.77), "pole": (1, 0.3, -0.4), "knuckles": (0.2, 0, 1), "blade": (-0.9, 0.35, 0.2), "plant": 1.0}
-    touch_r = {"pos": (-0.25, 0.06, 0.76), "pole": (-1, 0.3, -0.4), "knuckles": (-0.2, 0, 1), "plant": 1.0}
+    touch_l = {"pos": (0.27, 0.074, 0.77), "pole": (1, 0.3, -0.4), "knuckles": (0.2, 0, 1), "blade": (-0.9, 0.35, 0.2), "plant": 1.0, "ext": PUSH_EXT}
+    touch_r = {"pos": (-0.25, 0.06, 0.76), "pole": (-1, 0.3, -0.4), "knuckles": (-0.2, 0, 1), "plant": 1.0, "ext": PUSH_EXT}
     reach_l, reach_r = merge(touch_l, pos=(0.27, 0.20, 0.68), plant=0.0), merge(touch_r, pos=(-0.21, 0.19, 0.68), plant=0.0)
     # (The left slides out to where it is flung as the elbow gives; the
     # right is under her as she comes down on it.)
     # (Judge 12: the right one ended under her chin; it gives out to the side,
     # the elbow out, and lies by her face.)
-    give_l, give_r = merge(touch_l, pos=(0.42, 0.045, 0.86)), merge(touch_r, pos=(-0.28, 0.045, 0.90), pole=(-1, -0.2, -0.4))
+    # (Judge 15: carried 25-30 cm along the ground as the arms gave, the flat
+    # palms skated. They stay where they met it while the chest goes down
+    # between them, and only then flop out, lifted, to where they lie.)
+    give_l, give_r = merge(touch_l), merge(touch_r)
     buckle = body({"foot_l": {"pos": (0.13, 0, 0.06), "rot": (10, 0, 0)}, "foot_r": {"pos": (-0.15, 0, -0.14), "rot": (-14, 0, 0)},
                   "hips": {"pos": (0, -0.20, -0.06)}},
                  hips=(4, -4, 4), spine=(4, 10, 6), neck=(0, 6, 0), head=(4, 10, 8),
@@ -364,12 +377,16 @@ def death(rig):
     # (Judge 14: past upright low with straight toes, they still read as
     # pointe in the stills.) Upright at the top of the swing, the toes still
     # bent up as they were tucked; they let go only as the feet go over.
-    on_end = merge(_mix(on_knees, kneel, 1 / 6), foot_l={**on_knees["foot_l"], "rot": (8, 60, 0), "toe": 30},
-                   foot_r={**on_knees["foot_r"], "rot": (-8, 60, 0), "toe": 30})
-    over = merge(_mix(on_knees, kneel, 2 / 6), foot_l={**on_knees["foot_l"], "rot": (8, 128, 0), "toe": -30},
-                 foot_r={**on_knees["foot_r"], "rot": (-8, 128, 0), "toe": -30})
+    on_end = merge(_mix(on_knees, kneel, 1 / 6), foot_l={**on_knees["foot_l"], "rot": (8, 60, 0), "toe": 60},
+                   foot_r={**on_knees["foot_r"], "rot": (-8, 60, 0), "toe": 60})
+    over = merge(_mix(on_knees, kneel, 2 / 6), foot_l={**on_knees["foot_l"], "rot": (8, 128, 0), "toe": -10},
+                 foot_r={**on_knees["foot_r"], "rot": (-8, 128, 0), "toe": -10})
     tip = _kneel(rig, body(knees, hips=(6, 66, 6), spine=(6, 34, 8), neck=(4, 4, 0), head=(10, 4, 8),
                            hand_l=reach_l, hand_r=reach_r, fingers_l="open", fingers_r="open"), a=12)
+    chest_down = _kneel(rig, merge(down, hips={"rot": (6, 104, 6)}, spine=(5, -12, 4), neck=(-15, 0, 0), head=(-52, -6, 10),
+                                   hand_l=give_l, hand_r=give_r), a=60)
+    legs_down = _kneel(rig, merge(down, hips={"rot": (6, 92, 6)}, spine=(5, 2, 4), neck=(-15, 24, 0),
+                                  hand_l=_hop(give_l, down["hand_l"], 0.92, 0.015), hand_r=_hop(give_r, down["hand_r"], 0.92, 0.015)), a=70)
     keys = [
         (0, body(base, hips=(8, -10, 0), spine=(10, -18, -4), neck=(0, -10, 0), head=(8, -20, -6),
                  clav_l=(10, 0), clav_r=(10, 0),
@@ -403,18 +420,22 @@ def death(rig):
                               hand_l=give_l, hand_r=give_r, fingers_l="open", fingers_r="open"), a=40), "auto"),
         # The chest on the ground, the face turned; the hips still up, the
         # back sloping down to the chest.
-        (32, _kneel(rig, merge(down, hips={"rot": (6, 104, 6)}, spine=(5, -12, 4), neck=(-15, 0, 0), head=(-52, -6, 10)), a=60), "auto"),
+        (32, chest_down, "auto"),
+        (33, merge(_mix(chest_down, legs_down, 1 / 3), **{h: _hop(g, down[h], 0.1, 0.02) for h, g in (("hand_l", give_l), ("hand_r", give_r))}), "auto"),
+        (34, merge(_mix(chest_down, legs_down, 2 / 3), **{h: _hop(g, down[h], 0.55, 0.035) for h, g in (("hand_l", give_l), ("hand_r", give_r))}), "auto"),
         # The hips come down and forward as the legs straighten.
         # (The neck bending as the hips come down and the chest tips up onto
         # her breasts, so the head never lifts.)
-        (35, _kneel(rig, merge(down, hips={"rot": (6, 92, 6)}, spine=(5, 2, 4), neck=(-15, 24, 0)), a=70), "auto"),
+        (35, legs_down, "auto"),
+        (36, merge(_kneel(rig, _mix(legs_down, merge(down, spine=(4, 9, 4), neck=(-15, 40, 0)), 1 / 3)),
+                   hand_l=_hop(give_l, down["hand_l"], 0.99, 0.012), hand_r=_hop(give_r, down["hand_r"], 0.99, 0.012)), "auto"),
         (38, _kneel(rig, merge(down, spine=(4, 9, 4), neck=(-15, 40, 0))), "ease"),
         # A settle: the last of the weight going out of her (judge 12: only
         # ever down from here). Where she ends is where get_up starts.
         (40, _kneel(rig, merge(down, spine=(4, 9.5, 4), neck=(-15, 42, 0))), "ease"),
         (45, _kneel(rig, down), "ease"),
     ]
-    planted = _planted(rig, lambda fr: (KNEE_Z, "lr", _ankle_path(fr, ((15, TUCK_Y), (16, FLIP_Y), (17, 0.23), (18, INSTEP_Y))))
+    planted = _planted(rig, lambda fr: (KNEE_Z, "lr", _ankle_path(fr, ((15, 0.18), (16, FLIP_Y), (17, 0.21), (18, INSTEP_Y))))
                        if fr >= 15 else None)
     return build("death", rig, keys, meta={"layer": "full", "hold": True},
                  post=lambda fr, pose: _on_balls(rig, pose) if 8 < fr < 15 else planted(fr, pose))
@@ -428,7 +449,7 @@ def _back_pose(settle=0.0):
         "spine": (4, 4 - 2 * settle, -6), "neck": (10, 6, 0), "head": (34 + 4 * settle, -8, 10),
         "foot_l": {"pos": (0.04, 0.07, -0.02), "rot": (60, -30, 50), "pole": (1, 0.15, 0.3)},
         "foot_r": {"pos": (-0.17, 0.07, 0.31), "rot": (-24, -55, -10), "pole": (-0.4, 1, 0)},
-        "hand_l": {"pos": (0.52, 0.05, -1.30), "pole": (1, 0.4, 0), "knuckles": (0.4, 0, -1)},
+        "hand_l": {"pos": (0.52, 0.03, -1.30), "pole": (1, 0.4, 0), "knuckles": (0.4, 0, -1)},
         "hand_r": {"pos": (-0.40, 0.04, -0.62), "pole": (-1, 0.4, 0), "knuckles": (-0.2, 0, 1), "plant": 1.0},
         "fingers_l": "open", "fingers_r": "relaxed",
     }
@@ -555,15 +576,17 @@ def get_up(rig):
                  foot_r={"rot": (-8, 80, 0), "toe": -20, "pole": (-0.2, -1, 0.4)})
     # The hands lifted off the ground on their way in (judge 12: they skidded
     # 25-30 cm along it), set down at f4.
+    # (Judge 15: the left still skimmed the ground 30 cm: each hand peels
+    # up first, carried low, and comes down where it pushes.)
     hk = _kneel(rig, hands)
-    lift = _mix(down, hk, 0.5)
-    for h in ("hand_l", "hand_r"):
-        a_, b_ = down[h]["pos"], hk[h]["pos"]
-        lift[h] = {"pos": ((a_[0] + b_[0]) / 2, max(a_[1], b_[1]) + 0.05, (a_[2] + b_[2]) / 2), "pole": hk[h]["pole"],
-                   "knuckles": hk[h]["knuckles"]}
+
+    def lift(t, ht, up):
+        return merge(_mix(down, hk, t), **{h: _hop(down[h], hk[h], ht, up) for h in ("hand_l", "hand_r")})
     keys = [
         (0, down, "ease"),
-        (2, lift, "auto"),
+        (1, lift(0.25, 0.08, 0.035), "auto"),
+        (2, lift(0.5, 0.5, 0.05), "auto"),
+        (3, lift(0.75, 0.9, 0.025), "auto"),
         (4, hk, "auto"),
         (9, push, "auto"),
         (16, fours, "auto"),
@@ -651,19 +674,28 @@ def get_up_back(rig):
         return {"hips": {"pos": (0.0, hips_y, hips_z), "rot": (0, pitch, 0)}, "spine": (0, spine, 0), "neck": (0, neck, 0),
                 "head": (0, head, 0), "foot_l": feet[0], "foot_r": feet[1], "hand_l": hl, "hand_r": hr,
                 "fingers_l": fingers[0], "fingers_r": fingers[1]}
-    keys = [
-        (0, lie, "ease"),
-        # The head and shoulders curl first; the knees begin to draw up; the
-        # flung arm lifts off the ground and swings out round her side.
-        (3, merge(lie, hips={"rot": (-5, -86, -3)}, spine=(2, 10, -4), neck=(6, 24, 0), head=(10, 14, 6),
+    curl = merge(lie, hips={"rot": (-5, -86, -3)}, spine=(2, 10, -4), neck=(6, 24, 0), head=(10, 14, 6),
                   foot_l={"pos": (0.10, 0.06, -0.10), "rot": (30, -15, 25), "pole": (0.8, 0.6, 0.3)},
                   foot_r={"pos": (-0.16, 0.06, 0.12), "rot": (-15, -30, -5), "pole": (-0.4, 1, 0.3)},
                   hand_l={"pos": (0.68, 0.16, -1.12), "pole": (1, 0.4, -0.2), "knuckles": (0.6, 0, -0.6)},
                   # (Lifting off: no longer planted; the fingers forward, as the
                   # forearm points: pointed back at her head, the wrist could
                   # not bend that far and drove them into the ground.)
-                  hand_r={"pos": (-0.40, 0.10, -0.70), "pole": (-1, 0.4, -0.2), "knuckles": (-0.3, -0.3, 0.9), "plant": 0.0},
-                  fingers_l="relaxed", fingers_r="relaxed"), "auto"),
+                  hand_r={"pos": (-0.40, 0.10, -0.70), "pole": (-1, 0.4, -0.2), "knuckles": (-0.3, -0.05, 0.95), "plant": 0.0},
+                  fingers_l="relaxed", fingers_r="relaxed")
+    sat = sit(13, -0.95, -0.60, -34, 12, 6, 2, pl, pr, fingers=("flat", "flat"))
+    off = sit(17.5, -0.945, -0.56, 0, 16, -4, -4,
+              {"pos": (0.27, 0.16, -0.68), "pole": (1, -0.2, -0.6), "knuckles": (0.2, -0.5, 1)},
+              {"pos": (-0.27, 0.16, -0.66), "pole": (-1, -0.2, -0.6), "knuckles": (-0.2, -0.5, 1)})
+    keys = [
+        (0, lie, "ease"),
+        # (Judge 15: the hand by her side dragged its fingertips 4-7 cm as it
+        # left the ground: it comes straight up first.)
+        (1.5, merge(_mix(lie, curl, 0.5), hand_r={**lie["hand_r"], "pos": (-0.40, 0.085, -0.62), "plant": 0.0,
+                                                   "knuckles": (-0.2, 0, 1)}), "auto"),
+        # The head and shoulders curl first; the knees begin to draw up; the
+        # flung arm lifts off the ground and swings out round her side.
+        (3, curl, "auto"),
         # Up on her elbows' way, the knees up, the feet flat; the arms coming
         # down at her sides to plant behind her.
         (6, sit(6, -0.95, -0.62, -70, 18, 18, 8,
@@ -677,12 +709,15 @@ def get_up_back(rig):
         # forward over the hips, which roll forward on the ground (judge 14:
         # 10-14 degrees a frame was brisk for a hurt woman; two frames more,
         # taken from the end's hold, bring it to 8).
-        (13, sit(13, -0.95, -0.60, -34, 12, 6, 2, pl, pr, fingers=("flat", "flat")), "auto"),
+        (13, sat, "auto"),
+        # (Judge 15: peeling off while carried forward, the fingertips dragged
+        # 3-6 cm a frame.) The heels of the hands come up first, the fingers
+        # last, all but in place; then the hands go forward through the air.
+        (14.5, merge(_mix(sat, off, 1 / 3), **{h: {**sat[h], "pos": (sat[h]["pos"][0], 0.09, sat[h]["pos"][2] + 0.01), "plant": 0.0,
+                                                    "knuckles": (sat[h]["knuckles"][0], -0.28, 1)} for h in ("hand_l", "hand_r")}), "auto"),
         # Off the hands: the trunk upright, the hips still down, the hands in
         # the air on their way forward.
-        (17.5, sit(17.5, -0.945, -0.56, 0, 16, -4, -4,
-                 {"pos": (0.27, 0.16, -0.68), "pole": (1, -0.2, -0.6), "knuckles": (0.2, -0.5, 1)},
-                 {"pos": (-0.27, 0.16, -0.66), "pole": (-1, -0.2, -0.6), "knuckles": (-0.2, -0.5, 1)}), "auto"),
+        (17.5, off, "auto"),
         # The weight over the feet, the hips lifting.
         (22.5, sit(22.5, -0.82, -0.47, 32, 18, -10, -6,
                  {"pos": (0.25, 0.36, -0.30), "pole": (1, -0.4, -0.4), "knuckles": (0.1, -0.7, 0.7)},
@@ -862,16 +897,16 @@ def throw(rig):
         # raised arm at the play camera), the forearm turned out so its blade
         # points ahead and down outside her thigh.
         (7, body(stance(0.10, weight=0.5), hips=(12, 10, 0), spine=(22, 14, 0), head=(-26, -6, 0),
-                 hand_r=held((0.12, -0.24, 0.44), (-0.8, -0.2, 0.0), (0.1, -0.45, 0.9)),
+                 hand_r=held((-0.155, -0.15, 0.47), (-0.6, -0.6, 0.0), (-0.75, -0.25, 0.6)),
                  hand_l=held((0.07, -0.40, 0.12), (0.5, -0.1, -0.9), (0.3, -0.5, 0.8)),
                  fingers_r=fist, fingers_l=fist), "ease"),
         (10, body(stance(0.10, weight=0.5), hips=(13, 10, 0), spine=(24, 14, 0), head=(-28, -6, 0),
-                  hand_r=held((0.13, -0.27, 0.42), (-0.8, -0.2, 0.0), (0.1, -0.5, 0.86)),
+                  hand_r=held((-0.165, -0.19, 0.45), (-0.6, -0.6, 0.0), (-0.7, -0.3, 0.65)),
                   hand_l=held((0.08, -0.42, 0.10), (0.5, -0.1, -0.9), (0.3, -0.5, 0.8)),
                   fingers_r=fist, fingers_l=fist), "auto"),
         # Back to the hands low at her sides, the blades ahead (the left
         # beside her thigh, off her groin: judge 10).
-        (21, body(stance(0.07), hand_r=held((0.0, -0.34, 0.16), (-0.6, -0.4, -0.5), (-0.15, -0.35, 0.92)),
+        (21, body(stance(0.07), hand_r=held((-0.09, -0.33, 0.15), (-0.6, -0.4, -0.5), (-0.7, -0.3, 0.65)),
                   hand_l=held((0.06, -0.38, 0.06), (0.6, -0.4, -0.5), (0.15, -0.35, 0.92)),
                   fingers_r=fist, fingers_l=fist), "ease"),
     ]
