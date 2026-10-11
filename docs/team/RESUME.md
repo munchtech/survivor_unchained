@@ -13,6 +13,11 @@ The owner asked for a wind-down: classes stops after the Echo fix, the Act 2 wri
 - **Rulings in force:** two-attempts rule (two honest solver attempts fail, then a simpler route); outfits: leather pauldron, feathery trim dropped, the plunge's foot as a smooth U or else a small arcane clasp; face: death-clip hair gets one last physics try, else hand-posed rest shapes on the floor; animation: sit_back_heels remade with a soft hip limit (per clip if possible).
 - **Paused earlier:** rendering (docs/handoff/performance.md; the Look's edge lamp default may move to 1.3 m from face's work, unjudged). TOLL_SPEC (docs/story/TOLL_SPEC.md) is judged and waits for a code lead.
 
+### Next session: start small, then wait for "go"
+1. Start one su-lead-sonnet lead (own worktree, from integration) to raise Act 1's story-boss health (owner's "yes", 11 October): bring the Roost, Vault, Hollow and Dig kill times back to their pre-Flare values for both the skilled and the plain pilot, with no rise in deaths, measured with the classes harness (CLASSES §7, risk 4; docs/handoff/classes.md). Tests green, then ask to merge. No max judge needed: the numbers are the check.
+2. Merge it when it reports, remove its worktree, and sweep.
+3. Start nothing else until the owner says "go". Then resume areas from their handoffs, 3 to 5 at a time.
+
 ### Stopped (filled in as each lead stops)
 - classes: STOPPED and MERGED (b888da5c, 819 tests; worktree removed). The Echo fixed; Moonfire is now an arcane hit (no Burn, chain capped at 3). Every type in band at T3 and T4 except the moonweaver at T4, 1.38 (judged acceptable: mostly its night skills). Phase 2 from cold: docs/handoff/classes.md (Banked Flame in the pilot, the Road's Toll on bosses, the butcher lowest). Three owner questions in its section 4.
 - Act 2 writer: STOPPED at story/act2@5190bf0c (worktree agent-a6bea546976448116 stays; NOT merged, hold it): Act 2's first slice (C20, C20b, C22: the rope, the fourth dusk, his table) is in the data, WIP, unjudged, every line on hold; Holloway dies in play once merged. To finish: editor-judge, fixes, directions, locks, merge. Needs other leads: the fight in the hole, hauling as a held input, the cut as a cinematic; Tam's Pa needs a new cast voice. Handoff docs/handoff/story.md on that branch; build script scratchpad s18/build_c20.py.
