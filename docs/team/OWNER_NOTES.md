@@ -4,6 +4,10 @@ Every lead reads this after RESUME.md. When you take a note into your work, mark
 
 ## 11 October 2026
 
+### The twists
+
+- Approved: A ("Not yet": Chid made you) and B ("Count's right": Holloway knew). Then "I'm still missing a WHAT THE FUCK kinda moment". Chosen from TWIST_WTF.md: option 1, "It takes less than it did" (every rise costs one life in the valley; the ledger past line 27 is the player's own deaths from the save). The owner chose it knowing that dying in the endless then costs a life.
+
 ### Neck length
 
 - On the neck fixes (seam, grey jaw shade): "the neck might have been too long anyway, maybe the bug helps find the perfect". Then: "said might :) It could be perfect - and maybe a design boon that lets helmets be cool later without taking bust view". So it is an open question, not a change: the length may be right, and a long neck leaves room for helmets, gorgets and high collars without covering the bust. The face lead shows today's neck beside one or two shorter lengths (front and profile, at the Look and in play), with a helmet or gorget silhouette on each if one is to hand, and the judge weighs both looks. The owner picks; today's length is a full option. Outfits and animation are told before any change ships.
