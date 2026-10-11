@@ -4165,9 +4165,11 @@ if BODY_OUT:
             n = (mw3 @ v.normal).normalized()
             hit = tree.ray_cast(co + n * 0.0005, n, reach)
             # A boot (its parts keep 'deep_*') tucks her skin all the way
-            # under it, through a 30 mm ray, from 1 to 3.5 cm under its top
-            # edge down (the standard rule above that): it stands well off
-            # her, and her calf, ankle and toes came through it as she moved.
+            # under it, through a 30 mm ray, eased in from 4 to 8 cm under its
+            # top edge (the standard rule above that: tucked deep from 1 cm
+            # down, it showed as a deep gap seen up into the boot's top as she
+            # vaulted): it stands well off her, and her calf, ankle and toes
+            # would come through it as she moved.
             # Every other piece keeps the standard rule and its 12 mm ray.
             dp = deep[hit[2]] if hit[0] is not None else None
             if hit[0] is not None and hit[3] > 0.012 and (dp is None or LEGW[dp[2]][jj[v.index]] < 0.3):
@@ -4179,7 +4181,7 @@ if BODY_OUT:
                 if dp is not None:
                     h_ = np.array(hit[0][:])
                     a_ = np.mod(np.arctan2(h_[1] - dp[1][1], h_[0] - dp[1][0]), 2 * np.pi)
-                    t_ = ramp(np.interp(a_, np.arange(len(dp[0]) + 1) * 2 * np.pi / len(dp[0]), np.r_[dp[0], dp[0][:1]]) - h_[2], 0.01, 0.035)
+                    t_ = ramp(np.interp(a_, np.arange(len(dp[0]) + 1) * 2 * np.pi / len(dp[0]), np.r_[dp[0], dp[0][:1]]) - h_[2], 0.04, 0.08)
                     vals[v.index, k] = vals[v.index, k] * (1 - t_) + t_
             hid += vals[v.index, k] > 0
         # Tucked in gradually from the border, a third, two thirds, then all
