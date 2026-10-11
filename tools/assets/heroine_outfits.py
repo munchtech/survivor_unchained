@@ -4211,17 +4211,26 @@ def ranger_spaulder():
     S0, C2 = sp_env("SP_LINE", "0.012,0.012")          # (the cap plate's lower edge: s = S0 + C2 th^2 down her arm)
     G, H = sp_env("SP_BAND", "0.007,0.026")            # (gap between plates; band height)
     THB, = sp_env("SP_THB", "1.55")                    # (bands' half-span round her arm, radians)
-    S_MED, = sp_env("SP_MED", "-0.075")                # (the cap plate stops here toward her neck)
+    S_MED, = sp_env("SP_MED", "-0.055")                # (the cap plate stops here toward her neck: short of her trapezius, judge 7)
     R_CAP, = sp_env("SP_R", "0.105")                   # (the cap plate's reach over her shoulder)
     LIFT, THK, GAP = sp_env("SP_LIFT", "0.003,0.0025,0.0012")
     W_ = sp_env("SP_W", "0.45,0.6,0.7")                # (upper arm's share in the cap and each band)
     LKEY = os.environ.get("SP_LEATHER", "forestleather")
+    FAR, *FAR_W = sp_env("SP_FAR", "0.016,0.016,0.006")   # (past these from any plate the leather takes her skin's shape; past the cap and the bands, her skin's bones)
     CLR = LIFT + THK + GAP
+    CAP_UP, = sp_env("SP_CAP_UP", "0.004")            # (the cap stands further off: her shoulder swells under it at her idle)
     s_, th_, rho_ = pl_frame(P, F_)
     line = S0 + C2 * th_ ** 2
-    side = (np.abs(th_) < np.radians(115)).astype(float) * 2 - 1      # (never round into her armpit)
+    # (never round into her armpit; a distance, not a step: cut on a step,
+    # the leather's edge followed her triangles in a stair and its binding
+    # tore, judge 7. The cap stops CAP_TH round her arm behind and CAP_TH2
+    # in front, on top of her shoulder: her front deltoid swells 6-8 mm
+    # through a rigid plate at her idle, and the leather alone covers it)
+    CAP_TH, LEAF_TH, CAP_TH2 = sp_env("SP_TH", "90,115,65")
+    side = (np.radians(LEAF_TH) - np.abs(th_)) * rho_
+    side_c = (np.radians(np.where(th_ < 0, CAP_TH, CAP_TH2)) - np.abs(th_)) * rho_
     capf = ANDR(ANDR(cap(sh, R_CAP), line - s_, r=0.008), s_ - S_MED, r=0.012)
-    capf = np.minimum(capf, side * 0.05)
+    capf = ANDR(capf, side_c, r=0.008)
 
     def band(k):
         top = line + G + (k - 1) * (H + G)
@@ -4230,9 +4239,15 @@ def ranger_spaulder():
     # (the leather shows only toward her neck, between the bands and below
     # them; round the rest of the cap plate it ends hidden under its rim)
     tongue = ANDR(ANDR(bot - s_, (THB - np.abs(th_)) * rho_ + 0.011, r=0.014), s_ - (line - 0.02), r=0.004)
-    under = OR(ANDR(cap(sh, R_CAP - 0.007), line - s_ + 0.003, r=0.008),
-               ANDR(ANDR(cap(sh, R_CAP + 0.01), Z - (sh[2] - 0.0605), r=0.012), (S_MED + 0.02) - s_, r=0.012))
-    leaf = np.minimum(OR(under, tongue), side * 0.05)
+    # (the leather runs MARGIN past the cap plate all round, so the plate
+    # lies on it everywhere: ended hidden under its rim, her skin showed
+    # under the rim's front as she moved, judge 7; its neck end, TRAP past
+    # the cap's reach, stops short of her neck's bones, whose pull had torn
+    # its edge)
+    MARGIN, TRAP = sp_env("SP_MARGIN", "0.008,0.01")
+    under = OR(ANDR(cap(sh, R_CAP + MARGIN), line - s_ + MARGIN, r=0.008),
+               ANDR(ANDR(cap(sh, R_CAP + TRAP), Z - (sh[2] - 0.0605), r=0.012), (S_MED + 0.02) - s_, r=0.012))
+    leaf = ANDR(OR(under, tongue), side, r=0.008)
     # The plates first: the leather is shaped under them.
     names = ["ranger.pauldron0", "ranger.pauldron1", "ranger.pauldron2"]
     base = W[capf > 0].mean(0)
@@ -4245,7 +4260,8 @@ def ranger_spaulder():
             sm = float(np.median(s_[fld > 0]))
             cen = ctr + ax_ * sm
             RIGID_UV[nm] = (ctr, ax_, True)
-        made = piece(nm, fld, "bronze", lift=CLR, clear=CLR, thick=0.0015, smooth=14, soften=6 if k == 0 else 3, rigid=cen)
+        cl = CLR + (CAP_UP if k == 0 else 0.0)
+        made = piece(nm, fld, "bronze", lift=cl, clear=cl, thick=0.0015, smooth=14, soften=6 if k == 0 else 3, rigid=cen)
         pd, td, wd, _ = SHEET[nm]
         row = pl_row(base, W_[k])
         if k == 0:
@@ -4274,34 +4290,77 @@ def ranger_spaulder():
         out += made
         print("SPAULDER %s: %d points, rivets %d, upper arm %.2f" % (nm, len(pd), len(pts), W_[k]))
 
-    def reach(pos):
-        """How much each plate owns each point of the leather (1 under it,
-        fading to 0 over 10 mm past its edge), and the leather's place
-        under it there."""
-        bs, tg = [], []
-        for pd, nd, ein, kd, row in plates:
+    def owned(pos):
+        """Which plate each point of the leather lies under (-1: none), the
+        leather's place under it, and how far each point is past the
+        nearest plate's edge (0 under one)."""
+        own = -np.ones(len(pos), int)
+        tgt = pos.copy()
+        past = np.full((len(plates), len(pos)), np.inf)
+        for k, (pd, nd, ein, kd, row) in enumerate(plates):
             _, j = kd.query(pos)
             d = pos - pd[j]
             dn = (d * nd[j]).sum(1)
             tan = np.linalg.norm(d - nd[j] * dn[:, None], axis=1)
             sd = np.where(ein[j] > 0.0025, ein[j], -tan)
-            q = np.clip((sd + 0.004) / 0.010, 0, 1)   # (from 4 mm past its edge to 6 mm inside: past it, its tangent plane flew off her)
-            bs.append(q * q * (3 - 2 * q) * (np.abs(dn) < 0.03))
-            tg.append(pos - nd[j] * (dn + GAP + THK)[:, None])
-        return np.array(bs), np.array(tg)
+            near = np.abs(dn) < 0.03
+            under = near & (sd >= 0)
+            own[under] = k
+            tgt[under] = (pos - nd[j] * (dn + GAP + THK)[:, None])[under]
+            past[k] = np.where(near, np.maximum(-sd, 0), np.inf)
+        return own, tgt, past
+
+    def fill(tris, vals, known):
+        """Harmonic fill: `vals` kept where `known`, eased between."""
+        n = len(vals)
+        e = np.vstack([tris[:, [0, 1]], tris[:, [1, 2]], tris[:, [2, 0]]])
+        e = np.unique(np.sort(e, 1), axis=0)
+        A = sparse.coo_matrix((np.ones(2 * len(e)), (np.r_[e[:, 0], e[:, 1]], np.r_[e[:, 1], e[:, 0]])), shape=(n, n)).tocsr()
+        Lp = sparse.diags(np.asarray(A.sum(1)).ravel()) - A
+        fr = np.where(~known)[0]
+        kn = np.where(known)[0]
+        if len(fr) == 0:
+            return vals
+        from scipy.sparse.linalg import spsolve
+        rhs = -Lp[fr][:, kn] @ vals[kn]
+        out = vals.copy()
+        sol = spsolve(Lp[fr][:, fr].tocsc(), rhs)
+        out[fr] = sol.reshape(len(fr), -1) if vals.ndim > 1 else sol
+        return out
+
+    # (the leather is held to each plate's underside where under it and to
+    # her skin past FAR from any plate; between, in the gaps between plates
+    # and up her trapezius from the cap's neck end, it is eased harmonically:
+    # blending each plate's tangent plane by distance crumpled it into
+    # facets and shards, judge 7)
+    TRIS_L = []     # (the leather's triangles, for weigh(): piece() hands it none)
 
     def conform(pos, tris):
-        b, t = reach(pos)
-        B = b.max(0)
-        tgt = (b[:, :, None] * t).sum(0) / np.maximum(b.sum(0), 1e-9)[:, None]
-        print("SPAULDER leather conformed under the plates at %d of %d points" % ((B > 0.5).sum(), len(pos)))
-        return pos + B[:, None] * (tgt - pos)
+        TRIS_L[:] = [tris]
+        own, tgt, past = owned(pos)
+        known = (own >= 0) | (past.min(0) > FAR)
+        disp = np.where((own >= 0)[:, None], tgt - pos, 0.0)
+        # (its hem, past the plates, hugs her: ironed, it bridged the hollow
+        # behind her armpit and flared 8-13 mm off her arm, judge 7)
+        hem = np.unique(np.concatenate(edge_loops(tris)))
+        hem = hem[own[hem] < 0]
+        for i in hem:
+            q, n, _, _ = BVH.find_nearest(Vector(pos[i]))
+            if q is not None:
+                disp[i] = np.array(n) * (LIFT - (Vector(pos[i]) - q).dot(n))
+        known[hem] = True
+        disp = fill(tris, disp, known)
+        print("SPAULDER leather held under the plates at %d of %d points, eased at %d" % ((own >= 0).sum(), len(pos), (~known).sum()))
+        return pos + disp
 
     def weigh(pos, wt):
-        b, _ = reach(pos)
-        B = b.max(0)
-        rw = sum(b[k][:, None] * plates[k][4][None] for k in range(len(plates))) / np.maximum(b.sum(0), 1e-9)[:, None]
-        return (1 - B)[:, None] * wt + B[:, None] * rw
+        own, _, past = owned(pos)
+        # (the cap's bones reach further than a band's: her shoulder swells
+        # under it at her idle, and leather just past its rim, skinned as
+        # she is, rose over the rim, judge 7)
+        rows = np.array([pl[4] for pl in plates])
+        known = (own >= 0) | ((past[0] > FAR_W[0]) & (past[1:].min(0) > FAR_W[1]))
+        return fill(TRIS_L[0], np.where((own >= 0)[:, None], rows[np.maximum(own, 0)], wt), known)
 
     out = piece("ranger.spaulder", leaf, LKEY, lift=LIFT, thick=THK, smooth=10, soften=10, iron=20,
                 trim=("darkleather", 0.006, 0.0006, 0.0013), stiff=[conform], weigh=weigh) + out
