@@ -91,6 +91,21 @@ public partial class HairSway : Node
     Vector3[] restAt = new Vector3[8], restThen = new Vector3[8];
     Vector4[] turnAt = new Vector4[8], turnThen = new Vector4[8];
     bool drawn;
+    // The laid shape (hair solver 6, after five rounds of physics left the swing flagging and rodding as she lay down
+    // and got up: hair judge hj3). Of a procedural drape, the chain frozen where it lies, or shapes set by hand, the
+    // drape: it needs nothing per style or per clip and works for any fall or get-up. It is the chain with no
+    // momentum: carried with its root's move (not its turn), settled under gravity, kept out of her and off the floor,
+    // so it lies on her back or the ground as she lies, and hangs as she sits or crouches; with no speed of its own it
+    // can't stream out as a flag or stand off as a rod. How far she is down (her upper back's height over the floor
+    // and her spine's lean from upright) blends the swing into it; once down it is held until she is up (her head
+    // high, her spine upright), then the swing comes back over half a second, started from the drape.
+    float down;
+    Vector3[] drape = new Vector3[8];
+    Vector3 drapeRoot, rootPrev;
+    int[] neckBalls = [], backBalls = [], lowBalls = [];
+    const float DownLo = 0.45f, DownHi = 0.95f, FlatLo = 0.3f, FlatHi = 0.7f, UpLo = 1.1f, UpHi = 1.35f, UprightLo = 0.8f, UprightHi = 0.95f,
+        DownRise = 0.7f, DownFall = 0.5f, DrapeStep = 0.02f;
+    const int DrapePasses = 4;
 
     public HairSway() { Name = "HairSway"; }
 
@@ -137,6 +152,8 @@ public partial class HairSway : Node
             list.Add(new Ball { Bone = shoulder, At = s.Lerp(e, 0.5f), R = 0.065f });
         }
         balls = list.ToArray();
+        int[] Of(string n) { var l = new System.Collections.Generic.List<int>(); for (int k = 0; k < bs.Count; k++) if ((string)bs[k].AsGodotDictionary()["bone"] == n) l.Add(k); return l.ToArray(); }
+        neckBalls = Of("neck_01"); backBalls = Of("spine_03"); lowBalls = Of("spine_01");
     }
 
     /// <summary>Her arms' bones (shoulder, elbow, hand), each side that has them.</summary>
@@ -173,7 +190,7 @@ public partial class HairSway : Node
     Transform3D Moved(int b) => sk!.GetBoneGlobalPose(b) * sk.GetBoneGlobalRest(b).AffineInverse();
 
     /// <summary>A point kept out of the balls (i: the chain's point it is, which then touches; -1 none).</summary>
-    Vector3 Out(Vector3 q, float scale, int i)
+    Vector3 Out(Vector3 q, float scale, int i, Vector3? came = null)
     {
         var q0 = q;
         for (int b = 0; b < balls.Length; b++)
@@ -188,7 +205,8 @@ public partial class HairSway : Node
             // (in front of a ball down her back: mirrored behind it, then out)
             // (but not one that was in front of it already, lying beside her as she lies face down, once the hold has let
             // go: mirrored, a braid by her shoulder jumped 10 cm up onto her back, death c13)
-            if (balls[b].Behind && off.Dot(back[b]) < 0 && !(i > 0 && free[i] > 0.5f && (start[i] - c).Dot(back[b]) < 0))
+            if (balls[b].Behind && off.Dot(back[b]) < 0 && !(i > 0 && free[i] > 0.5f && (start[i] - c).Dot(back[b]) < 0)
+                && !(came is Vector3 cf && (cf - c).Dot(back[b]) < 0))
                 off -= 2 * off.Dot(back[b]) * back[b];
             var n = off.LengthSquared() > 1e-10f ? off.Normalized() : back[b];
             q = c + n * r;
@@ -268,7 +286,7 @@ public partial class HairSway : Node
             float scale = world.Basis.Scale.X;
             if (!live || dt <= 0)
             {
-                x = (Vector3[])target.Clone(); xp = (Vector3[])target.Clone(); rootThen = target[0]; offFloor = 1e3f; live = true; atThen = [];
+                x = (Vector3[])target.Clone(); xp = (Vector3[])target.Clone(); rootThen = target[0]; offFloor = 1e3f; live = true; atThen = []; justSettled = true;
                 for (int i = 1; i < 8; i++) link[i] = target[i].DistanceTo(target[i - 1]);
             }
             if (OS.HasEnvironment("HAIRDUMP")) Dump(dt, world.Origin.Y);
@@ -352,9 +370,10 @@ public partial class HairSway : Node
                     grip[i] = 0; surf[i] = Vector3.Zero;
                 }
             }
+            Lay(dt, world.Origin.Y, floor, scale);
             if (atThen.Length != balls.Length) { atThen = new Vector3[balls.Length]; acrossThen = new Vector3[balls.Length]; }
             System.Array.Copy(at, atThen, balls.Length); System.Array.Copy(across, acrossThen, balls.Length);
-            for (int i = 0; i < 8; i++) swung[i] = local.Basis * (x[i] - target[i]) * Amount;
+            for (int i = 0; i < 8; i++) swung[i] = local.Basis * ((down > 0 && down < 1 - 1e-4f && i > 0 ? lay[i] : x[i]) - target[i]) * Amount;
             Turn(local);
             if (OS.HasEnvironment("HAIRDRAW")) Draw();
             if (OS.HasEnvironment("HAIRBODY"))
@@ -419,6 +438,56 @@ public partial class HairSway : Node
                     m.SetShaderParameter(TurnThenName, turnThen);
                 }
     }
+
+    static Vector3 Mean(Vector3[] a, int[] k) { var m = Vector3.Zero; foreach (var j in k) m += a[j]; return k.Length > 0 ? m / k.Length : m; }
+
+    /// <summary>The laid shape (see the fields): the down weight, the drape, the chain blended into it, and the swing
+    /// started from it while she is fully down.</summary>
+    void Lay(float dt, float ground, float floor, float scale)
+    {
+        if (neckBalls.Length == 0 || backBalls.Length == 0 || lowBalls.Length == 0) return;
+        bool first = !drawn || down < 0;
+        Vector3 neck = Mean(at, neckBalls), low = Mean(at, lowBalls);
+        float upright = (neck - low).Normalized().Y, backH = Mean(at, backBalls).Y - ground;
+        float headH = (sk!.GlobalTransform * sk.GetBoneGlobalPose(head).Origin).Y - ground;
+        float d = (1 - Mathf.SmoothStep(DownLo, DownHi, backH)) * (1 - Mathf.SmoothStep(FlatLo, FlatHi, upright));
+        float up = Mathf.SmoothStep(UpLo, UpHi, headH) * Mathf.SmoothStep(UprightLo, UprightHi, upright);
+        if (first || justSettled) down = d;
+        else if (d > down) down = Mathf.Min(d, down + dt / DownRise);
+        else down = Mathf.Max(0, down - up * dt / DownFall);
+        if (first || justSettled || down <= 0) System.Array.Copy(x, drape, 8);
+        else
+        {
+            var carry = target[0] - drapeRoot;
+            for (int i = 0; i < 8; i++) drape[i] += carry;
+            drape[0] = target[0];
+            for (int k = 0; k < DrapePasses; k++)
+                for (int i = 1; i < 8; i++)
+                {
+                    var came = drape[i];
+                    drape[i].Y -= DrapeStep;
+                    drape[i] = drape[i - 1] + (drape[i] - drape[i - 1]).Normalized() * link[i];
+                    drape[i] = Out(drape[i], scale, -1, came);
+                    drape[i].Y = Mathf.Max(drape[i].Y, floor);
+                }
+        }
+        drapeRoot = target[0];
+        if (down > 0)
+        {
+            int steps = Mathf.Max(1, Mathf.CeilToInt(dt * 120f - 1e-3f));
+            var step = first || justSettled ? Vector3.Zero : (target[0] - rootPrev) / steps;
+            bool full = down >= 1 - 1e-4f;
+            for (int i = 1; i < 8; i++)
+            {
+                if (full) { x[i] = drape[i]; xp[i] = drape[i] - step; }
+                else lay[i] = x[i] + (drape[i] - x[i]) * down;
+            }
+        }
+        rootPrev = target[0];
+        justSettled = false;
+    }
+    bool justSettled;
+    Vector3[] lay = new Vector3[8];
 
     // (env HAIRDUMP: each frame's inputs and the chain as it starts, for an offline replica)
     void Dump(float dt, float ground)
