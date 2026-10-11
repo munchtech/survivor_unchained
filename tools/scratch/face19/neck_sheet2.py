@@ -80,7 +80,8 @@ rows = [("At the Look, front (%syellow: from her collarbone bones; portrait: the
         ('In play facing the camera (camera 12), 3x. Her head is bowed in this pose, so her neck hardly shows: the four read alike from the front too.',
          [fit(img('%s_pf_nk%s' % (tag, n)).crop(qbox), W) for n in L])]
 H = sum(r[1][0].height + 34 for r in rows) + 40 + 70 + 24
-CAP = ['%.2f  (+%d%% longer than her portrait)' % (r, round(100 * (r / ratios[4] - 1))) for r in ratios[:4]] + ['%.2f  (her portrait)' % ratios[4]]
+def vs(r): d = round(100 * (r / ratios[4] - 1)); return '%d%% %s than her portrait' % (abs(d), 'longer' if d >= 0 else 'shorter')
+CAP = ['%.2f  (%s)' % (r, vs(r)) for r in ratios[:4]] + ['%.2f  (her portrait)' % ratios[4]]
 sh = Image.new('RGB', (5 * (W + 8) + 8, H + 24), (24, 24, 24)); d = ImageDraw.Draw(sh)
 for i, n in enumerate(L): d.text((8 + i * (W + 8) + 6, 8), names[n], fill=(255, 230, 120), font=font)
 d.text((8 + 4 * (W + 8) + 6, 8), 'her portrait', fill=(255, 230, 120), font=font)
