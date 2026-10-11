@@ -9,6 +9,8 @@ of her throat above SPLIT (their moves eased out over the 2 cm above it) turned 
 the game that drew a stepped line along SPLIT across the front of her neck, her head's side up to 30% darker
 (Wildling, Vixen, Hard-won, Doe), and a dark crease under the chin (Moonlit, Saffron) (the owner, 10 October 2026).
 
+It also gives her head's shared points the graft's skin weights (weld_weights), so the two parts move as one.
+
 This holds every key's normals to her neck's own at SPLIT, eased into the key's over the BAND above it (as the keys'
 moves are eased in, heroine_head.py's _hold), and her head's shared points unmoved by any key (they moved up to a
 quarter of a millimetre), so the two parts meet as one surface under every face:
@@ -16,9 +18,10 @@ quarter of a millimetre), so the two parts meet as one surface under every face:
     python tools/assets/heroine_seam.py godot/art/people/heroine.glb [OUT.glb]
 
 heroine_head.py and heroine_outfits.py run it on every heroine.glb they write. Run again on a glb written without it;
-on one already done (its head's extras say seam_band) it does nothing.
+on one already done (its head's extras say seam_band and seam_weights) it does nothing.
 """
 import json
+import os
 import struct
 import sys
 
@@ -134,6 +137,41 @@ def _set(js, chunks, i, vals, minmax=False):
         a["min"], a["max"] = [float(v) for v in vals.min(0)], [float(v) for v in vals.max(0)]
 
 
+def _set_dense(js, chunks, i, vals):
+    """Accessor i given these values whole, in its own component type (joints are integers)."""
+    a = js["accessors"][i]
+    vals = np.ascontiguousarray(vals.astype(_CT[a["componentType"]]))
+    for k in ("bufferView", "byteOffset", "sparse"):
+        a.pop(k, None)
+    a["bufferView"] = len(js["bufferViews"])
+    js["bufferViews"].append({"buffer": 0})
+    chunks[a["bufferView"]] = vals.tobytes()
+
+
+def weld_weights(js, binc, chunks, hp, gp, HV, GV):
+    """Her head's points it shares with the graft given the graft's skin weights there, so the two move as one.
+    Two at the back left of her nape carried Head 0.027 on the head and 0.40 on the graft: any turn of her head
+    (a nod, the neck slider) opened a crack between them, about 0.5 cm on a 20-degree nod. Returns how many
+    points changed."""
+    d, gi = cKDTree(GV).query(HV)
+    shared = np.where(d < SHARED)[0]
+    changed = np.zeros(len(HV), bool)
+    sets = sorted(k[len("JOINTS_"):] for k in hp["attributes"] if k.startswith("JOINTS_"))
+    assert sets == sorted(k[len("JOINTS_"):] for k in gp["attributes"] if k.startswith("JOINTS_")), "head and graft weight sets differ"
+    loaded = {}
+    for n in sets:
+        for kind in ("JOINTS_", "WEIGHTS_"):
+            h = _read(js, binc, hp["attributes"][kind + n])
+            g = _read(js, binc, gp["attributes"][kind + n])
+            changed[shared] |= np.abs(h[shared] - g[gi[shared]]).max(1) > 1e-6
+            h[shared] = g[gi[shared]]
+            loaded[kind + n] = h
+    if changed.any():
+        for k, v in loaded.items():
+            _set_dense(js, chunks, hp["attributes"][k], v)
+    return int(changed.sum())
+
+
 def _smooth01(x):
     x = np.clip(x, 0, 1)
     return x * x * (3 - 2 * x)
@@ -164,9 +202,34 @@ def seam(path, out=None, band=BAND):
     dist, _ = cKDTree(HV[shared]).query(HV)
     w = _smooth01(dist / band)[:, None]
     names = hm.get("extras", {}).get("targetNames", [])
+    # (both parts must be skinned by one skin for their joint indices to agree)
+    skin_of = {n["mesh"]: n.get("skin") for n in js["nodes"] if "mesh" in n}
+    gm = next(m for m in js["meshes"] if gp in m["primitives"])
+    assert skin_of[js["meshes"].index(hm)] == skin_of[js["meshes"].index(gm)], "her head and the graft have different skins"
+    welded = None
+    if "seam_weights" not in hm.get("extras", {}):
+        welded = weld_weights(js, binc, chunks, hp, gp, HV, GV)
+        hm.setdefault("extras", {})["seam_weights"] = 1
+        print("SEAM: %d of her head's points shared with the graft given the graft's skin weights" % welded)
     if "seam_band" in hm.get("extras", {}):
-        print("SEAM: already done in", path, "(band %.0f mm) - nothing done" % (hm["extras"]["seam_band"] * 1000))
+        if welded is not None:
+            _save(out or path, js, chunks)
+            print("SEAM: keys already held in", path, "- weights welded, written", out or path)
+        else:
+            print("SEAM: already done in", path, "(band %.0f mm) - nothing done" % (hm["extras"]["seam_band"] * 1000))
         return
+    # (first her keys' moves under her jaw made smooth down to SPLIT: heroine_throat.py; then read anew, its
+    # accessors being in new views)
+    import heroine_throat
+    if heroine_throat.throat(js, binc, chunks, hm, hp, shared):
+        import tempfile
+        tmp = os.path.join(tempfile.gettempdir(), "heroine_seam_%d.glb" % os.getpid())
+        _save(tmp, js, chunks)
+        js, binc = _load(tmp)
+        os.remove(tmp)
+        chunks = {i: binc[bv.get("byteOffset", 0):bv.get("byteOffset", 0) + bv["byteLength"]] for i, bv in enumerate(js["bufferViews"])}
+        mats = [m.get("name") for m in js.get("materials", [])]
+        hm, hp = prim_of("skin_head")
     turned, moved = [], 0.0
     hn = _read(js, binc, hp["attributes"]["NORMAL"])
     for k, t in enumerate(hp["targets"]):
