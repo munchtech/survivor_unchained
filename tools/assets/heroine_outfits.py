@@ -3784,7 +3784,7 @@ def pl_rim(pos, tris, F_):
 
 
 def pl_lame(name, above, F_, row, O, V, E=0.016, tuck=0.0045, taper=-0.04, flare=0.004, joggle=0.003,
-            rc=0.010, thick=0.0015, rv_end=0.022, rv_up=0.009):
+            rc=0.010, thick=0.0015, rv_end=0.022, rv_up=0.009, cut=None):
     """A lame: a band round her arm under the rim of the plate above it, built
     in her arm's frame and never drawn on her skin (an outline on her skin,
     lifted off it, slid 10 to 18 mm, and no tuck survived: judge 5). Its top
@@ -3832,7 +3832,11 @@ def pl_lame(name, above, F_, row, O, V, E=0.016, tuck=0.0045, taper=-0.04, flare
     _, jn = cKDTree(C).query(uv2)
     t_ = tt[jn]
     d_ = ((uv2 - C[jn]) * Nn[jn]).sum(1)
-    tc, hw, dc, hh = L / 2, (L - 2 * E) / 2, (V - O) / 2, (V + O) / 2
+    # (`cut`: the hidden top lowered cut[0] at its back end, over cut[1] from
+    # it, eased back over cut[2]: at her idle the back of her arm rises under
+    # the dome, and lame 1's top corner came up through the dome, judge 7)
+    Ot = O - (cut[0] * (1 - ramp(t_ - E, cut[1], cut[1] + cut[2])) if cut else 0.0)
+    tc, hw, dc, hh = L / 2, (L - 2 * E) / 2, (V - Ot) / 2, (V + Ot) / 2
     qx, qy = np.abs(t_ - tc) - (hw - rc), np.abs(d_ - dc) - (hh - rc)
     field = -(np.minimum(np.maximum(qx, qy), 0) + np.hypot(np.maximum(qx, 0), np.maximum(qy, 0)) - rc)
     th_g = th_of(uv2[:, 0])
@@ -3950,6 +3954,7 @@ def ranger_pauldron():
     PL_V = tuple(float(x) for x in os.environ.get("PL_V", "0.030,0.029,0.028").split(","))   # (and shows below it)
     PL_LIFT = float(os.environ.get("PL_LIFT", "0.026"))
     PL_TUCK = float(os.environ.get("PL_TUCK", "0.0045"))
+    PL_CUT = tuple(float(x) for x in os.environ["PL_CUT"].split(",")) if os.environ.get("PL_CUT") else None   # (lame 1's hidden back top lowered; off until tuned)
     zone = ANDR(cap(sh, 0.11), Z - (sh[2] - 0.11 * 0.55), r=0.011)
     RIGID_UV["ranger.pauldron0"] = (ctr, ax_, False)
     dome = piece("ranger.pauldron0", zone, "bronze", lift=PL_LIFT, clear=0.015, thick=0.0015, smooth=14,
@@ -3966,7 +3971,7 @@ def ranger_pauldron():
     above = (pd, td)
     for k in (1, 2, 3):
         made, above = pl_lame(f"ranger.pauldron{k}", above, F_, pl_row(wd[0], PL_W[k]), PL_O[k - 1], PL_V[k - 1],
-                              tuck=PL_TUCK, rv_end=0.022 if k < 3 else 0.012)
+                              tuck=PL_TUCK, rv_end=0.022 if k < 3 else 0.012, cut=PL_CUT if k == 1 else None)
         out += made
     return out
 
