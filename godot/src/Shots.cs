@@ -158,6 +158,12 @@ public partial class Shots : Node
             int l = sk.FindBone("clavicle_l"), r = sk.FindBone("clavicle_r");
             if (cam == null || l < 0 || r < 0) continue;
             var at = sk.GlobalTransform * ((sk.GetBoneGlobalPose(l).Origin + sk.GetBoneGlobalPose(r).Origin) * 0.5f);
+            // --mark-offset U,F (metres): up and forward of her skeleton, so the point can be moved to the notch.
+            if (Args.Get("mark-offset") is string mo && mo.Split(',') is { Length: 2 } uf)
+            {
+                var bs = sk.GlobalTransform.Basis.Orthonormalized();
+                at += bs * (Vector3.Up * float.Parse(uf[0], CultureInfo.InvariantCulture) + Vector3.Back * float.Parse(uf[1], CultureInfo.InvariantCulture));
+            }
             if (cam.IsPositionBehind(at)) continue;
             var p = cam.UnprojectPosition(at);
             GD.Print($"MARK {p.X:0.0} {p.Y:0.0}");
