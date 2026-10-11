@@ -79,6 +79,10 @@ public static class Boons
         "hold_the_crossing", "blood_up", "second_reading", "hunters_blind",
     ];
 
+    /// <summary>The Flare's great blessings (CLASSES.md section 3.4): offered only to a survivor who
+    /// carries a Flare. Their effects live in Flare.cs; they do not deepen.</summary>
+    public static readonly string[] FlareGreat = ["bright_hour", "ember_answers_twice", "short_wick", "called_shot"];
+
     /// <summary>What each great blessing is for (docs/SKILLS_DESIGN.md, "Great
     /// blessings"): every path's list holds a ward, and a path slow to fell a
     /// champion holds an answer.</summary>
@@ -92,12 +96,13 @@ public static class Boons
         ["bloodthirst"] = GreatRole.Ward, ["iron_vow"] = GreatRole.Ward, ["from_the_ashes"] = GreatRole.Ward, ["grounding"] = GreatRole.Ward,
         ["hunters_mark"] = GreatRole.Answer, ["rootbind"] = GreatRole.Answer, ["go_for_the_throat"] = GreatRole.Answer,
         ["restless_hands"] = GreatRole.Tempo, ["ember_tithe"] = GreatRole.Tempo,
+        ["bright_hour"] = GreatRole.Power, ["ember_answers_twice"] = GreatRole.Ward, ["short_wick"] = GreatRole.Tempo, ["called_shot"] = GreatRole.Answer,
         ["hold_the_crossing"] = GreatRole.Power, ["blood_up"] = GreatRole.Power, ["second_reading"] = GreatRole.Power, ["hunters_blind"] = GreatRole.Power,
     };
     /// <summary>Passive skills a survivor can hold at once.</summary>
     public const int MaxPassives = 6;
     public static bool IsMilestone(int level) => Array.BinarySearch(Milestones, level) >= 0;
-    public static bool IsGreat(string id) => Array.IndexOf(Great, id) >= 0;
+    public static bool IsGreat(string id) => Array.IndexOf(Great, id) >= 0 || Array.IndexOf(FlareGreat, id) >= 0;
 
     static StatMod Inc(string stat, double v, string source) => new(stat, ModKind.Inc, v, source);
     static StatMod Flat(string stat, double v, string source) => new(stat, ModKind.Flat, v, source);
@@ -325,6 +330,14 @@ public static class Boons
             Text = "From cover, the first blow is the one that counts: half your blows on anything unhurt are critical strikes.",
             Mods = r => r >= 3 ? [Flat(Stat.CritDamage, 0.25, "syn:hunters_blind")] : [],
             DeeperText = ["All of them.", "+25% critical strike damage."] },
+        new() { Id = "bright_hour", Name = "Bright Hour", Icon = "expand", Rarity = Rarity.Legendary, Max = 1, Kind = BoonKind.Blessing,
+            Text = "Your Flare is 40% larger." },
+        new() { Id = "ember_answers_twice", Name = "The Ember Answers Twice", Icon = "heart", Rarity = Rarity.Legendary, Max = 1, Kind = BoonKind.Blessing,
+            Text = "Below a quarter of your health, the Flare fills to full: once a night." },
+        new() { Id = "short_wick", Name = "Short Wick", Icon = "wing", Rarity = Rarity.Legendary, Max = 1, Kind = BoonKind.Blessing,
+            Text = "Your Flare fills 35% faster." },
+        new() { Id = "called_shot", Name = "Called Shot", Icon = "crosshair", Rarity = Rarity.Legendary, Max = 1, Kind = BoonKind.Blessing,
+            Text = "Your Flare deals 60% more to champions and bosses." },
         new() { Id = "ember_tithe", Name = "Ember Tithe", Icon = "coin", Rarity = Rarity.Legendary, Max = 3, Kind = BoonKind.Blessing,
             Text = "25% more ember, and ember stones come to you from twice as far.",
             Mods = r => [Inc(Stat.XpGain, r >= 2 ? 0.45 : 0.25, "syn:ember_tithe"), Inc(Stat.PickupRadius, 1, "syn:ember_tithe")],

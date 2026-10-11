@@ -87,6 +87,7 @@ public static class Charts
             o.Add(new ChartMod(oath.Id, oath.Name, oath.Asks, true, 0.10, 0.06, oath.PackSize > 1 ? 0.0 : 0.05, oath.Rule, oath.Id));
         o.AddRange(
         [
+            new("smothered", "Smothered", "Your Flare fills 30% slower", true, 0.08, 0.05, 0.0, r => r.FlareFill *= 0.7),
             new("signed", "Signed", "Every champion wears one more Sign", true, 0.12, 0.10, 0.0),
             new("twin", "Twin guardians", "Two minibosses at each altar", true, 0.14, 0.08, 0.0),
             new("contested", "Contested", "A second people's packs hold a third of the ground", true, 0.14, 0.06, 0.10),
@@ -97,6 +98,7 @@ public static class Charts
             new("leaden", "of Lead", "Your dash comes back two fifths slower", false, 0.08, 0.05, 0.05, r => r.DashRecharge *= 0.6),
             new("sleepless", "of No Rest", "You do not regenerate", false, 0.08, 0.05, 0.05, r => r.RegenMul = 0),
             new("moonless", "of the Moonless", "Your light carries half as far", false, 0.10, 0.08, 0.0, r => r.Light *= 0.5),
+            new("bright", "of the Bright", "A Flare mends nothing", false, 0.06, 0.04, 0.0, r => r.FlareMends = false),
             new("sour", "of Sour Draughts", "Draughts mend half as much", false, 0.08, 0.05, 0.05, r => r.DraughtMul *= 0.5),
         ]);
         return o.ToArray();
