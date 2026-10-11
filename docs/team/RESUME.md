@@ -42,6 +42,16 @@ Each lead runs in its predecessor's worktree (built art kept); read the "Paused 
 eckrows.py`; `F` = `181eef02 scratchpad\f13`.
 **New since this morning:** context budgets are enforced by a hook (README "Working lean": `Context budget: NNk` in every brief); agent types list only their tools, so spawns should start near 15k (coordinator.md: check it on your first spawn); disk rules in `CLAUDE.md`.
 
+## Marionette: planned in, not started (the owner, 11 October)
+
+The owner's character app (`C:\Users\munch\Desktop\Marionette`, its own git repo, `main`, no remote, no worktrees) becomes a team tool for the crowd and secondary cast (`docs/art/MODELS_TO_MAKE.md`) on the same MakeHuman base. Goal, rules and state: its `HANDOFF.md` "Start here" and `docs/HISTORY.md` "The goal". Every step is judged against both bars, Meshy's ease and Maya's quality; a step isn't done until it's a click in the app that gives a good result.
+- **When:** the body-and-outfits lead takes it once the heroine's outfits pass their judge (its next real step, outfits as layers, ports `heroine_outfits.py`). Hair joins after the face lead's hair system ships (no separate hair library). The Godot export check (`groundSpeed` in GLB extras, a catalogue character beside the heroine) goes to rendering.
+- **Before any agent runs it:**
+  1. Wrap its Krea and TRELLIS jobs in `tools/turn.py take gpu "marionette: <job>"` / `give gpu`. On 10 October Godot shots took VRAM mid-TRELLIS and it hung for 80 minutes. WebGL work needs no GPU turn, but it runs headless Chrome.
+  2. Its ComfyUI watchdog (`comfy.cjs`, 570c1a0) may restart only a dead instance it started itself, inside the GPU turn. It never kills a live one ("free it, never kill it").
+  3. One agent at a time (fixed Chrome ports 9336 and 9337), committing to `main` as it goes.
+  4. The legal lead logs provenance: MakeHuman/MPFB2 CC0, Krea 2 concepts, TRELLIS.2, the Mystic LoRA, and the Quaternius, Mesh2Motion and CMU motions. Steam rule: a smooth crotch, no genitals.
+
 ## 10 October 2026, night: disk cleanup (the owner). Read if you restart a paused area
 
 Worktrees left after merging filled C: (13 GB free); the rules are now in `CLAUDE.md`. Every unmerged worktree was checked, and its wanted edits committed to its own branch and pushed. **Successors merge their area's WIP commit first** (unverified, on an old base):
