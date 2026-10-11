@@ -453,6 +453,7 @@ public sealed partial class Battle
         TickStones(dt);
         TickReaver(dt);
         TickArcanist(dt);
+        TickStalker(dt);
         // Warding light recharges.
         int blockRank = RoundInt(st.Get(Stat.Block));
         if (blockRank > 0 && p.BlockT > 0) p.BlockT = Math.Max(0, p.BlockT - dt);
@@ -567,7 +568,7 @@ public sealed partial class Battle
         p.DashDX = dx / m; p.DashDZ = dz / m;
         p.DashT = Abilities.Dash.Time;
         p.Iframes = Math.Max(p.Iframes, Abilities.Dash.Iframes);
-        p.DodgeWindow = Abilities.Dash.Perfect * (Boons.GetValueOrDefault("duelists_grace") >= 2 ? 1.5 : 1);
+        p.DodgeWindow = Abilities.Dash.Perfect * (Boons.GetValueOrDefault("duelists_grace") >= 2 ? 1.5 : 1) * StalkerDodgeWindow();
         p.WakeX = p.X; p.WakeZ = p.Z;
         p.PerfectThisDash = false;
         p.DashCharges--;
@@ -580,6 +581,7 @@ public sealed partial class Battle
             Events.Emit(new Ev.Dash { X0 = x0, Z0 = z0, X1 = x0 + p.DashDX * len, Z1 = z0 + p.DashDZ * len });
         }
         Fire(TriggerEvent.Dash, new ProcCtx { X = p.X, Z = p.Z });
+        StalkerOnDash();
         OpenGate(x0, z0);
         return true;
     }
@@ -732,6 +734,7 @@ public sealed partial class Battle
         dmg *= LampDamageMul(e, school, tags, o);
         dmg *= ReaverDamageMul(e, school, tags, o);
         dmg *= ArcanistDamageMul(e, school, tags, o);
+        dmg *= StalkerDamageMul(e, school, tags, o);
         // Warded by its own kind's lamp or drum.
         if (e.WardT > 0) dmg *= 1 - e.Ward;
         // Resistances.
@@ -749,13 +752,14 @@ public sealed partial class Battle
         bool crit = o.Crit;
         if (!crit && !o.NoCrit && !o.Dot)
         {
-            double chance = st.Get(Stat.CritChance) + (Player.SureCritT > 0 ? 1 : 0) + (o.Weapon?.CritBonus ?? 0);
+            double chance = st.Get(Stat.CritChance) + (Player.SureCritT > 0 ? 1 : 0) + (o.Weapon?.CritBonus ?? 0) + StalkerCritAdd(e, tags, o);
             // The Hunters' Blind: the first blow on anything unhurt.
             if (e.Hp >= e.MaxHp && Boons.TryGetValue("hunters_blind", out int blind)) chance += blind >= 2 ? 1 : 0.5;
             // Night-Eyes: the far ones, in the dark, are seen best.
             if (Boons.TryGetValue("precision", out int eyes) && Dist(e.X, e.Z, Player.X, Player.Z) > 6) chance += 0.03 * eyes;
             crit = Rng.Next() < chance;
         }
+        if (crit && StalkerNoTrue) crit = false; // roadknife.adders_patience
         if (crit) dmg *= st.Get(Stat.CritDamage) * (e.Hp < e.MaxHp * 0.5 && Boons.TryGetValue("ferocity", out int tooth) ? 1 + 0.12 * tooth : 1);
         else if ((Rules.IronSkin > 0 || e.Def.IronSkin > 0) && e.Disposition == Disposition.Hostile) { dmg *= 1 - Math.Max(Rules.IronSkin, e.Def.IronSkin); blocked = true; }
         dmg = Math.Max(0.5, dmg);
@@ -828,6 +832,7 @@ public sealed partial class Battle
 
         ReaverOnHit(e, o);
         ArcanistOnHit(e, school, tags, o, dmg);
+        StalkerOnHit(e, o, dmg);
         if (e.Boss) Hooks.OnBossHit?.Invoke(e, school, dmg);
         if (e.Hp <= 0 && e.Alive && e.State != EnemyState.Dying) KillEnemy(e, true, o.Weapon, depth);
         else ArtOnHit(e);
@@ -877,6 +882,7 @@ public sealed partial class Battle
         bool credited = e.Credit;
         if (weapon != null) { weapon.Kills++; ReaverWeaponKill(weapon); }
         ArcanistOnDeath(e, e.Credit);
+        StalkerOnDeath(e);
         if (credited && e.Disposition != Disposition.Ally)
         {
             FlareOnKill(e, e.Status.Has(StatusKind.Bleed) && e.LastWeapon == null);
@@ -962,7 +968,7 @@ public sealed partial class Battle
         double sd = Stats.Get(Stat.StatusDamage) * Stats.Get(Stat.StatusDamageOf(p.Kind));
         double dps = hitDamage * p.Power / Math.Max(0.5, p.Duration) * sd;
         // Longer burning is more burning: the rate holds, the time stretches.
-        double dur = ArcanistStatusDuration(p.Kind, ReaverStatusDuration(e, p.Kind, p.Duration * Stats.Get(Stat.StatusDurationOf(p.Kind))));
+        double dur = ArcanistStatusDuration(p.Kind, StalkerStatusDuration(e, p.Kind, ReaverStatusDuration(e, p.Kind, p.Duration * Stats.Get(Stat.StatusDurationOf(p.Kind)))));
         from ??= credit;
         switch (p.Kind)
         {
@@ -988,7 +994,7 @@ public sealed partial class Battle
             case StatusKind.Poison:
             {
                 var cur = s.Ensure(StatusKind.Poison, 0, 0, 0, 0.5);
-                cur.Stacks = Math.Min(10, cur.Stacks + 1);
+                cur.Stacks = Math.Min(StalkerPoisonCap, cur.Stacks + 1);
                 if (dps >= cur.Power) cur.From = from;
                 cur.Power = Math.Max(cur.Power, dps);
                 cur.T = Math.Max(cur.T, dur);
@@ -1042,6 +1048,7 @@ public sealed partial class Battle
         }
         if (p.Kind is StatusKind.Mark or StatusKind.Bound) MoonOnTheChain(e);
         ReaverAfterStatus(e, p, hitDamage, depth);
+        StalkerAfterStatus(e, p, hitDamage, depth);
         Events.Emit(new Ev.Status { Target = e.Id, Kind = p.Kind, X = e.X, Z = e.Z });
         if (depth < 3) Fire(TriggerEvent.Status, new ProcCtx { Target = e, X = e.X, Z = e.Z, Damage = hitDamage, School = School.Physical, Tags = Array.Empty<Tag>(), Applied = p.Kind, Depth = depth + 1 });
     }

@@ -280,4 +280,63 @@ public sealed class LampRulesTests
         Assert.False(a.Status.Has(StatusKind.Frozen));
         Assert.True(n.Hp < n.MaxHp);
     }
+
+    [Fact]
+    public void Stalker_poisoned_steel_is_a_size_and_long_sights_near_price_is_kept_in_full_by_night()
+    {
+        double Hit(LampLoadout? l, double dx, bool poisoned, params Tag[] tags)
+        {
+            var b = BattleTests.Arena(2);
+            if (l != null) b.Lamps = l;
+            var e = b.SpawnEnemy("wolf", b.Player.X + dx, b.Player.Z)!;
+            e.MaxHp = e.Hp = 1e6;
+            if (poisoned) e.Status[StatusKind.Poison] = new StatusSlot(10, 1, 0, 0);
+            return b.HitEnemy(e, 100, School.Physical, tags, new HitOpts { NoCrit = true, Projectile = true });
+        }
+        foreach (bool night in new[] { false, true })
+        {
+            double k = night ? 0.25 : 1;
+            LampLoadout Lit(params LampEffect[] r) { var l = new LampLoadout { Night = night }; foreach (var x in r) l.Add(x); return l; }
+            double steel = Hit(null, 5, true, Tag.Steel);
+            Assert.Equal(steel * (1 + 0.1 * k), Hit(Lit(Rule("poisoned.steel", ("more", 0.1))), 5, true, Tag.Steel), 4);
+            var sight = Rule("long_sight", ("range", 8), ("more", 0.5), ("near", 4), ("weaker", 0.3));
+            double far = Hit(null, 11, false, Tag.Ranged), close = Hit(null, 2, false, Tag.Ranged);
+            Assert.Equal(far * (1 + 0.5 * k), Hit(Lit(sight), 11, false, Tag.Ranged), 4);
+            Assert.Equal(close * 0.7, Hit(Lit(sight), 2, false, Tag.Ranged), 4);
+        }
+    }
+
+    [Fact]
+    public void Volley_looses_two_more_arrows_by_day_and_one_by_night_and_only_volley()
+    {
+        int Count(bool night, string skill)
+        {
+            var b = BattleTests.Arena(1, (skill, 1));
+            b.Lamps = new LampLoadout { Night = night };
+            b.Lamps.Add(new LampEffect { Do = LampDo.Rule, Rule = "skill.projectiles", Skill = "volley", Args = new() { ["add"] = 2 } });
+            return Firing.CountOf(b, b.Weapons[0]);
+        }
+        int bare = Firing.CountOf(BattleTests.Arena(1, ("volley", 1)), BattleTests.Arena(1, ("volley", 1)).Weapons[0]);
+        Assert.Equal(bare + 2, Count(false, "volley"));
+        Assert.Equal(bare + 1, Count(true, "volley"));
+        int other = Firing.CountOf(BattleTests.Arena(1, ("knifestorm", 1)), BattleTests.Arena(1, ("knifestorm", 1)).Weapons[0]);
+        Assert.Equal(other, Count(false, "knifestorm"));
+    }
+
+    [Fact]
+    public void Never_still_halves_the_blows_after_a_second_still_in_full_by_night_and_dashes_return_a_quarter_less_faster()
+    {
+        foreach (bool night in new[] { false, true })
+        {
+            var b = BattleTests.Arena(2);
+            b.Lamps = new LampLoadout { Night = night };
+            b.Lamps.Add(Rule("never_still", ("faster", 0.4), ("weaker", 0.5)));
+            var e = b.SpawnEnemy("wolf", b.Player.X + 5, b.Player.Z)!;
+            e.MaxHp = e.Hp = 1e6;
+            var o = new HitOpts { NoCrit = true, Projectile = true };
+            double moving = b.HitEnemy(e, 100, School.Physical, [Tag.Ranged], o);
+            b.Player.StillT = 1.5;
+            Assert.Equal(moving * 0.5, b.HitEnemy(e, 100, School.Physical, [Tag.Ranged], o), 4);
+        }
+    }
 }

@@ -106,7 +106,7 @@ public static class Firing
 {
     public static double CooldownOf(Battle b, WeaponInst w)
     {
-        double c = (w.Def.Base.Cooldown ?? 1) * b.Stats.Get(Stat.Cooldown) * w.Mods.Cooldown * b.ReaverCooldownMul(w) * b.ArcanistCooldownMul(w);
+        double c = (w.Def.Base.Cooldown ?? 1) * b.Stats.Get(Stat.Cooldown) * w.Mods.Cooldown * b.ReaverCooldownMul(w) * b.ArcanistCooldownMul(w) * b.StalkerCooldownMul(w);
         if (w.Evolution != null) c *= w.Evolution.Mods.Cooldown ?? 1;
         return Math.Max(0.08, Math.Min(20, c));
     }
@@ -139,7 +139,7 @@ public static class Firing
         int n = baseCount ?? w.Def.Base.Projectiles ?? 1;
         if (w.Rank >= Content.Weapons.ProjRankA) n++;
         if (w.Rank >= Content.Weapons.ProjRankB) n++;
-        n += RoundInt(b.Stats.Get(Stat.Projectiles)) + w.Mods.Projectiles + b.ArcanistProjectiles(w);
+        n += RoundInt(b.Stats.Get(Stat.Projectiles)) + w.Mods.Projectiles + b.ArcanistProjectiles(w) + b.StalkerProjectiles(w);
         if (w.Evolution != null) n += w.Evolution.Mods.Projectiles ?? 0;
         return Math.Max(1, n);
     }
@@ -152,7 +152,7 @@ public static class Firing
     }
 
     static int PierceOf(Battle b, WeaponInst w) =>
-        (int)(w.Num(s => s.Pierce) ?? 0) + RoundInt(b.Stats.Get(Stat.Pierce)) + w.Mods.Pierce + (w.Evolution?.Mods.Pierce ?? 0);
+        b.StalkerPierce(w, (int)(w.Num(s => s.Pierce) ?? 0) + RoundInt(b.Stats.Get(Stat.Pierce)) + w.Mods.Pierce + (w.Evolution?.Mods.Pierce ?? 0));
 
     static double RangeOf(WeaponInst w) => w.Num(s => s.Range) ?? 14;
 
@@ -252,11 +252,12 @@ public static class Firing
             pr.Bounces = (int)(w.Num(s => s.Bounces) ?? 0) + (w.Evolution?.Mods.Bounces ?? 0);
             pr.Life = life ?? DurationOf(b, w, w.Num(s => s.Life) ?? 2.0) / (1 + Content.Weapons.DurationStep * (w.Rank - 1));
             pr.Homing = (w.Num(s => s.Homing) ?? 0) + w.Mods.Homing;
-            pr.Seek = b.ArcanistSeek(w, SeekOf(w));
+            pr.Seek = b.StalkerSeek(w, b.ArcanistSeek(w, SeekOf(w)));
             // A hunter of the strongest or the marked picks its own prey in flight.
             pr.Target = pr.Seek is Seek.Strongest or Seek.Elite or Seek.Marked ? -2 : target ?? -2;
             pr.Weapon = w.Id;
             b.ArcanistLaunched(pr, w);
+            b.StalkerLaunched(pr, w);
             pr.Art = w.Art;
             pr.Status = w.StatusOf;
             var splash = w.Num(s => s.Splash);
