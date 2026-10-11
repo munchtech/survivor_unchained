@@ -19,7 +19,9 @@ origin facing +Z, her left at +X, up +Y; metres and degrees):
                "thumb": (x, y, z) instead of blade and knuckles: the wrist
                       left straight, the forearm rolled so the thumb side
                       faces as near this way as it can (a carried weapon),
-               "frame": "char" | "chest" (which space blade/knuckles/pos use)}
+               "frame": "char" | "chest" (which space blade/knuckles/pos use),
+               "ext": degrees the wrist may bend back (a hand on the ground
+                      under her weight; default EXT)}
     foot_l/r  {"pos": (x, y, z) the ankle (y 0 = flat on the ground),
                "rot": (yaw, pitch, roll), "pole": (x, y, z) the knee's way,
                "toe": degrees the toes bend up}
@@ -390,6 +392,9 @@ class Rig:
                 continue
             ua, la, ha = I[f"upperarm_{side}"], I[f"lowerarm_{side}"], I[f"hand_{side}"]
             frame = chest if spec.get("frame", "char") == "chest" else np.array([0, 0, 0, 1.0])
+            # A hand pushing on the ground under her weight bends back further
+            # than she would hold it ("ext"): a push-up's wrist is at 85-90.
+            self.EXT = float(spec.get("ext", Rig.EXT))
             sh = gpos[ua]
             arc_t = pos_t = None
             if "arc" in spec:
@@ -582,6 +587,7 @@ class Rig:
                 for j in [ha] + self._below(ha):
                     delta[j] = delta[la]
                 refresh()
+        self.EXT = Rig.EXT
 
         # Legs.
         for side in "lr":
@@ -694,6 +700,8 @@ FINGER_PRESETS = {
     "rest": {"curl": 0, "thumb": 0},
     "relaxed": {"curl": 0.28, "thumb": 0.15, "cascade": 0.25},
     "open": {"curl": 0.05, "thumb": 0.0, "spread": 4},
+    # Pressed flat on the ground under her weight: bent back a little.
+    "flat": {"curl": -0.12, "thumb": 0.0, "spread": 6},
     "spread": {"curl": 0.0, "thumb": -0.1, "spread": 10},
     "claw": {"curl": 0.45, "thumb": 0.2, "spread": 9, "tip": 0.6},
     "grip": {"curl": 0.9, "thumb": 0.65, "cascade": 0.08},
