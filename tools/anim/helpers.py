@@ -83,8 +83,25 @@ SPEC = {
         # it the crease folds in deep, with the bones each side, hidden
         # under them as before the helpers; the share rounds the outside.
         "crease": {"cut": 1.0, "reach": 0.035},
+        # The point of a joint (the elbow's olecranon): on the side away
+        # from the crease, a patch round the joint's line whose blend is
+        # sharpened to a step at `at` metres along the bone (none of the
+        # share there), so the bone below carries the tip and the skin
+        # above runs flat into it: a point at a deep bend, not a round cap.
+        # half/fade: the patch's half-width round the back, in degrees, and
+        # its fade beyond; reach/feather: along the bone, either side of
+        # `at`, in metres; band: the step's half-width.
+        # Tried as a step (band 4-20 mm): it turns the tip's faces over past
+        # 120 degrees (linear blend across a sharp step); off until a better
+        # law. "point": {"lowerarm_share_{s}": {"half": 50, "fade": 30,
+        # "reach": 0.025, "feather": 0.015, "band": 0.004, "at": 0.0}},
     },
 }
+
+
+def _smooth(t):
+    t = np.clip(t, 0.0, 1.0)
+    return t * t * (3 - 2 * t)
 
 # Where along a parent's line a twist bone lies: toward its main child.
 MAIN_CHILD = {"upperarm": "lowerarm", "lowerarm": "hand"}
@@ -277,9 +294,30 @@ def split(W, P, index, heads, front=None):
                 # knee came to a point.)
                 tot = W[:, a] + W[:, b]
                 x = np.where(tot > 1e-9, W[:, b] / np.maximum(tot, 1e-9), 0.0)
-                mid = tot * x * (1 - x)
                 k = cfg["share"]
                 hs = next(h for h in SPEC["helpers"] if h["name"] == share)
+                po = (cfg.get("point") or {}).get(share)
+                if po and front is not None:
+                    # The joint's point: x sharpened to a step on the far
+                    # side from the crease, and the share cut there.
+                    j = np.asarray(heads[low.replace("{s}", s)], float)
+                    ax = j - np.asarray(heads[top.replace("{s}", s)], float)
+                    ax = ax / np.linalg.norm(ax)
+                    w = np.asarray(front, float) * (1.0 if hs["way"] == "front" else -1.0)
+                    w = w - ax * (w @ ax)
+                    w = w / np.linalg.norm(w)
+                    rel = P - j
+                    along = rel @ ax
+                    perp = rel - along[:, None] * ax
+                    cosang = (perp @ -w) / np.maximum(np.linalg.norm(perp, axis=1), 1e-9)
+                    c0, c1 = math.cos(math.radians(po["half"] + po["fade"])), math.cos(math.radians(po["half"]))
+                    f = _smooth((cosang - c0) / (c1 - c0))
+                    if "reach" in po:
+                        f = f * _smooth((po["reach"] + po["feather"] - np.abs(along - po["at"])) / po["feather"])
+                    step = _smooth((along - po["at"] + po["band"]) / (2 * po["band"]))
+                    x = x * (1 - f) + step * f
+                    k = k * (1 - f)
+                mid = tot * x * (1 - x)
                 cr = cfg.get("crease")
                 if cr and front is not None and "pivot" in hs:
                     # How far into the crease a point lies: along her front
