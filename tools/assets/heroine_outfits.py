@@ -4171,18 +4171,23 @@ if BODY_OUT:
             # vaulted): it stands well off her, and her calf, ankle and toes
             # would come through it as she moved.
             # Every other piece keeps the standard rule and its 12 mm ray.
+            # (how deep under the top edge both the hit and her skin are: a
+            # long ray from skin just past a boot's edge grazed its wall, and
+            # tucked bare skin deep there)
             dp = deep[hit[2]] if hit[0] is not None else None
-            if hit[0] is not None and hit[3] > 0.012 and (dp is None or LEGW[dp[2]][jj[v.index]] < 0.3):
-                hit, dp = (None, None, None, None), None
+            t_ = 0.0
+            if dp is not None and LEGW[dp[2]][jj[v.index]] >= 0.3:
+                ka_ = np.arange(len(dp[0]) + 1) * 2 * np.pi / len(dp[0])
+                d_ = [np.interp(np.mod(np.arctan2(q[1] - dp[1][1], q[0] - dp[1][0]), 2 * np.pi), ka_, np.r_[dp[0], dp[0][:1]]) - q[2]
+                      for q in (hit[0], co)]
+                t_ = float(ramp(min(d_), 0.04, 0.08))
+            if hit[0] is not None and hit[3] > 0.012 and t_ <= 0:
+                hit = (None, None, None, None)
             if proud[v.index] and tree.ray_cast(co + n * 0.0005, -n, 0.015)[0] is not None:
                 vals[v.index, k] = 1
             elif hit[0] is not None:
                 vals[v.index, k] = 1.0 if bump[v.index] else min(cap[hit[2]], 0.8 * np.clip((0.005 - hit[3] - 0.0005) / 0.004, 0, 1))
-                if dp is not None:
-                    h_ = np.array(hit[0][:])
-                    a_ = np.mod(np.arctan2(h_[1] - dp[1][1], h_[0] - dp[1][0]), 2 * np.pi)
-                    t_ = ramp(np.interp(a_, np.arange(len(dp[0]) + 1) * 2 * np.pi / len(dp[0]), np.r_[dp[0], dp[0][:1]]) - h_[2], 0.04, 0.08)
-                    vals[v.index, k] = vals[v.index, k] * (1 - t_) + t_
+                vals[v.index, k] = vals[v.index, k] * (1 - t_) + t_
             hid += vals[v.index, k] > 0
         # Tucked in gradually from the border, a third, two thirds, then all
         # the way, so her skin slopes under a piece's edge as if it pressed
