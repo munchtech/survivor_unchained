@@ -4529,8 +4529,51 @@ def ranger_spaulder():
         known = (own >= 0) | ((past[0] > FAR_W[0]) & (past[1:].min(0) > FAR_W[1]))
         return fill(TRIS_L[0], np.where((own >= 0)[:, None], rows[np.maximum(own, 0)], wt), known)
 
-    out = piece("ranger.spaulder", leaf, LKEY, lift=LIFT, thick=THK, smooth=10, soften=10, iron=20,
-                trim=("darkleather", 0.006, 0.0006, 0.0013), stiff=[conform], weigh=weigh) + out
+    lm = piece("ranger.spaulder", leaf, LKEY, lift=LIFT, thick=THK, smooth=10, soften=10, iron=20,
+               trim=("darkleather", 0.006, 0.0006, 0.0013), stiff=[conform], weigh=weigh)
+    # (its binding and stitches on the weights the leather's edge ends with:
+    # the binding took the sheet's weights before finish() eased them again,
+    # and at her idle the two parted by up to 9 mm at the lower corners (26 mm
+    # over the sweep): the leather rose over the binding in a ragged edge with
+    # her skin showing, and the rear corner hung off as a tongue, judge 8)
+    sheet = lm[0]
+    vs_ = sheet.data.vertices
+    sp_ = np.array([sheet.matrix_world @ v.co for v in vs_])
+    sw_ = np.zeros((len(vs_), len(BONES)))
+    for v in vs_:
+        for gg in v.groups:
+            sw_[v.index, BI[sheet.vertex_groups[gg.group].name]] = gg.weight
+    kd_ = cKDTree(sp_)
+    rings = {}
+    # (one set to each ring of the binding, as tube() gives, from the
+    # leather round the ring's centre, eased along it: each point of a ring
+    # on its own nearest leather, the roll came out toothed as she moved)
+    for o in sorted([o for o in lm[1:] if o is not None], key=lambda o: "_stitch" in o.name):
+        op_ = np.array([o.matrix_world @ v.co for v in o.data.vertices])
+        if "_bind" in o.name and len(op_) % 12 == 0:
+            rc_ = op_.reshape(-1, 12, 3).mean(1)
+            d_, j_ = kd_.query(rc_, k=8)
+            g_ = np.exp(-0.5 * (d_ / 0.003) ** 2) + 1e-12
+            rw_ = (sw_[j_] * g_[:, :, None]).sum(1) / g_.sum(1)[:, None]
+            for _ in range(3):
+                rw_ = (np.roll(rw_, 1, 0) + 2 * rw_ + np.roll(rw_, -1, 0)) / 4
+            rings[o.name] = (rc_, rw_)
+            ow_ = four_bones(np.repeat(rw_, 12, 0))
+        elif rings:
+            # (stitches on the ring of the binding they are sewn through)
+            rc_ = np.vstack([r[0] for r in rings.values()])
+            rw_ = np.vstack([r[1] for r in rings.values()])
+            ow_ = four_bones(rw_[cKDTree(rc_).query(op_)[1]])
+        else:
+            continue
+        for vg in list(o.vertex_groups):
+            o.vertex_groups.remove(vg)
+        for b in np.where(ow_.max(0) > 0.003)[0]:
+            grp = o.vertex_groups.new(name=BONES[b])
+            for i in np.where(ow_[:, b] > 0.003)[0]:
+                grp.add([int(i)], float(ow_[i, b]), "REPLACE")
+    print("SPAULDER binding and stitches on the leather's final weights: %d parts" % (len(lm) - 1))
+    out = lm + out
     return out
 
 
