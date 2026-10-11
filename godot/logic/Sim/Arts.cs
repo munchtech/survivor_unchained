@@ -696,7 +696,7 @@ public sealed partial class Battle
         double step = Math.Min(dt, a.RushT);
         double ex = p.X + a.RushDX * a.RushSpeed * step, ez = p.Z + a.RushDZ * a.RushSpeed * step;
         double bx = ex, bz = ez;
-        Collision.Resolve(ref bx, ref bz, p.Radius, true);
+        Collision.Resolve(ref bx, ref bz, p.Radius, true, overGaps: true);
         bool walled = Dist(bx, bz, ex, ez) > 0.05;
         p.X = bx; p.Z = bz;
         p.Moving = true;

@@ -475,7 +475,7 @@ public sealed partial class Battle
             p.Z = leap.Z0 + (leap.Z1 - leap.Z0) * k;
             p.Iframes = Math.Max(p.Iframes, 0.05);
             if (k >= 1) { p.Leap = null; LandLeap(leap); }
-            Collision.Resolve(ref p.X, ref p.Z, p.Radius, true);
+            Collision.Resolve(ref p.X, ref p.Z, p.Radius, true, overGaps: true);
             return;
         }
 

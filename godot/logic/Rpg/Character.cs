@@ -574,6 +574,7 @@ public static class Character
         };
         ch.Known = ArtBook.Starting(c.Archetype);
         if (c.Ability != "" && !ch.Known.Contains(c.Ability)) ch.Known.Add(c.Ability);
+        ArtBook.HoldKin(ch);
         Inventory.Equip(ch, Inventory.Make(ch, c.WeaponItem), EquipSlot.Weapon);
         foreach (var id in bg.Items)
         {
