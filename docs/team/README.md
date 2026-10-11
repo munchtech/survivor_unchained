@@ -84,7 +84,8 @@ The main session keeps this current. It is the address list for SendMessage. Ret
 | Area | Agent | Status page |
 |---|---|---|
 | Voice (paused by the owner: no placeholders; final voices from ElevenLabs later) | a501b387a90d78b4e | docs/team/voice.md |
-| Story and writing (the writer: the approved rewrite, Act 1 first) | — (handoff ready) | docs/team/story.md |
+| Story and writing (the writer: the approved rewrite, Act 1 first) | a81b550b25ab6b672 (11 Oct: twist options first, then the early lines locked for ElevenLabs) | docs/team/story.md |
+| Classes design (two types per calling, skill trees, ultimates on Q / right-click; plan only until the owner approves) | a24056785568e24a5 (11 Oct: research PoE, Last Epoch, Diablo, Grim Dawn; docs/design/CLASSES.md) | docs/design/CLASSES.md |
 | Combat, encounters, bosses, balance (paused; handoff ready at af6452e1) | — | docs/team/combat.md |
 | Animation (joints to perfection: wrists, follow-through, elbows, arms through body, sliding) | a20d622060130a90a (successor 10 Oct night, in worktree agent-af8dbda3195e438e4) | docs/team/animation.md |
 | UI design (the HUD keystone; portraits wait on the face) | — (handoff ready) | docs/team/ui_design.md |
@@ -93,7 +94,7 @@ The main session keeps this current. It is the address list for SendMessage. Ret
 | Gameplay experience director | af2c026d86e1b532b | docs/team/experience.md |
 | Skills look and feel (VFX, under the main session) | a560452c597415545 | docs/team/skills.md |
 | Cinematics production | aece7b87e89b13f19 | docs/team/cinematics.md |
-| Performance and rendering (clarity in motion first) | aa66d803239a26236 (successor 11 Oct, in worktree agent-a4e0c353e61cca6dc; heroine LOD first; 5f2e667c and the fur step merge with face) | docs/team/performance.md |
+| Performance and rendering (clarity in motion first) | a71fc38b0095fd45a (successor 3, 11 Oct, in worktree agent-a4e0c353e61cca6dc; heroine LOD judged PASS WITH FIXES, the Reaver ink strip open) | docs/team/performance.md |
 | Arena art | a0b61c278bdd5c994 | docs/team/arena_art.md |
 | Male hero (body, head, hair, outfits) | ab82cbe99e2937ddd | docs/team/hero_male.md |
 | Heroine face, hair and character creation's Look | a8b147f78b1db794b (successor 3, 11 Oct, in worktree agent-a2d632df7c7f21ec0 @ 5794c4e3; judge n1: neck fails in profile, front much improved) | docs/team/face.md |
@@ -102,5 +103,5 @@ The main session keeps this current. It is the address list for SendMessage. Ret
 | Loot and itemisation (paused, built and merged; docs/handoff/loot.md for a successor) | — | docs/team/loot.md |
 | Creatures and models (our own boar first, then MODELS_TO_MAKE.md) | af551cacc6292152f | docs/team/creatures.md |
 | Story editor (paused after notes 02 at 435k; a fresh editor reads the next draft) | — | docs/story/EDITORIAL_LETTER.md |
-| Heroine body and outfits (now a lead of its own; was the main session's) | ace45ae43386569ed (successor 11 Oct, in worktree agent-a5ca10091b08dc429; judge 2 on g5 failed) | docs/team/outfits.md |
+| Heroine body and outfits (now a lead of its own; was the main session's) | a29607fc2e88f0a18 (successor 3, 11 Oct, in worktree agent-a5ca10091b08dc429 @ 4b3aacde; judge 3 on g9 failed, closer) | docs/team/outfits.md |
 | Marionette, the character app (a tool: idea to engine; ease like Meshy, quality like Maya; one-click AI-assisted fixing) | — (paused; status page is its own HANDOFF.md "Start here") | Marionette/HANDOFF.md, docs/HISTORY.md "The goal" |
