@@ -339,7 +339,7 @@ def death(rig):
     # forearm stood too steep for the wrist to lay the hand flat, and the
     # fingers went 5 cm into the ground.)
     touch_l = {"pos": (0.27, 0.074, 0.77), "pole": (1, 0.3, -0.4), "knuckles": (0.2, 0, 1), "blade": (-0.9, 0.35, 0.2), "plant": 1.0, "ext": PUSH_EXT}
-    touch_r = {"pos": (-0.25, 0.06, 0.76), "pole": (-1, 0.3, -0.4), "knuckles": (-0.2, 0, 1), "plant": 1.0, "ext": PUSH_EXT}
+    touch_r = {"pos": (-0.25, 0.06, 0.76), "pole": (-0.3, 0.5, -0.8), "knuckles": (-0.2, 0, 1), "blade": (0.9, 0.35, 0.2), "plant": 1.0, "ext": PUSH_EXT}
     reach_l, reach_r = merge(touch_l, pos=(0.27, 0.20, 0.68), plant=0.0), merge(touch_r, pos=(-0.21, 0.19, 0.68), plant=0.0)
     # (The left slides out to where it is flung as the elbow gives; the
     # right is under her as she comes down on it.)
@@ -897,16 +897,16 @@ def throw(rig):
         # raised arm at the play camera), the forearm turned out so its blade
         # points ahead and down outside her thigh.
         (7, body(stance(0.10, weight=0.5), hips=(12, 10, 0), spine=(22, 14, 0), head=(-26, -6, 0),
-                 hand_r=held((-0.155, -0.15, 0.47), (-0.6, -0.6, 0.0), (-0.75, -0.25, 0.6)),
+                 hand_r=held((-0.215, -0.15, 0.45), (-0.6, -0.6, 0.0), (-0.75, -0.25, 0.6)),
                  hand_l=held((0.07, -0.40, 0.12), (0.5, -0.1, -0.9), (0.3, -0.5, 0.8)),
                  fingers_r=fist, fingers_l=fist), "ease"),
         (10, body(stance(0.10, weight=0.5), hips=(13, 10, 0), spine=(24, 14, 0), head=(-28, -6, 0),
-                  hand_r=held((-0.165, -0.19, 0.45), (-0.6, -0.6, 0.0), (-0.7, -0.3, 0.65)),
+                  hand_r=held((-0.225, -0.19, 0.43), (-0.6, -0.6, 0.0), (-0.7, -0.3, 0.65)),
                   hand_l=held((0.08, -0.42, 0.10), (0.5, -0.1, -0.9), (0.3, -0.5, 0.8)),
                   fingers_r=fist, fingers_l=fist), "auto"),
         # Back to the hands low at her sides, the blades ahead (the left
         # beside her thigh, off her groin: judge 10).
-        (21, body(stance(0.07), hand_r=held((-0.09, -0.33, 0.15), (-0.6, -0.4, -0.5), (-0.7, -0.3, 0.65)),
+        (21, body(stance(0.07), hand_r=held((-0.09, -0.33, 0.15), (-0.6, -0.4, -0.5), (-0.7, -0.05, 0.7)),
                   hand_l=held((0.06, -0.38, 0.06), (0.6, -0.4, -0.5), (0.15, -0.35, 0.92)),
                   fingers_r=fist, fingers_l=fist), "ease"),
     ]
