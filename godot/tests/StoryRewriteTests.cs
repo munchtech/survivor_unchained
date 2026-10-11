@@ -513,7 +513,7 @@ public class StoryRewriteTests
             var ways = nodes.Where(kv => !door[conv].Contains(kv.Key))
                 .SelectMany(kv => (kv.Value.Choices ?? new()).Select(c => c.Goto).Append(kv.Value.Next)
                     .Where(t => t != null && door[conv].Contains(t)).Select(t => kv.Key + ">" + t))
-                .OrderBy(x => x);
+                .Distinct().OrderBy(x => x);
             Assert.Equal(conv == "sella" ? new[] { "free_stairs>free_door", "rest_night>rest_bed", "stairs_say>stairs_room" }
                 : new[] { "blind_ask>blind" }, ways);
         }
