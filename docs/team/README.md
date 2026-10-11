@@ -92,7 +92,7 @@ The main session keeps this current. It is the address list for SendMessage. Ret
 | Gameplay experience director | af2c026d86e1b532b | docs/team/experience.md |
 | Skills look and feel (VFX, under the main session) | a560452c597415545 | docs/team/skills.md |
 | Cinematics production | aece7b87e89b13f19 | docs/team/cinematics.md |
-| Performance and rendering (clarity in motion first) | a3123dd8bb0182789 (restarted 10 Oct, in worktree agent-a4e0c353e61cca6dc) | docs/team/performance.md |
+| Performance and rendering (clarity in motion first) | — (handed off 10 Oct @ 048fdf87; ready to merge at 5f2e667c with face) | docs/team/performance.md |
 | Arena art | a0b61c278bdd5c994 | docs/team/arena_art.md |
 | Male hero (body, head, hair, outfits) | ab82cbe99e2937ddd | docs/team/hero_male.md |
 | Heroine face, hair and character creation's Look | a411e6c81f22f5c18 (restarted 10 Oct, in worktree agent-a2d632df7c7f21ec0) | docs/team/face.md |
