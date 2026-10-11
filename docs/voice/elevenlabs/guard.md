@@ -60,9 +60,11 @@ Subtitle: Dawn arrivals. We don't get many that live.
 ### 2. `say.9790cd22614c.wav`
 
 *Where:* godot/logic/Play/Journey.Day.cs
+*Played:* plain; doing: calls the town in at dusk, as every evening; pace: measured; volume: raised.
+*Note:* Called from the gate, out over the road: the Order's evening call, worn smooth by use. Two sentences at the same pitch, no tune in it, no warmth or warning. (The survivor's mother said it small, at a door; he does not know that.)
 
 ```
-Lamps are lit. Stay where they reach.
+[plain, loudly] Lamps are lit. Stay where they reach.
 ```
 Subtitle: Lamps are lit. Stay where they reach.
 

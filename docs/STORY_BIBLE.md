@@ -74,6 +74,12 @@ and one of the drowned was Nell. The rules, which never bend:
    twenty-eight, and nobody says it until C41. "You get up. It takes less than
    it did." is the plain truth every time, in the one voice that may never say
    what it means.
+7. The dead don't knock (settled 11 October, notes 02 §6.6). A risen body has
+   no mind to ask with: it climbs, walks and claws, and never asks to be let
+   in. Whatever knocks is alive. The ones under Holloway's lid knocked for
+   three days because they were living (Act 2 turns his confession on it), and
+   what knocks under Tam's farm is the Morrow, praying. So C20b's three dusks
+   at the hole are its silence, not its knocking.
 Why one in a great many rises with their mind is **never said**. Chid hopes it
 is because someone down there would not let go of them; the game neither
 confirms nor denies it, and no rule depends on it. (It must never become a
@@ -147,12 +153,16 @@ traveller she had been told to expect. Every evening the mother went down to
 the north bank with a lamp. On the seventh Chid walked her down to the
 water's edge and held her hand while the Warden took her, so that she would
 be down there first when her child came:
-the twenty-sixth line in the ledger, written in Vonnra's register as "Rook's
-lodger." She rose with the drowned, and stood on the far bank facing up the
-road her child would come by, holding a lamp that had gone out. On the first
-night the survivor cut her down to reach the water (the prologue's path, every
-player); the narrator says nothing at the water's edge. Chid buried her in the
-Quiet Garden behind the shrine, under a plain marker with no name.
+the twenty-sixth line in the ledger, written in Vonnra's register as "A woman.
+No name." (Vonnra never knew it, and it points at nobody: the back room is in
+Rook's lie, so the line must not say Rook.) She rose with the drowned, and
+stood on the far bank facing up the road her child would come by, holding a
+lamp that had gone out. On the first night the survivor cut her down to reach
+the water (the prologue's path, every player); the narrator says nothing at
+the water's edge. Chid buried her in the Quiet Garden behind the shrine, under
+a plain marker with no name. He knew her name: he wrote her letter. When the
+survivor has stood at the marker he asks her what to cut (`chid.cut`), and
+she has only "Mam." (fact `mother.cut`: `mam`, `plain` or `none`).
 - **Her word.** At dusk, when the survivor was small, she put the lamp in the
   window and called from the door: "Lamp's lit, Spark. Stay where it reaches."
   (The Order's evening call, made small and kept in one family; the name is
@@ -412,7 +422,9 @@ None of them says it.
   ask. Not wolves."), paid out of Holloway's pocket; his kindest friend, who
   walks him home and buys his drink with his own money. *Secret:* she left her
   post at the cave mouths and went down the shaft after the boy she was sleeping
-  with; she was on the ladder, the next hand up, number ninety-two, with her
+  with, Gale (settled 11 October: the one name Holloway's roll stops on,
+  "Gale. ...Gale.", and the lover's "a lad I'd been fond of"; Act 2's daybook
+  can show it without a word); she was on the ladder, the next hand up, number ninety-two, with her
   face in the shaft-head lamp, when the lid came down. Three days below: she
   finished the wounded before they could rise; on the third day she followed the
   air up an old wolf-run with the boy, and finished him at the cave mouth, and an
@@ -763,6 +775,12 @@ Each seed names the beat it pays (section 7 and 8). `WRITING_PASS.md` section
   again."), never what it means: the interface keeps the bible's first rule.
 
 **Chid** (pays: Act 3)
+- `chid.cut` (once she has stood at the plain marker after Rook's lie, which
+  promises it: "you can tell Chid what to cut"): "What do I cut?" She has only
+  "Mam." ("That's the first name anybody has."), or "Leave it plain." ("The
+  ground knows who's in it."), or nothing ("Come and tell me when it comes to
+  you."). Fact `mother.cut`. Under A he knew her name all along, and asks her
+  child for it; on day 3, `chid.names`: "You had to think. I saw you think."
 - `chid.long`: Rook's mother brought him bread. `chid.warden`: "Before me,
   certainly, which is a long time." (His "I think" there is Chid hiding: he knew
   the Warden, Brother Tobin, Act 3.) `npcs.json` chid bark: "Morning comes. It
@@ -786,17 +804,30 @@ Each seed names the beat it pays (section 7 and 8). `WRITING_PASS.md` section
 
 **Ashford, the lid** (pays: Act 2, the rope; `TREATMENT.md` §4)
 - `maeca.watch`: Holloway pays her out of his own pocket; she buys his drink
-  with it. `maeca.ashford`: "The cave mouths." (her post; his report's lie).
+  with it. The town says it too, as a joke (`folk.json` 112: "The captain pays
+  Maeca out of his own pocket, and she spends it on his slate. Round and
+  round."): B's money, in plain sight. `maeca.ashford`: "The cave mouths."
+  (her post; his report's lie).
 - `holloway.ashford` (sober): "That's the report." `holloway.roll` (night):
-  "Abbot. Two bairns. Ancell. His mam." `scene_knocking` (the first dusk after
-  the tremor, from day 4): the whole of it, in ledger syntax, with "Lamp in my
-  eyes." Fact `holloway.confessed`; his night bark "Ninety-one up."
+  "Abbot. Two bairns. Ancell. His mam." `holloway.roll2` stops on "Gale.
+  ...Gale." (Maeca's lad). `scene_knocking` (the first dusk after the tremor,
+  from day 4): the whole of it, in ledger syntax, with "Lamp in my eyes." and
+  "Gray, all of them, and not a sound out of them." (true of the dead, and of
+  the living too far gone to call out: (b)); "Three days, they knocked." turns
+  on rule 7. Fact `holloway.confessed`; his night bark "Ninety-one up."
+- `scene_in_my_count`: one voice in the crowd says the town's fear, and it is
+  the toll's truth: "every morning since you came, there's somebody up the
+  street didn't wake." Holloway walks through them and turns his back to her:
+  "She's in my count."
 - `scene_gate_dawn`: Maeca's loaded crossbow across her knees over the sleeping
   man, read as care; "That's your last." `scene_did_he`: "...Did he." (fact
   `maeca.told_lid`). `scene_his_cup`: she fills his cup and sits with him.
-- The decoy: `decoy.rope` (a Kerchief: "a rope with the captain's name on it")
-  or `decoy.ledger` (Pell writing down every drink). `pell.t_pell`: the lid was
-  "barred from the top. Somebody barred it. I know who."
+- The decoy, one on every road: `decoy.rope` (a Kerchief: "a rope with the
+  captain's name on it"; "Holloway said nothing, and drank.", so his first
+  laugh is the rope's), `decoy.ledger` (Pell writing down every drink), or,
+  with Redcowl and Pell both settled, `decoy.north` ("The town says the north
+  wants him gone."). `pell.t_pell`: the lid was "barred from the top.
+  Somebody barred it. I know who."
 - `sallow.rider`: a rider from the north, an hour in the Watch House; the
   letter face down (`holloway.letter`). Act 2: his answer, "No."
 - `maeca.blind_morning` (romance): the Pack saved her after Ashford.
@@ -1118,8 +1149,7 @@ his purse: the bootprints' end.
 to "From the ford. Got up." and turns the page. Twenty-eight is the baker, who
 sat down at her trough before light; then one line for every time this
 player got up, each dated to a night they remember, from the save. "Twenty-six
-for the first. One each, since. ...No charge, this once. I always tell people
-the price." Minutes later the survivor falls, and the narrator says what she
+for the first. One each, since. ...No charge, this once. Not to you." Minutes later the survivor falls, and the narrator says what she
 has always said. (`docs/story/TOLL_SPEC.md` §6.)
 
 **The heart.** At the bottom Grimtunnel holds the Warden's heart up to
@@ -1599,3 +1629,7 @@ is a change of its own (`{ "chart": ... }`). `WRITING_PASS.md` §22 has them all
 The toll (rule 6; to build, `docs/story/TOLL_SPEC.md` §2): `toll.rises` (every
 paid rising) and `toll.ledger` (one entry each: `n` from 28, `who`, `day`,
 `kind`, `place`, `came`, `burned`).
+
+The sophistication pass (11 October): `mother.cut` (`mam`, `plain` or `none`:
+what Chid cuts on the marker, `chid.cut`; read by nothing yet, kept for Act 2's
+marker and C32) and the overnight rule `decoy.north`.

@@ -1,6 +1,6 @@
 # Chid: ElevenLabs packet
 
-Voice id in the game: `chid`. 77 takes to record (8,436 characters; about 25,308 credits at three tries a line). Status: **draft**, until the story lead (a7622ae77d19e31dc) checks every line and marks it final.
+Voice id in the game: `chid`. 82 takes to record (8,712 characters; about 26,136 credits at three tries a line). Status: **draft**, until the story lead (a7622ae77d19e31dc) checks every line and marks it final.
 
 **Hold 2 of these** (marked HOLD below, with why); the rest can be recorded now.
 
@@ -742,9 +742,54 @@ Good. Keep it somewhere dry.
 ```
 Subtitle: Good. Keep it somewhere dry.
 
+### 65. `dlg.chid.cut.0.p1.wav`
+
+*Where:* dialogue.json chid/cut#0; part 2 of 2: narrator: There is a mallet and a chisel on the bench beside him, and he doesn't pick them up. / **chid: You've been to the garden. I saw. ...It wants a name, that marker. My hand's still steady,…**
+
+```
+You've been to the garden. I saw. ...It wants a name, that marker. My hand's still steady, whatever Rook says. What do I cut?
+```
+Subtitle: You've been to the garden. I saw. ...It wants a name, that marker. My hand's still steady, whatever Rook says. What do I cut?
+
+### 66. `dlg.chid.cut_mam.0.p0.wav`
+
+*Where:* dialogue.json chid/cut_mam#0; part 1 of 3: **chid: Mam.** / narrator: He says it over, under his breath, as if it might get away. / chid: That's the first name anybody has. I'll cut it tonight.
+
+```
+Mam.
+```
+Subtitle: Mam.
+
+### 67. `dlg.chid.cut_mam.0.p2.wav`
+
+*Where:* dialogue.json chid/cut_mam#0; part 3 of 3: chid: Mam. / narrator: He says it over, under his breath, as if it might get away. / **chid: That's the first name anybody has. I'll cut it tonight.**
+
+```
+That's the first name anybody has. I'll cut it tonight.
+```
+Subtitle: That's the first name anybody has. I'll cut it tonight.
+
+### 68. `dlg.chid.cut_plain.0.p1.wav`
+
+*Where:* dialogue.json chid/cut_plain#0; part 2 of 2: narrator: He nods. / **chid: Plain, then. The ground knows who's in it.**
+
+```
+Plain, then. The ground knows who's in it.
+```
+Subtitle: Plain, then. The ground knows who's in it.
+
+### 69. `dlg.chid.cut_wait.0.p1.wav`
+
+*Where:* dialogue.json chid/cut_wait#0; part 2 of 2: narrator: He waits, and then he puts the chisel away. / **chid: It'll keep. Come and tell me when it comes to you.**
+
+```
+It'll keep. Come and tell me when it comes to you.
+```
+Subtitle: It'll keep. Come and tell me when it comes to you.
+
 ## Said in passing
 
-### 65. `bark.chid.day.0.wav`
+### 70. `bark.chid.day.0.wav`
 
 *Where:* npcs.json chid.barks[0]
 *Played:* wistful, cheerful; pace: measured; volume: level.
@@ -754,7 +799,7 @@ Subtitle: Good. Keep it somewhere dry.
 ```
 Subtitle: The light's patient. I'm trying to be.
 
-### 66. `bark.chid.day.1.wav`
+### 71. `bark.chid.day.1.wav`
 
 *Where:* npcs.json chid.barks[1]
 *Played:* gently rueful; pace: measured; volume: level.
@@ -764,7 +809,7 @@ Subtitle: The light's patient. I'm trying to be.
 ```
 Subtitle: Morning comes. It always has. I should know.
 
-### 67. `bark.chid.night.0.wav`
+### 72. `bark.chid.night.0.wav`
 
 *Where:* npcs.json chid.nightBarks[0]
 *Played:* gentle hope; pace: slow; volume: quiet.
@@ -774,7 +819,7 @@ Subtitle: Morning comes. It always has. I should know.
 ```
 Subtitle: Even in the dark, the morning's on its way.
 
-### 68. `bark.chid.night.1.wav`
+### 73. `bark.chid.night.1.wav`
 
 *Where:* npcs.json chid.nightBarks[1]
 *Played:* kind; pace: slow; volume: quiet.
@@ -784,7 +829,7 @@ Subtitle: Even in the dark, the morning's on its way.
 ```
 Subtitle: I leave a candle lit. Somebody might need it.
 
-### 69. `bark.chid.night.2.wav`
+### 74. `bark.chid.night.2.wav`
 
 *Where:* npcs.json chid.nightBarks[2]
 *Played:* friendly, sleepless; pace: measured; volume: quiet.
@@ -794,7 +839,7 @@ Subtitle: I leave a candle lit. Somebody might need it.
 ```
 Subtitle: Can't sleep either?
 
-### 70. `bark.chid.night.3.wav`
+### 75. `bark.chid.night.3.wav`
 
 *Where:* npcs.json chid.nightBarks[3]
 *Played:* reciting, then rueful; pace: slow; volume: quiet.
@@ -805,7 +850,7 @@ Subtitle: Can't sleep either?
 ```
 Subtitle: The dark's only the part of the day that hasn't happened yet. ...It's taking its time tonight.
 
-### 71. `bark.chid.said.0.wav`
+### 76. `bark.chid.said.0.wav`
 
 *Where:* npcs.json chid.said[0]
 *Played:* cheerful; doing: the shrine used to work; pace: measured; volume: level.
@@ -816,7 +861,7 @@ Subtitle: The dark's only the part of the day that hasn't happened yet. ...It's 
 ```
 Subtitle: It used to work, you know. The shrine.
 
-### 72. `bark.chid.said.1.wav`
+### 77. `bark.chid.said.1.wav`
 
 *Where:* npcs.json chid.said[1]
 *Played:* delighted; doing: the shrine works again; pace: quick; volume: raised.
@@ -827,7 +872,7 @@ Subtitle: It used to work, you know. The shrine.
 ```
 Subtitle: It works! It works. I keep checking.
 
-### 73. `bark.chid.said.2.wav`
+### 78. `bark.chid.said.2.wav`
 
 *Where:* npcs.json chid.said[2]
 *Played:* bright, fond; doing: you're up; pace: quick; volume: level.
@@ -838,7 +883,7 @@ Subtitle: It works! It works. I keep checking.
 ```
 Subtitle: Up and about! Up's very good.
 
-### 74. `bark.chid.said.3.wav`
+### 79. `bark.chid.said.3.wav`
 
 *Where:* npcs.json chid.said[3]
 *Played:* quiet, tender; doing: candles for Nell; pace: measured; volume: quiet.
@@ -849,7 +894,7 @@ Subtitle: Up and about! Up's very good.
 ```
 Subtitle: Two candles in for her. One's for Brannoc. He'd only blow it out.
 
-### 75. `bark.chid.said.4.wav`
+### 80. `bark.chid.said.4.wav`
 
 *Where:* npcs.json chid.said[4]
 
@@ -858,7 +903,7 @@ Oh, you're cold! Colder than usual, I mean. Come and sit by the flame.
 ```
 Subtitle: Oh, you're cold! Colder than usual, I mean. Come and sit by the flame.
 
-### 76. `bark.chid.said.5.wav`
+### 81. `bark.chid.said.5.wav`
 
 *Where:* npcs.json chid.said[5]
 
@@ -867,7 +912,7 @@ Back again! You always are. Sit, sit; the flame likes company.
 ```
 Subtitle: Back again! You always are. Sit, sit; the flame likes company.
 
-### 77. `bark.chid.said.6.wav`
+### 82. `bark.chid.said.6.wav`
 
 *Where:* npcs.json chid.said[6]
 

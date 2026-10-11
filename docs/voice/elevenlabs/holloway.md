@@ -1,6 +1,6 @@
 # Captain Holloway: ElevenLabs packet
 
-Voice id in the game: `holloway`. 110 takes to record (9,700 characters; about 29,100 credits at three tries a line). Status: **on hold**: the story rewrite changes most of his lines (docs/voice/RERECORD.md). Do not record any of it yet.
+Voice id in the game: `holloway`. 110 takes to record (9,718 characters; about 29,154 credits at three tries a line). Status: **on hold**: the story rewrite changes most of his lines (docs/voice/RERECORD.md). Do not record any of it yet.
 
 ## Who they are
 
@@ -781,7 +781,7 @@ Subtitle: Count's right.
 
 ### 67. `dlg.scene_gate_dawn.all.0.p0.wav`
 
-*Where:* dialogue.json scene_gate_dawn/all#0; part 1 of 2: **holloway: Gate was open. Somebody had to stand in it.** / narrator: Maeca looks at the step he was asleep on, and then at him, and says nothing at all, very l…
+*Where:* dialogue.json scene_gate_dawn/all#0; part 1 of 2: **holloway: Gate was open. Somebody had to stand in it.** / narrator: Maeca looks at the ground he slept on, and then at him, and says nothing.
 
 ```
 Gate was open. Somebody had to stand in it.
@@ -801,7 +801,7 @@ Subtitle: Don't. That's a drink you owe me. The cheap stuff; I'm not proud.
 
 ### 69. `dlg.scene_in_my_count.captain.0.p1.wav`
 
-*Where:* dialogue.json scene_in_my_count/captain#0; part 2 of 2: narrator: He comes down the street at a walk, not hurrying, and he has been drinking, and he stops i… / **holloway: She's in my count.**
+*Where:* dialogue.json scene_in_my_count/captain#0; part 2 of 2: narrator: He comes down the street at a walk, not hurrying, and he has been drinking. He walks throu… / **holloway: She's in my count.**
 
 ```
 She's in my count.
@@ -875,7 +875,7 @@ Subtitle: No. Course not.
 
 ### 77. `dlg.scene_knocking.home.0.p0.wav`
 
-*Where:* dialogue.json scene_knocking/home#0; part 1 of 3: **holloway: Can't. Somebody's still out.** / narrator: He drinks. / holloway: ...You want to know about Ashford. Everybody does. Sit, then.
+*Where:* dialogue.json scene_knocking/home#0; part 1 of 3: **holloway: Can't. Somebody's still out.** / narrator: He drinks. / holloway: ...Sit down. I'll tell you who.
 
 ```
 Can't. Somebody's still out.
@@ -884,12 +884,12 @@ Subtitle: Can't. Somebody's still out.
 
 ### 78. `dlg.scene_knocking.home.0.p2.wav`
 
-*Where:* dialogue.json scene_knocking/home#0; part 3 of 3: holloway: Can't. Somebody's still out. / narrator: He drinks. / **holloway: ...You want to know about Ashford. Everybody does. Sit, then.**
+*Where:* dialogue.json scene_knocking/home#0; part 3 of 3: holloway: Can't. Somebody's still out. / narrator: He drinks. / **holloway: ...Sit down. I'll tell you who.**
 
 ```
-...You want to know about Ashford. Everybody does. Sit, then.
+...Sit down. I'll tell you who.
 ```
-Subtitle: ...You want to know about Ashford. Everybody does. Sit, then.
+Subtitle: ...Sit down. I'll tell you who.
 
 ### 79. `dlg.scene_knocking.tell.0.p1.wav`
 
@@ -920,16 +920,16 @@ Subtitle: Ninety-one. Then I looked down.
 
 ### 82. `dlg.scene_knocking.saw.0.p0.wav`
 
-*Where:* dialogue.json scene_knocking/saw#0; part 1 of 7: **holloway: Dead. Climbing. Under the last of ours, close as that.** / narrator: He holds one hand flat over the other. / holloway: Four hundred behind me, asleep. Bairns. / narrator: He drinks. / holloway: Lid down. Bar across. Sat on it. / narrator: He breathes out, a long way. / holloway: Three days, they knocked.
+*Where:* dialogue.json scene_knocking/saw#0; part 1 of 7: **holloway: Dead. Climbing. Gray, all of them, and not a sound out of them. Under the last of ours, cl…** / narrator: He holds one hand flat over the other. / holloway: Four hundred behind me, asleep. Bairns. / narrator: He drinks. / holloway: Lid down. Bar across. Sat on it. / narrator: He breathes out, a long way. / holloway: Three days, they knocked.
 
 ```
-Dead. Climbing. Under the last of ours, close as that.
+Dead. Climbing. Gray, all of them, and not a sound out of them. Under the last of ours, close as that.
 ```
-Subtitle: Dead. Climbing. Under the last of ours, close as that.
+Subtitle: Dead. Climbing. Gray, all of them, and not a sound out of them. Under the last of ours, close as that.
 
 ### 83. `dlg.scene_knocking.saw.0.p2.wav`
 
-*Where:* dialogue.json scene_knocking/saw#0; part 3 of 7: holloway: Dead. Climbing. Under the last of ours, close as that. / narrator: He holds one hand flat over the other. / **holloway: Four hundred behind me, asleep. Bairns.** / narrator: He drinks. / holloway: Lid down. Bar across. Sat on it. / narrator: He breathes out, a long way. / holloway: Three days, they knocked.
+*Where:* dialogue.json scene_knocking/saw#0; part 3 of 7: holloway: Dead. Climbing. Gray, all of them, and not a sound out of them. Under the last of ours, cl… / narrator: He holds one hand flat over the other. / **holloway: Four hundred behind me, asleep. Bairns.** / narrator: He drinks. / holloway: Lid down. Bar across. Sat on it. / narrator: He breathes out, a long way. / holloway: Three days, they knocked.
 
 ```
 Four hundred behind me, asleep. Bairns.
@@ -938,7 +938,7 @@ Subtitle: Four hundred behind me, asleep. Bairns.
 
 ### 84. `dlg.scene_knocking.saw.0.p4.wav`
 
-*Where:* dialogue.json scene_knocking/saw#0; part 5 of 7: holloway: Dead. Climbing. Under the last of ours, close as that. / narrator: He holds one hand flat over the other. / holloway: Four hundred behind me, asleep. Bairns. / narrator: He drinks. / **holloway: Lid down. Bar across. Sat on it.** / narrator: He breathes out, a long way. / holloway: Three days, they knocked.
+*Where:* dialogue.json scene_knocking/saw#0; part 5 of 7: holloway: Dead. Climbing. Gray, all of them, and not a sound out of them. Under the last of ours, cl… / narrator: He holds one hand flat over the other. / holloway: Four hundred behind me, asleep. Bairns. / narrator: He drinks. / **holloway: Lid down. Bar across. Sat on it.** / narrator: He breathes out, a long way. / holloway: Three days, they knocked.
 
 ```
 Lid down. Bar across. Sat on it.
@@ -947,7 +947,7 @@ Subtitle: Lid down. Bar across. Sat on it.
 
 ### 85. `dlg.scene_knocking.saw.0.p6.wav`
 
-*Where:* dialogue.json scene_knocking/saw#0; part 7 of 7: holloway: Dead. Climbing. Under the last of ours, close as that. / narrator: He holds one hand flat over the other. / holloway: Four hundred behind me, asleep. Bairns. / narrator: He drinks. / holloway: Lid down. Bar across. Sat on it. / narrator: He breathes out, a long way. / **holloway: Three days, they knocked.**
+*Where:* dialogue.json scene_knocking/saw#0; part 7 of 7: holloway: Dead. Climbing. Gray, all of them, and not a sound out of them. Under the last of ours, cl… / narrator: He holds one hand flat over the other. / holloway: Four hundred behind me, asleep. Bairns. / narrator: He drinks. / holloway: Lid down. Bar across. Sat on it. / narrator: He breathes out, a long way. / **holloway: Three days, they knocked.**
 
 ```
 Three days, they knocked.

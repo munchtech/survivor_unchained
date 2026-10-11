@@ -87,12 +87,19 @@ is hot, and nobody died." becomes "A quiet night. Rook's bread is hot." (the
 builder changes it). A reload before the save undoes the rise and its payer.
 Old saves start at `toll.rises` 0.
 
-Detail: If anyone paid since the last dawn, it's
-the first of them, told gently: in a chair, in their sleep, no cause given. The
-others are written in the ledger and not reported. If nobody paid, it's a death
-with a cause, from the second list. One a morning, whatever happened, so the
-count never matches the player's deaths and nobody can spot the pattern in
-Act 1. The town remarks on it once, through Rook, as the season.
+**Which death.** If anyone paid since the last dawn, the morning tells the
+first of them, gently, with no cause given; the others go into the ledger
+unreported. If nobody paid, it tells a death with a cause, from the second
+list. One a morning, whatever happened, so the count never matches the
+player's deaths and nobody can spot the pattern in Act 1. The town says it
+aloud twice, and nobody believes it: one voice in the crowd at the gate
+(`scene_in_my_count`, day 3 on: "And every morning since you came, there's
+somebody up the street didn't wake."), and Rook once, as the season (below).
+
+**Vary the gentle ones.** No cause, and no formula either: at most two of
+them go "in a chair", two "in their sleep", and only the baker "sat down
+... and went" (her words come back at C41). A new entry finds its own small
+image, as these do.
 
 The text is the report's own register, unvoiced (like the reports in
 `rules.json`). Each gentle entry also has Vonnra's short form for the ledger
@@ -103,28 +110,28 @@ and the mark the paid one carries at night.
 | id | Ledger (Vonnra's hand) | The news | Mark at night |
 |---|---|---|---|
 | hester | The baker. | Hester Ancell, who baked for the square, sat down at her trough before light and went. The first anyone knew of it was that there was no bread. | One of them is white to the elbows. |
-| oswin | Oswin, at his dinner. | Old Oswin's gone to the Morrow. Sat down in his chair after his dinner and went. | One of them has a napkin still tucked in at the neck. |
-| sumner | The lamplighter. | Abel Sumner, the lamplighter, sat down on the bottom rung of his ladder before light and went. Half the square's lamps were still lit at noon. | One of them carries a lamplighter's pole, unlit. |
+| oswin | Oswin, at his dinner. | Old Oswin's gone to the Morrow, as he said every winter he would. They found him at his table, napkin still tucked in, plate wiped clean. | One of them has a napkin still tucked in at the neck. |
+| sumner | The lamplighter. | Abel Sumner, the lamplighter, stopped for breath on the bottom rung of his ladder before light, and didn't start again. Half the square's lamps were still lit at noon. | One of them carries a lamplighter's pole, unlit. |
 | garside | The carter, at the gate. | Will Garside, who carts for Harlan, was found sitting up on his cart at the east gate at first light, waiting for it to open. | One of them still has a carter's whip in its hand. |
 | coombe | The Flagon's books. | Mistress Coombe, who kept the Flagon's books, went at her table with the pen in her hand. The last line was half a word. | One of them has a pen in its fist. |
 | rigby | The egg woman. | Ma Rigby, who sold eggs at the south gate, went in her chair with the basket in her lap. Not one of them broken. | One of them is carrying a basket, very carefully. |
 | sowerby | The layer-out. | Nan Sowerby, who laid out the dead for the town, went in her own bed. For the first time in forty years they had to send to Low Kiln for someone to lay her out. | One of them has its hands crossed on its chest, and keeps them there. |
 | hobb | Hobb, the drover's boy. | Hobb, the drover's boy, went in his sleep in the loft over the Coyles' stable. He was fourteen. Nothing wrong with him at all. | One of them is a boy, barefoot. |
-| hebble | Annis Hebble, knitting. | Annis Hebble went in her chair by the window with her knitting in her lap. Her daughter says she'd dropped a stitch and never picked it up. | One of them trails a skein of wool behind it. |
-| dowd | The miller's widow. | Mercy Dowd, the miller's widow, went in her sleep. The cat had been crying at her door since before light. | One of them is in a nightgown, and has one slipper on. |
-| maud | Maud, who swept the shrine. | Maud, who swept the shrine for Chid, was found on the shrine step with her broom across her knees. Chid has swept it himself every morning since, twice. | One of them has a broom. |
-| ashby | The thatcher. | Tom Ashby, the thatcher, sat down on a roof ridge at first light to eat his bread, and went. They had to bring him down on a rope. | One of them has a bundle of reed on its back. |
-| carrow | The Widow Carrow. | The Widow Carrow went in her sleep. Holloway paid for the box himself, and stood at the back. (Gate: Holloway alive. After him: "The Widow Carrow went in her sleep. Her boy found her. With the captain gone, Maeca paid for the box.") | One of them is holding a child's mitten. |
+| hebble | Annis Hebble, knitting. | Annis Hebble's daughter found her by the window with the needles still in her hands. She'd dropped a stitch, and never picked it up. | One of them trails a skein of wool behind it. |
+| dowd | The miller's widow. | Mercy Dowd, the miller's widow, didn't come to her door this morning. The cat had been crying at it since before light. | One of them is in a nightgown, and has one slipper on. |
+| maud | Maud, who swept the shrine. | Maud, who swept the shrine for Chid, was found on the shrine step with her broom across her knees. Chid swept the step himself this morning. Twice. | One of them has a broom. |
+| ashby | The thatcher. | Tom Ashby, the thatcher, took his bread up onto a roof ridge at first light, and never came down. They had to fetch him down on a rope. | One of them has a bundle of reed on its back. |
+| carrow | The Widow Carrow. | The Widow Carrow's boy couldn't wake her this morning. Holloway paid for the box himself, and stood at the back. (Gate: Holloway alive. After him: "The Widow Carrow's boy couldn't wake her this morning. With the captain gone, Maeca paid for the box.") | One of them is holding a child's mitten. |
 | hollis | The cooper's lad. | Bran Hollis, the cooper's lad, didn't wake on his wedding morning. The girl has been at the shrine since. | One of them is in its wedding shirt. |
-| penhale | Gran Penhale. | Gran Penhale went in her bed. The dog was lying across her feet, and growled at the men who came for her. | One of them has a shawl over its head, the way the old women wear them. |
+| penhale | Gran Penhale. | Gran Penhale died in the night with the dog lying across her feet. It growled at the men who came for her. | One of them has a shawl over its head, the way the old women wear them. |
 | kit | The ferryman. | Old Kit, who worked the ferry at the Low Ford till the irons were lit, went in his chair facing the river. | One of them has a boat-hook over its shoulder. |
-| prout | The Watch's drummer. | Davey Prout, who drummed for the Watch when it had men enough to march, was found in his bed with his sticks under the pillow. | One of them has drumsticks through its belt. |
-| weller | The well-digger. | Joss Weller, the well-digger, lay down in his boots after supper and never took them off. | One of them is caked in clay to the knees. |
-| agnes | The Coyles' cook. | Agnes, the Coyles' cook, was found at the cold range with the fire laid and not lit. Harlan says she's the first person to leave that house without asking him. | One of them has a ladle. |
-| haig | Mother Haig. | Mother Haig, ninety if a day, went in her chair. Everyone says it was her time, and says it a little too quickly. | One of them is bent nearly double. |
-| tolley | Jem Tolley, at the Flagon. | Jem Tolley went in his chair at the Flagon with a full cup in front of him. Rav says it's the first full cup he ever left. | One of them has a tankard hooked on one finger. |
+| prout | The Watch's drummer. | Davey Prout, who drummed for the Watch when it had men enough to march, died in his bed with his sticks under the pillow. | One of them has drumsticks through its belt. |
+| weller | The well-digger. | Joss Weller, the well-digger, was gone before he'd washed the clay off. His wife says he was only resting his eyes. | One of them is caked in clay to the knees. |
+| agnes | The Coyles' cook. | Agnes, the Coyles' cook, laid the fire this morning and never lit it. Harlan says she's the first person to leave that house without asking him. | One of them has a ladle. |
+| haig | Mother Haig. | Mother Haig, ninety if a day, has gone. Everyone says it was her time, and says it a little too quickly. | One of them is bent nearly double. |
+| tolley | Jem Tolley, at the Flagon. | Jem Tolley put his head down on the Flagon's corner table with a full cup in front of him, and that was all. Rav says it's the first full cup he ever left. | One of them has a tankard hooked on one finger. |
 | pip | The shepherd. | Pip, the Penhales' shepherd, went on the hill with his dog beside him. The dog brought the sheep home by itself. | One of them has a crook. |
-| dorrie | Dorrie Hale. Four. | Little Dorrie Hale went in her sleep. She was four. Wenna sat with the mother all morning and said nothing, which is the most anyone has ever seen Wenna do. | One of them is very small. |
+| dorrie | Dorrie Hale. Four. | Little Dorrie Hale went in her sleep. She was four. Wenna sat with the mother all morning, and for once said nothing at all. | One of them is very small. |
 | tull | The washerwoman. | Mother Tull, who did the Watch's washing, lay down for a minute after the copper was lit, and went. The copper boiled dry. | One of them has its sleeves rolled to the shoulder. |
 
 Gate the entries that need someone alive: carrow (Holloway alive, see her text), agnes (Harlan alive). Hester is always first. Keep Dorrie out of the first ten draws. Two take
@@ -141,7 +148,7 @@ use the generator (§7) with "the fever", "the cold", "a fall" or "the Dig".
 1. A fever took the Lark twins' father in the night. Wenna says it's the river's fever, and to boil the water.
 2. The frost got old Saul Pike, who would sleep in the lean-to whatever anyone said. Rook has put his blanket out to air, as if he might want it.
 3. A drover went back out for a lost ewe after dark. They found him at the edge of the lamps, facing in.
-4. Wolves had a peddler on the east road, a mile out. His tray came into town on the drover's cart; his boots didn't. (the Pack)
+4. Wolves had a peddler on the east road, a mile out. His tray came into town on the drover's cart. Not much else of him did. (the Pack)
 5. A gallery came down in the Dig. The Watch got two out. The third is still under it, and Pell has already asked whose he was. (the Dig)
 6. The Kerchiefs left a man hanging from the Old Road sign with a board on him: TOLL. He was one of theirs. (the Kerchiefs)
 7. The cough took the last of the Ruddock grandparents. Ashford's cough, Rook says, ten years late.
@@ -215,12 +222,12 @@ Said when the player first passes her that morning:
   Chid carried you home"; fell "after the day the carter found you". If not
   burned: "...still floured. She stood in your light till it was day." New,
   for a payer who hasn't come out yet: "She hasn't come out to you yet."
-- **C09's text** (`dialogue.json`, Vonnra's chart node, ~14682 and ~14685, not
-  locked) says the ledger "lies open under her hand at its last page", which
-  is false under the toll. Replace it with "(The ledger lies open, and from
-  where you sit you can read the left-hand page. Her hand is flat on the
-  right-hand one. ...)". The writer may also change line twenty-six's words in
-  the same pass (`docs/handoff/story.md` item 2).
+- **C09's text is in** (11 October, `vonnra.f_chart` [0] and [1]): "(The
+  ledger lies open, her hand flat on the right-hand page, and from where you
+  sit you can read the left. Twenty-six lines, every one struck through. The
+  twenty-fifth: Nell, the smith's girl. With Wat. The twenty-sixth: A woman.
+  No name. And under them a twenty-seventh, not struck: From the ford. Got
+  up.)" Line twenty-six names nobody now; it never says Rook.
 - Then the page fills with the rest of the save's lines in her hand (text,
   unvoiced, scrolling), in about 10 s whatever the count. Entries with
   `burned` true are ruled through like lines 1-26. Each pool entry needs
@@ -232,9 +239,10 @@ Said when the player first passes her that morning:
   [ledger short form]" (one short take per entry). If the last name is a
   generated one (more than 25 paid), voice "And the last of them." alone.
 - Then, voiced: **"Twenty-six for the first. One each, since. ...No charge,
-  this once. I always tell people the price."**
-  (Optional sharper close, offered to the writer: "...No charge, this once.
-  Not to you.")
+  this once. Not to you."** (The writer's close, 11 October: it turns the
+  game's first words, the far voice's "Come up, traveler. ...No charge, this
+  once.", without explaining them. It replaces "I always tell people the
+  price.")
 - Minutes later a fall, and the narrator's line, unchanged: "You get up. It
   takes less than it did." Act 3 gives no rises, so this fall bypasses
   `RisesFor`; name its fight in the build. It is PAID: its ledger line is
@@ -282,6 +290,11 @@ The clock's `DayLines` and the story fights' pulls and sights now have ids
   He's said it every winter for twenty years.", gated on Oswin not yet paid
   (re-take its .f and .m). The pool's `oswin` news then pays the idiom off.
   Keep `vault.shut`'s swap to "the Penhale boy" (he exists).
+- **The crowd at the gate** (`scene_in_my_count`, `say`, voice `folk_m1`)
+  says the town's fear: "every morning since you came, there's somebody up
+  the street didn't wake." It is true once §4 is built (one death a morning
+  from day 2; the scene is day 3 on). Until then it reads as superstition.
+  Keep the scene after day 2 if its rule ever moves.
 - No gentle death may come from anywhere but the toll, or the re-read leaks:
   check `folk.json` and `rules.json` for "in her sleep" and "in his chair".
   There are no others outside the toll. (Rook's "She went in her sleep, pet"

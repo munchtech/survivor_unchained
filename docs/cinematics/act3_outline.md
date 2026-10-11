@@ -42,7 +42,9 @@ to the Act 1 standard before it is built. The beats are `STORY_BIBLE.md` section
   opens the ledger from C09, and reads the entries aloud, in order, as she read
   the palm: a name, a date, a crossing. Wat. A woman from Low Kiln. A pedlar with
   no name, "the pedlar". At twenty-five she reads "Nell, the smith's girl" in
-  exactly the voice she used for twenty-four. At twenty-seven she reads the
+  exactly the voice she used for twenty-four. At twenty-six, "A woman. No
+  name.", the same (the survivor's mother; if told, Vonnra asks "...Her
+  name?", and the survivor has only "Mam": `TREATMENT.md` §3.3). At twenty-seven she reads the
   survivor's name (or "the one from the ford"), and stops, because there is
   nothing after it yet.
 - **Variants.** *Accused:* she reads it unasked, at the first landing, and calls

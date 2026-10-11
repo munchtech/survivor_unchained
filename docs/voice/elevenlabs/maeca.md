@@ -1,6 +1,6 @@
 # Maeca: ElevenLabs packet
 
-Voice id in the game: `maeca`. 87 takes to record (6,294 characters; about 18,882 credits at three tries a line). Status: **on hold**: the story rewrite changes most of her lines (docs/voice/RERECORD.md). Do not record any of it yet.
+Voice id in the game: `maeca`. 87 takes to record (6,262 characters; about 18,786 credits at three tries a line). Status: **on hold**: the story rewrite changes most of her lines (docs/voice/RERECORD.md). Do not record any of it yet.
 
 ## Who they are
 
@@ -306,15 +306,15 @@ Subtitle: Go on, then. The wood's awake, and so's Holloway, and he'll count us b
 
 ### 24. `dlg.maeca.blind_morning.1.p1.wav`
 
-*Where:* dialogue.json maeca/blind_morning#1; part 2 of 2: narrator: Gray light. She's already up, barefoot in the frost, listening to the wood. / **maeca: The Pack found me, after Ashford. Three days, and then a cave mouth, and a lad I'd been fo…**
+*Where:* dialogue.json maeca/blind_morning#1; part 2 of 2: narrator: Gray light. She's already up, barefoot in the frost, listening to the wood. / **maeca: The Pack found me, after Ashford. A cave mouth, and a lad I'd been fond of dying in it. Th…**
 *Played:* confession, raw but steady; doing: tells you why she never hunts wolves; pace: slow; volume: quiet.
 *Wants:* you to know, and not to pity her
 *Note:* Narrator for the frost. The story told plainly, present tense feel. 'Kept everything off.' near breaking. A pause. 'That's all of why.' firm. 'Don't make it a story.' a plea disguised as an order.
 
 ```
-[confession, raw but steady, quietly] The Pack found me, after Ashford. Three days, and then a cave mouth, and a lad I'd been fond of dying in it. The old gray one came and lay down across the way in. Kept the cold off. Kept everything off. ...That's why. That's all of why. Don't make it a story.
+[confession, raw but steady, quietly] The Pack found me, after Ashford. A cave mouth, and a lad I'd been fond of dying in it. The old gray one came and lay down across the way in. Kept the cold off. Kept everything off. ...That's why. That's all of why. Don't make it a story.
 ```
-Subtitle: The Pack found me, after Ashford. Three days, and then a cave mouth, and a lad I'd been fond of dying in it. The old gray one came and lay down across the way in. Kept the cold off. Kept everything off. ...That's why. That's all of why. Don't make it a story.
+Subtitle: The Pack found me, after Ashford. A cave mouth, and a lad I'd been fond of dying in it. The old gray one came and lay down across the way in. Kept the cold off. Kept everything off. ...That's why. That's all of why. Don't make it a story.
 
 ### 25. `dlg.maeca.cb_broke_promise.0.wav`
 
@@ -581,9 +581,9 @@ Subtitle: Walking away's a skill. Most never learn it. They stay till it's too l
 *Note:* Narrator: a long breath. The cave mouth line very quiet. 'We'd have got on.' tender.
 
 ```
-[kinship, grief, quietly] Lamps. Nobody coming. [a long breath] I held a cave mouth three days for nobody coming. We'd have got on.
+[kinship, grief, quietly] Lamps. Nobody coming. [a long breath] I held a cave mouth for nobody coming. We'd have got on.
 ```
-Subtitle: Lamps. Nobody coming. I held a cave mouth three days for nobody coming. We'd have got on.
+Subtitle: Lamps. Nobody coming. I held a cave mouth for nobody coming. We'd have got on.
 
 ### 49. `dlg.maeca.told_little.0.p1.wav`
 
@@ -816,7 +816,7 @@ Subtitle: That's your last.
 
 ### 70. `dlg.scene_did_he.well.0.p1.wav`
 
-*Where:* dialogue.json scene_did_he/well#0; part 2 of 2: narrator: She's waiting for you at the well, which she never does. / **maeca: He talked to you. Last night. At the gate.**
+*Where:* dialogue.json scene_did_he/well#0; part 2 of 2: narrator: She's waiting for you at the well. / **maeca: He talked to you. Last night. At the gate.**
 
 ```
 He talked to you. Last night. At the gate.

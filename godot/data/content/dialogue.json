@@ -863,7 +863,7 @@
       "goto": "mother_where"
      },
      {
-      "text": "I was a day short.",
+      "text": "A week. I was a week on the road.",
       "goto": "mother_short"
      },
      {
@@ -4776,7 +4776,7 @@
       "text": "Off in the Hollow the Pack is loud, a long tangle of voices, and she stops with her hands on your buckle and listens, and then she laughs: a short surprised sound, as if she'd trodden on something. \"They're eating.\" She pulls you down onto the hides. Her hands are hard and careful, the way they are with a snare, and then they're not careful. The fire goes down to embers. Neither of you feeds it. Later, under the hides, she sleeps like a hunter: lightly, one hand on the crossbow and the other on you."
      },
      {
-      "text": "She doesn't talk, and then neither of you needs to. She undoes your boots before anything else, and sets them side by side outside the hides, and that seems to be a decision. Her hands are hard and careful, the way they are with a snare: slow, listening, ready to stop. They become sure. Once, far off, the Pack calls, and she goes still against you until it's done. Later, under the hides, she sleeps like a hunter: lightly, one hand on the crossbow and the other on you."
+      "text": "She doesn't talk, and then neither of you needs to. She comes round the fire to you, and that seems to be a decision. Her hands are hard and careful, the way they are with a snare: slow, listening, ready to stop. They become sure. Once, far off, the Pack calls, and she goes still against you until it's done. Later, under the hides, she sleeps like a hunter: lightly, one hand on the crossbow and the other on you."
      }
     ],
     "effects": [
@@ -4838,7 +4838,7 @@
       "text": "(Gray light. She's already up, barefoot in the frost, listening.) Go on, then. The wood's awake, and so's Holloway, and he'll count us both."
      },
      {
-      "text": "(Gray light. She's already up, barefoot in the frost, listening to the wood.) The Pack found me, after Ashford. Three days, and then a cave mouth, and a lad I'd been fond of dying in it. The old gray one came and lay down across the way in. Kept the cold off. Kept everything off. ...That's why. That's all of why. Don't make it a story."
+      "text": "(Gray light. She's already up, barefoot in the frost, listening to the wood.) The Pack found me, after Ashford. A cave mouth, and a lad I'd been fond of dying in it. The old gray one came and lay down across the way in. Kept the cold off. Kept everything off. ...That's why. That's all of why. Don't make it a story."
      }
     ],
     "effects": [
@@ -4956,7 +4956,7 @@
       "text": "She goes out by the east gate without a lamp, and you follow her along the Old Road past the wreck, by starlight and the white of the frost. She doesn't make a sound. Once she stops, and you stop, and somewhere off in the Hollow a wolf calls and is answered. \"Him. And the bitch with the white foot.\" She walks on."
      },
      {
-      "text": "The Old Road, the wreck, the frost. You know the way now, and she lets you walk in front, which she has never done."
+      "text": "The Old Road, the wreck, the frost. You know the way now, and she lets you walk in front."
      }
     ],
     "next": "blind_fire"
@@ -5415,7 +5415,7 @@
       "text": "Walking away's a skill. Most never learn it. They stay till it's too late, out of pride."
      },
      {
-      "text": "Lamps. Nobody coming. (a long breath) I held a cave mouth three days for nobody coming. We'd have got on."
+      "text": "Lamps. Nobody coming. (a long breath) I held a cave mouth for nobody coming. We'd have got on."
      }
     ],
     "effects": [
@@ -11798,6 +11798,36 @@
        "met": "chid"
       },
       {
+       "fact": "mother.told",
+       "eq": true
+      },
+      {
+       "zone": {
+        "id": "waystation",
+        "key": "grave",
+        "eq": true
+       }
+      },
+      {
+       "not": {
+        "npcFlag": {
+         "npc": "chid",
+         "key": "say:cut",
+         "eq": true
+        }
+       }
+      }
+     ]
+    },
+    "node": "cut"
+   },
+   {
+    "when": {
+     "all": [
+      {
+       "met": "chid"
+      },
+      {
        "fact": "chapter.done",
        "eq": true
       },
@@ -13181,6 +13211,69 @@
       }
      }
     ],
+    "next": "hub"
+   },
+   "cut": {
+    "id": "cut",
+    "text": "(There is a mallet and a chisel on the bench beside him, and he doesn't pick them up.) You've been to the garden. I saw. ...It wants a name, that marker. My hand's still steady, whatever Rook says. What do I cut?",
+    "effects": [
+     {
+      "npcFlag": {
+       "npc": "chid",
+       "key": "say:cut",
+       "value": true
+      }
+     }
+    ],
+    "choices": [
+     {
+      "text": "Mam.",
+      "effects": [
+       {
+        "set": {
+         "mother.cut": "mam"
+        }
+       }
+      ],
+      "goto": "cut_mam"
+     },
+     {
+      "text": "Leave it plain.",
+      "effects": [
+       {
+        "set": {
+         "mother.cut": "plain"
+        }
+       }
+      ],
+      "goto": "cut_plain"
+     },
+     {
+      "text": "(Say nothing.)",
+      "effects": [
+       {
+        "set": {
+         "mother.cut": "none"
+        }
+       }
+      ],
+      "goto": "cut_wait"
+     }
+    ]
+   },
+   "cut_mam": {
+    "id": "cut_mam",
+    "text": "Mam. (He says it over, under his breath, as if it might get away.) That's the first name anybody has. I'll cut it tonight.",
+    "next": "hub"
+   },
+   "cut_plain": {
+    "id": "cut_plain",
+    "text": "(He nods.) Plain, then. The ground knows who's in it.",
+    "next": "hub"
+   },
+   "cut_wait": {
+    "id": "cut_wait",
+    "text": "(He waits, and then he puts the chisel away.) It'll keep. Come and tell me when it comes to you.",
     "next": "hub"
    }
   }
@@ -14679,10 +14772,10 @@
        "fact": "vonnra.accused",
        "eq": true
       },
-      "text": "(She takes a folded chart from under the ledger and lays it between you. It is in the Wayfinder's hand, and its margins are written full.) That would be ten gold. This once, no charge. The rest you will walk into yourself, and you will, because you are the kind that does. (The ledger lies open under her hand at its last page, and from where you sit you can read it. Twenty-six lines, every one struck through. The twenty-fifth: Nell, the smith's girl. With Wat. The twenty-sixth: Rook's lodger. And under them a twenty-seventh, not struck: From the ford. Got up.)"
+      "text": "(She takes a folded chart from under the ledger and lays it between you. It is in the Wayfinder's hand, and its margins are written full.) That would be ten gold. This once, no charge. The rest you will walk into yourself, and you will, because you are the kind that does. (The ledger lies open, her hand flat on the right-hand page, and from where you sit you can read the left. Twenty-six lines, every one struck through. The twenty-fifth: Nell, the smith's girl. With Wat. The twenty-sixth: A woman. No name. And under them a twenty-seventh, not struck: From the ford. Got up.)"
      },
      {
-      "text": "(She takes a folded chart from under the ledger and lays it between you. It is in the Wayfinder's hand, and its margins are written full.) That would be ten gold, traveler. This once, no charge. The rest you will walk into yourself, and you will, because you are the kind that does. (The ledger lies open under her hand at its last page, and from where you sit you can read it. Twenty-six lines, every one struck through. The twenty-fifth: Nell, the smith's girl. With Wat. The twenty-sixth: Rook's lodger. And under them a twenty-seventh, not struck: From the ford. Got up.)"
+      "text": "(She takes a folded chart from under the ledger and lays it between you. It is in the Wayfinder's hand, and its margins are written full.) That would be ten gold, traveler. This once, no charge. The rest you will walk into yourself, and you will, because you are the kind that does. (The ledger lies open, her hand flat on the right-hand page, and from where you sit you can read the left. Twenty-six lines, every one struck through. The twenty-fifth: Nell, the smith's girl. With Wat. The twenty-sixth: A woman. No name. And under them a twenty-seventh, not struck: From the ford. Got up.)"
      }
     ],
     "effects": [
@@ -17302,10 +17395,10 @@
       "when": {
        "archetype": "stalker"
       },
-      "text": "You came up behind me without a sound. Do that upstairs and you'll get a candlestick in the ear."
+      "text": "Nobody's looked at you once since you came in. Not once. I'd pay good money for that, love. Some nights I'd pay all of it."
      },
      {
-      "text": "You came up behind me without a sound. Do that upstairs and you'll get a candlestick in the ear."
+      "text": "Nobody's looked at you once since you came in. Not once. I'd pay good money for that, love. Some nights I'd pay all of it."
      }
     ],
     "effects": [
@@ -17396,7 +17489,7 @@
       "text": "She doesn't talk the way she talks for money. She doesn't talk at all, at first. She undresses you as if she's never done it before, which is absurd, and she knows it's absurd, and halfway through she laughs into your neck and can't stop. Then she does stop, and the laugh goes somewhere else. She's slower than on her working nights, and less sure, and once she stops altogether with her forehead against yours and just breathes, and you wait, and she goes on. The lamp burns down on its own. Nobody turns it. In the dark, much later, she says into your shoulder, \"You told me anyway,\" and nothing else, and then she sleeps."
      },
      {
-      "text": "The blue room, and the lamp, and the bolt, which she shot herself, which she has never done. She doesn't talk the way she talks for money. For a while neither of you talks at all. She is slower than you have known her, and less sure, and there is a moment when she stops with her hands on your face and just looks, as if she is learning it, and doesn't make a joke of it. Later she lies awake, and you can feel her deciding something, and then she sleeps."
+      "text": "The blue room, and the lamp, and the bolt, which she shot herself. She doesn't talk the way she talks for money. For a while neither of you talks at all. She is slower than you have known her, and less sure, and there is a moment when she stops with her hands on your face and just looks, as if she is learning it, and doesn't make a joke of it. Later she lies awake, and you can feel her deciding something, and then she sleeps."
      }
     ],
     "effects": [
@@ -17425,7 +17518,7 @@
    },
    "free_morning": {
     "id": "free_morning",
-    "text": "(She's still there when you wake, which she never is.) Don't tell Rook; she'll want a third of nothing, on principle. ...And don't tell me anything up here you'd not want Vonnra to hear. I mean that kindly. It's the kindest thing I've said to anyone in a year.",
+    "text": "(She's still there when you wake.) Don't tell Rook; she'll want a third of nothing, on principle. ...And don't tell me anything up here you'd not want Vonnra to hear. I mean that kindly. It's the kindest thing I've said to anyone in a year.",
     "choices": [
      {
       "text": "Then I'll tell you things downstairs.",
@@ -21956,7 +22049,7 @@
    "all": {
     "id": "all",
     "speaker": "holloway",
-    "text": "Gate was open. Somebody had to stand in it. (Maeca looks at the step he was asleep on, and then at him, and says nothing at all, very loudly.)",
+    "text": "Gate was open. Somebody had to stand in it. (Maeca looks at the ground he slept on, and then at him, and says nothing.)",
     "next": "bar"
    },
    "thanks": {
@@ -21995,13 +22088,25 @@
    "crowd": {
     "id": "crowd",
     "speaker": "narrator",
-    "text": "There are folk at the gate end of the square when you come down, and the talk stops when they see you. Somebody says it out loud: every night you go out into the dark, and every morning you come back out of it, and nothing out there ever touches you. Rook has a word for that. They are between you and the street, and they are not moving.",
+    "text": "There are folk at the gate end of the square when you come down, and the talk stops when they see you.",
+    "next": "say"
+   },
+   "say": {
+    "id": "say",
+    "speaker": "folk_m1",
+    "text": "Every night you go out in the dark. Every morning you walk back in without a mark on you. And every morning since you came, there's somebody up the street didn't wake. ...You'll be out of that gate by dark.",
+    "next": "between"
+   },
+   "between": {
+    "id": "between",
+    "speaker": "narrator",
+    "text": "They are between you and the street, and they are not moving.",
     "next": "captain"
    },
    "captain": {
     "id": "captain",
     "speaker": "holloway",
-    "text": "(He comes down the street at a walk, not hurrying, and he has been drinking, and he stops in the gateway between you and them.) She's in my count.",
+    "text": "(He comes down the street at a walk, not hurrying, and he has been drinking. He walks through them, not round them, and stops with his back to you.) She's in my count.",
     "next": "men"
    },
    "men": {
@@ -22102,7 +22207,7 @@
    "home": {
     "id": "home",
     "speaker": "holloway",
-    "text": "Can't. Somebody's still out. (He drinks.) ...You want to know about Ashford. Everybody does. Sit, then.",
+    "text": "Can't. Somebody's still out. (He drinks.) ...Sit down. I'll tell you who.",
     "next": "tell"
    },
    "tell": {
@@ -22123,7 +22228,7 @@
    "saw": {
     "id": "saw",
     "speaker": "holloway",
-    "text": "Dead. Climbing. Under the last of ours, close as that. (He holds one hand flat over the other.) Four hundred behind me, asleep. Bairns. (He drinks.) Lid down. Bar across. Sat on it. (He breathes out, a long way.) Three days, they knocked.",
+    "text": "Dead. Climbing. Gray, all of them, and not a sound out of them. Under the last of ours, close as that. (He holds one hand flat over the other.) Four hundred behind me, asleep. Bairns. (He drinks.) Lid down. Bar across. Sat on it. (He breathes out, a long way.) Three days, they knocked.",
     "choices": [
      {
       "text": "You saved the upper town.",
@@ -22209,7 +22314,7 @@
    "well": {
     "id": "well",
     "speaker": "maeca",
-    "text": "(She's waiting for you at the well, which she never does.) He talked to you. Last night. At the gate.",
+    "text": "(She's waiting for you at the well.) He talked to you. Last night. At the gate.",
     "choices": [
      {
       "text": "He told me about Ashford. The shaft, and the lid.",

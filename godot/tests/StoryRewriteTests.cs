@@ -319,8 +319,12 @@ public class StoryRewriteTests
         var q = Q();
         Play("rook", q, "My mother sent for me", "Where is she");
         Assert.Contains("rook", q.World.Quests["home"].Entries);
+        // The room stays in the lie, so line twenty-six names nobody (notes 02 §2); it rhymes with the
+        // unnamed marker. Her hand covers the next page: the toll's lines (TOLL_SPEC §6).
         var chart = string.Join(" ", Convo("vonnra").Nodes["f_chart"].Text.Select(v => v.Text));
-        Assert.Contains("The twenty-sixth: Rook's lodger.", chart);
+        Assert.Contains("The twenty-sixth: A woman. No name.", chart);
+        Assert.DoesNotContain("lodger", chart);
+        Assert.Contains("her hand flat on the right-hand page", chart);
         Assert.Contains("From the ford. Got up.", chart);
         Assert.DoesNotContain("woman with a lamp", chart);
     }
@@ -355,5 +359,53 @@ public class StoryRewriteTests
         Play("chid", c, "Write down what she called you");
         Assert.Contains("word", c.World.Quests["home"].Entries);
         Assert.Contains("\"Spark. What she called me, at dusk.\"", Lore.Quests["home"].Entries["word"]);
+    }
+
+    [Fact]
+    public void The_sophistication_pass_holds()
+    {
+        // Notes 02 §3: "three days" is Holloway's number; the lover never hears it from Maeca.
+        foreach (var id in new[] { "blind_morning", "told_true" })
+            Assert.DoesNotContain(Convo("maeca").Nodes[id].Text, v => v.Text.Contains("three days", StringComparison.OrdinalIgnoreCase));
+        // §2: the survivor's answer is one the lie allows.
+        var answers = Convo("rook").Nodes["mother2"].Choices!.SelectMany(c => c.Text.Select(v => v.Text)).ToList();
+        Assert.Contains("A week. I was a week on the road.", answers);
+        Assert.DoesNotContain(answers, a => a.Contains("a day short"));
+        // §9: the narrator's tic, cut; the hammer and Chid's quiet are kept.
+        foreach (var tic in new[] { "which she never does", "which they never do", "which nobody has seen her do", "which she has never done", "which she never is" })
+            Assert.DoesNotContain(ContentStrings(), t => t.Contains(tic));
+        Assert.Contains(ContentStrings(), t => t.Contains("You have never seen him put the hammer down."));
+        Assert.Contains(ContentStrings(), t => t.Contains("(He is quiet, which he never is.)"));
+        // The crowd's threat is one voice in it, and the town's fear is the toll's truth, dismissed.
+        var (count, _) = Play("scene_in_my_count", Q());
+        Assert.Equal("folk_m1", Convo("scene_in_my_count").Nodes["say"].Speaker);
+        Assert.Contains(count, t => t.Contains("somebody up the street didn't wake"));
+        Assert.Contains("They are between you and the street, and they are not moving.", count);
+        Assert.Contains(count, t => t.Contains("He walks through them, not round them, and stops with his back to you."));
+        // The confession's plant, true of the dead and of the living too far gone to call out (b).
+        var (knock, _) = Play("scene_knocking", Q(), "(Listen.)", "Go home", "(Wait.)");
+        Assert.Contains(knock, t => t.EndsWith("...Sit down. I'll tell you who."));
+        Assert.Contains(knock, t => t.StartsWith("Dead. Climbing. Gray, all of them, and not a sound out of them."));
+        // §6.2: the boots thinned.
+        Assert.DoesNotContain(Convo("maeca").Nodes["blind"].Text, v => v.Text.Contains("boots"));
+        Assert.Contains(Simulation.DailyRules, r => r.Id == "kerchief.raid" && r.Report!.Contains("took his mule"));
+        // Rook's "you can tell Chid what to cut", kept: once she has stood at the plain marker.
+        var s = Q();
+        s.World.Npc("chid").Flags["met"] = true;
+        s.World.Facts["mother.told"] = true;
+        Assert.DoesNotContain(Play("chid", s).Said, t => t.Contains("What do I cut?"));
+        s.World.Zones["waystation"] = new() { ["grave"] = true };
+        var (cut, _) = Play("chid", s, "Mam.");
+        Assert.Contains(cut, t => t.EndsWith("What do I cut?"));
+        Assert.Equal("mam", s.World.Fact("mother.cut").Str);
+        Assert.DoesNotContain(Play("chid", s).Said, t => t.Contains("What do I cut?"));
+        // §6.5: the player who settled Redcowl and Pell still gets a decoy, and no reported laugh.
+        var n = Q();
+        n.World.Day = 6;
+        n.World.Facts["holloway.cup_seen"] = true;
+        n.World.Facts["redcowl"] = "dead";
+        n.World.Facts["pell.fate"] = "ran";
+        Assert.Contains(Simulation.AdvanceDay(n.C, () => 0.5).Lines, l => l.Contains("The town says the north wants him gone."));
+        Assert.DoesNotContain(Simulation.DailyRules, r => r.Report?.Contains("Holloway laughed") == true);
     }
 }
