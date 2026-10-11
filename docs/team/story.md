@@ -7,7 +7,10 @@ starts from `docs/handoff/story.md`.
 **Now (11 October, the tenth lead, branch `worktree-agent-a81b550b25ab6b672`):**
 - **The twist:** three options for the owner are in `docs/story/TWIST_OPTIONS.md`.
   A, "Not yet": Chid made you (recommended). B, "Count's right": Holloway knew.
-  C, "She went in first". Reported to main; **waiting on the owner's choice.**
+  C, "She went in first". **The owner chose A and B together.** He still
+  wants a real "WHAT THE FUCK" moment, a twist that re-reads the whole game
+  ("those are just like 'ohhh yeahhh'"). It comes next, before the early
+  lines lock (see the handoff).
 - **Next:** settle the Prologue and the opening of Act 1 for ElevenLabs. Plant
   the chosen seeds and make the sophistication pass. A fresh editor (max)
   checks the lines before they're marked LOCKED FOR RECORDING. Then

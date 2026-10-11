@@ -1,5 +1,9 @@
 # The big twist: three options for the owner
 
+> **Decided (11 October):** the owner took **A and B together**; C is dropped.
+> He still wants a bigger, whole-game "WHAT THE FUCK" moment: "those are just
+> like 'ohhh yeahhh'". The next writer proposes it (`docs/handoff/story.md`).
+
 The writer, 11 October 2026. The owner: "we need a big twist nobody sees
 coming, maybe chid being evil?" A twist nobody sees coming is planted from the
 first scenes, so it has to be chosen before the early lines are recorded. Here

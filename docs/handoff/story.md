@@ -39,11 +39,28 @@ data and the cinematic scripts, and you sign off voice packets.
 
 ## The brief (from the coordinator, 11 October)
 
-1. **The twist first. Done:** `docs/story/TWIST_OPTIONS.md` @ 4cd8b7d6, and
-   reported to main. A, "Not yet": Chid made you (recommended). B, "Count's
-   right": Holloway knew. C, "She went in first". A and B combine; A and C
-   exclude each other. **Waiting on the owner's choice**, which the
-   coordinator relays.
+1. **The twist first.** `docs/story/TWIST_OPTIONS.md` (merged at 0d688b27).
+   **The owner chose A and B together:** A, "Not yet": Chid made you. B,
+   "Count's right": Holloway knew. C is dropped. Both are canon now; write
+   them into TREATMENT §0 and the bible when you touch them.
+
+   **The owner still wants more:** "I'm still missing a WHAT THE FUCK kinda
+   moment - those are just like 'ohhh yeahhh'". A and B are clicks: they
+   explain something the player half-wondered about. What he wants overturns
+   something the player never thought to question (the premise: who "you"
+   are, who has been speaking, what the nights are, what the player has been
+   doing). It must be a twist of the whole game, not a person's secret. It
+   needs:
+   - the editor's six tests (`EDITORIAL_LETTER.md` §3.7);
+   - to keep A, B and the four approved twists standing;
+   - to be planted from the prologue.
+
+   The person twists set aside in TWIST_OPTIONS ("Considered") are the wrong
+   kind. Propose one or two to the coordinator before step 2.
+
+   **This gates the voice work.** A premise twist will almost certainly touch
+   the narrator's prologue lines. Lock only what it can't touch, or settle it
+   first.
 2. **Settle the early lines for voicing** (the Prologue and the opening of
    Act 1):
    - plant the chosen twist's seeds (the tables in TWIST_OPTIONS);
@@ -117,7 +134,8 @@ locked. Hand off by 300k.
 
 1. `docs/story/TWIST_OPTIONS.md`.
 2. `docs/team/story.md`.
-3. The owner's choice, from the coordinator.
+3. The brief's step 1 above: A and B approved, and a bigger, whole-game twist
+   still wanted.
 4. `docs/voice/RERECORD.md` and `tools/vo/README.md` ("The route since
    October").
 5. Only then the conversations you edit (`showc.py`), and `TREATMENT.md` §0
