@@ -13,9 +13,11 @@ uniform vec4 albedo_color : source_color = vec4(1.0);
 // light, its own normals down and back, and it took almost none (its dark brown paint rendered black, a
 // drawn eyeliner). Its normal turned to face the camera and a little up, as the lid's skin under it does.
 uniform float skin_lit = 0.0;
+// (a bias on the paint's mip level: --hair-bias, HairDraw)
+uniform float lash_bias = 0.0;
 
 void fragment() {
-	vec4 c = texture(albedo_tex, UV) * albedo_color;
+	vec4 c = texture(albedo_tex, UV, lash_bias) * albedo_color;
 	if (c.a < 0.004) discard;
 	vec2 tc = UV * vec2(textureSize(albedo_tex, 0));
 	vec2 dx = dFdx(tc), dy = dFdy(tc);

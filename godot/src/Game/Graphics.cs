@@ -115,6 +115,16 @@ public static class Graphics
         // --fsr-sharpness S (to compare): FSR 2's own sharpening, 0 the most and 2 none
         // (Godot hands it on as 1 - S/2; its default 0.2 is 0.9, near the most).
         if (FsrSharpness is float fs) vp.FsrSharpness = fs;
+        // The Look (creation's still close-up): TAA and MSAA whatever play uses. FSR 2 at
+        // native left her eyes' edges and the hair's edge moving in a still portrait, where
+        // TAA has no ghost to leave (judged 10 October 2026, cycle 12).
+        if (AtLook && vp.Scaling3DMode == Viewport.Scaling3DModeEnum.Fsr2 && vp.Scaling3DScale >= 0.999f)
+        {
+            vp.Scaling3DMode = Viewport.Scaling3DModeEnum.Bilinear;
+            vp.UseTaa = true;
+            vp.Msaa3D = t.Msaa == Viewport.Msaa.Disabled ? Viewport.Msaa.Msaa4X : t.Msaa;
+        }
+        HairDraw.Msaa(vp.Msaa3D != Viewport.Msaa.Disabled);
 
         Sparks.Density = t.Effects;
         if (scene == null) return;
@@ -127,6 +137,9 @@ public static class Graphics
     /// <summary>The edges smoothed another way than the tier's (--aa: smaa, fxaa, msaa, fsr2, or taa
     /// alone without MSAA), to compare; null: the tier's.</summary>
     public static string? Aa = Args.Get("aa");
+
+    /// <summary>At the Look (creation): its own smoothing (Apply). Set by GameFront.</summary>
+    public static bool AtLook;
 
     /// <summary>FSR 2's sharpening (--fsr-sharpness), to compare; null: Godot's own.</summary>
     public static float? FsrSharpness = Args.Has("fsr-sharpness") ? (float)Args.Num("fsr-sharpness", 0.2f) : null;
