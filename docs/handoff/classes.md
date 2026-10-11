@@ -24,7 +24,7 @@ Battle wiring (dash forms, reflexes, the Flare's meter, window and clutch, Q fir
 - `--flare stand` (harness; carries the road's Stand). The pilot fires a ready Flare after 15 s with four foes within 10 m (a kiting moonweaver sat full with its 5 m Stand).
 - Game fixes: **the Flare grows 2% a lamp lit** (`Flare.FlareLampGlow`, `LampLoadout.Lit`; the full board's boss share had fallen to 14% at T4 and 9% at L30); **Moonmarked's mark is a quarter by night** (`ArcanistOnHit`; it lifted every blow on the marked by 30% at night); **a Crowded Sky the cap leaves nothing to loose stays dark** (`CrowdOn`; it was seeking for free beside Many Lights). CLASSES §2.10, §3.2 and §7 "Phase 1, measured" carry them. 813 tests green.
 - Checks: Bulwark T4 and chainbound T2 full/empty are noise (x1.00, x1.01 at 48 seeds). Seeking Motes on arcanists isn't weak (probe: highest of all hosts); in runs it fuses into Starfall and the arcanist's other spells take the crowd first.
-- Re-judge (su-lead-max, verdict in the main session's scratchpad `cl4berdict.md`): PASS WITH FIXES. F1-F3 done: chainbound 48 seeds x1.01; Banked Flame is the sunderer's slow T4 (gap 105 s, 72 s off); story bosses fall 14-29% sooner than on main (deft hands; listed, risk 4).
+- Re-judge (su-lead-max; verdict in the main session's scratchpad, folder cl4b, file verdict.md): PASS WITH FIXES. F1-F3 done: chainbound 48 seeds x1.01; Banked Flame is the sunderer's slow T4 (gap 105 s, 72 s off); story bosses fall 14-29% sooner than on main (deft hands; listed, risk 4).
 
 ## 4. Measured (12 seeds, 1f4bc98f; scratchpad `cl4b\`: summary.txt, flare_table.txt, extras.txt)
 
