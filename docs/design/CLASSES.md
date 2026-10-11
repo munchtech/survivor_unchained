@@ -384,7 +384,7 @@ Same shape: the hearth's dash form and reflexes, two roads, the bridge.
 | **By day and in maps** | in full | in full | in full | in full |
 | **By night** (the table's arenas and story fights) | **in full**: they wake on whatever the draft brings | **at a quarter**; a blue lamp's *price* stays in full | at most +1 each from the whole board | become a **×1.25 lean** toward the road's cards, as the Edge does (SKILLS_DESIGN §14.2) |
 
-By night, every lamp keeps its rule but not its size. A rule's defining number (a chance, reach or count without which it can't fire) stays in full by night; its +% riders are sizes. This keeps the night the ember's ("power from nothing, gone at dawn"; SKILLS_DESIGN principle 8): identity crosses into the night and numbers barely do. The harness holds a full 50-lamp board at night within ×1.25 of an empty one.
+By night, every lamp keeps its rule but not its size. A rule's defining number (a chance, reach or count without which it can't fire) stays in full by night; its +% riders are sizes. A status a rule lays carries its size too: the Moonmarked mark lifts the marked by +30% by day and +7.5% by night. A blue lamp whose gift the night's count cap withholds entirely (the Crowded Sky beside Many Lights) stays dark by night, its seeking with its price. This keeps the night the ember's ("power from nothing, gone at dawn"; SKILLS_DESIGN principle 8): identity crosses into the night and numbers barely do. The harness holds a full 50-lamp board at night within ×1.25 of an empty one.
 
 **Leans.** The calling's path lean (×1.3 to ×1.5) and the road's lean multiply, and they are clamped at ×2.
 
@@ -424,6 +424,8 @@ Hearth lamps that fill it from the horde (Blood for the Flare, Kindling) draw on
 - then one every 60 to 90 s;
 - two or three in a boss fight;
 - faster when it's going badly.
+
+**Power:** each blow's power grows 8% an ember level (a level, by day) and 2% for every lamp lit. The board feeds the skills by their tags, so without the second term a full board's Flare fell from about a fifth of a boss's damage to a seventh at tier 4 and a tenth at level 30 (the harness, 12 October).
 
 **Starting charge:** nights and maps start at 20 to 25 (a quarter of the way: 25), and story fights start at half (they're short). In a map, the meter carries between areas.
 
