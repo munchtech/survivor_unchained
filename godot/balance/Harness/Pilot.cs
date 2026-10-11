@@ -133,7 +133,8 @@ public static class Pilot
                     break;
                 }
         if (p.DashCharges > 0 && b.HostilesInRadius(p.X, p.Z, 2.2).Count >= 3) b.Dash(mx, mz);
-        if (p.AbilityCd <= 0 && b.HostilesInRadius(p.X, p.Z, 6).Count >= 5) b.UseAbility(mx, mz);
+        // The Flare: a boss within ten metres, a crowd of eight within six, or health below a quarter.
+        if (b.FlareReady && (p.Hp < b.MaxHp * 0.25 || b.HostilesInRadius(p.X, p.Z, 10).Any(e => e.Boss) || b.HostilesInRadius(p.X, p.Z, 6).Count >= 8)) b.UseFlare(mx, mz);
         if (p.Hp >= b.MaxHp * 0.33) return false;
         double before = p.Hp;
         j.Quaff(b);

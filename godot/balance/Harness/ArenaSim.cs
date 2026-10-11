@@ -17,10 +17,12 @@ namespace SurvivorUnchained.Balance;
 /// whether the hands are deft (they read lunges, pots and burning ground as a
 /// player who knows the fight does: a death is then the game's, not the bot's).</summary>
 public sealed record RunSpec(int Seed, string Calling, string Policy, int Tier = 1, string People = "pack", string[]? Oaths = null,
-    double Cap = 40, double Beyond = 0, int Weapon = 0, int Art = 0, int Level = 1, bool Deft = false, double Minutes = 30)
+    double Cap = 40, double Beyond = 0, int Weapon = 0, int Art = 0, int Level = 1, bool Deft = false, double Minutes = 30,
+    string Type = "", string Lamps = "empty")
 {
     public string Key => $"{Calling}/{Policy}/t{Tier}/{People}/s{Seed}/w{Weapon}" + (Level > 1 ? $"/L{Level}" : "") + (Deft ? "/deft" : "") +
-        (Oaths is { Length: > 0 } ? $"/{string.Join("+", Oaths)}" : "") + (Minutes != 30 ? $"/m{Minutes:0}" : "");
+        (Oaths is { Length: > 0 } ? $"/{string.Join("+", Oaths)}" : "") + (Minutes != 30 ? $"/m{Minutes:0}" : "") +
+        (Type != "" ? $"/{Type}" : "") + (Lamps != "empty" ? $"/lamps-{Lamps}" : "");
 }
 
 /// <summary>A minute of the fight, as the harness saw it.</summary>
@@ -77,6 +79,14 @@ public sealed class RunResult
     public double Gold;
     public int Champions;
     public Dictionary<string, int> KillsBy = new();
+    /// <summary>The survivor's type (road) and the lamps lit (free ones too) at the start.</summary>
+    public string Road = "";
+    public int LampsLit;
+    /// <summary>The Flare: casts, the first cast's minute, the mean gap between casts (s), casts while a boss was up,
+    /// its share of the damage done to bosses, clutch casts, and the meter's fill by source.</summary>
+    public int FlareCasts, FlareBossCasts, FlareClutches;
+    public double FlareFirst = double.NaN, FlareGap = double.NaN, FlareBossShare = double.NaN;
+    public Dictionary<string, double> FlareFills = new();
 
     /// <summary>Won at the half hour and still standing for the boss: the target.</summary>
     public bool Won => WonAt != null;
@@ -149,6 +159,14 @@ public static class ArenaSim
         while (j.Ch.Level < spec.Level) Character.GainXp(j.Ch, Character.XpForLevel(j.Ch.Level) - j.Ch.Xp + 1);
         switch (spec.Calling) { case "arcanist": j.Ch.Attributes.Wits += j.Ch.Points; break; case "stalker": j.Ch.Attributes.Finesse += j.Ch.Points; break; default: j.Ch.Attributes.Might += j.Ch.Points; break; }
         j.Ch.Points = 0;
+        // The type (road) and the lamps lit (docs/design/CLASSES.md section 2).
+        if (spec.Type != "") LampBook.SetType(j.Ch, spec.Type);
+        if (spec.Lamps == "full")
+        {
+            foreach (var id in Lamps.StoryFights) j.World.Facts[$"arena.{id}"] = "won";
+            j.World.Facts["lamps.atlas"] = LampBook.AtlasLamps;
+        }
+        if (spec.Lamps is "suggested" or "full") LampBook.LightSuggested(j.Ch, j.World);
         // (A night shorter than the table's is a story's: it ends on its boss.)
         var arena = new ArenaSpec { Id = "table:bot", Name = "The Harness", Seed = spec.Seed, Tier = spec.Tier, People = spec.People, Oaths = (spec.Oaths ?? []).ToList(),
             Minutes = spec.Minutes, Story = spec.Minutes != 30 };
@@ -170,7 +188,7 @@ public static class ArenaSim
         var firstHit = new Dictionary<int, double>();
         var fodder = new List<double>();
         var elite = new List<double>();
-        double bossAt = -1;
+        double bossAt = -1, bossUp = -1;
         var p = b.Player;
         var m = new Minute();
         double lastDamage = 0, lastTaken = 0;
@@ -227,6 +245,7 @@ public static class ArenaSim
             m.ChargePeak = Math.Max(m.ChargePeak, b.Charges.Live);
             if (b.Charges.Live >= 3) m.Overlap += Dt;
             t += Dt;
+            if (bossUp < 0 && (int)Math.Round(t * 60) % 30 == 0 && b.Enemies.Living().Any(e => e.Boss)) bossUp = b.Time;
             if (r.WonAt == null && zone.Won)
             {
                 r.WonAt = t / 60;
@@ -278,6 +297,16 @@ public static class ArenaSim
         r.KilledBy = r.Died ? p.FellTo ?? p.LastKiller?.Def.Id ?? "?" : "";
         r.DamageBy = new Dictionary<string, double>(b.DamageBy);
         r.Build = Describe(b);
+        r.Road = LampBook.Now(j.Ch).Type;
+        r.LampsLit = LampBook.Now(j.Ch).Lit.Count;
+        r.FlareCasts = b.FlareCasts;
+        r.FlareClutches = b.FlareClutches;
+        r.FlareFills = new Dictionary<string, double>(b.FlareFills);
+        if (b.FlareTimes.Count > 0) r.FlareFirst = b.FlareTimes[0] / 60;
+        if (b.FlareTimes.Count > 1) r.FlareGap = (b.FlareTimes[^1] - b.FlareTimes[0]) / (b.FlareTimes.Count - 1);
+        if (bossUp >= 0) r.FlareBossCasts = b.FlareTimes.Count(x => x >= bossUp);
+        double bossDmg = b.BossDamageBy.Values.Sum();
+        if (bossDmg > 0) r.FlareBossShare = b.BossDamageBy.GetValueOrDefault("flare") / bossDmg;
         return r;
     }
 
