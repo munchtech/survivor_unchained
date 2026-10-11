@@ -74,7 +74,12 @@ public sealed class WaterMaskDef
 public sealed record SkySettings(string Top, string Horizon, string Bottom, string Glow, double GlowPower, double Stars, double Moon);
 
 public sealed record GradeSettings(double[] Lift, double[] Gamma, double[] Gain, string ShadowTint, string HighlightTint,
-    double TintStrength, double Saturation, double Vibrance, double Contrast);
+    double TintStrength, double Saturation, double Vibrance, double Contrast)
+{
+    /// <summary>How much of the shadow tint's darkening is held off in the toe (0 to 1): the tint stays a colour there,
+    /// so dark values (an iris, dark hair, unlit ground) keep their detail instead of falling to black.</summary>
+    public double Toe { get; init; }
+}
 
 public sealed record AtmospherePreset(
     SkySettings Sky, string KeyColor, double KeyIntensity, double KeyElevation, double KeyAzimuth, double ShadowStrength,

@@ -10,6 +10,59 @@ applied. The rewrite into the game's data goes Act 1, then Act 2, then Act 3.
 
 These overrule the text below wherever it differs.
 
+**Added 11 October (the owner): three more twists, canon.** They overrule
+anything below, in this section too. Each has its own page for the detail.
+
+- **"Not yet": Chid made you** (`TWIST_OPTIONS.md` A). Alone since his
+  fellow keeper Tobin became the Warden, Chid went down to the reeds every
+  night the irons were lit, hoping one of the drowned would get up with its
+  mind, and warned nobody. When the mother came to the Waystation dying, he
+  wrote her letter for her (her hands were bad) and chose its words: *Come
+  home by the Low Ford. I'll be at the water with a lamp, so you'll see me.*
+  Rook took it to the carrier and sold the date. On the seventh evening he
+  walked her to the water's edge and held her hand while the Warden took her,
+  so that she would be down there first, holding on, when her child drowned.
+  Everything he does for the survivor on screen is true kindness, and it is
+  tending what he made. It comes out in three steps, heard first as comfort:
+  C32, Rook's kitchen ("The last night he went down with her."); C42, his
+  truth ("I held her hand. ...She wasn't on her own."); C43, the voice ("The
+  kind one walked me to the edge."). In the coda he asks "Is it morning?",
+  the game's first choice turned round, and the player may give him the
+  Order's answer, "Not yet.", and leave him to sit up alone for good, as he
+  left Tobin. Option 3's "I made him too." may go into C42, at the writer's
+  call.
+- **"Count's right": Holloway knew** (`TWIST_OPTIONS.md` B). As the lid came
+  down he saw Maeca's face, ninety-two, turned up into his lamp. For ten years
+  he has known she lived, so the ones under him weren't all dead, and
+  everything since is for her: a widow's ration for a living woman, out of
+  his own pocket; her loaded crossbow beside his stool; whatever she pours.
+  At the lip of the hole he looks up at her, grins, "Count's right," and
+  climbs into her knife on purpose. After the kill, risen at his gate on the
+  fourth dusk, he counts to ninety-two (C20b); his daybook ends "92." with no
+  name, and "Sorry." (C22). Maeca's "He never counted me." becomes "...He
+  counted me."
+- **The toll: "It takes less than it did"** (`TWIST_WTF.md` option 1; the
+  build, `TOLL_SPEC.md`). The survivor's first rising cost the twenty-six
+  Vonnra drowned. Every rising since costs one life in the valley: someone
+  dies quietly before the next light (in a chair, in their sleep; the town's
+  other deaths have a cause), and the next night they walk out to the
+  survivor's light and never strike, and she burns them. Every player pays at
+  least once: the first night fight has one fall nobody can dodge, and the
+  next morning, "Up the street, nobody is baking." Nobody says it until C41,
+  where Vonnra reads her ledger on past twenty-seven ("From the ford. Got
+  up.") into the player's own deaths, by name and night: "Twenty-six for the
+  first. One each, since. ...No charge, this once. Not to you." The narrator's most-said line was the plain truth every time. The
+  owner chose it knowing that dying in the endless then costs a life (after
+  ending A; after B nobody pays; after C the survivor pays it herself).
+- **How the three meet.** Vonnra's lamps took the twenty-six, and she
+  believes they bought her the survivor ("I drowned twenty-six people to find
+  you."). Chid put the one who would hold on into the water first, and Vonnra
+  never learns it. Why one rises with their mind stays unsaid: the game shows
+  only that the survivor came up with her mother. And the mother's voice tells
+  the player every rising, and never what it costs.
+
+**Decided before (October):**
+
 - **All four twists: yes.** "You did this", "Ninety-two", the woman with the
   lamp, the voice.
 - **The narrator is a woman of about sixty, cast plain and dry**, a woman who
@@ -22,13 +75,13 @@ These overrule the text below wherever it differs.
 - **Holloway's act is option (b):** with the lamp in his eyes he took the
   living on the ladder, grey with slurry and too far gone to call out, for the
   dead. His lid made the dead he feared: three days near ember, they died and
-  got up, and Maeca finished them. He never learns it. Maeca says it once,
-  after the kill. "Both numbers are right" turns over: one of them was wrong.
+  got up, and Maeca finished them. He knew ("Count's right", above); Maeca,
+  who thinks he never did, says it once, after the kill. "Both numbers are right" turns over: one of them was wrong.
 - **No boots on Holloway.** The roll is who each man left behind ("Abbot. Two
   bairns. Ancell. His mam. Bede. Nobody."); the daybook lists names and who
   they left. Nobody dies of footwear. Nell's new boots are the one boot image.
 - **The confession moves to the middle of Act 1** (a dusk at the gate, the
-  first after the ground turns over, from day 4), so the player loves him,
+  first after the ground turns over, from day 3), so the player loves him,
   learns what he did, and goes on loving him. Its leading option ("Did anyone
   come out from under it?") is gone: "Does anyone else know?" names Pell, and
   the eye goes to red. **"Tell Maeca" is on the trunk:** if the player doesn't
@@ -67,13 +120,14 @@ These overrule the text below wherever it differs.
   (Sella, Holloway, the town), and Vonnra says both halves: "You stopped the
   drowning. You also did this." Tam lands it after the rope: "It started the
   night the ford went dark."
-- **Twist B's false belief, named:** on day 1 Rook tells her a kind lie: her
+- **The lamp twist's false belief, named:** on day 1 Rook tells her a kind lie: her
   mother went in her sleep, a week since, in Rook's back room ("Back room's
   free. Has been a week."). A plain marker in the Quiet Garden; its earth is
-  fresh. The ledger's line twenty-six is innocent: "Rook's lodger." Rook's
+  fresh. The ledger's line twenty-six points at nobody: "A woman. No name."
+  (the room is in Rook's lie, so the line must not say Rook). Rook's
   sale had a cost: told the traveller was expected, Vonnra kept the irons lit
   all that week. The ring is on a nail behind Rook's bar from day 1.
-- **Twist A's second turn:** from Act 2's turn the narrator says less, and at
+- **The voice's second turn:** from Act 2's turn the narrator says less, and at
   the stair the player learns why: their ember crowded her out. Her voice
   leaves them, and goes down. The word is checkable: on day 3 she writes it in
   her journal at Chid's asking.
@@ -204,9 +258,9 @@ then Vonnra turns the cup over.
 
 **The stinger, readable.** Alone, she opens the ledger, and the camera lets
 the player read it: twenty-six lines struck through; at twenty-five, *Nell,
-the smith's girl. With Wat.*; at twenty-six, *A woman with a lamp. North
-bank. Seventh evening.*; and twenty-seven, not struck: *From the ford. Got
-up.* Then Act 2 opens with the knocking under the farm stopping.
+the smith's girl. With Wat.*; at twenty-six, *A woman. No name.*; and
+twenty-seven, not struck: *From the ford. Got up.* Her hand lies flat on the
+facing page (the toll's lines, `TOLL_SPEC.md` §6). Then Act 2 opens with the knocking under the farm stopping.
 
 **The re-reads.** C03's groan under the ground and every lamp on the road
 dipping at once; Grimtunnel's "Downstairs'll be ever so grateful"; Vonnra's
@@ -285,9 +339,11 @@ never cries in front of anyone, does neither:
   her mother.
 
 **In Act 3** Vonnra reads the ledger aloud (C41), and at twenty-six she reads
-"A woman with a lamp" in exactly the voice she used for the others. The
+"A woman. No name." in exactly the voice she used for the others. The
 player knows; she does not. The survivor can tell her. Vonnra, after a long
-time: "...She was waiting for someone. I wrote that down." She does not say
+time, with the pen: "...Her name?" The survivor has only "Mam" (the names go
+first; it was all she had for Chid at the marker, `chid.cut`), and the line
+stays as it is. (The writer's proposal for Act 3, 11 October.) She does not say
 the thing both of them are thinking: that it is not often the second thing
 happens, and that this once, someone down there would not let go. The game
 still never says it as a law.
@@ -308,8 +364,9 @@ can be seen, never what it means and never what she feels, because an
 Unchained who remembers too much stops: she would have sat down in the road
 to wait for her.
 
-**What it needs: the narrator is recast as a woman of about sixty**, low,
-warm and unhurried, a winter's tale told to a child. Nothing is recorded yet,
+**What it needs: the narrator is recast as a woman of about sixty**, plain
+and dry, level, with the valley's accent lightly; no warmth and no winter's
+tale (`VOICES.md`): she lets warmth in once, at "There you are." Nothing is recorded yet,
 so it costs nothing to change. The survivor is never heard in a cinematic, so
 no player can match the accents.
 
@@ -380,8 +437,8 @@ Then the faces." The player did that with their own hands.
 ### 4.1 Holloway, remade
 
 **What he did.** Ten years ago Holloway was the Ashford garrison's
-quartermaster: thirty-five, steady, the man who knew every soldier's boot
-size and every child's name in the upper town. The night the lower town went
+quartermaster: thirty-five, steady, the man who knew every soldier's name and
+who each one went home to, and every child's name in the upper town. The night the lower town went
 into the ground, half the garrison held the cave mouths on the hillside,
 where the old workings come out, and the other half went down the main shaft
 on the ladders to bring up whoever was alive. Holloway held the shaft-head:
@@ -483,10 +540,10 @@ Four scenes, every one on the trunk, each costing him something.
    morning." It costs him: his own two men stand back, and he stands there
    alone till they go.
 4. **The roll.** A night from day 3 on, at the gate, drunk: he recites names
-   to the dark, in order, each with a number. "Abbot, nines. Ancell, tens,
-   wide. Bede, eights." If she asks: "Garrison. Boot sizes." "I counted boots
-   for them, once. Every pair." (The old boots line, kept, now as love.) The
-   player sees what he drinks to forget before they learn what it is.
+   to the dark, in order, each with who they left. "Abbot. Two bairns.
+   Ancell. His mam. Bede. Nobody." On another night he stops on one: "Gale.
+   ...Gale." (Maeca's lad.) The player sees what he drinks to forget before
+   they learn what it is.
 
 And the laughs: his want ("A posting with walls somebody else has to count.
 A dog. Eight hours' sleep in one go. In that order. ...Don't tell the men
@@ -594,8 +651,8 @@ Only then do the choices come.
   are paid in full*, and under it his answer, written and never sent: "No."
   Dead, he is still protecting her. And his garrison daybook, its last entry
   ten years old, *91 up. Lid down.*; under it, in a drunk's newer hand, every
-  name below the lid, with boot sizes; and at the foot, once, the word he
-  never said. "Sorry." She can take the book to Maeca, give it to Redcowl, or
+  name below the lid, each with who they left; at the foot "92.", with no
+  name (B, §0), and once, the word he never said. "Sorry." She can take the book to Maeca, give it to Redcowl, or
   burn it.
 - **Redcowl** (C26), if he reads it: "So that's the man kept my bairns
   alive. And I robbed his road for ten years. ...Oh, Mam."
@@ -731,7 +788,7 @@ as only Nell did. He stops. It is a gift, not a wound.
   did." from `harlan.knew`. Jory's homecoming is Act 1's elation.
 - **Pell.** The numbers, and the decoy: he knows who barred the lid.
 - **Sella.** Unchanged. Her free night is still the tenderest thing in the
-  game, and under twist A the narrator is never in her room.
+  game, and under the voice twist the narrator is never in her room.
 - **Ysolde and Edric.** Silverstair's reunion is a joy: "Have you got the
   corners right yet?"
 - **Wenna, Tam, Snib, Grimtunnel, Greymuzzle.** Unchanged. Tam is right

@@ -1211,7 +1211,9 @@ def build(style):
         if CHAIN["bone"] == "Head":
             at = np.where((cw[:, 1] > 0)[:, None], CENTRE, at)
     uv2 = me.uv_layers.new(name="chain")
-    uv2.data.foreach_set("uv", cw[loops].astype(np.float32).ravel())
+    # (its weight written as 1 - weight: the glTF export flips v, and as written the tail reached the shader as 0
+    # and never swung, its cap and tie as 1; fixed in the shipped files by tools/scratch/face17/uv2flip.py)
+    uv2.data.foreach_set("uv", np.c_[cw[:, 0], 1 - cw[:, 1]][loops].astype(np.float32).ravel())
     me.uv_layers.active_index = 0
     rig(o, V, at)
     print("STYLE", style, len(V), "points,", len(F), "faces")

@@ -159,6 +159,8 @@ public partial class Atmosphere : Node3D
         // The web game's uniforms take three.js colours: linear.
         var shT = Lin(Hex(g.ShadowTint)); var hiT = Lin(Hex(g.HighlightTint));
         float tintHue = Oklab(shT).Z;
+        // --grade-toe X: the toe hold for pictures (0, the grade before it).
+        float toe = SurvivorUnchained.Args.Has("grade-toe") ? SurvivorUnchained.Args.Num("grade-toe", 1f) : (float)g.Toe;
         float tint = (float)g.TintStrength, sat = (float)g.Saturation, vibr = (float)g.Vibrance, con = (float)g.Contrast;
         var slices = new Godot.Collections.Array<Image>();
         for (int b = 0; b < LutSize; b++)
@@ -179,7 +181,12 @@ public partial class Atmosphere : Node3D
                         s.Z * con / (1 + Mathf.Abs(s.Z) * (con - 1) * 1.2f));
                     float l = Luma(p);
                     float sh = 1 - Smooth(0, 0.55f, l), hi = Smooth(0.45f, 1, l);
-                    p += (shT - new Vector3(0.5f, 0.5f, 0.5f)) * sh * tint;
+                    // The shadow tint (the web game's sum) also darkens: in the dark it took an iris, dark hair and
+                    // unlit ground to black. In the toe its lightness is held (Toe), so it stays a colour there: the moon's
+                    // blue over detail. It fades in from black (true black stays black) to full at a gamma luma of 0.14, and out by 0.35.
+                    var shade = (shT - new Vector3(0.5f, 0.5f, 0.5f)) * sh * tint;
+                    float held = toe * Smooth(ToeFoot, 0.14f, l) * (1 - Smooth(0.14f, 0.35f, l));
+                    p += shade - Vector3.One * Luma(shade) * held;
                     p += (hiT - new Vector3(0.5f, 0.5f, 0.5f)) * hi * tint;
                     l = Luma(p);
                     float spread = Mathf.Max(Mathf.Max(p.X, p.Y), p.Z) - Mathf.Min(Mathf.Min(p.X, p.Y), p.Z);
@@ -191,6 +198,7 @@ public partial class Atmosphere : Node3D
                     p = new Vector3(l, l, l).Lerp(p, 1 - mute * (1 - keep));
                     var outLin = Pow(p.Clamp(Vector3.Zero, Vector3.One), 2.2f);
                     if (!OldGrade) outLin = KeepHue(c, outLin, tintHue);
+                    if (toe > 0) outLin = ToeColour(c, outLin, toe);
                     var o = Srgb(outLin);
                     img.SetPixel(r, gi, new Color(o.X, o.Y, o.Z));
                 }
@@ -244,6 +252,29 @@ public partial class Atmosphere : Node3D
         float a = Mathf.Lerp(o.Y * Mathf.Cos(h0), chroma * Mathf.Cos(h1), w);
         float b = Mathf.Lerp(o.Y * Mathf.Sin(h0), chroma * Mathf.Sin(h1), w);
         if (a > 0 && b < 0) a *= 1 - violet * Smooth(0, 0.015f, -b);
+        return FromOklab(o.X, a, b).Clamp(Vector3.Zero, Vector3.One);
+    }
+
+    /// <summary>In the toe the grade keeps a dark's own colour: the shadow tint's blue and the lift's, held off its
+    /// darkening there (Toe), would turn black navy, dark brown hair violet-grey and the pupils slate. So a dark keeps the
+    /// hue and chroma it came in with (scaled to its new lightness): wholly where it has a colour of its own (hair,
+    /// irises, leather, ember ground) and near black; a neutral mid-dark keeps a little over half of the moon's blue.</summary>
+    /// <summary>--toe-foot, --toe-own, --toe-chroma: where the hold starts, and ToeColour's neutral share and chroma ramp (pictures).</summary>
+    static readonly float ToeFoot = SurvivorUnchained.Args.Num("toe-foot", 0.0f), ToeOwn = SurvivorUnchained.Args.Num("toe-own", 0.45f), ToeChroma = SurvivorUnchained.Args.Num("toe-chroma", 0.04f);
+    static Vector3 ToeColour(Vector3 inLin, Vector3 outLin, float toe)
+    {
+        var i = Oklab(inLin); var o = Oklab(outLin);
+        // (whole at any strength of the hold: at half, the blue kept with half the darkening turned dark hair violet)
+        float zone = 1 - Smooth(0.35f, 0.55f, i.X);
+        if (zone <= 0) return outLin;
+        // (gently in chroma: the table's neighbouring points differ by about 0.015 of it, and a steeper step made a neutral
+        // ramp's blue zigzag between them)
+        float own = ToeOwn + (1 - ToeOwn) * (1 - Smooth(0.12f, 0.3f, i.X));
+        float w = zone * (own + (1 - own) * Smooth(0, ToeChroma, i.Y));
+        float s = Mathf.Min(o.X / Mathf.Max(i.X, 1e-4f), 1.2f);
+        float ih = Mathf.DegToRad(i.Z), oh = Mathf.DegToRad(o.Z);
+        float a = Mathf.Lerp(o.Y * Mathf.Cos(oh), i.Y * s * Mathf.Cos(ih), w);
+        float b = Mathf.Lerp(o.Y * Mathf.Sin(oh), i.Y * s * Mathf.Sin(ih), w);
         return FromOklab(o.X, a, b).Clamp(Vector3.Zero, Vector3.One);
     }
 

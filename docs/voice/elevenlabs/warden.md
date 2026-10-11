@@ -1,6 +1,8 @@
 # The Ford-Warden: ElevenLabs packet
 
-Voice id in the game: `warden`. 6 takes to record (164 characters; about 492 credits at three tries a line). Status: **draft**, until the story lead (a7622ae77d19e31dc) checks every line and marks it final.
+Voice id in the game: `warden`. 5 takes to record (142 characters; about 426 credits at three tries a line). Status: **draft, except the 5 takes marked LOCKED FOR RECORDING** (the story lead, 2026-10-11): record those now.
+
+**5 takes are LOCKED FOR RECORDING** (marked below).
 
 ## Who they are
 
@@ -37,7 +39,7 @@ python tools/vo/import_takes.py ~/Downloads/su_vo --voice warden
 
 ## The effect
 
-Record every take dry, with no effect or reverb: the game adds it. For every line, it slows it by a quarter (lower and larger), lays a voice an octave down under it, and puts it in a cave with water in it. For the lines that say so, it does the same, and hears it through the river: the top gone, the surface moving over it. So read a little quicker than he should finally sound.
+Record every take dry, with no effect or reverb: the game adds it. For every line, it slows it by a quarter (lower and larger), lays a voice an octave down under it, and puts it in a cave with water in it. For the lines that say so, it does the same, and hears it through the river: the top gone, the surface moving over it. So read a little quicker than the voice should finally sound.
 
 ## The lines
 
@@ -45,7 +47,7 @@ Each: what is going on, how it is played, then the text to paste (the bracketed 
 
 ## Cinematic: none cross
 
-### 1. `dlg.cin_none_cross.call.0.wav`
+### 1. `dlg.cin_none_cross.call.0.wav`  **LOCKED FOR RECORDING**
 
 *Where:* dialogue.json cin_none_cross/call#0
 *Played:* a slow dirge; doing: the Order's evening call, heard through water; pace: very slow; volume: quiet.
@@ -57,7 +59,7 @@ Each: what is going on, how it is played, then the text to paste (the bracketed 
 ```
 Subtitle: Lamps are lit... stay where they reach...
 
-### 2. `dlg.cin_none_cross.lie_down.0.wav`
+### 2. `dlg.cin_none_cross.lie_down.0.wav`  **LOCKED FOR RECORDING**
 
 *The same words are also* `cbark.d918c7cc3d98.wav`*: record once; the importer copies the take.*
 *Where:* dialogue.json cin_none_cross/lie_down#0
@@ -70,8 +72,9 @@ Subtitle: Lamps are lit... stay where they reach...
 ```
 Subtitle: Lie down.
 
-### 3. `dlg.cin_none_cross.none.0.wav`
+### 3. `dlg.cin_none_cross.none.0.wav`  **LOCKED FOR RECORDING**
 
+*The same words are also* `cbark.7a9cdb2c49b5.wav`*: record once; the importer copies the take.*
 *Where:* dialogue.json cin_none_cross/none#0
 *Played:* tired, final; doing: the ford's rule, not a threat; pace: slow; volume: quiet.
 *Note:* Every word set down like a stone; no louder than 'Lie down.' The capitals are the subtitle's, not the performance's.
@@ -84,7 +87,7 @@ Subtitle: NONE. CROSS. AFTER DARK.
 
 ## In a fight
 
-### 4. `cbark.345352a478c0.wav`
+### 4. `cbark.345352a478c0.wav`  **LOCKED FOR RECORDING**
 
 *Where:* godot/logic/Play/Zones/Prologue.cs
 *Played:* vast, commanding; doing: the Warden raises the drowned; pace: slow; volume: shout.
@@ -95,7 +98,7 @@ Subtitle: NONE. CROSS. AFTER DARK.
 ```
 Subtitle: RISE, YOU WHO DROWNED HERE.
 
-### 5. `cbark.db6c2c28509f.wav`
+### 5. `cbark.db6c2c28509f.wav`  **LOCKED FOR RECORDING**
 
 *Where:* godot/logic/Play/Zones/Prologue.cs
 *Played:* eerie, distant; doing: the Warden's call; pace: slow; volume: hushed.
@@ -105,15 +108,4 @@ Subtitle: RISE, YOU WHO DROWNED HERE.
 [eerie, distant, whispers] Lamps are lit... stay where they reach...
 ```
 Subtitle: Lamps are lit... stay where they reach...
-
-### 6. `cbark.a5b5efc70a27.wav`
-
-*Where:* godot/logic/Play/Zones/Prologue.cs
-*Played:* vast, final; doing: the Warden's law; pace: slow; volume: shout.
-*Note:* Each word a bell stroke.
-
-```
-[vast, final, shouting] NONE CROSS AFTER DARK.
-```
-Subtitle: NONE CROSS AFTER DARK.
 

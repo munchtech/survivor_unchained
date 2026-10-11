@@ -137,6 +137,7 @@ public class RecipeTests
             Assert.True(Paths.OfWeapon(id).Any(), $"{id} is on no path");
         foreach (var d in Boons.All.Values)
         {
+            if (Boons.FlareGreat.Contains(d.Id)) continue; // the Flare's own, offered by carrying a Flare, not by path
             int wanted = Paths.All.Count(p => p.Passives.Contains(d.Id) || p.Blessings.Contains(d.Id) || p.Great.Contains(d.Id));
             Assert.True(wanted >= 2, $"{d.Id} is wanted by {wanted} paths");
         }
