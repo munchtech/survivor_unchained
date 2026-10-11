@@ -451,4 +451,41 @@ public class StoryRewriteTests
         a2.World.Facts["mother.carved"] = true;
         Assert.DoesNotContain(Simulation.AdvanceDay(a2.C, () => 0.5).Lines, l => l.Contains("a tap, and a long wait"));
     }
+
+    /// <summary>Love scenes B (the owner, 6 October; docs/story/LOVE_SCENES.md): the narrator stops at the
+    /// door. Behind it only the lovers speak, in the dark and in the mornings after: no narrated node and no
+    /// narrator's aside (a capitalized parenthesis). The bolt is the one exception: she hears it from the
+    /// stairs (free_bolt, and the same sentence opening free_sleep_bed), and then she is silent.</summary>
+    [Fact]
+    public void The_narrator_stops_at_the_door()
+    {
+        var door = new Dictionary<string, string[]>
+        {
+            ["sella"] = new[] { "stairs_room", "stairs_rules", "stop_paid", "rest_night_paid", "rest_bed", "rest_dark",
+                "rest_morning", "night", "morning", "free_night", "free_morning", "past", "sleeptalk", "door", "door_years",
+                "door_south", "free_door", "free_want", "free_stop", "free_sit", "free_sleep", "free_sleep_bed",
+                "free_bolt", "free_m_downstairs", "free_m_who", "free_m_kiss" },
+            ["maeca"] = new[] { "blind", "blind_dark", "blind2_feet", "blind2_let", "told_true", "told_little",
+                "blind3_morning", "blind3_m_no" },
+        };
+        var bolt = Convo("sella").Nodes["free_bolt"];
+        Assert.Equal("narrator", bolt.Speaker);
+        string heard = bolt.Text.Single().Text;
+        Assert.StartsWith("Behind the door, the bolt", heard);
+        Assert.EndsWith("\"...There.\"", heard);
+        var aside = new Regex(@"\(\s*([A-Z][^()]*)\)");
+        foreach (var (conv, ids) in door)
+            foreach (var id in ids)
+            {
+                var n = Convo(conv).Nodes[id];
+                if (id == "free_bolt") continue;
+                Assert.True(n.Speaker is null || n.Speaker == conv, $"{conv}.{id} is narrated behind the door");
+                foreach (var v in n.Text)
+                    foreach (Match m in aside.Matches(v.Text))
+                        Assert.True(id == "free_sleep_bed" && heard.StartsWith(m.Groups[1].Value),
+                            $"{conv}.{id}: the narrator's aside {m.Value} is behind the door");
+            }
+        // The mornings at the Blind open outside, in the frost: the plant for the rope stays the narrator's.
+        Assert.Contains("one hand on the crossbow and the other on you", Convo("maeca").Nodes["blind_morning"].Text.Last().Text);
+    }
 }

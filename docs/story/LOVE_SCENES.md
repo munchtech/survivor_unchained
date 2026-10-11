@@ -1,188 +1,135 @@
-# The love scenes, two ways: for the owner to choose
+# The love scenes: B, the lovers' own lines
 
-Under twist A (the narrator is her mother; `TREATMENT.md` §3.4) the narrator
-never enters a bedroom: at a love scene her voice stops at the door. The
-owner asked for both ways of doing that, written out, to choose on the page.
-Both fade to black at the moment itself, as every love scene does, and
-neither is explicit.
+The owner chose B on 6 October: at a love scene the narrator (under twist A,
+her mother; `TREATMENT.md` §3.4) stops at the door, and behind it only the
+lovers speak. Nothing is explicit; the night fades at the moment itself. The
+editor's reasons (notes 02 §10): B keeps twist A whole (silent narration in
+the room would invite "Mum was watching?"), B is the better writing, and a
+voice close in the dark has the stronger sex appeal.
 
-- **Version A, unvoiced narration.** The prose stays exactly as it is in the
-  game today. It plays on screen as text, unvoiced, while the picture holds
-  one object (the blue lamp, the fire at the Blind). Players read the silence
-  as a rating choice, and at the bottom of the stair they hear why.
-- **Version B, the lovers' own lines.** The narration in the room is replaced
-  by the lover's own voice on a dark screen: what she says, and the sounds of
-  the room. The narrator is not there at all.
+## The four conditions, and how B meets them
 
-**The editor's warning, beside both (notes 01, "The owner's choices, folded
-in"):** under twist A, unvoiced narration is still the narrator's prose. On
-the re-read, a player may decide her mother was in the room all along, only
-silent. That undoes the plant ("she stops at the door") and invites the wrong
-laugh at the summit ("Mum was watching?"). The lovers' own lines keep the door
-fully shut. Most of the best romance writing is already the lovers' own
-("Your hands are colder than my feet..."), so Version B loses the least.
+1. **The bolt is the door.** The narrator's last line before the door is the
+   bolt, heard from the stairs (`sella.free_bolt`, and the same sentence
+   opening `free_sleep_bed`: one take). Then she is silent until you come back
+   down. `free_stairs` lost its two sentences in the room; Sella's "Lamp stays
+   up tonight." keeps the lamp.
+2. **No "Boots."** Maeca's first word in B is "...Hear that?"; the boots are
+   gone from A as well.
+3. **"One hand on the crossbow and the other on you"** (the plant for the
+   rope) opens the gray light at the Blind, outside the door, in the
+   narrator's voice (`maeca.blind_morning`, the first morning).
+4. **B lives or dies on the takes.** Directed line by line
+   (`tools/vo/direction/love_b.json`): low and close, nearly a whisper, never
+   breathy; each "..." a real silence of two to four seconds (the importer
+   keeps up to four for these lines); a laugh that sounds made is cut. **A is
+   the fallback** for any take that can't be made to sound like a person: the
+   narration as it stood at `fd0b8a9b` (`git show
+   fd0b8a9b:godot/data/content/dialogue.json`, the same node ids), shown as
+   unvoiced text over one held object.
 
-**The writer's view.** B. A's prose is lovely, but the twist is the bigger
-thing, and B costs only a few images (the quilt on the floor, the scars read
-by hand). Where an image matters, B moves it into her mouth or into a sound.
+## The rules behind the door
 
-**What it costs either way.** A: a flag on the narrated nodes in the room
-(no voice), and the held picture. B: about a dozen new takes (Sella five,
-Maeca five or six), and the narrated nodes in the room rewritten as below.
-Nothing else in the romances changes.
+- **Where the door is.** Sella: from the blue room (`stairs_room` on) to the
+  last morning line (`door_south`, `free_m_*`), the night she's paid to sleep
+  and the stop included. Maeca: from under the hides (`blind` on) to
+  `blind3_morning`. The walk to the Blind, the fire and the first gray light
+  are outside, and stay narrated.
+- **On black, a direction is a caption:** what is heard ("(the hides
+  rustle)", "(water poured)") or how she says it ("(low, against your
+  chest)"), never what is seen. A visual direction there would be the
+  narrator's prose by another name.
+- **The mornings are lit:** her directions may place her ("(on the edge of
+  the bed, her palm flat on your breastbone)"); they are played, never read.
+- **Nothing behind the door is the narrator's to record,** locked or not
+  (`tools/vo/elevenlabs.py` `DOOR`; `tools/vo/tests/test_door.py`), and the
+  data keeps it so (`StoryRewriteTests.The_narrator_stops_at_the_door`).
+- **The sounds are the game's, not the actor's** (for cinematics and sound):
+  water poured and slopping over the side, the bath moving, buckles and the
+  one that sticks, a lace, coins counted (twice after the cold bath; thirteen
+  back into your palm), the fourth and ninth steps, the bolt that sticks and
+  then goes home, the hides, the fire shifting and the embers ticking, the
+  Pack far off (fed and loud; one call), soft feet in the frost and the
+  Pack's sighs round the Blind.
 
-**Where the door is.** Sella: from the blue room (`sella.stairs_room` on) to
-the morning after. Maeca: from under the hides (`maeca.blind` on) to the gray
-light. Any narrator sentence that sees the bed is behind the door, the
-mornings after included (the story lead's ruling, on the editor-judge's
-advice, 11 October).
-`maeca.blind_morning` stays outside: she is up and barefoot in the frost. The
-walk to the Blind, the fire, and Keegan's and Rav's suppers stay narrated:
-they are not bedrooms.
-
----
+## B as it plays (the data; the other variants follow the same rules)
 
 ## Sella
 
-### The first night (`sella.night`, the last variant)
+### The blue room (`stairs_room`, eight variants: the first time by calling, then again)
 
-**A (as now, unvoiced):** *The blue room smells of lavender and lamp oil, and
-the bath is warm, at least to begin with. After that the door is shut, and
-what happens behind it is slow, and warm, and funny, and nobody's business but
-yours: her hair coming down, her mouth at your ear, her hands everywhere
-they're welcome and nowhere they're not. For a few hours the road and the dead
-on it are a long way off. You wake with her hair across your chest and the sun
-already up. She is dressed, and counting.*
+> (water poured) It's the lamp glass. Everyone asks. Everything up here comes out blue. ...Warm. Told you. Chin up. Let me look at you. (buckles, quick, one after another) I've undone a few of these, love. (one sticks; she laughs) All that steel, and under it, look. A person.
+>
+> (water poured) Blue room again. Same jug, same quilt. ...Same me. (buckles, quick, one after another) I've undone a few of these, love. (one sticks; she laughs) All that steel, and under it, look. A person.
 
-**B (Sella, on black):** Bath's warm. Was warm. ...Leave it, love. Come here.
-There. Now, any hand of mine that's not welcome, you say, and I'll find it
-somewhere it is. ...That's it. Slow. Nobody's paying me to hurry. ...Listen.
-Can't hear the road from up here. Can't hear the river. That's what the
-fifteen's for.
-*(Black. Then morning light on the quilt, and the sound of coins counted.)*
+### The bath (`stairs_rules`, if she has felt the cold in you)
 
-### Three nights or more (`sella.night`, the middle variant)
+> (the bath water moving; then still) ...You're cold. Not chilled, love. Cold. Under warm water. (a long quiet; no joke in it) ...Right. Rules. Anything you'd rather I didn't, say so. Anything you'd rather I did, say it louder.
 
-**A:** *She laughs when the water slops over the side, and again when you try
-to mop it with her shift. ... But there are gaps, tonight. Places where she
-stops mid-sentence and doesn't finish, and you don't need her to.* (as now)
+### The first night (`night`, the last variant)
 
-**B:** That's the floor, then. ...Not with my shift, you great— give it here.
-...Right. I'll tell you what I'm going to do, love, and then I'm going to do
-it. First I'm going to— ...First. ...You know. Come here.
-*(The gaps she doesn't finish are the scene.)*
+> Bath's warm. Was warm. ...Leave it, love. Come here. There. Now, any hand of mine that's not welcome, you say, and I'll find it somewhere it is. ...That's it. Slow. Nobody's paying me to hurry. ...Listen. Can't hear the road from up here. Can't hear the river. That's what the fifteen's for. (morning: coins, counted)
 
-### The cold bath (`sella.night`, the first variant)
+### Three nights or more (`night`, the middle variant)
 
-**A:** *The water's gone cool by the time either of you notices, and she drags
-the quilt off the bed and onto the floor rather than walk three steps. ... when
-you look at her she says, "Don't," and kisses you so you can't. ... She is
-dressed, and counting, and she counts it twice.* (as now)
+> (water slopping over the side; she laughs) That's the floor, then. ...Not with my shift, you great— give it here. ...Right. I'll tell you what I'm going to do, love, and then I'm going to do it. First I'm going to— ...First. ...You know. Come here. (morning: coins, counted)
 
-**B:** Water's gone cold. ...Leave it. I'm not walking three steps for a bed;
-bring the quilt. ...Easy. Easy, love. ...Don't. ...Don't look at me. ...I'm not
-getting dressed. Don't ask me why.
-*(Morning: the coins counted, and counted again.)*
+### The cold bath (`night`, the first variant)
 
-### The bolt (`sella.free_bolt`)
+> Water's gone cold. ...Leave it. I'm not walking three steps for a bed; bring the quilt. ...Easy. Easy, love. ...Don't. ...Don't look at me. ...I'm not getting dressed. Don't ask me why. (morning: coins, counted, and counted again)
 
-**A:** *She reaches behind her without looking and finds the bolt. It sticks
-halfway; nobody has ever shot it. She has to turn round and put her shoulder to
-it, swearing, and it goes home with a sound like the last coin put down on a
-counter.* "...There." (as now)
+### The night she's paid to sleep (`rest_night_paid`, `rest_dark`)
 
-**B:** *(On black: a bolt that sticks; her shoulder to it.)* Come on, you—
-come on— *(it goes home: one hard iron sound, like the last coin put down on a
-counter)* ...There.
+> (as if it's a word in a foreign tongue) Sleep. ...You've paid fifteen gold to sleep.
+>
+> ...and there's Rook at the top of the stairs with her cudgel, and him in his shirt— no. That one's for another night. ...There was a man from Low Kiln, wanted me to bark. Like a dog. And I said— (she breaks off; then, softer) ...Go on, then. Sleep. Somebody ought to watch you.
 
-### Her free night (`sella.free_night`)
+### Her free night: the stairs and the door (`free_stairs`, `free_door`)
 
-**A, if she told her knowing it would be sold:** *She doesn't talk the way she
-talks for money. ... halfway through she laughs into your neck and can't stop.
-... In the dark, much later, she says into your shoulder, "You told me
-anyway," and nothing else, and then she sleeps.* (as now)
+> She doesn't take your hand on the stairs, or your sleeve. She goes up ahead of you, and on the fourth step she forgets to step over it, and it creaks, loud as a shout, and she stops dead with one foot on it and laughs at herself, and that's worse, somehow, than if she hadn't.  *(the narrator, on the stairs)*
+>
+> Lamp stays up tonight. ...I keep thinking about you sitting on my bed telling me where you're from. Knowing who'd hear it by morning. ...Nobody does that. Nobody's ever done that.
 
-**B:** Hold still. My hands don't know what they're doing. ...Seven years,
-love, and I can't undo a lace. Don't you laugh. Don't you dare— *(she laughs,
-and can't stop, and then does)* ...Wait. ...All right. All right. *(Black, a
-long time.)* ...You told me anyway.
+### The bolt (`free_bolt`): the narrator's last line
 
-**A, otherwise:** *The blue room, and the lamp, and the bolt, which she shot
-herself ... there is a moment when she stops with her hands on your face and
-just looks, as if she is learning it, and doesn't make a joke of it.* (as now)
+> Behind the door, the bolt sticks halfway; nobody has ever shot it. Swearing, and a shoulder to it, and then it goes home, with a sound like the last coin put down on a counter. "...There."
 
-**B:** No talking. I talk for money. ...Stay like that. Let me look. ...I'm not
-making a joke of it. Don't you make one. ...Yes.
+### Her free night (`free_night`: if she told her knowing it would be sold; otherwise)
 
-### The rest of the blue room, in B
+> Hold still. My hands don't know what they're doing. ...Seven years, love, and I can't undo a lace. Don't you laugh. Don't you dare— (she laughs, and can't stop, and then she does) ...Wait. ...All right. All right. (much later; into your shoulder) ...You told me anyway.
+>
+> No talking. I talk for money. ...Stay like that. Let me look. ...I'm not making a joke of it. Don't you make one. ...Yes.
 
-- `sella.stairs_room` (undressing): the narrator's room description goes;
-  her quoted lines stay hers ("All that steel, and under it, look. A
-  person."), and the room is heard, not described: water poured, a buckle,
-  her laugh.
-- `sella.rest_dark` (the night she pays to sleep): *(on black)* Rook says the
-  stairs— no, I'll tell you about Rook. ...There was a man from Low Kiln,
-  wanted me to bark. Like a dog. I said— *(you're asleep)* ...Go on, then.
-  Sleep. I'll watch the weather.
-- `sella.free_sleep_bed`: *(the bolt goes home)* Shift over. Arm. ...Your arm,
-  love, over. Like a blanket. There.
-- `sella.free_sit` and `sella.free_m_kiss`: hers already; the narration's two
-  images (the door's colour; the ninth step creaking behind you) become her
-  lines: "Green door. Faces the sun. And somebody who knocks." / "*(the ninth
-  step creaks)* ...I'm not watching you go. Go on."
-- The mornings in the blue room (`sella.morning`, `rest_morning`,
-  `free_morning`, `past`, `sleeptalk`, `door`, `door_years`, `door_south`,
-  `free_m_downstairs`, `free_m_who`) and Maeca's third morning under the hides
-  (`maeca.blind3_morning`): her lines stay hers; the narrator's capitalized
-  parentheses become lower-case directions for her actor ("(on the edge of the
-  bed, her palm on your breastbone)"), played, never read.
+### If you only sit, or only sleep (`free_sit`; `free_sleep_bed`, which opens on the same bolt)
+
+> The house. In the south. ...Kitchen faces the sun. Green door. Not blue; nothing in it blue. (a breath) And somebody who knocks. ...Go on, then. Down you go. Mind the fourth.
+>
+> (Behind the door, the bolt sticks halfway; nobody has ever shot it. Swearing, and a shoulder to it, and then it goes home, with a sound like the last coin put down on a counter.) Shift over. Arm. ...Your arm, love, over. Like a blanket. There.
+
+### A morning after (`free_m_kiss`; the mornings take lit directions)
+
+> (she lets you; then pushes you off by the face, gently, with the flat of her hand) Out. Before I get used to it. (smiling, all the way to the stairs; behind you, the ninth step creaks) ...I'm not watching you go. Go on.
 
 ## Maeca
 
-### The first night at the Blind, the Pack fed (`maeca.blind`, the first variant)
+### The first night at the Blind (`blind`: the Pack fed; otherwise)
 
-**A:** *Off in the Hollow the Pack is loud, a long tangle of voices, and she
-stops with her hands on your buckle and listens, and then she laughs: a short
-surprised sound, as if she'd trodden on something. "They're eating." She pulls
-you down onto the hides. ...* (as now)
+> (far off, the Pack, loud) ...Hear that? (a short laugh, surprised out of her) They're eating. ...Down. On the hides. ...Quiet. I said quiet.
+>
+> (the fire shifts; then her voice, close) ...Hold still. Slow. Say stop and I stop. (far off, the Pack calls; nothing, until it's done) ...All right.
 
-**B (Maeca, on black, the fire low):** *(far off, the Pack, loud)* ...Hear
-that? *(a short laugh, surprised out of her)* They're eating. ...Down. On the
-hides. ...Quiet. I said quiet.
+### After (`blind_dark`; `blind2_feet`, `blind2_let`)
 
-### The first night, otherwise (`maeca.blind`, the second variant)
+> ...You're colder than my feet. (the hides rustle) How are you colder than my feet.
+>
+> ...Two toes short. The wet had them, a long time back. ...Your hands are colder than my feet. (a long quiet) Hold them anyway. ...Nobody's held those.
+>
+> (a long quiet; then, half asleep, close) ...Mm. Keep still. ...They're only feet.
+>
+> (outside, in the frost: soft feet, a long way round; a sigh; another) ...They don't do that. Not for me. Not for anyone. (low, against your chest) You walk quiet. You came into my Hollow and knelt to him, and he let you. You never talk about before. (almost no sound) ...What were you?
+>
+> (the embers tick) ...They've settled. (her breathing slowing) Sleep.
 
-**A:** *She doesn't talk, and then neither of you needs to. She comes round
-the fire to you, and that seems to be a decision.* (as now; your boots cut,
-notes 02 §6.2)
+### The gray light (`blind_morning`, outside the door: the narrator opens it)
 
-**B:** *(the fire shifts; she comes round it, close)* ...Hold still. Slow.
-I'll stop if you stop. *(far off, the Pack calls; she goes still
-until it's done)* ...All right.
-
-### After (`maeca.blind_dark`, `blind2_feet`, `blind2_let`)
-
-**A:** as now: her feet against your legs; you're colder than they are; the
-scarred soles in your hands; "Nobody's held those."
-
-**B:**
-- The second night, her feet: You're colder than my feet. *(she starts to
-  take them back)* How are you colder than my feet.
-- `(Hold them.)`: Two toes short. The wet had them, a long time back.
-  ...Your hands are colder than my feet. *(a long time)* Hold them anyway.
-  ...Nobody's held those.
-- `(Let her.)`: *(in the night, half asleep, she puts them back against
-  you)* ...Mm. Keep still.
-- The third night, the Pack round the Blind: *(soft feet in the frost, a long
-  way round; a sigh; another)* They don't do that. Not for me. Not for anyone.
-  *(her ear back on your chest)* You walk quiet. You came into my Hollow and
-  knelt to him, and he let you. You never talk about before. ...What were you?
-
----
-
-**If the owner chooses A**, the writer marks the narrated nodes in the room
-unvoiced (`voiced: false` in the data, read by the voice tools and the
-player) and the cinematics lead holds one object for each. **If B**, the
-writer rewrites those nodes as above (speaker Sella or Maeca, the sounds as
-directions), and the owner records the new takes listed in
-`docs/voice/RERECORD.md`.
+> (Gray light. She's already up, crouched barefoot in the frost at the mouth of the Blind, listening to the wood: one hand on the crossbow and the other on you.) The Pack found me, after Ashford. A cave mouth, and a lad I'd been fond of dying in it. The old gray one came and lay down across the way in. Kept the cold off. Kept everything off. ...That's why. That's all of why. Don't make it a story.

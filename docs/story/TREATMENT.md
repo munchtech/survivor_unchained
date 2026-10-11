@@ -131,9 +131,9 @@ anything below, in this section too. Each has its own page for the detail.
   the stair the player learns why: their ember crowded her out. Her voice
   leaves them, and goes down. The word is checkable: on day 3 she writes it in
   her journal at Chid's asking.
-- **Love scenes: both versions written** (`LOVE_SCENES.md`), the narration as
-  unvoiced text and the lovers' own lines, with the editor's warning that
-  silent narration in the room may read as her mother having been there.
+- **Love scenes: B, the lovers' own lines** (the owner, 6 October;
+  `LOVE_SCENES.md`): the narrator stops at the door, and silent narration in
+  the room can't read as her mother having been there. A is the fallback.
 
 **The owner, in his words:**
 - "we really want a powerful epic story with real emotional happenings.
@@ -412,8 +412,9 @@ no player can match the accents.
 4. **Every rise: "You get up. It takes less than it did."** A mother getting
    a child up.
 5. **The narrator never enters a bedroom.** At every love scene the voice
-   stops at the door; the scene's prose plays as unvoiced text, and the
-   picture holds its one object. Players read it as a rating choice.
+   stops at the door: her last line is the bolt, heard from the stairs, and
+   behind it only the lovers speak (B, `LOVE_SCENES.md`). Players read it as a
+   rating choice.
 6. **The dawn lines that take "Spark" away.** She is narrating her child
    forgetting her, plainly, with no weight, night after night.
 7. **The silences:** at the water's edge in the prologue; through Rook's
@@ -915,7 +916,7 @@ as only Nell did. He stops. It is a gift, not a wound.
 - **Story data** (mine, after the yes): Holloway, Maeca, Brannoc, Rook and
   Vonnra's fortune rewritten; the gate scenes, the confession and C07's
   extension written; the narrator's dawn lines and silences; the love
-  scenes' narration marked unvoiced; new facts (`holloway.confessed`,
+  scenes as the lovers' own lines (B); new facts (`holloway.confessed`,
   `maeca.told_lid`, `mother.lamp`) and their StoryLint and tests.
 - **The prologue** (combat and the experience director): the drowned woman
   with the dead lamp on the last stepping stone, who does not strike; the
@@ -934,8 +935,7 @@ as only Nell did. He stops. It is a gift, not a wound.
 
 1. The twists: all four.
 2. The narrator recast: yes, plain and dry.
-3. Love scenes: both versions on the page, for him to choose
-   (`LOVE_SCENES.md`).
+3. Love scenes: B, the lovers' own lines (6 October; `LOVE_SCENES.md`).
 4. Holloway risen at his gate: yes, on the fourth dusk.
 5. The nod as the first choice: yes.
 6. The lamp-iron lantern: yes.

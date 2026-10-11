@@ -4775,7 +4775,7 @@
       "text": "(far off, the Pack, loud) ...Hear that? (a short laugh, surprised out of her) They're eating. ...Down. On the hides. ...Quiet. I said quiet."
      },
      {
-      "text": "(the fire shifts; then her voice, close) ...Hold still. Slow. I'll stop if you stop. (far off, the Pack calls; nothing, until it's done) ...All right."
+      "text": "(the fire shifts; then her voice, close) ...Hold still. Slow. Say stop and I stop. (far off, the Pack calls; nothing, until it's done) ...All right."
      }
     ],
     "effects": [
@@ -4837,7 +4837,7 @@
       "text": "(Gray light. She's already up, barefoot in the frost, listening.) Go on, then. The wood's awake, and so's Holloway, and he'll count us both."
      },
      {
-      "text": "(Gray light. She's already up, barefoot in the frost at the mouth of the Blind, listening to the wood: one hand on the crossbow and the other on you.) The Pack found me, after Ashford. A cave mouth, and a lad I'd been fond of dying in it. The old gray one came and lay down across the way in. Kept the cold off. Kept everything off. ...That's why. That's all of why. Don't make it a story."
+      "text": "(Gray light. She's already up, crouched barefoot in the frost at the mouth of the Blind, listening to the wood: one hand on the crossbow and the other on you.) The Pack found me, after Ashford. A cave mouth, and a lad I'd been fond of dying in it. The old gray one came and lay down across the way in. Kept the cold off. Kept everything off. ...That's why. That's all of why. Don't make it a story."
      }
     ],
     "effects": [
@@ -5113,7 +5113,7 @@
       "text": "(low, against your chest) You walk quiet. You never talk about before. (almost no sound) ...What were you?"
      },
      {
-      "text": "(the fire, down to embers) ...They've settled. (her breathing slowing) Sleep."
+      "text": "(the embers tick) ...They've settled. (her breathing slowing) Sleep."
      }
     ],
     "choices": [
@@ -5396,13 +5396,13 @@
       "when": {
        "bg": "hunter"
       },
-      "text": "Thought so. You put your feet down like you're asking the ground first. (She almost smiles.) I'd have liked you, then. Probably would have shot you for poaching."
+      "text": "Thought so. You put your feet down like you're asking the ground first. (almost a smile in it) I'd have liked you, then. Probably would have shot you for poaching."
      },
      {
       "when": {
        "bg": "scholar"
       },
-      "text": "Letters. (She thinks about it.) Tracks for people who sit still. ...Read me something, one day. Not now."
+      "text": "Letters. (turning it over) ...Tracks for people who sit still. ...Read me something, one day. Not now."
      },
      {
       "when": {
@@ -17988,7 +17988,7 @@
    },
    "rest_dark": {
     "id": "rest_dark",
-    "text": "Rook says the stairs— no, I'll tell you about Rook. ...There was a man from Low Kiln, wanted me to bark. Like a dog. I said— (she breaks off; softer) ...Go on, then. Sleep. I'll watch the weather.",
+    "text": "...and there's Rook at the top of the stairs with her cudgel, and him in his shirt— no. That one's for another night. ...There was a man from Low Kiln, wanted me to bark. Like a dog. And I said— (she breaks off; then, softer) ...Go on, then. Sleep. Somebody ought to watch you.",
     "effects": [
      {
       "add": {
@@ -18420,7 +18420,7 @@
    },
    "free_m_who": {
     "id": "free_m_who",
-    "text": "You know who. Everybody pays; she pays most. (pulling the quilt up to her chin) I said don't tell me. I didn't say I'd sell it. ...I didn't say I wouldn't, either. I don't know, {name}. That's the honest answer, and I'm out of practice at those. Don't make me practise before breakfast.",
+    "text": "You know who. Everybody pays; she pays most. (pulling the quilt up to her chin) I said don't tell me. I didn't say I'd sell it. ...I didn't say I wouldn't, either. I don't know, {name}. That's the honest answer, and I'm out of practice at those. Don't make me practice before breakfast.",
     "choices": [
      {
       "text": "Until next time.",
