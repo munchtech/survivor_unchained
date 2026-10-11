@@ -1934,7 +1934,7 @@ def dump(name, stage, pos, tris, field):
         np.savez(os.path.join(os.environ.get("TEMP", "."), f"dump_{name}_{stage}.npz"), pos=pos, tris=tris, field=field)
 
 
-def over_nipples(pos, tris, least=0.0015, s=0.011):
+def over_nipples(pos, tris, least=0.0007, s=0.008, dome=0.035):
     """A garment cut over her filled breasts drawn over each nipple as a
     low, soft rise (`least` high, `s` its spread), so her nipples show
     through it as shapes; the tip of her nipple, through it, is hidden
@@ -1942,10 +1942,25 @@ def over_nipples(pos, tris, least=0.0015, s=0.011):
     to clear all of her nipple, it was a cone; 3 mm high and 9 mm across,
     the owner wanted less poke, the same on both: 1.5 mm and 11 mm, her
     skin's own tip tucked under it, and each rise set on the two nipples'
-    mirrored mean, so neither sits higher or further out.)"""
+    mirrored mean, so neither sits higher or further out. Still a point:
+    the cup followed her breast's own cone to its tip, so first it is eased
+    into a dome within `dome` of each tip, along its normals only, and the
+    rise is 0.7 mm over about 16 mm.)"""
+    mean = (NIPPLE["l"] * np.array([-1, 1, 1]) + NIPPLE["r"]) / 2
+    tips = [mean * np.array([-1 if sd == "l" else 1, 1, 1]) for sd in ("l", "r")]
+    dist = np.min([np.linalg.norm(pos - t, axis=1) for t in tips], axis=0)
+    w = np.clip(1 - dist / dome, 0, 1)
+    w = w * w * (3 - 2 * w)
+    # (never its cut edge: a sweetheart line can pass within reach)
+    rim = [v for loop in edge_loops(tris) for v in loop]
+    w[rim] = 0
+    A = adjacency(len(pos), tris)
+    for _ in range(60):
+        nor = vertex_normals(pos, tris)
+        lap = A @ pos - pos
+        pos = pos + (0.5 * w * (lap * nor).sum(1))[:, None] * nor
     nor = vertex_normals(pos, tris)
     out = pos.copy()
-    mean = (NIPPLE["l"] * np.array([-1, 1, 1]) + NIPPLE["r"]) / 2
     for sd in ("l", "r"):
         tip = mean * np.array([-1 if sd == "l" else 1, 1, 1])
         near = np.where(np.linalg.norm(pos - tip, axis=1) < 0.05)[0]
