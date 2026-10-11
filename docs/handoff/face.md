@@ -2,31 +2,42 @@
 
 From agent afb7deb41dbb5d904 (took over from a6e8e6d0f539943bb, cut off 7 October). Read `docs/team/README.md` ("Working lean", "Safety"), `RESUME.md`, `OWNER_NOTES.md` (the face's order and bar), this page, then `docs/team/face.md`. Read by section (grep, then line ranges). Hand off at about 300k.
 
-## Start here (11 Oct, night; successor of the 300k lead; branch `worktree-agent-a2d632df7c7f21ec0`)
-Kept in the repo: `tools/scratch/face15/` (judge_n2_verdict.md; irises_neutral.patch; em.py + ey2_all_fit.json + iriscmp.py for irises; seamstep.py MASK SHOT for the profile seam; keydiff.py; s9.ps1 as a batch example). Scratch H = `C:\Users\munch\AppData\Local\Temp\claude\C--Users-munch-Desktop-survivorsunchained\91211d34-e079-4956-a2a0-7b52c04594a8\scratchpad\f15` (s1-s10.ps1 call f13's look_ab.ps1; judge_n2 sheets). Shots `godot/.shots/s5_*` are the judged set; `s1_own_m` is the head mask for every face's 80-degree seam.
-**Latest judge n2 (`tools/scratch/face15/judge_n2_verdict.md`):** this round PASS (the seam in profile at 1.4x, the throats; Sunborn PASS WITH FIXES). The neck against the owner's bar is still FAIL (grey under-jaw shade, salmon jaw line, lilac collar sheen).
-- **Done (775 green):**
-  - Seam in profile (337e056e): the head's rough, shine and pore depth ease into the graft's over the 3 cm above SPLIT (shader `seam_ease`; the weight is heroine_ao.png's green, by `tools/assets/heroine_ao_seam.py`; rerun it after heroine_features.py). The root bug: `PoreScale` is per mesh, so the graft (a small part of the body mesh) had its grain at a third of its size. `grain_scale` is now per surface (`SurfacePoreScale`). Pores elsewhere are unchanged. The body's own pore tile (~2.9 cm) is also off, left alone: a decision for later.
-  - Sunborn (3d24fddd): brown lit red x0.9, `HerAmbientTints["brown"]` 1.0/1.0/0.8, `HerFaceTone["sunborn"]` 1.20/1.23/1.23.
-  - Throats (d7fe25e3, glb 6d9ae49c): `tools/assets/heroine_throat.py` re-solves the face, chin and jaw keys under the jaw (biharmonic over jaw_zone.png; no move and no slope at SPLIT; ears and expressions left). `heroine_seam.seam()` runs it first. Outfits told.
-- **Findings:**
-  - Her jawR shade is lit by the cool fill spot: fill off takes it from L 0.45 to 0.31. The ambient tint and the terminator width barely move it, so n1's per-face ambient tints don't work.
-  - The iris crush at the Look is the Night grade's toe. With the rig white and only the grade toggled, Doe's ring goes from 56,22,12 (grade off) to 25,6,4 (grade on).
-- **Rendering landed (worktree-agent-a4e0c353e61cca6dc @ 685a6689, in e06744f4; merge it first):**
-  - Grade: toe 1.0 at the title and the Look. Doe's ring stays 56,22,12; `--grade-toe 0` gives the old grade.
-  - Portrait rig: fill 1.0/0.95/0.9, bounce 0.18 by default, rim specular 0.25; `--rig-old` gives the before.
-  - So: apply the iris patch and re-measure. Re-measure jawR, the salmon line and the collar sheen with our own crops (rendering's boxes missed).
-  - Check HerBackSpec 0.3 on top of the rim's 0.25: maybe back to 1.0.
-  - Rendering's judge also saw: sclera chroma about +0.012; ears paler and greyer than the face; a pale scalp wedge at the temple.
-- **In flight / next:**
-  1. The neck solver (afe257673845169a9, done; its crops are in scratch `f16\`, unjudged) committed c3f549ec. A lamp behind her now gives 0.3 of its sheen (`HerBackSpec`). The lilac collar sheen passes its numbers on Highborn and Fey, misses by 2 deg on Doe, and fails on Sunborn (hue -25). It also added neutral shader switches: `backlight`, `backlight_colour`, `backlight_behind`, `shade_tint` + gates, `rim_gate`, `rim_tint`, `back_spec`. This is UNJUDGED.
-     - **Grey shade under the jaw, not fixed.** The cool fill hits jawR about as squarely as it hits the cheek, so no light-angle term separates them. Two paths: rendering warms the fill (about 1.0/0.95/0.9) and adds a bounce from below at 0.15-0.2 (`--bounce`, the coordinator has asked); or, on the skin side, a zone mask (jaw_zone into heroine_ao.png's blue, faded to 0 at the seam by the green) with `shade_zone=1, shade_from=0.9, shade_to=1.0, shade_tint~1.3/1.0/0.6`.
-     - **Salmon jaw line.** It comes from BACKLIGHT (no thickness mask) plus the terminator; the rim isn't the cause. It needs a thickness mask (ears and nostrils only) for BACKLIGHT.
-     - **Sunborn and Doe's sheen.** Try `back_spec` 0.15, or rendering's rim lamp specular 0.5 to 0.25.
-     - Then one judge over all of it, with the f16 crops plus a profile check that the face's rim sparkle survives.
-  2. Irises: `tools/scratch/face15/irises_neutral.patch` (looks.json: chestnut, peat, umber, sloe) is calibrated under `--rig-white --grade off`. It lands within 1-2% of the portraits; peat to chestnut is dE 0.037. It's not applied, because at the Look the grade crushes it to black. Rendering (a71fc38b0095fd45a) will lift the grade's toe and tell us. Then: `git apply`, shoot the four (s9.ps1), `python em.py TAG doe sunborn moonlit saffron doe:w_doe ...`, `python iriscmp.py TAG ...`, and judge. Aim: the iris ring at the Look above sRGB 30 in red, and dE >= 0.03 between peat and chestnut.
-  3. n2's grain taper: the graft's grain to 60% at mid-neck and 30% at the collarbones (heroine_freckles_graft.png's blue). Also Sunborn's under-chin chroma, the 2x seam proof, the tick behind the lobe and the jaw-angle fold.
-  4. Then the f6 list (lids, Moonlit's temple arc, brows), then the older queue below.
+## Start here (11 Oct, early morning; face successor 4 handing off at about 235k; branch `worktree-agent-a2d632df7c7f21ec0`)
+Read `tools/scratch/face16/j1_j2_verdicts.md` (two judges' verdicts; numbers in j1_/j2_numbers.txt; sheet scripts sheets.py and necksheet.py; batches t1-t8.ps1 call f13's look_ab.ps1). Scratch G = `C:\Users\munch\AppData\Local\Temp\claude\C--Users-munch-Desktop-survivorsunchained\91211d34-e079-4956-a2a0-7b52c04594a8\scratchpad\f17` (j1\ and j2\ sheets; heads_orig\ = the ten paints before heroine_ears.py). Measures: `...91211d34...\scratchpad\f16\lmxy.py` (facefit venv; its jawL misses, use jawR), `prof.py`, `sheen.py`; `tools/scratch/face15/em.py` and `iriscmp.py` for irises.
+- **Done (768 green):**
+  - Integration merged (grade toe, portrait rig): 1d061d8b.
+  - `thin_map`: BACKLIGHT is kept to the ears and nose wings. `tools/assets/heroine_thin.py` writes heroine_ao.png's blue; shade_zone now reads its alpha. Rerun it after heroine_features.py. Salmon edge: PASS.
+  - HerBackSpec 0.3 kept: PASS.
+  - Dark irises recalibrated at the Look: looks.json chestnut, umber, peat and sloe are within 1-3 sRGB; peat-chestnut dE 0.038. Their pattern is halved (`dark_contrast`, shader). PASS.
+  - Ears: `tools/assets/heroine_ears.py` ran on all ten paints (54b3c717). PASS for own and Highborn; Sunborn and Saffron still read ashier.
+  - Dev switches: `--neck-cm X` (HerPose), `--fill-colour R,G,B` (GameFront).
+- **Under-jaw grey: gone (j1).** Now the opposite: the jaw shade is too light and the skin orange (verdicts A and B). Rendering's rig comes first: fill 1/0.98/0.96, bounce 0.045, key light higher and more frontal with shadow. Then our per-face paint hue and chroma, and a neck chroma trim. The rig is NOT changed in code: it's rendering's, which is paused. The main session decides who does it.
+- **Neck length (the owner's open question):** the sheets `G\j1\neck_length.jpg` and `G\j2\neck_length.jpg` are NOT fit for the owner yet.
+  - Both judges recommend -1.5 cm; -3 cm is too short; today's length stays a full option.
+  - **The nape fleck is a seam crack.** Two of the 95 points her head shares with the graft (back left of the nape, about x -0.044, y 1.645, z -0.06) carry Head weight 0.027 on the head but 0.40 on the graft. Their ring neighbours are 0.5-0.65 on both sides.
+  - Any Head-bone move opens the crack: the neck slider's ends, and nods in play and in cinematics (estimate about 0.5 cm at a 20-degree nod).
+  - Root fix: in `heroine_seam.py`, copy the graft's JOINTS_0/WEIGHTS_0 onto the head's shared points (needs a uint setter: `_set` is float-only). Rerun the export chain, then check a t8-style profile at -3 cm (`t8.ps1`: hair off and shadow off both still showed it) and a nod.
+  - Tell animation (a8e3b95318cc82e94) and outfits (a8f5db2bb06ceb5c5) first: their exports run heroine_seam.
+  - Scaling the neck bone instead was tried and reverted: it shears the head on nods and didn't clear the fleck.
+- **Next, in order:**
+  1. The seam-weight weld (above). Then reshoot the neck sheet (t6 set) and measure chin-to-notch / pupil-to-chin against the portraits; add a -2 cm column if -1.5 is still more than 10% long. Judge it, then send it to the main session for the owner.
+  2. The rig (ours or rendering's), then skin hue and chroma per face (verdict j2 A).
+  3. The mid-neck line on all ten: measure the step.
+  4. Sunborn's and Saffron's ears.
+  5. Eyes: a soft window catchlight; lid occlusion and a tear line; Moonlit's corner smear and pale brows.
+  6. Brows and lashes (the f6 list): Doe's, Sunborn's and Saffron's brows; a dense, dark upper lash line.
+  7. Hair:
+     - **From outfits' judge 5: a red hair tuft pokes through the plunge neckline in `chain_haul`** (hair collision; crops in the coordinator's scratchpad `o2\h1\`).
+     - Temple strands read as scratches.
+     - The scalp wedge at the temple.
+  8. n2's grain taper; Sunborn's under-chin.
+- **For others (tell them):**
+  - Rendering: the rig (above); armour highlights clip to white at the Look; an orange particle disc drifts over her neck at the Look.
+  - Godot shots here crash or hang about 1 in 20 (t1 wildling, t5 nk-3_f; t6 nk-1.5_t40 hung for 30 minutes). Kill the hung process and the batch carries on.
+- **Tooling:** the context hook took README's example line "Context budget: 120k" as this lead's budget. The brief's 300k was followed.
+
+## Earlier start-here (11 Oct, night)
+In this page's history (4aa76ffe): judge n2, the throats, the seam ease, Sunborn's tone, the neck solver's c3f549ec.
 
 ## Earlier start-here (11 Oct, later)
 Judge n1's start-here is in this page's history (5794c4e3); its items 1-3 are done above.

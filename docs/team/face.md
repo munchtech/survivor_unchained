@@ -1,6 +1,11 @@
 # Heroine face, hair and creation's Look: status
 
-Agent afb7deb41dbb5d904 (took over from a6e8e6d0f539943bb), branch `worktree-agent-afb7deb41dbb5d904`, handing off. The handoff is `docs/handoff/face.md`.
+Face successor 4, branch `worktree-agent-a2d632df7c7f21ec0`, handing off. The handoff is `docs/handoff/face.md` ("Start here").
+
+## 11 October 2026: the neck after rendering's rig
+- Grey-violet under the jaw gone on all ten (judge j1). Salmon jaw edge PASS (thin_map). Collar sheen PASS. Dark irises on target (PASS). Ears repainted (PASS own, Highborn).
+- Open: under the new portrait rig the skin reads orange and the jaw shade too light (rendering's rig first, then per-face paint). The neck-length sheet waits on a nape crack: two head/graft seam points with mismatched Head weights (found; fix specified). Then brows, lashes, catchlight, lid occlusion.
+- For animation and outfits: those two seam points crack on nods; the fix will change heroine.glb's weights there.
 
 ## 10 October 2026: round 2 judged, the fix pass next
 - **Hair:** the new strand atlas ships (soft ragged roots, unclipped sides, straight shade; hard lock blocks gone), blended drawing the direction. Round 2 (baby hairs, ragged cap hairline, card tone, strand contrast, skin rim behind only) built and with a judge.
