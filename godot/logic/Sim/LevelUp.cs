@@ -73,6 +73,17 @@ public static class LevelUp
 
     /// <summary>Leans, as multipliers on a card's weight.</summary>
     public const double PathLean = 1.5, CallingLean = 1.3, AttunedLean = 2.0, FamiliarLean = 1.3, PassivePathLean = 1.3;
+    /// <summary>The road lit deepest leans its signature skills by night (x1.25); with the path and
+    /// calling leans the product is capped (CLASSES.md section 2.10).</summary>
+    public static double RoadLeaned(Battle b, string skill, double lean, Offer o)
+    {
+        if (!b.EmberOn || string.IsNullOrEmpty(b.Lamps?.Lean)) return lean;
+        var road = Content.Lamps.Roads.GetValueOrDefault(b.Lamps!.Lean);
+        if (road == null || System.Array.IndexOf(road.Skills, skill) < 0) return lean;
+        o.Why.Add($"Your road: {road.Name}");
+        return System.Math.Min(lean * Content.Lamps.RoadLean, Content.Lamps.LeanCap);
+    }
+
     /// <summary>The first skill drafts of an arena in which an attuned skill not yet
     /// taken is always among the cards.</summary>
     public const int AttunedDrafts = 4;
@@ -276,7 +287,7 @@ public static class LevelUp
         if (GreatNext(b))
         {
             var pool = new List<Cand>();
-            foreach (var id in Boons.Great)
+            foreach (var id in Boons.Great.Concat(b.Flare != null ? Boons.FlareGreat : []))
             {
                 var d = Boons.All[id];
                 int r = b.Boons.GetValueOrDefault(id);
@@ -398,7 +409,7 @@ public static class LevelUp
             };
             // Pushing toward an evolution already in hand.
             double near = w.Rank >= 6 && w.Evolution == null && held ? 1.3 : 1;
-            combat.Add(new Cand { O = o, W = 9 * Affinity(w.Tags, tags) * near * Again(o), Advancing = true });
+            combat.Add(new Cand { O = o, W = 9 * Affinity(w.Tags, tags) * near * Again(o) * RoadLeaned(b, w.Id, 1, o), Advancing = true });
         }
         if (b.Weapons.Count < Content.Weapons.MaxWeapons)
         {
@@ -411,13 +422,16 @@ public static class LevelUp
                 var o = new Offer { Kind = OfferKind.Weapon, Id = id, Rarity = Rarity.Uncommon, Title = d.Name, Text = d.Description, Icon = d.Art, Tags = d.Tags, From = 0, To = 1, Recipe = Recipe(id) };
                 double w = 3.2 * want * Affinity(d.Tags, tags) * Again(o);
                 var mine = paths.FirstOrDefault(p => p.Weapons.Contains(id));
-                if (mine != null) { w *= PathLean; o.Path = mine.Id; o.Why.Add($"On your path: {mine.Name}"); }
+                double lean = 1;
+                if (mine != null) { lean *= PathLean; o.Path = mine.Id; o.Why.Add($"On your path: {mine.Name}"); }
                 // A slight lean toward the calling's own style; anyone can take anything.
                 if (b.CallingPaths.Any(p => Paths.Find(p)?.Weapons.Contains(id) == true) || (b.Favours.Count > 0 && d.Tags.Any(b.Favours.Contains)))
                 {
-                    w *= CallingLean;
+                    lean *= CallingLean;
                     if (mine == null) o.Why.Add("Your calling's");
                 }
+                lean = RoadLeaned(b, id, lean, o);
+                w *= lean;
                 // Carried by day: attuned, it comes first and comes in higher.
                 if (b.Attuned.TryGetValue(id, out int at))
                 {

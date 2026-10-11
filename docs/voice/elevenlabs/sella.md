@@ -1,6 +1,6 @@
 # Sella: ElevenLabs packet
 
-Voice id in the game: `sella`. 97 takes to record (9,939 characters; about 29,817 credits at three tries a line). Status: **final** (the story lead, 2026-10-03): record it.
+Voice id in the game: `sella`. 97 takes to record (9,938 characters; about 29,814 credits at three tries a line). Status: **final** (the story lead, 2026-10-03): record it.
 
 ## Who they are
 
@@ -309,9 +309,9 @@ Subtitle: Big hands. Be gentle with them upstairs, or you'll be paying for the f
 *Note:* Puzzled, then laughing: 'You're a little bit on fire.'
 
 ```
-[startled, amused] Something on you's smouldering, love. Are you on fire? You're a little bit on fire.
+[startled, amused] Something on you's smoldering, love. Are you on fire? You're a little bit on fire.
 ```
-Subtitle: Something on you's smouldering, love. Are you on fire? You're a little bit on fire.
+Subtitle: Something on you's smoldering, love. Are you on fire? You're a little bit on fire.
 
 ### 25. `dlg.sella.say_calling.3.wav`
 

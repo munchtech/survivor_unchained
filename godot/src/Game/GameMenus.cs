@@ -53,7 +53,7 @@ public partial class Game
                 if (locked != null) Toast(new Toast(ToastKind.Warning, locked));
                 else { near.Act(); zone?.Touched(); }
                 return true;
-            case Act.Ultimate: Journey.Quaff(Battle); return true;
+            case Act.Draught: Journey.Quaff(Battle); return true;
         }
         return false;
     }

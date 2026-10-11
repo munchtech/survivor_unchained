@@ -37,7 +37,7 @@ python tools/vo/import_takes.py ~/Downloads/su_vo --voice tam
 
 ## Saying the names
 
-The text to paste already respells these; keep the respelling: Penhale's as *Pen-hale's*.
+The text to paste already respells these; keep the respelling: Penhale as *Pen-hale*, Penhale's as *Pen-hale's*.
 
 ## The lines
 
@@ -151,9 +151,9 @@ Subtitle: The water's clear! Pa says I can go home! Pa says you did it. Did you 
 *Note:* Awed question; then quieter, sad: was he sick too?
 
 ```
-[uncertain, sad, quietly] Did you kill the big grey one? ...Was he sick too?
+[uncertain, sad, quietly] Did you kill the big gray one? ...Was he sick too?
 ```
-Subtitle: Did you kill the big grey one? ...Was he sick too?
+Subtitle: Did you kill the big gray one? ...Was he sick too?
 
 ### 11. `dlg.tam.cb_grey2.0.wav`
 

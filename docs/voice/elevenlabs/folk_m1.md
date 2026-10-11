@@ -1,6 +1,6 @@
 # Townsman, middle-aged: ElevenLabs packet
 
-Voice id in the game: `folk_m1`. 47 takes to record (3,081 characters; about 9,243 credits at three tries a line). Status: **draft**, until the story lead (a7622ae77d19e31dc) checks every line and marks it final.
+Voice id in the game: `folk_m1`. 47 takes to record (3,080 characters; about 9,240 credits at three tries a line). Status: **draft**, until the story lead (a7622ae77d19e31dc) checks every line and marks it final.
 
 ## Who they are
 
@@ -37,7 +37,7 @@ python tools/vo/import_takes.py ~/Downloads/su_vo --voice folk_m1
 
 ## Saying the names
 
-The text to paste already respells these; keep the respelling: Penhale as *Pen-hale*, Redcowl as *Red-cowl*, Redcowl's as *Red-cowl's*, Vonnra as *Vonra*.
+The text to paste already respells these; keep the respelling: Brannoc as *Brannock*, Maeca as *Mayka*, Penhale as *Pen-hale*, Redcowl as *Red-cowl*, Redcowl's as *Red-cowl's*, Vonnra as *Vonra*.
 
 ## The lines
 
@@ -231,7 +231,7 @@ Subtitle: You're the one who cleared the wolves. My boy can walk to the mill aga
 *Played:* amazed; pace: measured; volume: level.
 
 ```
-[amazed] They say wolves walk beside you out there. I'd not believe it but for Maeca's face.
+[amazed] They say wolves walk beside you out there. I'd not believe it but for Mayka's face.
 ```
 Subtitle: They say wolves walk beside you out there. I'd not believe it but for Maeca's face.
 
@@ -291,9 +291,9 @@ Subtitle: Jory Coyle's home! Harlan wept in the street, I saw it.
 *Played:* disgusted; pace: measured; volume: level.
 
 ```
-[disgusted] Pell Varrow, selling his own neighbours. I bought eggs from that man.
+[disgusted] Pell Varrow, selling his own neighbors. I bought eggs from that man.
 ```
-Subtitle: Pell Varrow, selling his own neighbours. I bought eggs from that man.
+Subtitle: Pell Varrow, selling his own neighbors. I bought eggs from that man.
 
 ### 26. `folk.52.m.wav`
 
@@ -451,7 +451,7 @@ Subtitle: Kerchief lad tried his luck with my daughter. She broke his nose with 
 *Played:* quiet, sad; pace: measured; volume: quiet.
 
 ```
-[quiet, sad, quietly] Brannoc's girl went south with Wat's cart a fortnight back. Quietest forge in the valley since, and that's saying something.
+[quiet, sad, quietly] Brannock's girl went south with Wat's cart a fortnight back. Quietest forge in the valley since, and that's saying something.
 ```
 Subtitle: Brannoc's girl went south with Wat's cart a fortnight back. Quietest forge in the valley since, and that's saying something.
 
@@ -461,7 +461,7 @@ Subtitle: Brannoc's girl went south with Wat's cart a fortnight back. Quietest f
 *Played:* sad, pitying; pace: measured; volume: quiet.
 
 ```
-[sad, pitying, quietly] Brannoc's stopping carters off the south road, asking after a red-haired girl. Nobody's had the heart to say they've not seen her.
+[sad, pitying, quietly] Brannock's stopping carters off the south road, asking after a red-haired girl. Nobody's had the heart to say they've not seen her.
 ```
 Subtitle: Brannoc's stopping carters off the south road, asking after a red-haired girl. Nobody's had the heart to say they've not seen her.
 

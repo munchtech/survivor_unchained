@@ -84,17 +84,17 @@ The main session keeps this current. It is the address list for SendMessage. Ret
 | Area | Agent | Status page |
 |---|---|---|
 | Voice (paused by the owner: no placeholders; final voices from ElevenLabs later) | a501b387a90d78b4e | docs/team/voice.md |
-| Story and writing (the writer: the approved rewrite, Act 1 first) | a17db00d9ec9596ca (11 Oct: A and B approved; three WTF premise twists for the owner, then the early lines locked for ElevenLabs) | docs/team/story.md |
-| Classes design (two types per calling, skill trees, ultimates on Q / right-click; plan only until the owner approves) | a2a42cd8430929a76 (11 Oct: plan approved, all 8 recommendations; phase 1 systems: Lamps data, Flare meter, dash forms, migration, harness) | docs/design/CLASSES.md |
+| Story and writing (the writer: the approved rewrite, Act 1 first) | ac0c41b1b8a3813b5 (11 Oct night: 160 early lines LOCKED for recording (merged 9cbc654c); now day-cycle voice ids, A/B/toll into the treatment and bible, the sophistication pass, TOLL_SPEC judged) | docs/team/story.md |
+| Classes design (two types per calling, skill trees, ultimates on Q / right-click; plan only until the owner approves) | a7bf244a8d7dd3e67 (phase 1 session 2, worktree agent-a2a42cd8430929a76, branch classes/phase1; session 1 merged c9806045: board, lamp book, Act renames, tags, Bound. Now: Battle wiring (dash forms, reflexes, the Flare), harness, acceptance numbers) | docs/design/CLASSES.md |
 | Combat, encounters, bosses, balance (paused; handoff ready at af6452e1) | — | docs/team/combat.md |
-| Animation (joints to perfection: wrists, follow-through, elbows, arms through body, sliding) | a8e3b95318cc82e94 (successor 11 Oct evening, in worktree agent-af8dbda3195e438e4: bracer rim, throw left arm, thigh, elbow corrective) | docs/team/animation.md |
+| Animation (joints to perfection: wrists, follow-through, elbows, arms through body, sliding) | a4e62fc358dc5214a (successor 5, 11 Oct night, in worktree agent-af8dbda3195e438e4 @ 14fb9b71: death and get_up rekeyed, hand-speck cause fixed, all unjudged; next rebuild, throw axe, judge 12, crotch cut, death_back pop) | docs/team/animation.md |
 | UI design (the HUD keystone; portraits wait on the face) | — (handoff ready) | docs/team/ui_design.md |
 | UI art (paused; handoff ready at cd0f4ab6) | — | docs/team/ui_art.md |
 | Crafting (research, design, build) (paused; handoff ready at ed429efb) | — | docs/team/crafting.md |
 | Gameplay experience director | af2c026d86e1b532b | docs/team/experience.md |
 | Skills look and feel (VFX, under the main session) | a560452c597415545 | docs/team/skills.md |
 | Cinematics production | aece7b87e89b13f19 | docs/team/cinematics.md |
-| Performance and rendering (clarity in motion first) | PAUSED 11 Oct night (merged b87ad0c7: grade toe, portrait rig, LOD code; LOD art uncommitted in worktree agent-a4e0c353e61cca6dc). Next: oldleather LOD blob and re-judge, wilds toe, moonlight pass, fur round 2 (docs/handoff/performance.md "Paused here"). Resumes when a lead slot frees | docs/team/performance.md |
+| Performance and rendering (clarity in motion first) | PAUSED 11 Oct night (merged b87ad0c7: grade toe, portrait rig, LOD code; LOD art uncommitted in worktree agent-a4e0c353e61cca6dc). Next: oldleather LOD blob and re-judge, wilds toe, moonlight pass, fur round 2 (docs/handoff/performance.md "Paused here"). Resumes when a lead slot frees. On resume: her body now has two blend shapes (elbow_point_l/_r, from animation); the LOD must keep them | docs/team/performance.md |
 | Arena art | a0b61c278bdd5c994 | docs/team/arena_art.md |
 | Male hero (body, head, hair, outfits) | ab82cbe99e2937ddd | docs/team/hero_male.md |
 | Heroine face, hair and character creation's Look | a9e79acd9eb319d23 (successor 4, 11 Oct night, in worktree agent-a2d632df7c7f21ec0 @ 4aa76ffe: merge the grade toe and portrait rig, iris patch, neck re-measure, salmon line, the neck-length sheet for the owner) | docs/team/face.md |
@@ -103,5 +103,5 @@ The main session keeps this current. It is the address list for SendMessage. Ret
 | Loot and itemisation (paused, built and merged; docs/handoff/loot.md for a successor) | — | docs/team/loot.md |
 | Creatures and models (our own boar first, then MODELS_TO_MAKE.md) | af551cacc6292152f | docs/team/creatures.md |
 | Story editor (paused after notes 02 at 435k; a fresh editor reads the next draft) | — | docs/story/EDITORIAL_LETTER.md |
-| Heroine body and outfits (now a lead of its own; was the main session's) | a8f5db2bb06ceb5c5 (successor 4, 11 Oct evening, in worktree agent-a5ca10091b08dc429 @ d3c444c6; judge 4 failed: pauldron, arcanist stomach and nipples, plunge foot) | docs/team/outfits.md |
+| Heroine body and outfits (now a lead of its own; was the main session's) | af07affeb22637bb5 (successor 5, 12 Oct, in worktree agent-a5ca10091b08dc429 @ edc5dc0d; judge 5 passed stomach, boning, nipples, chest paint; open: Ranger pauldron (one last solver, else a simpler design for the owner), rivets, binding slivers, plunge foot, three specks) | docs/team/outfits.md |
 | Marionette, the character app (a tool: idea to engine; ease like Meshy, quality like Maya; one-click AI-assisted fixing) | — (paused; status page is its own HANDOFF.md "Start here") | Marionette/HANDOFF.md, docs/HISTORY.md "The goal" |

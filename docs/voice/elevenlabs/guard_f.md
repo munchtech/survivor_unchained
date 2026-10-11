@@ -1,6 +1,6 @@
 # A Watchwoman: ElevenLabs packet
 
-Voice id in the game: `guard_f`. 9 takes to record (406 characters; about 1,218 credits at three tries a line). Status: **draft**, until the story lead (a7622ae77d19e31dc) checks every line and marks it final.
+Voice id in the game: `guard_f`. 9 takes to record (405 characters; about 1,215 credits at three tries a line). Status: **draft**, until the story lead (a7622ae77d19e31dc) checks every line and marks it final.
 
 ## Who they are
 
@@ -67,9 +67,9 @@ Subtitle: Gates are shut till dawn.
 *Played:* curt; pace: measured; volume: level.
 
 ```
-[curt] Walk on, traveller.
+[curt] Walk on, traveler.
 ```
-Subtitle: Walk on, traveller.
+Subtitle: Walk on, traveler.
 
 ### 4. `folk.74.f.wav`
 

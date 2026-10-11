@@ -506,38 +506,27 @@ public partial class GameHud : CanvasLayer
         dash.Recharge = (float)Math.Clamp(p.DashRecharge / Abilities.Dash.Recharge, 0, 1);
         irons.Draught.Count = draughts;
 
-        // The art: its charge rising in the right cuff as it readies, its glyph in the glass.
+        // The art slot now shows the Flare (docs/design/CLASSES.md §3): its meter, a plain readout until phase 3's HUD.
         var art = irons.Art;
-        if (b.Ability is AbilityKind ak)
+        if (b.Flare is { } fl)
         {
-            var def = Abilities.All[ak];
-            if (b.Art.EchoT > 0)
-            {
-                // An echo waits: the art is the way back into it, its violet draining as the chance does.
-                art.Liquid(new Color("#d8b8ff"), new Color("#4a2a7a"));
-                art.Level = (float)Math.Clamp(b.Art.EchoT / (b.Has("long_echo") ? 7 : 4), 0, 1);
-                art.Glyph = Glyphs.Texture(def.Icon, 96, Hex("#fff4ff"), line: true);
-                art.GlyphTint = Colors.White;
-                art.Number = "";
-                irons.ArtWord.Text = "STEP BACK";
-                artReadyWas = 1;
-            }
-            else
-            {
-                irons.ArtWord.Text = "";
-                art.Liquid(new Color("#ffc66a"), new Color("#8a3a08"));
-                double ready = 1 - p.AbilityCd / Math.Max(Math.Max(0.01, b.Art.CdFull), p.AbilityCd);
-                ready = Math.Clamp(ready, 0, 1);
-                // Readied this frame: a flare through the glass, once.
-                if (ready >= 1 && artReadyWas < 1) artPing = 1;
-                artReadyWas = ready;
-                art.Level = (float)ready;
-                art.Glyph = Glyphs.Texture(def.Icon, 96, Hex("#fff3dc"), line: true);
-                art.GlyphTint = ready >= 1 ? Colors.White : new Color(0.62f, 0.58f, 0.54f, 0.85f);
-                art.Number = ready >= 1 ? "" : p.AbilityCd >= 1 ? $"{Math.Ceiling(p.AbilityCd)}" : $"{p.AbilityCd:0.0}";
-            }
+            double full = Battle.FlareFull;
+            double per = Math.Clamp(b.FlareMeter % full == 0 && b.FlareMeter > 0 ? 1 : b.FlareMeter % full / full, 0, 1);
+            art.Liquid(new Color("#ffc66a"), new Color("#8a3a08"));
+            if (b.FlareReady && per < 1) per = 1;
+            if (per >= 1 && artReadyWas < 1) artPing = 1;
+            artReadyWas = per;
+            art.Level = (float)per;
+            art.Glyph = Glyphs.Texture(Abilities.All[b.Ability ?? AbilityKind.Sprint].Icon, 96, Hex("#fff3dc"), line: true);
+            art.GlyphTint = b.FlareReady ? Colors.White : new Color(0.62f, 0.58f, 0.54f, 0.85f);
+            art.Number = b.FlareReady ? "" : $"{Math.Floor(b.FlareMeter % full)}%";
+            var line = new System.Text.StringBuilder(b.Ability is AbilityKind ak
+                ? (b.FormReady ? $"{Abilities.All[ak].Name}: ready" : $"{Abilities.All[ak].Name}: {p.AbilityCd:0.0}s") : "");
+            foreach (var r in b.Reflexes)
+                line.Append(line.Length > 0 ? " | " : "").Append($"{r.Def.Art} {(r.Cd > 0 ? Math.Ceiling(r.Cd).ToString() : "ready")}");
+            irons.ArtNote.Text = line.ToString();
         }
-        else { art.Level = 0; art.Glyph = null; art.Number = ""; irons.ArtWord.Text = ""; }
+        else { art.Level = 0; art.Glyph = null; art.Number = ""; irons.ArtWord.Text = ""; irons.ArtNote.Text = ""; }
 
         if (!b.Combat) return;
         // The fight's clock and its count belong to the night; by day they would only be noise.

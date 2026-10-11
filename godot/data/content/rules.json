@@ -1,6 +1,17 @@
 {
  "rules": [
   {
+   "id": "chid.ford_burial",
+   "once": true,
+   "when": {
+    "day": {
+     "gte": 2
+    }
+   },
+   "effect": [],
+   "report": "Chid carried a woman up from the ford before light yesterday, and buried her himself. Nobody's claimed her."
+  },
+  {
    "id": "dawn.voice",
    "once": true,
    "when": {
@@ -808,7 +819,7 @@
      ]
     }
    ],
-   "report": "A pedlar off the south road was selling Coyle cloth at half its price. Harlan bought a bolt of his own goods back and did not say a word."
+   "report": "A peddler off the south road was selling Coyle cloth at half its price. Harlan bought a bolt of his own goods back and did not say a word."
   },
   {
    "id": "caravan.settled",
@@ -882,7 +893,7 @@
      "kerchief.raids": 1
     }
    },
-   "report": "The Kerchiefs stopped a pedlar on the Old Road and took his boots. The Watch is stretched thin."
+   "report": "The Kerchiefs stopped a peddler on the Old Road and took his boots. The Watch is stretched thin."
   },
   {
    "id": "aldo.buried",
@@ -1215,7 +1226,7 @@
     "eq": true
    },
    "effect": [],
-   "report": "Brannoc stopped a pedlar off the south road at the gate yesterday, and asked him something. The pedlar shook his head. Brannoc asked the next one too."
+   "report": "Brannoc stopped a peddler off the south road at the gate yesterday, and asked him something. The peddler shook his head. Brannoc asked the next one too."
   },
   {
    "id": "jory.words",

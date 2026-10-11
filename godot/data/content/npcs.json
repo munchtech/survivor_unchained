@@ -1254,7 +1254,7 @@
    "barks": [
     "Good steel's not cheap. Nor's a good pelt.",
     "Mind the sparks.",
-    "Bring me hides. I'll make you something worth wearing.",
+    "Five pelts. That's a cloak. Bring five.",
     "Hit a man with this and he stays hit."
    ],
    "nightBarks": [
@@ -1335,7 +1335,7 @@
      }
     },
     {
-     "text": "Pedlar says the Kiln road's dry. Good.",
+     "text": "Peddler says the Kiln road's dry. Good.",
      "night": false,
      "when": {
       "any": [

@@ -627,7 +627,7 @@ public partial class CreateScreen : Overlay
             v.AddChild(Line("At rank 8", string.Join(", or ", w.Evolutions.Select(e => $"{e.Name} (with {string.Join(" or ", e.Catalysts.Select(c => Boons.Find(c)?.Name ?? c))})"))));
         v.AddChild(Kit.RuleH());
         // The art in hand: its mark, its name and key, what it does.
-        var name = Style.H(Style.Gap2, Style.Label(ab.Name.ToUpperInvariant(), Style.Display, 18, Kit.Ink, false, HorizontalAlignment.Left, false), Style.Prompt(Act.Ability));
+        var name = Style.H(Style.Gap2, Style.Label(ab.Name.ToUpperInvariant(), Style.Display, 18, Kit.Ink, false, HorizontalAlignment.Left, false), Style.Prompt(Act.Flare));
         foreach (var c in name.GetChildren().OfType<Control>()) c.SizeFlagsVertical = SizeFlags.ShrinkCenter;
         var what = Style.V(Style.Gap1, name, Style.Label(ab.Description, Style.Text, 16, Kit.Ink2, true, HorizontalAlignment.Left, false));
         what.SizeFlagsHorizontal = SizeFlags.ExpandFill;

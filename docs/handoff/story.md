@@ -3,142 +3,136 @@
 You are the writer. You own the canon, every word the game says, the story
 data and the cinematic scripts, and you sign off voice packets.
 
-- **Branch:** `worktree-agent-a81b550b25ab6b672` (the tenth lead; handed off
-  at once, after onboarding). Merge `origin/claude/vigilant-galileo-l6jqyx`
-  first. Commit, push, open no PRs. Tests: `cd godot/tests && dotnet test`
-  (760 pass, 8 skipped) before every commit. Commit messages go in a file
-  (`git commit -F`) and end with `Co-Authored-By: Claude Opus 5.5
-  <noreply@anthropic.com>`.
-- **Budget warning:** onboarding as the brief listed it (README, this page,
-  the status page, the whole treatment, the editorial letter, the bible's
-  sections) cost the tenth lead about 250k of a 300k budget. Don't repeat it.
-  `docs/story/TWIST_OPTIONS.md` holds the canon the next steps need. Read the
-  bible and the treatment only by grepped section, and only for a step that
-  needs them.
-- **Scripts:** the worktree guard refuses bash with computed values, so write
-  Python in your scratchpad and run it with literal paths. Copy `lib.py`
-  (round-trip-safe load and save of the content JSON; `node`, `ch`, `v`,
-  `replace_text`) and `showc.py` (`showc.py CONV [NODE...]` prints a
-  conversation; `showc.py ?` lists them) from
-  `C:\Users\munch\Desktop\survivorsunchained_inputs\scratch_91211d34\s10\`,
-  and set `WT` and `C` to your worktree.
+## Where it stands (the thirteenth lead, 11 October)
+
+- **Canon written in.** A ("Not yet": Chid made you), B ("Count's right":
+  Holloway knew) and the toll ("It takes less than it did") are in
+  `TREATMENT.md` §0 (with "How the three meet": Vonnra's twenty-six were the
+  price; Chid put the one who would hold on in the water first; why one rises
+  with a mind stays unsaid) and in the bible: rule 6 (a rising is paid for),
+  §1 the mother's last evening, §3 rows (plus "Getting up"), §5 Chid, Vonnra,
+  Holloway, Maeca and the third layers, §8 C41/C42/C43, the toll in the
+  endless, §12 facts. The old labels "twist A/B" (the voice, the lamp) are
+  renamed so nobody confuses them with the owner's A and B.
+- **Voice ids for the unvoiced narration.** `tools/vo/lines.py` now reads
+  `Journey.Day.cs` DayLines (12 lines: the dusk call is the gate guard's, the
+  rest the narrator's) and the story fights' `Pull`/`Between`/`BetweenSight`
+  (20 lines: Hollow, Roost, Dig, Vault), all said via `Game.Say` as
+  `say.<hash>`. **"You get up." and "You get up. It takes less than it did."
+  are directed and LOCKED** (162 locks). The other 30 have no direction yet
+  and are on the narrator's HOLD: review, direct and lock them with the rest
+  of the narrator.
+- **TOLL_SPEC judged** (max judge, against TWIST_WTF option 1): see "TOLL_SPEC"
+  below for what was applied.
+- **Not done: the sophistication pass.** Analysed, not applied (my context ran
+  out). The decided list is below; do it, then a max editor-judge, then lock
+  Holloway, Maeca, Chid and the rest of the narrator.
+
+## The sophistication pass: decided, to apply (Act 1, unlocked lines only)
+
+Rook's and Brannoc's Act 1 lines are locked: never change their words. The
+editor's open notes are `docs/story/notes/02_act1_draft.md` §2 to §11 (§12 is
+the order). Use `showc.py` to see each node first.
+1. **Maeca's "three days"** (§3): `maeca.blind_morning` "The Pack found me,
+   after Ashford. A cave mouth, and a lad I'd been fond of dying in it.";
+   `maeca.told_true` "...I held a cave mouth for nobody coming. ..."
+2. **The ledger leak** (§2). Rook's side is locked (the room stays in the
+   lie), so fix the ledger: `vonnra.f_chart` [0] and [1], line twenty-six
+   "Rook's lodger." becomes "A woman. No name." (it rhymes with the unnamed
+   marker; under A Chid knew her name and left it off). Ripple: bible §1, §0's
+   lamp-twist bullet, TOLL_SPEC §6, the Act 3 plan. The survivor's choice in
+   `rook.mother2` "I was a day short." becomes "A week. I was a week on the
+   road." (Rook's locked reply still fits, and re-reads).
+3. **The gate scenes** (§9): `scene_gate_dawn.all` "(Maeca looks at the ground
+   he slept on, and then at him, and says nothing.)" (fixes the step slip and
+   "very loudly"); `scene_in_my_count.crowd`: the threat in one crowd voice
+   (no folk speaker exists in dialogue.json: check how Panels/Dialogue name a
+   non-NPC speaker first); consider the toll seed there: the town's fear is
+   that people go in their sleep since she came (true, and the player
+   dismisses it); `.captain`: he walks through them and turns his back on her;
+   `scene_knocking.home` "Can't. Somebody's still out. (He drinks.) ...Sit
+   down. I'll tell you who."; `scene_knocking.saw` gains (b)'s plant: "Dead.
+   Climbing. Grey, all of them, and not a sound out of them."; `scene_did_he`
+   cut "which she never does".
+4. **The narrator's tic** ("which she never does", "which he never is"...):
+   keep the hammer and Chid's quiet, cut the rest (grep the data).
+5. **Bible rules to settle:** the dead don't knock (§6.6: whatever knocks is
+   alive; C20b's three dusks are the hole's silence); Gale (Holloway stops on
+   "Gale. ...Gale.") is the lad Maeca followed down the shaft (§7).
+6. **B's money and the decoy** (§6.5, §7): folk "Maeca pays the captain's
+   slate..." becomes a B seed: "The captain pays Maeca out of his own pocket,
+   and she spends it on his slate. Round and round." (edit in place: folk ids
+   are indices); a third decoy for the player who settled Redcowl and Pell
+   (the town says the north wants the captain gone); `decoy.rope` "Holloway
+   laughed when he heard" becomes "said nothing, and drank."
+7. **Boots** (§6.2): cut your boots from `maeca.blind`; `kerchief.raid` "took
+   his boots" becomes his mule; LOVE_SCENES B loses "Boots."
+8. **Chid, "What do I cut?"** `rook.mother_where` (locked) promises it: give
+   Chid the beat after `mother.told` (her name if named at creation, "Mam" if
+   not). Under A he knew her name all along.
+9. **Folk:** append "Wat's grey mare won't take a bit in winter. He warms it
+   in his armpit." (the lie route's mare). Sella's stalker `say_calling` from
+   her trade (it twins Rook's).
+10. **Hygiene:** `elevenlabs.py` calls the narrator "he"; the treatment body's
+    boot roll (§4.1, §4.3, §4.6), "A woman with a lamp. North bank. Seventh
+    evening." (§3.1), "low, warm and unhurried" (§3.4).
+Then Act 2, per `git show 86b97737:docs/handoff/story.md` §3.
+
+## TOLL_SPEC (judged; fixes applied)
+
+A max judge passed it with fixes; all applied (303 lines): C41's line no
+longer says "the night you first got up" (line 27 is the ford) and takes a
+clause per fight; the §1 table adds the in-fight revives (`p.Revives`,
+`p.Ashes`), a lost table night and map runs; the scripted fall has its own
+path (no rise spent, no stage replayed) and a staged beat per fight; the paid
+ones get a villager body and rules so they are seen; Rook's barks stop giving
+the pattern away; the death leads the morning report; Oswin's folk line is
+rewritten in place (gated), not deleted. **Left for you:** "went in his/her
+chair" (5 of the 24) and "sat down ... and went" (4) still repeat; a stiff
+"Detail:" lead-in in §4; Vonnra's optional close "...No charge, this once.
+Not to you."; C09's ledger text goes in with item 2. Then it is ready for a
+combat or story-code lead (the main session assigns it).
+
+## Branch and tools
+
+- **Branch:** `story-writer-successor` (from the integration branch at
+  9cbc654c). Commit, push, open no PRs. `cd godot/tests && dotnet test` (771
+  pass, 8 skipped) before any commit touching code or data;
+  `python -m unittest discover -s tools/vo/tests` has one librosa error, not
+  ours.
+- **Locks** (`tools/vo/lock.py`, `locked.json`) bind words, not ids:
+  `--prefix say.<hash>` locks one line. Then `lines.py`, `elevenlabs.py`,
+  `lock.py --check`, `check_ids.py`.
+- **Scripts** (the worktree guard refuses bash with computed values; run
+  Python with literal paths), backed up in
+  `C:\Users\munch\Desktop\survivorsunchained_inputs\scratch_91211d34\s13\`
+  (set `WT` to your worktree): `rep.py FILE PAIRS.json` (exact replacements,
+  each must match once, CRLF-safe), `adddir.py NAME ENTRIES.json` (direction
+  files, style-safe), `gaps.py DIR...` (sentence literals with no voice id),
+  `showc.py`, `lsv.py`, `lib.py`, `sheet.py`.
+
+## Gotchas
+
+- `from_story_fights` skips a literal followed by `=>` or right after `(`
+  (switch-arm keys like "rescued"); a sight passed as a call's first argument
+  would be missed.
+- Morning reports are unvoiced text. A capitalized parenthesis inside a line
+  is the narrator's; lower-case directions are not.
+- `holloway.knocking` must not fire once `holloway.confessed` is set. Scenes
+  share one morning and one dusk slot. StoryLint: every fact read is written.
 
 ## The owner's words
 
-- Today (11 October), verbatim: "lets fire up the writer - we need a big twist
-  nobody sees coming, maybe chid being evil? and another pass of
-  sophistication. also I would like to get some of the early lines mostly
-  settled so I can truly begin my elevenlabs voices"
-- Before: "a powerful epic story with real emotional happenings. people being
-  devastated, elated, or both. shocks and twists, stuff we figured out that
-  was obvious."; "when maeca kills halloway it should be a HOLY SHIT WHAT THE
-  FUCK kinda thing."; Brannoc "needs to hit HARD. so hard."; "the harshest
-  versions are what were aiming for."
-- Spelling is American (OWNER_NOTES, 11 October). The data already is
-  ("traveler", "gray"). The tone is adult.
-
-## The brief (from the coordinator, 11 October)
-
-1. **The twist first.** `docs/story/TWIST_OPTIONS.md` (merged at 0d688b27).
-   **The owner chose A and B together:** A, "Not yet": Chid made you. B,
-   "Count's right": Holloway knew. C is dropped. Both are canon now; write
-   them into TREATMENT §0 and the bible when you touch them.
-
-   **The owner still wants more:** "I'm still missing a WHAT THE FUCK kinda
-   moment - those are just like 'ohhh yeahhh'". A and B are clicks: they
-   explain something the player half-wondered about. What he wants overturns
-   something the player never thought to question (the premise: who "you"
-   are, who has been speaking, what the nights are, what the player has been
-   doing). It must be a twist of the whole game, not a person's secret. It
-   needs:
-   - the editor's six tests (`EDITORIAL_LETTER.md` §3.7);
-   - to keep A, B and the four approved twists standing;
-   - to be planted from the prologue.
-
-   The person twists set aside in TWIST_OPTIONS ("Considered") are the wrong
-   kind. Propose one or two to the coordinator before step 2.
-
-   **This gates the voice work.** A premise twist will almost certainly touch
-   the narrator's prologue lines. Lock only what it can't touch, or settle it
-   first.
-2. **Settle the early lines for voicing** (the Prologue and the opening of
-   Act 1):
-   - plant the chosen twist's seeds (the tables in TWIST_OPTIONS);
-   - the sophistication pass: subtext over statement, each voice distinct, no
-     line that explains what the scene shows;
-   - love-scene B only if it falls in this stretch (check
-     `docs/story/LOVE_SCENES.md`: Sella's paid night opens on night one).
-
-   Then mark the lines **LOCKED FOR RECORDING**, character by character.
-   Bring `docs/voice/RERECORD.md` and the packets (`python
-   tools/vo/elevenlabs.py`) up to date for exactly those lines, and lift
-   their HOLD (`HOLD_LINES` in `tools/vo/elevenlabs.py`). Don't hand-edit
-   the packets. Then run `python tools/vo/check_ids.py`.
-3. **Before anything is called locked:** a fresh `su-lead-max` story editor,
-   in the foreground, with "Context budget: 150k". Give it the locked lines,
-   the twist choice, the owner's words and a checklist. Fix what it finds.
-4. **Then** the sophistication pass through the rest of Act 1, and Act 2.
-   Act 2's plan is the eighth lead's: `git show 86b97737:docs/handoff/story.md`,
-   §3 "Act 2 (next)". Notes 02 (`docs/story/notes/02_act1_draft.md` §12) is
-   the editor's open work list on Act 1.
-
-Report to the coordinator (SendMessage `main`) when the early lines are
-locked. Hand off by 300k.
-
-## What step 2 covers, and what was found
-
-- **Untouched by every option** (do these first):
-  - the narrator's prologue lines (`godot/logic/Play/Zones/Prologue.cs`
-    `G.Say`, about 18 of them);
-  - C01 `cin_drowned_fire`, C02 `cin_none_cross`, C03 `cin_heart_goes_down`,
-    `warden_answer`, C04 `cin_first_light`;
-  - Vonnra's `far_voice`;
-  - Rook's day-one lines (`rook.first` and on);
-  - Brannoc's first meeting and barks.
-- **Touched by A:**
-  - `chid.first` gains one direction;
-  - the day-2 report that Chid buried a woman from the ford ("Nobody's
-    claimed her.") is **not in the data yet**, so write it;
-  - the prologue's reeds beat is staging, plus an optional narrator line.
-
-  Chid's other Act 1 lines are already the seeds; keep their words.
-- **Touched by B:** `scene_knocking` (Holloway looks to the step on "Pell."),
-  his roll (stops at ninety-one), `scene_his_cup` (a direction).
-- **Not built in the prologue yet:** the drowned woman with the dead lamp at
-  the water's edge (combat and experience).
-- **C01's letter** is cinematic shot 6, unvoiced: "no word is left".
-
-## Voice gotchas
-
-- **Zone-code lines** (the prologue's narrator) are keyed by a hash of their
-  words (`VoiceLines.Said`, `say.<hash>`, in `tools/vo/manifest.json`). A
-  reworded line gets a new id: regenerate the manifest (`tools/vo/lines.py`),
-  and `check_ids.py` must pass.
-- **Dialogue ids** are `dlg.<npc>.<node>.<variant>`. Adding a variant shifts
-  the ids after it.
-- **A changed line with an old placeholder take** loses its entry in
-  `godot/data/vo/index.json`, or `VoiceTests` fails. The previous drop
-  script is `vo_drop_s7.py` in `survivorsunchained_inputs\scratch_f1b9be14\story7\`.
-- **Parentheses:** a capitalized parenthesis inside a line is voiced by the
-  narrator. Lower-case directions are not.
-
-## Story gotchas (from the eighth lead, still true)
-
-- A node's effects apply before its text is chosen.
-- Scenes share one morning slot and one dusk slot: check the slot is empty.
-- StoryLint: every fact read is written; every fact written is read or listed
-  as a seed.
-- `holloway.knocking` must not fire once `holloway.confessed` is set.
+- 11 October: "another pass of sophistication"; "we need a big twist nobody
+  sees coming"; "I'm still missing a WHAT THE FUCK kinda moment".
+- Before: "a powerful epic story with real emotional happenings"; Maeca
+  killing Holloway "a HOLY SHIT WHAT THE FUCK kinda thing"; Brannoc "needs to
+  hit HARD. so hard."; "the harshest versions are what were aiming for".
+- Game text is American spelling. The tone is adult.
 
 ## Read first
 
-1. `docs/story/TWIST_OPTIONS.md`.
-2. `docs/team/story.md`.
-3. The brief's step 1 above: A and B approved, and a bigger, whole-game twist
-   still wanted.
-4. `docs/voice/RERECORD.md` and `tools/vo/README.md` ("The route since
-   October").
-5. Only then the conversations you edit (`showc.py`), and `TREATMENT.md` §0
-   if a decision is in doubt.
+1. This page; `TREATMENT.md` §0 (the top block); `TOLL_SPEC.md` if on the toll.
+2. For the pass: notes 02 §2 to §11 by section, then each node in `showc.py`.
 
-HANDOFF READY: docs/handoff/story.md on worktree-agent-a81b550b25ab6b672 (commit below)
+HANDOFF READY: docs/handoff/story.md on story-writer-successor@eea7d462

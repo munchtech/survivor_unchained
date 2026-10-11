@@ -4,18 +4,21 @@ The writer: owner of the canon, the words and the story data. Works with the
 story editor, a fresh one for each draft (`docs/story/notes/`). A successor
 starts from `docs/handoff/story.md`.
 
-**Now (11 October, the tenth lead, branch `worktree-agent-a81b550b25ab6b672`):**
-- **The twist:** three options for the owner are in `docs/story/TWIST_OPTIONS.md`.
-  A, "Not yet": Chid made you (recommended). B, "Count's right": Holloway knew.
-  C, "She went in first". **The owner chose A and B together.** He still
-  wants a real "WHAT THE FUCK" moment, a twist that re-reads the whole game
-  ("those are just like 'ohhh yeahhh'"). It comes next, before the early
-  lines lock (see the handoff).
-- **Next:** settle the Prologue and the opening of Act 1 for ElevenLabs. Plant
-  the chosen seeds and make the sophistication pass. A fresh editor (max)
-  checks the lines before they're marked LOCKED FOR RECORDING. Then
-  RERECORD.md, the packets and `check_ids.py`. The handoff page lists the
-  scenes no option touches; do those first.
+**Now (11 October, the thirteenth lead, branch `story-writer-successor`):**
+- **Canon:** A (Chid made you), B (Holloway knew) and the toll ("It takes
+  less than it did": every rise since the first costs a life) are written into
+  TREATMENT §0 and the bible (rule 6). The rise lines and 30 more unvoiced
+  narrator lines (the clock's, the story fights') now have voice ids; the two
+  rise lines are LOCKED (162 locks). The sophistication pass is decided, not
+  applied: the list is in `docs/handoff/story.md`.
+- **Voice: 160 early lines LOCKED FOR RECORDING** (the narrator's prologue and
+  C01 to C04, Vonnra's far voice, the prologue's Warden, Grimtunnel, dead
+  Watchman and gate guard, Rook's and Brannoc's Act 1), judged by a max
+  editor and fixed. Marked in the packets; `tools/vo/lock.py --list`.
+- **The toll's build spec:** `docs/story/TOLL_SPEC.md`, for a combat or
+  story-code lead (not yet judged).
+- **Next:** the sophistication pass through Act 1 and Act 2; then lock
+  Holloway, Maeca, Chid and the rest of the narrator.
 
 The ninth lead's state follows (paused 6 October; still true unless the lines
 above say otherwise).

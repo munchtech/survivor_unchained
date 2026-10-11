@@ -1,6 +1,8 @@
 # The dead Watchman: ElevenLabs packet
 
-Voice id in the game: `watchman`. 1 take to record (45 characters; about 135 credits at three tries a line). Status: **draft**, until the story lead (a7622ae77d19e31dc) checks every line and marks it final.
+Voice id in the game: `watchman`. 1 take to record (45 characters; about 135 credits at three tries a line). Status: **draft, except the 1 take marked LOCKED FOR RECORDING** (the story lead, 2026-10-11): record those now.
+
+**1 take is LOCKED FOR RECORDING** (marked below).
 
 ## Who they are
 
@@ -45,7 +47,7 @@ Each: what is going on, how it is played, then the text to paste (the bracketed 
 
 ## Scenes: Prologue
 
-### 1. `say.b81f9a1e8df8.wav`
+### 1. `say.b81f9a1e8df8.wav`  **LOCKED FOR RECORDING**
 
 *Where:* godot/logic/Play/Zones/Prologue.cs
 *Played:* dry, broken, dead; doing: the watchman's warning; pace: slow; volume: hushed.

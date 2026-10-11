@@ -1,6 +1,6 @@
 # Redcowl: ElevenLabs packet
 
-Voice id in the game: `redcowl`. 45 takes to record (4,339 characters; about 13,017 credits at three tries a line). Status: **draft**, until the story lead (a7622ae77d19e31dc) checks every line and marks it final.
+Voice id in the game: `redcowl`. 45 takes to record (4,337 characters; about 13,011 credits at three tries a line). Status: **draft**, until the story lead (a7622ae77d19e31dc) checks every line and marks it final.
 
 ## Who they are
 
@@ -155,9 +155,9 @@ Subtitle: You're the one who's been putting my lads in the ground. Redcowl. Talk
 *Note:* Big, amused. 'daft' Scots. Then cold on 'You're standing in my Roost. Talk.'
 
 ```
-[amused suspicion] Look at the colours on you. You're not one of mine, and you're not daft enough to be one of Holloway's. Red-cowl. You're standing in my Roost. Talk.
+[amused suspicion] Look at the colors on you. You're not one of mine, and you're not daft enough to be one of Holloway's. Red-cowl. You're standing in my Roost. Talk.
 ```
-Subtitle: Look at the colours on you. You're not one of mine, and you're not daft enough to be one of Holloway's. Redcowl. You're standing in my Roost. Talk.
+Subtitle: Look at the colors on you. You're not one of mine, and you're not daft enough to be one of Holloway's. Redcowl. You're standing in my Roost. Talk.
 
 ### 12. `dlg.redcowl.first.2.wav`
 
@@ -254,9 +254,9 @@ Subtitle: Pleasure. Box is by the tents; the teamsters are in the cages. Open th
 *Note:* 'Is it, now.' sceptical. Admits the howling. 'Fine.' 'for a friend' with a grin.
 
 ```
-[grudging] Is it, now. The howling's been keeping my lot up nights, I'll admit. ...Fine. The teamsters, for the favour. The box you still pay for. Fifty, for a friend.
+[grudging] Is it, now. The howling's been keeping my lot up nights, I'll admit. ...Fine. The teamsters, for the favor. The box you still pay for. Fifty, for a friend.
 ```
-Subtitle: Is it, now. The howling's been keeping my lot up nights, I'll admit. ...Fine. The teamsters, for the favour. The box you still pay for. Fifty, for a friend.
+Subtitle: Is it, now. The howling's been keeping my lot up nights, I'll admit. ...Fine. The teamsters, for the favor. The box you still pay for. Fifty, for a friend.
 
 ### 21. `dlg.redcowl.prisoners.0.wav`
 

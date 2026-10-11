@@ -245,7 +245,7 @@ public class BreadcrumbTests
         Assert.Equal("lie", s.World.Fact("nell.told").Str);
         Assert.False(s.World.Fact("nell.buried").Truthy);
         Day(s);
-        Assert.Contains("Brannoc stopped a pedlar", string.Join(" ", Day(s)));
+        Assert.Contains("Brannoc stopped a peddler", string.Join(" ", Day(s)));
         Assert.Contains(Lore.FolkLines, l => l.Text.Contains("red-haired girl") && Rules.Test(l.When, s.C));
         Assert.Equal("Waiting for word from Low Kiln that his girl got there.", Lore.ConcernOf("brannoc", s.C));
     }

@@ -147,8 +147,8 @@ public partial class WorldScene : Node3D, IZoneLook
                 // cost most exactly when it mattered.
                 if (Pressed(Act.Dash)) dashHeld = Buffer;
                 if (dashHeld > 0) dashHeld = b.Dash(mx, mz) ? 0 : dashHeld - Step;
-                if (Pressed(Act.Ability)) artHeld = Buffer;
-                if (artHeld > 0) artHeld = b.UseAbility(mx, mz) ? 0 : artHeld - Step;
+                if (Pressed(Act.Flare)) artHeld = Buffer;
+                if (artHeld > 0) artHeld = b.UseFlare(mx, mz) ? 0 : artHeld - Step;
                 OnStep(Step);
                 Perf.Begin(Perf.Part.Sim);
                 b.Tick(Step, mx, mz);

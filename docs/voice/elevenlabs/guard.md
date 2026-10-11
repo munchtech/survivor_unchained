@@ -1,6 +1,8 @@
 # A Watchman at the gate: ElevenLabs packet
 
-Voice id in the game: `guard`. 12 takes to record (510 characters; about 1,530 credits at three tries a line). Status: **draft**, until the story lead (a7622ae77d19e31dc) checks every line and marks it final.
+Voice id in the game: `guard`. 13 takes to record (546 characters; about 1,638 credits at three tries a line). Status: **draft, except the 1 take marked LOCKED FOR RECORDING** (the story lead, 2026-10-11): record those now.
+
+**1 take is LOCKED FOR RECORDING** (marked below).
 
 ## Who they are
 
@@ -41,7 +43,7 @@ Each: what is going on, how it is played, then the text to paste (the bracketed 
 
 ## Cinematic: first light
 
-### 1. `dlg.cin_first_light.dawn.0.wav`
+### 1. `dlg.cin_first_light.dawn.0.wav`  **LOCKED FOR RECORDING**
 
 *The same words are also* `guard.0.wav`*: record once; the importer copies the take.*
 *Where:* dialogue.json cin_first_light/dawn#0
@@ -53,9 +55,20 @@ Each: what is going on, how it is played, then the text to paste (the bracketed 
 ```
 Subtitle: Dawn arrivals. We don't get many that live.
 
+## Scenes: the clock (dusk, night, getting up)
+
+### 2. `say.9790cd22614c.wav`
+
+*Where:* godot/logic/Play/Journey.Day.cs
+
+```
+Lamps are lit. Stay where they reach.
+```
+Subtitle: Lamps are lit. Stay where they reach.
+
 ## Said in passing
 
-### 2. `guard.1.wav`
+### 3. `guard.1.wav`
 
 *Where:* npcs.json guards[1]
 *Played:* bored, matter-of-fact; pace: measured; volume: level.
@@ -65,7 +78,7 @@ Subtitle: Dawn arrivals. We don't get many that live.
 ```
 Subtitle: Keep your weapon sheathed in town.
 
-### 3. `guard.2.wav`
+### 4. `guard.2.wav`
 
 *Where:* npcs.json guards[2]
 *Played:* bored, matter-of-fact; pace: measured; volume: level.
@@ -77,7 +90,7 @@ Subtitle: East road. Mind the wolves.
 
 ## Passers-by
 
-### 4. `folk.71.m.wav`
+### 5. `folk.71.m.wav`
 
 *Where:* folk.json lines[71]
 *Played:* curt; pace: measured; volume: level.
@@ -87,7 +100,7 @@ Subtitle: East road. Mind the wolves.
 ```
 Subtitle: All quiet. Keep it that way.
 
-### 5. `folk.72.m.wav`
+### 6. `folk.72.m.wav`
 
 *Where:* folk.json lines[72]
 *Played:* curt; pace: measured; volume: level.
@@ -97,17 +110,17 @@ Subtitle: All quiet. Keep it that way.
 ```
 Subtitle: Gates are shut till dawn.
 
-### 6. `folk.73.m.wav`
+### 7. `folk.73.m.wav`
 
 *Where:* folk.json lines[73]
 *Played:* curt; pace: measured; volume: level.
 
 ```
-[curt] Walk on, traveller.
+[curt] Walk on, traveler.
 ```
-Subtitle: Walk on, traveller.
+Subtitle: Walk on, traveler.
 
-### 7. `folk.74.m.wav`
+### 8. `folk.74.m.wav`
 
 *Where:* folk.json lines[74]
 *Played:* rough; pace: measured; volume: level.
@@ -117,7 +130,7 @@ Subtitle: Walk on, traveller.
 ```
 Subtitle: Piss off home. It's past curfew.
 
-### 8. `folk.75.m.wav`
+### 9. `folk.75.m.wav`
 
 *Where:* folk.json lines[75]
 *Played:* threatening; pace: measured; volume: level.
@@ -127,7 +140,7 @@ Subtitle: Piss off home. It's past curfew.
 ```
 Subtitle: Keep that blade sheathed or I'll sheathe it for you.
 
-### 9. `folk.76.m.wav`
+### 10. `folk.76.m.wav`
 
 *Where:* folk.json lines[76]
 *Played:* tired; pace: measured; volume: level.
@@ -137,7 +150,7 @@ Subtitle: Keep that blade sheathed or I'll sheathe it for you.
 ```
 Subtitle: Captain's doubled the gate. Wolves.
 
-### 10. `folk.81.m.wav`
+### 11. `folk.81.m.wav`
 
 *Where:* folk.json lines[81]
 *Played:* uneasy; pace: measured; volume: level.
@@ -147,7 +160,7 @@ Subtitle: Captain's doubled the gate. Wolves.
 ```
 Subtitle: Captain says to let you be. Captain says it like he's not sure.
 
-### 11. `folk.94.m.wav`
+### 12. `folk.94.m.wav`
 
 *Where:* folk.json lines[94]
 *Played:* rough threat; pace: measured; volume: level.
@@ -157,7 +170,7 @@ Subtitle: Captain says to let you be. Captain says it like he's not sure.
 ```
 Subtitle: Indoors, before I find a reason. I'm good at finding reasons.
 
-### 12. `folk.106.m.wav`
+### 13. `folk.106.m.wav`
 
 *Where:* folk.json lines[106]
 *Played:* uneasy; pace: measured; volume: level.
