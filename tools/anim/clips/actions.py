@@ -587,8 +587,8 @@ def get_up(rig):
         return merge(_mix(down, hk, t), **{h: _hop(down[h], hk[h], ht, up) for h in ("hand_l", "hand_r")})
     keys = [
         (0, down, "ease"),
-        (1, lift(0.25, 0.08, 0.035), "auto"),
-        (2, lift(0.5, 0.5, 0.05), "auto"),
+        (1, lift(0.25, 0.08, 0.03), "auto"),
+        (2, lift(0.5, 0.5, 0.035), "auto"),
         (3, lift(0.75, 0.9, 0.025), "auto"),
         (4, hk, "auto"),
         (9, push, "auto"),
@@ -647,7 +647,7 @@ def get_up(rig):
     # The hands' first lift and carry drawn out over 7 frames, not 4 (judge
     # 22: a hand 15 cm a frame, the elbows snapping up after it); every key
     # after, and the frames the passes above name, OPEN later.
-    OPEN = 3
+    OPEN = 6
     keys = [(k * (4 + OPEN) / 4 if k <= 4 else k + OPEN, pose, e) for k, pose, e in keys]
     post_ = post
     post = lambda fr, pose: post_(fr - OPEN if fr > 4 + OPEN else min(fr, 4), pose)
@@ -660,7 +660,7 @@ def get_up(rig):
     # The arms, solved fresh where death's came from its frames before, are
     # left 6 degrees apart even so: eased in, hands and all, as the hands
     # first lift (over 4 frames the lift lagged 3-4 cm behind its path).
-    clip = build("get_up", rig, keys, meta={"layer": "full"}, post=post, pin_first=5)
+    clip = build("get_up", rig, keys, meta={"layer": "full"}, post=post, pin_first=4)
     end = death(rig)
     of = lambda *parts: [j for j, b in enumerate(rig.sk.names) if b.split("_")[0] in parts]
     _ease_from(clip, end.rot[-1], 8, of("thigh", "calf", "foot", "ball"))
