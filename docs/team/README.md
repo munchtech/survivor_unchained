@@ -103,5 +103,5 @@ The main session keeps this current. It is the address list for SendMessage. Ret
 | Loot and itemisation (paused, built and merged; docs/handoff/loot.md for a successor) | — | docs/team/loot.md |
 | Creatures and models (our own boar first, then MODELS_TO_MAKE.md) | af551cacc6292152f | docs/team/creatures.md |
 | Story editor (paused after notes 02 at 435k; a fresh editor reads the next draft) | — | docs/story/EDITORIAL_LETTER.md |
-| Heroine body and outfits (now a lead of its own; was the main session's) | a8f5db2bb06ceb5c5 (successor 4, 11 Oct evening, in worktree agent-a5ca10091b08dc429 @ d3c444c6; judge 4 failed: pauldron, arcanist stomach and nipples, plunge foot) | docs/team/outfits.md |
+| Heroine body and outfits (now a lead of its own; was the main session's) | af07affeb22637bb5 (successor 5, 12 Oct, in worktree agent-a5ca10091b08dc429 @ edc5dc0d; judge 5 passed stomach, boning, nipples, chest paint; open: Ranger pauldron (one last solver, else a simpler design for the owner), rivets, binding slivers, plunge foot, three specks) | docs/team/outfits.md |
 | Marionette, the character app (a tool: idea to engine; ease like Meshy, quality like Maya; one-click AI-assisted fixing) | — (paused; status page is its own HANDOFF.md "Start here") | Marionette/HANDOFF.md, docs/HISTORY.md "The goal" |
