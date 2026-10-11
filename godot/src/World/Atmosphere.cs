@@ -214,23 +214,31 @@ public partial class Atmosphere : Node3D
 
     /// <summary>The shadow tint adds blue in gamma (the web game's sum), and in the dark it outweighs a
     /// colour's own chroma: dark browns (irises, lashes, brows, leather) came out purple. Here the
-    /// grade keeps its brightness and its blue on greys and cool colours, but a colour's hue may
+    /// grade keeps its brightness and its blue on greys, cool colours and greens, but a warm colour's hue may
     /// turn at most 6 degrees (Oklab), and where the grade darkens it, it may not grow more
     /// saturated than it came in (the blue shade reads as a darker, greyer brown, not a purple).</summary>
     static Vector3 KeepHue(Vector3 inLin, Vector3 outLin, float tintHue)
     {
         var i = Oklab(inLin); var o = Oklab(outLin);
         float sat = i.Y / Mathf.Max(i.X, 1e-4f);
-        float away = Mathf.Abs(Mathf.Wrap(i.Z - tintHue, -180, 180));
-        // Greys have no hue to keep; colours near the tint's own hue may go bluer.
-        float w = Smooth(0.04f, 0.12f, sat) * Smooth(45, 90, away);
-        if (w <= 0) return outLin;
+        float side = Mathf.Wrap(i.Z - tintHue, -180, 180);
+        // Greys have no hue to keep; colours near the tint's own hue may go bluer, and so may
+        // greens, which turn toward it through cyan (moonlit leaves go teal, as before). Only
+        // the warm side, whose turn runs through magenta, is held.
+        float green = side < 0 ? Smooth(-160, -140, side) : 0;
+        float warm = Smooth(45, 90, Mathf.Abs(side)) * (1 - green);
+        float w = Smooth(0.04f, 0.12f, sat) * warm;
+        // Faintly warm darks (black brows, near-grey browns) still half take the old turn: where
+        // it lands on violet (red over blue), the red goes, so they reach the greys' navy.
+        float violet = warm * Smooth(0.01f, 0.04f, sat);
+        if (w <= 0 && violet <= 0) return outLin;
         float turn = Mathf.Clamp(Mathf.Wrap(o.Z - i.Z, -180, 180), -6, 6);
         // The cap fades in over 0.02 of lightness as the grade starts to darken, so no step shows.
         float chroma = Mathf.Lerp(o.Y, Mathf.Min(o.Y, sat * o.X), Smooth(0, 0.02f, i.X - o.X));
         float h0 = Mathf.DegToRad(o.Z), h1 = Mathf.DegToRad(i.Z + turn);
         float a = Mathf.Lerp(o.Y * Mathf.Cos(h0), chroma * Mathf.Cos(h1), w);
         float b = Mathf.Lerp(o.Y * Mathf.Sin(h0), chroma * Mathf.Sin(h1), w);
+        if (a > 0 && b < 0) a *= 1 - violet * Smooth(0, 0.015f, -b);
         return FromOklab(o.X, a, b).Clamp(Vector3.Zero, Vector3.One);
     }
 
