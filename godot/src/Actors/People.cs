@@ -1045,6 +1045,8 @@ public static class People
                 m.SetShaderParameter("ao_light", 0.55f);
             }
         }
+        // (her skin warmer in the sky's light than in the lamps': HerAmbientTint)
+        if (who == "heroine") m.SetShaderParameter("ambient_tint", HerAmbientTint);
         // Her freckles, a layer over her face, neck, shoulders and upper chest
         // (tools/assets/heroine_freckles.py), as many as her face starts with.
         if (who == "heroine" && FreckleFile(src.ResourceName) is string fp)
@@ -1073,9 +1075,15 @@ public static class People
             foreach (var part in ss.Split(';'))
                 if (part.Split(':') is [var who2, var kvs] && (who2 == "*" || who2 == src.ResourceName))
                     foreach (var kv in kvs.Split(','))
-                        if (kv.Split('=') is [var k, var v] && float.TryParse(v, System.Globalization.NumberStyles.Float,
-                                System.Globalization.CultureInfo.InvariantCulture, out var x))
-                            m.SetShaderParameter(k.Trim(), x);
+                        if (kv.Split('=') is [var k, var v])
+                        {
+                            // (a/b/c: a vec3)
+                            var xs = v.Split('/').Select(t => float.TryParse(t, System.Globalization.NumberStyles.Float,
+                                System.Globalization.CultureInfo.InvariantCulture, out var x) ? x : float.NaN).ToArray();
+                            if (xs.Any(float.IsNaN)) continue;
+                            if (xs.Length == 3) m.SetShaderParameter(k.Trim(), new Vector3(xs[0], xs[1], xs[2]));
+                            else if (xs.Length == 1) m.SetShaderParameter(k.Trim(), xs[0]);
+                        }
         return m;
     }
 
@@ -1086,6 +1094,12 @@ public static class People
     /// 0.74 / 0.92 / 0.99 and Doe's brows 0.20; the soft edge of her lit side is the shader's own (`terminator`).
     /// (0.2 smeared as 0.38 did.)</summary>
     const float HerScatter = 0.1f;
+
+    /// <summary>Her skin in the sky's light against the lamps' (the skin shader's ambient_tint): light from all
+    /// round goes deeper into skin and comes out redder. Without it, under her jaw, in the key's shadow, the night
+    /// sky's blue made her neck grey-violet on every face (the owner, 10 October 2026: Oklab hue 31° against her
+    /// portraits' 51°; with it and the grade keeping skin's hue in shade, 46-47°). Her lit face is as fitted.</summary>
+    static readonly Vector3 HerAmbientTint = new(1.3f, 1.0f, 0.7f);
 
     /// <summary>His skin's roughness, sheen, and the roughness it gains seen
     /// edge on (shaders/heroine_skin.gdshader).</summary>

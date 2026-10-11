@@ -39,6 +39,12 @@ uniform float rim = 0.25;
 // line; Godot's screen-space scattering spreads a few pixels at a close-up,
 // and spread wider it blurred away her skin's grain.)
 uniform vec3 terminator = vec3(0.32, 0.15, 0.1);
+// Her skin's colour in the sky's light (the ambient) against the lamps': her colour times this there, the lamps'
+// light on her as before (light() divides it back out). Light from all round goes deeper into skin and comes out
+// redder than a lamp's from one side; without it, the night sky's blue in her jaw's shadow, the only light there,
+// made her neck under it grey-violet (Oklab hue 31° against her portraits' 51°) on every face (the owner,
+// 10 October 2026). 1 (his) as before.
+uniform vec3 ambient_tint = vec3(1.0);
 // Her sheen's strength (SPECULAR), for her light() to read.
 varying float sheen;
 // Rougher where the skin is seen edge on: there a light from behind
@@ -198,6 +204,7 @@ void fragment() {
 	AO_LIGHT_AFFECT = ao_light;
 	SSS_STRENGTH = scatter;
 	BACKLIGHT = ALBEDO * vec3(1.0, 0.45, 0.35) * 0.18;
+	ALBEDO *= ambient_tint;
 }
 
 // Each lamp's light on her, as Godot's own (Burley's diffuse, GGX's sheen,
@@ -225,15 +232,16 @@ void light() {
 	float fd90 = 2.0 * c_ldh * c_ldh * ROUGHNESS - 0.5;
 	float burley = (1.0 + fd90 * schlick(c_ndv)) * (1.0 + fd90 * schlick(c_ndl));
 	vec3 diffuse = soft * burley / PI;
-	DIFFUSE_LIGHT += LIGHT_COLOR * diffuse * ATTENUATION;
+	vec3 un = 1.0 / max(ambient_tint, vec3(1e-3));        // (the lamps' light on her as without the tint)
+	DIFFUSE_LIGHT += LIGHT_COLOR * diffuse * ATTENUATION * un;
 	// the fine down at her edges, against a light from behind her only (lit
 	// from the front, it brightened every edge of her: a pale ribbon down her
 	// cheek where her dark hair met it, her temples white)
 	float rim_light = pow(max(1e-4, 1.0 - c_ndv), max(0.0, (1.0 - ROUGHNESS) * 16.0));
 	float behind = smoothstep(-0.1, 0.6, dot(-LIGHT, VIEW));
-	DIFFUSE_LIGHT += rim_light * behind * rim * mix(vec3(1.0), ALBEDO, 0.6) * LIGHT_COLOR * ATTENUATION;
+	DIFFUSE_LIGHT += rim_light * behind * rim * mix(vec3(1.0), ALBEDO * un, 0.6) * LIGHT_COLOR * ATTENUATION * un;
 	// light through her where she is thin
-	DIFFUSE_LIGHT += LIGHT_COLOR * max(vec3(1.0 / PI) - diffuse, vec3(0.0)) * BACKLIGHT * ATTENUATION;
+	DIFFUSE_LIGHT += LIGHT_COLOR * max(vec3(1.0 / PI) - diffuse, vec3(0.0)) * BACKLIGHT * ATTENUATION * un;
 	if (c_ndl > 0.0) {
 		float a = ROUGHNESS * ROUGHNESS;
 		float da = c_ndh * a;
