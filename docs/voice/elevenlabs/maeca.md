@@ -1,6 +1,6 @@
 # Maeca: ElevenLabs packet
 
-Voice id in the game: `maeca`. 87 takes to record (6,262 characters; about 18,786 credits at three tries a line). Status: **on hold, except the 70 takes marked LOCKED FOR RECORDING** (the story lead, 2026-10-11): record those now and hold the rest (the story rewrite changes most of her lines (docs/voice/RERECORD.md)).
+Voice id in the game: `maeca`. 87 takes to record (6,262 characters; about 18,786 credits at three tries a line). Status: **on hold, except the 67 takes marked LOCKED FOR RECORDING** (the story lead, 2026-10-11): record those now and hold the rest (the story rewrite changes most of her lines (docs/voice/RERECORD.md)).
 
 ## Who they are
 
@@ -607,7 +607,7 @@ Subtitle: All right.
 ```
 Subtitle: ...Keep it, then. I keep mine.
 
-### 51. `dlg.maeca.blind3_morning.0.p1.wav`  **LOCKED FOR RECORDING**
+### 51. `dlg.maeca.blind3_morning.0.p1.wav`  HOLD: the story rewrite changes most of her lines (docs/voice/RERECORD.md)
 
 *Where:* dialogue.json maeca/blind3_morning#0; part 2 of 6: narrator: Gray light. She's awake before you, as always, but she hasn't got up. Her head is still on… / **maeca: Your heart's going like a hare's.** / narrator: She doesn't lift her head. / maeca: All night it was a bear's in January. I counted between. ...I've lain with my ear to a lot… / narrator: She gets up, then, and goes out barefoot into the frost, and stands there listening to the… / maeca: Go on. Holloway'll count us.
 *Played:* tender, frightened, hiding it; doing: she heard your heart change; pace: slow; volume: hushed.
@@ -618,7 +618,7 @@ Subtitle: ...Keep it, then. I keep mine.
 ```
 Subtitle: Your heart's going like a hare's.
 
-### 52. `dlg.maeca.blind3_morning.0.p3.wav`  **LOCKED FOR RECORDING**
+### 52. `dlg.maeca.blind3_morning.0.p3.wav`  HOLD: the story rewrite changes most of her lines (docs/voice/RERECORD.md)
 
 *Where:* dialogue.json maeca/blind3_morning#0; part 4 of 6: narrator: Gray light. She's awake before you, as always, but she hasn't got up. Her head is still on… / maeca: Your heart's going like a hare's. / narrator: She doesn't lift her head. / **maeca: All night it was a bear's in January. I counted between. ...I've lain with my ear to a lot…** / narrator: She gets up, then, and goes out barefoot into the frost, and stands there listening to the… / maeca: Go on. Holloway'll count us.
 *Played:* tender, frightened, hiding it; doing: she heard your heart change; pace: slow; volume: hushed.
@@ -629,7 +629,7 @@ Subtitle: Your heart's going like a hare's.
 ```
 Subtitle: All night it was a bear's in January. I counted between. ...I've lain with my ear to a lot of things to see if they'd live.
 
-### 53. `dlg.maeca.blind3_morning.0.p5.wav`  **LOCKED FOR RECORDING**
+### 53. `dlg.maeca.blind3_morning.0.p5.wav`  HOLD: the story rewrite changes most of her lines (docs/voice/RERECORD.md)
 
 *Where:* dialogue.json maeca/blind3_morning#0; part 6 of 6: narrator: Gray light. She's awake before you, as always, but she hasn't got up. Her head is still on… / maeca: Your heart's going like a hare's. / narrator: She doesn't lift her head. / maeca: All night it was a bear's in January. I counted between. ...I've lain with my ear to a lot… / narrator: She gets up, then, and goes out barefoot into the frost, and stands there listening to the… / **maeca: Go on. Holloway'll count us.**
 *Played:* tender, frightened, hiding it; doing: she heard your heart change; pace: slow; volume: hushed.

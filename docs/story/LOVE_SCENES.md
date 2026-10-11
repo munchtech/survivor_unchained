@@ -33,8 +33,11 @@ Nothing else in the romances changes.
 
 **Where the door is.** Sella: from the blue room (`sella.stairs_room` on) to
 the morning after. Maeca: from under the hides (`maeca.blind` on) to the grey
-light. The walk to the Blind, the fire, and Keegan's and Rav's suppers stay
-narrated: they are not bedrooms.
+light. Any narrator sentence that sees the bed is behind the door, the
+mornings after included (the editor-judge's ruling, 11 October).
+`maeca.blind_morning` stays outside: she is up and barefoot in the frost. The
+walk to the Blind, the fire, and Keegan's and Rav's suppers stay narrated:
+they are not bedrooms.
 
 ---
 
@@ -126,6 +129,12 @@ making a joke of it. Don't you make one. ...Yes.
   images (the door's colour; the ninth step creaking behind you) become her
   lines: "Green door. Faces the sun. And somebody who knocks." / "*(the ninth
   step creaks)* ...I'm not watching you go. Go on."
+- The mornings in the blue room (`sella.morning`, `rest_morning`,
+  `free_morning`, `past`, `sleeptalk`, `door`, `door_years`, `door_south`,
+  `free_m_downstairs`, `free_m_who`) and Maeca's third morning under the hides
+  (`maeca.blind3_morning`): her lines stay hers; the narrator's capitalized
+  parentheses become lower-case directions for her actor ("(on the edge of the
+  bed, her palm on your breastbone)"), played, never read.
 
 ## Maeca
 

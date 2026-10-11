@@ -1,8 +1,8 @@
 # Chid: ElevenLabs packet
 
-Voice id in the game: `chid`. 84 takes to record (8,735 characters; about 26,205 credits at three tries a line). Status: **draft, except the 82 takes marked LOCKED FOR RECORDING** (the story lead, 2026-10-11): record those now.
+Voice id in the game: `chid`. 84 takes to record (8,735 characters; about 26,205 credits at three tries a line). Status: **draft, except the 84 takes marked LOCKED FOR RECORDING** (the story lead, 2026-10-11): record those now.
 
-**82 takes are LOCKED FOR RECORDING** (marked below).
+**84 takes are LOCKED FOR RECORDING** (marked below).
 
 ## Who they are
 
@@ -839,7 +839,7 @@ Subtitle: Plain, then. The ground knows who's in it.
 ```
 Subtitle: It'll keep. Come and tell me when it comes to you.
 
-### 70. `dlg.chid.cut_came.0.p1.wav`
+### 70. `dlg.chid.cut_came.0.p1.wav`  **LOCKED FOR RECORDING**
 
 *Where:* dialogue.json chid/cut_came#0; part 2 of 2: narrator: He has the chisel out again before you've finished. / **chid: Go on, then.**
 *Played:* eager, held in; doing: she's come back to tell him; pace: measured; volume: quiet.
@@ -850,7 +850,7 @@ Subtitle: It'll keep. Come and tell me when it comes to you.
 ```
 Subtitle: Go on, then.
 
-### 71. `dlg.chid.cut_still.0.p1.wav`
+### 71. `dlg.chid.cut_still.0.p1.wav`  **LOCKED FOR RECORDING**
 
 *Where:* dialogue.json chid/cut_still#0; part 2 of 2: narrator: He waits, and puts it away again. / **chid: It'll keep.**
 *Played:* patient; doing: she still can't say it; pace: slow; volume: quiet.

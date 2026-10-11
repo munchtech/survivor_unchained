@@ -37,8 +37,18 @@
    "id": "mother.carved",
    "once": true,
    "when": {
-    "fact": "mother.cut",
-    "eq": "mam"
+    "all": [
+     {
+      "fact": "mother.cut",
+      "eq": "mam"
+     },
+     {
+      "not": {
+       "fact": "mother.carved",
+       "eq": true
+      }
+     }
+    ]
    },
    "effect": [
     {

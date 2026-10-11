@@ -444,5 +444,11 @@ public class StoryRewriteTests
         var (_, plainHub) = Play("chid", p, "Leave it plain.");
         Assert.DoesNotContain(plainHub!.Choices, c => c.Text.Contains("It's come to me"));
         Assert.DoesNotContain(Simulation.AdvanceDay(p.C, () => 0.5).Lines, l => l.Contains("a tap, and a long wait"));
+        // Act 2's second silence ends with "Mam." cut on screen, in daylight (scene_still_plain sets
+        // mother.carved itself): no report of a night's work the player watched him do.
+        var a2 = Q();
+        a2.World.Facts["mother.cut"] = "mam";
+        a2.World.Facts["mother.carved"] = true;
+        Assert.DoesNotContain(Simulation.AdvanceDay(a2.C, () => 0.5).Lines, l => l.Contains("a tap, and a long wait"));
     }
 }

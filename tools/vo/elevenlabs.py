@@ -50,11 +50,15 @@ FINAL = {"narrator": "2026-10-03", "rook": "2026-10-03", "holloway": "2026-10-03
 _ROOM = "the love scenes go to B (the owner, 6 October): the narrator stops at the door, and these are rewritten as the lovers' own lines"
 HOLD_LINES = (("dlg.keegan.vonnra.", "the story lead's confirmation of Keegan's kenning"),
               # Behind the door (docs/story/LOVE_SCENES.md "Where the door is"): never the narrator's to record.
+              # Any narrator sentence that sees the bed is behind it, the mornings after included.
               *((p, _ROOM) for p in ("dlg.maeca.blind.", "dlg.maeca.blind_dark.", "dlg.maeca.blind2_", "dlg.maeca.told_",
                                      "dlg.sella.stairs_room.", "dlg.sella.stairs_rules.", "dlg.sella.night.", "dlg.sella.stop_",
                                      "dlg.sella.rest_night", "dlg.sella.rest_bed.", "dlg.sella.rest_dark.", "dlg.sella.free_night.",
                                      "dlg.sella.free_door.", "dlg.sella.free_want.", "dlg.sella.free_stop.", "dlg.sella.free_sit.",
-                                     "dlg.sella.free_sleep", "dlg.sella.free_bolt.", "dlg.sella.free_m_")))
+                                     "dlg.sella.free_sleep", "dlg.sella.free_bolt.", "dlg.sella.free_m_",
+                                     "dlg.sella.morning.", "dlg.sella.rest_morning.", "dlg.sella.free_morning.", "dlg.sella.past.",
+                                     "dlg.sella.sleeptalk.", "dlg.sella.door.", "dlg.sella.door_years.", "dlg.sella.door_south.",
+                                     "dlg.maeca.blind3_morning.")))
 TAG = {"beat": "…", "breath": "[inhales]", "laugh": "[laughs]", "laughs": "[laughs]", "chuckle": "[chuckles]",
        "sigh": "[sighs]", "sighs": "[sighs]", "sniff": "[sniffs]", "gasp": "[gasps]", "silence": "[long pause]", "name": "",
        "whisper": "[whispers]"}

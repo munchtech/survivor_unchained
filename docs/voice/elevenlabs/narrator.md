@@ -1,6 +1,6 @@
 # The narrator: ElevenLabs packet
 
-Voice id in the game: `narrator`. 395 takes to record (37,300 characters; about 111,900 credits at three tries a line). Status: **on hold, except the 251 takes marked LOCKED FOR RECORDING** (the story lead, 2026-10-11): record those now and hold the rest (recast as a woman of about sixty, plain and dry (the story rewrite, 6 October); cast her anew before recording).
+Voice id in the game: `narrator`. 395 takes to record (37,300 characters; about 111,900 credits at three tries a line). Status: **on hold, except the 252 takes marked LOCKED FOR RECORDING** (the story lead, 2026-10-11): record those now and hold the rest (recast as a woman of about sixty, plain and dry (the story rewrite, 6 October); cast her anew before recording).
 
 ## Who they are
 
@@ -770,7 +770,7 @@ Subtitle: The lock gives under your picks. Inside: crates, dust, and a ledger Pe
 ```
 Subtitle: The whole town is in the Quiet Garden, round a fresh grave beside the old captain's stone. Brannoc kneels at its head with an iron marker and his hammer: three strokes, iron into earth. Rook sets the inn's lamp at its foot, lit, in broad daylight, and steps back, and back.
 
-### 65. `say.0407f971959b.wav`  HOLD: recast as a woman of about sixty, plain and dry (the story rewrite, 6 October); cast her anew before recording
+### 65. `say.0407f971959b.wav`  **LOCKED FOR RECORDING**
 
 *Where:* godot/logic/Play/Zones/Waystation.cs
 *Played:* plain; doing: the word cut on her mother's marker; pace: slow; volume: quiet.
@@ -781,7 +781,7 @@ Subtitle: The whole town is in the Quiet Garden, round a fresh grave beside the 
 ```
 Subtitle: It says Mam now, cut deep and straight. You stand at it a while.
 
-### 66. `say.ae37a13a9846.wav`  HOLD: recast as a woman of about sixty, plain and dry (the story rewrite, 6 October); cast her anew before recording
+### 66. `say.ae37a13a9846.wav`  **LOCKED FOR RECORDING**
 
 *Where:* godot/logic/Play/Zones/Waystation.cs
 *Played:* plain; doing: the marker still has no name; pace: slow; volume: quiet.
@@ -1552,7 +1552,7 @@ Subtitle: He nods.
 ```
 Subtitle: He waits, and then he puts the chisel away.
 
-### 137. `dlg.chid.cut_came.0.p0.wav`  HOLD: recast as a woman of about sixty, plain and dry (the story rewrite, 6 October); cast her anew before recording
+### 137. `dlg.chid.cut_came.0.p0.wav`  **LOCKED FOR RECORDING**
 
 *Where:* dialogue.json chid/cut_came#0; part 1 of 2: **narrator: He has the chisel out again before you've finished.** / chid: Go on, then.
 *Played:* the narrator's aside inside someone else's line: plain, quiet, observant; the narrator never shows a feeling.
@@ -1562,7 +1562,7 @@ Subtitle: He waits, and then he puts the chisel away.
 ```
 Subtitle: He has the chisel out again before you've finished.
 
-### 138. `dlg.chid.cut_still.0.p0.wav`  HOLD: recast as a woman of about sixty, plain and dry (the story rewrite, 6 October); cast her anew before recording
+### 138. `dlg.chid.cut_still.0.p0.wav`  **LOCKED FOR RECORDING**
 
 *Where:* dialogue.json chid/cut_still#0; part 1 of 2: **narrator: He waits, and puts it away again.** / chid: It'll keep.
 *Played:* the narrator's aside inside someone else's line: plain, quiet, observant; the narrator never shows a feeling.
@@ -2468,7 +2468,7 @@ Subtitle: She doesn't push.
 ```
 Subtitle: And it is.
 
-### 225. `dlg.maeca.blind3_morning.0.p0.wav`  **LOCKED FOR RECORDING**
+### 225. `dlg.maeca.blind3_morning.0.p0.wav`  HOLD: recast as a woman of about sixty, plain and dry (the story rewrite, 6 October); cast her anew before recording
 
 *Where:* dialogue.json maeca/blind3_morning#0; part 1 of 6: **narrator: Gray light. She's awake before you, as always, but she hasn't got up. Her head is still on…** / maeca: Your heart's going like a hare's. / narrator: She doesn't lift her head. / maeca: All night it was a bear's in January. I counted between. ...I've lain with my ear to a lot… / narrator: She gets up, then, and goes out barefoot into the frost, and stands there listening to the… / maeca: Go on. Holloway'll count us.
 *Played:* the narrator's aside inside someone else's line: plain, quiet, observant; the narrator never shows a feeling.
@@ -2478,7 +2478,7 @@ Subtitle: And it is.
 ```
 Subtitle: Gray light. She's awake before you, as always, but she hasn't got up. Her head is still on your chest. Her face is very still.
 
-### 226. `dlg.maeca.blind3_morning.0.p2.wav`  **LOCKED FOR RECORDING**
+### 226. `dlg.maeca.blind3_morning.0.p2.wav`  HOLD: recast as a woman of about sixty, plain and dry (the story rewrite, 6 October); cast her anew before recording
 
 *Where:* dialogue.json maeca/blind3_morning#0; part 3 of 6: narrator: Gray light. She's awake before you, as always, but she hasn't got up. Her head is still on… / maeca: Your heart's going like a hare's. / **narrator: She doesn't lift her head.** / maeca: All night it was a bear's in January. I counted between. ...I've lain with my ear to a lot… / narrator: She gets up, then, and goes out barefoot into the frost, and stands there listening to the… / maeca: Go on. Holloway'll count us.
 *Played:* the narrator's aside inside someone else's line: plain, quiet, observant; the narrator never shows a feeling.
@@ -2488,7 +2488,7 @@ Subtitle: Gray light. She's awake before you, as always, but she hasn't got up. 
 ```
 Subtitle: She doesn't lift her head.
 
-### 227. `dlg.maeca.blind3_morning.0.p4.wav`  **LOCKED FOR RECORDING**
+### 227. `dlg.maeca.blind3_morning.0.p4.wav`  HOLD: recast as a woman of about sixty, plain and dry (the story rewrite, 6 October); cast her anew before recording
 
 *Where:* dialogue.json maeca/blind3_morning#0; part 5 of 6: narrator: Gray light. She's awake before you, as always, but she hasn't got up. Her head is still on… / maeca: Your heart's going like a hare's. / narrator: She doesn't lift her head. / maeca: All night it was a bear's in January. I counted between. ...I've lain with my ear to a lot… / **narrator: She gets up, then, and goes out barefoot into the frost, and stands there listening to the…** / maeca: Go on. Holloway'll count us.
 *Played:* the narrator's aside inside someone else's line: plain, quiet, observant; the narrator never shows a feeling.

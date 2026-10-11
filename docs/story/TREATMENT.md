@@ -338,16 +338,18 @@ you something at dusk..."), a trunk scene, `scene_still_plain`:
   three letters, deep, and he brushes them clean with his thumb.) There.
   That'll keep."
 - "Leave it plain." (`plain`): "(He lays the chisel down in the grass.)
-  Plain. ...She didn't ask for much, at the end."
+  Plain. ...I know who's in it."
 - "(Say nothing.)" (`mother.chisel`): he says nothing either. The narrator:
   "He waits a long time. Then he lays the chisel on top of the marker, and
   takes up his lamp, and goes in." From then on the marker reads "Chid's
-  chisel is lying on top of it. You stand at it a while."
+  chisel is lying on top of it. You stand at it a while." His hub stops
+  offering "The marker. It's come to me." (the choice's `when` adds `not
+  mother.chisel`): the chisel stays where he left it.
 
 Why here: the dawn has just taken the last of her mother's voice, and the
 stone is the one place a word could still be kept; "It'll keep" is shown not
 to. Under A every line holds a second way: he sat up all night with the woman
-he walked to the edge; "at the end", he was there; and the man who never stops
+he walked to the edge; "I know who's in it": he did, by name; and the man who never stops
 talking answers her silence with his own. C32 needs no branch: Rook's "She was
 your mam, pet." gives back the word the player cut, or the one they kept from
 the stone.
