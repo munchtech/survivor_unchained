@@ -127,7 +127,9 @@ SPEC = {
         # nearest skin point, whole within garment[0] metres of the skin,
         # easing out to none at garment[1].
         {"name": "elbow_point_{s}", "bone": "lowerarm_{s}", "way": "front", "full": 145, "from": 90, "to": 145,
-         "amount": 0.006, "radius": [0.018, 0.026, 0.02], "lean": 0.0, "near": 0.008, "garment": [0.02, 0.04]},
+         # (6 mm over 18-26 mm barely showed and read as a nub where it did;
+         # broad flanks make the cap a cone with a point: tick.py previews)
+         "amount": 0.012, "radius": [0.028, 0.06, 0.045], "lean": 0.0, "near": 0.008, "garment": [0.02, 0.04]},
     ],
 }
 

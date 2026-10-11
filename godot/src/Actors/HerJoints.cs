@@ -44,10 +44,42 @@ public partial class HerJoints : SkeletonModifier3D
         public Quaternion ForearmRest, HandRest;
         public Vector3 Axis, Thumb0;
         public readonly List<Helper> Helpers = new();
+        public readonly List<Corrective> Correctives = new();
+    }
+
+    /// <summary>A corrective shape (helpers.py "correctives"): a blend shape
+    /// of that name on her body and the pieces she wears near the joint,
+    /// eased in (smoothstep) from From to To degrees of the joint's bend.</summary>
+    sealed class Corrective
+    {
+        public required string Name;
+        public required int Bone;
+        public required float From, To;
+        public readonly List<(MeshInstance3D Mesh, int Shape)> On = new();
     }
 
     Skeleton3D? found;
     readonly List<Side> sides = new();
+    // Her meshes come and go (an outfit put on): look for the shapes again.
+    bool rescan = true;
+
+    void MarkRescan(Node _) => rescan = true;
+
+    void Rescan(Skeleton3D sk)
+    {
+        rescan = false;
+        foreach (var side in sides)
+            foreach (var c in side.Correctives)
+            {
+                c.On.Clear();
+                foreach (var n in sk.GetChildren())
+                    if (n is MeshInstance3D mi && mi.Mesh != null && !mi.IsQueuedForDeletion())
+                    {
+                        int i = mi.FindBlendShapeByName(c.Name);
+                        if (i >= 0) c.On.Add((mi, i));
+                    }
+            }
+    }
 
     static Godot.Collections.Dictionary? spec;
 
@@ -62,7 +94,15 @@ public partial class HerJoints : SkeletonModifier3D
 
     void Find(Skeleton3D sk)
     {
+        if (found != null && IsInstanceValid(found))
+        {
+            found.ChildEnteredTree -= MarkRescan;
+            found.ChildExitingTree -= MarkRescan;
+        }
         found = sk;
+        sk.ChildEnteredTree += MarkRescan;
+        sk.ChildExitingTree += MarkRescan;
+        rescan = true;
         sides.Clear();
         var s = Spec();
         if (s == null) return;
@@ -107,6 +147,18 @@ public partial class HerJoints : SkeletonModifier3D
                     helper.Own = sk.GetBoneRest(src).Basis.GetRotationQuaternion().Inverse() * sk.GetBoneRest(bone).Basis.GetRotationQuaternion();
                 one.Helpers.Add(helper);
             }
+            if (s.ContainsKey("correctives"))
+                foreach (var cv in s["correctives"].AsGodotArray())
+                {
+                    var c = cv.AsGodotDictionary();
+                    int bone = sk.FindBone(((string)c["bone"]).Replace("{s}", side));
+                    if (bone < 0) continue;
+                    one.Correctives.Add(new Corrective
+                    {
+                        Name = ((string)c["name"]).Replace("{s}", side), Bone = bone,
+                        From = (float)(double)c["from"], To = (float)(double)c["to"],
+                    });
+                }
             sides.Add(one);
         }
     }
@@ -127,6 +179,7 @@ public partial class HerJoints : SkeletonModifier3D
         var sk = GetSkeleton();
         if (sk == null) return;
         if (sk != found) Find(sk);
+        if (rescan) Rescan(sk);
         foreach (var side in sides)
         {
             // The forearm bone kept on its hinge: its roll goes to the hand.
@@ -199,6 +252,20 @@ public partial class HerJoints : SkeletonModifier3D
                         break;
                     }
                 }
+            }
+            // Her corrective shapes from their joints' bend as the clips and
+            // layers leave it (the forearm's roll already handed down), as
+            // helpers.bend reads it: the swing from rest, the turn about the
+            // bone's own line left out.
+            foreach (var c in side.Correctives)
+            {
+                var rest = sk.GetBoneRest(c.Bone).Basis.GetRotationQuaternion();
+                var (swing2, _, _) = TwistY(rest.Inverse() * sk.GetBonePoseRotation(c.Bone));
+                float deg = Mathf.RadToDeg(2 * Mathf.Acos(Mathf.Min(1f, Mathf.Abs(swing2.W))));
+                float v = Mathf.Clamp((deg - c.From) / (c.To - c.From), 0f, 1f);
+                float w = v * v * (3 - 2 * v);
+                foreach (var (mi, i) in c.On)
+                    if (IsInstanceValid(mi)) mi.SetBlendShapeValue(i, w);
             }
         }
     }

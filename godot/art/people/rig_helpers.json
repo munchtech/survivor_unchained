@@ -55,7 +55,10 @@
    "push": 0.03,
    "from": 70,
    "to": 145,
-   "way": "front"
+   "way": "front",
+   "squeeze": 0.0,
+   "squeeze_x": 0.0,
+   "squeeze_from": 100
   },
   {
    "name": "calf_share_{s}",
@@ -112,5 +115,27 @@
     "feather": 0.03
    }
   }
- }
+ },
+ "correctives": [
+  {
+   "name": "elbow_point_{s}",
+   "bone": "lowerarm_{s}",
+   "way": "front",
+   "full": 145,
+   "from": 90,
+   "to": 145,
+   "amount": 0.012,
+   "radius": [
+    0.028,
+    0.06,
+    0.045
+   ],
+   "lean": 0.0,
+   "near": 0.008,
+   "garment": [
+    0.02,
+    0.04
+   ]
+  }
+ ]
 }

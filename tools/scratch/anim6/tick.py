@@ -61,6 +61,19 @@ def variant_body(spec):
             h["bulge"] = float(over.get("eb", h["bulge"]))
             h["bulge_max"] = float(over.get("emax", h["bulge_max"]))
             h["pivot"] = float(over.get("ep", h.get("pivot", 0.0)))
+    for c in hp.SPEC.get("correctives", []):
+        # corrective overrides: ca amount (mm), crh/crt/crn radii (mm), clean lean, cnear (mm), cfull/cfrom
+        if "ca" in over:
+            c["amount"] = float(over["ca"]) / 1000
+        r = list(c["radius"])
+        for i, k in enumerate(("crh", "crt", "crn")):
+            if k in over:
+                r[i] = float(over[k]) / 1000
+        c["radius"] = r
+        if "clean" in over:
+            c["lean"] = float(over["clean"])
+        if "cnear" in over:
+            c["near"] = float(over["cnear"]) / 1000
     cr = hp.SPEC["weights"].get("crease") or {"cut": 0.0, "reach": 0.035}
     hp.SPEC["weights"]["crease"] = {"cut": float(over.get("cut", cr["cut"])), "reach": float(over.get("reach", cr["reach"]))}
     if "share" in over:

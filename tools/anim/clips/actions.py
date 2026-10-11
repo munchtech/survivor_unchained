@@ -367,17 +367,24 @@ def throw(rig):
         # out to the side at shoulder height, the hand behind her ear, the
         # wrist straight with the forearm until the release.
         (0, body(stance(0.07, weight=-0.4), hips=(-16, -2, 0), spine=(-26, -8, 0), head=(30, -2, 0), clav_r=(16, -6),
-                 hand_r=arm((-0.24, 0.18, -0.12), (-0.9, 0.0, -0.2), blade=_n(0.3, 0.9, -0.2)),
-                 hand_l=arm((0.06, -0.08, 0.36), (0.8, -0.5, -0.2)), fingers_r="grip", fingers_l="open"), "fast"),
+                 # (judge, 11 October: the hand 10-15 cm in toward her head, the
+                 # forearm upright from behind, the upper arm turned out, the
+                 # axe head back behind the shoulder; the other arm reaching
+                 # forward at chest height)
+                 hand_r=arm((-0.12, 0.18, -0.18), (-0.9, 0.0, -0.2), blade=_n(0.2, 0.75, -0.6)),
+                 hand_l=arm((0.04, -0.06, 0.40), (0.8, -0.5, -0.2)), fingers_r="grip", fingers_l="open"), "fast"),
         (2.5, body(stance(0.08), hips=(-2, 6, 0), spine=(0, 8, 0), head=(4, -4, 0),
                    hand_r=arm((-0.04, 0.10, 0.44), (-0.8, -0.3, -0.2), blade=_n(0.0, 0.3, 1.0)),
-                   hand_l=arm((0.10, -0.20, 0.10), (0.8, -0.3, -0.3)), fingers_r="open", fingers_l="relaxed"), "linear"),
+                   hand_l=arm((0.06, -0.30, 0.18), (0.6, -0.2, -0.6)), fingers_r="open", fingers_l="relaxed"), "linear"),
         (6, body(stance(0.10, weight=0.5), hips=(12, 10, 0), spine=(22, 14, 0), head=(-26, -6, 0),
                  hand_r=arm((0.22, -0.34, 0.30), (-0.8, -0.2, 0.0)),
-                 hand_l=arm((0.08, -0.26, -0.18), (0.8, -0.2, -0.3)), fingers_r="relaxed", fingers_l="relaxed"), "ease"),
+                 # The other arm swept down to her hip as she turns in, not
+                 # behind her back (it read as a raised arm at the play camera):
+                 # the elbow a little behind her, the wrist straight.
+                 hand_l=arm((-0.02, -0.42, 0.10), (0.4, -0.1, -0.9)), fingers_r="relaxed", fingers_l="relaxed"), "ease"),
         (9, body(stance(0.10, weight=0.5), hips=(13, 10, 0), spine=(24, 14, 0), head=(-28, -6, 0),
                  hand_r=arm((0.24, -0.36, 0.26), (-0.8, -0.2, 0.0)),
-                 hand_l=arm((0.08, -0.27, -0.18), (0.8, -0.2, -0.3)), fingers_r="relaxed", fingers_l="relaxed"), "auto"),
+                 hand_l=arm((-0.01, -0.44, 0.12), (0.4, -0.1, -0.9)), fingers_r="relaxed", fingers_l="relaxed"), "auto"),
         (20, body(stance(0.07), hand_r=arm((0.0, -0.34, 0.16), (-0.6, -0.4, -0.5)),
                   hand_l=arm((0.0, -0.36, 0.14), (0.6, -0.4, -0.5)), fingers_r="grip", fingers_l="relaxed"), "ease"),
     ]
