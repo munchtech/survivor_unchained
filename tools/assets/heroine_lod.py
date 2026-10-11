@@ -54,6 +54,8 @@ TUCK = 0.010         # (m: heroine_skin.gdshader's tuck, her skin drawn in by a 
 SHEER = {"stocking"}       # (seen through: hides nothing under it)
 HAIR_NEAR = 0.04     # (m: her skin and outfit this near any hair she can wear, at rest, are held as the closest layers: a
                      # strand lying on her is drawn where it passes over or under her surface, to the tenth of a millimetre)
+DECALS = {"ink"}     # (painted onto her skin, lying on it: kept as built, and her skin under it, so they meet as in her full model)
+DECAL_NEAR = 0.02    # (m: her skin this near a decal's points is kept as built: wider than her skin's triangles, so none under it changes)
 DENSE_BONES = ("breast_l", "breast_r", "glute_l", "glute_r", "pelvis")
 
 _CT = {5120: np.int8, 5121: np.uint8, 5122: np.int16, 5123: np.uint16, 5125: np.uint32, 5126: np.float32}
@@ -347,6 +349,11 @@ def lod(folder, outfit):
     hip_y = (joints["thigh_l"][1] + joints["thigh_r"][1]) / 2
     head_i = {"Head": names.index("Head")}
     # What no ray reaches is removed, but never her headwear, nor where her weights blend over a joint.
+    # A decal (ink on her skin) and her skin under it are kept as built: a decal lies a hair off her skin, and the least
+    # change to either turns it solid where it was half sunk, or the other way round.
+    from scipy.spatial import cKDTree
+    decal_pts = [attrs["POSITION"][0].astype(np.float64) for kind, mat, attrs, tris in parts if kind == "outfit" and mat in DECALS]
+    decal_tree = cKDTree(np.concatenate(decal_pts)) if decal_pts else None
     kept = []
     for kind, mat, attrs, tris in parts:
         if kind == "head":
@@ -354,6 +361,10 @@ def lod(folder, outfit):
         pos = attrs["POSITION"][0].astype(np.float64)
         big, on = weights_of(attrs, head_i)
         whole = on["Head"] > HEADWEAR if kind == "outfit" else np.zeros(len(pos), bool)
+        if kind == "outfit" and mat in DECALS:
+            whole[:] = True
+        elif kind == "body" and decal_tree is not None:
+            whole |= decal_tree.query(pos, distance_upper_bound=DECAL_NEAR)[0] < DECAL_NEAR
         vis = seen(scene, pos, tris)
         hold = vis | (big < BLEND)[tris].any(1) | whole[tris].any(1)
         keep = grow(pos, tris, hold, KEEP) if not os.environ.get("LOD_KEEP_ALL") else np.ones(len(tris), bool)
@@ -372,7 +383,6 @@ def lod(folder, outfit):
                 for hm, ha, ht in hg.prims(mi):
                     others.append(ha["POSITION"][0].astype(np.float32)[ht])
                     hair_pts.append(ha["POSITION"][0].astype(np.float32))
-    from scipy.spatial import cKDTree
     hair_tree = cKDTree(np.concatenate(hair_pts)) if hair_pts else None
     keep_parts = []
     for i, (kind, mat, attrs, tris, keep, whole, nv) in enumerate(kept):
