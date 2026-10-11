@@ -3862,6 +3862,7 @@ def arcanist():
         X = rr * np.sin(th)[:, None]
         Zc = cz - rr * np.cos(th)[:, None]
         Y = np.array([[front(X[a, b], Zc[a, b]) for b in range(nr)] for a in range(nth)])
+        Y[Y > y_ft + 0.04] = np.nan   # (her back's cloth, seen through the opening)
         # (inside the opening the ray finds no cloth: the row's own front-most)
         for a in range(nth):
             ok = ~np.isnan(Y[a])
