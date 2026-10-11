@@ -12,6 +12,12 @@ Kept in the repo: `tools/scratch/face15/` (judge_n2_verdict.md; irises_neutral.p
 - **Findings:**
   - Her jawR shade is lit by the cool fill spot: fill off takes it from L 0.45 to 0.31. The ambient tint and the terminator width barely move it, so n1's per-face ambient tints don't work.
   - The iris crush at the Look is the Night grade's toe. With the rig white and only the grade toggled, Doe's ring goes from 56,22,12 (grade off) to 25,6,4 (grade on).
+- **Rendering landed (worktree-agent-a4e0c353e61cca6dc @ 685a6689, in e06744f4; merge it first):**
+  - Grade: toe 1.0 at the title and the Look. Doe's ring stays 56,22,12; `--grade-toe 0` gives the old grade.
+  - Portrait rig: fill 1.0/0.95/0.9, bounce 0.18 by default, rim specular 0.25; `--rig-old` gives the before.
+  - So: apply the iris patch and re-measure. Re-measure jawR, the salmon line and the collar sheen with our own crops (rendering's boxes missed).
+  - Check HerBackSpec 0.3 on top of the rim's 0.25: maybe back to 1.0.
+  - Rendering's judge also saw: sclera chroma about +0.012; ears paler and greyer than the face; a pale scalp wedge at the temple.
 - **In flight / next:**
   1. The neck solver (afe257673845169a9, done; its crops are in scratch `f16\`, unjudged) committed c3f549ec. A lamp behind her now gives 0.3 of its sheen (`HerBackSpec`). The lilac collar sheen passes its numbers on Highborn and Fey, misses by 2 deg on Doe, and fails on Sunborn (hue -25). It also added neutral shader switches: `backlight`, `backlight_colour`, `backlight_behind`, `shade_tint` + gates, `rim_gate`, `rim_tint`, `back_spec`. This is UNJUDGED.
      - **Grey shade under the jaw, not fixed.** The cool fill hits jawR about as squarely as it hits the cheek, so no light-angle term separates them. Two paths: rendering warms the fill (about 1.0/0.95/0.9) and adds a bounce from below at 0.15-0.2 (`--bounce`, the coordinator has asked); or, on the skin side, a zone mask (jaw_zone into heroine_ao.png's blue, faded to 0 at the seam by the green) with `shade_zone=1, shade_from=0.9, shade_to=1.0, shade_tint~1.3/1.0/0.6`.
