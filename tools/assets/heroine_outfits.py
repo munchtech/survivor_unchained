@@ -112,56 +112,94 @@ def mend_body(me):
     print("MEND her body: %d fins, %d pockets" % (len(fins), len(pockets)))
 
 
-mend_body(body.data)
 
-
-# Corners of hers whose normal is turned over (facing into her, away from
-# their own face): lit from inside, they take the sky's colour, and from below
-# they read as holes (the inner thigh above the knee, her groin, the inside
-# of a calf: animation, judge 9c). Each takes the area-weighted normal of the
-# faces round its place (her seams welded); every other corner keeps its own.
-def mend_normals(me):
-    n = len(me.loops)
-    if not n or not me.has_custom_normals:
+# A hole in her right inner thigh just under the crotch, on her midline: a
+# ring of 7 open edges (4.4 x 2.8 cm) round a loose triangle. build_heroine's
+# crotch step gave three points of her right thigh's inner face, 0.1 mm past
+# the midline, to her left leg by the sign of x, and its web cut then took
+# the 10 triangles joining them to the right leg. At rest her left thigh hid
+# it; with her legs apart the inside of her thigh showed through (the grey
+# spots from below in the vault and death: animation, judge 10, found by a
+# solver's ray cast). Filled (faces only, so every map by vertex still holds),
+# facing out as the rim does, the loose points given the rim's weights.
+def mend_hole(obj):
+    import collections
+    me = obj.data
+    mb = bmesh.new()
+    mb.from_mesh(me)
+    mb.verts.ensure_lookup_table()
+    key = [tuple(round(c, 5) for c in v.co) for v in mb.verts]
+    use = collections.Counter()
+    for f in mb.faces:
+        ks = [key[v.index] for v in f.verts]
+        use.update(frozenset(e) for e in zip(ks, ks[1:] + ks[:1]))
+    at = Vector((0.0, 0.009, 0.866))
+    edges = [e for e in mb.edges if use[frozenset((key[e.verts[0].index], key[e.verts[1].index]))] == 1
+             and abs((e.verts[0].co + e.verts[1].co).x / 2) < 0.01 and ((e.verts[0].co + e.verts[1].co) / 2 - at).length < 0.05]
+    if len(edges) != 10:
+        print("MEND her thigh hole: NOT FOUND (%d open edges there, 10 wanted); left as it is" % len(edges))
+        mb.free()
         return
-    cn = np.empty(n * 3, np.float32)
-    me.corner_normals.foreach_get("vector", cn)
-    cn = cn.reshape(-1, 3)
-    m = len(me.polygons)
-    fn = np.empty(m * 3, np.float32)
-    me.polygons.foreach_get("normal", fn)
-    fn = fn.reshape(-1, 3)
-    fa = np.empty(m, np.float32)
-    me.polygons.foreach_get("area", fa)
-    lt = np.empty(m, np.int64)
-    me.polygons.foreach_get("loop_total", lt)
-    face = np.repeat(np.arange(m), lt)
-    lv = np.empty(n, np.int64)
-    me.loops.foreach_get("vertex_index", lv)
-    co = np.empty(len(me.vertices) * 3, np.float32)
-    me.vertices.foreach_get("co", co)
-    _, weld = np.unique(np.round(co.reshape(-1, 3) / 1e-5).astype(np.int64), axis=0, return_inverse=True)
-    weld = weld.ravel()
-    A = np.zeros((weld.max() + 1, 3))
-    np.add.at(A, weld[lv], fn[face] * fa[face, None])
-    A /= np.maximum(np.linalg.norm(A, axis=1, keepdims=True), 1e-12)
-    bad = (cn * fn[face]).sum(1) < 0
-    if bad.any():
-        new = cn.astype(float)
-        new[bad] = A[weld[lv[bad]]]
-        me.normals_split_custom_set([tuple(v) for v in new])
-    print("MEND her normals: %d corners turned over, set to their faces'" % int(bad.sum()))
+    island = {v for e in edges for v in e.verts if len(e.link_faces) == 1 and len(e.link_faces[0].verts) == 3
+              and all(len(x.link_faces) == 1 for x in e.link_faces[0].edges)}
+    rim = {v for e in edges for v in e.verts} - island
+    made = bmesh.ops.triangle_fill(mb, use_beauty=True, use_dissolve=False, edges=edges)["geom"]
+    new = [g for g in made if isinstance(g, bmesh.types.BMFace)]
+    # (the loose triangle is a face already: a fill over it is dropped)
+    dup = [f for f in new if set(f.verts) <= island]
+    if dup:
+        bmesh.ops.delete(mb, geom=dup, context="FACES_ONLY")
+        new = [f for f in new if f not in dup]
+    mb.normal_update()
+    turn = [f for f in new if f.normal.x < 0]
+    if turn:
+        bmesh.ops.reverse_faces(mb, faces=turn)
+    uv = mb.loops.layers.uv
+    old = next(f for v in rim for f in v.link_faces if f not in new)
+    for f in new:
+        f.material_index = old.material_index
+        f.smooth = old.smooth
+        for lo in f.loops:
+            src = next((l for l in lo.vert.link_loops if l.face not in new), None)
+            if src is not None:
+                for lay in uv.values():
+                    lo[lay].uv = src[lay].uv
+    dl = mb.verts.layers.deform.verify()
+    mean = collections.Counter()
+    for v in rim:
+        for g, w in v[dl].items():
+            mean[g] += w / len(rim)
+    for v in island:
+        v[dl].clear()
+        for g, w in mean.items():
+            if w > 0.01:
+                v[dl][g] = w
+    mb.to_mesh(me)
+    me.update()
+    mb.free()
+    names = {g.index: g.name for g in obj.vertex_groups}
+    print("MEND her thigh hole: %d faces filled (%d turned), %d loose points given %s"
+          % (len(new), len(turn), len(island), {names[g]: round(w, 3) for g, w in mean.items() if w > 0.01}))
 
 
-# Faces of hers folded over (a corner pushed past the edge across from it,
-# so the face lies turned against every face round it: 46 on her body,
-# 2.7 cm2, the largest 0.36 cm2 on her right inner thigh, all in one sheet
-# with their neighbours): culled from outside, each is a hole the background
-# shows through (animation, judge 9c: the inner thigh from below). Turning
-# the face round leaves it lying over its neighbours (a dark patch), so the
-# fold is undone instead: each folded face's corners are drawn to the middle
-# of the points round them (her seams moved as one), a few times over, until
-# no face is folded. mend_normals then gives their corners their faces' normal.
+mend_body(body.data)
+mend_hole(body)
+
+
+# Faces of hers folded over at rest (a corner pushed past the edge across
+# from it, so the face lies turned against every face round it: 46 on her
+# body, 2.7 cm2, the largest 0.36 cm2 on her right inner thigh), and corners
+# whose normal is turned away from the skin round them. Mended on her body
+# only, just before it is written (after every outfit has read her, so no
+# piece cut from her moves: mended first, the warden's cups took 76 rivets
+# for 34 and the build broke). Each folded face's corners are drawn to the
+# middle of the points round them (her seams moved as one) until no face is
+# folded; turning the faces round instead left them lying over their
+# neighbours, dark marks at her left flank and breast (animation, judge 10).
+# Then every corner moved, and every corner more than 60 degrees from the
+# skin round it, takes the mean of its neighbours' own normals: the normals
+# drawn round it, so no mark (an average of face normals was up to 70
+# degrees off where the faces are slivers).
 def _folded(mb, weld, nw):
     A = np.zeros((nw, 3))
     fn = [f.normal * f.calc_area() for f in mb.faces]
@@ -184,16 +222,28 @@ def _folded(mb, weld, nw):
     return out
 
 
-def mend_faces(me):
+def mend_folds(me):
+    nl = len(me.loops)
+    cn = np.empty(nl * 3, np.float32)
+    me.corner_normals.foreach_get("vector", cn)
+    cn = cn.reshape(-1, 3).astype(float)
+    lv = np.empty(nl, np.int64)
+    me.loops.foreach_get("vertex_index", lv)
     mb = bmesh.new()
     mb.from_mesh(me)
     mb.verts.ensure_lookup_table()
     key = {}
-    weld = [key.setdefault(tuple(round(c, 5) for c in v.co), len(key)) for v in mb.verts]
+    weld = np.array([key.setdefault(tuple(round(c, 5) for c in v.co), len(key)) for v in mb.verts])
     copies = [[] for _ in key]
     for v in mb.verts:
         copies[weld[v.index]].append(v)
-    first = None
+    ring = [set() for _ in key]
+    for e in mb.edges:
+        a, b = weld[e.verts[0].index], weld[e.verts[1].index]
+        if a != b:
+            ring[a].add(b)
+            ring[b].add(a)
+    moved, first = set(), None
     for it in range(12):
         mb.normal_update()
         bad = _folded(mb, weld, len(key))
@@ -202,23 +252,38 @@ def mend_faces(me):
         if not bad:
             break
         move = {weld[v.index] for f in bad for v in f.verts}
-        new = {}
-        for k in move:
-            ring = {weld[e.other_vert(v).index] for v in copies[k] for e in v.link_edges} - {k}
-            new[k] = sum((copies[r][0].co for r in ring), Vector()) / max(len(ring), 1)
+        new = {k: sum((copies[r][0].co for r in ring[k]), Vector()) / max(len(ring[k]), 1) for k in move}
         for k, p in new.items():
             for v in copies[k]:
                 v.co = p
+        moved |= move
     mb.normal_update()
     left = len(_folded(mb, weld, len(key)))
     mb.to_mesh(me)
     me.update()
     mb.free()
-    print("MEND her faces: %d folded, %d left after %d passes" % (first, left, it + 1))
-
-
-mend_faces(body.data)
-mend_normals(body.data)
+    # each corner against the mean normal of the corners at the places round it
+    lw = weld[lv]
+    S = np.zeros((len(key), 3))
+    np.add.at(S, lw, cn)
+    R = np.zeros((len(key), 3))
+    for k, rk in enumerate(ring):
+        for r in rk:
+            R[k] += S[r]
+    Rn = R / np.maximum(np.linalg.norm(R, axis=1, keepdims=True), 1e-12)
+    target = np.isin(lw, list(moved)) | ((cn * Rn[lw]).sum(1) < 0.5)
+    S2 = np.zeros((len(key), 3))
+    np.add.at(S2, lw[~target], cn[~target])
+    R2 = S2.copy()
+    for k, rk in enumerate(ring):
+        for r in rk:
+            R2[k] += S2[r]
+    out = cn.copy()
+    ok = np.linalg.norm(R2[lw], axis=1) > 1e-9
+    out[target & ok] = R2[lw[target & ok]] / np.linalg.norm(R2[lw[target & ok]], axis=1, keepdims=True)
+    me.normals_split_custom_set([tuple(v) for v in out])
+    print("MEND her folds: %d folded, %d left after %d passes, %d points moved; %d corners given their neighbours' normal"
+          % (first, left, it + 1, len(moved), int((target & ok).sum())))
 
 # ------------------------------------------------------------ her surface --
 # Welded (the paint's seams split her vertices) and in triangles.
@@ -3954,6 +4019,7 @@ if BODY_OUT:
     # Her helper bones (twists at the shoulders and down the forearms, shares
     # at the shoulders, elbows and knees: tools/anim/helpers.py), her weights
     # split onto them; her pieces take the same split below.
+    mend_folds(me)
     rig_helpers.apply(arm, [body])
     bpy.ops.object.select_all(action="DESELECT")
     arm.select_set(True)

@@ -297,7 +297,35 @@ def _body_moves(arm, body):
     P = _to_game([(mw @ v.co)[:] for v in body.data.vertices])
     W = _weights(body, sk.names)
     moves = {k: _to_blender(d) for k, d in hp.corrective(P, W, sk, front=(0.0, 0.0, 1.0)).items()}
-    return {k: d for k, d in moves.items() if np.abs(d).max() > 0}
+    return {k: _relaxed(body.data, d) for k, d in moves.items() if np.abs(d).max() > 0}
+
+
+def _relaxed(me, d, passes=3):
+    """A shape's moves eased over her mesh (each point halfway to the mean
+    of the points round it, `passes` times; her seams welded), then scaled
+    back to its peak: the falloff's rim follows her own edges, not a cut
+    across them (at 145 degrees a step in the patch's forearm-side rim read
+    as a nub on the elbow's flank: animation, judge 10)."""
+    co = np.array([v.co[:] for v in me.vertices])
+    _, w = np.unique(np.round(co / 1e-5).astype(np.int64), axis=0, return_inverse=True)
+    w = w.ravel()
+    ev = np.array([e.vertices[:] for e in me.edges])
+    a, b = w[ev[:, 0]], w[ev[:, 1]]
+    k = a != b
+    a, b = a[k], b[k]
+    n = w.max() + 1
+    D = np.zeros((n, 3))
+    np.add.at(D, w, d)
+    D /= np.bincount(w, minlength=n)[:, None]
+    deg = np.bincount(np.r_[a, b], minlength=n).astype(float)
+    peak = np.linalg.norm(D, axis=1).max()
+    for _ in range(passes):
+        S = np.zeros_like(D)
+        np.add.at(S, a, D[b])
+        np.add.at(S, b, D[a])
+        D = np.where(deg[:, None] > 0, 0.5 * D + 0.5 * S / np.maximum(deg, 1)[:, None], D)
+    D *= peak / max(np.linalg.norm(D, axis=1).max(), 1e-12)
+    return D[w]
 
 
 def _sampler_moves(arm, sampler):
