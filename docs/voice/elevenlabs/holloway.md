@@ -1,6 +1,6 @@
 # Captain Holloway: ElevenLabs packet
 
-Voice id in the game: `holloway`. 109 takes to record (9,702 characters; about 29,106 credits at three tries a line). Status: **on hold**: the story rewrite changes most of his lines (docs/voice/RERECORD.md). Do not record any of it yet.
+Voice id in the game: `holloway`. 110 takes to record (9,700 characters; about 29,100 credits at three tries a line). Status: **on hold**: the story rewrite changes most of his lines (docs/voice/RERECORD.md). Do not record any of it yet.
 
 ## Who they are
 
@@ -234,9 +234,9 @@ Subtitle: Make it quick. I've a gate to count.
 *Note:* A quartermaster's numbers. 'Bring me proof and I'll pay. Bring me stories and I won't.' as a rule. The eleven-men line bitter and dry.
 
 ```
-[terse, practical] They're bolder. Two nights ago they came right up to the east gate. Five a pelt, fifty for the old grey one they call Grey-muzzle. Bring me proof and I'll pay. Bring me stories and I won't. I've eleven men and four of them can hold a spear the right way round; I'm not spending them on stories.
+[terse, practical] They're bolder. Two nights ago they came right up to the east gate. Five a pelt, fifty for the old gray one they call Grey-muzzle. Bring me proof and I'll pay. Bring me stories and I won't. I've eleven men and four of them can hold a spear the right way round; I'm not spending them on stories.
 ```
-Subtitle: They're bolder. Two nights ago they came right up to the east gate. Five a pelt, fifty for the old grey one they call Greymuzzle. Bring me proof and I'll pay. Bring me stories and I won't. I've eleven men and four of them can hold a spear the right way round; I'm not spending them on stories.
+Subtitle: They're bolder. Two nights ago they came right up to the east gate. Five a pelt, fifty for the old gray one they call Greymuzzle. Bring me proof and I'll pay. Bring me stories and I won't. I've eleven men and four of them can hold a spear the right way round; I'm not spending them on stories.
 
 ### 18. `dlg.holloway.maeca.0.wav`
 
@@ -459,9 +459,9 @@ Subtitle: You sold the Coyle cargo to a fence. Everyone in the Waystation knows 
 *Note:* Puzzled and uneasy, not angry.
 
 ```
-[troubled, judging, quietly] I hear you put the old grey one down. I'd stopped paying for it. You did it anyway. I'm trying to work out what that makes you.
+[troubled, judging, quietly] I hear you put the old gray one down. I'd stopped paying for it. You did it anyway. I'm trying to work out what that makes you.
 ```
-Subtitle: I hear you put the old grey one down. I'd stopped paying for it. You did it anyway. I'm trying to work out what that makes you.
+Subtitle: I hear you put the old gray one down. I'd stopped paying for it. You did it anyway. I'm trying to work out what that makes you.
 
 ### 38. `dlg.holloway.cb_killed_greymuzzle.1.wav`
 
@@ -677,14 +677,14 @@ Subtitle: Could be anyone. There's more thieves in this valley than letters to g
 
 ### 57. `dlg.holloway.post.0.p1.wav`
 
-*Where:* dialogue.json holloway/post#0; part 2 of 2: narrator: He says nothing for long enough that you think he hasn't heard. / **holloway: Grey beard, proud of it? Bad hip? ...Corran. He had that post before I had this one. I wro…**
+*Where:* dialogue.json holloway/post#0; part 2 of 2: narrator: He says nothing for long enough that you think he hasn't heard. / **holloway: Gray beard, proud of it? Bad hip? ...Corran. He had that post before I had this one. I wro…**
 *Played:* shock, guilt; doing: his old comrade is dead; pace: slow; volume: quiet.
 *Note:* Narrator holds the silence. Then quiet questions he knows the answers to. 'Corran.' on its own. The deserter lines in self-disgust.
 
 ```
-[shock, guilt, quietly] Grey beard, proud of it? Bad hip? ...Corran. He had that post before I had this one. I wrote him down as a deserter in the spring. Him and his runner, Dannet. Dannet never came up the road, so I wrote him down too.
+[shock, guilt, quietly] Gray beard, proud of it? Bad hip? ...Corran. He had that post before I had this one. I wrote him down as a deserter in the spring. Him and his runner, Dannet. Dannet never came up the road, so I wrote him down too.
 ```
-Subtitle: Grey beard, proud of it? Bad hip? ...Corran. He had that post before I had this one. I wrote him down as a deserter in the spring. Him and his runner, Dannet. Dannet never came up the road, so I wrote him down too.
+Subtitle: Gray beard, proud of it? Bad hip? ...Corran. He had that post before I had this one. I wrote him down as a deserter in the spring. Him and his runner, Dannet. Dannet never came up the road, so I wrote him down too.
 
 ### 58. `dlg.holloway.post2.0.p0.wav`
 
@@ -972,25 +972,34 @@ I did.
 ```
 Subtitle: I did.
 
-### 88. `dlg.scene_knocking.knows.0.p1.wav`
+### 88. `dlg.scene_knocking.knows.0.p0.wav`
 
-*Where:* dialogue.json scene_knocking/knows#0; part 2 of 4: narrator: He looks into the cup. / **holloway: Pell. Went up after, for his sister's money. Found the lid barred from the top.** / narrator: He drinks. / holloway: He's a careful man. He's waiting for a price.
+*Where:* dialogue.json scene_knocking/knows#0; part 1 of 5: **holloway: Pell.** / narrator: His eyes go past you, to the step, and come back to the cup. / holloway: Went up after, for his sister's money. Found the lid barred from the top. / narrator: He drinks. / holloway: He's a careful man. He's waiting for a price.
 
 ```
-Pell. Went up after, for his sister's money. Found the lid barred from the top.
+Pell.
 ```
-Subtitle: Pell. Went up after, for his sister's money. Found the lid barred from the top.
+Subtitle: Pell.
 
-### 89. `dlg.scene_knocking.knows.0.p3.wav`
+### 89. `dlg.scene_knocking.knows.0.p2.wav`
 
-*Where:* dialogue.json scene_knocking/knows#0; part 4 of 4: narrator: He looks into the cup. / holloway: Pell. Went up after, for his sister's money. Found the lid barred from the top. / narrator: He drinks. / **holloway: He's a careful man. He's waiting for a price.**
+*Where:* dialogue.json scene_knocking/knows#0; part 3 of 5: holloway: Pell. / narrator: His eyes go past you, to the step, and come back to the cup. / **holloway: Went up after, for his sister's money. Found the lid barred from the top.** / narrator: He drinks. / holloway: He's a careful man. He's waiting for a price.
+
+```
+Went up after, for his sister's money. Found the lid barred from the top.
+```
+Subtitle: Went up after, for his sister's money. Found the lid barred from the top.
+
+### 90. `dlg.scene_knocking.knows.0.p4.wav`
+
+*Where:* dialogue.json scene_knocking/knows#0; part 5 of 5: holloway: Pell. / narrator: His eyes go past you, to the step, and come back to the cup. / holloway: Went up after, for his sister's money. Found the lid barred from the top. / narrator: He drinks. / **holloway: He's a careful man. He's waiting for a price.**
 
 ```
 He's a careful man. He's waiting for a price.
 ```
 Subtitle: He's a careful man. He's waiting for a price.
 
-### 90. `dlg.scene_knocking.wrote.0.p0.wav`
+### 91. `dlg.scene_knocking.wrote.0.p0.wav`
 
 *Where:* dialogue.json scene_knocking/wrote#0; part 1 of 5: **holloway: Wrote them down with the hill party. At the cave mouths. Some of the hill came home; nobod…** / narrator: He looks into the cup, finds it empty, and keeps holding it. / holloway: Go to bed. / narrator: He gets up, holding the gatepost, and looks down the dark road. / holloway: Somebody's still out. ...Always somebody still out.
 
@@ -999,7 +1008,7 @@ Wrote them down with the hill party. At the cave mouths. Some of the hill came h
 ```
 Subtitle: Wrote them down with the hill party. At the cave mouths. Some of the hill came home; nobody asked which. Widows get paid for the cave mouths.
 
-### 91. `dlg.scene_knocking.wrote.0.p2.wav`
+### 92. `dlg.scene_knocking.wrote.0.p2.wav`
 
 *Where:* dialogue.json scene_knocking/wrote#0; part 3 of 5: holloway: Wrote them down with the hill party. At the cave mouths. Some of the hill came home; nobod… / narrator: He looks into the cup, finds it empty, and keeps holding it. / **holloway: Go to bed.** / narrator: He gets up, holding the gatepost, and looks down the dark road. / holloway: Somebody's still out. ...Always somebody still out.
 
@@ -1008,7 +1017,7 @@ Go to bed.
 ```
 Subtitle: Go to bed.
 
-### 92. `dlg.scene_knocking.wrote.0.p4.wav`
+### 93. `dlg.scene_knocking.wrote.0.p4.wav`
 
 *Where:* dialogue.json scene_knocking/wrote#0; part 5 of 5: holloway: Wrote them down with the hill party. At the cave mouths. Some of the hill came home; nobod… / narrator: He looks into the cup, finds it empty, and keeps holding it. / holloway: Go to bed. / narrator: He gets up, holding the gatepost, and looks down the dark road. / **holloway: Somebody's still out. ...Always somebody still out.**
 
@@ -1019,7 +1028,7 @@ Subtitle: Somebody's still out. ...Always somebody still out.
 
 ## Said in passing
 
-### 93. `bark.holloway.day.0.wav`
+### 94. `bark.holloway.day.0.wav`
 
 *Where:* npcs.json holloway.barks[0]
 *Played:* curt; pace: brisk; volume: level.
@@ -1029,7 +1038,7 @@ Subtitle: Somebody's still out. ...Always somebody still out.
 ```
 Subtitle: Keep to the road, and keep your blade where I can see it.
 
-### 94. `bark.holloway.day.1.wav`
+### 95. `bark.holloway.day.1.wav`
 
 *Where:* npcs.json holloway.barks[1]
 *Played:* curt; pace: brisk; volume: level.
@@ -1039,7 +1048,7 @@ Subtitle: Keep to the road, and keep your blade where I can see it.
 ```
 Subtitle: Three caravans this month. Three.
 
-### 95. `bark.holloway.night.0.wav`
+### 96. `bark.holloway.night.0.wav`
 
 *Where:* npcs.json holloway.nightBarks[0]
 *Played:* tired; pace: measured; volume: quiet.
@@ -1049,7 +1058,7 @@ Subtitle: Three caravans this month. Three.
 ```
 Subtitle: Curfew's not law. Yet.
 
-### 96. `bark.holloway.night.1.wav`
+### 97. `bark.holloway.night.1.wav`
 
 *Where:* npcs.json holloway.nightBarks[1]
 *Played:* tired; pace: measured; volume: quiet.
@@ -1059,17 +1068,17 @@ Subtitle: Curfew's not law. Yet.
 ```
 Subtitle: Two on the walls, one on each gate. It's not enough.
 
-### 97. `bark.holloway.night.2.wav`
+### 98. `bark.holloway.night.2.wav`
 
 *Where:* npcs.json holloway.nightBarks[2]
 *Played:* tired; pace: measured; volume: quiet.
 
 ```
-[tired, quietly] Go to bed, traveller.
+[tired, quietly] Go to bed, traveler.
 ```
-Subtitle: Go to bed, traveller.
+Subtitle: Go to bed, traveler.
 
-### 98. `bark.holloway.night.3.wav`
+### 99. `bark.holloway.night.3.wav`
 
 *Where:* npcs.json holloway.nightBarks[3]
 *Played:* tired; pace: measured; volume: quiet.
@@ -1079,7 +1088,7 @@ Subtitle: Go to bed, traveller.
 ```
 Subtitle: Every night I bury somebody's son. Go home.
 
-### 99. `bark.holloway.night.4.wav`
+### 100. `bark.holloway.night.4.wav`
 
 *Where:* npcs.json holloway.nightBarks[4]
 *Played:* tired; pace: measured; volume: quiet.
@@ -1089,18 +1098,18 @@ Subtitle: Every night I bury somebody's son. Go home.
 ```
 Subtitle: Quiet on the wall. I hate it quiet.
 
-### 100. `bark.holloway.said.0.wav`
+### 101. `bark.holloway.said.0.wav`
 
 *Where:* npcs.json holloway.said[0]
 *Played:* businesslike; doing: the pelt bounty; pace: measured; volume: level.
 *Note:* A notice read aloud by a man who wrote it.
 
 ```
-[businesslike] Five a pelt. Fifty for the old grey one.
+[businesslike] Five a pelt. Fifty for the old gray one.
 ```
-Subtitle: Five a pelt. Fifty for the old grey one.
+Subtitle: Five a pelt. Fifty for the old gray one.
 
-### 101. `bark.holloway.said.1.wav`
+### 102. `bark.holloway.said.1.wav`
 
 *Where:* npcs.json holloway.said[1]
 *Played:* dry relief; doing: the bounty's done; pace: measured; volume: level.
@@ -1111,7 +1120,7 @@ Subtitle: Five a pelt. Fifty for the old grey one.
 ```
 Subtitle: Pelt book's closed. I'll not miss writing in it.
 
-### 102. `bark.holloway.said.2.wav`
+### 103. `bark.holloway.said.2.wav`
 
 *Where:* npcs.json holloway.said[2]
 *Played:* grim, private; doing: Corran buried; pace: slow; volume: quiet.
@@ -1123,7 +1132,7 @@ Subtitle: Pelt book's closed. I'll not miss writing in it.
 ```
 Subtitle: Corran's in the ground. That's one debt paid.
 
-### 103. `bark.holloway.said.3.wav`
+### 104. `bark.holloway.said.3.wav`
 
 *Where:* npcs.json holloway.said[3]
 *Played:* weary, grateful; doing: one caravan came home; pace: measured; volume: level.
@@ -1134,7 +1143,7 @@ Subtitle: Corran's in the ground. That's one debt paid.
 ```
 Subtitle: One caravan home. I'll take it.
 
-### 104. `bark.holloway.said.4.wav`
+### 105. `bark.holloway.said.4.wav`
 
 *Where:* npcs.json holloway.said[4]
 
@@ -1143,7 +1152,7 @@ One in. Count's right, for once.
 ```
 Subtitle: One in. Count's right, for once.
 
-### 105. `bark.holloway.said.5.wav`
+### 106. `bark.holloway.said.5.wav`
 
 *Where:* npcs.json holloway.said[5]
 
@@ -1152,7 +1161,7 @@ Heard you put down what rules out there. Proof it can be done.
 ```
 Subtitle: Heard you put down what rules out there. Proof it can be done.
 
-### 106. `bark.holloway.said.6.wav`
+### 107. `bark.holloway.said.6.wav`
 
 *Where:* npcs.json holloway.said[6]
 
@@ -1161,7 +1170,7 @@ Seven nights out, seven back. I've taken you out of the missing column.
 ```
 Subtitle: Seven nights out, seven back. I've taken you out of the missing column.
 
-### 107. `bark.holloway.said.7.wav`
+### 108. `bark.holloway.said.7.wav`
 
 *Where:* npcs.json holloway.said[7]
 
@@ -1170,7 +1179,7 @@ Count was one short last night. It's right this morning. Don't make me write it 
 ```
 Subtitle: Count was one short last night. It's right this morning. Don't make me write it twice.
 
-### 108. `bark.holloway.said.8.wav`
+### 109. `bark.holloway.said.8.wav`
 
 *Where:* npcs.json holloway.said[8]
 
@@ -1179,7 +1188,7 @@ Had Red-cowl on his knee and let him up. Road's quiet. I'll give you that.
 ```
 Subtitle: Had Redcowl on his knee and let him up. Road's quiet. I'll give you that.
 
-### 109. `bark.holloway.said.9.wav`
+### 110. `bark.holloway.said.9.wav`
 
 *Where:* npcs.json holloway.said[9]
 

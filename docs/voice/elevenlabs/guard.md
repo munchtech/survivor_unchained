@@ -1,6 +1,8 @@
 # A Watchman at the gate: ElevenLabs packet
 
-Voice id in the game: `guard`. 12 takes to record (510 characters; about 1,530 credits at three tries a line). Status: **draft**, until the story lead (a7622ae77d19e31dc) checks every line and marks it final.
+Voice id in the game: `guard`. 12 takes to record (509 characters; about 1,527 credits at three tries a line). Status: **draft**, until the story lead (a7622ae77d19e31dc) checks every line and marks it final.
+
+**1 take is LOCKED FOR RECORDING** (marked below).
 
 ## Who they are
 
@@ -41,7 +43,7 @@ Each: what is going on, how it is played, then the text to paste (the bracketed 
 
 ## Cinematic: first light
 
-### 1. `dlg.cin_first_light.dawn.0.wav`
+### 1. `dlg.cin_first_light.dawn.0.wav`  **LOCKED FOR RECORDING**
 
 *The same words are also* `guard.0.wav`*: record once; the importer copies the take.*
 *Where:* dialogue.json cin_first_light/dawn#0
@@ -103,9 +105,9 @@ Subtitle: Gates are shut till dawn.
 *Played:* curt; pace: measured; volume: level.
 
 ```
-[curt] Walk on, traveller.
+[curt] Walk on, traveler.
 ```
-Subtitle: Walk on, traveller.
+Subtitle: Walk on, traveler.
 
 ### 7. `folk.74.m.wav`
 

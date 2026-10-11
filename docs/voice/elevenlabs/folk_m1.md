@@ -1,6 +1,6 @@
 # Townsman, middle-aged: ElevenLabs packet
 
-Voice id in the game: `folk_m1`. 47 takes to record (3,081 characters; about 9,243 credits at three tries a line). Status: **draft**, until the story lead (a7622ae77d19e31dc) checks every line and marks it final.
+Voice id in the game: `folk_m1`. 47 takes to record (3,080 characters; about 9,240 credits at three tries a line). Status: **draft**, until the story lead (a7622ae77d19e31dc) checks every line and marks it final.
 
 ## Who they are
 
@@ -291,9 +291,9 @@ Subtitle: Jory Coyle's home! Harlan wept in the street, I saw it.
 *Played:* disgusted; pace: measured; volume: level.
 
 ```
-[disgusted] Pell Varrow, selling his own neighbours. I bought eggs from that man.
+[disgusted] Pell Varrow, selling his own neighbors. I bought eggs from that man.
 ```
-Subtitle: Pell Varrow, selling his own neighbours. I bought eggs from that man.
+Subtitle: Pell Varrow, selling his own neighbors. I bought eggs from that man.
 
 ### 26. `folk.52.m.wav`
 

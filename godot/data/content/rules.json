@@ -1,6 +1,17 @@
 {
  "rules": [
   {
+   "id": "chid.ford_burial",
+   "once": true,
+   "when": {
+    "day": {
+     "gte": 2
+    }
+   },
+   "effect": [],
+   "report": "Chid carried a woman up from the ford before light yesterday, and buried her behind the shrine. Nobody's claimed her."
+  },
+  {
    "id": "dawn.voice",
    "once": true,
    "when": {

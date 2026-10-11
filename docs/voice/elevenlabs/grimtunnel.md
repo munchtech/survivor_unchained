@@ -2,6 +2,8 @@
 
 Voice id in the game: `grimtunnel`. 7 takes to record (442 characters; about 1,326 credits at three tries a line). Status: **draft**, until the story lead (a7622ae77d19e31dc) checks every line and marks it final.
 
+**3 takes are LOCKED FOR RECORDING** (marked below).
+
 ## Who they are
 
 **Grimtunnel** (Boss of the Dig). Oily, gleeful, possessive: "Nobody's!", "surface-meat" (never finished at the survivor once he has smelled downstairs on her in C03: "surface-m—"), "downstairs" for the deep. Under the greed, faith: he is carrying a god its heart, and when anything touches that he goes toad-still and very nearly bows, then covers it with a grin. He believes the thing below will be grateful, and says so. *Casting:* Snib's family, bigger, lower, a cackle, a cave reverb that gets wetter as he goes down.
@@ -41,7 +43,7 @@ Each: what is going on, how it is played, then the text to paste (the bracketed 
 
 ## Cinematic: heart goes down
 
-### 1. `dlg.cin_heart_goes_down.nobodys.0.wav`
+### 1. `dlg.cin_heart_goes_down.nobodys.0.wav`  **LOCKED FOR RECORDING**
 
 *The same words are also* `cbark.676eeb4cf137.wav`*: record once; the importer copies the take.*
 *Where:* dialogue.json cin_heart_goes_down/nobodys#0
@@ -54,7 +56,7 @@ Each: what is going on, how it is played, then the text to paste (the bracketed 
 ```
 Subtitle: Ooh, still lit! Nobody's, is it? Nobody's!
 
-### 2. `dlg.cin_heart_goes_down.downstairs.0.wav`
+### 2. `dlg.cin_heart_goes_down.downstairs.0.wav`  **LOCKED FOR RECORDING**
 
 *The same words are also* `cbark.ca65f966df2d.wav`*: record once; the importer copies the take.*
 *Where:* dialogue.json cin_heart_goes_down/downstairs#0
@@ -67,7 +69,7 @@ Subtitle: Ooh, still lit! Nobody's, is it? Nobody's!
 ```
 Subtitle: ...You smell like downstairs.
 
-### 3. `dlg.cin_heart_goes_down.grateful.0.wav`
+### 3. `dlg.cin_heart_goes_down.grateful.0.wav`  **LOCKED FOR RECORDING**
 
 *The same words are also* `cbark.d6a6b3a4b868.wav`*: record once; the importer copies the take.*
 *Where:* dialogue.json cin_heart_goes_down/grateful#0

@@ -181,9 +181,9 @@ Subtitle: The Captain carried the front of Aldo's coffin himself. Wouldn't let a
 *Played:* blunt, apologetic; pace: measured; volume: level.
 
 ```
-[blunt, apologetic] You smell like the dead. No offence. Everybody does, lately.
+[blunt, apologetic] You smell like the dead. No offense. Everybody does, lately.
 ```
-Subtitle: You smell like the dead. No offence. Everybody does, lately.
+Subtitle: You smell like the dead. No offense. Everybody does, lately.
 
 ### 15. `folk.29.f.wav`
 

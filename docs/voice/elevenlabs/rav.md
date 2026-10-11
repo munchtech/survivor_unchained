@@ -1,6 +1,6 @@
 # Rav Cutwell: ElevenLabs packet
 
-Voice id in the game: `rav`. 61 takes to record (6,009 characters; about 18,027 credits at three tries a line). Status: **draft**, until the story lead (a7622ae77d19e31dc) checks every line and marks it final.
+Voice id in the game: `rav`. 61 takes to record (6,007 characters; about 18,021 credits at three tries a line). Status: **draft**, until the story lead (a7622ae77d19e31dc) checks every line and marks it final.
 
 ## Who they are
 
@@ -130,9 +130,9 @@ Subtitle: Redcowl runs them. He'd rather talk than bleed, and he'd rather you bl
 *Note:* Pub gossip, then 'Between us' lower. Fond scorn: 'like a boy with a frog'. A pause; uneasy: 'Not seen him since.'
 
 ```
-[conspiratorial, then uneasy, quietly] A toll clerk bought the room a round the night the caravan vanished. Clerks don't buy rounds. Jessop, his name is; Vonnra's. He'd "done somebody a favour": told Coyle's teamsters the road was shut and sent them down the forest track. Between us, he'd also a key he shouldn't have. Pell's warehouse. Showed it me like a boy with a frog. ...Not seen him since. He wasn't the type to buy rounds, either.
+[conspiratorial, then uneasy, quietly] A toll clerk bought the room a round the night the caravan vanished. Clerks don't buy rounds. Jessop, his name is; Vonnra's. He'd "done somebody a favor": told Coyle's teamsters the road was shut and sent them down the forest track. Between us, he'd also a key he shouldn't have. Pell's warehouse. Showed it me like a boy with a frog. ...Not seen him since. He wasn't the type to buy rounds, either.
 ```
-Subtitle: A toll clerk bought the room a round the night the caravan vanished. Clerks don't buy rounds. Jessop, his name is; Vonnra's. He'd "done somebody a favour": told Coyle's teamsters the road was shut and sent them down the forest track. Between us, he'd also a key he shouldn't have. Pell's warehouse. Showed it me like a boy with a frog. ...Not seen him since. He wasn't the type to buy rounds, either.
+Subtitle: A toll clerk bought the room a round the night the caravan vanished. Clerks don't buy rounds. Jessop, his name is; Vonnra's. He'd "done somebody a favor": told Coyle's teamsters the road was shut and sent them down the forest track. Between us, he'd also a key he shouldn't have. Pell's warehouse. Showed it me like a boy with a frog. ...Not seen him since. He wasn't the type to buy rounds, either.
 
 ### 9. `dlg.rav.clerk.1.wav`
 
@@ -141,9 +141,9 @@ Subtitle: A toll clerk bought the room a round the night the caravan vanished. C
 *Note:* Pub gossip. 'Draw your own lines, pal.' A pause; slow realisation on 'now I think of it.'
 
 ```
-[conspiratorial, then uneasy, quietly] A toll clerk bought the room a round the night the caravan vanished. Clerks don't buy rounds. Jessop, his name is; Vonnra's. He'd "done somebody a favour": told Coyle's teamsters the road was shut and sent them down the forest track. Draw your own lines, pal. ...Not seen him since, now I think of it.
+[conspiratorial, then uneasy, quietly] A toll clerk bought the room a round the night the caravan vanished. Clerks don't buy rounds. Jessop, his name is; Vonnra's. He'd "done somebody a favor": told Coyle's teamsters the road was shut and sent them down the forest track. Draw your own lines, pal. ...Not seen him since, now I think of it.
 ```
-Subtitle: A toll clerk bought the room a round the night the caravan vanished. Clerks don't buy rounds. Jessop, his name is; Vonnra's. He'd "done somebody a favour": told Coyle's teamsters the road was shut and sent them down the forest track. Draw your own lines, pal. ...Not seen him since, now I think of it.
+Subtitle: A toll clerk bought the room a round the night the caravan vanished. Clerks don't buy rounds. Jessop, his name is; Vonnra's. He'd "done somebody a favor": told Coyle's teamsters the road was shut and sent them down the forest track. Draw your own lines, pal. ...Not seen him since, now I think of it.
 
 ### 10. `dlg.rav.fence.0.wav`
 

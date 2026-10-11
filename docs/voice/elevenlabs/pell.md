@@ -1,6 +1,6 @@
 # Pell Varrow: ElevenLabs packet
 
-Voice id in the game: `pell`. 32 takes to record (3,622 characters; about 10,866 credits at three tries a line). Status: **draft**, until the story lead (a7622ae77d19e31dc) checks every line and marks it final.
+Voice id in the game: `pell`. 32 takes to record (3,621 characters; about 10,863 credits at three tries a line). Status: **draft**, until the story lead (a7622ae77d19e31dc) checks every line and marks it final.
 
 ## Who they are
 
@@ -100,7 +100,7 @@ Subtitle: ...Careful. That's the kind of thing that gets said once. Walk with me
 
 ### 6. `dlg.pell.confront.0.p0.wav`
 
-*Where:* dialogue.json pell/confront#0; part 1 of 3: **pell: Where did you— the clerk. Of course.** / narrator: He studies your face, and something in his own unclenches. / pell: ...You don't know what you're holding, do you? How refreshing. Let's be civilised. There's…
+*Where:* dialogue.json pell/confront#0; part 1 of 3: **pell: Where did you— the clerk. Of course.** / narrator: He studies your face, and something in his own unclenches. / pell: ...You don't know what you're holding, do you? How refreshing. Let's be civilized. There's…
 *Played:* alarm, then relief, then smooth; doing: caught, then bargains; pace: quick then measured; volume: quiet.
 *Note:* Breaks off 'Where did you—'. Narrator: he studies your face and relaxes. Relief, amused: 'How refreshing.' Then smooth bargaining.
 
@@ -111,14 +111,14 @@ Subtitle: Where did you— the clerk. Of course.
 
 ### 7. `dlg.pell.confront.0.p2.wav`
 
-*Where:* dialogue.json pell/confront#0; part 3 of 3: pell: Where did you— the clerk. Of course. / narrator: He studies your face, and something in his own unclenches. / **pell: ...You don't know what you're holding, do you? How refreshing. Let's be civilised. There's…**
+*Where:* dialogue.json pell/confront#0; part 3 of 3: pell: Where did you— the clerk. Of course. / narrator: He studies your face, and something in his own unclenches. / **pell: ...You don't know what you're holding, do you? How refreshing. Let's be civilized. There's…**
 *Played:* alarm, then relief, then smooth; doing: caught, then bargains; pace: quick then measured; volume: quiet.
 *Note:* Breaks off 'Where did you—'. Narrator: he studies your face and relaxes. Relief, amused: 'How refreshing.' Then smooth bargaining.
 
 ```
-[alarm, then relief, then smooth, quietly] ...You don't know what you're holding, do you? How refreshing. Let's be civilised. There's gold in this for you, a good deal of gold, if that book were to go in the fire.
+[alarm, then relief, then smooth, quietly] ...You don't know what you're holding, do you? How refreshing. Let's be civilized. There's gold in this for you, a good deal of gold, if that book were to go in the fire.
 ```
-Subtitle: ...You don't know what you're holding, do you? How refreshing. Let's be civilised. There's gold in this for you, a good deal of gold, if that book were to go in the fire.
+Subtitle: ...You don't know what you're holding, do you? How refreshing. Let's be civilized. There's gold in this for you, a good deal of gold, if that book were to go in the fire.
 
 ### 8. `dlg.pell.confront.1.wav`
 
@@ -127,9 +127,9 @@ Subtitle: ...You don't know what you're holding, do you? How refreshing. Let's b
 *Note:* Breaks off 'Where did you—'. Recovers instantly into civility.
 
 ```
-[alarm, then smooth, quietly] Where did you— the clerk. Of course. Let's be civilised. There's gold in this for you, a good deal of gold, if that book were to go in the fire.
+[alarm, then smooth, quietly] Where did you— the clerk. Of course. Let's be civilized. There's gold in this for you, a good deal of gold, if that book were to go in the fire.
 ```
-Subtitle: Where did you— the clerk. Of course. Let's be civilised. There's gold in this for you, a good deal of gold, if that book were to go in the fire.
+Subtitle: Where did you— the clerk. Of course. Let's be civilized. There's gold in this for you, a good deal of gold, if that book were to go in the fire.
 
 ### 9. `dlg.pell.why.0.wav`
 
@@ -226,9 +226,9 @@ Subtitle: I hear the Kerchiefs left their camp in rather a hurry. On your word. 
 *Note:* A merchant's appraisal.
 
 ```
-[appraising] Armour like that costs more than most of this street. Whoever paid for it, I'd very much like to meet them.
+[appraising] Armor like that costs more than most of this street. Whoever paid for it, I'd very much like to meet them.
 ```
-Subtitle: Armour like that costs more than most of this street. Whoever paid for it, I'd very much like to meet them.
+Subtitle: Armor like that costs more than most of this street. Whoever paid for it, I'd very much like to meet them.
 
 ### 18. `dlg.pell.say_calling.1.wav`
 

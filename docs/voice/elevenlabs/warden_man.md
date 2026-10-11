@@ -2,6 +2,8 @@
 
 Voice id in the game: `warden_man`. 1 take to record (14 characters; about 42 credits at three tries a line). Status: **draft**, until the story lead (a7622ae77d19e31dc) checks every line and marks it final.
 
+**1 take is LOCKED FOR RECORDING** (marked below).
+
 ## Who they are
 
 **The Ford-Warden.** The Order's keeper of the Low Ford, older than the Watch. Speaks rarely, in capitals and orders: the dead are told to rise, the living to lie down, nobody to cross. Sings the Order's evening call under the water. His last line is in another voice: the tired man under him, asking if it is morning. *Casting:* a very low bass with no age and no accent that belongs to the valley now, a long cave reverb with water in it; the last line a plain man of sixty, dry, no reverb.
@@ -41,7 +43,7 @@ Each: what is going on, how it is played, then the text to paste (the bracketed 
 
 ## Cinematic: heart goes down
 
-### 1. `dlg.cin_heart_goes_down.morning.0.wav`
+### 1. `dlg.cin_heart_goes_down.morning.0.wav`  **LOCKED FOR RECORDING**
 
 *The same words are also* `cbark.f7a2a69e2307.wav`*: record once; the importer copies the take.*
 *Where:* dialogue.json cin_heart_goes_down/morning#0

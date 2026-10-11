@@ -151,9 +151,9 @@ Subtitle: The water's clear! Pa says I can go home! Pa says you did it. Did you 
 *Note:* Awed question; then quieter, sad: was he sick too?
 
 ```
-[uncertain, sad, quietly] Did you kill the big grey one? ...Was he sick too?
+[uncertain, sad, quietly] Did you kill the big gray one? ...Was he sick too?
 ```
-Subtitle: Did you kill the big grey one? ...Was he sick too?
+Subtitle: Did you kill the big gray one? ...Was he sick too?
 
 ### 11. `dlg.tam.cb_grey2.0.wav`
 

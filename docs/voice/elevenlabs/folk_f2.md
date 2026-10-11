@@ -1,6 +1,6 @@
 # Townswoman, young: ElevenLabs packet
 
-Voice id in the game: `folk_f2`. 47 takes to record (3,056 characters; about 9,168 credits at three tries a line). Status: **draft**, until the story lead (a7622ae77d19e31dc) checks every line and marks it final.
+Voice id in the game: `folk_f2`. 47 takes to record (3,055 characters; about 9,165 credits at three tries a line). Status: **draft**, until the story lead (a7622ae77d19e31dc) checks every line and marks it final.
 
 ## Who they are
 
@@ -301,9 +301,9 @@ Subtitle: Jory Coyle's home! Harlan wept in the street, I saw it.
 *Played:* disgusted; pace: measured; volume: level.
 
 ```
-[disgusted] Pell Varrow, selling his own neighbours. I bought eggs from that man.
+[disgusted] Pell Varrow, selling his own neighbors. I bought eggs from that man.
 ```
-Subtitle: Pell Varrow, selling his own neighbours. I bought eggs from that man.
+Subtitle: Pell Varrow, selling his own neighbors. I bought eggs from that man.
 
 ### 27. `folk.52.f.wav`
 

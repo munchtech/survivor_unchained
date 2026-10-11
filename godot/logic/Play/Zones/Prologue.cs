@@ -628,7 +628,7 @@ public sealed class Prologue : ZoneRuntime
         if (cutT > 4.2 && shown.Add("intro3"))
         {
             G.Announce(new Announcement("The Ford-Warden", "Keeper of the Low Crossing", "danger", 3.4));
-            B.Events.Emit(new Ev.Bark { X = wardenPos.X, Z = wardenPos.Z, Text = "NONE CROSS AFTER DARK.", Speaker = "The Ford-Warden" });
+            B.Events.Emit(new Ev.Bark { X = wardenPos.X, Z = wardenPos.Z, Text = "NONE. CROSS. AFTER DARK.", Speaker = "The Ford-Warden" });
         }
         if (cutT > 6.4)
         {
@@ -804,7 +804,9 @@ public sealed class Prologue : ZoneRuntime
         if (B == null) return;
         Go(Stage.Dawn);
         B.Collision.RemoveTagged("gate");
-        G.Say("Gray light, then gold. Up the road, the Waystation's gate is opening.", null, 6);
+        // Chid, who has watched the ford all night (TWIST_OPTIONS A); the narrator says it as plainly as the rest.
+        G.Say("In the reeds on the far bank, someone is standing very still.", null, 4);
+        G.After(4.4, () => G.Say("Gray light, then gold. Up the road, the Waystation's gate is opening.", null, 6));
         Objective([("Walk up the road to the Waystation", false, false)]);
         W.Time = TimeOfDay.Dawn;
     }
@@ -855,7 +857,7 @@ public sealed class Prologue : ZoneRuntime
                 G.Journey.Grew();
             });
         // Without C04 A the narrator's words are a caption; with it, they were said in it.
-        if (caption) G.After(1.2, () => G.Say("As the sun clears the trees, the ember goes out of you and back into the ground, and everything it gave you goes with it. What you carry, and what you have learned, are still yours. When the dark comes again, it will burn again, from nothing. You try to call up your mother's face, and find it is not quite where you left it. Her voice is still there. \"Lamp's lit, Spark. Stay where it reaches.\"", null, 14));
+        if (caption) G.After(1.2, () => G.Say("As the sun clears the trees, the ember goes out of you and back into the ground, and everything it gave you goes with it. What you carry, and what you have learned, are still yours. When the dark comes again, it will burn again. You try to call up your mother's face, and find it is not quite where you left it. Her voice is still there. \"Lamp's lit, Spark. Stay where it reaches.\"", null, 14));
         G.After(caption ? 11.5 : 9.5, () => Tip("day", "By day", $"By day the ember sleeps: you fight with what you carry, your art and your feet, and every fight teaches you ({Key("character")}). The ember is for the night.", [Key("character")], 14));
     }
 

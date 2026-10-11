@@ -1,6 +1,6 @@
 # Maeca: ElevenLabs packet
 
-Voice id in the game: `maeca`. 87 takes to record (6,295 characters; about 18,885 credits at three tries a line). Status: **on hold**: the story rewrite changes most of her lines (docs/voice/RERECORD.md). Do not record any of it yet.
+Voice id in the game: `maeca`. 87 takes to record (6,294 characters; about 18,882 credits at three tries a line). Status: **on hold**: the story rewrite changes most of her lines (docs/voice/RERECORD.md). Do not record any of it yet.
 
 ## Who they are
 
@@ -179,9 +179,9 @@ Subtitle: The Hunters' Blind, out past the wreck on the Old Road, most days. I w
 *Note:* Reporting the Hollow, steady. Then the confession, quieter. A long pause. 'Thank you.' barely said; she never says it.
 
 ```
-[moved, unaccustomed, quietly] The Hollow's quiet. The Pack's eating again: deer, not travellers. I've been a hunter all my life, and I've never once saved anything. ...Thank you.
+[moved, unaccustomed, quietly] The Hollow's quiet. The Pack's eating again: deer, not travelers. I've been a hunter all my life, and I've never once saved anything. ...Thank you.
 ```
-Subtitle: The Hollow's quiet. The Pack's eating again: deer, not travellers. I've been a hunter all my life, and I've never once saved anything. ...Thank you.
+Subtitle: The Hollow's quiet. The Pack's eating again: deer, not travelers. I've been a hunter all my life, and I've never once saved anything. ...Thank you.
 
 ### 13. `dlg.maeca.cold.0.wav`
 
@@ -295,7 +295,7 @@ Subtitle: They're eating.
 
 ### 23. `dlg.maeca.blind_morning.0.p1.wav`
 
-*Where:* dialogue.json maeca/blind_morning#0; part 2 of 2: narrator: Grey light. She's already up, barefoot in the frost, listening. / **maeca: Go on, then. The wood's awake, and so's Holloway, and he'll count us both.**
+*Where:* dialogue.json maeca/blind_morning#0; part 2 of 2: narrator: Gray light. She's already up, barefoot in the frost, listening. / **maeca: Go on, then. The wood's awake, and so's Holloway, and he'll count us both.**
 *Played:* quiet warmth, dry; doing: morning after; pace: measured; volume: quiet.
 *Note:* Narrator for the frost. Then softer than usual; dry joke on Holloway counting.
 
@@ -306,15 +306,15 @@ Subtitle: Go on, then. The wood's awake, and so's Holloway, and he'll count us b
 
 ### 24. `dlg.maeca.blind_morning.1.p1.wav`
 
-*Where:* dialogue.json maeca/blind_morning#1; part 2 of 2: narrator: Grey light. She's already up, barefoot in the frost, listening to the wood. / **maeca: The Pack found me, after Ashford. Three days, and then a cave mouth, and a lad I'd been fo…**
+*Where:* dialogue.json maeca/blind_morning#1; part 2 of 2: narrator: Gray light. She's already up, barefoot in the frost, listening to the wood. / **maeca: The Pack found me, after Ashford. Three days, and then a cave mouth, and a lad I'd been fo…**
 *Played:* confession, raw but steady; doing: tells you why she never hunts wolves; pace: slow; volume: quiet.
 *Wants:* you to know, and not to pity her
 *Note:* Narrator for the frost. The story told plainly, present tense feel. 'Kept everything off.' near breaking. A pause. 'That's all of why.' firm. 'Don't make it a story.' a plea disguised as an order.
 
 ```
-[confession, raw but steady, quietly] The Pack found me, after Ashford. Three days, and then a cave mouth, and a lad I'd been fond of dying in it. The old grey one came and lay down across the way in. Kept the cold off. Kept everything off. ...That's why. That's all of why. Don't make it a story.
+[confession, raw but steady, quietly] The Pack found me, after Ashford. Three days, and then a cave mouth, and a lad I'd been fond of dying in it. The old gray one came and lay down across the way in. Kept the cold off. Kept everything off. ...That's why. That's all of why. Don't make it a story.
 ```
-Subtitle: The Pack found me, after Ashford. Three days, and then a cave mouth, and a lad I'd been fond of dying in it. The old grey one came and lay down across the way in. Kept the cold off. Kept everything off. ...That's why. That's all of why. Don't make it a story.
+Subtitle: The Pack found me, after Ashford. Three days, and then a cave mouth, and a lad I'd been fond of dying in it. The old gray one came and lay down across the way in. Kept the cold off. Kept everything off. ...That's why. That's all of why. Don't make it a story.
 
 ### 25. `dlg.maeca.cb_broke_promise.0.wav`
 
@@ -609,7 +609,7 @@ Subtitle: ...Keep it, then. I keep mine.
 
 ### 51. `dlg.maeca.blind3_morning.0.p1.wav`
 
-*Where:* dialogue.json maeca/blind3_morning#0; part 2 of 6: narrator: Grey light. She's awake before you, as always, but she hasn't got up. Her head is still on… / **maeca: Your heart's going like a hare's.** / narrator: She doesn't lift her head. / maeca: All night it was a bear's in January. I counted between. ...I've lain with my ear to a lot… / narrator: She gets up, then, and goes out barefoot into the frost, and stands there listening to the… / maeca: Go on. Holloway'll count us.
+*Where:* dialogue.json maeca/blind3_morning#0; part 2 of 6: narrator: Gray light. She's awake before you, as always, but she hasn't got up. Her head is still on… / **maeca: Your heart's going like a hare's.** / narrator: She doesn't lift her head. / maeca: All night it was a bear's in January. I counted between. ...I've lain with my ear to a lot… / narrator: She gets up, then, and goes out barefoot into the frost, and stands there listening to the… / maeca: Go on. Holloway'll count us.
 *Played:* tender, frightened, hiding it; doing: she heard your heart change; pace: slow; volume: hushed.
 *Note:* Narrator: grey light, her head on your chest. Close and still: the hare and the bear. 'I counted between.' A pause where the name would be. Narrator: she goes out. 'Go on. Holloway'll count us.' steadier.
 
@@ -620,7 +620,7 @@ Subtitle: Your heart's going like a hare's.
 
 ### 52. `dlg.maeca.blind3_morning.0.p3.wav`
 
-*Where:* dialogue.json maeca/blind3_morning#0; part 4 of 6: narrator: Grey light. She's awake before you, as always, but she hasn't got up. Her head is still on… / maeca: Your heart's going like a hare's. / narrator: She doesn't lift her head. / **maeca: All night it was a bear's in January. I counted between. ...I've lain with my ear to a lot…** / narrator: She gets up, then, and goes out barefoot into the frost, and stands there listening to the… / maeca: Go on. Holloway'll count us.
+*Where:* dialogue.json maeca/blind3_morning#0; part 4 of 6: narrator: Gray light. She's awake before you, as always, but she hasn't got up. Her head is still on… / maeca: Your heart's going like a hare's. / narrator: She doesn't lift her head. / **maeca: All night it was a bear's in January. I counted between. ...I've lain with my ear to a lot…** / narrator: She gets up, then, and goes out barefoot into the frost, and stands there listening to the… / maeca: Go on. Holloway'll count us.
 *Played:* tender, frightened, hiding it; doing: she heard your heart change; pace: slow; volume: hushed.
 *Note:* Narrator: grey light, her head on your chest. Close and still: the hare and the bear. 'I counted between.' A pause where the name would be. Narrator: she goes out. 'Go on. Holloway'll count us.' steadier.
 
@@ -631,7 +631,7 @@ Subtitle: All night it was a bear's in January. I counted between. ...I've lain 
 
 ### 53. `dlg.maeca.blind3_morning.0.p5.wav`
 
-*Where:* dialogue.json maeca/blind3_morning#0; part 6 of 6: narrator: Grey light. She's awake before you, as always, but she hasn't got up. Her head is still on… / maeca: Your heart's going like a hare's. / narrator: She doesn't lift her head. / maeca: All night it was a bear's in January. I counted between. ...I've lain with my ear to a lot… / narrator: She gets up, then, and goes out barefoot into the frost, and stands there listening to the… / **maeca: Go on. Holloway'll count us.**
+*Where:* dialogue.json maeca/blind3_morning#0; part 6 of 6: narrator: Gray light. She's awake before you, as always, but she hasn't got up. Her head is still on… / maeca: Your heart's going like a hare's. / narrator: She doesn't lift her head. / maeca: All night it was a bear's in January. I counted between. ...I've lain with my ear to a lot… / narrator: She gets up, then, and goes out barefoot into the frost, and stands there listening to the… / **maeca: Go on. Holloway'll count us.**
 *Played:* tender, frightened, hiding it; doing: she heard your heart change; pace: slow; volume: hushed.
 *Note:* Narrator: grey light, her head on your chest. Close and still: the hare and the bear. 'I counted between.' A pause where the name would be. Narrator: she goes out. 'Go on. Holloway'll count us.' steadier.
 
@@ -737,7 +737,7 @@ Subtitle: They've been leaving fur on the thorn by the Blind. For you, I think. 
 
 ### 63. `dlg.maeca.shed_fur_braid.0.p1.wav`
 
-*Where:* dialogue.json maeca/shed_fur_braid#0; part 2 of 2: narrator: She sits with her back to the fire and braids it on her knee, grey and grey and white, the… / **maeca: Next to the skin. They'll know you in the dark.**
+*Where:* dialogue.json maeca/shed_fur_braid#0; part 2 of 2: narrator: She sits with her back to the fire and braids it on her knee, gray and gray and white, the… / **maeca: Next to the skin. They'll know you in the dark.**
 
 ```
 Next to the skin. They'll know you in the dark.

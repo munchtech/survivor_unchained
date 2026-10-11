@@ -17,6 +17,8 @@ syntax, Brannoc's pride and his iron, Maeca's name and her secret, the
 fortune's "You did this", Harlan's "I did.", and the narrator's recast as a
 woman of about sixty).
 
+**Locked for recording (11 October):** the narrator's prologue lines and C01 to C04, Vonnra's far voice in the prologue, the Warden's, Grimtunnel's, the dead Watchman's and the gate guard's prologue lines, and Rook's and Brannoc's Act 1 lines (with the narrator's parts inside them). Each is marked **LOCKED FOR RECORDING** in its packet (`tools/vo/locked.json`; `python tools/vo/lock.py --list`). The rest of the narrator, Vonnra and Brannoc stays on hold. A locked line whose words change later shows **HOLD** again until the story lead re-locks it.
+
 ---
 
 ## Sella (ready)
@@ -119,10 +121,22 @@ narrator's parts wait for the narrator's recast.
 
 ---
 
-## The narrator (on hold: recast)
+## Brannoc (Act 1 locked)
+
+One bark changes; every other Act 1 line of his is locked as written.
+
+### Changed
+
+| Id | Old | New | Why |
+|---|---|---|---|
+| `bark.brannoc.day.2` | Bring me hides. I'll make you something worth wearing. | Five pelts. That's a cloak. Bring five. | The old bark was any smith's; he counts, the way he counts his irons. |
+
+---
+
+## The narrator (recast; the prologue and C01 to C04 locked)
 
 Recast as a woman of about sixty, plain and dry, a light valley accent
 (`docs/VOICES.md`). Nothing of the narrator's is recorded in ElevenLabs yet.
 The old placeholder take of `dlg.cin_first_light.face.0` is dropped (its words
 changed: "Her voice is still there. 'Lamp's lit, Spark. Stay where it
-reaches.'"); every other placeholder of hers goes when she is cast.
+reaches.'"); every other placeholder of hers goes when she is cast. Her prologue and C01 to C04 lines are locked (above): cast her from the brief in her packet and record those first.

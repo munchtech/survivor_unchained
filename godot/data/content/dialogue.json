@@ -12024,10 +12024,10 @@
       "when": {
        "bg": "devout"
       },
-      "text": "Oh! A lantern of the Order! Lit! Oh, sit down, sit, sit. I'm Chid. They call me the Fool, which is fair. This is the shrine of the Morning Light. It used to work."
+      "text": "Oh! A lantern of the Order! Lit! (He looks from the lantern to you, a moment longer than people do.) Oh, sit down, sit, sit. I'm Chid. They call me the Fool, which is fair. This is the shrine of the Morning Light. It used to work."
      },
      {
-      "text": "Oh! A visitor. Hello! I'm Chid. They call me the Fool, which is fair. This is the shrine of the Morning Light. It used to work."
+      "text": "Oh! A visitor. Hello! (He looks at you a moment longer than people do.) I'm Chid. They call me the Fool, which is fair. This is the shrine of the Morning Light. It used to work."
      }
     ],
     "choices": [
@@ -22158,7 +22158,7 @@
    "knows": {
     "id": "knows",
     "speaker": "holloway",
-    "text": "(He looks into the cup.) Pell. Went up after, for his sister's money. Found the lid barred from the top. (He drinks.) He's a careful man. He's waiting for a price.",
+    "text": "Pell. (His eyes go past you, to the step, and come back to the cup.) Went up after, for his sister's money. Found the lid barred from the top. (He drinks.) He's a careful man. He's waiting for a price.",
     "next": "wrote"
    },
    "silent": {
@@ -22288,7 +22288,7 @@
    "cup": {
     "id": "cup",
     "speaker": "narrator",
-    "text": "At the gate, Holloway is on the ground with his back to the post, counting. Maeca comes down the street, and takes the cup out of his hand, and fills it from her own flask, and gives it back. Then she sits down beside him with her crossbow across her knees, and he leans on her a little, and she lets him.",
+    "text": "At the gate, Holloway is on the ground with his back to the post, counting. He gets as far as ninety-one, and starts again. Maeca comes down the street, and takes the cup out of his hand, and fills it from her own flask, and gives it back. He drinks without looking at it. Then she sits down beside him with her crossbow across her knees, and he leans on her a little, and she lets him.",
     "effects": [
      {
       "set": {

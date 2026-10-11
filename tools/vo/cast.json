@@ -3,11 +3,11 @@
  "voices": {
   "narrator": {
    "name": "The narrator",
-   "sex": "m",
-   "age": 55,
-   "accent": "neutral southern English (RP)",
-   "design": "A man in his mid fifties with a low, warm, slightly gravelly baritone and a neutral southern English Received Pronunciation accent. He speaks quietly and close, unhurried and even, like an old storyteller telling a winter's tale by the fire. Plain and grave, never theatrical.",
-   "ref_text": "The fire has burned low. Out in the dark, the ground is moving, and somewhere ahead there is water, and a cold blue light. You get up, because there is nothing else to do.",
+   "sex": "f",
+   "age": 60,
+   "accent": "light northern English (the valley's)",
+   "design": "A woman of about sixty with a plain, dry, level voice and a light northern English accent. She speaks evenly and close, at one steady pace, like a woman who has told people bad news before and does not dress it up. No warmth, no performance, never theatrical, never a storyteller's lilt.",
+   "ref_text": "Prints in the frost, your own. They come up from the river. None go down to it.",
    "room": "close",
    "tempo": [
     2.2,

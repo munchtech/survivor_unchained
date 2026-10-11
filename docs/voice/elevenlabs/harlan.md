@@ -426,9 +426,9 @@ Subtitle: Word is you sold Pell what the Dig was doing to the stream, and he sol
 *Note:* Fair-minded, then hard: 'I'll not pretend to weep.'
 
 ```
-[hard, unrepentant] They say the old grey wolf's dead. It wasn't wolves that took my wagons, I know that now. But it was wolves on that road every other night, and I'll not pretend to weep.
+[hard, unrepentant] They say the old gray wolf's dead. It wasn't wolves that took my wagons, I know that now. But it was wolves on that road every other night, and I'll not pretend to weep.
 ```
-Subtitle: They say the old grey wolf's dead. It wasn't wolves that took my wagons, I know that now. But it was wolves on that road every other night, and I'll not pretend to weep.
+Subtitle: They say the old gray wolf's dead. It wasn't wolves that took my wagons, I know that now. But it was wolves on that road every other night, and I'll not pretend to weep.
 
 ### 35. `dlg.harlan.say_calling.0.wav`
 

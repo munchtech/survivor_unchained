@@ -1,6 +1,6 @@
 # Vonnra Ash-of-Morrow: ElevenLabs packet
 
-Voice id in the game: `vonnra`. 103 takes to record (8,907 characters; about 26,721 credits at three tries a line). Status: **on hold**: the story rewrite changes the fortune (docs/voice/RERECORD.md). Do not record any of it yet.
+Voice id in the game: `vonnra`. 104 takes to record (8,939 characters; about 26,817 credits at three tries a line). Status: **on hold, except the 1 take marked LOCKED FOR RECORDING** (the story lead, 2026-10-11): record those now and hold the rest (the story rewrite changes the fortune (docs/voice/RERECORD.md)).
 
 ## Who they are
 
@@ -27,7 +27,7 @@ In the Voice Library instead: search for *clipped, unplaceable old empire*, *fem
 - Model: **Eleven v4** (`eleven_v4`): the most emotive, and it follows the audio tags in square brackets.
 - Stability: **45** (lower is more expressive and less steady; raise it if the voice drifts from line to line). Similarity: **75**.
 - One line at a time, as below; regenerate until the read matches the direction. Two regenerations of the same text are free within two hours.
-- Download as **WAV** (from History if the download button gives MP3; MP3 at 192 kbps also works). Save each take into one folder under the exact name given, e.g. `~/Downloads/su_vo/dlg.vonnra.first.0.wav`.
+- Download as **WAV** (from History if the download button gives MP3; MP3 at 192 kbps also works). Save each take into one folder under the exact name given, e.g. `~/Downloads/su_vo/say.54013f8d7d21.wav`.
 
 Then bring them into the game (it trims, levels, mixes and replaces the placeholders, and lists what is missing or wrong):
 
@@ -43,9 +43,20 @@ The text to paste already respells these; keep the respelling: Legio Septima as 
 
 Each: what is going on, how it is played, then the text to paste (the bracketed tags are ElevenLabs audio tags: they are acted, not spoken), the words the subtitle shows (what the take must say), and the file name.
 
+## Scenes: Prologue
+
+### 1. `say.54013f8d7d21.wav`  **LOCKED FOR RECORDING**
+
+*Where:* godot/logic/Play/Zones/Prologue.cs
+
+```
+Come up, traveler. ...No charge, this once.
+```
+Subtitle: Come up, traveler. ...No charge, this once.
+
 ## Conversations: Vonnra
 
-### 1. `dlg.vonnra.first.0.wav`
+### 2. `dlg.vonnra.first.0.wav`  HOLD: the story rewrite changes the fortune (docs/voice/RERECORD.md)
 
 *Where:* dialogue.json vonnra/first#0
 *Played:* cool, amused, still; doing: names the toll and sizes you up; pace: slow; volume: quiet.
@@ -57,7 +68,7 @@ Each: what is going on, how it is played, then the text to paste (the bracketed 
 ```
 Subtitle: A reader. You have the look. The toll is the toll: five gold to pass east. I am Vonnra. I see a great deal and say very little. You, of all people, will find that frustrating.
 
-### 2. `dlg.vonnra.first.1.wav`
+### 3. `dlg.vonnra.first.1.wav`  HOLD: the story rewrite changes the fortune (docs/voice/RERECORD.md)
 
 *Where:* dialogue.json vonnra/first#1
 *Played:* quiet recognition, controlled; doing: the one she has waited for has come; pace: very slow; volume: quiet.
@@ -69,7 +80,7 @@ Subtitle: A reader. You have the look. The toll is the toll: five gold to pass e
 ```
 Subtitle: So. The one from the ford. ...Sooner than I had thought. The toll is the toll: five gold to pass east. I am Vonnra. I see a great deal and say very little. You will find that is the arrangement.
 
-### 3. `dlg.vonnra.first.2.wav`
+### 4. `dlg.vonnra.first.2.wav`  HOLD: the story rewrite changes the fortune (docs/voice/RERECORD.md)
 
 *Where:* dialogue.json vonnra/first#2
 *Played:* cool, faintly menacing; doing: names the toll; pace: slow; volume: quiet.
@@ -80,7 +91,7 @@ Subtitle: So. The one from the ford. ...Sooner than I had thought. The toll is t
 ```
 Subtitle: The toll is the toll. Five gold to pass east, or no gold and I remember your face. I am Vonnra. I see a great deal and say very little. You will find that is the arrangement.
 
-### 4. `dlg.vonnra.hub.0.wav`
+### 5. `dlg.vonnra.hub.0.wav`  HOLD: the story rewrite changes the fortune (docs/voice/RERECORD.md)
 
 *Where:* dialogue.json vonnra/hub#0
 *Played:* calm finality, a new intimacy; doing: uses your name now; pace: slow; volume: quiet.
@@ -92,7 +103,7 @@ Subtitle: The toll is the toll. Five gold to pass east, or no gold and I remembe
 ```
 Subtitle: Your chapter is written. The next one is not. ...Payment, always.
 
-### 5. `dlg.vonnra.hub.1.wav`
+### 6. `dlg.vonnra.hub.1.wav`  HOLD: the story rewrite changes the fortune (docs/voice/RERECORD.md)
 
 *Where:* dialogue.json vonnra/hub#1
 *Played:* calm finality; doing: the chapter is closed; pace: slow; volume: quiet.
@@ -103,18 +114,18 @@ Subtitle: Your chapter is written. The next one is not. ...Payment, always.
 ```
 Subtitle: Your chapter is written. The next one is not. Payment, always.
 
-### 6. `dlg.vonnra.hub.2.p1.wav`
+### 7. `dlg.vonnra.hub.2.p1.wav`  HOLD: the story rewrite changes the fortune (docs/voice/RERECORD.md)
 
-*Where:* dialogue.json vonnra/hub#2; part 2 of 2: narrator: Her lamp is lit, and she is looking south, toward the ford. / **vonnra: Traveller. The road is quiet tonight. It will not always be. Payment, always.**
+*Where:* dialogue.json vonnra/hub#2; part 2 of 2: narrator: Her lamp is lit, and she is looking south, toward the ford. / **vonnra: Traveler. The road is quiet tonight. It will not always be. Payment, always.**
 *Played:* watchful, foreboding; doing: looking toward the ford; pace: slow; volume: quiet.
 *Note:* Narrator for the lamp and the south. 'Traveller.' acknowledgement without turning. A quiet prophecy. 'Payment, always.'
 
 ```
-[watchful, foreboding, quietly] Traveller. The road is quiet tonight. It will not always be. Payment, always.
+[watchful, foreboding, quietly] Traveler. The road is quiet tonight. It will not always be. Payment, always.
 ```
-Subtitle: Traveller. The road is quiet tonight. It will not always be. Payment, always.
+Subtitle: Traveler. The road is quiet tonight. It will not always be. Payment, always.
 
-### 7. `dlg.vonnra.hub.3.wav`
+### 8. `dlg.vonnra.hub.3.wav`  HOLD: the story rewrite changes the fortune (docs/voice/RERECORD.md)
 
 *Where:* dialogue.json vonnra/hub#3
 *Played:* dry, businesslike; doing: comments on trade; pace: slow; volume: quiet.
@@ -125,7 +136,7 @@ Subtitle: Traveller. The road is quiet tonight. It will not always be. Payment, 
 ```
 Subtitle: Fewer wagons, fewer tolls. The Kerchiefs are bad for everyone's business but their own. Payment, always.
 
-### 8. `dlg.vonnra.hub.4.wav`
+### 9. `dlg.vonnra.hub.4.wav`  HOLD: the story rewrite changes the fortune (docs/voice/RERECORD.md)
 
 *The same words are also* `bark.vonnra.day.2.wav`*: record once; the importer copies the take.*
 *Where:* dialogue.json vonnra/hub#4
@@ -137,7 +148,7 @@ Subtitle: Fewer wagons, fewer tolls. The Kerchiefs are bad for everyone's busine
 ```
 Subtitle: Payment, always.
 
-### 9. `dlg.vonnra.paid.0.wav`
+### 10. `dlg.vonnra.paid.0.wav`  HOLD: the story rewrite changes the fortune (docs/voice/RERECORD.md)
 
 *Where:* dialogue.json vonnra/paid#0
 *Played:* cool, ambiguous; doing: lets you pass; pace: slow; volume: quiet.
@@ -148,7 +159,7 @@ Subtitle: Payment, always.
 ```
 Subtitle: The east gate is yours. Try to come back through it.
 
-### 10. `dlg.vonnra.ledger.0.wav`
+### 11. `dlg.vonnra.ledger.0.wav`  HOLD: the story rewrite changes the fortune (docs/voice/RERECORD.md)
 
 *Where:* dialogue.json vonnra/ledger#0
 *Played:* cool, transactional; doing: the ledger costs; pace: slow; volume: quiet.
@@ -159,7 +170,7 @@ Subtitle: The east gate is yours. Try to come back through it.
 ```
 Subtitle: Everything that passes my gate is written down. Reading it is not free.
 
-### 11. `dlg.vonnra.ledger_read.0.wav`
+### 12. `dlg.vonnra.ledger_read.0.wav`  HOLD: the story rewrite changes the fortune (docs/voice/RERECORD.md)
 
 *Where:* dialogue.json vonnra/ledger_read#0
 *Played:* precise, unhelpful; doing: the caravan never came; pace: slow; volume: quiet.
@@ -170,7 +181,7 @@ Subtitle: Everything that passes my gate is written down. Reading it is not free
 ```
 Subtitle: There. The Coyle caravan did not pay my toll. It never came through my gate. Whatever happened to it happened before it reached me.
 
-### 12. `dlg.vonnra.vault.0.wav`
+### 13. `dlg.vonnra.vault.0.wav`  HOLD: the story rewrite changes the fortune (docs/voice/RERECORD.md)
 
 *Where:* dialogue.json vonnra/vault#0
 *Played:* cold, absolute; doing: refuses; pace: slow; volume: quiet.
@@ -181,7 +192,7 @@ Subtitle: There. The Coyle caravan did not pay my toll. It never came through my
 ```
 Subtitle: Not for any price. That is the only thing I will ever say to you without charging for it.
 
-### 13. `dlg.vonnra.arcana.0.wav`
+### 14. `dlg.vonnra.arcana.0.wav`  HOLD: the story rewrite changes the fortune (docs/voice/RERECORD.md)
 
 *Where:* dialogue.json vonnra/arcana#0
 *Played:* cool respect, warning; doing: you know the Legion's words; pace: slow; volume: quiet.
@@ -192,7 +203,7 @@ Subtitle: Not for any price. That is the only thing I will ever say to you witho
 ```
 Subtitle: You do read. Then you know what Legio Septima means over a door, and you know better than to ask me what is behind it. Ask me something cheaper.
 
-### 14. `dlg.vonnra.ford.0.wav`
+### 15. `dlg.vonnra.ford.0.wav`  HOLD: the story rewrite changes the fortune (docs/voice/RERECORD.md)
 
 *Where:* dialogue.json vonnra/ford#0
 *Played:* hushed, deliberate; doing: tells you what she saw; pace: very slow; volume: quiet.
@@ -204,7 +215,7 @@ Subtitle: You do read. Then you know what Legio Septima means over a door, and y
 ```
 Subtitle: A light going out at the crossing. And then, a little after, another one coming on. It is not often the second thing happens. ...That would be five gold. This once, no charge.
 
-### 15. `dlg.vonnra.fortune.0.wav`
+### 16. `dlg.vonnra.fortune.0.wav`  HOLD: the story rewrite changes the fortune (docs/voice/RERECORD.md)
 
 *Where:* dialogue.json vonnra/fortune#0
 *Played:* calm command, a hidden eagerness; doing: begins the fortune; pace: slow; volume: quiet.
@@ -216,7 +227,7 @@ Subtitle: A light going out at the crossing. And then, a little after, another o
 ```
 Subtitle: Sit. Give me your hand. No, the other one: the one you burn with. No charge, this once. I have been waiting to see how it came out.
 
-### 16. `dlg.vonnra.fortune.1.wav`
+### 17. `dlg.vonnra.fortune.1.wav`  HOLD: the story rewrite changes the fortune (docs/voice/RERECORD.md)
 
 *Where:* dialogue.json vonnra/fortune#1
 *Played:* calm command, a hidden eagerness; doing: begins the fortune; pace: slow; volume: quiet.
@@ -227,7 +238,7 @@ Subtitle: Sit. Give me your hand. No, the other one: the one you burn with. No c
 ```
 Subtitle: Sit. Give me your hand. No, the other one: the one you draw with. No charge, this once. I have been waiting to see how it came out.
 
-### 17. `dlg.vonnra.fortune.2.wav`
+### 18. `dlg.vonnra.fortune.2.wav`  HOLD: the story rewrite changes the fortune (docs/voice/RERECORD.md)
 
 *Where:* dialogue.json vonnra/fortune#2
 *Played:* expectant calm; doing: to read the result of her own work; pace: slow; volume: level.
@@ -239,7 +250,7 @@ Subtitle: Sit. Give me your hand. No, the other one: the one you draw with. No c
 ```
 Subtitle: Sit. Give me your hand. No, the other one: the one you hold the blade with. No charge, this once. I have been waiting to see how it came out.
 
-### 18. `dlg.vonnra.f_beasts.0.wav`
+### 19. `dlg.vonnra.f_beasts.0.wav`  HOLD: the story rewrite changes the fortune (docs/voice/RERECORD.md)
 
 *Where:* dialogue.json vonnra/f_beasts#0
 *Played:* cold judgement; doing: you broke faith with the Pack; pace: slow; volume: quiet.
@@ -250,7 +261,7 @@ Subtitle: Sit. Give me your hand. No, the other one: the one you hold the blade 
 ```
 Subtitle: I see an old wolf who let you into his house, and you, coming back to it with his children's blood on your hands. Whatever else you did about the wolves, he will remember that first. So will I.
 
-### 19. `dlg.vonnra.f_beasts.1.wav`
+### 20. `dlg.vonnra.f_beasts.1.wav`  HOLD: the story rewrite changes the fortune (docs/voice/RERECORD.md)
 
 *Where:* dialogue.json vonnra/f_beasts#1
 *Played:* approving, grave; doing: you cured the wolves; pace: slow; volume: quiet.
@@ -261,29 +272,29 @@ Subtitle: I see an old wolf who let you into his house, and you, coming back to 
 ```
 Subtitle: I see water running clear. Wolves in the deep wood where they belong, and a hole in the hillside with no poison coming out of it. You went looking for the cause and not the culprit. Most people never learn the difference.
 
-### 20. `dlg.vonnra.f_beasts.2.wav`
+### 21. `dlg.vonnra.f_beasts.2.wav`  HOLD: the story rewrite changes the fortune (docs/voice/RERECORD.md)
 
 *Where:* dialogue.json vonnra/f_beasts#2
 *Played:* measured, warning; doing: you run with wolves; pace: slow; volume: quiet.
 *Note:* A faint amusement at Holloway. 'Be careful what you have taught them to follow.' a warning.
 
 ```
-[measured, warning, quietly] I see wolves running beside you, not at you. The old grey one lets you walk in front. Holloway sleeps with his sword across his knees now. Be careful what you have taught them to follow.
+[measured, warning, quietly] I see wolves running beside you, not at you. The old gray one lets you walk in front. Holloway sleeps with his sword across his knees now. Be careful what you have taught them to follow.
 ```
-Subtitle: I see wolves running beside you, not at you. The old grey one lets you walk in front. Holloway sleeps with his sword across his knees now. Be careful what you have taught them to follow.
+Subtitle: I see wolves running beside you, not at you. The old gray one lets you walk in front. Holloway sleeps with his sword across his knees now. Be careful what you have taught them to follow.
 
-### 21. `dlg.vonnra.f_beasts.3.wav`
+### 22. `dlg.vonnra.f_beasts.3.wav`  HOLD: the story rewrite changes the fortune (docs/voice/RERECORD.md)
 
 *Where:* dialogue.json vonnra/f_beasts#3
 *Played:* cold, unsparing; doing: you slaughtered the Pack; pace: slow; volume: quiet.
 *Note:* Flat images. The last sentence slow and pitiless.
 
 ```
-[cold, unsparing, quietly] I see pelts. A great many pelts, and a grey one on top of the pile. The road is safe and the wood is quiet. Something that was sick got sicker, and then there was nothing left of it to be sick.
+[cold, unsparing, quietly] I see pelts. A great many pelts, and a gray one on top of the pile. The road is safe and the wood is quiet. Something that was sick got sicker, and then there was nothing left of it to be sick.
 ```
-Subtitle: I see pelts. A great many pelts, and a grey one on top of the pile. The road is safe and the wood is quiet. Something that was sick got sicker, and then there was nothing left of it to be sick.
+Subtitle: I see pelts. A great many pelts, and a gray one on top of the pile. The road is safe and the wood is quiet. Something that was sick got sicker, and then there was nothing left of it to be sick.
 
-### 22. `dlg.vonnra.f_beasts.4.wav`
+### 23. `dlg.vonnra.f_beasts.4.wav`  HOLD: the story rewrite changes the fortune (docs/voice/RERECORD.md)
 
 *Where:* dialogue.json vonnra/f_beasts#4
 *Played:* cold irony; doing: you slaughtered the Pack; pace: slow; volume: quiet.
@@ -294,7 +305,7 @@ Subtitle: I see pelts. A great many pelts, and a grey one on top of the pile. Th
 ```
 Subtitle: I see a quiet wood. Too quiet. You made the road safe the way a fire makes a house warm.
 
-### 23. `dlg.vonnra.f_beasts.5.wav`
+### 24. `dlg.vonnra.f_beasts.5.wav`  HOLD: the story rewrite changes the fortune (docs/voice/RERECORD.md)
 
 *Where:* dialogue.json vonnra/f_beasts#5
 *Played:* cool reproach; doing: you did nothing; pace: slow; volume: quiet.
@@ -305,7 +316,7 @@ Subtitle: I see a quiet wood. Too quiet. You made the road safe the way a fire m
 ```
 Subtitle: I see wolves at the east gate, and a man of the Watch who did not come home. You were busy. The world was not.
 
-### 24. `dlg.vonnra.f_beasts.6.wav`
+### 25. `dlg.vonnra.f_beasts.6.wav`  HOLD: the story rewrite changes the fortune (docs/voice/RERECORD.md)
 
 *Where:* dialogue.json vonnra/f_beasts#6
 *Played:* dry, knowing; doing: you sold the cure; pace: slow; volume: quiet.
@@ -316,7 +327,7 @@ Subtitle: I see wolves at the east gate, and a man of the Watch who did not come
 ```
 Subtitle: I see clean water, and a ledger with a new line in it. The wolves are saved and Pell Varrow owns a hole in the ground. You were paid; he was paid. Someone always is. Wenna has not forgiven you, and she is the one who notices.
 
-### 25. `dlg.vonnra.f_beasts.7.wav`
+### 26. `dlg.vonnra.f_beasts.7.wav`  HOLD: the story rewrite changes the fortune (docs/voice/RERECORD.md)
 
 *Where:* dialogue.json vonnra/f_beasts#7
 *Played:* veiled; doing: the wolves are unresolved; pace: slow; volume: quiet.
@@ -326,7 +337,7 @@ Subtitle: I see clean water, and a ledger with a new line in it. The wolves are 
 ```
 Subtitle: The wolves, I see only dimly. Whatever you meant to do about them, you have not done it yet.
 
-### 26. `dlg.vonnra.f_caravan.0.wav`
+### 27. `dlg.vonnra.f_caravan.0.wav`  HOLD: the story rewrite changes the fortune (docs/voice/RERECORD.md)
 
 *Where:* dialogue.json vonnra/f_caravan#0
 *Played:* grave, watchful; doing: Jory knows; pace: slow; volume: quiet.
@@ -337,7 +348,7 @@ Subtitle: The wolves, I see only dimly. Whatever you meant to do about them, you
 ```
 Subtitle: I see a boy in a wagon, and his uncle sitting up beside him all night. The boy is not asleep. He knows what he carried now, and he is deciding what that makes his uncle.
 
-### 27. `dlg.vonnra.f_caravan.1.wav`
+### 28. `dlg.vonnra.f_caravan.1.wav`  HOLD: the story rewrite changes the fortune (docs/voice/RERECORD.md)
 
 *Where:* dialogue.json vonnra/f_caravan#1
 *Played:* measured approval; doing: the caravan restored; pace: slow; volume: quiet.
@@ -348,7 +359,7 @@ Subtitle: I see a boy in a wagon, and his uncle sitting up beside him all night.
 ```
 Subtitle: I see a boy asleep in a wagon, and his uncle sitting up beside him all night. Salt and iron back where they belong. The Coyle Company will say your name at every table it sits at.
 
-### 28. `dlg.vonnra.f_caravan.2.wav`
+### 29. `dlg.vonnra.f_caravan.2.wav`  HOLD: the story rewrite changes the fortune (docs/voice/RERECORD.md)
 
 *Where:* dialogue.json vonnra/f_caravan#2
 *Played:* dry warning; doing: you sold the box; pace: slow; volume: quiet.
@@ -359,7 +370,7 @@ Subtitle: I see a boy asleep in a wagon, and his uncle sitting up beside him all
 ```
 Subtitle: I see a boy come home, and a strongbox go the other way. Harlan will learn where it went. People always do.
 
-### 29. `dlg.vonnra.f_caravan.3.wav`
+### 30. `dlg.vonnra.f_caravan.3.wav`  HOLD: the story rewrite changes the fortune (docs/voice/RERECORD.md)
 
 *Where:* dialogue.json vonnra/f_caravan#3
 *Played:* measured; doing: the teamsters home; pace: slow; volume: quiet.
@@ -369,7 +380,7 @@ Subtitle: I see a boy come home, and a strongbox go the other way. Harlan will l
 ```
 Subtitle: I see three teamsters walking home, thinner than when they left. What became of the rest of it is between you and the Kerchiefs.
 
-### 30. `dlg.vonnra.f_caravan.4.wav`
+### 31. `dlg.vonnra.f_caravan.4.wav`  HOLD: the story rewrite changes the fortune (docs/voice/RERECORD.md)
 
 *Where:* dialogue.json vonnra/f_caravan#4
 *Played:* cold, final; doing: the prisoners died; pace: very slow; volume: quiet.
@@ -380,7 +391,7 @@ Subtitle: I see three teamsters walking home, thinner than when they left. What 
 ```
 Subtitle: I see cages. I will not tell you what is in them. You know.
 
-### 31. `dlg.vonnra.f_caravan.5.wav`
+### 32. `dlg.vonnra.f_caravan.5.wav`  HOLD: the story rewrite changes the fortune (docs/voice/RERECORD.md)
 
 *Where:* dialogue.json vonnra/f_caravan#5
 *Played:* veiled; doing: unfinished; pace: slow; volume: quiet.
@@ -391,7 +402,7 @@ Subtitle: I see cages. I will not tell you what is in them. You know.
 ```
 Subtitle: The caravan: a cold trail, cold cages. It is not finished. Neither are you.
 
-### 32. `dlg.vonnra.f_below.0.p0.wav`
+### 33. `dlg.vonnra.f_below.0.p0.wav`  HOLD: the story rewrite changes the fortune (docs/voice/RERECORD.md)
 
 *Where:* dialogue.json vonnra/f_below#0; part 1 of 2: **vonnra: And the door in the hillside...** / narrator: The roof shivers under the table, and the glass of her lamp rings in its frame. The flame …
 *Played:* hushed dread; doing: the thing below; pace: very slow; volume: hushed.
@@ -402,7 +413,7 @@ Subtitle: The caravan: a cold trail, cold cages. It is not finished. Neither are
 ```
 Subtitle: And the door in the hillside...
 
-### 33. `dlg.vonnra.f_door.0.wav`
+### 34. `dlg.vonnra.f_door.0.wav`  HOLD: the story rewrite changes the fortune (docs/voice/RERECORD.md)
 
 *Where:* dialogue.json vonnra/f_door#0
 *Played:* calm, intimate, inexorable; doing: closes the reading, using your name; pace: slow; volume: quiet.
@@ -414,7 +425,7 @@ Subtitle: And the door in the hillside...
 ```
 Subtitle: The door in the hillside is listening, as I am. That is all I see for free.
 
-### 34. `dlg.vonnra.f_door.1.wav`
+### 35. `dlg.vonnra.f_door.1.wav`  HOLD: the story rewrite changes the fortune (docs/voice/RERECORD.md)
 
 *Where:* dialogue.json vonnra/f_door#1
 *Played:* calm, inexorable; doing: closes the reading; pace: slow; volume: quiet.
@@ -425,7 +436,7 @@ Subtitle: The door in the hillside is listening, as I am. That is all I see for 
 ```
 Subtitle: The door is not for sale. That is all I see for free.
 
-### 35. `dlg.vonnra.f_chart.0.p1.wav`
+### 36. `dlg.vonnra.f_chart.0.p1.wav`  HOLD: the story rewrite changes the fortune (docs/voice/RERECORD.md)
 
 *Where:* dialogue.json vonnra/f_chart#0; part 2 of 3: narrator: She takes a folded chart from under the ledger and lays it between you. It is in the Wayfi… / **vonnra: That would be ten gold. This once, no charge. The rest you will walk into yourself, and yo…** / narrator: The ledger lies open under her hand at its last page, and from where you sit you can read …
 
@@ -434,27 +445,27 @@ That would be ten gold. This once, no charge. The rest you will walk into yourse
 ```
 Subtitle: That would be ten gold. This once, no charge. The rest you will walk into yourself, and you will, because you are the kind that does.
 
-### 36. `dlg.vonnra.f_chart.1.p1.wav`
+### 37. `dlg.vonnra.f_chart.1.p1.wav`  HOLD: the story rewrite changes the fortune (docs/voice/RERECORD.md)
 
-*Where:* dialogue.json vonnra/f_chart#1; part 2 of 3: narrator: She takes a folded chart from under the ledger and lays it between you. It is in the Wayfi… / **vonnra: That would be ten gold, traveller. This once, no charge. The rest you will walk into yours…** / narrator: The ledger lies open under her hand at its last page, and from where you sit you can read …
+*Where:* dialogue.json vonnra/f_chart#1; part 2 of 3: narrator: She takes a folded chart from under the ledger and lays it between you. It is in the Wayfi… / **vonnra: That would be ten gold, traveler. This once, no charge. The rest you will walk into yourse…** / narrator: The ledger lies open under her hand at its last page, and from where you sit you can read …
 
 ```
-That would be ten gold, traveller. This once, no charge. The rest you will walk into yourself, and you will, because you are the kind that does.
+That would be ten gold, traveler. This once, no charge. The rest you will walk into yourself, and you will, because you are the kind that does.
 ```
-Subtitle: That would be ten gold, traveller. This once, no charge. The rest you will walk into yourself, and you will, because you are the kind that does.
+Subtitle: That would be ten gold, traveler. This once, no charge. The rest you will walk into yourself, and you will, because you are the kind that does.
 
-### 37. `dlg.vonnra.cb_opened_vault.0.wav`
+### 38. `dlg.vonnra.cb_opened_vault.0.wav`  HOLD: the story rewrite changes the fortune (docs/voice/RERECORD.md)
 
 *Where:* dialogue.json vonnra/cb_opened_vault#0
 *Played:* shaken, controlled; doing: you opened the door; pace: slow; volume: quiet.
 *Note:* 'You opened it.' A long pause, the closest she comes to fear. Then sharp control: she would rather you stood. The question urgent under the calm.
 
 ```
-[shaken, controlled, quietly] You opened it. ...Do not sit, traveller. I would rather you stood. What did you see on the stair?
+[shaken, controlled, quietly] You opened it. ...Do not sit, traveler. I would rather you stood. What did you see on the stair?
 ```
-Subtitle: You opened it. ...Do not sit, traveller. I would rather you stood. What did you see on the stair?
+Subtitle: You opened it. ...Do not sit, traveler. I would rather you stood. What did you see on the stair?
 
-### 38. `dlg.vonnra.cb_vault2.0.wav`
+### 39. `dlg.vonnra.cb_vault2.0.wav`  HOLD: the story rewrite changes the fortune (docs/voice/RERECORD.md)
 
 *Where:* dialogue.json vonnra/cb_vault2#0
 *Played:* relief hidden as finality; doing: the dead still hold; pace: slow; volume: quiet.
@@ -465,18 +476,18 @@ Subtitle: You opened it. ...Do not sit, traveller. I would rather you stood. Wha
 ```
 Subtitle: Then it is still there. That is all. I will say it again, because it bears repeating: that is all.
 
-### 39. `dlg.vonnra.cb_vault3.0.wav`
+### 40. `dlg.vonnra.cb_vault3.0.wav`  HOLD: the story rewrite changes the fortune (docs/voice/RERECORD.md)
 
 *Where:* dialogue.json vonnra/cb_vault3#0
 *Played:* cool, menacing; doing: silence has a price; pace: slow; volume: quiet.
 *Note:* 'It is. For now.' Then quiet menace. 'You will find I collect.' softly.
 
 ```
-[cool, menacing, quietly] Yours, for now. Payment, always, traveller; even for silence. You will find I collect.
+[cool, menacing, quietly] Yours, for now. Payment, always, traveler; even for silence. You will find I collect.
 ```
-Subtitle: Yours, for now. Payment, always, traveller; even for silence. You will find I collect.
+Subtitle: Yours, for now. Payment, always, traveler; even for silence. You will find I collect.
 
-### 40. `dlg.vonnra.cb_core_stolen.0.wav`
+### 41. `dlg.vonnra.cb_core_stolen.0.wav`  HOLD: the story rewrite changes the fortune (docs/voice/RERECORD.md)
 
 *Where:* dialogue.json vonnra/cb_core_stolen#0
 *Played:* cold, controlled anger; doing: the heart was lost; pace: very slow; volume: quiet.
@@ -487,7 +498,7 @@ Subtitle: Yours, for now. Payment, always, traveller; even for silence. You will
 ```
 Subtitle: A heart went into the ground at the Low Ford, and you watched it go. I am not angry. I am arranging.
 
-### 41. `dlg.vonnra.cb_exposed_pell.0.wav`
+### 42. `dlg.vonnra.cb_exposed_pell.0.wav`  HOLD: the story rewrite changes the fortune (docs/voice/RERECORD.md)
 
 *Where:* dialogue.json vonnra/cb_exposed_pell#0
 *Played:* dry, calculating; doing: Pell is caught; pace: slow; volume: quiet.
@@ -498,18 +509,18 @@ Subtitle: A heart went into the ground at the Low Ford, and you watched it go. I
 ```
 Subtitle: Pell Varrow in irons. He owed me a great deal. I shall have to find another way to be paid.
 
-### 42. `dlg.vonnra.say_calling.0.wav`
+### 43. `dlg.vonnra.say_calling.0.wav`  HOLD: the story rewrite changes the fortune (docs/voice/RERECORD.md)
 
 *Where:* dialogue.json vonnra/say_calling#0
 *Played:* gentle condescension; doing: reads a warden; pace: slow; volume: quiet.
 *Note:* Three nouns, unhurried. 'It is a lovely belief.' kind and pitying.
 
 ```
-[gentle condescension, quietly] Shields. Gates. Walls. You believe things can be kept out, traveller. It is a lovely belief.
+[gentle condescension, quietly] Shields. Gates. Walls. You believe things can be kept out, traveler. It is a lovely belief.
 ```
-Subtitle: Shields. Gates. Walls. You believe things can be kept out, traveller. It is a lovely belief.
+Subtitle: Shields. Gates. Walls. You believe things can be kept out, traveler. It is a lovely belief.
 
-### 43. `dlg.vonnra.say_calling.1.wav`
+### 44. `dlg.vonnra.say_calling.1.wav`  HOLD: the story rewrite changes the fortune (docs/voice/RERECORD.md)
 
 *Where:* dialogue.json vonnra/say_calling#1
 *Played:* measured warning; doing: reads a reaver; pace: slow; volume: quiet.
@@ -519,7 +530,7 @@ Subtitle: Shields. Gates. Walls. You believe things can be kept out, traveller. 
 ```
 Subtitle: You will break a great many things before the end. Try to choose them.
 
-### 44. `dlg.vonnra.say_calling.2.wav`
+### 45. `dlg.vonnra.say_calling.2.wav`  HOLD: the story rewrite changes the fortune (docs/voice/RERECORD.md)
 
 *Where:* dialogue.json vonnra/say_calling#2
 *Played:* veiled warning; doing: reads an arcanist; pace: slow; volume: quiet.
@@ -530,7 +541,7 @@ Subtitle: You will break a great many things before the end. Try to choose them.
 ```
 Subtitle: You carry a fire you did not buy. Be careful whom you show it to. Some of them keep ledgers.
 
-### 45. `dlg.vonnra.say_calling.3.wav`
+### 46. `dlg.vonnra.say_calling.3.wav`  HOLD: the story rewrite changes the fortune (docs/voice/RERECORD.md)
 
 *The same words are also* `dlg.vonnra.say_calling.4.wav`*: record once; the importer copies the take.*
 *Where:* dialogue.json vonnra/say_calling#3
@@ -538,11 +549,11 @@ Subtitle: You carry a fire you did not buy. Be careful whom you show it to. Some
 *Note:* 'I noticed.' quiet.
 
 ```
-[cool approval, quietly] You paid no toll the first time you passed my tower, traveller. Nobody saw you pass. I have added it to your account.
+[cool approval, quietly] You paid no toll the first time you passed my tower, traveler. Nobody saw you pass. I have added it to your account.
 ```
-Subtitle: You paid no toll the first time you passed my tower, traveller. Nobody saw you pass. I have added it to your account.
+Subtitle: You paid no toll the first time you passed my tower, traveler. Nobody saw you pass. I have added it to your account.
 
-### 46. `dlg.vonnra.coin.0.wav`
+### 47. `dlg.vonnra.coin.0.wav`  HOLD: the story rewrite changes the fortune (docs/voice/RERECORD.md)
 
 *Where:* dialogue.json vonnra/coin#0
 *Played:* reverent, guarded; doing: the square coin; pace: slow; volume: quiet.
@@ -553,20 +564,20 @@ Subtitle: You paid no toll the first time you passed my tower, traveller. Nobody
 ```
 Subtitle: Old-empire. Square. My grandmother's, and hers before. I have never spent it. One day I shall, and it will buy something that cannot be bought twice. ...That was free. Do not grow used to it.
 
-### 47. `dlg.vonnra.risen.0.wav`
+### 48. `dlg.vonnra.risen.0.wav`  HOLD: the story rewrite changes the fortune (docs/voice/RERECORD.md)
 
 *Where:* dialogue.json vonnra/risen#0
 *Played:* grave, knowing; doing: you came back from death; pace: slow; volume: quiet.
 *Note:* 'You came back.' Long pause. Firm instructions. 'you will find out who holds the note' very quiet, very sure.
 
 ```
-[grave, knowing, quietly] You came back. Most do not, the first time. ...Do not thank Chid. Do not thank anyone. Payment, always, traveller, and for that above all; you will find out who holds the note.
+[grave, knowing, quietly] You came back. Most do not, the first time. ...Do not thank Chid. Do not thank anyone. Payment, always, traveler, and for that above all; you will find out who holds the note.
 ```
-Subtitle: You came back. Most do not, the first time. ...Do not thank Chid. Do not thank anyone. Payment, always, traveller, and for that above all; you will find out who holds the note.
+Subtitle: You came back. Most do not, the first time. ...Do not thank Chid. Do not thank anyone. Payment, always, traveler, and for that above all; you will find out who holds the note.
 
-### 48. `dlg.vonnra.jessop.0.p0.wav`
+### 49. `dlg.vonnra.jessop.0.p0.wav`  HOLD: the story rewrite changes the fortune (docs/voice/RERECORD.md)
 
-*Where:* dialogue.json vonnra/jessop#0; part 1 of 3: **vonnra: Gone south. On the toll's business.** / narrator: She turns a page of the ledger that does not need turning. / vonnra: Clerks go south, traveller. It is the direction they fall in.
+*Where:* dialogue.json vonnra/jessop#0; part 1 of 3: **vonnra: Gone south. On the toll's business.** / narrator: She turns a page of the ledger that does not need turning. / vonnra: Clerks go south, traveler. It is the direction they fall in.
 *Played:* smooth evasion; doing: covers for Jessop; pace: slow; volume: quiet.
 *Note:* Unruffled. Narrator: the page that does not need turning. The last line a quiet, chilling aphorism.
 
@@ -575,18 +586,18 @@ Subtitle: You came back. Most do not, the first time. ...Do not thank Chid. Do n
 ```
 Subtitle: Gone south. On the toll's business.
 
-### 49. `dlg.vonnra.jessop.0.p2.wav`
+### 50. `dlg.vonnra.jessop.0.p2.wav`  HOLD: the story rewrite changes the fortune (docs/voice/RERECORD.md)
 
-*Where:* dialogue.json vonnra/jessop#0; part 3 of 3: vonnra: Gone south. On the toll's business. / narrator: She turns a page of the ledger that does not need turning. / **vonnra: Clerks go south, traveller. It is the direction they fall in.**
+*Where:* dialogue.json vonnra/jessop#0; part 3 of 3: vonnra: Gone south. On the toll's business. / narrator: She turns a page of the ledger that does not need turning. / **vonnra: Clerks go south, traveler. It is the direction they fall in.**
 *Played:* smooth evasion; doing: covers for Jessop; pace: slow; volume: quiet.
 *Note:* Unruffled. Narrator: the page that does not need turning. The last line a quiet, chilling aphorism.
 
 ```
-[smooth evasion, quietly] Clerks go south, traveller. It is the direction they fall in.
+[smooth evasion, quietly] Clerks go south, traveler. It is the direction they fall in.
 ```
-Subtitle: Clerks go south, traveller. It is the direction they fall in.
+Subtitle: Clerks go south, traveler. It is the direction they fall in.
 
-### 50. `dlg.vonnra.f_past.0.p0.wav`
+### 51. `dlg.vonnra.f_past.0.p0.wav`  HOLD: the story rewrite changes the fortune (docs/voice/RERECORD.md)
 
 *Where:* dialogue.json vonnra/f_past#0; part 1 of 2: **vonnra: And before the ford: a child following tracks through these woods, with a bow too big for …** / narrator: She is not looking at your palm.
 *Played:* intimate, uncanny; doing: quotes what you said in Sella's bed; pace: slow; volume: quiet.
@@ -597,7 +608,7 @@ Subtitle: Clerks go south, traveller. It is the direction they fall in.
 ```
 Subtitle: And before the ford: a child following tracks through these woods, with a bow too big for them.
 
-### 51. `dlg.vonnra.f_past.1.p0.wav`
+### 52. `dlg.vonnra.f_past.1.p0.wav`  HOLD: the story rewrite changes the fortune (docs/voice/RERECORD.md)
 
 *Where:* dialogue.json vonnra/f_past#1; part 1 of 2: **vonnra: And before the ford: four years in a cloister cellar among dead men's letters, and a lens …** / narrator: She is not looking at your palm.
 *Played:* intimate, uncanny; doing: quotes what you said in Sella's bed; pace: slow; volume: quiet.
@@ -608,7 +619,7 @@ Subtitle: And before the ford: a child following tracks through these woods, wit
 ```
 Subtitle: And before the ford: four years in a cloister cellar among dead men's letters, and a lens you were not meant to leave with.
 
-### 52. `dlg.vonnra.f_past.2.p0.wav`
+### 53. `dlg.vonnra.f_past.2.p0.wav`  HOLD: the story rewrite changes the fortune (docs/voice/RERECORD.md)
 
 *Where:* dialogue.json vonnra/f_past#2; part 1 of 2: **vonnra: And before the ford: worse company than the Kerchiefs, and the trick of walking away from …** / narrator: She is not looking at your palm.
 *Played:* intimate, uncanny; doing: quotes what you said in Sella's bed; pace: slow; volume: quiet.
@@ -619,7 +630,7 @@ Subtitle: And before the ford: four years in a cloister cellar among dead men's 
 ```
 Subtitle: And before the ford: worse company than the Kerchiefs, and the trick of walking away from it.
 
-### 53. `dlg.vonnra.f_past.3.p0.wav`
+### 54. `dlg.vonnra.f_past.3.p0.wav`  HOLD: the story rewrite changes the fortune (docs/voice/RERECORD.md)
 
 *Where:* dialogue.json vonnra/f_past#3; part 1 of 2: **vonnra: And before the ford: chapel lamps that nobody came to see, and you, lighting them anyway.** / narrator: She is not looking at your palm.
 *Played:* intimate, uncanny; doing: quotes what you said in Sella's bed; pace: slow; volume: quiet.
@@ -630,7 +641,7 @@ Subtitle: And before the ford: worse company than the Kerchiefs, and the trick o
 ```
 Subtitle: And before the ford: chapel lamps that nobody came to see, and you, lighting them anyway.
 
-### 54. `dlg.vonnra.f_past.4.wav`
+### 55. `dlg.vonnra.f_past.4.wav`  HOLD: the story rewrite changes the fortune (docs/voice/RERECORD.md)
 
 *Where:* dialogue.json vonnra/f_past#4
 *Played:* gentle, unsettling; doing: your past is lost; pace: slow; volume: quiet.
@@ -641,7 +652,7 @@ Subtitle: And before the ford: chapel lamps that nobody came to see, and you, li
 ```
 Subtitle: And six crates on a cart going north over the ridge, and a man walking behind it who knows what they are for. He will not sell them. He is saving them. I wonder for what.
 
-### 55. `dlg.vonnra.f_past.5.wav`
+### 56. `dlg.vonnra.f_past.5.wav`  HOLD: the story rewrite changes the fortune (docs/voice/RERECORD.md)
 
 *Where:* dialogue.json vonnra/f_past#5
 
@@ -650,7 +661,7 @@ And six crates in a bandit's tent, guarded now by a man who knows what they are 
 ```
 Subtitle: And six crates in a bandit's tent, guarded now by a man who knows what they are for. He will not sell them. He is saving them. I wonder for what.
 
-### 56. `dlg.vonnra.f_past.6.wav`
+### 57. `dlg.vonnra.f_past.6.wav`  HOLD: the story rewrite changes the fortune (docs/voice/RERECORD.md)
 
 *Where:* dialogue.json vonnra/f_past#6
 
@@ -659,7 +670,7 @@ And six crates going home to a man who knows where they go next. You told him wh
 ```
 Subtitle: And six crates going home to a man who knows where they go next. You told him where to find what was his. That is honest. It is not the same thing as good.
 
-### 57. `dlg.vonnra.f_past.7.wav`
+### 58. `dlg.vonnra.f_past.7.wav`  HOLD: the story rewrite changes the fortune (docs/voice/RERECORD.md)
 
 *Where:* dialogue.json vonnra/f_past#7
 
@@ -668,7 +679,7 @@ And six crates at the bottom of a stream, where nothing will ever buy them. That
 ```
 Subtitle: And six crates at the bottom of a stream, where nothing will ever buy them. That is the first thing you have thrown away that I approve of.
 
-### 58. `dlg.vonnra.f_past.8.wav`
+### 59. `dlg.vonnra.f_past.8.wav`  HOLD: the story rewrite changes the fortune (docs/voice/RERECORD.md)
 
 *Where:* dialogue.json vonnra/f_past#8
 
@@ -677,7 +688,7 @@ And six crates that went up with the Roost. You will have heard it from the wall
 ```
 Subtitle: And six crates that went up with the Roost. You will have heard it from the wall. Everyone did.
 
-### 59. `dlg.vonnra.f_past.9.wav`
+### 60. `dlg.vonnra.f_past.9.wav`  HOLD: the story rewrite changes the fortune (docs/voice/RERECORD.md)
 
 *Where:* dialogue.json vonnra/f_past#9
 
@@ -686,7 +697,7 @@ And six crates gone down the south road with the rest of the cargo, sold to whoe
 ```
 Subtitle: And six crates gone down the south road with the rest of the cargo, sold to whoever paid for them first. I think you know who that was.
 
-### 60. `dlg.vonnra.f_past.10.wav`
+### 61. `dlg.vonnra.f_past.10.wav`  HOLD: the story rewrite changes the fortune (docs/voice/RERECORD.md)
 
 *Where:* dialogue.json vonnra/f_past#10
 
@@ -695,7 +706,7 @@ And Pell Varrow, in a cage that was built for someone else. You know which one. 
 ```
 Subtitle: And Pell Varrow, in a cage that was built for someone else. You know which one. He is still counting. It is all he has left to do.
 
-### 61. `dlg.vonnra.f_past.11.wav`
+### 62. `dlg.vonnra.f_past.11.wav`  HOLD: the story rewrite changes the fortune (docs/voice/RERECORD.md)
 
 *Where:* dialogue.json vonnra/f_past#11
 
@@ -704,7 +715,7 @@ And Pell. Pell in irons, being walked to the cells, telling everyone who will li
 ```
 Subtitle: And Pell. Pell in irons, being walked to the cells, telling everyone who will listen that he has friends. He does. They are not in this town.
 
-### 62. `dlg.vonnra.f_past.12.wav`
+### 63. `dlg.vonnra.f_past.12.wav`  HOLD: the story rewrite changes the fortune (docs/voice/RERECORD.md)
 
 *Where:* dialogue.json vonnra/f_past#12
 
@@ -713,7 +724,7 @@ And a ledger, with your name in it, in Pell's small tidy hand. You were paid. So
 ```
 Subtitle: And a ledger, with your name in it, in Pell's small tidy hand. You were paid. So was everyone else in that book. I would keep an eye on all of them.
 
-### 63. `dlg.vonnra.f_past.13.wav`
+### 64. `dlg.vonnra.f_past.13.wav`  HOLD: the story rewrite changes the fortune (docs/voice/RERECORD.md)
 
 *Where:* dialogue.json vonnra/f_past#13
 
@@ -722,7 +733,7 @@ And an empty warehouse, and a man on a fast horse who will not stop until he is 
 ```
 Subtitle: And an empty warehouse, and a man on a fast horse who will not stop until he is somewhere that has never heard of the Coyle Company. He took his books with him. You are in them.
 
-### 64. `dlg.vonnra.f_past.14.wav`
+### 65. `dlg.vonnra.f_past.14.wav`  HOLD: the story rewrite changes the fortune (docs/voice/RERECORD.md)
 
 *Where:* dialogue.json vonnra/f_past#14
 
@@ -731,7 +742,7 @@ Of before the ford, I see very little. The water took it, or you left it on the 
 ```
 Subtitle: Of before the ford, I see very little. The water took it, or you left it on the far bank. Most do.
 
-### 65. `dlg.vonnra.f_accuse.0.p0.wav`
+### 66. `dlg.vonnra.f_accuse.0.p0.wav`  HOLD: the story rewrite changes the fortune (docs/voice/RERECORD.md)
 
 *Where:* dialogue.json vonnra/f_accuse#0; part 1 of 4: **vonnra: I did not kill him.** / narrator: For the first time she looks at your face and not at your hand. It goes on long enough tha… / vonnra: ...Sit down. / vonnra: I have not finished reading.
 *Played:* listening very hard, caught for once; doing: accused, she answers with your name; pace: very slow; volume: quiet.
@@ -743,7 +754,7 @@ Subtitle: Of before the ford, I see very little. The water took it, or you left 
 ```
 Subtitle: I did not kill him.
 
-### 66. `dlg.vonnra.f_accuse.0.p2.wav`
+### 67. `dlg.vonnra.f_accuse.0.p2.wav`  HOLD: the story rewrite changes the fortune (docs/voice/RERECORD.md)
 
 *Where:* dialogue.json vonnra/f_accuse#0; part 3 of 4: vonnra: I did not kill him. / narrator: For the first time she looks at your face and not at your hand. It goes on long enough tha… / **vonnra: ...Sit down.** / vonnra: I have not finished reading.
 *Played:* listening very hard, caught for once; doing: accused, she answers with your name; pace: very slow; volume: quiet.
@@ -756,7 +767,7 @@ Subtitle: I did not kill him.
 ```
 Subtitle: ...Sit down.
 
-### 67. `dlg.vonnra.f_accuse.0.p3.wav`
+### 68. `dlg.vonnra.f_accuse.0.p3.wav`  HOLD: the story rewrite changes the fortune (docs/voice/RERECORD.md)
 
 *Where:* dialogue.json vonnra/f_accuse#0; part 4 of 4: vonnra: I did not kill him. / narrator: For the first time she looks at your face and not at your hand. It goes on long enough tha… / vonnra: ...Sit down. / **vonnra: I have not finished reading.**
 *Played:* listening very hard, caught for once; doing: accused, she answers with your name; pace: very slow; volume: quiet.
@@ -769,57 +780,57 @@ Subtitle: ...Sit down.
 ```
 Subtitle: I have not finished reading.
 
-### 68. `dlg.vonnra.f_ford.0.p0.wav`
+### 69. `dlg.vonnra.f_ford.0.p0.wav`  HOLD: the story rewrite changes the fortune (docs/voice/RERECORD.md)
 
 *The same words are also* `dlg.vonnra.f_ford.1.p0.wav`*: record once; the importer copies the take.*
-*Where:* dialogue.json vonnra/f_ford#0; part 1 of 3: **vonnra: And the ford.** / narrator: She turns the cup over on the table. / vonnra: He would have held that lamp out of the water until the river ran dry, traveller. Two hund…
+*Where:* dialogue.json vonnra/f_ford#0; part 1 of 3: **vonnra: And the ford.** / narrator: She turns the cup over on the table. / vonnra: He would have held that lamp out of the water until the river ran dry, traveler. Two hundr…
 
 ```
 And the ford.
 ```
 Subtitle: And the ford.
 
-### 69. `dlg.vonnra.f_ford.0.p2.wav`
+### 70. `dlg.vonnra.f_ford.0.p2.wav`  HOLD: the story rewrite changes the fortune (docs/voice/RERECORD.md)
 
-*Where:* dialogue.json vonnra/f_ford#0; part 3 of 3: vonnra: And the ford. / narrator: She turns the cup over on the table. / **vonnra: He would have held that lamp out of the water until the river ran dry, traveller. Two hund…**
-
-```
-He would have held that lamp out of the water until the river ran dry, traveller. Two hundred years he held it, and he would have held it two hundred more, and got up every dusk to hold it again. You did not even tell him it was morning. He let go anyway.
-```
-Subtitle: He would have held that lamp out of the water until the river ran dry, traveller. Two hundred years he held it, and he would have held it two hundred more, and got up every dusk to hold it again. You did not even tell him it was morning. He let go anyway.
-
-### 70. `dlg.vonnra.f_ford.1.p2.wav`
-
-*Where:* dialogue.json vonnra/f_ford#1; part 3 of 3: vonnra: And the ford. / narrator: She turns the cup over on the table. / **vonnra: He would have held that lamp out of the water until the river ran dry, traveller. Two hund…**
+*Where:* dialogue.json vonnra/f_ford#0; part 3 of 3: vonnra: And the ford. / narrator: She turns the cup over on the table. / **vonnra: He would have held that lamp out of the water until the river ran dry, traveler. Two hundr…**
 
 ```
-He would have held that lamp out of the water until the river ran dry, traveller. Two hundred years he held it, and he would have held it two hundred more, and got up every dusk to hold it again. You told him it was morning.
+He would have held that lamp out of the water until the river ran dry, traveler. Two hundred years he held it, and he would have held it two hundred more, and got up every dusk to hold it again. You did not even tell him it was morning. He let go anyway.
 ```
-Subtitle: He would have held that lamp out of the water until the river ran dry, traveller. Two hundred years he held it, and he would have held it two hundred more, and got up every dusk to hold it again. You told him it was morning.
+Subtitle: He would have held that lamp out of the water until the river ran dry, traveler. Two hundred years he held it, and he would have held it two hundred more, and got up every dusk to hold it again. You did not even tell him it was morning. He let go anyway.
 
-### 71. `dlg.vonnra.f_did.0.p0.wav`
+### 71. `dlg.vonnra.f_ford.1.p2.wav`  HOLD: the story rewrite changes the fortune (docs/voice/RERECORD.md)
 
-*Where:* dialogue.json vonnra/f_did#0; part 1 of 3: **vonnra: When the lamp went into the water, his heart came up out of it, and a little lamp-person w…** / narrator: She lays her hand flat on the cup. / vonnra: You stopped the drowning, traveller. You also did this.
+*Where:* dialogue.json vonnra/f_ford#1; part 3 of 3: vonnra: And the ford. / narrator: She turns the cup over on the table. / **vonnra: He would have held that lamp out of the water until the river ran dry, traveler. Two hundr…**
+
+```
+He would have held that lamp out of the water until the river ran dry, traveler. Two hundred years he held it, and he would have held it two hundred more, and got up every dusk to hold it again. You told him it was morning.
+```
+Subtitle: He would have held that lamp out of the water until the river ran dry, traveler. Two hundred years he held it, and he would have held it two hundred more, and got up every dusk to hold it again. You told him it was morning.
+
+### 72. `dlg.vonnra.f_did.0.p0.wav`  HOLD: the story rewrite changes the fortune (docs/voice/RERECORD.md)
+
+*Where:* dialogue.json vonnra/f_did#0; part 1 of 3: **vonnra: When the lamp went into the water, his heart came up out of it, and a little lamp-person w…** / narrator: She lays her hand flat on the cup. / vonnra: You stopped the drowning, traveler. You also did this.
 
 ```
 When the lamp went into the water, his heart came up out of it, and a little lamp-person was waiting to carry it away down a hole. The ground has turned over every night since. The Dig digs faster. The Pen-hale boy's floor knocks.
 ```
 Subtitle: When the lamp went into the water, his heart came up out of it, and a little lamp-person was waiting to carry it away down a hole. The ground has turned over every night since. The Dig digs faster. The Penhale boy's floor knocks.
 
-### 72. `dlg.vonnra.f_did.0.p2.wav`
+### 73. `dlg.vonnra.f_did.0.p2.wav`  HOLD: the story rewrite changes the fortune (docs/voice/RERECORD.md)
 
-*Where:* dialogue.json vonnra/f_did#0; part 3 of 3: vonnra: When the lamp went into the water, his heart came up out of it, and a little lamp-person w… / narrator: She lays her hand flat on the cup. / **vonnra: You stopped the drowning, traveller. You also did this.**
+*Where:* dialogue.json vonnra/f_did#0; part 3 of 3: vonnra: When the lamp went into the water, his heart came up out of it, and a little lamp-person w… / narrator: She lays her hand flat on the cup. / **vonnra: You stopped the drowning, traveler. You also did this.**
 
 ```
-You stopped the drowning, traveller. You also did this.
+You stopped the drowning, traveler. You also did this.
 ```
-Subtitle: You stopped the drowning, traveller. You also did this.
+Subtitle: You stopped the drowning, traveler. You also did this.
 
 ## The survivor's name
 
 One take for each name the creation screen suggests. The game splices it into every line where she says the survivor's name (marked *The name* above); a name the player types that is not on this list leaves the pause empty. Keep each the same in tone, so it fits all of them.
 
-### 73. `name.vonnra.Alder.wav`
+### 74. `name.vonnra.Alder.wav`  HOLD: the story rewrite changes the fortune (docs/voice/RERECORD.md)
 
 *Where:* Front.cs Names (the creation screen)
 *Played:* warm, unsettling; doing: says your name; pace: slow; volume: quiet.
@@ -830,7 +841,7 @@ One take for each name the creation screen suggests. The game splices it into ev
 ```
 Subtitle: Alder.
 
-### 74. `name.vonnra.Bryony.wav`
+### 75. `name.vonnra.Bryony.wav`  HOLD: the story rewrite changes the fortune (docs/voice/RERECORD.md)
 
 *Where:* Front.cs Names (the creation screen)
 *Played:* warm, unsettling; doing: says your name; pace: slow; volume: quiet.
@@ -841,7 +852,7 @@ Subtitle: Alder.
 ```
 Subtitle: Bryony.
 
-### 75. `name.vonnra.Cass.wav`
+### 76. `name.vonnra.Cass.wav`  HOLD: the story rewrite changes the fortune (docs/voice/RERECORD.md)
 
 *Where:* Front.cs Names (the creation screen)
 *Played:* warm, unsettling; doing: says your name; pace: slow; volume: quiet.
@@ -852,7 +863,7 @@ Subtitle: Bryony.
 ```
 Subtitle: Cass.
 
-### 76. `name.vonnra.Dace.wav`
+### 77. `name.vonnra.Dace.wav`  HOLD: the story rewrite changes the fortune (docs/voice/RERECORD.md)
 
 *Where:* Front.cs Names (the creation screen)
 *Played:* warm, unsettling; doing: says your name; pace: slow; volume: quiet.
@@ -863,7 +874,7 @@ Subtitle: Cass.
 ```
 Subtitle: Dace.
 
-### 77. `name.vonnra.Edda.wav`
+### 78. `name.vonnra.Edda.wav`  HOLD: the story rewrite changes the fortune (docs/voice/RERECORD.md)
 
 *Where:* Front.cs Names (the creation screen)
 *Played:* warm, unsettling; doing: says your name; pace: slow; volume: quiet.
@@ -874,7 +885,7 @@ Subtitle: Dace.
 ```
 Subtitle: Edda.
 
-### 78. `name.vonnra.Fen.wav`
+### 79. `name.vonnra.Fen.wav`  HOLD: the story rewrite changes the fortune (docs/voice/RERECORD.md)
 
 *Where:* Front.cs Names (the creation screen)
 *Played:* warm, unsettling; doing: says your name; pace: slow; volume: quiet.
@@ -885,7 +896,7 @@ Subtitle: Edda.
 ```
 Subtitle: Fen.
 
-### 79. `name.vonnra.Garrow.wav`
+### 80. `name.vonnra.Garrow.wav`  HOLD: the story rewrite changes the fortune (docs/voice/RERECORD.md)
 
 *Where:* Front.cs Names (the creation screen)
 *Played:* warm, unsettling; doing: says your name; pace: slow; volume: quiet.
@@ -896,7 +907,7 @@ Subtitle: Fen.
 ```
 Subtitle: Garrow.
 
-### 80. `name.vonnra.Hester.wav`
+### 81. `name.vonnra.Hester.wav`  HOLD: the story rewrite changes the fortune (docs/voice/RERECORD.md)
 
 *Where:* Front.cs Names (the creation screen)
 *Played:* warm, unsettling; doing: says your name; pace: slow; volume: quiet.
@@ -907,7 +918,7 @@ Subtitle: Garrow.
 ```
 Subtitle: Hester.
 
-### 81. `name.vonnra.Ilse.wav`
+### 82. `name.vonnra.Ilse.wav`  HOLD: the story rewrite changes the fortune (docs/voice/RERECORD.md)
 
 *Where:* Front.cs Names (the creation screen)
 *Played:* warm, unsettling; doing: says your name; pace: slow; volume: quiet.
@@ -918,7 +929,7 @@ Subtitle: Hester.
 ```
 Subtitle: Ilse.
 
-### 82. `name.vonnra.Jessamy.wav`
+### 83. `name.vonnra.Jessamy.wav`  HOLD: the story rewrite changes the fortune (docs/voice/RERECORD.md)
 
 *Where:* Front.cs Names (the creation screen)
 *Played:* warm, unsettling; doing: says your name; pace: slow; volume: quiet.
@@ -929,7 +940,7 @@ Subtitle: Ilse.
 ```
 Subtitle: Jessamy.
 
-### 83. `name.vonnra.Kit.wav`
+### 84. `name.vonnra.Kit.wav`  HOLD: the story rewrite changes the fortune (docs/voice/RERECORD.md)
 
 *Where:* Front.cs Names (the creation screen)
 *Played:* warm, unsettling; doing: says your name; pace: slow; volume: quiet.
@@ -940,7 +951,7 @@ Subtitle: Jessamy.
 ```
 Subtitle: Kit.
 
-### 84. `name.vonnra.Lorne.wav`
+### 85. `name.vonnra.Lorne.wav`  HOLD: the story rewrite changes the fortune (docs/voice/RERECORD.md)
 
 *Where:* Front.cs Names (the creation screen)
 *Played:* warm, unsettling; doing: says your name; pace: slow; volume: quiet.
@@ -951,7 +962,7 @@ Subtitle: Kit.
 ```
 Subtitle: Lorne.
 
-### 85. `name.vonnra.Maren.wav`
+### 86. `name.vonnra.Maren.wav`  HOLD: the story rewrite changes the fortune (docs/voice/RERECORD.md)
 
 *Where:* Front.cs Names (the creation screen)
 *Played:* warm, unsettling; doing: says your name; pace: slow; volume: quiet.
@@ -962,7 +973,7 @@ Subtitle: Lorne.
 ```
 Subtitle: Maren.
 
-### 86. `name.vonnra.Nolly.wav`
+### 87. `name.vonnra.Nolly.wav`  HOLD: the story rewrite changes the fortune (docs/voice/RERECORD.md)
 
 *Where:* Front.cs Names (the creation screen)
 *Played:* warm, unsettling; doing: says your name; pace: slow; volume: quiet.
@@ -973,7 +984,7 @@ Subtitle: Maren.
 ```
 Subtitle: Nolly.
 
-### 87. `name.vonnra.Orla.wav`
+### 88. `name.vonnra.Orla.wav`  HOLD: the story rewrite changes the fortune (docs/voice/RERECORD.md)
 
 *Where:* Front.cs Names (the creation screen)
 *Played:* warm, unsettling; doing: says your name; pace: slow; volume: quiet.
@@ -984,7 +995,7 @@ Subtitle: Nolly.
 ```
 Subtitle: Orla.
 
-### 88. `name.vonnra.Pim.wav`
+### 89. `name.vonnra.Pim.wav`  HOLD: the story rewrite changes the fortune (docs/voice/RERECORD.md)
 
 *Where:* Front.cs Names (the creation screen)
 *Played:* warm, unsettling; doing: says your name; pace: slow; volume: quiet.
@@ -995,7 +1006,7 @@ Subtitle: Orla.
 ```
 Subtitle: Pim.
 
-### 89. `name.vonnra.Quill.wav`
+### 90. `name.vonnra.Quill.wav`  HOLD: the story rewrite changes the fortune (docs/voice/RERECORD.md)
 
 *Where:* Front.cs Names (the creation screen)
 *Played:* warm, unsettling; doing: says your name; pace: slow; volume: quiet.
@@ -1006,7 +1017,7 @@ Subtitle: Pim.
 ```
 Subtitle: Quill.
 
-### 90. `name.vonnra.Rhosyn.wav`
+### 91. `name.vonnra.Rhosyn.wav`  HOLD: the story rewrite changes the fortune (docs/voice/RERECORD.md)
 
 *Where:* Front.cs Names (the creation screen)
 *Played:* warm, unsettling; doing: says your name; pace: slow; volume: quiet.
@@ -1017,7 +1028,7 @@ Subtitle: Quill.
 ```
 Subtitle: Rhosyn.
 
-### 91. `name.vonnra.Sabre.wav`
+### 92. `name.vonnra.Sabre.wav`  HOLD: the story rewrite changes the fortune (docs/voice/RERECORD.md)
 
 *Where:* Front.cs Names (the creation screen)
 *Played:* warm, unsettling; doing: says your name; pace: slow; volume: quiet.
@@ -1028,7 +1039,7 @@ Subtitle: Rhosyn.
 ```
 Subtitle: Sabre.
 
-### 92. `name.vonnra.Tegan.wav`
+### 93. `name.vonnra.Tegan.wav`  HOLD: the story rewrite changes the fortune (docs/voice/RERECORD.md)
 
 *Where:* Front.cs Names (the creation screen)
 *Played:* warm, unsettling; doing: says your name; pace: slow; volume: quiet.
@@ -1039,7 +1050,7 @@ Subtitle: Sabre.
 ```
 Subtitle: Tegan.
 
-### 93. `name.vonnra.Ulla.wav`
+### 94. `name.vonnra.Ulla.wav`  HOLD: the story rewrite changes the fortune (docs/voice/RERECORD.md)
 
 *Where:* Front.cs Names (the creation screen)
 *Played:* warm, unsettling; doing: says your name; pace: slow; volume: quiet.
@@ -1050,7 +1061,7 @@ Subtitle: Tegan.
 ```
 Subtitle: Ulla.
 
-### 94. `name.vonnra.Voss.wav`
+### 95. `name.vonnra.Voss.wav`  HOLD: the story rewrite changes the fortune (docs/voice/RERECORD.md)
 
 *Where:* Front.cs Names (the creation screen)
 *Played:* warm, unsettling; doing: says your name; pace: slow; volume: quiet.
@@ -1061,7 +1072,7 @@ Subtitle: Ulla.
 ```
 Subtitle: Voss.
 
-### 95. `name.vonnra.Wren.wav`
+### 96. `name.vonnra.Wren.wav`  HOLD: the story rewrite changes the fortune (docs/voice/RERECORD.md)
 
 *Where:* Front.cs Names (the creation screen)
 *Played:* warm, unsettling; doing: says your name; pace: slow; volume: quiet.
@@ -1072,7 +1083,7 @@ Subtitle: Voss.
 ```
 Subtitle: Wren.
 
-### 96. `name.vonnra.Yarrow.wav`
+### 97. `name.vonnra.Yarrow.wav`  HOLD: the story rewrite changes the fortune (docs/voice/RERECORD.md)
 
 *Where:* Front.cs Names (the creation screen)
 *Played:* warm, unsettling; doing: says your name; pace: slow; volume: quiet.
@@ -1085,7 +1096,7 @@ Subtitle: Yarrow.
 
 ## Said in passing
 
-### 97. `bark.vonnra.day.0.wav`
+### 98. `bark.vonnra.day.0.wav`  HOLD: the story rewrite changes the fortune (docs/voice/RERECORD.md)
 
 *Where:* npcs.json vonnra.barks[0]
 *Played:* still; pace: slow; volume: quiet.
@@ -1095,7 +1106,7 @@ Subtitle: Yarrow.
 ```
 Subtitle: The toll is the toll.
 
-### 98. `bark.vonnra.day.1.wav`
+### 99. `bark.vonnra.day.1.wav`  HOLD: the story rewrite changes the fortune (docs/voice/RERECORD.md)
 
 *Where:* npcs.json vonnra.barks[1]
 *Played:* still; pace: slow; volume: quiet.
@@ -1105,7 +1116,7 @@ Subtitle: The toll is the toll.
 ```
 Subtitle: I see a great deal. I say very little. You will find that is the arrangement.
 
-### 99. `bark.vonnra.night.0.wav`
+### 100. `bark.vonnra.night.0.wav`  HOLD: the story rewrite changes the fortune (docs/voice/RERECORD.md)
 
 *Where:* npcs.json vonnra.nightBarks[0]
 *Played:* still; pace: slow; volume: quiet.
@@ -1115,7 +1126,7 @@ Subtitle: I see a great deal. I say very little. You will find that is the arran
 ```
 Subtitle: The toll does not sleep, and neither do I.
 
-### 100. `bark.vonnra.night.1.wav`
+### 101. `bark.vonnra.night.1.wav`  HOLD: the story rewrite changes the fortune (docs/voice/RERECORD.md)
 
 *Where:* npcs.json vonnra.nightBarks[1]
 *Played:* still; pace: slow; volume: quiet.
@@ -1125,7 +1136,7 @@ Subtitle: The toll does not sleep, and neither do I.
 ```
 Subtitle: The dark is also a customer.
 
-### 101. `bark.vonnra.night.2.wav`
+### 102. `bark.vonnra.night.2.wav`  HOLD: the story rewrite changes the fortune (docs/voice/RERECORD.md)
 
 *Where:* npcs.json vonnra.nightBarks[2]
 *Played:* still; pace: slow; volume: quiet.
@@ -1135,7 +1146,7 @@ Subtitle: The dark is also a customer.
 ```
 Subtitle: Payment, even now.
 
-### 102. `bark.vonnra.night.3.wav`
+### 103. `bark.vonnra.night.3.wav`  HOLD: the story rewrite changes the fortune (docs/voice/RERECORD.md)
 
 *Where:* npcs.json vonnra.nightBarks[3]
 *Played:* still; pace: slow; volume: quiet.
@@ -1145,7 +1156,7 @@ Subtitle: Payment, even now.
 ```
 Subtitle: I count the lights on the ford road, every night. Somebody should.
 
-### 103. `bark.vonnra.said.0.wav`
+### 104. `bark.vonnra.said.0.wav`  HOLD: the story rewrite changes the fortune (docs/voice/RERECORD.md)
 
 *Where:* npcs.json vonnra.said[0]
 
