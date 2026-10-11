@@ -17,7 +17,7 @@ import sys
 
 import bpy
 import numpy as np
-from mathutils import Matrix
+from mathutils import Matrix, Vector
 
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "anim"))
 import helpers as hp  # noqa: E402
@@ -51,7 +51,7 @@ def add_bones(arm):
             continue
         s = n[-1]
         parent = eb[h["parent"].replace("{s}", s)]
-        if h["kind"] == "share":
+        if h["kind"] in ("share", "point"):
             low = eb[h["bone"].replace("{s}", s)]
             above = low.parent
             g = low.matrix.to_quaternion()
@@ -77,9 +77,15 @@ def add_bones(arm):
     return made
 
 
-def split_mesh(arm, obj):
+def split_mesh(arm, obj, skin=None, body=None):
     """The mesh's weights onto the helpers (helpers.split), its other vertex
-    groups left as they are."""
+    groups left as they are. With `skin` (a point to the nearest point of her
+    skin, in world space), a piece she wears is split where the skin under it
+    lies, not where it lies itself: the crease cut and the twist bones'
+    reach are read along her skin, so cloth takes the split of the skin it
+    covers (split at its own offset, cloth behind a knee was cut deeper into
+    the crease than the skin under it, and the skin came through). Points
+    far off her (a cape's hem) ease back to their own place."""
     bones = [b.name for b in arm.data.bones]
     index = {n: i for i, n in enumerate(bones)}
     heads = {b.name: np.array((arm.matrix_world @ b.head_local)[:]) for b in arm.data.bones}
@@ -100,12 +106,28 @@ def split_mesh(arm, obj):
         pts.append((obj.matrix_world @ v.co)[:])
     if not rows:
         return 0
+    if skin is not None:
+        own = np.array(pts)
+        near = np.array([skin(p) for p in pts])
+        d = np.linalg.norm(own - near, axis=1)
+        t = np.clip((d - SKIN_NEAR) / SKIN_NEAR, 0.0, 1.0)
+        t = t * t * (3 - 2 * t)
+        pts = near + (own - near) * t[:, None]
     W = np.zeros((len(rows), len(bones)))
     for r, (_, gs) in enumerate(rows):
         for n, w in gs:
             if n in index:
                 W[r, index[n]] += w
-    W2 = hp.split(W, np.array(pts), index, heads)
+    W2 = hp.split(W, np.array(pts), index, heads, front=(0.0, -1.0, 0.0))
+    if skin is not None and body is not None:
+        # Split where the skin lies is not enough: the split reads the
+        # piece's own blend between the bones above and below a joint, and a
+        # sleeve weighted 60/40 over skin weighted 80/20 still took another
+        # share (judge 6: the mismatch's p95 stayed at 0.09, and skin came
+        # through behind the knee and at the elbow). So near her, the limb's
+        # weight is shared out as the skin's under it is: the piece keeps how
+        # much it rides the limb, the skin says on which of its bones.
+        W2 = _as_skin(W2, near, t, body, index, src)
     groups = {g.name: g for g in obj.vertex_groups}
     for n in bones:
         if n not in groups and W2[:, index[n]].any():
@@ -120,15 +142,313 @@ def split_mesh(arm, obj):
     return len(rows)
 
 
-def apply(arm, meshes):
+# A piece within this of her skin is split as the skin under it; out to twice
+# this it eases to its own place.
+SKIN_NEAR = 0.03
+
+
+def skin_sampler(arm, body):
+    """Her skin's weights (helpers included) by point: (BVH of her triangles,
+    their corners [T, 3], corner points, weights [V, J] by the armature's bone
+    order). A body not yet split is split here, in memory, as split_mesh
+    would split it."""
+    from mathutils.bvhtree import BVHTree
+    bones = [b.name for b in arm.data.bones]
+    index = {n: i for i, n in enumerate(bones)}
+    me = body.data
+    me.calc_loop_triangles()
+    mw = body.matrix_world
+    P = np.array([(mw @ v.co)[:] for v in me.vertices])
+    T = np.array([lt.vertices[:] for lt in me.loop_triangles])
+    gname = {g.index: g.name for g in body.vertex_groups}
+    W = np.zeros((len(P), len(bones)))
+    for v in me.vertices:
+        for g in v.groups:
+            n = gname.get(g.group)
+            if n in index:
+                W[v.index, index[n]] += g.weight
+    if not any(n in gname.values() for n in hp.names()):
+        heads = {b.name: np.array((arm.matrix_world @ b.head_local)[:]) for b in arm.data.bones}
+        W = hp.split(W, P, index, heads, front=FRONT)
+    return BVHTree.FromPolygons([tuple(p) for p in P], T.tolist()), T, P, W
+
+
+def _as_skin(W2, near, t, body, index, src):
+    """W2's weight on the limb's bones (those the helpers help, and the
+    helpers) shared out as her skin's at `near`, eased back to W2's own as t
+    goes 0 to 1."""
+    bvh, T, P, W = body
+    # (the hands too: at the wrist a cuff weighted more to the hand than the
+    # skin under it took a different twist share; judge 8, the worst points)
+    chain = sorted({index[n] for n in set(src) | set(hp.names()) | {"hand_l", "hand_r"} if n in index})
+    tri = np.zeros(len(near), int)
+    q = np.zeros((len(near), 3))
+    for i, p in enumerate(near):
+        hit = bvh.find_nearest(Vector(p))
+        q[i], tri[i] = hit[0][:], hit[2]
+    a, b, c = P[T[tri, 0]], P[T[tri, 1]], P[T[tri, 2]]
+    # Barycentric weights of q in its triangle.
+    v0, v1, v2 = b - a, c - a, q - a
+    d00, d01, d11 = (v0 * v0).sum(1), (v0 * v1).sum(1), (v1 * v1).sum(1)
+    d20, d21 = (v2 * v0).sum(1), (v2 * v1).sum(1)
+    den = np.maximum(d00 * d11 - d01 * d01, 1e-18)
+    bv = np.clip((d11 * d20 - d01 * d21) / den, 0, 1)
+    bw = np.clip((d00 * d21 - d01 * d20) / den, 0, 1)
+    bu = np.clip(1 - bv - bw, 0, 1)
+    s = bu + bv + bw
+    Ws = (W[T[tri, 0]][:, chain] * (bu / s)[:, None] + W[T[tri, 1]][:, chain] * (bv / s)[:, None]
+          + W[T[tri, 2]][:, chain] * (bw / s)[:, None])
+    ssum, gsum = Ws.sum(1), W2[:, chain].sum(1)
+    ok = (ssum > 1e-6) & (gsum > 1e-6) & (t < 1.0)
+    out = W2.copy()
+    target = Ws[ok] * (gsum[ok] / ssum[ok])[:, None]
+    tt = t[ok][:, None]
+    out[np.ix_(ok.nonzero()[0], chain)] = tt * W2[ok][:, chain] + (1 - tt) * target
+    return out
+
+
+# ----------------------------------------------------------- correctives --
+# Her corrective shapes (helpers.corrective, SPEC "correctives") as shape
+# keys: made on her body from its split weights, and carried to each piece
+# she wears from the skin under it. Kept by body name between apply's two
+# calls (her body first, her pieces after).
+_CORR = {}
+
+
+def _to_game(v):
+    """Blender's world (Z up, front -Y) to the game's (Y up, front +Z), as the
+    glTF export turns it."""
+    v = np.asarray(v, float)
+    return np.stack([v[..., 0], v[..., 2], -v[..., 1]], -1)
+
+
+def _to_blender(v):
+    v = np.asarray(v, float)
+    return np.stack([v[..., 0], -v[..., 2], v[..., 1]], -1)
+
+
+def _game_skeleton(arm):
+    """The game's skeleton for this armature (tools/anim/data, dumped from the
+    last import), if it holds every bone and lies where the armature's do
+    (within 2 mm): the corrective shapes are made in its space."""
+    from rig import Skeleton
+    names = {b.name for b in arm.data.bones}
+    for f in ("heroine_skeleton.json", "hero_skeleton.json"):
+        path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "anim", "data", f)
+        if not os.path.exists(path):
+            continue
+        sk = Skeleton.load(path)
+        if set(sk.names) != names:
+            continue
+        _, gpos = sk.rest_globals()
+        heads = _to_game([(arm.matrix_world @ arm.data.bones[n].head_local)[:] for n in sk.names])
+        err = np.abs(gpos[0] - heads).max()
+        if err < 0.002:
+            return sk
+        print(f"RIG correctives: {f} is {err * 1000:.1f} mm off this armature")
+    return None
+
+
+def _weights(obj, names):
+    """[V, J] weights by `names`, as the glTF export keeps them: the four
+    largest, made to sum to one."""
+    index = {n: i for i, n in enumerate(names)}
+    gname = {g.index: g.name for g in obj.vertex_groups}
+    W = np.zeros((len(obj.data.vertices), len(names)))
+    for v in obj.data.vertices:
+        for g in v.groups:
+            n = gname.get(g.group)
+            if n in index:
+                W[v.index, index[n]] += g.weight
+    top = np.argsort(-W, axis=1)[:, :4]
+    keep = np.zeros_like(W)
+    rows = np.arange(len(W))[:, None]
+    keep[rows, top] = W[rows, top]
+    return keep / np.maximum(keep.sum(1, keepdims=True), 1e-12)
+
+
+def _shape_keys(obj, moves):
+    """`moves` {name: [V, 3] world moves} as shape keys on obj (a basis first)."""
+    if not moves:
+        return
+    if obj.data.shape_keys is None:
+        obj.shape_key_add(name="Basis", from_mix=False)
+    inv = np.array(obj.matrix_world.inverted().to_3x3())
+    base = np.array([v.co[:] for v in obj.data.vertices])
+    for name, mv in moves.items():
+        kb = obj.data.shape_keys.key_blocks.get(name) or obj.shape_key_add(name=name, from_mix=False)
+        kb.data.foreach_set("co", (base + mv @ inv.T).astype(np.float32).ravel())
+        kb.value = 0.0
+
+
+def _body_moves(arm, body):
+    """Her corrective shapes as world moves of her body's points, from its
+    split weights, or {} (none in the spec, no game skeleton for this
+    armature, or a body not split)."""
+    if not hp.SPEC.get("correctives"):
+        return {}
+    if not any(g.name in hp.names() for g in body.vertex_groups):
+        return {}
+    sk = _game_skeleton(arm)
+    if sk is None:
+        print("RIG correctives: no game skeleton matches this armature; none made")
+        return {}
+    mw = body.matrix_world
+    P = _to_game([(mw @ v.co)[:] for v in body.data.vertices])
+    W = _weights(body, sk.names)
+    moves = {k: _to_blender(d) for k, d in hp.corrective(P, W, sk, front=(0.0, 0.0, 1.0)).items()}
+    return {k: _relaxed(body.data, d) for k, d in moves.items() if np.abs(d).max() > 0}
+
+
+def _relaxed(me, d, passes=3):
+    """A shape's moves eased over her mesh (each point halfway to the mean
+    of the points round it, `passes` times; her seams welded), then scaled
+    back to its peak: the falloff's rim follows her own edges, not a cut
+    across them (at 145 degrees a step in the patch's forearm-side rim read
+    as a nub on the elbow's flank: animation, judge 10)."""
+    co = np.array([v.co[:] for v in me.vertices])
+    _, w = np.unique(np.round(co / 1e-5).astype(np.int64), axis=0, return_inverse=True)
+    w = w.ravel()
+    ev = np.array([e.vertices[:] for e in me.edges])
+    a, b = w[ev[:, 0]], w[ev[:, 1]]
+    k = a != b
+    a, b = a[k], b[k]
+    n = w.max() + 1
+    D = np.zeros((n, 3))
+    np.add.at(D, w, d)
+    D /= np.bincount(w, minlength=n)[:, None]
+    deg = np.bincount(np.r_[a, b], minlength=n).astype(float)
+    peak = np.linalg.norm(D, axis=1).max()
+    for _ in range(passes):
+        S = np.zeros_like(D)
+        np.add.at(S, a, D[b])
+        np.add.at(S, b, D[a])
+        D = np.where(deg[:, None] > 0, 0.5 * D + 0.5 * S / np.maximum(deg, 1)[:, None], D)
+    D *= peak / max(np.linalg.norm(D, axis=1).max(), 1e-12)
+    return D[w]
+
+
+def _sampler_moves(arm, sampler):
+    """As _body_moves, from skin_sampler's points and split weights."""
+    if not hp.SPEC.get("correctives"):
+        return {}
+    sk = _game_skeleton(arm)
+    if sk is None:
+        return {}
+    _, _, Pb, Wb = sampler
+    order = [b.name for b in arm.data.bones]
+    W = Wb[:, [order.index(n) for n in sk.names]]
+    top = np.argsort(-W, axis=1)[:, :4]
+    keep = np.zeros_like(W)
+    rows = np.arange(len(W))[:, None]
+    keep[rows, top] = W[rows, top]
+    W = keep / np.maximum(keep.sum(1, keepdims=True), 1e-12)
+    moves = {k: _to_blender(d) for k, d in hp.corrective(_to_game(Pb), W, sk, front=(0.0, 0.0, 1.0)).items()}
+    return {k: d for k, d in moves.items() if np.abs(d).max() > 0}
+
+
+def body_correctives(arm, body):
+    """Her corrective shapes set as shape keys on her body (once split) and
+    kept for her pieces."""
+    moves = _body_moves(arm, body)
+    _shape_keys(body, moves)
+    _CORR[body.name] = moves
+    for k, d in moves.items():
+        n = np.linalg.norm(d, axis=1)
+        print(f"RIG corrective {k}: {int((n > 1e-5).sum())} points, deepest {n.max() * 1000:.1f} mm")
+    return moves
+
+
+def piece_correctives(obj, body, sampler):
+    """A piece's corrective shapes: the move of the skin under each point
+    (barycentric on her nearest triangle), whole within garment[0] of her
+    skin, easing out to none at garment[1]."""
+    moves = _CORR.get(body.name)
+    if not moves:
+        return 0
+    bvh, T, Pb, _ = sampler
+    mw = obj.matrix_world
+    P = np.array([(mw @ v.co)[:] for v in obj.data.vertices])
+    out = {}
+    for c in hp.SPEC.get("correctives", []):
+        near, far = c.get("garment", (0.02, 0.04))
+        for name in hp.each(c["name"]):
+            mv = moves.get(name)
+            if mv is None:
+                continue
+            # only points near the skin that moves
+            moving = np.linalg.norm(mv, axis=1) > 1e-6
+            lo, hi = Pb[moving].min(0) - far, Pb[moving].max(0) + far
+            cand = np.nonzero(((P > lo) & (P < hi)).all(1))[0]
+            if not len(cand):
+                continue
+            d = np.zeros((len(P), 3))
+            for i in cand:
+                q, _, ti, dist = bvh.find_nearest(Vector(P[i]))
+                if q is None or dist >= far:
+                    continue
+                a, b_, c_ = (Pb[T[ti, k]] for k in range(3))
+                v0, v1, v2 = b_ - a, c_ - a, np.array(q[:]) - a
+                d00, d01, d11 = v0 @ v0, v0 @ v1, v1 @ v1
+                d20, d21 = v2 @ v0, v2 @ v1
+                den = max(d00 * d11 - d01 * d01, 1e-18)
+                bv = min(max((d11 * d20 - d01 * d21) / den, 0.0), 1.0)
+                bw = min(max((d00 * d21 - d01 * d20) / den, 0.0), 1.0)
+                bu = max(1.0 - bv - bw, 0.0)
+                s = bu + bv + bw
+                m = (mv[T[ti, 0]] * bu + mv[T[ti, 1]] * bv + mv[T[ti, 2]] * bw) / s
+                t = min(max((dist - near) / (far - near), 0.0), 1.0)
+                d[i] = m * (1.0 - t * t * (3 - 2 * t))
+            if np.abs(d).max() > 1e-6:
+                out[name] = d
+    _shape_keys(obj, out)
+    return len(out)
+
+
+def share_keys(objs):
+    """Before pieces are joined: every one given the shape keys any of them
+    has (a copy of its basis where it has none), so the join keeps them all
+    (Blender keeps only the active object's keys, matched by name)."""
+    names = []
+    for o in objs:
+        if o.type == "MESH" and o.data.shape_keys:
+            names += [k.name for k in o.data.shape_keys.key_blocks[1:] if k.name not in names]
+    if not names:
+        return
+    for o in objs:
+        if o.type != "MESH":
+            continue
+        if o.data.shape_keys is None:
+            o.shape_key_add(name="Basis", from_mix=False)
+        for n in names:
+            if n not in o.data.shape_keys.key_blocks:
+                o.shape_key_add(name=n, from_mix=False)
+
+
+def apply(arm, meshes, skin=None, body=None):
     # Off until a built body has been checked in the game (docs/handoff/animation.md):
     # pass --helpers after the build's "--" to build them in.
     if "--helpers" not in sys.argv:
         print("RIG helpers: off (pass --helpers to build them in)")
         return
     made = add_bones(arm)
+    # (her skin's split, read once, for the pieces she wears to share as it)
+    sampler = skin_sampler(arm, body) if (skin is not None and body is not None) else None
     total = 0
     for o in meshes:
         if o.type == "MESH":
-            total += split_mesh(arm, o)
+            total += split_mesh(arm, o, skin, sampler)
     print(f"RIG helpers: {made} bones added; {total} points split onto them")
+    # Her corrective shapes: on her body once split (called with her body
+    # alone), then on the pieces she wears, from the skin under them.
+    if sampler is None:
+        for o in meshes:
+            if o.type == "MESH" and o.name not in _CORR:
+                body_correctives(arm, o)
+    else:
+        if body.name not in _CORR:
+            # (her body exported in another run: its moves made again here,
+            # from the sampler's split of her)
+            _CORR[body.name] = _sampler_moves(arm, sampler)
+        keyed = sum(1 for o in meshes if o.type == "MESH" and piece_correctives(o, body, sampler))
+        print(f"RIG correctives: {keyed} pieces keyed")

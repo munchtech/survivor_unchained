@@ -28,7 +28,7 @@ from pathlib import Path
 
 import numpy as np
 
-from rig import DATA, REPO, Skeleton, qmatrix, qnorm
+from rig import DATA, REPO, Skeleton, qfrom_matrix, qmatrix, qnorm
 
 # (ANIM_PEOPLE, ANIM_SKELETONS, ANIM_OUT: another body, skeleton dump or
 # clip library to measure, a "before" kept aside say.)
@@ -58,20 +58,31 @@ class Gltf:
             self.js = json.loads(path.read_text())
             self.buffers = [(path.parent / buf["uri"]).read_bytes() for buf in self.js["buffers"]]
 
-    def accessor(self, i):
-        a = self.js["accessors"][i]
-        bv = self.js["bufferViews"][a["bufferView"]]
-        dt = np.dtype(self.TYPES[a["componentType"]])
-        w = self.WIDTH[a["type"]]
-        start = bv.get("byteOffset", 0) + a.get("byteOffset", 0)
+    def _read(self, view, offset, count, ctype, w):
+        bv = self.js["bufferViews"][view]
+        dt = np.dtype(self.TYPES[ctype])
+        start = bv.get("byteOffset", 0) + offset
         stride = bv.get("byteStride", 0) or dt.itemsize * w
         buf = self.buffers[bv["buffer"]]
-        raw = np.frombuffer(buf, dtype=np.uint8, count=stride * (a["count"] - 1) + dt.itemsize * w, offset=start)
+        raw = np.frombuffer(buf, dtype=np.uint8, count=stride * (count - 1) + dt.itemsize * w, offset=start)
         if stride == dt.itemsize * w:
-            out = raw.view(dt).reshape(a["count"], w)
+            return np.array(raw.view(dt).reshape(count, w))
+        return np.array(np.lib.stride_tricks.as_strided(raw.view(dt), shape=(count, w), strides=(stride, dt.itemsize)))
+
+    def accessor(self, i):
+        a = self.js["accessors"][i]
+        dt = np.dtype(self.TYPES[a["componentType"]])
+        w = self.WIDTH[a["type"]]
+        if "bufferView" in a:
+            out = self._read(a["bufferView"], a.get("byteOffset", 0), a["count"], a["componentType"], w)
         else:
-            out = np.lib.stride_tricks.as_strided(raw.view(dt), shape=(a["count"], w), strides=(stride, dt.itemsize))
-        out = np.array(out)
+            out = np.zeros((a["count"], w), dt)
+        sp = a.get("sparse")
+        if sp:
+            # (a morph target is written sparse: only the points it moves)
+            ix = self._read(sp["indices"]["bufferView"], sp["indices"].get("byteOffset", 0), sp["count"], sp["indices"]["componentType"], 1)
+            out[ix[:, 0].astype(np.int64)] = self._read(sp["values"]["bufferView"], sp["values"].get("byteOffset", 0), sp["count"],
+                                                        a["componentType"], w)
         if a.get("normalized"):
             out = out.astype(np.float64) / np.iinfo(dt).max
         return out
@@ -179,6 +190,21 @@ class Clip:
 ARM_PARTS = ("clavicle", "upperarm", "lowerarm", "hand", "index", "middle", "ring", "pinky", "thumb")
 
 
+def _normals(P, T):
+    """Area-weighted point normals [V, 3] of triangles T, welded by place
+    (points split at a seam share one); points on none get zero."""
+    _, inv = np.unique(np.round(P, 6), axis=0, return_inverse=True)
+    inv = inv.reshape(-1)
+    fn = np.cross(P[T[:, 1]] - P[T[:, 0]], P[T[:, 2]] - P[T[:, 0]])
+    N = np.zeros((inv.max() + 1, 3))
+    for k in range(3):
+        np.add.at(N, inv[T[:, k]], fn)
+    N = N[inv]
+    on = np.zeros(len(P), bool)
+    on[T.ravel()] = True
+    return np.where(on[:, None], N / np.maximum(np.linalg.norm(N, axis=1, keepdims=True), 1e-12), 0.0)
+
+
 def part_of(name):
     """Which part a bone moves: arm_l, arm_r, leg_l, leg_r or trunk."""
     side = name[-1] if name[-2:] in ("_l", "_r") else ""
@@ -209,6 +235,7 @@ class Body:
         self.rest = self._mats(grot[0], gpos[0])
         self.rest_inv = np.linalg.inv(self.rest)
         P, W, Jn, T, piece, kind = [], [], [], [], [], []
+        CP, CN = {}, {}
         base = 0
         for path, which, tag in files:
             g = Gltf(path)
@@ -247,6 +274,14 @@ class Body:
                 for pr in mesh["primitives"]:
                     a = pr["attributes"]
                     p = g.accessor(a["POSITION"]).astype(float)
+                    # Her corrective shapes as built: morph targets, by name.
+                    names_t = mesh.get("extras", {}).get("targetNames", [])
+                    tgs = pr.get("targets", [])
+                    for cn in hp.corrective_names():
+                        k = names_t.index(cn) if cn in names_t else -1
+                        tg = tgs[k] if 0 <= k < len(tgs) else {}
+                        for key, into in (("POSITION", CP), ("NORMAL", CN)):
+                            into.setdefault(cn, []).append(g.accessor(tg[key]).astype(float) if key in tg else np.zeros_like(p))
                     jj = remap[g.accessor(a["JOINTS_0"]).astype(int)]
                     ww = g.accessor(a["WEIGHTS_0"]).astype(float)
                     ww = np.where(jj < 0, 0, ww)
@@ -266,17 +301,34 @@ class Body:
         self.T = np.concatenate(T)
         self.piece = np.array(piece)
         self.kind = np.array(kind)
+        self.corr = {k: np.concatenate(v) for k, v in CP.items() if np.abs(np.concatenate(v)).max() > 0}
+        self.corrN = {k: np.concatenate(CN[k]) for k in self.corr}
         if self.split_here:
             import helpers as hp
             dense = np.zeros((len(self.P), len(sk.names)))
             for k in range(4):
                 np.add.at(dense, (np.arange(len(self.P)), self.J[:, k]), self.W[:, k])
             heads = {n: self.rest[j][:3, 3] for n, j in sk.index.items()}
-            dense = hp.split(dense, self.P, sk.index, heads)
+            dense = hp.split(dense, self.P, sk.index, heads, front=(0.0, 0.0, 1.0))
             order = np.argsort(-dense, axis=1)[:, :4]
             self.J = order
             self.W = np.take_along_axis(dense, order, 1)
             self.W = self.W / np.maximum(self.W.sum(1, keepdims=True), 1e-12)
+            # Her corrective shapes made here as the build makes them (her
+            # skin's; the shape's normals as Blender's shape key normals: of
+            # the moved points, welded).
+            idx = np.nonzero(self.kind == "skin")[0]
+            if len(idx) and not self.corr:
+                D = np.zeros((len(idx), len(sk.names)))
+                for k in range(4):
+                    np.add.at(D, (np.arange(len(idx)), self.J[idx, k]), self.W[idx, k])
+                Ts = self.T[(self.kind[self.T] == "skin").all(1)]
+                n0 = _normals(self.P, Ts)
+                for k, d in hp.corrective(self.P[idx], D, sk, front=(0.0, 0.0, 1.0)).items():
+                    full = np.zeros_like(self.P)
+                    full[idx] = d
+                    self.corr[k] = full
+                    self.corrN[k] = _normals(self.P + full, Ts) - n0
         # What moves each point: the part holding most of its weight, and how
         # much of its weight that part holds.
         parts = ["trunk", "arm_l", "arm_r", "leg_l", "leg_r"]
@@ -289,14 +341,15 @@ class Body:
         self.share = share
 
     @staticmethod
-    def _mats(grot, gpos, scale=None):
+    def _mats(grot, gpos, scale=None, shift=None):
         n = len(grot)
         M = np.tile(np.eye(4), (n, 1, 1))
         for j in range(n):
-            M[j, :3, :3] = qmatrix(grot[j])
+            R = qmatrix(grot[j])
+            M[j, :3, :3] = R
             if scale is not None:
-                M[j, :3, :3] = M[j, :3, :3] @ np.diag(scale[j])
-            M[j, :3, 3] = gpos[j]
+                M[j, :3, :3] = R @ np.diag(scale[j])
+            M[j, :3, 3] = gpos[j] if shift is None else gpos[j] + R @ shift[j]
         return M
 
     # -------------------------------------------------------- the factories --
@@ -344,14 +397,15 @@ class Body:
         """Bone globals [J, 4, 4] of frame f (no springs; her helpers driven
         as the game drives them)."""
         rot = clip.rot[f]
-        scale = None
+        scale = shift = None
         if self.helpers:
             import helpers as hp
             scale = np.ones((len(self.sk.names), 3))
-            rot = hp.drive(self.sk, rot.copy(), scale)
+            shift = np.zeros((len(self.sk.names), 3))
+            rot = hp.drive(self.sk, rot.copy(), scale, shift)
         grot, gpos = self.sk.fk(rot[None], clip.pos[f][None])
-        # (A bone's own scale reaches only itself: the helpers have no children.)
-        return self._mats(grot[0], gpos[0], scale)
+        # (A bone's own scale and shift reach only itself: the helpers have no children.)
+        return self._mats(grot[0], gpos[0], scale, shift)
 
     def world(self, clip: Clip, f):
         """Where the skeleton stands in the world at frame f: scaled as the
@@ -383,12 +437,46 @@ class Body:
     def skin_mats(self, G):
         return G @ self.rest_inv
 
+    def shape_weights(self, G):
+        """Her corrective shapes' weights for globals G: each keyed on its
+        joint's bend (helpers.corrective_weights), read from G."""
+        if not self.corr:
+            return {}
+        import helpers as hp
+        rot = self.sk.rest_rot.copy()
+        for c in hp.SPEC.get("correctives", []):
+            for s in "lr":
+                j = self.sk.index.get(c["bone"].replace("{s}", s))
+                if j is None:
+                    continue
+                a, b = G[self.sk.parent[j]][:3, :3], G[j][:3, :3]
+                a, b = a / np.linalg.norm(a, axis=0), b / np.linalg.norm(b, axis=0)
+                rot[j] = qnorm(qfrom_matrix(a.T @ b))
+        return {k: w for k, w in hp.corrective_weights(self.sk, rot).items() if k in self.corr and w > 0}
+
+    def rest_points(self, G, idx=None):
+        """Her points at rest with her corrective shapes in, as set for G."""
+        P = self.P if idx is None else self.P[idx]
+        for k, w in self.shape_weights(G).items():
+            P = P + w * (self.corr[k] if idx is None else self.corr[k][idx])
+        return P
+
+    def rest_normals(self, N, G):
+        """Rest normals N [V, 3] with her corrective shapes' in, as set for G."""
+        sw = self.shape_weights(G)
+        if not sw:
+            return N
+        for k, w in sw.items():
+            N = N + w * self.corrN[k]
+        return N / np.maximum(np.linalg.norm(N, axis=1, keepdims=True), 1e-12)
+
     def pose(self, G, idx=None):
-        """Posed points [V, 3] (or only `idx`) for globals G."""
+        """Posed points [V, 3] (or only `idx`) for globals G (her corrective
+        shapes in, as the game sets them)."""
         S = self.skin_mats(G)
         J = self.J if idx is None else self.J[idx]
         W = self.W if idx is None else self.W[idx]
-        P = self.P if idx is None else self.P[idx]
+        P = self.rest_points(G, idx)
         Ph = np.concatenate([P, np.ones((len(P), 1))], 1)
         out = np.zeros((len(P), 3))
         for k in range(4):

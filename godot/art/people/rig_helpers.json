@@ -40,9 +40,25 @@
    "kind": "share",
    "bone": "lowerarm_{s}",
    "amount": 0.5,
-   "bulge": 1.0,
-   "bulge_max": 2.0,
+   "bulge": 0.45,
+   "bulge_max": 1.45,
+   "pivot": 0.047,
    "way": "front"
+  },
+  {
+   "name": "lowerarm_point_{s}",
+   "parent": "upperarm_{s}",
+   "kind": "point",
+   "bone": "lowerarm_{s}",
+   "amount": 0.5,
+   "share": "lowerarm_share_{s}",
+   "push": 0.03,
+   "from": 70,
+   "to": 145,
+   "way": "front",
+   "squeeze": 0.0,
+   "squeeze_x": 0.0,
+   "squeeze_from": 100
   },
   {
    "name": "calf_share_{s}",
@@ -50,8 +66,9 @@
    "kind": "share",
    "bone": "calf_{s}",
    "amount": 0.5,
-   "bulge": 1.0,
-   "bulge_max": 2.0,
+   "bulge": 0.5,
+   "bulge_max": 1.5,
+   "pivot": 0.059,
    "way": "back"
   }
  ],
@@ -84,6 +101,41 @@
     "calf_share_{s}"
    ]
   ],
-  "cap": 4
- }
+  "cap": 4,
+  "crease": {
+   "cut": 1.0,
+   "reach": 0.035
+  },
+  "point": {
+   "lowerarm_point_{s}": {
+    "half": 20,
+    "fade": 40,
+    "at": 0.008,
+    "reach": 0.0,
+    "feather": 0.03
+   }
+  }
+ },
+ "correctives": [
+  {
+   "name": "elbow_point_{s}",
+   "bone": "lowerarm_{s}",
+   "way": "front",
+   "full": 145,
+   "from": 90,
+   "to": 145,
+   "amount": 0.012,
+   "radius": [
+    0.028,
+    0.06,
+    0.045
+   ],
+   "lean": 0.0,
+   "near": 0.008,
+   "garment": [
+    0.02,
+    0.04
+   ]
+  }
+ ]
 }

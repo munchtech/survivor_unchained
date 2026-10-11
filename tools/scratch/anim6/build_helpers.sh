@@ -3,15 +3,15 @@
 # then imported and her skeleton re-dumped (a Godot turn).
 #   bash build_helpers.sh            NOIMPORT=1 skips the Godot half
 T="python /c/Users/munch/Desktop/survivorsunchained/tools/turn.py"
-WT=/c/Users/munch/Desktop/survivorsunchained/.claude/worktrees/agent-ae2a9884e3e51609c
-S=/c/Users/munch/AppData/Local/Temp/claude/C--Users-munch-Desktop-survivorsunchained/0b33992d-1e38-4eb8-80a1-d5c23b1a44e6/scratchpad/an
+WT=/c/Users/munch/Desktop/survivorsunchained/.claude/worktrees/agent-af8dbda3195e438e4
+S=/c/Users/munch/AppData/Local/Temp/claude/C--Users-munch-Desktop-survivorsunchained/181eef02-779f-45de-b419-31a949a4d27e/scratchpad/an
 B=/c/Users/munch/Tools/blender-4.5.14-windows-x64/blender.exe
 G="/c/Users/munch/Desktop/Godot_v4.5.1-stable_mono_win64/Godot_v4.5.1-stable_mono_win64_console.exe"
 W="animation: helpers build"
 until $T take blender "$W" --wait 60 >/dev/null 2>&1; do :; done
 echo "blender turn $(date +%H:%M:%S)"
 cd $WT
-timeout 7000 "$B" -b "$S/heroine_built.blend" --python tools/assets/heroine_outfits.py -- godot/art/people/x --body godot/art/people/heroine.glb --helpers > "$S/build.log" 2>&1
+timeout 7000 "$B" -b "C:/Users/munch/AppData/Local/Temp/claude/C--Users-munch-Desktop-survivorsunchained/91211d34-e079-4956-a2a0-7b52c04594a8/scratchpad/an6/heroine_built_relinked.blend" --python tools/assets/heroine_outfits.py -- godot/art/people/x --body godot/art/people/heroine.glb --helpers > "$S/build.log" 2>&1
 echo "blender exit $?"
 $T give blender "$W" >/dev/null
 echo "blender done $(date +%H:%M:%S)"

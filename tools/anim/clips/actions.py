@@ -13,7 +13,7 @@ import numpy as np
 
 from clips.sword import _n
 from gait import arc_of
-from keyed import STRIKE, build, merge
+from keyed import STRIKE, _flatten, _unflatten, build, merge
 
 
 def stance(crouch=0.06, l=(0.13, 0.10), r=(-0.15, -0.08), weight=0.0):
@@ -101,16 +101,31 @@ def hit(rig):
 
 
 # ----------------------------------------------------------- death, rise --
-def _down_pose():
-    """Face down where she fell, one arm under her, one flung out, a knee
-    drawn up: the end of the fall, and the start of rising."""
+def _mix(a, b, t):
+    """Two poses mixed: their numbers in between at t (0 is a, 1 is b),
+    anything else (a preset) from the nearer one."""
+    fa, fb = _flatten(a), _flatten(b)
+    out = {}
+    for k in fa.keys() | fb.keys():
+        x, y = fa.get(k, fb.get(k)), fb.get(k, fa.get(k))
+        out[k] = x + (y - x) * t if isinstance(x, float) and isinstance(y, float) else (y if t >= 0.5 else x)
+    return _unflatten(out)
+
+
+def _down_pose(lift=0.0):
+    """Face down where she fell, one arm under her, one flung out, her legs
+    long on the ground: the end of the fall, and the start of rising. `lift`
+    holds her feet and knees that far off the ground (the moment before they
+    settle)."""
     return {
         "hips": {"pos": (0.02, -0.90, -0.22), "rot": (6, 90, 6)},
         "spine": (4, 2, 4), "neck": (20, -22, 0), "head": (42, -12, 0),
-        # (A bent knee lies out to the side along the ground: bent toward
-        # the ground it went 13 cm into it, and she sank at the fall.)
-        "foot_l": {"pos": (0.24, 0.0, -1.12), "rot": (10, -88, 0), "pole": (1.0, 0.15, 0.3)},
-        "foot_r": {"pos": (-0.12, 0.04, -1.02), "rot": (-6, -80, 0), "pole": (-1.0, 0.15, 0.3)},
+        # Her legs lie on the ground, the knees a little bent (10-20 degrees)
+        # and down, the shins and the tops of her feet on the ground, the toes
+        # pointed back (judge 10: a knee drawn up to the side left the shins
+        # raised 45-70 degrees off the ground, her feet in the air).
+        "foot_l": {"pos": (0.21, -0.045 + lift, -1.16), "rot": (6, -225, 0), "pole": (0.25, -1.0, 0.0)},
+        "foot_r": {"pos": (-0.13, -0.045 + lift, -1.17), "rot": (-4, -225, 0), "pole": (-0.15, -1.0, 0.0)},
         # The flung arm palm down, so a shield strapped to it lies face up
         # on it (the forearm takes the whole roll); the arm under her palm
         # up, so what is in the hand lies flat out from under her. (Left as
@@ -128,6 +143,12 @@ def death(rig):
     """A blow that takes her: rocked back, the knees go, she drops to them,
     sways, and falls forward onto her face, an arm out. Held there."""
     base = stance(0.06)
+    kneel = body({"foot_l": {"pos": (0.16, 0.02, -0.55), "rot": (8, -75, 0), "pole": (0.3, -1, 0.3)},
+                   "foot_r": {"pos": (-0.15, 0.02, -0.58), "rot": (-8, -78, 0), "pole": (-0.2, -1, 0.3)},
+                   "hips": {"pos": (0, -0.51, -0.10)}},
+                  hips=(6, 44, 6), spine=(6, 26, 8), neck=(0, 10, 0), head=(14, 6, 10),
+                  hand_l=arm((0.10, -0.20, 0.36), (0.8, 0.2, -0.3)), hand_r=arm((-0.06, -0.22, 0.30), (-0.8, 0.2, -0.3)),
+                  fingers_l="open", fingers_r="open")
     keys = [
         (0, body(base, hips=(8, -10, 0), spine=(10, -18, -4), neck=(0, -10, 0), head=(8, -20, -6),
                  clav_l=(10, 0), clav_r=(10, 0),
@@ -145,13 +166,14 @@ def death(rig):
                   hips=(4, 10, 6), spine=(6, 22, 8), neck=(0, 12, 0), head=(6, 14, 10),
                   hand_l=arm((0.0, -0.42, 0.04), (0.6, -0.4, -0.5)), hand_r=arm((0.0, -0.42, 0.02), (-0.6, -0.4, -0.5)),
                   fingers_l="relaxed", fingers_r="relaxed"), "auto"),
-        (21, body({"foot_l": {"pos": (0.16, 0.02, -0.55), "rot": (8, -75, 0), "pole": (0.3, -1, 0.3)},
-                   "foot_r": {"pos": (-0.15, 0.02, -0.58), "rot": (-8, -78, 0), "pole": (-0.2, -1, 0.3)},
-                   "hips": {"pos": (0, -0.51, -0.10)}},
-                  hips=(6, 44, 6), spine=(6, 26, 8), neck=(0, 10, 0), head=(14, 6, 10),
-                  hand_l=arm((0.10, -0.20, 0.36), (0.8, 0.2, -0.3)), hand_r=arm((-0.06, -0.22, 0.30), (-0.8, 0.2, -0.3)),
-                  fingers_l="open", fingers_r="open"), "auto"),
-        (27, _down_pose(), "ease"),
+        (21, kneel, "auto"),
+        # Falling forward, the legs swing back and down: the knees kept off
+        # the ground as they go (the shins straight down at the ground in
+        # between put her knees 4 cm into it).
+        (24, merge(_mix(kneel, _down_pose(), 0.5), foot_l={"pos": (0.19, 0.20, -0.98), "rot": (7, -150, 0), "pole": (0.25, -1.0, 0.0)},
+                   foot_r={"pos": (-0.14, 0.20, -0.99), "rot": (-6, -150, 0), "pole": (-0.15, -1.0, 0.0)}), "auto"),
+        (27, _down_pose(lift=0.025), "ease"),
+        (29, _down_pose(), "ease"),
         (34, merge(_down_pose(), spine=(4, 2, 4)), "ease"),
     ]
     return build("death", rig, keys, meta={"layer": "full", "hold": True})
@@ -227,17 +249,22 @@ def death_back(rig):
 def get_up(rig):
     """From where the fall left her: a push up on the hands, a knee under
     her, a breath on one knee, and up, shaking it off."""
-    keys = [
-        (0, _down_pose(), "ease"),
-        # On her hands and knees: the hips over the knees, the shins along
-        # the ground behind them. (Lower, the knees went 17 cm into it.)
-        (8, {"hips": {"pos": (0.0, -0.53, -0.28), "rot": (2, 60, 2)}, "spine": (0, 10, 0), "neck": (0, -10, 0),
+    # On her hands and knees: the hips over the knees, the shins along
+    # the ground behind them. (Lower, the knees went 17 cm into it.)
+    fours = {"hips": {"pos": (0.0, -0.53, -0.28), "rot": (2, 60, 2)}, "spine": (0, 10, 0), "neck": (0, -10, 0),
              "head": (0, -20, 0),
              "foot_l": {"pos": (0.16, 0.02, -0.74), "rot": (6, -80, 0), "pole": (0.3, -1, 0.2)},
              "foot_r": {"pos": (-0.14, 0.02, -0.76), "rot": (-6, -80, 0), "pole": (-0.2, -1, 0.2)},
              "hand_l": {"pos": (0.24, 0.04, 0.22), "pole": (1, 0, -0.5), "knuckles": (0, 0, 1)},
              "hand_r": {"pos": (-0.24, 0.04, 0.20), "pole": (-1, 0, -0.5), "knuckles": (0, 0, 1)},
-             "fingers_l": "open", "fingers_r": "open"}, "auto"),
+             "fingers_l": "open", "fingers_r": "open"}
+    keys = [
+        (0, _down_pose(), "ease"),
+        # (Her legs drawn up from long on the ground: the feet lifted as
+        # they come, the knees kept off the ground.)
+        (4, merge(_mix(_down_pose(), fours, 0.5), hips={"pos": (0.01, -0.60, -0.25), "rot": (4, 72, 4)}, foot_l={"pos": (0.18, 0.14, -0.95), "rot": (6, -150, 0), "pole": (0.3, -1, 0.1)},
+                  foot_r={"pos": (-0.14, 0.14, -0.96), "rot": (-6, -150, 0), "pole": (-0.2, -1, 0.1)}), "auto"),
+        (8, fours, "auto"),
         # One knee up.
         (16, body({"foot_l": {"pos": (0.15, 0.0, 0.22), "rot": (8, 0, 0), "pole": (0.2, 0, 1)},
                    "foot_r": {"pos": (-0.15, 0.02, -0.50), "rot": (-8, -70, 0), "pole": (-0.2, -1, 0.4)},
@@ -361,20 +388,36 @@ def throw(rig):
     """Overhand: the hand already back behind her head, whipped through,
     released high and in front, the arm following through across her."""
     keys = [
-        (0, body(stance(0.07, weight=-0.4), hips=(-16, -2, 0), spine=(-26, -8, 0), head=(30, -2, 0),
-                 hand_r=arm((-0.14, 0.20, -0.16), (-0.6, -0.3, 0.6), blade=_n(-0.2, 0.6, -0.8)),
-                 hand_l=arm((0.06, -0.08, 0.36), (0.8, -0.5, -0.2)), fingers_r="grip", fingers_l="open"), "fast"),
+        # The wind-up (the owner, 11 October: the arm went straight up at the
+        # ball joint, twisted thin, the forearm over her crown and the wrist
+        # bent back hard): the shoulder shrugged and drawn back, the elbow
+        # out to the side at shoulder height, the hand behind her ear, the
+        # wrist straight with the forearm until the release.
+        (0, body(stance(0.07, weight=-0.4), hips=(-16, -2, 0), spine=(-26, -8, 0), head=(30, -2, 0), clav_r=(16, -6),
+                 # (judge, 11 October: the hand 10-15 cm in toward her head, the
+                 # forearm upright from behind, the upper arm turned out, the
+                 # axe head back behind the shoulder; the other arm reaching
+                 # forward at chest height)
+                 # (judge 10: the haft stood upright, the head over her crown,
+                 # and the other hand at her waist: the haft laid back toward
+                 # her back, the other hand raised to her chest)
+                 hand_r=arm((-0.12, 0.18, -0.20), (-0.9, 0.0, -0.2), blade=_n(0.15, 0.45, -0.88)),
+                 hand_l=arm((0.05, 0.12, 0.36), (0.8, -0.5, -0.2)), fingers_r="grip", fingers_l="open"), "fast"),
         (2.5, body(stance(0.08), hips=(-2, 6, 0), spine=(0, 8, 0), head=(4, -4, 0),
                    hand_r=arm((-0.04, 0.10, 0.44), (-0.8, -0.3, -0.2), blade=_n(0.0, 0.3, 1.0)),
-                   hand_l=arm((0.10, -0.20, 0.10), (0.8, -0.3, -0.3)), fingers_r="open", fingers_l="relaxed"), "linear"),
+                   hand_l=arm((0.06, -0.30, 0.18), (0.6, -0.2, -0.6)), fingers_r="open", fingers_l="relaxed"), "linear"),
         (6, body(stance(0.10, weight=0.5), hips=(12, 10, 0), spine=(22, 14, 0), head=(-26, -6, 0),
                  hand_r=arm((0.22, -0.34, 0.30), (-0.8, -0.2, 0.0)),
-                 hand_l=arm((0.08, -0.26, -0.18), (0.8, -0.2, -0.3)), fingers_r="relaxed", fingers_l="relaxed"), "ease"),
+                 # The other arm swept down to her hip as she turns in, not
+                 # behind her back (it read as a raised arm at the play camera):
+                 # the elbow a little behind her, the wrist straight.
+                 hand_l=arm((-0.02, -0.42, 0.14), (0.4, -0.1, -0.9)), fingers_r="relaxed", fingers_l="relaxed"), "ease"),
         (9, body(stance(0.10, weight=0.5), hips=(13, 10, 0), spine=(24, 14, 0), head=(-28, -6, 0),
                  hand_r=arm((0.24, -0.36, 0.26), (-0.8, -0.2, 0.0)),
-                 hand_l=arm((0.08, -0.27, -0.18), (0.8, -0.2, -0.3)), fingers_r="relaxed", fingers_l="relaxed"), "auto"),
+                 hand_l=arm((-0.01, -0.44, 0.12), (0.4, -0.1, -0.9)), fingers_r="relaxed", fingers_l="relaxed"), "auto"),
         (20, body(stance(0.07), hand_r=arm((0.0, -0.34, 0.16), (-0.6, -0.4, -0.5)),
-                  hand_l=arm((0.0, -0.36, 0.14), (0.6, -0.4, -0.5)), fingers_r="grip", fingers_l="relaxed"), "ease"),
+                  # (the hand at the side of her thigh, off her groin: judge 10)
+                  hand_l=arm((0.06, -0.38, 0.06), (0.6, -0.4, -0.5)), fingers_r="grip", fingers_l="relaxed"), "ease"),
     ]
     return build("throw", rig, keys, lead=STRIKE, meta={"layer": "upper", "contact": 2.5 / 30, "weapon": "daggers"})
 
