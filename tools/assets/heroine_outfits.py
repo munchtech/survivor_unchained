@@ -3678,62 +3678,268 @@ def leg_z(sd, s0):
     return float(np.interp(s0, d, np.array(pts)[:, 2]))
 
 
+PL_SPOTS = []   # (the pauldron's rivets as laid: plate, centre; for its checks)
+PL_ROWS = {}    # (each pauldron plate's one blend of bones)
+
+
+def pl_frame(Q, F_):
+    """Points in her left arm's frame: `s` down the arm from the ball of her
+    shoulder, the bearing round it (0 up her outer arm, + to her front) and
+    the distance off its axis."""
+    c_, a_, e0_, e1_ = F_
+    d_ = np.atleast_2d(Q) - c_
+    s_ = d_ @ a_
+    r_ = d_ - np.outer(s_, a_)
+    return s_, np.arctan2(r_ @ e1_, r_ @ e0_), np.linalg.norm(r_, axis=1)
+
+
+def pl_point(s_, th_, rho_, F_):
+    c_, a_, e0_, e1_ = F_
+    return c_ + np.outer(s_, a_) + np.asarray(rho_)[:, None] * (np.outer(np.cos(th_), e0_) + np.outer(np.sin(th_), e1_))
+
+
+def pl_row(base, w):
+    """A plate's one blend of bones: `w` of her upper arm, the rest the
+    shoulder's own blend under the dome (her collarbone, chest and neck)."""
+    arm_l = [BI[n] for n in BONES if n.endswith("_l") and n.split("_")[0] in
+             ("upperarm", "lowerarm", "hand", "index", "middle", "pinky", "ring", "thumb")]
+    rest = np.array(base, float)
+    rest[arm_l] = 0
+    rest /= rest.sum()
+    row = rest * (1 - w)
+    row[BI["upperarm_l"]] += w
+    return four_bones(row[None])[0]
+
+
+def pl_one_blend(objs, row):
+    """Every point of these parts on the plate's one blend (it moves rigidly)."""
+    keep = np.where(row > 0.003)[0]
+    for o in objs:
+        for vg in list(o.vertex_groups):
+            o.vertex_groups.remove(vg)
+        idx = list(range(len(o.data.vertices)))
+        for j in keep:
+            o.vertex_groups.new(name=BONES[j]).add(idx, float(row[j] / row[keep].sum()), "REPLACE")
+
+
+def pl_rim(pos, tris, F_):
+    """A plate's lower rim round her arm, from its outline as built: the
+    lowest crossing at each bearing (half a degree apart) and the plate's
+    distance off her arm there; only the rim proper, round the lowest point
+    for as long as it runs round her arm at 45 degrees or less (past that it
+    is the plate's end, turning up)."""
+    loop = max(edge_loops(tris), key=len)
+    s_, th_, rho_ = pl_frame(pos[loop], F_)
+    g_ = np.radians(np.arange(-150, 150.01, 0.5))
+    lo, rr = np.full(len(g_), -np.inf), np.zeros(len(g_))
+    for i in range(len(loop)):
+        j = (i + 1) % len(loop)
+        if min(rho_[i], rho_[j]) < 0.02 or abs(th_[j] - th_[i]) > 0.5 or th_[j] == th_[i]:
+            continue
+        k = np.where((g_ >= min(th_[i], th_[j])) & (g_ < max(th_[i], th_[j])))[0]
+        if not len(k):
+            continue
+        f = (g_[k] - th_[i]) / (th_[j] - th_[i])
+        sv, rv = s_[i] + f * (s_[j] - s_[i]), rho_[i] + f * (rho_[j] - rho_[i])
+        up = sv > lo[k]
+        lo[k[up]], rr[k[up]] = sv[up], rv[up]
+    ok = np.isfinite(lo)
+    mid = np.where(ok & (np.abs(g_) < np.radians(60)))[0]
+    i0 = mid[np.argmax(lo[mid])]
+    dg = np.radians(0.5)
+    a0 = b0 = i0
+    while a0 > 0 and ok[a0 - 1] and abs(lo[a0 - 1] - lo[a0]) <= rr[a0] * dg:
+        a0 -= 1
+    while b0 < len(g_) - 1 and ok[b0 + 1] and abs(lo[b0 + 1] - lo[b0]) <= rr[b0] * dg:
+        b0 += 1
+    return g_[a0:b0 + 1], lo[a0:b0 + 1], rr[a0:b0 + 1]
+
+
+def pl_lame(name, above, F_, row, O, V, E=0.016, tuck=0.0045, taper=-0.04, flare=0.004, joggle=0.004,
+            rc=0.010, thick=0.0015, rv_end=0.022, rv_up=0.009):
+    """A lame: a band round her arm under the rim of the plate above it, built
+    in her arm's frame and never drawn on her skin (an outline on her skin,
+    lifted off it, slid 10 to 18 mm, and no tuck survived: judge 5). Its top
+    edge follows the built rim above `O` up under it, its lower edge `V` below
+    that rim, each end `E` inside the rim's own end, the corners rounded `rc`.
+    Its distance off her arm is one smooth law: the plate above's, less
+    `tuck`, at every bearing (a Chebyshev fit, then lowered until it is under
+    that plate everywhere they overlap), narrowing down her arm by `taper`,
+    the hidden top bent `joggle` further in, the lower edge flared `flare`
+    out over its last 12 mm. Laid out round her arm (its brushing runs round
+    it, one island), bound all round, rivets `rv_up` above its lower edge."""
+    from numpy.polynomial import chebyshev as cheb
+    from scipy.interpolate import LinearNDInterpolator
+    pa, ta = above
+    th_r, s_r, rho_r = pl_rim(pa, ta, F_)
+    rl = rho_r - tuck
+    u_r = np.r_[0, np.cumsum(np.diff(th_r) * (rl[1:] + rl[:-1]) / 2)]
+    u_r -= np.interp(0.0, th_r, u_r)
+
+    def th_of(u):
+        return np.where(u < u_r[0], th_r[0] + (u - u_r[0]) / rl[0],
+                        np.where(u > u_r[-1], th_r[-1] + (u - u_r[-1]) / rl[-1], np.interp(u, u_r, th_r)))
+
+    def u_of(th):
+        return np.where(th < th_r[0], u_r[0] + (th - th_r[0]) * rl[0],
+                        np.where(th > th_r[-1], u_r[-1] + (th - th_r[-1]) * rl[-1], np.interp(th, th_r, u_r)))
+    cl = np.r_[0, np.cumsum(np.hypot(np.diff(u_r), np.diff(s_r)))]
+    L = cl[-1]
+    tt = np.arange(0, L, 0.0005)
+    C = np.c_[np.interp(tt, cl, u_r), np.interp(tt, cl, s_r)]
+    T = np.gradient(C, axis=0)
+    T /= np.linalg.norm(T, axis=1)[:, None]
+    Nn = np.c_[-T[:, 1], T[:, 0]]
+    # (a grid over the band's box, each point placed along the rim and below it)
+    inb = (tt >= E) & (tt <= L - E)
+    box = np.vstack([C[inb] + d * Nn[inb] for d in (-O, V)])
+    h = 0.0015
+    gu = np.arange(box[:, 0].min() - 0.004, box[:, 0].max() + 0.004, h)
+    gs = np.arange(box[:, 1].min() - 0.004, box[:, 1].max() + 0.004, h)
+    UU, SS = np.meshgrid(gu, gs, indexing="ij")
+    uv2 = np.c_[UU.ravel(), SS.ravel()]
+    ns = len(gs)
+    ii = (np.arange(len(gu) - 1)[:, None] * ns + np.arange(ns - 1)[None, :]).ravel()
+    tri = np.vstack([np.c_[ii, ii + ns, ii + 1], np.c_[ii + ns, ii + ns + 1, ii + 1]])
+    _, jn = cKDTree(C).query(uv2)
+    t_ = tt[jn]
+    d_ = ((uv2 - C[jn]) * Nn[jn]).sum(1)
+    tc, hw, dc, hh = L / 2, (L - 2 * E) / 2, (V - O) / 2, (V + O) / 2
+    qx, qy = np.abs(t_ - tc) - (hw - rc), np.abs(d_ - dc) - (hh - rc)
+    field = -(np.minimum(np.maximum(qx, qy), 0) + np.hypot(np.maximum(qx, 0), np.maximum(qy, 0)) - rc)
+    th_g = th_of(uv2[:, 0])
+    # (the plate above, as built, round her arm: its distance off the axis at
+    # each bearing and height)
+    sa, tha, rha = pl_frame(pa, F_)
+    near = (np.abs(tha) < np.radians(150)) & (rha > 0.02)
+    rad_above = LinearNDInterpolator(np.c_[tha[near] * rl.mean(), sa[near]], rha[near])(th_g * rl.mean(), uv2[:, 1])
+    jog = joggle * np.clip(-d_ / O, 0, 1) ** 2
+    fl = flare * np.clip((d_ - (V - 0.012)) / 0.012, 0, 1) ** 2
+    ov = (field > -0.003) & (d_ < 0.001) & np.isfinite(rad_above)
+    bound = rad_above - tuck - taper * d_ + jog
+    lo_t, hi_t = th_g[ov].min(), th_g[ov].max()
+
+    def xb(th):
+        return np.clip((th - lo_t) / (hi_t - lo_t) * 2 - 1, -1, 1)
+    bins = np.round(np.degrees(th_g[ov])).astype(int)
+    ub = np.unique(bins)
+    cb = np.array([bound[ov][bins == b].min() for b in ub])
+    xs = xb(np.radians(ub))
+    tgt = cb.copy()
+    for _ in range(8):
+        coef = cheb.chebfit(xs, tgt, 6)
+        over = cheb.chebval(xs, coef) - cb
+        if over.max() < 0.0001:
+            break
+        tgt -= np.maximum(over, 0)
+    shift = max(0.0, float((cheb.chebval(xb(th_g[ov]), coef) - bound[ov]).max())) + 0.0002
+
+    def law(th, d):
+        return (cheb.chebval(xb(th), coef) - shift + taper * d + flare * np.clip((d - (V - 0.012)) / 0.012, 0, 1) ** 2
+                - joggle * np.clip(-d / O, 0, 1) ** 2)
+    X = pl_point(uv2[:, 1], th_g, law(th_g, d_), F_)
+    at = np.c_[np.zeros((len(X), 3)), np.repeat(row[None], len(X), 0), t_, d_, field]
+    pos, at, tris = clip(field, X, at, tri)
+    pos, at, tris = weld(pos, at, tris)
+    tris = islands(pos, tris)
+    nr = vertex_normals(pos, tris)
+    sp, thp, _ = pl_frame(pos, F_)
+    if (nr * (np.cos(thp)[:, None] * F_[2] + np.sin(thp)[:, None] * F_[3])).sum(1).mean() < 0:
+        tris = tris[:, ::-1]
+        nr = -nr
+    at[:, :3] = nr
+    pos, beads = bind_edges(name, pos, at, tris, "bronze", 0.0045, 0.0005, 0.0015, thick, sigma=0.003)
+    # (how far the bound sheet stands off its own law: rigid, none)
+    sp, thp, rp = pl_frame(pos, F_)
+    q2 = np.c_[u_of(thp), sp]
+    _, jq = cKDTree(C).query(q2)
+    dev = np.abs(rp - law(thp, ((q2 - C[jq]) * Nn[jq]).sum(1)))
+    print("PAULDRON %s: %.0f mm long round her arm, %d points, off its law by %.2f mm at most (%.2f mm 99%%), "
+          "lowered %.1f mm" % (name, (L - 2 * E) * 1000, len(pos), dev.max() * 1000, np.percentile(dev, 99) * 1000, shift * 1000))
+    SHEET[name] = (pos.copy(), tris.copy(), at[:, 3:3 + NB].copy(), thick)
+    RIGID_UV[name] = (F_[0], F_[1], True)
+    made = [finish(name, pos, at[:, 3:3 + NB], tris, "bronze", thick, 0.0012, 3000)] + beads
+    # (rivets in one row `rv_up` above its lower edge, `rv_end` in from its ends)
+    n = max(2, int(round((L - 2 * E - 2 * rv_end) / 0.028)) + 1)
+    tk = np.linspace(E + rv_end, L - E - rv_end, n)
+    pk = np.c_[np.interp(tk, tt, C[:, 0]), np.interp(tk, tt, C[:, 1])] + (V - rv_up) * np.c_[np.interp(tk, tt, Nn[:, 0]), np.interp(tk, tt, Nn[:, 1])]
+    thk = th_of(pk[:, 0])
+    spots = pl_point(pk[:, 1], thk, law(thk, np.full(n, V - rv_up)), F_)
+    _, jv = cKDTree(pos).query(spots)
+    made += rivets(name, pos, at, tris, thick, "darksteel", spots=(spots, vertex_normals(pos, tris)[jv], np.repeat(row[None], n, 0)))
+    PL_SPOTS.extend((name, p) for p in spots)
+    pl_one_blend([o for o in made if o is not None], row)
+    PL_ROWS[name] = row
+    return made, (pos, tris)
+
+
+def pl_border_spots(pos, tris, F_, inset=0.0095, step=0.028):
+    """Rivets in a row `inset` inside a plate's outline, `step` apart round
+    it, one at its lowest point on her outer arm."""
+    loop = max(edge_loops(tris), key=len)
+    lp = np.vstack([pos[loop], pos[loop[:1]]])
+    run = np.r_[0, np.cumsum(np.linalg.norm(np.diff(lp, axis=0), axis=1))]
+    Lp = run[-1]
+    rd = np.arange(0, Lp, 0.0005)
+    dense = np.stack([np.interp(rd, run, lp[:, k]) for k in range(3)], 1)
+    dist, j = cKDTree(dense).query(pos)
+    par = rd[j]
+    cand = np.where(np.abs(dist - inset) < 0.003)[0]
+    s_, th_, _ = pl_frame(dense, F_)
+    lat = np.where(np.abs(th_) < np.radians(30))[0]
+    a0 = rd[lat[np.argmax(s_[lat])]]
+    n = int(round(Lp / step))
+    nor = vertex_normals(pos, tris)
+    pts, nrs = [], []
+    for k in range(n):
+        tgt = (a0 + k * Lp / n) % Lp
+        dp = np.abs((par[cand] - tgt + Lp / 2) % Lp - Lp / 2)
+        best = np.argmin(dp + 2 * np.abs(dist[cand] - inset))
+        if dp[best] < 0.005:
+            pts.append(pos[cand[best]])
+            nrs.append(nor[cand[best]])
+    return np.array(pts), np.array(nrs)
+
+
 def ranger_pauldron():
-    """Her left spaulder: a bronze dome over her shoulder and three lames down her arm."""
+    """Her left spaulder: a bronze dome over her shoulder and three lames down
+    her arm, each a rigid plate on one blend of bones, stepping from the
+    dome's (her shoulder's, seated on her trapezius) to her upper arm's."""
     out = []
     sh = shoulder("l")
-    # (judge 3: each plate fitted on its own, the lames cut through one
-    # another and the one above (a gash at the top). Now built from the
-    # lowest up, each a fair dome lifted until it stands clear outside those
-    # under it (its 1.5 mm and a 1.3 mm gap), and laid out round her arm.)
     ctr = head("upperarm_l")
-    arm_ax = head("lowerarm_l") - ctr
-    NEST.pop("ranger.pauldron", None)
-    PL_LAP = 0.01
-    plates = [(0.0, 0.11, 0.018), (-0.045, 0.1, 0.015), (-0.09, 0.09, 0.012), (-0.13, 0.08, 0.009)]
-    cut_z = [sh[2] + dz - r * 0.55 for dz, r, _ in plates]
-    # (judge 4: each lame was cut wider than the plate above it, so its ends
-    # stood out beside that plate, above its lower rim: a sliver and a kink
-    # at the dome's back, and every corner a sharp point the rolled rim
-    # ended in. Each plate's corners are now rounded `PL_ROUND`, and each
-    # lame's arc round her arm ends `PL_TUCK` inside the straight lower rim
-    # of the plate above, so both its ends go under that plate.)
-    PL_ROUND, PL_TUCK = 0.011, 0.012
-    P_TREE = cKDTree(P)
-    ax_ = arm_ax / np.linalg.norm(arm_ax)
-    d_ = P - ctr
-    rad_ = d_ - np.outer(d_ @ ax_, ax_)
+    ax_ = head("lowerarm_l") - ctr
+    ax_ /= np.linalg.norm(ax_)
     e0 = (sh - ctr) - ax_ * ((sh - ctr) @ ax_)
     e0 /= np.linalg.norm(e0)
-    th_ = np.arctan2(rad_ @ np.cross(ax_, e0), rad_ @ e0)
-    rho_ = np.linalg.norm(rad_, axis=1)
-    zones = []
-    for k, (dz, r, _) in enumerate(plates):
-        z_ = ANDR(cap(sh + np.array([0.02 * k, 0, dz]), r), Z - cut_z[k], r=PL_ROUND)
-        if k:
-            # (judge 5: an arc round her arm still let lame 1 out beside the
-            # dome at its back, where the dome's rim is its round, not its
-            # cut. So a lame keeps only what, slid up her arm by its own
-            # height, lies `PL_TUCK` inside the plate above: in that
-            # plate's shadow, its top edge under it everywhere.)
-            # (any slide from 5 to 90 mm: a band above is hit by whatever
-            # lies under it, at whatever height)
-            arc = np.max([zones[k - 1][P_TREE.query(P - ax_ * sl)[1]] for sl in np.arange(0.005, 0.0901, 0.005)], axis=0) - PL_TUCK
-            print("PAULDRON lame %d: kept in plate %d's shadow up her arm" % (k, k - 1))
-            # (a lame is a band: under the plate above only by its 10 mm overlap)
-            z_ = ANDR(ANDR(z_, PL_LAP - zones[k - 1], r=PL_ROUND), arc, r=PL_ROUND)
-        zones.append(z_)
-    for k in reversed(range(len(plates))):
-        lft = plates[k][2]
-        RIGID_UV[f"ranger.pauldron{k}"] = (ctr, ax_, k > 0)
-        zone = zones[k]
-        # (a lame's centre on her arm at its own height: about the shoulder's
-        # ball, a band down her arm fitted badly, 8 mm rms)
-        ax_ = arm_ax / np.linalg.norm(arm_ax)
-        cen = ctr if k == 0 else ctr + ax_ * max(0.0, float((P[zone > 0].mean(0) - ctr) @ ax_))
-        out += piece(f"ranger.pauldron{k}", zone, "bronze", lift=lft, thick=0.0015, smooth=14,
-                     soften=10, studs="darksteel", rigid=(cen, "ranger.pauldron", 0.0028),
-                     studs_off=zones[k - 1] if k else None)
+    F_ = (ctr, ax_, e0, np.cross(ax_, e0))
+    NEST.pop("ranger.pauldron", None)
+    # (her upper arm's share in each plate: the dome stays with her shoulder,
+    # the lames step to her arm, by less lower down, where the same turn
+    # about her shoulder's ball swings a lame further out under the one above)
+    PL_W = tuple(float(x) for x in os.environ.get("PL_W", "0.05,0.42,0.60,0.72").split(","))
+    PL_O = tuple(float(x) for x in os.environ.get("PL_O", "0.022,0.016,0.014").split(","))   # (how far each lame goes up under the plate above)
+    PL_V = tuple(float(x) for x in os.environ.get("PL_V", "0.030,0.029,0.028").split(","))   # (and shows below it)
+    PL_LIFT = float(os.environ.get("PL_LIFT", "0.026"))
+    PL_TUCK = float(os.environ.get("PL_TUCK", "0.0045"))
+    zone = ANDR(cap(sh, 0.11), Z - (sh[2] - 0.11 * 0.55), r=0.011)
+    RIGID_UV["ranger.pauldron0"] = (ctr, ax_, False)
+    dome = piece("ranger.pauldron0", zone, "bronze", lift=PL_LIFT, clear=0.015, thick=0.0015, smooth=14,
+                 soften=10, rigid=(ctr, "ranger.pauldron", 0.0028))
+    pd, td, wd, _ = SHEET["ranger.pauldron0"]
+    row = pl_row(wd[0], PL_W[0])
+    pts, nrs = pl_border_spots(pd, td, F_)
+    dome += rivets("ranger.pauldron0", pd, None, td, 0.0015, "darksteel", spots=(pts, nrs, np.repeat(row[None], len(pts), 0)))
+    PL_SPOTS.extend(("ranger.pauldron0", p) for p in pts)
+    pl_one_blend([o for o in dome if o is not None], row)
+    PL_ROWS["ranger.pauldron0"] = row
+    SHEET["ranger.pauldron0"] = (pd, td, np.repeat(row[None], len(pd), 0), 0.0015)
+    out += dome
+    above = (pd, td)
+    for k in (1, 2, 3):
+        made, above = pl_lame(f"ranger.pauldron{k}", above, F_, pl_row(wd[0], PL_W[k]), PL_O[k - 1], PL_V[k - 1],
+                              tuck=PL_TUCK, rv_end=0.022 if k < 3 else 0.012)
+        out += made
     return out
 
 
