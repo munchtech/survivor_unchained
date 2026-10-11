@@ -30,12 +30,12 @@ public partial class HairSway : Node
     // faces +Z): a hand below it and a little behind.
     static readonly Vector3 Hang = new(0, -0.25f, -0.08f);
 
-    /// <summary>A ball the chain is kept out of. Behind: one down her neck and back, which pushes it out behind her
+    /// <summary>A ball the chain is kept out of (W: stretched that far each way across her back). Behind: one down her neck and back, which pushes it out behind her
     /// only. (On all fours in chain_haul, her head up, where her tail would hang from her head runs through her
     /// chest; pushed out the nearest way, the chain came out of her front. What hangs from her head is never in
     /// front of her chest. The tip that showed in her plunge, outfits judge h1, 11 October 2026, was her tail not
     /// swinging at all: its weights reached the shader upside down, tools/scratch/face17/uv2flip.py.)</summary>
-    sealed class Ball { public int Bone; public Vector3 At; public float R; public bool Behind; }
+    sealed class Ball { public int Bone; public Vector3 At; public float R, W; public bool Behind; }
 
     // Her forearms, from the elbow to past the fist, in the skeleton's space at rest: the shader pushes her hair out of
     // them (a lock by her ear as her throwing arm comes past her head, animation judge 20), and balls at her shoulders and
@@ -63,10 +63,13 @@ public partial class HairSway : Node
     float[] keep = [];
     Ball[] balls = [];
     // This frame's: where the chain's points would hang, and the balls they are kept out of.
-    Vector3[] target = new Vector3[8], at = [], back = [];
+    Vector3[] target = new Vector3[8], at = [], back = [], across = [];
     float[] hold = new float[8], grip = new float[8];
     Vector3[] vel = new Vector3[8], touch = new Vector3[8];
     bool[] grounded = new bool[8];
+    // How long since any of it lay on the ground, and since each point's rest last stopped hanging down.
+    float offFloor = 1e3f;
+    float[] hungFor = new float[8];
     Vector3 rootThen;
     // What the shader is given (in the mesh's space): this frame's swing and where her head
     // is, and last frame's, for the motion vectors (MotionClock).
@@ -106,6 +109,10 @@ public partial class HairSway : Node
             var b = bs[i].AsGodotDictionary();
             var name = (string)b["bone"];
             list.Add(new Ball { Bone = sk.FindBone(name), At = Vec(b["at"]), R = (float)b["r"], Behind = name.StartsWith("neck") || name.StartsWith("spine") });
+            // Her back is wide and flat: those down her spine are stretched 6 cm each way across it (as far back as at her
+            // spine to 6 cm out, and reaching her sides), so a braid that swings over her shoulder as she throws and then
+            // bends forward lies on her back, not 2-4 cm into it beside her spine, hidden (hair judge hj2).
+            if (name.StartsWith("spine")) list[^1].W = 0.06f;
         }
         // (her shoulders and upper arms only: her forearm and fist sweeping past her head as she threw kicked the chain
         // up over her head, hair judge hj1; the shader keeps her hair out of her forearms)
@@ -168,26 +175,39 @@ public partial class HairSway : Node
         {
             var moved = world * Moved(bone);
             for (int i = 0; i < 8; i++) target[i] = moved * rest[i];
-            if (at.Length != balls.Length) { at = new Vector3[balls.Length]; back = new Vector3[balls.Length]; }
+            if (at.Length != balls.Length) { at = new Vector3[balls.Length]; back = new Vector3[balls.Length]; across = new Vector3[balls.Length]; }
             for (int i = 0; i < balls.Length; i++)
             {
                 var mv = Moved(balls[i].Bone);
                 at[i] = world * (mv * balls[i].At);
                 back[i] = (world.Basis * mv.Basis * Vector3.Forward).Normalized();   // (her back: -z at rest)
+                across[i] = world.Basis * mv.Basis * new Vector3(balls[i].W, 0, 0);    // (her left to right, its half-width)
             }
             // How stiff each point is held to its rest: all of it while its rest hangs down from the root (within about
             // 30 degrees: she leans into a run or a throw, and long hair lies on her back as it did), the root's share only
             // (keep) once that rest is level or up (lying, folded forward, her head tipped back).
             // It is let go at once, but taken back over half a second, and not while it lies on the ground: taken back
             // at once, a braid lying by her face as her head rolled over was snatched up into a rod (hair judge hj1).
+            // A link whose rest points up (her head face down, tipped back) lets go of the root's share too, for every point
+            // past it (the first link, in the tie, keeps half): a braid stood up off the back of her head as a rod (hj2).
+            // And it's taken back for the whole chain or not at all: not while any of it lies on the ground or for half a
+            // second after (a tail's free end stiffened and hooked up off its middle pinned on the floor), and at each point
+            // only once its rest has hung down for half a second unbroken.
+            bool lying = false;
+            for (int i = 1; i < 8; i++) { lying |= grounded[i]; grounded[i] = false; }
+            offFloor = lying ? 0 : offFloor + dt;
+            float level = 1;
             for (int i = 1; i < 8; i++)
             {
                 float u = Mathf.SmoothStep(0.35f, 0.85f, (target[i] - target[0]).Normalized().Dot(Vector3.Down));
-                float want = stiff * (keep[i] + (1f - keep[i]) * u);
-                hold[i] = !live || want <= hold[i] ? want : grounded[i] ? hold[i] : Mathf.Min(want, hold[i] + stiff * dt / 0.5f);
-                grounded[i] = false;
+                level = Mathf.Min(level, Mathf.SmoothStep(-0.3f, 0.1f, (target[i] - target[i - 1]).Normalized().Dot(Vector3.Down)));
+                float k = keep[i] * (i == 1 ? 0.5f + 0.5f * level : level);
+                float want = stiff * (k + (1f - k) * u);
+                hungFor[i] = u > 0.98f ? hungFor[i] + dt : 0;
+                if (!live || want <= hold[i]) hold[i] = want;
+                else if (offFloor > 0.5f && hungFor[i] > 0.5f) hold[i] = Mathf.Min(want, hold[i] + stiff * dt / 0.5f);
             }
-            if (!live || dt <= 0) { x = (Vector3[])target.Clone(); xp = (Vector3[])target.Clone(); rootThen = target[0]; live = true; }
+            if (!live || dt <= 0) { x = (Vector3[])target.Clone(); xp = (Vector3[])target.Clone(); rootThen = target[0]; offFloor = 1e3f; live = true; }
             // Steps of about 1/120 s whatever the frame rate (four at 30 fps, as it was tuned and judged): the
             // stiffness and the damping are per step, so at 60 fps four steps held it twice as stiff.
             int steps = Mathf.Max(1, Mathf.CeilToInt(dt * 120f - 1e-3f));
@@ -220,13 +240,17 @@ public partial class HairSway : Node
                         x[i] = x[i - 1] + (x[i] - x[i - 1]).Normalized() * link[i];
                         for (int b = 0; b < balls.Length; b++)
                         {
-                            var off = x[i] - at[b];
+                            // (the nearest point of its line across her back)
+                            var w = across[b];
+                            float ww = w.LengthSquared();
+                            var c = ww > 0 ? at[b] + w * Mathf.Clamp((x[i] - at[b]).Dot(w) / ww, -1f, 1f) : at[b];
+                            var off = x[i] - c;
                             float r = balls[b].R;
                             if (off.LengthSquared() >= r * r) continue;
                             // (in front of a ball down her back: mirrored behind it, then out)
                             if (balls[b].Behind && off.Dot(back[b]) < 0) { off -= 2 * off.Dot(back[b]) * back[b]; }
                             var n = off.LengthSquared() > 1e-10f ? off.Normalized() : back[b];
-                            x[i] = at[b] + n * r;
+                            x[i] = c + n * r;
                             touch[i] = n; grip[i] = Mathf.Max(grip[i], 0.1f);
                         }
                         if (x[i].Y < floor) { x[i].Y = floor; touch[i] = Vector3.Up; grip[i] = 0.5f; grounded[i] = true; }
@@ -242,6 +266,15 @@ public partial class HairSway : Node
                 }
             }
             for (int i = 0; i < 8; i++) swung[i] = local.Basis * (x[i] - target[i]) * Amount;
+            if (OS.HasEnvironment("HAIRDRAW")) Draw();
+            if (OS.HasEnvironment("HAIRBODY"))
+            {
+                // (each point in her body's rest space, by spine_03: to check against her torso's shape)
+                var inv = (world * Moved(sk.FindBone("spine_03"))).AffineInverse();
+                var line = $"HAIRBODY f{Engine.GetProcessFrames()}";
+                for (int i = 0; i < 8; i++) { var q = inv * x[i]; line += $" {q.X:F3},{q.Y:F3},{q.Z:F3}"; }
+                GD.Print(line);
+            }
             if (OS.HasEnvironment("HAIRDEBUG") && Engine.GetProcessFrames() % 20 == 0)
             {
                 float inside = 0;
@@ -291,6 +324,30 @@ public partial class HairSway : Node
                     m.SetShaderParameter(ArmsThenName, armsThen);
                     m.SetShaderParameter(ArmRName, foreBone.Length > 0 ? ForearmR : 0f);
                 }
+    }
+
+    // A debugging view (env HAIRDRAW): the chain's points drawn over everything (yellow, the tip red) and its balls
+    // (blue, see-through), to see where it runs against her body.
+    MeshInstance3D[] dots = [];
+    void Draw()
+    {
+        if (dots.Length == 0)
+        {
+            var list = new System.Collections.Generic.List<MeshInstance3D>();
+            for (int i = 0; i < 8 + balls.Length; i++)
+            {
+                bool ball = i >= 8;
+                float r = ball ? balls[i - 8].R : 0.012f;
+                var m = new StandardMaterial3D { ShadingMode = BaseMaterial3D.ShadingModeEnum.Unshaded, NoDepthTest = !ball,
+                    AlbedoColor = ball ? new Color(0.2f, 0.5f, 1f, 0.25f) : i == 7 ? Colors.Red : Colors.Yellow,
+                    Transparency = ball ? BaseMaterial3D.TransparencyEnum.Alpha : BaseMaterial3D.TransparencyEnum.Disabled };
+                var d = new MeshInstance3D { Mesh = new SphereMesh { Radius = r, Height = 2 * r, RadialSegments = 16, Rings = 8 }, MaterialOverride = m, TopLevel = true };
+                AddChild(d); list.Add(d);
+            }
+            dots = list.ToArray();
+        }
+        for (int i = 0; i < 8; i++) dots[i].GlobalPosition = x[i];
+        for (int b = 0; b < balls.Length; b++) dots[8 + b].GlobalPosition = at[b];
     }
 
     // The parameters' names made once: a string given where a name is wanted
