@@ -4481,7 +4481,15 @@ def bandeau(name, mkey, zc, width, lift=0.004, thick=0.003, trim=None, rows=11, 
     # (all of it on her skin's own weights, her arms' share kept: steadied, it
     # stayed put as her arm drew the skin at her breasts' sides from under it)
     UNSTEADIED.add(name)
-    made = trimmed(name, pos, at, tris, mkey, thick, 0.001, trim)
+    # (its edges bound with a rolled binding, as every other piece's are: a
+    # flat strip laid over the edge showed the sheet's own edge as a pale
+    # sliver between two dark lines, and stretched at a corner, judge 5)
+    beads = []
+    if trim:
+        tkey, w, h, tt = trim
+        pos, beads = bind_edges(name, pos, at, tris, tkey, max(w, 0.005), max(h, 0.0006), 0.0018, thick,
+                                stitch=kind(mkey) == "leather")
+    made = [finish(name, pos, at[:, 3:3 + NB], tris, mkey, thick, 0.001)] + beads
     for o in made:
         o["hides"] = o is made[0]
     # (her skin tucked under it only 3.5 mm: it moves with her skin, springs

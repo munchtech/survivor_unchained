@@ -95,8 +95,10 @@ void fragment() {
 		col *= mix(1.0, 0.62, near_edge);
 		col = mix(col, col * 1.18 + 0.02, bulge * 0.5);
 		col *= mix(1.0, 0.8, hollow);
-		// (satin, not gloss: leather is never shinier than this but at its burnished edges)
-		rough = clamp(rough * 0.9 - 0.08 * bulge - 0.15 * near_edge + 0.1 * hollow, mix(0.42, 0.28, near_edge), 0.95);
+		// (satin, not gloss: leather is never shinier than this but at its burnished edges;
+		// burnished to 0.28, a rolled binding seen edge-on caught the sky as a pale
+		// line along its top that read as a gap, judge 5)
+		rough = clamp(rough * 0.9 - 0.08 * bulge - 0.1 * near_edge + 0.1 * hollow, mix(0.42, 0.36, near_edge), 0.95);
 		// Stitches: dashes along the edge, `stitch_in` in, square to the
 		// edge's way (its direction from how the distance changes on screen).
 		vec2 g = vec2(dFdx(edge), dFdy(edge));
