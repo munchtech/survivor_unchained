@@ -28,6 +28,7 @@ uniform float stitch_in = 0.0045;
 uniform float stitch_len = 0.004;
 uniform vec3 thread : source_color = vec3(0.78, 0.7, 0.55);
 uniform float grain = 0.6;                         // how strongly the fine grain shows
+uniform float view_pull = 0.0;                     // metres drawn toward the camera (a decal on her skin: the ink, never z-fighting it)
 uniform int debug_view = 0;                        // (1 edge distance, 2 convexity, 3 sky seen: to check what was baked)
 
 varying vec4 det;                                  // (edge distance m, convexity 0..1, sky seen, piece)
@@ -46,6 +47,11 @@ void vertex() {
 	det = vec4(UV2.x, UV2.y, COLOR.r, COLOR.g);
 	painted = COLOR.b;
 	opos = VERTEX;
+	if (view_pull > 0.0) {
+		vec4 v = MODELVIEW_MATRIX * vec4(VERTEX, 1.0);
+		v.xyz -= normalize(v.xyz) * view_pull;
+		POSITION = PROJECTION_MATRIX * v;
+	}
 }
 
 vec3 blend_normals(vec3 a, vec3 b, float k) {      // (two normal-map texels, the second laid over the first; encoded as maps are)

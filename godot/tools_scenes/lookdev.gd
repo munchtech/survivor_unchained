@@ -264,6 +264,7 @@ func outfit_materials(mi):
 		m.set_shader_parameter("roughness_value", src.roughness)
 		m.set_shader_parameter("metallic_value", src.metallic)
 		m.set_shader_parameter("repeats", float(outfit_table[String(src.resource_name)]["repeats"]))
+		if outfit_table[String(src.resource_name)].has("pull"): m.set_shader_parameter("view_pull", float(outfit_table[String(src.resource_name)]["pull"]))
 		if OS.get_environment("OUTFITVIEW") != "": m.set_shader_parameter("debug_view", int(OS.get_environment("OUTFITVIEW")))
 		for kv in OS.get_environment("OUTFITSET").split(",", false):
 			var e = kv.split("=")

@@ -3917,6 +3917,11 @@ KIND = {"steel": "metal", "darksteel": "metal", "gold": "metal", "bronze": "meta
         "browncloth": "twill", "thread": "gloss", "satin": "gloss", "bone": "leather", "fur": "fur", "stocking": "sheer"}
 
 
+# Decals laid on her skin, drawn this far toward the camera so they never
+# z-fight it (the Reaver's ink half sank into her skin in the full model).
+PULL = {"ink": 0.0015}
+
+
 def kind(key):
     return KIND.get(key, "leather")
 
@@ -4018,7 +4023,7 @@ def material_table(path):
     many times its texture repeats in a metre (its UVs are in those units)."""
     import json
     with open(path, "w", encoding="utf-8") as fh:
-        json.dump({k: {"kind": kind(k), "repeats": v[3]} for k, v in SPEC.items()}, fh, indent=1)
+        json.dump({k: {"kind": kind(k), "repeats": v[3], **({"pull": PULL[k]} if k in PULL else {})} for k, v in SPEC.items()}, fh, indent=1)
 
 made = []
 for name, build in OUTFITS.items():

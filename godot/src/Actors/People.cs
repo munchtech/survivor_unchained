@@ -886,6 +886,7 @@ public static class People
             m.SetShaderParameter("roughness_value", src.Roughness);
             m.SetShaderParameter("metallic_value", src.Metallic);
             m.SetShaderParameter("repeats", (float)entry["repeats"]);
+            if (entry.ContainsKey("pull")) m.SetShaderParameter("view_pull", (float)entry["pull"]);
             mi.SetSurfaceOverrideMaterial(s, m);
         }
     }
