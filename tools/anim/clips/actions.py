@@ -871,7 +871,10 @@ def throw(rig):
                   # (judge 12: the haft's top leant 24 degrees in over her head).
                   "blade": _n(0.068, 0.868, -0.492 - 0.05 * c),
                   "knuckles": _n(-0.236, 0.493, 0.837), "frame": "char", "twist": 0.45}
-        hand_l = held((0.05, -0.22, 0.36), (0.8, -0.5, -0.2), (0.2, 0.55, 0.8))
+        # (Judge 17: reached straight ahead, at the game cameras the fist and
+        # its blade projected onto her groin: it reaches forward and out to
+        # her left, the blade up and out, clear of her outline from above.)
+        hand_l = held((0.17, -0.16, 0.30), (0.8, -0.5, -0.2), (0.45, 0.8, 0.35))
         return body(stance(0.07, weight=-0.4), hips=(-16, -2 - 2 * c, 0), spine=(-26, -8 - 3 * c, 0), head=(30, -2 + 4 * c, 0),
                     clav_r=(16, -6), hand_r=hand_r, hand_l=hand_l, fingers_r=fist, fingers_l=fist)
 
