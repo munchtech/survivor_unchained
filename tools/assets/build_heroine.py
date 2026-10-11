@@ -409,12 +409,34 @@ body["crotch"] = [float(c) for c in knot]
 # outward it goes to her own thigh.
 gi_ = {g.name: g.index for g in body.vertex_groups}
 cz, cx = knot[2], 0.0
+# Which leg a point is of: by the side of x, a few points of her right
+# thigh's inner face (0.1 mm past the midline) went to her left leg, and the
+# web cut below then tore them from their own thigh (a hole, once filled by
+# heroine_outfits.mend_hole). So a point's leg is where AccuRIG's leg
+# weights over it and its mesh neighbours lean; only a tie goes by x.
+LEGB_ = ("thigh", "calf", "foot", "ball", "glute")
+lean_ = np.zeros(G_)
+for v in body.data.vertices:
+    w = {body.vertex_groups[g.group].name: g.weight for g in v.groups}
+    lean_[grp[v.index]] += sum(w.get(f"{b}_l", 0.0) - w.get(f"{b}_r", 0.0) for b in LEGB_)
+lean_ /= np.bincount(grp, minlength=G_)
+side_ = {}
+flip_ = 0
+for v in body.data.vertices:
+    p_ = co[v.index]
+    if p_[2] > cz + 0.02 or abs(p_[0]) > 0.12:
+        continue
+    g = grp[v.index]
+    s_ = lean_[g] + 0.5 * sum(lean_[n] for n in gnb[g]) / max(len(gnb[g]), 1)
+    side_[v.index] = (s_ > 0) if abs(s_) > 0.05 else (p_[0] > 0)
+    flip_ += side_[v.index] != (p_[0] > 0)
+print("CROTCH legs: %d points under the crotch on the other side of x than their leg" % flip_)
 fixed_ = 0
 for v in body.data.vertices:
     p_ = co[v.index]
     if p_[2] > cz + 0.02 or abs(p_[0]) > 0.12:
         continue
-    own, oth = ("l", "r") if p_[0] > 0 else ("r", "l")
+    own, oth = ("l", "r") if side_[v.index] else ("r", "l")
     w = {body.vertex_groups[g.group].name: g.weight for g in v.groups}
     other = sum(w.get(f"{b}_{oth}", 0.0) for b in ("thigh", "calf", "foot", "ball", "glute"))
     if other < 1e-4:
