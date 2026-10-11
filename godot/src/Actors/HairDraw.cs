@@ -33,8 +33,12 @@ public static class HairDraw
     public static readonly float EraseKeep = SurvivorUnchained.Args.Num("hair-erase", 0f);
 
     /// <summary>--hair-core-cut C: with "two", the cover a strand needs to be drawn
-    /// solid (its depth and motion written); 0.9 by default.</summary>
+    /// solid (its depth and motion written); 0.5 by default.</summary>
     public static readonly float CoreCut = SurvivorUnchained.Args.Num("hair-core-cut", 0.5f);
+
+    /// <summary>--hair-a2c-cut C: the core's cut under MSAA (the Look, alpha to coverage);
+    /// 0.9 by default, so the core and the blended pass over it don't both cover the edge.</summary>
+    public static readonly float A2cCut = SurvivorUnchained.Args.Num("hair-a2c-cut", 0.9f);
 
     /// <summary>--hair-erase-from F: with "two", the cards' eraser works fully where
     /// the strands cover F or more (the core's cut: only what wrote her hair's own
@@ -85,7 +89,9 @@ public static class HairDraw
         foreach (var p in Passes(m))
         {
             p.SetShaderParameter("strand_bias", Bias);
-            if (cards) p.SetShaderParameter("core_cut", CoreCut);
+            if (!cards) continue;
+            p.SetShaderParameter("core_cut", CoreCut);
+            p.SetShaderParameter("a2c_cut", A2cCut);
         }
         return m;
     }

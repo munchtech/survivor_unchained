@@ -50,6 +50,11 @@ uniform vec3 chain_then[8];
 // (the share of a pixel a strand must cover to be drawn solid, its depth and
 // motion written: near 1, so the blended pass over it shows no edge)
 uniform float core_cut = 0.9;
+#ifdef CORE_A2C
+// (under MSAA, at the Look: its own cut, near 1, so the core's samples and the blended
+// pass over them don't both cover the edge, which drew it darker and wider)
+uniform float a2c_cut = 0.9;
+#endif
 #endif
 #ifdef ERASE
 // (how much of the blended alpha under it is kept: heroine_hair_erase.gdshader;
@@ -124,12 +129,14 @@ void fragment() {
 	ALPHA = cover;
 #ifdef CORE_A2C
 	// (under MSAA, the cut's edge spread over the samples over a pixel round
-	// core_cut: alpha to coverage, heroine_hair_core_a2c.gdshader; cut first a
-	// quarter below it, as Godot cuts before it spreads)
-	float cut0 = max(core_cut - 0.25, 0.05);
+	// a2c_cut: alpha to coverage, heroine_hair_core_a2c.gdshader; cut first a
+	// quarter below it, as Godot cuts before it spreads. The texture coordinate
+	// is the plain UV, whose tiny derivatives turn off Godot's boost of the
+	// alpha by a quarter per mip level, which widened the cut)
+	float cut0 = max(a2c_cut - 0.25, 0.05);
 	ALPHA_SCISSOR_THRESHOLD = IN_SHADOW_PASS ? 0.5 : cut0;
-	ALPHA_ANTIALIASING_EDGE = IN_SHADOW_PASS ? 0.0 : core_cut - cut0;
-	ALPHA_TEXTURE_COORDINATE = UV * vec2(textureSize(strands, 0));
+	ALPHA_ANTIALIASING_EDGE = IN_SHADOW_PASS ? 0.0 : a2c_cut - cut0;
+	ALPHA_TEXTURE_COORDINATE = UV;
 #else
 	ALPHA_SCISSOR_THRESHOLD = IN_SHADOW_PASS ? 0.5 : core_cut;
 #endif
