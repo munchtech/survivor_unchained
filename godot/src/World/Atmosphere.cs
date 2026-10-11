@@ -217,6 +217,8 @@ public partial class Atmosphere : Node3D
     /// grade keeps its brightness and its blue on greys, cool colours and greens, but a warm colour's hue may
     /// turn at most 6 degrees (Oklab), and where the grade darkens it, it may not grow more
     /// saturated than it came in (the blue shade reads as a darker, greyer brown, not a purple).</summary>
+    /// <summary>--grade-sat-lo, --grade-sat-hi: the saturation band over which mid-tones are held (pictures).</summary>
+    static readonly float SatLo = SurvivorUnchained.Args.Num("grade-sat-lo", 0.025f), SatHi = SurvivorUnchained.Args.Num("grade-sat-hi", 0.06f);
     static Vector3 KeepHue(Vector3 inLin, Vector3 outLin, float tintHue)
     {
         var i = Oklab(inLin); var o = Oklab(outLin);
@@ -227,7 +229,10 @@ public partial class Atmosphere : Node3D
         // the warm side, whose turn runs through magenta, is held.
         float green = side < 0 ? Smooth(-160, -140, side) : 0;
         float warm = Smooth(45, 90, Mathf.Abs(side)) * (1 - green);
-        float w = Smooth(0.04f, 0.12f, sat) * warm;
+        // Mid-tones (skin in shade, L about 0.45) are held from a lower saturation than the dark
+        // near-greys of ground and stone, which keep more of the moon's blue.
+        float mid = Smooth(0.3f, 0.42f, i.X);
+        float w = Smooth(Mathf.Lerp(0.04f, SatLo, mid), Mathf.Lerp(0.12f, SatHi, mid), sat) * warm;
         // Faintly warm darks (black brows, near-grey browns) still half take the old turn: where
         // it lands on violet (red over blue), the red goes, so they reach the greys' navy.
         float violet = warm * Smooth(0.01f, 0.04f, sat);
