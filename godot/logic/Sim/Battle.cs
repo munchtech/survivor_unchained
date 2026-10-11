@@ -450,6 +450,7 @@ public sealed partial class Battle
             if (p.DashRecharge >= Abilities.Dash.Recharge) { p.DashRecharge = 0; p.DashCharges++; }
         }
 
+        TickStones(dt);
         // Warding light recharges.
         int blockRank = RoundInt(st.Get(Stat.Block));
         if (blockRank > 0 && p.BlockT > 0) p.BlockT = Math.Max(0, p.BlockT - dt);
@@ -726,6 +727,7 @@ public sealed partial class Battle
         if (s.Has(StatusKind.Bound) && tags.Has(Tag.Area)) dmg *= 1 + BoundArea;
         if (s.Has(StatusKind.Shock) && !o.Dot) { dmg *= 1.35 + st.Get(Stat.ShockBonus); if (!Boons.ContainsKey("static_charge")) s.Remove(StatusKind.Shock); }
         dmg *= e.TakenMul;
+        dmg *= LampDamageMul(e, school, tags, o);
         // Warded by its own kind's lamp or drum.
         if (e.WardT > 0) dmg *= 1 - e.Ward;
         // Resistances.
@@ -753,6 +755,7 @@ public sealed partial class Battle
         if (crit) dmg *= st.Get(Stat.CritDamage) * (e.Hp < e.MaxHp * 0.5 && Boons.TryGetValue("ferocity", out int tooth) ? 1 + 0.12 * tooth : 1);
         else if ((Rules.IronSkin > 0 || e.Def.IronSkin > 0) && e.Disposition == Disposition.Hostile) { dmg *= 1 - Math.Max(Rules.IronSkin, e.Def.IronSkin); blocked = true; }
         dmg = Math.Max(0.5, dmg);
+        LightningLeaps(e, baseDamage, school, tags, o);
 
         double before = e.Hp;
         e.Hp -= dmg;
@@ -1005,7 +1008,8 @@ public sealed partial class Battle
                 if (!s.Has(StatusKind.Bound)) { e.BoundX = e.X; e.BoundZ = e.Z; }
                 var cur = s.Ensure(StatusKind.Bound, 0, 1, p.Power, 0);
                 cur.From ??= from;
-                cur.T = Math.Max(cur.T, dur);
+                // night_road.marked.bound_longer: a marked thing is Bound longer.
+                cur.T = Math.Max(cur.T, dur + (s.Has(StatusKind.Mark) ? Lamps.Size("marked.bound_longer", "seconds") : 0));
                 Events.Emit(new Ev.Status { Target = e.Id, Kind = StatusKind.Bound, X = e.X, Z = e.Z });
                 break;
             }
@@ -1026,6 +1030,7 @@ public sealed partial class Battle
                 break;
             }
         }
+        if (p.Kind is StatusKind.Mark or StatusKind.Bound) MoonOnTheChain(e);
         Events.Emit(new Ev.Status { Target = e.Id, Kind = p.Kind, X = e.X, Z = e.Z });
         if (depth < 3) Fire(TriggerEvent.Status, new ProcCtx { Target = e, X = e.X, Z = e.Z, Damage = hitDamage, School = School.Physical, Tags = Array.Empty<Tag>(), Applied = p.Kind, Depth = depth + 1 });
     }
@@ -1133,6 +1138,7 @@ public sealed partial class Battle
             Fire(TriggerEvent.Block, new ProcCtx { X = p.X, Z = p.Z });
             return 0;
         }
+        if (TryLampBlock(amount, school, source, from)) return 0;
         // Watch Mail counts: every tenth blow that reaches the survivor glances off.
         if (Boons.ContainsKey("ironhide") && ++p.MailCount >= 10)
         {
@@ -1216,6 +1222,7 @@ public sealed partial class Battle
         if (from is { Alive: true }) Interrupt(from);
         Events.Emit(new Ev.PerfectDodge { X = p.X, Z = p.Z });
         FlareOnPerfect();
+        LampsOnPerfect();
         Reflex("perfect");
         Fire(TriggerEvent.PerfectDodge, new ProcCtx { X = p.X, Z = p.Z });
     }
@@ -1820,6 +1827,9 @@ public sealed partial class Battle
                 pr.X += pr.Vx * step;
                 pr.Z += pr.Vz * step;
                 pr.AimAlongVelocity();
+                // firebreak.fire_arrows: an arrow passing through the survivor's burning ground catches fire.
+                if (pr.Owner == Side.Player && pr.Status?.Kind != StatusKind.Burn && pr.School != School.Fire && Lamp("fire_arrows") && OnBurningGround(pr.X, pr.Z))
+                    pr.Status = new StatusPayload(StatusKind.Burn, 1, 0.8, 3);
                 // Walls stop bolts; hitting a tagged prop tells the world.
                 if (!pr.Chakram && Collision.Blocked(pr.X, pr.Z, 0.05, false))
                 {
@@ -1843,6 +1853,14 @@ public sealed partial class Battle
                     }
                     var src = pr.OwnerId >= 0 ? Enemies.Items[pr.OwnerId] : null;
                     HurtPlayer(pr.Damage, pr.School, pr.Art, src is { Alive: true } ? src : null, true);
+                    // bulwark.turned_arrows: a blocked missile flies back at whoever loosed it.
+                    if (lampBlocked && Lamp("turned_arrows") && src is { Alive: true })
+                    {
+                        lampBlocked = false;
+                        pr.Owner = Side.Player; pr.Vx *= -1; pr.Vz *= -1; pr.Homing = 6; pr.Target = pr.OwnerId; pr.Age = 0;
+                        pr.Tags = Reflected;
+                        continue;
+                    }
                     if (pr.Status?.Kind == StatusKind.Chill) SlowPlayer(0.6, pr.Status.Duration);
                     Projectiles.Release(pr);
                 }

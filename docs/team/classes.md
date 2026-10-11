@@ -1,6 +1,6 @@
 # Classes (phase 1: systems)
 
-**State (11 October, end of session 2 of about 3):** the Battle runs the classes design: the Kin rides the dash as its form, the calling arts fire as reflexes, and the Flare fills, casts (Q / right-click), clutches and burns missiles. The harness knows types, lamps and Flares. The Flare's timing and boss share are tuned and mostly in band. Next: wire the remaining ~100 phase-1 lamp rules (warden in progress), re-measure, fix what's out of band, then a judge. Handoff: `docs/handoff/classes.md`.
+**State (11 October, end of session 2 of about 3):** the Battle runs the classes design: the Kin rides the dash as its form, the calling arts fire as reflexes, and the Flare fills, casts (Q / right-click), clutches and burns missiles. The harness knows types, lamps and Flares. The Flare's timing and boss share are tuned and mostly in band. Next: wire the remaining ~96 phase-1 lamp rules (warden and crossings done), re-measure, fix what's out of band, then a judge. Handoff: `docs/handoff/classes.md`.
 
 **Key decisions**
 - The art in hand is the dash form; the Kin's facets come only from lamps, while a learned form keeps ArtBook's (no double source).

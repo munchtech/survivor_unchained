@@ -113,8 +113,17 @@ public static class Firing
     {
         double a = baseValue * b.Stats.Get(Stat.Area) * (1 + Content.Weapons.AreaStep * (w.Rank - 1)) * w.Mods.Area;
         if (w.Evolution != null) a *= w.Evolution.Mods.Area ?? 1;
+        // sunderer.skill.area / tags.area: the skill's lamps and its tags' lamps reach wider.
+        a *= 1 + b.Lamps.SizeOn("skill.area", "inc", w.Def.Id, w.Def.Tags) + b.Lamps.SizeOn("tags.area", "inc", w.Def.Id, w.Def.Tags);
         return a;
     }
+
+    /// <summary>bulwark.skill.reach: metres of reach a skill's lamp adds (Oathblade, 1.5).</summary>
+    static double ReachAdd(Battle b, WeaponInst w) => b.Lamps.SizeOn("skill.reach", "add", w.Def.Id, w.Def.Tags);
+
+    /// <summary>The status a skill strikes with: its own, or the one its lamp gives (sunderer.skill.status).</summary>
+    static StatusPayload? StatusWith(Battle b, WeaponInst w) =>
+        w.StatusOf ?? (b.Lamps.HasOn("skill.status", w.Def.Id, w.Def.Tags) && b.Lamps.Each["skill.status"].Find(e => e.Status != null && (e.Skill == w.Def.Id)) is { Status: { } k } ? new StatusPayload(k, 1, 1, 3) : null);
 
     public static double DurationOf(Battle b, WeaponInst w, double baseValue)
     {
@@ -162,9 +171,13 @@ public static class Firing
             }
         }
         if (w.Timer > 0) return;
+        int kills0 = w.Kills;
         bool fired = Fire(b, w);
         // Nothing in range: look again soon rather than waiting a whole cooldown.
         w.Timer = fired ? CooldownOf(b, w) : 0.25;
+        // sunderer.momentum: a melee swing that kills enough brings the skill's next swing sooner.
+        if (fired && w.Tags.Has(Tag.Melee) && b.Lamp("momentum") && w.Kills - kills0 >= b.Lamps.Full("momentum", "kills", 3))
+            w.Timer *= 1 - Math.Min(0.9, b.Lamps.Size("momentum", "sooner"));
     }
 
     static bool Fire(Battle b, WeaponInst w) => w.Behavior switch
@@ -312,6 +325,7 @@ public static class Firing
         double dmg = w.Damage;
         double kb = w.Num(s => s.Knockback) ?? 0;
         double heal = w.Num(s => s.Heal) ?? 0;
+        var novaStatus = StatusWith(b, w);
         bool hitAny = false;
         b.ForEachHostileInRadius(p.X, p.Z, r, (e, d) =>
         {
@@ -319,7 +333,7 @@ public static class Firing
             double dd = d == 0 ? 1 : d;
             b.HitEnemy(e, dmg, w.School, w.Tags, new HitOpts
             {
-                Weapon = w, Knockback = kb, DirX = (e.X - p.X) / dd, DirZ = (e.Z - p.Z) / dd, Status = w.StatusOf, BossDamage = w.Def.BossDamage,
+                Weapon = w, Knockback = kb, DirX = (e.X - p.X) / dd, DirZ = (e.Z - p.Z) / dd, Status = novaStatus, BossDamage = w.Def.BossDamage,
             });
         });
         if (heal != 0 && hitAny) b.HealPlayer(heal, "weapon");
@@ -527,7 +541,7 @@ public static class Firing
     static bool FireSlash(Battle b, WeaponInst w)
     {
         var p = b.Player;
-        double reach = AreaOf(b, w, w.Num(s => s.Reach) ?? 2.6);
+        double reach = AreaOf(b, w, w.Num(s => s.Reach) ?? 2.6) + ReachAdd(b, w);
         var t = b.NearestHostile(p.X, p.Z, reach + 1.2);
         if (t == null) return false;
         double a = Math.Atan2(t.Z - p.Z, t.X - p.X);

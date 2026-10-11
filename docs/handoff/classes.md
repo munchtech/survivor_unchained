@@ -26,11 +26,11 @@ Battle wiring (dash forms, reflexes, the Flare's meter, window and clutch, Q fir
 
 ## 4. In progress
 
-- **Rule wiring, warden quarter and crossings:** a su-worker was editing Arts.cs, Battle.cs and Weapons.cs at handoff (uncommitted). It commits with its report in the message body. Check `git log` and the working tree first; if it never committed, review its diff (`git diff`) and finish or reset it.
+- Nothing running. **Warden quarter and crossings wired** (0981f48c, 31 rules; report in its commit body). It adds a block chance, stones and the rebuke (`godot/logic/Sim/WardenLamps.cs`). Two picks need a design look: the rebuke deals 30% of max health as holy, and stones lapse after 8 s without a block unless Mortar is lit. The Watch Bell doesn't exist yet. Tests: 791 green.
 
 ## 5. Next, in order
 
-1. **Wire the remaining phase-1 rules:** reaver (32), arcanist (33), stalker (31), one su-worker per quarter, **one at a time** (they all edit Battle.cs). The shared brief is `docs/handoff/classes_rules_brief.md` (replace <CALLING>). Then add the test that every phase-1 rule id appears as a string literal in godot/logic/Sim (the generator script is in that brief's command). Check each worker's diff: sizes through `Size` (quarter by night), prices and thresholds through `Full`, counts capped at +1 by night.
+1. **Wire the remaining phase-1 rules:** reaver (32), arcanist (33), stalker (31) (warden and crossings done), one su-worker per quarter, **one at a time** (they all edit Battle.cs). The shared brief is `docs/handoff/classes_rules_brief.md` (replace <CALLING>). Then add the test that every phase-1 rule id appears as a string literal in godot/logic/Sim (the generator script is in that brief's command). Check each worker's diff: sizes through `Size` (quarter by night), prices and thresholds through `Full`, counts capped at +1 by night.
 2. **Re-run the acceptance sweep** (the runner's commands are in §7 below) once all rules are wired. Today's numbers (482124f0, rules mostly unwired) are a baseline only.
 3. **Fix what's out of band**, then send it to a fresh `su-lead-max` judge with the reports, §7's targets and the owner's words. Known so far:
    - Casters' Flare gap is 104-116 s (target 60-90). Casters are rarely hurt. Consider a caster-friendly fill (Kindling-like spell fill in the base table) rather than raising the kill cap, which speeds up the reavers (already at 63-68 s).
@@ -45,6 +45,7 @@ Battle wiring (dash forms, reflexes, the Flare's meter, window and clutch, Q fir
 
 - Workers' completion notices go to the main session, not to you: ask them to put the report in the commit body.
 - `dotnet test` takes 3-5 min. Two agents building godot/tests at once lock `bin/`: run them in turn. The harness: `dotnet build -c Release godot/balance`, then `dotnet run -c Release --no-build ...`.
+- Don't let workers build with `-o <dir>`: art-path tests (Fx, Export) fail there.
 - Python edits to CRLF files are fine (git normalizes to LF).
 - The context hook reads README's "Context budget: 120k" example as yours; the brief's 300k is the real one.
 - Warden tests needing the Flare to fill use a reaver: Bull Rush's barrier soaks the damage.
@@ -54,4 +55,4 @@ Battle wiring (dash forms, reflexes, the Flare's meter, window and clutch, Q fir
 - Read first: `godot/logic/Sim/Forms.cs`, `godot/logic/Sim/Flare.cs`, `godot/logic/Sim/LampLoadout.cs`, `docs/handoff/classes_rules_brief.md`, CLASSES.md §2.10, §3.2-3.4 and §7.
 - Sweep (from the worktree): `dotnet run -c Release --no-build --project godot/balance -- arena --callings all --type both --lamps full|empty --tiers 1,2,3,4 --level tier --seeds 3 --policies greedy --people pack --bot deft --beyond 0 --par 16 --out <f>.jsonl`; the same with `--tiers 4 --level 30` for the end-game board; then `-- report --in <f>.jsonl`. The baseline reports are in the session scratchpad `sweep\` (they won't survive the scratch sweep, so regenerate them).
 
-HANDOFF READY: docs/handoff/classes.md on classes/phase1@d26fb4d4
+HANDOFF READY: docs/handoff/classes.md on classes/phase1@b8ec84dd
