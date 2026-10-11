@@ -1,10 +1,10 @@
 # Heroine body and outfits: status
 
-Lead: su-lead-high (third lead, 10 October 2026; wound down by the owner). Handoff: `docs/handoff/outfits.md`. Branch: `worktree-agent-a5ca10091b08dc429` (pushed; code only, unjudged in full: never build it into the game until it passes).
+Lead: su-lead-high (fifth lead, 11 October 2026; handed off at its budget). Handoff: `docs/handoff/outfits.md`. Branch: `worktree-agent-a5ca10091b08dc429` (pushed; code only, unjudged in full: never build it into the game until it passes).
 
-## Now (paused)
-- Gussets as skin-tight pieces and every rim bound: strip frames fell (Warden 47 to 6, Arcanist 603 to 29, Reaver 31 to 13); areolas 0 to 1 px; 0 bare at rest. Judge 1 failed g2 on tucked skin seen in motion (worst: the Ranger's pant leg and corset in chain_haul/chain_strike; a bump of skin at the gusset-to-string junction; slits at the Warden cups' inner edges and the Reaver band) and on binding corners (Warden pauldrons, Arcanist plunge, Ranger lames).
-- Weights are ruled out as the cause (two trials, 5-10%).
+## Now (paused, 11 October, after judge 3: FAIL)
+- g9 built (unjudged in full): rigid pauldrons (Warden domes pass), plunge as one U (fails), Ranger boots constructed (sole cup, welt, stacked heel; right direction, read as rubber), skin paint fixed (the build blend had lost the graft and head images). Animation's thigh fix took ranger chain_strike tucked6 from 25 frames/9884 px to 2/53 and removed the vault thigh hole.
+- Next: the judge 3 list in the handoff (plunge on the flattened pattern, Ranger pauldron gash and UVs, Warden corners and raw cup edge, Arcanist front and gusset, left-breast bump, boots).
 
 ## Key decisions
 - Coverage fixes tighten, never enlarge, except where the 2.4 cm strip is wider than the garment (the Arcanist's V foot: 1.9 to 2.9 cm).
