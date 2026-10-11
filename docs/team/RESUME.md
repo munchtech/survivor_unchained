@@ -2,13 +2,23 @@
 
 The one page of what's current. Every lead starts from the latest `claude/vigilant-galileo-l6jqyx`. Merge it first and keep your own workflow; this page says what has changed around you. Updated by the main session, 5 October 2026.
 
-## 12 October, early: state for the next coordinator
+## 12 October, late: winding down for a full session handoff (the owner). Restart here
 
-- Running (5): face a564d5c3b5d4dac62 (owns the Look portrait rig for the orange skin, then the nape crack, then the neck-length sheet), outfits af07affeb22637bb5 (pauldron: one last solver, else a simpler design for the owner), animation a4e62fc358dc5214a (death and get_up rebuild and judge 12, throw axe, crotch cut, death_back pop), classes a58dbbc2f5e2563fa (phase 1 session 3: remaining quarters' rules, sweep, judge), writer a29c05b453e33b062 (sophistication pass, then lock Holloway, Maeca, Chid, narrator).
-- Paused: rendering (performance.md "Paused here": oldleather LOD blob, wilds toe, moonlight pass, fur round 2; the LOD must keep elbow_point_l/_r; face changes the Look rig meanwhile).
-- Owner decisions today: classes plan approved (all 8); twists A + B + "It takes less than it did" (TWIST_WTF option 1); 162 early lines locked for ElevenLabs (bark.brannoc.day.2 to re-record); the neck length is an open question (OWNER_NOTES).
-- Merged up to ae229a30 (791 tests). Worktree agent-ac6f417ab08f069bd is merged but locked by the app: remove it in the sweep.
-- Helpers' completion notices come to the main session, not their lead: relay them (coordinator.md).
+The owner asked for a wind-down: classes stops after the Echo fix, the Act 2 writer at its next good point, outfits and animation at their next milestone, and face works to its budget. None of them gets a successor. Each lead's handoff on its branch is written for a cold start. This section is updated as each one stops (see "Stopped" below).
+
+- **Merged today (integration, 817 tests):** classes phase 1 (cc228199: all 133 lamp rules, the Flare, the harness); animation's death, get_up, get_up_back and dagger throw (6c3fbb22, 82b3e751, 70900fb2: the death-to-get_up pop fixed, the crotch cut in build_heroine.py, the plant key); the hair swing-weight flip (b716ea2a, fix only); story: Chid's marker return, love scenes B, 566 lines locked for ElevenLabs (01d0bd95, bc011e9e).
+- **Shown to the owner:** the animation sheet docs/team/anim_sheets/owner_death_getup_throw_2026-10-11.jpg.
+- **Owner questions still open:** classes (the Bulwark's rebuke share; the ×1.03 home bonus until phase 5; Act 1 story bosses die 14-29% sooner with the Flare: raise their health?); the neck length (OWNER_NOTES). Recording: everything locked is recordable; only Keegan's kenning is held; the narrator can never be recorded behind the door (guard + tests).
+- **Not merged on purpose:** face's branch (agent-a2d632df7c7f21ec0) carries much unjudged skin, rig and hair work. Only judged parts go in, as a hair-only or skin-only branch from integration.
+- **Rulings in force:** two-attempts rule (two honest solver attempts fail, then a simpler route); outfits: leather pauldron, feathery trim dropped, the plunge's foot as a smooth U or else a small arcane clasp; face: death-clip hair gets one last physics try, else hand-posed rest shapes on the floor; animation: sit_back_heels remade with a soft hip limit (per clip if possible).
+- **Paused earlier:** rendering (docs/handoff/performance.md; the Look's edge lamp default may move to 1.3 m from face's work, unjudged). TOLL_SPEC (docs/story/TOLL_SPEC.md) is judged and waits for a code lead.
+
+### Stopped (filled in as each lead stops)
+- classes: running (session 5, branch classes/phase1b, own worktree)
+- Act 2 writer: running (branch story/act2, own worktree)
+- outfits: running (worktree agent-a5ca10091b08dc429)
+- animation: running (worktree agent-af8dbda3195e438e4)
+- face: running (worktree agent-a2d632df7c7f21ec0)
 
 ## How the team runs now (README has the detail)
 
