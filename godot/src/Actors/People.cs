@@ -826,11 +826,13 @@ public static class People
                     skin.SetShaderParameter("paint", paint ?? (mi.Mesh.SurfaceGetMaterial(s) as BaseMaterial3D)?.AlbedoTexture);
     }
 
-    /// <summary>Her head's paint for a face (head_tex/heroine_head_ID.jpg); her own is heroine.glb's. (Her own from
-    /// head_tex/heroine_head.jpg, the same paint, would let it be laid again without a new glb: not yet seen in a
-    /// shot, so not yet.)</summary>
-    static string? HeadPaintFile(string? face) =>
-        face is { Length: > 0 } && ResourceLoader.Exists($"res://art/people/head_tex/heroine_head_{face}.jpg") ? $"res://art/people/head_tex/heroine_head_{face}.jpg" : null;
+    /// <summary>Her head's paint for a face (head_tex/heroine_head_ID.jpg); her own head_tex/heroine_head.jpg, so a
+    /// paint laid again since (the jaw cut, 10 October 2026) shows without a new glb: heroine.glb's own copy is older.</summary>
+    static string? HeadPaintFile(string? face)
+    {
+        var f = face is { Length: > 0 } and not "own" ? $"res://art/people/head_tex/heroine_head_{face}.jpg" : "res://art/people/head_tex/heroine_head.jpg";
+        return ResourceLoader.Exists(f) ? f : null;
+    }
 
     /// <summary>Her head's paint as a texture (HeadPaintFile). --head-paint PATH: a paint from any file instead, for
     /// whichever face she wears, for pictures of a paint tried before it is laid in.</summary>

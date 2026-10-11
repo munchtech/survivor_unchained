@@ -2,13 +2,27 @@
 
 From agent afb7deb41dbb5d904 (took over from a6e8e6d0f539943bb, cut off 7 October). Read `docs/team/README.md` ("Working lean", "Safety"), `RESUME.md`, `OWNER_NOTES.md` (the face's order and bar), this page, then `docs/team/face.md`. Read by section (grep, then line ranges). Hand off at about 300k.
 
-## Paused here (10 Oct, late, agent a411e6c81f22f5c18, same branch); next:
-State: integration and rendering 38cb3391 merged (hair "two", the Look TAA+MSAA without DOF; lash cards keep `skin_lit` beside `lash_bias`/eraser); 775 green. **Still unjudged.** Shots `godot/.shots/f5_*` (merged defaults); eyes measured with `F\em.py f5 ...` (f5 ≈ f4).
-- **Neck seam at SPLIT: fixed at the root (5a2f5121, max solver a4170bbb2846c80e1).** Cause: the glTF exporter builds each head shape key's normals from the head alone, so under every face but her own the normals at the points the head shares with the graft turned up to 24°. A second cause: `heroine_features.png`'s blue (face_tone) reached SPLIT. Fix: new `tools/assets/heroine_seam.py` `seam(glb)` (key normals held to the neck's over 2 cm, shared points unmoved, idempotent), run after both heroine.glb exports (`heroine_head.py`, `heroine_outfits.py`: outfits told); `heroine_features.py` eases the blue out above SPLIT; `heroine_jaw_cut.py` pads islands after a cut (`--pad`). Head-over-graft ratio is now 0.96-0.98 on every face. Before/after sheets: `F\solve1\neck_f5b.jpg`, `neck_after.jpg`.
-- **Left on the neck:** (a) a grey stepped region under the jaw on own and Highborn: `under_jaw` is per point, eased over 3 rings, so the portrait's jaw shadow shows through in polygon shapes. A per-texel `under_jaw` (`F\solve1\under_jaw_per_texel.patch`, `git apply`) is written but **never ran**: `jaw1.ps1` crashes for every face because `heroine_unpainted.blend` links its images (body skin too, sampled at `heroine_face.py` ~971-984) to a deleted scratch folder (`...face6\art_unpainted\`; log `F\jaw\own\jaw.log`). First relink the blend's images into the repo, then apply the patch, run `jaw1.ps1 -inplace` on all ten, pad, and shoot with `-import`. The heads are as in 5a2f5121. (The `j3` shots and sheets were taken on uncut heads: ignore them. The worktree's `.godot` cache is stale, so the next shoot needs `-import`.) (b) A soft arc under the chin on Saffron (and Moonlit): geometry (face keys bend the throat 6-10 mm, `_hold` squeezes it within 2 cm). The fix is a rebuild: graft gets `face_*` keys eased over 4-5 cm, or a longer hold. (c) Sunborn's neck: the jaw's cast shadow on dark skin plus a face/body ratio mismatch (face R/G 2.31, chest 1.58). A tone call for the judge.
-- **Magenta on dark irises and lashes: cause found.** It is the Night grade (`Atmosphere.GradeLut`, `NightGrade`: shadow tint subtracted in gamma space, blue lift, vibrance), not the eye shader. Sim: (45,30,24) comes out (18,7,24). Rendering's successor takes the fix (hue-preserving shadow tint). **Hold the iris swatch recalibration until it lands.** Then: `F\gains2.py A B GAINS` (secant; local response exponent about 2) for chestnut, sloe, umber and peat (dark irises are +30-50% light, Saffron -20%), and re-measure the lashes (band (24,7,16) against target (45,30,24)).
-- **Applied, unshot:** per-face resting lids from the measured cover (1 lid unit = 1.15 iris diameters): Doe 0.003, Sunborn 0.024, Saffron 0.009, Hard-won -0.007, Wildling -0.033, Vixen -0.042, Fey -0.084. New dev switch `--skin-set "part:k=v,...;part2:..."` (People.Skin; `*` for every part).
-- **Next:** (1) after the grade fix, recalibrate the dark swatches; (2) shoot `F\set5.ps1 -tag f6` (shipped heads for every neck, plus the doe3j/sun3j brow lays); (3) make sheets: `F\neckrows.py` (neck at 1:1 beside the portrait; facefit venv), `F\eyequick.py`, `F\sheets_ey2.ps1`-style rows; (4) one fresh foreground max judge: the round-2 targets, plus "each face's neck at 1:1 beside its portrait: no blotches, no violet, no band, no seam step", with residuals (a)-(c) named. Give every brief a "Context budget: NNk" line. (5) GPU re-lay of the ten paints after the judge passes.
+## Start here (11 Oct, agent a411e6c81f22f5c18 handing off; branch `worktree-agent-a2d632df7c7f21ec0`)
+Scratch F = `C:\Users\munch\AppData\Local\Temp\claude\C--Users-munch-Desktop-survivorsunchained\181eef02-779f-45de-b419-31a949a4d27e\scratchpad\f13`. Integration and rendering 38cb3391 are merged (hair "two", the Look TAA+MSAA without DOF); 775 green at cf9e2888.
+**Latest judge: `F\judge_f6\verdict.md`: neck FAIL, lids PASS WITH FIXES.** Its sheets and numbers are beside it.
+- **Done:**
+  - Seam at SPLIT fixed at the root (5a2f5121). The head keys' normals are held to the neck's by `tools/assets/heroine_seam.py`, run after every heroine.glb export, including heroine_outfits.py's (outfits told). The features' blue is eased out above SPLIT. The jaw-cut pads. No step at SPLIT at 1:1 (judge).
+  - Per-face resting lids within ±0.011 of target (judge: no nudges).
+  - `--skin-set "part:k=v;..."` dev switch.
+  - `heroine_unpainted.blend` images relinked and packed (face6 backup; the graft from shipped head_tex). Local, ignored; `.prepack.blend` beside it.
+  - `under_jaw` per texel (3afe6ffb); own and Highborn recut over the old cut.
+  - **`People.HeadPaintFile` now loads her own paint from head_tex/heroine_head.jpg.** Before, own's paint was heroine.glb's embedded older copy, so no jaw cut on own ever showed. That is why the judge saw own unchanged. Built, not yet shot.
+- **Note:** `F\seamstep.py`'s edge at x 980-1020 is the jaw line, not SPLIT. Use the solver's `F\solve1\step.py` for the seam.
+- **Next, in order:**
+  1. Reshoot own and Highborn (`-import`) and confirm own's cut now shows. Add a debug frame with the cut mask as colour (`F\jaw\<face>\jaw_cut.png`).
+  2. Highborn's blue-violet bruise (obvious) and the grey zones on all ten: the cut must cover from the ear lobe to mid-jaw and down to the end of the grey zone, with the ramp ending on the neck and the neck's own colour (hue 17-18°, sat ~0.24). Redo all ten via `F\jaw1.ps1 -inplace -faces ...` (the blend runs now).
+  3. Dark speckle under the jaw on all ten ("stubble"): fade ~50% from the jaw line to SPLIT; keep the cheek freckles.
+  4. Sunborn's terracotta neck, chest and lids: tone (sat 0.37 → 0.28-0.35, hue up; SSS for dark skin).
+  5. Saffron's (then Moonlit's) crease under the chin: relax the keys there, or give the graft `face_*` keys eased over 4-5 cm.
+  6. **Outfits' report: a ragged pale-to-warm paint edge across her upper breasts** in every chest close-up (`...91211d34...\scratchpad\o2\judge2\` s1/s2). Probably the graft's lower edge (CUT, heroine_head.py). Ours. Tell outfits lead ace45ae43386569ed the commit when fixed.
+  7. The judge's other tells: a glossy lilac band on her shoulders (body rough/spec against the face's); Moonlit's pink-red temple arc (brow tail to eye corner; a hook on Saffron and Hard-won); lower lids asymmetric R/L; brows lower and flatter than the portraits.
+  8. The iris swatches after rendering's Night-grade fix (the coordinator forwards the commit): `F\gains2.py`, then the lashes (target (45,30,24)).
+  9. The next judge: `F\neckrows.py` sheets plus a 70-90° profile neck tile per face and Highborn turned 40°; "Context budget: NNk" in the brief. Then the GPU re-lay of the ten paints.
 
 ## Paused before (10 Oct, agent a2d632df7c7f21ec0); its notes:
 Scratch F = `S\f13` (scripts, logs, `jaw\`, `heads\`). Nothing below has been judged.
@@ -60,4 +74,4 @@ Based on `claude/vigilant-galileo-l6jqyx` @ 45a0bde4, with the predecessor's WIP
 - Godot's import rewrites hundreds of `.import` sidecars and adds `.uid`s: never commit them (stage files by name). `godot/assets` is a junction with `--skip-worktree`.
 - A fresh worktree needs main's `godot/.godot` (robocopy), `f12\sidecars.py`, and a first `-import` (about 8 minutes).
 
-HANDOFF READY: docs/handoff/face.md on worktree-agent-afb7deb41dbb5d904
+HANDOFF READY: docs/handoff/face.md on worktree-agent-a2d632df7c7f21ec0
