@@ -470,7 +470,23 @@ def adjacency(n, tris):
     return sparse.diags(1 / deg) @ m
 
 
+# (mend_body leaves each fin's tip a point in no triangle, kept so her points
+# stay as many as the game's: its normal is Blender's stand-in, its own place,
+# and with no neighbours the smoothing that finds bumps read the tip under her
+# left breast 1.3 m proud and took it for her nipple, which moved the reaver's
+# band under her breasts. Each such point takes its nearest real point's
+# normal and is smoothed as that point, and is never sought as a nipple or lump.)
+LOOSE = np.ones(len(P), bool)
+LOOSE[TRI.ravel()] = False
+LOOSE_TO = np.arange(len(P))
+if LOOSE.any():
+    LOOSE_TO[LOOSE] = np.where(~LOOSE)[0][cKDTree(P[~LOOSE]).query(P[LOOSE])[1]]
+    N[LOOSE] = N[LOOSE_TO[LOOSE]]
+    print("LOOSE points in her surface (fin tips mended away):", int(LOOSE.sum()))
 ADJ = adjacency(len(P), TRI)
+if LOOSE.any():
+    ADJ = (ADJ + sparse.coo_matrix((np.ones(int(LOOSE.sum())), (np.where(LOOSE)[0], LOOSE_TO[LOOSE])),
+                                   shape=ADJ.shape)).tocsr()
 # Her breasts' weights eased up their upper slope. As authored they fell from
 # most to nothing within two centimetres at the top of each breast, so in a
 # swing the flesh above stayed put while the breast (and whatever she wears
@@ -539,12 +555,12 @@ def nipples():
     # The strongest such bump on either breast; the other nipple is sought
     # near its mirror image (they are level), so a lump elsewhere on one
     # breast cannot be taken for it.
-    m = (np.abs(P[:, 0]) > 0.07) & (P[:, 2] > 1.3) & (P[:, 2] < 1.5) & (P[:, 1] < -0.05) & ~NEAR_GRAFT
+    m = (np.abs(P[:, 0]) > 0.07) & (P[:, 2] > 1.3) & (P[:, 2] < 1.5) & (P[:, 1] < -0.05) & ~NEAR_GRAFT & ~LOOSE
     first = P[np.where(m)[0][np.argmax(proud[m])]]
     out = {}
     for s, sd in ((1, "l"), (-1, "r")):
         guess = np.array([abs(first[0]) * s, first[1], first[2]])
-        near = np.where((np.linalg.norm(P - guess, axis=1) < 0.02) & ~NEAR_GRAFT)[0]
+        near = np.where((np.linalg.norm(P - guess, axis=1) < 0.02) & ~NEAR_GRAFT & ~LOOSE)[0]
         out[sd] = P[near[np.argmax(proud[near])]]
         print("NIPPLE", sd, out[sd].round(3), "proud %.4f" % proud[near].max())
     return out
@@ -571,7 +587,7 @@ def filled_nipples(radius=0.03, rounds=4000):
     proud = ((P - S) * N).sum(1)
     breast = (np.abs(P[:, 0]) > 0.03) & (P[:, 2] > 1.28) & (P[:, 2] < 1.5) & (P[:, 1] < -0.05)
     # Dents as well as lumps (a crease at the top of her left breast).
-    lumps = P[breast & (np.abs(proud) > 0.0018) & ~NEAR_GRAFT]
+    lumps = P[breast & (np.abs(proud) > 0.0018) & ~NEAR_GRAFT & ~LOOSE]
     if len(lumps):
         d, _ = cKDTree(lumps).query(P)
         inside |= breast & (d < 0.02)
