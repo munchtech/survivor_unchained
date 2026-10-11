@@ -8,6 +8,7 @@ to the median of the skin in front of the ear as it renders (its paint times the
 blue lays it), a touch warmer (WARM: ears run pinker than a cheek), eased in over the ear's root.
 
     python tools/assets/heroine_ears.py [face ...]     (no faces: all eleven paints in godot/art/people/head_tex)
+    python tools/assets/heroine_ears.py --render FILE  (the render's own miss, measured: from_render)
 
 Idempotent only from the originals: it measures the ear against the cheek, so a rerun converges, but run it on
 paints fresh from the lay (heroine_face.py) and after heroine_jaw_cut.py.
@@ -98,5 +99,49 @@ def main(faces):
         print("EARS %-9s gain %.3f %.3f %.3f (ear %s, front of it %s)" % (face, *gain, np.round(srgb(e), 3), np.round(srgb(cheek), 3)))
 
 
+M1 = np.array([[0.4122214708, 0.5363325363, 0.0514459929], [0.2119034982, 0.6806995451, 0.1073969566],
+               [0.0883024619, 0.2817188376, 0.6299787005]])
+M2 = np.array([[0.2104542553, 0.7936177850, -0.0040720468], [1.9779984951, -2.4285922050, 0.4505937099],
+               [0.0259040371, 0.7827717662, -0.8086757660]])
+
+
+def oklab(c): return np.cbrt(c @ M1.T) @ M2.T
+def unoklab(c): return (c @ np.linalg.inv(M2).T) ** 3 @ np.linalg.inv(M1).T
+
+
+def from_render(fixes):
+    """Each face's ear moved by what its render shows (earmeas.py: her lit ear against her lit cheek at 40 degrees,
+    hair that shows it): lightness by the ratio of the two, chroma by theirs, hue turned toward the cheek's, in Oklab
+    on the ear's texels (eased in as main's). The paint's own tone is not the render's (her face's tone, the soft
+    lamps' tint and the lift lie over it, and the ear is lit at another angle), so this closes the loop on what shows;
+    a rerun on a fresh measure converges. fixes: {face: (L ratio, C ratio, hue degrees)}."""
+    js, binc = hs._load(GLB)
+    mats = [m.get("name") for m in js["materials"]]
+    prim = next(p for m in js["meshes"] for p in m["primitives"] if mats[p["material"]] == "skin_head")
+    P = hs._read(js, binc, prim["attributes"]["POSITION"]).astype(np.float64)
+    UV = hs._read(js, binc, prim["attributes"]["TEXCOORD_0"])
+    T = hs._read(js, binc, prim["indices"]).astype(np.int64).reshape(-1, 3)
+    ax = np.abs(P[:, 0])
+    d = np.linalg.norm(np.c_[ax, P[:, 1:]] - np.array(EAR), axis=1)
+    w = (1 - smooth(EAR_R[0], EAR_R[1], d)) * smooth(EAR_X[0], EAR_X[1], ax)
+    mask = None
+    for face, (rl, rc, dh) in fixes.items():
+        path = os.path.join(TEX, "heroine_head.jpg" if face == "own" else "heroine_head_%s.jpg" % face)
+        im = np.asarray(Image.open(path).convert("RGB")).astype(np.float64) / 255
+        if mask is None or mask.shape[0] != im.shape[0]:
+            mask = raster(UV, T, w, im.shape[0])
+        lab = oklab(lin(im))
+        c, s_ = np.cos(np.radians(dh)), np.sin(np.radians(dh))
+        a, b = lab[..., 1] * rc, lab[..., 2] * rc
+        moved = np.stack([lab[..., 0] * rl, a * c - b * s_, a * s_ + b * c], -1)
+        out = srgb(np.clip(unoklab(lab + (moved - lab) * mask[..., None]), 0, 1))
+        Image.fromarray((np.clip(out, 0, 1) * 255 + 0.5).astype(np.uint8)).save(path, quality=95, subsampling=0)
+        print("EARS %-9s L x%.3f C x%.3f h %+.1f" % (face, rl, rc, dh))
+
+
 if __name__ == "__main__":
-    main(sys.argv[1:])
+    if sys.argv[1:2] == ["--render"]:
+        # --render FILE: lines "face L-ratio C-ratio hue-degrees"
+        from_render({f: (float(l), float(c), float(h)) for f, l, c, h in (ln.split() for ln in open(sys.argv[2]) if ln.strip())})
+    else:
+        main(sys.argv[1:])

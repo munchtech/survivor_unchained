@@ -1281,7 +1281,8 @@ public static class People
     /// and under her jaw, outside her face's paint. Her head's own skin there showed greyer than her portrait's shade
     /// (jaw chroma 37-55% short on the fair faces, judge j5, 11 October 2026); fitted at the Look to each portrait's
     /// chroma and hue under her jaw, its lightness kept (tools/scratch/face17/softfit.py, clamped 0.5-1.6). Sunborn's
-    /// shade there is lit mostly by the key, out of this one's reach. (--soft-tone R,G,B: another, for judging it.)</summary>
+    /// shade there is lit mostly by the key, out of this one's reach. (Vixen, Moonlit and Fey at the fair faces' median took
+    /// a third of their jaw's chroma and none of its missing shade, which is the key's: face 19, r8.) (--soft-tone R,G,B: another, for judging it.)</summary>
     static readonly Dictionary<string, Vector3> HerSoftTone = new()
     {
         ["own"] = new(1.268f, 0.877f, 0.571f), ["highborn"] = new(0.934f, 1.032f, 1.082f), ["doe"] = new(1.192f, 0.881f, 0.737f),

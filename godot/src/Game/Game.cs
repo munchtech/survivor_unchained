@@ -153,6 +153,10 @@ public partial class Game : Node, IZoneHost
             // --sex female [--hair STYLE --figure F --skin ID]: a woman survivor.
             Sex = Args.Get("sex") == "female" ? Sex.Female : null, HairStyle = Args.Get("hair"), Skin = Args.Get("skin"),
             Figure = Args.Has("figure") ? Args.Num("figure", 1) : null,
+            // --preset ID [--eyes ID]: one of her faces (pictures of a face in play, by day and by torch).
+            FaceShape = Args.Get("preset"), Eyes = Args.Get("eyes"),
+            Face = Args.Get("preset") is string ps && Loadouts.HeroKit(Sex.Female)?.Faces.FirstOrDefault(f => f.Id == ps) is { } pf
+                ? new(pf.Shape) : null,
         });
         // --art ID[:FACET+FACET]: that art in hand, learned and (with facets) mastered.
         if (Args.Get("art") is string art)
