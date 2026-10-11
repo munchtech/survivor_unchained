@@ -148,7 +148,7 @@ def _zsit(lean=1.0):
         "hips": {"pos": _SBH_HIPS[0][1], "rot": _SBH_HIPS[0][2]},
         "spine": (-10, 6 + 4 * lean, -6 - 2 * lean), "neck": (6, 12, -2), "head": (4, 16, -2),
         "foot_r": _sbh_foot("r", 62), "foot_l": _sbh_foot("l", 62),
-        "hand_r": {"pos": (-0.60, 0.05, 0.10), "pole": (-0.5, 0, -1), "knuckles": (-0.4, 0, 1)},
+        "hand_r": {"pos": (-0.52, 0.05, 0.28), "pole": (-0.5, 0, -1), "knuckles": (-0.4, 0, 1)},
         "hand_l": {"pos": (-0.10, 0.22, 0.12), "pole": (0.6, -0.5, -0.4), "knuckles": (0.1, -0.5, 1)},
         "clav_l": (0, 6), "clav_r": (10, 2), "fingers_l": RELAXED, "fingers_r": OPEN,
     }
@@ -174,8 +174,8 @@ _SBH_LEGS = {
     "l": [(48, (0.34, 0.0, 0.10), None, (0.08, 0.235, 0.42)),
           (62, (0.03, -0.05, -0.15), (-4, 140, 0), (0.0, 0.07, 0.30)),
           (64, (0.03, -0.05, -0.15), (-4, 140, 0), (0.0, 0.07, 0.30)),
-          (71, (0.08, -0.02, -0.13), (0, 140, 0), (0.08, 0.10, 0.33)),
-          (77, (0.11, -0.03, -0.115), (1, 140, 0), (0.15, 0.06, 0.341)),
+          (70, (0.08, -0.02, -0.13), (0, 140, 0), (0.08, 0.10, 0.33)),
+          (75, (0.11, -0.03, -0.115), (1, 140, 0), (0.15, 0.06, 0.341)),
           (88, (0.11, -0.03, -0.115), (1, 140, 0), (0.15, 0.06, 0.341))],
 }
 
@@ -187,8 +187,15 @@ _SBH_LEGS = {
 _SBH_HIPS = [
     (62, (-0.327, -0.920, -0.077), (12, -4, 14)),
     (64, (-0.327, -0.920, -0.077), (12, -4, 14)),
+    # (Points every frame or two: between sparser ones the ease cut inside the
+    # arc and pressed the planted knee 22 mm down and up, judge 23b.)
+    (65, (-0.304, -0.892, -0.082), (11.0, -1.9, 13.0)),
+    (66, (-0.283, -0.868, -0.085), (10.2, -0.1, 12.2)),
     (67, (-0.258, -0.841, -0.085), (9.2, 2.0, 11.2)),
+    (68, (-0.232, -0.815, -0.083), (8.3, 4.1, 10.3)),
+    (69, (-0.208, -0.793, -0.079), (7.4, 5.9, 9.4)),
     (70, (-0.181, -0.769, -0.072), (6.5, 8.0, 8.5)),
+    (72, (-0.139, -0.735, -0.057), (5.0, 11.1, 7.0)),
     (73, (-0.096, -0.705, -0.037), (3.6, 14.2, 5.6)),
     (75, (-0.031, -0.667, 0.004), (1.4, 18.9, 3.4)),
     # Up off her hip only to a low kneel, spent, the hips well short of over
@@ -358,10 +365,10 @@ def _sbh_leg(rig, p, fr, side, first, last):
         q = keyed(fr)
     else:
         q = drawn(fr)
-        # Out of the keyed lying foot over f34-f42, into the keyed side-sit
+        # Out of the keyed lying foot over f34-f48, into the keyed side-sit
         # one over f56-f62.
         d = qmul(qeuler(*first["rot"]), qinv(drawn(34)))
-        q = qmul(qslerp(d, np.array([0.0, 0.0, 0.0, 1.0]), smoothstep_((fr - 34) / 8.0)), q)
+        q = qmul(qslerp(d, np.array([0.0, 0.0, 0.0, 1.0]), smoothstep_((fr - 34) / 14.0)), q)
         q = qslerp(q, keyed(fr), smoothstep_((fr - 56) / 6.0))
     spec = {"pos": tuple(float(v) for v in pos), "rot": _euler(q), "pole": tuple(10.0 * (knee - (hip + ankle) / 2))}
     return spec, hip, knee
@@ -423,14 +430,13 @@ def sit_back_heels(rig):
         # Over onto her knees: the hips up off the ground and over them, the
         # right leg drawn under; the right hand pushes off the ground.
         (77, {"hips": {"pos": _SBH_HIPS[6][1], "rot": _SBH_HIPS[6][2]}, "spine": (2, 24, -2), "neck": (0, 8, 0), "head": (0, 10, 0),
-              "foot_l": _sbh_foot("l", 77), "foot_r": _sbh_foot("r", 77),
+              "foot_l": _sbh_foot("l", 75), "foot_r": _sbh_foot("r", 77),
               "hand_r": {"pos": (-0.16, 0.30, 0.22), "pole": (-0.6, -0.5, -0.4), "knuckles": (-0.1, -0.4, 1)},
               "hand_l": {"pos": (0.15, 0.32, 0.20), "pole": (0.7, -0.5, -0.3), "knuckles": (0.1, -0.5, 1)},
               "clav_l": (0, 6), "clav_r": (4, 6), "fingers_l": RELAXED, "fingers_r": RELAXED}, "auto"),
         # Back onto her heels, the hips going round on the planted knees (a
         # thigh's length from them all the way down), the hands to her thighs;
         # a breath.
-        (87, merge(_heels(look=0.2, hands=0.0, breath=0.5), hips={"pos": (0.011, -0.66, 0.016), "rot": (0, 10, 1)}), "auto"),
         (96, _heels(look=0.3, hands=0.0, breath=1.0), "ease"),
         (118, _heels(look=0.5, hands=0.0, breath=-0.5), "ease"),
         # The hands come up before her, and she looks down at them.
@@ -454,11 +460,11 @@ def sit_back_heels(rig):
             # onto its top again as she sits back (the heels key's own).
             w = smoothstep_((fr - 54) / 6.0) * (1.0 - smoothstep_((fr - 91) / 4.0))
             if w > 0:
-                free = smoothstep_((fr - 67) / 10.0) * (1.0 - smoothstep_((fr - 79) / 12.0))
+                free = smoothstep_((fr - 67) / 10.0) * (1.0 - smoothstep_((fr - 77) / 16.0))
                 # Coming to rest palm up as the heels key has it (judge 23 round
                 # b: turned over from palm down in the last frames, the
                 # fingers swung 20 cm a frame).
-                out["hand_l"] = _on_thigh(pose["hand_l"], legs["l"][1], legs["l"][2], free, w, settle=smoothstep_((fr - 74) / 18.0))
+                out["hand_l"] = _on_thigh(pose["hand_l"], legs["l"][1], legs["l"][2], free, w, settle=smoothstep_((fr - 72) / 22.0))
                 # Flatter on the thigh, the fingers not curled into it.
                 fl, k = pose["fingers_l"], w * (1.0 - free)
                 if isinstance(fl, dict):
