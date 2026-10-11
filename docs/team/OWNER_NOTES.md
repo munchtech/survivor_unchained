@@ -4,6 +4,10 @@ Every lead reads this after RESUME.md. When you take a note into your work, mark
 
 ## 11 October 2026
 
+### Neck length
+
+- On the neck fixes (seam, grey jaw shade): "the neck might have been too long anyway, maybe the bug helps find the perfect". The face lead tries a shorter neck as part of the fix: a side-by-side of now against one or two shorter lengths, front and profile, at the Look and in play, judged, then shown to the owner. Outfits (collars, necklines) and animation (the neck bones) are told before any change ships.
+
 ### Classes, trees and ultimates
 
 - Each calling gets two types: warden two-hander and shield tank; stalker dual-wield melee and ranged; arcanist two caster styles; reaver two of its own.
