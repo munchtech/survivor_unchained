@@ -52,6 +52,9 @@ A new coordinator can't reliably reach the old session's agents, so never switch
 5. Then tell the owner in one line, pointing at START.md. Give the line only when steps 1 to 4 are done.
 
 ## Tokens and quality, always
+
+- **A lead's workers report to you, not to the lead (11 October).** A background worker or judge spawned by a lead sends its completion notice to the main session; the lead waits forever. Relay each one (SendMessage to the lead) and tell leads to have their workers SendMessage them before finishing. A notice whose task id isn't on the roster is almost always one of these.
+- **The budget hook reads the brief only (11 October fix).** It used to match README's example "Context budget: 120k". Write `Context budget: 300k` in every brief.
 The owner, 7 October: the cheapest route (lower effort, smaller model, any saving technique) that ends at the same quality, always, without asking; raise at once when quality is at risk. Measure each wave's tokens per finished piece against wave 1 (7 October: max-effort leads filled 48k to 300k in about 30 minutes; the hour cache works, 0 five-minute writes) and report the real saving.
 
 ## State at handoff
