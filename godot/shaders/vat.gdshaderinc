@@ -18,6 +18,13 @@ uniform vec3 glow_color = vec3(0.0);
 uniform float rim_amount = 0.45;
 uniform float rim_tint = 0.35;
 uniform float alpha_cut = 0.45;
+// Moving foes keep about a frame of FSR 2's history, so each frame must be smooth on its own
+// (the wolf's fur sparkled): the paint is read this many mips softer, and cut cards fade out
+// edge-on, and shine and rim fade where the normal turns faster than a pixel can show
+// (fading them, not widening the lobe: a rougher lobe spread the sparkle over more pixels).
+uniform float tex_bias = 0.0;
+uniform float edge_fade = 0.0;
+uniform float shine_aa = 0.0;
 
 // The cloth's dye, as the person shader has it (shaders/person.gdshader).
 uniform bool use_dye = false;
@@ -76,11 +83,13 @@ void fragment() {
 	float dn = fract(sin(dot(floor(vat_local * 18.0), vec3(12.9898, 78.233, 37.719))) * 43758.5453);
 	if (fx.y > 0.0 && dn < fx.y) discard;
 	vec3 c = albedo.rgb;
-	vec4 tex = use_tex ? texture(albedo_tex, UV) : vec4(1.0);
+	vec4 tex = use_tex ? texture(albedo_tex, UV, tex_bias) : vec4(1.0);
 	c *= tex.rgb;
 #ifdef VAT_CUT
 	// Fur and hair cards: cut where the paint is clear.
 	ALPHA = tex.a * albedo.a;
+	// A card seen edge-on is thinner than a pixel and breaks into a crawling line: it fades out.
+	ALPHA *= mix(1.0, smoothstep(0.06, 0.25, abs(dot(NORMAL, VIEW))), edge_fade);
 	ALPHA_SCISSOR_THRESHOLD = alpha_cut;
 #endif
 	if (use_dye) {
@@ -123,9 +132,12 @@ void fragment() {
 		e += vec3(1.0, 0.3, 0.03) * tongue + vec3(1.0, 0.42, 0.08) * pow(rim, 3.0) * fx.w * 0.5;
 	}
 	ALBEDO = c;
+	vec3 dnx = dFdx(NORMAL), dny = dFdy(NORMAL);
+	float busy = shine_aa * smoothstep(0.02, 0.3, 0.5 * (dot(dnx, dnx) + dot(dny, dny)));
 	ROUGHNESS = rough;
+	SPECULAR = 0.5 * (1.0 - busy);
 	METALLIC = metallic;
-	RIM = rim_amount;
+	RIM = rim_amount * (1.0 - busy);
 	RIM_TINT = rim_tint;
 	// Struck: a warm flare that lives at the rim, so the body keeps its shape
 	// from thirty metres up, with only an instant's glow across the whole of it
