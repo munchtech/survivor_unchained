@@ -97,7 +97,7 @@ The main session keeps this current. It is the address list for SendMessage. Ret
 | Performance and rendering (clarity in motion first) | a71fc38b0095fd45a (successor 3, 11 Oct, in worktree agent-a4e0c353e61cca6dc; heroine LOD judged PASS WITH FIXES, the Reaver ink strip open) | docs/team/performance.md |
 | Arena art | a0b61c278bdd5c994 | docs/team/arena_art.md |
 | Male hero (body, head, hair, outfits) | ab82cbe99e2937ddd | docs/team/hero_male.md |
-| Heroine face, hair and character creation's Look | a8b147f78b1db794b (successor 3, 11 Oct, in worktree agent-a2d632df7c7f21ec0 @ 5794c4e3; judge n1: neck fails in profile, front much improved) | docs/team/face.md |
+| Heroine face, hair and character creation's Look | PAUSED 11 Oct evening (handoff docs/handoff/face.md "Start here", worktree agent-a2d632df7c7f21ec0 @ 4103afd0). Waiting on rendering: Night grade toe (irises crushed) and PortraitLight fill/bounce/rim (grey jaw shade, lilac sheen). Then: iris patch (tools/scratch/face15), salmon jaw line (thickness mask) | docs/team/face.md |
 | Asset provenance (what isn't ours, licences, credits, replacement plan) | a80ff0c7fd988b178 | docs/team/provenance.md |
 | Legal and Steam compliance (paused; docs/handoff/legal.md; wake before submission or for a new outfit) | — | docs/team/legal.md |
 | Loot and itemisation (paused, built and merged; docs/handoff/loot.md for a successor) | — | docs/team/loot.md |
