@@ -78,6 +78,21 @@ the order). Use `showc.py` to see each node first.
     evening." (§3.1), "low, warm and unhurried" (§3.4).
 Then Act 2, per `git show 86b97737:docs/handoff/story.md` §3.
 
+## TOLL_SPEC (judged; fixes applied)
+
+A max judge passed it with fixes; all applied (303 lines): C41's line no
+longer says "the night you first got up" (line 27 is the ford) and takes a
+clause per fight; the §1 table adds the in-fight revives (`p.Revives`,
+`p.Ashes`), a lost table night and map runs; the scripted fall has its own
+path (no rise spent, no stage replayed) and a staged beat per fight; the paid
+ones get a villager body and rules so they are seen; Rook's barks stop giving
+the pattern away; the death leads the morning report; Oswin's folk line is
+rewritten in place (gated), not deleted. **Left for you:** "went in his/her
+chair" (5 of the 24) and "sat down ... and went" (4) still repeat; a stiff
+"Detail:" lead-in in §4; Vonnra's optional close "...No charge, this once.
+Not to you."; C09's ledger text goes in with item 2. Then it is ready for a
+combat or story-code lead (the main session assigns it).
+
 ## Branch and tools
 
 - **Branch:** `story-writer-successor` (from the integration branch at
