@@ -123,6 +123,8 @@ public sealed class Enemy : Pooled
     public double HomeX, HomeZ, Leash;
     /// <summary>Multiplier on damage taken (a ward, a vulnerable moment).</summary>
     public double TakenMul = 1;
+    /// <summary>Where it was Bound (StatusKind.Bound): it can't move away from here.</summary>
+    public double BoundX, BoundZ;
     /// <summary>At rest, it notices the survivor only this close (0: from afar);
     /// roused, it hunts as far as its leash.</summary>
     public double Wake;

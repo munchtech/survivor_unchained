@@ -35,7 +35,9 @@ public class StoryLint
             .Select(f => (Path.GetRelativePath(GodotDir, f).Replace('\\', '/'), File.ReadAllText(f))).ToList());
 
     /// <summary>Facts the game writes from outside the story (the settings screen).</summary>
-    static bool Outside(string fact) => fact.StartsWith("settings.");
+    /// <summary>Facts the story doesn't write: the settings, and the atlas's lamps (its milestones set
+    /// them when the experience lead places them, docs/design/CLASSES.md §2.4).</summary>
+    static bool Outside(string fact) => fact.StartsWith("settings.") || fact == "lamps.atlas";
 
     /* ------------------------------------------------------------ the JSON -- */
 

@@ -1,0 +1,8250 @@
+{
+ "story": [
+  "hollow_by_night",
+  "roost_raid",
+  "dig_boils",
+  "vault_opened"
+ ],
+ "roads": [
+  {
+   "id": "sunderer",
+   "calling": "warden",
+   "name": "Road of the Sunderer",
+   "line": "Slow, huge blows that split the ground.",
+   "grip": null,
+   "skills": [
+    "sunder",
+    "groundbreaker",
+    "dawnpulse"
+   ],
+   "strike": "the_long_cut",
+   "stand": "dawn_in_the_steel"
+  },
+  {
+   "id": "bulwark",
+   "calling": "warden",
+   "name": "Road of the Bulwark",
+   "line": "Walk in, let them hit you, and they break on it.",
+   "grip": null,
+   "skills": [
+    "oathblade",
+    "rebuke",
+    "watch_bell"
+   ],
+   "strike": "bell_of_the_morning",
+   "stand": "sixty_on_the_wall"
+  },
+  {
+   "id": "butcher",
+   "calling": "reaver",
+   "name": "Road of the Butcher",
+   "line": "Twin axes, and you fight best bleeding.",
+   "grip": null,
+   "skills": [
+    "carve",
+    "hurled_cleaver",
+    "axe_gyre"
+   ],
+   "strike": "the_butchers_bill",
+   "stand": "butchers_hour"
+  },
+  {
+   "id": "chainbound",
+   "calling": "reaver",
+   "name": "Road of the Chainbound",
+   "line": "A hooked chain that drags the horde into knots, with lightning down it.",
+   "grip": null,
+   "skills": [
+    "chain_lash",
+    "anchor",
+    "iron_palms"
+   ],
+   "strike": "drag_them_under",
+   "stand": "storm_on_the_chain"
+  },
+  {
+   "id": "kindler",
+   "calling": "arcanist",
+   "name": "Road of the Kindler",
+   "line": "Fire and frost on the ground: freeze them, then shatter them.",
+   "grip": null,
+   "skills": [
+    "cinderfall",
+    "pyre_line",
+    "rime_field"
+   ],
+   "strike": "burns_twice",
+   "stand": "hard_winter"
+  },
+  {
+   "id": "moonweaver",
+   "calling": "arcanist",
+   "name": "Road of the Moonweaver",
+   "line": "Moonlight that hunts on its own and marks what it touches.",
+   "grip": null,
+   "skills": [
+    "seeking_motes",
+    "moonwell",
+    "lantern_man"
+   ],
+   "strike": "the_branding",
+   "stand": "the_drowned_moon"
+  },
+  {
+   "id": "roadknife",
+   "calling": "stalker",
+   "name": "Road of the Roadknife",
+   "line": "Twin blades: every dash goes through the crowd.",
+   "grip": null,
+   "skills": [
+    "twin_fangs",
+    "cutting_wake",
+    "knifestorm"
+   ],
+   "strike": "the_roads_toll",
+   "stand": "through_and_through"
+  },
+  {
+   "id": "verge_hunter",
+   "calling": "stalker",
+   "name": "Road of the Verge-Hunter",
+   "line": "A longbow: far off, pinning the front.",
+   "grip": null,
+   "skills": [
+    "volley",
+    "heartseeker",
+    "snare_line"
+   ],
+   "strike": "one_arrow",
+   "stand": "pinning_rain"
+  }
+ ],
+ "flares": [
+  {
+   "id": "the_long_cut",
+   "name": "The Long Cut",
+   "calling": "warden",
+   "road": "sunderer",
+   "kind": "strike",
+   "length": 0.8,
+   "radius": 12,
+   "blows": 2,
+   "power": 120,
+   "school": "holy",
+   "tags": [
+    "melee",
+    "area",
+    "heavy",
+    "holy"
+   ],
+   "text": "A sweep of dawn 12 m round, then a cleave down a 24 m line."
+  },
+  {
+   "id": "dawn_in_the_steel",
+   "name": "Dawn in the Steel",
+   "calling": "warden",
+   "road": "sunderer",
+   "kind": "stand",
+   "length": 6,
+   "radius": 10,
+   "blows": 2,
+   "power": 30,
+   "school": "holy",
+   "tags": [
+    "melee",
+    "area",
+    "heavy",
+    "holy"
+   ],
+   "text": "For 6 s the blade burns with morning: faster swings, crescents of light, every heavy blow staggers."
+  },
+  {
+   "id": "bell_of_the_morning",
+   "name": "Bell of the Morning",
+   "calling": "warden",
+   "road": "bulwark",
+   "kind": "strike",
+   "length": 0.9,
+   "radius": 14,
+   "blows": 3,
+   "power": 80,
+   "school": "holy",
+   "tags": [
+    "area",
+    "holy",
+    "shield"
+   ],
+   "text": "Three tolls on the shield: each stuns and sears everything near, and mends you 4%."
+  },
+  {
+   "id": "sixty_on_the_wall",
+   "name": "Sixty on the Wall",
+   "calling": "warden",
+   "road": "bulwark",
+   "kind": "stand",
+   "length": 6,
+   "radius": 7,
+   "blows": 1,
+   "power": 30,
+   "school": "holy",
+   "tags": [
+    "area",
+    "holy",
+    "shield"
+   ],
+   "text": "For 6 s the Watch's shield-bearers hold an arc in front of you.",
+   "guard": "cut",
+   "guardValue": 0.5
+  },
+  {
+   "id": "the_butchers_bill",
+   "name": "The Butcher's Bill",
+   "calling": "reaver",
+   "road": "butcher",
+   "kind": "strike",
+   "length": 1.2,
+   "radius": 10,
+   "blows": 6,
+   "power": 45,
+   "school": "physical",
+   "tags": [
+    "melee",
+    "steel",
+    "physical",
+    "twin"
+   ],
+   "text": "A leap on the strongest near you, and a chop for each tenth of health you're missing."
+  },
+  {
+   "id": "butchers_hour",
+   "name": "Butcher's Hour",
+   "calling": "reaver",
+   "road": "butcher",
+   "kind": "stand",
+   "length": 8,
+   "radius": 4,
+   "blows": 2,
+   "power": 25,
+   "school": "physical",
+   "tags": [
+    "melee",
+    "steel",
+    "physical",
+    "twin"
+   ],
+   "text": "For 8 s: Frenzy full, blows twice as fast, every blow bleeds."
+  },
+  {
+   "id": "drag_them_under",
+   "name": "Drag Them Under",
+   "calling": "reaver",
+   "road": "chainbound",
+   "kind": "strike",
+   "length": 0.8,
+   "radius": 14,
+   "blows": 2,
+   "power": 110,
+   "school": "physical",
+   "tags": [
+    "melee",
+    "physical",
+    "area",
+    "hook"
+   ],
+   "text": "Hooks bite everything within 14 m and haul them into one knot for the slam."
+  },
+  {
+   "id": "storm_on_the_chain",
+   "name": "Storm on the Chain",
+   "calling": "reaver",
+   "road": "chainbound",
+   "kind": "stand",
+   "length": 5,
+   "radius": 8,
+   "blows": 2,
+   "power": 35,
+   "school": "storm",
+   "tags": [
+    "melee",
+    "storm",
+    "area",
+    "hook"
+   ],
+   "text": "For 5 s the chain sweeps 8 m out, and the sky strikes down it."
+  },
+  {
+   "id": "burns_twice",
+   "name": "Burns Twice",
+   "calling": "arcanist",
+   "road": "kindler",
+   "kind": "strike",
+   "length": 1.1,
+   "radius": 14,
+   "blows": 3,
+   "power": 80,
+   "school": "fire",
+   "tags": [
+    "spell",
+    "fire",
+    "frost",
+    "area"
+   ],
+   "text": "Frost races under every pack near, then embers fall on the frozen ground."
+  },
+  {
+   "id": "hard_winter",
+   "name": "Hard Winter",
+   "calling": "arcanist",
+   "road": "kindler",
+   "kind": "stand",
+   "length": 6,
+   "radius": 12,
+   "blows": 1,
+   "power": 30,
+   "school": "frost",
+   "tags": [
+    "spell",
+    "frost",
+    "area",
+    "zone"
+   ],
+   "text": "For 6 s the ford's cold: everything near slows and freezes, and the thaw bursts."
+  },
+  {
+   "id": "the_branding",
+   "name": "The Branding",
+   "calling": "arcanist",
+   "road": "moonweaver",
+   "kind": "strike",
+   "length": 1.0,
+   "radius": 14,
+   "blows": 2,
+   "power": 100,
+   "school": "arcane",
+   "tags": [
+    "spell",
+    "arcane",
+    "area"
+   ],
+   "text": "Every enemy near is branded; the brands burst outward, each death passing a mark."
+  },
+  {
+   "id": "the_drowned_moon",
+   "name": "The Drowned Moon",
+   "calling": "arcanist",
+   "road": "moonweaver",
+   "kind": "stand",
+   "length": 6,
+   "radius": 5,
+   "blows": 3,
+   "power": 22,
+   "school": "arcane",
+   "tags": [
+    "spell",
+    "arcane",
+    "projectile",
+    "zone"
+   ],
+   "text": "For 6 s a pool of moonlight follows you and looses motes."
+  },
+  {
+   "id": "the_roads_toll",
+   "name": "The Road's Toll",
+   "calling": "stalker",
+   "road": "roadknife",
+   "kind": "strike",
+   "length": 1.2,
+   "radius": 12,
+   "blows": 12,
+   "power": 30,
+   "school": "physical",
+   "tags": [
+    "melee",
+    "steel",
+    "physical",
+    "twin"
+   ],
+   "text": "Gone in smoke: twelve cuts in 1.2 s, the last on the strongest."
+  },
+  {
+   "id": "through_and_through",
+   "name": "Through and Through",
+   "calling": "stalker",
+   "road": "roadknife",
+   "kind": "stand",
+   "length": 6,
+   "radius": 3,
+   "blows": 2,
+   "power": 25,
+   "school": "physical",
+   "tags": [
+    "melee",
+    "steel",
+    "physical"
+   ],
+   "text": "For 6 s your dashes are free and endless, and every one cuts."
+  },
+  {
+   "id": "one_arrow",
+   "name": "One Arrow",
+   "calling": "stalker",
+   "road": "verge_hunter",
+   "kind": "strike",
+   "length": 0.9,
+   "radius": 30,
+   "blows": 1,
+   "power": 260,
+   "school": "physical",
+   "tags": [
+    "projectile",
+    "ranged",
+    "physical"
+   ],
+   "text": "One arrow down a 30 m line, splitting three times on the toughest."
+  },
+  {
+   "id": "pinning_rain",
+   "name": "Pinning Rain",
+   "calling": "stalker",
+   "road": "verge_hunter",
+   "kind": "stand",
+   "length": 5,
+   "radius": 6,
+   "blows": 3,
+   "power": 18,
+   "school": "physical",
+   "tags": [
+    "projectile",
+    "ranged",
+    "physical",
+    "area"
+   ],
+   "text": "For 5 s arrows rain on ground 12 m across, rooting what they strike."
+  }
+ ],
+ "lamps": [
+  {
+   "id": "warden.the_wardens_oath",
+   "name": "The Warden's Oath",
+   "kind": "start",
+   "region": "hearth",
+   "calling": "warden",
+   "road": "warden.hearth",
+   "text": "Your dash form is Bull Rush: every 8 s the next dash is a 6 m charge behind a barrier of 15% of health. What's in the way is thrown aside; a champion stops it, stunned.",
+   "effects": [
+    {
+     "do": "form",
+     "art": "bull_rush",
+     "wait": 8
+    }
+   ]
+  },
+  {
+   "id": "warden.iron_hide",
+   "name": "Iron Hide",
+   "kind": "form",
+   "region": "hearth",
+   "calling": "warden",
+   "road": "warden.hearth",
+   "at": [
+    "warden.the_wardens_oath"
+   ],
+   "text": "Bull Rush's barrier is 25% of health.",
+   "effects": [
+    {
+     "do": "facet",
+     "art": "bull_rush",
+     "facet": "iron_hide"
+    }
+   ]
+  },
+  {
+   "id": "warden.pile_driver",
+   "name": "Pile Driver",
+   "kind": "form",
+   "region": "hearth",
+   "calling": "warden",
+   "road": "warden.hearth",
+   "at": [
+    "warden.the_wardens_oath"
+   ],
+   "text": "The rush ends in a slam that stuns everything 3 m round.",
+   "effects": [
+    {
+     "do": "facet",
+     "art": "bull_rush",
+     "facet": "pile_driver"
+    }
+   ]
+  },
+  {
+   "id": "warden.unbroken",
+   "name": "Unbroken",
+   "kind": "form",
+   "region": "hearth",
+   "calling": "warden",
+   "road": "warden.hearth",
+   "at": [
+    "warden.the_wardens_oath"
+   ],
+   "text": "Each thing the rush strikes adds 2% of health to the barrier.",
+   "effects": [
+    {
+     "do": "facet",
+     "art": "bull_rush",
+     "facet": "unbroken"
+    }
+   ]
+  },
+  {
+   "id": "warden.gore",
+   "name": "Gore",
+   "kind": "form",
+   "region": "hearth",
+   "calling": "warden",
+   "road": "warden.hearth",
+   "at": [
+    "warden.the_wardens_oath"
+   ],
+   "text": "What the rush strikes bleeds, and champions take half again.",
+   "effects": [
+    {
+     "do": "facet",
+     "art": "bull_rush",
+     "facet": "gore"
+    }
+   ]
+  },
+  {
+   "id": "warden.shield_bash",
+   "name": "Shield Bash",
+   "kind": "reflex",
+   "region": "hearth",
+   "calling": "warden",
+   "road": "warden.hearth",
+   "at": [
+    "warden.the_wardens_oath"
+   ],
+   "text": "When three or more things, or a champion, are within 2.5 m: bash. They're thrown back and stunned 1.5 s, and a channel breaks. Every 7 s.",
+   "effects": [
+    {
+     "do": "reflex",
+     "art": "shield_bash",
+     "trigger": "crowd",
+     "wait": 7,
+     "args": {
+      "count": 3,
+      "radius": 2.5
+     }
+    }
+   ]
+  },
+  {
+   "id": "warden.concussion",
+   "name": "Concussion",
+   "kind": "reflexUp",
+   "region": "hearth",
+   "calling": "warden",
+   "road": "warden.hearth",
+   "at": [
+    "warden.shield_bash"
+   ],
+   "text": "Shield Bash stuns a second longer.",
+   "effects": [
+    {
+     "do": "facet",
+     "art": "shield_bash",
+     "facet": "concussion"
+    }
+   ]
+  },
+  {
+   "id": "warden.shield_wall",
+   "name": "Shield Wall",
+   "kind": "reflexUp",
+   "region": "hearth",
+   "calling": "warden",
+   "road": "warden.hearth",
+   "at": [
+    "warden.shield_bash"
+   ],
+   "text": "Shield Bash gives a barrier of 8% of health for each thing struck, to 40%.",
+   "effects": [
+    {
+     "do": "facet",
+     "art": "shield_bash",
+     "facet": "shield_wall"
+    }
+   ]
+  },
+  {
+   "id": "warden.braced",
+   "name": "Braced",
+   "kind": "reflex",
+   "region": "hearth",
+   "calling": "warden",
+   "road": "warden.hearth",
+   "at": [
+    "warden.the_wardens_oath"
+   ],
+   "text": "A blow that takes a seventh of your health or more plants you for 3 s: blows cut by 65%, arrows turned back. Every 20 s.",
+   "effects": [
+    {
+     "do": "reflex",
+     "art": "bulwark",
+     "trigger": "big_blow",
+     "wait": 20,
+     "args": {
+      "share": 0.1429
+     }
+    }
+   ]
+  },
+  {
+   "id": "warden.rallying_stand",
+   "name": "Rallying Stand",
+   "kind": "reflexUp",
+   "region": "hearth",
+   "calling": "warden",
+   "road": "warden.hearth",
+   "at": [
+    "warden.braced"
+   ],
+   "text": "Mend 4% of health a second while braced.",
+   "effects": [
+    {
+     "do": "facet",
+     "art": "bulwark",
+     "facet": "rallying"
+    }
+   ]
+  },
+  {
+   "id": "warden.kindled_oath",
+   "name": "Kindled Oath",
+   "kind": "flareLamp",
+   "region": "hearth",
+   "calling": "warden",
+   "road": "warden.hearth",
+   "at": [
+    "warden.the_wardens_oath"
+   ],
+   "text": "Blows taken fill the Flare 20% faster.",
+   "effects": [
+    {
+     "do": "rule",
+     "rule": "flare.hurt_fill",
+     "args": {
+      "more": 0.2
+     }
+    }
+   ]
+  },
+  {
+   "id": "warden.last_at_the_crossing",
+   "name": "Last at the Crossing",
+   "kind": "flareLamp",
+   "region": "hearth",
+   "calling": "warden",
+   "road": "warden.hearth",
+   "at": [
+    "warden.kindled_oath"
+   ],
+   "text": "A Flare cast below a third of health also gives a barrier of 30% of health.",
+   "effects": [
+    {
+     "do": "rule",
+     "rule": "flare.low_barrier",
+     "args": {
+      "below": 0.3333,
+      "barrier": 0.3
+     }
+    }
+   ]
+  },
+  {
+   "id": "warden.hold_fast",
+   "name": "Hold Fast",
+   "kind": "blue",
+   "region": "hearth",
+   "calling": "warden",
+   "road": "warden.hearth",
+   "at": [
+    "warden.braced"
+   ],
+   "gate": 6,
+   "text": "You can't be thrown, stunned or slowed. Your dash is 30% shorter.",
+   "effects": [
+    {
+     "do": "rule",
+     "rule": "hold_fast",
+     "args": {
+      "dash": 0.3
+     }
+    }
+   ]
+  },
+  {
+   "id": "warden.banked_flame",
+   "name": "Banked Flame",
+   "kind": "blue",
+   "region": "hearth",
+   "calling": "warden",
+   "road": "warden.hearth",
+   "at": [
+    "warden.last_at_the_crossing"
+   ],
+   "gate": 6,
+   "text": "Hold two Flares. Each fills 30% slower.",
+   "effects": [
+    {
+     "do": "rule",
+     "rule": "flare.banked",
+     "args": {
+      "charges": 2,
+      "slower": 0.3
+     }
+    }
+   ]
+  },
+  {
+   "id": "sunderer.two_hands",
+   "name": "Two Hands",
+   "kind": "entry",
+   "region": "road",
+   "calling": "warden",
+   "road": "sunderer",
+   "at": [
+    "warden.the_wardens_oath"
+   ],
+   "text": "Heavy blows stagger ordinary things for 0.4 s.",
+   "effects": [
+    {
+     "do": "rule",
+     "rule": "heavy.stagger",
+     "args": {
+      "seconds": 0.4
+     },
+     "phase": 4
+    }
+   ]
+  },
+  {
+   "id": "sunderer.s1",
+   "name": "",
+   "kind": "small",
+   "region": "road",
+   "calling": "warden",
+   "road": "sunderer",
+   "at": [
+    "sunderer.two_hands"
+   ],
+   "text": "Heavy blows strike 12% harder at staggered things.",
+   "effects": [
+    {
+     "do": "rule",
+     "rule": "heavy.vs_staggered",
+     "args": {
+      "more": 0.12
+     },
+     "phase": 4
+    }
+   ]
+  },
+  {
+   "id": "sunderer.s2",
+   "name": "",
+   "kind": "small",
+   "region": "road",
+   "calling": "warden",
+   "road": "sunderer",
+   "at": [
+    "sunderer.s1"
+   ],
+   "text": "Heavy and nova skills reach 8% wider.",
+   "effects": [
+    {
+     "do": "rule",
+     "rule": "tags.area",
+     "args": {
+      "inc": 0.08
+     },
+     "tags": [
+      "heavy",
+      "nova"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "sunderer.s3",
+   "name": "",
+   "kind": "attribute",
+   "region": "road",
+   "calling": "warden",
+   "road": "sunderer",
+   "at": [
+    "sunderer.s2"
+   ],
+   "text": "+2 Might.",
+   "effects": [
+    {
+     "do": "attr",
+     "attr": "might",
+     "value": 2
+    }
+   ]
+  },
+  {
+   "id": "sunderer.s4",
+   "name": "",
+   "kind": "small",
+   "region": "road",
+   "calling": "warden",
+   "road": "sunderer",
+   "at": [
+    "sunderer.s3"
+   ],
+   "text": "Staggered things take 10% more holy.",
+   "effects": [
+    {
+     "do": "rule",
+     "rule": "staggered.holy",
+     "args": {
+      "more": 0.1
+     },
+     "phase": 4
+    }
+   ]
+  },
+  {
+   "id": "sunderer.s5",
+   "name": "",
+   "kind": "attribute",
+   "region": "road",
+   "calling": "warden",
+   "road": "sunderer",
+   "at": [
+    "sunderer.s4"
+   ],
+   "text": "+2 Might.",
+   "effects": [
+    {
+     "do": "attr",
+     "attr": "might",
+     "value": 2
+    }
+   ]
+  },
+  {
+   "id": "sunderer.s6",
+   "name": "",
+   "kind": "small",
+   "region": "road",
+   "calling": "warden",
+   "road": "sunderer",
+   "at": [
+    "sunderer.s5"
+   ],
+   "text": "Each heavy blow landed in the last 3 s gives +1 armor, to +10.",
+   "effects": [
+    {
+     "do": "rule",
+     "rule": "heavy.armor",
+     "args": {
+      "per": 1,
+      "cap": 10,
+      "seconds": 3
+     },
+     "phase": 4
+    }
+   ]
+  },
+  {
+   "id": "sunderer.s7",
+   "name": "",
+   "kind": "small",
+   "region": "road",
+   "calling": "warden",
+   "road": "sunderer",
+   "at": [
+    "sunderer.s6"
+   ],
+   "text": "Standing still, Sunder reaches 10% further.",
+   "effects": [
+    {
+     "do": "rule",
+     "rule": "sunder.still_reach",
+     "args": {
+      "inc": 0.1
+     },
+     "phase": 5
+    }
+   ]
+  },
+  {
+   "id": "sunderer.sunder.wide_swing",
+   "name": "Wide Swing",
+   "kind": "skill",
+   "region": "road",
+   "calling": "warden",
+   "road": "sunderer",
+   "at": [
+    "sunderer.s1"
+   ],
+   "feeds": [
+    "sunder"
+   ],
+   "text": "Sunder's arc is 300°.",
+   "effects": [
+    {
+     "do": "rule",
+     "rule": "sunder.wide_swing",
+     "phase": 5
+    }
+   ]
+  },
+  {
+   "id": "sunderer.sunder.third_blow",
+   "name": "Third Blow",
+   "kind": "skill",
+   "region": "road",
+   "calling": "warden",
+   "road": "sunderer",
+   "at": [
+    "sunderer.s1"
+   ],
+   "feeds": [
+    "sunder"
+   ],
+   "text": "Every third swing of Sunder is heavy.",
+   "effects": [
+    {
+     "do": "rule",
+     "rule": "sunder.third_blow",
+     "phase": 5
+    }
+   ]
+  },
+  {
+   "id": "sunderer.sunder.burning_edge",
+   "name": "Burning Edge",
+   "kind": "skill",
+   "region": "road",
+   "calling": "warden",
+   "road": "sunderer",
+   "at": [
+    "sunderer.s1"
+   ],
+   "feeds": [
+    "sunder"
+   ],
+   "text": "Sunder's heavy line sears.",
+   "effects": [
+    {
+     "do": "rule",
+     "rule": "sunder.burning_edge",
+     "phase": 5
+    }
+   ]
+  },
+  {
+   "id": "sunderer.groundbreaker.twin_cracks",
+   "name": "Twin Cracks",
+   "kind": "skill",
+   "region": "road",
+   "calling": "warden",
+   "road": "sunderer",
+   "at": [
+    "sunderer.s3"
+   ],
+   "feeds": [
+    "groundbreaker"
+   ],
+   "text": "Groundbreaker opens two cracks, splayed 30°.",
+   "effects": [
+    {
+     "do": "rule",
+     "rule": "groundbreaker.twin",
+     "phase": 5
+    }
+   ]
+  },
+  {
+   "id": "sunderer.groundbreaker.fault_line",
+   "name": "Fault Line",
+   "kind": "skill",
+   "region": "road",
+   "calling": "warden",
+   "road": "sunderer",
+   "at": [
+    "sunderer.s3"
+   ],
+   "feeds": [
+    "groundbreaker"
+   ],
+   "text": "Groundbreaker's cracks run 14 m.",
+   "effects": [
+    {
+     "do": "rule",
+     "rule": "groundbreaker.fault_line",
+     "phase": 5
+    }
+   ]
+  },
+  {
+   "id": "sunderer.groundbreaker.upheaval",
+   "name": "Upheaval",
+   "kind": "skill",
+   "region": "road",
+   "calling": "warden",
+   "road": "sunderer",
+   "at": [
+    "sunderer.s3"
+   ],
+   "feeds": [
+    "groundbreaker"
+   ],
+   "text": "Lesser things heaved are thrown up 0.8 s, and take 30% more while airborne.",
+   "effects": [
+    {
+     "do": "rule",
+     "rule": "groundbreaker.upheaval",
+     "phase": 5
+    }
+   ]
+  },
+  {
+   "id": "sunderer.dawnpulse.dawn_rhythm",
+   "name": "Dawn Rhythm",
+   "kind": "skill",
+   "region": "road",
+   "calling": "warden",
+   "road": "sunderer",
+   "at": [
+    "sunderer.s5"
+   ],
+   "feeds": [
+    "dawnpulse"
+   ],
+   "text": "Dawnpulse fires when you land a heavy blow instead of on its timer, at most every 1.5 s.",
+   "effects": [
+    {
+     "do": "rule",
+     "rule": "dawnpulse.rhythm",
+     "args": {
+      "every": 1.5
+     },
+     "phase": 4
+    }
+   ]
+  },
+  {
+   "id": "sunderer.dawnpulse.wider_morning",
+   "name": "Wider Morning",
+   "kind": "skill",
+   "region": "road",
+   "calling": "warden",
+   "road": "sunderer",
+   "at": [
+    "sunderer.s5"
+   ],
+   "feeds": [
+    "dawnpulse"
+   ],
+   "text": "Dawnpulse reaches 20% wider.",
+   "effects": [
+    {
+     "do": "rule",
+     "rule": "skill.area",
+     "args": {
+      "inc": 0.2
+     },
+     "skill": "dawnpulse"
+    }
+   ]
+  },
+  {
+   "id": "sunderer.dawnpulse.searing_light",
+   "name": "Searing Light",
+   "kind": "skill",
+   "region": "road",
+   "calling": "warden",
+   "road": "sunderer",
+   "at": [
+    "sunderer.s5"
+   ],
+   "feeds": [
+    "dawnpulse"
+   ],
+   "text": "Dawnpulse sears what it strikes.",
+   "effects": [
+    {
+     "do": "rule",
+     "rule": "skill.status",
+     "skill": "dawnpulse",
+     "status": "sear"
+    }
+   ]
+  },
+  {
+   "id": "sunderer.breaking_point",
+   "name": "Breaking Point",
+   "kind": "notable",
+   "region": "road",
+   "calling": "warden",
+   "road": "sunderer",
+   "at": [
+    "sunderer.s2"
+   ],
+   "feeds": [
+    "sunder",
+    "groundbreaker"
+   ],
+   "gate": 6,
+   "text": "Champions fill a stagger bar from heavy blows and break for 1.5 s.",
+   "effects": [
+    {
+     "do": "rule",
+     "rule": "breaking_point",
+     "args": {
+      "seconds": 1.5
+     },
+     "phase": 4
+    }
+   ]
+  },
+  {
+   "id": "sunderer.sundered",
+   "name": "Sundered",
+   "kind": "notable",
+   "region": "road",
+   "calling": "warden",
+   "road": "sunderer",
+   "at": [
+    "sunderer.s3"
+   ],
+   "feeds": [
+    "sunder"
+   ],
+   "gate": 6,
+   "text": "Heavy blows break armor: Sundered things take 20% more from heavy blows for 4 s.",
+   "effects": [
+    {
+     "do": "rule",
+     "rule": "sundered",
+     "args": {
+      "more": 0.2,
+      "seconds": 4
+     },
+     "phase": 4
+    }
+   ]
+  },
+  {
+   "id": "sunderer.momentum_of_the_blade",
+   "name": "Momentum of the Blade",
+   "kind": "notable",
+   "region": "road",
+   "calling": "warden",
+   "road": "sunderer",
+   "at": [
+    "sunderer.s4"
+   ],
+   "feeds": [
+    "sunder",
+    "oathblade"
+   ],
+   "gate": 6,
+   "text": "A melee swing that kills three makes that skill's next swing come 25% sooner.",
+   "effects": [
+    {
+     "do": "rule",
+     "rule": "momentum",
+     "args": {
+      "kills": 3,
+      "sooner": 0.25
+     }
+    }
+   ]
+  },
+  {
+   "id": "sunderer.morning_in_the_steel",
+   "name": "Morning in the Steel",
+   "kind": "notable",
+   "region": "road",
+   "calling": "warden",
+   "road": "sunderer",
+   "at": [
+    "sunderer.s5"
+   ],
+   "feeds": [
+    "sunder",
+    "dawnpulse"
+   ],
+   "gate": 6,
+   "text": "Heavy blows on seared things burst in holy light 3 m round.",
+   "effects": [
+    {
+     "do": "rule",
+     "rule": "morning_in_the_steel",
+     "args": {
+      "radius": 3
+     },
+     "phase": 4
+    }
+   ]
+  },
+  {
+   "id": "sunderer.rooted_stance",
+   "name": "Rooted Stance",
+   "kind": "notable",
+   "region": "road",
+   "calling": "warden",
+   "road": "sunderer",
+   "at": [
+    "sunderer.s6"
+   ],
+   "feeds": [
+    "sunder",
+    "groundbreaker"
+   ],
+   "gate": 6,
+   "text": "After 1 s standing still, heavy blows are 20% wider.",
+   "effects": [
+    {
+     "do": "rule",
+     "rule": "rooted_stance",
+     "args": {
+      "inc": 0.2
+     },
+     "phase": 4
+    }
+   ]
+  },
+  {
+   "id": "sunderer.weight_of_the_oath",
+   "name": "Weight of the Oath",
+   "kind": "blue",
+   "region": "road",
+   "calling": "warden",
+   "road": "sunderer",
+   "at": [
+    "sunderer.s6"
+   ],
+   "gate": 12,
+   "text": "Every blow you strike is heavy and always staggers: Sunder's line comes on every swing. You swing 45% slower, nothing can make you swing faster, and you never strike true.",
+   "effects": [
+    {
+     "do": "rule",
+     "rule": "weight_of_the_oath",
+     "args": {
+      "slower": 0.45
+     },
+     "phase": 4
+    }
+   ]
+  },
+  {
+   "id": "sunderer.the_unbroken_line",
+   "name": "The Unbroken Line",
+   "kind": "blue",
+   "region": "road",
+   "calling": "warden",
+   "road": "sunderer",
+   "at": [
+    "sunderer.s7"
+   ],
+   "gate": 12,
+   "text": "Sunder's heavy blow no longer splits a line: it breaks the ground all around you, 4 m, at half the blow.",
+   "effects": [
+    {
+     "do": "rule",
+     "rule": "unbroken_line",
+     "args": {
+      "radius": 4,
+      "share": 0.5
+     },
+     "phase": 5
+    }
+   ]
+  },
+  {
+   "id": "sunderer.the_long_cut",
+   "name": "The Long Cut",
+   "kind": "ultimate",
+   "region": "road",
+   "calling": "warden",
+   "road": "sunderer",
+   "at": [
+    "sunderer.s2"
+   ],
+   "gate": 3,
+   "text": "Learn the Flare The Long Cut.",
+   "effects": [
+    {
+     "do": "flare",
+     "flare": "the_long_cut"
+    }
+   ]
+  },
+  {
+   "id": "sunderer.the_long_cut.second_cut",
+   "name": "Second Cut",
+   "kind": "ultimateMod",
+   "region": "road",
+   "calling": "warden",
+   "road": "sunderer",
+   "at": [
+    "sunderer.the_long_cut"
+   ],
+   "gate": 3,
+   "text": "Another sweep 0.3 s later, inside the 1.2 s.",
+   "effects": [
+    {
+     "do": "flareMod",
+     "flare": "the_long_cut",
+     "rule": "long_cut.second_cut",
+     "phase": 6
+    }
+   ]
+  },
+  {
+   "id": "sunderer.the_long_cut.line_of_morning",
+   "name": "Line of Morning",
+   "kind": "ultimateMod",
+   "region": "road",
+   "calling": "warden",
+   "road": "sunderer",
+   "at": [
+    "sunderer.the_long_cut"
+   ],
+   "gate": 3,
+   "text": "The line burns for 4 s.",
+   "effects": [
+    {
+     "do": "flareMod",
+     "flare": "the_long_cut",
+     "rule": "long_cut.line_of_morning",
+     "phase": 6
+    }
+   ]
+  },
+  {
+   "id": "sunderer.the_long_cut.through_the_wall",
+   "name": "Through the Wall",
+   "kind": "ultimateMod",
+   "region": "road",
+   "calling": "warden",
+   "road": "sunderer",
+   "at": [
+    "sunderer.the_long_cut"
+   ],
+   "gate": 3,
+   "text": "The line runs 36 m, and Sundered is 40% weaker armor on bosses.",
+   "effects": [
+    {
+     "do": "flareMod",
+     "flare": "the_long_cut",
+     "rule": "long_cut.through_the_wall",
+     "phase": 6
+    }
+   ]
+  },
+  {
+   "id": "sunderer.dawn_in_the_steel",
+   "name": "Dawn in the Steel",
+   "kind": "ultimate",
+   "region": "road",
+   "calling": "warden",
+   "road": "sunderer",
+   "at": [
+    "sunderer.s6"
+   ],
+   "gate": 12,
+   "text": "Learn the Flare Dawn in the Steel.",
+   "effects": [
+    {
+     "do": "flare",
+     "flare": "dawn_in_the_steel"
+    }
+   ]
+  },
+  {
+   "id": "sunderer.dawn_in_the_steel.high_morning",
+   "name": "High Morning",
+   "kind": "ultimateMod",
+   "region": "road",
+   "calling": "warden",
+   "road": "sunderer",
+   "at": [
+    "sunderer.dawn_in_the_steel"
+   ],
+   "gate": 12,
+   "text": "It holds 8 s.",
+   "effects": [
+    {
+     "do": "flareMod",
+     "flare": "dawn_in_the_steel",
+     "rule": "dawn_steel.high_morning",
+     "phase": 6
+    }
+   ]
+  },
+  {
+   "id": "sunderer.dawn_in_the_steel.crescents_through",
+   "name": "Crescents Through",
+   "kind": "ultimateMod",
+   "region": "road",
+   "calling": "warden",
+   "road": "sunderer",
+   "at": [
+    "sunderer.dawn_in_the_steel"
+   ],
+   "gate": 12,
+   "text": "Its crescents pierce everything.",
+   "effects": [
+    {
+     "do": "flareMod",
+     "flare": "dawn_in_the_steel",
+     "rule": "dawn_steel.crescents_through",
+     "phase": 6
+    }
+   ]
+  },
+  {
+   "id": "sunderer.dawn_in_the_steel.mending_light",
+   "name": "Mending Light",
+   "kind": "ultimateMod",
+   "region": "road",
+   "calling": "warden",
+   "road": "sunderer",
+   "at": [
+    "sunderer.dawn_in_the_steel"
+   ],
+   "gate": 12,
+   "text": "A kill by a crescent mends 0.5%.",
+   "effects": [
+    {
+     "do": "flareMod",
+     "flare": "dawn_in_the_steel",
+     "rule": "dawn_steel.mending_light",
+     "phase": 6
+    }
+   ]
+  },
+  {
+   "id": "bulwark.shield_arm",
+   "name": "Shield Arm",
+   "kind": "entry",
+   "region": "road",
+   "calling": "warden",
+   "road": "bulwark",
+   "at": [
+    "warden.the_wardens_oath"
+   ],
+   "feeds": [
+    "oathblade"
+   ],
+   "text": "Your shield turns one blow in seven. Each block lays a stone, up to ten; at ten, the wall answers with a rebuke of holy light all around you.",
+   "effects": [
+    {
+     "do": "rule",
+     "rule": "shield_arm",
+     "args": {
+      "block": 0.15,
+      "stones": 10,
+      "radius": 4
+     }
+    }
+   ]
+  },
+  {
+   "id": "bulwark.s1",
+   "name": "",
+   "kind": "small",
+   "region": "road",
+   "calling": "warden",
+   "road": "bulwark",
+   "at": [
+    "bulwark.shield_arm"
+   ],
+   "text": "+5% block while you stand still.",
+   "effects": [
+    {
+     "do": "rule",
+     "rule": "block.still",
+     "args": {
+      "add": 0.05
+     }
+    }
+   ]
+  },
+  {
+   "id": "bulwark.s2",
+   "name": "",
+   "kind": "small",
+   "region": "road",
+   "calling": "warden",
+   "road": "bulwark",
+   "at": [
+    "bulwark.s1"
+   ],
+   "text": "+5% block against champions' and bosses' blows.",
+   "effects": [
+    {
+     "do": "rule",
+     "rule": "block.champions",
+     "args": {
+      "add": 0.05
+     }
+    }
+   ]
+  },
+  {
+   "id": "bulwark.s3",
+   "name": "",
+   "kind": "attribute",
+   "region": "road",
+   "calling": "warden",
+   "road": "bulwark",
+   "at": [
+    "bulwark.s2"
+   ],
+   "text": "+2 Resolve.",
+   "effects": [
+    {
+     "do": "attr",
+     "attr": "resolve",
+     "value": 2
+    }
+   ]
+  },
+  {
+   "id": "bulwark.s4",
+   "name": "",
+   "kind": "small",
+   "region": "road",
+   "calling": "warden",
+   "road": "bulwark",
+   "at": [
+    "bulwark.s3"
+   ],
+   "text": "Barrier is 15% stronger while you hold five stones or more.",
+   "effects": [
+    {
+     "do": "rule",
+     "rule": "stones.barrier",
+     "args": {
+      "at": 5,
+      "more": 0.15
+     }
+    }
+   ]
+  },
+  {
+   "id": "bulwark.s5",
+   "name": "",
+   "kind": "attribute",
+   "region": "road",
+   "calling": "warden",
+   "road": "bulwark",
+   "at": [
+    "bulwark.s4"
+   ],
+   "text": "+2 Resolve.",
+   "effects": [
+    {
+     "do": "attr",
+     "attr": "resolve",
+     "value": 2
+    }
+   ]
+  },
+  {
+   "id": "bulwark.s6",
+   "name": "",
+   "kind": "small",
+   "region": "road",
+   "calling": "warden",
+   "road": "bulwark",
+   "at": [
+    "bulwark.s5"
+   ],
+   "text": "Rebukes and the Watch Bell strike champions 15% harder.",
+   "effects": [
+    {
+     "do": "rule",
+     "rule": "rebuke.champions",
+     "args": {
+      "more": 0.15
+     }
+    }
+   ]
+  },
+  {
+   "id": "bulwark.s7",
+   "name": "",
+   "kind": "small",
+   "region": "road",
+   "calling": "warden",
+   "road": "bulwark",
+   "at": [
+    "bulwark.s6"
+   ],
+   "text": "Each block mends 0.5% of health while you're above half.",
+   "effects": [
+    {
+     "do": "rule",
+     "rule": "block.mend",
+     "args": {
+      "share": 0.005,
+      "above": 0.5
+     }
+    }
+   ]
+  },
+  {
+   "id": "bulwark.oathblade.shield_and_edge",
+   "name": "Shield and Edge",
+   "kind": "skill",
+   "region": "road",
+   "calling": "warden",
+   "road": "bulwark",
+   "at": [
+    "bulwark.s1"
+   ],
+   "feeds": [
+    "oathblade"
+   ],
+   "text": "After a block, Oathblade swings at once.",
+   "effects": [
+    {
+     "do": "rule",
+     "rule": "oathblade.shield_and_edge"
+    }
+   ]
+  },
+  {
+   "id": "bulwark.oathblade.reaching_oath",
+   "name": "Reaching Oath",
+   "kind": "skill",
+   "region": "road",
+   "calling": "warden",
+   "road": "bulwark",
+   "at": [
+    "bulwark.s1"
+   ],
+   "feeds": [
+    "oathblade"
+   ],
+   "text": "Oathblade reaches 1.5 m further.",
+   "effects": [
+    {
+     "do": "rule",
+     "rule": "skill.reach",
+     "args": {
+      "add": 1.5
+     },
+     "skill": "oathblade"
+    }
+   ]
+  },
+  {
+   "id": "bulwark.oathblade.morning_edge",
+   "name": "Morning Edge",
+   "kind": "skill",
+   "region": "road",
+   "calling": "warden",
+   "road": "bulwark",
+   "at": [
+    "bulwark.s1"
+   ],
+   "feeds": [
+    "oathblade"
+   ],
+   "text": "Each Oathblade swing throws a crescent of light 6 m.",
+   "effects": [
+    {
+     "do": "rule",
+     "rule": "oathblade.morning_edge",
+     "phase": 5
+    }
+   ]
+  },
+  {
+   "id": "bulwark.rebuke.wider_rebuke",
+   "name": "Wider Rebuke",
+   "kind": "skill",
+   "region": "road",
+   "calling": "warden",
+   "road": "bulwark",
+   "at": [
+    "bulwark.s3"
+   ],
+   "feeds": [
+    "rebuke"
+   ],
+   "text": "Rebuke strikes 50% wider.",
+   "effects": [
+    {
+     "do": "rule",
+     "rule": "rebuke.wider",
+     "phase": 5
+    }
+   ]
+  },
+  {
+   "id": "bulwark.rebuke.rebuke_the_strong",
+   "name": "Rebuke the Strong",
+   "kind": "skill",
+   "region": "road",
+   "calling": "warden",
+   "road": "bulwark",
+   "at": [
+    "bulwark.s3"
+   ],
+   "feeds": [
+    "rebuke"
+   ],
+   "text": "Rebuke strikes champions twice as hard.",
+   "effects": [
+    {
+     "do": "rule",
+     "rule": "rebuke.strong",
+     "phase": 5
+    }
+   ]
+  },
+  {
+   "id": "bulwark.rebuke.answering_light",
+   "name": "Answering Light",
+   "kind": "skill",
+   "region": "road",
+   "calling": "warden",
+   "road": "bulwark",
+   "at": [
+    "bulwark.s3"
+   ],
+   "feeds": [
+    "rebuke"
+   ],
+   "text": "Each rebuke mends 1% of health.",
+   "effects": [
+    {
+     "do": "rule",
+     "rule": "rebuke.answering",
+     "phase": 5
+    }
+   ]
+  },
+  {
+   "id": "bulwark.watch_bell.loud_bell",
+   "name": "Loud Bell",
+   "kind": "skill",
+   "region": "road",
+   "calling": "warden",
+   "road": "bulwark",
+   "at": [
+    "bulwark.s5"
+   ],
+   "feeds": [
+    "watch_bell"
+   ],
+   "text": "The Watch Bell draws from 10 m.",
+   "effects": [
+    {
+     "do": "rule",
+     "rule": "watch_bell.loud",
+     "phase": 5
+    }
+   ]
+  },
+  {
+   "id": "bulwark.watch_bell.iron_bell",
+   "name": "Iron Bell",
+   "kind": "skill",
+   "region": "road",
+   "calling": "warden",
+   "road": "bulwark",
+   "at": [
+    "bulwark.s5"
+   ],
+   "feeds": [
+    "watch_bell"
+   ],
+   "text": "What the bell draws in is slowed 30%.",
+   "effects": [
+    {
+     "do": "rule",
+     "rule": "watch_bell.iron",
+     "phase": 5
+    }
+   ]
+  },
+  {
+   "id": "bulwark.watch_bell.bell_and_barrier",
+   "name": "Bell and Barrier",
+   "kind": "skill",
+   "region": "road",
+   "calling": "warden",
+   "road": "bulwark",
+   "at": [
+    "bulwark.s5"
+   ],
+   "feeds": [
+    "watch_bell"
+   ],
+   "text": "Each thing the bell draws gives a barrier of 3% of health.",
+   "effects": [
+    {
+     "do": "rule",
+     "rule": "watch_bell.barrier",
+     "phase": 5
+    }
+   ]
+  },
+  {
+   "id": "bulwark.mortar",
+   "name": "Mortar",
+   "kind": "notable",
+   "region": "road",
+   "calling": "warden",
+   "road": "bulwark",
+   "at": [
+    "bulwark.s2"
+   ],
+   "feeds": [
+    "oathblade"
+   ],
+   "gate": 6,
+   "text": "Stones last through a lull, and each gives a barrier of 1% of health.",
+   "effects": [
+    {
+     "do": "rule",
+     "rule": "mortar",
+     "args": {
+      "barrier": 0.01
+     }
+    }
+   ]
+  },
+  {
+   "id": "bulwark.turned_arrows",
+   "name": "Turned Arrows",
+   "kind": "notable",
+   "region": "road",
+   "calling": "warden",
+   "road": "bulwark",
+   "at": [
+    "bulwark.s3"
+   ],
+   "gate": 6,
+   "text": "Blocked missiles fly back at whoever loosed them.",
+   "effects": [
+    {
+     "do": "rule",
+     "rule": "turned_arrows"
+    }
+   ]
+  },
+  {
+   "id": "bulwark.planted",
+   "name": "Planted",
+   "kind": "notable",
+   "region": "road",
+   "calling": "warden",
+   "road": "bulwark",
+   "at": [
+    "bulwark.s4"
+   ],
+   "gate": 6,
+   "text": "+15% block while you stand still.",
+   "effects": [
+    {
+     "do": "rule",
+     "rule": "block.still",
+     "args": {
+      "add": 0.15
+     }
+    }
+   ]
+  },
+  {
+   "id": "bulwark.heavy_shield",
+   "name": "Heavy Shield",
+   "kind": "notable",
+   "region": "road",
+   "calling": "warden",
+   "road": "bulwark",
+   "at": [
+    "bulwark.s5"
+   ],
+   "gate": 6,
+   "text": "Blocking a champion's blow stuns it 0.5 s.",
+   "effects": [
+    {
+     "do": "rule",
+     "rule": "heavy_shield",
+     "args": {
+      "seconds": 0.5
+     }
+    }
+   ]
+  },
+  {
+   "id": "bulwark.faith_in_the_wall",
+   "name": "Faith in the Wall",
+   "kind": "notable",
+   "region": "road",
+   "calling": "warden",
+   "road": "bulwark",
+   "at": [
+    "bulwark.s6"
+   ],
+   "feeds": [
+    "rebuke",
+    "watch_bell",
+    "dawnpulse"
+   ],
+   "gate": 6,
+   "text": "While your barrier is above a fifth of health, holy damage is 20% higher.",
+   "effects": [
+    {
+     "do": "rule",
+     "rule": "faith_in_the_wall",
+     "args": {
+      "at": 0.2,
+      "inc": 0.2
+     }
+    }
+   ]
+  },
+  {
+   "id": "bulwark.the_wall_holds",
+   "name": "The Wall Holds",
+   "kind": "blue",
+   "region": "road",
+   "calling": "warden",
+   "road": "bulwark",
+   "at": [
+    "bulwark.s6"
+   ],
+   "gate": 12,
+   "text": "Block chance is doubled, to 75% at most, but you can't block while moving.",
+   "effects": [
+    {
+     "do": "rule",
+     "rule": "wall_holds",
+     "args": {
+      "cap": 0.75
+     }
+    }
+   ]
+  },
+  {
+   "id": "bulwark.bearer_of_blows",
+   "name": "Bearer of Blows",
+   "kind": "blue",
+   "region": "road",
+   "calling": "warden",
+   "road": "bulwark",
+   "at": [
+    "bulwark.s7"
+   ],
+   "gate": 12,
+   "text": "What you block isn't lost: it's stored, and let out as holy damage by your next rebuke. You mend 30% less.",
+   "effects": [
+    {
+     "do": "rule",
+     "rule": "bearer_of_blows",
+     "args": {
+      "less": 0.3
+     }
+    }
+   ]
+  },
+  {
+   "id": "bulwark.bell_of_the_morning",
+   "name": "Bell of the Morning",
+   "kind": "ultimate",
+   "region": "road",
+   "calling": "warden",
+   "road": "bulwark",
+   "at": [
+    "bulwark.s2"
+   ],
+   "gate": 3,
+   "text": "Learn the Flare Bell of the Morning.",
+   "effects": [
+    {
+     "do": "flare",
+     "flare": "bell_of_the_morning"
+    }
+   ]
+  },
+  {
+   "id": "bulwark.bell_of_the_morning.fourth_toll",
+   "name": "Fourth Toll",
+   "kind": "ultimateMod",
+   "region": "road",
+   "calling": "warden",
+   "road": "bulwark",
+   "at": [
+    "bulwark.bell_of_the_morning"
+   ],
+   "gate": 3,
+   "text": "The bell tolls a fourth time.",
+   "effects": [
+    {
+     "do": "flareMod",
+     "flare": "bell_of_the_morning",
+     "rule": "bell.fourth_toll",
+     "phase": 2
+    }
+   ]
+  },
+  {
+   "id": "bulwark.bell_of_the_morning.bell_for_the_dead",
+   "name": "Bell for the Dead",
+   "kind": "ultimateMod",
+   "region": "road",
+   "calling": "warden",
+   "road": "bulwark",
+   "at": [
+    "bulwark.bell_of_the_morning"
+   ],
+   "gate": 3,
+   "text": "Lesser things flee for 3 s after the last toll.",
+   "effects": [
+    {
+     "do": "flareMod",
+     "flare": "bell_of_the_morning",
+     "rule": "bell.for_the_dead",
+     "phase": 2
+    }
+   ]
+  },
+  {
+   "id": "bulwark.bell_of_the_morning.healing_peal",
+   "name": "Healing Peal",
+   "kind": "ultimateMod",
+   "region": "road",
+   "calling": "warden",
+   "road": "bulwark",
+   "at": [
+    "bulwark.bell_of_the_morning"
+   ],
+   "gate": 3,
+   "text": "Each toll mends 8%.",
+   "effects": [
+    {
+     "do": "flareMod",
+     "flare": "bell_of_the_morning",
+     "rule": "bell.healing_peal",
+     "phase": 2
+    }
+   ]
+  },
+  {
+   "id": "bulwark.sixty_on_the_wall",
+   "name": "Sixty on the Wall",
+   "kind": "ultimate",
+   "region": "road",
+   "calling": "warden",
+   "road": "bulwark",
+   "at": [
+    "bulwark.s6"
+   ],
+   "gate": 12,
+   "text": "Learn the Flare Sixty on the Wall.",
+   "effects": [
+    {
+     "do": "flare",
+     "flare": "sixty_on_the_wall"
+    }
+   ]
+  },
+  {
+   "id": "bulwark.sixty_on_the_wall.shield_brothers",
+   "name": "Shield-Brothers",
+   "kind": "ultimateMod",
+   "region": "road",
+   "calling": "warden",
+   "road": "bulwark",
+   "at": [
+    "bulwark.sixty_on_the_wall"
+   ],
+   "gate": 12,
+   "text": "The wall strikes out once a second.",
+   "effects": [
+    {
+     "do": "flareMod",
+     "flare": "sixty_on_the_wall",
+     "rule": "sixty.shield_brothers",
+     "phase": 6
+    }
+   ]
+  },
+  {
+   "id": "bulwark.sixty_on_the_wall.the_wall_walks",
+   "name": "The Wall Walks",
+   "kind": "ultimateMod",
+   "region": "road",
+   "calling": "warden",
+   "road": "bulwark",
+   "at": [
+    "bulwark.sixty_on_the_wall"
+   ],
+   "gate": 12,
+   "text": "The wall moves with you.",
+   "effects": [
+    {
+     "do": "flareMod",
+     "flare": "sixty_on_the_wall",
+     "rule": "sixty.wall_walks",
+     "phase": 6
+    }
+   ]
+  },
+  {
+   "id": "bulwark.sixty_on_the_wall.night_watch",
+   "name": "Night Watch",
+   "kind": "ultimateMod",
+   "region": "road",
+   "calling": "warden",
+   "road": "bulwark",
+   "at": [
+    "bulwark.sixty_on_the_wall"
+   ],
+   "gate": 12,
+   "text": "It holds 9 s.",
+   "effects": [
+    {
+     "do": "flareMod",
+     "flare": "sixty_on_the_wall",
+     "rule": "sixty.night_watch",
+     "phase": 6
+    }
+   ]
+  },
+  {
+   "id": "warden.bridge.s1",
+   "name": "",
+   "kind": "attribute",
+   "region": "bridge",
+   "calling": "warden",
+   "road": "warden.bridge",
+   "at": [
+    "sunderer.s4"
+   ],
+   "text": "+2 Might.",
+   "effects": [
+    {
+     "do": "attr",
+     "attr": "might",
+     "value": 2
+    }
+   ]
+  },
+  {
+   "id": "warden.bridge.shield_swing",
+   "name": "Shield Swing",
+   "kind": "notable",
+   "region": "bridge",
+   "calling": "warden",
+   "road": "warden.bridge",
+   "at": [
+    "warden.bridge.s1"
+   ],
+   "feeds": [
+    "sunder"
+   ],
+   "text": "Heavy blows lay stones, and each block makes the next heavy blow 30% harder.",
+   "effects": [
+    {
+     "do": "rule",
+     "rule": "shield_swing",
+     "args": {
+      "more": 0.3
+     },
+     "phase": 4
+    }
+   ]
+  },
+  {
+   "id": "warden.bridge.s2",
+   "name": "",
+   "kind": "small",
+   "region": "bridge",
+   "calling": "warden",
+   "road": "warden.bridge",
+   "at": [
+    "warden.bridge.shield_swing"
+   ],
+   "text": "Heavy blows and blocks each make the next 10% harder, for 2 s.",
+   "effects": [
+    {
+     "do": "rule",
+     "rule": "heavy_block.chain",
+     "args": {
+      "more": 0.1
+     },
+     "phase": 4
+    }
+   ]
+  },
+  {
+   "id": "warden.bridge.sword_and_board",
+   "name": "Sword-and-Board",
+   "kind": "blue",
+   "region": "bridge",
+   "calling": "warden",
+   "road": "warden.bridge",
+   "at": [
+    "warden.bridge.s2"
+   ],
+   "gate": 3,
+   "text": "You may carry a greatsword and a shield together. The greatsword strikes 15% slower, and the shield blocks half as often.",
+   "effects": [
+    {
+     "do": "rule",
+     "rule": "sword_and_board",
+     "args": {
+      "slower": 0.15,
+      "block": 0.5
+     },
+     "phase": 4
+    }
+   ]
+  },
+  {
+   "id": "warden.bridge.oath_and_bell",
+   "name": "Oath and Bell",
+   "kind": "notable",
+   "region": "bridge",
+   "calling": "warden",
+   "road": "warden.bridge",
+   "at": [
+    "warden.bridge.s2"
+   ],
+   "feeds": [
+    "watch_bell"
+   ],
+   "text": "The Watch Bell tolls when you stagger something, at most every 3 s.",
+   "effects": [
+    {
+     "do": "rule",
+     "rule": "oath_and_bell",
+     "args": {
+      "every": 3
+     },
+     "phase": 5
+    }
+   ]
+  },
+  {
+   "id": "warden.bridge.s3",
+   "name": "",
+   "kind": "attribute",
+   "region": "bridge",
+   "calling": "warden",
+   "road": "warden.bridge",
+   "at": [
+    "warden.bridge.oath_and_bell",
+    "bulwark.s4"
+   ],
+   "text": "+2 Resolve.",
+   "effects": [
+    {
+     "do": "attr",
+     "attr": "resolve",
+     "value": 2
+    }
+   ]
+  },
+  {
+   "id": "reaver.the_reavers_chain",
+   "name": "The Reaver's Chain",
+   "kind": "start",
+   "region": "hearth",
+   "calling": "reaver",
+   "road": "reaver.hearth",
+   "text": "Your dash form is Grapple Chain: every 6 s the next dash throws the hook up to 12 m at the first thing in its aim and hauls you to it. With nothing to bite, it's a plain dash.",
+   "effects": [
+    {
+     "do": "form",
+     "art": "grapple",
+     "wait": 6
+    }
+   ]
+  },
+  {
+   "id": "reaver.whirling_chain",
+   "name": "Whirling Chain",
+   "kind": "form",
+   "region": "hearth",
+   "calling": "reaver",
+   "road": "reaver.hearth",
+   "at": [
+    "reaver.the_reavers_chain"
+   ],
+   "text": "On landing, the chain whirls, striking everything 3 m round.",
+   "effects": [
+    {
+     "do": "facet",
+     "art": "grapple",
+     "facet": "whirling_chain"
+    }
+   ]
+  },
+  {
+   "id": "reaver.moored",
+   "name": "Moored",
+   "kind": "form",
+   "region": "hearth",
+   "calling": "reaver",
+   "road": "reaver.hearth",
+   "at": [
+    "reaver.the_reavers_chain"
+   ],
+   "text": "Landing gives a barrier of 12% of health.",
+   "effects": [
+    {
+     "do": "facet",
+     "art": "grapple",
+     "facet": "anchor"
+    }
+   ]
+  },
+  {
+   "id": "reaver.second_hook",
+   "name": "Second Hook",
+   "kind": "form",
+   "region": "hearth",
+   "calling": "reaver",
+   "road": "reaver.hearth",
+   "at": [
+    "reaver.the_reavers_chain"
+   ],
+   "text": "A kill within 3 s of the haul brings the wait back.",
+   "effects": [
+    {
+     "do": "facet",
+     "art": "grapple",
+     "facet": "second_hook"
+    }
+   ]
+  },
+  {
+   "id": "reaver.reel",
+   "name": "Reel",
+   "kind": "form",
+   "region": "hearth",
+   "calling": "reaver",
+   "road": "reaver.hearth",
+   "at": [
+    "reaver.the_reavers_chain"
+   ],
+   "text": "Lesser things are dragged to you instead.",
+   "effects": [
+    {
+     "do": "facet",
+     "art": "grapple",
+     "facet": "reel"
+    }
+   ]
+  },
+  {
+   "id": "reaver.war_cry",
+   "name": "War Cry",
+   "kind": "reflex",
+   "region": "hearth",
+   "calling": "reaver",
+   "road": "reaver.hearth",
+   "at": [
+    "reaver.the_reavers_chain"
+   ],
+   "text": "Ten or more things within 5 m, or a champion strikes you: roar. Lesser things flee 2.5 s, and you strike 25% harder for 6 s. Every 16 s.",
+   "effects": [
+    {
+     "do": "reflex",
+     "art": "warcry",
+     "trigger": "swarm",
+     "wait": 16,
+     "args": {
+      "count": 10,
+      "radius": 5
+     }
+    }
+   ]
+  },
+  {
+   "id": "reaver.terror",
+   "name": "Terror",
+   "kind": "reflexUp",
+   "region": "hearth",
+   "calling": "reaver",
+   "road": "reaver.hearth",
+   "at": [
+    "reaver.war_cry"
+   ],
+   "text": "Champions flee the roar too, for a second.",
+   "effects": [
+    {
+     "do": "facet",
+     "art": "warcry",
+     "facet": "terror"
+    }
+   ]
+  },
+  {
+   "id": "reaver.bloodlust",
+   "name": "Bloodlust",
+   "kind": "reflexUp",
+   "region": "hearth",
+   "calling": "reaver",
+   "road": "reaver.hearth",
+   "at": [
+    "reaver.war_cry"
+   ],
+   "text": "You run 20% faster while the roar drives you.",
+   "effects": [
+    {
+     "do": "facet",
+     "art": "warcry",
+     "facet": "bloodlust"
+    }
+   ]
+  },
+  {
+   "id": "reaver.red_tide",
+   "name": "Red Tide",
+   "kind": "reflex",
+   "region": "hearth",
+   "calling": "reaver",
+   "road": "reaver.hearth",
+   "at": [
+    "reaver.the_reavers_chain"
+   ],
+   "text": "Below a third of health: a red roar that mends 10% of health and drives you 30% harder for 4 s. Every 25 s.",
+   "effects": [
+    {
+     "do": "reflex",
+     "art": "red_tide",
+     "trigger": "low",
+     "wait": 25,
+     "args": {
+      "below": 0.3333
+     }
+    }
+   ]
+  },
+  {
+   "id": "reaver.second_tide",
+   "name": "Second Tide",
+   "kind": "reflexUp",
+   "region": "hearth",
+   "calling": "reaver",
+   "road": "reaver.hearth",
+   "at": [
+    "reaver.red_tide"
+   ],
+   "text": "Red Tide comes every 18 s.",
+   "effects": [
+    {
+     "do": "rule",
+     "rule": "red_tide.second",
+     "args": {
+      "wait": 18
+     }
+    }
+   ]
+  },
+  {
+   "id": "reaver.blood_for_the_flare",
+   "name": "Blood for the Flare",
+   "kind": "flareLamp",
+   "region": "hearth",
+   "calling": "reaver",
+   "road": "reaver.hearth",
+   "at": [
+    "reaver.the_reavers_chain"
+   ],
+   "text": "Kills by a bleed fill the Flare as a champion's kill does, a tenth as much.",
+   "effects": [
+    {
+     "do": "rule",
+     "rule": "flare.bleed_kill",
+     "args": {
+      "fill": 0.8
+     }
+    }
+   ]
+  },
+  {
+   "id": "reaver.not_done_yet",
+   "name": "Not Done Yet",
+   "kind": "flareLamp",
+   "region": "hearth",
+   "calling": "reaver",
+   "road": "reaver.hearth",
+   "at": [
+    "reaver.blood_for_the_flare"
+   ],
+   "text": "A Flare cast below a third of health mends half again as much.",
+   "effects": [
+    {
+     "do": "rule",
+     "rule": "flare.low_mend",
+     "args": {
+      "below": 0.3333,
+      "more": 0.5
+     }
+    }
+   ]
+  },
+  {
+   "id": "reaver.nothing_spared",
+   "name": "Nothing Spared",
+   "kind": "blue",
+   "region": "hearth",
+   "calling": "reaver",
+   "road": "reaver.hearth",
+   "at": [
+    "reaver.red_tide"
+   ],
+   "gate": 6,
+   "text": "All mending is 50% stronger. You have no draught.",
+   "effects": [
+    {
+     "do": "mod",
+     "stat": "healing",
+     "mod": "inc",
+     "value": 0.5
+    },
+    {
+     "do": "rule",
+     "rule": "no_draught"
+    }
+   ]
+  },
+  {
+   "id": "reaver.banked_flame",
+   "name": "Banked Flame",
+   "kind": "blue",
+   "region": "hearth",
+   "calling": "reaver",
+   "road": "reaver.hearth",
+   "at": [
+    "reaver.not_done_yet"
+   ],
+   "gate": 6,
+   "text": "Hold two Flares. Each fills 30% slower.",
+   "effects": [
+    {
+     "do": "rule",
+     "rule": "flare.banked",
+     "args": {
+      "charges": 2,
+      "slower": 0.3
+     }
+    }
+   ]
+  },
+  {
+   "id": "butcher.red_hands",
+   "name": "Red Hands",
+   "kind": "entry",
+   "region": "road",
+   "calling": "reaver",
+   "road": "butcher",
+   "at": [
+    "reaver.the_reavers_chain"
+   ],
+   "feeds": [
+    "axe_gyre",
+    "carve"
+   ],
+   "text": "Each hit gives +1% attack speed (Frenzy), to 20; it fades when the fight lulls.",
+   "effects": [
+    {
+     "do": "rule",
+     "rule": "frenzy",
+     "args": {
+      "per": 0.01,
+      "cap": 20,
+      "fade": 3
+     }
+    }
+   ]
+  },
+  {
+   "id": "butcher.s1",
+   "name": "",
+   "kind": "small",
+   "region": "road",
+   "calling": "reaver",
+   "road": "butcher",
+   "at": [
+    "butcher.red_hands"
+   ],
+   "text": "Bleeding things take 10% more from melee.",
+   "effects": [
+    {
+     "do": "rule",
+     "rule": "bleeding.melee",
+     "args": {
+      "more": 0.1
+     }
+    }
+   ]
+  },
+  {
+   "id": "butcher.s2",
+   "name": "",
+   "kind": "small",
+   "region": "road",
+   "calling": "reaver",
+   "road": "butcher",
+   "at": [
+    "butcher.s1"
+   ],
+   "text": "Bleeds last 20% longer while Frenzy is at ten or more.",
+   "effects": [
+    {
+     "do": "rule",
+     "rule": "frenzy.bleed_longer",
+     "args": {
+      "at": 10,
+      "inc": 0.2
+     }
+    }
+   ]
+  },
+  {
+   "id": "butcher.s3",
+   "name": "",
+   "kind": "attribute",
+   "region": "road",
+   "calling": "reaver",
+   "road": "butcher",
+   "at": [
+    "butcher.s2"
+   ],
+   "text": "+2 Might.",
+   "effects": [
+    {
+     "do": "attr",
+     "attr": "might",
+     "value": 2
+    }
+   ]
+  },
+  {
+   "id": "butcher.s4",
+   "name": "",
+   "kind": "small",
+   "region": "road",
+   "calling": "reaver",
+   "road": "butcher",
+   "at": [
+    "butcher.s3"
+   ],
+   "text": "Below half health, kills mend 0.5% of health.",
+   "effects": [
+    {
+     "do": "rule",
+     "rule": "low.kill_mend",
+     "args": {
+      "below": 0.5,
+      "share": 0.005
+     }
+    }
+   ]
+  },
+  {
+   "id": "butcher.s5",
+   "name": "",
+   "kind": "attribute",
+   "region": "road",
+   "calling": "reaver",
+   "road": "butcher",
+   "at": [
+    "butcher.s4"
+   ],
+   "text": "+2 Might.",
+   "effects": [
+    {
+     "do": "attr",
+     "attr": "might",
+     "value": 2
+    }
+   ]
+  },
+  {
+   "id": "butcher.s6",
+   "name": "",
+   "kind": "small",
+   "region": "road",
+   "calling": "reaver",
+   "road": "butcher",
+   "at": [
+    "butcher.s5"
+   ],
+   "text": "Thrown steel strikes bleeding things 12% harder.",
+   "effects": [
+    {
+     "do": "rule",
+     "rule": "tags.vs_bleeding",
+     "args": {
+      "more": 0.12
+     },
+     "tags": [
+      "thrown"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "butcher.s7",
+   "name": "",
+   "kind": "small",
+   "region": "road",
+   "calling": "reaver",
+   "road": "butcher",
+   "at": [
+    "butcher.s6"
+   ],
+   "text": "Frenzy fades half as fast.",
+   "effects": [
+    {
+     "do": "rule",
+     "rule": "frenzy.slow_fade",
+     "args": {
+      "share": 0.5
+     }
+    }
+   ]
+  },
+  {
+   "id": "butcher.carve.four_chops",
+   "name": "Four Chops",
+   "kind": "skill",
+   "region": "road",
+   "calling": "reaver",
+   "road": "butcher",
+   "at": [
+    "butcher.s1"
+   ],
+   "feeds": [
+    "carve"
+   ],
+   "text": "Carve chops four times.",
+   "effects": [
+    {
+     "do": "rule",
+     "rule": "carve.four",
+     "phase": 5
+    }
+   ]
+  },
+  {
+   "id": "butcher.carve.deeper_cuts",
+   "name": "Deeper Cuts",
+   "kind": "skill",
+   "region": "road",
+   "calling": "reaver",
+   "road": "butcher",
+   "at": [
+    "butcher.s1"
+   ],
+   "feeds": [
+    "carve"
+   ],
+   "text": "Carve's bleeds run 30% deeper.",
+   "effects": [
+    {
+     "do": "rule",
+     "rule": "carve.deeper",
+     "phase": 5
+    }
+   ]
+  },
+  {
+   "id": "butcher.carve.reaching_chops",
+   "name": "Reaching Chops",
+   "kind": "skill",
+   "region": "road",
+   "calling": "reaver",
+   "road": "butcher",
+   "at": [
+    "butcher.s1"
+   ],
+   "feeds": [
+    "carve"
+   ],
+   "text": "Carve reaches 1.5 m further.",
+   "effects": [
+    {
+     "do": "rule",
+     "rule": "carve.reaching",
+     "phase": 5
+    }
+   ]
+  },
+  {
+   "id": "butcher.hurled_cleaver.two_cleavers",
+   "name": "Two Cleavers",
+   "kind": "skill",
+   "region": "road",
+   "calling": "reaver",
+   "road": "butcher",
+   "at": [
+    "butcher.s3"
+   ],
+   "feeds": [
+    "hurled_cleaver"
+   ],
+   "text": "Two cleavers fly.",
+   "effects": [
+    {
+     "do": "rule",
+     "rule": "cleaver.two",
+     "phase": 5
+    }
+   ]
+  },
+  {
+   "id": "butcher.hurled_cleaver.ricochet",
+   "name": "Ricochet",
+   "kind": "skill",
+   "region": "road",
+   "calling": "reaver",
+   "road": "butcher",
+   "at": [
+    "butcher.s3"
+   ],
+   "feeds": [
+    "hurled_cleaver"
+   ],
+   "text": "The cleaver strikes a second bleeding thing on its way back.",
+   "effects": [
+    {
+     "do": "rule",
+     "rule": "cleaver.ricochet",
+     "phase": 5
+    }
+   ]
+  },
+  {
+   "id": "butcher.hurled_cleaver.another_way_back",
+   "name": "Another Way Back",
+   "kind": "skill",
+   "region": "road",
+   "calling": "reaver",
+   "road": "butcher",
+   "at": [
+    "butcher.s3"
+   ],
+   "feeds": [
+    "hurled_cleaver"
+   ],
+   "text": "The cleaver comes back by another path.",
+   "effects": [
+    {
+     "do": "rule",
+     "rule": "cleaver.way_back",
+     "phase": 5
+    }
+   ]
+  },
+  {
+   "id": "butcher.axe_gyre.bleeding_gyre",
+   "name": "Bleeding Gyre",
+   "kind": "skill",
+   "region": "road",
+   "calling": "reaver",
+   "road": "butcher",
+   "at": [
+    "butcher.s5"
+   ],
+   "feeds": [
+    "axe_gyre"
+   ],
+   "text": "Axe Gyre's axes make what they strike bleed.",
+   "effects": [
+    {
+     "do": "rule",
+     "rule": "skill.status",
+     "skill": "axe_gyre",
+     "status": "bleed"
+    }
+   ]
+  },
+  {
+   "id": "butcher.axe_gyre.wide_gyre",
+   "name": "Wide Gyre",
+   "kind": "skill",
+   "region": "road",
+   "calling": "reaver",
+   "road": "butcher",
+   "at": [
+    "butcher.s5"
+   ],
+   "feeds": [
+    "axe_gyre"
+   ],
+   "text": "Axe Gyre whirls 25% wider.",
+   "effects": [
+    {
+     "do": "rule",
+     "rule": "skill.area",
+     "args": {
+      "inc": 0.25
+     },
+     "skill": "axe_gyre"
+    }
+   ]
+  },
+  {
+   "id": "butcher.axe_gyre.gyre_on_a_kill",
+   "name": "Gyre on a Kill",
+   "kind": "skill",
+   "region": "road",
+   "calling": "reaver",
+   "road": "butcher",
+   "at": [
+    "butcher.s5"
+   ],
+   "feeds": [
+    "axe_gyre"
+   ],
+   "text": "A kill by the axes brings Axe Gyre's next whirl 30% sooner.",
+   "effects": [
+    {
+     "do": "rule",
+     "rule": "skill.kill_sooner",
+     "args": {
+      "sooner": 0.3
+     },
+     "skill": "axe_gyre"
+    }
+   ]
+  },
+  {
+   "id": "butcher.deep_frenzy",
+   "name": "Deep Frenzy",
+   "kind": "notable",
+   "region": "road",
+   "calling": "reaver",
+   "road": "butcher",
+   "at": [
+    "butcher.s2"
+   ],
+   "feeds": [
+    "axe_gyre",
+    "carve"
+   ],
+   "gate": 6,
+   "text": "Frenzy builds to 40.",
+   "effects": [
+    {
+     "do": "rule",
+     "rule": "frenzy.deep",
+     "args": {
+      "cap": 40
+     }
+    }
+   ]
+  },
+  {
+   "id": "butcher.fights_best_hurt",
+   "name": "Fights Best Hurt",
+   "kind": "notable",
+   "region": "road",
+   "calling": "reaver",
+   "road": "butcher",
+   "at": [
+    "butcher.s3"
+   ],
+   "gate": 6,
+   "text": "Below a third of health, blows strike 30% harder and kills mend 1%.",
+   "effects": [
+    {
+     "do": "rule",
+     "rule": "fights_best_hurt",
+     "args": {
+      "below": 0.3333,
+      "more": 0.3,
+      "mend": 0.01
+     }
+    }
+   ]
+  },
+  {
+   "id": "butcher.open_vein",
+   "name": "Open Vein",
+   "kind": "notable",
+   "region": "road",
+   "calling": "reaver",
+   "road": "butcher",
+   "at": [
+    "butcher.s4"
+   ],
+   "feeds": [
+    "carve",
+    "axe_gyre"
+   ],
+   "gate": 6,
+   "text": "A blow on a thing bleeding for 3 s or more bursts the bleed.",
+   "effects": [
+    {
+     "do": "rule",
+     "rule": "open_vein",
+     "args": {
+      "seconds": 3
+     }
+    }
+   ]
+  },
+  {
+   "id": "butcher.red_work",
+   "name": "Red Work",
+   "kind": "notable",
+   "region": "road",
+   "calling": "reaver",
+   "road": "butcher",
+   "at": [
+    "butcher.s5"
+   ],
+   "gate": 6,
+   "text": "Killing a bleeding thing mends 1% of health.",
+   "effects": [
+    {
+     "do": "rule",
+     "rule": "red_work",
+     "args": {
+      "share": 0.01
+     }
+    }
+   ]
+  },
+  {
+   "id": "butcher.hamstrung",
+   "name": "Hamstrung",
+   "kind": "notable",
+   "region": "road",
+   "calling": "reaver",
+   "road": "butcher",
+   "at": [
+    "butcher.s6"
+   ],
+   "gate": 6,
+   "text": "Bleeding champions are 20% slower.",
+   "effects": [
+    {
+     "do": "rule",
+     "rule": "hamstrung",
+     "args": {
+      "slow": 0.2
+     }
+    }
+   ]
+  },
+  {
+   "id": "butcher.always_bleeding",
+   "name": "Always Bleeding",
+   "kind": "blue",
+   "region": "road",
+   "calling": "reaver",
+   "road": "butcher",
+   "at": [
+    "butcher.s6"
+   ],
+   "gate": 12,
+   "text": "You always count as below a third of health for Fights Best Hurt and Blood Up. You can't be mended above half, and what would mend past it is lost.",
+   "effects": [
+    {
+     "do": "rule",
+     "rule": "always_bleeding",
+     "args": {
+      "cap": 0.5
+     }
+    }
+   ]
+  },
+  {
+   "id": "butcher.the_butchers_count",
+   "name": "The Butcher's Count",
+   "kind": "blue",
+   "region": "road",
+   "calling": "reaver",
+   "road": "butcher",
+   "at": [
+    "butcher.s7"
+   ],
+   "gate": 12,
+   "text": "Each kill gives +1% damage for 10 s, to 50. You take more by half the Count.",
+   "effects": [
+    {
+     "do": "rule",
+     "rule": "butchers_count",
+     "args": {
+      "per": 0.01,
+      "cap": 50,
+      "seconds": 10,
+      "price": 0.5
+     }
+    }
+   ]
+  },
+  {
+   "id": "butcher.the_butchers_bill",
+   "name": "The Butcher's Bill",
+   "kind": "ultimate",
+   "region": "road",
+   "calling": "reaver",
+   "road": "butcher",
+   "at": [
+    "butcher.s2"
+   ],
+   "gate": 3,
+   "text": "Learn the Flare The Butcher's Bill.",
+   "effects": [
+    {
+     "do": "flare",
+     "flare": "the_butchers_bill"
+    }
+   ]
+  },
+  {
+   "id": "butcher.the_butchers_bill.running_tab",
+   "name": "Running Tab",
+   "kind": "ultimateMod",
+   "region": "road",
+   "calling": "reaver",
+   "road": "butcher",
+   "at": [
+    "butcher.the_butchers_bill"
+   ],
+   "gate": 3,
+   "text": "The leftover chops can go on twice.",
+   "effects": [
+    {
+     "do": "flareMod",
+     "flare": "the_butchers_bill",
+     "rule": "bill.running_tab",
+     "phase": 6
+    }
+   ]
+  },
+  {
+   "id": "butcher.the_butchers_bill.wide_chops",
+   "name": "Wide Chops",
+   "kind": "ultimateMod",
+   "region": "road",
+   "calling": "reaver",
+   "road": "butcher",
+   "at": [
+    "butcher.the_butchers_bill"
+   ],
+   "gate": 3,
+   "text": "Each chop strikes everything 2 m round.",
+   "effects": [
+    {
+     "do": "flareMod",
+     "flare": "the_butchers_bill",
+     "rule": "bill.wide_chops",
+     "phase": 6
+    }
+   ]
+  },
+  {
+   "id": "butcher.the_butchers_bill.feast",
+   "name": "Feast",
+   "kind": "ultimateMod",
+   "region": "road",
+   "calling": "reaver",
+   "road": "butcher",
+   "at": [
+    "butcher.the_butchers_bill"
+   ],
+   "gate": 3,
+   "text": "Each kill mends 10%.",
+   "effects": [
+    {
+     "do": "flareMod",
+     "flare": "the_butchers_bill",
+     "rule": "bill.feast",
+     "phase": 6
+    }
+   ]
+  },
+  {
+   "id": "butcher.butchers_hour",
+   "name": "Butcher's Hour",
+   "kind": "ultimate",
+   "region": "road",
+   "calling": "reaver",
+   "road": "butcher",
+   "at": [
+    "butcher.s6"
+   ],
+   "gate": 12,
+   "text": "Learn the Flare Butcher's Hour.",
+   "effects": [
+    {
+     "do": "flare",
+     "flare": "butchers_hour"
+    }
+   ]
+  },
+  {
+   "id": "butcher.butchers_hour.overtime",
+   "name": "Overtime",
+   "kind": "ultimateMod",
+   "region": "road",
+   "calling": "reaver",
+   "road": "butcher",
+   "at": [
+    "butcher.butchers_hour"
+   ],
+   "gate": 12,
+   "text": "A kill adds 0.6 s.",
+   "effects": [
+    {
+     "do": "flareMod",
+     "flare": "butchers_hour",
+     "rule": "hour.overtime",
+     "phase": 2
+    }
+   ]
+  },
+  {
+   "id": "butcher.butchers_hour.red_mist",
+   "name": "Red Mist",
+   "kind": "ultimateMod",
+   "region": "road",
+   "calling": "reaver",
+   "road": "butcher",
+   "at": [
+    "butcher.butchers_hour"
+   ],
+   "gate": 12,
+   "text": "Lesser things near you flee.",
+   "effects": [
+    {
+     "do": "flareMod",
+     "flare": "butchers_hour",
+     "rule": "hour.red_mist",
+     "phase": 2
+    }
+   ]
+  },
+  {
+   "id": "butcher.butchers_hour.not_today",
+   "name": "Not Today",
+   "kind": "ultimateMod",
+   "region": "road",
+   "calling": "reaver",
+   "road": "butcher",
+   "at": [
+    "butcher.butchers_hour"
+   ],
+   "gate": 12,
+   "text": "While it holds, you can't fall below 1 health.",
+   "effects": [
+    {
+     "do": "flareMod",
+     "flare": "butchers_hour",
+     "rule": "hour.not_today",
+     "phase": 2
+    }
+   ]
+  },
+  {
+   "id": "chainbound.hooked",
+   "name": "Hooked",
+   "kind": "entry",
+   "region": "road",
+   "calling": "reaver",
+   "road": "chainbound",
+   "at": [
+    "reaver.the_reavers_chain"
+   ],
+   "feeds": [
+    "chain_lash"
+   ],
+   "text": "Chain Lash's hook leaves things Bound for 2 s: tethered where they stand, and taking more from what strikes an area.",
+   "effects": [
+    {
+     "do": "rule",
+     "rule": "hooked",
+     "args": {
+      "seconds": 2
+     },
+     "phase": 5
+    }
+   ]
+  },
+  {
+   "id": "chainbound.s1",
+   "name": "",
+   "kind": "small",
+   "region": "road",
+   "calling": "reaver",
+   "road": "chainbound",
+   "at": [
+    "chainbound.hooked"
+   ],
+   "text": "Bound things take 10% more from storm.",
+   "effects": [
+    {
+     "do": "rule",
+     "rule": "bound.storm",
+     "args": {
+      "more": 0.1
+     }
+    }
+   ]
+  },
+  {
+   "id": "chainbound.s2",
+   "name": "",
+   "kind": "small",
+   "region": "road",
+   "calling": "reaver",
+   "road": "chainbound",
+   "at": [
+    "chainbound.s1"
+   ],
+   "text": "Area skills strike 8% harder at Bound things.",
+   "effects": [
+    {
+     "do": "rule",
+     "rule": "tags.vs_bound",
+     "args": {
+      "more": 0.08
+     },
+     "tags": [
+      "area"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "chainbound.s3",
+   "name": "",
+   "kind": "attribute",
+   "region": "road",
+   "calling": "reaver",
+   "road": "chainbound",
+   "at": [
+    "chainbound.s2"
+   ],
+   "text": "+2 Might.",
+   "effects": [
+    {
+     "do": "attr",
+     "attr": "might",
+     "value": 2
+    }
+   ]
+  },
+  {
+   "id": "chainbound.s4",
+   "name": "",
+   "kind": "small",
+   "region": "road",
+   "calling": "reaver",
+   "road": "chainbound",
+   "at": [
+    "chainbound.s3"
+   ],
+   "text": "Shock lasts 20% longer on Bound things.",
+   "effects": [
+    {
+     "do": "rule",
+     "rule": "bound.shock_longer",
+     "args": {
+      "inc": 0.2
+     }
+    }
+   ]
+  },
+  {
+   "id": "chainbound.s5",
+   "name": "",
+   "kind": "attribute",
+   "region": "road",
+   "calling": "reaver",
+   "road": "chainbound",
+   "at": [
+    "chainbound.s4"
+   ],
+   "text": "+2 Wits.",
+   "effects": [
+    {
+     "do": "attr",
+     "attr": "wits",
+     "value": 2
+    }
+   ]
+  },
+  {
+   "id": "chainbound.s6",
+   "name": "",
+   "kind": "small",
+   "region": "road",
+   "calling": "reaver",
+   "road": "chainbound",
+   "at": [
+    "chainbound.s5"
+   ],
+   "text": "Each Bound thing within 6 m gives +1 armor, to +10.",
+   "effects": [
+    {
+     "do": "rule",
+     "rule": "bound.armor",
+     "args": {
+      "per": 1,
+      "cap": 10,
+      "radius": 6
+     }
+    }
+   ]
+  },
+  {
+   "id": "chainbound.s7",
+   "name": "",
+   "kind": "small",
+   "region": "road",
+   "calling": "reaver",
+   "road": "chainbound",
+   "at": [
+    "chainbound.s6"
+   ],
+   "text": "Storm skills reach 10% further while three or more things are Bound.",
+   "effects": [
+    {
+     "do": "rule",
+     "rule": "bound.storm_reach",
+     "args": {
+      "at": 3,
+      "inc": 0.1
+     }
+    }
+   ]
+  },
+  {
+   "id": "chainbound.chain_lash.double_lash",
+   "name": "Double Lash",
+   "kind": "skill",
+   "region": "road",
+   "calling": "reaver",
+   "road": "chainbound",
+   "at": [
+    "chainbound.s1"
+   ],
+   "feeds": [
+    "chain_lash"
+   ],
+   "text": "Chain Lash lashes twice.",
+   "effects": [
+    {
+     "do": "rule",
+     "rule": "chain_lash.double",
+     "phase": 5
+    }
+   ]
+  },
+  {
+   "id": "chainbound.chain_lash.barbed_hook",
+   "name": "Barbed Hook",
+   "kind": "skill",
+   "region": "road",
+   "calling": "reaver",
+   "road": "chainbound",
+   "at": [
+    "chainbound.s1"
+   ],
+   "feeds": [
+    "chain_lash"
+   ],
+   "text": "The hooked thing bleeds.",
+   "effects": [
+    {
+     "do": "rule",
+     "rule": "chain_lash.barbed",
+     "phase": 5
+    }
+   ]
+  },
+  {
+   "id": "chainbound.chain_lash.lash_back",
+   "name": "Lash Back",
+   "kind": "skill",
+   "region": "road",
+   "calling": "reaver",
+   "road": "chainbound",
+   "at": [
+    "chainbound.s1"
+   ],
+   "feeds": [
+    "chain_lash"
+   ],
+   "text": "The lash cracks back the way it came.",
+   "effects": [
+    {
+     "do": "rule",
+     "rule": "chain_lash.back",
+     "phase": 5
+    }
+   ]
+  },
+  {
+   "id": "chainbound.anchor.two_anchors",
+   "name": "Two Anchors",
+   "kind": "skill",
+   "region": "road",
+   "calling": "reaver",
+   "road": "chainbound",
+   "at": [
+    "chainbound.s3"
+   ],
+   "feeds": [
+    "anchor"
+   ],
+   "text": "Two anchors land.",
+   "effects": [
+    {
+     "do": "rule",
+     "rule": "anchor.two",
+     "phase": 5
+    }
+   ]
+  },
+  {
+   "id": "chainbound.anchor.heavy_anchor",
+   "name": "Heavy Anchor",
+   "kind": "skill",
+   "region": "road",
+   "calling": "reaver",
+   "road": "chainbound",
+   "at": [
+    "chainbound.s3"
+   ],
+   "feeds": [
+    "anchor"
+   ],
+   "text": "The anchor's landing stuns 0.5 s.",
+   "effects": [
+    {
+     "do": "rule",
+     "rule": "anchor.heavy",
+     "phase": 5
+    }
+   ]
+  },
+  {
+   "id": "chainbound.anchor.live_anchor",
+   "name": "Live Anchor",
+   "kind": "skill",
+   "region": "road",
+   "calling": "reaver",
+   "road": "chainbound",
+   "at": [
+    "chainbound.s3"
+   ],
+   "feeds": [
+    "anchor"
+   ],
+   "text": "The anchor shocks what it binds.",
+   "effects": [
+    {
+     "do": "rule",
+     "rule": "anchor.live",
+     "phase": 5
+    }
+   ]
+  },
+  {
+   "id": "chainbound.iron_palms.palm_on_the_chain",
+   "name": "Palm on the Chain",
+   "kind": "skill",
+   "region": "road",
+   "calling": "reaver",
+   "road": "chainbound",
+   "at": [
+    "chainbound.s5"
+   ],
+   "feeds": [
+    "iron_palms"
+   ],
+   "text": "Iron Palms strike Bound things 20% harder.",
+   "effects": [
+    {
+     "do": "rule",
+     "rule": "skill.vs_bound",
+     "args": {
+      "more": 0.2
+     },
+     "skill": "iron_palms"
+    }
+   ]
+  },
+  {
+   "id": "chainbound.iron_palms.ringing_palm",
+   "name": "Ringing Palm",
+   "kind": "skill",
+   "region": "road",
+   "calling": "reaver",
+   "road": "chainbound",
+   "at": [
+    "chainbound.s5"
+   ],
+   "feeds": [
+    "iron_palms"
+   ],
+   "text": "Iron Palms shock what they strike.",
+   "effects": [
+    {
+     "do": "rule",
+     "rule": "skill.status",
+     "skill": "iron_palms",
+     "status": "shock"
+    }
+   ]
+  },
+  {
+   "id": "chainbound.iron_palms.palm_storm",
+   "name": "Palm Storm",
+   "kind": "skill",
+   "region": "road",
+   "calling": "reaver",
+   "road": "chainbound",
+   "at": [
+    "chainbound.s5"
+   ],
+   "feeds": [
+    "iron_palms"
+   ],
+   "text": "Iron Palms strike 15% more often.",
+   "effects": [
+    {
+     "do": "rule",
+     "rule": "skill.sooner",
+     "args": {
+      "sooner": 0.15
+     },
+     "skill": "iron_palms"
+    }
+   ]
+  },
+  {
+   "id": "chainbound.fast_binding",
+   "name": "Fast Binding",
+   "kind": "notable",
+   "region": "road",
+   "calling": "reaver",
+   "road": "chainbound",
+   "at": [
+    "chainbound.s2"
+   ],
+   "feeds": [
+    "chain_lash",
+    "anchor"
+   ],
+   "gate": 6,
+   "text": "Bound lasts 4 s, and Anchor binds 7 m round.",
+   "effects": [
+    {
+     "do": "rule",
+     "rule": "fast_binding",
+     "args": {
+      "seconds": 4,
+      "radius": 7
+     }
+    }
+   ]
+  },
+  {
+   "id": "chainbound.conductor",
+   "name": "Conductor",
+   "kind": "notable",
+   "region": "road",
+   "calling": "reaver",
+   "road": "chainbound",
+   "at": [
+    "chainbound.s3"
+   ],
+   "feeds": [
+    "iron_palms"
+   ],
+   "gate": 6,
+   "text": "Shock on a Bound thing leaps to every other Bound thing.",
+   "effects": [
+    {
+     "do": "rule",
+     "rule": "conductor"
+    }
+   ]
+  },
+  {
+   "id": "chainbound.short_leash",
+   "name": "Short Leash",
+   "kind": "notable",
+   "region": "road",
+   "calling": "reaver",
+   "road": "chainbound",
+   "at": [
+    "chainbound.s4"
+   ],
+   "feeds": [
+    "chain_lash"
+   ],
+   "gate": 6,
+   "text": "Hooked things are dragged 2 m further.",
+   "effects": [
+    {
+     "do": "rule",
+     "rule": "short_leash",
+     "args": {
+      "add": 2
+     },
+     "phase": 5
+    }
+   ]
+  },
+  {
+   "id": "chainbound.knot",
+   "name": "Knot",
+   "kind": "notable",
+   "region": "road",
+   "calling": "reaver",
+   "road": "chainbound",
+   "at": [
+    "chainbound.s5"
+   ],
+   "feeds": [
+    "anchor"
+   ],
+   "gate": 6,
+   "text": "Eight Bound things close together are stunned 1 s.",
+   "effects": [
+    {
+     "do": "rule",
+     "rule": "knot",
+     "args": {
+      "count": 8,
+      "radius": 3,
+      "seconds": 1
+     }
+    }
+   ]
+  },
+  {
+   "id": "chainbound.iron_reach",
+   "name": "Iron Reach",
+   "kind": "notable",
+   "region": "road",
+   "calling": "reaver",
+   "road": "chainbound",
+   "at": [
+    "chainbound.s6"
+   ],
+   "feeds": [
+    "iron_palms"
+   ],
+   "gate": 6,
+   "text": "Iron Palms strike Bound things from 6 m.",
+   "effects": [
+    {
+     "do": "rule",
+     "rule": "iron_reach",
+     "args": {
+      "reach": 6
+     }
+    }
+   ]
+  },
+  {
+   "id": "chainbound.the_long_chain",
+   "name": "The Long Chain",
+   "kind": "blue",
+   "region": "road",
+   "calling": "reaver",
+   "road": "chainbound",
+   "at": [
+    "chainbound.s6"
+   ],
+   "gate": 12,
+   "text": "Melee skills reach 3 m further and hook the last thing they hit. They strike 20% weaker.",
+   "effects": [
+    {
+     "do": "rule",
+     "rule": "long_chain",
+     "args": {
+      "reach": 3,
+      "weaker": 0.2
+     }
+    }
+   ]
+  },
+  {
+   "id": "chainbound.lightning_rod",
+   "name": "Lightning Rod",
+   "kind": "blue",
+   "region": "road",
+   "calling": "reaver",
+   "road": "chainbound",
+   "at": [
+    "chainbound.s7"
+   ],
+   "gate": 12,
+   "text": "Storm skills strike Bound things first, and 40% harder. You take 15% more from storm and fire.",
+   "effects": [
+    {
+     "do": "rule",
+     "rule": "lightning_rod",
+     "args": {
+      "more": 0.4,
+      "price": 0.15
+     }
+    }
+   ]
+  },
+  {
+   "id": "chainbound.drag_them_under",
+   "name": "Drag Them Under",
+   "kind": "ultimate",
+   "region": "road",
+   "calling": "reaver",
+   "road": "chainbound",
+   "at": [
+    "chainbound.s2"
+   ],
+   "gate": 3,
+   "text": "Learn the Flare Drag Them Under.",
+   "effects": [
+    {
+     "do": "flare",
+     "flare": "drag_them_under"
+    }
+   ]
+  },
+  {
+   "id": "chainbound.drag_them_under.deeper",
+   "name": "Deeper",
+   "kind": "ultimateMod",
+   "region": "road",
+   "calling": "reaver",
+   "road": "chainbound",
+   "at": [
+    "chainbound.drag_them_under"
+   ],
+   "gate": 3,
+   "text": "The hooks reach the whole screen.",
+   "effects": [
+    {
+     "do": "flareMod",
+     "flare": "drag_them_under",
+     "rule": "drag.deeper",
+     "phase": 6
+    }
+   ]
+  },
+  {
+   "id": "chainbound.drag_them_under.grinder",
+   "name": "Grinder",
+   "kind": "ultimateMod",
+   "region": "road",
+   "calling": "reaver",
+   "road": "chainbound",
+   "at": [
+    "chainbound.drag_them_under"
+   ],
+   "gate": 3,
+   "text": "The knot is shredded for a breath before the slam.",
+   "effects": [
+    {
+     "do": "flareMod",
+     "flare": "drag_them_under",
+     "rule": "drag.grinder",
+     "phase": 6
+    }
+   ]
+  },
+  {
+   "id": "chainbound.drag_them_under.hold_him",
+   "name": "Hold Him",
+   "kind": "ultimateMod",
+   "region": "road",
+   "calling": "reaver",
+   "road": "chainbound",
+   "at": [
+    "chainbound.drag_them_under"
+   ],
+   "gate": 3,
+   "text": "A boss is pinned 3 s.",
+   "effects": [
+    {
+     "do": "flareMod",
+     "flare": "drag_them_under",
+     "rule": "drag.hold_him",
+     "phase": 6
+    }
+   ]
+  },
+  {
+   "id": "chainbound.storm_on_the_chain",
+   "name": "Storm on the Chain",
+   "kind": "ultimate",
+   "region": "road",
+   "calling": "reaver",
+   "road": "chainbound",
+   "at": [
+    "chainbound.s6"
+   ],
+   "gate": 12,
+   "text": "Learn the Flare Storm on the Chain.",
+   "effects": [
+    {
+     "do": "flare",
+     "flare": "storm_on_the_chain"
+    }
+   ]
+  },
+  {
+   "id": "chainbound.storm_on_the_chain.second_length",
+   "name": "Second Length",
+   "kind": "ultimateMod",
+   "region": "road",
+   "calling": "reaver",
+   "road": "chainbound",
+   "at": [
+    "chainbound.storm_on_the_chain"
+   ],
+   "gate": 12,
+   "text": "A second chain; the sweeps alternate.",
+   "effects": [
+    {
+     "do": "flareMod",
+     "flare": "storm_on_the_chain",
+     "rule": "storm_chain.second_length",
+     "phase": 6
+    }
+   ]
+  },
+  {
+   "id": "chainbound.storm_on_the_chain.earthing",
+   "name": "Earthing",
+   "kind": "ultimateMod",
+   "region": "road",
+   "calling": "reaver",
+   "road": "chainbound",
+   "at": [
+    "chainbound.storm_on_the_chain"
+   ],
+   "gate": 12,
+   "text": "Each sky strike mends 1%.",
+   "effects": [
+    {
+     "do": "flareMod",
+     "flare": "storm_on_the_chain",
+     "rule": "storm_chain.earthing",
+     "phase": 6
+    }
+   ]
+  },
+  {
+   "id": "chainbound.storm_on_the_chain.wide_lash",
+   "name": "Wide Lash",
+   "kind": "ultimateMod",
+   "region": "road",
+   "calling": "reaver",
+   "road": "chainbound",
+   "at": [
+    "chainbound.storm_on_the_chain"
+   ],
+   "gate": 12,
+   "text": "The sweeps reach 11 m.",
+   "effects": [
+    {
+     "do": "flareMod",
+     "flare": "storm_on_the_chain",
+     "rule": "storm_chain.wide_lash",
+     "phase": 6
+    }
+   ]
+  },
+  {
+   "id": "reaver.bridge.s1",
+   "name": "",
+   "kind": "attribute",
+   "region": "bridge",
+   "calling": "reaver",
+   "road": "reaver.bridge",
+   "at": [
+    "butcher.s4"
+   ],
+   "text": "+2 Might.",
+   "effects": [
+    {
+     "do": "attr",
+     "attr": "might",
+     "value": 2
+    }
+   ]
+  },
+  {
+   "id": "reaver.bridge.red_chain",
+   "name": "Red Chain",
+   "kind": "notable",
+   "region": "bridge",
+   "calling": "reaver",
+   "road": "reaver.bridge",
+   "at": [
+    "reaver.bridge.s1"
+   ],
+   "feeds": [
+    "chain_lash",
+    "anchor"
+   ],
+   "text": "Bound things bleed; bleeding things stay Bound 1 s longer.",
+   "effects": [
+    {
+     "do": "rule",
+     "rule": "red_chain",
+     "args": {
+      "seconds": 1
+     }
+    }
+   ]
+  },
+  {
+   "id": "reaver.bridge.s2",
+   "name": "",
+   "kind": "small",
+   "region": "bridge",
+   "calling": "reaver",
+   "road": "reaver.bridge",
+   "at": [
+    "reaver.bridge.red_chain"
+   ],
+   "text": "Bleeding things are Bound 1 s on a hook.",
+   "effects": [
+    {
+     "do": "rule",
+     "rule": "bleed.hook_bind",
+     "args": {
+      "seconds": 1
+     },
+     "phase": 5
+    }
+   ]
+  },
+  {
+   "id": "reaver.bridge.cleaver_on_a_chain",
+   "name": "Cleaver on a Chain",
+   "kind": "blue",
+   "region": "bridge",
+   "calling": "reaver",
+   "road": "reaver.bridge",
+   "at": [
+    "reaver.bridge.s2"
+   ],
+   "gate": 3,
+   "text": "Hurled Cleaver flies on your chain, hooks what it hits and drags it to you. It no longer returns through the crowd.",
+   "effects": [
+    {
+     "do": "rule",
+     "rule": "cleaver_on_a_chain",
+     "phase": 5
+    }
+   ]
+  },
+  {
+   "id": "reaver.bridge.hook_and_hatchet",
+   "name": "Hook and Hatchet",
+   "kind": "notable",
+   "region": "bridge",
+   "calling": "reaver",
+   "road": "reaver.bridge",
+   "at": [
+    "reaver.bridge.s2"
+   ],
+   "feeds": [
+    "axe_gyre",
+    "chain_lash"
+   ],
+   "text": "A blow on a Bound thing adds a stack of Frenzy.",
+   "effects": [
+    {
+     "do": "rule",
+     "rule": "hook_and_hatchet"
+    }
+   ]
+  },
+  {
+   "id": "reaver.bridge.s3",
+   "name": "",
+   "kind": "attribute",
+   "region": "bridge",
+   "calling": "reaver",
+   "road": "reaver.bridge",
+   "at": [
+    "reaver.bridge.hook_and_hatchet",
+    "chainbound.s4"
+   ],
+   "text": "+2 Resolve.",
+   "effects": [
+    {
+     "do": "attr",
+     "attr": "resolve",
+     "value": 2
+    }
+   ]
+  },
+  {
+   "id": "arcanist.the_arcanists_glass",
+   "name": "The Arcanist's Glass",
+   "kind": "start",
+   "region": "hearth",
+   "calling": "arcanist",
+   "road": "arcanist.hearth",
+   "text": "Your dash form is Mirror Step: every 8 s the next dash leaves two reflections where you stood. They draw what hunts you, and burst when broken.",
+   "effects": [
+    {
+     "do": "form",
+     "art": "mirror_step",
+     "wait": 8
+    }
+   ]
+  },
+  {
+   "id": "arcanist.hall_of_mirrors",
+   "name": "Hall of Mirrors",
+   "kind": "form",
+   "region": "hearth",
+   "calling": "arcanist",
+   "road": "arcanist.hearth",
+   "at": [
+    "arcanist.the_arcanists_glass"
+   ],
+   "text": "Mirror Step leaves three.",
+   "effects": [
+    {
+     "do": "facet",
+     "art": "mirror_step",
+     "facet": "three_mirrors"
+    }
+   ]
+  },
+  {
+   "id": "arcanist.cold_glass",
+   "name": "Cold Glass",
+   "kind": "form",
+   "region": "hearth",
+   "calling": "arcanist",
+   "road": "arcanist.hearth",
+   "at": [
+    "arcanist.the_arcanists_glass"
+   ],
+   "text": "A breaking reflection chills everything it cuts.",
+   "effects": [
+    {
+     "do": "facet",
+     "art": "mirror_step",
+     "facet": "cold_glass"
+    }
+   ]
+  },
+  {
+   "id": "arcanist.fighting_reflections",
+   "name": "Fighting Reflections",
+   "kind": "form",
+   "region": "hearth",
+   "calling": "arcanist",
+   "road": "arcanist.hearth",
+   "at": [
+    "arcanist.the_arcanists_glass"
+   ],
+   "text": "Your reflections strike at what comes for them.",
+   "effects": [
+    {
+     "do": "facet",
+     "art": "mirror_step",
+     "facet": "fighting_reflections"
+    }
+   ]
+  },
+  {
+   "id": "arcanist.glass_heart",
+   "name": "Glass Heart",
+   "kind": "form",
+   "region": "hearth",
+   "calling": "arcanist",
+   "road": "arcanist.hearth",
+   "at": [
+    "arcanist.the_arcanists_glass"
+   ],
+   "text": "Each reflection that breaks mends 4% of health.",
+   "effects": [
+    {
+     "do": "facet",
+     "art": "mirror_step",
+     "facet": "glass_heart"
+    }
+   ]
+  },
+  {
+   "id": "arcanist.time_slip",
+   "name": "Time Slip",
+   "kind": "reflex",
+   "region": "hearth",
+   "calling": "arcanist",
+   "road": "arcanist.hearth",
+   "at": [
+    "arcanist.the_arcanists_glass"
+   ],
+   "text": "A blow that would take a quarter of your health, or a champion's mark closing on you: 3.5 s at a third of the speed. Every 30 s.",
+   "effects": [
+    {
+     "do": "reflex",
+     "art": "time_slip",
+     "trigger": "dire",
+     "wait": 30,
+     "args": {
+      "share": 0.25
+     }
+    }
+   ]
+  },
+  {
+   "id": "arcanist.borrowed_time",
+   "name": "Borrowed Time",
+   "kind": "reflexUp",
+   "region": "hearth",
+   "calling": "arcanist",
+   "road": "arcanist.hearth",
+   "at": [
+    "arcanist.time_slip"
+   ],
+   "text": "Dashes come back three times as fast in the slip.",
+   "effects": [
+    {
+     "do": "facet",
+     "art": "time_slip",
+     "facet": "borrowed_time"
+    }
+   ]
+  },
+  {
+   "id": "arcanist.deep_slip",
+   "name": "Deep Slip",
+   "kind": "reflexUp",
+   "region": "hearth",
+   "calling": "arcanist",
+   "road": "arcanist.hearth",
+   "at": [
+    "arcanist.time_slip"
+   ],
+   "text": "In the slip, everything moves at a fifth.",
+   "effects": [
+    {
+     "do": "facet",
+     "art": "time_slip",
+     "facet": "deep_slip"
+    }
+   ]
+  },
+  {
+   "id": "arcanist.spellward",
+   "name": "Spellward",
+   "kind": "reflex",
+   "region": "hearth",
+   "calling": "arcanist",
+   "road": "arcanist.hearth",
+   "at": [
+    "arcanist.the_arcanists_glass"
+   ],
+   "text": "Whenever three of your spells land in one second: a barrier of 10% of health. Every 8 s.",
+   "effects": [
+    {
+     "do": "reflex",
+     "art": "spellward",
+     "trigger": "spells",
+     "wait": 8,
+     "args": {
+      "count": 3,
+      "barrier": 0.1
+     }
+    }
+   ]
+  },
+  {
+   "id": "arcanist.thick_ward",
+   "name": "Thick Ward",
+   "kind": "reflexUp",
+   "region": "hearth",
+   "calling": "arcanist",
+   "road": "arcanist.hearth",
+   "at": [
+    "arcanist.spellward"
+   ],
+   "text": "Spellward's barrier is 15% of health.",
+   "effects": [
+    {
+     "do": "rule",
+     "rule": "spellward.thick",
+     "args": {
+      "barrier": 0.15
+     }
+    }
+   ]
+  },
+  {
+   "id": "arcanist.kindling",
+   "name": "Kindling",
+   "kind": "flareLamp",
+   "region": "hearth",
+   "calling": "arcanist",
+   "road": "arcanist.hearth",
+   "at": [
+    "arcanist.the_arcanists_glass"
+   ],
+   "text": "Spells that strike three or more things at once fill the Flare a little.",
+   "effects": [
+    {
+     "do": "rule",
+     "rule": "flare.spell_fill",
+     "args": {
+      "count": 3,
+      "fill": 0.5
+     }
+    }
+   ]
+  },
+  {
+   "id": "arcanist.glass_clutch",
+   "name": "Glass Clutch",
+   "kind": "flareLamp",
+   "region": "hearth",
+   "calling": "arcanist",
+   "road": "arcanist.hearth",
+   "at": [
+    "arcanist.kindling"
+   ],
+   "text": "A Flare cast below a third of health leaves two reflections.",
+   "effects": [
+    {
+     "do": "rule",
+     "rule": "flare.low_mirrors",
+     "args": {
+      "below": 0.3333,
+      "count": 2
+     }
+    }
+   ]
+  },
+  {
+   "id": "arcanist.unbound_casting",
+   "name": "Unbound Casting",
+   "kind": "blue",
+   "region": "hearth",
+   "calling": "arcanist",
+   "road": "arcanist.hearth",
+   "at": [
+    "arcanist.spellward"
+   ],
+   "gate": 6,
+   "text": "Spells wait 30% less. You have 20% less health.",
+   "effects": [
+    {
+     "do": "rule",
+     "rule": "unbound_casting",
+     "args": {
+      "sooner": 0.3
+     }
+    },
+    {
+     "do": "mod",
+     "stat": "maxHealth",
+     "mod": "more",
+     "value": -0.2,
+     "price": true
+    }
+   ]
+  },
+  {
+   "id": "arcanist.banked_flame",
+   "name": "Banked Flame",
+   "kind": "blue",
+   "region": "hearth",
+   "calling": "arcanist",
+   "road": "arcanist.hearth",
+   "at": [
+    "arcanist.glass_clutch"
+   ],
+   "gate": 6,
+   "text": "Hold two Flares. Each fills 30% slower.",
+   "effects": [
+    {
+     "do": "rule",
+     "rule": "flare.banked",
+     "args": {
+      "charges": 2,
+      "slower": 0.3
+     }
+    }
+   ]
+  },
+  {
+   "id": "kindler.fire_on_ice",
+   "name": "Fire on Ice",
+   "kind": "entry",
+   "region": "road",
+   "calling": "arcanist",
+   "road": "kindler",
+   "at": [
+    "arcanist.the_arcanists_glass"
+   ],
+   "feeds": [
+    "cinderfall",
+    "rime_field"
+   ],
+   "text": "Fire striking a frozen thing shatters it, 2 m round, at half its blow.",
+   "effects": [
+    {
+     "do": "rule",
+     "rule": "fire_on_ice",
+     "args": {
+      "radius": 2,
+      "share": 0.5
+     }
+    }
+   ]
+  },
+  {
+   "id": "kindler.s1",
+   "name": "",
+   "kind": "small",
+   "region": "road",
+   "calling": "arcanist",
+   "road": "kindler",
+   "at": [
+    "kindler.fire_on_ice"
+   ],
+   "text": "Burning things take 10% more from frost.",
+   "effects": [
+    {
+     "do": "rule",
+     "rule": "burning.frost",
+     "args": {
+      "more": 0.1
+     }
+    }
+   ]
+  },
+  {
+   "id": "kindler.s2",
+   "name": "",
+   "kind": "small",
+   "region": "road",
+   "calling": "arcanist",
+   "road": "kindler",
+   "at": [
+    "kindler.s1"
+   ],
+   "text": "Chill builds 15% faster on things standing in your fire.",
+   "effects": [
+    {
+     "do": "rule",
+     "rule": "fire.chill_faster",
+     "args": {
+      "inc": 0.15
+     }
+    }
+   ]
+  },
+  {
+   "id": "kindler.s3",
+   "name": "",
+   "kind": "attribute",
+   "region": "road",
+   "calling": "arcanist",
+   "road": "kindler",
+   "at": [
+    "kindler.s2"
+   ],
+   "text": "+2 Wits.",
+   "effects": [
+    {
+     "do": "attr",
+     "attr": "wits",
+     "value": 2
+    }
+   ]
+  },
+  {
+   "id": "kindler.s4",
+   "name": "",
+   "kind": "small",
+   "region": "road",
+   "calling": "arcanist",
+   "road": "kindler",
+   "at": [
+    "kindler.s3"
+   ],
+   "text": "Zone spells last 15% longer while you stand in one.",
+   "effects": [
+    {
+     "do": "rule",
+     "rule": "zone.longer",
+     "args": {
+      "inc": 0.15
+     }
+    }
+   ]
+  },
+  {
+   "id": "kindler.s5",
+   "name": "",
+   "kind": "attribute",
+   "region": "road",
+   "calling": "arcanist",
+   "road": "kindler",
+   "at": [
+    "kindler.s4"
+   ],
+   "text": "+2 Wits.",
+   "effects": [
+    {
+     "do": "attr",
+     "attr": "wits",
+     "value": 2
+    }
+   ]
+  },
+  {
+   "id": "kindler.s6",
+   "name": "",
+   "kind": "small",
+   "region": "road",
+   "calling": "arcanist",
+   "road": "kindler",
+   "at": [
+    "kindler.s5"
+   ],
+   "text": "Shatters strike champions 15% harder.",
+   "effects": [
+    {
+     "do": "rule",
+     "rule": "shatter.champions",
+     "args": {
+      "more": 0.15
+     }
+    }
+   ]
+  },
+  {
+   "id": "kindler.s7",
+   "name": "",
+   "kind": "small",
+   "region": "road",
+   "calling": "arcanist",
+   "road": "kindler",
+   "at": [
+    "kindler.s6"
+   ],
+   "text": "Frozen things take 10% more from fire.",
+   "effects": [
+    {
+     "do": "rule",
+     "rule": "frozen.fire",
+     "args": {
+      "more": 0.1
+     }
+    }
+   ]
+  },
+  {
+   "id": "kindler.cinderfall.two_cinders",
+   "name": "Two Cinders",
+   "kind": "skill",
+   "region": "road",
+   "calling": "arcanist",
+   "road": "kindler",
+   "at": [
+    "kindler.s1"
+   ],
+   "feeds": [
+    "cinderfall"
+   ],
+   "text": "Cinderfall drops two.",
+   "effects": [
+    {
+     "do": "rule",
+     "rule": "cinderfall.two"
+    }
+   ]
+  },
+  {
+   "id": "kindler.cinderfall.wider_fall",
+   "name": "Wider Fall",
+   "kind": "skill",
+   "region": "road",
+   "calling": "arcanist",
+   "road": "kindler",
+   "at": [
+    "kindler.s1"
+   ],
+   "feeds": [
+    "cinderfall"
+   ],
+   "text": "Cinderfall lands 25% wider.",
+   "effects": [
+    {
+     "do": "rule",
+     "rule": "skill.area",
+     "args": {
+      "inc": 0.25
+     },
+     "skill": "cinderfall"
+    }
+   ]
+  },
+  {
+   "id": "kindler.cinderfall.slow_burning",
+   "name": "Slow Burning",
+   "kind": "skill",
+   "region": "road",
+   "calling": "arcanist",
+   "road": "kindler",
+   "at": [
+    "kindler.s1"
+   ],
+   "feeds": [
+    "cinderfall"
+   ],
+   "text": "Cinderfall's burn lasts 50% longer.",
+   "effects": [
+    {
+     "do": "rule",
+     "rule": "skill.burn_longer",
+     "args": {
+      "inc": 0.5
+     },
+     "skill": "cinderfall"
+    }
+   ]
+  },
+  {
+   "id": "kindler.pyre_line.cross_of_fire",
+   "name": "Cross of Fire",
+   "kind": "skill",
+   "region": "road",
+   "calling": "arcanist",
+   "road": "kindler",
+   "at": [
+    "kindler.s3"
+   ],
+   "feeds": [
+    "pyre_line"
+   ],
+   "text": "A second line crosses the first.",
+   "effects": [
+    {
+     "do": "rule",
+     "rule": "pyre_line.cross",
+     "phase": 5
+    }
+   ]
+  },
+  {
+   "id": "kindler.pyre_line.hedge_of_fire",
+   "name": "Hedge of Fire",
+   "kind": "skill",
+   "region": "road",
+   "calling": "arcanist",
+   "road": "kindler",
+   "at": [
+    "kindler.s3"
+   ],
+   "feeds": [
+    "pyre_line"
+   ],
+   "text": "The line is 12 m long.",
+   "effects": [
+    {
+     "do": "rule",
+     "rule": "pyre_line.hedge",
+     "phase": 5
+    }
+   ]
+  },
+  {
+   "id": "kindler.pyre_line.rolling_wall",
+   "name": "Rolling Wall",
+   "kind": "skill",
+   "region": "road",
+   "calling": "arcanist",
+   "road": "kindler",
+   "at": [
+    "kindler.s3"
+   ],
+   "feeds": [
+    "pyre_line"
+   ],
+   "text": "The line rolls toward the pack.",
+   "effects": [
+    {
+     "do": "rule",
+     "rule": "pyre_line.rolling",
+     "phase": 5
+    }
+   ]
+  },
+  {
+   "id": "kindler.rime_field.quick_frost",
+   "name": "Quick Frost",
+   "kind": "skill",
+   "region": "road",
+   "calling": "arcanist",
+   "road": "kindler",
+   "at": [
+    "kindler.s5"
+   ],
+   "feeds": [
+    "rime_field"
+   ],
+   "text": "Rime Field freezes after 1 s.",
+   "effects": [
+    {
+     "do": "rule",
+     "rule": "rime_field.quick",
+     "phase": 5
+    }
+   ]
+  },
+  {
+   "id": "kindler.rime_field.wide_field",
+   "name": "Wide Field",
+   "kind": "skill",
+   "region": "road",
+   "calling": "arcanist",
+   "road": "kindler",
+   "at": [
+    "kindler.s5"
+   ],
+   "feeds": [
+    "rime_field"
+   ],
+   "text": "Rime Field is 30% wider.",
+   "effects": [
+    {
+     "do": "rule",
+     "rule": "rime_field.wide",
+     "phase": 5
+    }
+   ]
+  },
+  {
+   "id": "kindler.rime_field.shatter_field",
+   "name": "Shatter Field",
+   "kind": "skill",
+   "region": "road",
+   "calling": "arcanist",
+   "road": "kindler",
+   "at": [
+    "kindler.s5"
+   ],
+   "feeds": [
+    "rime_field"
+   ],
+   "text": "What thaws in Rime Field shatters.",
+   "effects": [
+    {
+     "do": "rule",
+     "rule": "rime_field.shatter",
+     "phase": 5
+    }
+   ]
+  },
+  {
+   "id": "kindler.thermal_shock",
+   "name": "Thermal Shock",
+   "kind": "notable",
+   "region": "road",
+   "calling": "arcanist",
+   "road": "kindler",
+   "at": [
+    "kindler.s2"
+   ],
+   "feeds": [
+    "cinderfall",
+    "rime_field"
+   ],
+   "gate": 6,
+   "text": "The shatter is 3 m round and strikes as hard as the blow.",
+   "effects": [
+    {
+     "do": "rule",
+     "rule": "thermal_shock",
+     "args": {
+      "radius": 3,
+      "share": 1
+     }
+    }
+   ]
+  },
+  {
+   "id": "kindler.ashen_ground",
+   "name": "Ashen Ground",
+   "kind": "notable",
+   "region": "road",
+   "calling": "arcanist",
+   "road": "kindler",
+   "at": [
+    "kindler.s3"
+   ],
+   "feeds": [
+    "cinderfall",
+    "pyre_line"
+   ],
+   "gate": 6,
+   "text": "Your burning ground lasts 50% longer.",
+   "effects": [
+    {
+     "do": "rule",
+     "rule": "ashen_ground",
+     "args": {
+      "inc": 0.5
+     }
+    }
+   ]
+  },
+  {
+   "id": "kindler.ford_cold_ground",
+   "name": "Ford-Cold Ground",
+   "kind": "notable",
+   "region": "road",
+   "calling": "arcanist",
+   "road": "kindler",
+   "at": [
+    "kindler.s4"
+   ],
+   "feeds": [
+    "rime_field"
+   ],
+   "gate": 6,
+   "text": "Rime Field chills before it freezes.",
+   "effects": [
+    {
+     "do": "rule",
+     "rule": "ford_cold",
+     "phase": 5
+    }
+   ]
+  },
+  {
+   "id": "kindler.firebreak_wall",
+   "name": "Firebreak Wall",
+   "kind": "notable",
+   "region": "road",
+   "calling": "arcanist",
+   "road": "kindler",
+   "at": [
+    "kindler.s5"
+   ],
+   "feeds": [
+    "pyre_line"
+   ],
+   "gate": 6,
+   "text": "Pyre Line stops missiles.",
+   "effects": [
+    {
+     "do": "rule",
+     "rule": "firebreak_wall",
+     "phase": 5
+    }
+   ]
+  },
+  {
+   "id": "kindler.stand_in_your_fire",
+   "name": "Stand in Your Fire",
+   "kind": "notable",
+   "region": "road",
+   "calling": "arcanist",
+   "road": "kindler",
+   "at": [
+    "kindler.s6"
+   ],
+   "gate": 6,
+   "text": "In your burning ground: +20% armor, and spells come 10% sooner.",
+   "effects": [
+    {
+     "do": "rule",
+     "rule": "stand_in_fire",
+     "args": {
+      "armor": 0.2,
+      "sooner": 0.1
+     }
+    }
+   ]
+  },
+  {
+   "id": "kindler.frostfire",
+   "name": "Frostfire",
+   "kind": "blue",
+   "region": "road",
+   "calling": "arcanist",
+   "road": "kindler",
+   "at": [
+    "kindler.s6"
+   ],
+   "gate": 12,
+   "text": "Burn and chill no longer cancel: your fire chills and your frost burns. Each is 30% weaker.",
+   "effects": [
+    {
+     "do": "rule",
+     "rule": "frostfire",
+     "args": {
+      "weaker": 0.3
+     }
+    }
+   ]
+  },
+  {
+   "id": "kindler.ash_walker",
+   "name": "Ash Walker",
+   "kind": "blue",
+   "region": "road",
+   "calling": "arcanist",
+   "road": "kindler",
+   "at": [
+    "kindler.s7"
+   ],
+   "gate": 12,
+   "text": "In your burning or frozen ground you take 40% less. Outside it, your spells are 15% weaker.",
+   "effects": [
+    {
+     "do": "rule",
+     "rule": "ash_walker",
+     "args": {
+      "less": 0.4,
+      "weaker": 0.15
+     }
+    }
+   ]
+  },
+  {
+   "id": "kindler.burns_twice",
+   "name": "Burns Twice",
+   "kind": "ultimate",
+   "region": "road",
+   "calling": "arcanist",
+   "road": "kindler",
+   "at": [
+    "kindler.s2"
+   ],
+   "gate": 3,
+   "text": "Learn the Flare Burns Twice.",
+   "effects": [
+    {
+     "do": "flare",
+     "flare": "burns_twice"
+    }
+   ]
+  },
+  {
+   "id": "kindler.burns_twice.more_embers",
+   "name": "More Embers",
+   "kind": "ultimateMod",
+   "region": "road",
+   "calling": "arcanist",
+   "road": "kindler",
+   "at": [
+    "kindler.burns_twice"
+   ],
+   "gate": 3,
+   "text": "Eighteen embers fall.",
+   "effects": [
+    {
+     "do": "flareMod",
+     "flare": "burns_twice",
+     "rule": "burns.more_embers",
+     "phase": 2
+    }
+   ]
+  },
+  {
+   "id": "kindler.burns_twice.black_ice",
+   "name": "Black Ice",
+   "kind": "ultimateMod",
+   "region": "road",
+   "calling": "arcanist",
+   "road": "kindler",
+   "at": [
+    "kindler.burns_twice"
+   ],
+   "gate": 3,
+   "text": "Frozen things below half health shatter even without an ember.",
+   "effects": [
+    {
+     "do": "flareMod",
+     "flare": "burns_twice",
+     "rule": "burns.black_ice",
+     "phase": 2
+    }
+   ]
+  },
+  {
+   "id": "kindler.burns_twice.called_down",
+   "name": "Called Down",
+   "kind": "ultimateMod",
+   "region": "road",
+   "calling": "arcanist",
+   "road": "kindler",
+   "at": [
+    "kindler.burns_twice"
+   ],
+   "gate": 3,
+   "text": "Every ember falls on the toughest frozen thing.",
+   "effects": [
+    {
+     "do": "flareMod",
+     "flare": "burns_twice",
+     "rule": "burns.called_down",
+     "phase": 2
+    }
+   ]
+  },
+  {
+   "id": "kindler.hard_winter",
+   "name": "Hard Winter",
+   "kind": "ultimate",
+   "region": "road",
+   "calling": "arcanist",
+   "road": "kindler",
+   "at": [
+    "kindler.s6"
+   ],
+   "gate": 12,
+   "text": "Learn the Flare Hard Winter.",
+   "effects": [
+    {
+     "do": "flare",
+     "flare": "hard_winter"
+    }
+   ]
+  },
+  {
+   "id": "kindler.hard_winter.deep_winter",
+   "name": "Deep Winter",
+   "kind": "ultimateMod",
+   "region": "road",
+   "calling": "arcanist",
+   "road": "kindler",
+   "at": [
+    "kindler.hard_winter"
+   ],
+   "gate": 12,
+   "text": "It freezes after 1 s.",
+   "effects": [
+    {
+     "do": "flareMod",
+     "flare": "hard_winter",
+     "rule": "winter.deep",
+     "phase": 6
+    }
+   ]
+  },
+  {
+   "id": "kindler.hard_winter.thaw_burst",
+   "name": "Thaw-Burst",
+   "kind": "ultimateMod",
+   "region": "road",
+   "calling": "arcanist",
+   "road": "kindler",
+   "at": [
+    "kindler.hard_winter"
+   ],
+   "gate": 12,
+   "text": "The thaw bursts twice as hard.",
+   "effects": [
+    {
+     "do": "flareMod",
+     "flare": "hard_winter",
+     "rule": "winter.thaw_burst",
+     "phase": 6
+    }
+   ]
+  },
+  {
+   "id": "kindler.hard_winter.winter_keeps",
+   "name": "Winter Keeps",
+   "kind": "ultimateMod",
+   "region": "road",
+   "calling": "arcanist",
+   "road": "kindler",
+   "at": [
+    "kindler.hard_winter"
+   ],
+   "gate": 12,
+   "text": "Mend 2% a second while it holds.",
+   "effects": [
+    {
+     "do": "flareMod",
+     "flare": "hard_winter",
+     "rule": "winter.keeps",
+     "phase": 6
+    }
+   ]
+  },
+  {
+   "id": "moonweaver.moonmarked",
+   "name": "Moonmarked",
+   "kind": "entry",
+   "region": "road",
+   "calling": "arcanist",
+   "road": "moonweaver",
+   "at": [
+    "arcanist.the_arcanists_glass"
+   ],
+   "feeds": [
+    "seeking_motes",
+    "moonwell"
+   ],
+   "text": "Motes mark what they strike; a marked thing that dies passes its mark to one more.",
+   "effects": [
+    {
+     "do": "rule",
+     "rule": "moonmarked",
+     "args": {
+      "passes": 1
+     }
+    }
+   ]
+  },
+  {
+   "id": "moonweaver.s1",
+   "name": "",
+   "kind": "small",
+   "region": "road",
+   "calling": "arcanist",
+   "road": "moonweaver",
+   "at": [
+    "moonweaver.moonmarked"
+   ],
+   "text": "Marked things take 8% more from projectiles.",
+   "effects": [
+    {
+     "do": "rule",
+     "rule": "marked.projectiles",
+     "args": {
+      "more": 0.08
+     }
+    }
+   ]
+  },
+  {
+   "id": "moonweaver.s2",
+   "name": "",
+   "kind": "small",
+   "region": "road",
+   "calling": "arcanist",
+   "road": "moonweaver",
+   "at": [
+    "moonweaver.s1"
+   ],
+   "text": "Arcane projectiles fly 15% faster.",
+   "effects": [
+    {
+     "do": "rule",
+     "rule": "tags.projectile_speed",
+     "args": {
+      "inc": 0.15
+     },
+     "tags": [
+      "arcane"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "moonweaver.s3",
+   "name": "",
+   "kind": "attribute",
+   "region": "road",
+   "calling": "arcanist",
+   "road": "moonweaver",
+   "at": [
+    "moonweaver.s2"
+   ],
+   "text": "+2 Wits.",
+   "effects": [
+    {
+     "do": "attr",
+     "attr": "wits",
+     "value": 2
+    }
+   ]
+  },
+  {
+   "id": "moonweaver.s4",
+   "name": "",
+   "kind": "small",
+   "region": "road",
+   "calling": "arcanist",
+   "road": "moonweaver",
+   "at": [
+    "moonweaver.s3"
+   ],
+   "text": "A marked thing's death mends 0.3% of health.",
+   "effects": [
+    {
+     "do": "rule",
+     "rule": "marked.kill_mend",
+     "args": {
+      "share": 0.003
+     }
+    }
+   ]
+  },
+  {
+   "id": "moonweaver.s5",
+   "name": "",
+   "kind": "attribute",
+   "region": "road",
+   "calling": "arcanist",
+   "road": "moonweaver",
+   "at": [
+    "moonweaver.s4"
+   ],
+   "text": "+2 Wits.",
+   "effects": [
+    {
+     "do": "attr",
+     "attr": "wits",
+     "value": 2
+    }
+   ]
+  },
+  {
+   "id": "moonweaver.s6",
+   "name": "",
+   "kind": "small",
+   "region": "road",
+   "calling": "arcanist",
+   "road": "moonweaver",
+   "at": [
+    "moonweaver.s5"
+   ],
+   "text": "Arcane strikes champions 10% harder while they're marked.",
+   "effects": [
+    {
+     "do": "rule",
+     "rule": "marked.arcane_champions",
+     "args": {
+      "more": 0.1
+     }
+    }
+   ]
+  },
+  {
+   "id": "moonweaver.s7",
+   "name": "",
+   "kind": "small",
+   "region": "road",
+   "calling": "arcanist",
+   "road": "moonweaver",
+   "at": [
+    "moonweaver.s6"
+   ],
+   "text": "Marks last 30% longer.",
+   "effects": [
+    {
+     "do": "rule",
+     "rule": "marks.longer",
+     "args": {
+      "inc": 0.3
+     }
+    }
+   ]
+  },
+  {
+   "id": "moonweaver.seeking_motes.split_motes",
+   "name": "Split Motes",
+   "kind": "skill",
+   "region": "road",
+   "calling": "arcanist",
+   "road": "moonweaver",
+   "at": [
+    "moonweaver.s1"
+   ],
+   "feeds": [
+    "seeking_motes"
+   ],
+   "text": "Seeking Motes split in two on a kill.",
+   "effects": [
+    {
+     "do": "rule",
+     "rule": "motes.split"
+    }
+   ]
+  },
+  {
+   "id": "moonweaver.seeking_motes.swift_motes",
+   "name": "Swift Motes",
+   "kind": "skill",
+   "region": "road",
+   "calling": "arcanist",
+   "road": "moonweaver",
+   "at": [
+    "moonweaver.s1"
+   ],
+   "feeds": [
+    "seeking_motes"
+   ],
+   "text": "Seeking Motes come 20% sooner.",
+   "effects": [
+    {
+     "do": "rule",
+     "rule": "skill.sooner",
+     "args": {
+      "sooner": 0.2
+     },
+     "skill": "seeking_motes"
+    }
+   ]
+  },
+  {
+   "id": "moonweaver.seeking_motes.heavy_motes",
+   "name": "Heavy Motes",
+   "kind": "skill",
+   "region": "road",
+   "calling": "arcanist",
+   "road": "moonweaver",
+   "at": [
+    "moonweaver.s1"
+   ],
+   "feeds": [
+    "seeking_motes"
+   ],
+   "text": "Seeking Motes strike 25% harder and fly slower.",
+   "effects": [
+    {
+     "do": "rule",
+     "rule": "skill.harder",
+     "args": {
+      "more": 0.25
+     },
+     "skill": "seeking_motes"
+    }
+   ]
+  },
+  {
+   "id": "moonweaver.moonwell.twin_wells",
+   "name": "Twin Wells",
+   "kind": "skill",
+   "region": "road",
+   "calling": "arcanist",
+   "road": "moonweaver",
+   "at": [
+    "moonweaver.s3"
+   ],
+   "feeds": [
+    "moonwell"
+   ],
+   "text": "Three wells may hang at once.",
+   "effects": [
+    {
+     "do": "rule",
+     "rule": "moonwell.twin",
+     "phase": 5
+    }
+   ]
+  },
+  {
+   "id": "moonweaver.moonwell.wide_well",
+   "name": "Wide Well",
+   "kind": "skill",
+   "region": "road",
+   "calling": "arcanist",
+   "road": "moonweaver",
+   "at": [
+    "moonweaver.s3"
+   ],
+   "feeds": [
+    "moonwell"
+   ],
+   "text": "Wells fire at what passes within 9 m.",
+   "effects": [
+    {
+     "do": "rule",
+     "rule": "moonwell.wide",
+     "phase": 5
+    }
+   ]
+  },
+  {
+   "id": "moonweaver.moonwell.deep_well",
+   "name": "Deep Well",
+   "kind": "skill",
+   "region": "road",
+   "calling": "arcanist",
+   "road": "moonweaver",
+   "at": [
+    "moonweaver.s3"
+   ],
+   "feeds": [
+    "moonwell"
+   ],
+   "text": "Wells hold 12 s.",
+   "effects": [
+    {
+     "do": "rule",
+     "rule": "moonwell.deep",
+     "phase": 5
+    }
+   ]
+  },
+  {
+   "id": "moonweaver.lantern_man.two_lanterns",
+   "name": "Two Lanterns",
+   "kind": "skill",
+   "region": "road",
+   "calling": "arcanist",
+   "road": "moonweaver",
+   "at": [
+    "moonweaver.s5"
+   ],
+   "feeds": [
+    "lantern_man"
+   ],
+   "text": "Two wisps drift out.",
+   "effects": [
+    {
+     "do": "rule",
+     "rule": "lantern_man.two",
+     "phase": 5
+    }
+   ]
+  },
+  {
+   "id": "moonweaver.lantern_man.far_wandering",
+   "name": "Far-Wandering",
+   "kind": "skill",
+   "region": "road",
+   "calling": "arcanist",
+   "road": "moonweaver",
+   "at": [
+    "moonweaver.s5"
+   ],
+   "feeds": [
+    "lantern_man"
+   ],
+   "text": "The wisp drifts 50% further.",
+   "effects": [
+    {
+     "do": "rule",
+     "rule": "lantern_man.far",
+     "phase": 5
+    }
+   ]
+  },
+  {
+   "id": "moonweaver.lantern_man.guttering",
+   "name": "Guttering",
+   "kind": "skill",
+   "region": "road",
+   "calling": "arcanist",
+   "road": "moonweaver",
+   "at": [
+    "moonweaver.s5"
+   ],
+   "feeds": [
+    "lantern_man"
+   ],
+   "text": "The wisp bursts when it goes out.",
+   "effects": [
+    {
+     "do": "rule",
+     "rule": "lantern_man.gutter",
+     "phase": 5
+    }
+   ]
+  },
+  {
+   "id": "moonweaver.silvered",
+   "name": "Silvered",
+   "kind": "notable",
+   "region": "road",
+   "calling": "arcanist",
+   "road": "moonweaver",
+   "at": [
+    "moonweaver.s2"
+   ],
+   "feeds": [
+    "seeking_motes"
+   ],
+   "gate": 6,
+   "text": "Marks pass to two, and the marked take 10% more.",
+   "effects": [
+    {
+     "do": "rule",
+     "rule": "silvered",
+     "args": {
+      "passes": 2,
+      "more": 0.1
+     }
+    }
+   ]
+  },
+  {
+   "id": "moonweaver.many_lights",
+   "name": "Many Lights",
+   "kind": "notable",
+   "region": "road",
+   "calling": "arcanist",
+   "road": "moonweaver",
+   "at": [
+    "moonweaver.s3"
+   ],
+   "feeds": [
+    "seeking_motes",
+    "moonwell"
+   ],
+   "gate": 6,
+   "text": "Spells loose one more projectile.",
+   "effects": [
+    {
+     "do": "rule",
+     "rule": "tags.projectiles",
+     "args": {
+      "add": 1
+     },
+     "tags": [
+      "spell"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "moonweaver.moon_drawn",
+   "name": "Moon-Drawn",
+   "kind": "notable",
+   "region": "road",
+   "calling": "arcanist",
+   "road": "moonweaver",
+   "at": [
+    "moonweaver.s4"
+   ],
+   "feeds": [
+    "seeking_motes"
+   ],
+   "gate": 6,
+   "text": "Motes seek the marked first.",
+   "effects": [
+    {
+     "do": "rule",
+     "rule": "moon_drawn"
+    }
+   ]
+  },
+  {
+   "id": "moonweaver.still_water",
+   "name": "Still Water",
+   "kind": "notable",
+   "region": "road",
+   "calling": "arcanist",
+   "road": "moonweaver",
+   "at": [
+    "moonweaver.s5"
+   ],
+   "feeds": [
+    "moonwell"
+   ],
+   "gate": 6,
+   "text": "Moonwell lasts 50% longer and fires 30% faster.",
+   "effects": [
+    {
+     "do": "rule",
+     "rule": "still_water",
+     "phase": 5
+    }
+   ]
+  },
+  {
+   "id": "moonweaver.moonfire",
+   "name": "Moonfire",
+   "kind": "notable",
+   "region": "road",
+   "calling": "arcanist",
+   "road": "moonweaver",
+   "at": [
+    "moonweaver.s6"
+   ],
+   "feeds": [
+    "seeking_motes",
+    "lantern_man"
+   ],
+   "gate": 6,
+   "text": "A mark that passes burns violet: the new bearer takes moonfire.",
+   "effects": [
+    {
+     "do": "rule",
+     "rule": "moonfire",
+     "args": {
+      "share": 0.2
+     }
+    }
+   ]
+  },
+  {
+   "id": "moonweaver.the_echo",
+   "name": "The Echo",
+   "kind": "blue",
+   "region": "road",
+   "calling": "arcanist",
+   "road": "moonweaver",
+   "at": [
+    "moonweaver.s6"
+   ],
+   "gate": 12,
+   "text": "Every spell fires again 0.5 s later at half strength. Spells wait 25% longer.",
+   "effects": [
+    {
+     "do": "rule",
+     "rule": "the_echo",
+     "args": {
+      "delay": 0.5,
+      "share": 0.5,
+      "longer": 0.25
+     }
+    }
+   ]
+  },
+  {
+   "id": "moonweaver.crowded_sky",
+   "name": "Crowded Sky",
+   "kind": "blue",
+   "region": "road",
+   "calling": "arcanist",
+   "road": "moonweaver",
+   "at": [
+    "moonweaver.s7"
+   ],
+   "gate": 12,
+   "text": "Spells with projectiles loose two more, all seeking, and no two strike the same thing; each is 35% weaker.",
+   "effects": [
+    {
+     "do": "rule",
+     "rule": "crowded_sky",
+     "args": {
+      "add": 2,
+      "weaker": 0.35
+     }
+    }
+   ]
+  },
+  {
+   "id": "moonweaver.the_branding",
+   "name": "The Branding",
+   "kind": "ultimate",
+   "region": "road",
+   "calling": "arcanist",
+   "road": "moonweaver",
+   "at": [
+    "moonweaver.s2"
+   ],
+   "gate": 3,
+   "text": "Learn the Flare The Branding.",
+   "effects": [
+    {
+     "do": "flare",
+     "flare": "the_branding"
+    }
+   ]
+  },
+  {
+   "id": "moonweaver.the_branding.second_brand",
+   "name": "Second Brand",
+   "kind": "ultimateMod",
+   "region": "road",
+   "calling": "arcanist",
+   "road": "moonweaver",
+   "at": [
+    "moonweaver.the_branding"
+   ],
+   "gate": 3,
+   "text": "It brands again 1 s later.",
+   "effects": [
+    {
+     "do": "flareMod",
+     "flare": "the_branding",
+     "rule": "branding.second",
+     "phase": 6
+    }
+   ]
+  },
+  {
+   "id": "moonweaver.the_branding.branded_deep",
+   "name": "Branded Deep",
+   "kind": "ultimateMod",
+   "region": "road",
+   "calling": "arcanist",
+   "road": "moonweaver",
+   "at": [
+    "moonweaver.the_branding"
+   ],
+   "gate": 3,
+   "text": "The bursts are 50% wider.",
+   "effects": [
+    {
+     "do": "flareMod",
+     "flare": "the_branding",
+     "rule": "branding.deep",
+     "phase": 6
+    }
+   ]
+  },
+  {
+   "id": "moonweaver.the_branding.the_eye",
+   "name": "The Eye",
+   "kind": "ultimateMod",
+   "region": "road",
+   "calling": "arcanist",
+   "road": "moonweaver",
+   "at": [
+    "moonweaver.the_branding"
+   ],
+   "gate": 3,
+   "text": "The boss is branded three times.",
+   "effects": [
+    {
+     "do": "flareMod",
+     "flare": "the_branding",
+     "rule": "branding.eye",
+     "phase": 6
+    }
+   ]
+  },
+  {
+   "id": "moonweaver.the_drowned_moon",
+   "name": "The Drowned Moon",
+   "kind": "ultimate",
+   "region": "road",
+   "calling": "arcanist",
+   "road": "moonweaver",
+   "at": [
+    "moonweaver.s6"
+   ],
+   "gate": 12,
+   "text": "Learn the Flare The Drowned Moon.",
+   "effects": [
+    {
+     "do": "flare",
+     "flare": "the_drowned_moon"
+    }
+   ]
+  },
+  {
+   "id": "moonweaver.the_drowned_moon.full_moon",
+   "name": "Full Moon",
+   "kind": "ultimateMod",
+   "region": "road",
+   "calling": "arcanist",
+   "road": "moonweaver",
+   "at": [
+    "moonweaver.the_drowned_moon"
+   ],
+   "gate": 12,
+   "text": "Twice the motes.",
+   "effects": [
+    {
+     "do": "flareMod",
+     "flare": "the_drowned_moon",
+     "rule": "drowned.full_moon",
+     "phase": 6
+    }
+   ]
+  },
+  {
+   "id": "moonweaver.the_drowned_moon.moonset",
+   "name": "Moonset",
+   "kind": "ultimateMod",
+   "region": "road",
+   "calling": "arcanist",
+   "road": "moonweaver",
+   "at": [
+    "moonweaver.the_drowned_moon"
+   ],
+   "gate": 12,
+   "text": "It ends by bursting upward, 8 m round.",
+   "effects": [
+    {
+     "do": "flareMod",
+     "flare": "the_drowned_moon",
+     "rule": "drowned.moonset",
+     "phase": 6
+    }
+   ]
+  },
+  {
+   "id": "moonweaver.the_drowned_moon.silver_tide",
+   "name": "Silver Tide",
+   "kind": "ultimateMod",
+   "region": "road",
+   "calling": "arcanist",
+   "road": "moonweaver",
+   "at": [
+    "moonweaver.the_drowned_moon"
+   ],
+   "gate": 12,
+   "text": "Marks pass to three.",
+   "effects": [
+    {
+     "do": "flareMod",
+     "flare": "the_drowned_moon",
+     "rule": "drowned.silver_tide",
+     "phase": 6
+    }
+   ]
+  },
+  {
+   "id": "arcanist.bridge.s1",
+   "name": "",
+   "kind": "attribute",
+   "region": "bridge",
+   "calling": "arcanist",
+   "road": "arcanist.bridge",
+   "at": [
+    "kindler.s4"
+   ],
+   "text": "+2 Wits.",
+   "effects": [
+    {
+     "do": "attr",
+     "attr": "wits",
+     "value": 2
+    }
+   ]
+  },
+  {
+   "id": "arcanist.bridge.two_schools",
+   "name": "Two Schools",
+   "kind": "notable",
+   "region": "bridge",
+   "calling": "arcanist",
+   "road": "arcanist.bridge",
+   "at": [
+    "arcanist.bridge.s1"
+   ],
+   "feeds": [
+    "rime_field",
+    "lantern_man"
+   ],
+   "text": "Rime Field's frozen ground makes Lantern-Man flare twice as often.",
+   "effects": [
+    {
+     "do": "rule",
+     "rule": "two_schools",
+     "phase": 5
+    }
+   ]
+  },
+  {
+   "id": "arcanist.bridge.s2",
+   "name": "",
+   "kind": "small",
+   "region": "bridge",
+   "calling": "arcanist",
+   "road": "arcanist.bridge",
+   "at": [
+    "arcanist.bridge.two_schools"
+   ],
+   "text": "Marked things freeze 20% sooner.",
+   "effects": [
+    {
+     "do": "rule",
+     "rule": "marked.freeze_sooner",
+     "args": {
+      "inc": 0.2
+     }
+    }
+   ]
+  },
+  {
+   "id": "arcanist.bridge.the_ledger",
+   "name": "The Ledger",
+   "kind": "blue",
+   "region": "bridge",
+   "calling": "arcanist",
+   "road": "arcanist.bridge",
+   "at": [
+    "arcanist.bridge.s2"
+   ],
+   "gate": 3,
+   "text": "Some of them keep ledgers. Each fire or frost spell makes your next moon or shadow spell 30% harder, and the other way round. A spell of the same side twice running is 15% weaker.",
+   "effects": [
+    {
+     "do": "rule",
+     "rule": "the_ledger",
+     "args": {
+      "more": 0.3,
+      "weaker": 0.15
+     }
+    }
+   ]
+  },
+  {
+   "id": "arcanist.bridge.cold_moon",
+   "name": "Cold Moon",
+   "kind": "notable",
+   "region": "bridge",
+   "calling": "arcanist",
+   "road": "arcanist.bridge",
+   "at": [
+    "arcanist.bridge.s2"
+   ],
+   "feeds": [
+    "seeking_motes",
+    "cinderfall"
+   ],
+   "text": "Motes chill what they strike; a frozen thing's mark passes when it shatters.",
+   "effects": [
+    {
+     "do": "rule",
+     "rule": "cold_moon"
+    }
+   ]
+  },
+  {
+   "id": "arcanist.bridge.s3",
+   "name": "",
+   "kind": "attribute",
+   "region": "bridge",
+   "calling": "arcanist",
+   "road": "arcanist.bridge",
+   "at": [
+    "arcanist.bridge.cold_moon",
+    "moonweaver.s4"
+   ],
+   "text": "+2 Resolve.",
+   "effects": [
+    {
+     "do": "attr",
+     "attr": "resolve",
+     "value": 2
+    }
+   ]
+  },
+  {
+   "id": "stalker.the_stalkers_spring",
+   "name": "The Stalker's Spring",
+   "kind": "start",
+   "region": "hearth",
+   "calling": "stalker",
+   "road": "stalker.hearth",
+   "text": "Your dash form is Vault: every 6 s the next dash springs 6 m the way you aim, untouchable in the air, and leaves caltrops where you left.",
+   "effects": [
+    {
+     "do": "form",
+     "art": "vault",
+     "wait": 6
+    }
+   ]
+  },
+  {
+   "id": "stalker.parting_volley",
+   "name": "Parting Volley",
+   "kind": "form",
+   "region": "hearth",
+   "calling": "stalker",
+   "road": "stalker.hearth",
+   "at": [
+    "stalker.the_stalkers_spring"
+   ],
+   "text": "In the air, knives are loosed back at where you left.",
+   "effects": [
+    {
+     "do": "facet",
+     "art": "vault",
+     "facet": "volley"
+    }
+   ]
+  },
+  {
+   "id": "stalker.caltrops_hold",
+   "name": "Caltrops Hold",
+   "kind": "form",
+   "region": "hearth",
+   "calling": "stalker",
+   "road": "stalker.hearth",
+   "at": [
+    "stalker.the_stalkers_spring"
+   ],
+   "text": "What steps on the caltrops is stuck 1.5 s.",
+   "effects": [
+    {
+     "do": "facet",
+     "art": "vault",
+     "facet": "snare_line"
+    }
+   ]
+  },
+  {
+   "id": "stalker.light_feet",
+   "name": "Light Feet",
+   "kind": "form",
+   "region": "hearth",
+   "calling": "stalker",
+   "road": "stalker.hearth",
+   "at": [
+    "stalker.the_stalkers_spring"
+   ],
+   "text": "Landing gives back a dash.",
+   "effects": [
+    {
+     "do": "facet",
+     "art": "vault",
+     "facet": "light_feet"
+    }
+   ]
+  },
+  {
+   "id": "stalker.nimble",
+   "name": "Nimble",
+   "kind": "form",
+   "region": "hearth",
+   "calling": "stalker",
+   "road": "stalker.hearth",
+   "at": [
+    "stalker.the_stalkers_spring"
+   ],
+   "text": "Vault's wait is a third shorter.",
+   "effects": [
+    {
+     "do": "facet",
+     "art": "vault",
+     "facet": "nimble"
+    }
+   ]
+  },
+  {
+   "id": "stalker.mark_prey",
+   "name": "Mark Prey",
+   "kind": "reflex",
+   "region": "hearth",
+   "calling": "stalker",
+   "road": "stalker.hearth",
+   "at": [
+    "stalker.the_stalkers_spring"
+   ],
+   "text": "Every 9 s the strongest thing in sight becomes your prey: it takes 50% more and dies below 20%.",
+   "effects": [
+    {
+     "do": "reflex",
+     "art": "mark_prey",
+     "trigger": "every",
+     "wait": 9
+    }
+   ]
+  },
+  {
+   "id": "stalker.two_prey",
+   "name": "Two Prey",
+   "kind": "reflexUp",
+   "region": "hearth",
+   "calling": "stalker",
+   "road": "stalker.hearth",
+   "at": [
+    "stalker.mark_prey"
+   ],
+   "text": "The two strongest become prey.",
+   "effects": [
+    {
+     "do": "facet",
+     "art": "mark_prey",
+     "facet": "twin_marks"
+    }
+   ]
+  },
+  {
+   "id": "stalker.executioner",
+   "name": "Executioner",
+   "kind": "reflexUp",
+   "region": "hearth",
+   "calling": "stalker",
+   "road": "stalker.hearth",
+   "at": [
+    "stalker.mark_prey"
+   ],
+   "text": "Prey dies outright below 30%.",
+   "effects": [
+    {
+     "do": "facet",
+     "art": "mark_prey",
+     "facet": "executioner"
+    }
+   ]
+  },
+  {
+   "id": "stalker.smoke_bomb",
+   "name": "Smoke Bomb",
+   "kind": "reflex",
+   "region": "hearth",
+   "calling": "stalker",
+   "road": "stalker.hearth",
+   "at": [
+    "stalker.the_stalkers_spring"
+   ],
+   "text": "A perfect dash throws smoke: 3 s unseen, and your strikes are sure. Every 12 s.",
+   "effects": [
+    {
+     "do": "reflex",
+     "art": "smoke_bomb",
+     "trigger": "perfect",
+     "wait": 12
+    }
+   ]
+  },
+  {
+   "id": "stalker.choking_smoke",
+   "name": "Choking Smoke",
+   "kind": "reflexUp",
+   "region": "hearth",
+   "calling": "stalker",
+   "road": "stalker.hearth",
+   "at": [
+    "stalker.smoke_bomb"
+   ],
+   "text": "The smoke hangs where it fell and poisons what breathes it.",
+   "effects": [
+    {
+     "do": "facet",
+     "art": "smoke_bomb",
+     "facet": "choking"
+    }
+   ]
+  },
+  {
+   "id": "stalker.hunters_patience",
+   "name": "Hunter's Patience",
+   "kind": "flareLamp",
+   "region": "hearth",
+   "calling": "stalker",
+   "road": "stalker.hearth",
+   "at": [
+    "stalker.the_stalkers_spring"
+   ],
+   "text": "Perfect dashes fill the Flare half again as much.",
+   "effects": [
+    {
+     "do": "rule",
+     "rule": "flare.perfect_fill",
+     "args": {
+      "more": 0.5
+     }
+    }
+   ]
+  },
+  {
+   "id": "stalker.into_the_smoke",
+   "name": "Into the Smoke",
+   "kind": "flareLamp",
+   "region": "hearth",
+   "calling": "stalker",
+   "road": "stalker.hearth",
+   "at": [
+    "stalker.hunters_patience"
+   ],
+   "text": "A Flare cast below a third of health leaves you unseen for 2 s after.",
+   "effects": [
+    {
+     "do": "rule",
+     "rule": "flare.low_unseen",
+     "args": {
+      "below": 0.3333,
+      "seconds": 2
+     }
+    }
+   ]
+  },
+  {
+   "id": "stalker.light_step",
+   "name": "Light Step",
+   "kind": "blue",
+   "region": "hearth",
+   "calling": "stalker",
+   "road": "stalker.hearth",
+   "at": [
+    "stalker.smoke_bomb"
+   ],
+   "gate": 6,
+   "text": "Three dash charges. Each dash is 30% shorter.",
+   "effects": [
+    {
+     "do": "mod",
+     "stat": "dashCharges",
+     "mod": "flat",
+     "value": 1
+    },
+    {
+     "do": "rule",
+     "rule": "light_step",
+     "args": {
+      "shorter": 0.3
+     }
+    }
+   ]
+  },
+  {
+   "id": "stalker.banked_flame",
+   "name": "Banked Flame",
+   "kind": "blue",
+   "region": "hearth",
+   "calling": "stalker",
+   "road": "stalker.hearth",
+   "at": [
+    "stalker.into_the_smoke"
+   ],
+   "gate": 6,
+   "text": "Hold two Flares. Each fills 30% slower.",
+   "effects": [
+    {
+     "do": "rule",
+     "rule": "flare.banked",
+     "args": {
+      "charges": 2,
+      "slower": 0.3
+     }
+    }
+   ]
+  },
+  {
+   "id": "roadknife.opening",
+   "name": "Opening",
+   "kind": "entry",
+   "region": "road",
+   "calling": "stalker",
+   "road": "roadknife",
+   "at": [
+    "stalker.the_stalkers_spring"
+   ],
+   "feeds": [
+    "twin_fangs",
+    "knifestorm"
+   ],
+   "text": "For 2 s after a dash, your blows strike true.",
+   "effects": [
+    {
+     "do": "rule",
+     "rule": "opening",
+     "args": {
+      "seconds": 2
+     }
+    }
+   ]
+  },
+  {
+   "id": "roadknife.s1",
+   "name": "",
+   "kind": "small",
+   "region": "road",
+   "calling": "stalker",
+   "road": "roadknife",
+   "at": [
+    "roadknife.opening"
+   ],
+   "text": "Poisoned things take 10% more from steel.",
+   "effects": [
+    {
+     "do": "rule",
+     "rule": "poisoned.steel",
+     "args": {
+      "more": 0.1
+     }
+    }
+   ]
+  },
+  {
+   "id": "roadknife.s2",
+   "name": "",
+   "kind": "small",
+   "region": "road",
+   "calling": "stalker",
+   "road": "roadknife",
+   "at": [
+    "roadknife.s1"
+   ],
+   "text": "True strikes poison what they strike.",
+   "effects": [
+    {
+     "do": "rule",
+     "rule": "true.poison",
+     "args": {
+      "stacks": 1
+     }
+    }
+   ]
+  },
+  {
+   "id": "roadknife.s3",
+   "name": "",
+   "kind": "attribute",
+   "region": "road",
+   "calling": "stalker",
+   "road": "roadknife",
+   "at": [
+    "roadknife.s2"
+   ],
+   "text": "+2 Finesse.",
+   "effects": [
+    {
+     "do": "attr",
+     "attr": "finesse",
+     "value": 2
+    }
+   ]
+  },
+  {
+   "id": "roadknife.s4",
+   "name": "",
+   "kind": "small",
+   "region": "road",
+   "calling": "stalker",
+   "road": "roadknife",
+   "at": [
+    "roadknife.s3"
+   ],
+   "text": "Dashes come back 8% faster while something within 4 m is poisoned.",
+   "effects": [
+    {
+     "do": "rule",
+     "rule": "poison.dash_faster",
+     "args": {
+      "radius": 4,
+      "inc": 0.08
+     }
+    }
+   ]
+  },
+  {
+   "id": "roadknife.s5",
+   "name": "",
+   "kind": "attribute",
+   "region": "road",
+   "calling": "stalker",
+   "road": "roadknife",
+   "at": [
+    "roadknife.s4"
+   ],
+   "text": "+2 Finesse.",
+   "effects": [
+    {
+     "do": "attr",
+     "attr": "finesse",
+     "value": 2
+    }
+   ]
+  },
+  {
+   "id": "roadknife.s6",
+   "name": "",
+   "kind": "small",
+   "region": "road",
+   "calling": "stalker",
+   "road": "roadknife",
+   "at": [
+    "roadknife.s5"
+   ],
+   "text": "Thrown steel strikes 12% harder within the Opening.",
+   "effects": [
+    {
+     "do": "rule",
+     "rule": "opening.thrown",
+     "args": {
+      "more": 0.12
+     }
+    }
+   ]
+  },
+  {
+   "id": "roadknife.s7",
+   "name": "",
+   "kind": "small",
+   "region": "road",
+   "calling": "stalker",
+   "road": "roadknife",
+   "at": [
+    "roadknife.s6"
+   ],
+   "text": "Poison lasts 20% longer on champions.",
+   "effects": [
+    {
+     "do": "rule",
+     "rule": "poison.champions_longer",
+     "args": {
+      "inc": 0.2
+     }
+    }
+   ]
+  },
+  {
+   "id": "roadknife.twin_fangs.third_fang",
+   "name": "Third Fang",
+   "kind": "skill",
+   "region": "road",
+   "calling": "stalker",
+   "road": "roadknife",
+   "at": [
+    "roadknife.s1"
+   ],
+   "feeds": [
+    "twin_fangs"
+   ],
+   "text": "Twin Fangs cut a third time.",
+   "effects": [
+    {
+     "do": "rule",
+     "rule": "twin_fangs.third",
+     "phase": 5
+    }
+   ]
+  },
+  {
+   "id": "roadknife.twin_fangs.quick_fangs",
+   "name": "Quick Fangs",
+   "kind": "skill",
+   "region": "road",
+   "calling": "stalker",
+   "road": "roadknife",
+   "at": [
+    "roadknife.s1"
+   ],
+   "feeds": [
+    "twin_fangs"
+   ],
+   "text": "Twin Fangs come on every dash, even a plain one, twice as soon.",
+   "effects": [
+    {
+     "do": "rule",
+     "rule": "twin_fangs.quick",
+     "phase": 5
+    }
+   ]
+  },
+  {
+   "id": "roadknife.twin_fangs.venom_fangs",
+   "name": "Venom Fangs",
+   "kind": "skill",
+   "region": "road",
+   "calling": "stalker",
+   "road": "roadknife",
+   "at": [
+    "roadknife.s1"
+   ],
+   "feeds": [
+    "twin_fangs"
+   ],
+   "text": "Twin Fangs' cuts each poison twice.",
+   "effects": [
+    {
+     "do": "rule",
+     "rule": "twin_fangs.venom",
+     "phase": 5
+    }
+   ]
+  },
+  {
+   "id": "roadknife.cutting_wake.wide_wake",
+   "name": "Wide Wake",
+   "kind": "skill",
+   "region": "road",
+   "calling": "stalker",
+   "road": "roadknife",
+   "at": [
+    "roadknife.s3"
+   ],
+   "feeds": [
+    "cutting_wake"
+   ],
+   "text": "The wake is twice as wide.",
+   "effects": [
+    {
+     "do": "rule",
+     "rule": "cutting_wake.wide",
+     "phase": 5
+    }
+   ]
+  },
+  {
+   "id": "roadknife.cutting_wake.lingering_wake",
+   "name": "Lingering Wake",
+   "kind": "skill",
+   "region": "road",
+   "calling": "stalker",
+   "road": "roadknife",
+   "at": [
+    "roadknife.s3"
+   ],
+   "feeds": [
+    "cutting_wake"
+   ],
+   "text": "The wake hangs 3 s.",
+   "effects": [
+    {
+     "do": "rule",
+     "rule": "cutting_wake.lingering",
+     "phase": 5
+    }
+   ]
+  },
+  {
+   "id": "roadknife.cutting_wake.wake_of_smoke",
+   "name": "Wake of Smoke",
+   "kind": "skill",
+   "region": "road",
+   "calling": "stalker",
+   "road": "roadknife",
+   "at": [
+    "roadknife.s3"
+   ],
+   "feeds": [
+    "cutting_wake"
+   ],
+   "text": "The wake hides you while you stand in it.",
+   "effects": [
+    {
+     "do": "rule",
+     "rule": "cutting_wake.smoke",
+     "phase": 5
+    }
+   ]
+  },
+  {
+   "id": "roadknife.knifestorm.fan_out",
+   "name": "Fan Out",
+   "kind": "skill",
+   "region": "road",
+   "calling": "stalker",
+   "road": "roadknife",
+   "at": [
+    "roadknife.s5"
+   ],
+   "feeds": [
+    "knifestorm"
+   ],
+   "text": "Knifestorm looses two more knives.",
+   "effects": [
+    {
+     "do": "rule",
+     "rule": "skill.projectiles",
+     "args": {
+      "add": 2
+     },
+     "skill": "knifestorm"
+    }
+   ]
+  },
+  {
+   "id": "roadknife.knifestorm.knives_return",
+   "name": "Knives Return",
+   "kind": "skill",
+   "region": "road",
+   "calling": "stalker",
+   "road": "roadknife",
+   "at": [
+    "roadknife.s5"
+   ],
+   "feeds": [
+    "knifestorm"
+   ],
+   "text": "Knifestorm's knives come back through the crowd.",
+   "effects": [
+    {
+     "do": "rule",
+     "rule": "knifestorm.return"
+    }
+   ]
+  },
+  {
+   "id": "roadknife.knifestorm.poisoned_steel",
+   "name": "Poisoned Steel",
+   "kind": "skill",
+   "region": "road",
+   "calling": "stalker",
+   "road": "roadknife",
+   "at": [
+    "roadknife.s5"
+   ],
+   "feeds": [
+    "knifestorm"
+   ],
+   "text": "Knifestorm's knives poison.",
+   "effects": [
+    {
+     "do": "rule",
+     "rule": "skill.status",
+     "skill": "knifestorm",
+     "status": "poison"
+    }
+   ]
+  },
+  {
+   "id": "roadknife.wide_opening",
+   "name": "Wide Opening",
+   "kind": "notable",
+   "region": "road",
+   "calling": "stalker",
+   "road": "roadknife",
+   "at": [
+    "roadknife.s2"
+   ],
+   "feeds": [
+    "twin_fangs",
+    "knifestorm"
+   ],
+   "gate": 6,
+   "text": "The Opening lasts 3 s.",
+   "effects": [
+    {
+     "do": "rule",
+     "rule": "opening.wide",
+     "args": {
+      "seconds": 3
+     }
+    }
+   ]
+  },
+  {
+   "id": "roadknife.adders_kiss",
+   "name": "Adder's Kiss",
+   "kind": "notable",
+   "region": "road",
+   "calling": "stalker",
+   "road": "roadknife",
+   "at": [
+    "roadknife.s3"
+   ],
+   "feeds": [
+    "knifestorm"
+   ],
+   "gate": 6,
+   "text": "Poison stacks to ten; at ten it bursts.",
+   "effects": [
+    {
+     "do": "rule",
+     "rule": "adders_kiss",
+     "args": {
+      "cap": 10
+     }
+    }
+   ]
+  },
+  {
+   "id": "roadknife.through_not_around",
+   "name": "Through, Not Around",
+   "kind": "notable",
+   "region": "road",
+   "calling": "stalker",
+   "road": "roadknife",
+   "at": [
+    "roadknife.s4"
+   ],
+   "feeds": [
+    "cutting_wake"
+   ],
+   "gate": 6,
+   "text": "Dashing through things cuts them, and each one cut gives back 2% of a dash.",
+   "effects": [
+    {
+     "do": "rule",
+     "rule": "through_not_around",
+     "args": {
+      "share": 0.02
+     }
+    }
+   ]
+  },
+  {
+   "id": "roadknife.slip_the_blow",
+   "name": "Slip the Blow",
+   "kind": "notable",
+   "region": "road",
+   "calling": "stalker",
+   "road": "roadknife",
+   "at": [
+    "roadknife.s5"
+   ],
+   "gate": 6,
+   "text": "The perfect dash's window is 50% longer.",
+   "effects": [
+    {
+     "do": "rule",
+     "rule": "slip_the_blow",
+     "args": {
+      "inc": 0.5
+     }
+    }
+   ]
+  },
+  {
+   "id": "roadknife.venom_edge",
+   "name": "Venom Edge",
+   "kind": "notable",
+   "region": "road",
+   "calling": "stalker",
+   "road": "roadknife",
+   "at": [
+    "roadknife.s6"
+   ],
+   "feeds": [
+    "twin_fangs",
+    "knifestorm"
+   ],
+   "gate": 6,
+   "text": "True strikes add two poison.",
+   "effects": [
+    {
+     "do": "rule",
+     "rule": "venom_edge",
+     "args": {
+      "stacks": 2
+     }
+    }
+   ]
+  },
+  {
+   "id": "roadknife.never_still",
+   "name": "Never Still",
+   "kind": "blue",
+   "region": "road",
+   "calling": "stalker",
+   "road": "roadknife",
+   "at": [
+    "roadknife.s6"
+   ],
+   "gate": 12,
+   "text": "Dashes come back 40% faster. Standing still for a second halves your blows until you move.",
+   "effects": [
+    {
+     "do": "rule",
+     "rule": "never_still",
+     "args": {
+      "faster": 0.4,
+      "weaker": 0.5
+     }
+    }
+   ]
+  },
+  {
+   "id": "roadknife.adders_patience",
+   "name": "Adder's Patience",
+   "kind": "blue",
+   "region": "road",
+   "calling": "stalker",
+   "road": "roadknife",
+   "at": [
+    "roadknife.s7"
+   ],
+   "gate": 12,
+   "text": "Poison stacks without limit and never fades while you keep striking. You can't strike true.",
+   "effects": [
+    {
+     "do": "rule",
+     "rule": "adders_patience"
+    }
+   ]
+  },
+  {
+   "id": "roadknife.the_roads_toll",
+   "name": "The Road's Toll",
+   "kind": "ultimate",
+   "region": "road",
+   "calling": "stalker",
+   "road": "roadknife",
+   "at": [
+    "roadknife.s2"
+   ],
+   "gate": 3,
+   "text": "Learn the Flare The Road's Toll.",
+   "effects": [
+    {
+     "do": "flare",
+     "flare": "the_roads_toll"
+    }
+   ]
+  },
+  {
+   "id": "roadknife.the_roads_toll.toll_doubled",
+   "name": "Toll Doubled",
+   "kind": "ultimateMod",
+   "region": "road",
+   "calling": "stalker",
+   "road": "roadknife",
+   "at": [
+    "roadknife.the_roads_toll"
+   ],
+   "gate": 3,
+   "text": "Eighteen cuts, in the same time.",
+   "effects": [
+    {
+     "do": "flareMod",
+     "flare": "the_roads_toll",
+     "rule": "toll.doubled",
+     "phase": 2
+    }
+   ]
+  },
+  {
+   "id": "roadknife.the_roads_toll.last_cut",
+   "name": "Last Cut",
+   "kind": "ultimateMod",
+   "region": "road",
+   "calling": "stalker",
+   "road": "roadknife",
+   "at": [
+    "roadknife.the_roads_toll"
+   ],
+   "gate": 3,
+   "text": "The last blow kills below 40%.",
+   "effects": [
+    {
+     "do": "flareMod",
+     "flare": "the_roads_toll",
+     "rule": "toll.last_cut",
+     "phase": 2
+    }
+   ]
+  },
+  {
+   "id": "roadknife.the_roads_toll.gone",
+   "name": "Gone",
+   "kind": "ultimateMod",
+   "region": "road",
+   "calling": "stalker",
+   "road": "roadknife",
+   "at": [
+    "roadknife.the_roads_toll"
+   ],
+   "gate": 3,
+   "text": "Unseen for 3 s after.",
+   "effects": [
+    {
+     "do": "flareMod",
+     "flare": "the_roads_toll",
+     "rule": "toll.gone",
+     "phase": 2
+    }
+   ]
+  },
+  {
+   "id": "roadknife.through_and_through",
+   "name": "Through and Through",
+   "kind": "ultimate",
+   "region": "road",
+   "calling": "stalker",
+   "road": "roadknife",
+   "at": [
+    "roadknife.s6"
+   ],
+   "gate": 12,
+   "text": "Learn the Flare Through and Through.",
+   "effects": [
+    {
+     "do": "flare",
+     "flare": "through_and_through"
+    }
+   ]
+  },
+  {
+   "id": "roadknife.through_and_through.deeper_notches",
+   "name": "Deeper Notches",
+   "kind": "ultimateMod",
+   "region": "road",
+   "calling": "stalker",
+   "road": "roadknife",
+   "at": [
+    "roadknife.through_and_through"
+   ],
+   "gate": 12,
+   "text": "Each pass notches twice.",
+   "effects": [
+    {
+     "do": "flareMod",
+     "flare": "through_and_through",
+     "rule": "through.deeper",
+     "phase": 6
+    }
+   ]
+  },
+  {
+   "id": "roadknife.through_and_through.wake_of_blades",
+   "name": "Wake of Blades",
+   "kind": "ultimateMod",
+   "region": "road",
+   "calling": "stalker",
+   "road": "roadknife",
+   "at": [
+    "roadknife.through_and_through"
+   ],
+   "gate": 12,
+   "text": "The paths stay as Cutting Wake for 2 s.",
+   "effects": [
+    {
+     "do": "flareMod",
+     "flare": "through_and_through",
+     "rule": "through.wake",
+     "phase": 6
+    }
+   ]
+  },
+  {
+   "id": "roadknife.through_and_through.free_hands",
+   "name": "Free Hands",
+   "kind": "ultimateMod",
+   "region": "road",
+   "calling": "stalker",
+   "road": "roadknife",
+   "at": [
+    "roadknife.through_and_through"
+   ],
+   "gate": 12,
+   "text": "It lasts 8 s.",
+   "effects": [
+    {
+     "do": "flareMod",
+     "flare": "through_and_through",
+     "rule": "through.free_hands",
+     "phase": 6
+    }
+   ]
+  },
+  {
+   "id": "verge_hunter.far_eye",
+   "name": "Far Eye",
+   "kind": "entry",
+   "region": "road",
+   "calling": "stalker",
+   "road": "verge_hunter",
+   "at": [
+    "stalker.the_stalkers_spring"
+   ],
+   "feeds": [
+    "volley",
+    "heartseeker"
+   ],
+   "text": "Blows from beyond 8 m strike true one time in four.",
+   "effects": [
+    {
+     "do": "rule",
+     "rule": "far_eye",
+     "args": {
+      "range": 8,
+      "chance": 0.25
+     }
+    }
+   ]
+  },
+  {
+   "id": "verge_hunter.s1",
+   "name": "",
+   "kind": "small",
+   "region": "road",
+   "calling": "stalker",
+   "road": "verge_hunter",
+   "at": [
+    "verge_hunter.far_eye"
+   ],
+   "text": "Projectiles strike 10% harder at rooted or slowed things.",
+   "effects": [
+    {
+     "do": "rule",
+     "rule": "projectiles.vs_held",
+     "args": {
+      "more": 0.1
+     }
+    }
+   ]
+  },
+  {
+   "id": "verge_hunter.s2",
+   "name": "",
+   "kind": "small",
+   "region": "road",
+   "calling": "stalker",
+   "road": "verge_hunter",
+   "at": [
+    "verge_hunter.s1"
+   ],
+   "text": "Arrows fly 15% further and faster.",
+   "effects": [
+    {
+     "do": "rule",
+     "rule": "tags.projectile_speed",
+     "args": {
+      "inc": 0.15
+     },
+     "tags": [
+      "ranged"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "verge_hunter.s3",
+   "name": "",
+   "kind": "attribute",
+   "region": "road",
+   "calling": "stalker",
+   "road": "verge_hunter",
+   "at": [
+    "verge_hunter.s2"
+   ],
+   "text": "+2 Finesse.",
+   "effects": [
+    {
+     "do": "attr",
+     "attr": "finesse",
+     "value": 2
+    }
+   ]
+  },
+  {
+   "id": "verge_hunter.s4",
+   "name": "",
+   "kind": "small",
+   "region": "road",
+   "calling": "stalker",
+   "road": "verge_hunter",
+   "at": [
+    "verge_hunter.s3"
+   ],
+   "text": "The prey takes 10% more from projectiles.",
+   "effects": [
+    {
+     "do": "rule",
+     "rule": "prey.projectiles",
+     "args": {
+      "more": 0.1
+     }
+    }
+   ]
+  },
+  {
+   "id": "verge_hunter.s5",
+   "name": "",
+   "kind": "attribute",
+   "region": "road",
+   "calling": "stalker",
+   "road": "verge_hunter",
+   "at": [
+    "verge_hunter.s4"
+   ],
+   "text": "+2 Finesse.",
+   "effects": [
+    {
+     "do": "attr",
+     "attr": "finesse",
+     "value": 2
+    }
+   ]
+  },
+  {
+   "id": "verge_hunter.s6",
+   "name": "",
+   "kind": "small",
+   "region": "road",
+   "calling": "stalker",
+   "road": "verge_hunter",
+   "at": [
+    "verge_hunter.s5"
+   ],
+   "text": "Standing still, projectiles come 8% sooner.",
+   "effects": [
+    {
+     "do": "rule",
+     "rule": "still.projectiles_sooner",
+     "args": {
+      "sooner": 0.08
+     }
+    }
+   ]
+  },
+  {
+   "id": "verge_hunter.s7",
+   "name": "",
+   "kind": "small",
+   "region": "road",
+   "calling": "stalker",
+   "road": "verge_hunter",
+   "at": [
+    "verge_hunter.s6"
+   ],
+   "text": "Traps strike 12% harder at things beyond 8 m.",
+   "effects": [
+    {
+     "do": "rule",
+     "rule": "tags.far",
+     "args": {
+      "more": 0.12,
+      "range": 8
+     },
+     "tags": [
+      "trap"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "verge_hunter.volley.wide_volley",
+   "name": "Wide Volley",
+   "kind": "skill",
+   "region": "road",
+   "calling": "stalker",
+   "road": "verge_hunter",
+   "at": [
+    "verge_hunter.s1"
+   ],
+   "feeds": [
+    "volley"
+   ],
+   "text": "Volley looses two more arrows.",
+   "effects": [
+    {
+     "do": "rule",
+     "rule": "skill.projectiles",
+     "args": {
+      "add": 2
+     },
+     "skill": "volley"
+    }
+   ]
+  },
+  {
+   "id": "verge_hunter.volley.twice_fletched",
+   "name": "Twice Fletched",
+   "kind": "skill",
+   "region": "road",
+   "calling": "stalker",
+   "road": "verge_hunter",
+   "at": [
+    "verge_hunter.s1"
+   ],
+   "feeds": [
+    "volley"
+   ],
+   "text": "Volley's arrows pierce once more.",
+   "effects": [
+    {
+     "do": "rule",
+     "rule": "skill.pierce",
+     "args": {
+      "add": 1
+     },
+     "skill": "volley"
+    }
+   ]
+  },
+  {
+   "id": "verge_hunter.volley.barbed",
+   "name": "Barbed",
+   "kind": "skill",
+   "region": "road",
+   "calling": "stalker",
+   "road": "verge_hunter",
+   "at": [
+    "verge_hunter.s1"
+   ],
+   "feeds": [
+    "volley"
+   ],
+   "text": "Volley's arrows make what they strike bleed.",
+   "effects": [
+    {
+     "do": "rule",
+     "rule": "skill.status",
+     "skill": "volley",
+     "status": "bleed"
+    }
+   ]
+  },
+  {
+   "id": "verge_hunter.heartseeker.split_heart",
+   "name": "Split Heart",
+   "kind": "skill",
+   "region": "road",
+   "calling": "stalker",
+   "road": "verge_hunter",
+   "at": [
+    "verge_hunter.s3"
+   ],
+   "feeds": [
+    "heartseeker"
+   ],
+   "text": "Heartseeker splits in two where it stops.",
+   "effects": [
+    {
+     "do": "rule",
+     "rule": "heartseeker.split",
+     "phase": 5
+    }
+   ]
+  },
+  {
+   "id": "verge_hunter.heartseeker.quick_draw",
+   "name": "Quick Draw",
+   "kind": "skill",
+   "region": "road",
+   "calling": "stalker",
+   "road": "verge_hunter",
+   "at": [
+    "verge_hunter.s3"
+   ],
+   "feeds": [
+    "heartseeker"
+   ],
+   "text": "Heartseeker comes every 2 s.",
+   "effects": [
+    {
+     "do": "rule",
+     "rule": "heartseeker.quick",
+     "phase": 5
+    }
+   ]
+  },
+  {
+   "id": "verge_hunter.heartseeker.heart_of_thorns",
+   "name": "Heart of Thorns",
+   "kind": "skill",
+   "region": "road",
+   "calling": "stalker",
+   "road": "verge_hunter",
+   "at": [
+    "verge_hunter.s3"
+   ],
+   "feeds": [
+    "heartseeker"
+   ],
+   "text": "Heartseeker roots what it pierces.",
+   "effects": [
+    {
+     "do": "rule",
+     "rule": "heartseeker.thorns",
+     "phase": 5
+    }
+   ]
+  },
+  {
+   "id": "verge_hunter.snare_line.more_snares",
+   "name": "More Snares",
+   "kind": "skill",
+   "region": "road",
+   "calling": "stalker",
+   "road": "verge_hunter",
+   "at": [
+    "verge_hunter.s5"
+   ],
+   "feeds": [
+    "snare_line"
+   ],
+   "text": "Snare-Line lays half again as many.",
+   "effects": [
+    {
+     "do": "rule",
+     "rule": "snare_line.more",
+     "phase": 5
+    }
+   ]
+  },
+  {
+   "id": "verge_hunter.snare_line.biting_snares",
+   "name": "Biting Snares",
+   "kind": "skill",
+   "region": "road",
+   "calling": "stalker",
+   "road": "verge_hunter",
+   "at": [
+    "verge_hunter.s5"
+   ],
+   "feeds": [
+    "snare_line"
+   ],
+   "text": "The snares bleed what they hold.",
+   "effects": [
+    {
+     "do": "rule",
+     "rule": "snare_line.biting",
+     "phase": 5
+    }
+   ]
+  },
+  {
+   "id": "verge_hunter.snare_line.snare_and_burn",
+   "name": "Snare and Burn",
+   "kind": "skill",
+   "region": "road",
+   "calling": "stalker",
+   "road": "verge_hunter",
+   "at": [
+    "verge_hunter.s5"
+   ],
+   "feeds": [
+    "snare_line"
+   ],
+   "text": "The snares burn what they hold.",
+   "effects": [
+    {
+     "do": "rule",
+     "rule": "snare_line.burn",
+     "phase": 5
+    }
+   ]
+  },
+  {
+   "id": "verge_hunter.pinned",
+   "name": "Pinned",
+   "kind": "notable",
+   "region": "road",
+   "calling": "stalker",
+   "road": "verge_hunter",
+   "at": [
+    "verge_hunter.s2"
+   ],
+   "feeds": [
+    "heartseeker"
+   ],
+   "gate": 6,
+   "text": "Heartseeker roots lesser things it passes through.",
+   "effects": [
+    {
+     "do": "rule",
+     "rule": "pinned",
+     "phase": 5
+    }
+   ]
+  },
+  {
+   "id": "verge_hunter.run_it_down",
+   "name": "Run It Down",
+   "kind": "notable",
+   "region": "road",
+   "calling": "stalker",
+   "road": "verge_hunter",
+   "at": [
+    "verge_hunter.s3"
+   ],
+   "feeds": [
+    "spirit_herd"
+   ],
+   "gate": 6,
+   "text": "When the prey dies, Spirit Herd's beasts run down the next strongest.",
+   "effects": [
+    {
+     "do": "rule",
+     "rule": "run_it_down"
+    }
+   ]
+  },
+  {
+   "id": "verge_hunter.fletchers_eye",
+   "name": "Fletcher's Eye",
+   "kind": "notable",
+   "region": "road",
+   "calling": "stalker",
+   "road": "verge_hunter",
+   "at": [
+    "verge_hunter.s4"
+   ],
+   "feeds": [
+    "volley",
+    "heartseeker"
+   ],
+   "gate": 6,
+   "text": "Projectiles pierce once more.",
+   "effects": [
+    {
+     "do": "mod",
+     "stat": "pierce",
+     "mod": "flat",
+     "value": 1
+    }
+   ]
+  },
+  {
+   "id": "verge_hunter.hold_the_distance",
+   "name": "Hold the Distance",
+   "kind": "notable",
+   "region": "road",
+   "calling": "stalker",
+   "road": "verge_hunter",
+   "at": [
+    "verge_hunter.s5"
+   ],
+   "feeds": [
+    "volley",
+    "heartseeker"
+   ],
+   "gate": 6,
+   "text": "Blows from beyond 8 m strike 20% harder.",
+   "effects": [
+    {
+     "do": "rule",
+     "rule": "hold_the_distance",
+     "args": {
+      "range": 8,
+      "more": 0.2
+     }
+    }
+   ]
+  },
+  {
+   "id": "verge_hunter.spring_back",
+   "name": "Spring Back",
+   "kind": "notable",
+   "region": "road",
+   "calling": "stalker",
+   "road": "verge_hunter",
+   "at": [
+    "verge_hunter.s6"
+   ],
+   "feeds": [
+    "volley"
+   ],
+   "gate": 6,
+   "text": "Vault springs back from your aim, and landing looses a Volley.",
+   "effects": [
+    {
+     "do": "rule",
+     "rule": "spring_back"
+    }
+   ]
+  },
+  {
+   "id": "verge_hunter.long_sight",
+   "name": "Long Sight",
+   "kind": "blue",
+   "region": "road",
+   "calling": "stalker",
+   "road": "verge_hunter",
+   "at": [
+    "verge_hunter.s6"
+   ],
+   "gate": 12,
+   "text": "Blows from beyond 8 m strike 50% harder. Within 4 m, 30% weaker.",
+   "effects": [
+    {
+     "do": "rule",
+     "rule": "long_sight",
+     "args": {
+      "range": 8,
+      "more": 0.5,
+      "near": 4,
+      "weaker": 0.3
+     }
+    }
+   ]
+  },
+  {
+   "id": "verge_hunter.hunters_stillness",
+   "name": "Hunter's Stillness",
+   "kind": "blue",
+   "region": "road",
+   "calling": "stalker",
+   "road": "verge_hunter",
+   "at": [
+    "verge_hunter.s7"
+   ],
+   "gate": 12,
+   "text": "After a second standing still, every arrow pierces everything. Moving, arrows can't pierce.",
+   "effects": [
+    {
+     "do": "rule",
+     "rule": "hunters_stillness",
+     "args": {
+      "after": 1
+     }
+    }
+   ]
+  },
+  {
+   "id": "verge_hunter.one_arrow",
+   "name": "One Arrow",
+   "kind": "ultimate",
+   "region": "road",
+   "calling": "stalker",
+   "road": "verge_hunter",
+   "at": [
+    "verge_hunter.s2"
+   ],
+   "gate": 3,
+   "text": "Learn the Flare One Arrow.",
+   "effects": [
+    {
+     "do": "flare",
+     "flare": "one_arrow"
+    }
+   ]
+  },
+  {
+   "id": "verge_hunter.one_arrow.split_thrice_more",
+   "name": "Split Thrice More",
+   "kind": "ultimateMod",
+   "region": "road",
+   "calling": "stalker",
+   "road": "verge_hunter",
+   "at": [
+    "verge_hunter.one_arrow"
+   ],
+   "gate": 3,
+   "text": "It splits three more times.",
+   "effects": [
+    {
+     "do": "flareMod",
+     "flare": "one_arrow",
+     "rule": "arrow.split",
+     "phase": 6
+    }
+   ]
+  },
+  {
+   "id": "verge_hunter.one_arrow.pinned_to_the_earth",
+   "name": "Pinned to the Earth",
+   "kind": "ultimateMod",
+   "region": "road",
+   "calling": "stalker",
+   "road": "verge_hunter",
+   "at": [
+    "verge_hunter.one_arrow"
+   ],
+   "gate": 3,
+   "text": "Everything struck is rooted 2 s.",
+   "effects": [
+    {
+     "do": "flareMod",
+     "flare": "one_arrow",
+     "rule": "arrow.pinned",
+     "phase": 6
+    }
+   ]
+  },
+  {
+   "id": "verge_hunter.one_arrow.through_the_heart",
+   "name": "Through the Heart",
+   "kind": "ultimateMod",
+   "region": "road",
+   "calling": "stalker",
+   "road": "verge_hunter",
+   "at": [
+    "verge_hunter.one_arrow"
+   ],
+   "gate": 3,
+   "text": "Triple crit damage on a boss.",
+   "effects": [
+    {
+     "do": "flareMod",
+     "flare": "one_arrow",
+     "rule": "arrow.heart",
+     "phase": 6
+    }
+   ]
+  },
+  {
+   "id": "verge_hunter.pinning_rain",
+   "name": "Pinning Rain",
+   "kind": "ultimate",
+   "region": "road",
+   "calling": "stalker",
+   "road": "verge_hunter",
+   "at": [
+    "verge_hunter.s6"
+   ],
+   "gate": 12,
+   "text": "Learn the Flare Pinning Rain.",
+   "effects": [
+    {
+     "do": "flare",
+     "flare": "pinning_rain"
+    }
+   ]
+  },
+  {
+   "id": "verge_hunter.pinning_rain.follow_the_hunter",
+   "name": "Follow the Hunter",
+   "kind": "ultimateMod",
+   "region": "road",
+   "calling": "stalker",
+   "road": "verge_hunter",
+   "at": [
+    "verge_hunter.pinning_rain"
+   ],
+   "gate": 12,
+   "text": "The field moves with you.",
+   "effects": [
+    {
+     "do": "flareMod",
+     "flare": "pinning_rain",
+     "rule": "rain.follow",
+     "phase": 6
+    }
+   ]
+  },
+  {
+   "id": "verge_hunter.pinning_rain.iron_rain",
+   "name": "Iron Rain",
+   "kind": "ultimateMod",
+   "region": "road",
+   "calling": "stalker",
+   "road": "verge_hunter",
+   "at": [
+    "verge_hunter.pinning_rain"
+   ],
+   "gate": 12,
+   "text": "The arrows stun.",
+   "effects": [
+    {
+     "do": "flareMod",
+     "flare": "pinning_rain",
+     "rule": "rain.iron",
+     "phase": 6
+    }
+   ]
+  },
+  {
+   "id": "verge_hunter.pinning_rain.thorned_rain",
+   "name": "Thorned Rain",
+   "kind": "ultimateMod",
+   "region": "road",
+   "calling": "stalker",
+   "road": "verge_hunter",
+   "at": [
+    "verge_hunter.pinning_rain"
+   ],
+   "gate": 12,
+   "text": "Thornbloom grows where they fell.",
+   "effects": [
+    {
+     "do": "flareMod",
+     "flare": "pinning_rain",
+     "rule": "rain.thorned",
+     "phase": 6
+    }
+   ]
+  },
+  {
+   "id": "stalker.bridge.s1",
+   "name": "",
+   "kind": "attribute",
+   "region": "bridge",
+   "calling": "stalker",
+   "road": "stalker.bridge",
+   "at": [
+    "roadknife.s4"
+   ],
+   "text": "+2 Finesse.",
+   "effects": [
+    {
+     "do": "attr",
+     "attr": "finesse",
+     "value": 2
+    }
+   ]
+  },
+  {
+   "id": "stalker.bridge.quick_hands",
+   "name": "Quick Hands",
+   "kind": "notable",
+   "region": "bridge",
+   "calling": "stalker",
+   "road": "stalker.bridge",
+   "at": [
+    "stalker.bridge.s1"
+   ],
+   "feeds": [
+    "volley"
+   ],
+   "text": "After a dash, your next Volley looses at once.",
+   "effects": [
+    {
+     "do": "rule",
+     "rule": "quick_hands"
+    }
+   ]
+  },
+  {
+   "id": "stalker.bridge.s2",
+   "name": "",
+   "kind": "small",
+   "region": "bridge",
+   "calling": "stalker",
+   "road": "stalker.bridge",
+   "at": [
+    "stalker.bridge.quick_hands"
+   ],
+   "text": "After a dash, your next arrow strikes true.",
+   "effects": [
+    {
+     "do": "rule",
+     "rule": "dash.true_arrow"
+    }
+   ]
+  },
+  {
+   "id": "stalker.bridge.close_and_far",
+   "name": "Close and Far",
+   "kind": "blue",
+   "region": "bridge",
+   "calling": "stalker",
+   "road": "stalker.bridge",
+   "at": [
+    "stalker.bridge.s2"
+   ],
+   "gate": 3,
+   "text": "Within 4 m your blades strike 30% harder, beyond 8 m your arrows do. In between, both are 15% weaker.",
+   "effects": [
+    {
+     "do": "rule",
+     "rule": "close_and_far",
+     "args": {
+      "near": 4,
+      "far": 8,
+      "more": 0.3,
+      "weaker": 0.15
+     }
+    }
+   ]
+  },
+  {
+   "id": "stalker.bridge.knife_and_fletch",
+   "name": "Knife and Fletch",
+   "kind": "notable",
+   "region": "bridge",
+   "calling": "stalker",
+   "road": "stalker.bridge",
+   "at": [
+    "stalker.bridge.s2"
+   ],
+   "feeds": [
+    "knifestorm"
+   ],
+   "text": "Thrown knives pierce once more while you hold a bow.",
+   "effects": [
+    {
+     "do": "rule",
+     "rule": "knife_and_fletch",
+     "phase": 4
+    }
+   ]
+  },
+  {
+   "id": "stalker.bridge.s3",
+   "name": "",
+   "kind": "attribute",
+   "region": "bridge",
+   "calling": "stalker",
+   "road": "stalker.bridge",
+   "at": [
+    "stalker.bridge.knife_and_fletch",
+    "verge_hunter.s4"
+   ],
+   "text": "+2 Wits.",
+   "effects": [
+    {
+     "do": "attr",
+     "attr": "wits",
+     "value": 2
+    }
+   ]
+  },
+  {
+   "id": "shambles.a1",
+   "name": "",
+   "kind": "attribute",
+   "region": "crossing",
+   "road": "shambles",
+   "at": [
+    "sunderer.s7"
+   ],
+   "text": "+2 Might.",
+   "effects": [
+    {
+     "do": "attr",
+     "attr": "might",
+     "value": 2
+    }
+   ]
+  },
+  {
+   "id": "shambles.s1",
+   "name": "",
+   "kind": "small",
+   "region": "crossing",
+   "road": "shambles",
+   "at": [
+    "shambles.a1"
+   ],
+   "text": "Bleeding things are staggered 20% longer.",
+   "effects": [
+    {
+     "do": "rule",
+     "rule": "bleeding.stagger_longer",
+     "args": {
+      "inc": 0.2
+     },
+     "phase": 4
+    }
+   ]
+  },
+  {
+   "id": "shambles.opened_up",
+   "name": "Opened Up",
+   "kind": "notable",
+   "region": "crossing",
+   "road": "shambles",
+   "at": [
+    "shambles.s1"
+   ],
+   "feeds": [
+    "sunder",
+    "carve"
+   ],
+   "text": "A heavy blow on a bleeding thing deals the rest of its bleed at once.",
+   "effects": [
+    {
+     "do": "rule",
+     "rule": "opened_up",
+     "phase": 4
+    }
+   ]
+  },
+  {
+   "id": "shambles.cleavers_weight",
+   "name": "Cleaver's Weight",
+   "kind": "notable",
+   "region": "crossing",
+   "road": "shambles",
+   "at": [
+    "shambles.opened_up"
+   ],
+   "feeds": [
+    "carve"
+   ],
+   "text": "Every third chop of Carve is heavy.",
+   "effects": [
+    {
+     "do": "rule",
+     "rule": "cleavers_weight",
+     "phase": 5
+    }
+   ]
+  },
+  {
+   "id": "shambles.s2",
+   "name": "",
+   "kind": "small",
+   "region": "crossing",
+   "road": "shambles",
+   "at": [
+    "shambles.cleavers_weight"
+   ],
+   "text": "Melee strikes 8% harder at bleeding champions.",
+   "effects": [
+    {
+     "do": "rule",
+     "rule": "tags.vs_bleeding_champions",
+     "args": {
+      "more": 0.08
+     },
+     "tags": [
+      "melee"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "shambles.a2",
+   "name": "",
+   "kind": "attribute",
+   "region": "crossing",
+   "road": "shambles",
+   "at": [
+    "shambles.s2",
+    "butcher.s7"
+   ],
+   "text": "+2 Might.",
+   "effects": [
+    {
+     "do": "attr",
+     "attr": "might",
+     "value": 2
+    }
+   ]
+  },
+  {
+   "id": "night_road.a1",
+   "name": "",
+   "kind": "attribute",
+   "region": "crossing",
+   "road": "night_road",
+   "at": [
+    "chainbound.s7"
+   ],
+   "text": "+2 Wits.",
+   "effects": [
+    {
+     "do": "attr",
+     "attr": "wits",
+     "value": 2
+    }
+   ]
+  },
+  {
+   "id": "night_road.s1",
+   "name": "",
+   "kind": "small",
+   "region": "crossing",
+   "road": "night_road",
+   "at": [
+    "night_road.a1"
+   ],
+   "text": "Marked things are Bound 0.5 s longer.",
+   "effects": [
+    {
+     "do": "rule",
+     "rule": "marked.bound_longer",
+     "args": {
+      "seconds": 0.5
+     }
+    }
+   ]
+  },
+  {
+   "id": "night_road.lightning_leaps_the_chain",
+   "name": "Lightning Leaps the Chain",
+   "kind": "notable",
+   "region": "crossing",
+   "road": "night_road",
+   "at": [
+    "night_road.s1"
+   ],
+   "feeds": [
+    "iron_palms",
+    "chain_lash"
+   ],
+   "text": "Storm that strikes a Bound thing runs to everything Bound.",
+   "effects": [
+    {
+     "do": "rule",
+     "rule": "lightning_leaps"
+    }
+   ]
+  },
+  {
+   "id": "night_road.moon_on_the_chain",
+   "name": "Moon on the Chain",
+   "kind": "notable",
+   "region": "crossing",
+   "road": "night_road",
+   "at": [
+    "night_road.lightning_leaps_the_chain"
+   ],
+   "feeds": [
+    "seeking_motes",
+    "anchor"
+   ],
+   "text": "A marked Bound thing marks everything Bound to it.",
+   "effects": [
+    {
+     "do": "rule",
+     "rule": "moon_on_the_chain"
+    }
+   ]
+  },
+  {
+   "id": "night_road.s2",
+   "name": "",
+   "kind": "small",
+   "region": "crossing",
+   "road": "night_road",
+   "at": [
+    "night_road.moon_on_the_chain"
+   ],
+   "text": "Storm and arcane strike Bound marked things 10% harder.",
+   "effects": [
+    {
+     "do": "rule",
+     "rule": "bound_marked.more",
+     "args": {
+      "more": 0.1
+     }
+    }
+   ]
+  },
+  {
+   "id": "night_road.a2",
+   "name": "",
+   "kind": "attribute",
+   "region": "crossing",
+   "road": "night_road",
+   "at": [
+    "night_road.s2",
+    "moonweaver.s7"
+   ],
+   "text": "+2 Might.",
+   "effects": [
+    {
+     "do": "attr",
+     "attr": "might",
+     "value": 2
+    }
+   ]
+  },
+  {
+   "id": "firebreak.a1",
+   "name": "",
+   "kind": "attribute",
+   "region": "crossing",
+   "road": "firebreak",
+   "at": [
+    "kindler.s7"
+   ],
+   "text": "+2 Wits.",
+   "effects": [
+    {
+     "do": "attr",
+     "attr": "wits",
+     "value": 2
+    }
+   ]
+  },
+  {
+   "id": "firebreak.s1",
+   "name": "",
+   "kind": "small",
+   "region": "crossing",
+   "road": "firebreak",
+   "at": [
+    "firebreak.a1"
+   ],
+   "text": "Projectiles strike burning things 8% harder.",
+   "effects": [
+    {
+     "do": "rule",
+     "rule": "projectiles.vs_burning",
+     "args": {
+      "more": 0.08
+     }
+    }
+   ]
+  },
+  {
+   "id": "firebreak.fire_arrows",
+   "name": "Fire Arrows",
+   "kind": "notable",
+   "region": "crossing",
+   "road": "firebreak",
+   "at": [
+    "firebreak.s1"
+   ],
+   "feeds": [
+    "volley",
+    "pyre_line"
+   ],
+   "text": "Arrows that pass through your burning ground catch fire.",
+   "effects": [
+    {
+     "do": "rule",
+     "rule": "fire_arrows"
+    }
+   ]
+  },
+  {
+   "id": "firebreak.frozen_snares",
+   "name": "Frozen Snares",
+   "kind": "notable",
+   "region": "crossing",
+   "road": "firebreak",
+   "at": [
+    "firebreak.fire_arrows"
+   ],
+   "feeds": [
+    "snare_line",
+    "rime_field"
+   ],
+   "text": "Snares in Rime Field freeze what they hold.",
+   "effects": [
+    {
+     "do": "rule",
+     "rule": "frozen_snares",
+     "phase": 5
+    }
+   ]
+  },
+  {
+   "id": "firebreak.s2",
+   "name": "",
+   "kind": "small",
+   "region": "crossing",
+   "road": "firebreak",
+   "at": [
+    "firebreak.frozen_snares"
+   ],
+   "text": "Traps last 20% longer on burning ground.",
+   "effects": [
+    {
+     "do": "rule",
+     "rule": "traps.burning_longer",
+     "args": {
+      "inc": 0.2
+     }
+    }
+   ]
+  },
+  {
+   "id": "firebreak.a2",
+   "name": "",
+   "kind": "attribute",
+   "region": "crossing",
+   "road": "firebreak",
+   "at": [
+    "firebreak.s2",
+    "verge_hunter.s7"
+   ],
+   "text": "+2 Finesse.",
+   "effects": [
+    {
+     "do": "attr",
+     "attr": "finesse",
+     "value": 2
+    }
+   ]
+  },
+  {
+   "id": "duelists_road.a1",
+   "name": "",
+   "kind": "attribute",
+   "region": "crossing",
+   "road": "duelists_road",
+   "at": [
+    "roadknife.s7"
+   ],
+   "text": "+2 Finesse.",
+   "effects": [
+    {
+     "do": "attr",
+     "attr": "finesse",
+     "value": 2
+    }
+   ]
+  },
+  {
+   "id": "duelists_road.s1",
+   "name": "",
+   "kind": "small",
+   "region": "crossing",
+   "road": "duelists_road",
+   "at": [
+    "duelists_road.a1"
+   ],
+   "text": "A perfect dash gives a barrier of 5% of health.",
+   "effects": [
+    {
+     "do": "rule",
+     "rule": "perfect.barrier",
+     "args": {
+      "share": 0.05
+     }
+    }
+   ]
+  },
+  {
+   "id": "duelists_road.parry",
+   "name": "Parry",
+   "kind": "notable",
+   "region": "crossing",
+   "road": "duelists_road",
+   "at": [
+    "duelists_road.s1"
+   ],
+   "feeds": [
+    "oathblade"
+   ],
+   "text": "A perfect dash lays a stone.",
+   "effects": [
+    {
+     "do": "rule",
+     "rule": "parry"
+    }
+   ]
+  },
+  {
+   "id": "duelists_road.return_cut",
+   "name": "Return Cut",
+   "kind": "notable",
+   "region": "crossing",
+   "road": "duelists_road",
+   "at": [
+    "duelists_road.parry"
+   ],
+   "feeds": [
+    "twin_fangs",
+    "oathblade"
+   ],
+   "text": "A block gives an Opening: your blows strike true for 1 s.",
+   "effects": [
+    {
+     "do": "rule",
+     "rule": "return_cut",
+     "args": {
+      "seconds": 1
+     }
+    }
+   ]
+  },
+  {
+   "id": "duelists_road.s2",
+   "name": "",
+   "kind": "small",
+   "region": "crossing",
+   "road": "duelists_road",
+   "at": [
+    "duelists_road.return_cut"
+   ],
+   "text": "Blocks give 1 s of the Opening.",
+   "effects": [
+    {
+     "do": "rule",
+     "rule": "block.opening",
+     "args": {
+      "seconds": 1
+     }
+    }
+   ]
+  },
+  {
+   "id": "duelists_road.a2",
+   "name": "",
+   "kind": "attribute",
+   "region": "crossing",
+   "road": "duelists_road",
+   "at": [
+    "duelists_road.s2",
+    "bulwark.s7"
+   ],
+   "text": "+2 Resolve.",
+   "effects": [
+    {
+     "do": "attr",
+     "attr": "resolve",
+     "value": 2
+    }
+   ]
+  }
+ ]
+}

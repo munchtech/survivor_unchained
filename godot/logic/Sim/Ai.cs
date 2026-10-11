@@ -708,6 +708,12 @@ public static class Ai
             }
         }
         b.Collision.Resolve(ref e.X, ref e.Z, e.Radius);
+        // Bound: tethered where it was caught, it can't move away (a boss is never locked).
+        if (!e.Boss && e.Status.Has(StatusKind.Bound))
+        {
+            double bx = e.X - e.BoundX, bz = e.Z - e.BoundZ, bd = Math.Sqrt(bx * bx + bz * bz);
+            if (bd > Battle.BoundSlack) { e.X = e.BoundX + bx / bd * Battle.BoundSlack; e.Z = e.BoundZ + bz / bd * Battle.BoundSlack; }
+        }
         if (e.Leash != 0 && e.Disposition != Disposition.Ally)
         {
             double hd = Dist(e.X, e.Z, e.HomeX, e.HomeZ);
