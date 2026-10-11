@@ -111,7 +111,7 @@ public partial class ControlsPanel : VBoxContainer
     static readonly (string Label, Act[] Acts, string? Pad)[] Rows =
     {
         ("Move", [Act.Up, Act.Left, Act.Down, Act.Right], "Left stick"), ("Dash", [Act.Dash], null), ("Ability", [Act.Ability], null),
-        ("Draught", [Act.Ultimate], null), ("Talk, use, pick up", [Act.Interact], null), ("Pack", [Act.Inventory], "View"),
+        ("Draught", [Act.Draught], null), ("Talk, use, pick up", [Act.Interact], null), ("Pack", [Act.Inventory], "View"),
         ("Self", [Act.Character], "View, then RB"), ("Arts", [Act.Arts], "View, then RB"), ("Journal", [Act.Journal], "View, then RB"), ("Map", [Act.Map], "View, then RB"), ("Answer the night (hold)", [Act.Answer], "L3"), ("Pause", [Act.Pause], null),
         ("Turn the book's pages", [Act.TabPrev, Act.TabNext], "LB / RB"), ("A screen's own pages", [Act.SubPrev, Act.SubNext], "LT / RT"),
         ("In menus: choose, back", [Act.Confirm, Act.Cancel], "A, B"), ("In menus: more", [Act.Alt], "X, Y"),
