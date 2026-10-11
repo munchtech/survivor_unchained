@@ -3697,6 +3697,10 @@ def bandeau(name, mkey, zc, width, lift=0.004, thick=0.003, trim=None, rows=11, 
     made = trimmed(name, pos, at, tris, mkey, thick, 0.001, trim)
     for o in made:
         o["hides"] = o is made[0]
+    # (her skin tucked under it only 3.5 mm: it moves with her skin, springs
+    # and all; tucked 6 mm, as close pieces are, the gap under its taut top
+    # edge showed the tuck as a dark slit, seen from above as she ran)
+    made[0]["tuck"] = 0.35
     print("BANDEAU", name, "at %.3f, %.3f tall" % (zc, width))
     return made
 
