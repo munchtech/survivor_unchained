@@ -37,15 +37,22 @@ sig = {'bulwark': 'oathblade', 'butcher': 'axe_gyre', 'chainbound': 'iron_palms'
        'moonweaver': 'seeking_motes', 'roadknife': 'knifestorm', 'verge_hunter': 'volley', 'sunderer': 'dawnpulse'}
 home = {'bulwark': 'warden', 'sunderer': 'warden', 'butcher': 'reaver', 'chainbound': 'reaver',
         'kindler': 'arcanist', 'moonweaver': 'arcanist', 'roadknife': 'stalker', 'verge_hunter': 'stalker'}
+# A union (godot/logic/Content/Unions.cs) fuses two skills under a new id: Starfall is Seeking Motes
+# and Moonbrand, so a moonweaver who fuses them stops crediting "seeking_motes". Count unions of the skill.
+_u = open(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'logic', 'Content', 'Unions.cs'), encoding='utf-8').read()
+unions = {}
+for a, b, into in re.findall(r'A = "(\w+)", B = "(\w+)", Into = "(\w+)"', _u):
+    unions.setdefault(a, []).append(into); unions.setdefault(b, []).append(into)
+def sig_dmg(r, s): return r['DamageBy'].get(s, 0) + sum(r['DamageBy'].get(u, 0) for u in unions.get(s, []))
 p = os.path.join(D, 'off.jsonl')
 if os.path.exists(p):
     rs = [json.loads(l) for l in open(p) if l.strip()]
-    print('== on-calling: the one built signature skill, k dmg/min (median per calling), home / median of the other three; target 1.00-1.25')
+    print('== on-calling: the one built signature skill (with its unions), k dmg/min (median per calling), home / median of the other three; target 1.00-1.25')
     for road, s in sig.items():
         for t in sorted({x['Spec']['Tier'] for x in rs}):
             per = {}
             for c in ('warden', 'reaver', 'arcanist', 'stalker'):
-                v = [x['DamageBy'].get(s, 0) / max(1, x['Minutes']) / 1000 for x in rs
+                v = [sig_dmg(x, s) / max(1, x['Minutes']) / 1000 for x in rs
                      if x['Spec'].get('For') == road and x['Spec']['Calling'] == c and x['Spec']['Tier'] == t]
                 if v: per[c] = st.median(v)
             h = per.get(home[road]); off = [v for c, v in per.items() if c != home[road]]
