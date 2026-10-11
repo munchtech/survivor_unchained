@@ -95,3 +95,5 @@ data and the cinematic scripts, and you sign off voice packets.
 1. This page, then `docs/story/TWIST_WTF.md` §1 and `TWIST_OPTIONS.md` A and B.
 2. `docs/story/TOLL_SPEC.md` if you work on the toll.
 3. For step 3: notes 02 §12, then the conversations you edit (`showc.py`).
+
+HANDOFF READY: docs/handoff/story.md on story/voice-lock-toll@281a46b8
