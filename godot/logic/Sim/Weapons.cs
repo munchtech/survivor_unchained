@@ -28,6 +28,8 @@ public sealed class WeaponInst
     public readonly WeaponMods Mods = new();
     /// <summary>Burst shots still to go, and when.</summary>
     public int BurstLeft;
+    /// <summary>The strength (CastMul) of the cast whose burst is still firing.</summary>
+    public double BurstMul = 1;
     public double BurstT;
     public int BurstTarget = -2;
     /// <summary>Statistics for the damage meter and for mastery.</summary>
@@ -169,7 +171,7 @@ public static class Firing
             {
                 w.BurstLeft--;
                 w.BurstT = 0.07;
-                FireAimedOne(b, w, w.BurstTarget);
+                FireBurstShot(b, w);
             }
         }
         if (w.Timer > 0) return;
@@ -215,6 +217,10 @@ public static class Firing
         int n = CountOf(b, w);
         if (w.Flag(s => s.Burst))
         {
+            // A burst still firing (the Echo comes 0.5 s after the cast, a long burst runs past a short wait)
+            // is let go at once, at its own strength, not cut short by this one.
+            while (w.BurstLeft > 0) { w.BurstLeft--; FireBurstShot(b, w); }
+            w.BurstMul = w.CastMul;
             w.BurstLeft = n - 1;
             w.BurstT = 0.07;
             w.BurstTarget = target.Id;
@@ -223,6 +229,14 @@ public static class Firing
         else
             for (int i = 0; i < n; i++) FireAimedOne(b, w, target.Id, (i - (n - 1) / 2.0) * 0.14);
         return true;
+    }
+
+    static void FireBurstShot(Battle b, WeaponInst w)
+    {
+        double keep = w.CastMul;
+        w.CastMul = w.BurstMul;
+        FireAimedOne(b, w, w.BurstTarget);
+        w.CastMul = keep;
     }
 
     static void FireAimedOne(Battle b, WeaponInst w, int targetId, double angleOffset = 0)

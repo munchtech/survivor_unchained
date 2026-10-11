@@ -50,6 +50,7 @@ switch (cmd)
     case "arena": Arena(); break;
     case "probe": ProbeAll(); break;
     case "weapons": WeaponsAll(); break;
+    case "lamped": Lamped(); break;
     case "report": Console.WriteLine(Report.Arena(Load(opt.Get("in", "balance.jsonl")))); break;
     case "map": Maps(); break;
     case "story": Story(); break;
@@ -307,6 +308,26 @@ void ProbeAll()
     var md = Report.Probes(results.ToList());
     if (opt.Has("out")) File.WriteAllText(opt.Get("out", "probe.md"), md);
     Console.WriteLine(md);
+}
+
+/* One skill alone, a calling's lamps lit: `lamped --skill seeking_motes --rank 8 --evo mote_cascade --foe 7 --seeds 4`.
+ * Cases are calling:type:lamps, e.g. arcanist:moonweaver:full, warden:bulwark:full, arcanist:moonweaver:none.
+ * Set LAMPS_OFF=id1,id2 in the environment to turn rules off. Prints crowd damage a second per case. */
+void Lamped()
+{
+    string skill = opt.Get("skill", "seeking_motes");
+    string? evo = opt.Has("evo") ? opt.Get("evo", "") : null;
+    int rank = opt.Int("rank", 8), foe = opt.Int("foe", 7), seeds = opt.Int("seeds", 4);
+    var cases = opt.List("cases", "arcanist:moonweaver:full,warden:bulwark:full,arcanist:moonweaver:none");
+    foreach (var c in cases)
+    {
+        var p = c.Split(':');
+        var rs = new ConcurrentBag<ProbeResult>();
+        Parallel.For(0, seeds, new ParallelOptions { MaxDegreeOfParallelism = opt.Int("par", 8) }, s =>
+            rs.Add(SurvivorUnchained.Balance.Probe.Lamped(p[0], p[1], p[2], skill, rank, evo, foe, 1 + s, opt.Int("clevel", 20), opt.Get("people", "dead"))));
+        double dmg = Report.Median(rs.Select(r => r.DamageBy.GetValueOrDefault(skill) / 40.0));
+        Console.WriteLine($"{c,-32} {skill} {evo ?? "-"}: {skill} dmg/s {dmg:0} (first 40s), crowd dps {Report.Median(rs.Select(r => r.CrowdDps)):0}, champion {Report.Median(rs.Select(r => r.BossDps)):0}");
+    }
 }
 
 /* Every combat skill alone at the stages a run passes through: rank 1 at

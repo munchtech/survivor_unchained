@@ -36,6 +36,18 @@ public sealed partial class Battle
     /// <summary>Spells with projectiles, while the Crowded Sky is lit.</summary>
     bool CrowdOn(WeaponInst w) => Lamp("crowded_sky") && w.Tags.Has(Tag.Spell) && w.Tags.Has(Tag.Projectile);
 
+    /// <summary>How much of the Crowded Sky's gift the cast really has: the night caps counts
+    /// (a lit Many Lights may already hold the one extra), and its price, "each weaker", is
+    /// owed only for the projectiles it truly looses (a price on a gift withheld would be pure loss).</summary>
+    double CrowdShare(WeaponInst w)
+    {
+        double add = Lamps.Full("crowded_sky", "add", 2);
+        if (add <= 0) return 1;
+        double others = RawOn("tags.projectiles", "add", w) + (w.Def.Id == "cinderfall" && Lamps.Has("cinderfall.two") ? 1 : 0);
+        int gained = CountCap(others + add) - CountCap(others);
+        return Math.Clamp(gained / add, 0, 1);
+    }
+
     /// <summary>Per tick: where the survivor stands (her burning or frozen ground), the echoes due, the volleys forgotten.</summary>
     void TickArcanist(double dt)
     {
@@ -93,7 +105,7 @@ public sealed partial class Battle
             // moonweaver.the_echo: the second cast is at a share of the first.
             if (echo) m *= Math.Min(1, Lamps.Size("the_echo", "share", 0.5));
             // moonweaver.crowded_sky: every projectile is weaker (a price, kept in full).
-            if (CrowdOn(w)) m *= 1 - Lamps.Full("crowded_sky", "weaker", 0.35);
+            if (CrowdOn(w)) m *= 1 - Lamps.Full("crowded_sky", "weaker", 0.35) * CrowdShare(w);
             // arcanist.bridge.the_ledger: fire/frost and moon/shadow take turns.
             if (!echo && Lamp("the_ledger") && SideOf(w.School) is var side and > 0)
             {
@@ -171,6 +183,7 @@ public sealed partial class Battle
         v = (v.Id, Time, v.N + 1);
         volleyOf[w.Id] = v;
         pr.Volley = v.Id;
+        pr.VolleyHard = CrowdShare(w) >= 1;
         volleyHit.TryAdd(v.Id, (Time, new HashSet<int>()));
         // Each looses at a different thing: the k-th nearest.
         var near = HostilesInRadius(Player.X, Player.Z, 14);
@@ -180,8 +193,7 @@ public sealed partial class Battle
     }
 
     /// <summary>moonweaver.crowded_sky: no two of a volley strike the same thing.</summary>
-    bool VolleyTaken(Projectile pr, int enemy) =>
-        pr.Volley != 0 && volleyHit.TryGetValue(pr.Volley, out var v) && v.Hit.Contains(enemy);
+    bool VolleyTaken(Projectile pr, int enemy) => pr.Volley != 0 && volleyHit.TryGetValue(pr.Volley, out var v) && v.Hit.Contains(enemy);
 
     /// <summary>A player projectile struck: the volley remembers it, and Split Motes split on a kill.</summary>
     void ArcanistOnProjectileHit(Projectile pr, Enemy e, WeaponInst? weapon)

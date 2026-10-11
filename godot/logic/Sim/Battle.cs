@@ -1898,7 +1898,7 @@ public sealed partial class Battle
             foreach (var id in qProj)
             {
                 var e = Enemies.Items[id];
-                if (!Targetable(e) || VolleyTaken(pr, e.Id)) continue;
+                if (!Targetable(e) || (pr.VolleyHard && VolleyTaken(pr, e.Id))) continue;
                 double rr = pr.Radius + e.Radius;
                 if ((e.X - pr.X) * (e.X - pr.X) + (e.Z - pr.Z) * (e.Z - pr.Z) > rr * rr) continue;
                 int k = pr.Hits.IndexOf(e.Id);
@@ -1933,10 +1933,25 @@ public sealed partial class Battle
         }
         if (pr.Seek == Seek.Marked)
         {
-            var m = HostilesInRadius(pr.X, pr.Z, range).FirstOrDefault(e => e.Status.Has(StatusKind.Mark) && !pr.Hits.Contains(e.Id));
+            // The nearest marked thing no other of the volley has struck within a short flight (a far one, or the first in the list, sent every mote across the field).
+            Enemy? m = null; double md = 8.0 * 8.0;
+            foreach (var e in HostilesInRadius(pr.X, pr.Z, range))
+            {
+                if (!e.Status.Has(StatusKind.Mark) || pr.Hits.Contains(e.Id) || VolleyTaken(pr, e.Id)) continue;
+                double d = (e.X - pr.X) * (e.X - pr.X) + (e.Z - pr.Z) * (e.Z - pr.Z);
+                if (d < md) { md = d; m = e; }
+            }
             if (m != null) return m;
         }
-        return NearestHostile(pr.X, pr.Z, range, e => !pr.Hits.Contains(e.Id) && !VolleyTaken(pr, e.Id));
+        var near = NearestHostile(pr.X, pr.Z, range, e => !pr.Hits.Contains(e.Id) && !VolleyTaken(pr, e.Id));
+        // Nothing left that the volley has not struck: the spread yields, and the mote strikes what there is
+        // (else a lone champion took one mote of eight).
+        if (near == null && pr.Volley != 0)
+        {
+            pr.Volley = 0;
+            near = NearestHostile(pr.X, pr.Z, range, e => !pr.Hits.Contains(e.Id));
+        }
+        return near;
     }
 
     WeaponInst? WeaponById(string? id)

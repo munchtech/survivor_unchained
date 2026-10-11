@@ -194,6 +194,8 @@ public sealed class Projectile : Pooled
     public int Rank = 1, Depth;
     /// <summary>The volley it was loosed in (the Crowded Sky: no two of a volley strike the same thing); 0 for none.</summary>
     public int Volley;
+    /// <summary>The volley's rule is whole (the Crowded Sky looses its extra motes): it bars a second strike. Otherwise it only steers.</summary>
+    public bool VolleyHard;
     public double BossDamage = 1;
     /// <summary>Which way it is going (frontal guards).</summary>
     public double DirX, DirZ = 1;
@@ -209,7 +211,7 @@ public sealed class Projectile : Pooled
         Homing = 0; Seek = null; Target = -2; Weapon = null; Art = "bolt"; Status = null; Splash = 0; SplitOnHit = 0;
         Heal = 0; Knockback = 0; Chakram = false; Returning = false; Lob = false; LandX = LandZ = 0; GroundOnHit = null;
         Hits.Clear(); HitTimes.Clear(); Rehit = 0; HitCount = 0; OrbitR = OrbitW = OrbitA = 0; SlotId = -1; Rank = 1;
-        Depth = 0; Volley = 0; BossDamage = 1; DirX = 0; DirZ = 1; Credit = null;
+        Depth = 0; Volley = 0; VolleyHard = false; BossDamage = 1; DirX = 0; DirZ = 1; Credit = null;
     }
 
     /// <summary>Point DirX, DirZ along its velocity.</summary>
