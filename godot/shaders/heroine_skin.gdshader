@@ -111,6 +111,12 @@ uniform float lift_to = 0.15;
 // and under her jaw, outside her face's paint (the features' blue), times this: under her jaw her portraits' shade is
 // richer, and on the fairest faces darker, than her head's own skin there shows (judge j5).
 uniform vec3 soft_tone = vec3(1.0);
+// Her neck's and body's colour in every lamp but the soft ones (People.HerKeyTone, linear), outside her face's paint,
+// its lightness kept. Her body's tone (People.HerBodyTone) was fitted where the key and the warm fill meet on her lit
+// neck; the fill shows her paint without it, so the key's share was driven to grey (white-lit neck Oklab C .015): where
+// the fill can't reach, the far side of her neck under her jaw went blue-grey (hue -61), and in the moon her whole body
+// lavender under a peach face (the owner, 10 October 2026; face 21). 1 as before.
+uniform vec3 key_tone = vec3(1.0);
 // A body's own relief, baked from its sculpt (the hero's: every muscle and
 // vein his reduced mesh has only in paint), the pores laid over it.
 uniform sampler2D relief : hint_normal, filter_linear_mipmap_anisotropic;
@@ -315,7 +321,13 @@ void light() {
 	// (lamps behind her take no lift: the Look's cool rim and the fire's edge lamp lifted the far side of her neck too,
 	// judge j6)
 	float behind = smoothstep(-0.1, 0.6, dot(-LIGHT, VIEW));
-	DIFFUSE_LIGHT += LIGHT_COLOR * diffuse * ATTENUATION * un * rich * mix(1.0, body_lift, key_w * lift_w * (1.0 - behind))
+	vec3 kt = vec3(1.0);
+	if (any(notEqual(key_tone, vec3(1.0)))) {
+		vec3 ka = ALBEDO * un;
+		vec3 klw = vec3(0.2126, 0.7152, 0.0722);
+		kt = mix(vec3(1.0), key_tone * dot(ka, klw) / max(dot(ka * key_tone, klw), 1e-4), key_w * soft_w);
+	}
+	DIFFUSE_LIGHT += LIGHT_COLOR * diffuse * ATTENUATION * un * rich * kt * mix(1.0, body_lift, key_w * lift_w * (1.0 - behind))
 		* mix(vec3(1.0), soft_tone, (1.0 - key_w) * soft_w * shade_by_soft);
 	// the fine down at her edges, against a light from behind her only (lit
 	// from the front, it brightened every edge of her: a pale ribbon down her

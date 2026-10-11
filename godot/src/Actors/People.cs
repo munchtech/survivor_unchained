@@ -754,6 +754,7 @@ public static class People
                         m.SetShaderParameter("face_tone", FaceTone(look));
                         m.SetShaderParameter("body_lift", BodyLift(look));
                         m.SetShaderParameter("soft_tone", SoftTone(look));
+                        m.SetShaderParameter("key_tone", KeyTone(look));
                         m.SetShaderParameter("freckle_amount", HerFreckles(look));
                         HerShade(m, look);
                     }
@@ -1021,6 +1022,7 @@ public static class People
             m.SetShaderParameter("face_tone", FaceTone(look));
             m.SetShaderParameter("body_lift", BodyLift(look));
             m.SetShaderParameter("soft_tone", SoftTone(look));
+            m.SetShaderParameter("key_tone", KeyTone(look));
             m.SetShaderParameter("scatter", HerScatter);
             m.SetShaderParameter("back_spec", HerBackSpec);
         }
@@ -1293,6 +1295,25 @@ public static class People
     static Vector3 SoftTone(Look look) => SurvivorUnchained.Args.Get("soft-tone") is string st && st.Split(',') is [var r, var g, var b2]
         ? new(float.Parse(r, System.Globalization.CultureInfo.InvariantCulture), float.Parse(g, System.Globalization.CultureInfo.InvariantCulture), float.Parse(b2, System.Globalization.CultureInfo.InvariantCulture))
         : ToneTrim && HerSoftTone.TryGetValue(FaceId(look), out var v) ? v : Vector3.One;
+
+    /// <summary>Her neck's and body's colour in every lamp but the soft ones (the skin shader's key_tone, linear, its
+    /// lightness kept), outside her face's paint. HerBodyTone was fitted on her lit neck, where the warm fill (which shows
+    /// her paint without it) meets the key, so the key's share went grey: under a white rig her lit neck was Oklab C .015,
+    /// and where the fill can't reach, the far side of her neck under her jaw was blue-grey (own hue -61) and in the moon
+    /// her whole body lavender under a peach face (the owner, 10 October 2026). Fitted at the Look (r9 pose) to each
+    /// portrait's shaded neck side, hue and chroma, at the far neck (tools/scratch/face21). The warm faces read warm and
+    /// are left as they were. (--key-tone R,G,B: another, for judging it.)</summary>
+    static readonly Dictionary<string, Vector3> HerKeyTone = new()
+    {
+        // (0.6 of the far neck's fit (r9, in log): at all of it her lit neck went yellow and rich, Oklab C .058 h61 against
+        // her portrait's .035 h56, own; s10b)
+        ["own"] = new(1.179f, 0.956f, 0.764f), ["highborn"] = new(1.117f, 0.967f, 0.805f), ["vixen"] = new(1.138f, 0.963f, 0.764f),
+        ["moonlit"] = new(1.144f, 0.957f, 0.790f), ["fey"] = new(1.127f, 0.967f, 0.784f),
+    };
+
+    static Vector3 KeyTone(Look look) => SurvivorUnchained.Args.Get("key-tone") is string kt && kt.Split(',') is [var r, var g, var b2]
+        ? new(float.Parse(r, System.Globalization.CultureInfo.InvariantCulture), float.Parse(g, System.Globalization.CultureInfo.InvariantCulture), float.Parse(b2, System.Globalization.CultureInfo.InvariantCulture))
+        : ToneTrim && HerKeyTone.TryGetValue(FaceId(look), out var v) ? v : Vector3.One;
 
     static float BodyLift(Look look) => SurvivorUnchained.Args.Has("body-lift") ? (float)SurvivorUnchained.Args.Num("body-lift", 1f)
         : ToneTrim && HerBodyLift.TryGetValue(FaceId(look), out var v) ? v : 1f;
