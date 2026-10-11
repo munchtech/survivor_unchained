@@ -518,6 +518,8 @@ public sealed partial class Battle
         {
             zn.Tags = SnareTags; zn.Art = Has("snare_line") ? "snare_hold" : "snare"; zn.Slow = 0.5;
             zn.Status = new StatusPayload(StatusKind.Bleed, 0.5, 0.6, 3);
+            // firebreak.traps.burning_longer: a trap laid on burning ground lasts longer.
+            if (OnBurningGround(x0, z0)) zn.Life *= 1 + Lamps.Size("traps.burning_longer", "inc");
         }
         Art.Struck.Clear();
         if (Has("volley"))
@@ -775,6 +777,7 @@ public sealed partial class Battle
     public void Barrier(double amount, double seconds)
     {
         var p = Player;
+        amount = StonesBarrier(amount);
         p.Shield = Math.Min(MaxHp, Math.Max(p.Shield, 0) + amount);
         p.ShieldT = Math.Max(p.ShieldT, seconds);
     }
