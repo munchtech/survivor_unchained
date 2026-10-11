@@ -590,6 +590,8 @@ public partial class Game : Node, IZoneHost
         showing = false;
         scene.Showcase = null;
         var start = at ?? z.ArrivalFrom(from);
+        // (--facing DEG: which way she stands at the start, for pictures of her from the front)
+        if (Args.Get("facing") is string fa) start = start with { Facing = double.Parse(fa, System.Globalization.CultureInfo.InvariantCulture) * Math.PI / 180 };
         var meta = scene.Data.Meta;
         var b = Journey.StartBattle(z.Combat, meta.Collision(), scene.HeightAt, start.X, start.Z, start.Facing, (uint)Rng.Next(), arena: z is ArenaRun or StoryNight, ember: z.Ember);
         Perf.Lap("play: the fight begun");

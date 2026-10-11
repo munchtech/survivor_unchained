@@ -96,6 +96,20 @@ uniform float far_bold = 3.0;
 // linear light), laid where her face's paint is (the features' blue): each
 // face's paint a few per cent off its portrait, her neck and body untouched.
 uniform vec3 face_tone = vec3(1.0);
+// Her lit neck and body paler than her face (People.HerBodyLift): her portraits' lit necks and upper chests sit
+// 0.05-0.1 lighter (Oklab L) than their cheeks, ours level with them. The key's light only (every lamp but the soft
+// ones, as shade_by_soft tells them): laid on her paint, it lit the shade under her chin too (0.05-0.14 over the
+// portraits'). Her head takes it below the 3 cm over her neck's seam (ao_map's green), so her face and ears keep
+// their fitted tone.
+uniform float body_lift = 1.0;
+// (none where she faces down (world normal's y under lift_from, all over lift_to): lit from the front, the shade
+// under her chin took it too)
+uniform float lift_from = -0.15;
+uniform float lift_to = 0.15;
+// Her shade's own colour off her face (People.HerSoftTone, linear): the soft lamps' light (shade_by_soft) on her neck
+// and under her jaw, outside her face's paint (the features' blue), times this: under her jaw her portraits' shade is
+// richer, and on the fairest faces darker, than her head's own skin there shows (judge j5).
+uniform vec3 soft_tone = vec3(1.0);
 // A body's own relief, baked from its sculpt (the hero's: every muscle and
 // vein his reduced mesh has only in paint), the pores laid over it.
 uniform sampler2D relief : hint_normal, filter_linear_mipmap_anisotropic;
@@ -164,6 +178,8 @@ uniform float rim_tint = 0.6;
 // that grazes it from behind; at full, the cool rim lamp lay over her collarbones and upper chest as a lilac sheen.
 uniform float back_spec = 1.0;
 varying float shade_w;
+varying float lift_w;
+varying float soft_w;
 
 void vertex() {
 	if (tuck_channel >= 0) {
@@ -255,6 +271,8 @@ void fragment() {
 	BACKLIGHT = ALBEDO * backlight_colour * backlight * mix(1.0, aot.b, thin_map);
 	float wd = (INV_VIEW_MATRIX * vec4(NORMAL, 0.0)).y;
 	shade_w = mix(1.0, smoothstep(down_from, down_to, -wd), shade_down) * mix(1.0, aot.a, shade_zone);
+	soft_w = 1.0 - fm.b;
+	lift_w = (seam_ease ? 1.0 - aot.g : 1.0) * smoothstep(lift_from, lift_to, wd);
 	ALBEDO *= ambient_tint;
 }
 
@@ -292,7 +310,9 @@ void light() {
 		float lit = mix(mix(ndl, dot(LIGHT_COLOR * vec3(ATTENUATION), lw) * c_ndl, shade_by_light), SPECULAR_AMOUNT, shade_by_soft);
 		rich = mix(vec3(1.0), tn, shade_w * (1.0 - smoothstep(shade_from, shade_to, lit)));
 	}
-	DIFFUSE_LIGHT += LIGHT_COLOR * diffuse * ATTENUATION * un * rich;
+	float key_w = mix(1.0, smoothstep(shade_from, shade_to, SPECULAR_AMOUNT), shade_by_soft);
+	DIFFUSE_LIGHT += LIGHT_COLOR * diffuse * ATTENUATION * un * rich * mix(1.0, body_lift, key_w * lift_w)
+		* mix(vec3(1.0), soft_tone, (1.0 - key_w) * soft_w * shade_by_soft);
 	// the fine down at her edges, against a light from behind her only (lit
 	// from the front, it brightened every edge of her: a pale ribbon down her
 	// cheek where her dark hair met it, her temples white)

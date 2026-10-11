@@ -752,6 +752,8 @@ public static class People
                     {
                         m.SetShaderParameter("tone", HerTone(look));
                         m.SetShaderParameter("face_tone", FaceTone(look));
+                        m.SetShaderParameter("body_lift", BodyLift(look));
+                        m.SetShaderParameter("soft_tone", SoftTone(look));
                         m.SetShaderParameter("freckle_amount", HerFreckles(look));
                         HerShade(m, look);
                     }
@@ -1017,6 +1019,8 @@ public static class People
         if (who == "heroine")
         {
             m.SetShaderParameter("face_tone", FaceTone(look));
+            m.SetShaderParameter("body_lift", BodyLift(look));
+            m.SetShaderParameter("soft_tone", SoftTone(look));
             m.SetShaderParameter("scatter", HerScatter);
             m.SetShaderParameter("back_spec", HerBackSpec);
         }
@@ -1201,14 +1205,14 @@ public static class People
     {
         // (11 October 2026, the Look's rig made near white: each face's cheek taken to its portrait's chroma and hue,
         // on top of HerBodyTone below, which these partly undo on the face; judge j2's trims, measured at the Look)
-        ["own"] = new(1.221f, 0.924f, 0.741f), ["highborn"] = new(1.129f, 0.918f, 0.843f),
-        ["vixen"] = new(1.110f, 0.896f, 0.765f), ["moonlit"] = new(1.082f, 0.976f, 0.898f),
-        ["fey"] = new(1.262f, 0.990f, 0.847f), ["doe"] = new(1.115f, 0.964f, 0.851f),
-        ["wildling"] = new(1.088f, 0.926f, 0.810f), ["hardwon"] = new(1.123f, 0.961f, 0.869f),
-        ["saffron"] = new(1.048f, 0.972f, 0.946f),
+        ["own"] = new(1.358f, 0.890f, 0.660f), ["highborn"] = new(1.168f, 0.905f, 0.824f),
+        ["vixen"] = new(1.170f, 0.878f, 0.730f), ["moonlit"] = new(1.159f, 0.947f, 0.841f),
+        ["fey"] = new(1.320f, 0.973f, 0.816f), ["doe"] = new(1.167f, 0.947f, 0.783f),
+        ["wildling"] = new(1.102f, 0.928f, 0.765f), ["hardwon"] = new(1.166f, 0.948f, 0.813f),
+        ["saffron"] = new(1.071f, 0.963f, 0.887f),
         // (Sunborn: her face lighter, a little less red, against her body: her cheek at 0.86 of her portrait's
         // lightness against 0.92-0.97 for the others, her head darker than her neck; judge n1, 11 October 2026)
-        ["sunborn"] = new(1.175f, 1.246f, 1.414f),
+        ["sunborn"] = new(1.146f, 1.262f, 1.646f),
     };
 
     /// <summary>Her skin's own colour for each face, all of her (linear, on her swatch's HerTone): her neck and
@@ -1217,11 +1221,11 @@ public static class People
     /// her portrait's (judge j1, 11 October 2026). (--tone-trim off: none, and the faces' tones as before.) Measured at the Look and refitted (r1, r3; r6b with BodyK 1 and the soft lamps' shade).</summary>
     static readonly Dictionary<string, Vector3> HerBodyTone = new()
     {
-        ["own"] = new(0.763f, 1.102f, 1.790f), ["highborn"] = new(0.814f, 1.081f, 1.638f),
-        ["doe"] = new(0.814f, 1.102f, 1.697f), ["sunborn"] = new(1.020f, 0.972f, 1.116f),
-        ["vixen"] = new(0.806f, 1.084f, 1.663f), ["moonlit"] = new(0.810f, 1.084f, 1.614f),
-        ["saffron"] = new(0.888f, 1.068f, 1.527f), ["wildling"] = new(0.846f, 1.081f, 1.617f),
-        ["hardwon"] = new(0.816f, 1.095f, 1.766f), ["fey"] = new(0.791f, 1.093f, 1.694f),
+        ["own"] = new(0.656f, 1.173f, 2.152f), ["highborn"] = new(0.768f, 1.109f, 1.764f),
+        ["doe"] = new(0.762f, 1.132f, 1.975f), ["sunborn"] = new(1.056f, 0.948f, 0.956f),
+        ["vixen"] = new(0.740f, 1.123f, 1.862f), ["moonlit"] = new(0.729f, 1.134f, 1.840f),
+        ["saffron"] = new(0.861f, 1.080f, 1.715f), ["wildling"] = new(0.817f, 1.095f, 1.789f),
+        ["hardwon"] = new(0.771f, 1.120f, 2.020f), ["fey"] = new(0.729f, 1.129f, 1.885f),
     };
 
     static readonly Dictionary<string, Vector3> HerFaceToneUntrimmed = new()
@@ -1259,6 +1263,36 @@ public static class People
     }
 
     static string FaceId(Look look) => string.IsNullOrEmpty(look.FaceShape) ? "own" : look.FaceShape;
+
+    /// <summary>How much paler her neck and body are than her face (linear, the skin shader's body_lift): her portraits'
+    /// lit necks and upper chests sit 0.05-0.1 lighter (Oklab L) than their cheeks; hers sat level with her cheek
+    /// (judge j5, 11 October 2026). Fitted at the Look with her neck 3 cm shorter, where her neck's spot falls on the
+    /// same part of her as on her portrait's (at today's length it is higher up her neck, turned from the key).
+    /// (--body-lift X: another, for judging it (pictures).)</summary>
+    static readonly Dictionary<string, float> HerBodyLift = new()
+    {
+        ["own"] = 1.39f, ["highborn"] = 1.08f, ["doe"] = 1.23f, ["sunborn"] = 1f, ["vixen"] = 1.10f,
+        ["moonlit"] = 1.18f, ["saffron"] = 1.21f, ["wildling"] = 1.08f, ["hardwon"] = 1.21f, ["fey"] = 1.05f,
+    };
+
+    /// <summary>Her shade's colour off her face (the skin shader's soft_tone, linear): the soft lamps' light on her neck
+    /// and under her jaw, outside her face's paint. Her head's own skin there showed greyer than her portrait's shade
+    /// (jaw chroma 37-55% short on the fair faces, judge j5, 11 October 2026); fitted at the Look to each portrait's
+    /// chroma and hue under her jaw, its lightness kept (tools/scratch/face17/softfit.py, clamped 0.5-1.6). Sunborn's
+    /// shade there is lit mostly by the key, out of this one's reach. (--soft-tone R,G,B: another, for judging it.)</summary>
+    static readonly Dictionary<string, Vector3> HerSoftTone = new()
+    {
+        ["own"] = new(1.268f, 0.877f, 0.571f), ["highborn"] = new(0.934f, 1.032f, 1.082f), ["doe"] = new(1.192f, 0.881f, 0.737f),
+        ["vixen"] = new(1.479f, 0.814f, 0.500f), ["moonlit"] = new(1.518f, 0.798f, 0.500f), ["saffron"] = new(1.047f, 0.942f, 1.214f),
+        ["wildling"] = new(1.217f, 0.853f, 0.684f), ["hardwon"] = new(1.117f, 0.909f, 0.991f), ["fey"] = new(1.338f, 0.857f, 0.504f),
+    };
+
+    static Vector3 SoftTone(Look look) => SurvivorUnchained.Args.Get("soft-tone") is string st && st.Split(',') is [var r, var g, var b2]
+        ? new(float.Parse(r, System.Globalization.CultureInfo.InvariantCulture), float.Parse(g, System.Globalization.CultureInfo.InvariantCulture), float.Parse(b2, System.Globalization.CultureInfo.InvariantCulture))
+        : ToneTrim && HerSoftTone.TryGetValue(FaceId(look), out var v) ? v : Vector3.One;
+
+    static float BodyLift(Look look) => SurvivorUnchained.Args.Has("body-lift") ? (float)SurvivorUnchained.Args.Num("body-lift", 1f)
+        : ToneTrim && HerBodyLift.TryGetValue(FaceId(look), out var v) ? v : 1f;
 
     /// <summary>Her freckles' map for a part of her skin, if it has one: her head's, or the graft's (her
     /// neck, shoulders and upper chest).</summary>

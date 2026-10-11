@@ -39,13 +39,13 @@ for half, fs in (('a', faces[:5]), ('b', faces[5:])):
 rows = []
 for f in ('own', 'highborn'):
     old = '%s_%s_was' % (tag, f)
-    rows.append([('%s before (body tone half, no shade tint)' % f, face_crop(old, W)), ('%s untrimmed' % f, face_crop('%s_%s_untrim' % (tag, f), W)),
-                 ('%s new rig + trims' % f, face_crop('%s_%s' % (tag, f), W)), ('%s portrait' % f, face_crop(REF.get(f, f + '_11'), W))])
+    rows.append([('%s before (r5: no lift, no soft tone)' % f, face_crop(old, W)), ('%s untrimmed' % f, face_crop('%s_%s_untrim' % (tag, f), W)),
+                 ('%s now (lift, soft tone, trims)' % f, face_crop('%s_%s' % (tag, f), W)), ('%s portrait' % f, face_crop(REF.get(f, f + '_11'), W))])
 grid(rows, 'trim_ab.jpg')
 # turned 40: the ear and cheek (fixed crop round her ear side)
 rows = [[]]
 for f in ('own', 'highborn', 'sunborn', 'saffron'):
-    t = img('%s_%s_t40' % (tag, f)); rows[0].append(('%s t40' % f, t.crop((700, 200, 1220, 820)).resize((390, 465), Image.LANCZOS)))
+    t = img('%s_%s_t40' % (tag, f)); rows[0].append(('%s t40' % f, t.crop((600, 200, 1120, 820)).resize((390, 465), Image.LANCZOS)))
 grid(rows, 'ears_t40.jpg')
 # the whole frame at the Look (armour, particles), halved
 rows = [[('own close (default framing), half size', img('%s_own' % tag).resize((960, 540), Image.LANCZOS)), ('own head and shoulders, half size', img('%s_own_bust' % tag).resize((960, 540), Image.LANCZOS))]]

@@ -166,6 +166,7 @@ public partial class Game
 
     SpotLight3D? fillLight, edgeLight, rimLight, bounceLight;
     float bounce = -1;
+    float ambientBase = -1;
     Vector2 bounceAt = new(1.3f, 1.0f);
     Vector2? keyAt;
     static readonly bool LookReflOff = Args.Get("look-refl") == "off";
@@ -222,6 +223,8 @@ public partial class Game
             keyLight.LightSize = 0.3f;
             // (--key-spec X: its highlight's strength, for judging it (pictures))
             if (Args.Get("key-spec") is string kss) keyLight.LightSpecular = float.Parse(kss, System.Globalization.CultureInfo.InvariantCulture);
+            // (--key-cone ANGLE: its cone's half angle, for judging it (pictures))
+            if (Args.Get("key-cone") is string kc) keyLight.SpotAngle = float.Parse(kc, System.Globalization.CultureInfo.InvariantCulture);
             // --key-shadow off | SIZE: the key's shadow off, or its light size (softness), for judging what it casts (pictures).
             if (Args.Get("key-shadow") is string ks)
             {
@@ -282,7 +285,9 @@ public partial class Game
         }
         Aim(keyLight, eyes + dir * 1.9f - camLeft * keyAt.Value.X + Vector3.Up * keyAt.Value.Y, eyes + Vector3.Down * 0.05f, 0.15f + rig[0] * p);
         Aim(fillLight, eyes + dir * 1.8f + camLeft * 1.1f, eyes + Vector3.Down * 0.08f, rig[1] * p);
-        Aim(edgeLight, eyes - dir * 1.3f + camLeft * 1.4f + Vector3.Up * 0.35f, eyes + Vector3.Down * 0.1f, rig[2] * p);
+        // (--edge-up U: the fire's edge lamp's height over her eyes, for judging it (pictures))
+        float edgeUp = Args.Get("edge-up") is string eu ? float.Parse(eu, System.Globalization.CultureInfo.InvariantCulture) : 0.35f;
+        Aim(edgeLight, eyes - dir * 1.3f + camLeft * 1.4f + Vector3.Up * edgeUp, eyes + Vector3.Down * 0.1f, rig[2] * p);
         Aim(rimLight, eyes - dir * 1.6f - camLeft * 1.0f + Vector3.Up * 1.1f, eyes + Vector3.Down * 0.12f, rig[3] * p);
         if (bounceLight != null) Aim(bounceLight, eyes + dir * bounceAt.X + Vector3.Down * bounceAt.Y, eyes + Vector3.Down * 0.14f, bounce * p);
         // The sky's own light (the moon) off her from head and shoulders in: the
@@ -295,6 +300,12 @@ public partial class Game
         Campfire.ClearNear(p > 0.01f ? p * (camera.GlobalPosition.DistanceTo(eyes) + 0.05f) : 0);
         // (--look-refl off: the sky's reflections off at the Look, to find what blows her armour's highlights (pictures))
         if (LookReflOff) air.Env.ReflectedLightSource = p > 0.5f ? Godot.Environment.ReflectionSource.Disabled : Godot.Environment.ReflectionSource.Sky;
+        // (--look-ambient X: the sky's ambient light times X at the Look, for judging what greys the shade under her jaw (pictures))
+        if (Args.Get("look-ambient") is string la)
+        {
+            if (ambientBase < 0) ambientBase = air.Env.AmbientLightEnergy;
+            air.Env.AmbientLightEnergy = ambientBase * Mathf.Lerp(1f, float.Parse(la, System.Globalization.CultureInfo.InvariantCulture), p);
+        }
 
         // The fire lights her through a stand-in that fades as the portrait comes up; the fire
         // itself no longer reaches her (layer 2), so the camp around her stays as it is.
