@@ -489,12 +489,22 @@ public partial class HairSway : Node
             d0 = d; e0 = e;
         }
         turnAt[0] = new Vector4(0, 0, 0, 1);
+        // (long hair's wide sheet turned no more than 20 degrees at any point: its cards reach 13 cm from the chain, and
+        // turned 40-75 degrees as it bent over her shoulder lying face down they stood 4-9 cm off her (hair judge hj3,
+        // death c10-c11), and fanned into a spray at its end as she sat up (get_up_back c4). Running, stopping and
+        // throwing it turns 17 or less, so they are unchanged; a braid's or a tail's strands lie within 5 cm of it and
+        // turn freely.)
+        float most = Style == "long" ? SheetTurn : Mathf.Pi;
         for (int i = 1; i < 8; i++)
         {
             var q = i == 7 ? seg[6] : seg[i - 1].Slerp(seg[i], 0.5f);
+            if (q.W < 0) q = -q;
+            if (2 * Mathf.Acos(Mathf.Min(q.W, 1f)) > most) q = new Quaternion(q.GetAxis(), most);
             turnAt[i] = new Vector4(q.X, q.Y, q.Z, q.W);
         }
     }
+
+    static readonly float SheetTurn = Mathf.DegToRad(20);
 
     /// <summary>The shortest turn from one direction to another (both of unit length).</summary>
     static Quaternion Arc(Vector3 a, Vector3 b)
