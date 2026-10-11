@@ -644,7 +644,32 @@ def get_up(rig):
                 f["toe"] = toe
             pose = {**pose, "foot_l": f}
         return planted(fr, pose)
-    return build("get_up", rig, keys, meta={"layer": "full"}, post=post)
+    # Handed over from where death left her: settled with the frames after
+    # it (solve_frames), get_up's first frame took its left elbow 9 cm up
+    # toward the hands' lift (the upper arm 50 degrees off death's last
+    # frame: a pop as the game swaps the clips); so its elbows are pinned.
+    # Its near-straight legs took their hinge from f9 (4 degrees of thigh
+    # roll off death's): eased in from death's legs while the knees rest.
+    # The arms, solved fresh where death's came from its frames before, are
+    # left 6 degrees apart even so: eased in, hands and all, as the hands
+    # first lift (over 4 frames the lift lagged 3-4 cm behind its path).
+    clip = build("get_up", rig, keys, meta={"layer": "full"}, post=post, pin_first=True)
+    end = death(rig)
+    of = lambda *parts: [j for j, b in enumerate(rig.sk.names) if b.split("_")[0] in parts]
+    _ease_from(clip, end.rot[-1], 8, of("thigh", "calf", "foot", "ball"))
+    _ease_from(clip, end.rot[-1], 3, of("upperarm", "lowerarm", "hand", "thumb", "index", "middle", "ring", "pinky"))
+    return clip
+
+
+def _ease_from(clip, rot0, n, joints):
+    """The joints' turns in the clip's first n frames eased in from a pose
+    (the last clip's last frame): all of it at frame 0, none by frame n."""
+    from rig import qslerp
+    for fr in range(min(n, clip.frames)):
+        u = fr / n
+        u = u * u * (3 - 2 * u)
+        for j in joints:
+            clip.rot[fr, j] = qslerp(rot0[j], clip.rot[fr, j], u)
 
 
 def get_up_back(rig):

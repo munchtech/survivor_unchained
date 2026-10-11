@@ -1233,13 +1233,16 @@ def grip_of(weapon):
     return {"r": GRIP[main]} if main in GRIP else {}
 
 
-def solve_frames(rig: Rig, poses, bases=None, loop=False, sigma=2.0, weapon=""):
+def solve_frames(rig: Rig, poses, bases=None, loop=False, sigma=2.0, weapon="", pin_first=False):
     """Every frame's pose solved, where each elbow goes settled over the
     whole clip first: solved frame by frame (the pole's way, swung round
     where a keyed wrist needs it), then smoothed in time, so an elbow eases
     round instead of whipping between frames as the hand passes near the
     shoulder or the wrist's strain tips it from one side to the other.
-    `weapon`: what the clip holds (grip_of)."""
+    `weapon`: what the clip holds (grip_of). `pin_first`: the first frame's
+    elbows are its own (the window narrowing to it), for a clip that takes
+    over from another's last frame: settled with the frames after, they
+    left where that clip did."""
     rig.grip = grip_of(weapon) if rig.grips else {}
     n = len(poses)
     J = len(rig.sk)
@@ -1298,11 +1301,12 @@ def solve_frames(rig: Rig, poses, bases=None, loop=False, sigma=2.0, weapon=""):
             continue
         out = np.full((n, 3), np.nan)
         for fr in np.nonzero(have)[0]:
-            idx = np.arange(fr - pad, fr + pad + 1)
+            h = min(pad, fr) if pin_first else pad
+            idx = np.arange(fr - h, fr + h + 1)
             if loop:
                 idx = idx % max(1, n - 1)
             ok = (idx >= 0) & (idx < n)
-            idx, w = idx[ok], k[ok]
+            idx, w = idx[ok], k[pad - h:pad + h + 1][ok]
             ok = have[idx]
             idx, w = idx[ok], w[ok]
             v = (x[idx] * w[:, None]).sum(0) / w.sum()
@@ -1320,7 +1324,7 @@ def solve_frames(rig: Rig, poses, bases=None, loop=False, sigma=2.0, weapon=""):
     return rot, pos
 
 
-def build(name, rig: Rig, keys, fps=30, loop=False, meta=None, post=None, base=None, lead=None) -> Clip:
+def build(name, rig: Rig, keys, fps=30, loop=False, meta=None, post=None, base=None, lead=None, pin_first=False) -> Clip:
     """A clip from keys [(frame, pose, ease), ...]. For a loop, the last key
     should be the first again. With a base clip, the keys are laid over its
     frames (Rig.solve's base): turns add to its turns, hands and feet given
@@ -1336,7 +1340,7 @@ def build(name, rig: Rig, keys, fps=30, loop=False, meta=None, post=None, base=N
         poses.append(post(fr, pose) if post else pose)
     bases = None if base is None else [(base.rot[min(fr, base.frames - 1)], base.pos[min(fr, base.frames - 1)])
                                        for fr in range(frames)]
-    rot, pos = solve_frames(rig, poses, bases, loop=loop, weapon=(meta or {}).get("weapon", ""))
+    rot, pos = solve_frames(rig, poses, bases, loop=loop, weapon=(meta or {}).get("weapon", ""), pin_first=pin_first)
     m = {"source": "keyed (tools/anim)", "licence": "own work"}
     m.update(meta or {})
     return Clip(name, fps, rot, pos, loop=loop, meta=m)
