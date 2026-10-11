@@ -30,21 +30,16 @@ Done:
   - Motion vectors: Godot reruns the vertex shader with the previous frame's custom data and time, so the VAT limbs should get motion vectors. If the sparkle stays, confirm this on a motion-vector view.
 
 Next, in the coordinator's order:
-1. **The heroine's gameplay LOD.** The owner approved all five pieces, then said "we can skip measuring and move to implementing":
-   - a gameplay-distance LOD that keeps the silhouette dense at the bust, hips, gear effects and weapon;
-   - the body triangles hidden under each outfit removed in the gameplay LOD;
-   - the lowest LOD for shadows;
-   - her pieces merged by material;
-   - fewer fur shells at range.
-
-   How to build it:
-   - Make it its own post-export step that runs after heroine.glb is written, like `tools/assets/heroine_seam.py`.
-   - Don't edit `heroine_outfits.py`: the outfits lead (ace45ae43386569ed) owns it. Tell them the step and its hook line.
-   - Hold full detail at the title, in creation, in conversations, and on every cinematic or close-up camera.
-   - Bake the fine detail into normals so she looks the same at play size.
-   - Judge the full model against the LOD at the play camera, at 1:1 and 3x, plus the shadows. They must look the same.
-   - Include before and after ms only if a runner gets them nearly free.
-   - PERF_AUDIT §4 puts her at about 1M triangles (Warden 727k, body 92k, hair 173k) and 95+ draws per pass, landing in about 9,000 px.
+1. **The heroine's gameplay LOD: built, judge 1 PASS WITH FIXES, fixes half done** (lead a2, 11 October, handed off at the context budget). The owner approved all five pieces with no measuring phase; full detail always at the title, creation, conversations, chests, close-ups and cinematics ("we worked very hard on these models so they show there no matter what").
+   - **Built:** `tools/assets/heroine_lod.py FOLDER [SET...]` (pure glTF, no Blender: numpy, scipy, `meshoptimizer` and `embreex` from pip, already installed in the user site). It writes `heroine_outfit_SET_lod.gltf/.bin/.gltf.import` beside each outfit with: `lod_MAT` (each outfit mesh), `lod_body` (her body for that outfit), `lod_shadow` (body+outfit welded, 2.5 mm, inset 1.5 mm). The method: rays decide what's unseen (sheer stocking never occludes), kept within 5 cm of anything seen, at joint blends and on headwear (Head weight > 0.3, kept whole). Then meshoptimizer keeps the original vertices: the close-layer tiers (another surface within 1.5/3/5 mm along the normal, or within 4 cm of any hair: 0.05/0.2/0.5 mm), then bust/hips/butt at 0.5 mm, then the rest at 1 mm, with normals weighted at 0.06 m per unit and body colours (the tuck) at 0.01 m per unit. Takes about 1 min per outfit.
+   - **Runtime:** `godot/src/Actors/HerLod.cs`, hooked at the end of `People.HerOutfit` (`HerLod.Attach`) and in `Game._Process` (`HerLod.InPlay`). LOD only in play with no hud mode, held camera or cinematic, camera beyond 18 m (back to full under 16). It copies the full meshes' override materials, overlay and transparency each frame. Fur gets 6 shells. `--lod off|on|mesh|auto` (mesh = LOD meshes with the full shadow). Logs checked: auto at `--cam 8` stays full; the blessing overlay is full.
+   - **Commits:** bf83e587 (WIP) and the WIP after it. The built `*_lod.*` art in `godot/art/people` is uncommitted (unjudged). Regenerate it with the tool; it is the current version.
+   - **Now:** Warden 755k -> 400k triangles, Ranger 690k -> 302k, Arcanist 487k -> 247k, Reaver 421k -> 181k; shadow about 12k each (was the full model in every pass). The first version was 14-18%, but judge 1 found layers crossing, so the close-layer tiers bought it back. The successor's call: loosen the tiers where the sweep stays clean (thread on leather is 70-95% in the 1.5 mm tier).
+   - **Judge 1 (agent a5229310acdb6cf45; verdict in this lead's report):** shadows PASS; fur at 6 shells PASS; at 1:1 the same. Its fixes: (1) a Reaver torso strip; (2) the Arcanist hat (now kept whole, so it's fixed); (3) layers poking through (the close tiers; the stocking-greying was the sheer stocking hiding skin, now fixed). It wants for the re-judge: one frame per sheet at 2000 px or under; the sweep's worst 6 at 6x; 8-frame strips; and the switch frames.
+   - **Open: the Reaver torso strip.** It is still there after removal off (LOD_KEEP_ALL=1), the tight close tiers and the tuck weight. It's the dark `ink` decal down her chest and side: in the full model it is half sunk (dotted); in the LOD it is solid, or the other way round. Next, test with ink and the body under it kept unsimplified (or skip `ink` and the skin within 5 mm of it). Also tell the outfits lead: the Reaver's ink z-fights with her skin in the full model.
+   - **Tools (N\lod\):** `batch.ps1 RUNS "rendering: X" [-NoImport]` (godot turn; needs `-ExecutionPolicy Bypass`), `shoot.py`, `cmp.py OUT a+b ...` (BOX=WxH env), `sweep.py OUTDIR PREFIX OUTFITS` (needs the off frames under the same prefix; copy s1 off). Runs: `runs_s1.txt` (12-frame sweep, 4 outfits, off/on). Frames in `godot/.shots` (s1_, s2_, s3_). The window caps at 2526x1421: for "4K", use `--cam 15`. `--time night` does nothing in the arena: the town (`--quick X` without `--zone`) is night. Frames 7, 8 and 11 of the Reaver sweep have nondeterministic gibs and sparks; ignore those blobs.
+   - **After the pass:** send the outfits lead (ace45ae43386569ed) the hook line for `heroine_outfits.py` after the outfits export: `import heroine_lod; heroine_lod.main([os.path.dirname(OUT)])`. Commit the built art. Gear effects: the outfits have no emissive parts; weapons are separate and untouched. Body morphs: her body has no shape keys (only her head), so creation can't break the LOD.
+   - Integration has merged this branch to 2d9b6922; merge integration in when it suits. fb3adb43 is still unjudged (fur round 2 below).
 2. **Fur, round 2** (judge fur1's fixes 1, 3 and 5):
    - View the motion vectors on a running wolf.
    - Fade only cards under 1 px on screen, if that keeps the outline.

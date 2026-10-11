@@ -40,11 +40,20 @@ FLAT = 0.0010        # (m: simplification error over most of her; a pixel is 5-1
 DENSE = 0.0005       # (m: over her bust, hips and butt, which make her silhouette)
 SHADOW = 0.0025      # (m: her shadow's mesh)
 INSET = 0.0015       # (m: her shadow's mesh drawn in along its normals)
-KEEP = 0.025         # (m: what lies within this of anything seen, along its own surface, is kept)
+KEEP = 0.05          # (m: what lies within this of anything seen, along its own surface, is kept: openings widen in motion)
+# (a vertex with another of her surfaces near along its normal (a garment over skin, one garment over another, a strand
+# of hair on her) is simplified within a third of that gap, so neither passes through the other: gaps under these, these
+# errors)
+CLOSE = ((0.0015, 0.00005), (0.003, 0.0002), (0.005, 0.0005))
+HEADWEAR = 0.3       # (her outfit's pieces weighted this much to her head (a hat, a hood) are kept whole, as her head is)
 BLEND = 0.80         # (a vertex whose largest weight is under this blends over a joint: never removed)
 RAYS = 64            # (directions tried from each point of a triangle)
 NORMALS = 0.06       # (m per unit of a normal's turn: a normal off by 1 degree costs as 1 mm of shape, so broad curves keep their shading)
 NO_SHADOW = {"stocking"}   # (sheer: drawn blended, it casts none)
+TUCK = 0.010         # (m: heroine_skin.gdshader's tuck, her skin drawn in by a whole unit of its colour)
+SHEER = {"stocking"}       # (seen through: hides nothing under it)
+HAIR_NEAR = 0.04     # (m: her skin and outfit this near any hair she can wear, at rest, are held as the closest layers: a
+                     # strand lying on her is drawn where it passes over or under her surface, to the tenth of a millimetre)
 DENSE_BONES = ("breast_l", "breast_r", "glute_l", "glute_r", "pelvis")
 
 _CT = {5120: np.int8, 5121: np.uint8, 5122: np.int16, 5123: np.uint16, 5125: np.uint32, 5126: np.float32}
@@ -204,7 +213,7 @@ def grow(pos, tris, keep, radius):
     return keep | near[t].any(1)
 
 
-def simplify(pos, attrs, tris, dense, error_flat, error_dense):
+def simplify(pos, attrs, tris, dense, gap, whole, error_flat, error_dense, colour_weight=0.004):
     """Her mesh simplified with every vertex left where it was: first over her dense parts (the rest locked), then the
     rest (the dense locked), its open edges locked."""
     # (attribute weights in metres per unit: NORMALS; a UV moved 0.05 costs as 0.5 mm)
@@ -218,13 +227,21 @@ def simplify(pos, attrs, tris, dense, error_flat, error_dense):
         c, norm = attrs["COLOR_0"]
         c = c.astype(np.float32) / ({np.dtype(np.uint8): 255.0, np.dtype(np.uint16): 65535.0}.get(c.dtype, 1.0) if norm else 1.0)
         cols.append(c)
-        w += [0.004] * c.shape[1]
+        w += [colour_weight] * c.shape[1]
     at = np.ascontiguousarray(np.concatenate(cols, 1), np.float32)
     wt = np.array(w, np.float32)
     idx = np.ascontiguousarray(tris.ravel(), np.uint32)
     p = np.ascontiguousarray(pos, np.float32)
     opts = mo.SIMPLIFY_LOCK_BORDER | mo.SIMPLIFY_ERROR_ABSOLUTE
-    for err, lock in ((error_dense, ~dense), (error_flat, dense)):
+    # (the closest layers first, each band with all else locked, then the dense parts, then the rest; what is whole, never)
+    lo = 0.0
+    passes = []
+    for g, err in CLOSE:
+        passes.append((err, ~((gap >= lo) & (gap < g)) | whole))
+        lo = g
+    close = gap < lo
+    passes += [(error_dense, ~dense | close | whole), (error_flat, dense | close | whole)]
+    for err, lock in passes:
         idx, _e = mo_simplify(idx, p, err, opts, at, wt, lock)
     return idx.reshape(-1, 3).astype(np.int64)
 
@@ -306,8 +323,7 @@ def lod(folder, outfit):
     ibm_b = body.acc(body.js["skins"][0]["inverseBindMatrices"])[0]
     assert np.abs(ibm_a - ibm_b).max() < 1e-4, "her outfit and her body bound in different places"
     joints = bind_positions(full)
-    dense_idx = {n: names.index(n) for n in DENSE_BONES + ("thigh_l", "thigh_r")}
-
+    
     # Every surface of her, as it stands in her bind pose.
     parts = []      # (kind, name, attrs, tris)
     for mi, m in enumerate(full.js["meshes"]):
@@ -323,27 +339,70 @@ def lod(folder, outfit):
 
     scene = rtcs.EmbreeScene()
     for kind, mat, attrs, tris in parts:
-        TriangleMesh(scene, attrs["POSITION"][0].astype(np.float32)[tris])
+        if mat not in SHEER:
+            TriangleMesh(scene, attrs["POSITION"][0].astype(np.float32)[tris])
 
     w = Writer(full)
     report = {}
-    keep_parts = []
     hip_y = (joints["thigh_l"][1] + joints["thigh_r"][1]) / 2
+    head_i = {"Head": names.index("Head")}
+    # What no ray reaches is removed, but never her headwear, nor where her weights blend over a joint.
+    kept = []
     for kind, mat, attrs, tris in parts:
         if kind == "head":
             continue
         pos = attrs["POSITION"][0].astype(np.float64)
-        big, on = weights_of(attrs, dense_idx)
-        # (her dense parts: her bust, her hips and butt, the tops of her thighs)
-        dense = (on["breast_l"] + on["breast_r"] + on["glute_l"] + on["glute_r"] + on["pelvis"] > 0.2) | \
-                ((on["thigh_l"] + on["thigh_r"] > 0.2) & (pos[:, 1] > hip_y - 0.22))
+        big, on = weights_of(attrs, head_i)
+        whole = on["Head"] > HEADWEAR if kind == "outfit" else np.zeros(len(pos), bool)
         vis = seen(scene, pos, tris)
-        bend = (big < BLEND)[tris].any(1)
-        keep = grow(pos, tris, vis | bend, KEEP)
+        hold = vis | (big < BLEND)[tris].any(1) | whole[tris].any(1)
+        keep = grow(pos, tris, hold, KEEP) if not os.environ.get("LOD_KEEP_ALL") else np.ones(len(tris), bool)
+        kept.append((kind, mat, attrs, tris, keep, whole, int(vis.sum())))
+    # How near each vertex lies to another of her surfaces along its normal: what is kept of the others, her head, and
+    # every hair she can wear (never its own surface: a garment's own thickness is no other layer).
+    others = []
+    hair_pts = []
+    for kind, mat, attrs, tris in parts:
+        if kind == "head":
+            others.append(attrs["POSITION"][0].astype(np.float32)[tris])
+    for f in sorted(os.listdir(folder)):
+        if f.startswith("heroine_hair_") and f.endswith(".gltf"):
+            hg = Gltf(os.path.join(folder, f))
+            for mi in range(len(hg.js["meshes"])):
+                for hm, ha, ht in hg.prims(mi):
+                    others.append(ha["POSITION"][0].astype(np.float32)[ht])
+                    hair_pts.append(ha["POSITION"][0].astype(np.float32))
+    from scipy.spatial import cKDTree
+    hair_tree = cKDTree(np.concatenate(hair_pts)) if hair_pts else None
+    keep_parts = []
+    for i, (kind, mat, attrs, tris, keep, whole, nv) in enumerate(kept):
+        near = rtcs.EmbreeScene()
+        for t in others:
+            TriangleMesh(near, t)
+        for j, (k2, m2, a2, t2_, kp2, _w, _n) in enumerate(kept):
+            if j != i:
+                TriangleMesh(near, a2["POSITION"][0].astype(np.float32)[t2_[kp2]])
+        pos = attrs["POSITION"][0].astype(np.float64)
+        nrm = attrs["NORMAL"][0].astype(np.float32)
+        nrm = nrm / np.maximum(np.linalg.norm(nrm, axis=1, keepdims=True), 1e-9)
+        gap = np.full(len(pos), np.inf)
+        for sgn in (1.0, -1.0):
+            d = (nrm * sgn).astype(np.float32)
+            hit = near.run(pos.astype(np.float32), d, output=1)
+            gap = np.minimum(gap, np.where(hit["primID"] >= 0, hit["tfar"], np.inf))
+        if hair_tree is not None:
+            gap[hair_tree.query(pos, distance_upper_bound=HAIR_NEAR)[0] < HAIR_NEAR] = 0.0
+        _, on = weights_of(attrs, {n: names.index(n) for n in DENSE_BONES + ("thigh_l", "thigh_r")})
+        # (her dense parts: her bust, her hips and butt, the tops of her thighs)
+        dense = (on["breast_l"] + on["breast_r"] + on["glute_l"] + on["glute_r"] + on["pelvis"] > 0.2) |                 ((on["thigh_l"] + on["thigh_r"] > 0.2) & (pos[:, 1] > hip_y - 0.22))
         t2 = tris[keep]
-        t3 = simplify(pos, attrs, t2, dense, FLAT, DENSE) if len(t2) else t2
-        report[f"{kind}.{mat}"] = (len(tris), int(vis.sum()), len(t2), len(t3))
-        print(f"  {kind}.{mat}: {len(tris)} tris, {vis.sum()} seen, {len(t2)} kept, {len(t3)} after simplifying", flush=True)
+        # (her body's colours are how far each outfit tucks her skin in (heroine_skin.gdshader: up to TUCK): weighed
+        # as the shape they make)
+        t3 = simplify(pos, attrs, t2, dense, gap, whole, FLAT, DENSE, TUCK if kind == "body" else 0.004) if len(t2) else t2
+        used = np.unique(t2)
+        report[f"{kind}.{mat}"] = (len(tris), nv, len(t2), len(t3))
+        print(f"  {kind}.{mat}: {len(tris)} tris, {nv} seen, {len(t2)} kept, {len(t3)} after simplifying "
+              f"(within 1.5/3/5 mm of another layer {(gap[used] < 1.5e-3).mean():.0%}/{(gap[used] < 3e-3).mean():.0%}/{(gap[used] < 5e-3).mean():.0%}, whole {whole[used].mean():.0%})", flush=True)
         keep_parts.append((kind, mat, attrs, t3))
 
     # The outfit's meshes (each its own material), her body (its two), her shadow (one).
