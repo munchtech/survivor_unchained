@@ -87,6 +87,7 @@ The main session keeps this current. It is the address list for SendMessage. Ret
 | Story and writing (the writer: the approved rewrite, Act 1 first) | PAUSED 12 Oct late (no lead running; Act 2's first slice WIP on story/act2@5190bf0c, unjudged, don't merge; handoff docs/handoff/story.md on that branch; 566 lines locked on integration; TOLL_SPEC ready for a code lead) | docs/team/story.md |
 | Classes design (two types per calling, skill trees, ultimates on Q / right-click; plan only until the owner approves) | PAUSED 12 Oct late (no lead running; phase 1 merged b888da5c; phase 2 from docs/handoff/classes.md; three owner questions) | docs/design/CLASSES.md |
 | Combat, encounters, bosses, balance (paused; handoff ready at af6452e1) | — | docs/team/combat.md |
+| Act 1 story-boss health (one job: back to pre-Flare kill times; su-lead-sonnet, 12 Oct) | a1291e6028306d879 | docs/handoff/classes.md |
 | Animation (joints to perfection: wrists, follow-through, elbows, arms through body, sliding) | PAUSED 12 Oct late (no lead running; handoff docs/handoff/animation.md on worktree-agent-af8dbda3195e438e4@77338d02: sit_back_heels remake PASS WITH FIXES, unmerged) | docs/team/animation.md |
 | UI design (the HUD keystone; portraits wait on the face) | — (handoff ready) | docs/team/ui_design.md |
 | UI art (paused; handoff ready at cd0f4ab6) | — | docs/team/ui_art.md |
