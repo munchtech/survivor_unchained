@@ -1,11 +1,13 @@
 # Heroine body and outfits: status
 
-Lead: su-lead-high (successor 5 of the outfits lead, 11 October 2026). Handoff: `docs/handoff/outfits.md`. Branch: `worktree-agent-a5ca10091b08dc429` (pushed; code only, unjudged: never build it into the game until it passes).
+Lead: su-lead-high (successor 6 of the outfits lead, 11 October 2026). Handoff: `docs/handoff/outfits.md`. Branch: `worktree-agent-a5ca10091b08dc429` (pushed; code only, unjudged: never build it into the game until it passes).
 
-## Now (11 October; judge 6 on h3: FAIL, fixes committed, h4 not built)
-- The Ranger pauldron, rebuilt as bands round the arm (third solver), passed most of judge 6. Left: lame 1's back corner and the dome's medial stand-off at the game's idle pose (a solver is on them), and leather straps at the lame ends.
-- Passed judge 6: the Reaver binding, the rivet shape, B4, and every judge 5 pass. Fixed since, not yet built: the Ranger's pale binding line, the dome's brushing, the rivets' contact shadow, B1 (elbow), B2 (breast fold).
-- The Arcanist plunge foot: one more solver (taut-string rim); if it doesn't land, a feathery trim, judged side by side for the owner.
+## Now (11 October, later; successor 6)
+- Two owner side-by-sides being built (h4, both on at once: PAULDRON=leather PLUNGE_TRIM=down; code defaults unchanged):
+  - The simpler pauldron: a leather spaulder skinned to her (its neck end lies on her trapezius) with a bronze cap and two spaced bands riveted on; beside h3's lames, whose two idle-pose items stuck after two solvers.
+  - The plunge foot: option (a), the taut-string rim, did not land (173e05e0); option (b), a white feathery trim (fur shells tuned as down), beside h3's plunge.
+- Pauldron plates drawn satin (face: 5.7% of the Look's frame blew out). Fixed since judge 6, built in h4: the Ranger's pale binding line, rivets' contact shadow, B1, B2.
+- Next: a judge on h4 (the side-by-sides plus judge 6's checklist), then the pauldron straps.
 
 ## Key decisions
 - Coverage fixes tighten, never enlarge, except where the 2.4 cm strip is wider than a garment.
