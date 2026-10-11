@@ -373,7 +373,7 @@ public sealed class LampRulesTests
     }
 
     [Fact]
-    public void The_echos_wait_is_kept_in_full_by_night_and_unbound_casting_waits_a_quarter_less_by_night()
+    public void The_echos_wait_shrinks_with_its_echo_by_night_and_unbound_casting_waits_a_quarter_less_by_night()
     {
         double Wait(bool night, params LampEffect[] lamps)
         {
@@ -386,7 +386,7 @@ public sealed class LampRulesTests
         var echo = Rule("the_echo", ("delay", 0.5), ("share", 0.5), ("longer", 0.25));
         var unbound = Rule("unbound_casting", ("sooner", 0.3));
         Assert.Equal(bare * 1.25, Wait(false, echo), 6);
-        Assert.Equal(bare * 1.25, Wait(true, echo), 6);
+        Assert.Equal(bare * (1 + 0.25 * 0.25), Wait(true, echo), 6);
         Assert.Equal(bare * 0.7, Wait(false, unbound), 6);
         Assert.Equal(bare * (1 - 0.3 * 0.25), Wait(true, unbound), 6);
     }
