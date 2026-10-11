@@ -85,7 +85,7 @@ The main session keeps this current. It is the address list for SendMessage. Ret
 |---|---|---|
 | Voice (paused by the owner: no placeholders; final voices from ElevenLabs later) | a501b387a90d78b4e | docs/team/voice.md |
 | Story and writing (the writer: the approved rewrite, Act 1 first) | ac6f417ab08f069bd (11 Oct night: canon A + B + "It takes less than it did"; locking the early lines and ElevenLabs packets, then TOLL_SPEC.md, then the sophistication pass) | docs/team/story.md |
-| Classes design (two types per calling, skill trees, ultimates on Q / right-click; plan only until the owner approves) | a2a42cd8430929a76 (11 Oct: plan approved, all 8 recommendations; phase 1 systems: Lamps data, Flare meter, dash forms, migration, harness) | docs/design/CLASSES.md |
+| Classes design (two types per calling, skill trees, ultimates on Q / right-click; plan only until the owner approves) | a7bf244a8d7dd3e67 (phase 1 session 2, worktree agent-a2a42cd8430929a76, branch classes/phase1; session 1 merged c9806045: board, lamp book, Act renames, tags, Bound. Now: Battle wiring (dash forms, reflexes, the Flare), harness, acceptance numbers) | docs/design/CLASSES.md |
 | Combat, encounters, bosses, balance (paused; handoff ready at af6452e1) | — | docs/team/combat.md |
 | Animation (joints to perfection: wrists, follow-through, elbows, arms through body, sliding) | a58694457cba54ade (successor 3, 11 Oct night, in worktree agent-af8dbda3195e438e4 @ a2509219: round 10 judged; three dark marks from the mends, inner-thigh spots, death shins, throw f0, elbow nub) | docs/team/animation.md |
 | UI design (the HUD keystone; portraits wait on the face) | — (handoff ready) | docs/team/ui_design.md |
