@@ -972,6 +972,9 @@ SPEC = {
     "bone": ("rough_linen", (1.376, 1.099, 0.779), 183, 12, 0.0, 0.5),
     "browncloth": ("rough_linen", (0.75, 0.55, 0.36), 78, 18, 0.0, 0.8),  # (a light brown: the old tint read olive)
     "forestleather": ("Leather026", (0.42, 0.66, 0.42), 40, 3, 0.0, None),
+    # (her boots and their cuffs: a darker, greyer green, matte as worn
+    # leather is, its grain finer so it does not mottle; judge 2)
+    "bootleather": ("Leather026", (0.5, 0.6, 0.46), 32, 7, 0.0, 0.62),
     "thread": ("rough_linen", (1.349, 1.034, 0.682), 170, 60, 0.0, 0.5),
 }
 MATS = {}
@@ -3480,8 +3483,8 @@ def ranger():
                    soften=10, trim=edge(0.006, "brownleather"), studs="darksteel"),
             *piece(f"ranger.glove_{sd}", AND(limb(sd, WRIST_S - 0.03, 9.9, legs=False), 0.4 - fingers), "forestleather", lift=0.0015,
                    thick=0.0012, bevel=0.0004, soften=8),
-            *BOOTS.boot(f"ranger.boot_{sd}", sd, tops[sd], dip[sd], BOOTS.RANGER, "forestleather"),
-            *girdle(f"ranger.cuff_{sd}", lambda a, cz=cz, d=dip[sd]: cz - d * (1 - np.cos(a)) / 2, 0.06, "forestleather",
+            *BOOTS.boot(f"ranger.boot_{sd}", sd, tops[sd], dip[sd], BOOTS.RANGER, "bootleather"),
+            *girdle(f"ranger.cuff_{sd}", lambda a, cz=cz, d=dip[sd]: cz - d * (1 - np.cos(a)) / 2, 0.06, "bootleather",
                     lift=0.01 if sd == "r" else 0.012, thick=0.003, trim=edge(0.005),
                     mask=(LEGW[sd] > 0.6) & (np.abs(Z - cz) < 0.07 + dip[sd]), flare=0.012),
         ]
