@@ -1927,6 +1927,40 @@ def clear_of_skin(pos, lift, tris=None, spread=0.003, rounds=20, fall=0.9):
     return pos
 
 
+def shell(name, pos, centre, clear, most=0.006):
+    """A rigid plate's surface: its distance from `centre` (the ball of her
+    shoulder) fitted, over the directions it covers, by a smooth quadric in
+    them, so the plate is one fair dome and no longer a cast of the muscle
+    under it (judge 2: the pauldrons were lumpy); then lifted as a whole,
+    up to `most`, until it stands `clear` off her everywhere (any rest left
+    to clear_of_skin)."""
+    d = pos - centre
+    r = np.linalg.norm(d, axis=1)
+    u = d / r[:, None]
+    x, y, z = u.T
+    B = np.stack([np.ones_like(x), x, y, z, x * x, y * y, x * y, y * z, z * x], 1)
+    # (fitted again without the points far off it, a scrap or a fold, which
+    # then keep their own distance within 4 mm of the dome's)
+    keep = np.ones(len(r), bool)
+    for _ in range(4):
+        coef = np.linalg.lstsq(B[keep], r[keep], rcond=None)[0]
+        rf = B @ coef
+        res = np.abs(rf - r)
+        keep = res < max(3 * np.sqrt((res[keep] ** 2).mean()), 0.004)
+    rf = np.where(keep, rf, np.clip(r, rf - 0.004, rf + 0.004))
+    print("SHELL %s: %d of %d points off the dome, eased to within 4 mm of it" % (name, (~keep).sum(), len(r)))
+    up = 0.0
+    for _ in range(6):
+        q = centre + u * (rf + up)[:, None]
+        need = np.linalg.norm(pushes_off_skin(q, clear), axis=1).max()
+        if need < 0.0002 or up >= most:
+            break
+        up = min(most, up + need * 1.15)
+    print("SHELL %s: fair dome, %.1f mm rms off the cast (largest %.1f), lifted %.1f mm" %
+          (name, np.sqrt(((rf - r) ** 2).mean()) * 1000, np.abs(rf - r).max() * 1000, up * 1000))
+    return centre + u * (rf + up)[:, None]
+
+
 def dump(name, stage, pos, tris, field):
     """A piece's sheet at a stage of its making, saved for study (DUMP=its
     name in the environment)."""
@@ -1974,8 +2008,10 @@ def over_nipples(pos, tris, least=0.0007, s=0.008, dome=0.035):
     return out
 
 
-def piece(name, field, mkey, lift=0.003, thick=0.003, smooth=0, bevel=0.0012, trim=None, clear=None, soften=3, dome=False, keep_off=("Head", "neck_01"), cut=None, iron=0, hull=None, studs=None, budget=None, filled=False, edge=30, slot=True, bridge=False, bind=True):
-    """A region of her skin made into a piece of her outfit. `trim`, as
+def piece(name, field, mkey, lift=0.003, thick=0.003, smooth=0, bevel=0.0012, trim=None, clear=None, soften=3, dome=False, keep_off=("Head", "neck_01"), cut=None, iron=0, hull=None, studs=None, budget=None, filled=False, edge=30, slot=True, bridge=False, bind=True, rigid=None):
+    """A region of her skin made into a piece of her outfit. `rigid`, a
+    centre, makes it a rigid plate: a fair dome round that centre (shell())
+    on one blend of bones throughout, so it moves as one piece. `trim`, as
     (material, width, height, thickness), edges it with a band laid on the
     piece itself, so the two can never part. `clear` is how close to the
     skin it may come once smoothed (the lift unless said): plate lifted well
@@ -2032,6 +2068,10 @@ def piece(name, field, mkey, lift=0.003, thick=0.003, smooth=0, bevel=0.0012, tr
         pos, at, tris = weld(pos, at, tris)
         pos = relax(pos, tris, interior=0)
         dump(name, "3cut", pos, tris, at[:, -1])
+    if rigid is not None:
+        pos = shell(name, pos, np.asarray(rigid, float), lift if clear is None else clear)
+        # (one blend for the whole plate, its skin's mean: it moves rigidly)
+        at[:, 3:3 + NB] = four_bones(at[:, 3:3 + NB].mean(0, keepdims=True))
     if not dome and not filled:
         pos = clear_of_skin(pos, lift if clear is None else clear, tris)
     dump(name, "3pre", pos, tris, at[:, -1])  # SOLVER1 TEMP
@@ -2067,8 +2107,10 @@ def piece(name, field, mkey, lift=0.003, thick=0.003, smooth=0, bevel=0.0012, tr
     # Only the piece itself hides her skin: its binding, trim, studs and
     # stitches overhang its edge, and skin hidden under them showed as holes
     # in her just past it.
+    # (A rigid plate tucks nothing: it moves apart from her skin, and the
+    # skin tucked under it showed in its shadow as it swung.)
     for o in made:
-        o["hides"] = o is made[0] and len(SPEC[mkey]) < 7
+        o["hides"] = o is made[0] and len(SPEC[mkey]) < 7 and rigid is None
     return made
 
 
@@ -3053,7 +3095,7 @@ def warden():
     out += studs_on("warden.skirt_rivets", belt, aims, "gold", r=0.0028)
     for sd, sg in (("l", 1), ("r", -1)):
         out += [
-            *piece(f"warden.pauldron_{sd}", cap(shoulder(sd), 0.11), "steel", lift=0.012, thick=0.004, smooth=14, trim=gold(0.01), studs="gold"),
+            *piece(f"warden.pauldron_{sd}", cap(shoulder(sd), 0.11), "steel", lift=0.012, thick=0.004, smooth=14, trim=gold(0.01), studs="gold", rigid=head(f"upperarm_{sd}")),
             *piece(f"warden.vambrace_{sd}", limb(sd, ELBOW_S + 0.05, WRIST_S - 0.01, legs=False), "steel", lift=0.006, smooth=8, trim=gold(), studs="gold"),
             *piece(f"warden.greave_{sd}", limb(sd, KNEE_S + 0.03, ANKLE_S + 0.01, front_dip=0.04), "steel", lift=0.008, smooth=12, trim=gold(), studs="gold"),
             *piece(f"warden.knee_{sd}", cap(LEG[sd][1] + np.array([0, -0.06, 0]), 0.06), "steel", lift=0.016, thick=0.004, smooth=12, trim=gold(0.006)),
@@ -3107,8 +3149,20 @@ def arcanist():
     # round the sides and back of her neck.
     v_lo, v_hi = UNDERBUST + 0.004, head("neck_01")[2] + 0.02
     nx_ = abs(NIPPLE["r"][0])
-    v_half = np.interp(Z, [v_lo, (NIPPLE["r"][2] + v_lo) / 2, NIPPLE["r"][2] + 0.03, v_hi],
-                       [0.0, nx_ * 0.42, nx_ * 0.62, 0.05])
+    # (one U, judge 2: drawn piecewise straight it came out with a flat
+    # bottom, a hump and a corner. A parabola from its foot, round there,
+    # through the upper breast, then eased up to the collar.)
+    from scipy.interpolate import PchipInterpolator
+    zt, wt_ = NIPPLE["r"][2] + 0.03, nx_ * 0.62
+    R_u = wt_ ** 2 / (2 * (zt - v_lo))
+    zk = np.r_[v_lo + (zt - v_lo) * np.linspace(0, 1, 12) ** 2, zt + (v_hi - zt) * np.array([0.35, 0.7]), v_hi]
+    xk = np.where(zk <= zt, np.sqrt(2 * R_u * np.maximum(zk - v_lo, 0)), 0.0)
+    xk[-3:] = [wt_ + (0.05 - wt_) * 0.3, wt_ + (0.05 - wt_) * 0.7, 0.05]
+    _vh = PchipInterpolator(zk, xk, extrapolate=False)
+    def vhalf(z):
+        return np.nan_to_num(_vh(np.clip(z, v_lo, v_hi)))
+    print("PLUNGE U: foot round %.1f mm, %.1f cm across at %.1f cm above its foot" % (R_u * 1000, 2 * wt_ * 100, (zt - v_lo) * 100))
+    v_half = vhalf(Z)
     plunge = np.where(FRONT > 0.5, np.abs(X) - v_half, 1.0)
     plunge = np.where(Z < v_lo, 1.0, plunge)
     # Its leg lines and plunge are cut exactly once it is shaped (cut on her
@@ -3122,7 +3176,7 @@ def arcanist():
         r = qz - CROTCH
         wq = (0.0145 + 0.42 * np.maximum(r, 0)) * fr + (-0.01 + 1.5 * np.maximum(r - 0.13, 0)) * (1 - fr)
         legs = np.maximum(qz - 1.13, wq - np.abs(qx))
-        vh = np.interp(qz, [v_lo, (NIPPLE["r"][2] + v_lo) / 2, NIPPLE["r"][2] + 0.03, v_hi], [0.0, nx_ * 0.42, nx_ * 0.62, 0.05])
+        vh = vhalf(qz)
         pl = np.where((fr > 0.5) & (qz >= v_lo), np.abs(qx) - vh, 1.0)
         return np.minimum(legs, pl)
     belt_z = 1.0 + 0.035 * X / 0.18
@@ -3387,7 +3441,7 @@ def ranger():
     for k, (dz, r, lft) in enumerate(((0.0, 0.11, 0.024), (-0.045, 0.1, 0.019), (-0.09, 0.09, 0.014), (-0.13, 0.08, 0.009))):
         c = sh + np.array([0.02 * k, 0, dz])
         out += piece(f"ranger.pauldron{k}", AND(cap(c, r), Z - (c[2] - r * 0.55)), "bronze", lift=lft, thick=0.004, smooth=14,
-                     soften=10, studs="darksteel")
+                     soften=10, studs="darksteel", rigid=head("upperarm_l"))
     for sd in "lr":
         cz = leg_z(sd, tops[sd] + 0.02)
         # (the right boot, over her knee in front, cut 8 cm lower behind, as a
