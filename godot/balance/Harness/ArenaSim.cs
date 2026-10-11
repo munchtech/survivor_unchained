@@ -18,11 +18,11 @@ namespace SurvivorUnchained.Balance;
 /// player who knows the fight does: a death is then the game's, not the bot's).</summary>
 public sealed record RunSpec(int Seed, string Calling, string Policy, int Tier = 1, string People = "pack", string[]? Oaths = null,
     double Cap = 40, double Beyond = 0, int Weapon = 0, int Art = 0, int Level = 1, bool Deft = false, double Minutes = 30,
-    string Type = "", string Lamps = "empty", string For = "")
+    string Type = "", string Lamps = "empty", string For = "", string Flare = "")
 {
     public string Key => $"{Calling}/{Policy}/t{Tier}/{People}/s{Seed}/w{Weapon}" + (Level > 1 ? $"/L{Level}" : "") + (Deft ? "/deft" : "") +
         (Oaths is { Length: > 0 } ? $"/{string.Join("+", Oaths)}" : "") + (Minutes != 30 ? $"/m{Minutes:0}" : "") +
-        (Type != "" ? $"/{Type}" : "") + (Lamps != "empty" ? $"/lamps-{Lamps}" : "") + (For != "" ? $"/for-{For}" : "");
+        (Type != "" ? $"/{Type}" : "") + (Lamps != "empty" ? $"/lamps-{Lamps}" : "") + (For != "" ? $"/for-{For}" : "") + (Flare != "" ? $"/flare-{Flare}" : "");
 }
 
 /// <summary>A minute of the fight, as the harness saw it.</summary>
@@ -169,6 +169,13 @@ public static class ArenaSim
             j.World.Facts["lamps.atlas"] = LampBook.AtlasLamps;
         }
         if (spec.Lamps is "suggested" or "full") LampBook.LightSuggested(j.Ch, j.World);
+        // --flare stand: carry the road's Stand (its lamp lit past its gate if the board hasn't reached it; a measuring aid).
+        if (spec.Flare == "stand")
+        {
+            var road = Lamps.Road(LampBook.Now(j.Ch).Type);
+            if (Lamps.FlareLamp(road.Stand) is { } fl && !LampBook.Now(j.Ch).Lit.Contains(fl)) LampBook.Now(j.Ch).Lit.Add(fl);
+            if (!LampBook.Carry(j.Ch, road.Stand)) throw new InvalidOperationException($"can't carry {road.Stand}");
+        }
         // (A night shorter than the table's is a story's: it ends on its boss.)
         var arena = new ArenaSpec { Id = "table:bot", Name = "The Harness", Seed = spec.Seed, Tier = spec.Tier, People = spec.People, Oaths = (spec.Oaths ?? []).ToList(),
             Minutes = spec.Minutes, Story = spec.Minutes != 30 };

@@ -109,7 +109,7 @@ void Arena()
                           specs.Add(new RunSpec(seed0 + s, host, "road:" + ty, tier, peoples[(s + w) % peoples.Length], Sworn(oath, tier, seed0 + s),
                               opt.Double("cap", 40), opt.Double("beyond", 0), allWeapons ? w : s % Callings.Archetype(host).Weapons.Count,
                               Level: level == "tier" ? 1 + 3 * (tier - 1) : int.Parse(level), Deft: deft, Minutes: opt.Double("minutes", 30),
-                              Type: host == c ? ty : Lamps.RoadsOf(host).First().Id, Lamps: lampsOpt, For: ty));
+                              Type: host == c ? ty : Lamps.RoadsOf(host).First().Id, Lamps: lampsOpt, For: ty, Flare: opt.Get("flare", "")));
                   }
     }
     else
@@ -124,7 +124,7 @@ void Arena()
                         for (int w = 0; w < nw; w++)
                             specs.Add(new RunSpec(seed0 + s, c, pol, tier, peoples[(s + w) % peoples.Length], Sworn(oath, tier, seed0 + s),
                                 opt.Double("cap", 40), opt.Double("beyond", 0), allWeapons ? w : s % Callings.Archetype(c).Weapons.Count,
-                                Level: level == "tier" ? 1 + 3 * (tier - 1) : int.Parse(level), Deft: deft, Minutes: opt.Double("minutes", 30), Type: ty, Lamps: lampsOpt));
+                                Level: level == "tier" ? 1 + 3 * (tier - 1) : int.Parse(level), Deft: deft, Minutes: opt.Double("minutes", 30), Type: ty, Lamps: lampsOpt, Flare: opt.Get("flare", "")));
                     }
     string outPath = opt.Get("out", "balance.jsonl");
     Console.WriteLine($"{specs.Count} arenas, {opt.Int("par", 16)} at a time -> {outPath}");
