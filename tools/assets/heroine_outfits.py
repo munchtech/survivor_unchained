@@ -3851,13 +3851,27 @@ def arcanist():
             ok = ~np.isnan(Y[a])
             Y[a] = np.where(ok, Y[a], np.nanmin(Y[a]) if ok.any() else np.nanmin(Y))
         Y = np.minimum.accumulate(Y[:, ::-1], axis=1)[:, ::-1]   # (never behind what lies outside it)
-        Y0 = Y.copy()   # (the easing must never pull it behind the cloth it lies on: its horns sank)
-        for _ in range(30):
-            Y[1:-1] = 0.25 * Y[:-2] + 0.5 * Y[1:-1] + 0.25 * Y[2:]
-        Y = np.minimum(Y, Y0) - 0.0006
-        bump = 0.0016 * np.sin(np.pi * np.linspace(0, 1, nr))[None, :] * (wid[:, None] / W0) ** 0.5
+        # (a rigid piece of metal, not a foil: its back is one smooth surface,
+        # a cubic in x and z hugging the front-most of the cloth and binding
+        # under it (refitted to the lower envelope), then set CLASP_OFF, 3 mm,
+        # in front of every sample. At 0.4 mm the cloth came through it in her
+        # idle (her chest rises under it) and the strip read as crumpled foil
+        # with its horns buried; at 3 mm it lies clean.)
+        Y0 = Y.copy()
+        xs, zs = X.ravel() / 0.03, (Zc.ravel() - cz) / 0.03
+        A = np.stack([xs ** i * zs ** j for i in range(4) for j in range(4 - i)], 1)
+        tgt = Y0.ravel().copy()
+        for _ in range(40):
+            fit = A @ np.linalg.lstsq(A, tgt, rcond=None)[0]
+            tgt = np.minimum(Y0.ravel(), fit)
+        Y = fit.reshape(Y0.shape)
+        Y = Y + min(0.0, float((Y0 - Y).min())) - float(os.environ.get("CLASP_OFF", 0.003))
+        gap = (Y0 - Y) * 1000
+        print(f"CLASP: back off the cloth {gap.min():.2f} to {gap.max():.2f} mm (median {np.median(gap):.2f}; its rim {np.median(np.r_[gap[:, 0], gap[:, -1]]):.2f})")
+        t = np.linspace(0, 1, nr)[None, :]
+        bump = 0.0011 + 0.0013 * np.sqrt(np.clip(np.sin(np.pi * t), 0, 1)) * (wid[:, None] / W0) ** 0.5
         back = np.stack([X, Y, Zc], -1)
-        frnt = np.stack([X, Y - 0.0008 - bump, Zc], -1)
+        frnt = np.stack([X, Y - bump, Zc], -1)
         P2, T2 = [], []
 
         def grid(G, flip):
@@ -3878,8 +3892,18 @@ def arcanist():
         pp, tt = np.vstack(P2), np.array(T2)
         if (vertex_normals(pp, tt)[:n0, 1] > 0).mean() > 0.5:
             tt = tt[:, ::-1]
-        _, jn = cKDTree(cp).query(pp)
-        made = [finish("arcanist.clasp", pp, cw[jn], tt, "gold", 0.0, 0.0, 10 ** 6, scraps=False)]
+        c_foot = back[nth // 2, nr // 2]
+        def sk(pts):
+            # (metal moves as one rigid piece: every point of the crescent, its
+            # bezel and stone takes one row, the cloth's weights averaged over
+            # 12 mm round the foot. Per-point weights mixed her breasts' and
+            # spine's bones differently from point to point, and the four-bone
+            # cut crumpled the strip into zigzags in her idle.)
+            d, j = cKDTree(cp).query(c_foot, k=96)
+            g = np.exp(-(d / 0.012) ** 2)
+            w = (cw[j] * g[:, None]).sum(0) / g.sum()
+            return np.repeat((w / w.sum())[None], len(pts), 0)
+        made = [finish("arcanist.clasp", pp, sk(pp), tt, "gold", 0.0, 0.0, 10 ** 6, scraps=False)]
         # (the stone: an oval cabochon at the foot, 10 x 8 mm, 3.2 mm high, in
         # a gold bezel ring 1 mm proud of the crescent)
         c0 = frnt[nth // 2, nr // 2]
@@ -3892,14 +3916,14 @@ def arcanist():
         if (vertex_normals(sp, st)[:, 1] > 0).mean() > 0.5:
             st = st[:, ::-1]
         _, jn = cKDTree(cp).query(sp)
-        made.append(finish("arcanist.clasp_stone", sp, cw[jn], st, "amethyst", 0.0, 0.0, 10 ** 6, scraps=False))
+        made.append(finish("arcanist.clasp_stone", sp, sk(sp), st, "amethyst", 0.0, 0.0, 10 ** 6, scraps=False))
         bp = [c0 + np.array([0.005 * ra * np.cos(2 * np.pi * j / nu), dy, 0.004 * ra * np.sin(2 * np.pi * j / nu)])
               for ra, dy in ((1.0, 0.0), (1.0, -0.001), (1.2, -0.001), (1.2, 0.0)) for j in range(nu)]
         bt = [t_ for k in range(3) for j in range(nu) for t_ in ((k * nu + j, (k + 1) * nu + (j + 1) % nu, k * nu + (j + 1) % nu),
                                                                   (k * nu + j, (k + 1) * nu + j, (k + 1) * nu + (j + 1) % nu))]
         bp, bt = np.array(bp), np.array(bt)
         _, jn = cKDTree(cp).query(bp)
-        made.append(finish("arcanist.clasp_bezel", bp, cw[jn], bt, "gold", 0.0, 0.0, 10 ** 6, scraps=False))
+        made.append(finish("arcanist.clasp_bezel", bp, sk(bp), bt, "gold", 0.0, 0.0, 10 ** 6, scraps=False))
         print("CLASP: crescent %.0f mm across, horns %.0f deg round the foot, %.1f mm wide at its foot; stone at z %.3f"
               % (2 * (R_IN + W0) * np.sin(TH0) * 1000, CLASP_TH, W0 * 1000, c0[2]))
         return made
