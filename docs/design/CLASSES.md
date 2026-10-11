@@ -895,6 +895,8 @@ Sizes are in lead sessions. One session is about 300k tokens of a `su-lead-high`
 
 ## 8. Open questions for the owner
 
+**Decided (the owner, 11 October 2026): "go with all 8 recommendations".** All eight below are answered as recommended. Phase 1 (systems) starts now.
+
 1. **Should ultimates be locked to the calling?** *Recommend yes:* they're the identity, and the only hard lock. Everything else stays open to everyone.
 2. **Free respec by day at any town lamp-post, with two saved layouts?** *Recommend yes:* planning is only fun when trying is free.
 3. **Pick the type at creation?** *Recommend yes,* for the starting grip, the road's mechanic and the first Flare, but never as a lock: the Lamps decide what you become.

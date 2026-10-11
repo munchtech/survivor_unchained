@@ -15,6 +15,7 @@ Every lead reads this after RESUME.md. When you take a note into your work, mark
 - In arenas, anyone can do anything (as in PoE), but on-calling choices are easier or better. More skills, mostly synergy.
 - Q / right-click stops being a dash and becomes a customizable ULTIMATE: it charges up, works as a limit-break life-saver, and is the heart of class identity. "it should be AWESOME. it should look AWESOME."
 - Plan first (docs/design/CLASSES.md); the owner approves before code.
+- The plan (CLASSES.md: the Lamps tree, the Flare ultimates, two types per calling) was approved with "go with all 8 recommendations". Build order: phases 1 to 3 first (systems; the beat and one Flare per calling; the Lamps screen and HUD).
 
 ### Outfits: trim at the bust (an option, sent to the outfits lead)
 "can add leather trim to ranger, and white feathery trim to arcanist parts of their clothing in the bust if it makes it easier to clean them up nicely - just only increase the skin we cover slightly if you do decide to do that route." Leather trim for the Ranger, white feathery trim for the Arcanist, on the bust edges, where it gives a cleaner edge; the extra coverage stays slight.
