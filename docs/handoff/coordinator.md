@@ -11,6 +11,7 @@ From the coordinator session that ran 3 to 6 October 2026. Read this after `docs
 
 ## Procedures
 - **Merging a lead:** `bash tools/scratch/coordinator/merge_lead.sh <agent-id>`. It sets aside untracked `.uid` and `.import` files that would block the merge, merges, and stops on a conflict.
+  - **When the lead's work is finished and merged, remove its worktree in the same turn** (`powershell -NoProfile -File tools/scratch/coordinator/wt_remove.ps1 <path>`; links first, long paths handled). Disk rules: `CLAUDE.md` (the owner, 10 October). End of day: `python tools/scratch/coordinator/wt_audit.py`, remove the merged and clean ones, and report any older than 48 h that are unmerged or dirty.
   - Resolve conflicts by keeping both sides' intent: Game.cs's `Tour` flags are a common clash; combine the bool lists.
   - Then `dotnet test` in `godot/tests` before every push.
 - **After any Godot import in the main checkout:** revert `godot/project.godot` (the editor drops `screen_space_aa=0`) and the regenerated `.import` files: `git status --short | grep '^ M' | grep '\.import$' | cut -c4- > imp.txt; git checkout --pathspec-from-file=imp.txt --`.
@@ -21,6 +22,7 @@ From the coordinator session that ran 3 to 6 October 2026. Read this after `docs
 
 - **Background runners' and judges' reports reach you, not the lead (10 October).** A lead that ends its turn "waiting" on one stops and won't wake. Relay each result with SendMessage (condensed), and save a judge's full verdict next to its sheets: `python <scratchpad>/lastmsg.py <agent-id> <dir>/verdict.md` (reads the last text of `~/.claude/projects/<project>/<session>/subagents/agent-<id>.jsonl`; a copy is in tools/scratch/coordinator/lastmsg.py). Leads are now told to run a runner or judge in the foreground when their next step depends on it.
 - **Weekly usage audit:** `python tools/scratch/coordinator/usage_week.py` (and `usage_more.py`) reads the last eight days of transcripts: cost at list price, cache rewrites after waits, contexts over 300k, image re-reads. Run it at the start of each week and act on what it shows.
+- **Lean agent types (10 October):** every type now lists only the tools it uses (`tools:` in `.claude/agents/*.md`; `su-worker-medium` is in `~/.claude/agents`). Without that list an agent loaded every tool (the browser, computer use, artifacts, docs): about 40k of its 48-53k starting context. A runner with 5 tools starts at 12.8k. Types load at session start, so **on your first spawn, check the start**: spawn `su-lead-max` (effort low) with "reply ok and list your tool names; Context budget: 60k" and confirm it starts near 15k, not 51k. If a lead needs another tool (the browser for downloads), spawn it with `subagent_type: claude` for that job.
 - **Settings that save tokens** live in `.claude/settings.json`: a one-hour cache for subagents and a 400k auto-compact backstop.
 
 ## The owner
