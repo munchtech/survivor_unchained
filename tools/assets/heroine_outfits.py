@@ -3497,6 +3497,65 @@ def leg_z(sd, s0):
     return float(np.interp(s0, d, np.array(pts)[:, 2]))
 
 
+def ranger_pauldron():
+    """Her left spaulder: a bronze dome over her shoulder and three lames down her arm."""
+    out = []
+    sh = shoulder("l")
+    # (judge 3: each plate fitted on its own, the lames cut through one
+    # another and the one above (a gash at the top). Now built from the
+    # lowest up, each a fair dome lifted until it stands clear outside those
+    # under it (its 1.5 mm and a 1.3 mm gap), and laid out round her arm.)
+    ctr = head("upperarm_l")
+    arm_ax = head("lowerarm_l") - ctr
+    NEST.pop("ranger.pauldron", None)
+    PL_LAP = 0.01
+    plates = [(0.0, 0.11, 0.018), (-0.045, 0.1, 0.015), (-0.09, 0.09, 0.012), (-0.13, 0.08, 0.009)]
+    cut_z = [sh[2] + dz - r * 0.55 for dz, r, _ in plates]
+    # (judge 4: each lame was cut wider than the plate above it, so its ends
+    # stood out beside that plate, above its lower rim: a sliver and a kink
+    # at the dome's back, and every corner a sharp point the rolled rim
+    # ended in. Each plate's corners are now rounded `PL_ROUND`, and each
+    # lame's arc round her arm ends `PL_TUCK` inside the straight lower rim
+    # of the plate above, so both its ends go under that plate.)
+    PL_ROUND, PL_TUCK = 0.011, 0.012
+    P_TREE = cKDTree(P)
+    ax_ = arm_ax / np.linalg.norm(arm_ax)
+    d_ = P - ctr
+    rad_ = d_ - np.outer(d_ @ ax_, ax_)
+    e0 = (sh - ctr) - ax_ * ((sh - ctr) @ ax_)
+    e0 /= np.linalg.norm(e0)
+    th_ = np.arctan2(rad_ @ np.cross(ax_, e0), rad_ @ e0)
+    rho_ = np.linalg.norm(rad_, axis=1)
+    zones = []
+    for k, (dz, r, _) in enumerate(plates):
+        z_ = ANDR(cap(sh + np.array([0.02 * k, 0, dz]), r), Z - cut_z[k], r=PL_ROUND)
+        if k:
+            # (judge 5: an arc round her arm still let lame 1 out beside the
+            # dome at its back, where the dome's rim is its round, not its
+            # cut. So a lame keeps only what, slid up her arm by its own
+            # height, lies `PL_TUCK` inside the plate above: in that
+            # plate's shadow, its top edge under it everywhere.)
+            # (any slide from 5 to 90 mm: a band above is hit by whatever
+            # lies under it, at whatever height)
+            arc = np.max([zones[k - 1][P_TREE.query(P - ax_ * sl)[1]] for sl in np.arange(0.005, 0.0901, 0.005)], axis=0) - PL_TUCK
+            print("PAULDRON lame %d: kept in plate %d's shadow up her arm" % (k, k - 1))
+            # (a lame is a band: under the plate above only by its 10 mm overlap)
+            z_ = ANDR(ANDR(z_, PL_LAP - zones[k - 1], r=PL_ROUND), arc, r=PL_ROUND)
+        zones.append(z_)
+    for k in reversed(range(len(plates))):
+        lft = plates[k][2]
+        RIGID_UV[f"ranger.pauldron{k}"] = (ctr, ax_, k > 0)
+        zone = zones[k]
+        # (a lame's centre on her arm at its own height: about the shoulder's
+        # ball, a band down her arm fitted badly, 8 mm rms)
+        ax_ = arm_ax / np.linalg.norm(arm_ax)
+        cen = ctr if k == 0 else ctr + ax_ * max(0.0, float((P[zone > 0].mean(0) - ctr) @ ax_))
+        out += piece(f"ranger.pauldron{k}", zone, "bronze", lift=lft, thick=0.0015, smooth=14,
+                     soften=10, studs="darksteel", rigid=(cen, "ranger.pauldron", 0.0028),
+                     studs_off=zones[k - 1] if k else None)
+    return out
+
+
 def ranger():
     """The stalker: a corset that holds her. It is strapless, with a
     sweetheart line over her breasts (hugged tight, on their perfect form),
@@ -3713,59 +3772,7 @@ def ranger():
     for _ in range(4):
         seam[1:-1] = (seam[:-2] + 2 * seam[1:-1] + seam[2:]) / 4
     out += ribbon("ranger.pant_seam", list(seam), 0.005, "brownleather", lift=0.0022, thick=0.0012)
-    sh = shoulder("l")
-    # (judge 3: each plate fitted on its own, the lames cut through one
-    # another and the one above (a gash at the top). Now built from the
-    # lowest up, each a fair dome lifted until it stands clear outside those
-    # under it (its 1.5 mm and a 1.3 mm gap), and laid out round her arm.)
-    ctr = head("upperarm_l")
-    arm_ax = head("lowerarm_l") - ctr
-    NEST.pop("ranger.pauldron", None)
-    PL_LAP = 0.01
-    plates = [(0.0, 0.11, 0.018), (-0.045, 0.1, 0.015), (-0.09, 0.09, 0.012), (-0.13, 0.08, 0.009)]
-    cut_z = [sh[2] + dz - r * 0.55 for dz, r, _ in plates]
-    # (judge 4: each lame was cut wider than the plate above it, so its ends
-    # stood out beside that plate, above its lower rim: a sliver and a kink
-    # at the dome's back, and every corner a sharp point the rolled rim
-    # ended in. Each plate's corners are now rounded `PL_ROUND`, and each
-    # lame's arc round her arm ends `PL_TUCK` inside the straight lower rim
-    # of the plate above, so both its ends go under that plate.)
-    PL_ROUND, PL_TUCK = 0.011, 0.012
-    P_TREE = cKDTree(P)
-    ax_ = arm_ax / np.linalg.norm(arm_ax)
-    d_ = P - ctr
-    rad_ = d_ - np.outer(d_ @ ax_, ax_)
-    e0 = (sh - ctr) - ax_ * ((sh - ctr) @ ax_)
-    e0 /= np.linalg.norm(e0)
-    th_ = np.arctan2(rad_ @ np.cross(ax_, e0), rad_ @ e0)
-    rho_ = np.linalg.norm(rad_, axis=1)
-    zones = []
-    for k, (dz, r, _) in enumerate(plates):
-        z_ = ANDR(cap(sh + np.array([0.02 * k, 0, dz]), r), Z - cut_z[k], r=PL_ROUND)
-        if k:
-            # (judge 5: an arc round her arm still let lame 1 out beside the
-            # dome at its back, where the dome's rim is its round, not its
-            # cut. So a lame keeps only what, slid up her arm by its own
-            # height, lies `PL_TUCK` inside the plate above: in that
-            # plate's shadow, its top edge under it everywhere.)
-            # (any slide from 5 to 90 mm: a band above is hit by whatever
-            # lies under it, at whatever height)
-            arc = np.max([zones[k - 1][P_TREE.query(P - ax_ * sl)[1]] for sl in np.arange(0.005, 0.0901, 0.005)], axis=0) - PL_TUCK
-            print("PAULDRON lame %d: kept in plate %d's shadow up her arm" % (k, k - 1))
-            # (a lame is a band: under the plate above only by its 10 mm overlap)
-            z_ = ANDR(ANDR(z_, PL_LAP - zones[k - 1], r=PL_ROUND), arc, r=PL_ROUND)
-        zones.append(z_)
-    for k in reversed(range(len(plates))):
-        lft = plates[k][2]
-        RIGID_UV[f"ranger.pauldron{k}"] = (ctr, ax_, k > 0)
-        zone = zones[k]
-        # (a lame's centre on her arm at its own height: about the shoulder's
-        # ball, a band down her arm fitted badly, 8 mm rms)
-        ax_ = arm_ax / np.linalg.norm(arm_ax)
-        cen = ctr if k == 0 else ctr + ax_ * max(0.0, float((P[zone > 0].mean(0) - ctr) @ ax_))
-        out += piece(f"ranger.pauldron{k}", zone, "bronze", lift=lft, thick=0.0015, smooth=14,
-                     soften=10, studs="darksteel", rigid=(cen, "ranger.pauldron", 0.0028),
-                     studs_off=zones[k - 1] if k else None)
+    out += ranger_pauldron()
     for sd in "lr":
         cz = leg_z(sd, tops[sd] + 0.02)
         # (the right boot, over her knee in front, cut 8 cm lower behind, as a
