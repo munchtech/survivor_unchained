@@ -18,6 +18,10 @@ public partial class Hits : Node3D
     readonly List<(Label3D Label, float T, float Life, Vector3 At)> words = new();
     int nextSpray, nextNumber, nextArc, nextWord;
     readonly RandomNumberGenerator rng = new() { Seed = 5 };
+    /// <summary>While a held moment's words are on the world (the fall's choices), a boss's words
+    /// step back: his move's name stood over "Get up" and read as part of it.</summary>
+    public static bool Hushed;
+    float hush;
 
     public override void _Ready()
     {
@@ -193,13 +197,14 @@ public partial class Hits : Node3D
     {
         StepTally(delta);
         float dt = (float)delta;
+        hush = Mathf.MoveToward(hush, Hushed ? 1 : 0, dt * 6);
         for (int i = 0; i < numbers.Count; i++)
         {
             var (l, t) = numbers[i];
             if (t >= 1) continue;
             t += dt / 0.75f;
             l.Position += Vector3.Up * dt * 1.4f * (1 - t);
-            var c = l.Modulate; c.A = t < 0.7f ? 1 : 1 - (t - 0.7f) / 0.3f; l.Modulate = c;
+            var c = l.Modulate; c.A = (t < 0.7f ? 1 : 1 - (t - 0.7f) / 0.3f) * (1 - hush); l.Modulate = c;
             l.OutlineModulate = new Color(l.OutlineModulate, c.A);
             if (t >= 1) l.Visible = false;
             numbers[i] = (l, t);
@@ -210,7 +215,7 @@ public partial class Hits : Node3D
             if (t >= 1) continue;
             t += dt / life;
             // In quickly, a slow lift while it holds, out over its last fifth.
-            float a = Mathf.Min(1, t * life / 0.12f) * (t < 0.8f ? 1 : 1 - (t - 0.8f) / 0.2f);
+            float a = Mathf.Min(1, t * life / 0.12f) * (t < 0.8f ? 1 : 1 - (t - 0.8f) / 0.2f) * (1 - hush);
             l.GlobalPosition = UnderTheBars(at + Vector3.Up * 0.35f * t);
             var c = l.Modulate; c.A = a; l.Modulate = c;
             l.OutlineModulate = new Color(l.OutlineModulate, a);

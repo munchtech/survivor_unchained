@@ -404,6 +404,10 @@ public partial class StoryChoices : Control
         return b;
     }
 
+    /// <summary>Where its words stand on the screen once they are up (null before): what is said over
+    /// the world keeps out of it (GameHud.Banner), as from the banner whose place it takes.</summary>
+    public Rect2? Words => Modulate.A > 0.05f ? new Rect2(column.Position, column.Size) : null;
+
     /// <summary>The answer whose key is held (-1: none), and how far to choosing it.</summary>
     public void Held(int i, float k)
     {

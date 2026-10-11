@@ -806,13 +806,35 @@ public partial class GameHud : CanvasLayer
         return chip;
     }
 
+    Label? zoneWhen;
+    (int Day, string? Region, TimeOfDay Time) zoneAt;
+    double? zoneClock;
+
     public void ZoneInfo(string name, string? region, int day, TimeOfDay time)
     {
         zoneName.Text = name.ToUpperInvariant();
         foreach (var c in zoneSub.GetChildren()) if (c != dial) c.QueueFree();
         // Where the clock runs, its dial says the time of day; elsewhere a sun or a moon.
         if (!dial.Visible) zoneSub.AddChild(Glyphs.Icon(time == TimeOfDay.Night ? "moon" : "sun", 15, time == TimeOfDay.Night ? Hex("#b8ccff") : Hex("#ffd890")));
-        zoneSub.AddChild(Style.Label($"{time}  ·  Day {day}" + (region != null ? $"  ·  {region}" : ""), Style.Ui, 17, Style.Ink with { A = 0.85f }));
+        zoneAt = (day, region, time);
+        zoneWhen = Style.Label(When(), Style.Ui, 17, Style.Ink with { A = 0.85f });
+        zoneSub.AddChild(zoneWhen);
+    }
+
+    /// <summary>The line under the place's name: the time of day, the day, the region. By day it is
+    /// the morning or the afternoon where the clock runs, and daylight where it does not ("Day ·
+    /// Day 1" said the one word twice).</summary>
+    string When()
+    {
+        var (day, region, time) = zoneAt;
+        const double noon = SurvivorUnchained.World.DayClock.DayAt + SurvivorUnchained.World.DayClock.DayLength / 2;
+        string word = time switch
+        {
+            TimeOfDay.Day when zoneClock is double c => c < noon ? "Morning" : "Afternoon",
+            TimeOfDay.Day => "Daylight",
+            _ => time.ToString(),
+        };
+        return $"{word}  ·  Day {day}" + (region != null ? $"  ·  {region}" : "");
     }
 
     FallChoices? fall;
@@ -859,6 +881,9 @@ public partial class GameHud : CanvasLayer
             if (zoneSub.GetChildCount() > 1 && zoneSub.GetChild(1) is TextureRect g) g.Visible = !on;
         }
         if (clock is double c) dial.Set(c, running);
+        // (the morning turns to the afternoon in the line's word as well as on the dial)
+        zoneClock = clock;
+        if (zoneWhen != null && IsInstanceValid(zoneWhen) && When() is var w && zoneWhen.Text != w) zoneWhen.Text = w;
     }
 
     public void Objectives(List<Tracked> list)
@@ -1095,6 +1120,14 @@ public partial class GameHud : CanvasLayer
     }
 
     /// <summary>Where the survivor stands on screen, each frame (null: not on it).</summary>
+    Rect2? bossOnScreen;
+    float bossBarA = 1;
+
+    /// <summary>Where the boss himself stands on the screen (his feet to his head; null: none, or off it).
+    /// Under his own bar at the top of the picture, the bar steps back so he is seen: with the view
+    /// leant toward him a boss far up the screen still stood under his name.</summary>
+    public void BossAt(Rect2? body) => bossOnScreen = body;
+
     public void Follow(Vector2? at)
     {
         if (at is { } p) under.Position = p + new Vector2(-38, 22);
@@ -1228,8 +1261,12 @@ public partial class GameHud : CanvasLayer
         else announce.Modulate = Colors.Transparent;
         // Nothing big over a choice being made.
         if (draft != null || talk != null) { announce.Modulate = Colors.Transparent; subtitle.Modulate = Colors.Transparent; }
-        Banner = announce.Modulate.A > 0.05f ? BannerRect() : null;
+        // (a choice the story puts to her stands in the banner's place, and is kept clear as it is)
+        Banner = announce.Modulate.A > 0.05f ? BannerRect() : choice != null && IsInstanceValid(choice) ? choice.Words : null;
         TopClear = bossBox.Visible ? bossBox.GetGlobalRect().End.Y + 8 : 118;
+        bool beneath = bossBox.Visible && bossOnScreen is Rect2 body && bossBox.GetGlobalRect().Grow(6).Intersects(body);
+        bossBarA = Mathf.MoveToward(bossBarA, beneath ? 0.38f : 1, dt * 4);
+        bossBox.Modulate = Colors.White with { A = bossBarA };
         foreach (var c in toasts.GetChildren())
         {
             if (c is not Notice n) continue;

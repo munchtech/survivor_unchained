@@ -62,9 +62,16 @@ void fragment() {
 		float len = length(d);
 		vec3 dir = d / len;
 		float t = dot(wp - cam, dir);
-		if (t < len - 1.0) {
+		// (in the last metre before her, only what is over her head: a low bough at her own depth
+		// covered her whole in the Verge, while the ground at her feet must stay)
+		if (t < len - 1.0 || (t < len && wp.y > survivor.y + 0.5)) {
 			float r = length((wp - cam) - dir * t);
 			float radius = mix(1.2, 3.4, clamp(t / len, 0.0, 1.0));
+			// Roofs and crowns, well over her head, open wider: at 3.4 m a house's roof between her
+			// and the camera still filled the lower half of the picture (the shrine, the town's lanes),
+			// and the Verge's crowns hid the ground round her where the crowd comes from.
+			float high = smoothstep(2.4, 5.0, wp.y - survivor.y);
+			radius = mix(radius, mix(3.0, 6.5, clamp(t / len, 0.0, 1.0)), high);
 			float fade = (1.0 - smoothstep(radius * 0.7, radius, r)) * 0.94;
 			if (bayer(FRAGCOORD.xy) < fade) discard;
 		}

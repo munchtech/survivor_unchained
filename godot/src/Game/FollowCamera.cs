@@ -26,8 +26,9 @@ public sealed class FollowCamera
     public float ShakeScale = 1;
     public Vector3? FocusOverride;
     /// <summary>What the view keeps in frame with her (a story night's boss): the look leans a third of the
-    /// way toward it, never more than four and a half metres. Followed on her alone, the boss stood under the
-    /// HUD's bar at the screen's foot for a fight's length.</summary>
+    /// way toward it across the screen, never more than four and a half metres, and up to 45% and seven
+    /// metres up or down it. Followed on her alone, the boss stood under the HUD's bar at the screen's
+    /// foot for a fight's length.</summary>
     public Vector3? Toward;
     float towardX, towardZ;
     /// <summary>Where the survivor should stand across the screen, in pixels from its middle at
@@ -99,7 +100,11 @@ public sealed class FollowCamera
         if (Toward is Vector3 tw)
         {
             float dx = tw.X - x, dz = tw.Z - z, dl = Mathf.Sqrt(dx * dx + dz * dz);
-            if (dl > 0.01f) { float k = Mathf.Min(dl * 0.33f, 4.5f) / dl; wx = dx * k; wz = dz * k; }
+            // Further when he is up or down the screen than across it: the picture is shorter than it
+            // is wide, and the boss's bar and the orbs take its top and foot (the experience director:
+            // Redcowl twelve metres north stood under his own bar).
+            float v = dl > 0.01f ? Mathf.Abs(dx * Mathf.Sin(Yaw) + dz * Mathf.Cos(Yaw)) / dl : 0;
+            if (dl > 0.01f) { float k = Mathf.Min(dl * (0.33f + 0.12f * v), 4.5f + 2.5f * v) / dl; wx = dx * k; wz = dz * k; }
         }
         towardX = Damp(towardX, wx, 1.5f, dt);
         towardZ = Damp(towardZ, wz, 1.5f, dt);

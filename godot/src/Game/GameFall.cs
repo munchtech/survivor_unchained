@@ -72,6 +72,8 @@ public partial class Game
             controls.ClearLatches();
             // The two choices as type on the darkened world, a click or a key choosing (no prompt box).
             hud.Fall(risesLeft, () => FallKey(Act.Confirm), () => FallKey(Act.Cancel));
+            // (the boss's move words step back: "His age" stood over "Get up")
+            SurvivorUnchained.View.Hits.Hushed = true;
             Shots.Want("fall", 0.6);
             // --choose rise|letgo: the choice made for a run, after the card has been seen.
             if (Args.Get("choose") is string ch) Wait(2.0, () => { if (hudMode == "fall") FallKey(ch == "letgo" ? Act.Cancel : Act.Confirm); });
@@ -102,6 +104,7 @@ public partial class Game
         if (scene != null) scene.SimPaused = false;
         hud.Prompt(promptShown = null);
         hud.Fall(null);
+        SurvivorUnchained.View.Hits.Hushed = false;
     }
 
     /// <summary>Up again: dark for a breath, then the checkpoint, the light back, and the words.</summary>

@@ -574,6 +574,7 @@ public partial class Game : Node, IZoneHost
         screens.Close();
         hud.ShowPlay(true);
         scene!.SimPaused = false;
+        SurvivorUnchained.View.Hits.Hushed = false;
         showing = false;
         scene.Showcase = null;
         var start = at ?? z.ArrivalFrom(from);
@@ -943,6 +944,8 @@ public partial class Game : Node, IZoneHost
             // A story night's boss kept in frame with her (FollowCamera.Toward).
             cam.Toward = zone is StoryNight bn && bn.Now == StoryNight.Stage.Boss && bn.BossScript?.E is { Alive: true } be && be.State != SurvivorUnchained.Sim.EnemyState.Dying
                 ? new Vector3((float)be.X, 0, (float)be.Z) : null;
+            // (his body on the screen, so his bar can step back from over him)
+            hud.BossAt(BossBody());
             Perf.Begin(Perf.Part.Later);
             RunLater(dt);
             Perf.End(Perf.Part.Later);
@@ -982,7 +985,10 @@ public partial class Game : Node, IZoneHost
             if (near != null)
             {
                 var np = new Vector3((float)near.X, (float)scene.HeightAt(near.X, near.Z) + 2.4f, (float)near.Z);
-                hud.PromptAt(camera.IsPositionBehind(np) ? null : camera.UnprojectPosition(np));
+                // Over a person, above the name over their head: at the head, its plate covered the
+                // name under it ("Talk Chid" over "Chid, Priest"). The plates are a fixed size on the
+                // screen, so the step is in its pixels.
+                hud.PromptAt(camera.IsPositionBehind(np) ? null : camera.UnprojectPosition(np) - new Vector2(0, near.Verb == "Talk" ? 46 : 0));
             }
             else hud.PromptAt(null);
             hud.Beyond(Overlay == null ? Offscreen(fb2) : new());
@@ -1475,6 +1481,21 @@ public partial class Game : Node, IZoneHost
     }
 
     int clickI;
+
+    /// <summary>The fight's boss on the screen, feet to head (null: no boss, or behind the camera).</summary>
+    Rect2? BossBody()
+    {
+        var script = zone switch { StoryNight sn => sn.BossScript, ArenaRun a => a.BossScript, MapRun m => m.BossScript, _ => null };
+        if (script?.E is not { Alive: true } e || scene == null) return null;
+        var camera = GetViewport().GetCamera3D();
+        float y = (float)scene.HeightAt(e.X, e.Z), tall = 2.6f * (float)(e.Def.Scale ?? 1);
+        var feet = new Vector3((float)e.X, y, (float)e.Z);
+        var head = feet + Vector3.Up * tall;
+        if (camera == null || camera.IsPositionBehind(feet) || camera.IsPositionBehind(head)) return null;
+        Vector2 f = camera.UnprojectPosition(feet), h = camera.UnprojectPosition(head);
+        float w = Mathf.Max(60, (f.Y - h.Y) * 0.8f);
+        return new Rect2(h.X - w / 2, h.Y, w, Mathf.Max(1, f.Y - h.Y));
+    }
 
     /// <summary>A click as the mouse gives it: moved there, pressed, released ("r640:480" for the right button).</summary>
     void ClickAt(string spec)

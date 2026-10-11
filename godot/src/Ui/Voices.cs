@@ -220,8 +220,11 @@ public partial class Voices : Node3D
             if (at.Y < top) at.Y = Math.Max(top, cam.UnprojectPosition(b.At).Y + 14);
             at.X = Mathf.Clamp(at.X, 16, 1904 - size.X);
             // Never inside the banner's words, nor beside them on their line (read across, a howl's
-            // caption and the banner's title made one sentence): under them (over them is the boss's bar).
-            if (Ui.GameHud.Banner is Rect2 band && band.GrowIndividual(140, 6, 140, 6).Intersects(new Rect2(at, size))) at.Y = band.End.Y + 10;
+            // caption and the banner's title made one sentence): under them (over them is the boss's bar),
+            // and under the speaker's feet when they stand lower still: said just under the knee's
+            // choice, his line read as a third row of it.
+            if (Ui.GameHud.Banner is Rect2 band && band.GrowIndividual(140, 6, 140, 6).Intersects(new Rect2(at, size)))
+                at.Y = Math.Max(band.End.Y + 18, cam.UnprojectPosition(b.At).Y + 14);
             float want = 0;
             for (int pass = 0; pass < 8; pass++)
             {
