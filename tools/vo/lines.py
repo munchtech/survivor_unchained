@@ -58,7 +58,7 @@ SPEAKER_VOICE = {"The Ford-Warden": "warden", "Grimtunnel": "grimtunnel", "Snib"
                  "A Kerchief woman": "kerchief_woman", "The Barrow Lord": "barrow_lord", "The Red Hand": "red_hand",
                  "A voice up the road": "vonnra"}
 # A conversation node's own speaker (the cinematics name theirs).
-NODE_VOICE = {"ford_warden": "warden", "barrow_lord": "barrow_lord", "kerchief_woman": "kerchief_woman", "guard": "guard"}
+NODE_VOICE = {"ford_warden": "warden", "barrow_lord": "barrow_lord", "kerchief_woman": "kerchief_woman", "guard": "guard", "far_voice": "vonnra"}
 
 
 def name_elided(s: str, mark: str = "") -> tuple[str, bool]:

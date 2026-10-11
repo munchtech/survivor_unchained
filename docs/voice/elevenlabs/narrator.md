@@ -1,6 +1,6 @@
 # The narrator: ElevenLabs packet
 
-Voice id in the game: `narrator`. 355 takes to record (34,602 characters; about 103,806 credits at three tries a line). Status: **on hold, except the 64 takes marked LOCKED FOR RECORDING** (the story lead, 2026-10-11): record those now and hold the rest (recast as a woman of about sixty, plain and dry (the story rewrite, 6 October); cast her anew before recording).
+Voice id in the game: `narrator`. 355 takes to record (34,557 characters; about 103,671 credits at three tries a line). Status: **on hold, except the 64 takes marked LOCKED FOR RECORDING** (the story lead, 2026-10-11): record those now and hold the rest (recast as a woman of about sixty, plain and dry (the story rewrite, 6 October); cast her anew before recording).
 
 ## Who they are
 
@@ -11,7 +11,7 @@ Voice id in the game: `narrator`. 355 takes to record (34,602 characters; about 
 In ElevenLabs: **Voices → Add a new voice → Voice Design**. Paste this as the description, and the preview text below as the text; generate, listen to the three, and regenerate until one is this person. Save it as `SU The narrator`. Never describe a voice as sounding like a real person.
 
 ```
-Native English (British, northern English). Female, 60s. Studio quality. Persona: an old storyteller. A woman of about sixty with a plain, dry, level voice and a light northern English accent. She speaks evenly and close, at one steady pace, like a woman who has told people bad news before and does not dress it up. No warmth, no performance, never theatrical, never a storyteller's lilt. Light northern English accent. No reverb or effects.
+Native English (British, northern English). Female, 60s. Studio quality. Persona: a plain-spoken northern woman. A woman of about sixty with a plain, dry, level voice and a light northern English accent. She speaks evenly and close, at one steady pace, like a woman who has told people bad news before and does not dress it up. No warmth, no performance, never theatrical, never a storyteller's lilt. Light northern English accent. No reverb or effects.
 ```
 
 Preview text:
@@ -79,9 +79,10 @@ Subtitle: Prints in the frost, your own. They come up from the river. None go do
 
 *The same words are also* `say.e6fc0151e69a.wav`*: record once; the importer copies the take.*
 *Where:* dialogue.json cin_drowned_fire/lamp#0
+*Played:* volume: quiet.
 
 ```
-Far up the road one lamp burns high in the dark, and a voice comes down to you over the frost, close as if she stood at your shoulder.
+[quietly] Far up the road one lamp burns high in the dark, and a voice comes down to you over the frost, close as if she stood at your shoulder.
 ```
 Subtitle: Far up the road one lamp burns high in the dark, and a voice comes down to you over the frost, close as if she stood at your shoulder.
 
@@ -107,18 +108,18 @@ Subtitle: Past the firelight, the frost is breaking.
 *Note:* The book's three lines read as written words, plainly, one after another.
 
 ```
-[quietly] A Watchman, gray-bearded and a long time dead, sitting against the post as if he had only stopped for breath. Something has had his eyes. In his belt-book, three lines in a hand that worsens as it goes: "Lamps at the Low Ford lit again, and not by us. Not oil. Wrong color." "Sent Dannet for the captain. Dannet not back." "The Warden is walking. I can hear it singing in the water."
+[quietly] A Watchman, gray-bearded and a long time dead, sitting against the post as if he had only stopped for breath. Something has had his eyes. In his belt-book, three lines in a hand that worsens as it goes: Lamps at the Low Ford lit again, and not by us. Not oil. Wrong color. Sent Dannet for the captain. Dannet not back. The Warden is walking. I can hear it singing in the water.
 ```
 Subtitle: A Watchman, gray-bearded and a long time dead, sitting against the post as if he had only stopped for breath. Something has had his eyes. In his belt-book, three lines in a hand that worsens as it goes: "Lamps at the Low Ford lit again, and not by us. Not oil. Wrong color." "Sent Dannet for the captain. Dannet not back." "The Warden is walking. I can hear it singing in the water."
 
 ### 6. `say.178e6dd0ad78.wav`  **LOCKED FOR RECORDING**
 
 *Where:* godot/logic/Play/Zones/Prologue.cs
-*Played:* plain; doing: a dead man speaks to you alone; pace: slow; volume: hushed.
+*Played:* plain; doing: a dead man speaks to you alone; pace: slow; volume: quiet.
 *Note:* A hush: one of his four whispers.
 
 ```
-[whispers] ...and for you alone, the dead man's jaw moves.
+[quietly] ...and for you alone, the dead man's jaw moves.
 ```
 Subtitle: ...and for you alone, the dead man's jaw moves.
 
@@ -202,11 +203,11 @@ Subtitle: Past the fence, a figure in a tall hat is talking to the graves. The g
 ### 14. `say.f67dd9f6e97c.wav`  **LOCKED FOR RECORDING**
 
 *Where:* godot/logic/Play/Zones/Prologue.cs
-*Played:* plain; doing: the Warden is seen for the first time; pace: slow; volume: hushed.
+*Played:* plain; doing: the Warden is seen for the first time; pace: slow; volume: quiet.
 *Note:* A hush: one of his four whispers. A pause after 'in the ford'; 'with a lamp in its fist' plain.
 
 ```
-[whispers] Something lies in the ford… larger than any man, with a lamp in its fist.
+[quietly] Something lies in the ford… larger than any man, with a lamp in its fist.
 ```
 Subtitle: Something lies in the ford, larger than any man, with a lamp in its fist.
 
@@ -224,9 +225,10 @@ Subtitle: Where the Warden fell, its heart is still burning: a stone the size of
 ### 16. `say.e9a2a9ccac15.wav`  **LOCKED FOR RECORDING**
 
 *Where:* godot/logic/Play/Zones/Prologue.cs
+*Played:* volume: quiet.
 
 ```
-In the reeds on the far bank, someone is standing very still.
+[quietly] In the reeds on the far bank, someone is standing very still.
 ```
 Subtitle: In the reeds on the far bank, someone is standing very still.
 
@@ -244,9 +246,10 @@ Subtitle: Gray light, then gold. Up the road, the Waystation's gate is opening.
 ### 18. `say.93b63298edc0.wav`  **LOCKED FOR RECORDING**
 
 *Where:* godot/logic/Play/Zones/Prologue.cs
+*Played:* volume: quiet.
 
 ```
-As the sun clears the trees, the ember goes out of you and back into the ground, and everything it gave you goes with it. What you carry, and what you have learned, are still yours. When the dark comes again, it will burn again. You try to call up your mother's face, and find it is not quite where you left it. Her voice is still there. "Lamp's lit, Spark. Stay where it reaches."
+[quietly] As the sun clears the trees, the ember goes out of you and back into the ground, and everything it gave you goes with it. What you carry, and what you have learned, are still yours. When the dark comes again, it will burn again. You try to call up your mother's face, and find it is not quite where you left it. Her voice is still there. Lamp's lit, Spark. Stay where it reaches.
 ```
 Subtitle: As the sun clears the trees, the ember goes out of you and back into the ground, and everything it gave you goes with it. What you carry, and what you have learned, are still yours. When the dark comes again, it will burn again. You try to call up your mother's face, and find it is not quite where you left it. Her voice is still there. "Lamp's lit, Spark. Stay where it reaches."
 
@@ -283,7 +286,7 @@ Subtitle: The sun clears the trees, and the ember goes back into the ground.
 *Length:* the cut is timed to it: 4.6–5.4 s (the cut then holds three seconds of silence), first sound to last word.
 
 ```
-[quietly] You try to call up your mother's face, and find it is not quite where you left it. Her voice is still there. "Lamp's lit, Spark. Stay where it reaches."
+[quietly] You try to call up your mother's face, and find it is not quite where you left it. Her voice is still there. Lamp's lit, Spark. Stay where it reaches.
 ```
 Subtitle: You try to call up your mother's face, and find it is not quite where you left it. Her voice is still there. "Lamp's lit, Spark. Stay where it reaches."
 
@@ -1125,18 +1128,18 @@ Subtitle: He watches you write it, and doesn't look at what.
 ### 100. `dlg.brannoc.first.0.p1.wav`  **LOCKED FOR RECORDING**
 
 *The same words are also* `dlg.brannoc.first.1.p1.wav`*: record once; the importer copies the take.*
-*Where:* dialogue.json brannoc/first#0; part 2 of 5: brannoc: Hunter. Good. You'll know a clean pelt. Brannoc. Iron, and things with fur on. / **narrator: The hammer. He looks at you properly.** / brannoc: ...Came up the Low Ford road? Irons on it. Mine. Ten. / narrator: The hammer. / brannoc: Best I've done.
+*Where:* dialogue.json brannoc/first#0; part 2 of 5: brannoc: Hunter. Good. You'll know a clean pelt. Brannoc. Iron, and things with fur on. / **narrator: The hammer. He looks you over.** / brannoc: ...Came up the Low Ford road? Irons on it. Mine. Ten. / narrator: The hammer. / brannoc: Best I've done.
 *Played:* the narrator's aside inside someone else's line: plain, quiet, observant; the narrator never shows a feeling.
 
 ```
-[quietly] The hammer. He looks at you properly.
+[quietly] The hammer. He looks you over.
 ```
-Subtitle: The hammer. He looks at you properly.
+Subtitle: The hammer. He looks you over.
 
 ### 101. `dlg.brannoc.first.0.p3.wav`  **LOCKED FOR RECORDING**
 
 *The same words are also* `dlg.brannoc.first.1.p3.wav`*: record once; the importer copies the take.*
-*Where:* dialogue.json brannoc/first#0; part 4 of 5: brannoc: Hunter. Good. You'll know a clean pelt. Brannoc. Iron, and things with fur on. / narrator: The hammer. He looks at you properly. / brannoc: ...Came up the Low Ford road? Irons on it. Mine. Ten. / **narrator: The hammer.** / brannoc: Best I've done.
+*Where:* dialogue.json brannoc/first#0; part 4 of 5: brannoc: Hunter. Good. You'll know a clean pelt. Brannoc. Iron, and things with fur on. / narrator: The hammer. He looks you over. / brannoc: ...Came up the Low Ford road? Irons on it. Mine. Ten. / **narrator: The hammer.** / brannoc: Best I've done.
 *Played:* the narrator's aside inside someone else's line: plain, quiet, observant; the narrator never shows a feeling.
 
 ```
@@ -1287,7 +1290,7 @@ Subtitle: He picks the hammer up and holds it, and doesn't use it.
 
 ### 116. `dlg.brannoc.nell_risen.0.p0.wav`  **LOCKED FOR RECORDING**
 
-*Where:* dialogue.json brannoc/nell_risen#0; part 1 of 4: **narrator: He looks at you then. Properly, for the first time.** / brannoc: Got up. / narrator: He says it the way he tests an edge: weighing it. / brannoc: Got up, and you put her down. ...Was it quick?
+*Where:* dialogue.json brannoc/nell_risen#0; part 1 of 4: **narrator: He looks at you then. Properly, for the first time.** / brannoc: Got up. / narrator: He says it the way he tests an edge. / brannoc: Got up, and you put her down. ...Was it quick?
 *Played:* the narrator's aside inside someone else's line: plain, quiet, observant; the narrator never shows a feeling.
 
 ```
@@ -1297,13 +1300,13 @@ Subtitle: He looks at you then. Properly, for the first time.
 
 ### 117. `dlg.brannoc.nell_risen.0.p2.wav`  **LOCKED FOR RECORDING**
 
-*Where:* dialogue.json brannoc/nell_risen#0; part 3 of 4: narrator: He looks at you then. Properly, for the first time. / brannoc: Got up. / **narrator: He says it the way he tests an edge: weighing it.** / brannoc: Got up, and you put her down. ...Was it quick?
+*Where:* dialogue.json brannoc/nell_risen#0; part 3 of 4: narrator: He looks at you then. Properly, for the first time. / brannoc: Got up. / **narrator: He says it the way he tests an edge.** / brannoc: Got up, and you put her down. ...Was it quick?
 *Played:* the narrator's aside inside someone else's line: plain, quiet, observant; the narrator never shows a feeling.
 
 ```
-[quietly] He says it the way he tests an edge: weighing it.
+[quietly] He says it the way he tests an edge.
 ```
-Subtitle: He says it the way he tests an edge: weighing it.
+Subtitle: He says it the way he tests an edge.
 
 ### 118. `dlg.brannoc.nell_quick.0.p0.wav`  **LOCKED FOR RECORDING**
 
@@ -1441,36 +1444,40 @@ Subtitle: He takes the lantern down off its hook, and lights it, and takes a bla
 ### 131. `dlg.brannoc.nell_with.0.wav`  **LOCKED FOR RECORDING**
 
 *Where:* dialogue.json brannoc/nell_with#0
+*Played:* volume: quiet.
 
 ```
-He doesn't wait for anything else. He goes out, and you go with him, down toward the south gate in the last of the light.
+[quietly] He doesn't wait for anything else. He goes out, and you go with him, down toward the south gate.
 ```
-Subtitle: He doesn't wait for anything else. He goes out, and you go with him, down toward the south gate in the last of the light.
+Subtitle: He doesn't wait for anything else. He goes out, and you go with him, down toward the south gate.
 
 ### 132. `dlg.brannoc.nell_alone.0.wav`  **LOCKED FOR RECORDING**
 
 *Where:* dialogue.json brannoc/nell_alone#0
+*Played:* volume: quiet.
 
 ```
-He nods, once, and goes out past you with the lantern and the blanket, down toward the south gate.
+[quietly] He nods, once, and goes out past you with the lantern and the blanket, down toward the south gate.
 ```
 Subtitle: He nods, once, and goes out past you with the lantern and the blanket, down toward the south gate.
 
 ### 133. `dlg.brannoc.dusk_call.0.wav`  **LOCKED FOR RECORDING**
 
 *Where:* dialogue.json brannoc/dusk_call#0
+*Played:* volume: quiet.
 
 ```
-The forge is banked, but Brannock is still at the anvil, and when you pass he calls you over without looking up.
+[quietly] The forge is banked, but Brannock is still at the anvil, and when you pass he calls you over without looking up.
 ```
 Subtitle: The forge is banked, but Brannoc is still at the anvil, and when you pass he calls you over without looking up.
 
 ### 134. `dlg.brannoc.dusk_call.1.wav`  **LOCKED FOR RECORDING**
 
 *Where:* dialogue.json brannoc/dusk_call#1
+*Played:* volume: quiet.
 
 ```
-As the light goes, the hammer at the smithy stops. Brannock calls you over, without looking up.
+[quietly] As the light goes, the hammer at the smithy stops. Brannock calls you over, without looking up.
 ```
 Subtitle: As the light goes, the hammer at the smithy stops. Brannoc calls you over, without looking up.
 
@@ -3764,9 +3771,10 @@ Subtitle: At the gate, Holloway is on the ground with his back to the post, coun
 ### 355. `dlg.warden_answer.wait.0.wav`  **LOCKED FOR RECORDING**
 
 *Where:* dialogue.json warden_answer/wait#0
+*Played:* volume: quiet.
 
 ```
-He waits for an answer, the lamp held up to your face.
+[quietly] He waits for an answer, the lamp held up to your face.
 ```
 Subtitle: He waits for an answer, the lamp held up to your face.
 

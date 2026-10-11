@@ -37,7 +37,7 @@ python tools/vo/import_takes.py ~/Downloads/su_vo --voice maeca
 
 ## Saying the names
 
-The text to paste already respells these; keep the respelling: Greymuzzle as *Grey-muzzle*, Maeca as *Mayka*, Thornhollow as *Thorn-hollow*.
+The text to paste already respells these; keep the respelling: Greymuzzle as *Grey-muzzle*, Grimtunnel as *Grim-tunnel*, Maeca as *Mayka*, Thornhollow as *Thorn-hollow*.
 
 ## The lines
 
@@ -145,7 +145,7 @@ Subtitle: You saw that? Nobody sees that. Dragging, yes. Weak in the hindquarter
 *Note:* Contempt for the diggers. 'Days, maybe.' hopeful, guarded.
 
 ```
-[quiet anger, then hope, quietly] Grimtunnel's diggers. Should've known; every bad thing under Thorn-hollow has a lamp in its hand. Stop that pump and the Pack'll come back to itself. Days, maybe. It'll happen.
+[quiet anger, then hope, quietly] Grim-tunnel's diggers. Should've known; every bad thing under Thorn-hollow has a lamp in its hand. Stop that pump and the Pack'll come back to itself. Days, maybe. It'll happen.
 ```
 Subtitle: Grimtunnel's diggers. Should've known; every bad thing under Thornhollow has a lamp in its hand. Stop that pump and the Pack'll come back to itself. Days, maybe. It'll happen.
 
@@ -156,7 +156,7 @@ Subtitle: Grimtunnel's diggers. Should've known; every bad thing under Thornholl
 *Note:* Instructions, each a rule. A dry edge on 'If he decides wrong, well. Run then.'
 
 ```
-[serious, careful, quietly] Not with words. But Greymuzzle's old and he isn't stupid. Go into the Hollow with no wolf blood on you, none since you last slept. Don't wear their skins. And don't run. He'll decide what you are. If he decides wrong, well. Run then.
+[serious, careful, quietly] Not with words. But Grey-muzzle's old and he isn't stupid. Go into the Hollow with no wolf blood on you, none since you last slept. Don't wear their skins. And don't run. He'll decide what you are. If he decides wrong, well. Run then.
 ```
 Subtitle: Not with words. But Greymuzzle's old and he isn't stupid. Go into the Hollow with no wolf blood on you, none since you last slept. Don't wear their skins. And don't run. He'll decide what you are. If he decides wrong, well. Run then.
 

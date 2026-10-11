@@ -117,7 +117,7 @@ def say(text: str) -> str:
     placeholders use)."""
     lex = lexicon().get("say", {})
     for k in sorted(lex, key=len, reverse=True):
-        text = re.sub(rf"(?<![\w']){re.escape(k)}(?![\w'])", lex[k], text)
+        text = re.sub(rf"(?<![\w']){re.escape(k)}(?:(?![\w'])|(?='s(?![\w'])))", lex[k], text)
     return text
 
 
@@ -125,7 +125,8 @@ def words(t: str) -> list[str]:
     return re.findall(r"[a-z']+", re.sub(r"\[[^\]]*\]", " ", t.lower()))
 
 
-ACTED = {"a sniff": "sniffs", "a laugh": "laughs", "a sigh": "sighs", "a gasp": "gasps"}
+ACTED = {"a sniff": "sniffs", "a laugh": "laughs", "a sigh": "sighs", "a gasp": "gasps", "a breath": "exhales",
+         "a long breath, through the nose": "exhales slowly"}
 
 
 def acted_tag(m) -> str:
@@ -138,7 +139,7 @@ def paste(seg_text: str, d: dict, narrator_aside: bool, plain: bool = False, act
     """What to paste into ElevenLabs: a direction tag, then the words with
     the writer's beats as audio tags where a beats part says exactly them."""
     text = re.sub(r"\[([^\]]+)\]", acted_tag, acted) if acted else seg_text
-    if not narrator_aside:
+    if not narrator_aside and not acted:
         for part in (d.get("beats") or "").split("|"):
             if words(part) and words(part) == words(seg_text):
                 text = re.sub(r"\[([a-z]+)[^\]]*\]", lambda m: TAG.get(m.group(1), ""), part)
@@ -150,9 +151,11 @@ def paste(seg_text: str, d: dict, narrator_aside: bool, plain: bool = False, act
     vol = "quiet" if narrator_aside else d.get("vol", "level")
     if plain and vol == "hushed" and not d.get("whisper"):
         vol = "quiet"  # the narrator whispers only where his direction says so
-    if VOL_TAG.get(vol):
+    if VOL_TAG.get(vol) and not any(VOL_TAG[vol] in h for h in how):  # "very quietly" already says it
         how.append(VOL_TAG[vol])
     tag = ", ".join(h for h in how if h)
+    if plain:
+        text = text.replace('"', "").replace("\u201c", "").replace("\u201d", "")  # the narrator's quotes are not acted as quotes
     return (f"[{tag}] " if tag else "") + say(text)
 
 
@@ -163,7 +166,7 @@ def brief(voice: str, v: dict) -> str:
     region = next((r for k, r in REGION.items() if k.lower() in v.get("accent", "").lower()), "British")
     # Maya1's description names the persona in the clause that is not about the voice.
     clauses = v.get("maya", "").split(". ")[0].split(", ")
-    persona = next((c for c in reversed(clauses) if "voice" not in c), v["name"])
+    persona = v.get("persona") or next((c for c in reversed(clauses) if "voice" not in c), v["name"])
     # The accents are a palette, not a caricature (VOICES.md): broad at most,
     # and a softened, flattened or tinged one asked for lightly.
     light = any(w in v.get("accent", "").lower() for w in ("tinge", "soft", "flatten", "worn", "light"))
@@ -240,22 +243,29 @@ def packet(voice: str, man: list[dict]) -> tuple[str, dict]:
         key = e["seg"].get("acted", e["seg"]["text"])
         if key in first:
             first[key]["also"].append(file_name(e["line"], e["part"]))
+            if lock_state(e["line"]) == "ok":
+                first[key]["locked"] = True
             continue
         e["also"] = []
+        e["locked"] = lock_state(e["line"]) == "ok"
         first[key] = e
         es.append(e)
     chars = sum(len(e["seg"]["text"]) for e in es)
     holds = [e for e in es if held(e["line"], voice)]
-    locked = [e for e in es if lock_state(e["line"]) == "ok"]
+    locked = [e for e in es if e["locked"]]
     lk = lock_mod.load().get(locked[0]["line"]["id"], {}) if locked else {}
+    if locked and not lk:
+        lk = next((x for x in (lock_mod.load().get(i) for i in [e["line"]["id"] for e in entries(man, voice)]) if x), {})
     spoken = " ".join(e["seg"]["text"] for e in es)
-    lex = {k: x for k, x in lexicon().get("say", {}).items() if k != x and re.search(rf"(?<![\w']){re.escape(k)}(?![\w'])", spoken)}
+    lex = {k: x for k, x in lexicon().get("say", {}).items() if k != x and re.search(rf"(?<![\w']){re.escape(k)}(?:(?![\w'])|(?='s(?![\w'])))", spoken)}
     w = [f"# {v['name']}: ElevenLabs packet", "",
          f"Voice id in the game: `{voice}`. {len(es)} take{'s' if len(es) != 1 else ''} to record ({chars:,} characters; about {chars * 3:,} credits at three "
          f"tries a line). " + (f"Status: **on hold, except the {len(locked)} take{"" if len(locked) == 1 else "s"} marked LOCKED FOR RECORDING** ({lk.get('by')}, {lk.get('date')}): "
                                   f"record those now and hold the rest ({HOLD_VOICES[voice]})." if voice in HOLD_VOICES and locked else
                                f"Status: **on hold**: {HOLD_VOICES[voice]}. Do not record any of it yet." if voice in HOLD_VOICES else
                                f"Status: **final** (the story lead, {FINAL[voice]}): record it." if voice in FINAL else
+                               f"Status: **draft, except the {len(locked)} take{'' if len(locked) == 1 else 's'} marked LOCKED FOR RECORDING** "
+                               f"({lk.get('by')}, {lk.get('date')}): record those now." if locked else
                                "Status: **draft**, until the story lead (a7622ae77d19e31dc) checks every line and marks it final."), ""]
     if locked and voice not in HOLD_VOICES:
         w += [f"**{len(locked)} take{'s are' if len(locked) != 1 else ' is'} LOCKED FOR RECORDING** (marked below).", ""]
@@ -317,7 +327,9 @@ def packet(voice: str, man: list[dict]) -> tuple[str, dict]:
         aside = s["voice"] == "narrator" and l["voice"] != "narrator"
         # a whole part on hold says so once, at the top, unless some of it is locked: then each take says which
         hold = held(l, voice) if voice not in HOLD_VOICES or locked else None
-        is_locked = lock_state(l) == "ok"
+        is_locked = e["locked"]
+        if is_locked:
+            hold = None
         redo = file_name(l, k)[:-4] in again or l["id"] in again
         w.append(f"### {n}. `{file_name(l, k)}`" + (f"  HOLD: {hold}" if hold else "") + ("  **RE-RECORD: the words changed**" if redo else "")
                  + ("  **LOCKED FOR RECORDING**" if is_locked else ""))

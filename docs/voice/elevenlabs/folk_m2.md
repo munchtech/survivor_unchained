@@ -37,7 +37,7 @@ python tools/vo/import_takes.py ~/Downloads/su_vo --voice folk_m2
 
 ## Saying the names
 
-The text to paste already respells these; keep the respelling: Maeca as *Mayka*, Redcowl as *Red-cowl*.
+The text to paste already respells these; keep the respelling: Brannoc as *Brannock*, Maeca as *Mayka*, Redcowl as *Red-cowl*.
 
 ## The lines
 
@@ -431,7 +431,7 @@ Subtitle: Sella was singing on the stairs this morning. Sella. Singing. Somebody
 *Played:* tender; pace: measured; volume: level.
 
 ```
-[tender] They buried Brannoc's girl behind the shrine. Chid sang. Chid can't sing. Nobody minded.
+[tender] They buried Brannock's girl behind the shrine. Chid sang. Chid can't sing. Nobody minded.
 ```
 Subtitle: They buried Brannoc's girl behind the shrine. Chid sang. Chid can't sing. Nobody minded.
 

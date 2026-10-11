@@ -380,7 +380,7 @@
         }
        ]
       },
-      "text": "Nothing you don't know already, pet; you did half of it. Holloway's counting what's left, Harlan's counting what came back, and the Penhales say their dog won't go in the barn any more. Stands at the door and whines at the floor, and won't be told."
+      "text": "Nothing you don't know already, pet; you did half of it. Holloway's counting what's left, Harlan's counting what came back, and the Penhales say their dog won't go in the barn anymore. Stands at the door and whines at the floor, and won't be told."
      },
      {
       "when": {
@@ -474,7 +474,7 @@
    },
    "clerk": {
     "id": "clerk",
-    "text": "Clerks don't buy rounds. Jessop bought three, the night Coyle's wagons went missing, and kept telling the room he'd \"done somebody a favor\". Rav was there; Rav's always there. ...Jessop's not been in since. He still owes me for the third.",
+    "text": "Clerks don't buy rounds. Jessop bought three, the night Coyle's wagons went missing, and kept telling the room he'd \"done somebody a favor.\" Rav was there; Rav's always there. ...Jessop's not been in since. He still owes me for the third.",
     "choices": [
      {
       "text": "Something else.",
@@ -7174,10 +7174,10 @@
       "when": {
        "bg": "hunter"
       },
-      "text": "Hunter. Good. You'll know a clean pelt. Brannoc. Iron, and things with fur on. (The hammer. He looks at you properly.) ...Came up the Low Ford road? Irons on it. Mine. Ten. (The hammer.) Best I've done."
+      "text": "Hunter. Good. You'll know a clean pelt. Brannoc. Iron, and things with fur on. (The hammer. He looks you over.) ...Came up the Low Ford road? Irons on it. Mine. Ten. (The hammer.) Best I've done."
      },
      {
-      "text": "Brannoc. I make things of iron. I buy things with fur on. Which? (The hammer. He looks at you properly.) ...Came up the Low Ford road? Irons on it. Mine. Ten. (The hammer.) Best I've done."
+      "text": "Brannoc. I make things of iron. I buy things with fur on. Which? (The hammer. He looks you over.) ...Came up the Low Ford road? Irons on it. Mine. Ten. (The hammer.) Best I've done."
      }
     ],
     "choices": [
@@ -7839,7 +7839,7 @@
    },
    "nell_risen": {
     "id": "nell_risen",
-    "text": "(He looks at you then. Properly, for the first time.) Got up. (He says it the way he tests an edge: weighing it.) Got up, and you put her down. ...Was it quick?",
+    "text": "(He looks at you then. Properly, for the first time.) Got up. (He says it the way he tests an edge.) Got up, and you put her down. ...Was it quick?",
     "choices": [
      {
       "text": "It was quick.",
@@ -8066,7 +8066,7 @@
    "nell_with": {
     "id": "nell_with",
     "speaker": "narrator",
-    "text": "He doesn't wait for anything else. He goes out, and you go with him, down toward the south gate in the last of the light.",
+    "text": "He doesn't wait for anything else. He goes out, and you go with him, down toward the south gate.",
     "choices": [
      {
       "text": "(Go with him.)",

@@ -37,7 +37,7 @@ python tools/vo/import_takes.py ~/Downloads/su_vo --voice jory
 
 ## Saying the names
 
-The text to paste already respells these; keep the respelling: Thornhollow as *Thorn-hollow*.
+The text to paste already respells these; keep the respelling: Thornhollow as *Thorn-hollow*, Vonnra as *Vonra*.
 
 ## The lines
 
@@ -65,7 +65,7 @@ Subtitle: Jory. Jory Coyle. Is my uncle... Is he...
 *Note:* Short sentences, unsteady. 'I— thank you.' A small laugh-sob about Uncle. Then urgent, quiet: the clerk in violet. 'And they were waiting.' a shiver.
 
 ```
-[shaken gratitude, quietly] You're the one with the bar. I— thank you. Uncle Harlan hasn't stopped crying. It wasn't wolves, you know. A toll clerk met us on the road, in Vonnra's violet, and said the Old Road was shut at the Waystation and sent us down the forest track. And they were waiting.
+[shaken gratitude, quietly] You're the one with the bar. I— thank you. Uncle Harlan hasn't stopped crying. It wasn't wolves, you know. A toll clerk met us on the road, in Vonra's violet, and said the Old Road was shut at the Waystation and sent us down the forest track. And they were waiting.
 ```
 Subtitle: You're the one with the bar. I— thank you. Uncle Harlan hasn't stopped crying. It wasn't wolves, you know. A toll clerk met us on the road, in Vonnra's violet, and said the Old Road was shut at the Waystation and sent us down the forest track. And they were waiting.
 

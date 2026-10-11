@@ -1,6 +1,6 @@
 # The Ford-Warden: ElevenLabs packet
 
-Voice id in the game: `warden`. 5 takes to record (142 characters; about 426 credits at three tries a line). Status: **draft**, until the story lead (a7622ae77d19e31dc) checks every line and marks it final.
+Voice id in the game: `warden`. 5 takes to record (142 characters; about 426 credits at three tries a line). Status: **draft, except the 5 takes marked LOCKED FOR RECORDING** (the story lead, 2026-10-11): record those now.
 
 **5 takes are LOCKED FOR RECORDING** (marked below).
 

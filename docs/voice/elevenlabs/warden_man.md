@@ -1,6 +1,6 @@
 # The Ford-Warden, the man under him: ElevenLabs packet
 
-Voice id in the game: `warden_man`. 1 take to record (14 characters; about 42 credits at three tries a line). Status: **draft**, until the story lead (a7622ae77d19e31dc) checks every line and marks it final.
+Voice id in the game: `warden_man`. 1 take to record (14 characters; about 42 credits at three tries a line). Status: **draft, except the 1 take marked LOCKED FOR RECORDING** (the story lead, 2026-10-11): record those now.
 
 **1 take is LOCKED FOR RECORDING** (marked below).
 

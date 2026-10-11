@@ -1,6 +1,6 @@
 # Grimtunnel: ElevenLabs packet
 
-Voice id in the game: `grimtunnel`. 7 takes to record (442 characters; about 1,326 credits at three tries a line). Status: **draft**, until the story lead (a7622ae77d19e31dc) checks every line and marks it final.
+Voice id in the game: `grimtunnel`. 7 takes to record (442 characters; about 1,326 credits at three tries a line). Status: **draft, except the 3 takes marked LOCKED FOR RECORDING** (the story lead, 2026-10-11): record those now.
 
 **3 takes are LOCKED FOR RECORDING** (marked below).
 

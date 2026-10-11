@@ -72,13 +72,13 @@ Holloway, Brannoc and Sella, in that order.
 <!-- PACKETS -->
 | Character | Takes | Characters | Held | Locked |
 |---|---|---|---|---|
-| [The narrator](narrator.md) | 355 | 34,602 | 291 | 64 |
+| [The narrator](narrator.md) | 355 | 34,557 | 291 | 64 |
 | [Sella](sella.md) | 97 | 9,938 |  |  |
 | [Captain Holloway](holloway.md) | 110 | 9,700 | 110 |  |
 | [Vonnra Ash-of-Morrow](vonnra.md) | 104 | 8,939 | 103 | 1 |
 | [Chid](chid.md) | 77 | 8,436 | 2 |  |
 | [Harlan Coyle](harlan.md) | 63 | 7,229 | 63 |  |
-| [Mother Rook](rook.md) | 54 | 6,559 |  | 54 |
+| [Mother Rook](rook.md) | 54 | 6,558 |  | 54 |
 | [Maeca](maeca.md) | 87 | 6,294 | 87 |  |
 | [Rav Cutwell](rav.md) | 61 | 6,007 |  |  |
 | [Dame Keegan Orme](keegan.md) | 48 | 5,218 | 1 |  |
@@ -89,7 +89,7 @@ Holloway, Brannoc and Sella, in that order.
 | [Townsman, middle-aged](folk_m1.md) | 47 | 3,080 |  |  |
 | [Townswoman, young](folk_f2.md) | 47 | 3,055 |  |  |
 | [Townswoman, middle-aged](folk_f1.md) | 46 | 2,721 |  |  |
-| [Brannoc](brannoc.md) | 63 | 2,620 | 2 | 61 |
+| [Brannoc](brannoc.md) | 63 | 2,621 | 2 | 62 |
 | [Townsman, old](folk_m2.md) | 43 | 2,470 |  |  |
 | [Snib](snib.md) | 15 | 2,199 |  |  |
 | [Tam](tam.md) | 21 | 2,020 |  |  |

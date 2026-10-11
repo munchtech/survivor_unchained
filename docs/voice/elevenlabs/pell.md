@@ -35,6 +35,10 @@ Then bring them into the game (it trims, levels, mixes and replaces the placehol
 python tools/vo/import_takes.py ~/Downloads/su_vo --voice pell
 ```
 
+## Saying the names
+
+The text to paste already respells these; keep the respelling: Grimtunnel as *Grim-tunnel*.
+
 ## The lines
 
 Each: what is going on, how it is played, then the text to paste (the bracketed tags are ElevenLabs audio tags: they are acted, not spoken), the words the subtitle shows (what the take must say), and the file name.
@@ -161,7 +165,7 @@ Subtitle: Eighty gold. And the book.
 *Note:* 'Is it? Go on.' Then delighted calculation; ledger words, 'consideration' savoured. 'Especially me.' a little giggle he can't help.
 
 ```
-[interested, then gleeful] Is it? Go on. ...The Dig. Grimtunnel's little lamp-people, pumping their slurry into the stream. Oh, that is worth something. Not to Holloway: to the diggers. A pipe can be moved, for a consideration, and a consideration can be split. Forty gold, and the wolves stop dying. Everyone's happy. Especially me.
+[interested, then gleeful] Is it? Go on. ...The Dig. Grim-tunnel's little lamp-people, pumping their slurry into the stream. Oh, that is worth something. Not to Holloway: to the diggers. A pipe can be moved, for a consideration, and a consideration can be split. Forty gold, and the wolves stop dying. Everyone's happy. Especially me.
 ```
 Subtitle: Is it? Go on. ...The Dig. Grimtunnel's little lamp-people, pumping their slurry into the stream. Oh, that is worth something. Not to Holloway: to the diggers. A pipe can be moved, for a consideration, and a consideration can be split. Forty gold, and the wolves stop dying. Everyone's happy. Especially me.
 

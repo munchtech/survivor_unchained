@@ -1,6 +1,6 @@
 # Brannoc: ElevenLabs packet
 
-Voice id in the game: `brannoc`. 63 takes to record (2,620 characters; about 7,860 credits at three tries a line). Status: **on hold, except the 61 takes marked LOCKED FOR RECORDING** (the story lead, 2026-10-11): record those now and hold the rest (the story rewrite changes most of his lines (docs/voice/RERECORD.md)).
+Voice id in the game: `brannoc`. 63 takes to record (2,621 characters; about 7,863 credits at three tries a line). Status: **on hold, except the 62 takes marked LOCKED FOR RECORDING** (the story lead, 2026-10-11): record those now and hold the rest (the story rewrite changes most of his lines (docs/voice/RERECORD.md)).
 
 ## Who they are
 
@@ -47,7 +47,7 @@ Each: what is going on, how it is played, then the text to paste (the bracketed 
 
 ## Cinematic: road back
 
-### 1. `dlg.cin_road_back.place.0.wav`  HOLD: the story rewrite changes most of his lines (docs/voice/RERECORD.md)
+### 1. `dlg.cin_road_back.place.0.wav`  **LOCKED FOR RECORDING**
 
 *The same words are also* `dlg.brannoc.nell_lantern.0.p1.wav`*: record once; the importer copies the take.*
 *Where:* dialogue.json cin_road_back/place#0
@@ -73,7 +73,7 @@ Subtitle: ...Wat.
 
 ### 3. `dlg.brannoc.first.0.p0.wav`  **LOCKED FOR RECORDING**
 
-*Where:* dialogue.json brannoc/first#0; part 1 of 5: **brannoc: Hunter. Good. You'll know a clean pelt. Brannoc. Iron, and things with fur on.** / narrator: The hammer. He looks at you properly. / brannoc: ...Came up the Low Ford road? Irons on it. Mine. Ten. / narrator: The hammer. / brannoc: Best I've done.
+*Where:* dialogue.json brannoc/first#0; part 1 of 5: **brannoc: Hunter. Good. You'll know a clean pelt. Brannoc. Iron, and things with fur on.** / narrator: The hammer. He looks you over. / brannoc: ...Came up the Low Ford road? Irons on it. Mine. Ten. / narrator: The hammer. / brannoc: Best I've done.
 *Played:* gruff approval; doing: sizes up a hunter; pace: slow; volume: level.
 *Wants:* trade
 *Note:* Each fragment set down like a weight. 'Good.' approving. The last fragment a statement of trade.
@@ -86,7 +86,7 @@ Subtitle: Hunter. Good. You'll know a clean pelt. Brannoc. Iron, and things with
 ### 4. `dlg.brannoc.first.0.p2.wav`  **LOCKED FOR RECORDING**
 
 *The same words are also* `dlg.brannoc.first.1.p2.wav`*: record once; the importer copies the take.*
-*Where:* dialogue.json brannoc/first#0; part 3 of 5: brannoc: Hunter. Good. You'll know a clean pelt. Brannoc. Iron, and things with fur on. / narrator: The hammer. He looks at you properly. / **brannoc: ...Came up the Low Ford road? Irons on it. Mine. Ten.** / narrator: The hammer. / brannoc: Best I've done.
+*Where:* dialogue.json brannoc/first#0; part 3 of 5: brannoc: Hunter. Good. You'll know a clean pelt. Brannoc. Iron, and things with fur on. / narrator: The hammer. He looks you over. / **brannoc: ...Came up the Low Ford road? Irons on it. Mine. Ten.** / narrator: The hammer. / brannoc: Best I've done.
 *Played:* gruff approval; doing: sizes up a hunter; pace: slow; volume: level.
 *Wants:* trade
 *Note:* Each fragment set down like a weight. 'Good.' approving. The last fragment a statement of trade.
@@ -99,7 +99,7 @@ Subtitle: ...Came up the Low Ford road? Irons on it. Mine. Ten.
 ### 5. `dlg.brannoc.first.0.p4.wav`  **LOCKED FOR RECORDING**
 
 *The same words are also* `dlg.brannoc.first.1.p4.wav`*: record once; the importer copies the take.*
-*Where:* dialogue.json brannoc/first#0; part 5 of 5: brannoc: Hunter. Good. You'll know a clean pelt. Brannoc. Iron, and things with fur on. / narrator: The hammer. He looks at you properly. / brannoc: ...Came up the Low Ford road? Irons on it. Mine. Ten. / narrator: The hammer. / **brannoc: Best I've done.**
+*Where:* dialogue.json brannoc/first#0; part 5 of 5: brannoc: Hunter. Good. You'll know a clean pelt. Brannoc. Iron, and things with fur on. / narrator: The hammer. He looks you over. / brannoc: ...Came up the Low Ford road? Irons on it. Mine. Ten. / narrator: The hammer. / **brannoc: Best I've done.**
 *Played:* gruff approval; doing: sizes up a hunter; pace: slow; volume: level.
 *Wants:* trade
 *Note:* Each fragment set down like a weight. 'Good.' approving. The last fragment a statement of trade.
@@ -111,7 +111,7 @@ Subtitle: Best I've done.
 
 ### 6. `dlg.brannoc.first.1.p0.wav`  **LOCKED FOR RECORDING**
 
-*Where:* dialogue.json brannoc/first#1; part 1 of 5: **brannoc: Brannoc. I make things of iron. I buy things with fur on. Which?** / narrator: The hammer. He looks at you properly. / brannoc: ...Came up the Low Ford road? Irons on it. Mine. Ten. / narrator: The hammer. / brannoc: Best I've done.
+*Where:* dialogue.json brannoc/first#1; part 1 of 5: **brannoc: Brannoc. I make things of iron. I buy things with fur on. Which?** / narrator: The hammer. He looks you over. / brannoc: ...Came up the Low Ford road? Irons on it. Mine. Ten. / narrator: The hammer. / brannoc: Best I've done.
 *Played:* blunt, laconic; doing: what he does; pace: slow; volume: level.
 *Note:* Deep, slow, few words. 'Which?' a flat question.
 
@@ -394,7 +394,7 @@ Subtitle: Mine. Nell. ...You pass them?
 *Note:* He does not break. Narrator gives the look at the irons. Then facts about his daughter, flat: 'Had the reins.' barely voiced. The love is only in saying 'the reins' again. No breath of his own: the narrator describes it.
 
 ```
-[stunned, flat, quietly] ...Had the reins. She'd want the reins. Always wanted the reins.
+[stunned, flat, quietly] ...Had the reins. [exhales slowly] She'd want the reins. Always wanted the reins.
 ```
 Subtitle: ...Had the reins. She'd want the reins. Always wanted the reins.
 
@@ -411,7 +411,7 @@ Subtitle: Quick, then. Water's quick.
 
 ### 33. `dlg.brannoc.nell_risen.0.p1.wav`  **LOCKED FOR RECORDING**
 
-*Where:* dialogue.json brannoc/nell_risen#0; part 2 of 4: narrator: He looks at you then. Properly, for the first time. / **brannoc: Got up.** / narrator: He says it the way he tests an edge: weighing it. / brannoc: Got up, and you put her down. ...Was it quick?
+*Where:* dialogue.json brannoc/nell_risen#0; part 2 of 4: narrator: He looks at you then. Properly, for the first time. / **brannoc: Got up.** / narrator: He says it the way he tests an edge. / brannoc: Got up, and you put her down. ...Was it quick?
 *Played:* terrible stillness; doing: she rose and you killed her; pace: very slow; volume: quiet.
 *Note:* Narrator: he looks at you. 'Got up.' weighed. Narrator explains how he says it. Then slowly, all of it. A long pause. 'Was it quick?' the most fragile thing he says.
 
@@ -422,7 +422,7 @@ Subtitle: Got up.
 
 ### 34. `dlg.brannoc.nell_risen.0.p3.wav`  **LOCKED FOR RECORDING**
 
-*Where:* dialogue.json brannoc/nell_risen#0; part 4 of 4: narrator: He looks at you then. Properly, for the first time. / brannoc: Got up. / narrator: He says it the way he tests an edge: weighing it. / **brannoc: Got up, and you put her down. ...Was it quick?**
+*Where:* dialogue.json brannoc/nell_risen#0; part 4 of 4: narrator: He looks at you then. Properly, for the first time. / brannoc: Got up. / narrator: He says it the way he tests an edge. / **brannoc: Got up, and you put her down. ...Was it quick?**
 *Played:* terrible stillness; doing: she rose and you killed her; pace: very slow; volume: quiet.
 *Note:* Narrator: he looks at you. 'Got up.' weighed. Narrator explains how he says it. Then slowly, all of it. A long pause. 'Was it quick?' the most fragile thing he says.
 
@@ -489,36 +489,40 @@ Subtitle: No. ...Nobody looks.
 ### 40. `dlg.brannoc.fang.0.p1.wav`  **LOCKED FOR RECORDING**
 
 *Where:* dialogue.json brannoc/fang#0; part 2 of 2: narrator: He holds it up to the forge-light and turns it. / **brannoc: Worn flat on the one side. He chewed on that side.**
+*Played:* quietly, absorbed; volume: quiet.
 
 ```
-Worn flat on the one side. He chewed on that side.
+[quietly, absorbed] Worn flat on the one side. He chewed on that side.
 ```
 Subtitle: Worn flat on the one side. He chewed on that side.
 
 ### 41. `dlg.brannoc.nell_iron.0.p1.wav`  **LOCKED FOR RECORDING**
 
 *Where:* dialogue.json brannoc/nell_iron#0; part 2 of 2: narrator: His eyes go to the iron at your belt, and stay there. / **brannoc: ...That was in its hand. The thing in the water.**
+*Played:* very quietly, flat; volume: quiet.
 
 ```
-...That was in its hand. The thing in the water.
+[very quietly, flat] ...That was in its hand. The thing in the water.
 ```
 Subtitle: ...That was in its hand. The thing in the water.
 
 ### 42. `dlg.brannoc.nell_iron.1.p1.wav`  **LOCKED FOR RECORDING**
 
 *Where:* dialogue.json brannoc/nell_iron#1; part 2 of 2: narrator: His eyes go to the iron at your belt, and stay there. / **brannoc: ...Where'd you get that.**
+*Played:* low, flat; volume: level.
 
 ```
-...Where'd you get that.
+[low, flat] ...Where'd you get that.
 ```
 Subtitle: ...Where'd you get that.
 
 ### 43. `dlg.brannoc.nell_iron.2.p1.wav`  **LOCKED FOR RECORDING**
 
 *Where:* dialogue.json brannoc/nell_iron#2; part 2 of 2: narrator: He looks at the two irons on the rack, and then at you. / **brannoc: The thing in the water. What was it carrying.**
+*Played:* low, flat; volume: level.
 
 ```
-The thing in the water. What was it carrying.
+[low, flat] The thing in the water. What was it carrying.
 ```
 Subtitle: The thing in the water. What was it carrying.
 
@@ -526,27 +530,30 @@ Subtitle: The thing in the water. What was it carrying.
 
 *The same words are also* `dlg.brannoc.nell_told.0.p1.wav`*: record once; the importer copies the take.*
 *Where:* dialogue.json brannoc/nell_hand#0; part 2 of 2: narrator: He holds out his hand. You put the iron in it. He turns it to the forge, and his thumb goe… / **brannoc: Lifts it up. To see your face. ...Does it.**
+*Played:* very quietly, slow; volume: quiet.
 
 ```
-Lifts it up. [a breath] To see your face. ...Does it.
+[very quietly, slow] Lifts it up. [exhales] To see your face. ...Does it.
 ```
 Subtitle: Lifts it up. To see your face. ...Does it.
 
 ### 45. `dlg.brannoc.nell_letters.0.p1.wav`  **LOCKED FOR RECORDING**
 
 *Where:* dialogue.json brannoc/nell_letters#0; part 2 of 2: narrator: The forge ticks. He does not move for a long time. / **brannoc: Knew my mark before she knew her letters.**
+*Played:* very quietly, slow; volume: quiet.
 
 ```
-Knew my mark before she knew her letters.
+[very quietly, slow] Knew my mark before she knew her letters.
 ```
 Subtitle: Knew my mark before she knew her letters.
 
 ### 46. `dlg.brannoc.nell_thought.0.p1.wav`  **LOCKED FOR RECORDING**
 
 *Where:* dialogue.json brannoc/nell_thought#0; part 2 of 2: narrator: Longer. / **brannoc: She'd have thought I'd come for her.**
+*Played:* very quietly, voice catching; volume: quiet.
 
 ```
-She'd have thought I'd come for her.
+[very quietly, voice catching] She'd have thought I'd come for her.
 ```
 Subtitle: She'd have thought I'd come for her.
 
@@ -554,9 +561,10 @@ Subtitle: She'd have thought I'd come for her.
 
 *The same words are also* `dlg.brannoc.nell_shut.1.p1.wav`*: record once; the importer copies the take.*
 *Where:* dialogue.json brannoc/nell_shut#0; part 2 of 2: narrator: Nothing. Then he gives you the iron back, carefully, the way you'd hand someone a thing th… / **brannoc: Forge is shut.**
+*Played:* flat, quietly; volume: quiet.
 
 ```
-Forge is shut.
+[flat, quietly] Forge is shut.
 ```
 Subtitle: Forge is shut.
 
@@ -689,36 +697,40 @@ Subtitle: Forge is lit. Don't come in.
 ### 60. `bark.brannoc.said.3.wav`  **LOCKED FOR RECORDING**
 
 *Where:* npcs.json brannoc.said[3]
+*Played:* flat, wary; volume: level.
 
 ```
-Hill went gold last night. Open lamps. Not mine.
+[flat, wary] Hill went gold last night. Open lamps. Not mine.
 ```
 Subtitle: Hill went gold last night. Open lamps. Not mine.
 
 ### 61. `bark.brannoc.said.4.wav`  **LOCKED FOR RECORDING**
 
 *Where:* npcs.json brannoc.said[4]
+*Played:* gruff, proud; volume: level.
 
 ```
-Girl's first new boots. Irons paid for 'em.
+[gruff, proud] Girl's first new boots. Irons paid for 'em.
 ```
 Subtitle: Girl's first new boots. Irons paid for 'em.
 
 ### 62. `bark.brannoc.said.5.wav`  **LOCKED FOR RECORDING**
 
 *Where:* npcs.json brannoc.said[5]
+*Played:* gruff, fond; volume: level.
 
 ```
-Told her: walk where it's lit. Nothing on that road you can't see.
+[gruff, fond] Told her: walk where it's lit. Nothing on that road you can't see.
 ```
 Subtitle: Told her: walk where it's lit. Nothing on that road you can't see.
 
 ### 63. `bark.brannoc.said.6.wav`  **LOCKED FOR RECORDING**
 
 *Where:* npcs.json brannoc.said[6]
+*Played:* flat, hopeful; volume: level.
 
 ```
-Pedlar says the Kiln road's dry. Good.
+[flat, hopeful] Peddler says the Kiln road's dry. Good.
 ```
-Subtitle: Pedlar says the Kiln road's dry. Good.
+Subtitle: Peddler says the Kiln road's dry. Good.
 

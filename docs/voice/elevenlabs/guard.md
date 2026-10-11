@@ -1,6 +1,6 @@
 # A Watchman at the gate: ElevenLabs packet
 
-Voice id in the game: `guard`. 12 takes to record (509 characters; about 1,527 credits at three tries a line). Status: **draft**, until the story lead (a7622ae77d19e31dc) checks every line and marks it final.
+Voice id in the game: `guard`. 12 takes to record (509 characters; about 1,527 credits at three tries a line). Status: **draft, except the 1 take marked LOCKED FOR RECORDING** (the story lead, 2026-10-11): record those now.
 
 **1 take is LOCKED FOR RECORDING** (marked below).
 

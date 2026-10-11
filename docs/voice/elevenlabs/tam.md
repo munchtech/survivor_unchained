@@ -37,7 +37,7 @@ python tools/vo/import_takes.py ~/Downloads/su_vo --voice tam
 
 ## Saying the names
 
-The text to paste already respells these; keep the respelling: Penhale's as *Pen-hale's*.
+The text to paste already respells these; keep the respelling: Penhale as *Pen-hale*, Penhale's as *Pen-hale's*.
 
 ## The lines
 

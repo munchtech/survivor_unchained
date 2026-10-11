@@ -1,6 +1,6 @@
 # Mother Rook: ElevenLabs packet
 
-Voice id in the game: `rook`. 54 takes to record (6,559 characters; about 19,677 credits at three tries a line). Status: **final** (the story lead, 2026-10-03): record it.
+Voice id in the game: `rook`. 54 takes to record (6,558 characters; about 19,674 credits at three tries a line). Status: **final** (the story lead, 2026-10-03): record it.
 
 **54 takes are LOCKED FOR RECORDING** (marked below).
 
@@ -114,9 +114,9 @@ Subtitle: Back again. What'll it be?
 *Note:* Wry tally of who's counting what. The dog story slows and darkens: 'whines at the floor' uneasy; 'won't be told' firm.
 
 ```
-[dry, gossipy, then uneasy] Nothing you don't know already, pet; you did half of it. Holloway's counting what's left, Harlan's counting what came back, and the Pen-hales say their dog won't go in the barn any more. Stands at the door and whines at the floor, and won't be told.
+[dry, gossipy, then uneasy] Nothing you don't know already, pet; you did half of it. Holloway's counting what's left, Harlan's counting what came back, and the Pen-hales say their dog won't go in the barn anymore. Stands at the door and whines at the floor, and won't be told.
 ```
-Subtitle: Nothing you don't know already, pet; you did half of it. Holloway's counting what's left, Harlan's counting what came back, and the Penhales say their dog won't go in the barn any more. Stands at the door and whines at the floor, and won't be told.
+Subtitle: Nothing you don't know already, pet; you did half of it. Holloway's counting what's left, Harlan's counting what came back, and the Penhales say their dog won't go in the barn anymore. Stands at the door and whines at the floor, and won't be told.
 
 ### 7. `dlg.rook.rumours.1.wav`  **LOCKED FOR RECORDING**
 
@@ -136,7 +136,7 @@ Subtitle: Wenna says the stream's running clean. The wolves have gone quiet, and
 *Note:* 'None.' flat and pointed. 'Make of that what you like.' cool.
 
 ```
-[flat, disapproving] No wolves on the road now. None. Brannoc's never seen so many pelts, and Mayka hasn't been in since. Make of that what you like. Harlan's still asking after his boy.
+[flat, disapproving] No wolves on the road now. None. Brannock's never seen so many pelts, and Mayka hasn't been in since. Make of that what you like. Harlan's still asking after his boy.
 ```
 Subtitle: No wolves on the road now. None. Brannoc's never seen so many pelts, and Maeca hasn't been in since. Make of that what you like. Harlan's still asking after his boy.
 
@@ -191,9 +191,9 @@ Subtitle: Wolves, mainly. Holloway's paying for pelts, Maeca says they're sick, 
 *Note:* Mimic his 'done somebody a favour' with scorn. 'Rav's always there.' dry. Pause, then the debt, still annoyed.
 
 ```
-[knowing, aggrieved] Clerks don't buy rounds. Jessop bought three, the night Coyle's wagons went missing, and kept telling the room he'd "done somebody a favor". Rav was there; Rav's always there. ...Jessop's not been in since. He still owes me for the third.
+[knowing, aggrieved] Clerks don't buy rounds. Jessop bought three, the night Coyle's wagons went missing, and kept telling the room he'd "done somebody a favor." Rav was there; Rav's always there. ...Jessop's not been in since. He still owes me for the third.
 ```
-Subtitle: Clerks don't buy rounds. Jessop bought three, the night Coyle's wagons went missing, and kept telling the room he'd "done somebody a favor". Rav was there; Rav's always there. ...Jessop's not been in since. He still owes me for the third.
+Subtitle: Clerks don't buy rounds. Jessop bought three, the night Coyle's wagons went missing, and kept telling the room he'd "done somebody a favor." Rav was there; Rav's always there. ...Jessop's not been in since. He still owes me for the third.
 
 ### 14. `dlg.rook.town.0.wav`  **LOCKED FOR RECORDING**
 
@@ -442,54 +442,60 @@ Subtitle: Ashford was. Half of it went to the Morrow in one night, pet, and the 
 ### 36. `dlg.rook.mother.0.p1.wav`  **LOCKED FOR RECORDING**
 
 *Where:* dialogue.json rook/mother#0; part 2 of 2: narrator: She stops wiping the cup. She looks at your face a beat too long, and then out of the wind… / **rook: ...Sit down, pet.**
+*Played:* softly; volume: level.
 
 ```
-...Sit down, pet.
+[softly] ...Sit down, pet.
 ```
 Subtitle: ...Sit down, pet.
 
 ### 37. `dlg.rook.mother2.0.p0.wav`  **LOCKED FOR RECORDING**
 
 *Where:* dialogue.json rook/mother2#0; part 1 of 3: **rook: She went in her sleep, pet. A week since.** / narrator: She sets the cup down. / rook: Chid brought her down and saw to her. I sat with her, after.
+*Played:* gently, steady; volume: level.
 
 ```
-She went in her sleep, pet. A week since.
+[gently, steady] She went in her sleep, pet. A week since.
 ```
 Subtitle: She went in her sleep, pet. A week since.
 
 ### 38. `dlg.rook.mother2.0.p2.wav`  **LOCKED FOR RECORDING**
 
 *Where:* dialogue.json rook/mother2#0; part 3 of 3: rook: She went in her sleep, pet. A week since. / narrator: She sets the cup down. / **rook: Chid brought her down and saw to her. I sat with her, after.**
+*Played:* gently, steady; volume: level.
 
 ```
-Chid brought her down and saw to her. I sat with her, after.
+[gently, steady] Chid brought her down and saw to her. I sat with her, after.
 ```
 Subtitle: Chid brought her down and saw to her. I sat with her, after.
 
 ### 39. `dlg.rook.mother_where.0.wav`  **LOCKED FOR RECORDING**
 
 *Where:* dialogue.json rook/mother_where#0
+*Played:* gently; volume: level.
 
 ```
-Quiet Garden, behind the shrine. There's a marker. No name on it yet; you can tell Chid what to cut.
+[gently] Quiet Garden, behind the shrine. There's a marker. No name on it yet; you can tell Chid what to cut.
 ```
 Subtitle: Quiet Garden, behind the shrine. There's a marker. No name on it yet; you can tell Chid what to cut.
 
 ### 40. `dlg.rook.mother_short.0.p1.wav`  **LOCKED FOR RECORDING**
 
 *Where:* dialogue.json rook/mother_short#0; part 2 of 2: narrator: Something goes across her face, and is put away. / **rook: You came, pet. That's the part that counts.**
+*Played:* gruff, gentle; volume: level.
 
 ```
-You came, pet. That's the part that counts.
+[gruff, gentle] You came, pet. That's the part that counts.
 ```
 Subtitle: You came, pet. That's the part that counts.
 
 ### 41. `dlg.rook.mother_room.0.p1.wav`  **LOCKED FOR RECORDING**
 
 *Where:* dialogue.json rook/mother_room#0; part 2 of 2: narrator: She turns a ring on the nail behind the bar, among the keys, without looking at it. / **rook: Back room's yours, if you want it. It's been free a week.**
+*Played:* brisk, gentle; volume: level.
 
 ```
-Back room's yours, if you want it. It's been free a week.
+[brisk, gentle] Back room's yours, if you want it. It's been free a week.
 ```
 Subtitle: Back room's yours, if you want it. It's been free a week.
 
@@ -608,27 +614,30 @@ Subtitle: Hook's empty. I know. Leave it.
 ### 52. `bark.rook.said.2.wav`  **LOCKED FOR RECORDING**
 
 *Where:* npcs.json rook.said[2]
+*Played:* dry, sly; volume: level.
 
 ```
-Lamp burned all night for you, pet. A night's ember. It's on your slate.
+[dry, sly] Lamp burned all night for you, pet. A night's ember. It's on your slate.
 ```
 Subtitle: Lamp burned all night for you, pet. A night's ember. It's on your slate.
 
 ### 53. `bark.rook.said.3.wav`  **LOCKED FOR RECORDING**
 
 *Where:* npcs.json rook.said[3]
+*Played:* dry, fond; volume: level.
 
 ```
-Face like a wet week. Eat first. It'll still be there after.
+[dry, fond] Face like a wet week. Eat first. It'll still be there after.
 ```
 Subtitle: Face like a wet week. Eat first. It'll still be there after.
 
 ### 54. `bark.rook.said.4.wav`  **LOCKED FOR RECORDING**
 
 *Where:* npcs.json rook.said[4]
+*Played:* dry, brisk; volume: level.
 
 ```
-Sit down before you fall down. Again.
+[dry, brisk] Sit down before you fall down. Again.
 ```
 Subtitle: Sit down before you fall down. Again.
 

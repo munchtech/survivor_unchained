@@ -39,7 +39,7 @@ python tools/vo/import_takes.py ~/Downloads/su_vo --voice holloway
 
 ## Saying the names
 
-The text to paste already respells these; keep the respelling: Greymuzzle as *Grey-muzzle*, Maeca as *Mayka*, Redcowl as *Red-cowl*.
+The text to paste already respells these; keep the respelling: Greymuzzle as *Grey-muzzle*, Maeca as *Mayka*, Redcowl as *Red-cowl*, Vonnra as *Vonra*.
 
 ## The lines
 
@@ -204,7 +204,7 @@ Subtitle: They say you've put down more things than the fever year. Try not to p
 *Note:* Clipped.
 
 ```
-[impatient, tired] The road's quiet. I paid for every pelt of it. You know how quiet? Maeca's stopped coming in to argue with me.
+[impatient, tired] The road's quiet. I paid for every pelt of it. You know how quiet? Mayka's stopped coming in to argue with me.
 ```
 Subtitle: The road's quiet. I paid for every pelt of it. You know how quiet? Maeca's stopped coming in to argue with me.
 
@@ -213,7 +213,7 @@ Subtitle: The road's quiet. I paid for every pelt of it. You know how quiet? Mae
 *Where:* dialogue.json holloway/hub#9
 
 ```
-I pay for a pelt and two more wolves come down the road. I'm starting to think Maeca's right, and I hate that. What is it?
+I pay for a pelt and two more wolves come down the road. I'm starting to think Mayka's right, and I hate that. What is it?
 ```
 Subtitle: I pay for a pelt and two more wolves come down the road. I'm starting to think Maeca's right, and I hate that. What is it?
 
@@ -245,7 +245,7 @@ Subtitle: They're bolder. Two nights ago they came right up to the east gate. Fi
 *Note:* Fair-minded first sentence. Then much quieter, after a pause: what she never got. Guilt he won't name.
 
 ```
-[grudging respect, guilt, quietly] Maeca's right more often than I'd like. She tracks for the Watch: men, not wolves. Watch won't pay her, so I do. She takes it every week, and buys my drink with it. ...Then she walks me home.
+[grudging respect, guilt, quietly] Mayka's right more often than I'd like. She tracks for the Watch: men, not wolves. Watch won't pay her, so I do. She takes it every week, and buys my drink with it. ...Then she walks me home.
 ```
 Subtitle: Maeca's right more often than I'd like. She tracks for the Watch: men, not wolves. Watch won't pay her, so I do. She takes it every week, and buys my drink with it. ...Then she walks me home.
 
@@ -426,7 +426,7 @@ Subtitle: Dealt with. The road's been quiet today, I'll grant you that. Thirty f
 *Note:* Reading the ledger aloud, building. Contempt and relish on 'you careful, greedy little man'. The fee line dry: 'Once.'
 
 ```
-[grim triumph, then dry] Payments to "R.": Red-cowl. And to Jessop, at Vonnra's toll. On the night. Pell Varrow, you careful, greedy little man. My lads'll have him in irons before dark. ...And the strongbox you sold, we'll call that a fee for services. Once.
+[grim triumph, then dry] Payments to "R.": Red-cowl. And to Jessop, at Vonra's toll. On the night. Pell Varrow, you careful, greedy little man. My lads'll have him in irons before dark. ...And the strongbox you sold, we'll call that a fee for services. Once.
 ```
 Subtitle: Payments to "R.": Redcowl. And to Jessop, at Vonnra's toll. On the night. Pell Varrow, you careful, greedy little man. My lads'll have him in irons before dark. ...And the strongbox you sold, we'll call that a fee for services. Once.
 
@@ -437,7 +437,7 @@ Subtitle: Payments to "R.": Redcowl. And to Jessop, at Vonnra's toll. On the nig
 *Note:* Reading the ledger, building. Contempt on 'careful, greedy little man'. Then awkward, sincere thanks; 'I've not much to pay you with' rueful.
 
 ```
-[grim triumph, then gratitude] Payments to "R.": Red-cowl. And to Jessop, at Vonnra's toll. On the night. Pell Varrow, you careful, greedy little man. My lads'll have him in irons before dark. The Watch owes you. I don't say that lightly; I've not much to pay you with.
+[grim triumph, then gratitude] Payments to "R.": Red-cowl. And to Jessop, at Vonra's toll. On the night. Pell Varrow, you careful, greedy little man. My lads'll have him in irons before dark. The Watch owes you. I don't say that lightly; I've not much to pay you with.
 ```
 Subtitle: Payments to "R.": Redcowl. And to Jessop, at Vonnra's toll. On the night. Pell Varrow, you careful, greedy little man. My lads'll have him in irons before dark. The Watch owes you. I don't say that lightly; I've not much to pay you with.
 
@@ -470,7 +470,7 @@ Subtitle: I hear you put the old gray one down. I'd stopped paying for it. You d
 *Note:* Dry joke about Maeca. After the pause, unexpectedly reflective: odd, missing a thing you hated.
 
 ```
-[dry, then wistful, quietly] Greymuzzle's dead, they tell me. Mayka won't speak to me for a month and I've slept better for it already. ...Twenty years that wolf's had the run of this valley. Odd, missing a thing you hated.
+[dry, then wistful, quietly] Grey-muzzle's dead, they tell me. Mayka won't speak to me for a month and I've slept better for it already. ...Twenty years that wolf's had the run of this valley. Odd, missing a thing you hated.
 ```
 Subtitle: Greymuzzle's dead, they tell me. Maeca won't speak to me for a month and I've slept better for it already. ...Twenty years that wolf's had the run of this valley. Odd, missing a thing you hated.
 
@@ -648,7 +648,7 @@ Subtitle: A posting with walls somebody else has to count. A dog. Eight hours' s
 *Note:* Narrator for the reading. Then reading the entries, quieter as he understands. Firm and low on 'Don't tell me where you got it.'
 
 ```
-[shocked, then careful, quietly] Two payments, one night. Forty to "R." Ten to Jessop, "for the road": that's Vonnra's clerk at the toll. And that's the night Harlan Coyle's wagons went off the Old Road and didn't come back.
+[shocked, then careful, quietly] Two payments, one night. Forty to "R." Ten to Jessop, "for the road": that's Vonra's clerk at the toll. And that's the night Harlan Coyle's wagons went off the Old Road and didn't come back.
 ```
 Subtitle: Two payments, one night. Forty to "R." Ten to Jessop, "for the road": that's Vonnra's clerk at the toll. And that's the night Harlan Coyle's wagons went off the Old Road and didn't come back.
 

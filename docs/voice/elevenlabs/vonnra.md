@@ -27,7 +27,7 @@ In the Voice Library instead: search for *clipped, unplaceable old empire*, *fem
 - Model: **Eleven v4** (`eleven_v4`): the most emotive, and it follows the audio tags in square brackets.
 - Stability: **45** (lower is more expressive and less steady; raise it if the voice drifts from line to line). Similarity: **75**.
 - One line at a time, as below; regenerate until the read matches the direction. Two regenerations of the same text are free within two hours.
-- Download as **WAV** (from History if the download button gives MP3; MP3 at 192 kbps also works). Save each take into one folder under the exact name given, e.g. `~/Downloads/su_vo/say.54013f8d7d21.wav`.
+- Download as **WAV** (from History if the download button gives MP3; MP3 at 192 kbps also works). Save each take into one folder under the exact name given, e.g. `~/Downloads/su_vo/dlg.cin_drowned_fire.call.0.wav`.
 
 Then bring them into the game (it trims, levels, mixes and replaces the placeholders, and lists what is missing or wrong):
 
@@ -43,14 +43,16 @@ The text to paste already respells these; keep the respelling: Legio Septima as 
 
 Each: what is going on, how it is played, then the text to paste (the bracketed tags are ElevenLabs audio tags: they are acted, not spoken), the words the subtitle shows (what the take must say), and the file name.
 
-## Scenes: Prologue
+## Cinematic: drowned fire
 
-### 1. `say.54013f8d7d21.wav`  **LOCKED FOR RECORDING**
+### 1. `dlg.cin_drowned_fire.call.0.wav`  **LOCKED FOR RECORDING**
 
-*Where:* godot/logic/Play/Zones/Prologue.cs
+*The same words are also* `say.54013f8d7d21.wav`*: record once; the importer copies the take.*
+*Where:* dialogue.json cin_drowned_fire/call#0
+*Played:* softly, unhurried; volume: level.
 
 ```
-Come up, traveler. ...No charge, this once.
+[softly, unhurried] Come up, traveler. ...No charge, this once.
 ```
 Subtitle: Come up, traveler. ...No charge, this once.
 
