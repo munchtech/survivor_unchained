@@ -1138,7 +1138,7 @@ def relax(pos, tris, interior=0, edge=12):
 SPEC = {
     "steel": ("Metal038", (1.0, 1.0, 1.02), 175, 2.5, 1.0, None),
     "darksteel": ("Metal046B", (1.0, 1.0, 1.05), 95, 2.5, 1.0, None),
-    "iron": ("Metal046B", (0.92, 0.84, 0.74), 72, 2.5, 1.0, 0.5),   # (rivets: warm dark iron, an even sheen)
+    "iron": ("Metal046B", (0.92, 0.84, 0.74), 88, 2.5, 1.0, 0.5),   # (rivets: warm dark iron, an even sheen; at 72 they read as black dots beside the plate, judge 6)
     "gold": ("Metal048C", (1.0, 0.92, 0.8), None, 3, 1.0, None),
     "rust": ("Metal053C", (1, 1, 1), None, 2.5, 0.8, None),
     "leather": ("Leather037", (1, 1, 1), None, 4, 0.0, None),
@@ -4711,7 +4711,11 @@ def detail(objs, rays=20, reach=0.03):
         # (each point's few rays are noisy: eased over its neighbours, or a
         # smooth plate reads blotched)
         el_mean = float(np.median(el)) if len(el) else 0.002
-        for _ in range(int(np.clip((0.015 / max(el_mean, 1e-4)) ** 2, 8, 200))):
+        # (a rivet's eased only a little: eased 200 times over a 3 mm head, its
+        # contact shadow spread over all of it, and it read as a black dot with
+        # no ring where it meets the plate, judge 6)
+        n_ease = 2 if o.name.endswith("_rivets") else int(np.clip((0.015 / max(el_mean, 1e-4)) ** 2, 8, 200))
+        for _ in range(n_ease):
             ao = 0.5 * ao + 0.5 * mean_nb(ao)
         loops = np.zeros(len(me.loops), np.int32)
         me.loops.foreach_get("vertex_index", loops)
