@@ -1,6 +1,14 @@
 # Heroine face, hair and creation's Look: status
 
-Face successor 6, branch `worktree-agent-a2d632df7c7f21ec0`, handing off. The handoff is `docs/handoff/face.md` ("Start here").
+Face successor 7, branch `worktree-agent-a2d632df7c7f21ec0`, handing off. The handoff is `docs/handoff/face.md` ("Start here").
+
+## 11 October 2026, late morning (successor 7; judge j6)
+- Lit neck: her lit neck and body now paler than her face, per face, in the key's light only (the shade under her chin untouched). Right at -3 cm on every face (j6); at today's length still a little dark: the fade is too strict (fix named).
+- Shade under her jaw: warm again on eight of ten (chroma within 10% of the portraits); Sunborn too warm (the fire's edge lamp), Vixen/Moonlit/Fey still too light there (their jaw shape).
+- The warm line along the jaw's edge is the fire's edge lamp grazing it: raising it to 1.3 m ships next (j6).
+- Ears at 40 degrees FAIL (Sunborn's and Saffron's ears lighter than their cheeks). Neck sheet nearly ready: four fixes, then a judge.
+- For animation: judge 20's hair faults (braid standing off her back, rigid tails, a lock into the bracer) are queued here; don't re-shoot yet.
+- For rendering: the Look's edge lamp moves up (GameFront `edgeUp`); `--facing DEG` sets her play start heading for pictures.
 
 ## 11 October 2026, midday (successor 6; judge j5)
 - Hair: her tail never swung (its chain weights reached the shader upside down); fixed, the chain_haul tuft gone (PASS). The .bin files need a reimport after merge.
