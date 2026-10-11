@@ -43,6 +43,12 @@ public partial class HerPose : SkeletonModifier3D
     /// <summary>--neck-cm X: her neck X cm longer (or, negative, shorter) on top of the slider, past its reach (pictures
     /// of her at other neck lengths, for the owner's choice of hers: 11 October 2026).</summary>
     static readonly float NeckShift = SurvivorUnchained.Args.Num("neck-cm", 0f) / 100f;
+    /// <summary>Degrees her chin is raised, a third at her neck and the rest at her head. At creation's Look her idle
+    /// carries her head bowed about 12 degrees below her portraits' level gaze, and from the Look's camera her lower
+    /// face read 7-17% short and her nose low; raised 12, both meet the portrait within 2% (12 October 2026).</summary>
+    public float ChinUp;
+    /// <summary>--chin-up DEG: tries another (every figure with her pose).</summary>
+    static readonly float? ChinUpTry = SurvivorUnchained.Args.Has("chin-up") ? SurvivorUnchained.Args.Num("chin-up", 0f) : null;
 
     public HerPose() { Name = "HerPose"; }
 
@@ -113,6 +119,12 @@ public partial class HerPose : SkeletonModifier3D
             var across = new Vector3(1 + NeckWidth * NeckBreadth, 1, 1 + NeckWidth * NeckBreadth * 0.5f);
             sk.SetBonePoseScale(neck, sk.GetBonePoseScale(neck) * across);
             sk.SetBonePoseScale(head, sk.GetBonePoseScale(head) / across);
+        }
+        float up = ChinUpTry ?? ChinUp;
+        if (up != 0)
+        {
+            Turn(sk, neck, Vector3.Right, -up / 3);
+            Turn(sk, head, Vector3.Right, -up * 2 / 3);
         }
     }
 

@@ -26,9 +26,14 @@ ref = ref.resize((int(ref.width * k), int(ref.height * k)), Image.LANCZOS); rp, 
 rbox = (int(rc[0] - 1.25 * u), int(rp[1] - 0.9 * u), int(rc[0] + 1.25 * u), int(rc[1] + 2.1 * u))
 front = [fit(img('%s_nk%s_f' % (tag, n)).crop(fbox), W) for n in L] + [fit(ref.crop(rbox), W)]
 from scipy.ndimage import gaussian_filter1d
+def det(im):
+    # (mediapipe misses some frames at full size: try again at 2x)
+    l = ff.detect(np.asarray(im))
+    if l is None: l = ff.detect(np.asarray(im.resize((im.width * 2, im.height * 2), Image.LANCZOS))); l = None if l is None else l / 2
+    return l
 def notch(im, box):
     # (the notch: the strongest dip in lightness down her midline, 0.3-1.0 pupil-to-chin below her chin)
-    a = np.asarray(im.convert('L'), np.float32); l = ff.detect(np.asarray(im))[:, :2]
+    a = np.asarray(im.convert('L'), np.float32); l = det(im)[:, :2]
     p = (l[468] + l[473]) / 2; c = l[152]; uu = c[1] - p[1]; x0 = int(c[0]); w = max(2, int(0.04 * uu))
     ys = np.arange(int(c[1] + 0.3 * uu), min(a.shape[0] - 1, int(c[1] + 1.0 * uu)))
     d2 = gaussian_filter1d(gaussian_filter1d(a[ys, x0 - w:x0 + w].mean(1), 0.02 * uu), 0.03 * uu, order=2)
