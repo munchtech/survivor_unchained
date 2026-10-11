@@ -921,6 +921,8 @@ public partial class Game : Node, IZoneHost
         controls.MenuMode = screens.Current != null || hudMode != null;
         // --pad (pictures of pad play): the pad stays in hand whatever the window's mouse does.
         if (Args.Has("pad") && keyI > 0) controls.UsingPad = true;
+        // Her gameplay model only in play: never in a conversation, an overlay, a held camera or a cinematic.
+        View.HerLod.InPlay = Mode == "play" && !showing && !InCinematic && hudMode == null;
         if (scene == null) return;
         double dt = Math.Min(delta, 0.1);
         playedT += delta;

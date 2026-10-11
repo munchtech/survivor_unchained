@@ -10,23 +10,58 @@ Written by agent a4e0c353e61cca6dc, 2026-10-10 (wound down at the owner's word).
 
 ## Paused here; next:
 
-Written by a3123dd8bb0182789 (10 October, at the context budget). Branch @ the commit after 0a85d850, integration merged, 775 tests green (before 0a85d850; rerun).
+Written by lead a3 (11 October, at the context budget). Branch @ e06744f4 + this page. 775 tests passed before e06744f4's last grade tweaks; rerun them. N = scratchpad `C:\Users\munch\AppData\Local\Temp\claude\C--Users-munch-Desktop-survivorsunchained\91211d34-e079-4956-a2a0-7b52c04594a8\scratchpad` (`lod\` LOD tools, `ng\` grade and portrait tools).
 
-Done and judged (judge c14, verdict `S\judge_c14\verdict.md`; S = the 181eef02 scratchpad):
-- **Play is FSR 2 native by default** (`Graphics.Apply`: FSR 2 at every scale, sharpening off; `--aa old` = the former TAA + MSAA, also smaa/fxaa/msaa/taa). Gates PASS WITH FIXES: at 60 fps FSR 2 keeps her and the foes crisp, TAA ghosts the slashes; owner sheet `S\perf9\c16\fight60_x1.png` rows 1 and 4.
-- **The Look's hair edge PASS:** A2C core at its own `a2c_cut` 0.9 (`--hair-a2c-cut`), `ALPHA_TEXTURE_COORDINATE = UV`; matches TAA blended hair. Bar from now: jag <= 1.1x the reference (0.10 was wrong).
-- **Arena ground:** `detail_blur` 2.0 (one mip softer: detail equal to TAA's) + specular AA. Fizz ~2x TAA, accepted as low. Leaf fade tried and dropped (it dimmed every leaf).
-- **Pictures repeat frame for frame:** `Game.Rng` seeded in shot mode, camera kicks on game time. Gates now compare the same moment.
+Done this round (426cea72, e06744f4):
+- **Night grade toe** (face's ask: dark irises and hair crushed to black). Atmosphere.GradeLut holds the shadow tint's darkening in the toe (`GradeSettings.Toe`; the hold fades in over 0-0.14 gamma luma and out by 0.35). Then `ToeColour` keeps a dark's own hue (neutral share `--toe-own` 0.45, chroma ramp `--toe-chroma` 0.04).
+  - Strengths: Night (wilds) 0.75; NightTown and ArenaPlaces 0.5; `Atmospheres.Front` (title and Look, GameFront) 1.0.
+  - Doe's iris 56,22,12 now stays 56,22,12 at the Look (was 25,6,4). Neutral, brown and navy ramps are smooth.
+  - Judge aad08911f5aa24415, round 2: PASS WITH FIXES. Front, the town and the arenas ship. **The wilds are held at Toe 0** (Atmospheres.NightGrade) until this fix: ToeColour took the verge's moon blue (dark chroma 0.031 -> 0.014, hue 264 -> 217). For Night only: neutral share 0.15, chroma ramp 0.02-0.06, aim the kept blue at Oklab hue about 245. Make the share, ramp and hue per-grade fields on GradeSettings. Check: verge dark chroma about 0.025 at hue 245-265, ground 45,42,38 -> about 33,37,45, dark hair hue outside 285-345. Then Toe 0.75. Also: force each LUT axis non-decreasing (running max; the 1.0 table drops 1 level once), and give the title screen one look on Front.
+  - Flags: `--grade-toe X`, `--toe-foot/-own/-chroma`, `--grade off`. Check a `--grade-dump` with `N\ng\lutcheck.py LUT.bin`; sheets with `N\ng\nt_sheet2.py OUT PREFIX`.
+- **Portrait light** (GameFront.PortraitLight, face's ask): fill 1.0/0.95/0.9, a warm bounce of 0.18 from below, rim specular 0.25. Face's `--bounce`, `--key-shadow` and `--ssao` switches are brought in; `--rig-old` gives the before.
+  - Judge a57930a5a677ca5ce: PASS WITH FIXES, ship as built once its checks pass. Measured with `N\ng\pl_meas.py pl1`:
+    - Under-jaw shade hue 42-48 to 46-51 (cheek 53-58).
+    - Shade C/L against the cheek's: 0.76-0.90 to 0.89-1.07.
+    - Catchlights kept, no second catchlight.
+    - Cheek spread shrinks 9%, order unchanged.
+    - Sclera chroma +0.011-0.013 (target under 0.01; the box may catch lashes).
+    - The jaw-step and collar-lilac boxes missed (the right shade box lands on hair).
+  - For face: the judge saw ears paler and greyer than the face, and a pale scalp wedge at the temple. Face's HerBackSpec (c3f549ec, back_spec 0.3) isn't on this branch; with it, the rim's skin sheen is 0.25 x 0.3, so check the two together.
+- **LOD:**
+  - The Reaver's ink and her skin within 2 cm of it are kept as built (`DECALS`). Outfits also fixed the ink z-fight in their shader (view_pull 1.5 mm, 2560896e/4c757428), which the LOD shares through HerLod's material copy.
+  - Close tiers loosened to 0.1/0.5/1 mm: Warden 400k to 323k, Arcanist 247k to 209k, Ranger 302k to 245k, Reaver 181k to 156k. The play-size sweep is as clean as tight: s5 blobs Warden 22, Arcanist 7, Ranger 10, Reaver 25 (skipping gib frames 7, 8 and 11).
+  - The built art in godot/art/people is this version, uncommitted and unjudged. The tight build is in `N\lod\art_tight\`.
 
-Next, in order:
-1. **Wolf fur sparkle** (required before the wolf arena signs off). Root cause found by solver: the crowd's glTF textures had no mips (fixed, 0a85d850, unjudged) and FSR 2 keeps ~1 frame of history on fast-moving foes, so each frame must be smooth on its own. Sparkle (nearest wolf, `S\perf9\furbox.py`, frames 3-5): TAA 36, FSR 2 607, with mips 362; crowd share 298 vs target ~70 (ground alone ~70 in the box). Measured, unbuilt: crowd textures one mip blurrier 148, two 111; one mip + rim and specular off 95. Next: crowd textures sampled one mip softer + specular/rim AA on bodies (vat.gdshaderinc), check fur still reads as fur at 3x, judge. Runs `S\perf9\runs_c20.txt` (wolves at 2.2 s, title on screen; `--nohud` doesn't hide it). Solver notes: `split.py` and `sheet_c21.png` in scratchpad 91211d34-...\scratchpad.
-2. **Night grade for face** (promised to face lead a411e6c81f22f5c18, waiting on it): `Atmosphere.GradeLut` adds the shadow tint in gamma (`p += (lin(#2f5a86) - 0.5) * sh * 0.24`), taking ~0.11 R off dark pixels: dark browns go purple/black (lashes, pupils, irises, brows) at the Look (Night). Fix: hue-preserving shadow tint (chroma toward the tint at constant luma), lift neutral in darks, for every grade. Message face with the commit so they recalibrate iris swatches.
-3. Ground: try `detail_blur` 2.4 only if detail stays >= TAA's and box 700 900 900 1050 <= 1.3 (judge c14 fix 2).
-4. **See-through v2** (unchanged design): radius fixed in world space `R = (1.55 + 0.35*fbm(world.xz*1.1 + v_jit*17))*open`; foliage thins along its leaves (`ALPHA_SCISSOR_THRESHOLD = mix(1.02, alpha_scissor, smoothstep(R-0.5, R+0.25, metres))`, alpha at mip +1.5); solids discard inside R with a soft darkening at the cut; roofs lifted whole (KitLook tags roofs; CPU line test, instance uniform `lift` eased 0.15 s; world-noise dissolve); radius eased 0.2 s. `--see-fix back,norim` is today's stopgap ("pedestrian").
-5. Face judge's items (main scratchpad `judge_hr2\verdict.md`): hair cut over the strap at her right ear; DOF at the crown (likely gone with the Look's DOF: confirm); hair shadow facets on Highborn's neck (`IN_SHADOW_PASS` half-cover cut).
-6. Smaller: FSR 2 history never reset on camera cuts (`reset_accumulation = false`): check frames after cinematic cuts; GameCinema DOF mushes blended hair; smoke billboard notches the slash VFX; retire `--hair-draw blend|hash`, `--coverage` once FSR 2 ships; bush alpha-cut edges show 1 px steps under FSR 2 (low).
+Next:
+1. **LOD: one blob left at the 18 m switch.** In s6, Reaver frame 0 has a 206 px blob: a dark leather flap at her hip reads darker and wider in the LOD.
+   - Bisected with `N\lod\rtest.sh TAG` and the env switches `LOD_EXACT_MATS=a,b` and `LOD_EXACT=1` in heroine_lod.py. It isn't removal, the shadow mesh, the fur shells or the body. It clears with all three leathers exact and stays with blackleather or darkleather alone exact, so it's **oldleather** (168k triangles).
+   - Next: try a tighter error on oldleather near that flap, or a heavier normals weight. Confirm with rtest.
+   - Then the re-judge: per-outfit worst6 (`sweep.py` with `SKIP="reaver:7 reaver:8 reaver:11"`), the strips, and the s6 18 m frames. Shoot everything with `--grade-toe 0`, because the arena grade changed under the old off frames.
+   - After the pass: commit the art, including the `*_lod.gltf.import` files. Send outfits lead **a8f5db2bb06ceb5c5** the hook line for `heroine_outfits.py`, after the outfits export: `import heroine_lod; heroine_lod.main([os.path.dirname(OUT)])`. Tell the coordinator the commits.
+2. **The moonlight pass** (the toe judge's fix 1): give the town and arenas a dim cool moon fill, so unlit ground is blue before the grade (dark hue 230-270 at low chroma, lamp pools still amber). Then re-judge the town and arenas at toe 0.5.
+3. **Fur, round 2** (judge fur1's fixes 1, 3 and 5). State: crowd sparkle went from 299 to about 90 (target about 70, TAA 7); fb3adb43 (bias by pace) is unjudged. The detail is in lead a1's block in this page's git history (99cb2f8c).
+   - View the motion vectors on a running wolf.
+   - Fade only cards under 1 px on screen, if that keeps the outline.
+   - Limit the rim at grazing angles on the thin legs and the tail.
+   - Then re-judge, adding a lit-arena crop where the foes are dense, at bias 0 against 1.5.
+4. **Ground:** `detail_blur` 2.4, but only if detail stays at or above TAA's (judge c14, fix 2).
+5. **See-through v2:** the design is unchanged; see this page's git history, the 10 October block.
+6. **The face judge's hair items** (main scratchpad `judge_hr2\verdict.md`):
+   - the hair cut over the strap at her right ear;
+   - DOF at the crown;
+   - hair shadow facets on Highborn's neck.
+7. **Smaller items:**
+   - FSR 2 history is never reset on camera cuts.
+   - GameCinema DOF mushes blended hair.
+   - The smoke billboard notches the slash VFX.
+   - Retire `--hair-draw` and `--coverage`.
+   - Bush alpha-cut steps.
 
-Tools: `S\perf9\batch.ps1` needs `powershell -ExecutionPolicy Bypass`; `edge_nums.sh` (Look edge numbers), `flick.py`, `sheets_c14.py`/`sheets_c15.py`, `judge_c13b	spec.py`, `furbox.py`. Judge and solver briefs need the line "Context budget: NNk".
+Tools:
+- Runs go through `181eef02 scratchpad\perf9\batch.ps1 RUNS "rendering: X" -NoImport`, which takes the godot turn and gives it back. The runs file has one line per run: "NAME | RES | FPS | args".
+- Measuring: `perf9\furbox.py`; `N\split.py` (needs `c23_wolf60_mask_*.png` in .shots); `N\ng\sheets.py` and `sheets2.py`.
+- Judge and solver briefs need "Context budget: NNk". Lean judges cost 85-140k.
+- Python in bash heredocs: Windows paths break the string escapes, so write files with the Write tool.
 
 ## Measured (164 Hz; share of pixels changing >8/255 between consecutive frames, hair / face)
 
@@ -59,4 +94,4 @@ Fight (arena, 60 horde, 1440): ground flicker TAA 1.09–1.13 (0% hot) vs FSR 2 
 
 Main session (reports, owner decisions; relays to the face lead, who owns the hair's look and mesh, eyes and lashes). Outfits and animation leads share the godot turn.
 
-HANDOFF READY: docs/handoff/performance.md on worktree-agent-a4e0c353e61cca6dc (a3123dd8bb0182789)
+HANDOFF READY: docs/handoff/performance.md on worktree-agent-a4e0c353e61cca6dc (successor of a3123dd8bb0182789)

@@ -1119,6 +1119,10 @@ public partial class VatCrowd : MultiMeshInstance3D
 
     public void Begin() => frame++;
 
+    /// <summary>--vat-move-from, --vat-move-to: metres a frame over which a body's paint goes from
+    /// sharp to --vat-bias mips softer.</summary>
+    static readonly float MoveFrom = SurvivorUnchained.Args.Num("vat-move-from", 0.01f), MoveTo = SurvivorUnchained.Args.Num("vat-move-to", 0.05f);
+
     /// <summary>A free slot for a new body: the lowest.</summary>
     int Take()
     {
@@ -1142,9 +1146,15 @@ public partial class VatCrowd : MultiMeshInstance3D
             // not from whatever its slot held (nothing, or another body).
             dissolve = 1;
         }
+        int o = s * Stride;
+        // How far it moved since last frame (the slot still holds last frame's place): FSR 2 keeps
+        // little history on what moves, so the paint softens with it (0 still, 1 at 5 cm a frame).
+        float moved = 0;
+        if (drawnAt[s] == frame - 1)
+            moved = new Vector3(buffer[o + 3], buffer[o + 7], buffer[o + 11]).DistanceTo(at.Origin);
+        float pace = Mathf.SmoothStep(MoveFrom, MoveTo, moved);
         drawnAt[s] = frame;
         if (s >= top) top = s + 1;
-        int o = s * Stride;
         var (f0, f1, blend) = Asset.Frame(role, t);
         static int Q(float v, int max) => (int)Math.Round(Math.Clamp(v, 0, 1) * max);
         int word = Q(flash, 255) | Q(dissolve, 255) << 8 | Q(frozen, 15) << 16 | Q(burning, 15) << 20;
@@ -1154,7 +1164,8 @@ public partial class VatCrowd : MultiMeshInstance3D
         buf[o + 4] = b.X.Y; buf[o + 5] = b.Y.Y; buf[o + 6] = b.Z.Y; buf[o + 7] = at.Origin.Y;
         buf[o + 8] = b.X.Z; buf[o + 9] = b.Y.Z; buf[o + 10] = b.Z.Z; buf[o + 11] = at.Origin.Z;
         buf[o + 12] = tint.R; buf[o + 13] = tint.G; buf[o + 14] = tint.B; buf[o + 15] = glow;
-        buf[o + 16] = f0; buf[o + 17] = f1; buf[o + 18] = blend; buf[o + 19] = word;
+        // The pace rides in the first frame's fraction (the shader rounds the frame).
+        buf[o + 16] = f0 + 0.45f * pace; buf[o + 17] = f1; buf[o + 18] = blend; buf[o + 19] = word;
     }
 
     public void End()
