@@ -1,10 +1,21 @@
 # Story and writing: status
 
-The writer: owner of the canon, the words and the story data. The ninth story
-lead, branch `worktree-agent-a67ad095680c3d65b` (paused 6 October by the
-owner). Works with the story editor, a fresh one started for each act's draft
-(`docs/story/notes/`). A successor starts from `docs/handoff/story.md`, then
-the paused line below, then `docs/story/notes/02_act1_draft.md` (the work list).
+The writer: owner of the canon, the words and the story data. Works with the
+story editor, a fresh one for each draft (`docs/story/notes/`). A successor
+starts from `docs/handoff/story.md`.
+
+**Now (11 October, the tenth lead, branch `worktree-agent-a81b550b25ab6b672`):**
+- **The twist:** three options for the owner are in `docs/story/TWIST_OPTIONS.md`.
+  A, "Not yet": Chid made you (recommended). B, "Count's right": Holloway knew.
+  C, "She went in first". Reported to main; **waiting on the owner's choice.**
+- **Next:** settle the Prologue and the opening of Act 1 for ElevenLabs. Plant
+  the chosen seeds and make the sophistication pass. A fresh editor (max)
+  checks the lines before they're marked LOCKED FOR RECORDING. Then
+  RERECORD.md, the packets and `check_ids.py`. The handoff page lists the
+  scenes no option touches; do those first.
+
+The ninth lead's state follows (paused 6 October; still true unless the lines
+above say otherwise).
 
 **Paused here (6 October):** the lie to Brannoc costs nothing in play
 (notes 02 §6.7) is done and tested. **Next**, in the editor's order (§12):

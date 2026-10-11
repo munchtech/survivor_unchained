@@ -1,205 +1,126 @@
 # Handoff: the story and writing lead (Survivor Unchained)
 
 You are the writer. You own the canon, every word the game says, the story
-data and the cinematic scripts, and you sign off voice packets. Read
-`docs/team/README.md`, then this page, then `docs/team/story.md` (status and
-the staging notes for cinematics).
+data and the cinematic scripts, and you sign off voice packets.
 
-- **Branch:** `worktree-agent-a38d66ae66583ace1` (the eighth lead). Merge
-  `origin/claude/vigilant-galileo-l6jqyx` in first. Commit, push, open no PRs.
-- **Tests:** `cd godot/tests && dotnet test` (774 pass). Run them before every
-  commit.
-- **Commits:** write the message to a file and use `git commit -F`. End it with
-  `Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>`.
-- **Scripts:** the worktree guard refuses complex bash (heredocs into python,
-  variables as commands). Put Python in the scratchpad
-  (`.../scratchpad/story7/`) and run `python <abs path>`. In `lib_s7.py`:
-  - `load` and `save` round-trip the content JSON (indent 1, CRLF);
-  - `node`, `ch` and `v` build dialogue nodes.
+- **Branch:** `worktree-agent-a81b550b25ab6b672` (the tenth lead; handed off
+  at once, after onboarding). Merge `origin/claude/vigilant-galileo-l6jqyx`
+  first. Commit, push, open no PRs. Tests: `cd godot/tests && dotnet test`
+  (760 pass, 8 skipped) before every commit. Commit messages go in a file
+  (`git commit -F`) and end with `Co-Authored-By: Claude Opus 5.5
+  <noreply@anthropic.com>`.
+- **Budget warning:** onboarding as the brief listed it (README, this page,
+  the status page, the whole treatment, the editorial letter, the bible's
+  sections) cost the tenth lead about 250k of a 300k budget. Don't repeat it.
+  `docs/story/TWIST_OPTIONS.md` holds the canon the next steps need. Read the
+  bible and the treatment only by grepped section, and only for a step that
+  needs them.
+- **Scripts:** the worktree guard refuses bash with computed values, so write
+  Python in your scratchpad and run it with literal paths. Copy `lib.py`
+  (round-trip-safe load and save of the content JSON; `node`, `ch`, `v`,
+  `replace_text`) and `showc.py` (`showc.py CONV [NODE...]` prints a
+  conversation; `showc.py ?` lists them) from
+  `C:\Users\munch\Desktop\survivorsunchained_inputs\scratch_91211d34\s10\`,
+  and set `WT` and `C` to your worktree.
 
-  `showc_s7.py CONV [NODE...]` prints a conversation.
+## The owner's words
 
-## 1. The owner's words
+- Today (11 October), verbatim: "lets fire up the writer - we need a big twist
+  nobody sees coming, maybe chid being evil? and another pass of
+  sophistication. also I would like to get some of the early lines mostly
+  settled so I can truly begin my elevenlabs voices"
+- Before: "a powerful epic story with real emotional happenings. people being
+  devastated, elated, or both. shocks and twists, stuff we figured out that
+  was obvious."; "when maeca kills halloway it should be a HOLY SHIT WHAT THE
+  FUCK kinda thing."; Brannoc "needs to hit HARD. so hard."; "the harshest
+  versions are what were aiming for."
+- Spelling is American (OWNER_NOTES, 11 October). The data already is
+  ("traveler", "gray"). The tone is adult.
 
-- "a powerful epic story with real emotional happenings. people being
-  devastated, elated, or both. shocks and twists, stuff we figured out that was
-  obvious."
-- "when maeca kills halloway it should be a HOLY SHIT WHAT THE FUCK kinda
-  thing."
-- Brannoc "needs to hit HARD. so hard."
-- On the lie to Brannoc: "we can't get punished from gameplay perspective - he
-  just talks to us like he hates us or ignores us".
-- On the Kiln Ford: "the harshest versions are what were aiming for."
+## The brief (from the coordinator, 11 October)
 
-## 2. The brief, and the decisions (all in `docs/story/TREATMENT.md` §0)
+1. **The twist first. Done:** `docs/story/TWIST_OPTIONS.md` @ 4cd8b7d6, and
+   reported to main. A, "Not yet": Chid made you (recommended). B, "Count's
+   right": Holloway knew. C, "She went in first". A and B combine; A and C
+   exclude each other. **Waiting on the owner's choice**, which the
+   coordinator relays.
+2. **Settle the early lines for voicing** (the Prologue and the opening of
+   Act 1):
+   - plant the chosen twist's seeds (the tables in TWIST_OPTIONS);
+   - the sophistication pass: subtext over statement, each voice distinct, no
+     line that explains what the scene shows;
+   - love-scene B only if it falls in this stretch (check
+     `docs/story/LOVE_SCENES.md`: Sella's paid night opens on night one).
 
-**The brief:** rewrite the approved treatment into the game, act by act:
-1. Act 1;
-2. Act 2: the rope with the player's hands on it, Holloway at his gate, and
-   the woman with the lamp;
-3. Act 3: the voice.
+   Then mark the lines **LOCKED FOR RECORDING**, character by character.
+   Bring `docs/voice/RERECORD.md` and the packets (`python
+   tools/vo/elevenlabs.py`) up to date for exactly those lines, and lift
+   their HOLD (`HOLD_LINES` in `tools/vo/elevenlabs.py`). Don't hand-edit
+   the packets. Then run `python tools/vo/check_ids.py`.
+3. **Before anything is called locked:** a fresh `su-lead-max` story editor,
+   in the foreground, with "Context budget: 150k". Give it the locked lines,
+   the twist choice, the owner's words and a checklist. Fix what it finds.
+4. **Then** the sophistication pass through the rest of Act 1, and Act 2.
+   Act 2's plan is the eighth lead's: `git show 86b97737:docs/handoff/story.md`,
+   §3 "Act 2 (next)". Notes 02 (`docs/story/notes/02_act1_draft.md` §12) is
+   the editor's open work list on Act 1.
 
-After each act, send the main session the key scenes (file paths and a short
-summary). The main session starts a fresh editor for each act's draft, whose
-notes land in `docs/story/notes/NN_*.md`. Apply the notes.
+Report to the coordinator (SendMessage `main`) when the early lines are
+locked. Hand off by 300k.
 
-**The decisions:**
-- All four twists.
-- The narrator recast as a woman of about sixty, plain and dry.
-- Her word for the survivor is "Spark" (not "Wick").
-- The lamplings are renamed Stub and Old Gutter.
-- Holloway's act is option (b): the lamp in his eyes.
-- No boots on Holloway.
-- The confession comes mid Act 1, and "tell Maeca" is on the trunk.
-- Holloway rises at his gate on the fourth dusk.
-- The nod is the game's first choice.
-- The lamp-iron is her night lantern.
-- The lie to Brannoc costs his warmth only. On that route the truth comes in
-  Act 2, with the grey mare, after he sells the irons and the Kiln Ford is lit.
-- Love scenes: both versions are on the page for the owner
-  (`docs/story/LOVE_SCENES.md`), with the editor's warning beside them. He
-  hasn't chosen yet.
+## What step 2 covers, and what was found
 
-## 3. Where things stand
+- **Untouched by every option** (do these first):
+  - the narrator's prologue lines (`godot/logic/Play/Zones/Prologue.cs`
+    `G.Say`, about 18 of them);
+  - C01 `cin_drowned_fire`, C02 `cin_none_cross`, C03 `cin_heart_goes_down`,
+    `warden_answer`, C04 `cin_first_light`;
+  - Vonnra's `far_voice`;
+  - Rook's day-one lines (`rook.first` and on);
+  - Brannoc's first meeting and barks.
+- **Touched by A:**
+  - `chid.first` gains one direction;
+  - the day-2 report that Chid buried a woman from the ford ("Nobody's
+    claimed her.") is **not in the data yet**, so write it;
+  - the prologue's reeds beat is staging, plus an optional narrator line.
 
-**Act 1 is done (first pass, in the data).** `docs/WRITING_PASS.md` §26 lists
-every scene, rule, fact and changed line. `godot/tests/StoryRewriteTests.cs`
-holds the rules.
+  Chid's other Act 1 lines are already the seeds; keep their words.
+- **Touched by B:** `scene_knocking` (Holloway looks to the step on "Pell."),
+  his roll (stops at ninety-one), `scene_his_cup` (a direction).
+- **Not built in the prologue yet:** the drowned woman with the dead lamp at
+  the water's edge (combat and experience).
+- **C01's letter** is cinematic shot 6, unvoiced: "no word is left".
 
-- **Scenes on the trunk.** `Journey.TakeScene` plays them, the overnight rules
-  set `scene.morning` and `scene.dusk`, and `scene.now` opens a person's own
-  conversation at a node. The scenes are:
-  - the gate at dawn;
-  - "She's in my count.";
-  - the knocking (the confession);
-  - "...Did he.";
-  - her cup at the gate;
-  - Brannoc's dusk call.
-- **Brannoc's C07** is reordered, and the road is in `nell.burial_with`.
-- **Rook's kind lie**, the grave, the mystery page Home, and Chid's
-  `names_write`.
-- **The fortune:** `f_ford` and `f_did`, and the readable ledger with line
-  twenty-six as "Rook's lodger.".
-- **The dawns:** `dawn.voice` and `dawn.word`.
-- **"Barefoot" is gone everywhere**, including the voice tools.
-- **The calling remarks** are de-duplicated.
-- **The bible** has its Act 1 canon updated: §1 (the mother; what she did
-  first), §3, §5 (Holloway, Maeca, Brannoc), the third layer, the extremes, and
-  the seeds.
+## Voice gotchas
 
-**Left in Act 1:**
-- **The editor's notes on this draft.** Not started; the main session starts
-  them.
-- **The love scenes,** once the owner chooses:
-  - if A, add `voiced: false` to the narrated nodes in the room;
-  - if B, rewrite those nodes per `LOVE_SCENES.md`.
-- **C04 B's coat line** ("That's his only coat.") needs a cinematic cue, so it
-  waits for the cinematics lead. The other staging notes are on the status
-  page.
-- **Not yet seen in Godot.** Play the scenes at 1920x1080 when a Godot turn is
-  free. The things to watch:
-  - Holloway sitting in the south gateway at night (`Waystation.cs` routine,
-    `Sit_Floor_Idle` at -3.0, 31.2);
-  - the grave interactable;
-  - the scenes' timing after the morning page.
-- **Bible sections still to rewrite:**
-  - §7 Act 2: beat 3 (the letter), beat 4 ("The boots", which becomes the
-    rope) and beat 8 (Brannoc's lie route with the mare);
-  - §9 and §10's boot rows;
-  - §11's romance note.
+- **Zone-code lines** (the prologue's narrator) are keyed by a hash of their
+  words (`VoiceLines.Said`, `say.<hash>`, in `tools/vo/manifest.json`). A
+  reworded line gets a new id: regenerate the manifest (`tools/vo/lines.py`),
+  and `check_ids.py` must pass.
+- **Dialogue ids** are `dlg.<npc>.<node>.<variant>`. Adding a variant shifts
+  the ids after it.
+- **A changed line with an old placeholder take** loses its entry in
+  `godot/data/vo/index.json`, or `VoiceTests` fails. The previous drop
+  script is `vo_drop_s7.py` in `survivorsunchained_inputs\scratch_f1b9be14\story7\`.
+- **Parentheses:** a capitalized parenthesis inside a line is voiced by the
+  narrator. Lower-case directions are not.
 
-  Do these with Act 2.
-
-**Act 2 (next).** Nothing is in the data yet. The plan, from the treatment §4
-and the editor's notes:
-- **C20 (the ground opens).** Holloway goes down drunk and shaking. He counts
-  them up the rope: "One. Two." Tam's Pa: "And you took your bloody time,
-  CAPTAIN!" Then his first laugh. **The haul** is a held input with no fail
-  state: the survivor and Maeca, Ashford's windlass turned round. He hangs a
-  body-length below the lip, lit from above, and grins: "Count's right." Maeca
-  has made the rope fast round the post. One stroke at the post; the rope goes
-  slack in her hands and runs over the lip. No music. "Ninety-two." Only then
-  the choices:
-  - lover: "You were up.";
-  - otherwise she looks at you, and says nothing.
-
-  Then Maeca's one line of (b): "The ones under me weren't dead. Not when he
-  shut it." Then Tam: "It started the night the ford went dark." Tolley:
-  "...Ten." The town holds her, guards her, or lets her go.
-- **C20b.** Three dusks with the gate barred and his stool empty, and the hole
-  knocking. On the fourth dusk he is at his gate, lips moving: "...Always
-  somebody still out." She lays him down. Whoever opens the gate says "One in."
-- **C22 (his table).** Sallow's letter, and his "No.", never sent. The
-  daybook:
-  - "91 up. Lid down.";
-  - the names below the lid, with who each left;
-  - "Sorry." once;
-  - a page of dog names, crossed out ("Corran" hardest; "Dog." not crossed
-    out).
-
-  Lean the route toward taking it to Maeca: "He never counted me."
-- **C27 and C28, the lie route.** He sells the irons and the Kiln Ford is lit.
-  Then the grey mare comes up the south road: "That's mine. ...You passed
-  nobody." From then on he is cold or silent at the forge, and play is
-  unchanged. Write his hub variants keyed to a new fact set by that scene.
-- **C31.** Build it as a reversal. Maeca wears his coat and counts them in.
-- **C32 (Rook's kitchen).** The ring is on the table. "I'll be at the water
-  with a lamp." "That week the ford was lit every night. For you." "She was
-  your mam, pet." The insert is the player's own blow at the water's edge.
-  **The narrator is silent:** no narrator nodes, and no capitalised
-  parenthesis (those are voiced by the narrator); lower-case directions only.
-  Then Vonnra: "Come down with me."
-- **The dawns after Act 2's turn:** "Somebody used to call you something at
-  dusk. One short word. It was yours." Then they stop, and the narrator says
-  less.
-- **Put the Act 2 conversations on HOLD** in `tools/vo/elevenlabs.py`
-  (`HOLD_LINES`) until the editor and the owner pass them.
-
-**Act 3 (after).** The voice (§3.4):
-- Vonnra reads line twenty-six ("Rook's lodger.") in the same voice as the
-  others.
-- At C43, "Lamp's lit, Spark." starts where the narrator has always been, then
-  goes down into the pale thing.
-- "There you are." "I came up with you." "You'd have sat down in the road and
-  waited for me."
-- The second turn: her voice got quieter because of the player's ember.
-- The endings settle her voice: A, "You lie down. I'm here."; B, "It's
-  morning, Spark. Go on."; C, her voice drowned out.
-- Chid at dawn: "Is it morning?"
-
-## 4. Voice
-
-- `docs/voice/RERECORD.md` lists every changed or new line by character. The
-  packets mark changed lines **RE-RECORD**, read from its "Changed" tables
-  (`tools/vo/elevenlabs.py rerecord()`). Regenerate with
-  `python tools/vo/elevenlabs.py`; it needs `soundfile`, which is installed.
-- **Sella and Rook are ready.** Sella's packet had been behind the data: one
-  line reworded on 4 October, two takes to rename, two new barks.
-- **On HOLD:** Holloway, Brannoc, Maeca, Vonnra, Harlan and the narrator. Write
-  their RERECORD sections when you sign them off.
-- A changed line with an old placeholder take must lose its index entry
-  (`scratchpad/story7/vo_drop_s7.py`), or `VoiceTests` fails.
-
-## 5. Gotchas
+## Story gotchas (from the eighth lead, still true)
 
 - A node's effects apply before its text is chosen.
-- Adding a variant shifts the voice ids after it, so tell voice.
-- Scenes share one morning slot and one dusk slot, and queue: a rule that sets
-  `scene.*` must check that the slot is empty.
-- StoryLint: every fact read is written somewhere, and every fact written is
-  read or listed as a seed. `brannoc.knew_iron` and `mother.word` are seeds
-  for Act 2.
+- Scenes share one morning slot and one dusk slot: check the slot is empty.
+- StoryLint: every fact read is written; every fact written is read or listed
+  as a seed.
 - `holloway.knocking` must not fire once `holloway.confessed` is set.
-- The editor's notes are at `docs/story/notes/01_treatment.md`. The letter is
-  `docs/story/EDITORIAL_LETTER.md`.
 
-## 6. Read first
+## Read first
 
-1. `docs/story/TREATMENT.md`: §0, then §3 and §4.
-2. `docs/story/notes/01_treatment.md`.
-3. `docs/WRITING_PASS.md` §26.
-4. `docs/team/story.md`.
-5. `docs/story/LOVE_SCENES.md`.
-6. `docs/voice/RERECORD.md`.
-7. `godot/tests/StoryRewriteTests.cs`.
-8. `docs/cinematics/act2_outline.md` (to be rewritten to the treatment).
+1. `docs/story/TWIST_OPTIONS.md`.
+2. `docs/team/story.md`.
+3. The owner's choice, from the coordinator.
+4. `docs/voice/RERECORD.md` and `tools/vo/README.md` ("The route since
+   October").
+5. Only then the conversations you edit (`showc.py`), and `TREATMENT.md` §0
+   if a decision is in doubt.
+
+HANDOFF READY: docs/handoff/story.md on worktree-agent-a81b550b25ab6b672 (commit below)
