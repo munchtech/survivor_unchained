@@ -355,6 +355,34 @@ public sealed class LampRulesTests
     }
 
     [Fact]
+    public void Moonfire_strikes_the_new_bearer_as_arcane_and_lays_no_burn_for_fire_chains()
+    {
+        (double Lost, bool Burning, bool Marked) Pass(bool night)
+        {
+            var b = BattleTests.Arena(1, ("seeking_motes", 1));
+            b.Lamps = new LampLoadout { Night = night };
+            b.Lamps.Add(Rule("moonmarked", ("passes", 1)));
+            b.Lamps.Add(Rule("moonfire", ("share", 0.1)));
+            var dead = b.SpawnEnemy("wolf", b.Player.X + 5, b.Player.Z)!;
+            var next = b.SpawnEnemy("wolf", b.Player.X + 6, b.Player.Z)!;
+            dead.MaxHp = dead.Hp = 1000;
+            next.MaxHp = next.Hp = 1e6;
+            b.Tick(0.05, 0, 0); // the neighbours' grid
+            b.HitEnemy(dead, 10, School.Arcane, [Tag.Spell, Tag.Projectile], new HitOpts { Weapon = b.Weapons[0], NoCrit = true });
+            double before = next.Hp;
+            b.KillEnemy(dead, true, b.Weapons[0]);
+            return (before - next.Hp, next.Status.Has(StatusKind.Burn), next.Status.Has(StatusKind.Mark));
+        }
+        var day = Pass(false);
+        var night = Pass(true);
+        Assert.True(day.Marked && night.Marked);
+        Assert.False(day.Burning || night.Burning);
+        Assert.True(day.Lost > 0);
+        // A quarter by night, and the passed mark it lands on is a quarter too (+7.5% against +30%).
+        Assert.Equal(0.25 * 1.075 / 1.3, night.Lost / day.Lost, 3);
+    }
+
+    [Fact]
     public void A_crowded_sky_the_night_leaves_nothing_to_loose_stays_dark_its_seeking_with_its_price()
     {
         double Homing(bool night, bool many)

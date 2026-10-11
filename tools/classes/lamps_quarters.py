@@ -286,11 +286,11 @@ moon = road("arcanist", ar, "moonweaver", "Road of the Moonweaver", "Moonlight t
      ("lantern_man", [("Two Lanterns", "Two wisps drift out.", [R("lantern_man.two", phase=5)]),
                       ("Far-Wandering", "The wisp drifts 50% further.", [R("lantern_man.far", phase=5)]),
                       ("Guttering", "The wisp bursts when it goes out.", [R("lantern_man.gutter", phase=5)])])],
-    [("Silvered", "Marks pass to two, and the marked take 5% more.", [R("silvered", passes=2, more=0.05)], ["seeking_motes"]),
+    [("Silvered", "Marks pass to two, and the marked take 10% more.", [R("silvered", passes=2, more=0.1)], ["seeking_motes"]),
      ("Many Lights", "Spells loose one more projectile.", [R("tags.projectiles", tags="spell", add=1)], ["seeking_motes", "moonwell"]),
      ("Moon-Drawn", "Motes seek the marked first.", [R("moon_drawn")], ["seeking_motes"]),
      ("Still Water", "Moonwell lasts 50% longer and fires 30% faster.", [R("still_water", phase=5)], ["moonwell"]),
-     ("Moonfire", "A mark that passes burns violet: the new bearer takes moonfire.", [R("moonfire", share=0.1)], ["seeking_motes", "lantern_man"])],
+     ("Moonfire", "A mark that passes flares violet: the new bearer takes a tenth of the dead one's health as moonfire.", [R("moonfire", share=0.1)], ["seeking_motes", "lantern_man"])],
     [("The Echo", "Every spell fires again 0.5 s later at half strength. Spells wait 25% longer.", [R("the_echo", delay=0.5, share=0.5, longer=0.25)]),
      ("Crowded Sky", "Spells with projectiles loose two more, all seeking, and no two strike the same thing; each is 35% weaker.", [R("crowded_sky", add=2, weaker=0.35)])],
     ("the_branding", "The Branding", [

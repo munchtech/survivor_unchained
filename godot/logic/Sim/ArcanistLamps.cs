@@ -300,8 +300,12 @@ public sealed partial class Battle
         {
             ApplyStatus(near[i], new StatusPayload(StatusKind.Mark, 1, mark.Power != 0 ? mark.Power : 1, 4), 0, 2);
             Events.Emit(new Ev.Chain { Points = [e.X, e.Z, near[i].X, near[i].Z], School = School.Arcane });
-            // moonweaver.moonfire: the new bearer burns (a share of the dead one's health over 3 s; burning is fire here).
-            if (l.Has("moonfire")) ApplyStatus(near[i], new StatusPayload(StatusKind.Burn, 1, l.Size("moonfire", "share", 0.2), 3), e.MaxHp, 2);
+            // moonweaver.moonfire: the new bearer takes moonfire, a share of the dead one's health at once. It is
+            // arcane, not a Burn: as a Burn it seeded every fire chain (Pyre Burst's share of damage doubled, 8% to
+            // 17%), which put the moonweaver's board far over the others' at T3-T4. Fire's chains are the kindler's.
+            if (l.Has("moonfire"))
+                HitEnemy(near[i], e.MaxHp * l.Size("moonfire", "share", 0.1), School.Arcane, [Tag.Arcane, Tag.Spell],
+                    new HitOpts { NoCrit = true, NoProcs = true, Depth = 2, Credit = "moonfire" });
         }
     }
 

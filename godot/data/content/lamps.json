@@ -5495,14 +5495,14 @@
     "seeking_motes"
    ],
    "gate": 6,
-   "text": "Marks pass to two, and the marked take 5% more.",
+   "text": "Marks pass to two, and the marked take 10% more.",
    "effects": [
     {
      "do": "rule",
      "rule": "silvered",
      "args": {
       "passes": 2,
-      "more": 0.05
+      "more": 0.1
      }
     }
    ]
@@ -5596,7 +5596,7 @@
     "lantern_man"
    ],
    "gate": 6,
-   "text": "A mark that passes burns violet: the new bearer takes moonfire.",
+   "text": "A mark that passes flares violet: the new bearer takes a tenth of the dead one's health as moonfire.",
    "effects": [
     {
      "do": "rule",
