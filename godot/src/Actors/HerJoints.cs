@@ -34,6 +34,7 @@ public partial class HerJoints : SkeletonModifier3D
         public float Pivot;         // metres along the share's Z its stretch holds still (the crease side)
         public Vector3 RestOrigin;
         public Quaternion Own;      // a share's turn about its line, from the bone it shares
+        public float Push, From, To; // a point's push out across the bend (metres), eased in over these degrees
     }
 
     sealed class Side
@@ -76,21 +77,29 @@ public partial class HerJoints : SkeletonModifier3D
             one.HandRest = handRest.Basis.GetRotationQuaternion();
             one.Axis = handRest.Origin.Normalized();
             one.Thumb0 = one.HandRest * Vector3.Back;
+            var byName = new Dictionary<string, Godot.Collections.Dictionary>();
+            foreach (var hv in s["helpers"].AsGodotArray())
+                byName[(string)hv.AsGodotDictionary()["name"]] = hv.AsGodotDictionary();
             foreach (var hv in s["helpers"].AsGodotArray())
             {
                 var h = hv.AsGodotDictionary();
+                // A point is its share's twin: it bends and swells as the share does.
+                var sh = h.ContainsKey("share") ? byName[(string)h["share"]] : h;
                 int bone = sk.FindBone(((string)h["name"]).Replace("{s}", side));
                 int src = sk.FindBone(((string)h["bone"]).Replace("{s}", side));
                 if (bone < 0 || src < 0) continue;
                 var helper = new Helper
                 {
                     Kind = (string)h["kind"], Bone = bone, Source = src, Amount = (float)(double)h["amount"],
-                    Bulge = h.ContainsKey("bulge") ? (float)(double)h["bulge"] : 0f,
-                    BulgeMax = h.ContainsKey("bulge_max") ? (float)(double)h["bulge_max"] : 1f,
-                    Pivot = h.ContainsKey("pivot") ? (float)(double)h["pivot"] : 0f,
+                    Bulge = sh.ContainsKey("bulge") ? (float)(double)sh["bulge"] : 0f,
+                    BulgeMax = sh.ContainsKey("bulge_max") ? (float)(double)sh["bulge_max"] : 1f,
+                    Pivot = sh.ContainsKey("pivot") ? (float)(double)sh["pivot"] : 0f,
+                    Push = h.ContainsKey("push") ? (float)(double)h["push"] : 0f,
+                    From = h.ContainsKey("from") ? (float)(double)h["from"] : 0f,
+                    To = h.ContainsKey("to") ? (float)(double)h["to"] : 180f,
                     RestOrigin = sk.GetBoneRest(bone).Origin,
                 };
-                if (helper.Kind == "share")
+                if (helper.Kind == "share" || helper.Kind == "point")
                     helper.Own = sk.GetBoneRest(src).Basis.GetRotationQuaternion().Inverse() * sk.GetBoneRest(bone).Basis.GetRotationQuaternion();
                 one.Helpers.Add(helper);
             }
@@ -144,12 +153,13 @@ public partial class HerJoints : SkeletonModifier3D
                         break;
                     }
                     case "share":
+                    case "point":
                     {
                         var rest = sk.GetBoneRest(h.Source).Basis.GetRotationQuaternion();
                         var (bend, _, _) = TwistY(rest.Inverse() * sk.GetBonePoseRotation(h.Source));
                         var turned = (rest * Quaternion.Identity.Slerp(bend, h.Amount) * h.Own).Normalized();
                         sk.SetBonePoseRotation(h.Bone, turned);
-                        if (h.Bulge > 0)
+                        if (h.Bulge > 0 || h.Push > 0)
                         {
                             // The skin's weights over a joint are a quadratic
                             // Bezier's, so a point halfway round lies at
@@ -162,8 +172,16 @@ public partial class HerJoints : SkeletonModifier3D
                             sk.SetBonePoseScale(h.Bone, new Vector3(1, 1, stretch));
                             // About its pivot (helpers.bulge): the crease side held still,
                             // the stretch's push all on the outside of the bend.
-                            if (h.Pivot != 0)
-                                sk.SetBonePosePosition(h.Bone, h.RestOrigin + turned * new Vector3(0, 0, (1 - stretch) * h.Pivot));
+                            // A point is pushed out across the bend (its -Z, away from
+                            // the crease), eased in over From..To degrees (helpers.point_push).
+                            float push = 0f;
+                            if (h.Push > 0)
+                            {
+                                float u = Mathf.Clamp((Mathf.RadToDeg(rad) - h.From) / (h.To - h.From), 0f, 1f);
+                                push = h.Push * u * u * (3 - 2 * u);
+                            }
+                            if (h.Pivot != 0 || push != 0)
+                                sk.SetBonePosePosition(h.Bone, h.RestOrigin + turned * new Vector3(0, 0, (1 - stretch) * h.Pivot - push));
                         }
                         break;
                     }

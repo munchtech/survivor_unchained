@@ -53,6 +53,12 @@ SPEC = {
          "bulge": 0.0, "bulge_max": 1.0, "way": "front"},
         {"name": "lowerarm_share_{s}", "parent": "upperarm_{s}", "kind": "share", "bone": "lowerarm_{s}", "amount": 0.5,
          "bulge": 0.45, "bulge_max": 1.45, "pivot": 0.047, "way": "front"},
+        # The elbow's point: the share's twin, pushed out across the bend
+        # (away from the crease, -Z) by `push` metres eased in from `from`
+        # to `to` degrees of bend; it takes the share's weight on the
+        # patch weights.point gives it.
+        {"name": "lowerarm_point_{s}", "parent": "upperarm_{s}", "kind": "point", "bone": "lowerarm_{s}", "amount": 0.5,
+         "share": "lowerarm_share_{s}", "push": 0.03, "from": 70, "to": 145, "way": "front"},
         {"name": "calf_share_{s}", "parent": "thigh_{s}", "kind": "share", "bone": "calf_{s}", "amount": 0.5,
          "bulge": 0.5, "bulge_max": 1.5, "pivot": 0.059, "way": "back"},
     ],
@@ -84,17 +90,16 @@ SPEC = {
         # under them as before the helpers; the share rounds the outside.
         "crease": {"cut": 1.0, "reach": 0.035},
         # The point of a joint (the elbow's olecranon): on the side away
-        # from the crease, a patch round the joint's line whose blend is
-        # sharpened to a step at `at` metres along the bone (none of the
-        # share there), so the bone below carries the tip and the skin
-        # above runs flat into it: a point at a deep bend, not a round cap.
-        # half/fade: the patch's half-width round the back, in degrees, and
-        # its fade beyond; reach/feather: along the bone, either side of
-        # `at`, in metres; band: the step's half-width.
-        # Tried as a step (band 4-20 mm): it turns the tip's faces over past
-        # 120 degrees (linear blend across a sharp step); off until a better
-        # law. "point": {"lowerarm_share_{s}": {"half": 50, "fade": 30,
-        # "reach": 0.025, "feather": 0.015, "band": 0.004, "at": 0.0}},
+        # from the crease, a patch round the joint's line whose share weight
+        # goes to its point bone (a share's twin, pushed out from the joint
+        # as it bends: helpers kind "point"), so the tip stands out of the
+        # round the share makes. A step in the blend there instead (the
+        # bone below carrying the tip) turned the tip's faces over past 120
+        # degrees: across a short band the skin is blended between places
+        # 145 degrees apart round the joint, and the chord runs into it.
+        # half/fade: the patch round the back, degrees (full, then eased
+        # out); reach/feather: along the bone either side of `at`, metres.
+        "point": {"lowerarm_point_{s}": {"half": 20, "fade": 40, "at": 0.008, "reach": 0.0, "feather": 0.03}},
     },
 }
 
@@ -168,7 +173,7 @@ def extend(sk: Skeleton) -> Skeleton:
             if n in I:
                 continue
             p = I[h["parent"].replace("{s}", s)]
-            if h["kind"] == "share":
+            if h["kind"] in ("share", "point"):
                 b = I[h["bone"].replace("{s}", s)]
                 above = sk.parent[b]
                 turn = hinge_turn(grot[0, b], gpos[0, above], gpos[0, b], h["way"])
@@ -221,6 +226,16 @@ def bulge(bend, h):
     return float(min(1.0 + h.get("bulge", 0.0) * (k - 1.0), h.get("bulge_max", 1.0)))
 
 
+def point_push(bend, h):
+    """How far a point bone is pushed out across the bend (metres, along
+    its -Z: away from the crease), eased in from h["from"] to h["to"]
+    degrees of bend. Nothing for a share."""
+    if h["kind"] != "point":
+        return 0.0
+    t = min(max((bend - h["from"]) / (h["to"] - h["from"]), 0.0), 1.0)
+    return float(h["push"] * t * t * (3 - 2 * t))
+
+
 def drive(sk: Skeleton, rot, scale=None, shift=None):
     """Her helpers posed from the pose (local rotations [J, 4], changed in
     place): the forearm's roll handed to the hand, the twists shared out, the
@@ -249,17 +264,18 @@ def drive(sk: Skeleton, rot, scale=None, shift=None):
                 b = I[hh["bone"].replace("{s}", s)]
                 _, _, ang = _twist_y(qmul(qinv(sk.rest_rot[b]), rot[b]))
                 rot[j] = qaxis([0, 1.0, 0], -ang * hh["amount"])
-            elif hh["kind"] == "share":
+            elif hh["kind"] in ("share", "point"):
                 b = I[hh["bone"].replace("{s}", s)]
                 swing, _, _ = _twist_y(qmul(qinv(sk.rest_rot[b]), rot[b]))
                 own = qmul(qinv(sk.rest_rot[b]), sk.rest_rot[j])        # its turn about the line
                 rot[j] = qnorm(qmul(sk.rest_rot[b], qmul(qslerp(ident, swing, hh["amount"]), own)))
                 if scale is not None:
                     bend = 2 * math.degrees(math.acos(min(1.0, abs(float(swing[3])))))
-                    k = bulge(bend, hh)
+                    hs = hh if hh["kind"] == "share" else next(x for x in SPEC["helpers"] if x["name"] == hh["share"])
+                    k = bulge(bend, hs)
                     scale[j] = (1.0, 1.0, k)
                     if shift is not None:
-                        shift[j] = (0.0, 0.0, (1.0 - k) * hh.get("pivot", 0.0))
+                        shift[j] = (0.0, 0.0, (1.0 - k) * hs.get("pivot", 0.0) - point_push(bend, hh))
     return rot
 
 
@@ -296,27 +312,6 @@ def split(W, P, index, heads, front=None):
                 x = np.where(tot > 1e-9, W[:, b] / np.maximum(tot, 1e-9), 0.0)
                 k = cfg["share"]
                 hs = next(h for h in SPEC["helpers"] if h["name"] == share)
-                po = (cfg.get("point") or {}).get(share)
-                if po and front is not None:
-                    # The joint's point: x sharpened to a step on the far
-                    # side from the crease, and the share cut there.
-                    j = np.asarray(heads[low.replace("{s}", s)], float)
-                    ax = j - np.asarray(heads[top.replace("{s}", s)], float)
-                    ax = ax / np.linalg.norm(ax)
-                    w = np.asarray(front, float) * (1.0 if hs["way"] == "front" else -1.0)
-                    w = w - ax * (w @ ax)
-                    w = w / np.linalg.norm(w)
-                    rel = P - j
-                    along = rel @ ax
-                    perp = rel - along[:, None] * ax
-                    cosang = (perp @ -w) / np.maximum(np.linalg.norm(perp, axis=1), 1e-9)
-                    c0, c1 = math.cos(math.radians(po["half"] + po["fade"])), math.cos(math.radians(po["half"]))
-                    f = _smooth((cosang - c0) / (c1 - c0))
-                    if "reach" in po:
-                        f = f * _smooth((po["reach"] + po["feather"] - np.abs(along - po["at"])) / po["feather"])
-                    step = _smooth((along - po["at"] + po["band"]) / (2 * po["band"]))
-                    x = x * (1 - f) + step * f
-                    k = k * (1 - f)
                 mid = tot * x * (1 - x)
                 cr = cfg.get("crease")
                 if cr and front is not None and "pivot" in hs:
@@ -333,6 +328,27 @@ def split(W, P, index, heads, front=None):
                 W[:, c] += 2 * k * mid
                 W[:, a] = tot * (1 - x) ** 2 + (1 - k) * mid
                 W[:, b] = tot * x ** 2 + (1 - k) * mid
+                for pn, po in (cfg.get("point") or {}).items():
+                    hp_ = next(h for h in SPEC["helpers"] if h["name"] == pn)
+                    d = I.get(pn.replace("{s}", s))
+                    if hp_["share"] != share or d is None or front is None:
+                        continue
+                    # The patch round the joint's far side from the crease.
+                    j = np.asarray(heads[low.replace("{s}", s)], float)
+                    ax = j - np.asarray(heads[top.replace("{s}", s)], float)
+                    ax = ax / np.linalg.norm(ax)
+                    w = np.asarray(front, float) * (1.0 if hs["way"] == "front" else -1.0)
+                    w = w - ax * (w @ ax)
+                    w = w / np.linalg.norm(w)
+                    rel = P - j
+                    along = rel @ ax
+                    perp = rel - along[:, None] * ax
+                    cosang = (perp @ -w) / np.maximum(np.linalg.norm(perp, axis=1), 1e-9)
+                    c0, c1 = math.cos(math.radians(po["half"] + po["fade"])), math.cos(math.radians(po["half"]))
+                    f = _smooth((cosang - c0) / (c1 - c0))
+                    f = f * _smooth((po["reach"] + po["feather"] - np.abs(along - po["at"])) / po["feather"])
+                    W[:, d] += W[:, c] * f
+                    W[:, c] *= 1 - f
             else:
                 m = np.minimum(W[:, a], W[:, b]) * 2 * cfg["share"]
                 W[:, c] += m

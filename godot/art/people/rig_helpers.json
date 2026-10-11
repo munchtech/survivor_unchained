@@ -46,6 +46,18 @@
    "way": "front"
   },
   {
+   "name": "lowerarm_point_{s}",
+   "parent": "upperarm_{s}",
+   "kind": "point",
+   "bone": "lowerarm_{s}",
+   "amount": 0.5,
+   "share": "lowerarm_share_{s}",
+   "push": 0.03,
+   "from": 70,
+   "to": 145,
+   "way": "front"
+  },
+  {
    "name": "calf_share_{s}",
    "parent": "thigh_{s}",
    "kind": "share",
@@ -90,6 +102,15 @@
   "crease": {
    "cut": 1.0,
    "reach": 0.035
+  },
+  "point": {
+   "lowerarm_point_{s}": {
+    "half": 20,
+    "fade": 40,
+    "at": 0.008,
+    "reach": 0.0,
+    "feather": 0.03
+   }
   }
  }
 }

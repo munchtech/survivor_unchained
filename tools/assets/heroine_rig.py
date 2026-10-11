@@ -51,7 +51,7 @@ def add_bones(arm):
             continue
         s = n[-1]
         parent = eb[h["parent"].replace("{s}", s)]
-        if h["kind"] == "share":
+        if h["kind"] in ("share", "point"):
             low = eb[h["bone"].replace("{s}", s)]
             above = low.parent
             g = low.matrix.to_quaternion()
@@ -77,9 +77,15 @@ def add_bones(arm):
     return made
 
 
-def split_mesh(arm, obj):
+def split_mesh(arm, obj, skin=None):
     """The mesh's weights onto the helpers (helpers.split), its other vertex
-    groups left as they are."""
+    groups left as they are. With `skin` (a point to the nearest point of her
+    skin, in world space), a piece she wears is split where the skin under it
+    lies, not where it lies itself: the crease cut and the twist bones'
+    reach are read along her skin, so cloth takes the split of the skin it
+    covers (split at its own offset, cloth behind a knee was cut deeper into
+    the crease than the skin under it, and the skin came through). Points
+    far off her (a cape's hem) ease back to their own place."""
     bones = [b.name for b in arm.data.bones]
     index = {n: i for i, n in enumerate(bones)}
     heads = {b.name: np.array((arm.matrix_world @ b.head_local)[:]) for b in arm.data.bones}
@@ -100,6 +106,13 @@ def split_mesh(arm, obj):
         pts.append((obj.matrix_world @ v.co)[:])
     if not rows:
         return 0
+    if skin is not None:
+        own = np.array(pts)
+        near = np.array([skin(p) for p in pts])
+        d = np.linalg.norm(own - near, axis=1)
+        t = np.clip((d - SKIN_NEAR) / SKIN_NEAR, 0.0, 1.0)
+        t = t * t * (3 - 2 * t)
+        pts = near + (own - near) * t[:, None]
     W = np.zeros((len(rows), len(bones)))
     for r, (_, gs) in enumerate(rows):
         for n, w in gs:
@@ -120,7 +133,12 @@ def split_mesh(arm, obj):
     return len(rows)
 
 
-def apply(arm, meshes):
+# A piece within this of her skin is split as the skin under it; out to twice
+# this it eases to its own place.
+SKIN_NEAR = 0.03
+
+
+def apply(arm, meshes, skin=None):
     # Off until a built body has been checked in the game (docs/handoff/animation.md):
     # pass --helpers after the build's "--" to build them in.
     if "--helpers" not in sys.argv:
@@ -130,5 +148,5 @@ def apply(arm, meshes):
     total = 0
     for o in meshes:
         if o.type == "MESH":
-            total += split_mesh(arm, o)
+            total += split_mesh(arm, o, skin)
     print(f"RIG helpers: {made} bones added; {total} points split onto them")
