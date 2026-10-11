@@ -549,7 +549,7 @@ public partial class BattleFx
                 var ice = Hdr("#9fe0ff", 1f);
                 AddFront(ground, r, 0.45f, 0.5f * g, ice, 2.2f, Ribbons.Style.Frost);
                 if (rings > 1) AddFront(ground, r * 0.7f, 0.55f, 0.3f, ice, 1.4f, Ribbons.Style.Frost);
-                Books.Spawn("frost_burst", ground + Vector3.Up * 0.4f, r * 0.9f, 0.55f, new Color(0.5f, 0.75f, 1.2f, 0.85f), flat: true, sizeEnd: r * 2.1f);
+                Books.Spawn("frost_burst", ground + Vector3.Up * 0.4f, r * 0.7f, 0.45f, new Color(0.32f, 0.55f, 0.95f, 0.6f), flat: true, sizeEnd: r * 1.7f);
                 Waves.Add(ground + Vector3.Up * 0.3f, r * 1.2f, 0.4f, f.Glow, 0.8f);
                 // Ice flung low over the ground, and the cold rolling out after it.
                 int n = Math.Min(40, (int)(14 * g + r * 3));
@@ -559,11 +559,11 @@ public partial class BattleFx
                     var dir = new Vector3(Mathf.Cos(a), 0, Mathf.Sin(a));
                     Sparks.Spawn(ground + Vector3.Up * 0.4f + dir * 0.4f, dir * v + Vector3.Up * (0.5f + R() * 1.5f), 0.4f + R() * 0.25f, 0.07f + R() * 0.07f, f.Core, f.Glow * 0.4f, 0.02f, 8, 2.5f, sprite: Sprites.Of("star"), spinV: 9);
                 }
-                for (int i = 0; i < 10; i++)
+                for (int i = 0; i < 5; i++)
                 {
-                    float a = i / 10f * Mathf.Tau + R() * 0.4f;
+                    float a = i / 5f * Mathf.Tau + R() * 0.6f;
                     var dir = new Vector3(Mathf.Cos(a), 0, Mathf.Sin(a));
-                    Smoke.Spawn(ground + Vector3.Up * 0.3f + dir * r * 0.3f, dir * r * 1.4f + Vector3.Up * 0.2f, 0.9f, r * 0.25f, new Color(0.78f, 0.9f, 1f), new Color(0.6f, 0.75f, 0.95f), r * 0.6f, drag: 2.2f, alpha: 0.22f);
+                    Smoke.Spawn(ground + Vector3.Up * 0.3f + dir * r * 0.3f, dir * r * 1.4f + Vector3.Up * 0.2f, 0.6f, r * 0.18f, new Color(0.7f, 0.85f, 1f), new Color(0.55f, 0.7f, 0.95f), r * 0.4f, drag: 2.2f, alpha: 0.1f);
                 }
                 // The front leaves ice standing in it: a ring of crystal points, leaning out, gone in a second.
                 Erupt(e.X, e.Z, r * 0.35f, r * 0.95f, 14 + rings * 5, SpikeKind.Ice, 1.0f * g, 0.95f, Hdr("#8fd8ff", 1.3f));
@@ -577,7 +577,7 @@ public partial class BattleFx
                 var gold = Hdr("#ffd27a", 1f);
                 AddFront(ground, r, 0.4f, 0.42f * g, gold, 3f, Ribbons.Style.Glow, 0.1f);
                 for (int k = 1; k < rings; k++) AddFront(ground, r * (1 - 0.18f * k), 0.4f + 0.08f * k, 0.22f, gold, 1.8f, Ribbons.Style.Glow, 0.1f);
-                Books.Spawn("holy_burst", ground + Vector3.Up * 0.5f, r * 0.6f, 0.45f, new Color(1.1f, 1.0f, 0.75f, 0.8f), flat: true, sizeEnd: r * 1.5f);
+                Books.Spawn("holy_burst", ground + Vector3.Up * 0.5f, r * 0.5f, 0.4f, new Color(0.85f, 0.75f, 0.5f, 0.55f), flat: true, sizeEnd: r * 1.3f);
                 // Rays: short strokes of light thrown outward along the ground.
                 int n = 10 + rings * 4;
                 for (int i = 0; i < n; i++)
@@ -592,7 +592,7 @@ public partial class BattleFx
                     float a = R() * Mathf.Tau, d = r * (0.3f + R() * 0.7f);
                     Sparks.Spawn(ground + new Vector3(Mathf.Cos(a) * d, 0.3f, Mathf.Sin(a) * d), Vector3.Up * (1 + R() * 1.5f), 0.7f + R() * 0.4f, 0.08f, h.Core, h.Glow, 0.02f, -0.4f, 1.5f, sprite: R() < 0.5f ? Sprites.Of("star") : 0, spinV: 3);
                 }
-                Scars.Add("sigil", ground, r * 0.7f, art == "nova_sun" ? 3 : 1.4f, 0.6f);
+                Scars.Add("sigil", ground, r * 0.45f, art == "nova_sun" ? 3 : 0.8f, 0.6f);
                 Flash(ground + Vector3.Up * 1.5f, h.Light, 7, 0.4f, r * 2.5f);
                 return true;
             }
