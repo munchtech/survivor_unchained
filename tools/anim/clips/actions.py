@@ -874,7 +874,9 @@ def throw(rig):
         # (Judge 17: reached straight ahead, at the game cameras the fist and
         # its blade projected onto her groin: it reaches forward and out to
         # her left, the blade up and out, clear of her outline from above.)
-        hand_l = held((0.17, -0.16, 0.30), (0.8, -0.5, -0.2), (0.45, 0.8, 0.35))
+        # (Judge 18: out past her thigh's edge at the game cameras; the blade
+        # already turning down as the hips lead, so it doesn't turn in a frame.)
+        hand_l = held((0.27 - 0.08 * c, -0.16, 0.26), (0.8, -0.5, -0.2), (0.45 - 0.05 * c, 0.8 - 0.4 * c, 0.35 + 0.4 * c))
         return body(stance(0.07, weight=-0.4), hips=(-16, -2 - 2 * c, 0), spine=(-26, -8 - 3 * c, 0), head=(30, -2 + 4 * c, 0),
                     clav_r=(16, -6), hand_r=hand_r, hand_l=hand_l, fingers_r=fist, fingers_l=fist)
 
