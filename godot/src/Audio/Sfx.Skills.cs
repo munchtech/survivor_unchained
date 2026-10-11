@@ -39,7 +39,7 @@ public static partial class Sfx
                 a.Play(new Hiss { A = 0.03, D = 0.4, G = 0.05, Bp = 900, Bp2 = 2200, Q = 3, Pan = p });
                 a.Play(new Fm { F = R(950, 1100), Ratio = 1.41, Index = 2.2, D = 0.45, G = 0.018, Pan = p, Verb = 0.2 });
                 return;
-            case "disc" or "disc_aegis" or "disc_reckon":
+            case "disc" or "disc_aegis" or "disc_reckon" or "disc_dawn":
                 if (!a.Gate("cast:disc", 2, 200)) return;
                 a.Play(new Fm { F = R(700, 760), Ratio = 2, Index = 1.1, D = 0.55, G = 0.03, Pan = p, Verb = 0.4 });
                 a.Play(new Hiss { A = 0.03, D = 0.3, G = 0.035, Bp = 1400, Bp2 = 2600, Q = 2.5, Pan = p });
@@ -154,10 +154,10 @@ public static partial class Sfx
         double p = w.Pan, t = Now + System.Math.Max(0, delay), g = 0.5 + 0.5 * w.Near;
         switch (art)
         {
-            case "storm_bolt" or "storm_eye" or "storm_clap" or "arc_sky":
+            case "storm_bolt" or "storm_eye" or "storm_clap" or "arc_sky" or "sky_bolt":
             {
                 if (!a.Gate("fall:thunder", 3, 160)) return;
-                double k = art == "storm_clap" ? 1.4 : art == "arc_sky" ? 0.6 : 1;
+                double k = art == "storm_clap" ? 1.4 : art == "arc_sky" ? 0.6 : art == "sky_bolt" ? 0.8 : 1;
                 // The crack, then the rumble rolling after it.
                 a.Play(new Hiss { T = t, A = 0.001, D = 0.1, G = 0.13 * k * g, Hp = 1800, Pan = p });
                 a.Play(new Hiss { T = t + 0.02, A = 0.01, D = 0.9 * k, G = 0.12 * k * g, Lp = 900, Lp2 = 110, Brown = true, Pan = p });
@@ -236,7 +236,7 @@ public static partial class Sfx
             case "tether" or "tether2" or "tether_mark" when a.Gate("hit:chain", 2, 160):
                 a.Play(new Clip { Of = "chainLink", G = 0.12 * g, Pitch = R(0.9, 1.15), Pan = p });
                 break;
-            case "disc" or "disc_aegis" or "disc_reckon" when a.Gate("hit:disc", 2, 120):
+            case "disc" or "disc_aegis" or "disc_reckon" or "disc_dawn" when a.Gate("hit:disc", 2, 120):
                 a.Play(new Fm { F = R(980, 1060), Ratio = 2, Index = 1.2, D = 0.3, G = 0.016 * g, Pan = p, Verb = 0.35 });
                 break;
         }

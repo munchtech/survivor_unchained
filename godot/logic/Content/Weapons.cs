@@ -321,10 +321,10 @@ public static class Weapons
             Evolutions =
             [
                 new() { Id = "winter_ward", Name = "Winter Ward", Description = "Each breath of cold wraps you in rime: a barrier of a fiftieth of your health for everything it chills, up to a quarter.",
-                    Catalysts = ["warding"], Mods = new() { Damage = 2.52, Area = 1.15 }, Art = "nova_frost",
+                    Catalysts = ["warding"], Mods = new() { Damage = 2.52, Area = 1.15 }, Art = "nova_ward",
                     Triggers = [T(TriggerEvent.Hit, [new Effect.Barrier(0.02, 0.25, 1e9)], new() { Weapon = "hoarfrost" })] },
                 new() { Id = "absolute_zero", Name = "Absolute Zero", Description = "The cold goes all the way down: whatever it reaches freezes solid.",
-                    Catalysts = ["chilling"], Mods = new() { Damage = 4.4, Cooldown = 1.15 }, Set = new() { Status = S(Chill, 1, 5, 3) }, Art = "nova_frost" },
+                    Catalysts = ["chilling"], Mods = new() { Damage = 4.4, Cooldown = 1.15 }, Set = new() { Status = S(Chill, 1, 5, 3) }, Art = "nova_zero" },
             ],
         },
         new()
@@ -531,7 +531,7 @@ public static class Weapons
         {
             Id = "dawns_judgement", Name = "Dawn's Judgement", School = School.Holy, Behavior = WeaponBehavior.Bounce, Tags = [Tag.Projectile, Tag.Thrown, Tag.Bounce, Tag.Nova, Tag.Holy],
             Base = new() { Cooldown = 1.8, Damage = 15, Speed = 10.5, Projectiles = 2, Bounces = 9, Range = 16, Life = 3.5, Radius = 0.32, Knockback = 0.3, Status = S(Sear, 1, 1, 3) },
-            Art = "disc_reckon", BossDamage = 2.2,
+            Art = "disc_dawn", BossDamage = 2.2,
             Description = "Two shields of morning that ricochet through the crowd, and break into light wherever they strike.",
             Triggers = [T(TriggerEvent.Hit, [new Effect.Nova(2.2, 0.35, Basis.Hit, School.Holy, 0.4)], new() { Weapon = "dawns_judgement" }, icd: 0.15)],
         },

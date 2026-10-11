@@ -1568,10 +1568,11 @@ public sealed partial class Battle
     public void EnemyStrike(double x, double z, double r, double dmg, School school, double delay) =>
         strikes.Add(new StrikeSpec(x, z, r, dmg, school, BlastTag, delay, null, Side.Enemy, 0));
 
-    public void ScheduleStrike(double x, double z, double r, double dmg, School school, Tag[] tags, double delay, WeaponInst? weapon, Side owner = Side.Player, int depth = 0)
+    /// <param name="art">How the view draws it when no weapon throws it (only a look).</param>
+    public void ScheduleStrike(double x, double z, double r, double dmg, School school, Tag[] tags, double delay, WeaponInst? weapon, Side owner = Side.Player, int depth = 0, string? art = null)
     {
         strikes.Add(new StrikeSpec(x, z, r, dmg, school, tags, delay, weapon, owner, depth) { Credit = credit });
-        Events.Emit(new Ev.Strike { X = x, Z = z, Radius = r, School = school, Delay = delay, Art = weapon?.Art, Rank = weapon?.Rank ?? 0 });
+        Events.Emit(new Ev.Strike { X = x, Z = z, Radius = r, School = school, Delay = delay, Art = weapon?.Art ?? art, Rank = weapon?.Rank ?? 0 });
         if (owner == Side.Enemy) Events.Emit(new Ev.Telegraph { Id = -1, Shape = TelegraphShape.Circle, X = x, Z = z, Radius = r, Duration = delay, Hostile = true });
     }
 
@@ -2578,7 +2579,7 @@ public sealed partial class Battle
                 }
                 break;
             case Effect.Nova fx:
-                Events.Emit(new Ev.Nova { X = x, Z = z, Radius = fx.Radius, School = fx.School, Duration = 0.3 });
+                Events.Emit(new Ev.Nova { X = x, Z = z, Radius = fx.Radius, School = fx.School, Duration = 0.3, Art = ctx.Weapon?.Art });
                 ForEachHostileInRadius(x, z, fx.Radius, (e, d) =>
                 {
                     double dd = d == 0 ? 1 : d;
@@ -2592,7 +2593,8 @@ public sealed partial class Battle
                 for (int i = 0; i < fx.Count && list.Count > 0; i++)
                 {
                     var hit = list[Rng.Int(0, list.Count - 1)];
-                    ScheduleStrike(hit.X, hit.Z, fx.Radius, BaseOf(fx.Damage, fx.Basis, ctx), fx.School, [Tag.Storm, fx.School.AsTag()], 0.3 + i * 0.08, null, Side.Player, depth);
+                    ScheduleStrike(hit.X, hit.Z, fx.Radius, BaseOf(fx.Damage, fx.Basis, ctx), fx.School, [Tag.Storm, fx.School.AsTag()], 0.3 + i * 0.08, null, Side.Player, depth,
+                        art: fx.School == School.Storm ? "sky_bolt" : null);
                 }
                 break;
             }

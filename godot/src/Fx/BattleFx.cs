@@ -412,7 +412,7 @@ public partial class BattleFx : Node3D
             var lt = school == School.Fire ? new Color(glow * 0.7f, glow * 0.45f, glow * 0.22f, 0.8f)
                 : school == School.Storm ? new Color(glow * 0.3f, glow * 0.45f, glow * 0.95f, 0.75f)
                 : new Color(glow * 0.7f, glow * 0.7f, glow * 0.7f, 0.8f);
-            Books.Spawn(BlastOf(school), ground + Vector3.Up * 0.55f, r * 1.1f, life * 0.8f, lt, flat: true, sizeEnd: r * 2.1f);
+            if (!Unfilmed(school, ground, r * 0.8f, life * 0.8f)) Books.Spawn(BlastOf(school), ground + Vector3.Up * 0.55f, r * 1.1f, life * 0.8f, lt, flat: true, sizeEnd: r * 2.1f);
             for (int i = 0; i < 6; i++)
             {
                 float a = R() * Mathf.Tau, v = r * (1 + R() * 2);
@@ -434,7 +434,7 @@ public partial class BattleFx : Node3D
             : holy ? new Color(glow * 0.95f, glow * 0.7f, glow * 0.32f, 0.85f)
             // A storm's in its own blue (white, Thunderclap's burst was a blown-out ball).
             : school == School.Storm ? new Color(glow * 0.45f, glow * 0.65f, glow * 1.1f, 1) : new Color(glow, glow, glow, 1);
-        if (On('b')) Books.Spawn(BlastOf(school), ground + Vector3.Up * 0.55f, r * 1.2f, life, tint, flat: true, sizeEnd: r * 2.4f);
+        if (On('b') && !Unfilmed(school, ground, r, life)) Books.Spawn(BlastOf(school), ground + Vector3.Up * 0.55f, r * 1.2f, life, tint, flat: true, sizeEnd: r * 2.4f);
         // What it throws.
         int n = On('d') ? Math.Min(48, 12 + (int)(r * 8)) : 0;
         for (int i = 0; i < n; i++)
@@ -486,6 +486,45 @@ public partial class BattleFx : Node3D
         var (mark, size, last, spin) = ScarOf(school);
         if (On('m')) Scars.Add(mark, ground, r * size, last, spin);
         return true;
+    }
+
+    /// <summary>The bursts of the schools whose filmed ones were rings: the wild's was a set of green
+    /// rings and the arcane's a pink ring with rays (a champion falling to the Wild Hunt or under a
+    /// moon left one, a dozen at once). Drawn instead as what each throws: the wild's green fire
+    /// jetting up and its spores; the arcane's star of light and motes that hang and wink out. False
+    /// for the schools whose film is kept.</summary>
+    bool Unfilmed(School school, Vector3 ground, float r, float life)
+    {
+        if (school == School.Nature)
+        {
+            var fire = Hdr("#4cff3a", 1.1f);
+            int jets = 4 + (int)Mathf.Min(6, r * 2);
+            for (int i = 0; i < jets; i++)
+            {
+                float a = R() * Mathf.Tau;
+                var dir = new Vector3(Mathf.Cos(a), 0, Mathf.Sin(a));
+                MoonTongue(ground + dir * r * 0.3f * R() + Vector3.Up * 0.3f, dir * r * (0.5f + R()) + Vector3.Up * (1.4f + R() * 1.2f), (0.3f + R() * 0.2f) * Mathf.Max(1, r * 0.6f), fire);
+            }
+            for (int i = 0; i < 10 + (int)(r * 4); i++)
+                Sparks.Spawn(ground + Vector3.Up * 0.5f, new Vector3((R() - 0.5f) * r * 3, 1.5f + R() * 2.5f, (R() - 0.5f) * r * 3), life + R() * 0.5f, 0.05f + R() * 0.04f,
+                    Hdr("#b8ff6a", 1.5f), Hdr("#1a6a10", 0.6f), 0.01f, -0.8f, 1.8f);
+            Smoke.Spawn(ground + Vector3.Up * 0.5f, Vector3.Up * 0.9f, 0.6f, r * 0.3f, new Color(0.07f, 0.11f, 0.05f), new Color(0.03f, 0.05f, 0.02f), r * 0.7f, drag: 1.4f, alpha: 0.4f);
+            return true;
+        }
+        if (school == School.Arcane)
+        {
+            var pal = Palette.Of(School.Arcane);
+            Sparks.Spawn(ground + Vector3.Up * 0.8f, Vector3.Zero, 0.12f, r * 0.45f, Hdr("#c890ff", 1.3f), Hdr("#4a1aa0", 0.4f), r * 0.75f, sprite: Sprites.Range("star").First + 1, spinV: 0);
+            for (int i = 0; i < 10 + (int)(r * 4); i++)
+            {
+                float a = R() * Mathf.Tau, v = r * (1.2f + R() * 2);
+                Sparks.Spawn(ground + Vector3.Up * 0.6f, new Vector3(Mathf.Cos(a) * v, 1 + R() * 2, Mathf.Sin(a) * v), life + R() * 0.4f, 0.06f + R() * 0.05f, pal.Core, pal.Glow * 0.6f, 0.01f, -0.3f, 3.5f,
+                    sprite: R() < 0.4f ? Sprites.Of("star") : 0, spinV: 5);
+            }
+            Smoke.Spawn(ground + Vector3.Up * 0.5f, Vector3.Up * 0.5f, 0.6f, r * 0.35f, new Color(0.08f, 0.04f, 0.14f), new Color(0.03f, 0.02f, 0.06f), r * 0.8f, drag: 1.4f, alpha: 0.45f);
+            return true;
+        }
+        return false;
     }
 
     /// <summary>A strike from the sky arriving: a thin hot pillar, its
@@ -792,6 +831,9 @@ public partial class BattleFx : Node3D
                     break;
                 case Ev.Explosion { Art: "frostfire" } e:
                     FrostfireBurst(e);
+                    break;
+                case Ev.Explosion { Art: "herd_hunt" } e:
+                    HuntFire(e);
                     break;
                 // A moon's splash is drawn by its landing (Landing): the arcane school's filmed burst
                 // under it was a pink-white ball at every moon.

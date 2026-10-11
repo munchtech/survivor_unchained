@@ -9,8 +9,9 @@ namespace SurvivorUnchained.View;
 /// <summary>
 /// Looks a night's story asks for, read from its state (Game sets what they read):
 ///
-///   the way out   where a won night lets her go: a band of cold light lying on the ground,
-///                 breathing (a pulsing cream decal with a hard edge read as a hoop);
+///   the way out   where a won night lets her go: the night thinning there, a pool of cold light
+///                 lying soft on the ground with a faint veil of it standing and motes drifting up
+///                 through it (a pulsing cream decal read as a hoop, and so did a soft band);
 ///   a fed fire    a story night's deadfall alight: flame standing the length of the dead tree,
 ///                 embers going up, and its flames sinking and smoking as its burning runs out (feed
 ///                 it). Its reach is its own light's (a flat disc of firelight out to the reach read as
@@ -140,14 +141,14 @@ public partial class BattleFx
         Flash((a + b) / 2 + Vector3.Up * 1.5f, new Color("#ff9a40"), 8, 0.8f, 9);
     }
 
-    /// <summary>The way out's band of light, drawn in loot's batch as loot's light is (EndLoot).</summary>
+    /// <summary>The way out's light, drawn in loot's batch as loot's light is (EndLoot).</summary>
     void StoryLights()
     {
         // It breathes while its pulse keeps coming (a second and a half after the last), and comes
         // only once the fall has landed, as its prompt does: at the night's peak it ringed her in
         // pale light over the column.
         float way = (float)(Mathf.Clamp(1 - (time - waySeen - 1.3) / 0.6, 0, 1) * Mathf.Clamp((time - wayFirst - 2.4) / 1.2, 0, 1));
-        if (way > 0) Light(wayAt.X, wayAt.Y, wayAt.Z, Lit.Band, 0, wayReach, wayReach * 0.86f, WayCold, way * 0.5f);
+        if (way > 0) Light(wayAt.X, wayAt.Y, wayAt.Z, Lit.Band, 0, wayReach, wayReach * 1.5f, WayCold, way * 0.5f);
     }
 
     /* ------------------------------------------------------- a panting wolf -- */

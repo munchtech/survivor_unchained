@@ -11,9 +11,10 @@
 // One instance per swing (a MultiMesh): COLOR is its hue (linear, kept
 // near 1 so the tone curve leaves it a colour; the edge is the only white)
 // and in alpha how deep its smear reaches; INSTANCE_CUSTOM is (head, back,
-// span in radians, seed + what is left): the blade's place along the swing
+// span in radians, heat + seed + what is left): the blade's place along the swing
 // (0 the start, 1 the end), where its smear ends behind it, the angle it
-// sweeps, and a seed whose fraction is how much of it is left.
+// sweeps, and in the last its edge's heat in thousands (1 to 5: its own hue to
+// white), a seed under a thousand, and in its fraction how much of it is left.
 //
 // The mesh is a unit grid (UV.x along the swing, UV.y from the inner
 // radius out past the reach); the vertex stage bends it round the swing.
@@ -59,7 +60,10 @@ void vertex() {
 
 void fragment() {
 	float head = v_custom.x, back = v_custom.y, span = v_custom.z;
-	float seed = floor(v_custom.w), left = fract(v_custom.w);
+	float packed = floor(v_custom.w), left = fract(v_custom.w);
+	float level = floor(packed / 1000.0);
+	float seed = packed - level * 1000.0;
+	float white = clamp((level - 1.0) / 4.0, 0.0, 1.0);
 	float u = UV.x, y = mix(INNER_R, OUTER_R, UV.y);
 	float len = max(head - back, 0.02);
 	float t = (head - u) / len;
@@ -96,7 +100,7 @@ void fragment() {
 	// Colour: white-hot at the edge, the hue in the smear, its deeper, darker self behind.
 	vec3 hue = v_hue.rgb;
 	vec3 deep = hue * hue * 0.35;
-	vec3 hot = mix(hue, vec3(1.0), 0.75) * 2.4;
+	vec3 hot = mix(hue, vec3(1.0), white) * 2.4;
 	vec3 smear = mix(deep, hue, smoothstep(0.15, 0.95, across) * mix(1.0, 0.45, tc));
 	// Held low: on a dark ground the exposure climbs, and a brighter smear washed to cream.
 	vec3 light = smear * body * 0.55 + hot * (edge * 1.3 + halo * 0.35);

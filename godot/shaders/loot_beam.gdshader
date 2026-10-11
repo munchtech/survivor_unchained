@@ -18,7 +18,8 @@
 //   6 Glow: a plain short light (Chart, Quest, the hoard stone).
 //   7 Shaft: a moment's column of light (BattleFx.Pillar: a strike, a level, an evolution, a chest,
 //     the night won), its height given; the fraction, how thick the motes riding up it.
-//   8 Band: a band of light lying on the ground at its reach (the way out), breathing.
+//   8 Way: the way out, the night thinning where it lies: a pool of cold light soft on the ground,
+//     a faint veil standing up off it, motes drifting up through it, breathing.
 shader_type spatial;
 render_mode unshaded, blend_premul_alpha, depth_draw_never, depth_test_disabled, cull_disabled, shadows_disabled, fog_disabled, skip_vertex_transform;
 
@@ -49,7 +50,6 @@ void vertex() {
 	// Below the foot by the pool's reach (a circle on the ground seen from 56 degrees up); what lies
 	// on the ground all round it, as far above.
 	float down = half_w * 0.85;
-	if (kind > 7.5) tall = down;
 	at = vec2(VERTEX.x * 2.0 * half_w, mix(-down, tall, VERTEX.y + 0.5));
 	VERTEX = foot + vec3(at, 0.0);
 }
@@ -149,15 +149,19 @@ void fragment() {
 		// A little of the ground under its pool covered, so by night it lies warm and not pink.
 		veil = (g(x, w * 0.14) * 0.25 + g(x, w * 0.4) * 0.08) * fade + pool(w * 0.55) * 0.12;
 	} else if (kind > 7.5) {
-		// A band of light lying on the ground at its reach, soft on both sides, breathing; a faint
-		// light within it. (A decal's band with a hard edge read as a cream hoop.)
+		// The way out: the night thinning where what ruled it fell. A pool of cold light lying soft
+		// on the ground, a faint veil of it standing up off the ground, and motes drifting slowly up
+		// through it, all breathing. (A decal's band with a hard edge read as a cream hoop, and a
+		// soft band of light round her as a pale-blue one.)
 		vec2 e = vec2(x / half_w, y / (half_w * 0.83));
-		float r = length(e);
-		float breath = 0.72 + 0.28 * sin(TIME * 2.2 + seed * 6.28);
-		float band = exp(-pow((r - 0.92) / 0.075, 2.0)) * breath;
-		float within = smoothstep(1.0, 0.2, r) * 0.1;
-		light = mix(tint, deep, 0.35) * band + deep * within;
-		veil = band * 0.05;
+		float breath = 0.78 + 0.22 * sin(TIME * 1.7 + seed * 6.28);
+		float lie = exp(-dot(e, e) * 1.7);
+		float lift = max(y, 0.0) / H;
+		float stand = g(x, half_w * 0.38) * smoothstep(-0.3 * half_w, 0.1 * half_w, y) * exp(-lift * 2.6);
+		float up = (motes_of(half_w * 1.1, 0.45, 0.32, 0.055) + motes_of(half_w * 0.7, 0.3, 0.5, 0.045))
+			* smoothstep(-0.2, 0.3, y) * (1.0 - smoothstep(0.35, 1.0, lift));
+		light = deep * lie * 0.26 * breath + mix(tint, deep, 0.4) * stand * 0.2 * breath + tint * up * 1.3;
+		veil = lie * 0.05 + stand * 0.04;
 	} else {
 		// A plain short glow.
 		float fade = rise * pow(1.0 - u, 1.5);

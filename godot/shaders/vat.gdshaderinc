@@ -122,17 +122,21 @@ void fragment() {
 		c *= (1.0 - soot * 0.72) * (1.0 - tongue * 0.9);
 		e += vec3(1.0, 0.3, 0.03) * tongue + vec3(1.0, 0.42, 0.08) * pow(rim, 3.0) * fx.w * 0.5;
 	}
+	// Struck: a warm pale gold, never white. Three bodies a frame went wholly white and read as
+	// flat cut-outs over the pale dead: the near-white flare added to a pale body passed AgX's
+	// knee. Now the body's own paint warms to gold under the scene's light (so it keeps its
+	// shading and its paint), a gold glow is shaded like a lamp from above, and the rim takes
+	// gold; the sum stays under the knee, so it stays gold.
+	float hot = fx.x * fx.x;
+	float lum = dot(c, vec3(0.2126, 0.7152, 0.0722));
+	c = mix(c, vec3(lum) * vec3(1.18, 0.9, 0.52), fx.x * 0.6);
 	ALBEDO = c;
 	ROUGHNESS = rough;
 	METALLIC = metallic;
 	RIM = rim_amount;
 	RIM_TINT = rim_tint;
-	// Struck: a warm flare that lives at the rim, so the body keeps its shape
-	// from thirty metres up, with only an instant's glow across the whole of it
-	// (a full white-hot body bloomed the pale risen into blobs).
-	float hot = fx.x * fx.x;
-	// (At 0.75 across the whole body a pale body lost its paint and read as a ghost.)
-	e += vec3(1.0, 0.86, 0.72) * (hot * hot * 0.38 + fx.x * (0.1 + rim * rim * 1.1));
+	float shade = (0.3 + 0.7 * up) * (0.55 + 0.9 * clamp(lum, 0.0, 0.5));
+	e += vec3(1.0, 0.66, 0.3) * (hot * 0.34 * shade + fx.x * rim * rim * 0.55);
 	e += c * COLOR.a;
 	// Ember at the dissolve's edge.
 	if (fx.y > 0.0) e += vec3(1.0, 0.45, 0.12) * smoothstep(fx.y + 0.12, fx.y, dn) * 3.0;

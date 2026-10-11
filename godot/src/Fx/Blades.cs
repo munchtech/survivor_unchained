@@ -16,7 +16,7 @@ public partial class Blades : MultiMeshInstance3D
     struct Swing
     {
         public Transform3D At;
-        public float Span, Sweep, Drain, Age, Depth, Seed;
+        public float Span, Sweep, Drain, Age, Depth, Seed, Tail, White;
         public Color Hue;
     }
 
@@ -43,8 +43,11 @@ public partial class Blades : MultiMeshInstance3D
     /// `span` radians, the other way round when `mirror`. The blade crosses
     /// it in `sweep` seconds and its smear drains over `drain` more; `hue` is
     /// its colour (linear, bright), `depth` how deep its smear reaches in
-    /// from the edge as a share of the reach.</summary>
-    public void Add(Vector3 centre, float facing, float reach, float span, bool mirror, float sweep, float drain, Color hue, float depth, float delay = 0)
+    /// from the edge as a share of the reach. `tail` is how much of the swing
+    /// its smear trails behind the blade (a share of the span), and `white` how
+    /// near white its cutting edge burns (0 its own hue, 1 white).</summary>
+    public void Add(Vector3 centre, float facing, float reach, float span, bool mirror, float sweep, float drain, Color hue, float depth, float delay = 0,
+        float tail = 0.75f, float white = 0.75f)
     {
         if (live.Count >= Max) live.RemoveAt(0);
         var basis = new Basis(Vector3.Up, facing).Scaled(new Vector3(mirror ? -reach : reach, reach, reach));
@@ -52,6 +55,7 @@ public partial class Blades : MultiMeshInstance3D
         {
             At = new Transform3D(basis, centre), Span = span, Sweep = Mathf.Max(0.02f, sweep), Drain = Mathf.Max(0.02f, drain),
             Age = -delay, Depth = Mathf.Clamp(depth, 0.05f, 0.62f), Hue = hue, Seed = 1 + rng.Next(900),
+            Tail = Mathf.Clamp(tail, 0.08f, 0.95f), White = Mathf.Clamp(white, 0, 1),
         });
     }
 
@@ -68,12 +72,11 @@ public partial class Blades : MultiMeshInstance3D
             // Fast out of the wind-up, slowing through the follow.
             float k = Mathf.Min(1, s.Age / s.Sweep);
             float head = 1 - Mathf.Pow(1 - k, 2.2f);
-            const float Tail = 0.75f;
-            float back = Mathf.Max(0, head - Tail);
+            float back = Mathf.Max(0, head - s.Tail);
             if (s.Age > s.Sweep)
             {
                 float d = (s.Age - s.Sweep) / s.Drain;
-                back = Mathf.Lerp(1 - Tail, 1, 1 - (1 - d) * (1 - d));
+                back = Mathf.Lerp(1 - s.Tail, 1, 1 - (1 - d) * (1 - d));
             }
             float life = s.Age / (s.Sweep + s.Drain);
             float left = 1 - Mathf.SmoothStep(0.45f, 1, life);
@@ -83,7 +86,9 @@ public partial class Blades : MultiMeshInstance3D
             buffer[o + 4] = b.X.Y; buffer[o + 5] = b.Y.Y; buffer[o + 6] = b.Z.Y; buffer[o + 7] = s.At.Origin.Y;
             buffer[o + 8] = b.X.Z; buffer[o + 9] = b.Y.Z; buffer[o + 10] = b.Z.Z; buffer[o + 11] = s.At.Origin.Z;
             buffer[o + 12] = s.Hue.R; buffer[o + 13] = s.Hue.G; buffer[o + 14] = s.Hue.B; buffer[o + 15] = s.Depth;
-            buffer[o + 16] = head; buffer[o + 17] = back; buffer[o + 18] = s.Span; buffer[o + 19] = s.Seed + Mathf.Clamp(left, 0.001f, 0.999f);
+            // The edge's heat rides in the seed's thousands (a level of five), as the custom data is full.
+            float heat = 1000 * (1 + Mathf.Round(s.White * 4));
+            buffer[o + 16] = head; buffer[o + 17] = back; buffer[o + 18] = s.Span; buffer[o + 19] = heat + s.Seed + Mathf.Clamp(left, 0.001f, 0.999f);
         }
         if (n > 0) Multimesh.Buffer = buffer;
         Multimesh.VisibleInstanceCount = n;

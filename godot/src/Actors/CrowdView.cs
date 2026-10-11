@@ -156,11 +156,12 @@ public partial class CrowdView : Node3D
         }
     }
 
-    /// <summary>Bodies flashed white this frame, and how many may be: past it, a flash stays at the
-    /// rim (the shader's whole-body white needs a flash over this).</summary>
+    /// <summary>Bodies flared in full this frame, and how many may be: past it, a flash stays at the
+    /// rim (the shader's whole-body gold needs a flash over this; it was white until the struck
+    /// flare was warmed).</summary>
     int whiteFlashes;
     const int WhiteFlashes = 3;
-    /// <summary>Champions flashed white this frame, on top of the three: eight elite risen under one
+    /// <summary>Champions flared in full this frame, on top of the three: eight elite risen under one
     /// Iron Palms went white together, the same white-out the cap was made against.</summary>
     int eliteFlashes;
     const int EliteFlashes = 2;
