@@ -9,12 +9,12 @@ the story data and the cinematic scripts, and you sign off voice packets.
 - **Love scenes B, directed and guarded, unjudged** (05ae446d data, 708cf892
   directions, docs, guard; 795 tests pass):
   - Directions: `tools/vo/direction/love_b.json` (60 lines; built by
-    `<scratch>\s17uild_b.py`, which holds every direction as a spec and
+    `<scratch>\s17\build_b.py`, which holds every direction as a spec and
     asserts the acted words; edit the spec and rerun, not the json).
   - Writer 14's pass before the judge: `told_true` lost its two narrator asides
     (under the hides), "(the embers tick)", "Say stop and I stop.", "crouched"
     at the mouth of the Blind, rest_dark ends "Somebody ought to watch you.",
-    "practice" (`<scratch>\s17ix1.py`, `fix2.py`).
+    "practice" (`<scratch>\s17\fix1.py`, `fix2.py`).
   - `produce.fit`: a direction `gap` keeps silences up to that many seconds
     (the importer cut every pause to 1.6 s; B's "..." are 2-4 s).
   - The door, for good: `elevenlabs.py` `DOOR`/`behind_door` holds any
@@ -25,7 +25,7 @@ the story data and the cinematic scripts, and you sign off voice packets.
     sound, A = fd0b8a9b as the fallback), TREATMENT, RERECORD (B's take list),
     VOICES (captions rule).
 - **The editor-judge on B is running** (su-lead-max, spawned by writer 14; its
-  verdict file: `<scratch>\s17erdict_b.md`). If it isn't there, re-spawn one
+  verdict file: `<scratch>\s17\verdict_b.md`). If it isn't there, re-spawn one
   with the same checklist (the brief is in writer 14's transcript; the
   checklist: the four conditions, voice, 18+ taste, the door and captions,
   directions, recordability, continuity).
