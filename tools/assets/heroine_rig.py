@@ -178,7 +178,9 @@ def _as_skin(W2, near, t, body, index, src):
     helpers) shared out as her skin's at `near`, eased back to W2's own as t
     goes 0 to 1."""
     bvh, T, P, W = body
-    chain = sorted({index[n] for n in set(src) | set(hp.names()) if n in index})
+    # (the hands too: at the wrist a cuff weighted more to the hand than the
+    # skin under it took a different twist share; judge 8, the worst points)
+    chain = sorted({index[n] for n in set(src) | set(hp.names()) | {"hand_l", "hand_r"} if n in index})
     tri = np.zeros(len(near), int)
     q = np.zeros((len(near), 3))
     for i, p in enumerate(near):

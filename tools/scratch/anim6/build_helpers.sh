@@ -11,7 +11,7 @@ W="animation: helpers build"
 until $T take blender "$W" --wait 60 >/dev/null 2>&1; do :; done
 echo "blender turn $(date +%H:%M:%S)"
 cd $WT
-timeout 7000 "$B" -b "$S/heroine_built.blend" --python tools/assets/heroine_outfits.py -- godot/art/people/x --body godot/art/people/heroine.glb --helpers > "$S/build.log" 2>&1
+timeout 7000 "$B" -b "C:/Users/munch/AppData/Local/Temp/claude/C--Users-munch-Desktop-survivorsunchained/91211d34-e079-4956-a2a0-7b52c04594a8/scratchpad/an6/heroine_built_relinked.blend" --python tools/assets/heroine_outfits.py -- godot/art/people/x --body godot/art/people/heroine.glb --helpers > "$S/build.log" 2>&1
 echo "blender exit $?"
 $T give blender "$W" >/dev/null
 echo "blender done $(date +%H:%M:%S)"
