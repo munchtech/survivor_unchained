@@ -325,10 +325,13 @@ def crotch_bridge(name, pos, tris, gap_at, mkey, thick, bevel, trim, lift):
     # (close under her, her skin tucked under it, and each line of it moving
     # with the skin under that line, as the thongs' gussets)
     # (cut from her own skin, as the thongs' gussets: see gusset())
-    return gusset(name + "_gusset", mkey, GAP_F - 0.014, GAP_B + 0.014, thick=thick)
+    # (on back under the string's foot by 1.5 cm: stopped at GAP_B, short of
+    # the string, the strip between them showed as she vaulted)
+    foot = back_string(CROTCH + 0.155, CROTCH + 0.012)[-1][1]
+    return gusset(name + "_gusset", mkey, GAP_F - 0.014, max(GAP_B + 0.014, foot + 0.015), thick=thick)
 
 
-def gusset(name, mkey, y_front, y_back, half=0.016, steep=0.9, thick=0.0018):
+def gusset(name, mkey, y_front, y_back, half=0.016, steep=0.96, thick=0.0018):
     """A gusset cut from her own skin under her crotch, skin-tight (1 mm off
     her), its edges bound and her skin tucked under it: from y_front to
     y_back, |x| under `half`, and up the walls of the slot between her thighs
@@ -338,7 +341,12 @@ def gusset(name, mkey, y_front, y_back, half=0.016, steep=0.9, thick=0.0018):
     her skin came through it as her thighs parted.)"""
     field = AND(half - np.abs(X), (steep - np.abs(N[:, 0])) * 0.02, y_back - Y, Y - y_front,
                 Z - (CROTCH - 0.015), (CROTCH + 0.03) - Z)
-    return piece(name, field, mkey, lift=0.001, thick=thick, smooth=2, soften=0, slot=False)
+    made = piece(name, field, mkey, lift=0.001, thick=thick, smooth=2, soften=0, slot=False)
+    # (her skin tucked under it only 3 mm: it moves with the skin under it,
+    # so it needs no more, and tucked 7 mm, as close pieces are, the walls of
+    # the slot showed a gully along each of its edges as her thighs parted)
+    made[0]["tuck"] = 0.3
+    return made
 
 
 def spline(pts, step=0.004):
@@ -1124,7 +1132,28 @@ def edge_loops(tris):
     return loops
 
 
-def bind_edges(name, pos, at, tris, key, width, height, overhang, thick, sigma=0.012, stitch=False):
+def rounded(cur, rmin, rounds=400):
+    """A closed line with no bend tighter than `rmin`: each point bent
+    tighter than that (its circle through it and its neighbours smaller)
+    eased toward its neighbours with them, until none is. (Eased by a
+    Gaussian alone, a plate's corner kept a bend tighter than its rolled
+    edge was round, and the edge's rings crossed there in a knot, with a
+    hole and a spike; and the arcanist's plunge came to a V.)"""
+    cur = cur.copy()
+    for _ in range(rounds):
+        a, b = np.roll(cur, 1, 0), np.roll(cur, -1, 0)
+        twice = np.linalg.norm(np.cross(cur - a, b - a), axis=1)
+        r = (np.linalg.norm(b - a, axis=1) * np.linalg.norm(cur - a, axis=1) * np.linalg.norm(b - cur, axis=1)
+             / (2 * twice + 1e-15))
+        tight = r < rmin
+        if not tight.any():
+            break
+        m = tight | np.roll(tight, 1) | np.roll(tight, -1)
+        cur = np.where(m[:, None], 0.5 * cur + 0.25 * (a + b), cur)
+    return cur
+
+
+def bind_edges(name, pos, at, tris, key, width, height, overhang, thick, sigma=0.012, stitch=False, rmin=None):
     """A sheet's cut outline made fair and bound: each edge loop eased into
     one smooth curve, the sheet's own edge points moved onto it, and a
     rolled edge laid along it that covers the cut, as a garment's edges are
@@ -1150,6 +1179,8 @@ def bind_edges(name, pos, at, tris, key, width, height, overhang, thick, sigma=0
             continue
         bound += 1
         cur = smooth_closed(lp, sigma)
+        # (no bend tighter than twice the rolled edge's radius: see rounded())
+        cur = rounded(cur, rmin or width)
         # Back onto the sheet (its surface, not the plane of the nearest
         # point: that changed from point to point and stepped the line in
         # depth, unseen face-on, kinked at a glancing view), the move eased
@@ -1903,16 +1934,20 @@ def dump(name, stage, pos, tris, field):
         np.savez(os.path.join(os.environ.get("TEMP", "."), f"dump_{name}_{stage}.npz"), pos=pos, tris=tris, field=field)
 
 
-def over_nipples(pos, tris, least=0.003, s=0.009):
+def over_nipples(pos, tris, least=0.0015, s=0.011):
     """A garment cut over her filled breasts drawn over each nipple as a
     low, soft rise (`least` high, `s` its spread), so her nipples show
     through it as shapes; the tip of her nipple, through it, is hidden
     under it (the owner: hide the tip, leave the nipple visible). (Raised
-    to clear all of her nipple, it was a cone.)"""
+    to clear all of her nipple, it was a cone; 3 mm high and 9 mm across,
+    the owner wanted less poke, the same on both: 1.5 mm and 11 mm, her
+    skin's own tip tucked under it, and each rise set on the two nipples'
+    mirrored mean, so neither sits higher or further out.)"""
     nor = vertex_normals(pos, tris)
     out = pos.copy()
+    mean = (NIPPLE["l"] * np.array([-1, 1, 1]) + NIPPLE["r"]) / 2
     for sd in ("l", "r"):
-        tip = NIPPLE[sd]
+        tip = mean * np.array([-1 if sd == "l" else 1, 1, 1])
         near = np.where(np.linalg.norm(pos - tip, axis=1) < 0.05)[0]
         if len(near) < 10:
             continue
@@ -2966,9 +3001,10 @@ def warden():
         # (close under her, 1 mm, her skin tucked in under it and each line of
         # it moving with the skin under that line: hung 6 mm under her and
         # moving as one strap, her skin came through it as her thighs parted)
-        # (from 6 mm up into her cleft, under the string's foot: begun 4 mm
-        # short of it, the turn between them was bare)
-        *gusset("warden.thong_gusset", "darkleather", GAP_F - 0.006, thong_back[-1][1] + 0.006),
+        # (1.5 cm up into her cleft, under the string's foot: begun 4 mm
+        # short of it, the turn between them was bare, and 6 mm under it, the
+        # strip beside the hand-over showed as she vaulted)
+        *gusset("warden.thong_gusset", "darkleather", GAP_F - 0.006, thong_back[-1][1] + 0.015),
     ]
     # A skirt of steel plates hung all round from the belt, each its own (her
     # legs move freely between them; each swings with the thigh it is over),
@@ -3747,7 +3783,7 @@ def reaver():
                 trim=edge(0.004, "blackleather"), snap=False, hides=True, flare=(0.028, 0.03)),
         # (under her a gusset wider than the string, close under her and
         # following her skin, as on the warden's thong)
-        *gusset("reaver.gstring_gusset", "oldleather", GAP_F - 0.006, back_string(bz0 + 0.07, CROTCH + 0.012)[-1][1] + 0.006),
+        *gusset("reaver.gstring_gusset", "oldleather", GAP_F - 0.006, back_string(bz0 + 0.07, CROTCH + 0.012)[-1][1] + 0.015),
         *piece("reaver.cape", cape, "fur", lift=0.012, thick=0.004, smooth=12, soften=10, keep_off=("Head",)),
         *piece("reaver.tattoo_arm", OR(zigzag_band("r", ELBOW_S - 0.12, legs=False), zigzag_band("r", ELBOW_S - 0.06, legs=False, amp=0.01, width=0.012)), "ink", lift=0.0012, thick=0.0002, bevel=0.0, soften=0, budget=10 ** 7),
         *piece("reaver.tattoo_thigh", OR(zigzag_band("l", 0.15), zigzag_band("l", 0.22, amp=0.01, width=0.013)), "ink", lift=0.0012, thick=0.0002, bevel=0.0, soften=0, budget=10 ** 7),
@@ -3988,11 +4024,12 @@ if BODY_OUT:
         objs = [o for o in made if o.name.startswith(name + ".") and o.get("hides")]
         if not objs or k > 3:
             continue
-        vs, fs = [], []
+        vs, fs, cap = [], [], []
         for o in objs:
             base = len(vs)
             vs += [tuple(o.matrix_world @ v.co) for v in o.data.vertices]
             fs += [[base + i for i in p.vertices] for p in o.data.polygons]
+            cap += [o.get("tuck", 1.0)] * len(o.data.polygons)
         tree = BVHTree.FromPolygons(vs, fs)
         hid = 0
         # Her skin under a piece (it faces the piece, within 12 mm), and
@@ -4022,7 +4059,7 @@ if BODY_OUT:
             if proud[v.index] and tree.ray_cast(co + n * 0.0005, -n, 0.015)[0] is not None:
                 vals[v.index, k] = 1
             elif hit[0] is not None:
-                vals[v.index, k] = 1.0 if bump[v.index] else 0.8 * np.clip((0.005 - hit[3] - 0.0005) / 0.004, 0, 1)
+                vals[v.index, k] = 1.0 if bump[v.index] else min(cap[hit[2]], 0.8 * np.clip((0.005 - hit[3] - 0.0005) / 0.004, 0, 1))
             hid += vals[v.index, k] > 0
         # Tucked in gradually from the border, a third, two thirds, then all
         # the way, so her skin slopes under a piece's edge as if it pressed
@@ -4085,6 +4122,9 @@ if BODY_OUT:
     bpy.context.view_layer.objects.active = arm
     bpy.ops.export_scene.gltf(filepath=BODY_OUT, export_format="GLB", use_selection=True, export_skins=True, export_animations=False,
                               export_yup=True, export_vertex_color="ACTIVE")
+    # (her head's keys' normals held to her neck's at SPLIT, as the exporter does not: heroine_seam.py)
+    import heroine_seam
+    heroine_seam.seam(BODY_OUT)
     print("BODY", BODY_OUT)
 
 # Nothing else rides along (the scene may hold strays).
