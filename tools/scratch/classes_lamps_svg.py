@@ -1,10 +1,10 @@
-"""Draws the warden's quarter of the Lamps as an SVG (docs/design/classes_warden_lamps.svg).
+﻿"""Draws the warden's quarter of the Lamps as an SVG (docs/design/classes_warden_lamps.svg).
 Hand-laid on a grid so no label meets another: two roads as columns, the bridge between,
 the hearth below, the crossings leaving at the sides."""
 import math, sys
 
-W, H = 1700, 1110
-CX = 850
+W, H = 1900, 1110
+CX = 950
 out = []
 add = out.append
 
@@ -22,20 +22,25 @@ def edge(a, b): edges.append((a, b))
 SY0, STEP = 820, 58
 def sy(i): return SY0 - STEP * i
 
+strikes = []
+gates = []
+
 def road(p, side, spine_x, skills, notables, blues, ults, lit_spine, lit_extra):
     s = side                       # -1: the left road, +1: the right
     outer, inner = ("l", "r") if s < 0 else ("r", "l")
     for i in range(12):
         nid = f"{p}s{i}"
         if i == 0:
-            node(nid, spine_x, sy(i), "notable", notables[0], i in lit_spine, inner)
-        elif i in (3, 6):
-            node(nid, spine_x, sy(i), "notable", notables[(3, 6).index(i) + 1], i in lit_spine, inner)
+            node(nid, spine_x, sy(i), "notable", notables[0], i in lit_spine, outer)
+        elif i in (3, 6, 9):
+            node(nid, spine_x, sy(i), "notable", notables[(3, 6, 9).index(i) + 1], i in lit_spine, inner)
         elif i == 11:
             node(nid, spine_x, sy(i), "blue", blues[0], False, inner)
         else:
             node(nid, spine_x, sy(i), "small", "", i in lit_spine)
         if i: edge(f"{p}s{i-1}", nid)
+    for a_, t_ in ((2, "6 lit"), (8, "12 lit")):
+        gates.append((spine_x, (sy(a_) + sy(a_ + 1)) / 2, s, t_))
     # skill clusters on the outer side
     for k, at in enumerate((1, 4, 7)):
         name, lamps = skills[k]
@@ -50,40 +55,41 @@ def road(p, side, spine_x, skills, notables, blues, ults, lit_spine, lit_extra):
     # two more notables on the inner side
     for k, at in enumerate((5, 8)):
         nid = f"{p}n{k}"
-        node(nid, spine_x - s * 110, sy(at) + 0, "notable", notables[3 + k], False, inner)
+        node(nid, spine_x - s * 110, sy(at) + 0, "notable", notables[4 + k], False, inner)
         edge(f"{p}s{at}", nid)
     # the second blue lamp, outer, off spine 10
     node(f"{p}b1", spine_x + s * 140, sy(10), "blue", blues[1], False, outer)
     edge(f"{p}s10", f"{p}b1")
-    # ultimates on the inner side: the Strike at depth 3 (spine 2), the Stand at depth 12 (spine 9)
-    for k, at in enumerate((2, 9)):
+    # ultimates on the inner side: the Strike at depth 3 (spine 2), the Stand at depth 12 (spine 10)
+    for k, at in enumerate((2, 10)):
         name, mods = ults[k]
         ux, uy = spine_x - s * 150, sy(at)
         uid = f"{p}u{k}"
         node(uid, ux, uy, "ult", name, f"u{k}" in lit_extra, "ul" if s < 0 else "ur")
         edge(f"{p}s{at}", uid)
+        if k == 0: strikes.append((ux + (-24 if s < 0 else 24), uy + 42, "end" if s < 0 else "start"))
         for j, m in enumerate(mods):
             mid = f"{uid}_{j}"
             node(mid, ux - s * 62, uy - 30 + 30 * j, "mod", m, False, inner)
             edge(uid, mid)
 
-road("L", -1, 500,
+road("L", -1, 520,
      [("Sunder", ["Wide Swing", "Third Blow", "Burning Edge"]),
       ("Groundbreaker", ["Twin Cracks", "Fault Line", "Upheaval"]),
       ("Dawnpulse", ["Dawn Rhythm", "Wider Morning", "Searing Light"])],
-     ["Two Hands", "Stagger", "Sundered", "Momentum of the Blade", "Morning in the Steel"],
+     ["Two Hands", "Breaking Point", "Sundered", "Rooted Stance", "Momentum of the Blade", "Morning in the Steel"],
      ["Weight of the Oath", "The Unbroken Line"],
      [("The Long Cut", ["Second Cut", "Line of Morning", "Through the Wall"]),
-      ("Dawn in the Steel", ["Long Morning", "Crescents Through", "Mending Light"])],
-     lit_spine={0, 1, 2, 3, 4}, lit_extra={"k0", "k0_0", "u0"})
-road("R", 1, 1200,
-     [("Oathblade", ["Shield and Edge", "Long Oath", "Morning Edge"]),
+      ("Dawn in the Steel", ["High Morning", "Crescents Through", "Mending Light"])],
+     lit_spine={0, 1, 2, 3, 4}, lit_extra={"k0", "k0_0", "k0_1", "u0"})
+road("R", 1, 1380,
+     [("Oathblade", ["Shield and Edge", "Reaching Oath", "Morning Edge"]),
       ("Rebuke", ["Wider Rebuke", "Rebuke the Strong", "Answering Light"]),
       ("Watch Bell", ["Loud Bell", "Iron Bell", "Bell and Barrier"])],
-     ["Shield Arm", "Ward", "Shield-Wall", "Heavy Shield", "Faith in the Wall"],
+     ["Shield Arm", "Mortar", "Planted", "Turned Arrows", "Heavy Shield", "Faith in the Wall"],
      ["The Wall Holds", "Bearer of Blows"],
      [("Bell of the Morning", ["Fourth Toll", "Bell for the Dead", "Healing Peal"]),
-      ("Sixty on the Wall", ["Shield-Brothers", "The Wall Walks", "Long Watch"])],
+      ("Sixty on the Wall", ["Shield-Brothers", "The Wall Walks", "Night Watch"])],
      lit_spine=set(), lit_extra=set())
 
 # the bridge, between the roads' inner notables
@@ -101,22 +107,23 @@ node("start", HX, HY, "start", "The Warden's Oath: the dash is Bull Rush", True,
 node("d1", HX - 95, 975, "dash", "Iron Hide", False, "b", 12)
 node("d2", HX - 185, 975, "dash", "Pile Driver", False, "b", 12)
 node("d3", HX - 275, 975, "dash", "Unbroken", False, "b", 12)
-edge("start", "d1"); edge("d1", "d2"); edge("d2", "d3")
+node("d4", HX - 365, 975, "dash", "Gore", False, "b", 12)
+edge("start", "d1"); edge("d1", "d2"); edge("d2", "d3"); edge("d3", "d4")
 node("r1", HX + 95, 975, "reflex", "Shield Bash", False, "b", 12)
 node("r1a", HX + 185, 975, "small", "Concussion", False, "b", 12)
 node("r1b", HX + 275, 975, "small", "Shield Wall", False, "b", 12)
-node("r2", HX + 95, 1040, "reflex", "Bulwark", False, "b", 12)
+node("r2", HX + 95, 1040, "reflex", "Braced", False, "b", 12)
 node("r2a", HX + 205, 1040, "small", "Rallying Stand", False, "b", 12)
 edge("start", "r1"); edge("r1", "r1a"); edge("r1a", "r1b"); edge("r1", "r2"); edge("r2", "r2a")
 node("f1", HX - 85, 835, "small", "Kindled Oath", False, "l", 12)
 node("f2", HX + 85, 835, "small", "Last at the Crossing", False, "r", 12)
 edge("start", "f1"); edge("start", "f2")
-node("hb1", 690, 790, "blue", "Hold Fast", False, "t")
-node("hb2", 1010, 790, "blue", "Banked Flame", False, "t")
+node("hb1", CX - 160, 790, "blue", "Hold Fast", False, "t")
+node("hb2", CX + 160, 790, "blue", "Banked Flame", False, "t")
 edge("f1", "hb1"); edge("f2", "hb2")
 edge("start", "Ls0"); edge("start", "Rs0")
 
-# the crossings, leaving at the sides from spine 9
+# the crossings, leaving at the sides from spine 8
 def crossing(p, from_id, x_end, labels):
     fx, fy = nodes[from_id]["x"], nodes[from_id]["y"]
     prev = from_id
@@ -124,11 +131,11 @@ def crossing(p, from_id, x_end, labels):
     for i, lab in enumerate(labels):
         x = fx + (x_end - fx) * (i + 1) / n
         nid = f"{p}{i}"
-        node(nid, x, fy, "notable" if lab else "small", lab, False, "b", 12)
+        node(nid, x, fy, "notable" if lab else "small", lab, False, "t", 12)
         edge(prev, nid); prev = nid
 
-crossing("CL", "Ls9", 90, ["", "Opened Up", "", "Cleaver's Weight", "", ""])
-crossing("CR", "Rs9", 1610, ["", "Parry", "", "Riposte", "", ""])
+crossing("CL", "Ls8", 90, ["", "Opened Up", "", "Cleaver's Weight", "", ""])
+crossing("CR", "Rs8", 1810, ["", "Parry", "", "Return Cut", "", ""])
 
 # ---------------------------------------------------------------- draw
 add(f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {W} {H}" width="{W}" height="{H}" font-family="Georgia, \'Times New Roman\', serif">')
@@ -136,7 +143,7 @@ add(f'<rect width="{W}" height="{H}" fill="{BG}"/>')
 add('<defs><radialGradient id="glow"><stop offset="0" stop-color="#ffcf7a" stop-opacity="0.5"/><stop offset="1" stop-color="#ffcf7a" stop-opacity="0"/></radialGradient>'
     '<radialGradient id="bglow"><stop offset="0" stop-color="#8cc4ff" stop-opacity="0.45"/><stop offset="1" stop-color="#8cc4ff" stop-opacity="0"/></radialGradient></defs>')
 add(f'<text x="40" y="50" fill="{INK}" font-size="30">The Lamps: the warden\'s quarter</text>')
-add(f'<text x="40" y="76" fill="{DIM}" font-size="15">A diagram, not the screen. Lit as a new player who follows the glow has it at about level 6; the glowing lamp is the next suggestion.</text>')
+add(f'<text x="40" y="76" fill="{DIM}" font-size="15">A diagram, not the screen. Lit as a new player who follows the glow has it at about level 6; the glowing lamp is the next suggestion. Gates count lamps lit on that road.</text>')
 
 for a, b in edges:
     A, B = nodes[a], nodes[b]
@@ -191,16 +198,22 @@ for n in nodes.values():
     colour = {"blue": BLUE, "ult": GOLD, "mod": DIM, "small": INK if lit else DIM, "skill": GOLD if lit else INK}.get(kind, INK)
     label(x, y, n["label"], n["lp"], size, colour)
 
+for gx, gy, gs, gt in gates:
+    add(f'<line x1="{gx}" y1="{gy:.0f}" x2="{gx + gs * 30}" y2="{gy:.0f}" stroke="#6f6350" stroke-width="2" stroke-dasharray="5 4"/>')
+    add(f'<text x="{gx + gs * 36}" y="{gy + 4:.0f}" fill="#8a7e6a" font-size="11" font-style="italic" text-anchor="{"end" if gs < 0 else "start"}">{gt}</text>')
+for sx, sy_, sa in strikes:
+    add(f'<text x="{sx}" y="{sy_}" fill="#8a7e6a" font-size="11" font-style="italic" text-anchor="{sa}">3 lit</text>')
+
 def title(x, y, big, small):
     add(f'<text x="{x}" y="{y}" fill="{GOLD}" font-size="22" text-anchor="middle">{big}</text>')
     add(f'<text x="{x}" y="{y + 20}" fill="{DIM}" font-size="13" text-anchor="middle">{small}</text>')
 
-title(500, 118, "Road of the Sunderer", "greatsword: heavy blows, stagger, holy fire")
-title(1200, 118, "Road of the Bulwark", "sword and shield: block, Ward, retaliation")
+title(520, 118, "Road of the Sunderer", "greatsword: heavy blows, stagger, holy fire")
+title(1380, 118, "Road of the Bulwark", "sword and shield: block, Ward, retaliation")
 title(CX, 612, "The bridge: Sword and Board", "for carrying both")
 title(CX, 1075, "The hearth", "dash form, reflexes, the Flare")
-add(f'<text x="90" y="352" fill="{DIM}" font-size="14" font-style="italic">the Shambles, on to the Butcher</text>')
-add(f'<text x="1610" y="352" fill="{DIM}" font-size="14" font-style="italic" text-anchor="end">the Duelist\'s Road, on to the Skirmisher</text>')
+add(f'<text x="90" y="312" fill="{DIM}" font-size="14" font-style="italic">the Shambles, on to the Butcher</text>')
+add(f'<text x="1810" y="312" fill="{DIM}" font-size="14" font-style="italic" text-anchor="end">the Duelist\'s Road, on to the Skirmisher</text>')
 
 # legend, bottom left
 lx, ly = 70, 880
