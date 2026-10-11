@@ -17,7 +17,7 @@ Read this first, then `docs/team/RESUME.md` (what's current: the owner's latest 
 - Our repo is munchtech/survivor_unchained. The integration branch is `claude/vigilant-galileo-l6jqyx`.
 - You work in your own worktree. Merge `origin/claude/vigilant-galileo-l6jqyx` in first, and again often. Commit and push your own branch; the main session merges it in. Open no PRs.
 - Run `dotnet test` in `godot/tests` before every commit, and keep it green.
-- Use British spelling. Comments are short prose that say why.
+- Comments are short prose that say why.
 - Check your work as the player sees it: screenshots, renders and runs at full resolution. Never claim what you haven't seen.
 
 ## Context engineering

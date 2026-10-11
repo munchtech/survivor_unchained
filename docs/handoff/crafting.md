@@ -35,7 +35,7 @@ The research is `docs/CRAFTING_RESEARCH.md` (C1–C30).
 Crafting lead: research, design and build crafting, playable end to end, and seen in the running game at
 1920×1080.
 - Don't stop to ask. Keep `dotnet test` in `godot/tests` green before every commit.
-- British spelling, and short comments that say why.
+- Short comments that say why.
 - Commit and push your own branch at milestones. The main session merges it; open no PRs.
 - Take a turn for Godot (`tools/turn.py`) and give it back the moment the shots are done.
 - Hand off at about 500k tokens of context.

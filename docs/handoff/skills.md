@@ -27,7 +27,7 @@ combat asks for. Each skill must read at a glance in a horde, keep its school's 
 land every hit, and grow with rank. Combat owns mechanics and numbers: propose, never make them.
 Batch shots in one Godot turn and look once. Krea only through the `gpu` turn (the face lead uses
 it a lot: queue fairly). Commit and push at milestones; open no PRs. `dotnet test` (in
-`godot/tests`) before every commit. British spelling. Hand off at about 500k tokens.
+`godot/tests`) before every commit. Hand off at about 500k tokens.
 
 ## The main session's rulings (applied)
 

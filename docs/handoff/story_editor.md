@@ -15,7 +15,6 @@ section of `docs/team/OWNER_NOTES.md`, then this page, then
   docs-only ones.
 - **Commits:** write the message to a file and use `git commit -F`. End it
   with `Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>`.
-- British spelling.
 
 ## 1. The owner's words
 

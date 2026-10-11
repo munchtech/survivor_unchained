@@ -27,7 +27,7 @@ From the coordinator session that ran 3 to 6 October 2026. Read this after `docs
 
 ## The owner
 - Pronouns: they/them unless the owner says otherwise. Some leads wrote "he"; don't repeat it.
-- British spelling. Short, plain updates: what changed, what's next, and any decision that's theirs. Pictures over descriptions.
+- Short, plain updates: what changed, what's next, and any decision that's theirs. Pictures over descriptions.
 - They play the build and send crops; take every note seriously, sort it by area into OWNER_NOTES, and route it.
 - The bar: "we are striving for perfection"; soul over generic; no AI-looking UI; sex appeal "tho not at the cost of looking bad"; coverage pixel-perfect.
 - Safety:
