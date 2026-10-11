@@ -103,8 +103,9 @@ uniform vec3 face_tone = vec3(1.0);
 // their fitted tone.
 uniform float body_lift = 1.0;
 // (none where she faces down (world normal's y under lift_from, all over lift_to): lit from the front, the shade
-// under her chin took it too)
-uniform float lift_from = -0.15;
+// under her chin took it too. From -0.45: from -0.15 her neck's upright skin took half of it and the notch's upper
+// wall none, so at today's neck length it sat .03-.08 short of the portraits' (judge j6))
+uniform float lift_from = -0.45;
 uniform float lift_to = 0.15;
 // Her shade's own colour off her face (People.HerSoftTone, linear): the soft lamps' light (shade_by_soft) on her neck
 // and under her jaw, outside her face's paint (the features' blue), times this: under her jaw her portraits' shade is
@@ -311,13 +312,15 @@ void light() {
 		rich = mix(vec3(1.0), tn, shade_w * (1.0 - smoothstep(shade_from, shade_to, lit)));
 	}
 	float key_w = mix(1.0, smoothstep(shade_from, shade_to, SPECULAR_AMOUNT), shade_by_soft);
-	DIFFUSE_LIGHT += LIGHT_COLOR * diffuse * ATTENUATION * un * rich * mix(1.0, body_lift, key_w * lift_w)
+	// (lamps behind her take no lift: the Look's cool rim and the fire's edge lamp lifted the far side of her neck too,
+	// judge j6)
+	float behind = smoothstep(-0.1, 0.6, dot(-LIGHT, VIEW));
+	DIFFUSE_LIGHT += LIGHT_COLOR * diffuse * ATTENUATION * un * rich * mix(1.0, body_lift, key_w * lift_w * (1.0 - behind))
 		* mix(vec3(1.0), soft_tone, (1.0 - key_w) * soft_w * shade_by_soft);
 	// the fine down at her edges, against a light from behind her only (lit
 	// from the front, it brightened every edge of her: a pale ribbon down her
 	// cheek where her dark hair met it, her temples white)
 	float rim_light = pow(max(1e-4, 1.0 - c_ndv), max(0.0, (1.0 - ROUGHNESS) * 16.0));
-	float behind = smoothstep(-0.1, 0.6, dot(-LIGHT, VIEW));
 	rim_light *= mix(1.0, smoothstep(0.0, 0.3, ndl), rim_gate);
 	DIFFUSE_LIGHT += rim_light * behind * rim * mix(vec3(1.0), ALBEDO * un, rim_tint) * LIGHT_COLOR * ATTENUATION * un;
 	// light through her where she is thin

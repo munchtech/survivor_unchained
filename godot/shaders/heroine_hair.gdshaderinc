@@ -41,6 +41,11 @@ uniform vec3 chain[8];
 uniform vec3 sway_then = vec3(0.0);
 uniform vec3 head_then = vec3(0.0, 1.6, 0.0);
 uniform vec3 chain_then[8];
+// Her forearms (elbow, past the fist; left then right, in the mesh's own space) and their radius: her hair is
+// pushed out of them (a lock by her ear as her throwing arm comes past her head). 0: none.
+uniform vec3 arms[4];
+uniform vec3 arms_then[4];
+uniform float arm_r = 0.0;
 
 #include "res://shaders/motion.gdshaderinc"
 #ifdef COVERAGE
@@ -86,6 +91,16 @@ void vertex() {
 		VERTEX += (mix(a, b, s - float(i)) + air * UV2.x) * UV2.y;
 	} else {
 		VERTEX += ((past ? sway_then : sway) + air) * hang * hang * tip * moves;
+	}
+	if (arm_r > 0.0 && moves > 0.0) {
+		for (int k = 0; k < 2; k++) {
+			vec3 a = past ? arms_then[2 * k] : arms[2 * k];
+			vec3 ab = (past ? arms_then[2 * k + 1] : arms[2 * k + 1]) - a;
+			vec3 c = a + ab * clamp(dot(VERTEX - a, ab) / max(dot(ab, ab), 1e-6), 0.0, 1.0);
+			vec3 o = VERTEX - c;
+			float d = length(o);
+			if (d < arm_r && d > 1e-5) VERTEX = c + o * (arm_r / d);
+		}
 	}
 }
 

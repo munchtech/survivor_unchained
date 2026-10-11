@@ -285,8 +285,9 @@ public partial class Game
         }
         Aim(keyLight, eyes + dir * 1.9f - camLeft * keyAt.Value.X + Vector3.Up * keyAt.Value.Y, eyes + Vector3.Down * 0.05f, 0.15f + rig[0] * p);
         Aim(fillLight, eyes + dir * 1.8f + camLeft * 1.1f, eyes + Vector3.Down * 0.08f, rig[1] * p);
-        // (--edge-up U: the fire's edge lamp's height over her eyes, for judging it (pictures))
-        float edgeUp = Args.Get("edge-up") is string eu ? float.Parse(eu, System.Globalization.CultureInfo.InvariantCulture) : 0.35f;
+        // (1.3 m over her eyes: at 0.35 it grazed her jaw's silhouette, a warm line along it and orange under Sunborn's
+        // jaw, judge j6; --edge-up U: another height, for judging it (pictures))
+        float edgeUp = Args.Get("edge-up") is string eu ? float.Parse(eu, System.Globalization.CultureInfo.InvariantCulture) : 1.3f;
         Aim(edgeLight, eyes - dir * 1.3f + camLeft * 1.4f + Vector3.Up * edgeUp, eyes + Vector3.Down * 0.1f, rig[2] * p);
         Aim(rimLight, eyes - dir * 1.6f - camLeft * 1.0f + Vector3.Up * 1.1f, eyes + Vector3.Down * 0.12f, rig[3] * p);
         if (bounceLight != null) Aim(bounceLight, eyes + dir * bounceAt.X + Vector3.Down * bounceAt.Y, eyes + Vector3.Down * 0.14f, bounce * p);

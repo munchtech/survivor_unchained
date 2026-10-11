@@ -478,6 +478,8 @@ func _process(delta):
 			# The first shots after warming: from the clip's start.
 			ap.seek(start, true)
 			her.position = Vector3.ZERO
+			# (her hair hung afresh from this pose: the seek back was a jump, and it flung her hair)
+			for h in her.find_children("HairSway", "", true, false): h.call("Settle")
 		return false
 	var k = frame - warm - 1
 	if tree != null and k == int(float(env("OVERAT", "0")) * 30):
