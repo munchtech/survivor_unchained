@@ -94,3 +94,61 @@ Written by `a427a874da78cba8b` for its successor.
 2. `godot/logic/Play/Zones/StoryNight.cs`, `Play/Story/StoryFight.cs`, `Vault.cs`; `Play/Bosses/StoryBoss.cs`, `BarrowLordStory.cs`, `GrimtunnelStory.cs`, `BossSense.cs`.
 3. `godot/src/Game/GameChoice.cs`, `src/Ui/WorldType.cs` (`StoryChoices`).
 4. `godot/balance/Harness/StorySim.cs`; tests `StoryNightTests`, `RoostTests`, `DigTests`, `VaultTests`.
+
+## Late notes recovered from unmerged branches (10 October cleanup)
+
+Written by woken leads on 4 and 5 October after this page, and never merged. Check each against the code and later pages before acting; some may be done or stale.
+
+From `worktree-agent-ac4ec5bbd2763a0df` (2026-10-04 eaf57e82):
+
+5. **The story lead's brief for C14, "The Road Back"** (`a035208561a66c171`; script in `docs/cinematics/c14_road_back.md`). Fit it into the queue; build it before the maps if story needs it for Act 1.
+   - **The fight:** story fight `night:road_back`, that night only, when `nell.road` = "with". Story writes `brannoc.road` once the fight exists.
+   - **Setting:** people dead, 20 minutes. The place is the Low Ford road at the wagon and ditch: the prologue's Lowford zone at night if it can be reused, otherwise an arena dressed as the road (arena art's call).
+   - **Boss: Wat,** "Over the Ford by Dark":
+     - a big drowned carter: a drowned or risen rig, carter's coat, a copper toll-token in his hatband;
+     - the cold trail;
+     - silent, with no barks;
+     - lesson: "He walks where the water was. Keep off the wet."
+   - **Ally: Brannoc** with his hammer:
+     - holds the edge of the lantern's light and never chases;
+     - never dies (goes down on one knee, gets up);
+     - his kills are not credited to the survivor;
+     - his blow's word is "Down."
+   - **Outcomes:** OnWin sets `nell.brought_home` true and gives nothing. OnLose sets nothing.
+   - **Hooks for the cinematics lead's C14 cues:** spawn at the boss's arrival, and dawn at the win.
+   - Tell story when it exists. They will add `brannoc.road`, the `nell.burial` morning variant and a RouteTests play.
+6. **Then:**
+  - **Delivered** on `worktree-agent-a1e3002b800ee55ac@eeadae6` (the VAT cache is now v9):
+    - the wolf howl as the beasts' "cast" role: wolf, wolf_alpha, wolf_blighted, wolf_spirit;
+    - a rally gesture as every person visual's cast. kerchief_brute and skeleton_minion keep their windup until a slam lands.
+  - **Keep its two small edits in combat code:**
+    - CrowdView's Casting uses `t = e.AnimT`;
+    - Ai's grave-caller raise sets `e.AnimT = 0`.
+  - kneel_shoot and slam wait on the owner's Kimodo run.
+  - Its tool `godot/tools_scenes/crowd_sheet.gd` (VISUAL=, ROLE=, N=, STEP=, YAW=, OUT=) renders any crowd kind's role as a contact sheet. Use it to check the new kinds on screen.
+- **Crafting (now `a97e32948c5bf419d`):**
+  - Its endgame design is in `docs/CRAFTING_DESIGN.md` §20: scars pay fire, the atlas pays iron and bases.
+  - I agreed these for maps:
+    - the chart item gets heat (plain 4, fine 6, rare 8) and a pin slot;
+    - map drops carry ilvl = creature level;
+    - map materials are tallied at a map's end by `Crafting.Night`'s rules, and a fall spills half;
+    - two kits (night and map) are fine.
+  - **Open, yours:** Sigils, gear that bends one day skill in maps. Confirm a clean per-skill modifier hook (WeaponInst's evolution `Set` and `Mods` look like the place) or decline.
+  - I sent crafting the economy medians per won night (tiers 1/2/3):
+    - Kerchiefs' gold went from 45k/53k/43k to 2.6k/3.3k/2.8k (champions keep the day's gold);
+    - champions are 864/1052/1079, within 10% of before.
+
+From `worktree-agent-a708da2c97bf85c95` (2026-10-04 cdfe73f8):
+
+0. **Arena art built the Hollow's place (`worktree-agent-a26767f7f9955cb56@f7c4c43c`, 662 tests green).** Merge it before touching `Hollow.cs` or `StoryNight.cs`:
+   - **The place is mirrored in z.** Every capsule, gate and point of `HollowByNight.Ground` is negated, so the way runs up the screen, away from the camera: the clough at the bottom, the den at the top. Directions in this page and in STORY_BOSSES ("north edge") now mean the top of the picture. Nothing in the stages or Greymuzzle depends on direction.
+   - `StoryNight.Open(gate)` also calls `G.Look.Show("gate:{id}", false)`. A shut gate is drawn as the ember's burning line, and it goes out as the gate opens.
+   - **Deadfalls use the map's own fire lights** (`map.FireLights`) where there is one for the fire's id, so lighting one sets its wood burning.
+   - `--night hollow [--stage N] [--lit]` shoots any stage; `--lit` lights every deadfall.
+   - **Their composition ask, yours to decide:** from `boss_start` the den's mouth is 23 m up the screen, at the very top edge of the frame. Bring `den_mouth` in to about 18 m from `boss_start` and the root plate and his way out sit in the upper third. Check the ring (12 m round `den`), the guard's arc before the mouth, and the porch still fit, and rerun `StoryNightTests`.
+- **Arena art (`a26767f7f9955cb56`):** built the Hollow to `HollowByNight.Ground`, mirrored in z (§4.3). They'll tell you before moving shapes.
+
+From `worktree-agent-afe45df4957917614` (2026-10-05 ad59feee):
+
+6. **Loot (`a9a9c345a35e1fcad`, built on their branch at `2404bf9f`; numbers are yours, in `data/content/loot.json`):** gear drops by source (champions 45%, minibosses and heralds one roll at least Uncommon, the boss two or three rolls), item level and make (a full Heartwrought set is about 60 armour, 75% reduction: measure it, likely a cap or a softer curve at the top), seven Legendaries and two sets, the belt at 20 of each draught. Already told them: keep "standing still" (Corran's Sword); change Forty-One Mouths' "at full health" (in a horde she is never at full); don't duck the sfx bus for a legendary's toll (telegraph sounds), duck music; Kell's Lamp should scale by day too. Measure the run-ups and maps with their drops in.
+7. **Crafting (`af01b0d61ef656dd4`):** their `Marks.Gyre` → `"of_the_wheel"`, `MapRun.OnLoot`'s `Crafting.RulerMark`, `Chart.Pinned` and `Journey.GiveChart`'s heat are on their branch; keep them when they reach integration.
