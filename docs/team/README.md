@@ -85,9 +85,9 @@ The main session keeps this current. It is the address list for SendMessage. Ret
 |---|---|---|
 | Voice (paused by the owner: no placeholders; final voices from ElevenLabs later) | a501b387a90d78b4e | docs/team/voice.md |
 | Story and writing (the writer: the approved rewrite, Act 1 first) | PAUSED 12 Oct late (no lead running; Act 2's first slice WIP on story/act2@5190bf0c, unjudged, don't merge; handoff docs/handoff/story.md on that branch; 566 lines locked on integration; TOLL_SPEC ready for a code lead) | docs/team/story.md |
-| Classes design (two types per calling, skill trees, ultimates on Q / right-click) | a7df67d65a2e0b4d4 (successor from 5813f9f3; press-stagger hotfix first; Hour fix merged a86814cc) | docs/design/CLASSES.md |
+| Classes design (two types per calling, skill trees, ultimates on Q / right-click) | PAUSED 12 Oct night (handoff docs/handoff/classes.md on classes-8@5606fe8f; owner question on arena phases) | docs/design/CLASSES.md |
 | Combat, encounters, bosses, balance (paused; handoff ready at af6452e1) | — | docs/team/combat.md |
-| Animation (joints to perfection: wrists, follow-through, elbows, arms through body, sliding) | a91916f9c0c1a27f6 (lead 15, from 24d05e2f; restarted 12 Oct night in worktree agent-af8dbda3195e438e4) | docs/team/animation.md |
+| Animation (joints to perfection: wrists, follow-through, elbows, arms through body, sliding) | PAUSED 12 Oct night (handoff docs/handoff/animation.md on worktree-agent-af8dbda3195e438e4@ff2d03b9; two clips signed off, held for reach_coals) | docs/team/animation.md |
 | UI design (the HUD keystone; portraits wait on the face) | — (handoff ready) | docs/team/ui_design.md |
 | UI art (paused; handoff ready at cd0f4ab6) | — | docs/team/ui_art.md |
 | Crafting (research, design, build) (paused; handoff ready at ed429efb) | — | docs/team/crafting.md |
@@ -103,5 +103,5 @@ The main session keeps this current. It is the address list for SendMessage. Ret
 | Loot and itemisation (paused, built and merged; docs/handoff/loot.md for a successor) | — | docs/team/loot.md |
 | Creatures and models (our own boar first, then MODELS_TO_MAKE.md) | af551cacc6292152f | docs/team/creatures.md |
 | Story editor (paused after notes 02 at 435k; a fresh editor reads the next draft) | — | docs/story/EDITORIAL_LETTER.md |
-| Heroine body and outfits (now a lead of its own; was the main session's) | ab1416ef16d6b0ca5 (from 4df26dd5; build reads 181eef02 scratchpad outfits/hs, keep it; restarted 12 Oct night in worktree agent-a5ca10091b08dc429) | docs/team/outfits.md |
+| Heroine body and outfits (now a lead of its own; was the main session's) | PAUSED 12 Oct night (handoff docs/handoff/outfits.md on worktree-agent-a5ca10091b08dc429@9b0536cc; build e2 uncommitted) | docs/team/outfits.md |
 | Marionette, the character app (a tool: idea to engine; ease like Meshy, quality like Maya; one-click AI-assisted fixing) | — (paused; status page is its own HANDOFF.md "Start here") | Marionette/HANDOFF.md, docs/HISTORY.md "The goal" |
