@@ -3557,7 +3557,7 @@ PLUNGE_STRING = float(os.environ.get("PLUNGE_STRING", 0.035))  # (that string's 
 PLUNGE_BAND = float(os.environ.get("PLUNGE_BAND", 0.028))   # (how far from the rim the cloth eases back into the fitted sheet)
 PLUNGE_TRIM = os.environ.get("PLUNGE_TRIM", "")   # ("down": the owner's option, a white feathery trim along the plunge, for the side-by-side)
 PLUNGE_CLASP = os.environ.get("PLUNGE_CLASP", "1") == "1"   # (a small gold crescent clasp with a violet stone at the plunge's foot: the fallback, judge 7)
-CLASP_TH, CLASP_W = (float(v) for v in os.environ.get("CLASP", "78,0.0085").split(","))   # (the clasp's horns' reach round the foot, degrees; its width at its foot)
+CLASP_TH, CLASP_W = (float(v) for v in os.environ.get("CLASP", "100,0.0085").split(","))   # (the clasp's horns' reach round the foot, degrees; its width at its foot)
 DOWN_IN, DOWN_OUT = 0.004, 0.012   # (how far the trim reaches over her skin, and over the corset, from the cut)
 
 
@@ -3873,12 +3873,14 @@ def arcanist():
         def taper(s_):
             return (0.0025 + 0.0085 * (1 - s_) ** 1.5) * np.sqrt(np.clip(1 - s_ ** 12, 0.0225, 1.0))
 
-        # (its span held at CLASP_SPAN, 58 mm, as judge 8 asked: it has to
-        # reach where the U's kinks were. Once the horns followed the
-        # binding's inner edge, 78 degrees came to only 38 mm, so the horns'
-        # reach round the foot is solved for the span: they climb the U's
-        # sides as far as it takes)
-        SPAN = float(os.environ.get("CLASP_SPAN", "0.058"))
+        # (judge 8 asked to keep h5's 58 mm span so it reaches past the U's
+        # kinks, where its round foot meets its sides. Once the horns
+        # followed the binding's inner edge, 78 degrees came to 38 mm and
+        # stopped short of them; held at 58 mm the horns climbed 145 degrees
+        # up the sides and it read as a gold lining, no longer a clasp. So
+        # the horns go 100 degrees round, just past the kinks; CLASP_SPAN, in
+        # metres, solves the reach for a span instead)
+        SPAN = float(os.environ.get("CLASP_SPAN", "0"))
         if SPAN > 0:
             tg = np.radians(np.arange(0.0, 160.01, 1.0))
             eg = np.array([edge(t0) for t0 in tg])
@@ -3903,7 +3905,14 @@ def arcanist():
         r_e = np.where(np.isnan(r_e), np.nanmax(r_e), r_e)
         for _ in range(6):
             r_e[1:-1] = 0.25 * r_e[:-2] + 0.5 * r_e[1:-1] + 0.25 * r_e[2:]
-        R_IN = r_e - 0.001
+        # (its inner rim 1 mm onto her skin at the foot, meeting it there; out
+        # along the horns it moves onto the binding, 1 mm in from the
+        # binding's inner edge at the tips, and each horn narrows about its
+        # own middle line: narrowed from the outside only, the tips lay
+        # inside the binding's edge, on her skin, as points, judge 8)
+        wfull = 0.0025 + 0.0085 * (1 - s_) ** 1.5
+        mid_ = r_e - 0.001 + 0.002 * s_ ** 2 + 0.5 * wfull
+        R_IN = mid_ - 0.5 * wid
         rr = R_IN[:, None] + wid[:, None] * np.linspace(0, 1, nr)[None, :]
         X = rr * np.sin(th)[:, None]
         Zc = cz - rr * np.cos(th)[:, None]
@@ -3987,6 +3996,22 @@ def arcanist():
         bp, bt = np.array(bp), np.array(bt)
         _, jn = cKDTree(cp).query(bp)
         made.append(finish("arcanist.clasp_bezel", bp, sk(bp), bt, "gold", 0.0, 0.0, 10 ** 6, scraps=False))
+        # (a small gold ball at each horn's tip, 3.2 mm across, seated on the
+        # binding: the narrowed tips read as sharp points, judge 8)
+        tp, tt_ = [], []
+        for a in (0, nth - 1):
+            r0 = mid_[a] - 0.4 * (mid_[a] - R_IN[a])   # (just in from the tip's own end)
+            q0 = np.array([r0 * np.sin(th[a]), float(np.interp(r0, rr[a], Y[a])) - 0.0012, cz - r0 * np.cos(th[a])])
+            o_ = len(tp)
+            tp += [q0 + 0.0016 * np.array([np.cos(2 * np.pi * j / nu) * np.cos(0.98 * np.pi * (k / nv - 0.5)), np.sin(0.98 * np.pi * (k / nv - 0.5)),
+                                            np.sin(2 * np.pi * j / nu) * np.cos(0.98 * np.pi * (k / nv - 0.5))]) for k in range(nv + 1) for j in range(nu)]
+            tt_ += [(o_ + t0, o_ + t1, o_ + t2) for k in range(nv) for j in range(nu)
+                    for t0, t1, t2 in ((k * nu + j, k * nu + (j + 1) % nu, (k + 1) * nu + (j + 1) % nu),
+                                       (k * nu + j, (k + 1) * nu + (j + 1) % nu, (k + 1) * nu + j))]
+        tp, tt_ = np.array(tp), np.array(tt_)
+        if (vertex_normals(tp, tt_)[:len(tp) // 2] * (tp[:len(tp) // 2] - tp[:len(tp) // 2].mean(0))).sum(1).mean() < 0:
+            tt_ = tt_[:, ::-1]
+        made.append(finish("arcanist.clasp_tips", tp, sk(tp), tt_, "gold", 0.0, 0.0, 10 ** 6, scraps=False))
         print("CLASP: crescent %.0f mm across, horns %.0f deg round the foot, %.1f mm wide at its foot; stone at z %.3f"
               % ((X.max() - X.min()) * 1000, np.degrees(TH0), wid[nth // 2] * 1000, c0[2]))
         # (the cloth, binding and stitches under it cut away 1 mm inside its
@@ -4441,7 +4466,11 @@ def ranger_spaulder():
     # made under the band instead, the leather on her skin's weights rose
     # 4.8 mm through it at her idle, so the leather ends just past the band
     # and moves with it, sp9)
-    TONGUE, TSIDE = sp_env("SP_TONGUE", "0.006,0.011")   # (and how far it runs round her arm past the bands' ends)
+    # (and how far round her arm it runs past the bands' ends: 11 mm, and
+    # that corner, past any plate, hung off the back of her arm as a loop
+    # with a void under it through two solvers, judge 8; now it ends 3 mm
+    # inside the bands' ends, so all of it below the cap rides a band)
+    TONGUE, TSIDE = sp_env("SP_TONGUE", "0.006,-0.003")
     s_, th_, rho_ = pl_frame(P, F_)
     line = S0 + C2 * th_ ** 2
     # (never round into her armpit; a distance, not a step: cut on a step,
@@ -4468,8 +4497,11 @@ def ranger_spaulder():
     # the cap's reach, stops short of her neck's bones, whose pull had torn
     # its edge)
     MARGIN, TRAP = sp_env("SP_MARGIN", "0.008,0.01")
+    # (the neck end's corners: at 12 mm its binding turned up off her
+    # trapezius in a hook, judge 8)
+    NECK_R, = sp_env("SP_NECK_R", "0.024")
     under = OR(ANDR(cap(sh, R_CAP + MARGIN), line - s_ + MARGIN, r=0.008),
-               ANDR(ANDR(cap(sh, R_CAP + TRAP), Z - (sh[2] - 0.0605), r=0.012), (S_MED + 0.02) - s_, r=0.012))
+               ANDR(ANDR(cap(sh, R_CAP + TRAP), Z - (sh[2] - 0.0605), r=NECK_R), (S_MED + 0.02) - s_, r=NECK_R))
     # (its corners round, 16-18 mm: at 8 the neck corner's binding turned
     # tight and curled up off her trapezius, judge 8)
     leaf = ANDR(OR(under, tongue), side, r=0.016)
@@ -4490,7 +4522,9 @@ def ranger_spaulder():
         pd, td, wd, _ = SHEET[nm]
         row = pl_row(base, W_[k])
         if k == 0:
-            pts, nrs = pl_border_spots(pd, td, F_)
+            # (10 mm in: at 9.5 the cap's border rivets stood only 1.6 mm inside
+            # its rolled rim, judge 8 asked for 2 mm or more)
+            pts, nrs = pl_border_spots(pd, td, F_, inset=0.0100)
         else:
             sp_, tp_, rp_ = pl_frame(pd, F_)
             mid = float(np.median(sp_))
