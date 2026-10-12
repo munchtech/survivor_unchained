@@ -2,6 +2,16 @@
 
 The one page of what's current. Every lead starts from the latest `claude/vigilant-galileo-l6jqyx`. Merge it first and keep your own workflow; this page says what has changed around you. Updated by the main session, 5 October 2026.
 
+## 12 October, night: coordinator 1515c1de at its context limit; wound down for a fresh coordinator. Restart here
+
+Ran classes, face, outfits and animation (hero held: four Blender leads on three Blender turns). Every lead filled ~250-265k in 1.5-3.5 h; each area had one or two successors.
+- **Merged (integration):** get_up braid (6234da8b) and get_up ponytail (6efa704c; three short fast-motion residuals the owner accepted for a later polish: k44-46 tuft under the jaw from the front, a stiff flick at k38-42, a one-frame drop at k50-51); the Butcher's Hour deepens one bleed (a86814cc); the Flare's press stagger bug (15 on a 0-1 gauge, every press stunned bosses 3 s) fixed at 0.15, the Toll's boss share 0.85 to 0.25, Burns Twice 1.0, Act 1 health Roost 110 / Vault 141 / Hollow 107 / Dig 114: every calling within 3% of the real pre-Flare game (8450b738, 833 tests).
+- **Owner decisions:** no fuller lips (the recolor was turned down); one more lip round approved (the last: taper to the corners, own upper red, the leftover line, per-face size; else per-face or the soft AO alone, and lips close). The get_up ponytail's residuals accepted for now. Neck: coordinator's ruling (face handoff): an eye-test judge at 1x first; if it fails, one skin-wide rim-warmth shader term (no rig move), two tries at most, then bb6 ships.
+- **Restart order (on "go"):** animation (reach_coals' opening first, then merge), face, classes, outfits, hero; 3 to 5 at a time. Scratch to KEEP: this coordinator's scratchpad `C:/Users/munch/AppData/Local/Temp/claude/C--Users-munch-Desktop-survivorsunchained/1515c1de-1208-43e2-b6eb-5133e0d07e1c/scratchpad` (classes, face, outfits, anim), plus ba85aba8's and 91211d34's (below) and 181eef02's `outfits/hs` (the outfits build reads `heroine_built.blend` there).
+
+### Stopped (filled in as each lead stops)
+- **animation: STOPPED at worktree-agent-af8dbda3195e438e4@93de06fb, NOT merged.** lie_side_wake (judge 38) and sit_back_heels (judge 39) signed off, library repacked (81 clips; 78 byte-identical). Held back because reach_coals' opening (it starts from the changed hold) FAILED its narrow judge j40 (`C:/Users/munch/AppData/Local/Temp/claude/C--Users-munch-Desktop-survivorsunchained/1515c1de-1208-43e2-b6eb-5133e0d07e1c/scratchpad/anim/j40/verdict.md`): the right elbow flares out and back over f4-16 (36 mm/f, wrist still), and from f20 the left upper arm presses up to 24 mm into her trunk through the unchanged hold (integration's own reach_coals was worse: 42-45 mm). Next: fix reach_coals, re-judge it narrowly, then merge request; get_up's hand skim; the hair re-shoots (every clip). For cinematics (C01): the rise is 0.37 s later (192 frames), hands settle at f116/f121, the hold leans 8 deg further, lie_side_wake's left knee up to 85 mm higher.
+
 ## 12 October, evening: second wind-down for a full session handoff (the owner). Restart here
 
 The owner: "let everyone finish what they are currently working on but then wind down for a handoff". Five leads were told to finish their current step, stop clean and write a cold-start handoff (no successors).
