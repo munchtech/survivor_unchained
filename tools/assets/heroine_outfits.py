@@ -3925,7 +3925,7 @@ def arcanist():
         # piece, and the horn's outer rim CLASP_TIPIN, 1.5 mm, inside its outer
         # edge. A fixed 5 mm out from the cloth's edge put the right tip under
         # its cup and left the left one on her skin, n1)
-        bvb = [(BVHTree.FromObject(o.evaluated_get(dg), dg), o.matrix_world.copy()) for o in obs if o.name.endswith("_trim")]
+        bvb = [(BVHTree.FromObject(o.evaluated_get(dg), dg), o.matrix_world.copy()) for o in obs if "_bind" in o.name or o.name.endswith("_trim")]   # (the binding is `<piece>_bind<k>`, tube(); "_trim" alone found none, c1)
 
         def on_bind(x, z):
             yb = None
@@ -4005,7 +4005,7 @@ def arcanist():
         under = np.minimum(np.where(np.isnan(Yraw), np.inf, Yraw), np.array([[skin_y(X[a, b], Zc[a, b]) for b in range(nr)] for a in range(nth)]))
         per = np.zeros((nth, nr), bool)
         per[:, 0] = per[:, -1] = per[0, :] = per[-1, :] = True
-        Yb = np.where(per & np.isfinite(under), np.maximum(Y, under - 0.0003), Y)
+        Yb = np.where(per & np.isfinite(under), np.maximum(Y, np.minimum(under - 0.0003, Y + float(os.environ.get("CLASP_PULL", "0.006")))), Y)   # (at most 6 mm: 12 mm reached her skin behind the cup, c1)
         print("CLASP: back's rim drawn down %.1f to %.1f mm onto what lies under it (inner rim median %.1f)"
               % (((Yb - Y)[per]).min() * 1000, ((Yb - Y)[per]).max() * 1000, np.median((Yb - Y)[:, 0]) * 1000))
         back = np.stack([X, Yb, Zc], -1)
