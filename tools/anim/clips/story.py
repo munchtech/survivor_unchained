@@ -350,6 +350,8 @@ def _euler(q):
 SBH_HAND_R = ({"pos": (-0.508, 0.05, 0.235), "pole": (-0.3, -1.0, -0.4), "knuckles": (-0.5, 0.0, 1.0)},
               {"pos": (-0.65, 0.05, -0.03), "pole": (-0.2, 0.3, -1.0), "knuckles": (-1.0, 0.0, 0.35)})
 SBH_LEAN = 22.0
+# The left hand onto her left thigh as it comes round (design frames: from, over).
+SBH_ONTHIGH = (54.0, 6.0)
 # The right hand's hop to under her shoulder (clip frames from f34), and its
 # fingers let go of the ground (design frames: from, over).
 SBH_HOP = 20.0
@@ -694,7 +696,7 @@ def sit_back_heels(rig):
             # it as she comes up, then at its outside while the thigh stands
             # (judge 23: left to the keys it sank into the thigh), settling
             # onto its top again as she sits back (the heels key's own).
-            w = smoothstep_((u - 54) / 6.0) * (1.0 - smoothstep_((u - 91) / 4.0))
+            w = smoothstep_((u - SBH_ONTHIGH[0]) / SBH_ONTHIGH[1]) * (1.0 - smoothstep_((u - 91) / 4.0))
             if w > 0:
                 free = smoothstep_((u - 65) / 14.0) * (1.0 - smoothstep_((u - 79) / 15.0))
                 # Coming to rest palm up as the heels key has it (judge 23 round
