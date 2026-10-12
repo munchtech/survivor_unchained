@@ -384,13 +384,16 @@ SBH_PUSH_TURN = ((-0.1, -0.35, 1.0), (-1.0, 0.0, -0.1))
 # The left hand back from where it hung at her left thigh's outside onto its
 # top, palm up, as she sits back (clip frames f86-f107; design frame, wrist
 # place): worked out as SBH_PUSH_R, kept 80 mm higher off the thigh's line
-# than it rests until it is set down (35 let the fingers into the thigh) (lead 13; left to the keys it hung at
-# full stretch, then came round in 8 frames at 34 mm a frame, the fingertips
-# 51-55); and its turn, from how it hung to the heels key's.
+# than it rests until it is set down (35 let the fingers into the thigh) (lead 13; left
+# to the keys it hung at full stretch, then came round in 8 frames at 34 mm a
+# frame, the fingertips 51-55); then carried up to 40 mm further out and 26 mm
+# higher about design f82 (lead 14: the palm turning up swept the ring and
+# pinky tips 23 mm into the thigh's outside at f90-94); and its turn, from how
+# it hung to the heels key's.
 SBH_BACK_L = [
-    (76.01, (0.304, 0.36, 0.166)), (77.27, (0.301, 0.359, 0.166)), (79.01, (0.292, 0.367, 0.168)),
-    (81.0, (0.276, 0.383, 0.174)), (83.0, (0.255, 0.401, 0.181)), (85.0, (0.23, 0.413, 0.188)),
-    (87.0, (0.204, 0.414, 0.19)), (89.0, (0.177, 0.398, 0.185)), (91.0, (0.152, 0.366, 0.173)),
+    (76.01, (0.304, 0.36, 0.166)), (77.27, (0.305, 0.362, 0.166)), (79.01, (0.309, 0.379, 0.168)),
+    (81.0, (0.311, 0.405, 0.174)), (83.0, (0.295, 0.427, 0.181)), (85.0, (0.257, 0.43, 0.188)),
+    (87.0, (0.213, 0.419, 0.19)), (89.0, (0.177, 0.398, 0.185)), (91.0, (0.152, 0.366, 0.173)),
     (93.0, (0.133, 0.327, 0.156)), (95.0, (0.122, 0.296, 0.143)), (96.0, (0.12, 0.29, 0.14)),
 ]
 SBH_BACK_TURN = (((0.046, -0.99, 0.136), (-0.042, 0.134, 0.99)), ((0.1, -0.35, 1.0), (1.0, 0.0, -0.1)))
