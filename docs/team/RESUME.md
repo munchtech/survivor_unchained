@@ -2,6 +2,14 @@
 
 The one page of what's current. Every lead starts from the latest `claude/vigilant-galileo-l6jqyx`. Merge it first and keep your own workflow; this page says what has changed around you. Updated by the main session, 5 October 2026.
 
+## 12 October, evening: second wind-down for a full session handoff (the owner). Restart here
+
+The owner: "let everyone finish what they are currently working on but then wind down for a handoff". Five leads were told to finish their current step, stop clean and write a cold-start handoff (no successors).
+- **Merged this session (integration):** Act 1 story-boss health (69a94126: x1.15 Roost, x1.14 Vault, x1.10 Hollow, x1.13 Dig); classes phase 2 (14dda627: the rebuke's stones, the Road's Toll counting, the four staged Flares, Light my way never lights Banked Flame); her hair swing (a119f85f: 16 of 18 clips pass); turns relaxed (5a507bfd: blender 3, godot 4, VRAM guard).
+- **Owner decisions:** Banked Flame needs a clear reward when played well; the hero may be remade ("sex appeal. muscular defined, attractive"); the double brow and lip line on the faces are faults to fix (OWNER_NOTES, 12 October).
+
+### Stopped (filled in as each lead stops)
+
 ## 12 October, late: winding down for a full session handoff (the owner). Restart here
 
 The owner asked for a wind-down: classes stops after the Echo fix, the Act 2 writer at its next good point, outfits and animation at their next milestone, and face works to its budget. None of them gets a successor. Each lead's handoff on its branch is written for a cold start. All five have stopped (12 October, late); nothing is running. Restart any area from its handoff on its branch.
