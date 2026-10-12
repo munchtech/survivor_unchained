@@ -158,15 +158,19 @@ def _heels(look=1.0, hands=1.0, breath=0.0):
     # down onto the ground a thigh's length ahead (her thigh 0.49, shin
     # 0.45). The hands rest on the thighs, or are held up before her.
     lap = 0.29 + 0.05 * hands
+    # (Held up, the elbows open out round her breasts, the hands a little
+    # wider, higher and nearer, and she leans over them: lead 15, judge 38,
+    # the upper arms were 40-48 mm into the breasts' sides.)
+    po = (0.7 + 0.3 * hands, -0.5 + 0.5 * hands, -0.3 + 0.4 * hands)
     return {
         "hips": {"pos": (0.0, -0.80, -0.08), "rot": (0, 6, 0)},
-        "spine": (0, 10 + 8 * look + 2 * breath, 0), "neck": (0, 10 + 8 * look, 0), "head": (0, 10 + 16 * look, 0),
+        "spine": (0, 10 + 8 * look + 2 * breath + 8 * hands, 0), "neck": (0, 10 + 8 * look, 0), "head": (0, 10 + 16 * look, 0),
         "foot_l": {"pos": (0.11, -0.045, -0.11), "rot": (4, 140, 0), "pole": (0.1, 0, 1)},
         "foot_r": {"pos": (-0.11, -0.045, -0.11), "rot": (-4, 140, 0), "pole": (-0.1, 0, 1)},
         # (Her arms are short for her legs: resting, the hands lie high on the thighs.)
-        "hand_l": {"pos": (0.12 - 0.01 * hands, lap, 0.14 + 0.18 * hands), "pole": (0.7, -0.5, -0.3),
+        "hand_l": {"pos": (0.12 + 0.002 * hands, lap + 0.01 * hands, 0.14 + 0.168 * hands), "pole": po,
                    "knuckles": (0.1, 0.25 * hands - 0.35 * (1 - hands), 1.0), "blade": (1.0, 0.0, -0.1), "aim": 1.0},
-        "hand_r": {"pos": (-0.12 + 0.01 * hands, lap, 0.14 + 0.18 * hands), "pole": (-0.7, -0.5, -0.3),
+        "hand_r": {"pos": (-0.12 - 0.002 * hands, lap + 0.01 * hands, 0.14 + 0.168 * hands), "pole": (-po[0], po[1], po[2]),
                    "knuckles": (-0.1, 0.25 * hands - 0.35 * (1 - hands), 1.0), "blade": (-1.0, 0.0, -0.1), "aim": 1.0},
         "clav_l": (0, 6), "clav_r": (0, 6),
         "fingers_l": _f(0.3, 0.2), "fingers_r": _f(0.3, 0.2),
@@ -722,14 +726,70 @@ HIP_SOFT = (55.0, 85.0)
 # (m): both lifted out of the thighs (judge 37: 21-23 mm in), the left further
 # toward the knee and its fingers more open, so the two are not one mirrored
 # pose (they stopped at x +-125, y 302, z 146 on the same frame).
-SBH_REST_OFF = {"r": (0.0, 0.010, 0.0), "l": (0.005, 0.010, 0.01)}
+SBH_REST_OFF = {"r": (0.0, 0.015, 0.0), "l": (0.005, 0.010, 0.025)}
 SBH_REST_CURL_L = 0.22
+SBH_REST_POLE_L = (1.0, -0.4, 0.05)
+
+# The hands' landings on the thighs (lead 15, judge 38: met at speed, the
+# right sank 29 mm into the thigh while still moving and the palm screwed
+# in; the two landed together, mirrored). Each hand's way (SBH_PUSH_R,
+# SBH_BACK_L) is re-timed by arc length from SBH_LAND's clip frame, its
+# speed falling evenly to SBH_LAND_V mm a frame as it settles, so the last
+# few frames are a slow set-down onto the thigh; its turn is eased to done
+# SBH_TURN_EARLY frames before it stops (so the palm is up before it
+# touches). The left lands about four frames after the right.
+SBH_LAND = {"r": 97, "l": 95}
+SBH_LAND_V = {"r": 1.0, "l": 1.0}
+SBH_TURN_EARLY = 5
+_SBH_WARP = {}
+
+
+def _sbh_way(s, t):
+    """sit_back_heels' hand s at clip frame t along its old timing."""
+    u = _sbh_u(t)
+    if s == "r":
+        return _hermite(_land(u), SBH_PUSH_R) + np.multiply(SBH_REST_OFF["r"], smoothstep_((u - 88) / 8.0))
+    return _hermite(_land(u), SBH_BACK_L) + np.multiply(SBH_REST_OFF["l"], smoothstep_((u - 86) / 10.0))
+
+
+def _sbh_warp(s):
+    """(fr0, rest frame, old clip frame for each clip frame fr0..rest): the
+    way from SBH_LAND[s] to its end (old clip frame 107) re-timed by arc
+    length, its speed falling evenly from what it was at fr0 to SBH_LAND_V."""
+    if s not in _SBH_WARP:
+        f0, vh = SBH_LAND[s], SBH_LAND_V[s]
+        ts = np.linspace(f0, 107.0, 4401)
+        at = np.array([_sbh_way(s, t) for t in ts]) * 1040
+        S = np.concatenate([[0.0], np.cumsum(np.linalg.norm(np.diff(at, axis=0), axis=1))])
+        v0 = float(np.linalg.norm(_sbh_way(s, f0) - _sbh_way(s, f0 - 1)) * 1040)
+        n = max(2, int(round((2 * S[-1] - (vh - v0)) / (v0 + vh))))
+        v = v0 + (vh - v0) * np.arange(1, n + 1) / n
+        v *= S[-1] / v.sum()
+        cum = np.concatenate([[0.0], np.cumsum(v)])
+        _SBH_WARP[s] = (f0, f0 + n, np.interp(cum, S, ts))
+    return _SBH_WARP[s]
+
+
+def _sbh_landing(s, fr):
+    """Hand s's landing at clip frame fr: (place, old clip frame for its way,
+    old clip frame for its turn), or None outside it. The turn: a cubic from
+    the way's pace at fr0 to done, still, SBH_TURN_EARLY frames before the end."""
+    f0, th, told = _sbh_warp(s)
+    if fr < f0 or fr > th:
+        return None
+    t = float(told[int(fr) - f0])
+    n = th - SBH_TURN_EARLY - f0
+    x = min(1.0, (fr - f0) / n)
+    tq = f0 + (x ** 3 - 2 * x * x + x) * n + (3 * x * x - 2 * x ** 3) * (107.0 - f0)
+    return _sbh_way(s, t), t, tq
 
 
 def _sbh_rest(pose):
     out = dict(pose)
     for s in "lr":
         out[f"hand_{s}"] = {**pose[f"hand_{s}"], "pos": tuple(np.add(pose[f"hand_{s}"]["pos"], SBH_REST_OFF[s]))}
+    # (The left elbow out a little: its upper arm was 12-14 mm into her side.)
+    out["hand_l"]["pole"] = SBH_REST_POLE_L
     out["fingers_l"] = {**pose["fingers_l"], "curl": SBH_REST_CURL_L}
     return out
 
@@ -769,6 +829,7 @@ def sit_back_heels(rig):
         (191, _heels(look=1.0, hands=1.0, breath=0.6), "ease"),
     ]
     plan = {}
+    was_l = {}
 
     def contacts(fr, g, p, pose):
         # The knees kept on the ground, not through it, whatever the legs do.
@@ -824,6 +885,7 @@ def sit_back_heels(rig):
                 k = _even((fr - 86) / 21.0)
                 q = qslerp(_basis_q(*SBH_BACK_TURN[0]), _basis_q(*SBH_BACK_TURN[1]), k)
                 was = out.get("hand_l", pose["hand_l"])
+                was_l[fr] = was.get("pole", pose["hand_l"]["pole"])
                 out["hand_l"] = {**_aimed_only(pose["hand_l"]), "pos": tuple(_hermite(_land(u), SBH_BACK_L) + np.multiply(SBH_REST_OFF["l"], smoothstep_((u - 86) / 10.0))),
                                  "knuckles": tuple(qrot(q, [0, 1.0, 0])), "blade": tuple(qrot(q, [0, 0, 1.0])), "aim": 1.0,
                                  "pole": tuple(slerp_dir(was.get("pole", pose["hand_l"]["pole"]), pose["hand_l"]["pole"], k))}
@@ -910,6 +972,28 @@ def sit_back_heels(rig):
             out["hand_r"] = {**_aimed_only(keyed), "pos": tuple(at), "pole": tuple(pole * w + np.asarray(to["pole"], float) * (1 - w)),
                              "knuckles": tuple(slerp_dir(to["knuckles"], PROP_TOWARD, w)),
                              "plant": smoothstep_((fr - 24) / 10.0), "lay": smoothstep_((fr - 2) / 12.0)}
+        # The hands slowed onto their thighs (SBH_LAND): the ways above, read
+        # at the old frames _sbh_landing gives.
+        for s in "rl":
+            land = _sbh_landing(s, fr)
+            if land is None:
+                continue
+            at, t, tq = land
+            if s == "r":
+                q = _trail_turn(tq, rig._planted("r", SBH_HAND_R[1], None, np.array([0.0, 0.0, 0.0, 1.0])))
+                k = float(np.interp(t, *_paced(SBH_PUSH_R, 64, 106)))
+                out["hand_r"] = {**_aimed_only(pose["hand_r"]), "pos": tuple(at), "plant": 0.0,
+                                 "knuckles": tuple(qrot(q, [0, 1.0, 0])), "blade": tuple(qrot(q, [0, 0, 1.0])), "aim": 1.0,
+                                 "pole": tuple(slerp_dir(SBH_HAND_R[1]["pole"], pose["hand_r"]["pole"], k))}
+            else:
+                k = _even((tq - 86) / 21.0)
+                q = qslerp(_basis_q(*SBH_BACK_TURN[0]), _basis_q(*SBH_BACK_TURN[1]), k)
+                out["hand_l"] = {**_aimed_only(pose["hand_l"]), "pos": tuple(at),
+                                 "knuckles": tuple(qrot(q, [0, 1.0, 0])), "blade": tuple(qrot(q, [0, 0, 1.0])), "aim": 1.0,
+                                 "pole": tuple(slerp_dir(was_l.get(fr, pose["hand_l"]["pole"]), pose["hand_l"]["pole"], k))}
+                fl = pose["fingers_l"]
+                if isinstance(fl, dict):
+                    out["fingers_l"] = {**fl, "curl": fl["curl"] * (1 - 0.1 * (1 - k)) + 0.01 * (1 - k)}
         return out
 
     # The side-sit turns her right hip out 64-77 degrees, past the rig's hard
