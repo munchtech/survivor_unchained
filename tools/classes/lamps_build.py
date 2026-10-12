@@ -109,8 +109,8 @@ def hearth(calling, start, form, forms, rx1, rx1_ups, rx2, rx2_ups, flare_lamps,
     f1 = lamp(f"{calling}.{slug(flare_lamps[0][0])}", flare_lamps[0][0], "flareLamp", "hearth", flare_lamps[0][1], [flare_lamps[0][2]], at=[s], calling=calling, road=g)
     f2 = lamp(f"{calling}.{slug(flare_lamps[1][0])}", flare_lamps[1][0], "flareLamp", "hearth", flare_lamps[1][1], [flare_lamps[1][2]], at=[f1], calling=calling, road=g)
     lamp(f"{calling}.{slug(blue[0])}", blue[0], "blue", "hearth", blue[1], blue[2], at=[r2], calling=calling, road=g, gate=6)
-    lamp(f"{calling}.banked_flame", "Banked Flame", "blue", "hearth", "Hold two Flares. Each fills 30% slower.",
-         [R("flare.banked", charges=2, slower=0.3)], at=[f2], calling=calling, road=g, gate=6)
+    lamp(f"{calling}.banked_flame", "Banked Flame", "blue", "hearth", "Hold two Flares. Each fills 30% slower and strikes 40% harder.",
+         [R("flare.banked", charges=2, slower=0.3, harder=0.4)], at=[f2], calling=calling, road=g, gate=6)
     return s
 
 

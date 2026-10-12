@@ -769,14 +769,15 @@
     "warden.last_at_the_crossing"
    ],
    "gate": 6,
-   "text": "Hold two Flares. Each fills 30% slower.",
+   "text": "Hold two Flares. Each fills 30% slower and strikes 40% harder.",
    "effects": [
     {
      "do": "rule",
      "rule": "flare.banked",
      "args": {
       "charges": 2,
-      "slower": 0.3
+      "slower": 0.3,
+      "harder": 0.4
      }
     }
    ]
@@ -2620,14 +2621,15 @@
     "reaver.not_done_yet"
    ],
    "gate": 6,
-   "text": "Hold two Flares. Each fills 30% slower.",
+   "text": "Hold two Flares. Each fills 30% slower and strikes 40% harder.",
    "effects": [
     {
      "do": "rule",
      "rule": "flare.banked",
      "args": {
       "charges": 2,
-      "slower": 0.3
+      "slower": 0.3,
+      "harder": 0.4
      }
     }
    ]
@@ -4469,14 +4471,15 @@
     "arcanist.glass_clutch"
    ],
    "gate": 6,
-   "text": "Hold two Flares. Each fills 30% slower.",
+   "text": "Hold two Flares. Each fills 30% slower and strikes 40% harder.",
    "effects": [
     {
      "do": "rule",
      "rule": "flare.banked",
      "args": {
       "charges": 2,
-      "slower": 0.3
+      "slower": 0.3,
+      "harder": 0.4
      }
     }
    ]
@@ -6295,14 +6298,15 @@
     "stalker.into_the_smoke"
    ],
    "gate": 6,
-   "text": "Hold two Flares. Each fills 30% slower.",
+   "text": "Hold two Flares. Each fills 30% slower and strikes 40% harder.",
    "effects": [
     {
      "do": "rule",
      "rule": "flare.banked",
      "args": {
       "charges": 2,
-      "slower": 0.3
+      "slower": 0.3,
+      "harder": 0.4
      }
     }
    ]
