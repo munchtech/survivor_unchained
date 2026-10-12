@@ -141,6 +141,8 @@ public class LampsTests
         while (LampBook.Spare(ch, null) > 0) Assert.NotNull(LampBook.Suggest(ch, null) is { } id && LampBook.Light(ch, null, id) ? id : null);
         Assert.Null(LampBook.Suggest(ch, null));
         Assert.Equal(29 + 3, LampBook.Now(ch).Lit.Count);
+        // Light my way never lights Banked Flame: it is a hand's choice (the owner, 12 October).
+        Assert.DoesNotContain("warden.banked_flame", LampBook.Now(ch).Lit);
     }
 
     [Fact]

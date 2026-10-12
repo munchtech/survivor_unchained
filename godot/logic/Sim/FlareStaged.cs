@@ -51,6 +51,8 @@ public sealed partial class Battle
         double dx = e.X - fromX, dz = e.Z - fromZ, d = Len(dx, dz);
         if (d < 1e-6) { dx = 1; dz = 0; d = 1; }
         if (e.Boss && !flareStruckBoss) { flareStruckBoss = true; FlareCastsOnBoss++; }
+        // A staged Flare's measure on a boss ("bossMul"): its blows can gather on a boss as the plain form's never did.
+        if (e.Boss) share *= Flare!.Arg("bossMul", 1);
         return HitEnemy(e, flarePower * share, school, Flare!.Tags, new HitOpts { Credit = "flare", BossDamage = vsBig, Knockback = e.Boss ? 0 : knockback, DirX = dx / d, DirZ = dz / d });
     }
 
@@ -147,13 +149,16 @@ public sealed partial class Battle
             var frozen = near.Where(e => !e.Boss && e.Status.Has(StatusKind.Frozen)).ToList();
             target = frozen.Where(e => !Struck(e)).OrderByDescending(Pack).FirstOrDefault()
                 ?? frozen.OrderByDescending(Pack).FirstOrDefault()
-                ?? near.Where(e => !e.Boss).OrderByDescending(e => near.Count(o => Dist(o.X, o.Z, e.X, e.Z) < r)).FirstOrDefault()
-                ?? boss;
+                ?? near.Where(e => !e.Boss).OrderByDescending(e => near.Count(o => Dist(o.X, o.Z, e.X, e.Z) < r)).FirstOrDefault();
+            // Nothing else near: it falls on open ground round her, and a lone boss still takes only its four.
         }
         double tx = target?.X ?? p.X + Math.Cos(ember * 2.4) * flareReach * 0.5, tz = target?.Z ?? p.Z + Math.Sin(ember * 2.4) * flareReach * 0.5;
         emberFell.Add((tx, tz));
         ForEachHostileInRadius(tx, tz, r, (e, d) =>
         {
+            // A boss takes only the embers that seek it (four of twelve): those that fall on the packs round it pass it
+            // by, or a boss in a crowd took the whole sky (four times the plain form's three blows).
+            if (e.Boss && e != target) return;
             // The ice breaks first, then the fire lands: a fire lit on ice burns twice.
             if (e.Status.Has(StatusKind.Frozen))
             {
@@ -176,8 +181,8 @@ public sealed partial class Battle
     /* -------------------------------------------------------- The Road's Toll -- */
 
     readonly List<int> tollPlan = new();
-    /// <summary>Each boss cut's share of a blow: the boss's cuts carry a fixed worth between them (data "bossWorth"
-    /// blows), so what a boss takes doesn't swing threefold with how many things stand round it.</summary>
+    /// <summary>Each boss cut's share of a blow: the boss's cuts carry a fixed worth between them (four cuts, "onBoss";
+    /// grown with Toll Doubled), so what a boss takes doesn't swing threefold with how many things stand round it.</summary>
     double tollBossShare = 1;
 
     /// <summary>A boss the cuts can hurt: not shut against all harm, nor pinned at its phase's gate with its Break
@@ -272,7 +277,8 @@ public sealed partial class Battle
             tollPlan.Add(k == 0 ? -1 : picks[((k - 1 + (i - (n - bossCuts - 1))) % k + k) % k].Id);
         for (int i = 0; i < bossCuts; i++) tollPlan.Add(boss!.Id);
         // The boss's cuts carry a fixed worth between them ("bossWorth" blows, grown with Toll Doubled), however many.
-        tollBossShare = bossCuts > 0 ? f.Arg("bossWorth", f.Blows) * n / Math.Max(1.0, f.Blows) / bossCuts : 1;
+        // Four cuts' worth: at 2100 a cut, what the plain form's twelve 700s gave everything in reach.
+        tollBossShare = bossCuts > 0 ? f.Arg("bossWorth", f.Arg("onBoss", 4)) * n / Math.Max(1.0, f.Blows) / bossCuts : 1;
     }
 
     /* --------------------------------------------------------- Butcher's Hour -- */

@@ -339,6 +339,7 @@
     "shatter": 1.0,
     "emberRadius": 2.5,
     "onBoss": 4,
+    "bossMul": 0.8,
     "moreEmbers": 18,
     "blackIce": 0.5
    }
@@ -430,6 +431,7 @@
     "execute": 0.25,
     "lastCut": 0.4,
     "onBoss": 4,
+    "bossMul": 0.85,
     "doubled": 18,
     "gone": 3
    }

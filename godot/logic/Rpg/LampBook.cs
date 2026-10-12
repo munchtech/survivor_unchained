@@ -209,6 +209,9 @@ public static class LampBook
         {
             if (CanLight(ch, w, id) != LampNo.None) continue;
             var d = Lamps.Get(id);
+            // Banked Flame is a choice, never a suggestion: it pays only to a hand that holds a charge back, and
+            // spent as it fills it is a trap (the owner, 12 October: Light my way never lights it).
+            if (d.Effects.Any(e => e.Rule == "flare.banked")) continue;
             double sc = d.Road == l.Type ? 100 : d.Region == LampRegion.Hearth ? 60 : 0;
             sc += d.Kind switch
             {

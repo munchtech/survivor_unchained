@@ -148,6 +148,22 @@ public class FlareStagedTests
     }
 
     [Fact]
+    public void Burns_twice_strikes_a_boss_with_its_four_embers_alone_or_in_a_crowd()
+    {
+        double Took(bool crowd)
+        {
+            var b = Carrying("burns_twice");
+            b.Stats.Add(new StatMod(Stat.CritChance, ModKind.Flat, -b.Stats.Get(Stat.CritChance), "test"));
+            var boss = Foe(b, -6, 0, hp: 1e9, boss: true);
+            // A frozen pack packed round the boss: its embers fall there, but only the four aimed at the boss strike it.
+            if (crowd) foreach (var i in Enumerable.Range(0, 6)) Foe(b, -6 + 0.5 * (i % 3), 0.6 * (i / 3) - 0.3, hp: 1e9);
+            Cast(b);
+            return b.BossDamageBy["flare"];
+        }
+        Assert.InRange(Took(true) / Took(false), 0.9, 1.1);
+    }
+
+    [Fact]
     public void The_roads_toll_cuts_the_strongest_last_and_a_boss_four_times_and_what_it_leaves_low_dies()
     {
         var b = Carrying("the_roads_toll");
