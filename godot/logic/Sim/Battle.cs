@@ -290,6 +290,10 @@ public sealed partial class Battle
     /// takes nothing, yet BossDamageBy counts it: a full board's poison on a gated boss made the Flare's
     /// share of the damage read a quarter of its share of the fight.</summary>
     public readonly Dictionary<string, double> BossHealthBy = new();
+    /// <summary>For the harness, a Stand's uplift on a boss (CLASSES §7): health taken off bosses in all and while a
+    /// Stand held, and the seconds a Stand held with a boss being hurt (struck within the last second).</summary>
+    public double BossTookAll, BossTookInStand, StandOnBossSeconds;
+    double lastBossHit = -99;
     /// <summary>Who is dealing damage while no weapon is: the rule firing, the art.</summary>
     string? credit;
     public int KillCount;
@@ -804,6 +808,9 @@ public sealed partial class Battle
         {
             BossDamageBy[by] = BossDamageBy.GetValueOrDefault(by) + Math.Min(dmg, Math.Max(0, before));
             BossHealthBy[by] = BossHealthBy.GetValueOrDefault(by) + took;
+            BossTookAll += took;
+            if (FlareT > 0 && Flare?.Kind == FlareKind.Stand) BossTookInStand += took;
+            lastBossHit = Time;
         }
         if (tags.Has(Tag.Spell) && !o.Dot) OnSpellHit(by);
         // Where the damage is coming from, for the director.

@@ -56,6 +56,8 @@ public sealed class StoryRunResult
     public Dictionary<string, Dictionary<string, double>> HurtBy = new();
     /// <summary>Health taken off the boss (Battle.BossHealthBy), by source; and the Bulwark's rebukes.</summary>
     public Dictionary<string, double> BossTookBy = new();
+    /// <summary>A Stand's uplift on a boss: health taken off bosses while it held, and its seconds on a boss (Battle).</summary>
+    public double StandTook, StandSeconds;
     public int Rebukes;
 
     /// <summary>The way in: its minutes, and how low she went on it.</summary>
@@ -87,6 +89,9 @@ public static class StorySim
             if (SurvivorUnchained.Content.Lamps.FlareLamp(road.Stand) is { } fl && !LampBook.Now(j.Ch).Lit.Contains(fl)) LampBook.Now(j.Ch).Lit.Add(fl);
             if (!LampBook.Carry(j.Ch, road.Stand)) throw new InvalidOperationException($"can't carry {road.Stand}");
         }
+        // --light: lamps lit past the empty board (what Light my way has lit by a story boss; a measuring aid).
+        foreach (var id in ArenaSim.Light.Select(x => x.Replace("{calling}", spec.Calling)))
+            if (!LampBook.Now(j.Ch).Lit.Contains(id)) LampBook.Now(j.Ch).Lit.Add(id);
         while (j.Ch.Level < spec.Level) Character.GainXp(j.Ch, Character.XpForLevel(j.Ch.Level) - j.Ch.Xp + 1);
         switch (spec.Calling) { case "arcanist": j.Ch.Attributes.Wits += j.Ch.Points; break; case "stalker": j.Ch.Attributes.Finesse += j.Ch.Points; break; default: j.Ch.Attributes.Might += j.Ch.Points; break; }
         j.Ch.Points = 0;
@@ -251,6 +256,7 @@ public static class StorySim
         r.KilledBy = !r.Won && host.Result != null ? b.Player.FellTo ?? b.Player.LastKiller?.Def.Id ?? "?" : "";
         r.Build = ArenaSim.Describe(b);
         r.BossTookBy = new Dictionary<string, double>(b.BossHealthBy);
+        r.StandTook = b.BossTookInStand; r.StandSeconds = b.StandOnBossSeconds;
         r.Rebukes = b.Rebukes;
         var pp = b.Player;
         r.Where = $"{zone.Now} {zone.BeatIx} at ({pp.X:0},{pp.Z:0}) goal {(zone.Goal is var (gx, gz) ? $"({gx:0},{gz:0})" : "-")} hostiles {zone.Hostiles()} {zone.Beat?.Goal}";

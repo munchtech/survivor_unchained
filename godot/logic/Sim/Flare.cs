@@ -261,6 +261,7 @@ public sealed partial class Battle
             HealPlayer(MaxHp * FlareMend * more * step, "flare", true);
         }
         if (FlareT <= 0 || Flare is not { } f) return;
+        if (f.Kind == FlareKind.Stand && Time - lastBossHit < 1) StandOnBossSeconds += Math.Min(dt, FlareT);
         FlareT -= dt;
         FlareHold = Math.Max(0, FlareHold - dt);
         if (FlareHold > 0) { p.Vx = p.Vz = 0; }

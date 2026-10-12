@@ -21,7 +21,7 @@ flare("drag_them_under", "Drag Them Under", "reaver", "chainbound", "strike", 0.
 flare("storm_on_the_chain", "Storm on the Chain", "reaver", "chainbound", "stand", 5, 8, 2, 400, "storm", ["melee", "storm", "area", "hook"], "For 5 s the chain sweeps 8 m out, and the sky strikes down it.")
 flare("burns_twice", "Burns Twice", "arcanist", "kindler", "strike", 1.1, 14, 12, 1160, "fire", ["spell", "fire", "frost", "area"], "Frost races under every pack near, then twelve embers fall on the frozen ground, and each shatters what is frozen round it.",
       beat={"key": 0.15, "frost": 0.3, "first": 0.55, "last": 1.05, "hitstop": 2, "hitstopFrost": 3, "hitstopLast": 6},
-      args={"frost": 0.3, "freeze": 2, "chill": 3, "ember": 0.675, "shatter": 1.0, "emberRadius": 2.5, "onBoss": 4, "bossMul": 0.8, "moreEmbers": 18, "blackIce": 0.5})
+      args={"frost": 0.3, "freeze": 2, "chill": 3, "ember": 0.675, "shatter": 1.0, "emberRadius": 2.5, "onBoss": 4, "moreEmbers": 18, "blackIce": 0.5})
 flare("hard_winter", "Hard Winter", "arcanist", "kindler", "stand", 6, 12, 1, 345, "frost", ["spell", "frost", "area", "zone"], "For 6 s the ford's cold: everything near slows and freezes, and the thaw bursts.")
 flare("the_branding", "The Branding", "arcanist", "moonweaver", "strike", 1.0, 14, 2, 2100, "arcane", ["spell", "arcane", "area"], "Every enemy near is branded; the brands burst outward, each death passing a mark.")
 flare("the_drowned_moon", "The Drowned Moon", "arcanist", "moonweaver", "stand", 6, 5, 3, 255, "arcane", ["spell", "arcane", "projectile", "zone"], "For 6 s a pool of moonlight follows you and looses motes.")
