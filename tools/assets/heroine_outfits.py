@@ -1154,6 +1154,7 @@ SPEC = {
     "iron": ("Metal046B", (0.92, 0.84, 0.74), 88, 2.5, 1.0, 0.5),
     "rivetbronze": ("Metal046B", (1.0, 0.8, 0.6), 100, 2.5, 1.0, 0.48),   # (the spaulder's rivets dark bronze, not black dots, judge 7)   # (rivets: warm dark iron, an even sheen; at 72 they read as black dots beside the plate, judge 6)
     "gold": ("Metal048C", (1.0, 0.88, 0.7), None, 3, 1.0, None),   # (warmer: it read olive, judge 8)
+    "claspgold": ("Metal048C", (252, 194, 108), None, 3, 1.0, 0.22),   # (the arcanist's clasp: a warm yellow gold, about sRGB 255,200,125 lit, polished; the scan's grain kept and its colour set, judge 9)
     "rust": ("Metal053C", (1, 1, 1), None, 2.5, 0.8, None),
     "leather": ("Leather037", (1, 1, 1), None, 4, 0.0, None),
     "darkleather": ("Leather026", (1.0, 0.8, 0.65), 30, 3, 0.0, None),
@@ -1197,6 +1198,9 @@ def mat(key):
     from PIL import Image
     col = np.asarray(Image.open(os.path.join(TEX, f"{src}_diff.jpg")).convert("RGB"), np.float32)
     col = col * np.array(tint)
+    if key == "claspgold":
+        lum = col.mean(2, keepdims=True)
+        col = np.clip(lum / lum.mean(), 0.92, 1.08) * np.array(tint)
     if mean:
         col = col * (mean / col.mean())
     if key in ("steel", "darksteel", "iron", "gold", "bronze", "rivetbronze"):
@@ -1227,7 +1231,7 @@ def mat(key):
     else:
         bsdf.inputs["Roughness"].default_value = rough if rough is not None else 0.55
     mm = img(os.path.join(TEX, f"{src}_metal.jpg"), True)
-    if mm:
+    if mm and key != "claspgold":
         nt.links.new(mm.outputs["Color"], bsdf.inputs["Metallic"])
     else:
         bsdf.inputs["Metallic"].default_value = metal
@@ -3858,7 +3862,8 @@ def arcanist():
             return np.nan if best is None else best
 
         # (front on: columns round the foot, rows across the crescent)
-        nth, nr = 61, 9
+        nth, nr = 61, 15
+        uu = 0.5 - 0.5 * np.cos(np.pi * np.linspace(0, 1, nr))   # (across it, closer at its rims)
         th = np.linspace(-TH0, TH0, nth)
         # (a boss under the stone tapering to 2.5 mm at its tips, judge 8; the
         # horns follow the binding's own inner edge on each side, found by
@@ -3875,7 +3880,7 @@ def arcanist():
             return np.nan
 
         def taper(s_):
-            return (0.0025 + 0.0085 * (1 - s_) ** 1.5) * np.sqrt(np.clip(1 - s_ ** 12, 0.0225, 1.0))
+            return (0.0025 + 0.0085 * (1 - s_) ** 1.5) * np.sqrt(np.clip(1 - s_ ** 12, 0.25, 1.0))
 
         # (judge 8 asked to keep h5's 58 mm span so it reaches past the U's
         # kinks, where its round foot meets its sides. Once the horns
@@ -3915,15 +3920,46 @@ def arcanist():
         # own middle line: narrowed from the outside only, the tips lay
         # inside the binding's edge, on her skin, as points, judge 8)
         wfull = 0.0025 + 0.0085 * (1 - s_) ** 1.5
-        # (2 mm out at the tips left both balls at the plunge's edge, the
-        # right one under its cup's edge, i3: now CLASP_OUT, 5 mm)
-        mid_ = r_e - 0.001 + float(os.environ.get("CLASP_OUT", "0.005")) * s_ ** 2 + 0.5 * wfull
+        # (each tip on its cup's binding, judge 9: the binding's own edges found
+        # front on along each tip's ray, where it is the corset's front-most
+        # piece, and the horn's outer rim CLASP_TIPIN, 1.5 mm, inside its outer
+        # edge. A fixed 5 mm out from the cloth's edge put the right tip under
+        # its cup and left the left one on her skin, n1)
+        bvb = [(BVHTree.FromObject(o.evaluated_get(dg), dg), o.matrix_world.copy()) for o in obs if o.name.endswith("_trim")]
+
+        def on_bind(x, z):
+            yb = None
+            for bv, mw in bvb:
+                inv = mw.inverted()
+                h = bv.ray_cast(inv @ Vector((x, -1.0, z)), (inv.to_3x3() @ Vector((0.0, 1.0, 0.0))).normalized(), 2.0)
+                if h[0] is not None:
+                    yb = (mw @ h[0])[1] if yb is None else min(yb, (mw @ h[0])[1])
+            return yb is not None and yb <= front(x, z) + 1e-5
+        TIPIN = float(os.environ.get("CLASP_TIPIN", "0.0015"))
+        outs = {}
+        for a in (0, nth - 1):
+            rs = np.arange(r_e[a] - 0.003, r_e[a] + 0.02, 0.0001)
+            hit = np.array([on_bind(r * np.sin(th[a]), cz - r * np.cos(th[a])) for r in rs])
+            base = r_e[a] - 0.001 + 0.5 * wfull[a]
+            if not hit.any():
+                print("CLASP: WARNING no binding on the tip's ray at %.0f deg" % np.degrees(th[a]))
+                outs[a] = 0.005
+                continue
+            i0 = int(np.argmax(hit))
+            i1 = i0 + int(np.argmin(np.r_[hit[i0:], False]))
+            rb0, rb1 = rs[i0], rs[i1 - 1]
+            want = max(rb1 - TIPIN - 0.0012, rb0 + 0.0012)
+            outs[a] = want - base
+            print("CLASP: tip at %+.0f deg: binding %.1f to %.1f mm out from the foot's centre (cloth's edge %.1f); horn's middle %.1f, %.1f mm inside its outer edge"
+                  % (np.degrees(th[a]), rb0 * 1000, rb1 * 1000, r_e[a] * 1000, want * 1000, (rb1 - want) * 1000))
+        mid_ = r_e - 0.001 + np.where(th < 0, outs[0], outs[nth - 1]) * s_ ** 2 + 0.5 * wfull
         R_IN = mid_ - 0.5 * wid
-        rr = R_IN[:, None] + wid[:, None] * np.linspace(0, 1, nr)[None, :]
+        rr = R_IN[:, None] + wid[:, None] * uu[None, :]
         X = rr * np.sin(th)[:, None]
         Zc = cz - rr * np.cos(th)[:, None]
         Y = np.array([[front(X[a, b], Zc[a, b]) for b in range(nr)] for a in range(nth)])
         Y[Y > y_ft + 0.04] = np.nan   # (her back's cloth, seen through the opening)
+        Yraw = Y.copy()
         # (inside the opening the ray finds no cloth: the row's own front-most)
         for a in range(nth):
             ok = ~np.isnan(Y[a])
@@ -3944,11 +3980,35 @@ def arcanist():
             tgt = np.minimum(Y0.ravel(), fit)
         Y = fit.reshape(Y0.shape)
         Y = Y + min(0.0, float((Y0 - Y).min())) - float(os.environ.get("CLASP_OFF", 0.001))
+        # (the horns laid down onto the binding toward their tips, 0.4 mm off
+        # it: held in front of all the crescent's samples they stood off it)
+        k_ = np.clip((s_ - 0.55) / 0.45, 0, 1)
+        Y = Y + (k_ * k_ * (3 - 2 * k_) * np.maximum((Y0 - Y).min(1) - 0.0004, 0))[:, None]
         gap = (Y0 - Y) * 1000
         print(f"CLASP: back off the cloth {gap.min():.2f} to {gap.max():.2f} mm (median {np.median(gap):.2f}; its rim {np.median(np.r_[gap[:, 0], gap[:, -1]]):.2f})")
-        t = np.linspace(0, 1, nr)[None, :]
-        bump = 0.0011 + 0.0013 * np.sqrt(np.clip(np.sin(np.pi * t), 0, 1)) * (wid[:, None] / W0) ** 0.5
-        back = np.stack([X, Y, Zc], -1)
+        t = uu[None, :]
+        # (a 0.7 mm round at each rim under a polished crown: a thin bright
+        # line along both edges, judge 9)
+        dd = np.minimum(t, 1 - t) * wid[:, None]
+        bump = (0.0006 + 0.0006 * np.sqrt(1 - (1 - np.clip(dd / 0.0007, 0, 1)) ** 2)
+                + 0.0011 * np.sqrt(np.clip(np.sin(np.pi * t), 0, 1)) * (wid[:, None] / W0) ** 0.5)
+        # (its back's rim drawn down onto what lies under it, 0.3 mm off: her
+        # skin where its inner rim is over the opening, else the cloth or
+        # binding. From above a slot showed between its back and her skin,
+        # and the motion check saw her tucked skin through it, judge 9)
+        bsel = (np.abs(P_FILLED[:, 0]) < 0.07) & (np.abs(P_FILLED[:, 2] - cz) < 0.07) & (P_FILLED[:, 1] < y_ft + 0.03)
+        sbv = BVHTree.FromPolygons([tuple(p) for p in P_FILLED], TRI[bsel[TRI].all(1)].tolist())
+
+        def skin_y(x, z):
+            h = sbv.ray_cast(Vector((x, -1.0, z)), Vector((0.0, 1.0, 0.0)))[0]
+            return np.inf if h is None else h[1]
+        under = np.minimum(np.where(np.isnan(Yraw), np.inf, Yraw), np.array([[skin_y(X[a, b], Zc[a, b]) for b in range(nr)] for a in range(nth)]))
+        per = np.zeros((nth, nr), bool)
+        per[:, 0] = per[:, -1] = per[0, :] = per[-1, :] = True
+        Yb = np.where(per & np.isfinite(under), np.maximum(Y, under - 0.0003), Y)
+        print("CLASP: back's rim drawn down %.1f to %.1f mm onto what lies under it (inner rim median %.1f)"
+              % (((Yb - Y)[per]).min() * 1000, ((Yb - Y)[per]).max() * 1000, np.median((Yb - Y)[:, 0]) * 1000))
+        back = np.stack([X, Yb, Zc], -1)
         frnt = np.stack([X, Y - bump, Zc], -1)
         P2, T2 = [], []
 
@@ -3981,7 +4041,7 @@ def arcanist():
             g = np.exp(-(d / 0.012) ** 2)
             w = (cw[j] * g[:, None]).sum(0) / g.sum()
             return np.repeat((w / w.sum())[None], len(pts), 0)
-        made = [finish("arcanist.clasp", pp, sk(pp), tt, "gold", 0.0, 0.0, 10 ** 6, scraps=False)]
+        made = [finish("arcanist.clasp", pp, sk(pp), tt, "claspgold", 0.0, 0.0, 10 ** 6, scraps=False)]
         # (the stone: an oval cabochon at the foot, 10 x 8 mm, 3.2 mm high, in
         # a gold bezel ring 1 mm proud of the crescent)
         c0 = frnt[nth // 2, nr // 2]
@@ -4001,7 +4061,7 @@ def arcanist():
                                                                   (k * nu + j, (k + 1) * nu + j, (k + 1) * nu + (j + 1) % nu))]
         bp, bt = np.array(bp), np.array(bt)
         _, jn = cKDTree(cp).query(bp)
-        made.append(finish("arcanist.clasp_bezel", bp, sk(bp), bt, "gold", 0.0, 0.0, 10 ** 6, scraps=False))
+        made.append(finish("arcanist.clasp_bezel", bp, sk(bp), bt, "claspgold", 0.0, 0.0, 10 ** 6, scraps=False))
         # (a small gold ball at each horn's tip, 3.2 mm across, seated on the
         # binding: the narrowed tips read as sharp points, judge 8)
         tp, tt_ = [], []
@@ -4010,7 +4070,7 @@ def arcanist():
             # set 1.2 mm in front of its back, the horn's front buried it, j1)
             q0 = frnt[a, nr // 2].copy()
             o_ = len(tp)
-            tp += [q0 + 0.0016 * np.array([np.cos(2 * np.pi * j / nu) * np.cos(0.98 * np.pi * (k / nv - 0.5)), np.sin(0.98 * np.pi * (k / nv - 0.5)),
+            tp += [q0 + 0.0009 * np.array([np.cos(2 * np.pi * j / nu) * np.cos(0.98 * np.pi * (k / nv - 0.5)), np.sin(0.98 * np.pi * (k / nv - 0.5)),
                                             np.sin(2 * np.pi * j / nu) * np.cos(0.98 * np.pi * (k / nv - 0.5))]) for k in range(nv + 1) for j in range(nu)]
             tt_ += [(o_ + t0, o_ + t1, o_ + t2) for k in range(nv) for j in range(nu)
                     for t0, t1, t2 in ((k * nu + j, k * nu + (j + 1) % nu, (k + 1) * nu + (j + 1) % nu),
@@ -4018,13 +4078,13 @@ def arcanist():
         tp, tt_ = np.array(tp), np.array(tt_)
         if (vertex_normals(tp, tt_)[:len(tp) // 2] * (tp[:len(tp) // 2] - tp[:len(tp) // 2].mean(0))).sum(1).mean() < 0:
             tt_ = tt_[:, ::-1]
-        made.append(finish("arcanist.clasp_tips", tp, sk(tp), tt_, "gold", 0.0, 0.0, 10 ** 6, scraps=False))
+        made.append(finish("arcanist.clasp_tips", tp, sk(tp), tt_, "claspgold", 0.0, 0.0, 10 ** 6, scraps=False))
         print("CLASP: crescent %.0f mm across, horns %.0f deg round the foot, %.1f mm wide at its foot; stone at z %.3f"
               % ((X.max() - X.min()) * 1000, np.degrees(TH0), wid[nth // 2] * 1000, c0[2]))
         # (the cloth, binding and stitches under it cut away 1 mm inside its
         # edge: lumps of the cloth came through a rigid clasp seated close in
         # her idle, and 3 mm off it showed a dark slot round it, judge 8)
-        yb, ncut = float(back[..., 1].max()) + 0.012, 0
+        yb, ncut = float(Y.max()) + 0.012, 0
         for o in obs:
             mw = o.matrix_world
             bm = bmesh.new()
@@ -5453,7 +5513,7 @@ OUTFITS = {"warden": warden, "arcanist": arcanist, "ranger": ranger, "reaver": r
 # leather (grain, burnished edges, stitching), metal (forged, polished at
 # the edges, dark in the crevices), cloth (weave, sheen), gloss (latex,
 # satin: clean). Fur and sheer stockings have shaders of their own.
-KIND = {"steel": "metal", "darksteel": "metal", "iron": "metal", "rivetbronze": "metal", "gold": "metal", "bronze": "metal", "rust": "metal",
+KIND = {"steel": "metal", "darksteel": "metal", "iron": "metal", "rivetbronze": "metal", "gold": "metal", "claspgold": "metal", "bronze": "metal", "rust": "metal",
         "velvet": "cloth", "arcvelvet": "cloth", "linen": "cloth", "lace": "cloth", "ink": "cloth",
         "browncloth": "twill", "thread": "gloss", "satin": "gloss", "amethyst": "gloss", "bone": "leather", "fur": "fur", "down": "fur", "stocking": "sheer"}
 
