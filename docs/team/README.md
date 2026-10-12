@@ -85,9 +85,9 @@ The main session keeps this current. It is the address list for SendMessage. Ret
 |---|---|---|
 | Voice (paused by the owner: no placeholders; final voices from ElevenLabs later) | a501b387a90d78b4e | docs/team/voice.md |
 | Story and writing (the writer: the approved rewrite, Act 1 first) | PAUSED 12 Oct late (no lead running; Act 2's first slice WIP on story/act2@5190bf0c, unjudged, don't merge; handoff docs/handoff/story.md on that branch; 566 lines locked on integration; TOLL_SPEC ready for a code lead) | docs/team/story.md |
-| Classes design (two types per calling, skill trees, ultimates on Q / right-click) | a54ebb1323cb25841 (8th lead, 12 Oct: phase 2 merged 14dda627; next Banked Flame's reward, the judge's fixes 2-9, checks before the owner plays) | docs/design/CLASSES.md |
+| Classes design (two types per calling, skill trees, ultimates on Q / right-click) | a8fcfca8223930e30 (restarted 12 Oct night on classes-8; Butcher's Hour fix first) | docs/design/CLASSES.md |
 | Combat, encounters, bosses, balance (paused; handoff ready at af6452e1) | — | docs/team/combat.md |
-| Animation (joints to perfection: wrists, follow-through, elbows, arms through body, sliding) | a53fecff72d90a3a3 (resumed 12 Oct in worktree agent-af8dbda3195e438e4: sit_back_heels fixes, get_up hand skim, then hair re-shoots) | docs/team/animation.md |
+| Animation (joints to perfection: wrists, follow-through, elbows, arms through body, sliding) | ab03e4f8d4a145551 (restarted 12 Oct night in worktree agent-af8dbda3195e438e4) | docs/team/animation.md |
 | UI design (the HUD keystone; portraits wait on the face) | — (handoff ready) | docs/team/ui_design.md |
 | UI art (paused; handoff ready at cd0f4ab6) | — | docs/team/ui_art.md |
 | Crafting (research, design, build) (paused; handoff ready at ed429efb) | — | docs/team/crafting.md |
@@ -96,12 +96,12 @@ The main session keeps this current. It is the address list for SendMessage. Ret
 | Cinematics production | aece7b87e89b13f19 | docs/team/cinematics.md |
 | Performance and rendering (clarity in motion first) | PAUSED 11 Oct night (merged b87ad0c7: grade toe, portrait rig, LOD code; LOD art uncommitted in worktree agent-a4e0c353e61cca6dc). Next: oldleather LOD blob and re-judge, wilds toe, moonlight pass, fur round 2 (docs/handoff/performance.md "Paused here"). Resumes when a lead slot frees. On resume: her body now has two blend shapes (elbow_point_l/_r, from animation); the LOD must keep them | docs/team/performance.md |
 | Arena art | a0b61c278bdd5c994 | docs/team/arena_art.md |
-| Male hero (body, head, hair, outfits) | a2b2a8945909e5e76 (successor 2, 12 Oct, in worktree agent-ac39445bca5508eaf: j0 failed the old body; MakeHuman rebuild, then judge j1 beside her) | docs/team/hero_male.md |
-| Heroine face, hair and character creation's Look | a5c0bdd721be19ccf (successor 11, 12 Oct, owner: "lets finish face / hair"; in worktree agent-a2d632df7c7f21ec0: hair to a merge, then skin r12 and Sunborn's one try, then the neck sheet) | docs/team/face.md |
+| Male hero (body, head, hair, outfits) | PAUSED 12 Oct evening (handoff docs/handoff/hero_male.md on worktree-agent-ac39445bca5508eaf@9c51a20d) | docs/team/hero_male.md |
+| Heroine face, hair and character creation's Look | aec399124b6939d65 (restarted 12 Oct night in worktree agent-a2d632df7c7f21ec0) | docs/team/face.md |
 | Asset provenance (what isn't ours, licences, credits, replacement plan) | a80ff0c7fd988b178 | docs/team/provenance.md |
 | Legal and Steam compliance (paused; docs/handoff/legal.md; wake before submission or for a new outfit) | — | docs/team/legal.md |
 | Loot and itemisation (paused, built and merged; docs/handoff/loot.md for a successor) | — | docs/team/loot.md |
 | Creatures and models (our own boar first, then MODELS_TO_MAKE.md) | af551cacc6292152f | docs/team/creatures.md |
 | Story editor (paused after notes 02 at 435k; a fresh editor reads the next draft) | — | docs/story/EDITORIAL_LETTER.md |
-| Heroine body and outfits (now a lead of its own; was the main session's) | ac1be1a239a28b9a9 (resumed 12 Oct in worktree agent-a5ca10091b08dc429: clasp back to 58 mm, spaulder hem, judge 9) | docs/team/outfits.md |
+| Heroine body and outfits (now a lead of its own; was the main session's) | aadb422f08743bfbd (restarted 12 Oct night in worktree agent-a5ca10091b08dc429) | docs/team/outfits.md |
 | Marionette, the character app (a tool: idea to engine; ease like Meshy, quality like Maya; one-click AI-assisted fixing) | — (paused; status page is its own HANDOFF.md "Start here") | Marionette/HANDOFF.md, docs/HISTORY.md "The goal" |
