@@ -3861,15 +3861,46 @@ def arcanist():
         # walking out from the foot's centre until the cloth begins, so both
         # tips lie on it: a round of one radius ran one under the cup and left
         # the other on her skin)
-        s_ = np.abs(th) / TH0
-        wid = (0.0025 + 0.0085 * (1 - s_) ** 1.5) * np.sqrt(np.clip(1 - s_ ** 12, 0.0225, 1.0))
         y_ft = front(0.0, v_lo - 0.004)   # (the cloth just below the foot: the front layer's depth)
-        r_e = np.empty(nth)
-        for a in range(nth):
-            for r_ in np.arange(0.5 * R_u, 2.0 * R_u, 0.00025):
-                if front(r_ * np.sin(th[a]), cz - r_ * np.cos(th[a])) < y_ft + 0.04:   # (nan is never less: the opening; her back's cloth is far behind)
-                    break
-            r_e[a] = r_
+
+        def edge(t0):
+            # (the binding's inner edge on the ray at t0 round the foot)
+            for r_ in np.arange(0.5 * R_u, 3.0 * R_u, 0.00025):
+                if front(r_ * np.sin(t0), cz - r_ * np.cos(t0)) < y_ft + 0.04:   # (nan is never less: the opening; her back's cloth is far behind)
+                    return r_
+            return np.nan
+
+        def taper(s_):
+            return (0.0025 + 0.0085 * (1 - s_) ** 1.5) * np.sqrt(np.clip(1 - s_ ** 12, 0.0225, 1.0))
+
+        # (its span held at CLASP_SPAN, 58 mm, as judge 8 asked: it has to
+        # reach where the U's kinks were. Once the horns followed the
+        # binding's inner edge, 78 degrees came to only 38 mm, so the horns'
+        # reach round the foot is solved for the span: they climb the U's
+        # sides as far as it takes)
+        SPAN = float(os.environ.get("CLASP_SPAN", "0.058"))
+        if SPAN > 0:
+            tg = np.radians(np.arange(0.0, 160.01, 1.0))
+            eg = np.array([edge(t0) for t0 in tg])
+            ok_ = ~np.isnan(eg)
+            top = tg[ok_ & (np.cumsum(~ok_) == 0)].max()   # (as far round as the edge runs unbroken)
+
+            def reach(T):
+                t_ = np.linspace(-T, T, nth)
+                x_ = (np.interp(np.abs(t_), tg[ok_], eg[ok_]) - 0.001 + taper(np.abs(t_) / T)) * np.sin(t_)
+                return x_.max() - x_.min()
+            lo_, hi_ = np.radians(30.0), top
+            for _ in range(30):
+                mid = 0.5 * (lo_ + hi_)
+                lo_, hi_ = (mid, hi_) if reach(mid) < SPAN else (lo_, mid)
+            TH0 = 0.5 * (lo_ + hi_)
+            if reach(TH0) < SPAN - 0.001:
+                print("CLASP: WARNING the binding's edge runs out at %.0f deg; span only %.0f mm" % (np.degrees(top), reach(TH0) * 1000))
+        th = np.linspace(-TH0, TH0, nth)
+        s_ = np.abs(th) / TH0
+        wid = taper(s_)
+        r_e = np.array([edge(t0) for t0 in th])
+        r_e = np.where(np.isnan(r_e), np.nanmax(r_e), r_e)
         for _ in range(6):
             r_e[1:-1] = 0.25 * r_e[:-2] + 0.5 * r_e[1:-1] + 0.25 * r_e[2:]
         R_IN = r_e - 0.001
@@ -3957,7 +3988,7 @@ def arcanist():
         _, jn = cKDTree(cp).query(bp)
         made.append(finish("arcanist.clasp_bezel", bp, sk(bp), bt, "gold", 0.0, 0.0, 10 ** 6, scraps=False))
         print("CLASP: crescent %.0f mm across, horns %.0f deg round the foot, %.1f mm wide at its foot; stone at z %.3f"
-              % ((X.max() - X.min()) * 1000, CLASP_TH, wid[nth // 2] * 1000, c0[2]))
+              % ((X.max() - X.min()) * 1000, np.degrees(TH0), wid[nth // 2] * 1000, c0[2]))
         # (the cloth, binding and stitches under it cut away 1 mm inside its
         # edge: lumps of the cloth came through a rigid clasp seated close in
         # her idle, and 3 mm off it showed a dark slot round it, judge 8)
@@ -4410,7 +4441,7 @@ def ranger_spaulder():
     # made under the band instead, the leather on her skin's weights rose
     # 4.8 mm through it at her idle, so the leather ends just past the band
     # and moves with it, sp9)
-    TONGUE, = sp_env("SP_TONGUE", "0.006")
+    TONGUE, TSIDE = sp_env("SP_TONGUE", "0.006,0.011")   # (and how far it runs round her arm past the bands' ends)
     s_, th_, rho_ = pl_frame(P, F_)
     line = S0 + C2 * th_ ** 2
     # (never round into her armpit; a distance, not a step: cut on a step,
@@ -4430,7 +4461,7 @@ def ranger_spaulder():
     bot = line + 2 * (H + G) + TONGUE
     # (the leather shows only toward her neck, between the bands and below
     # them; round the rest of the cap plate it ends hidden under its rim)
-    tongue = ANDR(ANDR(bot - s_, (THB - np.abs(th_)) * rho_ + 0.011, r=0.014), s_ - (line - 0.02), r=0.004)
+    tongue = ANDR(ANDR(bot - s_, (THB - np.abs(th_)) * rho_ + TSIDE, r=0.014), s_ - (line - 0.02), r=0.004)
     # (the leather runs MARGIN past the cap plate all round, so the plate
     # lies on it everywhere: ended hidden under its rim, her skin showed
     # under the rim's front as she moved, judge 7; its neck end, TRAP past
@@ -5706,7 +5737,89 @@ material_table(os.path.join(os.path.dirname(OUT), "outfit_materials.json"))
 # One file an outfit, so the game loads only what she wears.
 # (each outfit's pieces listed before any are joined: a joined piece is gone)
 # Every piece split onto her helper bones as her skin is, so they move as one.
+BONE_NAMES = {b.name for b in arm.data.bones}
+
+
+def one_blend_pieces(objs):
+    """The pieces on one blend of bones: rigid plates, the clasp, rivets."""
+    out = []
+    for o in objs:
+        if o.type != "MESH" or not len(o.data.vertices):
+            continue
+        gname = {g.index: g.name for g in o.vertex_groups}
+        rows = {tuple(sorted((gname[g.group], round(g.weight, 4)) for g in v.groups
+                             if g.weight > 1e-4 and gname[g.group] in BONE_NAMES)) for v in o.data.vertices}
+        if len(rows) == 1 and rows != {()}:
+            out.append(o)
+    return out
+
+
+def rows_of(o):
+    gname = {g.index: g.name for g in o.vertex_groups}
+    return [tuple(sorted((gname[g.group], round(g.weight, 4)) for g in v.groups
+                         if g.weight > 1e-4 and gname[g.group] in BONE_NAMES)) for v in o.data.vertices]
+
+
+def rigid_again(objs, riders):
+    """Each one-blend piece back on one blend after the helpers' split, and
+    its corrective shapes made a shift of the whole. The split reads each
+    point's own place (the twist bones' reach, the skin under it), so a plate
+    on one blend came out bent, point by point: it takes the mean of its
+    points' split instead, its four largest shares."""
+    for o in objs:
+        gname = {g.index: g.name for g in o.vertex_groups}
+        tot = {}
+        for v in o.data.vertices:
+            for g in v.groups:
+                n = gname[g.group]
+                if n in BONE_NAMES:
+                    tot[n] = tot.get(n, 0.0) + g.weight
+        keep = sorted(tot, key=tot.get, reverse=True)[:4]
+        s = sum(tot[n] for n in keep)
+        idx = list(range(len(o.data.vertices)))
+        for g in list(o.vertex_groups):
+            if g.name in BONE_NAMES:
+                o.vertex_groups.remove(g)
+        for n in keep:
+            o.vertex_groups.new(name=n).add(idx, tot[n] / s, "REPLACE")
+        keys = o.data.shape_keys
+        if keys is not None:
+            base = np.array([k.co[:] for k in keys.reference_key.data])
+            for kb in keys.key_blocks[1:]:
+                d = np.array([k.co[:] for k in kb.data]) - base
+                for i, k in enumerate(kb.data):
+                    k.co = Vector(base[i] + d.mean(0))
+    # (what rides a plate on its very blend, the spaulder's leather riveted
+    # under it, takes the plate's new blend too, so they still move as one)
+    by_row = {}
+    for o in objs:
+        gname = {g.index: g.name for g in o.vertex_groups}
+        by_row[RIGID_ROWS[o.name]] = [(gname[g.group], g.weight) for g in o.data.vertices[0].groups if gname[g.group] in BONE_NAMES]
+    n_ride = 0
+    for o, rows in riders:
+        hit = [i for i, r in enumerate(rows) if r in _rset]
+        if not hit:
+            continue
+        groups = {g.name: g for g in o.vertex_groups}
+        for i in hit:
+            for g in list(o.data.vertices[i].groups):
+                if o.vertex_groups[g.group].name in BONE_NAMES:
+                    o.vertex_groups[g.group].remove([i])
+            for n, w in by_row[rows[i]]:
+                if n not in groups:
+                    groups[n] = o.vertex_groups.new(name=n)
+                groups[n].add([i], w, "REPLACE")
+        n_ride += len(hit)
+    print("RIGID: %d points riding a plate on its blend moved with it" % n_ride)
+    print("RIGID: %d one-blend pieces kept on one blend after the helpers' split" % len(objs))
+
+
+RIGID_PIECES = one_blend_pieces(made)
+RIGID_ROWS = {o.name: rows_of(o)[0] for o in RIGID_PIECES}
+_rset = {r for r in RIGID_ROWS.values() if len(r) > 1}   # (a blend, never one bone's whole: cloth on one bone is no rider)
+RIDERS = [(o, r) for o in made if o.type == "MESH" and o not in RIGID_PIECES for r in [rows_of(o)] if _rset & set(r)]
 rig_helpers.apply(arm, made, skin=lambda p: SKIN_BVH.find_nearest(Vector(p))[0][:], body=body)
+rigid_again(RIGID_PIECES, RIDERS)
 pieces_of = {name: [o for o in made if o.name.startswith(name + ".")] for name in OUTFITS}
 for name in OUTFITS:
     mine = pieces_of[name]
