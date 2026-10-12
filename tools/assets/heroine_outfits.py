@@ -2131,15 +2131,17 @@ def mirrored(pos, at, tris):
 
 
 def pushes_off_skin(pos, lift):
-    """How far, and which way, each point must move to stand `lift` off her skin."""
+    """How far, and which way, each point must move to stand `lift` off her skin
+    (one distance, or one to each point)."""
     push = np.zeros_like(pos)
+    lift = np.broadcast_to(np.asarray(lift, float), (len(pos),))
     for i in range(len(pos)):
         q, n, _, _ = BVH.find_nearest(Vector(pos[i]))
         if q is None:
             continue
         d = (Vector(pos[i]) - q).dot(n)
-        if d < lift:
-            push[i] = (n * (lift - d))[:]
+        if d < lift[i]:
+            push[i] = (n * (lift[i] - d))[:]
     return push
 
 
@@ -2429,7 +2431,7 @@ def piece(name, field, mkey, lift=0.003, thick=0.003, smooth=0, bevel=0.0012, tr
         # (one blend for the whole plate, its skin's mean: it moves rigidly)
         at[:, 3:3 + NB] = four_bones(at[:, 3:3 + NB].mean(0, keepdims=True))
     if not dome and not filled:
-        pos = clear_of_skin(pos, lift if clear is None else clear, tris)
+        pos = clear_of_skin(pos, lift if clear is None else (clear(pos) if callable(clear) else clear), tris)
     dump(name, "3pre", pos, tris, at[:, -1])  # SOLVER1 TEMP
     # Every edge bound: in the trim's colour where one is asked, else in the
     # piece's own (a rolled hem). Sheer and painted pieces are left as cut.
@@ -4508,7 +4510,10 @@ def ranger_spaulder():
     NECK_R, = sp_env("SP_NECK_R", "0.024")
     # (and its hem there, past the cap's neck stop and NOFF out from under
     # the cap, lies NLIFT on her (judge 8 asked 1 mm or less; it was 1.5))
-    NOFF, NLIFT, NS = sp_env("SP_NECKPIN", "0.004,0.0009,0.0")
+    # (NSTRIP: over how much of it the leather rises from NLIFT to LIFT: over
+    # STRIP, the binding's fair line, rounded inside the hem at the front
+    # corner, found the leather 2-2.5 mm up and stood off with it, solver 3)
+    NOFF, NLIFT, NS, NSTRIP = sp_env("SP_NECKPIN", "0.004,0.0013,0.0,0.024")
     LOWPASS = int(os.environ.get("SP_LOWPASS", "20"))   # (Taubin rounds over the leather away from the plates)
     _ua = ANDR(cap(sh, R_CAP + MARGIN), line - s_ + MARGIN, r=0.008)
     _ub = ANDR(ANDR(cap(sh, R_CAP + TRAP), Z - (sh[2] - 0.0605), r=NECK_R), (S_MED + 0.02) - s_, r=NECK_R)
@@ -4658,7 +4663,7 @@ def ranger_spaulder():
             avg_ = (A_ @ out_) / np.maximum(deg_, 1)[:, None]
             out_[free_] += lam_ * (avg_[free_] - out_[free_])
         d_e, j_e = cKDTree(out_[hem]).query(out_)
-        need = LIFT - (LIFT - hl_[hem][j_e]) * far_[hem][j_e] * np.clip(1 - d_e / STRIP, 0, 1)
+        need = LIFT - (LIFT - hl_[hem][j_e]) * far_[hem][j_e] * np.clip(1 - d_e / np.where(nk_[hem][j_e], NSTRIP, STRIP), 0, 1)
         for i in np.where(own < 0)[0]:
             q, n, _, _ = BVH.find_nearest(Vector(out_[i]))
             if q is not None:
@@ -4718,7 +4723,16 @@ def ranger_spaulder():
     # a pale line across it near her neck, judge 8)
     ONE_ISLAND.add("ranger.spaulder")
     BIND_RMIN["ranger.spaulder"] = 0.012
-    lm = piece("ranger.spaulder", leaf, LKEY, lift=LIFT, thick=THK, smooth=10, soften=10, iron=20, clear=HEM_LIFT,
+
+    # (cleared to HEM_LIFT all over once shaped, the neck end's hem, pinned at
+    # NLIFT, went back up to 1.5 mm, and its binding's underside, 0.6 mm
+    # below the leather, stood 1-2.5 mm off her trapezius at rest: there it
+    # keeps NLIFT, solver 3)
+    def clear_(pos):
+        own, _, past = owned(pos)
+        nk_ = (pl_frame(pos, F_)[0] < S_MED + NS) & (past[0] > NOFF) & (own < 0)
+        return np.where(nk_, min(NLIFT, HEM_LIFT), HEM_LIFT)
+    lm = piece("ranger.spaulder", leaf, LKEY, lift=LIFT, thick=THK, smooth=10, soften=10, iron=20, clear=clear_,
                trim=("darkleather", 0.006, 0.0006, 0.0013), stiff=[conform], weigh=weigh)
     # (its binding and stitches on the weights the leather's edge ends with:
     # the binding took the sheet's weights before finish() eased them again,
