@@ -246,7 +246,23 @@ public partial class Game
                 float.Parse(fp[1], System.Globalization.CultureInfo.InvariantCulture), float.Parse(fp[2], System.Globalization.CultureInfo.InvariantCulture));
         fillLight ??= Spot(white ? Colors.White : fillC, 26, false, 0.1f);
         edgeLight ??= Spot(white ? Colors.White : new Color(1f, 0.56f, 0.26f), 24, false, 0.35f);
-        rimLight ??= Spot(white ? Colors.White : new Color(0.72f, 0.82f, 1f), 24, false, old ? 0.5f : 0.25f);
+        if (rimLight == null)
+        {
+            // The rim casts her shadow: without one it lit the far side of her neck under her jaw through her jaw and
+            // head, a cool grey-lilac band there on the fair faces (the owner, 10 October 2026; skin r13 B1b). Soft
+            // (Spot's 0.6 m at 2.2 m from her), so her jaw's shadow on her neck has no hard edge. (--rim-shadow off |
+            // SIZE: none, as r12, or another light size, for judging it (pictures).)
+            // (--rim-colour R,G,B: its colour, for judging it (pictures))
+            var rimC = new Color(0.72f, 0.82f, 1f);
+            if (Args.Get("rim-colour") is string rcs && rcs.Split(',') is { Length: 3 } rp)
+                rimC = new Color(float.Parse(rp[0], System.Globalization.CultureInfo.InvariantCulture), float.Parse(rp[1], System.Globalization.CultureInfo.InvariantCulture), float.Parse(rp[2], System.Globalization.CultureInfo.InvariantCulture));
+            rimLight = Spot(white ? Colors.White : rimC, 24, true, old ? 0.5f : 0.25f);
+            if (Args.Get("rim-shadow") is string rsh)
+            {
+                if (rsh == "off") { rimLight.ShadowEnabled = false; rimLight.LightSize = 0; }
+                else if (float.TryParse(rsh, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var rsz)) rimLight.LightSize = rsz;
+            }
+        }
         // (--bounce E: a warm light from below, as her chest and collar give back the key, for judging it (pictures);
         // --ssao off | RADIUS,INTENSITY: the world's ambient occlusion at the Look, likewise)
         if (bounce < 0)
