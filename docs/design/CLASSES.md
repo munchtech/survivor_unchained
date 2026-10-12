@@ -279,6 +279,9 @@ Drawn in `docs/design/classes_warden_lamps.svg`. The other callings follow the s
 
 **The Bulwark's road (32).**
 - **Entry, Shield Arm:** each block lays a **stone**, up to ten. At ten, the wall answers with a Rebuke all around you.
+  - *The rebuke's yardstick:* ten times max health, grown 8% a level as the Flare's power is (the ember's level by night, the survivor's by day), through the build's holy damage, 4 m round. Max health keeps the judge's rule ("the wall answers as hard as it is thick"): Resolve and health are the Bulwark's damage too, as in any tank build. The level factor makes it keep pace with the night. A level-1 survivor at ember 48 rebukes for about 10,000 before the build's damage, a little over two tolls of Bell of the Morning. That kills every ordinary thing in reach at all four tiers and takes a fifth or more off a champion.
+  - *What it can't do:* the rebuke's share of a night's damage is capped by how much life stands within 4 m when it fires, not by its number. Measured (6 seeds, deft pilot holding the press), it was 0.3% at ten times max health, 0.3% at thirty and 0.3% at a hundred at tier 1. At tier 4 it rose only from 1% to 1.7%, the extra from champions and the boss. Rebukes come 5 to 17 a night (2 to 6 blocks a minute, at one blow in seven). So the 8-15% share the judge asked for is out of reach by any yardstick. It would take stones from more than blocks, or a wider rebuke (Wider Rebuke, phase 5). That's a design question for the owner, not a number.
+  - *How a Bulwark is played (the harness pilot):* in the press it stands still, with no circling and no dash out of a crush. Planted and The Wall Holds pay for standing, and every blow is a chance at a stone. It steps back under two-fifths of health until mended to two-thirds, and a champion at arm's length is still given ground below half. It is the one road the pilot plays this way.
 - **Small (7):**
   - +5% block while you stand still;
   - +5% block against champions;
@@ -347,7 +350,7 @@ Same shape: the hearth's dash form and reflexes, two roads, the bridge.
 | Road | Entry (the mechanic) | Notables | Blue lamps (the price in italics) | Skill lamps |
 |---|---|---|---|---|
 | **Kindler** | **Fire on Ice:** fire striking a frozen thing shatters it, 2 m around, at half its blow | **Thermal Shock** (the shatter is 3 m and hits as hard as the blow), **Ashen Ground** (burning ground lasts 50% longer), **Ford-Cold Ground** (Rime Field chills before it freezes), **Firebreak Wall** (Pyre Line stops missiles), **Stand in Your Fire** (in your burning ground: +20% armor, spells 10% faster) | **Frostfire:** burn and chill no longer cancel; your fire chills and your frost burns; *each is 30% weaker*. **Ash Walker:** in your burning or frozen ground you take 40% less; *outside it your spells are 15% weaker* | Cinderfall (*Two Cinders*, *Wider Fall*, *Slow Burning*); Pyre Line (*Cross of Fire*, *Hedge of Fire*, *Rolling Wall*); Rime Field (*Quick Frost*, *Wide Field*, *Shatter Field*) |
-| **Moonweaver** | **Moonmarked:** motes mark what they strike; a marked thing that dies passes its mark to one more | **Silvered** (marks pass to two, and the marked take 10% more), **Many Lights** (+1 projectile to spells), **Moon-Drawn** (motes seek the marked first), **Still Water** (Moonwell lasts 50% longer and fires 30% faster), **Moonfire** (a mark that passes burns violet: the new bearer takes moonfire) | **The Echo:** every spell fires again 0.5 s later at half strength; *spells wait 25% longer*. **Crowded Sky:** spells with projectiles fire two more, all seeking, *and no two strike the same thing; each is 35% weaker* | Seeking Motes (*Split Motes*, *Swift Motes*, *Heavy Motes*); Moonwell (*Twin Wells*, *Wide Well*, *Deep Well*); Lantern-Man (*Two Lanterns*, *Far-Wandering*, *Guttering*) |
+| **Moonweaver** | **Moonmarked:** motes mark what they strike; a marked thing that dies passes its mark to one more | **Silvered** (marks pass to two, and the marked take 10% more), **Many Lights** (+1 projectile to spells), **Moon-Drawn** (motes seek the marked first), **Still Water** (Moonwell lasts 50% longer and fires 30% faster), **Moonfire** (a mark that passes flares violet: the new bearer takes a tenth of the dead one's health as moonfire, arcane, not a Burn) | **The Echo:** every spell fires again 0.5 s later at half strength; *spells wait 25% longer*. **Crowded Sky:** spells with projectiles fire two more, all seeking, *and no two strike the same thing; each is 35% weaker* | Seeking Motes (*Split Motes*, *Swift Motes*, *Heavy Motes*); Moonwell (*Twin Wells*, *Wide Well*, *Deep Well*); Lantern-Man (*Two Lanterns*, *Far-Wandering*, *Guttering*) |
 | **Bridge: The Ledger** | | **Two Schools** (Rime Field's frozen ground makes Lantern-Man flare twice as often) | **The Ledger** ("Some of them keep ledgers."): each fire or frost spell makes your next moon or shadow spell 30% harder, and the other way round; *a spell of the same side twice running is 15% weaker* | |
 
 **Stalker.**
@@ -381,7 +384,7 @@ Same shape: the hearth's dash form and reflexes, two roads, the bridge.
 | **By day and in maps** | in full | in full | in full | in full |
 | **By night** (the table's arenas and story fights) | **in full**: they wake on whatever the draft brings | **at a quarter**; a blue lamp's *price* stays in full | at most +1 each from the whole board | become a **×1.25 lean** toward the road's cards, as the Edge does (SKILLS_DESIGN §14.2) |
 
-By night, every lamp keeps its rule but not its size. This keeps the night the ember's ("power from nothing, gone at dawn"; SKILLS_DESIGN principle 8): identity crosses into the night and numbers barely do. The harness holds a full 50-lamp board at night within ×1.25 of an empty one.
+By night, every lamp keeps its rule but not its size. A rule's defining number (a chance, reach or count without which it can't fire) stays in full by night; its +% riders are sizes. A status a rule lays carries its size too: the Moonmarked mark lifts the marked by +30% by day and +7.5% by night. A blue lamp whose gift the night's count cap withholds entirely (the Crowded Sky beside Many Lights) stays dark by night, its seeking with its price. Three prices follow their gift by night: the Echo's longer wait is a quarter, as its echo is (in full the lamp was a net loss); the Crowded Sky is weaker only for what it truly looses; the Butcher's Count's price is half of what the Count gives. Every other price stays in full, beside a sized gift too (Ash Walker, the Ledger). This keeps the night the ember's ("power from nothing, gone at dawn"; SKILLS_DESIGN principle 8): identity crosses into the night and numbers barely do. The harness holds a full 50-lamp board at night within ×1.25 of an empty one.
 
 **Leans.** The calling's path lean (×1.3 to ×1.5) and the road's lean multiply, and they are clamped at ×2.
 
@@ -405,10 +408,10 @@ The meter runs from 0 to 100. It fills **fastest when you're in trouble**, and s
 
 | Source | Fill | Why |
 |---|---|---|
-| Blows taken | +0.55 for each 1% of health lost; doubled below a third of health | Being hurt is when you need it |
+| Blows taken | +0.40 for each 1% of health lost; doubled below a third of health | Being hurt is when you need it |
 | **Close calls** | a perfect dash +10; blocking a champion's or boss's blow +6 | Rewards the skill the dash already teaches |
 | **The ember answers** | the first drop below a quarter of health: +35 (at most once every 45 s) | The life-saver: a half-full Flare is ready just as you're nearly dead |
-| Bosses | +0.8 for each 1% of their health you deal (the Flare's own never counts) | Two or three Flares in a boss fight, from fighting it well |
+| Bosses | +1.8 for each 1% of their health you deal, a gate's Break counting up to a tenth of its health (the Flare's own never counts) | Two or three Flares in a boss fight, from fighting it well |
 | Champions | +2 a kill, at most +0.6 a second (no fill from damage: about 40 champions fall a minute) | A champion is a step, not a full Flare |
 | Ordinary kills | +0.1 each, at most +0.65 a second | The horde can't spam it |
 
@@ -422,7 +425,9 @@ Hearth lamps that fill it from the horde (Blood for the Flare, Kindling) draw on
 - two or three in a boss fight;
 - faster when it's going badly.
 
-**Starting charge:** nights and maps start empty, and story fights start at half (they're short). In a map, the meter carries between areas.
+**Power:** each blow's power grows 8% an ember level (a level, by day) and 2% for every lamp lit. The board feeds the skills by their tags, so without the second term a full board's Flare fell from about a fifth of a boss's damage to a seventh at tier 4 and a tenth at level 30 (the harness, 12 October).
+
+**Starting charge:** nights and maps start at 20 to 25 (a quarter of the way: 25), and story fights start at half (they're short). In a map, the meter carries between areas.
 
 ### 3.3 The window
 
@@ -836,7 +841,7 @@ A warden who drafts Volley and Moonbrand all night plays a full ember build: pos
 2. **Crowded Sky (planner).** A Moonweaver with:
    - **Crowded Sky:** two more projectiles, each seeking a different thing;
    - **Silvered** and **Moon-Drawn:** marks pass to two on a death, and motes seek the marked;
-   - **Moonfire:** a passed mark burns;
+   - **Moonfire:** a passed mark flares (arcane, so it feeds no fire chain);
    - two Moonwells.
 
    At night, Second Reading fires everything at once, and a single kill passes marks across the screen in a chain. The Drowned Moon with **Silver Tide** turns the end of a night into a silver flood.
@@ -882,6 +887,13 @@ Sizes are in lead sessions. One session is about 300k tokens of a `su-lead-high`
 - A full board at night is within ×1.25 of an empty one.
 - Flare timing: the first by about 2 minutes, then one every 60 to 90 s at night, and two or three in a boss fight. Flares do 15 to 25% of a boss's damage.
 - Every Flare is judged at 1:1 in a packed horde and on a boss, against §3.5's laws.
+
+**Phase 1, measured (12 October; 12 seeds a cell, deft hands; one 12-seed cell of damage at minute 25 swings about ±25%, so a starred cell is re-run at 48 seeds before it counts):**
+- A full board against an empty one: in band (median ×1.00). Bulwark T4 and chainbound T2, the two cells out, read ×1.00 and ×1.01 at 48 seeds.
+- On-calling: the fitted home term is 0.85 to 1.22, never over ×1.25.
+- The Flare: first at 54 to 123 s, then every 52 to 81 s, three per boss (except the sunderer at T4: 176 s, every 105 s, two per boss; see Banked Flame below); 15 to 23% of a boss's damage by tier (median of the types).
+- The types: the butcher reads 0.80 and 0.82 at T3-T4 at 48 seeds (in band; 0.72 at 12). The moonweaver after session 5 (96 seeds): T3 1.34, T4 1.38 (90% 1.35-1.50), L30 1.37 (empty board 1.34). Its board adds x1.11/1.20/1.18/1.02 at T2/T3/T4/L30; at T4 the rest is its empty board's (1.14), the night skills' (phases 5 and 7).
+- Open: (1) Done (session 5): the Echo's wait shrinks with its echo by night; Moonfire is an arcane hit, not a Burn (as a Burn it seeded Pyre Burst: 14-17% of the full board's damage against 7-10% empty). T4's 1.38 goes to phase 7's sweep untrimmed: a 2% trim is below what 96 seeds can see. (2) **Banked Flame** (each hearth's gate-6 blue lamp) costs the harness its price without its gift, because the pilot never banks. It caused the sunderer's slow T4 Flare: gap 105 s, 72 s with it off. The pilot learns to bank in phase 2; should "Light my way" light it at all? (3) **The Road's Toll** lands little on a boss on a full board (8 to 11% at T3-T4, 29% at T1). That's targeting, not power, so phase 2 diagnoses it before building it. (4) The reavers' and roadknife's Strikes reach 24 to 30% at T1-T2. (5) Done (11 October, the owner's call): Act 1's story bosses' health is raised (Roost 103 to 118, Vault 130 to 148, Hollow 100 to 110, Dig 109 to 123: x1.15, x1.14, x1.10, x1.13). At 96 to 192 seeds a cell, with the Flare they fell 7 to 13% (mean) sooner, 12 to 16% by the median; now plain hands are within 2% of the pre-Flare length (deft within 5%, Dig the furthest). Falls were not above the pre-Flare level beyond noise (nights lost 0.86% before, 0.55% with the Flare, 1.1% now of 9216 each: about 1.8 sigma over before). (6) The glow is measured only by night; maps by day are unmeasured. (7) The Stands are measured in their plain form only (pulses round her). Butcher's Hour: three per boss, 11 to 15% of its damage.
 
 **Risks:**
 1. **Animation is the long pole.** That's 16 Flare clips and about 22 grip clips, all twice over. Phase 2 proves the beat on grips we already have.

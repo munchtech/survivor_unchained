@@ -34,6 +34,32 @@
    "report": "This morning it takes you a moment to find her word. It is there."
   },
   {
+   "id": "mother.carved",
+   "once": true,
+   "when": {
+    "all": [
+     {
+      "fact": "mother.cut",
+      "eq": "mam"
+     },
+     {
+      "not": {
+       "fact": "mother.carved",
+       "eq": true
+      }
+     }
+    ]
+   },
+   "effect": [
+    {
+     "set": {
+      "mother.carved": true
+     }
+    }
+   ],
+   "report": "Chid sat up in the Quiet Garden half the night with a lamp. Rook heard him from her kitchen: a tap, and a long wait, and a tap."
+  },
+  {
    "id": "beasts.escalate",
    "when": {
     "all": [

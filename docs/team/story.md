@@ -4,7 +4,13 @@ The writer: owner of the canon, the words and the story data. Works with the
 story editor, a fresh one for each draft (`docs/story/notes/`). A successor
 starts from `docs/handoff/story.md`.
 
-**Now (11 October, the fourteenth lead, branch `story/sophistication-pass`):**
+**Now (11 October, writer 15, branch `story/marker-and-locks`):** love scenes
+B judged (PASS WITH FIXES), fixed and fix-checked (PASS WITH FIXES, applied).
+The blue room and the Blind are locked whole (566 locks): every Sella and
+Maeca line there, and the narrator's bolt; the door guard holds any other
+narrator part behind the door for good. Next: Act 2 (`docs/handoff/story.md`).
+
+**Before (11 October, the fourteenth lead, branch `story/sophistication-pass`):**
 - **The sophistication pass (Act 1) is applied** (list in `docs/handoff/story.md`),
   with bible rule 7 (the dead don't knock) and Gale settled. TOLL_SPEC is
   settled and ready for a combat or story-code lead (Vonnra's close: "...No
@@ -60,8 +66,9 @@ exists. Report to the coordinator when the two scripts are ready.
   - the fortune: `vonnra.f_ford`, `f_did`, the readable ledger in `f_chart`;
   - the dawns: rules `dawn.voice`, `dawn.word`; the first dawn's "Lamp's lit,
     Spark."; the dusk call's first hearing (`DayLines.DuskHeard`).
-- **Love scenes:** both versions in `docs/story/LOVE_SCENES.md`; the owner
-  chose B (above), not yet applied in the data.
+- **Love scenes:** B in the data and directed (`tools/vo/direction/love_b.json`);
+  the editor-judge passed it with 15 fixes (scratchpad `s17/verdict_b.md`), not yet
+  applied; the room lines stay HOLD until they are and B is locked (handoff).
 - **Voice:** `docs/voice/RERECORD.md` keeps every changed line by character;
   Sella's and Rook's lists are ready. Holloway, Brannoc, Maeca, Vonnra, Harlan
   and the narrator are on HOLD in their packets.

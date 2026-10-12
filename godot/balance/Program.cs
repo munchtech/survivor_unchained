@@ -32,6 +32,8 @@ using SurvivorUnchained.Rpg;
  *          --charges 0 (every charger on its own clock, as before the charge director)
  *          --minutes 20 (a story's night: twenty minutes, ending on its boss)
  *          --type <road id>|both (the survivor's type)  --lamps empty|suggested|full (the board lit)
+ *          --offcalling (with --type both|<road>: each road's skills drafted (policy road:T, --policies ignored) on its
+ *          own calling and on each other calling; the report's on-calling table, target <= x1.25)
  *
  * This is the one balance tool: the balance lab's sweep (godot/tests/BalanceLab.cs,
  * BALANCE_LAB=arena) runs these same arenas through these same hands. */
@@ -48,6 +50,7 @@ switch (cmd)
     case "arena": Arena(); break;
     case "probe": ProbeAll(); break;
     case "weapons": WeaponsAll(); break;
+    case "lamped": Lamped(); break;
     case "report": Console.WriteLine(Report.Arena(Load(opt.Get("in", "balance.jsonl")))); break;
     case "map": Maps(); break;
     case "story": Story(); break;
@@ -90,6 +93,26 @@ void Arena()
     // --type road|both ("" = the calling's first road, key unchanged); --lamps empty|suggested|full.
     string typeOpt = opt.Get("type", ""), lampsOpt = opt.Get("lamps", "empty");
     string[] TypesOf(string c) => typeOpt == "" ? [""] : typeOpt == "both" ? Lamps.RoadsOf(c).Select(x => x.Id).ToArray() : [typeOpt];
+    if (opt.Has("offcalling"))
+    {
+        // Each road T of calling C: on-calling (C, type T) and off-calling (each other calling C', its first road), all drafting road T's skills.
+        string[] all4 = ["warden", "reaver", "arcanist", "stalker"];
+        foreach (var c in Callers())
+          foreach (var ty in TypesOf(c))
+            foreach (var host in all4)
+              foreach (int tier in tiers)
+                foreach (var oath in oaths)
+                  for (int s = 0; s < seeds; s++)
+                  {
+                      int nw = allWeapons ? Callings.Archetype(host).Weapons.Count : 1;
+                      for (int w = 0; w < nw; w++)
+                          specs.Add(new RunSpec(seed0 + s, host, "road:" + ty, tier, peoples[(s + w) % peoples.Length], Sworn(oath, tier, seed0 + s),
+                              opt.Double("cap", 40), opt.Double("beyond", 0), allWeapons ? w : s % Callings.Archetype(host).Weapons.Count,
+                              Level: level == "tier" ? 1 + 3 * (tier - 1) : int.Parse(level), Deft: deft, Minutes: opt.Double("minutes", 30),
+                              Type: host == c ? ty : Lamps.RoadsOf(host).First().Id, Lamps: lampsOpt, For: ty, Flare: opt.Get("flare", "")));
+                  }
+    }
+    else
     foreach (var c in Callers())
       foreach (var ty in TypesOf(c))
         foreach (var pol in Policies())
@@ -101,7 +124,7 @@ void Arena()
                         for (int w = 0; w < nw; w++)
                             specs.Add(new RunSpec(seed0 + s, c, pol, tier, peoples[(s + w) % peoples.Length], Sworn(oath, tier, seed0 + s),
                                 opt.Double("cap", 40), opt.Double("beyond", 0), allWeapons ? w : s % Callings.Archetype(c).Weapons.Count,
-                                Level: level == "tier" ? 1 + 3 * (tier - 1) : int.Parse(level), Deft: deft, Minutes: opt.Double("minutes", 30), Type: ty, Lamps: lampsOpt));
+                                Level: level == "tier" ? 1 + 3 * (tier - 1) : int.Parse(level), Deft: deft, Minutes: opt.Double("minutes", 30), Type: ty, Lamps: lampsOpt, Flare: opt.Get("flare", "")));
                     }
     string outPath = opt.Get("out", "balance.jsonl");
     Console.WriteLine($"{specs.Count} arenas, {opt.Int("par", 16)} at a time -> {outPath}");
@@ -285,6 +308,26 @@ void ProbeAll()
     var md = Report.Probes(results.ToList());
     if (opt.Has("out")) File.WriteAllText(opt.Get("out", "probe.md"), md);
     Console.WriteLine(md);
+}
+
+/* One skill alone, a calling's lamps lit: `lamped --skill seeking_motes --rank 8 --evo mote_cascade --foe 7 --seeds 4`.
+ * Cases are calling:type:lamps, e.g. arcanist:moonweaver:full, warden:bulwark:full, arcanist:moonweaver:none.
+ * Set LAMPS_OFF=id1,id2 in the environment to turn rules off. Prints crowd damage a second per case. */
+void Lamped()
+{
+    string skill = opt.Get("skill", "seeking_motes");
+    string? evo = opt.Has("evo") ? opt.Get("evo", "") : null;
+    int rank = opt.Int("rank", 8), foe = opt.Int("foe", 7), seeds = opt.Int("seeds", 4);
+    var cases = opt.List("cases", "arcanist:moonweaver:full,warden:bulwark:full,arcanist:moonweaver:none");
+    foreach (var c in cases)
+    {
+        var p = c.Split(':');
+        var rs = new ConcurrentBag<ProbeResult>();
+        Parallel.For(0, seeds, new ParallelOptions { MaxDegreeOfParallelism = opt.Int("par", 8) }, s =>
+            rs.Add(SurvivorUnchained.Balance.Probe.Lamped(p[0], p[1], p[2], skill, rank, evo, foe, 1 + s, opt.Int("clevel", 20), opt.Get("people", "dead"))));
+        double dmg = Report.Median(rs.Select(r => r.DamageBy.GetValueOrDefault(skill) / 40.0));
+        Console.WriteLine($"{c,-32} {skill} {evo ?? "-"}: {skill} dmg/s {dmg:0} (first 40s), crowd dps {Report.Median(rs.Select(r => r.CrowdDps)):0}, champion {Report.Median(rs.Select(r => r.BossDps)):0}");
+    }
 }
 
 /* Every combat skill alone at the stages a run passes through: rank 1 at

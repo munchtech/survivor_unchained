@@ -242,4 +242,18 @@ public class LampsTests
         Assert.Equal("butcher", LampBook.Now(d.Character).Type);
         Assert.Equal(8 + 1, LampBook.Spare(d.Character, w));
     }
+
+    /// <summary>Every phase-1 rule a lamp lights is read by the fight: its id appears, quoted, in the
+    /// fight's code (godot/logic/Sim). A rule nobody reads would light a lamp that does nothing.</summary>
+    [Fact]
+    public void Every_phase_one_rule_is_read_by_the_fight()
+    {
+        var sim = System.IO.Path.GetFullPath(System.IO.Path.Combine(AppContext.BaseDirectory, "../../../../logic/Sim"));
+        var code = string.Concat(System.IO.Directory.GetFiles(sim, "*.cs").Select(System.IO.File.ReadAllText));
+        var rules = Lamps.All.Values.SelectMany(l => l.Effects).Where(e => e.Do == LampDo.Rule && e.Phase == 1 && e.Rule != null)
+            .Select(e => e.Rule!).Distinct().ToList();
+        Assert.True(rules.Count >= 130, $"only {rules.Count} phase-1 rules");
+        var unread = rules.Where(r => !code.Contains($"\"{r}\"")).OrderBy(r => r).ToList();
+        Assert.True(unread.Count == 0, "unread: " + string.Join(", ", unread));
+    }
 }

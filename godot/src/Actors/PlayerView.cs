@@ -331,8 +331,12 @@ public partial class PlayerView : Node3D
     {
         dead = fallen = false;
         tree.Active = true;
-        Full("Lie_StandUp", 1.2);
+        // Up from where the fall left her: off her back if she went over
+        // onto it (get_up starts face down: from her back it popped).
+        Full(onBack && mine && own.Has("get_up_back") ? own.Prefix + "get_up_back" : "Lie_StandUp", 1.2);
+        onBack = false;
     }
+    bool onBack;
 
     /// <summary>A blow aimed at `angle` (the fight's: atan2(z, x)): her back
     /// turns to it if it is within reach of a turn of the waist, else she
@@ -375,6 +379,7 @@ public partial class PlayerView : Node3D
                 if (mine && p.FellTo == null && p.LastKiller is { } k && own.Has("death_back")
                     && (k.X - p.X) * Mathf.Sin(Rotation.Y) + (k.Z - p.Z) * Mathf.Cos(Rotation.Y) > 0)
                     death = own.Prefix + "death_back";
+                onBack = death.EndsWith("death_back");
                 person.Anim.Play(death, 0.1);
                 if (person.Pose != null) person.Pose.Native = death.StartsWith(own.Prefix) ? 1 : 0;
                 if (carriage != null) carriage.Aim = carriage.Bank = carriage.Tilt = carriage.HeadLevel = 0;
@@ -579,8 +584,11 @@ public partial class PlayerView : Node3D
         // Her back to the blow while it lasts, then home.
         float aimTo = aimHold > 0 ? aim : 0;
         carriage.Aim = Mathf.Lerp(carriage.Aim, aimTo, 1 - Mathf.Exp((aimHold > 0 ? -30 : -8) * dt));
-        // Her head carried up, her eyes on the way ahead (HerCarriage.HeadLevel).
-        carriage.HeadLevel = Mathf.Lerp(carriage.HeadLevel, HeadLevel, 1 - Mathf.Exp(-4 * dt));
+        // Her head carried up, her eyes on the way ahead (HerCarriage.HeadLevel);
+        // left to the clip through a whole-body one (a roll, a leap, a vault, a
+        // rush, a get-up), whose tucked head lifted would look wrong, and back after.
+        bool tucked = fullOn && !fullSoft;
+        carriage.HeadLevel = Mathf.Lerp(carriage.HeadLevel, tucked ? 0 : HeadLevel, 1 - Mathf.Exp((tucked ? -12 : -4) * dt));
     }
 
     /// <summary>How much of her clips' bowed head is taken back toward level in play (--head-level tries

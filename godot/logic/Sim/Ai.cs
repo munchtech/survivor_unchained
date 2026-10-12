@@ -101,7 +101,7 @@ public static class Ai
         double dist = Len(dx, dz);
         if (dist == 0) dist = 0.001;
         var def = e.Def;
-        double speed = e.Speed * SlowFactor(e) * (e.HasteT > 0 ? e.Haste : 1);
+        double speed = e.Speed * SlowFactor(e) * (e.HasteT > 0 ? e.Haste : 1) * b.HamstrungMul(e); // butcher.hamstrung
         double wantX = dx / dist, wantZ = dz / dist;
         e.Facing = Math.Atan2(dz, dx);
 

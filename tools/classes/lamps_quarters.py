@@ -13,13 +13,13 @@ flare("bell_of_the_morning", "Bell of the Morning", "warden", "bulwark", "strike
 flare("sixty_on_the_wall", "Sixty on the Wall", "warden", "bulwark", "stand", 6, 7, 1, 345, "holy", ["area", "holy", "shield"], "For 6 s the Watch's shield-bearers hold an arc in front of you.", "cut", 0.5)
 flare("the_butchers_bill", "The Butcher's Bill", "reaver", "butcher", "strike", 1.2, 10, 6, 520, "physical", ["melee", "steel", "physical", "twin"], "A leap on the strongest near you, and a chop for each tenth of health you're missing.")
 flare("butchers_hour", "Butcher's Hour", "reaver", "butcher", "stand", 8, 4, 2, 290, "physical", ["melee", "steel", "physical", "twin"], "For 8 s: Frenzy full, blows twice as fast, every blow bleeds.")
-flare("drag_them_under", "Drag Them Under", "reaver", "chainbound", "strike", 0.8, 14, 2, 1265, "physical", ["melee", "physical", "area", "hook"], "Hooks bite everything within 14 m and haul them into one knot for the slam.")
+flare("drag_them_under", "Drag Them Under", "reaver", "chainbound", "strike", 0.8, 14, 2, 1590, "physical", ["melee", "physical", "area", "hook"], "Hooks bite everything within 14 m and haul them into one knot for the slam.")
 flare("storm_on_the_chain", "Storm on the Chain", "reaver", "chainbound", "stand", 5, 8, 2, 400, "storm", ["melee", "storm", "area", "hook"], "For 5 s the chain sweeps 8 m out, and the sky strikes down it.")
-flare("burns_twice", "Burns Twice", "arcanist", "kindler", "strike", 1.1, 14, 3, 920, "fire", ["spell", "fire", "frost", "area"], "Frost races under every pack near, then embers fall on the frozen ground.")
+flare("burns_twice", "Burns Twice", "arcanist", "kindler", "strike", 1.1, 14, 3, 1160, "fire", ["spell", "fire", "frost", "area"], "Frost races under every pack near, then embers fall on the frozen ground.")
 flare("hard_winter", "Hard Winter", "arcanist", "kindler", "stand", 6, 12, 1, 345, "frost", ["spell", "frost", "area", "zone"], "For 6 s the ford's cold: everything near slows and freezes, and the thaw bursts.")
-flare("the_branding", "The Branding", "arcanist", "moonweaver", "strike", 1.0, 14, 2, 1150, "arcane", ["spell", "arcane", "area"], "Every enemy near is branded; the brands burst outward, each death passing a mark.")
+flare("the_branding", "The Branding", "arcanist", "moonweaver", "strike", 1.0, 14, 2, 2100, "arcane", ["spell", "arcane", "area"], "Every enemy near is branded; the brands burst outward, each death passing a mark.")
 flare("the_drowned_moon", "The Drowned Moon", "arcanist", "moonweaver", "stand", 6, 5, 3, 255, "arcane", ["spell", "arcane", "projectile", "zone"], "For 6 s a pool of moonlight follows you and looses motes.")
-flare("the_roads_toll", "The Road's Toll", "stalker", "roadknife", "strike", 1.2, 12, 12, 345, "physical", ["melee", "steel", "physical", "twin"], "Gone in smoke: twelve cuts in 1.2 s, the last on the strongest.")
+flare("the_roads_toll", "The Road's Toll", "stalker", "roadknife", "strike", 1.2, 12, 12, 700, "physical", ["melee", "steel", "physical", "twin"], "Gone in smoke: twelve cuts in 1.2 s, the last on the strongest.")
 flare("through_and_through", "Through and Through", "stalker", "roadknife", "stand", 6, 3, 2, 290, "physical", ["melee", "steel", "physical"], "For 6 s your dashes are free and endless, and every one cuts.")
 flare("one_arrow", "One Arrow", "stalker", "verge_hunter", "strike", 0.9, 30, 1, 2990, "physical", ["projectile", "ranged", "physical"], "One arrow down a 30 m line, splitting three times on the toughest.")
 flare("pinning_rain", "Pinning Rain", "stalker", "verge_hunter", "stand", 5, 6, 3, 205, "physical", ["projectile", "ranged", "physical", "area"], "For 5 s arrows rain on ground 12 m across, rooting what they strike.")
@@ -82,7 +82,7 @@ sund = road("warden", w, "sunderer", "Road of the Sunderer", "Slow, huge blows t
 
 bulw = road("warden", w, "bulwark", "Road of the Bulwark", "Walk in, let them hit you, and they break on it.",
     ("Shield Arm", "Your shield turns one blow in seven. Each block lays a stone, up to ten; at ten, the wall answers with a rebuke of holy light all around you.",
-     [R("shield_arm", block=0.15, stones=10, radius=4)], ["oathblade"]),
+     [R("shield_arm", block=0.15, stones=10, radius=4, lull=6, rebuke=10, per_level=0.08)], ["oathblade"]),
     [("+5% block while you stand still.", [R("block.still", add=0.05)]),
      ("+5% block against champions' and bosses' blows.", [R("block.champions", add=0.05)]),
      ("+2 Resolve.", [A("resolve")]),
@@ -290,7 +290,7 @@ moon = road("arcanist", ar, "moonweaver", "Road of the Moonweaver", "Moonlight t
      ("Many Lights", "Spells loose one more projectile.", [R("tags.projectiles", tags="spell", add=1)], ["seeking_motes", "moonwell"]),
      ("Moon-Drawn", "Motes seek the marked first.", [R("moon_drawn")], ["seeking_motes"]),
      ("Still Water", "Moonwell lasts 50% longer and fires 30% faster.", [R("still_water", phase=5)], ["moonwell"]),
-     ("Moonfire", "A mark that passes burns violet: the new bearer takes moonfire.", [R("moonfire", share=0.2)], ["seeking_motes", "lantern_man"])],
+     ("Moonfire", "A mark that passes flares violet: the new bearer takes a tenth of the dead one's health as moonfire.", [R("moonfire", share=0.1)], ["seeking_motes", "lantern_man"])],
     [("The Echo", "Every spell fires again 0.5 s later at half strength. Spells wait 25% longer.", [R("the_echo", delay=0.5, share=0.5, longer=0.25)]),
      ("Crowded Sky", "Spells with projectiles loose two more, all seeking, and no two strike the same thing; each is 35% weaker.", [R("crowded_sky", add=2, weaker=0.35)])],
     ("the_branding", "The Branding", [

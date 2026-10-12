@@ -13,16 +13,18 @@ public sealed partial class Battle
     bool lampBlocked;
     /// <summary>Stones laid by blocks, the lull since the last, and what the Bearer has stored.</summary>
     int stones;
-    double stoneLull, bearerStore;
+    double stoneLull, stoneDrop, bearerStore;
     bool leaping;
 
     public int Stones => stones;
+    /// <summary>Counters for measurement: blocks (any), rebukes, the most stones held at once.</summary>
+    public int Blocks, Rebukes, StonesPeak;
 
     /// <summary>The chance a lamp-lit shield turns this blow (0 when none is lit).</summary>
     double LampBlockChance(Enemy? from)
     {
         var l = Lamps;
-        double c = l.Size("shield_arm", "block");
+        double c = l.Full("shield_arm", "block");
         if (Player.StillT > 0.25) c += l.Size("block.still", "add");
         if (from != null && (from.Boss || from.Elite)) c += l.Size("block.champions", "add");
         if (c <= 0) return 0;
@@ -46,6 +48,15 @@ public sealed partial class Battle
         FlareOnBlock(from);
         Events.Emit(new Ev.PlayerHit { X = p.X, Z = p.Z, Amount = 0, School = school, Source = source, Blocked = true });
         Fire(TriggerEvent.Block, new ProcCtx { X = p.X, Z = p.Z });
+        OnBlocked(amount, from);
+        return true;
+    }
+
+    /// <summary>Everything a block brings, lamp's or Warding light's: a stone, and what the lamps hang on it.</summary>
+    void OnBlocked(double amount, Enemy? from)
+    {
+        var p = Player;
+        Blocks++;
         var l = Lamps;
         // bulwark.block.mend: each block mends a sliver while above half.
         if (l.Has("block.mend") && p.Hp > MaxHp * l.Full("block.mend", "above", 0.5)) HealPlayer(MaxHp * l.Size("block.mend", "share") * BearerMend(), "block");
@@ -62,7 +73,6 @@ public sealed partial class Battle
         // bulwark.oathblade.shield_and_edge: Oathblade swings at once.
         if (l.Has("oathblade.shield_and_edge") && WeaponById("oathblade") is { } edge) edge.Timer = 0;
         AddStone();
-        return true;
     }
 
     double BearerMend() => Lamps.Has("bearer_of_blows") ? 1 - Lamps.Full("bearer_of_blows", "less", 0.3) : 1;
@@ -73,7 +83,9 @@ public sealed partial class Battle
         if (!Lamps.Has("shield_arm") && !Lamps.Has("parry") && !Lamps.Has("mortar")) return;
         stoneLull = 0;
         int cap = (int)Lamps.Full("shield_arm", "stones", 10);
+        stoneDrop = 0;
         if (++stones >= cap) { stones = 0; Rebuke(); }
+        else StonesPeak = Math.Max(StonesPeak, stones);
     }
 
     /// <summary>bulwark.shield_arm: the rebuke of holy light all around, at ten stones.</summary>
@@ -82,7 +94,8 @@ public sealed partial class Battle
         var p = Player;
         var l = Lamps;
         double r = l.Full("shield_arm", "radius", 4) * Math.Sqrt(Stats.Get(Stat.Area));
-        double dmg = MaxHp * 0.3 + bearerStore;
+        double dmg = RebukePower() + bearerStore;
+        Rebukes++;
         bearerStore = 0;
         Events.Emit(new Ev.Nova { X = p.X, Z = p.Z, Radius = r, School = School.Holy, Duration = 0.3, Rings = 1 });
         ForEachHostileInRadius(p.X, p.Z, r, (e, d) =>
@@ -93,12 +106,28 @@ public sealed partial class Battle
         });
     }
 
-    /// <summary>Stones are lost after a lull unless the mortar holds them.</summary>
+    /// <summary>The rebuke's blow before the build's damage: as hard as the wall is thick (a share of max health), grown by
+    /// the level as the Flare's power is (8% a level; the ember's level by night, the survivor's by day). CLASSES.md 2.8.</summary>
+    public double RebukePower()
+    {
+        int level = EmberOn ? EmberLevel : Level;
+        return MaxHp * Lamps.Full("shield_arm", "rebuke", 10) * (1 + Lamps.Full("shield_arm", "per_level", 0.08) * Math.Max(0, level - 1));
+    }
+
+    /// <summary>The lull is in the fight: no blow taken or blocked and no hostile within 3 m for `lull` seconds, then stones
+    /// fall one a second; the mortar holds them.</summary>
     void TickStones(double dt)
     {
         if (stones == 0) return;
-        stoneLull += dt;
-        if (stoneLull > 8 && !Lamps.Has("mortar")) stones = 0;
+        if (Lamps.Has("mortar")) return;
+        double lull = Lamps.Full("shield_arm", "lull", 6);
+        bool near = false;
+        ForEachHostileInRadius(Player.X, Player.Z, 3, (e, d) => near = true);
+        if (near) stoneLull = 0; else stoneLull += dt;
+        if (stoneLull <= lull) return;
+        stoneDrop += dt;
+        while (stoneDrop >= 1 && stones > 0) { stoneDrop -= 1; stones--; }
+        if (stones == 0) stoneDrop = 0;
     }
 
     /// <summary>Barrier made stronger while five stones or more are held (bulwark.stones.barrier).</summary>

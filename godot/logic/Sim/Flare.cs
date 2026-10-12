@@ -56,7 +56,10 @@ public sealed partial class Battle
         return got;
     }
     /// <summary>The fill table, tuned by the harness (CLASSES.md §3.2).</summary>
-    public const double FillHurt = 0.55, FillAnswer = 35, FillPerfect = 10, FillBlock = 6, FillBoss = 0.8,
+    public const double FlareStartNight = 25;
+    /// <summary>The Flare's power grows by this share for every lamp lit.</summary>
+    public const double FlareLampGlow = 0.02;
+    public const double FillHurt = 0.40, FillAnswer = 35, FillPerfect = 10, FillBlock = 6, FillBoss = 1.8,
         FillChampion = 2, FillChampionRate = 0.6, FillKill = 0.1, FillKillRate = 0.65;
     bool answeredTwice;
 
@@ -125,7 +128,7 @@ public sealed partial class Battle
         if (from is { } e && (e.Elite || e.Boss)) FillFlare(FillBlock, "block");
     }
 
-    /// <summary>Damage she dealt: a boss +0.8 for each 1% of its health (the Flare's own never refills it).</summary>
+    /// <summary>Damage she dealt: a boss +1.8 for each 1% of its health (the Flare's own never refills it).</summary>
     void FlareOnDealt(Enemy e, double dealt, string by)
     {
         if (Flare == null || by == "flare" || dealt <= 0 || e.MaxHp <= 0) return;
@@ -167,7 +170,9 @@ public sealed partial class Battle
         int rank = FlareRank;
         // Its size grows with the long night until it fills the screen, then stops; its damage has no cap (§5).
         flareReach = f.Radius * (flareClutch ? FlareReachClutch : 1) * (Boons.ContainsKey("bright_hour") ? 1.4 : 1) * Math.Min(2.5, 1 + 0.1 * rank);
-        flarePower = Content.Lamps.FlarePower(f, EmberOn ? EmberLevel : Level) * (1 + 0.25 * rank);
+        // The board's lamps feed the skills by their tags, so the Flare grows with the board too, or a full
+        // board's Flare fell to a tenth of a boss's damage (the harness, 12 October).
+        flarePower = Content.Lamps.FlarePower(f, EmberOn ? EmberLevel : Level) * (1 + 0.25 * rank) * (1 + FlareLampGlow * Lamps.Lit);
         bool stand = f.Kind == FlareKind.Stand;
         flareLen = stand ? f.Length : Math.Min(StrikeMax, f.Length);
         FlareT = flareLen;

@@ -131,6 +131,21 @@
    "by": "the story lead",
    "date": "2026-10-11"
   },
+  "bark.chid.said.4": {
+   "hash": "0570c59ab2c3",
+   "by": "the story lead",
+   "date": "2026-10-11"
+  },
+  "bark.chid.said.5": {
+   "hash": "f7896530673e",
+   "by": "the story lead",
+   "date": "2026-10-11"
+  },
+  "bark.chid.said.6": {
+   "hash": "70642881f891",
+   "by": "the story lead",
+   "date": "2026-10-11"
+  },
   "bark.holloway.day.0": {
    "hash": "76cb0c873489",
    "by": "the story lead",
@@ -186,6 +201,36 @@
    "by": "the story lead",
    "date": "2026-10-11"
   },
+  "bark.holloway.said.4": {
+   "hash": "e0841cb739eb",
+   "by": "the story lead",
+   "date": "2026-10-11"
+  },
+  "bark.holloway.said.5": {
+   "hash": "308699d21c72",
+   "by": "the story lead",
+   "date": "2026-10-11"
+  },
+  "bark.holloway.said.6": {
+   "hash": "69b7ea506ffc",
+   "by": "the story lead",
+   "date": "2026-10-11"
+  },
+  "bark.holloway.said.7": {
+   "hash": "e1fc923b7ff8",
+   "by": "the story lead",
+   "date": "2026-10-11"
+  },
+  "bark.holloway.said.8": {
+   "hash": "27ef343ec170",
+   "by": "the story lead",
+   "date": "2026-10-11"
+  },
+  "bark.holloway.said.9": {
+   "hash": "2c8978f2652d",
+   "by": "the story lead",
+   "date": "2026-10-11"
+  },
   "bark.maeca.day.0": {
    "hash": "09809a3777e1",
    "by": "the story lead",
@@ -211,6 +256,21 @@
    "by": "the story lead",
    "date": "2026-10-11"
   },
+  "bark.maeca.said.10": {
+   "hash": "832697f308a9",
+   "by": "the story lead",
+   "date": "2026-10-11"
+  },
+  "bark.maeca.said.11": {
+   "hash": "d2ea2e201a00",
+   "by": "the story lead",
+   "date": "2026-10-11"
+  },
+  "bark.maeca.said.12": {
+   "hash": "93912bb3d8c0",
+   "by": "the story lead",
+   "date": "2026-10-11"
+  },
   "bark.maeca.said.2": {
    "hash": "c00286bfa701",
    "by": "the story lead",
@@ -233,6 +293,21 @@
   },
   "bark.maeca.said.6": {
    "hash": "dc05a87095c4",
+   "by": "the story lead",
+   "date": "2026-10-11"
+  },
+  "bark.maeca.said.7": {
+   "hash": "ac991942d317",
+   "by": "the story lead",
+   "date": "2026-10-11"
+  },
+  "bark.maeca.said.8": {
+   "hash": "376c2f67aa2e",
+   "by": "the story lead",
+   "date": "2026-10-11"
+  },
+  "bark.maeca.said.9": {
+   "hash": "4f8d3bc513df",
    "by": "the story lead",
    "date": "2026-10-11"
   },
@@ -576,6 +651,86 @@
    "by": "the story lead",
    "date": "2026-10-11"
   },
+  "dlg.chid.carried.0": {
+   "hash": "3acf78554ab8",
+   "by": "the story lead",
+   "date": "2026-10-11"
+  },
+  "dlg.chid.carried.1": {
+   "hash": "a287b669f181",
+   "by": "the story lead",
+   "date": "2026-10-11"
+  },
+  "dlg.chid.carried.2": {
+   "hash": "c2822424b4ee",
+   "by": "the story lead",
+   "date": "2026-10-11"
+  },
+  "dlg.chid.carried.3": {
+   "hash": "2c3f2277bdf8",
+   "by": "the story lead",
+   "date": "2026-10-11"
+  },
+  "dlg.chid.carried.4": {
+   "hash": "7b7b1326e36a",
+   "by": "the story lead",
+   "date": "2026-10-11"
+  },
+  "dlg.chid.carried_chid.0": {
+   "hash": "b84f08ca88d8",
+   "by": "the story lead",
+   "date": "2026-10-11"
+  },
+  "dlg.chid.carried_chid.1": {
+   "hash": "1ffb1f5b11ba",
+   "by": "the story lead",
+   "date": "2026-10-11"
+  },
+  "dlg.chid.carried_chid.2": {
+   "hash": "340b80671175",
+   "by": "the story lead",
+   "date": "2026-10-11"
+  },
+  "dlg.chid.carried_chid.3": {
+   "hash": "309d7ce025af",
+   "by": "the story lead",
+   "date": "2026-10-11"
+  },
+  "dlg.chid.carried_chid.4": {
+   "hash": "e0c0a70d8c52",
+   "by": "the story lead",
+   "date": "2026-10-11"
+  },
+  "dlg.chid.carried_chid.5": {
+   "hash": "113293f6a225",
+   "by": "the story lead",
+   "date": "2026-10-11"
+  },
+  "dlg.chid.carried_chid.6": {
+   "hash": "efb1e75c5f34",
+   "by": "the story lead",
+   "date": "2026-10-11"
+  },
+  "dlg.chid.carried_chid.7": {
+   "hash": "65de7e4157f3",
+   "by": "the story lead",
+   "date": "2026-10-11"
+  },
+  "dlg.chid.carried_chid.8": {
+   "hash": "03464668e2a3",
+   "by": "the story lead",
+   "date": "2026-10-11"
+  },
+  "dlg.chid.carried_chid.9": {
+   "hash": "e72d753a2546",
+   "by": "the story lead",
+   "date": "2026-10-11"
+  },
+  "dlg.chid.carried_who.0": {
+   "hash": "a1ee03f2c7c7",
+   "by": "the story lead",
+   "date": "2026-10-11"
+  },
   "dlg.chid.carter.0": {
    "hash": "0cf9c31ab979",
    "by": "the story lead",
@@ -611,6 +766,36 @@
    "by": "the story lead",
    "date": "2026-10-11"
   },
+  "dlg.chid.cut.0": {
+   "hash": "1cf195899b48",
+   "by": "the story lead",
+   "date": "2026-10-11"
+  },
+  "dlg.chid.cut_came.0": {
+   "hash": "6ca9d428e1b9",
+   "by": "the story lead",
+   "date": "2026-10-11"
+  },
+  "dlg.chid.cut_mam.0": {
+   "hash": "a4066c987787",
+   "by": "the story lead",
+   "date": "2026-10-11"
+  },
+  "dlg.chid.cut_plain.0": {
+   "hash": "7068450bc7e2",
+   "by": "the story lead",
+   "date": "2026-10-11"
+  },
+  "dlg.chid.cut_still.0": {
+   "hash": "0eb874e1f153",
+   "by": "the story lead",
+   "date": "2026-10-11"
+  },
+  "dlg.chid.cut_wait.0": {
+   "hash": "ad40f99f6c34",
+   "by": "the story lead",
+   "date": "2026-10-11"
+  },
   "dlg.chid.first.0": {
    "hash": "19bacd2c5510",
    "by": "the story lead",
@@ -631,6 +816,11 @@
    "by": "the story lead",
    "date": "2026-10-11"
   },
+  "dlg.chid.legion.0": {
+   "hash": "d11460b86c98",
+   "by": "the story lead",
+   "date": "2026-10-11"
+  },
   "dlg.chid.lit.0": {
    "hash": "d60834b1151a",
    "by": "the story lead",
@@ -646,8 +836,28 @@
    "by": "the story lead",
    "date": "2026-10-11"
   },
+  "dlg.chid.names_write.0": {
+   "hash": "f34249c881d3",
+   "by": "the story lead",
+   "date": "2026-10-11"
+  },
   "dlg.chid.note.0": {
    "hash": "451907b700ae",
+   "by": "the story lead",
+   "date": "2026-10-11"
+  },
+  "dlg.chid.office.0": {
+   "hash": "a7d2a63be26c",
+   "by": "the story lead",
+   "date": "2026-10-11"
+  },
+  "dlg.chid.office_end.0": {
+   "hash": "56aabddf5389",
+   "by": "the story lead",
+   "date": "2026-10-11"
+  },
+  "dlg.chid.office_who.0": {
+   "hash": "6fe85c9127a8",
    "by": "the story lead",
    "date": "2026-10-11"
   },
@@ -991,6 +1201,11 @@
    "by": "the story lead",
    "date": "2026-10-11"
   },
+  "dlg.holloway.hub.10": {
+   "hash": "597434bc4403",
+   "by": "the story lead",
+   "date": "2026-10-11"
+  },
   "dlg.holloway.hub.2": {
    "hash": "7e218278b640",
    "by": "the story lead",
@@ -1023,6 +1238,11 @@
   },
   "dlg.holloway.hub.8": {
    "hash": "45b3b363c99c",
+   "by": "the story lead",
+   "date": "2026-10-11"
+  },
+  "dlg.holloway.hub.9": {
+   "hash": "d412c1d47095",
    "by": "the story lead",
    "date": "2026-10-11"
   },
@@ -1068,6 +1288,16 @@
   },
   "dlg.holloway.repaid.0": {
    "hash": "e5b0d1d84076",
+   "by": "the story lead",
+   "date": "2026-10-11"
+  },
+  "dlg.holloway.roll.0": {
+   "hash": "0f488919ea4f",
+   "by": "the story lead",
+   "date": "2026-10-11"
+  },
+  "dlg.holloway.roll2.0": {
+   "hash": "99e108ea72ef",
    "by": "the story lead",
    "date": "2026-10-11"
   },
@@ -1126,13 +1356,23 @@
    "by": "the story lead",
    "date": "2026-10-11"
   },
+  "dlg.maeca.blind.0": {
+   "hash": "1734cb15e193",
+   "by": "the story lead",
+   "date": "2026-10-11"
+  },
+  "dlg.maeca.blind.1": {
+   "hash": "334fcf7cf4a2",
+   "by": "the story lead",
+   "date": "2026-10-11"
+  },
   "dlg.maeca.blind2_feet.0": {
-   "hash": "5b808cea6007",
+   "hash": "0a556b4cf2a2",
    "by": "the story lead",
    "date": "2026-10-11"
   },
   "dlg.maeca.blind2_let.0": {
-   "hash": "dc5674c73ccf",
+   "hash": "0a82e22de252",
    "by": "the story lead",
    "date": "2026-10-11"
   },
@@ -1142,7 +1382,7 @@
    "date": "2026-10-11"
   },
   "dlg.maeca.blind3_morning.0": {
-   "hash": "4c77528e7a85",
+   "hash": "5c11aa0cd847",
    "by": "the story lead",
    "date": "2026-10-11"
   },
@@ -1157,22 +1397,22 @@
    "date": "2026-10-11"
   },
   "dlg.maeca.blind_dark.0": {
-   "hash": "ae6ca86cef49",
+   "hash": "faf00689a67b",
    "by": "the story lead",
    "date": "2026-10-11"
   },
   "dlg.maeca.blind_dark.1": {
-   "hash": "bc1d5dcb96d4",
+   "hash": "54edf00d8c7e",
    "by": "the story lead",
    "date": "2026-10-11"
   },
   "dlg.maeca.blind_dark.2": {
-   "hash": "bc2ce580f6f1",
+   "hash": "fabfc1279787",
    "by": "the story lead",
    "date": "2026-10-11"
   },
   "dlg.maeca.blind_dark.3": {
-   "hash": "ea475daa0781",
+   "hash": "2189731fdd63",
    "by": "the story lead",
    "date": "2026-10-11"
   },
@@ -1183,6 +1423,26 @@
   },
   "dlg.maeca.blind_leave.0": {
    "hash": "5aca6c122b12",
+   "by": "the story lead",
+   "date": "2026-10-11"
+  },
+  "dlg.maeca.blind_morning.0": {
+   "hash": "590a651c760e",
+   "by": "the story lead",
+   "date": "2026-10-11"
+  },
+  "dlg.maeca.blind_morning.1": {
+   "hash": "aa0537f43d34",
+   "by": "the story lead",
+   "date": "2026-10-11"
+  },
+  "dlg.maeca.blind_walk.0": {
+   "hash": "18ec89c5b90e",
+   "by": "the story lead",
+   "date": "2026-10-11"
+  },
+  "dlg.maeca.blind_walk.1": {
+   "hash": "16a4baf75146",
    "by": "the story lead",
    "date": "2026-10-11"
   },
@@ -1213,6 +1473,11 @@
   },
   "dlg.maeca.driving.0": {
    "hash": "f010ad9fdd42",
+   "by": "the story lead",
+   "date": "2026-10-11"
+  },
+  "dlg.maeca.fire.0": {
+   "hash": "48fbb35bc911",
    "by": "the story lead",
    "date": "2026-10-11"
   },
@@ -1316,6 +1581,16 @@
    "by": "the story lead",
    "date": "2026-10-11"
   },
+  "dlg.maeca.shed_fur_braid.0": {
+   "hash": "44f1600b5492",
+   "by": "the story lead",
+   "date": "2026-10-11"
+  },
+  "dlg.maeca.shed_fur_offer.0": {
+   "hash": "e1c5ce64c050",
+   "by": "the story lead",
+   "date": "2026-10-11"
+  },
   "dlg.maeca.speak.0": {
    "hash": "d0c6495385ca",
    "by": "the story lead",
@@ -1332,7 +1607,27 @@
    "date": "2026-10-11"
   },
   "dlg.maeca.told_little.0": {
-   "hash": "7ad515a42fd4",
+   "hash": "582630848e5b",
+   "by": "the story lead",
+   "date": "2026-10-11"
+  },
+  "dlg.maeca.told_true.0": {
+   "hash": "7ce0fc5aa6e5",
+   "by": "the story lead",
+   "date": "2026-10-11"
+  },
+  "dlg.maeca.told_true.1": {
+   "hash": "e2ac23e69ecd",
+   "by": "the story lead",
+   "date": "2026-10-11"
+  },
+  "dlg.maeca.told_true.2": {
+   "hash": "c328c8e00365",
+   "by": "the story lead",
+   "date": "2026-10-11"
+  },
+  "dlg.maeca.told_true.3": {
+   "hash": "49645dec4910",
    "by": "the story lead",
    "date": "2026-10-11"
   },
@@ -1576,38 +1871,358 @@
    "by": "the story lead",
    "date": "2026-10-11"
   },
+  "dlg.scene_did_he.did.0": {
+   "hash": "57610b638860",
+   "by": "the story lead",
+   "date": "2026-10-11"
+  },
+  "dlg.scene_did_he.kept.0": {
+   "hash": "4bd838bdea2c",
+   "by": "the story lead",
+   "date": "2026-10-11"
+  },
+  "dlg.scene_did_he.quiet.0": {
+   "hash": "1e13f78a88c1",
+   "by": "the story lead",
+   "date": "2026-10-11"
+  },
+  "dlg.scene_did_he.told.0": {
+   "hash": "8614b846effe",
+   "by": "the story lead",
+   "date": "2026-10-11"
+  },
+  "dlg.scene_did_he.well.0": {
+   "hash": "441ad790dc1e",
+   "by": "the story lead",
+   "date": "2026-10-11"
+  },
+  "dlg.scene_gate_dawn.all.0": {
+   "hash": "dfc3c48cf7a1",
+   "by": "the story lead",
+   "date": "2026-10-11"
+  },
+  "dlg.scene_gate_dawn.bar.0": {
+   "hash": "9624988b9e04",
+   "by": "the story lead",
+   "date": "2026-10-11"
+  },
+  "dlg.scene_gate_dawn.gate.0": {
+   "hash": "2763e463622e",
+   "by": "the story lead",
+   "date": "2026-10-11"
+  },
+  "dlg.scene_gate_dawn.last.0": {
+   "hash": "1a66aadc753d",
+   "by": "the story lead",
+   "date": "2026-10-11"
+  },
+  "dlg.scene_gate_dawn.maeca.0": {
+   "hash": "2e616c9779a5",
+   "by": "the story lead",
+   "date": "2026-10-11"
+  },
+  "dlg.scene_gate_dawn.thanks.0": {
+   "hash": "8afb1c04032c",
+   "by": "the story lead",
+   "date": "2026-10-11"
+  },
+  "dlg.scene_gate_dawn.wake.0": {
+   "hash": "204624339d88",
+   "by": "the story lead",
+   "date": "2026-10-11"
+  },
+  "dlg.scene_his_cup.cup.0": {
+   "hash": "1c20ee800a00",
+   "by": "the story lead",
+   "date": "2026-10-11"
+  },
+  "dlg.scene_in_my_count.between.0": {
+   "hash": "c4a81f848a4b",
+   "by": "the story lead",
+   "date": "2026-10-11"
+  },
+  "dlg.scene_in_my_count.captain.0": {
+   "hash": "717a92d0ac8f",
+   "by": "the story lead",
+   "date": "2026-10-11"
+  },
+  "dlg.scene_in_my_count.crowd.0": {
+   "hash": "68b3c4e4eaf1",
+   "by": "the story lead",
+   "date": "2026-10-11"
+  },
+  "dlg.scene_in_my_count.dont.0": {
+   "hash": "24531fc0fe1b",
+   "by": "the story lead",
+   "date": "2026-10-11"
+  },
+  "dlg.scene_in_my_count.gone.0": {
+   "hash": "d80f65960c89",
+   "by": "the story lead",
+   "date": "2026-10-11"
+  },
+  "dlg.scene_in_my_count.men.0": {
+   "hash": "4a9cd64ee1ef",
+   "by": "the story lead",
+   "date": "2026-10-11"
+  },
+  "dlg.scene_in_my_count.sit.0": {
+   "hash": "a5d9120d5a0a",
+   "by": "the story lead",
+   "date": "2026-10-11"
+  },
+  "dlg.scene_in_my_count.through.0": {
+   "hash": "a9375c51d044",
+   "by": "the story lead",
+   "date": "2026-10-11"
+  },
+  "dlg.scene_knocking.ground.0": {
+   "hash": "ccf3cc333ed9",
+   "by": "the story lead",
+   "date": "2026-10-11"
+  },
+  "dlg.scene_knocking.hear.0": {
+   "hash": "2207c144d7bb",
+   "by": "the story lead",
+   "date": "2026-10-11"
+  },
+  "dlg.scene_knocking.home.0": {
+   "hash": "247a8c5a9589",
+   "by": "the story lead",
+   "date": "2026-10-11"
+  },
+  "dlg.scene_knocking.knock.0": {
+   "hash": "10079d5993be",
+   "by": "the story lead",
+   "date": "2026-10-11"
+  },
+  "dlg.scene_knocking.knows.0": {
+   "hash": "2b7447daa325",
+   "by": "the story lead",
+   "date": "2026-10-11"
+  },
+  "dlg.scene_knocking.saved.0": {
+   "hash": "657fd5909839",
+   "by": "the story lead",
+   "date": "2026-10-11"
+  },
+  "dlg.scene_knocking.saw.0": {
+   "hash": "fc35b82c2f47",
+   "by": "the story lead",
+   "date": "2026-10-11"
+  },
+  "dlg.scene_knocking.shut.0": {
+   "hash": "69c3697221c1",
+   "by": "the story lead",
+   "date": "2026-10-11"
+  },
+  "dlg.scene_knocking.silent.0": {
+   "hash": "7f5ad7bfb753",
+   "by": "the story lead",
+   "date": "2026-10-11"
+  },
+  "dlg.scene_knocking.tell.0": {
+   "hash": "2eb0033801ee",
+   "by": "the story lead",
+   "date": "2026-10-11"
+  },
+  "dlg.scene_knocking.wrote.0": {
+   "hash": "bc946f0c9718",
+   "by": "the story lead",
+   "date": "2026-10-11"
+  },
+  "dlg.sella.door.0": {
+   "hash": "41937b970ea1",
+   "by": "the story lead",
+   "date": "2026-10-11"
+  },
+  "dlg.sella.door_south.0": {
+   "hash": "08e398cdbabd",
+   "by": "the story lead",
+   "date": "2026-10-11"
+  },
+  "dlg.sella.door_years.0": {
+   "hash": "36dab6f8b826",
+   "by": "the story lead",
+   "date": "2026-10-11"
+  },
+  "dlg.sella.free_bolt.0": {
+   "hash": "cc8f6ea9b936",
+   "by": "the story lead",
+   "date": "2026-10-11"
+  },
+  "dlg.sella.free_door.0": {
+   "hash": "814f10780976",
+   "by": "the story lead",
+   "date": "2026-10-11"
+  },
+  "dlg.sella.free_door.1": {
+   "hash": "871a02d32602",
+   "by": "the story lead",
+   "date": "2026-10-11"
+  },
+  "dlg.sella.free_m_downstairs.0": {
+   "hash": "dcc3d40c0a53",
+   "by": "the story lead",
+   "date": "2026-10-11"
+  },
+  "dlg.sella.free_m_kiss.0": {
+   "hash": "5a7d26a6cd88",
+   "by": "the story lead",
+   "date": "2026-10-11"
+  },
+  "dlg.sella.free_m_who.0": {
+   "hash": "f0ef4ccafa8f",
+   "by": "the story lead",
+   "date": "2026-10-11"
+  },
+  "dlg.sella.free_morning.0": {
+   "hash": "edf1c74b386c",
+   "by": "the story lead",
+   "date": "2026-10-11"
+  },
+  "dlg.sella.free_night.0": {
+   "hash": "cd54f1d06db4",
+   "by": "the story lead",
+   "date": "2026-10-11"
+  },
   "dlg.sella.free_night.1": {
-   "hash": "da6771252289",
+   "hash": "5a666cf96da0",
    "by": "the story lead",
    "date": "2026-10-11"
   },
   "dlg.sella.free_sit.0": {
-   "hash": "2e4ee62c4783",
+   "hash": "3da1e064e389",
+   "by": "the story lead",
+   "date": "2026-10-11"
+  },
+  "dlg.sella.free_sleep.0": {
+   "hash": "fc9400e877d7",
    "by": "the story lead",
    "date": "2026-10-11"
   },
   "dlg.sella.free_sleep_bed.0": {
-   "hash": "fc7eff81b302",
+   "hash": "a98423e8ac17",
    "by": "the story lead",
    "date": "2026-10-11"
   },
   "dlg.sella.free_stairs.0": {
-   "hash": "b9a373decb75",
+   "hash": "ffc294ac4cf4",
+   "by": "the story lead",
+   "date": "2026-10-11"
+  },
+  "dlg.sella.free_stop.0": {
+   "hash": "d9396c4d3d36",
+   "by": "the story lead",
+   "date": "2026-10-11"
+  },
+  "dlg.sella.free_want.0": {
+   "hash": "368d1d9399d4",
+   "by": "the story lead",
+   "date": "2026-10-11"
+  },
+  "dlg.sella.morning.0": {
+   "hash": "4a7dd9c87d1d",
+   "by": "the story lead",
+   "date": "2026-10-11"
+  },
+  "dlg.sella.morning.1": {
+   "hash": "35bb32f4e375",
+   "by": "the story lead",
+   "date": "2026-10-11"
+  },
+  "dlg.sella.morning.2": {
+   "hash": "68c50242ba91",
+   "by": "the story lead",
+   "date": "2026-10-11"
+  },
+  "dlg.sella.morning.3": {
+   "hash": "ab15135f4b8e",
+   "by": "the story lead",
+   "date": "2026-10-11"
+  },
+  "dlg.sella.night.0": {
+   "hash": "2ede74022f41",
    "by": "the story lead",
    "date": "2026-10-11"
   },
   "dlg.sella.night.1": {
-   "hash": "46cd299aefad",
+   "hash": "00593beeef2b",
    "by": "the story lead",
    "date": "2026-10-11"
   },
   "dlg.sella.night.2": {
-   "hash": "cc7f8da42f3b",
+   "hash": "503b286d0b45",
+   "by": "the story lead",
+   "date": "2026-10-11"
+  },
+  "dlg.sella.past.0": {
+   "hash": "e46b4af89ba5",
+   "by": "the story lead",
+   "date": "2026-10-11"
+  },
+  "dlg.sella.past.1": {
+   "hash": "aa0c08761984",
+   "by": "the story lead",
+   "date": "2026-10-11"
+  },
+  "dlg.sella.past.2": {
+   "hash": "c8241e118450",
+   "by": "the story lead",
+   "date": "2026-10-11"
+  },
+  "dlg.sella.past.3": {
+   "hash": "e0ba526a1822",
+   "by": "the story lead",
+   "date": "2026-10-11"
+  },
+  "dlg.sella.past.4": {
+   "hash": "bd7ea40e98ba",
+   "by": "the story lead",
+   "date": "2026-10-11"
+  },
+  "dlg.sella.past.5": {
+   "hash": "c667438e5cd9",
+   "by": "the story lead",
+   "date": "2026-10-11"
+  },
+  "dlg.sella.past.6": {
+   "hash": "ba6473b4e4f3",
+   "by": "the story lead",
+   "date": "2026-10-11"
+  },
+  "dlg.sella.past.7": {
+   "hash": "d9dece1a9f76",
+   "by": "the story lead",
+   "date": "2026-10-11"
+  },
+  "dlg.sella.rest_bed.0": {
+   "hash": "448c19f472f3",
    "by": "the story lead",
    "date": "2026-10-11"
   },
   "dlg.sella.rest_dark.0": {
-   "hash": "cb0547ba03cf",
+   "hash": "1781ed92749d",
+   "by": "the story lead",
+   "date": "2026-10-11"
+  },
+  "dlg.sella.rest_morning.0": {
+   "hash": "38ede4e4ac05",
+   "by": "the story lead",
+   "date": "2026-10-11"
+  },
+  "dlg.sella.rest_morning.1": {
+   "hash": "9b4b6dc236aa",
+   "by": "the story lead",
+   "date": "2026-10-11"
+  },
+  "dlg.sella.rest_night_paid.0": {
+   "hash": "417b4a33f0ab",
+   "by": "the story lead",
+   "date": "2026-10-11"
+  },
+  "dlg.sella.sleeptalk.0": {
+   "hash": "f0bd0d3e05d2",
    "by": "the story lead",
    "date": "2026-10-11"
   },
@@ -1626,6 +2241,76 @@
    "by": "the story lead",
    "date": "2026-10-11"
   },
+  "dlg.sella.stairs_room.0": {
+   "hash": "4540d27b7ad2",
+   "by": "the story lead",
+   "date": "2026-10-11"
+  },
+  "dlg.sella.stairs_room.1": {
+   "hash": "10a72fe92d0c",
+   "by": "the story lead",
+   "date": "2026-10-11"
+  },
+  "dlg.sella.stairs_room.2": {
+   "hash": "118437fde52e",
+   "by": "the story lead",
+   "date": "2026-10-11"
+  },
+  "dlg.sella.stairs_room.3": {
+   "hash": "b830ebfa680c",
+   "by": "the story lead",
+   "date": "2026-10-11"
+  },
+  "dlg.sella.stairs_room.4": {
+   "hash": "13ad9bb6dbca",
+   "by": "the story lead",
+   "date": "2026-10-11"
+  },
+  "dlg.sella.stairs_room.5": {
+   "hash": "4acf4ec4fd13",
+   "by": "the story lead",
+   "date": "2026-10-11"
+  },
+  "dlg.sella.stairs_room.6": {
+   "hash": "429b8b931233",
+   "by": "the story lead",
+   "date": "2026-10-11"
+  },
+  "dlg.sella.stairs_room.7": {
+   "hash": "22827c1b56f0",
+   "by": "the story lead",
+   "date": "2026-10-11"
+  },
+  "dlg.sella.stairs_rules.0": {
+   "hash": "a4e0823b3227",
+   "by": "the story lead",
+   "date": "2026-10-11"
+  },
+  "dlg.sella.stairs_rules.1": {
+   "hash": "dd34c29a2cc6",
+   "by": "the story lead",
+   "date": "2026-10-11"
+  },
+  "dlg.sella.stairs_say.0": {
+   "hash": "531f424249dd",
+   "by": "the story lead",
+   "date": "2026-10-11"
+  },
+  "dlg.sella.stairs_say.1": {
+   "hash": "f814330f29d8",
+   "by": "the story lead",
+   "date": "2026-10-11"
+  },
+  "dlg.sella.stairs_say.2": {
+   "hash": "e74c99549e5b",
+   "by": "the story lead",
+   "date": "2026-10-11"
+  },
+  "dlg.sella.stop_paid.0": {
+   "hash": "8f3b7f831a6e",
+   "by": "the story lead",
+   "date": "2026-10-11"
+  },
   "dlg.tam.fetch.0": {
    "hash": "c94e23739b42",
    "by": "the story lead",
@@ -1638,6 +2323,11 @@
   },
   "say.005625eee2b8": {
    "hash": "005625eee2b8",
+   "by": "the story lead",
+   "date": "2026-10-11"
+  },
+  "say.0407f971959b": {
+   "hash": "0407f971959b",
    "by": "the story lead",
    "date": "2026-10-11"
   },
@@ -1663,6 +2353,11 @@
   },
   "say.0b5e75f9dfa0": {
    "hash": "0b5e75f9dfa0",
+   "by": "the story lead",
+   "date": "2026-10-11"
+  },
+  "say.0d5976546998": {
+   "hash": "0d5976546998",
    "by": "the story lead",
    "date": "2026-10-11"
   },
@@ -1876,6 +2571,11 @@
    "by": "the story lead",
    "date": "2026-10-11"
   },
+  "say.7afbb86d6b6e": {
+   "hash": "7afbb86d6b6e",
+   "by": "the story lead",
+   "date": "2026-10-11"
+  },
   "say.82b1e8294244": {
    "hash": "82b1e8294244",
    "by": "the story lead",
@@ -1951,6 +2651,11 @@
    "by": "the story lead",
    "date": "2026-10-11"
   },
+  "say.9a0e5952f0c0": {
+   "hash": "9a0e5952f0c0",
+   "by": "the story lead",
+   "date": "2026-10-11"
+  },
   "say.9bf57b5df8e4": {
    "hash": "9bf57b5df8e4",
    "by": "the story lead",
@@ -1988,6 +2693,11 @@
   },
   "say.ac8270282f9f": {
    "hash": "ac8270282f9f",
+   "by": "the story lead",
+   "date": "2026-10-11"
+  },
+  "say.ae37a13a9846": {
+   "hash": "ae37a13a9846",
    "by": "the story lead",
    "date": "2026-10-11"
   },

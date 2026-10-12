@@ -25,6 +25,8 @@ extends SceneTree
 #   BODYDIR=folder                         her body and outfits read from another build (before a change)
 #   NOJOINTS=1                             her helper bones left undriven (not her body before them:
 #                                          an elbow's share then follows the upper arm; use BODYDIR)
+#   SKINDBG=faces|cull|uv                  her skin as faces seen from behind (red) / normals turned
+#                                          away (blue); her own skin drawn from both sides; her UVs as colour
 var clip = ""
 var out = ""
 var her: Node3D
@@ -242,9 +244,30 @@ func dress(h):
 				mi.set_surface_override_material(s, m)
 			elif part in ["teeth", "tongue"]:
 				pass
+			elif env("SKINDBG", "") == "uv":
+				# Her UVs as colour (red, green; blue where seen from behind),
+				# drawn linear: a pixel read back finds the face under it.
+				var um = ShaderMaterial.new()
+				um.shader = Shader.new()
+				um.shader.code = "shader_type spatial; render_mode unshaded, cull_disabled;
+void fragment() { ALBEDO = vec3(UV.x, UV.y, FRONT_FACING ? 0.0 : 1.0); }"
+				mi.set_surface_override_material(s, um)
+			elif env("SKINDBG", "") == "faces":
+				# What a see-through spot is: red where a face is seen from
+				# behind (folded or wound the wrong way), blue where a face
+				# seen from the front has a normal turned away, else grey.
+				var dm = ShaderMaterial.new()
+				dm.shader = Shader.new()
+				dm.shader.code = "shader_type spatial; render_mode unshaded, cull_disabled;\nvoid fragment() { float f = clamp(NORMAL.z, 0.0, 1.0); ALBEDO = !FRONT_FACING ? vec3(1.0, 0.0, 0.0) : (NORMAL.z < 0.0 ? vec3(0.0, 0.2, 1.0) : vec3(0.25 + 0.6 * f)); }"
+				mi.set_surface_override_material(s, dm)
 			else:
 				var sk = ShaderMaterial.new()
 				sk.shader = load("res://shaders/heroine_skin.gdshader")
+				if env("SKINDBG", "") == "cull":
+					# her skin drawn from both sides: a hole stays a hole
+					var sh = Shader.new()
+					sh.code = sk.shader.code.replace("render_mode sss_mode_skin;", "render_mode sss_mode_skin, cull_disabled;")
+					sk.shader = sh
 				sk.set_shader_parameter("paint", src.albedo_texture)
 				sk.set_shader_parameter("pores", load("res://art/people/skin_pores.png"))
 				sk.set_shader_parameter("pore_scale", 50.0)
@@ -424,6 +447,8 @@ func stage(root):
 	e.ambient_light_color = Color(0.6, 0.6, 0.65)
 	e.ambient_light_energy = 0.7
 	e.tonemap_mode = Environment.TONE_MAPPER_AGX
+	if env("SKINDBG", "") == "uv":
+		e.tonemap_mode = Environment.TONE_MAPPER_LINEAR
 	env_.environment = e
 	root.add_child(env_)
 	var key = DirectionalLight3D.new()
@@ -456,14 +481,16 @@ func place_camera():
 	if env("OFF", "") != "":
 		var o = env("OFF", "").split_floats(",")
 		off = Vector3(o[0], o[1], o[2])
-	if env("LOOKOFF", "") != "":
-		var lo = env("LOOKOFF", "").split_floats(",")
-		c += Vector3(lo[0], lo[1], lo[2])
 	if view == "game": cam.fov = 26
 	if view in ["day", "arena"]:
 		cam.fov = rad_to_deg(2 * atan(tan(deg_to_rad(17)) * vp.size.y / 1080.0))
 		her.rotation_degrees.y = float(env("YAW", "0"))
 		c = her.position + Vector3(0, 0.9, 0)
+	# (After the game cameras' own look point, so LOOKOFF frames a body
+	# that has moved off its spot, a fall's end, under them too.)
+	if env("LOOKOFF", "") != "":
+		var lo = env("LOOKOFF", "").split_floats(",")
+		c += Vector3(lo[0], lo[1], lo[2])
 	cam.look_at_from_position(c + off / float(env("ZOOM", "1")), c)
 
 func _process(delta):

@@ -218,9 +218,6 @@ public class StoryLint
         // when he knew (Act 2's hooded buyer, "Tell her no"); her word, written in her own hand (Act 2's
         // dawn: "One short word. It was yours.", with the journal still holding it).
         "brannoc.knew_iron", "mother.word",
-        // What Chid cut on her mother's marker ("Mam.", plain, or nothing): Act 2's marker and C32,
-        // and Vonnra's "...Her name?" at C41 (the sophistication pass, 11 October).
-        "mother.cut",
         // The last night, for the town to talk about (docs/EXPERIENCE_AUDIT.md, finding 5): the
         // story's lines read them next; take each off this list as it is read.
         "arena.last.tier", "arena.last.minutes", "arena.last.day", "arena.last.killer",

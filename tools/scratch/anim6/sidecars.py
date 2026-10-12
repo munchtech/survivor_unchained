@@ -1,8 +1,8 @@
 """Copy main's untracked Godot sidecars (.import, .uid) into this worktree
 where the base file exists here and the sidecar does not."""
 import os, shutil
-A = r"C:\Users\munch\Desktop\survivorsunchained"
-B = r"C:\Users\munch\Desktop\survivorsunchained\.claude\worktrees\agent-ae2a9884e3e51609c"
+A = r"C:\Users\munch\Desktop\survivorsunchained\.claude\worktrees\agent-a8d33b2672b7be905"
+B = r"C:\Users\munch\Desktop\survivorsunchained\.claude\worktrees\agent-af8dbda3195e438e4"
 n = 0
 for top in ("godot", "public"):
     for root, dirs, files in os.walk(os.path.join(A, top)):

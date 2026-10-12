@@ -1,22 +1,25 @@
-# Classes (phase 1: systems)
+# Classes (paused after phase 1)
 
-**State (11 October, end of session 2 of about 3):** the Battle runs the classes design: the Kin rides the dash as its form, the calling arts fire as reflexes, and the Flare fills, casts (Q / right-click), clutches and burns missiles. The harness knows types, lamps and Flares. The Flare's timing and boss share are tuned and mostly in band. Next: wire the remaining ~96 phase-1 lamp rules (warden and crossings done), re-measure, fix what's out of band, then a judge. Handoff: `docs/handoff/classes.md`.
+**State (11 October, end of session 5):** paused by the owner. Phase 1 (systems) is merged. `classes/phase1b` carries the Echo fix (its wait is a quarter by night, as its echo is) and Moonfire as an arcane hit instead of a Burn (it seeded Pyre Burst chains); judged PASS WITH FIXES, fixes done, 818 tests green. Next, when resumed: phase 2 (the beat and four Flares), starting with Banked Flame in the pilot and the Road's Toll on bosses. Handoff: `docs/handoff/classes.md`.
 
 **Key decisions**
-- The art in hand is the dash form; the Kin's facets come only from lamps, while a learned form keeps ArtBook's (no double source).
-- A reflex borrows the art's wait while it runs, so the arts' own wait tricks (Rebound, Quickening, Quarry) work unchanged.
-- The Flare's own damage never refills it, and boss fill counts only other sources (it can't feed itself).
-- The fill table was tuned by the harness (CLASSES §3.2): champions and kills are capped per second, because this horde has about 40 champions a minute.
-- Flare damage follows the game's ember scaling (+8% a level), so it keeps pace with a night's build (boss share 14-23%).
-- Small lamps' rules sleep by night (only the road's lean), per §2.10. Rules stack across lamps and scope to their skill or tags.
+- The art in hand is the dash form; the Kin's facets come only from lamps.
+- A reflex borrows the art's wait while it runs.
+- The Flare's own damage never refills it; boss fill counts health lost, a gate's Break only up to a tenth of its health.
+- By night sizes are quartered, counts +1 at most, a rule's defining number in full; prices stay in full except three that follow their gift (the Echo, the Crowded Sky, the Butcher's Count) (CLASSES §2.10).
+- A lamp's effect never seeds another calling's chains by accident: Moonfire is arcane, not a Burn.
+- On-calling is measured as a fitted home term (calling + road + home x road).
 
-**Measured (482124f0, rules mostly unwired: baseline only)**
-- Flare: first 1.3-2.5 min; gap 63-116 s (casters 104-116 s, above band); 1.7-3.8 per boss; 14-23% of boss damage.
-- Types vs median: out of band at verge T4 ×1.96, roadknife T3 ×1.42, butcher T3 ×0.66, bulwark T2 ×0.68.
-- Full board vs empty: 0.63-1.24 (prices are in, gains not yet).
+**Measured** (48 seeds; CLASSES §7 "Phase 1, measured")
+- Types at T3/T4 all in band except moonweaver T4 1.38 (passed untrimmed: its empty board's 1.14; a 2% trim is below what 96 seeds resolve). Butcher 0.80/0.82.
+- Full vs empty in band; on-calling home term 0.85-1.22; Flare first 54-123 s, gap 52-81 s, 3 per boss, 15-23% of boss damage.
+
+**Open questions (for the owner, via the main session)**
+- The Bulwark's rebuke is under 1% of its night damage (a judge asked 8-15%).
+- Home adds little today (median x1.03) until phase 5's signature skills.
+- Act 1's story bosses' health raised x1.10 to x1.15 (11 October, the owner's call), so they last as long as before the Flare (CLASSES §7 Open (5)).
 
 **Notes for other areas**
-- Story: `Ev.Flare` with `Clutch`, `Battle.FlareClutches`, `Ev.Rise` and `Ev.PlayerDeath` are the countable hooks for the toll. Lamp, Flare and great-blessing names are drafts for your voice check.
-- Phase 2 (experience, VFX): `Ev.Flare` Press/Blow/End, `Battle.FlareFreeze` (0.22 s at 8%), and `Battle.FlareFreezeScale` for the setting.
-- Combat: the types' spread mostly follows each road's three signature skills in the draft; their own balance is yours.
-- UI (phase 3): `Battle.Reflexes` (`Cd`, `Full`), `FormReady`, `FlareMeter`/`FlareCharges` feed the HUD. Today's readout is plain debug (`ArtNote`).
+- Story: `Ev.Flare` with `Clutch`, `Battle.FlareClutches`, `Ev.Rise`, `Ev.PlayerDeath` are the toll's hooks. Lamp, Flare and blessing names are drafts.
+- Phase 2 (experience, VFX): `Ev.Flare` Press/Blow/End, `Battle.FlareFreeze`, `FlareFreezeScale`. Moonfire is now a violet arcane flash on the new mark bearer (credit "moonfire").
+- UI (phase 3): `Battle.Reflexes`, `FormReady`, `FlareMeter`/`FlareCharges`, `Battle.Stones` feed the HUD.

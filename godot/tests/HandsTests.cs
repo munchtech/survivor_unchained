@@ -190,25 +190,25 @@ public class HandsTests
         b.HurtPlayer(5, School.Physical, "t", null, telegraphed: true);
         Assert.Equal(10, b.FlareMeter, 3);
 
-        // 10% of health lost: +5.5; below a third, +11.
+        // 10% of health lost: +4; below a third, +8.
         b.FlareMeter = 0;
         p.Hp = b.MaxHp * 0.5;
         b.HurtPlayerRaw(b.MaxHp * 0.1, School.Physical, "t", null);
-        Assert.Equal(5.5, b.FlareMeter, 3);
+        Assert.Equal(4, b.FlareMeter, 3);
         b.FlareMeter = 0;
         p.Hp = b.MaxHp * 0.4;
         b.HurtPlayerRaw(b.MaxHp * 0.1, School.Physical, "t", null);
-        Assert.Equal(11, b.FlareMeter, 3);
+        Assert.Equal(8, b.FlareMeter, 3);
 
         // The first drop below a quarter: the ember answers (+35), once in 45 s.
         b.FlareMeter = 0;
         p.Hp = b.MaxHp * 0.3;
         b.HurtPlayerRaw(b.MaxHp * 0.1, School.Physical, "t", null);
-        Assert.Equal(11 + 35, b.FlareMeter, 3);
+        Assert.Equal(8 + 35, b.FlareMeter, 3);
         b.FlareMeter = 0;
         p.Hp = b.MaxHp * 0.3;
         b.HurtPlayerRaw(b.MaxHp * 0.1, School.Physical, "t", null);
-        Assert.Equal(11, b.FlareMeter, 3);
+        Assert.Equal(8, b.FlareMeter, 3);
     }
 
     [Fact]
