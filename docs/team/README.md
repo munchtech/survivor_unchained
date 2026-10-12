@@ -87,7 +87,7 @@ The main session keeps this current. It is the address list for SendMessage. Ret
 | Story and writing (the writer: the approved rewrite, Act 1 first) | PAUSED 12 Oct late (no lead running; Act 2's first slice WIP on story/act2@5190bf0c, unjudged, don't merge; handoff docs/handoff/story.md on that branch; 566 lines locked on integration; TOLL_SPEC ready for a code lead) | docs/team/story.md |
 | Classes design (two types per calling, skill trees, ultimates on Q / right-click) | a54ebb1323cb25841 (8th lead, 12 Oct: phase 2 merged 14dda627; next Banked Flame's reward, the judge's fixes 2-9, checks before the owner plays) | docs/design/CLASSES.md |
 | Combat, encounters, bosses, balance (paused; handoff ready at af6452e1) | — | docs/team/combat.md |
-| Animation (joints to perfection: wrists, follow-through, elbows, arms through body, sliding) | PAUSED 12 Oct late (no lead running; handoff docs/handoff/animation.md on worktree-agent-af8dbda3195e438e4@77338d02: sit_back_heels remake PASS WITH FIXES, unmerged) | docs/team/animation.md |
+| Animation (joints to perfection: wrists, follow-through, elbows, arms through body, sliding) | a53fecff72d90a3a3 (resumed 12 Oct in worktree agent-af8dbda3195e438e4: sit_back_heels fixes, get_up hand skim, then hair re-shoots) | docs/team/animation.md |
 | UI design (the HUD keystone; portraits wait on the face) | — (handoff ready) | docs/team/ui_design.md |
 | UI art (paused; handoff ready at cd0f4ab6) | — | docs/team/ui_art.md |
 | Crafting (research, design, build) (paused; handoff ready at ed429efb) | — | docs/team/crafting.md |
@@ -103,5 +103,5 @@ The main session keeps this current. It is the address list for SendMessage. Ret
 | Loot and itemisation (paused, built and merged; docs/handoff/loot.md for a successor) | — | docs/team/loot.md |
 | Creatures and models (our own boar first, then MODELS_TO_MAKE.md) | af551cacc6292152f | docs/team/creatures.md |
 | Story editor (paused after notes 02 at 435k; a fresh editor reads the next draft) | — | docs/story/EDITORIAL_LETTER.md |
-| Heroine body and outfits (now a lead of its own; was the main session's) | PAUSED 12 Oct late (no lead running; handoff docs/handoff/outfits.md on worktree-agent-a5ca10091b08dc429@4a2a2b11: judge 8 passed both designs, failed the build; fixes listed in order) | docs/team/outfits.md |
+| Heroine body and outfits (now a lead of its own; was the main session's) | ac1be1a239a28b9a9 (resumed 12 Oct in worktree agent-a5ca10091b08dc429: clasp back to 58 mm, spaulder hem, judge 9) | docs/team/outfits.md |
 | Marionette, the character app (a tool: idea to engine; ease like Meshy, quality like Maya; one-click AI-assisted fixing) | — (paused; status page is its own HANDOFF.md "Start here") | Marionette/HANDOFF.md, docs/HISTORY.md "The goal" |
