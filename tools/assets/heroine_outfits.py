@@ -1399,6 +1399,8 @@ def mirror_line(cur):
 
 
 BIND_RMIN = {}   # (a piece's name: no bend of its binding tighter than this)
+# (a piece's name: its binding faces the sheet as fitted across the roll's width, see bind_edges)
+BIND_FIT = {"ranger.corset"}
 
 
 def bind_edges(name, pos, at, tris, key, width, height, overhang, thick, sigma=0.012, stitch=False, rmin=None):
@@ -1450,6 +1452,24 @@ def bind_edges(name, pos, at, tris, key, width, height, overhang, thick, sigma=0
         cur = cur + mv
         if name in MIRROR_BIND:
             cur = mirror_line(cur)
+        if name in BIND_FIT:
+            # (its facing from the sheet itself under the roll: a plane fitted
+            # to the sheet within 6 mm of each point of the line. From the
+            # nearest face, eased along the line, it lagged 17-28 deg where the
+            # ranger's cup edge turns down under her arm, and the leather rose
+            # 1-2 mm over the roll's inner flank there: a torn edge, judge 9)
+            fit = nrm.copy()
+            for i, nb in enumerate(tree.query_ball_point(cur, 0.006)):
+                if len(nb) < 4:
+                    continue
+                q = pos[nb]
+                g = np.exp(-0.5 * (np.linalg.norm(q - cur[i], axis=1) / 0.003) ** 2)[:, None]
+                m = (q * g).sum(0) / g.sum()
+                f = np.linalg.eigh(((q - m) * g).T @ (q - m))[1][:, 0]
+                fit[i] = f if f @ nrm[i] > 0 else -f
+            for _ in range(3):
+                fit = (np.roll(fit, 1, 0) + 2 * fit + np.roll(fit, -1, 0)) / 4
+            nrm = fit / (np.linalg.norm(fit, axis=1)[:, None] + 1e-12)
         tg = np.roll(cur, -1, 0) - np.roll(cur, 1, 0)
         tg /= np.linalg.norm(tg, axis=1)[:, None] + 1e-12
         nrm = nrm - tg * (nrm * tg).sum(1)[:, None]
@@ -1458,6 +1478,9 @@ def bind_edges(name, pos, at, tris, key, width, height, overhang, thick, sigma=0
         for _ in range(8):
             bn = (np.roll(bn, 1, 0) + 2 * bn + np.roll(bn, -1, 0)) / 4
         bn = bn - tg * (bn * tg).sum(1)[:, None]
+        if name in BIND_FIT:
+            # (and square to that facing: eased along a tight turn it tilted out of the sheet's plane)
+            bn = bn - nrm * (bn * nrm).sum(1)[:, None]
         bn /= np.linalg.norm(bn, axis=1)[:, None] + 1e-12
         # Outward: away from the sheet's points near the line.
         votes = []
