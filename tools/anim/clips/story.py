@@ -35,10 +35,39 @@ def _f(curl, thumb, cascade=0.25, spread=0.0):
 RELAXED, OPEN = _f(0.28, 0.15), _f(0.05, 0.0, 0.0, 4.0)
 
 
+# The left hand resting on her hip and thigh while she lies and rises (lead 14,
+# judge 37 and its solver: planted on the ground before her chest, the hand
+# was out of reach, hung 8-11 cm over the ground, and the upper arm went
+# 64-77 mm into her breast). Keyed here (the elbow back behind her trunk);
+# the clips' contacts lay it on the thigh each frame (_hand_on_thigh_l), `u`
+# of the way from hip to knee, the wrist `off` over the thigh's line.
+HAND_ON_HIP_L = {"pos": (0.10, 0.42, 0.08), "pole": (0.5, -0.2, -1.0), "knuckles": (0.3, -0.2, 0.93)}
+HIP_REST_L = (0.3, 0.185)
+
+
+def _knee_at(rig, gpos, fr, side, foot):
+    """Where knee_clear sets the knee (the place its pole aims the solve at)."""
+    s = 1 if side == "l" else -1
+    rest = rig.prest[rig.I[f"foot_{side}"]]
+    p = np.asarray(foot.get("pos", (rest[0], 0, rest[2])), float)
+    target = np.array([p[0] + s * rig.feet_out * ("pos" in foot), rest[1] + p[1], p[2]])
+    top = gpos[fr, rig.I[f"thigh_{side}"]]
+    return (top + target) / 2 + np.asarray(knee_clear(rig, gpos, fr, side, foot)["pole"], float) / 10.0
+
+
+def _hand_on_thigh_l(rig, gpos, fr, pose, u=HIP_REST_L[0], off=HIP_REST_L[1], hip=None, knee=None):
+    """The left hand laid on her left thigh (_on_thigh, on its top), the thigh
+    as solved this frame (knee_clear's knee unless given)."""
+    hip = gpos[fr, rig.I["thigh_l"]] if hip is None else hip
+    knee = _knee_at(rig, gpos, fr, "l", pose["foot_l"]) if knee is None else knee
+    return _on_thigh(pose["hand_l"], hip, knee, 0.0, 1.0, u=u, off=(off, off))
+
+
 def _side(breath=0.0, stir=0.0):
     """Lying on her right side, a little curled: the knees drawn up, the
     left leg over the right, the right arm out under her head, the left
-    hand fallen on the ground before her chest."""
+    hand resting on her hip (put on her thigh by the clips' contacts: fallen
+    on the ground before her chest, the arm went through her breast, judge 37)."""
     return {
         "hips": {"pos": (0.0, -0.87, 0.0), "rot": (0, 8, 90)},
         "spine": (0, 14 + 2 * breath, -4), "neck": (0, 6, 16), "head": (0, 8 - 3 * stir, 14 - 6 * stir),
@@ -46,7 +75,7 @@ def _side(breath=0.0, stir=0.0):
         "foot_l": {"pos": (0.62, 0.07, 0.40), "rot": (0, 10, 88), "pole": (0, 0, 1)},
         # (Arms in character space: she lies along -X, the ground at y 0.)
         "hand_r": {"pos": (-0.90, 0.05, 0.24), "pole": (0, 0.3, 1), "knuckles": (-0.6, 0, 0.8)},
-        "hand_l": {"pos": (-0.30 + 0.02 * stir, 0.05, 0.30), "pole": (0, 1, 0.4), "knuckles": (-0.3, 0, 1)},
+        "hand_l": HAND_ON_HIP_L,
         "clav_l": (0, 8), "clav_r": (0, -4),
         "fingers_l": _f(0.28 + 0.3 * stir, 0.15 + 0.15 * stir),
         "fingers_r": RELAXED,
@@ -55,14 +84,14 @@ def _side(breath=0.0, stir=0.0):
 
 def _elbow(up=1.0, sag=0.0):
     """Propped on her right forearm, the chest lifted off the ground, the
-    left hand flat before her bearing some of it; the head hanging."""
+    left hand on her thigh; the head hanging."""
     return {
         "hips": {"pos": (0.0, -0.87, 0.0), "rot": (0, 10, 90 - 31 * up)},
         "spine": (0, 12, -6 * up), "neck": (0, 18 + 8 * sag, -6), "head": (0, 22 + 10 * sag, -10),
         "foot_r": {"pos": (0.70, -0.015, 0.30), "rot": (0, 0, 90), "pole": (0, 0.4, 1)},
         "foot_l": {"pos": (0.62, 0.07, 0.42), "rot": (0, 10, 86), "pole": (0, 0, 1)},
         "hand_r": {"pos": (-0.52, 0.05, 0.28), "pole": (-0.3, -1, -0.4), "knuckles": (-0.5, 0, 1)},
-        "hand_l": {"pos": (-0.22, 0.05, 0.40), "pole": (0.6, 1, 0), "knuckles": (-0.3, 0, 1)},
+        "hand_l": HAND_ON_HIP_L,
         "clav_l": (4, 10), "clav_r": (14, 6),
         "fingers_l": OPEN, "fingers_r": OPEN,
     }
@@ -94,20 +123,26 @@ def lie_side_wake(rig):
     keys.append((210, _elbow(0.96, 1.0), "ease"))
 
     def contacts(fr, g, p, pose):
+        # The knees kept off the ground as sit_back_heels keeps them (lead 14:
+        # left to the keys, the left knee was 7.5 cm lower at her last frame
+        # than at sit_back_heels' first), and the left hand on her thigh.
+        out = {f"foot_{s}": knee_clear(rig, p, fr, s, pose[f"foot_{s}"]) for s in "lr"}
+        out["hand_l"] = _hand_on_thigh_l(rig, p, fr, pose)
         # The right arm comes in from under her head to lie along the ground
         # under her shoulder, and she rises onto that forearm.
         # The arm sweeps along the ground from over her head (her -X) round to
         # before her, the elbow drawn in as the shoulder lifts.
         w = smoothstep_((fr - 92) / 26.0)
         if w <= 0:
-            return {}
+            return out
         toward = slerp_dir((-1.0, 0.0, 0.12), PROP_TOWARD, w)
         hand, pole = forearm_on_ground(rig.sk, p, fr, "r", toward, ground=0.035)
         keyed = pose["hand_r"]
         k = min(1.0, w * 6)
         at = np.asarray(keyed["pos"], float) * (1 - k) + hand * k
-        return {"hand_r": {**_aimed_only(keyed), "pos": tuple(at), "pole": tuple(np.asarray(keyed["pole"], float) * (1 - k) + pole * k),
-                           "knuckles": tuple(slerp_dir(keyed["knuckles"], toward, k))}}
+        out["hand_r"] = {**_aimed_only(keyed), "pos": tuple(at), "pole": tuple(np.asarray(keyed["pole"], float) * (1 - k) + pole * k),
+                         "knuckles": tuple(slerp_dir(keyed["knuckles"], toward, k))}
+        return out
 
     return contact_build("lie_side_wake", rig, keys, contacts,
                          meta={"layer": "full", "hold": True, "source": "keyed (tools/anim/clips/story.py)", "licence": "own work",
@@ -352,6 +387,10 @@ SBH_HAND_R = ({"pos": (-0.508, 0.05, 0.235), "pole": (-0.3, -1.0, -0.4), "knuckl
 SBH_LEAN = 22.0
 # The left hand onto her left thigh as it comes round (design frames: from, over).
 SBH_ONTHIGH = (54.0, 6.0)
+# How far it lifts off the thigh on the way (m), and how many degrees of her
+# lean she sits up out of while the right hand is in the air (f36-54).
+SBH_LIFT_L = 0.03
+SBH_UPRIGHT = 15.0
 # The right hand's hop to under her shoulder (clip frames from f34), and its
 # fingers let go of the ground (design frames: from, over).
 SBH_HOP = 20.0
@@ -643,7 +682,7 @@ def sit_back_heels(rig):
         # Up onto the right hand, the arm straightening under her, the left
         # hand pushing; the hips rolling under her.
         (34, merge(start, hips={"pos": (-0.02, -0.89, 0.02), "rot": (-10, 6, 40)}, spine=(4, 8, -6), neck=(2, 10, -4), head=(2, 12, -6),
-                   hand_l={"pos": (-0.12, 0.05, 0.38), "pole": (0.6, 1, 0), "knuckles": (-0.2, 0, 1)}), "auto"),
+                   hand_l=HAND_ON_HIP_L), "auto"),
         # Sat up sideways on the right hip, the legs round to her left.
         (62, z, "auto"),
         # Leaning forward and onto the right hand, gathering to rise.
@@ -674,6 +713,14 @@ def sit_back_heels(rig):
         out = {f"foot_{s}": knee_clear(rig, p, fr, s, pose[f"foot_{s}"]) for s in "lr" if f"foot_{s}" in pose}
         # (Below, frames are design frames: _SBH_SLOW.)
         u = _sbh_u(fr)
+        # The left hand on her thigh from the first frame (HAND_ON_HIP_L),
+        # lifted a little and set down again mid-thigh as she sits up (f34-54),
+        # where the side-sit has it (below).
+        if u < 60:
+            t = smoothstep_((u - 34) / 20.0)
+            on_l = {"u": HIP_REST_L[0] + (0.55 - HIP_REST_L[0]) * t, "off": HIP_REST_L[1] + SBH_LIFT_L * math.sin(math.pi * t)}
+            if u <= 34:
+                out["hand_l"] = _hand_on_thigh_l(rig, p, fr, pose, **on_l)
         # From her side to her heels the legs go as laid by hand.
         if 34 < u < 96:
             if not plan:
@@ -692,6 +739,8 @@ def sit_back_heels(rig):
                 out["hips"] = plan["hips_at"](u)
             legs = {s: _sbh_leg(rig, plan, p, u, s) for s in "lr"}
             out.update({f"foot_{s}": legs[s][0] for s in "lr"})
+            if u < 60:
+                out["hand_l"] = _hand_on_thigh_l(rig, p, fr, pose, hip=legs["l"][1], knee=legs["l"][2], **on_l)
             # The left hand on her left thigh from the side-sit, pressing on
             # it as she comes up, then at its outside while the thigh stands
             # (judge 23: left to the keys it sank into the thigh), settling
@@ -702,7 +751,7 @@ def sit_back_heels(rig):
                 # Coming to rest palm up as the heels key has it (judge 23 round
                 # b: turned over from palm down in the last frames, the
                 # fingers swung 20 cm a frame).
-                out["hand_l"] = _on_thigh(pose["hand_l"], legs["l"][1], legs["l"][2], free, w, settle=smoothstep_((u - 72) / 22.0))
+                out["hand_l"] = _on_thigh(out.get("hand_l", pose["hand_l"]), legs["l"][1], legs["l"][2], free, w, settle=smoothstep_((u - 72) / 22.0))
                 # Flatter on the thigh, the fingers not curled into it.
                 fl, k = pose["fingers_l"], w * (1.0 - free)
                 if isinstance(fl, dict):
@@ -728,8 +777,12 @@ def sit_back_heels(rig):
         if 30 <= u < 96:
             if u < 84:
                 lean = smoothstep_((u - 34 - (SBH_HOP - 16.0)) / 14.0) * (1.0 - smoothstep_((u - 64) / 10.0))
-                out["spine"] = tuple(np.asarray(pose["spine"], float) + (0.0, 0.0, SBH_LEAN * lean))
-                out["neck"] = tuple(np.asarray(pose["neck"], float) - (0.0, 0.0, 0.35 * SBH_LEAN * lean))
+                # Sat up nearer upright while neither hand bears her (lead 14,
+                # judge 37: tilted 30 degrees over the hopping hand, nothing held
+                # her), and over again onto it as it lands.
+                up_ = SBH_UPRIGHT * math.sin(math.pi * min(1.0, max(0.0, (u - 36) / 18.0))) ** 2
+                out["spine"] = tuple(np.asarray(pose["spine"], float) + (0.0, 0.0, SBH_LEAN * lean - up_))
+                out["neck"] = tuple(np.asarray(pose["neck"], float) - (0.0, 0.0, 0.35 * (SBH_LEAN * lean - up_)))
             keyed = pose["hand_r"]
             # (Pressed flat as the weight comes onto it.)
             first, under = {**SBH_HAND_R[0], "plant": smoothstep_((fr - 24) / 10.0)}, {**SBH_HAND_R[1], "plant": 1.0}
