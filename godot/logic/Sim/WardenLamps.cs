@@ -113,6 +113,8 @@ public sealed partial class Battle
         {
             double dd = d == 0 ? 1 : d;
             double m = e.Elite || e.Boss ? 1 + l.Size("rebuke.champions", "more") : 1;
+            // A boss takes a share: the wall breaks the crowd; against a lord of the night it mustn't rival the Flare.
+            if (e.Boss) m *= l.Full("shield_arm", "boss", 1);
             HitEnemy(e, dmg * m, School.Holy, [Tag.Holy, Tag.Area, Tag.Shield], new HitOpts { Knockback = 1.2, DirX = (e.X - p.X) / dd, DirZ = (e.Z - p.Z) / dd, NoProcs = true, Credit = "rebuke" });
         });
     }

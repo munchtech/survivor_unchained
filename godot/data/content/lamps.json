@@ -1514,7 +1514,7 @@
    "feeds": [
     "oathblade"
    ],
-   "text": "Your shield turns one blow in seven. Every blow that reaches you, turned or not, lays a stone; at six, the wall answers with a rebuke of holy light 8 m all around you.",
+   "text": "Your shield turns one blow in seven. Every blow that reaches you, turned or not, lays a stone; at six, the wall answers with a rebuke of holy light 8 m all around you (a boss takes half).",
    "effects": [
     {
      "do": "rule",
@@ -1526,7 +1526,8 @@
       "radius": 8,
       "lull": 6,
       "rebuke": 10,
-      "per_level": 0.08
+      "per_level": 0.08,
+      "boss": 0.5
      }
     }
    ]

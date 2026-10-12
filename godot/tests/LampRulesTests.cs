@@ -280,6 +280,30 @@ public sealed class LampRulesTests
         if (near != null) Assert.True(w.DamageBy.GetValueOrDefault("rebuke") > 0);
     }
 
+    [Fact]
+    public void A_boss_takes_half_a_rebuke()
+    {
+        double Took(double boss)
+        {
+            var b = BattleTests.Arena(3);
+            b.Lamps = new LampLoadout();
+            b.Lamps.Add(Rule("shield_arm", ("block", 0.0), ("stones", 6), ("struck", 1), ("radius", 8), ("rebuke", 10), ("per_level", 0.08), ("boss", boss)));
+            var e = b.SpawnEnemy("risen", b.Player.X + 2, b.Player.Z)!;
+            e.Boss = e.Elite = true;
+            e.MaxHp = e.Hp = 1e12;
+            e.AttackT = e.RangedT = 99;
+            for (int i = 0; i < 30; i++) b.Tick(0.1, 0, 0); // risen from the ground
+            int was = b.Rebukes, need = 6 - b.Stones;
+            for (int i = 0; i < need; i++) { b.Player.Iframes = 0; b.HurtPlayer(1, School.Physical, "test", null); }
+            Assert.Equal(was + 1, b.Rebukes);
+            return b.BossDamageBy.GetValueOrDefault("rebuke");
+        }
+        double whole = Took(1), half = Took(0.5);
+        Assert.True(whole > 0);
+        Assert.Equal(0.5, half / whole, 3);
+        Assert.Equal(0.5, Lamps.Get("bulwark.shield_arm").Effects[0].Arg("boss", 1), 6);
+    }
+
     static double Dist(Enemy e, Battle b) => System.Math.Sqrt((e.X - b.Player.X) * (e.X - b.Player.X) + (e.Z - b.Player.Z) * (e.Z - b.Player.Z));
 
     [Fact]
