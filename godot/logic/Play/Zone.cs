@@ -323,7 +323,7 @@ public abstract class ZoneRuntime
     public virtual string? Region => null;
     public abstract bool Combat { get; }
     /// <summary>Ground the town's walkers keep off (Folk.Clear), set by the close view of her.</summary>
-    public (double X, double Z, double R)? KeepClear;
+    public (double X, double Z, double Dx, double Dz)? KeepClear;
     /// <summary>The camera's pitch (degrees) and distance here, if not the road's own.</summary>
     public virtual (double Pitch, double Distance)? Camera => null;
     /// <summary>The ember burns here (it is the night's: the prologue, the arenas).</summary>

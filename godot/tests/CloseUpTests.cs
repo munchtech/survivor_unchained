@@ -169,4 +169,20 @@ public class CloseUpTests
         far.Disposition = Disposition.Neutral;
         Assert.False(CloseUp.Threat(b));
     }
+
+    [Fact]
+    public void WalkersKeepOutOfTheViewBehindHer()
+    {
+        // She stands at the origin, the camera south of her looking north (-z).
+        var c = (0.0, 0.0, 0.0, -1.0);
+        // Right behind her head, 8 m back: pushed sideways, by the nearer side.
+        var (x, _) = Folk.OutOfView(c, 0.3, -8);
+        Assert.True(x > 0.5);
+        Assert.True(Folk.OutOfView(c, -0.3, -8).X < -0.5);
+        // At her side: pushed off.
+        Assert.True(Folk.OutOfView(c, 2, 0).X > 0.5);
+        // Well clear of the wedge, or in front of the camera's view behind her: left alone.
+        Assert.Equal((0.0, 0.0), Folk.OutOfView(c, 6, -8));
+        Assert.Equal((0.0, 0.0), Folk.OutOfView(c, 0, 30));
+    }
 }

@@ -71,7 +71,7 @@ public partial class Game
         hud.Calm(!held && closeUp.Idling && near > 0.15f, dt);
         scene.Voices.Away = !held && (closeUp.Idling || target >= 0.5f || near >= 0.5f);
         if (!held && near > 0.3f && p != null)
-            zone.KeepClear = (p.X - Mathf.Sin(cam.Yaw) * 3.0, p.Z - Mathf.Cos(cam.Yaw) * 3.0, 3.2);
+            zone.KeepClear = (p.X, p.Z, -Mathf.Sin(cam.Yaw), -Mathf.Cos(cam.Yaw));
         else zone.KeepClear = null;
     }
 
