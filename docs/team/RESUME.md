@@ -16,6 +16,7 @@ The owner asked for a wind-down: classes stops after the Echo fix, the Act 2 wri
 ### Next session: start small, then wait for "go"
 1. Start one su-lead-sonnet lead (own worktree, from integration) to raise Act 1's story-boss health (owner's "yes", 11 October): bring the Roost, Vault, Hollow and Dig kill times back to their pre-Flare values for both the skilled and the plain pilot, with no rise in deaths, measured with the classes harness (CLASSES §7, risk 4; docs/handoff/classes.md). Tests green, then ask to merge. No max judge needed: the numbers are the check.
 2. Merge it when it reports, remove its worktree, and sweep.
+   - **Done (12 October, 69a94126, 819 tests):** health ×1.15 Roost, ×1.14 Vault, ×1.10 Hollow, ×1.13 Dig; plain pilot back to pre-Flare kill times (0-2%), deft 1-5% short (Dig the most). Nights lost 0.86% before the Flare, 1.12% now (1.8 sigma, noise, leans up); tier 1 measured only. Worktree removed; sweep: five paused worktrees kept on purpose, none over 48 h.
 3. Start nothing else until the owner says "go". Then resume areas from their handoffs, 3 to 5 at a time.
 
 ### Stopped (filled in as each lead stops)
