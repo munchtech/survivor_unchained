@@ -206,7 +206,20 @@ public class FlareStagedTests
         var c = Carrying("the_roads_toll");
         var foe = Foe(c, 2, 0, hp: 1e9);
         Cast(c);
-        Assert.Equal("flare", foe.Status[StatusKind.Poison]?.From);
+        Assert.True(foe.Status.Has(StatusKind.Poison));
+        double direct = c.DamageBy["flare"];
+        Run(c, 6);
+        // Its poison is the Flare's: half its cuts again, over 4 s.
+        Assert.InRange(c.DamageBy["flare"] / direct, 1.3, 1.7);
+
+        // Her own poison stack keeps its strength and its owner: the cut doesn't make it the Flare's.
+        var d = Carrying("the_roads_toll");
+        var bitten = Foe(d, 2, 0, hp: 1e9);
+        d.ApplyStatus(bitten, new StatusPayload(StatusKind.Poison, 1, 1, 4), 10, from: "venom");
+        double power = bitten.Status[StatusKind.Poison]!.Power;
+        Cast(d);
+        Assert.Equal(power, bitten.Status[StatusKind.Poison]!.Power, 6);
+        Assert.Equal("venom", bitten.Status[StatusKind.Poison]!.From);
     }
 
     [Fact]

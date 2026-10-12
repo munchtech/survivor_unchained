@@ -243,6 +243,7 @@ public sealed partial class Battle
     void TickFlare(double dt)
     {
         var p = Player;
+        TickVenom();
         if (flareMendT > 0)
         {
             double step = Math.Min(dt, flareMendT);

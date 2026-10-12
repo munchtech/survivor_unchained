@@ -176,8 +176,8 @@ public sealed partial class Battle
     /* -------------------------------------------------------- The Road's Toll -- */
 
     readonly List<int> tollPlan = new();
-    /// <summary>Each boss cut's share of a blow: the boss's cuts carry the whole Flare between them (12 / the boss's
-    /// cuts), so what a boss takes doesn't swing threefold with how many things stand round it.</summary>
+    /// <summary>Each boss cut's share of a blow: the boss's cuts carry a fixed worth between them (data "bossWorth"
+    /// blows), so what a boss takes doesn't swing threefold with how many things stand round it.</summary>
     double tollBossShare = 1;
 
     /// <summary>A boss the cuts can hurt: not shut against all harm, nor pinned at its phase's gate with its Break
@@ -208,12 +208,52 @@ public sealed partial class Battle
             double dealt = FlareHit(e, bossCut ? tollBossShare : 1, f.School, 0, p.X, p.Z);
             if (e.Alive && e.State != EnemyState.Dying)
             {
-                ApplyStatus(e, new StatusPayload(StatusKind.Poison, 1, f.Arg("poison", 0.5), f.Arg("poisonSeconds", 4)), dealt, from: "flare");
+                TollVenom(e, dealt, f);
                 double below = last && FlareMod("toll.last_cut") ? f.Arg("lastCut", 0.4) : f.Arg("execute", 0.25);
                 if (!e.Boss && e.Alive && e.State != EnemyState.Dying && e.Hp < e.MaxHp * below) KillEnemy(e, true, null);
             }
         }
         FlareBlowEvent(f, "cut", last, e?.X ?? p.X, e?.Z ?? p.Z, e, 0);
+    }
+
+    /// <summary>The cut's poison: half its damage again over 4 s, the Flare's own. It marks the thing poisoned (a stack at
+    /// the poison it already carries) but never lifts her poison's strength: a stack of hers ticks at its strongest
+    /// poison's rate, so a cut's rate on it made her whole stack the Flare's (70% of a boss at T4, 12 October).</summary>
+    void TollVenom(Enemy e, double dealt, FlareDef f)
+    {
+        ApplyStatus(e, new StatusPayload(StatusKind.Poison, 1, 0, f.Arg("poisonSeconds", 4)), 0, from: "flare");
+        double sd = Stats.Get(Stat.StatusDamage) * Stats.Get(Stat.StatusDamageOf(StatusKind.Poison));
+        double ticks = Math.Max(1, Math.Round(f.Arg("poisonSeconds", 4) / 0.5));
+        if (dealt > 0) venom.Add(new TollPoison(e.Id, dealt * f.Arg("poison", 0.5) * sd / ticks, (int)ticks, Time + 0.5));
+    }
+
+    sealed class TollPoison(int target, double tick, int left, double next)
+    {
+        public readonly int Target = target;
+        public readonly double Tick = tick;
+        public int Left = left;
+        public double Next = next;
+    }
+    readonly List<TollPoison> venom = new();
+
+    /// <summary>The Toll's poisons tick every half second as the Flare's, after the Flare has ended too.</summary>
+    void TickVenom()
+    {
+        if (venom.Count == 0) return;
+        var was = credit;
+        credit = "flare";
+        for (int i = venom.Count - 1; i >= 0; i--)
+        {
+            var v = venom[i];
+            var e = v.Target >= 0 && v.Target < Enemies.Items.Length ? Enemies.Items[v.Target] : null;
+            if (e == null || !e.Alive || e.State == EnemyState.Dying) { venom.RemoveAt(i); continue; }
+            if (Time < v.Next) continue;
+            v.Next += 0.5;
+            v.Left--;
+            HitEnemy(e, v.Tick, School.Nature, DotPoison, new HitOpts { Dot = true, NoCrit = true, NoProcs = true, Depth = 2, Credit = "flare" });
+            if (v.Left <= 0) venom.RemoveAt(i);
+        }
+        credit = was;
     }
 
     void PlanToll(FlareDef f, int n)
@@ -231,7 +271,8 @@ public sealed partial class Battle
             // Fewer things than cuts: they go round again, the last still on the strongest.
             tollPlan.Add(k == 0 ? -1 : picks[((k - 1 + (i - (n - bossCuts - 1))) % k + k) % k].Id);
         for (int i = 0; i < bossCuts; i++) tollPlan.Add(boss!.Id);
-        tollBossShare = bossCuts > 0 ? (double)n / bossCuts : 1;
+        // The boss's cuts carry a fixed worth between them ("bossWorth" blows, grown with Toll Doubled), however many.
+        tollBossShare = bossCuts > 0 ? f.Arg("bossWorth", f.Blows) * n / Math.Max(1.0, f.Blows) / bossCuts : 1;
     }
 
     /* --------------------------------------------------------- Butcher's Hour -- */
