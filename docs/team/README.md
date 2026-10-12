@@ -87,7 +87,7 @@ The main session keeps this current. It is the address list for SendMessage. Ret
 | Story and writing (the writer: the approved rewrite, Act 1 first) | PAUSED 12 Oct late (no lead running; Act 2's first slice WIP on story/act2@5190bf0c, unjudged, don't merge; handoff docs/handoff/story.md on that branch; 566 lines locked on integration; TOLL_SPEC ready for a code lead) | docs/team/story.md |
 | Classes design (two types per calling, skill trees, ultimates on Q / right-click) | a54ebb1323cb25841 (8th lead, 12 Oct: phase 2 merged 14dda627; next Banked Flame's reward, the judge's fixes 2-9, checks before the owner plays) | docs/design/CLASSES.md |
 | Combat, encounters, bosses, balance (paused; handoff ready at af6452e1) | — | docs/team/combat.md |
-| Animation (joints to perfection: wrists, follow-through, elbows, arms through body, sliding) | a53fecff72d90a3a3 (resumed 12 Oct in worktree agent-af8dbda3195e438e4: sit_back_heels fixes, get_up hand skim, then hair re-shoots) | docs/team/animation.md |
+| Animation (joints to perfection: wrists, follow-through, elbows, arms through body, sliding) | a653112d26ffb847c (successor, 12 Oct, worktree agent-af8dbda3195e438e4 @ 1240e59a: sit_back_heels G4 and wrists, judge, solver-change diff, then hair re-shoots and get_up hand skim) | docs/team/animation.md |
 | UI design (the HUD keystone; portraits wait on the face) | — (handoff ready) | docs/team/ui_design.md |
 | UI art (paused; handoff ready at cd0f4ab6) | — | docs/team/ui_art.md |
 | Crafting (research, design, build) (paused; handoff ready at ed429efb) | — | docs/team/crafting.md |
