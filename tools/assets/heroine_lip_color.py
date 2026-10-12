@@ -14,6 +14,7 @@ corners of her mouth, where the border meets the mouth line, the band thins to n
 Run on paints fresh from the chain (heroine_face.py's lay, heroine_jaw_cut.py, heroine_ears.py), then this. A rerun
 finds the red's top at the border and changes nothing more.
 """
+import json
 import os
 import sys
 
@@ -71,11 +72,11 @@ def border(m, t):
     return tt
 
 
-def fields(F, m, t, paint_front, face=""):
+def fields(F, m, t, paint_front, face="", t_new=None):
     """Per front-grid pixel the band's weight W and its target colour (linear, with her lower lip's vertical lines),
     and the paint's smoothed luminance (each texel keeps its own fine detail against it)."""
     e = hl.red_top(paint_front, m, t)
-    tt = border(m, t)
+    tt = border(m, t if t_new is None else t_new)
     ok = ~np.isnan(tt) & ~np.isnan(m)
     x = np.arange(len(m))
     ok_e = ok & ~np.isnan(e)
@@ -176,19 +177,37 @@ def main():
         i = args.index("--to")
         to = args[i + 1]
         del args[i:i + 2]
+    border_mode = "sculpt"
+    if "--border" in args:
+        i = args.index("--border")
+        border_mode = args[i + 1]
+        del args[i:i + 2]
     pp = hl.paints()
     faces = args or sorted(pp)
-    P, UV, T = hl.mesh()
-    F = hl.front(P, UV, T)
     ao = np.asarray(Image.open(os.path.join(hl.TEX, "heroine_ao.png")).convert("RGBA")).astype(np.float64)[..., 0] / 255
-    m, t, _, _ = hl.lines(F, ao)
-    G = None
+    if border_mode == "ao":
+        P, UV, TRI = hl.mesh()
+    else:
+        import heroine_lipsculpt as ls
+        js, binc, chunks, hm, hp, names, P0, N0, UV0, T0 = ls.head(hl.GLB)
+        UV, TRI = UV0.astype(np.float64), T0.astype(np.int64).reshape(-1, 3)
+        bj = json.load(open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "heroine_face", "lip_borders.json")))
+    cache = {}
     for f in faces:
+        if border_mode != "ao":
+            if f not in bj:
+                print("LIPCOLOR %s: not in lip_borders.json, skipped" % f)
+                continue
+            P = ls.shaped(js, binc, hp, names, P0, f).astype(np.float64)
         src = os.path.join(hl.TEX, pp[f])
         img = np.asarray(Image.open(src).convert("RGB")).astype(np.float64)
         n = img.shape[0]
-        if G is None or G.shape[0] != n:
-            G = hl.in_uv(P, UV, T, n, None)
+        key = (n, "ao") if border_mode == "ao" else (n, f)
+        if key not in cache:
+            cache.clear()
+            F = hl.front(P, UV, TRI)
+            m, t, _, _ = hl.lines(F, ao)
+            G = hl.in_uv(P, UV, TRI, n, None)
             gx, gy, gz = G[..., 0], G[..., 1], G[..., 2]
             has = ~np.isnan(gx)
             rr, cc = hl.row(np.nan_to_num(gy)), hl.col(np.nan_to_num(gx))
@@ -197,8 +216,17 @@ def main():
             front_most = np.abs(zf - gz[has]) < 0.001
             idx = tuple(a[front_most] for a in np.where(has))
             r_s, c_s = rr[has][front_most], cc[has][front_most]
+            cache[key] = 1
+        t_new = None
+        if border_mode != "ao":
+            e = bj[f]
+            U = np.array(bj["u"])
+            xs = hl.X0 + (np.arange(len(m)) + 0.5) * hl.D
+            uu = (1000 * xs - e["cx_mm"]) / e["w_mm"]
+            t_new = (np.interp(uu, U, e["slit_mm"]) + np.interp(uu, U, e["crease"]) * e["w_mm"]) / 1000
+            t_new[np.abs(uu) > 0.35] = np.nan
         pf = hl.at_uv(img, np.nan_to_num(F[..., 0]), np.nan_to_num(F[..., 1]))
-        W, T, Sm, tt, ee, lo, up = fields(F, m, t, pf, f)
+        W, T, Sm, tt, ee, lo, up = fields(F, m, t, pf, f, t_new)
         w = hl.sample(W, r_s, c_s)
         Tt = np.stack([hl.sample(T[..., k], r_s, c_s) for k in range(3)], -1)
         L = lin(img[idx])
@@ -210,11 +238,14 @@ def main():
         mid = len(m) // 2
         po = hl.at_uv(out, np.nan_to_num(F[..., 0]), np.nan_to_num(F[..., 1]))
         band = W > 0.6
+        e0 = hl.red_top(pf, m, t)
+        g_ = ~np.isnan(e0)
+        hband = (tt[mid] - np.interp(mid, np.where(g_)[0], e0[g_])) * 1000
         print("LIPCOLOR %-9s texels %6d  gap mid %.1f mm  | lum/redness: lower lip %.3f/%.0f  upper red %.3f/%.0f  "
-              "band was %.3f/%.0f  now %.3f/%.0f  | seam step was %.3f now %.3f -> %s" % (
+              "band was %.3f/%.0f  now %.3f/%.0f  | seam step was %.3f now %.3f | band mid %.1f mm -> %s" % (
                   f, int((w > 0.05).sum()), (tt[mid] - ee[mid]) * 1000,
                   _lum(pf[lo]), _rdn(pf[lo]), _lum(pf[up]), _rdn(pf[up]), _lum(pf[band]), _rdn(pf[band]),
-                  _lum(po[band]), _rdn(po[band]), _seam(pf, m, tt, ee), _seam(po, m, tt, ee), dst))
+                  _lum(po[band]), _rdn(po[band]), _seam(pf, m, tt, ee), _seam(po, m, tt, ee), hband, dst))
 
 
 def _seam(img, m, tt, ee):
