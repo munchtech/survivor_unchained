@@ -214,6 +214,9 @@ BORDERS = os.path.join(os.path.dirname(os.path.abspath(__file__)), "heroine_face
 LAYING = {"fey": 0.158 / 0.135, "moonlit": 0.163 / 0.153}
 # (round two, judge j8b: per face over its laying portrait. Fey read 25-35% over _37, Wildling ~15% over, Vixen's
 #  peaks high, Sunborn ~20% under _23's full dark lip; the paint now follows this curve itself, not the crease)
+# (the faces that ship it: judge j8c, 12 Oct: these five beat today in every view; the rest keep today's lip, so
+#  her head's base (own) is left as it is and only these keys change. HEROINE_LIPSCULPT_FACES=a,b overrides.)
+SHIP = tuple(f for f in os.environ.get("HEROINE_LIPSCULPT_FACES", "moonlit,saffron,wildling,hardwon,fey").split(",") if f)
 SIZE = {"fey": 0.78, "vixen": 0.94, "wildling": 0.9, "sunborn": 1.12}
 # (her upper lip's height eased to nothing at her mouth's corners (|u| 0.5) from TAPER_U0, a quarter cosine: one
 #  smooth curve corner-peak-bow-peak-corner, like every portrait; j8b: the red held its height out to the corners,
@@ -452,8 +455,8 @@ def lip_sculpt(js, binc, chunks, hm, hp):
     _, inv = np.unique(np.round(P / 1e-6).astype(np.int64), axis=0, return_inverse=True)
     inv = inv.ravel()
     n = inv.max() + 1
-    ch = changes(js, binc, hp, names, P, UV, T, inv=inv)
-    d_own = ch["own"][0]
+    ch = changes(js, binc, hp, names, P, UV, T, faces=SHIP, inv=inv)
+    d_own = ch["own"][0] if "own" in ch else np.zeros(len(P))
     P2 = P.copy()
     P2[:, 2] += d_own
     turn0 = _welded_mean(_vertex_normals(P2, T) - _vertex_normals(P, T), inv, n)
@@ -483,7 +486,7 @@ def lip_sculpt(js, binc, chunks, hm, hp):
                 dn2[rows] = a / np.linalg.norm(a, axis=1)[:, None] - N2[rows]
                 hs._set(js, chunks, t["NORMAL"], dn2)
                 keys_turned += 1
-    hm.setdefault("extras", {})["lip_sculpt"] = "ls5"
+    hm.setdefault("extras", {})["lip_sculpt"] = "ls5:" + ",".join(SHIP)
     print("LIPSCULPT: her upper lip remapped on %d faces (own's base by up to %.2f mm; keys %s), %d keys' normals "
           "turned" % (len(ch), np.abs(d_own).max() * 1000, ", ".join(keys_moved), keys_turned))
     return ch
