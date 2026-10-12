@@ -159,6 +159,12 @@ public sealed partial class Battle
 
     /* ----------------------------------------------------------- the cast -- */
 
+    /// <summary>What the press adds to a boss's stagger gauge, as a share of the 0-1 gauge (AddStagger): 0.15 is a seventh
+    /// of a stagger, never one outright. Until 12 October it was 15, so every press staggered a boss for 3 s.</summary>
+    public const double PressStaggerBoss = 0.15;
+    /// <summary>The same for a champion (AddStagger only fills a boss's gauge today).</summary>
+    public const double PressStaggerOther = 0.3;
+
     /// <summary>Q / right-click: the Flare, when the meter is full.</summary>
     public bool UseFlare(double dirX, double dirZ)
     {
@@ -198,7 +204,7 @@ public sealed partial class Battle
         foreach (var pr in Projectiles.Items)
             if (pr.Alive && pr.Owner == Side.Enemy && Dist(pr.X, pr.Z, p.X, p.Z) < FlareBurn) ExpireProjectile(pr);
         // A boss's channel breaks and it staggers a little; never stunned outright.
-        ForEachHostileInRadius(p.X, p.Z, flareReach, (e, _) => { if (e.Boss || e.Elite) { Interrupt(e); AddStagger(e, e.Boss ? 15 : 30); } });
+        ForEachHostileInRadius(p.X, p.Z, flareReach, (e, _) => { if (e.Boss || e.Elite) { Interrupt(e); AddStagger(e, e.Boss ? PressStaggerBoss : PressStaggerOther); } });
         if (flareClutch)
         {
             FlareClutches++;
