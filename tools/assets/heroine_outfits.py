@@ -1418,6 +1418,7 @@ def bind_edges(name, pos, at, tris, key, width, height, overhang, thick, sigma=0
     pos = pos.copy()
     moved = np.zeros(len(pos), bool)
     bound = 0
+    planes = []
     for k, loop in enumerate(loops):
         lp = pos[loop]
         seg = np.linalg.norm(np.diff(np.vstack([lp, lp[:1]]), axis=0), axis=1)
@@ -1513,6 +1514,8 @@ def bind_edges(name, pos, at, tris, key, width, height, overhang, thick, sigma=0
         moved |= fix
         beads.append(tube(f"{name}_bind{k}" if k else f"{name}_bind", cur, nrm, outward, key, width, height, overhang, thick,
                           pos, at[:, 3:3 + NB]))
+        if name in BIND_FIT:
+            planes.append((cur.copy(), nrm.copy(), outward.copy()))
         if stitch:
             # (sewn through the binding, along its inner shoulder)
             c0 = cur + outward * (overhang - width / 2) + nrm * (thick / 2)
@@ -1528,6 +1531,21 @@ def bind_edges(name, pos, at, tris, key, width, height, overhang, thick, sigma=0
         d_ = 0.5 * (A @ pos - pos)
         d_ -= nor_e * (d_ * nor_e).sum(1)[:, None]
         pos = np.where(near[:, None], pos + d_, pos)
+    # (BIND_FIT: the sheet under and just inside its roll laid in the roll's
+    # own plane, fully to BF_IN in from the edge and faded out by BF_OUT: the
+    # leather rose 17 deg from 2.5 mm in and lay over the roll's inner flank,
+    # so the roll showed 0.5 mm and the edge read torn, judge 9, solver E)
+    BF_IN, BF_OUT = (float(v) for v in os.environ.get("BIND_FLAT", "0.0045,0.0105").split(","))
+    for cur, nrm, outward in planes:
+        dn, jn = cKDTree(cur).query(pos)
+        inw = -((pos - cur[jn]) * outward[jn]).sum(1)       # (how far in from the edge)
+        sel = (dn < BF_OUT + 0.002) & (inw > -0.001)
+        t_ = np.clip((inw[sel] - BF_IN) / (BF_OUT - BF_IN), 0, 1)
+        w_ = 1 - t_ * t_ * (3 - 2 * t_)
+        h_ = ((pos[sel] - cur[jn[sel]]) * nrm[jn[sel]]).sum(1)
+        pos[sel] -= nrm[jn[sel]] * (w_ * h_)[:, None]
+        if len(h_):
+            print("BINDFLAT %s: %d points laid in the roll's plane, off it by up to %.2f mm before" % (name, sel.sum(), np.abs(h_).max() * 1000))
     print("BOUND", name, bound, "of", len(loops), "edge loops")
     return pos, beads
 
@@ -4787,21 +4805,26 @@ def ranger_spaulder():
         # with her skin at its notch, judge 8. The change from a band's row to
         # her skin's is made under the band, over TRANS, hidden by it)
         tris = TRIS_L[0]
-        hp, hw = [], []
+        hp, hw, hk = [], [], []
         for lp in edge_loops(tris):
             lp = np.asarray(lp)
             w_ = np.asarray(wt, float)[lp]
             for _ in range(30):
                 w_ = (np.roll(w_, 1, 0) + 2 * w_ + np.roll(w_, -1, 0)) / 4
-            nk_ = (pl_frame(pos[lp], F_)[0] < S_MED + NS) & (past[0][lp] > NOFF) & (own[lp] < 0)
-            keep = ((past[0][lp] > FAR_W[0]) | nk_) & (past[1:, lp].min(0) > STRIP + 0.004)
+            # (soft at the neck end too: a hard stop there ended the strip
+            # abruptly and the leather creased from the binding's corner, A5)
+            kw_ = np.maximum((past[0][lp] > FAR_W[0]).astype(float), nkw(pos[lp], own[lp], past[:, lp])) \
+                * (past[1:, lp].min(0) > STRIP + 0.004)
+            keep = kw_ > 0
             hp.append(lp[keep])
             hw.append(w_[keep])
-        hp, hw = np.concatenate(hp), np.vstack(hw)
+            hk.append(kw_[keep])
+        hp, hw, hk = np.concatenate(hp), np.vstack(hw), np.concatenate(hk)
         if len(hp):
             d_e, j_e = cKDTree(pos[hp]).query(pos)
             strip = (d_e < STRIP) & (own < 0)   # (never under a plate: the neck's strip reaches the cap)
-            vals[strip] = hw[j_e[strip]]
+            k_ = hk[j_e[strip]][:, None]
+            vals[strip] = (1 - k_) * vals[strip] + k_ * hw[j_e[strip]]
             known |= strip
             known &= ~((own >= 1) & ~strip & (d_e < STRIP + TRANS))
             print("SPAULDER hem strip on its edge's weights at %d points, eased from the bands' rows at %d" % (
