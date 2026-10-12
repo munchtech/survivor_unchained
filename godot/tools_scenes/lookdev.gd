@@ -192,6 +192,9 @@ func _init():
 			for n in L.get_animation_list():
 				if not lib.has_animation(n): lib.add_animation(n, L.get_animation(n))
 		ap.add_animation_library("", lib)
+		# (His own library as the game plays it, OwnClips.Him: "him/idle_warden" and so on.)
+		if who == "hero" and ResourceLoader.exists("res://art/anim/hero.res"):
+			ap.add_animation_library("him", load("res://art/anim/hero.res"))
 		ap.root_node = ".."
 		ap.play(clips[i])
 		players.append(ap)

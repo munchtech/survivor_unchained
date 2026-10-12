@@ -1,30 +1,45 @@
 # Male hero: status
 
-Agent ab82cbe99e2937ddd, branch `worktree-agent-ab82cbe99e2937ddd` (took over from ae2de192cce8298ca).
+Lead ac39445bca5508eaf (12 October), branch `worktree-agent-ac39445bca5508eaf`. Predecessors: ab82cbe99e2937ddd, ae2de192cce8298ca.
 
-## Current state: his current body stays, polished
-- **Legal has cleared both bodies to stay.** The owner confirmed TRELLIS 2 and Krea 2 Turbo, both run locally. The MakeHuman rebuild below is a fallback only.
-- **His new `hero.glb` is committed** (sheets: `docs/hero_male/face4.jpg`, `body4.jpg`). It beats e7709bd in every view:
-  - one skin tone from his scalp to his chest, with no seam at his nape or under his jaw;
-  - his Krea face no longer olive or green-cast;
-  - his skull rounded;
-  - his ears clean;
-  - the white collarbone lines and blotches gone;
-  - his skin matte, with roughness 0.62, sheen 0.3 and extra roughness edge on (`People.HisSkin`, the shader's new `edge_rough`).
-- **Still only behind `--body hero`** in the game, until his outfits exist. His own `him/` clips play (merged from animation).
-- **`People.HisShadow`** wires his stubble (scalp and beard ground) and a brow dye, from `head_tex/hero_shadow.png`. The brow dye is off: his painted brows have no hairs, so a dyed brow reads as a smudge of colour.
+## The plan (12 October): the heroine's lessons, a straight route
+The owner: "Begin work on Hero, using the lessons we learned making Heroine to hopefully do it in a fraction of the time and effort and tokens", and (12 Oct) "you can totally make a new one from scratch if ours is lame. but remember sex appeal. muscular defined, attractive". The bar is unchanged; the saving comes from reuse, never from quality.
+
+**Reuse as-is:** `heroine_skin.gdshader` (relief, stubble/scalp/brow layers already in), `heroine_eye.gdshader` + iris recolour, the hair shader and `HairSway.cs` (after `face/hair-swing` merges), the strand atlas, `heroine_outfit.gdshader` + `outfit_materials.json`, `heroine_rig.py` (helper bones; already takes "hers or the hero's"), `face_shapes.py`, `blend_relink.py`, `lookdev.gd BODY=hero`, his `him/` clips.
+**A body parameter, not a copy:** `heroine_hair.py` (object names, hairline, CENTRE), `heroine_lashes.py` (lit lash cards), `heroine_seam.py` and the `under_jaw` cut (face branch), `heroine_outfits.py` (via `hero_male_outfits.py`; the outfits lead's branch stays untouched), `heroine_lod.py` (later).
+**New for him:** brow cards (she has painted brows only), beard cards that carry the head's shape keys (2-3 styles), stubble wired through `People.HisShadow`, the base garment, `BeardStyle` and `heroes.male` data.
+
+**Route and judge points** (each a fresh `su-lead-max` judge on one sheet per question, with numbers made first):
+- J0 body bar (sex appeal, muscular and defined, attractive, rugged 1.98 m) against the heroine and path A's base: keep and polish, or rebuild.
+- J1 head finish: brows, stubble, three beards, lit lashes, skin checks (far neck, under the jaw, moonlight; one tone scalp to chest).
+- J2 base garment + mesh audit (doubled/reversed triangles, non-manifold fans), checked in motion.
+- J3 each of the four outfits (tucked skin, bound rims, tight fit, motion clips).
+- J4 hair on the merged swing code; then the Look step's data and wiring.
+- Full-resolution face/front/side/back sheets to the main session after each passing judge.
+
+**Token estimate (honest):** the body and head rebuild about 1.5-2M (3-4 lead sessions, 4-6 judges); head finish 0.5M; base garment and four outfits 1.5-2M; hair and the Look 0.5M. About 4-5M in all, against the heroine's many times that, because the shader, rig helpers, hair system, outfit generator and judging method all exist.
+
+## Current state (12 October): REBUILDING his body (judge j0)
+- **Judge j0 (owner's bar: sex appeal, muscular and defined, attractive, rugged 1.98 m): REBUILD, path A, donor variant.** The TRELLIS body read as a stage bodybuilder (traps to the ears, lat spread, swayback, balloon right lat), the face gaunt and 45-55, the skin orange clay, a neck graft ridge. Verdict and targets: `docs/hero_male/verdict_j0.md`; its sheets were the old body's (scratch, not kept). Shoot and sheet helpers: `tools/scratch/hero_male/` (paths inside point at this session's scratchpad: change `O=`). The owner's 12 Oct words replace "the body stays".
+- **j0's targets:** athletic heavyweight, 8-10% fat (looks 110-118 kg); upper arm ≈ neck ≈ calf; shoulder girth ≈ 1.6x waist; thigh ≈ 1.75x knee; arms close in idle; gentle trap slope; back with a lat fan, lower-trap diamond, scapula knots, erector columns, sacral dimples; firm square glutes; neutral pelvis; no neck seam; face 30-35, wider squarer jaw, strong chin, cheeks half as hollow, heavy straight brow, fuller lips, clean mirrored paint; her skin pipeline, a warmer slightly darker tone, no baked shading, flat nipples. First sheet: him beside her, same light and scale, front/side/back/3-4.
+- **Built so far: `tools/assets/hero_male.py`** (new; replaces `hero_male_body.py` + the graft in `hero_male_head.py` once it carries the head):
+  - MakeHuman man (MPFB, CC0) at MACROS/BUILD/NECK/FACE, 1.98 m, stood in a T by LBS on his own weights, Catmull-Clark once (107k triangles), UAL skeleton folded onto his joints (52 bones, `Head` from MH `head`).
+  - Donor = the old `hero.glb` (copy at `tools/comfy/out/heroes/hero_donor.glb`), laid on his bones per bone (stretch along the bone only). Volume transfer is in the code but OFF (`HM_GAIN` 0): measured, the MH man already matches or passes the donor's girth where it counts.
+  - Detail: Cycles bakes the donor (with its relief) and a smoothed donor to his UVs; the turn between them is the relief (`hero_tex/hero_relief.png`), masked to stomach, flanks, arms, front/outer thighs, calves, and to where both bakes hit.
+  - Measures now: upper arm 44.7, forearm 28.3, neck 52.9 (suspect: the slice may catch the trap slope), calf 44.1, thigh 66.4, knee 38.7, waist 81.7, chest 126.4 cm; thigh/knee 1.72.
+  - `HM_STOP=shape` (measures only, ~1 min), `HM_STOP=body` (exports a body-only `godot/art/people/hero.glb` with MakeHuman's skin and the relief for lookdev).
+- **Look (lead's own working check, not judged):** upright and well proportioned in `him/idle_warden`; a clear V. NOT at the bar yet: definition weak, the donor relief carries TRELLIS's streaky noise on the legs and arms and a band across the lower stomach; deltoids bulge upward (the T-pose LBS at the shoulder); the face is MakeHuman's with the buzz-cut paint; no head split, shapes, paint or masks yet.
+- **Uncommitted built art (unjudged, keep):** `godot/art/people/hero.glb` (the v2 body), `godot/art/anim/hero.res` + `tools/anim/data/hero_skeleton.json` (his 73 clips rebuilt on the new skeleton, 872 s). `git checkout` them to go back to the old body.
+- **lookdev.gd:** `BODY=hero` now also loads `art/anim/hero.res` as library `him`; shoot with clip `him/idle_warden` and `NECK=0` (UAL's `Idle` hunches the MH skeleton; NeckPitch 22 was for the old one).
 
 ## Next (exact)
-1. **Hair, brows and beards (`tools/assets/hero_male_hair.py`):**
-   - hair cards in the heroine's way;
-   - brow cards over his painted brows, with the painted brows lifted to a shadow through the mask, then `brow_dye` turned on;
-   - beards as cards from his beard ground, with the head's shape keys;
-   - stubble through `HisShadow`.
-2. **The base garment,** then his four outfits (`hero_male_outfits.py`).
-3. **The Look step:** `heroes.male` and `BeardStyle`, with the UI lead.
-4. **Later:** a body skin layer (redness at the knuckles, knees and elbows; the body still reads a little like clay).
+1. **Definition, cleanly.** Decide between (a) a cleaner donor detail (larger smoothing for B, a de-noise of the relief by a bilateral or a low-pass along the muscle direction, the masks tighter to the judge's list) and (b) authored definition: displacement along masks on the subdivided mesh (abdominal grid, linea alba, serratus, obliques, pec/delt edges, back landmarks). One honest try at (a); if the streaks stay, a `su-lead-max` solver on (b).
+2. **Shoulders:** the T-pose LBS lifts the deltoid; try the MH rig's own rest (A-pose) as his rest instead (the clips are retargeted per skeleton, so it is allowed), or correct the shoulder with MH's shoulder targets.
+3. **Head stage in `hero_male.py`:** split the head at SPLIT (shared boundary points, normals from the whole mesh), slider/expression shape keys (from `hero_male_head.py` SLIDERS/EXPRESSIONS/base_delta/eye_follow, deltas carried through the subdivision by evaluating the subsurf per key), parts (eyes, lashes, teeth, tongue), head 4K paint, `hero_shadow.png` masks (`scalp()`, `beard()`, brows), export names as before (`Hero`, `HeroHead`, `HeroEyes`... and the `mh` UV for `hero_male_face.py`).
+4. **Skin:** body paint repacked to 4K from `young_caucasian_male` (CC0), toned warmer and a little darker in her colour family, its shading taken out; then a new Krea face paint (`hero_male_face.py`, GPU turn) for a man of thirty to thirty-five.
+5. **Judge j1** with j0's targets, him beside her (`b1\shoot.sh` + `sheet.py` make the sheets). Then `heroine_rig.apply` helpers, `People.Hero` retune (NeckPitch 0), provenance ledger entry.
 
-## Fallback: the rebuild (path A, MakeHuman's CC0 body, a 1.98 m rugged build)
+## The rebuild in full (path A, now under way; MakeHuman's CC0 body, a 1.98 m rugged build)
 1. **His body, `hero_male_body.py` rewritten.**
    - **The man:** a MakeHuman man by MPFB, from the system assets only (CC0):
      - gender 1, age about 0.59 (32), muscle 1.0, weight about 0.6;
