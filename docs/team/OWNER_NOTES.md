@@ -195,5 +195,5 @@ Not made by us: poses or animation whose purpose is a sex act, or that show nudi
 - **Cause found (face lead, 12 Oct):** the lip line is the mesh's real upper-lip edge, 3-4 mm above the painted red, shaded on purpose by the shared AO; the double brow is the upper lashes seen from below at the Look. Waiting on the owner: move the paints' red up to the mesh lip (fuller lips, recommended) or soften the shading.
 
 ## 12 October 2026, night: waiting on the owner
-- **Lip line:** (a) move each paint's red up to the mesh lip (fuller lips; recommended) or (b) soften the AO there. Face builds (a) by default with (b) as a switch.
+- **Lip line (revised):** the sculpt's upper lip is 9-10 mm tall; every portrait's painted red sits 4.4-7.6 mm below its edge. (b) soften the shading so the painted lip reads alone (same lips as the portraits): being built and judged in j8. (a) repaint the red up to the sculpt: 2.5-3x taller painted upper lips, very full; another solver round, only if the owner wants fuller lips.
 - **get_up ponytail:** ships with a known 0.1 s cut through her right trapezius (k46-48; plain on the reaver, mostly hidden under the warden pad). The no-carry fallback measured worse (judge jh2). One more solver round is the owner's call. The braid fix merged (6234da8b).
