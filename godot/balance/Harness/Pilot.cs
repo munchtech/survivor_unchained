@@ -142,16 +142,20 @@ public static class Pilot
         // (A crowd of eight within six metres kept a kiting caster's meter full for minutes.)
         if (b.FlareReady)
         {
-            if (readyIn != b) { readyIn = b; readyAt = b.Time; }
             double reach = Math.Max(6, b.Flare?.Radius ?? 6);
             int near = b.HostilesInRadius(p.X, p.Z, reach).Count;
             bool low = p.Hp < b.MaxHp * 0.25;
             // A boss in its phase transition can't be hurt (TakenMul 0): spare the Flare unless health is low.
             bool bossNear = b.HostilesInRadius(p.X, p.Z, 10).Any(e => e.Boss && (low || e.TakenMul > 0));
+            // Banked Flame holds two: a player who lit it keeps one for a boss or the edge, and spends on
+            // the crowd only from a full bank (before it learned, the pilot paid the price without the gift).
+            bool keeps = Banks && b.FlareCharges > 1 && b.FlareMeter < Battle.FlareFull * b.FlareCharges;
+            if (keeps) readyIn = null;
+            else if (readyIn != b) { readyIn = b; readyAt = b.Time; }
             // A kiting caster with a small Stand (the Drowned Moon, 5 m) rarely has four inside it: after
             // fifteen seconds, four within ten metres will do (the Stand follows her in).
-            if (low || bossNear || near >= 8 || (near >= 4 && b.Time - readyAt >= 8) ||
-                (b.Time - readyAt >= 15 && b.HostilesInRadius(p.X, p.Z, 10).Count >= 4))
+            if (low || bossNear || (!keeps && (near >= 8 || (near >= 4 && b.Time - readyAt >= 8) ||
+                (b.Time - readyAt >= 15 && b.HostilesInRadius(p.X, p.Z, 10).Count >= 4))))
             {
                 b.UseFlare(mx, mz);
                 readyIn = null;
@@ -251,6 +255,8 @@ public static class Pilot
 
     /// <summary>Off (--bossread 0) for the numbers of the hands before they knew the bosses.</summary>
     public static bool ReadsBosses = true;
+    /// <summary>Off (--bank 0) for the hands before they banked a second Flare.</summary>
+    public static bool Banks = true;
     /// <summary>When this run's Flare came ready (each run plays on one thread).</summary>
     [ThreadStatic] static Battle? readyIn;
     [ThreadStatic] static double readyAt;
