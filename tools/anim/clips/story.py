@@ -844,6 +844,30 @@ def _sbh_rest(pose):
     return out
 
 
+# (first frame, last frame, sigma in frames) of _smooth_joints on the right
+# fingers as the hand plants.
+SBH_LAY_SMOOTH = (18, 38, 2.5)
+
+
+def _smooth_joints(clip, rig, names, a, b, sigma):
+    """The local turns of joints `names` over clip frames a..b averaged with
+    their neighbours (Gaussian, `sigma` frames), eased in and out at a and b
+    so the frames outside are untouched."""
+    r = int(math.ceil(3 * sigma))
+    w = np.exp(-0.5 * (np.arange(-r, r + 1) / sigma) ** 2)
+    for n in names:
+        j = rig.I[n]
+        q = clip.rot[:, j].copy()
+        for f in range(a, b + 1):
+            acc = np.zeros(4)
+            for k, wk in zip(range(-r, r + 1), w):
+                g = q[min(max(f + k, 0), len(q) - 1)]
+                acc += wk * (g if np.dot(g, q[f]) >= 0 else -g)
+            m = acc / np.linalg.norm(acc)
+            e = min(1.0, (f - a + 1) / (r + 1), (b - f + 1) / (r + 1))
+            clip.rot[f, j] = qslerp(q[f], m, smoothstep_(e))
+
+
 def sit_back_heels(rig):
     start = _elbow(0.96, 1.0)
     z = _zsit()
@@ -1055,9 +1079,14 @@ def sit_back_heels(rig):
     # grows with the turn instead of switching on in a frame.
     rig.hip_soft = HIP_SOFT
     try:
-        return contact_build("sit_back_heels", rig, keys, contacts,
+        clip = contact_build("sit_back_heels", rig, keys, contacts,
                              meta={"layer": "full", "hold": True, "source": "keyed (tools/anim/clips/story.py)", "licence": "own work",
                                    "note": "keyed (C01): from the forearm to sitting sideways, onto her knees and back on her heels, looking at her hands"})
+        # The right fingers laid on the ground as the hand plants, smoothed
+        # in time (lead 15, judge 38: Rig._lay's thumb and index snapped down
+        # in a frame once touching was cheaper, the tips at 14-27 mm a frame).
+        _smooth_joints(clip, rig, [f"{f}_0{n}_r" for f in ("thumb", "index", "middle", "ring", "pinky") for n in (1, 2, 3)], *SBH_LAY_SMOOTH)
+        return clip
     finally:
         rig.hip_soft = None
 
