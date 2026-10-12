@@ -5868,6 +5868,13 @@ def rigid_again(objs, riders):
         # nearer band 1 than 2.8 mm), sv)
         if o.name.split("_")[0] in SP_SHARE:
             sh_ = [("upperarm_share_l", 1.0)]
+        # (or all three plates on one row, SP_ROW: they move as one and can't
+        # cross; the twist bone's share keeps the shrink small, so band 1
+        # keeps 2.1 mm or more under the cap and band 2 under band 1 in all
+        # six clips, offline; on their own blends 11 frames crossed, j3, and
+        # the share bone alone slid the cap 25 mm round her arm at idle, s1)
+        if SP_ROW and o.name.split("_")[0].startswith("ranger.pauldron"):
+            sh_ = list(SP_ROW)
         idx = list(range(len(o.data.vertices)))
         for g in list(o.vertex_groups):
             if g.name in BONE_NAMES:
@@ -5907,7 +5914,8 @@ def rigid_again(objs, riders):
 
 
 PL_RAW = os.environ.get("PL_RAW", "1") == "1"
-SP_SHARE = {"ranger.pauldron%d" % k for k, on in enumerate(os.environ.get("SP_SHARE", "1,1,0").split(",")) if on == "1"}     if os.environ.get("PAULDRON") == "leather" else set()
+SP_SHARE = {"ranger.pauldron%d" % k for k, on in enumerate(os.environ.get("SP_SHARE", "0,0,0").split(",")) if on == "1"}     if os.environ.get("PAULDRON") == "leather" else set()
+SP_ROW = [(n, float(w)) for n, w in (kv.split(":") for kv in os.environ.get("SP_ROW", "clavicle_l:0.4206,spine_03:0.0494,upperarm_l:0.26,upperarm_twist_01_l:0.27").split(",") if kv)] if os.environ.get("PAULDRON") == "leather" else []
 RIGID_PIECES = one_blend_pieces(made)
 RIGID_ROWS = {o.name: rows_of(o)[0] for o in RIGID_PIECES}
 _rset = {r for r in RIGID_ROWS.values() if len(r) > 1}   # (a blend, never one bone's whole: cloth on one bone is no rider)
