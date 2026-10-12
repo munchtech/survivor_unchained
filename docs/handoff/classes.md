@@ -1,33 +1,46 @@
-# Handoff: classes (session 9: Hour hotfix merged, press-stagger hotfix in progress, early modifiers built)
+# Handoff: classes (session 10: stagger hotfix merged, Banked Flame C40 in, three checks owed)
 
-Written by the ninth classes lead (12 October) at the context budget. Branch `classes-8` (worktree `agent-a54ebb1323cb25841`), last commit on the last line of git log. Scratch: `C:\Users\munch\AppData\Local\Temp\claude\C--Users-munch-Desktop-survivorsunchained\1515c1de-1208-43e2-b6eb-5133e0d07e1c\scratchpad\classes\` (below `N/`); the eighth lead's tools and runs are in `...\ba85aba8-...\scratchpad\c8\` (`c8/`).
+Written by the tenth classes lead (12 October), stopped clean for a new coordinator. Branch `classes-8` (worktree `agent-a54ebb1323cb25841`), last commit on the last line of git log. Scratch `N/` = `C:\Users\munch\AppData\Local\Temp\claude\C--Users-munch-Desktop-survivorsunchained\1515c1de-1208-43e2-b6eb-5133e0d07e1c\scratchpad\classes\`. Nothing is running and no turn is held.
 
-## 1. The owner's words and the coordinator's standing calls
-- Banked Flame: "0-5% faster is barely anything though, seems like its a lot of risk with not much reward": played well it must be a clear reward; a non-banker no worse than today; its line honest.
-- "begin planning for flares to have 1 per spec" (via main). Build nothing for phase 6 until the owner approves.
-- Coordinator (12 Oct): ship the **press-stagger fix as its own hotfix from integration** (like the Hour's), and in the same hotfix re-tune the four Act 1 story-boss health multipliers back to their **pre-Flare kill times for both deft and plain pilots, with no rise in falls**. That is within the owner's 11 October yes; only an outcome off that target goes to main as a question. Report kill time per boss vs pre-Flare, wins, falls, and the checks. Light my way's early rule: go (done). Phase-6 owner lines: bring them once the 10 fixes are in.
-- Keep the Hour falls follow-up on the list (0.066 vs the plain form's 0.056 a run).
+## Start here
+1. **Owner question (open):** should arena phase floors let a Flare's burst through? See §2.2 for judge 2's wording. Build nothing until the owner answers.
+2. **Re-run judge 2's measurements:** `bash N/bq4.sh` (about 90 min, stopped at the wind-down). It measures C40 against no lamp with arena floors ON (T4 L10 and L30, deft and plain, banks or not), plus the reserve run (plain hands, T4 L10, 96 seeds, falls). If `--seed0` errors on `arena`, drop it.
+   - Pass: the non-banker's worst calling is within +3% of no lamp, and the Flare's share of a boss is at or under 35%.
+   - Summarize with `python c8/bstat.py ref.jsonl ...` (`c8` = `...\ba85aba8-36f4-4cf9-99c5-4c5ef9e4a65c\scratchpad\c8`).
+   - CLASSES §7 (2) still says to soften the price to 20% if the reserve saves nothing. Decide that from the reserve run.
+3. **Butcher's Hour Dig deft cell, -7.4% against its plain form** (bar ±6%; after the stagger fix). Measure it, find why (suspect: the deepened bleed ignores Grimtunnel's half damage on his ground and his lamps' quarter), and trim the Hour on him only. Falls are no longer a question: 0.049 against 0.043, 1 sigma. No solver needed.
+4. **Write two results into CLASSES §7.** First, the Bell's Vault plain cell is waived: -4.5% after the fix, within ±6%, and the arms show the Bell's own damage is the cause (below). Second, the Hour's falls follow-up is closed.
+5. Then: the phase-6 owner lines (`N/judge1_verdict.md`, bottom) go to the coordinator. More Embers / Toll Doubled checks (the session-9 list). Phase 6 waits for the owner's yes.
 
-## 2. Where each step stands
-1. **Butcher's Hour: MERGED** (integration a86814cc, from `classes-hourfix`, deleted). Every blow while it holds deepens one bleed (`deepen` arg, bleed 0.8). Act 1 vs plain form, 3072 runs a side: mean -1.6%, worst cell -5.2%, won 98.1 -> 97.8%, falls 0.056 -> 0.066 (1.6 sigma). Mend 2% (0.064) and execute 25% (0.065) did not move falls: a solver if it still shows after the stagger fix (`N/st/ph_all.jsonl`, `hd_all.jsonl`; `N/falls.py`).
-2. **Press stagger: IN PROGRESS (hotfix).** Bug: Flare.cs:210 `AddStagger(e, e.Boss ? 15 : 30)` on a 0-1 gauge stuns a boss 3 s (1.25x taken) every press; the Bell's `"stagger": 15` (lamps.json, lamps_quarters.py) same unit. Fix: 0.15 / 0.3 and the Bell 0.15 (make the press value a data/const with a comment).
-   - Scratch tree `N/st2/godot` = integration (f0a525fa) + the fix + switches: `SU_NOFLARE=1` (no Flare), `SU_HM_Redcowl|BarrowLordStory|Greymuzzle|GrimtunnelStory=<mul>` (health). Runs: `bash N/s2run.sh <tag> ENV=...` -> `N/s2/<tag>.jsonl` (all callings, 96 seeds, greedy/random, plain/deft, 6144 runs, ~45-60 min). Queue `N/s2q1.sh` (background, was running): `pre` (no Flare, old health 103/130/100/109 = the pre-Flare target) then `fix0` (fix at today's 118/148/110/123).
-   - First read (classes-8 tree, deft, 48 seeds, `N/bk/sg_deft.jsonl` vs `bk/ref_b1.jsonl`): bosses +1.5% longer (warden +3.8%, worst cell +10%), falls 0.025 -> 0.031.
-   - **Done since:** `pre` and `fix0` finished (`python N/fight.py N/s2/pre.jsonl N/s2/fix0.jsonl`). With the fix at today's health, bosses are still SHORTER than pre-Flare: Dig deft -4.9% / plain -8.1%, Hollow -8.0/-12.0, Roost -9.3/-10.8, Vault -3.4/-9.8; wins higher, falls lower than pre everywhere (e.g. Hollow plain 0.168 -> 0.056). So health goes up, not down. First try (mean of the two pilots' ratios): Dig 123 -> 131, Hollow 110 -> 122, Roost 118 -> 131, Vault 148 -> 158 (`bash N/s2run.sh fix1 SU_HM_GrimtunnelStory=131 SU_HM_Greymuzzle=122 SU_HM_Redcowl=131 SU_HM_BarrowLordStory=158`). Deft and plain differ by up to 6 points (Vault), so one multiplier can't hit both exactly: aim to centre them, and if a pilot stays more than about 3% off, that's the question for main.
-   - Next: per boss (fight) and pilot, compare `fix0` to `pre` (mean boss seconds; write a small per-fight script from `N/bsum.py`); scale each mul by pre/fix0, re-run, iterate once; falls no higher than `pre`... then build the hotfix like `N/hf/mk.py` (temp index on integration, `git commit-tree`, branch `classes-staggerfix`), export it (`git archive` to scratch) and confirm one run matches; report to main. Boss files: `godot/logic/Play/Bosses/{Redcowl,BarrowLordStory,Greymuzzle,GrimtunnelStory}.cs` HealthMul (Roost, Vault, Hollow, Dig). Then merge integration into classes-8.
-3. **Light my way early modifiers: BUILT** (b9db3807, tests green): `"early"` on More Embers, Bell for the Dead, Toll Doubled; `LampBook.Suggest` skips other modifiers until `chapter.done`; arena harness boards light the whole path. CLASSES §7 rule rewritten. To measure: More Embers dig deft at 384 fresh seeds (if past 6%, switch to Black Ice); Toll Doubled alone; `Balance.dll suggest` path.
-4. **Banked Flame: measured, judge next.** Arena boss floors (ArenaBoss phase `Floor` minimum times; overflow only lengthens the Break stagger) hide any burst reward at arena bosses: say so plainly. Numbers (boss kill time vs no lamp; banked b1 / unbanked b0):
-   - Floors off, T4 L30 deft (`c8/runs/*_L30f0`, `N/bk/ar_*`): cur -13.3% / +5.6% (median); A15 -11.8/+3.7; B -15.9/+3.2; **C (every Flare 25% harder) -17.0/+0.1 (mean -20.5/-2.4)**; D -12.7/+5.6; BC -9.9/+0.8 (mean -14.4); C40 arena pending (`N/bankq2.sh`).
-   - Act 1 (L1, deft, 48 seeds, every calling; `N/bk/*.jsonl`, `python N/bsum.py bk/ref_b1.jsonl ...`): cur -5.5/+5.6; B -4.3; C -8.0/+4.4; BC -7.0/+3.4; C40 -8.2.
-   - Floors on (arena T4 L10/L30, deft and plain): every variant within ±4%. Plain hands T4 L10 (`c8/runs/*_plain`): falls 0-3 of 48, no life-saver signal; banked low-HP runs a little fewer.
-   - Lead's lean: C (text: "Hold two Flares. Each fills 30% slower and strikes 25% harder."). Judge questions: pick; and whether arena floors should let a burst through (overflow shortens the next phase's floor), which is the only way a boss-burst reward can show at arena bosses (a design change for main/owner).
-5. **Bell Vault plain cell** (~-7% pooled): judge says measure 3 arms after the stagger fix (`N/judge1_verdict.md` Q2).
-6. **Phase-6 plan: judged, PASS WITH 10 FIXES** (`N/judge1_verdict.md`): apply the fixes to CLASSES §7 "Phase 6 plan" (a su-worker can, with that file), then send main the owner lines from the same file.
+## 1. Done this session
+- **Press-stagger hotfix MERGED** (integration 8450b738; also in classes-8 via 9c0a0175).
+  - Press 0.15 of the gauge (`Battle.PressStaggerBoss`); the Bell's toll 0.15.
+  - The Toll's boss measure 0.85 -> 0.25; Burns Twice 1.0.
+  - Story-boss HealthMul: Redcowl 110, Barrow Lord 141, Greymuzzle 107, Grimtunnel 114.
+  - The target is the real pre-Flare game (`N/s2/base11.jsonl` = the 11 Oct baseline). `SU_NOFLARE` on today's build is 7-14% slower and falls three times as often, so don't use it.
+  - Result: every calling within 3%; falls 0.037 against 0.030, which is the stagger fix itself. Arena power is unchanged; only the Toll's arena boss share drops.
+  - Tools: `N/fc.py` (fight x calling against a reference), `N/fshare.py` (the Flare's share of boss health), `N/sf/mk.py` (the hotfix builder).
+- **Banked Flame: judge 2** (agent ac3d24521b4fd4b75): "FAIL as the finished lamp, PASS for C40 replacing cur now".
+  - Applied in 4ddba3ab: "Hold two Flares. Each fills 30% slower and strikes 40% harder." (harder 0.4). The data is in lamps.json and `tools/classes/lamps_build.py`; CLASSES lines 252 and 901 are updated.
+  - Post-fix numbers are in `N/bk3/` (`ar_table.md`):
+    - Act 1 banked -7.1%, unbanked +1.3%.
+    - Arena floors off: banked -16% (median), unbanked +11%.
+  - Falls on Act 1: 23 against 36 runs (1.7 sigma).
+- **Phase-6 plan:** judge 1's ten fixes are in CLASSES §7 (bd2fd49e, fc2e2c1e). The Branding's live length stays 1.0 until 6a is approved.
+- **Bell Vault arms** (`N/bell/`, 384 seeds, plain hands): staged 171.4 s, plain form 179.9 s. Arm results: mend 0 gives 173.3 s; stun 0 gives 171.5 s; no interrupt and no stagger gives 169.8 s.
+- **Hour post-fix** (`N/hr/`, 192 seeds a side): mean about -1.4%. The plain Stand needs `blows: 2` (`N/over/plainhour2`).
+
+## 2. Owner and coordinator lines
+1. The Toll trim, to pass on: "The Road's Toll's four cuts on a boss now strike about a third as hard as before (poison included); it took over a third of an Act 1 boss, now about a sixth like every other Flare. Its twelve cuts on the horde, its executes and its look are unchanged."
+2. **Floors (owner):** judge 2 recommends yes, narrowly.
+   - When a Flare pushes a boss past a phase mark, that phase's minimum time is cut in proportion, never by more than half. Only Flare damage counts, so every phase is still seen.
+   - Risk: burst Flares shorten arena boss fights, and the Flare's share of a boss climbs toward 33-56%. The cut gets tuned until the 35% line holds.
+   - If no: Banked Flame stays a story-boss and safety lamp.
 
 ## 3. Tools
-- Harness copy `N/bal1` (this session's build; rebuild after logic changes: `cd godot/balance && dotnet build -c Release`, copy). Story runs from cwd `godot/`. `--over DIR` data overrides; `N/mkargs.py lamps.json out flare k=v`; `N/mkvar.py` (Banked variants, `N/bover/`).
-- Summaries: `N/stsum.py base now [calling]`, `N/cell.py a b fight hands`, `N/took.py`, `N/falls.py`, `N/bsum.py` (per calling, Act 1), `c8/bstat.py` (arena Banked).
-- Python on Windows: give it `C:/...` paths, not `/c/...`.
-
-## 4. Next, in order
-Stagger hotfix (tune, build, confirm, report) -> merge integration into classes-8 -> Banked Flame judge (lean sheet from §2.4) -> phase-6 fixes and owner lines -> Bell Vault arms, More Embers / Toll Doubled checks -> Hour falls solver if still high.
+- Harness builds:
+  - `N/bal2` is classes-8 at 9c0a0175. It has no C40 in its data, so pass `--over N/bover2/C40`.
+  - `N/st5` is a scratch tree with a Bell `interrupt` knob.
+  - Rebuild after logic changes: `cd godot/balance && dotnet build -c Release`.
+- Story runs use cwd `godot/`. A data override covers the whole file, so make it from the *current* lamps.json.
+- Python on Windows: give it `C:/...` paths.
