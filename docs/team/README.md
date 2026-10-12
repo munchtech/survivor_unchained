@@ -85,7 +85,7 @@ The main session keeps this current. It is the address list for SendMessage. Ret
 |---|---|---|
 | Voice (paused by the owner: no placeholders; final voices from ElevenLabs later) | a501b387a90d78b4e | docs/team/voice.md |
 | Story and writing (the writer: the approved rewrite, Act 1 first) | PAUSED 12 Oct late (no lead running; Act 2's first slice WIP on story/act2@5190bf0c, unjudged, don't merge; handoff docs/handoff/story.md on that branch; 566 lines locked on integration; TOLL_SPEC ready for a code lead) | docs/team/story.md |
-| Classes design (two types per calling, skill trees, ultimates on Q / right-click) | a5b513003773e2317 (phase 2 from docs/handoff/classes.md, started 12 Oct on the owner's "go just classes") | docs/design/CLASSES.md |
+| Classes design (two types per calling, skill trees, ultimates on Q / right-click) | ac4407f7c6228a101 (7th lead, phase 2, in worktree agent-a5b513003773e2317 on classes-6; owner question pending: should "Light my way" light Banked Flame? recommended never) | docs/design/CLASSES.md |
 | Combat, encounters, bosses, balance (paused; handoff ready at af6452e1) | — | docs/team/combat.md |
 | Animation (joints to perfection: wrists, follow-through, elbows, arms through body, sliding) | PAUSED 12 Oct late (no lead running; handoff docs/handoff/animation.md on worktree-agent-af8dbda3195e438e4@77338d02: sit_back_heels remake PASS WITH FIXES, unmerged) | docs/team/animation.md |
 | UI design (the HUD keystone; portraits wait on the face) | — (handoff ready) | docs/team/ui_design.md |
