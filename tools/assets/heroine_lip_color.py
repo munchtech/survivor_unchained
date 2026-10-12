@@ -4,9 +4,9 @@ Her sculpt's upper lip is a full, ordinary lip (9-10 mm from her mouth line to t
 cupid's bow), but every face's paint (laid from a portrait with a thinner upper lip) colours its top 4.4-7.6 mm as
 skin. At the Look the lit ridge and her head's shade then drew the border as an outline in skin above a thin red
 lip (the owner, 12 October 2026; with her shade off it still showed: it is the sculpt's). This recolours that band,
-between the paint's red top and the border, to the paint's own lip colour just under its red top, column by column
+between the paint's red top and the border, to the paint's own lower lip's colour (its red, under the mouth line), column by column
 across her mouth, keeping each texel's own detail (a ratio in linear light, not a warp: a stretched lip smeared).
-The border's edge is soft over 0.4 mm; the band fades into the paint's red over 1 mm below its old top; toward the
+The border's edge is soft over 0.7 mm; the band fades into the paint's red over 1 mm below its old top; toward the
 corners of her mouth, where the border meets the mouth line, the band thins to nothing.
 
     python tools/assets/heroine_lip_color.py [--to DIR] [face ...]   (no faces: every paint; --to: write there)
@@ -24,10 +24,12 @@ from scipy import ndimage
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import heroine_lips as hl  # noqa: E402
 
-EDGE = 0.0004       # (the border's softness, m)
+EDGE = 0.0007       # (the border's softness, m: smoothstep; 0.4 read stickered on Doe)
 INTO = 0.0010       # (the band fades into the old red over this, below its old top)
 UNDER = 0.0002      # (the new red's top this far under the crease's middle: the crease is its edge's shade)
-SAMPLE = (0.0004, 0.0018)   # (the lip's colour: from this far under the old red's top to this)
+LOWER = (0.0035, 0.0115)    # (the lip's colour: her LOWER lip's red, this far under the mouth line. Over 3.5 mm the
+                            #  paints carry the portrait's dark mouth gap; the upper red's top sits in the mouth
+                            #  line's shade and read darker and rosier than her lower lip)
 NO_CREASE = 0.0095
 
 
@@ -72,7 +74,8 @@ def fields(F, m, t, paint_front):
     ys = hl.Y1 - (np.arange(F.shape[0]) + 0.5) * hl.D
     Y = ys[:, None]
     top = (tt - UNDER)[None, :]
-    w_top = 1 - np.clip((Y - (top - EDGE / 2)) / EDGE, 0, 1)        # (1 under the border, 0 over it)
+    u = np.clip((Y - (top - EDGE / 2)) / EDGE, 0, 1)
+    w_top = 1 - u * u * (3 - 2 * u)                                # (1 under the border, 0 over it; smoothstep)
     w_bot = np.clip((Y - (ee[None, :] - INTO)) / INTO, 0, 1)       # (0 deep in the old red, 1 at and over its top)
     W = np.nan_to_num(w_top * w_bot) * ok[None, :]
     # (no band where the red's top is already at the border)
@@ -81,11 +84,16 @@ def fields(F, m, t, paint_front):
     L = lin(paint_front)
     lipc = np.full((len(m), 3), np.nan)
     band = np.full((len(m), 3), np.nan)
+    rd = ndimage.uniform_filter(hl.redness(paint_front), (3, 5))
+    lowmask = np.zeros(rd.shape, bool)
     for c in np.where(ok_e)[0]:
-        r0, r1 = int(hl.row(ee[c] - SAMPLE[0])), int(hl.row(ee[c] - SAMPLE[1]))
+        r0, r1 = int(hl.row(m[c] - LOWER[0])), int(hl.row(m[c] - LOWER[1]))
         b0, b1 = int(hl.row(tt[c] - UNDER)), int(hl.row(ee[c]))
-        if r1 > r0 + 2:
-            lipc[c] = np.median(L[r0:r1, c], 0)
+        if r1 > r0 + 10:
+            sel = _lower_sel(rd[r0:r1, c], L[r0:r1, c])
+            lowmask[r0:r1, c] = sel
+            if sel.sum() > 4:
+                lipc[c] = np.median(L[r0:r1, c][sel], 0)
         if b1 > b0 + 2:
             band[c] = np.median(L[b0:b1, c], 0)
     ratio = np.ones((len(m), 3))
@@ -94,9 +102,24 @@ def fields(F, m, t, paint_front):
         good = ~np.isnan(a) & ~np.isnan(b)
         if good.sum() > 3:
             r = np.interp(x, x[good], (a / np.maximum(b, 1e-4))[good])
-            ratio[:, k] = ndimage.gaussian_filter1d(ndimage.median_filter(r, 15), 10)
+            ratio[:, k] = ndimage.gaussian_filter1d(ndimage.median_filter(r, 31), 20)
     W = ndimage.gaussian_filter(W, 1.0)
-    return W, ratio, tt, ee
+    return W, ratio, tt, ee, lowmask
+
+
+def _lower_sel(rd, L):
+    """Her lower lip's mid-tones in one column: its redder half, without the portrait's highlight or shade."""
+    y = L @ np.array([0.2126, 0.7152, 0.0722])
+    lo, hi = np.percentile(y, [20, 90])
+    return (rd >= np.median(rd)) & (y >= lo) & (y <= hi)
+
+
+def _lum(a):
+    return float(np.mean(lin(a) @ np.array([0.2126, 0.7152, 0.0722]))) if len(a) else float("nan")
+
+
+def _rdn(a):
+    return float(np.mean(a[:, 0] - a[:, 1])) if len(a) else float("nan")
 
 
 def main():
@@ -128,7 +151,7 @@ def main():
             idx = tuple(a[front_most] for a in np.where(has))
             r_s, c_s = rr[has][front_most], cc[has][front_most]
         pf = hl.at_uv(img, np.nan_to_num(F[..., 0]), np.nan_to_num(F[..., 1]))
-        W, ratio, tt, ee = fields(F, m, t, pf)
+        W, ratio, tt, ee, lo = fields(F, m, t, pf)
         w = hl.sample(W, r_s, c_s)
         rat = np.stack([np.interp(c_s, np.arange(len(m)), ratio[:, k]) for k in range(3)], -1)
         L = lin(img[idx])
@@ -137,8 +160,15 @@ def main():
         dst = os.path.join(to, pp[f]) if to else src
         Image.fromarray(np.clip(out + 0.5, 0, 255).astype(np.uint8), "RGB").save(dst, quality=95, subsampling=0)
         mid = len(m) // 2
-        print("LIPCOLOR %-9s texels %6d  gap mid %.1f mm  ratio mid %s -> %s" % (
-            f, int((w > 0.05).sum()), (tt[mid] - ee[mid]) * 1000, np.round(ratio[mid], 2), dst))
+        po = hl.at_uv(out, np.nan_to_num(F[..., 0]), np.nan_to_num(F[..., 1]))
+        band = W > 0.6
+        up = np.zeros_like(band)
+        for c in np.where(~np.isnan(m) & ~np.isnan(ee))[0]:
+            up[int(hl.row(ee[c] - 0.0006)):int(hl.row(m[c] + 0.001)), c] = True
+        print("LIPCOLOR %-9s texels %6d  gap mid %.1f mm  ratio mid %s  | lum/redness: lower lip %.3f/%.0f  upper red %.3f/%.0f  band was "
+              "%.3f/%.0f  now %.3f/%.0f -> %s" % (
+                  f, int((w > 0.05).sum()), (tt[mid] - ee[mid]) * 1000, np.round(ratio[mid], 2),
+                  _lum(pf[lo]), _rdn(pf[lo]), _lum(pf[up]), _rdn(pf[up]), _lum(pf[band]), _rdn(pf[band]), _lum(po[band]), _rdn(po[band]), dst))
 
 
 if __name__ == "__main__":
