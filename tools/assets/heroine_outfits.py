@@ -4490,6 +4490,18 @@ def pl_border_spots(pos, tris, F_, inset=0.0095, step=0.028):
         if dp[best] < 0.005:
             pts.append(pos[cand[best]])
             nrs.append(nor[cand[best]])
+        else:
+            # (no point in the band near this slot: the cap had 16 of 17, a
+            # gap of two steps in its row, judge 9. A wider band, never
+            # nearer the edge, then the nearest along it)
+            c2 = np.where((dist > inset - 0.0015) & (dist < inset + 0.006))[0]
+            dp2 = np.abs((par[c2] - tgt + Lp / 2) % Lp - Lp / 2)
+            b2 = np.argmin(dp2 + np.abs(dist[c2] - inset))
+            if dp2[b2] < 0.008:
+                pts.append(pos[c2[b2]])
+                nrs.append(nor[c2[b2]])
+            else:
+                print("RIVETS: WARNING slot %d of %d found no point (nearest %.1f mm along)" % (k, n, dp2[b2] * 1000))
     return np.array(pts), np.array(nrs)
 
 
