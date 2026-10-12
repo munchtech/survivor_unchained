@@ -4104,7 +4104,8 @@ def arcanist():
         w_st = w_st / w_st.sum(1, keepdims=True)
         print("CLASP: horns ride their cups from %.0f%% out (full by +30%%); tip rows %s | %s" % (100 * float(os.environ.get("CLASP_RIDE0", "0.3")),
               {BONES[j]: round(float(w_st[0, j]), 3) for j in np.argsort(-w_st[0])[:4]}, {BONES[j]: round(float(w_st[-1, j]), 3) for j in np.argsort(-w_st[-1])[:4]}))
-        made = [finish("arcanist.clasp", pp, w_st[(np.arange(len(pp)) % (nth * nr)) // nr], tt, "claspgold", 0.0, 0.0, 10 ** 6, scraps=False)]
+        RIDE = os.environ.get("CLASP_RIDE", "0") == "1"   # (off: c2 rode the rolls but the crescent came out a flattened, dented bar in her carriage)
+        made = [finish("arcanist.clasp", pp, w_st[(np.arange(len(pp)) % (nth * nr)) // nr] if RIDE else sk(pp), tt, "claspgold", 0.0, 0.0, 10 ** 6, scraps=False)]
         # (the stone: an oval cabochon at the foot, 10 x 8 mm, 3.2 mm high, in
         # a gold bezel ring 1 mm proud of the crescent)
         c0 = frnt[nth // 2, nr // 2]
@@ -4141,7 +4142,7 @@ def arcanist():
         tp, tt_ = np.array(tp), np.array(tt_)
         if (vertex_normals(tp, tt_)[:len(tp) // 2] * (tp[:len(tp) // 2] - tp[:len(tp) // 2].mean(0))).sum(1).mean() < 0:
             tt_ = tt_[:, ::-1]
-        made.append(finish("arcanist.clasp_tips", tp, np.repeat(w_st[[0, nth - 1]], len(tp) // 2, 0), tt_, "claspgold", 0.0, 0.0, 10 ** 6, scraps=False))
+        made.append(finish("arcanist.clasp_tips", tp, np.repeat(w_st[[0, nth - 1]], len(tp) // 2, 0) if RIDE else sk(tp), tt_, "claspgold", 0.0, 0.0, 10 ** 6, scraps=False))
         print("CLASP: crescent %.0f mm across, horns %.0f deg round the foot, %.1f mm wide at its foot; stone at z %.3f"
               % ((X.max() - X.min()) * 1000, np.degrees(TH0), wid[nth // 2] * 1000, c0[2]))
         # (the cloth, binding and stitches under it cut away 1 mm inside its
