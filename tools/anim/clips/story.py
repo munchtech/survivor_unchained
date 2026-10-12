@@ -350,6 +350,11 @@ def _euler(q):
 SBH_HAND_R = ({"pos": (-0.508, 0.05, 0.235), "pole": (-0.3, -1.0, -0.4), "knuckles": (-0.5, 0.0, 1.0)},
               {"pos": (-0.65, 0.05, -0.03), "pole": (-0.2, 0.3, -1.0), "knuckles": (-1.0, 0.0, 0.35)})
 SBH_LEAN = 22.0
+# The right hand's hop to under her shoulder (clip frames from f34), and its
+# fingers let go of the ground (design frames: from, over).
+SBH_HOP = 20.0
+SBH_LIFT = (62.5, 2.5)
+SBH_HOP_LAY = 0.2  # (the share of the hop over which the fingers let go and lay again)
 # The most of an arm's length her hands use in it (Rig: "reach"): kneeling
 # up, both arms hung locked straight with the hands dragged after them.
 SBH_REACH = 0.95
@@ -720,7 +725,7 @@ def sit_back_heels(rig):
         # straight arm.
         if 30 <= u < 96:
             if u < 84:
-                lean = smoothstep_((u - 34) / 14.0) * (1.0 - smoothstep_((u - 64) / 10.0))
+                lean = smoothstep_((u - 34 - (SBH_HOP - 16.0)) / 14.0) * (1.0 - smoothstep_((u - 64) / 10.0))
                 out["spine"] = tuple(np.asarray(pose["spine"], float) + (0.0, 0.0, SBH_LEAN * lean))
                 out["neck"] = tuple(np.asarray(pose["neck"], float) - (0.0, 0.0, 0.35 * SBH_LEAN * lean))
             keyed = pose["hand_r"]
@@ -728,14 +733,17 @@ def sit_back_heels(rig):
             first, under = {**SBH_HAND_R[0], "plant": smoothstep_((fr - 24) / 10.0)}, {**SBH_HAND_R[1], "plant": 1.0}
             if fr < 34:
                 hand = first
-            elif fr < 50:
+            elif fr < 34 + SBH_HOP:
                 # Lifted off as it leaves, flat again as it lands; turned on
                 # the way.
                 # (Over 16 frames, lead 13: over 13 the wrist ran 40 mm a
                 # frame, the fingertips 60-86; at an even pace it landed hard.)
-                t = smoothstep_((fr - 34) / 16.0)
+                # (Over 20, lead 14, the fingers letting go and laying again
+                # in its first and last fifth, where the wrist is slow: over 16
+                # the fingertips ran 40-48 mm a frame; the lean waits for it.)
+                t = smoothstep_((fr - 34) / SBH_HOP)
                 hand = {**_hop(first, under, t, 0.05 * math.sin(math.pi * t)),
-                        "plant": max(1.0 - smoothstep_(t / 0.35), smoothstep_((t - 0.65) / 0.35)),
+                        "plant": max(1.0 - smoothstep_(t / SBH_HOP_LAY), smoothstep_((t - 1.0 + SBH_HOP_LAY) / SBH_HOP_LAY)),
                         "pole": tuple(slerp_dir(first["pole"], under["pole"], t))}
                 # Kept flat, turned from one planted way to the other (lead 13:
                 # let go of by the plant, it rolled to ride the forearm and back,
@@ -747,8 +755,8 @@ def sit_back_heels(rig):
                 # (The fingers let go of the ground just before the hand
                 # leaves it, the palm kept flat: let go of as it rose, they
                 # peeled off at 39 mm a frame, lead 13.)
-                hand = {**under, "plant": 1.0 - smoothstep_((u - 62.5) / 2.5)}
-                if u > 62.5:
+                hand = {**under, "plant": 1.0 - smoothstep_((u - SBH_LIFT[0]) / SBH_LIFT[1])}
+                if u > SBH_LIFT[0]:
                     q = rig._planted("r", SBH_HAND_R[1], None, np.array([0.0, 0.0, 0.0, 1.0]))
                     hand.update(knuckles=tuple(qrot(q, [0, 1.0, 0])), blade=tuple(qrot(q, [0, 0, 1.0])), aim=1.0)
             else:
@@ -758,7 +766,7 @@ def sit_back_heels(rig):
                 # (clip frames f65-f107; the turn _paced, done by f106).
                 k = float(np.interp(fr, *_paced(SBH_PUSH_R, 64, 106)))
                 q = qslerp(rig._planted("r", SBH_HAND_R[1], None, np.array([0.0, 0.0, 0.0, 1.0])), _basis_q(*SBH_PUSH_TURN), k)
-                hand = {**_aimed_only(keyed), "pos": tuple(_hermite(u, SBH_PUSH_R)), "plant": 1.0 - smoothstep_((u - 62.5) / 2.5),
+                hand = {**_aimed_only(keyed), "pos": tuple(_hermite(u, SBH_PUSH_R)), "plant": 1.0 - smoothstep_((u - SBH_LIFT[0]) / SBH_LIFT[1]),
                         "knuckles": tuple(qrot(q, [0, 1.0, 0])), "blade": tuple(qrot(q, [0, 0, 1.0])), "aim": 1.0,
                         "pole": tuple(slerp_dir(under["pole"], keyed["pole"], k))}
             out["hand_r"] = hand
