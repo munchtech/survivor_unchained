@@ -77,7 +77,8 @@ public sealed partial class Battle
 
     /// <summary>bulwark.shield_arm: a blow the shield didn't turn still lands on the wall and lays a stone ("let them
     /// hit you, and they break on it"). From blocks alone a rebuke came once in three minutes, under 1% of the night's
-    /// damage; from every blow, at six stones and 8 m, about every 13 s and 5-8% (the owner, 11 October: "a little more").</summary>
+    /// damage; from every blow, at six stones and 8 m, every 22 s at tier 1 to 12 s at tier 4 and 3.6-7.9% (the owner,
+    /// 11 October: "a little more").</summary>
     void LampsOnBlowLanded()
     {
         if (Lamps.Full("shield_arm", "struck") > 0) AddStone();
@@ -91,6 +92,8 @@ public sealed partial class Battle
         if (!Lamps.Has("shield_arm") && !Lamps.Has("parry") && !Lamps.Has("mortar")) return;
         stoneLull = 0;
         int cap = (int)Lamps.Full("shield_arm", "stones", 6);
+        // Parry without Shield Arm lays stones the wall can't answer (no cap, no reach).
+        if (cap <= 0) return;
         stoneDrop = 0;
         if (++stones >= cap) { stones = 0; Rebuke(); }
         else StonesPeak = Math.Max(StonesPeak, stones);
@@ -140,7 +143,7 @@ public sealed partial class Battle
 
     /// <summary>Barrier made stronger while five stones or more are held (bulwark.stones.barrier).</summary>
     double StonesBarrier(double amount) =>
-        Lamps.Has("stones.barrier") && stones >= (int)Lamps.Full("stones.barrier", "at", 5) ? amount * (1 + Lamps.Size("stones.barrier", "more")) : amount;
+        Lamps.Has("stones.barrier") && stones >= (int)Lamps.Full("stones.barrier", "at", 3) ? amount * (1 + Lamps.Size("stones.barrier", "more")) : amount;
 
     /// <summary>A perfect dash's lamps: a barrier (perfect.barrier) and a stone (parry).</summary>
     void LampsOnPerfect()

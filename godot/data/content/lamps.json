@@ -1602,13 +1602,13 @@
    "at": [
     "bulwark.s3"
    ],
-   "text": "Barrier is 15% stronger while you hold five stones or more.",
+   "text": "Barrier is 15% stronger while you hold three stones or more.",
    "effects": [
     {
      "do": "rule",
      "rule": "stones.barrier",
      "args": {
-      "at": 5,
+      "at": 3,
       "more": 0.15
      }
     }
@@ -1745,8 +1745,8 @@
    ]
   },
   {
-   "id": "bulwark.rebuke.wider_rebuke",
-   "name": "Wider Rebuke",
+   "id": "bulwark.rebuke.readier_wall",
+   "name": "Readier Wall",
    "kind": "skill",
    "region": "road",
    "calling": "warden",
@@ -1757,11 +1757,11 @@
    "feeds": [
     "rebuke"
    ],
-   "text": "Rebuke strikes 50% wider.",
+   "text": "The wall answers at five stones.",
    "effects": [
     {
      "do": "rule",
-     "rule": "rebuke.wider",
+     "rule": "rebuke.readier",
      "phase": 5
     }
    ]
@@ -1890,7 +1890,7 @@
     "oathblade"
    ],
    "gate": 6,
-   "text": "Stones last through a lull, and each gives a barrier of 1% of health.",
+   "text": "Stones last through a lull, and each block gives a barrier of 1% of health.",
    "effects": [
     {
      "do": "rule",
