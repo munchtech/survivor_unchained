@@ -96,7 +96,7 @@ The main session keeps this current. It is the address list for SendMessage. Ret
 | Cinematics production | aece7b87e89b13f19 | docs/team/cinematics.md |
 | Performance and rendering (clarity in motion first) | PAUSED 11 Oct night (merged b87ad0c7: grade toe, portrait rig, LOD code; LOD art uncommitted in worktree agent-a4e0c353e61cca6dc). Next: oldleather LOD blob and re-judge, wilds toe, moonlight pass, fur round 2 (docs/handoff/performance.md "Paused here"). Resumes when a lead slot frees. On resume: her body now has two blend shapes (elbow_point_l/_r, from animation); the LOD must keep them | docs/team/performance.md |
 | Arena art | a0b61c278bdd5c994 | docs/team/arena_art.md |
-| Male hero (body, head, hair, outfits) | ab82cbe99e2937ddd | docs/team/hero_male.md |
+| Male hero (body, head, hair, outfits) | ac39445bca5508eaf (12 Oct: lessons from the heroine; body judged, remade if short of "muscular defined, attractive") | docs/team/hero_male.md |
 | Heroine face, hair and character creation's Look | a5c0bdd721be19ccf (successor 11, 12 Oct, owner: "lets finish face / hair"; in worktree agent-a2d632df7c7f21ec0: hair to a merge, then skin r12 and Sunborn's one try, then the neck sheet) | docs/team/face.md |
 | Asset provenance (what isn't ours, licences, credits, replacement plan) | a80ff0c7fd988b178 | docs/team/provenance.md |
 | Legal and Steam compliance (paused; docs/handoff/legal.md; wake before submission or for a new outfit) | — | docs/team/legal.md |

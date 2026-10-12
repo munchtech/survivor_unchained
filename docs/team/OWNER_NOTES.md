@@ -183,3 +183,8 @@ Not made by us: poses or animation whose purpose is a sex act, or that show nudi
 
 - **Light my way and Banked Flame:** "sounds good": the suggested path never lights Banked Flame (its gift only pays if you change how you spend the Flare).
 - **Banked Flame is too weak:** "0-5% faster is barely anything though, seems like its a lot of risk with not much reward." Played well, it must be a clear reward worth the 30% slower fill. Sent to the classes lead (options measured, judge picks).
+
+## 12 October 2026: the male hero
+
+- "Begin work on Hero, using the lessons we learned making Heroine to hopefully do it in a fraction of the time and effort and tokens."
+- **His body may be remade:** "you can totally make a new one from scratch if ours is lame. but remember sex appeal. muscular defined, attractive". A judge rates the current body against that; if it falls short, rebuild (hero_male.md path A is the start). Replaces "the bodies stay" for him.
