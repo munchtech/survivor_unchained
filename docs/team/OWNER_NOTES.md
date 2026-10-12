@@ -193,3 +193,7 @@ Not made by us: poses or animation whose purpose is a sex act, or that show nudi
 
 - "most have a double eyebrow thing and a like lip outline above the lip. the lip outline I think is intentional? to show definition/3d? the eyebrow thing might also be i'm not sure. curious about both". Crops in coordinator session ba85aba8's images (1.png eye, 2.png mouth). Sent to the face lead: diagnose (paint vs mesh: brow, lid crease, vermilion border), fix in skin round r12, both on judge j8's checklist at 2x.
 - **Cause found (face lead, 12 Oct):** the lip line is the mesh's real upper-lip edge, 3-4 mm above the painted red, shaded on purpose by the shared AO; the double brow is the upper lashes seen from below at the Look. Waiting on the owner: move the paints' red up to the mesh lip (fuller lips, recommended) or soften the shading.
+
+## 12 October 2026, night: lips and the get_up ponytail (answered)
+- **Lip line:** the owner, on the fuller-lip recolor: "the fuller lips is probably not great ... it dosnt look so hot". Recolor (a) stopped. Soft lip AO (b) is the default floor (halves the line, keeps the portraits' lips). One solver try at the true fix from the mesh side: bring the sculpt's upper-lip border down to each paint's red. If it fails its judge, (b) ships alone.
+- **get_up ponytail:** one more solver round with the braid's method (shoulder capsules in the chain solve, tip-last release); if it fails, today's ponytail (a 0.1 s cut at k46-48) ships. The braid fix is merged (6234da8b).

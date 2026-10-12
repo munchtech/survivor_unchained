@@ -258,6 +258,20 @@ public class FlareStagedTests
     }
 
     [Fact]
+    public void Butchers_hour_blows_deepen_one_bleed()
+    {
+        // Every blow while the Hour holds deepens the bleed (up to 5), so the Hour carries its weight on a boss.
+        var b = Carrying("butchers_hour");
+        b.FillFlare(100, "t");
+        Assert.True(b.UseFlare(1, 0));
+        var e = Foe(b, 2, 0, hp: 1e9, boss: true);
+        for (int i = 0; i < 3; i++) b.HitEnemy(e, 50, School.Physical, [Tag.Physical], new HitOpts { Projectile = true, NoCrit = true });
+        Assert.Equal(3, e.Status[StatusKind.Bleed]!.Stacks);
+        for (int i = 0; i < 4; i++) b.HitEnemy(e, 50, School.Physical, [Tag.Physical], new HitOpts { Projectile = true, NoCrit = true });
+        Assert.Equal(5, e.Status[StatusKind.Bleed]!.Stacks);
+    }
+
+    [Fact]
     public void A_flare_that_kills_a_boss_says_so_once()
     {
         var b = Carrying("the_roads_toll");
