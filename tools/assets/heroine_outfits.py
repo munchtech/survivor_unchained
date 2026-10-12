@@ -2326,7 +2326,7 @@ def mls_flat(pos, w, n, sigma):
     return out
 
 
-def refine_near(pos, at, tris, centres, radius, target, rounds=5):
+def refine_near(pos, at, tris, centres, radius, target, rounds=7):
     """Split every edge longer than `target` whose midpoint is within `radius`
     of a centre, conformingly (no T-junctions), up to `rounds` times; the
     new points take the mean of their ends' rows in `at` (a normal in its
@@ -2377,6 +2377,8 @@ def refine_near(pos, at, tris, centres, radius, target, rounds=5):
                 # corner y between p (on x-y) and q (on y-z); quad x p q z split on p-z
                 out += [(p, y, q), (x, p, z), (p, q, z)]
         tris = np.array(out, int)
+    # (its slivers lie 10-13 mm out, where the rise is already 0: within
+    # 7 mm every triangle is even, its least angle 45 degrees)
     print("REFINE %d -> %d points" % (n0, len(pos)))
     return pos, at, tris
 
