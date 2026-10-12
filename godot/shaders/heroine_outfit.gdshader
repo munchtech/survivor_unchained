@@ -104,10 +104,7 @@ void fragment() {
 	if (kind == 0) {
 		// Leather: the grain fine (the texture again at five times), the edge
 		// dyed dark and burnished, worn where it stands out, dark in creases.
-		// (the owner's 1.5 mm nipple rise read through the leather's grain, judge 10: grain at half within 8 mm; flag 0.8 to 1.0)
-		float nipf = flag > 0.75 ? clamp((1.0 - flag) * 5.0, 0.0, 1.0) : 0.0;
-		nrm = mix(nrm, vec3(0.5, 0.5, 1.0), 0.5 * nipf);
-		nrm = blend_normals(nrm, texture(normal_map, UV * 5.13 + 0.37).rgb, grain * (1.0 - 0.5 * nipf));
+		nrm = blend_normals(nrm, texture(normal_map, UV * 5.13 + 0.37).rgb, grain);
 		col *= mix(1.0, 0.62, near_edge);
 		col = mix(col, col * 1.18 + 0.02, bulge * 0.5);
 		col *= mix(1.0, 0.8, hollow);

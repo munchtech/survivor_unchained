@@ -2326,67 +2326,6 @@ def mls_flat(pos, w, n, sigma):
     return out
 
 
-def refine_near(pos, at, tris, centres, radius, target, rounds=5):
-    """Split every edge longer than `target` whose midpoint is within `radius`
-    of a centre, conformingly (no T-junctions), up to `rounds` times; the
-    new points take the mean of their ends' rows in `at` (a normal in its
-    columns 0:3 renormalised). Winding is kept."""
-    pos, at, tris = np.asarray(pos, float), np.asarray(at, float), np.asarray(tris, int)
-    n0 = len(pos)
-    tree = cKDTree(np.asarray(centres, float))
-    for _ in range(rounds):
-        e = np.sort(np.vstack([tris[:, [0, 1]], tris[:, [1, 2]], tris[:, [2, 0]]]), 1)
-        e = np.unique(e, axis=0)
-        mid = (pos[e[:, 0]] + pos[e[:, 1]]) / 2
-        ln = np.linalg.norm(pos[e[:, 0]] - pos[e[:, 1]], axis=1)
-        sel = (ln > target) & (tree.query(mid)[0] < radius)
-        if not sel.any():
-            break
-        e = e[sel]
-        base = len(pos)
-        key = {(int(a), int(c)): base + k for k, (a, c) in enumerate(e)}
-        nrow = (at[e[:, 0]] + at[e[:, 1]]) / 2
-        nl = np.linalg.norm(nrow[:, :3], axis=1)[:, None]
-        nrow[:, :3] = nrow[:, :3] / np.maximum(nl, 1e-12)
-        pos = np.vstack([pos, pos[e].mean(1)])
-        at = np.vstack([at, nrow])
-        out = []
-        for a, b_, c in tris:
-            m = [key.get((min(a, b_), max(a, b_))), key.get((min(b_, c), max(b_, c))), key.get((min(c, a), max(c, a)))]
-            k = sum(x is not None for x in m)
-            if k == 0:
-                out.append((a, b_, c))
-            elif k == 3:
-                out += [(a, m[0], m[2]), (m[0], b_, m[1]), (m[2], m[1], c), (m[0], m[1], m[2])]
-            elif k == 1:
-                # bisect from the opposite corner, in the triangle's own winding
-                if m[0] is not None:
-                    out += [(a, m[0], c), (m[0], b_, c)]
-                elif m[1] is not None:
-                    out += [(a, b_, m[1]), (a, m[1], c)]
-                else:
-                    out += [(a, b_, m[2]), (m[2], b_, c)]
-            else:
-                # two marked: rotate so the unmarked edge is the last one (z, x)
-                if m[2] is None:
-                    x, y, z, p, q = a, b_, c, m[0], m[1]
-                elif m[0] is None:
-                    x, y, z, p, q = b_, c, a, m[1], m[2]
-                else:
-                    x, y, z, p, q = c, a, b_, m[2], m[0]
-                # corner y between p (on x-y) and q (on y-z); quad x p q z split on p-z
-                out += [(p, y, q), (x, p, z), (p, q, z)]
-        tris = np.array(out, int)
-    print("REFINE %d -> %d points" % (n0, len(pos)))
-    return pos, at, tris
-
-
-def nipple_tips():
-    """Her two nipple tips (left first), each on the mirrored mean."""
-    mean = (NIPPLE["l"] * np.array([-1, 1, 1]) + NIPPLE["r"]) / 2
-    return [mean * np.array([-1 if sd == "l" else 1, 1, 1]) for sd in ("l", "r")]
-
-
 def over_nipples(pos, tris, least=float(os.environ.get("NIP_RISE", "0.0015")), s=0.008, dome=0.065, rim_reach=0.02, fit=0.02):
     """A garment cut over her filled breasts drawn over each nipple as a
     low, soft rise (`least` high, `s` its spread), so her nipples show
@@ -2400,11 +2339,9 @@ def over_nipples(pos, tris, least=float(os.environ.get("NIP_RISE", "0.0015")), s
     into a dome within `dome` of each tip, along its normals only, and the
     rise is 0.7 mm over about 16 mm. Judge 9: at 0.7 mm it can't be seen
     from either side, and the owner asked for it on the Arcanist and the
-    Ranger: back to the owner's own 1.5 mm, NIP_RISE. Judge 10 ruled 1.5 mm
-    unreadable as a Gaussian over decimated 6 mm triangles; now a 3 mm
-    plateau eased to 0 at 7 mm on a locally refined sheet, kept out of the
-    decimation.)"""
-    tips = nipple_tips()
+    Ranger: back to the owner's own 1.5 mm, NIP_RISE.)"""
+    mean = (NIPPLE["l"] * np.array([-1, 1, 1]) + NIPPLE["r"]) / 2
+    tips = [mean * np.array([-1 if sd == "l" else 1, 1, 1]) for sd in ("l", "r")]
     dist = np.min([np.linalg.norm(pos - t, axis=1) for t in tips], axis=0)
     # (judge 3: eased within 35 mm on a smoothstep, the dome's own rim was a
     # bump in the highlight. Now 65 mm on a smootherstep (curvature-continuous
@@ -2429,27 +2366,19 @@ def over_nipples(pos, tris, least=float(os.environ.get("NIP_RISE", "0.0015")), s
         pos = mls_flat(pos, w * near, nrm / np.linalg.norm(nrm), fit)
     nor = vertex_normals(pos, tris)
     out = pos.copy()
-    plateau = float(os.environ.get("NIP_PLATEAU", "0.003"))
-    reach = float(os.environ.get("NIP_REACH", "0.007"))
-    for sd, tip in zip(("l", "r"), tips):
-        near = np.where(np.linalg.norm(pos - tip, axis=1) < max(0.05, reach))[0]
+    for sd in ("l", "r"):
+        tip = mean * np.array([-1 if sd == "l" else 1, 1, 1])
+        near = np.where(np.linalg.norm(pos - tip, axis=1) < 0.05)[0]
         if len(near) < 10:
             continue
         centre = pos[near[cKDTree(pos[near]).query(tip)[1]]]
         h = least
         d = np.linalg.norm(pos[near] - centre, axis=1)
-        t = np.clip((d - plateau) / (reach - plateau), 0, 1)
-        f = 1 - t ** 3 * (t * (6 * t - 15) + 10)
-        out[near] += nor[near] * (h * f)[:, None]
-        ne = np.vstack([tris[:, [0, 1]], tris[:, [1, 2]], tris[:, [2, 0]]])
-        dd = np.linalg.norm(pos - centre, axis=1)
-        ine = ne[(dd[ne[:, 0]] < reach) & (dd[ne[:, 1]] < reach)]
-        med = np.median(np.linalg.norm(pos[ine[:, 0]] - pos[ine[:, 1]], axis=1)) * 1e3 if len(ine) else float("nan")
-        print("NIPPLE RISE %s %.1f mm plateau %.1f reach %.1f, edge med %.2f mm within reach" % (sd, h * 1e3, plateau * 1e3, reach * 1e3, med))
+        out[near] += nor[near] * (h * np.exp(-(d / s) ** 2))[:, None]
+        print("NIPPLE RISE %s %.1f mm" % (sd, h * 1e3))
     return out
 
 
-NIP_PIECES = set()   # (the cups with a nipple rise: refined there, kept out of the decimation)
 SHEET = {}   # (each piece's sheet as finished: points, triangles, weights, thickness)
 
 
@@ -2521,10 +2450,6 @@ def piece(name, field, mkey, lift=0.003, thick=0.003, smooth=0, bevel=0.0012, tr
             print("STIFF %s: fitted %.0f mm wide, lifted %.1f mm" % (name, wide * 1000, up * 1000))
     dump(name, "2shaped", pos, tris, at[:, -1])
     if filled and not dome:
-        allat = np.c_[at, gap_at]
-        pos, allat, tris = refine_near(pos, allat, tris, nipple_tips(), float(os.environ.get("NIP_REFINE_R", "0.012")), float(os.environ.get("NIP_EDGE", "0.0008")))
-        at, gap_at = allat[:, :-1], allat[:, -1]
-        NIP_PIECES.add(name)
         pos = over_nipples(pos, tris)
     if dome:
         cut_from, cut_at = pos.copy(), at.copy()
@@ -2961,8 +2886,6 @@ def finish(name, pos, wt, tris, mkey, thick, bevel, budget=3000, scraps=True):
         A = adjacency(len(pos), tris)
         for _ in range(2):
             keep = np.maximum(keep, (A @ keep > 0).astype(float))
-        if name in NIP_PIECES:
-            keep[np.min([np.linalg.norm(pos - t, axis=1) for t in nipple_tips()], axis=0) < 0.014] = 1
         inner = obj.vertex_groups.new(name="_thin")
         inner.add([int(i) for i in np.where(keep == 0)[0]], 1.0, "REPLACE")
         dc = obj.modifiers.new("thin", "DECIMATE")
@@ -5771,14 +5694,7 @@ def detail(objs, rays=20, reach=0.03):
         # (alpha, a flag for the shader: 0 a rolled binding, drawn matte if leather;
         # 0.5 a pauldron plate laid out round her arm, brushed along its UVs)
         flag = 0.0 if "_bind" in o.name else 0.5 if re.fullmatch(r"ranger\.(pauldron\d|bracer_[lr])", o.name) else 1.0
-        flag_v = np.full(len(V), flag)
-        if flag == 1.0 and o.name in NIP_PIECES:
-            # (grain eased toward the nipple so the 1.5 mm rise reads through it: alpha 1.0 down to 0.8 within 7 mm)
-            dn = np.min([np.linalg.norm(V - t, axis=1) for t in nipple_tips()], axis=0)
-            gs = np.clip((dn - 0.007) / 0.004, 0, 1)
-            flag_v = 1.0 - 0.2 * (1 - gs * gs * (3 - 2 * gs))
-            print("NIP GRAIN %s least %.1f mm" % (o.name, dn.min() * 1e3))
-        col.data.foreach_set("color", np.c_[ao, np.full(len(V), rnd), np.full(len(V), painted), flag_v].astype(np.float32).ravel())
+        col.data.foreach_set("color", np.c_[ao, np.full(len(V), rnd), np.full(len(V), painted), np.full(len(V), flag)].astype(np.float32).ravel())
         me.color_attributes.active_color = col
     print("DETAIL", len(objs), "pieces")
 
