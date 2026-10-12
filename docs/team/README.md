@@ -98,7 +98,7 @@ The main session keeps this current. It is the address list for SendMessage. Ret
 | Cinematics production | aece7b87e89b13f19 | docs/team/cinematics.md |
 | Performance and rendering (clarity in motion first) | PAUSED 11 Oct night (merged b87ad0c7: grade toe, portrait rig, LOD code; LOD art uncommitted in worktree agent-a4e0c353e61cca6dc). Next: oldleather LOD blob and re-judge, wilds toe, moonlight pass, fur round 2 (docs/handoff/performance.md "Paused here"). Resumes when a lead slot frees. On resume: her body now has two blend shapes (elbow_point_l/_r, from animation); the LOD must keep them | docs/team/performance.md |
 | Arena art | a0b61c278bdd5c994 | docs/team/arena_art.md |
-| Male hero (body, head, hair, outfits) | PAUSED 12 Oct evening (handoff docs/handoff/hero_male.md on worktree-agent-ac39445bca5508eaf@9c51a20d) | docs/team/hero_male.md |
+| Male hero (body, head, hair, outfits) | NEXT: starts when a Blender lead stops (the owner, 12 Oct night). PAUSED 12 Oct evening (handoff docs/handoff/hero_male.md on worktree-agent-ac39445bca5508eaf@9c51a20d) | docs/team/hero_male.md |
 | Heroine face, hair and character creation's Look | a087324531e9b0bc4 (RUNNING 12 Oct night, worktree agent-a2d632df7c7f21ec0; skin branch port first, then B2) | docs/team/face.md |
 | Asset provenance (what isn't ours, licences, credits, replacement plan) | a80ff0c7fd988b178 | docs/team/provenance.md |
 | Legal and Steam compliance (paused; docs/handoff/legal.md; wake before submission or for a new outfit) | — | docs/team/legal.md |
@@ -106,4 +106,5 @@ The main session keeps this current. It is the address list for SendMessage. Ret
 | Creatures and models (our own boar first, then MODELS_TO_MAKE.md) | af551cacc6292152f | docs/team/creatures.md |
 | Story editor (paused after notes 02 at 435k; a fresh editor reads the next draft) | — | docs/story/EDITORIAL_LETTER.md |
 | Heroine body and outfits (now a lead of its own; was the main session's) | a78ecab77b7ddfea2 (RUNNING 12 Oct night, worktree agent-a5ca10091b08dc429; tighter nipple shape at 1.5 mm, then judge 10's list) | docs/team/outfits.md |
+| Camera close-up (wheel zoom in town, idle close-up; the owner, 12 Oct) | a672c7205533f7baa (RUNNING 12 Oct night, worktree camera-1) | this row |
 | Marionette, the character app (a tool: idea to engine; ease like Meshy, quality like Maya; one-click AI-assisted fixing) | — (paused; status page is its own HANDOFF.md "Start here") | Marionette/HANDOFF.md, docs/HISTORY.md "The goal" |
