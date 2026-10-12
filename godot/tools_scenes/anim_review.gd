@@ -27,7 +27,7 @@ extends SceneTree
 #                                          an elbow's share then follows the upper arm; use BODYDIR)
 #   SKINDBG=faces|cull|uv                  her skin as faces seen from behind (red) / normals turned
 #                                          away (blue); her own skin drawn from both sides; her UVs as colour
-#   HAIRCLEAR=1                            debug: per photographed frame, how near her hair chain comes to her posed
+#   HAIRCLEAR=1 [HAIRMESH=folder]          debug: per photographed frame, how near her hair chain comes to her posed
 #                                          body and outfit (signed cm, negative = inside) and its jump in her neck frame
 var clip = ""
 var out = ""
@@ -516,11 +516,12 @@ func _process(delta):
 	if gestures != null and k == int(float(env("GESTUREAT", "0")) * 30):
 		gestures.Play(ap.get_animation(env("GESTURE", "")), 1.0, env("HOLD", "") != "")
 	if k % step == 0:
-		# DEBUG=bone: print where that bone is and which way its axes point.
+		# DEBUG=bone[,bone...]: print where each bone is and which way its axes point.
 		if env("DEBUG", "") != "":
 			var sk: Skeleton3D = her.find_children("*", "Skeleton3D", true, false)[0]
-			var gp = sk.get_bone_global_pose(sk.find_bone(env("DEBUG", "")))
-			print("DBG %d t=%.3f pos=%s y=%s z=%s" % [k, ap.current_animation_position, gp.origin, gp.basis.y, gp.basis.z])
+			for bn in env("DEBUG", "").split(","):
+				var gp = sk.get_bone_global_pose(sk.find_bone(bn))
+				print("DBG %d t=%.3f %s pos=%s x=%s y=%s z=%s" % [k, ap.current_animation_position, bn, gp.origin, gp.basis.x, gp.basis.y, gp.basis.z])
 		var img = vp.get_texture().get_image()
 		if env("HAIRCLEAR", "") != "": hair_clear(k)
 		shots.append(img)
@@ -582,6 +583,16 @@ func hair_clear(k):
 					var g = gt * pv[i]
 					if g.distance_to(p0) <= 0.45:
 						vs.append([g, (nb3 * nv[i]).normalized(), String(m.name)])
+		# HAIRMESH=folder: these posed vertices (position, normal, mesh) saved per
+		# frame, so the clearance can be replayed offline against a changed chain.
+		if env("HAIRMESH", "") != "":
+			var f = FileAccess.open("%s/k%02d.bin" % [env("HAIRMESH", ""), k], FileAccess.WRITE)
+			var names = []
+			for m in meshes: names.append(String(m.name))
+			for v in vs:
+				for c in [v[0].x, v[0].y, v[0].z, v[1].x, v[1].y, v[1].z, float(names.find(v[2]))]: f.store_float(c)
+			f.close()
+			if k == 0: print("HAIRMESH names: ", ",".join(names))
 		var worst = INF
 		var wseg = 0
 		var wmesh = ""
