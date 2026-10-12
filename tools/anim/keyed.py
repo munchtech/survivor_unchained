@@ -515,6 +515,20 @@ class Rig:
             pole = np.array(spec.get("pole", (s * 0.6, -0.3, -1.0)), float)
             pole = qrot(frame, pole) if spec.get("frame") == "chest" else pole
             S = gpos[ua].copy()
+            if "reach" in spec:
+                # A hand keyed at or past the arm's length ("reach": the most
+                # of it to use) drawn in short of it along a soft curve, so
+                # the arm eases toward straight instead of locking, and the
+                # elbow never jumps from straight to bent as the hand comes
+                # back within reach; "reach_w" eases it in and out.
+                full = np.linalg.norm(self.prest[la] - self.prest[ua]) + np.linalg.norm(self.prest[ha] - self.prest[la])
+                top = float(spec["reach"]) * full
+                knee_ = 0.92 * top
+                d = np.asarray(target, float) - S
+                n = float(np.linalg.norm(d))
+                if n > knee_:
+                    k = float(spec.get("reach_w", 1.0))
+                    target = np.asarray(target, float) + k * (S + d / n * (knee_ + (top - knee_) * math.tanh((n - knee_) / (top - knee_))) - target)
             elbow_at = getattr(self, "elbow_force", None)
             if elbow_at is not None and side in elbow_at:
                 # Where the elbow goes, settled over the whole clip (solve_frames):
@@ -711,8 +725,11 @@ class Rig:
             kb, an = two_bone_ik(gpos[th], gpos[ca], gpos[fo], target, gpos[ca] + pole)
             # The thigh turned about its length so the knee bends straight
             # over the shin, never out to the side.
+            # (A leg laid by hand, knee and all, `"laid": True`, is left where
+            # it is put: the hip's limit is for keyed knees, and its swing
+            # would carry a placed one off its place.)
             delta[th], delta[ca] = self._bend("leg", side, th, ca, fo, delta[th], delta[ca], gpos[th].copy(), kb, an, pole,
-                                        d_par=delta[sk.parent[th]])
+                                        d_par=None if spec.get("laid") else delta[sk.parent[th]])
             refresh()
             # The foot keeps its own turn in the world, whatever the leg does.
             fq = qeuler(*spec.get("rot", (0, 0, 0)))
