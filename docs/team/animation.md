@@ -2,6 +2,11 @@
 
 Lead 10 (12 October), branch `worktree-agent-af8dbda3195e438e4`. Next steps: `docs/handoff/animation.md` section 0.
 
+## State (2026-10-12, lead 11): handed off
+
+**sit_back_heels: judge 23b's G2 and G5 fixed, G1 and G3 fixed at the cause, G4 open; unjudged, not repacked (04e6b3c0).** Knees laid exactly and held (right knee 48-49 mm, no travel over f62-89); ankles no longer twisted on the shin (was 90 deg); the right hand truly planted and leant on through the side-sit (it had hung 13 cm off the ground on a locked arm). New opt-in solver keys (`laid`, `reach`, `reach_w`; keyed.py). Next: the hand turn spikes and G4, the judge, the repack, then get_up's skim, then the hair re-shoots (the hair swing is on integration). Handoff section 0.
+- For a rebuilt male body (the hero lead): the same bone names and rest pose the clip tools expect (`tools/anim/data/*_skeleton.json`, dumped from the build), helper bones from `tools/anim/helpers.py`, and a motion-check re-run on his clips.
+
 ## State (2026-10-12, lead 10): PAUSED by the owner, no successor
 
 **sit_back_heels (C01) remade f35-f96 (judge 23 rounds a and b: PASS WITH FIXES; G1-G5 one pass made, unjudged, v14).** A side-sit with both shins back, the hips laid round planted knees, feet on their edges in the draw-up, the left hand on and beside its thigh; a per-clip soft hip limit (`Rig.hip_soft`), so no other clip changed. Before -> after: knee jump 682 -> 29 mm, toes -188 -> -33 mm, knee gap 867 -> 322 mm.
