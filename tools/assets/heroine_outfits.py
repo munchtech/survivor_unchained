@@ -1535,7 +1535,8 @@ def bind_edges(name, pos, at, tris, key, width, height, overhang, thick, sigma=0
     # own plane, fully to BF_IN in from the edge and faded out by BF_OUT: the
     # leather rose 17 deg from 2.5 mm in and lay over the roll's inner flank,
     # so the roll showed 0.5 mm and the edge read torn, judge 9, solver E)
-    BF_IN, BF_OUT = (float(v) for v in os.environ.get("BIND_FLAT", "0.0045,0.0105").split(","))
+    BF_IN, BF_OUT = (float(v) for v in os.environ.get("BIND_FLAT", "0.004,0.008").split(","))
+    BF_MAX = float(os.environ.get("BIND_FLATMAX", "0.0008"))   # (pulled at most this far: unbounded, 6-12 mm, it folded the cup's turn under her arm, e1)
     for cur, nrm, outward in planes:
         dn, jn = cKDTree(cur).query(pos)
         inw = -((pos - cur[jn]) * outward[jn]).sum(1)       # (how far in from the edge)
@@ -1543,7 +1544,7 @@ def bind_edges(name, pos, at, tris, key, width, height, overhang, thick, sigma=0
         t_ = np.clip((inw[sel] - BF_IN) / (BF_OUT - BF_IN), 0, 1)
         w_ = 1 - t_ * t_ * (3 - 2 * t_)
         h_ = ((pos[sel] - cur[jn[sel]]) * nrm[jn[sel]]).sum(1)
-        pos[sel] -= nrm[jn[sel]] * (w_ * h_)[:, None]
+        pos[sel] -= nrm[jn[sel]] * np.clip(w_ * h_, -BF_MAX, BF_MAX)[:, None]
         if len(h_):
             print("BINDFLAT %s: %d points laid in the roll's plane, off it by up to %.2f mm before" % (name, sel.sum(), np.abs(h_).max() * 1000))
     print("BOUND", name, bound, "of", len(loops), "edge loops")
@@ -5107,7 +5108,7 @@ def ranger():
     pant = AND(X - 0.004, (edge_l + 0.03) - Z, (tops["l"] + 0.06) - LEG_S["l"], 0.3 - ARMW["l"])
     out = [
         *piece("ranger.corset", corset, "forestleather", lift=lift, thick=thick, smooth=8, iron=60, soften=20, slot="right",
-               trim=edge(0.006), filled=True, keep_off=("Head", "neck_01"), edge=6, cut=exact),
+               trim=("darkleather", 0.006, float(os.environ.get("CORSET_ROLL", "0.001")), 0.0013), filled=True, keep_off=("Head", "neck_01"), edge=6, cut=exact),   # (its roll 1 mm proud: at 0.6 the cup's own rise behind it covered its inner flank, judge 9)
         *grommets("ranger.eyelets", eye[1] + eye[-1], enrm[1] + enrm[-1], "bronze"),
         *laces,
         *girdle("ranger.belt", belt_z, 0.042, "brownleather", lift=belt_lift, thick=0.004),
