@@ -38,7 +38,7 @@ LUMA = np.array([0.2126, 0.7152, 0.0722])
 #  the old red where they meet (JOIN, under the old red's top, where the band's ramp starts) and eased to the face's
 #  upper red over the band: no lower-lip pink, no stripe)
 JOIN = (0.0021, 0.0013)     # (the old red's colour where the band meets it: this far under its old top)
-DARKEN = {"sunborn": 0.90}  # (j8b: Sunborn's upper lip darker, like her _23)
+DARKEN = {"sunborn": 0.72}  # (j8b: Sunborn's upper lip darker, like her _23; 0.90 read lighter than her old upper red at the Look, ls5)
 CHROMA = {}
 LINES = 0.6                 # (her lower lip's vertical lines carried into the band at this strength)
 LINES_SIGMA = 4.0           # (front-grid px, 0.1 mm: the high-pass across her lip)
