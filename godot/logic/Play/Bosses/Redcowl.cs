@@ -46,7 +46,9 @@ public sealed class Redcowl : StoryBoss
     /// the length, as Greymuzzle's was: the same at every tier. His blows are measured against her (Teeth). Raised from 103 to 118
     /// (11 October, the owner's call): with the Flare he fell 10% (mean) to 13% (median) sooner; at 118 the fight is its pre-Flare
     /// length again (deft -1%, plain 0%).</summary>
-    public override double HealthMul(int tier) => 118;
+    // 12 October: 118 -> 110. With the Flare's press no longer staggering a boss outright and the Toll and Burns Twice
+    // measured to the other Flares' share of a boss, every calling is within 3% of the pre-Flare length (Act 1, 96 seeds, both pilots).
+    public override double HealthMul(int tier) => 110;
     public override double Teeth => 0.4;
     protected override bool DiesAtZero => false;
 

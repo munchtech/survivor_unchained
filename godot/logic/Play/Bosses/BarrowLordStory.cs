@@ -45,7 +45,9 @@ public sealed class BarrowLordStory : StoryBoss, IBound
     public override string ReEntry => "The dead part again. He comes up through them, and gives you the same long look.";
     /// <summary>Measured to the length, as the others were: the same at every tier. Raised from 130 to 148 (11 October, the
     /// owner's call): with the Flare he fell 9 to 10% (mean) sooner; at 148 the fight is its pre-Flare length again (deft -1%, plain 0%).</summary>
-    public override double HealthMul(int tier) => 148;
+    // 12 October: 148 -> 141. With the Flare's press no longer staggering a boss outright and the Toll and Burns Twice
+    // measured to the other Flares' share of a boss, every calling is within 3% of the pre-Flare length (Act 1, 96 seeds, both pilots).
+    public override double HealthMul(int tier) => 141;
     /// <summary>His teeth are in his marked moves: a pilum or the gladius about a third of her own health.</summary>
     public override double Teeth => 0.22;
     protected override bool DiesAtZero => false;

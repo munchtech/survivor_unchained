@@ -189,7 +189,7 @@
     "sear": 2,
     "mend": 0.04,
     "peal": 0.08,
-    "stagger": 15,
+    "stagger": 0.15,
     "flee": 3
    }
   },
@@ -343,6 +343,7 @@
     "shatter": 1.0,
     "emberRadius": 2.5,
     "onBoss": 4,
+    "bossMul": 1.0,
     "moreEmbers": 18,
     "blackIce": 0.5
    }
@@ -434,7 +435,7 @@
     "execute": 0.25,
     "lastCut": 0.4,
     "onBoss": 4,
-    "bossMul": 0.85,
+    "bossMul": 0.25,
     "doubled": 18,
     "gone": 3
    }

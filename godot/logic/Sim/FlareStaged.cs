@@ -84,7 +84,7 @@ public sealed partial class Battle
     void BellToll(FlareDef f, bool last)
     {
         var p = Player;
-        double stun = f.Arg("stun", 1), sear = f.Arg("sear", 2), stagger = f.Arg("stagger", 15);
+        double stun = f.Arg("stun", 1), sear = f.Arg("sear", 2), stagger = f.Arg("stagger", 0.15);
         ForEachHostileInRadius(p.X, p.Z, flareReach, (e, d) =>
         {
             double dealt = FlareHit(e, f.Arg("toll", 0.45), f.School, 0, p.X, p.Z);
