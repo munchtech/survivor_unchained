@@ -10,6 +10,7 @@ The owner: "let everyone finish what they are currently working on but then wind
 
 ### Stopped (filled in as each lead stops)
 
+- **classes: STOPPED at classes-8@0034fcda** (worktree agent-a54ebb1323cb25841 stays; NOT merged, unjudged; handoff docs/handoff/classes.md on that branch). **First on restart: integration's staged Butcher's Hour fails Act 1** against its plain form (bosses +13.9%, falls 0.061 to 0.105 a run, wins 97.9 to 96.0%): its pulses were 18% of a boss and the staged Hour has no damage of its own; fix (bleed 1.0 or 1.6) queued, not run. Also: Banked Flame's reward can't show at arena bosses (phase minimums cap kill time; with `--floors 0` the lamp already gives -13% banked), judge to rule on bursts through minimums; Bell's Vault cell -9.3% to re-run; Light my way lights all three Flare modifiers by level 5-7 (unmeasured on Act 1); the judge's fixes 2-9 built; the phase-6 plan drafted in CLASSES §7 (6a: a staged Strike for the four types without one), unjudged, not yet shown to the owner.
 ## 12 October, late: winding down for a full session handoff (the owner). Restart here
 
 The owner asked for a wind-down: classes stops after the Echo fix, the Act 2 writer at its next good point, outfits and animation at their next milestone, and face works to its budget. None of them gets a successor. Each lead's handoff on its branch is written for a cold start. All five have stopped (12 October, late); nothing is running. Restart any area from its handoff on its branch.
