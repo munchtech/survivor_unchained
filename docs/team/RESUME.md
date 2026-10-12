@@ -35,7 +35,7 @@ The owner asked for a wind-down: classes stops after the Echo fix, the Act 2 wri
 - **Tokens and quality, always (the owner, 7 October):** the cheapest route that ends at the same quality, as standing permission. Long-running leads are `su-lead-high`; max effort goes to short-lived `su-lead-max` judges and solvers (story writer and editor stay `su-lead-max` leads). Pass `effort` on every spawn. README "Working lean".
 
 - 3 to 5 leads at once. The rest are paused with their handoffs and resumed in turn.
-- Heavy work takes turns (`tools/turn.py`): `gpu` (ComfyUI, TRELLIS, MoGe, one at a time), `blender` (two), `godot` (three). A fair queue: ask again within 90 s to keep your place.
+- Heavy work takes turns (`tools/turn.py`): `gpu` (ComfyUI, TRELLIS, MoGe, one at a time), `blender` (three), `godot` (four), with RAM and VRAM guards. A fair queue: ask again within 90 s to keep your place.
 - Batch shots and look once. Hand off at about 300k tokens of context. Lean handoffs. See README "Working lean".
 - Before you show the main session anything, run a strict self-critique at 1:1 and send the findings with it.
 
