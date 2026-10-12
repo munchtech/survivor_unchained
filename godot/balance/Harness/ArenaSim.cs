@@ -109,6 +109,9 @@ public static class ArenaSim
     public const double Dt = 1 / 60.0;
     /// <summary>--charges 0: every charger on its own clock, as before the charge director.</summary>
     public static bool Director = true;
+    /// <summary>Lamps lit past the board (--light; "{calling}" is the survivor's calling): a measuring aid,
+    /// for a lamp Light my way never lights (Banked Flame).</summary>
+    public static List<string> Light = new();
 
     public static string Card(Offer o) => o.Kind switch
     {
@@ -176,6 +179,8 @@ public static class ArenaSim
             j.World.Facts["lamps.atlas"] = LampBook.AtlasLamps;
         }
         if (spec.Lamps is "suggested" or "full") LampBook.LightSuggested(j.Ch, j.World);
+        foreach (var id in Light.Select(x => x.Replace("{calling}", spec.Calling)))
+            if (!LampBook.Now(j.Ch).Lit.Contains(id)) LampBook.Now(j.Ch).Lit.Add(id);
         // --flare stand: carry the road's Stand (its lamp lit past its gate if the board hasn't reached it; a measuring aid).
         if (spec.Flare == "stand")
         {

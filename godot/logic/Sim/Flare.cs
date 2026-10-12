@@ -78,7 +78,12 @@ public sealed partial class Battle
     {
         double m = Rules.FlareFill;
         if (Boons.ContainsKey("short_wick")) m *= 1.35;
-        if (Lamp("flare.banked")) m *= 1 - Lamps.Full("flare.banked", "slower", 0.3);
+        // Banked Flame's price: the first charge at "slower", the second (the one held back) at "second".
+        if (Lamp("flare.banked"))
+        {
+            double slower = Lamps.Full("flare.banked", "slower", 0.3);
+            m *= 1 - (FlareMeter >= FlareFull ? Lamps.Full("flare.banked", "second", slower) : slower);
+        }
         return m;
     }
 
@@ -164,6 +169,7 @@ public sealed partial class Battle
     {
         var p = Player;
         if (!Combat || !p.Alive || Flare is not { } f || FlareMeter < FlareFull || FlareT > 0) return false;
+        bool fromFullBank = FlareCharges > 1 && FlareMeter >= FlareFull * FlareCharges;
         FlareMeter -= FlareFull;
         FlareCasts++;
         FlareTimes.Add(Time);
@@ -178,6 +184,9 @@ public sealed partial class Battle
         // The board's lamps feed the skills by their tags, so the Flare grows with the board too, or a full
         // board's Flare fell to a tenth of a boss's damage (the harness, 12 October).
         flarePower = Content.Lamps.FlarePower(f, EmberOn ? EmberLevel : Level) * (1 + 0.25 * rank) * (1 + FlareLampGlow * Lamps.Lit);
+        // Banked Flame's gift beyond the second charge: every Flare "harder", one spent from a full bank "held" more.
+        if (Lamp("flare.banked"))
+            flarePower *= 1 + Lamps.Full("flare.banked", "harder", 0) + (fromFullBank ? Lamps.Full("flare.banked", "held", 0) : 0);
         bool stand = f.Kind == FlareKind.Stand;
         flareAt = FlareSchedule(f);
         // A staged Strike runs to its last blow and a breath after (the Fourth Toll), never past the 1.2 s.

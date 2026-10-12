@@ -105,7 +105,7 @@ public sealed class FlareDef
     public double GuardValue;
     /// <summary>A staged Flare's beat (phase 2, CLASSES.md §3.5-3.6): its timings from the press in seconds ("key": the
     /// key pose's end; "first"/"step" or "first"/"last": the blows'; Burns Twice's "frost") and its hitstop in frames
-    /// ("hitstop", "hitstopLast", "hitstopExecute"). The logic schedules its blows by it; the view reads the rest.</summary>
+    /// ("hitstop", "hitstopLast", "hitstopExecute", "hitstopFrost"). The logic schedules its blows by it; the view reads the rest.</summary>
     public Dictionary<string, double> Beat = new();
     /// <summary>A staged Flare's own numbers (shares of its power, seconds, metres), by name.</summary>
     public Dictionary<string, double> Args = new();

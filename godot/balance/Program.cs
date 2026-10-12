@@ -10,6 +10,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using SurvivorUnchained.Balance;
 using SurvivorUnchained.Content;
+using SurvivorUnchained.Core;
 using SurvivorUnchained.Maps;
 using SurvivorUnchained.Rpg;
 
@@ -43,6 +44,14 @@ var opt = Opts.Parse(args);
 Pilot.ReadsBosses = opt.Get("bossread", "1") != "0";
 Pilot.Banks = opt.Get("bank", "1") != "0";
 ArenaSim.Director = opt.Get("charges", "1") != "0";
+if (opt.Has("light")) ArenaSim.Light = opt.List("light", "").ToList();
+// --over DIR: data files found under DIR are read in place of godot/data's (a variant's lamps.json, no rebuild).
+if (opt.Has("over"))
+{
+    string over = opt.Get("over", "");
+    var read = DataFiles.Text;
+    DataFiles.Text = rel => File.Exists(Path.Combine(over, rel)) ? File.ReadAllText(Path.Combine(over, rel)) : read(rel);
+}
 string cmd = args.Length > 0 && !args[0].StartsWith("--") ? args[0] : "help";
 // The content is read once, before the runs share it.
 _ = Callings.Archetypes; _ = Items.All; _ = Weapons.All; _ = Boons.All;
