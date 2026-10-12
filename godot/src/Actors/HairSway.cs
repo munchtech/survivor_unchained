@@ -616,9 +616,9 @@ public partial class HairSway : Node
     // cm out): so it has a slope capsule more each side, from above the base of her neck (3.5 cm) down to the ridge's
     // neck end, and the margin 4.5. Those held it in front of her shoulder until k60 and then let it through her warden
     // collar (k56, -4.8), so its carry is quicker (180 degrees in 0.15 s, not 0.35) and no point moves over 6 cm a frame.
-    // Offline (tools/scratch/face19/sv15): segments 4-7 k28-60 -4.1 -> -0.8 cm (warden) and -0.4 (reaver, bar the tip's
-    // brush on her back after it, -3.2, today's -4.3), the carry ends k52 (k51), the largest move k40-60 6.3 (7.7),
-    // k28-60 9.3 (10.1); every other clip 0.00. PONYRIDGE=1 turns it on.
+    // Offline and in Godot (tools/scratch/face19/sv15): segments 4-7 k28-60 -4.1 -> -0.8 cm (warden and reaver; k40-52
+    // -0.3), the carry ends k52 (k51), the largest move k40-60 6.2 (7.7), k28-60 10.8 at k31 (10.1 at k30);
+    // every other clip 0.00 offline. PONYRIDGE=1 turns it on (off until a judge passes it).
     bool ridge, pony;
     int ridgeBone = -1;
     static readonly Vector3 RidgeA = new(-0.1069f, 1.5404f, -0.0536f), RidgeB = new(-0.2115f, 1.501f, -0.0434f), SlopeA = new(-0.05f, 1.585f, -0.05f);
