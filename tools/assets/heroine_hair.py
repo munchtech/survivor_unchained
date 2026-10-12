@@ -594,7 +594,7 @@ def style_long():
         m = np.abs(hang[:, 2] - z) < 0.03
         pts.append([np.median(hang[m, 0]), np.percentile(hang[m, 1], 60), z] if m.sum() > 20 else [0.0, pts[-1][1] if pts else 0.1, z])
     global CHAIN
-    CHAIN = {"points": np.array(pts), "bone": "spine_03", "stiff": 0.05,
+    CHAIN = {"points": np.array(pts), "bone": "spine_03", "stiff": 0.05, "bend": 0.02,
              "weight": lambda at: np.clip((top + 0.02 - at[:, 2]) / 0.08, 0, 1) * np.clip(at[:, 1] / 0.05, 0, 1)}
     return layers
 
@@ -923,7 +923,7 @@ def style_ponytail():
     parts += hang
     parts.append(band(T + axis * 0.004, axis, 0.0135))
     global CHAIN
-    CHAIN = {"points": middle, "bone": "Head", "stiff": 0.01}
+    CHAIN = {"points": middle, "bone": "Head", "stiff": 0.01, "bend": 0.03}
     return parts
 
 
@@ -969,7 +969,7 @@ def style_braid():
     for c in parts[on_head:]:                                    # (all after what is gathered to the tie)
         c["swing"] = True
     global CHAIN
-    CHAIN = {"points": resample(np.vstack([C[:end + 1], P.mean(0)])[None], 8)[0], "bone": "Head", "stiff": 0.012}
+    CHAIN = {"points": resample(np.vstack([C[:end + 1], P.mean(0)])[None], 8)[0], "bone": "Head", "stiff": 0.012, "bend": 0.03, "corner": 60}
     return parts
 
 
@@ -1205,7 +1205,7 @@ def build(style):
         import json
         g = lambda v: [float(v[0]), float(v[2]), float(-v[1])]
         with open(os.path.join(ART, f"heroine_hair_{style}.chain.json"), "w", encoding="utf-8") as fh:
-            json.dump({"bone": CHAIN["bone"], "stiff": CHAIN["stiff"], "points": [g(q) for q in CHAIN["points"]],
+            json.dump({"bone": CHAIN["bone"], "stiff": CHAIN["stiff"], "bend": CHAIN["bend"], **({"corner": CHAIN["corner"]} if "corner" in CHAIN else {}), "points": [g(q) for q in CHAIN["points"]],
                        "spheres": [{"bone": sp["bone"], "at": g(sp["at"]), "r": sp["r"]} for sp in chain_spheres()]}, fh, indent=1)
         # (what swings on a chain from her head is her head's alone: the chain moves it)
         if CHAIN["bone"] == "Head":

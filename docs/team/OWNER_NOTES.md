@@ -188,3 +188,8 @@ Not made by us: poses or animation whose purpose is a sex act, or that show nudi
 
 - "Begin work on Hero, using the lessons we learned making Heroine to hopefully do it in a fraction of the time and effort and tokens."
 - **His body may be remade:** "you can totally make a new one from scratch if ours is lame. but remember sex appeal. muscular defined, attractive". A judge rates the current body against that; if it falls short, rebuild (hero_male.md path A is the start). Replaces "the bodies stay" for him.
+
+## 12 October 2026: the face, two marks
+
+- "most have a double eyebrow thing and a like lip outline above the lip. the lip outline I think is intentional? to show definition/3d? the eyebrow thing might also be i'm not sure. curious about both". Crops in coordinator session ba85aba8's images (1.png eye, 2.png mouth). Sent to the face lead: diagnose (paint vs mesh: brow, lid crease, vermilion border), fix in skin round r12, both on judge j8's checklist at 2x.
+- **Cause found (face lead, 12 Oct):** the lip line is the mesh's real upper-lip edge, 3-4 mm above the painted red, shaded on purpose by the shared AO; the double brow is the upper lashes seen from below at the Look. Waiting on the owner: move the paints' red up to the mesh lip (fuller lips, recommended) or soften the shading.
