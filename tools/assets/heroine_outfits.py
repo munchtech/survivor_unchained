@@ -4601,7 +4601,21 @@ def ranger_spaulder():
     NOFF, NLIFT, NS, NSTRIP = sp_env("SP_NECKPIN", "0.004,0.0013,0.0,0.024")
     LOWPASS = int(os.environ.get("SP_LOWPASS", "20"))   # (Taubin rounds over the leather away from the plates)
     _ua = ANDR(cap(sh, R_CAP + MARGIN), line - s_ + MARGIN, r=0.008)
-    _ub = ANDR(ANDR(cap(sh, R_CAP + TRAP), Z - (sh[2] - 0.0605), r=NECK_R), (S_MED + 0.02) - s_, r=NECK_R)
+    # (SP_NECKCUT: how far past S_MED the neck end reaches, and its drop
+    # below the shoulder; shorter, it stops before the top of her trapezius)
+    NK_MED, NK_DROP = sp_env("SP_NECKCUT", "0.02,0.0605")
+    _ub = ANDR(ANDR(cap(sh, R_CAP + TRAP), Z - (sh[2] - NK_DROP), r=NECK_R), (S_MED + NK_MED) - s_, r=NECK_R)
+    # (the neck end as a soft 0-1 weight over NKW, not a hard mask: its
+    # switch stepped the hem's height, the strip's width and the weights,
+    # and the leather creased along it, a pale line from the binding's kink,
+    # judge 9 A5)
+    NKW = float(os.environ.get("SP_NECKW", "0.012"))
+
+    def nkw(pos, own, past):
+        a = np.clip(0.5 + (S_MED + NS - pl_frame(pos, F_)[0]) / NKW, 0, 1)
+        b = np.clip(0.5 + (past[0] - NOFF) / NKW, 0, 1)
+        sm = lambda t: t * t * (3 - 2 * t)
+        return sm(a) * sm(b) * (own < 0)
     _fil = float(os.environ.get("SP_FILLET", "0.012"))
     under = -ANDR(-_ua, -_ub, r=_fil) if _fil > 0 else OR(_ua, _ub)
     # (its corners round, 16-18 mm: at 8 the neck corner's binding turned
@@ -4721,9 +4735,9 @@ def ranger_spaulder():
         # its rear corner stood off her arm as a tongue with a void under
         # it, and its neck corner curled up off her trapezius, judge 8)
         far_ = np.clip((past[0] - FAR_W[0] / 2) / (FAR_W[0] / 2), 0, 1) * np.clip((past[1:].min(0) - STRIP) / STRIP, 0, 1)
-        nk_ = (pl_frame(pos, F_)[0] < S_MED + NS) & (past[0] > NOFF) & (own < 0)
-        far_ = np.where(nk_, 1.0, far_)
-        hl_ = np.where(nk_, NLIFT, HEM_LIFT)
+        nw_ = nkw(pos, own, past)
+        far_ = far_ + (1.0 - far_) * nw_
+        hl_ = HEM_LIFT + (NLIFT - HEM_LIFT) * nw_
         for i in hem:
             q, n, _, _ = BVH.find_nearest(Vector(pos[i]))
             if q is not None:
@@ -4748,7 +4762,7 @@ def ranger_spaulder():
             avg_ = (A_ @ out_) / np.maximum(deg_, 1)[:, None]
             out_[free_] += lam_ * (avg_[free_] - out_[free_])
         d_e, j_e = cKDTree(out_[hem]).query(out_)
-        need = LIFT - (LIFT - hl_[hem][j_e]) * far_[hem][j_e] * np.clip(1 - d_e / np.where(nk_[hem][j_e], NSTRIP, STRIP), 0, 1)
+        need = LIFT - (LIFT - hl_[hem][j_e]) * far_[hem][j_e] * np.clip(1 - d_e / (STRIP + (NSTRIP - STRIP) * nw_[hem][j_e]), 0, 1)
         for i in np.where(own < 0)[0]:
             q, n, _, _ = BVH.find_nearest(Vector(out_[i]))
             if q is not None:
@@ -4798,10 +4812,11 @@ def ranger_spaulder():
         # of her head's than her skin there (clavicle .58 neck .20 against
         # .45 and .25 with head .05), and it stood 5-7 mm off her trapezius
         # at her idle, 2-3 at rest: the hook of judge 8 #3, j2)
-        nk_ = (pl_frame(pos, F_)[0] < S_MED + NS) & (past[0] > NOFF) & (own < 0)
-        vals[nk_] = W[cKDTree(P).query(pos[nk_])[1]]
+        nw_ = nkw(pos, own, past)
+        nk_ = nw_ > 0
+        vals[nk_] = (1 - nw_[nk_, None]) * vals[nk_] + nw_[nk_, None] * W[cKDTree(P).query(pos[nk_])[1]]
         known |= nk_
-        print("SPAULDER neck end on her skin's weights at %d points" % nk_.sum())
+        print("SPAULDER neck end on her skin's weights at %d points (eased in at %d)" % (nk_.sum(), (nk_ & (nw_ < 1)).sum()))
         return fill(tris, vals, known)
 
     # (laid out whole, one island: cut into four by smart_project, it showed
@@ -4815,8 +4830,7 @@ def ranger_spaulder():
     # keeps NLIFT, solver 3)
     def clear_(pos):
         own, _, past = owned(pos)
-        nk_ = (pl_frame(pos, F_)[0] < S_MED + NS) & (past[0] > NOFF) & (own < 0)
-        return np.where(nk_, min(NLIFT, HEM_LIFT), HEM_LIFT)
+        return HEM_LIFT + (min(NLIFT, HEM_LIFT) - HEM_LIFT) * nkw(pos, own, past)
     lm = piece("ranger.spaulder", leaf, LKEY, lift=LIFT, thick=THK, smooth=10, soften=10, iron=20, clear=clear_,
                trim=("darkleather", 0.006, 0.0006, 0.0013), stiff=[conform], weigh=weigh)
     # (its binding and stitches on the weights the leather's edge ends with:
