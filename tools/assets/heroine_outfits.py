@@ -4500,6 +4500,7 @@ def ranger_spaulder():
     # (the neck end's corners: at 12 mm its binding turned up off her
     # trapezius in a hook, judge 8)
     NECK_R, = sp_env("SP_NECK_R", "0.024")
+    LOWPASS = int(os.environ.get("SP_LOWPASS", "20"))   # (Taubin rounds over the leather away from the plates)
     under = OR(ANDR(cap(sh, R_CAP + MARGIN), line - s_ + MARGIN, r=0.008),
                ANDR(ANDR(cap(sh, R_CAP + TRAP), Z - (sh[2] - 0.0605), r=NECK_R), (S_MED + 0.02) - s_, r=NECK_R))
     # (its corners round, 16-18 mm: at 8 the neck corner's binding turned
@@ -4628,13 +4629,27 @@ def ranger_spaulder():
         out_ = pos + disp
         # (and nothing of it nearer her than that: piece() clears it only by
         # HEM_LIFT now, so the rest is cleared by LIFT here, as before)
+        # (and away from the plates and the hem, low-passed (Taubin, so it
+        # does not shrink): it took her skin's every sub-millimetre ridge, and
+        # the rim light drew the edge of her shoulders' graft across it as a
+        # pale line, judge 8)
+        import scipy.sparse as sps
+        ed_ = np.r_[tris[:, [0, 1]], tris[:, [1, 2]], tris[:, [2, 0]]]
+        A_ = sps.coo_matrix((np.ones(len(ed_)), (ed_[:, 0], ed_[:, 1])), shape=(len(pos), len(pos))).tocsr()
+        A_ = ((A_ + A_.T) > 0).astype(float)
+        deg_ = np.asarray(A_.sum(1)).ravel()
+        free_ = np.setdiff1d(np.where(own < 0)[0], hem)
+        for k_ in range(LOWPASS):
+            lam_ = 0.5 if k_ % 2 == 0 else -0.53
+            avg_ = (A_ @ out_) / np.maximum(deg_, 1)[:, None]
+            out_[free_] += lam_ * (avg_[free_] - out_[free_])
         d_e, j_e = cKDTree(out_[hem]).query(out_)
         need = LIFT - (LIFT - HEM_LIFT) * far_[hem][j_e] * np.clip(1 - d_e / STRIP, 0, 1)
         for i in np.where(own < 0)[0]:
             q, n, _, _ = BVH.find_nearest(Vector(out_[i]))
             if q is not None:
                 d = (Vector(out_[i]) - q).dot(n)
-                if d < need[i]:
+                if d < need[i] - (0.0008 if LOWPASS else 0.0):   # (a ridge under it may come 0.8 mm nearer)
                     out_[i] = out_[i] + np.array(n) * (need[i] - d)
         print("SPAULDER leather held under the plates at %d of %d points, eased at %d" % ((own >= 0).sum(), len(pos), (~known).sum()))
         return out_
