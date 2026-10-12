@@ -85,7 +85,7 @@ The main session keeps this current. It is the address list for SendMessage. Ret
 |---|---|---|
 | Voice (paused by the owner: no placeholders; final voices from ElevenLabs later) | a501b387a90d78b4e | docs/team/voice.md |
 | Story and writing (the writer: the approved rewrite, Act 1 first) | PAUSED 12 Oct late (no lead running; Act 2's first slice WIP on story/act2@5190bf0c, unjudged, don't merge; handoff docs/handoff/story.md on that branch; 566 lines locked on integration; TOLL_SPEC ready for a code lead) | docs/team/story.md |
-| Classes design (two types per calling, skill trees, ultimates on Q / right-click) | a8fcfca8223930e30 (restarted 12 Oct night on classes-8; Butcher's Hour fix first) | docs/design/CLASSES.md |
+| Classes design (two types per calling, skill trees, ultimates on Q / right-click) | a7df67d65a2e0b4d4 (successor from 5813f9f3; press-stagger hotfix first; Hour fix merged a86814cc) | docs/design/CLASSES.md |
 | Combat, encounters, bosses, balance (paused; handoff ready at af6452e1) | — | docs/team/combat.md |
 | Animation (joints to perfection: wrists, follow-through, elbows, arms through body, sliding) | af52790583af94d29 (lead 14, from 5ef3bb04; restarted 12 Oct night in worktree agent-af8dbda3195e438e4) | docs/team/animation.md |
 | UI design (the HUD keystone; portraits wait on the face) | — (handoff ready) | docs/team/ui_design.md |
