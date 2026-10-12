@@ -34,9 +34,13 @@ SEED = 23
 # not near black; clumps of two or three, not a comb of stubby spikes; each tip fading over its last 40%; the root
 # band at most 0.85 and faded in over the inner 30%, where a portrait's line is lighter; and no solid wedge past
 # the outer corner (it read as winged eyeliner): the outer lashes fanned out, sparser and fainter.)
-UPPER = dict(count=260, length=((0.0, 4.2), (0.18, 6.6), (0.45, 8.6), (0.72, 9.6), (0.88, 8.8), (1.0, 6.4)),
+# (12 October, the owner's "double eyebrow": with her chin up 12 degrees at the Look the camera sees the upper fan from
+# below, and 260 lashes up to 9.6 mm, solid to 60% of their length, lay a dense dark arc over her lid parallel to her
+# brow. Judge jh1 picked 220 lashes, the middle a fifth shorter (7.0-7.8 mm), each fading from 45% of its length to
+# nothing: the lid reads lit between the lash line and the brow, the lashes still a full line.)
+UPPER = dict(count=220, length=((0.0, 4.0), (0.18, 5.8), (0.45, 7.0), (0.72, 7.8), (0.88, 7.6), (1.0, 6.0)),
              width=0.26, lean=((0.0, -3.0), (0.3, 2.0), (0.7, 12.0), (0.85, 18.0), (1.0, 30.0)), rows=0.6, alpha=0.95,
-             start=0.04, end=0.93, clump=0.42, band=(0.4, 0.85), fan=(0.8, 0.6), inner=0.3,
+             start=0.04, end=0.93, clump=0.42, band=(0.4, 0.85), fan=(0.8, 0.6), inner=0.3, fade=0.45, tip=0.0,
              dens=((0.0, 0.5), (0.25, 1.0), (0.8, 1.0), (1.0, 0.55)))
 LOWER = dict(count=48, length=((0.0, 2.2), (0.3, 3.6), (0.65, 5.2), (0.9, 5.8), (1.0, 5.0)),
              width=0.13, lean=((0.0, 0.0), (0.5, 6.0), (0.9, 10.0), (1.0, 6.0)), rows=0.45, alpha=0.6,
@@ -223,7 +227,8 @@ def paint(grids, size=SIZE, ss=SS, seed=SEED):
             col = (ROOT_COL + (TIP_COL - ROOT_COL) * np.clip((v[:, None] - 0.67) / 0.33, 0, 1) ** 1.2) * rng.uniform(0.85, 1.15)
             vv = (v[:-1] + v[1:]) / 2
             widths = np.maximum(w0 * (1 - vv) ** 0.85 * mm_px, 0.6 * ss / 4)
-            fades = spec["alpha"] * np.where(vv < 0.6, 1.0, 1 - (vv - 0.6) / 0.4 * 0.9)
+            f0, tip, fp = spec.get("fade", 0.6), spec.get("tip", 0.1), spec.get("fade_pow", 1.0)
+            fades = spec["alpha"] * np.where(vv < f0, 1.0, 1 - np.clip((vv - f0) / (1 - f0), 0, 1) ** fp * (1 - tip))
             fades = fades * (1 - (1 - spec["fan"][1]) * fan)               # (the fanned outer lashes fainter)
             fades = fades * (0.6 + 0.4 * np.clip((s - spec["start"]) / spec["inner"], 0, 1))   # (and the inner third)
             draw_lash(p, widths, fades, col)
