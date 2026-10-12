@@ -41,6 +41,18 @@ uniform vec3 chain[8];
 uniform vec3 sway_then = vec3(0.0);
 uniform vec3 head_then = vec3(0.0, 1.6, 0.0);
 uniform vec3 chain_then[8];
+// The chain at rest (where it hangs, carried by its bone) and how far each of its points has turned (a quaternion),
+// and last frame's: her hair is turned with it about it, not only moved (moved only, a braid swung sideways went
+// edge-on flat, and cards burst where it bent). None set: no turn.
+uniform vec3 chain_rest[8];
+uniform vec3 chain_rest_then[8];
+uniform vec4 chain_turn[8];
+uniform vec4 chain_turn_then[8];
+// Her forearms (elbow, past the fist; left then right, in the mesh's own space) and their radius: her hair is
+// pushed out of them (a lock by her ear as her throwing arm comes past her head). 0: none.
+uniform vec3 arms[4];
+uniform vec3 arms_then[4];
+uniform float arm_r = 0.0;
 
 #include "res://shaders/motion.gdshaderinc"
 #ifdef COVERAGE
@@ -72,6 +84,10 @@ varying vec3 strand;
 varying float sparkle;
 varying float fibre;
 
+vec3 turned(vec4 q, vec3 v) {
+	return v + 2.0 * cross(q.xyz, cross(q.xyz, v) + q.w * v);
+}
+
 void vertex() {
 	bool past = last_frame(TIME);
 	float hang = clamp(((past ? head_then.y : head.y) - VERTEX.y) / 0.35, 0.0, 1.0);
@@ -81,11 +97,31 @@ void vertex() {
 	if (UV2.y > 0.0) {
 		float s = clamp(UV2.x, 0.0, 1.0) * 7.0;
 		int i = min(int(floor(s)), 6);
+		float f = s - float(i);
 		vec3 a = past ? chain_then[i] : chain[i];
 		vec3 b = past ? chain_then[i + 1] : chain[i + 1];
-		VERTEX += (mix(a, b, s - float(i)) + air * UV2.x) * UV2.y;
+		vec3 o = VERTEX - mix(past ? chain_rest_then[i] : chain_rest[i], past ? chain_rest_then[i + 1] : chain_rest[i + 1], f);
+		vec4 q0 = past ? chain_turn_then[i] : chain_turn[i];
+		vec4 q1 = past ? chain_turn_then[i + 1] : chain_turn[i + 1];
+		vec4 q = mix(q0, dot(q0, q1) < 0.0 ? -q1 : q1, f);
+		float ql = length(q);
+		q = ql > 1e-6 ? q / ql : vec4(0.0, 0.0, 0.0, 1.0);
+		VERTEX += (mix(a, b, f) + turned(q, o) - o + air * UV2.x) * UV2.y;
+		NORMAL = normalize(mix(NORMAL, turned(q, NORMAL), UV2.y));
+		TANGENT = normalize(mix(TANGENT, turned(q, TANGENT), UV2.y));
+		BINORMAL = normalize(mix(BINORMAL, turned(q, BINORMAL), UV2.y));
 	} else {
 		VERTEX += ((past ? sway_then : sway) + air) * hang * hang * tip * moves;
+	}
+	if (arm_r > 0.0 && moves > 0.0) {
+		for (int k = 0; k < 2; k++) {
+			vec3 a = past ? arms_then[2 * k] : arms[2 * k];
+			vec3 ab = (past ? arms_then[2 * k + 1] : arms[2 * k + 1]) - a;
+			vec3 c = a + ab * clamp(dot(VERTEX - a, ab) / max(dot(ab, ab), 1e-6), 0.0, 1.0);
+			vec3 o = VERTEX - c;
+			float d = length(o);
+			if (d < arm_r && d > 1e-5) VERTEX = c + o * (arm_r / d);
+		}
 	}
 }
 
