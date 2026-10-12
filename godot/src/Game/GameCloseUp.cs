@@ -74,13 +74,37 @@ public partial class Game
         bool turn = !held && near > 0.45f && closeStill > 1.2;
         if (turn)
         {
-            pv.Turned = cam.Yaw + 0.35f;
+            // (three-quarters to the lens, her shield side away: square on, the shield hid her waist and hips)
+            pv.Turned = cam.Yaw + 0.6f;
             pv.Watch = cam.Camera;
         }
         else if (closeDrives) { pv.Turned = null; pv.Watch = null; }
         bool lit = !held && near > 0.05f && scene.View.Night != true;
-        if (lit) pv.LampScale = Mathf.Lerp(1, BookLampByDay, Mathf.Clamp((near - 0.3f) / 0.4f, 0, 1));
+        float day = Mathf.Clamp((near - 0.3f) / 0.4f, 0, 1);
+        if (lit) pv.LampScale = Mathf.Lerp(1, CloseLampByDay, day);
         else if (closeDrives) pv.LampScale = 1;
         closeDrives = turn || lit;
+        // By day the sun is behind or above her: a soft key of her own, 40 degrees off the lens on the side she
+        // turns to and 25 up, on people only (layer 2), so her face is modelled, not flat.
+        if (closeKey == null || !IsInstanceValid(closeKey) || closeKey.GetParent() != scene)
+        {
+            closeKey = new SpotLight3D { LightColor = new Color(1f, 0.95f, 0.88f), SpotAngle = 24, SpotRange = 8, SpotAttenuation = 0.4f, ShadowEnabled = false, LightCullMask = 2, LightSpecular = 0.3f, LightEnergy = 0 };
+            scene.AddChild(closeKey);
+        }
+        float want = lit ? CloseKey * day : 0;
+        closeKey.LightEnergy = Mathf.Lerp(closeKey.LightEnergy, want, 1 - Mathf.Exp(-3 * (float)dt));
+        closeKey.Visible = closeKey.LightEnergy > 0.005f;
+        if (closeKey.Visible)
+        {
+            var chest = pv.GlobalPosition + new Vector3(0, 1.55f, 0);
+            float a = cam.Yaw + 0.7f, up = Mathf.DegToRad(25);
+            closeKey.GlobalPosition = chest + new Vector3(Mathf.Sin(a) * Mathf.Cos(up), Mathf.Sin(up), Mathf.Cos(a) * Mathf.Cos(up)) * 2.6f;
+            closeKey.LookAt(chest);
+        }
     }
+
+    SpotLight3D? closeKey;
+    // --close-key E, --close-lamp L: the day key's strength and her lamp's share by day, for pictures.
+    static float CloseKey => Args.Has("close-key") ? Args.Num("close-key", 0.7f) : 0.7f;
+    static float CloseLampByDay => Args.Has("close-lamp") ? Args.Num("close-lamp", 0.25f) : 0.25f;
 }

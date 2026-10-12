@@ -57,7 +57,7 @@ public sealed class FollowCamera
     public System.Func<float, float, float>? Ground;
     /// <summary>The close view's two framings (pitch in degrees, distance and the height on her it looks at, in
     /// metres): her whole figure filling the frame, and her from the hips up. --close-mid / --close-near P,D,H.</summary>
-    public static readonly (float Pitch, float Distance, float Height) CloseMid = Frame("close-mid", (22, 4.0f, 1.05f)),
+    public static readonly (float Pitch, float Distance, float Height) CloseMid = Frame("close-mid", (15, 4.2f, 1.0f)),
         CloseNear = Frame("close-near", (9, 1.95f, 1.6f));
     float closeNow, orbitNow, room = 1;
     /// <summary>How near the close view is now (eased).</summary>
