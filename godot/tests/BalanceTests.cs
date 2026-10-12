@@ -24,7 +24,8 @@ public class BalanceTests(ITestOutputHelper log)
     {
         var specs = new List<ProbeSpec>();
         foreach (var p in Paths.All)
-            for (int s = 1; s <= 6; s++)
+            // Twelve seeds: at six, a 1% change in one rule moved a path 4% by chance alone (grave, the reaver quarter).
+            for (int s = 1; s <= 12; s++)
                 specs.Add(new ProbeSpec(s, p.Callings[0], $"path:{p.Id}", Targets.LevelAt(15)));
         var o = new ConcurrentBag<ProbeResult>();
         Parallel.ForEach(specs, spec => o.Add(Probe.Run(spec)));

@@ -46,7 +46,9 @@ public sealed class Greymuzzle : StoryBoss, IBound
     // The table's Pack-Mother is 41 + 6.8 a tier against a thirtieth-minute build in about 85 s. Here
     // the build is a table's twelfth minute and the fight three to four minutes, his time at the den
     // with it. The same at every tier: his level grows him, and the night eases the tiers (TierEase, BossEase).
-    public override double HealthMul(int tier) => 100;
+    // Raised from 100 to 110 (11 October, the owner's call): with the Flare he fell 7 to 9% (mean) sooner; at 110 the fight is
+    // within 3% of its pre-Flare length (deft -3%, plain -2%).
+    public override double HealthMul(int tier) => 110;
     // His teeth are in his marked moves and not a brawl (Stalk), so each must mean it: a lunge about a third of
     // her calling's own health, the hamstring's lunge after it given time to be walked out of lamed.
     public override double Teeth => 0.38;

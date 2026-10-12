@@ -1,6 +1,13 @@
 # Animation: status
 
-Lead 8 (11 October), branch `worktree-agent-af8dbda3195e438e4`. Next steps: `docs/handoff/animation.md` section 0.
+Lead 9 (12 October), branch `worktree-agent-af8dbda3195e438e4`. Next steps: `docs/handoff/animation.md` section 0.
+
+## State (2026-10-12, lead 9)
+
+**Judge 22: the death->get_up handover PASS WITH FIXES, library packed 3a37a642.** get_up's first frame had been 50 degrees / 96 mm off death's last (a pop in game); now exact, the opening drawn out to 10 frames, the elbows leading the hands (clip 0.2 s longer). Left: the left thumb skims the floor in the carry (handoff 0, next 1).
+- Crotch cut fixed at the source (build_heroine.py; the shipped body is unchanged, mend_hole still fills it). Helper bones on by default (`--no-helpers`).
+- Dropped: death's end legs asymmetric (the hip limit `Rig.HIP_ROT` 45 blocks it). Stuck, for the main session: sit_back_heels' 68 cm knee pop at f76 (needs a remake with a softened hip limit).
+- Hair re-shoots on hold until the face's hair-only branch is merged.
 
 ## State (2026-10-11, lead 8)
 

@@ -47,8 +47,10 @@ public sealed class GrimtunnelStory : StoryBoss, IBound
     protected override (string Title, string Sub) SoftWords(Enemy e) => ("The holes stay open", "The moths come quicker");
     public override string ReEntry => "The crack opens again, and he climbs out of it with his arms spread.";
     /// <summary>Measured to the length, as Greymuzzle's and Redcowl's were: the same at every tier. Under the
-    /// ground he takes half, and his lamps take a quarter of what is put into him.</summary>
-    public override double HealthMul(int tier) => 109;
+    /// ground he takes half, and his lamps take a quarter of what is put into him. Raised from 109 to 123 (11 October, the
+    /// owner's call): with the Flare he fell 11 to 13% (mean) sooner; at 123 the fight is within 2% of its pre-Flare length
+    /// for plain hands, 5% short for deft.</summary>
+    public override double HealthMul(int tier) => 123;
     /// <summary>His teeth are in his marked moves; his burst up (×2) about a third of her health at a story
     /// night's build.</summary>
     public override double Teeth => 0.2;

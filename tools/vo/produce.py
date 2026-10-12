@@ -349,8 +349,12 @@ def fit(line: dict, picks: list[dict], squeeze: bool = False) -> tuple:
     window its cut is timed to (direction `time`: [shortest, longest] s);
     then, for a placeholder (`squeeze`), the read itself made quicker.
     Returns (audio, marks, read, the pause cap, the speed)."""
-    win = (line.get("direction") or {}).get("time")
-    for g in FIT_GAPS if win else FIT_GAPS[:1]:
+    d = line.get("direction") or {}
+    win = d.get("time")
+    # A line written around its silences (the love scenes: each "..." two to
+    # four seconds) keeps them: its direction's `gap` lifts the first cap.
+    gaps = ((float(d["gap"]),) + FIT_GAPS) if d.get("gap") else FIT_GAPS
+    for g in gaps if win else gaps[:1]:
         audio, marks, read = mix(line, picks, g)
         if not win or read <= win[1]:
             break

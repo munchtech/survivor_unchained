@@ -122,5 +122,31 @@ class RebuildTests(unittest.TestCase):
         _ = lines_mod
 
 
+class GapTests(unittest.TestCase):
+    """A line written around its silences (the love scenes' "...", two to four
+    seconds) keeps them: the direction's `gap` lifts the 1.6 s cap on dead air."""
+
+    def test_edit_keeps_a_long_silence_only_when_asked(self):
+        import post
+        sr = post.SR
+        t = np.arange(int(0.8 * sr)) / sr
+        say = 0.3 * np.sin(2 * np.pi * 220 * t)
+        x = np.concatenate([say, np.zeros(3 * sr), say]).astype(np.float32)
+        short, long_ = len(post.edit(x.copy())), len(post.edit(x.copy(), max_gap=4.0))
+        self.assertGreater(long_ - short, int(1.2 * sr))
+
+    def test_fit_tries_the_direction_gap_first(self):
+        import produce
+        seen = []
+        real = produce.mix
+        produce.mix = lambda line, picks, g, speed=1.0: (seen.append(g), (np.zeros(10), [], 1.0))[1]
+        try:
+            produce.fit({"direction": {"gap": 4}}, [])
+            produce.fit({"direction": {}}, [])
+        finally:
+            produce.mix = real
+        self.assertEqual(seen, [4.0, produce.FIT_GAPS[0]])
+
+
 if __name__ == "__main__":
     unittest.main()

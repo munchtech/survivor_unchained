@@ -426,10 +426,12 @@ def share_keys(objs):
 
 
 def apply(arm, meshes, skin=None, body=None):
-    # Off until a built body has been checked in the game (docs/handoff/animation.md):
-    # pass --helpers after the build's "--" to build them in.
-    if "--helpers" not in sys.argv:
-        print("RIG helpers: off (pass --helpers to build them in)")
+    # On: judged at 1:1 in motion (animation judges 9-11) and shipped in her
+    # body and outfits since 11 October, so a build without them would
+    # quietly drop them. --no-helpers after the build's "--" leaves them out
+    # (for a before/after).
+    if "--no-helpers" in sys.argv:
+        print("RIG helpers: off (--no-helpers)")
         return
     made = add_bones(arm)
     # (her skin's split, read once, for the pieces she wears to share as it)

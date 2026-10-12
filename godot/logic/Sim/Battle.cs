@@ -285,6 +285,11 @@ public sealed partial class Battle
     public readonly Dictionary<string, double> DamageBy = new();
     /// <summary>The same, on bosses alone: the Flare's share of a boss's damage (CLASSES.md §7).</summary>
     public readonly Dictionary<string, double> BossDamageBy = new();
+    /// <summary>What each source truly took off bosses: health lost, and a gate's Break only up to the tenth of
+    /// its health the Break rewards (as the Flare's fill counts it). Damage poured into a gate past that
+    /// takes nothing, yet BossDamageBy counts it: a full board's poison on a gated boss made the Flare's
+    /// share of the damage read a quarter of its share of the fight.</summary>
+    public readonly Dictionary<string, double> BossHealthBy = new();
     /// <summary>Who is dealing damage while no weapon is: the rule firing, the art.</summary>
     string? credit;
     public int KillCount;
@@ -451,6 +456,9 @@ public sealed partial class Battle
         }
 
         TickStones(dt);
+        TickReaver(dt);
+        TickArcanist(dt);
+        TickStalker(dt);
         // Warding light recharges.
         int blockRank = RoundInt(st.Get(Stat.Block));
         if (blockRank > 0 && p.BlockT > 0) p.BlockT = Math.Max(0, p.BlockT - dt);
@@ -525,7 +533,7 @@ public sealed partial class Battle
         }
         condScratch.Clear();
         condScratch.Add(p.Moving ? ModWhen.Moving : ModWhen.Still);
-        if (p.Hp < MaxHp * 0.35) condScratch.Add(ModWhen.LowHealth);
+        if (p.Hp < MaxHp * 0.35 || Lamp("always_bleeding")) condScratch.Add(ModWhen.LowHealth); // butcher.always_bleeding counts as low
         if (p.Hp >= MaxHp - 0.01) condScratch.Add(ModWhen.FullHealth);
         if (p.Hp > MaxHp * 0.8) condScratch.Add(ModWhen.Healthy);
         // What gear asks of the moment: the dark, beasts close, fire underfoot, a dash just done.
@@ -565,7 +573,7 @@ public sealed partial class Battle
         p.DashDX = dx / m; p.DashDZ = dz / m;
         p.DashT = Abilities.Dash.Time;
         p.Iframes = Math.Max(p.Iframes, Abilities.Dash.Iframes);
-        p.DodgeWindow = Abilities.Dash.Perfect * (Boons.GetValueOrDefault("duelists_grace") >= 2 ? 1.5 : 1);
+        p.DodgeWindow = Abilities.Dash.Perfect * (Boons.GetValueOrDefault("duelists_grace") >= 2 ? 1.5 : 1) * StalkerDodgeWindow();
         p.WakeX = p.X; p.WakeZ = p.Z;
         p.PerfectThisDash = false;
         p.DashCharges--;
@@ -578,6 +586,7 @@ public sealed partial class Battle
             Events.Emit(new Ev.Dash { X0 = x0, Z0 = z0, X1 = x0 + p.DashDX * len, Z1 = z0 + p.DashDZ * len });
         }
         Fire(TriggerEvent.Dash, new ProcCtx { X = p.X, Z = p.Z });
+        StalkerOnDash();
         OpenGate(x0, z0);
         return true;
     }
@@ -728,6 +737,9 @@ public sealed partial class Battle
         if (s.Has(StatusKind.Shock) && !o.Dot) { dmg *= 1.35 + st.Get(Stat.ShockBonus); if (!Boons.ContainsKey("static_charge")) s.Remove(StatusKind.Shock); }
         dmg *= e.TakenMul;
         dmg *= LampDamageMul(e, school, tags, o);
+        dmg *= ReaverDamageMul(e, school, tags, o);
+        dmg *= ArcanistDamageMul(e, school, tags, o);
+        dmg *= StalkerDamageMul(e, school, tags, o);
         // Warded by its own kind's lamp or drum.
         if (e.WardT > 0) dmg *= 1 - e.Ward;
         // Resistances.
@@ -742,10 +754,12 @@ public sealed partial class Battle
         }
         if (e.TakenMul < 0.7) blocked = true;
         // Criticals.
-        bool crit = o.Crit;
+        // roadknife.adders_patience: no *sure* strike (true = sure crit); the build's own crit chance still rolls.
+        bool noTrue = StalkerNoTrue;
+        bool crit = o.Crit && !noTrue;
         if (!crit && !o.NoCrit && !o.Dot)
         {
-            double chance = st.Get(Stat.CritChance) + (Player.SureCritT > 0 ? 1 : 0) + (o.Weapon?.CritBonus ?? 0);
+            double chance = st.Get(Stat.CritChance) + (!noTrue && Player.SureCritT > 0 ? 1 : 0) + (o.Weapon?.CritBonus ?? 0) + (noTrue ? 0 : StalkerCritAdd(e, tags, o));
             // The Hunters' Blind: the first blow on anything unhurt.
             if (e.Hp >= e.MaxHp && Boons.TryGetValue("hunters_blind", out int blind)) chance += blind >= 2 ? 1 : 0.5;
             // Night-Eyes: the far ones, in the dark, are seen best.
@@ -760,7 +774,8 @@ public sealed partial class Battle
         double before = e.Hp;
         e.Hp -= dmg;
         // A boss's gate: it stops at its phase's mark; the rest is its Break.
-        if (e.HpFloor > 0 && e.Hp < e.HpFloor) { e.Overflow += e.HpFloor - e.Hp; e.Hp = e.HpFloor; }
+        double broke = 0;
+        if (e.HpFloor > 0 && e.Hp < e.HpFloor) { broke = e.HpFloor - e.Hp; e.Overflow += broke; e.Hp = e.HpFloor; }
         // A boss struck many times a second would never stop flashing white and its body
         // would be lost in it: a softer flash, so it stays itself under the build's blows.
         e.Flash = e.Boss ? Math.Max(e.Flash, 0.4) : 1;
@@ -780,8 +795,16 @@ public sealed partial class Battle
         if (o.Weapon != null) o.Weapon.DamageDealt += Math.Min(dmg, before);
         string by = o.Weapon?.Id ?? o.Credit ?? (o.Summon ? "summon" : credit ?? "other");
         DamageBy[by] = DamageBy.GetValueOrDefault(by) + Math.Min(dmg, Math.Max(0, before));
-        FlareOnDealt(e, Math.Min(dmg, Math.Max(0, before)), by);
-        if (e.Boss) BossDamageBy[by] = BossDamageBy.GetValueOrDefault(by) + Math.Min(dmg, Math.Max(0, before));
+        // Health it lost, and a gate's Break only up to the tenth of its health the Break itself rewards:
+        // uncapped, poison ticking on a gated boss filled 30 Flares a fight.
+        double breakCap = 0.1 * e.MaxHp;
+        double took = Math.Max(0, before - Math.Max(0, e.Hp)) + Math.Max(0, Math.Min(e.Overflow, breakCap) - Math.Min(e.Overflow - broke, breakCap));
+        FlareOnDealt(e, took, by);
+        if (e.Boss)
+        {
+            BossDamageBy[by] = BossDamageBy.GetValueOrDefault(by) + Math.Min(dmg, Math.Max(0, before));
+            BossHealthBy[by] = BossHealthBy.GetValueOrDefault(by) + took;
+        }
         if (tags.Has(Tag.Spell) && !o.Dot) OnSpellHit(by);
         // Where the damage is coming from, for the director.
         if (tags.Has(Tag.Summon) || o.Summon) Profile.Summon += dmg;
@@ -810,7 +833,9 @@ public sealed partial class Battle
         }
 
         // Status payloads ride the hit.
+        statusWeapon = o.Weapon;
         if (o.Status != null) ApplyStatus(e, o.Status, dmg, o.Depth, by);
+        statusWeapon = null;
 
         int depth = o.Depth;
         if (!o.NoProcs && depth < 3)
@@ -820,6 +845,10 @@ public sealed partial class Battle
             if (crit) Fire(TriggerEvent.Crit, ctx);
         }
 
+        ReaverOnHit(e, o);
+        ArcanistOnHit(e, school, tags, o, dmg);
+        StalkerOnHit(e, o, dmg);
+        FlareOnHit(e, o, dmg);
         if (e.Boss) Hooks.OnBossHit?.Invoke(e, school, dmg);
         if (e.Hp <= 0 && e.Alive && e.State != EnemyState.Dying) KillEnemy(e, true, o.Weapon, depth);
         else ArtOnHit(e);
@@ -867,10 +896,14 @@ public sealed partial class Battle
         e.AnimT = 0;
         e.Credit = byPlayer || e.Credit;
         bool credited = e.Credit;
-        if (weapon != null) weapon.Kills++;
+        if (weapon != null) { weapon.Kills++; ReaverWeaponKill(weapon); }
+        ArcanistOnDeath(e, e.Credit, depth);
+        StalkerOnDeath(e);
+        FlareOnKilled(e, credited && e.Disposition != Disposition.Ally);
         if (credited && e.Disposition != Disposition.Ally)
         {
             FlareOnKill(e, e.Status.Has(StatusKind.Bleed) && e.LastWeapon == null);
+            ReaverOnKill(e);
             KillCount++;
             KillsByFamily[e.Def.Family] = KillsByFamily.GetValueOrDefault(e.Def.Family) + 1;
             if (e.Elite && !e.Boss) ChampionsByFamily[e.Def.Family] = ChampionsByFamily.GetValueOrDefault(e.Def.Family) + 1;
@@ -952,7 +985,7 @@ public sealed partial class Battle
         double sd = Stats.Get(Stat.StatusDamage) * Stats.Get(Stat.StatusDamageOf(p.Kind));
         double dps = hitDamage * p.Power / Math.Max(0.5, p.Duration) * sd;
         // Longer burning is more burning: the rate holds, the time stretches.
-        double dur = p.Duration * Stats.Get(Stat.StatusDurationOf(p.Kind));
+        double dur = ArcanistStatusDuration(p.Kind, StalkerStatusDuration(e, p.Kind, ReaverStatusDuration(e, p.Kind, p.Duration * Stats.Get(Stat.StatusDurationOf(p.Kind)))));
         from ??= credit;
         switch (p.Kind)
         {
@@ -978,7 +1011,7 @@ public sealed partial class Battle
             case StatusKind.Poison:
             {
                 var cur = s.Ensure(StatusKind.Poison, 0, 0, 0, 0.5);
-                cur.Stacks = Math.Min(10, cur.Stacks + 1);
+                cur.Stacks = Math.Min(StalkerPoisonCap, cur.Stacks + 1);
                 if (dps >= cur.Power) cur.From = from;
                 cur.Power = Math.Max(cur.Power, dps);
                 cur.T = Math.Max(cur.T, dur);
@@ -989,7 +1022,7 @@ public sealed partial class Battle
                 // The frozen stay frozen only as long as the freeze: more cold does not lock them for good.
                 if (s.Has(StatusKind.Frozen)) break;
                 var cur = s.Ensure(StatusKind.Chill, 0, 0, 0, 0);
-                cur.Stacks += p.Power * (Boons.ContainsKey("deep_chill") ? 2 : 1) * Stats.Get(Stat.StatusPowerOf(StatusKind.Chill));
+                cur.Stacks += p.Power * (Boons.ContainsKey("deep_chill") ? 2 : 1) * Stats.Get(Stat.StatusPowerOf(StatusKind.Chill)) * ArcanistChillMul(e);
                 cur.T = Math.Max(cur.T, dur);
                 if (cur.Stacks >= 5 && e.Boss) { cur.Stacks = 2; AddStagger(e, 0.12); }
                 if (cur.Stacks >= 5 && !e.Boss && e.ThawT <= 0)
@@ -1031,6 +1064,8 @@ public sealed partial class Battle
             }
         }
         if (p.Kind is StatusKind.Mark or StatusKind.Bound) MoonOnTheChain(e);
+        ReaverAfterStatus(e, p, hitDamage, depth);
+        StalkerAfterStatus(e, p, hitDamage, depth);
         Events.Emit(new Ev.Status { Target = e.Id, Kind = p.Kind, X = e.X, Z = e.Z });
         if (depth < 3) Fire(TriggerEvent.Status, new ProcCtx { Target = e, X = e.X, Z = e.Z, Damage = hitDamage, School = School.Physical, Tags = Array.Empty<Tag>(), Applied = p.Kind, Depth = depth + 1 });
     }
@@ -1047,6 +1082,7 @@ public sealed partial class Battle
             var slot = s[k];
             if (slot == null) continue;
             slot.T -= dt;
+            slot.Age += dt;
             if (k == StatusKind.Burn || k == StatusKind.Bleed || k == StatusKind.Poison || (k == StatusKind.Sear && e.Def.Family == Family.Undead))
             {
                 slot.Tick -= dt;
@@ -1114,6 +1150,7 @@ public sealed partial class Battle
     {
         var p = Player;
         if (!p.Alive || !Combat) return 0;
+        stoneLull = 0;
         if (p.Iframes > 0 || p.Leap != null)
         {
             if (telegraphed && p.DodgeWindow > 0 && !p.PerfectThisDash) PerfectDodge(from);
@@ -1136,9 +1173,11 @@ public sealed partial class Battle
             FlareOnBlock(from);
             Events.Emit(new Ev.PlayerHit { X = p.X, Z = p.Z, Amount = 0, School = school, Source = source, Blocked = true });
             Fire(TriggerEvent.Block, new ProcCtx { X = p.X, Z = p.Z });
+            OnBlocked(amount, from);
             return 0;
         }
         if (TryLampBlock(amount, school, source, from)) return 0;
+        LampsOnBlowLanded();
         // Watch Mail counts: every tenth blow that reaches the survivor glances off.
         if (Boons.ContainsKey("ironhide") && ++p.MailCount >= 10)
         {
@@ -1177,6 +1216,7 @@ public sealed partial class Battle
         if (Art.WraithT > 0) dmg *= 0.5;
         // Grounding: part of the blow goes to earth (its lightning is the blessing's Hurt rule).
         if (Boons.TryGetValue("grounding", out int ground)) dmg *= ground >= 2 ? 0.67 : 0.8;
+        dmg *= ReaverTakenMul(school) * ArcanistTakenMul();
         return HurtPlayerRaw(FlareGuard(dmg), school, source, from);
     }
 
@@ -1358,6 +1398,7 @@ public sealed partial class Battle
             if (!silent && a > 0) Events.Emit(new Ev.ShieldHit { X = p.X, Z = p.Z, Absorbed = a, Broke = p.Shield <= 0 });
         }
         if (!silent) p.UnstruckT = 0;
+        dmg = FlareNotToday(dmg);
         if (dmg <= 0) return 0;
         double hpBefore = p.Hp;
         p.Hp -= dmg;
@@ -1424,9 +1465,9 @@ public sealed partial class Battle
     {
         var p = Player;
         if (!p.Alive) return;
-        double h = amount * Stats.Get(Stat.Healing) * (1 - Rules.HealCut) * (source == "draught" ? Rules.DraughtMul : 1);
+        double h = amount * Stats.Get(Stat.Healing) * (1 - Rules.HealCut) * (source == "draught" ? Rules.DraughtMul : 1) * ReaverMendMul(source);
         double before = p.Hp;
-        p.Hp = Math.Min(MaxHp, p.Hp + h);
+        p.Hp = Math.Min(MendCeiling(), p.Hp + h);
         if (!silent && p.Hp - before > 0.5) Events.Emit(new Ev.PlayerHeal { Amount = p.Hp - before });
     }
 
@@ -1542,6 +1583,7 @@ public sealed partial class Battle
         if (zn == null) return null;
         zn.Reset();
         zn.Owner = owner; zn.X = x; zn.Z = z; zn.Radius = radius; zn.Life = life; zn.Dps = dps; zn.School = school; zn.Credit = credit;
+        ArcanistZoneSpawned(zn);
         return zn;
     }
 
@@ -1796,7 +1838,7 @@ public sealed partial class Battle
                 if (pr.Homing > 0 && pr.Owner != Side.Enemy)
                 {
                     Enemy? t = pr.Target >= 0 ? Enemies.Items[pr.Target] : null;
-                    if (t == null || !Targetable(t) || pr.Hits.Contains(t.Id))
+                    if (t == null || !Targetable(t) || pr.Hits.Contains(t.Id) || VolleyTaken(pr, t.Id))
                     {
                         t = PickSeekTarget(pr);
                         pr.Target = t?.Id ?? -2;
@@ -1872,7 +1914,7 @@ public sealed partial class Battle
             foreach (var id in qProj)
             {
                 var e = Enemies.Items[id];
-                if (!Targetable(e)) continue;
+                if (!Targetable(e) || (pr.VolleyHard && VolleyTaken(pr, e.Id))) continue;
                 double rr = pr.Radius + e.Radius;
                 if ((e.X - pr.X) * (e.X - pr.X) + (e.Z - pr.Z) * (e.Z - pr.Z) > rr * rr) continue;
                 int k = pr.Hits.IndexOf(e.Id);
@@ -1907,10 +1949,25 @@ public sealed partial class Battle
         }
         if (pr.Seek == Seek.Marked)
         {
-            var m = HostilesInRadius(pr.X, pr.Z, range).FirstOrDefault(e => e.Status.Has(StatusKind.Mark) && !pr.Hits.Contains(e.Id));
+            // The nearest marked thing no other of the volley has struck within a short flight (a far one, or the first in the list, sent every mote across the field).
+            Enemy? m = null; double md = 8.0 * 8.0;
+            foreach (var e in HostilesInRadius(pr.X, pr.Z, range))
+            {
+                if (!e.Status.Has(StatusKind.Mark) || pr.Hits.Contains(e.Id) || VolleyTaken(pr, e.Id)) continue;
+                double d = (e.X - pr.X) * (e.X - pr.X) + (e.Z - pr.Z) * (e.Z - pr.Z);
+                if (d < md) { md = d; m = e; }
+            }
             if (m != null) return m;
         }
-        return NearestHostile(pr.X, pr.Z, range, e => !pr.Hits.Contains(e.Id));
+        var near = NearestHostile(pr.X, pr.Z, range, e => !pr.Hits.Contains(e.Id) && !VolleyTaken(pr, e.Id));
+        // Nothing left that the volley has not struck: the spread yields, and the mote strikes what there is
+        // (else a lone champion took one mote of eight).
+        if (near == null && pr.Volley != 0)
+        {
+            pr.Volley = 0;
+            near = NearestHostile(pr.X, pr.Z, range, e => !pr.Hits.Contains(e.Id));
+        }
+        return near;
     }
 
     WeaponInst? WeaponById(string? id)
@@ -1931,6 +1988,7 @@ public sealed partial class Battle
         });
         if (pr.Heal != 0) HealPlayer(pr.Heal, "weapon", true);
         pr.HitCount++;
+        ArcanistOnProjectileHit(pr, e, weapon);
         if (pr.Splash > 0) Explode(pr.X, pr.Z, pr.Splash, pr.Damage * 0.75, pr.School, pr.Tags, weapon, pr.Depth, e.Id);
         if (pr.GroundOnHit is { } g)
         {

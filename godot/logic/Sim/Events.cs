@@ -18,7 +18,10 @@ public enum TelegraphShape { Circle, Line, Cone, Ring }
 public enum TelegraphKind { Blow, Ground, Safe, Wall }
 public enum SpawnStyle { Rise, Burrow, Walk, Drop }
 public enum Tone { Danger, Info, Boon, Story }
-public enum FlarePhase { Ready, Press, Blow, End }
+/// <summary>The Flare's moments (CLASSES.md §3.5): Ready (a charge full), Press (t = 0: the freeze, the grade, the push),
+/// Release (the key pose ends: time returns, the camera eases back), Blow (each toll, cut, ember or pulse; carries its
+/// hitstop), Kill (a blow of it, or anything while a Stand holds, killed a boss: the last blow's slow orbit), End.</summary>
+public enum FlarePhase { Ready, Press, Blow, End, Release, Kill }
 
 public static class Ev
 {
@@ -102,7 +105,14 @@ public static class Ev
     /// shared beat's freeze and push begin here), Blow for each blow or pulse, End when it lets go.
     /// Clutch: cast below a quarter of health (it mends): a fall the Flare kept from happening, for
     /// whatever counts the survivor's rises (the toll, docs/story/TOLL_SPEC.md).</summary>
-    public sealed class Flare : CombatEvent { public FlarePhase Phase; public string Id = ""; public double X, Z, Radius, Angle; public bool Clutch, Stand; public int Blow; }
+    /// <summary>A Flare's moment. Blow: Part names what landed ("toll", "blast", "frost", "ember", "cut", "execute", "pulse"),
+    /// Last marks its final blow, TX/TZ where it landed (a cut's target, an ember's fall; her own place for a toll),
+    /// Target the enemy struck (0 for none), Hitstop the frames the view holds (from the Flare's beat).</summary>
+    public sealed class Flare : CombatEvent
+    {
+        public FlarePhase Phase; public string Id = ""; public double X, Z, Radius, Angle; public bool Clutch, Stand; public int Blow;
+        public string Part = ""; public bool Last; public double TX, TZ; public int Target, Hitstop;
+    }
     public sealed class Bark : CombatEvent { public double X, Z; public string Text = ""; public string? Speaker; }
     public sealed class Announce : CombatEvent { public string Title = ""; public string? Subtitle, Kicker; public Tone? Tone; }
     public sealed class Shake : CombatEvent { public double Amount; }

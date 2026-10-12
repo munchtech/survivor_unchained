@@ -121,6 +121,44 @@ public static class Probe
         return res;
     }
 
+    /// <summary>One skill alone for a calling on a road with its lamps lit as
+    /// the sweep's "full" (or none): for finding which lamp rules weaken a skill.
+    /// lamps is "full", "suggested" or "none".</summary>
+    public static ProbeResult Lamped(string calling, string type, string lamps, string id, int rank, string? evolution, int foeLevel, int seed, int charLevel = 20, string people = "dead")
+    {
+        var a = Callings.Archetype(calling);
+        var j = Journey.Begin(new CreationChoice
+        {
+            Name = "Probe", Archetype = calling, Background = "hunter", Palette = a.Palettes[0].Id, WeaponItem = a.Weapons[0], Ability = a.Abilities[0],
+        }, (uint)seed);
+        while (j.Ch.Level < charLevel) Character.GainXp(j.Ch, Character.XpForLevel(j.Ch.Level) - j.Ch.Xp + 1);
+        switch (calling) { case "arcanist": j.Ch.Attributes.Wits += j.Ch.Points; break; case "stalker": j.Ch.Attributes.Finesse += j.Ch.Points; break; default: j.Ch.Attributes.Might += j.Ch.Points; break; }
+        j.Ch.Points = 0;
+        if (type != "") LampBook.SetType(j.Ch, type);
+        if (lamps == "full")
+        {
+            foreach (var sid in Lamps.StoryFights) j.World.Facts[$"arena.{sid}"] = "won";
+            j.World.Facts["lamps.atlas"] = LampBook.AtlasLamps;
+        }
+        if (lamps is "suggested" or "full") LampBook.LightSuggested(j.Ch, j.World);
+        var b = j.StartBattle(true, new CollisionWorld(200), (_, _) => 0, 0, 0, 0, (uint)seed, arena: true);
+        foreach (var w in b.Weapons.ToList()) b.RemoveWeapon(w.Id);
+        b.AddWeapon(id, rank);
+        if (evolution != null)
+        {
+            var w = b.Weapons[0];
+            var evo = w.Def.Evolutions.First(e => e.Id == evolution);
+            b.AddBoon(evo.Catalysts[0]);
+            b.Evolve(id, evolution);
+        }
+        b.EmberLevel = Targets.LevelAt(Math.Max(1, (foeLevel - 1) * 2.5));
+        b.Time = (foeLevel - 1) * 2.5 * 60;
+        var spec = new ProbeSpec(seed, calling, "first", b.EmberLevel, 0, 0, people);
+        var res = new ProbeResult { Spec = spec, Build = ArenaSim.Describe(b), Weapons = 1, Evolved = evolution != null ? 1 : 0, Ehp = Ehp(b) };
+        Measure(b, res, foeLevel, people, seed, drafts: false);
+        return res;
+    }
+
     /// <summary>The standard test, as an arena of tier 1 is at that minute: the
     /// horde kept at its number, in groups from out of sight, for half a minute
     /// (after it has had time to arrive); then a champion that does not fall

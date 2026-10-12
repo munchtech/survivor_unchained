@@ -97,7 +97,7 @@ public sealed partial class Battle
             case AbilityKind.Leap: Leap(def, dx, dz, angle); moved = true; break;
             case AbilityKind.Blink: Blink(def, dx, dz, angle, ArtPower); moved = true; break;
             // Vault springs the way the dash goes (the lamp's text): the caltrops stay where she left.
-            case AbilityKind.Vault: Vault(def, dx, dz, -dx, -dz, angle, ArtPower); moved = true; break;
+            case AbilityKind.Vault: { double vax = -dx, vaz = -dz; StalkerVaultAim(ref vax, ref vaz); Vault(def, dx, dz, vax, vaz, angle, ArtPower); moved = true; break; }
             // The rest ride the dash: its own step carries her.
             case AbilityKind.MirrorStep: MirrorStep(def, dx, dz, angle); break;
             case AbilityKind.Sprint: Sprint(def, angle); break;

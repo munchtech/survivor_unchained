@@ -209,6 +209,9 @@ public static class LampBook
         {
             if (CanLight(ch, w, id) != LampNo.None) continue;
             var d = Lamps.Get(id);
+            // Banked Flame is a choice, never a suggestion: it pays only to a hand that holds a charge back, and
+            // spent as it fills it is a trap (the owner, 12 October: Light my way never lights it).
+            if (d.Effects.Any(e => e.Rule == "flare.banked")) continue;
             double sc = d.Road == l.Type ? 100 : d.Region == LampRegion.Hearth ? 60 : 0;
             sc += d.Kind switch
             {
@@ -217,7 +220,7 @@ public static class LampBook
                 LampKind.Skill => d.Feeds.Any(carried.Contains) ? 32 : 2, _ => 10,
             };
             // Nothing live yet is no gift (a later phase's lamp).
-            if (d.Effects.Length > 0 && d.Effects.All(e => e.Phase > 1)) sc -= 50;
+            if (d.Effects.Length > 0 && d.Effects.All(e => e.Phase > Lamps.LivePhase)) sc -= 50;
             // Deterministic: ties go to the board's order.
             if (sc > bestScore) { bestScore = sc; best = id; }
         }
@@ -239,7 +242,7 @@ public static class LampBook
     public static LampLoadout Loadout(CharacterData ch, bool night)
     {
         var l = Now(ch);
-        var o = new LampLoadout { Night = night, Type = l.Type, Flare = Carried(ch) };
+        var o = new LampLoadout { Night = night, Type = l.Type, Flare = Carried(ch), Lit = l.Lit.Count };
         var counts = new Dictionary<string, double>();
         foreach (var id in l.Lit)
         {
@@ -247,7 +250,7 @@ public static class LampBook
             bool small = d.Kind is LampKind.Small or LampKind.Attribute;
             foreach (var e in d.Effects)
             {
-                if (e.Phase > 1) continue;
+                if (e.Phase > Lamps.LivePhase) continue;
                 switch (e.Do)
                 {
                     case LampDo.Mod when e.Stat != null:
