@@ -212,13 +212,22 @@ BORDERS = os.path.join(os.path.dirname(os.path.abspath(__file__)), "heroine_face
 # (the portraits presets.json lays a face from, where they differ from lip_targets.json's *_23: its middle height
 #  over the _23's, solver ls3's brief)
 LAYING = {"fey": 0.158 / 0.135, "moonlit": 0.163 / 0.153}
+# (round two, judge j8b: per face over its laying portrait. Fey read 25-35% over _37, Wildling ~15% over, Vixen's
+#  peaks high, Sunborn ~20% under _23's full dark lip; the paint now follows this curve itself, not the crease)
+SIZE = {"fey": 0.78, "vixen": 0.94, "wildling": 0.9, "sunborn": 1.12}
+# (her upper lip's height eased to nothing at her mouth's corners (|u| 0.5) from TAPER_U0, a quarter cosine: one
+#  smooth curve corner-peak-bow-peak-corner, like every portrait; j8b: the red held its height out to the corners,
+#  then stepped or flared)
+TAPER_U0, TAPER_U1 = 0.30, 0.50
+S_MIN = 0.12         # (the sculpt's squeeze no harder than this, at her mouth's corners where the target is ~0)
 ANCHOR = 0.0009      # (nothing moves under this over her slit)
 SKIN = 0.0045        # (the skin from the old border to this over it eased up from the new border)
 NOSE_SLOPE = 0.6     # (her profile rising toward her nose faster than this, depth over height, is the nose's jump)
 NOSE_GAP = 0.0005    # (the eased skin's top kept this under the jump)
-SIG_Y, SIG_X = 0.00045, 0.0005   # (the new surface smoothed so: the new border's bend over 1.2 mm or more)
+SIG_Y, SIG_X = 0.0006, 0.0006   # (the new surface smoothed so: the new border a soft roll, not a crease (j8b))
 RAMP_A, RAMP_T = 0.0010, 0.0006  # (the change eased in over RAMP_A from the anchor, out over +-RAMP_T at the top)
-U_IN, U_OUT = 0.36, 0.47         # (the change tapered out between these, fractions of her mouth's width from its middle)
+U_IN, U_OUT = 0.42, 0.50         # (the change tapered out between these, fractions of her mouth's width from its middle;
+                                 #  round one's 0.36-0.47 let the old lip's height back in at the ends: wings, j8b)
 FRONT = 0.0003       # (only points this near the front-most surface move)
 TOP_L, TOP_B, TOP_S, TOP_LOW = 0.0025, 0.002, 0.75, 0.2  # (the lip's top step: see lip_profile)
 # (the squeezed lip ends short of the old border's depth: TILT of that made up over the lip, eased in and out
@@ -232,9 +241,11 @@ def target(face, path=TARGETS):
     past the measured ends, smoothed over 0.02), its mouth's width and middle (metres)."""
     t = json.load(open(path))
     us = np.asarray(t["u"], float)
-    H = np.asarray(t[face]["portrait"], float) * LAYING.get(face, 1.0)
+    H = np.asarray(t[face]["portrait"], float) * LAYING.get(face, 1.0) * SIZE.get(face, 1.0)
     fine = np.linspace(-0.6, 0.6, 1201)
     Hs = ndimage.gaussian_filter1d(np.interp(fine, us, H), 20, mode="nearest")
+    a = np.clip((np.abs(fine) - TAPER_U0) / (TAPER_U1 - TAPER_U0), 0, 1)
+    Hs = Hs * np.cos(0.5 * np.pi * a)
     return (lambda u: np.interp(u, fine, Hs)), t[face]["w_mm"] / 1000, t[face]["cx_mm"] / 1000
 
 
@@ -282,6 +293,7 @@ def plan(F, slit, border, face):
         y_b = y_s + hb[c]
         y_a = y_s + ANCHOR
         y_n = min(y_s + float(Hf(u[c])) * w, y_b)
+        y_n = max(y_n, y_a + S_MIN * (y_b - y_a))
         z = Z[:, c]
         ok = ~np.isnan(z)
         zf = lambda y: np.interp(y, ys[ok][::-1], z[ok][::-1])
@@ -471,7 +483,7 @@ def lip_sculpt(js, binc, chunks, hm, hp):
                 dn2[rows] = a / np.linalg.norm(a, axis=1)[:, None] - N2[rows]
                 hs._set(js, chunks, t["NORMAL"], dn2)
                 keys_turned += 1
-    hm.setdefault("extras", {})["lip_sculpt"] = "ls3"
+    hm.setdefault("extras", {})["lip_sculpt"] = "ls5"
     print("LIPSCULPT: her upper lip remapped on %d faces (own's base by up to %.2f mm; keys %s), %d keys' normals "
           "turned" % (len(ch), np.abs(d_own).max() * 1000, ", ".join(keys_moved), keys_turned))
     return ch
@@ -552,7 +564,13 @@ def report(ch, glb_changed=True, borders=None):
         slit_mm = [None if np.isnan(p["slit"][int(round((cx + u * w - X0) / D - 0.5))]) else
                    round(float(p["slit"][int(round((cx + u * w - X0) / D - 0.5))]) * 1000, 2) for u in KNOTS]
         band = [None if (n is None or q is None) else round(n - q, 4) for n, q in zip(new, paint)]
-        out[f] = {"w_mm": round(w * 1000, 2), "cx_mm": round(cx * 1000, 2), "slit_mm": slit_mm,
+        # (dense, for the paint: the slit (held past its ends) and the target over it, corner to corner)
+        ud = np.round(np.arange(-0.55, 0.5501, 0.005), 3)
+        cd = np.clip(np.round((cx + ud * w - X0) / D - 0.5).astype(int), 0, len(p["slit"]) - 1)
+        sl = _held(p["slit"], np.arange(len(p["slit"])))
+        out.setdefault("u_dense", [float(v) for v in ud])
+        dense = {"slit_mm": [round(float(sl[c]) * 1000, 3) for c in cd], "new": [round(float(Hf(v)), 4) for v in ud]}
+        out[f] = {"w_mm": round(w * 1000, 2), "cx_mm": round(cx * 1000, 2), "slit_mm": slit_mm, "dense": dense,
                   "new": [None if v is None else round(v, 4) for v in new],
                   "crease": [None if v is None else round(v, 4) for v in ca], "paint": paint, "band": band,
                   "band_mm": [None if v is None else round(v * w * 1000, 2) for v in band]}

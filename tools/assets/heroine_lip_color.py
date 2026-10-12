@@ -27,17 +27,19 @@ import heroine_lips as hl  # noqa: E402
 
 EDGE = 0.0007       # (the border's softness, m: smoothstep; 0.4 read stickered on Doe)
 INTO = 0.0012       # (the band ramps from the old red over this, below its old top: a step showed at 1.0 linear)
-UNDER = 0.0002      # (the new red's top this far under the crease's middle: the crease is its edge's shade)
+UNDER = 0.0         # (the new red's edge's middle this far under the border; round two: the border is the target
+                    #  curve itself (lip_borders.json's dense), the portraits' heights measured at the edge's middle)
 LOWER = (0.0035, 0.0115)    # (the lip's colour: her LOWER lip's red, this far under the mouth line. Over 3.5 mm the
                             #  paints carry the portrait's dark mouth gap; the upper red's top sits in the mouth
                             #  line's shade and read darker and rosier than her lower lip)
 NO_CREASE = 0.0095
 LUMA = np.array([0.2126, 0.7152, 0.0722])
-DARK = 0.85                 # (the band against her lower lip's mid-tones, linear: the upper lip a shade darker, judge j8a)
-TOWARD_UPPER = 0.25         # (its hue and chroma this far toward her old upper red)
-CHROMA = {"moonlit": 0.9, "wildling": 0.9, "fey": 0.9}   # (read pinker than the numbers in the engine, j8a)
-CARRY_UPPER = {"sunborn"}   # (her portrait's upper lip is dark brown-mauve, far darker than her lower: carry it up)
-TOP_LIFT = {"sunborn": 0.10}   # (lightened toward the border by at most this)
+# (round two, judge j8b: every face's band is its OWN upper red carried up (as Sunborn's in round one), matched to
+#  the old red where they meet (JOIN, under the old red's top, where the band's ramp starts) and eased to the face's
+#  upper red over the band: no lower-lip pink, no stripe)
+JOIN = (0.0021, 0.0013)     # (the old red's colour where the band meets it: this far under its old top)
+DARKEN = {"sunborn": 0.90}  # (j8b: Sunborn's upper lip darker, like her _23)
+CHROMA = {}
 LINES = 0.6                 # (her lower lip's vertical lines carried into the band at this strength)
 LINES_SIGMA = 4.0           # (front-grid px, 0.1 mm: the high-pass across her lip)
 LINES_SHIFT = 0.0           # (the mirror's offset)
@@ -54,9 +56,12 @@ def srgb(c):
     return np.where(c <= 0.0031308, c * 12.92, 1.055 * c ** (1 / 2.4) - 0.055) * 255
 
 
-def border(m, t):
-    """The border's height per column: the crease, smoothed, carried down to the mouth line at her mouth's corners."""
+def border(m, t, dense=False):
+    """The border's height per column: the crease, smoothed, carried down to the mouth line at her mouth's corners.
+    dense: t is already the whole smooth border, corner to corner (heroine_lipsculpt.py's target): taken as it is."""
     ok = ~np.isnan(m)
+    if dense:
+        return np.where(ok & ~np.isnan(t), t, m)
     okt = ok & ~np.isnan(t)
     x = np.arange(len(m))
     tt = np.full(len(m), np.nan)
@@ -76,7 +81,7 @@ def fields(F, m, t, paint_front, face="", t_new=None):
     """Per front-grid pixel the band's weight W and its target colour (linear, with her lower lip's vertical lines),
     and the paint's smoothed luminance (each texel keeps its own fine detail against it)."""
     e = hl.red_top(paint_front, m, t)
-    tt = border(m, t if t_new is None else t_new)
+    tt = border(m, t if t_new is None else t_new, dense=t_new is not None)
     ok = ~np.isnan(tt) & ~np.isnan(m)
     x = np.arange(len(m))
     ok_e = ok & ~np.isnan(e)
@@ -114,19 +119,20 @@ def fields(F, m, t, paint_front, face="", t_new=None):
             if sel.sum() > 3:
                 upc[c] = np.median(L[u0:u1, c][sel], 0)
     lipc, upc = _cols(lipc, x), _cols(upc, x)
-    # (the target: her lower lip a shade darker, its hue a quarter of the way to her old upper red (at the lower lip's
-    #  lightness), as every portrait's upper lip sits a shade darker and more mauve than its lower)
-    up_at = upc * ((lipc @ LUMA) / np.maximum(upc @ LUMA, 1e-4))[:, None]
-    tgt = DARK * ((1 - TOWARD_UPPER) * lipc + TOWARD_UPPER * up_at)
-    if face in CARRY_UPPER:                                        # (her upper red carried up whole: Sunborn)
-        tgt = upc.copy()
+    # (the target: her own upper red (upc), met at the band's foot by the old red's colour there (jc), eased between)
+    jc = np.full((len(m), 3), np.nan)
+    for c in np.where(ok_e)[0]:
+        j0, j1 = int(hl.row(ee[c] - JOIN[1])), int(hl.row(ee[c] - JOIN[0]))
+        j1 = min(j1, int(hl.row(m[c] + 0.0008)))
+        if j1 > j0 + 2:
+            jc[c] = np.median(L[j0:j1, c], 0)
+    jc = _cols(jc, x)
+    tgt = upc * DARKEN.get(face, 1.0)
     g = (tgt @ LUMA)[:, None]
     tgt = g + (tgt - g) * CHROMA.get(face, 1.0)
-    T = np.repeat(tgt[None, :, :], F.shape[0], 0)
-    lift = TOP_LIFT.get(face, 0.0)
-    if lift:
-        h = np.clip((Y - ee[None, :]) / np.maximum((tt - ee)[None, :], 1e-4), 0, 1)
-        T = T * (1 + lift * np.nan_to_num(h))[..., None]
+    foot = (ee - INTO)[None, :]
+    h = _smooth01_((Y - foot) / np.maximum((tt + EDGE / 2)[None, :] - foot, 1e-4))
+    T = jc[None, :, :] + (tgt - jc)[None, :, :] * np.nan_to_num(h)[..., None]
     # (her lower lip's vertical lines, mirrored over the mouth line: its luminance high-passed across, not down)
     hp = lum / np.maximum(ndimage.gaussian_filter1d(lum, LINES_SIGMA, axis=1), 1e-4)
     hp = ndimage.gaussian_filter1d(hp, 1.5, axis=0)
@@ -142,6 +148,11 @@ def fields(F, m, t, paint_front, face="", t_new=None):
     S = ndimage.gaussian_filter(lum, OWN_SIGMA)
     W = ndimage.gaussian_filter(W, 1.0)
     return W, T, S, tt, ee, lowmask, upmask
+
+
+def _smooth01_(x):
+    x = np.clip(x, 0, 1)
+    return x * x * (3 - 2 * x)
 
 
 def _cols(v, x):
@@ -223,8 +234,13 @@ def main():
             U = np.array(bj["u"])
             xs = hl.X0 + (np.arange(len(m)) + 0.5) * hl.D
             uu = (1000 * xs - e["cx_mm"]) / e["w_mm"]
-            t_new = (np.interp(uu, U, e["slit_mm"]) + np.interp(uu, U, e["crease"]) * e["w_mm"]) / 1000
-            t_new[np.abs(uu) > 0.35] = np.nan
+            if "dense" in e:                                       # (round two: the target curve, corner to corner)
+                U = np.array(bj["u_dense"])
+                t_new = (np.interp(uu, U, e["dense"]["slit_mm"]) + np.interp(uu, U, e["dense"]["new"]) * e["w_mm"]) / 1000
+                t_new[np.abs(uu) > 0.5] = np.nan
+            else:
+                t_new = (np.interp(uu, U, e["slit_mm"]) + np.interp(uu, U, e["crease"]) * e["w_mm"]) / 1000
+                t_new[np.abs(uu) > 0.35] = np.nan
         pf = hl.at_uv(img, np.nan_to_num(F[..., 0]), np.nan_to_num(F[..., 1]))
         W, T, Sm, tt, ee, lo, up = fields(F, m, t, pf, f, t_new)
         w = hl.sample(W, r_s, c_s)
