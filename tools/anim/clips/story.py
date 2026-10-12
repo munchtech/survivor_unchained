@@ -22,7 +22,7 @@ import numpy as np
 
 from clips.actions import _hop, arm
 from held import contact_build, forearm_on_ground, knee_clear, slerp_dir
-from keyed import Track, _one_frame, build, merge, smoothstep_
+from keyed import Track, _one_frame, _slerp_vec, build, merge, smoothstep_
 from rig import qaxis, qbetween, qeuler, qfrom_basis, qinv, qmatrix, qmul, qrot, qslerp
 
 
@@ -1091,24 +1091,60 @@ def sit_back_heels(rig):
         rig.hip_soft = None
 
 
+# reach_coals' right hand from palms up to out over the fire, palm down
+# (judge 40). The keys turned the palm the short way round, thumb down: past
+# the forearm's twist (Rig.TWIST_LIMIT; the start is already over it), so
+# the elbow was swung out and back to make up for it (f4-16, two humps), the
+# twist wound on past half a turn and the hand was held 141 degrees off its
+# key, never palm down. Laid here frame by frame over f0-RC_OUT on one ease:
+# the palm turned over the way a forearm turns (thumb up, through the
+# handshake, halfway), the hand on a low arc (RC_LIFT_R its bend) and its
+# elbow's way with it; the elbow eases out of where the start's strain holds
+# it (build's pin_first). The hand stops short of the arm's full reach: at
+# (-0.10, 0.37, 0.42) the arm locked straight and the upper arm pressed
+# 23 mm into her breast through the hold. The left hand lies 2 cm higher on
+# the thigh (it was 24 mm into it), the elbow a little out.
+RC_OUT = 36
+RC_LIFT_R = (-0.11, 0.40, 0.36)
+
+
 def reach_coals(rig):
     start = _heels(look=1.0, hands=1.0, breath=0.6)
     out = merge(start, spine=(0, 22, 0), neck=(0, 6, 0), head=(0, 4, 0), clav_r=(-2, 14),
-                hand_r={"pos": (-0.10, 0.37, 0.42), "pole": (-0.8, -0.3, 0), "knuckles": (0.0, -0.25, 1.0), "blade": (1.0, -0.1, 0.0)},
-                hand_l={"pos": (0.12, 0.29, 0.14), "pole": (0.7, -0.5, -0.3), "knuckles": (0.1, -0.35, 1), "blade": (1.0, 0.0, -0.1)},
+                hand_r={"pos": (-0.10, 0.37, 0.39), "pole": (-0.8, -0.3, 0), "knuckles": (0.0, -0.25, 1.0), "blade": (1.0, -0.1, 0.0)},
+                hand_l={"pos": (0.12, 0.31, 0.14), "pole": (0.9, -0.2, -0.05), "knuckles": (0.1, -0.35, 1), "blade": (1.0, 0.0, -0.1)},
                 fingers_r=_f(0.12, 0.05, 0.2))
+    unit = lambda v: np.asarray(v, float) / np.linalg.norm(v)
+    s0, s1 = start["hand_r"], out["hand_r"]
+    b0, b1, k0, k1 = unit(s0["blade"]), unit(s1["blade"]), unit(s0["knuckles"]), unit(s1["knuckles"])
+    km = unit(k0 + k1)
+    bm = unit(np.array([0.0, 1.0, 0.0]) - km * km[1])
+    p0, lift, p1 = np.asarray(s0["pos"], float), np.asarray(RC_LIFT_R, float), np.asarray(s1["pos"], float)
+
+    def lay(fr, pose):
+        if not 0 < fr < RC_OUT:
+            return pose
+        u = smoothstep_(fr / RC_OUT)
+        hand = dict(pose["hand_r"], pos=tuple((1 - u) ** 2 * p0 + 2 * u * (1 - u) * lift + u * u * p1),
+                    knuckles=tuple(unit(k0 * (1 - u) + k1 * u)),
+                    blade=tuple(_slerp_vec(b0, bm, 2 * u) if u < 0.5 else _slerp_vec(bm, b1, 2 * u - 1)),
+                    pole=tuple(_slerp_vec(unit(s0["pole"]), unit(s1["pole"]), u)))
+        return dict(pose, hand_r=hand)
+
     keys = [
         (0, start, "ease"),
-        # Out, slow, palm down over the warmth; the left hand falls to her thigh.
-        (24, merge(out, hand_r={"pos": (-0.11, 0.39, 0.37)}), "auto"),
-        (36, out, "ease"),
+        # Out, slow, palm down over the warmth (the right hand laid by `lay`);
+        # the left hand falls to her thigh.
+        (24, out, "auto"),
+        (RC_OUT, out, "ease"),
         # Held: only the breath, and the fingers spreading a little to the heat.
         (66, merge(out, spine=(0, 23, 0), fingers_r=_f(0.06, 0.0, 0.2, 3.0)), "ease"),
         (96, merge(out, spine=(0, 22, 0), fingers_r=_f(0.04, 0.0, 0.2, 5.0)), "ease"),
         (126, merge(out, spine=(0, 23, 0), fingers_r=_f(0.04, 0.0, 0.2, 5.0)), "ease"),
     ]
     return build("reach_coals", rig, keys, meta={"layer": "full", "hold": True,
-                                                  "note": "keyed (C01): kneeling, the right hand held out over the fire, palm down"})
+                                                  "note": "keyed (C01): kneeling, the right hand held out over the fire, palm down"},
+                 post=lay, pin_first=RC_OUT)
 
 
 # ------------------------------------------------------------------ letter --
