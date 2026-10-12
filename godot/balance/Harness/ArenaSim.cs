@@ -85,6 +85,11 @@ public sealed class RunResult
     /// <summary>The Flare: casts, the first cast's minute, the mean gap between casts (s), casts while a boss was up,
     /// its share of the damage done to bosses, clutch casts, and the meter's fill by source.</summary>
     public int FlareCasts, FlareBossCasts, FlareClutches;
+    /// <summary>Casts whose blows reached a boss; the Flare's damage to bosses, and all damage to bosses.</summary>
+    public int FlareCastsOnBoss;
+    public double FlareBossDamage, BossDamage;
+    /// <summary>The Flare's share of what was truly taken off bosses (health, and a gate's Break up to a tenth).</summary>
+    public double FlareBossTook = double.NaN;
     /// <summary>The Bulwark's wall: blocks, rebukes, the most stones held at once.</summary>
     public int Blocks, Rebukes, StonesPeak;
     public double FlareFirst = double.NaN, FlareGap = double.NaN, FlareBossShare = double.NaN;
@@ -316,6 +321,11 @@ public static class ArenaSim
         if (b.FlareTimes.Count > 1) r.FlareGap = (b.FlareTimes[^1] - b.FlareTimes[0]) / (b.FlareTimes.Count - 1);
         if (bossUp >= 0) r.FlareBossCasts = b.FlareTimes.Count(x => x >= bossUp);
         double bossDmg = b.BossDamageBy.Values.Sum();
+        r.FlareCastsOnBoss = b.FlareCastsOnBoss;
+        r.BossDamage = bossDmg;
+        r.FlareBossDamage = b.BossDamageBy.GetValueOrDefault("flare");
+        double took = b.BossHealthBy.Values.Sum();
+        if (took > 0) r.FlareBossTook = b.BossHealthBy.GetValueOrDefault("flare") / took;
         if (bossDmg > 0) r.FlareBossShare = b.BossDamageBy.GetValueOrDefault("flare") / bossDmg;
         return r;
     }

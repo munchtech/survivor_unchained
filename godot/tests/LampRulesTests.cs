@@ -206,6 +206,28 @@ public sealed class LampRulesTests
     }
 
     [Fact]
+    public void Every_blow_that_reaches_the_wall_lays_a_stone_and_six_rebuke_eight_metres_round()
+    {
+        var b = BattleTests.Arena(3);
+        b.Lamps = new LampLoadout();
+        b.Lamps.Add(Rule("shield_arm", ("block", 0.0), ("stones", 6), ("struck", 1), ("radius", 8), ("rebuke", 10), ("per_level", 0.08)));
+        for (int i = 0; i < 5; i++) { b.Player.Iframes = 0; b.HurtPlayer(1, School.Physical, "test", null); }
+        Assert.Equal(5, b.Stones);
+        Assert.Equal(0, b.Blocks);
+        b.Player.Iframes = 0;
+        b.HurtPlayer(1, School.Physical, "test", null);
+        Assert.Equal(0, b.Stones);
+        Assert.Equal(1, b.Rebukes);
+        // Without "struck" (a crossing's shield, the old rule), only blocks lay stones.
+        var c = BattleTests.Arena(3);
+        c.Lamps = new LampLoadout();
+        c.Lamps.Add(Rule("shield_arm", ("block", 0.0), ("stones", 6)));
+        c.Player.Iframes = 0;
+        c.HurtPlayer(1, School.Physical, "test", null);
+        Assert.Equal(0, c.Stones);
+    }
+
+    [Fact]
     public void Stones_fall_one_a_second_after_the_lull_and_never_with_the_mortar()
     {
         foreach (bool mortar in new[] { false, true })

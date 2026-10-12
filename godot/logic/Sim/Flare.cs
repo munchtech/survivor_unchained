@@ -43,6 +43,9 @@ public sealed partial class Battle
     bool flareClutch;
     /// <summary>For the harness and the toll: casts, their times, clutch casts (falls the Flare kept from happening).</summary>
     public int FlareCasts, FlareClutches;
+    /// <summary>For the harness: casts whose blows reached a boss.</summary>
+    public int FlareCastsOnBoss;
+    bool flareStruckBoss;
     public readonly List<double> FlareTimes = new();
     double emberAnsweredAt = -99;
     /// <summary>The horde can't spam it: each of its sources draws on a purse that refills at its rate a second.</summary>
@@ -177,6 +180,7 @@ public sealed partial class Battle
         flareLen = stand ? f.Length : Math.Min(StrikeMax, f.Length);
         FlareT = flareLen;
         flareBlow = 0;
+        flareStruckBoss = false;
         flareNext = stand ? 0 : flareLen / Math.Max(1, f.Blows);
         // A Strike holds the controls and is untouchable through it and a breath after; a Stand gives
         // them back at once, untouchable for its first moments.
@@ -218,6 +222,7 @@ public sealed partial class Battle
         ForEachHostileInRadius(p.X, p.Z, flareReach, (e, d) =>
         {
             double dd = d == 0 ? 1 : d;
+            if (e.Boss && !flareStruckBoss) { flareStruckBoss = true; FlareCastsOnBoss++; }
             HitEnemy(e, flarePower, f.School, f.Tags, new HitOpts { Credit = "flare", BossDamage = vsBig, Knockback = e.Boss ? 0 : 1.2, DirX = (e.X - p.X) / dd, DirZ = (e.Z - p.Z) / dd });
         });
         credit = was;

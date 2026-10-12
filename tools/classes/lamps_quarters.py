@@ -81,8 +81,8 @@ sund = road("warden", w, "sunderer", "Road of the Sunderer", "Slow, huge blows t
         ("Mending Light", "A kill by a crescent mends 0.5%.", FM("dawn_in_the_steel", "dawn_steel.mending_light", P_REST))]))
 
 bulw = road("warden", w, "bulwark", "Road of the Bulwark", "Walk in, let them hit you, and they break on it.",
-    ("Shield Arm", "Your shield turns one blow in seven. Each block lays a stone, up to ten; at ten, the wall answers with a rebuke of holy light all around you.",
-     [R("shield_arm", block=0.15, stones=10, radius=4, lull=6, rebuke=10, per_level=0.08)], ["oathblade"]),
+    ("Shield Arm", "Your shield turns one blow in seven. Every blow that reaches you, turned or not, lays a stone; at six, the wall answers with a rebuke of holy light 8 m all around you.",
+     [R("shield_arm", block=0.15, stones=6, struck=1, radius=8, lull=6, rebuke=10, per_level=0.08)], ["oathblade"]),
     [("+5% block while you stand still.", [R("block.still", add=0.05)]),
      ("+5% block against champions' and bosses' blows.", [R("block.champions", add=0.05)]),
      ("+2 Resolve.", [A("resolve")]),

@@ -75,25 +75,33 @@ public sealed partial class Battle
         AddStone();
     }
 
+    /// <summary>bulwark.shield_arm: a blow the shield didn't turn still lands on the wall and lays a stone ("let them
+    /// hit you, and they break on it"). From blocks alone a rebuke came once in three minutes, under 1% of the night's
+    /// damage; from every blow, at six stones and 8 m, about every 13 s and 5-8% (the owner, 11 October: "a little more").</summary>
+    void LampsOnBlowLanded()
+    {
+        if (Lamps.Full("shield_arm", "struck") > 0) AddStone();
+    }
+
     double BearerMend() => Lamps.Has("bearer_of_blows") ? 1 - Lamps.Full("bearer_of_blows", "less", 0.3) : 1;
 
-    /// <summary>A stone laid (a block, or a parry); at ten the wall answers.</summary>
+    /// <summary>A stone laid (a blow taken or blocked, or a parry); at six the wall answers.</summary>
     void AddStone()
     {
         if (!Lamps.Has("shield_arm") && !Lamps.Has("parry") && !Lamps.Has("mortar")) return;
         stoneLull = 0;
-        int cap = (int)Lamps.Full("shield_arm", "stones", 10);
+        int cap = (int)Lamps.Full("shield_arm", "stones", 6);
         stoneDrop = 0;
         if (++stones >= cap) { stones = 0; Rebuke(); }
         else StonesPeak = Math.Max(StonesPeak, stones);
     }
 
-    /// <summary>bulwark.shield_arm: the rebuke of holy light all around, at ten stones.</summary>
+    /// <summary>bulwark.shield_arm: the rebuke of holy light all around, at six stones.</summary>
     void Rebuke()
     {
         var p = Player;
         var l = Lamps;
-        double r = l.Full("shield_arm", "radius", 4) * Math.Sqrt(Stats.Get(Stat.Area));
+        double r = l.Full("shield_arm", "radius", 8) * Math.Sqrt(Stats.Get(Stat.Area));
         double dmg = RebukePower() + bearerStore;
         Rebukes++;
         bearerStore = 0;

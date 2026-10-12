@@ -29,6 +29,7 @@ using SurvivorUnchained.Rpg;
  *          --oaths none|all|a,b+c  --level N|tier  --bot plain|deft  --cap MIN
  *          --beyond MIN  --weapons all  --levels 20,40  --par N  --out PATH  --csv DIR
  *          --bossread 0 (the hands as they were before they read the bosses)
+ *          --bank 0 (Banked Flame's second charge spent on the crowd, as before the hands banked it)
  *          --charges 0 (every charger on its own clock, as before the charge director)
  *          --minutes 20 (a story's night: twenty minutes, ending on its boss)
  *          --type <road id>|both (the survivor's type)  --lamps empty|suggested|full (the board lit)
@@ -40,6 +41,7 @@ using SurvivorUnchained.Rpg;
 
 var opt = Opts.Parse(args);
 Pilot.ReadsBosses = opt.Get("bossread", "1") != "0";
+Pilot.Banks = opt.Get("bank", "1") != "0";
 ArenaSim.Director = opt.Get("charges", "1") != "0";
 string cmd = args.Length > 0 && !args[0].StartsWith("--") ? args[0] : "help";
 // The content is read once, before the runs share it.
