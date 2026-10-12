@@ -555,16 +555,23 @@ public partial class HairSway : Node
     bool justSettled;
 
     /// <summary>A point being carried round her (the round carry) kept out of her neck and back sideways, square to her
-    /// spine, so it goes round her and is never pushed back the way it came.</summary>
+    /// spine, so it goes round her and is never pushed back the way it came. But one above a ball's middle (along her
+    /// spine) goes up onto it, the nearest way: pushed square to her spine there, a point over the line across her upper
+    /// back was thrown forward each pass by the slant between that line and her spine, so the carry stuck with the tail in
+    /// front, its link through her neck, and never ended (hair solver 11, get_up). And it is kept out of her shoulders and
+    /// upper arms, grown by her pauldron, the nearest way (over the top when above the joint): carried through them, the
+    /// tail lay 4-6 cm inside her shoulder and its pad as she stood (hair judge hj5).</summary>
     Vector3 Sideways(Vector3 q, Vector3 upAx, float scale)
     {
-        for (int b = 0; b < fileBalls; b++)
+        for (int b = 0; b < balls.Length; b++)
         {
+            bool arm = b >= fileBalls;
             var w = across[b];
-            float ww = w.LengthSquared(), r = balls[b].R * scale;
+            float ww = w.LengthSquared(), r = (balls[b].R + (arm ? PadR : 0)) * scale;
             var c = ww > 0 ? at[b] + w * Mathf.Clamp((q - at[b]).Dot(w) / ww, -1f, 1f) : at[b];
             var off = q - c;
             if (off.LengthSquared() >= r * r) continue;
+            if (arm || off.Dot(upAx) > 0) { q = c + (off.LengthSquared() > 1e-10f ? off.Normalized() : upAx) * r; continue; }
             var u = upAx * off.Dot(upAx); var flat = off - u;
             if (flat.LengthSquared() < 1e-10f || u.LengthSquared() >= r * r) continue;
             q = c + u + flat.Normalized() * Mathf.Sqrt(r * r - u.LengthSquared());
@@ -572,6 +579,8 @@ public partial class HairSway : Node
         return q;
     }
     Vector3[] lay = new Vector3[8];
+    // (the warden's pauldron, the bulkiest, reaches 10 cm over her shoulder joint, its ball 8; and half the tail)
+    const float PadR = 0.025f;
 
     // (env HAIRDUMP: each frame's inputs and the chain as it starts, for an offline replica)
     void Dump(float dt, float ground)
