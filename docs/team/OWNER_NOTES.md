@@ -179,3 +179,7 @@ Not made by us: poses or animation whose purpose is a sex act, or that show nudi
 - **Sunborn's warm jaw and neck:** "judge reccomendation is ok": one try at keeping melanin-rich skin browner in shadow, to match her portrait.
 - **Neck length:** "judge decide but consider benefits of long neck (that dosn't look stupid)". The judge picks the length, weighing what a long neck gives (elegance, helmets and gorgets without hiding the bust) as long as it never looks stretched.
 
+## 12 October 2026: classes
+
+- **Light my way and Banked Flame:** "sounds good": the suggested path never lights Banked Flame (its gift only pays if you change how you spend the Flare).
+- **Banked Flame is too weak:** "0-5% faster is barely anything though, seems like its a lot of risk with not much reward." Played well, it must be a clear reward worth the 30% slower fill. Sent to the classes lead (options measured, judge picks).
