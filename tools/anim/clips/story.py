@@ -23,7 +23,7 @@ import numpy as np
 from clips.actions import _hop, arm
 from held import contact_build, forearm_on_ground, knee_clear, slerp_dir
 from keyed import Track, _one_frame, build, merge, smoothstep_
-from rig import qbetween, qeuler, qfrom_basis, qinv, qmatrix, qmul, qrot, qslerp
+from rig import qaxis, qbetween, qeuler, qfrom_basis, qinv, qmatrix, qmul, qrot, qslerp
 
 
 def _f(curl, thumb, cascade=0.25, spread=0.0):
@@ -425,6 +425,39 @@ SBH_PUSH_R = [
 # the hand goes slowest (_paced; spread evenly, the turn carried the
 # fingertips 41 mm a frame as the wrist went 27).
 SBH_PUSH_TURN = ((-0.1, -0.35, 1.0), (-1.0, 0.0, -0.1))
+# Its way there (clip frame, knuckles, blade), between the planted hand at
+# f64 and SBH_PUSH_TURN at f107 (_trail_turn): peeled off fingers last, it
+# trails palm back, the fingers hanging, comes round palm in toward her
+# side, and turns palm up only over the last frames onto the thigh (judge
+# 37: turned palm up from f78, it was held out at her side palm up and
+# cupped to f98, an open-palm gesture). Worked out (lead 14's solver) for the
+# least fingertip speed along SBH_PUSH_R in build v41, the turn at most
+# about 7 degrees a frame and the wrist within its range.
+SBH_TRAIL_R = [
+    (68, (-0.763, -0.267, 0.589), (0.607, 0.018, 0.795)), (72, (-0.616, -0.428, 0.661), (0.744, -0.04, 0.667)),
+    (77, (-0.343, -0.683, 0.645), (0.93, -0.149, 0.336)), (82, (-0.344, -0.737, 0.582), (0.884, -0.044, 0.465)),
+    (87, (-0.454, -0.733, 0.507), (0.551, 0.216, 0.806)), (92, (-0.498, -0.679, 0.539), (0.098, 0.574, 0.813)),
+    (97, (-0.46, -0.67, 0.582), (-0.442, 0.742, 0.504)), (102, (-0.182, -0.59, 0.787), (-0.864, 0.479, 0.159)),
+]
+
+
+def _rotvec(q):
+    v, w = np.asarray(q[:3], float), float(q[3])
+    if w < 0:
+        v, w = -v, -w
+    s = float(np.linalg.norm(v))
+    return v * (2 * math.atan2(s, w) / s) if s > 1e-9 else 2 * v
+
+
+def _trail_turn(fr, planted):
+    """The right hand's turn at clip frame fr along SBH_TRAIL_R: Catmull-Rom
+    (_hermite) through the keys' turns from SBH_PUSH_TURN's, as rotation
+    vectors, still at f64 and f107."""
+    end = _basis_q(*SBH_PUSH_TURN)
+    keys = [(64, planted)] + [(f, _basis_q(kn, bl)) for f, kn, bl in SBH_TRAIL_R] + [(107, end)]
+    r = _hermite(fr, [(f, _rotvec(qmul(q, qinv(end)))) for f, q in keys])
+    a = float(np.linalg.norm(r))
+    return qmul(qaxis(r / a, math.degrees(a)), end) if a > 1e-9 else end
 
 
 # The left hand back from where it hung at her left thigh's outside onto its
@@ -672,6 +705,22 @@ def _knee_on(rig, side, hip, ankle, want, floor=0.05):
 HIP_SOFT = (55.0, 85.0)
 
 
+# Where sit_back_heels' hands come to rest on her thighs, off the heels key's
+# (m): both lifted out of the thighs (judge 37: 21-23 mm in), the left further
+# toward the knee and its fingers more open, so the two are not one mirrored
+# pose (they stopped at x +-125, y 302, z 146 on the same frame).
+SBH_REST_OFF = {"r": (0.0, 0.010, 0.0), "l": (0.005, 0.010, 0.025)}
+SBH_REST_CURL_L = 0.22
+
+
+def _sbh_rest(pose):
+    out = dict(pose)
+    for s in "lr":
+        out[f"hand_{s}"] = {**pose[f"hand_{s}"], "pos": tuple(np.add(pose[f"hand_{s}"]["pos"], SBH_REST_OFF[s]))}
+    out["fingers_l"] = {**pose["fingers_l"], "curl": SBH_REST_CURL_L}
+    return out
+
+
 def sit_back_heels(rig):
     start = _elbow(0.96, 1.0)
     z = _zsit()
@@ -700,8 +749,8 @@ def sit_back_heels(rig):
         # Back onto her heels, the hips going round on the planted knees (a
         # thigh's length from them all the way down), the hands to her thighs;
         # a breath.
-        (107, _heels(look=0.3, hands=0.0, breath=1.0), "ease"),
-        (129, _heels(look=0.5, hands=0.0, breath=-0.5), "ease"),
+        (107, _sbh_rest(_heels(look=0.3, hands=0.0, breath=1.0)), "ease"),
+        (129, _sbh_rest(_heels(look=0.5, hands=0.0, breath=-0.5)), "ease"),
         # The hands come up before her, and she looks down at them.
         (153, _heels(look=1.0, hands=1.0), "ease"),
         (191, _heels(look=1.0, hands=1.0, breath=0.6), "ease"),
@@ -762,7 +811,7 @@ def sit_back_heels(rig):
                 k = _even((fr - 86) / 21.0)
                 q = qslerp(_basis_q(*SBH_BACK_TURN[0]), _basis_q(*SBH_BACK_TURN[1]), k)
                 was = out.get("hand_l", pose["hand_l"])
-                out["hand_l"] = {**_aimed_only(pose["hand_l"]), "pos": tuple(_hermite(u, SBH_BACK_L)),
+                out["hand_l"] = {**_aimed_only(pose["hand_l"]), "pos": tuple(_hermite(u, SBH_BACK_L) + np.multiply(SBH_REST_OFF["l"], smoothstep_((u - 86) / 10.0))),
                                  "knuckles": tuple(qrot(q, [0, 1.0, 0])), "blade": tuple(qrot(q, [0, 0, 1.0])), "aim": 1.0,
                                  "pole": tuple(slerp_dir(was.get("pole", pose["hand_l"]["pole"]), pose["hand_l"]["pole"], k))}
                 fl = pose["fingers_l"]
@@ -817,11 +866,11 @@ def sit_back_heels(rig):
             else:
                 # Pushed off (the plant let go by then: 13 cm up its finger
                 # laying stops at once, Rig._lay) and brought round
-                # to her thigh along SBH_PUSH_R, turning palm up the while
-                # (clip frames f65-f107; the turn _paced, done by f106).
+                # to her thigh along SBH_PUSH_R, turning as SBH_TRAIL_R has it
+                # (clip frames f65-f107; the elbow's way _paced, done by f106).
                 k = float(np.interp(fr, *_paced(SBH_PUSH_R, 64, 106)))
-                q = qslerp(rig._planted("r", SBH_HAND_R[1], None, np.array([0.0, 0.0, 0.0, 1.0])), _basis_q(*SBH_PUSH_TURN), k)
-                hand = {**_aimed_only(keyed), "pos": tuple(_hermite(u, SBH_PUSH_R)), "plant": 1.0 - smoothstep_((u - SBH_LIFT[0]) / SBH_LIFT[1]),
+                q = _trail_turn(fr, rig._planted("r", SBH_HAND_R[1], None, np.array([0.0, 0.0, 0.0, 1.0])))
+                hand = {**_aimed_only(keyed), "pos": tuple(_hermite(u, SBH_PUSH_R) + np.multiply(SBH_REST_OFF["r"], smoothstep_((u - 88) / 8.0))), "plant": 1.0 - smoothstep_((u - SBH_LIFT[0]) / SBH_LIFT[1]),
                         "knuckles": tuple(qrot(q, [0, 1.0, 0])), "blade": tuple(qrot(q, [0, 0, 1.0])), "aim": 1.0,
                         "pole": tuple(slerp_dir(under["pole"], keyed["pole"], k))}
             out["hand_r"] = hand
