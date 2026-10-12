@@ -169,6 +169,8 @@ public partial class HairSway : Node
         fileBalls = bs.Count;
         int[] Of(string n) { var l = new System.Collections.Generic.List<int>(); for (int k = 0; k < bs.Count; k++) if ((string)bs[k].AsGodotDictionary()["bone"] == n) l.Add(k); return l.ToArray(); }
         neckBalls = Of("neck_01"); backBalls = Of("spine_03"); lowBalls = Of("spine_01");
+        ridgeBone = backBalls.Length > 0 ? balls[backBalls[0]].Bone : -1;
+        ridge = Style == "braid" && ridgeBone >= 0 && balls.Length >= fileBalls + 4 && !OS.HasEnvironment("NORIDGE");
     }
 
     /// <summary>Her arms' bones (shoulder, elbow, hand), each side that has them.</summary>
@@ -496,6 +498,7 @@ public partial class HairSway : Node
             var upAx = (neck - low).Normalized();
             var bk = back[neckBalls[0]]; bk = (bk - upAx * bk.Dot(upAx)).Normalized();
             var ac = upAx.Cross(bk);
+            var shoulders = balls.Length >= fileBalls + 4 ? (at[fileBalls] + at[fileBalls + 2]) * 0.5f : neck;
             bool armed = laidFull && bone == head && upright > RoundLo && headH > RoundHead;
             float thMax = Mathf.Pi - (Mathf.Pi - RoundTo) * Mathf.SmoothStep(RoundLo, RoundHi, upright), turnMost = Mathf.Pi * dt / RoundTime / DrapePasses;
             // (the angle round her spine from straight behind her, toward the side it goes round; in front on the far side
@@ -519,9 +522,13 @@ public partial class HairSway : Node
                     float th = Round(drape[i], out float hg, out float b, out float rho);
                     if (rho < 0.02f) continue;
                     if (!round[i] && b < -RoundFront && hg < RoundTop) round[i] = true;
-                    if (round[i] && th <= RoundTo + 1e-3f) round[i] = false;
+                    // (a braid's: let go tip last, not while the next point toward the tip is still in front of the plane
+                    // through her shoulders)
+                    if (round[i] && th <= RoundTo + 1e-3f && !(ridge && i < 7 && (drape[i + 1] - shoulders).Dot(bk) < 0)) round[i] = false;
                 }
             }
+            bool on = ridge && System.Array.IndexOf(round, true) >= 0;
+            if (on) { RidgeAt(scale); System.Array.Copy(drape, carried, 8); }
             for (int k = 0; k < DrapePasses; k++)
                 for (int i = 1; i < 8; i++)
                 {
@@ -529,6 +536,7 @@ public partial class HairSway : Node
                     drape[i].Y -= DrapeStep;
                     drape[i] = drape[i - 1] + (drape[i] - drape[i - 1]).Normalized() * link[i];
                     drape[i] = round[i] ? Sideways(drape[i], upAx, scale) : Out(drape[i], scale, -1, came);
+                    if (on) drape[i] = OffRidge(drape[i]);
                     drape[i].Y = Mathf.Max(drape[i].Y, floor);
                     if (armed && round[i])
                     {
@@ -536,6 +544,16 @@ public partial class HairSway : Node
                         if (th > thMax) drape[i] = neck + (drape[i] - neck).Rotated(upAx, -side * Mathf.Min(th - thMax, turnMost));
                     }
                 }
+            if (on)
+            {
+                if (down >= 1 - 1e-4f) RidgeLinks();
+                // (and no point moves more than 7 cm a frame against her root's carry: its tip flicked 11 cm over her shoulder)
+                for (int i = 1; i < 8; i++)
+                {
+                    var dv = drape[i] - carried[i];
+                    if (dv.LengthSquared() > RidgeMove * RidgeMove) drape[i] = carried[i] + dv.Normalized() * RidgeMove;
+                }
+            }
         }
         drapeRoot = target[0];
         if (down > 0)
@@ -581,6 +599,72 @@ public partial class HairSway : Node
     Vector3[] lay = new Vector3[8];
     // (the warden's pauldron, the bulkiest, reaches 10 cm over her shoulder joint, its ball 8; and half the tail)
     const float PadR = 0.025f;
+
+    // The ridge (hair solver 14, a braid's only; env NORIDGE=1 turns it off to compare). Getting up, the braid carried
+    // round from the front of her right shoulder to her back cut 3-4 cm through the ridge between her neck and shoulder
+    // (k46-48), which no ball covers: a skin driver lifts her trapezius 1-4 cm there as she rises, and the chain dropped
+    // down her back while its tip was still in front, a U through her (hair judges hj6, jh1). So while the carry is on,
+    // a tapered capsule each side along that ridge (on spine_03, from beside her neck to her acromion, 4.5 cm to 8.5,
+    // grown 3.5 for her pauldron and half the braid) keeps the drape's points and links out of it, a carried point is
+    // let go tip last, and no point moves more than 7 cm a frame. Offline (tools/scratch/face19/sv14): segments 4-7
+    // -3.7 -> -0.6 cm, the carry ends k53, the largest move 9.3 (was 9.4); every other clip 0.00 cm. A tail's ridge
+    // (it hugs the base of her neck) stalled the carry or still cut, so it has none.
+    bool ridge;
+    int ridgeBone = -1;
+    static readonly Vector3 RidgeA = new(-0.1069f, 1.5404f, -0.0536f), RidgeB = new(-0.2115f, 1.501f, -0.0434f);
+    const float RidgeRA = 0.045f, RidgeRB = 0.085f, RidgeMargin = 0.035f, RidgeMove = 0.07f;
+    readonly Vector3[] ridgeA = new Vector3[2], ridgeB = new Vector3[2], carried = new Vector3[8];
+    float ridgeRA, ridgeRB;
+
+    /// <summary>This frame's ridge capsules (her right, then her left), carried by spine_03.</summary>
+    void RidgeAt(float scale)
+    {
+        var m = sk!.GlobalTransform * Moved(ridgeBone);
+        var mirror = new Vector3(-1, 1, 1);
+        ridgeA[0] = m * RidgeA; ridgeB[0] = m * RidgeB; ridgeA[1] = m * (RidgeA * mirror); ridgeB[1] = m * (RidgeB * mirror);
+        ridgeRA = (RidgeRA + RidgeMargin) * scale; ridgeRB = (RidgeRB + RidgeMargin) * scale;
+    }
+
+    /// <summary>A point kept out of the ridge capsules the nearest way.</summary>
+    Vector3 OffRidge(Vector3 p)
+    {
+        for (int c = 0; c < 2; c++)
+        {
+            var ab = ridgeB[c] - ridgeA[c];
+            float t = Mathf.Clamp((p - ridgeA[c]).Dot(ab) / ab.LengthSquared(), 0f, 1f), r = ridgeRA + (ridgeRB - ridgeRA) * t;
+            var o = p - (ridgeA[c] + ab * t);
+            if (o.LengthSquared() >= r * r) continue;
+            p = ridgeA[c] + ab * t + (o.LengthSquared() > 1e-12f ? o.Normalized() : Vector3.Up) * r;
+        }
+        return p;
+    }
+
+    /// <summary>The drape's links kept out of the ridge: a link (below the first) whose deepest of 41 places is in a
+    /// capsule has its far end swung out over it, and what hangs below is laid on again at its lengths (twice).</summary>
+    void RidgeLinks()
+    {
+        for (int it = 0; it < 2; it++)
+            for (int i = 2; i < 8; i++)
+                for (int c = 0; c < 2; c++)
+                {
+                    var ab = ridgeB[c] - ridgeA[c];
+                    float best = float.MaxValue, bs = 0, bt = 0; Vector3 bx = Vector3.Zero, bc = Vector3.Zero;
+                    for (int j = 0; j <= 40; j++)
+                    {
+                        float s = j / 40f;
+                        var q = drape[i - 1] + (drape[i] - drape[i - 1]) * s;
+                        float t = Mathf.Clamp((q - ridgeA[c]).Dot(ab) / ab.LengthSquared(), 0f, 1f);
+                        var cq = ridgeA[c] + ab * t;
+                        float dd = q.DistanceTo(cq);
+                        if (dd < best) { best = dd; bs = s; bt = t; bx = q; bc = cq; }
+                    }
+                    float rr = ridgeRA + (ridgeRB - ridgeRA) * bt;
+                    if (best >= rr || bs < 0.05f) continue;
+                    var to = drape[i] + (bx - bc).Normalized() * ((rr - best) / bs);
+                    drape[i] = drape[i - 1] + (to - drape[i - 1]).Normalized() * link[i];
+                    for (int j = i + 1; j < 8; j++) drape[j] = drape[j - 1] + (drape[j] - drape[j - 1]).Normalized() * link[j];
+                }
+    }
 
     // (env HAIRDUMP: each frame's inputs and the chain as it starts, for an offline replica)
     void Dump(float dt, float ground)
