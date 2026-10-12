@@ -17,7 +17,7 @@
 **Open questions (for the owner, via the main session)**
 - The Bulwark's rebuke is under 1% of its night damage (a judge asked 8-15%).
 - Home adds little today (median x1.03) until phase 5's signature skills.
-- Act 1's story bosses fall 14-29% sooner with the Flare: raise their health?
+- Act 1's story bosses' health raised x1.10 to x1.15 (11 October, the owner's call), so they last as long as before the Flare (CLASSES §7 Open (5)).
 
 **Notes for other areas**
 - Story: `Ev.Flare` with `Clutch`, `Battle.FlareClutches`, `Ev.Rise`, `Ev.PlayerDeath` are the toll's hooks. Lamp, Flare and blessing names are drafts.

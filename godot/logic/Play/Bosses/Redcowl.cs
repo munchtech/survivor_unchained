@@ -43,8 +43,10 @@ public sealed class Redcowl : StoryBoss
     protected override (string Title, string Sub) SoftWords(Enemy e) => ("His lot close in", "Quicker, and more of them");
     public override string ReEntry => "The torches part again, and he comes back through them, laughing.";
     /// <summary>The Red Hand's body (until Redcowl's own, with the greataxe, exists). His health is measured to
-    /// the length, as Greymuzzle's was: the same at every tier. His blows are measured against her (Teeth).</summary>
-    public override double HealthMul(int tier) => 103;
+    /// the length, as Greymuzzle's was: the same at every tier. His blows are measured against her (Teeth). Raised from 103 to 118
+    /// (11 October, the owner's call): with the Flare he fell 10% (mean) to 13% (median) sooner; at 118 the fight is its pre-Flare
+    /// length again (deft -1%, plain 0%).</summary>
+    public override double HealthMul(int tier) => 118;
     public override double Teeth => 0.4;
     protected override bool DiesAtZero => false;
 
