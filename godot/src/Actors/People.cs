@@ -1056,7 +1056,9 @@ public static class People
             // it was lit as her cheeks were, a pale band down to her collar)
             if (ResourceLoader.Exists("res://art/people/head_tex/heroine_ao.png"))
             {
-                m.SetShaderParameter("ao_map", GD.Load<Texture2D>("res://art/people/head_tex/heroine_ao.png"));
+                var aoFile = HerSoftLipAo && ResourceLoader.Exists("res://art/people/head_tex/heroine_ao_softlip.png")
+                    ? "res://art/people/head_tex/heroine_ao_softlip.png" : "res://art/people/head_tex/heroine_ao.png";
+                m.SetShaderParameter("ao_map", GD.Load<Texture2D>(aoFile));
                 m.SetShaderParameter("ao_light", 0.55f);
                 // (her head's skin eased into the graft's over the 3 cm above her neck's seam: the shader's seam_*,
                 // at the graft's rough, shine and pore depth, set above as every body part's)
@@ -1297,6 +1299,12 @@ public static class People
     static Vector3 SoftTone(Look look) => SurvivorUnchained.Args.Get("soft-tone") is string st && st.Split(',') is [var r, var g, var b2]
         ? new(float.Parse(r, System.Globalization.CultureInfo.InvariantCulture), float.Parse(g, System.Globalization.CultureInfo.InvariantCulture), float.Parse(b2, System.Globalization.CultureInfo.InvariantCulture))
         : ToneTrim && HerSoftTone.TryGetValue(FaceId(look), out var v) ? v : Vector3.One;
+
+    /// <summary>The line above her upper lip (the owner, 12 October 2026): her sculpt's lip border sits 4.4-7.6 mm above
+    /// every portrait's painted red, and her head's shade drew it as an outline in skin. True: the shade with that
+    /// crease eased out (heroine_ao_softlip.png, tools/assets/heroine_ao_softlip.py), each face keeping its portrait's
+    /// lip. False: the shade as baked. (Env SOFTLIP=0: false, for judging.)</summary>
+    public static bool HerSoftLipAo = OS.GetEnvironment("SOFTLIP") != "0";
 
     /// <summary>Her neck's and body's colour in every lamp but the soft ones (the skin shader's key_tone, linear, its
     /// lightness kept), outside her face's paint. HerBodyTone was fitted on her lit neck, where the warm fill (which shows
