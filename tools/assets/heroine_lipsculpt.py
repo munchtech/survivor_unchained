@@ -478,7 +478,7 @@ def lip_sculpt(js, binc, chunks, hm, hp):
 
 
 def enabled():
-    """WIP (solver ls3): off unless HEROINE_LIPSCULPT=1 (unaccepted: Doe's middle has no crease after; see the
+    """WIP (solver ls3): off unless HEROINE_LIPSCULPT=1 (unjudged; see the
     header). Once accepted, make it on by default with HEROINE_LIPSCULPT=0 to build without."""
     return os.environ.get("HEROINE_LIPSCULPT", "0") == "1"
 
