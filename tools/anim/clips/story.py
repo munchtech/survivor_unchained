@@ -225,7 +225,7 @@ _SBH_HIPS = [
 # The tables and windows here keep their frames (design frames): clip frame
 # fr shows design frame _sbh_u(fr), half speed through the rise, `frames`
 # added in all; and along the rise (_SBH_RISE) the
-# hips go their tables' path at an even, eased pace (_sbh_rise).
+# hips go their path at an even, eased pace (_sbh_rise, _sbh_plan).
 _SBH_SLOW = (63.0, 6.0, 0.5, 11)
 _SBH_RISE = (64, 77)
 
@@ -244,33 +244,28 @@ def _sbh_u(fr):
     return fr - (1.0 - r) * lag
 
 
-_RISE_LEN = []
-
-
-def _sbh_rise(u):
-    """The tables' frame the hips are at, design frame `u` of the rise: the
-    path's length (the hips' travel, and their turn at 25 cm a radian) gone
-    along smoothstep's ease."""
+def _rise_len(path, n=261):
+    """(table frames, length gone) along a hips path over the rise: the
+    hips' travel and their turn at 25 cm a radian."""
     a, b = _SBH_RISE
-    if not _RISE_LEN:
-        ts = np.linspace(a, b, 1301)
-        q = [_sbh_table(t) for t in ts]
-        d = [0.0] + [np.linalg.norm(np.subtract(q[i]["pos"], q[i - 1]["pos"]))
-                     + 0.25 * math.radians(np.linalg.norm(np.subtract(q[i]["rot"], q[i - 1]["rot"]))) for i in range(1, len(q))]
-        _RISE_LEN.extend([ts, np.cumsum(d)])
-    ts, L = _RISE_LEN
+    ts = np.linspace(a, b, n)
+    q = [path(t) for t in ts]
+    d = [0.0] + [np.linalg.norm(np.subtract(q[i]["pos"], q[i - 1]["pos"]))
+                 + 0.25 * math.radians(np.linalg.norm(np.subtract(q[i]["rot"], q[i - 1]["rot"]))) for i in range(1, len(q))]
+    return ts, np.cumsum(d)
+
+
+def _sbh_rise(u, lengths):
+    """The tables' frame the hips are at, design frame `u` of the rise: the
+    path's length (`lengths`, _rise_len) gone along smoothstep's ease."""
+    a, b = _SBH_RISE
+    ts, L = lengths
     return float(np.interp(L[-1] * smoothstep_((u - a) / (b - a)), L, ts))
 
 
 def _sbh_table(fr):
     return {"pos": tuple(float(v) for v in _hermite(fr, [(f, q) for f, q, _ in _SBH_HIPS])),
             "rot": tuple(float(v) for v in _hermite(fr, [(f, r) for f, _, r in _SBH_HIPS]))}
-
-
-def _sbh_hips(u):
-    """The hips control along _SBH_HIPS at design frame `u`."""
-    a, b = _SBH_RISE
-    return _sbh_table(_sbh_rise(u) if a < u < b else u)
 
 
 def _hip_at(rig, side, hips):
@@ -359,6 +354,46 @@ SBH_LEAN = 22.0
 # up, both arms hung locked straight with the hands dragged after them.
 SBH_REACH = 0.95
 
+# sit_back_heels' right hand from pushing off the ground to resting palm up
+# on her right thigh as she sits back (design frame, wrist place): the way of
+# least top speed that stays within 445 mm (on her, 91% of the arm) of her
+# shoulder, made the smoothest within 8% of that (lead 13, worked out over
+# the shoulder's path in build v27). Hung off the shoulder at its reach, the
+# hand had run with it at 35 mm a frame and then swung in at 29 as the
+# shoulder stopped, the fingertips at 48-51. Here the arm trails out and
+# back as she comes up and the hand comes round onto the thigh after. (Work
+# it out again if her rise or the keys that carry her shoulder change.)
+SBH_PUSH_R = [
+    (64.91, (-0.649, 0.046, -0.028)), (66.41, (-0.636, 0.073, -0.015)), (67.5, (-0.615, 0.123, 0.002)),
+    (68.5, (-0.594, 0.175, 0.016)), (69.5, (-0.572, 0.227, 0.03)), (70.5, (-0.551, 0.279, 0.043)),
+    (71.5, (-0.528, 0.33, 0.057)), (72.5, (-0.501, 0.376, 0.071)), (73.5, (-0.47, 0.414, 0.084)),
+    (74.5, (-0.435, 0.44, 0.096)), (75.5, (-0.398, 0.454, 0.107)), (76.59, (-0.358, 0.456, 0.116)),
+    (78.09, (-0.318, 0.447, 0.124)), (80.0, (-0.278, 0.43, 0.13)), (82.0, (-0.241, 0.407, 0.134)),
+    (84.0, (-0.207, 0.38, 0.137)), (86.0, (-0.178, 0.354, 0.139)), (88.0, (-0.155, 0.331, 0.14)),
+    (90.0, (-0.138, 0.312, 0.14)), (92.0, (-0.127, 0.299, 0.14)), (94.0, (-0.122, 0.292, 0.14)),
+    (96.0, (-0.12, 0.29, 0.14)),
+]
+# Its turn, from flat on the ground (the plant's) to palm up on the thigh
+# (the heels key's), as (knuckles, blade); spread evenly over the way.
+SBH_PUSH_TURN = (((-0.838, -0.344, 0.423), (0.424, 0.079, 0.902)), ((-0.1, -0.35, 1.0), (-1.0, 0.0, -0.1)))
+
+
+def _even(x, e=0.15):
+    """0..1 at an even pace, eased in and out over `e` of the way at each end."""
+    x = min(max(x, 0.0), 1.0)
+    if x < e:
+        return x * x / (2 * e * (1 - e))
+    if x > 1 - e:
+        return 1.0 - (1 - x) ** 2 / (2 * e * (1 - e))
+    return (x - e / 2) / (1 - e)
+
+
+def _basis_q(knuckles, blade):
+    z = np.asarray(blade, float) / np.linalg.norm(blade)
+    y = np.asarray(knuckles, float) - z * np.dot(knuckles, z)
+    y = y / np.linalg.norm(y)
+    return qfrom_basis(np.cross(y, z), y, z)
+
 # The lowest the ball of a foot's joint and its toes' tips go in
 # sit_back_heels' laid legs, as (along the ankle-to-ball line, height):
 # standing, the ball's joint is 37 mm over its pad; the tips are about a
@@ -387,11 +422,9 @@ def _sbh_plan(rig, p, first, last, ends):
     def place(s, f):
         return np.asarray(_hermite(f, [(g, k) for g, _, _, k in plan["pts"][s]]), float)
 
-    def hips(f):
-        """The hips at design frame f (from f62)."""
-        if f in plan["hips"]:
-            return plan["hips"][f]
-        h = _sbh_hips(f)
+    def project(h, f):
+        """A hips control `h` moved the least that keeps each planted knee a
+        thigh's length from its hip at design frame f."""
         pos, rot = np.asarray(h["pos"], float), h["rot"]
 
         def resid(at):
@@ -407,7 +440,32 @@ def _sbh_plan(rig, p, first, last, ends):
             J = np.array([r / np.linalg.norm(r) for r in rows])
             r = np.array(e) - np.array(want)
             pos = pos - J.T @ np.linalg.solve(J @ J.T + 1e-9 * np.eye(2), r)
-        plan["hips"][f] = {"pos": tuple(float(v) for v in pos), "rot": tuple(float(v) for v in rot)}
+        return {"pos": tuple(float(v) for v in pos), "rot": tuple(float(v) for v in rot)}
+
+    def hips(f):
+        """The hips at design frame f (from f62). Along the rise they go the
+        kept path (the table's, moved to keep the knees) at an even, eased
+        pace: timed along the table's own path, the moving-in that keeps the
+        right knee came on over two frames and the hips went 14, 10, 16 mm a
+        frame (lead 13)."""
+        if f in plan["hips"]:
+            return plan["hips"][f]
+        a, b = _SBH_RISE
+        if a < f < b:
+            if "rise" not in plan:
+                # The kept path, densely, then gone along by its own length.
+                table = _rise_len(_sbh_table)
+                us = np.linspace(a, b, 261)
+                kept = [project(_sbh_table(_sbh_rise(u, table)), u) for u in us]
+                plan["rise"] = (us, _rise_len(lambda u: kept[int(round((u - a) / (b - a) * 260))])[1], kept)
+            us, L, kept = plan["rise"]
+            x = float(np.interp(L[-1] * smoothstep_((f - a) / (b - a)), L, us))
+            i = min(max(int(np.searchsorted(us, x)), 1), len(us) - 1)
+            k = (x - us[i - 1]) / (us[i] - us[i - 1])
+            plan["hips"][f] = {key: tuple(float(v) for v in np.asarray(kept[i - 1][key]) * (1 - k) + np.asarray(kept[i][key]) * k)
+                               for key in ("pos", "rot")}
+        else:
+            plan["hips"][f] = project(_sbh_table(f), f)
         return plan["hips"][f]
 
     plan["hips_at"] = hips
@@ -541,7 +599,9 @@ def sit_back_heels(rig):
         # Sat up sideways on the right hip, the legs round to her left.
         (62, z, "auto"),
         # Leaning forward and onto the right hand, gathering to rise.
-        (64, merge(z, spine=(-8, 18, -2), neck=(4, 10, -2), head=(2, 12, 0)), "auto"),
+        # (Into the first frames of the rise, lead 13: in the two frames before
+        # it the neck went 11 to 31 mm a frame.)
+        (67, merge(z, spine=(-8, 18, -2), neck=(4, 10, -2), head=(2, 12, 0)), "auto"),
         # Over onto her knees: the hips up off the ground and over them, the
         # right leg drawn under; the right hand pushes off the ground. (From
         # here the keys are 11 frames on from the design frames: _SBH_SLOW.)
@@ -605,10 +665,11 @@ def sit_back_heels(rig):
         # a locked arm 13 cm over the ground), until she pushes off it to come
         # up onto her knees. She leans toward it the while, as one does onto a
         # straight arm.
-        if 30 <= u < 84:
-            lean = smoothstep_((u - 34) / 14.0) * (1.0 - smoothstep_((u - 64) / 10.0))
-            out["spine"] = tuple(np.asarray(pose["spine"], float) + (0.0, 0.0, SBH_LEAN * lean))
-            out["neck"] = tuple(np.asarray(pose["neck"], float) - (0.0, 0.0, 0.35 * SBH_LEAN * lean))
+        if 30 <= u < 96:
+            if u < 84:
+                lean = smoothstep_((u - 34) / 14.0) * (1.0 - smoothstep_((u - 64) / 10.0))
+                out["spine"] = tuple(np.asarray(pose["spine"], float) + (0.0, 0.0, SBH_LEAN * lean))
+                out["neck"] = tuple(np.asarray(pose["neck"], float) - (0.0, 0.0, 0.35 * SBH_LEAN * lean))
             keyed = pose["hand_r"]
             # (Pressed flat as the weight comes onto it.)
             first, under = {**SBH_HAND_R[0], "plant": smoothstep_((fr - 30) / 4.0)}, {**SBH_HAND_R[1], "plant": 1.0}
@@ -622,25 +683,26 @@ def sit_back_heels(rig):
                         "plant": max(1.0 - smoothstep_(t / 0.35), smoothstep_((t - 0.65) / 0.35)),
                         "pole": tuple(slerp_dir(first["pole"], under["pole"], t)),
                         "knuckles": tuple(slerp_dir(first["knuckles"], under["knuckles"], t))}
-            else:
+            elif u <= 64:
                 hand = under
-            off = smoothstep_((u - 64) / 18.0)
-            if off > 0:
-                # Pushed off: the heel of the hand up first, the wrist up and
-                # away, the hand turning to the key's after it.
-                at = np.asarray(hand["pos"], float) * (1 - off) + np.asarray(keyed["pos"], float) * off
-                at[1] += 0.05 * math.sin(math.pi * off)
-                lag = smoothstep_((u - 66) / 16.0)
-                hand = {**_aimed_only(keyed), "pos": tuple(at), "plant": 1.0 - smoothstep_((u - 64) / 10.0),
-                        "pole": tuple(slerp_dir(hand["pole"], keyed["pole"], off)),
-                        "knuckles": tuple(slerp_dir(hand["knuckles"], keyed.get("knuckles", hand["knuckles"]), lag))}
+            else:
+                # Pushed off (let go of the ground as it rises: by 13 cm up
+                # the plant's finger laying stops, Rig._lay) and brought round
+                # to her thigh along SBH_PUSH_R, turning palm up evenly the
+                # while (clip frames f65-f107).
+                k = _even((fr - 65) / 42.0)
+                q = qslerp(_basis_q(*SBH_PUSH_TURN[0]), _basis_q(*SBH_PUSH_TURN[1]), k)
+                hand = {**_aimed_only(keyed), "pos": tuple(_hermite(u, SBH_PUSH_R)), "plant": 1.0 - smoothstep_((u - 64) / 3.0),
+                        "knuckles": tuple(qrot(q, [0, 1.0, 0])), "blade": tuple(qrot(q, [0, 0, 1.0])), "aim": 1.0,
+                        "pole": tuple(slerp_dir(under["pole"], keyed["pole"], k))}
             out["hand_r"] = hand
         # Neither arm hung locked straight with its hand dragged after it
         # (eased in on the left from where it leaves the ground, on the right
         # once its hand is lifted to move, out by the heels).
         if 30 <= u < 96:
             end = 1.0 - smoothstep_((u - 88) / 8.0)
-            for s, k in (("l", smoothstep_((fr - 30) / 10.0)), ("r", smoothstep_((fr - 36) / 6.0))):
+            # (The right hand's way from its push-off keeps within reach itself.)
+            for s, k in (("l", smoothstep_((fr - 30) / 10.0)), ("r", smoothstep_((fr - 36) / 6.0) * (u <= 64))):
                 if k * end > 0:
                     out[f"hand_{s}"] = {**out.get(f"hand_{s}", pose[f"hand_{s}"]), "reach": SBH_REACH, "reach_w": k * end}
         # The right forearm on the ground as she starts up off it.
