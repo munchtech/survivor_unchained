@@ -1,26 +1,24 @@
 # Heroine body and outfits: status
 
-Lead: none (paused 11 October 2026; successor 9 handed off). Handoff: `docs/handoff/outfits.md`. Branch: `worktree-agent-a5ca10091b08dc429` (pushed; code only, unjudged: never build it into the game until it passes).
+Lead: none (wound down 12 October 2026 for a full session handoff). Handoff: `docs/handoff/outfits.md`. Branch: `worktree-agent-a5ca10091b08dc429` (pushed; code only, unjudged: never build it into the game until it passes).
 
-## Now (11 October, evening): PAUSED by the owner, no successor
-- h5 judged (judge 8, `O2\h5\verdict8.md`): FAIL as rendered, both designs pass. The leather spaulder beats h3's lames, and the clasp stays gold. B1 and B2 PASS with the game's shader.
-- After h5, unjudged: the clasp's fixes are done (horns on the binding, tapered, seated 1 mm with the cloth cut under it). The spaulder's fixes are partial, with two regressions. The ordered list is in the handoff's "Next".
-- Built art is uncommitted in the worktree on purpose (h5, plus the clasp8 Arcanist).
+## Now (12 October): wound down, no successor
+- i3 is built in the worktree (uncommitted, unjudged), with her helper bones on. The clasp is at 100 degrees with ball tips. The spaulder's rear-corner loop and the leather's pale line are gone. Still open: the neck-corner hook, the clasp tips' seat, cap-to-band clearance under the helpers, the motion check, then judge 9.
 
 ## Key decisions
 - Coverage fixes tighten, never enlarge, except where the 2.4 cm strip is wider than a garment.
-- Rigid plates get only rigid corrections (judge 5); pauldron lames are built in the arm's frame under the plate above.
+- Rigid plates get only rigid corrections (judge 5). Since the helpers, one-blend pieces are put back on one blend after the split (`rigid_again`), with leather riveted on a plate's blend riding it.
 - Pieces are cut from her mended body, the one the game shows.
 - Shader flags ride in vertex colour alpha (matte bindings; UV-brushed plates), so there's no per-material plumbing.
-- The pauldron becomes leather with riveted plates, spaced: rigid plates overlapping in a set crossed at her idle, and a rigid dome can't lie on her trapezius (two solvers).
-- The spaulder's plates turn nearly as one (upper arm 0.5/0.55/0.6, 11 mm gaps): spread shares crossed them in a third of her poses.
-- A rigid piece close on cloth must be checked in Godot's idle: the clasp at 0.4 mm took the cloth's lumps through it; the cloth under it is now cut away and it sits at 1 mm.
-- The spaulder's cap stays off her front deltoid: it swells 6-8 mm through any rigid plate at her idle; the leather alone covers it.
-- Leather under plates is eased harmonically between them (blending tangent planes crumpled it).
+- The pauldron becomes a leather spaulder with riveted bronze plates (judge 8: design passes). Its leather ends inside the bands' ends: past them, its corner hung off her arm through two solvers.
+- The clasp is gold, 100 degrees round the foot. Held at 58 mm it climbed the U and read as a lining.
+- A pale line seen only under lookdev's rim light is a sub-mm ridge: test with `NORIM=1` before a geometry hunt.
 
 ## Blockers
 - None. Rendering's LOD hook is still to come.
 
 ## Notes for other areas
-- Face: our branch carries your heroine_seam.py, heroine_throat.py and jaw_zone.png from 0cface69.
-- Any lead: closeups take OUTFITVIEW=1, NORIM=1 and NOSKYREFL=1 for diagnosing a material.
+- **Face:** under lookdev's back rim light, a thin pale line runs across the front and top of her left shoulder, from the leather's neck end toward her neck. It vanishes with `NORIM=1` or `LIGHTS=side`, so it is a sub-millimetre ridge. It is very likely the edge of your shoulder-and-neck graft (Mesh_1 in heroine.glb, from heroine_head.py). Evidence: the outfits scratchpad's `o\lt\cmp.png` and `o\solve1\result.md`.
+- **Animation:** her body has folded slivers at the top of each armpit: glTF x ±0.15-0.17, y 1.43-1.45, dihedrals 77-180 degrees beside 36-45 mm joining edges. `mend_folds` leaves 9 folded. They are not visible from above.
+- **Male hero:** `heroine_outfits.py` is still built for her body alone. Any body parameter must keep `rigid_again()` and the helpers' split after the pieces are made.
+- Any lead: close-ups take OUTFITVIEW=1, NORIM=1 and NOSKYREFL=1 for diagnosing a material.
