@@ -202,6 +202,12 @@ Not made by us: poses or animation whose purpose is a sex act, or that show nudi
 ## 12 October 2026, night: waiting on the owner (classes)
 - **Arena boss phases and Flare bursts:** each arena boss phase has a minimum length, so no Flare burst can speed up an arena boss today (Banked Flame, Called Down). The judge recommends letting Flare damage alone cut a phase's minimum by at most half, tuned so the Flare's share of a boss stays near 35%. If no, Banked Flame stays a story-boss and safety lamp.
 - **Banked Flame:** now "Hold two Flares. Each fills 30% slower and strikes 40% harder" (bankers 7.1% faster on Act 1 bosses). The judge says it's the best option measured but not yet the clear reward asked for; the arena answer above decides the rest.
-- **get_up ponytail residuals:** the coordinator recommends accepting them for a polish pass later; not yet answered.
+- **get_up ponytail residuals:** accepted (answers below).
 - **Lips closed (12 Oct, night):** the last round's fix beat today at rest on five faces (Moonlit, Saffron, Wildling, Hardwon, Fey) but the confirm judge held it: in a smile or open mouth a pink stripe shows under the old line. Per the owner's last-round rule, only the soft-lip shading ships. Reopen only on the owner's word (it would need the red carried to the mouth line and the smile shapes corrected).
 - **Neck (done, judged):** the far neck now reads as cool rim light, not discolored skin (judge jn1); ships with the next skin branch. Faint residuals written in RESUME.
+
+## 12 October 2026, night: answers (to the new coordinator)
+- The owner: "yes to both, accept ponytail and let arena phases shorten and tighter nipple shape suggestion".
+- **get_up ponytail residuals:** accepted as shipped (k44-46 jaw tuft, k38-42 stiff flick, k50-51 drop); a later polish pass only.
+- **Arena boss phases:** yes. Flare damage alone may cut an arena boss phase's minimum length, by at most half, tuned so the Flare's share of a boss stays near 35% (judge's narrow version). Sent to the classes lead; Banked Flame's reward is then measured in arenas too.
+- **Nipple rise:** the judge's suggestion accepted: keep the owner's 1.5 mm height, give it a tighter, more defined shape so it reads. Sent to the outfits lead.
