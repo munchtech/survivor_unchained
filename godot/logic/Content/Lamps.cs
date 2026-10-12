@@ -76,6 +76,8 @@ public sealed class LampDef
     /// <summary>Lamps lit on its road before it can be lit (§2.2's depth gates).</summary>
     public int Gate;
     public LampEffect[] Effects = [];
+    /// <summary>A Flare modifier Light my way may light before Act 1 is done (one per Flare, measured on Act 1; §7).</summary>
+    public bool Early;
 
     /// <summary>Only the calling may light it: the hearth is home, and Flares are the one hard lock (§2.7).</summary>
     public bool Home => Region == LampRegion.Hearth || Kind is LampKind.Ultimate or LampKind.UltimateMod;

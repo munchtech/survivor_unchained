@@ -212,6 +212,8 @@ public static class LampBook
             // Banked Flame is a choice, never a suggestion: it pays only to a hand that holds a charge back, and
             // spent as it fills it is a trap (the owner, 12 October: Light my way never lights it).
             if (d.Effects.Any(e => e.Rule == "flare.banked")) continue;
+            // Before Act 1 is done it lights only the modifier marked early: the strong ones stay a hand's choice (§7).
+            if (d.Kind == LampKind.UltimateMod && !d.Early && w != null && !w.Fact("chapter.done").Truthy) continue;
             double sc = d.Road == l.Type ? 100 : d.Region == LampRegion.Hearth ? 60 : 0;
             sc += d.Kind switch
             {

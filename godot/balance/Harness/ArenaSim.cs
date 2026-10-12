@@ -180,7 +180,14 @@ public static class ArenaSim
             foreach (var id in Lamps.StoryFights) j.World.Facts[$"arena.{id}"] = "won";
             j.World.Facts["lamps.atlas"] = LampBook.AtlasLamps;
         }
-        if (spec.Lamps is "suggested" or "full") LampBook.LightSuggested(j.Ch, j.World);
+        if (spec.Lamps is "suggested" or "full")
+        {
+            // An arena board is past Act 1: Light my way's whole path (§7's early rule is for the story).
+            bool had = j.World.Facts.ContainsKey("chapter.done");
+            if (!had) j.World.Facts["chapter.done"] = true;
+            LampBook.LightSuggested(j.Ch, j.World);
+            if (!had) j.World.Facts.Remove("chapter.done");
+        }
         foreach (var id in Light.Select(x => x.Replace("{calling}", spec.Calling)))
             if (!LampBook.Now(j.Ch).Lit.Contains(id)) LampBook.Now(j.Ch).Lit.Add(id);
         // --flare stand: carry the road's Stand (its lamp lit past its gate if the board hasn't reached it; a measuring aid).

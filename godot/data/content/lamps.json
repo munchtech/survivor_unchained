@@ -2093,6 +2093,7 @@
     "bulwark.bell_of_the_morning"
    ],
    "gate": 3,
+   "early": true,
    "text": "Lesser things flee for 3 s after the last toll.",
    "effects": [
     {
@@ -5048,6 +5049,7 @@
     "kindler.burns_twice"
    ],
    "gate": 3,
+   "early": true,
    "text": "Eighteen embers fall.",
    "effects": [
     {
@@ -6870,6 +6872,7 @@
     "roadknife.the_roads_toll"
    ],
    "gate": 3,
+   "early": true,
    "text": "Eighteen cuts, in the same time.",
    "effects": [
     {
