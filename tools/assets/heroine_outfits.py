@@ -5858,6 +5858,16 @@ def rigid_again(objs, riders):
         # were judged on, h5, the nearest was 1.17 mm)
         if PL_RAW and o.name.startswith("ranger.pauldron"):
             sh_ = list(RIGID_ROWS[o.name])
+        # (the leather spaulder's cap and band 1 on her shoulder's share bone
+        # alone: on blends of her collarbone and upper arm (.50, .55) linear
+        # skinning shrank each plate and turned them apart when her arm went
+        # high or she lay down, and band 1 went through the cap in 11 of 64
+        # Godot frames, j3. The share bone is that half turn as a true turn,
+        # unshrunk, so the two move as one and keep their 5.9 mm in every
+        # pose; band 2 stays on its blend (offline over the six clips: never
+        # nearer band 1 than 2.8 mm), sv)
+        if o.name.split("_")[0] in SP_SHARE:
+            sh_ = [("upperarm_share_l", 1.0)]
         idx = list(range(len(o.data.vertices)))
         for g in list(o.vertex_groups):
             if g.name in BONE_NAMES:
@@ -5897,6 +5907,7 @@ def rigid_again(objs, riders):
 
 
 PL_RAW = os.environ.get("PL_RAW", "1") == "1"
+SP_SHARE = {"ranger.pauldron%d" % k for k, on in enumerate(os.environ.get("SP_SHARE", "1,1,0").split(",")) if on == "1"}     if os.environ.get("PAULDRON") == "leather" else set()
 RIGID_PIECES = one_blend_pieces(made)
 RIGID_ROWS = {o.name: rows_of(o)[0] for o in RIGID_PIECES}
 _rset = {r for r in RIGID_ROWS.values() if len(r) > 1}   # (a blend, never one bone's whole: cloth on one bone is no rider)
