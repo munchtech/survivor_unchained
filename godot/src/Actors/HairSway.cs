@@ -170,7 +170,9 @@ public partial class HairSway : Node
         int[] Of(string n) { var l = new System.Collections.Generic.List<int>(); for (int k = 0; k < bs.Count; k++) if ((string)bs[k].AsGodotDictionary()["bone"] == n) l.Add(k); return l.ToArray(); }
         neckBalls = Of("neck_01"); backBalls = Of("spine_03"); lowBalls = Of("spine_01");
         ridgeBone = backBalls.Length > 0 ? balls[backBalls[0]].Bone : -1;
-        ridge = Style == "braid" && ridgeBone >= 0 && balls.Length >= fileBalls + 4 && !OS.HasEnvironment("NORIDGE");
+        bool can = ridgeBone >= 0 && balls.Length >= fileBalls + 4 && !OS.HasEnvironment("NORIDGE");
+        pony = can && Style == "ponytail" && !OS.HasEnvironment("NOPONYRIDGE");
+        ridge = can && Style == "braid" || pony;
     }
 
     /// <summary>Her arms' bones (shoulder, elbow, hand), each side that has them.</summary>
@@ -500,7 +502,7 @@ public partial class HairSway : Node
             var ac = upAx.Cross(bk);
             var shoulders = balls.Length >= fileBalls + 4 ? (at[fileBalls] + at[fileBalls + 2]) * 0.5f : neck;
             bool armed = laidFull && bone == head && upright > RoundLo && headH > RoundHead;
-            float thMax = Mathf.Pi - (Mathf.Pi - RoundTo) * Mathf.SmoothStep(RoundLo, RoundHi, upright), turnMost = Mathf.Pi * dt / RoundTime / DrapePasses;
+            float thMax = Mathf.Pi - (Mathf.Pi - RoundTo) * Mathf.SmoothStep(RoundLo, RoundHi, upright), turnMost = Mathf.Pi * dt / (pony ? PonyRoundTime : RoundTime) / DrapePasses;
             // (the angle round her spine from straight behind her, toward the side it goes round; in front on the far side
             // it goes round the near side too)
             float Round(Vector3 q, out float hg, out float b, out float rho)
@@ -547,11 +549,13 @@ public partial class HairSway : Node
             if (on)
             {
                 if (down >= 1 - 1e-4f) RidgeLinks();
-                // (and no point moves more than 7 cm a frame against her root's carry: its tip flicked 11 cm over her shoulder)
+                // (and no point moves more than 7 cm a frame against her root's carry, a tail's 6: its tip flicked 11 cm
+                // over her shoulder)
+                float most = pony ? PonyMove : RidgeMove;
                 for (int i = 1; i < 8; i++)
                 {
                     var dv = drape[i] - carried[i];
-                    if (dv.LengthSquared() > RidgeMove * RidgeMove) drape[i] = carried[i] + dv.Normalized() * RidgeMove;
+                    if (dv.LengthSquared() > most * most) drape[i] = carried[i] + dv.Normalized() * most;
                 }
             }
         }
@@ -607,14 +611,21 @@ public partial class HairSway : Node
     // a tapered capsule each side along that ridge (on spine_03, from beside her neck to her acromion, 4.5 cm to 8.5,
     // grown 3.5 for her pauldron and half the braid) keeps the drape's points and links out of it, a carried point is
     // let go tip last, and no point moves more than 7 cm a frame. Offline (tools/scratch/face19/sv14): segments 4-7
-    // -3.7 -> -0.6 cm, the carry ends k53, the largest move 9.3 (was 9.4); every other clip 0.00 cm. A tail's ridge
-    // (it hugs the base of her neck) stalled the carry or still cut, so it has none.
-    bool ridge;
+    // -3.7 -> -0.6 cm, the carry ends k53, the largest move 9.3 (was 9.4); every other clip 0.00 cm.
+    // A tail (hair solver 15) hugs the base of her neck, where the ridge alone left it cutting 3.6 cm (segments 3-4, 4-10
+    // cm out): so it has a slope capsule more each side, from above the base of her neck (3.5 cm) down to the ridge's
+    // neck end, and the margin 4.5. Those held it in front of her shoulder until k60 and then let it through her warden
+    // collar (k56, -4.8), so its carry is quicker (180 degrees in 0.15 s, not 0.35) and no point moves over 6 cm a frame.
+    // Offline and in Godot (tools/scratch/face19/sv15): segments 4-7 k28-60 -4.1 -> -0.8 cm (warden and reaver; k40-52
+    // -0.3), the carry ends k52 (k51), the largest move k40-60 6.2 (7.7), k28-60 10.8 at k31 (10.1 at k30);
+    // every other clip 0.00 offline. On by default (judge jp1 PASS, ship NEW, 12 Oct); NOPONYRIDGE=1 turns it off.
+    bool ridge, pony;
     int ridgeBone = -1;
-    static readonly Vector3 RidgeA = new(-0.1069f, 1.5404f, -0.0536f), RidgeB = new(-0.2115f, 1.501f, -0.0434f);
+    static readonly Vector3 RidgeA = new(-0.1069f, 1.5404f, -0.0536f), RidgeB = new(-0.2115f, 1.501f, -0.0434f), SlopeA = new(-0.05f, 1.585f, -0.05f);
     const float RidgeRA = 0.045f, RidgeRB = 0.085f, RidgeMargin = 0.035f, RidgeMove = 0.07f;
-    readonly Vector3[] ridgeA = new Vector3[2], ridgeB = new Vector3[2], carried = new Vector3[8];
-    float ridgeRA, ridgeRB;
+    const float SlopeR = 0.035f, PonyMargin = 0.045f, PonyMove = 0.06f, PonyRoundTime = 0.15f;
+    readonly Vector3[] ridgeA = new Vector3[2], ridgeB = new Vector3[2], slopeA = new Vector3[2], carried = new Vector3[8];
+    float ridgeRA, ridgeRB, slopeR;
 
     /// <summary>This frame's ridge capsules (her right, then her left), carried by spine_03.</summary>
     void RidgeAt(float scale)
@@ -622,19 +633,30 @@ public partial class HairSway : Node
         var m = sk!.GlobalTransform * Moved(ridgeBone);
         var mirror = new Vector3(-1, 1, 1);
         ridgeA[0] = m * RidgeA; ridgeB[0] = m * RidgeB; ridgeA[1] = m * (RidgeA * mirror); ridgeB[1] = m * (RidgeB * mirror);
-        ridgeRA = (RidgeRA + RidgeMargin) * scale; ridgeRB = (RidgeRB + RidgeMargin) * scale;
+        float mg = pony ? PonyMargin : RidgeMargin;
+        ridgeRA = (RidgeRA + mg) * scale; ridgeRB = (RidgeRB + mg) * scale;
+        if (pony) { slopeA[0] = m * SlopeA; slopeA[1] = m * (SlopeA * mirror); slopeR = (SlopeR + mg) * scale; }
+    }
+
+    /// <summary>Capsule c of this frame's: 0-1 the ridges (her right, then her left), and a tail's 2-3 its slopes (from
+    /// above the base of her neck to each ridge's neck end).</summary>
+    void Capsule(int c, out Vector3 a, out Vector3 b, out float ra, out float rb)
+    {
+        if (c < 2) { a = ridgeA[c]; b = ridgeB[c]; ra = ridgeRA; rb = ridgeRB; }
+        else { a = slopeA[c - 2]; b = ridgeA[c - 2]; ra = slopeR; rb = ridgeRA; }
     }
 
     /// <summary>A point kept out of the ridge capsules the nearest way.</summary>
     Vector3 OffRidge(Vector3 p)
     {
-        for (int c = 0; c < 2; c++)
+        for (int c = 0; c < (pony ? 4 : 2); c++)
         {
-            var ab = ridgeB[c] - ridgeA[c];
-            float t = Mathf.Clamp((p - ridgeA[c]).Dot(ab) / ab.LengthSquared(), 0f, 1f), r = ridgeRA + (ridgeRB - ridgeRA) * t;
-            var o = p - (ridgeA[c] + ab * t);
+            Capsule(c, out var a, out var b, out float ra, out float rb);
+            var ab = b - a;
+            float t = Mathf.Clamp((p - a).Dot(ab) / ab.LengthSquared(), 0f, 1f), r = ra + (rb - ra) * t;
+            var o = p - (a + ab * t);
             if (o.LengthSquared() >= r * r) continue;
-            p = ridgeA[c] + ab * t + (o.LengthSquared() > 1e-12f ? o.Normalized() : Vector3.Up) * r;
+            p = a + ab * t + (o.LengthSquared() > 1e-12f ? o.Normalized() : Vector3.Up) * r;
         }
         return p;
     }
@@ -645,20 +667,21 @@ public partial class HairSway : Node
     {
         for (int it = 0; it < 2; it++)
             for (int i = 2; i < 8; i++)
-                for (int c = 0; c < 2; c++)
+                for (int c = 0; c < (pony ? 4 : 2); c++)
                 {
-                    var ab = ridgeB[c] - ridgeA[c];
+                    Capsule(c, out var a, out var b, out float ra, out float rb);
+                    var ab = b - a;
                     float best = float.MaxValue, bs = 0, bt = 0; Vector3 bx = Vector3.Zero, bc = Vector3.Zero;
                     for (int j = 0; j <= 40; j++)
                     {
                         float s = j / 40f;
                         var q = drape[i - 1] + (drape[i] - drape[i - 1]) * s;
-                        float t = Mathf.Clamp((q - ridgeA[c]).Dot(ab) / ab.LengthSquared(), 0f, 1f);
-                        var cq = ridgeA[c] + ab * t;
+                        float t = Mathf.Clamp((q - a).Dot(ab) / ab.LengthSquared(), 0f, 1f);
+                        var cq = a + ab * t;
                         float dd = q.DistanceTo(cq);
                         if (dd < best) { best = dd; bs = s; bt = t; bx = q; bc = cq; }
                     }
-                    float rr = ridgeRA + (ridgeRB - ridgeRA) * bt;
+                    float rr = ra + (rb - ra) * bt;
                     if (best >= rr || bs < 0.05f) continue;
                     var to = drape[i] + (bx - bc).Normalized() * ((rr - best) / bs);
                     drape[i] = drape[i - 1] + (to - drape[i - 1]).Normalized() * link[i];
