@@ -610,6 +610,52 @@ def _sbh_plan(rig, p, first, last, ends):
     return plan
 
 
+# The left knee's way up off the ground and out to its side, re-timed in clip
+# frames (solver 51): read at the tables' own frames it left at 12.5, 23.9,
+# 21.7 mm a frame (f65-67), the slow-down's ease-in bunching its first keys
+# and the hips' rise dragging it. Per side (clip frames): from, back on its
+# own timing at, speed up evenly over, slowed over. Its place and ankle are
+# read at the design frame that puts the knee (a thigh's length from the hips
+# where they are) along its way at a speed rising at most 4 mm a frame from a
+# frame after it lands in the side-sit, even, then slowing into the landing
+# as it was (f85-88 unchanged).
+SBH_KNEE_WAY = {"l": (62.5, 84.0, 3.4, 6.0)}
+
+
+def _sbh_knee_way(rig, plan, side):
+    """(design frames, the design frame each reads the knee's place and
+    ankle at) over SBH_KNEE_WAY's window, or None: the knee's path gone
+    along by its length, re-timed until the knee's own speed has the shape."""
+    if side not in SBH_KNEE_WAY:
+        return None
+    key = f"way_{side}"
+    if key not in plan:
+        cs, cj, ramp, slow = SBH_KNEE_WAY[side]
+        l1 = plan["l1"][side]
+        c = np.linspace(cs, cj, 801)
+        u = np.array([_sbh_u(x) for x in c])
+
+        def knees(cc, at):
+            hip = np.array([_hip_at(rig, side, plan["hips_at"](_sbh_u(x))) for x in cc])
+            d = np.array([plan["place"](side, x) for x in at]) - hip
+            return hip + l1 * d / np.linalg.norm(d, axis=1, keepdims=True)
+
+        # The speed the knee comes back onto its own timing at.
+        vj = float(np.linalg.norm(np.subtract(*knees([cj + 1, cj], [_sbh_u(cj + 1), _sbh_u(cj)]))))
+        up = np.clip((c - cs) / ramp, 0.0, 1.0)
+        dn = np.array([smoothstep_((x - (cj - slow)) / slow) for x in c])
+        sg = u.copy()
+        for _ in range(12):
+            K = knees(c, sg)
+            A = np.concatenate([[0.0], np.cumsum(np.linalg.norm(np.diff(K, axis=0), axis=1))]) + 1e-12 * np.arange(len(c))
+            top = (A[-1] - np.trapezoid(vj * dn, c)) / np.trapezoid(up * (1 - dn), c)
+            v = top * up * (1 - dn) + vj * dn
+            S = np.concatenate([[0.0], np.cumsum((v[1:] + v[:-1]) / 2 * np.diff(c))])
+            sg = np.interp(np.interp(S, A, c), c, sg)
+        plan[key] = (u, sg)
+    return plan[key]
+
+
 def _sbh_leg(rig, plan, p, fr, side):
     """A foot control for sit_back_heels between its keys' f34 and f96, along
     the plan's points (_sbh_plan). Drawn up (to f62), the ankle leads: the
@@ -630,11 +676,15 @@ def _sbh_leg(rig, plan, p, fr, side):
     pts = plan["pts"][side]
     l1, l2 = plan["l1"][side], plan["l2"][side]
 
+    way = _sbh_knee_way(rig, plan, side)
+
     def leg(f):
-        pos = np.asarray(_hermite(f, [(g, a) for g, a, _, _ in pts]), float)
+        # (The place and ankle re-timed along SBH_KNEE_WAY; the hips not.)
+        at = float(np.interp(f, *way)) if way is not None and way[0][0] <= f <= way[0][-1] else f
+        pos = np.asarray(_hermite(at, [(g, a) for g, a, _, _ in pts]), float)
         hip = _hip_at(rig, side, plan["hips_at"](f)) if f >= 62 else p[int(round(f)), th]
         ankle = np.array([pos[0] + s * rig.feet_out, rest_y + pos[1], pos[2]])
-        want = plan["place"](side, f)
+        want = plan["place"](side, at)
         if f < 62:
             return pos, hip, _knee_on(rig, side, hip, ankle, want), ankle
         knee = hip + l1 * (want - hip) / np.linalg.norm(want - hip)
@@ -911,7 +961,11 @@ def sit_back_heels(rig):
             # (Pressed flat as the weight comes onto it.)
             first, under = {**SBH_HAND_R[0], "plant": smoothstep_((fr - 24) / 10.0)}, {**SBH_HAND_R[1], "plant": 1.0}
             if fr < 34:
-                hand = first
+                # (Still aimed as the keys aim it (their blade, below) while
+                # the plant comes on: dropped at f30, the keyed half of its
+                # turn swung the hand 10 degrees about its palm in a frame
+                # and back, the fingertips 34 mm, solver 51.)
+                hand = {**_aimed_only(keyed), **first}
             elif fr < 34 + SBH_HOP:
                 # Lifted off as it leaves, flat again as it lands; turned on
                 # the way.
