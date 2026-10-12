@@ -372,7 +372,7 @@
    "calling": "arcanist",
    "road": "moonweaver",
    "kind": "strike",
-   "length": 1.1,
+   "length": 1.0,
    "radius": 14,
    "blows": 2,
    "power": 2100,
