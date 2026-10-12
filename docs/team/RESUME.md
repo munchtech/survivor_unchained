@@ -2,6 +2,9 @@
 
 The one page of what's current. Every lead starts from the latest `claude/vigilant-galileo-l6jqyx`. Merge it first and keep your own workflow; this page says what has changed around you. Updated by the main session, 5 October 2026.
 
+## 12 October, night (later): coordinator 33ad5b17 restarted four leads
+The owner answered (OWNER_NOTES "12 October 2026, night: answers"): get_up ponytail accepted; Flare damage may cut arena phase minimums (at most half, Flare share near 35%); nipple rise stays 1.5 mm with a tighter shape. Running: animation, face, classes, outfits (roster). Hero waits for a Blender turn (three Blender leads on three turns). Scratch to KEEP: 33ad5b17's scratchpad (anim, face, classes, outfits) besides the ones below.
+
 ## 12 October, night: coordinator 1515c1de at its context limit; wound down for a fresh coordinator. Restart here
 
 Ran classes, face, outfits and animation (hero held: four Blender leads on three Blender turns). Every lead filled ~250-265k in 1.5-3.5 h; each area had one or two successors.
