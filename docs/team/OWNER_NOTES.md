@@ -216,3 +216,4 @@ Not made by us: poses or animation whose purpose is a sex act, or that show nudi
 ## 12 October 2026, night: the close-up camera and the hero
 - On a test shot of her zoomed in in town: "i like this being a feature a great deal, allow for mousewheel to view our character like that when in town or when we go idle - its a great way to keep sex appeal when we get to endgame and don't see zoom ins much while farming tough stuff". A camera lead builds it on `camera-1` (wheel in safe zones; idle close-up anywhere with no enemy near; a setting to turn idle off).
 - "start the hero too if/when a blender slot frees": the male hero starts when the first Blender lead (animation, face or outfits) stops.
+- **Nipple shape: closed (12 Oct, night).** Judge 11 put the tighter 1.5 mm plateau (f2) beside the old shape (e2) and ruled REVERT (read as a rivet or bead with a hard rim; chips at the tips). The old shape ships exactly as it was (outfits fa8d70c8).
