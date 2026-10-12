@@ -3911,7 +3911,9 @@ def arcanist():
         # own middle line: narrowed from the outside only, the tips lay
         # inside the binding's edge, on her skin, as points, judge 8)
         wfull = 0.0025 + 0.0085 * (1 - s_) ** 1.5
-        mid_ = r_e - 0.001 + 0.002 * s_ ** 2 + 0.5 * wfull
+        # (2 mm out at the tips left both balls at the plunge's edge, the
+        # right one under its cup's edge, i3: now CLASP_OUT, 5 mm)
+        mid_ = r_e - 0.001 + float(os.environ.get("CLASP_OUT", "0.005")) * s_ ** 2 + 0.5 * wfull
         R_IN = mid_ - 0.5 * wid
         rr = R_IN[:, None] + wid[:, None] * np.linspace(0, 1, nr)[None, :]
         X = rr * np.sin(th)[:, None]
@@ -4000,8 +4002,9 @@ def arcanist():
         # binding: the narrowed tips read as sharp points, judge 8)
         tp, tt_ = [], []
         for a in (0, nth - 1):
-            r0 = mid_[a] - 0.4 * (mid_[a] - R_IN[a])   # (just in from the tip's own end)
-            q0 = np.array([r0 * np.sin(th[a]), float(np.interp(r0, rr[a], Y[a])) - 0.0012, cz - r0 * np.cos(th[a])])
+            # (centred on the horn's front at its middle line, over the binding:
+            # set 1.2 mm in front of its back, the horn's front buried it, j1)
+            q0 = frnt[a, nr // 2].copy()
             o_ = len(tp)
             tp += [q0 + 0.0016 * np.array([np.cos(2 * np.pi * j / nu) * np.cos(0.98 * np.pi * (k / nv - 0.5)), np.sin(0.98 * np.pi * (k / nv - 0.5)),
                                             np.sin(2 * np.pi * j / nu) * np.cos(0.98 * np.pi * (k / nv - 0.5))]) for k in range(nv + 1) for j in range(nu)]
@@ -4365,7 +4368,10 @@ def pl_border_spots(pos, tris, F_, inset=0.0095, step=0.028):
     dense = np.stack([np.interp(rd, run, lp[:, k]) for k in range(3)], 1)
     dist, j = cKDTree(dense).query(pos)
     par = rd[j]
-    cand = np.where(np.abs(dist - inset) < 0.003)[0]
+    # (and none nearer the edge than inset less 1.5 mm: chosen within 3 mm,
+    # the cap's nearest rivet stood 7.9 mm in at an inset of 10, short of the
+    # 8.2 that puts it 2 mm inside the rolled rim, judge 8)
+    cand = np.where((np.abs(dist - inset) < 0.003) & (dist > inset - 0.0015))[0]
     s_, th_, _ = pl_frame(dense, F_)
     lat = np.where(np.abs(th_) < np.radians(30))[0]
     a0 = rd[lat[np.argmax(s_[lat])]]
@@ -4500,9 +4506,14 @@ def ranger_spaulder():
     # (the neck end's corners: at 12 mm its binding turned up off her
     # trapezius in a hook, judge 8)
     NECK_R, = sp_env("SP_NECK_R", "0.024")
+    # (and its hem there, past the cap's neck stop and NOFF out from under
+    # the cap, lies NLIFT on her (judge 8 asked 1 mm or less; it was 1.5))
+    NOFF, NLIFT, NS = sp_env("SP_NECKPIN", "0.004,0.0009,0.0")
     LOWPASS = int(os.environ.get("SP_LOWPASS", "20"))   # (Taubin rounds over the leather away from the plates)
-    under = OR(ANDR(cap(sh, R_CAP + MARGIN), line - s_ + MARGIN, r=0.008),
-               ANDR(ANDR(cap(sh, R_CAP + TRAP), Z - (sh[2] - 0.0605), r=NECK_R), (S_MED + 0.02) - s_, r=NECK_R))
+    _ua = ANDR(cap(sh, R_CAP + MARGIN), line - s_ + MARGIN, r=0.008)
+    _ub = ANDR(ANDR(cap(sh, R_CAP + TRAP), Z - (sh[2] - 0.0605), r=NECK_R), (S_MED + 0.02) - s_, r=NECK_R)
+    _fil = float(os.environ.get("SP_FILLET", "0.012"))
+    under = -ANDR(-_ua, -_ub, r=_fil) if _fil > 0 else OR(_ua, _ub)
     # (its corners round, 16-18 mm: at 8 the neck corner's binding turned
     # tight and curled up off her trapezius, judge 8)
     leaf = ANDR(OR(under, tongue), side, r=0.016)
@@ -4620,10 +4631,13 @@ def ranger_spaulder():
         # its rear corner stood off her arm as a tongue with a void under
         # it, and its neck corner curled up off her trapezius, judge 8)
         far_ = np.clip((past[0] - FAR_W[0] / 2) / (FAR_W[0] / 2), 0, 1) * np.clip((past[1:].min(0) - STRIP) / STRIP, 0, 1)
+        nk_ = (pl_frame(pos, F_)[0] < S_MED + NS) & (past[0] > NOFF) & (own < 0)
+        far_ = np.where(nk_, 1.0, far_)
+        hl_ = np.where(nk_, NLIFT, HEM_LIFT)
         for i in hem:
             q, n, _, _ = BVH.find_nearest(Vector(pos[i]))
             if q is not None:
-                disp[i] = np.array(n) * (LIFT - (LIFT - HEM_LIFT) * far_[i] - (Vector(pos[i]) - q).dot(n))
+                disp[i] = np.array(n) * (LIFT - (LIFT - hl_[i]) * far_[i] - (Vector(pos[i]) - q).dot(n))
         known[hem] = True
         disp = fill(tris, disp, known)
         out_ = pos + disp
@@ -4644,7 +4658,7 @@ def ranger_spaulder():
             avg_ = (A_ @ out_) / np.maximum(deg_, 1)[:, None]
             out_[free_] += lam_ * (avg_[free_] - out_[free_])
         d_e, j_e = cKDTree(out_[hem]).query(out_)
-        need = LIFT - (LIFT - HEM_LIFT) * far_[hem][j_e] * np.clip(1 - d_e / STRIP, 0, 1)
+        need = LIFT - (LIFT - hl_[hem][j_e]) * far_[hem][j_e] * np.clip(1 - d_e / STRIP, 0, 1)
         for i in np.where(own < 0)[0]:
             q, n, _, _ = BVH.find_nearest(Vector(out_[i]))
             if q is not None:
@@ -4675,18 +4689,27 @@ def ranger_spaulder():
             w_ = np.asarray(wt, float)[lp]
             for _ in range(30):
                 w_ = (np.roll(w_, 1, 0) + 2 * w_ + np.roll(w_, -1, 0)) / 4
-            keep = (past[0][lp] > FAR_W[0]) & (past[1:, lp].min(0) > STRIP + 0.004)
+            nk_ = (pl_frame(pos[lp], F_)[0] < S_MED + NS) & (past[0][lp] > NOFF) & (own[lp] < 0)
+            keep = ((past[0][lp] > FAR_W[0]) | nk_) & (past[1:, lp].min(0) > STRIP + 0.004)
             hp.append(lp[keep])
             hw.append(w_[keep])
         hp, hw = np.concatenate(hp), np.vstack(hw)
         if len(hp):
             d_e, j_e = cKDTree(pos[hp]).query(pos)
-            strip = d_e < STRIP
+            strip = (d_e < STRIP) & (own < 0)   # (never under a plate: the neck's strip reaches the cap)
             vals[strip] = hw[j_e[strip]]
             known |= strip
             known &= ~((own >= 1) & ~strip & (d_e < STRIP + TRANS))
             print("SPAULDER hem strip on its edge's weights at %d points, eased from the bands' rows at %d" % (
                 strip.sum(), ((own >= 1) & ~strip & (d_e < STRIP + TRANS)).sum()))
+        # (the neck end, past the cap's neck stop, on her skin's own weights
+        # point by point: on its hem's weights eased along the hem, it rose
+        # 5-7 mm off the top of her trapezius at her idle (2-3 at rest), the
+        # hook of judge 8 #3)
+        nk_ = (pl_frame(pos, F_)[0] < S_MED + NS) & (past[0] > NOFF) & (own < 0)
+        vals[nk_] = np.asarray(wt, float)[nk_]
+        known |= nk_
+        print("SPAULDER neck end on her skin's weights at %d points" % nk_.sum())
         return fill(tris, vals, known)
 
     # (laid out whole, one island: cut into four by smart_project, it showed
