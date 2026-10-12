@@ -4084,11 +4084,13 @@ def arcanist():
             w = (cw[j] * g[:, None]).sum(0) / g.sum()
             return np.repeat((w / w.sum())[None], len(pts), 0)
         # (the horns ride their cups: each station takes the cloth's own weights
-        # under its middle (6 mm round it), blended in from the rigid row from
-        # CLASP_RIDE0, 30%, to 85% of the way out, so the tips and balls move
-        # with the cups' rolls. Rigid, the rolls slid about 4 mm out from under
-        # the tips in her carriage (rest + HerPose) and both balls stood over
-        # her skin, judge 10; at rest they were within 0.4 mm of the binding)
+        # under its middle (6 mm round it), blended in from the rigid row over
+        # the first 30% out from the foot (there the two nearly agree), so the
+        # crescent bends as the binding under it does and the tips and balls move
+        # with the cups' rolls. Rigid, the rolls slid 9 mm off the balls in her
+        # carriage (rest + HerPose), both over her skin; blended in from 30% to
+        # 85% the horns rode their rolls but folded at a kink, c1. At rest the
+        # balls were within 0.4 mm of the binding, judge 10)
         w_r = sk(pp[:1])[0]
         mids = np.stack([X[:, nr // 2], Y[:, nr // 2], Zc[:, nr // 2]], 1)
         d_w, j_w = cKDTree(cp).query(mids, k=48)
@@ -4096,11 +4098,11 @@ def arcanist():
         w_b = (cw[j_w] * g_w[:, :, None]).sum(1) / g_w.sum(1)[:, None]
         for _ in range(4):
             w_b[1:-1] = 0.25 * w_b[:-2] + 0.5 * w_b[1:-1] + 0.25 * w_b[2:]
-        k_w = np.clip((s_ - float(os.environ.get("CLASP_RIDE0", "0.3"))) / 0.55, 0, 1)
+        k_w = np.clip((s_ - float(os.environ.get("CLASP_RIDE0", "0.0"))) / 0.3, 0, 1)
         k_w = k_w * k_w * k_w * (k_w * (6 * k_w - 15) + 10)
         w_st = (1 - k_w)[:, None] * w_r[None] + k_w[:, None] * w_b
         w_st = w_st / w_st.sum(1, keepdims=True)
-        print("CLASP: horns ride their cups from %.0f%% out; tip rows %s | %s" % (100 * float(os.environ.get("CLASP_RIDE0", "0.3")),
+        print("CLASP: horns ride their cups from %.0f%% out (full by +30%%); tip rows %s | %s" % (100 * float(os.environ.get("CLASP_RIDE0", "0.3")),
               {BONES[j]: round(float(w_st[0, j]), 3) for j in np.argsort(-w_st[0])[:4]}, {BONES[j]: round(float(w_st[-1, j]), 3) for j in np.argsort(-w_st[-1])[:4]}))
         made = [finish("arcanist.clasp", pp, w_st[(np.arange(len(pp)) % (nth * nr)) // nr], tt, "claspgold", 0.0, 0.0, 10 ** 6, scraps=False)]
         # (the stone: an oval cabochon at the foot, 10 x 8 mm, 3.2 mm high, in
