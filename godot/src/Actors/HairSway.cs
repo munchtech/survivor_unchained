@@ -56,6 +56,8 @@ public partial class HairSway : Node
     int bone = -1;
     float stiff, bend, corner;
     Vector3[] rest = [], x = [], xp = [];
+    // Read-only view of the chain's world points (root first), for the HAIRCLEAR debug in anim_review.gd.
+    public Vector3[] ChainWorld => x;
     float[] link = [];
     Ball[] balls = [];
     // Its own stiffness once the hold has let go (bend, from its file: a braid's a little more than a tail's or long
