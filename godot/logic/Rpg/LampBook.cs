@@ -217,7 +217,7 @@ public static class LampBook
                 LampKind.Skill => d.Feeds.Any(carried.Contains) ? 32 : 2, _ => 10,
             };
             // Nothing live yet is no gift (a later phase's lamp).
-            if (d.Effects.Length > 0 && d.Effects.All(e => e.Phase > 1)) sc -= 50;
+            if (d.Effects.Length > 0 && d.Effects.All(e => e.Phase > Lamps.LivePhase)) sc -= 50;
             // Deterministic: ties go to the board's order.
             if (sc > bestScore) { bestScore = sc; best = id; }
         }
@@ -247,7 +247,7 @@ public static class LampBook
             bool small = d.Kind is LampKind.Small or LampKind.Attribute;
             foreach (var e in d.Effects)
             {
-                if (e.Phase > 1) continue;
+                if (e.Phase > Lamps.LivePhase) continue;
                 switch (e.Do)
                 {
                     case LampDo.Mod when e.Stat != null:

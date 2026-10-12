@@ -23,6 +23,9 @@ public sealed partial class Battle
 
     double FrenzyCap() => Math.Max(Lamps.Full("frenzy", "cap", 20), Lamps.Has("frenzy.deep") ? Lamps.Full("frenzy.deep", "cap", 40) : 0);
 
+    /// <summary>Butcher's Hour: Frenzy fills at once (as far as the lamps let it).</summary>
+    void FillFrenzy() { if (FrenzyCap() > 0) AddFrenzy(FrenzyCap()); }
+
     void AddFrenzy(double n)
     {
         frenzy = Math.Min(FrenzyCap(), frenzy + n);

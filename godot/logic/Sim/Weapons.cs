@@ -108,7 +108,7 @@ public static class Firing
 {
     public static double CooldownOf(Battle b, WeaponInst w)
     {
-        double c = (w.Def.Base.Cooldown ?? 1) * b.Stats.Get(Stat.Cooldown) * w.Mods.Cooldown * b.ReaverCooldownMul(w) * b.ArcanistCooldownMul(w) * b.StalkerCooldownMul(w);
+        double c = (w.Def.Base.Cooldown ?? 1) * b.Stats.Get(Stat.Cooldown) * w.Mods.Cooldown * b.ReaverCooldownMul(w) * b.ArcanistCooldownMul(w) * b.StalkerCooldownMul(w) * b.FlareCooldownMul(w);
         if (w.Evolution != null) c *= w.Evolution.Mods.Cooldown ?? 1;
         return Math.Max(0.08, Math.Min(20, c));
     }

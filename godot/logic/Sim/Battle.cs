@@ -848,6 +848,7 @@ public sealed partial class Battle
         ReaverOnHit(e, o);
         ArcanistOnHit(e, school, tags, o, dmg);
         StalkerOnHit(e, o, dmg);
+        FlareOnHit(e, o, dmg);
         if (e.Boss) Hooks.OnBossHit?.Invoke(e, school, dmg);
         if (e.Hp <= 0 && e.Alive && e.State != EnemyState.Dying) KillEnemy(e, true, o.Weapon, depth);
         else ArtOnHit(e);
@@ -898,6 +899,7 @@ public sealed partial class Battle
         if (weapon != null) { weapon.Kills++; ReaverWeaponKill(weapon); }
         ArcanistOnDeath(e, e.Credit, depth);
         StalkerOnDeath(e);
+        FlareOnKilled(e, credited && e.Disposition != Disposition.Ally);
         if (credited && e.Disposition != Disposition.Ally)
         {
             FlareOnKill(e, e.Status.Has(StatusKind.Bleed) && e.LastWeapon == null);
@@ -1396,6 +1398,7 @@ public sealed partial class Battle
             if (!silent && a > 0) Events.Emit(new Ev.ShieldHit { X = p.X, Z = p.Z, Absorbed = a, Broke = p.Shield <= 0 });
         }
         if (!silent) p.UnstruckT = 0;
+        dmg = FlareNotToday(dmg);
         if (dmg <= 0) return 0;
         double hpBefore = p.Hp;
         p.Hp -= dmg;

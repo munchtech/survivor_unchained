@@ -255,5 +255,11 @@ public class LampsTests
         Assert.True(rules.Count >= 130, $"only {rules.Count} phase-1 rules");
         var unread = rules.Where(r => !code.Contains($"\"{r}\"")).OrderBy(r => r).ToList();
         Assert.True(unread.Count == 0, "unread: " + string.Join(", ", unread));
+        // The staged Flares' modifier lamps, live from phase 2 (Sim/FlareStaged.cs).
+        var mods = Lamps.All.Values.SelectMany(l => l.Effects).Where(e => e.Do == LampDo.FlareMod && e.Phase <= Lamps.LivePhase && e.Rule != null)
+            .Select(e => e.Rule!).Distinct().ToList();
+        Assert.Equal(12, mods.Count);
+        var dark = mods.Where(r => !code.Contains($"\"{r}\"")).OrderBy(r => r).ToList();
+        Assert.True(dark.Count == 0, "unread flare mods: " + string.Join(", ", dark));
     }
 }
