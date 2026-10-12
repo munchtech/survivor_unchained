@@ -1299,7 +1299,7 @@ def grip_of(weapon):
     return {"r": GRIP[main]} if main in GRIP else {}
 
 
-def solve_frames(rig: Rig, poses, bases=None, loop=False, sigma=2.0, weapon="", pin_first=0):
+def solve_frames(rig: Rig, poses, bases=None, loop=False, sigma=2.0, weapon="", pin_first=0, pin_path=None):
     """Every frame's pose solved, where each elbow goes settled over the
     whole clip first: solved frame by frame (the pole's way, swung round
     where a keyed wrist needs it), then smoothed in time, so an elbow eases
@@ -1308,7 +1308,10 @@ def solve_frames(rig: Rig, poses, bases=None, loop=False, sigma=2.0, weapon="", 
     `weapon`: what the clip holds (grip_of). `pin_first`: frames over which
     the elbows ease out of the first frame's own place, for a clip that
     takes over from another's last frame (settled with the frames after,
-    they left where that clip did); the hands keep their path."""
+    they left where that clip did); the hands keep their path. `pin_first`
+    may be a dict {side: frames} to ease only those sides; `pin_path`
+    {side: n} lays that side's frames 1..n-1 on one path from frame 0's
+    elbow to frame n's smoothed one, ignoring the frames between."""
     rig.grip = grip_of(weapon) if rig.grips else {}
     n = len(poses)
     J = len(rig.sk)
@@ -1376,10 +1379,20 @@ def solve_frames(rig: Rig, poses, bases=None, loop=False, sigma=2.0, weapon="", 
             idx, w = idx[ok], w[ok]
             v = (x[idx] * w[:, None]).sum(0) / w.sum()
             out[fr] = v
-        if pin_first and have[0]:
-            for fr in range(1 if have[0] else 0, min(pin_first, n)):
+        npath = (pin_path or {}).get(s, 0)
+        pf = pin_first.get(s, 0) if isinstance(pin_first, dict) else pin_first
+        if npath and have[0] and npath < n and have[npath]:
+            end = out[npath].copy()
+            la, lb = np.linalg.norm(x[0]), np.linalg.norm(end)
+            for fr in range(1, npath):
+                u = fr / npath
+                u = u * u * (3 - 2 * u)
+                out[fr] = _slerp_vec(x[0] / la, end / lb, u) * (la + (lb - la) * u)
+            out[0] = x[0]
+        elif pf and have[0]:
+            for fr in range(1 if have[0] else 0, min(pf, n)):
                 if have[fr]:
-                    u = fr / pin_first
+                    u = fr / pf
                     u = u * u * (3 - 2 * u)
                     la, lb = np.linalg.norm(x[0]), np.linalg.norm(out[fr])
                     out[fr] = _slerp_vec(x[0] / la, out[fr] / lb, u) * (la + (lb - la) * u)
@@ -1397,12 +1410,13 @@ def solve_frames(rig: Rig, poses, bases=None, loop=False, sigma=2.0, weapon="", 
     return rot, pos
 
 
-def build(name, rig: Rig, keys, fps=30, loop=False, meta=None, post=None, base=None, lead=None, pin_first=0) -> Clip:
+def build(name, rig: Rig, keys, fps=30, loop=False, meta=None, post=None, base=None, lead=None, pin_first=0, pin_path=None) -> Clip:
     """A clip from keys [(frame, pose, ease), ...]. For a loop, the last key
     should be the first again. With a base clip, the keys are laid over its
     frames (Rig.solve's base): turns add to its turns, hands and feet given
     are solved afresh. `lead`: see Track. A weapon in the meta ("weapon")
-    sits in the fist's diagonal grip (GRIP)."""
+    sits in the fist's diagonal grip (GRIP). `pin_first` (int, or {side: frames})
+    and `pin_path` ({side: n}) pin the elbows at the start: see solve_frames."""
     rig.grip = grip_of((meta or {}).get("weapon")) if rig.grips else {}
     keys = _one_frame(rig, keys, base)
     track = Track(keys)
@@ -1413,7 +1427,7 @@ def build(name, rig: Rig, keys, fps=30, loop=False, meta=None, post=None, base=N
         poses.append(post(fr, pose) if post else pose)
     bases = None if base is None else [(base.rot[min(fr, base.frames - 1)], base.pos[min(fr, base.frames - 1)])
                                        for fr in range(frames)]
-    rot, pos = solve_frames(rig, poses, bases, loop=loop, weapon=(meta or {}).get("weapon", ""), pin_first=pin_first)
-    m = {"source": "keyed (tools/anim)", "licence": "own work"}
+    rot, pos = solve_frames(rig, poses, bases, loop=loop, weapon=(meta or {}).get("weapon", ""), pin_first=pin_first, pin_path=pin_path)
+    m ={"source": "keyed (tools/anim)", "licence": "own work"}
     m.update(meta or {})
     return Clip(name, fps, rot, pos, loop=loop, meta=m)

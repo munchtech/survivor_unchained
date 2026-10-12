@@ -1105,6 +1105,9 @@ def sit_back_heels(rig):
 # 23 mm into her breast through the hold. The left hand lies 2 cm higher on
 # the thigh (it was 24 mm into it), the elbow a little out.
 RC_OUT = 36
+RC_PIN = {"r": RC_OUT, "l": 24}
+RC_PIN_EASE = {}
+RC_BREATH = 0.0025
 RC_LIFT_R = (-0.11, 0.40, 0.36)
 
 
@@ -1156,6 +1159,8 @@ def reach_coals(rig):
                     pole=tuple(_slerp_vec(unit(s0["pole"]), unit(s1["pole"]), u)))
         return dict(pose, hand_r=hand, fingers_r={k: f0[k] + (f1[k] - f0[k]) * u for k in f0})
 
+    ox, oy, oz = out["hand_r"]["pos"]
+    rise = {"pos": (ox, oy + RC_BREATH, oz)}
     keys = [
         (0, start, "ease"),
         # Out, slow, palm down over the warmth (the right hand laid by `lay`);
@@ -1163,13 +1168,13 @@ def reach_coals(rig):
         (24, out, "auto"),
         (RC_OUT, out, "ease"),
         # Held: only the breath, and the fingers spreading a little to the heat.
-        (66, merge(out, spine=(0, 23, 0), fingers_r=_f(0.06, 0.0, 0.2, 3.0)), "ease"),
+        (66, merge(out, spine=(0, 23, 0), hand_r=rise, fingers_r=_f(0.06, 0.0, 0.2, 3.0)), "ease"),
         (96, merge(out, spine=(0, 22, 0), fingers_r=_f(0.04, 0.0, 0.2, 5.0)), "ease"),
-        (126, merge(out, spine=(0, 23, 0), fingers_r=_f(0.04, 0.0, 0.2, 5.0)), "ease"),
+        (126, merge(out, spine=(0, 23, 0), hand_r=rise, fingers_r=_f(0.04, 0.0, 0.2, 5.0)), "ease"),
     ]
     return build("reach_coals", rig, keys, meta={"layer": "full", "hold": True,
                                                   "note": "keyed (C01): kneeling, the right hand held out over the fire, palm down"},
-                 post=lay, pin_first=RC_OUT)
+                 post=lay, pin_first=RC_PIN_EASE or 0, pin_path=RC_PIN)
 
 
 # ------------------------------------------------------------------ letter --
