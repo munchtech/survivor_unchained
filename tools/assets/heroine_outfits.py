@@ -2844,6 +2844,9 @@ def nipple_rise_bm(obj):
     offs = {}
     for sd, tip in zip(("l", "r"), tips):
         centre = min(bm.verts, key=lambda v: (v.co - tip).length).co.copy()
+        if (centre - tip).length > 0.012:
+            print("NIP RISE %s %s: no sheet over this nipple" % (name, sd))
+            continue
         near = []
         for v in bm.verts:
             d = (v.co - centre).length
