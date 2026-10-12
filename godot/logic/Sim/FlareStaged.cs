@@ -17,7 +17,7 @@ public sealed partial class Battle
     bool FlareMod(string rule) => Lamps.FlareMods.Contains(rule);
 
     /// <summary>How many blows it lands: the staged Flares' modifiers add tolls, embers and cuts.</summary>
-    int FlareBlowCount(FlareDef f) => f.Id switch
+    int FlareBlowCount(FlareDef f) => !f.Staged ? f.Blows : f.Id switch
     {
         "bell_of_the_morning" => f.Blows + (FlareMod("bell.fourth_toll") ? 1 : 0),
         "burns_twice" => FlareMod("burns.more_embers") ? (int)f.Arg("moreEmbers", 18) : f.Blows,
@@ -74,7 +74,7 @@ public sealed partial class Battle
     {
         hourAdded = 0;
         mistAt = 0;
-        if (f.Id == "butchers_hour") FillFrenzy();
+        if (f.Id == "butchers_hour" && f.Staged) FillFrenzy();
     }
 
     /* ---------------------------------------------------- Bell of the Morning -- */
@@ -305,7 +305,7 @@ public sealed partial class Battle
     double hourAdded, mistAt;
 
     /// <summary>Butcher's Hour holds.</summary>
-    public bool HourHolds => FlareT > 0 && Flare is { Id: "butchers_hour" };
+    public bool HourHolds => FlareT > 0 && Flare is { Id: "butchers_hour", Staged: true };
 
     /// <summary>Her skills' waits while the Hour holds: twice as fast.</summary>
     public double FlareCooldownMul(WeaponInst w) => HourHolds ? 1 / Math.Max(1, Flare!.Arg("faster", 2)) : 1;
@@ -334,7 +334,7 @@ public sealed partial class Battle
             flareKilledBoss = true;
             Events.Emit(new Ev.Flare { Phase = FlarePhase.Kill, Id = f.Id, X = Player.X, Z = Player.Z, TX = e.X, TZ = e.Z, Target = e.Id, Clutch = flareClutch, Stand = f.Kind == FlareKind.Stand });
         }
-        if (FlareT <= 0 || !credited || f.Id != "butchers_hour") return;
+        if (!credited || !HourHolds) return;
         bool over = FlareMod("hour.overtime");
         double cap = over ? f.Arg("overtimeCap", 12) : f.Arg("extendCap", 8);
         double add = Math.Min(over ? f.Arg("overtime", 0.6) : f.Arg("extend", 0.3), Math.Max(0, cap - hourAdded));
@@ -345,7 +345,7 @@ public sealed partial class Battle
     /// <summary>While a Stand holds: Red Mist (lesser things near her flee, twice a second).</summary>
     void FlareStagedTick(FlareDef f, double dt)
     {
-        if (f.Id != "butchers_hour" || !FlareMod("hour.red_mist") || Time < mistAt) return;
+        if (!HourHolds || !FlareMod("hour.red_mist") || Time < mistAt) return;
         mistAt = Time + 0.5;
         var p = Player;
         ForEachHostileInRadius(p.X, p.Z, f.Arg("mistRadius", 5), (e, d) =>

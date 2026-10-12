@@ -235,7 +235,7 @@ public sealed partial class Battle
         bool last = f.Kind == FlareKind.Strike && flareBlow == flareAt.Length;
         var was = credit;
         credit = "flare";
-        switch (f.Id)
+        switch (f.Staged ? f.Id : "")
         {
             case "bell_of_the_morning": BellToll(f, last); break;
             case "burns_twice": BurnsTwiceBlow(f, last); break;

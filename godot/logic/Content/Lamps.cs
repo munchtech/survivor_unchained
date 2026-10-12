@@ -107,6 +107,9 @@ public sealed class FlareDef
     /// key pose's end; "first"/"step" or "first"/"last": the blows'; Burns Twice's "frost") and its hitstop in frames
     /// ("hitstop", "hitstopLast", "hitstopExecute", "hitstopFrost"). The logic schedules its blows by it; the view reads the rest.</summary>
     public Dictionary<string, double> Beat = new();
+    /// <summary>Staged (its own logic, FlareStaged.cs) once its data has a beat; without one it plays its kind's plain
+    /// form (the harness measures a staged Flare against it so).</summary>
+    public bool Staged => Beat.Count > 0;
     /// <summary>A staged Flare's own numbers (shares of its power, seconds, metres), by name.</summary>
     public Dictionary<string, double> Args = new();
     public double Arg(string key, double fallback) => Args.TryGetValue(key, out var v) ? v : fallback;

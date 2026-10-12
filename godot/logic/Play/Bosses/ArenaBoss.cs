@@ -113,6 +113,7 @@ public abstract class ArenaBoss
         winter = A.Sworn("winter"); embers = A.Sworn("embers"); blight = A.Sworn("blight"); ruin = A.Sworn("ruin");
         // The long vigil: its floors a third shorter and its moves a fifth quicker.
         if (A.Sworn("vigil")) { FloorScale *= 2 / 3.0; cadenceMul = 0.8; }
+        FloorScale *= Floors;
         PhaseIx = 0;
         PhaseT = 0;
         e.HpFloor = Phases[0].Mark * e.MaxHp;
@@ -130,6 +131,9 @@ public abstract class ArenaBoss
     /// <summary>The floors over the night's: a map is ten minutes, not thirty, so its ruler's
     /// gates are shorter there (docs/SKILLS_DESIGN.md §17.3).</summary>
     public double FloorScale = 1;
+    /// <summary>Every boss's floors (the harness's --floors 0: a boss that falls as fast as it is hurt, to read
+    /// damage on a boss where the floors would hold the kill time; CLASSES §7).</summary>
+    public static double Floors = 1;
 
     /// <summary>The boss's tick: the gate, the enrages, then its moves.</summary>
     public bool Tick(Enemy e, double dt)

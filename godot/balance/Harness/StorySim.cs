@@ -69,6 +69,9 @@ public sealed class StoryRunResult
 /// people's arena), by the Pilot's hands reading the stage's goal and the boss, and a Picker's taste.</summary>
 public static class StorySim
 {
+    /// <summary>--flare stand: the road's Stand carried instead of its Strike.</summary>
+    public static string Flare = "";
+
     public static StoryRunResult Play(StoryRunSpec spec)
     {
         var a = Callings.Archetype(spec.Calling);
@@ -77,6 +80,13 @@ public static class StorySim
             Name = "Bot", Archetype = spec.Calling, Background = "hunter", Palette = a.Palettes[0].Id, WeaponItem = a.Weapons[spec.Seed % a.Weapons.Count], Ability = a.Abilities[0],
         }, (uint)spec.Seed);
         if (spec.Type != "") LampBook.SetType(j.Ch, spec.Type);
+        // --flare stand: carry the road's Stand (its lamp lit past the empty board; a measuring aid).
+        if (Flare == "stand")
+        {
+            var road = SurvivorUnchained.Content.Lamps.Road(LampBook.Now(j.Ch).Type);
+            if (SurvivorUnchained.Content.Lamps.FlareLamp(road.Stand) is { } fl && !LampBook.Now(j.Ch).Lit.Contains(fl)) LampBook.Now(j.Ch).Lit.Add(fl);
+            if (!LampBook.Carry(j.Ch, road.Stand)) throw new InvalidOperationException($"can't carry {road.Stand}");
+        }
         while (j.Ch.Level < spec.Level) Character.GainXp(j.Ch, Character.XpForLevel(j.Ch.Level) - j.Ch.Xp + 1);
         switch (spec.Calling) { case "arcanist": j.Ch.Attributes.Wits += j.Ch.Points; break; case "stalker": j.Ch.Attributes.Finesse += j.Ch.Points; break; default: j.Ch.Attributes.Might += j.Ch.Points; break; }
         j.Ch.Points = 0;
