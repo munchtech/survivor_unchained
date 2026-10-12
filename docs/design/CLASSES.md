@@ -565,7 +565,7 @@ Each brief says what the Flare does and its defense, then the camera, animation,
 - **Sound:** a grunt on the leap; wet, heavy chops rising in pitch; a bone-crack on the last; a low growl between.
 - **Hitstop:** 2 frames on each chop, 7 on the last.
 
-**Butcher's Hour** (Stand, 8 s). Frenzy fills at once. She strikes twice as fast, every blow bleeds, blows execute ordinary things below 15%, and every kill adds 0.3 s (up to 8 s more).
+**Butcher's Hour** (Stand, 8 s). Frenzy fills at once. She strikes twice as fast, every blow deepens the bleed (up to five deep), blows execute ordinary things below 15%, and every kill adds 0.3 s (up to 8 s more).
 - *Defense:* every kill mends 1%.
 - *Horde:* a red blur.
 - *Boss:* sustained damage while it lasts, her health held up by the mending.

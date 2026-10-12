@@ -249,7 +249,7 @@
     "physical",
     "twin"
    ],
-   "text": "For 8 s: Frenzy full, blows twice as fast, every blow bleeds, ordinary things below 15% die, and each kill adds 0.3 s (up to 8 s more) and mends 1%.",
+   "text": "For 8 s: Frenzy full, blows twice as fast, every blow deepens the bleed, ordinary things below 15% die, and each kill adds 0.3 s (up to 8 s more) and mends 1%.",
    "beat": {
     "key": 0.3,
     "hitstop": 1,
@@ -257,8 +257,9 @@
    },
    "args": {
     "faster": 2,
-    "bleed": 0.4,
+    "bleed": 0.8,
     "bleedSeconds": 3,
+    "deepen": 1,
     "execute": 0.15,
     "extend": 0.3,
     "extendCap": 8,
