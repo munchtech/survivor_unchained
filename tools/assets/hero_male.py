@@ -198,12 +198,13 @@ JH = {n: fit(p[None])[0] for n, p in JH.items()}
 JT = {n: fit(p[None])[0] for n, p in JT.items()}
 print("MAN", len(V), "points,", len(F), "faces, %.3f m" % np.ptp(V[:, 2]))
 
-# ------------------------------------------------------------- in a T --
-# Each arm turned out level, its forearm and hand straight along it (palms
-# down), by linear blend skinning on his own weights; his head untouched.
-POSE = {}            # bone -> (3x3 world turn, pivot), parents first
-LIN = {n: np.eye(3) for n in BONES}
-OFF = {n: np.zeros(3) for n in BONES}
+# ------------------------------------------------------------- at rest --
+# Her lesson (build_heroine.py): the mesh's own pose is the bind pose and the
+# game's skeleton is laid along it. Carrying MakeHuman's A-pose up into a T by
+# its own skinning left his deltoids as boxes once the clips brought the arms
+# back down (the shoulder turned twice as far as it need). So he stays in
+# MakeHuman's A; HM_REST=T keeps the old T, for comparison.
+REST = os.environ.get("HM_REST", "A")
 
 
 def depth(n):
@@ -222,37 +223,78 @@ def rot_between(a, b):
     return np.eye(3) + vx + vx @ vx * (1 / (1 + c))
 
 
-AIM = {}
-for s, x in (("l", 1.0), ("r", -1.0)):
-    # (MakeHuman's "l" is the figure's left, on +x.)
-    if JH[f"upperarm_{s}"][0] * x < 0:
-        x = -x
-    AIM[f"upperarm_{s}"] = (f"lowerarm_{s}", np.array([x, 0, 0]))
-    AIM[f"lowerarm_{s}"] = (f"hand_{s}", np.array([x, 0, 0]))
-    AIM[f"hand_{s}"] = (f"middle_01_{s}", np.array([x, 0, 0]))
-for n in sorted(BONES, key=depth):
-    p = PARENT[n]
-    L, O = (LIN[p], OFF[p]) if p else (np.eye(3), np.zeros(3))
-    if n in AIM:
-        child, tgt = AIM[n]
-        cur = L @ (JH[child] - JH[n])
-        R = rot_between(cur, tgt)
-        h = L @ JH[n] + O
-        # x -> R (L x + O - h) + h
-        LIN[n], OFF[n] = R @ L, R @ (O - h) + h
-    else:
-        LIN[n], OFF[n] = L, O
-V0 = V.copy()
-V = np.zeros_like(V0)
-for b in range(len(BONES)):
-    w = W[:, b]
-    m = w > 0
-    if m.any():
-        V[m] += w[m, None] * (V0[m] @ LIN[BONES[b]].T + OFF[BONES[b]])
-JH2 = {n: (LIN[PARENT[n]] @ JH[n] + OFF[PARENT[n]]) if PARENT[n] else JH[n] for n in BONES}
-JT2 = {n: LIN[n] @ JT[n] + OFF[n] for n in BONES}
-JH, JT = JH2, JT2
-print("T-POSE: hands at %s" % np.round([JH["hand_l"], JH["hand_r"]], 3).tolist())
+# The shoulder's cap. MakeHuman weights the skin over the top of the joint
+# 60-80% to the upper arm, so when the clips bring the arm down from the A,
+# that skin (above the pivot) swings out and the deltoid reads as a box.
+# Over the joint the share ramps toward the collarbone (half, at the top), as
+# a real shoulder's skin rides the acromion; then the two are eased together.
+# (Off by default: tried at 0.5 on 12 Oct, the box stayed; see the handoff.)
+CAP = float(os.environ.get("HM_CAP", 0.0))
+if CAP:
+    _A1 = adjacency(len(V), F)
+    for _s in "lr":
+        u, c = BI[f"upperarm_{_s}"], BI[f"clavicle_{_s}"]
+        h = JH[f"upperarm_{_s}"]
+        sg = np.sign(h[0])
+        f = smooth01((V[:, 2] - h[2] + 0.01) / 0.07) * smooth01((V[:, 0] * sg - abs(h[0]) + 0.10) / 0.06)
+        mv = CAP * f * W[:, u]
+        W[:, u] -= mv
+        W[:, c] += mv
+        reg = (W[:, u] + W[:, c]) > 1e-3
+        tot = W[:, u] + W[:, c]
+        for _ in range(4):
+            r = np.where(reg, (_A1 @ (W[:, u] / np.maximum(tot, 1e-9) * reg)) / np.maximum(_A1 @ reg.astype(float), 1e-9), 0)
+            share = np.where(f > 0, r, W[:, u] / np.maximum(tot, 1e-9))
+            W[:, u], W[:, c] = share * tot, (1 - share) * tot
+    print("CAP: the shoulder's cap eased toward the collarbones (%.2f at the top)" % CAP)
+
+if REST == "T":
+    # Each arm turned out level, its forearm and hand straight along it (palms
+    # down), by linear blend skinning on his own weights; his head untouched.
+    POSE = {}            # bone -> (3x3 world turn, pivot), parents first
+    LIN = {n: np.eye(3) for n in BONES}
+    OFF = {n: np.zeros(3) for n in BONES}
+    AIM = {}
+    for s, x in (("l", 1.0), ("r", -1.0)):
+        # (MakeHuman's "l" is the figure's left, on +x.)
+        if JH[f"upperarm_{s}"][0] * x < 0:
+            x = -x
+        AIM[f"upperarm_{s}"] = (f"lowerarm_{s}", np.array([x, 0, 0]))
+        AIM[f"lowerarm_{s}"] = (f"hand_{s}", np.array([x, 0, 0]))
+        AIM[f"hand_{s}"] = (f"middle_01_{s}", np.array([x, 0, 0]))
+    for n in sorted(BONES, key=depth):
+        p = PARENT[n]
+        L, O = (LIN[p], OFF[p]) if p else (np.eye(3), np.zeros(3))
+        if n in AIM:
+            child, tgt = AIM[n]
+            cur = L @ (JH[child] - JH[n])
+            R = rot_between(cur, tgt)
+            h = L @ JH[n] + O
+            # x -> R (L x + O - h) + h
+            LIN[n], OFF[n] = R @ L, R @ (O - h) + h
+        else:
+            LIN[n], OFF[n] = L, O
+    V0 = V.copy()
+    V = np.zeros_like(V0)
+    for b in range(len(BONES)):
+        w = W[:, b]
+        m = w > 0
+        if m.any():
+            V[m] += w[m, None] * (V0[m] @ LIN[BONES[b]].T + OFF[BONES[b]])
+    JH2 = {n: (LIN[PARENT[n]] @ JH[n] + OFF[PARENT[n]]) if PARENT[n] else JH[n] for n in BONES}
+    JT2 = {n: LIN[n] @ JT[n] + OFF[n] for n in BONES}
+    JH, JT = JH2, JT2
+    print("T-POSE: hands at %s" % np.round([JH["hand_l"], JH["hand_r"]], 3).tolist())
+
+if os.environ.get("HM_DEBUG"):
+    # The shoulder's weights: rings of skin about the upper arm's head, by
+    # height above it, outer half only.
+    _h = JH["upperarm_l"]
+    for _dz in (0.06, 0.03, 0.0, -0.03, -0.06, -0.10):
+        _m = (np.abs(V[:, 2] - (_h[2] + _dz)) < 0.015) & (V[:, 0] * np.sign(_h[0]) > abs(_h[0]) - 0.04)
+        if _m.any():
+            _top = np.argsort(-W[_m].mean(0))[:4]
+            print("DBG shoulder dz %+.2f n=%d: " % (_dz, _m.sum()) + ", ".join("%s %.2f" % (BONES[j], W[_m, j].mean()) for j in _top))
 
 # ------------------------------------------------------------ the donor --
 before = set(bpy.data.objects)
@@ -389,9 +431,11 @@ print("VOLUME from the donor: mean %.1f mm, max %.1f mm, min %.1f mm over %d poi
 _E = np.unique(np.sort(np.array([(f[i], f[(i + 1) % len(f)]) for f in F for i in range(len(f))]), 1), axis=0)
 
 
-def section(axis, c, keep=None):
-    """Where his surface crosses the plane (axis = c): the edges' crossings."""
-    a, b = V[_E[:, 0]], V[_E[:, 1]]
+def section(axis, c, keep=None, skip=None):
+    """Where his surface crosses the plane (axis = c): the edges' crossings
+    (an edge with an end in `skip`, a point mask, left out)."""
+    E = _E if skip is None or len(skip) != len(V) else _E[~(skip[_E[:, 0]] | skip[_E[:, 1]])]
+    a, b = V[E[:, 0]], V[E[:, 1]]
     da, db = a[:, axis] - c, b[:, axis] - c
     m = (da * db) < 0
     t = da[m] / (da[m] - db[m])
@@ -399,31 +443,45 @@ def section(axis, c, keep=None):
     return P[keep(P)] if keep is not None else P
 
 
+def limb_girth(j0, j1, t, r=0.13):
+    """Round a limb at t along j0->j1, across the bone (any pose), within r of it."""
+    d = (j1 - j0) / np.linalg.norm(j1 - j0)
+    c = j0 + t * (j1 - j0)
+    a, b = V[_E[:, 0]] - c, V[_E[:, 1]] - c
+    da, db = a @ d, b @ d
+    m = (da * db) < 0
+    tt = da[m] / (da[m] - db[m])
+    P = a[m] + (b[m] - a[m]) * tt[:, None]
+    P = P[np.linalg.norm(P, axis=1) < r]
+    if len(P) < 4:
+        return 0.0
+    u = np.cross(d, [0, 0, 1] if abs(d[2]) < 0.9 else [1, 0, 0])
+    u /= np.linalg.norm(u)
+    return ConvexHull(np.stack([P @ u, P @ np.cross(d, u)], 1)).area
+
+
 def hull(P, dims):
     return ConvexHull(P[:, dims]).area if len(P) > 3 else 0.0
 
 
-def girth_z(z0, xsign=0, xmin=0.0):
-    return hull(section(2, z0, (lambda P: P[:, 0] * xsign > xmin) if xsign else None), [0, 1])
-
-
-def girth_x(x0):
-    return hull(section(0, x0), [1, 2])
+def girth_z(z0, xsign=0, xmin=0.0, skip=None):
+    return hull(section(2, z0, (lambda P: P[:, 0] * xsign > xmin) if xsign else None, skip), [0, 1])
 
 
 def measures():
     sh, el, wr = JH["upperarm_l"], JH["lowerarm_l"], JH["hand_l"]
     knee, ank, hip = JH["calf_l"], JH["foot_l"], JH["thigh_l"]
     side = np.sign(sh[0])
-    arm = max(girth_x(sh[0] + t * (el[0] - sh[0])) for t in np.linspace(0.35, 0.75, 9))
-    fore = max(girth_x(el[0] + t * (wr[0] - el[0])) for t in np.linspace(0.1, 0.4, 7))
+    arm = max(limb_girth(sh, el, t) for t in np.linspace(0.35, 0.75, 9))
+    fore = max(limb_girth(el, wr, t, 0.1) for t in np.linspace(0.1, 0.4, 7))
+    _arms = wsum(*[f"{b}_{s}" for b in ("upperarm", "lowerarm", "hand") for s in "lr"]) > 0.3
     neck = min(girth_z(JH["neck_01"][2] + t * (JH["head"][2] - JH["neck_01"][2])) for t in np.linspace(0.2, 0.8, 7))
     calf = max(girth_z(knee[2] + t * (ank[2] - knee[2]), side) for t in np.linspace(0.2, 0.5, 7))
     thigh = max(girth_z(hip[2] + t * (knee[2] - hip[2]), side, 0.02) for t in np.linspace(0.15, 0.35, 5))
     kneeg = min(girth_z(knee[2] + t * (hip[2] - knee[2]), side) for t in np.linspace(0.02, 0.15, 5))
-    waist = min(girth_z(z0) for z0 in np.linspace(JH["spine_01"][2] - 0.02, JH["spine_02"][2], 9))
+    waist = min(girth_z(z0, skip=_arms) for z0 in np.linspace(JH["spine_01"][2] - 0.02, JH["spine_02"][2], 9))
     _cx = abs(sh[0]) - 0.02
-    chest = max(hull(section(2, z0, lambda P: np.abs(P[:, 0]) < _cx), [0, 1]) for z0 in np.linspace(JH["spine_03"][2], sh[2] - 0.06, 7))
+    chest = max(hull(section(2, z0, lambda P: np.abs(P[:, 0]) < _cx, _arms), [0, 1]) for z0 in np.linspace(JH["spine_03"][2], sh[2] - 0.06, 7))
     print("JOINTS z: " + ", ".join("%s %.3f" % (n, JH[n][2]) for n in ("pelvis", "spine_01", "spine_02", "spine_03", "neck_01", "head",
                                                                          "upperarm_l", "thigh_l", "calf_l", "foot_l")))
     _sh = V[(np.abs(V[:, 2] - (sh[2] - 0.03)) < 0.02)]
@@ -495,10 +553,23 @@ for o in (donor, smooth_d):
     o.data.vertices.foreach_set("co", DV.ravel())
     o.data.update()
 _SA = adjacency(len(DV), DF)
-SV = DV.copy()
-for _ in range(80):
-    SV = SV + 0.6 * (_SA @ SV - SV)
-    SV = SV - 0.62 * (_SA @ SV - SV)
+
+
+def taubin(P, n):
+    for _ in range(n):
+        P = P + 0.6 * (_SA @ P - P)
+        P = P - 0.62 * (_SA @ P - P)
+    return P
+
+
+# TRELLIS leaves streaks a few of its edges wide (about 1-3 cm); his muscles'
+# separations are wider. A light pass takes the streaks off the detailed
+# donor first, so the turn below carries the muscles and not the noise.
+_pre = int(os.environ.get("HM_DPRE", 12))
+if _pre:
+    donor.data.vertices.foreach_set("co", taubin(DV, _pre).ravel())
+    donor.data.update()
+SV = taubin(DV, int(os.environ.get("HM_DSMOOTH", 120)))
 smooth_d.data.vertices.foreach_set("co", SV.ravel())
 smooth_d.data.update()
 flat = bpy.data.materials.new("flat")
@@ -516,8 +587,8 @@ sc.cycles.device = "CPU"
 sc.cycles.samples = 1
 bk = sc.render.bake
 bk.use_selected_to_active = True
-bk.cage_extrusion = 0.04
-bk.max_ray_distance = 0.08
+bk.cage_extrusion = float(os.environ.get("HM_CAGE", 0.06))
+bk.max_ray_distance = 2 * bk.cage_extrusion
 bk.margin = 16
 bk.normal_space = "TANGENT"
 

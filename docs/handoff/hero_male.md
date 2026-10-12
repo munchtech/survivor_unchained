@@ -1,6 +1,6 @@
 # Handoff: male hero lead
 
-From lead ac39445bca5508eaf (12 October, about 250k), branch `worktree-agent-ac39445bca5508eaf`. Status and the full plan: `docs/team/hero_male.md` (read it whole). Earlier handoffs are in git history.
+From successor 2 of lead ac39445bca5508eaf (12 October, wound down by the owner for a full-session handoff; cold start), branch `worktree-agent-ac39445bca5508eaf`. Status and the full plan: `docs/team/hero_male.md` (read it whole). Earlier handoffs are in git history.
 
 ## The owner, in their words
 - 12 Oct: "Begin work on Hero, using the lessons we learned making Heroine to hopefully do it in a fraction of the time and effort and tokens."
@@ -25,14 +25,16 @@ blender -b --python tools/assets/hero_male.py -- tools/comfy/out/heroes/hero_don
 (Blender: `C:\Users\munch\Tools\blender-4.5.14-windows-x64\blender.exe`; about 8 min with the bakes; `hero_donor.glb` is the old `hero.glb`: `git show b08e8bdf:godot/art/people/hero.glb > ...` if it is gone.) Then `CLIP=him/idle_warden EXTRA="NECK=0" bash tools/scratch/hero_male/shoot2.sh <out dir>` in a godot turn (it imports first), `python tools/scratch/hero_male/sheet2.py <dir> look.jpg 520 hero_front:c hero_side:c hero_back:c hero_q:c`. After any change to his joints, re-run `clips.sh`.
 
 ## Next
-The status page's "Next (exact)": definition (one try at a clean donor relief, else a solver on authored definition), shoulders (T-pose LBS lifts the deltoid: consider MH's own rest), the head stage, the skin, then judge j1 beside her.
+Read the status page's "Session 12 Oct (successor 2)" and "Next (exact)". In short: (1) a `su-lead-max` solver on the box shoulders in the idles (two tries spent: A rest, cap reweight; suspect the clips lift his clavicles); (2) a solver on authored definition (the donor's legs and arms stay streaky after one clean try; the front torso is usable); then the head stage, the skin, judge j1 beside her.
 
 ## Decisions
 - Rebuild on MakeHuman (owner's 12 Oct words + j0). Donor only for surface detail; its volume is off (measured: MH matches it).
-- T-pose rest like hers, via LBS on MH weights (revisit: shoulders).
+- Rest = MakeHuman's own A-pose (her lesson: the mesh's pose is the bind pose). `HM_REST=T` only for comparison.
 - One body mesh with MakeHuman's UVs, its head to be split with shared boundary points (no graft).
 
 ## Failures and why
+- Box deltoids in the idles: not the T rest (A rest shows the same), not fixed by moving the cap's weight to the clavicle (`HM_CAP`, off). Delta mush on the T conversion was tried and dropped with the T.
+- Donor relief: pre-smoothing kills only the short streaks; TRELLIS's lengthwise leg and arm streaks are long and stay.
 - Donor bake v1: garbage relief (dark patches, streaks): rays missed (black texels) and the donor's arms sat 8 cm off his. Fixed by per-bone registration and a hit mask.
 - Volume transfer: a wide smoothing used to remove the donor's misplacement also removed the girth (it averaged half a limb). Per-bone means fixed that; then the volume turned out not to be needed.
 - UAL's `Idle` hunches the MH skeleton (clips are frame-specific); use `him/...`.
@@ -44,7 +46,8 @@ The status page's "Next (exact)": definition (one try at a clean donor relief, e
 - `People.Hero` and lookdev still use `NeckPitch 22` (old body); set 0 for the new one when it ships.
 
 ## Uncommitted on purpose (unjudged built art)
-`godot/art/people/hero.glb`, `godot/art/anim/hero.res`, `godot/art/anim/hero_clips.json`, `tools/anim/data/hero_skeleton.json` (new body and its clips). Never commit the many `.import` files the Godot import dirtied. `git checkout -- <file>` returns the old ones.
+`godot/art/people/hero.glb` (A rest, built with `HM_CAP=0.5 HM_STOP=body`; rebuild with the default to drop the cap), `godot/art/anim/hero.res`, `godot/art/anim/hero_clips.json`, `tools/anim/data/hero_skeleton.json` (his 73 clips on the A skeleton). Never commit the many `.import` files. `git checkout -- <file>` returns the old body. After any change to his joints, re-run `clips.sh` (about 15 min, godot turn).
+Shoot helpers used this session (scratch, not kept): one Blender build in a turn (`build.sh`: `turn.py take blender --wait`, run the line under Run, give back), and per-view Godot shots in a turn with `lookdev.gd` (`BODY=hero NECK=0 ORBIT=yaw,1.05,4.6,1.0`, clip `him/idle_warden`; `POSE=pelvis:0,0,0` shows the rest). Import first after a new glb.
 
 ## Files to read first
 `docs/team/hero_male.md`, `docs/hero_male/verdict_j0.md`, `tools/assets/hero_male.py` (by section), then for the head stage `tools/assets/hero_male_head.py` lines 52-118 (config), 1211-1430 (paint, masks), 1431-1640 (parts, shapes, export).
