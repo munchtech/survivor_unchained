@@ -54,7 +54,7 @@ public partial class HairSway : Node
     // The chain: its bone, its points at rest (skeleton space), now and a
     // step ago (world), its links' lengths, what it is kept out of.
     int bone = -1;
-    float stiff, bend;
+    float stiff, bend, corner;
     Vector3[] rest = [], x = [], xp = [];
     float[] link = [];
     Ball[] balls = [];
@@ -137,6 +137,7 @@ public partial class HairSway : Node
         bone = sk.FindBone((string)d["bone"]);
         stiff = (float)d["stiff"];
         bend = d.ContainsKey("bend") ? (float)d["bend"] : 0.03f;
+        corner = d.ContainsKey("corner") ? Mathf.DegToRad((float)d["corner"]) : 0f;
         var pts = d["points"].AsGodotArray();
         rest = new Vector3[pts.Count];
         for (int i = 0; i < rest.Length; i++) rest[i] = Vec(pts[i]);
@@ -342,6 +343,20 @@ public partial class HairSway : Node
                 x[0] = target[0];
                 for (int k = 0; k < 3; k++)
                 {
+                    // A braid (its file's corner) bent past that angle where the hold still has it rounds the corner by the
+                    // corner moving toward the middle of its neighbours, not as a speed (as the bend): flung over her
+                    // shoulder as she threw, it lodged on her trapezius beside her neck, and nothing pulls a held point
+                    // down from below (the links are kept by moving what hangs), so it showed a Z for half a second (hair
+                    // judge hj4). Capped the other way, as the free chain is, the rest of it was thrown over her shoulder
+                    // (hair solver 9); a tail's or long hair's throw moved 3-12 cm with it, so it is the braid's alone.
+                    if (corner > 0)
+                        for (int i = 1; i < 7; i++)
+                        {
+                            float th = Mathf.Acos(Mathf.Clamp((x[i] - x[i - 1]).Normalized().Dot((x[i + 1] - x[i]).Normalized()), -1f, 1f));
+                            if (th <= corner) continue;
+                            var mv = ((x[i - 1] + x[i + 1]) * 0.5f - x[i]) * (0.5f * Mathf.SmoothStep(corner, corner + Mathf.DegToRad(30), th) * (1f - free[i]));
+                            x[i] += mv; xp[i] += mv;
+                        }
                     // (how each link turned from its rest, carried down the chain: the next link's rest bend is kept from it)
                     var turn = Quaternion.Identity;
                     for (int i = 1; i < 8; i++)
