@@ -92,6 +92,10 @@ public partial class Game : Node, IZoneHost
         cam = new FollowCamera(camera);
         // --cam D: the camera this far off (closer pictures of the crowd).
         if (Args.Has("cam")) cam.Distance = cam.TargetDistance = (float)Args.Num("cam", 23);
+        // --frame PITCH,DIST,HEIGHT: the view held as a side panel holds it (degrees, metres, metres up her), for
+        // pictures of her nearer and lower than play (a close-up of her face from more angles).
+        if (Args.Get("frame") is string fra && fra.Split(',') is [var fp, var fd, var fh])
+            cam.ScreenFrame = (float.Parse(fp, System.Globalization.CultureInfo.InvariantCulture), float.Parse(fd, System.Globalization.CultureInfo.InvariantCulture), float.Parse(fh, System.Globalization.CultureInfo.InvariantCulture));
         camHome = (cam.Pitch, cam.TargetDistance);
         air = new Atmosphere();
         AddChild(air);
