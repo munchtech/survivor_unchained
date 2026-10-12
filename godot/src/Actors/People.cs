@@ -755,6 +755,7 @@ public static class People
                         m.SetShaderParameter("body_lift", BodyLift(look));
                         m.SetShaderParameter("soft_tone", SoftTone(look));
                         m.SetShaderParameter("key_tone", KeyTone(look));
+                        m.SetShaderParameter("sky_tone", SkyTone(look));
                         m.SetShaderParameter("edge_tone", EdgeTone(look));
                         m.SetShaderParameter("freckle_amount", HerFreckles(look));
                         HerShade(m, look);
@@ -1024,6 +1025,7 @@ public static class People
             m.SetShaderParameter("body_lift", BodyLift(look));
             m.SetShaderParameter("soft_tone", SoftTone(look));
             m.SetShaderParameter("key_tone", KeyTone(look));
+            m.SetShaderParameter("sky_tone", SkyTone(look));
             m.SetShaderParameter("edge_tone", EdgeTone(look));
             m.SetShaderParameter("scatter", HerScatter);
             m.SetShaderParameter("back_spec", HerBackSpec);
@@ -1324,6 +1326,20 @@ public static class People
     static Vector3 KeyTone(Look look) => SurvivorUnchained.Args.Get("key-tone") is string kt && kt.Split(',') is [var r, var g, var b2]
         ? new(float.Parse(r, System.Globalization.CultureInfo.InvariantCulture), float.Parse(g, System.Globalization.CultureInfo.InvariantCulture), float.Parse(b2, System.Globalization.CultureInfo.InvariantCulture))
         : ToneTrim && HerKeyTone.TryGetValue(FaceId(look), out var v) ? v : Vector3.One;
+
+    /// <summary>Her neck's and body's colour under the sun and the moon (the skin shader's sky_tone, for directional lamps
+    /// in place of key_tone, its lightness kept, outside her face's paint): her face's own tone (HerFaceTone), so under
+    /// them her body takes her face's colour. HerBodyTone's blue was fitted against the Look's warm key; under the moon
+    /// (the Look's whole frame, play at night) nothing warmed it back and her thighs and arms read lavender-blue under
+    /// her face (judge j7 (f): own's thighs -11 and -21 deg off her cheek, +10% and +63% chroma; with this +7 and -7,
+    /// -30% and +2%; skin r13 B1). OFF BY DEFAULT, UNJUDGED: on Doe it overshot (thighs +15 and -4 deg to +55 and +35)
+    /// and on Highborn one thigh went +1 to +16, so it wants a fit per face. (--sky-tone face: her face's tone; R,G,B
+    /// another, for judging it; none: as key_tone, r12.)</summary>
+    static Vector3 SkyTone(Look look) => SurvivorUnchained.Args.Get("sky-tone") is string st
+        ? (st == "face" ? FaceTone(look) : st.Split(',') is [var r, var g, var b2]
+            ? new(float.Parse(r, System.Globalization.CultureInfo.InvariantCulture), float.Parse(g, System.Globalization.CultureInfo.InvariantCulture), float.Parse(b2, System.Globalization.CultureInfo.InvariantCulture))
+            : Vector3.Zero)
+        : Vector3.Zero;
 
     /// <summary>Her neck and body richer where she turns from the lens (the skin shader's edge_tone, on key_tone, linear,
     /// its lightness kept; below her head). Her portraits' neck sides are 1.6 times as rich as their lit fronts (Oklab C);

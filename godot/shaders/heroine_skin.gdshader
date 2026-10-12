@@ -127,6 +127,17 @@ uniform float edge_to = 0.7;
 // (kept to her neck by her freckles' map's blue, 0 from her collarbones down and on parts without the map: on her
 // limbs' silhouettes it turned her thighs and arms a richer, bluer pink in the whole frame, judge j7 (f); 0 as r11)
 uniform float edge_neck = 1.0;
+// The lamps behind her (the Look's cool rim and the fire's edge lamp, neither with a shadow) shaded by her head's own
+// shade (ao_map's red), back_occ of it: her jaw never shaded the rim, which lit the far side of her neck under her jaw
+// as brightly as the key, a cool grey-lilac band there on the fair faces (the owner, 10 October 2026; skin r12: with
+// the rim off, own's row .15 hue -21 to -8). 0 none (r12). (Tried at 1, skin r13 B1: own's row .15 -25 to -23, no
+// help: ao_map is white there, its bake has no shade under her far jaw. Wants a shadow on the rim, or a map that has it.)
+uniform float back_occ = 0.0;
+// Her neck's and body's colour under the sun and the moon (directional lamps), in place of key_tone, outside her face's
+// paint, its lightness kept (People.HerSkyTone). HerBodyTone's blue was fitted against the Look's warm key; under the
+// moon nothing warms it back, and in the whole frame her body read lavender-blue under her face (judge j7 (f)).
+// 0: as key_tone (r12).
+uniform vec3 sky_tone = vec3(0.0);
 // A body's own relief, baked from its sculpt (the hero's: every muscle and
 // vein his reduced mesh has only in paint), the pores laid over it.
 uniform sampler2D relief : hint_normal, filter_linear_mipmap_anisotropic;
@@ -202,6 +213,7 @@ varying float shade_w;
 varying float lift_w;
 varying float soft_w;
 varying float edge_w;
+varying float back_ao;
 
 void vertex() {
 	if (tuck_channel >= 0) {
@@ -289,6 +301,7 @@ void fragment() {
 	sheen = SPECULAR;
 	AO = ao;
 	AO_LIGHT_AFFECT = ao_light;
+	back_ao = mix(1.0, ao, back_occ);
 	SSS_STRENGTH = scatter;
 	BACKLIGHT = ALBEDO * backlight_colour * backlight * mix(1.0, aot.b, thin_map);
 	float wd = (INV_VIEW_MATRIX * vec4(NORMAL, 0.0)).y;
@@ -349,17 +362,18 @@ void light() {
 	// judge j6)
 	float behind = smoothstep(-0.1, 0.6, dot(-LIGHT, VIEW));
 	vec3 kt = vec3(1.0);
-	if (any(notEqual(key_tone, vec3(1.0)))) {
+	vec3 ktone = LIGHT_IS_DIRECTIONAL && sky_tone.x > 0.0 ? sky_tone : key_tone;
+	if (any(notEqual(ktone, vec3(1.0)))) {
 		vec3 ka = ALBEDO * un;
 		vec3 klw = vec3(0.2126, 0.7152, 0.0722);
-		kt = mix(vec3(1.0), key_tone * dot(ka, klw) / max(dot(ka * key_tone, klw), 1e-4), key_w * soft_w);
+		kt = mix(vec3(1.0), ktone * dot(ka, klw) / max(dot(ka * ktone, klw), 1e-4), key_w * soft_w);
 	}
 	if (any(notEqual(edge_tone, vec3(1.0)))) {
 		vec3 ea = ALBEDO * un * kt;
 		vec3 elw = vec3(0.2126, 0.7152, 0.0722);
 		kt *= mix(vec3(1.0), edge_tone * dot(ea, elw) / max(dot(ea * edge_tone, elw), 1e-4), key_w * soft_w * edge_w);
 	}
-	DIFFUSE_LIGHT += LIGHT_COLOR * diffuse * ATTENUATION * un * rich * kt * mix(1.0, body_lift, key_w * lift_w * (1.0 - behind))
+	DIFFUSE_LIGHT += LIGHT_COLOR * diffuse * ATTENUATION * un * rich * kt * mix(1.0, body_lift, key_w * lift_w * (1.0 - behind)) * mix(1.0, back_ao, behind)
 		* mix(vec3(1.0), soft_tone, (1.0 - key_w) * soft_w * shade_by_soft);
 	// the fine down at her edges, against a light from behind her only (lit
 	// from the front, it brightened every edge of her: a pale ribbon down her
