@@ -347,7 +347,7 @@ def _euler(q):
 # under her right shoulder as she leans on it in the side-sit (the fingers
 # out to her right, the elbow back); and how far she leans onto it (spine
 # roll, degrees).
-SBH_HAND_R = ({"pos": (-0.52, 0.05, 0.28), "pole": (-0.3, -1.0, -0.4), "knuckles": (-0.5, 0.0, 1.0)},
+SBH_HAND_R = ({"pos": (-0.508, 0.05, 0.235), "pole": (-0.3, -1.0, -0.4), "knuckles": (-0.5, 0.0, 1.0)},
               {"pos": (-0.65, 0.05, -0.03), "pole": (-0.2, 0.3, -1.0), "knuckles": (-1.0, 0.0, 0.35)})
 SBH_LEAN = 22.0
 # The most of an arm's length her hands use in it (Rig: "reach"): kneeling
@@ -357,26 +357,43 @@ SBH_REACH = 0.95
 # sit_back_heels' right hand from pushing off the ground to resting palm up
 # on her right thigh as she sits back (design frame, wrist place): the way of
 # least top speed that stays within 445 mm (on her, 91% of the arm) of her
-# shoulder, made the smoothest within 8% of that (lead 13, worked out over
-# the shoulder's path in build v27). Hung off the shoulder at its reach, the
-# hand had run with it at 35 mm a frame and then swung in at 29 as the
-# shoulder stopped, the fingertips at 48-51. Here the arm trails out and
+# shoulder and 35 mm higher off her thigh's line than it rests until it is
+# set down, made the smoothest within 8% of that (lead 13, worked out over
+# the shoulder's and thigh's paths in build v28). Hung off the shoulder at
+# its reach, the hand had run with it at 35 mm a frame and then swung in at
+# 29 as the shoulder stopped, the fingertips at 48-51. Here the arm trails out and
 # back as she comes up and the hand comes round onto the thigh after. (Work
 # it out again if her rise or the keys that carry her shoulder change.)
 SBH_PUSH_R = [
-    (64.91, (-0.649, 0.046, -0.028)), (66.41, (-0.636, 0.073, -0.015)), (67.5, (-0.615, 0.123, 0.002)),
-    (68.5, (-0.594, 0.175, 0.016)), (69.5, (-0.572, 0.227, 0.03)), (70.5, (-0.551, 0.279, 0.043)),
-    (71.5, (-0.528, 0.33, 0.057)), (72.5, (-0.501, 0.376, 0.071)), (73.5, (-0.47, 0.414, 0.084)),
-    (74.5, (-0.435, 0.44, 0.096)), (75.5, (-0.398, 0.454, 0.107)), (76.59, (-0.358, 0.456, 0.116)),
-    (78.09, (-0.318, 0.447, 0.124)), (80.0, (-0.278, 0.43, 0.13)), (82.0, (-0.241, 0.407, 0.134)),
-    (84.0, (-0.207, 0.38, 0.137)), (86.0, (-0.178, 0.354, 0.139)), (88.0, (-0.155, 0.331, 0.14)),
-    (90.0, (-0.138, 0.312, 0.14)), (92.0, (-0.127, 0.299, 0.14)), (94.0, (-0.122, 0.292, 0.14)),
+    (64.91, (-0.649, 0.046, -0.028)), (66.41, (-0.636, 0.074, -0.017)), (67.5, (-0.615, 0.125, -0.003)),
+    (68.5, (-0.594, 0.178, 0.01)), (69.5, (-0.573, 0.231, 0.021)), (70.5, (-0.553, 0.285, 0.033)),
+    (71.5, (-0.53, 0.337, 0.045)), (72.5, (-0.505, 0.386, 0.06)), (73.5, (-0.476, 0.429, 0.075)),
+    (74.5, (-0.444, 0.462, 0.092)), (75.5, (-0.408, 0.486, 0.108)), (76.59, (-0.371, 0.498, 0.124)),
+    (78.09, (-0.332, 0.499, 0.139)), (80.0, (-0.294, 0.49, 0.15)), (82.0, (-0.257, 0.471, 0.159)),
+    (84.0, (-0.222, 0.444, 0.163)), (86.0, (-0.191, 0.412, 0.164)), (88.0, (-0.165, 0.378, 0.161)),
+    (90.0, (-0.145, 0.345, 0.155)), (92.0, (-0.131, 0.316, 0.148)), (94.0, (-0.123, 0.297, 0.142)),
     (96.0, (-0.12, 0.29, 0.14)),
 ]
-# Its turn, from flat on the ground (the plant's) to palm up on the thigh
-# (the heels key's), as (knuckles, blade); spread evenly over the way.
-SBH_PUSH_TURN = (((-0.838, -0.344, 0.423), (0.424, 0.079, 0.902)), ((-0.1, -0.35, 1.0), (-1.0, 0.0, -0.1)))
+# Its turn, from flat on the ground (Rig._planted's) to palm up on the
+# thigh (the heels key's, as knuckles and blade): 153 degrees, done mostly where
+# the hand goes slowest (_paced; spread evenly, the turn carried the
+# fingertips 41 mm a frame as the wrist went 27).
+SBH_PUSH_TURN = ((-0.1, -0.35, 1.0), (-1.0, 0.0, -0.1))
 
+
+# The left hand back from where it hung at her left thigh's outside onto its
+# top, palm up, as she sits back (clip frames f86-f107; design frame, wrist
+# place): worked out as SBH_PUSH_R, kept 80 mm higher off the thigh's line
+# than it rests until it is set down (35 let the fingers into the thigh) (lead 13; left to the keys it hung at
+# full stretch, then came round in 8 frames at 34 mm a frame, the fingertips
+# 51-55); and its turn, from how it hung to the heels key's.
+SBH_BACK_L = [
+    (76.01, (0.304, 0.36, 0.166)), (77.27, (0.301, 0.359, 0.166)), (79.01, (0.292, 0.367, 0.168)),
+    (81.0, (0.276, 0.383, 0.174)), (83.0, (0.255, 0.401, 0.181)), (85.0, (0.23, 0.413, 0.188)),
+    (87.0, (0.204, 0.414, 0.19)), (89.0, (0.177, 0.398, 0.185)), (91.0, (0.152, 0.366, 0.173)),
+    (93.0, (0.133, 0.327, 0.156)), (95.0, (0.122, 0.296, 0.143)), (96.0, (0.12, 0.29, 0.14)),
+]
+SBH_BACK_TURN = (((0.046, -0.99, 0.136), (-0.042, 0.134, 0.99)), ((0.1, -0.35, 1.0), (1.0, 0.0, -0.1)))
 
 def _even(x, e=0.15):
     """0..1 at an even pace, eased in and out over `e` of the way at each end."""
@@ -387,6 +404,27 @@ def _even(x, e=0.15):
         return 1.0 - (1 - x) ** 2 / (2 * e * (1 - e))
     return (x - e / 2) / (1 - e)
 
+
+
+_PACED = {}
+
+
+def _paced(path, a, b, floor=12.0, add=5.0, power=3, box=7, ramp=5):
+    """How much of a hand's turn is done by each clip frame a..b as it goes
+    along `path` (a design-frame table of wrist places): a frame's share as
+    1 / (its speed in mm, at least `floor`, + `add`) ** `power`, smoothed
+    over `box` frames and eased in and out over `ramp`; as (frames, done)."""
+    key = (id(path), a, b)
+    if key not in _PACED:
+        at = np.array([_hermite(_sbh_u(f), path) for f in range(a, b + 1)], float)
+        v = np.linalg.norm(np.diff(at, axis=0), axis=1) * 1040
+        w = 1.0 / (np.maximum(v, floor) + add) ** power
+        w = np.convolve(np.pad(w, box // 2, mode="edge"), np.ones(box) / box, mode="valid")
+        k = np.arange(len(w))
+        w = w * np.minimum(1.0, np.minimum((k + 0.5) / ramp, (len(w) - k - 0.5) / ramp))
+        done = np.concatenate([[0.0], np.cumsum(w)])
+        _PACED[key] = (np.arange(a, b + 1), done / done[-1])
+    return _PACED[key]
 
 def _basis_q(knuckles, blade):
     z = np.asarray(blade, float) / np.linalg.norm(blade)
@@ -659,6 +697,18 @@ def sit_back_heels(rig):
                 fl, k = pose["fingers_l"], w * (1.0 - free)
                 if isinstance(fl, dict):
                     out["fingers_l"] = {**fl, "curl": fl["curl"] * (1 - k) + 0.1 * k}
+            if fr >= 86:
+                # Back onto the thigh's top along SBH_BACK_L, turning palm up
+                # the while (the elbow's way eased from the thigh's to the key's).
+                k = _even((fr - 86) / 21.0)
+                q = qslerp(_basis_q(*SBH_BACK_TURN[0]), _basis_q(*SBH_BACK_TURN[1]), k)
+                was = out.get("hand_l", pose["hand_l"])
+                out["hand_l"] = {**_aimed_only(pose["hand_l"]), "pos": tuple(_hermite(u, SBH_BACK_L)),
+                                 "knuckles": tuple(qrot(q, [0, 1.0, 0])), "blade": tuple(qrot(q, [0, 0, 1.0])), "aim": 1.0,
+                                 "pole": tuple(slerp_dir(was.get("pole", pose["hand_l"]["pole"]), pose["hand_l"]["pole"], k))}
+                fl = pose["fingers_l"]
+                if isinstance(fl, dict):
+                    out["fingers_l"] = {**fl, "curl": fl["curl"] * (1 - 0.1 * (1 - k)) + 0.01 * (1 - k)}
         # The right hand: planted where the forearm left it as she pushes up
         # off it, moved once to under her shoulder, and leant on there through
         # the side-sit (judge 23b: left to the keys it skidded, then hung off
@@ -672,27 +722,40 @@ def sit_back_heels(rig):
                 out["neck"] = tuple(np.asarray(pose["neck"], float) - (0.0, 0.0, 0.35 * SBH_LEAN * lean))
             keyed = pose["hand_r"]
             # (Pressed flat as the weight comes onto it.)
-            first, under = {**SBH_HAND_R[0], "plant": smoothstep_((fr - 30) / 4.0)}, {**SBH_HAND_R[1], "plant": 1.0}
+            first, under = {**SBH_HAND_R[0], "plant": smoothstep_((fr - 24) / 10.0)}, {**SBH_HAND_R[1], "plant": 1.0}
             if fr < 34:
                 hand = first
-            elif fr < 47:
+            elif fr < 50:
                 # Lifted off as it leaves, flat again as it lands; turned on
                 # the way.
-                t = smoothstep_((fr - 34) / 13.0)
+                # (Over 16 frames, lead 13: over 13 the wrist ran 40 mm a
+                # frame, the fingertips 60-86; at an even pace it landed hard.)
+                t = smoothstep_((fr - 34) / 16.0)
                 hand = {**_hop(first, under, t, 0.05 * math.sin(math.pi * t)),
                         "plant": max(1.0 - smoothstep_(t / 0.35), smoothstep_((t - 0.65) / 0.35)),
-                        "pole": tuple(slerp_dir(first["pole"], under["pole"], t)),
-                        "knuckles": tuple(slerp_dir(first["knuckles"], under["knuckles"], t))}
+                        "pole": tuple(slerp_dir(first["pole"], under["pole"], t))}
+                # Kept flat, turned from one planted way to the other (lead 13:
+                # let go of by the plant, it rolled to ride the forearm and back,
+                # the fingertips 60-89 mm a frame).
+                q1 = rig._planted("r", SBH_HAND_R[0], None, np.array([0.0, 0.0, 0.0, 1.0]))
+                q = qslerp(q1, rig._planted("r", SBH_HAND_R[1], None, np.array([0.0, 0.0, 0.0, 1.0])), t)
+                hand.update(knuckles=tuple(qrot(q, [0, 1.0, 0])), blade=tuple(qrot(q, [0, 0, 1.0])), aim=1.0)
             elif u <= 64:
-                hand = under
+                # (The fingers let go of the ground just before the hand
+                # leaves it, the palm kept flat: let go of as it rose, they
+                # peeled off at 39 mm a frame, lead 13.)
+                hand = {**under, "plant": 1.0 - smoothstep_((u - 62.5) / 2.5)}
+                if u > 62.5:
+                    q = rig._planted("r", SBH_HAND_R[1], None, np.array([0.0, 0.0, 0.0, 1.0]))
+                    hand.update(knuckles=tuple(qrot(q, [0, 1.0, 0])), blade=tuple(qrot(q, [0, 0, 1.0])), aim=1.0)
             else:
-                # Pushed off (let go of the ground as it rises: by 13 cm up
-                # the plant's finger laying stops, Rig._lay) and brought round
-                # to her thigh along SBH_PUSH_R, turning palm up evenly the
-                # while (clip frames f65-f107).
-                k = _even((fr - 65) / 42.0)
-                q = qslerp(_basis_q(*SBH_PUSH_TURN[0]), _basis_q(*SBH_PUSH_TURN[1]), k)
-                hand = {**_aimed_only(keyed), "pos": tuple(_hermite(u, SBH_PUSH_R)), "plant": 1.0 - smoothstep_((u - 64) / 3.0),
+                # Pushed off (the plant let go by then: 13 cm up its finger
+                # laying stops at once, Rig._lay) and brought round
+                # to her thigh along SBH_PUSH_R, turning palm up the while
+                # (clip frames f65-f107; the turn _paced, done by f106).
+                k = float(np.interp(fr, *_paced(SBH_PUSH_R, 64, 106)))
+                q = qslerp(rig._planted("r", SBH_HAND_R[1], None, np.array([0.0, 0.0, 0.0, 1.0])), _basis_q(*SBH_PUSH_TURN), k)
+                hand = {**_aimed_only(keyed), "pos": tuple(_hermite(u, SBH_PUSH_R)), "plant": 1.0 - smoothstep_((u - 62.5) / 2.5),
                         "knuckles": tuple(qrot(q, [0, 1.0, 0])), "blade": tuple(qrot(q, [0, 0, 1.0])), "aim": 1.0,
                         "pole": tuple(slerp_dir(under["pole"], keyed["pole"], k))}
             out["hand_r"] = hand
@@ -701,18 +764,24 @@ def sit_back_heels(rig):
         # once its hand is lifted to move, out by the heels).
         if 30 <= u < 96:
             end = 1.0 - smoothstep_((u - 88) / 8.0)
-            # (The right hand's way from its push-off keeps within reach itself.)
-            for s, k in (("l", smoothstep_((fr - 30) / 10.0)), ("r", smoothstep_((fr - 36) / 6.0) * (u <= 64))):
+            # (The hands' ways laid by hand, SBH_PUSH_R and SBH_BACK_L, keep within reach themselves.)
+            for s, k in (("l", smoothstep_((fr - 30) / 10.0) * (fr < 86)), ("r", smoothstep_((fr - 36) / 6.0) * (u <= 64))):
                 if k * end > 0:
                     out[f"hand_{s}"] = {**out.get(f"hand_{s}", pose[f"hand_{s}"]), "reach": SBH_REACH, "reach_w": k * end}
         # The right forearm on the ground as she starts up off it.
         if fr < 30:
+            # Coming onto the hand where it is first planted (SBH_HAND_R), the
+            # hand laid flat on the ground as the weight comes onto it; its
+            # fingers kept out of the ground from the first frames (lead 13:
+            # the pinky was 3-5 cm into it until f29, then thrown out of it
+            # in a frame as the plant began).
             w = 1.0 - smoothstep_((fr - 6) / 24.0)
             hand, pole = forearm_on_ground(rig.sk, p, fr, "r", PROP_TOWARD, ground=0.035)
-            keyed = pose["hand_r"]
-            at = hand * w + np.asarray(keyed["pos"], float) * (1 - w)
-            out["hand_r"] = {**_aimed_only(keyed), "pos": tuple(at), "pole": tuple(pole * w + np.asarray(keyed["pole"], float) * (1 - w)),
-                             "knuckles": tuple(slerp_dir(keyed.get("knuckles", PROP_TOWARD), PROP_TOWARD, w))}
+            keyed, to = pose["hand_r"], SBH_HAND_R[0]
+            at = hand * w + np.asarray(to["pos"], float) * (1 - w)
+            out["hand_r"] = {**_aimed_only(keyed), "pos": tuple(at), "pole": tuple(pole * w + np.asarray(to["pole"], float) * (1 - w)),
+                             "knuckles": tuple(slerp_dir(to["knuckles"], PROP_TOWARD, w)),
+                             "plant": smoothstep_((fr - 24) / 10.0), "lay": smoothstep_((fr - 2) / 12.0)}
         return out
 
     # The side-sit turns her right hip out 64-77 degrees, past the rig's hard

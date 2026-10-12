@@ -465,7 +465,7 @@ class Rig:
                     gpos[j] = gpos[p] + qrot(grot[p], lp)
         refresh()
         chest = delta[I["spine_03"]]
-        # The hands keyed with a "plant" (side: (plant, ground)): their
+        # The hands keyed with a "plant" (side: (plant, ground, lay)): their
         # fingers are laid on the ground, or kept out of it (Rig._lay).
         laid = {}
 
@@ -510,7 +510,7 @@ class Rig:
                 pull = min(1.0, plant) * min(1.0, max(0.0, 1.0 - (target[1] - rest) / (0.06 * self.hand_scale)))
                 target[1] += pull * (rest - target[1])
             if "plant" in spec:
-                laid[side] = (plant, float(spec.get("ground", 0.0)))
+                laid[side] = (plant, float(spec.get("ground", 0.0)), float(spec.get("lay", 1.0)))
             s = 1 if side == "l" else -1
             pole = np.array(spec.get("pole", (s * 0.6, -0.3, -1.0)), float)
             pole = qrot(frame, pole) if spec.get("frame") == "chest" else pole
@@ -793,12 +793,13 @@ class Rig:
         roll = PLANT_ROLL if np.cross(y, z)[1] > 0 else -PLANT_ROLL
         return qmul(qaxis(np.cross(y, [0, -1.0, 0]), PLANT_PITCH), qmul(qaxis(y, roll), qfrom_basis(x, y, z)))
 
-    def _lay(self, side, local, grot, gpos, w, ground):
+    def _lay(self, side, local, grot, gpos, w, ground, lay=1.0):
         """The fingers and thumb of a hand down at the ground: each finger's
         three joints bent together (about the line square to its first bone
         and the palm's normal), as little as keeps every pad (PADS) out of the
         ground and, by the plant w, brings the finger down to rest on it
-        (LAY_STIFF). (Joint by joint, a knuckle bent down until its own bone's
+        (LAY_STIFF); `lay` (a hand's "lay", 0..1, else 1) eases all of it in.
+        (Joint by joint, a knuckle bent down until its own bone's
         pad touched drove the rest of the finger 2 cm into the ground: the
         joints beyond cannot bend back that far.) Within LAY_RANGE
         (THUMB_RANGE); what a joint cannot do is left."""
@@ -867,8 +868,8 @@ class Rig:
                 i = np.unravel_index(int(np.argmin(E)), E.shape)
                 best = [float(T[n][i]) for n in range(3)]
             for n, t in enumerate(best):
-                if t:
-                    local[js[n]] = qmul(local[js[n]], qaxis(qrot(qinv(gs[n]), a), t))
+                if t * lay:
+                    local[js[n]] = qmul(local[js[n]], qaxis(qrot(qinv(gs[n]), a), t * lay))
 
     def _below(self, j):
         if not hasattr(self, "_below_cache"):
