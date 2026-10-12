@@ -12,9 +12,11 @@ job and give it back the moment the job ends; while you wait, do light work
 
 gpu:     one holder. ComfyUI, TRELLIS and MoGe: they share one server and most
          of the card's memory, and swapping their models thrashes 20 GB.
-blender: two holders (each needs 6 GB of RAM free). Blender builds, bakes and
+blender: three holders (each needs 6 GB of RAM free). Blender builds, bakes and
          renders: mostly CPU, a few GB each.
-godot:   three holders (each needs 5 GB of RAM free). Godot runs for pictures or clips (dotnet test needs none).
+godot:   four holders (each needs 5 GB of RAM free). Godot runs for pictures or clips (dotnet test needs none).
+While the gpu turn is held, blender and godot also need 4 GB of the card's memory
+free: on 10 October a Godot shot took VRAM mid-TRELLIS and hung it for 80 minutes.
 
 Waiters are served in the order they first asked: whoever has asked longest
 gets the next free turn, and giving a turn back then taking it again puts you
@@ -33,9 +35,10 @@ import urllib.request
 from pathlib import Path
 
 HOME = Path.home() / ".su_turns"
-SLOTS = {"gpu": 1, "blender": 2, "godot": 3}
+SLOTS = {"gpu": 1, "blender": 3, "godot": 4}  # raised 12 Oct (owner): the RAM and VRAM guards are the real limit
 STALE = 3 * 3600  # a holder that never gave its turn back (crashed or forgotten)
 LEAST_RAM = {"gpu": 0, "blender": 6, "godot": 5}  # GB free needed, beyond the turn itself
+LEAST_VRAM = {"blender": 4, "godot": 4}  # GB of the card free needed while the gpu turn is held
 FRESH = 90  # seconds a place in the queue lasts without being asked again
 
 
@@ -88,6 +91,17 @@ def free_ram_gb():
     return m.avail / 2**30
 
 
+def free_vram_gb():
+    """The card's free memory, or None if nvidia-smi can't say (then the guard is skipped)."""
+    import subprocess
+    try:
+        out = subprocess.run(["nvidia-smi", "--query-gpu=memory.free", "--format=csv,noheader,nounits"],
+                             capture_output=True, text=True, timeout=10).stdout
+        return int(out.split()[0]) / 1024
+    except (OSError, ValueError, IndexError, subprocess.SubprocessError):
+        return None
+
+
 def holders(kind):
     out = []
     for i in range(SLOTS[kind]):
@@ -112,6 +126,11 @@ def try_take(kind, who):
     if free_ram_gb() < LEAST_RAM[kind]:
         queue(kind, who)
         return f"only {free_ram_gb():.1f} GB of RAM free"
+    if kind in LEAST_VRAM and holders("gpu"):
+        vram = free_vram_gb()
+        if vram is not None and vram < LEAST_VRAM[kind]:
+            queue(kind, who)
+            return f"only {vram:.1f} GB of the card free while the gpu turn is held"
     names = [w for _, w, _ in queue(kind, who)]
     ahead = names[:names.index(who)] if who in names else []
     if len(ahead) >= SLOTS[kind] - len(holders(kind)):
