@@ -25,12 +25,22 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import heroine_lips as hl  # noqa: E402
 
 EDGE = 0.0007       # (the border's softness, m: smoothstep; 0.4 read stickered on Doe)
-INTO = 0.0010       # (the band fades into the old red over this, below its old top)
+INTO = 0.0012       # (the band ramps from the old red over this, below its old top: a step showed at 1.0 linear)
 UNDER = 0.0002      # (the new red's top this far under the crease's middle: the crease is its edge's shade)
 LOWER = (0.0035, 0.0115)    # (the lip's colour: her LOWER lip's red, this far under the mouth line. Over 3.5 mm the
                             #  paints carry the portrait's dark mouth gap; the upper red's top sits in the mouth
                             #  line's shade and read darker and rosier than her lower lip)
 NO_CREASE = 0.0095
+LUMA = np.array([0.2126, 0.7152, 0.0722])
+DARK = 0.85                 # (the band against her lower lip's mid-tones, linear: the upper lip a shade darker, judge j8a)
+TOWARD_UPPER = 0.25         # (its hue and chroma this far toward her old upper red)
+CHROMA = {"moonlit": 0.9, "wildling": 0.9, "fey": 0.9}   # (read pinker than the numbers in the engine, j8a)
+CARRY_UPPER = {"sunborn"}   # (her portrait's upper lip is dark brown-mauve, far darker than her lower: carry it up)
+TOP_LIFT = {"sunborn": 0.10}   # (lightened toward the border by at most this)
+LINES = 0.6                 # (her lower lip's vertical lines carried into the band at this strength)
+LINES_SIGMA = 4.0           # (front-grid px, 0.1 mm: the high-pass across her lip)
+LINES_SHIFT = 0.0           # (the mirror's offset)
+OWN_SIGMA = 5.0             # (each texel's own detail against the paint smoothed over this, px)
 
 
 def lin(c):
@@ -61,8 +71,9 @@ def border(m, t):
     return tt
 
 
-def fields(F, m, t, paint_front):
-    """Per front-grid pixel the band's weight, and per column the ratio (lip colour over band colour, linear)."""
+def fields(F, m, t, paint_front, face=""):
+    """Per front-grid pixel the band's weight W and its target colour (linear, with her lower lip's vertical lines),
+    and the paint's smoothed luminance (each texel keeps its own fine detail against it)."""
     e = hl.red_top(paint_front, m, t)
     tt = border(m, t)
     ok = ~np.isnan(tt) & ~np.isnan(m)
@@ -76,35 +87,71 @@ def fields(F, m, t, paint_front):
     top = (tt - UNDER)[None, :]
     u = np.clip((Y - (top - EDGE / 2)) / EDGE, 0, 1)
     w_top = 1 - u * u * (3 - 2 * u)                                # (1 under the border, 0 over it; smoothstep)
-    w_bot = np.clip((Y - (ee[None, :] - INTO)) / INTO, 0, 1)       # (0 deep in the old red, 1 at and over its top)
+    v = np.clip((Y - (ee[None, :] - INTO)) / INTO, 0, 1)
+    w_bot = v * v * (3 - 2 * v)                                    # (0 deep in the old red, 1 at its old top: a ramp)
     W = np.nan_to_num(w_top * w_bot) * ok[None, :]
-    # (no band where the red's top is already at the border)
     gap = np.nan_to_num(tt - ee)
-    W *= np.clip(gap / 0.0008, 0, 1)[None, :]
+    W *= np.clip(gap / 0.0008, 0, 1)[None, :]                      # (no band where the red already meets the border)
     L = lin(paint_front)
+    lum = L @ LUMA
     lipc = np.full((len(m), 3), np.nan)
-    band = np.full((len(m), 3), np.nan)
+    upc = np.full((len(m), 3), np.nan)
     rd = ndimage.uniform_filter(hl.redness(paint_front), (3, 5))
     lowmask = np.zeros(rd.shape, bool)
+    upmask = np.zeros(rd.shape, bool)
     for c in np.where(ok_e)[0]:
         r0, r1 = int(hl.row(m[c] - LOWER[0])), int(hl.row(m[c] - LOWER[1]))
-        b0, b1 = int(hl.row(tt[c] - UNDER)), int(hl.row(ee[c]))
+        u0, u1 = int(hl.row(ee[c] - 0.0006)), int(hl.row(m[c] + 0.0010))
         if r1 > r0 + 10:
             sel = _lower_sel(rd[r0:r1, c], L[r0:r1, c])
             lowmask[r0:r1, c] = sel
             if sel.sum() > 4:
                 lipc[c] = np.median(L[r0:r1, c][sel], 0)
-        if b1 > b0 + 2:
-            band[c] = np.median(L[b0:b1, c], 0)
-    ratio = np.ones((len(m), 3))
-    for k in range(3):
-        a, b = lipc[:, k], band[:, k]
-        good = ~np.isnan(a) & ~np.isnan(b)
-        if good.sum() > 3:
-            r = np.interp(x, x[good], (a / np.maximum(b, 1e-4))[good])
-            ratio[:, k] = ndimage.gaussian_filter1d(ndimage.median_filter(r, 31), 20)
+        if u1 > u0 + 6:
+            sel = _lower_sel(rd[u0:u1, c], L[u0:u1, c])
+            upmask[u0:u1, c] = sel
+            if sel.sum() > 3:
+                upc[c] = np.median(L[u0:u1, c][sel], 0)
+    lipc, upc = _cols(lipc, x), _cols(upc, x)
+    # (the target: her lower lip a shade darker, its hue a quarter of the way to her old upper red (at the lower lip's
+    #  lightness), as every portrait's upper lip sits a shade darker and more mauve than its lower)
+    up_at = upc * ((lipc @ LUMA) / np.maximum(upc @ LUMA, 1e-4))[:, None]
+    tgt = DARK * ((1 - TOWARD_UPPER) * lipc + TOWARD_UPPER * up_at)
+    if face in CARRY_UPPER:                                        # (her upper red carried up whole: Sunborn)
+        tgt = upc.copy()
+    g = (tgt @ LUMA)[:, None]
+    tgt = g + (tgt - g) * CHROMA.get(face, 1.0)
+    T = np.repeat(tgt[None, :, :], F.shape[0], 0)
+    lift = TOP_LIFT.get(face, 0.0)
+    if lift:
+        h = np.clip((Y - ee[None, :]) / np.maximum((tt - ee)[None, :], 1e-4), 0, 1)
+        T = T * (1 + lift * np.nan_to_num(h))[..., None]
+    # (her lower lip's vertical lines, mirrored over the mouth line: its luminance high-passed across, not down)
+    hp = lum / np.maximum(ndimage.gaussian_filter1d(lum, LINES_SIGMA, axis=1), 1e-4)
+    hp = ndimage.gaussian_filter1d(hp, 1.5, axis=0)
+    det = np.ones(lum.shape)
+    for c in np.where(ok)[0]:
+        rows = np.arange(lum.shape[0])
+        yy = 2 * m[c] - ys - LINES_SHIFT                             # (the mirrored lower-lip height)
+        src = np.clip(np.round(hl.row(yy)).astype(int), 0, lum.shape[0] - 1)
+        inband = (ys > ee[c] - INTO) & (ys < tt[c] + EDGE)
+        det[rows[inband], c] = hp[src[inband], c]
+    det = np.clip(det, 0.8, 1.2) ** LINES
+    T = T * det[..., None]
+    S = ndimage.gaussian_filter(lum, OWN_SIGMA)
     W = ndimage.gaussian_filter(W, 1.0)
-    return W, ratio, tt, ee, lowmask
+    return W, T, S, tt, ee, lowmask, upmask
+
+
+def _cols(v, x):
+    """Per-column colours, gaps filled and smoothed across her mouth."""
+    out = np.ones_like(v)
+    for k in range(3):
+        good = ~np.isnan(v[:, k])
+        if good.sum() > 3:
+            r = np.interp(x, x[good], v[good, k])
+            out[:, k] = ndimage.gaussian_filter1d(ndimage.median_filter(r, 31), 20)
+    return out
 
 
 def _lower_sel(rd, L):
@@ -151,24 +198,36 @@ def main():
             idx = tuple(a[front_most] for a in np.where(has))
             r_s, c_s = rr[has][front_most], cc[has][front_most]
         pf = hl.at_uv(img, np.nan_to_num(F[..., 0]), np.nan_to_num(F[..., 1]))
-        W, ratio, tt, ee, lo = fields(F, m, t, pf)
+        W, T, Sm, tt, ee, lo, up = fields(F, m, t, pf, f)
         w = hl.sample(W, r_s, c_s)
-        rat = np.stack([np.interp(c_s, np.arange(len(m)), ratio[:, k]) for k in range(3)], -1)
+        Tt = np.stack([hl.sample(T[..., k], r_s, c_s) for k in range(3)], -1)
         L = lin(img[idx])
+        own = np.clip((L @ LUMA) / np.maximum(hl.sample(Sm, r_s, c_s), 1e-4), 0.7, 1.3)
         out = img.copy()
-        out[idx] = srgb(L * (1 + w[:, None] * (rat - 1)))
+        out[idx] = srgb(L * (1 - w[:, None]) + w[:, None] * Tt * own[:, None])
         dst = os.path.join(to, pp[f]) if to else src
         Image.fromarray(np.clip(out + 0.5, 0, 255).astype(np.uint8), "RGB").save(dst, quality=95, subsampling=0)
         mid = len(m) // 2
         po = hl.at_uv(out, np.nan_to_num(F[..., 0]), np.nan_to_num(F[..., 1]))
         band = W > 0.6
-        up = np.zeros_like(band)
-        for c in np.where(~np.isnan(m) & ~np.isnan(ee))[0]:
-            up[int(hl.row(ee[c] - 0.0006)):int(hl.row(m[c] + 0.001)), c] = True
-        print("LIPCOLOR %-9s texels %6d  gap mid %.1f mm  ratio mid %s  | lum/redness: lower lip %.3f/%.0f  upper red %.3f/%.0f  band was "
-              "%.3f/%.0f  now %.3f/%.0f -> %s" % (
-                  f, int((w > 0.05).sum()), (tt[mid] - ee[mid]) * 1000, np.round(ratio[mid], 2),
-                  _lum(pf[lo]), _rdn(pf[lo]), _lum(pf[up]), _rdn(pf[up]), _lum(pf[band]), _rdn(pf[band]), _lum(po[band]), _rdn(po[band]), dst))
+        print("LIPCOLOR %-9s texels %6d  gap mid %.1f mm  | lum/redness: lower lip %.3f/%.0f  upper red %.3f/%.0f  "
+              "band was %.3f/%.0f  now %.3f/%.0f  | seam step was %.3f now %.3f -> %s" % (
+                  f, int((w > 0.05).sum()), (tt[mid] - ee[mid]) * 1000,
+                  _lum(pf[lo]), _rdn(pf[lo]), _lum(pf[up]), _rdn(pf[up]), _lum(pf[band]), _rdn(pf[band]),
+                  _lum(po[band]), _rdn(po[band]), _seam(pf, m, tt, ee), _seam(po, m, tt, ee), dst))
+
+
+def _seam(img, m, tt, ee):
+    """The upper lip's worst lightness step over 0.4 mm, from 1.5 mm under the old red's top to 1 mm under the border
+    (smoothed 0.3 mm; the 90th percentile over her mouth's columns, linear luminance)."""
+    y = ndimage.gaussian_filter(lin(img) @ LUMA, 3)
+    steps = []
+    for c in np.where(~np.isnan(m) & ~np.isnan(tt) & ~np.isnan(ee))[0]:
+        i0, i1 = int(hl.row(tt[c] - 0.001)), int(hl.row(ee[c] - 0.0015))
+        if i1 > i0 + 5:
+            p = y[i0:i1, c]
+            steps.append(np.abs(p[4:] - p[:-4]).max())
+    return float(np.percentile(steps, 90)) if steps else float("nan")
 
 
 if __name__ == "__main__":
