@@ -43,8 +43,9 @@ public sealed class BarrowLordStory : StoryBoss, IBound
     protected override string HardSub => "The front walks in";
     protected override (string Title, string Sub) SoftWords(Enemy e) => ("The drill quickens", "New lines form quicker");
     public override string ReEntry => "The dead part again. He comes up through them, and gives you the same long look.";
-    /// <summary>Measured to the length, as the others were: the same at every tier.</summary>
-    public override double HealthMul(int tier) => 130;
+    /// <summary>Measured to the length, as the others were: the same at every tier. Raised from 130 to 148 (11 October, the
+    /// owner's call): with the Flare he fell 9 to 10% (mean) sooner; at 148 the fight is its pre-Flare length again (deft -1%, plain 0%).</summary>
+    public override double HealthMul(int tier) => 148;
     /// <summary>His teeth are in his marked moves: a pilum or the gladius about a third of her own health.</summary>
     public override double Teeth => 0.22;
     protected override bool DiesAtZero => false;

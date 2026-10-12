@@ -27,7 +27,7 @@ Phase 2 is the shared beat (time, grade, camera push, hitstop, last blow) and fo
 
 1. **The Bulwark's rebuke share:** under 1% of a Bulwark's night damage; a judge asked 8-15%. Getting there needs more rebukes or a wider one (phase 5's "Wider Rebuke"), not a bigger number. Is under 1% fine (a defensive answer), or should it reach 8-15%?
 2. **The home bonus:** on-calling adds little today (fitted home term median x1.03, range 0.85-1.22), because only one of each road's three signature skills exists until phase 5. Accept until phase 5?
-3. **Story bosses vs the Flare:** Act 1's story bosses fall 14-29% sooner than on main (deft hands: Roost 24%, Vault 29%, Hollow 17%, Dig 14%; nobody falls more). Raise their health (CLASSES §7 risk 4)?
+3. **Story bosses vs the Flare:** Done (11 October, the owner's call): health raised x1.10 to x1.15 so each fight is back to its pre-Flare length (plain within 2%, deft within 5%); see CLASSES §7 "Open" (5). Falls: no rise beyond noise.
 
 ## 5. Gotchas
 
