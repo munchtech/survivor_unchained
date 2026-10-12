@@ -376,6 +376,10 @@ public sealed class Folk
 
     /* ------------------------------------------------------------ update -- */
 
+    /// <summary>Ground the walkers keep off while the close view of her is in (GameCloseUp: a circle behind her,
+    /// as the camera sees her), so nobody walks through her outline. Null: only her own step aside.</summary>
+    public (double X, double Z, double R)? Clear;
+
     public void Update(double dt, double px, double pz)
     {
         var plan = o.Plan();
@@ -512,6 +516,18 @@ public sealed class Folk
             double push = (1.7 - pd) * 3.2;
             ax += pdx / pd * push; az += pdz / pd * push;
             if (wantV > 0.3 && ax * -pdx + az * -pdz > 0) { ax += -pdz / pd * 1.2; az += pdx / pd * 1.2; }
+        }
+        if (Clear is { } cl)
+        {
+            double cx = cl.X, cz = cl.Z, cr = cl.R;
+            // Out of the view behind her: pushed to the circle's edge, and round it if walking.
+            double qx = w.X - cx, qz = w.Z - cz, qd = Math.Sqrt(qx * qx + qz * qz);
+            if (qd < cr && qd > 1e-3)
+            {
+                double push = (cr - qd) * 3.2;
+                ax += qx / qd * push; az += qz / qd * push;
+                if (wantV > 0.3 && ax * -qx + az * -qz > 0) { ax += -qz / qd * 1.2; az += qx / qd * 1.2; }
+            }
         }
         foreach (var other in walkers)
         {

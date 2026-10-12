@@ -24,6 +24,8 @@ public partial class Game
         cam.Close = 0;
         cam.Orbit = 0;
         cam.SnapClose();
+        hud.Calm(false, 0);
+        z.KeepClear = null;
         cam.Room = (a, b) =>
         {
             if (Battle?.Collision is not { } col) return 1;
@@ -63,6 +65,14 @@ public partial class Game
         cam.Orbit = closeUp.Idling ? 0.3f * Mathf.Sin((float)closeDrift * 0.1f) : 0;
         if (taken) cam.SnapClose();
         HerToTheView(dt, held, moving);
+        // The idle view is a picture: the HUD steps away (back at once on any input). Near, by the wheel or idle,
+        // no name floats by her head, and the town's walkers keep out of the view behind her.
+        float near = cam.CloseShown;
+        hud.Calm(!held && closeUp.Idling && near > 0.15f, dt);
+        scene.Voices.Away = !held && (closeUp.Idling || target >= 0.5f || near >= 0.5f);
+        if (!held && near > 0.3f && p != null)
+            zone.KeepClear = (p.X - Mathf.Sin(cam.Yaw) * 3.0, p.Z - Mathf.Cos(cam.Yaw) * 3.0, 3.2);
+        else zone.KeepClear = null;
     }
 
     /// <summary>Close and standing a beat: she turns to the view, her head to the lens; by day her light comes down.</summary>
