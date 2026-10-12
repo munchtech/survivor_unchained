@@ -1116,20 +1116,45 @@ def reach_coals(rig):
                 fingers_r=_f(0.12, 0.05, 0.2))
     unit = lambda v: np.asarray(v, float) / np.linalg.norm(v)
     s0, s1 = start["hand_r"], out["hand_r"]
-    b0, b1, k0, k1 = unit(s0["blade"]), unit(s1["blade"]), unit(s0["knuckles"]), unit(s1["knuckles"])
-    km = unit(k0 + k1)
-    bm = unit(np.array([0.0, 1.0, 0.0]) - km * km[1])
+
+    def basis(blade, knuckles):
+        z = unit(blade)
+        y = unit(np.asarray(knuckles, float) - z * np.dot(knuckles, z))
+        return qfrom_basis(np.cross(y, z), y, z)
+
+    def log(q):
+        q = q if q[3] >= 0 else -q
+        s = float(np.linalg.norm(q[:3]))
+        return q[:3] / s * 2 * math.atan2(s, q[3]) if s > 1e-9 else np.zeros(3)
+
+    # The turn starts where the start's hand really is (its key is past what
+    # the forearm and wrist can do, and the solve holds it short): from the
+    # key it froze f0-8 and then rolled at full speed (judge 41). One curve
+    # through the thumb-up middle (a quadratic in the turn's log), not two
+    # slerped halves, which beat at the middle.
+    rig.swivel, rig.twist_last, rig.swing_last, rig.bend_last, rig.grip = {}, {}, {}, {}, {}
+    rig.swivel_force = rig.elbow_force = rig.bend_force = None
+    r0 = rig.globals(*rig.solve(start))[0][0, rig.I["hand_r"]]
+    km = unit(unit(s0["knuckles"]) + unit(s1["knuckles"]))
+    lm = log(qmul(basis(np.array([0.0, 1.0, 0.0]) - km * km[1], km), qinv(r0)))
+    l1 = log(qmul(basis(s1["blade"], s1["knuckles"]), qinv(r0)))
+    if np.dot(l1, lm) < 0:
+        a = float(np.linalg.norm(l1))
+        l1 = -l1 / a * (2 * math.pi - a)
     p0, lift, p1 = np.asarray(s0["pos"], float), np.asarray(RC_LIFT_R, float), np.asarray(s1["pos"], float)
+    f0, f1 = start["fingers_r"], out["fingers_r"]
 
     def lay(fr, pose):
         if not 0 < fr < RC_OUT:
             return pose
         u = smoothstep_(fr / RC_OUT)
+        v = 4 * u * (1 - u) * lm + u * (2 * u - 1) * l1
+        ang = float(np.linalg.norm(v))
+        q = qmul(qaxis(v / ang, math.degrees(ang)), r0) if ang > 1e-9 else r0
         hand = dict(pose["hand_r"], pos=tuple((1 - u) ** 2 * p0 + 2 * u * (1 - u) * lift + u * u * p1),
-                    knuckles=tuple(unit(k0 * (1 - u) + k1 * u)),
-                    blade=tuple(_slerp_vec(b0, bm, 2 * u) if u < 0.5 else _slerp_vec(bm, b1, 2 * u - 1)),
+                    knuckles=tuple(qrot(q, [0, 1.0, 0])), blade=tuple(qrot(q, [0, 0, 1.0])),
                     pole=tuple(_slerp_vec(unit(s0["pole"]), unit(s1["pole"]), u)))
-        return dict(pose, hand_r=hand)
+        return dict(pose, hand_r=hand, fingers_r={k: f0[k] + (f1[k] - f0[k]) * u for k in f0})
 
     keys = [
         (0, start, "ease"),
