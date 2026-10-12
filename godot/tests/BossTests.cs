@@ -176,6 +176,39 @@ public class BossTests
         Assert.True(f.Zone.BossScript!.BreakSum > 0);
     }
 
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void Only_the_flare_cuts_an_arena_floor_and_never_by_more_than_half(bool flare)
+    {
+        var f = At30("pack");
+        var boss = Boss(f);
+        var s = f.Zone.BossScript!;
+        double start = f.B.Time, cutMax = 0;
+        // The absurd build again, its every blow the Flare's (or none of them).
+        Step(f, 200, _ =>
+        {
+            if (boss.Alive && boss.Boss && boss.State != EnemyState.Dying)
+                f.B.HitEnemy(boss, boss.MaxHp * 0.2, School.Holy, [Tag.Holy], new HitOpts { NoCrit = true, Credit = flare ? "flare" : null });
+            if (boss.Alive && boss.Boss) { f.B.Player.X = boss.X + 1; f.B.Player.Z = boss.Z; }
+            cutMax = Math.Max(cutMax, s.FlareCut);
+        });
+        Assert.True(f.Zone.Won);
+        double took = f.B.Time - start;
+        if (!flare)
+        {
+            // Every other blow leaves the floors (15, 20, 15 s) whole.
+            Assert.Equal(0, cutMax);
+            Assert.True(took >= 50, $"won in {took:0.0} s");
+        }
+        else
+        {
+            // The Flare cuts each floor by half and no more: 25 s of floors, plus the turns.
+            Assert.Equal(ArenaBoss.FlareCutMax, cutMax, 6);
+            Assert.True(took >= 25 && took < 45, $"won in {took:0.0} s");
+        }
+    }
+
     [Fact]
     public void A_boss_left_alone_shows_every_phase_and_then_its_enrages()
     {

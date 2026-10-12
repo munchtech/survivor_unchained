@@ -808,6 +808,7 @@ public sealed partial class Battle
         {
             BossDamageBy[by] = BossDamageBy.GetValueOrDefault(by) + Math.Min(dmg, Math.Max(0, before));
             BossHealthBy[by] = BossHealthBy.GetValueOrDefault(by) + took;
+            if (by == "flare") e.FlareTook += took;
             BossTookAll += took;
             if (FlareT > 0 && Flare?.Kind == FlareKind.Stand) BossTookInStand += took;
             lastBossHit = Time;
@@ -1544,7 +1545,7 @@ public sealed partial class Battle
         e.Decoy = e.Prey = false;
         e.ThawT = 0;
         e.Raised = false;
-        e.HpFloor = e.Overflow = e.Stagger = e.StaggeredT = e.StaggerResistT = 0;
+        e.HpFloor = e.Overflow = e.FlareTook = e.Stagger = e.StaggeredT = e.StaggerResistT = 0;
         e.HasteT = e.WardT = e.Ward = 0; e.Haste = 1;
         // (Only those with the verb draw from the stream: the rest of the fight's dice stay where they were.)
         e.AuraT = def.Aura is { } au ? au.Every * (0.3 + Rng.Next() * 0.4) : 0;

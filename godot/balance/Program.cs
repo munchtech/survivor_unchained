@@ -46,6 +46,13 @@ Pilot.Banks = opt.Get("bank", "1") != "0";
 ArenaSim.Director = opt.Get("charges", "1") != "0";
 StorySim.Flare = opt.Get("flare", "");
 SurvivorUnchained.Play.Bosses.ArenaBoss.Floors = double.Parse(opt.Get("floors", "1"), System.Globalization.CultureInfo.InvariantCulture);
+// --flarecut MAX[,RATE]: the most a Flare cuts an arena phase floor, and how fast (0 = floors as before).
+if (opt.Has("flarecut"))
+{
+    var fc = opt.Get("flarecut", "0.5").Split(',');
+    SurvivorUnchained.Play.Bosses.ArenaBoss.FlareCutMax = double.Parse(fc[0], System.Globalization.CultureInfo.InvariantCulture);
+    if (fc.Length > 1) SurvivorUnchained.Play.Bosses.ArenaBoss.FlareCutRate = double.Parse(fc[1], System.Globalization.CultureInfo.InvariantCulture);
+}
 if (opt.Has("light")) ArenaSim.Light = opt.List("light", "").ToList();
 // --over DIR: data files found under DIR are read in place of godot/data's (a variant's lamps.json, no rebuild).
 if (opt.Has("over"))
