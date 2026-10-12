@@ -7,6 +7,7 @@ what a player can see). It adds to lookdev:
 - VIEWS="name:deg,height,dist,targety:fov;...": several cameras in one run (the first is the
   window's, the rest SubViewports sharing its world); pictures are out_<name>_NN.png;
 - FOLLOW=1: every camera keeps its offset from her hips, for clips that travel (dash, leap, vault);
+  FOLLOW=<bone> (e.g. clavicle_l): every camera rides that bone rigidly, turn included;
 - MARKS=1: test codes on her skin (marks_section.py: skin near a nipple with its distance, the
   strip a garment must cover, and tucked skin), drawn last in her skin shader so the outfit's
   own tuck and hiding stay as in play, for count.py to read. LEGALBARE=1 also hides the outfit's
@@ -38,6 +39,8 @@ swap('var players = []\n',
      'var clip_len = 0.0\n'
      'var follow_skel: Skeleton3D\n'
      'var follow_from = Vector3.ZERO\n'
+     'var follow_xf = Transform3D()\n'
+     'var view_xf = []\n'
      'var view_cams = []\n'
      'var view_from = []\n'
      'var view_names = []\n'
@@ -96,7 +99,19 @@ swap('\t\t\tget_root().get_texture().get_image().save_png(out.replace(".png", "_
 swap('\tt += delta\n',
      '\tt += delta\n'
      '\t# FOLLOW=1: every camera keeps its offset from her hips (taken at 0.5 s, once she has settled).\n'
-     '\tif OS.get_environment("FOLLOW") != "" and follow_skel != null:\n'
+     '\t# FOLLOW=<bone> (not 1): every camera rides that bone rigidly (its turn too), so a\n'
+     '\t# shoulder close-up stays on the shoulder when she lies down or raises her arm.\n'
+     '\tvar fbn = OS.get_environment("FOLLOW")\n'
+     '\tif fbn != "" and fbn != "1" and follow_skel != null and follow_skel.find_bone(fbn) >= 0:\n'
+     '\t\tvar g = follow_skel.global_transform * follow_skel.get_bone_global_pose(follow_skel.find_bone(fbn))\n'
+     '\t\tg = g.orthonormalized()\n'
+     '\t\tif t < 0.5:\n'
+     '\t\t\tfollow_xf = g\n'
+     '\t\t\tview_xf.clear()\n'
+     '\t\t\tfor vi in view_cams.size(): view_xf.append(view_cams[vi].global_transform)\n'
+     '\t\telse:\n'
+     '\t\t\tfor vi in view_cams.size(): view_cams[vi].global_transform = g * follow_xf.affine_inverse() * view_xf[vi]\n'
+     '\telif OS.get_environment("FOLLOW") != "" and follow_skel != null:\n'
      '\t\tvar hb = follow_skel.find_bone("pelvis")\n'
      '\t\tif hb < 0: hb = 0\n'
      '\t\tvar hp = follow_skel.global_transform * follow_skel.get_bone_global_pose(hb).origin\n'
