@@ -409,15 +409,19 @@ SBH_REACH = 0.95
 # its reach, the hand had run with it at 35 mm a frame and then swung in at
 # 29 as the shoulder stopped, the fingertips at 48-51. Here the arm trails out and
 # back as she comes up and the hand comes round onto the thigh after. (Work
-# it out again if her rise or the keys that carry her shoulder change.)
+# it out again if her rise or the keys that carry her shoulder change.) Lifted up
+# to 35 mm about design f89 so it comes onto the thigh from above (lead 14: it
+# met the thigh's outside at f99, 8 cm short of its rest, and skated in 23 mm).
 SBH_PUSH_R = [
     (64.91, (-0.649, 0.046, -0.028)), (66.41, (-0.636, 0.074, -0.017)), (67.5, (-0.615, 0.125, -0.003)),
     (68.5, (-0.594, 0.178, 0.01)), (69.5, (-0.573, 0.231, 0.021)), (70.5, (-0.553, 0.285, 0.033)),
     (71.5, (-0.53, 0.337, 0.045)), (72.5, (-0.505, 0.386, 0.06)), (73.5, (-0.476, 0.429, 0.075)),
     (74.5, (-0.444, 0.462, 0.092)), (75.5, (-0.408, 0.486, 0.108)), (76.59, (-0.371, 0.498, 0.124)),
     (78.09, (-0.332, 0.499, 0.139)), (80.0, (-0.294, 0.49, 0.15)), (82.0, (-0.257, 0.471, 0.159)),
-    (84.0, (-0.222, 0.444, 0.163)), (86.0, (-0.191, 0.412, 0.164)), (88.0, (-0.165, 0.378, 0.161)),
-    (90.0, (-0.145, 0.345, 0.155)), (92.0, (-0.131, 0.316, 0.148)), (94.0, (-0.123, 0.297, 0.142)),
+    (84.0, (-0.222, 0.446, 0.163)), (85.0, (-0.206, 0.437, 0.164)), (86.0, (-0.191, 0.429, 0.164)),
+    (87.0, (-0.177, 0.421, 0.163)), (88.0, (-0.165, 0.411, 0.161)), (89.0, (-0.154, 0.396, 0.158)),
+    (90.0, (-0.145, 0.378, 0.155)), (91.0, (-0.137, 0.356, 0.151)), (92.0, (-0.131, 0.334, 0.148)),
+    (93.0, (-0.126, 0.314, 0.145)), (94.0, (-0.123, 0.299, 0.142)), (95.0, (-0.121, 0.292, 0.141)),
     (96.0, (-0.12, 0.29, 0.14)),
 ]
 # Its turn, from flat on the ground (Rig._planted's) to palm up on the
@@ -447,6 +451,15 @@ def _rotvec(q):
         v, w = -v, -w
     s = float(np.linalg.norm(v))
     return v * (2 * math.atan2(s, w) / s) if s > 1e-9 else 2 * v
+
+
+def _land(u, a=86.0, b=96.0):
+    """A design frame slowed into the end of a hand's table (a..b): as fast
+    as the table at a, eased to a stop at b, so the hand settles onto the
+    thigh instead of meeting it at speed (judge 37: both hands skated and
+    sank in, the left stopping hard)."""
+    x = min(max((u - a) / (b - a), 0.0), 1.0)
+    return a + (b - a) * (x + x * x - x ** 3) if u > a else u
 
 
 def _trail_turn(fr, planted):
@@ -709,7 +722,7 @@ HIP_SOFT = (55.0, 85.0)
 # (m): both lifted out of the thighs (judge 37: 21-23 mm in), the left further
 # toward the knee and its fingers more open, so the two are not one mirrored
 # pose (they stopped at x +-125, y 302, z 146 on the same frame).
-SBH_REST_OFF = {"r": (0.0, 0.010, 0.0), "l": (0.005, 0.010, 0.025)}
+SBH_REST_OFF = {"r": (0.0, 0.010, 0.0), "l": (0.005, 0.010, 0.01)}
 SBH_REST_CURL_L = 0.22
 
 
@@ -811,7 +824,7 @@ def sit_back_heels(rig):
                 k = _even((fr - 86) / 21.0)
                 q = qslerp(_basis_q(*SBH_BACK_TURN[0]), _basis_q(*SBH_BACK_TURN[1]), k)
                 was = out.get("hand_l", pose["hand_l"])
-                out["hand_l"] = {**_aimed_only(pose["hand_l"]), "pos": tuple(_hermite(u, SBH_BACK_L) + np.multiply(SBH_REST_OFF["l"], smoothstep_((u - 86) / 10.0))),
+                out["hand_l"] = {**_aimed_only(pose["hand_l"]), "pos": tuple(_hermite(_land(u), SBH_BACK_L) + np.multiply(SBH_REST_OFF["l"], smoothstep_((u - 86) / 10.0))),
                                  "knuckles": tuple(qrot(q, [0, 1.0, 0])), "blade": tuple(qrot(q, [0, 0, 1.0])), "aim": 1.0,
                                  "pole": tuple(slerp_dir(was.get("pole", pose["hand_l"]["pole"]), pose["hand_l"]["pole"], k))}
                 fl = pose["fingers_l"]
@@ -870,7 +883,7 @@ def sit_back_heels(rig):
                 # (clip frames f65-f107; the elbow's way _paced, done by f106).
                 k = float(np.interp(fr, *_paced(SBH_PUSH_R, 64, 106)))
                 q = _trail_turn(fr, rig._planted("r", SBH_HAND_R[1], None, np.array([0.0, 0.0, 0.0, 1.0])))
-                hand = {**_aimed_only(keyed), "pos": tuple(_hermite(u, SBH_PUSH_R) + np.multiply(SBH_REST_OFF["r"], smoothstep_((u - 88) / 8.0))), "plant": 1.0 - smoothstep_((u - SBH_LIFT[0]) / SBH_LIFT[1]),
+                hand = {**_aimed_only(keyed), "pos": tuple(_hermite(_land(u), SBH_PUSH_R) + np.multiply(SBH_REST_OFF["r"], smoothstep_((u - 88) / 8.0))), "plant": 1.0 - smoothstep_((u - SBH_LIFT[0]) / SBH_LIFT[1]),
                         "knuckles": tuple(qrot(q, [0, 1.0, 0])), "blade": tuple(qrot(q, [0, 0, 1.0])), "aim": 1.0,
                         "pole": tuple(slerp_dir(under["pole"], keyed["pole"], k))}
             out["hand_r"] = hand
