@@ -2326,6 +2326,7 @@ def mls_flat(pos, w, n, sigma):
     return out
 
 
+# (unused now: the refinement is made after the decimation, nipple_rise_bm)
 def refine_near(pos, at, tris, centres, radius, target, rounds=7):
     """Split every edge longer than `target` whose midpoint is within `radius`
     of a centre, conformingly (no T-junctions), up to `rounds` times; the
@@ -2389,7 +2390,7 @@ def nipple_tips():
     return [mean * np.array([-1 if sd == "l" else 1, 1, 1]) for sd in ("l", "r")]
 
 
-def over_nipples(pos, tris, least=float(os.environ.get("NIP_RISE", "0.0015")), s=0.008, dome=0.065, rim_reach=0.02, fit=0.02):
+def over_nipples(pos, tris, least=float(os.environ.get("NIP_RISE", "0.0015")), s=0.008, dome=0.065, rim_reach=0.02, fit=0.02, rise=True):
     """A garment cut over her filled breasts drawn over each nipple as a
     low, soft rise (`least` high, `s` its spread), so her nipples show
     through it as shapes; the tip of her nipple, through it, is hidden
@@ -2429,6 +2430,8 @@ def over_nipples(pos, tris, least=float(os.environ.get("NIP_RISE", "0.0015")), s
             continue
         nrm = vertex_normals(pos, tris)[near].mean(0)
         pos = mls_flat(pos, w * near, nrm / np.linalg.norm(nrm), fit)
+    if not rise:
+        return pos   # (the rise itself is made in finish(), nipple_rise_bm)
     nor = vertex_normals(pos, tris)
     out = pos.copy()
     plateau = float(os.environ.get("NIP_PLATEAU", "0.003"))
@@ -2523,11 +2526,10 @@ def piece(name, field, mkey, lift=0.003, thick=0.003, smooth=0, bevel=0.0012, tr
             print("STIFF %s: fitted %.0f mm wide, lifted %.1f mm" % (name, wide * 1000, up * 1000))
     dump(name, "2shaped", pos, tris, at[:, -1])
     if filled and not dome:
-        allat = np.c_[at, gap_at]
-        pos, allat, tris = refine_near(pos, allat, tris, nipple_tips(), float(os.environ.get("NIP_REFINE_R", "0.012")), float(os.environ.get("NIP_EDGE", "0.0008")))
-        at, gap_at = allat[:, :-1], allat[:, -1]
+        # (only the dome easing here; the rise is refined and raised in
+        # finish(), after the decimation: nipple_rise_bm)
         NIP_PIECES.add(name)
-        pos = over_nipples(pos, tris)
+        pos = over_nipples(pos, tris, rise=False)
     if dome:
         cut_from, cut_at = pos.copy(), at.copy()
         pos, at, tris = even_cup(pos, at, tris)
@@ -2798,6 +2800,76 @@ RIGID_UV = {}   # (a plate's name: (centre, arm axis, unrolled round the arm?))
 ONE_ISLAND = set()   # (sheets laid out whole, one island with no seams)
 
 
+def nipple_rise_bm(obj):
+    """The nipple rise, made after the decimation (the collapse took a rise
+    refined beforehand: a smooth patch costs ~0 to collapse whatever its
+    weight). The thin modifier is applied here, then the edges near each tip
+    are split to NIP_EDGE and the vertices within reach raised along their
+    normals on a plateau eased to 0 (see over_nipples for the history)."""
+    assert all(abs(obj.matrix_world[i][j] - (1.0 if i == j else 0.0)) < 1e-6 for i in range(4) for j in range(4)), "nipple_rise_bm: not an identity transform"
+    thin = obj.modifiers.get("thin")
+    if thin is not None:
+        assert len(obj.modifiers) == 1, "nipple_rise_bm: thin must be the only modifier"
+        with bpy.context.temp_override(object=obj, active_object=obj, selected_objects=[obj]):
+            bpy.ops.object.modifier_apply(modifier="thin")
+    name = obj.name
+    R = float(os.environ.get("NIP_REFINE_R", "0.012"))
+    E = float(os.environ.get("NIP_EDGE", "0.0008"))
+    h = float(os.environ.get("NIP_RISE", "0.0015"))
+    plateau = float(os.environ.get("NIP_PLATEAU", "0.003"))
+    reach = float(os.environ.get("NIP_REACH", "0.007"))
+    tips = [Vector(t) for t in nipple_tips()]
+    bm = bmesh.new()
+    bm.from_mesh(obj.data)
+    dl = bm.verts.layers.deform.active
+
+    def unweighted():
+        return sum(1 for v in bm.verts if dl is None or len(v[dl]) == 0)
+    n0, bare0 = len(bm.verts), unweighted()
+    rounds = 0
+    for _ in range(7):
+        sel = []
+        for e in bm.edges:
+            mid = (e.verts[0].co + e.verts[1].co) / 2
+            if e.calc_length() > E and min((mid - t).length for t in tips) < R:
+                sel.append(e)
+        if not sel:
+            break
+        bmesh.ops.subdivide_edges(bm, edges=sel, cuts=1, use_grid_fill=True)
+        bmesh.ops.triangulate(bm, faces=[f for f in bm.faces if len(f.verts) > 3])
+        rounds += 1
+    bm.verts.ensure_lookup_table()
+    print("NIP REFINE %s rounds %d, %d -> %d verts, unweighted new %d" % (name, rounds, n0, len(bm.verts), unweighted() - bare0))
+    bm.normal_update()
+    offs = {}
+    for sd, tip in zip(("l", "r"), tips):
+        centre = min(bm.verts, key=lambda v: (v.co - tip).length).co.copy()
+        near = []
+        for v in bm.verts:
+            d = (v.co - centre).length
+            if d < reach:
+                t = min(max((d - plateau) / (reach - plateau), 0.0), 1.0)
+                f = 1 - t ** 3 * (t * (6 * t - 15) + 10)
+                offs[v.index] = offs.get(v.index, Vector()) + v.normal * (h * f)
+                near.append(v)
+        ins = set(v.index for v in near)
+        ls = np.array([e.calc_length() for e in bm.edges if e.verts[0].index in ins and e.verts[1].index in ins]) * 1e3
+        if len(ls):
+            print("NIP RISE %s %s %.1f mm plateau %.1f reach %.1f; %d verts within reach; edge median %.2f max %.2f mm within reach; least edge %.3f mm" % (name, sd, h * 1e3, plateau * 1e3, reach * 1e3, len(near), np.median(ls), ls.max(), ls.min()))
+        else:
+            print("NIP RISE %s %s: nothing within reach" % (name, sd))
+    for i, o in offs.items():
+        bm.verts[i].co += o
+    bm.to_mesh(obj.data)
+    bm.free()
+    obj.data.update()
+    flat = sum(1 for p in obj.data.polygons if not p.use_smooth)
+    print("NIP SMOOTH %s non-smooth faces %d of %d" % (name, flat, len(obj.data.polygons)))
+    if flat:
+        for p in obj.data.polygons:
+            p.use_smooth = True
+
+
 def finish(name, pos, wt, tris, mkey, thick, bevel, budget=3000, scraps=True):
     """A sheet made a piece: her weights, its texture laid out at true size,
     a thickness and a rounded edge, bound to her skeleton. The sheet is
@@ -2964,6 +3036,8 @@ def finish(name, pos, wt, tris, mkey, thick, bevel, budget=3000, scraps=True):
         for _ in range(2):
             keep = np.maximum(keep, (A @ keep > 0).astype(float))
         if name in NIP_PIECES:
+            # (harmless but no protection: the rise is now made after the
+            # decimation, nipple_rise_bm)
             keep[np.min([np.linalg.norm(pos - t, axis=1) for t in nipple_tips()], axis=0) < 0.014] = 1
         inner = obj.vertex_groups.new(name="_thin")
         inner.add([int(i) for i in np.where(keep == 0)[0]], 1.0, "REPLACE")
@@ -2974,6 +3048,8 @@ def finish(name, pos, wt, tris, mkey, thick, bevel, budget=3000, scraps=True):
         dc.ratio = budget / len(me.polygons)
         dc.use_symmetry = bool(abs(pos[:, 0].mean()) < 0.02)
         dc.symmetry_axis = "X"
+    if name in NIP_PIECES:
+        nipple_rise_bm(obj)
     # (A sheer piece is one sheet: layered, it would not be sheer.)
     so = obj.modifiers.new("thick", "SOLIDIFY") if thick > 0 else None
     if so:
