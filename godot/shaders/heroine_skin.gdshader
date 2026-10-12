@@ -124,6 +124,9 @@ uniform vec3 key_tone = vec3(1.0);
 uniform vec3 edge_tone = vec3(1.0);
 uniform float edge_from = 0.2;
 uniform float edge_to = 0.7;
+// (kept to her neck by her freckles' map's blue, 0 from her collarbones down and on parts without the map: on her
+// limbs' silhouettes it turned her thighs and arms a richer, bluer pink in the whole frame, judge j7 (f); 0 as r11)
+uniform float edge_neck = 1.0;
 // A body's own relief, baked from its sculpt (the hero's: every muscle and
 // vein his reduced mesh has only in paint), the pores laid over it.
 uniform sampler2D relief : hint_normal, filter_linear_mipmap_anisotropic;
@@ -291,7 +294,9 @@ void fragment() {
 	float wd = (INV_VIEW_MATRIX * vec4(NORMAL, 0.0)).y;
 	shade_w = mix(1.0, smoothstep(down_from, down_to, -wd), shade_down) * mix(1.0, aot.a, shade_zone);
 	soft_w = 1.0 - fm.b;
-	edge_w = (seam_ease ? 1.0 - aot.g : 1.0) * (1.0 - smoothstep(edge_from, edge_to, dot(NORMAL, VIEW)));
+	// (her head as r11, by its seam ease alone: its freckles' map's blue dips under her jaw, and gated by it there
+	// the far side of her neck under her jaw went bluer, own's row .15 hue -21 to -31)
+	edge_w = (seam_ease ? 1.0 - aot.g : mix(1.0, fk.b, edge_neck)) * (1.0 - smoothstep(edge_from, edge_to, dot(NORMAL, VIEW)));
 	lift_w = (seam_ease ? 1.0 - aot.g : 1.0) * smoothstep(lift_from, lift_to, wd);
 	ALBEDO *= ambient_tint;
 	if (dbg_gate > 0.0) { ALBEDO = vec3(1.0); SPECULAR = 0.0; BACKLIGHT = vec3(0.0); }
