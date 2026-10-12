@@ -84,7 +84,7 @@ public sealed partial class Battle
     void BellToll(FlareDef f, bool last)
     {
         var p = Player;
-        double stun = f.Arg("stun", 1), sear = f.Arg("sear", 2), stagger = f.Arg("stagger", 15);
+        double stun = f.Arg("stun", 1), sear = f.Arg("sear", 2), stagger = f.Arg("stagger", 0.15);
         ForEachHostileInRadius(p.X, p.Z, flareReach, (e, d) =>
         {
             double dealt = FlareHit(e, f.Arg("toll", 0.45), f.School, 0, p.X, p.Z);
@@ -291,12 +291,13 @@ public sealed partial class Battle
     /// <summary>Her skills' waits while the Hour holds: twice as fast.</summary>
     public double FlareCooldownMul(WeaponInst w) => HourHolds ? 1 / Math.Max(1, Flare!.Arg("faster", 2)) : 1;
 
-    /// <summary>Each blow of hers while the Hour holds bleeds, and an ordinary thing it leaves below 15% dies.</summary>
+    /// <summary>Each blow of hers while the Hour holds bleeds (with "deepen", each cut deepens the wound, up to 5 deep),
+    /// and an ordinary thing it leaves below 15% dies.</summary>
     void FlareOnHit(Enemy e, HitOpts o, double dmg)
     {
         if (!HourHolds || o.Dot || o.Summon || (o.Weapon == null && !o.Projectile) || dmg <= 0) return;
         var f = Flare!;
-        if (e.Alive && e.State != EnemyState.Dying) ApplyStatus(e, new StatusPayload(StatusKind.Bleed, 1, f.Arg("bleed", 0.4), f.Arg("bleedSeconds", 3)), dmg, o.Depth + 1);
+        if (e.Alive && e.State != EnemyState.Dying) ApplyStatus(e, new StatusPayload(StatusKind.Bleed, 1, f.Arg("bleed", 0.4), f.Arg("bleedSeconds", 3), f.Arg("deepen", 0) > 0), dmg, o.Depth + 1);
         if (!e.Elite && !e.Boss && e.Alive && e.State != EnemyState.Dying && e.Hp > 0 && e.Hp < e.MaxHp * f.Arg("execute", 0.15))
         {
             KillEnemy(e, true, o.Weapon, o.Depth + 1);

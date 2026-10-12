@@ -50,7 +50,9 @@ public sealed class GrimtunnelStory : StoryBoss, IBound
     /// ground he takes half, and his lamps take a quarter of what is put into him. Raised from 109 to 123 (11 October, the
     /// owner's call): with the Flare he fell 11 to 13% (mean) sooner; at 123 the fight is within 2% of its pre-Flare length
     /// for plain hands, 5% short for deft.</summary>
-    public override double HealthMul(int tier) => 123;
+    // 12 October: 123 -> 114. With the Flare's press no longer staggering a boss outright and the Toll and Burns Twice
+    // measured to the other Flares' share of a boss, every calling is within 3% of the pre-Flare length (Act 1, 96 seeds, both pilots).
+    public override double HealthMul(int tier) => 114;
     /// <summary>His teeth are in his marked moves; his burst up (×2) about a third of her health at a story
     /// night's build.</summary>
     public override double Teeth => 0.2;
