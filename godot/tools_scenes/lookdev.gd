@@ -205,8 +205,11 @@ func _init():
 	if orbit != "":
 		var o = orbit.split(",")
 		var a = deg_to_rad(float(o[0]))
-		cam.position = Vector3(sin(a) * float(o[2]), float(o[1]), cos(a) * float(o[2]))
-		cam.look_at_from_position(cam.position, Vector3(0, float(o[3]), 0))
+		# (optional ,x,z: the target off her middle, the camera moved with it: a
+		# true profile of her bust, say)
+		var off = Vector3(float(o[4]), 0, float(o[5])) if o.size() > 5 else Vector3.ZERO
+		cam.position = Vector3(sin(a) * float(o[2]), float(o[1]), cos(a) * float(o[2])) + off
+		cam.look_at_from_position(cam.position, Vector3(0, float(o[3]), 0) + off)
 	var env = WorldEnvironment.new()
 	var e = Environment.new()
 	e.background_mode = Environment.BG_COLOR
