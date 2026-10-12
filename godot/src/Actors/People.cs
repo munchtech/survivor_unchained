@@ -1151,6 +1151,8 @@ public static class People
     static void HerShade(ShaderMaterial m, Look look)
     {
         m.SetShaderParameter("ambient_tint", HerAmbient(look));
+        m.SetShaderParameter("body_tone", BodyTone(look));
+        m.SetShaderParameter("body_gate", BodyGate ? 1f : 0f);
         // Her soft lamps (the Look's fill and bounce, their sheen 0.1 and 0: SPECULAR_AMOUNT 0.2 and 0) show her paint's
         // own colour, all of her; the key, the fire and the sun her body's tone. (Tried 11 October 2026 (r6a): held
         // to where she faces down and gated by ndl, the shade at the side of her neck stayed grey (own jaw chroma
@@ -1252,6 +1254,15 @@ public static class People
     /// (All of it: her soft lamps' light shows her paint's own colour (HerShade), so the shade under her jaw keeps its
     /// warmth. Before that, at 1 the shade went grey-violet (chroma 0.015, hue 30, own) and it shipped at 0.5.)
     static readonly float BodyK = SurvivorUnchained.Args.Has("body-k") ? (float)SurvivorUnchained.Args.Num("body-k", 1f) : 1f;
+
+    /// <summary>Her body's tone kept on her head and up her neck, where it was fitted, and from her collarbones down taken
+    /// out of the lamps' light on her, with the key's and the soft lamps' tones fitted with it (the skin shader's body_tone
+    /// and body_gate, by her freckles' map's blue): fitted on her lit neck against the Look's warm key, its blue turned her
+    /// chest, arms and thighs a cold lilac-grey beside the fire and her thighs grey-lilac at night, where they were warm
+    /// peach (judge s1, 12 October 2026; body r1: the Look's whole frame and play at night within 0.005 of integration's
+    /// Oklab chroma, 3-25 deg warmer, where they were 60-100 deg cooler). (--body-gate off: all of her takes them, as
+    /// before, for judging it.)</summary>
+    static readonly bool BodyGate = SurvivorUnchained.Args.Get("body-gate") != "off";
 
     static Vector3 Pow(Vector3 v, float k) => new(Mathf.Pow(v.X, k), Mathf.Pow(v.Y, k), Mathf.Pow(v.Z, k));
 

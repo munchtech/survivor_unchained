@@ -138,6 +138,19 @@ uniform float back_occ = 0.0;
 // moon nothing warms it back, and in the whole frame her body read lavender-blue under her face (judge j7 (f)).
 // 0: as key_tone (r12).
 uniform vec3 sky_tone = vec3(0.0);
+// Her body's tone (People.BodyTone, linear), which `tone` carries and ambient_tint and shade_tint take back out: with
+// body_gate 1, kept on her head and up her neck, where it was fitted, and from her collarbones down taken out of the
+// lamps' light on her, with the key's and the soft lamps' tones fitted with it (key_tone, sky_tone, soft_tone), by her
+// freckles' map's blue (neck_w: 0 on parts without the map; her head keeps it all, as that map's blue dips under her
+// jaw). Its blue was fitted on her lit neck against the Look's warm key; over her chest, arms and thighs it read a cold
+// lilac-grey beside the fire and in the moon, where they were warm peach (judge s1, 12 October 2026). The sky's light
+// on her (ambient_tint) is as before. body_gate 0: as before (--body-gate off).
+uniform vec3 body_tone = vec3(1.0);
+uniform float body_gate = 0.0;
+// (the factor her paint takes for it, 1 where it is kept and 1 / body_tone where it is taken out, and how much of the
+// tones fitted on her neck she takes, 1 on her head and neck, 0 from her collarbones down)
+varying vec3 body_back;
+varying float neck_w;
 // A body's own relief, baked from its sculpt (the hero's: every muscle and
 // vein his reduced mesh has only in paint), the pores laid over it.
 uniform sampler2D relief : hint_normal, filter_linear_mipmap_anisotropic;
@@ -232,6 +245,9 @@ void fragment() {
 	float hw = seam_ease ? aot.g : 1.0;
 	ALBEDO = texture(paint, UV).rgb * tone * mix(vec3(1.0), face_tone, fm.b);
 	vec3 fk = texture(freckles, UV).rgb;
+	neck_w = mix(1.0, seam_ease ? 1.0 : fk.b, body_gate);
+	body_back = pow(max(body_tone, vec3(1e-3)), vec3(neck_w - 1.0));
+	ALBEDO *= body_back;
 	if (freckle_amount > 0.001) {
 		float fv = fk.r * (1.0 - smoothstep(freckle_amount - 0.04, freckle_amount + 0.04, fk.g));
 		ALBEDO = mix(ALBEDO, ALBEDO * freckle_colour, fv * mix(0.5, 1.0, freckle_amount));
@@ -311,7 +327,8 @@ void fragment() {
 	// the far side of her neck under her jaw went bluer, own's row .15 hue -21 to -31)
 	edge_w = (seam_ease ? 1.0 - aot.g : mix(1.0, fk.b, edge_neck)) * (1.0 - smoothstep(edge_from, edge_to, dot(NORMAL, VIEW)));
 	lift_w = (seam_ease ? 1.0 - aot.g : 1.0) * smoothstep(lift_from, lift_to, wd);
-	ALBEDO *= ambient_tint;
+	// (the sky's light on her as before: ambient_tint takes her body's tone out of it already)
+	ALBEDO *= ambient_tint / body_back;
 	if (dbg_gate > 0.0) { ALBEDO = vec3(1.0); SPECULAR = 0.0; BACKLIGHT = vec3(0.0); }
 	// (dbg_gate 3+: her maps instead, emitted: red ao_map's shade, green its seam ease, blue the face's paint (features' blue))
 	if (dbg_gate > 2.5) { ALBEDO = vec3(0.0); EMISSION = (dbg_gate - 3.0) * vec3(aot.r, aot.g, fm.b); }
@@ -348,12 +365,13 @@ void light() {
 	float fd90 = 2.0 * c_ldh * c_ldh * ROUGHNESS - 0.5;
 	float burley = (1.0 + fd90 * schlick(c_ndv)) * (1.0 + fd90 * schlick(c_ndl));
 	vec3 diffuse = soft * burley / PI;
-	vec3 un = 1.0 / max(ambient_tint, vec3(1e-3));        // (the lamps' light on her as without the tint)
+	vec3 un = body_back / max(ambient_tint, vec3(1e-3));        // (the lamps' light on her as without the tint)
 	vec3 rich = vec3(1.0);
-	if (shade_w > 0.0 && any(notEqual(shade_tint, vec3(1.0)))) {
+	vec3 st = shade_tint / body_back;        // (where her body's tone is taken out, none to take out of her shade)
+	if (shade_w > 0.0 && any(notEqual(st, vec3(1.0)))) {
 		vec3 al = ALBEDO * un;
 		vec3 lw = vec3(0.2126, 0.7152, 0.0722);
-		vec3 tn = shade_tint * dot(al, lw) / max(dot(al * shade_tint, lw), 1e-4);
+		vec3 tn = st * dot(al, lw) / max(dot(al * st, lw), 1e-4);
 		float lit = mix(mix(ndl, dot(LIGHT_COLOR * vec3(ATTENUATION), lw) * c_ndl, shade_by_light), SPECULAR_AMOUNT, shade_by_soft);
 		rich = mix(vec3(1.0), tn, shade_w * (1.0 - smoothstep(shade_from, shade_to, lit)));
 	}
@@ -362,7 +380,8 @@ void light() {
 	// judge j6)
 	float behind = smoothstep(-0.1, 0.6, dot(-LIGHT, VIEW));
 	vec3 kt = vec3(1.0);
-	vec3 ktone = LIGHT_IS_DIRECTIONAL && sky_tone.x > 0.0 ? sky_tone : key_tone;
+	// (from her collarbones down none: fitted on her neck with her body's tone, which is taken out there; body_tone)
+	vec3 ktone = mix(vec3(1.0), LIGHT_IS_DIRECTIONAL && sky_tone.x > 0.0 ? sky_tone : key_tone, neck_w);
 	if (any(notEqual(ktone, vec3(1.0)))) {
 		vec3 ka = ALBEDO * un;
 		vec3 klw = vec3(0.2126, 0.7152, 0.0722);
@@ -374,7 +393,7 @@ void light() {
 		kt *= mix(vec3(1.0), edge_tone * dot(ea, elw) / max(dot(ea * edge_tone, elw), 1e-4), key_w * soft_w * edge_w);
 	}
 	DIFFUSE_LIGHT += LIGHT_COLOR * diffuse * ATTENUATION * un * rich * kt * mix(1.0, body_lift, key_w * lift_w * (1.0 - behind)) * mix(1.0, back_ao, behind)
-		* mix(vec3(1.0), soft_tone, (1.0 - key_w) * soft_w * shade_by_soft);
+		* mix(vec3(1.0), soft_tone, (1.0 - key_w) * soft_w * shade_by_soft * neck_w);
 	// the fine down at her edges, against a light from behind her only (lit
 	// from the front, it brightened every edge of her: a pale ribbon down her
 	// cheek where her dark hair met it, her temples white)
