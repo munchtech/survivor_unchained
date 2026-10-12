@@ -10,6 +10,8 @@ reports, per outfit:
   tuck, where a garment's edge meets her) is counted apart, as it may show by design.
 Each flagged frame, and each breast's closest frame, is saved as a crop with a banner saying
 it is a test tint, not the game, and a ring on the closest pixel.
+A code pixel further on screen from both posed tips than its own code allows is a garment's
+colour passing for a code, not skin, and is not read (stray()).
     python count.py <folder> [MIN_PX=6]
 Writes <folder>/counts.csv, <folder>/summary.txt and <folder>/crops/."""
 import glob
@@ -117,6 +119,31 @@ def landmarks(path, im):
     return tips, bones
 
 
+def stray(dist, tips):
+    """Code pixels no skin of hers could have drawn: further on screen from both posed tips
+    than their own code allows. A code says its skin lies d cm from an areola's centre (at
+    rest); posed, that skin is within 2d + 4 cm of the tip (stretch, jiggle and the landmark's
+    own error, all generously), so on screen within that many of the tip's centimetres (its
+    2 cm up or in as drawn, the longer: never under 0.7 of the true scale), and half as many
+    again for perspective. A garment's own colour can pass for a code: a bluish highlight on
+    the warden's skirt plate, 33 cm below her left nipple, read as tucked skin 0.2 cm from
+    that areola's centre in her hit clip, and read the same with no codes drawn at all (as
+    run.sh fp renders, 12 Oct 2026). Real skin in every motion check frame then on file (over
+    10,000: all four outfits, every clip and view) lay within 0.35 of this reach; that
+    highlight lay at 4.5 times it (4.9 in an older build). With a tip behind the camera, or no
+    landmarks, nothing is judged."""
+    off = np.zeros(dist.shape, bool)
+    if set(tips) != set(SIDES):
+        return off
+    ys, xs = np.nonzero(np.isfinite(dist))
+    ok = np.zeros(len(xs), bool)
+    for (tx, ty), (ux, uy), (ix, iy) in tips.values():
+        per_cm = max(math.hypot(ux - tx, uy - ty), math.hypot(ix - tx, iy - ty)) / 2.0
+        ok |= np.hypot(xs - tx, ys - ty) <= (2 * dist[ys, xs] + 4.0) * per_cm / 0.7 * 1.5
+    off[ys[~ok], xs[~ok]] = True
+    return off
+
+
 def place(xs, ys, tips, bones):
     """For pixels (xs, ys): which breast (the nearest posed tip on screen) and which edge of
     its rim, from the offset expressed in that tip's own up and inner directions on screen."""
@@ -165,6 +192,9 @@ for f in sorted(glob.glob(os.path.join(folder, '*_[0-9][0-9].png'))):
     im = Image.open(f).convert('RGB')
     dist, gen, tnear, depth = codes(im)
     tips, bones = landmarks(f[:-4] + '.json', im)
+    off = stray(dist, tips)
+    dist[off] = np.inf
+    tnear &= ~off
     areola_px = int((dist < AREOLA).sum())
     gen_px = int(gen.sum())
     deep_px = int((depth > 0.5).sum()) + int(tnear.sum())
