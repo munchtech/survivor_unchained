@@ -41,6 +41,10 @@ public partial class Voices : Node3D
     CanvasLayer? layer;
     /// <summary>A conversation is on: the names and words step back.</summary>
     public bool Quiet;
+    /// <summary>The close view of her is in (GameCloseUp): the names step away (eased out, back at once), so
+    /// none floats beside her head.</summary>
+    public bool Away;
+    float plateK = 1;
 
     public Voices() { Name = "Voices"; }
 
@@ -167,7 +171,9 @@ public partial class Voices : Node3D
     public override void _Process(double delta)
     {
         float quiet = Quiet ? 0 : 1;
-        foreach (var (n, m) in plates.Values) { n.Transparency = 1 - quiet; m.Transparency = 1 - quiet; }
+        plateK = Away ? Mathf.Max(0, plateK - (float)delta / 0.4f) : 1;
+        float pk = quiet * plateK;
+        foreach (var (n, m) in plates.Values) { n.Transparency = 1 - pk; m.Transparency = 1 - pk; n.Visible = pk > 0; }
         for (int i = barks.Count - 1; i >= 0; i--)
         {
             var b = barks[i];

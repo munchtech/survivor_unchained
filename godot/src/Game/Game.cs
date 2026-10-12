@@ -599,6 +599,7 @@ public partial class Game : Node, IZoneHost
         if (Args.Has("cam")) dist = (float)Args.Num("cam", dist);
         cam.Pitch = pitch;
         cam.Distance = cam.TargetDistance = dist;
+        CloseUpBegin(z);
         scene.StartBattle(b, Loadouts.Of(Journey.Ch));
         Perf.Lap("play: the survivor stood up");
         HookBattle(b);
@@ -964,6 +965,8 @@ public partial class Game : Node, IZoneHost
             // A story night's boss kept in frame with her (FollowCamera.Toward).
             cam.Toward = zone is StoryNight bn && bn.Now == StoryNight.Stage.Boss && bn.BossScript?.E is { Alive: true } be && be.State != SurvivorUnchained.Sim.EnemyState.Dying
                 ? new Vector3((float)be.X, 0, (float)be.Z) : null;
+            // The close view of her: the wheel in town, and the idle view anywhere quiet (GameCloseUp).
+            UpdateCloseUp(dt);
             Perf.Begin(Perf.Part.Later);
             RunLater(dt);
             Perf.End(Perf.Part.Later);

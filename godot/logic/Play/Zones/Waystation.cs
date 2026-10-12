@@ -492,6 +492,7 @@ public sealed class Waystation : ZoneRuntime
         foreach (var a in Actors.Values) a.Update(dt, px, pz);
         foreach (var a in guards) a.Update(dt, px, pz);
         foreach (var a in keepers) { a.Hidden = Dark; a.Update(dt, px, pz); }
+        folk.Clear = KeepClear;
         folk.Update(dt, px, pz);
         trackT -= dt;
         if (trackT <= 0)

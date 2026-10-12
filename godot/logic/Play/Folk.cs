@@ -376,6 +376,38 @@ public sealed class Folk
 
     /* ------------------------------------------------------------ update -- */
 
+    /// <summary>The close view of her (GameCloseUp): where she stands and the way the camera looks (a unit
+    /// vector, away from it). Walkers keep out of the sight line behind her (a wedge from 0.9 m wide at her,
+    /// widening to 4 m at 20 m) and out of 3.5 m round her, leaving by the nearer side, so nobody walks through
+    /// or beside her outline. Null: only her own step aside.</summary>
+    public (double X, double Z, double Dx, double Dz)? Clear;
+
+    /// <summary>The push (x, z) that takes a walker at (x, z) out of Clear, or zero.</summary>
+    public static (double X, double Z) OutOfView((double X, double Z, double Dx, double Dz) c, double x, double z)
+    {
+        double rx = x - c.X, rz = z - c.Z;
+        double along = rx * c.Dx + rz * c.Dz, side = rx * -c.Dz + rz * c.Dx;
+        double ax = 0, az = 0;
+        double d = Math.Sqrt(rx * rx + rz * rz);
+        if (d < 3.5 && d > 1e-3) { ax += rx / d * (3.5 - d) * 2.5; az += rz / d * (3.5 - d) * 2.5; }
+        if (along > 0 && along < 22)
+        {
+            double half = 0.45 + along * 0.08 + 0.6;
+            if (Math.Abs(side) < half)
+            {
+                double s = side >= 0 ? 1 : -1, push = (half - Math.Abs(side)) * 3.2 * s;
+                ax += -c.Dz * push; az += c.Dx * push;
+            }
+        }
+        // (and the ground between her and the camera, near and large in the frame: stepped aside out of it)
+        if (along <= 0 && along > -5 && Math.Abs(side) < 3.4)
+        {
+            double s = side >= 0 ? 1 : -1, push = (3.4 - Math.Abs(side)) * 2.5 * s;
+            ax += -c.Dz * push; az += c.Dx * push;
+        }
+        return (ax, az);
+    }
+
     public void Update(double dt, double px, double pz)
     {
         var plan = o.Plan();
@@ -512,6 +544,11 @@ public sealed class Folk
             double push = (1.7 - pd) * 3.2;
             ax += pdx / pd * push; az += pdz / pd * push;
             if (wantV > 0.3 && ax * -pdx + az * -pdz > 0) { ax += -pdz / pd * 1.2; az += pdx / pd * 1.2; }
+        }
+        if (Clear is { } cl)
+        {
+            var (ox, oz) = OutOfView(cl, w.X, w.Z);
+            ax += ox; az += oz;
         }
         foreach (var other in walkers)
         {
