@@ -272,6 +272,18 @@ public class FlareStagedTests
     }
 
     [Fact]
+    public void A_press_staggers_a_boss_a_little_never_outright()
+    {
+        var b = Carrying("burns_twice");
+        var boss = Foe(b, 2, 0, boss: true);
+        Run(b, 2); // risen things come up out of the ground untouchable
+        b.FillFlare(100, "t");
+        Assert.True(b.UseFlare(1, 0));
+        Assert.Equal(0, boss.StaggeredT);
+        Assert.InRange(boss.Stagger, 0.01, 0.5);
+    }
+
+    [Fact]
     public void A_flare_that_kills_a_boss_says_so_once()
     {
         var b = Carrying("the_roads_toll");
