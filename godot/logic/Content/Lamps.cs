@@ -103,6 +103,14 @@ public sealed class FlareDef
     /// <summary>What it does for the survivor while it holds (a Stand): "cut" blows by Value, "mend" a share a second.</summary>
     public string? Guard;
     public double GuardValue;
+    /// <summary>A staged Flare's beat (phase 2, CLASSES.md §3.5-3.6): its timings from the press in seconds ("key": the
+    /// key pose's end; "first"/"step" or "first"/"last": the blows'; Burns Twice's "frost") and its hitstop in frames
+    /// ("hitstop", "hitstopLast", "hitstopExecute"). The logic schedules its blows by it; the view reads the rest.</summary>
+    public Dictionary<string, double> Beat = new();
+    /// <summary>A staged Flare's own numbers (shares of its power, seconds, metres), by name.</summary>
+    public Dictionary<string, double> Args = new();
+    public double Arg(string key, double fallback) => Args.TryGetValue(key, out var v) ? v : fallback;
+    public double BeatAt(string key, double fallback) => Beat.TryGetValue(key, out var v) ? v : fallback;
 }
 
 /// <summary>A road: one type of a calling (§1).</summary>
@@ -186,6 +194,8 @@ public static class Lamps
 
     /// <summary>By night, sizes run at a quarter (§2.10): rules cross into the night, numbers barely do.</summary>
     public const double NightSize = 0.25;
+    /// <summary>Lamp effects of a later phase stay dark until the build reaches it (phase 2: the four staged Flares' lamps).</summary>
+    public const int LivePhase = 2;
     /// <summary>By night, the whole board adds at most this much to each count (projectiles, pierce, chains).</summary>
     public const int NightCount = 1;
     /// <summary>By night, small lamps give no numbers: their road leans the draft (×1.25, as the Edge does).</summary>

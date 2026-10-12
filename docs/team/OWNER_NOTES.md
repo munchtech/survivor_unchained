@@ -170,3 +170,21 @@ Not made by us: poses or animation whose purpose is a sex act, or that show nudi
 ### Sound
 
 - Every skill now has its own sounds (skills VFX), but no agent can hear them. The owner will say which sound bad after playing.
+
+## 11 October 2026, late: answers to the wind-down questions
+
+- **The Bulwark's rebuke:** "rebuke should probably do a little more damage than that yeah". Raise it above today's under 1% of its night damage, toward the judge's 8-15%, through more or wider rebukes (phase 5's Wider Rebuke, or sooner).
+- **The home bonus:** "I think? what does design/theory say?" Design (CLASSES §2.7) says home is easier and better, at most ×1.25. The coordinator's reading: today's ×1.03 is temporary because only one of each road's three signature skills exists; phase 5 should bring it to a clear edge (about ×1.10-×1.25). Accepted for now.
+- **Act 1 story bosses:** "yes". Raise their health to offset the Flare (they fall 14-29% sooner).
+- **Sunborn's warm jaw and neck:** "judge reccomendation is ok": one try at keeping melanin-rich skin browner in shadow, to match her portrait.
+- **Neck length:** "judge decide but consider benefits of long neck (that dosn't look stupid)". The judge picks the length, weighing what a long neck gives (elegance, helmets and gorgets without hiding the bust) as long as it never looks stretched.
+
+## 12 October 2026: classes
+
+- **Light my way and Banked Flame:** "sounds good": the suggested path never lights Banked Flame (its gift only pays if you change how you spend the Flare).
+- **Banked Flame is too weak:** "0-5% faster is barely anything though, seems like its a lot of risk with not much reward." Played well, it must be a clear reward worth the 30% slower fill. Sent to the classes lead (options measured, judge picks).
+
+## 12 October 2026: the male hero
+
+- "Begin work on Hero, using the lessons we learned making Heroine to hopefully do it in a fraction of the time and effort and tokens."
+- **His body may be remade:** "you can totally make a new one from scratch if ours is lame. but remember sex appeal. muscular defined, attractive". A judge rates the current body against that; if it falls short, rebuild (hero_male.md path A is the start). Replaces "the bodies stay" for him.

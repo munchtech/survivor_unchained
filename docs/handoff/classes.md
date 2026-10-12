@@ -1,58 +1,38 @@
-# Handoff: classes (phase 1, systems: the Lamps, the Flare, dash forms, reflexes)
+# Handoff: classes (phase 2: staged Flares measured, judge next)
 
-Written by the second classes lead for its successor. Branch `classes/phase1`, worktree `.claude/worktrees/agent-a2a42cd8430929a76`. See the last line for the commit.
+Written by the seventh classes lead (12 October) at the context budget. Branch `classes-6` (worktree `agent-a5b513003773e2317`). See the last line for the commit.
 
 ## 1. The owner's words
+- "go with all 8 recommendations" (CLASSES §8); the Flare "should be AWESOME. it should look AWESOME."; "we are striving for perfection". 12 October: "go just classes for now" (classes is the only lead running).
+- 11 October: "rebuke should probably do a little more damage than that yeah".
+- 12 October, Banked Flame: (1) "sounds good": Light my way never lights it (DONE, `LampBook.Suggest` skips `flare.banked`). (2) "0-5% faster is barely anything though, seems like its a lot of risk with not much reward". Played well, it must be a clear reward worth the risk of its 30% slower fill, and its text must make it a trap-free choice. "A blue lamp should feel worth building around."
 
-- 11 October 2026, on docs/design/CLASSES.md: **"go with all 8 recommendations"** (§8). The Flare: "it should be AWESOME. it should look AWESOME." (phase 2's job; ours is the logic). The bar: "we are striving for perfection".
-- Story (via the main session): the twist "It takes less than it did": every rise from death costs a life in the valley, counted from the save (docs/story/TOLL_SPEC.md, being drafted). The Flare's clutch heals near death, so a Flare save is a rise avoided. Keep rise and death events clean and countable (`Ev.Rise`, `Ev.PlayerDeath`, `Ev.Flare.Clutch`, `Battle.FlareClutches`). Don't build the toll.
+## 2. The brief (main session, 12 October) and where each step stands
+1. **The rebuke's checks: DONE, reported to main.** Whole, it took 8-14% of a boss, a rival to the Flare. A boss now takes half (`shield_arm boss=0.5`, in its text): 4.5-5.3%. Act 1 with a bulwark (`story --type bulwark`) is within -5%/+4% of the old rule, falls no higher. The Prologue can't hold a bulwark (no type choice in play yet; SetType is harness-only) and has no balance harness; Act 1 at level 1 stands in for it.
+2. **Merge: GO sent to main** (judge's verdict, 12 October, below). The judge's one before-merge check (fix 1) already holds: the Strike stretches to its last blow (`flareLen` in Flare.cs:184), and `The_fourth_toll_and_the_healing_peal` lands four tolls and the blast.
+3. **Phase 2 judged: GO, PASS WITH FIXES.** The numbers are in `scratchpad/c7/sheet2.md`; `c7/fin/` holds Burns at x0.8 in the arena plus the Banked Flame cells (unread). The judge's fixes, in priority:
+   - (2) `TollCut`'s fallback puts the boss last (`OrderBy(x => x.Boss)`), and a re-picked cut on a boss carries onBoss/Blows; re-run Act 1 for the stalker and keep x0.85 if the mean stays within ±3%.
+   - (3) Burns: run Act 1 for the arcanist at x0.9 and x1.0 (after the ember fix) and take 1.0 if it meets the bar (mean within ±3%, no cell beyond ±6%).
+   - (4) Called Down keeps its target from the frost and moves to the next toughest. No ember falls on open ground while anything stands in reach. Seeking embers pass over a boss that can't be hurt (rename `TollCanHurt` to `FlareCanHurt`). Re-measure the kindler (band 1.29 at T3; full T4 at 15% or more).
+   - (5) Butcher's Hour: "each kill adds 0.3 s, up to 8 s more" goes in its brief and lamp text; Overtime caps at 12 s more. Measure the butcher's band and Not Today's deaths.
+   - (6) CLASSES §7 acceptance becomes: (i) Act 1 calibration per staged Flare against its plain form: mean kill time within ±3%, no cell beyond ±6%, falls in noise; (ii) arena, health taken, full board: median of types 15-25% at every tier, each Flare 15-30%, the empty board reported but not banded; (iii) Stands judged by uplift (boss dps while it holds over outside, times uptime); (iv) once: a gates-off arena boss to prove the reading.
+   - (7) The sheet's 3.78 is 3.0 nominal (3.78 is after the build's damage).
+   - (8) Burns's first impact gets 3 frames of hitstop.
+   - (9) A boss killed by the Toll's poison after the Strike still plays the last blow (`FlareOnKilled` returns once FlareT <= 0).
+   Measure before the owner plays (not blocking): which modifiers Light my way lights before an Act 1 boss (if Called Down or Toll Doubled, run Act 1 with them: no cell more than 5% faster); Act 1 for bulwark/Bell and butcher/Hour against their plain forms; the Hour's uplift, its plain form's T3-T4 kill time, its mending on a boss, and executes a second at T4. Tier-1 median (25.8%): wait for phase 6, then re-measure at 96 seeds.
+4. **Banked Flame, after the verdict:** re-run the two cells (in `c7/fin/`, the banking pilot). Then propose 2-3 options with numbers at 48 seeds for the banking pilot and a non-banking one (`--bank 0`), for example a 15-20% price, a second charge that fills faster or comes cheaper, or a gift that pays even when spent at once (say, a banked charge's Flare 25% stronger). Have the judge pick, and fold the pick into the go/no-go.
 
-## 2. The brief (phase 1; CLASSES.md §7)
+## 3. Decisions this session (why)
+- The Toll's poison is its own DoT (`TollVenom`/`TickVenom` in FlareStaged.cs). Her poison stack ticks at its strongest rate times its stacks, so a 2100-power cut lifted her whole stack and took its credit (71% of a boss at T4).
+- The Toll's boss cuts carry four cuts' worth (`onBoss`; data `bossWorth` overrides). This is the plain form's worth after power went 700 to 2100. The judge had written "12/boss cuts", but at 12 it did 5-8x the plain form per cast.
+- Burns' embers strike a boss only when aimed at it, and never fall back onto a lone boss.
+- `bossMul` (a Flare arg in FlareHit, bosses only), calibrated on Act 1 story kill time: Burns 0.8, Toll 0.85. The arena took-share is set by the boss gates, so it is no lever (sheet D).
 
-Battle wiring (dash forms, reflexes, the Flare's meter, window and clutch, Q firing it), the harness taught types, lamps and Flares, a plain debug readout, the road lean, the four Flare great blessings, and **every acceptance number in §7 measured**: types within ×1.35 of the median at tiers 1-4; on-calling at most ×1.25; a full board at night within ×1.25 of an empty one; Flare timing (first by ~2 min, then every 60-90 s at night, 2-3 per boss fight, 15-25% of a boss's damage). Names stay drafts for the story lead.
+## 4. Gotchas
+- The harness reads `lamps.json` at process start. Variant scripts patch `lamps_quarters.py`, rebuild and restore (`c7/var.sh`, `c7/r3.sh`). Never build Release balance while a run is going: the dll is locked, the build fails quietly with "2 Error(s)" and the old dll runs.
+- Baseline (integration) harness: `c7/base/godot/balance/bin/Release/net8.0/Balance.dll` (git archive of integration, built). Its story has no `--type`.
+- In foreground bash, wait with `for i in $(seq 1 58); do [ -f done ] && break; sleep 10; done`.
+- Scripts in `c7/`: `rebcheck.py` (rebuke A/B), `p2stat.py [--split] label=file` (Flare per type/tier, boss split by source), `stcmp.py base now [callings]` (story), and c6's `typeband.py`. Scratch root: `C:\Users\munch\AppData\Local\Temp\claude\C--Users-munch-Desktop-survivorsunchained\ba85aba8-36f4-4cf9-99c5-4c5ef9e4a65c\scratchpad\`.
 
-## 3. Done (sessions 1-2)
-
-- Session 1: the board (`tools/classes/lamps_build.py` → `lamps.json`), `LampBook`, `LampLoadout`, Act renames, tags, Bound, save v5.
-- **Dash forms** (`logic/Sim/Forms.cs` `DashForm`, called from `Battle.Dash`): the Kin rides the dash after its own wait (lamp's KinWait; learned forms: the art's Cooldown). Bull Rush 6 m behind 15% (Iron Hide 25%). Grapple's miss is a plain dash and the wait isn't spent. Vault goes the way of the dash. Mirror Step, Sprint, Wraith (1.5 s), Cinder and Echo ride the dash, and a second dash recalls the echo. The Kin's facets come only from lamps (`Character.Kit`); a learned form keeps ArtBook's.
-- **Reflexes** (`Forms.cs`): `ReflexRun`, triggers crowd, swarm, low and every (ticked), big_blow and dire (on a blow; dire also when a Blow mark lands on her), swarm (a champion's blow), spells, perfect. A reflex borrows `p.AbilityCd` while it runs. Red Tide and Spellward are built. `Runs(kind)` and `HastenArt` replace the old `Ability ==` checks.
-- **The Flare** (`logic/Sim/Flare.cs`): meter, Banked Flame charges, fills (hooks in HurtPlayerRaw, PerfectDodge, the warding-light block, HitEnemy, KillEnemy, spells), `UseFlare` (Strike holds ≤1.2 s, untouchable +0.4 s; Stand 1.5 s grace, pulses, guard cut/mend), burns missiles within 6 m, interrupts and staggers bosses, clutch below 25% (mends 20% over 1 s, reach +25%), hearth low-lamps, `Ev.Flare` Ready/Press/Blow/End, `FlareFreeze` 0.22 with the static `FlareFreezeScale`. Fill table tuned (solver 8b0a0fc0, then pass 3 at 482124f0); CLASSES §3.2 holds the tuned table. Damage: +8% a level, base powers ×11.5.
-- Q / right-click calls `UseFlare` (WorldScene, Game). The HUD art slot shows the meter, and the `ArtNote` line shows form and reflex waits. `ArtBook.HoldKin` turns a held calling art into the Kin (in Create and the v5 migration). The Arts screen marks non-movement arts as "fires itself".
-- `Character.Kit(ch, night)` folds the lamps; `Journey.StartBattle` passes `Lamps`, `ReflexRanks`, `Level`, and `FlareStart` (story fights start at 50).
-- `LampLoadout`: rules stack across lamps (`Each`), with `HasOn`/`SizeOn` by skill and tags. A small lamp's rule sleeps by night.
-- Road lean (`LevelUp.RoadLeaned`, ×1.25, clamp ×2 with the path lean). The four Flare greats (`Boons.FlareGreat`, offered only with a Flare). Map mods Smothered and "of the Bright" (Charts.cs). Endless: `EndlessFrom` set at the arena's Victory. MapRun is one Battle, so the meter carries between areas.
-- The harness (`godot/balance`): `--type <road>|both`, `--lamps empty|suggested|full`, the Flare cast policy in `Pilot.Act`, and Flare and Types tables in the report. `Battle.BossDamageBy`.
-- Tests: 787 green (HandsTests, ClassesDraftTests and LampsTests among them).
-
-## 4. In progress
-
-- Nothing running. **Warden quarter and crossings wired** (0981f48c, 31 rules; report in its commit body). It adds a block chance, stones and the rebuke (`godot/logic/Sim/WardenLamps.cs`). Two picks need a design look: the rebuke deals 30% of max health as holy, and stones lapse after 8 s without a block unless Mortar is lit. The Watch Bell doesn't exist yet. Tests: 791 green.
-
-## 5. Next, in order
-
-1. **Wire the remaining phase-1 rules:** reaver (32), arcanist (33), stalker (31) (warden and crossings done), one su-worker per quarter, **one at a time** (they all edit Battle.cs). The shared brief is `docs/handoff/classes_rules_brief.md` (replace <CALLING>). Then add the test that every phase-1 rule id appears as a string literal in godot/logic/Sim (the generator script is in that brief's command). Check each worker's diff: sizes through `Size` (quarter by night), prices and thresholds through `Full`, counts capped at +1 by night.
-2. **Re-run the acceptance sweep** (the runner's commands are in §7 below) once all rules are wired. Today's numbers (482124f0, rules mostly unwired) are a baseline only.
-3. **Fix what's out of band**, then send it to a fresh `su-lead-max` judge with the reports, §7's targets and the owner's words. Known so far:
-   - Casters' Flare gap is 104-116 s (target 60-90). Casters are rarely hurt. Consider a caster-friendly fill (Kindling-like spell fill in the base table) rather than raising the kill cap, which speeds up the reavers (already at 63-68 s).
-   - The first Flare comes at 1.3-2.5 min. Clutches are about 0 (the deft bot is rarely low; a less deft bot would show them).
-   - Types out of band: verge_hunter T4 ×1.96 and T1 ×1.39, roadknife T3 ×1.42, butcher T3 ×0.66, bulwark T2 ×0.68. Mostly the draft lean toward each road's signature skills (the skills' own balance) plus lamps without their gains. Re-measure after wiring; the skills' balance belongs to combat, so talk to them.
-   - Full vs empty: today 0.63-1.24 (roadknife at level 30 is 0.63). Prices are in, gains are not. Re-measure.
-   - On-calling ≤ ×1.25: not measured yet. The harness needs an off-calling run (the same skills drafted by another calling); add it.
-   - Stands are unmeasured (the harness carries Strikes), as are story fights and maps.
-4. Status page, roster and report.
-
-## 6. Gotchas
-
-- Workers' completion notices go to the main session, not to you: ask them to put the report in the commit body.
-- `dotnet test` takes 3-5 min. Two agents building godot/tests at once lock `bin/`: run them in turn. The harness: `dotnet build -c Release godot/balance`, then `dotnet run -c Release --no-build ...`.
-- Don't let workers build with `-o <dir>`: art-path tests (Fx, Export) fail there.
-- Python edits to CRLF files are fine (git normalizes to LF).
-- The context hook reads README's "Context budget: 120k" example as yours; the brief's 300k is the real one.
-- Warden tests needing the Flare to fill use a reaver: Bull Rush's barrier soaks the damage.
-
-## 7. Files and commands
-
-- Read first: `godot/logic/Sim/Forms.cs`, `godot/logic/Sim/Flare.cs`, `godot/logic/Sim/LampLoadout.cs`, `docs/handoff/classes_rules_brief.md`, CLASSES.md §2.10, §3.2-3.4 and §7.
-- Sweep (from the worktree): `dotnet run -c Release --no-build --project godot/balance -- arena --callings all --type both --lamps full|empty --tiers 1,2,3,4 --level tier --seeds 3 --policies greedy --people pack --bot deft --beyond 0 --par 16 --out <f>.jsonl`; the same with `--tiers 4 --level 30` for the end-game board; then `-- report --in <f>.jsonl`. The baseline reports are in the session scratchpad `sweep\` (they won't survive the scratch sweep, so regenerate them).
-
-HANDOFF READY: docs/handoff/classes.md on classes/phase1@b8ec84dd
+## 5. Files to read first
+`godot/logic/Sim/FlareStaged.cs`, `Flare.cs` (FlareBlow), `WardenLamps.cs` (Rebuke), `godot/logic/Rpg/LampBook.cs` (Suggest), `tools/classes/lamps_quarters.py` (the flare() lines), `docs/design/CLASSES.md` §3.6 and §7, `c7/sheet2.md`.

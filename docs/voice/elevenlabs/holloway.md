@@ -1,6 +1,6 @@
 # Captain Holloway: ElevenLabs packet
 
-Voice id in the game: `holloway`. 110 takes to record (9,714 characters; about 29,142 credits at three tries a line). Status: **on hold, except the 70 takes marked LOCKED FOR RECORDING** (the story lead, 2026-10-11): record those now and hold the rest (the story rewrite changes most of his lines (docs/voice/RERECORD.md)).
+Voice id in the game: `holloway`. 110 takes to record (9,714 characters; about 29,142 credits at three tries a line). Status: **on hold, except the 110 takes marked LOCKED FOR RECORDING** (the story lead, 2026-10-11): record those now and hold the rest (the story rewrite changes most of his lines (docs/voice/RERECORD.md)).
 
 ## Who they are
 
@@ -208,21 +208,25 @@ Subtitle: They say you've put down more things than the fever year. Try not to p
 ```
 Subtitle: The road's quiet. I paid for every pelt of it. You know how quiet? Maeca's stopped coming in to argue with me.
 
-### 15. `dlg.holloway.hub.9.wav`  HOLD: the story rewrite changes most of his lines (docs/voice/RERECORD.md)
+### 15. `dlg.holloway.hub.9.wav`  **LOCKED FOR RECORDING**
 
 *Where:* dialogue.json holloway/hub#9
+*Played:* tired, sour; doing: admits Maeca may be right; pace: measured; volume: level.
+*Note:* A quartermaster's grumble; 'and I hate that' flat, not comic. 'What is it?' clipped.
 
 ```
-I pay for a pelt and two more wolves come down the road. I'm starting to think Mayka's right, and I hate that. What is it?
+[tired, sour] I pay for a pelt and two more wolves come down the road. I'm starting to think Mayka's right, and I hate that. What is it?
 ```
 Subtitle: I pay for a pelt and two more wolves come down the road. I'm starting to think Maeca's right, and I hate that. What is it?
 
-### 16. `dlg.holloway.hub.10.wav`  HOLD: the story rewrite changes most of his lines (docs/voice/RERECORD.md)
+### 16. `dlg.holloway.hub.10.wav`  **LOCKED FOR RECORDING**
 
 *Where:* dialogue.json holloway/hub#10
+*Played:* busy, curt; doing: wants it short; pace: quick; volume: level.
+*Note:* Not unkind; a man with a count to keep.
 
 ```
-Make it quick. I've a gate to count.
+[busy, curt] Make it quick. I've a gate to count.
 ```
 Subtitle: Make it quick. I've a gate to count.
 
@@ -732,297 +736,361 @@ Subtitle: Mine. From the north, about the north.
 ```
 Subtitle: Read your own post, if anybody writes to you.
 
-### 62. `dlg.holloway.roll.0.p1.wav`  HOLD: the story rewrite changes most of his lines (docs/voice/RERECORD.md)
+### 62. `dlg.holloway.roll.0.p1.wav`  **LOCKED FOR RECORDING**
 
 *Where:* dialogue.json holloway/roll#0; part 2 of 4: narrator: He isn't looking at you. He's looking down the dark road, and his lips are moving. / **holloway: ...Abbot. Two bairns. Ancell. His mam. Bede. Nobody. Carrow. A wife, and one coming.** / narrator: He finds you. / holloway: Garrison. The roll. I say it at night. Keeps them in order.
+*Played:* drunk, private; doing: the roll he says at night; pace: slow; volume: quiet.
+*Note:* Narrator plain and dry, level; says what is seen, never what it means. Holloway: names said like ledger entries, no grief put on; 'Nobody.' as flat as the rest. Then he finds you, and the explanation is almost sober.
 
 ```
-...Abbot. Two bairns. Ancell. His mam. Bede. Nobody. Carrow. A wife, and one coming.
+[drunk, private, quietly] Abbot. Two bairns… Ancell. His mam… Bede. Nobody… Carrow. A wife, and one coming.
 ```
 Subtitle: ...Abbot. Two bairns. Ancell. His mam. Bede. Nobody. Carrow. A wife, and one coming.
 
-### 63. `dlg.holloway.roll.0.p3.wav`  HOLD: the story rewrite changes most of his lines (docs/voice/RERECORD.md)
+### 63. `dlg.holloway.roll.0.p3.wav`  **LOCKED FOR RECORDING**
 
 *Where:* dialogue.json holloway/roll#0; part 4 of 4: narrator: He isn't looking at you. He's looking down the dark road, and his lips are moving. / holloway: ...Abbot. Two bairns. Ancell. His mam. Bede. Nobody. Carrow. A wife, and one coming. / narrator: He finds you. / **holloway: Garrison. The roll. I say it at night. Keeps them in order.**
+*Played:* drunk, private; doing: the roll he says at night; pace: slow; volume: quiet.
+*Note:* Narrator plain and dry, level; says what is seen, never what it means. Holloway: names said like ledger entries, no grief put on; 'Nobody.' as flat as the rest. Then he finds you, and the explanation is almost sober.
 
 ```
-Garrison. The roll. I say it at night. Keeps them in order.
+[drunk, private, quietly] Garrison. The roll. I say it at night. Keeps them in order.
 ```
 Subtitle: Garrison. The roll. I say it at night. Keeps them in order.
 
-### 64. `dlg.holloway.roll2.0.p0.wav`  HOLD: the story rewrite changes most of his lines (docs/voice/RERECORD.md)
+### 64. `dlg.holloway.roll2.0.p0.wav`  **LOCKED FOR RECORDING**
 
 *Where:* dialogue.json holloway/roll2#0; part 1 of 2: **holloway: Dunning. Two bairns. Ede. Her da. Fenn. Nobody. Gale. ...Gale.** / narrator: He stops on it, and drinks, and starts again at Abbot.
+*Played:* drunk, catching; doing: the roll, and one name he can't pass; pace: slow; volume: quiet.
+*Note:* Entries as before; the second 'Gale.' stops him. The narrator plain: he drinks and starts again.
 
 ```
-Dunning. Two bairns. Ede. Her da. Fenn. Nobody. Gale. ...Gale.
+[drunk, catching, quietly] Dunning. Two bairns. Ede. Her da. Fenn. Nobody. Gale. ...Gale.
 ```
 Subtitle: Dunning. Two bairns. Ede. Her da. Fenn. Nobody. Gale. ...Gale.
 
 ## Conversations: Scene_gate_dawn
 
-### 65. `dlg.scene_gate_dawn.wake.0.p0.wav`  HOLD: the story rewrite changes most of his lines (docs/voice/RERECORD.md)
+### 65. `dlg.scene_gate_dawn.wake.0.p0.wav`  **LOCKED FOR RECORDING**
 
 *Where:* dialogue.json scene_gate_dawn/wake#0; part 1 of 3: **holloway: ...One in.** / narrator: He looks past you at the empty road. / holloway: Count's right.
+*Played:* awake at once; doing: counts you in; pace: measured; volume: level.
+*Note:* Hoarse from sleep; 'One in.' a soldier's report; 'Count's right.' relief he won't show.
 
 ```
-[awake all at once, the way soldiers wake, and finding you] ...One in.
+[awake at once] [awake all at once, the way soldiers wake, and finding you] ...One in.
 ```
 Subtitle: ...One in.
 
-### 66. `dlg.scene_gate_dawn.wake.0.p2.wav`  HOLD: the story rewrite changes most of his lines (docs/voice/RERECORD.md)
+### 66. `dlg.scene_gate_dawn.wake.0.p2.wav`  **LOCKED FOR RECORDING**
 
 *Where:* dialogue.json scene_gate_dawn/wake#0; part 3 of 3: holloway: ...One in. / narrator: He looks past you at the empty road. / **holloway: Count's right.**
+*Played:* awake at once; doing: counts you in; pace: measured; volume: level.
+*Note:* Hoarse from sleep; 'One in.' a soldier's report; 'Count's right.' relief he won't show.
 
 ```
-Count's right.
+[awake at once] Count's right.
 ```
 Subtitle: Count's right.
 
-### 67. `dlg.scene_gate_dawn.all.0.p0.wav`  HOLD: the story rewrite changes most of his lines (docs/voice/RERECORD.md)
+### 67. `dlg.scene_gate_dawn.all.0.p0.wav`  **LOCKED FOR RECORDING**
 
 *Where:* dialogue.json scene_gate_dawn/all#0; part 1 of 2: **holloway: Gate was open. Somebody had to stand in it.** / narrator: Maeca looks at the ground he slept on, and then at him, and says nothing.
+*Played:* gruff; doing: why he was on the ground; pace: measured; volume: level.
+*Note:* Matter of fact. The narrator plain.
 
 ```
-Gate was open. Somebody had to stand in it.
+[gruff] Gate was open. Somebody had to stand in it.
 ```
 Subtitle: Gate was open. Somebody had to stand in it.
 
-### 68. `dlg.scene_gate_dawn.thanks.0.wav`  HOLD: the story rewrite changes most of his lines (docs/voice/RERECORD.md)
+### 68. `dlg.scene_gate_dawn.thanks.0.wav`  **LOCKED FOR RECORDING**
 
 *Where:* dialogue.json scene_gate_dawn/thanks#0
+*Played:* gruff, wry; doing: turns thanks into a debt; pace: quick; volume: level.
+*Note:* Shuts the thanks down; 'I'm not proud.' dry.
 
 ```
-Don't. That's a drink you owe me. The cheap stuff; I'm not proud.
+[gruff, wry] Don't. That's a drink you owe me. The cheap stuff; I'm not proud.
 ```
 Subtitle: Don't. That's a drink you owe me. The cheap stuff; I'm not proud.
 
 ## Conversations: Scene_in_my_count
 
-### 69. `dlg.scene_in_my_count.captain.0.p1.wav`  HOLD: the story rewrite changes most of his lines (docs/voice/RERECORD.md)
+### 69. `dlg.scene_in_my_count.captain.0.p1.wav`  **LOCKED FOR RECORDING**
 
 *Where:* dialogue.json scene_in_my_count/captain#0; part 2 of 2: narrator: He comes down the street at a walk, not hurrying, and he has been drinking. He walks throu… / **holloway: She's in my count.**
+*Played:* drunk, steady; doing: she's in my count; pace: slow; volume: level.
+*Note:* Narrator plain and dry, level; says what is seen, never what it means. Holloway: 'She's in my count.' low and immovable.
 
 ```
-She's in my count.
+[drunk, steady] She's in my count.
 ```
 Subtitle: She's in my count.
 
-### 70. `dlg.scene_in_my_count.through.0.p0.wav`  HOLD: the story rewrite changes most of his lines (docs/voice/RERECORD.md)
+### 70. `dlg.scene_in_my_count.through.0.p0.wav`  **LOCKED FOR RECORDING**
 
 *Where:* dialogue.json scene_in_my_count/through#0; part 1 of 3: **holloway: Anybody wants her out of it comes through me.** / narrator: He sways, and plants his feet. / holloway: ...And I'm drunk, so it'll take you all morning.
+*Played:* drunk, dangerous, wry; doing: faces the crowd down; pace: measured; volume: raised.
+*Note:* Carries to the back of the crowd without shouting; the drunk joke dry. The narrator plain.
 
 ```
-Anybody wants her out of it comes through me.
+[drunk, dangerous, wry, loudly] Anybody wants her out of it comes through me.
 ```
 Subtitle: Anybody wants her out of it comes through me.
 
-### 71. `dlg.scene_in_my_count.through.0.p2.wav`  HOLD: the story rewrite changes most of his lines (docs/voice/RERECORD.md)
+### 71. `dlg.scene_in_my_count.through.0.p2.wav`  **LOCKED FOR RECORDING**
 
 *Where:* dialogue.json scene_in_my_count/through#0; part 3 of 3: holloway: Anybody wants her out of it comes through me. / narrator: He sways, and plants his feet. / **holloway: ...And I'm drunk, so it'll take you all morning.**
+*Played:* drunk, dangerous, wry; doing: faces the crowd down; pace: measured; volume: raised.
+*Note:* Carries to the back of the crowd without shouting; the drunk joke dry. The narrator plain.
 
 ```
-...And I'm drunk, so it'll take you all morning.
+[drunk, dangerous, wry, loudly] ...And I'm drunk, so it'll take you all morning.
 ```
 Subtitle: ...And I'm drunk, so it'll take you all morning.
 
-### 72. `dlg.scene_in_my_count.dont.0.wav`  HOLD: the story rewrite changes most of his lines (docs/voice/RERECORD.md)
+### 72. `dlg.scene_in_my_count.dont.0.wav`  **LOCKED FOR RECORDING**
 
 *Where:* dialogue.json scene_in_my_count/dont#0
+*Played:* tired, gruff; doing: won't be thanked; pace: measured; volume: quiet.
+*Note:* Waves it off; 'Somebody in this town should.' bone-tired.
 
 ```
-Don't. Go and get some sleep. Somebody in this town should.
+[tired, gruff, quietly] Don't. Go and get some sleep. Somebody in this town should.
 ```
 Subtitle: Don't. Go and get some sleep. Somebody in this town should.
 
 ## Conversations: Scene_knocking
 
-### 73. `dlg.scene_knocking.hear.0.wav`  HOLD: the story rewrite changes most of his lines (docs/voice/RERECORD.md)
+### 73. `dlg.scene_knocking.hear.0.wav`  **LOCKED FOR RECORDING**
 
 *Where:* dialogue.json scene_knocking/hear#0
+*Played:* drunk, intent; doing: listen; pace: slow; volume: quiet.
+*Note:* Two words, low.
 
 ```
-Hear that.
+[drunk, intent, quietly] Hear that.
 ```
 Subtitle: Hear that.
 
-### 74. `dlg.scene_knocking.knock.0.p0.wav`  HOLD: the story rewrite changes most of his lines (docs/voice/RERECORD.md)
+### 74. `dlg.scene_knocking.knock.0.p0.wav`  **LOCKED FOR RECORDING**
 
 *Where:* dialogue.json scene_knocking/knock#0; part 1 of 5: **holloway: Knocking.** / narrator: He listens. / holloway: From under. / narrator: He drinks. / holloway: No. Course not.
+*Played:* drunk, haunted; doing: he hears knocking; pace: slow; volume: quiet.
+*Note:* Ledger-drunk fragments; 'No. Course not.' talking himself out of it.
 
 ```
-Knocking.
+[drunk, haunted, quietly] Knocking.
 ```
 Subtitle: Knocking.
 
-### 75. `dlg.scene_knocking.knock.0.p2.wav`  HOLD: the story rewrite changes most of his lines (docs/voice/RERECORD.md)
+### 75. `dlg.scene_knocking.knock.0.p2.wav`  **LOCKED FOR RECORDING**
 
 *Where:* dialogue.json scene_knocking/knock#0; part 3 of 5: holloway: Knocking. / narrator: He listens. / **holloway: From under.** / narrator: He drinks. / holloway: No. Course not.
+*Played:* drunk, haunted; doing: he hears knocking; pace: slow; volume: quiet.
+*Note:* Ledger-drunk fragments; 'No. Course not.' talking himself out of it.
 
 ```
-From under.
+[drunk, haunted, quietly] From under.
 ```
 Subtitle: From under.
 
-### 76. `dlg.scene_knocking.knock.0.p4.wav`  HOLD: the story rewrite changes most of his lines (docs/voice/RERECORD.md)
+### 76. `dlg.scene_knocking.knock.0.p4.wav`  **LOCKED FOR RECORDING**
 
 *Where:* dialogue.json scene_knocking/knock#0; part 5 of 5: holloway: Knocking. / narrator: He listens. / holloway: From under. / narrator: He drinks. / **holloway: No. Course not.**
+*Played:* drunk, haunted; doing: he hears knocking; pace: slow; volume: quiet.
+*Note:* Ledger-drunk fragments; 'No. Course not.' talking himself out of it.
 
 ```
-No. Course not.
+[drunk, haunted, quietly] No. Course not.
 ```
 Subtitle: No. Course not.
 
-### 77. `dlg.scene_knocking.home.0.p0.wav`  HOLD: the story rewrite changes most of his lines (docs/voice/RERECORD.md)
+### 77. `dlg.scene_knocking.home.0.p0.wav`  **LOCKED FOR RECORDING**
 
 *Where:* dialogue.json scene_knocking/home#0; part 1 of 3: **holloway: Can't. Somebody's still out.** / narrator: He drinks. / holloway: ...Sit down. I'll tell you who.
+*Played:* drunk, resolved; doing: he'll tell you; pace: slow; volume: quiet.
+*Note:* 'Can't.' flat; 'Somebody's still out.' the habit of years; 'I'll tell you who.' the decision.
 
 ```
-Can't. Somebody's still out.
+[drunk, resolved, quietly] Can't. Somebody's still out.
 ```
 Subtitle: Can't. Somebody's still out.
 
-### 78. `dlg.scene_knocking.home.0.p2.wav`  HOLD: the story rewrite changes most of his lines (docs/voice/RERECORD.md)
+### 78. `dlg.scene_knocking.home.0.p2.wav`  **LOCKED FOR RECORDING**
 
 *Where:* dialogue.json scene_knocking/home#0; part 3 of 3: holloway: Can't. Somebody's still out. / narrator: He drinks. / **holloway: ...Sit down. I'll tell you who.**
+*Played:* drunk, resolved; doing: he'll tell you; pace: slow; volume: quiet.
+*Note:* 'Can't.' flat; 'Somebody's still out.' the habit of years; 'I'll tell you who.' the decision.
 
 ```
-...Sit down. I'll tell you who.
+[drunk, resolved, quietly] ...Sit down. I'll tell you who.
 ```
 Subtitle: ...Sit down. I'll tell you who.
 
-### 79. `dlg.scene_knocking.tell.0.p1.wav`  HOLD: the story rewrite changes most of his lines (docs/voice/RERECORD.md)
+### 79. `dlg.scene_knocking.tell.0.p1.wav`  **LOCKED FOR RECORDING**
 
 *Where:* dialogue.json scene_knocking/tell#0; part 2 of 6: narrator: He counts on his fingers, loses his place, and starts again. / **holloway: Ground went. Lower town with it. Night. Half the garrison on the hill, at the cave mouths.…** / narrator: He drinks. / holloway: Me at the top. Lamp. Windlass. Lid. Counting them up. Lamp in my eyes. One. Two. / narrator: A long time. / holloway: Ninety-one. Then I looked down.
+*Played:* drunk, ledger; doing: the confession, part one; pace: slow; volume: quiet.
+*Note:* Entries, no subjects, numbers without nouns; the narrator plain between. 'Ninety-one.' after the long pause; 'Then I looked down.' quiet.
 
 ```
-Ground went. Lower town with it. Night. Half the garrison on the hill, at the cave mouths. Half down the shaft. Ladders.
+[drunk, ledger, quietly] Ground went. Lower town with it. Night. Half the garrison on the hill, at the cave mouths. Half down the shaft. Ladders.
 ```
 Subtitle: Ground went. Lower town with it. Night. Half the garrison on the hill, at the cave mouths. Half down the shaft. Ladders.
 
-### 80. `dlg.scene_knocking.tell.0.p3.wav`  HOLD: the story rewrite changes most of his lines (docs/voice/RERECORD.md)
+### 80. `dlg.scene_knocking.tell.0.p3.wav`  **LOCKED FOR RECORDING**
 
 *Where:* dialogue.json scene_knocking/tell#0; part 4 of 6: narrator: He counts on his fingers, loses his place, and starts again. / holloway: Ground went. Lower town with it. Night. Half the garrison on the hill, at the cave mouths.… / narrator: He drinks. / **holloway: Me at the top. Lamp. Windlass. Lid. Counting them up. Lamp in my eyes. One. Two.** / narrator: A long time. / holloway: Ninety-one. Then I looked down.
+*Played:* drunk, ledger; doing: the confession, part one; pace: slow; volume: quiet.
+*Note:* Entries, no subjects, numbers without nouns; the narrator plain between. 'Ninety-one.' after the long pause; 'Then I looked down.' quiet.
 
 ```
-Me at the top. Lamp. Windlass. Lid. Counting them up. Lamp in my eyes. One. Two.
+[drunk, ledger, quietly] Me at the top. Lamp. Windlass. Lid. Counting them up. Lamp in my eyes. One. Two.
 ```
 Subtitle: Me at the top. Lamp. Windlass. Lid. Counting them up. Lamp in my eyes. One. Two.
 
-### 81. `dlg.scene_knocking.tell.0.p5.wav`  HOLD: the story rewrite changes most of his lines (docs/voice/RERECORD.md)
+### 81. `dlg.scene_knocking.tell.0.p5.wav`  **LOCKED FOR RECORDING**
 
 *Where:* dialogue.json scene_knocking/tell#0; part 6 of 6: narrator: He counts on his fingers, loses his place, and starts again. / holloway: Ground went. Lower town with it. Night. Half the garrison on the hill, at the cave mouths.… / narrator: He drinks. / holloway: Me at the top. Lamp. Windlass. Lid. Counting them up. Lamp in my eyes. One. Two. / narrator: A long time. / **holloway: Ninety-one. Then I looked down.**
+*Played:* drunk, ledger; doing: the confession, part one; pace: slow; volume: quiet.
+*Note:* Entries, no subjects, numbers without nouns; the narrator plain between. 'Ninety-one.' after the long pause; 'Then I looked down.' quiet.
 
 ```
-Ninety-one. Then I looked down.
+[drunk, ledger, quietly] Ninety-one. Then I looked down.
 ```
 Subtitle: Ninety-one. Then I looked down.
 
-### 82. `dlg.scene_knocking.saw.0.p0.wav`  HOLD: the story rewrite changes most of his lines (docs/voice/RERECORD.md)
+### 82. `dlg.scene_knocking.saw.0.p0.wav`  **LOCKED FOR RECORDING**
 
 *Where:* dialogue.json scene_knocking/saw#0; part 1 of 7: **holloway: Dead. Climbing. Under the last of ours, close as that.** / narrator: He holds one hand flat over the other. / holloway: Gray, all of them. Not a sound out of them. Four hundred behind me, asleep. Bairns. / narrator: He drinks. / holloway: Lid down. Bar across. Sat on it. / narrator: He breathes out, a long way. / holloway: Three days, they knocked.
+*Played:* drunk, ledger, breaking flat; doing: what he saw and did; pace: slow; volume: quiet.
+*Note:* Fragments, flat as a list; 'Bairns.' no catch. 'Three days, they knocked.' after the long breath, plain.
 
 ```
-Dead. Climbing. Under the last of ours, close as that.
+[drunk, ledger, breaking flat, quietly] Dead. Climbing. Under the last of ours, close as that.
 ```
 Subtitle: Dead. Climbing. Under the last of ours, close as that.
 
-### 83. `dlg.scene_knocking.saw.0.p2.wav`  HOLD: the story rewrite changes most of his lines (docs/voice/RERECORD.md)
+### 83. `dlg.scene_knocking.saw.0.p2.wav`  **LOCKED FOR RECORDING**
 
 *Where:* dialogue.json scene_knocking/saw#0; part 3 of 7: holloway: Dead. Climbing. Under the last of ours, close as that. / narrator: He holds one hand flat over the other. / **holloway: Gray, all of them. Not a sound out of them. Four hundred behind me, asleep. Bairns.** / narrator: He drinks. / holloway: Lid down. Bar across. Sat on it. / narrator: He breathes out, a long way. / holloway: Three days, they knocked.
+*Played:* drunk, ledger, breaking flat; doing: what he saw and did; pace: slow; volume: quiet.
+*Note:* Fragments, flat as a list; 'Bairns.' no catch. 'Three days, they knocked.' after the long breath, plain.
 
 ```
-Gray, all of them. Not a sound out of them. Four hundred behind me, asleep. Bairns.
+[drunk, ledger, breaking flat, quietly] Gray, all of them. Not a sound out of them. Four hundred behind me, asleep. Bairns.
 ```
 Subtitle: Gray, all of them. Not a sound out of them. Four hundred behind me, asleep. Bairns.
 
-### 84. `dlg.scene_knocking.saw.0.p4.wav`  HOLD: the story rewrite changes most of his lines (docs/voice/RERECORD.md)
+### 84. `dlg.scene_knocking.saw.0.p4.wav`  **LOCKED FOR RECORDING**
 
 *Where:* dialogue.json scene_knocking/saw#0; part 5 of 7: holloway: Dead. Climbing. Under the last of ours, close as that. / narrator: He holds one hand flat over the other. / holloway: Gray, all of them. Not a sound out of them. Four hundred behind me, asleep. Bairns. / narrator: He drinks. / **holloway: Lid down. Bar across. Sat on it.** / narrator: He breathes out, a long way. / holloway: Three days, they knocked.
+*Played:* drunk, ledger, breaking flat; doing: what he saw and did; pace: slow; volume: quiet.
+*Note:* Fragments, flat as a list; 'Bairns.' no catch. 'Three days, they knocked.' after the long breath, plain.
 
 ```
-Lid down. Bar across. Sat on it.
+[drunk, ledger, breaking flat, quietly] Lid down. Bar across. Sat on it.
 ```
 Subtitle: Lid down. Bar across. Sat on it.
 
-### 85. `dlg.scene_knocking.saw.0.p6.wav`  HOLD: the story rewrite changes most of his lines (docs/voice/RERECORD.md)
+### 85. `dlg.scene_knocking.saw.0.p6.wav`  **LOCKED FOR RECORDING**
 
 *Where:* dialogue.json scene_knocking/saw#0; part 7 of 7: holloway: Dead. Climbing. Under the last of ours, close as that. / narrator: He holds one hand flat over the other. / holloway: Gray, all of them. Not a sound out of them. Four hundred behind me, asleep. Bairns. / narrator: He drinks. / holloway: Lid down. Bar across. Sat on it. / narrator: He breathes out, a long way. / **holloway: Three days, they knocked.**
+*Played:* drunk, ledger, breaking flat; doing: what he saw and did; pace: slow; volume: quiet.
+*Note:* Fragments, flat as a list; 'Bairns.' no catch. 'Three days, they knocked.' after the long breath, plain.
 
 ```
-Three days, they knocked.
+[drunk, ledger, breaking flat, quietly] Three days, they knocked.
 ```
 Subtitle: Three days, they knocked.
 
-### 86. `dlg.scene_knocking.saved.0.wav`  HOLD: the story rewrite changes most of his lines (docs/voice/RERECORD.md)
+### 86. `dlg.scene_knocking.saved.0.wav`  **LOCKED FOR RECORDING**
 
 *Where:* dialogue.json scene_knocking/saved#0
+*Played:* bitter, quiet; doing: both numbers are right; pace: slow; volume: quiet.
+*Note:* A quartermaster's truth; no self-pity.
 
 ```
-Both numbers are right. That's the trouble with counting.
+[bitter, quiet, quietly] Both numbers are right. That's the trouble with counting.
 ```
 Subtitle: Both numbers are right. That's the trouble with counting.
 
-### 87. `dlg.scene_knocking.shut.0.wav`  HOLD: the story rewrite changes most of his lines (docs/voice/RERECORD.md)
+### 87. `dlg.scene_knocking.shut.0.wav`  **LOCKED FOR RECORDING**
 
 *Where:* dialogue.json scene_knocking/shut#0
+*Played:* flat; doing: he did it; pace: slow; volume: quiet.
+*Note:* Two words; no weight put on.
 
 ```
-I did.
+[flat, quietly] I did.
 ```
 Subtitle: I did.
 
-### 88. `dlg.scene_knocking.knows.0.p0.wav`  HOLD: the story rewrite changes most of his lines (docs/voice/RERECORD.md)
+### 88. `dlg.scene_knocking.knows.0.p0.wav`  **LOCKED FOR RECORDING**
 
 *Where:* dialogue.json scene_knocking/knows#0; part 1 of 5: **holloway: Pell.** / narrator: His eyes go past you, to the step, and come back to the cup. / holloway: Went up after, for his sister's money. Found the lid barred from the top. / narrator: He drinks. / holloway: He's a careful man. He's waiting for a price.
+*Played:* drunk, careful; doing: Pell knows; pace: measured; volume: quiet.
+*Note:* Entries; 'He's waiting for a price.' dry contempt.
 
 ```
-Pell.
+[drunk, careful, quietly] Pell.
 ```
 Subtitle: Pell.
 
-### 89. `dlg.scene_knocking.knows.0.p2.wav`  HOLD: the story rewrite changes most of his lines (docs/voice/RERECORD.md)
+### 89. `dlg.scene_knocking.knows.0.p2.wav`  **LOCKED FOR RECORDING**
 
 *Where:* dialogue.json scene_knocking/knows#0; part 3 of 5: holloway: Pell. / narrator: His eyes go past you, to the step, and come back to the cup. / **holloway: Went up after, for his sister's money. Found the lid barred from the top.** / narrator: He drinks. / holloway: He's a careful man. He's waiting for a price.
+*Played:* drunk, careful; doing: Pell knows; pace: measured; volume: quiet.
+*Note:* Entries; 'He's waiting for a price.' dry contempt.
 
 ```
-Went up after, for his sister's money. Found the lid barred from the top.
+[drunk, careful, quietly] Went up after, for his sister's money. Found the lid barred from the top.
 ```
 Subtitle: Went up after, for his sister's money. Found the lid barred from the top.
 
-### 90. `dlg.scene_knocking.knows.0.p4.wav`  HOLD: the story rewrite changes most of his lines (docs/voice/RERECORD.md)
+### 90. `dlg.scene_knocking.knows.0.p4.wav`  **LOCKED FOR RECORDING**
 
 *Where:* dialogue.json scene_knocking/knows#0; part 5 of 5: holloway: Pell. / narrator: His eyes go past you, to the step, and come back to the cup. / holloway: Went up after, for his sister's money. Found the lid barred from the top. / narrator: He drinks. / **holloway: He's a careful man. He's waiting for a price.**
+*Played:* drunk, careful; doing: Pell knows; pace: measured; volume: quiet.
+*Note:* Entries; 'He's waiting for a price.' dry contempt.
 
 ```
-He's a careful man. He's waiting for a price.
+[drunk, careful, quietly] He's a careful man. He's waiting for a price.
 ```
 Subtitle: He's a careful man. He's waiting for a price.
 
-### 91. `dlg.scene_knocking.wrote.0.p0.wav`  HOLD: the story rewrite changes most of his lines (docs/voice/RERECORD.md)
+### 91. `dlg.scene_knocking.wrote.0.p0.wav`  **LOCKED FOR RECORDING**
 
 *Where:* dialogue.json scene_knocking/wrote#0; part 1 of 5: **holloway: Wrote them down with the hill party. At the cave mouths. Some of the hill came home; nobod…** / narrator: He looks into the cup, finds it empty, and keeps holding it. / holloway: Go to bed. / narrator: He gets up, holding the gatepost, and looks down the dark road. / holloway: Somebody's still out. ...Always somebody still out.
+*Played:* drunk, ashamed; doing: what he wrote down; pace: slow; volume: quiet.
+*Note:* Ledger fragments; the widows line flat. 'Go to bed.' gruff. The last two lines to the road, not to you.
 
 ```
-Wrote them down with the hill party. At the cave mouths. Some of the hill came home; nobody asked which. Widows get paid for the cave mouths.
+[drunk, ashamed, quietly] Wrote them down with the hill party. At the cave mouths. Some of the hill came home; nobody asked which. Widows get paid for the cave mouths.
 ```
 Subtitle: Wrote them down with the hill party. At the cave mouths. Some of the hill came home; nobody asked which. Widows get paid for the cave mouths.
 
-### 92. `dlg.scene_knocking.wrote.0.p2.wav`  HOLD: the story rewrite changes most of his lines (docs/voice/RERECORD.md)
+### 92. `dlg.scene_knocking.wrote.0.p2.wav`  **LOCKED FOR RECORDING**
 
 *Where:* dialogue.json scene_knocking/wrote#0; part 3 of 5: holloway: Wrote them down with the hill party. At the cave mouths. Some of the hill came home; nobod… / narrator: He looks into the cup, finds it empty, and keeps holding it. / **holloway: Go to bed.** / narrator: He gets up, holding the gatepost, and looks down the dark road. / holloway: Somebody's still out. ...Always somebody still out.
+*Played:* drunk, ashamed; doing: what he wrote down; pace: slow; volume: quiet.
+*Note:* Ledger fragments; the widows line flat. 'Go to bed.' gruff. The last two lines to the road, not to you.
 
 ```
-Go to bed.
+[drunk, ashamed, quietly] Go to bed.
 ```
 Subtitle: Go to bed.
 
-### 93. `dlg.scene_knocking.wrote.0.p4.wav`  HOLD: the story rewrite changes most of his lines (docs/voice/RERECORD.md)
+### 93. `dlg.scene_knocking.wrote.0.p4.wav`  **LOCKED FOR RECORDING**
 
 *Where:* dialogue.json scene_knocking/wrote#0; part 5 of 5: holloway: Wrote them down with the hill party. At the cave mouths. Some of the hill came home; nobod… / narrator: He looks into the cup, finds it empty, and keeps holding it. / holloway: Go to bed. / narrator: He gets up, holding the gatepost, and looks down the dark road. / **holloway: Somebody's still out. ...Always somebody still out.**
+*Played:* drunk, ashamed; doing: what he wrote down; pace: slow; volume: quiet.
+*Note:* Ledger fragments; the widows line flat. 'Go to bed.' gruff. The last two lines to the road, not to you.
 
 ```
-Somebody's still out. ...Always somebody still out.
+[drunk, ashamed, quietly] Somebody's still out. ...Always somebody still out.
 ```
 Subtitle: Somebody's still out. ...Always somebody still out.
 
@@ -1143,57 +1211,69 @@ Subtitle: Corran's in the ground. That's one debt paid.
 ```
 Subtitle: One caravan home. I'll take it.
 
-### 105. `bark.holloway.said.4.wav`  HOLD: the story rewrite changes most of his lines (docs/voice/RERECORD.md)
+### 105. `bark.holloway.said.4.wav`  **LOCKED FOR RECORDING**
 
 *Where:* npcs.json holloway.said[4]
+*Played:* gruff relief; doing: you're back; pace: quick; volume: level.
+*Note:* A count read out; 'for once' dry.
 
 ```
-One in. Count's right, for once.
+[gruff relief] One in. Count's right, for once.
 ```
 Subtitle: One in. Count's right, for once.
 
-### 106. `bark.holloway.said.5.wav`  HOLD: the story rewrite changes most of his lines (docs/voice/RERECORD.md)
+### 106. `bark.holloway.said.5.wav`  **LOCKED FOR RECORDING**
 
 *Where:* npcs.json holloway.said[5]
+*Played:* grudging respect; doing: you killed what rules out there; pace: measured; volume: level.
+*Note:* 'Proof' his word, said like a ledger entry.
 
 ```
-Heard you put down what rules out there. Proof it can be done.
+[grudging respect] Heard you put down what rules out there. Proof it can be done.
 ```
 Subtitle: Heard you put down what rules out there. Proof it can be done.
 
-### 107. `bark.holloway.said.6.wav`  HOLD: the story rewrite changes most of his lines (docs/voice/RERECORD.md)
+### 107. `bark.holloway.said.6.wav`  **LOCKED FOR RECORDING**
 
 *Where:* npcs.json holloway.said[6]
+*Played:* dry, warm under it; doing: you're off the missing list; pace: measured; volume: level.
+*Note:* Paperwork as affection.
 
 ```
-Seven nights out, seven back. I've taken you out of the missing column.
+[dry, warm under it] Seven nights out, seven back. I've taken you out of the missing column.
 ```
 Subtitle: Seven nights out, seven back. I've taken you out of the missing column.
 
-### 108. `bark.holloway.said.7.wav`  HOLD: the story rewrite changes most of his lines (docs/voice/RERECORD.md)
+### 108. `bark.holloway.said.7.wav`  **LOCKED FOR RECORDING**
 
 *Where:* npcs.json holloway.said[7]
+*Played:* gruff; doing: don't die again; pace: measured; volume: level.
+*Note:* Annoyed at the paperwork, which is the point.
 
 ```
-Count was one short last night. It's right this morning. Don't make me write it twice.
+[gruff] Count was one short last night. It's right this morning. Don't make me write it twice.
 ```
 Subtitle: Count was one short last night. It's right this morning. Don't make me write it twice.
 
-### 109. `bark.holloway.said.8.wav`  HOLD: the story rewrite changes most of his lines (docs/voice/RERECORD.md)
+### 109. `bark.holloway.said.8.wav`  **LOCKED FOR RECORDING**
 
 *Where:* npcs.json holloway.said[8]
+*Played:* grudging; doing: you spared Redcowl; pace: measured; volume: level.
+*Note:* He'd have done otherwise; he gives you the road.
 
 ```
-Had Red-cowl on his knee and let him up. Road's quiet. I'll give you that.
+[grudging] Had Red-cowl on his knee and let him up. Road's quiet. I'll give you that.
 ```
 Subtitle: Had Redcowl on his knee and let him up. Road's quiet. I'll give you that.
 
-### 110. `bark.holloway.said.9.wav`  HOLD: the story rewrite changes most of his lines (docs/voice/RERECORD.md)
+### 110. `bark.holloway.said.9.wav`  **LOCKED FOR RECORDING**
 
 *Where:* npcs.json holloway.said[9]
+*Played:* drunk, far off; doing: the count; pace: slow; volume: quiet.
+*Note:* Two words to himself, flat.
 
 ```
-Ninety-one up.
+[drunk, far off, quietly] Ninety-one up.
 ```
 Subtitle: Ninety-one up.
 

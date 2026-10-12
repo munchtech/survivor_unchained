@@ -18,11 +18,11 @@ namespace SurvivorUnchained.Balance;
 /// player who knows the fight does: a death is then the game's, not the bot's).</summary>
 public sealed record RunSpec(int Seed, string Calling, string Policy, int Tier = 1, string People = "pack", string[]? Oaths = null,
     double Cap = 40, double Beyond = 0, int Weapon = 0, int Art = 0, int Level = 1, bool Deft = false, double Minutes = 30,
-    string Type = "", string Lamps = "empty")
+    string Type = "", string Lamps = "empty", string For = "", string Flare = "")
 {
     public string Key => $"{Calling}/{Policy}/t{Tier}/{People}/s{Seed}/w{Weapon}" + (Level > 1 ? $"/L{Level}" : "") + (Deft ? "/deft" : "") +
         (Oaths is { Length: > 0 } ? $"/{string.Join("+", Oaths)}" : "") + (Minutes != 30 ? $"/m{Minutes:0}" : "") +
-        (Type != "" ? $"/{Type}" : "") + (Lamps != "empty" ? $"/lamps-{Lamps}" : "");
+        (Type != "" ? $"/{Type}" : "") + (Lamps != "empty" ? $"/lamps-{Lamps}" : "") + (For != "" ? $"/for-{For}" : "") + (Flare != "" ? $"/flare-{Flare}" : "");
 }
 
 /// <summary>A minute of the fight, as the harness saw it.</summary>
@@ -85,6 +85,15 @@ public sealed class RunResult
     /// <summary>The Flare: casts, the first cast's minute, the mean gap between casts (s), casts while a boss was up,
     /// its share of the damage done to bosses, clutch casts, and the meter's fill by source.</summary>
     public int FlareCasts, FlareBossCasts, FlareClutches;
+    /// <summary>Casts whose blows reached a boss; the Flare's damage to bosses, and all damage to bosses.</summary>
+    public int FlareCastsOnBoss;
+    public double FlareBossDamage, BossDamage;
+    /// <summary>The Flare's share of what was truly taken off bosses (health, and a gate's Break up to a tenth).</summary>
+    public double FlareBossTook = double.NaN;
+    /// <summary>Health taken off bosses (as FlareBossTook counts it), by source: each skill's share of a boss.</summary>
+    public Dictionary<string, double> BossTookBy = new();
+    /// <summary>The Bulwark's wall: blocks, rebukes, the most stones held at once.</summary>
+    public int Blocks, Rebukes, StonesPeak;
     public double FlareFirst = double.NaN, FlareGap = double.NaN, FlareBossShare = double.NaN;
     public Dictionary<string, double> FlareFills = new();
 
@@ -167,6 +176,13 @@ public static class ArenaSim
             j.World.Facts["lamps.atlas"] = LampBook.AtlasLamps;
         }
         if (spec.Lamps is "suggested" or "full") LampBook.LightSuggested(j.Ch, j.World);
+        // --flare stand: carry the road's Stand (its lamp lit past its gate if the board hasn't reached it; a measuring aid).
+        if (spec.Flare == "stand")
+        {
+            var road = Lamps.Road(LampBook.Now(j.Ch).Type);
+            if (Lamps.FlareLamp(road.Stand) is { } fl && !LampBook.Now(j.Ch).Lit.Contains(fl)) LampBook.Now(j.Ch).Lit.Add(fl);
+            if (!LampBook.Carry(j.Ch, road.Stand)) throw new InvalidOperationException($"can't carry {road.Stand}");
+        }
         // (A night shorter than the table's is a story's: it ends on its boss.)
         var arena = new ArenaSpec { Id = "table:bot", Name = "The Harness", Seed = spec.Seed, Tier = spec.Tier, People = spec.People, Oaths = (spec.Oaths ?? []).ToList(),
             Minutes = spec.Minutes, Story = spec.Minutes != 30 };
@@ -300,12 +316,19 @@ public static class ArenaSim
         r.Road = LampBook.Now(j.Ch).Type;
         r.LampsLit = LampBook.Now(j.Ch).Lit.Count;
         r.FlareCasts = b.FlareCasts;
+        r.Blocks = b.Blocks; r.Rebukes = b.Rebukes; r.StonesPeak = b.StonesPeak;
         r.FlareClutches = b.FlareClutches;
         r.FlareFills = new Dictionary<string, double>(b.FlareFills);
         if (b.FlareTimes.Count > 0) r.FlareFirst = b.FlareTimes[0] / 60;
         if (b.FlareTimes.Count > 1) r.FlareGap = (b.FlareTimes[^1] - b.FlareTimes[0]) / (b.FlareTimes.Count - 1);
         if (bossUp >= 0) r.FlareBossCasts = b.FlareTimes.Count(x => x >= bossUp);
         double bossDmg = b.BossDamageBy.Values.Sum();
+        r.FlareCastsOnBoss = b.FlareCastsOnBoss;
+        r.BossDamage = bossDmg;
+        r.FlareBossDamage = b.BossDamageBy.GetValueOrDefault("flare");
+        double took = b.BossHealthBy.Values.Sum();
+        if (took > 0) r.FlareBossTook = b.BossHealthBy.GetValueOrDefault("flare") / took;
+        r.BossTookBy = new Dictionary<string, double>(b.BossHealthBy);
         if (bossDmg > 0) r.FlareBossShare = b.BossDamageBy.GetValueOrDefault("flare") / bossDmg;
         return r;
     }

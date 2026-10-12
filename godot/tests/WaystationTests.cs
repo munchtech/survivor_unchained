@@ -106,6 +106,26 @@ public class WaystationTests
     }
 
     [Fact]
+    public void Her_mothers_marker_keeps_what_she_told_Chid()
+    {
+        var s = Make();
+        var grave = I(s, "mother_grave");
+        Assert.False(grave.When!());
+        s.J.World.Facts["mother.told"] = true;
+        grave.Act();
+        Assert.Contains(s.Host.Said, l => l.Contains("No name on it yet."));
+        grave.Act();
+        Assert.Equal("You stand at it a while.", s.Host.Said[^1]);
+        s.J.World.Facts["mother.cut"] = "none";
+        grave.Act();
+        Assert.Equal("Still no name on it. You stand at it a while.", s.Host.Said[^1]);
+        s.J.World.Facts["mother.cut"] = "mam";
+        s.J.World.Facts["mother.carved"] = true;
+        grave.Act();
+        Assert.Equal("It says MAM now, cut deep and straight. You stand at it a while.", s.Host.Said[^1]);
+    }
+
+    [Fact]
     public void Every_thing_that_can_be_done_can_be_done()
     {
         var s = Make(TimeOfDay.Dusk, "verge");

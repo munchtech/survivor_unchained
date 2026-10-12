@@ -550,6 +550,7 @@ public sealed partial class Battle
                 p.DashCharges = Math.Min(RoundInt(Stats.Get(Stat.DashCharges)), p.DashCharges + 1);
                 AddBuff("light_feet", Stat.MoveSpeed, 0.4, ModKind.Inc, 2, 1);
             }
+            StalkerVaultLanded();
             return;
         }
         double power = ArtPower;
@@ -827,6 +828,7 @@ public sealed partial class Battle
         double h = 1;
         if (Art.SprintT > 0 && Has("tailwind")) h *= 2;
         if (WorldRateT > 0 && Runs(AbilityKind.TimeSlip) && Has("borrowed_time")) h *= 3;
+        h *= StalkerDashHaste();
         return h;
     }
 }

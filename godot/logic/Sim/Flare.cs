@@ -38,11 +38,16 @@ public sealed partial class Battle
 
     /// <summary>The Flare while it plays.</summary>
     public double FlareT, FlareHold;
-    double flareLen, flareReach, flarePower, flareNext, flareMendT, flareUnseenAfter;
+    double flareLen, flareReach, flarePower, flareMendT, flareUnseenAfter, flareKey;
+    /// <summary>A Strike's blows, by time from the press (its beat, or even over its length).</summary>
+    double[] flareAt = [];
     int flareBlow;
-    bool flareClutch;
+    bool flareClutch, flareReleased, flareKilledBoss;
     /// <summary>For the harness and the toll: casts, their times, clutch casts (falls the Flare kept from happening).</summary>
     public int FlareCasts, FlareClutches;
+    /// <summary>For the harness: casts whose blows reached a boss.</summary>
+    public int FlareCastsOnBoss;
+    bool flareStruckBoss;
     public readonly List<double> FlareTimes = new();
     double emberAnsweredAt = -99;
     /// <summary>The horde can't spam it: each of its sources draws on a purse that refills at its rate a second.</summary>
@@ -56,7 +61,10 @@ public sealed partial class Battle
         return got;
     }
     /// <summary>The fill table, tuned by the harness (CLASSES.md §3.2).</summary>
-    public const double FillHurt = 0.55, FillAnswer = 35, FillPerfect = 10, FillBlock = 6, FillBoss = 0.8,
+    public const double FlareStartNight = 25;
+    /// <summary>The Flare's power grows by this share for every lamp lit.</summary>
+    public const double FlareLampGlow = 0.02;
+    public const double FillHurt = 0.40, FillAnswer = 35, FillPerfect = 10, FillBlock = 6, FillBoss = 1.8,
         FillChampion = 2, FillChampionRate = 0.6, FillKill = 0.1, FillKillRate = 0.65;
     bool answeredTwice;
 
@@ -125,7 +133,7 @@ public sealed partial class Battle
         if (from is { } e && (e.Elite || e.Boss)) FillFlare(FillBlock, "block");
     }
 
-    /// <summary>Damage she dealt: a boss +0.8 for each 1% of its health (the Flare's own never refills it).</summary>
+    /// <summary>Damage she dealt: a boss +1.8 for each 1% of its health (the Flare's own never refills it).</summary>
     void FlareOnDealt(Enemy e, double dealt, string by)
     {
         if (Flare == null || by == "flare" || dealt <= 0 || e.MaxHp <= 0) return;
@@ -167,12 +175,19 @@ public sealed partial class Battle
         int rank = FlareRank;
         // Its size grows with the long night until it fills the screen, then stops; its damage has no cap (§5).
         flareReach = f.Radius * (flareClutch ? FlareReachClutch : 1) * (Boons.ContainsKey("bright_hour") ? 1.4 : 1) * Math.Min(2.5, 1 + 0.1 * rank);
-        flarePower = Content.Lamps.FlarePower(f, EmberOn ? EmberLevel : Level) * (1 + 0.25 * rank);
+        // The board's lamps feed the skills by their tags, so the Flare grows with the board too, or a full
+        // board's Flare fell to a tenth of a boss's damage (the harness, 12 October).
+        flarePower = Content.Lamps.FlarePower(f, EmberOn ? EmberLevel : Level) * (1 + 0.25 * rank) * (1 + FlareLampGlow * Lamps.Lit);
         bool stand = f.Kind == FlareKind.Stand;
-        flareLen = stand ? f.Length : Math.Min(StrikeMax, f.Length);
+        flareAt = FlareSchedule(f);
+        // A staged Strike runs to its last blow and a breath after (the Fourth Toll), never past the 1.2 s.
+        flareLen = stand ? f.Length : Math.Min(StrikeMax, Math.Max(f.Length, f.Beat.ContainsKey("first") && flareAt.Length > 0 ? flareAt[^1] + 0.1 : 0));
         FlareT = flareLen;
         flareBlow = 0;
-        flareNext = stand ? 0 : flareLen / Math.Max(1, f.Blows);
+        flareStruckBoss = false;
+        flareKilledBoss = false;
+        flareReleased = false;
+        flareKey = f.BeatAt("key", flareAt.Length > 0 ? flareAt[0] : 0);
         // A Strike holds the controls and is untouchable through it and a breath after; a Stand gives
         // them back at once, untouchable for its first moments.
         FlareHold = stand ? 0 : flareLen;
@@ -197,31 +212,38 @@ public sealed partial class Battle
                 Reflect(p.X + (i == 0 ? -1.2 : 1.2), p.Z, 5, angle);
         flareUnseenAfter = p.Hp < MaxHp * Lamps.Full("flare.low_unseen", "below", 0.3333) && Lamp("flare.low_unseen")
             ? Lamps.Full("flare.low_unseen", "seconds", 2) : 0;
-        if (stand) FlareBlow();
+        FlareStagedPress(f);
+        if (stand && f.Blows > 0) FlareBlow();
         return true;
     }
 
-    /// <summary>One blow (a Strike's) or one pulse (a Stand's): everything in reach.</summary>
+    /// <summary>One blow (a Strike's) or one pulse (a Stand's): the four staged Flares by their briefs (FlareStaged.cs),
+    /// the rest in their kind's plain form, everything in reach, until phase 6 stages them.</summary>
     void FlareBlow()
     {
-        var p = Player;
         var f = Flare!;
         flareBlow++;
-        double vsBig = Boons.ContainsKey("called_shot") ? 1.6 : 1;
+        bool last = f.Kind == FlareKind.Strike && flareBlow == flareAt.Length;
         var was = credit;
         credit = "flare";
-        ForEachHostileInRadius(p.X, p.Z, flareReach, (e, d) =>
+        switch (f.Id)
         {
-            double dd = d == 0 ? 1 : d;
-            HitEnemy(e, flarePower, f.School, f.Tags, new HitOpts { Credit = "flare", BossDamage = vsBig, Knockback = e.Boss ? 0 : 1.2, DirX = (e.X - p.X) / dd, DirZ = (e.Z - p.Z) / dd });
-        });
+            case "bell_of_the_morning": BellToll(f, last); break;
+            case "burns_twice": BurnsTwiceBlow(f, last); break;
+            case "the_roads_toll": TollCut(f, last); break;
+            default:
+                var p = Player;
+                ForEachHostileInRadius(p.X, p.Z, flareReach, (e, d) => FlareHit(e, 1, f.School, 1.2, p.X, p.Z));
+                FlareBlowEvent(f, f.Kind == FlareKind.Stand ? "pulse" : "blow", last, p.X, p.Z, null, flareReach);
+                break;
+        }
         credit = was;
-        Events.Emit(new Ev.Flare { Phase = FlarePhase.Blow, Id = f.Id, X = p.X, Z = p.Z, Radius = flareReach, Blow = flareBlow, Clutch = flareClutch, Stand = f.Kind == FlareKind.Stand });
     }
 
     void TickFlare(double dt)
     {
         var p = Player;
+        TickVenom();
         if (flareMendT > 0)
         {
             double step = Math.Min(dt, flareMendT);
@@ -233,22 +255,32 @@ public sealed partial class Battle
         FlareT -= dt;
         FlareHold = Math.Max(0, FlareHold - dt);
         if (FlareHold > 0) { p.Vx = p.Vz = 0; }
+        double elapsed = flareLen - FlareT;
+        // The key pose ends: time returns and the camera eases back (§3.5, the release).
+        if (!flareReleased && elapsed >= flareKey - 1e-9)
+        {
+            flareReleased = true;
+            Events.Emit(new Ev.Flare { Phase = FlarePhase.Release, Id = f.Id, X = p.X, Z = p.Z, Radius = flareReach, Clutch = flareClutch, Stand = f.Kind == FlareKind.Stand });
+        }
         if (f.Kind == FlareKind.Strike)
         {
-            double elapsed = flareLen - FlareT;
-            while (flareBlow < f.Blows && elapsed >= flareNext * (flareBlow + 1) - 1e-9) FlareBlow();
+            while (flareBlow < flareAt.Length && elapsed >= flareAt[flareBlow] - 1e-9) FlareBlow();
         }
         else
         {
-            double elapsed = flareLen - FlareT;
-            double every = 1.0 / Math.Max(1, f.Blows);
-            while (elapsed >= every * flareBlow && FlareT > 0) FlareBlow();
+            if (f.Blows > 0)
+            {
+                double every = 1.0 / f.Blows;
+                while (elapsed >= every * flareBlow && FlareT > 0) FlareBlow();
+            }
             if (f.Guard == "mend") HealPlayer(MaxHp * f.GuardValue * dt, "flare", true);
+            FlareStagedTick(f, dt);
         }
         if (FlareT <= 0)
         {
             FlareT = 0;
             FlareHold = 0;
+            if (FlareMod("toll.gone") && f.Id == "the_roads_toll") flareUnseenAfter = Math.Max(flareUnseenAfter, f.Arg("gone", 3));
             if (flareUnseenAfter > 0) p.InvisibleT = Math.Max(p.InvisibleT, flareUnseenAfter);
             Events.Emit(new Ev.Flare { Phase = FlarePhase.End, Id = f.Id, X = p.X, Z = p.Z, Clutch = flareClutch, Stand = f.Kind == FlareKind.Stand });
         }

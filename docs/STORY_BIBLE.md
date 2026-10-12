@@ -162,7 +162,10 @@ the water (the prologue's path, every player); the narrator says nothing at
 the water's edge. Chid buried her in the Quiet Garden behind the shrine, under
 a plain marker with no name. He knew her name: he wrote her letter. When the
 survivor has stood at the marker he asks her what to cut (`chid.cut`), and
-she has only "Mam." (fact `mother.cut`: `mam`, `plain` or `none`).
+she has only "Mam." (fact `mother.cut`: `mam`, `plain` or `none`). He cuts it
+that night (`mother.carved`), and the marker says MAM from then on; if she
+says nothing it stays open until she tells him, or until Act 2, when he asks
+once more (`scene_still_plain`, TREATMENT §3.3).
 - **Her word.** At dusk, when the survivor was small, she put the lamp in the
   window and called from the door: "Lamp's lit, Spark. Stay where it reaches."
   (The Order's evening call, made small and kept in one family; the name is
@@ -781,6 +784,12 @@ Each seed names the beat it pays (section 7 and 8). `WRITING_PASS.md` section
   ground knows who's in it."), or nothing ("Come and tell me when it comes to
   you."). Fact `mother.cut`. Under A he knew her name all along, and asks her
   child for it; on day 3, `chid.names`: "You had to think. I saw you think."
+  If she said nothing, his hub offers "The marker. It's come to me." (`cut_came`:
+  "Go on, then."; silence again, `cut_still`: "It'll keep."). "Mam." is cut
+  that night: the morning report has Rook hearing it from her kitchen, "a tap,
+  and a long wait, and a tap" (rule `mother.carved`), and the marker reads
+  "It says MAM now, cut deep and straight." Pays in Act 2 (`scene_still_plain`)
+  for a player who never came back.
 - `chid.long`: Rook's mother brought him bread. `chid.warden`: "Before me,
   certainly, which is a long time." (His "I think" there is Chid hiding: he knew
   the Warden, Brother Tobin, Act 3.) `npcs.json` chid bark: "Morning comes. It
@@ -1115,6 +1124,11 @@ the floor of Act 3's reveal, and a careful player stands on it by the act's
 end. At Silverstair Edric says the rest of it, from a cage: "They bleed us for
 the silver lamps. Every night. And every night I know someone else's mother."
 (Rule 5 of the ember; section 1.)
+- *The plain marker, again* (only if `mother.cut` is `none`): the first free
+  morning after the dawn that takes her word, Chid at the marker with his lamp
+  lit in daylight: "I said it would keep. ...It won't, will it." The same three
+  answers; a second silence leaves his chisel lying on the marker
+  (`mother.chisel`). Lines and staging: TREATMENT §3.3, `scene_still_plain`.
 
 **12. The war at the gate.** Sallow's people come south for the Unchained: the
 survivor, Chid, the freed. Who holds the north gate is everything Act 2
@@ -1631,5 +1645,9 @@ paid rising) and `toll.ledger` (one entry each: `n` from 28, `who`, `day`,
 `kind`, `place`, `came`, `burned`).
 
 The sophistication pass (11 October): `mother.cut` (`mam`, `plain` or `none`:
-what Chid cuts on the marker, `chid.cut`; read by nothing yet, kept for Act 2's
-marker and C32) and the overnight rule `decoy.north`.
+what Chid cuts on the marker, `chid.cut`; read by his hub, which offers `none`
+the way back, by the marker's later text, and by the overnight rule
+`mother.carved`, which the marker reads for MAM; Act 2's `scene_still_plain`
+reads `none`, and sets `mother.chisel` on a second silence; C41 may read it;
+`mother.chisel` closes his hub's offer)
+and the overnight rule `decoy.north`.

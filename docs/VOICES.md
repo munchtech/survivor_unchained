@@ -46,6 +46,9 @@ Rules for everyone:
   ("(a sniff)", "(quietly)", "(sung, under the water)"): the actor plays it and
   nobody reads it aloud. A parenthesis that is a capitalised sentence is the
   narrator's ("(He looks at his hands.)").
+- Behind a love scene's door (`docs/story/LOVE_SCENES.md`) only the lovers
+  speak. On the dark screen a lower-case parenthesis is a caption: what is
+  heard, or how it is said, never what is seen.
 - Inside narration, a quoted line is spoken by its speaker. A bare "she says"
   is cut, so the subtitle and the voice agree; a tag that carries manner ("says
   into your ear") stays, read by the narrator.
