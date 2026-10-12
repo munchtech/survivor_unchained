@@ -4702,12 +4702,14 @@ def ranger_spaulder():
             known &= ~((own >= 1) & ~strip & (d_e < STRIP + TRANS))
             print("SPAULDER hem strip on its edge's weights at %d points, eased from the bands' rows at %d" % (
                 strip.sum(), ((own >= 1) & ~strip & (d_e < STRIP + TRANS)).sum()))
-        # (the neck end, past the cap's neck stop, on her skin's own weights
-        # point by point: on its hem's weights eased along the hem, it rose
-        # 5-7 mm off the top of her trapezius at her idle (2-3 at rest), the
-        # hook of judge 8 #3)
+        # (the neck end, past the cap's neck stop, on the very weights of her
+        # skin beneath, point by point, not eased: on weights eased over the
+        # piece, its tip near her neck took less of her neck's bone and none
+        # of her head's than her skin there (clavicle .58 neck .20 against
+        # .45 and .25 with head .05), and it stood 5-7 mm off her trapezius
+        # at her idle, 2-3 at rest: the hook of judge 8 #3, j2)
         nk_ = (pl_frame(pos, F_)[0] < S_MED + NS) & (past[0] > NOFF) & (own < 0)
-        vals[nk_] = np.asarray(wt, float)[nk_]
+        vals[nk_] = W[cKDTree(P).query(pos[nk_])[1]]
         known |= nk_
         print("SPAULDER neck end on her skin's weights at %d points" % nk_.sum())
         return fill(tris, vals, known)
@@ -5848,12 +5850,20 @@ def rigid_again(objs, riders):
                     tot[n] = tot.get(n, 0.0) + g.weight
         keep = sorted(tot, key=tot.get, reverse=True)[:4]
         s = sum(tot[n] for n in keep)
+        sh_ = [(n, tot[n] / s) for n in keep]
+        # (the spaulder's plates go back on their blends from before the
+        # split: split by their places, the cap rode the shoulder's helper
+        # and band 1 the twist bone, and band 1 went through the cap in 13 of
+        # 24 lying frames (death_back, get_up_back), j2; on the bones they
+        # were judged on, h5, the nearest was 1.17 mm)
+        if PL_RAW and o.name.startswith("ranger.pauldron"):
+            sh_ = list(RIGID_ROWS[o.name])
         idx = list(range(len(o.data.vertices)))
         for g in list(o.vertex_groups):
             if g.name in BONE_NAMES:
                 o.vertex_groups.remove(g)
-        for n in keep:
-            o.vertex_groups.new(name=n).add(idx, tot[n] / s, "REPLACE")
+        for n, w in sh_:
+            o.vertex_groups.new(name=n).add(idx, w, "REPLACE")
         keys = o.data.shape_keys
         if keys is not None:
             base = np.array([k.co[:] for k in keys.reference_key.data])
@@ -5886,6 +5896,7 @@ def rigid_again(objs, riders):
     print("RIGID: %d one-blend pieces kept on one blend after the helpers' split" % len(objs))
 
 
+PL_RAW = os.environ.get("PL_RAW", "1") == "1"
 RIGID_PIECES = one_blend_pieces(made)
 RIGID_ROWS = {o.name: rows_of(o)[0] for o in RIGID_PIECES}
 _rset = {r for r in RIGID_ROWS.values() if len(r) > 1}   # (a blend, never one bone's whole: cloth on one bone is no rider)
