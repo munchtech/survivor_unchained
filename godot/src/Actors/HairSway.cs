@@ -171,7 +171,7 @@ public partial class HairSway : Node
         neckBalls = Of("neck_01"); backBalls = Of("spine_03"); lowBalls = Of("spine_01");
         ridgeBone = backBalls.Length > 0 ? balls[backBalls[0]].Bone : -1;
         bool can = ridgeBone >= 0 && balls.Length >= fileBalls + 4 && !OS.HasEnvironment("NORIDGE");
-        pony = can && Style == "ponytail" && OS.HasEnvironment("PONYRIDGE");
+        pony = can && Style == "ponytail" && !OS.HasEnvironment("NOPONYRIDGE");
         ridge = can && Style == "braid" || pony;
     }
 
@@ -618,7 +618,7 @@ public partial class HairSway : Node
     // collar (k56, -4.8), so its carry is quicker (180 degrees in 0.15 s, not 0.35) and no point moves over 6 cm a frame.
     // Offline and in Godot (tools/scratch/face19/sv15): segments 4-7 k28-60 -4.1 -> -0.8 cm (warden and reaver; k40-52
     // -0.3), the carry ends k52 (k51), the largest move k40-60 6.2 (7.7), k28-60 10.8 at k31 (10.1 at k30);
-    // every other clip 0.00 offline. PONYRIDGE=1 turns it on (off until a judge passes it).
+    // every other clip 0.00 offline. On by default (judge jp1 PASS, ship NEW, 12 Oct); NOPONYRIDGE=1 turns it off.
     bool ridge, pony;
     int ridgeBone = -1;
     static readonly Vector3 RidgeA = new(-0.1069f, 1.5404f, -0.0536f), RidgeB = new(-0.2115f, 1.501f, -0.0434f), SlopeA = new(-0.05f, 1.585f, -0.05f);
