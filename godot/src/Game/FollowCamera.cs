@@ -57,8 +57,8 @@ public sealed class FollowCamera
     public System.Func<float, float, float>? Ground;
     /// <summary>The close view's two framings (pitch in degrees, distance and the height on her it looks at, in
     /// metres): her whole figure filling the frame, and her from the hips up. --close-mid / --close-near P,D,H.</summary>
-    public static readonly (float Pitch, float Distance, float Height) CloseMid = Frame("close-mid", (24, 3.6f, 0.98f)),
-        CloseNear = Frame("close-near", (12, 1.75f, 1.28f));
+    public static readonly (float Pitch, float Distance, float Height) CloseMid = Frame("close-mid", (22, 4.0f, 1.05f)),
+        CloseNear = Frame("close-near", (9, 1.95f, 1.6f));
     float closeNow, orbitNow, room = 1;
     /// <summary>How near the close view is now (eased).</summary>
     public float CloseShown => closeNow;
@@ -76,6 +76,20 @@ public sealed class FollowCamera
     /// <summary>Play's view brought so near (0..1): its pitch (radians), distance and height on her, from play's
     /// own pitch and distance. The distance goes down evenly in proportion (each notch the same step to the eye),
     /// the pitch and height with it through the two framings.</summary>
+    /// <summary>The lens at the nearest (vertical degrees; play's is 34): longer, as a portrait's, so her figure is
+    /// not drawn wide by a near wide lens. The distance grows with it to keep CloseNear's framing. --close-lens.</summary>
+    public static readonly float CloseLens = Args.Has("close-lens") ? Args.Num("close-lens", 24) : 24;
+
+    /// <summary>The lens (vertical degrees) the close view wants at this nearness.</summary>
+    public static float Lens(float c, float pitch, float dist)
+    {
+        var (_, d, _) = Closed(c, pitch, dist);
+        float mid = CloseMid.Distance, n = CloseNear.Distance;
+        if (d >= mid) return 34;
+        float u = Mathf.Clamp((Mathf.Log(mid) - Mathf.Log(d)) / (Mathf.Log(mid) - Mathf.Log(n)), 0, 1);
+        return Mathf.Lerp(34, CloseLens, u);
+    }
+
     public static (float Pitch, float Distance, float Height) Closed(float c, float pitch, float dist)
     {
         if (c <= 0) return (pitch, dist, 0.8f);
@@ -183,7 +197,10 @@ public sealed class FollowCamera
 
     /// <summary>How far the camera stands from where it looks: play's distance, or a panel's framing
     /// eased in (smoothed, so the view glides down to her rather than swinging).</summary>
-    float Reach() => Mathf.Lerp(Closed(closeNow, Pitch, Distance * near).Distance * room, frame.Distance, Mathf.SmoothStep(0, 1, framed));
+    float Reach() => Mathf.Lerp(Closed(closeNow, Pitch, Distance * near).Distance * LensStep() * room, frame.Distance, Mathf.SmoothStep(0, 1, framed));
+
+    /// <summary>The distance's stretch for the longer lens (1 at play's own), so the framing holds.</summary>
+    float LensStep() => closeNow <= 0.0005f ? 1 : Mathf.Tan(Mathf.DegToRad(17)) / Mathf.Tan(Mathf.DegToRad(Lens(closeNow, Pitch, Distance * near) / 2));
 
     void Place()
     {
@@ -196,14 +213,17 @@ public sealed class FollowCamera
         // A near view comes in front of a wall, never through it (eased, so a post going by is no jolt).
         if (closeNow > 0.02f && Room != null)
         {
-            var want = new Vector3(aim.X + Mathf.Sin(yaw) * cp * c.Distance, aim.Y + sp * c.Distance, aim.Z + Mathf.Cos(yaw) * cp * c.Distance);
+            float cd = c.Distance * LensStep();
+            var want = new Vector3(aim.X + Mathf.Sin(yaw) * cp * cd, aim.Y + sp * cd, aim.Z + Mathf.Cos(yaw) * cp * cd);
             float free = Mathf.Clamp(Room(aim, want), 0, 1);
-            // (no nearer than a metre and a quarter: inside that a wall wins and the view stays on her)
-            free = Mathf.Max(free, Mathf.Min(1, 1.25f / c.Distance));
+            // (no nearer than a metre and a half: inside that a wall wins and the view stays on her)
+            free = Mathf.Max(free, Mathf.Min(1, 1.5f / cd));
             room = Mathf.Lerp(room, free, 1 - Mathf.Exp((free < room ? -14f : -2.5f) * (float)lastDt));
         }
         else room = 1;
         float d = Reach();
+        // (the game puts play's lens back each frame; the close view lengthens it after)
+        if (closeNow > 0.0005f) Camera.Fov = Mathf.Lerp(Lens(closeNow, Pitch, Distance * near), Camera.Fov, k);
         var pos = new Vector3(aim.X + Mathf.Sin(yaw) * cp * d, aim.Y + sp * d, aim.Z + Mathf.Cos(yaw) * cp * d);
         if (closeNow > 0.02f && Ground != null) pos.Y = Mathf.Max(pos.Y, Ground(pos.X, pos.Z) + 0.45f);
         float s = Trauma * Trauma, t = shakeT * 22;
