@@ -170,6 +170,46 @@ public class FlareStagedTests
     }
 
     [Fact]
+    public void The_roads_tolls_boss_cuts_carry_the_whole_flare_however_many_stand_round_it()
+    {
+        // Alone, the boss takes all twelve cuts; with nine round it, four, each three times as hard.
+        var alone = Carrying("the_roads_toll");
+        // No crits: four hits against twelve would swing on them.
+        alone.Stats.Add(new StatMod(Stat.CritChance, ModKind.Flat, -alone.Stats.Get(Stat.CritChance), "test"));
+        var b1 = Foe(alone, 0, -4, hp: 1e9, boss: true);
+        Cast(alone, 8);
+        var crowded = Carrying("the_roads_toll");
+        foreach (var i in Enumerable.Range(0, 9)) Foe(crowded, 2 + 0.5 * i, 2, hp: 1e7);
+        crowded.Stats.Add(new StatMod(Stat.CritChance, ModKind.Flat, -crowded.Stats.Get(Stat.CritChance), "test"));
+        var b2 = Foe(crowded, 0, -4, hp: 1e9, boss: true);
+        // Long enough for the poison to run out: it is the Flare's too.
+        var ev = Cast(crowded, 8);
+        Assert.Equal(4, ev.Count(e => e.Phase == FlarePhase.Blow && e.Target == b2.Id));
+        double took1 = alone.BossDamageBy["flare"], took2 = crowded.BossDamageBy["flare"];
+        Assert.InRange(took2 / took1, 0.95, 1.2);
+    }
+
+    [Fact]
+    public void The_roads_toll_passes_over_a_boss_it_cant_hurt_and_its_poison_is_the_flares()
+    {
+        foreach (var pin in new[] { "shut", "gated" })
+        {
+            var b = Carrying("the_roads_toll");
+            var adds = Enumerable.Range(0, 3).Select(i => Foe(b, 2 + i, 2, hp: 1e8)).ToList();
+            var boss = Foe(b, 0, -4, hp: 1e9, boss: true);
+            if (pin == "shut") boss.TakenMul = 0;
+            else { boss.HpFloor = boss.Hp; boss.Overflow = 0.1 * boss.MaxHp; }
+            var ev = Cast(b);
+            Assert.DoesNotContain(ev, e => e.Phase == FlarePhase.Blow && e.Target == boss.Id);
+            Assert.Equal(12, ev.Count(e => e.Phase == FlarePhase.Blow && adds.Any(a => a.Id == e.Target)));
+        }
+        var c = Carrying("the_roads_toll");
+        var foe = Foe(c, 2, 0, hp: 1e9);
+        Cast(c);
+        Assert.Equal("flare", foe.Status[StatusKind.Poison]?.From);
+    }
+
+    [Fact]
     public void Butchers_hour_doubles_her_speed_and_each_kill_holds_it_longer_and_mends()
     {
         var b = Carrying("butchers_hour");

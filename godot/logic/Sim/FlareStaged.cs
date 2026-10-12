@@ -176,10 +176,18 @@ public sealed partial class Battle
     /* -------------------------------------------------------- The Road's Toll -- */
 
     readonly List<int> tollPlan = new();
+    /// <summary>Each boss cut's share of a blow: the boss's cuts carry the whole Flare between them (12 / the boss's
+    /// cuts), so what a boss takes doesn't swing threefold with how many things stand round it.</summary>
+    double tollBossShare = 1;
+
+    /// <summary>A boss the cuts can hurt: not shut against all harm, nor pinned at its phase's gate with its Break
+    /// already full (the tenth of its health the Break rewards). Those cuts go to what's round it.</summary>
+    bool TollCanHurt(Enemy e) => !e.Boss || (e.TakenMul > 0 && !(e.HpFloor > 0 && e.Hp <= e.HpFloor && e.Overflow >= 0.1 * e.MaxHp));
 
     /// <summary>A cut. At the first she picks her twelve: the strongest near, weakest first so the last falls on the
     /// strongest; on a boss its last four (a third of them). Each cut poisons, and what it leaves below a quarter of
-    /// its health dies (a boss never). A target fallen before its cut gives it to the strongest still standing.</summary>
+    /// its health dies (a boss never). A target fallen before its cut gives it to the strongest still standing. The
+    /// poison is the Flare's (its ticks are credited to it).</summary>
     void TollCut(FlareDef f, bool last)
     {
         var p = Player;
@@ -187,15 +195,20 @@ public sealed partial class Battle
         if (flareBlow == 1) PlanToll(f, n);
         int slot = flareBlow - 1 < tollPlan.Count ? tollPlan[flareBlow - 1] : -1;
         Enemy? e = slot >= 0 && slot < Enemies.Items.Length ? Enemies.Items[slot] : null;
-        if (e == null || !e.Alive || e.State == EnemyState.Dying || !Targetable(e))
-            e = HostilesInRadius(p.X, p.Z, flareReach).Where(x => x.Alive && x.State != EnemyState.Dying)
+        if (e == null || !e.Alive || e.State == EnemyState.Dying || !Targetable(e) || !TollCanHurt(e))
+        {
+            var near = HostilesInRadius(p.X, p.Z, flareReach).Where(x => x.Alive && x.State != EnemyState.Dying).ToList();
+            // A boss that can't be hurt now is passed over while anything else stands near.
+            e = (near.Any(TollCanHurt) ? near.Where(TollCanHurt) : near)
                 .OrderByDescending(x => x.Boss).ThenByDescending(x => x.Elite).ThenByDescending(x => x.Hp).FirstOrDefault();
+        }
         if (e != null)
         {
-            double dealt = FlareHit(e, 1, f.School, 0, p.X, p.Z);
+            bool bossCut = e.Boss && e.Id == slot;
+            double dealt = FlareHit(e, bossCut ? tollBossShare : 1, f.School, 0, p.X, p.Z);
             if (e.Alive && e.State != EnemyState.Dying)
             {
-                ApplyStatus(e, new StatusPayload(StatusKind.Poison, 1, f.Arg("poison", 0.5), f.Arg("poisonSeconds", 4)), dealt);
+                ApplyStatus(e, new StatusPayload(StatusKind.Poison, 1, f.Arg("poison", 0.5), f.Arg("poisonSeconds", 4)), dealt, from: "flare");
                 double below = last && FlareMod("toll.last_cut") ? f.Arg("lastCut", 0.4) : f.Arg("execute", 0.25);
                 if (!e.Boss && e.Alive && e.State != EnemyState.Dying && e.Hp < e.MaxHp * below) KillEnemy(e, true, null);
             }
@@ -208,7 +221,7 @@ public sealed partial class Battle
         tollPlan.Clear();
         var p = Player;
         var near = HostilesInRadius(p.X, p.Z, flareReach).Where(e => e.Alive && e.State != EnemyState.Dying).ToList();
-        var boss = near.Where(e => e.Boss).OrderByDescending(e => e.Hp).FirstOrDefault();
+        var boss = near.Where(e => e.Boss && TollCanHurt(e)).OrderByDescending(e => e.Hp).FirstOrDefault();
         // The strongest near, weakest first: champions above the rest, then by health.
         var others = near.Where(e => !e.Boss).OrderByDescending(e => e.Elite).ThenByDescending(e => e.Hp).ToList();
         int bossCuts = boss == null ? 0 : Math.Max((int)Math.Round(f.Arg("onBoss", 4) * n / Math.Max(1.0, f.Blows)), n - others.Count);
@@ -218,6 +231,7 @@ public sealed partial class Battle
             // Fewer things than cuts: they go round again, the last still on the strongest.
             tollPlan.Add(k == 0 ? -1 : picks[((k - 1 + (i - (n - bossCuts - 1))) % k + k) % k].Id);
         for (int i = 0; i < bossCuts; i++) tollPlan.Add(boss!.Id);
+        tollBossShare = bossCuts > 0 ? (double)n / bossCuts : 1;
     }
 
     /* --------------------------------------------------------- Butcher's Hour -- */

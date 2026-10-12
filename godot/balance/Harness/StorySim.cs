@@ -16,9 +16,9 @@ namespace SurvivorUnchained.Balance;
 /// <summary>One story night to play: which fight, who, how they draft, how hard; whether it is past
 /// Act 1 (no rise of its own), and what she chooses at the boss's side where the story lets her.</summary>
 public sealed record StoryRunSpec(int Seed, string Calling, string Policy, string Fight = "hollow", int Tier = 1, int Level = 1, bool Deft = false,
-    bool Act2 = false, string Choice = "spare", double Cap = 25, bool Crates = false, bool Naive = false, bool Learned = false, bool Banes = false)
+    bool Act2 = false, string Choice = "spare", double Cap = 25, bool Crates = false, bool Naive = false, bool Learned = false, bool Banes = false, string Type = "")
 {
-    public string Key => $"{Fight}/{Calling}/{Policy}/t{Tier}/s{Seed}" + (Level > 1 ? $"/L{Level}" : "") + (Deft ? "/deft" : "") + (Act2 ? "/act2" : "") + $"/{Choice}" + (Crates ? "/crates" : "") + (Naive ? "/naive" : "") + (Learned ? "/learned" : "") + (Banes ? "/banes" : "");
+    public string Key => $"{Fight}/{Calling}/{Policy}/t{Tier}/s{Seed}" + (Level > 1 ? $"/L{Level}" : "") + (Deft ? "/deft" : "") + (Act2 ? "/act2" : "") + $"/{Choice}" + (Crates ? "/crates" : "") + (Naive ? "/naive" : "") + (Learned ? "/learned" : "") + (Banes ? "/banes" : "") + (Type != "" ? $"/{Type}" : "");
     /// <summary>Plain and naive hands meet the boss for the first time on its first life (BossSense.Meeting);
     /// deft hands, and any with --learned, know it already.</summary>
     public bool Meets => !Deft && !Learned;
@@ -54,6 +54,9 @@ public sealed class StoryRunResult
     /// <summary>What hurt her, by part of the night ("stage 2", "boss") and source, as a share of her
     /// health: where the danger is.</summary>
     public Dictionary<string, Dictionary<string, double>> HurtBy = new();
+    /// <summary>Health taken off the boss (Battle.BossHealthBy), by source; and the Bulwark's rebukes.</summary>
+    public Dictionary<string, double> BossTookBy = new();
+    public int Rebukes;
 
     /// <summary>The way in: its minutes, and how low she went on it.</summary>
     public double WayIn => Stages.Where(s => s.Name != "boss").Sum(s => s.Seconds) / 60;
@@ -73,6 +76,7 @@ public static class StorySim
         {
             Name = "Bot", Archetype = spec.Calling, Background = "hunter", Palette = a.Palettes[0].Id, WeaponItem = a.Weapons[spec.Seed % a.Weapons.Count], Ability = a.Abilities[0],
         }, (uint)spec.Seed);
+        if (spec.Type != "") LampBook.SetType(j.Ch, spec.Type);
         while (j.Ch.Level < spec.Level) Character.GainXp(j.Ch, Character.XpForLevel(j.Ch.Level) - j.Ch.Xp + 1);
         switch (spec.Calling) { case "arcanist": j.Ch.Attributes.Wits += j.Ch.Points; break; case "stalker": j.Ch.Attributes.Finesse += j.Ch.Points; break; default: j.Ch.Attributes.Might += j.Ch.Points; break; }
         j.Ch.Points = 0;
@@ -236,6 +240,8 @@ public static class StorySim
         }
         r.KilledBy = !r.Won && host.Result != null ? b.Player.FellTo ?? b.Player.LastKiller?.Def.Id ?? "?" : "";
         r.Build = ArenaSim.Describe(b);
+        r.BossTookBy = new Dictionary<string, double>(b.BossHealthBy);
+        r.Rebukes = b.Rebukes;
         var pp = b.Player;
         r.Where = $"{zone.Now} {zone.BeatIx} at ({pp.X:0},{pp.Z:0}) goal {(zone.Goal is var (gx, gz) ? $"({gx:0},{gz:0})" : "-")} hostiles {zone.Hostiles()} {zone.Beat?.Goal}";
         return r;

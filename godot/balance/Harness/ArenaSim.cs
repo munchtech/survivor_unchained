@@ -90,6 +90,8 @@ public sealed class RunResult
     public double FlareBossDamage, BossDamage;
     /// <summary>The Flare's share of what was truly taken off bosses (health, and a gate's Break up to a tenth).</summary>
     public double FlareBossTook = double.NaN;
+    /// <summary>Health taken off bosses (as FlareBossTook counts it), by source: each skill's share of a boss.</summary>
+    public Dictionary<string, double> BossTookBy = new();
     /// <summary>The Bulwark's wall: blocks, rebukes, the most stones held at once.</summary>
     public int Blocks, Rebukes, StonesPeak;
     public double FlareFirst = double.NaN, FlareGap = double.NaN, FlareBossShare = double.NaN;
@@ -326,6 +328,7 @@ public static class ArenaSim
         r.FlareBossDamage = b.BossDamageBy.GetValueOrDefault("flare");
         double took = b.BossHealthBy.Values.Sum();
         if (took > 0) r.FlareBossTook = b.BossHealthBy.GetValueOrDefault("flare") / took;
+        r.BossTookBy = new Dictionary<string, double>(b.BossHealthBy);
         if (bossDmg > 0) r.FlareBossShare = b.BossDamageBy.GetValueOrDefault("flare") / bossDmg;
         return r;
     }
