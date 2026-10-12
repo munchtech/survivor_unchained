@@ -1290,10 +1290,12 @@ public static class People
     /// (jaw chroma 37-55% short on the fair faces, judge j5, 11 October 2026); fitted at the Look to each portrait's
     /// chroma and hue under her jaw, its lightness kept (tools/scratch/face17/softfit.py, clamped 0.5-1.6). Sunborn's
     /// shade there is lit mostly by the key, out of this one's reach. (Vixen, Moonlit and Fey at the fair faces' median took
-    /// a third of their jaw's chroma and none of its missing shade, which is the key's: face 19, r8.) (--soft-tone R,G,B: another, for judging it.)</summary>
+    /// a third of their jaw's chroma and none of its missing shade, which is the key's: face 19, r8.) (Highborn refitted, skin r13
+    /// B1b: at 0.93/1.03/1.08 the soft-lit middle of her neck was grey at her lit neck's hue, C 53-79% of it; at 1.30/0.92/0.72
+    /// 65-101%, hue as it was, her far neck's (b) kept.) (--soft-tone R,G,B: another, for judging it.)</summary>
     static readonly Dictionary<string, Vector3> HerSoftTone = new()
     {
-        ["own"] = new(1.268f, 0.877f, 0.571f), ["highborn"] = new(0.934f, 1.032f, 1.082f), ["doe"] = new(1.192f, 0.881f, 0.737f),
+        ["own"] = new(1.268f, 0.877f, 0.571f), ["highborn"] = new(1.30f, 0.92f, 0.72f), ["doe"] = new(1.192f, 0.881f, 0.737f),
         ["vixen"] = new(1.479f, 0.814f, 0.500f), ["moonlit"] = new(1.518f, 0.798f, 0.500f), ["saffron"] = new(1.047f, 0.942f, 1.214f),
         ["wildling"] = new(1.217f, 0.853f, 0.684f), ["hardwon"] = new(1.117f, 0.909f, 0.991f), ["fey"] = new(1.338f, 0.857f, 0.504f),
     };
