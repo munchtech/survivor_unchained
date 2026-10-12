@@ -171,10 +171,14 @@ def kind_of(effs):
     return "attribute" if any(x["do"] == "attr" for x in effs) else "small"
 
 
-def flare(fid, name, calling, rid, kind, length, radius, blows, power, school, tags, text, guard=None, guard_value=0):
+def flare(fid, name, calling, rid, kind, length, radius, blows, power, school, tags, text, guard=None, guard_value=0, beat=None, args=None):
+    """beat: a staged Flare's timings from the press (s) and hitstop (frames), read by the logic and the view (Flare.cs);
+    args: its staged numbers (shares of power, seconds, metres)."""
     f = {"id": fid, "name": name, "calling": calling, "road": rid, "kind": kind, "length": length, "radius": radius,
          "blows": blows, "power": power, "school": school, "tags": tags, "text": text}
     if guard: f["guard"], f["guardValue"] = guard, guard_value
+    if beat: f["beat"] = beat
+    if args: f["args"] = args
     flares.append(f)
 
 

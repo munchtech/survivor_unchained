@@ -69,13 +69,13 @@ public static class Report
         if (runs.Any(r => r.FlareCasts > 0 || r.Road != ""))
         {
             sb.AppendLine("### Flare (means; first cast in minutes, gap in seconds)\n");
-            Head(sb, "calling/type", "lamps", "runs", "casts", "first cast (min)", "gap (s)", "boss casts", "Flare share of boss damage", "clutches", "fills by source");
+            Head(sb, "calling/type", "lamps", "runs", "casts", "first cast (min)", "gap (s)", "boss casts", "Flare share of boss damage", "of boss health taken", "clutches", "fills by source");
             foreach (var g in runs.GroupBy(r => $"{r.Spec.Calling}/{(r.Road == "" ? "-" : r.Road)}").OrderBy(g => g.Key))
             {
                 var l = g.ToList();
                 var fills = l.SelectMany(r => r.FlareFills).GroupBy(kv => kv.Key).OrderByDescending(x => x.Sum(kv => kv.Value));
                 Row(sb, g.Key, F(l.Average(r => (double)r.LampsLit), "0"), l.Count, F(l.Average(r => (double)r.FlareCasts)), F(Mean(l.Select(r => r.FlareFirst))),
-                    F(Mean(l.Select(r => r.FlareGap)), "0"), F(l.Average(r => (double)r.FlareBossCasts)), Pct(Mean(l.Select(r => r.FlareBossShare))),
+                    F(Mean(l.Select(r => r.FlareGap)), "0"), F(l.Average(r => (double)r.FlareBossCasts)), Pct(Mean(l.Select(r => r.FlareBossShare))), Pct(Mean(l.Select(r => r.FlareBossTook))),
                     F(l.Average(r => (double)r.FlareClutches)), string.Join(" ", fills.Select(x => $"{x.Key} {x.Sum(kv => kv.Value) / l.Count:0}")));
             }
             sb.AppendLine();

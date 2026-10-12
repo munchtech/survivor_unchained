@@ -174,7 +174,24 @@
     "holy",
     "shield"
    ],
-   "text": "Three tolls on the shield: each stuns and sears everything near, and mends you 4%."
+   "text": "Three tolls on the shield: each stuns and sears everything near, and mends you 4%. The last is a holy blast 8 m round.",
+   "beat": {
+    "first": 0.3,
+    "step": 0.25,
+    "hitstop": 4,
+    "hitstopLast": 8
+   },
+   "args": {
+    "toll": 0.45,
+    "blast": 1.25,
+    "blastRadius": 8,
+    "stun": 1,
+    "sear": 2,
+    "mend": 0.04,
+    "peal": 0.08,
+    "stagger": 15,
+    "flee": 3
+   }
   },
   {
    "id": "sixty_on_the_wall",
@@ -223,7 +240,7 @@
    "kind": "stand",
    "length": 8,
    "radius": 4,
-   "blows": 2,
+   "blows": 0,
    "power": 290,
    "school": "physical",
    "tags": [
@@ -232,7 +249,23 @@
     "physical",
     "twin"
    ],
-   "text": "For 8 s: Frenzy full, blows twice as fast, every blow bleeds."
+   "text": "For 8 s: Frenzy full, blows twice as fast, every blow bleeds, ordinary things below 15% die, and each kill adds 0.3 s and mends 1%.",
+   "beat": {
+    "key": 0.3,
+    "hitstop": 1,
+    "hitstopExecute": 4
+   },
+   "args": {
+    "faster": 2,
+    "bleed": 0.4,
+    "bleedSeconds": 3,
+    "execute": 0.15,
+    "extend": 0.3,
+    "overtime": 0.6,
+    "mend": 0.01,
+    "mistRadius": 5,
+    "flee": 1.5
+   }
   },
   {
    "id": "drag_them_under",
@@ -280,7 +313,7 @@
    "kind": "strike",
    "length": 1.1,
    "radius": 14,
-   "blows": 3,
+   "blows": 12,
    "power": 1160,
    "school": "fire",
    "tags": [
@@ -289,7 +322,27 @@
     "frost",
     "area"
    ],
-   "text": "Frost races under every pack near, then embers fall on the frozen ground."
+   "text": "Frost races under every pack near, then twelve embers fall on the frozen ground, and each shatters what is frozen round it.",
+   "beat": {
+    "key": 0.15,
+    "frost": 0.3,
+    "first": 0.55,
+    "last": 1.05,
+    "hitstop": 2,
+    "hitstopLast": 6
+   },
+   "args": {
+    "frost": 0.3,
+    "freeze": 2,
+    "chill": 3,
+    "ember": 0.675,
+    "shatter": 1.0,
+    "emberRadius": 2.5,
+    "onBoss": 4,
+    "bossMul": 0.8,
+    "moreEmbers": 18,
+    "blackIce": 0.5
+   }
   },
   {
    "id": "hard_winter",
@@ -356,7 +409,7 @@
    "length": 1.2,
    "radius": 12,
    "blows": 12,
-   "power": 700,
+   "power": 2100,
    "school": "physical",
    "tags": [
     "melee",
@@ -364,7 +417,24 @@
     "physical",
     "twin"
    ],
-   "text": "Gone in smoke: twelve cuts in 1.2 s, the last on the strongest."
+   "text": "Gone in smoke: twelve cuts in 1.2 s on the strongest near, each poisoned, and anything below 25% dies. On a boss, the last four.",
+   "beat": {
+    "key": 0.24,
+    "first": 0.24,
+    "last": 1.12,
+    "hitstop": 1,
+    "hitstopLast": 6
+   },
+   "args": {
+    "poison": 0.5,
+    "poisonSeconds": 4,
+    "execute": 0.25,
+    "lastCut": 0.4,
+    "onBoss": 4,
+    "bossMul": 0.85,
+    "doubled": 18,
+    "gone": 3
+   }
   },
   {
    "id": "through_and_through",
@@ -1446,18 +1516,20 @@
    "feeds": [
     "oathblade"
    ],
-   "text": "Your shield turns one blow in seven. Each block lays a stone, up to ten; at ten, the wall answers with a rebuke of holy light all around you.",
+   "text": "Your shield turns one blow in seven. Every blow that reaches you, turned or not, lays a stone; at six, the wall answers with a rebuke of holy light 8 m all around you (a boss takes half).",
    "effects": [
     {
      "do": "rule",
      "rule": "shield_arm",
      "args": {
       "block": 0.15,
-      "stones": 10,
-      "radius": 4,
+      "stones": 6,
+      "struck": 1,
+      "radius": 8,
       "lull": 6,
       "rebuke": 10,
-      "per_level": 0.08
+      "per_level": 0.08,
+      "boss": 0.5
      }
     }
    ]
@@ -1533,13 +1605,13 @@
    "at": [
     "bulwark.s3"
    ],
-   "text": "Barrier is 15% stronger while you hold five stones or more.",
+   "text": "Barrier is 15% stronger while you hold three stones or more.",
    "effects": [
     {
      "do": "rule",
      "rule": "stones.barrier",
      "args": {
-      "at": 5,
+      "at": 3,
       "more": 0.15
      }
     }
@@ -1676,8 +1748,8 @@
    ]
   },
   {
-   "id": "bulwark.rebuke.wider_rebuke",
-   "name": "Wider Rebuke",
+   "id": "bulwark.rebuke.readier_wall",
+   "name": "Readier Wall",
    "kind": "skill",
    "region": "road",
    "calling": "warden",
@@ -1688,11 +1760,11 @@
    "feeds": [
     "rebuke"
    ],
-   "text": "Rebuke strikes 50% wider.",
+   "text": "The wall answers at five stones.",
    "effects": [
     {
      "do": "rule",
-     "rule": "rebuke.wider",
+     "rule": "rebuke.readier",
      "phase": 5
     }
    ]
@@ -1821,7 +1893,7 @@
     "oathblade"
    ],
    "gate": 6,
-   "text": "Stones last through a lull, and each gives a barrier of 1% of health.",
+   "text": "Stones last through a lull, and each block gives a barrier of 1% of health.",
    "effects": [
     {
      "do": "rule",

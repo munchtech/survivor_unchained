@@ -285,6 +285,11 @@ public sealed partial class Battle
     public readonly Dictionary<string, double> DamageBy = new();
     /// <summary>The same, on bosses alone: the Flare's share of a boss's damage (CLASSES.md §7).</summary>
     public readonly Dictionary<string, double> BossDamageBy = new();
+    /// <summary>What each source truly took off bosses: health lost, and a gate's Break only up to the tenth of
+    /// its health the Break rewards (as the Flare's fill counts it). Damage poured into a gate past that
+    /// takes nothing, yet BossDamageBy counts it: a full board's poison on a gated boss made the Flare's
+    /// share of the damage read a quarter of its share of the fight.</summary>
+    public readonly Dictionary<string, double> BossHealthBy = new();
     /// <summary>Who is dealing damage while no weapon is: the rule firing, the art.</summary>
     string? credit;
     public int KillCount;
@@ -793,8 +798,13 @@ public sealed partial class Battle
         // Health it lost, and a gate's Break only up to the tenth of its health the Break itself rewards:
         // uncapped, poison ticking on a gated boss filled 30 Flares a fight.
         double breakCap = 0.1 * e.MaxHp;
-        FlareOnDealt(e, Math.Max(0, before - Math.Max(0, e.Hp)) + Math.Max(0, Math.Min(e.Overflow, breakCap) - Math.Min(e.Overflow - broke, breakCap)), by);
-        if (e.Boss) BossDamageBy[by] = BossDamageBy.GetValueOrDefault(by) + Math.Min(dmg, Math.Max(0, before));
+        double took = Math.Max(0, before - Math.Max(0, e.Hp)) + Math.Max(0, Math.Min(e.Overflow, breakCap) - Math.Min(e.Overflow - broke, breakCap));
+        FlareOnDealt(e, took, by);
+        if (e.Boss)
+        {
+            BossDamageBy[by] = BossDamageBy.GetValueOrDefault(by) + Math.Min(dmg, Math.Max(0, before));
+            BossHealthBy[by] = BossHealthBy.GetValueOrDefault(by) + took;
+        }
         if (tags.Has(Tag.Spell) && !o.Dot) OnSpellHit(by);
         // Where the damage is coming from, for the director.
         if (tags.Has(Tag.Summon) || o.Summon) Profile.Summon += dmg;
@@ -838,6 +848,7 @@ public sealed partial class Battle
         ReaverOnHit(e, o);
         ArcanistOnHit(e, school, tags, o, dmg);
         StalkerOnHit(e, o, dmg);
+        FlareOnHit(e, o, dmg);
         if (e.Boss) Hooks.OnBossHit?.Invoke(e, school, dmg);
         if (e.Hp <= 0 && e.Alive && e.State != EnemyState.Dying) KillEnemy(e, true, o.Weapon, depth);
         else ArtOnHit(e);
@@ -888,6 +899,7 @@ public sealed partial class Battle
         if (weapon != null) { weapon.Kills++; ReaverWeaponKill(weapon); }
         ArcanistOnDeath(e, e.Credit, depth);
         StalkerOnDeath(e);
+        FlareOnKilled(e, credited && e.Disposition != Disposition.Ally);
         if (credited && e.Disposition != Disposition.Ally)
         {
             FlareOnKill(e, e.Status.Has(StatusKind.Bleed) && e.LastWeapon == null);
@@ -1165,6 +1177,7 @@ public sealed partial class Battle
             return 0;
         }
         if (TryLampBlock(amount, school, source, from)) return 0;
+        LampsOnBlowLanded();
         // Watch Mail counts: every tenth blow that reaches the survivor glances off.
         if (Boons.ContainsKey("ironhide") && ++p.MailCount >= 10)
         {
@@ -1385,6 +1398,7 @@ public sealed partial class Battle
             if (!silent && a > 0) Events.Emit(new Ev.ShieldHit { X = p.X, Z = p.Z, Absorbed = a, Broke = p.Shield <= 0 });
         }
         if (!silent) p.UnstruckT = 0;
+        dmg = FlareNotToday(dmg);
         if (dmg <= 0) return 0;
         double hpBefore = p.Hp;
         p.Hp -= dmg;
