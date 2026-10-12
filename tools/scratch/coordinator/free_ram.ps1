@@ -15,8 +15,7 @@ $state = Join-Path $env:LOCALAPPDATA 'SurvivorUnchained\paused_apps.json'
 $Pausable = @(
     @{ name = 'Discord'; start = "$env:LOCALAPPDATA\Discord\Update.exe|--processStart Discord.exe" }
     @{ name = 'ShareX'; start = '' }
-    @{ name = 'DisplayFusion'; start = '' }
-)
+)  # DisplayFusion is left out: Windows denies closing it without admin rights
 if ($Browser) { $Pausable += @{ name = 'chrome'; start = '' } }
 
 function Show-Free {
@@ -52,8 +51,14 @@ if ($Mode -eq 'pause') {
         $start = if ($a.start) { $a.start } else { $path }
         $ps | ForEach-Object { [void]$_.CloseMainWindow() }      # let it save (Chrome keeps its tabs)
         Start-Sleep -Seconds 3
-        Get-Process -Name $a.name -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
-        if (Get-Process -Name $a.name -ErrorAction SilentlyContinue) { "  could not close $($a.name) (runs as admin?)"; continue }
+        # Tray apps (Discord, DisplayFusion) only hide on close, and Discord's main process respawns
+        # its children, so end the whole tree with taskkill and wait for it to go.
+        $err = ''
+        for ($i = 0; $i -lt 10 -and (Get-Process -Name $a.name -ErrorAction SilentlyContinue); $i++) {
+            $err = (& taskkill /F /T /IM "$($a.name).exe" 2>&1 | Out-String).Trim()
+            Start-Sleep -Seconds 1
+        }
+        if (Get-Process -Name $a.name -ErrorAction SilentlyContinue) { "  could not close $($a.name): $err"; continue }
         if ($start -and -not ($closed | Where-Object { $_.name -eq $a.name })) { $closed += [pscustomobject]@{ name = $a.name; start = $start } }
         "  paused $($a.name)"
     }

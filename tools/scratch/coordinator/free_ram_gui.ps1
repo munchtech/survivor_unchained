@@ -38,8 +38,8 @@ $btn.Add_Click({
     $btn.Enabled = $true; $form.UseWaitCursor = $false; Update-View
 })
 
-$timer = New-Object System.Windows.Forms.Timer -Property @{ Interval = 5000 }
-$timer.Add_Tick({ Update-View })
+$timer = New-Object System.Windows.Forms.Timer -Property @{ Interval = 10000 }
+$timer.Add_Tick({ if ($form.WindowState -ne 'Minimized') { Update-View } })  # no polling while minimized
 $form.Add_Shown({ Update-View; $timer.Start() })
 [void]$form.ShowDialog()
 $timer.Dispose()
