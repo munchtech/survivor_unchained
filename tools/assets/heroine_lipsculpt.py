@@ -223,7 +223,7 @@ FRONT = 0.0003       # (only points this near the front-most surface move)
 TOP_L, TOP_B, TOP_S, TOP_LOW = 0.0025, 0.002, 0.75, 0.2  # (the lip's top step: see lip_profile)
 # (the squeezed lip ends short of the old border's depth: TILT of that made up over the lip, eased in and out
 #  (TILT_EASED) or even (the brief's chord), the rest over the skin, eased out up to its top)
-TILT, TILT_EASED = 1.0, True
+TILT, TILT_EASED = 0.4, True
 PAD = 0.0005         # (the old border taken this over the old crease, so all its bend squeezes with the lip)
 
 
