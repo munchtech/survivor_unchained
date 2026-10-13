@@ -167,6 +167,25 @@ public partial class Game : Node, IZoneHost
                 foreach (var f in parts[1].Split('+')) ArtBook.Choose(ch, parts[0], f);
             }
         }
+        // --flare ID[+RULE+RULE]: that Flare carried, its lamp lit, and its lamps' rules (burns.black_ice,
+        // burns.more_embers, burns.called_down; !banked for Banked Flame); the meter starts full (pictures of it,
+        // with --cast T to press it, and --flare-hp F for her health then: below 0.25 is the clutch).
+        if (Args.Get("flare") is string flareArg)
+        {
+            var fparts = flareArg.Split('+');
+            var fd = Content.Lamps.Flare(fparts[0]);
+            if (fd != null)
+            {
+                var ch = Journey.Ch;
+                LampBook.State(ch);
+                LampBook.SetType(ch, fd.Road);
+                var flareLit = LampBook.Now(ch).Lit;
+                flareLit.Add(Content.Lamps.All.Values.First(l => l.Effects.Any(e => e.Do == Content.LampDo.Flare && e.Flare == fparts[0])).Id);
+                foreach (var m in fparts.Skip(1))
+                    flareLit.Add(m == "!banked" ? $"{fd.Calling}.banked_flame" : Content.Lamps.All.Values.First(l => l.Effects.Any(e => e.Do == Content.LampDo.FlareMod && e.Rule == m)).Id);
+                LampBook.Carry(ch, fparts[0]);
+            }
+        }
         // --charts N: N Wayfinder's charts in the pack, the first plain, the rest finer and higher
         // (pictures of the atlas); --lit PEOPLE:TIER+...: those pairs of the atlas cleared, and
         // their points (e.g. --lit pack:1 for the beta's first tier and point).
@@ -350,7 +369,7 @@ public partial class Game : Node, IZoneHost
         var s = Settings.Current;
         s.ApplyWindow();
         cam.ShakeScale = s.ShakeLevel;
-        if (scene != null) { scene.Fx.Gore.Level = s.GoreLevel; scene.Hitstop = s.Hitstop; }
+        if (scene != null) { scene.Fx.Gore.Level = s.GoreLevel; scene.Hitstop = s.Hitstop; scene.Fx.Flare.Motion = s.Motion switch { "off" => 0, "reduced" => 0.5f, _ => 1 }; }
         Graphics.Apply(s, air, GetViewport(), scene);
         AudioServer.SetBusVolumeDb(0, s.Volume <= 0 ? -80 : Mathf.LinearToDb(s.Volume));
         voice?.Apply();
@@ -552,6 +571,11 @@ public partial class Game : Node, IZoneHost
             : (auto?.Take(a) ?? false) || (!controls.Captured && controls.Pressed(a));
         scene.OnStep = dt => { if (cine is not { ZoneHeld: true }) zone?.Step(dt); };
         scene.OnEvents = OnEvents;
+        // The Flare's view speaks to the pad, the HUD and the crowd through these (Fx/Flare/FlareFx.cs).
+        var fl = scene.Fx.Flare;
+        fl.Rumble = (lo, hi, s) => Haptics.Add(lo, hi, s, blow: lo >= 1, peak: lo >= 1);
+        fl.HudDim = k => hud.FlareDim(k);
+        CrowdView.FlareDeath = fl.DeathOf;
         ApplySettings();
         return scene;
     }
@@ -572,6 +596,7 @@ public partial class Game : Node, IZoneHost
         air.Set(zone.AtmosphereFor(time));
         air.Air(scene!.Data.Place?.Air);
         scene.View.SetNight(time == TimeOfDay.Night);
+        scene.Fx.Flare.Night = time == TimeOfDay.Night;
         scene.View.SetDusk(time == TimeOfDay.Dusk);
         Perf.Lap("the zone's runtime and its air");
         EnterPlay(zone, from, at);
@@ -1175,6 +1200,7 @@ public partial class Game : Node, IZoneHost
 
     /// <summary>--open KIND (or 'all'): the screens opened in turn, for
     /// pictures and for runs that check each builds (--bare hides the world).</summary>
+    bool flareFilled, flareReadyShot;
     bool hordeDone, dropsDone, lootDone, castDone, giveDone, minuteDone, chestDone, barksDone, answerDone, fallDone, litDone, tipDone;
     int toastI;
 
@@ -1408,6 +1434,17 @@ public partial class Game : Node, IZoneHost
         }
         // --cast T: the art in hand used once, T seconds in (a picture of it);
         // --still: used standing, with no push (a vault then springs back).
+        if (!flareFilled && Args.Has("flare") && Battle is { Flare: not null } fb0)
+        {
+            flareFilled = true;
+            fb0.FlareMeter = Battle.FlareFull * fb0.FlareCharges;
+            if (Args.Has("flare-hp")) fb0.Player.Hp = fb0.MaxHp * Args.Num("flare-hp", 1);
+        }
+        if (!castDone && !flareReadyShot && Args.Has("cast") && Battle != null && Journey.Playtime >= Args.Num("cast", 1) - 0.1)
+        {
+            flareReadyShot = true;
+            Shots.Want("ready", 0);
+        }
         if (!castDone && Args.Has("cast") && Battle is { } cb && Journey.Playtime >= Args.Num("cast", 1))
         {
             castDone = true;

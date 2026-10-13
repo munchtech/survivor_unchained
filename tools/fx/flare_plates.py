@@ -66,6 +66,7 @@ def frost_plate(size=1024, ss=2):
     S = size * ss
     img = Image.new("F", (S, S), 0.0)
     tips = Image.new("F", (S, S), 0.0)
+    tip_rng = np.random.default_rng(5)  # its own stream, so the feathers (R) are unchanged
     d = ImageDraw.Draw(img)
     dt = ImageDraw.Draw(tips)
 
@@ -95,8 +96,9 @@ def frost_plate(size=1024, ss=2):
                     if rng.random() < 0.6:
                         branch(nx, ny, a - side * math.pi / 3 * rng.uniform(0.92, 1.08), sub * rng.uniform(0.6, 1.0), gen + 1, v * 0.78)
             px, py = nx, ny
-        # the tip: a glint
-        dt.ellipse([px - 1.5 * ss, py - 1.5 * ss, px + 1.5 * ss, py + 1.5 * ss], fill=1.0)
+        # the tip: a glint, on about a third of them and a pixel wide (all of them, 3 px, read as static)
+        if tip_rng.random() < 0.3:
+            dt.ellipse([px - 0.5 * ss, py - 0.5 * ss, px + 0.5 * ss, py + 0.5 * ss], fill=1.0)
 
     # Seeds: a few long feathers sweeping across (frost on stone grows in fans from a few nuclei), many small.
     for _ in range(26):

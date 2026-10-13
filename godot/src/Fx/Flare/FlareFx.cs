@@ -156,6 +156,10 @@ public partial class FlareFx : Node3D
         Cue("inhale", Her, (float)freezeLen);
         Rumble(0, 0.5f, 0.04f);
         HudDim(1);
+        // Pictures at the beats (--shot): press +1 frame, the Draw's end, the Hold.
+        Shots.Want("b1_press", 1 / 60.0);
+        Shots.Want("b2_draw", 0.22);
+        Shots.Want("b3_hold", freezeLen - 0.12);
     }
 
     int bankShots;
@@ -299,9 +303,13 @@ public partial class FlareFx : Node3D
         ramp = 1;
         releaseAt = spendAt = lastAt = -1;
         spendLightT = -1;
+        foreach (var em in embers) if (em.Light != null && IsInstanceValid(em.Light)) em.Light.QueueFree();
         embers.Clear();
+        embersLit = 0;
+        firstLanded = calledDown = false;
         marks.Clear();
         doomed.Clear();
+        pendingShatters.Clear();
         look = web = frost = Vector4.Zero;
         RenderingServer.GlobalShaderParameterSet("flare_look", look);
         RenderingServer.GlobalShaderParameterSet("flare_web", web);

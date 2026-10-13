@@ -96,7 +96,7 @@ public partial class FlareShards : MultiMeshInstance3D
                 V = dir.Normalized() * speed * (0.5f + R() * 0.8f),
                 Axis = axis.Normalized(),
                 Spin = new Vector3(R() * 14 - 7, R() * 14 - 7, R() * 14 - 7),
-                Life = 1.6f + R() * 1.6f,
+                Life = 0.8f + R() * 0.9f,
                 Size = s,
                 Heat = heat * (0.5f + R() * 0.5f),
                 Tint = tint,
@@ -127,7 +127,7 @@ public partial class FlareShards : MultiMeshInstance3D
                     else { s.Down = true; s.V = Vector3.Zero; }
                 }
             }
-            s.Heat *= Mathf.Exp(-dt * 2.6f);
+            s.Heat *= Mathf.Exp(-dt * 6f);
             live[i] = s;
         }
         foreach (var s in live)

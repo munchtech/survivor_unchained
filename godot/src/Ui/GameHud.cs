@@ -439,6 +439,18 @@ public partial class GameHud : CanvasLayer
         play.Modulate = new Color(1, 1, 1, calm);
     }
 
+    float flareDim;
+
+    /// <summary>A Flare holds the frame (FLARE_LOOK §1.5): the play HUD dims to 35% (k 1) but her irons (her health and
+    /// the Flare's lamp) and a boss's bar; back at k 0.</summary>
+    public void FlareDim(float k)
+    {
+        if (k == flareDim) return;
+        flareDim = k;
+        foreach (var n in play.GetChildren())
+            if (n is CanvasItem c && c != irons && c != bossBox) c.Modulate = new Color(1, 1, 1, 1 - 0.65f * k);
+    }
+
     public void SetBruise(float v) => ((ShaderMaterial)bruise.Material).SetShaderParameter("amount", v);
 
     static readonly Dictionary<ToastKind, (string Glyph, Color Color)> ToastLook = new()

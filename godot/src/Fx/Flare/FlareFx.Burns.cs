@@ -28,6 +28,7 @@ public partial class FlareFx
     /// fight's blow; the bodies it kills are held standing until it lands).</summary>
     const float Fall = 0.14f, FallSpeed = 110;
     int embersLit;
+    bool firstLanded;
     bool calledDown;
 
     /// <summary>The shared angle: out of the night from the upper left of the screen, never a vertical bar.</summary>
@@ -59,6 +60,9 @@ public partial class FlareFx
             // A cold, low bounce light, no flash: its shadows throw every body outward along the ground.
             SpendLight(at + Vector3.Up * 0.6f, new Color(0.42f, 0.66f, 1f), 3.2f);
             Cue("frost", at, 1);
+            Shots.Want("b4_frost0", 1 / 60.0);
+            Shots.Want("b5_frost1", 0.1);
+            Shots.Want("b6_frost3", 0.3);
             Rumble(0.6f, 0.3f, 0.12f);
             // The ice crackles up round her feet as it goes.
             for (int i = 0; i < 40; i++)
@@ -119,10 +123,11 @@ public partial class FlareFx
             headLight.GlobalPosition = head;
             headLight.LightColor = new Color(1f, 0.58f, 0.24f);
             headLight.LightEnergy = 3.5f * hold * (clutch ? 1.15f : 1);
-            if (R() < dt * 40)
-                glow.Spawn(FlareBits.Kind.Tongue, head + Rand3() * 0.05f, Vector3.Up * (1.5f + R()), 0.3f + R() * 0.2f, 0.12f + 0.1f * hold, new Color(1.1f, 0.5f, 0.15f), lift: 1);
-            if (R() < dt * 30)
-                glow.Spawn(FlareBits.Kind.Mote, head + Rand3() * 0.03f, Vector3.Zero, 0.2f, 0.08f * hold, clutch ? new Color(0.75f, 0.9f, 1.3f) : new Color(0.35f, 0.62f, 1.2f));
+            // (Read from the arena's height: a flame half a metre tall over a steady core, its heart blue.)
+            for (int i = 0, n = (int)(dt * 70 + R()); i < n; i++)
+                glow.Spawn(FlareBits.Kind.Tongue, head + Rand3() * 0.06f, Vector3.Up * (1.6f + R()) + Rand3() * 0.3f, 0.28f + R() * 0.18f, (0.16f + 0.16f * hold) * (0.7f + 0.6f * R()), new Color(1.1f, 0.5f, 0.15f), new Color(0.6f, 0.12f, 0.02f), lift: 1);
+            glow.Spawn(FlareBits.Kind.Mote, head, Vector3.Zero, 0.04f, 0.55f * hold, new Color(0.9f, 0.45f, 0.13f));
+            glow.Spawn(FlareBits.Kind.Mote, head, Vector3.Zero, 0.04f, 0.16f * hold, clutch ? new Color(0.75f, 0.9f, 1.25f) : new Color(0.4f, 0.66f, 1.2f));
             // At night her one breath smokes as she draws it.
             if (Night && t > 0.12 && t < 0.12 + dt)
                 bed.Spawn(FlareBits.Kind.Puff, Her + new Vector3(0, 1.62f, 0) - (Cam?.Camera.GlobalBasis.Z ?? Vector3.Zero) * 0.15f, Vector3.Up * 0.25f, 1.2f, 0.12f, new Color(0.7f, 0.72f, 0.75f, 0.35f), sizeEnd: 0.5f, drag: 1.5f);
@@ -189,6 +194,8 @@ public partial class FlareFx
         var p = em.Target;
         Hitstop(em.Hitstop);
         if (em.Last) lastAt = t;
+        if (!firstLanded) { firstLanded = true; Shots.Want("b7_ember1", 1 / 60.0); Shots.Want("b8_embers", 0.2); }
+        if (em.Last) { Shots.Want("b9_last", 1 / 60.0); Shots.Want("c1_last5", 5 / 60.0); Shots.Want("c2_ret1", 1); Shots.Want("c3_ret3", 3); Shots.Want("c4_ret6", 5.5); }
         marks.Add(new Vector4(p.X, p.Z, em.Radius * (em.Last ? 1.15f : 0.9f), (float)t));
         if (marks.Count > 32) marks.RemoveAt(0);
         float big = em.Last ? 1.6f : 1;
@@ -196,10 +203,10 @@ public partial class FlareFx
         for (int i = 0; i < (em.Last ? 16 : 9); i++)
         {
             float a = R() * Mathf.Tau;
-            var v = new Vector3(Mathf.Cos(a), 0.55f + R() * 0.9f, Mathf.Sin(a)) * (5 + R() * 5) * big;
+            var v = new Vector3(Mathf.Cos(a), 1.0f + R() * 1.4f, Mathf.Sin(a)) * (4 + R() * 4) * big;
             glow.Spawn(FlareBits.Kind.Tongue, p + Vector3.Up * 0.15f, v, 0.32f + R() * 0.2f, (0.45f + R() * 0.4f) * big, new Color(1.2f, 0.52f, 0.14f), new Color(0.7f, 0.16f, 0.03f), drag: 5);
         }
-        shards.Burst(p + Vector3.Up * 0.1f, em.Last ? 30 : 16, 7.5f * big, 0.2f, new Color(0, 0, 0, 0), 1);
+        shards.Burst(p + Vector3.Up * 0.1f, em.Last ? 18 : 9, 7.5f * big, 0.2f, new Color(0, 0, 0, 0), 1);
         for (int i = 0; i < 9; i++)
             bed.Spawn(FlareBits.Kind.Puff, p + Vector3.Up * 0.3f, new Vector3((R() - 0.5f) * 6, 1.5f + R() * 2.5f, (R() - 0.5f) * 6) * big, 1.6f + R() * 1.2f, 0.7f, new Color(0.66f, 0.68f, 0.72f, 0.5f), sizeEnd: 2.8f * big, drag: 2.4f, lift: 1);
         for (int i = 0; i < 22; i++)

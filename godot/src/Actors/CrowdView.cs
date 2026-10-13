@@ -100,6 +100,9 @@ public partial class CrowdView : Node3D
 
     /// <summary>Whether a creature is under the ground by its script's say (set by the view; null: none is).</summary>
     public static Func<Enemy, bool>? Under;
+    /// <summary>The Flare's say over a body it struck down (FlareFx.DeathOf): 1 held standing until its blow lands, -1 shattered
+    /// (not drawn), 0 its own death.</summary>
+    public static Func<int, int>? FlareDeath;
 
     /// <summary>How many are standing, and lying (for the log).</summary>
     public (int Living, int Dead) Counts => (living, corpses.Count);
@@ -203,8 +206,11 @@ public partial class CrowdView : Node3D
             {
                 // Burst apart: nothing is left to fall (the gore threw it).
                 if (e.Burst) return;
+                int flareSays = FlareDeath?.Invoke(e.Id) ?? 0;
+                if (flareSays < 0) return;
                 role = g.Death ??= DeathOf(asset, e);
-                t = e.DieT * Math.Max(1, asset.Duration(role) / (Ai.DieTime * 0.62));
+                t = flareSays > 0 ? 0 : e.DieT * Math.Max(1, asset.Duration(role) / (Ai.DieTime * 0.62));
+                if (flareSays > 0) break;
                 // Summons fade; the rest fall and stay.
                 if (e.Disposition == Disposition.Ally) dissolve = Smooth(e.DieT, Ai.DieTime * 0.55, Ai.DieTime);
                 else if (e.DieT >= Ai.DieTime - 0.12) { LayOut(e, ex, ez, g.Facing, role); return; }

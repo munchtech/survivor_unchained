@@ -38,7 +38,7 @@ void vertex() {
 	} else if (v_kind > 1.5 && v_kind < 2.5) {
 		// A tongue: long along its way, narrow, rooted at its base.
 		len = size * 2.6;
-		wid = size * 0.8;
+		wid = size * 0.5;
 	} else if (v_kind > 3.5 && v_kind < 4.5) {
 		len = size + sp * 0.08;
 		wid = size * 0.25;
@@ -78,12 +78,12 @@ void fragment() {
 	} else if (v_kind < 2.5) {
 		// A tongue of flame: tapered from the root, licked ragged by the noise, hottest at its root.
 		float along = q.y * 0.5 + 0.5;
-		vec2 nuv = vec2(q.x * 0.35 + v_seed * 7.0, along * 0.8 - TIME * 2.2 - v_seed * 3.0);
+		vec2 nuv = vec2(q.x * 0.9 + v_seed * 7.0, along * 1.4 - TIME * 2.6 - v_seed * 3.0);
 		float n = texture(flare_noise, nuv).g * 0.65 + texture(flare_noise, nuv * 2.3 + 0.4).b * 0.35;
-		float width = (1.0 - along) * 0.85 + 0.12;
-		float shape = 1.0 - smoothstep(width * 0.55, width, abs(q.x) + (n - 0.5) * 0.55);
+		float width = pow(1.0 - along, 0.7) * 0.8 + 0.06;
+		float shape = 1.0 - smoothstep(width * 0.25, width, abs(q.x) + (n - 0.5) * 0.7);
 		shape *= smoothstep(0.0, 0.08, along) * (1.0 - smoothstep(0.55 + 0.45 * n, 1.0, along + v_age * 0.6));
-		a = shape;
+		a = shape * (0.55 + 0.45 * n);
 		float heat = clamp((1.0 - along) * 1.2 - abs(q.x) * 0.6 - v_age * 0.8 + n * 0.3, 0.0, 1.0);
 		rgb = mix(vec3(0.5, 0.06, 0.01), mix(col.rgb, vec3(1.0, 0.82, 0.45), smoothstep(0.6, 1.0, heat)), smoothstep(0.1, 0.6, heat));
 	} else if (v_kind < 3.5) {
@@ -92,7 +92,7 @@ void fragment() {
 		float n = texture(flare_noise, uv * 0.55 + v_seed * 5.0 + vec2(0.0, -TIME * 0.05)).r;
 		float n2 = texture(flare_noise, uv * 1.3 + v_seed * 3.0 + vec2(TIME * 0.04, 0.0)).g;
 		float r = length(q);
-		float body = 1.0 - smoothstep(0.35, 1.0, r + (n - 0.5) * 0.7 + (n2 - 0.5) * 0.3);
+		float body = 1.0 - smoothstep(0.1, 1.0, r + (n - 0.5) * 0.7 + (n2 - 0.5) * 0.3);
 		a = body * (0.55 + 0.45 * n2);
 		// Lit from below and its rim brighter than its core (a puff seen against the dark).
 		rgb = col.rgb * (0.75 + 0.5 * n2) * (0.85 + 0.3 * smoothstep(0.2, 0.8, r));

@@ -33,6 +33,8 @@ public partial class BattleFx : Node3D
     /// <summary>Blood, pools and what a burst body throws (its Level: the settings' gore).</summary>
     public readonly Gore Gore;
     public FollowCamera? Cam;
+    /// <summary>The Flares' own view (Fx/Flare, docs/design/FLARE_LOOK.md): every Flare's art is its own.</summary>
+    public readonly FlareFx Flare = new();
     /// <summary>A blow landed on the survivor: how hard (0..1), for the edges of the picture.</summary>
     public Action<float> OnDamageFlash = _ => { };
     /// <summary>Where she is drawn (between the fight's steps: Interp), on the ground.</summary>
@@ -90,6 +92,8 @@ public partial class BattleFx : Node3D
         AddChild(Gore);
         AddChild(Ribbons);
         AddChild(Blades);
+        Flare.HeightAt = heightAt;
+        AddChild(Flare);
         for (int i = 0; i < 8; i++)
         {
             var l = new OmniLight3D { LightEnergy = 0, OmniRange = 10, OmniAttenuation = 1.6f, ShadowEnabled = false, Visible = false };
@@ -651,6 +655,22 @@ public partial class BattleFx : Node3D
         {
             switch (ev)
             {
+                // The Flare's moments, and its hits and kills, are its own (no spell's bursts, no gore).
+                case Ev.Flare fe:
+                    Flare.Cam = Cam;
+                    Flare.On(fe, b);
+                    break;
+                case Ev.Kill fk when fk.ByFlare && Flare.Active:
+                    Flare.Kill(fk);
+                    break;
+                case Ev.Hit fh when fh.ByFlare && !fh.Dot:
+                {
+                    // While the Flare holds the frame only champions' and bosses' numbers show (FLARE_LOOK §1.5).
+                    var foe = fh.Target >= 0 && fh.Target < b.Enemies.Capacity ? b.Enemies.Items[fh.Target] : null;
+                    if (!Flare.Quiet || foe is { Elite: true } or { Boss: true })
+                        Hits.Tally(fh.Target, V(fh.X, Y(fh.X, fh.Z) + 1.0, fh.Z), fh.Amount, fh.MaxHp, fh.Crit);
+                    break;
+                }
                 case Ev.Hit e:
                 {
                     var at = V(e.X, Y(e.X, e.Z) + 1.0, e.Z);
@@ -668,7 +688,9 @@ public partial class BattleFx : Node3D
                         Burst(at, School.Physical, 5, 3, 2, 0.06f);
                         break;
                     }
-                    Hits.Tally(e.Target, at, e.Amount, e.MaxHp, e.Crit);
+                    // (While a Flare holds the frame only champions' and bosses' numbers show: FLARE_LOOK §1.5.)
+                    if (!Flare.Quiet || b.Enemies.Items[Math.Clamp(e.Target, 0, b.Enemies.Capacity - 1)] is { Elite: true } or { Boss: true })
+                        Hits.Tally(e.Target, at, e.Amount, e.MaxHp, e.Crit);
                     if (e.Art != null) Impact(e, at);
                     else Burst(at, e.School, e.Crit ? 10 : 4, e.Crit ? 5 : 3, size: e.Crit ? 0.12f : 0.08f);
                     if (e.Family != null)

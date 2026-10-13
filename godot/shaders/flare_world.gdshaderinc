@@ -53,8 +53,9 @@ float flare_arrive(vec2 w) {
 
 // The crystal at a point: two layers of the plate, turned and scaled apart, multiplied (no visible repeat).
 vec3 flare_crystal(vec2 w) {
-	vec2 u1 = w * 0.23;
-	vec2 u2 = mat2(vec2(0.62, -0.78), vec2(0.78, 0.62)) * w * 0.141 + 0.37;
+	// (Ferns a hand long from the arena's height: smaller, the plate read as salt and static.)
+	vec2 u1 = w * 0.11;
+	vec2 u2 = mat2(vec2(0.62, -0.78), vec2(0.78, 0.62)) * w * 0.067 + 0.37;
 	vec4 p1 = texture(flare_plate, u1);
 	vec4 p2 = texture(flare_plate, u2);
 	float c = clamp(p1.r * (0.45 + 0.9 * p2.r) * 1.25, 0.0, 1.0);
@@ -85,9 +86,11 @@ vec3 flare_web_light(vec2 w) {
 	vec2 s = vec2(flare_web.w * 3.1, flare_web.w * 1.3);
 	float e1 = texture(flare_noise, w * 0.071 + s).a;
 	float e2 = texture(flare_noise, w * 0.19 + s.yx + 0.5).a;
-	float l1 = 1.0 - smoothstep(0.0, 0.035 + fwidth(e1) * 1.2, e1);
-	float l2 = 1.0 - smoothstep(0.0, 0.03 + fwidth(e2) * 1.2, e2);
-	float line = max(l1, l2 * 0.5);
+	// Hairlines (about a pixel from the arena's height), broken into lengths like embers under ash.
+	float l1 = 1.0 - smoothstep(0.0, 0.012 + fwidth(e1), e1);
+	float l2 = 1.0 - smoothstep(0.0, 0.01 + fwidth(e2), e2);
+	float seg = smoothstep(0.3, 0.72, texture(flare_noise, w * 0.11 + s * 0.7).g);
+	float line = max(l1 * (0.3 + 0.7 * seg), l2 * 0.35 * seg);
 	// Lit from her outward as the Draw begins, fading softly toward the reach's edge (the reach shown with no ring).
 	float lit = 1.0 - smoothstep(flare_web.z - 3.0, flare_web.z, r);
 	float inside = 1.0 - smoothstep(reach * 0.55, reach * 1.02, r + (texture(flare_noise, w * 0.05).r - 0.5) * 4.0);
@@ -96,8 +99,10 @@ vec3 flare_web_light(vec2 w) {
 	float heat = clamp(flare_web.y, 0.0, 1.0);
 	vec3 hot = mix(vec3(0.32, 0.03, 0.01), flare_hue.rgb, smoothstep(0.25, 1.0, heat)) * smoothstep(0.0, 0.25, heat);
 	// A breath of glow along the line's sides keeps a hairline alive from thirty metres up.
-	float halo = (1.0 - smoothstep(0.0, 0.16, e1)) * 0.18;
-	return hot * (line + halo) * lit * inside * run * flare_web.x * 1.6;
+	float halo = (1.0 - smoothstep(0.0, 0.05, e1)) * 0.07 * seg;
+	// Brightest near her, where the light is drawn in; faint toward the reach.
+	float near = mix(1.0, 0.35, smoothstep(2.0, reach, r));
+	return hot * (line + halo) * lit * inside * run * near * flare_web.x * 0.9;
 }
 
 // The impacts: melted rings of wet ground round each, char flung out, and a hot heart that cools.
@@ -157,8 +162,8 @@ void flare_ground(vec3 wp, inout vec3 alb, inout float rough, inout float spec, 
 		vec3 glaze = black ? vec3(0.018, 0.024, 0.034) * (0.6 + 0.8 * cr.x) : vec3(0.2, 0.3, 0.4) * (0.42 + 0.95 * cr.x);
 		float feather = black ? 0.75 : 0.3 + 0.7 * clamp(cr.x * 1.35, 0.0, 1.0);
 		alb = mix(alb, glaze, ice * feather);
-		rough = mix(rough, black ? 0.04 : mix(0.07, 0.34, cr.x), ice);
-		spec = mix(spec, 0.7, ice);
+		rough = mix(rough, black ? 0.06 : mix(0.16, 0.42, cr.x), ice);
+		spec = mix(spec, 0.5, ice);
 		// The feathers stand up from the glass: their ridges catch the light.
 		float gx = dFdx(cr.x), gy = dFdy(cr.x);
 		vec3 tilt = (inv_view * vec4(gx, gy, 0.0, 0.0)).xyz;
@@ -175,9 +180,9 @@ void flare_ground(vec3 wp, inout vec3 alb, inout float rough, inout float spec, 
 		// The front: the frost crystallising as it comes, cold points in a narrow fingered band.
 		float band = smoothstep(-0.2, 0.25, flare_frost.x - arr) * (1.0 - smoothstep(0.25, 1.4, flare_frost.x - arr));
 		float twinkle = step(0.55, fract(sin(dot(floor(w * 22.0), vec2(12.9898, 78.233)) + floor(TIME * 12.0)) * 43758.5453));
-		emi += vec3(0.32, 0.62, 1.0) * (cr.y * 1.4 + cr.x * 0.18) * band * cover * (black ? 0.35 : 1.0);
+		emi += vec3(0.32, 0.62, 1.0) * (cr.y * 0.6 + cr.x * 0.22) * band * cover * (black ? 0.35 : 1.0);
 		// Held frost: a few fine points of cold light, and the meltwater's glints.
-		emi += vec3(0.4, 0.68, 1.0) * cr.y * ice * twinkle * 0.12 * flare_hue.a;
+		emi += vec3(0.4, 0.68, 1.0) * cr.y * ice * twinkle * 0.05 * flare_hue.a;
 		nrm_view = normalize((view * vec4(nw, 0.0)).xyz);
 		// The web shows faint under the ice.
 		web *= 1.0 - 0.45 * ice;

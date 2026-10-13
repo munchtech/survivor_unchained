@@ -28,5 +28,5 @@ void fragment() {
 	RIM = 0.4;
 	RIM_TINT = 0.2;
 	float heat = v_c.x;
-	EMISSION = vec3(0.25, 0.52, 0.95) * pow(rim, 3.0) * 0.45 + vec3(1.0, 0.36, 0.07) * heat * (0.35 + 0.8 * pow(rim, 2.0)) * 1.4;
+	EMISSION = vec3(0.25, 0.52, 0.95) * pow(rim, 3.0) * 0.45 + vec3(1.0, 0.36, 0.07) * heat * (0.35 + 0.8 * pow(rim, 2.0)) * 0.6;
 }
