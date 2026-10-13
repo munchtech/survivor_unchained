@@ -194,22 +194,12 @@ def stalker_show(rig):
 
 
 # ----------------------------------------------------------------- breaks --
-def _carry_l(dx, dy, dz):
-    """The Warden's side-carry left hand, moved (x out to her left, y up, z
-    forward, metres from the carry), its grip and roll kept."""
-    h = dict(arms_of("warden")["hand_l"])
-    az, el, r = h["arc"]
-    v = np.array([r * math.cos(math.radians(el)) * math.sin(math.radians(az)), r * math.sin(math.radians(el)),
-                  r * math.cos(math.radians(el)) * math.cos(math.radians(az))])
-    h["arc"] = arc_of(v + np.array([dx, dy, dz]))
-    return h
-
-
-def _swing_l(abd, flex):
+def _swing_l(abd, flex, reach=0.0):
     """The side-carry left arm swung whole about the shoulder (abduction out,
     flexion forward, degrees), the elbow's bend and the hand on the forearm
     kept: the reach, pole and thumb turn with it (judge 51: lifting by the
-    elbow swings the shield's top rim into the pauldron)."""
+    elbow swings the shield's top rim into the pauldron). `reach` (m) opens
+    the elbow a little (about 2.5 mm a degree) for its follow-through."""
     h = dict(arms_of("warden")["hand_l"])
     az, el, r = h["arc"]
     a, b = math.radians(abd), math.radians(flex)
@@ -218,7 +208,7 @@ def _swing_l(abd, flex):
     R = Rx @ Rz
     v = np.array([r * math.cos(math.radians(el)) * math.sin(math.radians(az)), r * math.sin(math.radians(el)),
                   r * math.cos(math.radians(el)) * math.cos(math.radians(az))])
-    h["arc"] = arc_of(R @ v)
+    h["arc"] = arc_of(R @ v * (r + reach) / r)
     for k in ("pole", "thumb"):
         if k in h:
             h[k] = tuple(R @ np.array(h[k], float))
@@ -246,13 +236,13 @@ def warden_break(rig):
         # the side carry by f80. The forearm keeps the carry's roll.
         # The clavicle leads (its peak at f54), the arm swung whole about the
         # shoulder trails it to f57; the elbow keeps the carry's bend.
-        (54, over("warden", hand_r=shoulder, clav_l=(10, 0), hand_l=_swing_l(6, 3.5),
+        (54, over("warden", hand_r=shoulder, clav_l=(10, 0), hand_l=_swing_l(6, 3.5, 0.005),
                   head=(8, 6, 0)), "auto"),
-        (57, over("warden", hand_r=shoulder, clav_l=(10, 0), hand_l=_swing_l(10, 6),
+        (57, over("warden", hand_r=shoulder, clav_l=(10, 0), hand_l=_swing_l(10, 6, 0.0025),
                   head=(10, 8, 0)), "ease"),
-        (64, over("warden", hand_r=shoulder, clav_l=(6, -10), hand_l=_swing_l(2.5, 0),
+        (64, over("warden", hand_r=shoulder, clav_l=(6, -10), hand_l=_swing_l(2.5, 0, 0.0075),
                   spine=(0, -3, 0), head=(4, -3, 0)), "auto"),
-        (72, over("warden", hand_r=shoulder, clav_l=(-2, -2), head=(0, 3, 0),
+        (72, over("warden", hand_r=shoulder, clav_l=(-2, -2), hand_l=_swing_l(0, 0, 0.006),
                   fingers_l={"curl": 1.05, "cascade": 0.05, "thumb": 1.6, "oppose": 0.9}), "ease"),
         (80, over("warden", hand_r=shoulder), "ease"),
         (100, over("warden"), "ease"),
