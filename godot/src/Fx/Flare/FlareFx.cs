@@ -28,6 +28,10 @@ public partial class FlareFx : Node3D
     public bool LessFlash;
     /// <summary>A sound cue (Audio/Sfx.Flare.cs), where, and how strong.</summary>
     public Action<string, Vector3, float> Cue = (_, _, _) => { };
+    /// <summary>The eye stopping down after the last BOOM (the tone curve's exposure x this): after the flash's 4
+    /// frames the night dims to 0.7 and comes back over a second, so the fire stays the brightest thing on screen
+    /// and the frame's mean holds under §1.6's 1.5x (it held 1.9x for 0.6 s).</summary>
+    public Action<float> Dip = _ => { };
     /// <summary>The pad: low motor, high motor, seconds.</summary>
     public Action<float, float, float> Rumble = (_, _, _) => { };
     /// <summary>The HUD's dim (0 none .. 1 the Flare's 35%).</summary>
@@ -226,6 +230,11 @@ public partial class FlareFx : Node3D
             RenderingServer.GlobalShaderParameterSet("flare_web", web);
             RenderingServer.GlobalShaderParameterSet("flare_frost", frost);
             UploadMarks();
+            if (lastAt > 0)
+            {
+                float s = (float)(t - lastAt);
+                Dip(1 - 0.3f * Mathf.SmoothStep(0.05f, 0.09f, s) * (1 - Mathf.SmoothStep(0.5f, 1.2f, s)) * (LessFlash ? 0.5f : 1));
+            }
             if (Done())
             {
                 // (for the pictures' log: how much of the room the Flare cleared)
@@ -322,6 +331,7 @@ public partial class FlareFx : Node3D
         doomed.Clear();
         pendingShatters.Clear();
         look = web = frost = Vector4.Zero;
+        Dip(1);
         RenderingServer.GlobalShaderParameterSet("flare_look", look);
         RenderingServer.GlobalShaderParameterSet("flare_web", web);
         RenderingServer.GlobalShaderParameterSet("flare_frost", frost);

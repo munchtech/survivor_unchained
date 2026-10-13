@@ -575,6 +575,7 @@ public partial class Game : Node, IZoneHost
         var fl = scene.Fx.Flare;
         fl.Rumble = (lo, hi, s) => Haptics.Add(lo, hi, s, blow: lo >= 1, peak: lo >= 1);
         fl.HudDim = k => hud.FlareDim(k);
+        fl.Dip = k => air.FlareDip = k;
         fl.Cue = (cue, at, k) =>
         {
             // Panned and distanced from her, as the fight's own sounds (SoundBridge.At).
