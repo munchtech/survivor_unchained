@@ -93,14 +93,11 @@ public partial class HerFaceLife : Node
     {
         if (teeth == null || mouth == null || teeth.Mesh == null) return;
         float w = Mathf.Max(open >= 0 ? mouth.GetBlendShapeValue(open) : 0, snarl >= 0 ? mouth.GetBlendShapeValue(snarl) : 0);
-        float k = Mathf.Lerp(TeethClosed, 1f, Mathf.SmoothStep(0.03f, 0.3f, w));
+        float k = Mathf.SmoothStep(0.03f, 0.3f, w);
         for (int s = 0; s < teeth.Mesh.GetSurfaceCount(); s++)
-            if (teeth.GetSurfaceOverrideMaterial(s) is StandardMaterial3D m && m.ResourceName == "teeth")
-                m.AlbedoColor = new Color(k, k, k);
+            if (teeth.GetSurfaceOverrideMaterial(s) is ShaderMaterial m && m.ResourceName == "teeth")
+                m.SetShaderParameter("lit", k);
     }
-
-    /// <summary>Her teeth's paint with her lips closed (an sRGB grey: about a seventh of it in light).</summary>
-    public static float TeethClosed = Args.Has("teeth-closed") ? Args.Num("teeth-closed", 0.4f) : 0.4f;
 
     void SkinParams()
     {

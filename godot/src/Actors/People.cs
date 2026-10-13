@@ -495,12 +495,15 @@ public static class People
                     m.AlbedoTexture = TextureOrTry("res://art/people/head_tex/heroine_lashes.png", "lashes");
                 m.Roughness = 0.8f;
                 return HairDraw.Cards(m) ?? Coverage.Cards(m);
-            case "teeth" or "tongue":
+            case "teeth":
+                // (her side teeth, and all of them while her lips are closed, in the mouth's own warm shade:
+                // shaders/heroine_teeth.gdshader, lit by HerFaceLife.TeethLight)
+                teethShader ??= GD.Load<Shader>("res://shaders/heroine_teeth.gdshader");
+                var th = new ShaderMaterial { Shader = teethShader, ResourceName = "teeth" };
+                th.SetShaderParameter("paint", src.AlbedoTexture);
+                return th;
+            case "tongue":
                 m.Roughness = 0.35f;
-                // (her side teeth in the cheeks' shade: a grey vertex colour, linear, tools/assets/heroine_teethshade.py;
-                // white where a mesh has none)
-                m.VertexColorUseAsAlbedo = src.ResourceName == "teeth";
-                m.VertexColorIsSrgb = false;
                 return m;
             default:
                 return Skin(src, look, mesh, who == "hero" ? HisTone : null, who);
@@ -864,7 +867,7 @@ public static class People
         return ImageTexture.CreateFromImage(img);
     }
 
-    static Shader? hairShader, hairSoftShader, eyeShader;
+    static Shader? hairShader, hairSoftShader, eyeShader, teethShader;
 
     /// <summary>Hair: her hair cards (tools/assets/heroine_hair.py) by
     /// shaders/heroine_hair.gdshader, dyed: the strands' atlas cut to its
