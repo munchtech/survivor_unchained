@@ -12,13 +12,15 @@ Each flagged frame, and each breast's closest frame, is saved as a crop with a b
 it is a test tint, not the game, and a ring on the closest pixel.
 A code pixel further on screen from both posed tips than its own code allows is a garment's
 colour passing for a code, not skin, and is not read (stray()).
-    python count.py <folder> [MIN_PX=6]
+    python count.py <folder> [MIN_PX=1]
+Since 12 Oct 2026 the summary's counts mean "any pixel" (threshold 1; before, 6 or more), so
+older summaries and qsum bases read lower. A higher MIN_PX is printed in the summary's first line.
 Writes <folder>/counts.csv, <folder>/summary.txt and <folder>/crops/.
 Nothing is ignored silently: pixels dropped by stray() (stray_px) or by the binding-highlight
 filter and the lone-pixel filter in codes() (binding_px, lone_px) are counted per frame in counts.csv, logged per connected group
 in <folder>/stray.txt (frame, centre, pixels, filter, claimed cm, and for stray() how far past
-its reach) and ringed in <folder>/stray/ (crops of 96x96 at 4x; binding crops capped at
-MAX_BIND_CROPS a run, every group still logged)."""
+its reach) and ringed in <folder>/stray/ (crops of 96x96 at 4x; binding and lone crops capped at
+MAX_BIND_CROPS a run, largest groups first, "N of M cropped" in the summary; every group still logged)."""
 import glob
 import json
 import math
@@ -30,7 +32,7 @@ from scipy import ndimage
 from PIL import Image, ImageDraw, ImageFont
 
 folder = sys.argv[1]
-least = int(sys.argv[2]) if len(sys.argv) > 2 else 6
+least = int(sys.argv[2]) if len(sys.argv) > 2 else 1  # 1: any pixel counts; a higher value only when passed
 AREOLA = 2.2      # cm: her areola's pigment (texture rings, 4 Oct 2026)
 NEAR = 6.0        # cm: the reach of the distance code
 BANNER = ('TEST TINT for the legal check only. Not in the game. Blue to pink = skin within 6 cm '
@@ -157,6 +159,7 @@ def stray(dist, tips):
 
 MAX_BIND_CROPS = 20
 os.makedirs(os.path.join(folder, 'stray'), exist_ok=True)
+pending = []  # binding and lone groups, cropped largest first once all frames are read
 stray_log = []  # lines of stray.txt
 totals = {'stray': 0, 'binding': 0, 'lone': 0, 'stray_groups': 0, 'binding_groups': 0, 'lone_groups': 0, 'binding_crops': 0, 'lone_crops': 0}
 
@@ -187,8 +190,8 @@ def report(mask, kind, name, im, dist=None, ratio=None):
             why = {'binding': 'highlight blend dropped as not a code',
                    'lone': 'lone pixel at the tip dropped as a render artefact'}[kind]
             line = '%s %s centre (%d,%d) %d px %s' % (name, kind, cx, cy, len(gx), why)
-            totals[kind + '_crops'] += 1
-            crop = totals[kind + '_crops'] <= MAX_BIND_CROPS
+            crop = False
+            pending.append((len(gx), kind, name, cx, cy))  # cropped after the run, largest first
         stray_log.append(line)
         totals[kind + '_groups'] += 1
         if crop:
@@ -300,11 +303,22 @@ total_line = ('dropped, not read: %d px in %d groups by stray(), %d px in %d gro
               '(see stray.txt; crops in stray/)' % (totals['stray'], totals['stray_groups'], totals['binding'], totals['binding_groups'], totals['lone'], totals['lone_groups']))
 
 
+cropped = {}
+for n_px, kind, nm, cx, cy in sorted(pending, key=lambda t: -t[0]):
+    cropped.setdefault(kind, [0, 0])[1] += 1
+    if cropped[kind][0] < MAX_BIND_CROPS:
+        cropped[kind][0] += 1
+        ringed(Image.open(os.path.join(folder, nm)).convert('RGB'), cx, cy,
+               os.path.join(folder, 'stray', '%s_%s_%d_%d.png' % (kind, nm[:-4], cx, cy)))
+total_line += ' Crops, largest groups first: ' + ', '.join('%s %d of %d cropped' % (k, v[0], v[1]) for k, v in sorted(cropped.items())) + '.'
+
+
 def margin(v):
     return '%+.2f cm' % (v - AREOLA)
 
 
-lines = [total_line, 'Margins are past the areola\'s edge (2.2 cm from its centre): negative means the areola shows.',
+lines = ['threshold %d px%s' % (least, '' if least == 1 else ' (explicit; frames under it are NOT listed as flagged)'),
+         total_line, 'Margins are past the areola\'s edge (2.2 cm from its centre): negative means the areola shows.',
          'Edges are as seen in that view, from the posed tip: "inner" is towards her midline.',
          'No near skin in view at all means every margin is past %.1f cm.' % (NEAR - AREOLA), '']
 for outfit in sorted({r[0].split('_')[0] for r in rows}):
@@ -337,7 +351,9 @@ for outfit in sorted({r[0].split('_')[0] for r in rows}):
         x, y = loc
         labelled(im, (max(x - 120, 0), max(y - 90, 0), min(x + 120, im.width), min(y + 90, im.height)),
                  os.path.join(folder, 'crops', 'tuck_%s_%d.png' % (outfit, i)), ring=loc)
-    for r in [r for r in rs if r in af or r in gf][:16]:
-        lines.append('  flagged: %s (areola %d px, genital %d px, tucked %d px)' % (r[0], r[1], r[2], r[3]))
+    for r in rs:
+        for kind, px in (('areola', r[1]), ('genital strip', r[2]), ('tucked skin', r[3])):
+            if px >= least:
+                lines.append('  flagged: %s, %s, %d px' % (r[0], kind, px))
 open(os.path.join(folder, 'summary.txt'), 'w').write('\n'.join(lines) + '\n')
 print('\n'.join(lines))
