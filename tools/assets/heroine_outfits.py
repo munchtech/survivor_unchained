@@ -4144,6 +4144,15 @@ def arcanist():
             ok = ~np.isnan(Y[a])
             Y[a] = np.where(ok, Y[a], np.nanmin(Y[a]) if ok.any() else np.nanmin(Y))
         Y = np.minimum.accumulate(Y[:, ::-1], axis=1)[:, ::-1]   # (never behind what lies outside it)
+        if CLASP_D and CLASP_D_ROUND and os.environ.get("CLASP_D_LIE", "1") == "1":
+            # (D2: across its foot the back follows the cloth and binding as they are,
+            # not held to the front-most outside each point: there the corset recedes
+            # about 17 deg as it rises and its binding lies flush with it, so held
+            # square the crescent stood 3.4 mm off the binding at its top, its stone
+            # square to her, and from above its foot read as a ledge or hood, judge h.
+            # Laid on them it is seen nearly face on from above; the horns as before)
+            w_ = np.clip((0.7 - s_) / 0.3, 0, 1)
+            Y = Y + (w_ * w_ * (3 - 2 * w_))[:, None] * (np.where(np.isnan(Yraw), Y, Yraw) - Y)
         # (a rigid piece of metal, not a foil: its back is one smooth surface,
         # a cubic in x and z hugging the front-most of the cloth and binding
         # under it (refitted to the lower envelope), then set CLASP_OFF, 3 mm,
