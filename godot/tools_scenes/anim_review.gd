@@ -336,15 +336,20 @@ func weapon(skel, kind):
 	steel.roughness = 0.3
 	var wood = StandardMaterial3D.new()
 	wood.albedo_color = Color(0.35, 0.22, 0.12)
-	# SHEATH=1: the pieces at their sockets (the "sheathed" entries ArmsDump writes: the socket's bone, the
-	# piece with its scabbard in that bone's space) instead of the hands; one with no socket stays in hand.
-	var sheathed = data.get("sheathed", {}) if env("SHEATH", "") != "" else {}
+	# SHEATH=1: the pieces at their sockets, mounted by the game's code (Arms.HoldSheathed: the sword in its
+	# scabbard, the worn outfit's clearance) instead of the hands; one with no socket stays in hand.
+	var sheathe = env("SHEATH", "") != ""
+	var sr = load("res://tools_scenes/SheathedReview.cs").new() if sheathe else null
+	var calling = "" if env("OUTFIT", "none") == "none" else env("OUTFIT", "none")
 	for key in PIECES.get(kind, []):
+		# (The game's own piece and socket: Arms.HoldSheathed, through SheathedReview.cs.)
+		if sheathe and sr.Mount(skel, key.split("@")[0], key.ends_with("@hand_l"), calling):
+			continue
 		if not data.has(key):
 			print("WEAPON: no piece ", key)
 			continue
-		var piece = sheathed[key] if sheathed.has(key) else data[key]
-		var bone = piece["bone"] if sheathed.has(key) else key.split("@")[1]
+		var piece = data[key]
+		var bone = key.split("@")[1]
 		var verts = PackedVector3Array()
 		for v in piece["v"]:
 			verts.append(Vector3(v[0], v[1], v[2]))

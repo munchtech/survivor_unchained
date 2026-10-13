@@ -112,8 +112,8 @@ public partial class PersonView : Node3D, INpcView
         breakT -= delta;
         if (breakT > 0) return;
         breakT = rng.RandfRange(9, 15);
-        var brk = $"idle_{person.Calling}_break";
-        if (own.Has(brk)) Act(own.Prefix + brk);
+        var brk = Sheath.Pick(People.Clip(person, loop).EndsWith("_town"), $"idle_{person.Calling}", "_break", own.Has);
+        if (brk != null && own.Has(brk)) Act(own.Prefix + brk);
     }
 
     /// <summary>A gesture once; held on its last frame (a fall, getting up)

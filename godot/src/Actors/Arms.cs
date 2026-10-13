@@ -311,12 +311,16 @@ public static class Arms
     }
 
     /// <summary>Mount a weapon at its sheathed socket (a sword with its scabbard), or null if it has none.</summary>
-    public static Node3D? HoldSheathed(People.Person person, string id, bool left)
+    public static Node3D? HoldSheathed(People.Person person, string id, bool left) => HoldSheathed(person.Skeleton, id, left, person.Calling);
+
+    /// <summary>The same on a bare skeleton, for an outfit's calling ("" none): what tools_scenes/SheathedReview.cs
+    /// mounts for the review sheets (anim_review.gd, SHEATH=1), so the sheets show the game's piece.</summary>
+    public static Node3D? HoldSheathed(Skeleton3D skeleton, string id, bool left, string? calling)
     {
-        if (Sheathed(id, left, person.Calling) is not { } sock) return null;
+        if (Sheathed(id, left, calling ?? "") is not { } sock) return null;
         var (bone, at) = sock;
         var att = new BoneAttachment3D { BoneName = bone };
-        person.Skeleton.AddChild(att);
+        skeleton.AddChild(att);
         var mount = new Node3D { Name = $"sheathed:{bone}" };
         att.AddChild(mount);
         mount.Transform = at;
@@ -324,30 +328,35 @@ public static class Arms
         return mount;
     }
 
-    /// <summary>A piece as it rides sheathed, in its mount's space: the weapon, and for a sword its scabbard from
-    /// just under the guard, round the blade and a thumb past its tip (also what ArmsDump writes).</summary>
+    /// <summary>A piece as it rides sheathed, in its mount's space, its sheath point (anchor_sheath, else the grip) at
+    /// the origin: the weapon, and for a one-handed blade its scabbard from the guard round the blade to a thumb past
+    /// its tip (WeaponSockets.BladeLength; also what ArmsDump writes).</summary>
     public static Node3D MakeSheathed(string id)
     {
         var root = new Node3D { Name = "sheathed" };
+        var info = Info(id);
         var w = Make(id);
         w.Transform = PieceTransform(id);
         root.AddChild(w);
-        if (Scabbarded.Contains(id))
+        if (Scabbarded(KindOf(id)))
         {
-            var sp = All[id];
-            float guard = 0.10f, blade = sp.Length * (1 - sp.Grip) - guard;
-            var sc = Made.Scabbard(blade);
-            sc.Position = new Vector3(0, guard, 0);
+            const float guard = 0.10f;
+            var sc = Made.Scabbard(WeaponSockets.BladeLength(info.Tip, info.Sheath.Y, guard));
+            sc.Position = new Vector3(0, info.Sheath.Y + guard, 0);
             root.AddChild(sc);
         }
+        var off = PieceTransform(id) * info.Sheath - PieceTransform(id).Origin;
+        if (off != Vector3.Zero)
+            foreach (var c in root.GetChildren())
+                if (c is Node3D n) n.Position -= off;
         return root;
     }
 
-    /// <summary>The swords, which ride in a scabbard.</summary>
-    public static readonly HashSet<string> Scabbarded = new() { "chevalier_sword", "viking_sword", "longsword" };
+    /// <summary>Which kinds ride in a scabbard: the one-handed blades (by kind, never by item).</summary>
+    public static bool Scabbarded(WeaponKind kind) => kind == WeaponKind.Blade1H;
 
     /// <summary>How far the shield mount sits off the forearm bone, toward the back of the arm (m).</summary>
-    const float ShieldOff = 0.11f;  // was 0.08: 3 cm further out along the shield's face normal (judge 45)
+    const float ShieldOff = 0.115f;  // 0.08 -> 0.11 (judge 45), -> 0.115 (13 Oct: the rim grazed her own upper arm 1.6-1.8 mm in every Warden idle and stop; the arm runs along the disc)
 
     /// <summary>How far down the forearm the shield is strapped (m): its boss over her wrist, so the rim sits under her shoulder armour with air.</summary>
     const float ShieldAlong = 0.23f;
