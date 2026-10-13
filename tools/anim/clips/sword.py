@@ -44,9 +44,15 @@ def feet(weight=0.0, pivot=0.0):
     }
 
 
+# The buckler's hand in the guard (chest frame, from the shoulder) and its elbow's way.
+GUARD_L_AT = (-0.12, -0.26, 0.22)
+GUARD_L_POLE = (1.0, -0.4, -0.3)
+
+
 def guard_l(lift=0.0):
     """The buckler held up before her, a little to the left."""
-    return {"arc": arc_of((-0.12, -0.26 + lift, 0.22)), "pole": (1.0, -0.4, -0.3), "frame": "chest",
+    x, y, z = GUARD_L_AT
+    return {"arc": arc_of((x, y + lift, z)), "pole": GUARD_L_POLE, "frame": "chest",
             "blade": _n(-0.3, 0.75, 0.6), "twist": 0.3}
 
 

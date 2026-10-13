@@ -91,6 +91,11 @@ def sit_log(rig):
 
 
 # ------------------------------------------------------------ flourishes --
+def SHOW_L(at=(-0.14, -0.13, 0.30), pole=(1.0, -0.3, -0.3)):
+    """warden_show's shield hand in the guard (chest frame, from the shoulder)."""
+    return {"arc": arc_of(at), "pole": pole, "frame": "chest", "blade": _n(-0.2, 0.9, 0.4), "twist": 0.3}
+
+
 def warden_show(rig):
     """She steps in behind the buckler and levels the sword over its rim at
     you, glaring over it; holds; settles back."""
@@ -107,8 +112,7 @@ def warden_show(rig):
     # arm folded and the forearm came up across her face; pointed at the
     # camera, the blade crossed her face and read as nothing.)
     guard = {**step, "spine": (-8, 8, 0), "head": (12, -10, 0),
-             "hand_l": {"arc": arc_of((-0.14, -0.13, 0.30)), "pole": (1.0, -0.3, -0.3), "frame": "chest",
-                        "blade": _n(-0.2, 0.9, 0.4), "twist": 0.3},
+             "hand_l": SHOW_L(),
              "hand_r": {"arc": arc_of((-0.14, 0.29, -0.04)), "pole": (-1.0, -0.2, -0.2), "frame": "chest",
                         "blade": _n(0.28, 0.02, 0.96), "twist": 0.5},
              "fingers_l": "fist", "fingers_r": "grip"}
