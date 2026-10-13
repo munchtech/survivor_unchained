@@ -35,6 +35,12 @@ The Long Cut's full-board share is over 30% (and over 35% at T2-T3), and `bossMu
 - Branding: none 18.9/21.6/20.4/15.9; Branded Deep 18.8/19.5/14.3/17.6; Second Brand 21.4/23.6/19.0/21.0; The Eye 17.5/19.6/19.6/20.9.
 - Read with care: 24 runs a tier swing about ±3-4 points (the Bill with no modifier reads higher than with all three), and `--dark` leaves the put-out lamps' points unspent, so these read a little high. Re-run the Bill and One Arrow at their final bossMul (0.5, 0.45) before calling any of them over 35%: the Bill at 0.5 with all three lit read 22-27%. If the reading stays noisy, double the seeds (48 a tier).
 
+## Session 17 (in progress)
+- Written (08b3b8c1): bossMul Long Cut 0.6, Bill 0.5, One Arrow 0.45; Drag and Branding 1.0. Act 1 on the written data (S/out/w17rep.txt): pooled 1-96 against plain lc -1.8%, bb +0.9%, oa +0.9%, dt -2.0%, br -0.0%; lc 97-288 -1.0%. Against pre-Flare 11 Oct (seeds 1-32, written / never): lc -14.0% / +7.6%, bb -18.9% / -1.1%, oa -20.5% / +3.5%. Arena full board, 48 seeds: bb 22.6/24.4/26.8/28.2%, oa 29.3/27.6/27.9/26.6%.
+- Early modifiers (each alone, seeds 1-32, against the written staged): Branding The Eye -0.8% (cells within 3.3): early. Bill Wide Chops +0.4% (cells within 5.8): early (Running Tab vault/deft -9.4%, Feast -7.5%). One Arrow Pinned -0.1% but dig/deft +9.5%, Drag Hold Him -0.4% with roost/deft -6.0%: re-run on 33-96 (S/w17c.sh, S/out/w17c.txt). Through the Heart -17.2%, Split Thrice -6.0%, Second Brand -5.5%: never early.
+- Long Cut arena share: a su-lead-max solver on the named route (Line of Morning's zones take bossMul on a boss; Second Cut's counter-sweep takes a new "secondBoss" on a boss; each modifier alone <=35% at every tier, 48 seeds). It also picks the Long Cut's early modifier.
+- Bill and One Arrow each modifier alone in the arena at the final bossMul, 48 seeds: S/w17b.sh (runner, reports to the coordinator).
+
 ## Next, in order
 1. Check S/out for what landed after wind-down: Re-run any missing with the same scripts. `python S/rep.py dt` reads a Flare whole; `S/sh.py` reads arena shares; `S/cell.py REF X FIGHT 0|1` a cell with its SE.
 2. Write the three bossMuls into lamps_quarters.py; settle the Long Cut's arena share (above).
