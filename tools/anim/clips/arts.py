@@ -191,10 +191,18 @@ CHARGE = replace(WARDEN, frames=12, speed=4.4, duty=0.3, drop=0.13, bob=0.06, le
                  hip_roll=3, chest_yaw=4, reach=0.44, kick=0.46, knee=0.40, shoulders=(8, 8),
                  arms={"l": _shield_rush, "r": _sword_cocked})
 RUSH_TURN = (-8, -22, 26)   # hips, spine yaw (the left shoulder leading), head yaw back to the front
-SWORD_BACK_BLADE = (-0.17, -0.10, -0.98)     # f12: the blade drawn straight back behind her (chest frame)
-SWORD_RISE_BLADE = (-0.25, 0.55, -0.80)      # f14: already rising behind her as the shove lands
-SWORD_SIDE = np.array((-0.12, -0.29, 0.14))   # f16: the sword hand by her right hip, out from her (chest frame, from the shoulder)
-SWORD_SIDE_BLADE = (-0.50, 0.84, 0.20)       # the blade up and out to her right, on its way into the guard
+SWORD_BACK = (-0.24, -0.05, -0.08)            # f12: the sword hand flung out and back at her right side, chest high (chest frame, from the shoulder)
+SWORD_BACK_POLE = (-0.2, -1.0, -0.3)          # the elbow down by her ribs, the forearm up and out
+PLANT_L = (0.15, 0.0, 0.17)                    # f12: the lead foot stamps down where her guard keeps it
+BLEND_IN = 8                                   # the charge eases toward the plant from this frame
+SWORD_BACK_BLADE = (-0.2, 0.15, -0.97)       # f12: the blade drawn back behind her, a little up (chest frame)
+# The sword hand's way from the plant into her guard (SWING): out round her
+# right side, the elbow dropping to her ribs and the forearm coming up level
+# and out, so the blade rises on her right and goes over into the guard
+# (frame, the hand from the shoulder in the chest frame, the elbow's way).
+SWORD_WAY = ((12, SWORD_BACK, SWORD_BACK_POLE),
+             (16, (-0.25, -0.15, 0.08), (-0.25, -1.0, -0.1)),
+             (22, None, None))                 # (None: her guard's)
 HOME_LIFT = 0.025                              # f22: the shield a little up off her breastplate as it settles
 HEAD_FROM, HEAD_SETTLE = 11, 24
 
@@ -241,6 +249,16 @@ def _head_held(start, settle, guard):
 
 
 def bull_rush(rig):
+    plant = {"foot_l": {"pos": PLANT_L, "rot": (12, 0, 0), "pole": (0.2, 0, 1)},
+             "foot_r": {"pos": (-0.14, 0.06, -0.46), "rot": (-16, 40, 0), "toe": 40},
+             "fingers_l": "fist", "fingers_r": "grip"}
+    shove_l = {"arc": arc_of((-0.10, 0.02, 0.44)), "pole": (1.0, -0.2, -0.3), "frame": "chest",
+               "blade": _n(-0.1, 0.85, 0.5), "twist": 0.3}
+    sword_up = {"arc": arc_of(SWORD_BACK), "pole": SWORD_BACK_POLE, "frame": "chest",
+                "blade": _n(*SWORD_BACK_BLADE), "twist": 0.5}
+    slam = body({**plant, "hips": {"pos": (0.02, -0.22, 0.10)}, "hand_l": shove_l, "hand_r": sword_up,
+                 "clav_l": (6, 16), "clav_r": (6, -4)},
+                hips=(-12, 22, 0), spine=(-22, 16, 0), neck=(0, -10, 0), head=(18, -18, 0))
     keys = []
     for f in range(12):
         pose = pose_at(CHARGE, rig, (f / 12) % 1.0)
@@ -251,45 +269,35 @@ def bull_rush(rig):
         sp = pose["spine"]
         pose["spine"] = (sp[0] + RUSH_TURN[1], sp[1], sp[2])
         pose["head"] = (pose["head"][0] + RUSH_TURN[2], pose["head"][1] + 2, 0)
+        pose["fingers_r"] = "grip"
+        if f > BLEND_IN:
+            # The last strides ease into the plant (the body, the arms' places,
+            # the feet: the lead foot comes down under her, the back leg reaches
+            # out behind), so nothing jumps as the plant lands.
+            u = (f - BLEND_IN) / (12 - BLEND_IN)
+            pose = _toward(pose, slam, u * u * (3 - 2 * u))
         keys.append((f, pose, "linear"))
-    shove_l = {"arc": arc_of((-0.10, 0.02, 0.44)), "pole": (1.0, -0.2, -0.3), "frame": "chest",
-               "blade": _n(-0.1, 0.85, 0.5), "twist": 0.3}
-    # The sword drawn back behind her as the shield goes in, the wrist
-    # straight and the blade trailing where the arm takes it; it comes over
-    # the top into the guard as she recovers. (Held upright while the arm
-    # swung from behind her to the front, the hand rolled over in a frame.)
-    # (Every sword key aims the blade alone: a thumb-aimed key among them had
-    # each key's whole turn filled in, and the turn over the forearm, taken
-    # the nearest way frame to frame, went round the far side at f15 and
-    # stayed there, the blade pointing at the floor to the end.)
-    sword_up = {"arc": arc_of((-0.18, -0.20, -0.06)), "pole": (-0.6, 0.3, 0.4), "frame": "chest",
-                "blade": _n(*SWORD_BACK_BLADE), "twist": 0.5}
-    sword_rise = {**sword_up, "blade": _n(*SWORD_RISE_BLADE)}
-    # On the way up to the guard the sword comes round by her right hip, the
-    # elbow bent and out, the blade up and out to her right, so it never
-    # crosses her or the shield (it swung under and through the shield).
-    sword_side = {"arc": arc_of(SWORD_SIDE), "pole": (-0.1, -0.5, -0.85), "frame": "chest",
-                  "blade": _n(*SWORD_SIDE_BLADE), "twist": 0.5}
-    plant = {"foot_l": {"pos": (0.12, 0.0, 0.56), "rot": (10, 0, 0), "pole": (0.2, 0, 1)},
-             "foot_r": {"pos": (-0.14, 0.06, -0.46), "rot": (-16, 40, 0), "toe": 40},
-             "fingers_l": "fist", "fingers_r": "grip"}
+    # The sword drawn back behind her as the shield goes in; from the plant
+    # it goes its way (SWORD_WAY, _sword_way) round her right side and up
+    # into the guard, the blade rising over the top, never across her or the
+    # shield. (Keyed by its blade at each key, the hand rolled over in a
+    # frame: from behind her to the front the forearm swings the other way
+    # than the blade turns, and the turn about the forearm, taken the nearest
+    # way frame to frame, went round the far side.)
     keys += [
         # The lead foot slams down; the shield punches out, the body behind it.
-        (12, body({**plant, "hips": {"pos": (0.02, -0.22, 0.10)}, "hand_l": shove_l, "hand_r": sword_up,
-                   "clav_l": (6, 16), "clav_r": (6, -4)},
-                  hips=(-12, 22, 0), spine=(-22, 16, 0), neck=(0, -10, 0), head=(18, -18, 0)), "fast"),
+        (12, slam, "fast"),
         (14, body({**plant, "hips": {"pos": (0.02, -0.24, 0.13)}, "hand_l": {**shove_l, "arc": arc_of((-0.08, 0.04, 0.47))},
-                   "hand_r": sword_rise, "clav_l": (6, 20), "clav_r": (6, -6)},
+                   "clav_l": (6, 20), "clav_r": (6, -6)},
                   hips=(-14, 24, 0), spine=(-24, 16, 0), neck=(0, -10, 0), head=(20, -18, 0)), "ease"),
-        # The rebound: back up over her feet, shield home, the sword round
-        # by her right hip and up into the guard.
-        (16, body({"hips": {"pos": (0.01, -0.20, 0.10)}, "hand_r": sword_side, "clav_l": (4, 12), "clav_r": (4, -4)},
+        # The rebound: back up over her feet, the back foot stepping up into
+        # her guard (the lead foot stays planted), shield home.
+        (16, body({"foot_l": plant["foot_l"], "foot_r": {"pos": (-0.16, 0.10, -0.30), "rot": (-20, 12, 0), "toe": 10},
+                   "hips": {"pos": (0.01, -0.20, 0.10)}, "clav_l": (4, 12), "clav_r": (4, -4)},
                   hips=(-11, 18, 0), spine=(-19, 12, 0), neck=(0, -7, 0), head=(16, -13, 0)), "auto"),
-        (19, body({"foot_l": {"pos": (0.13, 0.0, 0.38), "rot": (12, 0, 0)},
-                   "foot_r": {"pos": (-0.16, 0.0, -0.24), "rot": (-22, 0, 0)},
+        (19, body({"foot_l": {"pos": PLANT_L, "rot": (12, 0, 0)},
+                   "foot_r": {"pos": (-0.17, 0.0, -0.13), "rot": (-25, 0, 0)},
                    "hips": {"pos": (0.0, -0.12, 0.04)}, "hand_l": _shield_home(0.04),
-                   "hand_r": {"arc": arc_of((-0.09, -0.26, 0.10)), "pole": (-0.7, -0.3, -0.5), "frame": "chest",
-                              "blade": _n(-0.45, 0.75, 0.45), "twist": 0.5},
                    "fingers_l": "fist", "fingers_r": "grip"},
                   hips=(-6, 6, 0), spine=(-8, 2, 0), neck=(0, -2, 0), head=(8, -4, 0)), "auto"),
         (22, body({**GUARD, "hips": {"pos": (0.0, -0.09, 0.03)}, "hand_l": _shield_home(HOME_LIFT)},
@@ -299,8 +307,142 @@ def bull_rush(rig):
         (30, {**GUARD, "hand_l": _shield_home()}, "ease"),
     ]
     guard = {**GUARD, "hand_l": _shield_home()}
-    return build("bull_rush", rig, keys, post=_head_held(HEAD_FROM, HEAD_SETTLE, guard),
-                 meta={"layer": "full", "weapon": "sword+shield", "note": "keyed: 0.4 s shield charge, then the plant and shove"})
+    meta = {"layer": "full", "weapon": "sword+shield", "note": "keyed: 0.4 s shield charge, then the plant and shove"}
+    # The sword hand's turn from the plant into the guard (SWING), spread
+    # evenly on its forearm as it goes its way: solved once with the hand
+    # riding the forearm between the two ends, then again with the hand's
+    # whole turn on the forearm (its roll about it and the wrist's bend)
+    # carried evenly from the one end's to the other's.
+    way = _sword_way(*SWING)
+    first = build("bull_rush", rig, keys, post=_then(_head_held(HEAD_FROM, HEAD_SETTLE, guard), way), meta=meta)
+    return build("bull_rush", rig, keys, post=_then(_head_held(HEAD_FROM, HEAD_SETTLE, guard), way,
+                                                     _turn_world(rig, first, *SWING, lead=TURN_LEAD)), meta=meta)
+
+
+SWING = (12, 22)   # the sword hand's way and whole turn between these frames (SWORD_WAY)
+GLIDE_RAMP = 0.25  # the sword's way and turn: the part of SWING its pace takes to ramp up (and down)
+PLANT_ROLL = 0.2   # how far the plant's sword hand is rolled about its blade toward the guard's roll
+TURN_LEAD = 5      # the frames before the plant over which the sword hand eases into its roll there
+
+
+def _toward(pose, goal, w):
+    """pose with each number goal also has moved w of the way to goal's (aims, presets kept)."""
+    from keyed import _flatten, _unflatten
+    a, b = _flatten(pose), _flatten(goal)
+    for k, v in list(a.items()):
+        if isinstance(v, float) and isinstance(b.get(k), float):
+            a[k] = v + (b[k] - v) * w
+    return _unflatten(a)
+
+
+def _then(*posts):
+    def post(fr, pose):
+        for p in posts:
+            pose = p(fr, pose)
+        return pose
+    return post
+
+
+def _ease(u):
+    """0..1 eased in and out (the hand's way and turn along it)."""
+    return u * u * (3 - 2 * u)
+
+
+def _glide(u, ramp=None):
+    """0..1 at an even pace between two soft ramps (each `ramp` of the way in
+    time, the pace eased up and down on a half cosine): the least top speed
+    that starts and ends at rest."""
+    ramp = GLIDE_RAMP if ramp is None else ramp
+    u = min(1.0, max(0.0, u))
+    top = 1.0 / (1.0 - ramp)
+
+    def up(t):  # the way covered while the pace ramps up for t (<= ramp)
+        return top * (t / 2 - ramp / (2 * math.pi) * math.sin(math.pi * t / ramp))
+    if u <= ramp:
+        return up(u)
+    if u >= 1.0 - ramp:
+        return 1.0 - up(1.0 - u)
+    return up(ramp) + top * (u - ramp)
+
+
+def _unarc(arc):
+    """The hand's place from the shoulder (chest frame) that arc_of gave as `arc`."""
+    az, el, r = math.radians(arc[0]), math.radians(arc[1]), arc[2]
+    return np.array([math.sin(az) * math.cos(el), math.sin(el), math.cos(az) * math.cos(el)]) * r
+
+
+def _sword_way(a, b):
+    """The sword hand between frames a and b on SWORD_WAY: its place and its
+    elbow's way through the waypoints on one smooth curve (Catmull-Rom on
+    their frames), eased along it; the hand rides the forearm (its turn is
+    _turn_world's)."""
+    pts = []
+    for f, at, pole in SWORD_WAY:
+        if at is None:
+            at, pole = _unarc(GUARD["hand_r"]["arc"]), GUARD["hand_r"]["pole"]
+        pts.append((f, np.array(at, float), np.array(pole, float) / np.linalg.norm(pole)))
+
+    def at(t):
+        fs = [p[0] for p in pts]
+        k = max(0, min(len(pts) - 2, int(np.searchsorted(fs, t, side="right")) - 1))
+        f0, f1 = fs[k], fs[k + 1]
+        u = (t - f0) / (f1 - f0)
+        out = []
+        for i in (1, 2):
+            p0, p1 = pts[k][i], pts[k + 1][i]
+            m0 = (p1 - pts[k - 1][i]) / (f1 - fs[k - 1]) * (f1 - f0) if k > 0 else p1 - p0
+            m1 = (pts[k + 2][i] - p0) / (fs[k + 2] - f0) * (f1 - f0) if k + 2 < len(pts) else p1 - p0
+            h = ((2 * u ** 3 - 3 * u ** 2 + 1) * p0 + (u ** 3 - 2 * u ** 2 + u) * m0 + (-2 * u ** 3 + 3 * u ** 2) * p1
+                 + (u ** 3 - u ** 2) * m1)
+            out.append(h)
+        return out
+
+    def post(fr, pose):
+        if not a < fr < b:
+            return pose
+        t = a + (b - a) * _glide((fr - a) / (b - a))
+        h, pole = at(t)
+        pose = dict(pose)
+        pose["hand_r"] = {"arc": arc_of(h), "pole": tuple(float(x) for x in pole), "frame": "chest", "twist": 0.5}
+        return pose
+    return post
+
+
+def _turn_world(rig, first, a, b, lead=3, side="r"):
+    """The sword hand's whole turn from the plant (frame a) into the guard
+    (frame b) of `first` (solved with the hand riding its forearm between
+    them) carried evenly in her space, the short way: at a the hand is
+    rolled about its blade to the guard's roll, so the turn from a to b is
+    the blade's swing alone, the least there is; the frames from a - lead
+    ease into that from the charge's hand. Given to each frame as the blade
+    and knuckles that make it, in the chest's frame. (Its turn on the forearm
+    spread evenly, the forearm swinging forward from behind her sent the
+    blade down and under, 250 degrees; and the blade keyed alone was turned
+    the nearest way about the forearm each frame, and flipped over in one.)"""
+    from rig import qaxis, qbetween, qinv, qmul, qrot, qslerp
+    sk, I = rig.sk, rig.I
+    g, _ = sk.fk(first.rot, first.pos)
+    h, s3 = I[f"hand_{side}"], I["spine_03"]
+    lq = qaxis([1.0, 0, 0], -rig.grip.get(side, 0.0))
+
+    def blade(q):
+        return qrot(qmul(q, lq), [0, 0, 1.0])
+
+    plant = qslerp(g[a, h], qmul(qbetween(blade(g[b, h]), blade(g[a, h])), g[b, h]), PLANT_ROLL)
+
+    def post(fr, pose):
+        if not a - lead < fr < b:
+            return pose
+        if fr < a:
+            hand = qslerp(g[a - lead, h], plant, _ease((fr - a + lead) / lead))
+        else:
+            hand = qslerp(plant, g[b, h], _glide((fr - a) / (b - a)))
+        q = qmul(qinv(qmul(g[fr, s3], qinv(rig.grest[s3]))), qmul(hand, lq))
+        pose = dict(pose)
+        pose[f"hand_{side}"] = dict(pose[f"hand_{side}"], frame="chest", blade=tuple(float(x) for x in qrot(q, [0, 0, 1.0])),
+                                    knuckles=tuple(float(x) for x in qrot(q, [0, 1.0, 0])))
+        return pose
+    return post
 
 
 # ------------------------------------------------------------ chain haul --

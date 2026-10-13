@@ -150,13 +150,15 @@ def _body_keys():
         # The drive: wheeled down, dropping into the lunge, bent over the staff.
         k(18, "auto", hips=(-0.02, -0.12, -0.27), hrot=(-3, 8, 2), spine=(-9, 14, 2), neck=(0, 5, -13), head=(0, 6, -7),
           cl=(2, 12), cr=(-2, 3)),
+        k(19, "auto", hips=(-0.025, -0.225, -0.30), hrot=(-3.5, 12, 2.5), spine=(-12.5, 20, 2), neck=(0, 2.5, -32), head=(0, 8, -12),
+          cl=(1, 16), cr=(-6, 3.5)),
         k(CONTACT, "ease", hips=(-0.03, -0.33, -0.33), hrot=(-4, 16, 3), spine=(-16, 26, 2), neck=(0, 0, -8), head=(0, 10, -3),
           cl=(0, 20), cr=(-10, 4)),
         # The look up: the chest lifted and the head back to the sky, deep in
         # the lunge (the staff is planted and the fist low), the body in one
         # line on from the back thigh, the chest turned a little open to her
         # left where her hand opens.
-        k(23, "auto", hips=(-0.03, -0.36, -0.33), hrot=(0, 14, 3), spine=(-2, 8, 5), head=(0, -4, 0),
+        k(23, "auto", hips=(-0.03, -0.36, -0.33), hrot=(0, 14, 3), spine=(-2, 8, 5), neck=(0, 0, -16), head=(0, 10, -6),
           cl=(3, 2), cr=(-10, 3)),
         k(28, "ease", hips=(-0.03, -0.37, -0.32), hrot=(2, 15, 2), spine=(6, -13, 5), neck=(0, -8, 0),
           head=(4, -24, 0), cl=(8, 0), cr=(-10, 4)),
