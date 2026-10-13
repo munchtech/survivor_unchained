@@ -16,7 +16,7 @@ from dataclasses import replace
 import numpy as np
 
 from clips import idle
-from clips.run import RUNS
+from clips.run import RUNS, SPRINT_ARMS
 from gait import run_cycle
 from keyed import build
 
@@ -27,6 +27,7 @@ CALLINGS = {"warden": "run_warden", "arcanist": "run_arcanist", "reaver": "run_r
 def sprint(rig, run):
     """The sprint for one of her runs (run_<calling>[_<weapon>])."""
     g, arms, weapon = RUNS[run]
+    arms = {**arms, **SPRINT_ARMS.get(run, {})}
     # The arms drive further, but the elbow stays bent, as a sprinter's does:
     # an arm flung out straight behind her has no hinge to read, and the
     # forearm rolled over as it bent again.
