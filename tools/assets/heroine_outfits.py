@@ -2559,13 +2559,13 @@ LEO_HOLD_Z = tuple(float(v) for v in os.environ.get("LEO_HOLD_Z", "0.002,-0.02,-
 HOLD_CAP = os.environ.get("HOLD_CAP", "1") == "1"
 LEO_FOOT = float(os.environ.get("LEO_FOOT", "0.004"))
 LEO_GUSSET_F = float(os.environ.get("LEO_GUSSET_F", "0.026"))
-LEO_U = tuple(float(v) for v in os.environ.get("LEO_U", "0,0.004").split(","))
+LEO_U = tuple(float(v) for v in os.environ.get("LEO_U", "0.016,0.004").split(","))
 # (LEO_GW: the gusset LEO_GW[0] wider in front of GAP_F + LEO_GW[1], eased out by
 # GAP_F + LEO_GW[2], under the U's rounded corners; LEO_UG: where the gusset is
 # under the U's edge, from LEO_UG[0] inside its edge to LEO_UG[1] outside; LEO_UH:
 # there the edge is held onto the gusset's top, LEO_UH * 30 mm higher, not off it)
 LEO_UG = tuple(float(v) for v in os.environ.get("LEO_UG", "0.001,0.005").split(","))
-LEO_GW = tuple(float(v) for v in os.environ.get("LEO_GW", "0,0,0.015").split(","))
+LEO_GW = tuple(float(v) for v in os.environ.get("LEO_GW", "0.005,0,0.015").split(","))
 LEO_UH = float(os.environ.get("LEO_UH", "0.07"))
 RBOOT_GONE = float(os.environ.get("RBOOT_GONE", "0.005"))
 
