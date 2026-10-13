@@ -123,6 +123,8 @@ RUNS = {
     "run_arcanist_wand": (ARCANIST, {"r": blade_carry()}, "wand"),
     "run_stalker": (STALKER, {"r": crossbow_low()}, "crossbow"),
     "run_stalker_daggers": (STALKER, {"r": blade_carry(), "l": blade_carry(1.0)}, "daggers"),
+    # In town, weapons sheathed: her calling's carriage, the arms swinging free.
+    "run_warden_town": (replace(WARDEN, fingers="relaxed", arm_fwd=(-0.04, -0.20, 0.27), arm_back=(0.13, -0.26, -0.20), elbow_out=0.4), {}, ""),
 }
 
 

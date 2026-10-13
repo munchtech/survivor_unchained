@@ -20,7 +20,8 @@ from clips.run import RUNS
 from gait import run_cycle
 from keyed import build
 
-CALLINGS = {"warden": "run_warden", "arcanist": "run_arcanist", "reaver": "run_reaver", "stalker": "run_stalker"}
+CALLINGS = {"warden": "run_warden", "arcanist": "run_arcanist", "reaver": "run_reaver", "stalker": "run_stalker",
+            "warden_town": "run_warden_town"}
 
 
 def sprint(rig, run):
