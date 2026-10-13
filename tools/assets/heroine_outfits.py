@@ -4330,23 +4330,27 @@ def arcanist():
                 if abs(t_) <= TH0:
                     ri, wi = np.interp(t_, th, R_IN), np.interp(t_, th, wid)
                     u_ = (r_ - ri) / wi
-                    if 0.0 <= u_ <= 1.0:
+                    if -0.001 / wi <= u_ <= 1.0 + 0.001 / wi:   # (within 1 mm of it: onto its rim)
+                        u_ = min(max(u_, 0.0), 1.0)
                         fa = np.interp(t_, th, np.arange(nth))
                         a0 = min(int(fa), nth - 2)
                         fb = np.arccos(np.clip(1 - 2 * u_, -1, 1)) / np.pi * (nr - 1)
                         b0 = min(int(fb), nr - 2)
                         wa, wb = fa - a0, fb - b0
-                        return float((1 - wa) * ((1 - wb) * Yf[a0, b0] + wb * Yf[a0, b0 + 1]) + wa * ((1 - wb) * Yf[a0 + 1, b0] + wb * Yf[a0 + 1, b0 + 1]))
+                        return float((1 - wa) * ((1 - wb) * Yf[a0, b0] + wb * Yf[a0, b0 + 1]) + wa * ((1 - wb) * Yf[a0 + 1, b0] + wb * Yf[a0 + 1, b0 + 1])), True
                 y_ = front(x, z)
-                return skin_y(x, z) if np.isnan(y_) or y_ > y_ft + 0.04 else y_
+                return (skin_y(x, z) if np.isnan(y_) or y_ > y_ft + 0.04 else y_), False
             ra_ = BEZ[-1][0]
             for j in range(nu):
                 dx_, dz_, D_ = 0.005 * ra_ * np.cos(2 * np.pi * j / nu), 0.004 * ra_ * np.sin(2 * np.pi * j / nu), 0.001
                 for _ in range(6):
                     q_ = jw(dx_, D_, dz_)
-                    ys_ = behind(q_[0], q_[2])
+                    ys_, in_ = behind(q_[0], q_[2])
                     D_ = float(np.clip(D_ + ((ys_ if np.isfinite(ys_) else q_[1] + 0.01) + 0.0003 - q_[1]) * math.hypot(1.0, m_), 0.0005, 0.006))
-                cup[j] = D_
+                # (where the crescent is not under it, over the cloth beside and below
+                # the boss, the cup stays shallow, CLASP_D_CUPOUT: reaching down to the
+                # cloth 4.8 mm back it stood as a drum round the stone, clasp16a)
+                cup[j] = D_ if in_ else min(D_, float(os.environ.get("CLASP_D_CUPOUT", "0.0012")))
             print("CLASP: jewel laid %.0f deg back on the crescent; bezel cup reaches back %.1f mm at its top, %.1f at its sides, %.1f at its bottom"
                   % (np.degrees(np.arctan(m_)), cup[nu // 4] * 1000, 0.5 * (cup[0] + cup[nu // 2]) * 1000, cup[3 * nu // 4] * 1000))
         bp = [jw(0.005 * ra * np.cos(2 * np.pi * j / nu), cup[j] if k_ == len(BEZ) - 1 else dy, 0.004 * ra * np.sin(2 * np.pi * j / nu))
