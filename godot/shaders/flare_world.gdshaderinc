@@ -177,7 +177,8 @@ vec4 flare_boom(vec2 w) {
 	float fade = 1.0 - smoothstep(bm.z - 1.5, bm.z + 2.5, length(w - flare_at.xz)); // the whole reach, wherever it struck
 	// A thin line of fire, and only the cracks glowing behind it, briefly: never a wash over the frame (§1.6).
 	float band = exp(-ahead * ahead / 0.22) * fade;
-	float after = smoothstep(0.0, 0.6, ahead) * exp(-ahead / 32.0 * 4.5) * fade;
+	// (By distance behind the line, not time: a trail by time spread the ring into a 4 m cream band, t9.)
+	float after = smoothstep(0.0, 0.25, ahead) * exp(-ahead * 1.1) * fade;
 	return vec4(band, after, bm.xy);
 }
 
@@ -233,7 +234,7 @@ void flare_ground(vec3 wp, inout vec3 alb, inout float rough, inout float spec, 
 		emi += vec3(1.0, 0.32, 0.06) * mk.z * (0.25 + 1.6 * crack) * 1.4;
 		// The BOOM's front across the field, and the cracks it leaves glowing.
 		vec4 bo = flare_boom(w);
-		emi += vec3(1.0, 0.45, 0.12) * bo.x * (0.45 + 1.0 * cr.y) * 2.8 + vec3(1.0, 0.3, 0.05) * bo.y * crack * 1.3;
+		emi += vec3(1.0, 0.4, 0.09) * bo.x * (0.45 + 1.0 * cr.y) * 2.2 + vec3(1.0, 0.28, 0.04) * bo.y * crack * 1.2;
 		// The front: the frost crystallising as it comes, cold points in a narrow fingered band.
 		float band = smoothstep(-0.2, 0.25, flare_frost.x - arr) * (1.0 - smoothstep(0.25, 1.4, flare_frost.x - arr));
 		float twinkle = step(0.55, fract(sin(dot(floor(w * 22.0), vec2(12.9898, 78.233)) + floor(TIME * 12.0)) * 43758.5453));
