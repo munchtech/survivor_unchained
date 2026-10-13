@@ -453,7 +453,7 @@ SABATON = dict(RANGER, toe=0.004, toe_point=0.0, sink=0.002, t_fore=0.0055, heel
 # flat top face catches the sky at a low camera. SAB17=0: s16's sabaton.)
 SAB17 = os.environ.get("SAB17", "1") == "1"
 SAB_MATTE = os.environ.get("SAB_MATTE", "1") == "1"   # (the sole drawn matte: see the sole in sabaton())
-SAB_RIM = os.environ.get("SAB_RIM", "1") == "1"   # (each plate's cut edges cleared of slivers and folds: rim_cleaned in heroine_outfits)
+SAB_RIM = os.environ.get("SAB_RIM", "0") == "1"   # (each plate's cut edges cleared of slivers and folds, rim_cleaned in heroine_outfits; off: on, dry d2 broke the gold beads into runs with gaps where edge triangles went)
 if SAB17:
     SABATON.update(lames=3, flare=float(os.environ.get("SAB_FLARE", 0.0035)), rise=1.0, sole_out=0.0005,
                    margin=float(os.environ.get("SAB_MARGIN", 0.002)), relax=int(os.environ.get("SAB_RELAX", 30)),
