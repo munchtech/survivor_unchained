@@ -1078,8 +1078,9 @@ public static class People
                 // (the light through her kept to her ears and her nose's wings: the map's blue, heroine_thin.py)
                 m.SetShaderParameter("thin_map", 1f);
             }
-            // (her ears' hollows, a shade of their own that dims the lamps there and warms: tools/assets/heroine_ear_ao.py)
-            if (ResourceLoader.Exists("res://art/people/head_tex/heroine_ear_ao.png"))
+            // (her ears' hollows, a shade of their own that dims the lamps there and warms: tools/assets/heroine_ear_ao.py;
+            // --ear-ao off: without it, for judging it)
+            if (!EarAoOff && ResourceLoader.Exists("res://art/people/head_tex/heroine_ear_ao.png"))
             {
                 m.SetShaderParameter("ear_ao", GD.Load<Texture2D>("res://art/people/head_tex/heroine_ear_ao.png"));
                 m.SetShaderParameter("ear_amount", 1f);
@@ -1315,6 +1316,7 @@ public static class People
     }
 
     static readonly bool HeadRigOff = SurvivorUnchained.Args.Get("head-rig") == "off";
+    static readonly bool EarAoOff = SurvivorUnchained.Args.Get("ear-ao") == "off";
 
     // (the rig's weight now, for her skin made while it is up: a look chosen at the close-up)
     static float lookRig;
