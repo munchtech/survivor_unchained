@@ -1292,11 +1292,18 @@ def tube(name, curve, nrm, outward, mkey, width, height, overhang, thick, src_po
     height above the sheet, wrapping its cut edge). Weights from the sheet
     it binds, one set to each ring."""
     n = len(curve)
-    c0 = curve + outward * (overhang - width / 2) + nrm * (thick / 2)
-    rw, rh = width / 2, thick / 2 + height
     th = np.linspace(0, 2 * np.pi, nv, endpoint=False)
-    pts = (c0[:, None, :] + outward[:, None, :] * (rw * np.cos(th))[None, :, None]
-           + nrm[:, None, :] * (rh * np.sin(th))[None, :, None]).reshape(-1, 3)
+    if np.ndim(width) or np.ndim(height) or np.ndim(overhang) or np.ndim(thick):
+        # (s18 BIND_SLIM: its profile ring by ring)
+        w_, h_, o_, t_ = (np.broadcast_to(np.asarray(v_, float), (n,)) for v_ in (width, height, overhang, thick))
+        c0 = curve + outward * (o_ - w_ / 2)[:, None] + nrm * (t_ / 2)[:, None]
+        pts = (c0[:, None, :] + outward[:, None, :] * ((w_ / 2)[:, None] * np.cos(th)[None, :])[:, :, None]
+               + nrm[:, None, :] * ((t_ / 2 + h_)[:, None] * np.sin(th)[None, :])[:, :, None]).reshape(-1, 3)
+    else:
+        c0 = curve + outward * (overhang - width / 2) + nrm * (thick / 2)
+        rw, rh = width / 2, thick / 2 + height
+        pts = (c0[:, None, :] + outward[:, None, :] * (rw * np.cos(th))[None, :, None]
+               + nrm[:, None, :] * (rh * np.sin(th))[None, :, None]).reshape(-1, 3)
     rows = n + (0 if closed else -1)
     tris = []
     for i in range(rows):
@@ -1427,6 +1434,13 @@ BIND_RMIN = {}   # (a piece's name: no bend of its binding tighter than this)
 BIND_AREA_N = {k_ for k_ in os.environ.get("BIND_AREA_N", "arcanist.corset").split(",") if k_}
 # (a piece's name: its binding faces the sheet as fitted across the roll's width, see bind_edges)
 BIND_FIT = {"ranger.corset"}
+# (s18, judge fin2: a piece's name: its binding slimmed round and under her crotch, to width : height : overhang :
+# centre-thick (the roll centred half that off the sheet's inside, as the sheet's thickness centres it elsewhere). The
+# one-piece's leg-line roll, 8 mm by 4.2 mm, centred on the full 3 mm sheet, stood 2.7 mm proud of its skived 0.9 mm
+# edge; where it turned under her crotch it showed past the sheet as a knob (a_leo_f, a_full_f's foot) and a ragged
+# end (a_leo_qr). Slim: 7 by 2.4 mm, 0.9 mm proud of the skived edge. Full below CROTCH + 4 mm, none above + 20 mm.)
+BIND_SLIM = {k_: tuple(float(v_) for v_ in r_.split(":")) for k_, r_ in (e_.split("=", 1) for e_ in os.environ.get(
+    "BIND_SLIM", "arcanist.corset=0.007:0.0004:0.0015:0.0016").split(",") if e_)}
 
 
 def sheet_untangled(name, pos, ref, tris, zone, rounds=400):
@@ -1580,14 +1594,28 @@ def bind_edges(name, pos, at, tris, key, width, height, overhang, thick, sigma=0
         fix[loop] = False
         pos[fix] -= outward[jn[fix]] * (out_[fix] + 0.0003)[:, None]
         moved |= fix
-        beads.append(tube(f"{name}_bind{k}" if k else f"{name}_bind", cur, nrm, outward, key, width, height, overhang, thick,
+        w_r, h_r, o_r, t_r = width, height, overhang, thick
+        if name in BIND_SLIM:
+            # (s18 BIND_SLIM: slimmer round and under her crotch, eased along the line)
+            sl_ = ramp(-cur[:, 2], -(CROTCH + 0.02), -(CROTCH + 0.004)) * ramp(-np.abs(cur[:, 0]), -0.06, -0.05)
+            for _ in range(8):
+                sl_ = (np.roll(sl_, 1) + 2 * sl_ + np.roll(sl_, -1)) / 4
+            if sl_.max() > 0.01:
+                ws_, hs_, os_, ts_ = BIND_SLIM[name]
+                w_r, h_r, o_r, t_r = (v_ + sl_ * (s_ - v_) for v_, s_ in ((width, ws_), (height, hs_), (overhang, os_), (thick, ts_)))
+                print("BIND_SLIM %s_bind%d: %d of %d rings slimmed (to %.1f by %.1f mm)" % (name, k, int((sl_ > 0.5).sum()), len(cur), ws_ * 1000, (ts_ + 2 * hs_) * 1000))
+        beads.append(tube(f"{name}_bind{k}" if k else f"{name}_bind", cur, nrm, outward, key, w_r, h_r, o_r, t_r,
                           pos, at[:, 3:3 + NB]))
         if name in BIND_FIT:
             planes.append((cur.copy(), nrm.copy(), outward.copy()))
         if stitch:
             # (sewn through the binding, along its inner shoulder)
-            c0 = cur + outward * (overhang - width / 2) + nrm * (thick / 2)
-            line = c0 - outward * (width / 2) * 0.45 + nrm * ((thick / 2 + height) * 0.893 + 0.0001)
+            if np.ndim(w_r):
+                c0 = cur + outward * (o_r - w_r / 2)[:, None] + nrm * (t_r / 2)[:, None]
+                line = c0 - outward * (w_r / 2 * 0.45)[:, None] + nrm * ((t_r / 2 + h_r) * 0.893 + 0.0001)[:, None]
+            else:
+                c0 = cur + outward * (overhang - width / 2) + nrm * (thick / 2)
+                line = c0 - outward * (width / 2) * 0.45 + nrm * ((thick / 2 + height) * 0.893 + 0.0001)
             beads += stitches(f"{name}_stitch{k}", line, nrm, tg, pos, at[:, 3:3 + NB], closed=True)
     # The points next to the edge eased, so the sheet meets its new edge
     # without a crease.
@@ -3074,6 +3102,11 @@ KEEP_SUB = {}    # (piece name prefix -> f(pos, wt, tris) -> (pos, wt, tris): zo
 # The Arcanist's boning channels end flush over this many metres at the
 # hip (judge fin1's tab and thorn were their square lower ends). 0 = off.
 BONING_TAPER = float(os.environ.get("BONING_TAPER", "0.008"))
+# (s18: a channel laid on a piece (`onto`) ends this far inside the piece's edge, its taper there. Its control
+# line ran on past the leg line at her hips, where lay() missed the sheet and left its points at the control
+# line's own depth, 10 cm inside her: the channel dived into her at the leg line, and the side of that dive was
+# judge fin1/fin2's tab (r_hand_outer_rest) and thorn (a_leo_qr); the taper was on its end, inside her. 0 = off.)
+BONING_CLIP = float(os.environ.get("BONING_CLIP", "0.008"))
 EDGE_SKIVE = {k_: (float(f_), float(o_)) for k_, f_, o_ in
               (e_.split(":") for e_ in os.environ.get("EDGE_SKIVE", "arcanist.corset:0.3:0.006").split(",") if e_)}
 
@@ -3519,6 +3552,18 @@ def ribbon(name, ctrl, width, mkey, lift=0.0035, thick=0.0025, cols=5, trim=None
         c[1:-1] = (c[:-2] + 2 * c[1:-1] + c[2:]) / 4
         if snap:
             c = lay(c)
+    if onto is not None and BONING_CLIP > 0:
+        # (s18, BONING_CLIP: no further than its piece goes, see the knob)
+        hit_ = np.array([s_bvh.ray_cast(Vector((p[0], -0.6, p[2])), Vector((0, 1, 0)), 1.2)[0] is not None for p in c])
+        e_ = np.sort(np.vstack([s_tris[:, [0, 1]], s_tris[:, [1, 2]], s_tris[:, [2, 0]]]), 1)
+        uk_, cn_ = np.unique(e_, axis=0, return_counts=True)
+        be_ = uk_[cn_ == 1]
+        smp_ = np.concatenate([s_pos[be_[:, 0]] * (1 - t_) + s_pos[be_[:, 1]] * t_ for t_ in np.linspace(0, 1, 6)])
+        bad_ = np.nonzero(~(hit_ & (cKDTree(smp_).query(c)[0] > BONING_CLIP)))[0]
+        bad_ = bad_[bad_ > len(c) // 2]
+        if len(bad_):
+            print("BONING %s: ends %.0f mm inside %s's edge, %d of %d points past it dropped" % (name, BONING_CLIP * 1000, onto, len(c) - bad_[0], len(c)))
+            c = c[:bad_[0]]
     if onto is not None:
         # (its normal the sheet's own, outward as it was lifted)
         nrm = s_nrm[cKDTree(s_pos).query(c)[1]]
