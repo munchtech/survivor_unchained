@@ -299,7 +299,7 @@ public partial class FlareFx
     {
         shards.Burst(w + Vector3.Up * 0.8f * scale, (int)(10 * scale), 4.5f, 0.16f * scale, new Color(0.32f, 0.3f, 0.27f, 0.6f), 0.5f);
         // (The dust small, faint and cold: at 1.6 m and pale, 250 of them at once laid a grey sheet over the crowd.)
-        bed.Spawn(FlareBits.Kind.Puff, w + Vector3.Up * 0.7f, Vector3.Up * 0.6f, 0.8f, 0.28f * scale, new Color(0.22f, 0.32f, 0.45f, 0.2f), sizeEnd: 0.8f * scale, drag: 2);
+        bed.Spawn(FlareBits.Kind.Puff, w + Vector3.Up * 0.7f, Vector3.Up * 0.6f, 0.7f, 0.25f * scale, new Color(0.2f, 0.3f, 0.43f, 0.13f), sizeEnd: 0.65f * scale, drag: 2);
         for (int i = 0; i < 6; i++)
             glow.Spawn(FlareBits.Kind.Mote, w + Vector3.Up * (0.4f + R()), new Vector3((R() - 0.5f) * 0.6f, 1 + R() * 1.5f, (R() - 0.5f) * 0.6f), 1.2f + R(), 0.04f, new Color(1.1f, 0.48f, 0.14f), new Color(0.4f, 0.08f, 0.02f), drag: 0.8f);
     }
