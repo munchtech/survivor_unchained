@@ -148,10 +148,10 @@ def _body_keys():
         k(16, "ease", hips=(-0.01, 0.007, -0.20), hrot=(0, -3, 0), spine=(0, -9, 0), neck=(0, -3, 0), head=(0, -10, 0),
           cl=(9, 0), cr=(9, 0)),
         # The drive: wheeled down, dropping into the lunge, bent over the staff.
-        k(18, "auto", hips=(-0.02, -0.12, -0.27), hrot=(-3, 8, 2), spine=(-9, 14, 4), head=(0, 6, 0),
-          cl=(2, 8), cr=(-2, 3)),
-        k(CONTACT, "ease", hips=(-0.03, -0.33, -0.33), hrot=(-4, 16, 3), spine=(-16, 26, 4), head=(0, 10, 0),
-          cl=(0, 14), cr=(-10, 4)),
+        k(18, "auto", hips=(-0.02, -0.12, -0.27), hrot=(-3, 8, 2), spine=(-9, 14, 2), neck=(0, 5, -13), head=(0, 6, -7),
+          cl=(2, 12), cr=(-2, 3)),
+        k(CONTACT, "ease", hips=(-0.03, -0.33, -0.33), hrot=(-4, 16, 3), spine=(-16, 26, 2), neck=(0, 0, -8), head=(0, 10, -3),
+          cl=(0, 20), cr=(-10, 4)),
         # The look up: the chest lifted and the head back to the sky, deep in
         # the lunge (the staff is planted and the fist low), the body in one
         # line on from the back thigh, the chest turned a little open to her
@@ -194,11 +194,15 @@ STAFF = [
     # forearm out-forward to the planted staff.
     (16, "grip", (-0.13, 1.88, -0.18), _n(1.0, 0.07, -0.05), (-1.0, 0.0, 0.4)),
     (17, "grip", (-0.19, 1.62, -0.03), _n(0.90, 0.44, -0.08), _n(0.76, -0.09, 0.64), "E"),
-    (18, "grip", (-0.32, 1.32, 0.06), _n(0.56, 0.83, -0.04), _n(0.52, -0.64, 0.56), "E"),
-    (19, "grip", (-0.45, 1.00, 0.02), _n(0.15, 0.99, 0.04), _n(0.23, -0.97, 0.12), "E"),
-    (CONTACT, "butt", BUTT_AT, _n(-0.05, 1.0, 0.10), _n(0.15, -0.97, -0.10), "E"),
-    (28, "butt", BUTT_AT, _n(-0.04, 1.0, 0.09), _n(0.15, -0.97, -0.10), "E"),
-    (40, "butt", BUTT_AT, _n(-0.05, 1.0, 0.09), _n(0.15, -0.97, -0.10), "E"),
+    (18, "grip", (-0.32, 1.32, 0.09), _n(0.56, 0.83, -0.04), _n(0.52, -0.64, 0.56), "E"),
+    (19, "grip", (-0.42, 1.00, -0.06), _n(0.15, 0.99, 0.04), _n(0.23, -0.97, 0.12), "E"),
+    # Planted the fist's +Z is keyed (the staff's own line is AXIS in it,
+    # 6.6 degrees toward the fingers, which face out to her right here): so
+    # the shaft stands about (-0.05, 0.99, 0.10), near upright, its head over
+    # the butt and the left fist within her reach.
+    (CONTACT, "butt", BUTT_AT, _n(0.05, 1.0, 0.04), _n(0.15, -0.97, -0.10), "E"),
+    (28, "butt", BUTT_AT, _n(0.06, 1.0, 0.03), _n(0.15, -0.97, -0.10), "E"),
+    (40, "butt", BUTT_AT, _n(0.05, 1.0, 0.03), _n(0.15, -0.97, -0.10), "E"),
     (SWEEP, "butt", BUTT_AT, _n(-0.24, 0.96, 0.14), (-0.6, -0.8, -0.4)),
     (BLEND, "grip", (-0.37, 0.98, -0.14), _n(0.08, 0.99, 0.10), (-0.8, -0.3, -0.6)),
     (52, "grip", (-0.33, 1.12, -0.06), _n(0.0, 1.0, 0.14), (-0.8, -0.3, -0.6)),
@@ -211,11 +215,11 @@ DRIVE_U = {16: 0.1, 17: 0.32, 18: 0.64, 19: 0.94}
 # with by f56 so the idle's own elbow is settled by the seam).
 R_ON = [(0, 0.0), (3, 1.0), (51, 1.0), (56, 0.0)]
 # The left hand: on the shaft from f5 through the contact, letting go over
-# f21-26 (turned evenly from its hold on the shaft to its opening: RELEASE,
+# f21-30 (turned evenly from its hold on the shaft to its opening: RELEASE,
 # OPEN), open to the embers, back to the idle by f54.
-L_SHAFT = [(1, 0.0), (5, 1.0), (CONTACT + 1, 1.0), (26, 0.0)]
-L_OPEN = [(CONTACT + 1, 0.0), (26, 1.0), (SWEEP + 2, 1.0), (54, 0.0)]
-RELEASE, OPEN = CONTACT + 1, 27
+L_SHAFT = [(1, 0.0), (5, 1.0), (CONTACT + 1, 1.0), (30, 0.0)]
+L_OPEN = [(CONTACT + 1, 0.0), (30, 1.0), (SWEEP + 2, 1.0), (54, 0.0)]
+RELEASE, OPEN = CONTACT + 1, 31
 L_OPEN_ARC = (0.34, 0.02, 0.26)        # from the left shoulder, in the chest's frame
 L_OPEN_KNUCKLES = _n(0.55, 0.55, 0.6)  # the fingers out and up, the palm up to the sky
 
@@ -317,6 +321,7 @@ class Flare:
                 pa = self._wrist_of(a, fr, R)
                 pb = self._wrist_of(b, fr, R)
                 W = pa + (pb - pa) * u
+            kn = None
             # The elbow's way: a pole from where the arm hangs, or (E) the
             # elbow's way from the shoulder; laid between keys as ways from
             # the shoulder, then given back as a pole.
@@ -324,7 +329,6 @@ class Flare:
             va = np.array(a[4]) if len(a) > 5 else hang + np.array(a[4])
             vb = np.array(b[4]) if len(b) > 5 else hang + np.array(b[4])
             pole = (va + (vb - va) * u) - hang
-            kn = None
             if fr in DRIVE_U and self.Rr is not None:
                 qa, qb = self.Rr[15], self.Rr[CONTACT]
                 q = qslerp(qa, -qb if float(np.dot(qa, qb)) < 0 else qb, DRIVE_U[fr])
@@ -475,7 +479,7 @@ def finger_mix():
     return full("relaxed"), full("grip"), full("spread")
 
 
-def flare_burns_twice(rig, rounds=6, log=None):
+def flare_burns_twice(rig, rounds=7, log=None):
     F = Flare(rig)
     clip = None
     G = None
