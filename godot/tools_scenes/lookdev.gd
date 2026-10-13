@@ -193,7 +193,20 @@ func _init():
 				if not lib.has_animation(n): lib.add_animation(n, L.get_animation(n))
 		ap.add_animation_library("", lib)
 		ap.root_node = ".."
+		# CLIPFRAME=k [CLIPFRAMES=n, default 10]: the clip held at the motion check's picture k of n
+		# (its SPREAD=1 run: picture k at 1 s + k * length / n, on a 60 fps tick, the clip looping),
+		# so a close-up here is the same moment as that numbered frame there. Clip as there: "her/catch_breath".
+		var cframe = OS.get_environment("CLIPFRAME")
+		if cframe != "" and not ap.has_animation_library("her"):
+			ap.add_animation_library("her", load("res://art/anim/heroine.res"))
 		ap.play(clips[i])
+		if cframe != "":
+			var cl = ap.get_animation(clips[i]).length
+			var nf = float(OS.get_environment("CLIPFRAMES")) if OS.get_environment("CLIPFRAMES") != "" else 10.0
+			var tk = (ceil((1.0 + float(cframe) * cl / nf) * 60.0 - 0.0001) - 2.0) / 60.0   # (measured: the clip is two ticks behind the clock there)
+			ap.get_animation(clips[i]).loop_mode = Animation.LOOP_LINEAR
+			ap.seek(fmod(tk, cl), true)
+			ap.speed_scale = 0.0
 		players.append(ap)
 	var cam = Camera3D.new()
 	cam.position = Vector3(0, float(OS.get_environment("CAMY")) if OS.get_environment("CAMY") != "" else 1.0, (1.6 + clips.size() * 0.75) * (float(OS.get_environment("CAMD")) if OS.get_environment("CAMD") != "" else 1.0))
