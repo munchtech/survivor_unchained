@@ -45,18 +45,20 @@ def warden(t, f):
     breath = 0.008 * math.sin(2 * math.pi * t * 2)
     return {
         # The shield at rest at her left side, off her body: the elbow out
-        # about 17 degrees and bent about 55, the forearm forward and about
-        # 44 degrees down (so the hand and the shield sit lower), turned in
-        # about 10, so the shield's face (the back of the forearm) looks out
-        # to her left-front about 17 degrees, its plane near upright and its
-        # top rim about 5 cm lower, near her bust line, clear of her hip,
-        # thigh and breast by 9 cm or more. The wrist straight, the fist on
-        # the strap; the forearm turned palm-up a little (the whole roll in
-        # the forearm, which carries the shield), not wrung at the wrist.
+        # about 19 degrees, the upper arm back about 14 and bent about 58, the
+        # forearm forward and about 50 degrees down, turned in about 10, so
+        # the shield's face (the back of the forearm) looks out to her
+        # left-front about 15 degrees, its plane near upright. The shield is
+        # strapped low on the forearm, its boss over her wrist, so its top rim
+        # sits about 145 cm up, level with her armpit and the top of her cup,
+        # with air under the shoulder armour, and its bottom is 8 cm or more
+        # clear of her hip and thigh. The wrist straight, the fist on the
+        # strap; the forearm turned palm-up a little (the whole roll in the
+        # forearm, which carries the shield), not wrung at the wrist.
         # (Carried across her body, the 66 cm shield sank 5 cm into her
         # breast and trunk.)
-        "hand_l": {"arc": arc_of((0.050, -0.374 + breath, 0.177)), "pole": (0.435, -0.507, -0.744), "frame": "chest",
-                   "thumb": (-0.229, 0.782, 0.579), "twist": 1.0},
+        "hand_l": {"arc": arc_of((0.0591, -0.3869 + breath, 0.1204)), "pole": (0.4298, -0.3825, -0.8179), "frame": "chest",
+                   "thumb": (-0.223, 0.7166, 0.6609), "twist": 1.0},
         # The sword low at her right, its point 45 degrees down ahead and a
         # little out: the hand in line with the forearm, its thumb forward,
         # dropped 16 degrees toward the little finger under the blade's
