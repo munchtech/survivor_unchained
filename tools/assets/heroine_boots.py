@@ -455,7 +455,7 @@ SAB17 = os.environ.get("SAB17", "1") == "1"
 if SAB17:
     SABATON.update(lames=3, flare=float(os.environ.get("SAB_FLARE", 0.0035)), rise=1.0, sole_out=0.0005,
                    margin=float(os.environ.get("SAB_MARGIN", 0.002)), relax=int(os.environ.get("SAB_RELAX", 30)),
-                   chamfer=float(os.environ.get("SAB_CHAMFER", 0.0025)))
+                   chamfer=float(os.environ.get("SAB_CHAMFER", 0.0)))   # (0: s16's sole; 0.0025 bevelled its top up toward the sky at w_feet35lo and the pale welt grew, s17 a1)
 
 
 def _fair(c, closed, step=0.0015, sigma=0.003):
