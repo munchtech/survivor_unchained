@@ -235,6 +235,15 @@ uniform float shade_by_light = 0.0;
 // her body's tone at every angle; by light, the key's weak light at her jaw's edge took her paint's colour, an
 // orange band along it)
 uniform float shade_by_soft = 0.0;
+// (thinned, shade_thin of it, on her jaw's underside, where she faces down (world normal's -y thin_from to thin_to):
+// lit there by the soft lamps alone, the warm bounce from below most, it showed her paint's own colour at full, an
+// orange-brown wedge from her jaw's angle to her chin with her head turned (Oklab C 1.6 times her lit skin's, own at
+// 80 degrees; face lead 19, 13 October 2026). Her cheeks face down 0.36-0.47 at the Look, her jaw's shade on her neck
+// under 0.4, and keep it all. (Tried: its saturation capped at 1.4 times her paint's own took the fill's warmth too,
+// the front view's jaw shade C 0.035 to 0.028; by ao_map's shade, it is as deep on her neck. 0: as before.)
+uniform float shade_thin = 0.75;
+uniform float thin_from = 0.4;
+uniform float thin_to = 0.75;
 // Her rim (`rim`) kept to where the lamp reaches her (rim_gate: smoothstep(0, 0.3, ndl)), and how much of her colour.
 uniform float rim_gate = 0.0;
 uniform float rim_tint = 0.6;
@@ -348,7 +357,8 @@ void fragment() {
 	BACKLIGHT = ALBEDO * backlight_colour * backlight * mix(1.0, aot.b, thin_map * rig_w);
 	front_rim = seam_ease ? aot.g * (1.0 - rig_w) : 0.0;
 	float wd = (INV_VIEW_MATRIX * vec4(NORMAL, 0.0)).y;
-	shade_w = mix(1.0, smoothstep(down_from, down_to, -wd), shade_down) * mix(1.0, aot.a, shade_zone);
+	shade_w = mix(1.0, smoothstep(down_from, down_to, -wd), shade_down) * mix(1.0, aot.a, shade_zone)
+		* (1.0 - shade_thin * smoothstep(thin_from, thin_to, -wd));
 	soft_w = 1.0 - fm.b;
 	// (her head as r11, by its seam ease alone: its freckles' map's blue dips under her jaw, and gated by it there
 	// the far side of her neck under her jaw went bluer, own's row .15 hue -21 to -31)
