@@ -80,6 +80,7 @@ best effect in the game by a distance.
 4. Luminance script (§1.6), frame time at the Spend (perf), then the max judge, then captures.
 
 ## Decisions
+- **The drive is a deep lunge** (animation's finding, agreed). The grip sits 0.79 m up the staff, so a standing pose can't plant it. Contacts stay at f20 (plant) and f43 (sweep) at 30 fps. The look up is held from the lunge; she rises on the sweep and blends into a run from f46. The frost starts at the planted butt (holder Y -0.79).
 - **Globals, not masks**: only world shaders drain, so she, the Flare and the danger marks keep their colour for free.
 - **Frost, web and scars live in the ground shader** (conformal, lit, no overdraw), not in decals.
 - **Ember fall lag 0.14 s**: the logic picks the target at the blow, so the view lands it 0.14 s later. The killed are held standing until it lands. If that ever reads late, ask classes for an "aim" event 0.2 s ahead.
