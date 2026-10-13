@@ -199,15 +199,16 @@ public static class People
     }
 
     /// <summary>The clip a person plays for one the game names: a survivor's
-    /// own where they have it ("her/...", "him/..."), the library's otherwise.</summary>
-    public static string Clip(Person p, string name)
+    /// own where they have it ("her/...", "him/..."), the library's otherwise. `kind`: the clips of another
+    /// kind than what they hold (the town's, sheathed).</summary>
+    public static string Clip(Person p, string name, string? kind = null)
     {
         // One of the kit's own asked for by name ("folk/m_rise_stiff": the Warden in a cinematic).
         if (name.StartsWith(FolkClips.Prefix) && p.Anim.HasAnimation(name)) return name;
         if (p.Own is not { } own) return p.Folk && FolkClips.For(p.Woman, name) is string folk ? folk : Resolve(name);
         // (One of their own asked for by its own name.)
         if (own.Owns(name)) return own.Has(name[own.Prefix.Length..]) ? name : Resolve("Idle");
-        return own.For(p.Calling, p.Kind, name) is string mine ? mine : Resolve(name);
+        return own.For(p.Calling, kind ?? p.Kind, name) is string mine ? mine : Resolve(name);
     }
 
     /// <summary>A person, put together: returns its root (add it to the

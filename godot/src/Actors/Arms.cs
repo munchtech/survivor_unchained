@@ -189,6 +189,99 @@ public static class Arms
         return new Transform3D(basis, at);
     }
 
+    /* ------------------------------------------------------------ sheathed -- */
+
+    /// <summary>Where her pieces ride when she is sheathed (in town), by weapon id; one table, tuned from
+    /// the sheets (tools_scenes/anim_review.gd, SHEATH=1). Each row is written in skeleton space at rest
+    /// (+Y up, +Z her front, +X her left) as a mount would stand: the grip at `At`, the shaft (the piece's
+    /// +Y, grip toward the tip) along `Shaft`, its thickness (the piece's +Z, the shield's face, a
+    /// scabbard's outer side) toward `Thick`. A pistol-fashion piece (the crossbow) is given by its stock
+    /// instead (the piece's +Y turned to the mount's +X, see PieceTransform): `Shaft` the stock's run,
+    /// `Thick` its top. Sheathed() turns the row into the bone's space.
+    /// Mirrors: a piece in her left hand rides on the other side (a pair of axes, a sword in the left).
+    /// A missing id stays in her hand (staves, the zweihander, the snake axe, the mace).</summary>
+    sealed record Socket(string Bone, Vector3 At, Vector3 Shaft, Vector3 Thick, bool Mirrors = false);
+
+    static readonly Dictionary<string, Socket> Sockets = new()
+    {
+        // Round shield: across the back, its boss centred between the shoulder blades 0.14 m behind
+        // spine_03, face out (back), its top rim under the neck (66 cm across).
+        ["shield_round"] = new("spine_03", new(0, 1.22f, -0.20f), new(0, 1, 0), new(0, 0, -1)),
+        // Swords: left hip, in the scabbard (Scabbard), hilt forward and up, blade down and back about
+        // 30 degrees off vertical, flat to her side (thickness out).
+        ["chevalier_sword"] = new("pelvis", new(0.21f, 1.20f, 0.10f), new(0.08f, -0.87f, -0.50f), new(1, 0, 0), Mirrors: true),
+        ["viking_sword"] = new("pelvis", new(0.21f, 1.20f, 0.10f), new(0.08f, -0.87f, -0.50f), new(1, 0, 0), Mirrors: true),
+        ["longsword"] = new("pelvis", new(0.21f, 1.20f, 0.10f), new(0.08f, -0.87f, -0.50f), new(1, 0, 0), Mirrors: true),
+        // Axe: right hip, head up, the haft down along the outside of the thigh (left hand: mirrored).
+        ["viking_axe"] = new("pelvis", new(-0.19f, 0.50f, 0.0f), new(0.06f, 1, 0), new(-1, 0, 0), Mirrors: true),
+        // Daggers: the back of the belt, flat, one each side of the spine, hilts out and blades crossing.
+        ["daggers"] = new("pelvis", new(-0.17f, 1.12f, -0.13f), new(1, 0, 0), new(0, 0, -1)),
+        ["dagger_b"] = new("pelvis", new(0.17f, 1.12f, -0.16f), new(-1, 0, 0), new(0, 0, -1)),
+        // Wand: right hip, tucked in the belt, crystal up, leaning in and forward.
+        ["wand"] = new("pelvis", new(-0.18f, 1.14f, 0.05f), new(0.15f, 0.95f, 0.25f), new(-1, 0, 0), Mirrors: true),
+        // Crossbow: slung across the back, stock rising to her right shoulder, its top out of the back.
+        ["crossbow"] = new("spine_03", new(0.10f, 1.16f, -0.17f), new(-0.6f, 0.8f, 0), new(0, 0, -1)),
+    };
+
+    /// <summary>The bones' rest poses in skeleton space (heroine, tools/anim/data/heroine_skeleton.json): the
+    /// origin and the turn about X; the hero's pelvis and spine differ by a few degrees.</summary>
+    static Transform3D RestOf(string bone) => bone == "pelvis"
+        ? new Transform3D(new Basis(Vector3.Right, Mathf.DegToRad(20.6f)), new Vector3(0, 1.0723f, 0))
+        : new Transform3D(new Basis(Vector3.Right, Mathf.DegToRad(-18.4f)), new Vector3(0, 1.3335f, 0.0364f));
+
+    /// <summary>Where her piece rides sheathed: the bone and the mount's transform in its space (as
+    /// MountTransform's), or null if it stays in her hand. `left`: it was in her left hand.</summary>
+    public static (string Bone, Transform3D At)? Sheathed(string id, bool left = false)
+    {
+        if (!Sockets.TryGetValue(id, out var k)) return null;
+        var at = k.At; var shaft = k.Shaft; var thick = k.Thick;
+        if (left && k.Mirrors) { at.X = -at.X; shaft.X = -shaft.X; thick.X = -thick.X; }
+        shaft = shaft.Normalized();
+        thick = (thick - shaft * thick.Dot(shaft)).Normalized();
+        var third = shaft.Cross(thick);
+        // (Pistol-fashion: the mount's X runs the stock, its Y the top.)
+        var basis = All[id].Pistol
+            ? new Basis(shaft, thick, shaft.Cross(thick))
+            : new Basis(third, shaft, thick);
+        return (k.Bone, RestOf(k.Bone).AffineInverse() * new Transform3D(basis, at));
+    }
+
+    /// <summary>Mount a weapon at its sheathed socket (a sword with its scabbard), or null if it has none.</summary>
+    public static Node3D? HoldSheathed(People.Person person, string id, bool left)
+    {
+        if (Sheathed(id, left) is not { } sock) return null;
+        var (bone, at) = sock;
+        var att = new BoneAttachment3D { BoneName = bone };
+        person.Skeleton.AddChild(att);
+        var mount = new Node3D { Name = $"sheathed:{bone}" };
+        att.AddChild(mount);
+        mount.Transform = at;
+        mount.AddChild(MakeSheathed(id));
+        return mount;
+    }
+
+    /// <summary>A piece as it rides sheathed, in its mount's space: the weapon, and for a sword its scabbard from
+    /// just under the guard, round the blade and a thumb past its tip (also what ArmsDump writes).</summary>
+    public static Node3D MakeSheathed(string id)
+    {
+        var root = new Node3D { Name = "sheathed" };
+        var w = Make(id);
+        w.Transform = PieceTransform(id);
+        root.AddChild(w);
+        if (Scabbarded.Contains(id))
+        {
+            var sp = All[id];
+            float guard = 0.10f, blade = sp.Length * (1 - sp.Grip) - guard;
+            var sc = Made.Scabbard(blade);
+            sc.Position = new Vector3(0, guard, 0);
+            root.AddChild(sc);
+        }
+        return root;
+    }
+
+    /// <summary>The swords, which ride in a scabbard.</summary>
+    public static readonly HashSet<string> Scabbarded = new() { "chevalier_sword", "viking_sword", "longsword" };
+
     /// <summary>How far the shield mount sits off the forearm bone, toward the back of the arm (m).</summary>
     const float ShieldOff = 0.11f;  // was 0.08: 3 cm further out along the shield's face normal (judge 45)
 
