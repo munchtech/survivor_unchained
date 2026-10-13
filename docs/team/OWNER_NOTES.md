@@ -231,3 +231,7 @@ Not made by us: poses or animation whose purpose is a sex act, or that show nudi
 - **Merged:** arena boss phases shorten by the Flare's share of the phase's health (at most half, never under 6 s); arena bosses fall 6-15% faster for everyone. Banked Flame is now "Hold two Flares. The second fills half as fast; a Flare fired with both held strikes 75% harder": saving both for a boss is 13-25% faster with no falls; lighting it without saving costs nothing.
 - **Question:** should Act 1's story bosses also be shortened by the Flare? Today they aren't (they were tuned to within 3%).
 - For the UI/codex lead later: teach players that a Flare shortens the boss phase it lands in.
+
+## 13 October 2026: answers (to coordinator 59a43b82)
+- **Act 1 story bosses and the Flare:** "why wouldn't flare shorten things? its supposed to be epic. an 'oh shit' button. a planned 'BOOM' button. a 'clear the whole room' button." Yes: the Flare cuts story-boss phases too (lift `StoryBoss.FlareCuts`), and more broadly it must feel like a planned BOOM that clears the room, not a quiet damage bump. Sent to the classes lead (measure story bosses with the cut, and check what one Flare does to a crowd).
+- **Restart:** the owner's "go" for the new coordinator: face, outfits, animation and classes restarted; hero still held.
