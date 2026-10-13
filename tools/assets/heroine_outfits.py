@@ -4347,10 +4347,12 @@ def arcanist():
                     q_ = jw(dx_, D_, dz_)
                     ys_, in_ = behind(q_[0], q_[2])
                     D_ = float(np.clip(D_ + ((ys_ if np.isfinite(ys_) else q_[1] + 0.01) + 0.0003 - q_[1]) * math.hypot(1.0, m_), 0.0005, 0.006))
-                # (where the crescent is not under it, over the cloth beside and below
-                # the boss, the cup stays shallow, CLASP_D_CUPOUT: reaching down to the
-                # cloth 4.8 mm back it stood as a drum round the stone, clasp16a)
-                cup[j] = D_ if in_ else min(D_, float(os.environ.get("CLASP_D_CUPOUT", "0.0012")))
+                # (only its upper half reaches back, where a slot behind it shows from
+                # above; elsewhere, over the cloth beside and below the boss or over the
+                # crescent's lower half, the cup stays shallow, CLASP_D_CUPOUT: reaching
+                # 4.8 mm to the cloth it stood as a drum round the stone (clasp16a), 3.2
+                # mm to the crescent below it a thick double rim front on (clasp16b))
+                cup[j] = D_ if in_ and dz_ > 0 else min(D_, float(os.environ.get("CLASP_D_CUPOUT", "0.0012")))
             print("CLASP: jewel laid %.0f deg back on the crescent; bezel cup reaches back %.1f mm at its top, %.1f at its sides, %.1f at its bottom"
                   % (np.degrees(np.arctan(m_)), cup[nu // 4] * 1000, 0.5 * (cup[0] + cup[nu // 2]) * 1000, cup[3 * nu // 4] * 1000))
         bp = [jw(0.005 * ra * np.cos(2 * np.pi * j / nu), cup[j] if k_ == len(BEZ) - 1 else dy, 0.004 * ra * np.sin(2 * np.pi * j / nu))
