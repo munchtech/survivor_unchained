@@ -9,6 +9,7 @@ The toe gets room ahead of her toes; below `wall` the boot is one upright
 outline, where the welt and sole go on.
 
 heroine_outfits.py calls bind(globals()) once its helpers exist."""
+import os
 import numpy as np
 from scipy import sparse
 from scipy.ndimage import gaussian_filter1d, maximum_filter1d, minimum_filter1d
@@ -442,6 +443,19 @@ SABATON = dict(RANGER, toe=0.004, toe_point=0.0, sink=0.002, t_fore=0.0055, heel
                plate=0.0015, lift=0.0013, tuck=0.0012, flare=0.002, over=0.009, lames=4, tuck_up=0.012, lining=0.001,
                tuck_run=0.009, first=0.02, last=0.056, lean=18.0, sole_out=0.001, gold=(0.0036, 0.0005, 0.001),
                rise=0.62, rivet=0.0024, dome_len=0.045, dome_front=0.01, dome_w=0.004, dome=0.012, dome_p=2.2)
+# (s17, fin1 judge: five thin piped lames read as a striped sneaker at the game's camera; a white welt
+# along the sole; lumpy reflections under the greave. SAB17=1: three lames after the instep plate, so
+# four gold leading edges, each lame rising its whole depth to stand `flare` proud of the next (a
+# sawtooth, a visible step); no bead on the instep's top under the greave; the shell relaxed
+# (`relax` Taubin passes) before it is fitted under the greave, `margin` inside the greave's inside;
+# each plate laid out round her foot's axis, one island (smart_project cut it into ~800 and the
+# metal's planishing broke at each); the sole's top bevelled down to its edge (`chamfer`), so no
+# flat top face catches the sky at a low camera. SAB17=0: s16's sabaton.)
+SAB17 = os.environ.get("SAB17", "1") == "1"
+if SAB17:
+    SABATON.update(lames=3, flare=float(os.environ.get("SAB_FLARE", 0.0035)), rise=1.0, sole_out=0.0005,
+                   margin=float(os.environ.get("SAB_MARGIN", 0.002)), relax=int(os.environ.get("SAB_RELAX", 30)),
+                   chamfer=float(os.environ.get("SAB_CHAMFER", 0.0025)))
 
 
 def _fair(c, closed, step=0.0015, sigma=0.003):
@@ -563,6 +577,16 @@ def sabaton(name, sd, top_s, dip, st, mkey, trim="gold", studs="gold", lining="d
     lo = sole.w(pos) - 0.0025          # (every plate runs 2.5 mm down into the sole)
     pos, _, tris = g["clip"](np.minimum(at_angle(zt, tc, pos) - pos[:, 2], pos[:, 2] - lo), pos, np.zeros((len(pos), 1)), tris)
     pos, _, tris = g["weld"](pos, np.zeros((len(pos), 1)), tris)
+    if st.get("relax", 0):
+        # (relaxed, Taubin: its rings eased into one another, no ripples; its rim and the sole's band held)
+        Ar = g["adjacency"](len(pos), tris)
+        hold = pos[:, 2] < sole.w(pos) + 0.0035
+        for L in g["edge_loops"](tris):
+            hold[np.asarray(L)] = True
+        mv = (~hold)[:, None]
+        for _ in range(st["relax"]):
+            pos = np.where(mv, pos + 0.5 * (Ar @ pos - pos), pos)
+            pos = np.where(mv, pos - 0.53 * (Ar @ pos - pos), pos)
     nrm = g["vertex_normals"](pos, tris)
     z, yf = pos[:, 2], leg.yf(pos)
     xo = (pos[:, :2] - leg.ankle[:2]) @ leg.out
@@ -601,7 +625,7 @@ def sabaton(name, sd, top_s, dip, st, mkey, trim="gold", studs="gold", lining="d
     # (Spread four rings round each point that must go in, then eased: the
     # plate goes in under the greave as one smooth dip, never dented.)
     need = np.where(s < st["tuck_up"] + 0.003, p0 + t_ + 0.0005, st["lining"])
-    raw = np.maximum(0.0, 0.0012 + need - room)
+    raw = np.maximum(0.0, st.get("margin", 0.0012) + need - room)
     A = g["adjacency"](len(pos), tris)
     B = A.tocsr(copy=True)
     B.data[:] = 1.0
@@ -687,6 +711,8 @@ def sabaton(name, sd, top_s, dip, st, mkey, trim="gold", studs="gold", lining="d
         nm = f"{name}_plate{k}" if k <= n else f"{name}_toe"
         if k == 0:
             nm = f"{name}_instep"
+        if SAB17:
+            g["RIGID_UV"][nm] = (np.r_[leg.ankle[:2], 0.035], np.r_[leg.f, 0.0] / np.linalg.norm(leg.f), True)
         o = g["finish"](nm, pp, w, tt, mkey, t_, bevel, 10 ** 7)
         made.append(o)
         hiders.append(o)
@@ -702,7 +728,7 @@ def sabaton(name, sd, top_s, dip, st, mkey, trim="gold", studs="gold", lining="d
             front = aa[:, 4] > -0.0012
         else:
             front = np.zeros(len(pp), bool)
-        top = (aa[:, 5] > st["tuck_up"] - 0.0015) if k == 0 else np.zeros(len(pp), bool)
+        top = (aa[:, 5] > st["tuck_up"] - 0.0015) if (k == 0 and not SAB17) else np.zeros(len(pp), bool)
         for j, (c, closed) in enumerate(_runs(pp, tt, mark & (front | top))):
             made.append(_bead(f"{nm}_gold{j}" if j else f"{nm}_gold", c, closed, pp, tt, w, trim, st["gold"], t_))
         # A rivet each side, halfway along what shows, 11 mm up from the sole.
@@ -725,9 +751,16 @@ def sabaton(name, sd, top_s, dip, st, mkey, trim="gold", studs="gold", lining="d
     c = O.mean(0)
     bev = 0.0008
     loops = [np.c_[q, sole.b(q)] for q in (c + (O - on * bev - c) * s_ for s_ in np.linspace(0.1, 0.92, 9))]
-    loops += [np.c_[O - on * bev, sole.b(O)], np.c_[O, sole.b(O) + bev], np.c_[O, sole.w(O) - bev * 0.6],
-              np.c_[O - on * bev * 0.6, sole.w(O)]]
-    loops += [np.c_[q, sole.w(q)] for q in (c + (O - on * bev - c) * s_ for s_ in np.linspace(0.92, 0.1, 5))]
+    if st.get("chamfer", 0):
+        # (its top bevelled from inside the plates down to its edge: no flat ledge to catch the sky)
+        cw = reach - 0.0012
+        loops += [np.c_[O - on * bev, sole.b(O)], np.c_[O, sole.b(O) + bev], np.c_[O, sole.w(O) - st["chamfer"]],
+                  np.c_[O - on * cw, sole.w(O - on * cw)]]
+        loops += [np.c_[q, sole.w(q)] for q in (c + (O - on * bev - c) * s_ for s_ in np.linspace(0.85, 0.1, 5))]
+    else:
+        loops += [np.c_[O - on * bev, sole.b(O)], np.c_[O, sole.b(O) + bev], np.c_[O, sole.w(O) - bev * 0.6],
+                  np.c_[O - on * bev * 0.6, sole.w(O)]]
+        loops += [np.c_[q, sole.w(q)] for q in (c + (O - on * bev - c) * s_ for s_ in np.linspace(0.92, 0.1, 5))]
     spos, stris = loft(loops, np.r_[c, sole.b(c[None])[0]], np.r_[c, sole.w(c[None])[0]])
     o = g["finish"](name + "_sole", spos, rigid(leg, spos), stris, sole_key, 0.0, 0.0, 10 ** 7)
     made.append(o)
