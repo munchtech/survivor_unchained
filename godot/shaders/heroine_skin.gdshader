@@ -198,8 +198,15 @@ uniform float backlight = 0.18;
 uniform vec3 backlight_colour = vec3(1.0, 0.45, 0.35);
 uniform float backlight_behind = 0.0;
 // (how far the light through her is kept to where she is thin, by ao_map's blue (heroine_thin.py: her ears, the
-// wings of her nose): unmasked, the underside of her jaw, turned from the key, took a salmon line along its edge)
+// wings of her nose): unmasked, the underside of her jaw, turned from the key, took a salmon line along its edge.
+// Under the Look's rig only (look_rig), as is her head's rim kept to lamps behind her: the rig has its own fill and
+// bounce, but outside it (play, cinematics, the Look's whole frame) these two were her head's only light on the side
+// turned from a lamp, as they are her body's; without them, by the overhead lantern at night, her lower face, jaw
+// and nostrils fell to the night sky's blue-black under a lit neck (judge rj2v, 12 October 2026).)
 uniform float thin_map = 0.0;
+// (her head's rim from every lamp, as her paint's light through her: her head outside the rig, eased out over the
+// 3 cm above SPLIT (ao_map's green); her body keeps it to lamps behind)
+varying float front_rim;
 // Her shade richer (a lamp's light where it reaches her at a low angle, ndl shade_from to shade_to, times shade_tint,
 // its lightness kept): where she faces down (shade_down, world normal's -y from down_from to down_to) and where
 // ao_map's alpha says (shade_zone). (Tried 11 October 2026: ungated it misses the shade under her jaw, lit there
@@ -329,7 +336,8 @@ void fragment() {
 	AO_LIGHT_AFFECT = ao_light;
 	back_ao = mix(1.0, ao, back_occ);
 	SSS_STRENGTH = scatter;
-	BACKLIGHT = ALBEDO * backlight_colour * backlight * mix(1.0, aot.b, thin_map);
+	BACKLIGHT = ALBEDO * backlight_colour * backlight * mix(1.0, aot.b, thin_map * rig_w);
+	front_rim = seam_ease ? aot.g * (1.0 - rig_w) : 0.0;
 	float wd = (INV_VIEW_MATRIX * vec4(NORMAL, 0.0)).y;
 	shade_w = mix(1.0, smoothstep(down_from, down_to, -wd), shade_down) * mix(1.0, aot.a, shade_zone);
 	soft_w = 1.0 - fm.b;
@@ -409,7 +417,7 @@ void light() {
 	// cheek where her dark hair met it, her temples white)
 	float rim_light = pow(max(1e-4, 1.0 - c_ndv), max(0.0, (1.0 - ROUGHNESS) * 16.0));
 	rim_light *= mix(1.0, smoothstep(0.0, 0.3, ndl), rim_gate);
-	DIFFUSE_LIGHT += rim_light * behind * rim * mix(vec3(1.0), ALBEDO * un, rim_tint) * LIGHT_COLOR * ATTENUATION * un;
+	DIFFUSE_LIGHT += rim_light * mix(behind, 1.0, front_rim) * rim * mix(vec3(1.0), ALBEDO * un, rim_tint) * LIGHT_COLOR * ATTENUATION * un;
 	// light through her where she is thin
 	DIFFUSE_LIGHT += LIGHT_COLOR * max(vec3(1.0 / PI) - diffuse, vec3(0.0)) * BACKLIGHT * ATTENUATION * un * mix(1.0, behind, backlight_behind);
 	if (c_ndl > 0.0) {
