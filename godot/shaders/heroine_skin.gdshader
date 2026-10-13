@@ -64,6 +64,13 @@ uniform sampler2D features : hint_default_black, filter_linear_mipmap;
 // on the light round her and on some of her lights' too (as a soft shadow).
 uniform sampler2D ao_map : hint_default_white, filter_linear_mipmap;
 uniform float ao_light = 0.0;
+// Her ears' hollows, a shade of their own (heroine_ear_ao.png, tools/assets/heroine_ear_ao.py; white elsewhere):
+// multiplied into AO, dimming her lamps there by ear_light (not ao_light), and warming her paint by it (ear_tint).
+// The cool fill and sky reached into her ear's bowl, grey-white in a warm ear (judge rj5v). Off at ear_amount 0.
+uniform sampler2D ear_ao : hint_default_white, filter_linear_mipmap;
+uniform float ear_amount = 0.0;
+uniform float ear_light = 0.0;
+uniform vec3 ear_tint = vec3(1.0);
 // Her head's own skin eased into her graft's over the 3 cm above her neck's seam (SPLIT), by ao_map's green
 // (1 on her head, 0 at SPLIT: tools/assets/heroine_ao_seam.py): side on, her head's more matte, deeper-pored,
 // grained skin met the graft's as a stair-stepped line across her neck (judge n1, 11 October 2026).
@@ -329,11 +336,13 @@ void fragment() {
 	// (no sheen where her head's own shade is deep: in the crease where her
 	// lips meet and the mouth behind, the rim light's reflection on her lips'
 	// inner linings showed as white slivers along their line at a turn)
-	float ao = aot.r;
+	float ea = mix(1.0, texture(ear_ao, UV).r, ear_amount);
+	ALBEDO *= mix(ear_tint, vec3(1.0), ea);
+	float ao = aot.r * ea;
 	SPECULAR = mix(seam_shine, shine, hw) * smoothstep(0.45, 0.95, ao);
 	sheen = SPECULAR;
 	AO = ao;
-	AO_LIGHT_AFFECT = ao_light;
+	AO_LIGHT_AFFECT = mix(ao_light, ear_light, smoothstep(0.0, 0.15, 1.0 - ea));
 	back_ao = mix(1.0, ao, back_occ);
 	SSS_STRENGTH = scatter;
 	BACKLIGHT = ALBEDO * backlight_colour * backlight * mix(1.0, aot.b, thin_map * rig_w);

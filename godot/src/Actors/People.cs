@@ -1078,6 +1078,14 @@ public static class People
                 // (the light through her kept to her ears and her nose's wings: the map's blue, heroine_thin.py)
                 m.SetShaderParameter("thin_map", 1f);
             }
+            // (her ears' hollows, a shade of their own that dims the lamps there and warms: tools/assets/heroine_ear_ao.py)
+            if (ResourceLoader.Exists("res://art/people/head_tex/heroine_ear_ao.png"))
+            {
+                m.SetShaderParameter("ear_ao", GD.Load<Texture2D>("res://art/people/head_tex/heroine_ear_ao.png"));
+                m.SetShaderParameter("ear_amount", 1f);
+                m.SetShaderParameter("ear_light", 0.7f);
+                m.SetShaderParameter("ear_tint", new Vector3(0.80f, 0.52f, 0.44f));
+            }
         }
         // (her skin warmer in the sky's light than in the lamps': HerAmbientTint)
         if (who == "heroine") HerShade(m, look);

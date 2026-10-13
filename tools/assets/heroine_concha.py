@@ -34,7 +34,8 @@ R0, R1 = 0.010, 0.014               # (all of the bowl within the first, eased o
 Y_LOW = (1.714, 1.720)              # (eased in above the lobe)
 SIGMA = 0.0012                      # (the bowl's local tone; finer is its grain and kept)
 HUE, DARK = -4.0, 0.02              # (the ear's shadow tone: hue degrees from its outer face's, Oklab L below it)
-BOX = (0.055, 1.700, 1.760, -0.040, 0.020)
+DEEP = (0.050, 0.054)               # (|x|: the bowl's deep floor taken in from the first, all of it past the second)
+BOX = (0.045, 1.700, 1.760, -0.040, 0.020)
 PAD = 12
 
 M1 = np.array([[0.4122214708, 0.5363325363, 0.0514459929], [0.2119034982, 0.6806995451, 0.1073969566],
@@ -50,8 +51,13 @@ def zone(pos, side):
     q = np.c_[ax, pos[:, 1], pos[:, 2]]
     d = np.linalg.norm(q - np.array(hl.EAR), axis=1)
     ear = (1 - hl.smooth(hl.EAR_R[0], hl.EAR_R[1], d)) * hl.smooth(0.062, 0.067, ax)
+    # (the bowl's floor runs deeper than the ear's reach: its deepest part, |x| 0.055-0.064 behind her tragus, kept
+    # the base head's grey (Own's left ear chroma 0.04 against its ear's 0.10, Sunborn's paler than its ear); taken in
+    # to DEEP behind z 0, so her cheek in front of the tragus stays as it was; ear7, 13 October 2026)
+    deep = (1 - hl.smooth(hl.EAR_R[0], hl.EAR_R[1], d)) * hl.smooth(DEEP[0], DEEP[1], ax) \
+        * (1 - hl.smooth(-0.002, 0.002, pos[:, 2]))
     b = 1 - hl.smooth(R0, R1, np.linalg.norm(q - np.array(CENTRE), axis=1))
-    return ear * b * hl.smooth(Y_LOW[0], Y_LOW[1], pos[:, 1]), ear
+    return np.maximum(ear, deep) * b * hl.smooth(Y_LOW[0], Y_LOW[1], pos[:, 1]), ear
 
 
 def run(faces, src_dir):
