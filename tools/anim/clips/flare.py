@@ -215,7 +215,7 @@ STAFF = [
     (16, "grip", (-0.13, 1.88, -0.18), _n(1.0, 0.07, -0.05), (-1.0, 0.0, 0.4)),
     (17, "grip", (-0.20, 1.60, 0.02), _n(0.90, 0.44, -0.08), _n(0.1, -0.2, 0.9), "E"),
     (18, "grip", (-0.32, 1.32, 0.12), _n(0.56, 0.83, -0.04), _n(-0.1, -0.6, 0.7), "E"),
-    (19, "grip", (-0.435, 1.00, -0.06), _n(0.15, 0.99, 0.04), _n(-0.35, -0.9, 0.1), "E"),
+    (19, "grip", (-0.42, 1.00, -0.06), _n(0.15, 0.99, 0.04), _n(-0.35, -0.9, 0.1), "E"),
     # Planted the fist's +Z is keyed (the staff's own line is AXIS in it,
     # 6.6 degrees toward the fingers, which face out to her right here): so
     # the shaft stands about (-0.05, 0.99, 0.10), near upright, its head over
@@ -243,6 +243,7 @@ RELEASE, OPEN = CONTACT + 1, 31
 L_OPEN_ARC = (0.35, -0.20, -0.13)      # from the left shoulder, in the chest's frame (hangs about 25 deg low, 20 behind)
 AIM_LET_GO = 1.0                       # how far the hand stops being aimed at mid-release
 L_BUMP = (0.15, 0.12, 0.30)                # the way round, in the chest's frame
+L_REACH = (0.06, 0.02, 0.16)               # the reach to the shaft goes out in front of her breast, not through it
 L_OPEN_KNUCKLES = _n(0.55, 0.55, 0.6)  # the fingers out and up, the palm up to the sky
 
 
@@ -402,6 +403,8 @@ class Flare:
             # shaft and the open hand, and between the open hand and the idle,
             # not through her breast and ribs.
             bump = qrot(chest[fr], np.array(L_BUMP)) * math.sin(math.pi * min(1.0, wo)) if wo < 1.0 else 0.0
+            if 0.0 < ws < 1.0 and fr < CONTACT:
+                bump = bump + qrot(chest[fr], np.array(L_REACH)) * math.sin(math.pi * ws)
             if ws > 0:
                 qr, pr = G[0][fr], G[1][fr]
                 on = pr + qrot(qr, SHAFT0 + AXIS * LEFT_AT)
