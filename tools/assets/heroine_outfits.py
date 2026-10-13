@@ -2811,6 +2811,9 @@ ONE_ISLAND = set()   # (sheets laid out whole, one island with no seams)
 FOLD_SAFE = {"arcanist.glove_l", "arcanist.glove_r"}   # (welded only along their own edges: weld(joined))
 
 
+KEEP_FINE = {}   # (piece name prefix -> f(pos): points finish() never thins)
+
+
 def finish(name, pos, wt, tris, mkey, thick, bevel, budget=3000, scraps=True):
     """A sheet made a piece: her weights, its texture laid out at true size,
     a thickness and a rounded edge, bound to her skeleton. The sheet is
@@ -2976,6 +2979,16 @@ def finish(name, pos, wt, tris, mkey, thick, bevel, budget=3000, scraps=True):
         A = adjacency(len(pos), tris)
         for _ in range(2):
             keep = np.maximum(keep, (A @ keep > 0).astype(float))
+        # (and any zone a piece asks to keep whole, KEEP_FINE: the glove's
+        # fingertip caps, polygonal at 2x when thinned; the budget grows by it)
+        fine = next((f for k_, f in KEEP_FINE.items() if name.startswith(k_)), None)
+        nfine = 0
+        if fine is not None:
+            kf = np.asarray(fine(pos)) > 0
+            keep = np.maximum(keep, kf.astype(float))
+            nfine = int(kf[tris].all(1).sum())
+            budget += nfine
+            print("KEEP_FINE %s: %d points, %d faces kept whole" % (name, int(kf.sum()), nfine))
         inner = obj.vertex_groups.new(name="_thin")
         inner.add([int(i) for i in np.where(keep == 0)[0]], 1.0, "REPLACE")
         dc = obj.modifiers.new("thin", "DECIMATE")
@@ -4544,6 +4557,9 @@ def arcanist():
             kk = np.clip((r1 - np.linalg.norm(pos - tip, axis=1)) / (r1 - r0), 0, 1)
             k = np.maximum(k, np.where(W[nb][:, bs].sum(1) > 0.5, kk * kk * (3 - 2 * kk), 0.0))
         return k
+
+    for sd_ in "lr":
+        KEEP_FINE[f"arcanist.glove_{sd_}"] = lambda q, sd_=sd_: glove_tip_k(q, sd_)
 
     def glove_top_k(pos, sd):
         k = np.clip(1 - (ARM_S[sd][skin_kd.query(pos)[1]] - (WRIST_S - GLOVE_TOP)) / 0.015, 0, 1)
