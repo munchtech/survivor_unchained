@@ -91,8 +91,12 @@ def sit_log(rig):
 
 
 # ------------------------------------------------------------ flourishes --
-def SHOW_L(at=(-0.14, -0.13, 0.30), pole=(1.0, -0.3, -0.3)):
-    """warden_show's shield hand in the guard (chest frame, from the shoulder)."""
+def SHOW_L(at=(-0.07, -0.20, 0.35), pole=(1.0, -0.3, -0.3)):
+    """warden_show's shield hand in the guard (chest frame, from the shoulder):
+    out ahead with the elbow open (122 deg), so the rim clears her pauldron
+    (18 mm) and her chin and hair (6 cm). (Close in and high, at
+    (-0.14, -0.13, 0.30), the elbow closed to 99 deg and the rim cut her
+    upper arm and pauldron 8/23 mm and came within 16 mm of her face.)"""
     return {"arc": arc_of(at), "pole": pole, "frame": "chest", "blade": _n(-0.2, 0.9, 0.4), "twist": 0.3}
 
 
