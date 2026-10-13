@@ -154,7 +154,7 @@
     "lineWidth": 1.5,
     "sunder": 0.3,
     "sunderSeconds": 8,
-    "bossMul": 1.0,
+    "bossMul": 0.6,
     "wall": 36,
     "sunderWall": 0.4,
     "burn": 0.25,
@@ -273,7 +273,7 @@
     "bleedSeconds": 3,
     "vault": 6,
     "emptyLeap": 6,
-    "bossMul": 1.0,
+    "bossMul": 0.5,
     "wide": 0.6,
     "feast": 0.1
    }
@@ -602,7 +602,7 @@
     "lineWidth": 1.2,
     "execute": 0.3,
     "bossCrit": 2,
-    "bossMul": 1.0,
+    "bossMul": 0.45,
     "splits": 3,
     "splitMore": 6,
     "splitAngle": 0.4,

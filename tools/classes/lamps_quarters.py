@@ -13,7 +13,7 @@ EARLY = {"kindler.burns_twice.more_embers", "bulwark.bell_of_the_morning.bell_fo
 # power: each blow's damage at level 1. A Strike's blows land over its length; a Stand pulses `blows` a second.
 flare("the_long_cut", "The Long Cut", "warden", "sunderer", "strike", 0.8, 12, 2, 1380, "holy", ["melee", "area", "heavy", "holy"], "A sweep of dawn 12 m round, then a cleave down a 24 m line.",
       beat={"key": 0.2, "first": 0.3, "cleave": 0.55, "second": 0.85, "hitstop": 3, "hitstopCleave": 8, "shake": 0.8},
-      args={"sweep": 1.5, "cleave": 1.5, "line": 24, "lineWidth": 1.5, "sunder": 0.3, "sunderSeconds": 8, "bossMul": 1.0,
+      args={"sweep": 1.5, "cleave": 1.5, "line": 24, "lineWidth": 1.5, "sunder": 0.3, "sunderSeconds": 8, "bossMul": 0.6,
             "wall": 36, "sunderWall": 0.4, "burn": 0.25, "burnSeconds": 4})
 flare("dawn_in_the_steel", "Dawn in the Steel", "warden", "sunderer", "stand", 6, 10, 2, 345, "holy", ["melee", "area", "heavy", "holy"], "For 6 s the blade burns with morning: faster swings, crescents of light, every heavy blow staggers.")
 flare("bell_of_the_morning", "Bell of the Morning", "warden", "bulwark", "strike", 0.9, 14, 3, 920, "holy", ["area", "holy", "shield"], "Three tolls on the shield: each stuns and sears everything near, and mends you 4%. The last is a holy blast 8 m round.",
@@ -23,7 +23,7 @@ flare("sixty_on_the_wall", "Sixty on the Wall", "warden", "bulwark", "stand", 6,
 flare("the_butchers_bill", "The Butcher's Bill", "reaver", "butcher", "strike", 1.2, 10, 6, 520, "physical", ["melee", "steel", "physical", "twin"], "A leap on the strongest near you, and a chop for each tenth of health you're missing (at least four): each mends 2%.",
       beat={"key": 0.2, "leap": 0.2, "first": 0.45, "step": 0.06, "lastGap": 0.12, "hitstop": 2, "hitstopLast": 7},
       args={"chop": 1.5, "lastChop": 1.5, "minChops": 4, "maxChops": 10, "mend": 0.02, "splash": 2, "bleed": 0.4, "bleedSeconds": 3, "vault": 6,
-            "emptyLeap": 6, "bossMul": 1.0, "wide": 0.6, "feast": 0.1})
+            "emptyLeap": 6, "bossMul": 0.5, "wide": 0.6, "feast": 0.1})
 flare("butchers_hour", "Butcher's Hour", "reaver", "butcher", "stand", 8, 4, 0, 290, "physical", ["melee", "steel", "physical", "twin"], "For 8 s: Frenzy full, blows twice as fast, every blow deepens the bleed, ordinary things below 15% die, and each kill adds 0.3 s (up to 8 s more) and mends 1%.",
       beat={"key": 0.3, "hitstop": 1, "hitstopExecute": 4},
       args={"faster": 2, "bleed": 0.8, "bleedSeconds": 3, "deepen": 1, "execute": 0.15, "extend": 0.3, "extendCap": 8, "overtime": 0.6, "overtimeCap": 12, "mend": 0.01, "mistRadius": 5, "flee": 1.5})
@@ -47,7 +47,7 @@ flare("the_roads_toll", "The Road's Toll", "stalker", "roadknife", "strike", 1.2
 flare("through_and_through", "Through and Through", "stalker", "roadknife", "stand", 6, 3, 2, 290, "physical", ["melee", "steel", "physical"], "For 6 s your dashes are free and endless, and every one cuts.")
 flare("one_arrow", "One Arrow", "stalker", "verge_hunter", "strike", 0.9, 30, 1, 2990, "physical", ["projectile", "ranged", "physical"], "One arrow down a 30 m line, splitting three times on the toughest.",
       beat={"key": 0.35, "first": 0.4, "splitFirst": 0.45, "splitLast": 0.55, "follow": 0.3, "hitstop": 7, "hitstopSplit": 1, "hitstopLast": 3},
-      args={"arrow": 1.0, "line": 30, "lineWidth": 1.2, "execute": 0.3, "bossCrit": 2, "bossMul": 1.0, "splits": 3, "splitMore": 6,
+      args={"arrow": 1.0, "line": 30, "lineWidth": 1.2, "execute": 0.3, "bossCrit": 2, "bossMul": 0.45, "splits": 3, "splitMore": 6,
             "splitAngle": 0.4, "splitLength": 12, "splitWidth": 0.8, "split": 0.6, "pinned": 2, "heart": 0.6, "heartFan": 0.7, "heartFrom": 4})
 flare("pinning_rain", "Pinning Rain", "stalker", "verge_hunter", "stand", 5, 6, 3, 205, "physical", ["projectile", "ranged", "physical", "area"], "For 5 s arrows rain on ground 12 m across, rooting what they strike.")
 
