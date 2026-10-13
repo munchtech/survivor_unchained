@@ -45,16 +45,18 @@ def warden(t, f):
     breath = 0.008 * math.sin(2 * math.pi * t * 2)
     return {
         # The shield at rest at her left side, off her body: the elbow out
-        # about 23 degrees and bent about 85, the forearm forward, a little
-        # down and turned in about 22, so the shield's face (the back of the
-        # forearm) looks out to her left-front about 26 degrees, its plane
-        # near upright, clear of her hip, thigh and breast by 8 cm or more.
-        # The wrist straight, the fist on the strap; the forearm turned
-        # palm-up a little (the whole roll in the forearm, which carries
-        # the shield), not wrung at the wrist. (Carried across her body,
-        # the 66 cm shield sank 5 cm into her breast and trunk.)
-        "hand_l": {"arc": arc_of((0.028, -0.293 + breath, 0.194)), "pole": (0.53, -0.56, -0.63), "frame": "chest",
-                   "thumb": (-0.21, 0.95, 0.21), "twist": 1.0},
+        # about 17 degrees and bent about 55, the forearm forward and about
+        # 44 degrees down (so the hand and the shield sit lower), turned in
+        # about 10, so the shield's face (the back of the forearm) looks out
+        # to her left-front about 17 degrees, its plane near upright and its
+        # top rim about 5 cm lower, near her bust line, clear of her hip,
+        # thigh and breast by 9 cm or more. The wrist straight, the fist on
+        # the strap; the forearm turned palm-up a little (the whole roll in
+        # the forearm, which carries the shield), not wrung at the wrist.
+        # (Carried across her body, the 66 cm shield sank 5 cm into her
+        # breast and trunk.)
+        "hand_l": {"arc": arc_of((0.050, -0.374 + breath, 0.177)), "pole": (0.435, -0.507, -0.744), "frame": "chest",
+                   "thumb": (-0.229, 0.782, 0.579), "twist": 1.0},
         # The sword low at her right, its point 45 degrees down ahead and a
         # little out: the hand in line with the forearm, its thumb forward,
         # dropped 16 degrees toward the little finger under the blade's
