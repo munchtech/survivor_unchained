@@ -1,3 +1,4 @@
+#include "res://shaders/flare_world.gdshaderinc"
 // The crowd's vertex animation, shared by vat.gdshader (solid bodies, one
 // side) and vat_cut.gdshader (fur and hair cards: two sides, cut by alpha).
 // See vat.gdshader for what it does.
@@ -109,18 +110,20 @@ void fragment() {
 	// and bluer than a pale body, not paler, and every status light stays under 1.
 	float rough = roughness;
 	vec3 e = glow_color;
-	if (fx.z > 0.0) {
+	// Burns Twice's glaze takes the rime's place where its frost lies (flare_world.gdshaderinc).
+	float fz = fx.z > 0.0 && flare_live() ? fx.z * (1.0 - flare_glazed((INV_VIEW_MATRIX * vec4(VERTEX, 1.0)).xyz)) : fx.z;
+	if (fz > 0.001) {
 		// Frozen (chill to half): rime grows in patches on what faces up, a cold blue at a
 		// middle value that a pale body shows against; the ice is glossy, with a thin cold rim
 		// and a few glints.
 		float lum = dot(c, vec3(0.2126, 0.7152, 0.0722));
-		float rime = smoothstep(0.42, 0.62, vat_noise(vat_local * 5.0) * 0.75 + up * 0.45) * smoothstep(0.0, 0.5, fx.z);
+		float rime = smoothstep(0.42, 0.62, vat_noise(vat_local * 5.0) * 0.75 + up * 0.45) * smoothstep(0.0, 0.5, fz);
 		vec3 ice = vec3(0.16, 0.36, 0.62) * (0.7 + 0.6 * clamp(lum, 0.0, 0.6));
-		c = mix(c, vec3(lum) * vec3(0.9, 0.97, 1.08), fx.z * 0.3);
+		c = mix(c, vec3(lum) * vec3(0.9, 0.97, 1.08), fz * 0.3);
 		c = mix(c, ice, rime * 0.85);
 		rough = mix(rough, 0.22, rime);
 		float glint = step(0.992, vat_hash(floor(vat_local * 16.0) + floor(TIME * 3.0)));
-		e += vec3(0.28, 0.62, 1.0) * fx.z * pow(rim, 4.0) * 0.85 + vec3(0.55, 0.8, 1.0) * rime * glint * 0.8;
+		e += vec3(0.28, 0.62, 1.0) * fz * pow(rim, 4.0) * 0.85 + vec3(0.55, 0.8, 1.0) * rime * glint * 0.8;
 	}
 	if (fx.w > 0.0) {
 		// Burning: thin tongues of fire licking up the body from its edges over char, soot where
@@ -150,4 +153,11 @@ void fragment() {
 	// Ember at the dissolve's edge.
 	if (fx.y > 0.0) e += vec3(1.0, 0.45, 0.12) * smoothstep(fx.y + 0.12, fx.y, dn) * 3.0;
 	EMISSION = e;
+
+	// The Flare's drain and glaze (flare_world.gdshaderinc).
+	if (flare_live()) {
+		vec3 fl_a = ALBEDO; float fl_r = ROUGHNESS; vec3 fl_e = EMISSION;
+		flare_body((INV_VIEW_MATRIX * vec4(VERTEX, 1.0)).xyz, NORMAL, INV_VIEW_MATRIX, rim, fl_a, fl_r, fl_e);
+		ALBEDO = fl_a; ROUGHNESS = fl_r; EMISSION = fl_e;
+	}
 }

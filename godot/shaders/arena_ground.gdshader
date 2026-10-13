@@ -11,6 +11,8 @@
 shader_type spatial;
 render_mode diffuse_burley, specular_schlick_ggx;
 
+#include "res://shaders/flare_world.gdshaderinc"
+
 #define NL 7
 #define FACE 6
 
@@ -450,4 +452,11 @@ void fragment() {
 		glow += fox_color * fox_glow * speck * clump * pulse * smoothstep(0.1, 0.6, s3.b);
 	}
 	EMISSION = glow;
+
+	// The Flare's drain, web, frost and scars (flare_world.gdshaderinc).
+	if (flare_live()) {
+		vec3 fl_a = ALBEDO; float fl_r = ROUGHNESS; float fl_s = SPECULAR; vec3 fl_n = NORMAL; vec3 fl_e = EMISSION;
+		flare_ground((INV_VIEW_MATRIX * vec4(VERTEX, 1.0)).xyz, fl_a, fl_r, fl_s, fl_n, fl_e, VIEW_MATRIX, INV_VIEW_MATRIX);
+		ALBEDO = fl_a; ROUGHNESS = fl_r; SPECULAR = fl_s; NORMAL = fl_n; EMISSION = fl_e;
+	}
 }

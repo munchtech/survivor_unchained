@@ -824,7 +824,7 @@ public sealed partial class Battle
         {
             X = e.X, Z = e.Z, Amount = dmg, Crit = crit, School = school, Target = e.Id, Dot = o.Dot, Blocked = blocked,
             Family = e.Def.Family, Def = e.Def.Id, MaxHp = e.MaxHp, Dx = e.LastDx, Dz = e.LastDz,
-            Art = o.Weapon?.Art, Rank = o.Weapon?.Rank ?? 0,
+            Art = o.Weapon?.Art, Rank = o.Weapon?.Rank ?? 0, ByFlare = o.Credit == "flare" || credit == "flare",
         });
 
         // Lifesteal.
@@ -924,7 +924,7 @@ public sealed partial class Battle
         Events.Emit(new Ev.Kill
         {
             X = e.X, Z = e.Z, Enemy = e.Id, Def = e.Def.Id, Family = e.Def.Family, School = e.LastSchool, Elite = e.Elite, Boss = e.Boss,
-            ByPlayer = credited, Burst = burst, Dx = e.LastDx, Dz = e.LastDz, Scale = e.Def.Scale ?? 1,
+            ByPlayer = credited, Burst = burst, ByFlare = credit == "flare", Dx = e.LastDx, Dz = e.LastDz, Scale = e.Def.Scale ?? 1,
         });
         Graves.Add((e.X, e.Z, e.Def.Id, Time));
 
