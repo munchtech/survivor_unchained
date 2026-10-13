@@ -3339,6 +3339,67 @@ def plate_cups(name, mkey, top, lift=0.003, thick=0.003, trim=None, studs=None, 
     inner = rim[np.abs(pos[rim, 0]) < gap + 0.006]
     global CUP_LOW
     CUP_LOW = pos[inner[np.argmin(pos[inner, 2])]] if len(inner) else np.array([0.0, nip[1], UNDERBUST])
+    # A lining under its top edge, from her middle to past her nipple: dark
+    # leather from just under the plate's edge down toward her, CUP_LINE[0]
+    # short of her skin (at most CUP_LINE[1] of the way, eased in over
+    # CUP_LINE[2] at each end). The plate stands off her by up to a
+    # centimetre under the plunge, and bent over (chain_haul, the motion
+    # check's left view, s16_sab2) a look in under that edge met the inner
+    # rim of her right areola (-0.17 cm). Closed from the inside, the plate's
+    # own form and edge are as judged. (Tucking her deeper there only let the
+    # look go deeper: offline, 1.6 cm became 0.7.)
+    line_ = [float(v) for v in os.environ.get("CUP_LINE", "0.0025,0.85,0.01,0.0015").split(",")]
+    lining = None
+    if line_[0] > 0 and loops:
+        ax_ = np.abs(pos[:, 0])
+        on_top = (np.abs(top(ax_) - pos[:, 2]) < 0.0015) & (ax_ < abs(nip[0]) + 0.025)
+        tree_ = cKDTree(pos)
+        LP, LW, LT = [], [], []
+        for lp in loops:
+            lp = np.array(lp)
+            if not on_top[lp].any():
+                continue
+            if not on_top[lp].all():
+                lp = np.roll(lp, -int(np.argmin(on_top[lp])))
+            runs, cur = [], []
+            for v_ in lp:
+                if on_top[v_]:
+                    cur.append(v_)
+                elif cur:
+                    runs.append(cur)
+                    cur = []
+            if cur:
+                runs.append(cur)
+            for run in runs:
+                run = np.array(run)
+                if len(run) < 4:
+                    continue
+                q = pos[run]
+                arc = np.r_[0, np.cumsum(np.linalg.norm(np.diff(q, axis=0), axis=1))]
+                tp_ = np.clip(np.minimum(arc, arc[-1] - arc) / line_[2], 0, 1)
+                tp_ = tp_ * tp_ * (3 - 2 * tp_)
+                n_ = at[run, :3] / np.linalg.norm(at[run, :3], axis=1)[:, None]
+                tg = np.gradient(q, axis=0)
+                tg /= np.maximum(np.linalg.norm(tg, axis=1), 1e-9)[:, None]
+                inn = np.cross(n_, tg)
+                inn /= np.maximum(np.linalg.norm(inn, axis=1), 1e-9)[:, None]
+                m_ = len(run) // 2
+                if at[tree_.query(q[m_] + inn[m_] * 0.004)[1], -1] < at[tree_.query(q[m_] - inn[m_] * 0.004)[1], -1]:
+                    inn = -inn
+                a_ = q + inn * line_[3] - n_ * 0.0003
+                sk_ = np.array([SKIN_BVH.find_nearest(Vector(v))[0][:] for v in a_])
+                L_ = np.linalg.norm(sk_ - a_, axis=1)
+                f_ = np.clip((L_ - line_[0]) / np.maximum(L_, 1e-6), 0, line_[1]) * tp_
+                b_ = a_ + (sk_ - a_) * f_[:, None]
+                o_ = sum(len(x) for x in LP)
+                k_ = len(run)
+                LP.append(np.vstack([a_, b_]))
+                LW.append(np.vstack([at[run, 3:3 + NB]] * 2))
+                LT += [[o_ + i, o_ + i + 1, o_ + k_ + i + 1] for i in range(k_ - 1)] + [[o_ + i, o_ + k_ + i + 1, o_ + k_ + i] for i in range(k_ - 1)]
+                print("CUP LINING %s: %d points along its top edge, %.0f mm long; the plate %.1f-%.1f mm off her there, the lining %.1f mm deep at most"
+                      % (name, k_, arc[-1] * 1000, L_.min() * 1000, L_.max() * 1000, (L_ * f_).max() * 1000))
+        if LP:
+            lining = (np.vstack(LP), np.vstack(LW), np.array(LT))
     pos2 = np.vstack([pos, pos * mirror])
     at2 = np.vstack([at, np.hstack([at[:, :3] * mirror, at[:, 3:3 + NB][:, SWAP], at[:, -1:]])])
     tris2 = np.vstack([tris, tris[:, ::-1] + len(pos)])
@@ -3353,6 +3414,13 @@ def plate_cups(name, mkey, top, lift=0.003, thick=0.003, trim=None, studs=None, 
     made = [finish(name, pos2, at2[:, 3:3 + NB], tris2, mkey, thick, 0.0006, 10 ** 7)] + beads
     if studs:
         made += rivets(name, pos2, at2, tris2, thick, studs)
+    if lining is not None:
+        lp2, lw2, lt2 = lining
+        if only != "r":
+            lp2, lw2, lt2 = np.vstack([lp2, lp2 * mirror]), np.vstack([lw2, lw2[:, SWAP]]), np.vstack([lt2, lt2[:, ::-1] + len(lp2)])
+            if only == "l":
+                lp2, lw2, lt2 = lp2[len(lining[0]):], lw2[len(lining[0]):], lining[2][:, ::-1]
+        made.append(finish(name + "_lining", lp2, lw2, lt2, "darkleather", 0.0012, 0.0004, 10 ** 6))
     for o_ in made:
         o_["hides"] = o_ is made[0]
     print("PLATE CUP %s: %d points" % (name, len(pos2)))
