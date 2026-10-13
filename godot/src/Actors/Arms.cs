@@ -164,24 +164,41 @@ public static class Arms
         person.Skeleton.AddChild(att);
         var mount = new Node3D { Name = $"mount:{bone}" };
         att.AddChild(mount);
-        bool forearm = bone.StartsWith("lowerarm");
-        var x = new Vector3(0, 1, 0);
-        var y = forearm ? new Vector3(0, 0, -1) : new Vector3(0, 0, 1);
-        mount.Basis = new Basis(x, y, x.Cross(y));
-        // Her and the hero hold it in the diagonal grip their clips are keyed
-        // to: the shaft turned about the hand's across axis toward the fingers.
-        if (!forearm && person.Own != null && All[id].Lean != 0)
-            mount.Basis = new Basis(Vector3.Right, Mathf.DegToRad(-All[id].Lean)) * mount.Basis;
-        mount.Position = forearm ? new Vector3(0, 0.14f, 0) : new Vector3(-0.025f, 0.075f, 0);
+        mount.Transform = MountTransform(id, bone, person.Own != null);
         var w = Make(id);
-        if (All[id].Pistol)
-        {
-            // Held pistol-fashion: the stock along the fingers, its top out
-            // of the thumb side, sitting on the fist rather than through it.
-            w.Basis = new Basis(new Vector3(0, 0, 1), new Vector3(1, 0, 0), new Vector3(0, 1, 0));
-            w.Position = new Vector3(0, 0.05f, 0);
-        }
+        w.Transform = PieceTransform(id);
         mount.AddChild(w);
         return mount;
     }
+
+    /// <summary>Where the mount sits in its bone's space (Hold's, and
+    /// tools_scenes/ArmsDump.cs's, so the two cannot drift). `own`: her
+    /// or the hero, who hold the diagonal grip their clips are keyed to.</summary>
+    public static Transform3D MountTransform(string id, string bone, bool own)
+    {
+        bool forearm = bone.StartsWith("lowerarm");
+        var x = new Vector3(0, 1, 0);
+        var y = forearm ? new Vector3(0, 0, -1) : new Vector3(0, 0, 1);
+        var basis = new Basis(x, y, x.Cross(y));
+        // Her and the hero hold it in the diagonal grip their clips are keyed
+        // to: the shaft turned about the hand's across axis toward the fingers.
+        if (!forearm && own && All[id].Lean != 0)
+            basis = new Basis(Vector3.Right, Mathf.DegToRad(-All[id].Lean)) * basis;
+        // Her and the hero: the shield sits on the back of the forearm, not on its axis.
+        var at = forearm ? new Vector3(own ? -ShieldOff : 0, own ? ShieldAlong : 0.14f, 0) : new Vector3(-0.025f, 0.075f, 0);
+        return new Transform3D(basis, at);
+    }
+
+    /// <summary>How far the shield mount sits off the forearm bone, toward the back of the arm (m).</summary>
+    const float ShieldOff = 0.11f;  // was 0.08: 3 cm further out along the shield's face normal (judge 45)
+
+    /// <summary>How far down the forearm the shield is strapped (m): its boss over her wrist, so the rim sits under her shoulder armour with air.</summary>
+    const float ShieldAlong = 0.23f;
+
+    /// <summary>The piece's own turn inside its mount: held pistol-fashion
+    /// (a crossbow) the stock runs along the fingers, its top out of the
+    /// thumb side, sitting on the fist rather than through it.</summary>
+    public static Transform3D PieceTransform(string id) => All[id].Pistol
+        ? new Transform3D(new Basis(new Vector3(0, 0, 1), new Vector3(1, 0, 0), new Vector3(0, 1, 0)), new Vector3(0, 0.05f, 0))
+        : Transform3D.Identity;
 }

@@ -3,8 +3,9 @@ each calling's body, the arms re-solved to hold what that calling holds,
 its way. The capture brings the weight shifts and the breath; the arms
 ride the chest as it moves.
 
-- Warden: Heavyset (tensed, square, settled). The buckler resting across
-  her body, the sword low at her right, point toward the ground ahead.
+- Warden: Heavyset (tensed, square, settled). The shield at rest at her
+  left side, its face turned a little to the front, off her body; the
+  sword low at her right, point toward the ground ahead.
 - Arcanist: Strutting (chin up, a little back, at ease). The staff upright
   at her side, the free hand on her hip.
 - Reaver: Angry (tense, restless). The axe on her shoulder, its head
@@ -43,11 +44,36 @@ def _n(v):
 def warden(t, f):
     breath = 0.008 * math.sin(2 * math.pi * t * 2)
     return {
-        "hand_l": {"arc": arc_of((-0.10, -0.38 + breath, 0.16)), "pole": (1.0, -0.4, -0.3), "frame": "chest",
-                   "blade": _n((-0.3, 0.75, 0.6)), "twist": 0.3},
-        "hand_r": {"arc": arc_of((-0.06, -0.44, 0.10)), "pole": (-0.5, -0.1, -1.0), "frame": "chest",
-                   "blade": _n((-0.25, -0.5, 0.85)), "twist": 0.5},
-        "fingers_l": "fist", "fingers_r": "grip",
+        # The shield at rest at her left side, off her body: the elbow out
+        # about 19 degrees, the upper arm back about 14 and bent about 58, the
+        # forearm forward and about 50 degrees down, turned in about 10, so
+        # the shield's face (the back of the forearm) looks out to her
+        # left-front about 15 degrees, its plane near upright. The shield is
+        # strapped low on the forearm, its boss over her wrist, so its top rim
+        # sits about 145 cm up, level with her armpit and the top of her cup,
+        # with air under the shoulder armour, and its bottom is 8 cm or more
+        # clear of her hip and thigh. The wrist straight, the fist on the
+        # strap; the forearm turned palm-up a little (the whole roll in the
+        # forearm, which carries the shield), not wrung at the wrist.
+        # (Carried across her body, the 66 cm shield sank 5 cm into her
+        # breast and trunk.) The upper arm turned 8 degrees out about its
+        # length (judges 46-47): the rim clear of her cup's outline from the
+        # front by 2-5 cm. In the game the forearm bone keeps to its hinge
+        # (HerJoints hands its roll to the hand), so the shield on it does not
+        # take the forearm's roll: measure with the helpers driven.
+        "hand_l": {"arc": arc_of((0.0817, -0.3796 + breath, 0.1299)), "pole": (0.3281, -0.4168, -0.8477), "frame": "chest",
+                   "thumb": (-0.1498, 0.7455, 0.6495), "twist": 1.0},
+        # The sword low at her right, its point 45 degrees down ahead and a
+        # little out: the hand in line with the forearm, its thumb forward,
+        # dropped 16 degrees toward the little finger under the blade's
+        # weight, the turn shared by the forearm and the wrist; no bend
+        # back. (Keyed by the blade alone, the
+        # wrist cocked back 42 degrees and 34 to the side.)
+        "hand_r": {"arc": arc_of((-0.09, -0.45, 0.04)), "pole": (-0.4, -0.2, -1.0), "frame": "chest",
+                   "blade": _n((-0.131, -0.630, 0.765)), "knuckles": _n((0.135, -0.776, -0.617)), "twist": 0.5},
+        # The left thumb closed round the grip, swung in across the palm
+        # (judge 47: held straight, it showed between the rim and her skirt).
+        "fingers_l": {"curl": 0.95, "cascade": 0.05, "thumb": 1.6, "oppose": 0.9}, "fingers_r": "grip",
     }
 
 

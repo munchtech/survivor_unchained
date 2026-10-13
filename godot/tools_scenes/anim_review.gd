@@ -15,7 +15,7 @@ extends SceneTree
 #   COLS=c                                 cells to a row
 #   SPEED=m/s                              carried forward at this speed (in metres of the world), camera following
 #   PLAY=x                                 playback speed
-#   OUTFIT=warden|arcanist|reaver|ranger   her outfit; HAIR=style; WEAPON=sword|staff|bow|axe|axes|daggers|wand
+#   OUTFIT=warden|arcanist|reaver|ranger   her outfit; HAIR=style; WEAPON=sword|sword+shield|shield|staff|axe|axes|daggers|wand|crossbow|flask
 #   MODEL=female|male                      a townsfolk body (the kit's) instead of hers, in PARTS (kit
 #                                          outfit parts, comma-separated); clips "folk/<name>"
 #   MODEL=hero                             the hero, with his clips ("him/<name>", art/anim/hero.res)
@@ -312,81 +312,63 @@ void fragment() { ALBEDO = vec3(UV.x, UV.y, FRONT_FACING ? 0.0 : 1.0); }"
 	skel.add_child(load("res://src/Actors/HerJiggle.cs").new())
 	weapon(skel, env("WEAPON", ""))
 
-# Stand-ins for what she holds, mounted as Arms.Hold mounts them: in the
-# hand's space the fingers run +Y and the thumb side is +Z, and a held shaft
-# leaves the fist out of the thumb side.
+# What she holds: the real pieces, from tools/anim/data/arms_local.json (the
+# ArmsDump output; vertices already in the bone's space, mount included), so
+# each hangs under a BoneAttachment3D with an identity mount.
+const PIECES = {"sword": ["chevalier_sword@hand_r"], "sword+shield": ["chevalier_sword@hand_r", "shield_round@lowerarm_l"],
+	"shield": ["shield_round@lowerarm_l"], "axe": ["viking_axe@hand_r"], "axes": ["viking_axe@hand_r", "viking_axe@hand_l"],
+	"daggers": ["daggers@hand_r", "dagger_b@hand_l"], "staff": ["mage_staff@hand_r"], "wand": ["wand@hand_r"],
+	"crossbow": ["crossbow@hand_r"]}
+
 func weapon(skel, kind):
 	if kind == "": return
+	if kind == "flask":
+		flask(skel)
+		return
+	var f = FileAccess.open(ProjectSettings.globalize_path("res://") + "../tools/anim/data/arms_local.json", FileAccess.READ)
+	if f == null:
+		print("WEAPON: arms_local.json missing")
+		return
+	var data = JSON.parse_string(f.get_as_text())
 	var steel = StandardMaterial3D.new()
 	steel.albedo_color = Color(0.75, 0.77, 0.8)
 	steel.metallic = 0.8
 	steel.roughness = 0.3
 	var wood = StandardMaterial3D.new()
 	wood.albedo_color = Color(0.35, 0.22, 0.12)
-	if kind.begins_with("sword+shield") or kind == "shield":
-		# A buckler on the left forearm, as Arms.Hold mounts one: its face
-		# along the mount's +Z.
-		var fa = BoneAttachment3D.new()
-		fa.bone_name = "lowerarm_l"
-		skel.add_child(fa)
-		var fm = Node3D.new()
-		var fx = Vector3(0, 1, 0)
-		var fy = Vector3(0, 0, -1)
-		fm.basis = Basis(fx, fy, fx.cross(fy))
-		fm.position = Vector3(0, 0.14, 0)
-		fa.add_child(fm)
-		var disc = MeshInstance3D.new()
-		var cm = CylinderMesh.new()
-		cm.top_radius = 0.3
-		cm.bottom_radius = 0.3
-		cm.height = 0.04
-		var wood2 = StandardMaterial3D.new()
-		wood2.albedo_color = Color(0.45, 0.3, 0.18)
-		cm.material = wood2
-		disc.mesh = cm
-		disc.rotation_degrees = Vector3(90, 0, 0)
-		disc.position = Vector3(0, 0, 0.05)
-		fm.add_child(disc)
-		if kind == "shield": return
-		kind = "sword"
-	if kind == "flask":
-		flask(skel)
-		return
-	var hands = {"sword": [["hand_r", 0.95, 0.05, steel]], "axe": [["hand_r", 0.8, 0.07, steel]],
-		"axes": [["hand_r", 0.8, 0.07, steel], ["hand_l", 0.8, 0.07, steel]],
-		"daggers": [["hand_r", 0.4, 0.03, steel], ["hand_l", 0.4, 0.03, steel]],
-		"staff": [["hand_r", 1.75, 0.03, wood]], "wand": [["hand_r", 0.38, 0.015, wood]], "crossbow": [["hand_r", 0.85, 0.05, wood]]}
-	for h in hands.get(kind, []):
+	for key in PIECES.get(kind, []):
+		if not data.has(key):
+			print("WEAPON: no piece ", key)
+			continue
+		var bone = key.split("@")[1]
+		var verts = PackedVector3Array()
+		for v in data[key]["v"]:
+			verts.append(Vector3(v[0], v[1], v[2]))
+		var idx = PackedInt32Array()
+		for t in data[key]["t"]:
+			idx.append(int(t[0]))
+			idx.append(int(t[1]))
+			idx.append(int(t[2]))
+		var arrays = []
+		arrays.resize(Mesh.ARRAY_MAX)
+		arrays[Mesh.ARRAY_VERTEX] = verts
+		arrays[Mesh.ARRAY_INDEX] = idx
+		var am = ArrayMesh.new()
+		am.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arrays)
+		var st = SurfaceTool.new()
+		st.create_from(am, 0)
+		st.generate_normals()
+		var mesh = st.commit()
+		var mat = steel
+		if key.begins_with("shield") or key.begins_with("mage_staff") or key.begins_with("wand") or key.begins_with("crossbow"):
+			mat = wood
+		mesh.surface_set_material(0, mat)
 		var at = BoneAttachment3D.new()
-		at.bone_name = h[0]
+		at.bone_name = bone
 		skel.add_child(at)
-		var mount = Node3D.new()
-		var x = Vector3(0, 1, 0)
-		var y = Vector3(0, 0, 1)
-		mount.basis = Basis(x, y, x.cross(y))
-		# Her and the hero hold a weapon in a diagonal grip, its shaft leaning
-		# toward the fingers (Arms.Spec.Lean, tools/anim/keyed.py GRIP); the
-		# townsfolk square, as the library's clips do.
-		var lean = {"sword": 35.0, "axe": 30.0, "axes": 30.0, "daggers": 30.0, "wand": 30.0}.get(kind, 0.0)
-		if env("MODEL", "") in ["", "hero"] and lean > 0:
-			mount.basis = Basis(Vector3(1, 0, 0), deg_to_rad(-lean)) * mount.basis
-		mount.position = Vector3(-0.025, 0.075, 0)
-		at.add_child(mount)
-		var len = h[1]
-		var grip = {"staff": 0.45, "crossbow": 0.3}.get(kind, 0.15)
-		var m = MeshInstance3D.new()
-		var bm = BoxMesh.new()
-		bm.size = Vector3(h[2] * 1.6, len, h[2] * 0.4)
-		bm.material = h[3]
-		m.mesh = bm
-		var w = Node3D.new()
-		if kind == "crossbow":
-			# Pistol-fashion, as Arms.Hold: the stock along the fingers.
-			w.basis = Basis(Vector3(0, 0, 1), Vector3(1, 0, 0), Vector3(0, 1, 0))
-			w.position = Vector3(0, 0.05, 0)
-		mount.add_child(w)
-		m.position = Vector3(0, len * (0.5 - grip), 0)
-		w.add_child(m)
+		var mi = MeshInstance3D.new()
+		mi.mesh = mesh
+		at.add_child(mi)
 
 # A flat pewter flask in the right hand, as Arms.Hold would mount one: its
 # body round the grip (13 cm tall, 10 wide, 4.5 thin across the palm), the
