@@ -170,8 +170,12 @@ public sealed partial class Battle
         {
             // The thickest frozen pack not yet struck; then anything frozen; then the thickest pack at all.
             bool Struck(Enemy e) => emberFell.Any(q => Dist(q.X, q.Z, e.X, e.Z) < r);
-            int Pack(Enemy e) => near.Count(o => o.Status.Has(StatusKind.Frozen) && Dist(o.X, o.Z, e.X, e.Z) < r);
-            var frozen = near.Where(e => !e.Boss && e.Status.Has(StatusKind.Frozen)).ToList();
+            // An ember already falling will shatter the ice round its aim: aimed ahead, count that ice as broken, as it
+            // was when each ember chose at landing (without this a press killed 5 points fewer, 13 October).
+            var falling = emberAims.Skip(Math.Max(0, flareBlow - (f.Beat.ContainsKey("frost") ? 1 : 0))).ToList();
+            bool Iced(Enemy e) => e.Status.Has(StatusKind.Frozen) && !falling.Any(q => Dist(q.X, q.Z, e.X, e.Z) < r);
+            int Pack(Enemy e) => near.Count(o => Iced(o) && Dist(o.X, o.Z, e.X, e.Z) < r);
+            var frozen = near.Where(e => !e.Boss && Iced(e)).ToList();
             target = frozen.Where(e => !Struck(e)).OrderByDescending(Pack).FirstOrDefault()
                 ?? frozen.OrderByDescending(Pack).FirstOrDefault()
                 ?? near.Where(e => !e.Boss).OrderByDescending(e => near.Count(o => Dist(o.X, o.Z, e.X, e.Z) < r)).FirstOrDefault();
@@ -214,6 +218,13 @@ public sealed partial class Battle
             var (ax, az, id) = emberAims[ember - 1];
             var held = id >= 0 && id < Enemies.Items.Length ? Enemies.Items[id] : null;
             target = held != null && held.Alive && held.State != EnemyState.Dying && FlareCanHurt(held) && Dist(held.X, held.Z, ax, az) < r + 2 ? held : null;
+            // Its target fell while it fell (an ember aimed four ahead, 13 October: 23 of 360 fell on nothing, a press
+            // killed 5 points fewer): it bends to the thickest pack still standing near its aim, never a boss.
+            if (target == null && id >= 0)
+            {
+                var near = HostilesInRadius(ax, az, r + f.Arg("aimBend", 3)).Where(e => e.Alive && e.State != EnemyState.Dying && !e.Boss).ToList();
+                target = near.OrderByDescending(e => near.Count(o => Dist(o.X, o.Z, e.X, e.Z) < r)).ThenBy(e => Dist(e.X, e.Z, ax, az)).FirstOrDefault();
+            }
             tx = target?.X ?? ax;
             tz = target?.Z ?? az;
         }
