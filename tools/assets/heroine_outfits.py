@@ -3664,8 +3664,9 @@ def warden():
             # (the sabaton a made shoe, lofted as the Ranger's boot is, toe box,
             # welted sole and heel, its top under the greave: laid on her foot it
             # showed each toe in steel, animation's judge 49, and laid on her
-            # foot's hull the toes still showed as creases)
-            *BOOTS.boot(f"warden.sabaton_{sd}", sd, ANKLE_S - 0.06, 0.0, BOOTS.RANGER, "darksteel"),
+            # foot's hull the toes still showed as creases; cut 3.5 cm lower behind,
+            # its back came through the greave over her heel)
+            *BOOTS.boot(f"warden.sabaton_{sd}", sd, ANKLE_S - 0.06, 0.035, BOOTS.RANGER, "darksteel"),
         ]
     return out
 
