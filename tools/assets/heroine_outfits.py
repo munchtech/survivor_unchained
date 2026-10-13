@@ -530,7 +530,10 @@ def crotch_bridge(name, pos, tris, gap_at, mkey, thick, bevel, trim, lift):
     # (on back under the string's foot by 1.5 cm: stopped at GAP_B, short of
     # the string, the strip between them showed as she vaulted)
     foot = back_string(CROTCH + 0.155, CROTCH + 0.012)[-1][1]
-    return gusset(name + "_gusset", mkey, GAP_F - LEO_GUSSET_F, max(GAP_B + 0.014, foot + 0.015), thick=thick)
+    # (LEO_GW: wider by LEO_GW[0] in front of GAP_F + LEO_GW[1], eased out
+    # by GAP_F + LEO_GW[2], under the U's rounded corners)
+    half = 0.016 + LEO_GW[0] * ramp(-Y, -(GAP_F + LEO_GW[2]), -(GAP_F + LEO_GW[1]))
+    return gusset(name + "_gusset", mkey, GAP_F - LEO_GUSSET_F, max(GAP_B + 0.014, foot + 0.015), half=half, thick=thick)
 
 
 def gusset(name, mkey, y_front, y_back, half=0.016, steep=0.96, thick=0.0018):
@@ -2557,6 +2560,8 @@ HOLD_CAP = os.environ.get("HOLD_CAP", "1") == "1"
 LEO_FOOT = float(os.environ.get("LEO_FOOT", "0.004"))
 LEO_GUSSET_F = float(os.environ.get("LEO_GUSSET_F", "0.026"))
 LEO_U = tuple(float(v) for v in os.environ.get("LEO_U", "0,0.004").split(","))
+LEO_UG = tuple(float(v) for v in os.environ.get("LEO_UG", "0.014,0.018").split(","))
+LEO_GW = tuple(float(v) for v in os.environ.get("LEO_GW", "0,0,0.015").split(","))
 RBOOT_GONE = float(os.environ.get("RBOOT_GONE", "0.005"))
 
 
@@ -4417,7 +4422,7 @@ def arcanist():
     # (the U's foot lies on the gusset, not held down through it: where the gusset
     # is under it, 0 to 1, no hold; LEO_U)
     def on_gusset(q):
-        return (float(LEO_U[0] > 0) * ramp(-np.abs(q[:, 0]), -0.018, -0.014) * ramp(q[:, 1], GAP_F - LEO_GUSSET_F - 0.002, GAP_F - LEO_GUSSET_F + 0.004)
+        return (float(LEO_U[0] > 0) * ramp(-np.abs(q[:, 0]), -LEO_UG[1], -LEO_UG[0]) * ramp(q[:, 1], GAP_F - LEO_GUSSET_F - 0.002, GAP_F - LEO_GUSSET_F + 0.004)
                 * ramp(-q[:, 2], -(CROTCH + 0.035), -(CROTCH + 0.028)))
     # (judge h: the glove copied the nail's free edge at the thumb tip, an
     # overhang with a dark wedge under it, and a pale lip at the thumb and
