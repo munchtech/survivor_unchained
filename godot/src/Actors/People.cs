@@ -450,7 +450,7 @@ public static class People
     /// <summary>Her own iris as painted (moss, no colour chosen), put right against her portrait's
     /// under a white light (linear; the eye shader's tint): as painted it showed 1.6 times as light
     /// as her portrait's and yellower.</summary>
-    static readonly Vector3 HerPaintedIris = new(0.615f, 0.651f, 1.04f);
+    static readonly Vector3 HerPaintedIris = new(0.816f, 0.766f, 1.071f);
 
     /// <summary>Her hairstyles (tools/assets/heroine_head.py: a file each,
     /// fitted to her head), the first hers unless another is chosen.</summary>
@@ -480,6 +480,7 @@ public static class People
                 // (his own, when none is chosen: flint grey, Lore.Eyes' "flint")
                 if (who == "hero" && look.Eyes == null) EyeColour(e, HisEyes.Iris, HisEyes.Ring);
                 else EyeColour(e, look.Eyes, look.EyeRing);
+                if (who != "hero") HerEyes(e, look.FaceShape);
                 return e;
             case "brows" or "lashes":
                 // Cards cut out by their alpha, soft at the edges; brows
@@ -491,11 +492,18 @@ public static class People
                 // (the lashes' own colour is in their paint, tools/assets/heroine_lashes.py: a dark brown, lighter
                 // toward the tips)
                 m.AlbedoColor = src.ResourceName == "brows" ? hair.Darkened(0.45f) : Colors.White;
-                if (src.ResourceName == "lashes")                  // (her lower lashes finer: tools/assets/heroine_eyes.py)
+                if (src.ResourceName == "lashes")                  // (painted hair by hair: tools/assets/heroine_lashes.py)
                     m.AlbedoTexture = TextureOrTry("res://art/people/head_tex/heroine_lashes.png", "lashes");
                 m.Roughness = 0.8f;
                 return HairDraw.Cards(m) ?? Coverage.Cards(m);
-            case "teeth" or "tongue":
+            case "teeth":
+                // (her side teeth, and all of them while her lips are closed, in the mouth's own warm shade:
+                // shaders/heroine_teeth.gdshader, lit by HerFaceLife.TeethLight)
+                teethShader ??= GD.Load<Shader>("res://shaders/heroine_teeth.gdshader");
+                var th = new ShaderMaterial { Shader = teethShader, ResourceName = "teeth" };
+                th.SetShaderParameter("paint", src.AlbedoTexture);
+                return th;
+            case "tongue":
                 m.Roughness = 0.35f;
                 return m;
             default:
@@ -605,6 +613,58 @@ public static class People
     /// paint keeps its fibres and crypts, its light and dark, and takes the
     /// colour chosen, the ring round the pupil its own (as a blue eye's amber
     /// collarette); none chosen keeps the paint's own green.</summary>
+    /// <summary>Her eyes as her portraits have them (a judge's measures beside them, round 2, 10 October 2026: iris
+    /// edges fitted, not MediaPipe's guesses on a render), the hero's left as they were: irises 0.117 of the paint
+    /// (0.13 read 7-21% big against pupil distance and face width); a thin limbal ring from 0.85 of the radius,
+    /// lighter on a dyed iris; the iris's blotches softened, its amber drawn in to a thin collarette darker than
+    /// the outer iris (lighter, it read as a starburst); the catchlight a cool window at the pupil's edge, taking
+    /// the iris's colour out under it (added, it read pink); pupils near black after the iris's tint (lighter
+    /// than a brown iris, they read as cataracts); the whites ivory, lit from below, the upper lid's shadow at
+    /// its visible margin, a wet line on the lower lid. Per face (looks.json faces): the iris's size, the pupil,
+    /// how light the whites stand, and where the lid covers the iris.</summary>
+    static void HerEyes(ShaderMaterial e, string? face)
+    {
+        var f = SurvivorUnchained.World.Lore.Her.Faces.FirstOrDefault(x => x.Id == (face is { Length: > 0 } ? face : "own"));
+        e.SetShaderParameter("iris_r", f is { Iris: > 0 } ? (float)f.Iris : 0.117f);
+        e.SetShaderParameter("pupil", f is { Pupil: > 0 } ? (float)f.Pupil : 0.28f);
+        bool dyed = e.GetShaderParameter("recolour").AsSingle() > 0f;
+        e.SetShaderParameter("limbal", dyed ? 0.32f : 0.42f);
+        e.SetShaderParameter("limbal_from", 0.85f);
+        e.SetShaderParameter("iris_contrast", 0.45f);
+        e.SetShaderParameter("ring_to", 0.35f);
+        e.SetShaderParameter("ring_light", 0.8f);
+        e.SetShaderParameter("iris_light", 1.3f);
+        // (the catchlight a soft window over the pupil's upper edge, 11 to 1 o'clock as in the portraits, about a
+        // sixth of the iris's radius across; a small hard dot at 10 to 11 read as a render, judge j2)
+        e.SetShaderParameter("catch_size", 2.8f);
+        e.SetShaderParameter("catchlight", 0.8f);
+        e.SetShaderParameter("catch_soft", 1.0f);
+        e.SetShaderParameter("catch_window", 1.0f);
+        e.SetShaderParameter("catch_at", new Vector2(0.06f, -0.32f));
+        e.SetShaderParameter("catch_colour", new Vector3(0.9f, 0.95f, 1.08f));
+        e.SetShaderParameter("catch_dim", 0.8f);
+        e.SetShaderParameter("pupil_dark", 0.020f);
+        var w = f is { Whites: > 0 } ? (float)f.Whites : 1f;
+        e.SetShaderParameter("white_tint", new Vector3(0.74f, 0.68f, 0.58f) * w);
+        e.SetShaderParameter("white_grad", 0.22f);
+        e.SetShaderParameter("corner_pink", 0.3f);
+        // (the lid's shadow from where the face's lid covers its iris: its margin a twentieth of a radius above
+        // where it shows, so no unshadowed sliver, and none hidden above it under the lashes)
+        float cover = f is { Cover: > 0 } ? (float)f.Cover : 0.2f;
+        e.SetShaderParameter("lid_shadow", 0.5f);
+        e.SetShaderParameter("lid_y", 2f * cover - 1.05f);
+        e.SetShaderParameter("lid_fade", 0.8f);
+        e.SetShaderParameter("low_wet", 1.5f);
+        e.SetShaderParameter("low_y", 0.95f);
+        e.SetShaderParameter("low_lift", 0.12f);
+        // (--eye-set "iris_r=0.13,pupil=0.24": a developer's switch, her eyes' uniforms tried without a build)
+        if (SurvivorUnchained.Args.Get("eye-set") is string es)
+            foreach (var kv in es.Split(','))
+                if (kv.Split('=') is [var k, var v] && float.TryParse(v, System.Globalization.NumberStyles.Float,
+                        System.Globalization.CultureInfo.InvariantCulture, out var x))
+                    e.SetShaderParameter(k.Trim(), x);
+    }
+
     static void EyeColour(ShaderMaterial e, Color? iris, Color? ring)
     {
         e.SetShaderParameter("recolour", iris != null ? 1f : 0f);
@@ -700,9 +760,20 @@ public static class People
                     {
                         m.SetShaderParameter("tone", HerTone(look));
                         m.SetShaderParameter("face_tone", FaceTone(look));
+                        m.SetShaderParameter("face_world", FaceWorld(look));
+                        m.SetShaderParameter("body_lift", BodyLift(look));
+                        m.SetShaderParameter("soft_tone", SoftTone(look));
+                        m.SetShaderParameter("key_tone", KeyTone(look));
+                        m.SetShaderParameter("sky_tone", SkyTone(look));
+                        m.SetShaderParameter("edge_tone", EdgeTone(look));
                         m.SetShaderParameter("freckle_amount", HerFreckles(look));
+                        HerShade(m, look);
                     }
-                    else if (m.Shader == eyeShader) EyeColour(m, look.Eyes, look.EyeRing);
+                    else if (m.Shader == eyeShader)
+                    {
+                        EyeColour(m, look.Eyes, look.EyeRing);
+                        HerEyes(m, look.FaceShape);
+                    }
                 }
                 else if (mi.GetSurfaceOverrideMaterial(s) is StandardMaterial3D b && b.ResourceName == "brows") b.AlbedoColor = colour.Darkened(0.45f);
             }
@@ -773,11 +844,13 @@ public static class People
                     skin.SetShaderParameter("paint", paint ?? (mi.Mesh.SurfaceGetMaterial(s) as BaseMaterial3D)?.AlbedoTexture);
     }
 
-    /// <summary>Her head's paint for a face (head_tex/heroine_head_ID.jpg); her own is heroine.glb's. (Her own from
-    /// head_tex/heroine_head.jpg, the same paint, would let it be laid again without a new glb: not yet seen in a
-    /// shot, so not yet.)</summary>
-    static string? HeadPaintFile(string? face) =>
-        face is { Length: > 0 } && ResourceLoader.Exists($"res://art/people/head_tex/heroine_head_{face}.jpg") ? $"res://art/people/head_tex/heroine_head_{face}.jpg" : null;
+    /// <summary>Her head's paint for a face (head_tex/heroine_head_ID.jpg); her own head_tex/heroine_head.jpg, so a
+    /// paint laid again since (the jaw cut, 10 October 2026) shows without a new glb: heroine.glb's own copy is older.</summary>
+    static string? HeadPaintFile(string? face)
+    {
+        var f = face is { Length: > 0 } and not "own" ? $"res://art/people/head_tex/heroine_head_{face}.jpg" : "res://art/people/head_tex/heroine_head.jpg";
+        return ResourceLoader.Exists(f) ? f : null;
+    }
 
     /// <summary>Her head's paint as a texture (HeadPaintFile). --head-paint PATH: a paint from any file instead, for
     /// whichever face she wears, for pictures of a paint tried before it is laid in.</summary>
@@ -796,7 +869,7 @@ public static class People
         return ImageTexture.CreateFromImage(img);
     }
 
-    static Shader? hairShader, hairSoftShader, eyeShader;
+    static Shader? hairShader, hairSoftShader, eyeShader, teethShader;
 
     /// <summary>Hair: her hair cards (tools/assets/heroine_hair.py) by
     /// shaders/heroine_hair.gdshader, dyed: the strands' atlas cut to its
@@ -958,7 +1031,15 @@ public static class People
         if (who == "heroine")
         {
             m.SetShaderParameter("face_tone", FaceTone(look));
+            m.SetShaderParameter("face_world", FaceWorld(look));
+            m.SetShaderParameter("look_rig", HeadRigOff ? 1f : lookRig);
+            m.SetShaderParameter("body_lift", BodyLift(look));
+            m.SetShaderParameter("soft_tone", SoftTone(look));
+            m.SetShaderParameter("key_tone", KeyTone(look));
+            m.SetShaderParameter("sky_tone", SkyTone(look));
+            m.SetShaderParameter("edge_tone", EdgeTone(look));
             m.SetShaderParameter("scatter", HerScatter);
+            m.SetShaderParameter("back_spec", HerBackSpec);
         }
         // A body's relief baked from its sculpt (the hero's), under the pores.
         if (src.NormalTexture != null)
@@ -988,10 +1069,28 @@ public static class People
             // it was lit as her cheeks were, a pale band down to her collar)
             if (ResourceLoader.Exists("res://art/people/head_tex/heroine_ao.png"))
             {
-                m.SetShaderParameter("ao_map", GD.Load<Texture2D>("res://art/people/head_tex/heroine_ao.png"));
+                var aoFile = HerSoftLipAo && ResourceLoader.Exists("res://art/people/head_tex/heroine_ao_softlip.png")
+                    ? "res://art/people/head_tex/heroine_ao_softlip.png" : "res://art/people/head_tex/heroine_ao.png";
+                m.SetShaderParameter("ao_map", GD.Load<Texture2D>(aoFile));
                 m.SetShaderParameter("ao_light", 0.55f);
+                // (her head's skin eased into the graft's over the 3 cm above her neck's seam: the shader's seam_*,
+                // at the graft's rough, shine and pore depth, set above as every body part's)
+                m.SetShaderParameter("seam_ease", true);
+                // (the light through her kept to her ears and her nose's wings: the map's blue, heroine_thin.py)
+                m.SetShaderParameter("thin_map", 1f);
+            }
+            // (her ears' hollows, a shade of their own that dims the lamps there and warms: tools/assets/heroine_ear_ao.py;
+            // --ear-ao off: without it, for judging it)
+            if (!EarAoOff && ResourceLoader.Exists("res://art/people/head_tex/heroine_ear_ao.png"))
+            {
+                m.SetShaderParameter("ear_ao", GD.Load<Texture2D>("res://art/people/head_tex/heroine_ear_ao.png"));
+                m.SetShaderParameter("ear_amount", 1f);
+                m.SetShaderParameter("ear_light", 0.7f);
+                m.SetShaderParameter("ear_tint", new Vector3(0.80f, 0.52f, 0.44f));
             }
         }
+        // (her skin warmer in the sky's light than in the lamps': HerAmbientTint)
+        if (who == "heroine") HerShade(m, look);
         // Her freckles, a layer over her face, neck, shoulders and upper chest
         // (tools/assets/heroine_freckles.py), as many as her face starts with.
         if (who == "heroine" && FreckleFile(src.ResourceName) is string fp)
@@ -1004,6 +1103,7 @@ public static class People
             {
                 m.SetShaderParameter("grain", GD.Load<Texture2D>("res://art/people/head_tex/heroine_grain.png"));
                 m.SetShaderParameter("grain_amount", HerGrain);
+                m.SetShaderParameter("grain_scale", SurfacePoreScale(mesh, src) * 0.321f);
             }
         }
         // His skin, all of it, rougher than hers: at her sheen his deep
@@ -1014,6 +1114,21 @@ public static class People
             m.SetShaderParameter("shine", HisSkin.Shine);
             m.SetShaderParameter("edge_rough", HisSkin.Edge);
         }
+        // (--skin-set "skin_head:ao_light=0;skin_graft:shine=0.36": a developer's switch, a part's skin uniforms
+        // tried without a build; a part "*" for every part)
+        if (SurvivorUnchained.Args.Get("skin-set") is string ss)
+            foreach (var part in ss.Split(';'))
+                if (part.Split(':') is [var who2, var kvs] && (who2 == "*" || who2 == src.ResourceName))
+                    foreach (var kv in kvs.Split(','))
+                        if (kv.Split('=') is [var k, var v])
+                        {
+                            // (a/b/c: a vec3)
+                            var xs = v.Split('/').Select(t => float.TryParse(t, System.Globalization.NumberStyles.Float,
+                                System.Globalization.CultureInfo.InvariantCulture, out var x) ? x : float.NaN).ToArray();
+                            if (xs.Any(float.IsNaN)) continue;
+                            if (xs.Length == 3) m.SetShaderParameter(k.Trim(), new Vector3(xs[0], xs[1], xs[2]));
+                            else if (xs.Length == 1) m.SetShaderParameter(k.Trim(), xs[0]);
+                        }
         return m;
     }
 
@@ -1024,6 +1139,68 @@ public static class People
     /// 0.74 / 0.92 / 0.99 and Doe's brows 0.20; the soft edge of her lit side is the shader's own (`terminator`).
     /// (0.2 smeared as 0.38 did.)</summary>
     const float HerScatter = 0.1f;
+
+    /// <summary>Her sheen from a lamp behind her, against one in front (the skin shader's back_spec): the Look's cool
+    /// rim lamp lay over her collarbones and upper chest by her armour as a lilac sheen on every face (Oklab hue 34°
+    /// against her skin's 54° round it, 0.06 lighter; judge n2, 11 October 2026). At 0.3: hue 46°, 0.02 lighter
+    /// (Highborn), her lit cheek as it was. Every part of her alike, so no step at her neck's seam.</summary>
+    const float HerBackSpec = 0.3f;
+
+    /// <summary>Her skin in the sky's light against the lamps' (the skin shader's ambient_tint): light from all
+    /// round goes deeper into skin and comes out redder. Without it, under her jaw, in the key's shadow, the night
+    /// sky's blue made her neck grey-violet on every face (the owner, 10 October 2026: Oklab hue 31° against her
+    /// portraits' 51°; with it and the grade keeping skin's hue in shade, 46-47°). Her lit face is as fitted.</summary>
+    static readonly Vector3 HerAmbientTint = new(1.3f, 1.0f, 0.7f);
+
+    /// <summary>The ambient tint by her skin's swatch, where it is not HerAmbientTint. Brown: at 1.3/1.0/0.7 her shade
+    /// under her jaw and chin read copper against the blue night (Oklab chroma 31-36% over her portrait's; judge n1,
+    /// 11 October 2026), as darker skin gives back less of the red light carried through it.</summary>
+    static readonly Dictionary<string, Vector3> HerAmbientTints = new()
+    {
+        ["brown"] = new(1.0f, 1.0f, 0.8f),
+    };
+
+    /// <summary>The ambient tint, and HerBodyTone taken back out of it: her skin's own colour for a face is set for
+    /// the lamps' light; in the sky's light alone (the shade under her jaw) it greyed her (jaw chroma 0.014 against
+    /// her portrait's 0.051, own).</summary>
+    /// <summary>Her skin's colour out of the lamps' direct light, for her face and swatch: the ambient tint, and where
+    /// she faces down (under her jaw and chin, lit there only by the fill at a slant) HerBodyTone taken back out by
+    /// the shader's shade_tint, its lightness kept. Her body's tone is set for lit skin (her portraits' lit necks are
+    /// pale); applied in her shade too, it greyed the shade under her jaw (chroma 0.014 against her portrait's 0.051,
+    /// own; skin in shade keeps its colour, the light coming back out of it).</summary>
+    static void HerShade(ShaderMaterial m, Look look)
+    {
+        m.SetShaderParameter("ambient_tint", HerAmbient(look));
+        m.SetShaderParameter("body_tone", BodyTone(look));
+        m.SetShaderParameter("body_gate", BodyGate ? 1f : 0f);
+        // Her soft lamps (the Look's fill and bounce, their sheen 0.1 and 0: SPECULAR_AMOUNT 0.2 and 0) show her paint's
+        // own colour, all of her; the key, the fire and the sun her body's tone. (Tried 11 October 2026 (r6a): held
+        // to where she faces down and gated by ndl, the shade at the side of her neck stayed grey (own jaw chroma
+        // 0.015, portrait's 0.051); gated by each lamp's light at the point, it went warm (0.040) but the key's weak
+        // light along her jaw's edge took her paint's colour too, an orange band. --shade-tint off | ndl | light |
+        // soft (the default) and --shade-gate FROM,TO, for judging them (pictures).)
+        var mode = SurvivorUnchained.Args.Get("shade-tint") is string st && st != "" ? st : "soft";
+        if (mode == "off") return;
+        var b = BodyTone(look);
+        m.SetShaderParameter("shade_tint", new Vector3(1 / b.X, 1 / b.Y, 1 / b.Z));
+        bool down = mode == "ndl" || SurvivorUnchained.Args.Get("shade-down") == "on";
+        m.SetShaderParameter("shade_down", down ? 1f : 0f);
+        m.SetShaderParameter("down_from", 0.05f);
+        m.SetShaderParameter("down_to", 0.45f);
+        var gate = mode switch { "ndl" => new Vector2(0.85f, 1f), "light" => new Vector2(0.8f, 1.6f), _ => new Vector2(0.25f, 0.45f) };
+        if (SurvivorUnchained.Args.Get("shade-gate") is string sg && sg.Split(',') is [var g0, var g1])
+            gate = new Vector2(float.Parse(g0, System.Globalization.CultureInfo.InvariantCulture), float.Parse(g1, System.Globalization.CultureInfo.InvariantCulture));
+        m.SetShaderParameter("shade_by_light", mode == "light" ? 1f : 0f);
+        m.SetShaderParameter("shade_by_soft", mode == "soft" ? 1f : 0f);
+        m.SetShaderParameter("shade_from", gate.X);
+        m.SetShaderParameter("shade_to", gate.Y);
+    }
+
+    static Vector3 HerAmbient(Look look)
+    {
+        var a = HerAmbientTints.TryGetValue(HerSkinId(look), out var t) ? t : HerAmbientTint;
+        return a / BodyTone(look);
+    }
 
     /// <summary>His skin's roughness, sheen, and the roughness it gains seen
     /// edge on (shaders/heroine_skin.gdshader).</summary>
@@ -1047,7 +1224,7 @@ public static class People
     static readonly Dictionary<string, Vector3> HerToneFit = new()
     {
         ["fair"] = new(0.897f, 1.094f, 1.009f), ["rose"] = new(0.849f, 1.062f, 0.827f),
-        ["warm"] = new(0.886f, 1.054f, 0.791f), ["brown"] = new(0.877f, 0.887f, 0.629f),
+        ["warm"] = new(0.886f, 1.054f, 0.791f), ["brown"] = new(0.789f, 0.887f, 0.629f),
     };
 
     /// <summary>Each face's own paint against its portrait, once its swatch is fitted (linear, the
@@ -1056,11 +1233,62 @@ public static class People
     /// beside it the face read a shade wrong while its neck was right.</summary>
     static readonly Dictionary<string, Vector3> HerFaceTone = new()
     {
+        // (11 October 2026, the Look's rig made near white: each face's cheek taken to its portrait's chroma and hue,
+        // on top of HerBodyTone below, which these partly undo on the face; judge j2's trims, measured at the Look)
+        ["own"] = new(1.358f, 0.890f, 0.660f), ["highborn"] = new(1.168f, 0.905f, 0.824f),
+        ["vixen"] = new(1.170f, 0.878f, 0.730f), ["moonlit"] = new(1.159f, 0.947f, 0.841f),
+        ["fey"] = new(1.320f, 0.973f, 0.816f), ["doe"] = new(1.167f, 0.947f, 0.783f),
+        ["wildling"] = new(1.102f, 0.928f, 0.765f), ["hardwon"] = new(1.166f, 0.948f, 0.813f),
+        ["saffron"] = new(1.071f, 0.963f, 0.887f),
+        // (Sunborn: her face lighter, a little less red, against her body: her cheek at 0.86 of her portrait's
+        // lightness against 0.92-0.97 for the others, her head darker than her neck; judge n1, 11 October 2026)
+        ["sunborn"] = new(1.146f, 1.262f, 1.646f),
+    };
+
+    /// <summary>Her skin's own colour for each face, all of her (linear, on her swatch's HerTone): her neck and
+    /// body at the portrait's neck-to-cheek chroma (0.56-0.80 of the cheek's, Sunborn 0.97) and its cheek's hue.
+    /// Under the Look's warm rig every face read a fake tan, her neck as saturated as her cheek and 40-80% over
+    /// her portrait's (judge j1, 11 October 2026). (--tone-trim off: none, and the faces' tones as before.) Measured at the Look and refitted (r1, r3; r6b with BodyK 1 and the soft lamps' shade).</summary>
+    static readonly Dictionary<string, Vector3> HerBodyTone = new()
+    {
+        ["own"] = new(0.656f, 1.173f, 2.152f), ["highborn"] = new(0.768f, 1.109f, 1.764f),
+        ["doe"] = new(0.762f, 1.132f, 1.975f), ["sunborn"] = new(1.056f, 0.948f, 0.956f),
+        ["vixen"] = new(0.740f, 1.123f, 1.862f), ["moonlit"] = new(0.729f, 1.134f, 1.840f),
+        ["saffron"] = new(0.861f, 1.080f, 1.715f), ["wildling"] = new(0.817f, 1.095f, 1.789f),
+        ["hardwon"] = new(0.771f, 1.120f, 2.020f), ["fey"] = new(0.729f, 1.129f, 1.885f),
+    };
+
+    static readonly Dictionary<string, Vector3> HerFaceToneUntrimmed = new()
+    {
         ["own"] = new(1.004f, 0.995f, 0.985f), ["highborn"] = new(0.981f, 0.981f, 0.969f),
         ["vixen"] = new(0.982f, 0.940f, 0.922f), ["moonlit"] = new(0.972f, 1.021f, 1.080f),
         ["fey"] = new(1.062f, 1.067f, 1.050f), ["doe"] = new(1.004f, 1.016f, 1.013f),
         ["wildling"] = new(0.992f, 0.969f, 0.957f), ["hardwon"] = new(1.004f, 1.016f, 1.032f),
+        // (no Sunborn: her 1.20/1.23/1.23 was fitted at the Look, which HerFaceTone now holds; out here it lit her face
+        // 3 L* over her Brown in play, day and night; judge rj2v fix 4, 13 October 2026)
     };
+
+    static readonly bool ToneTrim = SurvivorUnchained.Args.Get("tone-trim") != "off";
+
+    /// <summary>How much of HerBodyTone her body takes (0 none to 1 all; the rest goes to her face's tone, so her
+    /// cheek is as fitted either way). (--body-k K: another, for judging it (pictures).)</summary>
+    /// (All of it: her soft lamps' light shows her paint's own colour (HerShade), so the shade under her jaw keeps its
+    /// warmth. Before that, at 1 the shade went grey-violet (chroma 0.015, hue 30, own) and it shipped at 0.5.)
+    static readonly float BodyK = SurvivorUnchained.Args.Has("body-k") ? (float)SurvivorUnchained.Args.Num("body-k", 1f) : 1f;
+
+    /// <summary>Her body's tone kept on her head and up her neck, where it was fitted, and from her collarbones down taken
+    /// out of the lamps' light on her, with the key's and the soft lamps' tones fitted with it (the skin shader's body_tone
+    /// and body_gate, by her freckles' map's blue): fitted on her lit neck against the Look's warm key, its blue turned her
+    /// chest, arms and thighs a cold lilac-grey beside the fire and her thighs grey-lilac at night, where they were warm
+    /// peach (judge s1, 12 October 2026; body r1: the Look's whole frame and play at night within 0.005 of integration's
+    /// Oklab chroma, 3-25 deg warmer, where they were 60-100 deg cooler). (--body-gate off: all of her takes them, as
+    /// before, for judging it.)</summary>
+    static readonly bool BodyGate = SurvivorUnchained.Args.Get("body-gate") != "off";
+
+    static Vector3 Pow(Vector3 v, float k) => new(Mathf.Pow(v.X, k), Mathf.Pow(v.Y, k), Mathf.Pow(v.Z, k));
+
+    /// <summary>Her body's tone for her face, as much of it as BodyK says (one when untrimmed).</summary>
+    static Vector3 BodyTone(Look look) => ToneTrim && HerBodyTone.TryGetValue(FaceId(look), out var b) ? Pow(b, BodyK) : Vector3.One;
 
     /// <summary>How much of her face's own grain her neck takes (the skin shader's grain_amount; 1 her face's
     /// paint's own spread; none from her collarbones down, by her freckles' map's blue): her portrait's neck has
@@ -1068,8 +1296,128 @@ public static class People
     /// speckle over her breasts.) (--grain tries another.)</summary>
     static readonly float HerGrain = SurvivorUnchained.Args.Has("grain") ? SurvivorUnchained.Args.Num("grain", 3f) : 3f;
 
-    static Vector3 FaceTone(Look look) =>
-        HerFaceTone.TryGetValue(string.IsNullOrEmpty(look.FaceShape) ? "own" : look.FaceShape, out var f) ? f : Vector3.One;
+    /// <summary>Her face's tone outside the Look's portrait rig (the skin shader's face_world): her face's own tone against
+    /// its portrait as it was before the rig's fit (HerFaceToneUntrimmed). Every tone above was fitted under that rig, its
+    /// key with the soft fill showing her paint without HerBodyTone; under the fire, the moon and the sun alone her head kept
+    /// HerBodyTone's blue, pale blue-white over a warm firelit body in the Look's whole frame (judge rj1v, 12 October 2026).
+    /// Outside the rig her head takes her body's treatment and her face this (the shader's look_rig, HerLookRig).</summary>
+    static Vector3 FaceWorld(Look look) => HerFaceToneUntrimmed.TryGetValue(FaceId(look), out var t) ? t : Vector3.One;
+
+    /// <summary>How much of the Look's portrait rig lights her, on every part of her skin (the skin shader's look_rig: 1 her
+    /// head's tones as fitted under the rig, 0 her body's treatment and her face's FaceWorld, as in play). GameFront sets it
+    /// each frame, as the rig comes up. (--head-rig off: 1 always, her head as fitted in every light, for judging it.)</summary>
+    public static void HerLookRig(Person p, float w)
+    {
+        if (p.Body != "heroine") return;
+        lookRig = w;
+        if (HeadRigOff) w = 1;
+        foreach (var mi in p.Meshes)
+            for (int s = 0; mi.Mesh != null && s < mi.Mesh.GetSurfaceCount(); s++)
+                if (mi.GetSurfaceOverrideMaterial(s) is ShaderMaterial m && m.Shader == skinShader2) m.SetShaderParameter("look_rig", w);
+    }
+
+    static readonly bool HeadRigOff = SurvivorUnchained.Args.Get("head-rig") == "off";
+    static readonly bool EarAoOff = SurvivorUnchained.Args.Get("ear-ao") == "off";
+
+    // (the rig's weight now, for her skin made while it is up: a look chosen at the close-up)
+    static float lookRig;
+
+    static Vector3 FaceTone(Look look)
+    {
+        var f = (ToneTrim ? HerFaceTone : HerFaceToneUntrimmed).TryGetValue(FaceId(look), out var t) ? t : Vector3.One;
+        return ToneTrim && HerBodyTone.TryGetValue(FaceId(look), out var b) ? f * Pow(b, 1 - BodyK) : f;
+    }
+
+    static string FaceId(Look look) => string.IsNullOrEmpty(look.FaceShape) ? "own" : look.FaceShape;
+
+    /// <summary>How much paler her neck and body are than her face (linear, the skin shader's body_lift): her portraits'
+    /// lit necks and upper chests sit 0.05-0.1 lighter (Oklab L) than their cheeks; hers sat level with her cheek
+    /// (judge j5, 11 October 2026). Fitted at the Look with her neck 3 cm shorter, where her neck's spot falls on the
+    /// same part of her as on her portrait's (at today's length it is higher up her neck, turned from the key).
+    /// (--body-lift X: another, for judging it (pictures).)</summary>
+    static readonly Dictionary<string, float> HerBodyLift = new()
+    {
+        // (refitted on a band, 0.3-0.8 pupil-chin below the chin, at both neck lengths on the same anatomy, after the
+        // lift was kept off lamps behind her and its fade widened; WIP, judge j7 next: tools/scratch/face19/bandfit.py)
+        ["own"] = 1.30f, ["highborn"] = 1.03f, ["doe"] = 1.22f, ["sunborn"] = 1.32f, ["vixen"] = 1.07f,
+        ["moonlit"] = 1.26f, ["saffron"] = 1.27f, ["wildling"] = 1.07f, ["hardwon"] = 1.21f, ["fey"] = 1.09f,
+    };
+
+    /// <summary>Her shade's colour off her face (the skin shader's soft_tone, linear): the soft lamps' light on her neck
+    /// and under her jaw, outside her face's paint. Her head's own skin there showed greyer than her portrait's shade
+    /// (jaw chroma 37-55% short on the fair faces, judge j5, 11 October 2026); fitted at the Look to each portrait's
+    /// chroma and hue under her jaw, its lightness kept (tools/scratch/face17/softfit.py, clamped 0.5-1.6). Sunborn's
+    /// shade there is lit mostly by the key, out of this one's reach. (Vixen, Moonlit and Fey at the fair faces' median took
+    /// a third of their jaw's chroma and none of its missing shade, which is the key's: face 19, r8.) (Highborn refitted, skin r13
+    /// B1b: at 0.93/1.03/1.08 the soft-lit middle of her neck was grey at her lit neck's hue, C 53-79% of it; at 1.30/0.92/0.72
+    /// 65-101%, hue as it was, her far neck's (b) kept.) (--soft-tone R,G,B: another, for judging it.)</summary>
+    static readonly Dictionary<string, Vector3> HerSoftTone = new()
+    {
+        ["own"] = new(1.268f, 0.877f, 0.571f), ["highborn"] = new(1.30f, 0.92f, 0.72f), ["doe"] = new(1.192f, 0.881f, 0.737f),
+        ["vixen"] = new(1.479f, 0.814f, 0.500f), ["moonlit"] = new(1.518f, 0.798f, 0.500f), ["saffron"] = new(1.047f, 0.942f, 1.214f),
+        ["wildling"] = new(1.217f, 0.853f, 0.684f), ["hardwon"] = new(1.117f, 0.909f, 0.991f), ["fey"] = new(1.338f, 0.857f, 0.504f),
+    };
+
+    static Vector3 SoftTone(Look look) => SurvivorUnchained.Args.Get("soft-tone") is string st && st.Split(',') is [var r, var g, var b2]
+        ? new(float.Parse(r, System.Globalization.CultureInfo.InvariantCulture), float.Parse(g, System.Globalization.CultureInfo.InvariantCulture), float.Parse(b2, System.Globalization.CultureInfo.InvariantCulture))
+        : ToneTrim && HerSoftTone.TryGetValue(FaceId(look), out var v) ? v : Vector3.One;
+
+    /// <summary>The line above her upper lip (the owner, 12 October 2026): her sculpt's lip border sits 4.4-7.6 mm above
+    /// every portrait's painted red, and her head's shade drew it as an outline in skin. True: the shade with that
+    /// crease eased out (heroine_ao_softlip.png, tools/assets/heroine_ao_softlip.py), each face keeping its portrait's
+    /// lip. False: the shade as baked. (Env SOFTLIP=0: false, for judging.)</summary>
+    public static bool HerSoftLipAo = OS.GetEnvironment("SOFTLIP") != "0";
+
+    /// <summary>Her neck's and body's colour in every lamp but the soft ones (the skin shader's key_tone, linear, its
+    /// lightness kept), outside her face's paint. HerBodyTone was fitted on her lit neck, where the warm fill (which shows
+    /// her paint without it) meets the key, so the key's share went grey: under a white rig her lit neck was Oklab C .015,
+    /// and where the fill can't reach, the far side of her neck under her jaw was blue-grey (own hue -61) and in the moon
+    /// her whole body lavender under a peach face (the owner, 10 October 2026). Fitted at the Look (r9 pose) to each
+    /// portrait's shaded neck side, hue and chroma, at the far neck (tools/scratch/face21). The warm faces read warm and
+    /// are left as they were. (--key-tone R,G,B: another, for judging it.)</summary>
+    static readonly Dictionary<string, Vector3> HerKeyTone = new()
+    {
+        // (r11: her lit neck to her portrait's (own C .034 h52 against .035 h56); r10's 0.6 of the far neck's fit left it
+        // rich, C .045 h58. The richer far side of her neck is HerEdgeTone's. Own fitted (s11b), the others scaled as own.)
+        ["own"] = new(1.080f, 0.985f, 0.870f), ["highborn"] = new(1.053f, 0.985f, 0.890f), ["vixen"] = new(1.062f, 0.983f, 0.870f),
+        ["moonlit"] = new(1.065f, 0.981f, 0.880f), ["fey"] = new(1.057f, 0.985f, 0.880f),
+    };
+
+    static Vector3 KeyTone(Look look) => SurvivorUnchained.Args.Get("key-tone") is string kt && kt.Split(',') is [var r, var g, var b2]
+        ? new(float.Parse(r, System.Globalization.CultureInfo.InvariantCulture), float.Parse(g, System.Globalization.CultureInfo.InvariantCulture), float.Parse(b2, System.Globalization.CultureInfo.InvariantCulture))
+        : ToneTrim && HerKeyTone.TryGetValue(FaceId(look), out var v) ? v : Vector3.One;
+
+    /// <summary>Her neck's and body's colour under the sun and the moon (the skin shader's sky_tone, for directional lamps
+    /// in place of key_tone, its lightness kept, outside her face's paint): her face's own tone (HerFaceTone), so under
+    /// them her body takes her face's colour. HerBodyTone's blue was fitted against the Look's warm key; under the moon
+    /// (the Look's whole frame, play at night) nothing warmed it back and her thighs and arms read lavender-blue under
+    /// her face (judge j7 (f): own's thighs -11 and -21 deg off her cheek, +10% and +63% chroma; with this +7 and -7,
+    /// -30% and +2%; skin r13 B1). OFF BY DEFAULT, UNJUDGED: on Doe it overshot (thighs +15 and -4 deg to +55 and +35)
+    /// and on Highborn one thigh went +1 to +16, so it wants a fit per face. (--sky-tone face: her face's tone; R,G,B
+    /// another, for judging it; none: as key_tone, r12.)</summary>
+    static Vector3 SkyTone(Look look) => SurvivorUnchained.Args.Get("sky-tone") is string st
+        ? (st == "face" ? FaceTone(look) : st.Split(',') is [var r, var g, var b2]
+            ? new(float.Parse(r, System.Globalization.CultureInfo.InvariantCulture), float.Parse(g, System.Globalization.CultureInfo.InvariantCulture), float.Parse(b2, System.Globalization.CultureInfo.InvariantCulture))
+            : Vector3.Zero)
+        : Vector3.Zero;
+
+    /// <summary>Her neck and body richer where she turns from the lens (the skin shader's edge_tone, on key_tone, linear,
+    /// its lightness kept; below her head). Her portraits' neck sides are 1.6 times as rich as their lit fronts (Oklab C);
+    /// ours were 0.7-0.8 times at every key tone, as the key lights the far side of her neck at 0.8 of her lit neck's light
+    /// (face 22, s11a). (--edge-tone R,G,B: another, for judging it.)</summary>
+    static readonly Dictionary<string, Vector3> HerEdgeTone = new()
+    {
+        // (own fitted at the Look, r9 pose (s11b: far neck C .046 h50 against her portrait's shade .056 h56); the others as own)
+        ["own"] = new(1.45f, 0.90f, 0.54f), ["highborn"] = new(1.45f, 0.90f, 0.54f), ["vixen"] = new(1.45f, 0.90f, 0.54f),
+        ["moonlit"] = new(1.45f, 0.90f, 0.54f), ["fey"] = new(1.45f, 0.90f, 0.54f),
+    };
+
+    static Vector3 EdgeTone(Look look) => SurvivorUnchained.Args.Get("edge-tone") is string et && et.Split(',') is [var r, var g, var b2]
+        ? new(float.Parse(r, System.Globalization.CultureInfo.InvariantCulture), float.Parse(g, System.Globalization.CultureInfo.InvariantCulture), float.Parse(b2, System.Globalization.CultureInfo.InvariantCulture))
+        : ToneTrim && HerEdgeTone.TryGetValue(FaceId(look), out var v) ? v : Vector3.One;
+
+    static float BodyLift(Look look) => SurvivorUnchained.Args.Has("body-lift") ? (float)SurvivorUnchained.Args.Num("body-lift", 1f)
+        : ToneTrim && HerBodyLift.TryGetValue(FaceId(look), out var v) ? v : 1f;
 
     /// <summary>Her freckles' map for a part of her skin, if it has one: her head's, or the graft's (her
     /// neck, shoulders and upper chest).</summary>
@@ -1092,13 +1440,17 @@ public static class People
         : (float)(SurvivorUnchained.World.Lore.Her.Faces
             .FirstOrDefault(f => f.Id == (string.IsNullOrEmpty(look.FaceShape) ? "own" : look.FaceShape))?.Freckles ?? 0));
 
+    /// <summary>Her skin's swatch (Lore.Skins' id; "fair", her own, when none is chosen).</summary>
+    static string HerSkinId(Look look) => look.Skin is Color c
+        ? SurvivorUnchained.World.Lore.Skins.FirstOrDefault(s => s.Color != "" && new Color(s.Color).IsEqualApprox(c))?.Id ?? ""
+        : "fair";
+
     static Color HerTone(Look look)
     {
         var t = SkinTone(look);
-        string id = look.Skin is Color c
-            ? SurvivorUnchained.World.Lore.Skins.FirstOrDefault(s => s.Color != "" && new Color(s.Color).IsEqualApprox(c))?.Id ?? ""
-            : "fair";
-        if (!HerToneFit.TryGetValue(id, out var f)) return t;
+        string id = HerSkinId(look);
+        var f = HerToneFit.TryGetValue(id, out var fit) ? fit : Vector3.One;
+        f *= BodyTone(look);
         var l = t.SrgbToLinear();
         return new Color(l.R * f.X, l.G * f.Y, l.B * f.Z).LinearToSrgb();
     }
@@ -1115,20 +1467,44 @@ public static class People
         double area = 0, uvArea = 0;
         for (int s = 0; s < mesh.GetSurfaceCount(); s++)
         {
-            var arr = mesh.SurfaceGetArrays(s);
-            if (arr[(int)Mesh.ArrayType.TexUV].VariantType == Variant.Type.Nil) continue;
-            var v = arr[(int)Mesh.ArrayType.Vertex].AsVector3Array();
-            var uv = arr[(int)Mesh.ArrayType.TexUV].AsVector2Array();
-            var idx = arr[(int)Mesh.ArrayType.Index].AsInt32Array();
-            for (int t = 0; t + 2 < idx.Length; t += 3)
-            {
-                area += (v[idx[t + 1]] - v[idx[t]]).Cross(v[idx[t + 2]] - v[idx[t]]).Length() / 2;
-                uvArea += Mathf.Abs((uv[idx[t + 1]] - uv[idx[t]]).Cross(uv[idx[t + 2]] - uv[idx[t]])) / 2;
-            }
+            var (a, u) = SurfaceAreas(mesh, s);
+            area += a;
+            uvArea += u;
         }
         k = uvArea > 0 ? (float)(Math.Sqrt(area / uvArea) / 0.009) : 50f;
         poreScales[mesh] = k;
         return k;
+    }
+
+    /// <summary>A surface's own pore scale (as PoreScale, its surface alone): her graft, a small part of her
+    /// body's mesh, has UVs laid at a ninth of her body's (0.63 m to a UV unit against 5.7), so the mesh's mean put
+    /// its tiles at a third of their size. Her grain takes it (the skin shader's grain_scale); her pores are left
+    /// as they were judged.</summary>
+    public static float SurfacePoreScale(Mesh mesh, Material src)
+    {
+        for (int s = 0; s < mesh.GetSurfaceCount(); s++)
+            if (mesh.SurfaceGetMaterial(s) == src)
+            {
+                var (a, u) = SurfaceAreas(mesh, s);
+                return u > 0 ? (float)(Math.Sqrt(a / u) / 0.009) : PoreScale(mesh);
+            }
+        return PoreScale(mesh);
+    }
+
+    static (double Area, double UvArea) SurfaceAreas(Mesh mesh, int s)
+    {
+        double area = 0, uvArea = 0;
+        var arr = mesh.SurfaceGetArrays(s);
+        if (arr[(int)Mesh.ArrayType.TexUV].VariantType == Variant.Type.Nil) return (0, 0);
+        var v = arr[(int)Mesh.ArrayType.Vertex].AsVector3Array();
+        var uv = arr[(int)Mesh.ArrayType.TexUV].AsVector2Array();
+        var idx = arr[(int)Mesh.ArrayType.Index].AsInt32Array();
+        for (int t = 0; t + 2 < idx.Length; t += 3)
+        {
+            area += (v[idx[t + 1]] - v[idx[t]]).Cross(v[idx[t + 2]] - v[idx[t]]).Length() / 2;
+            uvArea += Mathf.Abs((uv[idx[t + 1]] - uv[idx[t]]).Cross(uv[idx[t + 2]] - uv[idx[t]])) / 2;
+        }
+        return (area, uvArea);
     }
 
     /// <summary>Her paint's own skin (lit, not in its shadows), hair and suit,

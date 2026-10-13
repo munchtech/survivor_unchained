@@ -90,8 +90,14 @@ public static class Arms
         Walk(model, Transform3D.Identity);
         var (axes, mean) = Principal(pts);
         var (lng, mid) = (axes[0], axes[1]);
-        // An anchor's -Y runs down the blade or haft toward the tip: it says which way is out, over the Spec's Flip.
-        if ((aGrip ?? aSheath) is { } tipAnchor) { if ((-tipAnchor.Basis.Y).Dot(lng) < 0) lng = -lng; }
+        // An anchor's -Y runs down the blade or haft toward the tip: it is the shaft itself (not just which way is out),
+        // over the bounds' axis, which leans with whatever else the mesh carries, and over the Spec's Flip.
+        if ((aGrip ?? aSheath) is { } tipAnchor)
+        {
+            static System.Numerics.Vector3 N(Vector3 v) => new(v.X, v.Y, v.Z);
+            var (l, m) = WeaponSockets.ShaftAxes(N(lng), N(mid), N(-tipAnchor.Basis.Y));
+            (lng, mid) = (new Vector3(l.X, l.Y, l.Z), new Vector3(m.X, m.Y, m.Z));
+        }
         else if (spec.Flip) lng = -lng;
         var shrt = mid.Cross(lng);
         // Extent along each new axis, and its middle.

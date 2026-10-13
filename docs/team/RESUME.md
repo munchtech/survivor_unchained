@@ -2,10 +2,67 @@
 
 The one page of what's current. Every lead starts from the latest `claude/vigilant-galileo-l6jqyx`. Merge it first and keep your own workflow; this page says what has changed around you. Updated by the main session, 5 October 2026.
 
-## 13 October: coordinator 59a43b82 running (keep current)
-- **Running (roster has ids):** face (rj3 incl. ear lobe, then face/ship), outfits successor 16 (V knot, sabaton, clasp foot, glove thumb, re-judge), animation successor 19 (armscheck pauldron gap, bull_rush r3, flare_burns_twice, town run (a)), classes (story bosses cut, crowd-clear measure, phase-6 plan), Flare successor 2 on flare-1 (Burns Twice written but never seen: hook in and shoot first).
-- **Merged 13 Oct:** animation cc8bf6c1 (idle_warden_break judge 52; sheathing system, inert). 882 tests. FLARE_LOOK.md (6a24d836), budget hook mid-run raise (50fab2ad).
-- **Queued:** after the face ships, the smile pass (OWNER_NOTES 13 October). The sixth-lead permission went unused (the Flare lead took the outfits handoff slot).
+## 13 October, late: coordinator 59a43b82 at its limit; every lead wound down at a clean point. Restart here
+
+### Restart
+
+Each lead restarts from its handoff. The worktrees are kept, so brief successors into them without isolation.
+
+1. **Outfits.** Worktree agent-a5ca10091b08dc429, docs/handoff/outfits.md.
+   - All fixes are in:
+     - one-piece leotard with skived edges: flecks 0, vis5 game 0, legal flat;
+     - Ranger crotch widened: legal 0;
+     - greave lining;
+     - sabaton welt and heel spikes;
+     - glove tips;
+     - clasp and cup lining passed.
+   - Next: build fin2, re-judge only the failed items, run the full legal run on all four outfits, then send the merge request.
+
+2. **Animation.** Worktree agent-af8dbda3195e438e4 @ 8b428cc3 (merged).
+   - **Staff first.** ShaftAxes puts the anchor's -Y on the fist's AXIS. Rebuild the wrap middle-poly at 3-6k vertices, with real steps.
+   - **Then:** hands on the grip, re-judge, install. Then re-derive flare_burns_twice (round 8 waits for the staff) and explain the forearm spins.
+   - **bull_rush r6:** the judge failed it, close. The fix list is in the 59a43b82 scratchpad, `anim/br6/verdict_j_r6.md`: the f15 pop, the f16 head snap, the shove re-key.
+   - **Sword trio:** keyed.py interpolates per component; make it interpolate the hand frame as one rotation, then re-run fore C5 and heavy H3.
+
+3. **Flare.** Worktree agent-af0782e2e3f51bc1f, flare-1@4a26c4f1. NOT merged, and HEAD is a broken WIP.
+   - Bisect solver 3's flare_world.gdshaderinc change that floods the BOOM with salmon (bis.py).
+   - Then: the BOOM, the frost and shatters, the bar.
+   - Then a judge, then captures with sound for the owner.
+
+4. **Classes.** Worktree agent-af76b344999b70629, classes-11@663bb7dc. NOT merged.
+   - All five wave-6a Flares are measured once. Four cut Act 1 bosses 9-11% more than their stand-ins.
+   - bossMul fits found, not yet written to data:
+     - the Bill at 0.5 and One Arrow at 0.45 pass;
+     - the Long Cut passes at 0.6 (fresh seeds 97-288);
+     - Drag passes at 1.0. All five now pass the Act 1 band (classes-11@663bb7dc); the values still need writing into lamps_quarters.py.
+   - The Long Cut's arena share (33-36%) comes from build procs credited to the Flare. That goes to a max solver.
+   - Coordinator's caution for the judge: the owner's rule is that balance never blunts a Flare. Weigh the ±3%-against-stand-in rule against it; good use is already 19-29% shorter than the baseline.
+
+5. **Face: SHIPPED** (face/ship 096c7a8c merged 13 October).
+   - Next session: the smile pass (queued by the owner), then the hair edges: the scalp edge, slivers above the ear, crack-like strands, and the bald review tool.
+   - Worktree agent-a2d632df7c7f21ec0 holds the lip WIP.
+
+### Merged 13 October
+
+- **Face:** face/ship 096c7a8c, the whole face and the Look.
+- **Animation:**
+  - cc8bf6c1: sheathing, inert;
+  - 75bfd459, 3b7513c2 and 4d9a7bea: the Warden run, sprint, idles, stops and warden_show; build.py now keeps clips it didn't make;
+  - 8b428cc3: ShaftAxes, an anchor sets a weapon's shaft.
+- **Classes:** 3935476c, 30899ed3 and 110ee98b: story bosses back to pre-Flare health with the Flare's cut, Burns Twice aim and shove, and the Act 1 baseline "pre-Flare 11 Oct".
+- **Docs and tools:** FLARE_LOOK.md; the budget hook's mid-run raise.
+
+### Queued
+
+- The smile pass (face).
+- The weapon remaster (below).
+- The grip-fist system: fingers wrap to each grip's diameter (see the animation status page).
+- The Stalker crossbow stock (notes in scratch `anim/xb`).
+- Each spec's second Flare (6b, 6c) waits for the owner's yes.
+
+**Keep the 59a43b82 scratchpad** (anim, outfits, face18, cl11): the handoffs point into it.
+- **Cross-lead notes from the face judges (13 October):** animation: the greatsword pommel sits in front of her mouth at the close-up camera; the cinematic close shows a mangled hand on the hilt. Body/outfits: the cinematic close shows a faceted-looking chest. Hand these to the leads at their next handoff (not urgent).
+- **Weapon remaster, later (13 October, staff judge a7714898):** the mage staff's original model blocks close-ups and cinematics: the lower coil goes flat and angular over its last 150 mm, the beads and gem are flat saturated blue and faceted, the rod's brushing reads as blotchy mottle, the head wings are flat-faceted. The bound-grip fix is in hand (animation); the rest waits for a weapon remaster pass.
 - **Lesson:** a lead that writes a whole system without running it hands off with nothing seen (Flare lead 1, 270k). Brief leads to hook in and shoot the first piece before writing the rest.
 - **Owner rules today:** no deadline, fix failing parts rather than gate them; judge each thing once on what varies it (README Working lean); sheathing as a system keyed by weapon kind; Flares are specialized and every press visible.
 

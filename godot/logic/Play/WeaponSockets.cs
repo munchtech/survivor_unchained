@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Numerics;
 using System.Text.Json;
 
 namespace SurvivorUnchained.Play;
@@ -47,6 +48,23 @@ public static class WeaponSockets
     /// point are on the piece's long axis (tip at Length * (1 - Grip) and the sheath point at the grip, 0, when no anchors say
     /// otherwise), so a longer blade gives a longer scabbard. Never under 5 cm.</summary>
     public static float BladeLength(float tipY, float sheathY, float guard) => Math.Max(0.05f, tipY - sheathY - guard);
+
+    /// <summary>The piece's shaft (long) and side (mid) axes in model space. An anchor (anchor_grip, else anchor_sheath) says
+    /// the shaft outright: its -Y runs down the blade or haft toward the tip, so `anchorDown` (that -Y) is the shaft, exactly,
+    /// whatever else the mesh carries (a coil or a crossguard tilts the bounds' principal axis: 4 degrees on the bound staff).
+    /// Without one, the bounds' principal axes stand. The side axis is the bounds' second axis made square to the shaft (the
+    /// anchor's +Z then turns the piece about the shaft).</summary>
+    public static (Vector3 Long, Vector3 Mid) ShaftAxes(Vector3 pcaLong, Vector3 pcaMid, Vector3? anchorDown)
+    {
+        if (anchorDown is not { } down || down.LengthSquared() < 1e-12f) return (pcaLong, pcaMid);
+        var lng = Vector3.Normalize(down);
+        foreach (var c in new[] { pcaMid, pcaLong, Vector3.UnitX, Vector3.UnitZ })
+        {
+            var m = c - lng * Vector3.Dot(c, lng);
+            if (m.LengthSquared() > 1e-4f) return (lng, Vector3.Normalize(m));
+        }
+        return (lng, Vector3.UnitX);
+    }
 
     /// <summary>Metres to push a socket out of her body along its normal for an outfit: art/anim/socket_clearance.json, written by
     /// `armscheck.py --sockets` as {outfit: {socket: metres}}. Unknown outfit or socket: 0.</summary>
