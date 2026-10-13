@@ -4047,6 +4047,9 @@ if BODY_OUT:
     # partner step, heroine_browpaint.py, is done once in each paint)
     import heroine_browfold
     heroine_browfold.fold(BODY_OUT)
+    # (and her side teeth in the cheeks' shade: heroine_teethshade.py)
+    import heroine_teethshade
+    heroine_teethshade.shade(BODY_OUT)
     print("BODY", BODY_OUT)
 
 # Nothing else rides along (the scene may hold strays).

@@ -497,6 +497,10 @@ public static class People
                 return HairDraw.Cards(m) ?? Coverage.Cards(m);
             case "teeth" or "tongue":
                 m.Roughness = 0.35f;
+                // (her side teeth in the cheeks' shade: a grey vertex colour, linear, tools/assets/heroine_teethshade.py;
+                // white where a mesh has none)
+                m.VertexColorUseAsAlbedo = src.ResourceName == "teeth";
+                m.VertexColorIsSrgb = false;
                 return m;
             default:
                 return Skin(src, look, mesh, who == "hero" ? HisTone : null, who);
