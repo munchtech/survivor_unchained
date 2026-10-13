@@ -2655,6 +2655,14 @@ LEO_ONE_STEEP = float(os.environ.get("LEO_ONE_STEEP", "0.96"))
 LEO_ONE_LIFT = float(os.environ.get("LEO_ONE_LIFT", "0.001"))
 LEO_ONE_Z = tuple(float(v) for v in os.environ.get("LEO_ONE_Z", "0.02,0.03").split(","))
 PIECE_SRC = {}   # (a piece cut with `crotch`: its sheet's skin points and normals, before lifting)
+# (LEO_ONE_TUCK: her skin under the one-piece's crotch tucked no deeper than this (the
+# gusset's 0.3): tucked all the way, as under a held leg line, it left a 9 mm tunnel under
+# the sheet, the strip seen through it from behind and the game's front quarters (dry one1).
+# LEO_ONE_DEPTH (0 off): in front of the slot the leg lines go no lower than this under
+# the roof of the slot, so they don't drop below the V's foot seen from the front.)
+LEO_ONE_TUCK = float(os.environ.get("LEO_ONE_TUCK", "0.3"))
+LEO_ONE_DEPTH = float(os.environ.get("LEO_ONE_DEPTH", "0"))
+TUCK_ZONES = {}  # (an outfit: [(cap, zone of her skin 0 to 1)], tucked no deeper there)
 RBOOT_GONE = float(os.environ.get("RBOOT_GONE", "0.005"))
 
 
@@ -4058,6 +4066,8 @@ def arcanist():
     t_ub = ((roof_z(0.0, y_ub) - 0.0035) - y_ub) / np.sqrt(2)
     # (LEO_ONE: the one-piece's back end, where the gusset's was, under the thong's foot)
     y_end1 = max(GAP_B + 0.014, back_string(CROTCH + 0.155, CROTCH + 0.012)[-1][1] + 0.015)
+    roof_ys = np.linspace(GAP_F - 0.03, y_end1 + 0.01, 80)
+    roof_zs = np.array([roof_z(0.0, y) for y in roof_ys])
 
     def exact(q):
         qx, qy, qz = q[:, 0], q[:, 1], q[:, 2]
@@ -4074,6 +4084,9 @@ def arcanist():
             a_, b_, ru = wq - np.abs(qx), y_end1 - qy, LEO_ONE_W[2]
             end_ = np.where((a_ < ru) & (b_ < ru), ru - np.hypot(ru - a_, ru - b_), np.minimum(a_, b_))
             legs = np.where((qy > CROTCH_Y) & (u_ > 0), np.minimum(legs, end_), legs)
+            if LEO_ONE_DEPTH > 0:
+                floor_ = np.interp(qy, roof_ys, roof_zs) - LEO_ONE_DEPTH - 0.012 * ramp(qy, CROTCH_Y - 0.02, CROTCH_Y + 0.02)
+                legs = np.where((qy > GAP_F - 0.025) & (qz < CROTCH + 0.005), np.minimum(legs, qz - floor_), legs)
         if LEO_U[0] > 0 and not LEO_ONE:
             a_, b_, ru = wq - np.abs(qx), (qz - qy) / np.sqrt(2) - t_ub, LEO_U[0]
             foot = np.where((a_ < ru) & (b_ < ru), ru - np.hypot(ru - a_, ru - b_), np.minimum(a_, b_))
@@ -4917,8 +4930,11 @@ def arcanist():
         z_ = q[:, 2]
         return (np.maximum(ramp(-z_, -(CROTCH + 0.012), -(CROTCH + 0.002)), ramp(q[:, 1], CROTCH_Y, CROTCH_Y + 0.01))
                 * ramp(-np.abs(q[:, 0]), -0.05, -0.04) * ramp(-z_, -(CROTCH + 0.06), -(CROTCH + 0.05)))
-    one_keep = AND(0.03 - np.abs(X), (LEO_ONE_STEEP - np.abs(N[:, 0])) * 0.02, (y_end1 + 0.006) - Y,
-                   Z - (CROTCH - 0.015), (CROTCH + 0.04) - Z) if LEO_ONE else None
+    # (in front of the slot, where LEO_ONE_DEPTH's line decides, kept down its walls
+    # whatever their slope: cut there by |N_x| too, the walls' patches of steeper skin
+    # tore the sheet at the line into flecks (dry one5); eased 3 rounds, no jag)
+    one_keep = smooth_field(AND(0.03 - np.abs(X), (LEO_ONE_STEEP + (0.999 - LEO_ONE_STEEP) * float(LEO_ONE_DEPTH > 0) * (1 - ramp(Y, CROTCH_Y - 0.012, CROTCH_Y + 0.004)) - np.abs(N[:, 0])) * 0.02,
+                                (y_end1 + 0.006) - Y, Z - (CROTCH - 0.015), (CROTCH + 0.04) - Z), 3) if LEO_ONE else None
     def crotch_lay(pos, tris):
         src, ns = PIECE_SRC["arcanist.corset"]
         w_ = one_zone(src)[:, None]
@@ -4927,6 +4943,8 @@ def arcanist():
         return pos * (1 - w_) + laid * w_
     def one_clear(q):
         return 0.0035 - (0.0035 - LEO_ONE_LIFT) * one_zone(q)
+    if LEO_ONE:
+        TUCK_ZONES["arcanist"] = [(LEO_ONE_TUCK, one_zone)]
     out = [
         # (opening into the gusset at its foot, as the warden's does)
         *ribbon("arcanist.thong", back_string(CROTCH + 0.155, CROTCH + 0.012), 0.016, "plumleather", lift=0.003, thick=0.003,
@@ -6653,6 +6671,10 @@ if BODY_OUT:
             for sd in ("l", "r"):
                 fa = (ARM_S[sd][jj] > ELBOW_S - 0.05) & (ARM_S[sd][jj] < WRIST_S - 0.01) & (ARMW[sd][jj] > 0.5)
                 vals[fa & (vals[:, k] > 0), k] = 1.0
+        for cap_, zone_ in TUCK_ZONES.get(name, []):
+            zw_ = zone_(P[jj])
+            print("TUCK ZONE %s: %d vertices of hers capped at %.2f" % (name, int(((zw_ > 0.5) & (vals[:, k] > cap_)).sum()), cap_))
+            vals[:, k] = vals[:, k] * (1 - zw_) + np.minimum(vals[:, k], cap_) * zw_
         if name in BALD:
             # Her hair is part of her body: hidden under a hat that is to carry the look.
             _, j = cKDTree(P).query(np.array([(body.matrix_world @ v.co)[:] for v in me.vertices]))
