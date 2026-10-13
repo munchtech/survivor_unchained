@@ -303,9 +303,11 @@ void flare_ground(vec3 wp, inout vec3 alb, inout float rough, inout float spec, 
 		float mot = texture(flare_noise, w * 0.23 + 0.5).g;
 		vec4 bmk = texelFetch(flare_marks, ivec2(31, 0), 0);
 		float aged = smoothstep(0.25, 1.4, bmk.w);
-		// (The ring's inside is lit hard after the BOOM: at 0.3-0.66 of the ground it washed the frame salmon at
-		// 3-4x ready, s5b-c. So the char stays near black, warm, a little lighter than the old 0.01.)
-		vec3 charc = vec3(0.026, 0.018, 0.012) * mix(1.25, 0.7, smoothstep(0.3, 0.7, mot)) * mix(0.6, 1.0, aged);
+		// A step under the ground it burnt, whatever ground (a fixed near-black read as a dead frame at night and a
+		// hole by day): its own colour, warmed, at about 0.45 of it, blacker while fresh. (The s5 salmon was a
+		// name clash, never this.)
+		vec3 charc = mix(vec3(dot(alb, FL_LUM)), alb, 0.5) * vec3(1.2, 0.85, 0.55) * 0.45
+			* mix(1.25, 0.7, smoothstep(0.3, 0.7, mot)) * mix(0.55, 1.0, aged);
 		alb = mix(alb, charc, bo.z * 0.97);
 		rough = mix(rough, mix(0.3, 0.85, smoothstep(0.35, 0.65, mot)), bo.z);
 		spec = mix(spec, 0.25, bo.z);
@@ -472,7 +474,7 @@ void flare_prop(vec3 wp, vec3 nrm_view, mat4 inv_view, inout vec3 alb, inout flo
 		emi += vec3(1.0, 0.42, 0.1) * (bo.x * 0.5 + bo.y * 0.25) * face;
 	}
 	// (Char a dark warm brown, as on the ground.)
-	alb = mix(alb, vec3(0.026, 0.018, 0.012), bo.z * 0.85 * smoothstep(0.2, 0.8, nw.y));
+	alb = mix(alb, mix(vec3(dot(alb, FL_LUM)), alb, 0.5) * vec3(1.2, 0.85, 0.55) * 0.45, bo.z * 0.85 * smoothstep(0.2, 0.8, nw.y));
 }
 
 // The BOOM's line reaching a statue (judge 2, s4: statues just behind the line stood whole): it cracks, the fire

@@ -63,12 +63,12 @@ public partial class FlareFx
         const string fb = "res://art/fx/flare/burns_boom";
         if (FileAccess.FileExists(fb + ".json") && ResourceLoader.Exists(fb + ".png"))
         {
-            var meta = Core.Json.Parse<System.Collections.Generic.Dictionary<string, object>>(FileAccess.GetFileAsString(fb + ".json"));
-            simFrames = Convert.ToInt32(meta["frames"]);
-            simFps = Convert.ToSingle(meta["fps"]);
+            var meta = Json.ParseString(FileAccess.GetFileAsString(fb + ".json")).AsGodotDictionary();
+            simFrames = (int)meta["frames"].AsDouble();
+            simFps = (float)meta["fps"].AsDouble();
             simMat = new ShaderMaterial { Shader = GD.Load<Shader>("res://shaders/flare_fb.gdshader") };
             simMat.SetShaderParameter("atlas", GD.Load<Texture2D>(fb + ".png"));
-            simMat.SetShaderParameter("grid", Convert.ToInt32(meta["grid"]));
+            simMat.SetShaderParameter("grid", (int)meta["grid"].AsDouble());
             simMat.SetShaderParameter("frames", simFrames);
             simBoom = new MeshInstance3D
             {
