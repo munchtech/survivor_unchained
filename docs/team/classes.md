@@ -1,6 +1,6 @@
-# Classes (phase 2 done; phase-6 plan judged, waiting on the owner)
+# Classes (phase 2 done; phase-6 plan with the owner; Act 1 baseline named)
 
-**State (13 October, session 13):** branch `classes-10` (from integration 3935476c). The Flare is the owner's BOOM button: specialized (Clear, Save, Single, Context), and every press is seen. This session: Burns Twice's aimed embers and its last-ember shove (asked for by the Flare lead); the Road's Toll with nothing near; the phase-6 plan's role column (judge 7: PASS WITH FIXES, applied). Being traced: the "drift" (see Open). Handoff: `docs/handoff/classes.md`.
+**State (13 October, session 14):** branch `classes-10` (from integration 3935476c). The Flare is the owner's BOOM button: specialized (Clear, Save, Single, Context), and every press is seen. Sessions 13-14: Burns Twice's aimed embers and last-ember shove; the Road's Toll with nothing near; the phase-6 plan's role column (judge 7: PASS WITH FIXES, applied; the owner lines are with the owner); the Act 1 baseline named ("pre-Flare 11 Oct"). Waiting on the owner's phase-6 answers. Handoff: `docs/handoff/classes.md`.
 
 **Key decisions**
 - Flare roles follow FLARE_LOOK (six Clears, four Saves, two Singles, four Contexts), confirmed in CLASSES §7's phase-6 plan. Judge 6's first table differed on eight Flares; the look's reading matches what each does in play.
@@ -11,8 +11,8 @@
 - A boss takes half a rebuke. The pilot banks Banked Flame. A staged Flare's boss measure is calibrated on Act 1's story bosses (earlier sessions; still in force).
 
 **Open**
-- **The drift is not a regression.** Never pressing, no build since 11 October has run at base11's length (the 12 Oct "pre-Flare" target). The real pre-Flare code (9cbc654c) runs +14.3% with 0.125 falls a night, the Flare's first build +16.4%, 12 Oct +13.6%, and today +10.3% with 0.089, the shortest. base11 was not a never-press game. Act 1's target length needs a fresh, named baseline before anything is tuned to it (bisect `S/bis`).
-- Burns' shove and aim: re-measure against the true parent build (`S/w`). The aim had cost 15% of a press's kills (fixed). The first Act 1 reading (-7.7%) was against classes-9's own build, a confound.
+- **Act 1 baseline "pre-Flare 11 Oct" (adopted 13 October; CLASSES §7 Acceptance):** 9cbc654c at health 103/130/100/109, never pressing, seeds 1-32: 233 s, 0.125 falls a night. Today against it on matched seeds: never pressing -0.1% (0.093), careless -7.5%, good use -17.7% (0.034), bankers -24%. In band; no re-tune. base11 is retired: it was the Flare's first build pressed with the 3 s press stun (matched fight for fight). The "drift" was base11 plus a seed-set mismatch (1-32 against 1-96).
+- Burns' shove and aim, re-measured against the true parent 3935476c (batch W, fresh arena seeds): Flare kills a press +12-16% at every tier, Act 1 -1.4% (inside 2%; without the boss stagger -2.6%, so it stays at 0.15), arena deaths and damage taken within noise. Merge requested at 30899ed3.
 
 **Notes for other areas**
 - **Flare lead and skills VFX:** Burns Twice's "aim" (one per ember, Target id or 0, Last on the 12th; the ember Blow follows 0.2 s later on its target's current spot, or bends to the nearest pack within 3 m of the aim if its target fell). "shove" (one per survivor after the last ember: TX/TZ where it rests, Radius how far, 0 for a boss). The Toll's empty cuts. Butcher's Hour has no blow: stage its press roar and frenzy until End. One Arrow's plain form is a 30 m clear today ("line" is phase 6). FLARE_LOOK L546 (Through and Through, Empty) needs the no-dash ring of cuts (judge 7).
