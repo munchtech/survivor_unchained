@@ -2392,7 +2392,7 @@ def over_nipples(pos, tris, least=float(os.environ.get("NIP_RISE", "0.0015")), s
 SHEET = {}   # (each piece's sheet as finished: points, triangles, weights, thickness)
 
 
-def piece(name, field, mkey, lift=0.003, thick=0.003, smooth=0, bevel=0.0012, trim=None, clear=None, soften=3, dome=False, keep_off=("Head", "neck_01"), cut=None, iron=0, hull=None, studs=None, budget=None, filled=False, edge=30, slot=True, bridge=False, bind=True, rigid=None, stiff=None, studs_off=None, weigh=None):
+def piece(name, field, mkey, lift=0.003, thick=0.003, smooth=0, bevel=0.0012, trim=None, clear=None, soften=3, dome=False, keep_off=("Head", "neck_01"), cut=None, iron=0, hull=None, studs=None, budget=None, filled=False, edge=30, slot=True, bridge=False, bind=True, rigid=None, stiff=None, studs_off=None, weigh=None, hold=None):
     """A region of her skin made into a piece of her outfit. `rigid`, a
     centre, makes it a rigid plate: a fair dome round that centre (shell())
     on one blend of bones throughout, so it moves as one piece. `trim`, as
@@ -2481,6 +2481,9 @@ def piece(name, field, mkey, lift=0.003, thick=0.003, smooth=0, bevel=0.0012, tr
         pos, at, tris = weld(pos, at, tris)
         pos = relax(pos, tris, interior=0)
         dump(name, "3cut", pos, tris, at[:, -1])
+    if hold is not None:
+        # (`hold`: chosen edges held down onto her skin, see held_edges)
+        pos, held = held_edges(name, pos, tris, *hold)
     if rigid is not None:
         if isinstance(rigid, tuple):
             pos = shell(name, pos, np.asarray(rigid[0], float), lift if clear is None else clear, nest=rigid[1:])
@@ -2512,6 +2515,9 @@ def piece(name, field, mkey, lift=0.003, thick=0.003, smooth=0, bevel=0.0012, tr
         trim = None
     SHEET[name] = (pos.copy(), tris.copy(), at[:, 3:3 + NB].copy(), thick)
     made = [finish(name, pos, at[:, 3:3 + NB], tris, mkey, thick, bevel, budget or (8000 if dome else 3000))] + beads
+    if hold is not None and len(held):
+        # (the held edge as built, for her skin's tuck under it: BODY_OUT)
+        made[0]["hold_line"] = pos[held].ravel().tolist()
     if any("_stitch" in o.name for o in beads):
         made[0]["geo_stitch"] = True
     if bridge:
@@ -2533,6 +2539,54 @@ def piece(name, field, mkey, lift=0.003, thick=0.003, smooth=0, bevel=0.0012, tr
     for o in made:
         o["hides"] = o is made[0] and len(SPEC[mkey]) < 7 and rigid is None
     return made
+
+
+HOLD_OFF, HOLD_FULL, HOLD_SLOPE = (float(v) for v in os.environ.get("HOLD", "0.001,0.012,0.25").split(","))
+HOLD_BAND, HOLD_GROOVE = (float(v) for v in os.environ.get("HOLD_TUCK", "0.05,0.0015").split(","))
+
+
+def held_edges(name, pos, tris, sel, fade=None):
+    """A skin-tight piece's chosen edges held down onto her skin, as an
+    elastic edge is: within HOLD_FULL of the edge the sheet lies HOLD_OFF off
+    her, and from there it rises back to its own lie no steeper than
+    HOLD_SLOPE (one smooth line, no step or ridge; a stiff panel keeps its
+    look away from the edge). Only ever pulled toward her, along her normal,
+    so the cut stays where it was on her. (The arcanist's leg lines stood 5-7
+    mm off her: looked in at a glance under the edge, her untucked belly
+    showed as a skin wedge, judge 14.) `sel` picks the held edge points,
+    `fade` (0 to 1 a point) eases the hold out where it is not wanted."""
+    e = np.sort(np.vstack([tris[:, [0, 1]], tris[:, [1, 2]], tris[:, [2, 0]]]), 1)
+    uk, c = np.unique(e, axis=0, return_counts=True)
+    be = uk[c == 1]
+    bv = np.unique(be)
+    held = bv[sel(pos[bv])]
+    if not len(held):
+        return pos, held
+    hb = be[np.isin(be[:, 0], held) & np.isin(be[:, 1], held)]
+    smp = np.concatenate([pos[hb[:, 0]] * (1 - t) + pos[hb[:, 1]] * t for t in np.linspace(0, 1, 5)])
+    d, _ = cKDTree(smp).query(pos)
+    rw = 0.004
+    r = np.where(d < HOLD_FULL - rw, 0.0, np.where(d > HOLD_FULL + rw, d - HOLD_FULL, (d - HOLD_FULL + rw) ** 2 / (4 * rw)))
+    cap = HOLD_OFF + HOLD_SLOPE * r + (0.0 if fade is None else (1 - fade(pos)) * 0.03)
+    out = pos.copy()
+    k, drop, at_edge = 0.001, [], []
+    for i in np.nonzero(cap < 0.02)[0]:
+        q, n, _, _ = BVH.find_nearest(Vector(pos[i]))
+        if q is None:
+            continue
+        s_ = (Vector(pos[i]) - q).dot(n)
+        h = min(max(0.5 + 0.5 * (cap[i] - s_) / k, 0.0), 1.0)
+        s2 = cap[i] * (1 - h) + s_ * h - k * h * (1 - h)
+        if d[i] < 0.0015:
+            at_edge.append((s_, min(s_, s2)))
+        if s2 < s_:
+            out[i] = pos[i] + np.array(n[:]) * (s2 - s_)
+            drop.append(s_ - s2)
+    ae = np.array(at_edge) * 1000 if at_edge else np.zeros((1, 2))
+    print("HOLD %s: %d edge points; at the edge %.1f-%.1f mm off her (median %.1f) now %.1f-%.1f (median %.1f); %d points pulled in, up to %.1f mm"
+          % (name, len(held), ae[:, 0].min(), ae[:, 0].max(), np.median(ae[:, 0]), ae[:, 1].min(), ae[:, 1].max(), np.median(ae[:, 1]),
+             len(drop), max(drop, default=0) * 1000))
+    return out, held
 
 
 def rivets(name, pos, at, tris, thick, mkey, spacing=0.028, inset=0.011, r=0.0032, off=None, spots=None):
@@ -4288,7 +4342,8 @@ def arcanist():
         *ribbon("arcanist.thong", back_string(CROTCH + 0.155, CROTCH + 0.012), 0.016, "plumleather", lift=0.003, thick=0.003,
                trim=gold(0.004), snap=False, hides=True, flare=(0.034, 0.03)),
         *piece("arcanist.corset", corset, "plumleather", lift=0.0035, smooth=8, iron=60, trim=gold(0.008), keep_off=("Head",), filled=True, edge=120, soften=80,
-               bridge=True, cut=exact, stiff=[(0.03, front_panel), (0.03, collar), plunge_fold, taut_gore, plunge_rim]),
+               bridge=True, cut=exact, stiff=[(0.03, front_panel), (0.03, collar), plunge_fold, taut_gore, plunge_rim],
+               hold=(lambda q: (q[:, 2] > CROTCH + 0.015) & (q[:, 2] < 1.2) & (np.abs(q[:, 0]) < 0.3), lambda q: ramp(q[:, 2], CROTCH + 0.03, CROTCH + 0.06))),
         *(down_tube() if PLUNGE_TRIM == "down" else []),
         *(plunge_clasp() if PLUNGE_CLASP else []),
         # (judge 4: the front read as moulded latex. Four stitched boning
@@ -5953,6 +6008,32 @@ if BODY_OUT:
             nxt = under & ~reached & ((_body_nb @ reached.astype(float)) > 0)
             ring[nxt], reached = r_, reached | nxt
         vals[:, k] *= np.where(ring > 0, ring / 3, 1.0)
+        # Under a held edge (held_edges: a leotard's leg lines) she is tucked
+        # all the way, out to HOLD_BAND from it, so a look in under the edge
+        # meets the piece's inside, not her; the last row before the edge only
+        # as deep as keeps her skin just past it from dipping more than
+        # HOLD_GROOVE under it (her rows are 4-20 mm apart there).
+        for o in objs:
+            if "hold_line" not in o:
+                continue
+            hl = np.array(o["hold_line"][:]).reshape(-1, 3)
+            bw_ = np.array([(body.matrix_world @ v.co)[:] for v in me.vertices])
+            dl, _ = cKDTree(hl).query(bw_)
+            und = np.zeros(len(dl), bool)
+            for i in np.nonzero(dl < HOLD_BAND)[0]:
+                v = me.vertices[i]
+                co = body.matrix_world @ v.co
+                n = (mw3 @ v.normal).normalized()
+                und[i] = tree.ray_cast(co + n * 0.0005, n, 0.012)[0] is not None
+            nb = _body_nb.tocoo()
+            m_ = und[nb.row] & ~und[nb.col] & (vals[nb.col, k] == 0)
+            u_ = dl[nb.col[m_]] / np.maximum(dl[nb.col[m_]] + dl[nb.row[m_]], 1e-6)
+            lim = np.ones(len(dl))
+            np.minimum.at(lim, nb.row[m_], HOLD_GROOVE / 0.010 / np.maximum(u_, 1e-3))
+            before = vals[und, k].copy()
+            vals[und, k] = np.maximum(vals[und, k], np.minimum(1.0, lim[und]))
+            print("HOLD TUCK %s: %d vertices of hers under it within %.0f mm of its held edge; marks %.2f -> %.2f (mean), %d at the edge row limited (mean %.2f)"
+                  % (o.name, und.sum(), HOLD_BAND * 1000, before.mean(), vals[und, k].mean(), (und & (lim < 1)).sum(), lim[und & (lim < 1)].mean() if (und & (lim < 1)).any() else 0))
         if name == "arcanist":
             # (her forearm and elbow under the sleeve and glove tucked all the way,
             # from 5 cm above her elbow to 1 cm short of her wrist: with her elbow
