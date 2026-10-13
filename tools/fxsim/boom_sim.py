@@ -41,16 +41,19 @@ TAKES = {
     # frames, a root that keeps the pillar alight, and fourteen tongues of flame thrown out along the ground.
     "burns_boom3": dict(
         dom=(12.5, 12.5, 12.5), tscale=4.0, steps_max=4, vort=0.3, flame_vort=1.0, beta=2.5, alpha=0.3,
-        burn=0.12, flame_smoke=1.0, dissolve=40, noise=0, noise_k=1.0,
-        fuel=2.0, temp=3.0, smoke=0.6, vfac=0.3, out=1.0, vol=1.0, surf=0.1,
+        burn=0.10, flame_smoke=2.0, dissolve=40, noise=0, noise_k=1.0,
+        fuel=2.0, temp=3.0, smoke=0.3, vfac=0.3, out=1.0, vol=1.0, surf=0.1,
         core_r=0.85, core_keys=((1, 0.6, 1.0), (2, 3.0, 1.2), (3, 4.8, 1.4), (4, 6.0, 1.55), (5, 6.6, 1.65)),
         core_off=6, lump=0.9, lump_s=0.55,
         root_r=1.15, root_fuel=((1, 2.0), (6, 1.6), (10, 0.8), (12, 0.3)), root_off=13, root_up=3.0,
-        jets=14, jet_long=(3.2, 4.3), jet_short=(1.6, 2.6), jet_r=(0.3, 0.6), jet_t=3, jet_seed=5, jet_fuel=2.0,
+        jets=22, jet_long=(3.0, 4.6), jet_short=(1.4, 2.8), jet_r=(0.35, 0.75), jet_t=3, jet_seed=5, jet_fuel=2.0,
         turb=((1, 4.0), (12, 2.5), (30, 1.0), (48, 0.5)), turb_size=1.0,
-        flame_pow=1.6, emit_k=1.0, smoke_k=6.0, dpow=1.3, smoke_rgb=(0.16, 0.13, 0.11),
-        smoke_keys=((1, 1.0), (16, 1.0), (32, 0.35), (46, 0.0)), fire_keys=(),
-        amb=0.25, look=3.75, ortho=14.6,
+        ramp=((0, (0, 0, 0)), (0.05, (0.10, 0.008, 0)), (0.2, (0.55, 0.06, 0.005)), (0.45, (1.0, 0.28, 0.02)),
+              (0.7, (1.0, 0.52, 0.08)), (0.9, (1.0, 0.70, 0.22)), (1.0, (1.0, 0.80, 0.38))),
+        fnoise=0.45, fnoise_s=2.2, flame_pow=1.3, emit_k=1.2,
+        smoke_k=12.0, dpow=1.0, smoke_rgb=(0.09, 0.075, 0.062), fmask=(0.12, 0.7, 0.08), zfade=(8.0, 11.5),
+        smoke_keys=((1, 1.0), (22, 1.0), (38, 0.4), (47, 0.0)), fire_keys=(),
+        amb=0.15, look=3.75, ortho=14.6,
         tone=dict(exp=1.0, knee=0.65, hot=0.25, amb=(0.030, 0.025, 0.020)),
     ),
 }
@@ -112,7 +115,28 @@ def flame_material(t):
         nt.links.new(dp.outputs["Value"], dk.inputs[0])
         nt.links.new(dk.outputs["Value"], dt.inputs[0])
         nt.links.new(tap.outputs[0], dt.inputs[1])
-        nt.links.new(dt.outputs["Value"], pv.inputs["Density"])
+        dens = dt.outputs["Value"]
+        if t.get("fmask"):
+            # Burning gas is clear and bright; the smoke is what the fire leaves: masked out where the flame is hot.
+            fa = nt.nodes.new("ShaderNodeAttribute"); fa.attribute_name = "flame"
+            fr_ = nt.nodes.new("ShaderNodeMapRange"); fr_.clamp = True
+            fr_.inputs["From Min"].default_value, fr_.inputs["From Max"].default_value = t["fmask"][:2]
+            fr_.inputs["To Min"].default_value, fr_.inputs["To Max"].default_value = 1.0, t["fmask"][2]
+            fmm = nt.nodes.new("ShaderNodeMath"); fmm.operation = "MULTIPLY"
+            nt.links.new(fa.outputs["Fac"], fr_.inputs["Value"])
+            nt.links.new(dens, fmm.inputs[0]); nt.links.new(fr_.outputs["Result"], fmm.inputs[1])
+            dens = fmm.outputs["Value"]
+        if t.get("zfade"):
+            # The smoke thins as it climbs, gone by zfade[1] m: no cap over the field, no cut at the domain's lid.
+            geo = nt.nodes.new("ShaderNodeNewGeometry"); sep = nt.nodes.new("ShaderNodeSeparateXYZ")
+            mr = nt.nodes.new("ShaderNodeMapRange"); mr.clamp = True
+            mr.inputs["From Min"].default_value, mr.inputs["From Max"].default_value = t["zfade"]
+            mr.inputs["To Min"].default_value, mr.inputs["To Max"].default_value = 1.0, 0.0
+            zm = nt.nodes.new("ShaderNodeMath"); zm.operation = "MULTIPLY"
+            nt.links.new(geo.outputs["Position"], sep.inputs[0]); nt.links.new(sep.outputs["Z"], mr.inputs["Value"])
+            nt.links.new(dens, zm.inputs[0]); nt.links.new(mr.outputs["Result"], zm.inputs[1])
+            dens = zm.outputs["Value"]
+        nt.links.new(dens, pv.inputs["Density"])
     fl = nt.nodes.new("ShaderNodeAttribute"); fl.attribute_name = "flame"
     src = fl.outputs["Fac"]
     if t.get("fnoise", 0.0) > 0:
@@ -135,11 +159,12 @@ def flame_material(t):
     pw = nt.nodes.new("ShaderNodeMath"); pw.operation = "POWER"; pw.inputs[1].default_value = t.get("flame_pow", 1.6)
     ramp = nt.nodes.new("ShaderNodeValToRGB")
     cr = ramp.color_ramp
-    cr.elements[0].position = 0.0; cr.elements[0].color = (0, 0, 0, 1)
-    cr.elements[1].position = 1.0; cr.elements[1].color = (1.0, 0.9, 0.7, 1)
-    for p, c in ((0.06, (0.12, 0.01, 0.0, 1)), (0.25, (0.75, 0.1, 0.008, 1)), (0.55, (1.0, 0.4, 0.04, 1)),
-                 (0.82, (1.0, 0.72, 0.28, 1))):
-        e = cr.elements.new(p); e.color = c
+    ramp_k = t.get("ramp", ((0.0, (0, 0, 0)), (0.06, (0.12, 0.01, 0.0)), (0.25, (0.75, 0.1, 0.008)),
+                            (0.55, (1.0, 0.4, 0.04)), (0.82, (1.0, 0.72, 0.28)), (1.0, (1.0, 0.9, 0.7))))
+    cr.elements[0].position = ramp_k[0][0]; cr.elements[0].color = tuple(ramp_k[0][1]) + (1,)
+    cr.elements[1].position = ramp_k[-1][0]; cr.elements[1].color = tuple(ramp_k[-1][1]) + (1,)
+    for p, c in ramp_k[1:-1]:
+        e = cr.elements.new(p); e.color = tuple(c) + (1,)
     mul = nt.nodes.new("ShaderNodeMath"); mul.operation = "MULTIPLY"; mul.inputs[1].default_value = t["emit_k"]
     nt.links.new(src, pw.inputs[0])
     nt.links.new(pw.outputs["Value"], ramp.inputs["Fac"])
