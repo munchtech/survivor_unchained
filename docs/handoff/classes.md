@@ -8,6 +8,7 @@ Written by the thirteenth classes lead (13 October). Branch `classes-10` (worktr
 - Coordinator's rulings: never tune a Flare into an invisible damage bump. Balance around fights without good Flare use, not by blunting the Flare.
 
 ## Start here
+0. **W read (session 13, end):** Burns with the aim fix against the true parent (3935476c), arcanist. Flare kills a press +12-16% at every tier (base 31.4/32.8/38.8/38.8/24.7, now 36.5/37.9/42.9/44.8/28.1); room cleared 99.8-100% both. Act 1 -1.4%, falls 0.030 -> 0.026 (no stagger: -2.6%), so the boss stagger stays. Arena deaths 28 -> 36 of 384, about one standard error. Merge request sent at e4fb967c's successor. Items 1-3 below are done; go on to 4-5.
 1. **Batch W** (`bash S/w.sh`; `S/w/q.out` ends "ALL"). It compares Burns with the aim fix (bal15, 46ab377d) against its true parent: integration 3935476c, built at `S/bis/base/out`. Arcanist kindler, same data, arenas on fresh seeds 201-248, Act 1 48 seeds. Outputs:
    - `S/w/arena.txt`: wins and deaths by tier.
    - `crowd_b.txt` and `crowd_15.txt`: compare "flare kills" a press; within about 3% is the bar.
