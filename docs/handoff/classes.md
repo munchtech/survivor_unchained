@@ -1,27 +1,51 @@
-# Handoff: classes (session 12: the Flare cuts story bosses; Act 1 health dropped; the crowd measured)
+# Handoff: classes (session 13: Burns Twice's aim and shove, the Toll seen with nothing near, phase-6 roles, the drift)
 
-Written by the twelfth classes lead (13 October). Branch `classes-9` (worktree `agent-a63a34b9e5a45d1bf`), last commit on the last line of git log. Scratch `S/` = `C:\Users\munch\AppData\Local\Temp\claude\C--Users-munch-Desktop-survivorsunchained\59a43b82-cb5d-4a5a-bb8d-db67086387ea\scratchpad\classes\`. Older: `N/` (33ad5b17-...\scratchpad\classes), `O/` (1515c1de-...).
+Written by the thirteenth classes lead (13 October). Branch `classes-10` (worktree `agent-ad0c69063d34fa8de`, from integration 3935476c), last commit on the last line of git log. Scratch `S/` = `C:\Users\munch\AppData\Local\Temp\claude\C--Users-munch-Desktop-survivorsunchained\59a43b82-cb5d-4a5a-bb8d-db67086387ea\scratchpad\classes\`. Older: `O/` = 1515c1de-...\scratchpad\classes (base11 at `O/s2/base11.jsonl`).
 
 ## The owner (13 October)
 - "why wouldn't flare shorten things? its supposed to be epic. an 'oh shit' button. a planned 'BOOM' button. a 'clear the whole room' button."
 - "flares in general don't need to be big boss hits - they are specialized. *most* are for arena mode type screen clears or saves etc - but some can be single target (or one or the other based on context). but pushing a flare should always do something visible."
+- Coordinator's rulings: never tune a Flare into an invisible damage bump. Balance around fights without good Flare use, not by blunting the Flare.
 
 ## Start here
-1. **Merge request sent** for classes-9 (step 1, judge 6 PASS; sheet `S/judge6_sheet.md`, verdict summarised below). Wait for the merge.
-2. **Flare lead's request (flare-1, a422b108a0fdfb259):** Burns Twice's last BOOM shoves survivors in reach (a stagger plus about 3 m, damage unchanged; an `Ev.Flare` Blow part "shove" per target), plus an "aim" part about 0.2 s before each ember lands. Promised to them. Re-measure arenas once (it moves bodies), then reply with the event names.
-3. **Judge 6's logic fix:** the Road's Toll's cuts with no target (`FlareStaged.cs` TollCut, last line: `e?.X ?? p.X ..., 0`) land at her feet with radius 0. Place them on open ground in reach, at an angle from the blow number, with a visible radius. Don't use the sim RNG: it would shift every seed.
-4. **Notes to the Flare lead and skills VFX** (judge 6; put them in docs/team/classes.md): Butcher's Hour has no blow, so the view must show its press burst and frenzy until End. One Arrow's plain form is a 30 m blast (label it "clear, 30 m today; line is the phase-6 intent"), and its ring sits off a 15 m screen. On integration the Godot view handles no `Ev.Flare` at all yet (FLARE_LOOK on flare-1 is building it).
-5. **Judge 6's numbers for a runner** (next round): (1) the drift: today's game without the Flare runs +10.3% longer than base11 with falls 0.089, so trace it per calling (base11 code against today's), and if it's a regression, re-run Q1; (2) careless warden's falls and the share of its fights more than 25% long; (3) the shortest story fight with the cut (p5, deft bankers); (4) Vault crowd (75% room cleared; reaver 65, warden 70): survivors' distance and kind, reach x1.25 and x1.33; (5) save Flares: alive 10 s after a low-health press; (6) whether a 15 m radius matches the default camera.
-6. **Then the phase-6 plan** (CLASSES §7, 6a), with a **role column** from judge 6's table (clear, clear+save, context, single/line, sustained, control/save, self) and "what a press shows with nothing near", plus its owner lines (`O/judge1_verdict.md`, bottom) to a lean judge, then to the coordinator. No phase-6 code before the owner approves.
+0. **W read (session 13, end):** Burns with the aim fix against the true parent (3935476c), arcanist. Flare kills a press +12-16% at every tier (base 31.4/32.8/38.8/38.8/24.7, now 36.5/37.9/42.9/44.8/28.1); room cleared 99.8-100% both. Act 1 -1.4%, falls 0.030 -> 0.026 (no stagger: -2.6%), so the boss stagger stays. Arena deaths 28 -> 36 of 384, about one standard error. Merge request sent at e4fb967c's successor. Items 1-3 below are done; go on to 4-5.
+1. **Batch W** (`bash S/w.sh`; `S/w/q.out` ends "ALL"). It compares Burns with the aim fix (bal15, 46ab377d) against its true parent: integration 3935476c, built at `S/bis/base/out`. Arcanist kindler, same data, arenas on fresh seeds 201-248, Act 1 48 seeds. Outputs:
+   - `S/w/arena.txt`: wins and deaths by tier.
+   - `crowd_b.txt` and `crowd_15.txt`: compare "flare kills" a press; within about 3% is the bar.
+   - `story.txt`: the Act 1 rows for bal15, bal14, and variants A (no aim), B (no shove) and C (no boss stagger), all against the parent.
+2. **Confound found:** `S/s` and `S/v` compared against `S/bal13`, which is classes-9's own build, not 3935476c. Every variant, even A and B, ran Act 1 6.6-8.1% shorter against it, so that gap is the build, not the shove. Only the within-batch differences stand:
+   - The aim cost a press about 15% of its Flare kills (V-B 28-38 against V-A 33-45). This is fixed in 46ab377d: on a synthetic crowd, 37.7% killed against 38.4% picking at landing.
+   - Arena deaths at 48 runs a tier are noise-level.
+   - If W shows Act 1 shorter by more than about 2% with the shove (15 against the parent), set "shoveStagger" to 0 in lamps.json. Variant C is the same build without it. The Flare lead only asked for the shove on survivors.
+   - W was restarted once (an orphaned copy of the first W wrote `_15` files into `S/w`; it was killed). The live W rewrites every `_15` file when it reaches bal15. Trust `S/w` only once q.out reads b, 15, ALL.
+3. Then send the coordinator one **MERGE REQUEST: classes-10@<sha>**. dotnet test passed 885 of 893 (8 skipped) at f82dfd66. The code hasn't changed since 46ab377d. In the same message, send **the phase-6 plan for the owner**: judge 7 PASS WITH FIXES, fixes applied (f4f8d3b8). Its final owner lines are below; fill in line 6.
+4. **Tell the Flare lead** (a422b108a0fdfb259, flare-1) that the ember now bends to the thickest pack within 3 m of its aim when its target fell before landing (data "aimBend" 3, default in code). They were told about aim, shove and the Toll on 440c4a90 and replied that they'll wire both once classes-10 reaches integration.
+5. **The drift** (`S/bis`, `bash S/bis.sh`; it waits for nothing now). It runs Act 1 never pressing (SU_NOPRESS=1 patches UseFlare) at health 103/130/100/109, 32 seeds, at integration commits p0 9cbc654c (pre-Flare), p1 90dd4062 (the Flare added), p2 cc228199, p3 b888da5c, p4 14dda627, p5 a86814cc. Summaries are `S/bis/sum_*.txt`, and `sum_all.txt` at the end. stc.py was patched for files without a Flare share.
+   - **Found:** p0, the real pre-Flare game, runs boss fights of 233 s with 0.125 falls a night. Against base11 that is +14.3%, falls 0.030 -> 0.125. Today never-pressing (`S/n/noD.jsonl`) runs 225 s with 0.089.
+   - **So base11 is not the pre-Flare game,** and today's never-press game is shorter and safer than the real pre-Flare one. base11 runs 204 s; `O/s2/cur11` (the 11 Oct game with the Flare) runs 184 s. `S/peek2.py` prints these per file.
+   - **Read so far** (never pressing, against base11): p0 +14.3%, falls 0.125; p1 (the Flare added) +16.4%, 0.108; p4 (12 Oct, with classes-6) +13.6%, 0.093; today +10.3%, 0.089. **No build since 11 October has run at base11's length without pressing, and today's is the shortest.** So the drift is not a regression: base11 was not a never-press game.
+   - **p2-p5 are done:** identical runs, +13.6% and 0.093 falls each (11 Oct 12:42 to 12 Oct 06:50 changed nothing for a player who never presses). `S/bis/sum_all.txt`. **Still to read:** pm1 = b87ad0c7, the integration before the Lamps board (`bash S/bis2.sh`, queued; `S/bis/sum_pm1.txt`), in case base11 is an earlier build.
+   - **If pm1 is also about 14% longer,** base11 was a run with the Flare pressed (cur11's 184 s is pressing at raised health), or a different setup, so it can't be told from the file. Report that to the coordinator: the 12-13 Oct story-boss health was tuned to base11, and Act 1's target length needs a fresh, named baseline. Today's never-press game (225 s, 0.089 falls a night) beats every never-press build since 11 Oct.
 
-## Done this session
-- `StoryBoss.Cuts` (on) lifts the story exemption. Act 1 health dropped to 103/130/100/109 (was 110/141/107/114). Tests updated.
-- Measured, Act 1, 96 seeds a cell (`S/a`, `S/h`, `S/n`; summaries `sum_*.txt`). Against base11: good use -7.7% / falls 0.027; banker -14.1% / 0.022; lit-not-held -7.6%; careless +4.2% / 0.043; never presses +10.3% / 0.089. With the raise kept: -2.2% / +10.0%. The cut alone is small (-1.7%): Act 1 phases run 45-75 s against floors of 25-30 s.
-- Crowd (`S/y`): one Flare kills 97-99% in reach and clears the room (80%+ of 15 m) in 89-94% of casts at all tiers. All 16 Flares in `S/y/crowd16.txt`. No number change (judge 6).
-- **Bug found and fixed:** the crowd count read a re-used pooled slot as a survivor, so every crowd figure before `S/y` (`S/d`, `S/e`, `S/r`, `S/x`) is about 30 points low. Ignore those.
-- Harness flags: `--storycut 0`, `--storyhp roost=..,vault=..,hollow=..,dig=..`, `--flareboss 0` (careless), `--flareuse 0` (never), `--rout X`, `--flarereach X` (measuring only). Results carry `FlareCrowd` rows (Flare.cs doc) and story `BossPhases`.
-- Agreed the Flare lead's `FlareLead(dt)` (view-only pre-key clock) on flare-1, with guards: no blows, no world stamps, clamped at the key.
+## Owner lines (judge 7's final; line 6 to fill in)
+1. Flares should shorten fights, as you said. We tune each night so a player who never uses Flares well still gets through, and a good press sits on top. No Flare is ever tuned down into a damage bump you can't see.
+2. Each Flare has one job. Most clear the room or save the hero (six clear, four save). Two go for the one that matters: the Butcher's Bill, and the Road's Toll, whose last four cuts go to the strongest. Four choose by what's near: the crowd, or the boss when there is one. Every press shows something, even with nothing in reach.
+3. The Flares not built yet are stand-ins that hit everything in reach, so once built a few will clear less. For example, One Arrow becomes a 30 m line through the crowd instead of hitting everything within 30 m.
+4. You asked for one Flare per spec. Four specs have theirs. The first wave builds the other four (the Long Cut, Drag Them Under, the Branding, One Arrow), plus the Butcher's Bill, which a new butcher starts with (the Hour opens at depth 12). Shall we build the first wave?
+5. The Long Cut, Drag Them Under and One Arrow use a greatsword, a hooked chain and a longbow, which come later. For the Flare, the weapon would form in the hero's hands in the calling's color and vanish after. Is that look okay?
+6. Four modifiers are replaced, so at most one of each Flare's three only changes a number. The new four: Hard Winter's Thaw-Burst (a shatter shatters the frozen within 3 m), the Branding's The Eye (the boss's brand stays 6 s and bursts again whenever a mark passes to it), Through and Through's Free Hands (press the Flare again to cut every notch now; it ends there), One Arrow's Through the Heart (it stops in the first champion or boss it hits, and its three splits turn back into it). Okay to use the new four?
+7. Until Act 1 is done, Light my way suggests at most one gentle modifier per Flare, so Act 1 plays as tuned. The strongest ones, like Called Down, can still be picked by hand.
+8. Each spec's second Flare (the other seven, waves 6b and 6c; 6c waits for the new weapons) will be a separate yes later.
+9. Done today, on the classes branch: Burns Twice aims each ember just before it lands, and its last ember throws back whatever still stands about 3 m (a boss only staggers). The Road's Toll, pressed with nothing near, now cuts a kata of twelve along the aim.
 
-## Tools
-- Summaries: `python S/stc.py REF.jsonl X.jsonl ...` (story bosses by calling, fight and hands), `S/crowd.py` (crowd), `S/arsum.py "a,b" "c,d"` (arena outcomes). Batches `S/*.sh` (cwd godot/; harness copy `S/bal13`, current). base11 = `O/s2/base11.jsonl`.
-- Isolation gotcha: commands with `$VAR` running python, or compound `cd && ...`, are refused. Write a script to `S/` and run `bash S/x.sh`.
+## Done this session (classes-10)
+- 440c4a90: Burns Twice "aim" and "shove" (Flare.cs TickFlare runs aims and blows in time order; FlareStaged.cs FlareAim, EmberPick, BurnsTwiceBlow, BurnsShove; lamps.json beat "aim", args shove, shoveStun, shoveStagger). 2 tests.
+- 955c64d3: the Toll's empty cuts along her aim (`flareAngle` stored at the press). 1 test.
+- 10740955 and f4f8d3b8: CLASSES §7 phase-6 plan: Role and "nothing near" columns, the roles paragraph and the two rules, judge 7's fixes.
+- 46ab377d: the aim fix. Aiming four embers ahead had cost a press about 15% of its kills (arena crowd `S/s`, `S/v` B). Fixed by counting the ice round falling embers as broken; checked on a synthetic crowd (37.7% against 38.4% killed at x2 health).
+
+## Gotchas
+- Isolation: no `$VAR` inside commands that run git, sed or find, and no compound `cd && git`. Write a script to `S/` and `bash` it. Python scripts that take paths as arguments are fine.
+- Harness copies: `S/bal13` (classes-9), `S/bal14` (440c4a90), `S/bal15` (46ab377d). Data comes from the cwd's `godot/data`, so data variants run from a copy (`S/v/<V>/godot/data`, `S/v_data.py`).
+- Bisect builds: `python S/bis_prep.py <tag> <commit>` exports logic, data and balance with `git archive` (no worktree, so the cap is safe) and patches the never-press switch and the health.
+- Every arena death figure at 48 runs a tier is noisy (±4 points). Read Flare kills a press (about 1,100 casts) first.

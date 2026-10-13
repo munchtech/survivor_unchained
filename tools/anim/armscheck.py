@@ -8,7 +8,12 @@ each triangle in its holding bone's own space) are carried by her bones through
 every frame and measured against her posed skin with the HOLDING ARM LEFT OUT
 (motion.py's Measure.arm[side] surface: the rest of her, so the grip inside her
 own fist does not count, but the other arm, trunk, breasts, hips, legs and head
-do). Depth is mm inside her skin (skeleton units, as motion.py reports; the
+do). The holding arm itself is measured too (13 October; it was left out, pauldron
+and shoulder included, and a shield rim cut her own pauldron 40 mm unseen):
+against her whole skin, counting points whose nearest vertex lies on the holding
+side's shoulder or arm short of the mount (HOLD_REACH: above the elbow for the
+shield on the forearm, short of the wrist for a piece in the fist). Each row's
+depth and outfit are the worst of both; hold_mm / hold_outfit_mm are the arm's. Depth is mm inside her skin (skeleton units, as motion.py reports; the
 game scales her and the weapon together by world_scale, so nothing changes in
 relative terms). A point beyond the signed distance's reach (8 cm) is tested
 by winding number: inside counts as 80 mm or more, so a shield buried deep is
@@ -77,6 +82,7 @@ DEEP = 80.0      # mm, a point beyond reach and inside
 COARSE = 0.03   # m, the coarse points' voxel
 MARGIN = 0.04   # m, the coarse points' distance from her skin beyond which the piece is clear
 BAD = 10.0       # mm, a frame counts as through her beyond this
+HOLD_REACH = {"lowerarm": 0.85, "hand": 1.6}   # the holding arm counted up to here (0 shoulder, 1 elbow, 2 wrist)
 
 
 def sample(v, t, spacing=0.008, cap=6000, seed=1):
@@ -146,6 +152,33 @@ class Checker:
         b = self.b
         # What part of her a skin vertex is: its heaviest bone's name (and breast flesh).
         self.vbone = np.array(b.sk.names)[b.J[np.arange(len(b.P)), b.W.argmax(1)]]
+        # The holding arm (13 October): the surface above leaves the whole holding arm out, its
+        # shoulder blend included, so a shield rim in her own pauldron or upper arm went unmeasured.
+        # Measured here against her whole skin, counting only points whose nearest vertex is on the
+        # holding side's shoulder or arm short of the mount (HOLD_REACH: above the elbow for a piece
+        # strapped to the forearm, short of the wrist for one in the fist).
+        self.whole = Surface(self.m.Tskin, len(b.P))
+        self.whole.winding = lambda P, Q: np.ones(len(Q))
+        rg, rp = b.sk.rest_globals()
+        rp = rp[0]
+        self.hold_along = {}
+        for s in "lr":
+            k = b.parts.index("arm_" + s)
+            on = np.zeros(len(b.P), bool)
+            on[self.m.skin] = b.share[self.m.skin, k] >= 0.05
+            segs = [(rp[self.I[f"upperarm_{s}"]], rp[self.I[f"lowerarm_{s}"]]),
+                    (rp[self.I[f"lowerarm_{s}"]], rp[self.I[f"hand_{s}"]]),
+                    (rp[self.I[f"hand_{s}"]], rp[self.I[f"middle_01_{s}"]])]
+            best = np.full(len(b.P), np.inf)
+            along = np.full(len(b.P), np.inf)
+            for i0, (a0, a1) in enumerate(segs):
+                d = a1 - a0
+                t = np.clip(((b.P - a0) @ d) / (d @ d), 0, 1)
+                dist = np.linalg.norm(b.P - (a0 + t[:, None] * d), axis=1)
+                m = dist < best
+                best = np.where(m, dist, best)
+                along = np.where(m, i0 + t, along)
+            self.hold_along[s] = np.where(on, along, np.inf)
 
     def bone_world(self, G, bone):
         return G[self.I[bone]]
@@ -237,27 +270,68 @@ class Checker:
             best, where = float(depth[j] + 1000.0 * self.cover[near[j]]), int(near[j])
         return max(0.0, best), where
 
+    def hold_depth(self, P, key, G):
+        """(mm into her skin, mm into her outfit, where) against the holding side's shoulder and arm
+        short of the mount (see __init__). Coarse points first; the full set only within 40 mm."""
+        bone = key.split("@")[1]
+        side = "r" if bone.endswith("_r") else "l"
+        zone = self.hold_along[side] < HOLD_REACH[bone.split("_")[0]]
+        surf = self.whole
+        M = self.bone_world(G, bone)
+        cov = self.cover if self.cover is not None else np.zeros(len(P))
+        for pts in (self.coarse[key], self.pts[key]):
+            Q = pts @ M[:3, :3].T + M[:3, 3]
+            d, nr = surf.signed(P, Q, reach=0.14, k=8)
+            ok = np.isfinite(d) & (nr >= 0)
+            ok[ok] = zone[nr[ok]]
+            if not ok.any():
+                return 0.0, 0.0, "-"
+            qi = np.nonzero(ok)[0]
+            # A point read inside by more than 4 mm is confirmed by winding number, deepest first.
+            deep = qi[d[qi] < -0.004]
+            if len(deep):
+                deep = deep[np.argsort(d[deep])][:400]
+                w = fast_winding(surf, P, Q[deep])
+                d[deep[w < 0.5]] *= -1
+            dq, nq = d[qi], nr[qi]
+            clear = dq - cov[nq]
+            if pts is self.coarse[key] and clear.min() > MARGIN:
+                return 0.0, 0.0, "-"
+            if pts is self.pts[key]:
+                skin_mm = max(0.0, float(-dq.min()) * 1000.0)
+                j = int(clear.argmin())
+                out_mm = max(0.0, float(-clear[j]) * 1000.0)
+                return skin_mm, out_mm, ("hold " + self.where(nq[j])) if out_mm > 0 or skin_mm > 0 else "-"
+
     def clip(self, name, folder, pieces, step=1):
         """{key: (worst mm per frame, where per frame[, outfit mm, outfit where])} over the sampled frames."""
         b = self.b
         c = b.clip(name, folder)
         Gs = b.frames(c)
-        res = {k: ([], [], [], []) for k in pieces}
+        # Per piece: body mm, where, outfit mm, where (each the worst of the rest of her and the
+        # holding arm), then the holding arm alone: skin mm, outfit mm, where.
+        res = {k: ([], [], [], [], [], [], []) for k in pieces}
         frames = list(range(0, len(Gs), step))
         for f in frames:
             G = Gs[f]
             P = b.pose(G)
             for s in "lr":
                 self.m.arm[s][2].pose(P)
+            self.whole.pose(P)
             for k in pieces:
                 depth, near = self.depths(P, k, G)
                 i = int(depth.argmax())
-                res[k][0].append(float(depth[i]))
-                res[k][1].append(self.where(near[i]) if depth[i] > 0 else "-")
+                hs, ho, hw = self.hold_depth(P, k, G)
+                bd, bw = float(depth[i]), (self.where(near[i]) if depth[i] > 0 else "-")
+                res[k][0].append(max(bd, hs))
+                res[k][1].append(bw if bd >= hs else hw)
+                res[k][4].append(hs)
+                res[k][5].append(ho)
+                res[k][6].append(hw)
                 if self.cover is not None:
                     od, ow = self.outfit_depth(P, k, G, depth, near)
-                    res[k][2].append(od)
-                    res[k][3].append(self.where(ow) if od > 0 else "-")
+                    res[k][2].append(max(od, ho))
+                    res[k][3].append((self.where(ow) if od > 0 else "-") if od >= ho else hw)
         return frames, res
 
 
@@ -294,12 +368,16 @@ def _work(job):
     rows = []
     for s in sets:
         for piece, k in SETS[s]:
-            dep, wh, od, ow = res[k]
+            dep, wh, od, ow, hs, ho, hw = res[k]
             dep = np.array(dep)
             i = int(dep.argmax())
             bad = int((dep > BAD).sum())
             row = dict(clip=name, set=s, piece=piece, depth_mm=round(float(dep[i]), 1), frame=frames[i],
                        part=wh[i], frames_over=bad, frames=n, share=round(bad / n, 3))
+            hh = np.maximum(np.array(hs), np.array(ho))
+            h = int(hh.argmax())
+            row.update(hold_mm=round(float(hs[h]), 1), hold_outfit_mm=round(float(ho[h]), 1), hold_frame=frames[h],
+                       hold_part=hw[h], hold_frames_over=int((hh > BAD).sum()))
             if od:
                 od = np.array(od)
                 j = int(od.argmax())
@@ -470,11 +548,13 @@ def main():
         OUTDIR.mkdir(exist_ok=True)
         (OUTDIR / f"armscheck_{a.save}.json").write_text(json.dumps(dict(seconds=round(time.time() - t0, 1), step=a.step, outfit=a.outfit, rows=rows), indent=1))
     oh = f" {'outfit':>7} {'frame':>5}  {'part':20}" if a.outfit else ""
-    print(f"{'clip':30} {'set':20} {'piece':8} {'depth':>7} {'frame':>5}  {'part':24} {'>10mm':>9} {'share':>6}" + oh)
+    print(f"{'clip':30} {'set':20} {'piece':8} {'depth':>7} {'frame':>5}  {'part':24} {'>10mm':>9} {'share':>6}" + oh
+          + f" {'hold':>5} {'h_out':>5} {'frame':>5}  hold part")
     for r in rows[: a.top]:
         o = f" {r['outfit_mm']:7.1f} {r['outfit_frame']:5d}  {r['outfit_part']:20}" if "outfit_mm" in r else ""
         print(f"{r['clip']:30} {r['set']:20} {r['piece']:8} {r['depth_mm']:7.1f} {r['frame']:5d}  {r['part']:24} "
-              f"{r['frames_over']:4d}/{r['frames']:<4d} {r['share'] * 100:5.0f}%" + o)
+              f"{r['frames_over']:4d}/{r['frames']:<4d} {r['share'] * 100:5.0f}%" + o
+              + f" {r['hold_mm']:5.1f} {r['hold_outfit_mm']:5.1f} {r['hold_frame']:5d}  {r['hold_part']}")
     print(f"{len(names)} clips, {len(sets)} sets, {time.time() - t0:.0f} s")
 
 

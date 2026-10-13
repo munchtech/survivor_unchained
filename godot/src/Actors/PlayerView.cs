@@ -53,7 +53,8 @@ public partial class PlayerView : Node3D
     readonly OwnClips own = OwnClips.Her;
     readonly HerCarriage? carriage;
     float runSpeed;
-    readonly float sprintSpeed;
+    float sprintSpeed;
+    AnimationNodeAnimation? sprintNode;
     PersonView? view;
     // Weapons sheathed in town (Play/Sheath.cs): fed each frame from the close-up's situation (Calm).
     readonly Sheath sheath = new();
@@ -94,7 +95,8 @@ public partial class PlayerView : Node3D
             runNode = new AnimationNodeAnimation { Animation = run };
             mv.AddNode("idle", idleNode, new Vector2(0, 0));
             mv.AddNode("run", runNode, new Vector2(0, 200));
-            mv.AddNode("sprint", new AnimationNodeAnimation { Animation = own.Has(sprint) ? own.Prefix + sprint : run }, new Vector2(0, 400));
+            sprintNode = new AnimationNodeAnimation { Animation = own.Has(sprint) ? own.Prefix + sprint : run };
+            mv.AddNode("sprint", sprintNode, new Vector2(0, 400));
             mv.AddNode("fast", new AnimationNodeBlend2 { Sync = true }, new Vector2(200, 300));
             mv.AddNode("runScale", new AnimationNodeTimeScale(), new Vector2(400, 300));
             mv.AddNode("blend", new AnimationNodeBlend2(), new Vector2(600, 100));
@@ -320,6 +322,11 @@ public partial class PlayerView : Node3D
         var run = People.Clip(person, "Jog_Fwd_Loop", kind);
         runNode.Animation = run;
         runSpeed = run.StartsWith(own.Prefix) ? own.Speed(run[own.Prefix.Length..]) * person.Root.Scale.X : 5.3f;
+        if (sprintNode == null) return;
+        // The sprint follows: her town sprint if she has one, else the town run itself; the armed sprint on the draw.
+        var sprint = run.StartsWith(own.Prefix + "run_") ? "sprint" + run[(own.Prefix.Length + 3)..] : "";
+        if (own.Has(sprint)) { sprintNode.Animation = own.Prefix + sprint; sprintSpeed = own.Speed(sprint) * person.Root.Scale.X; }
+        else { sprintNode.Animation = run; sprintSpeed = runSpeed; }
     }
 
     /// <summary>An art used: the hands that go with it.</summary>
@@ -565,14 +572,14 @@ public partial class PlayerView : Node3D
             var len = tree.Get("parameters/move/run/current_length");
             float phase = pos.VariantType != Variant.Type.Nil && len.VariantType != Variant.Type.Nil && (float)len > 0
                 ? (float)pos / (float)len : rng.Randf();
-            FullHer($"stop_{person.Calling}_{(phase >= 0.25f && phase < 0.75f ? "r" : "l")}", 1, true);
+            var stop = Sheath.Pick(sheath.Sheathed, $"stop_{person.Calling}", phase >= 0.25f && phase < 0.75f ? "_r" : "_l", own.Has);
+            if (stop != null) FullHer(stop, 1, true);
         }
         runT = 0;
         stillT += dt;
         // (A breath is caught on stopping, or not at all.)
         if (stillT > 1.0) ranFor = 0;
         bool calm = b.NearestHostile(p.X, p.Z, 14) == null && (!Busy || fullSoft);
-        if (sheath.Sheathed) { breakAt = Mathf.Max((float)breakAt, (float)stillT + 4); return; }
         if (!calm) { breakAt = Mathf.Max((float)breakAt, (float)stillT + 4); return; }
         if (ranFor > 6 && stillT > 0.75)
         {
@@ -585,7 +592,8 @@ public partial class PlayerView : Node3D
         if (stillT >= breakAt)
         {
             breakAt = stillT + rng.RandfRange(10, 16);
-            FullHer($"idle_{person.Calling}_break", 1, true);
+            var brk = Sheath.Pick(sheath.Sheathed, $"idle_{person.Calling}", "_break", own.Has);
+            if (brk != null) FullHer(brk, 1, true);
         }
     }
 

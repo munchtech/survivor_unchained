@@ -1063,6 +1063,34 @@ def smoothstep_(x):
     return x * x * (3 - 2 * x)
 
 
+FINGER_DEFAULTS = {"curl": 0.3, "thumb": 0.2, "cascade": 0.15, "tip": 1.0, "oppose": 0.0, "spread": 0.0}
+
+
+def _even_fingers(keys):
+    """A hand's fingers keyed as a preset name in one key and as values in
+    another (the idle's left hand is values, a flourish's guard asks for
+    "fist") would flatten to a name and a set of scalars under one control,
+    which can't be blended. In such a track every key's fingers on that side
+    are written out as full values, so they ease from one to the next. Tracks
+    that key one form only are left exactly as they were."""
+    for side in "lr":
+        k = f"fingers_{side}"
+        forms = {isinstance(key[1].get(k), dict) for key in keys if k in key[1]}
+        if forms != {True, False}:
+            continue
+        out = []
+        for key in keys:
+            spec = key[1].get(k)
+            if spec is not None:
+                p = dict(FINGER_PRESETS.get(spec, {})) if isinstance(spec, str) else dict(spec)
+                full = {**FINGER_DEFAULTS, **p}
+                full.setdefault("index", full["curl"])
+                key = (key[0], {**key[1], k: full}, *key[2:])
+            out.append(key)
+        keys = out
+    return keys
+
+
 def _zero_default(n):
     head = n.split("#")[0]
     # (A hand a key does not plant is off the ground there.)
@@ -1074,6 +1102,7 @@ class Track:
 
     def __init__(self, keys):
         self.keys = sorted(keys, key=lambda k: k[0])
+        self.keys = _even_fingers(self.keys)
         self.flats = [_flatten(k[1]) for k in self.keys]
         self.names = set()
         for f in self.flats:

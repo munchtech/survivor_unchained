@@ -109,11 +109,28 @@ def stalker(t, f):
     }
 
 
+def warden_town(t, f):
+    """In town, her weapons sheathed (the sword at her left hip, the shield
+    on her back): the arms hang free and easy at her sides, the elbows soft,
+    the wrists straight (the thumb forward, the palm to the thigh), clear of
+    her hips and skirt; a small counter-swing to the hips' sway."""
+    sw = 0.012 * math.sin(2 * math.pi * t * 2)
+    return {
+        "hand_l": {"arc": arc_of((0.16, -0.46, 0.08 + sw)), "pole": (0.3, -0.2, -1.0), "frame": "chest",
+                   "thumb": _n((-0.15, -0.1, 1.0)), "twist": 1.0},
+        "hand_r": {"arc": arc_of((-0.14, -0.46, 0.08 - sw)), "pole": (-0.3, -0.2, -1.0), "frame": "chest",
+                   "thumb": _n((0.15, -0.1, 1.0)), "twist": 1.0},
+        "fingers_l": "relaxed", "fingers_r": "relaxed",
+    }
+
+
 IDLES = {
     "idle_warden": ("Heavyset", warden, "sword+shield"),
     "idle_arcanist": ("Strutting", arcanist, "staff"),
     "idle_reaver": ("Angry", reaver, "axe"),
     "idle_stalker": ("Crouched", stalker, "crossbow"),
+    # In town, weapons sheathed (the game asks for idle_<calling>_town).
+    "idle_warden_town": ("WiggleHips", warden_town, ""),
 }
 
 

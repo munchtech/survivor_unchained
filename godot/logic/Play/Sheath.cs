@@ -14,6 +14,16 @@ public sealed class Sheath
     public bool Sheathed { get; private set; }
     double quiet;
 
+    /// <summary>The clip to play for a stop, a break or a sprint: the town one (base + "_town" + suffix) while sheathed,
+    /// else the armed one (base + suffix). Null when sheathed and the town clip does not exist (play nothing, or
+    /// for the sprint fall back to the town run). base is e.g. "stop_warden", suffix e.g. "_l" or "".</summary>
+    public static string? Pick(bool sheathed, string baseName, string suffix, System.Func<string, bool> has)
+    {
+        if (!sheathed) return baseName + suffix;
+        var town = baseName + "_town" + suffix;
+        return has(town) ? town : null;
+    }
+
     /// <summary>A new place: sheathed at once where it is safe, drawn otherwise.</summary>
     public void Enter(bool safe)
     {
