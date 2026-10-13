@@ -106,5 +106,5 @@ The main session keeps this current. It is the address list for SendMessage. Ret
 | Creatures and models (our own boar first, then MODELS_TO_MAKE.md) | af551cacc6292152f | docs/team/creatures.md |
 | Story editor (paused after notes 02 at 435k; a fresh editor reads the next draft) | — | docs/story/EDITORIAL_LETTER.md |
 | Heroine body and outfits (now a lead of its own; was the main session's) | a78ecab77b7ddfea2 (RUNNING 12 Oct night, worktree agent-a5ca10091b08dc429; tighter nipple shape at 1.5 mm, then judge 10's list) | docs/team/outfits.md |
-| Camera close-up (wheel zoom in town, idle close-up; the owner, 12 Oct) | a672c7205533f7baa (RUNNING 12 Oct night, worktree camera-1) | this row |
+| Camera close-up (wheel zoom in town, idle close-up; the owner, 12 Oct) | DONE, merged 12 Oct night (d31fefa6; worktree removed). Open: named NPCs and townsfolk walking up beside her during a close-up (keep-out covers only town walkers behind her); re-judge walkers day and night. Hook for sheathing: `CloseUp.Situation` / `CloseUp.Threat` in godot/logic/Play/CloseUp.cs | this row |
 | Marionette, the character app (a tool: idea to engine; ease like Meshy, quality like Maya; one-click AI-assisted fixing) | — (paused; status page is its own HANDOFF.md "Start here") | Marionette/HANDOFF.md, docs/HISTORY.md "The goal" |
