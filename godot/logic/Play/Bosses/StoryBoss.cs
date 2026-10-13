@@ -8,7 +8,8 @@ namespace SurvivorUnchained.Play.Bosses;
 /// A story fight's boss (docs/design/STORY_BOSSES.md 0.4): the contract of
 /// ArenaBoss, made for a longer fight at the end of a short night. Its phases
 /// each change the space; their floors are 25, 30 and 25 s and their ceilings
-/// 75, so an absurd build still takes about two minutes and a weak one sees
+/// 75 (a Flare cuts each by its share of the phase's health, at most half: 12.5, 15 and 12.5 s), so an absurd build still
+/// takes over a minute and a weak one sees
 /// every move; it grows wild at four and a half minutes and comes to its end
 /// at six. The horde is off: the only creatures on its ground are those it
 /// calls, each with a job. Its ending is the story's, and what it put on the

@@ -61,6 +61,7 @@ public sealed partial class Battle
     List<(Enemy E, int Id, double Hp, bool In)>? crowdAt;
     double[]? crowdRow;
     double crowdEvalAt;
+    internal HashSet<int>? crowdDied;
     internal int FlareKillsNow;
     /// <summary>For the harness (--rout): see FlareBlow.</summary>
     public static double FlareRout;
@@ -290,6 +291,7 @@ public sealed partial class Battle
             crowdAt.Add((e, e.Id, e.Hp, Dist(e.X, e.Z, p.X, p.Z) <= flareReach));
         }
         FlareKillsNow = 0;
+        crowdDied = new();
         crowdRow = [Time, crowdAt.Count(c => c.In), crowdAt.Count, 0, 0, 0, 0, flareClutch ? 1 : 0, bossNear ? 1 : 0, flareReach, 0];
         crowdEvalAt = Time + flareLen + 1;
     }
@@ -300,8 +302,8 @@ public sealed partial class Battle
         double hp0 = 0, hp1 = 0;
         foreach (var (e, id, hp, inside) in crowdAt)
         {
-            // (a pooled creature taken up again since is one that died)
-            bool dead = !e.Alive || e.Hp <= 0 || e.Id != id;
+            // (its slot may hold a new creature by now: a death is read from the deaths since the press)
+            bool dead = !e.Alive || e.Hp <= 0 || crowdDied!.Contains(id);
             if (inside) { crowdRow[3] += dead ? 1 : 0; crowdRow[10] += !dead && e.Elite ? 1 : 0; hp0 += hp; hp1 += dead ? 0 : Math.Min(hp, e.Hp); }
             crowdRow[4] += dead ? 1 : 0;
         }
@@ -310,6 +312,7 @@ public sealed partial class Battle
         FlareCrowd.Add(crowdRow);
         crowdAt = null;
         crowdRow = null;
+        crowdDied = null;
     }
 
     void TickFlare(double dt)
