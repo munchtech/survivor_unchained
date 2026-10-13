@@ -214,9 +214,10 @@ public partial class CrowdView : Node3D
                 break;
             case EnemyState.Dying:
             {
-                // Burst apart: nothing is left to fall (the gore threw it).
-                if (e.Burst) return;
+                // Burst apart: nothing is left to fall (the gore threw it). A Flare's kill is the Flare's to show first: the
+                // frost's overkill bursts nearly every body, and the pack vanished at frost +0.1 s (s2a).
                 int flareSays = FlareDeath?.Invoke(e.Id) ?? 0;
+                if (flareSays == 0 && e.Burst) return;
                 if (flareSays < 0) return;
                 if (flareSays > 0)
                 {

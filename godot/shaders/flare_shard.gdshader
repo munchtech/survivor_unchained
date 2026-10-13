@@ -26,7 +26,8 @@ void fragment() {
 	// Glass: a dark cold body you see into, its edges bright, a glint only when a face turns to the eye.
 	// (The moon's specular on mirror-smooth facets lit whole shards white: paper flakes, t5 and t6. So no direct
 	// specular: the glint is drawn, a small spot that sweeps across a face as the shard tumbles.)
-	vec3 ice = vec3(0.025, 0.05, 0.08) * (0.7 + 0.8 * cr);
+	// (At 0.025-0.08 the ring's flung shards were black flecks against its line: t10, s2b.)
+	vec3 ice = vec3(0.06, 0.12, 0.2) * (0.7 + 0.8 * cr);
 	ALBEDO = mix(ice, COLOR.rgb * 0.22, COLOR.a * 0.3);
 	ROUGHNESS = 0.3;
 	SPECULAR = 0.0;
@@ -35,7 +36,7 @@ void fragment() {
 	float melt = v_c.y;
 	float glint = smoothstep(0.986, 0.998, dot(NORMAL, VIEW));
 	float plane = smoothstep(0.72, 0.8, cr) * (1.0 - smoothstep(0.8, 0.9, cr));
-	EMISSION = vec3(0.2, 0.48, 0.95) * (pow(rim, 3.0) * 0.5 + plane * 0.12) * (1.0 - 0.6 * melt)
+	EMISSION = vec3(0.2, 0.48, 0.95) * (pow(rim, 2.0) * 0.8 + plane * 0.16 + 0.05) * (1.0 - 0.6 * melt)
 		+ vec3(0.75, 0.88, 1.0) * glint * 1.4 * (1.0 - melt)
-		+ vec3(1.0, 0.36, 0.07) * heat * (0.35 + 0.8 * pow(rim, 2.0)) * 0.6;
+		+ vec3(1.0, 0.36, 0.07) * heat * (0.35 + 0.8 * pow(rim, 2.0)) * 1.0;
 }

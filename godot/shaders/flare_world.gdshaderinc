@@ -194,7 +194,8 @@ vec4 flare_boom(vec2 w, out vec2 at) {
 	// Behind it the ground is burnt: char, its cracks glowing a moment, cooling with distance behind the line;
 	// gone back to wet ground through the Return.
 	float ch = smoothstep(0.1, 0.7, ahead) * fade * (1.0 - smoothstep(2.2, 4.6, bm.w));
-	float fresh = exp(-max(ahead, 0.0) / 1.6) * (1.0 - smoothstep(0.5, 1.4, bm.w));
+	// (Glowing 1.6 m back, the whole inside of the ring read as orange-brown, not char: s2b.)
+	float fresh = exp(-max(ahead, 0.0) / 0.55) * (1.0 - smoothstep(0.5, 1.4, bm.w));
 	return vec4(core * lit, body * lit, ch, fresh * ch);
 }
 
@@ -309,6 +310,9 @@ void flare_body(vec3 wp, vec3 nrm_view, mat4 inv_view, float rim, inout vec3 alb
 		float fres = pow(rim, 2.4);
 		vec3 rimc = mix(vec3(0.22, 0.56, 1.0), vec3(0.32, 1.0, 0.92), smoothstep(0.82, 0.98, rim));
 		emi += rimc * fres * g * (black ? 0.06 : mix(0.2, 0.42, night));
+		// The light held in the ice itself, so a statue reads from above (a hat or a crown faces the camera and has no
+		// rim): a cold mid-value body over the ground's dark glass, its facets uneven (s1b: the far pack went black).
+		emi += vec3(0.05, 0.12, 0.22) * g * (black ? 0.15 : mix(0.45, 1.0, night)) * (0.55 + 0.9 * p.r) * (0.6 + 0.4 * max(nw.y, 0.0));
 		// A few in a hundred of its facets catch the light at once, each on its own beat (the statues stand
 		// still, so the world's cells stay on them).
 		vec3 cell = floor(wp * 8.0);
@@ -361,5 +365,7 @@ void flare_prop(vec3 wp, vec3 nrm_view, mat4 inv_view, inout vec3 alb, inout flo
 	glass = mix(glass, black ? vec3(0.004, 0.005, 0.008) : vec3(0.006, 0.013, 0.03), black ? 0.8 : 0.3);
 	vec3 edge = black ? vec3(0.03, 0.04, 0.055) : vec3(0.26, 0.42, 0.62) * (1.0 - 0.3 * (1.0 - flare_hue.a));
 	alb = mix(alb, mix(glass, edge, spine * (black ? 0.5 : 0.85)), g);
-	rough = mix(rough, mix(0.1, 0.3, spine), g);
+	// Not mirror-smooth: a rock face tilted to the moon threw a still white hotspot (t10, s1b: the triangle at the
+	// Verge's top centre).
+	rough = mix(rough, mix(0.26, 0.38, spine), g);
 }

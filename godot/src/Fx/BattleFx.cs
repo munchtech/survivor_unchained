@@ -1533,6 +1533,8 @@ public partial class BattleFx : Node3D
         foreach (var p in b.Pickups.Living())
         {
             var (kx, kz) = Drawn?.Of(p) ?? (p.X, p.Z);
+            // A Flare's statue keeps its body's drop until it breaks.
+            if (p.Kind is PickupKind.Ember or PickupKind.Gold && !p.Pulled && Flare.HidesDrop(kx, kz)) continue;
             float gy = Y(kx, kz);
             float bob = Mathf.Sin((float)(now * 3 + p.Id)) * 0.08f;
             var spin = new Godot.Basis(Vector3.Up, (float)(now * 2.2 + p.Id));

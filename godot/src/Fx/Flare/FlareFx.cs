@@ -381,6 +381,20 @@ public partial class FlareFx : Node3D
         else doomed[e.Enemy] = new Doom { At = t + 0.02, Where = w };
     }
 
+    /// <summary>How long after its statue breaks a body's ember shows: the ring and its char read first (s1b: the
+    /// drops lit inside the ring at c1w as orange confetti over the char).</summary>
+    const double DropAfter = 1.0;
+
+    /// <summary>Whether a drop lying here is still inside a statue (BattleFx.Pickups): a body's ember falls out of
+    /// it when it breaks, not the instant the frost killed it (s1b: 250 orange crystals over the glazed field).</summary>
+    public bool HidesDrop(double x, double z)
+    {
+        if (!Active || doomed.Count == 0) return false;
+        foreach (var d in doomed.Values)
+            if (t < d.At + DropAfter && (d.Where.X - x) * (d.Where.X - x) + (d.Where.Z - z) * (d.Where.Z - z) < 1.44) return true;
+        return false;
+    }
+
     /// <summary>The BOOM's ring (flare_world's flare_ring): its radius this long after the last word lands (Flare
     /// time: the hitstop's tenth-speed first), racing out and easing as it reaches the reach's edge in 0.7 s.</summary>
     static float RingAt(double s, float rmax)
