@@ -81,8 +81,11 @@ def arcanist(t, f):
     return {
         "hand_l": {"arc": arc_of((-0.02, -0.40, -0.05)), "pole": (1.0, 0.0, -0.7), "frame": "chest",
                    "knuckles": _n((0.2, -0.6, 0.6)), "twist": 0.3},
+        # The staff upright at her side, its head leaning in a little and its foot out past her right leg
+        # (13 Oct: on the seated bound staff, blade (-0.12, 1.0, 0.18) crossed its lower half behind her right
+        # thigh and calf every frame; now >= 10 mm off her legs and her hat).
         "hand_r": {"arc": arc_of((-0.16, -0.28, 0.12)), "pole": (-0.8, -0.3, -0.6), "frame": "chest",
-                   "blade": _n((-0.12, 1.0, 0.18)), "twist": 0.5},
+                   "blade": _n((0.08, 1.0, 0.06)), "twist": 0.5},
         "fingers_l": "relaxed", "fingers_r": "grip",
     }
 
