@@ -4481,13 +4481,54 @@ def arcanist():
                 * ramp(-q[:, 2], -(CROTCH + 0.035), -(CROTCH + 0.028)))
     # (judge h: the glove copied the nail's free edge at the thumb tip, an
     # overhang with a dark wedge under it, and a pale lip at the thumb and
-    # index tips. Over the last 4-9 mm of each finger it is laid on the
-    # convex hull of the tip (outward only, never nearer her): the nail's
-    # step goes under one round cap. Dark flecks at the sleeve's hem over the
-    # glove's top: its top 15 mm sunk GLOVE_SINK deeper, under the sleeve)
-    GLOVE_TIP_R = tuple(float(v) for v in os.environ.get("GLOVE_TIP_R", "0.004,0.009").split(","))
+    # index tips. Dark flecks at the sleeve's hem over the glove's top: its
+    # top 15 mm sunk GLOVE_SINK deeper, under the sleeve.)
+    # (The sheet copies her nail: it folds back under the nail's free edge and
+    # into the grooves round it. Laid point by point on the tip's convex hull,
+    # the fold was only flattened onto it, its triangles still turned over, and
+    # thickened along their turned normals they showed as the wedge. So each
+    # fingertip, over its last GLOVE_TIP_R[0] (the whole nail; the thumb's
+    # GLOVE_TIP_THUMB times as far), eased out by GLOVE_TIP_R[1], is relaxed
+    # over the hull, GLOVE_TIP_ROUNDS times each point toward its neighbours'
+    # mean and back onto the hull: one taut round cap, nothing turned over. The
+    # hull holds her own fingertip lifted as far as the rest of the glove
+    # (1.2 mm), so the cap is never nearer her than that; clear_of_skin pushes
+    # only under GLOVE_TIP_CLEAR there, as its push along the nearest face's
+    # normal at the nail's edge is what folded the sheet again.)
+    GLOVE_TIP_R = tuple(float(v) for v in os.environ.get("GLOVE_TIP_R", "0.011,0.017").split(","))
+    GLOVE_TIP_THUMB = float(os.environ.get("GLOVE_TIP_THUMB", "1.25"))
+    GLOVE_TIP_ROUNDS = int(os.environ.get("GLOVE_TIP_ROUNDS", "40"))
+    GLOVE_TIP_RELAX = float(os.environ.get("GLOVE_TIP_RELAX", "0.85"))
+    GLOVE_TIP_CLEAR = float(os.environ.get("GLOVE_TIP_CLEAR", "0.0005"))
     GLOVE_SINK = float(os.environ.get("GLOVE_SINK", "0.001"))
     skin_kd = cKDTree(P)
+    glove_tips_ = {}
+
+    def glove_tips(sd):
+        # (each finger: its bones, the tip of its skin, its two radii)
+        if sd not in glove_tips_:
+            glove_tips_[sd] = []
+            for fg in ("thumb", "index", "middle", "ring", "pinky"):
+                bs = [BI[f"{fg}_0{i}_{sd}"] for i in (1, 2, 3) if f"{fg}_0{i}_{sd}" in BI]
+                if len(bs) < 3:
+                    continue
+                sel = W[:, bs[2]] > 0.5
+                if sel.sum() < 5:
+                    continue
+                base = P[W[:, bs[1]] > 0.5].mean(0)
+                tip = P[sel][np.argmax(np.linalg.norm(P[sel] - base, axis=1))]
+                sc = GLOVE_TIP_THUMB if fg == "thumb" else 1.0
+                glove_tips_[sd].append((fg, bs, tip, GLOVE_TIP_R[0] * sc, GLOVE_TIP_R[1] * sc))
+        return glove_tips_[sd]
+
+    def glove_tip_k(pos, sd):
+        # (1 over each fingertip's cap, eased to 0 at its edge; its own finger only)
+        nb = skin_kd.query(pos)[1]
+        k = np.zeros(len(pos))
+        for fg, bs, tip, r0, r1 in glove_tips(sd):
+            kk = np.clip((r1 - np.linalg.norm(pos - tip, axis=1)) / (r1 - r0), 0, 1)
+            k = np.maximum(k, np.where(W[nb][:, bs].sum(1) > 0.5, kk * kk * (3 - 2 * kk), 0.0))
+        return k
 
     def glove_top_k(pos, sd):
         k = np.clip(1 - (ARM_S[sd][skin_kd.query(pos)[1]] - (WRIST_S - GLOVE_TOP)) / 0.015, 0, 1)
@@ -4498,37 +4539,43 @@ def arcanist():
         nor = vertex_normals(pos, tris)
         sgn = 1.0 if (nor * N[nb]).sum(1).mean() > 0 else -1.0
         from scipy.spatial import ConvexHull
+        A_ = adjacency(len(pos), tris)
         p0 = pos.copy()
+        x = pos.copy()
         nfill = 0
-        for fg in ("thumb", "index", "middle", "ring", "pinky"):
-            bs = [BI[f"{fg}_0{i}_{sd}"] for i in (1, 2, 3) if f"{fg}_0{i}_{sd}" in BI]
-            if len(bs) < 3:
-                continue
-            sel = W[:, bs[2]] > 0.5
-            if sel.sum() < 5:
-                continue
-            base = P[W[:, bs[1]] > 0.5].mean(0)
-            tip = P[sel][np.argmax(np.linalg.norm(P[sel] - base, axis=1))]
+        for fg, bs, tip, r0, r1 in glove_tips(sd):
             d = np.linalg.norm(p0 - tip, axis=1)
-            # (the sheet folds back under the nail's free edge, so smoothing
-            # can't open it: each tip is laid on the convex hull of its own
-            # last GLOVE_TIP_R[1] + 3 mm, which only moves it outward)
-            m = (d < GLOVE_TIP_R[1] + 0.003) & (W[nb][:, bs].sum(1) > 0.5)
+            own = W[nb][:, bs].sum(1) > 0.5
+            m = own & (d < r1 + 0.004)
             if m.sum() < 20:
                 continue
-            h = ConvexHull(p0[m])
-            hb = BVHTree.FromPolygons([tuple(q) for q in p0[m]], h.simplices.tolist())
-            k = np.clip((GLOVE_TIP_R[1] - d) / (GLOVE_TIP_R[1] - GLOVE_TIP_R[0]), 0, 1)
-            k = k * k * (3 - 2 * k)
-            for i in np.where(m & (k > 0))[0]:
+            # (the hull of the sheet there and of her fingertip lifted 1.2 mm)
+            sk = (W[:, bs].sum(1) > 0.5) & (np.linalg.norm(P - tip, axis=1) < r1 + 0.004)
+            hp = np.vstack([p0[m], P[sk] + N[sk] * 0.0012])
+            h = ConvexHull(hp)
+            hb = BVHTree.FromPolygons([tuple(q) for q in hp], h.simplices.tolist())
+            k = np.clip((r1 - d) / (r1 - r0), 0, 1)
+            k = np.where(own, k * k * (3 - 2 * k), 0.0)
+            idx = np.where(k > 0)[0]
+            # (each point held to where it first lands on the hull by 1 -
+            # GLOVE_TIP_RELAX of each step: the fold opens, and the cap's
+            # points slide no further than a few of their spacings)
+            h0 = p0.copy()
+            for i in idx:
                 q = hb.find_nearest(Vector(p0[i]))[0]
                 if q is not None:
-                    pos[i] = p0[i] * (1 - k[i]) + np.array(q[:]) * k[i]
-                    nfill += 1
-        mv = np.linalg.norm(pos - p0, axis=1)
-        kt = glove_top_k(pos, sd)
-        pos = pos - sgn * vertex_normals(pos, tris) * (GLOVE_SINK * kt)[:, None]
-        print("GLOVE %s: fingertips laid on their hulls, %d points (moved out up to %.2f mm, %d over 0.3 mm); top %d points sunk %.1f mm"
+                    h0[i] = np.array(q[:])
+            for _ in range(GLOVE_TIP_ROUNDS):
+                av = (1 - GLOVE_TIP_RELAX) * h0 + GLOVE_TIP_RELAX * (A_ @ x)
+                for i in idx:
+                    q = hb.find_nearest(Vector(av[i]))[0]
+                    if q is not None:
+                        x[i] = p0[i] * (1 - k[i]) + np.array(q[:]) * k[i]
+            nfill += len(idx)
+        mv = np.linalg.norm(x - p0, axis=1)
+        kt = glove_top_k(x, sd)
+        pos = x - sgn * vertex_normals(x, tris) * (GLOVE_SINK * kt)[:, None]
+        print("GLOVE %s: fingertips relaxed over their hulls, %d points (moved up to %.2f mm, %d over 0.3 mm); top %d points sunk %.1f mm"
               % (sd, nfill, mv.max() * 1000, int((mv > 0.0003).sum()), int((kt > 0.5).sum()), GLOVE_SINK * 1000))
         return pos
     out = [
@@ -4553,7 +4600,7 @@ def arcanist():
     for sd in "lr":
         out += [
             *piece(f"arcanist.glove_{sd}", limb(sd, WRIST_S - GLOVE_TOP, 9.9, legs=False), "blackleather", lift=0.0012, thick=0.001, bevel=0.0004, trim=gold(0.008), edge=30, soften=12,
-                   stiff=[lambda q, t_, sd=sd: glove_shape(q, t_, sd)], clear=lambda q, sd=sd: 0.0012 - GLOVE_SINK * glove_top_k(q, sd)),
+                   stiff=[lambda q, t_, sd=sd: glove_shape(q, t_, sd)], clear=lambda q, sd=sd: 0.0012 - GLOVE_SINK * glove_top_k(q, sd) - (0.0012 - GLOVE_TIP_CLEAR) * glove_tip_k(q, sd)),
             # (her leg by where it is, not by its weights: her inner thigh is
             # partly her hips', and a weight test tore a hole there; and no
             # gap kept for the slot between her thighs, which ends above it)
