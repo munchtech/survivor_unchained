@@ -90,6 +90,8 @@ public sealed class RunResult
     /// <summary>Casts whose blows reached a boss; the Flare's damage to bosses, and all damage to bosses.</summary>
     public int FlareCastsOnBoss;
     public int FlareFullBankShots;
+    /// <summary>What each Flare did to the crowd round her (Battle.FlareCrowd's rows).</summary>
+    public List<double[]> FlareCrowd = new();
     public double FlareBossDamage, BossDamage;
     /// <summary>The Flare's share of what was truly taken off bosses (health, and a gate's Break up to a tenth).</summary>
     public double FlareBossTook = double.NaN;
@@ -343,6 +345,7 @@ public static class ArenaSim
         double bossDmg = b.BossDamageBy.Values.Sum();
         r.FlareCastsOnBoss = b.FlareCastsOnBoss;
         r.FlareFullBankShots = b.FlareFullBankShots;
+        r.FlareCrowd = b.FlareCrowd.ToList();
         r.BossDamage = bossDmg;
         r.FlareBossDamage = b.BossDamageBy.GetValueOrDefault("flare");
         double took = b.BossHealthBy.Values.Sum();

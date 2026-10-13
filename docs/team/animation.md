@@ -2,6 +2,33 @@
 
 Lead 10 (12 October), branch `worktree-agent-af8dbda3195e438e4`. Next steps: `docs/handoff/animation.md` section 0.
 
+## The holding arm, measured (13 October, lead 19)
+
+armscheck left the whole holding arm out (its shoulder blend, upper arm and pauldron), so a shield rim in her own pauldron was never measured. Fixed in b07e4301 (`Checker.hold_depth`, `HOLD_REACH`): each piece is also measured against her whole skin where the nearest vertex is on the holding side's shoulder or arm short of the mount, plus the outfit cover there (`hold_mm`, `hold_outfit_mm`; the row's depth and outfit are the worst of both). Full run: `tools/anim/out/armscheck_hold13.json` (86 clips x 8 sets, warden outfit, 41 min at 16 jobs). Against the old measure (`armscheck_hinge_new.json`), the Warden sword-and-shield set, mm into skin / outfit:
+
+| Clip | Piece | Old (arm left out) | Holding arm now | Frame, frames over 10 mm | Where | Status |
+|---|---|---|---|---|---|---|
+| idle_warden_break | sword | 0.0 / 2.4 | **19.5 / 34.7** | f16, 68/101 | right shoulder and pauldron (blade near the guard) | judge 52 PASS: reopened by the coordinator |
+| idle_warden | shield | 0.0 / 0.0 | 1.7 / 1.7 | f80, 0 | left upper arm | judges 47-49 PASS: touch, to 0 |
+| stop_warden_l/r | shield | 0.0 / 0.0 | 1.8 / 1.8 | f9, 0 | left upper arm | touch, to 0 |
+| run_warden | shield | 0.0 / 22.7 | **23.9 / 42.0** -> 0.0 / 0.0 | f11, 22/22 | left clavicle and pauldron | PASSED and packed (13 Oct, lead 20) |
+| sprint_warden | shield | 42.0 / 60.0 | 24.1 / 42.2 -> 0.0 / 0.0 | f11, 22/22 | left clavicle | PASSED and packed (13 Oct, lead 20) |
+| bull_rush (WIP) | shield | 73.9 / 73.9 | 23.7 / 39.7 | f0, 25/31 | left upper arm | round 3 |
+| warden_show | shield | 0.0 / 5.3 | **12.2 / 27.4** | f16, 53/71 | left upper arm | queued |
+| sword_fore | shield | 27.9 / 35.4 | 36.9 / 44.9 | f2, 25/25 | upper chest by the shoulder | GUARD round |
+| sword_back | shield | 38.2 / 41.8 | 45.9 / 54.7 | f2, 25/25 | upper chest by the shoulder | GUARD round |
+| sword_heavy | shield | 48.2 / 58.4 | 20.6 / 38.7 | f10, 30/31 | upper chest by the shoulder | GUARD round |
+| chain_strike | shield | 54.6 / 64.5 | 23.1 / 39.1 | f15, 17/28 | left upper arm | queued |
+| death_back | shield | 0.0 / 4.0 | 10.9 / 10.9 | f7, 3/41 | left upper arm | fair |
+
+Combat clips without a weapon in their meta also carry the kit and fail at the arm (hit 55 / 74, dash 51 / 66, get_up 55 / 71, vault 56 / 72, warcry 43 / 58, leap 42 / 42), most of them failing on the body already. **Stalker:** the crossbow's stock is 39 mm into her right forearm (lowerarm_twist_01_r) on every crossbow clip (idle_stalker 154/154 frames). That's one mount fix (after the Warden set). The walks (wade, walk_tired, walk_uphill) are at 7.3 / 7.3 if armed.
+
+## In work (13 October, lead 20 handed off; handoff section 0)
+warden_show PASSED and packed (shield 0.0, the rim just under her chin); flare_burns_twice (judge PASS WITH FIXES; a worker on the fixes), bull_rush r5 (sword turn fixed; shield open), sword_fore/back/heavy (new guard: shield 0.0 in all three; right-wrist spin open). None packed. Staff asset: 5-11 cm thick at the grips, so both fists sit 10-15 mm inside it (asset fix).
+
+## Run and sprint, packed (13 October, lead 20)
+run_warden, sprint_warden, idle_warden, idle_warden_break and stop_warden_l/r packed. The shield hand sits 2.5 cm (run) and 2 cm (sprint) back, so the left elbow stays bent: inner angle run 118-124 deg, sprint 115-119 (a judge's bar: 125/120). Shield and sword 0.0 into skin and outfit; left hand 65.5/26.6 mm off her; left arm 16 mm or more off her outfit; the run-to-sprint crossfade (the game's synced Blend2) at 25/50/75% is clean (elbow at most 123 deg, hand at least 37 mm off her, rim to pauldron at least 11 mm). Judges passed it from the front, the sword side, the game camera and behind. **New gate for every later blend and the trailing-foot gait fix: shield rim to pauldron at least 8 mm** (now 9.0 in the sprint). Polish noted: her left index finger points straight down at the shield's rim while the others half-curl (hidden at the game camera). Scripts: `Z\s20\owed.py` (elbow and crossfade), `armbody.py`, `back.py`.
+
 ## State (2026-10-12, lead 11): handed off
 
 **sit_back_heels: judge 23b's G2 and G5 fixed, G1 and G3 fixed at the cause, G4 open; unjudged, not repacked (04e6b3c0).** Knees laid exactly and held (right knee 48-49 mm, no travel over f62-89); ankles no longer twisted on the shin (was 90 deg); the right hand truly planted and leant on through the side-sit (it had hung 13 cm off the ground on a locked arm). New opt-in solver keys (`laid`, `reach`, `reach_w`; keyed.py). Next: the hand turn spikes and G4, the judge, the repack, then get_up's skim, then the hair re-shoots (the hair swing is on integration). Handoff section 0.

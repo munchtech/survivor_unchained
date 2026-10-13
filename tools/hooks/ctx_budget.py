@@ -58,6 +58,27 @@ def brief_budget(path):
     return None
 
 
+def raised_budget(path):
+    # A later message "Context budget raised to 360k" (the coordinator, mid-run) wins; last one counts.
+    # Only plain text parts are read, so a file's text in a tool result can't match.
+    found = None
+    with open(path, "rb") as f:
+        for line in f:
+            if b"budget raised" not in line:
+                continue
+            try:
+                m = json.loads(line).get("message") or {}
+            except ValueError:
+                continue
+            if m.get("role") != "user":
+                continue
+            c = m.get("content")
+            text = c if isinstance(c, str) else " ".join(p.get("text", "") for p in c if isinstance(p, dict) and p.get("type") == "text")
+            for b in re.finditer(r"Context budget raised to\s*(\d+)\s*k", text, re.I):
+                found = int(b.group(1)) * 1000
+    return found
+
+
 def main():
     d = json.load(sys.stdin)
     aid, atype = d.get("agent_id"), d.get("agent_type")
@@ -70,6 +91,8 @@ def main():
         return
     used = tail_usage(path)
     budget = (brief_budget(path) if aid else None) or DEFAULTS.get(atype, 300_000)
+    if used >= 0.8 * budget and aid:
+        budget = raised_budget(path) or budget
     if used < 0.8 * budget:
         return
     state_dir = os.path.join(os.environ.get("TEMP", "."), "ctx_budget")

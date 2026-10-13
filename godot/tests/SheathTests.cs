@@ -1,0 +1,115 @@
+using SurvivorUnchained.Play;
+using Xunit;
+
+namespace SurvivorUnchained.Tests;
+
+/// <summary>Weapons sheathed in town (Play/Sheath.cs): sheathed at once on entering a safe place, after 1.5 s of quiet
+/// otherwise, and drawn at once on a threat, on acting or on leaving the safe place.</summary>
+public class SheathTests
+{
+    static bool Run(Sheath s, double seconds, bool safe, bool threat = false, bool acting = false)
+    {
+        bool changed = false;
+        for (double t = 0; t < seconds - 1e-9; t += 0.1) changed |= s.Update(0.1, safe, threat, acting);
+        return changed;
+    }
+
+    [Fact]
+    public void EnteringASafePlaceSheathesAtOnce()
+    {
+        var s = new Sheath();
+        s.Enter(true);
+        Assert.True(s.Sheathed);
+        Assert.False(s.Update(0.016, true, false, false));
+        Assert.True(s.Sheathed);
+    }
+
+    [Fact]
+    public void EnteringAnUnsafePlaceStaysDrawn()
+    {
+        var s = new Sheath();
+        s.Enter(false);
+        Assert.False(s.Sheathed);
+        Assert.False(Run(s, 10, false));
+    }
+
+    [Fact]
+    public void SheathesOnlyAfterAQuietMoment()
+    {
+        var s = new Sheath();
+        s.Enter(false);
+        Assert.False(Run(s, 1.4, true));
+        Assert.False(s.Sheathed);
+        Assert.True(Run(s, 0.3, true));
+        Assert.True(s.Sheathed);
+    }
+
+    [Fact]
+    public void ADrawnWeaponInTheMiddleOfTheWaitStartsTheWaitAgain()
+    {
+        var s = new Sheath();
+        s.Enter(false);
+        Run(s, 1.2, true);
+        s.Update(0.1, true, true, false);  // a threat for a frame
+        Run(s, 1.2, true);
+        Assert.False(s.Sheathed);
+        Run(s, 0.5, true);
+        Assert.True(s.Sheathed);
+    }
+
+    [Fact]
+    public void AThreatDrawsAtOnce()
+    {
+        var s = new Sheath();
+        s.Enter(true);
+        Assert.True(s.Update(0.016, true, true, false));
+        Assert.False(s.Sheathed);
+    }
+
+    [Fact]
+    public void ActingDrawsAtOnce()
+    {
+        var s = new Sheath();
+        s.Enter(true);
+        Assert.True(s.Update(0.016, true, false, true));
+        Assert.False(s.Sheathed);
+    }
+
+    [Fact]
+    public void LeavingTheSafePlaceDrawsAtOnce()
+    {
+        var s = new Sheath();
+        s.Enter(true);
+        Assert.True(s.Update(0.016, false, false, false));
+        Assert.False(s.Sheathed);
+    }
+
+    [Fact]
+    public void ItDoesNotFlipFlop()
+    {
+        var s = new Sheath();
+        s.Enter(true);
+        int changes = 0;
+        // A threat every other half second: drawn, and never sheathed between (the wait is 1.5 s).
+        for (int i = 0; i < 100; i++)
+            if (s.Update(0.1, true, i % 5 == 0, false)) changes++;
+        Assert.Equal(1, changes);
+        Assert.False(s.Sheathed);
+        // Quiet for good: one change, and then none.
+        changes = 0;
+        for (int i = 0; i < 100; i++)
+            if (s.Update(0.1, true, false, false)) changes++;
+        Assert.Equal(1, changes);
+        Assert.True(s.Sheathed);
+    }
+
+    [Fact]
+    public void PickChoosesTheTownClipOnlyWhenItExists()
+    {
+        var have = new System.Collections.Generic.HashSet<string> { "stop_warden_town_l" };
+        Assert.Equal("stop_warden_l", Sheath.Pick(false, "stop_warden", "_l", have.Contains));
+        Assert.Equal("stop_warden_town_l", Sheath.Pick(true, "stop_warden", "_l", have.Contains));
+        Assert.Null(Sheath.Pick(true, "stop_warden", "_r", have.Contains));
+        Assert.Null(Sheath.Pick(true, "idle_warden", "_break", have.Contains));
+    }
+}

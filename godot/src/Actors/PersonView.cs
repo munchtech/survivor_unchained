@@ -34,9 +34,29 @@ public partial class PersonView : Node3D, INpcView
         person.Folk = person.Kit && arms?.Right == null && arms?.Left == null && arms?.Forearm == null;
         person.Root.Scale = Vector3.One * (float)(scale / 0.8 * 1.04);
         AddChild(person.Root);
-        if (arms?.Right is string r && Arms.All.ContainsKey(r)) held["handslot.r"] = Arms.Hold(person, r, "hand_r");
-        if (arms?.Left is string l && Arms.All.ContainsKey(l)) held["handslot.l"] = Arms.Hold(person, l, "hand_l");
-        if (arms?.Forearm is string f && Arms.All.ContainsKey(f)) held["forearm.l"] = Arms.Hold(person, f, "lowerarm_l");
+        if (arms?.Right is string r && Arms.All.ContainsKey(r)) { held["handslot.r"] = Arms.Hold(person, r, "hand_r"); pieces["handslot.r"] = r; }
+        if (arms?.Left is string l && Arms.All.ContainsKey(l)) { held["handslot.l"] = Arms.Hold(person, l, "hand_l"); pieces["handslot.l"] = l; }
+        if (arms?.Forearm is string f && Arms.All.ContainsKey(f)) { held["forearm.l"] = Arms.Hold(person, f, "lowerarm_l"); pieces["forearm.l"] = f; }
+    }
+
+    /// <summary>The weapon (Arms id) in each slot.</summary>
+    readonly System.Collections.Generic.Dictionary<string, string> pieces = new();
+
+    static string BoneOf(string slot) => slot switch { "handslot.l" => "hand_l", "forearm.l" => "lowerarm_l", _ => "hand_r" };
+
+    /// <summary>Her pieces at their sockets (sheathed) or back in her hands (drawn); a piece with no socket stays in
+    /// hand. Hers only (a calling's town clips ride with it: PlayerView).</summary>
+    public void Sheathe(bool on)
+    {
+        if (person.Own == null) return;
+        foreach (var (slot, id) in pieces)
+        {
+            if (!held.TryGetValue(slot, out var old)) continue;
+            Node3D? now = on ? Arms.HoldSheathed(person, id, slot == "handslot.l") : Arms.Hold(person, id, BoneOf(slot));
+            if (now == null) continue;
+            (old.GetParent() as BoneAttachment3D ?? (Node)old).QueueFree();
+            held[slot] = now;
+        }
     }
 
     public People.Person Person => person;
@@ -92,8 +112,8 @@ public partial class PersonView : Node3D, INpcView
         breakT -= delta;
         if (breakT > 0) return;
         breakT = rng.RandfRange(9, 15);
-        var brk = $"idle_{person.Calling}_break";
-        if (own.Has(brk)) Act(own.Prefix + brk);
+        var brk = Sheath.Pick(People.Clip(person, loop).EndsWith("_town"), $"idle_{person.Calling}", "_break", own.Has);
+        if (brk != null && own.Has(brk)) Act(own.Prefix + brk);
     }
 
     /// <summary>A gesture once; held on its last frame (a fall, getting up)
@@ -181,9 +201,10 @@ public partial class PersonView : Node3D, INpcView
     public void Hold(string slot, string? pack, string? piece)
     {
         if (held.Remove(slot, out var old)) old.QueueFree();
+        pieces.Remove(slot);
         if (piece == null) return;
-        var bone = slot switch { "handslot.l" => "hand_l", "forearm.l" => "lowerarm_l", _ => "hand_r" };
-        if (Arms.All.ContainsKey(piece)) { held[slot] = Arms.Hold(person, piece, bone); return; }
+        var bone = BoneOf(slot);
+        if (Arms.All.ContainsKey(piece)) { held[slot] = Arms.Hold(person, piece, bone); pieces[slot] = piece; return; }
         // The kits' small things (a torch, a bucket) as simple stand-ins
         // until the KayKit packs come over.
         if (Carried(piece) is Node3D thing)

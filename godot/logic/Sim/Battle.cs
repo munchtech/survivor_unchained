@@ -904,6 +904,8 @@ public sealed partial class Battle
         e.AnimT = 0;
         e.Credit = byPlayer || e.Credit;
         bool credited = e.Credit;
+        if (credit == "flare" && !e.Boss) FlareKillsNow++;
+        crowdDied?.Add(e.Id);
         if (weapon != null) { weapon.Kills++; ReaverWeaponKill(weapon); }
         ArcanistOnDeath(e, e.Credit, depth);
         StalkerOnDeath(e);
