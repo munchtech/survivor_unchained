@@ -124,12 +124,27 @@ class Topo:
 
 def paint_dark(tex):
     """Her paint's darkness against the skin round it (0 where lighter), per texel."""
-    import cv2
-    im = cv2.imread(tex, cv2.IMREAD_GRAYSCALE)
-    if im is None:
+    if not os.path.exists(tex):
         raise SystemExit("BROWFOLD: no paint " + tex)
-    im = im.astype(np.float32) / 255
-    return cv2.GaussianBlur(im, (0, 0), ROUND) - cv2.GaussianBlur(im, (0, 0), BLUR)
+    try:
+        import cv2
+        im = cv2.imread(tex, cv2.IMREAD_GRAYSCALE).astype(np.float32) / 255
+        return cv2.GaussianBlur(im, (0, 0), ROUND) - cv2.GaussianBlur(im, (0, 0), BLUR)
+    except ImportError:  # (Blender's Python, in heroine_outfits.py: the same blurs, near enough)
+        from scipy.ndimage import gaussian_filter
+        try:
+            from PIL import Image
+            im = np.asarray(Image.open(tex).convert("L")).astype(np.float32) / 255
+        except ImportError:
+            import bpy
+            img = bpy.data.images.load(tex, check_existing=False)
+            w, h = img.size
+            px = np.empty(w * h * 4, np.float32)
+            img.pixels.foreach_get(px)
+            bpy.data.images.remove(img)
+            px = px.reshape(h, w, 4)[::-1]  # (Blender's rows run bottom up; its jpg reads as sRGB values)
+            im = px[..., 0] * 0.299 + px[..., 1] * 0.587 + px[..., 2] * 0.114
+        return gaussian_filter(im, ROUND, truncate=3.0) - gaussian_filter(im, BLUR, truncate=3.0)
 
 
 def margin(T, G, N, d_seam, d_lo):
