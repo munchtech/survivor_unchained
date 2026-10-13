@@ -37,8 +37,8 @@ public partial class FlareFx : Node3D
     /// <summary>The HUD's dim (0 none .. 1 the Flare's 35%).</summary>
     public Action<float> HudDim = _ => { };
 
-    readonly FlareBits glow = new(2600, false), bed = new(1400, true);
-    readonly FlareShards shards = new(800);
+    readonly FlareBits glow = new(2600, false), bed = new(1400, true), scars = new(700, true);
+    readonly FlareShards shards = new(2600);
     readonly Random rng = new(71);
     float R() => (float)rng.NextDouble();
 
@@ -77,6 +77,7 @@ public partial class FlareFx : Node3D
 
     public override void _Ready()
     {
+        AddChild(scars);
         AddChild(bed);
         AddChild(glow);
         AddChild(shards);
@@ -245,6 +246,7 @@ public partial class FlareFx : Node3D
         }
         glow.Step(fdt, HeightAt);
         bed.Step(fdt, HeightAt);
+        scars.Step(fdt, HeightAt);
         shards.Step(fdt, HeightAt);
     }
 
@@ -308,8 +310,8 @@ public partial class FlareFx : Node3D
             if (i < marks.Count) m.W = (float)(t - m.W);
             marksImg.SetPixel(i, 0, new Color(m.X, m.Y, m.Z, i < marks.Count ? m.W : 0));
         }
-        // The last texel: the BOOM's shock front (where, the reach, seconds since), racing over the whole field.
-        marksImg.SetPixel(31, 0, lastAt > 0 ? new Color(boomAt.X, boomAt.Z, reach, (float)(t - lastAt)) : new Color(0, 0, 0, 0));
+        // The last texel: the BOOM's ring (where, how far it runs, seconds since), racing over the whole reach.
+        marksImg.SetPixel(31, 0, lastAt > 0 ? new Color(boomAt.X, boomAt.Z, ringMax, (float)(t - lastAt)) : new Color(0, 0, 0, 0));
         marksTex.Update(marksImg);
     }
 
@@ -330,7 +332,6 @@ public partial class FlareFx : Node3D
         firstLanded = calledDown = false;
         marks.Clear();
         doomed.Clear();
-        pendingShatters.Clear();
         look = web = frost = Vector4.Zero;
         Dip(1);
         RenderingServer.GlobalShaderParameterSet("flare_look", look);
@@ -343,10 +344,21 @@ public partial class FlareFx : Node3D
 
     /* ---------------------------------------------------- the crowd's view -- */
 
-    /// <summary>Bodies the Flare struck down (enemy id): when their death shows (real time), and whether they shatter.</summary>
-    readonly Dictionary<int, (double At, bool Shatter, Vector3 Where)> doomed = new();
+    /// <summary>A body the Flare struck down: when it breaks (Flare time; Held: a statue of ice until an ember lands
+    /// by it or the BOOM's ring crosses it), whether it shatters, where, how big, and what broke it.</summary>
+    sealed class Doom
+    {
+        public double At;
+        public bool Shatter, Done;
+        public Vector3 Where, From;
+        public float Scale;
+    }
 
-    /// <summary>For CrowdView.FlareDeath: 1 held standing (its ember hasn't landed), -1 shattered (not drawn), 0 its own death.</summary>
+    const double Held = double.MaxValue;
+    readonly Dictionary<int, Doom> doomed = new();
+
+    /// <summary>For CrowdView.FlareDeath: 1 held standing (a statue until its ember or the ring), -1 shattered (not
+    /// drawn), 0 its own death.</summary>
     public int DeathOf(int enemy)
     {
         if (!doomed.TryGetValue(enemy, out var d)) return 0;
@@ -354,25 +366,37 @@ public partial class FlareFx : Node3D
         return d.Shatter ? -1 : 0;
     }
 
-    /// <summary>A Flare's kill: held until its ember lands or the front reaches it, then shattered (Burns Twice) or let fall.</summary>
+    /// <summary>A Flare's kill. Burns Twice keeps the pack on screen: what the frost kills stands glazed, a field of
+    /// statues, until an ember lands by it (Burns.Strike) or the BOOM's ring crosses it (Burns.Land), and then
+    /// shatters; what dies after the ring has passed breaks at once.</summary>
     public void Kill(Ev.Kill e)
     {
         if (!Active) return;
         var w = new Vector3((float)e.X, (float)HeightAt(e.X, e.Z), (float)e.Z);
-        double when = t + 0.02;
         if (id == "burns_twice")
         {
-            // Under an ember's fall: when it lands. Under the frost: as the front reaches it.
-            var near = embers.Count > 0 ? embers[^1] : null;
-            if (near != null && !near.Landed && near.Target.DistanceTo(w) < near.Radius + 0.5f) when = near.LandAt + 0.02 + near.Target.DistanceTo(w) / 30;
-            else if (spendAt >= 0) when = spendAt + Math.Max(0, w.DistanceTo(at) - 1) / ((reach + 3) / 0.4);
-            doomed[e.Enemy] = (when, true, w);
-            pendingShatters.Add((when, w, e.Elite || e.Boss ? 1.6f : (float)e.Scale));
+            double when = lastAt > 0 ? Math.Max(t + 0.02, lastAt + RingTime(w.DistanceTo(boomAt))) : Held;
+            doomed[e.Enemy] = new Doom { At = when, Shatter = true, Where = w, From = lastAt > 0 ? boomAt : at, Scale = e.Elite || e.Boss ? 1.6f : (float)e.Scale };
         }
-        else doomed[e.Enemy] = (when, false, w);
+        else doomed[e.Enemy] = new Doom { At = t + 0.02, Where = w };
     }
 
-    readonly List<(double At, Vector3 Where, float Scale)> pendingShatters = new();
+    /// <summary>The BOOM's ring (flare_world's flare_ring): its radius this long after the last word lands (Flare
+    /// time: the hitstop's tenth-speed first), racing out and easing as it reaches the reach's edge in 0.7 s.</summary>
+    static float RingAt(double s, float rmax)
+    {
+        float x = Mathf.Clamp((float)(s - 0.01) / 0.7f, 0, 1);
+        return rmax * (1 - Mathf.Pow(1 - x, 2.5f));
+    }
+
+    /// <summary>When the ring crosses this far from where it struck (its inverse).</summary>
+    double RingTime(float d)
+    {
+        float x = 1 - Mathf.Pow(Mathf.Clamp(1 - d / Math.Max(1, ringMax), 0, 1), 1 / 2.5f);
+        return 0.01 + 0.7 * x;
+    }
+
+    float ringMax = 16;
 
     int StandingIn(Battle b)
     {

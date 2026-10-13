@@ -11,7 +11,7 @@ namespace SurvivorUnchained.View;
 /// </summary>
 public partial class FlareBits : MultiMeshInstance3D
 {
-    public enum Kind { Mote = 0, Streak = 1, Tongue = 2, Puff = 3, Thread = 4, Soot = 5, Fire = 6 }
+    public enum Kind { Mote = 0, Streak = 1, Tongue = 2, Puff = 3, Thread = 4, Soot = 5, Fire = 6, Scar = 7 }
 
     public struct P
     {
@@ -30,6 +30,8 @@ public partial class FlareBits : MultiMeshInstance3D
     }
 
     readonly List<P> live = new();
+    float[]? buf;
+    int shown;
     readonly int cap;
     readonly bool mixed;
     static Shader? addShader, mixShader;
@@ -74,6 +76,7 @@ public partial class FlareBits : MultiMeshInstance3D
     {
         var mm = Multimesh;
         int n = 0;
+        buf ??= new float[cap * 20];
         for (int i = live.Count - 1; i >= 0; i--)
         {
             var p = live[i];
@@ -116,14 +119,23 @@ public partial class FlareBits : MultiMeshInstance3D
             float k = p.Age / p.Life;
             float s = Mathf.Lerp(p.Size, p.SizeEnd, k);
             var c = p.Color.Lerp(p.ColorEnd, k);
-            // Fade in over the first tenth, out over the last third (a puff thins as it spreads).
-            float fade = Mathf.Clamp(k / 0.08f, 0, 1) * (1 - Mathf.SmoothStep(0.62f, 1, k));
+            // Fade in over the first tenth, out over the last third (a puff thins as it spreads; a scar is burnt
+            // in at once).
+            float fade = Mathf.Clamp(k / (p.Kind == Kind.Scar ? 0.005f : 0.08f), 0, 1) * (1 - Mathf.SmoothStep(0.62f, 1, k));
             c.A *= fade;
-            mm.SetInstanceTransform(n, new Transform3D(Basis.Identity.Scaled(Vector3.One * Mathf.Max(0.001f, s)), p.At));
-            mm.SetInstanceColor(n, c);
-            mm.SetInstanceCustomData(n, new Color(p.V.X, p.V.Y, p.V.Z, (int)p.Kind + Mathf.Min(k, 0.999f)));
+            // (One buffer for the whole batch: thousands of calls a frame, one per instance and field, cost
+            // milliseconds.)
+            int o = n * 20;
+            float sz = Mathf.Max(0.001f, s);
+            buf[o] = sz; buf[o + 1] = 0; buf[o + 2] = 0; buf[o + 3] = p.At.X;
+            buf[o + 4] = 0; buf[o + 5] = sz; buf[o + 6] = 0; buf[o + 7] = p.At.Y;
+            buf[o + 8] = 0; buf[o + 9] = 0; buf[o + 10] = sz; buf[o + 11] = p.At.Z;
+            buf[o + 12] = c.R; buf[o + 13] = c.G; buf[o + 14] = c.B; buf[o + 15] = c.A;
+            buf[o + 16] = p.V.X; buf[o + 17] = p.V.Y; buf[o + 18] = p.V.Z; buf[o + 19] = (int)p.Kind + Mathf.Min(k, 0.999f);
             n++;
         }
+        if (n > 0 || shown > 0) RenderingServer.MultimeshSetBuffer(mm.GetRid(), buf);
+        shown = n;
         mm.VisibleInstanceCount = n;
     }
 

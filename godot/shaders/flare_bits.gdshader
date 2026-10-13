@@ -59,6 +59,12 @@ void vertex() {
 	vec2 up2 = (VIEW_MATRIX * vec4(0.0, 1.0, 0.0, 0.0)).xy;
 	v_h = dot(off, normalize(up2 + vec2(0.0, 1e-4))) / max(size * 0.5, 1e-3);
 	POSITION = PROJECTION_MATRIX * vec4(pv + vec3(off, 0.0), 1.0);
+	if (v_kind > 6.5) {
+		// A scar lies flat on the ground, turned by its seed.
+		float t = v_seed * 6.2831;
+		vec2 r = mat2(vec2(cos(t), sin(t)), vec2(-sin(t), cos(t))) * c * size;
+		POSITION = PROJECTION_MATRIX * (VIEW_MATRIX * vec4(at + vec3(r.x, 0.0, r.y), 1.0));
+	}
 }
 
 void fragment() {
@@ -66,6 +72,7 @@ void fragment() {
 	q.y = -q.y;
 	vec4 col = COLOR;
 	float a = 0.0;
+	vec3 emit = vec3(0.0);
 	vec3 rgb = col.rgb;
 	if (v_kind < 0.5) {
 		// A mote: a soft point with a hot centre.
@@ -112,6 +119,13 @@ void fragment() {
 		// A fleck of soot: a small ragged dark scrap.
 		float n = texture(flare_noise, q * 0.3 + v_seed * 9.0).b;
 		a = 1.0 - smoothstep(0.3, 0.9, length(q) + (n - 0.5) * 0.6);
+	} else if (v_kind > 6.5) {
+		// A scar: a small black scorch on the glass where a statue stood, ragged, its embers cooling.
+		float n = texture(flare_noise, q * 0.32 + v_seed * 7.0).r;
+		float n2 = texture(flare_noise, q * 0.8 + v_seed * 3.0).b;
+		a = 1.0 - smoothstep(0.35, 0.95, length(q) + (n - 0.5) * 0.6);
+		float ember = smoothstep(0.66, 0.82, n2) * (1.0 - smoothstep(0.0, 0.3, v_age)) * a;
+		emit = vec3(1.0, 0.3, 0.05) * ember * 1.4;
 	} else {
 		// A billow of fire: a lobe of a fireball, churned by two layers of noise, its heat from the middle out.
 		vec2 uv = q * 0.5 + 0.5;
@@ -127,4 +141,5 @@ void fragment() {
 	// (The mixed batch is lit: a puff faces the eye, rounded a little, so the fire under it lights its belly.)
 	NORMAL = normalize(vec3(q.x * 0.35, q.y * 0.35 + 0.15, 1.0));
 	ALPHA = clamp(a * col.a, 0.0, 1.0);
+	EMISSION = emit;
 }

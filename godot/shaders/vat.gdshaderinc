@@ -110,8 +110,9 @@ void fragment() {
 	// and bluer than a pale body, not paler, and every status light stays under 1.
 	float rough = roughness;
 	vec3 e = glow_color;
-	// Burns Twice's glaze takes the rime's place where its frost lies (flare_world.gdshaderinc).
-	float fz = fx.z > 0.0 && flare_live() ? fx.z * (1.0 - flare_glazed((INV_VIEW_MATRIX * vec4(VERTEX, 1.0)).xyz)) : fx.z;
+	// Burns Twice's glaze takes the rime's place in its reach (flare_world.gdshaderinc): the fight freezes the
+	// whole reach at once, but a body glazes only as the frost's front reaches it (t10: all rimed by frost +0.1 s).
+	float fz = fx.z > 0.0 && flare_live() && flare_frosting((INV_VIEW_MATRIX * vec4(VERTEX, 1.0)).xyz) ? 0.0 : fx.z;
 	if (fz > 0.001) {
 		// Frozen (chill to half): rime grows in patches on what faces up, a cold blue at a
 		// middle value that a pale body shows against; the ice is glossy, with a thin cold rim

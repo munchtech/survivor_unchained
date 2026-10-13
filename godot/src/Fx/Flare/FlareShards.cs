@@ -20,6 +20,8 @@ public partial class FlareShards : MultiMeshInstance3D
     }
 
     readonly List<S> live = new();
+    float[]? buf;
+    int shown;
     readonly int cap;
     readonly Random rng = new(31);
 
@@ -132,17 +134,24 @@ public partial class FlareShards : MultiMeshInstance3D
             s.Heat *= Mathf.Exp(-dt * 6f);
             live[i] = s;
         }
+        buf ??= new float[cap * 20];
         foreach (var s in live)
         {
             if (n >= cap) break;
             float k = s.Age / s.Life;
             float melt = Mathf.SmoothStep(0.55f, 1f, k);
-            var b = new Basis(s.Axis, s.Angle) * s.Shape;
-            mm.SetInstanceTransform(n, new Transform3D(b.Scaled(Vector3.One * s.Size), s.At));
-            mm.SetInstanceColor(n, s.Tint);
-            mm.SetInstanceCustomData(n, new Color(s.Heat, melt, 0, 0));
+            var b = (new Basis(s.Axis, s.Angle) * s.Shape).Scaled(Vector3.One * s.Size);
+            // (One buffer for the batch, not three calls a shard.)
+            int o = n * 20;
+            buf[o] = b.X.X; buf[o + 1] = b.Y.X; buf[o + 2] = b.Z.X; buf[o + 3] = s.At.X;
+            buf[o + 4] = b.X.Y; buf[o + 5] = b.Y.Y; buf[o + 6] = b.Z.Y; buf[o + 7] = s.At.Y;
+            buf[o + 8] = b.X.Z; buf[o + 9] = b.Y.Z; buf[o + 10] = b.Z.Z; buf[o + 11] = s.At.Z;
+            buf[o + 12] = s.Tint.R; buf[o + 13] = s.Tint.G; buf[o + 14] = s.Tint.B; buf[o + 15] = s.Tint.A;
+            buf[o + 16] = s.Heat; buf[o + 17] = melt; buf[o + 18] = 0; buf[o + 19] = 0;
             n++;
         }
+        if (n > 0 || shown > 0) RenderingServer.MultimeshSetBuffer(mm.GetRid(), buf);
+        shown = n;
         mm.VisibleInstanceCount = n;
     }
 
