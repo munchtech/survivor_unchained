@@ -249,7 +249,7 @@ Drawn in `docs/design/classes_warden_lamps.svg`. The other callings follow the s
   - **Last at the Crossing:** a Flare cast below a third of health also gives a barrier of 30%.
 - **Blue lamps:**
   - **Hold Fast:** "You can't be thrown, stunned or slowed. Your dash is 30% shorter."
-  - **Banked Flame** (every hearth has it): "Hold two Flares. Each fills 30% slower and strikes 40% harder."
+  - **Banked Flame** (every hearth has it): "Hold two Flares. The second fills half as fast; a Flare fired with both held strikes 75% harder."
 
 **The Sunderer's road (32).**
 - **Entry, Two Hands:** heavy blows stagger ordinary things for 0.4 s.

@@ -769,15 +769,17 @@
     "warden.last_at_the_crossing"
    ],
    "gate": 6,
-   "text": "Hold two Flares. Each fills 30% slower and strikes 40% harder.",
+   "text": "Hold two Flares. The second fills half as fast; a Flare fired with both held strikes 75% harder.",
    "effects": [
     {
      "do": "rule",
      "rule": "flare.banked",
      "args": {
       "charges": 2,
-      "slower": 0.3,
-      "harder": 0.4
+      "slower": 0,
+      "second": 0.5,
+      "harder": 0,
+      "held": 0.75
      }
     }
    ]
@@ -2621,15 +2623,17 @@
     "reaver.not_done_yet"
    ],
    "gate": 6,
-   "text": "Hold two Flares. Each fills 30% slower and strikes 40% harder.",
+   "text": "Hold two Flares. The second fills half as fast; a Flare fired with both held strikes 75% harder.",
    "effects": [
     {
      "do": "rule",
      "rule": "flare.banked",
      "args": {
       "charges": 2,
-      "slower": 0.3,
-      "harder": 0.4
+      "slower": 0,
+      "second": 0.5,
+      "harder": 0,
+      "held": 0.75
      }
     }
    ]
@@ -4471,15 +4475,17 @@
     "arcanist.glass_clutch"
    ],
    "gate": 6,
-   "text": "Hold two Flares. Each fills 30% slower and strikes 40% harder.",
+   "text": "Hold two Flares. The second fills half as fast; a Flare fired with both held strikes 75% harder.",
    "effects": [
     {
      "do": "rule",
      "rule": "flare.banked",
      "args": {
       "charges": 2,
-      "slower": 0.3,
-      "harder": 0.4
+      "slower": 0,
+      "second": 0.5,
+      "harder": 0,
+      "held": 0.75
      }
     }
    ]
@@ -6298,15 +6304,17 @@
     "stalker.into_the_smoke"
    ],
    "gate": 6,
-   "text": "Hold two Flares. Each fills 30% slower and strikes 40% harder.",
+   "text": "Hold two Flares. The second fills half as fast; a Flare fired with both held strikes 75% harder.",
    "effects": [
     {
      "do": "rule",
      "rule": "flare.banked",
      "args": {
       "charges": 2,
-      "slower": 0.3,
-      "harder": 0.4
+      "slower": 0,
+      "second": 0.5,
+      "harder": 0,
+      "held": 0.75
      }
     }
    ]
