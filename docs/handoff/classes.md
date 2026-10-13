@@ -1,4 +1,4 @@
-# Handoff: classes (session 16: wave 6a measured once; four Flares need a bossMul)
+# Handoff: classes (session 16: wave 6a measured; three Flares need a bossMul)
 
 Written by the sixteenth classes lead (13 October), wound down at the coordinator's request. Branch `classes-11` (worktree `agent-af76b344999b70629`). Last commit: the last line of git log.
 
@@ -14,7 +14,7 @@ At `bossMul` 1.0, Act 1 seeds 1-96 pooled (1536 nights a side), staged against p
 - **Long Cut** (warden sunderer, default road): -9.0%, every cell -6 to -12%. Baseline: staged -19.2%, plain -12.7%, never +7.6% (falls 0.111 against 0.162; the sunderer type's own, not this branch). Crowd: story same as plain (96% in reach dead); arena kills a press 43 against 30, screen cleared 92% against 83%.
 - **Butcher's Bill** (reaver butcher, default road; Single): -11.4%, falls 0.014 against 0.033. Baseline: staged -28.6%, never -1.1%. Crowd falls by design (kills a press 1.1 against 14).
 - **One Arrow** (stalker verge_hunter; Context): -10.4%. Baseline: staged -29.1%, never +3.5%. Arena: in reach dead 78% against 100%, kills a press 12 against 85, won 90 of 96 against 94 (report it to the judge: the line isn't a room clear).
-- **Drag Them Under** (reaver chainbound): seeds 1-32 only: -3.7% (hollow/plain -11.6%). Baseline: staged -19.9%, never -0.7% (falls 0.152 against 0.125, the type's own). Seeds 33-96 and the arena were still running (c2.sh) at wind-down.
+- **Drag Them Under** (reaver chainbound; Clear): pooled 1-96 -2.0%, cells -3.8 to +1.9%, falls 0.021 against 0.027: **passes at bossMul 1.0**. Baseline: staged -19.9%, never -0.7% (falls 0.152 against 0.125, the type's own). Arena share 28.8/25.0/25.9/22.9% (in band). But as a Clear it clears less than its stand-in in the arena: in reach dead 81% against 99.8%, screen cleared 51% against 99%, kills a press 25 against 39 (story: same as plain). Put this to the judge: a Clear should clear the room (the hooks' 24 cap, or what the knot leaves outside the slam's 4 m?).
 - **Branding:** passes (session 15). Its dig/deft cell pooled b1+b2: +5.7% ± 3.6% (1.6 sigma), inside ±6%: noise, closed.
 - **Arena share, full board (all three modifiers lit), deft, T1-T4:** Long Cut 35.5/36.2/36.2/32.8% (plain 28/24/26/24); Bill 25/30/29/35 (at bossMul 0.5: 22/25/24/27); One Arrow 30/27/31/26; Branding 23/21/24/22.
 
@@ -22,15 +22,15 @@ At `bossMul` 1.0, Act 1 seeds 1-96 pooled (1536 nights a side), staged against p
 - **Bill 0.5:** pooled 1-96 +0.9%, cells -1.5 to +5.0%, falls 0.022 against 0.033. Passes. (0.35: +5.4%.)
 - **One Arrow 0.45:** pooled +0.9%, cells -4.6 to +5.4%, falls 0.038 against 0.029 (1.4 sigma). Passes. (0.55: -4.3% on 1-32.) 0.5 would sit about -2.5%: the judge may prefer it.
 - **Long Cut 0.6:** pooled -1.8%, falls 0.030 against 0.023, vault/plain -7.5% (past ±6%): re-run on fresh seeds 97-288 (`lc_bm60_st3`, `lc_plain3`, t4.sh) was in hand. 0.55: -0.7%, every cell inside (worst -4.4%), falls 0.035 against 0.023 (2 sigma). 0.5: +0.4%.
-- **Drag:** not tuned; once dt2 lands, probably about 0.8.
+- **Drag:** none needed (1.0 passes).
 - None is written into `tools/classes/lamps_quarters.py` yet (edit the builder, run lamps_build.py, never lamps.json by hand).
 
 ## The arena problem (unsolved: give it to a su-lead-max solver if one honest try fails)
 The Long Cut's full-board share is over 30% (and over 35% at T2-T3), and `bossMul` barely moves it: 0.5 gave 32.7/34.2/34.5/28.6%; floors off (`--floors 0`) 39.6/40.2/42.2/36.2% at 1.0 and 38.4/38.0/36.0/31.3% at 0.5. Cause: `Flare.cs` FlareBlow sets `credit = "flare"`, so every weaponless proc and on-death burst during a blow (her whole build's cascade over 40 kills) is credited to the Flare on the boss, and bossMul only scales `FlareHit`. Split (S/out/lc_ma_*, `--dark`): no modifiers 32.1/27.9/27.1/29.1; Second Cut alone 37.1/32.9/37.7/35.6 (over 35); Line of Morning alone 32.1/34.4/29.2/31.9; Through the Wall alone 32.8/30.5/24.5/28.5. Options to weigh: cut Second Cut's number (a modifier's number is allowed); Line of Morning's zones take `z.BossDamage = bossMul`; or scale the cascade on a boss by bossMul (careful: it would move the Road's Toll, bossMul 0.25, already measured). Never cut look, reach or room clear.
 
 ## Next, in order
-1. Check S/out for what landed after wind-down: `dt2_*`, `dt_ar_*` (c2.sh), `lc_bm60_st3`/`lc_plain3` (t4.sh), `*_ma_*` (c4.sh: each Flare's modifiers one at a time on the full board). Re-run any missing with the same scripts. `python S/rep.py dt` reads a Flare whole; `S/sh.py` reads arena shares; `S/cell.py REF X FIGHT 0|1` a cell with its SE.
-2. Write the four bossMuls into lamps_quarters.py; settle the Long Cut's arena share (above).
+1. Check S/out for what landed after wind-down: `lc_bm60_st3`/`lc_plain3` (t4.sh), `*_ma_*` (c4.sh: each Flare's modifiers one at a time on the full board). Re-run any missing with the same scripts. `python S/rep.py dt` reads a Flare whole; `S/sh.py` reads arena shares; `S/cell.py REF X FIGHT 0|1` a cell with its SE.
+2. Write the three bossMuls into lamps_quarters.py; settle the Long Cut's arena share (above).
 3. Early modifiers: `S/c3.sh` (each modifier lit alone on Act 1 seeds 1-32 against the staged Flare; it writes `m_<mod>`; re-run `br3_staged`/`lc_staged` etc. at the final bossMul as the reference). Pick the gentlest that holds ±3%/±6%; mark it in `EARLY` (lamps_quarters.py) and `"early"` on the lamp.
 4. One su-lead-max judge (measures and roles), CLASSES §7 (phase 6a measured), status page, full `dotnet test` on a quiet CPU (session 16's run: 870 passed, 0 failed, stopped at 9.5 min by my timeout while measuring runs held the CPU), MERGE REQUEST.
 
