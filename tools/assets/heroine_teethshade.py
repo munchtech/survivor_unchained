@@ -1,11 +1,12 @@
 """Her side teeth in the mouth's own shade, in her exported glb (heroine.glb): a vertex colour on her teeth.
 
-Her teeth are lit as if the mouth were open to the sky: at the Look (her chin lifted 12 degrees) Sunborn's closed lips
-leave a gap at the corner of her mouth, and the canine and premolar behind it read as a white-pink speck (judge s1;
+Her teeth were lit as if the mouth were open to the sky: at the Look (her chin lifted 12 degrees) Sunborn's closed lips
+leave a gap at the corner of her mouth, and the teeth behind it read as a white-pink speck (judge s1;
 the solver's teeth-green test: Sunborn 44 pixels, Vixen 1). In a real mouth the teeth behind the corners stand in the
 cheeks' shade (the buccal corridor), so a smile shows its front teeth lit and its side teeth darker. This gives her
 teeth a grey vertex colour (COLOR_0, linear) that is 1 over her front teeth and eases down to SIDE from FRONT to BACK
-metres off her mouth's middle (each side alike); People.cs multiplies her teeth's paint by it.
+metres off her mouth's middle (each side alike); People.cs multiplies her teeth's paint by it. (With her lips closed
+the whole row is darkened too, by HerFaceLife.TeethLight: from the side the corner shows her front teeth.)
 
     python tools/assets/heroine_teethshade.py [GLB [OUT]]
 
@@ -21,8 +22,8 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import heroine_seam as hs  # noqa: E402
 
 GLB = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "godot", "art", "people", "heroine.glb")
-FRONT, BACK = 0.011, 0.020   # (m off her mouth's middle: lit to here, in the cheeks' shade from here)
-SIDE = 0.25                  # (her side teeth's colour, linear: the cheeks' shade)
+FRONT, BACK = 0.008, 0.015   # (m off her mouth's middle: lit to here (incisors), in the cheeks' shade from here)
+SIDE = 0.2                   # (her side teeth's colour, linear: the cheeks' shade)
 
 
 def shade(path, out=None):
