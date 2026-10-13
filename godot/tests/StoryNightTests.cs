@@ -270,6 +270,18 @@ public class StoryNightTests
     static Enemy Boss(Night n) => n.B.Enemies.Items.First(e => e.Alive && e.Boss);
 
     [Fact]
+    public void A_story_bosss_floors_are_never_cut_by_the_flare()
+    {
+        var n = AtBoss();
+        var g = n.Zone.BossScript!;
+        var boss = Boss(n);
+        // The Flare's blows take him to his first mark at once; his floor (25 s) still holds.
+        n.B.HitEnemy(boss, boss.MaxHp * 0.6, School.Holy, [Tag.Holy], new HitOpts { NoCrit = true, Credit = "flare" });
+        Assert.True(boss.FlareTook > 0);
+        Assert.Equal(0, g.FlareCut);
+    }
+
+    [Fact]
     public void Greymuzzle_comes_with_his_ring_and_it_holds_her_in()
     {
         var n = AtBoss();

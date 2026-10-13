@@ -235,6 +235,8 @@ class Rig:
         right over to the wrong side comes out straight over the shin, and
         the turn never jumps as the keyed knee passes round (no switch).
         Within the range nothing changes."""
+        if getattr(self, "hip_soft", None):
+            return self._hip_soft(side, d_top, d_mid, d_par, S, W)
         lim = self.HIP_ROT
         g = self.hip_rot(side, d_top, d_par)
         if abs(g) <= lim:
@@ -275,6 +277,52 @@ class Rig:
             else:
                 hi = mid_
         w = qaxis(a, 0.5 * (lo + hi))
+        return qmul(w, d_top), qmul(w, d_mid)
+
+    def _hip_soft(self, side, d_top, d_mid, d_par, S, W):
+        """_hip_within eased in, for a clip that sets `hip_soft = (lo, hi)`
+        (a leg drawn through a wide turn, as from a side-sit onto the knees).
+        The hard limit lets a turn past it through untouched wherever no
+        swing reaches 45 and grabs it in the frame one first does: the knee
+        thrown across in a frame. Here a turn past `lo` is pressed toward
+        `hi` along a curve that leaves `lo` at the turn's own rate (tanh), and
+        the swing is the nearest that comes closest to it, found by walking
+        out from none, so the knee's swing grows and shrinks with the turn
+        frame to frame instead of switching on."""
+        lo, hi = self.hip_soft
+        g = self.hip_rot(side, d_top, d_par)
+        if abs(g) <= lo:
+            return d_top, d_mid
+        want = lo + (hi - lo) * math.tanh((abs(g) - lo) / (hi - lo))
+        # A knee keyed right over to the wrong side folds back toward neutral
+        # (at half round, none), as in _hip_within.
+        want = math.copysign(want * min(1.0, (180.0 - abs(g)) / 60.0), g)
+        a = W - S
+        if np.linalg.norm(a) < 1e-9:
+            return d_top, d_mid
+        a = a / np.linalg.norm(a)
+
+        def err(psi):
+            e = self.hip_rot(side, qmul(qaxis(a, psi), d_top), d_par) - want
+            return abs((e + 180.0) % 360.0 - 180.0)
+
+        e0 = err(0.0)
+        sgn = 1.0 if err(1.0) < err(-1.0) else -1.0
+        psi, e = 0.0, e0
+        for k in range(1, 181):
+            e1 = err(sgn * k)
+            if e1 >= e:
+                break
+            psi, e = sgn * k, e1
+        if psi == 0.0:
+            return d_top, d_mid
+        # Down to a tenth of a degree about the best whole one.
+        best = psi
+        for step in (0.5, 0.25, 0.1):
+            for c in (best - step, best + step):
+                if err(c) < e:
+                    best, e = c, err(c)
+        w = qaxis(a, best)
         return qmul(w, d_top), qmul(w, d_mid)
 
     def _strain(self, d_la, want, ha, fa, side):
@@ -417,7 +465,7 @@ class Rig:
                     gpos[j] = gpos[p] + qrot(grot[p], lp)
         refresh()
         chest = delta[I["spine_03"]]
-        # The hands keyed with a "plant" (side: (plant, ground)): their
+        # The hands keyed with a "plant" (side: (plant, ground, lay)): their
         # fingers are laid on the ground, or kept out of it (Rig._lay).
         laid = {}
 
@@ -462,11 +510,25 @@ class Rig:
                 pull = min(1.0, plant) * min(1.0, max(0.0, 1.0 - (target[1] - rest) / (0.06 * self.hand_scale)))
                 target[1] += pull * (rest - target[1])
             if "plant" in spec:
-                laid[side] = (plant, float(spec.get("ground", 0.0)))
+                laid[side] = (plant, float(spec.get("ground", 0.0)), float(spec.get("lay", 1.0)))
             s = 1 if side == "l" else -1
             pole = np.array(spec.get("pole", (s * 0.6, -0.3, -1.0)), float)
             pole = qrot(frame, pole) if spec.get("frame") == "chest" else pole
             S = gpos[ua].copy()
+            if "reach" in spec:
+                # A hand keyed at or past the arm's length ("reach": the most
+                # of it to use) drawn in short of it along a soft curve, so
+                # the arm eases toward straight instead of locking, and the
+                # elbow never jumps from straight to bent as the hand comes
+                # back within reach; "reach_w" eases it in and out.
+                full = np.linalg.norm(self.prest[la] - self.prest[ua]) + np.linalg.norm(self.prest[ha] - self.prest[la])
+                top = float(spec["reach"]) * full
+                knee_ = 0.92 * top
+                d = np.asarray(target, float) - S
+                n = float(np.linalg.norm(d))
+                if n > knee_:
+                    k = float(spec.get("reach_w", 1.0))
+                    target = np.asarray(target, float) + k * (S + d / n * (knee_ + (top - knee_) * math.tanh((n - knee_) / (top - knee_))) - target)
             elbow_at = getattr(self, "elbow_force", None)
             if elbow_at is not None and side in elbow_at:
                 # Where the elbow goes, settled over the whole clip (solve_frames):
@@ -663,8 +725,11 @@ class Rig:
             kb, an = two_bone_ik(gpos[th], gpos[ca], gpos[fo], target, gpos[ca] + pole)
             # The thigh turned about its length so the knee bends straight
             # over the shin, never out to the side.
+            # (A leg laid by hand, knee and all, `"laid": True`, is left where
+            # it is put: the hip's limit is for keyed knees, and its swing
+            # would carry a placed one off its place.)
             delta[th], delta[ca] = self._bend("leg", side, th, ca, fo, delta[th], delta[ca], gpos[th].copy(), kb, an, pole,
-                                        d_par=delta[sk.parent[th]])
+                                        d_par=None if spec.get("laid") else delta[sk.parent[th]])
             refresh()
             # The foot keeps its own turn in the world, whatever the leg does.
             fq = qeuler(*spec.get("rot", (0, 0, 0)))
@@ -728,12 +793,13 @@ class Rig:
         roll = PLANT_ROLL if np.cross(y, z)[1] > 0 else -PLANT_ROLL
         return qmul(qaxis(np.cross(y, [0, -1.0, 0]), PLANT_PITCH), qmul(qaxis(y, roll), qfrom_basis(x, y, z)))
 
-    def _lay(self, side, local, grot, gpos, w, ground):
+    def _lay(self, side, local, grot, gpos, w, ground, lay=1.0):
         """The fingers and thumb of a hand down at the ground: each finger's
         three joints bent together (about the line square to its first bone
         and the palm's normal), as little as keeps every pad (PADS) out of the
         ground and, by the plant w, brings the finger down to rest on it
-        (LAY_STIFF). (Joint by joint, a knuckle bent down until its own bone's
+        (LAY_STIFF); `lay` (a hand's "lay", 0..1, else 1) eases all of it in.
+        (Joint by joint, a knuckle bent down until its own bone's
         pad touched drove the rest of the finger 2 cm into the ground: the
         joints beyond cannot bend back that far.) Within LAY_RANGE
         (THUMB_RANGE); what a joint cannot do is left."""
@@ -802,8 +868,8 @@ class Rig:
                 i = np.unravel_index(int(np.argmin(E)), E.shape)
                 best = [float(T[n][i]) for n in range(3)]
             for n, t in enumerate(best):
-                if t:
-                    local[js[n]] = qmul(local[js[n]], qaxis(qrot(qinv(gs[n]), a), t))
+                if t * lay:
+                    local[js[n]] = qmul(local[js[n]], qaxis(qrot(qinv(gs[n]), a), t * lay))
 
     def _below(self, j):
         if not hasattr(self, "_below_cache"):
@@ -1233,7 +1299,7 @@ def grip_of(weapon):
     return {"r": GRIP[main]} if main in GRIP else {}
 
 
-def solve_frames(rig: Rig, poses, bases=None, loop=False, sigma=2.0, weapon="", pin_first=0):
+def solve_frames(rig: Rig, poses, bases=None, loop=False, sigma=2.0, weapon="", pin_first=0, pin_path=None):
     """Every frame's pose solved, where each elbow goes settled over the
     whole clip first: solved frame by frame (the pole's way, swung round
     where a keyed wrist needs it), then smoothed in time, so an elbow eases
@@ -1242,7 +1308,10 @@ def solve_frames(rig: Rig, poses, bases=None, loop=False, sigma=2.0, weapon="", 
     `weapon`: what the clip holds (grip_of). `pin_first`: frames over which
     the elbows ease out of the first frame's own place, for a clip that
     takes over from another's last frame (settled with the frames after,
-    they left where that clip did); the hands keep their path."""
+    they left where that clip did); the hands keep their path. `pin_first`
+    may be a dict {side: frames} to ease only those sides; `pin_path`
+    {side: n} lays that side's frames 1..n-1 on one path from frame 0's
+    elbow to frame n's smoothed one, ignoring the frames between."""
     rig.grip = grip_of(weapon) if rig.grips else {}
     n = len(poses)
     J = len(rig.sk)
@@ -1310,10 +1379,20 @@ def solve_frames(rig: Rig, poses, bases=None, loop=False, sigma=2.0, weapon="", 
             idx, w = idx[ok], w[ok]
             v = (x[idx] * w[:, None]).sum(0) / w.sum()
             out[fr] = v
-        if pin_first and have[0]:
-            for fr in range(1 if have[0] else 0, min(pin_first, n)):
+        npath = (pin_path or {}).get(s, 0)
+        pf = pin_first.get(s, 0) if isinstance(pin_first, dict) else pin_first
+        if npath and have[0] and npath < n and have[npath]:
+            end = out[npath].copy()
+            la, lb = np.linalg.norm(x[0]), np.linalg.norm(end)
+            for fr in range(1, npath):
+                u = fr / npath
+                u = u * u * (3 - 2 * u)
+                out[fr] = _slerp_vec(x[0] / la, end / lb, u) * (la + (lb - la) * u)
+            out[0] = x[0]
+        elif pf and have[0]:
+            for fr in range(1 if have[0] else 0, min(pf, n)):
                 if have[fr]:
-                    u = fr / pin_first
+                    u = fr / pf
                     u = u * u * (3 - 2 * u)
                     la, lb = np.linalg.norm(x[0]), np.linalg.norm(out[fr])
                     out[fr] = _slerp_vec(x[0] / la, out[fr] / lb, u) * (la + (lb - la) * u)
@@ -1331,12 +1410,13 @@ def solve_frames(rig: Rig, poses, bases=None, loop=False, sigma=2.0, weapon="", 
     return rot, pos
 
 
-def build(name, rig: Rig, keys, fps=30, loop=False, meta=None, post=None, base=None, lead=None, pin_first=0) -> Clip:
+def build(name, rig: Rig, keys, fps=30, loop=False, meta=None, post=None, base=None, lead=None, pin_first=0, pin_path=None) -> Clip:
     """A clip from keys [(frame, pose, ease), ...]. For a loop, the last key
     should be the first again. With a base clip, the keys are laid over its
     frames (Rig.solve's base): turns add to its turns, hands and feet given
     are solved afresh. `lead`: see Track. A weapon in the meta ("weapon")
-    sits in the fist's diagonal grip (GRIP)."""
+    sits in the fist's diagonal grip (GRIP). `pin_first` (int, or {side: frames})
+    and `pin_path` ({side: n}) pin the elbows at the start: see solve_frames."""
     rig.grip = grip_of((meta or {}).get("weapon")) if rig.grips else {}
     keys = _one_frame(rig, keys, base)
     track = Track(keys)
@@ -1347,7 +1427,7 @@ def build(name, rig: Rig, keys, fps=30, loop=False, meta=None, post=None, base=N
         poses.append(post(fr, pose) if post else pose)
     bases = None if base is None else [(base.rot[min(fr, base.frames - 1)], base.pos[min(fr, base.frames - 1)])
                                        for fr in range(frames)]
-    rot, pos = solve_frames(rig, poses, bases, loop=loop, weapon=(meta or {}).get("weapon", ""), pin_first=pin_first)
-    m = {"source": "keyed (tools/anim)", "licence": "own work"}
+    rot, pos = solve_frames(rig, poses, bases, loop=loop, weapon=(meta or {}).get("weapon", ""), pin_first=pin_first, pin_path=pin_path)
+    m ={"source": "keyed (tools/anim)", "licence": "own work"}
     m.update(meta or {})
     return Clip(name, fps, rot, pos, loop=loop, meta=m)

@@ -36,3 +36,9 @@ Agent a7a4c20bcfd7ccfd3 (succeeded a79b6d8c81e14dc63 on 5 October), branch `work
 - **Animation:** still to come: the Warden's `lie_arm_up` and `wade_drag`; Grimtunnel's burst, sniff and dive; C04's `wade_out`, `flask_drink`, `walk_uphill`, `unfold_arms`; C01's `letter` and `kneel_to_stand_snap`.
 - **Face:** `mouth_open` above 0.15 shows the teeth as a grin in C01's close-ups. Her hand reads smooth at C01's insert distance (no visible pores).
 - **Voice:** none needed; no new placeholders.
+
+## Waiting for the next cinematics lead: animation changes to C01 (merged 12 October, night, from animation dd541c17)
+- sit_back_heels is now 192 frames: the rise starts 0.37 s later; hands settle on the thighs at f116/f121; the hold leans 8 deg further over wider hands.
+- lie_side_wake's left knee sits up to 85 mm higher (f150).
+- reach_coals' held right hand is truly palm down, 23 mm nearer her; from within about 30 deg of the front it sits over her right knee: place the coals under the hand (6a's under-lit hand), or ask animation for a small trunk lean carrying it 6-10 cm out.
+- The sit_back_heels to reach_coals seam jumps 22.7 mm at the knees; the camera cuts there.

@@ -249,7 +249,7 @@
     "physical",
     "twin"
    ],
-   "text": "For 8 s: Frenzy full, blows twice as fast, every blow deepens the bleed, ordinary things below 15% die, and each kill adds 0.3 s and mends 1%.",
+   "text": "For 8 s: Frenzy full, blows twice as fast, every blow deepens the bleed, ordinary things below 15% die, and each kill adds 0.3 s (up to 8 s more) and mends 1%.",
    "beat": {
     "key": 0.3,
     "hitstop": 1,
@@ -262,7 +262,9 @@
     "deepen": 1,
     "execute": 0.15,
     "extend": 0.3,
+    "extendCap": 8,
     "overtime": 0.6,
+    "overtimeCap": 12,
     "mend": 0.01,
     "mistRadius": 5,
     "flee": 1.5
@@ -330,6 +332,7 @@
     "first": 0.55,
     "last": 1.05,
     "hitstop": 2,
+    "hitstopFrost": 3,
     "hitstopLast": 6
    },
    "args": {
@@ -766,14 +769,17 @@
     "warden.last_at_the_crossing"
    ],
    "gate": 6,
-   "text": "Hold two Flares. Each fills 30% slower.",
+   "text": "Hold two Flares. The second fills half as fast; a Flare fired with both held strikes 75% harder.",
    "effects": [
     {
      "do": "rule",
      "rule": "flare.banked",
      "args": {
       "charges": 2,
-      "slower": 0.3
+      "slower": 0,
+      "second": 0.5,
+      "harder": 0,
+      "held": 0.75
      }
     }
    ]
@@ -2091,6 +2097,7 @@
     "bulwark.bell_of_the_morning"
    ],
    "gate": 3,
+   "early": true,
    "text": "Lesser things flee for 3 s after the last toll.",
    "effects": [
     {
@@ -2616,14 +2623,17 @@
     "reaver.not_done_yet"
    ],
    "gate": 6,
-   "text": "Hold two Flares. Each fills 30% slower.",
+   "text": "Hold two Flares. The second fills half as fast; a Flare fired with both held strikes 75% harder.",
    "effects": [
     {
      "do": "rule",
      "rule": "flare.banked",
      "args": {
       "charges": 2,
-      "slower": 0.3
+      "slower": 0,
+      "second": 0.5,
+      "harder": 0,
+      "held": 0.75
      }
     }
    ]
@@ -3287,7 +3297,7 @@
     "butcher.butchers_hour"
    ],
    "gate": 12,
-   "text": "A kill adds 0.6 s.",
+   "text": "A kill adds 0.6 s (up to 12 s more).",
    "effects": [
     {
      "do": "flareMod",
@@ -4465,14 +4475,17 @@
     "arcanist.glass_clutch"
    ],
    "gate": 6,
-   "text": "Hold two Flares. Each fills 30% slower.",
+   "text": "Hold two Flares. The second fills half as fast; a Flare fired with both held strikes 75% harder.",
    "effects": [
     {
      "do": "rule",
      "rule": "flare.banked",
      "args": {
       "charges": 2,
-      "slower": 0.3
+      "slower": 0,
+      "second": 0.5,
+      "harder": 0,
+      "held": 0.75
      }
     }
    ]
@@ -5046,6 +5059,7 @@
     "kindler.burns_twice"
    ],
    "gate": 3,
+   "early": true,
    "text": "Eighteen embers fall.",
    "effects": [
     {
@@ -6290,14 +6304,17 @@
     "stalker.into_the_smoke"
    ],
    "gate": 6,
-   "text": "Hold two Flares. Each fills 30% slower.",
+   "text": "Hold two Flares. The second fills half as fast; a Flare fired with both held strikes 75% harder.",
    "effects": [
     {
      "do": "rule",
      "rule": "flare.banked",
      "args": {
       "charges": 2,
-      "slower": 0.3
+      "slower": 0,
+      "second": 0.5,
+      "harder": 0,
+      "held": 0.75
      }
     }
    ]
@@ -6868,6 +6885,7 @@
     "roadknife.the_roads_toll"
    ],
    "gate": 3,
+   "early": true,
    "text": "Eighteen cuts, in the same time.",
    "effects": [
     {

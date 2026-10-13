@@ -140,7 +140,14 @@ public static class Probe
             foreach (var sid in Lamps.StoryFights) j.World.Facts[$"arena.{sid}"] = "won";
             j.World.Facts["lamps.atlas"] = LampBook.AtlasLamps;
         }
-        if (lamps is "suggested" or "full") LampBook.LightSuggested(j.Ch, j.World);
+        if (lamps is "suggested" or "full")
+        {
+            // An arena board is past Act 1: Light my way's whole path (§7's early rule is for the story).
+            bool had = j.World.Facts.ContainsKey("chapter.done");
+            if (!had) j.World.Facts["chapter.done"] = true;
+            LampBook.LightSuggested(j.Ch, j.World);
+            if (!had) j.World.Facts.Remove("chapter.done");
+        }
         var b = j.StartBattle(true, new CollisionWorld(200), (_, _) => 0, 0, 0, 0, (uint)seed, arena: true);
         foreach (var w in b.Weapons.ToList()) b.RemoveWeapon(w.Id);
         b.AddWeapon(id, rank);

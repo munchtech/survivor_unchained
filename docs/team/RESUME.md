@@ -2,6 +2,17 @@
 
 The one page of what's current. Every lead starts from the latest `claude/vigilant-galileo-l6jqyx`. Merge it first and keep your own workflow; this page says what has changed around you. Updated by the main session, 5 October 2026.
 
+## 12 October, late night: coordinator 33ad5b17 state (keep current; restart here)
+- **Merged today:** animation's three signed-off clips (dd541c17: reach_coals, lie_side_wake, sit_back_heels; C01 notes in docs/team/cinematics.md); the close-up camera (d31fefa6: wheel in town, idle close-up; worktree removed). 844 tests.
+- **Owner priority:** face and outfits first; hero HELD; animation works the shield (owner: shield through her body, idle wrists, weapons sheathed in town; hook `CloseUp.Situation`).
+- **Running:** face successor 16 (brow fix, re-judge, whole-face ship B); outfits successor 14 (glove notch, gold in game light, clasp route S `CLASP_SHEAR`, flat-mode legal check done, reaver hand-highlight filter); animation (shield measure, idle, worst clips, sheathing plan); classes (arena phases under Flare damage, Banked Flame re-measured). Roster has the ids.
+- **Budget rule (owner):** 125% grace to finish a near-done step; judges/solvers 180k; no second rounds on a spent solver.
+- **Open follow-up:** close-up camera: named NPCs walking up beside her; re-judge walkers day and night.
+- **Lesson:** copy a sheet out of a worktree's `.shots` before removing the worktree.
+
+## 12 October, night (later): coordinator 33ad5b17 restarted four leads
+The owner answered (OWNER_NOTES "12 October 2026, night: answers"): get_up ponytail accepted; Flare damage may cut arena phase minimums (at most half, Flare share near 35%); nipple rise stays 1.5 mm with a tighter shape. Running: animation, face, classes, outfits (roster). Hero waits for a Blender turn (three Blender leads on three turns). Scratch to KEEP: 33ad5b17's scratchpad (anim, face, classes, outfits) besides the ones below.
+
 ## 12 October, night: coordinator 1515c1de at its context limit; wound down for a fresh coordinator. Restart here
 
 Ran classes, face, outfits and animation (hero held: four Blender leads on three Blender turns). Every lead filled ~250-265k in 1.5-3.5 h; each area had one or two successors.

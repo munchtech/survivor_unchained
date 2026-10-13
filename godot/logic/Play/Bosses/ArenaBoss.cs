@@ -113,9 +113,11 @@ public abstract class ArenaBoss
         winter = A.Sworn("winter"); embers = A.Sworn("embers"); blight = A.Sworn("blight"); ruin = A.Sworn("ruin");
         // The long vigil: its floors a third shorter and its moves a fifth quicker.
         if (A.Sworn("vigil")) { FloorScale *= 2 / 3.0; cadenceMul = 0.8; }
+        FloorScale *= Floors;
         PhaseIx = 0;
         PhaseT = 0;
         e.HpFloor = Phases[0].Mark * e.MaxHp;
+        e.FlareTook = 0;
         Enter(0);
     }
 
@@ -126,10 +128,39 @@ public abstract class ArenaBoss
     /// <summary>Brought to its end (held at one) and past the last phase's floor: a boss that ends
     /// otherwise than dying starts its end only now, or a strong build skipped the last floor
     /// (the Barrow Lord was laid down in about 35 s).</summary>
-    protected bool Spent(Enemy e) => Last && e.Hp <= 1.5 && PhaseT >= Current.Floor * FloorScale;
+    protected bool Spent(Enemy e) => Last && e.Hp <= 1.5 && PhaseT >= FloorNow;
+    /// <summary>This phase's floor now: an arena boss's is cut by the Flare's share of the phase's health, never by
+    /// more than half (the owner, 12 October: "let arena phases shorten"). Only the Flare's damage counts, so a burst
+    /// Flare (Banked Flame, Called Down) shows in an arena and every phase is still seen; a story boss's floors hold.</summary>
+    protected double FloorNow => Math.Max(Current.Floor * FloorScale * (1 - FlareCut), Math.Min(Current.Floor * FloorScale, MinCutFloor));
+    /// <summary>No cut takes a phase under six seconds (judge 3): a map ruler's floors (x0.65) and the vigil's (x2/3)
+    /// stack with the half, and a phase's own move starts 1.5-3 s in and must be seen through.</summary>
+    public const double MinCutFloor = 6;
+    /// <summary>For the harness: each phase as it ended (the Flare's cut, its seconds, and when its health reached
+    /// the mark, or -1 if it went on its ceiling).</summary>
+    public readonly List<(double Cut, double Seconds, double MarkAt)> PhaseLog = new();
+    double markAt = -1;
+    /// <summary>How much of this phase's floor the Flare has cut (0 to FlareCutMax).</summary>
+    public double FlareCut
+    {
+        get
+        {
+            if (!FlareCuts || E == null || MaxHp <= 0) return 0;
+            double span = ((PhaseIx == 0 ? 1 : Phases[PhaseIx - 1].Mark) - Current.Mark) * MaxHp;
+            return span <= 0 ? 0 : Math.Min(FlareCutMax, FlareCutRate * E.FlareTook / span);
+        }
+    }
+    /// <summary>Whether the Flare may cut its floors: an arena's boss yes, a story boss no (its floors are the story's).</summary>
+    protected virtual bool FlareCuts => true;
+    /// <summary>The most the Flare cuts a floor (half), and how fast: the floor's share cut for each share of the
+    /// phase's health the Flare took (tuned so the Flare's share of a boss holds near 35%; the harness's --flarecut).</summary>
+    public static double FlareCutMax = 0.5, FlareCutRate = 1;
     /// <summary>The floors over the night's: a map is ten minutes, not thirty, so its ruler's
     /// gates are shorter there (docs/SKILLS_DESIGN.md §17.3).</summary>
     public double FloorScale = 1;
+    /// <summary>Every boss's floors (the harness's --floors 0: a boss that falls as fast as it is hurt, to read
+    /// damage on a boss where the floors would hold the kill time; CLASSES §7).</summary>
+    public static double Floors = 1;
 
     /// <summary>The boss's tick: the gate, the enrages, then its moves.</summary>
     public bool Tick(Enemy e, double dt)
@@ -158,10 +189,11 @@ public abstract class ArenaBoss
         {
             e.HpFloor = Math.Max(1, ph.Mark * e.MaxHp);
             bool atMark = e.Hp <= e.HpFloor + 0.5;
-            if ((atMark && PhaseT >= ph.Floor * FloorScale) || (ph.Ceiling > 0 && PhaseT >= ph.Ceiling)) { Turn(e); return true; }
+            if (atMark && markAt < 0) markAt = PhaseT;
+            if ((atMark && PhaseT >= FloorNow) || (ph.Ceiling > 0 && PhaseT >= ph.Ceiling)) { Turn(e); return true; }
         }
         // The last phase keeps its floor too; then it dies (or holds at one, for a boss that ends otherwise).
-        else e.HpFloor = DiesAtZero && PhaseT >= ph.Floor * FloorScale ? 0 : 1;
+        else e.HpFloor = DiesAtZero && PhaseT >= FloorNow ? 0 : 1;
         if (!Soft && FightT >= SoftAt)
         {
             Soft = true;
@@ -183,9 +215,12 @@ public abstract class ArenaBoss
     /// in it), and the next phase begins.</summary>
     void Turn(Enemy e)
     {
+        PhaseLog.Add((FlareCut, PhaseT, markAt));
+        markAt = -1;
         double over = e.Overflow;
         BreakSum += over;
         e.Overflow = 0;
+        e.FlareTook = 0;
         if (over > 0) B.Events.Emit(new Ev.Break { X = e.X, Z = e.Z, Amount = over, Enemy = e.Id });
         PhaseIx++;
         e.HpFloor = Math.Max(1, Current.Mark * e.MaxHp);
