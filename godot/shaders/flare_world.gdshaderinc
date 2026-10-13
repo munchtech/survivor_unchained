@@ -129,7 +129,10 @@ vec4 flare_marks_at(vec2 w) {
 		float charR = R * (0.38 + 0.6 * fling);
 		float ch = 1.0 - smoothstep(charR * 0.55, charR, dl + (n - 0.5) * 0.35);
 		float heart = 1.0 - smoothstep(0.0, R * 0.32, dl);
-		float heat = heart * exp(-age * 2.4) + ch * exp(-age * 3.6) * smoothstep(0.55, 0.75, n) * 0.6;
+		// The crater: a black pit with a glowing lip, read from the arena's height.
+		ch = max(ch, 1.0 - smoothstep(R * 0.34, R * 0.46, dl + (n - 0.5) * 0.3));
+		float lip = clamp(1.0 - abs(dl - R * 0.44 + (n - 0.5) * 0.25) / (R * 0.1), 0.0, 1.0);
+		float heat = heart * exp(-age * 2.4) + ch * exp(-age * 3.6) * smoothstep(0.55, 0.75, n) * 0.6 + lip * exp(-age * 1.6) * (0.55 + 0.45 * n);
 		o.x = max(o.x, melt);
 		o.y = max(o.y, ch);
 		o.z = max(o.z, heat);
@@ -162,9 +165,12 @@ void flare_ground(vec3 wp, inout vec3 alb, inout float rough, inout float spec, 
 		alb *= 1.0 - 0.32 * ice;
 		vec3 glaze = black ? vec3(0.018, 0.024, 0.034) * (0.6 + 0.8 * cr.x) : vec3(0.13, 0.2, 0.28) * (0.42 + 0.95 * cr.x); // a mid-value glaze: by day the paler one read as snow
 		float feather = black ? 0.75 : 0.3 + 0.7 * clamp(cr.x * 1.35, 0.0, 1.0);
+		// By day the glaze is darker still and duller: glass over the ground, never snow over the screen.
+		float day = 1.0 - flare_hue.a;
+		glaze *= 1.0 - 0.4 * day;
 		alb = mix(alb, glaze, ice * feather);
 		rough = mix(rough, black ? 0.06 : mix(0.16, 0.42, cr.x), ice);
-		spec = mix(spec, 0.5, ice);
+		spec = mix(spec, mix(0.5, 0.22, day), ice);
 		// The feathers stand up from the glass: their ridges catch the light.
 		float gx = dFdx(cr.x), gy = dFdy(cr.x);
 		vec3 tilt = (inv_view * vec4(gx, gy, 0.0, 0.0)).xyz;
@@ -211,7 +217,7 @@ void flare_body(vec3 wp, vec3 nrm_view, mat4 inv_view, float rim, inout vec3 alb
 	vec3 ice = black ? vec3(0.02, 0.026, 0.036) : vec3(0.12, 0.19, 0.27) * (0.7 + 0.8 * clamp(l * 2.0, 0.0, 1.0));
 	// Glazed in a coat that runs thicker on what faces up; the body under it still reads through.
 	float coat = g * clamp(0.5 + 0.4 * nw.y + (p.r - 0.4) * 0.8, 0.0, 1.0);
-	alb = mix(alb, mix(alb * 0.55, ice, 0.7), coat);
+	alb = mix(alb, mix(alb * 0.55, ice * (1.0 - 0.4 * (1.0 - flare_hue.a)), 0.7), coat);
 	rough = mix(rough, black ? 0.05 : 0.12, g);
 	emi += vec3(0.22, 0.5, 0.95) * pow(rim, 3.0) * g * (black ? 0.12 : 0.32) + vec3(0.45, 0.7, 1.0) * p.g * coat * 0.1;
 }
@@ -226,7 +232,7 @@ void flare_blade(vec3 wp, float tip, inout vec3 alb, inout float rough, inout ve
 	bool black = flare_look.w > 1.5;
 	vec3 ice = black ? vec3(0.03, 0.04, 0.05) : vec3(0.11, 0.17, 0.24);
 	// (Leaf litter lies flat: it takes the glaze too, or it reads as orange confetti on the ice.)
-	alb = mix(alb, ice * (0.75 + 0.45 * tip), g * (0.6 + 0.3 * tip));
+	alb = mix(alb, ice * (0.75 + 0.45 * tip) * (1.0 - 0.4 * (1.0 - flare_hue.a)), g * (0.6 + 0.3 * tip));
 	rough = mix(rough, 0.2, g);
 }
 

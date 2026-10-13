@@ -893,6 +893,7 @@ public partial class GameHud : CanvasLayer
 
     public void Hint(Hint? h)
     {
+        if (Args.Has("clean")) h = null;
         bool same = hintView != null && h != null && hintView.Id == h.Id;
         hintView = h;
         hintBox.Visible = false;

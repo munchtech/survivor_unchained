@@ -1,93 +1,65 @@
 # Handoff: the Flares (look, sound and feel)
 
 Read `docs/team/README.md`, `RESUME.md` (top block), `OWNER_NOTES.md` (13 October), then this page, then
-`docs/design/FLARE_LOOK.md` §0-§2 and §4 (the grammar, sound, and the slice: Burns Twice, its beat sheet,
-"done" and the judge's checklist). Branch `flare-1` (from integration cc8bf6c1). Worktree
-`.claude/worktrees/agent-af0782e2e3f51bc1f`, set up: `godot/assets` is a junction to its own `public/assets`
-(assume-unchanged), with `.godot` and the `.import` files copied and imported.
+`docs/design/FLARE_LOOK.md` §0-§2 and §4 (grammar, sound, the slice: Burns Twice, beat sheet, "done", judge checklist).
+Branch `flare-1`. Worktree `.claude/worktrees/agent-af0782e2e3f51bc1f` (`godot/assets` is a junction to its own
+`public/assets`). Coordinator: 59a43b82. Numbers are classes' (a63a34b9e5a45d1bf); her clip is animation's
+(aaf7f8cdd03812ebd; placeholder `cast_raise` then `cast_bolt` until they message).
 
 ## The owner's words
-"I'm simply anxious to begin building super epic flare animations. like beyond anything we've done yet with effects
-and just awesomeness"; "its supposed to be epic. an 'oh shit' button. a planned 'BOOM' button. a 'clear the whole
-room' button"; "pushing a flare should always do something visible"; "take a look at sound research too. sounds
-that feel awesome, feel good. intangibles"; "flares should be unique ... our existing effects aren't perfect yet".
-So: no spell's flames, ice, sparks, sprites (Kenney's pack included) or sounds. Engine tools are fine. It must be the
-best effect in the game by a distance.
+"super epic flare animations. like beyond anything we've done yet"; "an 'oh shit' button ... a 'clear the whole room'
+button"; "pushing a flare should always do something visible"; "flares should be unique" (no spell's art or sound,
+no Kenney sprites); "sounds that feel awesome, feel good. intangibles".
 
-## Brief (from the coordinator)
-- Build the grammar once (FLARE_LOOK §4.2), then Burns Twice on it, to §4.3's "done".
-- Then a fresh `su-lead-max` judge (FOREGROUND, `Context budget: 150k`) with §4.4's checklist, sheets and numbers.
-- Then 60 fps captures for the owner, through the coordinator.
-- The numbers are classes' (a63a34b9e5a45d1bf, classes-9): propose, don't change.
-- The clip comes from animation (aaf7f8cdd03812ebd), built at 30 fps with the brief's timings. The contact frames: butt down at 0.67 s (f40 at 60), the sweep at 1.42 s, the run blend from 1.52 s. They'll message when it passes judge. Placeholder until then: `cast_raise`, then `cast_bolt`.
-- Staff head: node `arm:mage_staff` (under `mount:hand_r`), holder-local (0.04, 0.87, 0.01); the butt is at Y -0.79.
-- Textures: ComfyUI only on a gpu turn, logged in `docs/legal/ASSET_PROVENANCE.md`. Sound: ours (Synth.cs, or offline synthesis) or CC0, logged.
-- Short reports to the coordinator at milestones. Commit as you go; `dotnet test` green before each push.
+## State (successor 2 stopped here)
+- **Wired and seen.** BattleFx owns `FlareFx Flare` (Ev.Flare, ByFlare kills to `Flare.Kill`, ByFlare hits tally only
+  champions/bosses while `Quiet`; ordinary numbers hidden in the Quiet too). WorldScene: world at `Flare.WorldRate`,
+  her clock through `b.FlareLead` while `Frozen`, `Player.Update(dt*HerRate)` while frozen or in a Flare hitstop,
+  `Watch`/`Tick`, staff found once per figure (`arm:mage_staff`). CrowdView `FlareDeath` (1 held, -1 shattered).
+  Game: Rumble to Haptics, `HudDim` to `GameHud.FlareDim`, Motion setting, `Night`. `Cue` is still a no-op: sound is next.
+- **Test switches:** `--flare burns_twice[+burns.black_ice|+burns.more_embers|+burns.called_down|+!banked]` (meter full),
+  `--flare-hp F` (0.2 = the clutch), `--cast T`, `--clean` (no loot beams, hints or title cards). The director calls
+  `Shots.Want` at every beat (`NAME_ready`, `b1_press` ... `c3_ret3`, `c4_ret6`). Arenas run at night only: "by day"
+  is the story camera (`--zone verge --time day`).
+- **Scripts (scratch, backed up in `survivorsunchained_inputs/scratch_59a43b82/flare/`):** `batch.sh TAG [args]`
+  takes the godot turn, imports and shoots arena night / (arena day: skip with `NO_AD=1`) / Verge night / Verge day,
+  250 packed, cast at 6 s, to `godot/.shots/TAG_*`; `sheet.py OUT W COLS png[@x0,y0,x1,y1]...` makes labelled sheets.
+  Never `python -` (it hung and wrote 100 MB twice).
+- **Seen:** `t5_sheet.jpg` (latest; rows arena night, Verge night, Verge day; beats ready, hold, frost +0.1/+0.3,
+  embers, last+5f, return +1/+3 s). `t1_sheet.jpg` is the first, unfixed look. Logged: struck down 232-242 of 250,
+  standing in reach after 0-20: the clear is delivered by the numbers.
+- **Timing (real s from the press):** frost 0.67 (as the sheet), first ember lands ~1.2, last ~2.0 (sheet 1.42): twelve
+  2-frame hitstops add ~0.37 s, and the fall is now 0.26 s at 80 m/s (was 0.14 at 110) so the bodies it kills stand
+  ~0.26 s after the logic's blow. Judge in motion; if it reads late, ask classes for an aim event ~0.2 s ahead.
 
-## Done (committed, built, NOT yet run or seen)
-- **Her clock** `Battle.FlareLead(dt)` + getters `FlareKey`, `FlareReleased` (Flare.cs end).
-  - Agreed with classes, with four guards: no blows; stops at the key; no world stamps; its own method.
-  - Test: `Her_clock_lead_...` in `FlareStagedTests`.
-  - How it's used: while the view freezes the world at 8%, it calls `b.FlareLead(dt*LeadRate - fightDt)`. LeadRate = key / (0.22 + the calling's hold), so Release lands at 0.52 s real for the arcanist and every later beat keeps lamps.json's spacing.
-- **`Ev.Hit.ByFlare`, `Ev.Kill.ByFlare`** (Events.cs; set in Battle.cs from `credit == "flare"`). View only.
-- **Camera** (`FollowCamera`):
-  - `FlarePush` (share of the distance; negative pulls out);
-  - `FlarePitch` (radians; negative lifts toward the sky);
-  - `Jolt(axis, trauma)`, a damped 13 Hz swing along the blow.
-- **World shaders** read globals from `shaders/flare_world.gdshaderinc`: `flare_at`, `_look`, `_web`, `_frost`, `_hue`, plus the samplers `flare_plate`, `flare_noise`, `flare_marks`. They're registered in `project.godot` [shader_globals].
-  - Wired at the end of fragment() in arena_ground and terrain (`flare_ground`), kit (`flare_prop`), grass, arena_grass and arena_leaves (`flare_blade`), and vat.gdshaderinc (`flare_body`).
-  - The crowd's spell rime gives way to the glaze (`fz` in vat.gdshaderinc).
-  - The include holds: the drain and repaint (cold for Burns); the web (cellular hairlines, lit outward, running inward, fading at the reach, with heat cooling hue → dull red → dark); the frost (growth map `flare_arrive`, `flare_cover`, two multiplied plate layers, honest edge, melt from the edge, the crystallising front band); the impacts (melt, wet, char splash, cooling heart); the body glaze; frost on grass tips and on props.
-  - **Never compiled by Godot yet.** Watch the log for: hints on `global uniform sampler2D`; `TIME` and `dFdx` inside functions; reading ALBEDO, NORMAL and the like after writing them in the wired blocks. Fix any of those first.
-- **Textures** (ours, procedural): `tools/fx/flare_plates.py` makes `godot/art/fx/flare/frost_plate.png` (R feathered 60° dendrites, G tips, B cloud) and `flare_noise.png` (fbm R/G/B, cellular edges A), plus `flare_marks0.png` (black placeholder).
-  - Seen at 512: R reads as real feathered frost. G's tip dots are too dense and big: thin them (draw tips at about 30% chance and 1 px).
-  - Log both in ASSET_PROVENANCE (not done).
-  - Compare a ComfyUI frost plate on a gpu turn later.
-- **`src/Fx/Flare/`**:
-  - `FlareBits.cs` and `shaders/flare_bits.gdshader`: own particles. Kinds: Mote, Streak, Tongue, Puff, Thread, Soot. An additive batch, plus a lit, mixed "bed" batch made by string-replacing the render mode.
-  - `FlareShards.cs` and `flare_shard.gdshader`: real lit ice-shard meshes that tumble, land and melt.
-  - `FlareFx.cs`, the director. Handles Ready, Press, Release and Blow. Real-time `Tick(dt, b)`. Exposes `Frozen`, `LeadRate`, `Stop`, `WorldRate`, `HerRate` and `Quiet`. Runs the camera `Envelope()`, `Ready()` (staff-head breath, wick smoke), the press (staff flare, burnt missiles from `Watch(b)`), `SpendLight` (shadowed omni), the uniforms and the marks texture. `Kill(e)` and `DeathOf(id)` drive the crowd's held and shattered deaths. Hooks: `Cue`, `Rumble`, `HudDim`.
-  - `FlareFx.Burns.cs`, Burns Twice:
-    - the Draw's motes and threads homing into the staff head;
-    - the head flame (amber, blue heart) and her smoking breath;
-    - the frost front over 0.4 s, the cold repaint, and the web's return;
-    - embers: one shared angle, a 0.14 s fall at 110 m/s, smoke trails, the first four lit (two shadowed). Called Down converges;
-    - each landing: tongues, 16 shards, steam, sparks, soot, a char mark and the hitstop. The last is the BOOM;
-    - the steam columns, and the shatters.
+## Honest critique of t5 (start here)
+1. The last BOOM now has a field-wide light (20, range 1.3 x reach), 32 billows and a shock ring of frost dust and
+   shards, and reads at the arena camera; at the story camera it's still just a bigger fireball. No shake in stills.
+2. Each ember now reads from the top: a bright short ground light (12, range 10) and a crater (black pit, glowing lip).
+3. Frost by day is darker (glaze x0.6, spec 0.22) but the frame still reads grey: most of it is glazed bodies, not
+   ground. Next: body glaze darker and less opaque by day; measure the frame against §1.6 (mean <= 1.5x pre-press).
+4. Steam columns now rise from each crater but read as straight, even contrails: give them turbulence (sideways
+   wander, varied lean and width) and fewer per column by day, where they read pale.
+5. Her key pose isn't a poster: ~40 px at the arena camera, placeholder clip. Waits on animation.
+6. Shards still read as white paper flakes up close; frozen bodies as grey ghosts.
+7. A thin red vertical needle sits ~3 m below her in the arena after the frost (not loot: `--clean` hides drops):
+   find it (her aim mark, a lamp?) before the judge.
+8. "Survivors staggered back" needs a knockback on the BOOM from the logic: ask classes (don't change numbers).
 
-## Next, in order (exact)
-1. **Wire it** (about 40 lines):
-   - `BattleFx`: add `public readonly FlareFx Flare = new();` and AddChild it in `_Ready`. Set `Flare.Cam = Cam` and `Flare.HeightAt = heightAt`.
-   - In `Handle`'s switch, first:
-     - `case Ev.Flare fe: Flare.On(fe, b); break;`
-     - `case Ev.Kill k when k.ByFlare && Flare.Active: Flare.Kill(k); break;` (no gore or Kenney bursts);
-     - `case Ev.Hit h when h.ByFlare:` tally the number only for bosses and champions while `Flare.Quiet`. No Burst, no Gore.
-   - `WorldScene.Update`:
-     - if `Fx.Flare.Active`, `fightDt = dt * Fx.Flare.WorldRate` (the flare overrides the old hitstop);
-     - after the step loop, if `Fx.Flare.Frozen`, call `b.FlareLead(Math.Max(0, dt*LeadRate - fightDt))`, then drain `b.Events` through Fx.Handle, Weigh and frameEvents, as the loop does;
-     - call `Fx.Flare.Watch(b)` before the steps and `Fx.Flare.Tick(dt, b)` in Draw;
-     - set `Fx.Flare.Her = HerDrawn` and `Fx.Flare.Staff = Player?.FindChild("arm:mage_staff", true, false) as Node3D` (cache it);
-     - Player.Update gets `dt * HerRate` (not viewDt) while `Frozen || Stop > 0`.
-   - `CrowdView`: `public static Func<int,int>? FlareDeath` (set to `Fx.Flare.DeathOf`). In the Dying case: `-1` returns (not drawn), `1` holds the body standing at its death's frame 0.
-   - `Game`:
-     - `Cue` → `Sfx.Flare(name, at, k)`;
-     - `Rumble` → `Haptics.Add`;
-     - `HudDim` → GameHud (dim to 35% except health, the Flare lamp and a boss bar);
-     - `Motion` from Settings (1 / 0.5 / 0), `LessFlash` from Flashing.
-   - Test args in `Game.Tour`: `--flare ID[+mod]` (set `b.Lamps`, `b.Flare`, and fill the meter; mods like `burns.black_ice`), `--flare-hp F` (the clutch), and `--cast T` (presses it already).
-2. **Build, import, run.** `--quick arcanist --sex female --zone <arena> --horde 250 --cast 3 --shot NAME`. Get frames at the beats with `Shots.Want(tag, at)` from the director (ready, press+1f, Draw end, Hold, frost +0.1/+0.3, first impact, last, Return +1/+3 s). Better: Godot's `--write-movie out.avi --fixed-fps 60` for the 60 fps captures and strips (deterministic). Hand long batches to a `su-runner`.
-3. **Sound** (§2.2, §2.3): `Audio/Sfx.Flare.cs`. Cues: catch, confirm, inhale (the riser from the reversed Spend, plus the gap at the last 0.1 s of the Hold), frost (thud, ice creak racing out, the wind dropping), ember_fall (the roar from the sky), ember_land (hiss and glass), ember_last (the four-layer BOOM, the valley echo), steam. Add the designed duck (world −12 dB, music −9 dB) and the crowd's bed. Offline numpy synthesis played through `Clip` is fine if logged as ours. Measure with `--wav`; the owner listens.
-4. Luminance script (§1.6), frame time at the Spend (perf), then the max judge, then captures.
-
-## Decisions
-- **The drive is a deep lunge** (animation's finding, agreed). The grip sits 0.79 m up the staff, so a standing pose can't plant it. Contacts stay at f20 (plant) and f43 (sweep) at 30 fps. The look up is held from the lunge; she rises on the sweep and blends into a run from f46. The frost starts at the planted butt (holder Y -0.79).
-- **Globals, not masks**: only world shaders drain, so she, the Flare and the danger marks keep their colour for free.
-- **Frost, web and scars live in the ground shader** (conformal, lit, no overdraw), not in decals.
-- **Ember fall lag 0.14 s**: the logic picks the target at the blow, so the view lands it 0.14 s later. The killed are held standing until it lands. If that ever reads late, ask classes for an "aim" event 0.2 s ahead.
-- **Own particles and shards**: the Sparks/Smoke batches use Kenney's sprites, which the owner's rule forbids for Flares.
+## Next, in order
+1. Fix 3, 4, 7 above in one pass; reshoot with `NO_AD=1 batch.sh t6 --clean`; one sheet.
+2. Sound (§2.2, §2.3): `Audio/Sfx.Flare.cs` from `Cue(name, at, k)`: catch, confirm, inhale (+ the gap at the Hold's
+   last 0.1 s), frost, ember_fall, ember_land, ember_last (four layers, valley echo), boom, steam; the duck (world
+   -12 dB, music -9 dB). Synth.cs or offline numpy, logged as ours (or CC0, logged). Owner records a bronze bell and
+   ice later. Measure with `--wav`; the owner listens.
+3. Luminance (§1.6) from a 60 fps run (`--every 0.0166 --count N` from the press) and the Spend's frame time.
+4. Fresh `su-lead-max` judge, FOREGROUND, `Context budget: 150k`, §4.4's checklist, one face, sheets plus numbers.
+5. 60 fps captures for the owner (`--write-movie`) through the coordinator. Then the remaining "done" cases: empty
+   field, clutch, boss in reach, the three lamps, banked.
 
 ## Gotchas
-- The worktree guard refuses heredocs that write files and `cd X && ...` chains with odd constructs. Write scripts with the Write tool, or use Edit. **Never `python -`** (it opened a REPL that wrote 64 MB of errors).
-- The first `--import` segfaults (139); the second is fine. The import rewrote many `godot/art/**/*.import` files, which are left uncommitted on purpose (churn only): `git checkout -- godot/art` before committing.
-- The context hook counted this lead to 265k by the end of the code: onboarding plus reading the code cost about 120k. Next time, read less of BattleFx and CrowdView: the wiring above names every hook.
-- Godot recompiles a `.gdshader` at its next launch.
+- First `--import` after new files may segfault; the batch's import runs once per batch. Import churn under
+  `godot/art/**/*.import` stays uncommitted: `git checkout -- godot/art` before committing (but commit new `.import`
+  files for new art, as `art/fx/flare/*.import`).
+- Give the godot turn back by its name: `turn.py give godot "<the name you took it with>"`.
+- Onboarding plus this pass cost ~250k; the images were the bulk. One sheet per pass, crops only where needed.

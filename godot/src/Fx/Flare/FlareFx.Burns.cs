@@ -26,7 +26,7 @@ public partial class FlareFx
 
     /// <summary>The embers' fall: 0.14 s at 110 m/s along one shared angle (the view lands each 0.14 s after the
     /// fight's blow; the bodies it kills are held standing until it lands).</summary>
-    const float Fall = 0.14f, FallSpeed = 110;
+    const float Fall = 0.26f, FallSpeed = 80;
     int embersLit;
     bool firstLanded;
     bool calledDown;
@@ -181,12 +181,13 @@ public partial class FlareFx
         foreach (var m in marks)
         {
             float age = (float)(t - m.W);
-            float rate = age < 0 ? 0 : 24 * Mathf.Exp(-age * 0.7f);
+            float rate = age < 0 ? 0 : 30 * Mathf.Exp(-age * 0.55f);
             for (int i = 0, n = (int)(rate * dt + R()); i < n; i++)
             {
-                var p = new Vector3(m.X + (R() - 0.5f) * m.Z * 1.4f, 0, m.Y + (R() - 0.5f) * m.Z * 1.4f);
+                // A column: fed from a tight spot at the crater, rising and leaning with the air.
+            var p = new Vector3(m.X + (R() - 0.5f) * m.Z * 0.35f, 0, m.Y + (R() - 0.5f) * m.Z * 0.35f);
                 p.Y = (float)HeightAt(p.X, p.Z) + 0.1f;
-                bed.Spawn(FlareBits.Kind.Puff, p, new Vector3(0.4f, 1.6f + R(), 0.1f), 1.8f + R() * 1.4f, 0.35f, new Color(0.6f, 0.63f, 0.67f, 0.16f), sizeEnd: 1.3f + R() * 0.9f, drag: 0.5f, lift: 0.8f);
+                bed.Spawn(FlareBits.Kind.Puff, p, new Vector3(0.3f + R() * 0.2f, 2.6f + R(), 0.1f), 2.6f + R() * 1.2f, 0.3f, new Color(0.6f, 0.63f, 0.67f, 0.17f), sizeEnd: 1.1f + R() * 0.6f, drag: 0.15f, lift: 0.6f);
             }
         }
     }
@@ -204,11 +205,11 @@ public partial class FlareFx
         if (marks.Count > 32) marks.RemoveAt(0);
         float big = em.Last ? 1.6f : 1;
         // A fireball of churning billows thrown out and up off the ice (rays read as a firework: 13 October).
-        for (int i = 0; i < (em.Last ? 18 : 10); i++)
+        for (int i = 0; i < (em.Last ? 32 : 12); i++)
         {
             float a = R() * Mathf.Tau, out_ = R();
             var v = new Vector3(Mathf.Cos(a) * (1.5f + 4 * out_), 1.5f + R() * 4, Mathf.Sin(a) * (1.5f + 4 * out_)) * big;
-            glow.Spawn(FlareBits.Kind.Fire, p + Vector3.Up * (0.2f + R() * 0.4f), v, 0.45f + R() * 0.35f, (0.45f + R() * 0.35f) * big, new Color(1.15f, 0.5f, 0.13f), new Color(0.8f, 0.22f, 0.04f), sizeEnd: (1.1f + R() * 0.6f) * big, drag: 4, lift: 2.5f);
+            glow.Spawn(FlareBits.Kind.Fire, p + Vector3.Up * (0.2f + R() * 0.4f), v, 0.45f + R() * 0.35f, (0.5f + R() * 0.4f) * big, new Color(1.15f, 0.5f, 0.13f), new Color(0.8f, 0.22f, 0.04f), sizeEnd: (1.3f + R() * 0.7f) * big * (em.Last ? 1.4f : 1), drag: 4, lift: 2.5f);
         }
         // A few short tongues licking up out of it, turned along their way.
         for (int i = 0; i < (em.Last ? 8 : 4); i++)
@@ -227,17 +228,27 @@ public partial class FlareFx
             bed.Spawn(FlareBits.Kind.Soot, p + Vector3.Up * 0.2f, new Vector3((R() - 0.5f) * 8, 2 + R() * 4, (R() - 0.5f) * 8), 0.8f + R() * 0.5f, 0.07f, new Color(0.03f, 0.025f, 0.02f, 0.9f), gravity: 10);
         if (em.Light != null)
         {
-            em.Light.LightEnergy = em.Last ? 14 : 9;
+            em.Light.LightEnergy = em.Last ? 22 : 14;
+            em.Light.OmniRange = 11;
             var l = em.Light;
             GetTree().CreateTween().TweenProperty(l, "light_energy", 0f, 0.35f).SetEase(Tween.EaseType.Out);
             GetTree().CreateTimer(0.4).Timeout += () => { if (IsInstanceValid(l)) l.QueueFree(); };
             em.Light = null;
         }
-        else if (!em.Last) SpendLightAt(p, 5);
+        else if (!em.Last) SpendLightAt(p, 12);
         if (em.Last)
         {
             // The last word: the full BOOM on the toughest thing in reach.
-            SpendLight(p + Vector3.Up * 2.5f, new Color(1f, 0.6f, 0.25f), 12 * (banked ? 1.25f : 1));
+            SpendLight(p + Vector3.Up * 2.5f, new Color(1f, 0.6f, 0.25f), 20 * (banked ? 1.25f : 1));
+            spendLight.OmniRange = reach * 1.3f;
+            // The shock: frost dust and ice blown outward along the ground in a ring, so the room is cleared.
+            for (int i = 0; i < 56; i++)
+            {
+                float a = i / 56f * Mathf.Tau + R() * 0.1f;
+                var dir = new Vector3(Mathf.Cos(a), 0, Mathf.Sin(a));
+                bed.Spawn(FlareBits.Kind.Puff, p + dir * 0.8f + Vector3.Up * 0.3f, dir * (15 + R() * 6) + Vector3.Up * (0.5f + R()), 0.9f + R() * 0.5f, 0.6f, new Color(0.55f, 0.6f, 0.66f, 0.3f), sizeEnd: 2.4f, drag: 2.6f, lift: 0.3f);
+            }
+            shards.Burst(p + Vector3.Up * 0.2f, 40, 16, 0.14f, new Color(0, 0, 0, 0), 0.4f);
             Cam?.Jolt(Vector3.Up, (0.6f + (banked ? 0.1f : 0)) * Motion);
             Cue("ember_last", p, 1);
             Rumble(1, 0.6f, 0.4f);
@@ -254,10 +265,10 @@ public partial class FlareFx
     /// <summary>A short unshadowed flash at an unlit ember's impact.</summary>
     void SpendLightAt(Vector3 p, float energy)
     {
-        var l = new OmniLight3D { LightColor = new Color(1f, 0.5f, 0.16f), LightEnergy = energy, OmniRange = 7 };
+        var l = new OmniLight3D { LightColor = new Color(1f, 0.5f, 0.16f), LightEnergy = energy, OmniRange = 10 };
         AddChild(l);
-        l.GlobalPosition = p + Vector3.Up * 0.8f;
-        GetTree().CreateTween().TweenProperty(l, "light_energy", 0f, 0.3f);
+        l.GlobalPosition = p + Vector3.Up * 1.2f;
+        GetTree().CreateTween().TweenProperty(l, "light_energy", 0f, 0.3f).SetEase(Tween.EaseType.Out).SetTrans(Tween.TransitionType.Expo);
         GetTree().CreateTimer(0.35).Timeout += () => { if (IsInstanceValid(l)) l.QueueFree(); };
     }
 

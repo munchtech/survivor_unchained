@@ -948,7 +948,8 @@ public partial class BattleFx : Node3D
                     break;
                 }
                 case Ev.Drop d:
-                    Dropped(d);
+                    // (--clean: no loot beams over the picture.)
+                    if (!Args.Has("clean")) Dropped(d);
                     break;
                 case Ev.Spawn e:
                 {

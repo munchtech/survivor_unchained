@@ -139,6 +139,8 @@ public partial class FlareFx : Node3D
         Frozen = !e.Stand && Motion > 0;
         if (e.Stand) freezeLen = Math.Min(freezeLen, 0.15);
         RenderingServer.GlobalShaderParameterSet("flare_at", new Vector4(at.X, at.Y, at.Z, reach));
+        // (a: night, for the glaze's value: by day the sky's reflection on it turned the field to snow)
+        RenderingServer.GlobalShaderParameterSet("flare_hue", new Vector4(1f, 0.42f, 0.1f, Night ? 1 : 0));
         float kind = id == "burns_twice" ? (b.Lamps.FlareMods.Contains("burns.black_ice") ? 2 : 1) : 0;
         look = new Vector4(0, 0, 0, kind);
         web = new Vector4(0, 1, 0, R() * 10);
@@ -224,7 +226,12 @@ public partial class FlareFx : Node3D
             RenderingServer.GlobalShaderParameterSet("flare_web", web);
             RenderingServer.GlobalShaderParameterSet("flare_frost", frost);
             UploadMarks();
-            if (Done()) Clear();
+            if (Done())
+            {
+                // (for the pictures' log: how much of the room the Flare cleared)
+                if (Args.Has("shot") && b != null) GD.Print($"flare {id}: struck down {doomed.Count}, standing in reach {StandingIn(b)}");
+                Clear();
+            }
         }
         glow.Step(fdt, HeightAt);
         bed.Step(fdt, HeightAt);
@@ -351,4 +358,12 @@ public partial class FlareFx : Node3D
     }
 
     readonly List<(double At, Vector3 Where, float Scale)> pendingShatters = new();
+
+    int StandingIn(Battle b)
+    {
+        int n = 0;
+        foreach (var e in b.Enemies.Items)
+            if (e.Alive && (e.X - at.X) * (e.X - at.X) + (e.Z - at.Z) * (e.Z - at.Z) < reach * reach) n++;
+        return n;
+    }
 }
