@@ -217,15 +217,24 @@ def _swing_l(abd, flex, reach=0.0):
 
 def warden_break(rig):
     base = idle.base_of(rig, "warden")
-    shoulder = {"arc": arc_of((0.02, -0.06, 0.18)), "pole": (-0.8, -0.6, 0.0), "frame": "chest",
+    # The fist up and forward of the shoulder, so the guard stands in front of
+    # it and the flat rests on the pauldron (armscheck, 13 October: at 6 cm
+    # down and 18 forward the quillon sank 20 mm into her shoulder).
+    shoulder = {"arc": arc_of((0.02, -0.025, 0.215)), "pole": (-0.8, -0.6, 0.0), "frame": "chest",
                 "blade": _n(-0.15, 0.5, -0.85), "twist": 0.5}
+    # (With the shoulder rolled up under it the blade rides a little lower on
+    # the shoulder, so it stays on the pauldron instead of lifting off.)
+    rolled = dict(shoulder, arc=arc_of((0.02, -0.03, 0.21)))
     keys = [
         (0, over("warden"), "auto"),
         # The flat of the blade laid on her shoulder, the shoulder rolled under it.
+        # On the way up, the fist where it passed before (keyed, so the lift
+        # keeps its path and the wrist does not flip as the target moved).
+        (8, over("warden", hand_r=dict(shoulder, arc=arc_of((-0.108, -0.242, 0.189)), blade=_n(-0.42, 0.78, 0.46))), "auto"),
         (16, over("warden", hand_r=shoulder), "ease"),
-        (24, over("warden", hand_r=shoulder, clav_r=(10, 6), head=(-8, 0, 6)), "auto"),
+        (24, over("warden", hand_r=rolled, clav_r=(10, 6), head=(-8, 0, 6)), "auto"),
         (32, over("warden", hand_r=shoulder, clav_r=(2, -6), head=(-6, 0, 3)), "auto"),
-        (40, over("warden", hand_r=shoulder, clav_r=(10, 6), head=(-8, 0, 6)), "auto"),
+        (40, over("warden", hand_r=rolled, clav_r=(10, 6), head=(-8, 0, 6)), "auto"),
         (48, over("warden", hand_r=shoulder, clav_r=(0, 0)), "ease"),
         # The shield hefted and the shoulder rolled under it, echoing the
         # sword's roll on the other shoulder (judge 50: a "look over the
