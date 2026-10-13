@@ -2649,19 +2649,23 @@ LEO_UH = float(os.environ.get("LEO_UH", "0.07"))
 # middle, its back end rounded LEO_ONE_W[2]; it goes up the slot's walls while |N_x| is
 # under LEO_ONE_STEEP, laid LEO_ONE_LIFT off her (as the gusset was) below LEO_ONE_Z[0]
 # over the crotch and behind it; the back's thong cut from LEO_ONE_Z[1] up.)
-LEO_ONE = os.environ.get("LEO_ONE", "0") == "1"
+LEO_ONE = os.environ.get("LEO_ONE", "1") == "1"
 LEO_ONE_W = tuple(float(v) for v in os.environ.get("LEO_ONE_W", "0.0185,0.016,0.012").split(","))
 LEO_ONE_STEEP = float(os.environ.get("LEO_ONE_STEEP", "0.96"))
 LEO_ONE_LIFT = float(os.environ.get("LEO_ONE_LIFT", "0.001"))
 LEO_ONE_Z = tuple(float(v) for v in os.environ.get("LEO_ONE_Z", "0.02,0.03").split(","))
 PIECE_SRC = {}   # (a piece cut with `crotch`: its sheet's skin points and normals, before lifting)
-# (LEO_ONE_TUCK: her skin under the one-piece's crotch tucked no deeper than this (the
-# gusset's 0.3): tucked all the way, as under a held leg line, it left a 9 mm tunnel under
-# the sheet, the strip seen through it from behind and the game's front quarters (dry one1).
+# (LEO_ONE_TUCK: her skin under the one-piece's crotch tucked no deeper than this. The
+# built gusset tucked her not at all (its 'hides' was cleared as it joined the corset's
+# pieces), and lying 1 mm off untucked skin is what kept the strip unseen: tucked all the
+# way under the held leg lines (s17 dry one1) or 3 mm (one2), a tunnel opened under the
+# sheet and the strip showed through it (vis5 game 5 / 120, low 1115 / 483; at 0: 0 / 0).
 # LEO_ONE_DEPTH (0 off): in front of the slot the leg lines go no lower than this under
-# the roof of the slot, so they don't drop below the V's foot seen from the front.)
-LEO_ONE_TUCK = float(os.environ.get("LEO_ONE_TUCK", "0.3"))
-LEO_ONE_DEPTH = float(os.environ.get("LEO_ONE_DEPTH", "0"))
+# its roof, easing 12 mm deeper from 2 cm in front of the crotch point to 2 cm behind it,
+# so they don't drop below the V's foot seen from the front as two fangs (one3); at 4 mm
+# the strip's bare edge came within 5.8 mm and showed low from the front quarter (one4).)
+LEO_ONE_TUCK = float(os.environ.get("LEO_ONE_TUCK", "0"))
+LEO_ONE_DEPTH = float(os.environ.get("LEO_ONE_DEPTH", "0.007"))
 TUCK_ZONES = {}  # (an outfit: [(cap, zone of her skin 0 to 1)], tucked no deeper there)
 RBOOT_GONE = float(os.environ.get("RBOOT_GONE", "0.005"))
 
