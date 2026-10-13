@@ -437,7 +437,7 @@ public partial class FlareFx
     {
         float c = (float)colT;
         BoomTick(c, (float)(t - lastAt), dt);
-        if (c > 1.4f) return;
+        if (c > 1.4f || Simmed) return;
         var p = boomAt;
         const float H = PillarH;
         // Its root: fire licking round the pillar's foot.

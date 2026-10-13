@@ -19,6 +19,18 @@ public partial class FlareFx
     int jetN;
     const float PillarH = 7.5f, PillarR = 0.95f;
 
+    /* The simulated burst (tools/fxsim/boom_sim.py take burns_boom, cut by pack.py into art/fx/flare/burns_boom):
+     * real fire and smoke rendered at the game's pitch, played once on one camera-facing quad. When it is there
+     * it IS the pillar, the cap, the jets and the root's fire; the mesh shapes stay only as the fallback. */
+    MeshInstance3D? simBoom;
+    ShaderMaterial? simMat;
+    int simFrames = 48;
+    float simFps = 24;
+    // The sim's camera framed SimSize metres across, centred SimLook metres over the crater; played SimRate times
+    // its own speed (the column at full height in about 0.15 s).
+    const float SimSize = 15.4f, SimLook = 6.0f, SimRate = 1.4f;
+    bool Simmed => simBoom != null;
+
     void BoomReady()
     {
         pillarMat = new ShaderMaterial { Shader = GD.Load<Shader>("res://shaders/flare_pillar.gdshader") };
@@ -48,6 +60,23 @@ public partial class FlareFx
         AddChild(cap);
         AddChild(haze);
         AddChild(rimLight);
+        const string fb = "res://art/fx/flare/burns_boom";
+        if (FileAccess.FileExists(fb + ".json") && ResourceLoader.Exists(fb + ".png"))
+        {
+            var meta = Core.Json.Parse<System.Collections.Generic.Dictionary<string, object>>(FileAccess.GetFileAsString(fb + ".json"));
+            simFrames = Convert.ToInt32(meta["frames"]);
+            simFps = Convert.ToSingle(meta["fps"]);
+            simMat = new ShaderMaterial { Shader = GD.Load<Shader>("res://shaders/flare_fb.gdshader") };
+            simMat.SetShaderParameter("atlas", GD.Load<Texture2D>(fb + ".png"));
+            simMat.SetShaderParameter("grid", Convert.ToInt32(meta["grid"]));
+            simMat.SetShaderParameter("frames", simFrames);
+            simBoom = new MeshInstance3D
+            {
+                Mesh = new QuadMesh { Size = Vector2.One }, MaterialOverride = simMat,
+                CastShadow = GeometryInstance3D.ShadowCastingSetting.Off, Visible = false, ExtraCullMargin = 8,
+            };
+            AddChild(simBoom);
+        }
     }
 
     /// <summary>The last word lands at p: the pillar, its cap, the jets and the low light set off.</summary>
@@ -59,6 +88,13 @@ public partial class FlareFx
         pillarMat.SetShaderParameter("seed", seed);
         capMat.SetShaderParameter("seed", seed + 0.37f);
         pillar.Visible = cap.Visible = false;
+        if (simBoom != null)
+        {
+            simBoom.GlobalPosition = p + Vector3.Up * SimLook;
+            simBoom.Scale = Vector3.One * SimSize;
+            simMat!.SetShaderParameter("life", 0f);
+            simBoom.Visible = true;
+        }
         float y = (float)HeightAt(p.X, p.Z);
         haze.GlobalPosition = new Vector3(p.X, y + 0.05f, p.Z);
         haze.Scale = new Vector3(ringMax + 2.5f, 1, ringMax + 2.5f);
@@ -83,9 +119,19 @@ public partial class FlareFx
         // The low light: three frames at its peak, catching the rims of the statues round the crater, then gone.
         rimLight.LightEnergy = c < 0.05f ? 16 * (LessFlash ? 0.5f : 1) : Mathf.MoveToward(rimLight.LightEnergy, 0, dt * 90);
         // The pillar: full height in 0.15 s, full fire to 0.45 s, burnt out by 1.1 s.
+        if (simBoom != null)
+        {
+            float life = c * simFps * SimRate / Math.Max(1, simFrames - 1);
+            simBoom.Visible = life < 1;
+            simMat!.SetShaderParameter("life", life);
+            simMat.SetShaderParameter("gain", 1.25f * (LessFlash ? 0.6f : 1));
+            simMat.SetShaderParameter("smoke", 0.9f);
+            simMat.SetShaderParameter("fade", 1 - Mathf.SmoothStep(0.7f, 1f, life));
+            pillar.Visible = cap.Visible = false;
+        }
         float grow = 1 - Mathf.Pow(1 - Mathf.Clamp(c / 0.15f, 0, 1), 3);
         float burn = 1 - Mathf.SmoothStep(0.45f, 1.1f, c);
-        pillar.Visible = c < 1.15f;
+        pillar.Visible = c < 1.15f && !Simmed;
         pillarMat.SetShaderParameter("age", c);
         pillarMat.SetShaderParameter("grow", grow);
         pillarMat.SetShaderParameter("burn", burn);
@@ -93,14 +139,14 @@ public partial class FlareFx
         // thinning from 0.9 s (the head's smoke takes it on).
         float k = Mathf.SmoothStep(0.06f, 1.0f, c);
         float thin = Mathf.SmoothStep(0.6f, 1.5f, c);
-        cap.Visible = c > 0.07f && c < 1.5f;
+        cap.Visible = c > 0.07f && c < 1.5f && !Simmed;
         cap.GlobalPosition = p + Vector3.Up * (PillarH * 0.92f + 1.6f * k);
         cap.Scale = new Vector3(1.3f + 2.3f * k, 0.8f + 0.8f * k, 1.3f + 2.3f * k) * Mathf.Min(1, (c - 0.06f) / 0.08f + 0.35f);
         capMat.SetShaderParameter("age", c);
         capMat.SetShaderParameter("burn", burn);
         capMat.SetShaderParameter("thin", thin);
         // The jets: flame thrown 3-5 m out along the ground from the root, for its first 0.15 s.
-        if (c < 0.15f)
+        if (c < 0.15f && !Simmed)
             for (int j = 0; j < jetN; j++)
                 for (int i = 0, n = (int)(110 * dt + R()); i < n; i++)
                 {
@@ -125,6 +171,7 @@ public partial class FlareFx
     {
         if (pillar == null) return;
         pillar.Visible = cap.Visible = haze.Visible = false;
+        if (simBoom != null) simBoom.Visible = false;
         rimLight.LightEnergy = 0;
     }
 }
