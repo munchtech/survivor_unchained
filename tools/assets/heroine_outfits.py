@@ -4107,6 +4107,12 @@ def arcanist():
             print("CLASP: tip at %+.0f deg: binding %.1f to %.1f mm out from the foot's centre (cloth's edge %.1f); horn's middle %.1f, %.1f mm inside its outer edge"
                   % (np.degrees(th[a]), rb0 * 1000, rb1 * 1000, r_e[a] * 1000, want * 1000, (rb1 - want) * 1000))
         mid_ = r_e - 0.001 + (np.where(th < 0, outs[0], outs[nth - 1]) - (CLASP_D_IN if CLASP_D else 0.0)) * s_ ** 2 + 0.5 * wfull
+        if CLASP_D and CLASP_D_ROUND:
+            # (its inner rim on the binding at the foot, CLASP_D_RIM out from where
+            # the cloth begins, not 1 mm onto her skin: from there it dropped 4.8 mm
+            # to her skin, and half-round it stood as a tall hood from above;
+            # the tips stay where they were)
+            mid_ = mid_ + (0.001 + float(os.environ.get("CLASP_D_RIM", "0.0005"))) * (1 - s_ ** 2)
         R_IN = mid_ - 0.5 * wid
         rr = R_IN[:, None] + wid[:, None] * uu[None, :]
         X = rr * np.sin(th)[:, None]
@@ -4274,8 +4280,8 @@ def arcanist():
         _, jn = cKDTree(cp).query(sp)
         made.append(finish("arcanist.clasp_stone", sp, sk(sp), st, "amethyst", 0.0, 0.0, 10 ** 6, scraps=False))
         # (under a half-round crescent the bezel's ring stood off it at its top and
-        # bottom: its outer wall flares back 6 mm into the crescent, a bezel cup)
-        BEZ = ((1.0, 0.0), (1.0, -0.001), (1.2, -0.001), (1.2, 0.0)) if not (CLASP_D and CLASP_D_ROUND) else               ((1.0, 0.0), (1.0, -0.001), (1.2, -0.001), (1.25, -0.0002), (1.3, 0.006))
+        # bottom: its outer wall flares back 3.5 mm into the crescent, a bezel cup)
+        BEZ = ((1.0, 0.0), (1.0, -0.001), (1.2, -0.001), (1.2, 0.0)) if not (CLASP_D and CLASP_D_ROUND) else               ((1.0, 0.0), (1.0, -0.001), (1.2, -0.001), (1.25, -0.0002), (1.3, 0.0035))
         bp = [c0 + np.array([0.005 * ra * np.cos(2 * np.pi * j / nu), dy, 0.004 * ra * np.sin(2 * np.pi * j / nu)])
               for ra, dy in BEZ for j in range(nu)]
         bt = [t_ for k in range(len(BEZ) - 1) for j in range(nu) for t_ in ((k * nu + j, (k + 1) * nu + (j + 1) % nu, k * nu + (j + 1) % nu),
@@ -4415,12 +4421,11 @@ def arcanist():
                 * ramp(-q[:, 2], -(CROTCH + 0.035), -(CROTCH + 0.028)))
     # (judge h: the glove copied the nail's free edge at the thumb tip, an
     # overhang with a dark wedge under it, and a pale lip at the thumb and
-    # index tips. Over the last 4-9 mm of each finger its hollows are filled
-    # (smoothed outward only, so it never comes nearer her), and the nail's
+    # index tips. Over the last 4-9 mm of each finger it is laid on the
+    # convex hull of the tip (outward only, never nearer her): the nail's
     # step goes under one round cap. Dark flecks at the sleeve's hem over the
     # glove's top: its top 15 mm sunk GLOVE_SINK deeper, under the sleeve)
     GLOVE_TIP_R = tuple(float(v) for v in os.environ.get("GLOVE_TIP_R", "0.004,0.009").split(","))
-    GLOVE_TIP_ROUNDS = int(os.environ.get("GLOVE_TIP_ROUNDS", "80"))
     GLOVE_SINK = float(os.environ.get("GLOVE_SINK", "0.001"))
     skin_kd = cKDTree(P)
 
@@ -4432,7 +4437,9 @@ def arcanist():
         nb = skin_kd.query(pos)[1]
         nor = vertex_normals(pos, tris)
         sgn = 1.0 if (nor * N[nb]).sum(1).mean() > 0 else -1.0
-        wt = np.zeros(len(pos))
+        from scipy.spatial import ConvexHull
+        p0 = pos.copy()
+        nfill = 0
         for fg in ("thumb", "index", "middle", "ring", "pinky"):
             bs = [BI[f"{fg}_0{i}_{sd}"] for i in (1, 2, 3) if f"{fg}_0{i}_{sd}" in BI]
             if len(bs) < 3:
@@ -4442,20 +4449,27 @@ def arcanist():
                 continue
             base = P[W[:, bs[1]] > 0.5].mean(0)
             tip = P[sel][np.argmax(np.linalg.norm(P[sel] - base, axis=1))]
-            k = np.clip((GLOVE_TIP_R[1] - np.linalg.norm(pos - tip, axis=1)) / (GLOVE_TIP_R[1] - GLOVE_TIP_R[0]), 0, 1)
-            wt = np.maximum(wt, np.where(W[nb][:, bs].sum(1) > 0.3, k * k * (3 - 2 * k), 0.0))
-        A = adjacency(len(pos), tris)
-        A = A @ A   # (two rings round each point: a wedge wider than one edge fills too)
-        p0 = pos.copy()
-        for _ in range(GLOVE_TIP_ROUNDS):
-            nor = sgn * vertex_normals(pos, tris)
-            dv = ((A @ pos - pos) * nor).sum(1)
-            pos = pos + (np.maximum(dv, 0) * wt)[:, None] * nor
+            d = np.linalg.norm(p0 - tip, axis=1)
+            # (the sheet folds back under the nail's free edge, so smoothing
+            # can't open it: each tip is laid on the convex hull of its own
+            # last GLOVE_TIP_R[1] + 3 mm, which only moves it outward)
+            m = (d < GLOVE_TIP_R[1] + 0.003) & (W[nb][:, bs].sum(1) > 0.5)
+            if m.sum() < 20:
+                continue
+            h = ConvexHull(p0[m])
+            hb = BVHTree.FromPolygons([tuple(q) for q in p0[m]], h.simplices.tolist())
+            k = np.clip((GLOVE_TIP_R[1] - d) / (GLOVE_TIP_R[1] - GLOVE_TIP_R[0]), 0, 1)
+            k = k * k * (3 - 2 * k)
+            for i in np.where(m & (k > 0))[0]:
+                q = hb.find_nearest(Vector(p0[i]))[0]
+                if q is not None:
+                    pos[i] = p0[i] * (1 - k[i]) + np.array(q[:]) * k[i]
+                    nfill += 1
         mv = np.linalg.norm(pos - p0, axis=1)
         kt = glove_top_k(pos, sd)
         pos = pos - sgn * vertex_normals(pos, tris) * (GLOVE_SINK * kt)[:, None]
-        print("GLOVE %s: fingertips filled on %d points (moved out up to %.2f mm, %d over 0.3 mm); top %d points sunk %.1f mm"
-              % (sd, int((wt > 0).sum()), mv.max() * 1000, int((mv > 0.0003).sum()), int((kt > 0.5).sum()), GLOVE_SINK * 1000))
+        print("GLOVE %s: fingertips laid on their hulls, %d points (moved out up to %.2f mm, %d over 0.3 mm); top %d points sunk %.1f mm"
+              % (sd, nfill, mv.max() * 1000, int((mv > 0.0003).sum()), int((kt > 0.5).sum()), GLOVE_SINK * 1000))
         return pos
     out = [
         # (opening into the gusset at its foot, as the warden's does)
