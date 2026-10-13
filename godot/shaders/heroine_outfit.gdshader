@@ -30,7 +30,7 @@ uniform vec3 thread : source_color = vec3(0.78, 0.7, 0.55);
 uniform float grain = 0.6;                         // how strongly the fine grain shows
 uniform float view_pull = 0.0;                     // metres drawn toward the camera (a decal on her skin: the ink, never z-fighting it)
 uniform bool test_flat = false;                  // (the legal motion check: every garment flat grey, coverage unchanged)
-uniform int debug_view = 0;                        // (1 edge distance, 2 convexity, 3 sky seen: to check what was baked)
+uniform int debug_view = 0;                        // (1 edge distance, 2 convexity, 3 sky seen: to check what was baked; 4 gold flat magenta, a mask for measuring it)
 
 varying vec4 det;                                  // (edge distance m, convexity 0..1, sky seen, piece)
 varying float painted;                             // (1 where stitches are painted; 0 where the piece is sewn with thread of its own)
@@ -97,6 +97,7 @@ void fragment() {
 	float metal = has_orm ? mix(metallic_value, texture(orm, UV).b, step(0.5, metallic_value)) : metallic_value;
 	float edge = max(det.x, 0.0), conv = clamp(det.y, 0.0, 1.0), sky = clamp(det.z, 0.0, 1.0), piece = clamp(det.w, 0.0, 1.0);
 	float near_edge = 1.0 - smoothstep(0.0, 0.003, edge);
+	float gold = 0.0;                               // (1 on a gold metal, from its own mean colour below)
 	float bulge = smoothstep(0.55, 0.85, conv);
 	float hollow = smoothstep(0.45, 0.2, conv);
 	// Each piece a shade of its own, and broad unevenness across it.
@@ -144,6 +145,8 @@ void fragment() {
 		// even faint, read in its reflections as lumps, so none of it here)
 		vec3 mean_col = textureLod(albedo, vec2(0.5), 20.0).rgb * tint;   // (its smallest mip, one texel: the true mean; a 2x2 mip read through each UV island's own corner showed as pale patches)
 		col = mean_col;
+		// (gold and claspgold: mean linear red 0.95, blue 0.15 of it; every other metal's red is under 0.41)
+		gold = smoothstep(0.6, 0.75, mean_col.r) * (1.0 - smoothstep(0.3, 0.45, mean_col.b / max(mean_col.r, 1e-4)));
 		vec2 e = vec2(0.003, 0.0);
 		float h0 = fbm(m * 40.0), hx = fbm((m + e.xy) * 40.0), hy = fbm((m + e.yx) * 40.0);
 		vec3 dent = normalize(vec3((h0 - hx) * 0.08, (h0 - hy) * 0.08, 1.0)) * 0.5 + 0.5;
@@ -197,6 +200,7 @@ void fragment() {
 	AO_LIGHT_AFFECT = 0.3;
 	if (debug_view == 1) { ALBEDO = vec3(1.0 - smoothstep(0.0, 0.01, edge), fract(edge / 0.004), 0.0); ROUGHNESS = 1.0; METALLIC = 0.0; NORMAL_MAP = vec3(0.5, 0.5, 1.0); }
 	if (debug_view == 2) { ALBEDO = vec3(conv); ROUGHNESS = 1.0; METALLIC = 0.0; NORMAL_MAP = vec3(0.5, 0.5, 1.0); }
+	if (debug_view == 4) { ALBEDO = vec3(0.0); EMISSION = vec3(gold, 0.0, gold) * 4.0; ROUGHNESS = 1.0; METALLIC = 0.0; SPECULAR = 0.0; NORMAL_MAP = vec3(0.5, 0.5, 1.0); }
 	if (debug_view == 3) { ALBEDO = vec3(sky); ROUGHNESS = 1.0; METALLIC = 0.0; NORMAL_MAP = vec3(0.5, 0.5, 1.0); }
 	if (test_flat) { ALBEDO = vec3(0.0); METALLIC = 0.0; ROUGHNESS = 1.0; SPECULAR = 0.0; RIM = 0.0; EMISSION = vec3(0.5); }
 }
