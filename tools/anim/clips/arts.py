@@ -206,11 +206,22 @@ SWORD_BACK_BLADE = (-0.2, 0.15, -0.97)       # f12: the blade drawn back behind 
 SWORD_WAY = ((12, SWORD_BACK, SWORD_BACK_POLE),
              (16, (-0.25, -0.15, 0.08), (-0.25, -1.0, -0.1)),
              (22, None, None))                 # (None: her guard's)
-SHOVE_AT = np.array((-0.10, 0.02, 0.44))                    # f12: the shield's place on the plant (chest frame, from the shoulder)
-SHOVE_PUNCH = np.array((0.02, 0.02, 0.03))                # f14: the punch's reach beyond it
+SHOVE_AT = np.array((-0.08, 0.0, 0.40))                     # f12: the shield cocked in on the plant (chest frame, from the shoulder)
+# The punch, the impact and the recoil (chest frame, from the shoulder): solved from the build so the shield's hand
+# goes 17 cm forward over the ground at f13, 18 at f14 (a near-hold), back to 12 at f15 (round 7: keyed as a
+# reach beyond the plant's, the chest's yaw and pitch sent the punch to her right and down).
+SHOVE_13 = np.array((0.045, 0.166, 0.389))
+SHOVE_14 = np.array((0.044, 0.170, 0.386))
+SHOVE_15 = np.array((-0.021, 0.099, 0.387))
 SHOVE_POLE = (1.0, -0.4, -0.4)
-REBOUND_HAND = (-0.10, -0.10, 0.42)                            # f16: the shield's place on its way home (None: between the shove and the guard)
+SHOVE_THUMB = (-0.3, 0.6, 0.75)                           # the shield hand rides its forearm (the shield is on the forearm): no blade aim, no wrist bend
+REBOUND_HAND = (-0.051, -0.028, 0.426)                           # f16: the shield's place on its way home (None: between the shove and the guard)
 REBOUND_POLE = (1.0, -0.5, -0.4)
+# The sword hand's pace from the plant into the guard (SWING): cm a frame at the tip, as the judge keyed it
+# (slow out of the plant, the peak at f17-18, braking into the guard), one entry per frame f12->f13 ... f21->f22.
+SWORD_PACE = (3, 5, 8, 13, 18, 20, 15, 10, 5, 2)
+OVERSHOOT, OVER_END = 0.035, 25               # the blade runs this far past the guard's turn at f22 (of SWING's turn), back by OVER_END
+HEAD_NOD = {14: 1.0, 15: 5.0, 16: 5.0, 17: 2.0}   # the recoil's nod (degrees, chin down), a frame behind the chest
 HOME_LIFT = 0.0                                # f22: the shield on her guard (a lift off it brought the rim to her pauldron)
 HEAD_FROM, HEAD_SETTLE = 11, 24
 
@@ -256,6 +267,8 @@ def _head_held(start, settle, guard):
         u = min(1.0, (fr - start) / (settle - start))
         u = u * u * (3 - 2 * u)
         want = qslerp(ends["a"], qmul(chain(guard), qeuler(*guard["head"])), u)
+        if HEAD_NOD.get(fr):
+            want = qmul(want, qeuler(0, HEAD_NOD[fr], 0))
         m = qmatrix(qmul(qinv(chain(pose)), want))
         pose = dict(pose)
         pose["head"] = (math.degrees(math.atan2(m[0, 2], m[2, 2])), math.degrees(math.asin(max(-1.0, min(1.0, -m[1, 2])))),
@@ -268,10 +281,9 @@ def bull_rush(rig):
     plant = {"foot_l": {"pos": PLANT_L, "rot": (12, 0, 0), "pole": (0.2, 0, 1)},
              "foot_r": {"pos": (-0.14, 0.06, -0.46), "rot": (-16, 40, 0), "toe": 40},
              "fingers_l": "fist", "fingers_r": "grip"}
-    shove_l = {"arc": arc_of(SHOVE_AT), "pole": SHOVE_POLE, "frame": "chest",
-               "blade": _n(-0.1, 0.85, 0.5), "twist": 0.3}
-    sword_up = {"arc": arc_of(SWORD_BACK), "pole": SWORD_BACK_POLE, "frame": "chest",
-                "blade": _n(*SWORD_BACK_BLADE), "twist": 0.5}
+    shove_l = {"arc": arc_of(SHOVE_AT), "pole": SHOVE_POLE, "frame": "chest", "thumb": SHOVE_THUMB}
+    sword_up = {"arc": arc_of(SWORD_BACK), "pole": SWORD_BACK_POLE, "frame": "chest", "twist": 0.5,
+                **({"blade": _n(*SWORD_BACK_BLADE)} if SWORD_BACK_BLADE is not None else {})}
     slam = body({**plant, "hips": {"pos": (0.02, -0.22, 0.10)}, "hand_l": shove_l, "hand_r": sword_up,
                  "clav_l": (6, 16), "clav_r": (6, -4)},
                 hips=(-12, 22, 0), spine=(-22, 16, 0), neck=(0, -10, 0), head=(18, -18, 0))
@@ -303,25 +315,33 @@ def bull_rush(rig):
     keys += [
         # The lead foot slams down; the shield punches out, the body behind it.
         (12, slam, "fast"),
-        (14, body({**plant, "hips": {"pos": (0.02, -0.24, 0.13)}, "hand_l": {**shove_l, "arc": arc_of(SHOVE_AT + SHOVE_PUNCH), "pole": SHOVE_POLE},
-                   "clav_l": (6, 20), "clav_r": (6, -6)},
-                  hips=(-14, 24, 0), spine=(-24, 16, 0), neck=(0, -10, 0), head=(20, -18, 0)), "ease"),
-        # The trunk alone, about a fifth of the way from the shove to the guard's: the shove's
-        # "ease" held the chest still at f14 and then whipped it (10 degrees a frame).
-        (15, body({}, hips=(-12.5, 20.6, 0), spine=(-21.0, 13.3, 0), neck=(0, -8.6, 0), head=(17.6, -15.2, 0)), "auto"),
+        # The punch: the body drives through the shield, chest fastest f12-13, the left shoulder
+        # forward, the arm straight.
+        (13, body({**plant, "hips": {"pos": (0.02, -0.23, 0.14)}, "hand_l": {**shove_l, "arc": arc_of(SHOVE_13)},
+                   "clav_l": (6, 24), "clav_r": (6, -6)},
+                  hips=(-14, 25, 0), spine=(-25, 22, 0), neck=(0, -10, 0), head=(20, -18, 0)), "auto"),
+        # The impact: a near-hold.
+        (14, body({**plant, "hips": {"pos": (0.02, -0.235, 0.15)}, "hand_l": {**shove_l, "arc": arc_of(SHOVE_14)},
+                   "clav_l": (6, 24), "clav_r": (6, -6)},
+                  hips=(-14, 25, 0), spine=(-25, 22, 0), neck=(0, -10, 0), head=(20, -18, 0)), "ease"),
+        # The recoil: knocked back off the hit, the shield 5 cm back, the hips back, the chest pitching up.
+        (15, body({**plant, "hips": {"pos": (0.02, -0.228, 0.14)},
+                   "hand_l": {**shove_l, "arc": arc_of(SHOVE_15)},
+                   "clav_l": (5, 18), "clav_r": (5, -5)},
+                  hips=(-13, 23.5, 0), spine=(-22, 20, 0), neck=(0, -8.6, 0), head=(17.6, -15.2, 0)), "auto"),
         # The rebound: back up over her feet, the back foot stepping up into
         # her guard (the lead foot stays planted), shield home.
         (16, body({"foot_l": plant["foot_l"], "foot_r": {"pos": (-0.16, 0.10, -0.30), "rot": (-20, 12, 0), "toe": 10},
-                   "hips": {"pos": (0.01, -0.20, 0.10)}, "clav_l": (4, 12), "clav_r": (4, -4),
+                   "hips": {"pos": (0.01, -0.205, 0.10)}, "clav_l": (4, 12), "clav_r": (4, -4),
                    **({"hand_l": {"arc": arc_of(REBOUND_HAND), "pole": REBOUND_POLE, "frame": "chest", "thumb": (-0.3, 0.75, 0.6)}}
                       if REBOUND_HAND is not None else {})},
-                  hips=(-11.0, 17.2, 0), spine=(-17.9, 10.7, 0), neck=(0, -6, 0), head=(15, -12, 0)), "auto"),
+                  hips=(-11.0, 17.2, 0), spine=(-17.9, 15.0, 0), neck=(0, -6, 0), head=(15, -12, 0)), "auto"),
         (19, body({"foot_l": {"pos": PLANT_L, "rot": (12, 0, 0)},
                    "foot_r": {"pos": (-0.17, 0.0, -0.13), "rot": (-25, 0, 0)},
-                   "hips": {"pos": (0.0, -0.12, 0.04)}, "hand_l": _shield_home(-0.03),
+                   "hips": {"pos": (0.0, -0.155, 0.065)}, "hand_l": _shield_home(-0.03),
                    "fingers_l": "fist", "fingers_r": "grip"},
                   hips=(-8.6, 6, 0), spine=(-11.6, 3, 0), neck=(0, -2, 0), head=(8, -4, 0)), "auto"),
-        (22, body({**GUARD, "hips": {"pos": (0.0, -0.09, 0.03)}, "hand_l": _shield_home(HOME_LIFT)},
+        (22, body({**GUARD, "hips": {"pos": (0.0, -0.10, 0.035)}, "hand_l": _shield_home(HOME_LIFT)},
                   hips=(-3, 5, 0), spine=(-4, 4, 0), head=(4, -4, 0)), "auto"),
         # Her guard, the shield held a hand further out before her than the
         # sword clips' (their guard_l rests its rim on her breastplate).
@@ -386,6 +406,22 @@ def _glide(u, ramp=None):
     return up(ramp) + top * (u - ramp)
 
 
+def _pace(u):
+    """0..1 along SWING at the judge's pace (SWORD_PACE, one entry a frame), smooth between frames."""
+    c = np.concatenate([[0.0], np.cumsum(SWORD_PACE)]) / sum(SWORD_PACE)
+    x = min(1.0, max(0.0, u)) * len(SWORD_PACE)
+    i = min(int(x), len(SWORD_PACE) - 1)
+    return float(c[i] + (c[i + 1] - c[i]) * (x - i))
+
+
+def _over(fr):
+    """How far past the guard's turn (of SWING's turn) the sword hand runs at frame fr >= SWING's end: the peak at
+    its end, back by OVER_END."""
+    b = SWING[1]
+    u = (fr - b) / (OVER_END - b)
+    return OVERSHOOT * (1 - _ease(min(1.0, max(0.0, u))))
+
+
 def _unarc(arc):
     """The hand's place from the shoulder (chest frame) that arc_of gave as `arc`."""
     az, el, r = math.radians(arc[0]), math.radians(arc[1]), arc[2]
@@ -421,7 +457,7 @@ def _sword_way(a, b):
     def post(fr, pose):
         if not a < fr < b:
             return pose
-        t = a + (b - a) * _glide((fr - a) / (b - a))
+        t = a + (b - a) * _pace((fr - a) / (b - a))
         h, pole = at(t)
         pose = dict(pose)
         pose["hand_r"] = {"arc": arc_of(h), "pole": tuple(float(x) for x in pole), "frame": "chest", "twist": 0.5}
@@ -452,12 +488,21 @@ def _turn_world(rig, first, a, b, lead=3, side="r"):
     plant = qslerp(g[a, h], qmul(qbetween(blade(g[b, h]), blade(g[a, h])), g[b, h]), PLANT_ROLL)
 
     def post(fr, pose):
-        if not a - lead < fr < b:
+        if not a - lead < fr <= (OVER_END if b == SWING[1] else b - 1):
             return pose
         if fr < a:
             hand = qslerp(g[a - lead, h], plant, _ease((fr - a + lead) / lead))
+        elif fr < b:
+            hand = qslerp(plant, g[b, h], _pace((fr - a) / (b - a)))
         else:
-            hand = qslerp(plant, g[b, h], _glide((fr - a) / (b - a)))
+            # past the guard's turn and back (the blade's follow-through in the wrist): the plant-to-guard
+            # turn carried on a little, applied to the hand as the keys hold it there
+            r = qmul(g[b, h], qinv(plant))
+            if r[3] < 0:
+                r = -r
+            ang = 2 * math.acos(min(1.0, r[3]))
+            ax = r[:3] / max(1e-9, np.linalg.norm(r[:3]))
+            hand = qmul(qaxis(ax, math.degrees(ang * _over(fr))), g[fr, h])
         q = qmul(qinv(qmul(g[fr, s3], qinv(rig.grest[s3]))), qmul(hand, lq))
         pose = dict(pose)
         pose[f"hand_{side}"] = dict(pose[f"hand_{side}"], frame="chest", blade=tuple(float(x) for x in qrot(q, [0, 0, 1.0])),
