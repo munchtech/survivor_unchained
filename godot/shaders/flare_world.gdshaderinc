@@ -180,18 +180,32 @@ vec4 flare_boom(vec2 w, out vec2 at) {
 	vec2 d = w - bm.xy;
 	float dl = length(d);
 	float a = atan(d.y, d.x);
-	// A little ragged by angle and place, never far off the mean the bursts and the tongues keep (FlareFx.RingAt).
-	float fing = texture(flare_noise, vec2(a * 0.47746, 0.63)).g;
+	// Never a neon hoop (judge 2, s4): it wobbles about 0.4 m either side of the mean the bursts keep
+	// (FlareFx.RingAt), ragged by place too.
+	float u = a * 0.15915;
+	float wob = (texture(flare_noise, vec2(u * 2.0, 0.63 + bm.w * 0.5)).g - 0.5) * 1.3 + (texture(flare_noise, vec2(u * 9.0, 0.29)).r - 0.5) * 0.3;
 	float n = texture(flare_noise, w * 0.35).r;
-	float ahead = flare_ring(bm.w, bm.z) * (0.985 + 0.03 * fing) + (n - 0.5) * 0.3 - dl;
+	float ahead = flare_ring(bm.w, bm.z) + wob + (n - 0.5) * 0.3 - dl;
 	// Over the whole reach, wherever it struck; the line burns out as it reaches the edge.
 	float fade = 1.0 - smoothstep(flare_at.w - 1.0, flare_at.w + 1.5, length(w - flare_at.xz));
-	float lit = fade * (1.0 - smoothstep(0.62, 0.85, bm.w));
-	// Across the line, about 0.6 m in all: a red breath ahead (15 cm), the white-yellow core (12 cm), then
-	// orange cooling to red over 40 cm behind it. (A third of a metre of core and half a metre of orange, under
-	// the glow, read as a thick soft cream band: s2e.)
+	// Its fire uneven along its length: 30% either way, drifting.
+	float br = 0.7 + 0.6 * clamp(0.5 + (texture(flare_noise, vec2(u * 3.0, 0.41 + bm.w * 1.3)).g - 0.5) * 2.4, 0.0, 1.0);
+	float lit = fade * (1.0 - smoothstep(0.62, 0.85, bm.w)) * br;
+	// Across the line, thin: the white-yellow core (12 cm), orange cooling to red over 40 cm behind it, and ahead
+	// of it a fading red edge. (A third of a metre of core and half a metre of orange, under the glow, read as a
+	// thick soft cream band: s2e.)
 	float core = exp(-pow((ahead - 0.05) / 0.07, 2.0));
-	float body = smoothstep(-0.15, 0.03, ahead) * exp(-max(ahead - 0.03, 0.0) / 0.16);
+	float body = pow(smoothstep(-0.45, 0.03, ahead), 2.0) * exp(-max(ahead - 0.03, 0.0) / 0.16);
+	// Tongues of flame licking out ahead of it, 1-1.5 m, on a few angles (about eight round it: the noise's
+	// blue holds ~17 px features), each flickering every three or four frames; orange at the root, red to
+	// their tips, torn.
+	float tg = smoothstep(0.6, 0.78, texture(flare_noise, vec2(u * 2.0, 0.83)).b);
+	float fl = texture(flare_noise, vec2(u * 2.0 + 0.5, 0.17 + floor(TIME * 16.0) * 0.0731)).b;
+	float tl = tg * 1.45 * (0.5 + 0.5 * smoothstep(0.3, 0.7, fl));
+	float out_ = -ahead;
+	float tear = texture(flare_noise, w * 1.7 + vec2(0.0, -TIME * 2.5)).g;
+	float tongue = step(0.0, out_) * (1.0 - smoothstep(tl * 0.35, tl, out_ + (tear - 0.5) * 0.35)) * step(0.05, tl);
+	body = max(body, tongue * (0.85 - 0.6 * clamp(out_ / max(tl, 0.01), 0.0, 1.0)) * (0.6 + 0.6 * tear));
 	// Behind it the ground is burnt black at once; gone back to wet ground through the Return.
 	float ch = smoothstep(0.12, 0.42, ahead) * fade * (1.0 - smoothstep(2.2, 4.6, bm.w));
 	// Its cracks glow a breath behind the line, no further. (Glowing 1.6 m back, the whole inside of the ring
@@ -209,7 +223,23 @@ float flare_boom_behind(vec2 w) {
 
 // The BOOM's line on a surface (its white-yellow core under the knee, orange to red behind it).
 vec3 flare_boom_light(vec4 bo) {
-	return mix(vec3(0.5, 0.05, 0.008), vec3(1.0, 0.4, 0.06), smoothstep(0.15, 0.85, bo.y)) * bo.y * 1.15 + vec3(1.0, 0.85, 0.55) * bo.x * 0.7;
+	return mix(vec3(0.5, 0.05, 0.008), vec3(1.0, 0.36, 0.05), smoothstep(0.15, 0.85, bo.y)) * bo.y * 1.05 + vec3(1.0, 0.72, 0.36) * bo.x * 0.55;
+}
+
+// The last word's ground flash (judge 2, s4): its first frames, a torn disc about 3 m across round the crater, a
+// yellow heart under the knee going orange to its ragged edge (Flare time: the hitstop holds it ~4 frames).
+vec3 flare_boom_flash(vec2 w) {
+	vec4 bm = texelFetch(flare_marks, ivec2(31, 0), 0);
+	if (bm.z <= 0.0 || bm.w > 0.03) return vec3(0.0);
+	vec2 d = w - bm.xy;
+	float dl = length(d);
+	float u = atan(d.y, d.x) * 0.15915;
+	float torn = texture(flare_noise, vec2(u * 7.0, 0.11)).r + (texture(flare_noise, vec2(u * 19.0, 0.53)).g - 0.5) * 0.6;
+	float R = 1.55 * (0.65 + 0.6 * torn);
+	float k = 1.0 - smoothstep(0.004, 0.014, bm.w);
+	float disc = 1.0 - smoothstep(R * 0.7, R, dl + (texture(flare_noise, w * 2.3).b - 0.5) * 0.35);
+	float heart = 1.0 - smoothstep(0.0, R * 0.55, dl);
+	return (vec3(1.0, 0.42, 0.08) * disc * 0.9 + vec3(0.6, 0.45, 0.2) * heart * 0.5) * k;
 }
 
 // The ground: drained, then the web, the frost and the impacts over it (the Flare's own, never drained).
@@ -268,13 +298,27 @@ void flare_ground(vec3 wp, inout vec3 alb, inout float rough, inout float spec, 
 		// The BOOM's ring: black char behind it, mottled dry and wet (both black: mottled back to the lit ground,
 		// the inside read orange-brown under the last word's light, s2e), its cracks glowing a breath behind
 		// the line; the line itself white-yellow at its core (under the knee), orange to red behind.
+		// Char a dark warm brown, a step under the unburnt ground (judge 2, s4: near-black read as a dead frame),
+		// blacker while fresh; mottled dry and wet.
 		float mot = texture(flare_noise, w * 0.23 + 0.5).g;
-		alb = mix(alb, mix(vec3(0.014, 0.012, 0.01), vec3(0.006, 0.005, 0.005), smoothstep(0.3, 0.7, mot)), bo.z * 0.97);
+		vec4 bmk = texelFetch(flare_marks, ivec2(31, 0), 0);
+		float aged = smoothstep(0.25, 1.4, bmk.w);
+		// (The ring's inside is lit hard after the BOOM: at 0.3-0.66 of the ground it washed the frame salmon at
+		// 3-4x ready, s5b-c. So the char stays near black, warm, a little lighter than the old 0.01.)
+		vec3 charc = vec3(0.026, 0.018, 0.012) * mix(1.25, 0.7, smoothstep(0.3, 0.7, mot)) * mix(0.6, 1.0, aged);
+		alb = mix(alb, charc, bo.z * 0.97);
 		rough = mix(rough, mix(0.3, 0.85, smoothstep(0.35, 0.65, mot)), bo.z);
 		spec = mix(spec, 0.25, bo.z);
 		emi *= 1.0 - 0.7 * bo.z;
 		emi += vec3(1.0, 0.3, 0.05) * bo.w * crack * 0.9;
 		emi += flare_boom_light(bo);
+		// Live embers scattered in the char, breathing, dying through the Return (FLARE_LOOK §4.1).
+		float en = texture(flare_noise, w * 1.9 + 0.31).b;
+		float ember = smoothstep(0.83, 0.9, en) * (1.0 - smoothstep(0.9, 0.97, en)) * smoothstep(0.55, 0.8, texture(flare_noise, w * 0.4 + 0.7).r);
+		float breath = 0.65 + 0.35 * sin(TIME * (3.0 + 4.0 * en) + en * 40.0);
+		emi += vec3(1.0, 0.33, 0.06) * ember * breath * bo.z * smoothstep(0.08, 0.3, bmk.w) * (1.0 - smoothstep(2.5, 5.0, bmk.w)) * 1.3;
+		// The last word's ground flash.
+		emi += flare_boom_flash(w);
 		// The front: the frost crystallising as it comes, cold points in a narrow fingered band.
 		float band = smoothstep(-0.2, 0.25, flare_frost.x - arr) * (1.0 - smoothstep(0.25, 1.4, flare_frost.x - arr));
 		float twinkle = step(0.55, fract(sin(dot(floor(w * 22.0), vec2(12.9898, 78.233)) + floor(TIME * 12.0)) * 43758.5453));
@@ -285,7 +329,9 @@ void flare_ground(vec3 wp, inout vec3 alb, inout float rough, inout float spec, 
 		nrm_view = normalize((view * vec4(nw, 0.0)).xyz);
 		// The web shows faint under the ice, and is burnt out under the char (its glow over the inside of the
 		// ring read as orange lines on the black: s2e).
-		web *= (1.0 - 0.45 * ice) * (1.0 - 0.95 * bo.z);
+		// Through the char it glows amber (judge 2, s4), a breath warmer than the web on open ground.
+		web *= (1.0 - 0.45 * ice) * (1.0 + 0.4 * bo.z);
+		web = mix(web, vec3(dot(web, FL_LUM)) * vec3(1.9, 0.95, 0.25), 0.5 * bo.z);
 	}
 	emi += web;
 }
@@ -418,5 +464,18 @@ void flare_prop(vec3 wp, vec3 nrm_view, mat4 inv_view, inout vec3 alb, inout flo
 		float face = 0.3 + 0.7 * max(0.0, dot(nw, normalize(vec3(bat.x - wp.x, 0.4, bat.y - wp.z))));
 		emi += vec3(1.0, 0.42, 0.1) * (bo.x * 0.5 + bo.y * 0.25) * face;
 	}
-	alb = mix(alb, vec3(0.014, 0.012, 0.01), bo.z * 0.85 * smoothstep(0.2, 0.8, nw.y));
+	// (Char a dark warm brown, as on the ground.)
+	alb = mix(alb, vec3(0.026, 0.018, 0.012), bo.z * 0.85 * smoothstep(0.2, 0.8, nw.y));
+}
+
+// The BOOM's line reaching a statue (judge 2, s4: statues just behind the line stood whole): it cracks, the fire
+// showing orange through its glaze along hairline cracks, for the frame or three before it bursts
+// (FlareFx.CrackHold). Read by vat.gdshaderinc after the glaze; 0 off the line's reach.
+float flare_crack(vec3 wp) {
+	if (flare_look.w < 0.5 || flare_frost.y <= 0.0) return 0.0;
+	float bh = flare_boom_behind(wp.xz);
+	if (bh < -0.6 || bh > 3.0) return 0.0;
+	float g = flare_glazed(wp);
+	float lines = 1.0 - smoothstep(0.0, 0.07, texture(flare_noise, wp.xz * 1.1 + wp.y * vec2(0.83, 1.37)).a);
+	return smoothstep(-0.6, -0.1, bh) * g * (0.3 + 1.4 * lines);
 }

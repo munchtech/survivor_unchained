@@ -269,6 +269,8 @@ public partial class FlareFx
                 var sp = pos - em.Dir * (FallSpeed * dt * R());
                 bed.Spawn(FlareBits.Kind.Puff, sp, -em.Dir * 1.5f + Rand3() * 0.4f, 1.1f + R() * 0.9f, 0.35f, new Color(0.09f, 0.08f, 0.075f, 0.55f), sizeEnd: 1.4f + R(), drag: 2.5f, lift: 0.3f);
             }
+            // The eye darkens for the last two frames before the last word: the BOOM's punch is the dark before it.
+            if (em.Last && t - em.Born >= em.FallT - 2.2 / 60) Dip(LessFlash ? 0.85f : 0.68f);
             if (t >= em.LandAt) Land(em);
         }
         if (colT >= 0) { colT += dt; Column(dt); }
@@ -337,12 +339,21 @@ public partial class FlareFx
             ringMax = reach + new Vector2(p.X - at.X, p.Z - at.Z).Length() + 1.5f;
             // Every statue still standing breaks as the ring crosses it, outward from the blast.
             foreach (var d in doomed.Values)
-                if (d.At == Held) { d.At = t + RingTime(d.Where.DistanceTo(p)); d.From = p; }
+                if (d.At == Held) { d.At = t + RingTime(d.Where.DistanceTo(p)) + CrackHold(); d.From = p; }
         }
         if (!firstLanded) { firstLanded = true; Shots.Want("b7_ember1", 1 / 60.0); Shots.Want("b8_embers", 0.2); }
-        if (em.Last) { Shots.Want("b9_last", 1 / 60.0); Shots.Want("c1_last5", 5 / 60.0); Shots.Want("c1w_wave", 0.3); Shots.Want("c2_ret1", 1); Shots.Want("c3_ret3", 3); Shots.Want("c4_ret6", 5.5); }
+        if (em.Last) { Shots.Want("b9_last", 1 / 60.0); Shots.Want("c1_last5", 5 / 60.0); Shots.Want("c1a_p10", 0.1); Shots.Want("c1w_wave", 0.3); Shots.Want("c2_ret1", 1); Shots.Want("c3_ret3", 3); Shots.Want("c4_ret6", 5.5); }
         marks.Add(new Vector4(p.X, p.Z, em.Radius * (em.Last ? 0.8f : 0.9f), (float)t));
         if (marks.Count > 30) marks.RemoveAt(0);
+        // (The last word's own light, if it carried one, goes with the flash: left on, it lit the char orange to
+        // the end of the Return, s5a.)
+        if (em.Last && em.Light != null)
+        {
+            var l = em.Light;
+            GetTree().CreateTween().TweenProperty(l, "light_energy", 0f, 0.12f).SetEase(Tween.EaseType.Out);
+            GetTree().CreateTimer(0.15).Timeout += () => { if (IsInstanceValid(l)) l.QueueFree(); };
+            em.Light = null;
+        }
         if (em.Last) LastWord(p);
         else
         {
@@ -388,28 +399,27 @@ public partial class FlareFx
         }
     }
 
-    /// <summary>The last word (FLARE_LOOK §2.2): a short flash, and out of it a column of fire driven straight up
-    /// (Column: a narrow hot root, comets of white-hot fire up its spine, the fire climbing after them, a dark head
-    /// mushrooming where they stop, lit from below, the stem's smoke after), the ice blown out of the crater, and
-    /// the ring. Told by its shape, size and motion, not by more light (§1.6 has no headroom). (Twenty billows
-    /// at once, swelling where they slowed, read as a soft cream blob: s2e.)</summary>
+    /// <summary>The last word (FLARE_LOOK §2.2): ONE event bigger than any ember (judge 2, s4). The eye darkened for
+    /// two frames before it (BurnsTick); a torn 3 m ground flash, a low light on the statues' rims round it; one
+    /// pillar of fire at its full height in 0.15 s under a dark cap lit from below, jets of flame thrown out along
+    /// the ground with a spray of sparks (FlareFx.Boom), the ice blown out of the crater, and the ring. Told by
+    /// its shape, size and motion, not by more light (§1.6 has no headroom).</summary>
     void LastWord(Vector3 p)
     {
         colT = 0;
-        // The flash: four frames at its peak, under the knee, low at the root.
-        glow.Spawn(FlareBits.Kind.Mote, p + Vector3.Up * 0.5f, Vector3.Zero, 0.07f, 1.9f, new Color(1.0f, 0.62f, 0.26f), new Color(0.5f, 0.12f, 0.02f));
-        // The spine's first strike: comets already in flight up out of the root.
-        for (int i = 0; i < 8; i++) SpineComet(p, 1.1f + 0.2f * R());
-        // Its root: tongues turned out along the ground, and the ice thrown out of the crater, hot.
-        for (int i = 0; i < 8; i++)
-        {
-            float a = i / 8f * Mathf.Tau + R() * 0.5f;
-            var v = new Vector3(Mathf.Cos(a) * (5 + R() * 3), 2.5f + R() * 2, Mathf.Sin(a) * (5 + R() * 3));
-            glow.Spawn(FlareBits.Kind.Tongue, p + Vector3.Up * 0.2f, v, 0.25f + R() * 0.12f, 0.4f + R() * 0.2f, new Color(1.15f, 0.5f, 0.14f), new Color(0.7f, 0.16f, 0.03f), drag: 4);
-        }
+        BoomStart(p);
+        // The flash's hot point, low at the root (the ground's flash and the pillar carry the size).
+        glow.Spawn(FlareBits.Kind.Mote, p + Vector3.Up * 0.4f, Vector3.Zero, 0.06f, 1.3f, new Color(1.0f, 0.62f, 0.26f), new Color(0.5f, 0.12f, 0.02f));
         shards.Burst(p + Vector3.Up * 0.2f, 34, 13, 0.18f, new Color(0, 0, 0, 0), 1);
+        // Sparks: up the pillar, and a spray thrown out low along the jets.
         for (int i = 0; i < 24; i++)
             glow.Spawn(FlareBits.Kind.Mote, p + Vector3.Up * (0.3f + R() * 2), new Vector3((R() - 0.5f) * 5, 10 + R() * 14, (R() - 0.5f) * 5), 0.6f + R() * 0.5f, 0.05f, new Color(1.4f, 0.7f, 0.22f), new Color(0.6f, 0.12f, 0.02f), gravity: 9, drag: 0.8f);
+        for (int i = 0; i < 70; i++)
+        {
+            var d = jets[(int)(R() * jetN) % Math.Max(1, jetN)];
+            var v = d * (9 + R() * 13) + new Vector3((R() - 0.5f) * 4, 1.5f + R() * 4.5f, (R() - 0.5f) * 4);
+            glow.Spawn(FlareBits.Kind.Mote, p + Vector3.Up * 0.3f, v, 0.4f + R() * 0.45f, 0.045f, new Color(1.4f, 0.72f, 0.24f), new Color(0.6f, 0.12f, 0.02f), gravity: 9, drag: 1.2f);
+        }
         SpendLight(p + Vector3.Up * 3f, new Color(1f, 0.6f, 0.25f), 20 * (banked ? 1.25f : 1));
         spendLight.OmniRange = reach * 1.3f;
         Cam?.Jolt(Vector3.Up, (0.6f + (banked ? 0.1f : 0)) * Motion);
@@ -418,92 +428,57 @@ public partial class FlareFx
         HudDim(0);
     }
 
-    /// <summary>Real seconds since the last word landed (its column runs on the particles' clock); -1: none.</summary>
+    /// <summary>Real seconds since the last word landed (its pillar runs on the particles' clock); -1: none.</summary>
     double colT = -1;
 
-    /// <summary>The last word's column, fed over its first second: comets of white-hot fire driven straight up out of
-    /// a narrow root, the fire climbing after them, a dark head mushrooming where they stop (its underside lit by
-    /// the fire while it burns) and the stem's smoke after, leaning downwind. Its head at about 7.5 m reads at the
-    /// arena's camera and stays on screen at the story's.</summary>
+    /// <summary>The last word's particles round its pillar (FlareFx.Boom has the shapes): fire licking at its root,
+    /// the cap's smoke going on as the cap thins, and the stem's smoke standing after the fire, leaning downwind.</summary>
     void Column(float dt)
     {
         float c = (float)colT;
-        if (c > 1.2f) return;
+        BoomTick(c, (float)(t - lastAt), dt);
+        if (c > 1.4f) return;
         var p = boomAt;
-        const float H = 7.5f;
-        // The spine: comets driven up out of the root, fed hard for a third of a second.
-        float spine = c < 0.4f ? 60 * (1 - c / 0.4f) : 0;
-        for (int i = 0, n = (int)(spine * dt + R()); i < n; i++) SpineComet(p, 0.8f + 0.4f * R());
-        // The column's fire: billows climbing hard after the comets, narrow, cooling as they rise.
-        float fire = c < 0.45f ? 120 * (1 - c / 0.45f) : 0;
-        for (int i = 0, n = (int)(fire * dt + R()); i < n; i++)
-        {
-            float a = R() * Mathf.Tau, o = R() * 0.25f;
-            glow.Spawn(FlareBits.Kind.Fire, p + new Vector3(Mathf.Cos(a) * o, 0.3f + R() * 1.6f, Mathf.Sin(a) * o),
-                new Vector3(Mathf.Cos(a) * 0.5f, 18 + R() * 18, Mathf.Sin(a) * 0.5f), 0.3f + R() * 0.16f, 0.6f + R() * 0.2f,
-                new Color(1.0f, 0.46f, 0.13f), new Color(0.7f, 0.15f, 0.03f), sizeEnd: 1.3f + R() * 0.5f, drag: 2.6f);
-        }
-        // Its root: a narrow white-gold heart at the ground, and flame turned out from it.
-        if (c < 0.55f)
-        {
-            for (int i = 0, n = (int)(45 * dt + R()); i < n; i++)
-                glow.Spawn(FlareBits.Kind.Fire, p + new Vector3((R() - 0.5f) * 0.3f, 0.25f, (R() - 0.5f) * 0.3f), new Vector3((R() - 0.5f) * 1.2f, 3 + R() * 4, (R() - 0.5f) * 1.2f),
-                    0.2f + R() * 0.12f, 0.45f + R() * 0.15f, new Color(1.15f, 0.56f, 0.18f), new Color(0.75f, 0.18f, 0.04f), sizeEnd: 0.8f, drag: 3);
-            for (int i = 0, n = (int)(30 * dt + R()); i < n; i++)
+        const float H = PillarH;
+        // Its root: fire licking round the pillar's foot.
+        if (c < 0.5f)
+            for (int i = 0, n = (int)(40 * dt + R()); i < n; i++)
             {
                 float a = R() * Mathf.Tau;
-                glow.Spawn(FlareBits.Kind.Tongue, p + Vector3.Up * 0.12f, new Vector3(Mathf.Cos(a) * (3 + R() * 2), 1.5f + R() * 1.5f, Mathf.Sin(a) * (3 + R() * 2)),
-                    0.16f + R() * 0.1f, 0.22f + R() * 0.1f, new Color(1.1f, 0.5f, 0.14f), new Color(0.65f, 0.12f, 0.02f), drag: 4);
+                var way = new Vector3(Mathf.Cos(a), 0, Mathf.Sin(a));
+                glow.Spawn(FlareBits.Kind.Fire, p + way * (0.6f + R() * 0.5f) + Vector3.Up * 0.2f, way * (1 + R() * 1.5f) + Vector3.Up * (2 + R() * 3),
+                    0.25f + R() * 0.12f, 0.4f + R() * 0.15f, new Color(1.1f, 0.5f, 0.14f), new Color(0.7f, 0.15f, 0.03f), sizeEnd: 0.9f, drag: 3);
             }
-        }
-        // The head: where the comets stop, dark smoke rolls out and up, its underside lit by the fire under it, and
-        // the fire spreads under it.
-        if (c > 0.05f && c < 0.5f)
+        // The head: the cap's smoke goes on rolling out and up as the cap thins.
+        if (c > 0.5f && c < 1.2f)
         {
-            float k = (c - 0.05f) / 0.45f, rise = H + 1.5f * k;
-            for (int i = 0, n = (int)(80 * (1 - k) * dt + R()); i < n; i++)
+            float k = (c - 0.5f) / 0.7f, rise = H + 1.6f + 0.8f * k;
+            for (int i = 0, n = (int)(50 * (1 - k) * dt + R()); i < n; i++)
             {
                 float a = R() * Mathf.Tau;
                 var way = new Vector3(Mathf.Cos(a), 0, Mathf.Sin(a));
                 bed.Spawn(new FlareBits.P
                 {
-                    Kind = FlareBits.Kind.Smoke, At = p + Vector3.Up * (rise + (R() - 0.3f) * 1.2f) + way * (0.3f + R() * 0.9f),
-                    V = way * (2 + R() * 2) + Vector3.Up * (2 + R() * 3), Life = 1.8f + R() * 0.8f, Size = 1.0f + R() * 0.4f, SizeEnd = 2.6f + R() * 1.0f,
-                    Color = new Color(0.11f, 0.09f, 0.075f, 0.92f), ColorEnd = new Color(0.13f, 0.12f, 0.11f, 0.32f),
+                    Kind = FlareBits.Kind.Smoke, At = p + Vector3.Up * (rise + (R() - 0.3f) * 1.0f) + way * (1.0f + R() * 2.0f),
+                    V = way * (1.5f + R() * 1.5f) + Vector3.Up * (1.5f + R() * 2), Life = 1.8f + R() * 0.8f, Size = 1.2f + R() * 0.4f, SizeEnd = 2.8f + R() * 1.0f,
+                    Color = new Color(0.1f, 0.085f, 0.075f, 0.6f), ColorEnd = new Color(0.13f, 0.12f, 0.11f, 0.2f),
                     Drag = 1.8f, Lift = 0.3f, Swirl = 0.9f, Seed = R(), Wind = SteamWind * 0.7f,
                 });
             }
-            for (int i = 0, n = (int)(20 * (1 - k) * dt + R()); i < n; i++)
-            {
-                float a = R() * Mathf.Tau;
-                var way = new Vector3(Mathf.Cos(a), 0, Mathf.Sin(a));
-                glow.Spawn(FlareBits.Kind.Fire, p + Vector3.Up * (rise - 0.6f - R() * 0.8f) + way * (0.4f + R() * 0.8f), way * (1.5f + R() * 1.2f) + Vector3.Up * (1 + R() * 2),
-                    0.26f + R() * 0.12f, 0.7f + R() * 0.3f, new Color(0.85f, 0.32f, 0.07f), new Color(0.45f, 0.06f, 0.02f), sizeEnd: 1.6f + R() * 0.5f, drag: 2);
-            }
         }
-        // The stem: the fire's smoke after it, dark, standing as a column when the fire is gone, leaning downwind.
-        if (c > 0.06f && c < 0.75f)
-            for (int i = 0, n = (int)(50 * dt + R()); i < n; i++)
+        // The stem: the fire's smoke after it, dark, standing as a column as the fire goes, leaning downwind.
+        if (c > 0.35f && c < 1.1f)
+            for (int i = 0, n = (int)(40 * dt + R()); i < n; i++)
             {
                 float h = 0.4f + R() * H * 0.85f;
                 bed.Spawn(new FlareBits.P
                 {
-                    Kind = FlareBits.Kind.Smoke, At = p + new Vector3((R() - 0.5f) * 0.6f, h, (R() - 0.5f) * 0.6f),
-                    V = new Vector3((R() - 0.5f) * 0.8f, 2.5f + R() * 3, (R() - 0.5f) * 0.8f), Life = 1.5f + R() * 0.9f, Size = 0.6f + R() * 0.3f, SizeEnd = 1.7f + R() * 0.8f,
-                    Color = new Color(0.08f, 0.065f, 0.055f, 0.7f), ColorEnd = new Color(0.11f, 0.1f, 0.095f, 0.22f),
+                    Kind = FlareBits.Kind.Smoke, At = p + new Vector3((R() - 0.5f) * 0.9f, h, (R() - 0.5f) * 0.9f),
+                    V = new Vector3((R() - 0.5f) * 0.8f, 2.5f + R() * 3, (R() - 0.5f) * 0.8f), Life = 1.5f + R() * 0.9f, Size = 0.7f + R() * 0.3f, SizeEnd = 1.8f + R() * 0.8f,
+                    Color = new Color(0.08f, 0.065f, 0.055f, 0.6f), ColorEnd = new Color(0.11f, 0.1f, 0.095f, 0.2f),
                     Drag = 1.2f, Lift = 0.4f, Swirl = 1.1f, Seed = R(), Wind = SteamWind * (0.4f + h / H * 0.6f),
                 });
             }
-    }
-
-    /// <summary>One of the spine's comets: driven straight up out of the root, its streak (as long as its speed)
-    /// reaching back down to it, stalling where the head forms.</summary>
-    void SpineComet(Vector3 p, float force)
-    {
-        float v = (52 + R() * 20) * force;
-        var from = p + new Vector3((R() - 0.5f) * 0.3f, 0.3f + v * 0.03f, (R() - 0.5f) * 0.3f);
-        glow.Spawn(FlareBits.Kind.Streak, from, new Vector3((R() - 0.5f) * 1.4f, v, (R() - 0.5f) * 1.4f), 0.22f + R() * 0.1f, 0.22f + R() * 0.14f,
-            new Color(1.2f, 0.66f, 0.24f), new Color(0.9f, 0.3f, 0.06f), drag: 10);
     }
 
     /// <summary>A short unshadowed flash at an unlit ember's impact.</summary>
@@ -522,16 +497,28 @@ public partial class FlareFx
     {
         var away = new Vector3(w.X - from.X, 0, w.Z - from.Z);
         away = away.LengthSquared() > 0.01f ? away.Normalized() : Vector3.Zero;
-        shards.Burst(w + Vector3.Up * 0.9f * scale, (int)(8 * scale), ring ? 7.5f : 5f, 0.16f * scale, new Color(0.32f, 0.3f, 0.27f, 0.6f), ring ? 1 : 0.9f, ring ? away * 1.8f : away);
-        // On the ring's line it goes up in a lick of flame thrown outward with its ice (every other one: all of
-        // them at once thickened the line).
-        if (ring && R() < 0.5f)
-            glow.Spawn(FlareBits.Kind.Tongue, w + Vector3.Up * 0.5f * scale, away * 5 + Vector3.Up * (3.5f + R() * 2), 0.1f + R() * 0.06f, (0.26f + R() * 0.1f) * scale, new Color(1.1f, 0.5f, 0.14f), new Color(0.65f, 0.12f, 0.02f), drag: 2);
+        if (ring)
+        {
+            // The ring's burst (judge 2, s4: even, still confetti): the ice thrown out along the line's way,
+            // stretched by its speed and lit orange through its faces, landing a metre or three on and cooling grey.
+            shards.Burst(w + Vector3.Up * 0.9f * scale, (int)(9 * scale), 7.5f, 0.16f * scale, new Color(0.32f, 0.3f, 0.27f, 0.6f), 1.3f, away, thrown: true);
+            // The line flares where it crosses a body.
+            glow.Spawn(FlareBits.Kind.Fire, w + Vector3.Up * 0.45f * scale + away * 0.25f, away * 3.5f + Vector3.Up * 2.0f, 0.12f + R() * 0.05f, 0.26f * scale, new Color(0.95f, 0.38f, 0.09f), new Color(0.55f, 0.08f, 0.02f), sizeEnd: 0.6f * scale, drag: 3);
+            if (R() < 0.5f)
+                glow.Spawn(FlareBits.Kind.Tongue, w + Vector3.Up * 0.5f * scale, away * 5 + Vector3.Up * (3.5f + R() * 2), 0.1f + R() * 0.06f, (0.26f + R() * 0.1f) * scale, new Color(1.1f, 0.5f, 0.14f), new Color(0.65f, 0.12f, 0.02f), drag: 2);
+            // A short breath of steam off the hot ice.
+            bed.Spawn(new FlareBits.P
+            {
+                Kind = FlareBits.Kind.Puff, At = w + Vector3.Up * 0.8f * scale, V = Vector3.Up * 1.6f + away * 1.4f,
+                Life = 0.7f + R() * 0.3f, Size = 0.3f * scale, SizeEnd = 1.1f * scale, Color = new Color(0.62f, 0.65f, 0.7f, 0.2f),
+                ColorEnd = new Color(0.62f, 0.65f, 0.7f, 0.0f), Drag = 2.2f, Lift = 0.8f, Swirl = 1.0f, Seed = R(), Wind = SteamWind * 0.5f,
+            });
+        }
+        else shards.Burst(w + Vector3.Up * 0.9f * scale, (int)(8 * scale), 5f, 0.16f * scale, new Color(0.32f, 0.3f, 0.27f, 0.6f), 0.9f, away);
         scars.Spawn(new FlareBits.P { Kind = FlareBits.Kind.Scar, At = w + Vector3.Up * 0.04f, Life = 4.4f + R(), Size = (0.8f + R() * 0.35f) * scale, Color = new Color(0.02f, 0.016f, 0.013f, 0.9f) });
         // (The dust small, faint and cold: at 1.6 m and pale, 250 of them at once laid a grey sheet over the crowd.)
-        bed.Spawn(FlareBits.Kind.Puff, w + Vector3.Up * 0.7f, Vector3.Up * 0.6f + away * 1.2f, 0.6f, 0.25f * scale, new Color(0.2f, 0.3f, 0.43f, 0.12f), sizeEnd: 0.7f * scale, drag: 2);
+        if (!ring) bed.Spawn(FlareBits.Kind.Puff, w + Vector3.Up * 0.7f, Vector3.Up * 0.6f + away * 1.2f, 0.6f, 0.25f * scale, new Color(0.2f, 0.3f, 0.43f, 0.12f), sizeEnd: 0.7f * scale, drag: 2);
         // One spark each (three, over 240 statues, were orange confetti over the char: s1a).
-        for (int i = 0; i < 1; i++)
-            glow.Spawn(FlareBits.Kind.Mote, w + Vector3.Up * (0.3f + R() * 1.2f) * scale, away * (1 + R() * 2) + new Vector3(R() - 0.5f, 1.5f + R() * 2, R() - 0.5f), 0.5f + R() * 0.5f, 0.05f, new Color(1.25f, 0.6f, 0.18f), new Color(0.5f, 0.1f, 0.02f), drag: 1.5f);
+        glow.Spawn(FlareBits.Kind.Mote, w + Vector3.Up * (0.3f + R() * 1.2f) * scale, away * (1 + R() * 2) + new Vector3(R() - 0.5f, 1.5f + R() * 2, R() - 0.5f), 0.5f + R() * 0.5f, 0.05f, new Color(1.25f, 0.6f, 0.18f), new Color(0.5f, 0.1f, 0.02f), drag: 1.5f);
     }
 }

@@ -88,6 +88,7 @@ public partial class FlareFx : Node3D
         spendLight = new OmniLight3D { LightColor = new Color(0.45f, 0.7f, 1f), LightEnergy = 0, OmniRange = 14, ShadowEnabled = true };
         AddChild(headLight);
         AddChild(spendLight);
+        BoomReady();
         marksImg = Image.CreateEmpty(32, 1, false, Image.Format.Rgbaf);
         marksTex = ImageTexture.CreateFromImage(marksImg);
         RenderingServer.GlobalShaderParameterSet("flare_marks", marksTex);
@@ -238,7 +239,7 @@ public partial class FlareFx : Node3D
             {
                 float s = (float)(t - lastAt);
                 // (Flare time: the last word's 6-frame hitstop runs it at a tenth, so 0.005 s is about 3 real frames.)
-                Dip(1 - 0.38f * Mathf.SmoothStep(0.003f, 0.008f, s) * (1 - Mathf.SmoothStep(0.5f, 1.2f, s)) * (LessFlash ? 0.5f : 1));
+                Dip(1 - 0.38f * Mathf.SmoothStep(0.003f, 0.008f, s) * (1 - Mathf.SmoothStep(0.12f, 0.42f, s)) * (LessFlash ? 0.5f : 1));
             }
             if (Done())
             {
@@ -329,6 +330,7 @@ public partial class FlareFx : Node3D
         ramp = 1;
         releaseAt = spendAt = lastAt = -1;
         colT = -1;
+        BoomClear();
         spendLightT = -1;
         foreach (var em in embers) if (em.Light != null && IsInstanceValid(em.Light)) em.Light.QueueFree();
         embers.Clear();
@@ -379,7 +381,7 @@ public partial class FlareFx : Node3D
         var w = new Vector3((float)e.X, (float)HeightAt(e.X, e.Z), (float)e.Z);
         if (id == "burns_twice")
         {
-            double when = lastAt > 0 ? Math.Max(t + 0.02, lastAt + RingTime(w.DistanceTo(boomAt))) : Held;
+            double when = lastAt > 0 ? Math.Max(t + 0.02, lastAt + RingTime(w.DistanceTo(boomAt)) + CrackHold()) : Held;
             doomed[e.Enemy] = new Doom { At = when, Shatter = true, Where = w, From = lastAt > 0 ? boomAt : at, Scale = e.Elite || e.Boss ? 1.6f : (float)e.Scale };
         }
         else doomed[e.Enemy] = new Doom { At = t + 0.02, Where = w };

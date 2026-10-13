@@ -17,6 +17,8 @@ public partial class FlareShards : MultiMeshInstance3D
         public Color Tint;
         public Basis Shape;
         public bool Down;
+        /// <summary>Thrown by the ring: flies hot, lands and cools to grey (judge 2, s4).</summary>
+        public bool Ash;
     }
 
     readonly List<S> live = new();
@@ -83,13 +85,15 @@ public partial class FlareShards : MultiMeshInstance3D
 
     /// <summary>A burst of shards from a point: n of them, up and out at about this speed, this big (m),
     /// tinted by a body's paint (alpha: how much), hot from the ember that broke them.</summary>
-    public void Burst(Vector3 at, int n, float speed, float size, Color tint, float heat, Vector3? away = null)
+    public void Burst(Vector3 at, int n, float speed, float size, Color tint, float heat, Vector3? away = null, bool thrown = false)
     {
         for (int i = 0; i < n && live.Count < cap; i++)
         {
             float a = R() * Mathf.Tau;
             var dir = new Vector3(Mathf.Cos(a), 0.55f + R() * 1.1f, Mathf.Sin(a));
             if (away is Vector3 aw) dir += new Vector3(aw.X, 0, aw.Z) * 0.8f;
+            // Thrown by the ring: out along its way, low, landing a metre or three on.
+            if (thrown && away is Vector3 tw) dir = new Vector3(tw.X + Mathf.Cos(a) * 0.4f, 0.3f + R() * 0.45f, tw.Z + Mathf.Sin(a) * 0.4f);
             var axis = new Vector3(R() - 0.5f, R() - 0.5f, R() - 0.5f);
             if (axis.LengthSquared() < 1e-3f) axis = Vector3.Up;
             var shape = new Basis(new Vector3(R() - 0.5f, R() - 0.5f, R() - 0.5f).Normalized() is var ax && ax.LengthSquared() > 0.5f ? ax : Vector3.Up, R() * Mathf.Tau);
@@ -97,10 +101,11 @@ public partial class FlareShards : MultiMeshInstance3D
             live.Add(new S
             {
                 At = at + new Vector3((R() - 0.5f) * 0.4f, R() * 0.4f, (R() - 0.5f) * 0.4f),
-                V = dir.Normalized() * speed * (0.5f + R() * 0.8f),
+                V = dir.Normalized() * speed * (thrown ? 0.75f + R() * 0.5f : 0.5f + R() * 0.8f),
                 Axis = axis.Normalized(),
                 Spin = new Vector3(R() * 14 - 7, R() * 14 - 7, R() * 14 - 7),
-                Life = 0.8f + R() * 0.9f,
+                Life = thrown ? 2.2f + R() * 1.2f : 0.8f + R() * 0.9f,
+                Ash = thrown,
                 Size = s,
                 Heat = heat * (0.5f + R() * 0.5f),
                 Tint = tint,
@@ -131,7 +136,7 @@ public partial class FlareShards : MultiMeshInstance3D
                     else { s.Down = true; s.V = Vector3.Zero; }
                 }
             }
-            s.Heat *= Mathf.Exp(-dt * 6f);
+            s.Heat *= Mathf.Exp(-dt * (s.Ash ? (s.Down ? 2.6f : 0.9f) : 6f));
             live[i] = s;
         }
         buf ??= new float[cap * 20];
@@ -141,13 +146,21 @@ public partial class FlareShards : MultiMeshInstance3D
             float k = s.Age / s.Life;
             float melt = Mathf.SmoothStep(0.55f, 1f, k);
             var b = (new Basis(s.Axis, s.Angle) * s.Shape).Scaled(Vector3.One * s.Size);
+            // Stretched along its flight by its speed (a still shard is just a shard).
+            float sp = s.Down ? 0 : s.V.Length();
+            if (sp > 1.5f)
+            {
+                var u = s.V / sp;
+                float st = Mathf.Min(1 + sp * 0.09f, 2.6f) - 1;
+                b = new Basis(new Vector3(1, 0, 0) + u * (u.X * st), new Vector3(0, 1, 0) + u * (u.Y * st), new Vector3(0, 0, 1) + u * (u.Z * st)) * b;
+            }
             // (One buffer for the batch, not three calls a shard.)
             int o = n * 20;
             buf[o] = b.X.X; buf[o + 1] = b.Y.X; buf[o + 2] = b.Z.X; buf[o + 3] = s.At.X;
             buf[o + 4] = b.X.Y; buf[o + 5] = b.Y.Y; buf[o + 6] = b.Z.Y; buf[o + 7] = s.At.Y;
             buf[o + 8] = b.X.Z; buf[o + 9] = b.Y.Z; buf[o + 10] = b.Z.Z; buf[o + 11] = s.At.Z;
             buf[o + 12] = s.Tint.R; buf[o + 13] = s.Tint.G; buf[o + 14] = s.Tint.B; buf[o + 15] = s.Tint.A;
-            buf[o + 16] = s.Heat; buf[o + 17] = melt; buf[o + 18] = 0; buf[o + 19] = 0;
+            buf[o + 16] = s.Heat; buf[o + 17] = melt; buf[o + 18] = s.Ash ? Mathf.Clamp(1 - s.Heat / 0.3f, 0, 1) : 0; buf[o + 19] = 0;
             n++;
         }
         if (n > 0 || shown > 0) RenderingServer.MultimeshSetBuffer(mm.GetRid(), buf);

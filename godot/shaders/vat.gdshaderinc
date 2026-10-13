@@ -160,5 +160,7 @@ void fragment() {
 		vec3 fl_a = ALBEDO; float fl_r = ROUGHNESS; vec3 fl_e = EMISSION;
 		flare_body((INV_VIEW_MATRIX * vec4(VERTEX, 1.0)).xyz, NORMAL, INV_VIEW_MATRIX, rim, fl_a, fl_r, fl_e);
 		ALBEDO = fl_a; ROUGHNESS = fl_r; EMISSION = fl_e;
+		// The BOOM's line reaching a statue: the fire through its cracks before it bursts.
+		EMISSION += vec3(1.0, 0.4, 0.09) * flare_crack((INV_VIEW_MATRIX * vec4(VERTEX, 1.0)).xyz) * (0.45 + 0.9 * rim);
 	}
 }
