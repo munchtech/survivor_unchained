@@ -220,7 +220,7 @@ public partial class FlareFx : Node3D
             else Plain();
             // The Flare's light at the Spend: 2-4 frames at its peak, then down over 0.4 s.
             float sl = spendLightT < 0 ? 0 : (float)(t - spendLightT);
-            spendLight.LightEnergy = spendLightT < 0 ? 0 : sl < 0.05f ? spendLightPeak : spendLightPeak * Mathf.Exp(-(sl - 0.05f) * 7f);
+            spendLight.LightEnergy = spendLightT < 0 ? 0 : sl < 0.05f ? spendLightPeak : spendLightPeak * Mathf.Exp(-(sl - 0.05f) * 12f); // halved by the 5th frame (§1.6: 1.5x for 4 frames at most)
             if (sl > 0.6f) spendLightT = -1;
             RenderingServer.GlobalShaderParameterSet("flare_look", look);
             RenderingServer.GlobalShaderParameterSet("flare_web", web);

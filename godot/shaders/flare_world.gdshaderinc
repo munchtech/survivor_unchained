@@ -81,7 +81,7 @@ float flare_spine(vec2 w) {
 	float f = texture(flare_plate, u2).r;
 	float fb = texture(flare_plate, u2, 2.5).r;
 	float fine = smoothstep(0.07, 0.2, f - fb) * smoothstep(0.3, 0.5, f);
-	return max(big, fine * 0.6);
+	return max(big, fine * 0.25);
 }
 
 // How much frost lies at a point (0..1): grown past the front, held inside the reach, melted in from the edge.
@@ -175,8 +175,9 @@ vec4 flare_boom(vec2 w) {
 	float front = bm.w * 32.0 * (0.88 + 0.24 * fing) + (texture(flare_noise, w * 0.35).r - 0.5) * 1.6;
 	float ahead = front - dl;
 	float fade = 1.0 - smoothstep(bm.z - 1.5, bm.z + 2.5, length(w - flare_at.xz)); // the whole reach, wherever it struck
-	float band = exp(-ahead * ahead / 0.7) * fade;
-	float after = smoothstep(0.0, 0.6, ahead) * exp(-ahead / 32.0 * 2.6) * fade;
+	// A thin line of fire, and only the cracks glowing behind it, briefly: never a wash over the frame (§1.6).
+	float band = exp(-ahead * ahead / 0.22) * fade;
+	float after = smoothstep(0.0, 0.6, ahead) * exp(-ahead / 32.0 * 4.5) * fade;
 	return vec4(band, after, bm.xy);
 }
 
@@ -232,7 +233,7 @@ void flare_ground(vec3 wp, inout vec3 alb, inout float rough, inout float spec, 
 		emi += vec3(1.0, 0.32, 0.06) * mk.z * (0.25 + 1.6 * crack) * 1.4;
 		// The BOOM's front across the field, and the cracks it leaves glowing.
 		vec4 bo = flare_boom(w);
-		emi += vec3(1.0, 0.5, 0.14) * bo.x * (0.5 + 1.1 * cr.y) * 2.2 + vec3(1.0, 0.3, 0.05) * bo.y * (0.08 + 1.5 * crack) * 1.1;
+		emi += vec3(1.0, 0.45, 0.12) * bo.x * (0.45 + 1.0 * cr.y) * 2.8 + vec3(1.0, 0.3, 0.05) * bo.y * crack * 1.3;
 		// The front: the frost crystallising as it comes, cold points in a narrow fingered band.
 		float band = smoothstep(-0.2, 0.25, flare_frost.x - arr) * (1.0 - smoothstep(0.25, 1.4, flare_frost.x - arr));
 		float twinkle = step(0.55, fract(sin(dot(floor(w * 22.0), vec2(12.9898, 78.233)) + floor(TIME * 12.0)) * 43758.5453));
@@ -264,7 +265,7 @@ void flare_body(vec3 wp, vec3 nrm_view, mat4 inv_view, float rim, inout vec3 alb
 		vec4 bo = flare_boom(wp.xz);
 		if (bo.x + bo.y > 0.001) {
 			float face = 0.35 + 0.65 * max(0.0, dot(nw, normalize(vec3(bo.z - wp.x, 0.5, bo.w - wp.z))));
-			emi += vec3(1.0, 0.46, 0.13) * (bo.x * 1.1 + bo.y * 0.15) * face;
+			emi += vec3(1.0, 0.46, 0.13) * (bo.x * 0.55 + bo.y * 0.05) * face;
 		}
 	}
 	float g = flare_glazed(wp);
