@@ -91,7 +91,7 @@ def _swivel(h, phi):
     return tuple(20.0 * (math.cos(a) * ref + math.sin(a) * np.cross(d, ref)))
 
 
-def shield_guard(side="l", hand_at=(-0.02, -0.20, 0.38), swivel=-20, lift=0.0):
+def shield_guard(side="l", hand_at=(-0.02, -0.20, 0.38), swivel=-20, lift=0.0, fwd=0.0):
     """The shield up across the body, riding the step a little. It rides the
     forearm's hinge (its face is the plane of shoulder, elbow and wrist), so
     the guard is set by where the hand goes and how the elbow swings, never
@@ -100,7 +100,7 @@ def shield_guard(side="l", hand_at=(-0.02, -0.20, 0.38), swivel=-20, lift=0.0):
     elbow near square it reached over the shoulder, through the pauldron.)
     The hand rides the forearm, the wrist straight in the grip."""
     def f(ph, k, hand):
-        h = (hand_at[0], hand_at[1] + lift + 0.015 * math.cos(4 * math.pi * ph), hand_at[2])
+        h = (hand_at[0], hand_at[1] + lift + 0.015 * math.cos(4 * math.pi * ph), hand_at[2] + fwd)
         return {"arc": arc_of(h), "pole": _swivel(h, swivel), "frame": "chest"}
     return f
 
@@ -145,7 +145,7 @@ STALKER = Gait(frames=20, speed=SPEED, duty=0.34, drop=0.14, bob=0.035, lean=26,
 
 # The runs the game asks for: calling and what is in hand.
 RUNS = {
-    "run_warden": (WARDEN, {"r": blade_carry(swing=SWORD_SWING, tuck=SWORD_TUCK), "l": shield_guard(lift=0.04)}, "sword+shield"),
+    "run_warden": (WARDEN, {"r": blade_carry(swing=SWORD_SWING, tuck=SWORD_TUCK), "l": shield_guard(lift=0.04, fwd=0.02)}, "sword+shield"),
     "run_reaver": (REAVER, {"r": blade_carry(up_fwd=0.75, swing=AXE_SWING)}, "axe"),
     "run_reaver_axes": (REAVER, {"r": blade_carry(up_fwd=0.75, swing=AXE_SWING), "l": blade_carry(1.0, up_fwd=0.75, swing=AXE_SWING)}, "axes"),
     "run_arcanist": (ARCANIST, {"r": staff_hold()}, "staff"),
@@ -157,7 +157,7 @@ RUNS = {
 }
 
 # The sprint's own arms where they differ from the run's (sprint_stop applies these over RUNS).
-SPRINT_ARMS = {"run_warden": {"l": shield_guard(lift=0.06)}}
+SPRINT_ARMS = {"run_warden": {"l": shield_guard(lift=0.08, fwd=0.02)}}
 
 
 def clips(rig, want):
