@@ -1,6 +1,6 @@
 # Classes (phase 2 done; phase-6 plan with the owner; Act 1 baseline named)
 
-**State (13 October, session 15):** branch `classes-11`. Wave 6a built: the Branding (measured: Act 1 -22.4% against the baseline, -1.7% against its plain form, arena share 21-24%), the Long Cut, One Arrow, Drag Them Under and the Butcher's Bill (built and tested, not yet measured). The four new modifiers' texts are in; The Eye and Through the Heart have logic, Thaw-Burst and Free Hands wait for 6b. Handoff: `docs/handoff/classes.md`.
+**State (13 October, session 16):** branch `classes-11`, NOT merge-ready. Wave 6a built; all five measured once at `bossMul` 1.0: the Branding passes; the other four run 9-11% faster than their plain forms on Act 1 (rule: ±3%), so each needs a `bossMul`. Found and confirmed on seeds 1-96 against plain: the Bill 0.5 (+0.9%), One Arrow 0.45 (+0.9%); the Long Cut 0.6 (-1.8%, one cell -7.5%; fresh-seed re-run in hand); Drag Them Under -3.7% at 1.0 on seeds 1-32 (re-run in hand). None is in lamps_quarters yet. Early modifiers not picked; judge not run; CLASSES §7 not updated. Handoff: `docs/handoff/classes.md`.
 
 **Key decisions**
 - Flare roles follow FLARE_LOOK (six Clears, four Saves, two Singles, four Contexts), confirmed in CLASSES §7's phase-6 plan. Judge 6's first table differed on eight Flares; the look's reading matches what each does in play.
@@ -8,6 +8,7 @@
 - Balance never blunts a Flare. The night is tuned so a player who never times it well stays in band. Past the 35% arena share, the cut is a modifier's number or `bossMul`, never look, reach or room clear.
 - Burns Twice: each ember is aimed 0.2 s before it lands (beat "aim"). An ember already falling counts the ice round its aim as broken; without that, a press killed about 15% fewer (diagnosed with a synthetic crowd). The last ember throws back what stands in reach (args "shove" 3 m, "shoveStun" 0.5, "shoveStagger" 0.15 on a boss).
 - The Road's Toll with nothing near cuts twelve points on a zigzag along her aim (args "emptyFan", "emptyRadius").
+- The arena's Flare share counts kill-cascade damage (procs with no weapon inside a Flare blow carry the Flare's credit), so `bossMul` moves it little: the Long Cut at 0.5 still took 32-35% on the full board, 31-38% with floors off.
 - A boss takes half a rebuke. The pilot banks Banked Flame. A staged Flare's boss measure is calibrated on Act 1's story bosses (earlier sessions; still in force).
 
 **Open**
