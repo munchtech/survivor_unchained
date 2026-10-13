@@ -87,6 +87,9 @@ func _init():
 					for kv in OS.get_environment("SKIN").split(",", false):
 						var e = kv.split("=")
 						sk.set_shader_parameter(e[0], float(e[1]))
+					# (TONE=#rrggbb: her skin's tone as People.SkinTone gives it for a swatch, e.g. the
+					# lightest and darkest for an outfit's skin edges: fair #FFEDDE, deep #6E4F3F)
+					if OS.get_environment("TONE") != "": sk.set_shader_parameter("tone", Color(OS.get_environment("TONE")))
 					mi.set_surface_override_material(s, sk)
 					continue
 				m.albedo_color = Color(1.0, 0.86, 0.74)
