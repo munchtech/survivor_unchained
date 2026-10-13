@@ -5949,7 +5949,10 @@ if BODY_OUT:
                 jn = cKDTree(P).query(gw)[1]
                 cuff = ARM_S[sd][jn[(ARMW[sd][jn] > 0.5) & (ARM_S[sd][jn] > ELBOW_S)]].min()
                 inside = (ARMW[sd][jj] > 0.5) & (ARM_S[sd][jj] > cuff + GONE_IN)
-                gone = inside & (vals[:, k] > 0)
+                # every hand vertex past the cuff line, the fingertips and knuckles the
+                # coverage mark never reached too: the weld of the glove by position shows
+                # its finger ends closed, so each of them sits inside leather (judge 13)
+                gone = inside
                 vals[gone, k] = 1.0
                 print("HIDES arcanist glove_%s: her hand inside not drawn, %d vertices, from %.3f m down her arm (the cuff at %.3f, her wrist at %.3f); %d there unmarked, drawn"
                       % (sd, gone.sum(), cuff + GONE_IN, cuff, WRIST_S, (inside & ~gone).sum()))
