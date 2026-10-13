@@ -71,7 +71,30 @@ public partial class ArmsDump : Node
             GD.Print($"{id}@{bone}: {v.Count} vertices, {t.Count} triangles");
             piece.QueueFree();
         }
-        sb.Append("\n}\n");
+        // Where each rides sheathed (Arms.Sheathed): the socket's bone and mount, and the piece (a sword with its
+        // scabbard) in that bone's space, for tools_scenes/anim_review.gd with SHEATH=1. A piece with no socket
+        // stays in hand and is not here. (armscheck.py reads only the entries with vertices at the top level.)
+        sb.Append(",\n\"sheathed\": {");
+        bool firstS = true;
+        foreach (var (id, bone) in Pairs)
+        {
+            if (Arms.Sheathed(id, bone == "hand_l") is not { } sock) continue;
+            var piece = Arms.MakeSheathed(id);
+            var v = new List<Vector3>();
+            var t = new List<int[]>();
+            Collect(piece, Transform3D.Identity, sock.At, v, t);
+            if (!firstS) sb.Append(",");
+            firstS = false;
+            var b = sock.At.Basis; var o = sock.At.Origin;
+            sb.Append($"\n\"{id}@{bone}\": {{\"bone\": \"{sock.Bone}\", \"mount\": [[{F(b.X.X)},{F(b.Y.X)},{F(b.Z.X)},{F(o.X)}],[{F(b.X.Y)},{F(b.Y.Y)},{F(b.Z.Y)},{F(o.Y)}],[{F(b.X.Z)},{F(b.Y.Z)},{F(b.Z.Z)},{F(o.Z)}]], \"v\": [");
+            sb.Append(string.Join(",", v.ConvertAll(p => $"[{F(p.X)},{F(p.Y)},{F(p.Z)}]")));
+            sb.Append("], \"t\": [");
+            sb.Append(string.Join(",", t.ConvertAll(a => $"[{a[0]},{a[1]},{a[2]}]")));
+            sb.Append("]}");
+            GD.Print($"sheathed {id}@{bone}: {sock.Bone}, {v.Count} vertices");
+            piece.QueueFree();
+        }
+        sb.Append("\n}\n}\n");
         File.WriteAllText(Path.Combine(dir, "arms_local.json"), sb.ToString());
 
         // Her skeleton, as the game loads her (art/people/heroine.glb).

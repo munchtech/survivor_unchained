@@ -126,7 +126,7 @@ class Checker:
         self.cover = self.m._cover(outfit) if outfit else None
         self.I = self.b.sk.index
         raw = json.loads(Path(arms or DATA / "arms_local.json").read_text())
-        self.local = {k: (np.array(d["v"], float), np.array(d["t"], int)) for k, d in raw.items()}
+        self.local = {k: (np.array(d["v"], float), np.array(d["t"], int)) for k, d in raw.items() if "v" in d}
         self.pts = {k: sample(*vt) for k, vt in self.local.items()}
         self.coarse = {}
         for k, q in self.pts.items():
