@@ -1,0 +1,70 @@
+diff --git a/godot/art/people/heroine_hair_braid.chain.json b/godot/art/people/heroine_hair_braid.chain.json
+index 8f9c15c0..11f01af1 100644
+--- a/godot/art/people/heroine_hair_braid.chain.json
++++ b/godot/art/people/heroine_hair_braid.chain.json
+@@ -2,6 +2,7 @@
+  "bone": "Head",
+  "stiff": 0.012,
+  "bend": 0.03,
++ "fold": 45,
+  "points": [
+   [
+    0.0,
+diff --git a/godot/src/Actors/HairSway.cs b/godot/src/Actors/HairSway.cs
+index 3eb87a5c..f180d209 100644
+--- a/godot/src/Actors/HairSway.cs
++++ b/godot/src/Actors/HairSway.cs
+@@ -55,6 +55,10 @@ public partial class HairSway : Node
+     // step ago (world), its links' lengths, what it is kept out of.
+     int bone = -1;
+     float stiff, bend;
++    // How far a held joint may fold (its file's "fold", degrees; none if it has none): a braid is a stiff rope. Hanging
++    // held, with no limit, a braid flung over her shoulder as she threw lodged on her trapezius and hung from it in a Z
++    // with a near right-angle corner (hair judge hj4, throw c7-c10); a tail or long hair folds freely, and passed.
++    float fold = Mathf.Pi;
+     Vector3[] rest = [], x = [], xp = [];
+     float[] link = [];
+     Ball[] balls = [];
+@@ -137,6 +141,7 @@ public partial class HairSway : Node
+         bone = sk.FindBone((string)d["bone"]);
+         stiff = (float)d["stiff"];
+         bend = d.ContainsKey("bend") ? (float)d["bend"] : 0.03f;
++        fold = d.ContainsKey("fold") ? Mathf.DegToRad((float)d["fold"]) : Mathf.Pi;
+         var pts = d["points"].AsGodotArray();
+         rest = new Vector3[pts.Count];
+         for (int i = 0; i < rest.Length; i++) rest[i] = Vec(pts[i]);
+@@ -355,8 +360,10 @@ public partial class HairSway : Node
+                         float kb = i == 1 ? 0 : bend * free[i];
+                         var bent = kb > 0 ? (dir + (wantDir - dir) * kb).Normalized() : dir;
+                         // (the limit opens out toward none as the hold comes back)
+-                        float limit = (i == 1 ? Cone : Cap) + (Mathf.Pi - (i == 1 ? Cone : Cap)) * (1f - free[i]);
+-                        if (free[i] > 0.02f && limit < Mathf.Pi - 1e-6f) bent = Within(bent, wantDir, limit);
++                        // (and toward its fold, past its first link)
++                        float lo = i == 1 ? Cone : Cap, hi = i == 1 ? Mathf.Pi : fold;
++                        float limit = lo + (hi - lo) * (1f - free[i]);
++                        if ((free[i] > 0.02f || hi < Mathf.Pi) && limit < Mathf.Pi - 1e-6f) bent = Within(bent, wantDir, limit);
+                         xp[i] += (bent - dir) * link[i];
+                         var to = x[i - 1] + bent * link[i];
+                         corr[i] = to - x[i];
+diff --git a/tools/assets/heroine_hair.py b/tools/assets/heroine_hair.py
+index 85ae6df8..17d4f2e1 100644
+--- a/tools/assets/heroine_hair.py
++++ b/tools/assets/heroine_hair.py
+@@ -1005,7 +1005,7 @@ def style_braid():
+     for c in parts[on_head:]:                                    # (all after what is gathered to the tie)
+         c["swing"] = True
+     global CHAIN
+-    CHAIN = {"points": resample(np.vstack([C[:end + 1], P.mean(0)])[None], 8)[0], "bone": "Head", "stiff": 0.012, "bend": 0.03}
++    CHAIN = {"points": resample(np.vstack([C[:end + 1], P.mean(0)])[None], 8)[0], "bone": "Head", "stiff": 0.012, "bend": 0.03, "fold": 45}
+     return parts
+ 
+ 
+@@ -1250,7 +1250,7 @@ def build(style):
+         import json
+         g = lambda v: [float(v[0]), float(v[2]), float(-v[1])]
+         with open(os.path.join(ART, f"heroine_hair_{style}.chain.json"), "w", encoding="utf-8") as fh:
+-            json.dump({"bone": CHAIN["bone"], "stiff": CHAIN["stiff"], "bend": CHAIN["bend"], "points": [g(q) for q in CHAIN["points"]],
++            json.dump({"bone": CHAIN["bone"], "stiff": CHAIN["stiff"], "bend": CHAIN["bend"], **({"fold": CHAIN["fold"]} if "fold" in CHAIN else {}), "points": [g(q) for q in CHAIN["points"]],
+                        "spheres": [{"bone": sp["bone"], "at": g(sp["at"]), "r": sp["r"]} for sp in chain_spheres()]}, fh, indent=1)
+         # (what swings on a chain from her head is her head's alone: the chain moves it)
+         if CHAIN["bone"] == "Head":

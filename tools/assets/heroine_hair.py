@@ -81,8 +81,15 @@ def draw_atlas(size=(4096, 2048), over=3):
         gather = {"dense": (0.1, 0.4), "loose": (0.0, 0.3), "lock": (0.6, 0.95), "wisp": (-0.3, 0.3)}[kind]
         strands = []
         for i in range(n):
-            x0 = np.clip(r.normal(0.5, spread), 0.03, 0.97) * cw
-            t0 = r.uniform(0.0, 0.015)
+            # (drawn again, not clipped, when off the card: clipped, they piled
+            # up along its sides, a hard straight edge to every card)
+            x0 = r.normal(0.5, spread)
+            while not 0.03 < x0 < 0.97:
+                x0 = r.normal(0.5, spread)
+            # (its root lower the further out it lies, and ragged: a card's
+            # root end rounded, never a straight edge across it)
+            t0 = r.uniform(0.0, 0.015) + r.uniform(0.2, 1.0) * 0.06 * abs(2 * x0 - 1) ** 1.5
+            x0 *= cw
             t1 = min(1.0, t0 + r.uniform(*reach))
             t = np.linspace(t0, t1, 140)
             f = (t - t0) / (t1 - t0)
@@ -90,9 +97,12 @@ def draw_atlas(size=(4096, 2048), over=3):
             xs = x0 + (cw / 2 - x0) * r.uniform(*gather) * f ** 2 + amp * np.sin(2 * np.pi * r.uniform(0.8, 2.5) * t + r.uniform(0, 6.3))
             if r.random() < (0.06 if kind != "wisp" else 0.5):     # a flyaway, drifting off the clump
                 xs += np.sign(x0 - cw / 2) * r.uniform(0.05, 0.25) * cw * f ** 2
-            strands.append((xs, t * h, f, r.uniform(0.8, 1.5) * over, (0.5 + 0.5 * i / n) * r.uniform(0.8, 1.0), r.uniform(0.02, 0.98)))
-        shade, ident, alpha = (Image.new("L", (cw, h), 0) for _ in range(3))
-        ds, di, da = ImageDraw.Draw(shade), ImageDraw.Draw(ident), ImageDraw.Draw(alpha)
+            # (shade: the back of the clump darker, and strand to strand wider
+            # than it was (0.4 to 1): soft-edged now, the strands need their
+            # own light and dark to read as strands)
+            strands.append((xs, t * h, f, r.uniform(0.8, 1.5) * over, min(1.0, (0.5 + 0.6 * i / n) * r.uniform(0.65, 1.05)), r.uniform(0.02, 0.98)))
+        shade, ident, alpha, cov = (Image.new("L", (cw, h), 0) for _ in range(4))
+        ds, di, da, dc = ImageDraw.Draw(shade), ImageDraw.Draw(ident), ImageDraw.Draw(alpha), ImageDraw.Draw(cov)
         # (back to front: the later, lighter strands over the ones behind)
         for xs, ys, f, wd, sh, idv in strands:
             for c0 in range(0, len(xs) - 1, 20):
@@ -101,21 +111,28 @@ def draw_atlas(size=(4096, 2048), over=3):
                 pts = list(zip(xs[c0:c1], ys[c0:c1]))
                 ds.line(pts, fill=int(255 * sh * (0.9 + 0.1 * f[c0])), width=w, joint="curve")
                 di.line(pts, fill=int(255 * idv), width=w, joint="curve")
-        # Alpha: the strands' fading tips first, faintest first (where they
-        # cross, the stronger shows: no tip cuts into one behind it), then all
-        # their bodies over them.
+                dc.line(pts, fill=255, width=w, joint="curve")
+        # Alpha: the strands' fading tips (and roots) first, faintest first
+        # (where they cross, the stronger shows: no tip cuts into one behind
+        # it), then all their bodies over them.
         tips = []
         for xs, ys, f, wd, sh, idv in strands:
-            for k in np.nonzero(f > 0.9)[0][:-1]:
-                tips.append((int(255 * (1 - f[k]) / 0.1), (xs[k], ys[k]), (xs[k + 1], ys[k + 1]), max(1, int(round(wd * (1 - 0.5 * f[k]))))))
+            for k in np.nonzero((f > 0.9) | (f < 0.03))[0][:-1]:
+                fade = (1 - f[k]) / 0.1 if f[k] > 0.9 else f[k] / 0.03
+                tips.append((int(255 * fade), (xs[k], ys[k]), (xs[k + 1], ys[k + 1]), max(1, int(round(wd * (1 - 0.5 * f[k]))))))
         for a_, p0, p1, wd_ in sorted(tips, key=lambda q: q[0]):
             da.line([p0, p1], fill=a_, width=wd_)
         for xs, ys, f, wd, sh, idv in strands:
-            body_ = np.nonzero(f <= 0.9)[0]
+            body_ = np.nonzero((f <= 0.9) & (f >= 0.03))[0]
             for c0 in range(0, len(body_) - 1, 20):
                 seg = body_[c0:c0 + 21]
                 da.line(list(zip(xs[seg], ys[seg])), fill=255, width=max(1, int(round(wd * (1 - 0.5 * f[seg[0]])))), joint="curve")
-        small = [np.asarray(im.resize((cw // over, h // over), Image.LANCZOS), np.float32) for im in (shade, ident, alpha)]
+        small = [np.asarray(im.resize((cw // over, h // over), Image.LANCZOS), np.float32) for im in (shade, ident, alpha, cov)]
+        # (each strand's own shade and number to its very edge, not darkened
+        # by the empty card shrunk into it: blended, a strand's soft edge took
+        # the dark, and its mips too)
+        c = np.maximum(small[3], 1.0) / 255.0
+        small[0], small[1] = (np.where(small[3] > 8, np.minimum(s / c, 255.0), s) for s in small[:2])
         x = col * (size[0] // COLUMNS)
         out[:, x:x + cw // over] = np.stack([small[0], small[1], small[0], small[2]], 2)
     Image.fromarray(np.clip(padded(out), 0, 255).astype(np.uint8)).save(ATLAS)
@@ -141,6 +158,9 @@ def draw_scalp(size=1024, over=2):
             di.line(pts, fill=idv, width=wd, joint="curve")
             da.line(pts, fill=255, width=wd, joint="curve")
     small = [np.asarray(im.resize((size, size), Image.LANCZOS), np.float32) for im in (shade, ident, alpha)]
+    # (each strand's own shade to its edge: see draw_atlas)
+    c = np.maximum(small[2], 1.0) / 255.0
+    small[0], small[1] = (np.where(small[2] > 8, np.minimum(s / c, 255.0), s) for s in small[:2])
     img = padded(np.stack([small[0], small[1], small[0], small[2]], 2))
     Image.fromarray(np.clip(img, 0, 255).astype(np.uint8)).save(SCALP)
     print("SCALP", SCALP)
@@ -622,19 +642,35 @@ def hairline_hairs(comb, spacing=0.0026, points=8, sides=None):
     print("  hairline: %d cards" % len(pts))
     # Baby hairs: about her hairline's edge (6 mm either side), short, fine
     # and faint, each a little off the way it is combed, some curling.
-    pts, nrm = roots(0.0034, above=-0.006, below=0.006)
+    # (10 October, a judge: none showed. They were drawn from the wisp
+    # columns, two dozen strands across a card, at a third to half their
+    # alpha: shrunk to the Look's mip, a tenth of cover. Now from the lock
+    # columns (a gathered few hairs, holding their cover as they shrink), at
+    # half to four fifths, sparser over her forehead, a few more astray.)
+    # (10 October, round 2's judge: they showed, but as dark grey strokes lying
+    # across her forehead every way and crossing in X's. Now short (2 to 7 mm),
+    # rooted in the hairline's first 3 mm and gone about 4 mm out onto her
+    # skin, combed nearly as her hair is (0.2 rad, one in twelve astray and
+    # never more than 0.7 rad) with a gentle curl, a lighter copper with no
+    # darkening at the root or within (flat: their vertex colour's blue), and
+    # fainter (0.3 to 0.55), denser at the edge.)
+    pts, nrm = roots(0.0026, above=0.0, below=0.003)
+    th = np.degrees(np.abs(np.arctan2(pts[:, 0] - CENTRE[0], -(pts[:, 1] - CENTRE[1]))))
+    keep = RNG.random(len(pts)) < np.interp(th, [0, 35, 60], [0.6, 0.85, 1.0])
+    pts, nrm = pts[keep], nrm[keep]
     n, k = len(pts), 6
-    turn = RNG.normal(0, 0.45, n) + np.where(RNG.random(n) < 0.15, RNG.normal(0, 1.0, n), 0)
+    turn = RNG.normal(0, 0.2, n) + np.where(RNG.random(n) < 0.08, np.clip(RNG.normal(0, 0.5, n), -0.7, 0.7), 0)
 
     def astray(p, side=None):
         w = comb(p, side)
         return w * np.cos(turn)[:, None] + np.cross(nrm, w) * np.sin(turn)[:, None]
-    L = RNG.uniform(0.008, 0.022, n)
+    L = RNG.uniform(0.002, 0.007, n)
     P = lie(pts - nrm * 0.0005, combed(pts, nrm, astray(pts)), astray, L / (k - 1), np.full(n, k - 1), 0.0009,
-            side=sides(pts) if sides else None, lift=RNG.uniform(0.0, 0.0025, n))
-    c = cards(P, RNG.uniform(0.0018, 0.0032, n), [14, 15], 0.0009, narrow=0.7)
+            side=sides(pts) if sides else None, lift=RNG.uniform(0.0, 0.0012, n))
+    c = cards(P, RNG.uniform(0.0012, 0.0022, n), [11, 12, 13], 0.0009, narrow=0.7)
     c["alpha"] = np.repeat(RNG.uniform(0.3, 0.55, n), 3 * k)
     c["mat"] = 3
+    c["flat"] = True
     out.append(c)
     print("  baby hairs: %d cards" % n)
     return out
@@ -1166,6 +1202,15 @@ def build(style):
     Ch = np.vstack(C)
     rope = np.concatenate([np.full(len(c["V"]), c.get("mat", 0) == 1) for c in layers])
     Ch[:, 0] = np.where(hairy, np.where(rope, 0.6 + 0.4 * depth, 0.25 + 0.75 * depth), 1.0)   # (a braid's strands shade each other less)
+    # (10 October, round 2's judge: a dark band ran just over her hairline, half her hair's light in clumps, where a
+    # portrait's is lighter (skin through thinning hair). A card rooted within 10 mm of her hairline lies on her
+    # skin with nothing over it: no depth, root or AO darkening there, eased back in from 6 to 10 mm.)
+    rr = np.concatenate([c.get("root_rise", np.ones(len(c["V"]))) for c in layers])
+    Ch[:, 0] = np.maximum(Ch[:, 0], np.where(hairy & ~rope, 1 - np.clip((rr - 0.006) / 0.004, 0, 1), 0))
+    # (the baby hairs flat: no darkening at all, and the shader's lighter copper by their blue)
+    flat = np.concatenate([np.full(len(c["V"]), bool(c.get("flat"))) for c in layers])
+    Ch[flat, 0] = 1.0
+    Ch[flat, 2] = 1.0
     C = [Ch]
     cp = cap(comb, sides)
     V.append(cp["V"]), N.append(cp["N"]), UV.append(cp["UV"])

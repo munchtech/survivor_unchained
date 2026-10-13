@@ -1,0 +1,21 @@
+Round j2 (after judge j1: tools/scratch/face16/j1_numbers.txt has round 1's numbers). Branch @ 54b3c717.
+
+1. RIG CANDIDATE (t5, --fill-colour 1,0.98,0.96 --bounce 0.09; NOT shipped; shipped = fill 1/0.95/0.9, bounce 0.18). lmxy spots, Oklab.
+face      cheek C  (j1 target <=)  cheek h (portrait)  jaw L (target <=)  jaw h  jaw C   neck C (portrait)
+own       .071                     58                  .49                 55     .043    .076
+highborn  .073 (.068)              59 (49-51)          .47 (~.52 ok)       58     .040    .077 (.044-.047)
+doe       .086 (.080)              56 (52)             .44 (.41)           54     .057    .085 (.054)
+sunborn   .094 (.100)              52 (48)             .34 (.31)           54     .065    .089 (.089)
+vixen     .075 (.069)              56 (51)             .47 (.41)           56     .042    .076 (.043)
+moonlit   .070 (.062)              58 (53)             .50 (.48)           54     .044    .077 (.044)
+saffron   .103 (.101)              55 (53)             .41 (.41)           55     .067    .093 (.074)
+wildling  .086 (.085)              55 (51)             .41 (.43)           56     .053    .085 (.059)
+hardwon   .083 (.078)              54 (49)             .41 (.39)           56     .053    .085 (.053)
+fey       .070 (.067)              59 (51)             .51 (.42)           57     .045    .076 (.041)
+Reading: cheek chroma came down from +25-43% to +4-15% over the portraits, but the hue went 4-8 deg yellower than the portraits (the warm bounce halved, the fill less red), and the jaw shade is still .02-.09 too light. Neck chroma still 40-80% over the portraits on the pale faces.
+
+2. IRISES (t6, shipped rig, the dark swatches' pattern at half contrast): ring sRGB doe [62 31 19] (target 61 32 20), sunborn [29 20 16] (30 22 19), moonlit [50 30 23] (50 31 25), saffron [46 28 22] (46 29 24). Mean colour unchanged from j1 within 1. Peat-chestnut dE 0.038.
+
+3. EARS: all ten paints' ear texels scaled per channel (linear) to the skin just in front of the ear (with the face's tone), x(1.02,1.0,0.985). Gains e.g. own 1.05/0.94/0.81, moonlit 1.16/1.27/1.26, hardwon 1.01/0.91/0.79.
+
+4. NECK LENGTH now by the neck bone's scale along its length (the head bone given the inverse), not the head slid down: the -1.5 cm nape fold should be gone. The neck_length slider (+-1.5 cm) uses the same. A non-uniform parent scale can shear the head when it turns against the neck: sheet neck_shear_t40.jpg checks that.
