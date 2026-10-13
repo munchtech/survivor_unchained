@@ -4128,6 +4128,17 @@ def arcanist():
             RIDE = True
             print("CLASP: SHEAR on: tip rows %s | %s" % ({BONES[j]: round(float(w_st[0, j]), 3) for j in np.argsort(-w_st[0])[:4]},
                   {BONES[j]: round(float(w_st[-1, j]), 3) for j in np.argsort(-w_st[-1])[:4]}))
+        # (CLASP_A=1, route A, unjudged, failed offline: the whole clasp (crescent, bezel, stone, balls)
+        # one rigid row, the mean of the corset's own rows under its two tips, so it keeps its shape and
+        # its balls stay seated in her carriage (0.8 / 0.5 mm off their rest seats). Her U flattens there
+        # (its sides drop 14 mm on its foot), so the clasp's foot lands 14 mm below the U's foot and 4.5 mm
+        # in: the cloth below covers the stone and foot and the cut under the clasp opens, 77 of 78 mm^2)
+        if os.environ.get("CLASP_A", "0") == "1":
+            w_a = 0.5 * (w_b[0] + w_b[-1])
+            w_a = w_a / w_a.sum()
+            sk = lambda pts, w_a=w_a: np.repeat(w_a[None], len(pts), 0)
+            RIDE = False
+            print("CLASP: A on: one row %s" % {BONES[j]: round(float(w_a[j]), 3) for j in np.argsort(-w_a)[:5]})
         made = [finish("arcanist.clasp", pp, w_st[(np.arange(len(pp)) % (nth * nr)) // nr] if RIDE else sk(pp), tt, "claspgold", 0.0, 0.0, 10 ** 6, scraps=False)]
         # (the stone: an oval cabochon at the foot, 10 x 8 mm, 3.2 mm high, in
         # a gold bezel ring 1 mm proud of the crescent)
