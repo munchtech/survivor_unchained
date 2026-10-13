@@ -2543,6 +2543,9 @@ def piece(name, field, mkey, lift=0.003, thick=0.003, smooth=0, bevel=0.0012, tr
 
 HOLD_OFF, HOLD_FULL, HOLD_SLOPE = (float(v) for v in os.environ.get("HOLD", "0.001,0.012,0.25").split(","))
 HOLD_BAND, HOLD_GROOVE, HOLD_SOFT = (float(v) for v in os.environ.get("HOLD_TUCK", "0.05,0.0015,0.030").split(","))
+# (the leotard leg lines held onto her, 419ede90: gated off for the first
+# merge, its tuck showed as slivers in motion and it is unjudged; LEO_HOLD=1 to try)
+LEO_HOLD = os.environ.get("LEO_HOLD", "0") == "1"
 RBOOT_GONE = float(os.environ.get("RBOOT_GONE", "0.005"))
 
 
@@ -3662,7 +3665,7 @@ def warden():
             # welted sole and heel, its top under the greave: laid on her foot it
             # showed each toe in steel, animation's judge 49, and laid on her
             # foot's hull the toes still showed as creases)
-            *BOOTS.boot(f"warden.sabaton_{sd}", sd, ANKLE_S - 0.02, 0.0, BOOTS.RANGER, "darksteel"),
+            *BOOTS.boot(f"warden.sabaton_{sd}", sd, ANKLE_S - 0.06, 0.0, BOOTS.RANGER, "darksteel"),
         ]
     return out
 
@@ -4364,7 +4367,7 @@ def arcanist():
                trim=gold(0.004), snap=False, hides=True, flare=(0.034, 0.03)),
         *piece("arcanist.corset", corset, "plumleather", lift=0.0035, smooth=8, iron=60, trim=gold(0.008), keep_off=("Head",), filled=True, edge=120, soften=80,
                bridge=True, cut=exact, stiff=[(0.03, front_panel), (0.03, collar), plunge_fold, taut_gore, plunge_rim],
-               hold=(lambda q: (q[:, 2] > CROTCH + 0.015) & (q[:, 2] < 1.2) & (np.abs(q[:, 0]) < 0.3), lambda q: ramp(q[:, 2], CROTCH + 0.03, CROTCH + 0.06))),
+               hold=None if not LEO_HOLD else (lambda q: (q[:, 2] > CROTCH + 0.015) & (q[:, 2] < 1.2) & (np.abs(q[:, 0]) < 0.3), lambda q: ramp(q[:, 2], CROTCH + 0.03, CROTCH + 0.06))),
         *(down_tube() if PLUNGE_TRIM == "down" else []),
         *(plunge_clasp() if PLUNGE_CLASP else []),
         # (judge 4: the front read as moulded latex. Four stitched boning
