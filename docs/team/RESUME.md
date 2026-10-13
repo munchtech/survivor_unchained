@@ -2,6 +2,11 @@
 
 The one page of what's current. Every lead starts from the latest `claude/vigilant-galileo-l6jqyx`. Merge it first and keep your own workflow; this page says what has changed around you. Updated by the main session, 5 October 2026.
 
+## 13 October: coordinator 59a43b82 running (keep current)
+- **Running:** face, outfits, animation, classes (roster has ids); the Flare look director (design only, docs/design/FLARE_LOOK.md).
+- **Queued:** the skills VFX lead to build the first Flare (the director's slice pick) starts at the next lead handoff, as a one-time SIXTH lead (owner's permission). After the face ships: the smile pass (OWNER_NOTES 13 October).
+- **Owner rules today:** no deadline, fix failing parts rather than gate them; judge each thing once on what varies it (README Working lean); sheathing as a system keyed by weapon kind; Flares are specialized and every press visible.
+
 ## 13 October, early: coordinator 33ad5b17 at its limit; wound down for a fresh coordinator. Restart here
 - **Merged since the last block:** classes 6d9a123c (arena phase cut, Banked Flame H; worktree removed); animation 0a37947d (shield mounted on the back of the forearm, Warden idle passed judges 47-49 with arm 8 deg out and thumb closed, armscheck with HerJoints' hinge and `--outfit`; 77 of 81 clips better, 2 Reaver clips worse but carry no shield). 851 tests. Owner shown the Warden idle (j47/owner).
 - **Restart order (on "go"):** face (ship blockers, handoff on its branch), outfits (clasp D2 build, gold floor, leotard tuck check, Ranger boot, Arcanist flat run, glove judge), animation (idle_warden_break 47 mm to a solver, then bull_rush 74, sword_heavy 48, sprint 42; sheathing plan in its handoff waits for the coordinator's OK), then hero (held by the owner until face and outfits ship), classes (phase-6 plan to a judge; owner question on Act 1 Flare cut).
