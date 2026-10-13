@@ -300,7 +300,7 @@ void flare_body(vec3 wp, vec3 nrm_view, mat4 inv_view, float rim, inout vec3 alb
 		// ice-blue fresnel rim, cyan where it is thin (its edges, a hand, a brim), and a few glints.
 		vec4 p = texture(flare_plate, wp.xz * 1.3 + vec2(wp.y * 0.9, wp.y * -0.4));
 		float l = dot(alb, FL_LUM);
-		vec3 ice = mix(vec3(l), alb, 0.2) * vec3(0.5, 0.74, 1.0) * mix(0.75, 0.6, night) + vec3(0.02, 0.05, 0.09) * (0.6 + 0.8 * p.r);
+		vec3 ice = mix(vec3(l), alb, 0.2) * vec3(0.5, 0.74, 1.0) * mix(0.62, 0.46, night) + vec3(0.02, 0.05, 0.09) * (0.6 + 0.8 * p.r);
 		if (black) ice = mix(vec3(l), alb, 0.2) * vec3(0.12, 0.14, 0.18) + vec3(0.005, 0.007, 0.01);
 		alb = mix(alb, ice, g);
 		rough = mix(rough, black ? 0.05 : 0.12, g);
@@ -309,10 +309,11 @@ void flare_body(vec3 wp, vec3 nrm_view, mat4 inv_view, float rim, inout vec3 alb
 		emi *= 1.0 - 0.8 * g;
 		float fres = pow(rim, 2.4);
 		vec3 rimc = mix(vec3(0.22, 0.56, 1.0), vec3(0.32, 1.0, 0.92), smoothstep(0.82, 0.98, rim));
-		emi += rimc * fres * g * (black ? 0.06 : mix(0.2, 0.42, night));
+		emi += rimc * fres * g * (black ? 0.06 : mix(0.18, 0.3, night));
 		// The light held in the ice itself, so a statue reads from above (a hat or a crown faces the camera and has no
 		// rim): a cold mid-value body over the ground's dark glass, its facets uneven (s1b: the far pack went black).
-		emi += vec3(0.05, 0.12, 0.22) * g * (black ? 0.15 : mix(0.45, 1.0, night)) * (0.55 + 0.9 * p.r) * (0.6 + 0.4 * max(nw.y, 0.0));
+		// (At 0.05-0.22 the glazed pack lifted the night frame to 1.7x its ready mean for a second: s2c, §1.6.)
+		emi += vec3(0.018, 0.042, 0.078) * g * (black ? 0.15 : mix(0.45, 1.0, night)) * (0.55 + 0.9 * p.r) * (0.6 + 0.4 * max(nw.y, 0.0));
 		// A few in a hundred of its facets catch the light at once, each on its own beat (the statues stand
 		// still, so the world's cells stay on them).
 		vec3 cell = floor(wp * 8.0);

@@ -140,7 +140,7 @@ public class FlareStagedTests
         for (int i = 0; i < 120; i++)
         {
             a.Tick(1 / 60.0, 0, 0);
-            plain.AddRange(a.Events.Drain().OfType<Ev.Flare>().Where(e => e.Phase == FlarePhase.Blow).Select(_ => len - a.FlareT));
+            plain.AddRange(a.Events.Drain().OfType<Ev.Flare>().Where(e => e.Phase == FlarePhase.Blow && e.Part is not ("aim" or "shove")).Select(_ => len - a.FlareT));
         }
         // Led: the world at 8% until the key, the rest of each real step lent to the Flare's clock.
         var b = Carrying("burns_twice");
@@ -161,7 +161,7 @@ public class FlareStagedTests
             foreach (var e in b.Events.Drain().OfType<Ev.Flare>())
             {
                 if (e.Phase == FlarePhase.Release) releases++;
-                if (e.Phase == FlarePhase.Blow) led.Add(len - b.FlareT);
+                if (e.Phase == FlarePhase.Blow && e.Part is not ("aim" or "shove")) led.Add(len - b.FlareT);
             }
         }
         Assert.Equal(1, releases);
