@@ -3678,7 +3678,11 @@ CLASP_TH, CLASP_W = (float(v) for v in os.environ.get("CLASP", "100,0.0085").spl
 # opening so it ends free over her skin, clear of the binding; no seat, the cut only under its foot.
 # CLASP_D=0 gives g0 back)
 CLASP_D = os.environ.get("CLASP_D", "1") == "1"
-CLASP_D_IN = float(os.environ.get("CLASP_D_IN", "0.0045"))
+CLASP_D_IN = float(os.environ.get("CLASP_D_IN", "0.0"))   # (D2, clasp6: no pull-in; the tips seated on the binding's outer part, CLASP_D_ON
+# onto it from its inner edge, ball CLASP_D_SEAT off it: in her carriage the binding slides 2.0 mm radially and 0.9 mm along
+# relative to the rigid clasp at 25 deg (3.1 / 3.7 at 50) but only 0.1 mm in depth, so the balls stay on it, 0.2-0.3 mm off)
+CLASP_D_ON = float(os.environ.get("CLASP_D_ON", "0.0037"))
+CLASP_D_SEAT = float(os.environ.get("CLASP_D_SEAT", "0.0002"))
 DOWN_IN, DOWN_OUT = 0.004, 0.012   # (how far the trim reaches over her skin, and over the corset, from the cut)
 
 
@@ -4021,7 +4025,7 @@ def arcanist():
             if reach(TH0) < SPAN - 0.001:
                 print("CLASP: WARNING the binding's edge runs out at %.0f deg; span only %.0f mm" % (np.degrees(top), reach(TH0) * 1000))
         if CLASP_D:
-            TH0 = np.radians(float(os.environ.get("CLASP_D_TH", "50")))
+            TH0 = np.radians(float(os.environ.get("CLASP_D_TH", "25")))
         th = np.linspace(-TH0, TH0, nth)
         s_ = np.abs(th) / TH0
         wid = taper(s_)
@@ -4063,11 +4067,11 @@ def arcanist():
             i0 = int(np.argmax(hit))
             i1 = i0 + int(np.argmin(np.r_[hit[i0:], False]))
             rb0, rb1 = rs[i0], rs[i1 - 1]
-            want = max(rb1 - TIPIN - 0.0012, rb0 + 0.0012)
+            want = rb0 + CLASP_D_ON if CLASP_D else max(rb1 - TIPIN - 0.0012, rb0 + 0.0012)
             outs[a] = want - base
             print("CLASP: tip at %+.0f deg: binding %.1f to %.1f mm out from the foot's centre (cloth's edge %.1f); horn's middle %.1f, %.1f mm inside its outer edge"
                   % (np.degrees(th[a]), rb0 * 1000, rb1 * 1000, r_e[a] * 1000, want * 1000, (rb1 - want) * 1000))
-        mid_ = r_e - 0.001 + (np.where(th < 0, outs[0], outs[nth - 1]) if not CLASP_D else -CLASP_D_IN) * s_ ** 2 + 0.5 * wfull
+        mid_ = r_e - 0.001 + (np.where(th < 0, outs[0], outs[nth - 1]) - (CLASP_D_IN if CLASP_D else 0.0)) * s_ ** 2 + 0.5 * wfull
         R_IN = mid_ - 0.5 * wid
         rr = R_IN[:, None] + wid[:, None] * uu[None, :]
         X = rr * np.sin(th)[:, None]
@@ -4098,7 +4102,7 @@ def arcanist():
         # (the horns laid down onto the binding toward their tips, 0.4 mm off
         # it: held in front of all the crescent's samples they stood off it)
         k_ = np.clip((s_ - 0.55) / 0.45, 0, 1)
-        Y = Y + (0.0 if CLASP_D else 1.0) * (k_ * k_ * (3 - 2 * k_) * np.maximum((Y0 - Y).min(1) - 0.0004, 0))[:, None]
+        Y = Y + (0.0 if CLASP_D and CLASP_D_IN > 0 else 1.0) * (k_ * k_ * (3 - 2 * k_) * np.maximum((Y0 - Y).min(1) - 0.0004, 0))[:, None]
         gap = (Y0 - Y) * 1000
         print(f"CLASP: back off the cloth {gap.min():.2f} to {gap.max():.2f} mm (median {np.median(gap):.2f}; its rim {np.median(np.r_[gap[:, 0], gap[:, -1]]):.2f})")
         t = uu[None, :]
@@ -4231,6 +4235,8 @@ def arcanist():
             # (centred on the horn's front at its middle line, over the binding:
             # set 1.2 mm in front of its back, the horn's front buried it, j1)
             q0 = frnt[a, nr // 2].copy()
+            if CLASP_D and CLASP_D_IN == 0:   # (D2: seated on the binding under it, CLASP_D_SEAT off it)
+                q0[1] = front(q0[0], q0[2]) - float(os.environ.get("CLASP_D_BALL", "0.0011")) - CLASP_D_SEAT
             o_ = len(tp)
             tp += [q0 + (float(os.environ.get("CLASP_D_BALL", "0.0011")) if CLASP_D else 0.0009) * np.array([np.cos(2 * np.pi * j / nu) * np.cos(0.98 * np.pi * (k / nv - 0.5)), np.sin(0.98 * np.pi * (k / nv - 0.5)),
                                             np.sin(2 * np.pi * j / nu) * np.cos(0.98 * np.pi * (k / nv - 0.5))]) for k in range(nv + 1) for j in range(nu)]
