@@ -2966,6 +2966,16 @@ FOLD_SAFE = {"arcanist.glove_l", "arcanist.glove_r"}   # (welded only along thei
 
 KEEP_FINE = {}   # (piece name prefix -> f(pos): points finish() never thins)
 KEEP_SUB = {}    # (piece name prefix -> f(pos, wt, tris) -> (pos, wt, tris): zones finish() divides finer first)
+# A skived edge (s17 lead; judge fin1's spikes at the Arcanist's skin edges):
+# leather is pared thin where it goes under its binding, as a leatherworker
+# skives an edge before it is bound. The corset's 3 mm sheet filled its roll
+# with 0.25 mm to spare, and where the sheet tilted against the roll's facing
+# its edge came out through the roll (the plunge's tooth and bump, the leg
+# line's thorn and spurs; s17_spike's posed measure, 0.7-3.85 mm). Exact piece
+# name -> (thickness at the cut as a share of the sheet's, eased to full over
+# this many metres in). EDGE_SKIVE="" turns it off.
+EDGE_SKIVE = {k_: (float(f_), float(o_)) for k_, f_, o_ in
+              (e_.split(":") for e_ in os.environ.get("EDGE_SKIVE", "arcanist.corset:0.3:0.006").split(",") if e_)}
 
 
 def loop_divided(pos, attr, tris, red, sw):
@@ -3234,6 +3244,19 @@ def finish(name, pos, wt, tris, mkey, thick, bevel, budget=3000, scraps=True):
         so.use_even_offset = False
         so.use_quality_normals = True
         so.use_rim = True
+        # (EDGE_SKIVE: the sheet pared thin toward its bound edge)
+        if name in EDGE_SKIVE and len(be):
+            sf_, so_ = EDGE_SKIVE[name]
+            ds_ = cKDTree(pos[np.unique(be)]).query(pos)[0]
+            ws_ = np.clip(ds_ / so_, 0, 1)
+            ws_ = ws_ * ws_ * (3 - 2 * ws_)
+            gs_ = obj.vertex_groups.new(name="_skive")
+            for i_ in range(len(pos)):
+                gs_.add([i_], float(ws_[i_]), "REPLACE")
+            so.vertex_group = "_skive"
+            so.thickness_vertex_group = sf_
+            print("EDGE SKIVE %s: %.1f mm at the cut, full %.1f mm from %.0f mm in; %d points pared"
+                  % (name, thick * sf_ * 1000, thick * 1000, so_ * 1000, int((ws_ < 1).sum())))
     if bevel > 0:
         bv = obj.modifiers.new("edge", "BEVEL")
         bv.width = min(bevel, thick * 0.45)
@@ -3244,6 +3267,8 @@ def finish(name, pos, wt, tris, mkey, thick, bevel, budget=3000, scraps=True):
         bpy.ops.object.modifier_apply(modifier=mod.name)
     if "_thin" in obj.vertex_groups:
         obj.vertex_groups.remove(obj.vertex_groups["_thin"])
+    if "_skive" in obj.vertex_groups:
+        obj.vertex_groups.remove(obj.vertex_groups["_skive"])
     # After thickening and bevelling, any point left without a bone takes
     # the weights of the nearest point that has some.
     vs = obj.data.vertices
