@@ -342,7 +342,7 @@ public sealed class StoryNight : ZoneRuntime, IStoryArena
         {
             boss.Boss = true;
             boss.Named = new Named { Title = BossName };
-            boss.MaxHp = boss.Hp = boss.MaxHp * script.HealthMul(Spec.Tier) / BossEase;
+            boss.MaxHp = boss.Hp = boss.MaxHp * (HealthOver.TryGetValue(Spec.Id, out double hm) ? hm : script.HealthMul(Spec.Tier)) / BossEase;
             // (pictures of its end, --bosshp: a boss of a share of its health, its marks with it and its floors
             // still holding every phase; begun lower, the phases' marks healed it back up to them)
             boss.MaxHp = boss.Hp = boss.MaxHp * Math.Clamp(BossStartsAt, 0.01, 1);
@@ -808,6 +808,8 @@ public sealed class StoryNight : ZoneRuntime, IStoryArena
     /// level grows her blows, so with the crowd's ease alone each story boss ran a third longer at tier 4
     /// than at tier 1 (Greymuzzle 2.6 against 3.6 minutes planned), and the longer a fight, the more of his
     /// blows land. The same boss at every tier, as the same night.</summary>
+    /// <summary>For the harness (--storyhp): a story boss's health multiple in place of its script's, by the fight's id.</summary>
+    public static readonly Dictionary<string, double> HealthOver = new();
     public double BossEase => 1 + 0.1 * (Spec.Tier - 1);
 
     public Enemy? Foe(string def, double x, double z, double hpMul = 1, string? kicker = null, bool quiet = false)

@@ -48,7 +48,9 @@ public sealed class Redcowl : StoryBoss
     /// length again (deft -1%, plain 0%).</summary>
     // 12 October: 118 -> 110. With the Flare's press no longer staggering a boss outright and the Toll and Burns Twice
     // measured to the other Flares' share of a boss, every calling is within 3% of the pre-Flare length (Act 1, 96 seeds, both pilots).
-    public override double HealthMul(int tier) => 110;
+    // 13 October: 110 -> 103, its pre-Flare health: the Flare now cuts a story boss's floors, and a fight with the Flare
+    // timed is ~8% shorter than the tuned length (bankers ~14%) while one without it timed stays near it (+4%; judge 6).
+    public override double HealthMul(int tier) => 103;
     public override double Teeth => 0.4;
     protected override bool DiesAtZero => false;
 

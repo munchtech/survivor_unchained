@@ -59,6 +59,10 @@ public sealed class StoryRunResult
     /// <summary>A Stand's uplift on a boss: health taken off bosses while it held, and its seconds on a boss (Battle).</summary>
     public double StandTook, StandSeconds;
     public int Rebukes;
+    /// <summary>What each Flare did to the crowd round her (Battle.FlareCrowd's rows).</summary>
+    public List<double[]> FlareCrowd = new();
+    /// <summary>Each boss phase on its last life as it ended: [the Flare's cut, seconds, seconds to its mark or -1].</summary>
+    public List<double[]> BossPhases = new();
 
     /// <summary>The way in: its minutes, and how low she went on it.</summary>
     public double WayIn => Stages.Where(s => s.Name != "boss").Sum(s => s.Seconds) / 60;
@@ -252,10 +256,12 @@ public static class StorySim
             r.BossBreak = bs.BreakSum / Math.Max(1, bs.MaxHp);
             r.BossPhase = bs.PhaseIx;
             r.BossSoft = bs.Soft;
+            r.BossPhases = bs.PhaseLog.Select(x => new[] { x.Cut, x.Seconds, x.MarkAt }).Append(new[] { bs.FlareCut, bs.PhaseT, -1 }).ToList();
         }
         r.KilledBy = !r.Won && host.Result != null ? b.Player.FellTo ?? b.Player.LastKiller?.Def.Id ?? "?" : "";
         r.Build = ArenaSim.Describe(b);
         r.BossTookBy = new Dictionary<string, double>(b.BossHealthBy);
+        r.FlareCrowd = b.FlareCrowd.ToList();
         r.StandTook = b.BossTookInStand; r.StandSeconds = b.StandOnBossSeconds;
         r.Rebukes = b.Rebukes;
         var pp = b.Player;
