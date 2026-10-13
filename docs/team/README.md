@@ -91,12 +91,12 @@ The main session keeps this current. It is the address list for SendMessage. Ret
 | Story and writing (the writer: the approved rewrite, Act 1 first) | PAUSED 12 Oct late (no lead running; Act 2's first slice WIP on story/act2@5190bf0c, unjudged, don't merge; handoff docs/handoff/story.md on that branch; 566 lines locked on integration; TOLL_SPEC ready for a code lead) | docs/team/story.md |
 | Classes design (two types per calling, skill trees, ultimates on Q / right-click) | RUNNING 13 Oct: a63a34b9e5a45d1bf on classes-9 (story bosses cut by the Flare, the Flare as a room-clearing BOOM, then the phase-6 plan to a judge) | docs/design/CLASSES.md |
 | Combat, encounters, bosses, balance (paused; handoff ready at af6452e1) | — | docs/team/combat.md |
-| Animation (joints to perfection: wrists, follow-through, elbows, arms through body, sliding) | RUNNING 13 Oct: ad8e544750b550ed9 in worktree agent-af8dbda3195e438e4 (idle_warden_break solver, worst Warden clips, sheathing plan for OK) | docs/team/animation.md |
+| Animation (joints to perfection: wrists, follow-through, elbows, arms through body, sliding) | RUNNING 13 Oct: successor 19 aaf7f8cdd03812ebd in worktree agent-af8dbda3195e438e4 (armscheck pauldron gap first, bull_rush r3, flare_burns_twice in parallel, town run (a), sword_heavy, sprint) | docs/team/animation.md |
 | UI design (the HUD keystone; portraits wait on the face) | — (handoff ready) | docs/team/ui_design.md |
 | UI art (paused; handoff ready at cd0f4ab6) | — | docs/team/ui_art.md |
 | Crafting (research, design, build) (paused; handoff ready at ed429efb) | — | docs/team/crafting.md |
 | Gameplay experience director | af2c026d86e1b532b | docs/team/experience.md |
-| Skills look and feel (VFX, under the main session) | RUNNING 13 Oct: Flare look director a1a62d6514f69d699 (su-lead-max, design only: docs/design/FLARE_LOOK.md, then a skills lead builds the slice) | docs/team/skills.md |
+| Skills look and feel (VFX, under the main session) | RUNNING 13 Oct: af0782e2e3f51bc1f on flare-1 (the Flare grammar and Burns Twice, per docs/design/FLARE_LOOK.md §4) | docs/team/skills.md |
 | Cinematics production | aece7b87e89b13f19 | docs/team/cinematics.md |
 | Performance and rendering (clarity in motion first) | PAUSED 11 Oct night (merged b87ad0c7: grade toe, portrait rig, LOD code; LOD art uncommitted in worktree agent-a4e0c353e61cca6dc). Next: oldleather LOD blob and re-judge, wilds toe, moonlight pass, fur round 2 (docs/handoff/performance.md "Paused here"). Resumes when a lead slot frees. On resume: her body now has two blend shapes (elbow_point_l/_r, from animation); the LOD must keep them | docs/team/performance.md |
 | Arena art | a0b61c278bdd5c994 | docs/team/arena_art.md |
@@ -107,6 +107,6 @@ The main session keeps this current. It is the address list for SendMessage. Ret
 | Loot and itemisation (paused, built and merged; docs/handoff/loot.md for a successor) | — | docs/team/loot.md |
 | Creatures and models (our own boar first, then MODELS_TO_MAKE.md) | af551cacc6292152f | docs/team/creatures.md |
 | Story editor (paused after notes 02 at 435k; a fresh editor reads the next draft) | — | docs/story/EDITORIAL_LETTER.md |
-| Heroine body and outfits (now a lead of its own; was the main session's) | RUNNING 13 Oct: a9f737359b07b64a4 in worktree agent-a5ca10091b08dc429 (glove judge, clasp D2, leotard tuck, Ranger boot, gold floor, legal flat run) | docs/team/outfits.md |
+| Heroine body and outfits (now a lead of its own; was the main session's) | RUNNING 13 Oct: successor 16 adffe5700dcfb2aa6 in worktree agent-a5ca10091b08dc429 (from 605eb4a8: leotard V knot, Warden sabaton, clasp half-round foot, glove thumb; one re-judge; legal run; merge request) | docs/team/outfits.md |
 | Camera close-up (wheel zoom in town, idle close-up; the owner, 12 Oct) | DONE, merged 12 Oct night (d31fefa6; worktree removed). Open: named NPCs and townsfolk walking up beside her during a close-up (keep-out covers only town walkers behind her); re-judge walkers day and night. Hook for sheathing: `CloseUp.Situation` / `CloseUp.Threat` in godot/logic/Play/CloseUp.cs | this row |
 | Marionette, the character app (a tool: idea to engine; ease like Meshy, quality like Maya; one-click AI-assisted fixing) | — (paused; status page is its own HANDOFF.md "Start here") | Marionette/HANDOFF.md, docs/HISTORY.md "The goal" |
