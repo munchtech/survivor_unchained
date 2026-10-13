@@ -29,12 +29,12 @@ Each lead restarts from its handoff. The worktrees are kept, so brief successors
    - Then: the BOOM, the frost and shatters, the bar.
    - Then a judge, then captures with sound for the owner.
 
-4. **Classes.** Worktree agent-af76b344999b70629, classes-11@af6f7eef. NOT merged.
+4. **Classes.** Worktree agent-af76b344999b70629, classes-11@663bb7dc. NOT merged.
    - All five wave-6a Flares are measured once. Four cut Act 1 bosses 9-11% more than their stand-ins.
    - bossMul fits found, not yet written to data:
      - the Bill at 0.5 and One Arrow at 0.45 pass;
      - the Long Cut passes at 0.6 (fresh seeds 97-288);
-     - Drag passes at 1.0. All five now pass the Act 1 band (classes-11@b0f6df97); the values still need writing into lamps_quarters.py.
+     - Drag passes at 1.0. All five now pass the Act 1 band (classes-11@663bb7dc); the values still need writing into lamps_quarters.py.
    - The Long Cut's arena share (33-36%) comes from build procs credited to the Flare. That goes to a max solver.
    - Coordinator's caution for the judge: the owner's rule is that balance never blunts a Flare. Weigh the ±3%-against-stand-in rule against it; good use is already 19-29% shorter than the baseline.
 
