@@ -275,6 +275,8 @@ public sealed partial class Battle
             case "burns_twice": BurnsTwiceBlow(f, last); break;
             case "the_roads_toll": TollCut(f, last); break;
             case "the_branding": BrandingBlow(f, last); break;
+            case "the_long_cut": LongCutBlow(f, last); break;
+            case "one_arrow": OneArrowBlow(f, last); break;
             default:
                 var p = Player;
                 ForEachHostileInRadius(p.X, p.Z, flareReach, (e, d) => FlareHit(e, 1, f.School, 1.2, p.X, p.Z));

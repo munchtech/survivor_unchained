@@ -11,7 +11,10 @@ EARLY = {"kindler.burns_twice.more_embers", "bulwark.bell_of_the_morning.bell_fo
 # ------------------------------------------------------------------ Flares --
 # Phase 1 plays each as its kind's plain form (Lamps.cs FlareDef); phase 2 stages the first four, phase 6 the rest.
 # power: each blow's damage at level 1. A Strike's blows land over its length; a Stand pulses `blows` a second.
-flare("the_long_cut", "The Long Cut", "warden", "sunderer", "strike", 0.8, 12, 2, 1380, "holy", ["melee", "area", "heavy", "holy"], "A sweep of dawn 12 m round, then a cleave down a 24 m line.")
+flare("the_long_cut", "The Long Cut", "warden", "sunderer", "strike", 0.8, 12, 2, 1380, "holy", ["melee", "area", "heavy", "holy"], "A sweep of dawn 12 m round, then a cleave down a 24 m line.",
+      beat={"key": 0.2, "first": 0.3, "cleave": 0.55, "second": 0.85, "hitstop": 3, "hitstopCleave": 8, "shake": 0.8},
+      args={"sweep": 1.5, "cleave": 1.5, "line": 24, "lineWidth": 1.5, "sunder": 0.3, "sunderSeconds": 8, "bossMul": 1.0,
+            "wall": 36, "sunderWall": 0.4, "burn": 0.25, "burnSeconds": 4})
 flare("dawn_in_the_steel", "Dawn in the Steel", "warden", "sunderer", "stand", 6, 10, 2, 345, "holy", ["melee", "area", "heavy", "holy"], "For 6 s the blade burns with morning: faster swings, crescents of light, every heavy blow staggers.")
 flare("bell_of_the_morning", "Bell of the Morning", "warden", "bulwark", "strike", 0.9, 14, 3, 920, "holy", ["area", "holy", "shield"], "Three tolls on the shield: each stuns and sears everything near, and mends you 4%. The last is a holy blast 8 m round.",
       beat={"first": 0.3, "step": 0.25, "hitstop": 4, "hitstopLast": 8},
@@ -36,7 +39,10 @@ flare("the_roads_toll", "The Road's Toll", "stalker", "roadknife", "strike", 1.2
       beat={"key": 0.24, "first": 0.24, "last": 1.12, "hitstop": 1, "hitstopLast": 6},
       args={"poison": 0.5, "poisonSeconds": 4, "execute": 0.25, "lastCut": 0.4, "onBoss": 4, "bossMul": 0.25, "doubled": 18, "gone": 3, "emptyFan": 0.45, "emptyRadius": 1.5})
 flare("through_and_through", "Through and Through", "stalker", "roadknife", "stand", 6, 3, 2, 290, "physical", ["melee", "steel", "physical"], "For 6 s your dashes are free and endless, and every one cuts.")
-flare("one_arrow", "One Arrow", "stalker", "verge_hunter", "strike", 0.9, 30, 1, 2990, "physical", ["projectile", "ranged", "physical"], "One arrow down a 30 m line, splitting three times on the toughest.")
+flare("one_arrow", "One Arrow", "stalker", "verge_hunter", "strike", 0.9, 30, 1, 2990, "physical", ["projectile", "ranged", "physical"], "One arrow down a 30 m line, splitting three times on the toughest.",
+      beat={"key": 0.35, "first": 0.4, "splitFirst": 0.45, "splitLast": 0.55, "follow": 0.3, "hitstop": 7, "hitstopSplit": 1, "hitstopLast": 3},
+      args={"arrow": 1.0, "line": 30, "lineWidth": 1.2, "execute": 0.3, "bossCrit": 2, "bossMul": 1.0, "splits": 3, "splitMore": 6,
+            "splitAngle": 0.4, "splitLength": 12, "splitWidth": 0.8, "split": 0.6, "pinned": 2, "heart": 0.6, "heartFan": 0.7, "heartFrom": 4})
 flare("pinning_rain", "Pinning Rain", "stalker", "verge_hunter", "stand", 5, 6, 3, 205, "physical", ["projectile", "ranged", "physical", "area"], "For 5 s arrows rain on ground 12 m across, rooting what they strike.")
 
 P_FIRST = 2   # the four Flares phase 2 stages
@@ -88,9 +94,9 @@ sund = road("warden", w, "sunderer", "Road of the Sunderer", "Slow, huge blows t
     [("Weight of the Oath", "Every blow you strike is heavy and always staggers: Sunder's line comes on every swing. You swing 45% slower, nothing can make you swing faster, and you never strike true.", [R("weight_of_the_oath", phase=4, slower=0.45)]),
      ("The Unbroken Line", "Sunder's heavy blow no longer splits a line: it breaks the ground all around you, 4 m, at half the blow.", [R("unbroken_line", phase=5, radius=4, share=0.5)])],
     ("the_long_cut", "The Long Cut", [
-        ("Second Cut", "Another sweep 0.3 s later, inside the 1.2 s.", FM("the_long_cut", "long_cut.second_cut", P_REST)),
-        ("Line of Morning", "The line burns for 4 s.", FM("the_long_cut", "long_cut.line_of_morning", P_REST)),
-        ("Through the Wall", "The line runs 36 m, and Sundered is 40% weaker armor on bosses.", FM("the_long_cut", "long_cut.through_the_wall", P_REST))]),
+        ("Second Cut", "Another sweep 0.3 s later, inside the 1.2 s.", FM("the_long_cut", "long_cut.second_cut", P_6A)),
+        ("Line of Morning", "The line burns for 4 s.", FM("the_long_cut", "long_cut.line_of_morning", P_6A)),
+        ("Through the Wall", "The line runs 36 m, and Sundered is 40% weaker armor on bosses.", FM("the_long_cut", "long_cut.through_the_wall", P_6A))]),
     ("dawn_in_the_steel", "Dawn in the Steel", [
         ("High Morning", "It holds 8 s.", FM("dawn_in_the_steel", "dawn_steel.high_morning", P_REST)),
         ("Crescents Through", "Its crescents pierce everything.", FM("dawn_in_the_steel", "dawn_steel.crescents_through", P_REST)),
@@ -403,9 +409,9 @@ verge = road("stalker", st, "verge_hunter", "Road of the Verge-Hunter", "A longb
     [("Long Sight", "Blows from beyond 8 m strike 50% harder. Within 4 m, 30% weaker.", [R("long_sight", range=8, more=0.5, near=4, weaker=0.3)]),
      ("Hunter's Stillness", "After a second standing still, every arrow pierces everything. Moving, arrows can't pierce.", [R("hunters_stillness", after=1)])],
     ("one_arrow", "One Arrow", [
-        ("Split Thrice More", "It splits three more times.", FM("one_arrow", "arrow.split", P_REST)),
-        ("Pinned to the Earth", "Everything struck is rooted 2 s.", FM("one_arrow", "arrow.pinned", P_REST)),
-        ("Through the Heart", "It stops in the first champion or boss it hits, and its three splits turn back into it.", FM("one_arrow", "arrow.heart", P_REST))]),
+        ("Split Thrice More", "It splits three more times.", FM("one_arrow", "arrow.split", P_6A)),
+        ("Pinned to the Earth", "Everything struck is rooted 2 s.", FM("one_arrow", "arrow.pinned", P_6A)),
+        ("Through the Heart", "It stops in the first champion or boss it hits, and its three splits turn back into it.", FM("one_arrow", "arrow.heart", P_6A))]),
     ("pinning_rain", "Pinning Rain", [
         ("Follow the Hunter", "The field moves with you.", FM("pinning_rain", "rain.follow", P_REST)),
         ("Iron Rain", "The arrows stun.", FM("pinning_rain", "rain.iron", P_REST)),

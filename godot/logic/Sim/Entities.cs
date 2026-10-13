@@ -125,6 +125,8 @@ public sealed class Enemy : Pooled
     public double HomeX, HomeZ, Leash;
     /// <summary>Multiplier on damage taken (a ward, a vulnerable moment).</summary>
     public double TakenMul = 1;
+    /// <summary>Sundered (the Long Cut's cleave): until this time (the battle's clock) it takes Sunder more from her side.</summary>
+    public double SunderUntil, Sunder;
     /// <summary>Where it was Bound (StatusKind.Bound): it can't move away from here.</summary>
     public double BoundX, BoundZ;
     /// <summary>At rest, it notices the survivor only this close (0: from afar);

@@ -160,7 +160,12 @@ public static class Pilot
             if (low || bossNear || (!keeps && (near >= 8 || (near >= 4 && b.Time - readyAt >= 8) ||
                 (b.Time - readyAt >= 15 && b.HostilesInRadius(p.X, p.Z, 10).Count >= 4))))
             {
+                // A line Flare (the Long Cut, One Arrow) is aimed, as a player aims it: down the line through the most,
+                // or at the boss when one is near. The aim is the pointer's only for the press.
+                var aimWas = b.Aim;
+                if (b.Flare is { } fl && fl.Args.ContainsKey("line") && LineAim(b, fl.Arg("line", 24), fl.Arg("lineWidth", 1.5)) is { } la) b.Aim = la;
                 b.UseFlare(mx, mz);
+                b.Aim = aimWas;
                 readyIn = null;
             }
         }
@@ -288,6 +293,31 @@ public static class Pilot
             if (!b.Collision.Blocked(p.X + rx * 0.25, p.Z + rz * 0.25, p.Radius * 0.9)) return (rx, rz);
         }
         return (mx, mz);
+    }
+
+    /// <summary>Where a player points a line Flare: at a boss she can hurt within its length, else along the line through
+    /// the most (a champion counts three).</summary>
+    static (double X, double Z)? LineAim(Battle b, double len, double half)
+    {
+        var p = b.Player;
+        var near = b.HostilesInRadius(p.X, p.Z, len).Where(e => e.Alive && e.State != EnemyState.Dying).ToList();
+        if (near.Count == 0) return null;
+        if (near.Where(e => e.Boss && e.TakenMul > 0).OrderBy(e => Dist(e.X, e.Z, p.X, p.Z)).FirstOrDefault() is { } boss) return (boss.X, boss.Z);
+        (double X, double Z)? best = null;
+        double bestN = -1;
+        int step = Math.Max(1, near.Count / 48);
+        for (int i = 0; i < near.Count; i += step)
+        {
+            var t = near[i];
+            double l = Math.Max(0.1, Dist(t.X, t.Z, p.X, p.Z)), dx = (t.X - p.X) / l, dz = (t.Z - p.Z) / l, n = 0;
+            foreach (var o in near)
+            {
+                double rx = o.X - p.X, rz = o.Z - p.Z, along = rx * dx + rz * dz;
+                if (along >= 0 && along <= len && Math.Abs(-rx * dz + rz * dx) <= half + o.Radius) n += o.Elite ? 3 : 1;
+            }
+            if (n > bestN) { bestN = n; best = (t.X, t.Z); }
+        }
+        return best;
     }
 
     static double Dist(double ax, double az, double bx, double bz) => Math.Sqrt((ax - bx) * (ax - bx) + (az - bz) * (az - bz));

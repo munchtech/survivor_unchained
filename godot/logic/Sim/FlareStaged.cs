@@ -23,6 +23,8 @@ public sealed partial class Battle
         "burns_twice" => FlareMod("burns.more_embers") ? (int)f.Arg("moreEmbers", 18) : f.Blows,
         "the_roads_toll" => FlareMod("toll.doubled") ? (int)f.Arg("doubled", 18) : f.Blows,
         "the_branding" => 1,
+        "the_long_cut" => FlareMod("long_cut.second_cut") ? 3 : 2,
+        "one_arrow" => 1 + (int)(FlareMod("arrow.split") ? f.Arg("splitMore", 6) : f.Arg("splits", 3)),
         _ => f.Blows,
     };
 
@@ -36,6 +38,15 @@ public sealed partial class Battle
         {
             double len = Math.Min(StrikeMax, f.Length);
             return Enumerable.Range(1, Math.Max(1, n)).Select(k => len / Math.Max(1, n) * k).ToArray();
+        }
+        // The Long Cut: the sweep at "first", the cleave, and Second Cut's counter-sweep.
+        if (f.Beat.TryGetValue("cleave", out double cleave))
+            return n > 2 ? [first, cleave, f.BeatAt("second", 0.85)] : [first, cleave];
+        // One Arrow: the arrow at "first", then its splits spread from "splitFirst" to "splitLast".
+        if (f.Beat.TryGetValue("splitFirst", out double sf))
+        {
+            double sl = f.BeatAt("splitLast", sf);
+            return new[] { first }.Concat(Enumerable.Range(0, n - 1).Select(i => n <= 2 ? sf : sf + (sl - sf) * i / (n - 2))).ToArray();
         }
         var at = new List<double>();
         if (f.Beat.TryGetValue("frost", out double frost)) at.Add(frost);
