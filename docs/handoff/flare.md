@@ -87,5 +87,6 @@ best effect in the game by a distance.
 
 ## Gotchas
 - The worktree guard refuses heredocs that write files and `cd X && ...` chains with odd constructs. Write scripts with the Write tool, or use Edit. **Never `python -`** (it opened a REPL that wrote 64 MB of errors).
-- The first `--import` segfaults (139); the second is fine.
+- The first `--import` segfaults (139); the second is fine. The import rewrote many `godot/art/**/*.import` files, which are left uncommitted on purpose (churn only): `git checkout -- godot/art` before committing.
+- The context hook counted this lead to 265k by the end of the code: onboarding plus reading the code cost about 120k. Next time, read less of BattleFx and CrowdView: the wiring above names every hook.
 - Godot recompiles a `.gdshader` at its next launch.
