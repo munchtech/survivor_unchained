@@ -89,7 +89,7 @@ The main session keeps this current. It is the address list for SendMessage. Ret
 |---|---|---|
 | Voice (paused by the owner: no placeholders; final voices from ElevenLabs later) | a501b387a90d78b4e | docs/team/voice.md |
 | Story and writing (the writer: the approved rewrite, Act 1 first) | PAUSED 12 Oct late (no lead running; Act 2's first slice WIP on story/act2@5190bf0c, unjudged, don't merge; handoff docs/handoff/story.md on that branch; 566 lines locked on integration; TOLL_SPEC ready for a code lead) | docs/team/story.md |
-| Classes design (two types per calling, skill trees, ultimates on Q / right-click) | RUNNING 13 Oct: a63a34b9e5a45d1bf on classes-9 (story bosses cut by the Flare, the Flare as a room-clearing BOOM, then the phase-6 plan to a judge) | docs/design/CLASSES.md |
+| Classes design (two types per calling, skill trees, ultimates on Q / right-click) | RUNNING 13 Oct: successor ad0c69063d34fa8de on classes-10 (classes-9 merged 3935476c: story bosses back to pre-Flare health, judge 6 pass). Now: Burns Twice shove and aim events for the Flare lead, the Road's Toll on open ground, the 10% drift trace, the phase-6 plan to a judge | docs/design/CLASSES.md |
 | Combat, encounters, bosses, balance (paused; handoff ready at af6452e1) | — | docs/team/combat.md |
 | Animation (joints to perfection: wrists, follow-through, elbows, arms through body, sliding) | RUNNING 13 Oct: successor 19 aaf7f8cdd03812ebd in worktree agent-af8dbda3195e438e4 (armscheck pauldron gap first, bull_rush r3, flare_burns_twice in parallel, town run (a), sword_heavy, sprint) | docs/team/animation.md |
 | UI design (the HUD keystone; portraits wait on the face) | — (handoff ready) | docs/team/ui_design.md |
