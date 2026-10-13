@@ -18,6 +18,8 @@ Flare look director, 13 October 2026. Design only: nothing here is built. `CLASS
 
 ## 0. The idea
 
+**Every Flare's art is its own (the owner, 13 October: "flares should be unique. I really want these to be epic, not to mention our existing effects aren't perfect yet").** No Flare reuses a spell's flames, ice, sparks, textures or sounds. Shared engine tools (shaders' code, particle systems, the light rig) are fine; the art on them is made for the Flare, above the spells' bar.
+
 A Flare is an Unchained burning, all at once, the ember she has gathered. Ember is the valley's light, leaking up through the ground. When it is burnt, it goes back down: "Nothing is ever let go: it goes round" (`STORY_BIBLE.md` §1). So every Flare is one breath:
 - **Draw:** the light comes up out of the ground into her.
 - **Hold:** it is held for a heartbeat.
@@ -585,7 +587,7 @@ Roadknife: steel with poison-green. Verge-Hunter: bone-white with Verge green. T
 - It is what the owner asked for first: a room-clearing, planned BOOM for the arenas.
 - It has the biggest contrast of any Flare: a hush of frost, then fire falling, two beats from one press.
 - Its game logic is staged already: the frost, then the embers seeking the thickest frozen packs, four on a boss, and all three lamps.
-- It reuses proven pieces: Firepot's turned flame jets, Frostfire Comet's ice, the house's frost and steam.
+- Its art is all its own (the owner: "flares should be unique"): no spell's flames, ice or steam are reused; only the engine's tools are shared.
 - The arcanist's staff grip exists, so it needs one new clip.
 - It carries a saying of this world.
 - It proves the whole grammar on the hardest case, a frost that covers the screen without blinding it.
@@ -631,7 +633,7 @@ The game logic's beats are key 0.15 s, frost 0.3, first ember 0.55 and last 1.05
   - a frost growth shader. The front is a growth-time map: distance, plus low-frequency noise, plus fingers that race ahead. The crystal comes from two multiplied panning layers, so it never visibly repeats (Diablo III's method), using frost plates we make ourselves through ComfyUI gpu turns, logged;
   - the body glaze in the crowd's view;
   - ember streaks with smoke, three or four of them carrying moving lights;
-  - the impact set: Firepot's jets, a new ice-shard atlas, steam;
+  - the impact set, made new for it: its own flame jets, an ice-shard atlas, steam;
   - shatter deaths;
   - char and wet ground;
   - all three lamps.
