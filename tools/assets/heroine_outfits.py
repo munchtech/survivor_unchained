@@ -2572,15 +2572,16 @@ LEO_U = tuple(float(v) for v in os.environ.get("LEO_U", "0.016,0.004").split(","
 # under the U's edge, from LEO_UG[0] inside its edge to LEO_UG[1] outside; LEO_UH:
 # there the edge is held onto the gusset's top, LEO_UH * 30 mm higher, not off it)
 LEO_UG = tuple(float(v) for v in os.environ.get("LEO_UG", "0.001,0.005").split(","))
-LEO_GW = tuple(float(v) for v in os.environ.get("LEO_GW", "0,0,0.015").split(","))
+LEO_GW = tuple(float(v) for v in os.environ.get("LEO_GW", "0.005,0,0.015").split(","))
 # (the arcanist's gusset, judge fin1: LEO_GHALF its half-width, LEO_GSTEEP how far up the
 # slot's walls (|N_x|), LEO_GLIFT off her, LEO_GTHICK thick (0: the corset's), LEO_GBIND=1
-# binds and stitches its edges as before)
-LEO_GHALF = float(os.environ.get("LEO_GHALF", "0.013"))
-LEO_GSTEEP = float(os.environ.get("LEO_GSTEEP", "0.8"))
-LEO_GLIFT = float(os.environ.get("LEO_GLIFT", "0.0006"))
-LEO_GTHICK = float(os.environ.get("LEO_GTHICK", "0.0012"))
-LEO_GBIND = os.environ.get("LEO_GBIND", "0") == "1"
+# binds and stitches its edges. Defaults as built before (s17: unbound, narrowed or kept off
+# the walls, the strip under her showed from the game cameras: vis5 game 0 -> 50 to 312))
+LEO_GHALF = float(os.environ.get("LEO_GHALF", "0.016"))
+LEO_GSTEEP = float(os.environ.get("LEO_GSTEEP", "0.96"))
+LEO_GLIFT = float(os.environ.get("LEO_GLIFT", "0.001"))
+LEO_GTHICK = float(os.environ.get("LEO_GTHICK", "0"))
+LEO_GBIND = os.environ.get("LEO_GBIND", "1") == "1"
 LEO_UH = float(os.environ.get("LEO_UH", "0.07"))
 RBOOT_GONE = float(os.environ.get("RBOOT_GONE", "0.005"))
 
@@ -2827,6 +2828,76 @@ FOLD_SAFE = {"arcanist.glove_l", "arcanist.glove_r"}   # (welded only along thei
 
 
 KEEP_FINE = {}   # (piece name prefix -> f(pos): points finish() never thins)
+KEEP_SUB = {}    # (piece name prefix -> f(pos, wt, tris) -> (pos, wt, tris): zones finish() divides finer first)
+
+
+def loop_divided(pos, attr, tris, red, sw):
+    """One Loop step on the faces `red`, closed red-green so it stays one
+    sheet (a face with two or three of its edges split is divided whole, one
+    with one is halved). New points by Loop's rules, every point's move from
+    the plain midpoint (or its old place) scaled by `sw`, 0 to 1 per point;
+    `attr` (weights) carried linearly."""
+    nf = len(tris)
+    fe = np.vstack([tris[:, [0, 1]], tris[:, [1, 2]], tris[:, [2, 0]]])
+    uk, inv = np.unique(np.sort(fe, 1), axis=0, return_inverse=True)
+    inv = inv.ravel().reshape(3, nf).T
+    red = red.copy()
+    while True:
+        split = np.zeros(len(uk), bool)
+        split[inv[red].ravel()] = True
+        more = (~red) & (split[inv].sum(1) >= 2)
+        if not more.any():
+            break
+        red |= more
+    split = np.zeros(len(uk), bool)
+    split[inv[red].ravel()] = True
+    green = (~red) & (split[inv].sum(1) == 1)
+    ef = np.full((len(uk), 2), -1)
+    opp = np.full((len(uk), 2), -1)
+    idx = np.arange(nf)
+    for c in range(3):
+        e, o = inv[:, c], tris[:, (c + 2) % 3]
+        a = ef[e, 0] < 0
+        ef[e[a], 0] = idx[a]
+        opp[e[a], 0] = o[a]
+    for c in range(3):
+        e, o = inv[:, c], tris[:, (c + 2) % 3]
+        b = ef[e, 0] != idx
+        ef[e[b], 1] = idx[b]
+        opp[e[b], 1] = o[b]
+    sp = np.where(split)[0]
+    a, b = uk[sp, 0], uk[sp, 1]
+    lin = (pos[a] + pos[b]) / 2
+    lp = lin.copy()
+    inner = opp[sp, 1] >= 0
+    lp[inner] = 3 / 8 * (pos[a[inner]] + pos[b[inner]]) + 1 / 8 * (pos[opp[sp[inner], 0]] + pos[opp[sp[inner], 1]])
+    newp = lin + (lp - lin) * np.minimum(sw[a], sw[b])[:, None]
+    newa = (attr[a] + attr[b]) / 2
+    n = len(pos)
+    bnd = np.zeros(n, bool)
+    bnd[uk[ef[:, 1] < 0].ravel()] = True
+    allred = np.ones(n, bool)
+    allred[tris[~red].ravel()] = False
+    A = sparse.coo_matrix((np.ones(2 * len(uk)), (np.r_[uk[:, 0], uk[:, 1]], np.r_[uk[:, 1], uk[:, 0]])), shape=(n, n)).tocsr()
+    val = np.maximum(np.asarray(A.sum(1)).ravel(), 1)
+    beta = (5 / 8 - (3 / 8 + np.cos(2 * np.pi / val) / 4) ** 2) / val
+    sm = (1 - val * beta)[:, None] * pos + beta[:, None] * (A @ pos)
+    p2 = pos + (sm - pos) * (sw * (allred & ~bnd))[:, None]
+    mid = np.full(len(uk), -1)
+    mid[sp] = n + np.arange(len(sp))
+    out = [tris[~red & ~green]]
+    r = np.where(red)[0]
+    A_, B_, C_ = tris[r, 0], tris[r, 1], tris[r, 2]
+    ab, bc, ca = mid[inv[r, 0]], mid[inv[r, 1]], mid[inv[r, 2]]
+    out += [np.c_[A_, ab, ca], np.c_[ab, B_, bc], np.c_[ca, bc, C_], np.c_[ab, bc, ca]]
+    g = np.where(green)[0]
+    for c in range(3):
+        gg = g[split[inv[g, c]]]
+        if len(gg):
+            m = mid[inv[gg, c]]
+            v0, v1, v2 = tris[gg, c], tris[gg, (c + 1) % 3], tris[gg, (c + 2) % 3]
+            out += [np.c_[v0, m, v2], np.c_[m, v1, v2]]
+    return np.vstack([p2, newp]), np.vstack([attr, newa]), np.vstack(out)
 
 
 def finish(name, pos, wt, tris, mkey, thick, bevel, budget=3000, scraps=True):
@@ -2850,6 +2921,11 @@ def finish(name, pos, wt, tris, mkey, thick, bevel, budget=3000, scraps=True):
         pos, wt, tris = weld(pos, np.asarray(wt, float), tris, r=0.0002, joined=name in FOLD_SAFE)
         tris = islands(pos, tris)
         pos, wt, tris = pinholes_filled(name, pos, wt, tris)
+    # (zones a piece asks to have divided finer, KEEP_SUB: the glove's
+    # fingertip caps, their outlines polygonal at 2x with 2 mm edges)
+    sub = next((f for k_, f in KEEP_SUB.items() if name.startswith(k_)), None)
+    if sub is not None:
+        pos, wt, tris = sub(pos, np.asarray(wt, float), tris)
     # Its true edge, the sheet's border before it is thickened (both faces of
     # it): the shader's stitching and worn edges are measured from this. A
     # guess from its shape took any crease for an edge, and stitched rings
@@ -4612,6 +4688,18 @@ def arcanist():
     GLOVE_TIP_RELAX = float(os.environ.get("GLOVE_TIP_RELAX", "0.85"))
     GLOVE_TIP_CLEAR = float(os.environ.get("GLOVE_TIP_CLEAR", "0.0005"))
     GLOVE_SINK = float(os.environ.get("GLOVE_SINK", "0.001"))
+    # (s17: each cap ends GLOVE_TIP_DIP short of where her skin starts to bend
+    # with the finger's middle bone (its last bone's weight under
+    # GLOVE_TIP_BEND), eased over at least GLOVE_TIP_EASE, its hull taken
+    # GLOVE_TIP_HULL past it; rounded by GLOVE_TIP_TAUBIN rounds and held
+    # GLOVE_TIP_FLOOR off her; Loop-divided GLOVE_TIP_SUB times in finish())
+    GLOVE_TIP_BEND = float(os.environ.get("GLOVE_TIP_BEND", "0.95"))
+    GLOVE_TIP_DIP = float(os.environ.get("GLOVE_TIP_DIP", "0.002"))
+    GLOVE_TIP_EASE = float(os.environ.get("GLOVE_TIP_EASE", "0.004"))
+    GLOVE_TIP_HULL = float(os.environ.get("GLOVE_TIP_HULL", "0.002"))
+    GLOVE_TIP_TAUBIN = int(os.environ.get("GLOVE_TIP_TAUBIN", "20"))
+    GLOVE_TIP_FLOOR = float(os.environ.get("GLOVE_TIP_FLOOR", "0.001"))
+    GLOVE_TIP_SUB = int(os.environ.get("GLOVE_TIP_SUB", "1"))
     skin_kd = cKDTree(P)
     glove_tips_ = {}
 
@@ -4629,7 +4717,15 @@ def arcanist():
                 base = P[W[:, bs[1]] > 0.5].mean(0)
                 tip = P[sel][np.argmax(np.linalg.norm(P[sel] - base, axis=1))]
                 sc = GLOVE_TIP_THUMB if fg == "thumb" else 1.0
-                glove_tips_[sd].append((fg, bs, tip, GLOVE_TIP_R[0] * sc, GLOVE_TIP_R[1] * sc))
+                r0, r1 = GLOVE_TIP_R[0] * sc, GLOVE_TIP_R[1] * sc
+                # (fin1's 17 mm reached over the pinky's last joint: curled
+                # (idle), the leather bridged over its crease folded into a
+                # ragged patch with pale glints)
+                bend = (W[:, bs].sum(1) > 0.5) & (W[:, bs[2]] < GLOVE_TIP_BEND)
+                if bend.any():
+                    r1 = min(r1, float(np.linalg.norm(P[bend] - tip, axis=1).min()) - GLOVE_TIP_DIP)
+                    r0 = min(r0, r1 - GLOVE_TIP_EASE)
+                glove_tips_[sd].append((fg, bs, tip, r0, r1))
         return glove_tips_[sd]
 
     def glove_tip_k(pos, sd):
@@ -4643,6 +4739,18 @@ def arcanist():
 
     for sd_ in "lr":
         KEEP_FINE[f"arcanist.glove_{sd_}"] = lambda q, sd_=sd_: glove_tip_k(q, sd_)
+
+    def glove_sub(pos, wt, tris, sd):
+        # (the caps Loop-divided GLOVE_TIP_SUB times: every face with a point
+        # on a cap, the move eased by the cap)
+        n0 = len(tris)
+        for _ in range(GLOVE_TIP_SUB):
+            k = glove_tip_k(pos, sd)
+            pos, wt, tris = loop_divided(pos, wt, tris, (k[tris] > 0).any(1), k)
+        print("GLOVE %s: caps Loop-divided %d times, %d faces -> %d" % (sd, GLOVE_TIP_SUB, n0, len(tris)))
+        return pos, wt, tris
+    for sd_ in "lr":
+        KEEP_SUB[f"arcanist.glove_{sd_}"] = lambda q, w_, t_, sd_=sd_: glove_sub(q, w_, t_, sd_)
 
     def glove_top_k(pos, sd):
         k = np.clip(1 - (ARM_S[sd][skin_kd.query(pos)[1]] - (WRIST_S - GLOVE_TOP)) / 0.015, 0, 1)
@@ -4660,11 +4768,11 @@ def arcanist():
         for fg, bs, tip, r0, r1 in glove_tips(sd):
             d = np.linalg.norm(p0 - tip, axis=1)
             own = W[nb][:, bs].sum(1) > 0.5
-            m = own & (d < r1 + 0.004)
+            m = own & (d < r1 + GLOVE_TIP_HULL)
             if m.sum() < 20:
                 continue
             # (the hull of the sheet there and of her fingertip lifted 1.2 mm)
-            sk = (W[:, bs].sum(1) > 0.5) & (np.linalg.norm(P - tip, axis=1) < r1 + 0.004)
+            sk = (W[:, bs].sum(1) > 0.5) & (np.linalg.norm(P - tip, axis=1) < r1 + GLOVE_TIP_HULL)
             hp = np.vstack([p0[m], P[sk] + N[sk] * 0.0012])
             h = ConvexHull(hp)
             hb = BVHTree.FromPolygons([tuple(q) for q in hp], h.simplices.tolist())
@@ -4686,11 +4794,30 @@ def arcanist():
                     if q is not None:
                         x[i] = p0[i] * (1 - k[i]) + np.array(q[:]) * k[i]
             nfill += len(idx)
+        # (then rounded: a hull is flat between its points, and its ridges,
+        # up to 42 deg at the index tip (fin1), showed as corners in the
+        # outline. Taubin's rounds weighted by the cap; any point that comes
+        # nearer her than GLOVE_TIP_FLOOR put back out along her normal.)
+        kc = glove_tip_k(p0, sd)
+        for _ in range(GLOVE_TIP_TAUBIN):
+            for lam in (0.5, -0.53):
+                x = x + (lam * kc)[:, None] * (A_ @ x - x)
+        nlift = 0
+        for i in np.where(kc > 0)[0]:
+            co, nn, _f, _d = BVH.find_nearest(Vector(x[i]))
+            if co is None:
+                continue
+            short = GLOVE_TIP_FLOOR - float(np.dot(x[i] - np.array(co[:]), np.array(nn[:])))
+            if short > 0:
+                x[i] = x[i] + np.array(nn[:]) * short
+                nlift += 1
         mv = np.linalg.norm(x - p0, axis=1)
         kt = glove_top_k(x, sd)
         pos = x - sgn * vertex_normals(x, tris) * (GLOVE_SINK * kt)[:, None]
         print("GLOVE %s: fingertips relaxed over their hulls, %d points (moved up to %.2f mm, %d over 0.3 mm); top %d points sunk %.1f mm"
               % (sd, nfill, mv.max() * 1000, int((mv > 0.0003).sum()), int((kt > 0.5).sum()), GLOVE_SINK * 1000))
+        print("GLOVE %s: caps (mm) %s; %d Taubin rounds, %d points held out to %.1f mm"
+              % (sd, " ".join("%s %.1f-%.1f" % (fg, r0 * 1000, r1 * 1000) for fg, bs, tip, r0, r1 in glove_tips(sd)), GLOVE_TIP_TAUBIN, nlift, GLOVE_TIP_FLOOR * 1000))
         return pos
     out = [
         # (opening into the gusset at its foot, as the warden's does)
