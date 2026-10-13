@@ -2593,6 +2593,9 @@ def piece(name, field, mkey, lift=0.003, thick=0.003, smooth=0, bevel=0.0012, tr
         pos, at, tris = clip(at[:, -2], pos, at, tris)
         pos, at, tris = weld(pos, at, tris)
         pos = relax(pos, tris, interior=0)
+        if crotch is not None and LEO_LIP > 0:
+            # (the one-piece's edge round the V's foot: no lip up a crease's far wall, see LEO_LIP)
+            pos, at, tris = lip_trimmed(name, pos, at, tris, LEO_LIP)
         dump(name, "3cut", pos, tris, at[:, -1])
     if hold is not None:
         # (`hold`: chosen edges held down onto her skin, see held_edges)
@@ -2719,6 +2722,52 @@ PIECE_SRC = {}   # (a piece cut with `crotch`: its sheet's skin points and norma
 # the strip's bare edge came within 5.8 mm and showed low from the front quarter (one4).)
 LEO_ONE_TUCK = float(os.environ.get("LEO_ONE_TUCK", "0"))
 LEO_ONE_DEPTH = float(os.environ.get("LEO_ONE_DEPTH", "0.007"))
+# (LEO_LIP (0 off): s17 leo3, the flecks at the V's foot. Her right groin crease runs just inside the leg line there
+# (her left one 4-6 mm outside it), so the cut left the sheet's last 2-3 mm turned up the thigh's wall; its roll,
+# faced by that lip, stood on its side and the 3 mm sheet came out through it as ragged flecks (dry one4-7, base:
+# sections across the line). Round the V's foot, in front of the slot, the edge strip is trimmed where it
+# stands more than LEO_LIP off the plane of the sheet 3-8 mm in from its edge, so the roll sits on a flat edge.)
+LEO_LIP = float(os.environ.get("LEO_LIP", "0"))   # (0.0008 in dry lip2: flecks 0 px, but vis5 mid 0->5, low 7->22: off until the trim keeps the strip covered)
+
+
+def lip_trimmed(name, pos, at, tris, h_max):
+    """A cut sheet's edge strip (the last 3 mm) trimmed where it stands more than
+    h_max off the plane of the sheet 3-8 mm in from the edge (a lip turned up a
+    crease's far wall), round the V's foot only (in front of the slot: trimmed under
+    the crotch too, the strip showed, s17 leo3 lip1)."""
+    e = np.sort(np.vstack([tris[:, [0, 1]], tris[:, [1, 2]], tris[:, [2, 0]]]), 1)
+    uk, c = np.unique(e, axis=0, return_counts=True)
+    bv = np.unique(uk[c == 1])
+    bv = bv[(pos[bv, 2] < CROTCH + 0.035) & (pos[bv, 2] > CROTCH - 0.005) & (np.abs(pos[bv, 0]) < 0.05) & (pos[bv, 1] < CROTCH_Y - 0.02) & (pos[bv, 1] > CROTCH_Y - 0.09)]
+    if not len(bv):
+        return pos, at, tris
+    nor = vertex_normals(pos, tris)
+    tree = cKDTree(pos)
+    de = cKDTree(pos[np.unique(uk[c == 1])]).query(pos)[0]
+    f = np.full(len(pos), 1.0)
+    for i in bv:
+        nb = np.array(tree.query_ball_point(pos[i], 0.009))
+        nb = nb[(de[nb] > 0.003) & (de[nb] < 0.008)]
+        if len(nb) < 6:
+            continue
+        q = pos[nb]
+        m = q.mean(0)
+        n = np.linalg.eigh((q - m).T @ (q - m))[1][:, 0]
+        st = np.array(tree.query_ball_point(pos[i], 0.004))
+        st = st[de[st] < 0.003]
+        f[st] = np.minimum(f[st], h_max - np.abs((pos[st] - m) @ n))
+    if (f > 0).all():
+        print("LIP %s: no lip over %.1f mm round the V's foot (%d edge points)" % (name, h_max * 1000, len(bv)))
+        return pos, at, tris
+    n0 = int((f <= 0).sum())
+    at = at.copy()
+    at[:, -2] = np.minimum(at[:, -2], f)
+    at[:, -1] = np.minimum(at[:, -1], at[:, -2])
+    pos, at, tris = clip(at[:, -2], pos, at, tris)
+    pos, at, tris = weld(pos, at, tris)
+    pos = relax(pos, tris, interior=0)
+    print("LIP %s: %d points of the edge strip stood over %.1f mm off the sheet round the V's foot: trimmed (%d edge points)" % (name, n0, h_max * 1000, len(bv)))
+    return pos, at, tris
 TUCK_ZONES = {}  # (an outfit: [(cap, zone of her skin 0 to 1)], tucked no deeper there)
 RBOOT_GONE = float(os.environ.get("RBOOT_GONE", "0.005"))
 
