@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using Godot;
 using SurvivorUnchained.Sim;
 
@@ -19,6 +20,11 @@ public partial class FlareFx
         public Vector3 From, Target, Dir;
         public double Born, LandAt;
         public bool Landed, Last, Lit;
+        /// <summary>Dropped on the fight's aim, falling for its blow: lands on the frame the blow comes (the hitstop,
+        /// sound and kills on its landing frame), steered to where the blow fell if its target died meanwhile.</summary>
+        public bool Aimed;
+        /// <summary>Its fall's length: the aim's lead (lamps.json burns_twice "aim") or the view's own.</summary>
+        public float FallT = Fall;
         public float Radius;
         public int Hitstop;
         public OmniLight3D? Light;
@@ -27,6 +33,8 @@ public partial class FlareFx
     /// <summary>The embers' fall: 0.14 s at 110 m/s along one shared angle (the view lands each 0.14 s after the
     /// fight's blow; the bodies it kills are held standing until it lands).</summary>
     const float Fall = 0.26f, FallSpeed = 80;
+    /// <summary>The fight's aim comes this long before its blow (lamps.json burns_twice beat "aim").</summary>
+    const float AimFall = 0.2f;
     int embersLit;
     bool firstLanded;
     bool calledDown;
@@ -72,11 +80,32 @@ public partial class FlareFx
             }
             return;
         }
+        if (e.Part == "aim") { Drop(e, b, aimed: true); return; }
+        if (e.Part == "shove") { Shove(e, b); return; }
         if (e.Part != "ember") return;
+        // The ember the aim dropped lands now, where the blow fell (classes: it may bend up to ~5.5 m off its aim when
+        // its target died); without an aim (older data), it falls now and lands a fall later.
+        var aimed = embers.FirstOrDefault(x => x.Aimed && !x.Landed);
+        if (aimed != null)
+        {
+            aimed.Aimed = false;
+            aimed.Target = WhereFalls(e, b);
+            aimed.Hitstop = e.Hitstop;
+            aimed.Radius = (float)e.Radius;
+            aimed.LandAt = t;
+            DoomUnder(aimed);
+            return;
+        }
+        Drop(e, b, aimed: false);
+    }
+
+    /// <summary>Where an ember lands: the fight's blow, except the last word, which lands by her (2 m, toward its pack
+    /// and away from the eye) so the BOOM is centred at every camera and its ring crosses the whole reach; on a boss or
+    /// a champion it still lands on it (§1.6). (View only: what it kills where the fight aimed it breaks as the ring
+    /// crosses it.)</summary>
+    Vector3 WhereFalls(Ev.Flare e, Battle b)
+    {
         var target = new Vector3((float)e.TX, (float)HeightAt(e.TX, e.TZ), (float)e.TZ);
-        // The last word lands by her (2 m, toward its pack and away from the eye), so the BOOM is centred at every
-        // camera and its ring crosses the whole reach; on a boss or a champion it still lands on it (§1.6). (View
-        // only: what it kills where the fight aimed it breaks as the ring crosses it.)
         if (e.Last && !OnToughest(e, b))
         {
             var fwd = -(Cam?.Camera.GlobalBasis.Z ?? Vector3.Forward);
@@ -86,12 +115,20 @@ public partial class FlareFx
             var q = at + (way.LengthSquared() > 0.01f ? way.Normalized() : Vector3.Zero) * 2f;
             target = new Vector3(q.X, (float)HeightAt(q.X, q.Z), q.Z);
         }
+        return target;
+    }
+
+    /// <summary>An ember starts its fall: on the fight's aim (it lands when the blow comes), or on the blow itself.</summary>
+    void Drop(Ev.Flare e, Battle b, bool aimed)
+    {
+        var target = WhereFalls(e, b);
         var dir = EmberDir(e.Blow);
         var em = new Ember
         {
-            Target = target, Dir = dir, From = target - dir * Fall * FallSpeed, Born = t, LandAt = t + Fall,
-            Last = e.Last, Radius = (float)e.Radius, Hitstop = e.Hitstop,
+            Target = target, Dir = dir, From = target - dir * (aimed ? AimFall : Fall) * FallSpeed, Born = t, LandAt = t + Fall, FallT = aimed ? AimFall : Fall,
+            Last = e.Last, Radius = (float)e.Radius, Hitstop = e.Hitstop, Aimed = aimed,
         };
+        if (aimed) em.LandAt = double.MaxValue;
         // The first four carry moving lights (two of them shadowed), so the shadows swing as they fall.
         if (embersLit < 4)
         {
@@ -102,11 +139,49 @@ public partial class FlareFx
             embersLit++;
         }
         embers.Add(em);
-        // What stands frozen under its fall breaks as it lands, outward from it.
-        if (!em.Last)
-            foreach (var d in doomed.Values)
-                if (d.At == Held && d.Where.DistanceTo(target) < em.Radius + 0.5f) { d.At = em.LandAt + 0.02 + d.Where.DistanceTo(target) / 30; d.From = target; }
+        if (!aimed) DoomUnder(em);
         Cue("ember_fall", target, 1);
+    }
+
+    /// <summary>The BOOM's shock on what still stands (classes' "shove": TX/TZ its rest point, Radius how far, 0 for a
+    /// boss, which only staggers): the fight slides the body; the view gives the slide its weight, a skid of
+    /// churned frost and char from its feet along the way and a few sparks blown off its blast side.</summary>
+    void Shove(Ev.Flare e, Battle b)
+    {
+        if (e.Target < 0 || e.Target >= b.Enemies.Items.Length || b.Enemies.Items[e.Target] is not { Alive: true } foe) return;
+        var from = new Vector3((float)foe.X, (float)HeightAt(foe.X, foe.Z), (float)foe.Z);
+        var to = new Vector3((float)e.TX, from.Y, (float)e.TZ);
+        var way = new Vector3(to.X - from.X, 0, to.Z - from.Z);
+        float far = way.Length();
+        if (far < 0.05f)
+        {
+            // A boss, or one rooted: it rocks where it stands, a ring of churned frost round its feet.
+            for (int i = 0; i < 10; i++)
+            {
+                float a = i / 10f * Mathf.Tau + R() * 0.4f;
+                var o = new Vector3(Mathf.Cos(a), 0, Mathf.Sin(a));
+                bed.Spawn(FlareBits.Kind.Puff, from + o * 1.1f * (float)(foe.Def.Scale ?? 1) + Vector3.Up * 0.15f, o * 2.4f + Vector3.Up * 0.3f, 0.7f + R() * 0.3f, 0.35f, new Color(0.11f, 0.1f, 0.1f, 0.4f), sizeEnd: 1.1f, drag: 3);
+            }
+            return;
+        }
+        way /= far;
+        int n = Math.Clamp((int)(far * 2.5f), 2, 8);
+        for (int i = 0; i < n; i++)
+        {
+            // Kicked up from its feet and carried along its slide (it settles at 9 a second: Ai.cs).
+            var p = from + way * (R() * 0.5f) + Vector3.Up * 0.1f;
+            bed.Spawn(FlareBits.Kind.Puff, p, way * far * (1.2f + 1.6f * i / n) + Vector3.Up * (0.3f + R() * 0.4f), 0.6f + R() * 0.4f, 0.3f + R() * 0.1f, new Color(0.11f, 0.1f, 0.095f, 0.45f), sizeEnd: 0.9f, drag: 2.5f);
+        }
+        for (int i = 0; i < 2; i++)
+            glow.Spawn(FlareBits.Kind.Mote, from + Vector3.Up * (0.6f + R()), way * (4 + R() * 3) + Vector3.Up * (1 + R()), 0.4f + R() * 0.3f, 0.04f, new Color(1.3f, 0.62f, 0.2f), new Color(0.5f, 0.1f, 0.02f), drag: 1.8f);
+    }
+
+    /// <summary>What stands frozen under an ember's fall breaks as it lands, outward from it.</summary>
+    void DoomUnder(Ember em)
+    {
+        if (em.Last) return;
+        foreach (var d in doomed.Values)
+            if (d.At == Held && d.Where.DistanceTo(em.Target) < em.Radius + 0.5f) { d.At = em.LandAt + 0.02 + d.Where.DistanceTo(em.Target) / 30; d.From = em.Target; }
     }
 
     /// <summary>Whether the fight's last word falls on a boss or a champion (it lands on it, not by her).</summary>
@@ -181,7 +256,7 @@ public partial class FlareFx
         foreach (var em in embers)
         {
             if (em.Landed) continue;
-            float k = Mathf.Clamp((float)((t - em.Born) / Fall), 0, 1);
+            float k = Mathf.Clamp((float)((t - em.Born) / em.FallT), 0, em.Aimed ? 0.97f : 1);
             var pos = em.From.Lerp(em.Target, k);
             if (em.Light != null)
             {
