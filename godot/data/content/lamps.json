@@ -1558,6 +1558,7 @@
     "sunderer.the_long_cut"
    ],
    "gate": 3,
+   "early": true,
    "text": "The line runs 36 m, and Sundered is 40% weaker armor on bosses.",
    "effects": [
     {
