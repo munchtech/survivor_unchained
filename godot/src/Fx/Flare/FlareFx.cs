@@ -58,6 +58,9 @@ public partial class FlareFx : Node3D
     public double Stop { get; private set; }
     double ramp = 1;
     public bool Active => t >= 0;
+    /// <summary>Other words and lights wait (a level's banner, its pillar): the Flare has the frame until 1.2 s after
+    /// its last word (judge 2: "LEVEL 3" over the BOOM's column).</summary>
+    public bool HoldsFrame => Active && (lastAt < 0 || t < lastAt + 1.2);
     /// <summary>The world's clock now (1 when no Flare holds it).</summary>
     public double WorldRate => Motion <= 0 ? 1 : Stop > 0 ? 0.03 : Frozen ? 0.08 : ramp;
     /// <summary>Hers.</summary>

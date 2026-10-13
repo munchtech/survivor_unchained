@@ -729,6 +729,7 @@ public partial class Game : Node, IZoneHost
     public void Toast(Toast t) { hud.Toast(t); sound.Toast(t); }
     public void Announce(Announcement a)
     {
+        if (scene?.Fx.Flare.HoldsFrame == true) { After(0.25, () => Announce(a)); return; }
         hud.Announce(a);
         sound.Announce(a, bossUp);
         if (Shots.On("boss")) Shots.Want("say_" + a.Title, 0.6);

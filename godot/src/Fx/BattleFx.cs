@@ -645,6 +645,25 @@ public partial class BattleFx : Node3D
     double critBurstAt = -1;
     int critBursts;
 
+
+    int levelHeld;
+
+    /// <summary>A level: a pillar and a flash at her, sparks rising.</summary>
+    void LevelLight()
+    {
+        var p = PlayerPos;
+        if (!Blast(p.X, p.Z, School.Holy, 2.2f, 1.1f, 0.9f)) Nova(p.X, p.Z, 3.6f, Palette.Of(School.Fire).Glow, 0.5f);
+        Pillar(p, 7, 0.3f, Palette.Of(School.Holy).Core * 0.6f, 0.45f);
+        Flash(p + Vector3.Up * 2, new Color("#ffc070"), 10, 0.7f, 9);
+        for (int i = 0; i < 30; i++)
+        {
+            float a = R() * Mathf.Tau;
+            bool glint = i % 3 == 0;
+            Sparks.Spawn(p + new Vector3(Mathf.Cos(a) * 0.8f, 0.2f, Mathf.Sin(a) * 0.8f), new Vector3(Mathf.Cos(a) * 0.5f, 3 + R() * 4, Mathf.Sin(a) * 0.5f), 1.2f, glint ? 0.3f : 0.1f, new Color(2.4f, 1.9f, 1.1f), new Color(2.2f, 0.6f, 0.1f), 0.02f, 0, 1.5f,
+                sprite: glint ? Sprites.Of("star") : 0, spinV: 3);
+        }
+    }
+
     public void Handle(IReadOnlyList<CombatEvent> events, Battle b)
     {
         b0 = b;
@@ -970,20 +989,9 @@ public partial class BattleFx : Node3D
                         Sparks.Spawn(PlayerPos + Vector3.Up, new Vector3(0, 1, 0), 0.3f, 0.25f, e.Kind == PickupKind.Gold ? new Color(2f, 1.5f, 0.5f) : new Color(2.2f, 1f, 0.35f), sizeEnd: 0.05f, alpha: 0.6f);
                     break;
                 case Ev.LevelUp:
-                {
-                    var p = PlayerPos;
-                    if (!Blast(p.X, p.Z, School.Holy, 2.2f, 1.1f, 0.9f)) Nova(p.X, p.Z, 3.6f, Palette.Of(School.Fire).Glow, 0.5f);
-                    Pillar(p, 7, 0.3f, Palette.Of(School.Holy).Core * 0.6f, 0.45f);
-                    Flash(p + Vector3.Up * 2, new Color("#ffc070"), 10, 0.7f, 9);
-                    for (int i = 0; i < 30; i++)
-                    {
-                        float a = R() * Mathf.Tau;
-                        bool glint = i % 3 == 0;
-                        Sparks.Spawn(p + new Vector3(Mathf.Cos(a) * 0.8f, 0.2f, Mathf.Sin(a) * 0.8f), new Vector3(Mathf.Cos(a) * 0.5f, 3 + R() * 4, Mathf.Sin(a) * 0.5f), 1.2f, glint ? 0.3f : 0.1f, new Color(2.4f, 1.9f, 1.1f), new Color(2.2f, 0.6f, 0.1f), 0.02f, 0, 1.5f,
-                            sprite: glint ? Sprites.Of("star") : 0, spinV: 3);
-                    }
+                    // While the Flare has the frame, the level's pillar and flash wait for it (FlareFx.HoldsFrame).
+                    if (Flare.HoldsFrame) levelHeld++; else LevelLight();
                     break;
-                }
                 case Ev.Victory v:
                 {
                     // The night's peak, in layers (it plays in the fall's slow motion, so it
@@ -1329,6 +1337,7 @@ public partial class BattleFx : Node3D
         StepPanting(fdt);
         Projectiles(b, fdt, now);
         Pickups(b, now);
+        if (levelHeld > 0 && !Flare.HoldsFrame) { levelHeld = 0; LevelLight(); }
         StepFronts(fdt);
         Blades.Step(fdt);
         Hits.Flush(b0 != null ? PlayerPos + Vector3.Up : null);
