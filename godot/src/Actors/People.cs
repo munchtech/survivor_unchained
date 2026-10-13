@@ -1254,7 +1254,8 @@ public static class People
         ["vixen"] = new(0.982f, 0.940f, 0.922f), ["moonlit"] = new(0.972f, 1.021f, 1.080f),
         ["fey"] = new(1.062f, 1.067f, 1.050f), ["doe"] = new(1.004f, 1.016f, 1.013f),
         ["wildling"] = new(0.992f, 0.969f, 0.957f), ["hardwon"] = new(1.004f, 1.016f, 1.032f),
-        ["sunborn"] = new(1.20f, 1.23f, 1.23f),
+        // (no Sunborn: her 1.20/1.23/1.23 was fitted at the Look, which HerFaceTone now holds; out here it lit her face
+        // 3 L* over her Brown in play, day and night; judge rj2v fix 4, 13 October 2026)
     };
 
     static readonly bool ToneTrim = SurvivorUnchained.Args.Get("tone-trim") != "off";

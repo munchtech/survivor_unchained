@@ -344,7 +344,9 @@ void fragment() {
 	// (her head as r11, by its seam ease alone: its freckles' map's blue dips under her jaw, and gated by it there
 	// the far side of her neck under her jaw went bluer, own's row .15 hue -21 to -31)
 	edge_w = (seam_ease ? 1.0 - aot.g : mix(1.0, fk.b, edge_neck)) * (1.0 - smoothstep(edge_from, edge_to, dot(NORMAL, VIEW))) * rig_w;
-	lift_w = (seam_ease ? 1.0 - aot.g : 1.0) * smoothstep(lift_from, lift_to, wd);
+	// (under the Look's rig only, where it was fitted: in play every lamp is a key, and it lit her chest 4-5 L* over
+	// BEFORE's, own and Sunborn alike, by day and at night; judge rj2v fix 4, 13 October 2026)
+	lift_w = (seam_ease ? 1.0 - aot.g : 1.0) * smoothstep(lift_from, lift_to, wd) * rig_w;
 	// (the sky's light on her as before: ambient_tint takes her body's tone out of it already)
 	ALBEDO *= ambient_tint / body_back;
 	if (dbg_gate > 0.0) { ALBEDO = vec3(1.0); SPECULAR = 0.0; BACKLIGHT = vec3(0.0); }
