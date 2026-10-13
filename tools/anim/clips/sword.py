@@ -44,16 +44,35 @@ def feet(weight=0.0, pivot=0.0):
     }
 
 
-# The buckler's hand in the guard (chest frame, from the shoulder) and its elbow's way.
-GUARD_L_AT = (-0.12, -0.26, 0.22)
-GUARD_L_POLE = (1.0, -0.4, -0.3)
+# The buckler's hand in the guard (chest frame, from the shoulder) and its elbow's way: out
+# ahead, the elbow open at 122 degrees (at (-0.12, -0.26, 0.22) it closed to 101 and the rim
+# cut her upper arm 14/25 mm and sat on her pauldron).
+GUARD_L_AT = (-0.07, -0.22, 0.34)
+GUARD_L_POLE = (1.0, -0.5, -0.4)
+
+
+def shield_l(at, pole):
+    """The buckler's hand at `at` (chest frame, from the shoulder), the elbow `pole`'s way."""
+    return {"arc": arc_of(at), "pole": pole, "frame": "chest", "blade": _n(-0.3, 0.75, 0.6), "twist": 0.3}
 
 
 def guard_l(lift=0.0):
     """The buckler held up before her, a little to the left."""
     x, y, z = GUARD_L_AT
-    return {"arc": arc_of((x, y + lift, z)), "pole": GUARD_L_POLE, "frame": "chest",
-            "blade": _n(-0.3, 0.75, 0.6), "twist": 0.3}
+    return shield_l((x, y + lift, z), GUARD_L_POLE)
+
+
+def with_shield(keys, track):
+    """The buckler keyed on its own [(frame, hand, elbow's way, ease)]: set in the body's key of the
+    same frame, or a key of its own between them."""
+    keys = [(t, dict(p), e) for t, p, e in keys]
+    at_t = {t: k for k, (t, _, _) in enumerate(keys)}
+    for t, at, pole, e in track:
+        if t in at_t:
+            keys[at_t[t]][1]["hand_l"] = shield_l(at, pole)
+        else:
+            keys.append((t, {"hand_l": shield_l(at, pole)}, e))
+    return sorted(keys, key=lambda k: k[0])
 
 
 def pose(hips_yaw, spine_yaw, hand, blade, pole=(-0.7, -0.5, -0.3), left=None, pitch=6, roll=0, head=None,
@@ -64,7 +83,8 @@ def pose(hips_yaw, spine_yaw, hand, blade, pole=(-0.7, -0.5, -0.3), left=None, p
     # The head keeps on the foe: it turns against the back.
     p["head"] = head if head is not None else (-(hips_yaw + spine_yaw) * 0.6, -4, 0)
     p["hand_r"] = {"arc": arc_of(hand), "blade": blade, "pole": pole, "frame": "chest", "twist": 0.5}
-    p["hand_l"] = left or guard_l()
+    if left is not False:
+        p["hand_l"] = left or guard_l()
     p["fingers_r"] = fingers
     p["fingers_l"] = "fist"
     return p
@@ -73,68 +93,86 @@ def pose(hips_yaw, spine_yaw, hand, blade, pole=(-0.7, -0.5, -0.3), left=None, p
 GUARD = pose(0, 0, (-0.05, -0.30, 0.20), _n(-0.25, 0.65, 0.7), pole=(-0.6, -0.4, -0.6))
 
 
+# The buckler through each cut: its own keys (frame, hand, elbow's way, ease), chest frame
+# from the shoulder.
+BACK_L = [
+    (0, (0.12, -0.24, 0.33), (1.0, -0.6, -0.3), "fast"),
+    (2.5, (0.10, -0.26, 0.34), (1.0, -0.6, -0.3), "linear"),
+    (5, (0.16, -0.16, 0.34), (1.0, -0.6, -0.3), "ease"),
+    (8, (0.16, -0.16, 0.34), (1.0, -0.6, -0.3), "ease"),
+    (15, GUARD_L_AT, GUARD_L_POLE, "auto"),
+    (24, GUARD_L_AT, GUARD_L_POLE, "ease"),
+]
+FORE_L = [
+    (0, (-0.04, -0.20, 0.36), (1.0, -0.5, -0.4), "fast"),
+    (2.5, (0.04, -0.18, 0.37), (1.0, -0.5, -0.3), "linear"),
+    (5, (0.17, -0.04, 0.36), (1.0, -0.6, -0.5), "ease"),
+    (13, (0.17, -0.04, 0.36), (1.0, -0.6, -0.5), "ease"),
+    (19, (0.0, -0.20, 0.36), (1.0, -0.5, -0.4), "auto"),
+    (24, GUARD_L_AT, GUARD_L_POLE, "ease"),
+]
+HEAVY_L = [
+    (0, (-0.02, -0.18, 0.37), (1.0, -0.5, -0.4), "fast"),
+    (3, (0.04, -0.18, 0.37), (1.0, -0.5, -0.3), "linear"),
+    (6, (0.19, 0.0, 0.35), (1.0, -0.6, -0.5), "ease"),
+    (15, (0.19, 0.0, 0.35), (1.0, -0.6, -0.5), "ease"),
+    (22, (0.02, -0.18, 0.37), (1.0, -0.5, -0.4), "auto"),
+    (30, GUARD_L_AT, GUARD_L_POLE, "ease"),
+]
+BACK_COCK = (0.30, 0.04, 0.17)   # the cocked fist off her chest (at (0.30, 0.02, 0.10) the hilt was 11 mm into it)
+
+
+def _body(p):
+    return {k: v for k, v in p.items() if k != "hand_l"}
+
+
 def sword_back(rig):
     keys = [
         # Cocked: the blade drawn back across her to the left, high; hips and
         # back wound to the left.
-        (0, pose(18, 30, (0.30, 0.02, 0.10), _n(0.55, 0.6, -0.55), pole=(0.2, -0.3, -1.0),
-                 left=guard_l(-0.08), weight=0.4, pitch=4), "fast"),
+        (0, pose(18, 30, BACK_COCK, _n(0.55, 0.6, -0.55), pole=(0.2, -0.3, -1.0), left=False, weight=0.4, pitch=4), "fast"),
         # Through the middle at full reach, the blade level and leading.
-        (2.5, pose(4, 4, (-0.05, -0.08, 0.46), _n(-0.15, 0.05, 1.0), pole=(-0.3, -0.8, -0.4),
-                   left=guard_l(-0.04), weight=0.0), "linear"),
+        (2.5, pose(4, 4, (-0.05, -0.08, 0.46), _n(-0.15, 0.05, 1.0), pole=(-0.3, -0.8, -0.4), left=False, weight=0.0), "linear"),
         # Out to her right: the cut ends.
-        (5, pose(-16, -32, (-0.36, -0.14, 0.30), _n(-0.95, -0.05, 0.25), pole=(-0.2, -1.0, 0.2),
-                 left={"arc": arc_of((0.10, -0.18, 0.30)), "pole": (1.0, -0.5, 0.0), "frame": "chest",
-                       "blade": _n(0.2, 0.7, 0.7)}, weight=-0.5, pivot=0.0), "ease"),
+        (5, pose(-16, -32, (-0.36, -0.14, 0.30), _n(-0.95, -0.05, 0.25), pole=(-0.2, -1.0, 0.2), left=False, weight=-0.5), "ease"),
         # Held, the blade carrying on a hair (the weight of it).
-        (8, pose(-19, -38, (-0.38, -0.18, 0.24), _n(-0.9, -0.15, -0.3), pole=(-0.1, -1.0, 0.3),
-                 left={"arc": arc_of((0.12, -0.18, 0.30)), "pole": (1.0, -0.5, 0.0), "frame": "chest",
-                       "blade": _n(0.2, 0.7, 0.7)}, weight=-0.6), "ease"),
+        (8, pose(-19, -38, (-0.38, -0.18, 0.24), _n(-0.9, -0.15, -0.3), pole=(-0.1, -1.0, 0.3), left=False, weight=-0.6), "ease"),
         # Recovering: the blade comes round and up into the guard.
-        (15, pose(-6, -10, (-0.15, -0.26, 0.24), _n(-0.5, 0.5, 0.7), pole=(-0.6, -0.5, -0.4), weight=-0.2), "auto"),
-        (24, GUARD, "ease"),
+        (15, pose(-6, -10, (-0.15, -0.26, 0.24), _n(-0.5, 0.5, 0.7), pole=(-0.6, -0.5, -0.4), left=False, weight=-0.2), "auto"),
+        (24, _body(GUARD), "ease"),
     ]
+    keys = with_shield(keys, BACK_L)
     return build("sword_back", rig, keys, lead=STRIKE, meta={"layer": "upper", "contact": 2.5 / 30, "weapon": "sword+shield"})
 
 
 def sword_fore(rig):
     keys = [
         # Cocked over the right shoulder, the back wound to the right.
-        (0, pose(-18, -32, (-0.20, 0.10, 0.14), _n(-0.45, 0.65, -0.6), pole=(-0.8, -0.2, -0.5),
-                 left={"arc": arc_of((0.06, -0.16, 0.30)), "pole": (1.0, -0.5, 0.0), "frame": "chest",
-                       "blade": _n(0.2, 0.7, 0.7)}, weight=-0.4), "fast"),
-        (2.5, pose(-3, -4, (-0.02, -0.06, 0.46), _n(0.1, 0.05, 1.0), pole=(-0.6, -0.7, -0.3),
-                   left=guard_l(-0.06), weight=0.0), "linear"),
+        (0, pose(-18, -32, (-0.20, 0.10, 0.14), _n(-0.45, 0.65, -0.6), pole=(-0.8, -0.2, -0.5), left=False, weight=-0.4), "fast"),
+        (2.5, pose(-3, -4, (-0.02, -0.06, 0.46), _n(0.1, 0.05, 1.0), pole=(-0.6, -0.7, -0.3), left=False, weight=0.0), "linear"),
         # Out to her left, across her: the cut ends low.
-        (5, pose(16, 30, (0.26, -0.22, 0.30), _n(0.9, -0.15, 0.35), pole=(-0.9, -0.2, 0.2),
-                 left=guard_l(0.02), weight=0.6, pivot=0.6), "ease"),
-        (8, pose(19, 36, (0.28, -0.27, 0.24), _n(0.85, -0.3, -0.2), pole=(-0.9, -0.1, 0.3),
-                 left=guard_l(0.02), weight=0.7, pivot=0.7), "ease"),
-        (15, pose(6, 10, (0.02, -0.28, 0.24), _n(0.2, 0.5, 0.8), pole=(-0.6, -0.5, -0.4), weight=0.2, pivot=0.2),
+        (5, pose(16, 30, (0.26, -0.22, 0.30), _n(0.9, -0.15, 0.35), pole=(-0.9, -0.2, 0.2), left=False, weight=0.6, pivot=0.6), "ease"),
+        (8, pose(19, 36, (0.28, -0.27, 0.24), _n(0.85, -0.3, -0.2), pole=(-0.9, -0.1, 0.3), left=False, weight=0.7, pivot=0.7), "ease"),
+        (15, pose(6, 10, (0.02, -0.28, 0.24), _n(0.2, 0.5, 0.8), pole=(-0.6, -0.5, -0.4), left=False, weight=0.2, pivot=0.2),
          "auto"),
-        (24, GUARD, "ease"),
+        (24, _body(GUARD), "ease"),
     ]
+    keys = with_shield(keys, FORE_L)
     return build("sword_fore", rig, keys, lead=STRIKE, meta={"layer": "upper", "contact": 2.5 / 30, "weapon": "sword+shield"})
 
 
 def sword_heavy(rig):
     keys = [
-        # Wound far round to the right and low, the buckler thrown out
-        # behind her the other way.
-        (0, pose(-30, -40, (-0.30, -0.20, 0.06), _n(-0.6, 0.1, -0.8), pole=(-0.6, -0.8, 0.0),
-                 left={"arc": arc_of((0.10, -0.10, 0.36)), "pole": (1.0, -0.3, 0.2), "frame": "chest",
-                       "blade": _n(0.2, 0.8, 0.6)}, weight=-0.7, pitch=14), "fast"),
-        (3, pose(-6, -8, (-0.10, -0.14, 0.47), _n(-0.3, -0.05, 1.0), pole=(-0.4, -0.9, -0.1),
-                 left=guard_l(-0.1), weight=0.0, pitch=12), "linear"),
+        # Wound far round to the right and low.
+        (0, pose(-30, -40, (-0.30, -0.20, 0.06), _n(-0.6, 0.1, -0.8), pole=(-0.6, -0.8, 0.0), left=False, weight=-0.7, pitch=14), "fast"),
+        (3, pose(-6, -8, (-0.10, -0.14, 0.47), _n(-0.3, -0.05, 1.0), pole=(-0.4, -0.9, -0.1), left=False, weight=0.0, pitch=12), "linear"),
         # All the way round to her left, the whole back behind it.
-        (6, pose(26, 44, (0.30, -0.16, 0.34), _n(0.95, -0.05, 0.2), pole=(-0.8, -0.6, 0.2),
-                 left=guard_l(0.02), weight=0.8, pivot=1.0, pitch=10), "ease"),
-        (10, pose(30, 50, (0.30, -0.22, 0.26), _n(0.8, -0.3, -0.3), pole=(-0.8, -0.4, 0.4),
-                  left=guard_l(0.02), weight=0.9, pivot=1.0, pitch=10), "ease"),
-        (19, pose(10, 14, (0.04, -0.28, 0.24), _n(0.2, 0.5, 0.8), pole=(-0.6, -0.5, -0.4), weight=0.3, pivot=0.3),
-         "auto"),
-        (30, GUARD, "ease"),
+        (6, pose(26, 44, (0.30, -0.16, 0.34), _n(0.95, -0.05, 0.2), pole=(-0.8, -0.6, 0.2), left=False, weight=0.8, pivot=1.0, pitch=10), "ease"),
+        (10, pose(30, 50, (0.30, -0.22, 0.26), _n(0.8, -0.3, -0.3), pole=(-0.8, -0.4, 0.4), left=False, weight=0.9, pivot=1.0, pitch=10), "ease"),
+        (19, pose(10, 14, (0.04, -0.28, 0.24), _n(0.2, 0.5, 0.8), pole=(-0.6, -0.5, -0.4), left=False, weight=0.3, pivot=0.3), "auto"),
+        (30, _body(GUARD), "ease"),
     ]
+    keys = with_shield(keys, HEAVY_L)
     return build("sword_heavy", rig, keys, lead=STRIKE, meta={"layer": "upper", "contact": 3 / 30, "weapon": "sword+shield"})
 
 
