@@ -147,6 +147,15 @@ uniform vec3 sky_tone = vec3(0.0);
 // on her (ambient_tint) is as before. body_gate 0: as before (--body-gate off).
 uniform vec3 body_tone = vec3(1.0);
 uniform float body_gate = 0.0;
+// How much of the Look's portrait rig lights her (GameFront's portrait light, 0 for her whole figure, 1 from head and
+// shoulders in; 0 in play). Her head's tones above (body_tone kept up her neck, key, sky, soft and edge tones, and her
+// face's face_tone) were all fitted under that rig, its key with the soft fill showing her paint without body_tone; under
+// the fire, the moon and the sun alone (every lamp a key) her head and neck kept body_tone's blue, pale blue-white over a
+// warm firelit body in the Look's whole frame (judge rj1v, 12 October 2026: neck Oklab hue -86 against her chest's +8).
+// Outside the rig her head takes her body's treatment and her face face_world (People.HerFaceToneUntrimmed, her face's
+// own tone against its portrait, before the rig's fit). 1: as fitted, in every light (--head-rig off).
+uniform float look_rig = 0.0;
+uniform vec3 face_world = vec3(1.0);
 // (the factor her paint takes for it, 1 where it is kept and 1 / body_tone where it is taken out, and how much of the
 // tones fitted on her neck she takes, 1 on her head and neck, 0 from her collarbones down)
 varying vec3 body_back;
@@ -243,9 +252,10 @@ void fragment() {
 	vec3 fm = textureLod(features, UV, fl).rgb;
 	vec4 aot = texture(ao_map, UV);
 	float hw = seam_ease ? aot.g : 1.0;
-	ALBEDO = texture(paint, UV).rgb * tone * mix(vec3(1.0), face_tone, fm.b);
+	float rig_w = clamp(look_rig, 0.0, 1.0);
+	ALBEDO = texture(paint, UV).rgb * tone * mix(vec3(1.0), mix(face_world, face_tone, rig_w), fm.b);
 	vec3 fk = texture(freckles, UV).rgb;
-	neck_w = mix(1.0, seam_ease ? 1.0 : fk.b, body_gate);
+	neck_w = mix(1.0, seam_ease ? 1.0 : fk.b, body_gate) * rig_w;
 	body_back = pow(max(body_tone, vec3(1e-3)), vec3(neck_w - 1.0));
 	ALBEDO *= body_back;
 	if (freckle_amount > 0.001) {
@@ -325,7 +335,7 @@ void fragment() {
 	soft_w = 1.0 - fm.b;
 	// (her head as r11, by its seam ease alone: its freckles' map's blue dips under her jaw, and gated by it there
 	// the far side of her neck under her jaw went bluer, own's row .15 hue -21 to -31)
-	edge_w = (seam_ease ? 1.0 - aot.g : mix(1.0, fk.b, edge_neck)) * (1.0 - smoothstep(edge_from, edge_to, dot(NORMAL, VIEW)));
+	edge_w = (seam_ease ? 1.0 - aot.g : mix(1.0, fk.b, edge_neck)) * (1.0 - smoothstep(edge_from, edge_to, dot(NORMAL, VIEW))) * rig_w;
 	lift_w = (seam_ease ? 1.0 - aot.g : 1.0) * smoothstep(lift_from, lift_to, wd);
 	// (the sky's light on her as before: ambient_tint takes her body's tone out of it already)
 	ALBEDO *= ambient_tint / body_back;

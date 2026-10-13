@@ -191,6 +191,8 @@ public partial class Game
         static float Smooth(float t) { t = Mathf.Clamp(t, 0, 1); return t * t * (3 - 2 * t); }
         // How much of the portrait's light: none for her whole figure, all of it from head and shoulders in.
         float p = Smooth((z - 0.15f) / 0.45f);
+        // (her head's tones fitted under this rig, as much as it lights her: People.HerLookRig)
+        if (figure?.Person is { } herRig) People.HerLookRig(herRig, p);
         float k = 1 - Mathf.Exp(-4f * (float)dt);
         var camLeft = dir.Cross(Vector3.Up).Normalized();
         SpotLight3D Spot(Color c, float angle, bool shadow, float specular)
@@ -356,6 +358,7 @@ public partial class Game
         foreach (var l in new Light3D?[] { keyLight, fillLight, edgeLight, rimLight, bounceLight, herFire }) l?.QueueFree();
         keyLight = fillLight = edgeLight = rimLight = bounceLight = null;
         air.Key.LightCullMask |= 2u;                       // (the sky's light on her again)
+        if (figure?.Person is { } herRig) People.HerLookRig(herRig, 0);
         Campfire.ClearNear(0);
         herFire = null;
         if (fireSrc != null && IsInstanceValid(fireSrc)) fireSrc.LightCullMask = fireMask;

@@ -759,6 +759,7 @@ public static class People
                     {
                         m.SetShaderParameter("tone", HerTone(look));
                         m.SetShaderParameter("face_tone", FaceTone(look));
+                        m.SetShaderParameter("face_world", FaceWorld(look));
                         m.SetShaderParameter("body_lift", BodyLift(look));
                         m.SetShaderParameter("soft_tone", SoftTone(look));
                         m.SetShaderParameter("key_tone", KeyTone(look));
@@ -1029,6 +1030,8 @@ public static class People
         if (who == "heroine")
         {
             m.SetShaderParameter("face_tone", FaceTone(look));
+            m.SetShaderParameter("face_world", FaceWorld(look));
+            m.SetShaderParameter("look_rig", HeadRigOff ? 1f : lookRig);
             m.SetShaderParameter("body_lift", BodyLift(look));
             m.SetShaderParameter("soft_tone", SoftTone(look));
             m.SetShaderParameter("key_tone", KeyTone(look));
@@ -1281,6 +1284,31 @@ public static class People
     /// nearly half her face's grain, and her neck's relief alone gave it a quarter. (Over her body too, it was the
     /// speckle over her breasts.) (--grain tries another.)</summary>
     static readonly float HerGrain = SurvivorUnchained.Args.Has("grain") ? SurvivorUnchained.Args.Num("grain", 3f) : 3f;
+
+    /// <summary>Her face's tone outside the Look's portrait rig (the skin shader's face_world): her face's own tone against
+    /// its portrait as it was before the rig's fit (HerFaceToneUntrimmed). Every tone above was fitted under that rig, its
+    /// key with the soft fill showing her paint without HerBodyTone; under the fire, the moon and the sun alone her head kept
+    /// HerBodyTone's blue, pale blue-white over a warm firelit body in the Look's whole frame (judge rj1v, 12 October 2026).
+    /// Outside the rig her head takes her body's treatment and her face this (the shader's look_rig, HerLookRig).</summary>
+    static Vector3 FaceWorld(Look look) => HerFaceToneUntrimmed.TryGetValue(FaceId(look), out var t) ? t : Vector3.One;
+
+    /// <summary>How much of the Look's portrait rig lights her, on every part of her skin (the skin shader's look_rig: 1 her
+    /// head's tones as fitted under the rig, 0 her body's treatment and her face's FaceWorld, as in play). GameFront sets it
+    /// each frame, as the rig comes up. (--head-rig off: 1 always, her head as fitted in every light, for judging it.)</summary>
+    public static void HerLookRig(Person p, float w)
+    {
+        if (p.Body != "heroine") return;
+        lookRig = w;
+        if (HeadRigOff) w = 1;
+        foreach (var mi in p.Meshes)
+            for (int s = 0; mi.Mesh != null && s < mi.Mesh.GetSurfaceCount(); s++)
+                if (mi.GetSurfaceOverrideMaterial(s) is ShaderMaterial m && m.Shader == skinShader2) m.SetShaderParameter("look_rig", w);
+    }
+
+    static readonly bool HeadRigOff = SurvivorUnchained.Args.Get("head-rig") == "off";
+
+    // (the rig's weight now, for her skin made while it is up: a look chosen at the close-up)
+    static float lookRig;
 
     static Vector3 FaceTone(Look look)
     {
