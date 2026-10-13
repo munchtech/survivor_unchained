@@ -2402,7 +2402,56 @@ def over_nipples(pos, tris, least=float(os.environ.get("NIP_RISE", "0.0015")), s
 SHEET = {}   # (each piece's sheet as finished: points, triangles, weights, thickness)
 
 
-def piece(name, field, mkey, lift=0.003, thick=0.003, smooth=0, bevel=0.0012, trim=None, clear=None, soften=3, dome=False, keep_off=("Head", "neck_01"), cut=None, iron=0, hull=None, studs=None, budget=None, filled=False, edge=30, slot=True, bridge=False, bind=True, rigid=None, stiff=None, studs_off=None, weigh=None, hold=None, crotch=None):
+# (judge fin1 c: two steel spikes stood out past the gold roll down the back of each
+# Warden greave, over her heel: a sliver of the cut 0.02-0.04 mm high, or a triangle
+# folded back over its neighbour, at the sheet's edge, thickened along its skewed
+# facing. GREAVE_RIM=1: such triangles at the edge dropped before the plate is made
+# (the roll already lies along the edge and covers the notch they leave); 0: as before.)
+GREAVE_RIM = os.environ.get("GREAVE_RIM", "1") == "1"
+
+
+def rim_cleaned(name, pos, at, tris, least=0.0002, fold=0.3, rounds=6):
+    """A sheet's edge cleared of slivers and folds: each triangle on its edge
+    lower than `least` (its smallest height) or folded against a neighbour
+    (their facings' dot under `fold`) dropped, again as the edge moves in;
+    the points left without a triangle dropped with them."""
+    tris = np.asarray(tris)
+    gone = 0
+    for _ in range(rounds):
+        nf = len(tris)
+        e = np.sort(np.vstack([tris[:, [0, 1]], tris[:, [1, 2]], tris[:, [2, 0]]]), 1)
+        _, iv, cnt = np.unique(e, axis=0, return_inverse=True, return_counts=True)
+        iv = iv.ravel()
+        on_edge = (cnt[iv].reshape(3, -1) == 1).any(0)
+        a, b, c = pos[tris[:, 0]], pos[tris[:, 1]], pos[tris[:, 2]]
+        fn = np.cross(b - a, c - a)
+        ar = np.linalg.norm(fn, axis=1)
+        fu = fn / (ar[:, None] + 1e-15)
+        longest = np.maximum.reduce([np.linalg.norm(b - a, axis=1), np.linalg.norm(c - b, axis=1), np.linalg.norm(a - c, axis=1)])
+        height = ar / (longest + 1e-15)
+        o = np.argsort(iv, kind="stable")
+        s = iv[o]
+        k = np.where(s[1:] == s[:-1])[0]
+        f1, f2 = o[k] % nf, o[k + 1] % nf
+        d = (fu[f1] * fu[f2]).sum(1)
+        worst = np.ones(nf)
+        np.minimum.at(worst, f1, d)
+        np.minimum.at(worst, f2, d)
+        bad = on_edge & ((height < least) | (worst < fold))
+        if not bad.any():
+            break
+        gone += int(bad.sum())
+        tris = tris[~bad]
+    if gone:
+        used = np.unique(tris)
+        remap = np.full(len(pos), -1, dtype=np.int64)
+        remap[used] = np.arange(len(used))
+        pos, at, tris = pos[used], at[used], remap[tris]
+    print("RIMCLEAN %s: %d slivers or folds dropped from its edge" % (name, gone))
+    return pos, at, tris
+
+
+def piece(name, field, mkey, lift=0.003, thick=0.003, smooth=0, bevel=0.0012, trim=None, clear=None, soften=3, dome=False, keep_off=("Head", "neck_01"), cut=None, iron=0, hull=None, studs=None, budget=None, filled=False, edge=30, slot=True, bridge=False, bind=True, rigid=None, stiff=None, studs_off=None, weigh=None, hold=None, crotch=None, rim_clean=False):
     """A region of her skin made into a piece of her outfit. `rigid`, a
     centre, makes it a rigid plate: a fair dome round that centre (shell())
     on one blend of bones throughout, so it moves as one piece. `trim`, as
@@ -2530,6 +2579,9 @@ def piece(name, field, mkey, lift=0.003, thick=0.003, smooth=0, bevel=0.0012, tr
                                 stitch=kind(mkey) == "leather")
         dump(name, "4bound", pos, tris, at[:, -1])
         trim = None
+    if rim_clean:
+        # (`rim_clean`: slivers and folds at its edge dropped, see rim_cleaned)
+        pos, at, tris = rim_cleaned(name, pos, at, tris)
     SHEET[name] = (pos.copy(), tris.copy(), at[:, 3:3 + NB].copy(), thick)
     made = [finish(name, pos, at[:, 3:3 + NB], tris, mkey, thick, bevel, budget or (8000 if dome else 3000))] + beads
     if hold is not None and len(held):
@@ -3872,7 +3924,7 @@ def warden():
         out += [
             *piece(f"warden.pauldron_{sd}", cap(shoulder(sd), 0.11), "steel", lift=0.012, thick=0.004, smooth=14, trim=gold(0.01), studs="gold", rigid=head(f"upperarm_{sd}")),
             *piece(f"warden.vambrace_{sd}", limb(sd, ELBOW_S + 0.05, WRIST_S - 0.01, legs=False), "steel", lift=0.006, smooth=8, trim=gold(), studs="gold"),
-            *piece(f"warden.greave_{sd}", limb(sd, KNEE_S + 0.03, ANKLE_S + 0.01, front_dip=0.04), "steel", lift=0.008, smooth=12, trim=gold(), studs="gold"),
+            *piece(f"warden.greave_{sd}", limb(sd, KNEE_S + 0.03, ANKLE_S + 0.01, front_dip=0.04), "steel", lift=0.008, smooth=12, trim=gold(), studs="gold", rim_clean=GREAVE_RIM),
             *piece(f"warden.knee_{sd}", cap(LEG[sd][1] + np.array([0, -0.06, 0]), 0.06), "steel", lift=0.016, thick=0.004, smooth=12, trim=gold(0.006)),
             # (the sabaton a made shoe, lofted as the Ranger's boot is, toe box,
             # welted sole and heel, its top under the greave: laid on her foot it
