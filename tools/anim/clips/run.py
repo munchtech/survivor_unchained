@@ -35,7 +35,7 @@ def _perp(up_deg, out=0.0):
     return tuple(v / np.linalg.norm(v))
 
 
-def blade_carry(out=-1.0, up_back=0.35, up_fwd=0.5, swing=None):
+def blade_carry(out=-1.0, up_back=0.35, up_fwd=0.5, swing=None, tuck=0.0):
     """A blade carried in the swinging hand as a running hand carries one:
     the wrist straight in the grip and the forearm rolled so the thumb side
     faces out and up (`out`: -1 her right, +1 her left), so the blade rides
@@ -46,24 +46,38 @@ def blade_carry(out=-1.0, up_back=0.35, up_fwd=0.5, swing=None):
     straight can only point a blade down or across her, so a long blade's
     hand stays at her side. (Keyed by direction, up over her shoulder behind
     her, it asked a wrist bent back past what one can, and the hand flapped
-    from one side to the other.)"""
+    from one side to the other.) `tuck`: the elbow drawn in toward her side
+    as the fist goes back (the pole's sideways part, toward the middle, all
+    of it with the fist back and none with it forward), so the forearm runs
+    straight ahead from it, not in across her: the hilt and its cross ride
+    beside her hip, not into it and her thigh."""
     def f(ph, k, hand):
         hand = dict(hand)
         hand.update({"thumb": (out, up_back + (up_fwd - up_back) * k, 0.0), "frame": "chest", "twist": 0.5})
+        e = k * k * (3 - 2 * k)
         if swing is not None:
-            e = k * k * (3 - 2 * k)
             back, fwd = np.array(swing[0], float), np.array(swing[1], float)
             v = (back + (fwd - back) * e) * [-out, 1, 1]
             v[1] += 0.03 * math.sin(math.pi * k)
             hand["arc"] = arc_of(v)
-        hand["pole"] = tuple(np.array(hand["pole"]))
+        if tuck:
+            hand["pole"] = tuple(np.array(hand["pole"], float) + [-out * tuck * (1 - e), 0.0, 0.0])
+        else:
+            hand["pole"] = tuple(np.array(hand["pole"]))
         return hand
     return f
 
 
 # The long blades' hands: the sword at her side and ahead; the reaver's axe
-# pumped harder, but still never far behind her.
-SWORD_SWING = ((0.0, -0.34, 0.0), (0.02, -0.20, 0.27))
+# pumped harder, but still never far behind her. The warden's sword fist
+# rides back 4-5 cm out from her hip and 4 cm higher, its elbow tucked in
+# behind it (blade_carry's tuck), so the pommel and cross pass clear of her
+# side, the plates at her hip and the thigh driving up (the oath's longer
+# pommel too; at the old line they went 2-5 cm into her, the fist 5); and
+# forward it comes no further in than her shoulder's line, a touch lower,
+# its cross clear of the shield's rim (3 cm; it touched).
+SWORD_SWING = ((-0.045, -0.30, 0.0), (0.0, -0.22, 0.25))
+SWORD_TUCK = 0.45
 AXE_SWING = ((0.02, -0.30, -0.08), (0.0, -0.10, 0.31))
 
 
@@ -131,7 +145,7 @@ STALKER = Gait(frames=20, speed=SPEED, duty=0.34, drop=0.14, bob=0.035, lean=26,
 
 # The runs the game asks for: calling and what is in hand.
 RUNS = {
-    "run_warden": (WARDEN, {"r": blade_carry(swing=SWORD_SWING), "l": shield_guard()}, "sword+shield"),
+    "run_warden": (WARDEN, {"r": blade_carry(swing=SWORD_SWING, tuck=SWORD_TUCK), "l": shield_guard()}, "sword+shield"),
     "run_reaver": (REAVER, {"r": blade_carry(up_fwd=0.75, swing=AXE_SWING)}, "axe"),
     "run_reaver_axes": (REAVER, {"r": blade_carry(up_fwd=0.75, swing=AXE_SWING), "l": blade_carry(1.0, up_fwd=0.75, swing=AXE_SWING)}, "axes"),
     "run_arcanist": (ARCANIST, {"r": staff_hold()}, "staff"),
