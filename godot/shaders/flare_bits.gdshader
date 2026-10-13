@@ -10,12 +10,14 @@ shader_type spatial;
 render_mode unshaded, cull_disabled, depth_draw_never, shadows_disabled, blend_add;
 
 global uniform sampler2D flare_noise : filter_linear_mipmap, repeat_enable;
+global uniform vec4 flare_hue;    // a: night 0..1
 
 varying vec2 v_uv;
 varying flat float v_kind;
 varying flat float v_age;
 varying flat float v_seed;
 varying float v_len;
+varying float v_h; // a puff: how high on it, by the world's up as seen (-1 its belly .. 1 its crown)
 
 void vertex() {
 	vec3 at = MODEL_MATRIX[3].xyz;
@@ -54,6 +56,8 @@ void vertex() {
 	float back = (v_kind > 0.5 && v_kind < 2.5) || (v_kind > 3.5 && v_kind < 4.5) ? -0.5 : 0.0;
 	vec2 off = ax * (c.y + back) * len + ay * c.x * wid;
 	v_len = len / max(wid, 1e-3);
+	vec2 up2 = (VIEW_MATRIX * vec4(0.0, 1.0, 0.0, 0.0)).xy;
+	v_h = dot(off, normalize(up2 + vec2(0.0, 1e-4))) / max(size * 0.5, 1e-3);
 	POSITION = PROJECTION_MATRIX * vec4(pv + vec3(off, 0.0), 1.0);
 }
 
@@ -97,6 +101,9 @@ void fragment() {
 		a = body * (0.55 + 0.45 * n2);
 		// Lit from below and its rim brighter than its core (a puff seen against the dark).
 		rgb = col.rgb * (0.75 + 0.5 * n2) * (0.85 + 0.3 * smoothstep(0.2, 0.8, r));
+		// Its belly darker and warmer, its crown pale (by day a pale puff with no belly read as a contrail).
+		float under = smoothstep(0.3, -0.85, v_h + (n - 0.5) * 0.6);
+		rgb *= mix(vec3(1.0), vec3(0.5, 0.42, 0.35), under * mix(0.85, 0.5, flare_hue.a));
 	} else if (v_kind < 4.5) {
 		// A thread of light rising: thin, bright along its length, fading at both ends.
 		float along = q.y * 0.5 + 0.5;

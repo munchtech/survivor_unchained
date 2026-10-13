@@ -292,14 +292,18 @@ public partial class FlareFx : Node3D
 
     void UploadMarks()
     {
-        for (int i = 0; i < 32; i++)
+        for (int i = 0; i < 31; i++)
         {
             var m = i < marks.Count ? marks[i] : Vector4.Zero;
             if (i < marks.Count) m.W = (float)(t - m.W);
             marksImg.SetPixel(i, 0, new Color(m.X, m.Y, m.Z, i < marks.Count ? m.W : 0));
         }
+        // The last texel: the BOOM's shock front (where, the reach, seconds since), racing over the whole field.
+        marksImg.SetPixel(31, 0, lastAt > 0 ? new Color(boomAt.X, boomAt.Z, reach, (float)(t - lastAt)) : new Color(0, 0, 0, 0));
         marksTex.Update(marksImg);
     }
+
+    Vector3 boomAt;
 
     void Clear()
     {

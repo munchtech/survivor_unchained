@@ -141,6 +141,25 @@ vec4 flare_marks_at(vec2 w) {
 	return o;
 }
 
+// The BOOM's shock front (the marks' last texel): a fingered ring of fire racing over the whole field from the
+// last impact at 32 m/s, and the ice's cracks glowing behind it as it passes, so the room-clear reads at every
+// camera, not only from the arena's height (t5: at the story camera the BOOM was just a bigger fireball).
+// Returns x: the front (0..1), y: the afterglow behind it (0..1); zw: where it struck.
+vec4 flare_boom(vec2 w) {
+	vec4 bm = texelFetch(flare_marks, ivec2(31, 0), 0);
+	if (bm.z <= 0.0) return vec4(0.0);
+	vec2 d = w - bm.xy;
+	float dl = length(d);
+	float a = atan(d.y, d.x);
+	float fing = texture(flare_noise, vec2(a * 0.47746, 0.63)).g;
+	float front = bm.w * 32.0 * (0.88 + 0.24 * fing) + (texture(flare_noise, w * 0.35).r - 0.5) * 1.6;
+	float ahead = front - dl;
+	float fade = 1.0 - smoothstep(bm.z - 1.5, bm.z + 2.5, length(w - flare_at.xz)); // the whole reach, wherever it struck
+	float band = exp(-ahead * ahead / 0.7) * fade;
+	float after = smoothstep(0.0, 0.6, ahead) * exp(-ahead / 32.0 * 2.6) * fade;
+	return vec4(band, after, bm.xy);
+}
+
 // The ground: drained, then the web, the frost and the impacts over it (the Flare's own, never drained).
 void flare_ground(vec3 wp, inout vec3 alb, inout float rough, inout float spec, inout vec3 nrm_view, inout vec3 emi, mat4 view, mat4 inv_view) {
 	if (!flare_live()) return;
@@ -184,6 +203,9 @@ void flare_ground(vec3 wp, inout vec3 alb, inout float rough, inout float spec, 
 		rough = mix(rough, 0.95, mk.y * 0.85);
 		float crack = 1.0 - smoothstep(0.0, 0.08, texture(flare_noise, w * 0.9).a);
 		emi += vec3(1.0, 0.32, 0.06) * mk.z * (0.25 + 1.6 * crack) * 1.4;
+		// The BOOM's front across the field, and the cracks it leaves glowing.
+		vec4 bo = flare_boom(w);
+		emi += vec3(1.0, 0.5, 0.14) * bo.x * (0.5 + 1.1 * cr.y) * 2.2 + vec3(1.0, 0.3, 0.05) * bo.y * (0.08 + 1.5 * crack) * 1.1;
 		// The front: the frost crystallising as it comes, cold points in a narrow fingered band.
 		float band = smoothstep(-0.2, 0.25, flare_frost.x - arr) * (1.0 - smoothstep(0.25, 1.4, flare_frost.x - arr));
 		float twinkle = step(0.55, fract(sin(dot(floor(w * 22.0), vec2(12.9898, 78.233)) + floor(TIME * 12.0)) * 43758.5453));
@@ -208,9 +230,17 @@ float flare_glazed(vec3 wp) {
 void flare_body(vec3 wp, vec3 nrm_view, mat4 inv_view, float rim, inout vec3 alb, inout float rough, inout vec3 emi) {
 	if (!flare_live()) return;
 	flare_drain(wp, alb, emi);
+	vec3 nw = (inv_view * vec4(nrm_view, 0.0)).xyz;
+	// The BOOM's front lights each body from the blast's side as it passes.
+	if (flare_look.w > 0.5) {
+		vec4 bo = flare_boom(wp.xz);
+		if (bo.x + bo.y > 0.001) {
+			float face = 0.35 + 0.65 * max(0.0, dot(nw, normalize(vec3(bo.z - wp.x, 0.5, bo.w - wp.z))));
+			emi += vec3(1.0, 0.46, 0.13) * (bo.x * 1.1 + bo.y * 0.15) * face;
+		}
+	}
 	float g = flare_glazed(wp);
 	if (g <= 0.0) return;
-	vec3 nw = (inv_view * vec4(nrm_view, 0.0)).xyz;
 	vec4 p = texture(flare_plate, wp.xz * 1.3 + vec2(wp.y * 0.9, wp.y * -0.4));
 	float l = dot(alb, FL_LUM);
 	bool black = flare_look.w > 1.5;

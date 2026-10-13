@@ -177,20 +177,37 @@ public partial class FlareFx
         }
         for (int i = pendingShatters.Count - 1; i >= 0; i--)
             if (t >= pendingShatters[i].At) { var s = pendingShatters[i]; Shatter(s.Where, s.Scale); pendingShatters.RemoveAt(i); }
-        // ---- The Return: steam rising in columns off every scar, drifting; sparks lifting off the shattered.
-        foreach (var m in marks)
+        // ---- The Return: steam off every scar. Not contrails (t5): each column is fed in gusts from a tight spot,
+        // leaves fast and slows, snakes on its own eddies, leans downwind more the higher it climbs, and spreads
+        // and thins until it breaks up. By day fewer puffs, so it never reads as a pale sheet.
+        for (int c = 0; c < marks.Count; c++)
         {
+            var m = marks[c];
             float age = (float)(t - m.W);
-            float rate = age < 0 ? 0 : 30 * Mathf.Exp(-age * 0.55f);
+            if (age < 0) continue;
+            float seed = (c * 0.6180339f) % 1f;
+            float gust = 0.3f + 1.4f * Mathf.Clamp(0.5f + 0.5f * Mathf.Sin(age * (2.1f + seed * 1.7f) + seed * 9f) + 0.35f * Mathf.Sin(age * 5.3f + seed * 4f), 0, 1);
+            float rate = 26 * Mathf.Exp(-age * 0.55f) * gust * (Night ? 1 : 0.6f);
+            float lean = 0.7f + 0.8f * seed;
+            float r0 = Mathf.Abs(m.Z);
             for (int i = 0, n = (int)(rate * dt + R()); i < n; i++)
             {
-                // A column: fed from a tight spot at the crater, rising and leaning with the air.
-            var p = new Vector3(m.X + (R() - 0.5f) * m.Z * 0.35f, 0, m.Y + (R() - 0.5f) * m.Z * 0.35f);
+                var p = new Vector3(m.X + (R() - 0.5f) * r0 * 0.3f, 0, m.Y + (R() - 0.5f) * r0 * 0.3f);
                 p.Y = (float)HeightAt(p.X, p.Z) + 0.1f;
-                bed.Spawn(FlareBits.Kind.Puff, p, new Vector3(0.3f + R() * 0.2f, 2.6f + R(), 0.1f), 2.6f + R() * 1.2f, 0.3f, new Color(0.6f, 0.63f, 0.67f, 0.17f), sizeEnd: 1.1f + R() * 0.6f, drag: 0.15f, lift: 0.6f);
+                float up = 1.8f + R() * 2.2f;
+                bed.Spawn(new FlareBits.P
+                {
+                    Kind = FlareBits.Kind.Puff, At = p, V = new Vector3((R() - 0.5f) * 0.5f, up, (R() - 0.5f) * 0.5f),
+                    Life = 2.4f + R() * 1.6f, Size = 0.28f + R() * 0.12f, SizeEnd = 1.5f + R() * 1.1f,
+                    Color = new Color(0.6f, 0.63f, 0.67f, 0.2f), ColorEnd = new Color(0.62f, 0.64f, 0.68f, 0.07f),
+                    Drag = 0.55f, Lift = 0.45f, Swirl = 1.5f, Seed = seed + R() * 0.12f, Wind = SteamWind * lean,
+                });
             }
         }
     }
+
+    /// <summary>The night air the steam leans on (m/s²): one way across the whole field.</summary>
+    static readonly Vector3 SteamWind = new(1.0f, 0, 0.45f);
 
     /// <summary>An ember lands: turned tongues of flame, ice shards, steam, sparks and soot, the char on the wet frost.</summary>
     void Land(Ember em)
@@ -198,11 +215,11 @@ public partial class FlareFx
         em.Landed = true;
         var p = em.Target;
         Hitstop(em.Hitstop);
-        if (em.Last) lastAt = t;
+        if (em.Last) { lastAt = t; boomAt = p; }
         if (!firstLanded) { firstLanded = true; Shots.Want("b7_ember1", 1 / 60.0); Shots.Want("b8_embers", 0.2); }
         if (em.Last) { Shots.Want("b9_last", 1 / 60.0); Shots.Want("c1_last5", 5 / 60.0); Shots.Want("c2_ret1", 1); Shots.Want("c3_ret3", 3); Shots.Want("c4_ret6", 5.5); }
         marks.Add(new Vector4(p.X, p.Z, em.Radius * (em.Last ? 1.15f : 0.9f), (float)t));
-        if (marks.Count > 32) marks.RemoveAt(0);
+        if (marks.Count > 30) marks.RemoveAt(0);
         float big = em.Last ? 1.6f : 1;
         // A fireball of churning billows thrown out and up off the ice (rays read as a firework: 13 October).
         for (int i = 0; i < (em.Last ? 32 : 12); i++)
@@ -221,7 +238,12 @@ public partial class FlareFx
         shards.Burst(p + Vector3.Up * 0.1f, em.Last ? 18 : 9, 7.5f * big, 0.2f, new Color(0, 0, 0, 0), 1);
         // Steam: many thin wisps, not a few cotton balls.
         for (int i = 0; i < 16; i++)
-            bed.Spawn(FlareBits.Kind.Puff, p + Vector3.Up * 0.3f, new Vector3((R() - 0.5f) * 5, 2f + R() * 3f, (R() - 0.5f) * 5) * big, 1.2f + R() * 1.2f, 0.45f, new Color(0.62f, 0.65f, 0.7f, 0.22f), sizeEnd: (1.4f + R()) * big, drag: 2.4f, lift: 1.5f);
+            bed.Spawn(new FlareBits.P
+            {
+                Kind = FlareBits.Kind.Puff, At = p + Vector3.Up * 0.3f, V = new Vector3((R() - 0.5f) * 5, 2f + R() * 3f, (R() - 0.5f) * 5) * big,
+                Life = 1.2f + R() * 1.2f, Size = 0.45f, SizeEnd = (1.4f + R()) * big, Color = new Color(0.62f, 0.65f, 0.7f, 0.22f),
+                ColorEnd = new Color(0.62f, 0.65f, 0.7f, 0.1f), Drag = 2.4f, Lift = 1.5f, Swirl = 1.2f, Seed = R(), Wind = SteamWind * 0.6f,
+            });
         for (int i = 0; i < 22; i++)
             glow.Spawn(FlareBits.Kind.Mote, p + Vector3.Up * 0.2f, new Vector3((R() - 0.5f) * 10, 3 + R() * 7, (R() - 0.5f) * 10) * big, 0.5f + R() * 0.5f, 0.045f, new Color(1.4f, 0.7f, 0.22f), new Color(0.6f, 0.12f, 0.02f), gravity: 9);
         for (int i = 0; i < 10; i++)

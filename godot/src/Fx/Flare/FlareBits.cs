@@ -22,6 +22,11 @@ public partial class FlareBits : MultiMeshInstance3D
         /// <summary>Drawn toward this point (a thread or mote drawn up into her staff): its pull, m/s².</summary>
         public Vector3? Home;
         public float Pull;
+        /// <summary>Steam's air: Swirl, the eddies' push (m/s²), a slow churn so a column billows and breaks up
+        /// instead of rising as a contrail; Wind, a steady push (m/s²) so the column leans more the higher it is;
+        /// Seed, the column's own eddies (a little of each puff's own).</summary>
+        public float Swirl, Seed;
+        public Vector3 Wind;
     }
 
     readonly List<P> live = new();
@@ -83,6 +88,17 @@ public partial class FlareBits : MultiMeshInstance3D
                 // Drawn in, not orbiting: what runs across the line to her is bled off.
                 var along = to / d * p.V.Dot(to / d);
                 p.V = along + (p.V - along) * Mathf.Exp(-6 * dt);
+            }
+            if (p.Swirl > 0)
+            {
+                // Eddies keyed to height and age: neighbours in a column share them (it snakes), the seed sets each
+                // column's own, and they grow as the puff rises (steam leaves the crater tight and breaks up above).
+                float y = p.At.Y, a = p.Age, s = p.Seed * 6.283f, grow = 0.35f + Mathf.Min(1.6f, a * 0.6f);
+                var turb = new Vector3(
+                    Mathf.Sin(y * 1.1f + a * 1.3f + s) + 0.6f * Mathf.Sin(y * 2.7f - a * 2.1f + s * 2.7f),
+                    0.45f * Mathf.Sin(a * 2.4f + s * 1.9f + y * 1.7f),
+                    Mathf.Cos(y * 0.9f + a * 1.6f + s * 0.7f) + 0.6f * Mathf.Cos(y * 2.3f + a * 1.9f + s * 1.8f));
+                p.V += (turb * p.Swirl * grow + p.Wind) * dt;
             }
             p.V.Y += (p.Lift - p.Gravity) * dt;
             if (p.Drag > 0) p.V *= Mathf.Exp(-p.Drag * dt);
