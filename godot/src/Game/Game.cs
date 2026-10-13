@@ -575,6 +575,12 @@ public partial class Game : Node, IZoneHost
         var fl = scene.Fx.Flare;
         fl.Rumble = (lo, hi, s) => Haptics.Add(lo, hi, s, blow: lo >= 1, peak: lo >= 1);
         fl.HudDim = k => hud.FlareDim(k);
+        fl.Cue = (cue, at, k) =>
+        {
+            // Panned and distanced from her, as the fight's own sounds (SoundBridge.At).
+            double dx = at.X - fl.Her.X, dz = at.Z - fl.Her.Z, d = Math.Sqrt(dx * dx + dz * dz);
+            Sfx.Flare(cue, new Sfx.Where(Math.Clamp(dx / 18, -0.8, 0.8), Math.Max(0, 1 - d / 32)), k, fl.Night);
+        };
         CrowdView.FlareDeath = fl.DeathOf;
         ApplySettings();
         return scene;
