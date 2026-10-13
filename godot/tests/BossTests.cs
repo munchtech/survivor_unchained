@@ -210,6 +210,27 @@ public class BossTests
     }
 
     [Fact]
+    public void No_flare_cut_takes_a_phase_under_six_seconds()
+    {
+        // The vigil's floors (x2/3) and a map ruler's (x0.65) under the Flare's half: 15 s would be 3.3 s.
+        var f = At30("pack", oaths: ["vigil"]);
+        var boss = Boss(f);
+        var s = f.Zone.BossScript!;
+        s.FloorScale *= MapRun.BossFloors;
+        double lastT = 0;
+        Step(f, 200, _ =>
+        {
+            if (boss.Alive && boss.Boss && boss.State != EnemyState.Dying)
+                f.B.HitEnemy(boss, boss.MaxHp * 0.2, School.Holy, [Tag.Holy], new HitOpts { NoCrit = true, Credit = "flare" });
+            if (boss.Alive && boss.Boss) { f.B.Player.X = boss.X + 1; f.B.Player.Z = boss.Z; lastT = s.PhaseT; }
+        });
+        Assert.True(f.Zone.Won);
+        Assert.Equal(2, s.PhaseLog.Count);
+        foreach (var ph in s.PhaseLog) Assert.True(ph.Seconds >= ArenaBoss.MinCutFloor - 0.05, $"a phase of {ph.Seconds:0.0} s");
+        Assert.True(lastT >= ArenaBoss.MinCutFloor - 0.05, $"the last phase {lastT:0.0} s");
+    }
+
+    [Fact]
     public void A_boss_left_alone_shows_every_phase_and_then_its_enrages()
     {
         var f = At30("pack");

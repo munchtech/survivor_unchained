@@ -66,6 +66,8 @@ public sealed class RunResult
     /// health), its staggers, the phase it reached, and whether it grew wild (three minutes).</summary>
     public int BossMarked, BossLanded, BossStaggers, BossPhase = -1;
     public double BossBreak;
+    /// <summary>Each boss phase as it ended: [the Flare's cut, seconds, seconds to its mark or -1] (the last as the fight ended).</summary>
+    public List<double[]> BossPhases = new();
     public bool BossSoft;
     /// <summary>The long night: the boss's returns that came, and the dark's oaths sworn.</summary>
     public int Returns, Dark;
@@ -229,7 +231,7 @@ public static class ArenaSim
         while (t < spec.Cap * 60 && p.Alive && host.Result == null)
         {
             var (mx, mz) = Pilot.Steer(b, spec.Deft, zone.BossScript);
-            if (Pilot.Act(b, j, mx, mz)) r.Quaffs++;
+            if (Pilot.Act(b, j, mx, mz, zone.BossScript)) r.Quaffs++;
             zone.Step(Dt);
             zone.Frame(Dt);
             b.Tick(Dt, mx, mz);
@@ -315,6 +317,7 @@ public static class ArenaSim
             r.BossBreak = bs.BreakSum / Math.Max(1, bs.MaxHp);
             r.BossPhase = bs.PhaseIx;
             r.BossSoft = bs.Soft;
+            r.BossPhases = bs.PhaseLog.Select(x => new[] { x.Cut, x.Seconds, x.MarkAt }).Append(new[] { bs.FlareCut, bs.PhaseT, -1 }).ToList();
         }
         r.Returns = zone.Returns;
         r.CoreBroken = zone.CoreBroken;

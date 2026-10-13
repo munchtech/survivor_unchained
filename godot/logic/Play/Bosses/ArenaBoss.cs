@@ -132,7 +132,14 @@ public abstract class ArenaBoss
     /// <summary>This phase's floor now: an arena boss's is cut by the Flare's share of the phase's health, never by
     /// more than half (the owner, 12 October: "let arena phases shorten"). Only the Flare's damage counts, so a burst
     /// Flare (Banked Flame, Called Down) shows in an arena and every phase is still seen; a story boss's floors hold.</summary>
-    protected double FloorNow => Current.Floor * FloorScale * (1 - FlareCut);
+    protected double FloorNow => Math.Max(Current.Floor * FloorScale * (1 - FlareCut), Math.Min(Current.Floor * FloorScale, MinCutFloor));
+    /// <summary>No cut takes a phase under six seconds (judge 3): a map ruler's floors (x0.65) and the vigil's (x2/3)
+    /// stack with the half, and a phase's own move starts 1.5-3 s in and must be seen through.</summary>
+    public const double MinCutFloor = 6;
+    /// <summary>For the harness: each phase as it ended (the Flare's cut, its seconds, and when its health reached
+    /// the mark, or -1 if it went on its ceiling).</summary>
+    public readonly List<(double Cut, double Seconds, double MarkAt)> PhaseLog = new();
+    double markAt = -1;
     /// <summary>How much of this phase's floor the Flare has cut (0 to FlareCutMax).</summary>
     public double FlareCut
     {
@@ -182,6 +189,7 @@ public abstract class ArenaBoss
         {
             e.HpFloor = Math.Max(1, ph.Mark * e.MaxHp);
             bool atMark = e.Hp <= e.HpFloor + 0.5;
+            if (atMark && markAt < 0) markAt = PhaseT;
             if ((atMark && PhaseT >= FloorNow) || (ph.Ceiling > 0 && PhaseT >= ph.Ceiling)) { Turn(e); return true; }
         }
         // The last phase keeps its floor too; then it dies (or holds at one, for a boss that ends otherwise).
@@ -207,6 +215,8 @@ public abstract class ArenaBoss
     /// in it), and the next phase begins.</summary>
     void Turn(Enemy e)
     {
+        PhaseLog.Add((FlareCut, PhaseT, markAt));
+        markAt = -1;
         double over = e.Overflow;
         BreakSum += over;
         e.Overflow = 0;

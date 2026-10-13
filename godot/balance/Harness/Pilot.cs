@@ -122,7 +122,7 @@ public static class Pilot
     /// <summary>The hands that are not the feet: a dash out of a crush, the art
     /// on a crowd, a draught when low.</summary>
     /// <returns>Whether a draught was drunk.</returns>
-    public static bool Act(Battle b, Journey j, double mx, double mz)
+    public static bool Act(Battle b, Journey j, double mx, double mz, SurvivorUnchained.Play.Bosses.ArenaBoss? boss = null)
     {
         var p = b.Player;
         // A champion winding up a lunge close by: dash across its line, as anyone with a dash learns to.
@@ -147,6 +147,9 @@ public static class Pilot
             bool low = p.Hp < b.MaxHp * 0.25;
             // A boss in its phase transition can't be hurt (TakenMul 0): spare the Flare unless health is low.
             bool bossNear = b.HostilesInRadius(p.X, p.Z, 10).Any(e => e.Boss && (low || e.TakenMul > 0));
+            // A phase-aware banker (--phaseaware 1, judge 3's M1): with two charges, a phase the Flare has already cut by a
+            // quarter keeps the next for the next phase (a cut stops at half; the second Flare's would be wasted).
+            if (PhaseAware && bossNear && !low && b.FlareCharges > 1 && boss is { } bs && bs.FlareCut >= 0.25) bossNear = false;
             // Banked Flame holds two: a player who lit it keeps one for a boss or the edge, and spends on
             // the crowd only from a full bank (before it learned, the pilot paid the price without the gift).
             bool keeps = Banks && b.FlareCharges > 1 && b.FlareMeter < Battle.FlareFull * b.FlareCharges;
@@ -257,6 +260,7 @@ public static class Pilot
     public static bool ReadsBosses = true;
     /// <summary>Off (--bank 0) for the hands before they banked a second Flare.</summary>
     public static bool Banks = true;
+    public static bool PhaseAware;
     /// <summary>When this run's Flare came ready (each run plays on one thread).</summary>
     [ThreadStatic] static Battle? readyIn;
     [ThreadStatic] static double readyAt;
