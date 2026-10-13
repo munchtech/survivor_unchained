@@ -5,6 +5,8 @@
 #
 # Budget: a line "Context budget: 120k" in the agent's brief wins; otherwise by agent type.
 # Silent below 80%; one short line per 20k of growth from 80%; every call once over.
+# Grace (the owner, 12 October: "relax rules when its close to getting something done"): from 100% to 125%
+# an agent may finish the step in hand (a build, its measurement, a commit) if it is close; hard wrap at 125%.
 # Never fails a tool call: any error exits 0 silently.
 import json
 import os
@@ -15,7 +17,7 @@ DEFAULTS = {  # README "Working lean"
     None: 250_000,              # the main session (coordinator)
     "su-lead-high": 300_000,
     "su-lead-sonnet": 300_000,
-    "su-lead-max": 150_000,     # judges and solvers; story leads set their own in the brief
+    "su-lead-max": 180_000,     # judges and solvers (150k to 180k, 12 October); story leads set their own in the brief
     "su-worker": 150_000,
     "su-worker-medium": 150_000,
     "su-runner": 100_000,
@@ -80,16 +82,22 @@ def main():
         except ValueError:
             last = 0
     over = used >= budget
+    hard = used >= 1.25 * budget
     if not over and used - last < 20_000:
         return
     open(state, "w").write(str(used))
     k, b = used // 1000, budget // 1000
-    if over:
-        msg = (f"Context budget: you are at {k}k of {b}k. Wrap up now: no new experiments. Write your findings "
+    if over and not hard:
+        msg = (f"Context budget: you are at {k}k of {b}k (grace to {b * 5 // 4}k). Start nothing new. If a step "
+               f"is close to done (a build, its measurement, a commit), finish it so you hand back a result, "
+               f"not just a plan; then report (or hand off, if you're a lead).")
+    elif over:
+        msg = (f"Context budget: you are at {k}k of {b}k, past the grace. Wrap up now: no new experiments. Write your findings "
                f"to a file, then return your report (or hand off, if you're a lead). Never cut quality to fit: "
                f"if the work needs more to reach the bar, say so and what's left.")
     else:
-        msg = f"Context budget: {k}k of {b}k. Plan to finish and report before {b}k."
+        msg = (f"Context budget: {k}k of {b}k. Plan to finish and report before {b}k; if nothing is built or "
+               f"measured yet, do that next, before more reading.")
     print(json.dumps({"hookSpecificOutput": {"hookEventName": "PostToolUse", "additionalContext": msg}}))
 
 

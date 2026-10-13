@@ -211,3 +211,18 @@ Not made by us: poses or animation whose purpose is a sex act, or that show nudi
 - **get_up ponytail residuals:** accepted as shipped (k44-46 jaw tuft, k38-42 stiff flick, k50-51 drop); a later polish pass only.
 - **Arena boss phases:** yes. Flare damage alone may cut an arena boss phase's minimum length, by at most half, tuned so the Flare's share of a boss stays near 35% (judge's narrow version). Sent to the classes lead; Banked Flame's reward is then measured in arenas too.
 - **Nipple rise:** the judge's suggestion accepted: keep the owner's 1.5 mm height, give it a tighter, more defined shape so it reads. Sent to the outfits lead.
+- **Nipple shape, later the same night:** "the new nipples i see testing are not great, if its adding a ton of work they were kinda ok before I think, if they don't vastly improve in the next pass just move on with how they were". One more pass at most, judged against the old shape; unless it's a big improvement, the old rise ships as it was. Sent to the outfits lead.
+
+## 12 October 2026, night: the close-up camera and the hero
+- On a test shot of her zoomed in in town: "i like this being a feature a great deal, allow for mousewheel to view our character like that when in town or when we go idle - its a great way to keep sex appeal when we get to endgame and don't see zoom ins much while farming tough stuff". A camera lead builds it on `camera-1` (wheel in safe zones; idle close-up anywhere with no enemy near; a setting to turn idle off).
+- "start the hero too if/when a blender slot frees": the male hero starts when the first Blender lead (animation, face or outfits) stops.
+- **Nipple shape: closed (12 Oct, night).** Judge 11 put the tighter 1.5 mm plateau (f2) beside the old shape (e2) and ruled REVERT (read as a rivet or bead with a hard rim; chips at the tips). The old shape ships exactly as it was (outfits fa8d70c8).
+
+## 12 October 2026, night: the face at character select
+- Double brow: the owner's crop came from character select during a test ("and were sure we fixed the double eyebrows?"). The face lead traces which build; the re-judge checks the brow at the Look, the play camera and a close-up.
+- "some faces have nostril and ear issues - see the like lump in the nose" (crops in coordinator 33ad5b17's images, 3.png and 4.png). The ear is the ear lobe already on B2 (the owner: "thats it"). The nostril lump went to the face lead: cause, all ten faces at 2x, fixed before the face ships.
+- **Priority today (12 Oct, night):** "yes, prioritize face and outfits, hold the hero". Face and outfits get the Blender turns (outfits may run parallel solvers); animation pauses after reach_coals merges; the hero stays held.
+
+## 12 October 2026, night: the shield, the idle wrists, sheathing in town
+- "the shield is awful ... the shield just completely goes into her body all the time - surprised nobody caught it yet. but we haven't gotten to asset management too hard yet"; "that idle pose - also seen in character select, has some really awkward wrist action going on"; "shield on back (weapons in general sheathed) in town is a great idea".
+- Sent to the animation lead (after reach_coals, instead of pausing): a shield-and-weapon-through-body measure in the motion check, standing on every animation judge's checklist; fix the idle's wrists and shield arm; then the worst clips; then a plan for sheathed weapons in safe zones (sockets, a sheathe/draw, a town idle, the code hook).

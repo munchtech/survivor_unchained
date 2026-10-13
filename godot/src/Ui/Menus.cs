@@ -94,6 +94,7 @@ public static class SettingsPanel
         v.AddChild(Row("Display", ["window", "fullscreen"], s.Fullscreen ? "fullscreen" : "window", x => s.Fullscreen = x == "fullscreen"));
         v.AddChild(Row("Gore", ["full", "reduced", "off"], s.Gore, x => s.Gore = x));
         v.AddChild(Row("Screen shake", ["full", "reduced", "off"], s.Motion, x => s.Motion = x));
+        v.AddChild(Row("Idle close-up", ["on", "off"], s.IdleClose ? "on" : "off", x => s.IdleClose = x == "on"));
         v.AddChild(Row("Pad rumble", ["full", "low", "off"], s.Rumble, x => s.Rumble = x));
         v.AddChild(Row("Health under you", ["on", "off"], s.UnderBar ? "on" : "off", x => s.UnderBar = x == "on"));
         v.AddChild(Style.Gap(Style.Gap2));
@@ -112,7 +113,8 @@ public partial class ControlsPanel : VBoxContainer
     {
         ("Move", [Act.Up, Act.Left, Act.Down, Act.Right], "Left stick"), ("Dash", [Act.Dash], null), ("Flare", [Act.Flare], null),
         ("Draught", [Act.Draught], null), ("Talk, use, pick up", [Act.Interact], null), ("Pack", [Act.Inventory], "View"),
-        ("Self", [Act.Character], "View, then RB"), ("Arts", [Act.Arts], "View, then RB"), ("Journal", [Act.Journal], "View, then RB"), ("Map", [Act.Map], "View, then RB"), ("Answer the night (hold)", [Act.Answer], "L3"), ("Pause", [Act.Pause], null),
+        ("Self", [Act.Character], "View, then RB"), ("Arts", [Act.Arts], "View, then RB"), ("Journal", [Act.Journal], "View, then RB"), ("Map", [Act.Map], "View, then RB"), ("Answer the night (hold)", [Act.Answer], "L3"),
+        ("Look closer, in town", [], "Right stick up / down"), ("Pause", [Act.Pause], null),
         ("Turn the book's pages", [Act.TabPrev, Act.TabNext], "LB / RB"), ("A screen's own pages", [Act.SubPrev, Act.SubNext], "LT / RT"),
         ("In menus: choose, back", [Act.Confirm, Act.Cancel], "A, B"), ("In menus: more", [Act.Alt], "X, Y"),
         ("Draft: take a card", [Act.Pick1], "D-pad, A"), ("Draft: reroll", [Act.Reroll], "X"), ("Draft: banish", [Act.Banish], "Y"), ("Draft: skip", [Act.Skip], "R3"),
@@ -157,7 +159,8 @@ public partial class ControlsPanel : VBoxContainer
             name.SizeFlagsVertical = SizeFlags.ShrinkCenter;
             grid.AddChild(name);
             var keys = Style.H(Style.Gap1);
-            if (acts[0] == Act.Pick1) keys.AddChild(Style.Key("1-4"));
+            if (acts.Length == 0) keys.AddChild(Style.Key("Wheel"));
+            else if (acts[0] == Act.Pick1) keys.AddChild(Style.Key("1-4"));
             else foreach (var a in acts)
             {
                 var labels = c.KeyLabels(a).Distinct().ToList();

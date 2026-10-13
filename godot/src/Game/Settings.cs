@@ -18,6 +18,10 @@ public sealed class Settings
     public string Sound = "on";
     public string Gore = "full";
     public string Motion = "full";
+    /// <summary>Left alone a while with nothing hostile near, the view eases in close on her (CloseUp), after so
+    /// many seconds; off, never.</summary>
+    public bool IdleClose = true;
+    public double IdleCloseAfter = 12;
     /// <summary>The pad's rumble: full, low or off (S-14).</summary>
     public string Rumble = "full";
     public bool Fullscreen = true;

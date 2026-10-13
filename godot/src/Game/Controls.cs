@@ -84,6 +84,12 @@ public partial class Controls : Node
     /// <summary>The right stick, past its dead zone (x right, y down): what a
     /// screen turns or brings near with it (the figure in creation).</summary>
     public Vector2 Look;
+    /// <summary>The mouse wheel turned since last taken (notches, up positive): in play, the close view of
+    /// her in town (CloseUp); the screens hear the wheel themselves.</summary>
+    public double Wheel;
+    /// <summary>Anything at all was touched since last taken (a key, a button, a click, the mouse moved, a
+    /// stick): the idle close view ends.</summary>
+    public bool Touched;
     bool usingPad;
     /// <summary>The pad was touched last (the prompts show its buttons); a
     /// key, a click or a real move of the mouse turns it back.</summary>
@@ -136,8 +142,13 @@ public partial class Controls : Node
 
     public override void _Input(InputEvent e)
     {
+        if (e is not InputEventMouseMotion and not InputEventJoypadMotion || e is InputEventMouseMotion { Relative: var rel } && rel.Length() > 2) Touched = true;
         switch (e)
         {
+            case InputEventMouseButton { ButtonIndex: MouseButton.WheelUp or MouseButton.WheelDown, Pressed: true } w:
+                UsingPad = false;
+                Wheel += (w.ButtonIndex == MouseButton.WheelUp ? 1 : -1) * (w.Factor > 0 ? Mathf.Min(w.Factor, 1) : 1);
+                return;
             case InputEventKey k:
                 var code = CodeOf(k.PhysicalKeycode);
                 if (code == null) return;
@@ -277,6 +288,7 @@ public partial class Controls : Node
             if (m > 0.2f) { look += r / m * Mathf.Min(1, (m - 0.2f) / 0.7f); UsingPad = true; }
         }
         Look = look.LimitLength(1);
+        if (Look != Vector2.Zero || x != 0 || z != 0) Touched = true;
     }
 
     /* ----------------------------------------------------------- binding -- */
