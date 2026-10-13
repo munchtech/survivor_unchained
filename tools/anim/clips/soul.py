@@ -91,10 +91,10 @@ def sit_log(rig):
 
 
 # ------------------------------------------------------------ flourishes --
-def SHOW_L(at=(-0.07, -0.11, 0.395), pole=(1.0, -0.3, -0.3)):
+def SHOW_L(at=(-0.07, -0.08, 0.425), pole=(1.0, -0.3, -0.3)):
     """warden_show's shield hand in the guard (chest frame, from the shoulder):
-    out ahead with the elbow open (125 deg), so the rim clears her pauldron
-    (18 mm) and sits just under and before her chin (64 mm from her head) for the glare
+    out ahead with the elbow open (139 deg), so the rim clears her pauldron
+    (18 mm) and sits just under and before her chin (60 mm from her head) for the glare
     over it. (Close in and high, at
     (-0.14, -0.13, 0.30), the elbow closed to 99 deg and the rim cut her
     upper arm and pauldron 8/23 mm and came within 16 mm of her face.)"""
