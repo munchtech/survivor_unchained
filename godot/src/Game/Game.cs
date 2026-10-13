@@ -1051,7 +1051,7 @@ public partial class Game : Node, IZoneHost
             else hud.PromptAt(null);
             Perf.Begin(Perf.Part.Labels);
             hud.Beyond(Overlay == null ? Offscreen(fb2) : new());
-            hud.Ground(Overlay == null && !labelsOff ? Labels(fb2) : new());
+            hud.Ground(Overlay == null && !labelsOff && !Args.Has("clean") ? Labels(fb2) : new());
             Perf.End(Perf.Part.Labels);
         }
         {

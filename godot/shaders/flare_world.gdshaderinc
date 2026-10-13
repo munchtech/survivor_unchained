@@ -75,7 +75,13 @@ float flare_spine(vec2 w) {
 	vec2 u = mat2(vec2(cos(a), sin(a)), vec2(-sin(a), cos(a))) * w * 0.032 + vec2(fract(s * 0.618), fract(s * 0.382));
 	float c = texture(flare_plate, u).r;
 	float cb = texture(flare_plate, u, 2.5).r;
-	return smoothstep(0.06, 0.22, c - cb) * smoothstep(0.3, 0.5, c);
+	float big = smoothstep(0.05, 0.18, c - cb) * smoothstep(0.28, 0.48, c);
+	// A second, finer growth between the big ferns (t6: the field between them read as bare dark glass).
+	vec2 u2 = mat2(vec2(cos(a + 1.9), sin(a + 1.9)), vec2(-sin(a + 1.9), cos(a + 1.9))) * w * 0.085 + vec2(0.31, 0.77);
+	float f = texture(flare_plate, u2).r;
+	float fb = texture(flare_plate, u2, 2.5).r;
+	float fine = smoothstep(0.07, 0.2, f - fb) * smoothstep(0.3, 0.5, f);
+	return max(big, fine * 0.6);
 }
 
 // How much frost lies at a point (0..1): grown past the front, held inside the reach, melted in from the edge.
@@ -200,9 +206,9 @@ void flare_ground(vec3 wp, inout vec3 alb, inout float rough, inout float spec, 
 		// ferns' spines are bright: thin crystal edges catching the light.
 		float spine = flare_spine(w);
 		float gl = dot(alb, FL_LUM);
-		vec3 under = mix(vec3(gl), alb, 0.45) * vec3(0.46, 0.66, 1.0) * 0.72;
+		vec3 under = mix(vec3(gl), alb, 0.45) * vec3(0.46, 0.66, 1.0) * 0.85;
 		vec3 glass = mix(under, black ? vec3(0.004, 0.005, 0.008) : vec3(0.006, 0.013, 0.03), black ? 0.8 : 0.3);
-		vec3 edge = black ? vec3(0.03, 0.04, 0.055) : vec3(0.26, 0.42, 0.62) * (1.0 - 0.3 * day);
+		vec3 edge = black ? vec3(0.03, 0.04, 0.055) : mix(vec3(0.26, 0.42, 0.62), vec3(0.4, 0.55, 0.72), day);
 		alb = mix(alb, mix(glass, edge, spine * (black ? 0.5 : 1.0)), ice);
 		// The fine frost shows in the sheen, not the colour: clear glass mirror-smooth, the feathered rougher.
 		rough = mix(rough, black ? 0.05 : max(mix(0.06, 0.22, cr.x), 0.32 * spine), ice);
@@ -214,7 +220,7 @@ void flare_ground(vec3 wp, inout vec3 alb, inout float rough, inout float spec, 
 		vec3 tilt = (inv_view * vec4(gx, gy, 0.0, 0.0)).xyz;
 		nw = normalize(nw - vec3(tilt.x, 0.0, tilt.z) * 2.2 * ice * spine * (black ? 0.3 : 1.0));
 		// At night the spines hold a little cold light of their own, so the ferns read on the dark glass.
-		emi += vec3(0.2, 0.46, 1.0) * spine * ice * 0.06 * flare_hue.a * (black ? 0.3 : 1.0);
+		emi += vec3(0.2, 0.46, 1.0) * spine * ice * 0.16 * flare_hue.a * (black ? 0.3 : 1.0);
 		// Wet ground: darker, glossy, with meltwater glints.
 		alb *= 1.0 - 0.38 * wet;
 		rough = mix(rough, 0.1, wet);

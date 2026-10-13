@@ -199,7 +199,7 @@ public partial class FlareFx
                 {
                     Kind = FlareBits.Kind.Puff, At = p, V = new Vector3((R() - 0.5f) * 0.5f, up, (R() - 0.5f) * 0.5f),
                     Life = 2.4f + R() * 1.6f, Size = 0.28f + R() * 0.12f, SizeEnd = 1.5f + R() * 1.1f,
-                    Color = new Color(0.6f, 0.63f, 0.67f, 0.2f), ColorEnd = new Color(0.62f, 0.64f, 0.68f, 0.07f),
+                    Color = Night ? new Color(0.6f, 0.63f, 0.67f, 0.2f) : new Color(0.5f, 0.5f, 0.52f, 0.15f), ColorEnd = Night ? new Color(0.62f, 0.64f, 0.68f, 0.07f) : new Color(0.52f, 0.52f, 0.54f, 0.04f),
                     Drag = 0.55f, Lift = 0.45f, Swirl = 1.5f, Seed = seed + R() * 0.12f, Wind = SteamWind * lean,
                 });
             }
@@ -217,7 +217,7 @@ public partial class FlareFx
         Hitstop(em.Hitstop);
         if (em.Last) { lastAt = t; boomAt = p; }
         if (!firstLanded) { firstLanded = true; Shots.Want("b7_ember1", 1 / 60.0); Shots.Want("b8_embers", 0.2); }
-        if (em.Last) { Shots.Want("b9_last", 1 / 60.0); Shots.Want("c1_last5", 5 / 60.0); Shots.Want("c2_ret1", 1); Shots.Want("c3_ret3", 3); Shots.Want("c4_ret6", 5.5); }
+        if (em.Last) { Shots.Want("b9_last", 1 / 60.0); Shots.Want("c1_last5", 5 / 60.0); Shots.Want("c1w_wave", 0.3); Shots.Want("c2_ret1", 1); Shots.Want("c3_ret3", 3); Shots.Want("c4_ret6", 5.5); }
         marks.Add(new Vector4(p.X, p.Z, em.Radius * (em.Last ? 1.15f : 0.9f), (float)t));
         if (marks.Count > 30) marks.RemoveAt(0);
         float big = em.Last ? 1.6f : 1;
@@ -297,7 +297,7 @@ public partial class FlareFx
     /// <summary>A frozen body shatters: its ice flies (tinted a little by its paint), a puff of frost dust, sparks lift.</summary>
     void Shatter(Vector3 w, float scale)
     {
-        shards.Burst(w + Vector3.Up * 0.8f * scale, (int)(10 * scale), 4.5f, 0.16f * scale, new Color(0.32f, 0.3f, 0.27f, 0.6f), 0.5f);
+        shards.Burst(w + Vector3.Up * 0.8f * scale, (int)(6 * scale), 4.5f, 0.13f * scale, new Color(0.32f, 0.3f, 0.27f, 0.6f), 0.5f);
         // (The dust small, faint and cold: at 1.6 m and pale, 250 of them at once laid a grey sheet over the crowd.)
         bed.Spawn(FlareBits.Kind.Puff, w + Vector3.Up * 0.7f, Vector3.Up * 0.6f, 0.7f, 0.25f * scale, new Color(0.2f, 0.3f, 0.43f, 0.13f), sizeEnd: 0.65f * scale, drag: 2);
         for (int i = 0; i < 6; i++)

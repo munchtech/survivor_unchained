@@ -1574,7 +1574,8 @@ public partial class BattleFx : Node3D
                     if (hidden) break;
                     // Loot rolled whole carries its tier (docs/design/LOOT_DESIGN.md §8.1): the light's
                     // height says how rare, its colour the band (BattleFx.Loot).
-                    LootLight(p, gy, now, col);
+                    // (--clean: no loot lights over the picture.)
+                    if (!CleanShots) LootLight(p, gy, now, col);
                     break;
                 }
             }
