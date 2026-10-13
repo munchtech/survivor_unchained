@@ -22,6 +22,7 @@ public sealed partial class Battle
         "bell_of_the_morning" => f.Blows + (FlareMod("bell.fourth_toll") ? 1 : 0),
         "burns_twice" => FlareMod("burns.more_embers") ? (int)f.Arg("moreEmbers", 18) : f.Blows,
         "the_roads_toll" => FlareMod("toll.doubled") ? (int)f.Arg("doubled", 18) : f.Blows,
+        "the_branding" => 1,
         _ => f.Blows,
     };
 
@@ -75,6 +76,7 @@ public sealed partial class Battle
     {
         hourAdded = 0;
         mistAt = 0;
+        if (f.Id == "the_branding" && f.Staged) BrandingPress();
         if (f.Id == "butchers_hour" && f.Staged) FillFrenzy();
     }
 
@@ -436,6 +438,7 @@ public sealed partial class Battle
             flareKilledBoss = true;
             Events.Emit(new Ev.Flare { Phase = FlarePhase.Kill, Id = f.Id, X = Player.X, Z = Player.Z, TX = e.X, TZ = e.Z, Target = e.Id, Clutch = flareClutch, Stand = f.Kind == FlareKind.Stand });
         }
+        BrandOnKilled(e);
         if (!credited || !HourHolds) return;
         bool over = FlareMod("hour.overtime");
         double cap = over ? f.Arg("overtimeCap", 12) : f.Arg("extendCap", 8);

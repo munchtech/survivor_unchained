@@ -274,6 +274,7 @@ public sealed partial class Battle
             case "bell_of_the_morning": BellToll(f, last); break;
             case "burns_twice": BurnsTwiceBlow(f, last); break;
             case "the_roads_toll": TollCut(f, last); break;
+            case "the_branding": BrandingBlow(f, last); break;
             default:
                 var p = Player;
                 ForEachHostileInRadius(p.X, p.Z, flareReach, (e, d) => FlareHit(e, 1, f.School, 1.2, p.X, p.Z));
@@ -328,6 +329,7 @@ public sealed partial class Battle
         var p = Player;
         if (crowdAt != null && Time >= crowdEvalAt) CrowdEnd();
         TickVenom();
+        TickBrands();
         if (flareMendT > 0)
         {
             double step = Math.Min(dt, flareMendT);

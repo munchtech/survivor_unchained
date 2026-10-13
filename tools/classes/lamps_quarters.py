@@ -27,7 +27,10 @@ flare("burns_twice", "Burns Twice", "arcanist", "kindler", "strike", 1.1, 14, 12
       beat={"key": 0.15, "frost": 0.3, "first": 0.55, "last": 1.05, "aim": 0.2, "hitstop": 2, "hitstopFrost": 3, "hitstopLast": 6},
       args={"frost": 0.3, "freeze": 2, "chill": 3, "ember": 0.675, "shatter": 1.0, "emberRadius": 2.5, "onBoss": 4, "bossMul": 1.0, "moreEmbers": 18, "blackIce": 0.5, "shove": 3, "shoveStun": 0.5, "shoveStagger": 0.15})
 flare("hard_winter", "Hard Winter", "arcanist", "kindler", "stand", 6, 12, 1, 345, "frost", ["spell", "frost", "area", "zone"], "For 6 s the ford's cold: everything near slows and freezes, and the thaw bursts.")
-flare("the_branding", "The Branding", "arcanist", "moonweaver", "strike", 1.0, 14, 2, 2100, "arcane", ["spell", "arcane", "area"], "Every enemy near is branded; the brands burst outward, each death passing a mark.")
+flare("the_branding", "The Branding", "arcanist", "moonweaver", "strike", 1.1, 14, 2, 2100, "arcane", ["spell", "arcane", "area"], "Every enemy near is branded; the brands burst outward, each death passing a mark.",
+      beat={"key": 0.15, "first": 0.45, "burstFirst": 0.75, "burstLast": 1.0, "bossBurst": 1.1, "hop": 0.1, "second": 1.0, "hitstop": 2, "hitstopLast": 6, "hitstopEye": 1},
+      args={"markSeconds": 4, "burst": 1.5, "splash": 0.35, "burstRadius": 2, "bossBurst": 1.5, "bossRadius": 3, "bossMul": 1.0, "pass": 0.75, "passRange": 6, "passMax": 24,
+            "deep": 1.5, "secondShare": 0.6, "eye": 0.25, "eyeSeconds": 6, "eyeRange": 8, "eyeMax": 10, "emptyRings": 3})
 flare("the_drowned_moon", "The Drowned Moon", "arcanist", "moonweaver", "stand", 6, 5, 3, 255, "arcane", ["spell", "arcane", "projectile", "zone"], "For 6 s a pool of moonlight follows you and looses motes.")
 flare("the_roads_toll", "The Road's Toll", "stalker", "roadknife", "strike", 1.2, 12, 12, 2100, "physical", ["melee", "steel", "physical", "twin"], "Gone in smoke: twelve cuts in 1.2 s on the strongest near, each poisoned, and anything below 25% dies. On a boss, the last four.",
       beat={"key": 0.24, "first": 0.24, "last": 1.12, "hitstop": 1, "hitstopLast": 6},
@@ -38,6 +41,7 @@ flare("pinning_rain", "Pinning Rain", "stalker", "verge_hunter", "stand", 5, 6, 
 
 P_FIRST = 2   # the four Flares phase 2 stages
 P_REST = 6
+P_6A = 2      # phase 6a's staged Flares: their modifiers are live (Lamps.LivePhase) as each is staged
 
 # ------------------------------------------------------------------ warden --
 w = hearth("warden",
@@ -277,7 +281,7 @@ kind = road("arcanist", ar, "kindler", "Road of the Kindler", "Fire and frost on
         ("Called Down", "Every ember falls on the toughest frozen thing.", FM("burns_twice", "burns.called_down", P_FIRST))]),
     ("hard_winter", "Hard Winter", [
         ("Deep Winter", "It freezes after 1 s.", FM("hard_winter", "winter.deep", P_REST)),
-        ("Thaw-Burst", "The thaw bursts twice as hard.", FM("hard_winter", "winter.thaw_burst", P_REST)),
+        ("Thaw-Burst", "A shatter shatters the frozen within 3 m.", FM("hard_winter", "winter.thaw_burst", P_REST)),
         ("Winter Keeps", "Mend 2% a second while it holds.", FM("hard_winter", "winter.keeps", P_REST))]))
 
 moon = road("arcanist", ar, "moonweaver", "Road of the Moonweaver", "Moonlight that hunts on its own and marks what it touches.",
@@ -306,9 +310,9 @@ moon = road("arcanist", ar, "moonweaver", "Road of the Moonweaver", "Moonlight t
     [("The Echo", "Every spell fires again 0.5 s later at half strength. Spells wait 25% longer.", [R("the_echo", delay=0.5, share=0.5, longer=0.25)]),
      ("Crowded Sky", "Spells with projectiles loose two more, all seeking, and no two strike the same thing; each is 35% weaker.", [R("crowded_sky", add=2, weaker=0.35)])],
     ("the_branding", "The Branding", [
-        ("Second Brand", "It brands again 1 s later.", FM("the_branding", "branding.second", P_REST)),
-        ("Branded Deep", "The bursts are 50% wider.", FM("the_branding", "branding.deep", P_REST)),
-        ("The Eye", "The boss is branded three times.", FM("the_branding", "branding.eye", P_REST))]),
+        ("Second Brand", "It brands again 1 s later.", FM("the_branding", "branding.second", P_6A)),
+        ("Branded Deep", "The bursts are 50% wider.", FM("the_branding", "branding.deep", P_6A)),
+        ("The Eye", "The boss's brand stays 6 s and bursts again whenever a mark passes to it.", FM("the_branding", "branding.eye", P_6A))]),
     ("the_drowned_moon", "The Drowned Moon", [
         ("Full Moon", "Twice the motes.", FM("the_drowned_moon", "drowned.full_moon", P_REST)),
         ("Moonset", "It ends by bursting upward, 8 m round.", FM("the_drowned_moon", "drowned.moonset", P_REST)),
@@ -371,7 +375,7 @@ knife = road("stalker", st, "roadknife", "Road of the Roadknife", "Twin blades: 
     ("through_and_through", "Through and Through", [
         ("Deeper Notches", "Each pass notches twice.", FM("through_and_through", "through.deeper", P_REST)),
         ("Wake of Blades", "The paths stay as Cutting Wake for 2 s.", FM("through_and_through", "through.wake", P_REST)),
-        ("Free Hands", "It lasts 8 s.", FM("through_and_through", "through.free_hands", P_REST))]))
+        ("Free Hands", "Press the Flare again to cut every notch now; it ends there.", FM("through_and_through", "through.free_hands", P_REST))]))
 
 verge = road("stalker", st, "verge_hunter", "Road of the Verge-Hunter", "A longbow: far off, pinning the front.",
     ("Far Eye", "Blows from beyond 8 m strike true one time in four.", [R("far_eye", range=8, chance=0.25)], ["volley", "heartseeker"]),
@@ -401,7 +405,7 @@ verge = road("stalker", st, "verge_hunter", "Road of the Verge-Hunter", "A longb
     ("one_arrow", "One Arrow", [
         ("Split Thrice More", "It splits three more times.", FM("one_arrow", "arrow.split", P_REST)),
         ("Pinned to the Earth", "Everything struck is rooted 2 s.", FM("one_arrow", "arrow.pinned", P_REST)),
-        ("Through the Heart", "Triple crit damage on a boss.", FM("one_arrow", "arrow.heart", P_REST))]),
+        ("Through the Heart", "It stops in the first champion or boss it hits, and its three splits turn back into it.", FM("one_arrow", "arrow.heart", P_REST))]),
     ("pinning_rain", "Pinning Rain", [
         ("Follow the Hunter", "The field moves with you.", FM("pinning_rain", "rain.follow", P_REST)),
         ("Iron Rain", "The arrows stun.", FM("pinning_rain", "rain.iron", P_REST)),

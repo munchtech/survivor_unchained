@@ -377,7 +377,7 @@
    "calling": "arcanist",
    "road": "moonweaver",
    "kind": "strike",
-   "length": 1.0,
+   "length": 1.1,
    "radius": 14,
    "blows": 2,
    "power": 2100,
@@ -387,7 +387,38 @@
     "arcane",
     "area"
    ],
-   "text": "Every enemy near is branded; the brands burst outward, each death passing a mark."
+   "text": "Every enemy near is branded; the brands burst outward, each death passing a mark.",
+   "beat": {
+    "key": 0.15,
+    "first": 0.45,
+    "burstFirst": 0.75,
+    "burstLast": 1.0,
+    "bossBurst": 1.1,
+    "hop": 0.1,
+    "second": 1.0,
+    "hitstop": 2,
+    "hitstopLast": 6,
+    "hitstopEye": 1
+   },
+   "args": {
+    "markSeconds": 4,
+    "burst": 1.5,
+    "splash": 0.35,
+    "burstRadius": 2,
+    "bossBurst": 1.5,
+    "bossRadius": 3,
+    "bossMul": 1.0,
+    "pass": 0.75,
+    "passRange": 6,
+    "passMax": 24,
+    "deep": 1.5,
+    "secondShare": 0.6,
+    "eye": 0.25,
+    "eyeSeconds": 6,
+    "eyeRange": 8,
+    "eyeMax": 10,
+    "emptyRings": 3
+   }
   },
   {
    "id": "the_drowned_moon",
@@ -5169,7 +5200,7 @@
     "kindler.hard_winter"
    ],
    "gate": 12,
-   "text": "The thaw bursts twice as hard.",
+   "text": "A shatter shatters the frozen within 3 m.",
    "effects": [
     {
      "do": "flareMod",
@@ -5783,7 +5814,7 @@
      "do": "flareMod",
      "flare": "the_branding",
      "rule": "branding.second",
-     "phase": 6
+     "phase": 2
     }
    ]
   },
@@ -5804,7 +5835,7 @@
      "do": "flareMod",
      "flare": "the_branding",
      "rule": "branding.deep",
-     "phase": 6
+     "phase": 2
     }
    ]
   },
@@ -5819,13 +5850,13 @@
     "moonweaver.the_branding"
    ],
    "gate": 3,
-   "text": "The boss is branded three times.",
+   "text": "The boss's brand stays 6 s and bursts again whenever a mark passes to it.",
    "effects": [
     {
      "do": "flareMod",
      "flare": "the_branding",
      "rule": "branding.eye",
-     "phase": 6
+     "phase": 2
     }
    ]
   },
@@ -7016,7 +7047,7 @@
     "roadknife.through_and_through"
    ],
    "gate": 12,
-   "text": "It lasts 8 s.",
+   "text": "Press the Flare again to cut every notch now; it ends there.",
    "effects": [
     {
      "do": "flareMod",
@@ -7645,7 +7676,7 @@
     "verge_hunter.one_arrow"
    ],
    "gate": 3,
-   "text": "Triple crit damage on a boss.",
+   "text": "It stops in the first champion or boss it hits, and its three splits turn back into it.",
    "effects": [
     {
      "do": "flareMod",
