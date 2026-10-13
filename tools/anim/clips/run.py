@@ -67,12 +67,27 @@ SWORD_SWING = ((0.0, -0.34, 0.0), (0.02, -0.20, 0.27))
 AXE_SWING = ((0.02, -0.30, -0.08), (0.0, -0.10, 0.31))
 
 
-def shield_guard(side="l"):
-    """The shield up across the body, riding the step a little."""
+def _swivel(h, phi):
+    """A pole (chest frame) that swings the elbow phi degrees about shoulder-to-hand (h, from the
+    shoulder) from her left: far out, so the elbow goes exactly there."""
+    d = np.array(h, float) / np.linalg.norm(h)
+    ref = np.array([1.0, 0, 0]) - d * d[0]
+    ref /= np.linalg.norm(ref)
+    a = math.radians(phi)
+    return tuple(20.0 * (math.cos(a) * ref + math.sin(a) * np.cross(d, ref)))
+
+
+def shield_guard(side="l", hand_at=(-0.02, -0.20, 0.38), swivel=-20):
+    """The shield up across the body, riding the step a little. It rides the
+    forearm's hinge (its face is the plane of shoulder, elbow and wrist), so
+    the guard is set by where the hand goes and how the elbow swings, never
+    by the hand's aim: the hand well out ahead and the elbow open (120-130
+    degrees) and out, so the disc stays clear of her own shoulder. (With the
+    elbow near square it reached over the shoulder, through the pauldron.)
+    The hand rides the forearm, the wrist straight in the grip."""
     def f(ph, k, hand):
-        bounce = 0.015 * math.cos(4 * math.pi * ph)
-        return {"arc": arc_of((-0.17, -0.16 + bounce, 0.26)), "pole": (0.9, -0.5, -0.2),
-                "blade": (-0.4, 0.75, 0.55), "frame": "chest", "twist": 0.3}
+        h = (hand_at[0], hand_at[1] + 0.015 * math.cos(4 * math.pi * ph), hand_at[2])
+        return {"arc": arc_of(h), "pole": _swivel(h, swivel), "frame": "chest"}
     return f
 
 
