@@ -252,7 +252,31 @@
     "physical",
     "twin"
    ],
-   "text": "A leap on the strongest near you, and a chop for each tenth of health you're missing."
+   "text": "A leap on the strongest near you, and a chop for each tenth of health you're missing (at least four): each mends 2%.",
+   "beat": {
+    "key": 0.2,
+    "leap": 0.2,
+    "first": 0.45,
+    "step": 0.06,
+    "lastGap": 0.12,
+    "hitstop": 2,
+    "hitstopLast": 7
+   },
+   "args": {
+    "chop": 1.5,
+    "lastChop": 1.5,
+    "minChops": 4,
+    "maxChops": 10,
+    "mend": 0.02,
+    "splash": 2,
+    "bleed": 0.4,
+    "bleedSeconds": 3,
+    "vault": 6,
+    "emptyLeap": 6,
+    "bossMul": 1.0,
+    "wide": 0.6,
+    "feast": 0.1
+   }
   },
   {
    "id": "butchers_hour",
@@ -309,7 +333,35 @@
     "area",
     "hook"
    ],
-   "text": "Hooks bite everything within 14 m and haul them into one knot for the slam."
+   "text": "Hooks bite up to 24 things within 14 m and haul them into one knot at your feet for the slam.",
+   "beat": {
+    "key": 0.2,
+    "first": 0.35,
+    "knot": 0.65,
+    "slam": 0.77,
+    "grindFirst": 0.7,
+    "grindLast": 0.86,
+    "slamGrinder": 0.95,
+    "hitstop": 2,
+    "hitstopLast": 8
+   },
+   "args": {
+    "hook": 0.5,
+    "slam": 1.75,
+    "hooks": 24,
+    "slamRadius": 4,
+    "knotAhead": 1.5,
+    "knotSpread": 1.2,
+    "stun": 1,
+    "bossStun": 1.5,
+    "bossDrag": 3,
+    "bossMul": 1.0,
+    "deeper": 1.5,
+    "grinds": 3,
+    "grind": 0.25,
+    "hold": 3,
+    "emptyHooks": 8
+   }
   },
   {
    "id": "storm_on_the_chain",
@@ -3308,7 +3360,7 @@
      "do": "flareMod",
      "flare": "the_butchers_bill",
      "rule": "bill.running_tab",
-     "phase": 6
+     "phase": 2
     }
    ]
   },
@@ -3329,7 +3381,7 @@
      "do": "flareMod",
      "flare": "the_butchers_bill",
      "rule": "bill.wide_chops",
-     "phase": 6
+     "phase": 2
     }
    ]
   },
@@ -3350,7 +3402,7 @@
      "do": "flareMod",
      "flare": "the_butchers_bill",
      "rule": "bill.feast",
-     "phase": 6
+     "phase": 2
     }
    ]
   },
@@ -4024,7 +4076,7 @@
      "do": "flareMod",
      "flare": "drag_them_under",
      "rule": "drag.deeper",
-     "phase": 6
+     "phase": 2
     }
    ]
   },
@@ -4045,7 +4097,7 @@
      "do": "flareMod",
      "flare": "drag_them_under",
      "rule": "drag.grinder",
-     "phase": 6
+     "phase": 2
     }
    ]
   },
@@ -4066,7 +4118,7 @@
      "do": "flareMod",
      "flare": "drag_them_under",
      "rule": "drag.hold_him",
-     "phase": 6
+     "phase": 2
     }
    ]
   },

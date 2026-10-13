@@ -1,6 +1,6 @@
 # Classes (phase 2 done; phase-6 plan with the owner; Act 1 baseline named)
 
-**State (13 October, session 14):** branch `classes-10` (from integration 3935476c). The Flare is the owner's BOOM button: specialized (Clear, Save, Single, Context), and every press is seen. Sessions 13-14: Burns Twice's aimed embers and last-ember shove; the Road's Toll with nothing near; the phase-6 plan's role column (judge 7: PASS WITH FIXES, applied; the owner lines are with the owner); the Act 1 baseline named ("pre-Flare 11 Oct"). Waiting on the owner's phase-6 answers. Handoff: `docs/handoff/classes.md`.
+**State (13 October, session 15):** branch `classes-11`. Wave 6a built: the Branding (measured: Act 1 -22.4% against the baseline, -1.7% against its plain form, arena share 21-24%), the Long Cut, One Arrow, Drag Them Under and the Butcher's Bill (built and tested, not yet measured). The four new modifiers' texts are in; The Eye and Through the Heart have logic, Thaw-Burst and Free Hands wait for 6b. Handoff: `docs/handoff/classes.md`.
 
 **Key decisions**
 - Flare roles follow FLARE_LOOK (six Clears, four Saves, two Singles, four Contexts), confirmed in CLASSES §7's phase-6 plan. Judge 6's first table differed on eight Flares; the look's reading matches what each does in play.

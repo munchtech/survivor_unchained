@@ -71,7 +71,7 @@ public class FlareStagedTests
     [Fact]
     public void Every_staged_flare_releases_once_after_its_key_pose_and_ends()
     {
-        foreach (var id in new[] { "bell_of_the_morning", "burns_twice", "the_roads_toll", "butchers_hour", "the_branding" })
+        foreach (var id in new[] { "bell_of_the_morning", "burns_twice", "the_roads_toll", "butchers_hour", "the_branding", "the_long_cut", "one_arrow", "drag_them_under", "the_butchers_bill" })
         {
             var b = Carrying(id);
             Foe(b, 2, 0);

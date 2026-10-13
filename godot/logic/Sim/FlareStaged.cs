@@ -24,6 +24,8 @@ public sealed partial class Battle
         "the_roads_toll" => FlareMod("toll.doubled") ? (int)f.Arg("doubled", 18) : f.Blows,
         "the_branding" => 1,
         "the_long_cut" => FlareMod("long_cut.second_cut") ? 3 : 2,
+        "drag_them_under" => 3 + (FlareMod("drag.grinder") ? (int)f.Arg("grinds", 3) : 0),
+        "the_butchers_bill" => BillChops(f),
         "one_arrow" => 1 + (int)(FlareMod("arrow.split") ? f.Arg("splitMore", 6) : f.Arg("splits", 3)),
         _ => f.Blows,
     };
@@ -42,6 +44,17 @@ public sealed partial class Battle
         // The Long Cut: the sweep at "first", the cleave, and Second Cut's counter-sweep.
         if (f.Beat.TryGetValue("cleave", out double cleave))
             return n > 2 ? [first, cleave, f.BeatAt("second", 0.85)] : [first, cleave];
+        // Drag Them Under: the bite at "first", the knot, Grinder's shreds, the slam.
+        if (f.Beat.TryGetValue("knot", out double knot))
+        {
+            if (n <= 3) return [first, knot, f.BeatAt("slam", 0.77)];
+            double gs = f.BeatAt("grindFirst", 0.7), gl = f.BeatAt("grindLast", 0.86);
+            return new[] { first, knot }.Concat(Enumerable.Range(0, n - 3).Select(i => n <= 4 ? gs : gs + (gl - gs) * i / (n - 4)))
+                .Append(f.BeatAt("slamGrinder", 0.95)).ToArray();
+        }
+        // The Butcher's Bill: chops "step" apart from "first" (the landing), the last overhead "lastGap" after the one before.
+        if (f.Beat.TryGetValue("lastGap", out double gap))
+            return Enumerable.Range(0, n).Select(i => first + f.BeatAt("step", 0.06) * Math.Min(i, n - 2) + (i == n - 1 ? gap : 0)).ToArray();
         // One Arrow: the arrow at "first", then its splits spread from "splitFirst" to "splitLast".
         if (f.Beat.TryGetValue("splitFirst", out double sf))
         {
@@ -140,6 +153,8 @@ public sealed partial class Battle
     /// so the view drops each ember out of the sky in time to land on its blow. Only Burns Twice aims today.</summary>
     double[] FlareAimSchedule(FlareDef f)
     {
+        // The Bill's leap: she picks the strongest and springs at "leap", landing on the first chop.
+        if (f.Staged && f.Id == "the_butchers_bill") return [f.BeatAt("leap", 0.2)];
         if (!f.Staged || f.Id != "burns_twice" || !f.Beat.TryGetValue("aim", out double lead) || lead <= 0) return [];
         bool frosts = f.Beat.TryGetValue("frost", out double frost);
         return flareAt.Skip(frosts ? 1 : 0).Select(t => Math.Max(frosts ? frost : 0, t - lead)).ToArray();
@@ -150,6 +165,7 @@ public sealed partial class Battle
     {
         var f = Flare!;
         flareAim++;
+        if (f.Id == "the_butchers_bill") { BillAim(f); return; }
         if (f.Id != "burns_twice") return;
         int embers = flareAimAt.Length;
         double r = f.Arg("emberRadius", 2.5) * FlareGrow(f);
@@ -450,6 +466,7 @@ public sealed partial class Battle
             Events.Emit(new Ev.Flare { Phase = FlarePhase.Kill, Id = f.Id, X = Player.X, Z = Player.Z, TX = e.X, TZ = e.Z, Target = e.Id, Clutch = flareClutch, Stand = f.Kind == FlareKind.Stand });
         }
         BrandOnKilled(e);
+        BillOnKilled(e, credited);
         if (!credited || !HourHolds) return;
         bool over = FlareMod("hour.overtime");
         double cap = over ? f.Arg("overtimeCap", 12) : f.Arg("extendCap", 8);

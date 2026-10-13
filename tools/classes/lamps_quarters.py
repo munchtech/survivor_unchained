@@ -20,11 +20,17 @@ flare("bell_of_the_morning", "Bell of the Morning", "warden", "bulwark", "strike
       beat={"first": 0.3, "step": 0.25, "hitstop": 4, "hitstopLast": 8},
       args={"toll": 0.45, "blast": 1.25, "blastRadius": 8, "stun": 1, "sear": 2, "mend": 0.04, "peal": 0.08, "stagger": 0.15, "flee": 3})
 flare("sixty_on_the_wall", "Sixty on the Wall", "warden", "bulwark", "stand", 6, 7, 1, 345, "holy", ["area", "holy", "shield"], "For 6 s the Watch's shield-bearers hold an arc in front of you.", "cut", 0.5)
-flare("the_butchers_bill", "The Butcher's Bill", "reaver", "butcher", "strike", 1.2, 10, 6, 520, "physical", ["melee", "steel", "physical", "twin"], "A leap on the strongest near you, and a chop for each tenth of health you're missing.")
+flare("the_butchers_bill", "The Butcher's Bill", "reaver", "butcher", "strike", 1.2, 10, 6, 520, "physical", ["melee", "steel", "physical", "twin"], "A leap on the strongest near you, and a chop for each tenth of health you're missing (at least four): each mends 2%.",
+      beat={"key": 0.2, "leap": 0.2, "first": 0.45, "step": 0.06, "lastGap": 0.12, "hitstop": 2, "hitstopLast": 7},
+      args={"chop": 1.5, "lastChop": 1.5, "minChops": 4, "maxChops": 10, "mend": 0.02, "splash": 2, "bleed": 0.4, "bleedSeconds": 3, "vault": 6,
+            "emptyLeap": 6, "bossMul": 1.0, "wide": 0.6, "feast": 0.1})
 flare("butchers_hour", "Butcher's Hour", "reaver", "butcher", "stand", 8, 4, 0, 290, "physical", ["melee", "steel", "physical", "twin"], "For 8 s: Frenzy full, blows twice as fast, every blow deepens the bleed, ordinary things below 15% die, and each kill adds 0.3 s (up to 8 s more) and mends 1%.",
       beat={"key": 0.3, "hitstop": 1, "hitstopExecute": 4},
       args={"faster": 2, "bleed": 0.8, "bleedSeconds": 3, "deepen": 1, "execute": 0.15, "extend": 0.3, "extendCap": 8, "overtime": 0.6, "overtimeCap": 12, "mend": 0.01, "mistRadius": 5, "flee": 1.5})
-flare("drag_them_under", "Drag Them Under", "reaver", "chainbound", "strike", 0.8, 14, 2, 1590, "physical", ["melee", "physical", "area", "hook"], "Hooks bite everything within 14 m and haul them into one knot for the slam.")
+flare("drag_them_under", "Drag Them Under", "reaver", "chainbound", "strike", 0.8, 14, 2, 1590, "physical", ["melee", "physical", "area", "hook"], "Hooks bite up to 24 things within 14 m and haul them into one knot at your feet for the slam.",
+      beat={"key": 0.2, "first": 0.35, "knot": 0.65, "slam": 0.77, "grindFirst": 0.7, "grindLast": 0.86, "slamGrinder": 0.95, "hitstop": 2, "hitstopLast": 8},
+      args={"hook": 0.5, "slam": 1.75, "hooks": 24, "slamRadius": 4, "knotAhead": 1.5, "knotSpread": 1.2, "stun": 1, "bossStun": 1.5, "bossDrag": 3,
+            "bossMul": 1.0, "deeper": 1.5, "grinds": 3, "grind": 0.25, "hold": 3, "emptyHooks": 8})
 flare("storm_on_the_chain", "Storm on the Chain", "reaver", "chainbound", "stand", 5, 8, 2, 400, "storm", ["melee", "storm", "area", "hook"], "For 5 s the chain sweeps 8 m out, and the sky strikes down it.")
 flare("burns_twice", "Burns Twice", "arcanist", "kindler", "strike", 1.1, 14, 12, 1160, "fire", ["spell", "fire", "frost", "area"], "Frost races under every pack near, then twelve embers fall on the frozen ground, and each shatters what is frozen round it.",
       beat={"key": 0.15, "frost": 0.3, "first": 0.55, "last": 1.05, "aim": 0.2, "hitstop": 2, "hitstopFrost": 3, "hitstopLast": 6},
@@ -188,9 +194,9 @@ butch = road("reaver", rv, "butcher", "Road of the Butcher", "Twin axes, and you
     [("Always Bleeding", "You always count as below a third of health for Fights Best Hurt and Blood Up. You can't be mended above half, and what would mend past it is lost.", [R("always_bleeding", cap=0.5)]),
      ("The Butcher's Count", "Each kill gives +1% damage for 10 s, to 50. You take more by half the Count.", [R("butchers_count", per=0.01, cap=50, seconds=10, price=0.5)])],
     ("the_butchers_bill", "The Butcher's Bill", [
-        ("Running Tab", "The leftover chops can go on twice.", FM("the_butchers_bill", "bill.running_tab", P_REST)),
-        ("Wide Chops", "Each chop strikes everything 2 m round.", FM("the_butchers_bill", "bill.wide_chops", P_REST)),
-        ("Feast", "Each kill mends 10%.", FM("the_butchers_bill", "bill.feast", P_REST))]),
+        ("Running Tab", "The leftover chops can go on twice.", FM("the_butchers_bill", "bill.running_tab", P_6A)),
+        ("Wide Chops", "Each chop strikes everything 2 m round.", FM("the_butchers_bill", "bill.wide_chops", P_6A)),
+        ("Feast", "Each kill mends 10%.", FM("the_butchers_bill", "bill.feast", P_6A))]),
     ("butchers_hour", "Butcher's Hour", [
         ("Overtime", "A kill adds 0.6 s (up to 12 s more).", FM("butchers_hour", "hour.overtime", P_FIRST)),
         ("Red Mist", "Lesser things near you flee.", FM("butchers_hour", "hour.red_mist", P_FIRST)),
@@ -222,9 +228,9 @@ chain = road("reaver", rv, "chainbound", "Road of the Chainbound", "A hooked cha
     [("The Long Chain", "Melee skills reach 3 m further and hook the last thing they hit. They strike 20% weaker.", [R("long_chain", reach=3, weaker=0.2)]),
      ("Lightning Rod", "Storm skills strike Bound things first, and 40% harder. You take 15% more from storm and fire.", [R("lightning_rod", more=0.4, price=0.15)])],
     ("drag_them_under", "Drag Them Under", [
-        ("Deeper", "The hooks reach the whole screen.", FM("drag_them_under", "drag.deeper", P_REST)),
-        ("Grinder", "The knot is shredded for a breath before the slam.", FM("drag_them_under", "drag.grinder", P_REST)),
-        ("Hold Him", "A boss is pinned 3 s.", FM("drag_them_under", "drag.hold_him", P_REST))]),
+        ("Deeper", "The hooks reach the whole screen.", FM("drag_them_under", "drag.deeper", P_6A)),
+        ("Grinder", "The knot is shredded for a breath before the slam.", FM("drag_them_under", "drag.grinder", P_6A)),
+        ("Hold Him", "A boss is pinned 3 s.", FM("drag_them_under", "drag.hold_him", P_6A))]),
     ("storm_on_the_chain", "Storm on the Chain", [
         ("Second Length", "A second chain; the sweeps alternate.", FM("storm_on_the_chain", "storm_chain.second_length", P_REST)),
         ("Earthing", "Each sky strike mends 1%.", FM("storm_on_the_chain", "storm_chain.earthing", P_REST)),

@@ -1,48 +1,35 @@
-# Handoff: classes (session 14: Burns re-measured, the Act 1 baseline named; waiting on the owner)
+# Handoff: classes (session 15: wave 6a built; the Branding measured, the other four unmeasured)
 
-Written by the fourteenth classes lead (13 October). Branch `classes-10` (worktree `agent-ad0c69063d34fa8de`, from integration 3935476c), last commit on the last line of git log. The old scratch (59a43b82's `scratchpad\classes\`) isn't needed any more: the baseline and its tools are in the repo.
+Written by the fifteenth classes lead (13 October). Branch `classes-11` (worktree `agent-af76b344999b70629`, branched from integration d283e6bc; its own first commit was a bare "Initial commit", so `classes-11` was made from d283e6bc). Last commit: the last line of git log.
 
 ## The owner (13 October)
-- "why wouldn't flare shorten things? its supposed to be epic. an 'oh shit' button. a planned 'BOOM' button. a 'clear the whole room' button."
-- "flares in general don't need to be big boss hits - they are specialized. *most* are for arena mode type screen clears or saves etc - but some can be single target (or one or the other based on context). but pushing a flare should always do something visible."
-- Coordinator's rulings: never tune a Flare into an invisible damage bump. Balance around fights without good Flare use, not by blunting the Flare.
+- "yes to the four questions" (OWNER_NOTES "Phase 6, the Flare plan"): (1) build wave 6a: the Long Cut, Drag Them Under, the Branding, One Arrow, and the Butcher's Bill for a new butcher (the Hour opens at depth 12: already so, the Bill is the butcher's free Strike); (2) the greatsword, hooked chain and longbow form in her hands in the calling's color for the Flare and vanish after (look item, for the Flare lead; in logic the Flare needs no weapon equipped, already true); (3) the four new modifiers (Thaw-Burst, The Eye, Free Hands, Through the Heart); (4) waves 6b and 6c are a separate yes later: DON'T start them.
+- Standing: one role per Flare (6 clear, 4 save, 2 single, 4 context); every press seen (events even with nothing near); balance never blunts a Flare; Act 1 against "pre-Flare 11 Oct" (never-press within ±3%, falls no higher; good use clearly shorter).
+- Earlier: "flares in general don't need to be big boss hits - they are specialized ... pushing a flare should always do something visible"; the Flare is "a planned 'BOOM' button".
 
 ## Start here
-1. **Wait for the owner's phase-6 answers** (the owner lines below, relayed by the coordinator), and don't start wave 6 before they come. Once they do, follow CLASSES §7's phase-6 plan. Wave 6a runs in this order: the Branding, the two line Flares, the pull, the Bill. Stage each Flare, calibrate it on Act 1 against the baseline, then judge it.
-2. **Done in session 14:**
-   - **Batch W** measured Burns with the aim fix (46ab377d) against its true parent 3935476c: arcanist, fresh arena seeds 201-248.
-     - Flare kills a press: +12-16% at every tier.
-     - Act 1: -1.4%; the variant without the boss stagger ran -2.6%, so `shoveStagger` stays 0.15.
-     - Arena deaths and damage taken: within noise (T4 L30 damage taken +22%, about 1.5 SE, 100% won).
-     - The merge request went in at 30899ed3 (lead 13).
-     - The Flare lead (a63cfc9c8f0bf5d01) has the aim, the bend ("aimBend" 3, so a Blow can land away from its aim's target), the shove and the Toll's empty cuts.
-   - **Act 1 baseline "pre-Flare 11 Oct"** (CLASSES §7 Acceptance; adopted by the coordinator): 9cbc654c at health 103/130/100/109, never pressing, seeds 1-32, runs 233 s with 0.125 falls a night.
-     - Rule: never pressing stays within ±3% of it with falls no higher; good use is clearly shorter.
-     - Today: never pressing -0.1% (0.093 falls), careless -7.5%, good use -17.7% (0.034), bankers -24%. No re-tune.
-     - Files: `tools/classes/out/prefl11.jsonl` (git-ignored; rebuild with `tools/classes/baseline_build.py`). Compare with `tools/classes/act1_match.py`, on matched seeds only.
-   - **base11 retired:** it was 90dd4062 (the Flare's first build) with the Flare pressed and the 3 s press stun still in. A re-run of that build matched it on all 2048 seeds. The "drift" was base11 plus a seed-set mismatch: seeds 1-32 against 1-96 differ by about 2%.
-3. dotnet test: 885 of 893 passed (8 skipped) at 30899ed3. The code hasn't changed since 46ab377d.
+1. **Merge request not sent yet.** Run `dotnet test` (the suite was running at handoff; the Flare and Lamps tests passed, 57 of 57), then send the coordinator "MERGE REQUEST: classes-11@<sha>" only once the four unmeasured Flares are measured, or ask the coordinator whether to merge the logic early (the Long Cut and the Bill now play staged in default Act 1 runs: warden's first road is sunderer, reaver's butcher).
+2. **Measure the four** as the Branding was (below), each against its plain form (`v.py NAME plain=<flare_id>`) and the baseline: Act 1 `story --callings <c> --type <road> --seeds 32 --policies greedy,random --bot plain,deft`, arena `--tiers 1,2,3,4 --seeds 24 --seed0 201 --bot deft --lamps full --level tier`, then `crowd.py` and the FlareBossTook per tier. Order: Long Cut (warden sunderer), One Arrow (stalker verge_hunter), Drag (reaver chainbound), Bill (reaver butcher; it's Single, so its crowd numbers fall by design; watch Act 1 reaver falls).
+3. **Branding falls:** batch b2 (fresh seeds 33-96, staged against plain) was running at handoff: `S/out/b2_staged.jsonl`, `b2_plain.jsonl`. Pool with b1 and judge "falls within noise".
+4. Then: each Flare's early modifier (one gentle one, measured on Act 1 against the staged Flare: four bosses within ±3%, no cell beyond ±6%; mark it in `EARLY` in lamps_quarters.py), any modifier past the 35% arena share cut by its number or `bossMul`, then one su-lead-max judge on the wave's measures and roles. Then CLASSES §7 (phase 6a measured) and the status page.
 
-## Owner lines (judge 7's final; with the owner)
-1. Flares should shorten fights, as you said. We tune each night so a player who never uses Flares well still gets through, and a good press sits on top. No Flare is ever tuned down into a damage bump you can't see.
-2. Each Flare has one job. Most clear the room or save the hero (six clear, four save). Two go for the one that matters: the Butcher's Bill, and the Road's Toll, whose last four cuts go to the strongest. Four choose by what's near: the crowd, or the boss when there is one. Every press shows something, even with nothing in reach.
-3. The Flares not built yet are stand-ins that hit everything in reach, so once built a few will clear less. For example, One Arrow becomes a 30 m line through the crowd instead of hitting everything within 30 m.
-4. You asked for one Flare per spec. Four specs have theirs. The first wave builds the other four (the Long Cut, Drag Them Under, the Branding, One Arrow), plus the Butcher's Bill, which a new butcher starts with (the Hour opens at depth 12). Shall we build the first wave?
-5. The Long Cut, Drag Them Under and One Arrow use a greatsword, a hooked chain and a longbow, which come later. For the Flare, the weapon would form in the hero's hands in the calling's color and vanish after. Is that look okay?
-6. Four modifiers are replaced, so at most one of each Flare's three only changes a number. The new four: Hard Winter's Thaw-Burst (a shatter shatters the frozen within 3 m), the Branding's The Eye (the boss's brand stays 6 s and bursts again whenever a mark passes to it), Through and Through's Free Hands (press the Flare again to cut every notch now; it ends there), One Arrow's Through the Heart (it stops in the first champion or boss it hits, and its three splits turn back into it). Okay to use the new four?
-7. Until Act 1 is done, Light my way suggests at most one gentle modifier per Flare, so Act 1 plays as tuned. The strongest ones, like Called Down, can still be picked by hand.
-8. Each spec's second Flare (the other seven, waves 6b and 6c; 6c waits for the new weapons) will be a separate yes later.
-9. Done today, on the classes branch: Burns Twice aims each ember just before it lands, and its last ember throws back whatever still stands about 3 m (a boss only staggers). The Road's Toll, pressed with nothing near, now cuts a kata of twelve along the aim.
+## Done in session 15 (classes-11)
+- f2e10c5e: `lamps_quarters.py` had drifted from lamps.json (Burns' aim/shove, the Toll's empty cuts were data-only edits); caught up. Edit the builder, never lamps.json by hand.
+- dfb0dd5a: **the Branding** (`Sim/FlareBranding.cs`): brands everything in reach (Mark 4 s, +30% taken), bursts by distance 0.75-1.0 s, the boss's at 1.1 (hitstop 6), each burst splashes 2 m; a branded death passes a mark (6 m, one per thing, 24 a press) that bursts a hop later; nothing near: brands in three rings on the ground. Second Brand (again 1 s later at 0.6), Branded Deep (x1.5 bursts), The Eye (boss brand open 6 s; a marked thing dying within 8 m bursts it again, 0.25 a time, 10 at most).
+- 028a8fac: **the line hit, the Long Cut and One Arrow** (`Sim/FlareLines.cs`). Long Cut: sweep 1.5 on reach at 0.3, cleave 1.5 down 24 m x 1.5 m at 0.55; a boss in it is Sundered (`Enemy.Sunder/SunderUntil`, takes +30% from her side 8 s; HitEnemy). Second Cut, Line of Morning (flare-credited ground zones along the line, 4 s), Through the Wall (36 m, +40%). One Arrow: 30 m x 1.2 m, arrow 1.0 (a boss x2 "bossCrit"), ordinary left below 30% die, 3 splits (12 m, 0.6) from the toughest it passed; Split Thrice More (6), Pinned to the Earth (Bound 2 s), Through the Heart (stops in the first champion or boss, its splits strike it). Harness: `Pilot.LineAim` aims a line Flare at a boss in range, else down the thickest line (the pointer only for the press).
+- This commit: **Drag Them Under and the Butcher's Bill** (`Sim/FlareReaver.cs`). Drag: hooks 24 (boss, champions, then the farthest; not what the slam already covers) at 0.35, pulled by knockback to a knot 1.5 m ahead of her (a boss 3 m), knot 0.65, slam 1.75 at 0.77 (4 m; lesser stunned 1 s; a boss interrupted, Stun 1.5 which fills its stagger). Deeper (x1.5 reach), Grinder (3 shreds, slam at 0.95), Hold Him (Bound 3 s). Bill: leap at 0.2 on the strongest in 10 m (event "leap"), lands beside it at 0.45 (teleport plus Collision.Resolve), chops 0.06 apart, max(4, tenths missing) up to 10, last overhead +0.12 (hitstop 7), 1.5 a chop, mends 2% a hit, bleeds 2 m; leftovers vault 6 m once (Running Tab twice); Wide Chops, Feast. Nothing near: leaps 6 m along her aim, chops the ground.
+- `act1_match.py`: a `--type` run matches its calling's baseline run; `--cells` prints fight x hands.
 
-## Done in session 13 (classes-10)
-- 440c4a90: Burns Twice "aim" and "shove" (Flare.cs TickFlare runs aims and blows in time order; FlareStaged.cs FlareAim, EmberPick, BurnsTwiceBlow, BurnsShove; lamps.json beat "aim", args shove, shoveStun, shoveStagger). 2 tests.
-- 955c64d3: the Toll's empty cuts along her aim (`flareAngle` stored at the press). 1 test.
-- 10740955 and f4f8d3b8: CLASSES §7 phase-6 plan: Role and "nothing near" columns, the roles paragraph and the two rules, judge 7's fixes.
-- 46ab377d: the aim fix. Aiming four embers ahead had cost a press about 15% of its kills (arena crowd `S/s`, `S/v` B). Fixed by counting the ice round falling embers as broken; checked on a synthetic crowd (37.7% against 38.4% killed at x2 health).
+## Measured: the Branding (arcanist moonweaver, seeds 1-32, 512 nights a side)
+- Act 1 good use: -22.4% against the baseline (209 -> 162 s); plain form -20.6%; staged against plain -1.7%, every cell within ±6% (-4.6 to +2.4). Falls 0.041 against plain's 0.021 (21 vs 11, ~1.8 sigma; 8 of them hollow/plain hands, none in plain form): b2 re-runs this. Never pressing as moonweaver: -5.7% (falls 0.078): the type's own Act 1, not the Flare.
+- Crowd (story, no boss near): in reach dead 97.1% (plain 96.3), screen cleared 80% (75). Arena: 100% in reach dead, kills a press 41 (plain 22: the passes run on).
+- Arena share of boss health taken, full board, deft: T1-T4 23.3/21.4/23.7/22.0% (plain 23.0/19.2/19.1/23.4). In band (15-30%). No `bossMul` needed.
+
+## Notes for the Flare lead (through the coordinator; one event-format line each)
+- New Parts: brand, burst, pass (Branding); sweep, cleave, burnline, arrow, split (lines); hook, knot, grind, slam (Drag); leap, land, vault, chop (Bill). For "pass", "split", "leap", "land" and "vault", X/Z is where it starts (not her), TX/TZ where it ends. Line parts carry Angle and Radius = half-width. The look of the formed weapons (owner item 2) is theirs.
 
 ## Gotchas
-- Isolation: no `$VAR` inside commands that run git, sed or find, and no compound `cd && git`. Write a script to `S/` and `bash` it. Python scripts that take paths as arguments are fine.
-- Harness copies: `S/bal13` (classes-9), `S/bal14` (440c4a90), `S/bal15` (46ab377d). Data comes from the cwd's `godot/data`, so data variants run from a copy (`S/v/<V>/godot/data`, `S/v_data.py`).
-- Old builds: `python tools/classes/baseline_build.py <dir> <commit>` exports logic, data and balance with `git archive` (no worktree, so the cap is safe), adds the never-press switch (SU_NOPRESS=1) and sets the health. Today's harness never presses with `--flareuse 0`; `--storyhp roost=..,vault=..` sets health.
-- Compare story runs on matched seeds (`act1_match.py`); `S/stc.py` compares means over whatever seeds each file has.
-- Every arena death figure at 48 runs a tier is noisy (±4 points). Read Flare kills a press (about 1,100 casts) first.
+- Isolation blocks `$VAR` and complex heredocs in commands that touch the worktree: write scripts to `S/` (= `scratchpad/cl11`) and run them. `S/h.sh BUILD VARIANT OUT args...` runs a harness build from the worktree's godot dir with `--over S/v/VARIANT`; `S/v.py` makes variants; `S/crowd.py` reads presses. Builds: `S/bal1` (the Branding), `S/bal2` (lines and pilot aim; rebuild for the reaver: `dotnet build -c Release -o S/bal3 balance/Balance.csproj` from godot).
+- A staged Flare's modifiers go live with `P_6A` (= LivePhase 2) in lamps_quarters.py; LampsTests counts three per staged Flare.
+- Story runs: 512 nights take ~2.5 min at par 20; arena 96 runs ~3 min.
+- Baseline copy: `tools/classes/out/prefl11.jsonl` (git-ignored) is in this worktree.
