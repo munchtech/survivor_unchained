@@ -2451,7 +2451,54 @@ def rim_cleaned(name, pos, at, tris, least=0.0002, fold=0.3, rounds=6):
     return pos, at, tris
 
 
-def piece(name, field, mkey, lift=0.003, thick=0.003, smooth=0, bevel=0.0012, trim=None, clear=None, soften=3, dome=False, keep_off=("Head", "neck_01"), cut=None, iron=0, hull=None, studs=None, budget=None, filled=False, edge=30, slot=True, bridge=False, bind=True, rigid=None, stiff=None, studs_off=None, weigh=None, hold=None, crotch=None, rim_clean=False):
+# A lining under part of a piece's edge (GREAVE_LINE, s17 lead; the
+# coordinator's ruling on fin1's dark slit over her heel): dark leather from
+# just inside the edge (spec[3] in, under the plate) down toward her skin,
+# spec[0] short of it and at most spec[1] of the way, eased in over spec[2]
+# where a run of the chosen edge ends. `sel(pos, loop)` picks the loops.
+# Like the Warden cups' CUP_LINE: closed from the inside, the plate's own
+# form and edge are as judged; the lining rides with the plate's weights.
+GREAVE_LINE = [float(v) for v in os.environ.get("GREAVE_LINE", "0.0012,0.9,0.006,0.0015").split(",")]
+
+
+def edge_lining(name, pos, at, tris, spec, sel):
+    if spec[0] <= 0:
+        return None
+    loops = [np.array(lp) for lp in edge_loops(tris) if sel(pos, lp)]
+    tree_ = cKDTree(pos)
+    LP, LW, LT = [], [], []
+    for run in loops:
+        k_ = len(run)
+        if k_ < 4:
+            continue
+        q = pos[run]
+        qq = np.vstack([q[-1:], q, q[:1]])
+        tg = (qq[2:] - qq[:-2])
+        tg /= np.maximum(np.linalg.norm(tg, axis=1), 1e-9)[:, None]
+        n_ = at[run, :3] / np.maximum(np.linalg.norm(at[run, :3], axis=1), 1e-9)[:, None]
+        inn = np.cross(n_, tg)
+        inn /= np.maximum(np.linalg.norm(inn, axis=1), 1e-9)[:, None]
+        m_ = k_ // 2
+        if at[tree_.query(q[m_] + inn[m_] * 0.004)[1], -1] < at[tree_.query(q[m_] - inn[m_] * 0.004)[1], -1]:
+            inn = -inn
+        a_ = q + inn * spec[3] - n_ * 0.0003
+        sk_ = np.array([SKIN_BVH.find_nearest(Vector(v))[0][:] for v in a_])
+        L_ = np.linalg.norm(sk_ - a_, axis=1)
+        f_ = np.clip((L_ - spec[0]) / np.maximum(L_, 1e-6), 0, spec[1])
+        b_ = a_ + (sk_ - a_) * f_[:, None]
+        o_ = sum(len(x) for x in LP)
+        nx = [(i + 1) % k_ for i in range(k_)]
+        LP.append(np.vstack([a_, b_]))
+        LW.append(np.vstack([at[run, 3:3 + NB]] * 2))
+        LT += [[o_ + i, o_ + nx[i], o_ + k_ + nx[i]] for i in range(k_)] + [[o_ + i, o_ + k_ + nx[i], o_ + k_ + i] for i in range(k_)]
+        print("EDGE LINING %s: %d points round its edge; the plate %.1f-%.1f mm off her there, the lining %.1f mm deep at most"
+              % (name, k_, L_.min() * 1000, L_.max() * 1000, (L_ * f_).max() * 1000))
+    if not LP:
+        return None
+    return np.vstack(LP), np.vstack(LW), np.array(LT)
+
+
+def piece(name, field, mkey, lift=0.003, thick=0.003, smooth=0, bevel=0.0012, trim=None, clear=None, soften=3, dome=False, keep_off=("Head", "neck_01"), cut=None, iron=0, hull=None, studs=None, budget=None, filled=False, edge=30, slot=True, bridge=False, bind=True, rigid=None, stiff=None, studs_off=None, weigh=None, hold=None, crotch=None, rim_clean=False, line=None):
     """A region of her skin made into a piece of her outfit. `rigid`, a
     centre, makes it a rigid plate: a fair dome round that centre (shell())
     on one blend of bones throughout, so it moves as one piece. `trim`, as
@@ -2583,7 +2630,11 @@ def piece(name, field, mkey, lift=0.003, thick=0.003, smooth=0, bevel=0.0012, tr
         # (`rim_clean`: slivers and folds at its edge dropped, see rim_cleaned)
         pos, at, tris = rim_cleaned(name, pos, at, tris)
     SHEET[name] = (pos.copy(), tris.copy(), at[:, 3:3 + NB].copy(), thick)
+    lining = edge_lining(name, pos, at, tris, line[0], line[1]) if line is not None else None
     made = [finish(name, pos, at[:, 3:3 + NB], tris, mkey, thick, bevel, budget or (8000 if dome else 3000))] + beads
+    if lining is not None:
+        # (`line`: a dark leather lining under the chosen edge, see edge_lining)
+        made.append(finish(name + "_lining", lining[0], lining[1], lining[2], "darkleather", 0.0012, 0.0004, 10 ** 6))
     if hold is not None and len(held):
         # (the held edge as built, for her skin's tuck under it: BODY_OUT)
         made[0]["hold_line"] = pos[held].ravel().tolist()
@@ -2654,6 +2705,8 @@ LEO_ONE_W = tuple(float(v) for v in os.environ.get("LEO_ONE_W", "0.0185,0.016,0.
 LEO_ONE_STEEP = float(os.environ.get("LEO_ONE_STEEP", "0.96"))
 LEO_ONE_LIFT = float(os.environ.get("LEO_ONE_LIFT", "0.001"))
 LEO_ONE_Z = tuple(float(v) for v in os.environ.get("LEO_ONE_Z", "0.02,0.03").split(","))
+# (LEO_ONE_LAY: the laid sheet eased in from LEO_ONE_LAY[0] down to LEO_ONE_LAY[1] over the crotch)
+LEO_ONE_LAY = tuple(float(v) for v in os.environ.get("LEO_ONE_LAY", "0.012,0.002").split(","))
 PIECE_SRC = {}   # (a piece cut with `crotch`: its sheet's skin points and normals, before lifting)
 # (LEO_ONE_TUCK: her skin under the one-piece's crotch tucked no deeper than this. The
 # built gusset tucked her not at all (its 'hides' was cleared as it joined the corset's
@@ -3936,7 +3989,8 @@ def warden():
         out += [
             *piece(f"warden.pauldron_{sd}", cap(shoulder(sd), 0.11), "steel", lift=0.012, thick=0.004, smooth=14, trim=gold(0.01), studs="gold", rigid=head(f"upperarm_{sd}")),
             *piece(f"warden.vambrace_{sd}", limb(sd, ELBOW_S + 0.05, WRIST_S - 0.01, legs=False), "steel", lift=0.006, smooth=8, trim=gold(), studs="gold"),
-            *piece(f"warden.greave_{sd}", limb(sd, KNEE_S + 0.03, ANKLE_S + 0.01, front_dip=0.04), "steel", lift=0.008, smooth=12, trim=gold(), studs="gold", rim_clean=GREAVE_RIM),
+            *piece(f"warden.greave_{sd}", limb(sd, KNEE_S + 0.03, ANKLE_S + 0.01, front_dip=0.04), "steel", lift=0.008, smooth=12, trim=gold(), studs="gold", rim_clean=GREAVE_RIM,
+                   line=(GREAVE_LINE, lambda p_, lp_: p_[lp_, 2].mean() < p_[:, 2].mean())),
             *piece(f"warden.knee_{sd}", cap(LEG[sd][1] + np.array([0, -0.06, 0]), 0.06), "steel", lift=0.016, thick=0.004, smooth=12, trim=gold(0.006)),
             # (the sabaton a made shoe, lofted as the Ranger's boot is, toe box,
             # welted sole and heel, its top under the greave: laid on her foot it
@@ -4932,7 +4986,7 @@ def arcanist():
     # ironed (an arch so narrow sagged into the slot))
     def one_zone(q):
         z_ = q[:, 2]
-        return (np.maximum(ramp(-z_, -(CROTCH + 0.012), -(CROTCH + 0.002)), ramp(q[:, 1], CROTCH_Y, CROTCH_Y + 0.01))
+        return (np.maximum(ramp(-z_, -(CROTCH + LEO_ONE_LAY[0]), -(CROTCH + LEO_ONE_LAY[1])), ramp(q[:, 1], CROTCH_Y, CROTCH_Y + 0.01))
                 * ramp(-np.abs(q[:, 0]), -0.05, -0.04) * ramp(-z_, -(CROTCH + 0.06), -(CROTCH + 0.05)))
     # (in front of the slot, where LEO_ONE_DEPTH's line decides, kept down its walls
     # whatever their slope: cut there by |N_x| too, the walls' patches of steeper skin
