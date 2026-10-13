@@ -8,6 +8,7 @@ The one page of what's current. Every lead starts from the latest `claude/vigila
 - **Animation worktree** agent-af8dbda3195e438e4 is merged but locked: unlock and remove with wt_remove.ps1, or reuse it for the next animation lead.
 - **Not animation's, from judge 49:** purple greave speckle onto her toes, an orange spot on each cup, a pale sliver on the right of her neck (outfits and face).
 - **Stopped (filled in as each lead stops):**
+  - **outfits: PAUSED at worktree-agent-a5ca10091b08dc429@7b4c0590** (NOT merged; build clasp5/D1 with the leotard hold uncommitted on purpose, unjudged; glove, leotard and clasp D2 are ON by default in code but unjudged: judge or gate each before a merge). Handoff docs/handoff/outfits.md "Start here" on that branch. Next: glove judge; clasp D2 build (25 deg tips on the binding; fallback 20, then a smooth U with the stone); leotard softer tuck near the edge (slivers and sawtooth in four clips); Ranger boot (hide foot skin inside the boot); gold warm floor to a judge (off by default); `run.sh all` flat for the legal sign-off. Scratch: 33ad5b17's outfits\.
 
 ## 12 October, late night: coordinator 33ad5b17 state (keep current; restart here)
 - **Merged today:** animation's three signed-off clips (dd541c17: reach_coals, lie_side_wake, sit_back_heels; C01 notes in docs/team/cinematics.md); the close-up camera (d31fefa6: wheel in town, idle close-up; worktree removed). 844 tests.

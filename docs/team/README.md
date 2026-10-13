@@ -105,6 +105,6 @@ The main session keeps this current. It is the address list for SendMessage. Ret
 | Loot and itemisation (paused, built and merged; docs/handoff/loot.md for a successor) | — | docs/team/loot.md |
 | Creatures and models (our own boar first, then MODELS_TO_MAKE.md) | af551cacc6292152f | docs/team/creatures.md |
 | Story editor (paused after notes 02 at 435k; a fresh editor reads the next draft) | — | docs/story/EDITORIAL_LETTER.md |
-| Heroine body and outfits (now a lead of its own; was the main session's) | aa5ebc771a7548b00 (RUNNING 12 Oct night, successor 14, worktree agent-a5ca10091b08dc429 from b9463b84; glove, gold, two-half clasp, cup edge) | docs/team/outfits.md |
+| Heroine body and outfits (now a lead of its own; was the main session's) | PAUSED 13 Oct early (handoff docs/handoff/outfits.md on worktree-agent-a5ca10091b08dc429@7b4c0590; nothing judged yet; see RESUME) | docs/team/outfits.md |
 | Camera close-up (wheel zoom in town, idle close-up; the owner, 12 Oct) | DONE, merged 12 Oct night (d31fefa6; worktree removed). Open: named NPCs and townsfolk walking up beside her during a close-up (keep-out covers only town walkers behind her); re-judge walkers day and night. Hook for sheathing: `CloseUp.Situation` / `CloseUp.Threat` in godot/logic/Play/CloseUp.cs | this row |
 | Marionette, the character app (a tool: idea to engine; ease like Meshy, quality like Maya; one-click AI-assisted fixing) | — (paused; status page is its own HANDOFF.md "Start here") | Marionette/HANDOFF.md, docs/HISTORY.md "The goal" |
