@@ -52,7 +52,12 @@ public partial class PlayerView : Node3D
     readonly bool mine;
     readonly OwnClips own = OwnClips.Her;
     readonly HerCarriage? carriage;
-    readonly float runSpeed, sprintSpeed;
+    float runSpeed;
+    readonly float sprintSpeed;
+    PersonView? view;
+    // Weapons sheathed in town (Play/Sheath.cs): fed each frame from the close-up's situation (Calm).
+    readonly Sheath sheath = new();
+    bool entered, safeNow, threatNow, actedNow;
     bool upperNative, fullNative, fullSoft;
     float heading, turnRate, aim, aimHold, lastSpeed, accel;
     // Standing and running, for her breaks and her breath.
@@ -65,6 +70,7 @@ public partial class PlayerView : Node3D
         Name = "Survivor";
         var v = new PersonView(lo.Person, new World.Held { Right = lo.Arms.Right, Left = lo.Arms.Left, Forearm = lo.Arms.Forearm }, 0.8);
         person = v.Person;
+        view = v;
         AddChild(v);
         if (person.Own is { } o) own = o;
         mine = person.Own != null;
@@ -288,9 +294,38 @@ public partial class PlayerView : Node3D
 
     public void LevelFlare() => flare = 1;
 
+    /// <summary>Whether she carries her pieces sheathed now.</summary>
+    public bool Sheathed => sheath.Sheathed;
+
+    /// <summary>Where she stands this frame (Game.UpdateCloseUp): a safe place, or anything hostile near. The
+    /// first call is the place just entered: sheathed at once where it is safe. Only a calling with a town idle
+    /// (idle_&lt;calling&gt;_town) sheathes; the rest stay armed.</summary>
+    public void Calm(bool safe, bool threat)
+    {
+        safeNow = safe && mine && own.Has($"idle_{person.Calling}_town");
+        threatNow = threat;
+        if (entered) return;
+        entered = true;
+        sheath.Enter(safeNow);
+        if (sheath.Sheathed) Mount(true);
+    }
+
+    /// <summary>Her pieces at the sockets or in her hands, and her stand and run to match.</summary>
+    void Mount(bool sheathed)
+    {
+        view?.Sheathe(sheathed);
+        if (!mine || idleNode == null || runNode == null) return;
+        var kind = sheathed ? "town" : null;
+        idleNode.Animation = People.Clip(person, loadout.Arms.Idle, kind);
+        var run = People.Clip(person, "Jog_Fwd_Loop", kind);
+        runNode.Animation = run;
+        runSpeed = run.StartsWith(own.Prefix) ? own.Speed(run[own.Prefix.Length..]) * person.Root.Scale.X : 5.3f;
+    }
+
     /// <summary>An art used: the hands that go with it.</summary>
     public void OnAbility(string id)
     {
+        actedNow = true;
         switch (id)
         {
             case "mirror_step" or "echo_step" or "echo_recall" or "time_slip" or "blink":
@@ -311,6 +346,7 @@ public partial class PlayerView : Node3D
     /// the angle it went: the hands that loosed it, timed to it.</summary>
     public void OnMuzzle(double angle)
     {
+        actedNow = true;
         if (!mine || dead) return;
         var clip = person.Kind switch { "crossbow" => "crossbow_shoot", "wand" => "cast_flick", "staff" => "cast_bolt", "daggers" => "throw", _ => "" };
         // (Several weapons may loose at once: one gesture at a time, and
@@ -388,6 +424,13 @@ public partial class PlayerView : Node3D
             return;
         }
         float sp = (float)Mathf.Sqrt(p.Vx * p.Vx + p.Vz * p.Vz);
+        // Sheathed in a quiet town, drawn at once for a threat, a blow, a skill or a cast.
+        if (entered)
+        {
+            bool acting = actedNow || (p.AttackAnim is { } swung && swung.T != lastAttack);
+            actedNow = false;
+            if (sheath.Update(dt, safeNow, threatNow, acting)) Mount(sheath.Sheathed);
+        }
         // Face where you are going, or where you just struck (she, moving,
         // keeps her legs' line and turns her back to the blow instead).
         aimHold -= (float)dt;
@@ -529,6 +572,7 @@ public partial class PlayerView : Node3D
         // (A breath is caught on stopping, or not at all.)
         if (stillT > 1.0) ranFor = 0;
         bool calm = b.NearestHostile(p.X, p.Z, 14) == null && (!Busy || fullSoft);
+        if (sheath.Sheathed) { breakAt = Mathf.Max((float)breakAt, (float)stillT + 4); return; }
         if (!calm) { breakAt = Mathf.Max((float)breakAt, (float)stillT + 4); return; }
         if (ranFor > 6 && stillT > 0.75)
         {

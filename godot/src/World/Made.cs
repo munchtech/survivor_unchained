@@ -196,6 +196,42 @@ public static class Made
         return root;
     }
 
+    /// <summary>A sword's scabbard: dark leather over a wood core in a flattened lens (6 by 2.4 cm at the
+    /// throat, tapering to 4 by 1.8), the blade and 3 cm long; an aged-metal throat band (4 cm) and a pointed
+    /// chape (6.5 cm); two small strap loops for the belt near the throat on the outer side (+Z).
+    /// The throat is at the origin, the scabbard running along +Y (the blade's way).</summary>
+    public static Node3D Scabbard(float bladeLength)
+    {
+        float len = bladeLength + 0.03f;
+        const float throat = 0.04f, chape = 0.065f;
+        var root = new Node3D { Name = "scabbard" };
+        // Half-width and half-thickness down its length.
+        static float Wide(float y, float len) => Mathf.Lerp(0.030f, 0.020f, Mathf.Clamp(y / len, 0, 1));
+        static float Thick(float y, float len) => Mathf.Lerp(0.012f, 0.009f, Mathf.Clamp(y / len, 0, 1));
+        Vector3 Flat(Vector3 p) => new(p.X * Wide(p.Y, len), p.Y, p.Z * Thick(p.Y, len));
+        // Leather over the wood core: the body, rings 16 round, 14 along.
+        var body = new Build();
+        var prof = new List<float> { 0, 0 };
+        for (int j = 0; j < 14; j++) { prof.Add(1); prof.Add(len * j / 13f); }
+        prof.Add(0); prof.Add(len);
+        Lathe(body, Pts(prof.ToArray()), 20, null, Flat);
+        Add(root, body, Mat("#3b2618", 0, 0.75f));
+        // The throat band and the chape, a little proud of the leather.
+        var metal = new Build();
+        Lathe(metal, Pts(1.0f, -0.004f, 1.14f, -0.004f, 1.14f, throat * 0.5f, 1.14f, throat, 1.0f, throat + 0.004f), 20, null, Flat);
+        Lathe(metal, Pts(1.0f, len - chape - 0.004f, 1.12f, len - chape, 1.12f, len - chape * 0.7f, 1.0f, len - chape * 0.4f, 0.7f, len - chape * 0.18f, 0.3f, len - chape * 0.05f, 0, len + 0.004f), 20, null, Flat);
+        Add(root, metal, Mat("#8a7a5a", 0.8f, 0.35f));
+        // Two strap loops on the outer face, the belt passing through them.
+        var straps = new Build();
+        foreach (float y in new[] { 0.085f, 0.17f })
+        {
+            float z0 = Thick(y, len) + 0.004f;
+            Tube(straps, Path(14, t => new Vector3(0, y + 0.02f * Mathf.Cos(t * Mathf.Tau), z0 + 0.007f + 0.007f * Mathf.Sin(t * Mathf.Tau)), true), 0.004f, 6, true);
+        }
+        Add(root, straps, Mat("#3b2618", 0, 0.75f));
+        return root;
+    }
+
     /// <summary>The Grave Tether: blackwood, a claw of bone at its head
     /// clutching a dark light, a coil of it winding down the shaft.</summary>
     public static Node3D DarkWand()

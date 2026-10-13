@@ -373,16 +373,20 @@ func weapon(skel, kind):
 	steel.roughness = 0.3
 	var wood = StandardMaterial3D.new()
 	wood.albedo_color = Color(0.35, 0.22, 0.12)
+	# SHEATH=1: the pieces at their sockets (the "sheathed" entries ArmsDump writes: the socket's bone, the
+	# piece with its scabbard in that bone's space) instead of the hands; one with no socket stays in hand.
+	var sheathed = data.get("sheathed", {}) if env("SHEATH", "") != "" else {}
 	for key in PIECES.get(kind, []):
 		if not data.has(key):
 			print("WEAPON: no piece ", key)
 			continue
-		var bone = key.split("@")[1]
+		var piece = sheathed[key] if sheathed.has(key) else data[key]
+		var bone = piece["bone"] if sheathed.has(key) else key.split("@")[1]
 		var verts = PackedVector3Array()
-		for v in data[key]["v"]:
+		for v in piece["v"]:
 			verts.append(Vector3(v[0], v[1], v[2]))
 		var idx = PackedInt32Array()
-		for t in data[key]["t"]:
+		for t in piece["t"]:
 			idx.append(int(t[0]))
 			idx.append(int(t[1]))
 			idx.append(int(t[2]))

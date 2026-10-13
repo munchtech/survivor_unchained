@@ -50,6 +50,7 @@ public partial class Game
         var p = Battle?.Player;
         bool moving = p != null && p.Vx * p.Vx + p.Vz * p.Vz > 0.16;
         var sit = new CloseUp.Situation(!zone.Combat, held, Battle is { } b && CloseUp.Threat(b), moving);
+        scene.Player?.Calm(sit.Safe, sit.Threat);
         if (controls.Touched) { controls.Touched = false; closeUp.Input(); }
         double notches = controls.Wheel;
         controls.Wheel = 0;

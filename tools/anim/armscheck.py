@@ -27,6 +27,12 @@ belt, skirt: the garment's thickness over her skin, motion.py's cover, laid on
 the nearest skin point; the holding arm's own garment is left out as its skin
 is): outfit_mm per row, 0 when the piece clears the garment. Judge 46: a rim
 on the cup reads as contact though the skin is clear.
+
+--sockets [clip ...] [--step N] [--keep]: the weapons SHEATHED (by kind: Arms.cs Sockets). Fits
+godot/art/anim/socket_clearance.json ({outfit: {socket: metres}}: the garment's thickness at each socket
+plus 5 mm air, for warden, arcanist, reaver, ranger and none) and prints, per kind x outfit, the worst mm
+into her skin / into the outfit with that clearance, over the clips (default: idle_<calling> and any
+*_town clip). --keep measures with the file as it is. Needs the "sheathed" key of arms_local.json (ArmsDump).
 """
 from __future__ import annotations
 
@@ -45,7 +51,7 @@ sys.path.insert(0, str(HERE))
 
 import skin  # noqa: E402
 from skin import Body  # noqa: E402
-from motion import Measure  # noqa: E402
+from motion import Measure, Surface  # noqa: E402
 
 DATA = HERE / "data"
 OUTDIR = HERE / "out"
@@ -126,7 +132,7 @@ class Checker:
         self.cover = self.m._cover(outfit) if outfit else None
         self.I = self.b.sk.index
         raw = json.loads(Path(arms or DATA / "arms_local.json").read_text())
-        self.local = {k: (np.array(d["v"], float), np.array(d["t"], int)) for k, d in raw.items()}
+        self.local = {k: (np.array(d["v"], float), np.array(d["t"], int)) for k, d in raw.items() if "v" in d}
         self.pts = {k: sample(*vt) for k, vt in self.local.items()}
         self.coarse = {}
         for k, q in self.pts.items():
@@ -302,6 +308,134 @@ def _work(job):
             rows.append(row)
     return name, None, rows
 
+# ------------------------------------------------------------------ sockets --
+# Weapons sheathed (Arms.Sheathed: godot/src/Actors/Arms.cs, by KIND). ArmsDump writes, under "sheathed", every kind's
+# piece at its bare socket in the socket bone's space, with its socket name and outward normal. --sockets
+#   (a) fits godot/art/anim/socket_clearance.json = {outfit: {socket: metres}}: for each outfit (and 'none') and each
+#       socket, the garment's thickness over her skin along the socket's normal (motion.py's cover, the 90th percentile
+#       over her skin round the socket point, facing out) plus AIR; the game pushes the socket out by it, and
+#   (b) measures every kind at its socket (pushed by that file) against every outfit, over the clips: worst mm into her
+#       skin and into the outfit, per kind x outfit. A new asset needs only its Spec row (file, kind): run it.
+CLEARANCE = HERE.parent.parent / "godot" / "art" / "anim" / "socket_clearance.json"
+SOCKET_OUTFITS = ("warden", "arcanist", "reaver", "ranger", "none")
+AIR = 0.005      # m, air between the socket and the garment
+SOCKET_REACH = 0.06   # m, round the socket's normal line, the skin the garment is read on
+CALLINGS = ("warden", "arcanist", "reaver", "stalker")
+
+
+class SocketChecker(Checker):
+    def __init__(self, outfit, arms=None):
+        super().__init__(None if outfit == "none" else outfit, arms)
+        self.outfit = outfit
+        raw = json.loads(Path(arms or DATA / "arms_local.json").read_text()).get("sheathed", {})
+        self.sheathed = {}
+        for key, d in raw.items():
+            self.sheathed[key] = dict(bone=d["bone"], kind=d["kind"], socket=d["socket"], normal=np.array(d["normal"], float),
+                                      mount=np.array(d["mount"], float), v=np.array(d["v"], float), t=np.array(d["t"], int))
+        self.pts_s = {k: sample(d["v"], d["t"]) for k, d in self.sheathed.items()}
+        self.body = skin_surface(self)
+
+    def fit(self, G, clearance_air=AIR):
+        """{socket: metres} for this outfit, read on the pose G."""
+        b, m = self.b, self.m
+        P = b.pose(G)
+        N = skin._normals(P, m.Tskin)
+        cover = self.cover if self.cover is not None else np.zeros(len(P))
+        used = m.skin
+        out = {}
+        for key, d in self.sheathed.items():
+            if d["socket"] in out or key.endswith("@hand_l"):
+                continue
+            M = G[self.I[d["bone"]]]
+            p = M[:3, :3] @ d["mount"][:, 3] + M[:3, 3]
+            n = M[:3, :3] @ d["normal"]
+            n /= np.linalg.norm(n)
+            r = P[used] - p
+            along = r @ n
+            lateral = np.linalg.norm(r - along[:, None] * n, axis=1)
+            sel = (lateral < SOCKET_REACH) & (np.abs(along) < 0.12) & (N[used] @ n > 0.3)
+            thick = float(np.percentile(cover[used][sel], 90)) if sel.any() else 0.0
+            out[d["socket"]] = round(thick + clearance_air, 4)
+        return out
+
+    def measure_clip(self, name, folder, clearance, step=1):
+        """{key: (worst mm into skin, worst mm into outfit)} over the clip."""
+        b = self.b
+        Gs = b.frames(b.clip(name, folder))
+        res = {k: [0.0, 0.0] for k in self.sheathed}
+        for f in range(0, len(Gs), step):
+            G = Gs[f]
+            P = b.pose(G)
+            self.body.pose(P)
+            for k, d in self.sheathed.items():
+                push = d["normal"] * clearance.get(d["socket"], 0.0)
+                M = G[self.I[d["bone"]]]
+                Q = (self.pts_s[k] + push) @ M[:3, :3].T + M[:3, 3]
+                keep, near, _ = self.measure(P, self.body, Q)
+                res[k][0] = max(res[k][0], float(keep.max()))
+                if self.cover is not None:
+                    dd, nr = self.body.signed(P, Q, reach=0.14, k=8)
+                    ok = np.isfinite(dd) & (dd > -0.002)
+                    od = np.zeros(len(Q))
+                    od[ok] = (self.cover[nr[ok]] - dd[ok]) * 1000.0
+                    j = int(keep.argmax())
+                    deep = float(keep[j] + 1000.0 * self.cover[near[j]]) if keep[j] > 0 else 0.0
+                    res[k][1] = max(res[k][1], float(od.max()), deep)
+        return res
+
+
+def skin_surface(ck):
+    """The whole of her skin as one surface (the arms included, nothing left out, for a piece nobody holds)."""
+    surf = Surface(ck.m.Tskin, len(ck.b.P))
+    surf.winding = lambda P, Q: np.ones(len(Q))
+    return surf
+
+
+def _socket_job(job):
+    outfit, folder, names, step, arms, keep = job
+    ck = SocketChecker(outfit, arms)
+    folder = Path(folder)
+    first = ck.b.frames(ck.b.clip(names[0], folder))[0]
+    fitted = ck.fit(first)
+    clr = (json.loads(CLEARANCE.read_text()).get(outfit, {}) if keep and CLEARANCE.exists() else fitted)
+    worst = {k: [0.0, 0.0] for k in ck.sheathed}
+    for n in names:
+        for k, (a, o) in ck.measure_clip(n, folder, clr, step).items():
+            worst[k] = [max(worst[k][0], a), max(worst[k][1], o)]
+    kinds = {}
+    for k, w in worst.items():
+        kd = ck.sheathed[k]["kind"]
+        kinds[kd] = [max(kinds.get(kd, [0, 0])[0], w[0]), max(kinds.get(kd, [0, 0])[1], w[1])]
+    return outfit, fitted, kinds, {k: (ck.sheathed[k]["kind"], ck.sheathed[k]["socket"]) for k in ck.sheathed}
+
+
+def run_sockets(a):
+    t0 = time.time()
+    folder = Path(a.folder) if a.folder else OUTDIR / "clips"
+    names = a.clips or ([f"idle_{c}" for c in CALLINGS if (folder / f"idle_{c}.json").exists()] + sorted(p.stem for p in folder.glob("*_town.json")))
+    if not names:
+        sys.exit(f"no clips in {folder}")
+    jobs = [(o, str(folder), names, a.step, a.arms, a.keep) for o in SOCKET_OUTFITS]
+    table, kinds, info = {}, {}, {}
+    with ProcessPoolExecutor(max_workers=min(a.jobs, len(jobs))) as ex:
+        for outfit, fitted, kd, inf in ex.map(_socket_job, jobs):
+            table[outfit], kinds[outfit], info = fitted, kd, inf
+            print(f"{outfit} {time.time() - t0:.0f}s", file=sys.stderr, flush=True)
+    if not a.keep:
+        CLEARANCE.parent.mkdir(parents=True, exist_ok=True)
+        CLEARANCE.write_text(json.dumps(table, indent=1) + "\n")
+        print(f"wrote {CLEARANCE}")
+    socks = sorted({s for _, s in info.values()})
+    print("clearance (mm) " + "".join(f"{o:>10}" for o in SOCKET_OUTFITS))
+    for s in socks:
+        print(f"  {s:14}" + "".join(f"{table[o].get(s, 0) * 1000:10.1f}" for o in SOCKET_OUTFITS))
+    print(f"worst mm into skin / into outfit over {', '.join(names)} (step {a.step})")
+    print(f"  {'kind':10} {'socket':10}" + "".join(f"{o:>14}" for o in SOCKET_OUTFITS))
+    for kd in sorted({k for k, _ in info.values()}):
+        s = next(s for k, s in info.values() if k == kd)
+        print(f"  {kd:10} {s:10}" + "".join(f"{kinds[o][kd][0]:7.1f}/{kinds[o][kd][1]:<6.1f}" for o in SOCKET_OUTFITS))
+    print(f"{len(names)} clips, {time.time() - t0:.0f} s")
+
 
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
@@ -314,7 +448,11 @@ def main():
     ap.add_argument("--jobs", type=int, default=10, help="clips measured at once (processes)")
     ap.add_argument("--outfit", choices=("warden", "arcanist", "reaver", "ranger"))
     ap.add_argument("--arms", help="another arms_local.json (an older mount, to compare)")
+    ap.add_argument("--sockets", action="store_true", help="fit art/anim/socket_clearance.json and measure every weapon kind sheathed, per outfit")
+    ap.add_argument("--keep", action="store_true", help="with --sockets: measure with the clearance file as it is (no refit, no write)")
     a = ap.parse_args()
+    if a.sockets:
+        return run_sockets(a)
     t0 = time.time()
     folder = Path(a.folder) if a.folder else OUTDIR / "clips"
     names = a.clips or sorted(p.stem for p in folder.glob("*.json"))
