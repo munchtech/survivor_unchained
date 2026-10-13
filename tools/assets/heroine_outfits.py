@@ -4693,7 +4693,10 @@ def arcanist():
     # GLOVE_TIP_BEND), eased over at least GLOVE_TIP_EASE, its hull taken
     # GLOVE_TIP_HULL past it; rounded by GLOVE_TIP_TAUBIN rounds and held
     # GLOVE_TIP_FLOOR off her; Loop-divided GLOVE_TIP_SUB times in finish())
-    GLOVE_TIP_BEND = float(os.environ.get("GLOVE_TIP_BEND", "0.95"))
+    # (GLOVE_TIP_BEND off (0) by default: her skin's weights fade from the last
+    # bone from 5 to 19 mm short of the tip, unevenly between her hands)
+    GLOVE_TIP_BEND = float(os.environ.get("GLOVE_TIP_BEND", "0"))
+    GLOVE_TIP_FAIR = int(os.environ.get("GLOVE_TIP_FAIR", "4"))
     GLOVE_TIP_DIP = float(os.environ.get("GLOVE_TIP_DIP", "0.002"))
     GLOVE_TIP_EASE = float(os.environ.get("GLOVE_TIP_EASE", "0.004"))
     GLOVE_TIP_HULL = float(os.environ.get("GLOVE_TIP_HULL", "0.002"))
@@ -4799,6 +4802,10 @@ def arcanist():
         # outline. Taubin's rounds weighted by the cap; any point that comes
         # nearer her than GLOVE_TIP_FLOOR put back out along her normal.)
         kc = glove_tip_k(p0, sd)
+        # (and GLOVE_TIP_FAIR rings past it, fading: the cap's edge stood as a
+        # kink, up to 59 deg at 15-21 mm from the pinky's tip, fin1)
+        for _ in range(GLOVE_TIP_FAIR):
+            kc = np.maximum(kc, 0.75 * (A_ @ kc))
         for _ in range(GLOVE_TIP_TAUBIN):
             for lam in (0.5, -0.53):
                 x = x + (lam * kc)[:, None] * (A_ @ x - x)
