@@ -3673,6 +3673,12 @@ PLUNGE_BAND = float(os.environ.get("PLUNGE_BAND", 0.028))   # (how far from the 
 PLUNGE_TRIM = os.environ.get("PLUNGE_TRIM", "")   # ("down": the owner's option, a white feathery trim along the plunge, for the side-by-side)
 PLUNGE_CLASP = os.environ.get("PLUNGE_CLASP", "1") == "1"   # (a small gold crescent clasp with a violet stone at the plunge's foot: the fallback, judge 7)
 CLASP_TH, CLASP_W = (float(v) for v in os.environ.get("CLASP", "100,0.0085").split(","))   # (the clasp's horns' reach round the foot, degrees; its width at its foot)
+# (route D, the coordinator after routes RIDE/S/A failed: a small clasp at the foot only. The horns end
+# CLASP_D_TH degrees round (50, was 100), tapered to their own tips, each drawn CLASP_D_IN in toward the
+# opening so it ends free over her skin, clear of the binding; no seat, the cut only under its foot.
+# CLASP_D=0 gives g0 back)
+CLASP_D = os.environ.get("CLASP_D", "1") == "1"
+CLASP_D_IN = float(os.environ.get("CLASP_D_IN", "0.0045"))
 DOWN_IN, DOWN_OUT = 0.004, 0.012   # (how far the trim reaches over her skin, and over the corset, from the cut)
 
 
@@ -4014,6 +4020,8 @@ def arcanist():
             TH0 = 0.5 * (lo_ + hi_)
             if reach(TH0) < SPAN - 0.001:
                 print("CLASP: WARNING the binding's edge runs out at %.0f deg; span only %.0f mm" % (np.degrees(top), reach(TH0) * 1000))
+        if CLASP_D:
+            TH0 = np.radians(float(os.environ.get("CLASP_D_TH", "50")))
         th = np.linspace(-TH0, TH0, nth)
         s_ = np.abs(th) / TH0
         wid = taper(s_)
@@ -4059,7 +4067,7 @@ def arcanist():
             outs[a] = want - base
             print("CLASP: tip at %+.0f deg: binding %.1f to %.1f mm out from the foot's centre (cloth's edge %.1f); horn's middle %.1f, %.1f mm inside its outer edge"
                   % (np.degrees(th[a]), rb0 * 1000, rb1 * 1000, r_e[a] * 1000, want * 1000, (rb1 - want) * 1000))
-        mid_ = r_e - 0.001 + np.where(th < 0, outs[0], outs[nth - 1]) * s_ ** 2 + 0.5 * wfull
+        mid_ = r_e - 0.001 + (np.where(th < 0, outs[0], outs[nth - 1]) if not CLASP_D else -CLASP_D_IN) * s_ ** 2 + 0.5 * wfull
         R_IN = mid_ - 0.5 * wid
         rr = R_IN[:, None] + wid[:, None] * uu[None, :]
         X = rr * np.sin(th)[:, None]
@@ -4090,7 +4098,7 @@ def arcanist():
         # (the horns laid down onto the binding toward their tips, 0.4 mm off
         # it: held in front of all the crescent's samples they stood off it)
         k_ = np.clip((s_ - 0.55) / 0.45, 0, 1)
-        Y = Y + (k_ * k_ * (3 - 2 * k_) * np.maximum((Y0 - Y).min(1) - 0.0004, 0))[:, None]
+        Y = Y + (0.0 if CLASP_D else 1.0) * (k_ * k_ * (3 - 2 * k_) * np.maximum((Y0 - Y).min(1) - 0.0004, 0))[:, None]
         gap = (Y0 - Y) * 1000
         print(f"CLASP: back off the cloth {gap.min():.2f} to {gap.max():.2f} mm (median {np.median(gap):.2f}; its rim {np.median(np.r_[gap[:, 0], gap[:, -1]]):.2f})")
         t = uu[None, :]
@@ -4112,6 +4120,8 @@ def arcanist():
         under = np.minimum(np.where(np.isnan(Yraw), np.inf, Yraw), np.array([[skin_y(X[a, b], Zc[a, b]) for b in range(nr)] for a in range(nth)]))
         per = np.zeros((nth, nr), bool)
         per[:, 0] = per[:, -1] = per[0, :] = per[-1, :] = True
+        if CLASP_D:
+            per &= (s_ < 0.6)[:, None]   # (D: the horns end free over her skin, no skirt drawn down to it)
         Yb = np.where(per & np.isfinite(under), np.maximum(Y, np.minimum(under - 0.0003, Y + float(os.environ.get("CLASP_PULL", "0.006")))), Y)   # (at most 6 mm: 12 mm reached her skin behind the cup, c1)
         print("CLASP: back's rim drawn down %.1f to %.1f mm onto what lies under it (inner rim median %.1f)"
               % (((Yb - Y)[per]).min() * 1000, ((Yb - Y)[per]).max() * 1000, np.median((Yb - Y)[:, 0]) * 1000))
@@ -4222,7 +4232,7 @@ def arcanist():
             # set 1.2 mm in front of its back, the horn's front buried it, j1)
             q0 = frnt[a, nr // 2].copy()
             o_ = len(tp)
-            tp += [q0 + 0.0009 * np.array([np.cos(2 * np.pi * j / nu) * np.cos(0.98 * np.pi * (k / nv - 0.5)), np.sin(0.98 * np.pi * (k / nv - 0.5)),
+            tp += [q0 + (float(os.environ.get("CLASP_D_BALL", "0.0011")) if CLASP_D else 0.0009) * np.array([np.cos(2 * np.pi * j / nu) * np.cos(0.98 * np.pi * (k / nv - 0.5)), np.sin(0.98 * np.pi * (k / nv - 0.5)),
                                             np.sin(2 * np.pi * j / nu) * np.cos(0.98 * np.pi * (k / nv - 0.5))]) for k in range(nv + 1) for j in range(nu)]
             tt_ += [(o_ + t0, o_ + t1, o_ + t2) for k in range(nv) for j in range(nu)
                     for t0, t1, t2 in ((k * nu + j, k * nu + (j + 1) % nu, (k + 1) * nu + (j + 1) % nu),
@@ -4248,7 +4258,7 @@ def arcanist():
                     q = mw @ v.co
                     r_, t_ = math.hypot(q.x, cz - q.z), math.atan2(q.x, cz - q.z)
                     ri, wi = np.interp(t_, th, R_IN), np.interp(t_, th, wid)
-                    if abs(t_) >= TH0 * 0.97 or q.y > yb or not (ri + 0.001 < r_ < ri + wi - 0.001):
+                    if abs(t_) >= TH0 * (float(os.environ.get("CLASP_D_CUT", "0.6")) if CLASP_D else 0.97) or q.y > yb or not (ri + 0.001 < r_ < ri + wi - 0.001):
                         ins = False
                         break
                 if ins:
