@@ -501,7 +501,7 @@ public partial class FlareFx
         {
             // The ring's burst (judge 2, s4: even, still confetti): the ice thrown out along the line's way,
             // stretched by its speed and lit orange through its faces, landing a metre or three on and cooling grey.
-            shards.Burst(w + Vector3.Up * 0.9f * scale, (int)(9 * scale), 7.5f, 0.16f * scale, new Color(0.32f, 0.3f, 0.27f, 0.6f), 1.3f, away, thrown: true);
+            shards.Burst(w + Vector3.Up * 0.9f * scale, (int)(5 * scale + R() * 2), 7.5f, 0.16f * scale, new Color(0.32f, 0.3f, 0.27f, 0.6f), 1.3f, away, thrown: true);
             // The line flares where it crosses a body.
             glow.Spawn(FlareBits.Kind.Fire, w + Vector3.Up * 0.45f * scale + away * 0.25f, away * 3.5f + Vector3.Up * 2.0f, 0.12f + R() * 0.05f, 0.26f * scale, new Color(0.95f, 0.38f, 0.09f), new Color(0.55f, 0.08f, 0.02f), sizeEnd: 0.6f * scale, drag: 3);
             if (R() < 0.5f)

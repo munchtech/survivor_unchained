@@ -315,15 +315,15 @@ void flare_ground(vec3 wp, inout vec3 alb, inout float rough, inout float spec, 
 		emi += vec3(1.0, 0.3, 0.05) * bo.w * crack * 0.9;
 		emi += flare_boom_light(bo);
 		// Live embers scattered in the char, breathing, dying through the Return (FLARE_LOOK §4.1).
-		// A point in one 45 cm cell in seven. (NEVER name a local in this file after a uniform of a shader that
+		// A point in one 31 cm cell in ten, clumped, of varied heat (a jittered grid of even dots read as polka, s5). (NEVER name a local in this file after a uniform of a shader that
 		// includes it: arena_ground's 'uniform vec3 ember' won over a local 'ember' and lit the whole inside of
 		// the ring salmon at 4x ready, s5. Locals here take an fl_ prefix when in doubt.)
-		vec2 ecg = w * 2.2;
+		vec2 ecg = w * 3.2;
 		vec2 eci = floor(ecg);
 		float en = fract(sin(dot(eci, vec2(127.1, 311.7))) * 43758.5453);
 		float en2 = fract(sin(dot(eci, vec2(269.5, 183.3))) * 43758.5453);
 		float er = length(fract(ecg) - 0.5 - (vec2(en, en2) - 0.5) * 0.5);
-		float fl_emb = step(0.86, en) * (1.0 - smoothstep(0.035, 0.085, er)) * smoothstep(0.35, 0.7, textureLod(flare_noise, w * 0.4 + 0.7, 0.0).r);
+		float fl_emb = step(0.9, en) * (1.0 - smoothstep(0.015, 0.05, er)) * (0.3 + 0.7 * en2 * en2) * smoothstep(0.5, 0.8, textureLod(flare_noise, w * 0.4 + 0.7, 0.0).r);
 		float breath = 0.65 + 0.35 * sin(TIME * (3.0 + 4.0 * en2) + en2 * 40.0);
 		emi += vec3(1.0, 0.33, 0.06) * fl_emb * breath * bo.z * smoothstep(0.08, 0.3, bmk.w) * (1.0 - smoothstep(2.5, 5.0, bmk.w)) * 1.3;
 		// The last word's ground flash.
@@ -486,5 +486,6 @@ float flare_crack(vec3 wp) {
 	if (bh < -0.6 || bh > 3.0) return 0.0;
 	float g = flare_glazed(wp);
 	float lines = 1.0 - smoothstep(0.0, 0.07, texture(flare_noise, wp.xz * 1.1 + wp.y * vec2(0.83, 1.37)).a);
-	return smoothstep(-0.6, -0.1, bh) * g * (0.3 + 1.4 * lines);
+	// Lines, not the whole body (a 0.3 floor lit every cracked statue a flat beige, s5).
+	return smoothstep(-0.6, -0.1, bh) * g * (0.05 + 1.8 * lines);
 }
