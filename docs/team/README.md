@@ -87,7 +87,7 @@ The main session keeps this current. It is the address list for SendMessage. Ret
 |---|---|---|
 | Voice (paused by the owner: no placeholders; final voices from ElevenLabs later) | a501b387a90d78b4e | docs/team/voice.md |
 | Story and writing (the writer: the approved rewrite, Act 1 first) | PAUSED 12 Oct late (no lead running; Act 2's first slice WIP on story/act2@5190bf0c, unjudged, don't merge; handoff docs/handoff/story.md on that branch; 566 lines locked on integration; TOLL_SPEC ready for a code lead) | docs/team/story.md |
-| Classes design (two types per calling, skill trees, ultimates on Q / right-click) | ab694b3b9e7f34b84 (RUNNING 12 Oct night, classes-8; arena phases may shorten under Flare damage, then Banked Flame re-measured) | docs/design/CLASSES.md |
+| Classes design (two types per calling, skill trees, ultimates on Q / right-click) | PAUSED 12 Oct late night: merged classes-8@6d9a123c (arena phase cut, Banked Flame 'H' passed judge 5; worktree removed). Next: phase-6 plan (CLASSES §7, 6a) to a lean judge, then the owner; handoff docs/handoff/classes.md (on integration). Owner question: should Act 1's story bosses be cut by the Flare too? | docs/design/CLASSES.md |
 | Combat, encounters, bosses, balance (paused; handoff ready at af6452e1) | — | docs/team/combat.md |
 | Animation (joints to perfection: wrists, follow-through, elbows, arms through body, sliding) | a111d9d803395a8af (RUNNING 12 Oct night, successor from bb668e1f; the shield: Warden idle cup contact, break clip, worst clips, sheathing plan) | docs/team/animation.md |
 | UI design (the HUD keystone; portraits wait on the face) | — (handoff ready) | docs/team/ui_design.md |
