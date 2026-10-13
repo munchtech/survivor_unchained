@@ -129,7 +129,9 @@ class Surface:
         # Candidate triangles: those round the nearest vertices.
         sub = self.v2t[verts.ravel()].tocoo()
         rowq = np.repeat(np.arange(len(qi)), k)[sub.row]
-        pairs = np.unique(np.stack([rowq, sub.col], 1), axis=0)
+        # (Each pair once, ordered by point then triangle: one int64 key sorts 10x faster than rows.)
+        key = np.unique(rowq.astype(np.int64) * len(self.T) + sub.col)
+        pairs = np.stack([key // len(self.T), key % len(self.T)], 1)
         cand_rows, cand_tris = pairs[:, 0], pairs[:, 1]
         tri = self.T[cand_tris]
         p = Q[qi[cand_rows]]
