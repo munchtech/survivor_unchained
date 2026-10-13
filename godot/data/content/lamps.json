@@ -3377,6 +3377,7 @@
     "butcher.the_butchers_bill"
    ],
    "gate": 3,
+   "early": true,
    "text": "Each chop strikes everything 2 m round.",
    "effects": [
     {
@@ -5954,6 +5955,7 @@
     "moonweaver.the_branding"
    ],
    "gate": 3,
+   "early": true,
    "text": "The boss's brand stays 6 s and bursts again whenever a mark passes to it.",
    "effects": [
     {

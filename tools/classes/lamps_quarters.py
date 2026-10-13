@@ -7,7 +7,8 @@ THIRD = round(1 / 3, 4)
 # The one modifier per staged Flare that Light my way may light before Act 1 is done (CLASSES §7): measured on Act 1
 # against the staged Flare without it. A Flare with no passing modifier marks none.
 EARLY = {"kindler.burns_twice.more_embers", "bulwark.bell_of_the_morning.bell_for_the_dead", "roadknife.the_roads_toll.toll_doubled",
-         "sunderer.the_long_cut.through_the_wall"}
+         "sunderer.the_long_cut.through_the_wall",
+         "butcher.the_butchers_bill.wide_chops", "moonweaver.the_branding.the_eye"}
 
 # ------------------------------------------------------------------ Flares --
 # Phase 1 plays each as its kind's plain form (Lamps.cs FlareDef); phase 2 stages the first four, phase 6 the rest.
