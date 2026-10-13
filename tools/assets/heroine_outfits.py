@@ -1053,9 +1053,13 @@ def clip(f, pos, attr, tris):
     return p2[live], a2[live], re[t2]
 
 
-def weld(pos, attr, tris, r=0.0007):
+def weld(pos, attr, tris, r=0.0007, joined=False):
     """Points closer than r made one (the cut leaves slivers by the vertices
-    it passes close to); triangles that collapse are dropped."""
+    it passes close to); triangles that collapse are dropped. `joined`: only
+    points an edge of the sheet joins (her skin folds back on itself at a
+    nail's edge and in the creases of her fingers, and a weld by distance
+    alone zipped a glove shut across those folds; thickened and bevelled,
+    the zips tore open, judge 14)."""
     if os.environ.get("WELDDUMP"):  # SOLVER1 TEMP
         global _WELD_N
         _WELD_N = globals().get("_WELD_N", 0) + 1
@@ -1070,7 +1074,13 @@ def weld(pos, attr, tris, r=0.0007):
             i = parent[i]
         return i
 
-    for i, j in cKDTree(pos).query_pairs(r):
+    pairs = cKDTree(pos).query_pairs(r, output_type="ndarray")
+    if joined and len(pairs):
+        e_ = np.sort(np.vstack([tris[:, [0, 1]], tris[:, [1, 2]], tris[:, [2, 0]]]), 1)
+        k_ = np.unique(e_[:, 0].astype(np.int64) * len(pos) + e_[:, 1])
+        ps_ = np.sort(pairs, 1)
+        pairs = pairs[np.isin(ps_[:, 0].astype(np.int64) * len(pos) + ps_[:, 1], k_)]
+    for i, j in pairs:
         a, b = find(i), find(j)
         if a != b:
             parent[max(a, b)] = min(a, b)
@@ -2409,7 +2419,7 @@ def piece(name, field, mkey, lift=0.003, thick=0.003, smooth=0, bevel=0.0012, tr
     if len(tris) == 0:
         print("EMPTY", name)
         return []
-    pos, at, tris = weld(pos, at, tris)
+    pos, at, tris = weld(pos, at, tris, joined=name in FOLD_SAFE)
     dump(name, "1clip", pos, tris, at[:, -2])
     gap_at, at = at[:, -1], at[:, :-1]
     nor = at[:, :3] / (np.linalg.norm(at[:, :3], axis=1)[:, None] + 1e-12)
@@ -2719,6 +2729,7 @@ def pinholes_filled(name, pos, wt, tris, most=0.03):
 
 RIGID_UV = {}   # (a plate's name: (centre, arm axis, unrolled round the arm?))
 ONE_ISLAND = set()   # (sheets laid out whole, one island with no seams)
+FOLD_SAFE = {"arcanist.glove_l", "arcanist.glove_r"}   # (welded only along their own edges: weld(joined))
 
 
 def finish(name, pos, wt, tris, mkey, thick, bevel, budget=3000, scraps=True):
@@ -2739,7 +2750,7 @@ def finish(name, pos, wt, tris, mkey, thick, bevel, budget=3000, scraps=True):
         # (points on top of each other made one, and the flat triangles
         # between them dropped: they have no facing, and thickened, stood
         # out as spikes)
-        pos, wt, tris = weld(pos, np.asarray(wt, float), tris, r=0.0002)
+        pos, wt, tris = weld(pos, np.asarray(wt, float), tris, r=0.0002, joined=name in FOLD_SAFE)
         tris = islands(pos, tris)
         pos, wt, tris = pinholes_filled(name, pos, wt, tris)
     # Its true edge, the sheet's border before it is thickened (both faces of
@@ -4246,6 +4257,9 @@ def arcanist():
 
     global GARTER_Z
     GARTER_Z = CROTCH + 0.2
+    # (the gloves' cuffs 4 cm up under the sleeves, which end 6 cm short of her
+    # wrists: at 2 cm a notch at the sleeve's hem showed her skin, judge 14)
+    GLOVE_TOP = float(os.environ.get("GLOVE_TOP", 0.10))
     out = [
         # (opening into the gusset at its foot, as the warden's does)
         *ribbon("arcanist.thong", back_string(CROTCH + 0.155, CROTCH + 0.012), 0.016, "plumleather", lift=0.003, thick=0.003,
@@ -4266,7 +4280,7 @@ def arcanist():
     ]
     for sd in "lr":
         out += [
-            *piece(f"arcanist.glove_{sd}", limb(sd, WRIST_S - 0.08, 9.9, legs=False), "blackleather", lift=0.0012, thick=0.001, bevel=0.0004, trim=gold(0.008), edge=30, soften=12),
+            *piece(f"arcanist.glove_{sd}", limb(sd, WRIST_S - GLOVE_TOP, 9.9, legs=False), "blackleather", lift=0.0012, thick=0.001, bevel=0.0004, trim=gold(0.008), edge=30, soften=12),
             # (her leg by where it is, not by its weights: her inner thigh is
             # partly her hips', and a weight test tore a hole there; and no
             # gap kept for the slot between her thighs, which ends above it)
