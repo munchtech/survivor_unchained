@@ -47,7 +47,9 @@ public sealed class BarrowLordStory : StoryBoss, IBound
     /// owner's call): with the Flare he fell 9 to 10% (mean) sooner; at 148 the fight is its pre-Flare length again (deft -1%, plain 0%).</summary>
     // 12 October: 148 -> 141. With the Flare's press no longer staggering a boss outright and the Toll and Burns Twice
     // measured to the other Flares' share of a boss, every calling is within 3% of the pre-Flare length (Act 1, 96 seeds, both pilots).
-    public override double HealthMul(int tier) => 141;
+    // 13 October: 141 -> 130, its pre-Flare health: the Flare now cuts a story boss's floors, and a fight with the Flare
+    // timed is ~8% shorter than the tuned length (bankers ~14%) while one without it timed stays near it (+4%; judge 6).
+    public override double HealthMul(int tier) => 130;
     /// <summary>His teeth are in his marked moves: a pilum or the gladius about a third of her own health.</summary>
     public override double Teeth => 0.22;
     protected override bool DiesAtZero => false;

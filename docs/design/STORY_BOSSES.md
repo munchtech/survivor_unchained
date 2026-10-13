@@ -25,7 +25,7 @@ The way in teaches the boss. Each beat's named foe shows one of the boss's mecha
 | The night | 10–14 min, 12 at par | the boss's ending; then back into the same night |
 
 - **No clock anywhere.** There is no survival timer and no beat timer. A player who stands still in a beat stays in it.
-- **A strong build cannot skip the boss.** Its floors are 25, 30 and 25 s, so an absurd build takes about two minutes at the least. It sees every phase, and its surplus shows as the Break.
+- **A strong build cannot skip the boss.** Its floors are 25, 30 and 25 s; a Flare cuts each by its share of the phase's health, at most half (12.5, 15 and 12.5 s; 13 October), so an absurd build takes over a minute at the least. It sees every phase, and its surplus shows as the Break.
 - **A weak build sees every move.** Each phase has a 75 s ceiling. The soft enrage comes at 4:30 and the hard one at 6:00, so a weak build meets the boss's whole fight before an enrage meets it.
 
 ### 0.2 The build she brings
