@@ -206,13 +206,22 @@ def warden_break(rig):
         (32, over("warden", hand_r=shoulder, clav_r=(2, -6), head=(-6, 0, 3)), "auto"),
         (40, over("warden", hand_r=shoulder, clav_r=(10, 6), head=(-8, 0, 6)), "auto"),
         (48, over("warden", hand_r=shoulder, clav_r=(0, 0)), "ease"),
-        # The buckler turned to her and looked over, its strap tugged.
-        (64, over("warden", hand_r=shoulder, head=(24, 22, 0), spine=(8, 4, 0),
-                  hand_l={"arc": arc_of((-0.10, -0.22, 0.26)), "pole": (1.0, -0.6, 0.2), "frame": "chest",
-                          "blade": _n(-0.6, 0.3, 0.75), "twist": 0.6}), "ease"),
-        (76, over("warden", hand_r=shoulder, head=(26, 24, 0), spine=(8, 4, 0),
-                  hand_l={"arc": arc_of((-0.10, -0.20, 0.28)), "pole": (1.0, -0.6, 0.2), "frame": "chest",
-                          "blade": _n(-0.55, 0.35, 0.75), "twist": 0.6}), "ease"),
+        # The buckler brought forward at her left side, not across her (judge
+        # 43): the wrist at her waist, the elbow swung out, so the face tilts
+        # up about 40 degrees toward her, the rim 12 cm off her breast and
+        # clear of her cup's outline from the front; her head down and left
+        # to look it over. In the game the forearm keeps to its hinge
+        # (HerJoints hands its roll to the hand), so the tilt comes from the
+        # elbow's swing, not a forearm roll; the fist keeps the carry's grip
+        # on the strap (blade and knuckles from the carry's hand on its
+        # forearm). (Turned across her chest, the 66 cm shield went 47 mm
+        # into her.)
+        (64, over("warden", hand_r=shoulder, head=(24, 20, 0), spine=(6, 6, 0),
+                  hand_l={"arc": arc_of((0.157, -0.205, 0.286)), "pole": (0.568, -0.626, -0.534), "frame": "chest",
+                          "blade": (-0.446, 0.883, 0.145), "knuckles": (-0.051, -0.186, 0.981), "twist": 1.0}), "ease"),
+        (76, over("warden", hand_r=shoulder, head=(26, 22, 0), spine=(6, 6, 0),
+                  hand_l={"arc": arc_of((0.157, -0.195, 0.286)), "pole": (0.568, -0.626, -0.534), "frame": "chest",
+                          "blade": (-0.446, 0.883, 0.145), "knuckles": (-0.051, -0.186, 0.981), "twist": 1.0}), "ease"),
         (100, over("warden"), "ease"),
     ]
     return build("idle_warden_break", rig, keys, base=base, meta={"layer": "full", "weapon": "sword+shield"})
