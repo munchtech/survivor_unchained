@@ -8,7 +8,8 @@ THIRD = round(1 / 3, 4)
 # against the staged Flare without it. A Flare with no passing modifier marks none.
 EARLY = {"kindler.burns_twice.more_embers", "bulwark.bell_of_the_morning.bell_for_the_dead", "roadknife.the_roads_toll.toll_doubled",
          "sunderer.the_long_cut.through_the_wall",
-         "butcher.the_butchers_bill.wide_chops", "moonweaver.the_branding.the_eye"}
+         "butcher.the_butchers_bill.wide_chops", "moonweaver.the_branding.the_eye",
+         "verge_hunter.one_arrow.pinned_to_the_earth", "chainbound.drag_them_under.hold_him"}
 
 # ------------------------------------------------------------------ Flares --
 # Phase 1 plays each as its kind's plain form (Lamps.cs FlareDef); phase 2 stages the first four, phase 6 the rest.

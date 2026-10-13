@@ -4115,6 +4115,7 @@
     "chainbound.drag_them_under"
    ],
    "gate": 3,
+   "early": true,
    "text": "A boss is pinned 3 s.",
    "effects": [
     {
@@ -7761,6 +7762,7 @@
     "verge_hunter.one_arrow"
    ],
    "gate": 3,
+   "early": true,
    "text": "Everything struck is rooted 2 s.",
    "effects": [
     {
