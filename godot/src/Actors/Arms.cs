@@ -184,8 +184,13 @@ public static class Arms
         // to: the shaft turned about the hand's across axis toward the fingers.
         if (!forearm && own && All[id].Lean != 0)
             basis = new Basis(Vector3.Right, Mathf.DegToRad(-All[id].Lean)) * basis;
-        return new Transform3D(basis, forearm ? new Vector3(0, 0.14f, 0) : new Vector3(-0.025f, 0.075f, 0));
+        // Her and the hero: the shield sits on the back of the forearm, not on its axis.
+        var at = forearm ? new Vector3(own ? -ShieldOff : 0, 0.14f, 0) : new Vector3(-0.025f, 0.075f, 0);
+        return new Transform3D(basis, at);
     }
+
+    /// <summary>How far the shield mount sits off the forearm bone, toward the back of the arm (m).</summary>
+    const float ShieldOff = 0.08f;
 
     /// <summary>The piece's own turn inside its mount: held pistol-fashion
     /// (a crossbow) the stock runs along the fingers, its top out of the
