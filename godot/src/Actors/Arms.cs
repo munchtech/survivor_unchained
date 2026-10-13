@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using Godot;
+using SurvivorUnchained.Play;
 
 namespace SurvivorUnchained.View;
 
@@ -23,24 +24,24 @@ public static class Arms
     /// fingers toward them (a sword's grip runs from the root of the
     /// forefinger to the heel of the hand), for those whose own clips are
     /// keyed to it (tools/anim/keyed.py GRIP), not the library's.
-    public sealed record Spec(string File, float Length, float Grip, bool Flip = false, float Roll = 0, string? Node = null, bool Pistol = false, Func<Node3D>? Build = null, float Lean = 0);
+    public sealed record Spec(string File, float Length, float Grip, bool Flip = false, float Roll = 0, string? Node = null, bool Pistol = false, Func<Node3D>? Build = null, float Lean = 0, WeaponKind Kind = WeaponKind.None);
 
     public static readonly Dictionary<string, Spec> All = new()
     {
-        ["chevalier_sword"] = new("chevalier_sword", 1.0f, 0.1f, Lean: 35),
-        ["viking_sword"] = new("viking_sword", 0.92f, 0.13f, Lean: 35),
-        ["longsword"] = new("longsword", 1.05f, 0.22f, Flip: true, Lean: 35),
-        ["zweihander"] = new("zweihander", 1.6f, 0.2f),
-        ["mace"] = new("mace", 0.75f, 0.12f, Lean: 30),
-        ["viking_axe"] = new("viking_axe", 0.8f, 0.15f, Roll: Mathf.Pi, Lean: 30),
-        ["snake_axe"] = new("snake_axe", 1.3f, 0.22f, Lean: 30),
-        ["mage_staff"] = new("mage_staff", 1.75f, 0.45f),
-        ["short_staff"] = new("mage_staff", 1.1f, 0.3f),
-        ["crossbow"] = new("crossbow", 0.85f, 0.3f, Pistol: true),
-        ["wand"] = new("", 0.38f, 0.12f, Build: Made.Wand, Lean: 30),
-        ["shield_round"] = new("shield_round", 0.66f, 0.5f),
-        ["daggers"] = new("daggers", 0.4f, 0.2f, Node: "Cube_004", Lean: 30),
-        ["dagger_b"] = new("daggers", 0.4f, 0.2f, Node: "Cube_004_01", Lean: 30),
+        ["chevalier_sword"] = new("chevalier_sword", 1.0f, 0.1f, Lean: 35, Kind: WeaponKind.Blade1H),
+        ["viking_sword"] = new("viking_sword", 0.92f, 0.13f, Lean: 35, Kind: WeaponKind.Blade1H),
+        ["longsword"] = new("longsword", 1.05f, 0.22f, Flip: true, Lean: 35, Kind: WeaponKind.Blade1H),
+        ["zweihander"] = new("zweihander", 1.6f, 0.2f, Kind: WeaponKind.Blade2H),
+        ["mace"] = new("mace", 0.75f, 0.12f, Lean: 30, Kind: WeaponKind.Blunt),
+        ["viking_axe"] = new("viking_axe", 0.8f, 0.15f, Roll: Mathf.Pi, Lean: 30, Kind: WeaponKind.Axe),
+        ["snake_axe"] = new("snake_axe", 1.3f, 0.22f, Lean: 30, Kind: WeaponKind.Axe2H),
+        ["mage_staff"] = new("mage_staff", 1.75f, 0.45f, Kind: WeaponKind.Staff),
+        ["short_staff"] = new("mage_staff", 1.1f, 0.3f, Kind: WeaponKind.Staff),
+        ["crossbow"] = new("crossbow", 0.85f, 0.3f, Pistol: true, Kind: WeaponKind.Crossbow),
+        ["wand"] = new("", 0.38f, 0.12f, Build: Made.Wand, Lean: 30, Kind: WeaponKind.Wand),
+        ["shield_round"] = new("shield_round", 0.66f, 0.5f, Kind: WeaponKind.Shield),
+        ["daggers"] = new("daggers", 0.4f, 0.2f, Node: "Cube_004", Lean: 30, Kind: WeaponKind.Dagger),
+        ["dagger_b"] = new("daggers", 0.4f, 0.2f, Node: "Cube_004_01", Lean: 30, Kind: WeaponKind.Dagger),
     };
 
     /// <summary>A weapon, normalised (a new node each call).</summary>
@@ -64,11 +65,22 @@ public static class Arms
             Keep(model, false);
         }
         var pts = new List<Vector3>();
+        Transform3D? aGrip = null, aSheath = null;
+        var tag = WeaponKind.None;
         void Walk(Node n, Transform3D at)
         {
             foreach (var c in n.GetChildren())
             {
                 var t = c is Node3D c3 ? at * c3.Transform : at;
+                // Anchors (Marionette exports carry them) and a kind tag (a glTF extra "kind", or a node named kind_<kind>).
+                if (c is Node3D)
+                {
+                    if (c.Name.ToString().StartsWith("anchor_grip")) aGrip = t;
+                    else if (c.Name.ToString().StartsWith("anchor_sheath")) aSheath = t;
+                    else if (c.Name.ToString().StartsWith("kind", StringComparison.OrdinalIgnoreCase)) tag = WeaponSockets.Parse(c.Name);
+                }
+                if (c.HasMeta("extras") && c.GetMeta("extras").Obj is Godot.Collections.Dictionary ex && ex.ContainsKey("kind"))
+                    tag = WeaponSockets.Parse(ex["kind"].ToString());
                 if (c is MeshInstance3D mi && mi.Mesh != null)
                     for (int s = 0; s < mi.Mesh.GetSurfaceCount(); s++)
                         foreach (var v in (Vector3[])mi.Mesh.SurfaceGetArrays(s)[(int)Mesh.ArrayType.Vertex]) pts.Add(t * v);
@@ -78,7 +90,9 @@ public static class Arms
         Walk(model, Transform3D.Identity);
         var (axes, mean) = Principal(pts);
         var (lng, mid) = (axes[0], axes[1]);
-        if (spec.Flip) lng = -lng;
+        // An anchor's -Y runs down the blade or haft toward the tip: it says which way is out, over the Spec's Flip.
+        if ((aGrip ?? aSheath) is { } tipAnchor) { if ((-tipAnchor.Basis.Y).Dot(lng) < 0) lng = -lng; }
+        else if (spec.Flip) lng = -lng;
         var shrt = mid.Cross(lng);
         // Extent along each new axis, and its middle.
         var basis = new[] { mid, lng, shrt };
@@ -90,15 +104,26 @@ public static class Arms
         for (int a = 0; a < 3; a++) centre += basis[a] * (lo[a] + hi[a]) / 2;
         // Rows of the turn: model axes -> (X = mid, Y = long, Z = short).
         var turn = new Basis(mid, lng, shrt).Transposed();
-        if (spec.Roll != 0) turn = new Basis(Vector3.Up, spec.Roll) * turn;
+        if ((aGrip ?? aSheath) is { } faceAnchor)
+        {
+            // An anchor's +Z is the edge or face direction: turned about the shaft to land on the piece's +Z.
+            var f = turn * faceAnchor.Basis.Z;
+            if (Mathf.Abs(f.X) + Mathf.Abs(f.Z) > 1e-4f) turn = new Basis(Vector3.Up, Mathf.Atan2(-f.X, f.Z)) * turn;
+        }
+        else if (spec.Roll != 0) turn = new Basis(Vector3.Up, spec.Roll) * turn;
         float k = spec.Length / (hi[1] - lo[1]);
         var inner = new Node3D { Name = "inner" };
         model.Position = -centre;
         inner.AddChild(model);
         inner.Basis = turn.Scaled(Vector3.One * k);
-        inner.Position = new Vector3(0, spec.Length * (0.5f - spec.Grip), 0);
+        // The grip is the origin: the anchor if the asset has one, else the Spec's Grip along the long axis.
+        inner.Position = aGrip is { } g ? -(turn * (g.Origin - centre)) * k : new Vector3(0, spec.Length * (0.5f - spec.Grip), 0);
         var holder = new Node3D { Name = $"arm:{id}" };
         holder.AddChild(inner);
+        // The sheath point (where the piece hangs from; the grip when there is no anchor for it) and the tip's height on the shaft.
+        holder.SetMeta("sheath", aSheath is { } sa ? turn * (sa.Origin - centre) * k + inner.Position : Vector3.Zero);
+        holder.SetMeta("tip", inner.Position.Y + spec.Length / 2);
+        holder.SetMeta("kind", (int)(tag != WeaponKind.None ? tag : spec.Kind));
         return holder;
     }
 
@@ -191,37 +216,62 @@ public static class Arms
 
     /* ------------------------------------------------------------ sheathed -- */
 
-    /// <summary>Where her pieces ride when she is sheathed (in town), by weapon id; one table, tuned from
-    /// the sheets (tools_scenes/anim_review.gd, SHEATH=1). Each row is written in skeleton space at rest
-    /// (+Y up, +Z her front, +X her left) as a mount would stand: the grip at `At`, the shaft (the piece's
-    /// +Y, grip toward the tip) along `Shaft`, its thickness (the piece's +Z, the shield's face, a
-    /// scabbard's outer side) toward `Thick`. A pistol-fashion piece (the crossbow) is given by its stock
-    /// instead (the piece's +Y turned to the mount's +X, see PieceTransform): `Shaft` the stock's run,
-    /// `Thick` its top. Sheathed() turns the row into the bone's space.
-    /// Mirrors: a piece in her left hand rides on the other side (a pair of axes, a sword in the left).
-    /// A missing id stays in her hand (staves, the zweihander, the snake axe, the mace).</summary>
-    sealed record Socket(string Bone, Vector3 At, Vector3 Shaft, Vector3 Thick, bool Mirrors = false);
+    /// <summary>Where her pieces ride when she is sheathed (in town), by KIND of weapon (Spec.Kind, or an asset's own
+    /// tag), never by item: a new asset needs only its Spec row. One table of named sockets (WeaponSockets.SocketOf says
+    /// which kind rides in which), tuned from the sheets (tools_scenes/anim_review.gd, SHEATH=1). Each row is written in
+    /// skeleton space at rest (+Y up, +Z her front, +X her left) as a mount would stand: the piece's SHEATH POINT (its
+    /// anchor_sheath node, else its grip) at `At`, the shaft (the piece's +Y, toward the tip) along `Shaft`, its thickness
+    /// (the piece's +Z: the shield's face, an edge's side, a scabbard's outer side) toward `Thick`. A pistol-fashion
+    /// piece (the crossbow) is given by its stock instead (the piece's +Y turned to the mount's +X, see PieceTransform):
+    /// `Shaft` the stock's run, `Thick` its top. `Normal` is the way out of her body there: the socket is pushed out along it
+    /// by the worn outfit's thickness (art/anim/socket_clearance.json, filled by tools/anim/armscheck.py --sockets).
+    /// Mirrors: a piece in her left hand rides on the other side (a pair of daggers, a sword in the left).
+    /// Sheathed() turns the row into the bone's space.</summary>
+    sealed record Socket(string Bone, Vector3 At, Vector3 Shaft, Vector3 Thick, Vector3 Normal, bool Mirrors = false);
 
     static readonly Dictionary<string, Socket> Sockets = new()
     {
-        // Round shield: across the back, its boss centred between the shoulder blades 0.14 m behind
-        // spine_03, face out (back), its top rim under the neck (66 cm across).
-        ["shield_round"] = new("spine_03", new(0, 1.22f, -0.20f), new(0, 1, 0), new(0, 0, -1)),
-        // Swords: left hip, in the scabbard (Scabbard), hilt forward and up, blade down and back about
+        // Shield: across the back, its boss centred between the shoulder blades 0.14 m behind spine_03, face out
+        // (back), its top rim under the neck (66 cm across).
+        [WeaponSockets.Back] = new("spine_03", new(0, 1.22f, -0.20f), new(0, 1, 0), new(0, 0, -1), new(0, 0, -1)),
+        // One-handed blade: left hip, in the scabbard (MakeSheathed), hilt forward and up, blade down and back about
         // 30 degrees off vertical, flat to her side (thickness out).
-        ["chevalier_sword"] = new("pelvis", new(0.21f, 1.20f, 0.10f), new(0.08f, -0.87f, -0.50f), new(1, 0, 0), Mirrors: true),
-        ["viking_sword"] = new("pelvis", new(0.21f, 1.20f, 0.10f), new(0.08f, -0.87f, -0.50f), new(1, 0, 0), Mirrors: true),
-        ["longsword"] = new("pelvis", new(0.21f, 1.20f, 0.10f), new(0.08f, -0.87f, -0.50f), new(1, 0, 0), Mirrors: true),
-        // Axe: right hip, head up, the haft down along the outside of the thigh (left hand: mirrored).
-        ["viking_axe"] = new("pelvis", new(-0.19f, 0.50f, 0.0f), new(0.06f, 1, 0), new(-1, 0, 0), Mirrors: true),
-        // Daggers: the back of the belt, flat, one each side of the spine, hilts out and blades crossing.
-        ["daggers"] = new("pelvis", new(-0.17f, 1.12f, -0.13f), new(1, 0, 0), new(0, 0, -1)),
-        ["dagger_b"] = new("pelvis", new(0.17f, 1.12f, -0.16f), new(-1, 0, 0), new(0, 0, -1)),
+        [WeaponSockets.HipBlade] = new("pelvis", new(0.21f, 1.20f, 0.10f), new(0.08f, -0.87f, -0.50f), new(1, 0, 0), new(1, 0, 0), Mirrors: true),
+        // Blunt and axe: right hip loop, head up, the haft down along the outside of the thigh (left hand: mirrored).
+        [WeaponSockets.HipLoop] = new("pelvis", new(-0.19f, 0.50f, 0.0f), new(0.06f, 1, 0), new(-1, 0, 0), new(-1, 0, 0), Mirrors: true),
         // Wand: right hip, tucked in the belt, crystal up, leaning in and forward.
-        ["wand"] = new("pelvis", new(-0.18f, 1.14f, 0.05f), new(0.15f, 0.95f, 0.25f), new(-1, 0, 0), Mirrors: true),
+        [WeaponSockets.HipBelt] = new("pelvis", new(-0.18f, 1.14f, 0.05f), new(0.15f, 0.95f, 0.25f), new(-1, 0, 0), new(-1, 0, 0), Mirrors: true),
+        // Dagger: the back of the belt, flat, one each side of the spine, hilts out and blades crossing.
+        [WeaponSockets.BeltBack] = new("pelvis", new(-0.17f, 1.12f, -0.13f), new(1, 0, 0), new(0, 0, -1), new(0, 0, -1), Mirrors: true),
         // Crossbow: slung across the back, stock rising to her right shoulder, its top out of the back.
-        ["crossbow"] = new("spine_03", new(0.10f, 1.16f, -0.17f), new(-0.6f, 0.8f, 0), new(0, 0, -1)),
+        [WeaponSockets.Sling] = new("spine_03", new(0.10f, 1.16f, -0.17f), new(-0.6f, 0.8f, 0), new(0, 0, -1), new(0, 0, -1)),
+        // Two-handed blade or axe: diagonal across the back like the sling, hilt or haft over her right shoulder (the
+        // grip high on the right), the tip down toward her left hip, flat to her back.
+        [WeaponSockets.BackDiag] = new("spine_03", new(-0.07f, 1.30f, -0.20f), new(0.25f, -0.97f, 0), new(0, 0, -1), new(0, 0, -1)),
     };
+
+    static WeaponSockets.Clearance? clearance;
+
+    /// <summary>The clearance file, read once (art/anim/socket_clearance.json); absent: no clearance anywhere.</summary>
+    static WeaponSockets.Clearance Clearance => clearance ??= WeaponSockets.Clearance.Parse(
+        FileAccess.FileExists("res://art/anim/socket_clearance.json") ? FileAccess.GetFileAsString("res://art/anim/socket_clearance.json") : null);
+
+    /// <summary>What a piece is: its tag in the asset if it has one, else the Spec's Kind.</summary>
+    public static WeaponKind KindOf(string id) => (WeaponKind)Info(id).Kind;
+
+    sealed record Facts(int Kind, Vector3 Sheath, float Tip);
+    static readonly Dictionary<string, Facts> facts = new();
+
+    static Facts Info(string id)
+    {
+        if (!facts.TryGetValue(id, out var m))
+        {
+            var w = Make(id);
+            facts[id] = m = new Facts((int)w.GetMeta("kind"), (Vector3)w.GetMeta("sheath"), (float)w.GetMeta("tip"));
+            w.Free();
+        }
+        return m;
+    }
 
     /// <summary>The bones' rest poses in skeleton space (heroine, tools/anim/data/heroine_skeleton.json): the
     /// origin and the turn about X; the hero's pelvis and spine differ by a few degrees.</summary>
@@ -231,11 +281,14 @@ public static class Arms
 
     /// <summary>Where her piece rides sheathed: the bone and the mount's transform in its space (as
     /// MountTransform's), or null if it stays in her hand. `left`: it was in her left hand.</summary>
-    public static (string Bone, Transform3D At)? Sheathed(string id, bool left = false)
+    public static (string Bone, Transform3D At)? Sheathed(string id, bool left = false, string? outfit = null)
     {
-        if (!Sockets.TryGetValue(id, out var k)) return null;
-        var at = k.At; var shaft = k.Shaft; var thick = k.Thick;
-        if (left && k.Mirrors) { at.X = -at.X; shaft.X = -shaft.X; thick.X = -thick.X; }
+        if (WeaponSockets.SocketOf(KindOf(id)) is not { } name) return null;
+        var k = Sockets[name];
+        var at = k.At; var shaft = k.Shaft; var thick = k.Thick; var normal = k.Normal;
+        if (left && k.Mirrors) { at.X = -at.X; shaft.X = -shaft.X; thick.X = -thick.X; normal.X = -normal.X; }
+        // Out of her body by the worn outfit's thickness (outfit null: the bare socket, as ArmsDump and armscheck want it).
+        if (outfit != null) at += normal * Clearance.Metres(outfit, name);
         shaft = shaft.Normalized();
         thick = (thick - shaft * thick.Dot(shaft)).Normalized();
         var third = shaft.Cross(thick);
@@ -246,10 +299,21 @@ public static class Arms
         return (k.Bone, RestOf(k.Bone).AffineInverse() * new Transform3D(basis, at));
     }
 
+    /// <summary>The socket a piece rides in and the way out of her body there, in the socket bone's space (what
+    /// tools_scenes/ArmsDump.cs writes for armscheck.py --sockets), or null if it stays in her hand.</summary>
+    public static (string Socket, Vector3 Normal)? SocketFacing(string id, bool left = false)
+    {
+        if (WeaponSockets.SocketOf(KindOf(id)) is not { } name) return null;
+        var k = Sockets[name];
+        var n = k.Normal;
+        if (left && k.Mirrors) n.X = -n.X;
+        return (name, RestOf(k.Bone).AffineInverse().Basis * n);
+    }
+
     /// <summary>Mount a weapon at its sheathed socket (a sword with its scabbard), or null if it has none.</summary>
     public static Node3D? HoldSheathed(People.Person person, string id, bool left)
     {
-        if (Sheathed(id, left) is not { } sock) return null;
+        if (Sheathed(id, left, person.Calling) is not { } sock) return null;
         var (bone, at) = sock;
         var att = new BoneAttachment3D { BoneName = bone };
         person.Skeleton.AddChild(att);
