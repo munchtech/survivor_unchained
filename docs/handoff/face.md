@@ -2,7 +2,15 @@
 
 Read `docs/team/README.md` ("Working lean", "Safety"), `RESUME.md`, `OWNER_NOTES.md` (the face's order and bar; "Neck length"), this page, then `docs/team/face.md`. Read by section (grep, then line ranges). Hand off at about 300k.
 
-## Start here (12 Oct, successor 16 handed off at about 260k; the WHOLE-FACE SHIP: judge rj2 NOT YET, two fixes left)
+## Start here (12 Oct, successor 17; the face ship, round 3)
+N = scratch `C:\Users\munch\AppData\Local\Temp\claude\C--Users-munch-Desktop-survivorsunchained\33ad5b17-6735-4f1b-843e-85f16b19e648\scratchpad\face` (KEEP until the ship merges); this round's work in `N\s17`.
+- **Done:** integration (cc8c58c0 + 76cc3142) merged in, b3c9953d; `dotnet test` 851 pass, 0 fail.
+- **Close view at night (rj2v 1):** `--head-rig off` shows the same dark jaw, rim and black nostrils (`N\s17\hr_crop3.jpg`: BEFORE | AFTER | head-rig off), so 45786361 is NOT the cause. `--close 1` only works in a town zone (waystation), not the verge; `--nohud` hides the HUD (`--perf-off hud` doesn't). Solver A ("night", tree `N\W1`, work `N\night_work`) on it.
+- **Mouth (rj2v 2-3):** solver B ("mouth", tree `N\W2`, work `N\mouth_work`): teeth in shade + Sunborn's t40 bead. W1/W2 refreshed from the worktree at b3c9953d (robocopy /E); rules for both in `N\s17\common.md`.
+- **Sunborn in play (rj2v 4), measured** (`N\s17\sb_meas.py`, waystation cam 6, BEFORE -> AFTER): face L 61.7->64.0 day, 58.9->61.6 night; chest 57.2->60.9 day, 43.9->49.2 night. Over the ~3 L* line on the chest: restore her Brown in play (a solver after A, since it's the same tone code).
+- **Then:** copy the solvers' files back, one narrow re-judge rj3 (runner-made sheets, `Context budget: 150k`), then face/ship per successor 15/16 blocks.
+
+## Start here (12 Oct, successor 16 handed off at about 260k; superseded by 17 above; the WHOLE-FACE SHIP: judge rj2 NOT YET, two fixes left)
 N = scratch `C:\Users\munch\AppData\Local\Temp\claude\C--Users-munch-Desktop-survivorsunchained\33ad5b17-6735-4f1b-843e-85f16b19e648\scratchpad\face` (KEEP until the ship merges). Branch head: see the HANDOFF line. Worktree clean but for the five hair gltfs (line-ending noise) and import churn. No helpers running; turns given back.
 - **Verdicts:** `N\rj1v\verdict.md`, `N\rj2v\verdict.md` (read rj2v first: exact fixes, accept lines, reshoot list, next round's list). PASS so far: double brow (owner's mark) and nostrils (owner's mark) on all ten at the Look, the close-up camera and play; head tone at the Look's full frame (near misses ruled PASS); Doe/Moonlit irises; jaw ramp.
 - **Done this session (all committed):** ac426424 brow = solver 2's normals (`heroine_browfold.py`) + `heroine_browpaint.py` (each paint's light band under the brow held to the lid's level; ten paints rebuilt; run once per paint); 765b5811 + teeth commits: `heroine_outfits.py` now runs browfold and `heroine_teethshade.py` after the seam (a rebuild keeps them); teeth: COLOR_0 side shade (8-15 mm, 0.2) + `shaders/heroine_teeth.gdshader` + `HerFaceLife.TeethLight` (lips closed = dark, lit as mouth_open/snarl reach .3); bf367da2 chestnut/umber irises lifted; 45786361 (solver) `look_rig`: her head's r10-r13 tones only under the Look's close-up rig, `face_world` (integration's per-face tones) elsewhere; `--head-rig off` = before (numbers in its commit message; work `N\tone_work`).
