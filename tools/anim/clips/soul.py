@@ -225,12 +225,16 @@ def warden_break(rig):
     # (With the shoulder rolled up under it the blade rides a little lower on
     # the shoulder, so it stays on the pauldron instead of lifting off.)
     rolled = dict(shoulder, arc=arc_of((0.02, -0.03, 0.21)))
+    # Halfway up and halfway down, the fist where it passed before the rest
+    # moved (keyed, so the lift and the return keep their paths and the wrist
+    # does not flip as the target moved), the elbow's way halfway between the
+    # carry's and the shoulder's as it was then (the shoulder's, this early,
+    # swung the elbow out and rolled the upper arm 11 degrees in a frame).
+    passing = dict(shoulder, arc=arc_of((-0.108, -0.242, 0.189)), pole=(-0.6, -0.4, -0.5))
     keys = [
         (0, over("warden"), "auto"),
         # The flat of the blade laid on her shoulder, the shoulder rolled under it.
-        # On the way up, the fist where it passed before (keyed, so the lift
-        # keeps its path and the wrist does not flip as the target moved).
-        (8, over("warden", hand_r=dict(shoulder, arc=arc_of((-0.108, -0.242, 0.189)), blade=_n(-0.42, 0.78, 0.46))), "auto"),
+        (8, over("warden", hand_r=dict(passing, blade=_n(-0.42, 0.78, 0.46))), "auto"),
         (16, over("warden", hand_r=shoulder), "ease"),
         (24, over("warden", hand_r=rolled, clav_r=(10, 6), head=(-8, 0, 6)), "auto"),
         (32, over("warden", hand_r=shoulder, clav_r=(2, -6), head=(-6, 0, 3)), "auto"),
@@ -254,9 +258,16 @@ def warden_break(rig):
         (72, over("warden", hand_r=shoulder, clav_l=(-2, -2), hand_l=_swing_l(0, 0, 0.006),
                   fingers_l={"curl": 1.05, "cascade": 0.05, "thumb": 1.6, "oppose": 0.9}), "ease"),
         (80, over("warden", hand_r=shoulder), "ease"),
+        # (Unkeyed, the fist came down 3 cm higher and further forward than
+        # before and the wrist held at its sideways limit, then let go: the
+        # hand turned 17 degrees a frame faster in one frame, at f91.)
+        (90, over("warden", hand_r=dict(passing, blade=_n(-0.66, 0.59, 0.46))), "auto"),
         (100, over("warden"), "ease"),
     ]
-    return build("idle_warden_break", rig, keys, base=base, meta={"layer": "full", "weapon": "sword+shield"})
+    # The right elbow eases out of the carry's own place (it takes over from
+    # the idle): settled with the frames after, the carry's straight arm
+    # rolled 8-11 degrees into the lift's in the first frame.
+    return build("idle_warden_break", rig, keys, base=base, meta={"layer": "full", "weapon": "sword+shield"}, pin_first={"r": 4})
 
 
 def arcanist_break(rig):
