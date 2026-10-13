@@ -4116,6 +4116,18 @@ def arcanist():
         print("CLASP: horns ride their cups from %.0f%% out (full by +30%%); tip rows %s | %s" % (100 * float(os.environ.get("CLASP_RIDE0", "0.3")),
               {BONES[j]: round(float(w_st[0, j]), 3) for j in np.argsort(-w_st[0])[:4]}, {BONES[j]: round(float(w_st[-1, j]), 3) for j in np.argsort(-w_st[-1])[:4]}))
         RIDE = os.environ.get("CLASP_RIDE", "0") == "1"   # (off: c2 rode the rolls but the crescent came out a flattened, dented bar in her carriage)
+        # (CLASP_SHEAR=1, route S, unjudged: each half's rows blend from the rigid row at the
+        # stone to the cloth's own row under its tip, along ((1 - cos th) / (1 - cos TH0)) ** 0.8,
+        # the binding's own profile round the U (offline: it leads the cosine by 0.03-0.07). Its
+        # U flattens in her carriage (spine_03 pitched 31 deg on spine_02): the tips then ride
+        # the binding as at rest; a tip shift of 0.20 left the balls beside the tube or inside it)
+        if os.environ.get("CLASP_SHEAR", "0") == "1":
+            f_ = ((1 - np.cos(th)) / (1 - np.cos(TH0))) ** float(os.environ.get("CLASP_SHEAR_P", "0.8"))
+            w_st = (1 - f_)[:, None] * w_r[None] + f_[:, None] * np.where((th < 0)[:, None], w_b[0][None], w_b[-1][None])
+            w_st = w_st / w_st.sum(1, keepdims=True)
+            RIDE = True
+            print("CLASP: SHEAR on: tip rows %s | %s" % ({BONES[j]: round(float(w_st[0, j]), 3) for j in np.argsort(-w_st[0])[:4]},
+                  {BONES[j]: round(float(w_st[-1, j]), 3) for j in np.argsort(-w_st[-1])[:4]}))
         made = [finish("arcanist.clasp", pp, w_st[(np.arange(len(pp)) % (nth * nr)) // nr] if RIDE else sk(pp), tt, "claspgold", 0.0, 0.0, 10 ** 6, scraps=False)]
         # (the stone: an oval cabochon at the foot, 10 x 8 mm, 3.2 mm high, in
         # a gold bezel ring 1 mm proud of the crescent)
