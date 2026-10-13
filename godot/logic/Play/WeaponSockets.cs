@@ -66,6 +66,27 @@ public static class WeaponSockets
         return (lng, Vector3.UnitX);
     }
 
+    /// <summary>The line her right `grip` fist closes round, in hand_r's space: the pocket's centre (the mount point plus
+    /// the pocket's offset, -14, -17, +2 mm, Z\staff\chan.py) and the channel's direction, butt toward head (6.6 degrees off
+    /// hand +Z toward the fingers; tools/anim/clips/flare.py AXIS). An anchored piece's grip point and shaft are laid on it.</summary>
+    public static readonly Vector3 FistAtR = new(-0.039f, 0.058f, 0.002f);
+    public static readonly Vector3 FistDirR = Vector3.Normalize(new Vector3(0.001f, 0.1157f, 0.9933f));
+
+    /// <summary>Where an anchored piece sits inside its mount so that its grip point (the anchor's origin, on the shaft's
+    /// centreline) lands on the fist's pocket and its shaft (the piece's +Y, the anchor's -Y) runs along the fist's line:
+    /// a turn (the least that takes +Y onto the line, so the anchor's +Z keeps its roll) and an offset, both in the mount's
+    /// space. `mx, my, mz, origin`: the mount in the hand's space (unleaned; a Lean turns this seat with the mount).</summary>
+    public static (Quaternion Turn, Vector3 At) FistSeat(Vector3 mx, Vector3 my, Vector3 mz, Vector3 origin)
+    {
+        Vector3 In(Vector3 v) => new(Vector3.Dot(v, mx), Vector3.Dot(v, my), Vector3.Dot(v, mz));
+        var at = In(FistAtR - origin);
+        var dir = Vector3.Normalize(In(FistDirR));
+        var axis = Vector3.Cross(Vector3.UnitY, dir);
+        float s = axis.Length(), c = Vector3.Dot(Vector3.UnitY, dir);
+        var turn = s < 1e-7f ? Quaternion.Identity : Quaternion.CreateFromAxisAngle(axis / s, MathF.Atan2(s, c));
+        return (turn, at);
+    }
+
     /// <summary>Metres to push a socket out of her body along its normal for an outfit: art/anim/socket_clearance.json, written by
     /// `armscheck.py --sockets` as {outfit: {socket: metres}}. Unknown outfit or socket: 0.</summary>
     public sealed class Clearance

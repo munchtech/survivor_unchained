@@ -73,6 +73,26 @@ public class WeaponSocketsTests
     }
 
     [Fact]
+    public void AnAnchoredPieceSitsOnTheFistsLine()
+    {
+        // hand_r's mount (Arms.MountTransform): the piece's X along hand +Y, its shaft (+Y) along hand +Z, at (-25, 75, 0) mm.
+        System.Numerics.Vector3 mx = new(0, 1, 0), my = new(0, 0, 1), mz = new(1, 0, 0), o = new(-0.025f, 0.075f, 0);
+        var (turn, at) = WeaponSockets.FistSeat(mx, my, mz, o);
+        System.Numerics.Vector3 Hand(System.Numerics.Vector3 m) => o + mx * m.X + my * m.Y + mz * m.Z;
+        // The grip point lands on the pocket; the shaft runs along the fist's line (6.6 degrees off the mount's).
+        var grip = Hand(at);
+        Assert.Equal(0.0, (double)System.Numerics.Vector3.Distance(grip, WeaponSockets.FistAtR), 6);
+        var shaft = Hand(System.Numerics.Vector3.Transform(System.Numerics.Vector3.UnitY, turn)) - o;
+        Assert.Equal(1.0, (double)System.Numerics.Vector3.Dot(shaft, WeaponSockets.FistDirR), 6);
+        // A point a metre up the shaft is a metre up the fist's line.
+        var up = Hand(at + System.Numerics.Vector3.Transform(System.Numerics.Vector3.UnitY, turn));
+        Assert.Equal(0.0, (double)System.Numerics.Vector3.Distance(up, WeaponSockets.FistAtR + WeaponSockets.FistDirR), 5);
+        // The least turn: the piece's +Z (its edge or face) stays square to the shaft and keeps its side.
+        var face = System.Numerics.Vector3.Transform(System.Numerics.Vector3.UnitZ, turn);
+        Assert.True(face.Z > 0.99f);
+    }
+
+    [Fact]
     public void ClearanceReadsTheFileAndDefaultsToZero()
     {
         var c = WeaponSockets.Clearance.Parse("{\"warden\": {\"back\": 0.012, \"hip_blade\": 0.02}, \"none\": {\"back\": 0.005}}");
