@@ -62,6 +62,8 @@ public sealed partial class Battle
     double[]? crowdRow;
     double crowdEvalAt;
     internal int FlareKillsNow;
+    /// <summary>For the harness (--rout): see FlareBlow.</summary>
+    public static double FlareRout;
     double emberAnsweredAt = -99;
     /// <summary>The horde can't spam it: each of its sources draws on a purse that refills at its rate a second.</summary>
     readonly double[] purse = new double[4], purseAt = new double[4];
@@ -267,6 +269,10 @@ public sealed partial class Battle
                 FlareBlowEvent(f, f.Kind == FlareKind.Stand ? "pulse" : "blow", last, p.X, p.Z, null, flareReach);
                 break;
         }
+        // (the harness's --rout: at a Strike's last blow, the ordinary creatures in reach left below this share fall)
+        if (last && FlareRout > 0)
+            foreach (var e in HostilesInRadius(Player.X, Player.Z, flareReach))
+                if (!e.Boss && !e.Elite && e.Alive && e.State != EnemyState.Dying && e.Hp < e.MaxHp * FlareRout) KillEnemy(e, true, null);
         credit = was;
     }
 

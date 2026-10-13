@@ -140,7 +140,7 @@ public static class Pilot
         // The Flare: a boss within ten metres, a crowd of eight within its reach, or health below a quarter;
         // and nobody sits on a full meter: after eight seconds ready, four within its reach will do.
         // (A crowd of eight within six metres kept a kiting caster's meter full for minutes.)
-        if (b.FlareReady)
+        if (b.FlareReady && UsesFlare)
         {
             double reach = Math.Max(6, b.Flare?.Radius ?? 6);
             int near = b.HostilesInRadius(p.X, p.Z, reach).Count;
@@ -263,6 +263,8 @@ public static class Pilot
     /// <summary>Off (--flareboss 0): hands that never save the Flare for a boss (it goes on the crowd or at the edge), the
     /// player who doesn't time it: a fight without good Flare use.</summary>
     public static bool AimsFlare = true;
+    /// <summary>Off (--flareuse 0): hands that never press the Flare (today's game measured as before the Flare).</summary>
+    public static bool UsesFlare = true;
     public static bool PhaseAware = true;
     /// <summary>When this run's Flare came ready (each run plays on one thread).</summary>
     [ThreadStatic] static Battle? readyIn;
