@@ -3071,6 +3071,9 @@ KEEP_SUB = {}    # (piece name prefix -> f(pos, wt, tris) -> (pos, wt, tris): zo
 # line's thorn and spurs; s17_spike's posed measure, 0.7-3.85 mm). Exact piece
 # name -> (thickness at the cut as a share of the sheet's, eased to full over
 # this many metres in). EDGE_SKIVE="" turns it off.
+# The Arcanist's boning channels end flush over this many metres at the
+# hip (judge fin1's tab and thorn were their square lower ends). 0 = off.
+BONING_TAPER = float(os.environ.get("BONING_TAPER", "0.008"))
 EDGE_SKIVE = {k_: (float(f_), float(o_)) for k_, f_, o_ in
               (e_.split(":") for e_ in os.environ.get("EDGE_SKIVE", "arcanist.corset:0.3:0.006").split(",") if e_)}
 
@@ -3462,7 +3465,7 @@ def cups(cover=0.62, plunge=0.02, band=0.03, over=0.022, reach=0.088):
 
 
 def ribbon(name, ctrl, width, mkey, lift=0.0035, thick=0.0025, cols=5, trim=None, snap=True, centre=None,
-           hides=False, follow=False, flare=None, onto=None):
+           hides=False, follow=False, flare=None, onto=None, taper=None):
     """A strap as a strap is made: a ribbon of even width laid along a
     smooth curve on her skin, so its edges are two clean parallel lines.
     It moves with the skin under each point of it. With `centre` (a point
@@ -3478,7 +3481,9 @@ def ribbon(name, ctrl, width, mkey, lift=0.0035, thick=0.0025, cols=5, trim=None
     ribbon widens to that width over that length at its end, as a thong's
     string opens into its gusset. `onto`, a piece made before it: laid on
     that piece's outside as seen from ahead, `lift` off it, moving with it
-    (a boning channel on a suit)."""
+    (a boning channel on a suit). `taper`, a length: over that much of its
+    end it eases down into the piece it lies on and narrows, so it ends
+    flush, not in a square tab (a boning channel ending on a panel)."""
     if onto is not None:
         s_pos, s_tris, s_wt, s_thick = SHEET[onto]
         s_bvh = BVHTree.FromPolygons([tuple(p) for p in s_pos], s_tris.tolist())
@@ -3531,7 +3536,16 @@ def ribbon(name, ctrl, width, mkey, lift=0.0035, thick=0.0025, cols=5, trim=None
     if flare:
         run = np.r_[0, np.cumsum(np.linalg.norm(np.diff(c, axis=0), axis=1))]
         wrow = width + (flare[0] - width) * ramp(run, run[-1] - flare[1], run[-1])
-    pos = (c[:, None, :] + nrm[:, None, :] * lift + bn[:, None, :] * (off[None, :] * wrow[:, None])[:, :, None]).reshape(-1, 3)
+    lrow = np.full(len(c), lift)
+    if taper:
+        # (BONING_TAPER: down to the sheet's own surface, the last fifth
+        # under it, even where the sheet is skived thin; narrowed by half)
+        run = np.r_[0, np.cumsum(np.linalg.norm(np.diff(c, axis=0), axis=1))]
+        k_ = ramp(run, run[-1] - taper, run[-1])
+        lrow = lift - (lift - (s_thick - thick - 0.0002 if onto is not None else 0.0)) * ramp(run, run[-1] - taper, run[-1] - 0.2 * taper)
+        lrow = lrow - np.maximum(lrow, 0) * ramp(run, run[-1] - 0.2 * taper, run[-1])
+        wrow = wrow * (1 - 0.5 * k_)
+    pos = (c[:, None, :] + nrm[:, None, :] * lrow[:, None, None] + bn[:, None, :] * (off[None, :] * wrow[:, None])[:, :, None]).reshape(-1, 3)
     tris = grid(len(c), cols)
     nor = vertex_normals(pos, tris)
     if (nor * np.repeat(nrm, cols, 0)).sum(1).mean() < 0:
@@ -3558,7 +3572,7 @@ def ribbon(name, ctrl, width, mkey, lift=0.0035, thick=0.0025, cols=5, trim=None
     if kind(mkey) == "leather" and width >= 0.012:
         inset = 0.0028
         for k, sgn in enumerate((1, -1)):
-            ln = c + nrm * (lift + thick + 0.0001) + bn[:] * (sgn * (wrow[:, None] / 2 - inset))
+            ln = c + nrm * (lrow[:, None] + thick + 0.0001) + bn[:] * (sgn * (wrow[:, None] / 2 - inset))
             made += stitches(f"{name}_stitch{k}", ln, nrm, tg, pos, at[:, 3:3 + NB])
         made[0]["geo_stitch"] = True
     return made
@@ -5150,7 +5164,8 @@ def arcanist():
         *[o for k, x in enumerate((-0.088, -0.044, 0.044, 0.088))
           for o in ribbon(f"arcanist.boning{'abcd'[k]}",
                           [np.array([x + (x * 0.82 - x) * t, 0.0, (UNDERBUST - 0.024) + (1.03 - UNDERBUST + 0.024) * t]) for t in np.linspace(0, 1, 7)],
-                          0.012, "plumleather", lift=0.0002, thick=0.0007, onto="arcanist.corset")],
+                          0.012, "plumleather", lift=0.0002, thick=0.0007, onto="arcanist.corset",
+                          taper=BONING_TAPER or None)],
         *piece("arcanist.choker", choker, "blackleather", lift=0.002, soften=0, keep_off=("Head",)),
         *witch_hat("arcanist.hat", "plumleather", "darkpurple"),
     ]
