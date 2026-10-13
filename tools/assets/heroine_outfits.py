@@ -2560,8 +2560,13 @@ HOLD_CAP = os.environ.get("HOLD_CAP", "1") == "1"
 LEO_FOOT = float(os.environ.get("LEO_FOOT", "0.004"))
 LEO_GUSSET_F = float(os.environ.get("LEO_GUSSET_F", "0.026"))
 LEO_U = tuple(float(v) for v in os.environ.get("LEO_U", "0,0.004").split(","))
-LEO_UG = tuple(float(v) for v in os.environ.get("LEO_UG", "0.014,0.018").split(","))
+# (LEO_GW: the gusset LEO_GW[0] wider in front of GAP_F + LEO_GW[1], eased out by
+# GAP_F + LEO_GW[2], under the U's rounded corners; LEO_UG: where the gusset is
+# under the U's edge, from LEO_UG[0] inside its edge to LEO_UG[1] outside; LEO_UH:
+# there the edge is held onto the gusset's top, LEO_UH * 30 mm higher, not off it)
+LEO_UG = tuple(float(v) for v in os.environ.get("LEO_UG", "0.001,0.005").split(","))
 LEO_GW = tuple(float(v) for v in os.environ.get("LEO_GW", "0,0,0.015").split(","))
+LEO_UH = float(os.environ.get("LEO_UH", "0.07"))
 RBOOT_GONE = float(os.environ.get("RBOOT_GONE", "0.005"))
 
 
@@ -4420,9 +4425,11 @@ def arcanist():
     # wrists: at 2 cm a notch at the sleeve's hem showed her skin, judge 14)
     GLOVE_TOP = float(os.environ.get("GLOVE_TOP", 0.10))
     # (the U's foot lies on the gusset, not held down through it: where the gusset
-    # is under it, 0 to 1, no hold; LEO_U)
+    # is under it, 0 to 1, held onto its top; LEO_U, LEO_UG, LEO_UH. Released
+    # there instead, the held leg line stepped 2 mm up within 2 mm, a bump.)
     def on_gusset(q):
-        return (float(LEO_U[0] > 0) * ramp(-np.abs(q[:, 0]), -LEO_UG[1], -LEO_UG[0]) * ramp(q[:, 1], GAP_F - LEO_GUSSET_F - 0.002, GAP_F - LEO_GUSSET_F + 0.004)
+        hf = 0.016 + LEO_GW[0] * ramp(-q[:, 1], -(GAP_F + LEO_GW[2]), -(GAP_F + LEO_GW[1]))
+        return (float(LEO_U[0] > 0) * ramp(hf + LEO_UG[1] - np.abs(q[:, 0]), 0.0, LEO_UG[0] + LEO_UG[1]) * ramp(q[:, 1], GAP_F - LEO_GUSSET_F - 0.002, GAP_F - LEO_GUSSET_F + 0.004)
                 * ramp(-q[:, 2], -(CROTCH + 0.035), -(CROTCH + 0.028)))
     # (judge h: the glove copied the nail's free edge at the thumb tip, an
     # overhang with a dark wedge under it, and a pale lip at the thumb and
@@ -4482,7 +4489,7 @@ def arcanist():
                trim=gold(0.004), snap=False, hides=True, flare=(0.034, 0.03)),
         *piece("arcanist.corset", corset, "plumleather", lift=0.0035, smooth=8, iron=60, trim=gold(0.008), keep_off=("Head",), filled=True, edge=120, soften=80,
                bridge=True, cut=exact, stiff=[(0.03, front_panel), (0.03, collar), plunge_fold, taut_gore, plunge_rim],
-               hold=None if not LEO_HOLD else (lambda q: (q[:, 2] > CROTCH + LEO_HOLD_Z[0]) & (q[:, 2] < 1.2) & (np.abs(q[:, 0]) < 0.3) & (on_gusset(q) < 0.5), lambda q: ramp(q[:, 2], CROTCH + LEO_HOLD_Z[1], CROTCH + LEO_HOLD_Z[2]) * (1 - on_gusset(q)))),
+               hold=None if not LEO_HOLD else (lambda q: (q[:, 2] > CROTCH + LEO_HOLD_Z[0]) & (q[:, 2] < 1.2) & (np.abs(q[:, 0]) < 0.3), lambda q: ramp(q[:, 2], CROTCH + LEO_HOLD_Z[1], CROTCH + LEO_HOLD_Z[2]) * (1 - LEO_UH * on_gusset(q)))),
         *(down_tube() if PLUNGE_TRIM == "down" else []),
         *(plunge_clasp() if PLUNGE_CLASP else []),
         # (judge 4: the front read as moulded latex. Four stitched boning
