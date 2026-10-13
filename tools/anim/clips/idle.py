@@ -56,9 +56,13 @@ def warden(t, f):
         # strap; the forearm turned palm-up a little (the whole roll in the
         # forearm, which carries the shield), not wrung at the wrist.
         # (Carried across her body, the 66 cm shield sank 5 cm into her
-        # breast and trunk.)
-        "hand_l": {"arc": arc_of((0.0591, -0.3869 + breath, 0.1204)), "pole": (0.4298, -0.3825, -0.8179), "frame": "chest",
-                   "thumb": (-0.223, 0.7166, 0.6609), "twist": 1.0},
+        # breast and trunk.) The upper arm turned 8 degrees out about its
+        # length (judges 46-47): the rim clear of her cup's outline from the
+        # front by 2-5 cm. In the game the forearm bone keeps to its hinge
+        # (HerJoints hands its roll to the hand), so the shield on it does not
+        # take the forearm's roll: measure with the helpers driven.
+        "hand_l": {"arc": arc_of((0.0817, -0.3796 + breath, 0.1299)), "pole": (0.3281, -0.4168, -0.8477), "frame": "chest",
+                   "thumb": (-0.1498, 0.7455, 0.6495), "twist": 1.0},
         # The sword low at her right, its point 45 degrees down ahead and a
         # little out: the hand in line with the forearm, its thumb forward,
         # dropped 16 degrees toward the little finger under the blade's
@@ -67,7 +71,9 @@ def warden(t, f):
         # wrist cocked back 42 degrees and 34 to the side.)
         "hand_r": {"arc": arc_of((-0.09, -0.45, 0.04)), "pole": (-0.4, -0.2, -1.0), "frame": "chest",
                    "blade": _n((-0.131, -0.630, 0.765)), "knuckles": _n((0.135, -0.776, -0.617)), "twist": 0.5},
-        "fingers_l": "grip", "fingers_r": "grip",
+        # The left thumb closed round the grip, swung in across the palm
+        # (judge 47: held straight, it showed between the rim and her skirt).
+        "fingers_l": {"curl": 0.95, "cascade": 0.05, "thumb": 1.6, "oppose": 0.9}, "fingers_r": "grip",
     }
 
 

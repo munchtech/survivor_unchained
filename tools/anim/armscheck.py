@@ -15,12 +15,18 @@ by winding number: inside counts as 80 mm or more, so a shield buried deep is
 never missed.
 
     python tools/anim/armscheck.py [clip ...] [--sets warden,oath,...] [--folder DIR]
-                                   [--step N] [--save NAME] [--top N]
+                                   [--step N] [--save NAME] [--top N] [--outfit NAME] [--arms FILE]
 
 Sets: warden_sword_shield, oath_shield, axe, axes, wand, staff, crossbow,
 daggers (or a loadout key: worn_oathblade, judgement_disc_item, ...; 'warden'
 and 'oath' alone are accepted for the first two). Default: every JSON in
 out/clips, every set. Saved to out/armscheck_NAME.json.
+
+--outfit warden|arcanist|reaver|ranger adds the depth into that outfit (cups,
+belt, skirt: the garment's thickness over her skin, motion.py's cover, laid on
+the nearest skin point; the holding arm's own garment is left out as its skin
+is): outfit_mm per row, 0 when the piece clears the garment. Judge 46: a rim
+on the cup reads as contact though the skin is clear.
 """
 from __future__ import annotations
 
@@ -110,11 +116,16 @@ def fast_winding(surf, P, Q, radius=0.25):
 
 
 class Checker:
-    def __init__(self):
-        self.b = Body.heroine(jiggle=True)
+    def __init__(self, outfit=None, arms=None):
+        # Her helpers driven as the game's HerJoints drives them: the forearm
+        # bone kept on its hinge (its roll handed to the hand), so a piece on
+        # lowerarm_* turns only as the game turns it. (Without this the shield
+        # rolled with the clip's forearm roll: 5-8 cm off at the rim.)
+        self.b = Body.heroine(jiggle=True, helpers=True)
         self.m = Measure(self.b)
+        self.cover = self.m._cover(outfit) if outfit else None
         self.I = self.b.sk.index
-        raw = json.loads((DATA / "arms_local.json").read_text())
+        raw = json.loads(Path(arms or DATA / "arms_local.json").read_text())
         self.local = {k: (np.array(d["v"], float), np.array(d["t"], int)) for k, d in raw.items()}
         self.pts = {k: sample(*vt) for k, vt in self.local.items()}
         self.coarse = {}
@@ -203,12 +214,29 @@ class Checker:
         fin = d[np.isfinite(d)]
         return keep, near, (float(fin.min()) if len(fin) else 1.0)
 
+    def outfit_depth(self, P, key, G, depth, near):
+        """mm into the outfit (cover over the skin): the worst point, and its nearest vertex."""
+        bone = key.split("@")[1]
+        surf = self.m.arm["r" if bone.endswith("_r") else "l"][2]
+        M = self.bone_world(G, bone)
+        Q = self.pts[key] @ M[:3, :3].T + M[:3, 3]
+        d, nr = surf.signed(P, Q, reach=0.14, k=8)
+        ok = np.isfinite(d) & (d > -0.002)
+        od = np.zeros(len(Q))
+        od[ok] = (self.cover[nr[ok]] - d[ok]) * 1000.0
+        i = int(od.argmax())
+        best, where = float(od[i]), int(nr[i])
+        j = int(depth.argmax())
+        if depth[j] > 0 and depth[j] + 1000.0 * self.cover[near[j]] > best:
+            best, where = float(depth[j] + 1000.0 * self.cover[near[j]]), int(near[j])
+        return max(0.0, best), where
+
     def clip(self, name, folder, pieces, step=1):
-        """{key: (worst mm per frame, where per frame)} over the sampled frames."""
+        """{key: (worst mm per frame, where per frame[, outfit mm, outfit where])} over the sampled frames."""
         b = self.b
         c = b.clip(name, folder)
         Gs = b.frames(c)
-        res = {k: ([], []) for k in pieces}
+        res = {k: ([], [], [], []) for k in pieces}
         frames = list(range(0, len(Gs), step))
         for f in frames:
             G = Gs[f]
@@ -220,6 +248,10 @@ class Checker:
                 i = int(depth.argmax())
                 res[k][0].append(float(depth[i]))
                 res[k][1].append(self.where(near[i]) if depth[i] > 0 else "-")
+                if self.cover is not None:
+                    od, ow = self.outfit_depth(P, k, G, depth, near)
+                    res[k][2].append(od)
+                    res[k][3].append(self.where(ow) if od > 0 else "-")
         return frames, res
 
 
@@ -240,9 +272,9 @@ def resolve_sets(arg):
 _CK = None
 
 
-def _init():
+def _init(outfit=None, arms=None):
     global _CK
-    _CK = Checker()
+    _CK = Checker(outfit, arms)
 
 
 def _work(job):
@@ -256,12 +288,18 @@ def _work(job):
     rows = []
     for s in sets:
         for piece, k in SETS[s]:
-            dep, wh = res[k]
+            dep, wh, od, ow = res[k]
             dep = np.array(dep)
             i = int(dep.argmax())
             bad = int((dep > BAD).sum())
-            rows.append(dict(clip=name, set=s, piece=piece, depth_mm=round(float(dep[i]), 1), frame=frames[i],
-                             part=wh[i], frames_over=bad, frames=n, share=round(bad / n, 3)))
+            row = dict(clip=name, set=s, piece=piece, depth_mm=round(float(dep[i]), 1), frame=frames[i],
+                       part=wh[i], frames_over=bad, frames=n, share=round(bad / n, 3))
+            if od:
+                od = np.array(od)
+                j = int(od.argmax())
+                row.update(outfit_mm=round(float(od[j]), 1), outfit_frame=frames[j], outfit_part=ow[j],
+                           outfit_frames_over=int((od > BAD).sum()))
+            rows.append(row)
     return name, None, rows
 
 
@@ -274,6 +312,8 @@ def main():
     ap.add_argument("--save")
     ap.add_argument("--top", type=int, default=25)
     ap.add_argument("--jobs", type=int, default=10, help="clips measured at once (processes)")
+    ap.add_argument("--outfit", choices=("warden", "arcanist", "reaver", "ranger"))
+    ap.add_argument("--arms", help="another arms_local.json (an older mount, to compare)")
     a = ap.parse_args()
     t0 = time.time()
     folder = Path(a.folder) if a.folder else OUTDIR / "clips"
@@ -281,7 +321,7 @@ def main():
     sets = resolve_sets(a.sets)
     jobs = [(n, str(folder), sets, a.step) for n in names]
     rows = []
-    with ProcessPoolExecutor(max_workers=max(1, min(a.jobs, len(jobs))), initializer=_init) as ex:
+    with ProcessPoolExecutor(max_workers=max(1, min(a.jobs, len(jobs))), initializer=_init, initargs=(a.outfit, a.arms)) as ex:
         for i, (name, err, r) in enumerate(ex.map(_work, jobs)):
             if err:
                 print(f"{name}: skipped ({err})", file=sys.stderr)
@@ -290,11 +330,13 @@ def main():
     rows.sort(key=lambda r: (-r["depth_mm"], -r["share"]))
     if a.save:
         OUTDIR.mkdir(exist_ok=True)
-        (OUTDIR / f"armscheck_{a.save}.json").write_text(json.dumps(dict(seconds=round(time.time() - t0, 1), step=a.step, rows=rows), indent=1))
-    print(f"{'clip':30} {'set':20} {'piece':8} {'depth':>7} {'frame':>5}  {'part':24} {'>10mm':>9} {'share':>6}")
+        (OUTDIR / f"armscheck_{a.save}.json").write_text(json.dumps(dict(seconds=round(time.time() - t0, 1), step=a.step, outfit=a.outfit, rows=rows), indent=1))
+    oh = f" {'outfit':>7} {'frame':>5}  {'part':20}" if a.outfit else ""
+    print(f"{'clip':30} {'set':20} {'piece':8} {'depth':>7} {'frame':>5}  {'part':24} {'>10mm':>9} {'share':>6}" + oh)
     for r in rows[: a.top]:
+        o = f" {r['outfit_mm']:7.1f} {r['outfit_frame']:5d}  {r['outfit_part']:20}" if "outfit_mm" in r else ""
         print(f"{r['clip']:30} {r['set']:20} {r['piece']:8} {r['depth_mm']:7.1f} {r['frame']:5d}  {r['part']:24} "
-              f"{r['frames_over']:4d}/{r['frames']:<4d} {r['share'] * 100:5.0f}%")
+              f"{r['frames_over']:4d}/{r['frames']:<4d} {r['share'] * 100:5.0f}%" + o)
     print(f"{len(names)} clips, {len(sets)} sets, {time.time() - t0:.0f} s")
 
 
