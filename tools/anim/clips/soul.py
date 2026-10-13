@@ -194,6 +194,17 @@ def stalker_show(rig):
 
 
 # ----------------------------------------------------------------- breaks --
+def _carry_l(dx, dy, dz):
+    """The Warden's side-carry left hand, moved (x out to her left, y up, z
+    forward, metres from the carry), its grip and roll kept."""
+    h = dict(arms_of("warden")["hand_l"])
+    az, el, r = h["arc"]
+    v = np.array([r * math.cos(math.radians(el)) * math.sin(math.radians(az)), r * math.sin(math.radians(el)),
+                  r * math.cos(math.radians(el)) * math.cos(math.radians(az))])
+    h["arc"] = arc_of(v + np.array([dx, dy, dz]))
+    return h
+
+
 def warden_break(rig):
     base = idle.base_of(rig, "warden")
     shoulder = {"arc": arc_of((0.02, -0.06, 0.18)), "pole": (-0.8, -0.6, 0.0), "frame": "chest",
@@ -206,22 +217,20 @@ def warden_break(rig):
         (32, over("warden", hand_r=shoulder, clav_r=(2, -6), head=(-6, 0, 3)), "auto"),
         (40, over("warden", hand_r=shoulder, clav_r=(10, 6), head=(-8, 0, 6)), "auto"),
         (48, over("warden", hand_r=shoulder, clav_r=(0, 0)), "ease"),
-        # The buckler brought forward at her left side, not across her (judge
-        # 43): the wrist at her waist, the elbow swung out, so the face tilts
-        # up about 40 degrees toward her, the rim 12 cm off her breast and
-        # clear of her cup's outline from the front; her head down and left
-        # to look it over. In the game the forearm keeps to its hinge
-        # (HerJoints hands its roll to the hand), so the tilt comes from the
-        # elbow's swing, not a forearm roll; the fist keeps the carry's grip
-        # on the strap (blade and knuckles from the carry's hand on its
-        # forearm). (Turned across her chest, the 66 cm shield went 47 mm
-        # into her.)
-        (64, over("warden", hand_r=shoulder, head=(24, 20, 0), spine=(6, 6, 0),
-                  hand_l={"arc": arc_of((0.157, -0.205, 0.286)), "pole": (0.568, -0.626, -0.534), "frame": "chest",
-                          "blade": (-0.446, 0.883, 0.145), "knuckles": (-0.051, -0.186, 0.981), "twist": 1.0}), "ease"),
-        (76, over("warden", hand_r=shoulder, head=(26, 22, 0), spine=(6, 6, 0),
-                  hand_l={"arc": arc_of((0.157, -0.195, 0.286)), "pole": (0.568, -0.626, -0.534), "frame": "chest",
-                          "blade": (-0.446, 0.883, 0.145), "knuckles": (-0.051, -0.186, 0.981), "twist": 1.0}), "ease"),
+        # The shield hefted and the shoulder rolled under it, echoing the
+        # sword's roll on the other shoulder (judge 50: a "look over the
+        # buckler" cannot read with the shield on a hinge-only forearm, its
+        # face always away from her). The shoulder shrugs and comes forward,
+        # the shield rises off her hip and drops back with its weight, the
+        # shoulder rolls back, the fist regrips; then all of it settles into
+        # the side carry by f80. The forearm keeps the carry's roll.
+        (56, over("warden", hand_r=shoulder, clav_l=(10, 4), hand_l=_carry_l(0.045, 0.06, 0.035),
+                  head=(10, 8, 0)), "ease"),
+        (64, over("warden", hand_r=shoulder, clav_l=(8, -10), hand_l=_carry_l(0.01, -0.015, 0.0),
+                  spine=(0, -3, 0), head=(4, -3, 0)), "ease"),
+        (72, over("warden", hand_r=shoulder, clav_l=(-2, -2), head=(0, 3, 0),
+                  fingers_l={"curl": 1.05, "cascade": 0.05, "thumb": 1.6, "oppose": 0.9}), "ease"),
+        (80, over("warden", hand_r=shoulder), "ease"),
         (100, over("warden"), "ease"),
     ]
     return build("idle_warden_break", rig, keys, base=base, meta={"layer": "full", "weapon": "sword+shield"})
