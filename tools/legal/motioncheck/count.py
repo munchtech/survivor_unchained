@@ -331,10 +331,14 @@ for lg in glob.glob(os.path.join(folder, 'log_*.txt')):
         flat_ns.append(int(m_[-1]))
 is_flat = os.environ.get('FLAT') == '1' or (os.environ.get('FLAT') != '0' and bool(flat_ns) and min(flat_ns) > 0)
 flat_lines = []
+flat_fail = False
 if is_flat:
-    flat_lines.append('FLAT: stray %d px, binding %d px (must be 0)' % (totals['stray'], totals['binding']))
-    if totals['stray'] > 0 or totals['binding'] > 0:
+    flat_lines.append('FLAT: stray %d px, binding %d px, lone %d px (must be 0)' % (totals['stray'], totals['binding'], totals['lone']))
+    flat_fail = totals['stray'] > 0 or totals['binding'] > 0 or totals['lone'] > 0
+    if flat_fail:
         flat_lines.append('FLAT ASSERT FAIL')
+else:
+    flat_lines.append('FLAT: off')
 
 lines = flat_lines + ['threshold %d px%s' % (least, '' if least == 1 else ' (explicit; frames under it are NOT listed as flagged)'),
          total_line, 'Margins are past the areola\'s edge (2.2 cm from its centre): negative means the areola shows.',
@@ -376,3 +380,5 @@ for outfit in sorted({r[0].split('_')[0] for r in rows}):
                 lines.append('  flagged: %s, %s, %d px' % (r[0], kind, px))
 open(os.path.join(folder, 'summary.txt'), 'w').write('\n'.join(lines) + '\n')
 print('\n'.join(lines))
+if flat_fail:
+    sys.exit(1)
