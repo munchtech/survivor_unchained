@@ -47,6 +47,8 @@ public sealed partial class Battle
     public int FlareCasts, FlareClutches;
     /// <summary>For the harness: casts whose blows reached a boss.</summary>
     public int FlareCastsOnBoss;
+    /// <summary>For the harness: Flares fired with both charges held (Banked Flame's "held" shot).</summary>
+    public int FlareFullBankShots;
     bool flareStruckBoss;
     public readonly List<double> FlareTimes = new();
     double emberAnsweredAt = -99;
@@ -176,6 +178,7 @@ public sealed partial class Battle
         var p = Player;
         if (!Combat || !p.Alive || Flare is not { } f || FlareMeter < FlareFull || FlareT > 0) return false;
         bool fromFullBank = FlareCharges > 1 && FlareMeter >= FlareFull * FlareCharges;
+        if (fromFullBank) FlareFullBankShots++;
         FlareMeter -= FlareFull;
         FlareCasts++;
         FlareTimes.Add(Time);
