@@ -87,9 +87,9 @@ The main session keeps this current. It is the address list for SendMessage. Ret
 |---|---|---|
 | Voice (paused by the owner: no placeholders; final voices from ElevenLabs later) | a501b387a90d78b4e | docs/team/voice.md |
 | Story and writing (the writer: the approved rewrite, Act 1 first) | PAUSED 12 Oct late (no lead running; Act 2's first slice WIP on story/act2@5190bf0c, unjudged, don't merge; handoff docs/handoff/story.md on that branch; 566 lines locked on integration; TOLL_SPEC ready for a code lead) | docs/team/story.md |
-| Classes design (two types per calling, skill trees, ultimates on Q / right-click) | ab694b3b9e7f34b84 (RUNNING 12 Oct night, classes-8; arena phases may shorten under Flare damage, then Banked Flame re-measured) | docs/design/CLASSES.md |
+| Classes design (two types per calling, skill trees, ultimates on Q / right-click) | PAUSED 12 Oct late night: merged classes-8@6d9a123c (arena phase cut, Banked Flame 'H' passed judge 5; worktree removed). Next: phase-6 plan (CLASSES §7, 6a) to a lean judge, then the owner; handoff docs/handoff/classes.md (on integration). Owner question: should Act 1's story bosses be cut by the Flare too? | docs/design/CLASSES.md |
 | Combat, encounters, bosses, balance (paused; handoff ready at af6452e1) | — | docs/team/combat.md |
-| Animation (joints to perfection: wrists, follow-through, elbows, arms through body, sliding) | a1ebe9755afaadf45 (RUNNING 12 Oct night, worktree agent-af8dbda3195e438e4; reach_coals first, then merge) | docs/team/animation.md |
+| Animation (joints to perfection: wrists, follow-through, elbows, arms through body, sliding) | PAUSED 13 Oct early, merged 0a37947d (Warden idle passed); handoff docs/handoff/animation.md on integration; next idle_warden_break, worst Warden clips, sheathing plan | docs/team/animation.md |
 | UI design (the HUD keystone; portraits wait on the face) | — (handoff ready) | docs/team/ui_design.md |
 | UI art (paused; handoff ready at cd0f4ab6) | — | docs/team/ui_art.md |
 | Crafting (research, design, build) (paused; handoff ready at ed429efb) | — | docs/team/crafting.md |
@@ -99,12 +99,12 @@ The main session keeps this current. It is the address list for SendMessage. Ret
 | Performance and rendering (clarity in motion first) | PAUSED 11 Oct night (merged b87ad0c7: grade toe, portrait rig, LOD code; LOD art uncommitted in worktree agent-a4e0c353e61cca6dc). Next: oldleather LOD blob and re-judge, wilds toe, moonlight pass, fur round 2 (docs/handoff/performance.md "Paused here"). Resumes when a lead slot frees. On resume: her body now has two blend shapes (elbow_point_l/_r, from animation); the LOD must keep them | docs/team/performance.md |
 | Arena art | a0b61c278bdd5c994 | docs/team/arena_art.md |
 | Male hero (body, head, hair, outfits) | HELD (the owner, 12 Oct night: face and outfits first). PAUSED 12 Oct evening (handoff docs/handoff/hero_male.md on worktree-agent-ac39445bca5508eaf@9c51a20d) | docs/team/hero_male.md |
-| Heroine face, hair and character creation's Look | abba02533542fdee1 (RUNNING 12 Oct night, successor 16, worktree agent-a2d632df7c7f21ec0 from 8c7dd56b; the brow, re-judge, then the whole-face ship) | docs/team/face.md |
+| Heroine face, hair and character creation's Look | PAUSED 13 Oct early (handoff docs/handoff/face.md on worktree-agent-a2d632df7c7f21ec0@7babafcc; one blocker left (Sunborn in play), then rj3 and the ship) | docs/team/face.md |
 | Asset provenance (what isn't ours, licences, credits, replacement plan) | a80ff0c7fd988b178 | docs/team/provenance.md |
 | Legal and Steam compliance (paused; docs/handoff/legal.md; wake before submission or for a new outfit) | — | docs/team/legal.md |
 | Loot and itemisation (paused, built and merged; docs/handoff/loot.md for a successor) | — | docs/team/loot.md |
 | Creatures and models (our own boar first, then MODELS_TO_MAKE.md) | af551cacc6292152f | docs/team/creatures.md |
 | Story editor (paused after notes 02 at 435k; a fresh editor reads the next draft) | — | docs/story/EDITORIAL_LETTER.md |
-| Heroine body and outfits (now a lead of its own; was the main session's) | aa5ebc771a7548b00 (RUNNING 12 Oct night, successor 14, worktree agent-a5ca10091b08dc429 from b9463b84; glove, gold, two-half clasp, cup edge) | docs/team/outfits.md |
+| Heroine body and outfits (now a lead of its own; was the main session's) | PAUSED 13 Oct early (handoff docs/handoff/outfits.md on worktree-agent-a5ca10091b08dc429@7b4c0590; nothing judged yet; see RESUME) | docs/team/outfits.md |
 | Camera close-up (wheel zoom in town, idle close-up; the owner, 12 Oct) | DONE, merged 12 Oct night (d31fefa6; worktree removed). Open: named NPCs and townsfolk walking up beside her during a close-up (keep-out covers only town walkers behind her); re-judge walkers day and night. Hook for sheathing: `CloseUp.Situation` / `CloseUp.Threat` in godot/logic/Play/CloseUp.cs | this row |
 | Marionette, the character app (a tool: idea to engine; ease like Meshy, quality like Maya; one-click AI-assisted fixing) | — (paused; status page is its own HANDOFF.md "Start here") | Marionette/HANDOFF.md, docs/HISTORY.md "The goal" |

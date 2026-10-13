@@ -290,6 +290,10 @@ public sealed partial class Battle
     /// takes nothing, yet BossDamageBy counts it: a full board's poison on a gated boss made the Flare's
     /// share of the damage read a quarter of its share of the fight.</summary>
     public readonly Dictionary<string, double> BossHealthBy = new();
+    /// <summary>For the harness, a Stand's uplift on a boss (CLASSES §7): health taken off bosses in all and while a
+    /// Stand held, and the seconds a Stand held with a boss being hurt (struck within the last second).</summary>
+    public double BossTookAll, BossTookInStand, StandOnBossSeconds;
+    double lastBossHit = -99;
     /// <summary>Who is dealing damage while no weapon is: the rule firing, the art.</summary>
     string? credit;
     public int KillCount;
@@ -804,6 +808,10 @@ public sealed partial class Battle
         {
             BossDamageBy[by] = BossDamageBy.GetValueOrDefault(by) + Math.Min(dmg, Math.Max(0, before));
             BossHealthBy[by] = BossHealthBy.GetValueOrDefault(by) + took;
+            if (by == "flare") e.FlareTook += took;
+            BossTookAll += took;
+            if (FlareT > 0 && Flare?.Kind == FlareKind.Stand) BossTookInStand += took;
+            lastBossHit = Time;
         }
         if (tags.Has(Tag.Spell) && !o.Dot) OnSpellHit(by);
         // Where the damage is coming from, for the director.
@@ -1537,7 +1545,7 @@ public sealed partial class Battle
         e.Decoy = e.Prey = false;
         e.ThawT = 0;
         e.Raised = false;
-        e.HpFloor = e.Overflow = e.Stagger = e.StaggeredT = e.StaggerResistT = 0;
+        e.HpFloor = e.Overflow = e.FlareTook = e.Stagger = e.StaggeredT = e.StaggerResistT = 0;
         e.HasteT = e.WardT = e.Ward = 0; e.Haste = 1;
         // (Only those with the verb draw from the stream: the rest of the fight's dice stay where they were.)
         e.AuraT = def.Aura is { } au ? au.Every * (0.3 + Rng.Next() * 0.4) : 0;

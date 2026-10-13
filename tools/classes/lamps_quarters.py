@@ -4,6 +4,10 @@
 
 THIRD = round(1 / 3, 4)
 
+# The one modifier per staged Flare that Light my way may light before Act 1 is done (CLASSES §7): measured on Act 1
+# against the staged Flare without it. A Flare with no passing modifier marks none.
+EARLY = {"kindler.burns_twice.more_embers", "bulwark.bell_of_the_morning.bell_for_the_dead", "roadknife.the_roads_toll.toll_doubled"}
+
 # ------------------------------------------------------------------ Flares --
 # Phase 1 plays each as its kind's plain form (Lamps.cs FlareDef); phase 2 stages the first four, phase 6 the rest.
 # power: each blow's damage at level 1. A Strike's blows land over its length; a Stand pulses `blows` a second.
@@ -14,13 +18,13 @@ flare("bell_of_the_morning", "Bell of the Morning", "warden", "bulwark", "strike
       args={"toll": 0.45, "blast": 1.25, "blastRadius": 8, "stun": 1, "sear": 2, "mend": 0.04, "peal": 0.08, "stagger": 0.15, "flee": 3})
 flare("sixty_on_the_wall", "Sixty on the Wall", "warden", "bulwark", "stand", 6, 7, 1, 345, "holy", ["area", "holy", "shield"], "For 6 s the Watch's shield-bearers hold an arc in front of you.", "cut", 0.5)
 flare("the_butchers_bill", "The Butcher's Bill", "reaver", "butcher", "strike", 1.2, 10, 6, 520, "physical", ["melee", "steel", "physical", "twin"], "A leap on the strongest near you, and a chop for each tenth of health you're missing.")
-flare("butchers_hour", "Butcher's Hour", "reaver", "butcher", "stand", 8, 4, 0, 290, "physical", ["melee", "steel", "physical", "twin"], "For 8 s: Frenzy full, blows twice as fast, every blow deepens the bleed, ordinary things below 15% die, and each kill adds 0.3 s and mends 1%.",
+flare("butchers_hour", "Butcher's Hour", "reaver", "butcher", "stand", 8, 4, 0, 290, "physical", ["melee", "steel", "physical", "twin"], "For 8 s: Frenzy full, blows twice as fast, every blow deepens the bleed, ordinary things below 15% die, and each kill adds 0.3 s (up to 8 s more) and mends 1%.",
       beat={"key": 0.3, "hitstop": 1, "hitstopExecute": 4},
-      args={"faster": 2, "bleed": 0.8, "bleedSeconds": 3, "deepen": 1, "execute": 0.15, "extend": 0.3, "overtime": 0.6, "mend": 0.01, "mistRadius": 5, "flee": 1.5})
+      args={"faster": 2, "bleed": 0.8, "bleedSeconds": 3, "deepen": 1, "execute": 0.15, "extend": 0.3, "extendCap": 8, "overtime": 0.6, "overtimeCap": 12, "mend": 0.01, "mistRadius": 5, "flee": 1.5})
 flare("drag_them_under", "Drag Them Under", "reaver", "chainbound", "strike", 0.8, 14, 2, 1590, "physical", ["melee", "physical", "area", "hook"], "Hooks bite everything within 14 m and haul them into one knot for the slam.")
 flare("storm_on_the_chain", "Storm on the Chain", "reaver", "chainbound", "stand", 5, 8, 2, 400, "storm", ["melee", "storm", "area", "hook"], "For 5 s the chain sweeps 8 m out, and the sky strikes down it.")
 flare("burns_twice", "Burns Twice", "arcanist", "kindler", "strike", 1.1, 14, 12, 1160, "fire", ["spell", "fire", "frost", "area"], "Frost races under every pack near, then twelve embers fall on the frozen ground, and each shatters what is frozen round it.",
-      beat={"key": 0.15, "frost": 0.3, "first": 0.55, "last": 1.05, "hitstop": 2, "hitstopLast": 6},
+      beat={"key": 0.15, "frost": 0.3, "first": 0.55, "last": 1.05, "hitstop": 2, "hitstopFrost": 3, "hitstopLast": 6},
       args={"frost": 0.3, "freeze": 2, "chill": 3, "ember": 0.675, "shatter": 1.0, "emberRadius": 2.5, "onBoss": 4, "bossMul": 1.0, "moreEmbers": 18, "blackIce": 0.5})
 flare("hard_winter", "Hard Winter", "arcanist", "kindler", "stand", 6, 12, 1, 345, "frost", ["spell", "frost", "area", "zone"], "For 6 s the ford's cold: everything near slows and freezes, and the thaw bursts.")
 flare("the_branding", "The Branding", "arcanist", "moonweaver", "strike", 1.0, 14, 2, 2100, "arcane", ["spell", "arcane", "area"], "Every enemy near is branded; the brands burst outward, each death passing a mark.")
@@ -178,7 +182,7 @@ butch = road("reaver", rv, "butcher", "Road of the Butcher", "Twin axes, and you
         ("Wide Chops", "Each chop strikes everything 2 m round.", FM("the_butchers_bill", "bill.wide_chops", P_REST)),
         ("Feast", "Each kill mends 10%.", FM("the_butchers_bill", "bill.feast", P_REST))]),
     ("butchers_hour", "Butcher's Hour", [
-        ("Overtime", "A kill adds 0.6 s.", FM("butchers_hour", "hour.overtime", P_FIRST)),
+        ("Overtime", "A kill adds 0.6 s (up to 12 s more).", FM("butchers_hour", "hour.overtime", P_FIRST)),
         ("Red Mist", "Lesser things near you flee.", FM("butchers_hour", "hour.red_mist", P_FIRST)),
         ("Not Today", "While it holds, you can't fall below 1 health.", FM("butchers_hour", "hour.not_today", P_FIRST))]))
 

@@ -1,38 +1,26 @@
-# Handoff: classes (phase 2: staged Flares measured, judge next)
+# Handoff: classes (session 11: the Flare cuts arena phase floors; Banked Flame reworked)
 
-Written by the seventh classes lead (12 October) at the context budget. Branch `classes-6` (worktree `agent-a5b513003773e2317`). See the last line for the commit.
+Written by the eleventh classes lead (12 October). Branch `classes-8` (worktree `agent-a54ebb1323cb25841`), last commit on the last line of git log. Scratch `N/` = `C:\Users\munch\AppData\Local\Temp\claude\C--Users-munch-Desktop-survivorsunchained\33ad5b17-6735-4f1b-843e-85f16b19e648\scratchpad\classes\` (older: `1515c1de-...\scratchpad\classes\`, called `O/`).
 
-## 1. The owner's words
-- "go with all 8 recommendations" (CLASSES §8); the Flare "should be AWESOME. it should look AWESOME."; "we are striving for perfection". 12 October: "go just classes for now" (classes is the only lead running).
-- 11 October: "rebuke should probably do a little more damage than that yeah".
-- 12 October, Banked Flame: (1) "sounds good": Light my way never lights it (DONE, `LampBook.Suggest` skips `flare.banked`). (2) "0-5% faster is barely anything though, seems like its a lot of risk with not much reward". Played well, it must be a clear reward worth the risk of its 30% slower fill, and its text must make it a trap-free choice. "A blue lamp should feel worth building around."
+## Start here
+1. **Merge request sent** (Banked Flame H plus the arena cut; numbers in CLASSES §7 line 901 item (2) and acceptance item 5). Wait for the coordinator's merge and the owner's word on the summary (judge 5's paragraph, in `N/judge5_sheet.md`'s verdict as relayed; the owner may want story bosses cut too: today they keep their floors).
+2. **Next: the phase-6 plan** (CLASSES §7, 6a) and its owner lines (`O/judge1_verdict.md`, bottom) to a lean `su-lead-max` judge (Context budget 120k), then to the coordinator for the owner. No phase-6 code before the owner approves.
+3. Pass on to UI/codex: "a Flare shortens the boss phase it lands in, by at most half, never under 6 s" should be taught (judge 3).
+4. Open, not blocking: the arcanist's full board (Burns Twice with all three modifiers) reads 34-40% of a boss with no lamp (acceptance (2) wants 15-30%): phase 7's sweep. The reaver deft banker sits at the band's fast edge (-22 to -23% at L30).
 
-## 2. The brief (main session, 12 October) and where each step stands
-1. **The rebuke's checks: DONE, reported to main.** Whole, it took 8-14% of a boss, a rival to the Flare. A boss now takes half (`shield_arm boss=0.5`, in its text): 4.5-5.3%. Act 1 with a bulwark (`story --type bulwark`) is within -5%/+4% of the old rule, falls no higher. The Prologue can't hold a bulwark (no type choice in play yet; SetType is harness-only) and has no balance harness; Act 1 at level 1 stands in for it.
-2. **Merge: GO sent to main** (judge's verdict, 12 October, below). The judge's one before-merge check (fix 1) already holds: the Strike stretches to its last blow (`flareLen` in Flare.cs:184), and `The_fourth_toll_and_the_healing_peal` lands four tolls and the blast.
-3. **Phase 2 judged: GO, PASS WITH FIXES.** The numbers are in `scratchpad/c7/sheet2.md`; `c7/fin/` holds Burns at x0.8 in the arena plus the Banked Flame cells (unread). The judge's fixes, in priority:
-   - (2) `TollCut`'s fallback puts the boss last (`OrderBy(x => x.Boss)`), and a re-picked cut on a boss carries onBoss/Blows; re-run Act 1 for the stalker and keep x0.85 if the mean stays within ±3%.
-   - (3) Burns: run Act 1 for the arcanist at x0.9 and x1.0 (after the ember fix) and take 1.0 if it meets the bar (mean within ±3%, no cell beyond ±6%).
-   - (4) Called Down keeps its target from the frost and moves to the next toughest. No ember falls on open ground while anything stands in reach. Seeking embers pass over a boss that can't be hurt (rename `TollCanHurt` to `FlareCanHurt`). Re-measure the kindler (band 1.29 at T3; full T4 at 15% or more).
-   - (5) Butcher's Hour: "each kill adds 0.3 s, up to 8 s more" goes in its brief and lamp text; Overtime caps at 12 s more. Measure the butcher's band and Not Today's deaths.
-   - (6) CLASSES §7 acceptance becomes: (i) Act 1 calibration per staged Flare against its plain form: mean kill time within ±3%, no cell beyond ±6%, falls in noise; (ii) arena, health taken, full board: median of types 15-25% at every tier, each Flare 15-30%, the empty board reported but not banded; (iii) Stands judged by uplift (boss dps while it holds over outside, times uptime); (iv) once: a gates-off arena boss to prove the reading.
-   - (7) The sheet's 3.78 is 3.0 nominal (3.78 is after the build's damage).
-   - (8) Burns's first impact gets 3 frames of hitstop.
-   - (9) A boss killed by the Toll's poison after the Strike still plays the last blow (`FlareOnKilled` returns once FlareT <= 0).
-   Measure before the owner plays (not blocking): which modifiers Light my way lights before an Act 1 boss (if Called Down or Toll Doubled, run Act 1 with them: no cell more than 5% faster); Act 1 for bulwark/Bell and butcher/Hour against their plain forms; the Hour's uplift, its plain form's T3-T4 kill time, its mending on a boss, and executes a second at T4. Tier-1 median (25.8%): wait for phase 6, then re-measure at 96 seeds.
-4. **Banked Flame, after the verdict:** re-run the two cells (in `c7/fin/`, the banking pilot). Then propose 2-3 options with numbers at 48 seeds for the banking pilot and a non-banking one (`--bank 0`), for example a 15-20% price, a second charge that fills faster or comes cheaper, or a gift that pays even when spent at once (say, a banked charge's Flare 25% stronger). Have the judge pick, and fold the pick into the go/no-go.
+## 1. Done this session
+- Merged `claude/vigilant-galileo-l6jqyx` (docs only), 834 tests passed.
+- **The cut (owner: "let arena phases shorten")**, 4659982f + b8828e4b: `ArenaBoss.FloorNow = max(Floor*FloorScale*(1-FlareCut), min(Floor*FloorScale, 6))`; `FlareCut = min(0.5, 1.0 * Enemy.FlareTook / phase span)`; only health credited "flare" counts (Battle.cs next to BossHealthBy). Story bosses exempt (`StoryBoss.FlareCuts => false`). Harness `--flarecut MAX[,RATE]` (default 0.5,1), `ArenaBoss.PhaseLog` -> `BossPhases` in arena results. Tests in BossTests and StoryNightTests.
+  - Cut alone, every player: arena bosses -6 to -15% (arcanist -18 to -24%); the Flare's no-lamp share fell (arcanist 43->34%, 48->40%).
+- **Judge 3** (a46133c0270318ade, sheet `N/judge3_sheet.md`): cut PASS (rate 1, cap half) plus the 6 s minimum; story bosses keep floors PASS; Banked Flame not bound by the 35% line (its own kill-time bound); keep the price; M1/M2 asked.
+- **M1** (`N/m12/pa_*`): a phase-aware banker (holds the second charge while this phase's cut >= 0.25) beat firing both at once for every calling; now the harness default (`--phaseaware 0` for the old hands).
+- **M2** (`N/m12/m2*`): C40's non-banker cost the arcanist L30 +14/+17% (plain) and +5/+9% (deft): the half cap swallows "strikes 40% harder".
+- **Judge 5** (a8ae3459f53288069, sheet `N/judge5_sheet.md`): H PASS at held 0.75; band restated to 6-25% (no single held fits 8-20%); warden L10 confirmed at 192 seeds a hand (`N/j5/`): -14.3% / -9.8%. Results `N/j4/`, summary `python N/j4sum.py`.
+- **Judge 4** (aefdc28772b26d345, sheet `N/judge4_sheet.md`): FAIL for C40; fix applied in daa58e19: Banked Flame = "Hold two Flares. The second fills half as fast; a Flare fired with both held strikes 75% harder." (`slower 0, second 0.5, harder 0, held 0.75`). Tests: data and behavior (a held shot 1.75x, never-held fill unchanged).
+- **The Hour at the Dig** closed without a trim: fresh seeds at twice the runs -2.3%, pooled -4.0% (inside ±6%). Arms tried and dropped (`N/dig/`). CLASSES §7 notes for Bell's Vault, the Hour's falls and the Dig written (31f9ed99).
+- C40 floors-on numbers (the old `bq4.sh`, folded in): banker -3% before the cut; the reserve saves nothing (falls 5 vs 6 of 384, `N/fc2/res_*`).
 
-## 3. Decisions this session (why)
-- The Toll's poison is its own DoT (`TollVenom`/`TickVenom` in FlareStaged.cs). Her poison stack ticks at its strongest rate times its stacks, so a 2100-power cut lifted her whole stack and took its credit (71% of a boss at T4).
-- The Toll's boss cuts carry four cuts' worth (`onBoss`; data `bossWorth` overrides). This is the plain form's worth after power went 700 to 2100. The judge had written "12/boss cuts", but at 12 it did 5-8x the plain form per cast.
-- Burns' embers strike a boss only when aimed at it, and never fall back onto a lone boss.
-- `bossMul` (a Flare arg in FlareHit, bosses only), calibrated on Act 1 story kill time: Burns 0.8, Toll 0.85. The arena took-share is set by the boss gates, so it is no lever (sheet D).
-
-## 4. Gotchas
-- The harness reads `lamps.json` at process start. Variant scripts patch `lamps_quarters.py`, rebuild and restore (`c7/var.sh`, `c7/r3.sh`). Never build Release balance while a run is going: the dll is locked, the build fails quietly with "2 Error(s)" and the old dll runs.
-- Baseline (integration) harness: `c7/base/godot/balance/bin/Release/net8.0/Balance.dll` (git archive of integration, built). Its story has no `--type`.
-- In foreground bash, wait with `for i in $(seq 1 58); do [ -f done ] && break; sleep 10; done`.
-- Scripts in `c7/`: `rebcheck.py` (rebuke A/B), `p2stat.py [--split] label=file` (Flare per type/tier, boss split by source), `stcmp.py base now [callings]` (story), and c6's `typeband.py`. Scratch root: `C:\Users\munch\AppData\Local\Temp\claude\C--Users-munch-Desktop-survivorsunchained\ba85aba8-36f4-4cf9-99c5-4c5ef9e4a65c\scratchpad\`.
-
-## 5. Files to read first
-`godot/logic/Sim/FlareStaged.cs`, `Flare.cs` (FlareBlow), `WardenLamps.cs` (Rebuke), `godot/logic/Rpg/LampBook.cs` (Suggest), `tools/classes/lamps_quarters.py` (the flare() lines), `docs/design/CLASSES.md` §3.6 and §7, `c7/sheet2.md`.
+## 2. Tools
+- Harness copies: `N/bal3` (cut, C40), `N/bal6` (+6 s, phase log, phase-aware flag), `N/bal7` (H lamp, phase-aware default), `N/bal8` (+ `FlareFullBankShots` in results). Rebuild after logic changes: `cd godot/balance && dotnet build -c Release`, copy to a new `N/balX`. Runs use cwd `godot/` (data read from there).
+- Overrides: `N/over/plainhour3` (plain Hour), `N/over/nomods`, `N/over/cdonly` (Burns Twice modifiers off / Called Down alone; made from C40-era lamps.json: remake from the current one before reuse).
+- Python on Windows: give it `C:/...` paths.

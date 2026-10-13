@@ -21,6 +21,7 @@ public abstract class StoryBoss : ArenaBoss
 
     protected override double SoftAt => 270;
     protected override double HardAt => 360;
+    protected override bool FlareCuts => false;
 
     /// <summary>Its blow (what its moves' multiples are of) as a share of her calling's own health at her level
     /// (Character.OwnHealth): what she is, not what she drafted or wears, which stay her margin. A story fight

@@ -144,6 +144,9 @@ public sealed class Enemy : Pooled
     /// <summary>A boss's gate: health stops here, and what would have gone past it is
     /// its Break (docs/SKILLS_DESIGN.md, "Bosses").</summary>
     public double HpFloor, Overflow;
+    /// <summary>A boss's health the Flare took in this phase (the Break up to its cap included): it cuts an
+    /// arena phase's floor (ArenaBoss.FloorNow).</summary>
+    public double FlareTook;
     /// <summary>A boss's stagger bar (0..1), filled by what would lock a lesser creature;
     /// held while staggered, and resisting it for a while after.</summary>
     public double Stagger, StaggeredT, StaggerResistT;

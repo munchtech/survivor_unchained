@@ -146,6 +146,25 @@ public class LampsTests
     }
 
     [Fact]
+    public void Before_act_one_is_done_light_my_way_lights_only_the_early_modifier()
+    {
+        // At most one early modifier per Flare (§7), and before chapter.done only it is suggested.
+        foreach (var g in Lamps.All.Values.Where(l => l.Kind == LampKind.UltimateMod).GroupBy(l => l.At[0]))
+            Assert.True(g.Count(l => l.Early) <= 1, g.Key);
+        var ch = Survivor("arcanist", 12);
+        LampBook.SetType(ch, "kindler");
+        var w = new WorldState();
+        LampBook.LightSuggested(ch, w);
+        var mods = LampBook.Now(ch).Lit.Where(id => Lamps.Get(id).Kind == LampKind.UltimateMod).ToList();
+        Assert.Equal(["kindler.burns_twice.more_embers"], mods);
+        w.Facts["chapter.done"] = true;
+        var ch2 = Survivor("arcanist", 12);
+        LampBook.SetType(ch2, "kindler");
+        LampBook.LightSuggested(ch2, w);
+        Assert.Contains("kindler.burns_twice.called_down", LampBook.Now(ch2).Lit);
+    }
+
+    [Fact]
     public void LampsGoOutOnlyWhileTheRestHangsTogether()
     {
         var ch = Survivor("warden", 10);

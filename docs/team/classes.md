@@ -1,6 +1,6 @@
 # Classes (phase 2 in progress)
 
-**State (12 October, end of session 7):** branch `classes-6`. Steps 1-3 done. The rebuke's checks passed after one fix: a boss takes half a rebuke (whole, it took 8-14% of a boss). Phase 2's four staged Flares are measured and calibrated on Act 1's story bosses (Burns Twice x0.8, the Toll x0.85 on bosses; the Toll's poison is its own). They wait for a judge, then a go/no-go to main. Light my way never lights Banked Flame (owner); the owner wants Banked Flame to be a clear reward (options next). Handoff: `docs/handoff/classes.md`.
+**State (12 October, end of session 8, wind-down):** branch `classes-8`. The phase-2 judge's fixes 2-9 are built and measured on Act 1 (Burns Twice now x1.0 on bosses; the Toll x0.85 kept); not yet judged. Banked Flame: on the arena the bosses' floors hide any reward (every option within ±4%); with the floors off, today's lamp banked kills a boss 13% faster, unbanked 5.6% slower; options still to measure and judge. Butcher's Hour fails Act 1 against its plain form (+14% boss time, more falls): a fix is next. The phase-6 plan (one staged Flare per type early) is drafted in CLASSES §7, not yet judged. Handoff: `docs/handoff/classes.md`.
 
 **Key decisions**
 - The pilot banks Banked Flame (one charge kept for a boss or the edge): the lamp is a sidegrade banked, a trap unbanked; Light my way should never light it (owner asked).

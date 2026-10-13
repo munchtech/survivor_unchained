@@ -76,10 +76,10 @@ def FM(flare, rule, phase=2, **args):
     return e
 
 
-def lamp(id, name, kind, region, text, effects, at=(), calling=None, road=None, gate=0, feeds=()):
+def lamp(id, name, kind, region, text, effects, at=(), calling=None, road=None, gate=0, feeds=(), early=False):
     lamps.append({k: v for k, v in {
         "id": id, "name": name, "kind": kind, "region": region, "calling": calling, "road": road,
-        "at": list(at), "feeds": list(feeds), "gate": gate, "text": text, "effects": effects,
+        "at": list(at), "feeds": list(feeds), "gate": gate, "early": early, "text": text, "effects": effects,
     }.items() if v not in (None, [], 0) or k in ("effects",)})
     return id
 
@@ -109,8 +109,8 @@ def hearth(calling, start, form, forms, rx1, rx1_ups, rx2, rx2_ups, flare_lamps,
     f1 = lamp(f"{calling}.{slug(flare_lamps[0][0])}", flare_lamps[0][0], "flareLamp", "hearth", flare_lamps[0][1], [flare_lamps[0][2]], at=[s], calling=calling, road=g)
     f2 = lamp(f"{calling}.{slug(flare_lamps[1][0])}", flare_lamps[1][0], "flareLamp", "hearth", flare_lamps[1][1], [flare_lamps[1][2]], at=[f1], calling=calling, road=g)
     lamp(f"{calling}.{slug(blue[0])}", blue[0], "blue", "hearth", blue[1], blue[2], at=[r2], calling=calling, road=g, gate=6)
-    lamp(f"{calling}.banked_flame", "Banked Flame", "blue", "hearth", "Hold two Flares. Each fills 30% slower.",
-         [R("flare.banked", charges=2, slower=0.3)], at=[f2], calling=calling, road=g, gate=6)
+    lamp(f"{calling}.banked_flame", "Banked Flame", "blue", "hearth", "Hold two Flares. The second fills half as fast; a Flare fired with both held strikes 75% harder.",
+         [R("flare.banked", charges=2, slower=0, second=0.5, harder=0, held=0.75)], at=[f2], calling=calling, road=g, gate=6)
     return s
 
 
@@ -140,7 +140,8 @@ def road(calling, start, rid, name, line, entry, smalls, skills, notables, blues
     for (fid, fname, mods), hang, gate in ((strike, spine[1], 3), (stand, spine[5], 12)):
         u = lamp(f"{rid}.{fid}", fname, "ultimate", "road", f"Learn the Flare {fname}.", [FL(fid)], at=[hang], calling=calling, road=rid, gate=gate)
         for nm, text, eff in mods:
-            lamp(f"{rid}.{fid}.{slug(nm)}", nm, "ultimateMod", "road", text, [eff], at=[u], calling=calling, road=rid, gate=gate)
+            lamp(f"{rid}.{fid}.{slug(nm)}", nm, "ultimateMod", "road", text, [eff], at=[u], calling=calling, road=rid, gate=gate,
+                 early=f"{rid}.{fid}.{slug(nm)}" in EARLY)
     roads.append({"id": rid, "calling": calling, "name": name, "line": line, "grip": grip,
                   "skills": [s for s, _ in skills], "strike": strike[0], "stand": stand[0]})
     return spine

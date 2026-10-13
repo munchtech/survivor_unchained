@@ -17,7 +17,7 @@ public sealed partial class Battle
     bool FlareMod(string rule) => Lamps.FlareMods.Contains(rule);
 
     /// <summary>How many blows it lands: the staged Flares' modifiers add tolls, embers and cuts.</summary>
-    int FlareBlowCount(FlareDef f) => f.Id switch
+    int FlareBlowCount(FlareDef f) => !f.Staged ? f.Blows : f.Id switch
     {
         "bell_of_the_morning" => f.Blows + (FlareMod("bell.fourth_toll") ? 1 : 0),
         "burns_twice" => FlareMod("burns.more_embers") ? (int)f.Arg("moreEmbers", 18) : f.Blows,
@@ -74,7 +74,7 @@ public sealed partial class Battle
     {
         hourAdded = 0;
         mistAt = 0;
-        if (f.Id == "butchers_hour") FillFrenzy();
+        if (f.Id == "butchers_hour" && f.Staged) FillFrenzy();
     }
 
     /* ---------------------------------------------------- Bell of the Morning -- */
@@ -111,6 +111,14 @@ public sealed partial class Battle
     /* ----------------------------------------------------------- Burns Twice -- */
 
     readonly List<(double X, double Z)> emberFell = new();
+    /// <summary>Called Down's target (an enemy id; -1 none).</summary>
+    int calledDown = -1;
+
+    /// <summary>Called Down's choice: the toughest it can hurt (a boss, then champions, then the most health),
+    /// frozen first among the rest.</summary>
+    Enemy? CalledDownPick(List<Enemy> near) => near.Where(FlareCanHurt)
+        .OrderByDescending(e => e.Boss).ThenByDescending(e => e.Elite).ThenByDescending(e => e.Status.Has(StatusKind.Frozen)).ThenByDescending(e => e.Hp)
+        .FirstOrDefault();
 
     /// <summary>The frost (everything in reach frozen, a boss chilled), then each ember: it falls on the thickest
     /// frozen pack not yet struck (every few on a boss), shatters what is frozen round it, and burns.</summary>
@@ -127,21 +135,30 @@ public sealed partial class Battle
                 if (e.Boss) ApplyStatus(e, new StatusPayload(StatusKind.Chill, 1, 1, f.Arg("chill", 3)), 0);
                 else Freeze(e, f.Arg("freeze", 2));
             });
-            FlareBlowEvent(f, "frost", false, p.X, p.Z, null, flareReach, "hitstop");
+            calledDown = FlareMod("burns.called_down")
+                ? CalledDownPick(HostilesInRadius(p.X, p.Z, flareReach).Where(e => e.Alive && e.State != EnemyState.Dying).ToList())?.Id ?? -1 : -1;
+            // The first impact lands harder than an ember (hitstopFrost, 3 frames).
+            FlareBlowEvent(f, "frost", false, p.X, p.Z, null, flareReach, f.Beat.ContainsKey("hitstopFrost") ? "hitstopFrost" : "hitstop");
             return;
         }
         int embers = flareAt.Length - (f.Beat.ContainsKey("frost") ? 1 : 0), ember = flareBlow - (flareAt.Length - embers);
         double r = f.Arg("emberRadius", 2.5) * FlareGrow(f);
         var near = HostilesInRadius(p.X, p.Z, flareReach).Where(e => e.Alive && e.State != EnemyState.Dying).ToList();
-        var boss = near.Where(e => e.Boss).OrderByDescending(e => e.Hp).FirstOrDefault();
+        // A boss it can't hurt now (shut, or pinned at its gate with its Break full) is passed over.
+        var boss = near.Where(e => e.Boss && FlareCanHurt(e)).OrderByDescending(e => e.Hp).FirstOrDefault();
         int onBoss = (int)f.Arg("onBoss", 4);
         // Four of twelve seek the boss, evenly (the third, sixth, ninth and twelfth).
         bool seek = boss != null && ember * onBoss / Math.Max(1, embers) > (ember - 1) * onBoss / Math.Max(1, embers);
-        Enemy? target;
+        Enemy? target = null;
         if (FlareMod("burns.called_down"))
-            target = boss ?? near.Where(e => e.Status.Has(StatusKind.Frozen)).OrderByDescending(e => e.Elite).ThenByDescending(e => e.Hp).FirstOrDefault();
+        {
+            // Called Down keeps the target it chose at the frost, and when that falls moves to the next toughest.
+            var held = calledDown >= 0 && calledDown < Enemies.Items.Length ? Enemies.Items[calledDown] : null;
+            target = held != null && near.Contains(held) && FlareCanHurt(held) ? held : CalledDownPick(near);
+            calledDown = target?.Id ?? -1;
+        }
         else if (seek) target = boss;
-        else
+        if (target == null)
         {
             // The thickest frozen pack not yet struck; then anything frozen; then the thickest pack at all.
             bool Struck(Enemy e) => emberFell.Any(q => Dist(q.X, q.Z, e.X, e.Z) < r);
@@ -185,9 +202,9 @@ public sealed partial class Battle
     /// grown with Toll Doubled), so what a boss takes doesn't swing threefold with how many things stand round it.</summary>
     double tollBossShare = 1;
 
-    /// <summary>A boss the cuts can hurt: not shut against all harm, nor pinned at its phase's gate with its Break
-    /// already full (the tenth of its health the Break rewards). Those cuts go to what's round it.</summary>
-    bool TollCanHurt(Enemy e) => !e.Boss || (e.TakenMul > 0 && !(e.HpFloor > 0 && e.Hp <= e.HpFloor && e.Overflow >= 0.1 * e.MaxHp));
+    /// <summary>A boss a staged Flare can hurt: not shut against all harm, nor pinned at its phase's gate with its Break
+    /// already full (the tenth of its health the Break rewards). The Toll's cuts and Burns' embers go to what's round it.</summary>
+    bool FlareCanHurt(Enemy e) => !e.Boss || (e.TakenMul > 0 && !(e.HpFloor > 0 && e.Hp <= e.HpFloor && e.Overflow >= 0.1 * e.MaxHp));
 
     /// <summary>A cut. At the first she picks her twelve: the strongest near, weakest first so the last falls on the
     /// strongest; on a boss its last four (a third of them). Each cut poisons, and what it leaves below a quarter of
@@ -200,17 +217,19 @@ public sealed partial class Battle
         if (flareBlow == 1) PlanToll(f, n);
         int slot = flareBlow - 1 < tollPlan.Count ? tollPlan[flareBlow - 1] : -1;
         Enemy? e = slot >= 0 && slot < Enemies.Items.Length ? Enemies.Items[slot] : null;
-        if (e == null || !e.Alive || e.State == EnemyState.Dying || !Targetable(e) || !TollCanHurt(e))
+        if (e == null || !e.Alive || e.State == EnemyState.Dying || !Targetable(e) || !FlareCanHurt(e))
         {
             var near = HostilesInRadius(p.X, p.Z, flareReach).Where(x => x.Alive && x.State != EnemyState.Dying).ToList();
-            // A boss that can't be hurt now is passed over while anything else stands near.
-            e = (near.Any(TollCanHurt) ? near.Where(TollCanHurt) : near)
-                .OrderByDescending(x => x.Boss).ThenByDescending(x => x.Elite).ThenByDescending(x => x.Hp).FirstOrDefault();
+            // A boss that can't be hurt now is passed over while anything else stands near, and a re-picked cut
+            // goes to the boss last: the plan already gave it its worth.
+            e = (near.Any(FlareCanHurt) ? near.Where(FlareCanHurt) : near)
+                .OrderBy(x => x.Boss).ThenByDescending(x => x.Elite).ThenByDescending(x => x.Hp).FirstOrDefault();
         }
         if (e != null)
         {
-            bool bossCut = e.Boss && e.Id == slot;
-            double dealt = FlareHit(e, bossCut ? tollBossShare : 1, f.School, 0, p.X, p.Z);
+            // A planned boss cut carries its share of the boss's worth; a re-picked one a plain boss cut's (onBoss of Blows).
+            double share = !e.Boss ? 1 : e.Id == slot ? tollBossShare : f.Arg("onBoss", 4) / Math.Max(1.0, f.Blows);
+            double dealt = FlareHit(e, share, f.School, 0, p.X, p.Z);
             if (e.Alive && e.State != EnemyState.Dying)
             {
                 TollVenom(e, dealt, f);
@@ -266,7 +285,7 @@ public sealed partial class Battle
         tollPlan.Clear();
         var p = Player;
         var near = HostilesInRadius(p.X, p.Z, flareReach).Where(e => e.Alive && e.State != EnemyState.Dying).ToList();
-        var boss = near.Where(e => e.Boss && TollCanHurt(e)).OrderByDescending(e => e.Hp).FirstOrDefault();
+        var boss = near.Where(e => e.Boss && FlareCanHurt(e)).OrderByDescending(e => e.Hp).FirstOrDefault();
         // The strongest near, weakest first: champions above the rest, then by health.
         var others = near.Where(e => !e.Boss).OrderByDescending(e => e.Elite).ThenByDescending(e => e.Hp).ToList();
         int bossCuts = boss == null ? 0 : Math.Max((int)Math.Round(f.Arg("onBoss", 4) * n / Math.Max(1.0, f.Blows)), n - others.Count);
@@ -286,7 +305,7 @@ public sealed partial class Battle
     double hourAdded, mistAt;
 
     /// <summary>Butcher's Hour holds.</summary>
-    public bool HourHolds => FlareT > 0 && Flare is { Id: "butchers_hour" };
+    public bool HourHolds => FlareT > 0 && Flare is { Id: "butchers_hour", Staged: true };
 
     /// <summary>Her skills' waits while the Hour holds: twice as fast.</summary>
     public double FlareCooldownMul(WeaponInst w) => HourHolds ? 1 / Math.Max(1, Flare!.Arg("faster", 2)) : 1;
@@ -305,18 +324,21 @@ public sealed partial class Battle
         }
     }
 
-    /// <summary>A kill: while the Hour holds it adds 0.3 s (Overtime 0.6), at most its own length again, and mends 1%.
-    /// A boss falling to the Flare, or while a Stand holds, is the last blow (§3.5).</summary>
+    /// <summary>A kill: while the Hour holds it adds 0.3 s (Overtime 0.6), at most 8 s more (Overtime 12), and mends 1%.
+    /// A boss falling to the Flare, or while a Stand holds, is the last blow (§3.5); so is one the Toll's poison
+    /// finishes after the Strike has ended.</summary>
     void FlareOnKilled(Enemy e, bool credited)
     {
-        if (FlareT <= 0 || Flare is not { } f) return;
-        if (e.Boss && !flareKilledBoss && (credit == "flare" || f.Kind == FlareKind.Stand))
+        if (Flare is not { } f) return;
+        if (e.Boss && !flareKilledBoss && (credit == "flare" || (FlareT > 0 && f.Kind == FlareKind.Stand)))
         {
             flareKilledBoss = true;
             Events.Emit(new Ev.Flare { Phase = FlarePhase.Kill, Id = f.Id, X = Player.X, Z = Player.Z, TX = e.X, TZ = e.Z, Target = e.Id, Clutch = flareClutch, Stand = f.Kind == FlareKind.Stand });
         }
-        if (!credited || f.Id != "butchers_hour") return;
-        double add = Math.Min(FlareMod("hour.overtime") ? f.Arg("overtime", 0.6) : f.Arg("extend", 0.3), Math.Max(0, f.Length - hourAdded));
+        if (!credited || !HourHolds) return;
+        bool over = FlareMod("hour.overtime");
+        double cap = over ? f.Arg("overtimeCap", 12) : f.Arg("extendCap", 8);
+        double add = Math.Min(over ? f.Arg("overtime", 0.6) : f.Arg("extend", 0.3), Math.Max(0, cap - hourAdded));
         if (add > 0) { hourAdded += add; FlareT += add; flareLen += add; }
         HealPlayer(MaxHp * f.Arg("mend", 0.01), "flare", true);
     }
@@ -324,7 +346,7 @@ public sealed partial class Battle
     /// <summary>While a Stand holds: Red Mist (lesser things near her flee, twice a second).</summary>
     void FlareStagedTick(FlareDef f, double dt)
     {
-        if (f.Id != "butchers_hour" || !FlareMod("hour.red_mist") || Time < mistAt) return;
+        if (!HourHolds || !FlareMod("hour.red_mist") || Time < mistAt) return;
         mistAt = Time + 0.5;
         var p = Player;
         ForEachHostileInRadius(p.X, p.Z, f.Arg("mistRadius", 5), (e, d) =>
