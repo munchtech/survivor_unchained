@@ -148,10 +148,10 @@ def _body_keys():
         k(16, "ease", hips=(-0.01, 0.007, -0.20), hrot=(0, -3, 0), spine=(0, -9, 0), neck=(0, -3, 0), head=(0, -10, 0),
           cl=(9, 0), cr=(9, 0)),
         # The drive: wheeled down, dropping into the lunge, bent over the staff.
-        k(18, "auto", hips=(-0.02, -0.12, -0.27), hrot=(-3, 8, 2), spine=(-5, 14, 3), head=(0, 6, 0),
-          cl=(2, 2), cr=(-2, 3)),
-        k(CONTACT, "ease", hips=(-0.03, -0.33, -0.33), hrot=(-4, 16, 3), spine=(-10, 26, 5), head=(0, 10, 0),
-          cl=(0, 4), cr=(-10, 4)),
+        k(18, "auto", hips=(-0.02, -0.12, -0.27), hrot=(-3, 8, 2), spine=(-9, 14, 4), head=(0, 6, 0),
+          cl=(2, 8), cr=(-2, 3)),
+        k(CONTACT, "ease", hips=(-0.03, -0.33, -0.33), hrot=(-4, 16, 3), spine=(-16, 26, 4), head=(0, 10, 0),
+          cl=(0, 14), cr=(-10, 4)),
         # The look up: the chest lifted and the head back to the sky, deep in
         # the lunge (the staff is planted and the fist low), the body in one
         # line on from the back thigh, the chest turned a little open to her
@@ -183,18 +183,30 @@ def _body_keys():
 BUTT_AT = np.array([-0.37, 0.004, -0.17])  # beside her right foot (the lunge's lead), by its heel
 STAFF = [
     (3, "grip", (-0.17, 1.40, 0.22), _n(0.75, 0.62, 0.15), (-0.9, -0.4, -0.2)),
-    (5, "grip", (-0.13, 1.68, 0.0), _n(0.95, 0.30, 0.05), (-1.0, 0.0, 0.1)),
+    (5, "grip", (-0.13, 1.70, 0.05), _n(0.95, 0.30, 0.05), (-1.0, 0.0, 0.1)),
     (7, "grip", (-0.11, 1.89, -0.21), _n(0.996, 0.087, 0.0), (-1.0, 0.2, 0.3)),
     (12, "grip", (-0.11, 1.90, -0.22), _n(0.996, 0.087, 0.0), (-1.0, 0.2, 0.3)),
-    (16, "grip", (-0.11, 1.895, -0.21), _n(0.996, 0.087, 0.0), (-1.0, 0.2, 0.3)),
-    (18, "grip", (-0.32, 1.16, -0.06), _n(0.45, 0.88, 0.10), (-0.6, -0.8, -0.2)),
-    (CONTACT, "butt", BUTT_AT, _n(-0.05, 1.0, 0.10), (-0.35, -1.0, -0.35)),
-    (28, "butt", BUTT_AT, _n(-0.04, 1.0, 0.09), (-0.35, -1.0, -0.35)),
-    (40, "butt", BUTT_AT, _n(-0.05, 1.0, 0.09), (-0.35, -1.0, -0.35)),
+    (15, "grip", (-0.11, 1.895, -0.21), _n(0.996, 0.087, 0.0), (-1.0, 0.2, 0.3)),
+    # The drive: the staff wheeled about the middle of her two fists (its
+    # head up, its butt down at her right), down in front of her face and
+    # out of its way, then driven straight down into the ground. The right
+    # elbow keyed by its way from the shoulder (E): forward, then down, the
+    # forearm out-forward to the planted staff.
+    (16, "grip", (-0.13, 1.88, -0.18), _n(1.0, 0.07, -0.05), (-1.0, 0.0, 0.4)),
+    (17, "grip", (-0.19, 1.62, -0.03), _n(0.90, 0.44, -0.08), _n(0.76, -0.09, 0.64), "E"),
+    (18, "grip", (-0.32, 1.32, 0.06), _n(0.56, 0.83, -0.04), _n(0.52, -0.64, 0.56), "E"),
+    (19, "grip", (-0.45, 1.00, 0.02), _n(0.15, 0.99, 0.04), _n(0.23, -0.97, 0.12), "E"),
+    (CONTACT, "butt", BUTT_AT, _n(-0.05, 1.0, 0.10), _n(0.15, -0.97, -0.10), "E"),
+    (28, "butt", BUTT_AT, _n(-0.04, 1.0, 0.09), _n(0.15, -0.97, -0.10), "E"),
+    (40, "butt", BUTT_AT, _n(-0.05, 1.0, 0.09), _n(0.15, -0.97, -0.10), "E"),
     (SWEEP, "butt", BUTT_AT, _n(-0.24, 0.96, 0.14), (-0.6, -0.8, -0.4)),
     (BLEND, "grip", (-0.37, 0.98, -0.14), _n(0.08, 0.99, 0.10), (-0.8, -0.3, -0.6)),
     (52, "grip", (-0.33, 1.12, -0.06), _n(0.0, 1.0, 0.14), (-0.8, -0.3, -0.6)),
 ]
+# Through the drive the fist turns on one even turn from its last poster
+# frame to its plant (as last solved), this far along at each frame: the
+# staff wheels in her front plane and the fist rolls no more than it must.
+DRIVE_U = {16: 0.1, 17: 0.32, 18: 0.64, 19: 0.94}
 # How much of the hand is the path's (the rest the idle's own arm; done
 # with by f56 so the idle's own elbow is settled by the seam).
 R_ON = [(0, 0.0), (3, 1.0), (51, 1.0), (56, 0.0)]
@@ -224,10 +236,8 @@ def _staff_at(fr):
     for a, b in zip(STAFF, STAFF[1:]):
         if a[0] <= fr <= b[0]:
             u = (fr - a[0]) / (b[0] - a[0])
-            if a[0] == 16:
-                u = u ** 1.6            # the drive: from still, hard into the ground
-            elif a[0] == 18:
-                u = 1 - (1 - u) ** 1.3  # still accelerating through
+            if a[0] in (15, 16, 17, 18, 19):
+                pass                    # the drive: keyed every frame
             elif a[0] == SWEEP:
                 u = 1 - (1 - u) ** 2    # off the ground fast
             else:
@@ -258,7 +268,7 @@ class Flare:
     # -- the body alone (shoulders, chest) at each frame
     def body(self):
         rig, I = self.rig, self.rig.I
-        S_r, S_l, chest = [], [], []
+        S_r, S_l, chest, E_r = [], [], [], []
         for fr in range(self.n):
             pose = self.track(fr)
             pose = dict(pose, hips=dict(pose["hips"], pos=self._hips(pose, fr)))
@@ -267,8 +277,10 @@ class Flare:
             g, p = rig.sk.fk(local[None], pos[None])
             S_r.append(p[0, I["upperarm_r"]])
             S_l.append(p[0, I["upperarm_l"]])
+            E_r.append(p[0, I["lowerarm_r"]])
             s3 = I["spine_03"]
             chest.append(qmul(g[0, s3], qinv(rig.grest[s3])))
+        self.E_r = np.array(E_r)
         return np.array(S_r), np.array(S_l), np.array(chest)
 
     def _hips(self, pose, fr):
@@ -305,7 +317,19 @@ class Flare:
                 pa = self._wrist_of(a, fr, R)
                 pb = self._wrist_of(b, fr, R)
                 W = pa + (pb - pa) * u
-            pole = np.array(a[4]) + (np.array(b[4]) - np.array(a[4])) * u
+            # The elbow's way: a pole from where the arm hangs, or (E) the
+            # elbow's way from the shoulder; laid between keys as ways from
+            # the shoulder, then given back as a pole.
+            hang = self.E_r[fr] - S_r[fr]
+            va = np.array(a[4]) if len(a) > 5 else hang + np.array(a[4])
+            vb = np.array(b[4]) if len(b) > 5 else hang + np.array(b[4])
+            pole = (va + (vb - va) * u) - hang
+            kn = None
+            if fr in DRIVE_U and self.Rr is not None:
+                qa, qb = self.Rr[15], self.Rr[CONTACT]
+                q = qslerp(qa, -qb if float(np.dot(qa, qb)) < 0 else qb, DRIVE_U[fr])
+                d = qrot(q, np.array([0, 0, 1.0]))
+                kn = qrot(q, np.array([0, 1.0, 0]))
             w = _curve(R_ON, fr)
             if w < 1.0:
                 Wi = S_r[fr] + qrot(chest[fr], v_idle)
@@ -314,8 +338,11 @@ class Flare:
                 W = Wi + (W - Wi) * w
                 d = _slerp_dir(bi / np.linalg.norm(bi), d, w)
                 pole = pi + (pole - pi) * w
-            out.append({"pos": tuple(float(x) for x in W), "blade": tuple(float(x) for x in d), "frame": "char",
-                        "pole": tuple(float(x) for x in pole), "twist": 0.5})
+            spec = {"pos": tuple(float(x) for x in W), "blade": tuple(float(x) for x in d), "frame": "char",
+                    "pole": tuple(float(x) for x in pole), "twist": 0.5}
+            if kn is not None:
+                spec["knuckles"] = tuple(float(x) for x in kn)
+            out.append(spec)
         return out
 
     def _wrist_of(self, key, fr, R):
@@ -351,7 +378,8 @@ class Flare:
                 dw = qrot(qr, AXIS)
                 Rl = self.Rl[fr] if self.Rl is not None else None
                 Ws = on - (qrot(Rl, M_L) if Rl is not None else 0.0)
-                pole_s = np.array((0.6, -0.3, 0.8)) if fr < 17 else np.array((0.9, -0.3, -0.4))
+                k = _smooth((fr - 16) / 3.0)
+                pole_s = np.array((0.6, -0.3, 0.8)) * (1 - k) + np.array((0.9, -0.3, -0.4)) * k
                 W = Wi * wi + Ws * ws + Wo * wo
                 pole = pole_i * wi + pole_s * ws + pole_o * wo
                 if wo > 0 and self.Rl is not None:
@@ -362,6 +390,12 @@ class Flare:
                     spec["knuckles"] = tuple(float(x) for x in qrot(q, np.array([0, 1.0, 0])))
                 else:
                     spec["blade"] = tuple(float(x) for x in dw)
+                    # The fist's long way across the shaft: from her shoulder
+                    # to the shaft (fixed, so the fist does not roll round the
+                    # shaft as the elbow settles, and its channel stays on it).
+                    kn = on - S_l[fr]
+                    kn = kn - dw * float(np.dot(kn, dw))
+                    spec["knuckles"] = tuple(float(x) for x in kn / np.linalg.norm(kn))
                     if ws < 1.0:
                         spec["aim"] = ws
             else:
@@ -441,7 +475,7 @@ def finger_mix():
     return full("relaxed"), full("grip"), full("spread")
 
 
-def flare_burns_twice(rig, rounds=4, log=None):
+def flare_burns_twice(rig, rounds=6, log=None):
     F = Flare(rig)
     clip = None
     G = None
@@ -457,7 +491,32 @@ def flare_burns_twice(rig, rounds=4, log=None):
         G, _ = F.hands_of(clip)
         if log:
             log(r, F, clip)
+    _settle(rig, F, clip)
     return clip
+
+
+def _settle(rig, F, clip, a=50, b=56):
+    """Her right arm eased over f50-56 into the idle's own (solved here over
+    the idle's frames about its first, as idle_arcanist solves them), and her
+    toes into her standing's, so the last frame is idle_arcanist's first."""
+    from keyed import solve_frames
+    base = idle.base_of(rig, "arcanist")
+    n = base.frames - 1
+    lo = a - 6
+    idx = [(fr - END) % n for fr in range(lo, END + 7)]
+    rot, _ = solve_frames(rig, [idle.arcanist(0, 0) for _ in idx], [(base.rot[k], base.pos[k]) for k in idx],
+                          loop=False, weapon="staff")
+    I, sk = rig.I, rig.sk
+    arm = [I["upperarm_r"]]
+    for j in arm:
+        arm += [k for k, p in enumerate(sk.parent) if p == j and k not in arm]
+    toes = [I["ball_l"], I["ball_r"]]
+    for fr in range(a, END + 1):
+        w = _smooth((fr - a) / (b - a))
+        for j in arm:
+            clip.rot[fr, j] = qslerp(clip.rot[fr, j], rot[fr - lo, j], w)
+        for j in toes:
+            clip.rot[fr, j] = qslerp(clip.rot[fr, j], F.base.rot[fr, j], _smooth((fr - 52) / 8))
 
 
 def clips(rig, want):
