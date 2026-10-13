@@ -46,6 +46,8 @@ public sealed partial class Battle
     /// <summary>When each of a staged Strike's aims falls (Burns Twice: "aim" before each ember lands), and how many have.</summary>
     double[] flareAimAt = [];
     int flareAim;
+    /// <summary>Her aim at the press (radians, atan2 of z over x): where a staged Flare plays out with nothing near.</summary>
+    double flareAngle;
     bool flareClutch, flareReleased, flareKilledBoss;
     /// <summary>For the harness and the toll: casts, their times, clutch casts (falls the Flare kept from happening).</summary>
     public int FlareCasts, FlareClutches;
@@ -205,6 +207,7 @@ public sealed partial class Battle
         if (Aim is { } aim) { ax = aim.X - p.X; az = aim.Z - p.Z; }
         if (Len(ax, az) < 0.1) { ax = Math.Sin(p.Facing); az = Math.Cos(p.Facing); }
         double angle = Math.Atan2(az, ax);
+        flareAngle = angle;
         flareClutch = p.Hp < MaxHp * FlareClutch;
         int rank = FlareRank;
         // Its size grows with the long night until it fills the screen, then stops; its damage has no cap (§5).

@@ -441,7 +441,9 @@
     "onBoss": 4,
     "bossMul": 0.25,
     "doubled": 18,
-    "gone": 3
+    "gone": 3,
+    "emptyFan": 0.45,
+    "emptyRadius": 1.5
    }
   },
   {

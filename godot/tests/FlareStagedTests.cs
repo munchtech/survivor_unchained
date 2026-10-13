@@ -253,6 +253,27 @@ public class FlareStagedTests
     }
 
     [Fact]
+    public void The_roads_toll_with_nothing_near_cuts_the_air_along_her_aim_on_open_ground()
+    {
+        var b = Carrying("the_roads_toll");
+        b.Aim = (0, 10);
+        var cuts = Cast(b).Where(e => e.Phase == FlarePhase.Blow && e.Part == "cut").ToList();
+        Assert.Equal(12, cuts.Count);
+        Assert.All(cuts, c =>
+        {
+            double dx = c.TX - b.Player.X, dz = c.TZ - b.Player.Z, d = Math.Sqrt(dx * dx + dz * dz);
+            // Out on the ground ahead of her (her aim is +z), within her reach, each with a visible mark.
+            Assert.InRange(d, 1.5, 14);
+            Assert.True(dz > 0.7 * d, $"ahead: {dx:0.0},{dz:0.0}");
+            Assert.True(c.Radius > 0);
+            Assert.Equal(0, c.Target);
+        });
+        // Twelve different places, the last the farthest, on her aim.
+        Assert.Equal(12, cuts.Select(c => (Math.Round(c.TX, 1), Math.Round(c.TZ, 1))).Distinct().Count());
+        Assert.InRange(cuts[^1].TX - b.Player.X, -0.01, 0.01);
+    }
+
+    [Fact]
     public void The_roads_tolls_boss_cuts_carry_the_whole_flare_however_many_stand_round_it()
     {
         // Alone, the boss takes all twelve cuts; with nine round it, four, each three times as hard.

@@ -319,7 +319,15 @@ public sealed partial class Battle
                 if (!e.Boss && e.Alive && e.State != EnemyState.Dying && e.Hp < e.MaxHp * below) KillEnemy(e, true, null);
             }
         }
-        FlareBlowEvent(f, "cut", last, e?.X ?? p.X, e?.Z ?? p.Z, e, 0);
+        if (e != null) FlareBlowEvent(f, "cut", last, e.X, e.Z, e, 0);
+        else
+        {
+            // Nothing near: she cuts the air along her aim, a kata zigzagging out to two thirds of her reach and
+            // closing on her aim at the last (FLARE_LOOK "Empty"). From the blow number, not the sim's dice.
+            double k = (double)flareBlow / Math.Max(1, n), side = last ? 0 : flareBlow % 2 == 0 ? 1 : -1;
+            double a = flareAngle + side * f.Arg("emptyFan", 0.45) * (1 - 0.5 * k), d = flareReach * (0.2 + 0.47 * k);
+            FlareBlowEvent(f, "cut", last, p.X + Math.Cos(a) * d, p.Z + Math.Sin(a) * d, null, f.Arg("emptyRadius", 1.5));
+        }
     }
 
     /// <summary>The cut's poison: half its damage again over 4 s, the Flare's own. It marks the thing poisoned (a stack at
