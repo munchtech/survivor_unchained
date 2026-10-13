@@ -43,6 +43,11 @@ public sealed partial class Battle
     /// <summary>A Strike's blows, by time from the press (its beat, or even over its length).</summary>
     double[] flareAt = [];
     int flareBlow;
+    /// <summary>When each of a staged Strike's aims falls (Burns Twice: "aim" before each ember lands), and how many have.</summary>
+    double[] flareAimAt = [];
+    int flareAim;
+    /// <summary>Her aim at the press (radians, atan2 of z over x): where a staged Flare plays out with nothing near.</summary>
+    double flareAngle;
     bool flareClutch, flareReleased, flareKilledBoss;
     /// <summary>For the harness and the toll: casts, their times, clutch casts (falls the Flare kept from happening).</summary>
     public int FlareCasts, FlareClutches;
@@ -202,6 +207,7 @@ public sealed partial class Battle
         if (Aim is { } aim) { ax = aim.X - p.X; az = aim.Z - p.Z; }
         if (Len(ax, az) < 0.1) { ax = Math.Sin(p.Facing); az = Math.Cos(p.Facing); }
         double angle = Math.Atan2(az, ax);
+        flareAngle = angle;
         flareClutch = p.Hp < MaxHp * FlareClutch;
         int rank = FlareRank;
         // Its size grows with the long night until it fills the screen, then stops; its damage has no cap (§5).
@@ -218,6 +224,8 @@ public sealed partial class Battle
         flareLen = stand ? f.Length : Math.Min(StrikeMax, Math.Max(f.Length, f.Beat.ContainsKey("first") && flareAt.Length > 0 ? flareAt[^1] + 0.1 : 0));
         FlareT = flareLen;
         flareBlow = 0;
+        flareAimAt = FlareAimSchedule(f);
+        flareAim = 0;
         flareStruckBoss = false;
         flareKilledBoss = false;
         flareReleased = false;
@@ -341,7 +349,14 @@ public sealed partial class Battle
         }
         if (f.Kind == FlareKind.Strike)
         {
-            while (flareBlow < flareAt.Length && elapsed >= flareAt[flareBlow] - 1e-9) FlareBlow();
+            // Aims and blows in time order; an aim due with a blow waits for it (the frost freezes before the first aim).
+            while (true)
+            {
+                bool blow = flareBlow < flareAt.Length && elapsed >= flareAt[flareBlow] - 1e-9;
+                if (flareAim < flareAimAt.Length && elapsed >= flareAimAt[flareAim] - 1e-9 && (!blow || flareAimAt[flareAim] < flareAt[flareBlow] - 1e-9)) FlareAim();
+                else if (blow) FlareBlow();
+                else break;
+            }
         }
         else
         {

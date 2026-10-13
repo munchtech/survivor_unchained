@@ -147,6 +147,73 @@ public class FlareStagedTests
         Assert.All(pack, e => Assert.False(e.Status.Has(StatusKind.Frozen)));
     }
 
+    static double Gap(Enemy e, double x, double z) => Math.Sqrt((e.X - x) * (e.X - x) + (e.Z - z) * (e.Z - z));
+
+    [Fact]
+    public void Burns_twice_aims_each_ember_a_fifth_of_a_second_before_it_lands_and_lands_where_it_aimed()
+    {
+        var b = Carrying("burns_twice");
+        Enumerable.Range(0, 4).Select(i => Foe(b, 6 + 0.4 * i, 3)).ToList();
+        Enumerable.Range(0, 3).Select(i => Foe(b, -2, 7 + 0.5 * i)).ToList();
+        var boss = Foe(b, -6, 0, hp: 1e9, boss: true);
+        b.FillFlare(100, "t");
+        b.Events.Drain();
+        Assert.True(b.UseFlare(1, 0));
+        var at = new List<(double T, Ev.Flare E)>();
+        for (int i = 1; i <= 90; i++)
+        {
+            b.Tick(1 / 60.0, 0, 0);
+            at.AddRange(b.Events.Drain().OfType<Ev.Flare>().Select(e => (i / 60.0, e)));
+        }
+        var aims = at.Where(x => x.E.Phase == FlarePhase.Blow && x.E.Part == "aim").ToList();
+        var embers = at.Where(x => x.E.Phase == FlarePhase.Blow && x.E.Part == "ember").ToList();
+        Assert.Equal(12, aims.Count);
+        Assert.Equal(12, embers.Count);
+        // They aim at what the frost froze, so never before it.
+        double frost = at.First(x => x.E.Part == "frost").T;
+        Assert.All(aims, a => Assert.True(a.T >= frost));
+        for (int k = 0; k < 12; k++)
+        {
+            Assert.InRange(embers[k].T - aims[k].T, 0.2 - 1.5 / 60, 0.2 + 1.5 / 60);
+            Assert.Equal(aims[k].E.Target, embers[k].E.Target);
+            // A frozen pack hasn't moved; a chilled boss may have stepped a little.
+            Assert.InRange(Math.Sqrt(Math.Pow(aims[k].E.TX - embers[k].E.TX, 2) + Math.Pow(aims[k].E.TZ - embers[k].E.TZ, 2)), 0, 1);
+            Assert.Equal(k == 11, aims[k].E.Last);
+            Assert.Equal(0, aims[k].E.Hitstop);
+        }
+        Assert.Equal(4, aims.Count(a => a.E.Target == boss.Id));
+    }
+
+    [Fact]
+    public void Burns_twices_last_ember_throws_back_and_staggers_what_stands_and_a_boss_only_staggers()
+    {
+        var b = Carrying("burns_twice");
+        var pack = Enumerable.Range(0, 4).Select(i => Foe(b, 6 + 0.4 * i, 3)).ToList();
+        var boss = Foe(b, -6, 0, hp: 1e9, boss: true);
+        // 62 ticks: the last ember (1.05 s) has not yet fallen.
+        var ev = Cast(b, 1.02);
+        Assert.DoesNotContain(ev, e => e.Part == "shove");
+        var was = pack.Select(e => (e.X, e.Z)).ToList();
+        ev = Run(b, 0.02);
+        var shoves = ev.Where(e => e.Phase == FlarePhase.Blow && e.Part == "shove").ToList();
+        Assert.Equal(5, shoves.Count);
+        Assert.Equal(0, shoves.Single(e => e.Target == boss.Id).Radius);
+        Assert.Equal(0, boss.Kbx);
+        Assert.All(pack, e => Assert.True(e.Status.Has(StatusKind.Stun)));
+        // The last ember fell on the boss, across the field: the pack is thrown away from it, about 3 m, and comes to
+        // rest where its shove said while the stagger holds it.
+        Run(b, 0.45);
+        for (int i = 0; i < pack.Count; i++)
+        {
+            var e = pack[i];
+            var s = shoves.Single(x => x.Target == e.Id);
+            Assert.InRange(s.Radius, 2.5, 8);
+            Assert.True(e.X - was[i].X > 0.8 * s.Radius, $"thrown away from the boss: {was[i].X:0.00} to {e.X:0.00}");
+            // Near where its shove said (a packed crowd spreads itself a little as it lands).
+            Assert.InRange(Gap(e, s.TX, s.TZ), 0, 1.25);
+        }
+    }
+
     [Fact]
     public void Burns_twice_strikes_a_boss_with_its_four_embers_alone_or_in_a_crowd()
     {
@@ -183,6 +250,27 @@ public class FlareStagedTests
         var weak = Foe(c2, 2, 0, hp: one * 4);
         Cast(c2);
         Assert.False(weak.Alive && weak.State != EnemyState.Dying);
+    }
+
+    [Fact]
+    public void The_roads_toll_with_nothing_near_cuts_the_air_along_her_aim_on_open_ground()
+    {
+        var b = Carrying("the_roads_toll");
+        b.Aim = (0, 10);
+        var cuts = Cast(b).Where(e => e.Phase == FlarePhase.Blow && e.Part == "cut").ToList();
+        Assert.Equal(12, cuts.Count);
+        Assert.All(cuts, c =>
+        {
+            double dx = c.TX - b.Player.X, dz = c.TZ - b.Player.Z, d = Math.Sqrt(dx * dx + dz * dz);
+            // Out on the ground ahead of her (her aim is +z), within her reach, each with a visible mark.
+            Assert.InRange(d, 1.5, 14);
+            Assert.True(dz > 0.7 * d, $"ahead: {dx:0.0},{dz:0.0}");
+            Assert.True(c.Radius > 0);
+            Assert.Equal(0, c.Target);
+        });
+        // Twelve different places, the last the farthest, on her aim.
+        Assert.Equal(12, cuts.Select(c => (Math.Round(c.TX, 1), Math.Round(c.TZ, 1))).Distinct().Count());
+        Assert.InRange(cuts[^1].TX - b.Player.X, -0.01, 0.01);
     }
 
     [Fact]
