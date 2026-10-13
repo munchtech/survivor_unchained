@@ -1,54 +1,68 @@
 # Handoff: the heroine's body and outfits
 
-From outfits lead successor 13 (su-lead-high), 12 October 2026 night. **Stopped clean for a new session; no helper running, no turn held.** Start cold from here: `docs/team/README.md` ("Safety", "Working lean"), RESUME's "Coverage", then this page. **Never read a whole file**: `heroine_outfits.py` is ~5,900 lines with mixed CRLF/LF, so edit it with exact replacements (`S\ed.py <file> <pairs.py>`, pairs.py defines `PAIRS=[(old,new),...]` in raw strings `r"""..."""`).
+From outfits lead successor 14 (su-lead-high), 12 October 2026, late night. **Paused clean for a fresh coordinator. No helper is running and no turn is held.** Start cold from here: `docs/team/README.md` ("Safety", "Working lean"), then this page. **Never read a whole file.** `heroine_outfits.py` is about 6,000 lines with mixed CRLF and LF line endings: grep it and edit with exact replacements.
 
-## Start here (successor 13 stopped, 12 Oct night; no helper running, no turn held)
-- Branch `worktree-agent-a5ca10091b08dc429`. Worktree art = build **glove_g3** (the glove fix + the rigid clasp as in g0). It is **unjudged and uncommitted on purpose**. N = `C:\Users\munch\AppData\Local\Temp\claude\C--Users-munch-Desktop-survivorsunchained\33ad5b17-6735-4f1b-843e-85f16b19e648\scratchpad\outfits` (keep it).
-- **Tools (in N):**
-  - `CUF=<list> bash N/b.sh <tag>`: a locked full build plus close-ups into `N/<tag>` (B_DONE in run.txt; about 15 min).
-  - `bash N/locked.sh <cmd>`: use it for any render of the worktree's art (parallel solvers share one worktree).
-  - `N/solver_common.md`: the brief every solver reads first (rules, the lock, the motion check).
-  - lookdev's ORBIT takes `,x,z` target offsets (camera lists take two extra columns).
-  - lookdev's `CLIPFRAME=k` poses her at the motion check's picture k (167d2c1d). Pass the clip as `her/<clip>`. closeups.sh's POSE is a bone pose, so use `N/glove3/shoot.sh` for clip frames.
-- **The close-ups are not her rest pose.** `Idle` isn't in her rig, so lookdev shows her rest pose plus the HerPose posture, which spreads her breasts about 9 mm against her spine at the plunge.
-- **The checker (`tools/legal/motioncheck/count.py`):**
-  - It flags from 1 px now. It was 6 px, silent below that, so older qsum bases read lower.
-  - Pixels dropped by stray(), the binding filter and the lone filter are counted, logged in `stray.txt` and cropped.
-  - Judges 12 and 13 still want the root fix: draw garments flat grey in the test-colour mode, then assert 0 stray and 0 binding.
+## Start here (successor 14 paused, 12 Oct late night)
+- **Branch** `worktree-agent-a5ca10091b08dc429`. Main was merged in at de8cef63 (the close-up camera, animation's clips); dotnet test passed 844, failed 0.
+- **Nothing is judged and nothing is merge-ready.** Several unjudged changes are now code defaults: the glove weld and cuff, the leotard edge hold and tuck, clasp D2. Judge each before any merge request, or gate it off.
+- **Worktree art = build `clasp5/D1`.** That is the glove fix, the leotard hold (419ede90) and clasp D1 (50 deg horns, pulled in 4.5 mm), which is superseded by D2 in code. It is unjudged and uncommitted on purpose. Rebuild before any judge.
+- **Scratch.** N = `C:\Users\munch\AppData\Local\Temp\claude\C--Users-munch-Desktop-survivorsunchained\33ad5b17-6735-4f1b-843e-85f16b19e648\scratchpad\outfits` (keep it).
+  - `N/solver_common.md` is every solver's brief: the build lock, `b.sh`, `locked.sh`, the motion check.
+  - Parallel solvers in one worktree work, because the lock serializes builds.
 
-## Done this session
-- **Nipple rise: REVERTED to e2 exactly** (judge 11, `N/j11/verdict11.md`). The 3 mm plateau read as a rivet with chips, and the owner said it was "kinda ok before". The owner's call: closed, don't reopen.
-- **The Warden's "areola pixel" is not skin.** It is a skirt-plate highlight that matches a code colour; judge 12 passed that. It is fixed in the checker (76c823b5).
-  - Watch: the right cup's margin is +0.27 cm at warden_show_left_10.
-  - Judge 12: resample frames 9-11 at 4-8x density; widen the cup about 3 mm, mirrored, if the margin falls under 0.1 cm.
-- **The Arcanist glove see-through is fixed but not yet passed** (e11b2991, 6d38e296). A hide mark of exactly 1.0 now discards in heroine_skin.gdshader; every other mark is capped at 0.98. catch_breath went from 25 px to 0 at the hand.
-  - Judge 14 FAIL (`N/j14/verdict14.md`), worst first:
-    1. A skin wedge in the notch where the sleeve's front seam meets its hem (l_cuff_outer_rest ~797-815,517-567). Fix: run the glove's cuff 1.5-2 cm higher under the sleeve, or pin the flap. Not more discard.
-    2. The welded glove's open-edge fragments (73 left, 18 right) near the knuckles and palm: list them, close the ones on the outer surface, ring each at 4x.
-    3. Reshoot the palms at rest from about 25 cm, with her body, bodice and skirt hidden.
-    4. Minor: a 5 px spike at the left thumb tip (l_hand_inner_cb04 1250-1267,849-862).
-  - Then one sheet to a judge. Kit: `N/glove3` (lists, shoot.sh, report.txt) and `N/glove`.
-- **Clasp tips: not fixed.** The solver's kit is in `N/clasp/` (dump_idle.sh, balls.py, ortho2.py, sheet.py).
-  - At rest the tips sit on the bindings. Posed (HerPose), the rigid clasp and the breast-weighted bindings part by 9.5 mm (left) and 8.6 mm (right).
-  - Riding weights (`CLASP_RIDE=1`, default off) seat the balls (0.66/0.52 mm), but the crescent kinks (c1) or flattens (c2).
-  - Next route: keep the crescent rigid and put only its last ~6 mm and the ball on the roll's weights, pre-shaped so it reads as a crescent in her carriage. Then bend the tips onto the roll's crown and round the taper (N2: the drawn-down back rim is the chisel facet).
-  - Or ask the owner whether HerPose should move her breasts 9 mm at the plunge.
-- **Gold reads olive; likely cause: a double tint.** The `claspgold` texture is already tint x grain (~line 1201), and the shader's metal branch multiplies its mean by `tint` again (~line 144). Check `outfit_materials.json`.
+### Open items: exact state and next step
+1. **Arcanist glove** (judge 14's items, `N/j14/verdict14.md`).
+   - Done (cd1db038): the gloves weld only along their own edges (`weld(joined=)`, `FOLD_SAFE`); open edges went from 73/18 to 0/0; the thumb spike was one of those zips. The cuff (`GLOVE_TOP` 0.10) sits 4 cm under the sleeve. Palms were reshot with the body hidden.
+   - Sheet: `N/glove4/sheet.jpg` (20 tiles, listed in the glove solver's report in `N/glove4`).
+   - Judge 14's notch wedge (item 1) was NOT the glove: it was her belly seen under the leotard's lifted leg-line edge (`N/notch/sheet.jpg`, `N/hem/sheet.jpg`). Item 5 below fixes it.
+   - Next: one judge on `N/glove4/sheet.jpg` plus the notch tiles of `N/leo/sheet.jpg`, against verdict 14, blocking items only. Also: edges on 3+ faces 17/72 (no open boundary), and the sleeve binding 1-2 mm inside the glove at 355-357 deg, 5-7 mm above the hem (`N/hem`; fix it only if it shows at 1x).
+2. **Clasp D2** (f8f59d2b, unjudged, NOT built). What failed, and why:
+   - Measured cause: her spine bend, not her breasts. In her carriage the binding's U flattens.
+   - Routes that failed: riding weights (c1/c2), two halves, S (`CLASP_SHEAR`: squashed to 40%), A (`CLASP_A`: the foot drops 14 mm under the cloth), D1 (pulled in, floating horns). The coordinator ruled out floating horns.
+   - D2: the horns end at 25 deg (`CLASP_D_TH`), `CLASP_D_IN`=0, each tip `CLASP_D_ON`=3.7 mm onto the binding from its inner edge, the ball `CLASP_D_SEAT`=0.2 mm off it, lay-down on.
+   - Why it should hold: the binding slides against the clasp almost only sideways (+1.3 to +3.1 mm out, up to 3.7 mm along), not in depth. Spare room inside the binding's width: 0.96 mm at 20 deg, 1.34 at 25, 0.62 at 30, 0.12 at 35; 40 doesn't fit.
+   - Offline: rest gap 0.24 mm, posed 0.28; cloth 0.09-0.55 mm clear; skin 5-8 mm clear.
+   - Unchecked: the laid horn tips against the cloth when posed, jiggle, the look (the tip runs ~3.7 mm across the binding). Fallback: 20 deg. If both fail: a smooth U foot with only the stone and bezel (the coordinator's call).
+   - Next, in order:
+     1. `bash N/clasp6/dry.sh d2` then `meas.py`.
+     2. `CUF=N/cu_g.txt bash N/b.sh clasp6/D2`.
+     3. Ball gaps: `N/clasp/dump_idle.sh`, then `balls.py`.
+     4. Clips with jiggle on: `N/clasp3/clips.sh`.
+     5. The Arcanist motion check.
+     6. The sheet, g0 vs D2: a_clasp_* views, the Look, the close-up camera, the clips, 4x tips and stone.
+     7. A judge.
+   - Kits: `N/clasp2-6`.
+3. **Gold** (game light is the reference; `N/gold2/sheet.jpg`, `N/gold4/sheet.jpg`). It isn't olive in game and has the right hue. It is dull by day (no pixels at 245+) and brown or black at night. The play camera barely sees it; it matters at the Look and the close-up.
+   - Shader knobs, all default 0 (no change):
+     - `debug_view` 4 is a gold mask (e9b9667f).
+     - `gold_gloss`/`gold_rough` (26887c69) is the wrong lever: at night it goes black.
+     - `gold_floor` (1967199d) adds emission of the gold's own mean x floor x mix(0.4,1,sky). At night it lifts brown toward brass (Arcanist night close-up 77,34,3 -> 118,75,35 at 0.15); by day the Warden gains 4-11 R. The Arcanist day numbers are unreliable: they fell, undiagnosed, maybe the pose or the 138-295 px mask.
+     - Env trial knobs `GOLD_GLOSS`/`GOLD_ROUGH`/`GOLD_FLOOR` in People.cs and lookdev.gd.
+   - Next: a judge on `N/gold4/sheet.jpg` (unviewed). If a floor of about 0.08-0.15 clearly helps at night without flattening the day, make it the default. Otherwise the gold stays as it is and goes to the owner as a note. The other option is a fill reflection probe in town (not tried). Separately, match lookdev's exposure and sky to the game, so judges see what players see (lookdev's gold is about 2.5x darker).
+4. **Legal flat mode.**
+   - Done: 181e4033 (garments flat grey), f1b6b04c (uncoded skin flat warm grey), 45c94538 (the assert counts lone pixels and exits 1; `FLAT: off`; run.sh threshold 1).
+   - The judge FAILED the sign-off only for the run's scope.
+   - Next: on the final art, `run.sh all` for all four outfits (~44-46 clips each) at HEAD, threshold 1. Each summary must show `FLAT: stray 0, binding 0, lone 0`, frames above 0, and 0 areola and 0 genital frames. Confirm that no `stocking` surface overlaps the genital strip or the 6 cm zones (sheer counts as cover). Then a judge signs off.
+   - Margins now: Warden +0.27 cm, Arcanist +0.45, Ranger +1.23, Reaver +1.65.
+5. **Arcanist leotard edges** (419ede90, unjudged, in the D1 art). The leg-line edge is held 1 mm off her over its last 12 mm (`held_edges`, `piece(hold=)`, `HOLD`), and her skin is tucked out to 5 cm (`HOLD_TUCK`).
+   - Result: the notch wedge went from 202 px to 0, edge standoff median 1.9 -> 1.0 mm, coverage unchanged, FLAT 0/0/0.
+   - **But tucked skin seen rose** (frames/px): chain_haul 0/3 -> 6/83, daggers_fore 0/5 -> 7/114, vault 0/0 -> 1/21, vault_back 0/0 -> 4/66. The crops (`181eef02 ...\legal\leo1\arcanist\crops\tuck_arcanist_0..5.png`) show cyan slivers and a sawtooth of tucked edge along the leg line in side views, so the deeper edge tuck shows as the cloth lifts in motion.
+   - Next: a softer falloff, e.g. a full tuck only from ~10 mm in, and a gentler edge row. Check the real look of those frames at 1x and 3x, then a judge. Sheet `N/leo/sheet.jpg`; kit `N/leo` (edge.py, dry.sh, shoot_all.sh).
+6. **Close-up camera coverage.** Kit `N/cuv` (views.sh, go.sh). Camera views: wheel 1.0 (pitch 9 deg, 2.77 m, FOV 24); idle 0.92 (3.02 m, FOV 26.6); moving cap 0.6 (4.91 m, FOV 34); she turns so the camera sits at -34.4 deg; idle drift ±17 deg.
+   - Warden, Reaver, Ranger: FLAT 0/0/0, areola and genital 0.
+   - Next: the Arcanist on the final art.
+7. **Ranger boot heel** (diagnosed, not fixed; `N/rboot/sheet.jpg`, before only). In run_stalker her heel skin comes out through the boot's heel counter: up to 44 px, visible in the real look at 1x. The heel skin carries calf weight; the boot below the ankle is rigid on the foot, so the heel swings 43-51 mm against the boot.
+   - Recommended fix: mark her foot skin inside each Ranger boot "not drawn" (mark 1), as for the Arcanist's hands in the gloves (the BODY_OUT block, ~line 5935), below where the boot turns rigid (~ankle - 5 mm). First check the upper limit over all 10 frames with `N/rboot/out1.py`.
+   - Acceptance: tucked px 0 over the whole run in `N/cuv/go.sh`, no new flags.
+8. Later: catch_breath side_02 (1 px of genuine tucked skin at the bodice's hip edge; the leotard work may change it); the Ranger's tucked-ring at the wrist cuff (chain_haul_over_08, a look item); judge 10's spaulder list (`J\j10\verdict10.md`); the boots.
 
-## Next, in order
-1. The glove: judge 14's items 1-4, then one judge.
-2. The clasp (route above) and the gold's double tint.
-3. Two new 1 px flags: catch_breath side_02 (544,330, the bodice's hip edge) and vault_back over_04 (the chest clasp).
-4. Two side notes:
-   - The purple cup's edge stair-steps where it overlaps the gold clasp (a_bust_r ~1120-1140,800-845; judge 11, sent by the coordinator). Cause: aliasing or z-fighting. Check it at the play camera too (an idle/town close-up camera is coming).
-   - A dark flap at the bodice's leg opening by the hip (judge 13): a stray polygon or a tab?
-5. Judge 10's spaulder list (`J\j10\verdict10.md`): the A5 neck-corner crease, the A4 rivet halo, the A6 armpit cusp, the 3.9 mm neck fit (fix FOLLOW in make_motioncheck.py first), the N5 roll knuckle and step, the cap rivets' spacing and fleck.
-6. The boots.
+**Cost lessons (this session):**
+- Three of the solvers' premises were wrong: "breasts spread", "sleeve seam flap", "sleeve hem off the glove". Brief a solver to measure the cause first, and to build only after.
+- Solvers ran out right after their build. Hand the post-build shoot, measure and sheet to a worker.
+- Old handoff note fixed: HerPose does NOT spread her breasts; her spine bends.
 
-**Cost lessons:**
-- Parallel solvers in one worktree work with `locked.sh`.
-- Each judge round widened the scope. Give the judge the previous verdict, and ask for the blocking items only.
-- Successor 12's notes (spaulder, binding, clasp) are in this page's git history at 9b0536cc.
+## Done this session (successor 14)
+Glove weld and cuff (cd1db038); legal flat mode (181e4033, f1b6b04c, 45c94538); main merged (de8cef63); gold knobs (e9b9667f, 26887c69, 1967199d); clasp routes S, A, D, D2 (596a02a6, 467da49f, 87571429, f8f59d2b); leotard hold and tuck (419ede90).
 
 ## The owner's words and bar
 "AAA", "never settle", "we are striving for perfection". Edges "perfectly cut and tailored professionally". Sex appeal drives, "tho not at the cost of looking bad"; full cups with "massive cleavage" fine; the Reaver near-naked. Coverage "pixel perfect ... not even a few pixels"; holes and see-through "really distracting and bad". Fit means tighter, not bigger. Nipple poke-through on Arcanist and Ranger, equal both sides (the owner once chose 1.5 mm over 3).
