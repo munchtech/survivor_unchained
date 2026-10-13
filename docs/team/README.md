@@ -96,7 +96,7 @@ The main session keeps this current. It is the address list for SendMessage. Ret
 | UI art (paused; handoff ready at cd0f4ab6) | — | docs/team/ui_art.md |
 | Crafting (research, design, build) (paused; handoff ready at ed429efb) | — | docs/team/crafting.md |
 | Gameplay experience director | af2c026d86e1b532b | docs/team/experience.md |
-| Skills look and feel (VFX, under the main session) | RUNNING 13 Oct: af0782e2e3f51bc1f on flare-1 (the Flare grammar and Burns Twice, per docs/design/FLARE_LOOK.md §4) | docs/team/skills.md |
+| Skills look and feel (VFX, under the main session) | RUNNING 13 Oct: Flare successor 2 ab12c70ab5c88f6aa on flare-1 (worktree agent-af0782e2e3f51bc1f; hook Burns Twice in and SEE it first, then sound, judge, captures) | docs/team/skills.md |
 | Cinematics production | aece7b87e89b13f19 | docs/team/cinematics.md |
 | Performance and rendering (clarity in motion first) | PAUSED 11 Oct night (merged b87ad0c7: grade toe, portrait rig, LOD code; LOD art uncommitted in worktree agent-a4e0c353e61cca6dc). Next: oldleather LOD blob and re-judge, wilds toe, moonlight pass, fur round 2 (docs/handoff/performance.md "Paused here"). Resumes when a lead slot frees. On resume: her body now has two blend shapes (elbow_point_l/_r, from animation); the LOD must keep them | docs/team/performance.md |
 | Arena art | a0b61c278bdd5c994 | docs/team/arena_art.md |
