@@ -43,7 +43,7 @@ using SurvivorUnchained.Rpg;
 var opt = Opts.Parse(args);
 Pilot.ReadsBosses = opt.Get("bossread", "1") != "0";
 Pilot.Banks = opt.Get("bank", "1") != "0";
-Pilot.PhaseAware = opt.Get("phaseaware", "0") != "0";
+Pilot.PhaseAware = opt.Get("phaseaware", "1") != "0";
 ArenaSim.Director = opt.Get("charges", "1") != "0";
 StorySim.Flare = opt.Get("flare", "");
 SurvivorUnchained.Play.Bosses.ArenaBoss.Floors = double.Parse(opt.Get("floors", "1"), System.Globalization.CultureInfo.InvariantCulture);

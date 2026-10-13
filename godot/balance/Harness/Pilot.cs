@@ -147,7 +147,7 @@ public static class Pilot
             bool low = p.Hp < b.MaxHp * 0.25;
             // A boss in its phase transition can't be hurt (TakenMul 0): spare the Flare unless health is low.
             bool bossNear = b.HostilesInRadius(p.X, p.Z, 10).Any(e => e.Boss && (low || e.TakenMul > 0));
-            // A phase-aware banker (--phaseaware 1, judge 3's M1): with two charges, a phase the Flare has already cut by a
+            // A phase-aware banker (judge 3: it beat firing both at once for every calling; --phaseaware 0 for the old hands): with two charges, a phase the Flare has already cut by a
             // quarter keeps the next for the next phase (a cut stops at half; the second Flare's would be wasted).
             if (PhaseAware && bossNear && !low && b.FlareCharges > 1 && boss is { } bs && bs.FlareCut >= 0.25) bossNear = false;
             // Banked Flame holds two: a player who lit it keeps one for a boss or the edge, and spends on
@@ -260,7 +260,7 @@ public static class Pilot
     public static bool ReadsBosses = true;
     /// <summary>Off (--bank 0) for the hands before they banked a second Flare.</summary>
     public static bool Banks = true;
-    public static bool PhaseAware;
+    public static bool PhaseAware = true;
     /// <summary>When this run's Flare came ready (each run plays on one thread).</summary>
     [ThreadStatic] static Battle? readyIn;
     [ThreadStatic] static double readyAt;
