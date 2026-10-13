@@ -8,9 +8,14 @@ Written by the thirteenth classes lead (13 October). Branch `classes-10` (worktr
 - Coordinator's rulings: never tune a Flare into an invisible damage bump. Balance around fights without good Flare use, not by blunting the Flare.
 
 ## Start here
-1. **Batch W** (`bash S/w.sh`, may still be running; `S/w/q.out` ends "ALL"). It compares Burns with the aim fix (bal15, 46ab377d) against the old binary (bal13), arcanist kindler, on fresh seeds 201-248. Outputs: `S/w/arena.txt` (wins and deaths by tier), `crowd_13/15.txt` (look at "flare kills" a press: it should match bal13 within about 3%), `story.txt` (Act 1).
-   - If deaths still rise by more than noise (first batch `S/s`: 11 deaths of 240 before, 20 after), find which part does it. `S/v/arena_A.txt` (no aim, with shove) and `arena_B.txt` (aim, no shove) each had about 15 deaths, so the old binary's 11 may have been lucky.
-2. **Act 1 for the arcanist ran 7.7% shorter** with bal14 (`S/s/story.txt`). `S/v/story.txt` row st_C (no boss stagger from the shove) says whether the 0.15 boss stagger does it. If it does, and the owner's "Flares shorten things" doesn't cover it, set "shoveStagger" to 0 in lamps.json. The Flare lead only asked for the shove on survivors.
+1. **Batch W** (`bash S/w.sh`; `S/w/q.out` ends "ALL"). It compares Burns with the aim fix (bal15, 46ab377d) against its true parent: integration 3935476c, built at `S/bis/base/out`. Arcanist kindler, same data, arenas on fresh seeds 201-248, Act 1 48 seeds. Outputs:
+   - `S/w/arena.txt`: wins and deaths by tier.
+   - `crowd_b.txt` and `crowd_15.txt`: compare "flare kills" a press; within about 3% is the bar.
+   - `story.txt`: the Act 1 rows for bal15, bal14, and variants A (no aim), B (no shove) and C (no boss stagger), all against the parent.
+2. **Confound found:** `S/s` and `S/v` compared against `S/bal13`, which is classes-9's own build, not 3935476c. Every variant, even A and B, ran Act 1 6.6-8.1% shorter against it, so that gap is the build, not the shove. Only the within-batch differences stand:
+   - The aim cost a press about 15% of its Flare kills (V-B 28-38 against V-A 33-45). This is fixed in 46ab377d: on a synthetic crowd, 37.7% killed against 38.4% picking at landing.
+   - Arena deaths at 48 runs a tier are noise-level.
+   - If W shows Act 1 shorter by more than about 2% with the shove (15 against the parent), set "shoveStagger" to 0 in lamps.json. Variant C is the same build without it. The Flare lead only asked for the shove on survivors.
 3. Then send the coordinator one **MERGE REQUEST: classes-10@<sha>** (dotnet test passed 885/893 before the last two commits; run it again). In the same message, send **the phase-6 plan for the owner**: judge 7 PASS WITH FIXES, fixes applied (f4f8d3b8). Its final owner lines are below; fill in line 6.
 4. **Tell the Flare lead** (a422b108a0fdfb259, flare-1) that the ember now bends to the thickest pack within 3 m of its aim when its target fell before landing (data "aimBend" 3, default in code). They were told about aim, shove and the Toll on 440c4a90 and replied that they'll wire both once classes-10 reaches integration.
 5. **The drift** (`S/bis`, `bash S/bis.sh`; it waits for nothing now). It runs Act 1 never pressing (SU_NOPRESS=1 patches UseFlare) at health 103/130/100/109, 32 seeds, at integration commits p0 9cbc654c (pre-Flare), p1 90dd4062 (the Flare added), p2 cc228199, p3 b888da5c, p4 14dda627, p5 a86814cc. Summaries are `S/bis/sum_*.txt`, and `sum_all.txt` at the end. stc.py was patched for files without a Flare share.
