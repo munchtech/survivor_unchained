@@ -205,6 +205,26 @@ def _carry_l(dx, dy, dz):
     return h
 
 
+def _swing_l(abd, flex):
+    """The side-carry left arm swung whole about the shoulder (abduction out,
+    flexion forward, degrees), the elbow's bend and the hand on the forearm
+    kept: the reach, pole and thumb turn with it (judge 51: lifting by the
+    elbow swings the shield's top rim into the pauldron)."""
+    h = dict(arms_of("warden")["hand_l"])
+    az, el, r = h["arc"]
+    a, b = math.radians(abd), math.radians(flex)
+    Rz = np.array([[math.cos(a), -math.sin(a), 0], [math.sin(a), math.cos(a), 0], [0, 0, 1]])
+    Rx = np.array([[1, 0, 0], [0, math.cos(b), math.sin(b)], [0, -math.sin(b), math.cos(b)]])
+    R = Rx @ Rz
+    v = np.array([r * math.cos(math.radians(el)) * math.sin(math.radians(az)), r * math.sin(math.radians(el)),
+                  r * math.cos(math.radians(el)) * math.cos(math.radians(az))])
+    h["arc"] = arc_of(R @ v)
+    for k in ("pole", "thumb"):
+        if k in h:
+            h[k] = tuple(R @ np.array(h[k], float))
+    return h
+
+
 def warden_break(rig):
     base = idle.base_of(rig, "warden")
     shoulder = {"arc": arc_of((0.02, -0.06, 0.18)), "pole": (-0.8, -0.6, 0.0), "frame": "chest",
@@ -224,10 +244,14 @@ def warden_break(rig):
         # the shield rises off her hip and drops back with its weight, the
         # shoulder rolls back, the fist regrips; then all of it settles into
         # the side carry by f80. The forearm keeps the carry's roll.
-        (56, over("warden", hand_r=shoulder, clav_l=(10, 4), hand_l=_carry_l(0.045, 0.06, 0.035),
+        # The clavicle leads (its peak at f54), the arm swung whole about the
+        # shoulder trails it to f57; the elbow keeps the carry's bend.
+        (54, over("warden", hand_r=shoulder, clav_l=(10, 0), hand_l=_swing_l(6, 3.5),
+                  head=(8, 6, 0)), "auto"),
+        (57, over("warden", hand_r=shoulder, clav_l=(10, 0), hand_l=_swing_l(10, 6),
                   head=(10, 8, 0)), "ease"),
-        (64, over("warden", hand_r=shoulder, clav_l=(8, -10), hand_l=_carry_l(0.01, -0.015, 0.0),
-                  spine=(0, -3, 0), head=(4, -3, 0)), "ease"),
+        (64, over("warden", hand_r=shoulder, clav_l=(6, -10), hand_l=_swing_l(2.5, 0),
+                  spine=(0, -3, 0), head=(4, -3, 0)), "auto"),
         (72, over("warden", hand_r=shoulder, clav_l=(-2, -2), head=(0, 3, 0),
                   fingers_l={"curl": 1.05, "cascade": 0.05, "thumb": 1.6, "oppose": 0.9}), "ease"),
         (80, over("warden", hand_r=shoulder), "ease"),
