@@ -2556,6 +2556,7 @@ LEO_HOLD_Z = tuple(float(v) for v in os.environ.get("LEO_HOLD_Z", "0.002,-0.02,-
 HOLD_CAP = os.environ.get("HOLD_CAP", "1") == "1"
 LEO_FOOT = float(os.environ.get("LEO_FOOT", "0.004"))
 LEO_GUSSET_F = float(os.environ.get("LEO_GUSSET_F", "0.026"))
+LEO_U = tuple(float(v) for v in os.environ.get("LEO_U", "0,0.004").split(","))
 RBOOT_GONE = float(os.environ.get("RBOOT_GONE", "0.005"))
 
 
@@ -3793,12 +3794,25 @@ def arcanist():
     # little wider there, so the exact lines decide.
     corset = AND(neck_top - Z, OR(Z - 1.13, leotard + 0.02), sleeve("l"), sleeve("r"), plunge + 0.02)
 
+    # (judge h: the V's foot was a knot, the two leg lines meeting the bridge's
+    # straight cut in two corners, their binding folded and crossed by the
+    # gusset's. Now ONE U across the foot: the leg lines rounded into one curve
+    # LEO_U[0] round, in a chart tilted 45 degrees (t, up the front of her mound
+    # and forward under it alike), its bottom LEO_U[1] in front of the bridge's
+    # cut so this exact line, not the cut, decides; the gusset lies under it.)
+    y_ub = GAP_F - LEO_U[1]
+    t_ub = ((roof_z(0.0, y_ub) - 0.0035) - y_ub) / np.sqrt(2)
+
     def exact(q):
         qx, qy, qz = q[:, 0], q[:, 1], q[:, 2]
         fr = ramp(-(qy - CROTCH_Y), -0.03, 0.03)
         r = qz - CROTCH
         wq = (0.0145 + 0.42 * np.maximum(r, 0) + LEO_FOOT * np.exp(-(np.maximum(r, 0) / 0.035) ** 2)) * fr + (-0.01 + 1.5 * np.maximum(r - 0.13, 0)) * (1 - fr)
         legs = np.maximum(qz - 1.13, wq - np.abs(qx))
+        if LEO_U[0] > 0:
+            a_, b_, ru = wq - np.abs(qx), (qz - qy) / np.sqrt(2) - t_ub, LEO_U[0]
+            foot = np.where((a_ < ru) & (b_ < ru), ru - np.hypot(ru - a_, ru - b_), np.minimum(a_, b_))
+            legs = np.where((qy < CROTCH_Y) & (qz < CROTCH + 0.06), foot, legs)
         pl = np.where(fr > 0.5, u_dist(qx, qz), 1.0)
         return np.minimum(legs, pl)
     # A boned front from her underbust to below her navel: stiff, so it no
@@ -4394,6 +4408,11 @@ def arcanist():
     # (the gloves' cuffs 4 cm up under the sleeves, which end 6 cm short of her
     # wrists: at 2 cm a notch at the sleeve's hem showed her skin, judge 14)
     GLOVE_TOP = float(os.environ.get("GLOVE_TOP", 0.10))
+    # (the U's foot lies on the gusset, not held down through it: where the gusset
+    # is under it, 0 to 1, no hold; LEO_U)
+    def on_gusset(q):
+        return (float(LEO_U[0] > 0) * ramp(-np.abs(q[:, 0]), -0.018, -0.014) * ramp(q[:, 1], GAP_F - LEO_GUSSET_F - 0.002, GAP_F - LEO_GUSSET_F + 0.004)
+                * ramp(-q[:, 2], -(CROTCH + 0.035), -(CROTCH + 0.028)))
     # (judge h: the glove copied the nail's free edge at the thumb tip, an
     # overhang with a dark wedge under it, and a pale lip at the thumb and
     # index tips. Over the last 4-9 mm of each finger its hollows are filled
@@ -4444,7 +4463,7 @@ def arcanist():
                trim=gold(0.004), snap=False, hides=True, flare=(0.034, 0.03)),
         *piece("arcanist.corset", corset, "plumleather", lift=0.0035, smooth=8, iron=60, trim=gold(0.008), keep_off=("Head",), filled=True, edge=120, soften=80,
                bridge=True, cut=exact, stiff=[(0.03, front_panel), (0.03, collar), plunge_fold, taut_gore, plunge_rim],
-               hold=None if not LEO_HOLD else (lambda q: (q[:, 2] > CROTCH + LEO_HOLD_Z[0]) & (q[:, 2] < 1.2) & (np.abs(q[:, 0]) < 0.3), lambda q: ramp(q[:, 2], CROTCH + LEO_HOLD_Z[1], CROTCH + LEO_HOLD_Z[2]))),
+               hold=None if not LEO_HOLD else (lambda q: (q[:, 2] > CROTCH + LEO_HOLD_Z[0]) & (q[:, 2] < 1.2) & (np.abs(q[:, 0]) < 0.3) & (on_gusset(q) < 0.5), lambda q: ramp(q[:, 2], CROTCH + LEO_HOLD_Z[1], CROTCH + LEO_HOLD_Z[2]) * (1 - on_gusset(q)))),
         *(down_tube() if PLUNGE_TRIM == "down" else []),
         *(plunge_clasp() if PLUNGE_CLASP else []),
         # (judge 4: the front read as moulded latex. Four stitched boning
