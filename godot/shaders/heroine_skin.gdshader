@@ -109,17 +109,27 @@ uniform vec3 brow_colour : source_color = vec3(0.2, 0.15, 0.12);
 // of her vertex colours tuck_channel names): it never shows through what
 // she wears, and as nothing of her is cut away no gap opens in her where a
 // piece swings off her.
+// A full tuck is marked 0.98 (0.973 and over reads as all of it); a mark of
+// 1 is skin not drawn at all, inside a piece that closes round her: her hands
+// in the Arcanist's gloves, which no tuck keeps in (a finger is thinner than
+// it) and whose wrist came through the glove's back as it bent.
 uniform int tuck_channel = -1;
 uniform float tuck = 0.010;
+varying float tuck_gone;
 
 void vertex() {
+	tuck_gone = 0.0;
 	if (tuck_channel >= 0) {
 		float h = tuck_channel == 0 ? COLOR.r : tuck_channel == 1 ? COLOR.g : tuck_channel == 2 ? COLOR.b : COLOR.a;
-		VERTEX -= NORMAL * tuck * h;
+		tuck_gone = step(0.995, h);
+		VERTEX -= NORMAL * tuck * (h > 0.973 ? 1.0 : h);
 	}
 }
 
 void fragment() {
+	if (tuck_gone > 0.5) {
+		discard;
+	}
 	vec2 tx = UV * vec2(textureSize(paint, 0));
 	float lod = 0.5 * log2(max(dot(dFdx(tx), dFdx(tx)), dot(dFdy(tx), dFdy(tx))));
 	float far = smoothstep(far_from, far_to, lod);

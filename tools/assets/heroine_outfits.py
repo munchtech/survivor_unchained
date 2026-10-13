@@ -5823,6 +5823,9 @@ def cover_report(name, objs, tuck=None):
 
 COVER_STRIP, COVER_AREOLAS = _cover_regions()
 
+# (a full tuck's mark, and how far inside a glove's cuff her hand goes undrawn)
+TUCK_FULL = 0.98
+GONE_IN = 0.02
 # Her skin under each outfit's fitted pieces is marked, one colour channel
 # an outfit (CHANNELS, as People.cs has them), for the game to draw tucked a
 # few millimetres in (shaders/heroine_skin.gdshader): a smooth cup need not
@@ -5928,6 +5931,28 @@ if BODY_OUT:
             for _ in range(6):
                 hair = np.maximum(hair, (ADJ @ hair > 0.05).astype(float))
             vals[(hair[j] > 0.5) & (wsum("Head", "neck_01")[j] > 0.2), k] = 1
+        # A full tuck is marked TUCK_FULL (heroine_skin.gdshader reads 0.973 and
+        # over as all of it): a mark of 1 is her skin not drawn at all. So are
+        # her hands inside the Arcanist's gloves, from her fingertips to GONE_IN
+        # inside the cuff: no tuck keeps a hand in (a finger is thinner than a
+        # full tuck), and the back of her wrist, bent back as she caught her
+        # breath, came through the back of the glove tucked all the way (judge
+        # 10). Under the cuff's own edge she is tucked as before, so no gap
+        # opens there and a look into the cuff finds her.
+        vals[:, k] = np.minimum(vals[:, k], TUCK_FULL)
+        if name == "arcanist":
+            for sd in ("l", "r"):
+                glv = [o for o in objs if o.name.startswith(f"arcanist.glove_{sd}")]
+                if not glv:
+                    continue
+                gw = np.array([(o.matrix_world @ v.co)[:] for o in glv for v in o.data.vertices])
+                jn = cKDTree(P).query(gw)[1]
+                cuff = ARM_S[sd][jn[(ARMW[sd][jn] > 0.5) & (ARM_S[sd][jn] > ELBOW_S)]].min()
+                inside = (ARMW[sd][jj] > 0.5) & (ARM_S[sd][jj] > cuff + GONE_IN)
+                gone = inside & (vals[:, k] > 0)
+                vals[gone, k] = 1.0
+                print("HIDES arcanist glove_%s: her hand inside not drawn, %d vertices, from %.3f m down her arm (the cuff at %.3f, her wrist at %.3f); %d there unmarked, drawn"
+                      % (sd, gone.sum(), cuff + GONE_IN, cuff, WRIST_S, (inside & ~gone).sum()))
         print("HIDES", name, hid, "of", len(me.vertices), "vertices of her skin")
     col.data.foreach_set("color", vals.ravel())
     # Each outfit's coverage at rest, her skin tucked as the game draws it
@@ -5936,7 +5961,7 @@ if BODY_OUT:
     for name in OUTFITS:
         objs = [o for o in made if o.name.startswith(name + ".")]
         if objs and CHANNELS.index(name) <= 3:
-            cover_report(name, objs, 0.010 * vals[jb, CHANNELS.index(name)])
+            cover_report(name, objs, 0.010 * np.where(vals[jb, CHANNELS.index(name)] > 0.973, 1.0, vals[jb, CHANNELS.index(name)]))
     _, jw = cKDTree(P).query(np.array([(body.matrix_world @ v.co)[:] for v in me.vertices]))
     changed = np.abs(W - W_AUTHORED).sum(1) > 1e-4
     groups = {vg.name: vg for vg in body.vertex_groups}

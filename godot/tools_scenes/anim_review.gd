@@ -304,7 +304,7 @@ void fragment() { ALBEDO = vec3(UV.x, UV.y, FRONT_FACING ? 0.0 : 1.0); }"
 				sk.set_shader_parameter("pores", load("res://art/people/skin_pores.png"))
 				sk.set_shader_parameter("pore_scale", 50.0)
 				# (OUTFITSHADER=1: her skin under the outfit tucked in, as People.TuckSkin has it)
-				if env("OUTFITSHADER", "") != "":
+				if env("OUTFITSHADER", "") != "" and mi.mesh.surface_get_format(s) & Mesh.ARRAY_FORMAT_COLOR:
 					sk.set_shader_parameter("tuck_channel", ["warden", "arcanist", "reaver", "ranger"].find(env("OUTFIT", "warden")))
 				mi.set_surface_override_material(s, sk)
 	var outfit = env("OUTFIT", "warden")
