@@ -356,7 +356,7 @@ public static class Arms
     public static bool Scabbarded(WeaponKind kind) => kind == WeaponKind.Blade1H;
 
     /// <summary>How far the shield mount sits off the forearm bone, toward the back of the arm (m).</summary>
-    const float ShieldOff = 0.11f;  // was 0.08: 3 cm further out along the shield's face normal (judge 45)
+    const float ShieldOff = 0.115f;  // 0.08 -> 0.11 (judge 45), -> 0.115 (13 Oct: the rim grazed her own upper arm 1.6-1.8 mm in every Warden idle and stop; the arm runs along the disc)
 
     /// <summary>How far down the forearm the shield is strapped (m): its boss over her wrist, so the rim sits under her shoulder armour with air.</summary>
     const float ShieldAlong = 0.23f;
