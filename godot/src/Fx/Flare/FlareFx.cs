@@ -233,7 +233,8 @@ public partial class FlareFx : Node3D
             if (lastAt > 0)
             {
                 float s = (float)(t - lastAt);
-                Dip(1 - 0.3f * Mathf.SmoothStep(0.05f, 0.09f, s) * (1 - Mathf.SmoothStep(0.5f, 1.2f, s)) * (LessFlash ? 0.5f : 1));
+                // (Flare time: the last word's 6-frame hitstop runs it at a tenth, so 0.005 s is about 3 real frames.)
+                Dip(1 - 0.38f * Mathf.SmoothStep(0.003f, 0.008f, s) * (1 - Mathf.SmoothStep(0.5f, 1.2f, s)) * (LessFlash ? 0.5f : 1));
             }
             if (Done())
             {
