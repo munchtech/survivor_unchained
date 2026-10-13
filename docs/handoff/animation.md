@@ -24,7 +24,7 @@ Z = `C:\Users\munch\AppData\Local\Temp\claude\C--Users-munch-Desktop-survivorsun
   - Usual through-body and joint checks; judge on one face. His version waits for the hero.
   (Note: her clips are built at 30 fps today (`keyed.build`); check with the Flare lead whether 60 fps is a must or 30 with the same timings serves. The staff is `mage_staff`, Length 1.75, Grip 0.45 in `Arms.Spec`; its head is along the mount's long axis at Length - Grip from the grip: confirm the sign in a sheet.)
 - **Rules learned this round:** judges see one face and the worst-case outfit only (owner, 13 Oct); background helpers can't address the lead by name: tell them their final message is the report; `cd ../../..` from tools/anim lands in the MAIN checkout (use `git -C <worktree>`).
-- **Merge-request checklist:** tests green (`dotnet test` in godot/tests, 8 min); every other clip JSON byte-identical (`cmp` against `Z\clips_start`); pack by name (`build.py <clip>` under a Godot turn; never `build.py` with no names); commit `godot/art/anim/heroine.res`; push; branch@commit and the sheet path to the coordinator.
+- **Merge-request checklist:** (tests last green at df6cf15a, 883 passed; not run since 03148648 and 1d9c8099) tests green (`dotnet test` in godot/tests, 8 min); every other clip JSON byte-identical (`cmp` against `Z\clips_start`); pack by name (`build.py <clip>` under a Godot turn; never `build.py` with no names); commit `godot/art/anim/heroine.res`; push; branch@commit and the sheet path to the coordinator.
 
 ## 0b. Weapon anchors and sockets (12 October 2026)
 
