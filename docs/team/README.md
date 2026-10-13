@@ -101,7 +101,7 @@ The main session keeps this current. It is the address list for SendMessage. Ret
 | Performance and rendering (clarity in motion first) | PAUSED 11 Oct night (merged b87ad0c7: grade toe, portrait rig, LOD code; LOD art uncommitted in worktree agent-a4e0c353e61cca6dc). Next: oldleather LOD blob and re-judge, wilds toe, moonlight pass, fur round 2 (docs/handoff/performance.md "Paused here"). Resumes when a lead slot frees. On resume: her body now has two blend shapes (elbow_point_l/_r, from animation); the LOD must keep them | docs/team/performance.md |
 | Arena art | a0b61c278bdd5c994 | docs/team/arena_art.md |
 | Male hero (body, head, hair, outfits) | HELD (the owner, 12 Oct night: face and outfits first). PAUSED 12 Oct evening (handoff docs/handoff/hero_male.md on worktree-agent-ac39445bca5508eaf@9c51a20d) | docs/team/hero_male.md |
-| Heroine face, hair and character creation's Look | RUNNING 13 Oct: aeccf36934b1917c5 in worktree agent-a2d632df7c7f21ec0 (Sunborn in play, rj3, face/ship) | docs/team/face.md |
+| Heroine face, hair and character creation's Look | RUNNING 13 Oct: successor 19 aa11c586d0688ac42 in worktree agent-a2d632df7c7f21ec0 (18 handed off @ 5fe8f185: Sunborn in play, double brow, ear lobe and inner ear all passed; left: the turn-80 jaw wedge from the ear-AO map. Then face/ship and the merge request, the smile pass, hair edges) | docs/team/face.md |
 | Asset provenance (what isn't ours, licences, credits, replacement plan) | a80ff0c7fd988b178 | docs/team/provenance.md |
 | Legal and Steam compliance (paused; docs/handoff/legal.md; wake before submission or for a new outfit) | — | docs/team/legal.md |
 | Loot and itemisation (paused, built and merged; docs/handoff/loot.md for a successor) | — | docs/team/loot.md |

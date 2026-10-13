@@ -6,6 +6,7 @@ The one page of what's current. Every lead starts from the latest `claude/vigila
 - **Running (roster has ids):** face (rj3 incl. ear lobe, then face/ship), outfits successor 16 (V knot, sabaton, clasp foot, glove thumb, re-judge), animation successor 19 (armscheck pauldron gap, bull_rush r3, flare_burns_twice, town run (a)), classes (story bosses cut, crowd-clear measure, phase-6 plan), Flare successor 2 on flare-1 (Burns Twice written but never seen: hook in and shoot first).
 - **Merged 13 Oct:** animation cc8bf6c1 (idle_warden_break judge 52; sheathing system, inert). 882 tests. FLARE_LOOK.md (6a24d836), budget hook mid-run raise (50fab2ad).
 - **Queued:** after the face ships, the smile pass (OWNER_NOTES 13 October). The sixth-lead permission went unused (the Flare lead took the outfits handoff slot).
+- **Cross-lead notes from the face judges (13 October):** animation: the greatsword pommel sits in front of her mouth at the close-up camera; the cinematic close shows a mangled hand on the hilt. Body/outfits: the cinematic close shows a faceted-looking chest. Hand these to the leads at their next handoff (not urgent).
 - **Lesson:** a lead that writes a whole system without running it hands off with nothing seen (Flare lead 1, 270k). Brief leads to hook in and shoot the first piece before writing the rest.
 - **Owner rules today:** no deadline, fix failing parts rather than gate them; judge each thing once on what varies it (README Working lean); sheathing as a system keyed by weapon kind; Flares are specialized and every press visible.
 
