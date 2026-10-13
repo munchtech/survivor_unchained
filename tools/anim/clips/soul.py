@@ -91,13 +91,17 @@ def sit_log(rig):
 
 
 # ------------------------------------------------------------ flourishes --
-def SHOW_L(at=(-0.07, -0.20, 0.35), pole=(1.0, -0.3, -0.3)):
+def SHOW_L(at=(-0.07, -0.16, 0.37), pole=(1.0, -0.3, -0.3)):
     """warden_show's shield hand in the guard (chest frame, from the shoulder):
     out ahead with the elbow open (122 deg), so the rim clears her pauldron
-    (18 mm) and her chin and hair (6 cm). (Close in and high, at
+    (17 mm) and sits just under her chin (85 mm from her head) for the glare
+    over it. (Close in and high, at
     (-0.14, -0.13, 0.30), the elbow closed to 99 deg and the rim cut her
     upper arm and pauldron 8/23 mm and came within 16 mm of her face.)"""
     return {"arc": arc_of(at), "pole": pole, "frame": "chest", "blade": _n(-0.2, 0.9, 0.4), "twist": 0.3}
+
+
+SHOW_R_MID = (-0.24, -0.12, 0.08)
 
 
 def warden_show(rig):
@@ -125,6 +129,12 @@ def warden_show(rig):
         (8, over("warden", hips={"pos": (0, -0.05, -0.02)}, foot_l=f["foot_l"], foot_r=f["foot_r"]), "fast"),
         (16, guard, "ease"),
         (50, {**guard, "spine": (-8, 9, 0)}, "ease"),
+        # Settling back, the sword comes down close past her side (left to
+        # the arc alone, the hand swung 39 cm out at shoulder height and the
+        # arm read as locked straight); the body halfway home.
+        (60, {"hips": {"pos": (0, -0.04, 0.05), "rot": (-5, 4, 0)}, "spine": (-4, 4.5, 0), "head": (6, -5, 0),
+              "hand_r": {"arc": arc_of(SHOW_R_MID), "pole": (-1.0, -0.3, -0.2), "frame": "chest",
+                         "blade": _n(0.10, -0.30, 0.95), "twist": 0.5}}, "auto"),
         (70, over("warden"), "ease"),
     ]
     return build("warden_show", rig, keys, base=base, meta={"layer": "full", "weapon": "sword+shield"})
