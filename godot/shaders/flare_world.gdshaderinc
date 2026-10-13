@@ -180,23 +180,36 @@ vec4 flare_boom(vec2 w, out vec2 at) {
 	vec2 d = w - bm.xy;
 	float dl = length(d);
 	float a = atan(d.y, d.x);
-	// A little ragged by angle and place, never far off the mean the bursts keep.
+	// A little ragged by angle and place, never far off the mean the bursts and the tongues keep (FlareFx.RingAt).
 	float fing = texture(flare_noise, vec2(a * 0.47746, 0.63)).g;
 	float n = texture(flare_noise, w * 0.35).r;
-	float ahead = flare_ring(bm.w, bm.z) * (0.97 + 0.06 * fing) + (n - 0.5) * 0.45 - dl;
+	float ahead = flare_ring(bm.w, bm.z) * (0.985 + 0.03 * fing) + (n - 0.5) * 0.3 - dl;
 	// Over the whole reach, wherever it struck; the line burns out as it reaches the edge.
 	float fade = 1.0 - smoothstep(flare_at.w - 1.0, flare_at.w + 1.5, length(w - flare_at.xz));
 	float lit = fade * (1.0 - smoothstep(0.62, 0.85, bm.w));
-	// Across the line: a faint red breath ahead, the white-yellow core (a third of a metre), then orange
-	// cooling to red over half a metre behind it.
-	float core = exp(-pow((ahead - 0.1) / 0.13, 2.0));
-	float body = smoothstep(-0.25, 0.05, ahead) * exp(-max(ahead - 0.05, 0.0) / 0.38);
-	// Behind it the ground is burnt: char, its cracks glowing a moment, cooling with distance behind the line;
-	// gone back to wet ground through the Return.
-	float ch = smoothstep(0.1, 0.7, ahead) * fade * (1.0 - smoothstep(2.2, 4.6, bm.w));
-	// (Glowing 1.6 m back, the whole inside of the ring read as orange-brown, not char: s2b.)
-	float fresh = exp(-max(ahead, 0.0) / 0.55) * (1.0 - smoothstep(0.5, 1.4, bm.w));
+	// Across the line, about 0.6 m in all: a red breath ahead (15 cm), the white-yellow core (12 cm), then
+	// orange cooling to red over 40 cm behind it. (A third of a metre of core and half a metre of orange, under
+	// the glow, read as a thick soft cream band: s2e.)
+	float core = exp(-pow((ahead - 0.05) / 0.07, 2.0));
+	float body = smoothstep(-0.15, 0.03, ahead) * exp(-max(ahead - 0.03, 0.0) / 0.16);
+	// Behind it the ground is burnt black at once; gone back to wet ground through the Return.
+	float ch = smoothstep(0.12, 0.42, ahead) * fade * (1.0 - smoothstep(2.2, 4.6, bm.w));
+	// Its cracks glow a breath behind the line, no further. (Glowing 1.6 m back, the whole inside of the ring
+	// read as orange-brown, not char: s2b.)
+	float fresh = exp(-max(ahead, 0.0) / 0.3) * (1.0 - smoothstep(0.4, 1.0, bm.w));
 	return vec4(core * lit, body * lit, ch, fresh * ch);
+}
+
+// How far behind the BOOM's line this point lies (m; negative: not reached yet, or no ring).
+float flare_boom_behind(vec2 w) {
+	vec4 bm = texelFetch(flare_marks, ivec2(31, 0), 0);
+	if (bm.z <= 0.0) return -1e3;
+	return flare_ring(bm.w, bm.z) - length(w - bm.xy);
+}
+
+// The BOOM's line on a surface (its white-yellow core under the knee, orange to red behind it).
+vec3 flare_boom_light(vec4 bo) {
+	return mix(vec3(0.5, 0.05, 0.008), vec3(1.0, 0.4, 0.06), smoothstep(0.15, 0.85, bo.y)) * bo.y * 1.15 + vec3(1.0, 0.85, 0.55) * bo.x * 0.7;
 }
 
 // The ground: drained, then the web, the frost and the impacts over it (the Flare's own, never drained).
@@ -252,13 +265,16 @@ void flare_ground(vec3 wp, inout vec3 alb, inout float rough, inout float spec, 
 		rough = mix(rough, 0.95, mk.y * 0.85);
 		float crack = 1.0 - smoothstep(0.0, 0.08, texture(flare_noise, w * 0.9).a);
 		emi += vec3(1.0, 0.32, 0.06) * mk.z * (0.25 + 1.6 * crack) * 1.4;
-		// The BOOM's ring: char behind it, mottled (wet black ground between the burnt patches), its cracks
-		// glowing a moment; the line itself white-yellow at its core (under the knee), orange to red behind.
+		// The BOOM's ring: black char behind it, mottled dry and wet (both black: mottled back to the lit ground,
+		// the inside read orange-brown under the last word's light, s2e), its cracks glowing a breath behind
+		// the line; the line itself white-yellow at its core (under the knee), orange to red behind.
 		float mot = texture(flare_noise, w * 0.23 + 0.5).g;
-		alb = mix(alb, vec3(0.016, 0.013, 0.011), bo.z * (0.6 + 0.4 * smoothstep(0.3, 0.7, mot)));
-		rough = mix(rough, 0.7, bo.z * smoothstep(0.35, 0.65, mot));
-		emi += vec3(1.0, 0.3, 0.05) * bo.w * crack * 1.1;
-		emi += mix(vec3(0.75, 0.1, 0.012), vec3(1.0, 0.45, 0.08), smoothstep(0.1, 0.8, bo.y)) * bo.y * 1.25 + vec3(1.0, 0.84, 0.52) * bo.x * 0.9;
+		alb = mix(alb, mix(vec3(0.014, 0.012, 0.01), vec3(0.006, 0.005, 0.005), smoothstep(0.3, 0.7, mot)), bo.z * 0.97);
+		rough = mix(rough, mix(0.3, 0.85, smoothstep(0.35, 0.65, mot)), bo.z);
+		spec = mix(spec, 0.25, bo.z);
+		emi *= 1.0 - 0.7 * bo.z;
+		emi += vec3(1.0, 0.3, 0.05) * bo.w * crack * 0.9;
+		emi += flare_boom_light(bo);
 		// The front: the frost crystallising as it comes, cold points in a narrow fingered band.
 		float band = smoothstep(-0.2, 0.25, flare_frost.x - arr) * (1.0 - smoothstep(0.25, 1.4, flare_frost.x - arr));
 		float twinkle = step(0.55, fract(sin(dot(floor(w * 22.0), vec2(12.9898, 78.233)) + floor(TIME * 12.0)) * 43758.5453));
@@ -267,8 +283,9 @@ void flare_ground(vec3 wp, inout vec3 alb, inout float rough, inout float spec, 
 		// Held frost: a few fine points of cold light, and the meltwater's glints.
 		emi += vec3(0.4, 0.68, 1.0) * cr.y * ice * twinkle * 0.05 * flare_hue.a;
 		nrm_view = normalize((view * vec4(nw, 0.0)).xyz);
-		// The web shows faint under the ice.
-		web *= 1.0 - 0.45 * ice;
+		// The web shows faint under the ice, and is burnt out under the char (its glow over the inside of the
+		// ring read as orange lines on the black: s2e).
+		web *= (1.0 - 0.45 * ice) * (1.0 - 0.95 * bo.z);
 	}
 	emi += web;
 }
@@ -282,7 +299,9 @@ bool flare_frosting(vec3 wp) {
 float flare_glazed(vec3 wp) {
 	if (flare_look.w < 0.5 || flare_frost.y <= 0.0) return 0.0;
 	float cr = texture(flare_plate, wp.xz * 0.9 + wp.y * 0.6).r;
-	return flare_cover(wp.xz, flare_arrive(wp.xz), cr);
+	// Behind the BOOM's ring the frost is gone: the living who walk in after it are not statues (s2e: two glazed
+	// figures by her at c2 and c3). Every statue breaks as the line crosses it, before this.
+	return flare_cover(wp.xz, flare_arrive(wp.xz), cr) * (1.0 - smoothstep(1.2, 3.0, flare_boom_behind(wp.xz)));
 }
 
 // A body in the crowd: drained, then glazed where the frost has reached it, its own shading kept.
@@ -343,11 +362,19 @@ void flare_blade(vec3 wp, float tip, inout vec3 alb, inout float rough, inout ve
 	bool black = flare_look.w > 1.5;
 	// Glazed dark like the ground's glass, a little lighter (never paler than the blade was) where its tip
 	// catches the light. (Leaf litter lies flat: it takes the glaze too, or it reads as orange confetti on the ice.)
+	vec2 bat;
+	vec4 bo = flare_boom(wp.xz, bat);
+	g *= 1.0 - smoothstep(0.0, 0.6, bo.z);
 	float l = dot(alb, FL_LUM);
 	vec3 glass = mix(vec3(l), alb, 0.3) * vec3(0.4, 0.62, 1.0);
 	glass *= black ? 0.25 : mix(0.4, 0.85, smoothstep(0.6, 1.0, tip));
 	alb = mix(alb, glass, g);
 	rough = mix(rough, black ? 0.08 : 0.16, g);
+	// The BOOM's ring: the litter in its line burns with it and is char behind it. (Lying over the ground's
+	// line unlit, every leaf in it was a black fleck: s2e.)
+	alb = mix(alb, vec3(0.012, 0.01, 0.009), bo.z * 0.97);
+	emi *= 1.0 - 0.7 * bo.z;
+	emi += flare_boom_light(bo);
 }
 
 // A prop (stones, posts, walls): drained, and rimed on what faces up.
@@ -365,8 +392,17 @@ void flare_prop(vec3 wp, vec3 nrm_view, mat4 inv_view, inout vec3 alb, inout flo
 	vec3 glass = mix(vec3(l), alb, 0.4) * vec3(0.46, 0.66, 1.0) * 0.72;
 	glass = mix(glass, black ? vec3(0.004, 0.005, 0.008) : vec3(0.006, 0.013, 0.03), black ? 0.8 : 0.3);
 	vec3 edge = black ? vec3(0.03, 0.04, 0.055) : vec3(0.26, 0.42, 0.62) * (1.0 - 0.3 * (1.0 - flare_hue.a));
+	vec2 bat;
+	vec4 bo = flare_boom(wp.xz, bat);
+	g *= 1.0 - smoothstep(0.0, 0.6, bo.z);
 	alb = mix(alb, mix(glass, edge, spine * (black ? 0.5 : 0.85)), g);
 	// Not mirror-smooth: a rock face tilted to the moon threw a still white hotspot (t10, s1b: the triangle at the
 	// Verge's top centre).
 	rough = mix(rough, mix(0.26, 0.38, spine), g);
+	// The BOOM's ring: what it crosses is lit from the blast's side, and what faces up is charred behind it.
+	if (bo.x + bo.y > 0.001) {
+		float face = 0.3 + 0.7 * max(0.0, dot(nw, normalize(vec3(bat.x - wp.x, 0.4, bat.y - wp.z))));
+		emi += vec3(1.0, 0.42, 0.1) * (bo.x * 0.5 + bo.y * 0.25) * face;
+	}
+	alb = mix(alb, vec3(0.014, 0.012, 0.01), bo.z * 0.85 * smoothstep(0.2, 0.8, nw.y));
 }

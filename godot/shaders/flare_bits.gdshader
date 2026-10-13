@@ -4,8 +4,9 @@
 // kind + age (INSTANCE_CUSTOM.w: the kind's whole number, the life's fraction). COLOR is its colour and alpha.
 // Kinds: 0 a glow mote, 1 a molten streak, 2 a tongue of flame, 3 a puff (steam or smoke; the mixed batch),
 // 4 a thread of light, 5 a soot fleck (mixed), 6 a billow of fire (a fireball's lobe: white-gold heart, orange, a
-// deep red rim eaten by the noise, cooling as it ages and rises). The added batch's light is held under the knee by its colours;
-// the mixed batch is the dark bed under it.
+// deep red rim eaten by the noise, cooling as it ages and rises), 7 a scar (mixed, flat on the ground), 8 smoke over a fire
+// (mixed: a dark billow, its underside lit by the fire under it while the fire burns). The added batch's light is held
+// under the knee by its colours; the mixed batch is the dark bed under it.
 shader_type spatial;
 render_mode unshaded, cull_disabled, depth_draw_never, shadows_disabled, blend_add;
 
@@ -59,7 +60,7 @@ void vertex() {
 	vec2 up2 = (VIEW_MATRIX * vec4(0.0, 1.0, 0.0, 0.0)).xy;
 	v_h = dot(off, normalize(up2 + vec2(0.0, 1e-4))) / max(size * 0.5, 1e-3);
 	POSITION = PROJECTION_MATRIX * vec4(pv + vec3(off, 0.0), 1.0);
-	if (v_kind > 6.5) {
+	if (v_kind > 6.5 && v_kind < 7.5) {
 		// A scar lies flat on the ground, turned by its seed.
 		float t = v_seed * 6.2831;
 		vec2 r = mat2(vec2(cos(t), sin(t)), vec2(-sin(t), cos(t))) * c * size;
@@ -119,13 +120,28 @@ void fragment() {
 		// A fleck of soot: a small ragged dark scrap.
 		float n = texture(flare_noise, q * 0.3 + v_seed * 9.0).b;
 		a = 1.0 - smoothstep(0.3, 0.9, length(q) + (n - 0.5) * 0.6);
+	} else if (v_kind > 7.5) {
+		// Smoke over a fire (the last word's column and its head): a billow churned by two layers of noise, dark,
+		// its crown in shadow and its underside lit orange by the fire under it while the fire burns (its first
+		// third), so the head reads dark against the char and hot from below.
+		vec2 uv = q * 0.5 + 0.5;
+		float n = texture(flare_noise, uv * 0.6 + v_seed * 5.0 + vec2(0.0, -TIME * 0.12)).r;
+		float n2 = texture(flare_noise, uv * 0.9 + v_seed * 3.0 + vec2(TIME * 0.08, -TIME * 0.1)).g;
+		float r = length(q);
+		float body = 1.0 - smoothstep(0.15, 1.0, r + (n - 0.5) * 0.8 + (n2 - 0.5) * 0.35);
+		a = body * (0.6 + 0.4 * n2);
+		float under = smoothstep(0.45, -0.85, v_h + (n - 0.5) * 0.7);
+		rgb = col.rgb * (0.7 + 0.6 * n2) * mix(1.0, 0.55, smoothstep(-0.2, 0.9, v_h));
+		float burn = 1.0 - smoothstep(0.0, 0.34, v_age);
+		emit = vec3(1.0, 0.34, 0.07) * under * burn * burn * (0.35 + 0.65 * n2) * body * 0.55;
 	} else if (v_kind > 6.5) {
-		// A scar: a small black scorch on the glass where a statue stood, ragged, its embers cooling.
+		// A scar: a small black scorch on the glass where a statue stood, ragged, a few embers in it a moment.
+		// (Embers in all of them for a second and a half were orange speckle over the ring's char: s2e.)
 		float n = texture(flare_noise, q * 0.32 + v_seed * 7.0).r;
 		float n2 = texture(flare_noise, q * 0.8 + v_seed * 3.0).b;
 		a = 1.0 - smoothstep(0.35, 0.95, length(q) + (n - 0.5) * 0.6);
-		float ember = smoothstep(0.66, 0.82, n2) * (1.0 - smoothstep(0.0, 0.3, v_age)) * a;
-		emit = vec3(1.0, 0.3, 0.05) * ember * 1.4;
+		float ember = smoothstep(0.76, 0.86, n2) * (1.0 - smoothstep(0.0, 0.05, v_age)) * a;
+		emit = vec3(1.0, 0.3, 0.05) * ember * 0.9;
 	} else {
 		// A billow of fire: a lobe of a fireball, churned by two layers of noise, its heat from the middle out.
 		vec2 uv = q * 0.5 + 0.5;

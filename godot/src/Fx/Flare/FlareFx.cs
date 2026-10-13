@@ -325,6 +325,7 @@ public partial class FlareFx : Node3D
         Stop = 0;
         ramp = 1;
         releaseAt = spendAt = lastAt = -1;
+        colT = -1;
         spendLightT = -1;
         foreach (var em in embers) if (em.Light != null && IsInstanceValid(em.Light)) em.Light.QueueFree();
         embers.Clear();

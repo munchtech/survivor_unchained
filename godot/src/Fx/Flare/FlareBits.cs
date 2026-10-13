@@ -11,7 +11,7 @@ namespace SurvivorUnchained.View;
 /// </summary>
 public partial class FlareBits : MultiMeshInstance3D
 {
-    public enum Kind { Mote = 0, Streak = 1, Tongue = 2, Puff = 3, Thread = 4, Soot = 5, Fire = 6, Scar = 7 }
+    public enum Kind { Mote = 0, Streak = 1, Tongue = 2, Puff = 3, Thread = 4, Soot = 5, Fire = 6, Scar = 7, Smoke = 8 }
 
     public struct P
     {
