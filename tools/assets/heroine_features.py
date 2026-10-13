@@ -9,8 +9,10 @@ skin's shader to darken and redden by, the more the smaller she is
     blender -b tools/comfy/out/heroes/heroine_built.blend --python tools/assets/heroine_features.py -- godot/art/people/head_tex
 
 Written to <out>/heroine_features.png: red, her eyes (their lash lines
-deepest) and brows, to darken; green, her lips, to deepen to their red.
-Run again when her head is rebuilt (heroine_head.py).
+deepest) and brows, to darken; green, her lips, to deepen to their red;
+blue, where her face's own paint lies, for each face's tone (none at SPLIT).
+Run again when her head is rebuilt (heroine_head.py), then tools/assets/heroine_ao_seam.py (heroine_ao.png's
+green: her head's nearness to her neck's seam) and tools/assets/heroine_thin.py (its blue: where she is thin).
 """
 import os
 import sys
@@ -130,6 +132,13 @@ _fp = os.path.join(os.path.dirname(os.path.abspath(__file__)), "heroine_face", "
 if os.path.exists(_fp):
     _a = np.asarray(Image.open(_fp).convert("RGBA").resize((SIZE, SIZE), Image.BILINEAR), np.float32)[..., 3] / 255
     out[..., 2] = np.clip(ndimage.gaussian_filter(_a, 6), 0, 1)[::-1]
+    # (and none at SPLIT, eased in over the 2 cm above it as her head's shape keys are: the graft below has no face
+    # tone, and a face's tone that reached SPLIT stopped there as a step across her neck (the owner, 10 October 2026))
+    _s = np.clip((P[:, 2] - (1.625 + 0.27 * (P[:, 1] + 0.02))) / 0.02, 0, 1)
+    _ease, _in = np.zeros((SIZE, SIZE), np.float32), np.zeros((SIZE, SIZE), bool)
+    _ease[rows, cols], _in[rows, cols] = _s * _s * (3 - 2 * _s), True
+    _, (_iy, _ix) = ndimage.distance_transform_edt(~_in, return_indices=True)
+    out[..., 2] *= _ease[_iy, _ix]
 os.makedirs(OUT, exist_ok=True)
 path = os.path.join(OUT, "heroine_features.png")
 Image.fromarray((out[::-1] * 255 + 0.5).astype(np.uint8)).save(path)

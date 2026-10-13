@@ -10,6 +10,14 @@ Written by agent a4e0c353e61cca6dc, 2026-10-10 (wound down at the owner's word).
 
 ## Paused here; next:
 
+**The face lead changed the Look's portrait rig while you were paused (coordinator's ruling, 11 October; face branch `worktree-agent-a2d632df7c7f21ec0` @ b3ede887, UNJUDGED).** In `GameFront.PortraitLight`:
+- Fill 1/0.98/0.96 (was 1/0.95/0.9). Bounce 0.045 (was 0.18).
+- Key higher and nearer the lens: offsets side 0.55, up 1.25 (was 1.0, 0.85). Energy 1.3 (was 1.15). LightSize 0.3 (was 0.6: its soft shadow washed out the jaw shade, jaw L -0.04 to -0.10). LightSpecular 0.3 (was 0.45: a blown patch on the polished pauldron; clipped share of the lower frame 9.4% to about 5.5%).
+- New picture switches: `--key-at SIDE,UP`, `--key-colour R,G,B`, `--key-spec X`, `--look-refl off` (the sky's reflections off at the Look; it didn't change the clipping).
+- Embers and smoke nearer the lens than she is are faded out at the Look (`Campfire.ClearNear`, shared ember and smoke materials). This was the orange out-of-focus disc over her neck.
+- Still open for you: the polished pauldron still clips at the key's highlight (roughness 0.18-0.3 in heroine_outfit.gdshader's metal; outfits' call). The rest of the skin side (per-face tones) is face's.
+
+
 Written by lead a3 (11 October, at the context budget). Branch @ e06744f4 + this page. 775 tests passed before e06744f4's last grade tweaks; rerun them. N = scratchpad `C:\Users\munch\AppData\Local\Temp\claude\C--Users-munch-Desktop-survivorsunchained\91211d34-e079-4956-a2a0-7b52c04594a8\scratchpad` (`lod\` LOD tools, `ng\` grade and portrait tools).
 
 Done this round (426cea72, e06744f4):

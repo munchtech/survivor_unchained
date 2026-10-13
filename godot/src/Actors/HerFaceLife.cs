@@ -47,6 +47,8 @@ public partial class HerFaceLife : Node
             {
                 int l = mi.FindBlendShapeByName("blink_l"), r = mi.FindBlendShapeByName("blink_r");
                 if (l >= 0 || r >= 0) lids.Add((mi, l, r));
+                if (mi.Name.ToString().Contains("Teeth")) teeth = mi;
+                else if (mi.FindBlendShapeByName("snarl") is int sn and >= 0) { mouth = mi; open = mi.FindBlendShapeByName("mouth_open"); snarl = sn; }
                 for (int s = 0; mi.Mesh != null && s < mi.Mesh.GetSurfaceCount(); s++)
                     if (mi.GetSurfaceOverrideMaterial(s) is ShaderMaterial m && m.Shader?.ResourcePath.EndsWith("heroine_eye.gdshader") == true)
                         eyes = m;
@@ -76,9 +78,37 @@ public partial class HerFaceLife : Node
                 if (kv.Split('=') is [var k, var v])
                     skinParams.Add((k, v.StartsWith('#') ? new Color(v)
                         : float.Parse(v, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture)));
+        // --teethparam name=value,...: her teeth shader's numbers set, each frame after TeethLight's (pictures of them tried).
+        if (Args.Get("teethparam") is string tpar)
+            foreach (var kv in tpar.Split(','))
+                if (kv.Split('=') is [var k, var v] && float.TryParse(v, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var f))
+                    teethParams.Add((k, f));
     }
 
     readonly System.Collections.Generic.List<(string Name, Variant Value)> skinParams = new();
+    readonly System.Collections.Generic.List<(string Name, float Value)> teethParams = new();
+
+    MeshInstance3D? teeth, mouth;
+    int open = -1, snarl = -1;
+
+    /// <summary>Her teeth lit only as far as her lips are parted (her head's mouth_open, or a snarl's lifted lip): with
+    /// her lips closed her mouth is dark inside, so the teeth a corner of her lips shows read as shade, not a white
+    /// speck (Sunborn at the Look, judge s1). Her side teeth stay in the cheeks' shade anyway (their vertex colour,
+    /// tools/assets/heroine_teethshade.py). The teeth's material is remade with each look, so it is set each frame.</summary>
+    void TeethLight()
+    {
+        if (teeth == null || mouth == null || teeth.Mesh == null) return;
+        float w = Mathf.Max(open >= 0 ? mouth.GetBlendShapeValue(open) : 0, snarl >= 0 ? mouth.GetBlendShapeValue(snarl) : 0);
+        float k = Mathf.SmoothStep(0.03f, 0.3f, w);
+        for (int s = 0; s < teeth.Mesh.GetSurfaceCount(); s++)
+            if (teeth.GetSurfaceOverrideMaterial(s) is ShaderMaterial m && m.ResourceName == "teeth")
+            {
+                m.SetShaderParameter("lit", k);
+                // (the lamps cut wholly with her lips shut (her mouth's corner), 0.6 of the way once they part)
+                m.SetShaderParameter("shut", 1 - 0.4f * Mathf.SmoothStep(0, 0.05f, w));
+                foreach (var (n, v) in teethParams) m.SetShaderParameter(n, v);
+            }
+    }
 
     void SkinParams()
     {
@@ -96,6 +126,7 @@ public partial class HerFaceLife : Node
     {
         t += delta;
         if (skinParams.Count > 0) SkinParams();
+        TeethLight();
         // A blink: the lid down in 70 ms, held a moment, up in 150 ms.
         if (t >= nextBlink && blinkAt < 0)
         {

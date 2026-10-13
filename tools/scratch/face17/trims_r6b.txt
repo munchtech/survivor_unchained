@@ -1,0 +1,11 @@
+INFO: Created TensorFlow Lite XNNPACK delegate for CPU.
+own       cheek C0.074->0.063 h53->51 | neck C0.044->0.035 h53->51 (ratio 0.56) | body (0.952, 1.017, 1.086) face x(0.997, 1.006, 1.049)
+highborn  cheek C0.071->0.062 h52->49 | neck C0.050->0.044 h50->49 (ratio 0.71) | body (0.969, 1.012, 1.057) face x(0.991, 1.004, 1.060)
+doe       cheek C0.082->0.073 h52->52 | neck C0.059->0.054 h56->52 (ratio 0.75) | body (0.985, 1.002, 1.083) face x(0.967, 1.026, 1.030)
+sunborn   cheek C0.092->0.091 h50->48 | neck C0.088->0.089 h50->48 (ratio 0.97) | body (1.011, 0.985, 1.061) face x(0.992, 1.008, 0.996)
+vixen     cheek C0.073->0.063 h52->51 | neck C0.048->0.043 h55->51 (ratio 0.68) | body (0.978, 1.005, 1.074) face x(0.975, 1.017, 1.036)
+moonlit   cheek C0.064->0.056 h55->53 | neck C0.049->0.044 h55->53 (ratio 0.78) | body (0.975, 1.007, 1.067) face x(0.987, 1.007, 1.030)
+saffron   cheek C0.098->0.092 h53->53 | neck C0.078->0.074 h54->53 (ratio 0.80) | body (0.986, 1.006, 1.070) face x(0.988, 1.011, 1.023)
+wildling  cheek C0.084->0.077 h52->51 | neck C0.063->0.059 h53->51 (ratio 0.77) | body (0.984, 1.005, 1.071) face x(0.980, 1.015, 1.039)
+hardwon   cheek C0.080->0.071 h51->49 | neck C0.059->0.053 h51->49 (ratio 0.75) | body (0.974, 1.010, 1.083) face x(0.984, 1.011, 1.058)
+fey       cheek C0.071->0.061 h53->51 | neck C0.047->0.041 h54->51 (ratio 0.67) | body (0.970, 1.009, 1.077) face x(0.988, 1.008, 1.047)
