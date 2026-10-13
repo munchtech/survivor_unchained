@@ -3702,6 +3702,7 @@ CLASP_D_IN = float(os.environ.get("CLASP_D_IN", "0.0"))   # (D2, clasp6: no pull
 # relative to the rigid clasp at 25 deg (3.1 / 3.7 at 50) but only 0.1 mm in depth, so the balls stay on it, 0.2-0.3 mm off)
 CLASP_D_ON = float(os.environ.get("CLASP_D_ON", "0.0037"))
 CLASP_D_SEAT = float(os.environ.get("CLASP_D_SEAT", "0.0002"))
+CLASP_D_ROUND = os.environ.get("CLASP_D_ROUND", "1") == "1"   # (D2: a half-round section, no flat ledge on its foot from above, judge h)
 DOWN_IN, DOWN_OUT = 0.004, 0.012   # (how far the trim reaches over her skin, and over the corset, from the cut)
 
 
@@ -4148,8 +4149,25 @@ def arcanist():
         Yb = np.where(per & np.isfinite(under), np.maximum(Y, np.minimum(under - 0.0003, Y + float(os.environ.get("CLASP_PULL", "0.006")))), Y)   # (at most 6 mm: 12 mm reached her skin behind the cup, c1)
         print("CLASP: back's rim drawn down %.1f to %.1f mm onto what lies under it (inner rim median %.1f)"
               % (((Yb - Y)[per]).min() * 1000, ((Yb - Y)[per]).max() * 1000, np.median((Yb - Y)[:, 0]) * 1000))
+        Yf = Y - bump
+        if CLASP_D and CLASP_D_ROUND:
+            # (D2's foot read as a pale flat ledge from above, a top hat's brim:
+            # the back's inner rim drawn 4.8 mm down to her skin left a flat wall
+            # under a flat-topped bar, judge h. Now a half-round section all
+            # along: the front rolls from its crown down to the back's rim on both
+            # sides; the drawn-down rim eases out toward the horns (none past 60%
+            # out); the front never nearer the cloth under it than 0.4 mm)
+            fall = np.clip((0.6 - s_) / 0.2, 0, 1)
+            Yb = Y + (Yb - Y) * (fall * fall * (3 - 2 * fall))[:, None]
+            L_ = Y + (1 - t) * (Yb[:, :1] - Y[:, :1]) + t * (Yb[:, -1:] - Y[:, -1:])
+            crown = Y - bump[:, nr // 2][:, None]
+            Yf = L_ - (L_ - crown) * np.sqrt(np.clip(1 - (2 * t - 1) ** 2, 0, 1))
+            Yf = np.minimum(Yf, np.where(np.isnan(Yraw), np.inf, Yraw - 0.0004))
+            Yb = np.maximum(Yb, Yf + 0.0003)
+            print("CLASP: half-round section; at the foot its crown %.1f mm proud of its inner rim, %.1f of its outer; %.1f mm proud at the tips"
+                  % ((L_[nth // 2, 0] - crown[nth // 2, 0]) * 1000, (L_[nth // 2, -1] - crown[nth // 2, 0]) * 1000, (L_[0, 0] - crown[0, 0]) * 1000))
         back = np.stack([X, Yb, Zc], -1)
-        frnt = np.stack([X, Y - bump, Zc], -1)
+        frnt = np.stack([X, Yf, Zc], -1)
         P2, T2 = [], []
 
         def grid(G, flip):
@@ -4240,9 +4258,12 @@ def arcanist():
             st = st[:, ::-1]
         _, jn = cKDTree(cp).query(sp)
         made.append(finish("arcanist.clasp_stone", sp, sk(sp), st, "amethyst", 0.0, 0.0, 10 ** 6, scraps=False))
+        # (under a half-round crescent the bezel's ring stood off it at its top and
+        # bottom: its outer wall flares back 6 mm into the crescent, a bezel cup)
+        BEZ = ((1.0, 0.0), (1.0, -0.001), (1.2, -0.001), (1.2, 0.0)) if not (CLASP_D and CLASP_D_ROUND) else               ((1.0, 0.0), (1.0, -0.001), (1.2, -0.001), (1.25, -0.0002), (1.3, 0.006))
         bp = [c0 + np.array([0.005 * ra * np.cos(2 * np.pi * j / nu), dy, 0.004 * ra * np.sin(2 * np.pi * j / nu)])
-              for ra, dy in ((1.0, 0.0), (1.0, -0.001), (1.2, -0.001), (1.2, 0.0)) for j in range(nu)]
-        bt = [t_ for k in range(3) for j in range(nu) for t_ in ((k * nu + j, (k + 1) * nu + (j + 1) % nu, k * nu + (j + 1) % nu),
+              for ra, dy in BEZ for j in range(nu)]
+        bt = [t_ for k in range(len(BEZ) - 1) for j in range(nu) for t_ in ((k * nu + j, (k + 1) * nu + (j + 1) % nu, k * nu + (j + 1) % nu),
                                                                   (k * nu + j, (k + 1) * nu + j, (k + 1) * nu + (j + 1) % nu))]
         bp, bt = np.array(bp), np.array(bt)
         _, jn = cKDTree(cp).query(bp)
@@ -4372,6 +4393,50 @@ def arcanist():
     # (the gloves' cuffs 4 cm up under the sleeves, which end 6 cm short of her
     # wrists: at 2 cm a notch at the sleeve's hem showed her skin, judge 14)
     GLOVE_TOP = float(os.environ.get("GLOVE_TOP", 0.10))
+    # (judge h: the glove copied the nail's free edge at the thumb tip, an
+    # overhang with a dark wedge under it, and a pale lip at the thumb and
+    # index tips. Over the last 4-9 mm of each finger its hollows are filled
+    # (smoothed outward only, so it never comes nearer her), and the nail's
+    # step goes under one round cap. Dark flecks at the sleeve's hem over the
+    # glove's top: its top 15 mm sunk GLOVE_SINK deeper, under the sleeve)
+    GLOVE_TIP_R = tuple(float(v) for v in os.environ.get("GLOVE_TIP_R", "0.004,0.009").split(","))
+    GLOVE_TIP_ROUNDS = int(os.environ.get("GLOVE_TIP_ROUNDS", "80"))
+    GLOVE_SINK = float(os.environ.get("GLOVE_SINK", "0.001"))
+    skin_kd = cKDTree(P)
+
+    def glove_top_k(pos, sd):
+        k = np.clip(1 - (ARM_S[sd][skin_kd.query(pos)[1]] - (WRIST_S - GLOVE_TOP)) / 0.015, 0, 1)
+        return k * k * (3 - 2 * k)
+
+    def glove_shape(pos, tris, sd):
+        nb = skin_kd.query(pos)[1]
+        nor = vertex_normals(pos, tris)
+        sgn = 1.0 if (nor * N[nb]).sum(1).mean() > 0 else -1.0
+        wt = np.zeros(len(pos))
+        for fg in ("thumb", "index", "middle", "ring", "pinky"):
+            bs = [BI[f"{fg}_0{i}_{sd}"] for i in (1, 2, 3) if f"{fg}_0{i}_{sd}" in BI]
+            if len(bs) < 3:
+                continue
+            sel = W[:, bs[2]] > 0.5
+            if sel.sum() < 5:
+                continue
+            base = P[W[:, bs[1]] > 0.5].mean(0)
+            tip = P[sel][np.argmax(np.linalg.norm(P[sel] - base, axis=1))]
+            k = np.clip((GLOVE_TIP_R[1] - np.linalg.norm(pos - tip, axis=1)) / (GLOVE_TIP_R[1] - GLOVE_TIP_R[0]), 0, 1)
+            wt = np.maximum(wt, np.where(W[nb][:, bs].sum(1) > 0.3, k * k * (3 - 2 * k), 0.0))
+        A = adjacency(len(pos), tris)
+        A = A @ A   # (two rings round each point: a wedge wider than one edge fills too)
+        p0 = pos.copy()
+        for _ in range(GLOVE_TIP_ROUNDS):
+            nor = sgn * vertex_normals(pos, tris)
+            dv = ((A @ pos - pos) * nor).sum(1)
+            pos = pos + (np.maximum(dv, 0) * wt)[:, None] * nor
+        mv = np.linalg.norm(pos - p0, axis=1)
+        kt = glove_top_k(pos, sd)
+        pos = pos - sgn * vertex_normals(pos, tris) * (GLOVE_SINK * kt)[:, None]
+        print("GLOVE %s: fingertips filled on %d points (moved out up to %.2f mm, %d over 0.3 mm); top %d points sunk %.1f mm"
+              % (sd, int((wt > 0).sum()), mv.max() * 1000, int((mv > 0.0003).sum()), int((kt > 0.5).sum()), GLOVE_SINK * 1000))
+        return pos
     out = [
         # (opening into the gusset at its foot, as the warden's does)
         *ribbon("arcanist.thong", back_string(CROTCH + 0.155, CROTCH + 0.012), 0.016, "plumleather", lift=0.003, thick=0.003,
@@ -4393,7 +4458,8 @@ def arcanist():
     ]
     for sd in "lr":
         out += [
-            *piece(f"arcanist.glove_{sd}", limb(sd, WRIST_S - GLOVE_TOP, 9.9, legs=False), "blackleather", lift=0.0012, thick=0.001, bevel=0.0004, trim=gold(0.008), edge=30, soften=12),
+            *piece(f"arcanist.glove_{sd}", limb(sd, WRIST_S - GLOVE_TOP, 9.9, legs=False), "blackleather", lift=0.0012, thick=0.001, bevel=0.0004, trim=gold(0.008), edge=30, soften=12,
+                   stiff=[lambda q, t_, sd=sd: glove_shape(q, t_, sd)], clear=lambda q, sd=sd: 0.0012 - GLOVE_SINK * glove_top_k(q, sd)),
             # (her leg by where it is, not by its weights: her inner thigh is
             # partly her hips', and a weight test tore a hole there; and no
             # gap kept for the slot between her thighs, which ends above it)
