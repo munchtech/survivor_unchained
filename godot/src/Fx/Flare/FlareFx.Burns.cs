@@ -222,11 +222,13 @@ public partial class FlareFx
         if (marks.Count > 30) marks.RemoveAt(0);
         float big = em.Last ? 1.6f : 1;
         // A fireball of churning billows thrown out and up off the ice (rays read as a firework: 13 October).
-        for (int i = 0; i < (em.Last ? 32 : 12); i++)
+        // (The last's fireball flashes and cools fast into its own dark smoke: a long bright one held the night
+        // frame at 2x its pre-press mean for 0.8 s, against §1.6's 1.5x for 4 frames.)
+        for (int i = 0; i < (em.Last ? 22 : 12); i++)
         {
             float a = R() * Mathf.Tau, out_ = R();
             var v = new Vector3(Mathf.Cos(a) * (1.5f + 4 * out_), 1.5f + R() * 4, Mathf.Sin(a) * (1.5f + 4 * out_)) * big;
-            glow.Spawn(FlareBits.Kind.Fire, p + Vector3.Up * (0.2f + R() * 0.4f), v, 0.45f + R() * 0.35f, (0.5f + R() * 0.4f) * big, new Color(1.15f, 0.5f, 0.13f), new Color(0.8f, 0.22f, 0.04f), sizeEnd: (1.3f + R() * 0.7f) * big * (em.Last ? 1.4f : 1), drag: 4, lift: 2.5f);
+            glow.Spawn(FlareBits.Kind.Fire, p + Vector3.Up * (0.2f + R() * 0.4f), v, em.Last ? 0.28f + R() * 0.24f : 0.45f + R() * 0.35f, (0.5f + R() * 0.4f) * big, new Color(1.15f, 0.5f, 0.13f), new Color(0.8f, 0.22f, 0.04f), sizeEnd: (1.3f + R() * 0.7f) * big * (em.Last ? 1.4f : 1), drag: 4, lift: 2.5f);
         }
         // A few short tongues licking up out of it, turned along their way.
         for (int i = 0; i < (em.Last ? 8 : 4); i++)
@@ -271,6 +273,18 @@ public partial class FlareFx
                 bed.Spawn(FlareBits.Kind.Puff, p + dir * 0.8f + Vector3.Up * 0.3f, dir * (15 + R() * 6) + Vector3.Up * (0.5f + R()), 0.9f + R() * 0.5f, 0.6f, new Color(0.55f, 0.6f, 0.66f, 0.3f), sizeEnd: 2.4f, drag: 2.6f, lift: 0.3f);
             }
             shards.Burst(p + Vector3.Up * 0.2f, 40, 16, 0.14f, new Color(0, 0, 0, 0), 0.4f);
+            // Its smoke: a dark column boiling up out of the fire, lit from under by it.
+            for (int i = 0; i < 14; i++)
+            {
+                float a = R() * Mathf.Tau;
+                var v = new Vector3(Mathf.Cos(a) * (1 + R() * 2.5f), 3 + R() * 4, Mathf.Sin(a) * (1 + R() * 2.5f));
+                bed.Spawn(new FlareBits.P
+                {
+                    Kind = FlareBits.Kind.Puff, At = p + Vector3.Up * (0.5f + R()), V = v, Life = 1.4f + R() * 0.8f, Size = 1.2f + R() * 0.6f,
+                    SizeEnd = 3.2f + R() * 1.6f, Color = new Color(0.1f, 0.075f, 0.06f, 0.75f), ColorEnd = new Color(0.12f, 0.11f, 0.1f, 0.3f),
+                    Drag = 1.6f, Lift = 0.8f, Swirl = 1.2f, Seed = R(), Wind = SteamWind * 0.8f,
+                });
+            }
             Cam?.Jolt(Vector3.Up, (0.6f + (banked ? 0.1f : 0)) * Motion);
             Cue("ember_last", p, 1);
             Rumble(1, 0.6f, 0.4f);

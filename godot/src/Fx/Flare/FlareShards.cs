@@ -60,9 +60,11 @@ public partial class FlareShards : MultiMeshInstance3D
         void Tri(Vector3 a, Vector3 b, Vector3 c)
         {
             var n = (b - a).Cross(c - a).Normalized();
+            // Godot takes clockwise as the front: wound the other way, every shard was drawn inside out (its far
+            // faces, lit from behind, their rims full on: the white "paper flakes" of t1 to t8).
             st.SetNormal(n); st.AddVertex(a);
-            st.SetNormal(n); st.AddVertex(b);
             st.SetNormal(n); st.AddVertex(c);
+            st.SetNormal(n); st.AddVertex(b);
         }
         for (int i = 0; i < sides; i++)
         {
