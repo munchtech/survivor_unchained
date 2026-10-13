@@ -19,6 +19,7 @@ to the colour it lands on. The brow's body is never touched; the paint is writte
 Idempotent: a side whose ghost is under TOL (as after this has run) is left, so running it again changes nothing.
 The chain: after heroine_browpaint.py (it touches only the skin above and beyond each brow, not the ears).
 """
+import json
 import os
 import sys
 
@@ -35,6 +36,8 @@ ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 TEX = os.path.join(ROOT, "godot", "art", "people", "head_tex")
 GLB = os.path.join(ROOT, "godot", "art", "people", "heroine.glb")
 FACES = ["own", "doe", "fey", "hardwon", "highborn", "moonlit", "saffron", "sunborn", "vixen", "wildling"]
+DONE = os.path.join(ROOT, "tools", "assets", "heroine_face", "browtail_done.json")  # (the run-once check's probes)
+NPROBE = 32
 PX = 8.0                       # (the flat view's pixels per mm)
 BOX = (0.024, 0.076, 1.744, 1.800)  # (m: |x| from, to; y from, to: each brow's outer two thirds and the temple)
 SKIN, K = 2.0, 0.035           # (mm: the skin's local level, texels this much darker than it left out of it)
@@ -46,6 +49,12 @@ SEED, LOW, AREA = 0.06, 0.03, 3.0   # (the ghost: this dark seeds it, it grows t
 GROW, FEATHER = 0.45, 0.45     # (mm: its mask grown and feathered)
 TOL = 4.0                      # (mm2: a side with less ghost than this, at SEED, is clean already)
 SPLIT, LF1, LF2 = 4.0, 9.0, 24.0  # (texels: the grain's split; the broad colour's fill blurs, near and far)
+# (her brow's own tail, made to taper: the band is the body opened by a disk BAND_R across, so the ghost's hairy
+# root, 2-3 mm wide, falls away; its line over DIR_L mm in from the band's end is followed on while the body covers
+# it within TRACK_W; from TAPER mm in from that tip the brow is kept only inside a wedge narrowing to the tip, its
+# edges feathered EDGE_F, its outermost TIP_FADE fading into the skin)
+BAND_R, DIR_L, TRACK_W, TRACK_GAP, TRACK_MAX = 1.4, 5.0, 0.6, 0.5, 1.5   # (mm)
+TAPER, TIP_FADE, EDGE_F, TAPER_P = 5.0, 1.5, 0.35, 0.8   # (mm; the wedge's width goes as (distance from tip)^P)
 
 
 def paint_path(face):
@@ -137,6 +146,71 @@ def level(Y, ok, sig, k, it=3):
     return S
 
 
+def smooth01(t):
+    t = np.clip(t, 0.0, 1.0)
+    return t * t * (3 - 2 * t)
+
+
+def taper(brow, side):
+    """Her brow's own tail in one flat view, made to taper. The band is the body without what a disk BAND_R across
+    can't fit (the ghost's hairy root, which the body's darkness and hairs also take in, is thinner); its line over
+    DIR_L mm in from its end is followed on while the body covers it, to the tip. Returns the soft keep (1: the paint
+    left as it is; on the tail the wedge from the band's section TAPER mm in from the tip to the tip, its outermost
+    TIP_FADE fading out; 0 past the tip), and the tip's column, row and the wedge's inner column."""
+    mm = PX
+    H, W = brow.shape
+    o = -1 if side < 0 else 1                       # (a column's step outward, toward her temple)
+    span_b = np.ptp(np.where(brow.any(0))[0])
+    r = BAND_R
+    while True:   # (a fine brow, thinner than the disk in places, is opened by a smaller one)
+        core = ndi.binary_opening(brow, disk(r * mm))
+        lab, n = ndi.label(core)
+        if n:
+            core = lab == 1 + int(np.argmax(ndi.sum(core, lab, range(1, n + 1))))
+            if np.ptp(np.where(core.any(0))[0]) >= 0.6 * span_b or r < 0.5:
+                break
+        elif r < 0.5:
+            return None
+        r *= 0.8
+    has = core.any(0)
+    top, bot = np.argmax(core, 0), H - 1 - np.argmax(core[::-1], 0)
+    cc = np.where(has)[0]
+    ce = int(cc.min() if side < 0 else cc.max())
+    span = ce - o * np.arange(int(DIR_L * mm))
+    span = span[(span >= 0) & (span < W)]
+    span = span[has[span]]
+    slope, y0 = np.polyfit(span - ce, 0.5 * (top[span] + bot[span]), 1)
+    c, tip, gap, ys = ce, ce, 0, [(ce, 0.5 * (top[ce] + bot[ce]))]
+    while 0 <= c + o < W and abs(c - ce) < TRACK_MAX * mm:
+        c += o
+        y = y0 + slope * (c - ce)
+        r0, r1 = int(max(0, np.floor(y - TRACK_W * mm))), int(min(H, np.ceil(y + TRACK_W * mm) + 1))
+        hit = np.nonzero(brow[r0:r1, c])[0]
+        if len(hit):
+            tip, gap = c, 0
+            ys.append((c, r0 + hit.mean()))
+        else:
+            gap += 1
+            if gap > TRACK_GAP * mm:
+                break
+    ytip = float(np.mean([y for cy, y in ys if abs(cy - tip) <= 0.5 * mm]))
+    cref = int(np.clip(tip - o * round(TAPER * mm), 0, W - 1))
+    src = core if has[cref] else brow
+    if not src[:, cref].any():
+        return None
+    rr = np.nonzero(src[:, cref])[0]
+    tref, bref = float(rr.min()), float(rr.max())
+    rows, cols = np.mgrid[0:H, 0:W]
+    s = (tip - cols) * o                             # (columns in from the tip)
+    f = np.clip(s / (TAPER * mm), 0, 1) ** TAPER_P
+    ta, ba = ytip + (tref - ytip) * f, ytip + (bref - ytip) * f
+    din = np.minimum(rows - ta, ba - rows)
+    wedge = np.clip(din / (EDGE_F * mm) + 0.5, 0, 1) * smooth01(s / (TIP_FADE * mm))
+    body = ndi.binary_dilation(brow, disk(0.15 * mm)).astype(float)
+    keep = np.where(s >= TAPER * mm, body, np.where(s > 0, wedge, 0.0))
+    return dict(keep=keep, tip=tip, ytip=ytip, cref=cref, tref=tref, bref=bref, core=core, ce=ce, slope=slope)
+
+
 def find(view, ok, lid_px, side):
     """In one flat view: her brow's body and the ghost's soft mask, and its numbers."""
     mm = PX
@@ -163,16 +237,22 @@ def find(view, ok, lid_px, side):
     D = gaussian_filter(np.where(ok, (S - Yf) / np.maximum(S, 1), 0), 0.4 * mm)
     H, W = Y.shape
     rows, cols = np.mgrid[0:H, 0:W]
+    tp = taper(brow, side)
+    if tp is None:
+        return None
+    body, kept = brow, tp["keep"] > 0.5
     # (above the brow's body where it is; past its outer end anywhere; never near the lid's crease)
-    bc = np.where(brow.any(0))[0]
+    bc = np.where(body.any(0))[0]
+    old_outer = bc.min() if side < 0 else bc.max()
+    brow = kept & body
     top = np.where(brow.any(0), np.argmax(brow, 0), -1)
-    outer = bc.min() if side < 0 else bc.max()
+    outer = tp["tip"]
     inner = bc.max() if side < 0 else bc.min()
     beyond = (cols < outer) if side < 0 else (cols > outer)
     half = outer + OUTER * (inner - outer)
     outerhalf = (cols <= half) if side < 0 else (cols >= half)
     above = (top >= 0)[None, :] & (rows < top[None, :] + 0.3 * mm) & outerhalf
-    near = ndi.distance_transform_edt(~brow) < NEAR * mm
+    near = ndi.distance_transform_edt(~body) < NEAR * mm
     xm = (BOX[0] + cols / (1000 * PX)) if side > 0 else -(-BOX[1] + cols / (1000 * PX))
     ym = BOX[3] - rows / (1000 * PX)
     zone = ok & near & (above | beyond) & (lid_px > LID * mm) & (np.abs(xm) < XMAX) & (ym < YMAX)
@@ -186,10 +266,13 @@ def find(view, ok, lid_px, side):
         a = ndi.sum(g, lab, range(1, n + 1)) / mm ** 2
         g = np.isin(lab, [i + 1 for i in range(n) if a[i] >= AREA])
     area = (g & seed).sum() / mm ** 2
-    m = ndi.binary_dilation(g, disk(GROW * mm)) & ok
-    soft = gaussian_filter(m.astype(float), FEATHER * mm * 0.5)
-    soft = np.where(ndi.binary_dilation(brow, disk(0.15 * mm)), 0, soft)  # (never on the brow's body)
-    return dict(brow=brow, ghost=g, soft=np.clip(soft * 1.3, 0, 1), area=area,
+    # (the body's own tail past the wedge, and its fading tip, made again with the ghost)
+    trim = body & (tp["keep"] < 0.999)
+    m = ndi.binary_dilation(g | trim, disk(GROW * mm)) & ok
+    soft = np.clip(gaussian_filter(m.astype(float), FEATHER * mm * 0.5) * 1.3, 0, 1)
+    soft = soft * (1 - tp["keep"])   # (never on the brow's body, nor its tail's wedge but as it fades)
+    return dict(brow=body, ghost=g, soft=soft, area=area, trim=trim.sum() / mm ** 2,
+                cut=abs(old_outer - tp["tip"]) / mm, tp=tp,
                 peak=float(D[g].max()) if g.any() else 0.0, D=D)
 
 
@@ -260,7 +343,25 @@ def plan(faces):
     return V, UV, F, T, shapes
 
 
+def probe(img, x, y):
+    return luma(img[y - 1:y + 2, x - 1:x + 2].reshape(-1, 3)).mean()
+
+
+def is_done(img, probes):
+    """A side made already: its probes' luma (3x3 means, so a JPEG pass after is nothing) nearer the result's than
+    the paint's before (as when the paint is the original again)."""
+    if not probes:
+        return False
+    cur = np.array([probe(img, x, y) for x, y, _, _ in probes])
+    before, after = np.array([p[2] for p in probes]), np.array([p[3] for p in probes])
+    return np.abs(cur - after).mean() < 0.3 * np.abs(before - after).mean()
+
+
 def apply(faces, measure_only=False):
+    done = {}
+    if os.path.exists(DONE):
+        with open(DONE) as fh:
+            done = json.load(fh)
     V, UV, F, T, shapes = plan(faces)
     fm = T.main_v[F[:, 0]]
     for face in faces:
@@ -270,6 +371,10 @@ def apply(faces, measure_only=False):
         out = img.copy()
         changed = False
         for side in (-1, 1):
+            key = "%s_%s" % (face, "R" if side < 0 else "L")
+            if not measure_only and is_done(img, done.get(key)):
+                print("BROWTAIL %-11s: made already (its probes read as the result, not the paint before) - left" % key)
+                continue
             box = (-BOX[1], -BOX[0], BOX[2], BOX[3]) if side < 0 else (BOX[0], BOX[1], BOX[2], BOX[3])
             uvm = raster_view(P, F, UV, box)
             view, ok = sample(img, uvm)
@@ -289,15 +394,15 @@ def apply(faces, measure_only=False):
             if fv is None:
                 print("BROWTAIL %s: no brow found - left" % name)
                 continue
-            print("BROWTAIL %s: ghost %.1f mm2 (peak %.0f%% darker than the skin round it)" % (name, fv["area"], 100 * fv["peak"]))
+            print("BROWTAIL %s: ghost %.1f mm2 (peak %.0f%% darker than the skin round it); tail: %.1f mm2 of body "
+                  "past its wedge, tip %.1f mm in from the body's end" % (
+                      name, fv["area"], 100 * fv["peak"], fv["trim"], fv["cut"]))
             if os.environ.get("BROWTAIL_DEBUG"):  # (the view with the brow's body green and the mask red)
                 ov = view * (1 - 0.6 * fv["soft"][..., None]) + np.array([255.0, 0, 0]) * 0.6 * fv["soft"][..., None]
                 ov[fv["brow"]] = ov[fv["brow"]] * 0.6 + np.array([0, 255.0, 0]) * 0.4
                 Image.fromarray(np.clip(np.concatenate([view, ov], 1), 0, 255).astype(np.uint8)).save(
                     os.path.join(os.environ["BROWTAIL_DEBUG"], "bt_%s_%s.png" % (face, "R" if side < 0 else "L")))
-            if measure_only or fv["area"] < TOL:
-                if not measure_only:
-                    print("BROWTAIL %s: under TOL - left" % name)
+            if measure_only:
                 continue
             # (the mask taken back to the paint: each texel's place on her head, seen in the view)
             x = P[:, 0] * side
@@ -313,6 +418,13 @@ def apply(faces, measure_only=False):
             keep = okp & (map_coordinates(fv["brow"].astype(float), [cy, cx], order=1, mode="constant") > 0.3)
             neww, off, cost = fill(out, M, keep, win)
             x0, y0, x1, y1 = win
+            # (probes for the next run: texels made again in full that changed most, their luma before and after)
+            dl = luma(img[y0:y1, x0:x1]) - luma(neww)
+            py, px = np.nonzero(M > 0.95)
+            order = np.argsort(dl[py, px])[::-1][:NPROBE * 8:8]
+            done[key] = [[int(px[i] + x0), int(py[i] + y0), round(float(probe(img, px[i] + x0, py[i] + y0)), 2),
+                          round(float(probe(neww, px[i], py[i])), 2)]
+                         for i in order]
             out[y0:y1, x0:x1] = neww
             changed = True
             print("BROWTAIL %s: %d texels made again (%d at full), grain from %s texels off (cost %.3f)" % (
@@ -320,6 +432,8 @@ def apply(faces, measure_only=False):
         if changed:
             Image.fromarray(np.clip(out + 0.5, 0, 255).astype(np.uint8)).save(path, quality=95, subsampling=0)
             print("BROWTAIL: written", path)
+            with open(DONE, "w") as fh:
+                json.dump(done, fh, indent=0)
 
 
 if __name__ == "__main__":
