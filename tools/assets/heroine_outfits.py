@@ -532,11 +532,18 @@ def crotch_bridge(name, pos, tris, gap_at, mkey, thick, bevel, trim, lift):
     foot = back_string(CROTCH + 0.155, CROTCH + 0.012)[-1][1]
     # (LEO_GW: wider by LEO_GW[0] in front of GAP_F + LEO_GW[1], eased out
     # by GAP_F + LEO_GW[2], under the U's rounded corners)
-    half = 0.016 + LEO_GW[0] * ramp(-Y, -(GAP_F + LEO_GW[2]), -(GAP_F + LEO_GW[1]))
-    return gusset(name + "_gusset", mkey, GAP_F - LEO_GUSSET_F, max(GAP_B + 0.014, foot + 0.015), half=half, thick=thick)
+    # (judge fin1: the gusset showed below and beside the U as a second stitched
+    # lobe, a flap and a dark wedge: its own binding and stitches, its 21 mm flare
+    # past the U's corners and its sides down the slot's walls (to |N_x| 0.96),
+    # 4 mm off her. Now unbound, LEO_GHALF wide, up the walls only to LEO_GSTEEP,
+    # LEO_GLIFT off her and LEO_GTHICK thick: on the roof of the slot, its edges in
+    # the slot, the U's binding the one edge seen.)
+    half = LEO_GHALF + LEO_GW[0] * ramp(-Y, -(GAP_F + LEO_GW[2]), -(GAP_F + LEO_GW[1]))
+    return gusset(name + "_gusset", mkey, GAP_F - LEO_GUSSET_F, max(GAP_B + 0.014, foot + 0.015), half=half,
+                  thick=LEO_GTHICK if LEO_GTHICK > 0 else thick, steep=LEO_GSTEEP, lift=LEO_GLIFT, bind=LEO_GBIND)
 
 
-def gusset(name, mkey, y_front, y_back, half=0.016, steep=0.96, thick=0.0018):
+def gusset(name, mkey, y_front, y_back, half=0.016, steep=0.96, thick=0.0018, lift=0.001, bind=True):
     """A gusset cut from her own skin under her crotch, skin-tight (1 mm off
     her), its edges bound and her skin tucked under it: from y_front to
     y_back, |x| under `half`, and up the walls of the slot between her thighs
@@ -546,7 +553,7 @@ def gusset(name, mkey, y_front, y_back, half=0.016, steep=0.96, thick=0.0018):
     her skin came through it as her thighs parted.)"""
     field = AND(half - np.abs(X), (steep - np.abs(N[:, 0])) * 0.02, y_back - Y, Y - y_front,
                 Z - (CROTCH - 0.015), (CROTCH + 0.03) - Z)
-    made = piece(name, field, mkey, lift=0.001, thick=thick, smooth=2, soften=0, slot=False)
+    made = piece(name, field, mkey, lift=lift, thick=thick, smooth=2, soften=0, slot=False, bind=bind)
     # (her skin tucked under it only 3 mm: it moves with the skin under it,
     # so it needs no more, and tucked 7 mm, as close pieces are, the walls of
     # the slot showed a gully along each of its edges as her thighs parted)
@@ -2565,7 +2572,15 @@ LEO_U = tuple(float(v) for v in os.environ.get("LEO_U", "0.016,0.004").split(","
 # under the U's edge, from LEO_UG[0] inside its edge to LEO_UG[1] outside; LEO_UH:
 # there the edge is held onto the gusset's top, LEO_UH * 30 mm higher, not off it)
 LEO_UG = tuple(float(v) for v in os.environ.get("LEO_UG", "0.001,0.005").split(","))
-LEO_GW = tuple(float(v) for v in os.environ.get("LEO_GW", "0.005,0,0.015").split(","))
+LEO_GW = tuple(float(v) for v in os.environ.get("LEO_GW", "0,0,0.015").split(","))
+# (the arcanist's gusset, judge fin1: LEO_GHALF its half-width, LEO_GSTEEP how far up the
+# slot's walls (|N_x|), LEO_GLIFT off her, LEO_GTHICK thick (0: the corset's), LEO_GBIND=1
+# binds and stitches its edges as before)
+LEO_GHALF = float(os.environ.get("LEO_GHALF", "0.013"))
+LEO_GSTEEP = float(os.environ.get("LEO_GSTEEP", "0.8"))
+LEO_GLIFT = float(os.environ.get("LEO_GLIFT", "0.0006"))
+LEO_GTHICK = float(os.environ.get("LEO_GTHICK", "0.0012"))
+LEO_GBIND = os.environ.get("LEO_GBIND", "0") == "1"
 LEO_UH = float(os.environ.get("LEO_UH", "0.07"))
 RBOOT_GONE = float(os.environ.get("RBOOT_GONE", "0.005"))
 
@@ -4572,7 +4587,7 @@ def arcanist():
     # is under it, 0 to 1, held onto its top; LEO_U, LEO_UG, LEO_UH. Released
     # there instead, the held leg line stepped 2 mm up within 2 mm, a bump.)
     def on_gusset(q):
-        hf = 0.016 + LEO_GW[0] * ramp(-q[:, 1], -(GAP_F + LEO_GW[2]), -(GAP_F + LEO_GW[1]))
+        hf = LEO_GHALF + LEO_GW[0] * ramp(-q[:, 1], -(GAP_F + LEO_GW[2]), -(GAP_F + LEO_GW[1]))
         return (float(LEO_U[0] > 0) * ramp(hf + LEO_UG[1] - np.abs(q[:, 0]), 0.0, LEO_UG[0] + LEO_UG[1]) * ramp(q[:, 1], GAP_F - LEO_GUSSET_F - 0.002, GAP_F - LEO_GUSSET_F + 0.004)
                 * ramp(-q[:, 2], -(CROTCH + 0.035), -(CROTCH + 0.028)))
     # (judge h: the glove copied the nail's free edge at the thumb tip, an
