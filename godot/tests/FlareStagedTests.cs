@@ -25,7 +25,7 @@ public class FlareStagedTests
         LampBook.SetType(ch, f.Road);
         var lit = LampBook.Now(ch).Lit;
         lit.Add(Lamps.All.Values.First(l => l.Effects.Any(e => e.Do == LampDo.Flare && e.Flare == flare)).Id);
-        foreach (var m in mods) lit.Add(Lamps.All.Values.First(l => l.Effects.Any(e => e.Do == LampDo.FlareMod && e.Rule == m)).Id);
+        foreach (var m in mods) lit.Add(m == "!banked" ? $"{f.Calling}.banked_flame" : Lamps.All.Values.First(l => l.Effects.Any(e => e.Do == LampDo.FlareMod && e.Rule == m)).Id);
         Assert.True(LampBook.Carry(ch, flare));
         var kit = Character.Kit(ch, false);
         var b = new Battle(new BattleSetup
@@ -292,5 +292,55 @@ public class FlareStagedTests
         Assert.False(boss.Alive && boss.State != EnemyState.Dying);
         var kill = Assert.Single(ev, e => e.Phase == FlarePhase.Kill);
         Assert.Equal(boss.Id, kill.Target);
+    }
+
+    /* Banked Flame (judge 4, 12 October): the price and the power sit only on the held charge, so a player who
+     * lights it and never holds a second fills and strikes as without it. */
+
+    [Fact]
+    public void Banked_flame_prices_only_the_held_charge_in_its_data()
+    {
+        var banked = Lamps.All.Values.Where(l => l.Id.EndsWith(".banked_flame")).ToList();
+        Assert.Equal(4, banked.Count);
+        foreach (var l in banked)
+        {
+            var e = l.Effects.Single(x => x.Rule == "flare.banked");
+            Assert.Equal(0, e.Arg("slower", -1));
+            Assert.Equal(0, e.Arg("harder", -1));
+            Assert.Equal(0.5, e.Arg("second", -1));
+            Assert.Equal(0.75, e.Arg("held", -1));
+        }
+    }
+
+    [Fact]
+    public void Banked_flame_never_held_fills_and_strikes_as_without_it_and_the_held_shot_strikes_harder()
+    {
+        static (Battle b, Enemy foe) Bell(bool banked)
+        {
+            var b = Carrying("bell_of_the_morning", banked ? ["!banked"] : []);
+            return (b, Foe(b, 2, 0, boss: true));
+        }
+        // The first charge fills as without the lamp; the second (the one held) at half.
+        var (plain, _) = Bell(false);
+        var (lamp, _) = Bell(true);
+        Assert.Equal(2, lamp.FlareCharges);
+        plain.FillFlare(40, "t"); lamp.FillFlare(40, "t");
+        Assert.Equal(plain.FlareMeter, lamp.FlareMeter, 6);
+        lamp.FillFlare(Battle.FlareFull - 40, "t");
+        Assert.Equal(Battle.FlareFull, lamp.FlareMeter, 6);
+        lamp.FillFlare(40, "t");
+        Assert.Equal(Battle.FlareFull + 20, lamp.FlareMeter, 6);
+        // A Flare spent from one charge strikes as a Flare without the lamp would (its glow aside: one more lamp lit);
+        // one spent with both held strikes 75% harder.
+        double Took(bool full)
+        {
+            var (b, foe) = Bell(true);
+            b.FillFlare(full ? 4 * Battle.FlareFull : Battle.FlareFull, "t");
+            Assert.Equal(full ? 2 * Battle.FlareFull : Battle.FlareFull, b.FlareMeter, 6);
+            Assert.True(b.UseFlare(1, 0));
+            Run(b, 1.5);
+            return foe.MaxHp - foe.Hp;
+        }
+        Assert.Equal(1.75, Took(true) / Took(false), 2);
     }
 }

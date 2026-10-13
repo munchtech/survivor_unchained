@@ -10,6 +10,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using SurvivorUnchained.Balance;
 using SurvivorUnchained.Content;
+using SurvivorUnchained.Core;
 using SurvivorUnchained.Maps;
 using SurvivorUnchained.Rpg;
 
@@ -42,7 +43,25 @@ using SurvivorUnchained.Rpg;
 var opt = Opts.Parse(args);
 Pilot.ReadsBosses = opt.Get("bossread", "1") != "0";
 Pilot.Banks = opt.Get("bank", "1") != "0";
+Pilot.PhaseAware = opt.Get("phaseaware", "1") != "0";
 ArenaSim.Director = opt.Get("charges", "1") != "0";
+StorySim.Flare = opt.Get("flare", "");
+SurvivorUnchained.Play.Bosses.ArenaBoss.Floors = double.Parse(opt.Get("floors", "1"), System.Globalization.CultureInfo.InvariantCulture);
+// --flarecut MAX[,RATE]: the most a Flare cuts an arena phase floor, and how fast (0 = floors as before).
+if (opt.Has("flarecut"))
+{
+    var fc = opt.Get("flarecut", "0.5").Split(',');
+    SurvivorUnchained.Play.Bosses.ArenaBoss.FlareCutMax = double.Parse(fc[0], System.Globalization.CultureInfo.InvariantCulture);
+    if (fc.Length > 1) SurvivorUnchained.Play.Bosses.ArenaBoss.FlareCutRate = double.Parse(fc[1], System.Globalization.CultureInfo.InvariantCulture);
+}
+if (opt.Has("light")) ArenaSim.Light = opt.List("light", "").ToList();
+// --over DIR: data files found under DIR are read in place of godot/data's (a variant's lamps.json, no rebuild).
+if (opt.Has("over"))
+{
+    string over = opt.Get("over", "");
+    var read = DataFiles.Text;
+    DataFiles.Text = rel => File.Exists(Path.Combine(over, rel)) ? File.ReadAllText(Path.Combine(over, rel)) : read(rel);
+}
 string cmd = args.Length > 0 && !args[0].StartsWith("--") ? args[0] : "help";
 // The content is read once, before the runs share it.
 _ = Callings.Archetypes; _ = Items.All; _ = Weapons.All; _ = Boons.All;
@@ -58,6 +77,7 @@ switch (cmd)
     case "story": Story(); break;
     case "place": Place(); break;
     case "landmarks": Landmarks(); break;
+    case "suggest": SuggestPath(); break;
     default:
         Console.WriteLine("dotnet run -c Release --project godot/balance -- arena|probe|report [options]  (see Program.cs)");
         break;
@@ -315,6 +335,33 @@ void ProbeAll()
 /* One skill alone, a calling's lamps lit: `lamped --skill seeking_motes --rank 8 --evo mote_cascade --foe 7 --seeds 4`.
  * Cases are calling:type:lamps, e.g. arcanist:moonweaver:full, warden:bulwark:full, arcanist:moonweaver:none.
  * Set LAMPS_OFF=id1,id2 in the environment to turn rules off. Prints crowd damage a second per case. */
+/* Light my way's path for every type: the lamps it lights, in order, as levels come (--upto N levels; the
+ * Flare lamps and modifiers marked), so we know which modifiers a survivor carries into a story boss. */
+void SuggestPath()
+{
+    int upto = opt.Int("upto", 16);
+    foreach (var road in SurvivorUnchained.Content.Lamps.Roads.Values.Where(r => r.Stand != null).OrderBy(r => r.Id))
+    {
+        var a = Callings.Archetype(road.Calling);
+        var j = SurvivorUnchained.Play.Journey.Begin(new CreationChoice { Name = "Bot", Archetype = road.Calling, Background = "hunter", Palette = a.Palettes[0].Id, WeaponItem = a.Weapons[0], Ability = a.Abilities[0] }, 1);
+        LampBook.SetType(j.Ch, road.Id);
+        var sb = new StringBuilder($"{road.Calling}/{road.Id} (carries {LampBook.Carried(j.Ch)}):");
+        for (int lv = 2; lv <= upto; lv++)
+        {
+            Character.GainXp(j.Ch, Character.XpForLevel(j.Ch.Level) - j.Ch.Xp + 1);
+            var before = LampBook.Now(j.Ch).Lit.ToHashSet();
+            LampBook.LightSuggested(j.Ch, j.World);
+            foreach (var id in LampBook.Now(j.Ch).Lit.Where(x => !before.Contains(x)))
+            {
+                var d = SurvivorUnchained.Content.Lamps.Get(id);
+                string mark = d.Kind is SurvivorUnchained.Content.LampKind.UltimateMod or SurvivorUnchained.Content.LampKind.FlareLamp or SurvivorUnchained.Content.LampKind.Ultimate ? $" **{d.Kind}**" : "";
+                sb.Append($" L{lv} {id}{mark};");
+            }
+        }
+        Console.WriteLine(sb.ToString());
+    }
+}
+
 void Lamped()
 {
     string skill = opt.Get("skill", "seeking_motes");

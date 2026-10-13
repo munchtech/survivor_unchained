@@ -76,6 +76,8 @@ public sealed class LampDef
     /// <summary>Lamps lit on its road before it can be lit (§2.2's depth gates).</summary>
     public int Gate;
     public LampEffect[] Effects = [];
+    /// <summary>A Flare modifier Light my way may light before Act 1 is done (one per Flare, measured on Act 1; §7).</summary>
+    public bool Early;
 
     /// <summary>Only the calling may light it: the hearth is home, and Flares are the one hard lock (§2.7).</summary>
     public bool Home => Region == LampRegion.Hearth || Kind is LampKind.Ultimate or LampKind.UltimateMod;
@@ -105,8 +107,11 @@ public sealed class FlareDef
     public double GuardValue;
     /// <summary>A staged Flare's beat (phase 2, CLASSES.md §3.5-3.6): its timings from the press in seconds ("key": the
     /// key pose's end; "first"/"step" or "first"/"last": the blows'; Burns Twice's "frost") and its hitstop in frames
-    /// ("hitstop", "hitstopLast", "hitstopExecute"). The logic schedules its blows by it; the view reads the rest.</summary>
+    /// ("hitstop", "hitstopLast", "hitstopExecute", "hitstopFrost"). The logic schedules its blows by it; the view reads the rest.</summary>
     public Dictionary<string, double> Beat = new();
+    /// <summary>Staged (its own logic, FlareStaged.cs) once its data has a beat; without one it plays its kind's plain
+    /// form (the harness measures a staged Flare against it so).</summary>
+    public bool Staged => Beat.Count > 0;
     /// <summary>A staged Flare's own numbers (shares of its power, seconds, metres), by name.</summary>
     public Dictionary<string, double> Args = new();
     public double Arg(string key, double fallback) => Args.TryGetValue(key, out var v) ? v : fallback;

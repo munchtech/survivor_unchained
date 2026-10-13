@@ -66,6 +66,8 @@ public sealed class RunResult
     /// health), its staggers, the phase it reached, and whether it grew wild (three minutes).</summary>
     public int BossMarked, BossLanded, BossStaggers, BossPhase = -1;
     public double BossBreak;
+    /// <summary>Each boss phase as it ended: [the Flare's cut, seconds, seconds to its mark or -1] (the last as the fight ended).</summary>
+    public List<double[]> BossPhases = new();
     public bool BossSoft;
     /// <summary>The long night: the boss's returns that came, and the dark's oaths sworn.</summary>
     public int Returns, Dark;
@@ -87,11 +89,14 @@ public sealed class RunResult
     public int FlareCasts, FlareBossCasts, FlareClutches;
     /// <summary>Casts whose blows reached a boss; the Flare's damage to bosses, and all damage to bosses.</summary>
     public int FlareCastsOnBoss;
+    public int FlareFullBankShots;
     public double FlareBossDamage, BossDamage;
     /// <summary>The Flare's share of what was truly taken off bosses (health, and a gate's Break up to a tenth).</summary>
     public double FlareBossTook = double.NaN;
     /// <summary>Health taken off bosses (as FlareBossTook counts it), by source: each skill's share of a boss.</summary>
     public Dictionary<string, double> BossTookBy = new();
+    /// <summary>A Stand's uplift on a boss: health taken off bosses while it held, and its seconds on a boss (Battle).</summary>
+    public double StandTook, StandSeconds;
     /// <summary>The Bulwark's wall: blocks, rebukes, the most stones held at once.</summary>
     public int Blocks, Rebukes, StonesPeak;
     public double FlareFirst = double.NaN, FlareGap = double.NaN, FlareBossShare = double.NaN;
@@ -109,6 +114,9 @@ public static class ArenaSim
     public const double Dt = 1 / 60.0;
     /// <summary>--charges 0: every charger on its own clock, as before the charge director.</summary>
     public static bool Director = true;
+    /// <summary>Lamps lit past the board (--light; "{calling}" is the survivor's calling): a measuring aid,
+    /// for a lamp Light my way never lights (Banked Flame).</summary>
+    public static List<string> Light = new();
 
     public static string Card(Offer o) => o.Kind switch
     {
@@ -175,7 +183,16 @@ public static class ArenaSim
             foreach (var id in Lamps.StoryFights) j.World.Facts[$"arena.{id}"] = "won";
             j.World.Facts["lamps.atlas"] = LampBook.AtlasLamps;
         }
-        if (spec.Lamps is "suggested" or "full") LampBook.LightSuggested(j.Ch, j.World);
+        if (spec.Lamps is "suggested" or "full")
+        {
+            // An arena board is past Act 1: Light my way's whole path (§7's early rule is for the story).
+            bool had = j.World.Facts.ContainsKey("chapter.done");
+            if (!had) j.World.Facts["chapter.done"] = true;
+            LampBook.LightSuggested(j.Ch, j.World);
+            if (!had) j.World.Facts.Remove("chapter.done");
+        }
+        foreach (var id in Light.Select(x => x.Replace("{calling}", spec.Calling)))
+            if (!LampBook.Now(j.Ch).Lit.Contains(id)) LampBook.Now(j.Ch).Lit.Add(id);
         // --flare stand: carry the road's Stand (its lamp lit past its gate if the board hasn't reached it; a measuring aid).
         if (spec.Flare == "stand")
         {
@@ -215,7 +232,7 @@ public static class ArenaSim
         while (t < spec.Cap * 60 && p.Alive && host.Result == null)
         {
             var (mx, mz) = Pilot.Steer(b, spec.Deft, zone.BossScript);
-            if (Pilot.Act(b, j, mx, mz)) r.Quaffs++;
+            if (Pilot.Act(b, j, mx, mz, zone.BossScript)) r.Quaffs++;
             zone.Step(Dt);
             zone.Frame(Dt);
             b.Tick(Dt, mx, mz);
@@ -301,6 +318,7 @@ public static class ArenaSim
             r.BossBreak = bs.BreakSum / Math.Max(1, bs.MaxHp);
             r.BossPhase = bs.PhaseIx;
             r.BossSoft = bs.Soft;
+            r.BossPhases = bs.PhaseLog.Select(x => new[] { x.Cut, x.Seconds, x.MarkAt }).Append(new[] { bs.FlareCut, bs.PhaseT, -1 }).ToList();
         }
         r.Returns = zone.Returns;
         r.CoreBroken = zone.CoreBroken;
@@ -324,11 +342,13 @@ public static class ArenaSim
         if (bossUp >= 0) r.FlareBossCasts = b.FlareTimes.Count(x => x >= bossUp);
         double bossDmg = b.BossDamageBy.Values.Sum();
         r.FlareCastsOnBoss = b.FlareCastsOnBoss;
+        r.FlareFullBankShots = b.FlareFullBankShots;
         r.BossDamage = bossDmg;
         r.FlareBossDamage = b.BossDamageBy.GetValueOrDefault("flare");
         double took = b.BossHealthBy.Values.Sum();
         if (took > 0) r.FlareBossTook = b.BossHealthBy.GetValueOrDefault("flare") / took;
         r.BossTookBy = new Dictionary<string, double>(b.BossHealthBy);
+        r.StandTook = b.BossTookInStand; r.StandSeconds = b.StandOnBossSeconds;
         if (bossDmg > 0) r.FlareBossShare = b.BossDamageBy.GetValueOrDefault("flare") / bossDmg;
         return r;
     }
