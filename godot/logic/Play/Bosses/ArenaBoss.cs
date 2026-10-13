@@ -131,7 +131,8 @@ public abstract class ArenaBoss
     protected bool Spent(Enemy e) => Last && e.Hp <= 1.5 && PhaseT >= FloorNow;
     /// <summary>This phase's floor now: an arena boss's is cut by the Flare's share of the phase's health, never by
     /// more than half (the owner, 12 October: "let arena phases shorten"). Only the Flare's damage counts, so a burst
-    /// Flare (Banked Flame, Called Down) shows in an arena and every phase is still seen; a story boss's floors hold.</summary>
+    /// Flare (Banked Flame, Called Down) shows in an arena and every phase is still seen; a story boss's the same
+    /// (13 October: "a planned 'BOOM' button").</summary>
     protected double FloorNow => Math.Max(Current.Floor * FloorScale * (1 - FlareCut), Math.Min(Current.Floor * FloorScale, MinCutFloor));
     /// <summary>No cut takes a phase under six seconds (judge 3): a map ruler's floors (x0.65) and the vigil's (x2/3)
     /// stack with the half, and a phase's own move starts 1.5-3 s in and must be seen through.</summary>
@@ -150,7 +151,7 @@ public abstract class ArenaBoss
             return span <= 0 ? 0 : Math.Min(FlareCutMax, FlareCutRate * E.FlareTook / span);
         }
     }
-    /// <summary>Whether the Flare may cut its floors: an arena's boss yes, a story boss no (its floors are the story's).</summary>
+    /// <summary>Whether the Flare may cut its floors (every boss; the harness's --storycut 0 holds a story boss's).</summary>
     protected virtual bool FlareCuts => true;
     /// <summary>The most the Flare cuts a floor (half), and how fast: the floor's share cut for each share of the
     /// phase's health the Flare took (tuned so the Flare's share of a boss holds near 35%; the harness's --flarecut).</summary>
