@@ -54,7 +54,7 @@ public sealed partial class Battle
     public readonly List<double> FlareTimes = new();
     /// <summary>For the harness: what each Flare did to the crowd round her, a second after it ended: [press time, creatures
     /// (not bosses) in its reach at the press, within 15 m (the screen), of those dead in reach, dead on screen, kills
-    /// credited to the Flare, the share of the in-reach creatures' health gone, clutch 1/0, a boss within 10 m 1/0, reach].</summary>
+    /// credited to the Flare, the share of the in-reach creatures' health gone, clutch 1/0, a boss within 10 m 1/0, reach, champions in reach still standing].</summary>
     public readonly List<double[]> FlareCrowd = new();
     /// <summary>The room a Flare is judged against: what's on the screen round her.</summary>
     public const double FlareRoom = 15;
@@ -64,6 +64,8 @@ public sealed partial class Battle
     internal int FlareKillsNow;
     /// <summary>For the harness (--rout): see FlareBlow.</summary>
     public static double FlareRout;
+    /// <summary>For the harness (--flarereach): every Flare's reach times this.</summary>
+    public static double FlareReachMul = 1;
     double emberAnsweredAt = -99;
     /// <summary>The horde can't spam it: each of its sources draws on a purse that refills at its rate a second.</summary>
     readonly double[] purse = new double[4], purseAt = new double[4];
@@ -202,7 +204,7 @@ public sealed partial class Battle
         flareClutch = p.Hp < MaxHp * FlareClutch;
         int rank = FlareRank;
         // Its size grows with the long night until it fills the screen, then stops; its damage has no cap (§5).
-        flareReach = f.Radius * (flareClutch ? FlareReachClutch : 1) * (Boons.ContainsKey("bright_hour") ? 1.4 : 1) * Math.Min(2.5, 1 + 0.1 * rank);
+        flareReach = f.Radius * FlareReachMul * (flareClutch ? FlareReachClutch : 1) * (Boons.ContainsKey("bright_hour") ? 1.4 : 1) * Math.Min(2.5, 1 + 0.1 * rank);
         // The board's lamps feed the skills by their tags, so the Flare grows with the board too, or a full
         // board's Flare fell to a tenth of a boss's damage (the harness, 12 October).
         flarePower = Content.Lamps.FlarePower(f, EmberOn ? EmberLevel : Level) * (1 + 0.25 * rank) * (1 + FlareLampGlow * Lamps.Lit);
@@ -288,7 +290,7 @@ public sealed partial class Battle
             crowdAt.Add((e, e.Id, e.Hp, Dist(e.X, e.Z, p.X, p.Z) <= flareReach));
         }
         FlareKillsNow = 0;
-        crowdRow = [Time, crowdAt.Count(c => c.In), crowdAt.Count, 0, 0, 0, 0, flareClutch ? 1 : 0, bossNear ? 1 : 0, flareReach];
+        crowdRow = [Time, crowdAt.Count(c => c.In), crowdAt.Count, 0, 0, 0, 0, flareClutch ? 1 : 0, bossNear ? 1 : 0, flareReach, 0];
         crowdEvalAt = Time + flareLen + 1;
     }
 
@@ -300,7 +302,7 @@ public sealed partial class Battle
         {
             // (a pooled creature taken up again since is one that died)
             bool dead = !e.Alive || e.Hp <= 0 || e.Id != id;
-            if (inside) { crowdRow[3] += dead ? 1 : 0; hp0 += hp; hp1 += dead ? 0 : Math.Min(hp, e.Hp); }
+            if (inside) { crowdRow[3] += dead ? 1 : 0; crowdRow[10] += !dead && e.Elite ? 1 : 0; hp0 += hp; hp1 += dead ? 0 : Math.Min(hp, e.Hp); }
             crowdRow[4] += dead ? 1 : 0;
         }
         crowdRow[5] = FlareKillsNow;
