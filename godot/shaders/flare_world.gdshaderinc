@@ -325,18 +325,19 @@ void flare_body(vec3 wp, vec3 nrm_view, mat4 inv_view, float rim, inout vec3 alb
 		vec3 tint = vec3(0.5, 0.74, 1.0) + vec3(-0.05, 0.04, -0.02) * vj * 2.0;
 		// About one and a half to two times the ground glass, darker at night (judge 2: the Verge night's glaze was
 		// the brightest thing in the frame, several steps over the ground).
-		vec3 ice = mix(vec3(l), alb, 0.28) * tint * mix(0.5, 0.3, night) + vec3(0.014, 0.034, 0.062) * (0.6 + 0.8 * p.r);
+		vec3 ice = mix(vec3(l), alb, 0.28) * tint * mix(0.5, 0.24, night) + vec3(0.014, 0.034, 0.062) * (0.6 + 0.8 * p.r);
 		// Rime: white frost caught on what faces up (heads, shoulders, a brim), in patches, mid-value, never white.
 		float rime = smoothstep(0.62, 0.9, max(nw.y, 0.0) * 0.75 + p.g * 0.55) * (black ? 0.0 : 1.0);
-		ice = mix(ice, vec3(0.3, 0.35, 0.4) * mix(0.85, 0.55, night), rime * 0.55);
+		ice = mix(ice, vec3(0.3, 0.34, 0.38) * mix(0.8, 0.42, night), rime * 0.4);
 		if (black) ice = mix(vec3(l), alb, 0.2) * vec3(0.12, 0.14, 0.18) + vec3(0.005, 0.007, 0.01);
 		alb = mix(alb, ice, g);
 		rough = mix(rough, black ? 0.05 : mix(0.12, 0.55, rime), g);
 		// Its own warm lights (a lantern, an eye, a struck flare) go dim under the ice (t10: warm beads on
 		// the glazed field).
-		emi *= 1.0 - 0.8 * g;
+		emi *= 1.0 - 0.96 * g;
 		// The rim is the brightest of it: ice-blue, cyan where the body is thin (its edges, an arm, a hand, a brim).
-		float fres = pow(rim, 2.2);
+		// (Wide, at 2.2, the rim covered most of a small body and the pack read pale: s4f.)
+		float fres = pow(rim, 3.4);
 		vec3 rimc = mix(vec3(0.22, 0.56, 1.0), vec3(0.28, 1.0, 0.9), smoothstep(0.6, 0.92, rim));
 		emi += rimc * fres * g * (black ? 0.06 : mix(0.2, 0.32, night));
 		// The light held in the ice itself, so a statue reads from above (a hat or a crown faces the camera and has no
