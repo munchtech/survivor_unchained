@@ -78,9 +78,15 @@ public partial class HerFaceLife : Node
                 if (kv.Split('=') is [var k, var v])
                     skinParams.Add((k, v.StartsWith('#') ? new Color(v)
                         : float.Parse(v, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture)));
+        // --teethparam name=value,...: her teeth shader's numbers set, each frame after TeethLight's (pictures of them tried).
+        if (Args.Get("teethparam") is string tpar)
+            foreach (var kv in tpar.Split(','))
+                if (kv.Split('=') is [var k, var v] && float.TryParse(v, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var f))
+                    teethParams.Add((k, f));
     }
 
     readonly System.Collections.Generic.List<(string Name, Variant Value)> skinParams = new();
+    readonly System.Collections.Generic.List<(string Name, float Value)> teethParams = new();
 
     MeshInstance3D? teeth, mouth;
     int open = -1, snarl = -1;
@@ -96,7 +102,12 @@ public partial class HerFaceLife : Node
         float k = Mathf.SmoothStep(0.03f, 0.3f, w);
         for (int s = 0; s < teeth.Mesh.GetSurfaceCount(); s++)
             if (teeth.GetSurfaceOverrideMaterial(s) is ShaderMaterial m && m.ResourceName == "teeth")
+            {
                 m.SetShaderParameter("lit", k);
+                // (the lamps cut wholly with her lips shut (her mouth's corner), 0.6 of the way once they part)
+                m.SetShaderParameter("shut", 1 - 0.4f * Mathf.SmoothStep(0, 0.05f, w));
+                foreach (var (n, v) in teethParams) m.SetShaderParameter(n, v);
+            }
     }
 
     void SkinParams()
