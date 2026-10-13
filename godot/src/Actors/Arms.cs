@@ -190,7 +190,7 @@ public static class Arms
     }
 
     /// <summary>How far the shield mount sits off the forearm bone, toward the back of the arm (m).</summary>
-    const float ShieldOff = 0.08f;
+    const float ShieldOff = 0.11f;  // was 0.08: 3 cm further out along the shield's face normal (judge 45)
 
     /// <summary>How far down the forearm the shield is strapped (m): its boss over her wrist, so the rim sits under her shoulder armour with air.</summary>
     const float ShieldAlong = 0.23f;
