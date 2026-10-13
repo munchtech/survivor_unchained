@@ -530,7 +530,7 @@ def crotch_bridge(name, pos, tris, gap_at, mkey, thick, bevel, trim, lift):
     # (on back under the string's foot by 1.5 cm: stopped at GAP_B, short of
     # the string, the strip between them showed as she vaulted)
     foot = back_string(CROTCH + 0.155, CROTCH + 0.012)[-1][1]
-    return gusset(name + "_gusset", mkey, GAP_F - 0.014, max(GAP_B + 0.014, foot + 0.015), thick=thick)
+    return gusset(name + "_gusset", mkey, GAP_F - LEO_GUSSET_F, max(GAP_B + 0.014, foot + 0.015), thick=thick)
 
 
 def gusset(name, mkey, y_front, y_back, half=0.016, steep=0.96, thick=0.0018):
@@ -2543,9 +2543,19 @@ def piece(name, field, mkey, lift=0.003, thick=0.003, smooth=0, bevel=0.0012, tr
 
 HOLD_OFF, HOLD_FULL, HOLD_SLOPE = (float(v) for v in os.environ.get("HOLD", "0.001,0.012,0.25").split(","))
 HOLD_BAND, HOLD_GROOVE, HOLD_SOFT = (float(v) for v in os.environ.get("HOLD_TUCK", "0.05,0.0015,0.030").split(","))
-# (the leotard leg lines held onto her, 419ede90: gated off for the first
-# merge, its tuck showed as slivers in motion and it is unjudged; LEO_HOLD=1 to try)
-LEO_HOLD = os.environ.get("LEO_HOLD", "0") == "1"
+# (the leotard leg lines held onto her, 419ede90, down to their foot at the crotch
+# (LEO_HOLD_Z: select above, fade from/to, metres over CROTCH): seen from the game camera
+# at her front quarter, the strip showed by a pixel under the foot of the leg line, which
+# stood 2-4 mm off her there; LEO_FOOT widens the foot (eased out over 3.5 cm up) and
+# LEO_GUSSET_F carries the gusset further forward under it, the bare corner between them
+# 3.9 mm from the strip. HOLD_CAP: under a held edge her tuck is eased in from the edge
+# for every rule, not only the hold's (the standard rule tucked 7 mm right at the held edge,
+# seen as cyan slivers when the cloth lifted in motion).)
+LEO_HOLD = os.environ.get("LEO_HOLD", "1") == "1"
+LEO_HOLD_Z = tuple(float(v) for v in os.environ.get("LEO_HOLD_Z", "0.002,-0.02,-0.01").split(","))
+HOLD_CAP = os.environ.get("HOLD_CAP", "1") == "1"
+LEO_FOOT = float(os.environ.get("LEO_FOOT", "0.004"))
+LEO_GUSSET_F = float(os.environ.get("LEO_GUSSET_F", "0.026"))
 RBOOT_GONE = float(os.environ.get("RBOOT_GONE", "0.005"))
 
 
@@ -3721,7 +3731,7 @@ def arcanist():
     # widening into a V above her cheeks.
     # (2.9 cm across at its foot: what must be covered there is 2.4 cm, and
     # at 1.9 cm her skin showed either side of it in a lunge)
-    w = (0.0145 + 0.42 * np.maximum(Z - CROTCH, 0)) * FRONT + (-0.01 + 1.5 * np.maximum(Z - CROTCH - 0.13, 0)) * (1 - FRONT)
+    w = (0.0145 + 0.42 * np.maximum(Z - CROTCH, 0) + LEO_FOOT * np.exp(-(np.maximum(Z - CROTCH, 0) / 0.035) ** 2)) * FRONT + (-0.01 + 1.5 * np.maximum(Z - CROTCH - 0.13, 0)) * (1 - FRONT)
     leotard = AND(Z - (CROTCH - 0.03), w - ax)
     # A bodysuit: over her breasts and up to a high neck.
     neck_top = head("neck_01")[2] + 0.07 - 0.035 * (1 - FRONT)
@@ -3785,7 +3795,7 @@ def arcanist():
         qx, qy, qz = q[:, 0], q[:, 1], q[:, 2]
         fr = ramp(-(qy - CROTCH_Y), -0.03, 0.03)
         r = qz - CROTCH
-        wq = (0.0145 + 0.42 * np.maximum(r, 0)) * fr + (-0.01 + 1.5 * np.maximum(r - 0.13, 0)) * (1 - fr)
+        wq = (0.0145 + 0.42 * np.maximum(r, 0) + LEO_FOOT * np.exp(-(np.maximum(r, 0) / 0.035) ** 2)) * fr + (-0.01 + 1.5 * np.maximum(r - 0.13, 0)) * (1 - fr)
         legs = np.maximum(qz - 1.13, wq - np.abs(qx))
         pl = np.where(fr > 0.5, u_dist(qx, qz), 1.0)
         return np.minimum(legs, pl)
@@ -4368,7 +4378,7 @@ def arcanist():
                trim=gold(0.004), snap=False, hides=True, flare=(0.034, 0.03)),
         *piece("arcanist.corset", corset, "plumleather", lift=0.0035, smooth=8, iron=60, trim=gold(0.008), keep_off=("Head",), filled=True, edge=120, soften=80,
                bridge=True, cut=exact, stiff=[(0.03, front_panel), (0.03, collar), plunge_fold, taut_gore, plunge_rim],
-               hold=None if not LEO_HOLD else (lambda q: (q[:, 2] > CROTCH + 0.015) & (q[:, 2] < 1.2) & (np.abs(q[:, 0]) < 0.3), lambda q: ramp(q[:, 2], CROTCH + 0.03, CROTCH + 0.06))),
+               hold=None if not LEO_HOLD else (lambda q: (q[:, 2] > CROTCH + LEO_HOLD_Z[0]) & (q[:, 2] < 1.2) & (np.abs(q[:, 0]) < 0.3), lambda q: ramp(q[:, 2], CROTCH + LEO_HOLD_Z[1], CROTCH + LEO_HOLD_Z[2]))),
         *(down_tube() if PLUNGE_TRIM == "down" else []),
         *(plunge_clasp() if PLUNGE_CLASP else []),
         # (judge 4: the front read as moulded latex. Four stitched boning
@@ -6063,7 +6073,7 @@ if BODY_OUT:
             # the vaults, and eased over 10 mm it changed nothing, her rows there
             # being 4-20 mm apart)
             soft = np.clip(dl / HOLD_SOFT, 0.0, 1.0) if HOLD_SOFT > 0 else np.ones(len(dl))
-            vals[und, k] = np.maximum(vals[und, k], np.minimum(soft[und], lim[und]))
+            vals[und, k] = np.minimum(soft[und], lim[und]) if HOLD_CAP else np.maximum(vals[und, k], np.minimum(soft[und], lim[und]))
             print("HOLD TUCK %s: %d vertices of hers under it within %.0f mm of its held edge; marks %.2f -> %.2f (mean), %d at the edge row limited (mean %.2f)"
                   % (o.name, und.sum(), HOLD_BAND * 1000, before.mean(), vals[und, k].mean(), (und & (lim < 1)).sum(), lim[und & (lim < 1)].mean() if (und & (lim < 1)).any() else 0))
         if name == "arcanist":
