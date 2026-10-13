@@ -452,6 +452,8 @@ SABATON = dict(RANGER, toe=0.004, toe_point=0.0, sink=0.002, t_fore=0.0055, heel
 # metal's planishing broke at each); the sole's top bevelled down to its edge (`chamfer`), so no
 # flat top face catches the sky at a low camera. SAB17=0: s16's sabaton.)
 SAB17 = os.environ.get("SAB17", "1") == "1"
+SAB_MATTE = os.environ.get("SAB_MATTE", "1") == "1"   # (the sole drawn matte: see the sole in sabaton())
+SAB_RIM = os.environ.get("SAB_RIM", "1") == "1"   # (each plate's cut edges cleared of slivers and folds: rim_cleaned in heroine_outfits)
 if SAB17:
     SABATON.update(lames=3, flare=float(os.environ.get("SAB_FLARE", 0.0035)), rise=1.0, sole_out=0.0005,
                    margin=float(os.environ.get("SAB_MARGIN", 0.002)), relax=int(os.environ.get("SAB_RELAX", 30)),
@@ -704,6 +706,10 @@ def sabaton(name, sd, top_s, dip, st, mkey, trim="gold", studs="gold", lining="d
         pp, aa, tt = _whole(*g["weld"](pp, aa, tt))
         nn = aa[:, :3] / (np.linalg.norm(aa[:, :3], axis=1)[:, None] + 1e-12)
         pp = pp + nn * aa[:, 3:4]
+        if SAB_RIM:
+            # (its cut edges cleared of slivers and folds, as the greave's: thickened, they stood
+            # out as small teeth and nicks along the gold edges, fin1 judge a)
+            pp, aa, tt = g["rim_cleaned"](f"{name}_plate{k}", pp, aa, tt)
         # (its blend: from her foot to her toes across the ball, by where it shows)
         yc = (y_g if k == 0 else e[k - 1]) * 0.5 + (e[k] if k <= n else leg.toe_yf) * 0.5
         wb = float(ramp(yc, yb - 0.015, yb + 0.015))
@@ -762,7 +768,10 @@ def sabaton(name, sd, top_s, dip, st, mkey, trim="gold", studs="gold", lining="d
                   np.c_[O - on * bev * 0.6, sole.w(O)]]
         loops += [np.c_[q, sole.w(q)] for q in (c + (O - on * bev - c) * s_ for s_ in np.linspace(0.92, 0.1, 5))]
     spos, stris = loft(loops, np.r_[c, sole.b(c[None])[0]], np.r_[c, sole.w(c[None])[0]])
-    o = g["finish"](name + "_sole", spos, rigid(leg, spos), stris, sole_key, 0.0, 0.0, 10 ** 7)
+    # (SAB_MATTE: named a binding, so the shader draws it matte, as it draws a rolled
+    # binding: its flat top showed past the plates as a pale welt, its leather's sheen
+    # seen grazing, fin1 judge b)
+    o = g["finish"](name + ("_sole_bind" if SAB_MATTE else "_sole"), spos, rigid(leg, spos), stris, sole_key, 0.0, 0.0, 10 ** 7)
     made.append(o)
     hiders.append(o)
     for o in made:
