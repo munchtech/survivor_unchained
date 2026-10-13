@@ -64,6 +64,18 @@ vec3 flare_crystal(vec2 w) {
 	return vec3(c, fine, p1.b * 0.6 + p2.b * 0.4);
 }
 
+// The ferns' spines at a point (0..1): the crystal brighter than its own neighbourhood (the same two layers a few
+// mips down), so they stay thin lines at any distance. (Thresholded on its own, the plate's dense haze of fine
+// lines, minified, lit up as a pale field with the gaps showing dark.) Fragment only (mip bias).
+float flare_spine(vec2 w, float c) {
+	vec2 u1 = w * 0.11;
+	vec2 u2 = mat2(vec2(0.62, -0.78), vec2(0.78, 0.62)) * w * 0.067 + 0.37;
+	float b1 = texture(flare_plate, u1, 2.5).r;
+	float b2 = texture(flare_plate, u2, 2.5).r;
+	float cb = clamp(b1 * (0.45 + 0.9 * b2) * 1.25, 0.0, 1.0);
+	return smoothstep(0.1, 0.3, c - cb);
+}
+
 // How much frost lies at a point (0..1): grown past the front, held inside the reach, melted in from the edge.
 float flare_cover(vec2 w, float arr, float crystal) {
 	if (flare_look.w < 0.5 || flare_frost.y <= 0.0) return 0.0;
@@ -180,20 +192,27 @@ void flare_ground(vec3 wp, inout vec3 alb, inout float rough, inout float spec, 
 		wet = max(wet, melted * (1.0 - smoothstep(3.5, 6.0, flare_frost.w)));
 		vec3 nw = (inv_view * vec4(nrm_view, 0.0)).xyz;
 		bool black = kind > 1.5;
-		// Under the glaze the ground goes dark, as if wet.
-		alb *= 1.0 - 0.32 * ice;
-		vec3 glaze = black ? vec3(0.018, 0.024, 0.034) * (0.6 + 0.8 * cr.x) : vec3(0.13, 0.2, 0.28) * (0.42 + 0.95 * cr.x); // a mid-value glaze: by day the paler one read as snow
-		float feather = black ? 0.75 : 0.3 + 0.7 * clamp(cr.x * 1.35, 0.0, 1.0);
-		// By day the glaze is darker still and duller: glass over the ground, never snow over the screen.
 		float day = 1.0 - flare_hue.a;
-		glaze *= 1.0 - 0.4 * day;
-		alb = mix(alb, glaze, ice * feather);
-		rough = mix(rough, black ? 0.06 : mix(0.16, 0.42, cr.x), ice);
-		spec = mix(spec, mix(0.5, 0.22, day), ice);
-		// The feathers stand up from the glass: their ridges catch the light.
+		// Dark wet glass: the ground seen through it darker and colder than bare, never paler (a pale glaze,
+		// or the plate's fine haze of lines lit as a field, read as grey snow over the screen). Only the
+		// ferns' spines are bright: thin crystal edges catching the light.
+		float spine = flare_spine(w, cr.x);
+		float gl = dot(alb, FL_LUM);
+		vec3 under = mix(vec3(gl), alb, 0.45) * vec3(0.46, 0.66, 1.0) * 0.5;
+		vec3 glass = mix(under, black ? vec3(0.004, 0.005, 0.008) : vec3(0.006, 0.013, 0.03), black ? 0.8 : 0.45);
+		vec3 edge = black ? vec3(0.03, 0.04, 0.055) : vec3(0.26, 0.42, 0.62) * (1.0 - 0.3 * day);
+		alb = mix(alb, mix(glass, edge, spine * (black ? 0.5 : 1.0)), ice);
+		// The fine frost shows in the sheen, not the colour: clear glass mirror-smooth, the feathered rougher.
+		rough = mix(rough, black ? 0.05 : max(mix(0.06, 0.22, cr.x), 0.32 * spine), ice);
+		// By day the glass reflects little of the sky: its sheen over the whole field was the grey.
+		spec = mix(spec, black ? 0.5 : mix(0.42, 0.1, day), ice);
+		// The spines stand up from the glass: their ridges catch the light (only theirs: on the field
+		// between, the tilt was a speckle).
 		float gx = dFdx(cr.x), gy = dFdy(cr.x);
 		vec3 tilt = (inv_view * vec4(gx, gy, 0.0, 0.0)).xyz;
-		nw = normalize(nw - vec3(tilt.x, 0.0, tilt.z) * 3.5 * ice * (black ? 0.3 : 1.0));
+		nw = normalize(nw - vec3(tilt.x, 0.0, tilt.z) * 2.2 * ice * spine * (black ? 0.3 : 1.0));
+		// At night the spines hold a little cold light of their own, so the ferns read on the dark glass.
+		emi += vec3(0.2, 0.46, 1.0) * spine * ice * 0.035 * flare_hue.a * (black ? 0.3 : 1.0);
 		// Wet ground: darker, glossy, with meltwater glints.
 		alb *= 1.0 - 0.38 * wet;
 		rough = mix(rough, 0.1, wet);
@@ -209,7 +228,8 @@ void flare_ground(vec3 wp, inout vec3 alb, inout float rough, inout float spec, 
 		// The front: the frost crystallising as it comes, cold points in a narrow fingered band.
 		float band = smoothstep(-0.2, 0.25, flare_frost.x - arr) * (1.0 - smoothstep(0.25, 1.4, flare_frost.x - arr));
 		float twinkle = step(0.55, fract(sin(dot(floor(w * 22.0), vec2(12.9898, 78.233)) + floor(TIME * 12.0)) * 43758.5453));
-		emi += vec3(0.32, 0.62, 1.0) * (cr.y * 0.6 + cr.x * 0.22) * band * cover * (black ? 0.35 : 1.0);
+		// (The spines only: the whole line field lit made the front a pale ring.)
+		emi += vec3(0.3, 0.6, 1.0) * (cr.y * 0.6 + spine * 0.45) * band * cover * (black ? 0.35 : 1.0);
 		// Held frost: a few fine points of cold light, and the meltwater's glints.
 		emi += vec3(0.4, 0.68, 1.0) * cr.y * ice * twinkle * 0.05 * flare_hue.a;
 		nrm_view = normalize((view * vec4(nw, 0.0)).xyz);
@@ -244,12 +264,18 @@ void flare_body(vec3 wp, vec3 nrm_view, mat4 inv_view, float rim, inout vec3 alb
 	vec4 p = texture(flare_plate, wp.xz * 1.3 + vec2(wp.y * 0.9, wp.y * -0.4));
 	float l = dot(alb, FL_LUM);
 	bool black = flare_look.w > 1.5;
-	vec3 ice = black ? vec3(0.02, 0.026, 0.036) : vec3(0.12, 0.19, 0.27) * (0.7 + 0.8 * clamp(l * 2.0, 0.0, 1.0));
-	// Glazed in a coat that runs thicker on what faces up; the body under it still reads through.
-	float coat = g * clamp(0.5 + 0.4 * nw.y + (p.r - 0.4) * 0.8, 0.0, 1.0);
-	alb = mix(alb, mix(alb * 0.55, ice * (1.0 - 0.4 * (1.0 - flare_hue.a)), 0.7), coat);
-	rough = mix(rough, black ? 0.05 : 0.12, g);
-	emi += vec3(0.22, 0.5, 0.95) * pow(rim, 3.0) * g * (black ? 0.12 : 0.32) + vec3(0.45, 0.7, 1.0) * p.g * coat * 0.1;
+	float night = flare_hue.a;
+	// Dark glass: the body reads through it (its own light and shade), its warmth drawn out and its value
+	// down, under a deep cold coat that runs thicker on what faces up. Never paler than the body was: a pale
+	// glaze, lit, read as a grey haze over the packed crowd.
+	vec3 under = mix(vec3(l), alb, 0.3) * vec3(0.4, 0.62, 1.0) * 0.55;
+	float coat = clamp(0.45 + 0.35 * nw.y + (p.b - 0.45) * 0.6, 0.0, 1.0);
+	vec3 glass = mix(under, black ? vec3(0.004, 0.005, 0.008) : vec3(0.006, 0.014, 0.034), coat * (black ? 0.85 : 0.55));
+	alb = mix(alb, glass, g);
+	// Glossy, so the light finds it only in a sharp glint.
+	rough = mix(rough, black ? 0.05 : 0.1, g);
+	// The light lives at the glass's edge: a thin ford-blue rim (the sky's own sheen draws it by day).
+	emi += vec3(0.2, 0.48, 1.0) * pow(rim, 5.0) * g * (black ? 0.1 : mix(0.16, 0.42, night));
 }
 
 // A blade of grass: drained, and frost on its tip.
@@ -260,10 +286,13 @@ void flare_blade(vec3 wp, float tip, inout vec3 alb, inout float rough, inout ve
 	float cr = texture(flare_plate, wp.xz * 0.5).r;
 	float g = flare_cover(wp.xz, flare_arrive(wp.xz), cr);
 	bool black = flare_look.w > 1.5;
-	vec3 ice = black ? vec3(0.03, 0.04, 0.05) : vec3(0.11, 0.17, 0.24);
-	// (Leaf litter lies flat: it takes the glaze too, or it reads as orange confetti on the ice.)
-	alb = mix(alb, ice * (0.75 + 0.45 * tip) * (1.0 - 0.4 * (1.0 - flare_hue.a)), g * (0.6 + 0.3 * tip));
-	rough = mix(rough, 0.2, g);
+	// Glazed dark like the ground's glass, a little lighter (never paler than the blade was) where its tip
+	// catches the light. (Leaf litter lies flat: it takes the glaze too, or it reads as orange confetti on the ice.)
+	float l = dot(alb, FL_LUM);
+	vec3 glass = mix(vec3(l), alb, 0.3) * vec3(0.4, 0.62, 1.0);
+	glass *= black ? 0.25 : mix(0.4, 0.85, smoothstep(0.6, 1.0, tip));
+	alb = mix(alb, glass, g);
+	rough = mix(rough, black ? 0.08 : 0.16, g);
 }
 
 // A prop (stones, posts, walls): drained, and rimed on what faces up.
@@ -275,7 +304,12 @@ void flare_prop(vec3 wp, vec3 nrm_view, mat4 inv_view, inout vec3 alb, inout flo
 	vec3 p = flare_crystal(wp.xz + wp.y * 0.7);
 	float g = flare_cover(wp.xz, flare_arrive(wp.xz), p.x) * smoothstep(-0.2, 0.7, nw.y);
 	bool black = flare_look.w > 1.5;
-	vec3 ice = black ? vec3(0.02, 0.026, 0.036) : vec3(0.15, 0.22, 0.3) * (0.5 + 0.8 * p.x);
-	alb = mix(alb, ice, g * (0.4 + 0.5 * p.x));
-	rough = mix(rough, 0.15, g);
+	// The ground's dark glass on what faces up, its fern spines the only bright in it.
+	float spine = flare_spine(wp.xz + wp.y * 0.7, p.x);
+	float l = dot(alb, FL_LUM);
+	vec3 glass = mix(vec3(l), alb, 0.4) * vec3(0.46, 0.66, 1.0) * 0.5;
+	glass = mix(glass, black ? vec3(0.004, 0.005, 0.008) : vec3(0.006, 0.013, 0.03), black ? 0.8 : 0.4);
+	vec3 edge = black ? vec3(0.03, 0.04, 0.055) : vec3(0.26, 0.42, 0.62) * (1.0 - 0.3 * (1.0 - flare_hue.a));
+	alb = mix(alb, mix(glass, edge, spine * (black ? 0.5 : 0.85)), g);
+	rough = mix(rough, mix(0.1, 0.3, spine), g);
 }
