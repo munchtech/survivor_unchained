@@ -28,8 +28,15 @@ At `bossMul` 1.0, Act 1 seeds 1-96 pooled (1536 nights a side), staged against p
 ## The arena problem (unsolved: give it to a su-lead-max solver if one honest try fails)
 The Long Cut's full-board share is over 30% (and over 35% at T2-T3), and `bossMul` barely moves it: 0.5 gave 32.7/34.2/34.5/28.6%; floors off (`--floors 0`) 39.6/40.2/42.2/36.2% at 1.0 and 38.4/38.0/36.0/31.3% at 0.5. Cause: `Flare.cs` FlareBlow sets `credit = "flare"`, so every weaponless proc and on-death burst during a blow (her whole build's cascade over 40 kills) is credited to the Flare on the boss, and bossMul only scales `FlareHit`. Split (S/out/lc_ma_*, `--dark`): no modifiers 32.1/27.9/27.1/29.1; Second Cut alone 37.1/32.9/37.7/35.6 (over 35); Line of Morning alone 32.1/34.4/29.2/31.9; Through the Wall alone 32.8/30.5/24.5/28.5. Options to weigh: cut Second Cut's number (a modifier's number is allowed); Line of Morning's zones take `z.BossDamage = bossMul`; or scale the cascade on a boss by bossMul (careful: it would move the Road's Toll, bossMul 0.25, already measured). Never cut look, reach or room clear.
 
+## Arena, each modifier alone (c4.sh, S/out/*_ma_*; full board with the others put out by `--dark`, all at bossMul 1.0, before tuning), T1-T4
+- Bill: none 29.9/30.0/33.7/37.6; Feast 29.9/32.7/33.9/32.1; Running Tab 28.6/30.7/31.7/31.5; Wide Chops 36.7/33.1/35.8/31.6.
+- One Arrow: none 24.5/33.0/29.0/33.7; Pinned 26.7/32.3/30.3/37.1; Split Thrice 35.3/28.0/30.8/30.5; Heart 30.1/35.0/25.5/35.7.
+- Drag: none 31.3/24.8/24.7/22.5; Deeper 32.5/29.6/26.9/23.9; Grinder 26.1/29.4/28.1/29.2; Hold Him 30.7/25.6/24.3/22.0.
+- Branding: none 18.9/21.6/20.4/15.9; Branded Deep 18.8/19.5/14.3/17.6; Second Brand 21.4/23.6/19.0/21.0; The Eye 17.5/19.6/19.6/20.9.
+- Read with care: 24 runs a tier swing about ±3-4 points (the Bill with no modifier reads higher than with all three), and `--dark` leaves the put-out lamps' points unspent, so these read a little high. Re-run the Bill and One Arrow at their final bossMul (0.5, 0.45) before calling any of them over 35%: the Bill at 0.5 with all three lit read 22-27%. If the reading stays noisy, double the seeds (48 a tier).
+
 ## Next, in order
-1. Check S/out for what landed after wind-down: `*_ma_*` (c4.sh: each Flare's modifiers one at a time on the full board). Re-run any missing with the same scripts. `python S/rep.py dt` reads a Flare whole; `S/sh.py` reads arena shares; `S/cell.py REF X FIGHT 0|1` a cell with its SE.
+1. Check S/out for what landed after wind-down: Re-run any missing with the same scripts. `python S/rep.py dt` reads a Flare whole; `S/sh.py` reads arena shares; `S/cell.py REF X FIGHT 0|1` a cell with its SE.
 2. Write the three bossMuls into lamps_quarters.py; settle the Long Cut's arena share (above).
 3. Early modifiers: `S/c3.sh` (each modifier lit alone on Act 1 seeds 1-32 against the staged Flare; it writes `m_<mod>`; re-run `br3_staged`/`lc_staged` etc. at the final bossMul as the reference). Pick the gentlest that holds ±3%/±6%; mark it in `EARLY` (lamps_quarters.py) and `"early"` on the lamp.
 4. One su-lead-max judge (measures and roles), CLASSES §7 (phase 6a measured), status page, full `dotnet test` on a quiet CPU (session 16's run: 870 passed, 0 failed, stopped at 9.5 min by my timeout while measuring runs held the CPU), MERGE REQUEST.
