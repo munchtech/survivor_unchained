@@ -1,12 +1,15 @@
 # Heroine body and outfits: status
 
-Lead: none (wound down 12 October 2026 for a full session handoff). Handoff: `docs/handoff/outfits.md`. Branch: `worktree-agent-a5ca10091b08dc429` (pushed; code only, unjudged: never build it into the game until it passes).
+Lead: none (successor 17 wound down 13 October 2026 with the coordinator). Handoff: `docs/handoff/outfits.md` "Start here". Branch: `worktree-agent-a5ca10091b08dc429` (code committed; built art uncommitted and unjudged: never build it into the game until it passes).
 
-## Now (12 October): wound down, no successor
-- i3 is built in the worktree (uncommitted, unjudged), with her helper bones on. The clasp is at 100 degrees with ball tips. The spaulder's rear-corner loop and the leather's pale line are gone. Still open: the neck-corner hook, the clasp tips' seat, cap-to-band clearance under the helpers, the motion check, then judge 9.
+## Now (13 October): wound down, fixes in, fin2 next
+- Every fin1 failure has a fix in code, on by default and unjudged: the leotard as one piece (LEO_ONE), the corset's edge skived under its binding (EDGE_SKIVE), the plunge untangled (PLUNGE_UNTANGLE, BIND_AREA_N), the Ranger's crotch widened (RANGER_GUSSET, fixing the legal miss), the sabaton and greave (SAB17, SAB_MATTE, GREAVE_RIM, GREAVE_LINE), and the glove tips (KEEP_SUB).
+- Next: taper the boning channel's lower end (arcanist.boninga), build fin2 with the legal run over all four outfits, re-judge the failed items only, then dotnet test and the merge request.
 
 ## Key decisions
 - Coverage fixes tighten, never enlarge, except where the 2.4 cm strip is wider than a garment.
+- Thick sheets under thin bindings poke through where the edge turns: skive the sheet first (EDGE_SKIVE).
+- The leotard is one piece (route (a)): no separate gusset edge anywhere in view.
 - Rigid plates get only rigid corrections (judge 5). Since the helpers, one-blend pieces are put back on one blend after the split (`rigid_again`), with leather riveted on a plate's blend riding it.
 - Pieces are cut from her mended body, the one the game shows.
 - Shader flags ride in vertex colour alpha (matte bindings; UV-brushed plates), so there's no per-material plumbing.
