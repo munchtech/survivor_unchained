@@ -32,6 +32,7 @@ uniform float view_pull = 0.0;                     // metres drawn toward the ca
 uniform bool test_flat = false;                  // (the legal motion check: every garment flat grey, coverage unchanged)
 uniform float gold_gloss = 0.0;                   // (0 = as before; 1 = gold's roughness drawn to gold_rough: crisper, brighter highlights, tint and albedo untouched)
 uniform float gold_rough = 0.2;
+uniform float gold_floor = 0.0;                   // (0 = as before; gold's own colour added as a dim emission, less in crevices, so it never goes black at night)
 uniform int debug_view = 0;                        // (1 edge distance, 2 convexity, 3 sky seen: to check what was baked; 4 gold flat magenta, a mask for measuring it)
 
 varying vec4 det;                                  // (edge distance m, convexity 0..1, sky seen, piece)
@@ -99,6 +100,7 @@ void fragment() {
 	float metal = has_orm ? mix(metallic_value, texture(orm, UV).b, step(0.5, metallic_value)) : metallic_value;
 	float edge = max(det.x, 0.0), conv = clamp(det.y, 0.0, 1.0), sky = clamp(det.z, 0.0, 1.0), piece = clamp(det.w, 0.0, 1.0);
 	float near_edge = 1.0 - smoothstep(0.0, 0.003, edge);
+	vec3 gold_emit = vec3(0.0);
 	float gold = 0.0;                               // (1 on a gold metal, from its own mean colour below)
 	float bulge = smoothstep(0.55, 0.85, conv);
 	float hollow = smoothstep(0.45, 0.2, conv);
@@ -149,6 +151,7 @@ void fragment() {
 		col = mean_col;
 		// (gold and claspgold: mean linear red 0.95, blue 0.15 of it; every other metal's red is under 0.41)
 		gold = smoothstep(0.6, 0.75, mean_col.r) * (1.0 - smoothstep(0.3, 0.45, mean_col.b / max(mean_col.r, 1e-4)));
+		gold_emit = mean_col * gold * gold_floor;
 		vec2 e = vec2(0.003, 0.0);
 		float h0 = fbm(m * 40.0), hx = fbm((m + e.xy) * 40.0), hy = fbm((m + e.yx) * 40.0);
 		vec3 dent = normalize(vec3((h0 - hx) * 0.08, (h0 - hy) * 0.08, 1.0)) * 0.5 + 0.5;
@@ -201,6 +204,7 @@ void fragment() {
 	ROUGHNESS = rough;
 	METALLIC = metal;
 	AO = sky;
+	EMISSION = gold_emit * mix(0.4, 1.0, sky);
 	AO_LIGHT_AFFECT = 0.3;
 	if (debug_view == 1) { ALBEDO = vec3(1.0 - smoothstep(0.0, 0.01, edge), fract(edge / 0.004), 0.0); ROUGHNESS = 1.0; METALLIC = 0.0; NORMAL_MAP = vec3(0.5, 0.5, 1.0); }
 	if (debug_view == 2) { ALBEDO = vec3(conv); ROUGHNESS = 1.0; METALLIC = 0.0; NORMAL_MAP = vec3(0.5, 0.5, 1.0); }

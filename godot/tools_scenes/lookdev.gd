@@ -295,6 +295,7 @@ func outfit_materials(mi):
 		m.set_shader_parameter("repeats", float(outfit_table[String(src.resource_name)]["repeats"]))
 		if outfit_table[String(src.resource_name)].has("pull"): m.set_shader_parameter("view_pull", float(outfit_table[String(src.resource_name)]["pull"]))
 		if OS.get_environment("GOLD_GLOSS") != "": m.set_shader_parameter("gold_gloss", float(OS.get_environment("GOLD_GLOSS")))
+		if OS.get_environment("GOLD_FLOOR") != "": m.set_shader_parameter("gold_floor", float(OS.get_environment("GOLD_FLOOR")))
 		if OS.get_environment("GOLD_ROUGH") != "": m.set_shader_parameter("gold_rough", float(OS.get_environment("GOLD_ROUGH")))
 		if OS.get_environment("OUTFITVIEW") != "": m.set_shader_parameter("debug_view", int(OS.get_environment("OUTFITVIEW")))
 		for kv in OS.get_environment("OUTFITSET").split(",", false):
