@@ -1419,8 +1419,46 @@ def mirror_line(cur):
 
 
 BIND_RMIN = {}   # (a piece's name: no bend of its binding tighter than this)
+# (s17 spike2: a piece's name: its binding faces the sheet's faces within 3 mm of
+# the line, weighed by their area, not the one nearest face: at the arcanist's left
+# hip one folded sliver at the edge (0.18 mm2) was the nearest face of four line
+# points, its facing turned over; eased along the line it swung the roll's frame
+# 100 deg over 4 mm and the roll crumpled into a spur, judge fin1)
+BIND_AREA_N = {k_ for k_ in os.environ.get("BIND_AREA_N", "arcanist.corset").split(",") if k_}
 # (a piece's name: its binding faces the sheet as fitted across the roll's width, see bind_edges)
 BIND_FIT = {"ranger.corset"}
+
+
+def sheet_untangled(name, pos, ref, tris, zone, rounds=400):
+    """A sheet with no triangle turned over against `ref` (the same sheet
+    before a shaping), as untangled() does her skin: each folded triangle
+    and two rings round it eased toward their neighbours, the edge kept,
+    within `zone` (a mask of points) only, until none is left."""
+    def normals(Q):
+        return np.cross(Q[tris[:, 1]] - Q[tris[:, 0]], Q[tris[:, 2]] - Q[tris[:, 0]])
+    n0 = normals(ref)
+    A = adjacency(len(pos), tris)
+    e = np.vstack([tris[:, [0, 1]], tris[:, [1, 2]], tris[:, [2, 0]]])
+    uk, c = np.unique(np.sort(e, 1), axis=0, return_counts=True)
+    free = np.asarray(zone, bool).copy()
+    free[uk[c == 1].ravel()] = False
+    S, first, k = pos.copy(), None, 0
+    for k in range(rounds):
+        flip = ((normals(S) * n0).sum(1) <= 0) & free[tris].any(1)
+        if first is None:
+            first = int(flip.sum())
+        if not flip.any():
+            break
+        bad = np.zeros(len(S))
+        bad[tris[flip].ravel()] = 1
+        for _ in range(2):
+            bad = np.maximum(bad, (A @ bad > 0).astype(float))
+        m = (bad > 0) & free
+        S = np.where(m[:, None], 0.5 * S + 0.5 * (A @ S), S)
+    left = int((((normals(S) * n0).sum(1) <= 0) & free[tris].any(1)).sum())
+    print("UNTANGLED %s: %d folded triangles, left %d after %d rounds; moved up to %.1f mm"
+          % (name, first, left, k + 1, np.linalg.norm(S - pos, axis=1).max() * 1000))
+    return S
 
 
 def bind_edges(name, pos, at, tris, key, width, height, overhang, thick, sigma=0.012, stitch=False, rmin=None):
@@ -1464,6 +1502,16 @@ def bind_edges(name, pos, at, tris, key, width, height, overhang, thick, sigma=0
         nrm = np.array([h[1][:] for h in hits])
         _, j = tree.query(cur)
         nrm = np.where(((nrm * nor[j]).sum(1) < 0)[:, None], -nrm, nrm)
+        if name in BIND_AREA_N:
+            fcr_ = np.cross(pos[tris[:, 1]] - pos[tris[:, 0]], pos[tris[:, 2]] - pos[tris[:, 0]])
+            an_ = nrm.copy()
+            for i_, nb_ in enumerate(cKDTree(pos[tris].mean(1)).query_ball_point(on, 0.003)):
+                s_ = fcr_[nb_].sum(0) if nb_ else np.zeros(3)
+                if np.linalg.norm(s_) > 1e-12:
+                    an_[i_] = s_ / np.linalg.norm(s_)
+            # (one sign for the whole line, the winding being the sheet's own: the
+            # nearest point's normal, which set it point by point, was the sliver's)
+            nrm = an_ * (1.0 if (an_ * nor[j]).sum() >= 0 else -1.0)
         for _ in range(12):
             nrm = (np.roll(nrm, 1, 0) + 2 * nrm + np.roll(nrm, -1, 0)) / 4
         nrm /= np.linalg.norm(nrm, axis=1)[:, None] + 1e-12
@@ -4086,6 +4134,7 @@ PLUNGE_RIM = float(os.environ.get("PLUNGE_RIM", 0.0015))    # (the U's rim, its 
 PLUNGE_STRING = float(os.environ.get("PLUNGE_STRING", 0.035))  # (that string's least round, both ways: it spans her folds, never kinks)
 PLUNGE_BAND = float(os.environ.get("PLUNGE_BAND", 0.028))   # (how far from the rim the cloth eases back into the fitted sheet)
 PLUNGE_TRIM = os.environ.get("PLUNGE_TRIM", "")   # ("down": the owner's option, a white feathery trim along the plunge, for the side-by-side)
+PLUNGE_UNTANGLE = os.environ.get("PLUNGE_UNTANGLE", "1") == "1"   # (s17 spike2: the fold's fit untangled, see plunge_fold)
 PLUNGE_CLASP = os.environ.get("PLUNGE_CLASP", "1") == "1"   # (a small gold crescent clasp with a violet stone at the plunge's foot: the fallback, judge 7)
 CLASP_TH, CLASP_W = (float(v) for v in os.environ.get("CLASP", "100,0.0085").split(","))   # (the clasp's horns' reach round the foot, degrees; its width at its foot)
 # (route D, the coordinator after routes RIDE/S/A failed: a small clasp at the foot only. The horns end
@@ -4300,6 +4349,7 @@ def arcanist():
     # as one by the most any place needed, 7.4 mm, its foot stood 16 mm in
     # front of her sternum, a flat shelf; solver, 11 October)
     def plunge_fold(pos, tris):
+        pos0_ = pos.copy()
         sw = fold(pos)
         pos = mls_flat(pos, sw, (0.0, -1.0, 0.0), PLUNGE_FOLD)
         on = np.where(sw > 1e-3)[0]
@@ -4314,7 +4364,14 @@ def arcanist():
         lv[on] = sm * sw[on]
         print("PLUNGE FOLD: fitted %.0f mm wide, lifted %.1f to %.1f mm (median %.1f)"
               % (PLUNGE_FOLD * 1000, sm.min() * 1000, sm.max() * 1000, np.median(sm) * 1000))
-        return pos + vertex_normals(pos, tris) * lv[:, None]
+        out_ = pos + vertex_normals(pos, tris) * lv[:, None]
+        if PLUNGE_UNTANGLE:
+            # (s17 spike2: the fit along her depth laid the steep wall of the fold
+            # under each breast flat into a crease of turned-over triangles, which
+            # the U's cut met at each corner of its foot: a flap of the sheet 2 mm
+            # under its roll, the tooth left of the clasp and the speck right of it)
+            out_ = sheet_untangled("arcanist.corset", out_, pos0_, tris, fold(pos0_) > 1e-3)
+        return out_
     # The U's rim, its lower part, pinned onto her as a bound edge lies: on a
     # taut string along the U (her skin's depth along it closed and opened by
     # a round `PLUNGE_STRING`: it spans the fold under each breast without
