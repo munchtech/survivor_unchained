@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using SurvivorUnchained.Content;
 using static SurvivorUnchained.Core.MathX;
 
@@ -51,6 +52,16 @@ public sealed partial class Battle
     public int FlareFullBankShots;
     bool flareStruckBoss;
     public readonly List<double> FlareTimes = new();
+    /// <summary>For the harness: what each Flare did to the crowd round her, a second after it ended: [press time, creatures
+    /// (not bosses) in its reach at the press, within 15 m (the screen), of those dead in reach, dead on screen, kills
+    /// credited to the Flare, the share of the in-reach creatures' health gone, clutch 1/0, a boss within 10 m 1/0, reach].</summary>
+    public readonly List<double[]> FlareCrowd = new();
+    /// <summary>The room a Flare is judged against: what's on the screen round her.</summary>
+    public const double FlareRoom = 15;
+    List<(Enemy E, int Id, double Hp, bool In)>? crowdAt;
+    double[]? crowdRow;
+    double crowdEvalAt;
+    internal int FlareKillsNow;
     double emberAnsweredAt = -99;
     /// <summary>The horde can't spam it: each of its sources draws on a purse that refills at its rate a second.</summary>
     readonly double[] purse = new double[4], purseAt = new double[4];
@@ -230,6 +241,7 @@ public sealed partial class Battle
                 Reflect(p.X + (i == 0 ? -1.2 : 1.2), p.Z, 5, angle);
         flareUnseenAfter = p.Hp < MaxHp * Lamps.Full("flare.low_unseen", "below", 0.3333) && Lamp("flare.low_unseen")
             ? Lamps.Full("flare.low_unseen", "seconds", 2) : 0;
+        CrowdPress(p);
         FlareStagedPress(f);
         if (stand && f.Blows > 0) FlareBlow();
         return true;
@@ -258,9 +270,44 @@ public sealed partial class Battle
         credit = was;
     }
 
+    /// <summary>The harness's crowd count at the press (FlareCrowd); measured a second after the Flare ends.</summary>
+    void CrowdPress(PlayerState p)
+    {
+        CrowdEnd();
+        crowdAt = new();
+        bool bossNear = false;
+        foreach (var e in HostilesInRadius(p.X, p.Z, FlareRoom))
+        {
+            if (e.Boss) { bossNear |= Dist(e.X, e.Z, p.X, p.Z) <= 10; continue; }
+            crowdAt.Add((e, e.Id, e.Hp, Dist(e.X, e.Z, p.X, p.Z) <= flareReach));
+        }
+        FlareKillsNow = 0;
+        crowdRow = [Time, crowdAt.Count(c => c.In), crowdAt.Count, 0, 0, 0, 0, flareClutch ? 1 : 0, bossNear ? 1 : 0, flareReach];
+        crowdEvalAt = Time + flareLen + 1;
+    }
+
+    void CrowdEnd()
+    {
+        if (crowdAt == null || crowdRow == null) return;
+        double hp0 = 0, hp1 = 0;
+        foreach (var (e, id, hp, inside) in crowdAt)
+        {
+            // (a pooled creature taken up again since is one that died)
+            bool dead = !e.Alive || e.Hp <= 0 || e.Id != id;
+            if (inside) { crowdRow[3] += dead ? 1 : 0; hp0 += hp; hp1 += dead ? 0 : Math.Min(hp, e.Hp); }
+            crowdRow[4] += dead ? 1 : 0;
+        }
+        crowdRow[5] = FlareKillsNow;
+        crowdRow[6] = hp0 > 0 ? 1 - hp1 / hp0 : 0;
+        FlareCrowd.Add(crowdRow);
+        crowdAt = null;
+        crowdRow = null;
+    }
+
     void TickFlare(double dt)
     {
         var p = Player;
+        if (crowdAt != null && Time >= crowdEvalAt) CrowdEnd();
         TickVenom();
         if (flareMendT > 0)
         {

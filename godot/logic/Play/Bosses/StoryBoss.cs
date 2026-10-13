@@ -21,7 +21,10 @@ public abstract class StoryBoss : ArenaBoss
 
     protected override double SoftAt => 270;
     protected override double HardAt => 360;
-    protected override bool FlareCuts => false;
+    /// <summary>The Flare cuts a story boss's floors as it does an arena's (the owner, 13 October: "its supposed to be
+    /// epic. an 'oh shit' button. a planned 'BOOM' button"). The harness's --storycut 0 holds them, as before.</summary>
+    protected override bool FlareCuts => Cuts;
+    public static bool Cuts = true;
 
     /// <summary>Its blow (what its moves' multiples are of) as a share of her calling's own health at her level
     /// (Character.OwnHealth): what she is, not what she drafted or wears, which stay her margin. A story fight

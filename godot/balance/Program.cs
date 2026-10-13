@@ -44,6 +44,15 @@ var opt = Opts.Parse(args);
 Pilot.ReadsBosses = opt.Get("bossread", "1") != "0";
 Pilot.Banks = opt.Get("bank", "1") != "0";
 Pilot.PhaseAware = opt.Get("phaseaware", "1") != "0";
+Pilot.AimsFlare = opt.Get("flareboss", "1") != "0";
+SurvivorUnchained.Play.Bosses.StoryBoss.Cuts = opt.Get("storycut", "1") != "0";
+// --storyhp roost=103,vault=130: a story boss's health multiple in place of its script's (by the fight's short name).
+foreach (var kv in opt.List("storyhp", "").Where(x => x.Contains('=')))
+{
+    var (f, v) = (kv.Split('=')[0], double.Parse(kv.Split('=')[1], System.Globalization.CultureInfo.InvariantCulture));
+    var id = new Dictionary<string, string> { ["hollow"] = "hollow_by_night", ["roost"] = "roost_raid", ["dig"] = "dig_boils", ["vault"] = "vault_opened" }[f];
+    SurvivorUnchained.Play.Zones.StoryNight.HealthOver[id] = v;
+}
 ArenaSim.Director = opt.Get("charges", "1") != "0";
 StorySim.Flare = opt.Get("flare", "");
 SurvivorUnchained.Play.Bosses.ArenaBoss.Floors = double.Parse(opt.Get("floors", "1"), System.Globalization.CultureInfo.InvariantCulture);

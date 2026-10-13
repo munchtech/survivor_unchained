@@ -270,15 +270,15 @@ public class StoryNightTests
     static Enemy Boss(Night n) => n.B.Enemies.Items.First(e => e.Alive && e.Boss);
 
     [Fact]
-    public void A_story_bosss_floors_are_never_cut_by_the_flare()
+    public void A_story_bosss_floors_are_cut_by_the_flare_as_an_arenas_are()
     {
         var n = AtBoss();
         var g = n.Zone.BossScript!;
         var boss = Boss(n);
-        // The Flare's blows take him to his first mark at once; his floor (25 s) still holds.
+        // The Flare's blows take him to his first mark at once: half his first floor goes (the most a cut takes).
         n.B.HitEnemy(boss, boss.MaxHp * 0.6, School.Holy, [Tag.Holy], new HitOpts { NoCrit = true, Credit = "flare" });
         Assert.True(boss.FlareTook > 0);
-        Assert.Equal(0, g.FlareCut);
+        Assert.Equal(ArenaBoss.FlareCutMax, g.FlareCut, 6);
     }
 
     [Fact]
