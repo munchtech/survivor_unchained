@@ -422,6 +422,23 @@ public partial class GameHud : CanvasLayer
         playFade.TweenProperty(play, "modulate:a", 1f, fade).SetTrans(Tween.TransitionType.Sine).SetEase(Tween.EaseType.InOut);
     }
 
+    float calm = 1;
+
+    /// <summary>The idle close view of her (GameCloseUp): the play HUD steps away over half a second, and is
+    /// back at once when it ends. (A fade in from ShowPlay is left to finish.)</summary>
+    public void Calm(bool away, double dt)
+    {
+        if (!away)
+        {
+            // (only its own step away is undone: a conversation's or the fall's dimming is theirs)
+            if (calm < 1) { calm = 1; play.Modulate = Colors.White; }
+            return;
+        }
+        if (calm >= 1) { playFade?.Kill(); playFade = null; }
+        calm = Mathf.Max(0, calm - (float)dt / 0.5f);
+        play.Modulate = new Color(1, 1, 1, calm);
+    }
+
     public void SetBruise(float v) => ((ShaderMaterial)bruise.Material).SetShaderParameter("amount", v);
 
     static readonly Dictionary<ToastKind, (string Glyph, Color Color)> ToastLook = new()

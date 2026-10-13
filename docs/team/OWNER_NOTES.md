@@ -220,4 +220,9 @@ Not made by us: poses or animation whose purpose is a sex act, or that show nudi
 
 ## 12 October 2026, night: the face at character select
 - Double brow: the owner's crop came from character select during a test ("and were sure we fixed the double eyebrows?"). The face lead traces which build; the re-judge checks the brow at the Look, the play camera and a close-up.
-- "some faces have nostril and ear issues - see the like lump in the nose" (crops in coordinator 33ad5b17's images, 3.png and 4.png). Sent to the face lead: cause, all ten faces at 2x, fixed before the face ships.
+- "some faces have nostril and ear issues - see the like lump in the nose" (crops in coordinator 33ad5b17's images, 3.png and 4.png). The ear is the ear lobe already on B2 (the owner: "thats it"). The nostril lump went to the face lead: cause, all ten faces at 2x, fixed before the face ships.
+- **Priority today (12 Oct, night):** "yes, prioritize face and outfits, hold the hero". Face and outfits get the Blender turns (outfits may run parallel solvers); animation pauses after reach_coals merges; the hero stays held.
+
+## 12 October 2026, night: the shield, the idle wrists, sheathing in town
+- "the shield is awful ... the shield just completely goes into her body all the time - surprised nobody caught it yet. but we haven't gotten to asset management too hard yet"; "that idle pose - also seen in character select, has some really awkward wrist action going on"; "shield on back (weapons in general sheathed) in town is a great idea".
+- Sent to the animation lead (after reach_coals, instead of pausing): a shield-and-weapon-through-body measure in the motion check, standing on every animation judge's checklist; fix the idle's wrists and shield arm; then the worst clips; then a plan for sheathed weapons in safe zones (sockets, a sheathe/draw, a town idle, the code hook).
