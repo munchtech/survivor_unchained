@@ -12,6 +12,7 @@ heroine_outfits.py calls bind(globals()) once its helpers exist."""
 import numpy as np
 from scipy import sparse
 from scipy.ndimage import gaussian_filter1d, maximum_filter1d, minimum_filter1d
+from scipy.sparse.csgraph import connected_components as scipy_cc
 from scipy.spatial import ConvexHull, cKDTree
 
 G = None
@@ -428,9 +429,19 @@ def boot(name, sd, top_s, dip, st, mkey, sole_key="darkleather", thick=0.0025, b
 # the greave's foot; the lames' front edges from `first` ahead of the
 # greave's foot (along hers, on top) to `last` ahead of her ball, leaning
 # back down her sides `lean` (degrees, the first; the last half that).
-SABATON = dict(RANGER, toe=0.013, toe_point=0.0, sink=0.002, t_fore=0.0055, heel=-0.002, t_heel=0.0055, spring=0.004,
-               plate=0.0015, lift=0.0013, tuck=0.0011, flare=0.0011, over=0.009, lames=4, tuck_up=0.012, lining=0.001,
-               first=0.032, last=0.010, lean=18.0, sole_out=0.001, gold=(0.0045, 0.0005, 0.0012), rivet=0.0024)
+# Each lame's surface climbs from its tucked back to its flared front over
+# the first `rise` of it, in one S (the toe cap's back over `tuck_run`), so
+# each front edge stands `tuck` + `flare` over the next (less the plate and
+# its bead: a dark step under each gold edge).
+# The toe cap a dome (`dome_*`): a superellipsoid (power `dome_p`) standing
+# on the floor over her toes, `dome_len` from its middle to its front (her
+# toe tip plus `dome_front`), `dome_w` wider each side than her toes and `dome`
+# taller than them, met with the boot's rings: rounder and fuller than her
+# toes' own outline, not a point.
+SABATON = dict(RANGER, toe=0.004, toe_point=0.0, sink=0.002, t_fore=0.0055, heel=-0.002, t_heel=0.0055, spring=0.004,
+               plate=0.0015, lift=0.0013, tuck=0.0012, flare=0.002, over=0.009, lames=4, tuck_up=0.012, lining=0.001,
+               tuck_run=0.009, first=0.02, last=0.056, lean=18.0, sole_out=0.001, gold=(0.0036, 0.0005, 0.001),
+               rise=0.62, rivet=0.0024, dome_len=0.045, dome_front=0.01, dome_w=0.004, dome=0.012, dome_p=2.2)
 
 
 def _fair(c, closed, step=0.0015, sigma=0.003):
@@ -473,6 +484,22 @@ def _runs(pos, tris, mark, least=0.02):
     return out
 
 
+def _whole(pp, aa, tt, least=0.1):
+    """A cut sheet without its loose scraps: only the pieces of it at least
+    `least` the size of its biggest (in triangles)."""
+    nv = len(pp)
+    e = np.vstack([tt[:, [0, 1]], tt[:, [1, 2]]])
+    nc, lab = scipy_cc(sparse.coo_matrix((np.ones(len(e)), (e[:, 0], e[:, 1])), shape=(nv, nv)), directed=False)
+    if nc <= 1:
+        return pp, aa, tt
+    size = np.bincount(lab[tt[:, 0]], minlength=nc)
+    kt = size[lab[tt[:, 0]]] >= least * size.max()
+    used = np.unique(tt[kt])
+    remap = np.full(nv, -1)
+    remap[used] = np.arange(len(used))
+    return pp[used], aa[used], remap[tt[kt]]
+
+
 def _bead(name, c, closed, pp, tt, w, key, gold, thick):
     """A gold rolled edge along a line of a plate (its sheet pp, tt)."""
     g = G
@@ -506,10 +533,32 @@ def sabaton(name, sd, top_s, dip, st, mkey, trim="gold", studs="gold", lining="d
     zt, tc = top_heights(leg, top_s, dip)
     sole = Sole(leg, st)
 
+    # The toe cap's dome (st["dome*"]): its middle, half-sizes and power.
+    Pf = g["P"][(g["LEGW"][sd] > 0.5) & (g["P"][:, 2] < 0.06)]
+    yq, xq = leg.yf(Pf), (Pf[:, :2] - leg.ankle[:2]) @ leg.out
+    front = leg.toe_yf + st["c_foot"] + st["dome_front"]
+    dy_c = front - st["dome_len"]
+    near = np.abs(yq - dy_c) < 0.01
+    dx_c = 0.5 * (xq[near].max() + xq[near].min())
+    dome_o = 0.5 * (xq[near].max() - xq[near].min()) + st["c_foot"] + st["dome_w"]
+    dome_z = float(Pf[np.abs(yq - dy_c) < 0.006, 2].max()) + st["c_foot"] + st["dome"]
+    pw = 2.0 / st["dome_p"]
+    th = np.linspace(0, 2 * np.pi, 256, endpoint=False)
+    cs, sn = np.cos(th), np.sin(th)
+    ue = np.sign(cs) * np.abs(cs) ** pw, np.sign(sn) * np.abs(sn) ** pw
+
     def fit(zs, H, Hs):
         t = 1 - ramp(zt[None, :] - zs[:, None], 0.015, 0.06)
-        return Hs * (1 - t) + np.minimum(Hs, H + st["c_top"]) * t
-    zr, R, Hr, Ir = rings(leg, st, zt.max() + 0.015, top_s - 0.06, fit=fit)
+        Hs = Hs * (1 - t) + np.minimum(Hs, H + st["c_top"]) * t
+        for k, z in enumerate(zs):
+            if z >= dome_z:
+                continue
+            q = (1 - (z / dome_z) ** st["dome_p"]) ** (1 / st["dome_p"])
+            pts = (leg.ankle[:2] + np.outer(dy_c + st["dome_len"] * q * ue[0], leg.f)
+                   + np.outer(dx_c + dome_o * q * ue[1], leg.out))
+            Hs[k] = np.maximum(Hs[k], (pts @ U.T).max(0))
+        return Hs
+    zr, R, Hr, Ir = rings(leg, st, zt.max() + 0.015, top_s - 0.06, fit=fit, step=0.0015, dz_most=0.003)
     pos, tris = grid(zr, R)
     lo = sole.w(pos) - 0.0025          # (every plate runs 2.5 mm down into the sole)
     pos, _, tris = g["clip"](np.minimum(at_angle(zt, tc, pos) - pos[:, 2], pos[:, 2] - lo), pos, np.zeros((len(pos), 1)), tris)
@@ -539,21 +588,32 @@ def sabaton(name, sd, top_s, dip, st, mkey, trim="gold", studs="gold", lining="d
                 if q[0] is not None and (np.array(q[0][:]) - pos[i]) @ nrm[i] > 0:
                     room[i] = (np.array(q[0][:]) - pos[i]) @ nrm[i]
         d_e = cKDTree(foot).query(pos)[0]
-        covered = np.isfinite(room) & (room < 0.03)
-        s = np.where(covered, d_e, -d_e)
+        cov = (np.isfinite(room) & (room < 0.03)).astype(float)
+        A0 = g["adjacency"](len(pos), tris)
+        for _ in range(6):
+            cov = A0 @ cov
+        s = np.where(cov > 0.5, d_e, -d_e)
         top = foot[np.abs((foot[:, :2] - leg.ankle[:2]) @ leg.out) < 0.01]
         y_g = float(leg.yf(top).max()) if len(top) else 0.02
     # Room under it: the plates (and the bead on their top edge) and the
     # lining kept 1.2 mm inside its inside; where they would not be, the
     # shell is drawn in (eased over the sheet; her skin there is not drawn).
+    # (Spread four rings round each point that must go in, then eased: the
+    # plate goes in under the greave as one smooth dip, never dented.)
     need = np.where(s < st["tuck_up"] + 0.003, p0 + t_ + 0.0005, st["lining"])
-    shift = np.minimum(0.0, room - 0.0012 - need)
+    raw = np.maximum(0.0, 0.0012 + need - room)
     A = g["adjacency"](len(pos), tris)
-    deg = np.maximum(np.asarray(A.sum(1)).ravel(), 1)
-    sh = shift.copy()
-    for _ in range(12):
-        sh = np.minimum(shift, (A @ sh) / deg)
-    shift = sh
+    B = A.tocsr(copy=True)
+    B.data[:] = 1.0
+    sh = raw.copy()
+    for _ in range(4):
+        sh = np.maximum(sh, B.multiply(sh[None, :]).tocsr().max(1).toarray().ravel())
+    for _ in range(10):
+        sh = A @ sh
+    sh = np.maximum(sh, raw)
+    for _ in range(3):
+        sh = np.maximum(raw, A @ sh)
+    shift = -sh
     pos = pos + nrm * shift[:, None]
 
     # The plates' front edges: planes across her foot, leaning back down her
@@ -587,7 +647,7 @@ def sabaton(name, sd, top_s, dip, st, mkey, trim="gold", studs="gold", lining="d
     keep = s - (st["tuck_up"] - 0.012)
     lp, la, lt = g["clip"](keep, pos, np.c_[nrm], tris)
     if len(lt):
-        lp, la, lt = g["weld"](lp, la, lt)
+        lp, la, lt = _whole(*g["weld"](lp, la, lt))
         kr = 1 - ramp(lp[:, 2], za - 0.035, za - 0.005)
         lw = skin_weights(sd, lp) * (1 - kr)[:, None] + rigid(leg, lp) * kr[:, None]
         lw = g["four_bones"](g["eased_weights"](lp, lt, lw, over=0.012))
@@ -605,14 +665,19 @@ def sabaton(name, sd, top_s, dip, st, mkey, trim="gold", studs="gold", lining="d
             keep = np.minimum(keep, st["tuck_up"] - s)
         if k >= 1:
             keep = np.minimum(keep, D[k - 1] + ov)
-            off -= a_ * (1 - ramp(D[k - 1], 0.0, 0.004))
+            if k <= n:
+                u = np.clip(D[k - 1] / np.maximum(D[k - 1] - D[k], 1e-4), 0, 1)
+                off += -a_ + (a_ + b_) * ramp(u, 0.0, st["rise"])
+            else:
+                off -= a_ * (1 - ramp(D[k - 1], 0.0, st["tuck_run"]))
         if k <= n:
             keep = np.minimum(keep, -D[k])
-            off += b_ * ramp(D[k], -ov - 0.004, -ov)
+            if k == 0:
+                off += b_ * ramp(D[k], -ov - 0.012, -ov)
         pp, aa, tt = g["clip"](keep, pos, np.c_[nrm, off, D[min(k, n)], s], tris)
         if not len(tt):
             continue
-        pp, aa, tt = g["weld"](pp, aa, tt)
+        pp, aa, tt = _whole(*g["weld"](pp, aa, tt))
         nn = aa[:, :3] / (np.linalg.norm(aa[:, :3], axis=1)[:, None] + 1e-12)
         pp = pp + nn * aa[:, 3:4]
         # (its blend: from her foot to her toes across the ball, by where it shows)
@@ -678,6 +743,11 @@ def sabaton(name, sd, top_s, dip, st, mkey, trim="gold", studs="gold", lining="d
           % (name, 100 * y_g, ", ".join("%.1f" % (100 * v) for v in e),
              ", ".join("%.0f" % np.degrees(p[2]) for p in planes), int((shift < -1e-5).sum()), -1000 * shift.min(),
              1000 * reach, 1000 * float(sole.zw.mean())))
+    yt_ = np.arange(-0.06, 0.24, 0.02)
+    tl = [float(z[mid & (np.abs(yf - v) < 0.004)].max()) if (mid & (np.abs(yf - v) < 0.004)).any() else 0.0 for v in yt_]
+    print("SABATON %s: heel %.1f, ball %.1f, toe tip %.1f cm; dome middle %.1f cm, %.1f out, half-width %.1f, top %.1f cm; "
+          "shell top (cm, every 2 cm from -6): %s" % (name, 100 * leg.heel_yf, 100 * yb, 100 * leg.toe_yf, 100 * dy_c,
+                                                       100 * dx_c, 100 * dome_o, 100 * dome_z, " ".join("%.1f" % (100 * v) for v in tl)))
     return made
 
 
