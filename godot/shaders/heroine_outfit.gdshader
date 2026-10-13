@@ -30,6 +30,8 @@ uniform vec3 thread : source_color = vec3(0.78, 0.7, 0.55);
 uniform float grain = 0.6;                         // how strongly the fine grain shows
 uniform float view_pull = 0.0;                     // metres drawn toward the camera (a decal on her skin: the ink, never z-fighting it)
 uniform bool test_flat = false;                  // (the legal motion check: every garment flat grey, coverage unchanged)
+uniform float gold_gloss = 0.0;                   // (0 = as before; 1 = gold's roughness drawn to gold_rough: crisper, brighter highlights, tint and albedo untouched)
+uniform float gold_rough = 0.2;
 uniform int debug_view = 0;                        // (1 edge distance, 2 convexity, 3 sky seen: to check what was baked; 4 gold flat magenta, a mask for measuring it)
 
 varying vec4 det;                                  // (edge distance m, convexity 0..1, sky seen, piece)
@@ -165,6 +167,8 @@ void fragment() {
 		// (and no hotter than 0.38: the bracers' round caught the key light as a hot
 		// streak along their top at 0.32, judge 7)
 		if (flag > 0.25 && flag < 0.75) rough = clamp(rough + 0.14, 0.38, 0.62);
+		// (gold only: glossier by gold_gloss, the polished edges and bulges a little more still)
+		rough = mix(rough, max(gold_rough - 0.04 * polish, 0.08), gold * gold_gloss);
 		col *= mix(0.7, 1.0, sky) * mix(1.0, 1.1, polish);
 		metal = 1.0;   // (all metal: the scan's metal map has rust and dirt in it, and each patch of it showed as a pale fleck)
 	} else if (kind == 2 || kind == 4) {

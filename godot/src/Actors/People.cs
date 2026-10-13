@@ -893,6 +893,8 @@ public static class People
             m.SetShaderParameter("metallic_value", src.Metallic);
             m.SetShaderParameter("repeats", (float)entry["repeats"]);
             if (entry.ContainsKey("pull")) m.SetShaderParameter("view_pull", (float)entry["pull"]);
+            if (System.Environment.GetEnvironmentVariable("GOLD_GLOSS") is string gg && float.TryParse(gg, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var ggv)) m.SetShaderParameter("gold_gloss", ggv);   // (a trial knob)
+            if (System.Environment.GetEnvironmentVariable("GOLD_ROUGH") is string gr && float.TryParse(gr, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var grv)) m.SetShaderParameter("gold_rough", grv);
             mi.SetSurfaceOverrideMaterial(s, m);
         }
     }
