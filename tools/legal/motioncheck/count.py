@@ -13,7 +13,12 @@ it is a test tint, not the game, and a ring on the closest pixel.
 A code pixel further on screen from both posed tips than its own code allows is a garment's
 colour passing for a code, not skin, and is not read (stray()).
     python count.py <folder> [MIN_PX=6]
-Writes <folder>/counts.csv, <folder>/summary.txt and <folder>/crops/."""
+Writes <folder>/counts.csv, <folder>/summary.txt and <folder>/crops/.
+Nothing is ignored silently: pixels dropped by stray() (stray_px) or by the binding-highlight
+filter in codes() (binding_px) are counted per frame in counts.csv, logged per connected group
+in <folder>/stray.txt (frame, centre, pixels, filter, claimed cm, and for stray() how far past
+its reach) and ringed in <folder>/stray/ (crops of 96x96 at 4x; binding crops capped at
+MAX_BIND_CROPS a run, every group still logged)."""
 import glob
 import json
 import math
@@ -50,6 +55,7 @@ def codes(im):
     # bindings in g2, nine in ten of what was read there as tucked skin)
     tucked_near = (b >= 250) & (g >= 182) & (g <= 194) & (r <= 245)
     near = (b >= 250) & ((g <= 8) | tucked_near)
+    binding = (b >= 250) & (g >= 182) & (g <= 194) & (r > 245)  # dropped above; counted and logged
     dist = np.where(near, srgb_to_linear(r) / 0.9 * NEAR, np.inf)
     # A lone pixel reading her very tip (red under 30: within 0.8 mm of the areola's centre)
     # with no neighbour within 5 mm of it is a render artefact (a silhouette sample shaded
@@ -64,7 +70,7 @@ def codes(im):
     genital = (g >= 250) & (r <= 8) & (b <= 8)
     tucked = (g >= 250) & (b >= 250)
     depth = np.where(tucked, 1.0 - srgb_to_linear(r) / 0.9, 0.0)  # (a clipped white reads below 0)
-    return dist, genital, tucked_near, depth
+    return dist, genital, tucked_near, depth, binding
 
 
 def labelled(im, box, out, ring=None):
@@ -133,15 +139,59 @@ def stray(dist, tips):
     highlight lay at 4.5 times it (4.9 in an older build). With a tip behind the camera, or no
     landmarks, nothing is judged."""
     off = np.zeros(dist.shape, bool)
+    ratio = np.full(dist.shape, np.nan)  # screen distance / allowed reach, least over the tips
     if set(tips) != set(SIDES):
-        return off
+        return off, ratio
     ys, xs = np.nonzero(np.isfinite(dist))
     ok = np.zeros(len(xs), bool)
+    rt = np.full(len(xs), np.inf)
     for (tx, ty), (ux, uy), (ix, iy) in tips.values():
         per_cm = max(math.hypot(ux - tx, uy - ty), math.hypot(ix - tx, iy - ty)) / 2.0
-        ok |= np.hypot(xs - tx, ys - ty) <= (2 * dist[ys, xs] + 4.0) * per_cm / 0.7 * 1.5
+        reach = (2 * dist[ys, xs] + 4.0) * per_cm / 0.7 * 1.5
+        ok |= np.hypot(xs - tx, ys - ty) <= reach
+        rt = np.minimum(rt, np.hypot(xs - tx, ys - ty) / reach)
     off[ys[~ok], xs[~ok]] = True
-    return off
+    ratio[ys, xs] = rt
+    return off, ratio
+
+
+MAX_BIND_CROPS = 20
+os.makedirs(os.path.join(folder, 'stray'), exist_ok=True)
+stray_log = []  # lines of stray.txt
+totals = {'stray': 0, 'binding': 0, 'stray_groups': 0, 'binding_groups': 0, 'binding_crops': 0}
+
+
+def ringed(im, x, y, path):
+    """96x96 around (x, y) at 4x, a ring round the pixels."""
+    crop = im.crop((x - 48, y - 48, x + 48, y + 48)).resize((384, 384), Image.NEAREST)
+    d = ImageDraw.Draw(crop)
+    d.ellipse((192 - 24, 192 - 24, 192 + 24, 192 + 24), outline=(255, 220, 90), width=2)
+    d.text((4, 4), 'TEST TINT, not the game. Ring: pixels the check dropped.', fill=(255, 220, 90))
+    crop.save(path)
+
+
+def report(mask, kind, name, im, dist=None, ratio=None):
+    """Log, crop and count the dropped pixels (mask), one line per connected group."""
+    n = int(mask.sum())
+    if not n:
+        return 0
+    lab, ng = ndimage.label(mask, structure=np.ones((3, 3)))
+    for k in range(1, ng + 1):
+        gy, gx = np.nonzero(lab == k)
+        cx, cy = int(round(gx.mean())), int(round(gy.mean()))
+        if kind == 'stray':
+            line = '%s stray centre (%d,%d) %d px claimed %.2f cm, %.2f of the allowed reach (cut-off 1.00)' % (
+                name, cx, cy, len(gx), float(np.min(dist[gy, gx])), float(np.nanmin(ratio[gy, gx])))
+            crop = True
+        else:
+            line = '%s binding centre (%d,%d) %d px highlight blend dropped as not a code' % (name, cx, cy, len(gx))
+            totals['binding_crops'] += 1
+            crop = totals['binding_crops'] <= MAX_BIND_CROPS
+        stray_log.append(line)
+        totals[kind + '_groups'] += 1
+        if crop:
+            ringed(im, cx, cy, os.path.join(folder, 'stray', '%s_%s_%d_%d.png' % (kind, name[:-4], cx, cy)))
+    return n
 
 
 def place(xs, ys, tips, bones):
@@ -190,9 +240,13 @@ for f in sorted(glob.glob(os.path.join(folder, '*_[0-9][0-9].png'))):
     name = os.path.basename(f)
     outfit = name.split('_')[0]
     im = Image.open(f).convert('RGB')
-    dist, gen, tnear, depth = codes(im)
+    dist, gen, tnear, depth, binding = codes(im)
     tips, bones = landmarks(f[:-4] + '.json', im)
-    off = stray(dist, tips)
+    off, ratio = stray(dist, tips)
+    stray_px = report(off, 'stray', name, im, dist.copy(), ratio)
+    binding_px = report(binding, 'binding', name, im)
+    totals['stray'] += stray_px
+    totals['binding'] += binding_px
     dist[off] = np.inf
     tnear &= ~off
     areola_px = int((dist < AREOLA).sum())
@@ -215,7 +269,7 @@ for f in sorted(glob.glob(os.path.join(folder, '*_[0-9][0-9].png'))):
                     per[s] = ds[k]
                 if key not in ob or ds[k] < ob[key][0]:
                     ob[key] = (float(ds[k]), name, (int(xs[k]), int(ys[k])))
-    rows.append((name, areola_px, gen_px, deep_px, ring_px, dmin, per.get('breast_l', math.inf), per.get('breast_r', math.inf)))
+    rows.append((name, areola_px, gen_px, deep_px, ring_px, dmin, per.get('breast_l', math.inf), per.get('breast_r', math.inf), stray_px, binding_px))
     deep = (depth > 0.5) | tnear
     if deep.sum() >= least:
         lab, n = ndimage.label(deep)
@@ -234,16 +288,19 @@ def cm(v):
 
 
 with open(os.path.join(folder, 'counts.csv'), 'w') as out:
-    out.write('frame,areola_px,genital_px,tucked_seen_px,edge_ring_px,closest_cm,closest_left_cm,closest_right_cm\n')
+    out.write('frame,areola_px,genital_px,tucked_seen_px,edge_ring_px,closest_cm,closest_left_cm,closest_right_cm,stray_px,binding_px\n')
     for r in rows:
-        out.write('%s,%d,%d,%d,%d,%s,%s,%s\n' % (r[0], r[1], r[2], r[3], r[4], cm(r[5]), cm(r[6]), cm(r[7])))
+        out.write('%s,%d,%d,%d,%d,%s,%s,%s,%d,%d\n' % (r[0], r[1], r[2], r[3], r[4], cm(r[5]), cm(r[6]), cm(r[7]), r[8], r[9]))
+open(os.path.join(folder, 'stray.txt'), 'w').write('\n'.join(stray_log) + ('\n' if stray_log else ''))
+total_line = ('dropped, not read: %d px in %d groups by stray(), %d px in %d groups by the binding filter '
+              '(see stray.txt; crops in stray/)' % (totals['stray'], totals['stray_groups'], totals['binding'], totals['binding_groups']))
 
 
 def margin(v):
     return '%+.2f cm' % (v - AREOLA)
 
 
-lines = ['Margins are past the areola\'s edge (2.2 cm from its centre): negative means the areola shows.',
+lines = [total_line, 'Margins are past the areola\'s edge (2.2 cm from its centre): negative means the areola shows.',
          'Edges are as seen in that view, from the posed tip: "inner" is towards her midline.',
          'No near skin in view at all means every margin is past %.1f cm.' % (NEAR - AREOLA), '']
 for outfit in sorted({r[0].split('_')[0] for r in rows}):
