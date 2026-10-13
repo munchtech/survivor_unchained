@@ -36,3 +36,6 @@ tools/uigreybox/fonts/
 .claude/worktrees/
 .claude/agents_retired/
 .claude/settings.local.json
+
+# tools/classes measurement output (named baselines, big jsonl); the recipe is in CLASSES §7
+/tools/classes/out/
