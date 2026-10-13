@@ -1,46 +1,27 @@
-# Handoff: classes (session 10: stagger hotfix merged, Banked Flame C40 in, three checks owed)
+# Handoff: classes (session 11: the Flare cuts arena phase floors; Banked Flame reworked)
 
-Written by the tenth classes lead (12 October), stopped clean for a new coordinator. Branch `classes-8` (worktree `agent-a54ebb1323cb25841`), last commit on the last line of git log. Scratch `N/` = `C:\Users\munch\AppData\Local\Temp\claude\C--Users-munch-Desktop-survivorsunchained\1515c1de-1208-43e2-b6eb-5133e0d07e1c\scratchpad\classes\`. Nothing is running and no turn is held.
+Written by the eleventh classes lead (12 October). Branch `classes-8` (worktree `agent-a54ebb1323cb25841`), last commit on the last line of git log. Scratch `N/` = `C:\Users\munch\AppData\Local\Temp\claude\C--Users-munch-Desktop-survivorsunchained\33ad5b17-6735-4f1b-843e-85f16b19e648\scratchpad\classes\` (older: `1515c1de-...\scratchpad\classes\`, called `O/`).
 
 ## Start here
-1. **Owner question (open):** should arena phase floors let a Flare's burst through? See §2.2 for judge 2's wording. Build nothing until the owner answers.
-2. **Re-run judge 2's measurements:** `bash N/bq4.sh` (about 90 min, stopped at the wind-down). It measures C40 against no lamp with arena floors ON (T4 L10 and L30, deft and plain, banks or not), plus the reserve run (plain hands, T4 L10, 96 seeds, falls). If `--seed0` errors on `arena`, drop it.
-   - Pass: the non-banker's worst calling is within +3% of no lamp, and the Flare's share of a boss is at or under 35%.
-   - Summarize with `python c8/bstat.py ref.jsonl ...` (`c8` = `...\ba85aba8-36f4-4cf9-99c5-4c5ef9e4a65c\scratchpad\c8`).
-   - CLASSES §7 (2) still says to soften the price to 20% if the reserve saves nothing. Decide that from the reserve run.
-3. **Butcher's Hour Dig deft cell, -7.4% against its plain form** (bar ±6%; after the stagger fix). Measure it, find why (suspect: the deepened bleed ignores Grimtunnel's half damage on his ground and his lamps' quarter), and trim the Hour on him only. Falls are no longer a question: 0.049 against 0.043, 1 sigma. No solver needed.
-4. **Write two results into CLASSES §7.** First, the Bell's Vault plain cell is waived: -4.5% after the fix, within ±6%, and the arms show the Bell's own damage is the cause (below). Second, the Hour's falls follow-up is closed.
-5. Then: the phase-6 owner lines (`N/judge1_verdict.md`, bottom) go to the coordinator. More Embers / Toll Doubled checks (the session-9 list). Phase 6 waits for the owner's yes.
+1. **Judge 4's batch** (`bash N/j4.sh`, results `N/j4/`): Banked Flame H with the phase-aware banker. Compare against the no-lamp refs on the same seeds: `N/fc1/ref_fc0.5_L30_deft`, `N/fc1/ref_fc0.5_L10_plain`, `N/fc2/ref_fc0.5_L10_deft`, `N/fc2/ref_fc0.5_L30_plain` (48 seeds); `N/m12/m2ref_L30_{deft,plain}` (arcanist, 192, seed0 2001), `N/m12/m2ref_L10_plain` (warden+reaver, 192); Act 1 `O/bk3/st_ref.jsonl` (48 deft; `python O/fc.py ref new`). `python N/fcsum.py` reads fc1/fc2 cells.
+   - Pass (judge 4): every calling's banker median 8-20% faster, hands pooled, at L10 and L30; arcanist L30 pooled mean -5% or better (192 seeds); Act 1 banker -6% or better; non-banker (arcanist L30 plain, reaver L10 plain) no slower than +2% median and mean; falls within 2 sigma. Log the slowest tenth of arcanist banker runs (BossPhases: cut, seconds, mark time per phase).
+   - Adjust only `held` (tools/classes/lamps_build.py line 113, then `python tools/classes/lamps_build.py`): reaver or warden past -20% -> 0.6; reaver, warden or stalker short of 8%, or Act 1 short of 6% -> 0.9. Anything else back to a fresh judge.
+2. Then: CLASSES §7 line 901 item (2) rewrite (Banked Flame's own bound: banker 8-20% faster, non-banker within +2%; exempt from the 35% line; retire "soften the price to 20%"; the cut and the 6 s minimum; owner summary numbers: give means beside medians). Merge request to the coordinator with the numbers.
+3. Then the phase-6 plan (CLASSES §7, 6a) and its owner lines (`O/judge1_verdict.md`, bottom) to a lean judge, then to the coordinator. No phase-6 code before the owner approves.
+4. For the UI/codex (pass on): "a Flare shortens the boss phase it lands in, by at most half" should be taught somewhere (judge 3).
 
 ## 1. Done this session
-- **Press-stagger hotfix MERGED** (integration 8450b738; also in classes-8 via 9c0a0175).
-  - Press 0.15 of the gauge (`Battle.PressStaggerBoss`); the Bell's toll 0.15.
-  - The Toll's boss measure 0.85 -> 0.25; Burns Twice 1.0.
-  - Story-boss HealthMul: Redcowl 110, Barrow Lord 141, Greymuzzle 107, Grimtunnel 114.
-  - The target is the real pre-Flare game (`N/s2/base11.jsonl` = the 11 Oct baseline). `SU_NOFLARE` on today's build is 7-14% slower and falls three times as often, so don't use it.
-  - Result: every calling within 3%; falls 0.037 against 0.030, which is the stagger fix itself. Arena power is unchanged; only the Toll's arena boss share drops.
-  - Tools: `N/fc.py` (fight x calling against a reference), `N/fshare.py` (the Flare's share of boss health), `N/sf/mk.py` (the hotfix builder).
-- **Banked Flame: judge 2** (agent ac3d24521b4fd4b75): "FAIL as the finished lamp, PASS for C40 replacing cur now".
-  - Applied in 4ddba3ab: "Hold two Flares. Each fills 30% slower and strikes 40% harder." (harder 0.4). The data is in lamps.json and `tools/classes/lamps_build.py`; CLASSES lines 252 and 901 are updated.
-  - Post-fix numbers are in `N/bk3/` (`ar_table.md`):
-    - Act 1 banked -7.1%, unbanked +1.3%.
-    - Arena floors off: banked -16% (median), unbanked +11%.
-  - Falls on Act 1: 23 against 36 runs (1.7 sigma).
-- **Phase-6 plan:** judge 1's ten fixes are in CLASSES §7 (bd2fd49e, fc2e2c1e). The Branding's live length stays 1.0 until 6a is approved.
-- **Bell Vault arms** (`N/bell/`, 384 seeds, plain hands): staged 171.4 s, plain form 179.9 s. Arm results: mend 0 gives 173.3 s; stun 0 gives 171.5 s; no interrupt and no stagger gives 169.8 s.
-- **Hour post-fix** (`N/hr/`, 192 seeds a side): mean about -1.4%. The plain Stand needs `blows: 2` (`N/over/plainhour2`).
+- Merged `claude/vigilant-galileo-l6jqyx` (docs only), 834 tests passed.
+- **The cut (owner: "let arena phases shorten")**, 4659982f + b8828e4b: `ArenaBoss.FloorNow = max(Floor*FloorScale*(1-FlareCut), min(Floor*FloorScale, 6))`; `FlareCut = min(0.5, 1.0 * Enemy.FlareTook / phase span)`; only health credited "flare" counts (Battle.cs next to BossHealthBy). Story bosses exempt (`StoryBoss.FlareCuts => false`). Harness `--flarecut MAX[,RATE]` (default 0.5,1), `ArenaBoss.PhaseLog` -> `BossPhases` in arena results. Tests in BossTests and StoryNightTests.
+  - Cut alone, every player: arena bosses -6 to -15% (arcanist -18 to -24%); the Flare's no-lamp share fell (arcanist 43->34%, 48->40%).
+- **Judge 3** (a46133c0270318ade, sheet `N/judge3_sheet.md`): cut PASS (rate 1, cap half) plus the 6 s minimum; story bosses keep floors PASS; Banked Flame not bound by the 35% line (its own kill-time bound); keep the price; M1/M2 asked.
+- **M1** (`N/m12/pa_*`): a phase-aware banker (holds the second charge while this phase's cut >= 0.25) beat firing both at once for every calling; now the harness default (`--phaseaware 0` for the old hands).
+- **M2** (`N/m12/m2*`): C40's non-banker cost the arcanist L30 +14/+17% (plain) and +5/+9% (deft): the half cap swallows "strikes 40% harder".
+- **Judge 4** (aefdc28772b26d345, sheet `N/judge4_sheet.md`): FAIL for C40; fix applied in daa58e19: Banked Flame = "Hold two Flares. The second fills half as fast; a Flare fired with both held strikes 75% harder." (`slower 0, second 0.5, harder 0, held 0.75`). Tests: data and behavior (a held shot 1.75x, never-held fill unchanged).
+- **The Hour at the Dig** closed without a trim: fresh seeds at twice the runs -2.3%, pooled -4.0% (inside ±6%). Arms tried and dropped (`N/dig/`). CLASSES §7 notes for Bell's Vault, the Hour's falls and the Dig written (31f9ed99).
+- C40 floors-on numbers (the old `bq4.sh`, folded in): banker -3% before the cut; the reserve saves nothing (falls 5 vs 6 of 384, `N/fc2/res_*`).
 
-## 2. Owner and coordinator lines
-1. The Toll trim, to pass on: "The Road's Toll's four cuts on a boss now strike about a third as hard as before (poison included); it took over a third of an Act 1 boss, now about a sixth like every other Flare. Its twelve cuts on the horde, its executes and its look are unchanged."
-2. **Floors (owner):** judge 2 recommends yes, narrowly.
-   - When a Flare pushes a boss past a phase mark, that phase's minimum time is cut in proportion, never by more than half. Only Flare damage counts, so every phase is still seen.
-   - Risk: burst Flares shorten arena boss fights, and the Flare's share of a boss climbs toward 33-56%. The cut gets tuned until the 35% line holds.
-   - If no: Banked Flame stays a story-boss and safety lamp.
-
-## 3. Tools
-- Harness builds:
-  - `N/bal2` is classes-8 at 9c0a0175. It has no C40 in its data, so pass `--over N/bover2/C40`.
-  - `N/st5` is a scratch tree with a Bell `interrupt` knob.
-  - Rebuild after logic changes: `cd godot/balance && dotnet build -c Release`.
-- Story runs use cwd `godot/`. A data override covers the whole file, so make it from the *current* lamps.json.
+## 2. Tools
+- Harness copies: `N/bal3` (cut, C40), `N/bal6` (+6 s, phase log, phase-aware flag), `N/bal7` (H lamp, phase-aware default). Rebuild after logic changes: `cd godot/balance && dotnet build -c Release`, copy to a new `N/balX`. Runs use cwd `godot/` (data read from there).
+- Overrides: `N/over/plainhour3` (plain Hour), `N/over/nomods`, `N/over/cdonly` (Burns Twice modifiers off / Called Down alone; made from C40-era lamps.json: remake from the current one before reuse).
 - Python on Windows: give it `C:/...` paths.
