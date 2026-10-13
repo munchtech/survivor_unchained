@@ -11,8 +11,8 @@ armscheck left the whole holding arm out (its shoulder blend, upper arm and paul
 | idle_warden_break | sword | 0.0 / 2.4 | **19.5 / 34.7** | f16, 68/101 | right shoulder and pauldron (blade near the guard) | judge 52 PASS: reopened by the coordinator |
 | idle_warden | shield | 0.0 / 0.0 | 1.7 / 1.7 | f80, 0 | left upper arm | judges 47-49 PASS: touch, to 0 |
 | stop_warden_l/r | shield | 0.0 / 0.0 | 1.8 / 1.8 | f9, 0 | left upper arm | touch, to 0 |
-| run_warden | shield | 0.0 / 22.7 | **23.9 / 42.0** | f11, 22/22 | left clavicle and pauldron | first (the player sees it most) |
-| sprint_warden | shield | 42.0 / 60.0 | 24.1 / 42.2 | f11, 22/22 | left clavicle | queued |
+| run_warden | shield | 0.0 / 22.7 | **23.9 / 42.0** -> 0.0 / 0.0 | f11, 22/22 | left clavicle and pauldron | PASSED and packed (13 Oct, lead 20) |
+| sprint_warden | shield | 42.0 / 60.0 | 24.1 / 42.2 -> 0.0 / 0.0 | f11, 22/22 | left clavicle | PASSED and packed (13 Oct, lead 20) |
 | bull_rush (WIP) | shield | 73.9 / 73.9 | 23.7 / 39.7 | f0, 25/31 | left upper arm | round 3 |
 | warden_show | shield | 0.0 / 5.3 | **12.2 / 27.4** | f16, 53/71 | left upper arm | queued |
 | sword_fore | shield | 27.9 / 35.4 | 36.9 / 44.9 | f2, 25/25 | upper chest by the shoulder | GUARD round |
@@ -22,6 +22,9 @@ armscheck left the whole holding arm out (its shoulder blend, upper arm and paul
 | death_back | shield | 0.0 / 4.0 | 10.9 / 10.9 | f7, 3/41 | left upper arm | fair |
 
 Combat clips without a weapon in their meta also carry the kit and fail at the arm (hit 55 / 74, dash 51 / 66, get_up 55 / 71, vault 56 / 72, warcry 43 / 58, leap 42 / 42), most of them failing on the body already. **Stalker:** the crossbow's stock is 39 mm into her right forearm (lowerarm_twist_01_r) on every crossbow clip (idle_stalker 154/154 frames). That's one mount fix (after the Warden set). The walks (wade, walk_tired, walk_uphill) are at 7.3 / 7.3 if armed.
+
+## Run and sprint, packed (13 October, lead 20)
+run_warden, sprint_warden, idle_warden, idle_warden_break and stop_warden_l/r packed. The shield hand sits 2.5 cm (run) and 2 cm (sprint) back, so the left elbow stays bent: inner angle run 118-124 deg, sprint 115-119 (a judge's bar: 125/120). Shield and sword 0.0 into skin and outfit; left hand 65.5/26.6 mm off her; left arm 16 mm or more off her outfit; the run-to-sprint crossfade (the game's synced Blend2) at 25/50/75% is clean (elbow at most 123 deg, hand at least 37 mm off her, rim to pauldron at least 11 mm). Judges passed it from the front, the sword side, the game camera and behind. **New gate for every later blend and the trailing-foot gait fix: shield rim to pauldron at least 8 mm** (now 9.0 in the sprint). Polish noted: her left index finger points straight down at the shield's rim while the others half-curl (hidden at the game camera). Scripts: `Z\s20\owed.py` (elbow and crossfade), `armbody.py`, `back.py`.
 
 ## State (2026-10-12, lead 11): handed off
 
