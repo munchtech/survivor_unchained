@@ -102,4 +102,14 @@ public class SheathTests
         Assert.Equal(1, changes);
         Assert.True(s.Sheathed);
     }
+
+    [Fact]
+    public void PickChoosesTheTownClipOnlyWhenItExists()
+    {
+        var have = new System.Collections.Generic.HashSet<string> { "stop_warden_town_l" };
+        Assert.Equal("stop_warden_l", Sheath.Pick(false, "stop_warden", "_l", have.Contains));
+        Assert.Equal("stop_warden_town_l", Sheath.Pick(true, "stop_warden", "_l", have.Contains));
+        Assert.Null(Sheath.Pick(true, "stop_warden", "_r", have.Contains));
+        Assert.Null(Sheath.Pick(true, "idle_warden", "_break", have.Contains));
+    }
 }

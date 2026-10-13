@@ -82,12 +82,15 @@ def main(argv):
             made.append(clip.name)
             print(f"  {clip.name:28s} {clip.frames:4d} frames  {clip.length:5.2f} s  {m.__name__}  ({time.time() - t0:.1f} s)")
     print(f"{len(made)} clips written to {out}")
-    # A full build is the whole library: clips no module makes any more go.
+    # Clips this run didn't make are kept, never deleted: some modules make
+    # theirs only when asked by name (walks.py and story.py build their
+    # unjudged clips on request, not in a full build), and the game, the
+    # cinematics and other leads' checks use them (walk_tired, wade, letter).
+    # A clip no code makes any more is removed by hand, once nothing uses it.
     if not want:
-        for f in out.glob("*.json"):
-            if f.stem not in made:
-                f.unlink()
-                print(f"  (dropped {f.stem})")
+        kept = sorted(f.stem for f in out.glob("*.json") if f.stem not in made)
+        if kept:
+            print(f"  (kept, not made by this run: {', '.join(kept)})")
     if "--no-pack" not in argv:
         pack(out, stem)
         if body == "heroine":

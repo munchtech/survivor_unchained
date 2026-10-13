@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using SurvivorUnchained.Content;
 using static SurvivorUnchained.Core.MathX;
 
@@ -42,6 +43,11 @@ public sealed partial class Battle
     /// <summary>A Strike's blows, by time from the press (its beat, or even over its length).</summary>
     double[] flareAt = [];
     int flareBlow;
+    /// <summary>When each of a staged Strike's aims falls (Burns Twice: "aim" before each ember lands), and how many have.</summary>
+    double[] flareAimAt = [];
+    int flareAim;
+    /// <summary>Her aim at the press (radians, atan2 of z over x): where a staged Flare plays out with nothing near.</summary>
+    double flareAngle;
     bool flareClutch, flareReleased, flareKilledBoss;
     /// <summary>For the harness and the toll: casts, their times, clutch casts (falls the Flare kept from happening).</summary>
     public int FlareCasts, FlareClutches;
@@ -51,6 +57,21 @@ public sealed partial class Battle
     public int FlareFullBankShots;
     bool flareStruckBoss;
     public readonly List<double> FlareTimes = new();
+    /// <summary>For the harness: what each Flare did to the crowd round her, a second after it ended: [press time, creatures
+    /// (not bosses) in its reach at the press, within 15 m (the screen), of those dead in reach, dead on screen, kills
+    /// credited to the Flare, the share of the in-reach creatures' health gone, clutch 1/0, a boss within 10 m 1/0, reach, champions in reach still standing].</summary>
+    public readonly List<double[]> FlareCrowd = new();
+    /// <summary>The room a Flare is judged against: what's on the screen round her.</summary>
+    public const double FlareRoom = 15;
+    List<(Enemy E, int Id, double Hp, bool In)>? crowdAt;
+    double[]? crowdRow;
+    double crowdEvalAt;
+    internal HashSet<int>? crowdDied;
+    internal int FlareKillsNow;
+    /// <summary>For the harness (--rout): see FlareBlow.</summary>
+    public static double FlareRout;
+    /// <summary>For the harness (--flarereach): every Flare's reach times this.</summary>
+    public static double FlareReachMul = 1;
     double emberAnsweredAt = -99;
     /// <summary>The horde can't spam it: each of its sources draws on a purse that refills at its rate a second.</summary>
     readonly double[] purse = new double[4], purseAt = new double[4];
@@ -186,10 +207,11 @@ public sealed partial class Battle
         if (Aim is { } aim) { ax = aim.X - p.X; az = aim.Z - p.Z; }
         if (Len(ax, az) < 0.1) { ax = Math.Sin(p.Facing); az = Math.Cos(p.Facing); }
         double angle = Math.Atan2(az, ax);
+        flareAngle = angle;
         flareClutch = p.Hp < MaxHp * FlareClutch;
         int rank = FlareRank;
         // Its size grows with the long night until it fills the screen, then stops; its damage has no cap (§5).
-        flareReach = f.Radius * (flareClutch ? FlareReachClutch : 1) * (Boons.ContainsKey("bright_hour") ? 1.4 : 1) * Math.Min(2.5, 1 + 0.1 * rank);
+        flareReach = f.Radius * FlareReachMul * (flareClutch ? FlareReachClutch : 1) * (Boons.ContainsKey("bright_hour") ? 1.4 : 1) * Math.Min(2.5, 1 + 0.1 * rank);
         // The board's lamps feed the skills by their tags, so the Flare grows with the board too, or a full
         // board's Flare fell to a tenth of a boss's damage (the harness, 12 October).
         flarePower = Content.Lamps.FlarePower(f, EmberOn ? EmberLevel : Level) * (1 + 0.25 * rank) * (1 + FlareLampGlow * Lamps.Lit);
@@ -202,6 +224,8 @@ public sealed partial class Battle
         flareLen = stand ? f.Length : Math.Min(StrikeMax, Math.Max(f.Length, f.Beat.ContainsKey("first") && flareAt.Length > 0 ? flareAt[^1] + 0.1 : 0));
         FlareT = flareLen;
         flareBlow = 0;
+        flareAimAt = FlareAimSchedule(f);
+        flareAim = 0;
         flareStruckBoss = false;
         flareKilledBoss = false;
         flareReleased = false;
@@ -230,6 +254,7 @@ public sealed partial class Battle
                 Reflect(p.X + (i == 0 ? -1.2 : 1.2), p.Z, 5, angle);
         flareUnseenAfter = p.Hp < MaxHp * Lamps.Full("flare.low_unseen", "below", 0.3333) && Lamp("flare.low_unseen")
             ? Lamps.Full("flare.low_unseen", "seconds", 2) : 0;
+        CrowdPress(p);
         FlareStagedPress(f);
         if (stand && f.Blows > 0) FlareBlow();
         return true;
@@ -255,12 +280,53 @@ public sealed partial class Battle
                 FlareBlowEvent(f, f.Kind == FlareKind.Stand ? "pulse" : "blow", last, p.X, p.Z, null, flareReach);
                 break;
         }
+        // (the harness's --rout: at a Strike's last blow, the ordinary creatures in reach left below this share fall)
+        if (last && FlareRout > 0)
+            foreach (var e in HostilesInRadius(Player.X, Player.Z, flareReach))
+                if (!e.Boss && !e.Elite && e.Alive && e.State != EnemyState.Dying && e.Hp < e.MaxHp * FlareRout) KillEnemy(e, true, null);
         credit = was;
+    }
+
+    /// <summary>The harness's crowd count at the press (FlareCrowd); measured a second after the Flare ends.</summary>
+    void CrowdPress(PlayerState p)
+    {
+        CrowdEnd();
+        crowdAt = new();
+        bool bossNear = false;
+        foreach (var e in HostilesInRadius(p.X, p.Z, FlareRoom))
+        {
+            if (e.Boss) { bossNear |= Dist(e.X, e.Z, p.X, p.Z) <= 10; continue; }
+            crowdAt.Add((e, e.Id, e.Hp, Dist(e.X, e.Z, p.X, p.Z) <= flareReach));
+        }
+        FlareKillsNow = 0;
+        crowdDied = new();
+        crowdRow = [Time, crowdAt.Count(c => c.In), crowdAt.Count, 0, 0, 0, 0, flareClutch ? 1 : 0, bossNear ? 1 : 0, flareReach, 0];
+        crowdEvalAt = Time + flareLen + 1;
+    }
+
+    void CrowdEnd()
+    {
+        if (crowdAt == null || crowdRow == null) return;
+        double hp0 = 0, hp1 = 0;
+        foreach (var (e, id, hp, inside) in crowdAt)
+        {
+            // (its slot may hold a new creature by now: a death is read from the deaths since the press)
+            bool dead = !e.Alive || e.Hp <= 0 || crowdDied!.Contains(id);
+            if (inside) { crowdRow[3] += dead ? 1 : 0; crowdRow[10] += !dead && e.Elite ? 1 : 0; hp0 += hp; hp1 += dead ? 0 : Math.Min(hp, e.Hp); }
+            crowdRow[4] += dead ? 1 : 0;
+        }
+        crowdRow[5] = FlareKillsNow;
+        crowdRow[6] = hp0 > 0 ? 1 - hp1 / hp0 : 0;
+        FlareCrowd.Add(crowdRow);
+        crowdAt = null;
+        crowdRow = null;
+        crowdDied = null;
     }
 
     void TickFlare(double dt)
     {
         var p = Player;
+        if (crowdAt != null && Time >= crowdEvalAt) CrowdEnd();
         TickVenom();
         if (flareMendT > 0)
         {
@@ -283,7 +349,14 @@ public sealed partial class Battle
         }
         if (f.Kind == FlareKind.Strike)
         {
-            while (flareBlow < flareAt.Length && elapsed >= flareAt[flareBlow] - 1e-9) FlareBlow();
+            // Aims and blows in time order; an aim due with a blow waits for it (the frost freezes before the first aim).
+            while (true)
+            {
+                bool blow = flareBlow < flareAt.Length && elapsed >= flareAt[flareBlow] - 1e-9;
+                if (flareAim < flareAimAt.Length && elapsed >= flareAimAt[flareAim] - 1e-9 && (!blow || flareAimAt[flareAim] < flareAt[flareBlow] - 1e-9)) FlareAim();
+                else if (blow) FlareBlow();
+                else break;
+            }
         }
         else
         {

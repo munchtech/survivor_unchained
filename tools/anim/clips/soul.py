@@ -91,6 +91,19 @@ def sit_log(rig):
 
 
 # ------------------------------------------------------------ flourishes --
+def SHOW_L(at=(-0.07, -0.08, 0.425), pole=(1.0, -0.3, -0.3)):
+    """warden_show's shield hand in the guard (chest frame, from the shoulder):
+    out ahead with the elbow open (139 deg), so the rim clears her pauldron
+    (18 mm) and sits just under and before her chin (60 mm from her head) for the glare
+    over it. (Close in and high, at
+    (-0.14, -0.13, 0.30), the elbow closed to 99 deg and the rim cut her
+    upper arm and pauldron 8/23 mm and came within 16 mm of her face.)"""
+    return {"arc": arc_of(at), "pole": pole, "frame": "chest", "blade": _n(-0.2, 0.9, 0.4), "twist": 0.3}
+
+
+SHOW_R_MID = (-0.24, -0.12, 0.08)
+
+
 def warden_show(rig):
     """She steps in behind the buckler and levels the sword over its rim at
     you, glaring over it; holds; settles back."""
@@ -107,8 +120,7 @@ def warden_show(rig):
     # arm folded and the forearm came up across her face; pointed at the
     # camera, the blade crossed her face and read as nothing.)
     guard = {**step, "spine": (-8, 8, 0), "head": (12, -10, 0),
-             "hand_l": {"arc": arc_of((-0.14, -0.13, 0.30)), "pole": (1.0, -0.3, -0.3), "frame": "chest",
-                        "blade": _n(-0.2, 0.9, 0.4), "twist": 0.3},
+             "hand_l": SHOW_L(),
              "hand_r": {"arc": arc_of((-0.14, 0.29, -0.04)), "pole": (-1.0, -0.2, -0.2), "frame": "chest",
                         "blade": _n(0.28, 0.02, 0.96), "twist": 0.5},
              "fingers_l": "fist", "fingers_r": "grip"}
@@ -117,6 +129,12 @@ def warden_show(rig):
         (8, over("warden", hips={"pos": (0, -0.05, -0.02)}, foot_l=f["foot_l"], foot_r=f["foot_r"]), "fast"),
         (16, guard, "ease"),
         (50, {**guard, "spine": (-8, 9, 0)}, "ease"),
+        # Settling back, the sword comes down close past her side (left to
+        # the arc alone, the hand swung 39 cm out at shoulder height and the
+        # arm read as locked straight); the body halfway home.
+        (60, {"hips": {"pos": (0, -0.04, 0.05), "rot": (-5, 4, 0)}, "spine": (-4, 4.5, 0), "head": (6, -5, 0),
+              "hand_r": {"arc": arc_of(SHOW_R_MID), "pole": (-1.0, -0.3, -0.2), "frame": "chest",
+                         "blade": _n(0.10, -0.30, 0.95), "twist": 0.5}}, "auto"),
         (70, over("warden"), "ease"),
     ]
     return build("warden_show", rig, keys, base=base, meta={"layer": "full", "weapon": "sword+shield"})
@@ -217,15 +235,28 @@ def _swing_l(abd, flex, reach=0.0):
 
 def warden_break(rig):
     base = idle.base_of(rig, "warden")
-    shoulder = {"arc": arc_of((0.02, -0.06, 0.18)), "pole": (-0.8, -0.6, 0.0), "frame": "chest",
+    # The fist up and forward of the shoulder, so the guard stands in front of
+    # it and the flat rests on the pauldron (armscheck, 13 October: at 6 cm
+    # down and 18 forward the quillon sank 20 mm into her shoulder).
+    shoulder = {"arc": arc_of((0.02, -0.025, 0.215)), "pole": (-0.8, -0.6, 0.0), "frame": "chest",
                 "blade": _n(-0.15, 0.5, -0.85), "twist": 0.5}
+    # (With the shoulder rolled up under it the blade rides a little lower on
+    # the shoulder, so it stays on the pauldron instead of lifting off.)
+    rolled = dict(shoulder, arc=arc_of((0.02, -0.03, 0.21)))
+    # Halfway up and halfway down, the fist where it passed before the rest
+    # moved (keyed, so the lift and the return keep their paths and the wrist
+    # does not flip as the target moved), the elbow's way halfway between the
+    # carry's and the shoulder's as it was then (the shoulder's, this early,
+    # swung the elbow out and rolled the upper arm 11 degrees in a frame).
+    passing = dict(shoulder, arc=arc_of((-0.108, -0.242, 0.189)), pole=(-0.6, -0.4, -0.5))
     keys = [
         (0, over("warden"), "auto"),
         # The flat of the blade laid on her shoulder, the shoulder rolled under it.
+        (8, over("warden", hand_r=dict(passing, blade=_n(-0.42, 0.78, 0.46))), "auto"),
         (16, over("warden", hand_r=shoulder), "ease"),
-        (24, over("warden", hand_r=shoulder, clav_r=(10, 6), head=(-8, 0, 6)), "auto"),
+        (24, over("warden", hand_r=rolled, clav_r=(10, 6), head=(-8, 0, 6)), "auto"),
         (32, over("warden", hand_r=shoulder, clav_r=(2, -6), head=(-6, 0, 3)), "auto"),
-        (40, over("warden", hand_r=shoulder, clav_r=(10, 6), head=(-8, 0, 6)), "auto"),
+        (40, over("warden", hand_r=rolled, clav_r=(10, 6), head=(-8, 0, 6)), "auto"),
         (48, over("warden", hand_r=shoulder, clav_r=(0, 0)), "ease"),
         # The shield hefted and the shoulder rolled under it, echoing the
         # sword's roll on the other shoulder (judge 50: a "look over the
@@ -245,9 +276,16 @@ def warden_break(rig):
         (72, over("warden", hand_r=shoulder, clav_l=(-2, -2), hand_l=_swing_l(0, 0, 0.006),
                   fingers_l={"curl": 1.05, "cascade": 0.05, "thumb": 1.6, "oppose": 0.9}), "ease"),
         (80, over("warden", hand_r=shoulder), "ease"),
+        # (Unkeyed, the fist came down 3 cm higher and further forward than
+        # before and the wrist held at its sideways limit, then let go: the
+        # hand turned 17 degrees a frame faster in one frame, at f91.)
+        (90, over("warden", hand_r=dict(passing, blade=_n(-0.66, 0.59, 0.46))), "auto"),
         (100, over("warden"), "ease"),
     ]
-    return build("idle_warden_break", rig, keys, base=base, meta={"layer": "full", "weapon": "sword+shield"})
+    # The right elbow eases out of the carry's own place (it takes over from
+    # the idle): settled with the frames after, the carry's straight arm
+    # rolled 8-11 degrees into the lift's in the first frame.
+    return build("idle_warden_break", rig, keys, base=base, meta={"layer": "full", "weapon": "sword+shield"}, pin_first={"r": 4})
 
 
 def arcanist_break(rig):
