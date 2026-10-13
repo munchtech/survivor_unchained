@@ -4117,13 +4117,22 @@ def arcanist():
             print("CLASP: tip at %+.0f deg: binding %.1f to %.1f mm out from the foot's centre (cloth's edge %.1f); horn's middle %.1f, %.1f mm inside its outer edge"
                   % (np.degrees(th[a]), rb0 * 1000, rb1 * 1000, r_e[a] * 1000, want * 1000, (rb1 - want) * 1000))
         mid_ = r_e - 0.001 + (np.where(th < 0, outs[0], outs[nth - 1]) - (CLASP_D_IN if CLASP_D else 0.0)) * s_ ** 2 + 0.5 * wfull
-        if CLASP_D and CLASP_D_ROUND:
-            # (its inner rim on the binding at the foot, CLASP_D_RIM out from where
-            # the cloth begins, not 1 mm onto her skin: from there it dropped 4.8 mm
-            # to her skin, and half-round it stood as a tall hood from above;
-            # the tips stay where they were)
-            mid_ = mid_ + (0.001 + float(os.environ.get("CLASP_D_RIM", "0.0005"))) * (1 - s_ ** 2)
         R_IN = mid_ - 0.5 * wid
+        if CLASP_D and CLASP_D_ROUND:
+            # (D2, judge h: from above its foot stood as a pale ledge (h3), or half-round
+            # as a tall hood, behind the stone: its inner rim lay 1 mm over her skin, so
+            # its back's rim dropped 4.8 mm to her skin there. Now the inner rim lies at
+            # least CLASP_D_RIN onto the binding all along (a smooth max), its outer rim
+            # out by half as much, so the binding's own inner edge, uncut, runs down to
+            # her skin above it as all round the U; the tips stay where they were)
+            d_ = r_e + float(os.environ.get("CLASP_D_RIN", "0.0008")) - R_IN
+            sh = 0.5 * (d_ + np.sqrt(d_ * d_ + 0.0004 ** 2))
+            f_ = np.clip((s_ - 0.8) / 0.2, 0, 1)
+            sh = sh * (1 - f_ * f_ * (3 - 2 * f_))
+            wid = wid - 0.5 * sh
+            R_IN = R_IN + sh
+            print("CLASP: inner rim onto the binding: moved out %.1f mm at the foot, %.1f at 50%% out, %.2f at the tips"
+                  % (sh[nth // 2] * 1000, np.interp(0.5, s_[nth // 2:], sh[nth // 2:]) * 1000, sh[0] * 1000))
         rr = R_IN[:, None] + wid[:, None] * uu[None, :]
         X = rr * np.sin(th)[:, None]
         Zc = cz - rr * np.cos(th)[:, None]
@@ -4280,8 +4289,17 @@ def arcanist():
         # a gold bezel ring 1 mm proud of the crescent)
         c0 = frnt[nth // 2, nr // 2]
         nu, nv = 24, 6
-        sp = [c0 + np.array([0.005 * np.cos(2 * np.pi * j / nu) * np.cos(k / nv * np.pi / 2), -0.0032 * np.sin(k / nv * np.pi / 2),
-                             0.004 * np.sin(2 * np.pi * j / nu) * np.cos(k / nv * np.pi / 2)]) for k in range(nv + 1) for j in range(nu)]
+        # (D2: the stone and bezel laid on the crescent's back at the foot, not square
+        # to her: the cloth there recedes as it rises, so a square bezel's top stood
+        # off the crescent and its bottom sank into it; CLASP_D_TILT=0 squares it)
+        m_ = float(np.polyfit(Zc[nth // 2], Y[nth // 2], 1)[0]) if CLASP_D and CLASP_D_ROUND and os.environ.get("CLASP_D_TILT", "1") == "1" else 0.0
+        nh_, vh_ = np.array([0.0, -1.0, m_]) / math.hypot(1.0, m_), np.array([0.0, m_, 1.0]) / math.hypot(1.0, m_)
+
+        def jw(dx, dy, dz):
+            # (a point of the jewel: dx across, dy behind its seat (- in front), dz up its face)
+            return c0 + np.array([dx, 0.0, 0.0]) - dy * nh_ + dz * vh_
+        sp = [jw(0.005 * np.cos(2 * np.pi * j / nu) * np.cos(k / nv * np.pi / 2), -0.0032 * np.sin(k / nv * np.pi / 2),
+                 0.004 * np.sin(2 * np.pi * j / nu) * np.cos(k / nv * np.pi / 2)) for k in range(nv + 1) for j in range(nu)]
         st = [t_ for k in range(nv) for j in range(nu) for t_ in ((k * nu + j, k * nu + (j + 1) % nu, (k + 1) * nu + (j + 1) % nu),
                                                                    (k * nu + j, (k + 1) * nu + (j + 1) % nu, (k + 1) * nu + j))]
         sp, st = np.array(sp), np.array(st)
@@ -4292,8 +4310,38 @@ def arcanist():
         # (under a half-round crescent the bezel's ring stood off it at its top and
         # bottom: its outer wall flares back 3.5 mm into the crescent, a bezel cup)
         BEZ = ((1.0, 0.0), (1.0, -0.001), (1.2, -0.001), (1.2, 0.0)) if not (CLASP_D and CLASP_D_ROUND) else               ((1.0, 0.0), (1.0, -0.001), (1.2, -0.001), (1.25, -0.0002), (1.3, 0.0035))
-        bp = [c0 + np.array([0.005 * ra * np.cos(2 * np.pi * j / nu), dy, 0.004 * ra * np.sin(2 * np.pi * j / nu)])
-              for ra, dy in BEZ for j in range(nu)]
+        cup = [BEZ[-1][1]] * nu
+        if CLASP_D and CLASP_D_ROUND:
+            # (D2: the cup's last row reaches back to what lies behind it, 0.3 mm
+            # into it: the crescent's front where it lies under it, else the binding
+            # or cloth, else her skin; at most 6 mm. A fixed 3.5 mm stood off the
+            # binding at its top and sank into the crescent at its sides)
+            def behind(x, z):
+                r_, t_ = math.hypot(x, cz - z), math.atan2(x, cz - z)
+                if abs(t_) <= TH0:
+                    ri, wi = np.interp(t_, th, R_IN), np.interp(t_, th, wid)
+                    u_ = (r_ - ri) / wi
+                    if 0.0 <= u_ <= 1.0:
+                        fa = np.interp(t_, th, np.arange(nth))
+                        a0 = min(int(fa), nth - 2)
+                        fb = np.arccos(np.clip(1 - 2 * u_, -1, 1)) / np.pi * (nr - 1)
+                        b0 = min(int(fb), nr - 2)
+                        wa, wb = fa - a0, fb - b0
+                        return float((1 - wa) * ((1 - wb) * Yf[a0, b0] + wb * Yf[a0, b0 + 1]) + wa * ((1 - wb) * Yf[a0 + 1, b0] + wb * Yf[a0 + 1, b0 + 1]))
+                y_ = front(x, z)
+                return skin_y(x, z) if np.isnan(y_) or y_ > y_ft + 0.04 else y_
+            ra_ = BEZ[-1][0]
+            for j in range(nu):
+                dx_, dz_, D_ = 0.005 * ra_ * np.cos(2 * np.pi * j / nu), 0.004 * ra_ * np.sin(2 * np.pi * j / nu), 0.001
+                for _ in range(6):
+                    q_ = jw(dx_, D_, dz_)
+                    ys_ = behind(q_[0], q_[2])
+                    D_ = float(np.clip(D_ + ((ys_ if np.isfinite(ys_) else q_[1] + 0.01) + 0.0003 - q_[1]) * math.hypot(1.0, m_), 0.0005, 0.006))
+                cup[j] = D_
+            print("CLASP: jewel laid %.0f deg back on the crescent; bezel cup reaches back %.1f mm at its top, %.1f at its sides, %.1f at its bottom"
+                  % (np.degrees(np.arctan(m_)), cup[nu // 4] * 1000, 0.5 * (cup[0] + cup[nu // 2]) * 1000, cup[3 * nu // 4] * 1000))
+        bp = [jw(0.005 * ra * np.cos(2 * np.pi * j / nu), cup[j] if k_ == len(BEZ) - 1 else dy, 0.004 * ra * np.sin(2 * np.pi * j / nu))
+              for k_, (ra, dy) in enumerate(BEZ) for j in range(nu)]
         bt = [t_ for k in range(len(BEZ) - 1) for j in range(nu) for t_ in ((k * nu + j, (k + 1) * nu + (j + 1) % nu, k * nu + (j + 1) % nu),
                                                                   (k * nu + j, (k + 1) * nu + j, (k + 1) * nu + (j + 1) % nu))]
         bp, bt = np.array(bp), np.array(bt)
