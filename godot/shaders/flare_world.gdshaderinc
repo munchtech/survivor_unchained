@@ -33,7 +33,8 @@ void flare_drain(vec3 wp, inout vec3 alb, inout vec3 emi) {
 	float l = dot(alb, FL_LUM);
 	alb = mix(alb, vec3(l), 0.7 * k) * (1.0 - 0.25 * k);
 	// Burns Twice paints the world back cold first; the warmth comes with the embers.
-	float cold = flare_look.z * back * dr;
+	// (Only on the ford's frost, the reach and a little past it: by the story's camera the whole wood went blue.)
+	float cold = flare_look.z * back * dr * (1.0 - smoothstep(flare_at.w, flare_at.w + 5.0, r));
 	alb = mix(alb, vec3(l) * vec3(0.74, 0.9, 1.14), cold * 0.55);
 	emi = mix(emi, vec3(dot(emi, FL_LUM)), 0.7 * k) * (1.0 - 0.25 * k);
 }
@@ -101,7 +102,7 @@ vec3 flare_web_light(vec2 w) {
 	// A breath of glow along the line's sides keeps a hairline alive from thirty metres up.
 	float halo = (1.0 - smoothstep(0.0, 0.05, e1)) * 0.07 * seg;
 	// Brightest near her, where the light is drawn in; faint toward the reach.
-	float near = mix(1.0, 0.35, smoothstep(2.0, reach, r));
+	float near = mix(1.5, 0.4, smoothstep(2.0, reach, r));
 	return hot * (line + halo) * lit * inside * run * near * flare_web.x * 0.9;
 }
 
@@ -159,7 +160,7 @@ void flare_ground(vec3 wp, inout vec3 alb, inout float rough, inout float spec, 
 		bool black = kind > 1.5;
 		// Under the glaze the ground goes dark, as if wet.
 		alb *= 1.0 - 0.32 * ice;
-		vec3 glaze = black ? vec3(0.018, 0.024, 0.034) * (0.6 + 0.8 * cr.x) : vec3(0.2, 0.3, 0.4) * (0.42 + 0.95 * cr.x);
+		vec3 glaze = black ? vec3(0.018, 0.024, 0.034) * (0.6 + 0.8 * cr.x) : vec3(0.13, 0.2, 0.28) * (0.42 + 0.95 * cr.x); // a mid-value glaze: by day the paler one read as snow
 		float feather = black ? 0.75 : 0.3 + 0.7 * clamp(cr.x * 1.35, 0.0, 1.0);
 		alb = mix(alb, glaze, ice * feather);
 		rough = mix(rough, black ? 0.06 : mix(0.16, 0.42, cr.x), ice);
@@ -207,7 +208,7 @@ void flare_body(vec3 wp, vec3 nrm_view, mat4 inv_view, float rim, inout vec3 alb
 	vec4 p = texture(flare_plate, wp.xz * 1.3 + vec2(wp.y * 0.9, wp.y * -0.4));
 	float l = dot(alb, FL_LUM);
 	bool black = flare_look.w > 1.5;
-	vec3 ice = black ? vec3(0.02, 0.026, 0.036) : vec3(0.17, 0.27, 0.38) * (0.7 + 0.8 * clamp(l * 2.0, 0.0, 1.0));
+	vec3 ice = black ? vec3(0.02, 0.026, 0.036) : vec3(0.12, 0.19, 0.27) * (0.7 + 0.8 * clamp(l * 2.0, 0.0, 1.0));
 	// Glazed in a coat that runs thicker on what faces up; the body under it still reads through.
 	float coat = g * clamp(0.5 + 0.4 * nw.y + (p.r - 0.4) * 0.8, 0.0, 1.0);
 	alb = mix(alb, mix(alb * 0.55, ice, 0.7), coat);
@@ -223,8 +224,9 @@ void flare_blade(vec3 wp, float tip, inout vec3 alb, inout float rough, inout ve
 	float cr = texture(flare_plate, wp.xz * 0.5).r;
 	float g = flare_cover(wp.xz, flare_arrive(wp.xz), cr);
 	bool black = flare_look.w > 1.5;
-	vec3 ice = black ? vec3(0.03, 0.04, 0.05) : vec3(0.26, 0.36, 0.46);
-	alb = mix(alb, ice * (0.7 + 0.5 * tip), g * (0.35 + 0.5 * tip));
+	vec3 ice = black ? vec3(0.03, 0.04, 0.05) : vec3(0.11, 0.17, 0.24);
+	// (Leaf litter lies flat: it takes the glaze too, or it reads as orange confetti on the ice.)
+	alb = mix(alb, ice * (0.75 + 0.45 * tip), g * (0.6 + 0.3 * tip));
 	rough = mix(rough, 0.2, g);
 }
 
@@ -237,7 +239,7 @@ void flare_prop(vec3 wp, vec3 nrm_view, mat4 inv_view, inout vec3 alb, inout flo
 	vec3 p = flare_crystal(wp.xz + wp.y * 0.7);
 	float g = flare_cover(wp.xz, flare_arrive(wp.xz), p.x) * smoothstep(-0.2, 0.7, nw.y);
 	bool black = flare_look.w > 1.5;
-	vec3 ice = black ? vec3(0.02, 0.026, 0.036) : vec3(0.22, 0.32, 0.42) * (0.5 + 0.8 * p.x);
+	vec3 ice = black ? vec3(0.02, 0.026, 0.036) : vec3(0.15, 0.22, 0.3) * (0.5 + 0.8 * p.x);
 	alb = mix(alb, ice, g * (0.4 + 0.5 * p.x));
 	rough = mix(rough, 0.15, g);
 }

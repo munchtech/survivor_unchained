@@ -84,7 +84,7 @@ public partial class FlareFx
         if (embersLit < 4)
         {
             em.Lit = true;
-            em.Light = new OmniLight3D { LightColor = new Color(1f, 0.5f, 0.16f), LightEnergy = 5, OmniRange = 10, ShadowEnabled = embersLit < 2 };
+            em.Light = new OmniLight3D { LightColor = new Color(1f, 0.5f, 0.16f), LightEnergy = 0, OmniRange = 10, ShadowEnabled = embersLit < 2 };
             AddChild(em.Light);
             em.Light.GlobalPosition = em.From;
             embersLit++;
@@ -162,7 +162,11 @@ public partial class FlareFx
             if (em.Landed) continue;
             float k = Mathf.Clamp((float)((t - em.Born) / Fall), 0, 1);
             var pos = em.From.Lerp(em.Target, k);
-            if (em.Light != null) em.Light.GlobalPosition = pos + Vector3.Up * 0.3f;
+            if (em.Light != null)
+            {
+                em.Light.GlobalPosition = pos + Vector3.Up * 0.3f;
+                em.Light.LightEnergy = 5 * Mathf.SmoothStep(0.35f, 0.7f, k);
+            }
             glow.Spawn(FlareBits.Kind.Streak, pos, em.Dir * FallSpeed, 0.05f, 0.55f, new Color(1.25f, 0.62f, 0.2f));
             for (int i = 0; i < 4; i++)
             {
@@ -177,12 +181,12 @@ public partial class FlareFx
         foreach (var m in marks)
         {
             float age = (float)(t - m.W);
-            float rate = age < 0 ? 0 : 14 * Mathf.Exp(-age * 0.7f);
+            float rate = age < 0 ? 0 : 24 * Mathf.Exp(-age * 0.7f);
             for (int i = 0, n = (int)(rate * dt + R()); i < n; i++)
             {
-                var p = new Vector3(m.X + (R() - 0.5f) * m.Z, 0, m.Y + (R() - 0.5f) * m.Z);
+                var p = new Vector3(m.X + (R() - 0.5f) * m.Z * 1.4f, 0, m.Y + (R() - 0.5f) * m.Z * 1.4f);
                 p.Y = (float)HeightAt(p.X, p.Z) + 0.1f;
-                bed.Spawn(FlareBits.Kind.Puff, p, new Vector3(0.5f, 1.2f + R(), 0.15f), 2.2f + R() * 1.4f, 0.5f, new Color(0.6f, 0.63f, 0.67f, 0.32f), sizeEnd: 2.4f + R() * 1.4f, drag: 0.6f, lift: 0.4f);
+                bed.Spawn(FlareBits.Kind.Puff, p, new Vector3(0.4f, 1.6f + R(), 0.1f), 1.8f + R() * 1.4f, 0.35f, new Color(0.6f, 0.63f, 0.67f, 0.16f), sizeEnd: 1.3f + R() * 0.9f, drag: 0.5f, lift: 0.8f);
             }
         }
     }
@@ -199,16 +203,24 @@ public partial class FlareFx
         marks.Add(new Vector4(p.X, p.Z, em.Radius * (em.Last ? 1.15f : 0.9f), (float)t));
         if (marks.Count > 32) marks.RemoveAt(0);
         float big = em.Last ? 1.6f : 1;
-        // Tongues of flame jetting out and up, each turned along its way on the screen (the shader orients them).
-        for (int i = 0; i < (em.Last ? 16 : 9); i++)
+        // A fireball of churning billows thrown out and up off the ice (rays read as a firework: 13 October).
+        for (int i = 0; i < (em.Last ? 18 : 10); i++)
+        {
+            float a = R() * Mathf.Tau, out_ = R();
+            var v = new Vector3(Mathf.Cos(a) * (1.5f + 4 * out_), 1.5f + R() * 4, Mathf.Sin(a) * (1.5f + 4 * out_)) * big;
+            glow.Spawn(FlareBits.Kind.Fire, p + Vector3.Up * (0.2f + R() * 0.4f), v, 0.45f + R() * 0.35f, (0.45f + R() * 0.35f) * big, new Color(1.15f, 0.5f, 0.13f), new Color(0.8f, 0.22f, 0.04f), sizeEnd: (1.1f + R() * 0.6f) * big, drag: 4, lift: 2.5f);
+        }
+        // A few short tongues licking up out of it, turned along their way.
+        for (int i = 0; i < (em.Last ? 8 : 4); i++)
         {
             float a = R() * Mathf.Tau;
-            var v = new Vector3(Mathf.Cos(a), 1.0f + R() * 1.4f, Mathf.Sin(a)) * (4 + R() * 4) * big;
-            glow.Spawn(FlareBits.Kind.Tongue, p + Vector3.Up * 0.15f, v, 0.32f + R() * 0.2f, (0.45f + R() * 0.4f) * big, new Color(1.2f, 0.52f, 0.14f), new Color(0.7f, 0.16f, 0.03f), drag: 5);
+            var v = new Vector3(Mathf.Cos(a), 2.2f + R() * 1.5f, Mathf.Sin(a)) * (2 + R() * 2) * big;
+            glow.Spawn(FlareBits.Kind.Tongue, p + Vector3.Up * 0.2f, v, 0.3f + R() * 0.15f, (0.25f + R() * 0.2f) * big, new Color(1.15f, 0.5f, 0.14f), new Color(0.7f, 0.16f, 0.03f), drag: 4);
         }
         shards.Burst(p + Vector3.Up * 0.1f, em.Last ? 18 : 9, 7.5f * big, 0.2f, new Color(0, 0, 0, 0), 1);
-        for (int i = 0; i < 9; i++)
-            bed.Spawn(FlareBits.Kind.Puff, p + Vector3.Up * 0.3f, new Vector3((R() - 0.5f) * 6, 1.5f + R() * 2.5f, (R() - 0.5f) * 6) * big, 1.6f + R() * 1.2f, 0.7f, new Color(0.66f, 0.68f, 0.72f, 0.5f), sizeEnd: 2.8f * big, drag: 2.4f, lift: 1);
+        // Steam: many thin wisps, not a few cotton balls.
+        for (int i = 0; i < 16; i++)
+            bed.Spawn(FlareBits.Kind.Puff, p + Vector3.Up * 0.3f, new Vector3((R() - 0.5f) * 5, 2f + R() * 3f, (R() - 0.5f) * 5) * big, 1.2f + R() * 1.2f, 0.45f, new Color(0.62f, 0.65f, 0.7f, 0.22f), sizeEnd: (1.4f + R()) * big, drag: 2.4f, lift: 1.5f);
         for (int i = 0; i < 22; i++)
             glow.Spawn(FlareBits.Kind.Mote, p + Vector3.Up * 0.2f, new Vector3((R() - 0.5f) * 10, 3 + R() * 7, (R() - 0.5f) * 10) * big, 0.5f + R() * 0.5f, 0.045f, new Color(1.4f, 0.7f, 0.22f), new Color(0.6f, 0.12f, 0.02f), gravity: 9);
         for (int i = 0; i < 10; i++)

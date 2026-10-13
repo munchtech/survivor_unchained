@@ -3,7 +3,8 @@
 // size (the basis's scale), its way (INSTANCE_CUSTOM.xyz, m/s, for the streaks and the turned tongues), and
 // kind + age (INSTANCE_CUSTOM.w: the kind's whole number, the life's fraction). COLOR is its colour and alpha.
 // Kinds: 0 a glow mote, 1 a molten streak, 2 a tongue of flame, 3 a puff (steam or smoke; the mixed batch),
-// 4 a thread of light, 5 a soot fleck (mixed). The added batch's light is held under the knee by its colours;
+// 4 a thread of light, 5 a soot fleck (mixed), 6 a billow of fire (a fireball's lobe: white-gold heart, orange, a
+// deep red rim eaten by the noise, cooling as it ages and rises). The added batch's light is held under the knee by its colours;
 // the mixed batch is the dark bed under it.
 shader_type spatial;
 render_mode unshaded, cull_disabled, depth_draw_never, shadows_disabled, blend_add;
@@ -100,10 +101,20 @@ void fragment() {
 		// A thread of light rising: thin, bright along its length, fading at both ends.
 		float along = q.y * 0.5 + 0.5;
 		a = exp(-q.x * q.x * 9.0) * smoothstep(0.0, 0.4, along) * (1.0 - smoothstep(0.75, 1.0, along));
-	} else {
+	} else if (v_kind < 5.5) {
 		// A fleck of soot: a small ragged dark scrap.
 		float n = texture(flare_noise, q * 0.3 + v_seed * 9.0).b;
 		a = 1.0 - smoothstep(0.3, 0.9, length(q) + (n - 0.5) * 0.6);
+	} else {
+		// A billow of fire: a lobe of a fireball, churned by two layers of noise, its heat from the middle out.
+		vec2 uv = q * 0.5 + 0.5;
+		float n = texture(flare_noise, uv * 0.7 + v_seed * 5.0 + vec2(0.0, -TIME * 0.35)).r;
+		float n2 = texture(flare_noise, uv * 1.7 + v_seed * 3.0 + vec2(TIME * 0.2, -TIME * 0.5)).g;
+		float r = length(q) + (n - 0.5) * 0.75 + (n2 - 0.5) * 0.35;
+		float body = 1.0 - smoothstep(0.2 + 0.35 * (1.0 - v_age), 0.95, r);
+		float heat = clamp((1.0 - r) * 1.35 - v_age * 1.1 + (n2 - 0.5) * 0.4, 0.0, 1.0);
+		rgb = mix(vec3(0.35, 0.04, 0.01), mix(col.rgb, vec3(1.0, 0.8, 0.45), smoothstep(0.65, 1.0, heat)), smoothstep(0.05, 0.55, heat));
+		a = body * smoothstep(0.0, 0.25, heat + 0.1);
 	}
 	ALBEDO = rgb;
 	// (The mixed batch is lit: a puff faces the eye, rounded a little, so the fire under it lights its belly.)

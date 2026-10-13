@@ -20,10 +20,10 @@ void vertex() {
 void fragment() {
 	float rim = 1.0 - clamp(dot(NORMAL, VIEW), 0.0, 1.0);
 	float cr = texture(flare_plate, v_local.xy * 3.0 + v_local.z * 1.7).r;
-	vec3 ice = vec3(0.16, 0.27, 0.4) * (0.75 + 0.6 * cr);
+	vec3 ice = vec3(0.12, 0.2, 0.3) * (0.75 + 0.6 * cr);
 	ALBEDO = mix(ice, COLOR.rgb * 0.6, COLOR.a * 0.45);
-	ROUGHNESS = 0.08 + 0.25 * cr;
-	SPECULAR = 0.75;
+	ROUGHNESS = 0.2 + 0.25 * cr;
+	SPECULAR = 0.45;
 	METALLIC = 0.0;
 	RIM = 0.4;
 	RIM_TINT = 0.2;
