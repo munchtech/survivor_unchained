@@ -409,6 +409,278 @@ def boot(name, sd, top_s, dip, st, mkey, sole_key="darkleather", thick=0.0025, b
     return made
 
 
+# ------------------------------------------------------------ the sabaton --
+# The Warden's: plate over her foot, matching her greaves, not a shoe. On the
+# boot's shell (rings(): her foot's hull, clear of every toe), cut into steel
+# plates as an armourer makes a sabaton: an instep plate wrapped round her heel
+# as its cup, its top tucked up under the greave's foot; `lames` lames across
+# her instep, each sliding under the one behind it (its front stood out
+# `flare`, its back tucked in `tuck`, over `over`), each gold-edged along the
+# edge that shows, a gold rivet each side; a rounded toe cap under the last.
+# Under the greave, a thin dark lining runs up from under the plates to the
+# top edge (it takes her skin's weights there as the boot's shaft did), so
+# nothing opens at the ankle as she moves. Each plate is rigid on her foot
+# (one blend, stepped from her foot to her toes across the ball), so none
+# bends like leather. Under them a thin dark sole, flat (no welt, no
+# stitching, no heel block), its edge `sole_out` proud of the plates.
+# Clearances as the Ranger's (the shell is that boot's); `plate` thick,
+# `lift` off the shell (the lining's room under them), `tuck_up` up under
+# the greave's foot; the lames' front edges from `first` ahead of the
+# greave's foot (along hers, on top) to `last` ahead of her ball, leaning
+# back down her sides `lean` (degrees, the first; the last half that).
+SABATON = dict(RANGER, toe=0.013, toe_point=0.0, sink=0.002, t_fore=0.0055, heel=-0.002, t_heel=0.0055, spring=0.004,
+               plate=0.0015, lift=0.0013, tuck=0.0011, flare=0.0011, over=0.009, lames=4, tuck_up=0.012, lining=0.001,
+               first=0.032, last=0.010, lean=18.0, sole_out=0.001, gold=(0.0045, 0.0005, 0.0012), rivet=0.0024)
+
+
+def _fair(c, closed, step=0.0015, sigma=0.003):
+    """A line resampled evenly and eased (an open one keeps its ends)."""
+    if closed:
+        return G["smooth_closed"](c, sigma, step)
+    d = np.r_[0, np.cumsum(np.linalg.norm(np.diff(c, axis=0), axis=1))]
+    n = max(int(d[-1] / step), 4)
+    t = np.linspace(0, d[-1], n + 1)
+    r = np.stack([np.interp(t, d, c[:, k]) for k in range(3)], 1)
+    return gaussian_filter1d(r, max(sigma / (d[-1] / n), 0.5), axis=0, mode="nearest")
+
+
+def _runs(pos, tris, mark, least=0.02):
+    """The stretches of a sheet's edge where `mark` holds, each in order
+    along the edge (and whether it is the whole loop)."""
+    out = []
+    for loop in G["edge_loops"](tris):
+        loop = np.asarray(loop)
+        m = mark[loop]
+        if m.all():
+            out.append((pos[loop], True))
+            continue
+        if not m.any():
+            continue
+        s = int(np.argmin(m))
+        loop, m = np.roll(loop, -s), np.roll(m, -s)
+        i = 0
+        while i < len(loop):
+            if not m[i]:
+                i += 1
+                continue
+            j = i
+            while j < len(loop) and m[j]:
+                j += 1
+            seg = pos[loop[max(i - 1, 0):min(j + 1, len(loop))]]
+            if np.linalg.norm(np.diff(seg, axis=0), axis=1).sum() >= least:
+                out.append((seg, False))
+            i = j
+    return out
+
+
+def _bead(name, c, closed, pp, tt, w, key, gold, thick):
+    """A gold rolled edge along a line of a plate (its sheet pp, tt)."""
+    g = G
+    c = _fair(c, closed)
+    tree = cKDTree(pp)
+    _, j = tree.query(c)
+    nr = g["vertex_normals"](pp, tt)[j]
+    nr = gaussian_filter1d(nr, 3, axis=0, mode="wrap" if closed else "nearest")
+    tg = (np.roll(c, -1, 0) - np.roll(c, 1, 0)) if closed else np.gradient(c, axis=0)
+    tg /= np.linalg.norm(tg, axis=1)[:, None] + 1e-12
+    nr = nr - tg * (nr * tg).sum(1)[:, None]
+    nr /= np.linalg.norm(nr, axis=1)[:, None] + 1e-12
+    ow = np.cross(tg, nr)
+    ow /= np.linalg.norm(ow, axis=1)[:, None] + 1e-12
+    near = pp[tree.query(c, k=12)[1]].mean(1)
+    if ((near - c) * ow).sum(1).mean() > 0:
+        ow = -ow
+    width, height, over = gold
+    return g["tube"](name, c, nr, ow, key, width, height, over, thick, pp, w, closed=closed, nv=10)
+
+
+def sabaton(name, sd, top_s, dip, st, mkey, trim="gold", studs="gold", lining="darkleather", sole_key="darkleather",
+            under=None, bevel=0.0006):
+    """The Warden's sabaton (SABATON above): its lining, plates, their gold
+    edges and rivets, and its sole. `under`, the piece (its sheet in SHEET)
+    whose foot its top tucks up under: nothing of it comes within a hair of
+    that piece's inside there."""
+    g = G
+    leg = Leg(sd)
+    za, yb = leg.ankle[2], leg.ball_yf
+    zt, tc = top_heights(leg, top_s, dip)
+    sole = Sole(leg, st)
+
+    def fit(zs, H, Hs):
+        t = 1 - ramp(zt[None, :] - zs[:, None], 0.015, 0.06)
+        return Hs * (1 - t) + np.minimum(Hs, H + st["c_top"]) * t
+    zr, R, Hr, Ir = rings(leg, st, zt.max() + 0.015, top_s - 0.06, fit=fit)
+    pos, tris = grid(zr, R)
+    lo = sole.w(pos) - 0.0025          # (every plate runs 2.5 mm down into the sole)
+    pos, _, tris = g["clip"](np.minimum(at_angle(zt, tc, pos) - pos[:, 2], pos[:, 2] - lo), pos, np.zeros((len(pos), 1)), tris)
+    pos, _, tris = g["weld"](pos, np.zeros((len(pos), 1)), tris)
+    nrm = g["vertex_normals"](pos, tris)
+    z, yf = pos[:, 2], leg.yf(pos)
+    xo = (pos[:, :2] - leg.ankle[:2]) @ leg.out
+    t_, p0, a_, b_, ov = st["plate"], st["lift"], st["tuck"], st["flare"], st["over"]
+
+    # Where the greave's foot is: each point's way up under it (s, metres
+    # past its edge, negative below it), and how far out its inside is.
+    s = np.full(len(pos), -1.0)
+    room = np.full(len(pos), np.inf)
+    y_g = 0.02
+    if under is not None and under in g["SHEET"]:
+        gp, gt = g["SHEET"][under][0], g["SHEET"][under][1]
+        loops = g["edge_loops"](gt)
+        foot = gp[np.asarray(min(loops, key=lambda L: gp[np.asarray(L), 2].mean()))]
+        bvh = g["BVHTree"].FromPolygons([tuple(p) for p in gp], gt.tolist())
+        V = g["Vector"]
+        for i in range(len(pos)):
+            hit = bvh.ray_cast(V(pos[i]), V(nrm[i]), 0.03)
+            if hit[0] is not None:
+                room[i] = hit[3]
+            else:
+                q = bvh.find_nearest(V(pos[i]), 0.008)
+                if q[0] is not None and (np.array(q[0][:]) - pos[i]) @ nrm[i] > 0:
+                    room[i] = (np.array(q[0][:]) - pos[i]) @ nrm[i]
+        d_e = cKDTree(foot).query(pos)[0]
+        covered = np.isfinite(room) & (room < 0.03)
+        s = np.where(covered, d_e, -d_e)
+        top = foot[np.abs((foot[:, :2] - leg.ankle[:2]) @ leg.out) < 0.01]
+        y_g = float(leg.yf(top).max()) if len(top) else 0.02
+    # Room under it: the plates (and the bead on their top edge) and the
+    # lining kept 1.2 mm inside its inside; where they would not be, the
+    # shell is drawn in (eased over the sheet; her skin there is not drawn).
+    need = np.where(s < st["tuck_up"] + 0.003, p0 + t_ + 0.0005, st["lining"])
+    shift = np.minimum(0.0, room - 0.0012 - need)
+    A = g["adjacency"](len(pos), tris)
+    deg = np.maximum(np.asarray(A.sum(1)).ravel(), 1)
+    sh = shift.copy()
+    for _ in range(12):
+        sh = np.minimum(shift, (A @ sh) / deg)
+    shift = sh
+    pos = pos + nrm * shift[:, None]
+
+    # The plates' front edges: planes across her foot, leaning back down her
+    # sides, through her instep's top.
+    n = st["lames"]
+    e = np.linspace(y_g + st["first"], yb + st["last"], n + 1)
+    mid = np.abs(xo) < 0.012
+    planes = []
+    for k, ek in enumerate(e):
+        m = mid & (np.abs(yf - ek) < 0.003)
+        ztop = float(z[m].max()) if m.any() else float(np.interp(ek, [y_g, yb], [za - 0.02, 0.045]))
+        ph = np.radians(st["lean"] * (1 - 0.5 * k / max(n, 1)))
+        planes.append((ek, ztop, ph))
+
+    def d(k, p):
+        ek, ztop, ph = planes[k]
+        return (leg.yf(p) - ek) * np.cos(ph) - (p[:, 2] - ztop) * np.sin(ph)
+    D = [d(k, pos) for k in range(n + 1)]
+
+    foot_i, ball_i = g["BONES"].index(f"foot_{sd}"), g["BONES"].index(f"ball_{sd}")
+
+    def blend(wb):
+        w = np.zeros((1, len(g["BONES"])))
+        w[0, foot_i], w[0, ball_i] = 1 - wb, wb
+        return w
+
+    made = []
+    hiders = []
+    # The lining: from `over` under the plates' top up to the top edge, her
+    # skin's weights above her ankle as the boot's shaft, rigid below.
+    keep = s - (st["tuck_up"] - 0.012)
+    lp, la, lt = g["clip"](keep, pos, np.c_[nrm], tris)
+    if len(lt):
+        lp, la, lt = g["weld"](lp, la, lt)
+        kr = 1 - ramp(lp[:, 2], za - 0.035, za - 0.005)
+        lw = skin_weights(sd, lp) * (1 - kr)[:, None] + rigid(leg, lp) * kr[:, None]
+        lw = g["four_bones"](g["eased_weights"](lp, lt, lw, over=0.012))
+        o = g["finish"](name + "_lining", lp, lw, lt, lining, st["lining"], 0.0003, 10 ** 7)
+        made.append(o)
+        hiders.append(o)
+
+    # The plates: 0 the instep plate (round her heel), 1..n the lames, n+1
+    # the toe cap.
+    sheets = []
+    for k in range(n + 2):
+        keep = np.full(len(pos), 1.0)
+        off = np.full(len(pos), p0)
+        if k == 0:
+            keep = np.minimum(keep, st["tuck_up"] - s)
+        if k >= 1:
+            keep = np.minimum(keep, D[k - 1] + ov)
+            off -= a_ * (1 - ramp(D[k - 1], 0.0, 0.004))
+        if k <= n:
+            keep = np.minimum(keep, -D[k])
+            off += b_ * ramp(D[k], -ov - 0.004, -ov)
+        pp, aa, tt = g["clip"](keep, pos, np.c_[nrm, off, D[min(k, n)], s], tris)
+        if not len(tt):
+            continue
+        pp, aa, tt = g["weld"](pp, aa, tt)
+        nn = aa[:, :3] / (np.linalg.norm(aa[:, :3], axis=1)[:, None] + 1e-12)
+        pp = pp + nn * aa[:, 3:4]
+        # (its blend: from her foot to her toes across the ball, by where it shows)
+        yc = (y_g if k == 0 else e[k - 1]) * 0.5 + (e[k] if k <= n else leg.toe_yf) * 0.5
+        wb = float(ramp(yc, yb - 0.015, yb + 0.015))
+        w = np.repeat(blend(wb), len(pp), 0)
+        nm = f"{name}_plate{k}" if k <= n else f"{name}_toe"
+        if k == 0:
+            nm = f"{name}_instep"
+        o = g["finish"](nm, pp, w, tt, mkey, t_, bevel, 10 ** 7)
+        made.append(o)
+        hiders.append(o)
+        sheets.append((k, nm, pp, tt, w, aa))
+        print("SABATON %s: plate %d, %d points, blend to her toes %.2f" % (nm, k, len(pp), wb))
+
+    # Gold along each edge that shows: the front of each plate but the toe
+    # cap, and the instep plate's top, under the greave; never along the sole.
+    for k, nm, pp, tt, w, aa in sheets:
+        zb_ = sole.w(pp) + 0.0008
+        mark = pp[:, 2] > zb_
+        if k <= n:
+            front = aa[:, 4] > -0.0012
+        else:
+            front = np.zeros(len(pp), bool)
+        top = (aa[:, 5] > st["tuck_up"] - 0.0015) if k == 0 else np.zeros(len(pp), bool)
+        for j, (c, closed) in enumerate(_runs(pp, tt, mark & (front | top))):
+            made.append(_bead(f"{nm}_gold{j}" if j else f"{nm}_gold", c, closed, pp, tt, w, trim, st["gold"], t_))
+        # A rivet each side, halfway along what shows, 11 mm up from the sole.
+        if k <= n:
+            dm = aa[:, 4] + (0.5 * (e[k] - (e[k - 1] if k else y_g)) if k else 0.012)
+            zr_ = sole.w(pp) + 0.011
+            cand = np.where((np.abs(dm) < 0.004) & (np.abs(pp[:, 2] - zr_) < 0.003))[0]
+            if len(cand):
+                xs = (pp[cand, :2] - leg.ankle[:2]) @ leg.out
+                pick = [cand[np.argmax(xs)], cand[np.argmin(xs)]]
+                vn = g["vertex_normals"](pp, tt)
+                made += g["rivets"](nm, pp, None, tt, t_, studs, r=st["rivet"],
+                                    spots=(pp[pick], vn[pick], w[pick]))
+
+    # The sole: thin and flat under her, its edge proud of the plates.
+    k0 = int(np.argmin(np.abs(zr - 0.012)))
+    reach = p0 + b_ + t_ + st["sole_out"]
+    O = ring(outline(Hr[k0] + reach, Ir[k0]), -leg.f, 220)
+    on, _ = rim(O)
+    c = O.mean(0)
+    bev = 0.0008
+    loops = [np.c_[q, sole.b(q)] for q in (c + (O - on * bev - c) * s_ for s_ in np.linspace(0.1, 0.92, 9))]
+    loops += [np.c_[O - on * bev, sole.b(O)], np.c_[O, sole.b(O) + bev], np.c_[O, sole.w(O) - bev * 0.6],
+              np.c_[O - on * bev * 0.6, sole.w(O)]]
+    loops += [np.c_[q, sole.w(q)] for q in (c + (O - on * bev - c) * s_ for s_ in np.linspace(0.92, 0.1, 5))]
+    spos, stris = loft(loops, np.r_[c, sole.b(c[None])[0]], np.r_[c, sole.w(c[None])[0]])
+    o = g["finish"](name + "_sole", spos, rigid(leg, spos), stris, sole_key, 0.0, 0.0, 10 ** 7)
+    made.append(o)
+    hiders.append(o)
+    for o in made:
+        o["hides"] = o in hiders
+        if o["hides"]:
+            o["deep_zt"] = [float(v) for v in zt]
+            o["deep_c"] = [float(v) for v in tc]
+            o["deep_side"] = sd
+    print("SABATON %s: greave's foot %.1f cm ahead of her ankle on top; front edges at %s cm; lean %s deg; "
+          "shell drawn in under the greave at %d points, up to %.1f mm; sole edge %.1f mm out, top %.1f mm up"
+          % (name, 100 * y_g, ", ".join("%.1f" % (100 * v) for v in e),
+             ", ".join("%.0f" % np.degrees(p[2]) for p in planes), int((shift < -1e-5).sum()), -1000 * shift.min(),
+             1000 * reach, 1000 * float(sole.zw.mean())))
+    return made
+
+
 # ------------------------------------------------------------ still to come --
 #  - creases as outward ridges (ankle stacking, toe break), back seam tube +
 #    stitches, toe cap and heel counter overlays; the top edge bound;

@@ -3675,8 +3675,9 @@ def warden():
             # welted sole and heel, its top under the greave: laid on her foot it
             # showed each toe in steel, animation's judge 49, and laid on her
             # foot's hull the toes still showed as creases; cut 3.5 cm lower behind,
-            # its back came through the greave over her heel)
-            *BOOTS.boot(f"warden.sabaton_{sd}", sd, ANKLE_S - 0.06, 0.035, BOOTS.RANGER, "darksteel"),
+            # its back came through the greave over her heel; judge h, still a patent loafer:
+            # now plate, heroine_boots.sabaton: the greave's steel, gold-edged lames, rivets, toe cap, heel cup)
+            *BOOTS.sabaton(f"warden.sabaton_{sd}", sd, ANKLE_S - 0.06, 0.035, BOOTS.SABATON, "steel", under=f"warden.greave_{sd}"),
         ]
     return out
 
