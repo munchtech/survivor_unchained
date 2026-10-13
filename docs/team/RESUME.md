@@ -2,6 +2,13 @@
 
 The one page of what's current. Every lead starts from the latest `claude/vigilant-galileo-l6jqyx`. Merge it first and keep your own workflow; this page says what has changed around you. Updated by the main session, 5 October 2026.
 
+## 13 October, early: coordinator 33ad5b17 at its limit; wound down for a fresh coordinator. Restart here
+- **Merged since the last block:** classes 6d9a123c (arena phase cut, Banked Flame H; worktree removed); animation 0a37947d (shield mounted on the back of the forearm, Warden idle passed judges 47-49 with arm 8 deg out and thumb closed, armscheck with HerJoints' hinge and `--outfit`; 77 of 81 clips better, 2 Reaver clips worse but carry no shield). 851 tests. Owner shown the Warden idle (j47/owner).
+- **Restart order (on "go"):** face (ship blockers, handoff on its branch), outfits (clasp D2 build, gold floor, leotard tuck check, Ranger boot, Arcanist flat run, glove judge), animation (idle_warden_break 47 mm to a solver, then bull_rush 74, sword_heavy 48, sprint 42; sheathing plan in its handoff waits for the coordinator's OK), then hero (held by the owner until face and outfits ship), classes (phase-6 plan to a judge; owner question on Act 1 Flare cut).
+- **Animation worktree** agent-af8dbda3195e438e4 is merged but locked: unlock and remove with wt_remove.ps1, or reuse it for the next animation lead.
+- **Not animation's, from judge 49:** purple greave speckle onto her toes, an orange spot on each cup, a pale sliver on the right of her neck (outfits and face).
+- **Stopped (filled in as each lead stops):**
+
 ## 12 October, late night: coordinator 33ad5b17 state (keep current; restart here)
 - **Merged today:** animation's three signed-off clips (dd541c17: reach_coals, lie_side_wake, sit_back_heels; C01 notes in docs/team/cinematics.md); the close-up camera (d31fefa6: wheel in town, idle close-up; worktree removed). 844 tests.
 - **Owner priority:** face and outfits first; hero HELD; animation works the shield (owner: shield through her body, idle wrists, weapons sheathed in town; hook `CloseUp.Situation`).
