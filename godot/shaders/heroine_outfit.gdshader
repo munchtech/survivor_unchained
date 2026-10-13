@@ -32,7 +32,7 @@ uniform float view_pull = 0.0;                     // metres drawn toward the ca
 uniform bool test_flat = false;                  // (the legal motion check: every garment flat grey, coverage unchanged)
 uniform float gold_gloss = 0.0;                   // (0 = as before; 1 = gold's roughness drawn to gold_rough: crisper, brighter highlights, tint and albedo untouched)
 uniform float gold_rough = 0.2;
-uniform float gold_floor = 0.0;                   // (0 = as before; gold's own colour added as a dim emission, less in crevices, so it never goes black at night)
+uniform float gold_floor = 0.08;                  // (gold's own colour added as a dim emission, less in crevices, so it never goes black at night; 0.08 by judge g4: warm gold at night, no change by day, 0.15 turned shadowed trim to flat tan)
 uniform int debug_view = 0;                        // (1 edge distance, 2 convexity, 3 sky seen: to check what was baked; 4 gold flat magenta, a mask for measuring it)
 
 varying vec4 det;                                  // (edge distance m, convexity 0..1, sky seen, piece)

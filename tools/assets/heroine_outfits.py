@@ -2542,7 +2542,7 @@ def piece(name, field, mkey, lift=0.003, thick=0.003, smooth=0, bevel=0.0012, tr
 
 
 HOLD_OFF, HOLD_FULL, HOLD_SLOPE = (float(v) for v in os.environ.get("HOLD", "0.001,0.012,0.25").split(","))
-HOLD_BAND, HOLD_GROOVE, HOLD_SOFT = (float(v) for v in os.environ.get("HOLD_TUCK", "0.05,0.0015,0.010").split(","))
+HOLD_BAND, HOLD_GROOVE, HOLD_SOFT = (float(v) for v in os.environ.get("HOLD_TUCK", "0.05,0.0015,0.030").split(","))
 RBOOT_GONE = float(os.environ.get("RBOOT_GONE", "0.005"))
 
 
@@ -3658,9 +3658,11 @@ def warden():
             *piece(f"warden.vambrace_{sd}", limb(sd, ELBOW_S + 0.05, WRIST_S - 0.01, legs=False), "steel", lift=0.006, smooth=8, trim=gold(), studs="gold"),
             *piece(f"warden.greave_{sd}", limb(sd, KNEE_S + 0.03, ANKLE_S + 0.01, front_dip=0.04), "steel", lift=0.008, smooth=12, trim=gold(), studs="gold"),
             *piece(f"warden.knee_{sd}", cap(LEG[sd][1] + np.array([0, -0.06, 0]), 0.06), "steel", lift=0.016, thick=0.004, smooth=12, trim=gold(0.006)),
-            # (the sabaton on her foot's convex hull like the other boots: laid on
-            # her foot it showed each toe in steel, animation's judge 49)
-            *piece(f"warden.sabaton_{sd}", limb(sd, ANKLE_S - 0.02, 9.9), "darksteel", lift=0.005, smooth=6, iron=300, hull=LEG_S[sd] - ANKLE_S - 0.03),
+            # (the sabaton a made shoe, lofted as the Ranger's boot is, toe box,
+            # welted sole and heel, its top under the greave: laid on her foot it
+            # showed each toe in steel, animation's judge 49, and laid on her
+            # foot's hull the toes still showed as creases)
+            *BOOTS.boot(f"warden.sabaton_{sd}", sd, ANKLE_S - 0.02, 0.0, BOOTS.RANGER, "darksteel"),
         ]
     return out
 
@@ -6050,10 +6052,12 @@ if BODY_OUT:
             lim = np.ones(len(dl))
             np.minimum.at(lim, nb.row[m_], HOLD_GROOVE / 0.010 / np.maximum(u_, 1e-3))
             before = vals[und, k].copy()
-            # (eased in: a full tuck only from HOLD_SOFT inside the edge, as deep
-            # as it is far in nearer it; tucked all the way right up to the edge,
-            # her skin showed as cyan slivers and a sawtooth along the leg line
-            # as the cloth lifted in chain_haul, daggers_fore and the vaults)
+            # (eased in: a full tuck only from HOLD_SOFT inside the edge, a
+            # depth of a third of the way in nearer it at 30 mm; tucked all the way
+            # right up to the edge, her skin showed as cyan slivers and a sawtooth
+            # along the leg line as the cloth lifted in chain_haul, daggers_fore and
+            # the vaults, and eased over 10 mm it changed nothing, her rows there
+            # being 4-20 mm apart)
             soft = np.clip(dl / HOLD_SOFT, 0.0, 1.0) if HOLD_SOFT > 0 else np.ones(len(dl))
             vals[und, k] = np.maximum(vals[und, k], np.minimum(soft[und], lim[und]))
             print("HOLD TUCK %s: %d vertices of hers under it within %.0f mm of its held edge; marks %.2f -> %.2f (mean), %d at the edge row limited (mean %.2f)"
@@ -6098,8 +6102,8 @@ if BODY_OUT:
                 vals[gone, k] = 1.0
                 print("HIDES arcanist glove_%s: her hand inside not drawn, %d vertices, from %.3f m down her arm (the cuff at %.3f, her wrist at %.3f); %d there unmarked, drawn"
                       % (sd, gone.sum(), cuff + GONE_IN, cuff, WRIST_S, (inside & ~gone).sum()))
-        if name == "ranger":
-            # (her foot inside each Ranger boot not drawn, from RBOOT_GONE under her
+        if name in ("ranger", "warden"):
+            # (her foot inside each Ranger boot and Warden sabaton not drawn, from RBOOT_GONE under her
             # ankle down, where the boot rides her foot rigidly: her heel skin carries
             # calf weight and swung 43-51 mm against the rigid heel counter, out
             # through it in run_stalker; the shaft above keeps the tuck, so a look
@@ -6109,8 +6113,8 @@ if BODY_OUT:
                 foot = (LEGW[sd][jj] > 0.5) & (P[jj, 2] < za - RBOOT_GONE)
                 gone = foot & (vals[:, k] > 0)
                 vals[gone, k] = 1.0
-                print("HIDES ranger boot_%s: her foot inside not drawn, %d vertices under %.3f m (ankle %.3f); %d there unmarked, drawn"
-                      % (sd, gone.sum(), za - RBOOT_GONE, za, (foot & ~gone).sum()))
+                print("HIDES %s boot_%s: her foot inside not drawn, %d vertices under %.3f m (ankle %.3f); %d there unmarked, drawn"
+                      % (name, sd, gone.sum(), za - RBOOT_GONE, za, (foot & ~gone).sum()))
         print("HIDES", name, hid, "of", len(me.vertices), "vertices of her skin")
     col.data.foreach_set("color", vals.ravel())
     # Each outfit's coverage at rest, her skin tucked as the game draws it
