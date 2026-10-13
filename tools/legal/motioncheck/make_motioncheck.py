@@ -17,7 +17,9 @@ what a player can see). It adds to lookdev:
   blackened with 0.5 emission): sRGB 188 in all channels, which decodes to no code, so no
   garment colour can pass for a skin code. Alpha, discards and vertices are untouched, so
   coverage is as in play. Logs "FLAT grey: N materials"; count.py then asserts that stray() and
-  the binding filter drop nothing. Her skin and hair are untouched. Pictures with MARKS and no OUTFIT, or with
+  the binding filter drop nothing. Her hair is untouched; her uncoded skin
+  is drawn flat warm grey (emission 0.5, 0.45, 0.42 linear, marks_section.py), so no highlight is left
+  anywhere; the coded skin and the tuck are as before. Pictures with MARKS and no OUTFIT, or with
   LEGALBARE, show her bare: keep them out of the repo and never publish them.
     python make_motioncheck.py <out.gd>      (run.sh does this into its own output folder)
 Written as UTF-8 without a byte-order mark (Godot refuses a BOM in GDScript)."""
