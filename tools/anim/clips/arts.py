@@ -26,6 +26,8 @@ from __future__ import annotations
 
 import math
 
+import numpy as np
+
 from dataclasses import replace
 
 from clips.actions import arm, body
@@ -169,9 +171,31 @@ def _sword_cocked(ph, k, hand):
             "blade": _n(-0.2, -0.45, -0.85), "twist": 0.5}
 
 
+def _shield_rush(ph, k, hand):
+    """The shield out before her left shoulder, its face to the front: the
+    upper arm down, out and forward, the forearm up across before the
+    shoulder. The shield rides the forearm's back on its hinge (the game
+    hands the forearm's roll to the hand), so its face is set by the plane
+    of shoulder, elbow and wrist, never by a twist: that plane faces up and
+    out from her chest, which her lean and the turned shoulder make the
+    front, and keeps the disc off her breasts, neck and head."""
+    bounce = 0.012 * math.cos(4 * math.pi * ph)
+    return {"arc": arc_of(RUSH_HAND + (0.0, bounce, 0.0)), "pole": RUSH_POLE, "frame": "chest",
+            "thumb": (-0.3, 0.6, 0.75)}
+
+
+RUSH_HAND = np.array((0.0, 0.03, 0.34))
+RUSH_POLE = (2.0, -2.3, 0.2)
 CHARGE = replace(WARDEN, frames=12, speed=4.4, duty=0.3, drop=0.13, bob=0.06, lean=50, spine_lean=8, hip_yaw=8,
                  hip_roll=3, chest_yaw=4, reach=0.44, kick=0.46, knee=0.40, shoulders=(8, 8),
-                 arms={"l": _shield_charge, "r": _sword_cocked})
+                 arms={"l": _shield_rush, "r": _sword_cocked})
+RUSH_TURN = (-8, -22, 26)   # hips, spine yaw (the left shoulder leading), head yaw back to the front
+
+
+def _shield_home(lift=0.0):
+    """The rebound's shield: up before her, out and forward of guard_l."""
+    return {"arc": arc_of((-0.01, -0.22 + lift, 0.31)), "pole": (1.0, -0.4, -0.3), "frame": "chest",
+            "thumb": (-0.3, 0.75, 0.6)}
 
 
 def bull_rush(rig):
@@ -180,9 +204,11 @@ def bull_rush(rig):
         pose = pose_at(CHARGE, rig, (f / 12 + 0.25) % 1.0)
         # The left shoulder driving: the chest turned to lead with it, the
         # head down behind the shield's rim.
+        hr = pose["hips"]["rot"]
+        pose["hips"]["rot"] = (hr[0] + RUSH_TURN[0], hr[1], hr[2])
         sp = pose["spine"]
-        pose["spine"] = (sp[0] - 16, sp[1], sp[2])
-        pose["head"] = (pose["head"][0] + 12, pose["head"][1] - 4, 0)
+        pose["spine"] = (sp[0] + RUSH_TURN[1], sp[1], sp[2])
+        pose["head"] = (pose["head"][0] + RUSH_TURN[2], pose["head"][1] + 2, 0)
         keys.append((f, pose, "linear"))
     shove_l = {"arc": arc_of((-0.10, 0.02, 0.44)), "pole": (1.0, -0.2, -0.3), "frame": "chest",
                "blade": _n(-0.1, 0.85, 0.5), "twist": 0.3}
@@ -206,12 +232,14 @@ def bull_rush(rig):
         # The rebound: back up over her feet, shield home, sword raised.
         (19, body({"foot_l": {"pos": (0.13, 0.0, 0.38), "rot": (12, 0, 0)},
                    "foot_r": {"pos": (-0.16, 0.0, -0.24), "rot": (-22, 0, 0)},
-                   "hips": {"pos": (0.0, -0.12, 0.04)}, "hand_l": guard_l(0.06),
+                   "hips": {"pos": (0.0, -0.12, 0.04)}, "hand_l": _shield_home(0.04),
                    "hand_r": {"arc": arc_of((-0.08, -0.22, 0.12)), "pole": (-0.6, -0.3, -0.6), "frame": "chest",
                               "blade": _n(-0.25, 0.7, 0.65), "twist": 0.5},
                    "fingers_l": "fist", "fingers_r": "grip"},
                   hips=(-6, 6, 0), spine=(-8, 2, 0), neck=(0, -2, 0), head=(8, -4, 0)), "auto"),
-        (30, GUARD, "ease"),
+        # Her guard, the shield held a hand further out before her than the
+        # sword clips' (their guard_l rests its rim on her breastplate).
+        (30, {**GUARD, "hand_l": _shield_home()}, "ease"),
     ]
     return build("bull_rush", rig, keys, meta={"layer": "full", "weapon": "sword+shield", "note": "keyed: 0.4 s shield charge, then the plant and shove"})
 
