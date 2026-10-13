@@ -59,11 +59,12 @@ public sealed partial class Battle
     int FlareHitstop(FlareDef f, bool last, string key = "hitstop") =>
         (int)(last ? f.BeatAt("hitstopLast", f.BeatAt(key, 0)) : f.BeatAt(key, 0));
 
-    void FlareBlowEvent(FlareDef f, string part, bool last, double tx, double tz, Enemy? target, double radius, string stop = "hitstop") =>
+    void FlareBlowEvent(FlareDef f, string part, bool last, double tx, double tz, Enemy? target, double radius, string stop = "hitstop", int? hitstop = null) =>
         Events.Emit(new Ev.Flare
         {
             Phase = FlarePhase.Blow, Id = f.Id, X = Player.X, Z = Player.Z, Radius = radius, Blow = flareBlow, Clutch = flareClutch,
-            Stand = f.Kind == FlareKind.Stand, Part = part, Last = last, TX = tx, TZ = tz, Target = target?.Id ?? 0, Hitstop = FlareHitstop(f, last, stop),
+            Stand = f.Kind == FlareKind.Stand, Part = part, Last = last, TX = tx, TZ = tz, Target = target?.Id ?? 0,
+            Hitstop = hitstop ?? FlareHitstop(f, last, stop),
         });
 
     /// <summary>The Flare's reach grew (the clutch, Bright Hour, the long night): its parts grow with it.</summary>
@@ -111,6 +112,8 @@ public sealed partial class Battle
     /* ----------------------------------------------------------- Burns Twice -- */
 
     readonly List<(double X, double Z)> emberFell = new();
+    /// <summary>Each ember's aim (where it will fall, and on whom; -1 none), taken "aim" seconds before it lands.</summary>
+    readonly List<(double X, double Z, int Target)> emberAims = new();
     /// <summary>Called Down's target (an enemy id; -1 none).</summary>
     int calledDown = -1;
 
@@ -120,29 +123,34 @@ public sealed partial class Battle
         .OrderByDescending(e => e.Boss).ThenByDescending(e => e.Elite).ThenByDescending(e => e.Status.Has(StatusKind.Frozen)).ThenByDescending(e => e.Hp)
         .FirstOrDefault();
 
-    /// <summary>The frost (everything in reach frozen, a boss chilled), then each ember: it falls on the thickest
-    /// frozen pack not yet struck (every few on a boss), shatters what is frozen round it, and burns.</summary>
-    void BurnsTwiceBlow(FlareDef f, bool last)
+    /// <summary>The aims' times: "aim" (beat) before each ember lands, never before the frost (they aim at what it froze),
+    /// so the view drops each ember out of the sky in time to land on its blow. Only Burns Twice aims today.</summary>
+    double[] FlareAimSchedule(FlareDef f)
+    {
+        if (!f.Staged || f.Id != "burns_twice" || !f.Beat.TryGetValue("aim", out double lead) || lead <= 0) return [];
+        bool frosts = f.Beat.TryGetValue("frost", out double frost);
+        return flareAt.Skip(frosts ? 1 : 0).Select(t => Math.Max(frosts ? frost : 0, t - lead)).ToArray();
+    }
+
+    /// <summary>One aim: where the next ember will fall, chosen now (an Ev.Flare Blow, Part "aim", no hitstop).</summary>
+    void FlareAim()
+    {
+        var f = Flare!;
+        flareAim++;
+        if (f.Id != "burns_twice") return;
+        int embers = flareAimAt.Length;
+        double r = f.Arg("emberRadius", 2.5) * FlareGrow(f);
+        var (tx, tz, target) = EmberPick(f, flareAim, embers, r);
+        emberFell.Add((tx, tz));
+        emberAims.Add((tx, tz, target?.Id ?? -1));
+        FlareBlowEvent(f, "aim", flareAim == embers, tx, tz, target, r, hitstop: 0);
+    }
+
+    /// <summary>Where an ember falls: on the boss when it is one of the boss's own (four of twelve, evenly), on Called
+    /// Down's target, else on the thickest frozen pack not yet struck or aimed at; with nothing near, on open ground.</summary>
+    (double X, double Z, Enemy? Target) EmberPick(FlareDef f, int ember, int embers, double r)
     {
         var p = Player;
-        if (flareBlow == 1 && f.Beat.ContainsKey("frost"))
-        {
-            emberFell.Clear();
-            ForEachHostileInRadius(p.X, p.Z, flareReach, (e, d) =>
-            {
-                FlareHit(e, f.Arg("frost", 0.3), School.Frost, 0, p.X, p.Z);
-                if (!e.Alive || e.State == EnemyState.Dying) return;
-                if (e.Boss) ApplyStatus(e, new StatusPayload(StatusKind.Chill, 1, 1, f.Arg("chill", 3)), 0);
-                else Freeze(e, f.Arg("freeze", 2));
-            });
-            calledDown = FlareMod("burns.called_down")
-                ? CalledDownPick(HostilesInRadius(p.X, p.Z, flareReach).Where(e => e.Alive && e.State != EnemyState.Dying).ToList())?.Id ?? -1 : -1;
-            // The first impact lands harder than an ember (hitstopFrost, 3 frames).
-            FlareBlowEvent(f, "frost", false, p.X, p.Z, null, flareReach, f.Beat.ContainsKey("hitstopFrost") ? "hitstopFrost" : "hitstop");
-            return;
-        }
-        int embers = flareAt.Length - (f.Beat.ContainsKey("frost") ? 1 : 0), ember = flareBlow - (flareAt.Length - embers);
-        double r = f.Arg("emberRadius", 2.5) * FlareGrow(f);
         var near = HostilesInRadius(p.X, p.Z, flareReach).Where(e => e.Alive && e.State != EnemyState.Dying).ToList();
         // A boss it can't hurt now (shut, or pinned at its gate with its Break full) is passed over.
         var boss = near.Where(e => e.Boss && FlareCanHurt(e)).OrderByDescending(e => e.Hp).FirstOrDefault();
@@ -169,8 +177,51 @@ public sealed partial class Battle
                 ?? near.Where(e => !e.Boss).OrderByDescending(e => near.Count(o => Dist(o.X, o.Z, e.X, e.Z) < r)).FirstOrDefault();
             // Nothing else near: it falls on open ground round her, and a lone boss still takes only its four.
         }
-        double tx = target?.X ?? p.X + Math.Cos(ember * 2.4) * flareReach * 0.5, tz = target?.Z ?? p.Z + Math.Sin(ember * 2.4) * flareReach * 0.5;
-        emberFell.Add((tx, tz));
+        return (target?.X ?? p.X + Math.Cos(ember * 2.4) * flareReach * 0.5, target?.Z ?? p.Z + Math.Sin(ember * 2.4) * flareReach * 0.5, target);
+    }
+
+    /// <summary>The frost (everything in reach frozen, a boss chilled), then each ember: it lands where it was aimed (on
+    /// its target where that has stepped, while it stands), shatters what is frozen round it, and burns. The last is
+    /// the BOOM: what still stands in reach is thrown back from it and staggered.</summary>
+    void BurnsTwiceBlow(FlareDef f, bool last)
+    {
+        var p = Player;
+        if (flareBlow == 1 && f.Beat.ContainsKey("frost"))
+        {
+            emberFell.Clear();
+            emberAims.Clear();
+            ForEachHostileInRadius(p.X, p.Z, flareReach, (e, d) =>
+            {
+                FlareHit(e, f.Arg("frost", 0.3), School.Frost, 0, p.X, p.Z);
+                if (!e.Alive || e.State == EnemyState.Dying) return;
+                if (e.Boss) ApplyStatus(e, new StatusPayload(StatusKind.Chill, 1, 1, f.Arg("chill", 3)), 0);
+                else Freeze(e, f.Arg("freeze", 2));
+            });
+            calledDown = FlareMod("burns.called_down")
+                ? CalledDownPick(HostilesInRadius(p.X, p.Z, flareReach).Where(e => e.Alive && e.State != EnemyState.Dying).ToList())?.Id ?? -1 : -1;
+            // The first impact lands harder than an ember (hitstopFrost, 3 frames).
+            FlareBlowEvent(f, "frost", false, p.X, p.Z, null, flareReach, f.Beat.ContainsKey("hitstopFrost") ? "hitstopFrost" : "hitstop");
+            return;
+        }
+        int embers = flareAt.Length - (f.Beat.ContainsKey("frost") ? 1 : 0), ember = flareBlow - (flareAt.Length - embers);
+        double r = f.Arg("emberRadius", 2.5) * FlareGrow(f);
+        double tx, tz;
+        Enemy? target;
+        if (ember - 1 < emberAims.Count)
+        {
+            // Aimed: it follows its target while that stands (a frozen one hasn't moved; a chilled boss has stepped),
+            // else it lands where it was aimed. A slot re-used by a new thing far from the aim is not its target.
+            var (ax, az, id) = emberAims[ember - 1];
+            var held = id >= 0 && id < Enemies.Items.Length ? Enemies.Items[id] : null;
+            target = held != null && held.Alive && held.State != EnemyState.Dying && FlareCanHurt(held) && Dist(held.X, held.Z, ax, az) < r + 2 ? held : null;
+            tx = target?.X ?? ax;
+            tz = target?.Z ?? az;
+        }
+        else
+        {
+            (tx, tz, target) = EmberPick(f, ember, embers, r);
+            emberFell.Add((tx, tz));
+        }
         ForEachHostileInRadius(tx, tz, r, (e, d) =>
         {
             // A boss takes only the embers that seek it (four of twelve): those that fall on the packs round it pass it
@@ -193,6 +244,37 @@ public sealed partial class Battle
                     FlareHit(e, f.Arg("shatter", 1.0), School.Frost, 0, e.X, e.Z);
                 }
         FlareBlowEvent(f, "ember", last, tx, tz, target, r);
+        if (last) BurnsShove(f, tx, tz);
+    }
+
+    /// <summary>The BOOM's shock: everything still standing in reach is thrown back from where the last ember fell
+    /// ("shove" metres, less for the heavy and champions; a boss only staggers) and staggered for a breath, so the
+    /// room visibly clears even when little died. No damage. One Ev.Flare Blow, Part "shove", per thing: TX/TZ where
+    /// it should come to rest (a wall may stop it short), Radius how far.</summary>
+    void BurnsShove(FlareDef f, double bx, double bz)
+    {
+        var p = Player;
+        double far = f.Arg("shove", 3) * FlareGrow(f);
+        foreach (var e in HostilesInRadius(p.X, p.Z, flareReach).Where(e => e.Alive && e.State != EnemyState.Dying).ToList())
+        {
+            if (e.Boss)
+            {
+                AddStagger(e, f.Arg("shoveStagger", 0.15));
+                FlareBlowEvent(f, "shove", false, e.X, e.Z, e, 0, hitstop: 0);
+                continue;
+            }
+            double dist = e.Def.Behavior == Behavior.Stationary ? 0 : far * Math.Clamp(2 / Math.Max(0.5, e.Mass), 0.4, 1) * (e.Elite ? 0.5 : 1);
+            // Away from the blast; one standing in it goes away from her, and one on her too, along her facing.
+            double dx = e.X - bx, dz = e.Z - bz, d = Len(dx, dz);
+            if (d < 0.3) { dx = e.X - p.X; dz = e.Z - p.Z; d = Len(dx, dz); }
+            if (d < 0.3) { dx = Math.Sin(p.Facing); dz = Math.Cos(p.Facing); d = 1; }
+            // Knockback slides and settles at 9 per second (Ai.cs): a slide of v/9 metres.
+            e.Kbx += dx / d * dist * 9;
+            e.Kbz += dz / d * dist * 9;
+            if (e.Elite) Interrupt(e);
+            ApplyStatus(e, new StatusPayload(StatusKind.Stun, 1, 1, f.Arg("shoveStun", 0.5)), 0);
+            FlareBlowEvent(f, "shove", false, e.X + dx / d * dist, e.Z + dz / d * dist, e, dist, hitstop: 0);
+        }
     }
 
     /* -------------------------------------------------------- The Road's Toll -- */

@@ -331,6 +331,7 @@
     "frost": 0.3,
     "first": 0.55,
     "last": 1.05,
+    "aim": 0.2,
     "hitstop": 2,
     "hitstopFrost": 3,
     "hitstopLast": 6
@@ -345,7 +346,10 @@
     "onBoss": 4,
     "bossMul": 1.0,
     "moreEmbers": 18,
-    "blackIce": 0.5
+    "blackIce": 0.5,
+    "shove": 3,
+    "shoveStun": 0.5,
+    "shoveStagger": 0.15
    }
   },
   {
