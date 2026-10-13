@@ -13,7 +13,7 @@ EARLY = {"kindler.burns_twice.more_embers", "bulwark.bell_of_the_morning.bell_fo
 # power: each blow's damage at level 1. A Strike's blows land over its length; a Stand pulses `blows` a second.
 flare("the_long_cut", "The Long Cut", "warden", "sunderer", "strike", 0.8, 12, 2, 1380, "holy", ["melee", "area", "heavy", "holy"], "A sweep of dawn 12 m round, then a cleave down a 24 m line.",
       beat={"key": 0.2, "first": 0.3, "cleave": 0.55, "second": 0.85, "hitstop": 3, "hitstopCleave": 8, "shake": 0.8},
-      args={"sweep": 1.5, "cleave": 1.5, "line": 24, "lineWidth": 1.5, "sunder": 0.3, "sunderSeconds": 8, "bossMul": 0.6,
+      args={"sweep": 1.5, "cleave": 1.5, "line": 24, "lineWidth": 1.5, "sunder": 0.3, "sunderSeconds": 8, "bossMul": 0.6, "secondBoss": 0.5,
             "wall": 36, "sunderWall": 0.4, "burn": 0.25, "burnSeconds": 4})
 flare("dawn_in_the_steel", "Dawn in the Steel", "warden", "sunderer", "stand", 6, 10, 2, 345, "holy", ["melee", "area", "heavy", "holy"], "For 6 s the blade burns with morning: faster swings, crescents of light, every heavy blow staggers.")
 flare("bell_of_the_morning", "Bell of the Morning", "warden", "bulwark", "strike", 0.9, 14, 3, 920, "holy", ["area", "holy", "shield"], "Three tolls on the shield: each stuns and sears everything near, and mends you 4%. The last is a holy blast 8 m round.",
@@ -100,7 +100,7 @@ sund = road("warden", w, "sunderer", "Road of the Sunderer", "Slow, huge blows t
     [("Weight of the Oath", "Every blow you strike is heavy and always staggers: Sunder's line comes on every swing. You swing 45% slower, nothing can make you swing faster, and you never strike true.", [R("weight_of_the_oath", phase=4, slower=0.45)]),
      ("The Unbroken Line", "Sunder's heavy blow no longer splits a line: it breaks the ground all around you, 4 m, at half the blow.", [R("unbroken_line", phase=5, radius=4, share=0.5)])],
     ("the_long_cut", "The Long Cut", [
-        ("Second Cut", "Another sweep 0.3 s later, inside the 1.2 s.", FM("the_long_cut", "long_cut.second_cut", P_6A)),
+        ("Second Cut", "Another sweep 0.3 s later, inside the 1.2 s (a boss takes half).", FM("the_long_cut", "long_cut.second_cut", P_6A)),
         ("Line of Morning", "The line burns for 4 s.", FM("the_long_cut", "long_cut.line_of_morning", P_6A)),
         ("Through the Wall", "The line runs 36 m, and Sundered is 40% weaker armor on bosses.", FM("the_long_cut", "long_cut.through_the_wall", P_6A))]),
     ("dawn_in_the_steel", "Dawn in the Steel", [

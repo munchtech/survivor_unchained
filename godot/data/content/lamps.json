@@ -155,6 +155,7 @@
     "sunder": 0.3,
     "sunderSeconds": 8,
     "bossMul": 0.6,
+    "secondBoss": 0.5,
     "wall": 36,
     "sunderWall": 0.4,
     "burn": 0.25,
@@ -1515,7 +1516,7 @@
     "sunderer.the_long_cut"
    ],
    "gate": 3,
-   "text": "Another sweep 0.3 s later, inside the 1.2 s.",
+   "text": "Another sweep 0.3 s later, inside the 1.2 s (a boss takes half).",
    "effects": [
     {
      "do": "flareMod",

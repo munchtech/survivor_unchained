@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using SurvivorUnchained.Content;
 using SurvivorUnchained.Sim;
 using Xunit;
 using static SurvivorUnchained.Tests.FlareStagedTests;
@@ -73,6 +74,52 @@ public class FlareLinesTests
         double hp = far.Hp;
         Run(b, 2);
         Assert.True(far.Hp < hp, "the burning line keeps hurting what stands in it");
+    }
+
+    static void NoCrits(Battle b) => b.Stats.Add(new StatMod(Stat.CritChance, ModKind.Flat, -b.Stats.Get(Stat.CritChance), "test"));
+
+    [Fact]
+    public void A_boss_takes_second_cuts_counter_sweep_at_second_boss_and_the_burning_line_at_boss_mul_the_crowd_both_whole()
+    {
+        var f = Lamps.Flare("the_long_cut")!;
+        // Off the line, in the sweep's reach: only the two sweeps reach them.
+        var b = Carrying("the_long_cut", "long_cut.second_cut");
+        NoCrits(b);
+        b.Aim = (20, 0);
+        Foe(b, 0, 6, hp: 1e9, boss: true);
+        Foe(b, 0, -6, hp: 1e9);
+        b.FillFlare(100, "t");
+        b.Events.Drain();
+        Assert.True(b.UseFlare(1, 0));
+        var took = new List<(double Boss, double Man)>();
+        for (int i = 0; i < 90; i++)
+        {
+            b.Tick(1 / 60.0, 0, 0);
+            if (!b.Events.Drain().OfType<Ev.Flare>().Any(e => e.Phase == FlarePhase.Blow && e.Part == "sweep")) continue;
+            double onBoss = b.BossDamageBy.GetValueOrDefault("flare");
+            took.Add((onBoss, b.DamageBy.GetValueOrDefault("flare") - onBoss));
+        }
+        Assert.Equal(2, took.Count);
+        double second = f.Arg("secondBoss", 1);
+        Assert.InRange((took[1].Boss - took[0].Boss) / took[0].Boss, second - 0.01, second + 0.01);
+        Assert.InRange((took[1].Man - took[0].Man) / took[0].Man, 0.99, 1.01);
+
+        // The burning line's fires carry the Flare's measure on a boss, and a fire's measure is a boss's alone.
+        var c = Carrying("the_long_cut", "long_cut.line_of_morning");
+        NoCrits(c);
+        c.Aim = (20, 0);
+        Cast(c, 1.2);
+        var fires = c.Zones.Items.Where(z => z.Alive && z.Credit == "flare").ToList();
+        Assert.NotEmpty(fires);
+        Assert.All(fires, z => Assert.Equal(f.Arg("bossMul", 1), z.BossMul));
+        var fire = c.SpawnZone(Side.Player, -6, 6, 2, 2, 100, School.Holy)!;
+        fire.Credit = "test";
+        fire.BossMul = 0.5;
+        Foe(c, -6, 6, hp: 1e9, boss: true);
+        Foe(c, -6.5, 6, hp: 1e9);
+        Run(c, 1 / 60.0);
+        double fb = c.BossDamageBy["test"];
+        Assert.InRange(fb / (c.DamageBy["test"] - fb), 0.49, 0.51);
     }
 
     [Fact]
