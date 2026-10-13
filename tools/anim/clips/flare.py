@@ -145,29 +145,47 @@ def _body_keys():
           cl=(8, 0), cr=(8, 0)),
         k(12, "auto", hips=(-0.01, 0.01, -0.20), hrot=(0, -3, 0), spine=(0, -10, 0), neck=(0, -3, 0), head=(0, -11, 0),
           cl=(10, 0), cr=(10, 0)),
-        k(16, "ease", hips=(-0.01, 0.007, -0.20), hrot=(0, -3, 0), spine=(0, -9, 0), neck=(0, -3, 0), head=(0, -10, 0),
+        # The drive: wheeled down, dropping into the lunge, bent over the
+        # staff. The head's bow is capped near 20 degrees (world) and the
+        # rest of the bow is the chest's; the swing from the poster to the
+        # bow is spread over f14-19 (the chest and head leaving together).
+        k(14, "auto", hips=(-0.01, 0.005, -0.20), hrot=(0, -3, 0), spine=(0, -10, 0), neck=(0, -4, 0), head=(0, -9, 0),
           cl=(9, 0), cr=(9, 0)),
-        # The drive: wheeled down, dropping into the lunge, bent over the staff.
-        k(18, "auto", hips=(-0.02, -0.12, -0.27), hrot=(-3, 8, 2), spine=(-9, 14, 2), neck=(0, 5, -13), head=(0, 6, -7),
+        k(15, "auto", hips=(-0.012, -0.015, -0.21), hrot=(0, -3, 0), spine=(0, -7, 0), neck=(0, -3, -2), head=(0, -8, -1),
+          cl=(9, 0), cr=(9, 0)),
+        k(16, "auto", hips=(-0.014, -0.05, -0.23), hrot=(0, -3, 0), spine=(0, -1, 0), neck=(0, -2, -4), head=(0, -4, -2),
+          cl=(9, 0), cr=(9, 0)),
+        k(17, "auto", hips=(-0.017, -0.095, -0.25), hrot=(-1.5, 3, 1), spine=(-4, 7, 1), neck=(0, -1, -8), head=(0, -2, -4),
+          cl=(5, 6), cr=(3, 1.5)),
+        k(18, "auto", hips=(-0.02, -0.15, -0.27), hrot=(-3, 8, 2), spine=(-9, 16, 2), neck=(0, 1, -13), head=(0, 3, -7),
           cl=(2, 12), cr=(-2, 3)),
-        k(19, "auto", hips=(-0.025, -0.225, -0.30), hrot=(-3.5, 12, 2.5), spine=(-12.5, 20, 2), neck=(0, 2.5, -32), head=(0, 8, -12),
+        k(19, "auto", hips=(-0.025, -0.225, -0.30), hrot=(-3.5, 12, 2.5), spine=(-12.5, 27, 2), neck=(0, 0, -32), head=(0, 1, -12),
           cl=(1, 16), cr=(-6, 3.5)),
-        k(CONTACT, "ease", hips=(-0.03, -0.33, -0.33), hrot=(-4, 16, 3), spine=(-16, 26, 2), neck=(0, 0, -8), head=(0, 10, -3),
+        k(CONTACT, "ease", hips=(-0.03, -0.33, -0.33), hrot=(-4, 16, 3), spine=(-16, 38, 2), neck=(0, -3, -8), head=(0, -9, -3),
           cl=(0, 20), cr=(-10, 4)),
+        # The settle: the weight lands, the pelvis 2-3 cm lower and the chest
+        # a few degrees further over than the pose it comes back to (f25).
+        k(21, "auto", hips=(-0.03, -0.39, -0.33), hrot=(-2, 15, 3), spine=(-8, 35, 3), neck=(0, -3, -10), head=(0, -9, -3),
+          cl=(1, 12), cr=(-10, 4)),
+        k(22, "auto", hips=(-0.03, -0.395, -0.33), hrot=(-1, 14.5, 3), spine=(-4, 22, 4), neck=(0, -2, -13), head=(0, -4, -5),
+          cl=(2, 6), cr=(-10, 3.5)),
         # The look up: the chest lifted and the head back to the sky, deep in
         # the lunge (the staff is planted and the fist low), the body in one
         # line on from the back thigh, the chest turned a little open to her
         # left where her hand opens.
-        k(23, "auto", hips=(-0.03, -0.36, -0.33), hrot=(0, 14, 3), spine=(-2, 8, 5), neck=(0, 0, -16), head=(0, 10, -6),
+        k(23, "auto", hips=(-0.03, -0.38, -0.33), hrot=(0, 14, 3), spine=(-2, 8, 5), neck=(0, 0, -16), head=(0, 10, -6),
           cl=(3, 2), cr=(-10, 3)),
-        k(28, "ease", hips=(-0.03, -0.37, -0.32), hrot=(2, 15, 2), spine=(6, -13, 5), neck=(0, -8, 0),
-          head=(4, -24, 0), cl=(8, 0), cr=(-10, 4)),
-        k(34, "auto", hips=(-0.03, -0.37, -0.32), hrot=(2, 15, 2), spine=(6, -14.5, 5), neck=(0, -8, 0),
-          head=(7, -26, 2), cl=(9, 0), cr=(-10, 4)),
-        k(40, "ease", hips=(-0.03, -0.37, -0.32), hrot=(2, 15, 2), spine=(6, -13, 5), neck=(0, -8, 0),
-          head=(-3, -22, -1), cl=(8, 0), cr=(-10, 4)),
+        # One line from the hips to the head: the hips thrust forward, the
+        # chest arched back (and rising a few degrees through the hold), the
+        # neck taking only its share of the head's tilt.
+        k(28, "ease", hips=(-0.03, -0.37, -0.26), hrot=(2, 15, 2), spine=(6, -27, 5), neck=(0, -4, 0),
+          head=(4, -7, 0), cl=(8, 0), cr=(-10, 4)),
+        k(34, "auto", hips=(-0.03, -0.37, -0.255), hrot=(2, 15, 2), spine=(6, -29, 5), neck=(0, -4, 0),
+          head=(7, -8, 2), cl=(9, 0), cr=(-10, 4)),
+        k(40, "ease", hips=(-0.03, -0.37, -0.255), hrot=(2, 15, 2), spine=(6, -31, 5), neck=(0, -4, 0),
+          head=(-3, -6, -1), cl=(8, 0), cr=(-10, 4)),
         # The sweep: the planted staff's head swept out to her right.
-        k(SWEEP, "auto", hips=(-0.07, -0.35, -0.30), hrot=(0, 12, 3), spine=(0, -6, 10), neck=(0, -4, 0),
+        k(SWEEP, "auto", hips=(-0.07, -0.35, -0.28), hrot=(0, 12, 3), spine=(0, -6, 10), neck=(0, -4, 0),
           head=(0, -12, 0), cl=(4, 0), cr=(-12, 2)),
         # Up out of it, the left foot stepping through, back into her standing.
         k(BLEND, "auto", hips=(-0.03, -0.22, -0.20), hrot=(-2, 5, 1), spine=(-3, 2, 3), head=(0, -5, 0),
@@ -195,9 +213,9 @@ STAFF = [
     # elbow keyed by its way from the shoulder (E): forward, then down, the
     # forearm out-forward to the planted staff.
     (16, "grip", (-0.13, 1.88, -0.18), _n(1.0, 0.07, -0.05), (-1.0, 0.0, 0.4)),
-    (17, "grip", (-0.19, 1.62, -0.03), _n(0.90, 0.44, -0.08), _n(0.76, -0.09, 0.64), "E"),
-    (18, "grip", (-0.32, 1.32, 0.09), _n(0.56, 0.83, -0.04), _n(0.52, -0.64, 0.56), "E"),
-    (19, "grip", (-0.42, 1.00, -0.06), _n(0.15, 0.99, 0.04), _n(0.23, -0.97, 0.12), "E"),
+    (17, "grip", (-0.20, 1.60, 0.02), _n(0.90, 0.44, -0.08), _n(0.1, -0.2, 0.9), "E"),
+    (18, "grip", (-0.32, 1.32, 0.12), _n(0.56, 0.83, -0.04), _n(-0.1, -0.6, 0.7), "E"),
+    (19, "grip", (-0.42, 1.00, -0.06), _n(0.15, 0.99, 0.04), _n(-0.35, -0.9, 0.1), "E"),
     # Planted the fist's +Z is keyed (the staff's own line is AXIS in it,
     # 6.6 degrees toward the fingers, which face out to her right here): so
     # the shaft stands about (-0.05, 0.99, 0.10), near upright, its head over
@@ -222,7 +240,10 @@ R_ON = [(0, 0.0), (3, 1.0), (51, 1.0), (56, 0.0)]
 L_SHAFT = [(1, 0.0), (5, 1.0), (CONTACT + 1, 1.0), (30, 0.0)]
 L_OPEN = [(CONTACT + 1, 0.0), (30, 1.0), (SWEEP + 2, 1.0), (54, 0.0)]
 RELEASE, OPEN = CONTACT + 1, 31
-L_OPEN_ARC = (0.34, 0.02, 0.26)        # from the left shoulder, in the chest's frame
+L_OPEN_ARC = (0.35, -0.20, -0.13)      # from the left shoulder, in the chest's frame (hangs about 25 deg low, 20 behind)
+AIM_LET_GO = 1.0                       # how far the hand stops being aimed at mid-release
+L_BUMP = (0.15, 0.12, 0.30)                # the way round, in the chest's frame
+L_REACH = (0.06, 0.02, 0.16)               # the reach to the shaft goes out in front of her breast, not through it
 L_OPEN_KNUCKLES = _n(0.55, 0.55, 0.6)  # the fingers out and up, the palm up to the sky
 
 
@@ -378,6 +399,12 @@ class Flare:
             ko = qrot(chest[fr], L_OPEN_KNUCKLES)
             pole_o = qrot(chest[fr], np.array((0.9, -0.5, -0.3)))
             spec = {"frame": "char", "twist": 0.4}
+            # The hand goes round her front (out and forward) between the
+            # shaft and the open hand, and between the open hand and the idle,
+            # not through her breast and ribs.
+            bump = qrot(chest[fr], np.array(L_BUMP)) * math.sin(math.pi * min(1.0, wo)) if wo < 1.0 else 0.0
+            if 0.0 < ws < 1.0 and fr < CONTACT:
+                bump = bump + qrot(chest[fr], np.array(L_REACH)) * math.sin(math.pi * ws)
             if ws > 0:
                 qr, pr = G[0][fr], G[1][fr]
                 on = pr + qrot(qr, SHAFT0 + AXIS * LEFT_AT)
@@ -386,7 +413,11 @@ class Flare:
                 Ws = on - (qrot(Rl, M_L) if Rl is not None else 0.0)
                 k = _smooth((fr - 16) / 3.0)
                 pole_s = np.array((0.6, -0.3, 0.8)) * (1 - k) + np.array((0.9, -0.3, -0.4)) * k
-                W = Wi * wi + Ws * ws + Wo * wo
+                # Letting go across her front: the elbow up and back, so the
+                # forearm clears her breasts as the hand comes away.
+                k2 = _smooth((fr - 18) / 8.0)
+                pole_s = pole_s * (1 - k2) + np.array((0.3, 0.8, -0.4)) * k2
+                W = Wi * wi + Ws * ws + Wo * wo + bump
                 pole = pole_i * wi + pole_s * ws + pole_o * wo
                 if wo > 0 and self.Rl is not None:
                     # Letting go: turned evenly from its hold on the shaft to
@@ -394,6 +425,9 @@ class Flare:
                     q = qslerp(self.Rl[RELEASE], self.Rl[OPEN], wo)
                     spec["blade"] = tuple(float(x) for x in qrot(q, np.array([0, 0, 1.0])))
                     spec["knuckles"] = tuple(float(x) for x in qrot(q, np.array([0, 1.0, 0])))
+                    # Letting go the hand rides the forearm a little, so the
+                    # elbow can go up and back (clear of her breast).
+                    spec["aim"] = 1.0 - AIM_LET_GO * math.sin(math.pi * wo)
                 else:
                     spec["blade"] = tuple(float(x) for x in dw)
                     # The fist's long way across the shaft: from her shoulder
@@ -405,7 +439,7 @@ class Flare:
                     if ws < 1.0:
                         spec["aim"] = ws
             else:
-                W = Wi + (Wo - Wi) * wo
+                W = Wi + (Wo - Wi) * wo + bump
                 k = _slerp_dir(ki / np.linalg.norm(ki), ko / np.linalg.norm(ko), wo)
                 spec["knuckles"] = tuple(float(x) for x in k)
                 pole = pole_i + (pole_o - pole_i) * wo
@@ -438,8 +472,14 @@ class Flare:
         rig = self.rig
         g, p = rig.sk.fk(clip.rot, clip.pos)
         hr, hl = rig.I["hand_r"], rig.I["hand_l"]
-        self.Rr = [qmul(g[f, hr], np.array([0, 0, 0, 1.0])) for f in range(self.n)]
-        self.Rl = [g[f, hl] for f in range(self.n)]
+        Rr = [qmul(g[f, hr], np.array([0, 0, 0, 1.0])) for f in range(self.n)]
+        Rl = [g[f, hl] for f in range(self.n)]
+        # Relaxed, half way from the last round's to this one's: left whole,
+        # the drive's f17 fist flipped between two settings round by round.
+        if self.Rr is not None:
+            Rr = [qslerp(o, -n if float(np.dot(o, n)) < 0 else n, 0.5) for o, n in zip(self.Rr, Rr)]
+            Rl = [qslerp(o, -n if float(np.dot(o, n)) < 0 else n, 0.5) for o, n in zip(self.Rl, Rl)]
+        self.Rr, self.Rl = Rr, Rl
         return (g[:, hr], p[:, hr]), (g[:, hl], p[:, hl])
 
     def reach_drop(self, S_r, HR, top=0.425, over=0.265):
@@ -481,7 +521,7 @@ def finger_mix():
     return full("relaxed"), full("grip"), full("spread")
 
 
-def flare_burns_twice(rig, rounds=7, log=None):
+def flare_burns_twice(rig, rounds=9, log=None):
     F = Flare(rig)
     clip = None
     G = None
