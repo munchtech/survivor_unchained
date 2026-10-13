@@ -91,7 +91,7 @@ The main session keeps this current. It is the address list for SendMessage. Ret
 | Story and writing (the writer: the approved rewrite, Act 1 first) | PAUSED 12 Oct late (no lead running; Act 2's first slice WIP on story/act2@5190bf0c, unjudged, don't merge; handoff docs/handoff/story.md on that branch; 566 lines locked on integration; TOLL_SPEC ready for a code lead) | docs/team/story.md |
 | Classes design (two types per calling, skill trees, ultimates on Q / right-click) | RUNNING 13 Oct: a63a34b9e5a45d1bf on classes-9 (story bosses cut by the Flare, the Flare as a room-clearing BOOM, then the phase-6 plan to a judge) | docs/design/CLASSES.md |
 | Combat, encounters, bosses, balance (paused; handoff ready at af6452e1) | — | docs/team/combat.md |
-| Animation (joints to perfection: wrists, follow-through, elbows, arms through body, sliding) | RUNNING 13 Oct: ad8e544750b550ed9 in worktree agent-af8dbda3195e438e4 (idle_warden_break solver, worst Warden clips, sheathing plan for OK) | docs/team/animation.md |
+| Animation (joints to perfection: wrists, follow-through, elbows, arms through body, sliding) | RUNNING 13 Oct: successor 19 aaf7f8cdd03812ebd in worktree agent-af8dbda3195e438e4 (armscheck pauldron gap first, bull_rush r3, flare_burns_twice in parallel, town run (a), sword_heavy, sprint) | docs/team/animation.md |
 | UI design (the HUD keystone; portraits wait on the face) | — (handoff ready) | docs/team/ui_design.md |
 | UI art (paused; handoff ready at cd0f4ab6) | — | docs/team/ui_art.md |
 | Crafting (research, design, build) (paused; handoff ready at ed429efb) | — | docs/team/crafting.md |
