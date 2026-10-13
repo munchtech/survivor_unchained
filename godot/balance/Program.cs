@@ -67,6 +67,7 @@ if (opt.Has("flarecut"))
     if (fc.Length > 1) SurvivorUnchained.Play.Bosses.ArenaBoss.FlareCutRate = double.Parse(fc[1], System.Globalization.CultureInfo.InvariantCulture);
 }
 if (opt.Has("light")) ArenaSim.Light = opt.List("light", "").ToList();
+if (opt.Has("dark")) ArenaSim.Dark = opt.List("dark", "").ToList();
 // --over DIR: data files found under DIR are read in place of godot/data's (a variant's lamps.json, no rebuild).
 if (opt.Has("over"))
 {
@@ -357,6 +358,13 @@ void SuggestPath()
         var a = Callings.Archetype(road.Calling);
         var j = SurvivorUnchained.Play.Journey.Begin(new CreationChoice { Name = "Bot", Archetype = road.Calling, Background = "hunter", Palette = a.Palettes[0].Id, WeaponItem = a.Weapons[0], Ability = a.Abilities[0] }, 1);
         LampBook.SetType(j.Ch, road.Id);
+        // --lamps full: the arena's full board (story fights won, the atlas, past Act 1), as ArenaSim lights it.
+        if (opt.Get("lamps", "") == "full")
+        {
+            foreach (var id in SurvivorUnchained.Content.Lamps.StoryFights) j.World.Facts[$"arena.{id}"] = "won";
+            j.World.Facts["lamps.atlas"] = LampBook.AtlasLamps;
+            j.World.Facts["chapter.done"] = true;
+        }
         var sb = new StringBuilder($"{road.Calling}/{road.Id} (carries {LampBook.Carried(j.Ch)}):");
         for (int lv = 2; lv <= upto; lv++)
         {
