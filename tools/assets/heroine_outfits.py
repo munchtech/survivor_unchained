@@ -2402,7 +2402,7 @@ def over_nipples(pos, tris, least=float(os.environ.get("NIP_RISE", "0.0015")), s
 SHEET = {}   # (each piece's sheet as finished: points, triangles, weights, thickness)
 
 
-def piece(name, field, mkey, lift=0.003, thick=0.003, smooth=0, bevel=0.0012, trim=None, clear=None, soften=3, dome=False, keep_off=("Head", "neck_01"), cut=None, iron=0, hull=None, studs=None, budget=None, filled=False, edge=30, slot=True, bridge=False, bind=True, rigid=None, stiff=None, studs_off=None, weigh=None, hold=None):
+def piece(name, field, mkey, lift=0.003, thick=0.003, smooth=0, bevel=0.0012, trim=None, clear=None, soften=3, dome=False, keep_off=("Head", "neck_01"), cut=None, iron=0, hull=None, studs=None, budget=None, filled=False, edge=30, slot=True, bridge=False, bind=True, rigid=None, stiff=None, studs_off=None, weigh=None, hold=None, crotch=None):
     """A region of her skin made into a piece of her outfit. `rigid`, a
     centre, makes it a rigid plate: a fair dome round that centre (shell())
     on one blend of bones throughout, so it moves as one piece. `trim`, as
@@ -2424,8 +2424,13 @@ def piece(name, field, mkey, lift=0.003, thick=0.003, smooth=0, bevel=0.0012, tr
     # behind the slot between her thighs (`gap` is how far a point is out
     # of that box), and the two cut edges joined by a strip under her.
     gap = np.maximum.reduce([GAP_F - Y, Y - GAP_B, Z - GAP_Z, np.abs(X) - 0.07]) if bridge else np.ones(len(P))
-    dump(name, "0skin", P_FILLED if (dome or filled) else P, TRI, np.minimum(f, gap))  # SOLVER1 TEMP
-    pos, at, tris = clip(np.minimum(f, gap), P_FILLED if (dome or filled) else P, np.hstack([attr, gap[:, None]]), TRI)
+    # (`crotch`, a field on her skin taken as it is, not eased: what a one-piece
+    # keeps of her under the crotch, its own sheet carried on there, no gusset)
+    clipf = np.minimum(f, gap) if crotch is None else np.maximum(np.minimum(f, gap), crotch)
+    if crotch is not None:
+        attr[:, -1] = clipf
+    dump(name, "0skin", P_FILLED if (dome or filled) else P, TRI, clipf)  # SOLVER1 TEMP
+    pos, at, tris = clip(clipf, P_FILLED if (dome or filled) else P, np.hstack([attr, gap[:, None]]), TRI)
     if len(tris) == 0:
         print("EMPTY", name)
         return []
@@ -2433,6 +2438,8 @@ def piece(name, field, mkey, lift=0.003, thick=0.003, smooth=0, bevel=0.0012, tr
     dump(name, "1clip", pos, tris, at[:, -2])
     gap_at, at = at[:, -1], at[:, :-1]
     nor = at[:, :3] / (np.linalg.norm(at[:, :3], axis=1)[:, None] + 1e-12)
+    if crotch is not None:
+        PIECE_SRC[name] = (pos.copy(), nor.copy())
     pos = pos + nor * lift
     if hull is not None:
         pos = hulled(pos, at[:, -3], tris)
@@ -2530,7 +2537,7 @@ def piece(name, field, mkey, lift=0.003, thick=0.003, smooth=0, bevel=0.0012, tr
         made[0]["hold_line"] = pos[held].ravel().tolist()
     if any("_stitch" in o.name for o in beads):
         made[0]["geo_stitch"] = True
-    if bridge:
+    if bridge and crotch is None:
         made += crotch_bridge(name, pos, tris, gap_at, mkey, thick, bevel, trim, lift)
     if studs:
         made += rivets(name, pos, at, tris, thick, studs, off=studs_off)
@@ -2583,6 +2590,19 @@ LEO_GLIFT = float(os.environ.get("LEO_GLIFT", "0.001"))
 LEO_GTHICK = float(os.environ.get("LEO_GTHICK", "0"))
 LEO_GBIND = os.environ.get("LEO_GBIND", "1") == "1"
 LEO_UH = float(os.environ.get("LEO_UH", "0.07"))
+# (judge fin1, route (a): LEO_ONE=1 makes the arcanist's leotard one piece, as a real one is
+# made: the corset's own sheet carried on under her crotch to the thong's foot, one leg-line
+# binding a side from front to back and one stitch row, no U across the foot, no gusset.
+# Under her its leg lines stand LEO_ONE_W[0] (front) to LEO_ONE_W[1] (back) out from her
+# middle, its back end rounded LEO_ONE_W[2]; it goes up the slot's walls while |N_x| is
+# under LEO_ONE_STEEP, laid LEO_ONE_LIFT off her (as the gusset was) below LEO_ONE_Z[0]
+# over the crotch and behind it; the back's thong cut from LEO_ONE_Z[1] up.)
+LEO_ONE = os.environ.get("LEO_ONE", "0") == "1"
+LEO_ONE_W = tuple(float(v) for v in os.environ.get("LEO_ONE_W", "0.0185,0.016,0.012").split(","))
+LEO_ONE_STEEP = float(os.environ.get("LEO_ONE_STEEP", "0.96"))
+LEO_ONE_LIFT = float(os.environ.get("LEO_ONE_LIFT", "0.001"))
+LEO_ONE_Z = tuple(float(v) for v in os.environ.get("LEO_ONE_Z", "0.02,0.03").split(","))
+PIECE_SRC = {}   # (a piece cut with `crotch`: its sheet's skin points and normals, before lifting)
 RBOOT_GONE = float(os.environ.get("RBOOT_GONE", "0.005"))
 
 
@@ -3984,14 +4004,25 @@ def arcanist():
     # cut so this exact line, not the cut, decides; the gusset lies under it.)
     y_ub = GAP_F - LEO_U[1]
     t_ub = ((roof_z(0.0, y_ub) - 0.0035) - y_ub) / np.sqrt(2)
+    # (LEO_ONE: the one-piece's back end, where the gusset's was, under the thong's foot)
+    y_end1 = max(GAP_B + 0.014, back_string(CROTCH + 0.155, CROTCH + 0.012)[-1][1] + 0.015)
 
     def exact(q):
         qx, qy, qz = q[:, 0], q[:, 1], q[:, 2]
         fr = ramp(-(qy - CROTCH_Y), -0.03, 0.03)
         r = qz - CROTCH
         wq = (0.0145 + 0.42 * np.maximum(r, 0) + LEO_FOOT * np.exp(-(np.maximum(r, 0) / 0.035) ** 2)) * fr + (-0.01 + 1.5 * np.maximum(r - 0.13, 0)) * (1 - fr)
+        if LEO_ONE:
+            # (one piece: under her crotch the leg lines carry on back to the thong's foot)
+            u_ = ramp(-qz, -(CROTCH + LEO_ONE_Z[1]), -(CROTCH + LEO_ONE_Z[0]))
+            wf_ = 0.0145 + 0.42 * np.maximum(r, 0) + LEO_FOOT * np.exp(-(np.maximum(r, 0) / 0.035) ** 2)
+            wq = wf_ * fr + (1 - fr) * (u_ * LEO_ONE_W[1] + (1 - u_) * (-0.01 + 1.5 * np.maximum(r - 0.13, 0)))
         legs = np.maximum(qz - 1.13, wq - np.abs(qx))
-        if LEO_U[0] > 0:
+        if LEO_ONE:
+            a_, b_, ru = wq - np.abs(qx), y_end1 - qy, LEO_ONE_W[2]
+            end_ = np.where((a_ < ru) & (b_ < ru), ru - np.hypot(ru - a_, ru - b_), np.minimum(a_, b_))
+            legs = np.where((qy > CROTCH_Y) & (u_ > 0), np.minimum(legs, end_), legs)
+        if LEO_U[0] > 0 and not LEO_ONE:
             a_, b_, ru = wq - np.abs(qx), (qz - qy) / np.sqrt(2) - t_ub, LEO_U[0]
             foot = np.where((a_ < ru) & (b_ < ru), ru - np.hypot(ru - a_, ru - b_), np.minimum(a_, b_))
             legs = np.where((qy < CROTCH_Y) & (qz < CROTCH + 0.06), foot, legs)
@@ -4664,7 +4695,7 @@ def arcanist():
     # there instead, the held leg line stepped 2 mm up within 2 mm, a bump.)
     def on_gusset(q):
         hf = LEO_GHALF + LEO_GW[0] * ramp(-q[:, 1], -(GAP_F + LEO_GW[2]), -(GAP_F + LEO_GW[1]))
-        return (float(LEO_U[0] > 0) * ramp(hf + LEO_UG[1] - np.abs(q[:, 0]), 0.0, LEO_UG[0] + LEO_UG[1]) * ramp(q[:, 1], GAP_F - LEO_GUSSET_F - 0.002, GAP_F - LEO_GUSSET_F + 0.004)
+        return (float(LEO_U[0] > 0 and not LEO_ONE) * ramp(hf + LEO_UG[1] - np.abs(q[:, 0]), 0.0, LEO_UG[0] + LEO_UG[1]) * ramp(q[:, 1], GAP_F - LEO_GUSSET_F - 0.002, GAP_F - LEO_GUSSET_F + 0.004)
                 * ramp(-q[:, 2], -(CROTCH + 0.035), -(CROTCH + 0.028)))
     # (judge h: the glove copied the nail's free edge at the thumb tip, an
     # overhang with a dark wedge under it, and a pale lip at the thumb and
@@ -4826,12 +4857,31 @@ def arcanist():
         print("GLOVE %s: caps (mm) %s; %d Taubin rounds, %d points held out to %.1f mm"
               % (sd, " ".join("%s %.1f-%.1f" % (fg, r0 * 1000, r1 * 1000) for fg, bs, tip, r0, r1 in glove_tips(sd)), GLOVE_TIP_TAUBIN, nlift, GLOVE_TIP_FLOOR * 1000))
         return pos
+    # (LEO_ONE, route (a): what the sheet keeps of her under the crotch (taken as it is,
+    # then cut by exact's leg lines and back end), and there laid LEO_ONE_LIFT off her
+    # from the skin it was cut from (eased as the gusset was), not lifted 3.5 mm and
+    # ironed (an arch so narrow sagged into the slot))
+    def one_zone(q):
+        z_ = q[:, 2]
+        return (np.maximum(ramp(-z_, -(CROTCH + 0.012), -(CROTCH + 0.002)), ramp(q[:, 1], CROTCH_Y, CROTCH_Y + 0.01))
+                * ramp(-np.abs(q[:, 0]), -0.05, -0.04) * ramp(-z_, -(CROTCH + 0.06), -(CROTCH + 0.05)))
+    one_keep = AND(0.03 - np.abs(X), (LEO_ONE_STEEP - np.abs(N[:, 0])) * 0.02, (y_end1 + 0.006) - Y,
+                   Z - (CROTCH - 0.015), (CROTCH + 0.04) - Z) if LEO_ONE else None
+    def crotch_lay(pos, tris):
+        src, ns = PIECE_SRC["arcanist.corset"]
+        w_ = one_zone(src)[:, None]
+        laid = relax(src + ns * LEO_ONE_LIFT, tris, interior=2, edge=30)
+        print("LEO_ONE: %d points laid %.1f mm off her under the crotch" % (int((w_ > 0.5).sum()), LEO_ONE_LIFT * 1000))
+        return pos * (1 - w_) + laid * w_
+    def one_clear(q):
+        return 0.0035 - (0.0035 - LEO_ONE_LIFT) * one_zone(q)
     out = [
         # (opening into the gusset at its foot, as the warden's does)
         *ribbon("arcanist.thong", back_string(CROTCH + 0.155, CROTCH + 0.012), 0.016, "plumleather", lift=0.003, thick=0.003,
                trim=gold(0.004), snap=False, hides=True, flare=(0.034, 0.03)),
         *piece("arcanist.corset", corset, "plumleather", lift=0.0035, smooth=8, iron=60, trim=gold(0.008), keep_off=("Head",), filled=True, edge=120, soften=80,
-               bridge=True, cut=exact, stiff=[(0.03, front_panel), (0.03, collar), plunge_fold, taut_gore, plunge_rim],
+               bridge=True, cut=exact, stiff=[(0.03, front_panel), (0.03, collar), plunge_fold, taut_gore, plunge_rim] + ([crotch_lay] if LEO_ONE else []),
+               crotch=one_keep, clear=one_clear if LEO_ONE else None,
                hold=None if not LEO_HOLD else (lambda q: (q[:, 2] > CROTCH + LEO_HOLD_Z[0]) & (q[:, 2] < 1.2) & (np.abs(q[:, 0]) < 0.3), lambda q: ramp(q[:, 2], CROTCH + LEO_HOLD_Z[1], CROTCH + LEO_HOLD_Z[2]) * (1 - LEO_UH * on_gusset(q)))),
         *(down_tube() if PLUNGE_TRIM == "down" else []),
         *(plunge_clasp() if PLUNGE_CLASP else []),
@@ -5519,6 +5569,15 @@ def ranger_spaulder():
     return out
 
 
+# (RANGER_GUSSET "front,back,z0,z1": the ranger corset's thong made wider at her crotch, by
+# `front` each side in front of it and `back` behind, in full up to z0 over her crotch and eased
+# out by z1, one fair line into the leg line and the thong above. s17: as cut it was 5 mm each side
+# of her middle under her crotch (the strip a garment must cover is 12), the strip 2-4 mm inside
+# its roll, and it showed by a pixel past her right edge behind, seen from below in a wide stance.
+# "0,0,0.02,0.07" is the cut as before.)
+RG_F, RG_B, RG_Z0, RG_Z1 = (float(v) for v in os.environ.get("RANGER_GUSSET", "0.004,0.008,0.02,0.07").split(","))
+
+
 def ranger():
     """The stalker: a corset that holds her. It is strapless, with a
     sweetheart line over her breasts (hugged tight, on their perfect form),
@@ -5585,7 +5644,10 @@ def ranger():
     rise = np.maximum(Z - CROTCH, 0)
     # (between her legs a narrow strip, a little wider in front; behind, a
     # thong down her cleft)
-    strip = (0.012 + 0.3 * rise) * FRONT + np.minimum(0.008 + 0.07 * rise, 0.018) * (1 - FRONT) - ax_
+    # (RANGER_GUSSET: wider at her crotch, eased out up the leg line and the thong)
+    def gusset(z, fr_):
+        return (RG_F * fr_ + RG_B * (1 - fr_)) * (1 - ramp(z - CROTCH, RG_Z0, RG_Z1))
+    strip = (0.012 + 0.3 * rise) * FRONT + np.minimum(0.008 + 0.07 * rise, 0.018) * (1 - FRONT) + gusset(Z, FRONT) - ax_
     legs = OR(np.where(X < 0, right + 0.03, Z - edge_l), strip)
     # (her skin's field reaches lower under her crotch than the exact foot)
     # (her breasts always held; elsewhere never her arm, the cut eased so it
@@ -5611,7 +5673,7 @@ def ranger():
         qx, qy, qz = q[:, 0], q[:, 1], q[:, 2]
         fr = ramp(-(qy - CROTCH_Y), -0.03, 0.03)
         r = qz - CROTCH
-        reach = np.where(r < 0, 0.012 + 0.004 * np.clip(r / 0.035 + 1, 0, 1), 0.016 + 0.056 * np.clip(r, 0, None) / 0.24)
+        reach = np.where(r < 0, 0.012 + 0.004 * np.clip(r / 0.035 + 1, 0, 1), 0.016 + 0.056 * np.clip(r, 0, None) / 0.24) + gusset(qz, 1.0)
         # (her breast held by its own form: inside the ellipsoid her cups are
         # built on, a little grown, so the edge runs round its underside as
         # one closed curve; a height for each width folded back on the
@@ -5623,7 +5685,7 @@ def ranger():
         band = qz - (UNDERBUST + 0.015 + 0.01 * u)
         side = front * fr + band * (1 - fr)
         rq = np.maximum(r, 0)
-        thong = (0.015 + 0.3 * rq) * fr + np.minimum(0.015 + 0.07 * rq, 0.018) * (1 - fr) - np.abs(qx)
+        thong = (0.015 + 0.3 * rq) * fr + np.minimum(0.015 + 0.07 * rq, 0.018) * (1 - fr) + gusset(qz, fr) - np.abs(qx)
         right_q = np.where(qx < 0, np.maximum(side, thong), 1.0)
         slot = np.where((qz < lace_top + 0.018) & (qz > lace_bot - 0.045) & (fr > 0.5), np.abs(qx) - half, 1.0)
         # (and its foot under her crotch, cut with the rest, so the corner
