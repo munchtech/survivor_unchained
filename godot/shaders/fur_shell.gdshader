@@ -8,6 +8,7 @@ render_mode cull_back, depth_draw_opaque;
 
 uniform sampler2D albedo_tex : source_color, filter_linear_mipmap, repeat_enable;
 uniform vec4 tint : source_color = vec4(1.0);
+uniform bool test_flat = false;   // (the legal motion check: flat grey, coverage unchanged)
 uniform float layer = 0.0;
 uniform float fur_length = 0.008;
 uniform float density = 260.0;
@@ -42,4 +43,12 @@ void fragment() {
 	ROUGHNESS = 0.9;
 	SPECULAR = 0.25;
 	BACKLIGHT = c * backlight;
+	if (test_flat) {
+		ALBEDO = vec3(0.0);
+		METALLIC = 0.0;
+		ROUGHNESS = 1.0;
+		SPECULAR = 0.0;
+		EMISSION = vec3(0.5);
+		BACKLIGHT = vec3(0.0);
+	}
 }

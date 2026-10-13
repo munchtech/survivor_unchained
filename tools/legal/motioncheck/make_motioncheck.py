@@ -11,7 +11,13 @@ what a player can see). It adds to lookdev:
 - MARKS=1: test codes on her skin (marks_section.py: skin near a nipple with its distance, the
   strip a garment must cover, and tucked skin), drawn last in her skin shader so the outfit's
   own tuck and hiding stay as in play, for count.py to read. LEGALBARE=1 also hides the outfit's
-  pieces, to see where its tucked skin lies. Pictures with MARKS and no OUTFIT, or with
+  pieces, to see where its tucked skin lies.
+- FLAT (on with MARKS unless FLAT=0): every material of every outfit piece, each fur shell and
+  next_pass included, is drawn flat grey (shaders' test_flat; a stray StandardMaterial3D is
+  blackened with 0.5 emission): sRGB 188 in all channels, which decodes to no code, so no
+  garment colour can pass for a skin code. Alpha, discards and vertices are untouched, so
+  coverage is as in play. Logs "FLAT grey: N materials"; count.py then asserts that stray() and
+  the binding filter drop nothing. Her skin and hair are untouched. Pictures with MARKS and no OUTFIT, or with
   LEGALBARE, show her bare: keep them out of the repo and never publish them.
     python make_motioncheck.py <out.gd>      (run.sh does this into its own output folder)
 Written as UTF-8 without a byte-order mark (Godot refuses a BOM in GDScript)."""
@@ -132,6 +138,9 @@ swap('\t\t# HAIR=<style> (heroine_hair_<style>.gltf; "none" for none), HAIRCOLOR
      '\t\t\t\tfor pm in skel.get_children():\n'
      '\t\t\t\t\tif pm is MeshInstance3D and String(pm.name).begins_with(outfit.split("_")[0] + "_"): pm.visible = false\n'
      '\t\t# HAIR=<style> (heroine_hair_<style>.gltf; "none" for none), HAIRCOLOR=#rrggbb.\n')
+# FLAT: every material of the outfit's pieces flat grey (before the hair, after the fur and outfit shaders).
+swap('\t\t# HAIR=<style> (heroine_hair_<style>.gltf; "none" for none), HAIRCOLOR=#rrggbb.\n',
+     '\t\tif OS.get_environment("MARKS") != "" and OS.get_environment("FLAT") != "0" and outfit != "":\n\t\t\tvar nflat = 0\n\t\t\tfor pm in skel.get_children():\n\t\t\t\tif pm is MeshInstance3D and String(pm.name).begins_with(outfit.split("_")[0] + "_"):\n\t\t\t\t\tfor fs in pm.mesh.get_surface_count():\n\t\t\t\t\t\tvar fm = pm.get_surface_override_material(fs)\n\t\t\t\t\t\tif fm == null:\n\t\t\t\t\t\t\tfm = pm.mesh.surface_get_material(fs)\n\t\t\t\t\t\t\tif fm == null: continue\n\t\t\t\t\t\t\tfm = fm.duplicate()\n\t\t\t\t\t\t\tpm.set_surface_override_material(fs, fm)\n\t\t\t\t\t\twhile fm != null:\n\t\t\t\t\t\t\tif fm is ShaderMaterial:\n\t\t\t\t\t\t\t\tfm.set_shader_parameter("test_flat", true)\n\t\t\t\t\t\t\telif fm is StandardMaterial3D:\n\t\t\t\t\t\t\t\tfm.vertex_color_use_as_albedo = false\n\t\t\t\t\t\t\t\tfm.albedo_color = Color(0, 0, 0, fm.albedo_color.a)\n\t\t\t\t\t\t\t\tfm.metallic = 0.0\n\t\t\t\t\t\t\t\tfm.roughness = 1.0\n\t\t\t\t\t\t\t\tfm.metallic_specular = 0.0\n\t\t\t\t\t\t\t\tfm.emission_enabled = true\n\t\t\t\t\t\t\t\tfm.emission = Color(0.5, 0.5, 0.5).linear_to_srgb()\n\t\t\t\t\t\t\t\tfm.emission_energy_multiplier = 1.0\n\t\t\t\t\t\t\tnflat += 1\n\t\t\t\t\t\t\tfm = fm.next_pass\n\t\t\tprint("FLAT grey: %d materials" % nflat)\n' + '\t\t# HAIR=<style> (heroine_hair_<style>.gltf; "none" for none), HAIRCOLOR=#rrggbb.\n')
 # MARKS (or LINEAR=1, to test an outfit's own colours against the codes): a linear tonemapper.
 swap('\te.tonemap_mode = Environment.TONE_MAPPER_AGX\n',
      '\te.tonemap_mode = Environment.TONE_MAPPER_LINEAR if OS.get_environment("MARKS") != "" or OS.get_environment("LINEAR") != "" else Environment.TONE_MAPPER_AGX\n')

@@ -15,6 +15,8 @@ colour passing for a code, not skin, and is not read (stray()).
     python count.py <folder> [MIN_PX=1]
 Since 12 Oct 2026 the summary's counts mean "any pixel" (threshold 1; before, 6 or more), so
 older summaries and qsum bases read lower. A higher MIN_PX is printed in the summary's first line.
+A flat run (the logs say "FLAT grey: N materials", see make_motioncheck.py) opens the summary
+with "FLAT: stray X px, binding Y px (must be 0)" and "FLAT ASSERT FAIL" if either is above 0.
 Writes <folder>/counts.csv, <folder>/summary.txt and <folder>/crops/.
 Nothing is ignored silently: pixels dropped by stray() (stray_px) or by the binding-highlight
 filter and the lone-pixel filter in codes() (binding_px, lone_px) are counted per frame in counts.csv, logged per connected group
@@ -25,6 +27,7 @@ import glob
 import json
 import math
 import os
+import re
 import sys
 
 import numpy as np
@@ -317,7 +320,23 @@ def margin(v):
     return '%+.2f cm' % (v - AREOLA)
 
 
-lines = ['threshold %d px%s' % (least, '' if least == 1 else ' (explicit; frames under it are NOT listed as flagged)'),
+# A flat run (make_motioncheck.py's FLAT: every garment drawn grey 188, which decodes to no code)
+# is known by the "FLAT grey: N materials" line in its log_*.txt files (N above 0 in every log
+# that has the line; FLAT=1 or FLAT=0 in the environment overrides). There stray() and the
+# binding filter must drop nothing: a pixel they drop is then a bug in the grey or the filters.
+flat_ns = []
+for lg in glob.glob(os.path.join(folder, 'log_*.txt')):
+    m_ = re.findall(r'FLAT grey: (\d+) materials', open(lg, errors='replace').read())
+    if m_:
+        flat_ns.append(int(m_[-1]))
+is_flat = os.environ.get('FLAT') == '1' or (os.environ.get('FLAT') != '0' and bool(flat_ns) and min(flat_ns) > 0)
+flat_lines = []
+if is_flat:
+    flat_lines.append('FLAT: stray %d px, binding %d px (must be 0)' % (totals['stray'], totals['binding']))
+    if totals['stray'] > 0 or totals['binding'] > 0:
+        flat_lines.append('FLAT ASSERT FAIL')
+
+lines = flat_lines + ['threshold %d px%s' % (least, '' if least == 1 else ' (explicit; frames under it are NOT listed as flagged)'),
          total_line, 'Margins are past the areola\'s edge (2.2 cm from its centre): negative means the areola shows.',
          'Edges are as seen in that view, from the posed tip: "inner" is towards her midline.',
          'No near skin in view at all means every margin is past %.1f cm.' % (NEAR - AREOLA), '']
