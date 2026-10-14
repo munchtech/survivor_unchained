@@ -39,6 +39,8 @@ public partial class FlareFx : Node3D
     public Action<float, float, float> Rumble = (_, _, _) => { };
     /// <summary>The HUD's dim (0 none .. 1 the Flare's 35%).</summary>
     public Action<float> HudDim = _ => { };
+    /// <summary>The world's labels (loot names, map text): 0 hidden from the press, back to 1 from BOOM +0.8 s over 0.3 s (judge 5a).</summary>
+    public Action<float> LabelsAlpha = _ => { };
 
     readonly FlareBits glow = new(2600, false), bed = new(1400, true), scars = new(700, true);
     readonly FlareShards shards = new(2600);
@@ -170,7 +172,7 @@ public partial class FlareFx : Node3D
         Cue("confirm", Her, 1);
         Cue("inhale", Her, (float)freezeLen);
         Rumble(0, 0.5f, 0.04f);
-        HudDim(1);
+        HudDim(1); LabelsAlpha(0);
         // Pictures at the beats (--shot): press +1 frame, the Draw's end, the Hold.
         Shots.Want("b1_press", 1 / 60.0);
         Shots.Want("b2_draw", 0.22);
@@ -244,7 +246,7 @@ public partial class FlareFx : Node3D
             {
                 float s = (float)(t - lastAt);
                 // (Flare time: the last word's 6-frame hitstop runs it at a tenth, so 0.005 s is about 3 real frames.)
-                SetDip(1 - 0.38f * Mathf.SmoothStep(0.003f, 0.008f, s) * (1 - Mathf.SmoothStep(0.12f, 0.42f, s)) * (LessFlash ? 0.5f : 1));
+                SetDip(1 - (Night ? 0.38f : 0.25f) * Mathf.SmoothStep(0.003f, 0.008f, s) * (1 - Mathf.SmoothStep(0.12f, 0.42f, s)) * (LessFlash ? 0.5f : 1));
             }
             if (Done())
             {
@@ -349,7 +351,7 @@ public partial class FlareFx : Node3D
         RenderingServer.GlobalShaderParameterSet("flare_web", web);
         RenderingServer.GlobalShaderParameterSet("flare_frost", frost);
         if (Cam != null) { Cam.FlarePush = 0; Cam.FlarePitch = 0; }
-        HudDim(0);
+        HudDim(0); LabelsAlpha(1);
         if (marksImg != null) UploadMarks();
     }
 

@@ -446,7 +446,7 @@ public partial class FlareFx
         Cam?.Jolt(Vector3.Up, (0.6f + (banked ? 0.1f : 0)) * Motion);
         Cue("ember_last", p, 1);
         Rumble(1, 0.6f, 0.4f);
-        HudDim(0);
+        HudDim(0); LabelsAlpha(1);
     }
 
     /// <summary>Real seconds since the last word landed (its pillar runs on the particles' clock); -1: none.</summary>

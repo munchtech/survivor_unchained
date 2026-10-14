@@ -11,6 +11,7 @@ global uniform vec4 flare_at;     // xyz: where she stood at the press; w: the r
 global uniform vec4 flare_look;   // x: drain 0..1; y: repaint radius (m); z: the repaint's cold 0..1; w: kind (0 none, 1 Burns Twice, 2 its Black Ice)
 global uniform vec4 flare_web;    // x: web light 0..1; y: heat (1 the calling's hue .. 0 dark); z: how far it has lit (m); w: seed
 global uniform vec4 flare_frost;  // x: the front (m); y: frost alive 0..1; z: melted in from the edge (m); w: seconds since the frost
+global uniform vec4 flare_fire;   // xyz: the BOOM's fireball (world); w: its light on the frozen statues' rims (0 none)
 global uniform vec4 flare_hue;    // rgb: the web's hot colour (the calling's); a: night 0..1
 global uniform sampler2D flare_plate : filter_linear_mipmap_anisotropic, repeat_enable;
 global uniform sampler2D flare_noise : filter_linear_mipmap, repeat_enable;

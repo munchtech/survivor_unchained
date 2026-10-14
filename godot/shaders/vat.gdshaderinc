@@ -162,5 +162,13 @@ void fragment() {
 		ALBEDO = fl_a; ROUGHNESS = fl_r; EMISSION = fl_e;
 		// The BOOM's line reaching a statue: the fire through its cracks before it bursts.
 		EMISSION += vec3(1.0, 0.32, 0.05) * flare_crack((INV_VIEW_MATRIX * vec4(VERTEX, 1.0)).xyz) * (0.45 + 0.9 * rim);
+		// The fireball on the statues (judge 5a 2): its warmth in the rim facing it, 0.6-0.75 within 6 m, ~0.3 at 12 m.
+		if (flare_fire.w > 0.0) {
+			vec3 wp = (INV_VIEW_MATRIX * vec4(VERTEX, 1.0)).xyz;
+			vec3 to = flare_fire.xyz - wp;
+			float d = length(to);
+			float face = max(dot(normalize((INV_VIEW_MATRIX * vec4(NORMAL, 0.0)).xyz), to / max(d, 1e-3)), 0.0);
+			EMISSION += vec3(1.0, 0.6, 0.26) * flare_fire.w * face * (0.3 + 0.7 * rim) / (1.0 + (d / 8.0) * (d / 8.0));
+		}
 	}
 }
