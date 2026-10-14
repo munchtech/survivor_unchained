@@ -267,11 +267,200 @@ def regrade2(fl, dn, tp, f, P, cubes, tabs):
     return Fo.astype(np.float32), (2.0 * Tf).astype(np.float32), D.astype(np.float32), dict(R=R, cg=cg.tolist())
 
 
+def regrade3(fl, dn, tp, f, P, cubes, tabs):
+    """Version 3 (preset b5e, solver 9 after judge 5a): the fire's whole life, not only its birth.
+    Shape: the flame (to f5) or the hot gas relative to the frame's own peak (it keeps swelling and rising after the
+    flame has broken into grain), its skin pushed by three sizes of cellular dome: big masses (3-4 on the face the
+    camera sees), then two finer billows, displacement only (no billow is lit from its own middle: judge 5a 1b's
+    bubble wrap). Tongues: a few flame tongues thrust out of the outline early (1c).
+    Heat (the fire's colour and light, src_material's birth branch): falls off from the heart (centre hot, outer lobes
+    cooler), the folds between the masses cool (deepest low and outside), a white-yellow heart f1-f5 as b5d's.
+    Life (1e): every point of the fire has a score (in the masses' folds, deep, near the middle, a noise); a front
+    runs up the scores over the frames (thr), so the fire chars from its outer faces inward and sinks into the
+    folds, its share of the cloud falling 100 -> 60 -> 30 -> 10%. Charred fire is soot (density), lit by the fire
+    still burning near it (its heat grid read by the take's glow), bellies more than tops; the bake's own soot is
+    held thin round the fire and handed back by `back`."""
+    N = fl.shape[0]
+    h = P["dom"][0] / N
+    Fs = nd.gaussian_filter(fl, key(P["fsig"], f))
+    chiF = smooth(Fs, *P["chi"]) * key(P["flame_w"], f)
+    Tg = nd.gaussian_filter(tp, key(P["tsig"], f))
+    pk = float(np.percentile(Tg[Tg > 0.3], 99.5)) if (Tg > 0.3).any() else 1.0
+    chiH = smooth(Tg / pk, key(P["hrel0"], f), key(P["hrel1"], f))
+    chi = np.maximum(chiF, chiH).astype(np.float32)
+    nzi = np.argwhere(chi > 0.02)
+    pad = int(1.2 / h) + 2
+    lo = np.maximum(nzi.min(0) - pad, 0); hi = np.minimum(nzi.max(0) + pad + 1, N)
+    sl = tuple(slice(a, b) for a, b in zip(lo, hi))
+    c = chi[sl]
+    inside = c > 0.5
+    sd0 = h * (nd.distance_transform_edt(~inside) - nd.distance_transform_edt(inside)).astype(np.float32)
+    sd0 = nd.gaussian_filter(sd0, 0.7)
+    ax = [(np.arange(a, b, dtype=np.float32) + 0.5) * h for a, b in zip(lo, hi)]
+    X = ax[0][:, None, None] - P["dom"][0] / 2; Y = ax[1][None, :, None] - P["dom"][1] / 2; Z = ax[2][None, None, :]
+    idx = np.argwhere(inside)
+    cg = ((idx.mean(0) + lo + 0.5) * h - np.array([P["dom"][0] / 2, P["dom"][1] / 2, 0.0])).astype(np.float32)
+    pt = np.radians(P["pitch"])
+    d = np.array([0.0, np.cos(pt), -np.sin(pt)], np.float32)   # the camera's look
+    upv = np.array([0.0, np.sin(pt), np.cos(pt)], np.float32)  # up on screen
+    gx, gy, gz = X - cg[0], Y - cg[1], Z - cg[2]
+    gd = gx * d[0] + gy * d[1] + gz * d[2]
+    rho = np.sqrt(np.maximum((gx - gd * d[0]) ** 2 + (gy - gd * d[1]) ** 2 + (gz - gd * d[2]) ** 2, 0))
+    R = float(np.percentile(rho[inside], 92)) if inside.any() else 1.0
+    sv = gy * upv[1] + gz * upv[2]          # screen-up of each cell from the centre (m)
+    band = np.abs(sd0) < P["band"]
+    bi = np.nonzero(band)
+    sc = (P["r_ref"] / max(R, 0.3)) ** P["beta"]
+    q = np.stack([gx[bi[0], 0, 0], gy[0, bi[1], 0], gz[0, 0, bi[2]]], 1) * sc
+    sd = sd0.copy()
+    creases = []
+    amp = key(P["bamp"], f)
+    for k, (s, A, rad, cw) in enumerate(P["layers"]):
+        F1, F2 = worley(q + 13.7 * (k + 1), s, tabs[k])
+        dome = np.sqrt(np.clip(1 - (F1 / rad) ** 2, 0, 1))
+        creases.append(1 - smooth(F2 - F1, 0, cw))
+        sd[bi] -= A * amp * (dome - 0.5)
+    # Tongues: thrust out of the outline along a few directions near the screen's plane, pointed (a Laplacian of
+    # the angle), each its own length, curling a little as they go.
+    tl = key(P["tongue"], f)
+    if tl > 0:
+        rng = np.random.default_rng(P["seed"] + 300)
+        nt = P["tongues"]
+        ph = (np.arange(nt) + rng.uniform(0.15, 0.85, nt)) / nt * 2 * np.pi + P["tongue_rot"]
+        el = rng.uniform(-0.35, 0.35, nt)   # out of the screen's plane (rad)
+        ln = rng.uniform(*P["tongue_len"], nt)
+        ex = np.array([1.0, 0.0, 0.0], np.float32)
+        p3 = np.stack([gx[bi[0], 0, 0], gy[0, bi[1], 0], gz[0, 0, bi[2]]], 1)
+        pr = np.sqrt((p3 * p3).sum(1)) + 1e-6
+        for i in range(nt):
+            e = np.cos(el[i]) * (np.cos(ph[i]) * ex + np.sin(ph[i]) * upv) + np.sin(el[i]) * (-d)
+            # the axis curls with distance from the centre (a turn of `tongue_curl` rad per R)
+            tw = P["tongue_curl"] * np.clip(pr / R - 0.6, 0, None) * (1 if i % 2 else -1)
+            side = np.cross(e, -d); side /= np.linalg.norm(side)
+            ee = np.cos(tw)[:, None] * e[None] + np.sin(tw)[:, None] * side[None]
+            cs = (p3 * ee).sum(1) / pr
+            th = np.arccos(np.clip(cs, -1, 1))
+            sd[bi] -= tl * ln[i] * R * np.exp(-th / P["tongue_w"]) * smooth(cs, 0.5, 0.9)
+    occ = smooth(-sd, -P["edge"], P["edge"]).astype(np.float32)
+    dep = smooth(np.clip(-sd0, 0, None), 0, P["deep"])
+    rr = rho / R
+    crM = np.zeros_like(sd); crB = np.zeros_like(sd)
+    crM[bi] = creases[0]
+    if len(creases) > 1:
+        crB[bi] = np.maximum.reduce(creases[1:])
+    low = smooth(-sv / R, 0.0, 0.8)
+    outw = smooth(rr, 0.3, 0.95)
+    foldw = P["fold_in"] + (1 - P["fold_in"]) * np.maximum(low, outw)
+    # Birth heat.
+    T = (key(P["base"], f) + P["k_depth"] * (dep - 0.5) - key(P["k_rad"], f) * smooth(rr, 0.12, 1.05)
+         - key(P["k_fold"], f) * crM * foldw - key(P["k_bcr"], f) * crB)
+    hr = key(P["heart_m"], f)
+    Hc = np.exp(-(rho / max(hr, 1e-3)) ** 2) * (1 - P["heart_crease"] * np.maximum(crM, crB))
+    T = T + key(P["heart"], f) * Hc
+    # Life: the char front.
+    thr = key(P["thr"], f)
+    lw = key(P["life_w"], f)
+    Fo = occ.copy()
+    ch = np.zeros_like(sd)
+    if thr > -0.2 or lw > 0:
+        # a noise riding the ball (in its own scaled frame, as the billows), climbing a little
+        qq = np.stack(np.broadcast_arrays(gx, gy, gz), 0).reshape(3, -1) * sc * P["ch_noise"]
+        nzv = sample(cubes[1], qq + 31.0).reshape(sd.shape)
+        score = (P["w_fold"] * crM + P["w_bill"] * crB + P["w_mid"] * (1 - np.clip(rr, 0, 1))
+                 + P["w_deep"] * smooth(np.clip(-sd, 0, None), 0, P["ch_deep"]) + P["w_low"] * low
+                 + P["w_noise"] * (nzv - 0.5))
+        surf = (occ > 0.3) & (np.abs(sd) < P["ch_skin"])
+        ss = np.sort(score[surf])
+        if ss.size > 100:
+            srank = np.interp(score, ss, np.linspace(0, 1, ss.size)).astype(np.float32)
+            ws = P["ch_w"]
+            ch = (1 - smooth(srank, thr - ws, thr + ws)) * (occ > 0.01)
+        Fo = occ * (1 - ch)
+        # the fire still burning: its own heat, bright to the end (0.7-0.85 on screen), cooling at the front
+        Tl = (key(P["life_T"], f) + P["life_fold"] * crM - P["life_rad"] * smooth(rr, 0.3, 1.0)
+              + P["life_noise"] * (nzv - 0.5))
+        T = (1 - lw) * T + lw * Tl
+        T = T - P["front_cool"] * smooth(ch, 0.0, 1.0)
+    T = np.clip(T, 0, 1) * (occ > 0.01)
+    # The soot's light: the fire burning near it (a blur of the fire's heat), bellies more than tops.
+    D = dn.copy()
+    Dbox = D[sl]
+    tin = smooth(nd.gaussian_filter(occ, 0.25 / h), 0.15, 0.6)   # inside the fire's cloud
+    dch = key(P["dch"], f)
+    kin, kout = key(P["k_in"], f), key(P["k_out"], f)
+    Dnew = Dbox * (kin * tin + kout * (1 - tin)) + dch * ch * occ
+    # early: the thrown soot born torn (as b5d), outside the fire
+    tear = key(P["tear"], f)
+    if tear > 0:
+        m = Dbox > 1e-4
+        ii = np.nonzero(m)
+        rx, ry, rz = gx[ii[0], 0, 0], gy[0, ii[1], 0], gz[0, 0, ii[2]]
+        r3 = np.sqrt(rx * rx + ry * ry + rz * rz) + 1e-6
+        ua = np.stack([rx / r3, ry / r3, rz / r3]) * P["ka"]
+        ub = np.stack([rx, ry, rz]) / R * P["kb"]
+        wisp = smooth(0.5 * sample(cubes[0], ua + 17.0) + 0.5 * sample(cubes[1], ub + 5.0), P["tear_th"] - 0.08, P["tear_th"] + 0.08)
+        o_ = 1 - tin[ii]
+        Dnew[ii] = Dnew[ii] * (1 - o_ * tear * (1 - wisp))
+    sootl = np.zeros_like(sd)
+    gk = P["glow_k"]
+    if key(P["lsoot"], f) > 0:
+        hot = Fo * smooth(T, 0.55, 0.85)
+        Lf = nd.gaussian_filter(hot, P["l_sig"] / h)
+        Lf = np.clip(Lf / P["l_ref"], 0, 1) ** P["l_pow"]
+        under = smooth(-gz / max(R, 0.3), -0.7, 0.7)
+        Ls = key(P["lsoot"], f) * Lf * (P["l_top"] + (1 - P["l_top"]) * under) + key(P["lmin"], f)
+        sootl = np.sqrt(np.clip(Ls / gk, 0, 1))
+    # The heat grid: the fire's own heat where it burns, the soot's light where it has charred.
+    Tw = np.where(Fo > 0.05, (1 - ch) * T + ch * sootl, sootl * (Dnew > 1e-3))
+    Fout = np.zeros_like(fl); Fout[sl] = Fo
+    Tf = np.zeros_like(fl); Tf[sl] = Tw
+    D = np.zeros_like(dn) if key(P["clear_out"], f) > 0 else dn * key(P["k_far"], f)
+    D[sl] = Dnew
+    fire_vis = float(((Fo > 0.5) & (np.abs(sd) < 0.12)).sum()) / max(float(((occ > 0.5) & (np.abs(sd) < 0.12)).sum()), 1)
+    return Fout.astype(np.float32), (2.0 * Tf).astype(np.float32), D.astype(np.float32), dict(
+        R=R, cg=cg.tolist(), pk=pk, skin_fire=fire_vis, thr=thr)
+
+
+PRESETS["b5e"] = dict(
+    PRESETS["b5c"], v=3,
+    fsig=((1, 0.6), (3, 1.0), (4, 1.6), (48, 1.6)), chi=(0.05, 0.35),
+    flame_w=((1, 1.0), (5, 1.0), (8, 0.0)),
+    tsig=((1, 1.0), (48, 1.4)), hrel0=((1, 0.50), (6, 0.50), (12, 0.42), (48, 0.40)),
+    hrel1=((1, 0.73), (6, 0.73), (12, 0.64), (48, 0.62)),
+    band=0.8, r_ref=2.2, beta=1.0, edge=0.06, deep=0.5,
+    # (spacing m, displacement m, dome radius, crease width): big masses, then two billow sizes
+    layers=((2.3, 0.55, 0.9, 0.22), (0.72, 0.16, 0.85, 0.28), (0.30, 0.07, 0.85, 0.30)),
+    bamp=((1, 0.7), (2, 1.0), (48, 1.0)),
+    tongue=((1, 0.0), (1.6, 0.6), (2.5, 1.0), (4.5, 1.0), (6, 0.4), (7, 0.0)), tongues=5, tongue_rot=0.4,
+    tongue_len=(0.12, 0.22), tongue_w=0.10, tongue_curl=0.35,
+    base=((1, 0.84), (3, 0.84), (5, 0.83), (6, 0.82), (9, 0.80)), k_depth=0.12,
+    k_rad=((1, 0.15), (6, 0.15), (9, 0.10)),
+    fold_in=0.45, k_fold=((1, 0.34), (6, 0.34), (8, 0.15), (10, 0.0)), k_bcr=((1, 0.07), (8, 0.05), (10, 0.0)),
+    heart=((1, 0.55), (2, 0.50), (3, 0.42), (4, 0.28), (5, 0.15), (6, 0.04), (7, 0.0)),
+    heart_m=((1, 1.0), (2, 1.15), (3, 1.35), (4, 1.1), (5, 0.8), (6, 0.55), (7, 0.5)), heart_crease=0.6,
+    # life: the char front's threshold over the surface's ranked scores (share of the skin still burning ~ 1 - thr)
+    thr=((1, -0.3), (6, -0.12), (8, 0.05), (12, 0.38), (17, 0.66), (22, 0.88), (26, 0.97), (30, 1.15)),
+    life_w=((1, 0.0), (6, 0.0), (10, 1.0)),
+    w_fold=0.42, w_bill=0.12, w_mid=0.30, w_deep=0.30, w_low=0.10, w_noise=0.35, ch_noise=10.0, ch_deep=0.45,
+    ch_skin=0.14, ch_w=0.07,
+    life_T=((6, 0.82), (14, 0.84), (22, 0.84), (30, 0.80)), life_fold=0.05, life_rad=0.06, life_noise=0.06,
+    front_cool=0.25,
+    # soot
+    dch=((1, 0.0), (6, 0.04), (9, 0.12), (30, 0.12), (40, 0.06)),
+    k_in=((1, 1.0), (6, 0.6), (14, 0.5), (30, 0.6), (40, 0.8)), k_out=((1, 0.6), (6, 0.45), (14, 0.5), (30, 0.7), (40, 0.9)),
+    k_far=((1, 0.5), (14, 0.5), (30, 0.7), (40, 0.9)), clear_out=((1, 0.0),),
+    tear=((1, 1.0), (6, 1.0), (9, 0.4), (12, 0.0)),
+    glow_k=1.0, lsoot=((1, 0.0), (6, 0.0), (9, 0.09), (20, 0.08), (28, 0.03), (34, 0.0)),
+    lmin=((1, 0.0), (8, 0.004), (24, 0.004), (32, 0.0)), l_sig=0.45, l_ref=0.35, l_pow=0.8, l_top=0.35,
+)
+
+
 def main():
     src, dst = sys.argv[1], sys.argv[2]
     av = sys.argv[3:]
     preset = av[av.index("--preset") + 1] if "--preset" in av else "b5c"
     last = int(av[av.index("--last") + 1]) if "--last" in av else 9
+    only = [int(v) for v in av[av.index("--frames") + 1].split(",")] if "--frames" in av else None
     P = PRESETS[preset]
     for sub in ("config", "data", "guiding", "mesh", "noise", "particles"):
         os.makedirs(os.path.join(dst, sub), exist_ok=True)
@@ -279,7 +468,7 @@ def main():
         for fn in sorted(os.listdir(os.path.join(src, sub))):
             s_, d_ = os.path.join(src, sub, fn), os.path.join(dst, sub, fn)
             fr = int(fn.split("_")[-1].split(".")[0])
-            if sub == "data" and fr <= last:
+            if sub == "data" and (fr in only if only else fr <= last):
                 continue
             if os.path.exists(d_):
                 os.remove(d_)
@@ -289,9 +478,9 @@ def main():
                 shutil.copy2(s_, d_)
     cubes = [noise_cube(96, P["seed"], 2.0), noise_cube(96, P["seed"] + 1, 2.5)]
     rng = np.random.default_rng(P["seed"] + 100)
-    tabs = [rng.uniform(0.08, 0.92, (32, 32, 32, 3)).astype(np.float32) for _ in P.get("billows", ())]
+    tabs = [rng.uniform(0.08, 0.92, (32, 32, 32, 3)).astype(np.float32) for _ in P.get("layers", P.get("billows", ()))]
     N = P["res"]
-    for f in range(1, last + 1):
+    for f in (only or range(1, last + 1)):
         fn = "fluid_data_%04d.vdb" % f
         grids, meta = openvdb.readAll(os.path.join(src, "data", fn))
         G = {g.name: g for g in grids}
@@ -299,7 +488,9 @@ def main():
         def dense(g):
             a = np.zeros((N, N, N), np.float32); g.copyToArray(a, ijk=(0, 0, 0)); return a
         fl, dn, tp = dense(G["flame"]), dense(G["density"]), dense(G["temperature"])
-        if P.get("v") == 2:
+        if P.get("v") == 3:
+            Fn, Tn, Dn, info = regrade3(fl, dn, tp, f, P, cubes, tabs)
+        elif P.get("v") == 2:
             Fn, Tn, Dn, info = regrade2(fl, dn, tp, f, P, cubes, tabs)
         else:
             Fn, Tn, Dn, info = regrade(fl, dn, tp, f, P, cubes)
@@ -321,7 +512,9 @@ def main():
         fire = Fn > 0.3
         print("BIRTH f%02d" % f, "R %.2f m" % info["R"], "centroid (%.2f %.2f %.2f)" % tuple(info["cg"]),
               "T in fire p10/50/90/99 %.2f %.2f %.2f %.2f" % tuple(np.percentile(Tn[fire] / 2, [10, 50, 90, 99])) if fire.any() else "",
-              "soot sum %.0f -> %.0f" % (dn.sum(), Dn.sum()), flush=True)
+              "soot sum %.0f -> %.0f" % (dn.sum(), Dn.sum()),
+              ("hot-gas peak %.2f, skin burning %.0f%% (thr %.2f)" % (info["pk"], 100 * info["skin_fire"], info["thr"])
+               if "pk" in info else ""), flush=True)
     print("BIRTH done", dst)
 
 

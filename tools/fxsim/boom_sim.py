@@ -148,6 +148,16 @@ TAKES["burns_boom5d"] = dict(TAKES["burns_boom5"], birth=dict(
           (0.58, (1.0, 0.20, 0.02), 0.26), (0.70, (1.0, 0.33, 0.04), 0.42), (0.80, (1.0, 0.42, 0.06), 0.60),
           (0.88, (1.0, 0.62, 0.20), 1.0), (0.92, (1.0, 0.82, 0.48), 1.6), (0.95, (1.0, 0.97, 0.86), 3.0), (1.0, (1.0, 1.0, 0.95), 4.0))))
 
+# burns_boom5e (solver 9, judge 5a 1b/1c/1e): the whole life from birth.py preset b5e (every frame regraded, so no
+# hand-over cut): the birth's ramp of (T, colour, light) as 5d's, the fire's visibility a plain threshold of the
+# designed flame, no taper boost; the charred soot lit by the fire still burning near it through the glow (the heat
+# grid carries the soot's light where the fire has gone: hg = heat^2 * glow_k).
+TAKES["burns_boom5e"] = dict(TAKES["burns_boom5d"], birth=dict(
+    TAKES["burns_boom5d"]["birth"], keys=((1, 1.0), (48, 1.0)), kk=((1, 1.0), (48, 1.0)),
+    op=((1, 0.55), (5, 0.55), (8, 0.75), (10, 0.9), (48, 0.9))),
+    fire_keys=((1, 1.0), (48, 1.0)), fvis=((1, 0.2, 0.45), (48, 0.2, 0.45)), vmin=0.0,
+    glow_k=1.0, glow_heat=(0.0, 1.0), glow_rgb=(1.0, 0.45, 0.12), heat_keys=((1, 1.0), (48, 1.0)))
+
 
 def args():
     a = sys.argv[sys.argv.index("--") + 1:] if "--" in sys.argv else []
