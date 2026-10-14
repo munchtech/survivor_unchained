@@ -33,6 +33,11 @@ dashes on her other faces); and smile_open, written without normals, gets its ow
 (SMO). Tried and dropped: a biharmonic band, a front-view blur of the band's moves and her smiling normals smoothed
 (each deepened the dashes).
 
+Solver smile3 (14 October 2026): in smo a dark comma 1 cm over and outside each mouth corner on every face (the
+same with a flat paint and with corner_shade or mouth_in off: the keys' normals, where her smile folds her cheek).
+smile, mouth_open and smile_open's normals are smoothed there too (cheek_of: CHEEK_C, CHEEK_R, CHEEK_PASSES): the
+comma 26-46% as dark, over twice as wide, a soft shade; positions and her rest pose untouched.
+
     python tools/assets/heroine_smile_lip.py [GLB [OUT]]
 
 heroine_outfits.py runs it on the body it exports, after heroine_mouth.seat. On one done already (her head's
@@ -62,6 +67,13 @@ X_IN, X_OUT = float(os.environ.get("SMILE_LIP_XIN_MM", "16")) / 1000, float(os.e
 N_SMOOTH = int(os.environ.get("SMILE_LIP_NSMOOTH", "12"))   # (passes smoothing each eased key's normals on the band)
 INSIDE_NZ = -0.2               # (a point whose rest normal faces further back is her mouth's inside)
 COL_W = 0.0006                 # (m: a column's half width, as the border is looked for)
+# (her cheeks over and beside her mouth's corners, where her smile folds them: CHEEK_C the fold's middle (mm off her
+# mouth's middle, over her lips' line), CHEEK_R its reach (mm across, up), CHEEK_PASSES the smoothing of each smiling
+# key's normals there (solver smile3: a dark comma 1 cm over and outside each corner in smo, by the keys' normals))
+CHEEK_KEYS = tuple(os.environ.get("SMILE_CHEEK_KEYS", "smile,mouth_open,smile_open").split(","))
+CHEEK_C = tuple(float(v) / 1000 for v in os.environ.get("SMILE_CHEEK_C_MM", "25,6").split(","))
+CHEEK_R = tuple(float(v) / 1000 for v in os.environ.get("SMILE_CHEEK_R_MM", "10,12").split(","))
+CHEEK_PASSES = int(os.environ.get("SMILE_CHEEK_PASSES", "60"))
 
 
 def _weld(P):
@@ -155,6 +167,17 @@ def band_of(V, N, D, line, mid):
     return band, (xs, ys), share
 
 
+def cheek_of(V, N, line, mid):
+    """Each welded point's share of the cheek's smoothing (1 in the fold's middle, easing to none at CHEEK_R; none on
+    her lips' red by her corners, none inside her mouth)."""
+    ax, dy = np.abs(V[:, 0] - mid), V[:, 1] - line
+    r = np.hypot((ax - CHEEK_C[0]) / CHEEK_R[0], (dy - CHEEK_C[1]) / CHEEK_R[1])
+    w = 1 - hmo._s01((r - 0.5) / 0.5)
+    lip = np.maximum(hmo._s01((dy - 0.001) / 0.002), hmo._s01((ax - 0.023) / 0.002))
+    outside = (N[:, 2] > INSIDE_NZ) & (V[:, 2] > 0.07)
+    return np.where(outside, w * lip, 0.0)
+
+
 def harmonic(V, T, D, band):
     """D on the band's points replaced by the smoothest field that meets D round it (each band point the
     cotangent-weighted mean of its neighbours')."""
@@ -216,7 +239,7 @@ def ease(js, binc, chunks, hm, hp, keys=KEYS):
 
     mid = float(np.median(Vw[(np.abs(Vw[:, 1] - line - 0.004) < 0.008) & (np.abs(Vw[:, 0]) < 0.03) & (Vw[:, 2] > 0.085), 0]))
     band, (xs, ys), share = band_of(Vw, Nw, welded(hs._read(js, binc, hp["targets"][names.index(FIND)]["POSITION"])), line, mid)
-    done, eased, tgts = {}, {}, {}
+    done, eased, tgts, normals = {}, {}, {}, {}
     for key in keys:
         tgt = hp["targets"][names.index(key)]
         D = hs._read(js, binc, tgt["POSITION"])
@@ -233,6 +256,7 @@ def ease(js, binc, chunks, hm, hp, keys=KEYS):
             dN2[rows] = a / np.linalg.norm(a, axis=1)[:, None] - N[rows]
             dN2 = smooth_on(dN2, Tw, inv, n, band, share, N_SMOOTH)
             hs._set(js, chunks, tgt["NORMAL"], dN2)
+            normals[key] = dN2
         hs._set(js, chunks, tgt["POSITION"], D2, minmax=True)
         done[key] = round(1000 * float(np.linalg.norm(D2 - D, axis=1).max()), 2)
     # (smile_open (heroine_mouth.py) is written without normals: its own, as its move turns her face's in her laugh
@@ -244,7 +268,12 @@ def ease(js, binc, chunks, hm, hp, keys=KEYS):
         dN[np.abs(dN).max(1) < 1e-6] = 0
         js["accessors"].append({"componentType": 5126, "count": len(dN), "type": "VEC3"})
         tgts["smile_open"]["NORMAL"] = len(js["accessors"]) - 1
-        hs._set(js, chunks, tgts["smile_open"]["NORMAL"], smooth_on(dN, Tw, inv, n, band, share, N_SMOOTH))
+        normals["smile_open"] = smooth_on(dN, Tw, inv, n, band, share, N_SMOOTH)
+        hs._set(js, chunks, tgts["smile_open"]["NORMAL"], normals["smile_open"])
+    cheek = cheek_of(Vw, Nw, line, mid)
+    for key in CHEEK_KEYS:
+        if key in normals and CHEEK_PASSES > 0:
+            hs._set(js, chunks, tgts[key]["NORMAL"], smooth_on(normals[key], Tw, inv, n, cheek > 0, cheek, CHEEK_PASSES))
     hm.setdefault("extras", {})["smile_lip"] = {"band_mm": [B_LO * 1000, B_HI * 1000], "points": int(band.sum()),
                                                 "most_mm": done}
     print("SMILE_LIP: %s eased across her upper lip's border on %d points (moved at most %s mm); the border %.1f..%.1f mm "
