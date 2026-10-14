@@ -3997,6 +3997,12 @@ def grid(nu, nv):
     return np.vstack([np.c_[i, i + nv, i + 1], np.c_[i + 1, i + nv, i + nv + 1]])
 
 
+# (FRINGE_RIGID: a hanging piece cut into tongues weights each tongue as one; see hanging())
+FRINGE_RIGID = os.environ.get("FRINGE_RIGID", "1") == "1"
+# (FRINGE_ONE: a front panel given `one_piece` moves as one piece below its top; see hanging())
+FRINGE_ONE = os.environ.get("FRINGE_ONE", "1") == "1"
+
+
 def fringe(hem, strips, depth, notch=0.18):
     """A hem cut into `strips` strips: between each, a V-notch `depth` deep
     and `notch` of a strip wide, so the leather hangs in tongues."""
@@ -4007,7 +4013,8 @@ def fringe(hem, strips, depth, notch=0.18):
     return f
 
 
-def hanging(name, a0, a1, z_top, hem, mkey, flare=0.15, lift=0.01, gap=0.012, thick=0.0025, trim=None, nu=56, snug=None):
+def hanging(name, a0, a1, z_top, hem, mkey, flare=0.15, lift=0.01, gap=0.012, thick=0.0025, trim=None, nu=56, snug=None,
+            strips=None, one_piece=None):
     """Cloth hanging from her hips, all round her between the angles a0 and
     a1 (radians; 0 her front, rising toward her left): at each angle it
     falls from the hips, flaring out by `flare` a metre of fall, and never
@@ -4080,6 +4087,37 @@ def hanging(name, a0, a1, z_top, hem, mkey, flare=0.15, lift=0.01, gap=0.012, th
     d, j = cKDTree(P[body]).query(pos)
     near = 1 - ramp(d, gap + 0.004, 0.06)
     wt = wt * (1 - near[:, None]) + soft_weights(pos, np.where(body)[0], sigma=0.02) * near[:, None]
+    # A hem cut into `strips` tongues (fringe()): each tongue moves as one,
+    # from 3 cm above its notches' roots, all of it 3 cm below them (each row
+    # of it its row's mean): weighted column by column, a tongue near her
+    # middle took one thigh at one edge and the other at its other, and with
+    # her thighs spread (sit_log) its tip stretched across her thigh in a
+    # sawtooth shard (judge r2). Between tongues the notches part instead.
+    if strips and FRINGE_RIGID:
+        u_ = (aa.ravel() - a0) / (a1 - a0) * 2 - 1
+        ks = np.clip(np.floor((u_ + 1) / 2 * strips), 0, strips - 1).astype(int)
+        zr = np.array([max(hem(x) for x in np.linspace(2 * k / strips - 1, 2 * (k + 1) / strips - 1, 9)) for k in range(strips)])
+        rows = np.repeat(np.arange(len(zs)), nu)
+        grp = rows * strips + ks
+        cnt = np.bincount(grp, minlength=len(zs) * strips)[:, None]
+        mean = np.stack([np.bincount(grp, wt[:, b], minlength=len(zs) * strips) for b in range(wt.shape[1])], 1) / np.maximum(cnt, 1)
+        t_ = ramp(zr[ks] + 0.03 - pos[:, 2], 0.0, 0.06)[:, None]
+        wt = wt * (1 - t_) + mean[grp] * t_
+    # A narrow front panel (`one_piece`, its thigh share at the hem) moves as
+    # one piece below its top: pelvis, and both thighs alike, more and more
+    # from 5 cm below the hip joint to 25 cm. Each side after its own thigh,
+    # with her thighs raised and spread (sit_log) the panel spread with them,
+    # stretched and streaked across her thigh (judge r2); and in a stride it
+    # tore between a thigh forward and a thigh back, and went into the one
+    # forward no less (measured over run and sprint: the leading thigh in it
+    # a third as often this way). Near the belt, her skin's weights as above.
+    if one_piece is not None and FRINGE_ONE:
+        leg1 = one_piece * ramp(hip - pos[:, 2], 0.05, 0.25)
+        w1 = np.zeros_like(wt)
+        w1[:, BI["pelvis"]] = 1 - leg1
+        w1[:, BI["thigh_l"]] = w1[:, BI["thigh_r"]] = leg1 / 2
+        k_ = ramp(pos[:, 2], CROTCH - 0.04, CROTCH + 0.06)[:, None]
+        wt = wt * k_ + w1 * (1 - k_)
     attr = np.hstack([nor, wt, f_trim[:, None]])
     if os.environ.get("HANGDEBUG"):
         print("HANGDEBUG", name, "grid z %.3f..%.3f" % (pos[:, 2].min(), pos[:, 2].max()), "kept pts", int((f >= 0).sum()), "of", len(f),
@@ -6725,7 +6763,7 @@ def reaver():
         # The panel's hem cut into a fringe: strips with V-notches between.
         # (columns ~1 mm apart: any closer and the weld merges them)
         *hanging("reaver.loin_front", -0.33, 0.33, bz0, fringe(lambda u: 0.52 + 0.07 * u * u, 11, 0.075, notch=0.26), "oldleather",
-                 flare=0.06, lift=0.016, trim=edge(0.01), nu=120),
+                 flare=0.06, lift=0.016, trim=edge(0.01), nu=120, strips=11, one_piece=0.7),
         # Wolf fangs on a cord round her neck, hanging into her cleavage:
         # trophies of the Verge's wolves.
         *ribbon("reaver.cord", cord, 0.004, "blackleather", lift=0.0025, thick=0.003),
