@@ -49,6 +49,10 @@ def sprint(rig, run):
 def stop(rig, calling, side):
     """Planting the `side` foot out of the run."""
     arms = idle.IDLES[f"idle_{calling}"][1](0, 0)
+    if calling == "arcanist":
+        # The staff's head leant out past her hat's brim: braking, her head and hat pitch over the fist (13 Oct, with
+        # the staff seated in the fist's hollow, the idle's lean put the head 1 mm into the brim).
+        arms["hand_r"] = {**arms["hand_r"], "blade": idle._n((-0.10, 1.0, 0.04))}
     s = 1 if side == "l" else -1
     front, back = f"foot_{side}", f"foot_{'r' if side == 'l' else 'l'}"
     w = 0.09 if calling == "warden" else 0.05
