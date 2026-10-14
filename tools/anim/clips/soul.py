@@ -324,25 +324,34 @@ def arcanist_break(rig):
     # Up beside her face, not before it (the fingers stay 6 cm or more out from her mouth), the wrist easing
     # straight on the way (extension 55 -> 27 deg, no flick back; tools: scratch tuck/wrist.py, facecheck.py), and
     # down the same way to the hip.
-    rising = (9, over("arcanist", hand_l={"pos": (0.21, 1.40, 0.11), "pole": (0.6, -0.7, 0.4), "knuckles": (-0.3, 0.55, 0.78)},
-                      fingers_l="relaxed"), "auto")
-    lower = {"pos": (0.21, 1.36, 0.08), "pole": (0.6, -0.7, 0.4), "knuckles": (-0.35, 0.5, 0.8)}
-    lowering = (36, over("arcanist", hand_l=lower, fingers_l="relaxed"), "auto")
+    h9 = {"pos": (0.2100, 1.4001, 0.1100), "pole": (0.6, -0.7, 0.4), "knuckles": (-0.2910, 0.4774, 0.8289), "blade": (-0.1065, 0.8448, -0.5233)}
+    rising = (9, over("arcanist", hand_l=h9, fingers_l="relaxed"), "auto")
+    h41 = {"pos": (0.2100, 1.3601, 0.0800), "pole": (0.6, -0.7, 0.4), "knuckles": (-0.3434, 0.4529, 0.8226), "blade": (-0.0956, 0.8544, -0.5096)}
+    # The drop from her head to her chest over 10 frames, not 5 (it ran 30 cm in 5, 8.7 cm a frame: lead 31's tuck
+    # judge), so the staff's turn and the hand's landing on her hip come 5 frames later for her.
+    lowering = (41, over("arcanist", hand_l=h41, fingers_l="relaxed"), "auto")
+    # Wrist keys on the way up and down, and h9/h41 aimed in full: between the keys the hand bent 21-22 deg sideways
+    # (lead 31's tuck judge); now 11-12 at most from f9 to the chest key (tools: scratch anim/l32/try.sh, speed.py).
+    w12 = (12, {"hand_l": {"pos": (0.1843, 1.4708, 0.0686), "pole": (0.5, -0.72, 0.47), "knuckles": (-0.2411, 0.8336, 0.4968), "blade": (-0.0598, 0.4981, -0.8642)}}, "auto")
+    w15 = None
+    w36 = (36, {"hand_l": {"pos": (0.1912, 1.4792, 0.0170), "pole": (0.45, -0.72, 0.5), "knuckles": (-0.2001, 0.9279, 0.3144), "blade": (-0.0365, 0.3134, -0.9481)}}, "auto")
+    w39 = (39, {"hand_l": {"pos": (0.2066, 1.3838, 0.0674), "pole": (0.55, -0.71, 0.43), "knuckles": (-0.2865, 0.5744, 0.7666), "blade": (-0.0990, 0.7780, -0.6193)}}, "auto")
+    d = 0 if rig.body == "him" else 5
     keys = [
         (0, over("arcanist"), "auto"),
-        *([rising] if rig.body != "him" else []),
+        *([k for k in (rising, w12, w15) if k] if rig.body != "him" else []),
         first,
         second,
-        *([lift, lowering] if rig.body != "him" else []),
+        *([lift, w36, w39, lowering] if rig.body != "him" else []),
         # Up at the sky, the staff turning in her fingers.
-        (44, over("arcanist", head=(10, -24, 0), hand_r=staff(-40)), "ease"),
-        (60, over("arcanist", head=(14, -26, 0), hand_r=staff(30)), "auto"),
-        (74, over("arcanist", head=(8, -20, 0), hand_r=staff(-20)), "ease"),
+        (44 + d, over("arcanist", head=(10, -24, 0), hand_r=staff(-40)), "ease"),
+        (60 + d, over("arcanist", head=(14, -26, 0), hand_r=staff(30)), "auto"),
+        (74 + d, over("arcanist", head=(8, -20, 0), hand_r=staff(-20)), "ease"),
         (100, over("arcanist"), "ease"),
     ]
     clip = build("idle_arcanist_break", rig, keys, base=base, meta={"layer": "full", "weapon": "staff"})
     # The hand on her hip as it leaves and from where it is back (f44 on it floated 3-10 mm in the chest's frame).
-    return idle.hip_layer(rig, clip, lambda f: 1 - idle._smooth(f / 9) if f < 9 else idle._smooth((f - 36) / 8))
+    return idle.hip_layer(rig, clip, lambda f: 1 - idle._smooth(f / 9) if f < 9 else idle._smooth((f - 36 - d) / 8))
 
 
 def reaver_break(rig):
