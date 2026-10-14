@@ -302,6 +302,14 @@ def mend_folds(me, obj=None, free=None, normals=True):
     out = cn.copy()
     ok = np.linalg.norm(R2[lw], axis=1) > 1e-9
     out[target & ok] = R2[lw[target & ok]] / np.linalg.norm(R2[lw[target & ok]], axis=1, keepdims=True)
+    # (s26: her chest's fitted normals, heroine_chest.py, are set here in this one pass, so every other
+    # corner's normal is stored once as in F0 and the export keeps her vertex count)
+    _hc = sys.modules.get("heroine_chest")
+    if obj is not None and _hc is not None and getattr(_hc, "CN_OVERRIDE", None) is not None:
+        _sel, _nv = _hc.CN_OVERRIDE
+        if len(out) == nl:
+            out[_sel] = _nv
+        _hc.CN_OVERRIDE = None
     me.normals_split_custom_set([tuple(v) for v in out])
     print("MEND her folds: %d folded, %d left after %d passes (%d hand points kept), %d points moved; %d corners given their neighbours' normal"
           % (first, left, it + 1, len(still), len(moved), int((target & ok).sum())))

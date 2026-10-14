@@ -384,6 +384,9 @@ def nweights(P, tips, arm):
     return w * ss((ARM0 - arm) / 0.15)
 
 
+CN_OVERRIDE = None
+
+
 def chest_smooth(obj, mend=None):
     """mend: heroine_outfits.mend_folds (her chest's fold clusters mended first, at P6's places).
     Then: edges flipped toward better triangles (never across a UV seam, a material or a quad), her points
@@ -481,8 +484,10 @@ def chest_smooth(obj, mend=None):
         spread = np.ones(len(Gw)); np.minimum.at(spread, lw, (cn * mean[lw]).sum(1))
         act &= spread > np.cos(np.radians(1.0))
         sel = act[lw]
-        cn[sel] = ob[lw[sel]]
-        me.normals_split_custom_set([tuple(v) for v in cn])
+        # (s26: handed to the export's one custom-normal pass, mend_folds, so her other corners are
+        # stored once as in F0: set twice, their rounding changed and the export welded 2 copies)
+        global CN_OVERRIDE
+        CN_OVERRIDE = (np.nonzero(sel)[0], ob[lw[sel]])
         nn = int(act.sum())
     if os.environ.get("CHEST_DUMP"):
         np.savez(os.environ["CHEST_DUMP"], G=Gw, Gn=Gn, T=Tw, w=ww, tips=np.array(tips))
