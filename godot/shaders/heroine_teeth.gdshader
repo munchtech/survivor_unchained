@@ -24,6 +24,10 @@ uniform float closed = 0.2;      // (her lips closed: how much of the front teet
 uniform float shut = 1.0;        // (how far the lamps are cut in the shade: 1 lips shut, 0.6 parted; HerFaceLife.TeethLight)
 uniform float seep = 0.12;       // (her lips shut: the share of the light on her that reaches her mouth's inside)
 uniform float roughness = 0.35;
+// (her mouth open, its inside (the side teeth, her palate and gums, out of the lamps) gives off a little of the
+// mouth's own dark red, so it reads as a shaded mouth and not a black hole (the smile pass, f1-f4, with the skin's mouth_fill); 0 none)
+uniform vec3 inside : source_color = vec3(0.42, 0.15, 0.14);
+uniform float fill = 0.2;
 uniform float debug = 0.0;       // (1: her teeth green, emitted, for finding them in a picture; 2: hidden)
 
 void fragment() {
@@ -39,5 +43,6 @@ void fragment() {
 	// them and her molars showed as lit brown blocks behind her front teeth (the smile pass, a3))
 	AO_LIGHT_AFFECT = mix(max(shut * (1.0 - k), 1.0 - k * k * k), 1.0, c);
 	NORMAL = normalize(mix(NORMAL, VIEW, c));
+	EMISSION = mix(inside, ALBEDO, k) * fill * (1.0 - k) * (1.0 - c);
 	if (debug > 0.5) { ALBEDO = vec3(0.0); SPECULAR = 0.0; AO = 0.0; AO_LIGHT_AFFECT = 1.0; EMISSION = vec3(0.0, 2.0, 0.0); }
 }

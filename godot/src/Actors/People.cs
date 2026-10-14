@@ -504,14 +504,14 @@ public static class People
                 th.SetShaderParameter("paint", src.AlbedoTexture);
                 return th;
             case "tongue":
-                m.Roughness = 0.35f;
-                // (its own shade inside her mouth, lit at its tip and dark at its root: heroine_mouth.py's vertex colour;
-                // white where a mesh has none)
-                m.VertexColorUseAsAlbedo = true;
-                // (its paint a bright salmon pink, read as a plastic slab inside her mouth at the Look (a2): a muted,
-                // darker rose, as a tongue in the mouth's shade)
-                m.AlbedoColor = new Color(0.7f, 0.5f, 0.46f);
-                return m;
+                // (its own shade inside her mouth, lit at its tip and dark at its root: heroine_mouth.py's vertex colour,
+                // white where a mesh has none; no shadows, as their maps hatched it and cut a hard black edge over it
+                // (the smile pass, e1): shaders/heroine_tongue.gdshader. Its paint a bright salmon pink, read as a
+                // plastic slab inside her mouth at the Look (a2): the shader mutes it to a darker rose)
+                tongueShader ??= GD.Load<Shader>("res://shaders/heroine_tongue.gdshader");
+                var tg = new ShaderMaterial { Shader = tongueShader, ResourceName = "tongue" };
+                tg.SetShaderParameter("paint", src.AlbedoTexture);
+                return tg;
             default:
                 return Skin(src, look, mesh, who == "hero" ? HisTone : null, who);
         }
@@ -884,7 +884,7 @@ public static class People
         return ImageTexture.CreateFromImage(img);
     }
 
-    static Shader? hairShader, hairSoftShader, eyeShader, teethShader;
+    static Shader? hairShader, hairSoftShader, eyeShader, teethShader, tongueShader;
 
     /// <summary>Hair: her hair cards (tools/assets/heroine_hair.py) by
     /// shaders/heroine_hair.gdshader, dyed: the strands' atlas cut to its

@@ -83,10 +83,16 @@ public partial class HerFaceLife : Node
             foreach (var kv in tpar.Split(','))
                 if (kv.Split('=') is [var k, var v] && float.TryParse(v, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var f))
                     teethParams.Add((k, f));
+        // --tongueparam name=value,...: her tongue shader's numbers, each frame (pictures of them tried).
+        if (Args.Get("tongueparam") is string gpar)
+            foreach (var kv in gpar.Split(','))
+                if (kv.Split('=') is [var k, var v] && float.TryParse(v, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var f))
+                    tongueParams.Add((k, f));
     }
 
     readonly System.Collections.Generic.List<(string Name, Variant Value)> skinParams = new();
     readonly System.Collections.Generic.List<(string Name, float Value)> teethParams = new();
+    readonly System.Collections.Generic.List<(string Name, float Value)> tongueParams = new();
 
     MeshInstance3D? teeth, mouth;
     int open = -1, snarl = -1;
@@ -120,12 +126,23 @@ public partial class HerFaceLife : Node
                         foreach (var (k, v) in skinParams) m.SetShaderParameter(k, v);
     }
 
+    void TongueParams()
+    {
+        if (GetParent() is not Skeleton3D sk) return;
+        foreach (var c in sk.GetChildren())
+            if (c is MeshInstance3D mi)
+                for (int s = 0; mi.Mesh != null && s < mi.Mesh.GetSurfaceCount(); s++)
+                    if (mi.GetSurfaceOverrideMaterial(s) is ShaderMaterial m && m.ResourceName == "tongue")
+                        foreach (var (k, v) in tongueParams) m.SetShaderParameter(k, v);
+    }
+
     Color?[]? cycle;
 
     public override void _Process(double delta)
     {
         t += delta;
         if (skinParams.Count > 0) SkinParams();
+        if (tongueParams.Count > 0) TongueParams();
         TeethLight();
         // A blink: the lid down in 70 ms, held a moment, up in 150 ms.
         if (t >= nextBlink && blinkAt < 0)

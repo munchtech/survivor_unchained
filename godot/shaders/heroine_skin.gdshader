@@ -276,11 +276,20 @@ varying float back_ao;
 uniform float mouth_in = 0.0;
 uniform vec3 mouth_colour : source_color = vec3(0.42, 0.15, 0.14);
 uniform float mouth_occ = 0.93;
+// (a little of its own colour given off, so the shade inside reads as a deep red, not a black hole; less with depth)
+uniform float mouth_fill = 0.2;
+// (her mouth's corners, the crease where her lips meet (heroine_mouth.py: her head's vertex colour's red, 1 or down
+// to 0 there): in her smile it folds in, and the lamps behind her lit it, an orange-brown wedge through her skin's
+// light (the smile pass, e3); shadows at this scale don't reach it. corner_shade of the lamps behind her cut there:
+// all of them made a grey smudge on her cheek by the corners, f2)
+uniform float corner_shade = 1.0;
+varying float crease;
 varying float mouth_c;
 varying float mouth_f;
 
 void vertex() {
 	mouth_c = mouth_in * (1.0 - COLOR.a);
+	crease = mouth_in * (1.0 - COLOR.r);
 	tuck_gone = 0.0;
 	if (tuck_channel >= 0) {
 		float h = tuck_channel == 0 ? COLOR.r : tuck_channel == 1 ? COLOR.g : tuck_channel == 2 ? COLOR.b : COLOR.a;
@@ -400,10 +409,13 @@ void fragment() {
 		BACKLIGHT *= 1.0 - mc;
 		SPECULAR *= 1.0 - mo;
 		AO = min(AO, 1.0 - mouth_occ * mo);
+		EMISSION += mouth_colour * mouth_fill * mc * (1.0 - 0.6 * mo);
 	}
 	if (dbg_gate > 0.0) { ALBEDO = vec3(1.0); SPECULAR = 0.0; BACKLIGHT = vec3(0.0); }
 	// (dbg_gate 3+: her maps instead, emitted: red ao_map's shade, green its seam ease, blue the face's paint (features' blue))
 	if (dbg_gate > 2.5) { ALBEDO = vec3(0.0); EMISSION = (dbg_gate - 3.0) * vec3(aot.r, aot.g, fm.b); }
+	// (dbg_gate 9: her UV, emitted, to find a picture's point on her mesh, with --tonemap linear --grade off)
+	if (dbg_gate > 8.5) { EMISSION = vec3(UV, 0.0); }
 }
 
 // Each lamp's light on her, as Godot's own (Burley's diffuse, GGX's sheen,
@@ -416,7 +428,7 @@ float schlick(float u) {
 }
 
 void light() {
-	float mouth_lit = 1.0 - mouth_occ * smoothstep(0.1, 1.0, mouth_f);
+	float mouth_lit = (1.0 - mouth_occ * smoothstep(0.1, 1.0, mouth_f));
 	float ndl = dot(NORMAL, LIGHT);
 	float c_ndl = max(ndl, 0.0);
 	if (dbg_gate > 0.0) {
@@ -452,6 +464,7 @@ void light() {
 	// (lamps behind her take no lift: the Look's cool rim and the fire's edge lamp lifted the far side of her neck too,
 	// judge j6)
 	float behind = smoothstep(-0.1, 0.6, dot(-LIGHT, VIEW));
+	mouth_lit *= 1.0 - corner_shade * crease * behind;
 	vec3 kt = vec3(1.0);
 	// (from her collarbones down none: fitted on her neck with her body's tone, which is taken out there; body_tone)
 	vec3 ktone = mix(vec3(1.0), LIGHT_IS_DIRECTIONAL && sky_tone.x > 0.0 ? sky_tone : key_tone, neck_w);

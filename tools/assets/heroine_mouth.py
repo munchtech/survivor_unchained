@@ -49,7 +49,9 @@ LINE_NEAR = 1.692              # (her lips' line is looked for within 2 cm of th
 CAV_AXIS_Z, CAV_FRONT, CAV_SIDE, CAV_DEPTH = 0.04, 0.088, 0.6, 0.025   # (m: her mouth's axis; its opening's z at her
 #                                middle, falling back CAV_SIDE per metre out; dark at CAV_DEPTH behind it)
 CORNER_X, CORNER_DEPTH = (0.017, 0.023), float(os.environ.get("MOUTH_CORNER_DEPTH", "0.35"))
-TONGUE_ROOT, TONGUE_LEN = 0.12, 0.035   # (her tongue's shade at its root, so far back from its tip: at 0.3 over 50 mm its
+CREASE_X = tuple(float(v) for v in os.environ.get("MOUTH_CREASE_X", "0.015,0.018,0.023,0.026").split(","))  # (m: in, out)
+CREASE_Y = tuple(float(v) for v in os.environ.get("MOUTH_CREASE_Y", "0.002,0.004").split(","))  # (m off her lips' line)
+TONGUE_ROOT, TONGUE_LEN =0.12, 0.035   # (her tongue's shade at its root, so far back from its tip: at 0.3 over 50 mm its
 #                                      back, unshadowed, read as a lit pink slab behind her teeth (a2))
 # (at mouth_open 1, her tongue dropped and drawn back so far beyond her lower teeth's move, fully at its tip,
 # at its root: following her teeth alone it filled 14 mm of her mouth's opening at .6 (a2), a slab over her lower
@@ -144,8 +146,10 @@ def seat(path, out=None):
     GD = (w[..., None] * TD[jaw][j]).sum(1)
     tip = 0.6 + 0.4 * _s01(1 - (GV[:, 2].max() - GV[:, 2]) / TONGUE_LEN)
     GD = GD + np.c_[np.zeros(len(GV)), -TONGUE_DROP_MM / 1000 * tip, -TONGUE_BACK_MM / 1000 * tip]
-    # (her upper teeth are her skull's: mouth_open no longer moves them)
-    TD2 = TD * _s01((n / n.max() - 0.3) / (JAW_SHARE - 0.3))[:, None]
+    # (her upper teeth are her skull's: mouth_open no longer moves them. They move under 0.5% of the most, her lower
+    # teeth and gum 10% and more (the back of her jaw, by its hinge). An easing from 30% to 50% held back her lower
+    # back molars and gum, which stretched into a wall over her tongue's side, black in the shade (the smile pass, e2))
+    TD2 = TD * _s01((n / n.max() - 0.01) / 0.04)[:, None]
     SO, line, raised = smile_open(HV, HD)
     # (each accessor written anew: a shared view would move other parts too)
     hs._set(js, chunks, gp["targets"][gn.index("mouth_open")]["POSITION"], GD, minmax=True)
@@ -174,7 +178,14 @@ def seat(path, out=None):
     # as paint, an orange-brown wedge lit at each corner of her smile (a4): there, at least CORNER_DEPTH, a wet dark red)
     cw = _s01((np.abs(HV[:, 0]) - CORNER_X[0]) / (CORNER_X[1] - CORNER_X[0]))
     depth = np.where(inside, np.maximum(depth, CORNER_DEPTH * cw), depth)
-    _add_colour(js, chunks, hp, np.c_[np.ones((len(HV), 3)), 1 - depth])
+    # (her mouth's corners, the crease where her lips meet: in her smile it folds in, sideways and back, and the lamps
+    # behind her lit it, an orange-brown wedge through her skin's light (the smile pass, e3: by the lamps behind her,
+    # not her paint and not the mouth's red). Shadows at this scale don't reach it; red: 1, or down to 0 there, the
+    # lamps' share the skin shader lets reach it (corner_shade))
+    cx = np.abs(HV[:, 0])
+    crease = (_s01((cx - CREASE_X[0]) / (CREASE_X[1] - CREASE_X[0])) * (1 - _s01((cx - CREASE_X[2]) / (CREASE_X[3] - CREASE_X[2])))
+              * (1 - _s01((np.abs(HV[:, 1] - line) - CREASE_Y[0]) / (CREASE_Y[1] - CREASE_Y[0]))))
+    _add_colour(js, chunks, hp, np.c_[1 - crease, np.ones((len(HV), 2)), 1 - depth])
     gs = 1 - (1 - TONGUE_ROOT) * _s01((GV[:, 2].max() - GV[:, 2]) / TONGUE_LEN)
     _add_colour(js, chunks, gp, np.c_[np.repeat(gs[:, None], 3, 1), np.ones(len(GV))])
     tm.setdefault("extras", {})["mouth_seat"] = {"seat_mm": SEAT_MM, "tongue_k": K, "raise_mm": RAISE_MM,
