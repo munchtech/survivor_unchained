@@ -2,6 +2,38 @@
 
 Read `docs/team/README.md` ("Working lean", "Safety"), `RESUME.md`, `OWNER_NOTES.md` (the face's order and bar; "Neck length"), this page, then `docs/team/face.md`. Read by section (grep, then line ranges). Hand off at about 300k.
 
+## Start here (14 Oct, successor 24 PAUSED at the coordinator's wind-down; interior SHIP, seam built UNJUDGED)
+S = `C:\Users\munch\AppData\Local\Temp\claude\C--Users-munch-Desktop-survivorsunchained\d7e64ca2-6832-41bd-8851-2fc0175ecc1b\scratchpad\face` (KEEP: int2..int5, seam). P (34daaf5d f20) still holds the shared tools (grid.py, look.ps1, j2.ps1, rep2.glb, s2\build.py).
+- **Merged integration 50f7863f** (db102ceb): head_tex is integration's shipped B3-15 paints (checked blob-equal); looks.json and heroine_lip_raise.py were taken from integration.
+- **Hard-won's 1-px tick: closed.** The Look's double-click face zoom IS zoom 1 (CreateLook.cs line 63; `FrameFigure` clamps 0..1), the frame r7 judged, and the tick is invisible at 1x there. Revisit only if a smile judge sees it.
+- **Interior (teeth, tongue, cavity): SHIP.** Judge a9b5578 r4 said "when the numbers land, SHIP on the lead's own look"; I looked at `S\int4\interior5_2x.jpg` and `S\int5\wall_cmp.jpg`. The commits:
+  - a668d095: tongue_hug, widen.
+  - d37ab4f7: lower row fades by depth (teethshade share()), warm with specular x.15 in the teeth shader; tongue subdivided 253->953, contact x.6, edge x.8; inner-cheek wall weight.
+  - 614c92c3: tongue `shine` 0.15 by its depth mask; LOW_F molars 0.029/0.0255/0.021.
+  - 28f922c3: skin wall_grey 0.8, wall_dark 0.3, wall_tint 1/.88/.78.
+  - Numbers (luma; centrals 175): lower side teeth own 101/70/43/22/16, moonlit 116/65/44/13/7, sunborn 99/60/38/11/5. Deeper slots 5-7. Tongue band max B-G 4-6. Cheek walls (45,18,14) to (47,23,24).
+  - Accepted misses: Moonlit's nearest tooth 116 (the face drives it); tongue band max 113 against the top's max of 128.
+- **Smile seam: solver seam1 built it in 083f41ab; UNJUDGED.**
+  - Cause: the smile key (and mouth_open) changes all at once over the 1-2 rows at the sculpt's border. The up-facing shelf flips down into a 1.3-1.8 mm groove in shade. Own reads as a liner; Highborn, Vixen, Doe, Moonlit, Hard-won and Fey as dashes over the bow; Saffron and Wildling as a line doubled with the red's edge. In smo, mouth_open folds the same rows.
+  - Fix: new `tools/assets/heroine_smile_lip.py` (`ease`, `run`). In a band from 2 mm under to 5 mm over the border, the smile and mouth_open moves are replaced by the smoothest field that matches each key around the band, and normals are recomputed. It's hooked in heroine_outfits.py after mouth.seat, before headscale.
+  - Luma dip above the bow in smile, before->after: own 31->12, highborn 29->11, vixen 27->9, doe 20->13, sunborn 41->40, moonlit 31->13, saffron 26->15, wildling 24->16, hardwon 29->12, fey 27->7.
+  - The rest mesh is bit-identical (shot noise up to 20/255 at a few px).
+  - Sheets: `S\seam\seamA_2x.jpg`, `seamB_2x.jpg`, `blob_2x.jpg`.
+  - Build: `S\seam\m15.glb` = this worktree's heroine.glb, **NOT committed (unjudged built art)**. Rebuild with `python S\seam\build.py P\rep2.glb OUT`.
+- **Next, in order:**
+  1. A max judge on seam1: the sheets above plus the numbers. Also check open on faces other than own, since mouth_open changed. Its open items, for a fresh solver after it (seam1 is spent at 239k):
+     - (a) smo squashes the ~4 mm philtrum (smile_open lifts 2.8 mm while mouth_open drops the nose 2 mm): spread smile_open's raise over the whole upper lip.
+     - (b) Faint bow dashes on Highborn, Vixen, Doe, Moonlit and Fey: the smile key's normal deltas come from own's face and are added unchanged on the others. Needs a per-face correction.
+     - (c) Sunborn's doubled line is unchanged: run `P\r1\dbgband.py` once; it is likely paint.
+     - (d) pucker, snarl and frown are unchecked for the same cliff.
+  2. Own's inner lower lip blob in open (judge r4: a pale irregular patch with a dark notch, 5-7 mm right of the middle). seam1 found no fold, so it is PAINT. Write a script in tools/assets that paints the inner lip as a smooth band: the lip's base darkening to x.75 toward the mouth, one soft wet line, nothing lighter than the outer lower lip's lit top. Own's heroine_head.jpg only.
+  3. j2's remaining fixes (d):
+     - Cheek creases in smo half as dark and twice as wide (the dark commas beside the smile; head COLOR red crease mask, skin corner_shade).
+     - The corner smear on Saffron and Sunborn smo.
+  4. Re-judge the whole smile column (`P\j2.ps1`, all ten). Tell the coordinator before committing heroine.glb. The MERGE REQUEST goes after F1 and animation's re-fits land (rebuild on them if heroine.glb moved).
+  5. Hair edges: the speckled ends in `la_cl_own_day` (HairDraw.cs modes hash/a2c/blend/two, --hair-erase), and the stray neck strand at the +7% head.
+  6. A glance (from the coordinator): outfits' glove judge saw a faint level line across her throat in one game close-up, in all four outfits (so body or face): `C:\Users\munch\Desktop\survivorsunchained_inputs\scratch_d7e64ca2\outfits_s23\gloves_options_play.jpg`.
+
 ## Start here (14 Oct, successor 23 handed off at about 215k; lips at rest SENT for merge, interior solver done)
 P = the same `...34daaf5d...\scratchpad\f20` (KEEP). New in P: `rmeas2.py X shots` (lower:upper by the sharpest skin-to-lip brightness fall, 13 columns; rmeas.py's redness midpoint ran up Saffron's philtrum. NOTE: after heroine_lip_meet's shade it catches the shade instead: use it on unshaded paints or judge by eye), `rmview2.py` (its lines on crops), `r1\dbgband.py FACE SRC DST` (texels coloured by height over the sculpt's meet: front 0..0.5 mm green, 0.5..1 blue, -0.5..0 magenta, -1..-0.5 yellow; hidden cyan/red; ONE render tells which lip a mark is on), `r1\bandlab.py face paint ...` (L*a*b* per height band over the meet), `fk\sidecars.py` (sidecars into a new worktree). Shots of the package in `P\r1\shots`; judge sheets `P\r1\` (ba_3x, cl_2x, jaw_2x; r3_3x; r7_3x, r7_mid6x, r7_cl_2x).
 - **Lips at rest: merge request sent** (branch `face-lips-rest` @ 6743112e, from integration 1d52db92, clean onto d6a4f2e0; tests 906/0/8). Worktree face-lips removed; the branch stays. Contents: d8eb8916, e5d34c8a, e9105c2b, 787a7ba1; heroine_lipsculpt.py and heroine_lip_color.py (tools only); the ten B3-15 paints; own's lower-lip flecks (two dark specks in her PAINT, not freckles: `tools/assets/heroine_lip_specks.py`, own only); looks.json lips Saffron 1.0->0.5, Hard-won 0.6->0.3 (1.94->1.55, 1.71->1.57 on the body-pass build); `tools/assets/heroine_lip_meet.py` (Saffron's and Hard-won's upper-lip lowest ~1.75 mm shaded like own's: the pale strip judge r1 found was that edge, painted LIGHTER than the lip, facing the Look camera from 6 deg under her). Judges r1 (own, ratios, close-ups, jaw PASS), r3 (deeper at the tubercle), r7 SHIP.
