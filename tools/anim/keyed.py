@@ -953,7 +953,17 @@ FINGER_PRESETS = {
 # web is no longer stretched), the last joint closed over the middle finger; the base's twist 40 deg (was 61).
 WRAP = {"staff": {"bends": {"index": (53.0, 52.8, 36.1), "middle": (43.1, 67.4, 46.1), "ring": (47.0, 51.4, 35.1),
                             "pinky": (26.3, 56.0, 38.3), "thumb": (9.9, 0.0, 65.0)},
-                  "oppose": 0.44, "thumb_roll": -20.8}}
+                  "oppose": 0.44, "thumb_roll": -20.8},
+        # The one-handed blade (WeaponSockets.BladeAtR / BladeDirR), fitted 14 October on her skin (the warden's hands
+        # are bare) and the chevalier sword's barrel hilt (13.3-18.5 mm round), in the diagonal grip GRIP["sword"] keys:
+        # the forefinger's first bone on the grip (its knuckle 10 deg open, a sword hand's forefinger), each finger
+        # closing harder toward the little finger, every finger's two outer pads on the grip (0.4-1.0 mm), the palm on
+        # it (0.5), the thumb fully across and rolled so its pad lies on the grip and its tip over the middle finger.
+        # (The little finger's first bone stays 14 mm off: her palm doesn't cup, and its knuckle is 50 mm from the
+        # grip's line; no lean from 15 to 35 deg brings it nearer than 11 mm.)
+        "sword": {"bends": {"index": (-10.4, 65.0, 23.0), "middle": (25.1, 54.4, 49.5), "ring": (50.2, 37.2, 35.3),
+                            "pinky": (65.4, 27.8, 22.2), "thumb": (4.5, -5.2, 20.9)},
+                  "oppose": 1.0, "thumb_roll": -24.0}}
 
 
 def wrap_of(weapon):

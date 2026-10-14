@@ -17,7 +17,7 @@ import numpy as np
 
 from clips import idle
 from clips.run import RUNS, SPRINT_ARMS
-from gait import run_cycle
+from gait import arc_of, run_cycle
 from keyed import build
 
 CALLINGS = {"warden": "run_warden", "arcanist": "run_arcanist", "reaver": "run_reaver", "stalker": "run_stalker",
@@ -57,8 +57,14 @@ def stop(rig, calling, side):
     front, back = f"foot_{side}", f"foot_{'r' if side == 'l' else 'l'}"
     w = 0.09 if calling == "warden" else 0.05
 
-    def p(fz, bz, by, btoe, hy, hz, lean, roll=0.0, brot=-25):
-        return {**arms,
+    def p(fz, bz, by, btoe, hy, hz, lean, roll=0.0, brot=-25, out=0.0):
+        a = arms
+        if out and calling == "warden":
+            # The sword hand carried 15 mm out from her right thigh through the stop (14 Oct: with the hilt seated in
+            # the fist's hollow, 12 mm nearer the palm, it came 7-12 mm from the thigh, inside the skirt, as she
+            # landed, braked and settled with her hips forward; the game blends the stop's ends with the run and idle).
+            a = {**arms, "hand_r": {**arms["hand_r"], "arc": arc_of(np.add(idle.WARDEN_HAND_R, (-out, 0.0, 0.0)))}}
+        return {**a,
                 front: {"pos": (s * w, 0, fz), "rot": (s * 6, 0, 0)},
                 back: {"pos": (-s * (w + 0.06), by, bz), "rot": (-s * 10, brot, 0), "toe": btoe},
                 "hips": {"pos": (s * 0.02, hy, hz), "rot": (s * 4, lean * 0.4, roll)},
@@ -66,14 +72,14 @@ def stop(rig, calling, side):
 
     keys = [
         # Coming down on the front foot, the back leg still behind.
-        (0, p(0.34, -0.48, 0.12, 25, -0.08, 0.04, 16), "auto"),
+        (0, p(0.34, -0.48, 0.12, 25, -0.08, 0.04, 16, out=0.015), "auto"),
         # Over it and braking: the body carried on, the back foot coming through.
-        (5, p(0.30, -0.12, 0.10, 10, -0.13, 0.12, 4, roll=2), "auto"),
+        (5, p(0.30, -0.12, 0.10, 10, -0.13, 0.12, 4, roll=2, out=0.015), "auto"),
         # Down beside it, the weight back on the heels, the lean thrown back.
-        (9, p(0.26, 0.10, 0.0, 0, -0.12, 0.10, -7, brot=0), "auto"),
+        (9, p(0.26, 0.10, 0.0, 0, -0.12, 0.10, -7, brot=0, out=0.015), "auto"),
         # The rebound and the settle.
-        (15, p(0.20, 0.06, 0.0, 0, -0.05, 0.06, 4, brot=0), "auto"),
-        (24, p(0.16, 0.00, 0.0, 0, -0.04, 0.03, 1, brot=0), "ease"),
+        (15, p(0.20, 0.06, 0.0, 0, -0.05, 0.06, 4, brot=0, out=0.015), "auto"),
+        (24, p(0.16, 0.00, 0.0, 0, -0.04, 0.03, 1, brot=0, out=0.015), "ease"),
     ]
     return build(f"stop_{calling}_{side}", rig, keys, meta={"layer": "full", "weapon": idle.IDLES[f"idle_{calling}"][2]})
 

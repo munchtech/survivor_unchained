@@ -41,6 +41,10 @@ def _n(v):
     return tuple(v / np.linalg.norm(v))
 
 
+# Her sword hand at rest (chest frame), shared with the stops (sprint_stop.py).
+WARDEN_HAND_R = (-0.09, -0.45, 0.04)
+
+
 def warden(t, f):
     breath = 0.008 * math.sin(2 * math.pi * t * 2)
     return {
@@ -69,7 +73,7 @@ def warden(t, f):
         # weight, the turn shared by the forearm and the wrist; no bend
         # back. (Keyed by the blade alone, the
         # wrist cocked back 42 degrees and 34 to the side.)
-        "hand_r": {"arc": arc_of((-0.09, -0.45, 0.04)), "pole": (-0.4, -0.2, -1.0), "frame": "chest",
+        "hand_r": {"arc": arc_of(WARDEN_HAND_R), "pole": (-0.4, -0.2, -1.0), "frame": "chest",
                    "blade": _n((-0.131, -0.630, 0.765)), "knuckles": _n((0.135, -0.776, -0.617)), "twist": 0.5},
         # The left thumb closed round the grip, swung in across the palm
         # (judge 47: held straight, it showed between the rim and her skirt).

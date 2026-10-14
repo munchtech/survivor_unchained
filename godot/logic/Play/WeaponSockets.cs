@@ -76,15 +76,43 @@ public static class WeaponSockets
     public static readonly Vector3 FistAtR = new(-0.0308f, 0.1188f, -0.0104f);
     public static readonly Vector3 FistDirR = Vector3.Normalize(new Vector3(-0.0863f, 0.1138f, 0.9898f));
 
-    /// <summary>Where an anchored piece sits inside its mount so that its grip point (the anchor's origin, on the shaft's
-    /// centreline) lands on the fist's pocket and its shaft (the piece's +Y, the anchor's -Y) runs along the fist's line:
-    /// a turn (the least that takes +Y onto the line, so the anchor's +Z keeps its roll) and an offset, both in the mount's
-    /// space. `mx, my, mz, origin`: the mount in the hand's space (unleaned; a Lean turns this seat with the mount).</summary>
-    public static (Quaternion Turn, Vector3 At) FistSeat(Vector3 mx, Vector3 my, Vector3 mz, Vector3 origin)
+    /// <summary>The line her right fist closes round on a one-handed blade (tools/anim/keyed.py WRAP["sword"]), in hand_r's
+    /// space: where the blade's grip point (Arms.Spec.Grip along its long axis) lands, and the shaft's direction, pommel
+    /// toward blade. The shaft keeps the diagonal grip her sword clips are keyed to (keyed.py GRIP["sword"], Arms.Spec.Lean
+    /// 35: hand +Z turned 35 degrees toward the fingers, so the blade points where the clips aim it); the line is moved onto
+    /// the fist's hollow, up under the knuckles: from the forefinger's root (its first bone lies on the grip) across to the
+    /// heel of the palm, 36.7 mm off the bones toward the palm (the palm rests on the grip). Fitted 14 October on her skin
+    /// and the chevalier sword's hilt (a barrel 13.3-18.5 mm round, 125 mm between collar and ferrule): every finger's two
+    /// outer pads lie on it (0.3-1.0 mm out), the thumb over the middle finger; the hand spans 76 mm of the 125, its
+    /// forefinger 15 mm short of the ferrule and its little finger 13 mm clear of the pommel's collar. (The old seat, the
+    /// grip point at the mount, -25, 75, 0 mm, ran the hilt through the lower palm, the fingers 20-34 mm off it.)</summary>
+    public static readonly Vector3 BladeAtR = new(-0.0367f, 0.1178f, -0.0131f);
+    public static readonly Vector3 BladeDirR = new(0f, 0.57357644f, 0.81915204f);
+
+    /// <summary>The fitted pocket of her right fist for a kind of piece, or none (that kind keeps the plain mount): the
+    /// staff's (FistAtR / FistDirR) and the one-handed blade's (BladeAtR / BladeDirR). A new kind needs only its line here
+    /// and its fist in keyed.py WRAP.</summary>
+    public static (Vector3 At, Vector3 Dir)? PocketR(WeaponKind kind) => kind switch
+    {
+        WeaponKind.Staff => (FistAtR, FistDirR),
+        WeaponKind.Blade1H => (BladeAtR, BladeDirR),
+        _ => null,
+    };
+
+    /// <summary>The staff's seat (FistSeat with the staff's pocket).</summary>
+    public static (Quaternion Turn, Vector3 At) FistSeat(Vector3 mx, Vector3 my, Vector3 mz, Vector3 origin) =>
+        FistSeat(mx, my, mz, origin, FistAtR, FistDirR);
+
+    /// <summary>Where a piece sits inside its mount so that its grip point (an anchor's origin, else the Spec's grip; on
+    /// the shaft's centreline) lands on the fist's pocket `pocketAt` and its shaft (the piece's +Y, an anchor's -Y) runs
+    /// along the fist's line `pocketDir` (both in hand_r's space): a turn (the least that takes +Y onto the line, so the
+    /// piece's +Z keeps its roll) and an offset, both in the mount's space. `mx, my, mz, origin`: the mount in the hand's
+    /// space, as it is held (with its Lean).</summary>
+    public static (Quaternion Turn, Vector3 At) FistSeat(Vector3 mx, Vector3 my, Vector3 mz, Vector3 origin, Vector3 pocketAt, Vector3 pocketDir)
     {
         Vector3 In(Vector3 v) => new(Vector3.Dot(v, mx), Vector3.Dot(v, my), Vector3.Dot(v, mz));
-        var at = In(FistAtR - origin);
-        var dir = Vector3.Normalize(In(FistDirR));
+        var at = In(pocketAt - origin);
+        var dir = Vector3.Normalize(In(pocketDir));
         var axis = Vector3.Cross(Vector3.UnitY, dir);
         float s = axis.Length(), c = Vector3.Dot(Vector3.UnitY, dir);
         var turn = s < 1e-7f ? Quaternion.Identity : Quaternion.CreateFromAxisAngle(axis / s, MathF.Atan2(s, c));
