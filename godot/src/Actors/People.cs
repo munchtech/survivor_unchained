@@ -183,6 +183,9 @@ public static class People
         public string? Paint;
         /// <summary>The face she started from, whose painting her head wears (none: her own).</summary>
         public string? FaceShape;
+        /// <summary>Her face's own lower-lip fullness (FaceShape.Lips) and the player's lips_lower slider, summed on
+        /// the key (HerFace, HerFaceKey).</summary>
+        public float LipsBase, LipsSlider;
         /// <summary>The colour her brows are dyed (her hair's), or none: as painted.</summary>
         public Color? Brow;
         /// <summary>Her head's pose as she is drawn (her corrective layer
@@ -549,8 +552,10 @@ public static class People
         foreach (var mi in p.Meshes)
         {
             if (mi.Mesh is not ArrayMesh am || am.GetBlendShapeCount() == 0) continue;
-            foreach (var (name, v) in all)
+            foreach (var (name, v0) in all)
             {
+                var v = v0;
+                if (name == "lips_lower") { p.LipsSlider = v0; v = Mathf.Clamp(v0 + p.LipsBase, -1, 1.5f); }
                 Shape(mi, name + "+", Mathf.Max(v, 0));
                 Shape(mi, name + "-", Mathf.Max(-v, 0));
                 Shape(mi, name, v);
@@ -840,9 +845,19 @@ public static class People
                 if (name.StartsWith("face_") && !name.EndsWith('+') && !name.EndsWith('-')) mi.SetBlendShapeValue(i, name == want ? 1f : 0f);
             }
         }
+        var fs = SurvivorUnchained.World.Lore.Her.Faces.FirstOrDefault(f => f.Id == (face is { Length: > 0 } ? face : "own"));
         // (and her lids at that face's rest, as its portrait has them)
         if (p.Skeleton.GetNodeOrNull<HerFaceLife>("HerFaceLife") is HerFaceLife life)
-            life.Rest = (float)(SurvivorUnchained.World.Lore.Her.Faces.FirstOrDefault(f => f.Id == (face is { Length: > 0 } ? face : "own"))?.Lid ?? 0);
+            life.Rest = (float)(fs?.Lid ?? 0);
+        // (and its lower lip's own fullness under the player's slider)
+        p.LipsBase = (float)(fs?.Lips ?? 0);
+        foreach (var mi in p.Meshes)
+            if (mi.Mesh is ArrayMesh { } lm && lm.GetBlendShapeCount() > 0)
+            {
+                var v = Mathf.Clamp(p.LipsSlider + p.LipsBase, -1, 1.5f);
+                if (mi.FindBlendShapeByName("lips_lower+") is int a and >= 0) mi.SetBlendShapeValue(a, Mathf.Max(v, 0));
+                if (mi.FindBlendShapeByName("lips_lower-") is int b and >= 0) mi.SetBlendShapeValue(b, Mathf.Max(-v, 0));
+            }
     }
 
     /// <summary>Her head's painting for a face she started from (Lore.Her's
