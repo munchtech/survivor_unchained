@@ -1,7 +1,8 @@
 """Is this checkout rendering the current game? Run before a judged shot.
 
   python tools/freshness.py            # report; exit 1 if stale
-  (tools/turn.py take godot|blender runs it and refuses a stale checkout unless --stale-ok)
+  (tools/turn.py take godot|blender runs it on the caller's checkout, or --root <path>,
+   and refuses a stale one unless --stale-ok)
 
 Two checks, local and free (no model tokens):
 1. Behind integration: commits on claude/vigilant-galileo-l6jqyx that touch her body, outfits,
@@ -55,9 +56,14 @@ def stale_imports(root):
     return bad
 
 
+def toplevel(path):
+    """The checkout (main or worktree) holding path, or '' outside one."""
+    return git("rev-parse", "--show-toplevel", cwd=path)
+
+
 def check(root=None, imports=True):
-    """Returns a list of problem lines; empty means fresh."""
-    root = Path(root or git("rev-parse", "--show-toplevel", cwd=Path.cwd()) or ".")
+    """Returns a list of problem lines for the checkout at root (default: the caller's); empty means fresh."""
+    root = Path(root or toplevel(Path.cwd()) or ".")
     probs = []
     b = behind(root)
     if b:
