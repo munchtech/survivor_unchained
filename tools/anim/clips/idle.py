@@ -67,14 +67,18 @@ def warden(t, f):
         # take the forearm's roll: measure with the helpers driven.
         "hand_l": {"arc": arc_of((0.0817, -0.3796 + breath, 0.1299)), "pole": (0.3281, -0.4168, -0.8477), "frame": "chest",
                    "thumb": (-0.1498, 0.7455, 0.6495), "twist": 1.0},
-        # The sword low at her right, its point 45 degrees down ahead and a
-        # little out: the hand in line with the forearm, its thumb forward,
-        # dropped 16 degrees toward the little finger under the blade's
-        # weight, the turn shared by the forearm and the wrist; no bend
-        # back. (Keyed by the blade alone, the
-        # wrist cocked back 42 degrees and 34 to the side.)
-        "hand_r": {"arc": arc_of(WARDEN_HAND_R), "pole": (-0.4, -0.2, -1.0), "frame": "chest",
-                   "blade": _n((-0.131, -0.630, 0.765)), "knuckles": _n((0.135, -0.776, -0.617)), "twist": 0.5},
+        # The sword low at her right, its point 34 degrees below the chest's
+        # level ahead and a little out: the hand near in line with the
+        # forearm, its thumb forward, the turn shared by the forearm and the
+        # wrist. The elbow swung 25 degrees out and forward about the
+        # shoulder-wrist line (pole), so the forearm comes down over the
+        # hilt: wrist flex -12, toward the little finger 19 (animation
+        # 31: with the elbow back and the point 39 down the wrist sat 32 toward
+        # the little finger, "a very weird angle at the wrists"; the swing alone
+        # gets no lower than 23). (Keyed by the blade alone, the wrist cocked
+        # back 42 degrees and 34 to the side.)
+        "hand_r": {"arc": arc_of(WARDEN_HAND_R), "pole": (-0.744, 0.09, -0.662), "frame": "chest",
+                   "blade": _n((-0.142, -0.560, 0.816)), "knuckles": _n((0.123, -0.828, -0.548)), "twist": 0.5},
         # The left thumb closed round the grip, swung in across the palm
         # (judge 47: held straight, it showed between the rim and her skirt).
         "fingers_l": {"curl": 0.95, "cascade": 0.05, "thumb": 1.6, "oppose": 0.9}, "fingers_r": "grip",
@@ -135,11 +139,13 @@ def _on_hip(rig, base, arms):
     return over
 
 
-def hip_layer(rig, clip, w, thigh=0.0):
+def hip_layer(rig, clip, w, curl=None):
     """`clip` with her left hand laid on her hip (ARC_HIP, idle_arcanist's) where the weight w(frame) > 0, kept on
     the clip's OWN pelvis frame by frame, and the left arm and fingers slerped by w from the clip's own into it.
     For the clips that took the idle's frame-0 hand in the chest's frame (the breaks, the stops, the Flare's settle,
-    the flourish): there the hand floated 3-17 mm off her hip, or sank into it, as her hips moved under the chest."""
+    the flourish): there the hand floated 3-17 mm off her hip, or sank into it, as her hips moved under the chest.
+    `curl` ({finger: [deg per frame]}): each finger closed that much more (0.6 at the knuckle, 0.4 at the middle
+    joint; opened at the knuckle alone) where the clip's legs move the surface under it (the stops; following the thigh instead sank the thumb)."""
     from keyed import solve_frames
     from rig import qmul, qinv, qrot, qslerp
     I = rig.I
@@ -153,20 +159,27 @@ def hip_layer(rig, clip, w, thigh=0.0):
         arm += [k for k, q in enumerate(rig.sk.parent) if q == j and k not in arm]
     hand0 = arcanist(0, 0)["hand_l"]
 
-    th = I["thigh_l"]
-    a = float(__import__("os").environ.get("HIP_THIGH", thigh))
+    def fingers(f):
+        fx = _arc_hand_fingers()
+        if curl:
+            b = {k: list(v) for k, v in fx["bends"].items()}
+            for k, c in curl.items():
+                d = c[min(f, len(c) - 1)]
+                # (Opened, all at the knuckle: the finger lifts off from its base; opening the middle joint too
+                # took the little finger's middle bone into her thigh.)
+                b[k][0] += 0.6 * d if d > 0 else d
+                b[k][1] += 0.4 * d if d > 0 else 0.0
+            fx = dict(fx, bends=b)
+        return fx
 
     def spec(f):
         dp = qmul(g[f, pel], qinv(grest[pel]))
-        dt = qmul(g[f, th], qinv(grest[th]))
         ic = qinv(qmul(g[f, s3], qinv(grest[s3])))
-        at = np.array(ARC_HIP["pos"])
-        W = (1 - a) * (p[f, pel] + qrot(dp, at - prest[pel])) + a * (p[f, th] + qrot(dt, at - prest[th]))
-        dp = qslerp(dp, dt, a)
+        W = p[f, pel] + qrot(dp, np.array(ARC_HIP["pos"]) - prest[pel])
         return {"hand_l": dict(hand0, arc=arc_of(qrot(ic, W - p[f, ua])),
                                knuckles=tuple(qrot(ic, qrot(dp, np.array(ARC_HIP["knuckles"])))),
                                blade=tuple(qrot(ic, qrot(dp, np.array(ARC_HIP["blade"]))))),
-                "fingers_l": _arc_hand_fingers()}
+                "fingers_l": fingers(f)}
     # Each run of weighted frames solved on its own (the solver settles the elbow over the frames it is given).
     f = 0
     while f < n:

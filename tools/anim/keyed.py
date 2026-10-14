@@ -1019,8 +1019,12 @@ WRAP = {"staff": {"bends": {"index": (55.1, 76.6, 60.0), "middle": (56.8, 72.2, 
         # ends come 146-211 deg round where a fist needs about 225-235 (fistfit WRAP_MIN 180). The bones run at about
         # mid-thickness (pads 6.5-9 mm under them), not high in the finger as round 4 thought. Not passable on this
         # hand: waits on the body build's knuckle and end-joint move (fistfit --hand models it).
-        "sword": {"bends": {"index": (34.0, 92.0, 59.0), "middle": (58.0, 82.0, 45.0), "ring": (68.5, 69.5, 60.2), "pinky": (68.1, 65.3, 60.2), "thumb": (0.0, -6.1, 89.3)}, "spreads": {"index": -10.0, "middle": -2.0, "ring": 9.1, "pinky": 11.7},
-                  "oppose": 0.63, "thumb_roll": -0.0}}
+        # The thumb refitted (animation 31, on idle_warden's rest frame): its end joint 58 (was 89, "a hooked claw"),
+        # its pad 1.0 mm over the middle finger's middle bone, closed over the fingers, the thumb 1.3 mm off the hilt
+        # and 0.3 mm clear of the forefinger by its bone line (it was 1.5 mm into it); opposed 0.45 (was 0.63) and
+        # rolled 12 degrees so the pad, not its side, lies on the finger.
+        "sword": {"bends": {"index": (34.0, 92.0, 59.0), "middle": (58.0, 82.0, 45.0), "ring": (68.5, 69.5, 60.2), "pinky": (68.1, 65.3, 60.2), "thumb": (8.0, 3.4, 57.9)}, "spreads": {"index": -10.0, "middle": -2.0, "ring": 9.1, "pinky": 11.7},
+                  "oppose": 0.45, "thumb_roll": 12.3}}
 
 
 def spread_axis(rig, j):

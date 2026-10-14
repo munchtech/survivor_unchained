@@ -46,6 +46,25 @@ def sprint(rig, run):
     return run_cycle("sprint" + run[3:], rig, s, {"weapon": weapon})
 
 
+# The stops' left fingers closed onto her hip frame by frame (deg; idle.hip_layer's `curl`): with the hand kept on her
+# pelvis they stood 4-10 mm off as her legs braked under them, the little finger 2.9 mm in at stop_l f4 (judge
+# l31-hip). Fitted from the gaps (atan((gap - 1.8 mm) / finger length), 3-frame smoothed, neighbours within 3 deg).
+ARC_STOP_CURL = {
+    "l": {
+        "index": [4.0, 4.2, 4.5, 4.8, 4.7, 4.7, 4.5, 4.3, 4.2, 3.9, 3.7, 3.5, 3.3, 2.9, 2.6, 2.2, 2.0, 1.9, 1.8, 1.7, 1.7, 1.7, 1.7, 1.7, 1.7],
+        "middle": [4.7, 5.0, 5.5, 5.7, 6.0, 5.9, 5.5, 5.2, 5.0, 4.8, 4.5, 4.3, 4.0, 3.7, 3.4, 3.2, 3.0, 2.8, 2.7, 2.6, 2.6, 2.6, 2.6, 2.6, 2.6],
+        "ring": [5.4, 6.0, 6.6, 6.5, 6.6, 6.6, 6.2, 5.7, 5.6, 5.2, 4.8, 4.5, 4.1, 3.5, 3.1, 2.6, 2.4, 2.1, 2.0, 2.0, 2.0, 1.9, 1.9, 1.9, 1.9],
+        "pinky": [3.4, 5.0, 7.1, 7.0, 7.1, 7.1, 5.2, 4.7, 2.7, 0.7, 2.6, 4.9, 7.4, 8.0, 8.0, 8.0, 7.4, 7.1, 6.8, 6.7, 6.6, 6.5, 6.6, 6.6, 6.6],
+    },
+    "r": {
+        "index": [-1.4, -1.1, -0.5, 0.2, 0.8, 1.7, 2.3, 2.8, 2.7, 2.6, 2.3, 2.1, 2.0, 1.8, 1.6, 1.4, 1.2, 1.1, 1.0, 0.9, 0.9, 0.8, 0.8, 0.8, 0.8],
+        "middle": [-0.7, -0.4, 0.1, 0.8, 1.6, 2.4, 2.9, 3.3, 3.4, 3.4, 3.3, 3.1, 2.9, 2.7, 2.4, 2.2, 2.0, 1.9, 1.7, 1.6, 1.6, 1.5, 1.5, 1.5, 1.5],
+        "ring": [-1.1, -1.0, -0.7, -0.2, 0.5, 1.6, 2.5, 3.1, 3.1, 3.0, 2.8, 2.7, 2.5, 2.3, 2.1, 1.8, 1.5, 1.2, 1.0, 0.8, 0.7, 0.6, 0.6, 0.6, 0.6],
+        "pinky": [-0.7, -0.7, 0.2, 1.5, 3.7, 5.8, 8.0, 8.0, 8.0, 8.0, 8.0, 8.0, 7.5, 7.1, 6.4, 5.8, 5.3, 4.9, 4.6, 4.2, 3.9, 3.6, 3.6, 3.6, 3.6],
+    },
+}
+
+
 def stop(rig, calling, side):
     """Planting the `side` foot out of the run."""
     arms = idle.IDLES[f"idle_{calling}"][1](0, 0)
@@ -84,7 +103,7 @@ def stop(rig, calling, side):
     clip = build(f"stop_{calling}_{side}", rig, keys, meta={"layer": "full", "weapon": idle.IDLES[f"idle_{calling}"][2]})
     if calling == "arcanist":
         # Her left hand kept on her hip as the hips brake and rock under her (it floated 10-17 mm off in the chest's frame).
-        clip = idle.hip_layer(rig, clip, lambda f: 1.0)
+        clip = idle.hip_layer(rig, clip, lambda f: 1.0, curl=ARC_STOP_CURL[side])
     return clip
 
 
