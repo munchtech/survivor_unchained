@@ -1,3 +1,4 @@
+using System;
 using SurvivorUnchained.Play;
 using Xunit;
 
@@ -50,6 +51,61 @@ public class WeaponSocketsTests
     {
         Assert.Equal(0.76, (double)WeaponSockets.BladeLength(0.9f, 0.04f, 0.10f), 5);
         Assert.Equal(0.05, (double)WeaponSockets.BladeLength(0.1f, 0f, 0.10f), 5);
+    }
+
+    [Fact]
+    public void AnAnchorSetsTheShaftNotTheBounds()
+    {
+        // The bound staff: its coil leans the bounds' long axis 4 degrees off the rod; the anchor's -Y is the rod.
+        var tilt = 4f * System.MathF.PI / 180f;
+        var pcaLong = new System.Numerics.Vector3(System.MathF.Sin(tilt), System.MathF.Cos(tilt), 0);
+        var pcaMid = new System.Numerics.Vector3(System.MathF.Cos(tilt), -System.MathF.Sin(tilt), 0);
+        var rod = new System.Numerics.Vector3(0, -2f, 0); // anchor -Y, unnormalised (a scaled node)
+        var (lng, mid) = WeaponSockets.ShaftAxes(pcaLong, pcaMid, rod);
+        Assert.Equal(-1.0, (double)lng.Y, 5);
+        Assert.Equal(0.0, (double)System.Numerics.Vector3.Dot(lng, mid), 5);
+        Assert.Equal(1.0, (double)mid.Length(), 5);
+        Assert.True(mid.X > 0.99f);
+        // No anchor: the bounds stand.
+        Assert.Equal(pcaLong, WeaponSockets.ShaftAxes(pcaLong, pcaMid, null).Long);
+        // A side axis along the shaft falls back to another square to it.
+        var (l2, m2) = WeaponSockets.ShaftAxes(pcaLong, new System.Numerics.Vector3(0, 1, 0), rod);
+        Assert.Equal(0.0, (double)System.Numerics.Vector3.Dot(l2, m2), 5);
+    }
+
+    [Fact]
+    public void AnAnchoredPieceSitsOnTheFistsLine()
+    {
+        // hand_r's mount (Arms.MountTransform): the piece's X along hand +Y, its shaft (+Y) along hand +Z, at (-25, 75, 0) mm.
+        System.Numerics.Vector3 mx = new(0, 1, 0), my = new(0, 0, 1), mz = new(1, 0, 0), o = new(-0.025f, 0.075f, 0);
+        var (turn, at) = WeaponSockets.FistSeat(mx, my, mz, o);
+        System.Numerics.Vector3 Hand(System.Numerics.Vector3 m) => o + mx * m.X + my * m.Y + mz * m.Z;
+        // The grip point lands on the pocket; the shaft runs along the fist's line (8.2 degrees off the mount's).
+        var grip = Hand(at);
+        Assert.Equal(0.0, (double)System.Numerics.Vector3.Distance(grip, WeaponSockets.FistAtR), 6);
+        var shaft = Hand(System.Numerics.Vector3.Transform(System.Numerics.Vector3.UnitY, turn)) - o;
+        Assert.Equal(1.0, (double)System.Numerics.Vector3.Dot(shaft, WeaponSockets.FistDirR), 6);
+        // A point a metre up the shaft is a metre up the fist's line.
+        var up = Hand(at + System.Numerics.Vector3.Transform(System.Numerics.Vector3.UnitY, turn));
+        Assert.Equal(0.0, (double)System.Numerics.Vector3.Distance(up, WeaponSockets.FistAtR + WeaponSockets.FistDirR), 5);
+        // The least turn: the piece's +Z (its edge or face) stays square to the shaft and keeps its side.
+        var face = System.Numerics.Vector3.Transform(System.Numerics.Vector3.UnitZ, turn);
+        Assert.True(face.Z > 0.99f);
+    }
+
+    [Fact]
+    public void TheFistsPocketIsTheHollowItsFingersCloseRound()
+    {
+        // In hand_r's space (+Y along the fingers, +Z the thumb's side, the palm toward -X): the pocket lies under the
+        // knuckles (her knuckles are 120-139 mm from the wrist), the leather's 13.65 mm plus the glove off the palm
+        // (-X), not at the thumb's root (58 mm); the shaft square to the fingers within a few degrees.
+        var at = WeaponSockets.FistAtR;
+        Assert.InRange(at.Y, 0.105f, 0.130f);
+        Assert.InRange(at.X, -0.040f, -0.025f);
+        Assert.InRange(at.Z, -0.020f, 0.0f);
+        var dir = WeaponSockets.FistDirR;
+        Assert.InRange((double)dir.Length(), 0.99999, 1.00001);
+        Assert.InRange(Math.Acos(dir.Z) * 180 / Math.PI, 7.0, 9.5);
     }
 
     [Fact]

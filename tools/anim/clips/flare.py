@@ -157,17 +157,17 @@ def _body_keys():
           cl=(9, 0), cr=(9, 0)),
         k(17, "auto", hips=(-0.017, -0.095, -0.25), hrot=(-1.5, 3, 1), spine=(-4, 7, 1), neck=(0, -1, -8), head=(0, -2, -4),
           cl=(5, 6), cr=(3, 1.5)),
-        k(18, "auto", hips=(-0.02, -0.15, -0.27), hrot=(-3, 8, 2), spine=(-9, 16, 2), neck=(0, 1, -13), head=(0, 3, -7),
+        k(18, "auto", hips=(-0.02, -0.15, -0.27), hrot=(-3, 8, 2), spine=(-9, 14, 2), neck=(0, 1, -13), head=(0, 3, -7),
           cl=(2, 12), cr=(-2, 3)),
-        k(19, "auto", hips=(-0.025, -0.225, -0.30), hrot=(-3.5, 12, 2.5), spine=(-12.5, 27, 2), neck=(0, 0, -32), head=(0, 1, -12),
+        k(19, "auto", hips=(-0.025, -0.225, -0.30), hrot=(-3.5, 12, 2.5), spine=(-12.5, 18, 2), neck=(0, 0, -32), head=(0, 5, -12),
           cl=(1, 16), cr=(-6, 3.5)),
-        k(CONTACT, "ease", hips=(-0.03, -0.33, -0.33), hrot=(-4, 16, 3), spine=(-16, 38, 2), neck=(0, -3, -8), head=(0, -9, -3),
+        k(CONTACT, "ease", hips=(-0.03, -0.33, -0.33), hrot=(-4, 16, 3), spine=(-16, 19, 2), neck=(0, -3, -20), head=(0, 1, -3),
           cl=(0, 20), cr=(-10, 4)),
         # The settle: the weight lands, the pelvis 2-3 cm lower and the chest
         # a few degrees further over than the pose it comes back to (f25).
-        k(21, "auto", hips=(-0.03, -0.39, -0.33), hrot=(-2, 15, 3), spine=(-8, 35, 3), neck=(0, -3, -10), head=(0, -9, -3),
+        k(21, "auto", hips=(-0.03, -0.39, -0.33), hrot=(-2, 15, 3), spine=(-8, 21, 3), neck=(0, -3, -22), head=(0, -2, -3),
           cl=(1, 12), cr=(-10, 4)),
-        k(22, "auto", hips=(-0.03, -0.395, -0.33), hrot=(-1, 14.5, 3), spine=(-4, 22, 4), neck=(0, -2, -13), head=(0, -4, -5),
+        k(22, "auto", hips=(-0.03, -0.395, -0.33), hrot=(-1, 14.5, 3), spine=(-4, 17, 4), neck=(0, -2, -22), head=(0, -1, -5),
           cl=(2, 6), cr=(-10, 3.5)),
         # The look up: the chest lifted and the head back to the sky, deep in
         # the lunge (the staff is planted and the fist low), the body in one
@@ -202,8 +202,8 @@ def _body_keys():
 # `point`; "butt": the butt's foot at `point` (planted).
 BUTT_AT = np.array([-0.37, 0.004, -0.17])  # beside her right foot (the lunge's lead), by its heel
 STAFF = [
-    (3, "grip", (-0.17, 1.40, 0.22), _n(0.75, 0.62, 0.15), (-0.9, -0.4, -0.2)),
-    (5, "grip", (-0.13, 1.70, 0.05), _n(0.95, 0.30, 0.05), (-1.0, 0.0, 0.1)),
+    (3, "grip", (-0.17, 1.40, 0.27), _n(0.75, 0.62, 0.15), (-0.9, -0.4, -0.2)),
+    (5, "grip", (-0.13, 1.70, 0.09), _n(0.95, 0.30, 0.05), (-1.0, 0.0, 0.1)),
     (7, "grip", (-0.11, 1.89, -0.21), _n(0.996, 0.087, 0.0), (-1.0, 0.2, 0.3)),
     (12, "grip", (-0.11, 1.90, -0.22), _n(0.996, 0.087, 0.0), (-1.0, 0.2, 0.3)),
     (15, "grip", (-0.11, 1.895, -0.21), _n(0.996, 0.087, 0.0), (-1.0, 0.2, 0.3)),
@@ -213,14 +213,15 @@ STAFF = [
     # elbow keyed by its way from the shoulder (E): forward, then down, the
     # forearm out-forward to the planted staff.
     (16, "grip", (-0.13, 1.88, -0.18), _n(1.0, 0.07, -0.05), (-1.0, 0.0, 0.4)),
-    (17, "grip", (-0.20, 1.60, 0.02), _n(0.90, 0.44, -0.08), _n(0.1, -0.2, 0.9), "E"),
-    (18, "grip", (-0.32, 1.32, 0.12), _n(0.56, 0.83, -0.04), _n(-0.1, -0.6, 0.7), "E"),
-    (19, "grip", (-0.42, 1.00, -0.06), _n(0.15, 0.99, 0.04), _n(-0.35, -0.9, 0.1), "E"),
+    (17, "grip", (-0.20, 1.60, 0.06), _n(0.90, 0.44, -0.08), _n(0.1, -0.2, 0.9), "E"),
+    (18, "grip", (-0.32, 1.32, 0.16), _n(0.56, 0.83, -0.04), _n(-0.1, -0.6, 0.7), "E"),
+    (19, "grip", (-0.41, 1.00, -0.06), _n(0.15, 0.99, 0.04), _n(-0.35, -0.9, 0.1), "E"),
     # Planted the fist's +Z is keyed (the staff's own line is AXIS in it,
     # 6.6 degrees toward the fingers, which face out to her right here): so
     # the shaft stands about (-0.05, 0.99, 0.10), near upright, its head over
     # the butt and the left fist within her reach.
-    (CONTACT, "butt", BUTT_AT, _n(0.05, 1.0, 0.04), _n(0.15, -0.97, -0.10), "E"),
+    (CONTACT, "butt", BUTT_AT, _n(0.02, 1.0, 0.04), _n(0.15, -0.97, -0.10), "E"),
+    (22, "butt", BUTT_AT, _n(0.02, 1.0, 0.04), _n(0.15, -0.97, -0.10), "E"),
     (28, "butt", BUTT_AT, _n(0.06, 1.0, 0.03), _n(0.15, -0.97, -0.10), "E"),
     (40, "butt", BUTT_AT, _n(0.05, 1.0, 0.03), _n(0.15, -0.97, -0.10), "E"),
     (SWEEP, "butt", BUTT_AT, _n(-0.24, 0.96, 0.14), (-0.6, -0.8, -0.4)),
@@ -240,6 +241,7 @@ R_ON = [(0, 0.0), (3, 1.0), (51, 1.0), (56, 0.0)]
 L_SHAFT = [(1, 0.0), (5, 1.0), (CONTACT + 1, 1.0), (30, 0.0)]
 L_OPEN = [(CONTACT + 1, 0.0), (30, 1.0), (SWEEP + 2, 1.0), (54, 0.0)]
 RELEASE, OPEN = CONTACT + 1, 31
+FINGER_OPEN_AT = {"thumb": 23.5, "index": 23.5, "middle": 24.5, "ring": 25.5, "pinky": 26.5}
 L_OPEN_ARC = (0.35, -0.20, -0.13)      # from the left shoulder, in the chest's frame (hangs about 25 deg low, 20 behind)
 AIM_LET_GO = 1.0                       # how far the hand stops being aimed at mid-release
 L_BUMP = (0.15, 0.12, 0.30)                # the way round, in the chest's frame
@@ -449,6 +451,16 @@ class Flare:
         return out
 
     def fingers(self, fr):
+        if CONTACT + 1 <= fr <= 30:
+            # Letting go: each finger opens on its own window (thumb with the
+            # index, then middle, ring, little a frame apart), 3 frames each.
+            rel, grip, spread = finger_mix()
+            u = {k: _smooth((fr - s0) / 3.0) for k, s0 in FINGER_OPEN_AT.items()}
+            mix = lambda key, w: grip[key] * (1 - w) + spread[key] * w
+            f = {"curl": mix("curl", u["middle"]), "index": mix("curl", u["index"]), "thumb": mix("thumb", u["thumb"]),
+                 "spread": mix("spread", u["index"]),
+                 "cascade": mix("cascade", u["middle"]) + 0.25 * math.sin(math.pi * u["middle"])}
+            return f
         g = _curve(L_SHAFT, fr)
         o = _curve(L_OPEN, fr)
         rel, grip, spread = finger_mix()
@@ -521,7 +533,7 @@ def finger_mix():
     return full("relaxed"), full("grip"), full("spread")
 
 
-def flare_burns_twice(rig, rounds=9, log=None):
+def flare_burns_twice(rig, rounds=10, log=None):
     F = Flare(rig)
     clip = None
     G = None

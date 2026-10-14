@@ -12,7 +12,7 @@ namespace SurvivorUnchained.Tests;
 /// beat's times, what each does, and the events the view stages them by.</summary>
 public class FlareStagedTests
 {
-    static Battle Carrying(string flare, params string[] mods)
+    internal static Battle Carrying(string flare, params string[] mods)
     {
         var f = Lamps.Flare(flare)!;
         var a = Callings.Archetype(f.Calling);
@@ -37,7 +37,7 @@ public class FlareStagedTests
         return b;
     }
 
-    static List<Ev.Flare> Run(Battle b, double seconds)
+    internal static List<Ev.Flare> Run(Battle b, double seconds)
     {
         var got = new List<Ev.Flare>();
         for (double t = 0; t < seconds - 1e-9; t += 1 / 60.0)
@@ -48,7 +48,7 @@ public class FlareStagedTests
         return got;
     }
 
-    static Enemy Foe(Battle b, double x, double z, double hp = 1e6, bool elite = false, bool boss = false)
+    internal static Enemy Foe(Battle b, double x, double z, double hp = 1e6, bool elite = false, bool boss = false)
     {
         var e = b.SpawnEnemy("risen", x, z)!;
         e.AttackT = 99;
@@ -59,7 +59,7 @@ public class FlareStagedTests
         return e;
     }
 
-    static List<Ev.Flare> Cast(Battle b, double seconds = 1.5)
+    internal static List<Ev.Flare> Cast(Battle b, double seconds = 1.5)
     {
         b.FillFlare(100, "t");
         var got = b.Events.Drain().OfType<Ev.Flare>().ToList();
@@ -71,7 +71,7 @@ public class FlareStagedTests
     [Fact]
     public void Every_staged_flare_releases_once_after_its_key_pose_and_ends()
     {
-        foreach (var id in new[] { "bell_of_the_morning", "burns_twice", "the_roads_toll", "butchers_hour" })
+        foreach (var id in new[] { "bell_of_the_morning", "burns_twice", "the_roads_toll", "butchers_hour", "the_branding", "the_long_cut", "one_arrow", "drag_them_under", "the_butchers_bill" })
         {
             var b = Carrying(id);
             Foe(b, 2, 0);

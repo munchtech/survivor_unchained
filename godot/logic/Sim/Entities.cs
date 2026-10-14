@@ -125,6 +125,8 @@ public sealed class Enemy : Pooled
     public double HomeX, HomeZ, Leash;
     /// <summary>Multiplier on damage taken (a ward, a vulnerable moment).</summary>
     public double TakenMul = 1;
+    /// <summary>Sundered (the Long Cut's cleave): until this time (the battle's clock) it takes Sunder more from her side.</summary>
+    public double SunderUntil, Sunder;
     /// <summary>Where it was Bound (StatusKind.Bound): it can't move away from here.</summary>
     public double BoundX, BoundZ;
     /// <summary>At rest, it notices the survivor only this close (0: from afar);
@@ -239,6 +241,9 @@ public sealed class GroundZone : Pooled
     /// <summary>Armour for the player standing in it (Sanctified Earth).</summary>
     public double Armor;
     public double BossDamage = 1;
+    /// <summary>What a boss takes of it, bosses alone (BossDamage lifts champions too): a staged Flare's fires carry its
+    /// "bossMul", as its blows do.</summary>
+    public double BossMul = 1;
     /// <summary>What its damage is credited to when no weapon laid it.</summary>
     public string? Credit;
 
@@ -248,7 +253,7 @@ public sealed class GroundZone : Pooled
     {
         Owner = Side.Player; X = Z = 0; Radius = 1; Life = 1; Age = 0; Tick = 0.5; TickT = 0; Dps = 0;
         School = School.Physical; Tags = Array.Empty<Tag>(); Slow = 0; Status = null; Art = "zone"; Weapon = null;
-        Follow = false; Armor = 0; BossDamage = 1; Credit = null;
+        Follow = false; Armor = 0; BossDamage = 1; BossMul = 1; Credit = null;
     }
 }
 

@@ -966,6 +966,10 @@ public static class People
             m.SetShaderParameter("roughness_value", src.Roughness);
             m.SetShaderParameter("metallic_value", src.Metallic);
             m.SetShaderParameter("repeats", (float)entry["repeats"]);
+            if (entry.ContainsKey("pull")) m.SetShaderParameter("view_pull", (float)entry["pull"]);
+            if (System.Environment.GetEnvironmentVariable("GOLD_GLOSS") is string gg && float.TryParse(gg, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var ggv)) m.SetShaderParameter("gold_gloss", ggv);   // (a trial knob)
+            if (System.Environment.GetEnvironmentVariable("GOLD_FLOOR") is string gf && float.TryParse(gf, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var gfv)) m.SetShaderParameter("gold_floor", gfv);
+            if (System.Environment.GetEnvironmentVariable("GOLD_ROUGH") is string gr && float.TryParse(gr, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var grv)) m.SetShaderParameter("gold_rough", grv);
             mi.SetSurfaceOverrideMaterial(s, m);
         }
     }
@@ -984,7 +988,10 @@ public static class People
                 mi.SetSurfaceOverrideMaterial(s, new ShaderMaterial { Shader = sheerShader });
                 continue;
             }
-            if (mi.Mesh.SurfaceGetMaterial(s) is not BaseMaterial3D src || src.ResourceName != "fur") continue;
+            if (mi.Mesh.SurfaceGetMaterial(s) is not BaseMaterial3D src || (src.ResourceName != "fur" && src.ResourceName != "down")) continue;
+            // (down: the arcanist's white feathery trim, fine wisps longer than
+            // fur's pile, pale to the root and lit through)
+            bool down = src.ResourceName == "down";
             furShader ??= GD.Load<Shader>("res://shaders/fur_shell.gdshader");
             ShaderMaterial? first = null, last = null;
             for (int i = 0; i <= shells; i++)
@@ -993,6 +1000,15 @@ public static class People
                 m.SetShaderParameter("albedo_tex", src.AlbedoTexture);
                 m.SetShaderParameter("tint", src.AlbedoColor);
                 m.SetShaderParameter("layer", (float)i / shells);
+                if (down)
+                {
+                    m.SetShaderParameter("fur_length", 0.009f);
+                    m.SetShaderParameter("density", 520.0f);
+                    m.SetShaderParameter("clump", 0.15f);
+                    m.SetShaderParameter("root_dark", 0.78f);
+                    m.SetShaderParameter("backlight", 0.6f);
+                    m.SetShaderParameter("droop", 0.12f);
+                }
                 if (last != null) last.NextPass = m; else first = m;
                 last = m;
             }

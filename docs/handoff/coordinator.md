@@ -67,3 +67,19 @@ From the coordinator of 10 October (session 181eef02). Wave 1 restarted, ran abo
 **Coordinator 1515c1de (12 October, night):** ran classes, face, outfits and animation (hero held: Blender turns). Merged the get_up braid and ponytail, the Butcher's Hour fix and the Flare press-stagger fix with Act 1 retuned (RESUME "12 October, night"). Lessons: every su-lead-high lead filled 250-280k in 1.5-3.5 h, so plan a successor per lead every couple of hours and keep onboarding small; most of their spend was their own measuring and pictures, so brief successors to hand build-and-measure loops to runners and take the build to a judge before chasing every number; give a solver one item and a named route, and make it build before measuring (several solvers ran out measuring); judges rule on what the eye sees (the neck and reach_coals rulings). Run a narrow judge yourself (foreground, Context budget: 100k) when a lead hands off just before one. A lead often wakes once more after its "HANDOFF READY" when its background batch ends: check the branch head before spawning from it. Scratch to keep: this session's scratchpad (classes, face, outfits, anim).
 
 **Coordinator 33ad5b17 (12 October, night):** restarted animation, face, classes, outfits; built the close-up camera (merged). Merged animation dd541c17, camera d31fefa6, classes 6d9a123c. Owner rules added: 125% budget grace to finish a near-done step (hook updated); face and outfits first; hero held. Lessons: a lead's background solvers report to the coordinator, so relaying is most of the coordinator's traffic (keep relays condensed); diagnose before fixing (the glove notch was the leotard edge, the clasp gap was her spine bend, not her breasts): solvers that measured first saved builds; copy sheets out of `.shots` before removing a worktree. RESUME "12 October, late night" has the running state.
+
+**Coordinator 1be2d2a9 (13-14 October, the owner's one-session trial: three leads at 399k budgets, coordinator 300k; rules not changed).**
+- **Merged:** classes-11 (the five wave-6a Flares) and outfits fin5 (all four outfits, plus the owner's "legs stuck together" fix).
+- **Handed off, not merged:**
+  - animation, the staff in her fist (it waits on the outfits glove fix);
+  - Flare VFX (judge 4 NOT READY).
+- **Measured (cmp3.py in the scratchpad):**
+  - this session, 8.1 h, $123 ($15/h);
+  - 33ad5b17, 4 leads, 6.5 h, $150 ($23/h);
+  - 59a43b82, 5-6 leads, 14 h, $355 ($25/h).
+- **Per lead-slot hour all three cost about $5:** fewer leads is a throughput dial, not a saving.
+- **The bigger budget was barely used:** only 2 of 6 leads passed 300k (366k, 320k), and lead cost per slot-hour rose about 10-15%. Keep 300k.
+- **Lessons:**
+  - Never merge on a picture the judge hasn't ruled on (the staff merge was pulled when the owner saw the fist beside the shaft).
+  - Judges check "visibly inside the closed hand" first.
+  - Rebuild a lead's art on the latest integration before merging binaries (the outfits conflicted with face ship's heroine.glb).
