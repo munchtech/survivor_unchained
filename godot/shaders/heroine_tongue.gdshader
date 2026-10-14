@@ -8,7 +8,10 @@ shader_type spatial;
 render_mode shadows_disabled;
 
 uniform sampler2D paint : source_color, filter_linear_mipmap, hint_default_white;
-uniform vec3 tint : source_color = vec3(0.66, 0.44, 0.4);      // (its paint, a bright salmon, muted to a rose in shade)
+uniform vec3 tint : source_color = vec3(0.9, 0.72, 0.72);      // (its paint, a bright salmon, made a light rose)
+uniform float grey = 0.35;      // (its paint's colour eased so far toward its own grey: a rose, not a crimson slab (j2))
+uniform float rim = 0.6;        // (its sides, turned from the eye, darkened so far toward the mouth's dark: rounded, no
+//                                 hard edge against what is behind it (j2))
 uniform vec3 inside : source_color = vec3(0.42, 0.15, 0.14);  // (the mouth's own dark red, heroine_skin's mouth_colour)
 uniform float lamps = 0.6;
 uniform float fill = 0.15;
@@ -18,10 +21,13 @@ varying float shade_k;
 
 void fragment() {
 	float k = COLOR.r;
-	ALBEDO = texture(paint, UV).rgb * tint;
+	vec3 c = texture(paint, UV).rgb;
+	c = mix(c, vec3(dot(c, vec3(0.3, 0.59, 0.11))), grey) * tint;
+	float side = 1.0 - rim * (1.0 - smoothstep(0.0, 0.6, abs(dot(NORMAL, VIEW))));
+	ALBEDO = c * side;
 	AO = k * k;
 	AO_LIGHT_AFFECT = 0.0;
-	shade_k = k * k;
+	shade_k = k * k * side;
 	ROUGHNESS = roughness;
 	SPECULAR = specular * k;
 	EMISSION = inside * fill * (1.0 - 0.5 * k);

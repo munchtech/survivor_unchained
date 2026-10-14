@@ -32,16 +32,20 @@ uniform float debug = 0.0;       // (1: her teeth green, emitted, for finding th
 
 void fragment() {
 	if (debug > 1.5) discard;
+	// (k: the share of her front teeth's brightness on screen this tooth keeps, by how far it stands behind them
+	// (heroine_teethshade.py: 1 to about 0.35), and as light, k^2.2. Her lips parted, the light is cut evenly (sky and
+	// lamps alike, the paint kept ivory): her side teeth read as shaded ivory. Until the smile pass's j2 the shade cut
+	// the lamps by 1 - k^3 and the sky to k^2, with the paint browned toward shade: her canines and every tooth behind
+	// them read black, and her far side's lower back teeth a black column through her open mouth)
 	float k = COLOR.r * mix(closed, 1.0, lit);
+	float f = pow(k, 2.2);
 	// (her lips shut, 1, to parted, 0: shut runs from 1 to 0.6 by mouth_open 0.05)
 	float c = clamp((shut - 0.6) / 0.4, 0.0, 1.0);
-	ALBEDO = mix(texture(paint, UV).rgb * mix(shade, ivory, k), shade, c);
-	SPECULAR = 0.5 * k * k * (1.0 - c);
-	ROUGHNESS = mix(mix(0.75, roughness, k), 1.0, c);
-	AO = mix(k * k, seep, c);
-	// (her side teeth, k low, keep out of the lamps with her mouth open too: by shut alone, half the lamps reached
-	// them and her molars showed as lit brown blocks behind her front teeth (the smile pass, a3))
-	AO_LIGHT_AFFECT = mix(max(shut * (1.0 - k), 1.0 - k * k * k), 1.0, c);
+	ALBEDO = mix(texture(paint, UV).rgb * ivory, shade, c);
+	SPECULAR = 0.5 * f * (1.0 - c);
+	ROUGHNESS = mix(mix(0.6, roughness, k), 1.0, c);
+	AO = mix(f, seep, c);
+	AO_LIGHT_AFFECT = 1.0;
 	NORMAL = normalize(mix(NORMAL, VIEW, c));
 	// (on her gums and palate alone, by their paint's red: lit so, her side teeth read as brown blocks (g1))
 	vec3 p = texture(paint, UV).rgb;

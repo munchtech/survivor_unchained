@@ -38,8 +38,7 @@ SHOWN_AT_45 = {"own": 3.0, "doe": 0.8, "fey": 2.0, "hardwon": 0.4, "highborn": 1
                "sunborn": 1.2, "vixen": 1.6, "wildling": 1.8}
 SHOW_MM = float(os.environ.get("MOUTH_SHOW_MM", "2.5"))
 SEAT_MM = {f: 4.5 + SHOW_MM - s for f, s in SHOWN_AT_45.items()}
-K = 16                         # (lower-teeth points each tongue point follows)
-JAW_SHARE = 0.5                # (her lower teeth: the points mouth_open moves more than this share of its most)
+ROOT_Z = 0.02                  # (m: her tongue behind this depth moves as her jaw does here)
 RAISE_MM = float(os.environ.get("MOUTH_RAISE_MM", "3.5"))   # (smile_open at 1: her upper lip's middle raised so far)
 ROLL = 0.25                    # (and rolled back by this share of it)
 UP_X, UP_X2 = 0.012, 0.020     # (m from her mouth's middle: raised fully to here, easing out to there, where her smile
@@ -56,8 +55,11 @@ TONGUE_ROOT, TONGUE_LEN =0.12, 0.035   # (her tongue's shade at its root, so far
 # (at mouth_open 1, her tongue dropped and drawn back so far beyond her lower teeth's move, fully at its tip,
 # at its root: following her teeth alone it filled 14 mm of her mouth's opening at .6 (a2), a slab over her lower
 # teeth with no dark between it and her upper teeth; 0.6 of it at its root)
-TONGUE_DROP_MM = float(os.environ.get("MOUTH_TONGUE_DROP_MM", "7"))
-TONGUE_BACK_MM = float(os.environ.get("MOUTH_TONGUE_BACK_MM", "3"))
+# (at mouth_open 1, her tongue's back lowered so far in its middle beyond her jaw's move (none at its sides, none at
+# its tip, all of it DEPRESS_LEN behind its tip): riding her jaw alone its back stood over her upper teeth's edges)
+DEPRESS_MM = float(os.environ.get("MOUTH_DEPRESS_MM", "12"))
+DEPRESS_LEN = 0.03
+GROOVE_X = (0.005, 0.014)      # (m off her mouth's middle: lowered fully to here, none from there out)
 
 
 def _prim(js, mat):
@@ -164,17 +166,21 @@ def seat(path, out=None):
     TD = rd(tp["targets"][tn.index("mouth_open")]["POSITION"])
     HD = rd(hp["targets"][hn.index("mouth_open")]["POSITION"])
     n = np.linalg.norm(TD, axis=1)
-    jaw = n > JAW_SHARE * n.max()
-    # (the tongue moved as the lower teeth nearest it: inverse-distance over its K nearest. A rigid fit of the lower
-    # teeth's move was poor, rms 2.2 mm, as MakeHuman's jaw is a morph, and it swung the tongue's root 31 mm)
-    dd = np.linalg.norm(GV[:, None] - TV[jaw][None], axis=2)
-    j = np.argsort(dd, 1)[:, :K]
-    w = 1 / np.maximum(np.take_along_axis(dd, j, 1), 1e-4) ** 2
-    w /= w.sum(1, keepdims=True)
+    # (her tongue rides her jaw: her lower teeth's and gum's mouth_open is an affine map of their (y, z), rms 0.1 mm
+    # (MakeHuman's jaw morph), so each point of her tongue moves as her jaw does where it is (behind ROOT_Z, as at it).
+    # Following the lower teeth nearest it (inverse distance over the 16 nearest, the front teeth weighing most) and
+    # dropped 7 mm more, its sides sank 4-6 mm under her lower side teeth's tops at mouth_open .6, and from the Look
+    # (17 degrees to her right, 6 below) her far side's lower back teeth stood over it as a wall, a black column with a
+    # hard tongue edge beside it (judge j2). Its sides now rest at her lower teeth's cusps as with her mouth closed,
+    # and its middle and back are lowered (DEPRESS_MM), so a dark band of her throat shows over it)
+    jaw = n > 0.002
+    fit = np.linalg.lstsq(np.c_[TV[jaw][:, 1:], np.ones(jaw.sum())], TD[jaw][:, 1:], rcond=None)[0]
+    rms = np.sqrt((np.linalg.norm(np.c_[TV[jaw][:, 1:], np.ones(jaw.sum())] @ fit - TD[jaw][:, 1:], axis=1) ** 2).mean())
     GD_old = rd(gp["targets"][gn.index("mouth_open")]["POSITION"])
-    GD = (w[..., None] * TD[jaw][j]).sum(1)
-    tip = 0.6 + 0.4 * _s01(1 - (GV[:, 2].max() - GV[:, 2]) / TONGUE_LEN)
-    GD = GD + np.c_[np.zeros(len(GV)), -TONGUE_DROP_MM / 1000 * tip, -TONGUE_BACK_MM / 1000 * tip]
+    GD = np.c_[np.zeros(len(GV)), np.c_[GV[:, 1], np.maximum(GV[:, 2], ROOT_Z), np.ones(len(GV))] @ fit]
+    mid = 0.5 * (TV[:, 0].min() + TV[:, 0].max())
+    wx = 1 - _s01((np.abs(GV[:, 0] - mid) - GROOVE_X[0]) / (GROOVE_X[1] - GROOVE_X[0]))
+    GD[:, 1] -= DEPRESS_MM / 1000 * wx * _s01((GV[:, 2].max() - GV[:, 2]) / DEPRESS_LEN)
     # (her upper teeth are her skull's: mouth_open no longer moves them. They move under 0.5% of the most, her lower
     # teeth and gum 10% and more (the back of her jaw, by its hinge). An easing from 30% to 50% held back her lower
     # back molars and gum, which stretched into a wall over her tongue's side, black in the shade (the smile pass, e2))
@@ -229,13 +235,13 @@ def seat(path, out=None):
     _add_colour(js, chunks, hp, np.c_[1 - crease, np.ones((len(HV), 2)), 1 - depth])
     gs = 1 - (1 - TONGUE_ROOT) * _s01((GV[:, 2].max() - GV[:, 2]) / TONGUE_LEN)
     _add_colour(js, chunks, gp, np.c_[np.repeat(gs[:, None], 3, 1), np.ones(len(GV))])
-    tm.setdefault("extras", {})["mouth_seat"] = {"seat_mm": SEAT_MM, "tongue_k": K, "raise_mm": RAISE_MM,
+    tm.setdefault("extras", {})["mouth_seat"] = {"seat_mm": SEAT_MM, "tongue_jaw_rms_mm": round(1000 * rms, 2), "depress_mm": DEPRESS_MM, "raise_mm": RAISE_MM,
                                                  "line": round(line, 5)}
     hs._save(out or path, js, chunks)
     print("MOUTH: teeth and tongue seated %s mm lower (own %.1f); mouth_open no longer moves her upper teeth; the tongue "
-          "follows %d lower-teeth points (its mouth_open was %.1f mm at most, now %.1f); smile_open raises %d points of "
+          "rides her jaw (affine fit to %d points, rms %.2f mm; its mouth_open was %.1f mm at most, now %.1f); smile_open raises %d points of "
           "her upper lip %.1f mm (lips' line y %.4f); written %s" % (
-              ", ".join("%s %.1f" % kv for kv in SEAT_MM.items() if kv[0] != "own"), SEAT_MM["own"], jaw.sum(),
+              ", ".join("%s %.1f" % kv for kv in SEAT_MM.items() if kv[0] != "own"), SEAT_MM["own"], jaw.sum(), 1000 * rms,
               1000 * np.linalg.norm(GD_old, axis=1).max(), 1000 * np.linalg.norm(GD, axis=1).max(), raised, RAISE_MM,
               line, out or path))
 

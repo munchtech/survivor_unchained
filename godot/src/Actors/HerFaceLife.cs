@@ -53,6 +53,8 @@ public partial class HerFaceLife : Node
                     if (mi.GetSurfaceOverrideMaterial(s) is ShaderMaterial m && m.Shader?.ResourcePath.EndsWith("heroine_eye.gdshader") == true)
                         eyes = m;
             }
+        // (printed once her pose is final, her pose's modifiers run: --mouth-cam)
+        if (MouthCam) sk.SkeletonUpdated += PrintMouthCam;
         nextBlink = rng.RandfRange(1.0f, 4.0f);
         nextLook = rng.RandfRange(0.4f, 1.5f);
         // --open-eyes: a still of her face with her lids up and her eyes ahead
@@ -114,6 +116,32 @@ public partial class HerFaceLife : Node
                 m.SetShaderParameter("shut", 1 - 0.4f * Mathf.SmoothStep(0, 0.05f, w));
                 foreach (var (n, v) in teethParams) m.SetShaderParameter(n, v);
             }
+    }
+
+    /// <summary>--mouth-cam: each frame, the camera in her head's own space (the glb's, as her head, teeth and tongue are
+    /// all on her Head bone): "MOUTHCAM t T o X Y Z bx .. by .. bz .. fov F vp W H", so a tool casting rays at the glb
+    /// sees her mouth as the picture does (the smile pass: what fills her mouth's opening, found offline).</summary>
+    static readonly bool MouthCam = Args.Has("mouth-cam");
+
+    void PrintMouthCam()
+    {
+        if (teeth?.Skin is not { } skin || GetParent() is not Skeleton3D sk || GetViewport().GetCamera3D() is not { } cam) return;
+        int head = sk.FindBone("Head");
+        for (int i = 0; i < skin.GetBindCount(); i++)
+        {
+            string bn = skin.GetBindName(i);
+            int b = bn != "" ? sk.FindBone(bn) : skin.GetBindBone(i);
+            if (b != head) continue;
+            var m = sk.GlobalTransform * sk.GetBoneGlobalPose(head) * skin.GetBindPose(i);
+            var c = m.AffineInverse() * cam.GlobalTransform;
+            var ci = System.Globalization.CultureInfo.InvariantCulture;
+            string V(Vector3 v) => string.Format(ci, "{0:0.000000} {1:0.000000} {2:0.000000}", v.X, v.Y, v.Z);
+            var vp = GetViewport().GetVisibleRect().Size;
+            GD.Print(string.Format(ci, "MOUTHCAM t {0:0.000} o {1} bx {2} by {3} bz {4} fov {5:0.000} keep {6} vp {7} {8} mi {9}",
+                t, V(c.Origin), V(c.Basis.Column0), V(c.Basis.Column1), V(c.Basis.Column2), cam.Fov, (int)cam.KeepAspect,
+                vp.X, vp.Y, V(teeth.Transform.Origin)));
+            return;
+        }
     }
 
     void SkinParams()
