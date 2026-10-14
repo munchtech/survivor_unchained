@@ -2,6 +2,12 @@
 
 The one page of what's current. Every lead starts from the latest `claude/vigilant-galileo-l6jqyx`. Merge it first and keep your own workflow; this page says what has changed around you. Updated by the main session, 5 October 2026.
 
+## 14 October, night: coordinator 1cc516bc (running; outfits, animation, face)
+- The owner picked **B1 "with style"** (OWNER_NOTES). Styled G1/G2 being built; one judged sheet goes to the owner, on the new body.
+- **The one body build** (outfits s25 from 9ed60792): hand pivots on both hands' own skin, back of hand, throat fill (face's judged fix), B1. **F1's builds had NO correctives** (stale game-skeleton dump: no panel_front, stale hand and forearm bones; integration's glb has elbow_point, F1's don't): the final build needs a fresh skeleton dump and gates on the correctives.
+- **The Reaver thigh is NOT in the body build.** Knee drive can't hide it (animation 29), and a groin crease can't either: the true gap is 48-84 mm (outfits scratch 1cc516bc `outfits/hip/need.py`). The fix is garment-side, Reaver only: the belt front and buckle ride up like panel_front, or the belt sits higher. It comes after the body build and the glove sheet. Knee drive stays.
+- Animation 29 handed off @ c0e50030 (section 0a; idle_arcanist hip wrist 31-39 deg WIP, hand-on-thigh vs hand-on-hip for the judge). Successor 30 starts when the body build is final.
+
 ## 14 October, night: coordinator d7e64ca2 (outfits, animation, face only)
 Scratch for every lead this session: `C:\Users\munch\AppData\Local\Temp\claude\C--Users-munch-Desktop-survivorsunchained\d7e64ca2-6832-41bd-8851-2fc0175ecc1b\scratchpad\{outfits,anim,face}` (KEEP). Nothing merged yet this session except docs and tools (roster, lastmsg.py).
 - **The next body build (outfits; ONE build, after the owner's glove pick):**
