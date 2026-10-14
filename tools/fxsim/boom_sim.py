@@ -137,6 +137,16 @@ TAKES["burns_boom5b"] = dict(TAKES["burns_boom5"], pow_keys=((1, 1.8), (5, 1.6),
 # burns_boom5's own shading at f10 (so f10-f48 are b5g's).
 TAKES["burns_boom5c"] = dict(TAKES["burns_boom5"], birth=dict(
     keys=((1, 1.0), (9, 1.0), (10, 0.0)), m=3.0, k=2.3, op=((1, 0.55), (5, 0.55), (8, 0.75), (10, 1.0))))
+# burns_boom5d (solver 8): birth.py preset b5d's heat read through the birth's own ramp of (T, colour, light), set
+# from an in-game calibration (opaque patches at arena night: the atlas's colour after gain, exposure, AgX and grade)
+# so the game shows creases ~0.25, rims orange-red ~0.4, a yellow-orange body ~0.65 and a white-yellow core > 0.92;
+# its light raised from the fourth frame (the game's exposure dips 38% there), handed back to the bake's own by f10.
+TAKES["burns_boom5d"] = dict(TAKES["burns_boom5"], birth=dict(
+    keys=((1, 1.0), (6, 1.0), (7, 0.8), (8, 0.55), (9, 0.3), (10, 0.0)), op=((1, 0.55), (5, 0.55), (8, 0.75), (10, 1.0)),
+    kk=((1, 1.0), (2, 1.0), (3, 1.15), (4, 1.4), (6, 1.4), (8, 1.2), (9, 1.0)),
+    ramp=((0.0, (1.0, 0.05, 0.0), 0.0), (0.30, (1.0, 0.08, 0.005), 0.05), (0.45, (1.0, 0.12, 0.01), 0.15),
+          (0.58, (1.0, 0.20, 0.02), 0.26), (0.70, (1.0, 0.33, 0.04), 0.42), (0.80, (1.0, 0.42, 0.06), 0.60),
+          (0.88, (1.0, 0.62, 0.20), 1.0), (0.92, (1.0, 0.82, 0.48), 1.6), (0.95, (1.0, 0.97, 0.86), 3.0), (1.0, (1.0, 1.0, 0.95), 4.0))))
 
 
 def args():
@@ -330,12 +340,30 @@ def src_material(t):
     for p, c in rk[1:-1]:
         e = cr.elements.new(p); e.color = tuple(c) + (1,)
     L(fpr, ramp.inputs["Fac"])
+    col = ramp.outputs["Color"]
     inten = math("MULTIPLY", math("POWER", fp, t.get("emit_m", 2.0)), t["emit_k"])
+    if bw is not None and b.get("ramp"):
+        # The birth's own light (burns_boom5d): its heat T read through a ramp of (T, colour, light), the colour mixed
+        # with the bake's own by w and the light keyed by `kk` (the game's exposure dips 38% from its fourth frame).
+        rb = nt.nodes.new("ShaderNodeValToRGB"); rl = nt.nodes.new("ShaderNodeValToRGB")
+        rk2 = b["ramp"]; top = max(s[2] for s in rk2)
+        for r_, stops in ((rb, [(s[0], tuple(s[1])) for s in rk2]), (rl, [(s[0], (s[2] / top,) * 3) for s in rk2])):
+            cr2 = r_.color_ramp
+            cr2.elements[0].position = stops[0][0]; cr2.elements[0].color = stops[0][1] + (1,)
+            cr2.elements[1].position = stops[-1][0]; cr2.elements[1].color = stops[-1][1] + (1,)
+            for p_, c_ in stops[1:-1]:
+                e = cr2.elements.new(p_); e.color = c_ + (1,)
+            L(T, r_.inputs["Fac"])
+        mx = nt.nodes.new("ShaderNodeMix"); mx.data_type = "RGBA"
+        L(bw, mx.inputs["Factor"]); L(col, mx.inputs[6]); L(rb.outputs["Color"], mx.inputs[7])
+        col = mx.outputs[2]
+        kk = keyed(nt, "birth_kk", b.get("kk", ((1, 1.0),)), 1.0).outputs[0]
+        b_inten = math("MULTIPLY", math("MULTIPLY", rl.outputs["Color"], top), kk)
     if bw is not None:
         inten = math("MULTIPLY_ADD", math("SUBTRACT", b_inten, inten), bw, inten)
     if t.get("fire_keys"):
         inten = math("MULTIPLY", inten, keyed(nt, "fire_taper", t["fire_keys"], 1.0).outputs[0])
-    fire_rgb = scale(ramp.outputs["Color"], math("MULTIPLY", ff, inten))
+    fire_rgb = scale(col, math("MULTIPLY", ff, inten))
     # The soot's own heat: a dull red where the fire has warmed it, cooling on heat_keys.
     h0, h1 = t.get("glow_heat", (1.6, 3.0))
     hm = nt.nodes.new("ShaderNodeMapRange"); hm.clamp = True

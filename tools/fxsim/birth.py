@@ -45,11 +45,50 @@ PRESETS = {
         ka=50.0, kb=40.0, seed=7,
     ),
 }
+# Bake b5's birth, version 2 (solver 8, after judge 4: "a flat cream cotton ball, one value, no hot core, 5-6 smooth
+# lobes, no small billows"): the shape the flame or the hot gas (the edge rolls out to f9), two finer billow sizes
+# (0.85 and 0.29 m at R 2.2 m, about a third and a ninth of the sim's lobes, scaled with the ball), the heat in four
+# bands for take burns_boom5d's birth ramp (creases ~0.45, rims ~0.58, body ~0.75, a white-yellow core >= 0.95 on
+# the camera's line through the middle, 30-40% of the ball at f2-f3, gone by f6), handed back to the sim's grain f7-f9.
+PRESETS["b5d"] = dict(
+    PRESETS["b5c"], v=2,
+    fsig=((1, 0.6), (3, 1.0), (4, 1.6), (6, 1.6), (7, 1.2), (8, 0.8), (9, 0.6)),
+    hot=(1.5, 2.2), hot_w=((1, 1.0), (9, 1.0)),
+    band=0.7, r_ref=2.2, beta=1.0,
+    billows=((0.85, 0.34, 0.85, 0.30), (0.29, 0.11, 0.85, 0.30)),   # (spacing m, displacement m, dome radius, crease width)
+    bamp=((1, 0.7), (2, 1.0), (9, 1.0)), edge=0.06, deep=((1, 0.5), (9, 0.5)),
+    base=((1, 0.80), (2, 0.80), (3, 0.79), (4, 0.78), (5, 0.77), (6, 0.75), (7, 0.72), (8, 0.68), (9, 0.64)),
+    k_depth=0.30, k_bill=(0.25, 0.15), k_crease=(0.22, 0.12),
+    heart=((1, 0.55), (2, 0.50), (3, 0.42), (4, 0.28), (5, 0.15), (6, 0.04), (7, 0.0)),
+    heart_m=((1, 1.0), (2, 1.15), (3, 1.35), (4, 1.1), (5, 0.8), (6, 0.55), (7, 0.5)), heart_crease=0.6,
+    k_rad=0.15, rad0=0.5,
+    hand=((1, 0.0), (5, 0.0), (6, 0.15), (7, 0.4), (8, 0.65), (9, 0.85)),
+    csoot=((1, 0.0), (3, 0.0), (4, 0.02), (6, 0.06), (8, 0.12), (9, 0.15)),
+)
 
 
 def key(keys, f):
     fr = [k[0] for k in keys]; vs = [k[1] for k in keys]
     return float(np.interp(f, fr, vs))
+
+
+def worley(q, s, table):
+    """A jittered-grid cellular noise at points q (M, 3), cells s metres: the distances (in cells) to the nearest
+    and second-nearest feature point, F1 and F2. table: (n, n, n, 3) jitters, so a cell's point is fixed."""
+    g = q / s
+    c = np.floor(g).astype(np.int64)
+    fr = (g - c).astype(np.float32)
+    n = table.shape[0]
+    F1 = np.full(len(q), 9.0, np.float32); F2 = np.full(len(q), 9.0, np.float32)
+    for dx in (-1, 0, 1):
+        for dy in (-1, 0, 1):
+            for dz in (-1, 0, 1):
+                j = table[(c[:, 0] + dx) % n, (c[:, 1] + dy) % n, (c[:, 2] + dz) % n]
+                d = np.array([dx, dy, dz], np.float32) + j - fr
+                r = np.sqrt((d * d).sum(1))
+                F2 = np.minimum(F2, np.maximum(F1, r))
+                F1 = np.minimum(F1, r)
+    return F1, F2
 
 
 def smooth(a, lo, hi):
@@ -130,6 +169,104 @@ def regrade(fl, dn, tp, f, P, cubes):
     return Fs.astype(np.float32), (2.0 * T).astype(np.float32), D.astype(np.float32), dict(R=R, cg=cg.tolist())
 
 
+def regrade2(fl, dn, tp, f, P, cubes, tabs):
+    """Version 2 (preset b5d): the fire's shape is its flame or its hot gas, whichever is wider (the flame breaks up
+    from f5 while the hot gas keeps swelling, so the edge keeps rolling out), displaced by two finer sizes of billow
+    (cellular domes about a third and a ninth of the sim's lobes, riding the ball as it grows), and its heat is
+    designed on that shape: deep fire hotter than its skin, each billow's face hotter than its rim, the creases
+    between billows cool, a white-yellow core on the camera's line through the fire's middle, broken by the same
+    creases. From `hand` the flame is handed back to the sim's own (its grain), so f9 meets f10."""
+    N = fl.shape[0]
+    h = P["dom"][0] / N
+    fs = key(P["fsig"], f)
+    Fs = nd.gaussian_filter(fl, fs) if fs > 0 else fl
+    chiF = smooth(Fs, *P["chi"])
+    chiH = smooth(nd.gaussian_filter(tp, 1.0), *P["hot"]) * key(P["hot_w"], f)
+    chi = np.maximum(chiF, chiH).astype(np.float32)
+    # Work in the fire's box (a metre of margin).
+    nzi = np.argwhere(chi > 0.02)
+    pad = int(1.0 / h) + 2
+    lo = np.maximum(nzi.min(0) - pad, 0); hi = np.minimum(nzi.max(0) + pad + 1, N)
+    sl = tuple(slice(a, b) for a, b in zip(lo, hi))
+    c = chi[sl]
+    inside = c > 0.5
+    sd0 = h * (nd.distance_transform_edt(~inside) - nd.distance_transform_edt(inside)).astype(np.float32)
+    sd0 = nd.gaussian_filter(sd0, 0.7)
+    ax = [(np.arange(a, b, dtype=np.float32) + 0.5) * h for a, b in zip(lo, hi)]
+    X = ax[0][:, None, None] - P["dom"][0] / 2; Y = ax[1][None, :, None] - P["dom"][1] / 2; Z = ax[2][None, None, :]
+    idx = np.argwhere(inside)
+    cg = ((idx.mean(0) + lo + 0.5) * h - np.array([P["dom"][0] / 2, P["dom"][1] / 2, 0.0])).astype(np.float32)
+    pt = np.radians(P["pitch"])
+    d = np.array([0.0, np.cos(pt), -np.sin(pt)], np.float32)  # the camera's look
+    gx, gy, gz = X - cg[0], Y - cg[1], Z - cg[2]
+    gd = gx * d[0] + gy * d[1] + gz * d[2]
+    rho = np.sqrt(np.maximum((gx - gd * d[0]) ** 2 + (gy - gd * d[1]) ** 2 + (gz - gd * d[2]) ** 2, 0))
+    R = float(np.percentile(rho[inside], 92)) if inside.any() else 1.0
+    # Billows on the skin: the band within `band` m of the surface.
+    band = np.abs(sd0) < P["band"]
+    bi = np.nonzero(band)
+    sc = (P["r_ref"] / max(R, 0.3)) ** P["beta"]
+    q = np.stack([gx[bi[0], 0, 0], gy[0, bi[1], 0], gz[0, 0, bi[2]]], 1) * sc
+    sd = sd0.copy()
+    dome = {}; crease = {}
+    for k, (s, A, rad, cw) in enumerate(P["billows"]):
+        F1, F2 = worley(q + 13.7 * (k + 1), s, tabs[k])
+        dome[k] = np.sqrt(np.clip(1 - (F1 / rad) ** 2, 0, 1))
+        crease[k] = 1 - smooth(F2 - F1, 0, cw)
+        sd[bi] -= A * key(P["bamp"], f) * (dome[k] - 0.5)
+    occ = smooth(-sd, -P["edge"], P["edge"]).astype(np.float32)
+    depth = np.clip(-sd, 0, None)
+    dep = smooth(depth, 0, key(P["deep"], f))
+    T = key(P["base"], f) + P["k_depth"] * (dep - 0.5)
+    tb = np.zeros_like(sd)
+    for k in dome:
+        kb, kc = P["k_bill"][k], P["k_crease"][k]
+        tb[bi] += kb * (dome[k] - 0.5) - kc * crease[k]
+    T = T + tb * key(P["bamp"], f)
+    crx = np.zeros_like(sd)
+    if crease:
+        crx[bi] = np.maximum.reduce([crease[k] for k in crease])
+    hr = key(P["heart_m"], f) if "heart_m" in P else key(P["heart_r"], f) * R
+    Hc = np.exp(-(rho / max(hr, 1e-3)) ** 2) * (1 - P["heart_crease"] * crx)
+    T = T + key(P["heart"], f) * Hc - P["k_rad"] * np.clip(rho / R - P["rad0"], 0, 1)
+    T = np.clip(T, 0, 1) * (occ > 0.01)
+    # The flame handed back to the sim's own (its grain) from `hand`.
+    hb = key(P["hand"], f)
+    Fo = Fs.copy()
+    Fo[sl] = (1 - hb) * occ + hb * np.maximum(Fs[sl], 0)
+    Tf = np.zeros_like(fl); Tf[sl] = T
+    # Soot: as version 1 (torn, thin, handed back), on the new shape.
+    D = dn
+    fade, tear, skin = key(P["fade"], f), key(P["tear"], f), key(P["skin"], f)
+    if fade < 1 or tear > 0 or skin > 0:
+        G1 = np.zeros_like(fl); G1[sl] = nd.gaussian_filter(occ, key(P["s1"], f) / h)
+        Xf = (np.arange(N, dtype=np.float32) + 0.5) * h
+        out = 1.0 - smooth(G1, 0.1, 0.6)
+        m = (D > 1e-4) | ((G1 > 0.02) & (G1 < 0.6))
+        ii = np.nonzero(m)
+        rx, ry, rz = Xf[ii[0]] - P["dom"][0] / 2 - cg[0], Xf[ii[1]] - P["dom"][1] / 2 - cg[1], Xf[ii[2]] - cg[2]
+        rr = np.sqrt(rx * rx + ry * ry + rz * rz) + 1e-6
+        ua = np.stack([rx / rr, ry / rr, rz / rr]) * P["ka"]
+        ub = np.stack([rx, ry, rz]) / R * P["kb"]
+        na = sample(cubes[0], ua + 17.0); nb = sample(cubes[1], ub + 5.0)
+        wisp = smooth(0.5 * na + 0.5 * nb, P["tear_th"] - 0.08, P["tear_th"] + 0.08)
+        na2 = sample(cubes[0], ua * 1.3 + 41.0); nb2 = sample(cubes[1], ub * 1.2 + 23.0)
+        rag = smooth(0.6 * na2 + 0.4 * nb2, P["skin_th"] - 0.06, P["skin_th"] + 0.06)
+        o_ = out[ii]; d_ = D[ii]; g_ = G1[ii]
+        dout = d_ * o_ * fade * (1 - tear + tear * wisp)
+        din = d_ * (1 - o_)
+        bnd = smooth(g_, 0.03, 0.12) * (1 - smooth(g_, 0.3, 0.55))
+        dsk = skin * bnd * rag
+        # Soot in the billows' creases (thin, from `csoot`).
+        cs = key(P["csoot"], f)
+        if cs > 0:
+            CR = np.zeros_like(fl); CR[sl] = crx * smooth(-sd, -0.02, 0.15) * (1 - smooth(-sd, 0.25, 0.5))
+            dsk = np.maximum(dsk, cs * CR[ii])
+        D = np.zeros_like(dn)
+        D[ii] = din + np.maximum(dout, dsk)
+    return Fo.astype(np.float32), (2.0 * Tf).astype(np.float32), D.astype(np.float32), dict(R=R, cg=cg.tolist())
+
+
 def main():
     src, dst = sys.argv[1], sys.argv[2]
     av = sys.argv[3:]
@@ -151,6 +288,8 @@ def main():
             except OSError:
                 shutil.copy2(s_, d_)
     cubes = [noise_cube(96, P["seed"], 2.0), noise_cube(96, P["seed"] + 1, 2.5)]
+    rng = np.random.default_rng(P["seed"] + 100)
+    tabs = [rng.uniform(0.08, 0.92, (32, 32, 32, 3)).astype(np.float32) for _ in P.get("billows", ())]
     N = P["res"]
     for f in range(1, last + 1):
         fn = "fluid_data_%04d.vdb" % f
@@ -160,7 +299,10 @@ def main():
         def dense(g):
             a = np.zeros((N, N, N), np.float32); g.copyToArray(a, ijk=(0, 0, 0)); return a
         fl, dn, tp = dense(G["flame"]), dense(G["density"]), dense(G["temperature"])
-        Fn, Tn, Dn, info = regrade(fl, dn, tp, f, P, cubes)
+        if P.get("v") == 2:
+            Fn, Tn, Dn, info = regrade2(fl, dn, tp, f, P, cubes, tabs)
+        else:
+            Fn, Tn, Dn, info = regrade(fl, dn, tp, f, P, cubes)
         new = {"flame": Fn, "temperature": Tn, "density": Dn}
         out = []
         for g in grids:
