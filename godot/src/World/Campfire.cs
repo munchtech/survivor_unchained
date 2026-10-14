@@ -14,6 +14,23 @@ public static class Campfire
     /// of the fire's own lights.</summary>
     public const uint CoalLayer = 1 << 9;
 
+    // The embers' and smoke's looks, shared by every fire, so a close camera can keep them off the space in front of it.
+    static StandardMaterial3D? emberLook, smokeLook;
+
+    /// <summary>Embers and smoke nearer the camera than so far (metres) drawn not at all, fading in over the
+    /// next 35 cm; 0 for all of them. The Look's close portrait: an ember drifting between the lens and her
+    /// is a soft orange disc across her neck.</summary>
+    public static void ClearNear(float metres)
+    {
+        foreach (var m in new[] { emberLook, smokeLook })
+        {
+            if (m == null) continue;
+            m.DistanceFadeMode = metres > 0 ? BaseMaterial3D.DistanceFadeModeEnum.PixelAlpha : BaseMaterial3D.DistanceFadeModeEnum.Disabled;
+            m.DistanceFadeMinDistance = metres;
+            m.DistanceFadeMaxDistance = metres + 0.35f;
+        }
+    }
+
     /// <param name="ring">Lay its own stones and logs (not where the web
     /// game's are already laid).</param>
     /// <param name="parts">Which of flames, embers, smoke (for telling
@@ -367,7 +384,7 @@ public static class Campfire
             Name = "Embers", Amount = 24, Lifetime = 2.2, ProcessMaterial = p, Position = new Vector3(0, 0.4f, 0),
             // A speck sized in the mesh itself: billboarded particles ignored
             // the process material's scale, and drew each ember a metre across.
-            DrawPass1 = new QuadMesh { Size = new Vector2(0.045f, 0.045f) * size, Material = Sprite(Blob(Colors.White, new Color(1, 1, 1, 0)), true) },
+            DrawPass1 = new QuadMesh { Size = new Vector2(0.045f, 0.045f) * size, Material = emberLook ??= Sprite(Blob(Colors.White, new Color(1, 1, 1, 0)), true) },
             CastShadow = GeometryInstance3D.ShadowCastingSetting.Off, Preprocess = 2.0,
         };
     }
@@ -388,7 +405,7 @@ public static class Campfire
         return new GpuParticles3D
         {
             Name = "Smoke", Amount = 20, Lifetime = 4.5, ProcessMaterial = p, Position = new Vector3(0, 1.1f, 0),
-            DrawPass1 = new QuadMesh { Size = new Vector2(1, 1), Material = Sprite(Sprites.Puff, false) },
+            DrawPass1 = new QuadMesh { Size = new Vector2(1, 1), Material = smokeLook ??= Sprite(Sprites.Puff, false) },
             CastShadow = GeometryInstance3D.ShadowCastingSetting.Off, Preprocess = 4.0,
         };
     }

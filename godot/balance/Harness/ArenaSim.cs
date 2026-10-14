@@ -119,6 +119,8 @@ public static class ArenaSim
     /// <summary>Lamps lit past the board (--light; "{calling}" is the survivor's calling): a measuring aid,
     /// for a lamp Light my way never lights (Banked Flame).</summary>
     public static List<string> Light = new();
+    /// <summary>--dark: lamps put out after the board is lit (a Flare's modifiers one at a time on the full board; their points stay unspent).</summary>
+    public static List<string> Dark = new();
 
     public static string Card(Offer o) => o.Kind switch
     {
@@ -195,6 +197,7 @@ public static class ArenaSim
         }
         foreach (var id in Light.Select(x => x.Replace("{calling}", spec.Calling)))
             if (!LampBook.Now(j.Ch).Lit.Contains(id)) LampBook.Now(j.Ch).Lit.Add(id);
+        foreach (var id in Dark) LampBook.Now(j.Ch).Lit.Remove(id);
         // --flare stand: carry the road's Stand (its lamp lit past its gate if the board hasn't reached it; a measuring aid).
         if (spec.Flare == "stand")
         {

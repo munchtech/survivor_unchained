@@ -53,6 +53,26 @@ public class WeaponSocketsTests
     }
 
     [Fact]
+    public void AnAnchorSetsTheShaftNotTheBounds()
+    {
+        // The bound staff: its coil leans the bounds' long axis 4 degrees off the rod; the anchor's -Y is the rod.
+        var tilt = 4f * System.MathF.PI / 180f;
+        var pcaLong = new System.Numerics.Vector3(System.MathF.Sin(tilt), System.MathF.Cos(tilt), 0);
+        var pcaMid = new System.Numerics.Vector3(System.MathF.Cos(tilt), -System.MathF.Sin(tilt), 0);
+        var rod = new System.Numerics.Vector3(0, -2f, 0); // anchor -Y, unnormalised (a scaled node)
+        var (lng, mid) = WeaponSockets.ShaftAxes(pcaLong, pcaMid, rod);
+        Assert.Equal(-1.0, (double)lng.Y, 5);
+        Assert.Equal(0.0, (double)System.Numerics.Vector3.Dot(lng, mid), 5);
+        Assert.Equal(1.0, (double)mid.Length(), 5);
+        Assert.True(mid.X > 0.99f);
+        // No anchor: the bounds stand.
+        Assert.Equal(pcaLong, WeaponSockets.ShaftAxes(pcaLong, pcaMid, null).Long);
+        // A side axis along the shaft falls back to another square to it.
+        var (l2, m2) = WeaponSockets.ShaftAxes(pcaLong, new System.Numerics.Vector3(0, 1, 0), rod);
+        Assert.Equal(0.0, (double)System.Numerics.Vector3.Dot(l2, m2), 5);
+    }
+
+    [Fact]
     public void ClearanceReadsTheFileAndDefaultsToZero()
     {
         var c = WeaponSockets.Clearance.Parse("{\"warden\": {\"back\": 0.012, \"hip_blade\": 0.02}, \"none\": {\"back\": 0.005}}");

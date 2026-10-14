@@ -82,6 +82,8 @@ public partial class Game
         figureKey = d.LookKey;
         figureBody = d.BodyKey;
         figure = new PersonView(lo.Person, new Held { Right = lo.Arms.Right, Left = lo.Arms.Left, Forearm = lo.Arms.Forearm }, 0.8);
+        // (her chin up to her portraits' level gaze: HerPose.ChinUp)
+        if (figure.Person.Pose is HerPose hp) hp.ChinUp = 12f;
         scene!.AddChild(figure);
         // (where the camera looks: she stands in the middle of the screen, between creation's two
         // panels, the fire behind her at her right hand, in view between her and the choices)
@@ -166,7 +168,10 @@ public partial class Game
 
     SpotLight3D? fillLight, edgeLight, rimLight, bounceLight;
     float bounce = -1;
+    float ambientBase = -1;
     Vector2 bounceAt = new(1.3f, 1.0f);
+    Vector2? keyAt;
+    static readonly bool LookReflOff = Args.Get("look-refl") == "off";
     float[]? rig;
     OmniLight3D? herFire, fireSrc;
     uint fireMask;
@@ -186,6 +191,8 @@ public partial class Game
         static float Smooth(float t) { t = Mathf.Clamp(t, 0, 1); return t * t * (3 - 2 * t); }
         // How much of the portrait's light: none for her whole figure, all of it from head and shoulders in.
         float p = Smooth((z - 0.15f) / 0.45f);
+        // (her head's tones fitted under this rig, as much as it lights her: People.HerLookRig)
+        if (figure?.Person is { } herRig) People.HerLookRig(herRig, p);
         float k = 1 - Mathf.Exp(-4f * (float)dt);
         var camLeft = dir.Cross(Vector3.Up).Normalized();
         SpotLight3D Spot(Color c, float angle, bool shadow, float specular)
@@ -209,7 +216,19 @@ public partial class Game
         bool white = Args.Has("rig-white");
         if (keyLight == null)
         {
-            keyLight = Spot(white ? Colors.White : new Color(1f, 0.93f, 0.86f), 20, true, 0.45f);
+            // (a smaller source than the others: at 0.6 m its soft shadow washed out the shade under her jaw (jaw 0.06
+            // lighter than the portraits'), and its highlight on a polished pauldron was a broad patch blown to white;
+            // its sheen 0.3, not 0.45, for the same patch, her skin's sheen as it was to the eye)
+            var keyC = new Color(1f, 0.93f, 0.86f);
+            // (--key-colour R,G,B: its colour, for judging it (pictures))
+            if (Args.Get("key-colour") is string kcs && kcs.Split(',') is { Length: 3 } kp)
+                keyC = new Color(float.Parse(kp[0], System.Globalization.CultureInfo.InvariantCulture), float.Parse(kp[1], System.Globalization.CultureInfo.InvariantCulture), float.Parse(kp[2], System.Globalization.CultureInfo.InvariantCulture));
+            keyLight = Spot(white ? Colors.White : keyC, 20, true, 0.3f);
+            keyLight.LightSize = 0.3f;
+            // (--key-spec X: its highlight's strength, for judging it (pictures))
+            if (Args.Get("key-spec") is string kss) keyLight.LightSpecular = float.Parse(kss, System.Globalization.CultureInfo.InvariantCulture);
+            // (--key-cone ANGLE: its cone's half angle, for judging it (pictures))
+            if (Args.Get("key-cone") is string kc) keyLight.SpotAngle = float.Parse(kc, System.Globalization.CultureInfo.InvariantCulture);
             // --key-shadow off | SIZE: the key's shadow off, or its light size (softness), for judging what it casts (pictures).
             if (Args.Get("key-shadow") is string ks)
             {
@@ -217,18 +236,40 @@ public partial class Game
                 else if (float.TryParse(ks, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var sz)) keyLight.LightSize = sz;
             }
         }
-        // The fill is warm-white, not cool: it reaches the shade under her jaw about as squarely as her cheek, and cool
-        // it turned that shade grey. A warm bounce from below (her chest and collar giving back the key) and a rim
-        // whose sheen is half its light (at full, a lilac sheen along her collar). (--rig-old: the rig before, for pictures.)
+        // The fill is near white: cool, it turned the shade under her jaw grey; warm (1/0.95/0.9), with a strong warm
+        // bounce, it gave every face a fake tan (cheek chroma 25-43% over its portrait, judge j1). A faint warm bounce
+        // from below (her chest and collar giving back the key) and a rim whose sheen is half its light (at full, a
+        // lilac sheen along her collar). (--rig-old: the rig before, for pictures.)
         bool old = Args.Has("rig-old");
-        fillLight ??= Spot(white ? Colors.White : old ? new Color(0.88f, 0.92f, 1f) : new Color(1f, 0.95f, 0.9f), 26, false, 0.1f);
+        // (--fill-colour R,G,B: the fill's colour for judging it (pictures))
+        var fillC = old ? new Color(0.88f, 0.92f, 1f) : new Color(1f, 0.98f, 0.96f);
+        if (Args.Get("fill-colour") is string fcs && fcs.Split(',') is { Length: 3 } fp)
+            fillC = new Color(float.Parse(fp[0], System.Globalization.CultureInfo.InvariantCulture),
+                float.Parse(fp[1], System.Globalization.CultureInfo.InvariantCulture), float.Parse(fp[2], System.Globalization.CultureInfo.InvariantCulture));
+        fillLight ??= Spot(white ? Colors.White : fillC, 26, false, 0.1f);
         edgeLight ??= Spot(white ? Colors.White : new Color(1f, 0.56f, 0.26f), 24, false, 0.35f);
-        rimLight ??= Spot(white ? Colors.White : new Color(0.72f, 0.82f, 1f), 24, false, old ? 0.5f : 0.25f);
+        if (rimLight == null)
+        {
+            // The rim casts her shadow: without one it lit the far side of her neck under her jaw through her jaw and
+            // head, a cool grey-lilac band there on the fair faces (the owner, 10 October 2026; skin r13 B1b). Soft
+            // (Spot's 0.6 m at 2.2 m from her), so her jaw's shadow on her neck has no hard edge. (--rim-shadow off |
+            // SIZE: none, as r12, or another light size, for judging it (pictures).)
+            // (--rim-colour R,G,B: its colour, for judging it (pictures))
+            var rimC = new Color(0.72f, 0.82f, 1f);
+            if (Args.Get("rim-colour") is string rcs && rcs.Split(',') is { Length: 3 } rp)
+                rimC = new Color(float.Parse(rp[0], System.Globalization.CultureInfo.InvariantCulture), float.Parse(rp[1], System.Globalization.CultureInfo.InvariantCulture), float.Parse(rp[2], System.Globalization.CultureInfo.InvariantCulture));
+            rimLight = Spot(white ? Colors.White : rimC, 24, true, old ? 0.5f : 0.25f);
+            if (Args.Get("rim-shadow") is string rsh)
+            {
+                if (rsh == "off") { rimLight.ShadowEnabled = false; rimLight.LightSize = 0; }
+                else if (float.TryParse(rsh, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var rsz)) rimLight.LightSize = rsz;
+            }
+        }
         // (--bounce E: a warm light from below, as her chest and collar give back the key, for judging it (pictures);
         // --ssao off | RADIUS,INTENSITY: the world's ambient occlusion at the Look, likewise)
         if (bounce < 0)
         {
-            bounce = old ? 0 : 0.18f;
+            bounce = old ? 0 : 0.045f;
             if (Args.Get("bounce") is string bs && bs.Split(',') is { } bp)
             {
                 float F(int i, float d) => i < bp.Length ? float.Parse(bp[i], System.Globalization.CultureInfo.InvariantCulture) : d;
@@ -248,14 +289,26 @@ public partial class Game
         // --rig K,F,E,R: the four lights' strengths at the face, for judging them (pictures).
         if (rig == null)
         {
-            rig = new[] { 1.15f, 0.22f, 0.8f, 0.55f };
+            rig = new[] { 1.3f, 0.22f, 0.8f, 0.55f };
             if (Args.Get("rig") is string rs)
                 foreach (var (v, i) in rs.Split(',').Select((v, i) => (v, i)))
                     if (i < 4 && float.TryParse(v, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var f)) rig[i] = f;
         }
-        Aim(keyLight, eyes + dir * 1.9f - camLeft * 1.0f + Vector3.Up * 0.85f, eyes + Vector3.Down * 0.05f, 0.15f + rig[0] * p);
+        // The key high and near the lens, as the portraits are lit: their catchlights sit at 11 to 1 o'clock and
+        // their jaws fall into shade (from 28 degrees to the side and 22 up, ours sat at 10 to 11 and the jaw lit).
+        // (--key-at SIDE,UP: its offsets for judging it (pictures))
+        if (keyAt == null)
+        {
+            keyAt = new Vector2(0.55f, 1.25f);
+            if (Args.Get("key-at") is string ka && ka.Split(',') is [var kx, var ky])
+                keyAt = new Vector2(float.Parse(kx, System.Globalization.CultureInfo.InvariantCulture), float.Parse(ky, System.Globalization.CultureInfo.InvariantCulture));
+        }
+        Aim(keyLight, eyes + dir * 1.9f - camLeft * keyAt.Value.X + Vector3.Up * keyAt.Value.Y, eyes + Vector3.Down * 0.05f, 0.15f + rig[0] * p);
         Aim(fillLight, eyes + dir * 1.8f + camLeft * 1.1f, eyes + Vector3.Down * 0.08f, rig[1] * p);
-        Aim(edgeLight, eyes - dir * 1.3f + camLeft * 1.4f + Vector3.Up * 0.35f, eyes + Vector3.Down * 0.1f, rig[2] * p);
+        // (1.3 m over her eyes: at 0.35 it grazed her jaw's silhouette, a warm line along it and orange under Sunborn's
+        // jaw, judge j6; --edge-up U: another height, for judging it (pictures))
+        float edgeUp = Args.Get("edge-up") is string eu ? float.Parse(eu, System.Globalization.CultureInfo.InvariantCulture) : 1.3f;
+        Aim(edgeLight, eyes - dir * 1.3f + camLeft * 1.4f + Vector3.Up * edgeUp, eyes + Vector3.Down * 0.1f, rig[2] * p);
         Aim(rimLight, eyes - dir * 1.6f - camLeft * 1.0f + Vector3.Up * 1.1f, eyes + Vector3.Down * 0.12f, rig[3] * p);
         if (bounceLight != null) Aim(bounceLight, eyes + dir * bounceAt.X + Vector3.Down * bounceAt.Y, eyes + Vector3.Down * 0.14f, bounce * p);
         // The sky's own light (the moon) off her from head and shoulders in: the
@@ -263,6 +316,17 @@ public partial class Game
         // and flat across her face, and its reflection a white blob as big as her
         // pupil on the lower edge of each iris.
         air.Key.LightCullMask = p > 0.5f ? air.Key.LightCullMask & ~2u : air.Key.LightCullMask | 2u;
+        // Embers and smoke kept out of the space between the lens and her (an ember drifting there was a soft
+        // orange disc over her neck), from head and shoulders in.
+        Campfire.ClearNear(p > 0.01f ? p * (camera.GlobalPosition.DistanceTo(eyes) + 0.05f) : 0);
+        // (--look-refl off: the sky's reflections off at the Look, to find what blows her armour's highlights (pictures))
+        if (LookReflOff) air.Env.ReflectedLightSource = p > 0.5f ? Godot.Environment.ReflectionSource.Disabled : Godot.Environment.ReflectionSource.Sky;
+        // (--look-ambient X: the sky's ambient light times X at the Look, for judging what greys the shade under her jaw (pictures))
+        if (Args.Get("look-ambient") is string la)
+        {
+            if (ambientBase < 0) ambientBase = air.Env.AmbientLightEnergy;
+            air.Env.AmbientLightEnergy = ambientBase * Mathf.Lerp(1f, float.Parse(la, System.Globalization.CultureInfo.InvariantCulture), p);
+        }
 
         // The fire lights her through a stand-in that fades as the portrait comes up; the fire
         // itself no longer reaches her (layer 2), so the camp around her stays as it is.
@@ -294,6 +358,8 @@ public partial class Game
         foreach (var l in new Light3D?[] { keyLight, fillLight, edgeLight, rimLight, bounceLight, herFire }) l?.QueueFree();
         keyLight = fillLight = edgeLight = rimLight = bounceLight = null;
         air.Key.LightCullMask |= 2u;                       // (the sky's light on her again)
+        if (figure?.Person is { } herRig) People.HerLookRig(herRig, 0);
+        Campfire.ClearNear(0);
         herFire = null;
         if (fireSrc != null && IsInstanceValid(fireSrc)) fireSrc.LightCullMask = fireMask;
         fireSrc = null;
