@@ -510,7 +510,7 @@ public static class People
                 m.VertexColorUseAsAlbedo = true;
                 // (its paint a bright salmon pink, read as a plastic slab inside her mouth at the Look (a2): a muted,
                 // darker rose, as a tongue in the mouth's shade)
-                m.AlbedoColor = new Color(0.66f, 0.5f, 0.5f);
+                m.AlbedoColor = new Color(0.7f, 0.5f, 0.46f);
                 return m;
             default:
                 return Skin(src, look, mesh, who == "hero" ? HisTone : null, who);

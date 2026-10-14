@@ -48,6 +48,7 @@ UP_Y1, UP_Y2 = 0.008, 0.016    # (m above her lips' line: raised fully to here, 
 LINE_NEAR = 1.692              # (her lips' line is looked for within 2 cm of this height, m)
 CAV_AXIS_Z, CAV_FRONT, CAV_SIDE, CAV_DEPTH = 0.04, 0.088, 0.6, 0.025   # (m: her mouth's axis; its opening's z at her
 #                                middle, falling back CAV_SIDE per metre out; dark at CAV_DEPTH behind it)
+CORNER_X, CORNER_DEPTH = (0.017, 0.023), float(os.environ.get("MOUTH_CORNER_DEPTH", "0.35"))
 TONGUE_ROOT, TONGUE_LEN = 0.12, 0.035   # (her tongue's shade at its root, so far back from its tip: at 0.3 over 50 mm its
 #                                      back, unshadowed, read as a lit pink slab behind her teeth (a2))
 # (at mouth_open 1, her tongue dropped and drawn back so far beyond her lower teeth's move, fully at its tip,
@@ -169,6 +170,10 @@ def seat(path, out=None):
     inside = (((c0 - HV) * HN).sum(1) > 0) & (np.abs(HV[:, 0]) < 0.035) & (np.abs(HV[:, 1] - line) < 0.025)
     front = CAV_FRONT - CAV_SIDE * np.abs(HV[:, 0])
     depth = np.where(inside, _s01((front - HV[:, 2]) / CAV_DEPTH), 0.0)
+    # (her lips' inner faces at her mouth's corners stand as far forward as her lips there, so the plane left them
+    # as paint, an orange-brown wedge lit at each corner of her smile (a4): there, at least CORNER_DEPTH, a wet dark red)
+    cw = _s01((np.abs(HV[:, 0]) - CORNER_X[0]) / (CORNER_X[1] - CORNER_X[0]))
+    depth = np.where(inside, np.maximum(depth, CORNER_DEPTH * cw), depth)
     _add_colour(js, chunks, hp, np.c_[np.ones((len(HV), 3)), 1 - depth])
     gs = 1 - (1 - TONGUE_ROOT) * _s01((GV[:, 2].max() - GV[:, 2]) / TONGUE_LEN)
     _add_colour(js, chunks, gp, np.c_[np.repeat(gs[:, None], 3, 1), np.ones(len(GV))])
