@@ -75,12 +75,13 @@ TAKES = {
         turb=((1, 3.0), (8, 3.0), (20, 1.5), (36, 0.8)), turb_size=1.2, turb_z=(2.5, 8.0),
         src=True,
         smoke_k=25.0, dpow=1.0, smoke_rgb=(0.05, 0.045, 0.04), absorb=(0.45, 0.25, 0.08),
-        flame_k=8.0, fq=1.0, flame_pow=1.0, emit_k=3.5, emit_m=2.0,
+        flame_k=8.0, fq=1.0, flame_pow=1.0, emit_k=3.5, emit_m=3.0, heat_fire=(0.55, 1.0), heat_w=0.9,
+        soot_noise=(0.9, 0.42, 4.0), soot_up=5.0,
         ramp=((0.0, (0.0, 0.0, 0.0)), (0.10, (0.60, 0.04, 0.0)), (0.30, (0.95, 0.13, 0.01)),
               (0.50, (1.0, 0.32, 0.02)), (0.70, (1.0, 0.52, 0.07)), (0.85, (1.0, 0.70, 0.22)),
               (0.93, (1.0, 0.84, 0.48)), (1.0, (1.0, 0.95, 0.80))),
         fnoise=0.3, fnoise_s=2.5, fnoise_up=4.0,
-        glow_rgb=(1.0, 0.22, 0.04), glow_k=0.8, glow_heat=(1.6, 3.0),
+        glow_rgb=(1.0, 0.22, 0.04), glow_k=0.0, glow_heat=(0.5, 1.0),
         heat_keys=((1, 1.0), (10, 1.0), (22, 0.45), (32, 0.1)),
         zfade=(9.0, 12.5), smoke_keys=((1, 1.0), (26, 1.0), (36, 0.5)), fire_keys=(),
         amb=0.15, look=4.5, ortho=16.0,
@@ -166,6 +167,19 @@ def src_material(t):
     ds = math("MULTIPLY", ds, tap)
     if zf:
         ds = math("MULTIPLY", ds, zf)
+    if t.get("soot_noise"):
+        # Torn soot: holes in it where a climbing noise is low (the sim's shell is even), so the fire shows
+        # through in tears and the soot lies in rags, thick in its pockets.
+        sc_, th, gain = t["soot_noise"]
+        tc2 = nt.nodes.new("ShaderNodeTexCoord"); mp2 = nt.nodes.new("ShaderNodeMapping")
+        nz2 = nt.nodes.new("ShaderNodeTexNoise"); nz2.inputs["Scale"].default_value = sc_
+        nz2.inputs["Detail"].default_value = 6.0; nz2.inputs["Roughness"].default_value = 0.62
+        L(tc2.outputs["Object"], mp2.inputs["Vector"]); L(mp2.outputs["Vector"], nz2.inputs["Vector"])
+        l2 = mp2.inputs["Location"]
+        l2.default_value = (0, 0, 0); l2.keyframe_insert("default_value", frame=1)
+        l2.default_value = (0.3, 0, -t.get("soot_up", 5.0)); l2.keyframe_insert("default_value", frame=33)
+        mk = math("MULTIPLY", math("SUBTRACT", nz2.outputs["Fac"], th), gain, clamp=True)
+        ds = math("MULTIPLY", ds, mk)
     # Fire: the flame broken finer than the grid by a noise that climbs with it.
     f = attr("flame")
     if t.get("fnoise", 0.0) > 0:
@@ -180,6 +194,15 @@ def src_material(t):
         L(nz.outputs["Fac"], ma.inputs[0])
         ma.inputs[1].default_value = 2.0 * t["fnoise"]; ma.inputs[2].default_value = 1.0 - t["fnoise"]
         f = math("MULTIPLY", f, ma.outputs["Value"], clamp=True)
+    if t.get("heat_fire"):
+        # Hot gas is fire too: its heat (the sim's buoyancy temperature, which outlives the flame) mapped to the
+        # same scale, cooling on heat_keys, so burnt-out gas keeps a deep red glow and the fire dies as it cools.
+        a0, a1 = t["heat_fire"]
+        hf = nt.nodes.new("ShaderNodeMapRange"); hf.clamp = True
+        hf.inputs["From Min"].default_value, hf.inputs["From Max"].default_value = a0, a1
+        L(attr(t.get("heat_attr", "heat")), hf.inputs["Value"])
+        hc = keyed(nt, "heat_cool_f", t.get("heat_keys", ()), 1.0).outputs[0]
+        f = math("MAXIMUM", f, math("MULTIPLY", math("MULTIPLY", hf.outputs["Result"], hc), t.get("heat_w", 0.8)))
     ff = math("MULTIPLY", math("POWER", f, t.get("fq", 1.0)), t["flame_k"])
     if zf:
         ff = math("MULTIPLY", ff, zf)
@@ -200,7 +223,7 @@ def src_material(t):
     h0, h1 = t.get("glow_heat", (1.6, 3.0))
     hm = nt.nodes.new("ShaderNodeMapRange"); hm.clamp = True
     hm.inputs["From Min"].default_value, hm.inputs["From Max"].default_value = h0, h1
-    L(attr("heat"), hm.inputs["Value"])
+    L(attr(t.get("heat_attr", "heat")), hm.inputs["Value"])
     cool = keyed(nt, "heat_cool", t.get("heat_keys", ()), 1.0).outputs[0]
     hg = math("MULTIPLY", math("MULTIPLY", math("POWER", hm.outputs["Result"], 2.0), t.get("glow_k", 0.8)), cool)
     gc = nt.nodes.new("ShaderNodeRGB"); gc.outputs[0].default_value = tuple(t.get("glow_rgb", (1, 0.22, 0.04))) + (1,)
