@@ -78,6 +78,9 @@ func _init():
 	ap = AnimationPlayer.new()
 	her.add_child(ap)
 	ap.root_node = NodePath("..")
+	# Advanced by hand, after each photograph (see _process): played by the
+	# tree, the pose drawn at a tick was a frame on from the one asked for.
+	ap.callback_mode_process = AnimationMixer.ANIMATION_CALLBACK_MODE_PROCESS_MANUAL
 	var ual = AnimationLibrary.new()
 	for f in ["res://assets/people/UAL1.glb", "res://assets/people/UAL2.glb"]:
 		var s = load(f).instantiate()
@@ -179,6 +182,7 @@ func overlay(over):
 	for L in ap.get_animation_library_list(): tree.add_animation_library(L, ap.get_animation_library(L))
 	tree.set("parameters/sc/scale", float(env("OVERSPEED", "1.6")))
 	tree.active = true
+	tree.callback_mode_process = AnimationMixer.ANIMATION_CALLBACK_MODE_PROCESS_MANUAL
 
 func env(k, d):
 	var v = OS.get_environment(k)
@@ -529,7 +533,7 @@ func place_camera():
 	cam.look_at_from_position(c + off / float(env("ZOOM", "1")), c)
 
 func _process(delta):
-	her.position += her.basis.z.normalized() * speed * delta
+	her.position += her.basis.z.normalized() * speed * TICK
 	# FIXCAM=1: the camera set up on the clip's first frame and left there,
 	# as a cinematic's camera is set on its marks when the shot begins.
 	if env("FIXCAM", "") == "" or frame <= warm:
@@ -537,11 +541,14 @@ func _process(delta):
 	frame += 1
 	if frame <= warm:
 		if frame == warm:
-			# The first shots after warming: from the clip's start.
+			# The first shots after warming: from the clip's start (not
+			# advanced this tick, so the start itself is drawn and photographed).
 			ap.seek(start, true)
 			her.position = Vector3.ZERO
 			# (her hair hung afresh from this pose: the seek back was a jump, and it flung her hair)
 			for h in her.find_children("HairSway", "", true, false): h.call("Settle")
+		else:
+			play_on(delta)
 		return false
 	var k = frame - warm - 1
 	if tree != null and k == int(float(env("OVERAT", "0")) * 30):
@@ -562,7 +569,18 @@ func _process(delta):
 	if shots.size() >= nframes:
 		sheet()
 		quit()
+	# The photograph above is the frame drawn last tick: only now does the
+	# clip move on to the next (until 14 Oct the player moved on before the
+	# first photograph, so every cell showed one frame later than its number).
+	play_on(delta)
 	return false
+
+# Exactly a frame: the engine's tick wanders (0.025-0.042 s seen under
+# --fixed-fps 30, 14 Oct), which moved cells off their frames by up to a quarter.
+const TICK = 1.0 / 30.0
+func play_on(_delta):
+	if tree != null: tree.advance(TICK)
+	else: ap.advance(TICK)
 
 func sheet():
 	var w = shots[0].get_width()
