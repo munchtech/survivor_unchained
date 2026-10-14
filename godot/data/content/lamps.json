@@ -579,7 +579,7 @@
     "ranged",
     "physical"
    ],
-   "text": "One arrow down a 30 m line, splitting three times on the toughest.",
+   "text": "One arrow down a 30 m line, splitting three times on the toughest. A boss takes each of its hits double.",
    "beat": {
     "key": 0.35,
     "first": 0.4,

@@ -48,7 +48,7 @@ flare("the_roads_toll", "The Road's Toll", "stalker", "roadknife", "strike", 1.2
       beat={"key": 0.24, "first": 0.24, "last": 1.12, "hitstop": 1, "hitstopLast": 6},
       args={"poison": 0.5, "poisonSeconds": 4, "execute": 0.25, "lastCut": 0.4, "onBoss": 4, "doubled": 18, "gone": 3, "emptyFan": 0.45, "emptyRadius": 1.5})
 flare("through_and_through", "Through and Through", "stalker", "roadknife", "stand", 6, 3, 2, 290, "physical", ["melee", "steel", "physical"], "For 6 s your dashes are free and endless, and every one cuts.")
-flare("one_arrow", "One Arrow", "stalker", "verge_hunter", "strike", 0.9, 30, 1, 2990, "physical", ["projectile", "ranged", "physical"], "One arrow down a 30 m line, splitting three times on the toughest.",
+flare("one_arrow", "One Arrow", "stalker", "verge_hunter", "strike", 0.9, 30, 1, 2990, "physical", ["projectile", "ranged", "physical"], "One arrow down a 30 m line, splitting three times on the toughest. A boss takes each of its hits double.",
       beat={"key": 0.35, "first": 0.4, "splitFirst": 0.45, "splitLast": 0.55, "follow": 0.3, "hitstop": 7, "hitstopSplit": 1, "hitstopLast": 3},
       args={"arrow": 1.0, "line": 30, "lineWidth": 1.2, "execute": 0.3, "bossCrit": 2, "splits": 3, "splitMore": 6,
             "splitAngle": 0.4, "splitLength": 12, "splitWidth": 0.8, "split": 0.6, "pinned": 2, "heart": 0.6, "heartFan": 0.7, "heartFrom": 4})
