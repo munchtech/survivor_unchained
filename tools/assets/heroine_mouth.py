@@ -64,7 +64,7 @@ CO_X = (0.020, 0.028)
 # CH_Y (mm about her lips' line: full to the first, none past the second). mouth_open draws her cheek past each corner
 # back 4-6 mm and her smile 2-4 more, so in smo a pocket opened past each corner, browned by the skin's shading: as she
 # laughs her cheeks bunch forward instead)
-CHEEK_HOLD = float(os.environ.get("MOUTH_CHEEK_HOLD", "1.0"))
+CHEEK_HOLD = float(os.environ.get("MOUTH_CHEEK_HOLD", "0"))
 CH_X = tuple(float(v) / 1000 for v in os.environ.get("MOUTH_CH_X_MM", "21,25,32,40").split(","))
 CH_Y = tuple(float(v) / 1000 for v in os.environ.get("MOUTH_CH_Y_MM", "5,10").split(","))
 LINE_NEAR = 1.692              # (her lips' line is looked for within 2 cm of this height, m)

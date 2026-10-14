@@ -81,7 +81,7 @@ FACES = ("own", "highborn", "vixen", "doe", "sunborn", "moonlit", "saffron", "wi
 CORNER_C = tuple(float(v) / 1000 for v in os.environ.get("SMILE_CORNER_C_MM", "23,0").split(","))
 CORNER_R = tuple(float(v) / 1000 for v in os.environ.get("SMILE_CORNER_R_MM", "9,8").split(","))
 CORNER_PASSES = int(os.environ.get("SMILE_CORNER_PASSES", "10"))
-CORNER_ON = os.environ.get("SMILE_CORNER", "1") == "1"
+CORNER_ON = os.environ.get("SMILE_CORNER", "0") == "1"   # (off: tried in r2, softened own and moonlit's commas below the floor and left Saffron and Sunborn over .2)
 CORNER_NZ = float(os.environ.get("SMILE_CORNER_NZ", "-1.1"))   # (points whose rest normal faces further back are left as they were)
 # (her lower lip's inside carried with its outside (inner_carry): CARRY_KEYS; inside points CARRY_H (mm under her lips'
 # line: none at the first, all by the second) and up to CARRY_DEPTH (mm behind the outside they go with: all to the
