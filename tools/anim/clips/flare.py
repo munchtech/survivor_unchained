@@ -49,16 +49,16 @@ from rig import Clip, qinv, qmul, qrot, qslerp, qbetween
 NAME = "flare_burns_twice"
 END, CONTACT, SWEEP, BLEND = 60, 20, 43, 46
 
-# The staff in hand_r's own space.
+# The staff in hand_r's own space (the bound staff, seated on the fist's line by Arms.Seat: WeaponSockets.FistSeat).
 M_R = np.array([-0.025, 0.075, 0.0])                 # the mount: the shaft through the right fist
-BUTT = np.array([-0.016, -0.006, -0.7875])           # the butt's foot
-AXIS = np.array([0.001, 0.1157, 0.9933])             # the shaft's line, butt toward head
+BUTT = np.array([-0.0398, -0.0331, -0.7803])         # the butt's foot (on the shaft's line, 787.6 mm below the pocket)
+AXIS = np.array([0.001, 0.1157, 0.9933])             # the shaft's line, butt toward head (the fist's line)
 AXIS = AXIS / np.linalg.norm(AXIS)
-SHAFT0 = np.array([-0.015, 0.089, 0.0])              # the shaft's centre where it crosses the fist
-LEFT_AT = 0.25                                       # the left fist this far up the shaft (m along it)
-# The left fist's channel (the mirror of the right's mount: her left hand's
-# +X is across the palm, her right's across the back).
-M_L = np.array([0.025, 0.075, 0.0])
+SHAFT0 = np.array([-0.039, 0.058, 0.002])            # the shaft's centre where it crosses the fist (the fist's pocket)
+LEFT_AT = 0.235                                      # the left fist this far up the shaft (m along it)
+# The left fist's pocket (the mirror of the right's: her left hand's +X is
+# across the palm, her right's across the back).
+M_L = np.array([0.039, 0.058, 0.002])
 
 
 def _n(*v):

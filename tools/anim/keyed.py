@@ -1097,6 +1097,11 @@ def _zero_default(n):
     return head.startswith(("hips.", "spine", "neck", "head", "clav_")) or head.endswith((".rot", ".toe", ".plant"))
 
 
+# A hand keyed by blade and knuckles turns as one frame between keys (Track._hand_frame); 0 (KEYED_HANDFRAME=0 in the
+# environment) draws the two directions each on its own, as before 13 October.
+HAND_FRAME = __import__("os").environ.get("KEYED_HANDFRAME", "1") != "0"
+
+
 class Track:
     """Keys [(frame, pose, ease), ...] as a pose at any frame."""
 
@@ -1122,6 +1127,17 @@ class Track:
         self.vectors = sorted({n[:-2] for n in self.names if n.endswith("#0") and n.split("#")[0].split(".")[-1]
                                in ("blade", "knuckles", "pole", "thumb") and all(f"{n[:-2]}#{i}" in self.names for i in (1, 2))
                                and len(self.have[n]) == len(self.have[n[:-2] + "#1"]) == len(self.have[n[:-2] + "#2"])})
+        # A hand keyed by its blade AND its knuckles at the same keys turns as one frame (HAND_FRAME), not as two
+        # directions each on its own: a roll of the knuckles about the blade then spreads over the segment instead
+        # of bunching into the frame or two where the two vectors' separate paths cross.
+        self.frames_ = []
+        if HAND_FRAME:
+            for v in self.vectors:
+                if v.endswith(".blade") and v[:-6] + ".knuckles" in self.vectors:
+                    kv = v[:-6] + ".knuckles"
+                    if [h[0] for h in self.have[v + "#0"]] == [h[0] for h in self.have[kv + "#0"]]:
+                        self.frames_.append((v, kv))
+        self.in_frames = {x for pair in self.frames_ for x in pair}
 
     def __call__(self, fr, lead=None):
         """The pose at frame fr. `lead`: frames ahead each part of her runs
@@ -1148,6 +1164,8 @@ class Track:
         # long way apart would otherwise pass near nothing between them and
         # the hand would spin over in a frame.
         for vec in self.vectors:
+            if vec in self.in_frames:
+                continue
             names = [f"{vec}#{i}" for i in range(3)]
             have = self.have[names[0]]
             t = fr
@@ -1176,6 +1194,8 @@ class Track:
             v = lin * (1 - w) + arc * w
             for k, n in enumerate(names):
                 flat[n] = float(v[k])
+        for bvec, kvec in self.frames_:
+            self._hand_frame(flat, bvec, kvec, fr, lead)
         # A hand placed on an arc in one key and at a point in the next: the
         # two targets cross-faded between them (each held from its own keys).
         for side in "lr":
@@ -1195,6 +1215,77 @@ class Track:
             u = float(smoothstep_((fr - t0) / (t1 - t0)))
             flat[f"{h}.mix"] = u if m1 == "pos" else 1 - u
         return _unflatten(flat)
+
+
+def _frame_of(b, k):
+    """The hand's frame from its blade (+Z) and knuckles (+Y, made square to the blade), as Rig's _want_grip builds it."""
+    nb = np.linalg.norm(b)
+    if nb < 1e-6:
+        return None
+    z = b / nb
+    y = k - z * np.dot(k, z)
+    ny = np.linalg.norm(y)
+    if ny < 1e-4:
+        return None
+    y = y / ny
+    return qfrom_basis(np.cross(y, z), y, z)
+
+
+def _qlog(q):
+    """A unit quaternion (x, y, z, w) as a rotation vector (radians), the short way."""
+    q = np.asarray(q, float)
+    if q[3] < 0:
+        q = -q
+    s = np.linalg.norm(q[:3])
+    if s < 1e-12:
+        return np.zeros(3)
+    return q[:3] / s * 2 * math.atan2(s, q[3])
+
+
+def _qexp(v):
+    a = float(np.linalg.norm(v))
+    if a < 1e-12:
+        return np.array([0, 0, 0, 1.0])
+    return np.concatenate([np.asarray(v) / a * math.sin(a / 2), [math.cos(a / 2)]])
+
+
+def _hand_frame(self, flat, bvec, kvec, fr, lead):
+    """Blade and knuckles at frame fr from one turn of the hand's frame: each key's frame as a rotation vector from the
+    segment's first key (the short way), the vectors drawn through the keys with the keys' own timing and eases
+    (_hermite), the turn applied to the first key's frame. Lengths as the components' Hermite gave them."""
+    bn = [f"{bvec}#{i}" for i in range(3)]
+    kn = [f"{kvec}#{i}" for i in range(3)]
+    have = self.have[bn[0]]
+    t = fr
+    if lead:
+        for part, ahead in lead.items():
+            if bn[0].startswith(part):
+                t = min(fr + ahead, have[-1][0])
+                break
+    if len(have) < 2 or t <= have[0][0] or t >= have[-1][0]:
+        return
+    ts = [h[0] for h in have]
+    eases = [h[2] for h in have]
+    B = np.array([[self.have[n][j][1] for n in bn] for j in range(len(have))])
+    K = np.array([[self.have[n][j][1] for n in kn] for j in range(len(have))])
+    qs = [_frame_of(B[j], K[j]) for j in range(len(have))]
+    if any(q is None for q in qs):
+        return
+    i = min(bisect.bisect_right(ts, t) - 1, len(have) - 2)
+    qi = qs[i]
+    logs = np.array([_qlog(qmul(qinv(qi), q)) for q in qs])
+    v = np.array([_hermite(ts, list(logs[:, c]), eases, t) for c in range(3)])
+    R = qmul(qi, _qexp(v))
+    lb = np.linalg.norm([flat[n] for n in bn])
+    lk = np.linalg.norm([flat[n] for n in kn])
+    b = qrot(R, [0, 0, 1.0]) * (lb if lb > 1e-6 else 1.0)
+    k = qrot(R, [0, 1.0, 0]) * (lk if lk > 1e-6 else 1.0)
+    for c in range(3):
+        flat[bn[c]] = float(b[c])
+        flat[kn[c]] = float(k[c])
+
+
+Track._hand_frame = _hand_frame
 
 
 def _aims(keys):
