@@ -99,10 +99,13 @@ def edge_fade(a):
     return a * m[..., None]
 
 
+TINT = (1.0, 1.0, 1.0)  # the game's fire_tint (flare_fb.gdshader); --tint 1,0.92,0.6 previews the old one
+
+
 def over(a, bg):
-    """The game's blend (premultiplied, its gain and smoke factor, its clamp of colour to alpha) over a ground of
-    display colour bg, back to display colour."""
-    rgb = np.minimum(a[..., :3], a[..., 3:4]) * GAIN
+    """The game's blend (premultiplied, its gain, tint and smoke factor, its clamp of colour to alpha) over a ground
+    of display colour bg, back to display colour."""
+    rgb = np.minimum(a[..., :3], a[..., 3:4]) * GAIN * np.array(TINT, np.float32)
     return srgb(rgb + lin(np.array(bg, np.float32)) * (1 - a[..., 3:4] * SMOKE))
 
 
@@ -111,8 +114,11 @@ def opt(argv, k, d, t=str):
 
 
 def main():
+    global TINT, SMOKE
     mode, src, out = sys.argv[1:4]
     av = sys.argv[4:]
+    TINT = tuple(float(v) for v in opt(av, "--tint", "1,1,1").split(","))
+    SMOKE = opt(av, "--smoke", SMOKE, float)
     tone = tone_of(src, av)
     if mode == "atlas":
         cols, cell, fps = opt(av, "--cols", 8, int), opt(av, "--cell", 384, int), opt(av, "--fps", 24.0, float)
@@ -155,9 +161,19 @@ def main():
             sheet = np.concatenate([over(a, night), over(a, day)], 1)
             p = f"{out}_f{n:03d}.png"
             Image.fromarray((sheet * 255 + 0.5).astype(np.uint8)).save(p)
-            fire = a[..., :3].max(2)
-            print("FRAME", p, "alpha>0.5: %.1f%%" % (100 * (a[..., 3] > 0.5).mean()),
-                  "fire>0.9: %.2f%%" % (100 * (fire > 0.9).mean()), "fire>0.3: %.1f%%" % (100 * (fire > 0.3).mean()))
+            # The judge's numbers: the cloud (alpha > 0.1), the share of it that is bright fire (the game's light
+            # over 0.25 linear, about 0.54 on screen), how much of the dense cloud is opaque, and near-white pixels
+            # (every channel over 0.8 on screen, over the night ground) as a share of the whole frame.
+            al = a[..., 3]
+            cloud = al > 0.1
+            lit = np.minimum(a[..., :3], a[..., 3:4]) * GAIN * np.array(TINT, np.float32)
+            flame = lit.max(2) > 0.25
+            dark = cloud & (lit.max(2) < 0.06)
+            white = over(a, night).min(2) > 0.8
+            nc = max(int(cloud.sum()), 1)
+            print("FRAME", p, "cloud %.1f%%" % (100 * cloud.mean()), "flame/cloud %.1f%%" % (100 * (flame & cloud).sum() / nc),
+                  "dark/cloud %.1f%%" % (100 * dark.sum() / nc), "opaque(a>0.85)/cloud %.1f%%" % (100 * ((al > 0.85) & cloud).sum() / nc),
+                  "near-white %.2f%%" % (100 * white.mean()))
     else:
         every, cell = opt(av, "--every", 4, int), opt(av, "--cell", 320, int)
         bg = [float(v) for v in opt(av, "--bg", "0.05,0.05,0.06").split(",")]

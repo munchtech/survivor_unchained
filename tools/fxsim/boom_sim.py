@@ -56,17 +56,46 @@ TAKES = {
         amb=0.15, look=4.5, ortho=16.0,
         tone=dict(exp=0.8, knee=0.45, hot=0.0, sat=2.0, amb=(0.030, 0.025, 0.020)),
     ),
+    # Seeded round (the jets' starfish and the solid charges' grey blocks gone): a white-hot core from a source half
+    # a metre across, swelling to 4.7 m in three frames inside a torn shell of soot 9 m across, its fuel uneven
+    # (a clouds texture), so it burns out in patches and tongues; a small source on the ground burns on five frames
+    # (0.15 s in the game), the dark stem the rising ball trails. Shaded as a source function (src_material): the
+    # fire's light is its own heat's colour, the soot near-black and opaque, the fire seen through it reddened.
+    "burns_boom4": dict(
+        dom=(13.0, 13.0, 13.0), tscale=4.0, steps_max=4, vort=0.45, flame_vort=1.5, beta=1.5, alpha=0.3,
+        burn=0.17, flame_smoke=3.0, dissolve=60, noise=0, noise_k=1.0,
+        fuel=2.0, temp=3.0, smoke=0.12, vfac=0.0, out=0.0, vol=1.0, surf=0.15,
+        ball=True,
+        ball_keys=((1, 0.9, 0.65), (2, 1.5, 1.45), (3, 2.0, 2.05), (4, 2.4, 2.35)), core_on=(1, 4), core_up=0.0,
+        core_tex=(0.28, 1.8, 1.15), lump=0.30, lump_s=0.55,
+        shell_keys=((1, 0.9, 0.7), (2, 1.6, 2.1), (3, 2.2, 3.2), (4, 2.6, 3.9), (5, 2.9, 4.3)), shell_on=(2, 5),
+        shell_smoke=0.14, shell_temp=1.8, shell_tex=(0.22, 2.2, 0.95), shell_lump=0.35, shell_up=0.0,
+        stem=dict(r=0.32, z=0.35, on=(1, 5), fuel=1.0, temp=2.0, smoke=0.6, up=2.0),
+        turb=((1, 3.0), (8, 3.0), (20, 1.5), (36, 0.8)), turb_size=1.2, turb_z=(2.5, 8.0),
+        src=True,
+        smoke_k=25.0, dpow=1.0, smoke_rgb=(0.05, 0.045, 0.04), absorb=(0.45, 0.25, 0.08),
+        flame_k=8.0, fq=1.0, flame_pow=1.0, emit_k=3.5, emit_m=2.0,
+        ramp=((0.0, (0.0, 0.0, 0.0)), (0.10, (0.60, 0.04, 0.0)), (0.30, (0.95, 0.13, 0.01)),
+              (0.50, (1.0, 0.32, 0.02)), (0.70, (1.0, 0.52, 0.07)), (0.85, (1.0, 0.70, 0.22)),
+              (0.93, (1.0, 0.84, 0.48)), (1.0, (1.0, 0.95, 0.80))),
+        fnoise=0.3, fnoise_s=2.5, fnoise_up=4.0,
+        glow_rgb=(1.0, 0.22, 0.04), glow_k=0.8, glow_heat=(1.6, 3.0),
+        heat_keys=((1, 1.0), (10, 1.0), (22, 0.45), (32, 0.1)),
+        zfade=(9.0, 12.5), smoke_keys=((1, 1.0), (26, 1.0), (36, 0.5)), fire_keys=(),
+        amb=0.15, look=4.5, ortho=16.0,
+        tone=dict(exp=1.0, knee=0.6, hot=0.0, sat=1.0, amb=(0.0, 0.0, 0.0)),
+    ),
 }
 
 
 def args():
     a = sys.argv[sys.argv.index("--") + 1:] if "--" in sys.argv else []
     o = dict(out=a[0], take="burns_boom", res=160, frames=48, px=512, pitch=66.0, samples=48,
-             bake_only=False, render_only=False, set="", only="", fmt="exr")
+             bake_only=False, render_only=False, set="", only="", fmt="exr", vbounce=1, step=1.0, dry=False)
     i = 1
     while i < len(a):
         k = a[i].lstrip("-").replace("-", "_")
-        if k in ("bake_only", "render_only"):
+        if k in ("bake_only", "render_only", "dry"):
             o[k] = True; i += 1; continue
         v = a[i + 1]; i += 2
         o[k] = type(o[k])(v) if k in o else v
@@ -86,6 +115,113 @@ def keyed(nt, name, keys, default):
             for kp in fc.keyframe_points:
                 kp.interpolation = "LINEAR"
     return v
+
+
+def src_material(t):
+    """Fire as a source function (Kirchhoff): each point of fire emits its own heat's colour times its own opacity,
+    so the light seen at a thick surface is that surface's heat: the hot heart white-yellow, the fire's cooler skin
+    deep red, never a flat lit mass. Soot (the sim's density) is near-black (albedo smoke_rgb), opaque where dense,
+    reddening the fire seen through it (absorb: red passes, blue is taken); its own heat a dull red glow that cools
+    on heat_keys. Fire: flame^fq * flame_k of neutral opacity; light ramp(flame^flame_pow) * emit_k * fp^emit_m."""
+    m = bpy.data.materials.new("boom_src")
+    m.use_nodes = True
+    nt = m.node_tree
+    for n in list(nt.nodes):
+        nt.nodes.remove(n)
+    L = nt.links.new
+
+    def math(op, a, b=None, clamp=False):
+        n = nt.nodes.new("ShaderNodeMath"); n.operation = op; n.use_clamp = clamp
+        for i, v in enumerate((a, b)):
+            if v is None:
+                continue
+            if isinstance(v, (int, float)):
+                n.inputs[i].default_value = v
+            else:
+                L(v, n.inputs[i])
+        return n.outputs["Value"]
+
+    def attr(name):
+        a = nt.nodes.new("ShaderNodeAttribute"); a.attribute_name = name
+        return a.outputs["Fac"]
+
+    def scale(vec, s):
+        n = nt.nodes.new("ShaderNodeVectorMath"); n.operation = "SCALE"
+        L(vec, n.inputs[0]); L(s, n.inputs["Scale"])
+        return n.outputs["Vector"]
+
+    out = nt.nodes.new("ShaderNodeOutputMaterial")
+    zf = None
+    if t.get("zfade"):
+        geo = nt.nodes.new("ShaderNodeNewGeometry"); sep = nt.nodes.new("ShaderNodeSeparateXYZ")
+        mr = nt.nodes.new("ShaderNodeMapRange"); mr.clamp = True
+        mr.inputs["From Min"].default_value, mr.inputs["From Max"].default_value = t["zfade"]
+        mr.inputs["To Min"].default_value, mr.inputs["To Max"].default_value = 1.0, 0.0
+        L(geo.outputs["Position"], sep.inputs[0]); L(sep.outputs["Z"], mr.inputs["Value"])
+        zf = mr.outputs["Result"]
+    # Soot.
+    tap = keyed(nt, "smoke_taper", t.get("smoke_keys", ()), 1.0).outputs[0]
+    ds = math("MULTIPLY", math("POWER", attr("density"), t.get("dpow", 1.0)), t["smoke_k"])
+    ds = math("MULTIPLY", ds, tap)
+    if zf:
+        ds = math("MULTIPLY", ds, zf)
+    # Fire: the flame broken finer than the grid by a noise that climbs with it.
+    f = attr("flame")
+    if t.get("fnoise", 0.0) > 0:
+        tc = nt.nodes.new("ShaderNodeTexCoord"); mp = nt.nodes.new("ShaderNodeMapping")
+        nz = nt.nodes.new("ShaderNodeTexNoise"); nz.inputs["Scale"].default_value = t.get("fnoise_s", 2.5)
+        nz.inputs["Detail"].default_value = 4.0; nz.inputs["Roughness"].default_value = 0.6
+        L(tc.outputs["Object"], mp.inputs["Vector"]); L(mp.outputs["Vector"], nz.inputs["Vector"])
+        loc = mp.inputs["Location"]
+        loc.default_value = (0, 0, 0); loc.keyframe_insert("default_value", frame=1)
+        loc.default_value = (0, 0, -t.get("fnoise_up", 4.0)); loc.keyframe_insert("default_value", frame=49)
+        ma = nt.nodes.new("ShaderNodeMath"); ma.operation = "MULTIPLY_ADD"
+        L(nz.outputs["Fac"], ma.inputs[0])
+        ma.inputs[1].default_value = 2.0 * t["fnoise"]; ma.inputs[2].default_value = 1.0 - t["fnoise"]
+        f = math("MULTIPLY", f, ma.outputs["Value"], clamp=True)
+    ff = math("MULTIPLY", math("POWER", f, t.get("fq", 1.0)), t["flame_k"])
+    if zf:
+        ff = math("MULTIPLY", ff, zf)
+    fp = math("POWER", f, t.get("flame_pow", 1.0))
+    ramp = nt.nodes.new("ShaderNodeValToRGB")
+    cr = ramp.color_ramp
+    rk = t["ramp"]
+    cr.elements[0].position = rk[0][0]; cr.elements[0].color = tuple(rk[0][1]) + (1,)
+    cr.elements[1].position = rk[-1][0]; cr.elements[1].color = tuple(rk[-1][1]) + (1,)
+    for p, c in rk[1:-1]:
+        e = cr.elements.new(p); e.color = tuple(c) + (1,)
+    L(fp, ramp.inputs["Fac"])
+    inten = math("MULTIPLY", math("POWER", fp, t.get("emit_m", 2.0)), t["emit_k"])
+    if t.get("fire_keys"):
+        inten = math("MULTIPLY", inten, keyed(nt, "fire_taper", t["fire_keys"], 1.0).outputs[0])
+    fire_rgb = scale(ramp.outputs["Color"], math("MULTIPLY", ff, inten))
+    # The soot's own heat: a dull red where the fire has warmed it, cooling on heat_keys.
+    h0, h1 = t.get("glow_heat", (1.6, 3.0))
+    hm = nt.nodes.new("ShaderNodeMapRange"); hm.clamp = True
+    hm.inputs["From Min"].default_value, hm.inputs["From Max"].default_value = h0, h1
+    L(attr("heat"), hm.inputs["Value"])
+    cool = keyed(nt, "heat_cool", t.get("heat_keys", ()), 1.0).outputs[0]
+    hg = math("MULTIPLY", math("MULTIPLY", math("POWER", hm.outputs["Result"], 2.0), t.get("glow_k", 0.8)), cool)
+    gc = nt.nodes.new("ShaderNodeRGB"); gc.outputs[0].default_value = tuple(t.get("glow_rgb", (1, 0.22, 0.04))) + (1,)
+    glow_rgb = scale(gc.outputs[0], math("MULTIPLY", ds, hg))
+
+    pv = nt.nodes.new("ShaderNodeVolumePrincipled")
+    pv.inputs["Color"].default_value = tuple(t.get("smoke_rgb", (0.05, 0.045, 0.04))) + (1,)
+    pv.inputs["Absorption Color"].default_value = tuple(t.get("absorb", (0.0, 0.0, 0.0))) + (1,)
+    pv.inputs["Anisotropy"].default_value = 0.3
+    pv.inputs["Density Attribute"].default_value = ""
+    pv.inputs["Blackbody Intensity"].default_value = 0.0
+    pv.inputs["Emission Strength"].default_value = 1.0
+    L(ds, pv.inputs["Density"]); L(glow_rgb, pv.inputs["Emission Color"])
+    ab = nt.nodes.new("ShaderNodeVolumeAbsorption"); ab.inputs["Color"].default_value = (0, 0, 0, 1)
+    L(ff, ab.inputs["Density"])
+    em = nt.nodes.new("ShaderNodeEmission"); em.inputs["Strength"].default_value = 1.0
+    L(fire_rgb, em.inputs["Color"])
+    a1 = nt.nodes.new("ShaderNodeAddShader"); a2 = nt.nodes.new("ShaderNodeAddShader")
+    L(pv.outputs["Volume"], a1.inputs[0]); L(ab.outputs["Volume"], a1.inputs[1])
+    L(a1.outputs[0], a2.inputs[0]); L(em.outputs["Emission"], a2.inputs[1])
+    L(a2.outputs[0], out.inputs["Volume"])
+    return m
 
 
 def flame_material(t):
@@ -222,7 +358,7 @@ def main():
         ds.noise_scale = t["noise"]
         ds.noise_strength = t.get("noise_k", 1.0)
     ds.use_collision_border_bottom = True
-    dom.data.materials.append(flame_material(t))
+    dom.data.materials.append(src_material(t) if t.get("src") else flame_material(t))
 
     ds.time_scale = t.get("tscale", 1.0)
     if "steps_max" in t:
@@ -289,13 +425,20 @@ def main():
         d.strength = k; d.mid_level = 0.5
 
     def charge(name, obj, on, keys=(), fuel=1.0, temp=3.0, smoke=0.5, vcoord=None, vfac=0.0, normal=0.0,
-               fuel_keys=()):
+               fuel_keys=(), kind="BOTH", tex=None):
         """A solid flow (it fills its volume, not a shell) of fuel, heat and smoke, on for frames on[0]..on[1];
-        keys: (frame, location, scale), linear, so a punch starts at full speed."""
+        keys: (frame, location, scale), linear, so a punch starts at full speed. tex (scale, contrast, brightness):
+        a clouds texture over its emission (fuel and smoke, not heat), fixed to the object, so it burns unevenly."""
         obj.name = name
         f = obj.modifiers.new("Fluid", "FLUID"); f.fluid_type = "FLOW"
         fs = f.flow_settings
-        fs.flow_type = "BOTH"; fs.flow_behavior = "INFLOW"; fs.flow_source = "MESH"
+        fs.flow_type = kind; fs.flow_behavior = "INFLOW"; fs.flow_source = "MESH"
+        if hasattr(fs, "use_absolute"):
+            fs.use_absolute = True  # fuel and smoke set to the emitter's value, never piled up step on step
+        if tex:
+            tx = bpy.data.textures.new(name + "_tex", "CLOUDS")
+            tx.noise_scale, tx.contrast, tx.intensity = tex; tx.noise_depth = 3
+            fs.use_texture = True; fs.noise_texture = tx; fs.texture_map_type = "AUTO"; fs.texture_size = 1.0
         fs.surface_distance = t.get("surf", 0.1); fs.volume_density = t.get("vol", 1.0); fs.subframes = 8
         fs.fuel_amount = fuel; fs.temperature = temp; fs.density = smoke
         fs.smoke_color = (0.06, 0.05, 0.045)
@@ -360,9 +503,40 @@ def main():
                 tb.field.strength = v; tb.field.keyframe_insert("strength", frame=fr)
             tb.location = (0, 0, 2.0); tb.keyframe_insert("location", frame=1)
             tb.location = (0.4, -0.3, 8.0); tb.keyframe_insert("location", frame=o["frames"])
+    if t.get("ball"):
+        # The core: fire swelling out of a source half a metre across to full size in three frames, its fuel
+        # uneven. It burns out where the fuel was thin first, so the fire breaks into patches and tongues.
+        bpy.ops.mesh.primitive_ico_sphere_add(subdivisions=5, radius=1.0, location=(0, 0, 0.9))
+        c = bpy.context.object
+        lumpy(c, t["lump"])
+        charge("core", c, t["core_on"], [(fr, (0, 0, z), (r, r, r)) for fr, z, r in t["ball_keys"]],
+               t["fuel"], t["temp"], t["smoke"], vcoord=(0.0, 0.0, t.get("core_up", 0.0)), tex=t.get("core_tex"))
+        # The shell: soot thrown round it a frame later, torn (a clouds texture), cooler, so the fire shows through
+        # its holes and glows red through its thin parts, dark at its rims.
+        bpy.ops.mesh.primitive_ico_sphere_add(subdivisions=5, radius=1.0, location=(0, 0, 0.9))
+        sh = bpy.context.object
+        lumpy(sh, t["shell_lump"])
+        charge("shell", sh, t["shell_on"], [(fr, (0, 0, z), (r, r, r)) for fr, z, r in t["shell_keys"]],
+               0.0, t["shell_temp"], t["shell_smoke"], vcoord=(0.0, 0.0, t.get("shell_up", 0.0)), kind="SMOKE",
+               tex=t.get("shell_tex"))
+        # The stem: the crater burning on, smoke and a little fuel thrown up into the ball.
+        st = t["stem"]
+        bpy.ops.mesh.primitive_ico_sphere_add(subdivisions=3, radius=1.0, location=(0, 0, st["z"]))
+        sm = bpy.context.object
+        charge("stem", sm, st["on"], [(1, (0, 0, st["z"]), (st["r"],) * 3)], st["fuel"], st["temp"], st["smoke"],
+               vcoord=(0.0, 0.0, st["up"]))
+        if t.get("turb"):
+            bpy.ops.object.effector_add(type="TURBULENCE", location=(0, 0, 2.0))
+            tb = bpy.context.object
+            tb.field.size = t.get("turb_size", 1.0); tb.field.flow = 0.0; tb.field.noise = 0.0
+            for fr, v in t["turb"]:
+                tb.field.strength = v; tb.field.keyframe_insert("strength", frame=fr)
+            z0, z1 = t.get("turb_z", (2.0, 8.0))
+            tb.location = (0, 0, z0); tb.keyframe_insert("location", frame=1)
+            tb.location = (0.4, -0.3, z1); tb.keyframe_insert("location", frame=o["frames"])
     r0 = t.get("emit_r", 0.7)
     top = t.get("top", 7.0)
-    if t.get("core_keys"):
+    if t.get("core_keys") or t.get("ball"):
         pass
     elif t.get("particles"):
         # The column: puffs thrown straight up out of the crater, fast; the blast: puffs thrown out flat along the
@@ -392,6 +566,14 @@ def main():
     # Last: changing any domain setting after this frees (deletes) the baked cache, so a render-only run would
     # find it gone.
     ds.cache_directory = os.path.join(out, "cache")
+    if o["dry"]:
+        for ob in sc.objects:
+            if "Fluid" in ob.modifiers and ob.modifiers["Fluid"].fluid_type == "FLOW":
+                fs = ob.modifiers["Fluid"].flow_settings
+                print("FLOW", ob.name, fs.flow_type, "fuel", fs.fuel_amount, "smoke", fs.density, "temp", fs.temperature,
+                      "tex", fs.use_texture, "abs", fs.use_absolute, "vel", tuple(fs.velocity_coord))
+        print("DRY", len(sc.objects), "objects")
+        return
     if not o["render_only"]:
         with bpy.context.temp_override(object=dom, active_object=dom, selected_objects=[dom], scene=sc):
             bpy.ops.fluid.bake_all()
@@ -437,9 +619,11 @@ def main():
             continue
     sc.cycles.samples = o["samples"]
     sc.cycles.use_denoising = True
-    sc.cycles.volume_step_rate = 1.0
+    sc.cycles.volume_step_rate = o["step"]
+    sc.cycles.denoiser = "OPENIMAGEDENOISE"; sc.cycles.denoising_input_passes = "RGB_ALBEDO_NORMAL"
+    sc.cycles.denoising_prefilter = "ACCURATE"
     sc.cycles.volume_max_steps = 512
-    sc.cycles.max_bounces = 4; sc.cycles.volume_bounces = 1
+    sc.cycles.max_bounces = 4; sc.cycles.volume_bounces = o["vbounce"]
     r.film_transparent = True
     r.resolution_x = r.resolution_y = o["px"]
     if o["fmt"] == "exr":
