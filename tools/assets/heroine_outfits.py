@@ -6137,7 +6137,8 @@ def arcanist():
     # (where round her forearm: side, square to her elbow's hinge on the side the back of her hand faces
     # (the face seen with her elbow bent: gsG2a, laid on the back of her hand's line, it lay 30 deg from her
     # crook, edge-on in the fist); hand: on that line)
-    GLOVE_V_AT = os.environ.get("GLOVE_V_AT", "side")
+    GLOVE_V_AT = os.environ.get("GLOVE_V_AT", "hand")   # (gsG2b-d: side, far and face never faced the camera in the fist; hand showed best, in the idle)
+    GLOVE_V_ROT = np.radians(float(os.environ.get("GLOVE_V_ROT", "60")))
     GLOVE_EYES = [float(v) for v in os.environ.get("GLOVE_EYES", "0.008,0.028,0.048,0.068,0.086").split(",")]
     GLOVE_EYE = tuple(float(v) for v in os.environ.get("GLOVE_EYE", "0.0015,0.00045,0.0026").split(","))
     GLOVE_LACE_R = float(os.environ.get("GLOVE_LACE_R", "0.0009"))
@@ -6200,7 +6201,14 @@ def arcanist():
 
     def v_frame(sd):
         e_, ax_, d0, pk, el = glove_arm_frame(sd)
-        if GLOVE_V_AT in ("side", "far"):
+        if GLOVE_V_AT == "face":
+            # (gsG2a-c: at 150, 90 and 270 deg round from her elbow's tip it lay at the top edge, the far
+            # face and the top edge in the fist: the face the camera sees is about 300, GLOVE_V_ROT from
+            # her elbow's tip toward "side")
+            sf_ = -(d0 - el * (d0 @ el))
+            sf_ = sf_ / np.linalg.norm(sf_)
+            d0 = np.cos(GLOVE_V_ROT) * el + np.sin(GLOVE_V_ROT) * sf_
+        elif GLOVE_V_AT in ("side", "far"):
             # (gsG2b: square to the hinge on the back of her hand's side it lay on the far face in the fist;
             # side: the other face, the one the camera sees with her elbow bent)
             d0 = (d0 - el * (d0 @ el)) * (-1.0 if GLOVE_V_AT == "side" else 1.0)
@@ -6230,7 +6238,8 @@ def arcanist():
         if nm not in SHEET:
             return []
         sp_, st_, sw_, sth = SHEET[nm]
-        # (s24 gsG2a: weighted from the glove's sheet, not her skin, so they ride with it (the glove's
+        # (s24 gsG2f: the eyelets and G1's points weighted from the glove's sheet, so they ride with it; what
+        # crosses her skin (laces, bow) from her skin, which from the sheet came through a lace. gsG2a:  (the glove's
         # weights are eased, and its top refitted): from her skin the eyelets stood 3-4 mm off the binding
         # in the idle. Named under the glove, so glove_top_weights refits them with it.)
         wsrc_ = (sp_, np.asarray(sw_, float))
@@ -6325,9 +6334,16 @@ def arcanist():
                 c = e_ + ax_ * (off_ + s)
                 p_, n = skin_ray(c + d0 * 0.06, -d0)
                 R_ = np.linalg.norm((p_ - c) - ax_ * ((p_ - c) @ ax_)) if p_ is not None else 0.035
-                a = x / R_
-                d = np.cos(a) * d0 + np.sin(a) * b0
-                p_, n = skin_ray(c + d * 0.06, -d)
+                # (the angle by her radius on its own side, as the cut measures it: her bone's axis lies
+                # off her forearm's middle, and from the middle's radius one row of eyelets stood 3-4 mm
+                # off its binding, gsG2a/e)
+                for _ in range(4):
+                    a = x / R_
+                    d = np.cos(a) * d0 + np.sin(a) * b0
+                    p_, n = skin_ray(c + d * 0.06, -d)
+                    if p_ is None:
+                        break
+                    R_ = np.linalg.norm((p_ - c) - ax_ * ((p_ - c) @ ax_))
                 if p_ is None:
                     co, nn, _, _ = SKIN_BVH.find_nearest(Vector(c + d * (R_ + 0.005)))
                     p_, n = np.array(co[:]), np.array(nn[:])
@@ -6341,7 +6357,7 @@ def arcanist():
                     h = max(h, FL_LIFT + FL_THICK / 2 + (FL_THICK / 2 + hpipe) * np.sqrt(max(0.0, 1 - ((dd - cb) / (wpipe / 2)) ** 2)))
                 return h
             laid = []   # (points of the cords laid: 3D centre, r)
-            def lay(name, sx, r, key, closed=False, base=0.00015, ends=None, sig=10.0, extra=None):
+            def lay(name, sx, r, key, closed=False, base=0.00015, ends=None, sig=10.0, extra=None, wsrc=None):
                 sx = np.asarray(sx, float)
                 if not closed:
                     dd_ = np.r_[0, np.cumsum(np.linalg.norm(np.diff(sx, axis=0), axis=1))]
@@ -6379,7 +6395,7 @@ def arcanist():
                 h = at_ends(eased(req.copy(), req, sig, closed))
                 c3 = pp + nn * h[:, None]
                 laid.extend(zip(c3, np.full(len(c3), r)))
-                return cord(name, c3, key, r=r, nv=8, closed=closed, src=wsrc_), c3
+                return cord(name, c3, key, r=r, nv=8, closed=closed, src=wsrc), c3
             lay_ = lambda *a, **k: lay(*a, **k)[0]
             hw = lambda s: 0.5 * hw0 * (1 - s / L)
             er, ewr, ein = GLOVE_EYE
@@ -6389,7 +6405,7 @@ def arcanist():
                 for sg in (1, -1):
                     t = np.linspace(0, 2 * np.pi, 40, endpoint=False)
                     made_ += lay_(f"arcanist.glove_{sd}_eye{i}{'ab'[sg > 0]}", np.stack([s + er * np.cos(t), sg * xs[i] + er * np.sin(t)], 1),
-                                 ewr, "wiregold", closed=True, base=-0.4 * ewr, sig=2.0)
+                                 ewr, "wiregold", closed=True, base=-0.4 * ewr, sig=2.0, wsrc=wsrc_)
             laid.clear()
             eye_end = lift_c + 0.3 * GLOVE_LACE_R   # (a lace's end, into its eyelet)
             lr_ = GLOVE_LACE_R
@@ -6418,12 +6434,12 @@ def arcanist():
                 to_, tc3 = lay(f"arcanist.glove_{sd}_tail{'ab'[sg > 0]}", tail, lr_, "glovepipe",
                                extra=lambda i, n: hk * np.clip(1 - i / 8.0, 0, 1), sig=3.0)
                 ka = int(len(tc3) * (1 - al_ / tl))
-                made_ += to_ + cord(f"arcanist.glove_{sd}_aglet{'ab'[sg > 0]}", tc3[ka:], "wiregold", r=ar_, nv=10, src=wsrc_)
+                made_ += to_ + cord(f"arcanist.glove_{sd}_aglet{'ab'[sg > 0]}", tc3[ka:], "wiregold", r=ar_, nv=10)
                 tg_ = tc3[-1] - tc3[-2]
-                for o_ in domes(f"arcanist.glove_{sd}_aglettip{'ab'[sg > 0]}", [tc3[-1]], [tg_ / np.linalg.norm(tg_)], "wiregold", r=ar_, src=wsrc_):
+                for o_ in domes(f"arcanist.glove_{sd}_aglettip{'ab'[sg > 0]}", [tc3[-1]], [tg_ / np.linalg.norm(tg_)], "wiregold", r=ar_):
                     o_["hides"] = False
                     made_.append(o_)
-            for o_ in domes(f"arcanist.glove_{sd}_knot", [kp + kn * (hk - 0.0008)], [kn], "glovepipe", r=0.0019, src=wsrc_):
+            for o_ in domes(f"arcanist.glove_{sd}_knot", [kp + kn * (hk - 0.0008)], [kn], "glovepipe", r=0.0019):
                 o_["hides"] = False
                 made_.append(o_)
             print("GLOVE %s V: %.0f mm wide at the top, its foot %.0f mm down; %d eyelet pairs, %d crossings, the bow's knot %.1f mm off her"

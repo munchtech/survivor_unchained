@@ -198,7 +198,8 @@ void fragment() {
 		// material's, about 0.45: the linen's roughness map is flat white), a broad soft
 		// highlight, a sheen at the grazing edges, the knit barely there.
 		nrm = blend_normals(vec3(0.5, 0.5, 1.0), nrm, 0.3);
-		rough = clamp(roughness_value + 0.08 * (macro - 0.5) + 0.1 * (1.0 - sky), 0.3, 0.75);
+		// (s24 glove styles S1: a satin at 0.25 floors at 0.22, its streak kept; B1's 0.30 keeps 0.30)
+		rough = clamp(roughness_value + 0.08 * (macro - 0.5) + 0.1 * (1.0 - sky), roughness_value < 0.295 ? 0.22 : 0.3, 0.75);
 		metal = 0.0;
 		RIM = 0.3;
 		RIM_TINT = 0.5;
