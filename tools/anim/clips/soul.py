@@ -306,9 +306,13 @@ def arcanist_break(rig):
         # A strand tucked behind her ear: the hand comes up before her
         # shoulder, fingers up, palm to her, then back over the ear (it turns
         # on the way, not at the top).
-        tuck = {"pos": (0.13, 1.62, 0.04), "pole": (1.0, 0.2, -0.3), "knuckles": (-0.25, 0.8, -0.55)}
-        first = (18, over("arcanist", hand_l=tuck, head=(-6, 4, 8), fingers_l="relaxed"), "ease")
-        second = (28, over("arcanist", hand_l={**tuck, "pos": (0.14, 1.60, -0.02)}, head=(-6, 4, 8)), "ease")
+        # The elbow low and forward of the shoulder (not out level with the hand), so the forearm rises to the ear and
+        # the wrist stays near straight (it bent 55-65 deg back with the elbow out: the owner, 14 October, "her hands
+        # ... going at a very weird angle at the wrists"); the fingers soft and graded, the index leading.
+        tuck = {"pos": (0.13, 1.62, 0.04), "pole": (0.7, -0.6, 0.4), "knuckles": (-0.25, 0.8, -0.55)}
+        soft = {"curl": 0.32, "thumb": 0.2, "cascade": 0.45, "spread": 2}
+        first = (18, over("arcanist", hand_l=tuck, head=(-6, 4, 8), fingers_l=soft), "ease")
+        second = (28, over("arcanist", hand_l={**tuck, "pos": (0.14, 1.60, -0.02)}, head=(-6, 4, 8), fingers_l=soft), "ease")
     rising = (9, over("arcanist", hand_l={"pos": (0.16, 1.38, 0.16), "pole": (1.0, -0.3, -0.3), "knuckles": (-0.1, 0.9, 0.3)},
                       fingers_l="relaxed"), "auto")
     keys = [
