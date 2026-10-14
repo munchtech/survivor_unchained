@@ -936,7 +936,13 @@ def _twist(qr, axis):
 # thumb), and how far they fan.
 FINGER_PRESETS = {
     "rest": {"curl": 0, "thumb": 0},
-    "relaxed": {"curl": 0.28, "thumb": 0.15, "cascade": 0.25},
+    # Relaxed (14 October, lead 27; the owner: her idle hands "weird", the curl read clawed, every joint flexed
+    # evenly): each joint its own scale and cascade, so the forefinger lies nearly straight and each finger toward
+    # the little one bends more, mostly at the knuckle and the middle joint, the end joints only a little. Index to
+    # little finger (knuckle, middle, last): about (8, 14, 6) (14, 21, 8) (21, 29, 11) (27, 36, 13); the thumb
+    # soft beside the forefinger (8, 6, 10). Was curl 0.28, cascade 0.25: (22, 27, 18) .. (39, 46, 32).
+    "relaxed": {"curl": 0.1, "thumb": 0.25, "cascade": 0.5, "j1": 1.0, "j2": 1.47, "j3": 0.92,
+                "c1": 0.79, "c2": 0.52, "c3": 0.39, "t1": 1.28, "t2": 0.69, "t3": 1.0},
     "open": {"curl": 0.05, "thumb": 0.0, "spread": 4},
     # Pressed flat on the ground under her weight: bent back a little.
     "flat": {"curl": -0.12, "thumb": 0.0, "spread": 6},
@@ -996,13 +1002,18 @@ def finger_curl(spec):
     th = p.get("thumb", 0.2)
     cascade = p.get("cascade", 0.15)
     tip = p.get("tip", 1.0)
+    # Per joint (knuckle, middle, last): a scale ("j1".."j3", 1) and a cascade toward the little finger ("c1".."c3",
+    # else "cascade"); the thumb's joints scaled by "t1".."t3" (1). The defaults are the one-cascade curl as before.
+    js = [p.get(f"j{k}", 1.0) for k in (1, 2, 3)]
+    cs = [p.get(f"c{k}", cascade) for k in (1, 2, 3)]
+    ts = [p.get(f"t{k}", 1.0) for k in (1, 2, 3)]
     out = {}
     for i, f in enumerate(FINGERS):
-        ci = c * (1 + cascade * i)
+        ci = [c * (1 + cs[k] * i) for k in range(3)]
         if f == "index" and "index" in p:
-            ci = p["index"]
-        out[f] = [ci * 80, ci * 95 * (0.8 + 0.2 * tip), ci * 65 * tip]
-    out["thumb"] = [th * 25, th * 35, th * 40]
+            ci = [p["index"]] * 3
+        out[f] = [ci[0] * 80 * js[0], ci[1] * 95 * (0.8 + 0.2 * tip) * js[1], ci[2] * 65 * tip * js[2]]
+    out["thumb"] = [th * 25 * ts[0], th * 35 * ts[1], th * 40 * ts[2]]
     return out
 
 
@@ -1121,7 +1132,8 @@ def smoothstep_(x):
     return x * x * (3 - 2 * x)
 
 
-FINGER_DEFAULTS = {"curl": 0.3, "thumb": 0.2, "cascade": 0.15, "tip": 1.0, "oppose": 0.0, "spread": 0.0}
+FINGER_DEFAULTS = {"curl": 0.3, "thumb": 0.2, "cascade": 0.15, "tip": 1.0, "oppose": 0.0, "spread": 0.0,
+                   "j1": 1.0, "j2": 1.0, "j3": 1.0, "t1": 1.0, "t2": 1.0, "t3": 1.0}
 
 
 def _even_fingers(keys):
@@ -1143,6 +1155,8 @@ def _even_fingers(keys):
                 p = dict(FINGER_PRESETS.get(spec, {})) if isinstance(spec, str) else dict(spec)
                 full = {**FINGER_DEFAULTS, **p}
                 full.setdefault("index", full["curl"])
+                for c_ in ("c1", "c2", "c3"):
+                    full.setdefault(c_, full["cascade"])
                 key = (key[0], {**key[1], k: full}, *key[2:])
             out.append(key)
         keys = out

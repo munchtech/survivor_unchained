@@ -539,8 +539,12 @@ def finger_mix():
     keys = ("curl", "thumb", "spread", "cascade")
 
     def full(p):
+        # (With the per-joint scales and cascades a preset may carry, keyed.finger_curl: the relaxed hand's shape.)
         p = FINGER_PRESETS[p]
-        return {k: float(p.get(k, 0.0)) for k in keys}
+        out = {k: float(p.get(k, 0.0)) for k in keys}
+        out.update({f"{j}{n}": float(p.get(f"{j}{n}", 1.0)) for j in "jt" for n in (1, 2, 3)})
+        out.update({f"c{n}": float(p.get(f"c{n}", out["cascade"])) for n in (1, 2, 3)})
+        return out
     return full("relaxed"), full("grip"), full("spread")
 
 
