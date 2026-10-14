@@ -30,6 +30,15 @@ Scratch for every lead this session: `C:\Users\munch\AppData\Local\Temp\claude\C
   - The smile pass: interior judge rounds, cheek variants.
   - heroine.glb (m11) is shared with outfits' build: rebuild on integration, never pick a side.
 
+### Restart order (only outfits, animation, face; classes and Flare VFX stay paused)
+1. **Outfits:** a fresh successor 24 in worktree agent-a5ca10091b08dc429 @ 5f6fb567, from docs/handoff/outfits.md "Paused here".
+   - Starts with the owner's glove pick (OWNER_NOTES 14 Oct night), then the one body build.
+   - Panel3's weights are NOT coming: the Reaver thigh is a body or knee-drive fix. Ask animation's measure of the knee-drive cut first.
+2. **Animation:** a fresh lead 29 in worktree agent-af8dbda3195e438e4 @ 5cee3e9a, section 0.
+   - Before the body build: the Flare frame-offset check (a runner seeks the packed clip at frames 18-20), the f23-27 pelvis smoothing, and the Reaver knee-drive measurement.
+   - After it: the refits and the judges.
+3. **Face:** a fresh successor 25 in worktree agent-a2d632df7c7f21ec0, from its latest "Start here". Add the faint throat line in outfits' glove sheet (play row 1).
+
 ## 14 October, later: coordinator 34daaf5d (running lean to its 125% grace; the owner's choice)
 
 ### Merged
