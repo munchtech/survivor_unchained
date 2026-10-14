@@ -18,7 +18,7 @@ uniform float gain = 1.0;
 uniform float smoke = 1.0;
 uniform float fade = 1.0;
 // The fire's hue: the sim's tone read salmon over the night ground (s5f); less blue makes it burn orange.
-uniform vec3 fire_tint = vec3(1.0, 0.92, 0.6);
+uniform vec3 fire_tint = vec3(1.0); // (burns_boom5's own colour: no tint)
 uniform float soft = 0.8;
 // The BOOM's ring (flare_world): its first tenth of a second shows through the fireball's base (judge 3).
 global uniform sampler2D flare_marks : filter_nearest, repeat_disable;
