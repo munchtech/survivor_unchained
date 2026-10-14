@@ -596,7 +596,9 @@ def flare_burns_twice(rig, rounds=10, log=None):
         if log:
             log(r, F, clip)
     _settle(rig, F, clip)
-    return clip
+    # Her left hand on her hip at the ends (where the idle's weight is), kept on her own pelvis: in the chest's
+    # frame with the relaxed fingers it sank up to 29 mm into her hip and spread at the settle.
+    return idle.hip_layer(rig, clip, lambda f: 1.0 - _curve(L_SHAFT, f) - _curve(L_OPEN, f))
 
 
 def _settle(rig, F, clip, a=50, b=56):

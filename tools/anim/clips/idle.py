@@ -135,6 +135,62 @@ def _on_hip(rig, base, arms):
     return over
 
 
+def hip_layer(rig, clip, w, thigh=0.0):
+    """`clip` with her left hand laid on her hip (ARC_HIP, idle_arcanist's) where the weight w(frame) > 0, kept on
+    the clip's OWN pelvis frame by frame, and the left arm and fingers slerped by w from the clip's own into it.
+    For the clips that took the idle's frame-0 hand in the chest's frame (the breaks, the stops, the Flare's settle,
+    the flourish): there the hand floated 3-17 mm off her hip, or sank into it, as her hips moved under the chest."""
+    from keyed import solve_frames
+    from rig import qmul, qinv, qrot, qslerp
+    I = rig.I
+    grest, prest = (a[0] for a in rig.sk.rest_globals())
+    pel, s3, ua = I["pelvis"], I["spine_03"], I["upperarm_l"]
+    g, p = rig.sk.fk(clip.rot, clip.pos)
+    n = clip.frames
+    ws = [min(1.0, max(0.0, float(w(f)))) for f in range(n)]
+    arm = [ua]
+    for j in arm:
+        arm += [k for k, q in enumerate(rig.sk.parent) if q == j and k not in arm]
+    hand0 = arcanist(0, 0)["hand_l"]
+
+    th = I["thigh_l"]
+    a = float(__import__("os").environ.get("HIP_THIGH", thigh))
+
+    def spec(f):
+        dp = qmul(g[f, pel], qinv(grest[pel]))
+        dt = qmul(g[f, th], qinv(grest[th]))
+        ic = qinv(qmul(g[f, s3], qinv(grest[s3])))
+        at = np.array(ARC_HIP["pos"])
+        W = (1 - a) * (p[f, pel] + qrot(dp, at - prest[pel])) + a * (p[f, th] + qrot(dt, at - prest[th]))
+        dp = qslerp(dp, dt, a)
+        return {"hand_l": dict(hand0, arc=arc_of(qrot(ic, W - p[f, ua])),
+                               knuckles=tuple(qrot(ic, qrot(dp, np.array(ARC_HIP["knuckles"])))),
+                               blade=tuple(qrot(ic, qrot(dp, np.array(ARC_HIP["blade"]))))),
+                "fingers_l": _arc_hand_fingers()}
+    # Each run of weighted frames solved on its own (the solver settles the elbow over the frames it is given).
+    f = 0
+    while f < n:
+        if ws[f] <= 0:
+            f += 1
+            continue
+        e = f
+        while e < n and ws[e] > 0:
+            e += 1
+        idx = list(range(f, e))
+        rot, _ = solve_frames(rig, [spec(k) for k in idx], [(clip.rot[k], clip.pos[k]) for k in idx],
+                              weapon=(clip.meta or {}).get("weapon", ""))
+        for i, k in enumerate(idx):
+            for j in arm:
+                clip.rot[k, j] = qslerp(clip.rot[k, j], rot[i, j], ws[k])
+        f = e
+    return clip
+
+
+def _smooth(u):
+    u = min(1.0, max(0.0, u))
+    return u * u * (3 - 2 * u)
+
+
 def reaver(t, f):
     return {
         # The axe on her shoulder, its head behind her.

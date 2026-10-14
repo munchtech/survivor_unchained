@@ -81,7 +81,11 @@ def stop(rig, calling, side):
         (15, p(0.20, 0.06, 0.0, 0, -0.05, 0.06, 4, brot=0, out=0.015), "auto"),
         (24, p(0.16, 0.00, 0.0, 0, -0.04, 0.03, 1, brot=0, out=0.015), "ease"),
     ]
-    return build(f"stop_{calling}_{side}", rig, keys, meta={"layer": "full", "weapon": idle.IDLES[f"idle_{calling}"][2]})
+    clip = build(f"stop_{calling}_{side}", rig, keys, meta={"layer": "full", "weapon": idle.IDLES[f"idle_{calling}"][2]})
+    if calling == "arcanist":
+        # Her left hand kept on her hip as the hips brake and rock under her (it floated 10-17 mm off in the chest's frame).
+        clip = idle.hip_layer(rig, clip, lambda f: 1.0)
+    return clip
 
 
 def clips(rig, want):

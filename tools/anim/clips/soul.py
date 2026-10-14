@@ -163,7 +163,8 @@ def arcanist_show(rig):
                           "knuckles": _n(0.6, 0.35, 0.7)}, fingers_l="spread"), "ease"),
         (78, over("arcanist"), "ease"),
     ]
-    return build("arcanist_show", rig, keys, base=base, meta={"layer": "full", "weapon": "staff"})
+    clip = build("arcanist_show", rig, keys, base=base, meta={"layer": "full", "weapon": "staff"})
+    return idle.hip_layer(rig, clip, lambda f: 1 - idle._smooth(f / 12) if f < 12 else idle._smooth((f - 55) / 23))
 
 
 def reaver_show(rig):
@@ -332,7 +333,9 @@ def arcanist_break(rig):
         (74, over("arcanist", head=(8, -20, 0), hand_r=staff(-20)), "ease"),
         (100, over("arcanist"), "ease"),
     ]
-    return build("idle_arcanist_break", rig, keys, base=base, meta={"layer": "full", "weapon": "staff"})
+    clip = build("idle_arcanist_break", rig, keys, base=base, meta={"layer": "full", "weapon": "staff"})
+    # The hand on her hip as it leaves and from where it is back (f44 on it floated 3-10 mm in the chest's frame).
+    return idle.hip_layer(rig, clip, lambda f: 1 - idle._smooth(f / 9) if f < 9 else idle._smooth((f - 36) / 8))
 
 
 def reaver_break(rig):
