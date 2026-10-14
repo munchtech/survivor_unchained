@@ -2,42 +2,14 @@
 
 For the next animation lead (`su-lead-high`). Read `docs/team/README.md` ("Working lean", "Safety"), `RESUME.md`, `OWNER_NOTES.md` ("Animation: joints and motion to perfection"), then this page and `docs/team/animation.md`. Written by ae2a9884e3e51609c (branch `worktree-agent-ae2a9884e3e51609c`), handed off at about 320k on 7 October. **Read by section: grep, then `sed -n` the lines. Whole-file reads were this lead's largest context cost.** Earlier leads' ids are retired.
 
-## 0. Paused here; next: (lead 24, 13-14 October 2026; wound down with the coordinator)
-S = `C:\Users\munch\AppData\Local\Temp\claude\C--Users-munch-Desktop-survivorsunchained\1be2d2a9-6106-4122-a964-84d08ba42428\scratchpad\anim\` (keep it). Lead 23's section 0 is in git at 58585b68. Nothing from this session is merged: the coordinator merged anim-staff-pack-1, then took it back out. The owner, on `S\staff4\mat\idle_three_glb_zoom.png`: "that image reads as in her hands to you? its not". **Lesson: never send the main session a picture a judge hasn't passed, and judge the hand first.**
-**Done (branch worktree-agent-af8dbda3195e438e4; all WIP unless noted):**
-- 23e2b24d `anim_review` GAMEMAT=1: held pieces drawn as the game draws them (Arms.Hold, the glb's own materials). The game path is the glb's materials (no override), byte-identical to the source atlas.
-- 74f53e84 pack (dotnet test 905/0). Stale now: the fist changed after it. Re-pack before any merge request.
-- 4eb83530 (fist solver): **the staff runs through her closed right fist.** FistAtR/FistDirR are refitted to the real hollow; the old pocket was 40-65 mm off, through the thumb web. keyed.py `WRAP["staff"]` holds per-finger bends: the right "grip" becomes the wrap when the clip holds a staff. idle.py and sprint_stop.py lean the staff head out of the brim. f92cc9ca + bf641436 are the thumb refit (web span 79 -> 64 mm; thumb_03 eased to 65).
-- Judge j4 (`S\fist\verdict_j4.md`): items 1 and 3-5 PASS (inside the hand from every view). Item 2 FAILS: skin shows through the arcanist glove at the web, the thumb and the finger pads.
-  - That's the **outfits lead's fix A** (hide the hand skin under the glove: `heroine_outfits.py` "hides") or fix B (the glove copies the hand weights). The coordinator has passed it on, along with j4's other outfits note: the right glove renders brown and the left purple.
-  - Measure with `S\fist2\thumblib.py` / `svg_clip.py`: skin points not 0.5 mm inside the glove, idle 368, stop_r 2562.
-- Checks on the new pocket: `S\fist\fistwrap_new.py` and `S\fist\staffgap2_new.py` (every staff mesh to skin, outfit, brim and cone, gate >= 10 mm). Idle 22.6, stop_r 24.3, stop_l 38.6 mm.
-**Next, in order:**
-1. **Staff:** when the outfits glove fix lands:
-   - re-shoot with `S\fist2\shoot.sh`;
-   - fresh lean judge, checklist: inside the closed hand from three views; no skin through the glove;
-   - re-pack (`S\pack\pack.sh`; its WIP list keeps bull_rush and the Flare out), dotnet test;
-   - merge request, **leading with the judge's view of the hand**. Build the request branch without the bull_rush and Flare WIP: anim-staff-pack-1 was made with `git merge-tree --write-tree` + `commit-tree`.
-2. **Flare round 9** (`S\flare7\r9.sh <tag>`: build, staffgap2_new, gates.py). 5bca5171 keys the staff by the SHAFT's line and the pocket (shortest turn in `right()`), seeded from s23's world values. s28: the staff clears body and hat by >= 16.2 mm on every frame (was 0.7 mm, under on 18 frames); arm R to breast 32, staff to thigh 54.
-   - **Open:** the right hand's heel is 2 mm from the hat at f16 (`S\flare7\handhat.py`). Moving f16 3 cm forward didn't help: try the hand's roll or the head's pitch at f16.
-   - Also open: AIM_LET_GO (the left forearm's 44 deg spin at f20: spread it over 3-4 frames); the butt's slide; the stale comment at STAFF's planted keys; the left hand's pocket (M_L is still the old mirror).
-   - Then a narrow judge, pack, and tell the Flare lead.
-3. **The other staff clips** move with the new pocket. Re-check cast_bolt, cast_raise, arcanist_show, idle_arcanist_break and sprint/run_arcanist with staffgap2_new, then apply idle's upright-staff fix (lead 23's item 6). run_arcanist keys "open" fingers, so it gets no wrap.
-4. **Sword trio** (lead 23's item 5): fore C5 (`Z\sw1\c.py`) and heavy H3 (`Z\sw2\b.py`) on the HAND_FRAME keyed.
-5. **Grip-fist system for the sword, daggers, axe and crossbow** (j4 item 6; `S\fist\others.py`). All four have the staff's old fault:
-   - chevalier_sword is "skewered through an open hand" (the face judges' mangled hilt);
-   - the daggers sit in a limp open hand;
-   - the axe's thumb is a hitchhiker's;
-   - the crossbow can't be read.
-   Per weapon: seat the grip in the fitted pocket, and give it a WRAP for its grip radius. They use Spec.Grip, not anchors, so give them anchors or a per-Kind pocket. Order: sword, daggers, axe, crossbow.
-6. **bull_rush PARKED** at 9b5486fc. r7 judge `S\br7\verdict_j_r7.md`: items 1, 2, 3, 6 and 8 PASS.
-   - The carry: e156b4c2's forearm-first carry passes the wrist gates.
-   - The f13 forearm spin's cause: `solve_frames` averages the elbow over 13 frames, and SWORD_WAY's poles swing it 123 deg, so the arm plane turns 51 deg. Fixed by per-frame elbow planes (`_sword_way(rig=)`, ROLL_STEPS, WRIST_CUM): roll now <= 26/15.
-   - **But** with the elbow high, the blade dips under and crosses to her left at f17-19 (tip +31 cm, 1-2 mm from the shield). ELBOW_BUMP brings it back, and the roll with it. **It needs a new route: SWORD_WAY's hand path or the blade's route, not the poles.**
-   - Corrected gates (solve8's brief): hand pace is in degrees per frame; the guard's own wrist is -29/21 from f22.
-   - Also open: N1 (the f13 shield swing), N2 (the rear foot's launch), N3 (the shield hand opens f20-30), N4.
-   - Tools: `S\br7\solve8\m10.py`, `S\br7\m6.py`.
-7. Then lead 22's list (the crossbow stock, the sprint's trailing foot, the hero's run) and the face judges' greatsword pommel at the close-up camera.
+## 0. Now (lead 25, 14 October 2026)
+S = lead 24's scratchpad `...be2d2a9-6106-4122-a964-84d08ba42428\scratchpadnim\` (keep it); M = lead 25's `...daaf5d-e81c-4f32-9692-ca0980626592\scratchpad\`. Lead 24's section 0 is in git at 21e9c31d.
+**Merged:** the staff in her closed right fist (anim-staff-pack-2 = 7e06d70b on integration; judge 5 MERGE-READY; re-shot on the fresh import, M\shoot6, holds).
+**Rules learnt:** shoot only from a fresh checkout (`python tools/freshness.py`; turn.py refuses stale since 6e9b7474; re-import with `Godot_console --headless --path godot --import`). Shoot with OUTFITSHADER=1 GAMEMAT=1 (without it the outfit draws vertex colour: the brown glove). Tests: `dotnet test tests/Tests.csproj` (plain `dotnet test` in godot/ runs nothing). Request branches: commit-tree on integration without the WIP files (see 7e06d70b's message).
+**In flight (WIP on this branch):**
+- **Flare r9** (`tools/anim/clips/flare.py`; build/measure `Slare79.sh <tag>`, `handhat_mid.py` quarter frames, `lreach.py` left reach, `dbg20.py` per-round right hand). 880da939: the poster's wheel goes forward first (hat to hands 2 -> 29 mm, 20 at quarter frames). 1e0a7435: the contact hips -0.37 and the drive aimed at the settled fist f21 (f20's fist chased a shaft leant 15 deg out; butt 14.7 -> 4.4 mm, slide 27 -> 9). **Open:** the left fist is off the shaft (Lgap f16 76, f18 36, f20 68, f21 91 mm; out of the arm's reach). Tried and reverted: BUTT_AT -0.36 (staff head into the brim at f23-25), more chest yaw at f20-22 (beads to brim 5 mm at f18). A solver is on it (brief: Lgap <= 5 f5-21 with every gate kept; then AIM_LET_GO). Still open after: the left pocket M_L (old mirror), a narrow judge, then pack and tell the Flare lead.
+- **Grip-fist system** (j4 item 6, `Sisterdict_j4.md` section 6): a solver is on the sword (per-weapon pocket in WeaponSockets, Arms.Seat for every right-hand non-pistol piece, WRAP["sword"], keeping the 35 deg diagonal lean if a fist closes on it). Then daggers, axe, crossbow as data. Each needs a fresh max judge ("is it visibly gripped in a closed fist", hand first) before any merge request.
+**Next, in order:** Flare r9 to a judge; the sword to a judge, then the other three; the Reaver loincloth panel bone (outfits ea6a9417: a panel bone that follows the leading thigh, details in outfits' report); the other staff clips on the new pocket (cast_bolt, cast_raise, arcanist_show, idle_arcanist_break, sprint/run_arcanist via `Sist\staffgap2_new.py`); sword trio (fore C5, heavy H3); bull_rush stays PARKED at 9b5486fc (needs a new hand route; r7 verdict `Sr7erdict_j_r7.md`); lead 22's list.
 
 ## 0b. Weapon anchors and sockets (12 October 2026)
 
