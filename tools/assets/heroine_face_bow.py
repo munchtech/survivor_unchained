@@ -15,10 +15,26 @@ Measured (lap.py's spike, deg, at 7752 9202 7876 9114): 53-66 to 0 at rest, 47-6
 max 10-14 on the five. Left: in the smile, 7983 and 8988 still dip (shade 0.4-0.5 under their ring; was 1.4-1.6),
 set by the smile key's own normals there (see POSES): a smile-key or per-face corrective fix, not a face-key one.
 
-    python tools/assets/heroine_face_bow.py IN.glb [OUT.glb]
+    python tools/assets/heroine_face_bow.py IN.glb [OUT.glb]           (run: the five face keys)
+    python tools/assets/heroine_face_bow.py --keys IN.glb [OUT.glb]    (run_keys: the last step)
 
-It runs first in the heroine build chain (before heroine_teethshade). On a glb already done (its head's extras say
-face_bow) it does nothing.
+run goes first in the heroine build chain (before heroine_teethshade); run_keys goes LAST, after heroine_smile_lip.run
+(whose ease rewrites smile's and mouth_open's normals over the border and makes smile_open's and smile_hold's). Each
+does nothing on a glb it has already done (its head's extras say face_bow / face_bow_keys).
+
+run_keys (bow solver r2, 14 October 2026, UNJUDGED): the smile's own normals at 7983/8988 (and 7826/9146) were made
+against her head's authored base fold (points under the fold face back), so the smile, every expression and the four
+faces run left out (Vixen, Sunborn, Wildling, Hard-won: rest dips 147-166) dipped there. On the same window, positions
+untouched, it redoes (_fill: the smooth fill of seen neighbours, as face_fix; a point is redone where any of its poses
+spikes past KLAP off its ring or faces back past KNZ): the base at rest; each face key at rest (from the second round
+also in each expression at .8 and her laugh, weighed FACE_COMBO_W); each expression key (KEYS_EXPR) at .8 and 1 on all
+ten faces; smile_open and smile_hold in her laugh on all ten faces; ROUNDS times, each on the others. A key's normal
+is written as its absolute unit normal less the new base, the way Godot blends (base + sum w (key - base), made unit).
+Measured (bow2/meas.py, dip / light x100, max over the window on ten faces): rest 85-166 / 61 to 11 / 26; smile .8
+41-167 / 81 to 14 / 25; smile 1 75-168 / 79 to 15 / 24; laugh 70-158 / 86 to 25 / 20; open, pucker, snarl, frown (.8,
+1) 181 to 14 dark; Saffron's pucker keeps a light spot 59 at 7130/9834 (was 62: its ring's points just outside the
+window face back). Left: the creator sliders lips_upper-, mouth_height-, cupids_bow-, lips_forward+, mouth_width+ carry
+the same kind of spike at weight 1 (not redone).
 """
 import contextlib
 import copy
@@ -212,6 +228,165 @@ def run(path, out=None):
         open(out, "wb").write(open(path, "rb").read())
 
 
+# ---- the last step: the base's and every key's normals on the bow, as Godot blends them ----
+FACES_ALL = ("doe", "saffron", "moonlit", "fey", "highborn", "vixen", "sunborn", "wildling", "hardwon")
+KEYS_EXPR = tuple(k for k in os.environ.get("FACE_BOW_KEYS", "smile,mouth_open,pucker,snarl,frown").split(",") if k)
+EXPR_W = tuple(float(v) for v in os.environ.get("FACE_BOW_EXPR_W", "0.8,1").split(","))   # (each expression key is redone at these weights, on every face)
+LAUGH = (("mouth_open", 0.6), ("smile", 0.8), ("smile_open", 0.8), ("smile_hold", 0.48))
+# (smile_open and smile_hold are only ever seen in her laugh (People.cs: smile_open = smile when her lips part,
+#  smile_hold = smile x mouth_open), so theirs are redone in it, on every face, each with the keys before it)
+KLAP = float(os.environ.get("FACE_BOW_KLAP", "15"))   # (deg: a seen point this far off its ring's mean, in any pose, is redone)
+KNZ = float(os.environ.get("FACE_BOW_KNZ", "0"))      # (or whose normal faces further back than this (z), in any pose)
+ROUNDS = int(os.environ.get("FACE_BOW_ROUNDS", "5"))   # (rounds: faces, expressions, the laugh's helpers, each on the others)
+FACE_COMBO_W = float(os.environ.get("FACE_BOW_COMBO_W", "0.5"))   # (a face's fill: its expressions' weight against its rest)
+MARK_KEYS = "face_bow_keys"
+
+
+def _fill(poses, Tw, A, win, K0, its=ITS):
+    """One key's absolute unit normals K (welded) redone where any of its poses spikes. poses: (Q welded shape, R, wk):
+    the pose's normal is unit(R + wk K) (R: the base's, the face's and the other keys' share). Returns (K, redone, the
+    worst ring angle over the poses after)."""
+    pre = []
+    S = np.zeros(len(K0), bool)
+    for pose in poses:
+        Q, R, wk = pose[:3]
+        pw = pose[3] if len(pose) > 3 else 1.0
+        Ng = sl.vnormals(Q, Tw)
+        vis = seen_area(Q, Tw) > 0
+        M = (A @ sparse.diags(vis.astype(float))).tocsr()
+        G0 = _unit(R + wk * K0)
+        lap0 = _ang(G0, _unit(M @ G0))
+        S |= win & vis & ((lap0 > KLAP) | (G0[:, 2] < KNZ))
+        vis = vis.astype(float)
+        pre.append((Q, R, wk, Ng, vis * pw, M, G0, lap0))
+
+    def worst(K):
+        return max(_ang(_unit(R + wk * K), _unit(M @ _unit(R + wk * K)))[win & (vis > 0)].max(initial=0)
+                   for Q, R, wk, Ng, vis, M, G0, lap0 in pre)
+    K = K0
+    for _ in range(GROW + 1):
+        if not S.any():
+            break
+        K = K0.copy()
+        acc = np.zeros((S.sum(), 3))
+        for Q, R, wk, Ng, vis, M, G0, lap0 in pre:      # (start: each pose's own surface where it faces front)
+            st = np.where((Ng[S, 2] > 0)[:, None], Ng[S], G0[S])
+            s = np.linalg.norm(R[S] + wk * K0[S], axis=1)
+            acc += (vis[S] + 1e-3)[:, None] * (s[:, None] * st - R[S]) / wk
+        K[S] = _unit(acc)
+        MS = [M[np.where(S)[0]] for Q, R, wk, Ng, vis, M, G0, lap0 in pre]
+        for _ in range(its):
+            acc = np.zeros((S.sum(), 3))
+            for (Q, R, wk, Ng, vis, M, G0, lap0), Ms in zip(pre, MS):
+                t = _unit(Ms @ _unit(R + wk * K))
+                s = np.linalg.norm(R[S] + wk * K[S], axis=1)
+                acc += (vis[S] + 1e-3)[:, None] * (s[:, None] * t - R[S]) / wk
+            K[S] = _unit(acc)
+        new = np.zeros_like(S)
+        for Q, R, wk, Ng, vis, M, G0, lap0 in pre:
+            G = _unit(R + wk * K)
+            new |= win & (vis > 0) & ~S & (_ang(G, _unit(M @ G)) > np.maximum(GROW_LAP, lap0 + 1))
+        if not new.any():
+            break
+        S |= new
+    return K, S, worst(K)
+
+
+def bow_keys(js, binc, chunks, hm, hp):
+    """Her head's base normals, then each face key's, each expression key's and her laugh's two helpers', redone on the
+    bow's window where they spike; False if already done."""
+    ex = hm.setdefault("extras", {})
+    if ex.get(MARK_KEYS):
+        return False
+    names = ex["targetNames"]
+    P, N, first, inv, Tw, A, line = mesh(js, binc, hp, names)
+    V = P[first]
+    win = (np.abs(V[:, 0] - MID) < WIN_X) & (V[:, 1] - line > WIN_H[0]) & (V[:, 1] - line < WIN_H[1]) & (V[:, 2] > WIN_Z)
+    Nw = N[first].astype(np.float64)
+    z = np.zeros_like(Nw)
+    # (the base: her own face at rest)
+    Nn, S0, _ = _fill([(V, z, 1.0)], Tw, A, win, Nw)
+    done = {"base": int(S0.sum())}
+    Nr = N.copy()
+    Nr[S0[inv]] = Nn[inv[S0[inv]]]
+    if S0.any():
+        hs._set_dense(js, chunks, hp["attributes"]["NORMAL"], Nr)
+    fk = ["face_" + f for f in FACES_ALL if "face_" + f in names]
+    hk = [k for k, _ in LAUGH if k not in KEYS_EXPR and k in names]
+    tg = {k: hp["targets"][names.index(k)] for k in fk + [k for k in KEYS_EXPR if k in names] + hk}
+    D = {k: hs._read(js, binc, t["POSITION"])[first] for k, t in tg.items()}
+    DN = {k: hs._read(js, binc, t["NORMAL"]) for k, t in tg.items()}
+    K = {k: _unit(Nn + DN[k][first]) for k in tg}   # (each key's absolute normal, welded, as Godot makes it)
+    Sall = {k: np.zeros(len(V), bool) for k in tg}
+    lw = dict(LAUGH)
+
+    def redo(k, poses_of, starts):
+        """From each start, filled: the one that spikes least in its poses."""
+        best = None
+        for K0 in starts:
+            Kk, S, sc = _fill(poses_of(K0), Tw, A, win, K0)
+            if best is None or sc < best[0]:
+                best = (sc, Kk, S)
+        K[k] = best[1]
+        Sall[k] |= best[2]
+
+    def laugh_of(Df, Kf, skip):
+        """Her laugh on a face, every key but skip at its weight: (shape, normal share)."""
+        Q, R = V + Df, Kf.copy()
+        for j, wj in LAUGH:
+            if j != skip and j in K:
+                Q, R = Q + wj * D[j], R + wj * (K[j] - Nn)
+        return Q, R
+
+    def faces():                # (her own face, then each face key: shape, normal)
+        return [(np.zeros_like(V), Nn)] + [(D[k], K[k]) for k in fk]
+    ex_keys = [k for k in KEYS_EXPR if k in tg]
+    for rnd in range(ROUNDS):
+        for k in fk:            # (each face: at rest; from the second round also in each expression and her laugh)
+            def fposes(K0, k=k):
+                out = [(V + D[k], z, 1.0, 1.0)]
+                if rnd:
+                    out += [(V + D[k] + EXPR_W[0] * D[e], EXPR_W[0] * (K[e] - Nn), 1.0, FACE_COMBO_W) for e in ex_keys]
+                    Q, R = laugh_of(D[k], Nn, None)
+                    out.append((Q, R - Nn, 1.0, FACE_COMBO_W))
+                return out
+            redo(k, fposes, (_unit(Nw + DN[k][first]), _unit(Nn + DN[k][first])) if not rnd else (K[k],))
+        for k in ex_keys:       # (each at EXPR_W on every face)
+            redo(k, lambda K0, k=k: [(V + Df + w * D[k], Kf - w * Nn, w) for Df, Kf in faces() for w in EXPR_W],
+                 (_unit(Nw + DN[k][first]), _unit(Nn + DN[k][first])) if not rnd else (K[k],))
+        for k in hk:            # (the laugh's helpers on every face, the other keys at their laugh weights)
+            def lposes(K0, k=k):
+                out = []
+                for Df, Kf in faces():
+                    Q, R = laugh_of(Df, Kf, k)
+                    out.append((Q + lw[k] * D[k], R - lw[k] * Nn, lw[k]))
+                return out
+            redo(k, lposes, (_unit(Nw + DN[k][first]), _unit(Nn + DN[k][first])) if not rnd else (K[k],))
+    for k in tg:
+        rows = (Sall[k] | S0)[inv]
+        out = DN[k].copy()
+        out[rows] = K[k][inv[rows]] - Nr[rows]
+        hs._set(js, chunks, tg[k]["NORMAL"], out)
+        done[k] = int(Sall[k].sum())
+    ex[MARK_KEYS] = done
+    print("FACE_BOW_KEYS: bow normals redone (points): %s" % ", ".join("%s %d" % kv for kv in done.items()))
+    return True
+
+
+def run_keys(path, out=None):
+    """The last step of her build (after heroine_smile_lip.run)."""
+    js, binc = hs._load(path)
+    chunks = {i: binc[bv.get("byteOffset", 0):bv.get("byteOffset", 0) + bv["byteLength"]] for i, bv in enumerate(js["bufferViews"])}
+    hm, hp = hmo._prim(js, "skin_head")
+    if bow_keys(js, binc, chunks, hm, hp):
+        hs._save(out or path, js, chunks)
+    elif out and out != path:
+        open(out, "wb").write(open(path, "rb").read())
+
+
 if __name__ == "__main__":
     a = sys.argv[1:]
-    run(a[0] if a else hmo.GLB, a[1] if len(a) > 1 else None)
+    f = run
+    if a and a[0] == "--keys":
+        f, a = run_keys, a[1:]
+    f(a[0] if a else hmo.GLB, a[1] if len(a) > 1 else None)
