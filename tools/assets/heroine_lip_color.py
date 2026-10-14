@@ -98,7 +98,11 @@ def fields(F, m, t, paint_front, face="", t_new=None):
     ee = np.full(len(m), np.nan)
     ee[ok] = np.interp(x[ok], x[ok_e], hl.smooth_cols(e, 6)[ok_e]) if ok_e.sum() > 3 else np.nan
     if face in UPPER_P:                                            # (B3: the paint's own red top, scaled up)
-        tt = np.where(np.isnan(ee), tt, np.minimum(tt, m + UPPER_P[face] * (ee - m)))
+        # (smoothed over 2.5 mm first: at 0.6, scaled 1.7x, its every wobble read as a wavy, stepped edge on her own)
+        es = np.full(len(m), np.nan)
+        if ok_e.sum() > 3:
+            es[ok] = np.interp(x[ok], x[ok_e], hl.smooth_cols(e, 25)[ok_e])
+        tt = np.where(np.isnan(es), tt, np.minimum(tt, m + UPPER_P[face] * (es - m)))
     ee = np.minimum(ee, tt)                                        # (never above the border)
     ys = hl.Y1 - (np.arange(F.shape[0]) + 0.5) * hl.D
     Y = ys[:, None]
