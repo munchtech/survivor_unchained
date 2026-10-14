@@ -1642,7 +1642,10 @@ public static class People
         }
         var rest = skel.GetBoneGlobalRest(skel.FindBone("Head"));
         var qHead = from.GetBoneGlobalRest(from.FindBone("Head")).Origin;
-        var fit = new Transform3D(Basis.Identity.Scaled(Vector3.One * HairScale), rest.Origin + HairOffset - HairScale * qHead);
+        // (scaled about her head as her head's rest is: outfits baked her head 7% bigger as the Head bone's rest scale,
+        // 14 October 2026, and a fit in plain metres would leave the hair at the old size)
+        var hsc = rest.Basis.Scale;
+        var fit = new Transform3D(Basis.Identity.Scaled(hsc * HairScale), rest.Origin + hsc * (HairOffset - HairScale * qHead));
         foreach (var c in from.GetChildren())
             if (c is MeshInstance3D mi)
             {
