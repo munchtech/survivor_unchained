@@ -155,7 +155,6 @@
     "sunder": 0.3,
     "sunderSeconds": 8,
     "bossMul": 0.6,
-    "secondBoss": 0.5,
     "wall": 36,
     "sunderWall": 0.4,
     "burn": 0.25,
@@ -334,7 +333,7 @@
     "area",
     "hook"
    ],
-   "text": "Hooks bite up to 24 things within 14 m and haul them into one knot at your feet for the slam.",
+   "text": "Hooks bite everything within 14 m and haul it into one knot at your feet for the slam.",
    "beat": {
     "key": 0.2,
     "first": 0.35,
@@ -349,7 +348,7 @@
    "args": {
     "hook": 0.5,
     "slam": 1.75,
-    "hooks": 24,
+    "hooks": 0,
     "slamRadius": 4,
     "knotAhead": 1.5,
     "knotSpread": 1.2,
@@ -1516,7 +1515,7 @@
     "sunderer.the_long_cut"
    ],
    "gate": 3,
-   "text": "Another sweep 0.3 s later, inside the 1.2 s (a boss takes half).",
+   "text": "Another sweep 0.3 s later, inside the 1.2 s.",
    "effects": [
     {
      "do": "flareMod",

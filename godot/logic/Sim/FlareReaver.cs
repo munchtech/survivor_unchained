@@ -7,7 +7,7 @@ using static SurvivorUnchained.Core.MathX;
 namespace SurvivorUnchained.Sim;
 
 /* Phase 6a: the reaver's two Strikes (docs/design/CLASSES.md §3.6, §7's phase-6 plan).
- * Drag Them Under (chainbound, Clear): hooks bite up to 24 things in reach, the farthest and the champions first, and
+ * Drag Them Under (chainbound, Clear): hooks bite everything in reach (the boss, the champions, then the farthest first), and
  * haul them to one knot at her feet (the pull: the Flare's own displacement, a slide that walls stop); the slam there
  * stuns and breaks it. A boss is dragged 3 m, its channel broken, its stagger filled (a boss is never locked).
  * Events: "hook" per bite (TX/TZ the bitten thing or, with nothing near, a ground point at her reach; Target), "knot"
@@ -40,7 +40,7 @@ public sealed partial class Battle
             // What the slam takes where it stands needs no hook: the hooks go to the boss, the champions, then the farthest.
             var hooks = near.Where(e => e.Boss || Dist(e.X, e.Z, knotX, knotZ) > slamR * 0.8)
                 .OrderByDescending(e => e.Boss).ThenByDescending(e => e.Elite).ThenByDescending(e => Dist(e.X, e.Z, p.X, p.Z))
-                .Take((int)f.Arg("hooks", 24)).ToList();
+                .Take(f.Arg("hooks", 0) is var cap and > 0 ? (int)cap : int.MaxValue).ToList();  // "hooks" 0: every one in reach (the 6a judge: a Clear clears the room)
             int hitstop = FlareHitstop(f, false);
             int i = 0;
             foreach (var e in hooks)
