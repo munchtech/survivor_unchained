@@ -264,8 +264,19 @@ varying float lift_w;
 varying float soft_w;
 varying float edge_w;
 varying float back_ao;
+// The inside of her mouth (heroine_mouth.py: her head's vertex colour's alpha, 1 outside, falling to 0 deep in her
+// mouth): her paint there (a lilac-grey island, an orange-brown cheek wall) and every lamp's light, unshadowed at
+// this scale, showed it as a lit box with an orange glow (judge rj3). There it takes mouth_colour, a wet dark red,
+// and the light falls off with depth to mouth_occ of none (all of it: the sky's by AO, the lamps', its rim, the
+// light through her and its sheen). mouth_in 1 for her head only (People.HerPart); 0, as before.
+uniform float mouth_in = 0.0;
+uniform vec3 mouth_colour : source_color = vec3(0.42, 0.15, 0.14);
+uniform float mouth_occ = 0.93;
+varying float mouth_c;
+varying float mouth_f;
 
 void vertex() {
+	mouth_c = mouth_in * (1.0 - COLOR.a);
 	tuck_gone = 0.0;
 	if (tuck_channel >= 0) {
 		float h = tuck_channel == 0 ? COLOR.r : tuck_channel == 1 ? COLOR.g : tuck_channel == 2 ? COLOR.b : COLOR.a;
@@ -378,6 +389,14 @@ void fragment() {
 	lift_w = (seam_ease ? 1.0 - aot.g : 1.0) * smoothstep(lift_from, lift_to, wd) * rig_w;
 	// (the sky's light on her as before: ambient_tint takes her body's tone out of it already)
 	ALBEDO *= ambient_tint / body_back;
+	mouth_f = mouth_c;
+	if (mouth_c > 0.0) {
+		float mc = smoothstep(0.0, 0.35, mouth_c), mo = smoothstep(0.1, 1.0, mouth_c);
+		ALBEDO = mix(ALBEDO, mouth_colour, mc);
+		BACKLIGHT *= 1.0 - mc;
+		SPECULAR *= 1.0 - mo;
+		AO = min(AO, 1.0 - mouth_occ * mo);
+	}
 	if (dbg_gate > 0.0) { ALBEDO = vec3(1.0); SPECULAR = 0.0; BACKLIGHT = vec3(0.0); }
 	// (dbg_gate 3+: her maps instead, emitted: red ao_map's shade, green its seam ease, blue the face's paint (features' blue))
 	if (dbg_gate > 2.5) { ALBEDO = vec3(0.0); EMISSION = (dbg_gate - 3.0) * vec3(aot.r, aot.g, fm.b); }
@@ -393,6 +412,7 @@ float schlick(float u) {
 }
 
 void light() {
+	float mouth_lit = 1.0 - mouth_occ * smoothstep(0.1, 1.0, mouth_f);
 	float ndl = dot(NORMAL, LIGHT);
 	float c_ndl = max(ndl, 0.0);
 	if (dbg_gate > 0.0) {
@@ -441,16 +461,16 @@ void light() {
 		vec3 elw = vec3(0.2126, 0.7152, 0.0722);
 		kt *= mix(vec3(1.0), edge_tone * dot(ea, elw) / max(dot(ea * edge_tone, elw), 1e-4), key_w * soft_w * edge_w);
 	}
-	DIFFUSE_LIGHT += LIGHT_COLOR * diffuse * ATTENUATION * un * rich * kt * mix(1.0, body_lift, key_w * lift_w * (1.0 - behind)) * mix(1.0, back_ao, behind)
+	DIFFUSE_LIGHT += mouth_lit * LIGHT_COLOR * diffuse * ATTENUATION * un * rich * kt * mix(1.0, body_lift, key_w * lift_w * (1.0 - behind)) * mix(1.0, back_ao, behind)
 		* mix(vec3(1.0), soft_tone, (1.0 - key_w) * soft_w * shade_by_soft * neck_w);
 	// the fine down at her edges, against a light from behind her only (lit
 	// from the front, it brightened every edge of her: a pale ribbon down her
 	// cheek where her dark hair met it, her temples white)
 	float rim_light = pow(max(1e-4, 1.0 - c_ndv), max(0.0, (1.0 - ROUGHNESS) * 16.0));
 	rim_light *= mix(1.0, smoothstep(0.0, 0.3, ndl), rim_gate);
-	DIFFUSE_LIGHT += rim_light * mix(behind, 1.0, front_rim) * rim * mix(vec3(1.0), ALBEDO * un, rim_tint) * LIGHT_COLOR * ATTENUATION * un;
+	DIFFUSE_LIGHT += mouth_lit * rim_light * mix(behind, 1.0, front_rim) * rim * mix(vec3(1.0), ALBEDO * un, rim_tint) * LIGHT_COLOR * ATTENUATION * un;
 	// light through her where she is thin
-	DIFFUSE_LIGHT += LIGHT_COLOR * max(vec3(1.0 / PI) - diffuse, vec3(0.0)) * BACKLIGHT * ATTENUATION * un * mix(1.0, behind, backlight_behind);
+	DIFFUSE_LIGHT += mouth_lit * LIGHT_COLOR * max(vec3(1.0 / PI) - diffuse, vec3(0.0)) * BACKLIGHT * ATTENUATION * un * mix(1.0, behind, backlight_behind);
 	if (c_ndl > 0.0) {
 		float a = ROUGHNESS * ROUGHNESS;
 		float da = c_ndh * a;
@@ -460,7 +480,7 @@ void light() {
 		float f0 = 0.16 * sheen * sheen;
 		float f90 = clamp(f0 * 50.0, 0.0, 1.0);
 		float f = f0 + (f90 - f0) * schlick(c_ldh);
-		SPECULAR_LIGHT += c_ndl * d_ggx * f * v_ggx * LIGHT_COLOR * ATTENUATION * SPECULAR_AMOUNT * mix(1.0, back_spec, behind);
+		SPECULAR_LIGHT += mouth_lit * c_ndl * d_ggx * f * v_ggx * LIGHT_COLOR * ATTENUATION * SPECULAR_AMOUNT * mix(1.0, back_spec, behind);
 	}
 	}
 }

@@ -505,6 +505,9 @@ public static class People
                 return th;
             case "tongue":
                 m.Roughness = 0.35f;
+                // (its own shade inside her mouth, lit at its tip and dark at its root: heroine_mouth.py's vertex colour;
+                // white where a mesh has none)
+                m.VertexColorUseAsAlbedo = true;
                 return m;
             default:
                 return Skin(src, look, mesh, who == "hero" ? HisTone : null, who);
@@ -548,6 +551,15 @@ public static class People
                 Shape(mi, name + "+", Mathf.Max(v, 0));
                 Shape(mi, name + "-", Mathf.Max(-v, 0));
                 Shape(mi, name, v);
+            }
+            // (her smile with her mouth open lifts her upper lip off her teeth: smile_open, heroine_mouth.py, as her
+            // smile times how far her lips are parted, full by mouth_open 0.3; with her lips closed a smile stays
+            // closed-lipped)
+            int so = mi.FindBlendShapeByName("smile_open");
+            if (so >= 0 && mi.FindBlendShapeByName("smile") is int sm and >= 0 && mi.FindBlendShapeByName("mouth_open") is int mo and >= 0)
+            {
+                float o = Mathf.Clamp(mi.GetBlendShapeValue(mo) / 0.3f, 0, 1);
+                mi.SetBlendShapeValue(so, mi.GetBlendShapeValue(sm) * o * o * (3 - 2 * o));
             }
         }
 
@@ -1075,6 +1087,8 @@ public static class People
         if (src.ResourceName == "skin_head" && who == "heroine")
         {
             if (HeadPaint(look.FaceShape) is Texture2D painted) m.SetShaderParameter("paint", painted);
+            // (the inside of her mouth dark and unlit by depth: heroine_skin.gdshader mouth_in, heroine_mouth.py's colour)
+            m.SetShaderParameter("mouth_in", 1f);
             m.SetShaderParameter("rough", 0.6f);
             m.SetShaderParameter("shine", 0.36f);
             // (her eyes, brows and lips deepened when her face is small on

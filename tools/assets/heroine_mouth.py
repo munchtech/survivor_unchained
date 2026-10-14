@@ -46,6 +46,9 @@ UP_X, UP_X2 = 0.012, 0.020     # (m from her mouth's middle: raised fully to her
 #                                already lifts her mouth's corners 5-9 mm)
 UP_Y1, UP_Y2 = 0.008, 0.016    # (m above her lips' line: raised fully to here, easing out to there, under her nose)
 LINE_NEAR = 1.692              # (her lips' line is looked for within 2 cm of this height, m)
+CAV_AXIS_Z, CAV_FRONT, CAV_SIDE, CAV_DEPTH = 0.04, 0.088, 0.6, 0.025   # (m: her mouth's axis; its opening's z at her
+#                                middle, falling back CAV_SIDE per metre out; dark at CAV_DEPTH behind it)
+TONGUE_ROOT, TONGUE_LEN = 0.3, 0.05   # (her tongue's shade at its root, so far back from its tip)
 
 
 def _prim(js, mat):
@@ -78,8 +81,8 @@ def smile_open(V, D):
     go 20-40 mm with her jaw) raised RAISE_MM in her mouth's middle and rolled back ROLL of that."""
     line = lips_line(V, D)
     n = np.linalg.norm(D, axis=1)
-    w = (_s01((V[:, 1] - line) / 0.0004 + 0.5) * (1 - _s01((V[:, 1] - line - UP_Y1) / (UP_Y2 - UP_Y1)))
-         * (1 - _s01((np.abs(V[:, 0]) - UP_X) / (UP_X2 - UP_X))) * (1 - _s01((n - 0.010) / 0.006)))
+    w = (_s01((V[:, 1] - line + 0.004) / 0.001) * (1 - _s01((V[:, 1] - line - UP_Y1) / (UP_Y2 - UP_Y1)))
+         * (1 - _s01((np.abs(V[:, 0]) - UP_X) / (UP_X2 - UP_X))) * (1 - _s01((n - 0.008) / 0.006)))
     out = np.zeros_like(V)
     out[:, 1] = RAISE_MM / 1000 * w
     out[:, 2] = -ROLL * RAISE_MM / 1000 * w
@@ -94,6 +97,16 @@ def _add_target(js, chunks, mesh, prim, name, vals):
     mesh.setdefault("extras", {}).setdefault("targetNames", []).append(name)
     if "weights" in mesh:
         mesh["weights"].append(0.0)
+
+
+def _add_colour(js, chunks, prim, rgba):
+    js["accessors"].append({"componentType": 5126, "count": len(rgba), "type": "VEC4"})
+    i = len(js["accessors"]) - 1
+    a = js["accessors"][i]
+    a["bufferView"] = len(js["bufferViews"])
+    js["bufferViews"].append({"buffer": 0})
+    chunks[a["bufferView"]] = np.ascontiguousarray(rgba.astype("<f4")).tobytes()
+    prim["attributes"]["COLOR_0"] = i
 
 
 def seat(path, out=None):
@@ -140,6 +153,17 @@ def seat(path, out=None):
                 a = p["targets"][names.index("face_" + f)]["POSITION"]
                 hs._set(js, chunks, a, rd(a) + extra, minmax=True)
     _add_target(js, chunks, hm, hp, "smile_open", SO)
+    # (the inside of her mouth, for heroine_skin.gdshader's mouth_in: her head's vertex colour's alpha, 1 outside,
+    # falling to 0 with depth behind her lips, on the points facing in toward her mouth's middle; and her tongue's
+    # vertex colour, its own shade, lit at its tip and dark at its root)
+    HN = rd(hp["attributes"]["NORMAL"])
+    c0 = np.array([0.0, line, CAV_AXIS_Z])
+    inside = (((c0 - HV) * HN).sum(1) > 0) & (np.abs(HV[:, 0]) < 0.035) & (np.abs(HV[:, 1] - line) < 0.025)
+    front = CAV_FRONT - CAV_SIDE * np.abs(HV[:, 0])
+    depth = np.where(inside, _s01((front - HV[:, 2]) / CAV_DEPTH), 0.0)
+    _add_colour(js, chunks, hp, np.c_[np.ones((len(HV), 3)), 1 - depth])
+    gs = 1 - (1 - TONGUE_ROOT) * _s01((GV[:, 2].max() - GV[:, 2]) / TONGUE_LEN)
+    _add_colour(js, chunks, gp, np.c_[np.repeat(gs[:, None], 3, 1), np.ones(len(GV))])
     tm.setdefault("extras", {})["mouth_seat"] = {"seat_mm": SEAT_MM, "tongue_k": K, "raise_mm": RAISE_MM,
                                                  "line": round(line, 5)}
     hs._save(out or path, js, chunks)
