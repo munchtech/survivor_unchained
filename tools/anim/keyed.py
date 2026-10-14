@@ -946,10 +946,14 @@ FINGER_PRESETS = {
 # inner pads on the grip's leather (13.65 mm round its line, within 0.5 mm in to 1.5 mm out), her palm on it too and
 # the thumb's tip over the forefinger. The line is the hollow this fist makes, which Arms.cs seats the piece on
 # (WeaponSockets.FistAtR / FistDirR: hand_r space). Fitted on her skin and the arcanist's glove, 13 October (the
-# "grip" preset closed to a 7.8 mm hollow, the fingertips into the palm, beside the staff, not round it).
+# "grip" preset closed to a 7.8 mm hollow, the fingertips into the palm, beside the staff, not round it). The thumb
+# refitted the same day to close the ring: its base swung in toward the shaft (the thenar pad 38.5 mm from the line,
+# was 45.5; its CMC is 92 mm from the line, so no turn of the base brings the pad nearer than 28 mm), its proximal pad
+# 18.4 mm (was 23.4), the web from the thumb's knuckle to the index's 63.7 mm (was 79.2, 69.3 at rest, so the glove's
+# web is no longer stretched), the last joint closed over the middle finger; the base's twist 40 deg (was 61).
 WRAP = {"staff": {"bends": {"index": (53.0, 52.8, 36.1), "middle": (43.1, 67.4, 46.1), "ring": (47.0, 51.4, 35.1),
-                            "pinky": (26.3, 56.0, 38.3), "thumb": (-11.4, 43.0, 31.2)},
-                  "oppose": 0.60, "thumb_roll": -37.0}}
+                            "pinky": (26.3, 56.0, 38.3), "thumb": (9.9, 0.0, 79.6)},
+                  "oppose": 0.44, "thumb_roll": -20.8}}
 
 
 def wrap_of(weapon):
