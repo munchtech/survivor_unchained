@@ -2,6 +2,19 @@
 
 The one page of what's current. Every lead starts from the latest `claude/vigilant-galileo-l6jqyx`. Merge it first and keep your own workflow; this page says what has changed around you. Updated by the main session, 5 October 2026.
 
+## 14 October, late: coordinator 1cc516bc wound down (outfits, animation, face only; restart here)
+Scratch to KEEP: `C:\Users\munch\AppData\Local\Temp\claude\C--Users-munch-Desktop-survivorsunchained\1cc516bc-727d-4e77-9f0e-4ed15fbf8ea6\scratchpad\{outfits,anim,face}` (and d7e64ca2's, 34daaf5d's). Nothing merged this session except docs. The owner picked **B1 "with style"** (OWNER_NOTES).
+
+### Restart order (classes and Flare VFX stay paused)
+1. **Outfits** (worktree agent-a5ca10091b08dc429 @ f618f3d5, coordinator WIP over handoff 2cb51946; "Paused here; next: (successor 25, 14 Oct, late)" plus the two solver reports below it).
+   - **F0 is rig-final** (`outfits\prop\F0\art`; skeleton dump 810d51bf, correctives back: F1 had none). Pivots on both hands, throat fill PASS; back_of_hand OFF (judge FAIL: mesh too coarse; a post-F1 "close-up skin detail" item).
+   - **Chest wedge** (geometry: sliver triangles bend the normals): CT2 misses p99 (20-21 vs 18) and adds 5 sharper edges; the coordinator's call: a max judge rules on those by eye. But CT2's GLB has 2 fewer vertices than F0: fix that first (the F0-identity promise to animation), then poke-through on all four, then the judge.
+   - **Gloves:** G1 fixed by numbers; G2's laces and knot fixed, its V and bow unjudged. BLOCKER: the biceps pokes 1.3-1.7 mm (visible) through every glove at the elbow crook (brim) and the elbow-tip side (every bent-elbow clip). A tuck can't do it: a max solver on a glove-side fix (`outfits\gs2\m3.py` measures like Godot). Also cast_raise: the right glove drifts 5-8 mm off the forearm at 0.66 s. Small: a white corner under the thumb hole on the hip hand (animation's judge).
+   - Then the final build (bones, weights, key deltas identical to F0), legal on all four, the ONE judged glove sheet (G1, G2 if clean, plain B1; its hand closes judge F0's hands too) to the owner, and the F1 MERGE REQUEST with animation's.
+   - Then: the Reaver belt (garment-side: the belt front and buckle ride up like panel_front; true gap 48-84 mm, `outfits\hip\need.py`), the Arcanist chest, stockings (match the glove's trim), the groin fold crumple, the neck graft corner (confirm in game shots), close-up skin detail.
+2. **Animation** (agent-af8dbda3195e438e4 @ e84896ba; section 0). **MERGE REQUEST e84896ba** waits for outfits' final body build (repack once). Clips rebuilt on F0; staff, sword A, relaxed hand, hand-on-hip (idle_arcanist) all PASS; 930 tests. Open: the first-frame hip-hand clips (break, stops, Flare end), the brim tuck FAIL (fingers rake her cheek), the sword wrist (32 deg sideways, needs 20 or less: the owner's "weird angle"), then daggers, axe, crossbow, viking sword, the other staff clips.
+3. **Face** (agent-a2d632df7c7f21ec0 @ e1659c83; "Start here (14 Oct, successor 25 ...)"). Smile seam1, f1, g1 SHIP (unmerged). Open: the laugh corner pocket (3 faces), closed-smile bow dots (5 faces; changes rest, re-judge), own's inner lower lip, Sunborn's doubled line, the jaw-shadow band under the chin for the next judge. heroine.glb (g1 + tongue fix) uncommitted: rebuild on outfits' final body, then MERGE REQUEST.
+
 ## 14 October, night: coordinator d7e64ca2 (outfits, animation, face only)
 Scratch for every lead this session: `C:\Users\munch\AppData\Local\Temp\claude\C--Users-munch-Desktop-survivorsunchained\d7e64ca2-6832-41bd-8851-2fc0175ecc1b\scratchpad\{outfits,anim,face}` (KEEP). Nothing merged yet this session except docs and tools (roster, lastmsg.py).
 - **The next body build (outfits; ONE build, after the owner's glove pick):**
