@@ -562,12 +562,15 @@ public static class People
             }
             // (her smile with her mouth open lifts her upper lip off her teeth: smile_open, heroine_mouth.py, as her
             // smile times how far her lips are parted, full by mouth_open 0.3; with her lips closed a smile stays
-            // closed-lipped)
+            // closed-lipped); and smile_hold, her philtrum and nose's foot held up against mouth_open's drop, as her smile
+            // times mouth_open itself (so her nose's foot doesn't rise and fall back as her lips part)
             int so = mi.FindBlendShapeByName("smile_open");
             if (so >= 0 && mi.FindBlendShapeByName("smile") is int sm and >= 0 && mi.FindBlendShapeByName("mouth_open") is int mo and >= 0)
             {
-                float o = Mathf.Clamp(mi.GetBlendShapeValue(mo) / 0.3f, 0, 1);
+                float m = mi.GetBlendShapeValue(mo), o = Mathf.Clamp(m / 0.3f, 0, 1);
                 mi.SetBlendShapeValue(so, mi.GetBlendShapeValue(sm) * o * o * (3 - 2 * o));
+                int sh = mi.FindBlendShapeByName("smile_hold");
+                if (sh >= 0) mi.SetBlendShapeValue(sh, mi.GetBlendShapeValue(sm) * Mathf.Clamp(m, 0, 1));
             }
         }
 

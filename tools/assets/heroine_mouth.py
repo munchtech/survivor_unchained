@@ -15,7 +15,8 @@ So: her teeth and tongue seated lower (her own face's SEAT_MM in their rest shap
 face key: her closed lips cover them as before); mouth_open moves only her lower teeth and, by the lower teeth nearest
 each of its points, her tongue; and a new key on her head, smile_open (her upper lip's middle raised RAISE_MM,
 rolled back a little), which People.HerFace sets as smile times how far her mouth is open (her lips closed, a smile
-stays closed-lipped).
+stays closed-lipped); and smile_hold (her philtrum and nose's foot held up against mouth_open's drop), set as smile
+times mouth_open.
 
     python tools/assets/heroine_mouth.py [GLB [OUT]]
 
@@ -49,12 +50,23 @@ UP_X, UP_X2 = 0.012, 0.020     # (m from her mouth's middle: raised fully to her
 # border lifted 3.4 mm) with mouth_open's 2-3 mm drop of her nose's foot squashed her philtrum to 33-59% of its
 # height in smo on her ten faces (solver smile2): the laugh read as a sneer)
 LIFT_KNOTS = ((0.003, 1.0), (0.0088, 0.58), (0.0131, 0.27), (0.018, 0.10), (0.023, 0.0))
-# (COUNTER of mouth_open's move taken back by smile_open over her lip's red (CO_Y: from 4-7 mm over her lips' line up
-# to 30-36 mm) and out to CO_X (m off her middle). People.cs sets smile_open to smile x smoothstep(open / 0.3), so at
-# smo (open .6, smile .8: smile_open .8) 0.8 x 0.675 / 0.6 = 90% of her nose's drop is taken back)
-COUNTER = float(os.environ.get("MOUTH_COUNTER", "0.675"))
+# (COUNTER of mouth_open's move taken back over her lip's red (CO_Y: from 4-7 mm over her lips' line up to 30-36 mm)
+# and out to CO_X (m off her middle), by its own key, smile_hold, which People.cs sets to smile x mouth_open: so the
+# take-back follows mouth_open's own line. Solver smile4 (14 October 2026): it had been part of smile_open (smile x
+# smoothstep(open / 0.3)), full by open .3 while her nose's drop is a third of the way there, so with a smile her nose's
+# foot rose 2.15 mm at open .3 and fell back to 1.19 at .6 (a nostril lift as her lips part); now it rises 0.95 at .3
+# (smile_open's own lift up her philtrum) and stays)
+COUNTER = float(os.environ.get("MOUTH_COUNTER", "1.0"))
 CO_Y = (0.004, 0.007, 0.030, 0.036)
 CO_X = (0.020, 0.028)
+# (and by her cheeks beside her mouth's corners (solver smile4): CHEEK_HOLD of mouth_open's draw-back (z) taken back
+# there, from CH_X[0] off her middle (her corners) full by CH_X[1], easing off from CH_X[2] to CH_X[3], and within
+# CH_Y (mm about her lips' line: full to the first, none past the second). mouth_open draws her cheek past each corner
+# back 4-6 mm and her smile 2-4 more, so in smo a pocket opened past each corner, browned by the skin's shading: as she
+# laughs her cheeks bunch forward instead)
+CHEEK_HOLD = float(os.environ.get("MOUTH_CHEEK_HOLD", "1.0"))
+CH_X = tuple(float(v) / 1000 for v in os.environ.get("MOUTH_CH_X_MM", "21,25,32,40").split(","))
+CH_Y = tuple(float(v) / 1000 for v in os.environ.get("MOUTH_CH_Y_MM", "5,10").split(","))
 LINE_NEAR = 1.692              # (her lips' line is looked for within 2 cm of this height, m)
 CAV_AXIS_Z, CAV_FRONT, CAV_SIDE, CAV_DEPTH = 0.04, 0.088, 0.6, 0.025   # (m: her mouth's axis; its opening's z at her
 #                                middle, falling back CAV_SIDE per metre out; dark at CAV_DEPTH behind it)
@@ -144,8 +156,8 @@ def _lift(h):
 def smile_open(V, D):
     """smile_open's move: her upper lip (above her lips' line, and moved little by mouth_open, as her lower lip's points
     go 20-40 mm with her jaw) raised RAISE_MM in her mouth's middle and rolled back ROLL of that, the lift easing off up
-    her philtrum to none at her nose's tip (_lift); and, from over her lip's red up past her nose, COUNTER of
-    mouth_open's move taken back (her philtrum and her nose's foot stay up as she laughs)."""
+    her philtrum to none at her nose's tip (_lift); and smile_hold's: from over her lip's red up past her nose, COUNTER
+    of mouth_open's move taken back (her philtrum and her nose's foot stay up as she laughs)."""
     line = lips_line(V, D)
     n = np.linalg.norm(D, axis=1)
     h = V[:, 1] - line
@@ -157,8 +169,11 @@ def smile_open(V, D):
     out[:, 2] = -ROLL * RAISE_MM / 1000 * w
     c = (COUNTER * _s01((h - CO_Y[0]) / (CO_Y[1] - CO_Y[0])) * (1 - _s01((h - CO_Y[2]) / (CO_Y[3] - CO_Y[2])))
          * (1 - _s01((ax - CO_X[0]) / (CO_X[1] - CO_X[0]))) * keep)
-    out -= c[:, None] * D
-    return out, line, int((w > 0.5).sum())
+    ch = (CHEEK_HOLD * _s01((ax - CH_X[0]) / (CH_X[1] - CH_X[0])) * (1 - _s01((ax - CH_X[2]) / (CH_X[3] - CH_X[2])))
+          * (1 - _s01((np.abs(h) - CH_Y[0]) / (CH_Y[1] - CH_Y[0]))) * keep * (V[:, 2] > 0.06))
+    hold = -c[:, None] * D
+    hold[:, 2] -= ch * (1 - c) * np.minimum(D[:, 2], 0)
+    return out, hold, line, int((w > 0.5).sum())
 
 
 def _smooth(z, v, zq, win):
@@ -438,7 +453,7 @@ def seat(path, out=None):
     # teeth and gum 10% and more (the back of her jaw, by its hinge). An easing from 30% to 50% held back her lower
     # back molars and gum, which stretched into a wall over her tongue's side, black in the shade (the smile pass, e2))
     TD2 = TD * _s01((n / n.max() - 0.01) / 0.04)[:, None]
-    SO, line, raised = smile_open(HV, HD)
+    SO, SH, line, raised = smile_open(HV, HD)
     # (each accessor written anew: a shared view would move other parts too)
     gt["mouth_open"] = GD
     hs._set(js, chunks, tp["targets"][tn.index("mouth_open")]["POSITION"], TD2, minmax=True)
@@ -464,6 +479,7 @@ def seat(path, out=None):
         _put(js, chunks, t["POSITION"], gt[nm], minmax=True)
     _put(js, chunks, gp["indices"], GF.ravel(), 5123 if GF.max() < 65535 else 5125)
     _add_target(js, chunks, hm, hp, "smile_open", SO)
+    _add_target(js, chunks, hm, hp, "smile_hold", SH)
     # (the inside of her mouth, for heroine_skin.gdshader's mouth_in: her head's vertex colour's alpha, 1 outside,
     # falling to 0 with depth behind her lips, on the points facing in toward her mouth's middle; and her tongue's
     # vertex colour, its own shade, lit at its tip and dark at its root)
