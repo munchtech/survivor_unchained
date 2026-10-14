@@ -44,7 +44,17 @@ RAISE_MM = float(os.environ.get("MOUTH_RAISE_MM", "3.5"))   # (smile_open at 1: 
 ROLL = 0.25                    # (and rolled back by this share of it)
 UP_X, UP_X2 = 0.012, 0.020     # (m from her mouth's middle: raised fully to here, easing out to there, where her smile
 #                                already lifts her mouth's corners 5-9 mm)
-UP_Y1, UP_Y2 = 0.008, 0.016    # (m above her lips' line: raised fully to here, easing out to there, under her nose)
+# (smile_open's lift up her face (m over her lips' line, share of RAISE_MM): her lip's red all of it; her border (8.8
+# mm) a little over half; her nose's foot (13.1) a quarter; none at her nose's tip. The old flat lift to 8 mm (the
+# border lifted 3.4 mm) with mouth_open's 2-3 mm drop of her nose's foot squashed her philtrum to 33-59% of its
+# height in smo on her ten faces (solver smile2): the laugh read as a sneer)
+LIFT_KNOTS = ((0.003, 1.0), (0.0088, 0.58), (0.0131, 0.27), (0.018, 0.10), (0.023, 0.0))
+# (COUNTER of mouth_open's move taken back by smile_open over her lip's red (CO_Y: from 4-7 mm over her lips' line up
+# to 30-36 mm) and out to CO_X (m off her middle). People.cs sets smile_open to smile x smoothstep(open / 0.3), so at
+# smo (open .6, smile .8: smile_open .8) 0.8 x 0.675 / 0.6 = 90% of her nose's drop is taken back)
+COUNTER = float(os.environ.get("MOUTH_COUNTER", "0.675"))
+CO_Y = (0.004, 0.007, 0.030, 0.036)
+CO_X = (0.020, 0.028)
 LINE_NEAR = 1.692              # (her lips' line is looked for within 2 cm of this height, m)
 CAV_AXIS_Z, CAV_FRONT, CAV_SIDE, CAV_DEPTH = 0.04, 0.088, 0.6, 0.025   # (m: her mouth's axis; its opening's z at her
 #                                middle, falling back CAV_SIDE per metre out; dark at CAV_DEPTH behind it)
@@ -112,16 +122,42 @@ def lips_line(V, D):
     return float(np.median(ys))
 
 
+def _lift(h):
+    """The share of RAISE_MM her face takes at h (m over her lips' line): monotone cubic (PCHIP) through LIFT_KNOTS,
+    all of it under the first knot, none over the last."""
+    k = np.array(LIFT_KNOTS)
+    x, y = k[:, 0], k[:, 1]
+    d = np.diff(y) / np.diff(x)
+    m = np.zeros(len(x))
+    for i in range(1, len(x) - 1):
+        if d[i - 1] * d[i] > 0:
+            w1, w2 = 2 * (x[i + 1] - x[i]) + (x[i] - x[i - 1]), (x[i + 1] - x[i]) + 2 * (x[i] - x[i - 1])
+            m[i] = (w1 + w2) / (w1 / d[i - 1] + w2 / d[i])
+    hc = np.clip(h, x[0], x[-1])
+    i = np.clip(np.searchsorted(x, hc) - 1, 0, len(x) - 2)
+    t = (hc - x[i]) / (x[i + 1] - x[i])
+    dx = x[i + 1] - x[i]
+    return ((2 * t ** 3 - 3 * t ** 2 + 1) * y[i] + (t ** 3 - 2 * t ** 2 + t) * dx * m[i]
+            + (-2 * t ** 3 + 3 * t ** 2) * y[i + 1] + (t ** 3 - t ** 2) * dx * m[i + 1])
+
+
 def smile_open(V, D):
     """smile_open's move: her upper lip (above her lips' line, and moved little by mouth_open, as her lower lip's points
-    go 20-40 mm with her jaw) raised RAISE_MM in her mouth's middle and rolled back ROLL of that."""
+    go 20-40 mm with her jaw) raised RAISE_MM in her mouth's middle and rolled back ROLL of that, the lift easing off up
+    her philtrum to none at her nose's tip (_lift); and, from over her lip's red up past her nose, COUNTER of
+    mouth_open's move taken back (her philtrum and her nose's foot stay up as she laughs)."""
     line = lips_line(V, D)
     n = np.linalg.norm(D, axis=1)
-    w = (_s01((V[:, 1] - line + 0.004) / 0.001) * (1 - _s01((V[:, 1] - line - UP_Y1) / (UP_Y2 - UP_Y1)))
-         * (1 - _s01((np.abs(V[:, 0]) - UP_X) / (UP_X2 - UP_X))) * (1 - _s01((n - 0.008) / 0.006)))
+    h = V[:, 1] - line
+    ax = np.abs(V[:, 0])
+    keep = 1 - _s01((n - 0.008) / 0.006)
+    w = (_s01((h + 0.004) / 0.001) * _lift(h) * (1 - _s01((ax - UP_X) / (UP_X2 - UP_X))) * keep)
     out = np.zeros_like(V)
     out[:, 1] = RAISE_MM / 1000 * w
     out[:, 2] = -ROLL * RAISE_MM / 1000 * w
+    c = (COUNTER * _s01((h - CO_Y[0]) / (CO_Y[1] - CO_Y[0])) * (1 - _s01((h - CO_Y[2]) / (CO_Y[3] - CO_Y[2])))
+         * (1 - _s01((ax - CO_X[0]) / (CO_X[1] - CO_X[0]))) * keep)
+    out -= c[:, None] * D
     return out, line, int((w > 0.5).sum())
 
 
