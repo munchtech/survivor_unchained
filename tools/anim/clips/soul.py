@@ -332,14 +332,14 @@ def arcanist_break(rig):
     lowering = (41, over("arcanist", hand_l=h41, fingers_l="relaxed"), "auto")
     # Wrist keys on the way up and down, and h9/h41 aimed in full: between the keys the hand bent 21-22 deg sideways
     # (lead 31's tuck judge); now 11-12 at most from f9 to the chest key (tools: scratch anim/l32/try.sh, speed.py).
-    w12 = (12, {"hand_l": {"pos": (0.1843, 1.4708, 0.0686), "pole": (0.5, -0.72, 0.47), "knuckles": (-0.2411, 0.8336, 0.4968), "blade": (-0.0598, 0.4981, -0.8642)}}, "auto")
-    w15 = None
+    w12 = (12, {"hand_l": {"pos": (0.1843, 1.4708, 0.0686), "pole": (0.5, -0.72, 0.47), "knuckles": (-0.2388, 0.8157, 0.5267), "blade": (-0.0682, 0.5268, -0.8464)}}, "auto")
+    w15 = (15, {"hand_l": {"pos": (0.1516, 1.6022, -0.0232), "pole": (0.42, -0.73, 0.53), "knuckles": (-0.1495, 0.8269, -0.5420), "blade": (0.0529, -0.5406, -0.8388)}}, "auto")
     w36 = (36, {"hand_l": {"pos": (0.1912, 1.4792, 0.0170), "pole": (0.45, -0.72, 0.5), "knuckles": (-0.2001, 0.9279, 0.3144), "blade": (-0.0365, 0.3134, -0.9481)}}, "auto")
     w39 = (39, {"hand_l": {"pos": (0.2066, 1.3838, 0.0674), "pole": (0.55, -0.71, 0.43), "knuckles": (-0.2865, 0.5744, 0.7666), "blade": (-0.0990, 0.7780, -0.6193)}}, "auto")
     d = 0 if rig.body == "him" else 5
     keys = [
         (0, over("arcanist"), "auto"),
-        *([k for k in (rising, w12, w15) if k] if rig.body != "him" else []),
+        *([rising, w12, w15] if rig.body != "him" else []),
         first,
         second,
         *([lift, w36, w39, lowering] if rig.body != "him" else []),
