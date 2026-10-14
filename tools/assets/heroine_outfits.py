@@ -9012,16 +9012,16 @@ def glove_riders(objs):
 
 
 glove_riders(made)
-    bpy.ops.object.select_all(action="DESELECT")
-    arm.select_set(True)
-    for o in mine:
-        o.select_set(True)
-    bpy.context.view_layer.objects.active = arm
 pieces_of = {name: [o for o in made if o.name.startswith(name + ".")] for name in OUTFITS}
 for name in OUTFITS:
     mine = pieces_of[name]
     if not mine:
         continue
+    bpy.ops.object.select_all(action="DESELECT")
+    arm.select_set(True)
+    for o in mine:
+        o.select_set(True)
+    bpy.context.view_layer.objects.active = arm
     # Text and binary apart, the textures beside them in one folder that
     # every outfit shares (embedded, each file carried its own copies).
     path = os.path.join(os.path.dirname(OUT), f"heroine_outfit_{name}.gltf")
