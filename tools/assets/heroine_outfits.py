@@ -8896,7 +8896,8 @@ def glove_fit_rows(fitp, gl, X, W0, sel, bones):
         tg = a_ + (b_ - a_) * u[r] + (c_ - a_) * v[r] + n_ * d[r] * 1e3
         cand = np.nonzero((WB[T[r]].max(0) > 0) | (W0[i, tob] > 0))[0]
         pf = XG[i][None, :] + SWm @ np.stack([KG[k_][i] for k_ in kn])
-        Xm = (np.einsum("fcab,fb->fca", S[:, cand, :3, :3], pf) + S[:, cand, :3, 3]) * 1e3   # (f, c, 3)
+        Sc = S[:, cand]
+        Xm = (np.einsum("fcab,fb->fca", Sc[:, :, :3, :3], pf) + Sc[:, :, :3, 3]) * 1e3   # (f, c, 3)
         Xm = Xm.transpose(0, 2, 1).reshape(-1, len(cand))
         y = tg.reshape(-1)
         Aa = np.vstack([Xm, sl * np.eye(len(cand)), 1e3 * np.ones((1, len(cand)))])
