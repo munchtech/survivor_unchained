@@ -193,6 +193,14 @@ if __name__ == "__main__":
         show()
     elif a[0] == "take":
         kind, who = a[1], (a[2] if len(a) > 2 and not a[2].startswith("--") else "someone")
+        if kind in ("godot", "blender") and "--stale-ok" not in a:
+            sys.path.insert(0, str(Path(__file__).resolve().parent))
+            from freshness import check  # 14 Oct: judges were shown the old body; free, local check
+            if probs := check(Path(__file__).resolve().parent.parent, imports=kind == "godot"):
+                print("\n".join("STALE: " + x for x in probs))
+                print("Not taking the turn: a shot from here would show old art. Fix the above, or add "
+                      "--stale-ok if this shot doesn't need current art (say so in any sheet you make).")
+                sys.exit(2)
         wait = float(a[a.index("--wait") + 1]) * 60 if "--wait" in a else 0
         end = time.time() + wait
         while (why := try_take(kind, who)) and time.time() < end:
