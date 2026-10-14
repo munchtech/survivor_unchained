@@ -341,11 +341,16 @@ func weapon(skel, kind):
 	# SHEATH=1: the pieces at their sockets, mounted by the game's code (Arms.HoldSheathed: the sword in its
 	# scabbard, the worn outfit's clearance) instead of the hands; one with no socket stays in hand.
 	var sheathe = env("SHEATH", "") != ""
-	var sr = load("res://tools_scenes/SheathedReview.cs").new() if sheathe else null
+	# GAMEMAT=1: the held pieces as the game draws them (Arms.Hold's mount, the asset's own materials).
+	var gamemat = env("GAMEMAT", "") != ""
+	var sr = load("res://tools_scenes/SheathedReview.cs").new() if (sheathe or gamemat) else null
 	var calling = "" if env("OUTFIT", "none") == "none" else env("OUTFIT", "none")
 	for key in PIECES.get(kind, []):
 		# (The game's own piece and socket: Arms.HoldSheathed, through SheathedReview.cs.)
 		if sheathe and sr.Mount(skel, key.split("@")[0], key.ends_with("@hand_l"), calling):
+			continue
+		if gamemat:
+			sr.Held(skel, key.split("@")[0], key.split("@")[1])
 			continue
 		if not data.has(key):
 			print("WEAPON: no piece ", key)
