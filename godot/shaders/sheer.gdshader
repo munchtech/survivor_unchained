@@ -5,6 +5,7 @@ shader_type spatial;
 render_mode blend_mix, cull_back, depth_draw_never;
 
 uniform vec4 tint : source_color = vec4(1.0, 1.0, 1.0, 1.0);
+uniform bool test_flat = false;   // (the legal motion check: flat grey, coverage unchanged)
 uniform float face_alpha = 0.12;
 uniform float edge_alpha = 0.8;
 // How far it stands off her as drawn, beyond what it was made with: sheer,
@@ -22,4 +23,11 @@ void fragment() {
 	ROUGHNESS = 0.55;
 	SPECULAR = 0.35;
 	ALPHA = mix(edge_alpha, face_alpha, pow(facing, 0.6));
+	if (test_flat) {
+		ALBEDO = vec3(0.0);
+		METALLIC = 0.0;
+		ROUGHNESS = 1.0;
+		SPECULAR = 0.0;
+		EMISSION = vec3(0.5);
+	}
 }

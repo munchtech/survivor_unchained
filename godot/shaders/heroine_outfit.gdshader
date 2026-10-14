@@ -28,10 +28,16 @@ uniform float stitch_in = 0.0045;
 uniform float stitch_len = 0.004;
 uniform vec3 thread : source_color = vec3(0.78, 0.7, 0.55);
 uniform float grain = 0.6;                         // how strongly the fine grain shows
-uniform int debug_view = 0;                        // (1 edge distance, 2 convexity, 3 sky seen: to check what was baked)
+uniform float view_pull = 0.0;                     // metres drawn toward the camera (a decal on her skin: the ink, never z-fighting it)
+uniform bool test_flat = false;                  // (the legal motion check: every garment flat grey, coverage unchanged)
+uniform float gold_gloss = 0.0;                   // (0 = as before; 1 = gold's roughness drawn to gold_rough: crisper, brighter highlights, tint and albedo untouched)
+uniform float gold_rough = 0.2;
+uniform float gold_floor = 0.08;                  // (gold's own colour added as a dim emission, less in crevices, so it never goes black at night; 0.08 by judge g4: warm gold at night, no change by day, 0.15 turned shadowed trim to flat tan)
+uniform int debug_view = 0;                        // (1 edge distance, 2 convexity, 3 sky seen: to check what was baked; 4 gold flat magenta, a mask for measuring it)
 
 varying vec4 det;                                  // (edge distance m, convexity 0..1, sky seen, piece)
 varying float painted;                             // (1 where stitches are painted; 0 where the piece is sewn with thread of its own)
+varying float flag;                                // (COLOR.a: 0 a rolled binding, drawn matte if leather; 0.5 a plate brushed along its UVs' u; 1 neither)
 varying vec3 opos;                                 // (the point in the piece's own space: metal is brushed by it, not by its UV islands)
 
 float hash(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
@@ -41,11 +47,29 @@ float noise(vec2 p) {
 	return mix(mix(hash(i), hash(i + vec2(1, 0)), u.x), mix(hash(i + vec2(0, 1)), hash(i + vec2(1, 1)), u.x), u.y);
 }
 float fbm(vec2 p) { return 0.5 * noise(p) + 0.3 * noise(p * 2.13 + 7.1) + 0.2 * noise(p * 4.37 + 3.3); }
+// Brushed metal: hairline rows 0.4 mm apart (st.y, metres), each varying
+// smoothly along the stroke (st.x) at its own phase, so no cell ends line up
+// across rows (value noise on one grid read as rectangular blocks, judge 7);
+// eased to its mean where a pixel spans more than a row or two, so it never
+// shimmers at a distance.
+float brushed(vec2 st) {
+	float row = floor(st.y * 2500.0);
+	float ph = hash(vec2(row, 3.7)) * 64.0;
+	float v = 0.6 * noise(vec2(st.x * 55.0 + ph, row * 0.37)) + 0.4 * noise(vec2(st.x * 210.0 + ph * 1.7, row * 0.11 + 5.0));
+	return mix(v, 0.5, smoothstep(0.0003, 0.0009, fwidth(st.y)));
+}
 
 void vertex() {
 	det = vec4(UV2.x, UV2.y, COLOR.r, COLOR.g);
 	painted = COLOR.b;
+	flag = COLOR.a;
 	opos = VERTEX;
+	// (moved toward the camera in its own space, not by writing POSITION:
+	// written, Godot uses it for every vertex, and its motion vectors differ)
+	if (view_pull > 0.0) {
+		vec3 cam = (inverse(MODEL_MATRIX) * vec4(CAMERA_POSITION_WORLD, 1.0)).xyz;
+		VERTEX += normalize(cam - VERTEX) * view_pull;
+	}
 }
 
 vec3 blend_normals(vec3 a, vec3 b, float k) {      // (two normal-map texels, the second laid over the first; encoded as maps are)
@@ -76,6 +100,8 @@ void fragment() {
 	float metal = has_orm ? mix(metallic_value, texture(orm, UV).b, step(0.5, metallic_value)) : metallic_value;
 	float edge = max(det.x, 0.0), conv = clamp(det.y, 0.0, 1.0), sky = clamp(det.z, 0.0, 1.0), piece = clamp(det.w, 0.0, 1.0);
 	float near_edge = 1.0 - smoothstep(0.0, 0.003, edge);
+	vec3 gold_emit = vec3(0.0);
+	float gold = 0.0;                               // (1 on a gold metal, from its own mean colour below)
 	float bulge = smoothstep(0.55, 0.85, conv);
 	float hollow = smoothstep(0.45, 0.2, conv);
 	// Each piece a shade of its own, and broad unevenness across it.
@@ -88,8 +114,10 @@ void fragment() {
 		col *= mix(1.0, 0.62, near_edge);
 		col = mix(col, col * 1.18 + 0.02, bulge * 0.5);
 		col *= mix(1.0, 0.8, hollow);
-		// (satin, not gloss: leather is never shinier than this but at its burnished edges)
-		rough = clamp(rough * 0.9 - 0.08 * bulge - 0.15 * near_edge + 0.1 * hollow, mix(0.42, 0.28, near_edge), 0.95);
+		// (satin, not gloss: leather is never shinier than this but at its burnished edges;
+		// burnished to 0.28, a rolled binding seen edge-on caught the sky as a pale
+		// line along its top that read as a gap, judge 5)
+		rough = clamp(rough * 0.9 - 0.08 * bulge - 0.1 * near_edge + 0.1 * hollow, mix(0.42, 0.36, near_edge), 0.95);
 		// Stitches: dashes along the edge, `stitch_in` in, square to the
 		// edge's way (its direction from how the distance changes on screen).
 		vec2 g = vec2(dFdx(edge), dFdy(edge));
@@ -105,6 +133,9 @@ void fragment() {
 		float st = row * dash * painted;
 		col = mix(col, thread * (0.85 + 0.15 * macro), st);
 		rough = mix(rough, 0.7, st);
+		// (a rolled binding matte: satin, its top caught the backlight edge-on as a
+		// pale line along the Ranger's neckline that read as a gap, judges 5 and 6)
+		if (flag < 0.25) rough = max(rough, 0.8);
 		metal = 0.0;
 	} else if (kind == 1) {
 		// Metal: the scan's grain kept faint, a hammered unevenness, its
@@ -118,14 +149,29 @@ void fragment() {
 		// even faint, read in its reflections as lumps, so none of it here)
 		vec3 mean_col = textureLod(albedo, vec2(0.5), 20.0).rgb * tint;   // (its smallest mip, one texel: the true mean; a 2x2 mip read through each UV island's own corner showed as pale patches)
 		col = mean_col;
+		// (gold and claspgold: mean linear red 0.95, blue 0.15 of it; every other metal's red is under 0.41)
+		gold = smoothstep(0.6, 0.75, mean_col.r) * (1.0 - smoothstep(0.3, 0.45, mean_col.b / max(mean_col.r, 1e-4)));
+		gold_emit = mean_col * gold * gold_floor;
 		vec2 e = vec2(0.003, 0.0);
 		float h0 = fbm(m * 40.0), hx = fbm((m + e.xy) * 40.0), hy = fbm((m + e.yx) * 40.0);
 		vec3 dent = normalize(vec3((h0 - hx) * 0.08, (h0 - hy) * 0.08, 1.0)) * 0.5 + 0.5;
 		nrm = dent;
 		float polish = max(near_edge, bulge);
 		// (brushed along one way: fine streaks in its roughness)
-		float brush = noise(vec2(opos.y * 1800.0, (opos.x + opos.z) * 40.0));   // (fine level streaks, one way over the whole piece)
+		float brush = brushed(vec2(opos.x + opos.z, opos.y));   // (fine level streaks, one way over the whole piece)
+		// (a plate laid out round her arm brushed along it, by its UVs: on a dome's
+		// top, where the level streaks run flat, they showed as rotated blocks, judge 6)
+		if (flag > 0.25 && flag < 0.75) brush = brushed(m);
 		rough = clamp(mix(0.3, 0.18, polish) + 0.1 * hollow + 0.14 * (1.0 - sky) + 0.06 * (brush - 0.5), 0.12, 0.6);
+		// (the pauldron's broad plates satin, not polished: at the Look they
+		// blew out 5.7% of the lower frame, face lead)
+		// (the bracers too, so the set matches: polished beside the satin cap,
+		// judge 7)
+		// (and no hotter than 0.38: the bracers' round caught the key light as a hot
+		// streak along their top at 0.32, judge 7)
+		if (flag > 0.25 && flag < 0.75) rough = clamp(rough + 0.14, 0.38, 0.62);
+		// (gold only: glossier by gold_gloss, the polished edges and bulges a little more still)
+		rough = mix(rough, max(gold_rough - 0.04 * polish, 0.08), gold * gold_gloss);
 		col *= mix(0.7, 1.0, sky) * mix(1.0, 1.1, polish);
 		metal = 1.0;   // (all metal: the scan's metal map has rust and dirt in it, and each patch of it showed as a pale fleck)
 	} else if (kind == 2 || kind == 4) {
@@ -158,8 +204,11 @@ void fragment() {
 	ROUGHNESS = rough;
 	METALLIC = metal;
 	AO = sky;
+	EMISSION = gold_emit * mix(0.4, 1.0, sky);
 	AO_LIGHT_AFFECT = 0.3;
 	if (debug_view == 1) { ALBEDO = vec3(1.0 - smoothstep(0.0, 0.01, edge), fract(edge / 0.004), 0.0); ROUGHNESS = 1.0; METALLIC = 0.0; NORMAL_MAP = vec3(0.5, 0.5, 1.0); }
 	if (debug_view == 2) { ALBEDO = vec3(conv); ROUGHNESS = 1.0; METALLIC = 0.0; NORMAL_MAP = vec3(0.5, 0.5, 1.0); }
+	if (debug_view == 4) { ALBEDO = vec3(0.0); EMISSION = vec3(gold, 0.0, gold) * 4.0; ROUGHNESS = 1.0; METALLIC = 0.0; SPECULAR = 0.0; NORMAL_MAP = vec3(0.5, 0.5, 1.0); }
 	if (debug_view == 3) { ALBEDO = vec3(sky); ROUGHNESS = 1.0; METALLIC = 0.0; NORMAL_MAP = vec3(0.5, 0.5, 1.0); }
+	if (test_flat) { ALBEDO = vec3(0.0); METALLIC = 0.0; ROUGHNESS = 1.0; SPECULAR = 0.0; RIM = 0.0; EMISSION = vec3(0.5); }
 }

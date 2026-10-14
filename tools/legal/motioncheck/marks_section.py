@@ -153,7 +153,7 @@ func tinted_skin(base: Shader) -> Shader:
 	var flat = "ALBEDO = vec3(0.0); SPECULAR = 0.0; ROUGHNESS = 1.0; METALLIC = 0.0; RIM = 0.0; SSS_STRENGTH = 0.0; BACKLIGHT = vec3(0.0); legal_flat = 1.0; "
 	# (the outfit's channel of her vertex colours, as her shader's tuck reads it; -1: none)
 	var head = code.find("void fragment()")
-	code = code.substr(0, head) + "uniform int legal_tuck_ch = -1;\nvarying float legal_flat;\n" + code.substr(head)
+	code = code.substr(0, head) + "uniform int legal_tuck_ch = -1;\nuniform bool legal_flat_skin = false;\nvarying float legal_flat;\n" + code.substr(head)
 	# The codes go at the end of fragment() itself, not of the file: her shader has its own
 	# light() after it (face v10), where COLOR is unknown and the codes never compiled.
 	head = code.find("void fragment()")
@@ -165,6 +165,7 @@ func tinted_skin(base: Shader) -> Shader:
 		+ "\tif (UV2.y > 0.5) { " + flat + "EMISSION = vec3(0.0, 1.0, 0.0); }\n" \
 		+ "\telse if (UV2.x < 0.995) { " + flat + "EMISSION = vec3(UV2.x * 0.9, legal_th > 0.5 ? 0.5 : 0.0, 1.0); }\n" \
 		+ "\telse if (legal_th > 0.02) { " + flat + "EMISSION = vec3((1.0 - legal_th) * 0.9, 1.0, 1.0); }\n" \
+		+ "\telse if (legal_flat_skin) { " + flat + "EMISSION = vec3(0.5, 0.45, 0.42); }\n" \
 		+ code.substr(end)
 	# Her own light() adds a sheen from what fragment() had before the codes (a varying), so
 	# no lamp may light a coded pixel: the codes are read back exactly, as emission alone.
@@ -370,6 +371,8 @@ func legal_marks(mi):
 			m.shader = tinted_skin(m.shader)
 			for n in kept: m.set_shader_parameter(n, kept[n])
 			m.set_shader_parameter("legal_tuck_ch", tuck_ch if OS.get_environment("NOHIDE") == "" else -1)
+			# (FLAT, on unless FLAT=0: her uncoded skin flat warm grey, no highlight left)
+			m.set_shader_parameter("legal_flat_skin", OS.get_environment("FLAT") != "0")
 		mi.set_surface_override_material(si, m)
 	print("legal marks: tucked skin read from vertex colour channel ", tuck_ch)
 '''

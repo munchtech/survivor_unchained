@@ -142,6 +142,9 @@ def split_mesh(arm, obj, skin=None, body=None):
     return len(rows)
 
 
+# Each side's limb shared out as the skin's on that side only (_as_skin).
+AS_SKIN_SIDES = os.environ.get("AS_SKIN_SIDES", "1") == "1"
+
 # A piece within this of her skin is split as the skin under it; out to twice
 # this it eases to its own place.
 SKIN_NEAR = 0.03
@@ -202,6 +205,39 @@ def _as_skin(W2, near, t, body, index, src):
     ok = (ssum > 1e-6) & (gsum > 1e-6) & (t < 1.0)
     out = W2.copy()
     target = Ws[ok] * (gsum[ok] / ssum[ok])[:, None]
+    if AS_SKIN_SIDES:
+        # (each side's limb shared out on its own: the piece keeps how much
+        # it rides her left limb and her right, the skin under it says only
+        # on which of that side's bones. Shared out as a whole, a stocking
+        # band's inner edge, nearest the other thigh where her thighs meet,
+        # took that thigh's bones (up to 0.98) and stretched across the gap
+        # between her legs in every clip: the owner, 13 Oct)
+        names_ = {i: n for n, i in index.items()}
+        # (only where the skin is the wrong leg's: at her crotch the skin
+        # under a thong or a gusset is both legs', and the piece must take
+        # its very blend there or it parts from her and the strip shows,
+        # fin3: 11 / 6 / 4 frames. So per side only where the skin's share
+        # of the piece's own leg is under 30%, fully under 10%)
+        cl_ = np.array([names_[c].endswith("_l") for c in chain])
+        cr_ = np.array([names_[c].endswith("_r") for c in chain])
+        pl_, pr_ = W2[ok][:, np.array(chain)[cl_]].sum(1), W2[ok][:, np.array(chain)[cr_]].sum(1)
+        sl_, sr_ = Ws[ok][:, cl_].sum(1), Ws[ok][:, cr_].sum(1)
+        own_ = np.where(pl_ >= pr_, sl_, sr_) / np.maximum(sl_ + sr_, 1e-12)
+        kx_ = np.clip((0.3 - own_) / 0.2, 0.0, 1.0)
+        kx_ = (kx_ * kx_ * (3 - 2 * kx_))[:, None]
+        whole_ = target
+        target = np.zeros((int(ok.sum()), len(chain)))
+        for suf in ("_l", "_r"):
+            cs = np.array([names_[c].endswith(suf) for c in chain])
+            g_ = W2[ok][:, np.array(chain)[cs]].sum(1)
+            s_ = Ws[ok][:, cs].sum(1)
+            has = s_ > 1e-6
+            blk = np.where(has[:, None], Ws[ok][:, cs] * (g_ / np.maximum(s_, 1e-12))[:, None], W2[ok][:, np.array(chain)[cs]])
+            target[:, cs] = blk
+        rest_ = ~np.array([names_[c].endswith(("_l", "_r")) for c in chain])
+        if rest_.any():
+            target[:, rest_] = W2[ok][:, np.array(chain)[rest_]]
+        target = (1 - kx_) * whole_ + kx_ * target
     tt = t[ok][:, None]
     out[np.ix_(ok.nonzero()[0], chain)] = tt * W2[ok][:, chain] + (1 - tt) * target
     return out
