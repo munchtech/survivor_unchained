@@ -247,8 +247,11 @@ public partial class FlareFx
         else
         {
             double r = t - lastAt;
-            web.X = r < 0.3 ? Mathf.Lerp(0.3f, 0.85f, (float)r / 0.3f) : Mathf.Max(0, 0.85f - (float)(r - 0.3) / 2.2f * 0.85f);
-            web.Y = Mathf.Max(0, 1 - (float)r / 2.0f);
+            // (Judge 3: the Return's own light. Amber to 2 s, dark by 4 s; the steam had been lighting the floor.)
+            web.X = r < 0.3 ? Mathf.Lerp(0.3f, 0.85f, (float)r / 0.3f)
+                : r < 2.0 ? 0.85f - (float)(r - 0.3) / 1.7f * 0.2f
+                : Mathf.Max(0, 0.65f * (1 - (float)(r - 2.0) / 2.0f));
+            web.Y = Mathf.Clamp(1 - (float)(r - 1.0) / 3.0f, 0, 1);
             frost.Z = (float)(reach + 4) * Mathf.Ease(Mathf.Clamp((float)(r - 0.4) / 3.4f, 0, 1), 1.6f);
             frost.Y = Mathf.Clamp(1 - (float)(r - 3.8) / 0.8f, 0, 1);
         }
@@ -283,14 +286,25 @@ public partial class FlareFx
         {
             double s = t - lastAt;
             float rr = RingAt(s, ringMax), speed = (RingAt(s + 0.02, ringMax) - rr) / 0.02f;
-            for (int i = 0, n = (int)(dt * 170 + R()); i < n; i++)
+            // (Judge 3: tongues 0.5-1.2 m tall every ~0.6 m, leaning out. One slot each 0.6 m of the line, each lit
+            // about once a tongue's life, so they stand evenly spread; each rides the line, drawn standing.)
+            int slots = Mathf.Max(8, (int)(Mathf.Tau * rr / 0.6f));
+            float life = 0.13f;
+            for (int i = 0; i < slots; i++)
             {
-                float a = R() * Mathf.Tau;
+                if (R() > dt / life) continue;
+                float a = (i + R()) * Mathf.Tau / slots;
                 var way = new Vector3(Mathf.Cos(a), 0, Mathf.Sin(a));
-                var p = boomAt + way * (rr - 0.05f);
+                var p = boomAt + way * (rr - 0.03f);
                 if (new Vector2(p.X - at.X, p.Z - at.Z).Length() > reach - 0.5f) continue;
-                p.Y = (float)HeightAt(p.X, p.Z) + 0.05f;
-                glow.Spawn(FlareBits.Kind.Tongue, p, way * (speed + 1) + Vector3.Up * (2.4f + R() * 2.4f), 0.08f + R() * 0.07f, 0.2f + R() * 0.16f, new Color(1.1f, 0.52f, 0.14f), new Color(0.7f, 0.12f, 0.02f));
+                p.Y = (float)HeightAt(p.X, p.Z) + 0.03f;
+                float tall = 0.5f + R() * 0.7f;
+                glow.Spawn(new FlareBits.P
+                {
+                    Kind = FlareBits.Kind.Tongue, At = p, V = way * speed * 0.9f + Vector3.Up * (0.6f + R() * 0.8f),
+                    Show = way * (0.35f + R() * 0.3f) + Vector3.Up, Life = life * (0.7f + R() * 0.6f), Size = tall / 2.6f, SizeEnd = tall / 2.6f * 0.8f,
+                    Color = new Color(1.1f, 0.52f, 0.14f), ColorEnd = new Color(0.7f, 0.12f, 0.02f),
+                });
             }
         }
         // ---- The Return: steam off every scar. Not contrails (t5): each column is fed in gusts from a tight spot,
@@ -318,7 +332,8 @@ public partial class FlareFx
                 {
                     Kind = FlareBits.Kind.Puff, At = p, V = new Vector3((R() - 0.5f) * 0.5f, up, (R() - 0.5f) * 0.5f),
                     Life = 2.0f + R() * 1.2f, Size = 0.2f + R() * 0.08f, SizeEnd = 0.6f + R() * 0.45f,
-                    Color = Night ? new Color(0.5f, 0.4f, 0.32f, 0.16f) : new Color(0.62f, 0.58f, 0.52f, 0.13f), ColorEnd = Night ? new Color(0.4f, 0.43f, 0.47f, 0.04f) : new Color(0.6f, 0.6f, 0.6f, 0.03f),
+                    // (By day warm-white, judge 3: the grey read as dust.)
+                    Color = Night ? new Color(0.5f, 0.4f, 0.32f, 0.16f) : new Color(0.86f, 0.8f, 0.72f, 0.12f), ColorEnd = Night ? new Color(0.4f, 0.43f, 0.47f, 0.04f) : new Color(0.8f, 0.79f, 0.76f, 0.03f),
                     Drag = 0.55f, Lift = 0.45f, Swirl = 1.5f, Seed = seed + R() * 0.12f, Wind = SteamWind * lean,
                 });
             }
@@ -374,7 +389,7 @@ public partial class FlareFx
                 var v = new Vector3(Mathf.Cos(a) * (3 + R() * 2), 2.2f + R() * 1.5f, Mathf.Sin(a) * (3 + R() * 2));
                 glow.Spawn(FlareBits.Kind.Tongue, p + Vector3.Up * 0.15f, v, 0.2f + R() * 0.1f, 0.22f + R() * 0.12f, new Color(1.15f, 0.5f, 0.14f), new Color(0.7f, 0.16f, 0.03f), drag: 5);
             }
-            shards.Burst(p + Vector3.Up * 0.1f, 9, 7, 0.2f, new Color(0, 0, 0, 0), 1);
+            shards.Burst(p + Vector3.Up * 0.1f, 9, 7, 0.22f, new Color(0, 0, 0, 0), 1);
             // Steam: thin wisps, not a few cotton balls.
             for (int i = 0; i < 10; i++)
                 bed.Spawn(new FlareBits.P
@@ -413,7 +428,7 @@ public partial class FlareFx
         BoomStart(p);
         // The flash's hot point, low at the root (the ground's flash and the pillar carry the size).
         glow.Spawn(FlareBits.Kind.Mote, p + Vector3.Up * 0.4f, Vector3.Zero, 0.06f, 1.3f, new Color(1.0f, 0.62f, 0.26f), new Color(0.5f, 0.12f, 0.02f));
-        shards.Burst(p + Vector3.Up * 0.2f, 34, 13, 0.18f, new Color(0, 0, 0, 0), 1);
+        shards.Burst(p + Vector3.Up * 0.2f, 34, 13, 0.24f, new Color(0, 0, 0, 0), 1);
         // Sparks: up the pillar, and a spray thrown out low along the jets.
         for (int i = 0; i < 24; i++)
             glow.Spawn(FlareBits.Kind.Mote, p + Vector3.Up * (0.3f + R() * 2), new Vector3((R() - 0.5f) * 5, 10 + R() * 14, (R() - 0.5f) * 5), 0.6f + R() * 0.5f, 0.05f, new Color(1.4f, 0.7f, 0.22f), new Color(0.6f, 0.12f, 0.02f), gravity: 9, drag: 0.8f);
@@ -496,6 +511,9 @@ public partial class FlareFx
 
     /// <summary>A statue breaks: its ice flies out away from what broke it (hot from the fire), a small scorch where
     /// it stood, sparks lift, a breath of frost dust. Never a body that just goes.</summary>
+    /// <summary>3-6 plates of ice a statue (judge 3), a few more for the big.</summary>
+    int Plates(float scale) => (int)((3 + R() * 3.99f) * Mathf.Sqrt(Mathf.Max(scale, 1)));
+
     void Shatter(Vector3 w, float scale, Vector3 from, bool ring)
     {
         var away = new Vector3(w.X - from.X, 0, w.Z - from.Z);
@@ -504,7 +522,7 @@ public partial class FlareFx
         {
             // The ring's burst (judge 2, s4: even, still confetti): the ice thrown out along the line's way,
             // stretched by its speed and lit orange through its faces, landing a metre or three on and cooling grey.
-            shards.Burst(w + Vector3.Up * 0.9f * scale, (int)(5 * scale + R() * 2), 7.5f, 0.16f * scale, new Color(0.32f, 0.3f, 0.27f, 0.6f), 1.3f, away, thrown: true);
+            shards.Burst(w + Vector3.Up * 0.9f * scale, Plates(scale), 7.5f, 0.24f * Mathf.Sqrt(scale), new Color(0.32f, 0.3f, 0.27f, 0.6f), 1.3f, away, thrown: true);
             // The line flares where it crosses a body.
             glow.Spawn(FlareBits.Kind.Fire, w + Vector3.Up * 0.45f * scale + away * 0.25f, away * 3.5f + Vector3.Up * 2.0f, 0.12f + R() * 0.05f, 0.26f * scale, new Color(0.95f, 0.38f, 0.09f), new Color(0.55f, 0.08f, 0.02f), sizeEnd: 0.6f * scale, drag: 3);
             if (R() < 0.5f)
@@ -517,8 +535,9 @@ public partial class FlareFx
                 ColorEnd = new Color(0.62f, 0.65f, 0.7f, 0.0f), Drag = 2.2f, Lift = 0.8f, Swirl = 1.0f, Seed = R(), Wind = SteamWind * 0.5f,
             });
         }
-        else shards.Burst(w + Vector3.Up * 0.9f * scale, (int)(8 * scale), 5f, 0.16f * scale, new Color(0.32f, 0.3f, 0.27f, 0.6f), 0.9f, away);
-        scars.Spawn(new FlareBits.P { Kind = FlareBits.Kind.Scar, At = w + Vector3.Up * 0.04f, Life = 4.4f + R(), Size = (0.8f + R() * 0.35f) * scale, Color = new Color(0.02f, 0.016f, 0.013f, 0.9f) });
+        else shards.Burst(w + Vector3.Up * 0.9f * scale, Plates(scale), 5f, 0.24f * Mathf.Sqrt(scale), new Color(0.32f, 0.3f, 0.27f, 0.6f), 0.9f, away);
+        // A scorch where it stood, on the glass only: inside the ring's char, one a statue read as a grid of stumps (judge 3).
+        if (!ring) scars.Spawn(new FlareBits.P { Kind = FlareBits.Kind.Scar, At = w + Vector3.Up * 0.04f, Life = 4.4f + R(), Size = (0.65f + R() * 0.3f) * scale, Color = new Color(0.02f, 0.016f, 0.013f, 0.6f) });
         // (The dust small, faint and cold: at 1.6 m and pale, 250 of them at once laid a grey sheet over the crowd.)
         if (!ring) bed.Spawn(FlareBits.Kind.Puff, w + Vector3.Up * 0.7f, Vector3.Up * 0.6f + away * 1.2f, 0.6f, 0.25f * scale, new Color(0.2f, 0.3f, 0.43f, 0.12f), sizeEnd: 0.7f * scale, drag: 2);
         // One spark each (three, over 240 statues, were orange confetti over the char: s1a).

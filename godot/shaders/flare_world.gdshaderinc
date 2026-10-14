@@ -126,6 +126,23 @@ vec3 flare_web_light(vec2 w) {
 	return hot * (line + halo) * lit * inside * run * near * flare_web.x * 0.9;
 }
 
+// The char's cracks (the Return's web): distance to the nearest seam between cells about 0.55 m across (F2-F1
+// of a jittered grid, m), so the burnt ground glows along a joined crust of cracks, never in loose straight lengths
+// (judge 3: the hairline web held under the char read as orange straw and sticks).
+float fl_seam(vec2 w) {
+	vec2 g = w / 0.55;
+	vec2 gi = floor(g);
+	float d1 = 9.0, d2 = 9.0;
+	for (int y = -1; y <= 1; y++)
+	for (int x = -1; x <= 1; x++) {
+		vec2 c = gi + vec2(float(x), float(y));
+		vec2 h = fract(sin(vec2(dot(c, vec2(127.1, 311.7)), dot(c, vec2(269.5, 183.3)))) * 43758.5453);
+		float d = length(g - c - 0.1 - 0.8 * h);
+		if (d < d1) { d2 = d1; d1 = d; } else if (d < d2) d2 = d;
+	}
+	return (d2 - d1) * 0.55 * 0.5;
+}
+
 // The impacts: melted rings of wet ground round each, char flung out, and a hot heart that cools.
 // Returns x: wet (0..1), y: char (0..1), z: heat (0..1); w: melted (frost taken).
 vec4 flare_marks_at(vec2 w) {
@@ -195,7 +212,9 @@ vec4 flare_boom(vec2 w, out vec2 at) {
 	// of it a fading red edge. (A third of a metre of core and half a metre of orange, under the glow, read as a
 	// thick soft cream band: s2e.)
 	float core = exp(-pow((ahead - 0.05) / 0.07, 2.0));
-	float body = pow(smoothstep(-0.45, 0.03, ahead), 2.0) * exp(-max(ahead - 0.03, 0.0) / 0.16);
+	float body = pow(smoothstep(-0.16, 0.03, ahead), 2.0) * exp(-max(ahead - 0.03, 0.0) / 0.16);
+	// (Judge 3: a red edge two or three pixels outside the line, not a soft orange fade.)
+	body = max(body, 0.42 * exp(-pow((ahead + 0.075) / 0.032, 2.0)));
 	// Tongues of flame licking out ahead of it, 1-1.5 m, on a few angles (about eight round it: the noise's
 	// blue holds ~17 px features), each flickering every three or four frames; orange at the root, red to
 	// their tips, torn.
@@ -265,6 +284,8 @@ void flare_ground(vec3 wp, inout vec3 alb, inout float rough, inout float spec, 
 		wet = max(wet, melted * (1.0 - smoothstep(3.5, 6.0, flare_frost.w)));
 		vec3 nw = (inv_view * vec4(nrm_view, 0.0)).xyz;
 		bool black = kind > 1.5;
+		// The ground as it was (drained, not yet glazed, wet or burnt): the char is a step under this.
+		vec3 fl_alb0 = alb;
 		float day = 1.0 - flare_hue.a;
 		// Dark wet glass: the ground seen through it darker and colder than bare, never paler (a pale glaze,
 		// or the plate's fine haze of lines lit as a field, read as grey snow over the screen). Only the
@@ -306,26 +327,36 @@ void flare_ground(vec3 wp, inout vec3 alb, inout float rough, inout float spec, 
 		// A step under the ground it burnt, whatever ground (a fixed near-black read as a dead frame at night and a
 		// hole by day): its own colour, warmed, at about 0.45 of it, blacker while fresh. (The s5 salmon was a
 		// name clash, never this.)
-		vec3 charc = mix(vec3(dot(alb, FL_LUM)), alb, 0.5) * vec3(1.2, 0.85, 0.55) * 0.45
-			* mix(1.25, 0.7, smoothstep(0.3, 0.7, mot)) * mix(0.55, 1.0, aged);
+		// (Judge 3: at 0.45 of the wet ground, about 0.3 of the dry, it was the dead frame of the Return: the char
+		// now sits at about 0.7 of the ground it burnt, mottled, a breath darker while fresh.)
+		vec3 charc = mix(vec3(dot(fl_alb0, FL_LUM)), fl_alb0, 0.5) * vec3(1.2, 0.85, 0.55) * 0.8
+			* mix(1.15, 0.82, smoothstep(0.3, 0.7, mot)) * mix(0.85, 1.0, aged);
 		alb = mix(alb, charc, bo.z * 0.97);
+		// A warm scorched rim where the char gives out (judge 3, by day: a clear disc with a warm edge).
+		float fl_rim = bo.z * (1.0 - bo.z) * 4.0;
+		alb = mix(alb, fl_alb0 * vec3(1.05, 0.72, 0.42), fl_rim * 0.55);
 		rough = mix(rough, mix(0.3, 0.85, smoothstep(0.35, 0.65, mot)), bo.z);
 		spec = mix(spec, 0.25, bo.z);
-		emi *= 1.0 - 0.7 * bo.z;
+		emi *= 1.0 - 0.5 * bo.z;
 		emi += vec3(1.0, 0.3, 0.05) * bo.w * crack * 0.9;
 		emi += flare_boom_light(bo);
 		// Live embers scattered in the char, breathing, dying through the Return (FLARE_LOOK §4.1).
 		// A point in one 31 cm cell in ten, clumped, of varied heat (a jittered grid of even dots read as polka, s5). (NEVER name a local in this file after a uniform of a shader that
 		// includes it: arena_ground's 'uniform vec3 ember' won over a local 'ember' and lit the whole inside of
 		// the ring salmon at 4x ready, s5. Locals here take an fl_ prefix when in doubt.)
-		vec2 ecg = w * 3.2;
-		vec2 eci = floor(ecg);
+		// (Judge 3: still a polka grid. Now one a metre cell, anywhere in it (+-0.5 m), sized 0.5-2x, a third of
+		// them out by 1-2 s and the rest by 2.5-5 s.)
+		vec2 eci = floor(w);
 		float en = fract(sin(dot(eci, vec2(127.1, 311.7))) * 43758.5453);
 		float en2 = fract(sin(dot(eci, vec2(269.5, 183.3))) * 43758.5453);
-		float er = length(fract(ecg) - 0.5 - (vec2(en, en2) - 0.5) * 0.5);
-		float fl_emb = step(0.9, en) * (1.0 - smoothstep(0.015, 0.05, er)) * (0.3 + 0.7 * en2 * en2) * smoothstep(0.5, 0.8, textureLod(flare_noise, w * 0.4 + 0.7, 0.0).r);
+		float en3 = fract(sin(dot(eci, vec2(419.2, 371.9))) * 43758.5453);
+		float er = length(w - eci - vec2(en, en2));
+		float erad = 0.012 * (0.5 + 1.5 * en3 * en3);
+		float epx = max(fwidth(w.x), 0.002);
+		float fl_emb = step(0.15, en3 + en * 0.2) * (1.0 - smoothstep(erad, erad + epx * 1.2, er)) * (0.35 + 0.65 * en2 * en2) * smoothstep(0.45, 0.75, textureLod(flare_noise, w * 0.4 + 0.7, 0.0).r);
+		float eend = en3 < 0.33 ? 1.0 + 3.0 * en3 : 2.5 + 2.5 * en3;
 		float breath = 0.65 + 0.35 * sin(TIME * (3.0 + 4.0 * en2) + en2 * 40.0);
-		emi += vec3(1.0, 0.33, 0.06) * fl_emb * breath * bo.z * smoothstep(0.08, 0.3, bmk.w) * (1.0 - smoothstep(2.5, 5.0, bmk.w)) * 1.3;
+		emi += vec3(1.0, 0.33, 0.06) * fl_emb * breath * bo.z * smoothstep(0.08, 0.3, bmk.w) * (1.0 - smoothstep(eend - 0.6, eend, bmk.w)) * 1.3;
 		// The last word's ground flash.
 		emi += flare_boom_flash(w);
 		// The front: the frost crystallising as it comes, cold points in a narrow fingered band.
@@ -335,13 +366,39 @@ void flare_ground(vec3 wp, inout vec3 alb, inout float rough, inout float spec, 
 		emi += vec3(0.3, 0.6, 1.0) * (cr.y * 0.6 + spine * 0.45) * band * cover * (black ? 0.35 : 1.0);
 		// Held frost: a few fine points of cold light, and the meltwater's glints.
 		emi += vec3(0.4, 0.68, 1.0) * cr.y * ice * twinkle * 0.05 * flare_hue.a;
+		// Meltwater glints (judge 3): about one a square metre, sharp (a pixel or two), each twinkling on its own
+		// clock, thickest at the frost's receding edge and scattered thin on the wet ground behind it.
+		{
+			vec2 gci = floor(w);
+			float gh = fract(sin(dot(gci, vec2(41.3, 289.1))) * 43758.5453);
+			float gh2 = fract(sin(dot(gci, vec2(157.7, 113.9))) * 43758.5453);
+			vec2 gp = gci + 0.15 + 0.7 * vec2(gh, gh2);
+			float gpx = max(fwidth(w.x), 0.004);
+			float gd = 1.0 - smoothstep(gpx * 0.5, gpx * 1.6, length(w - gp));
+			float gtw = step(0.45, fract(sin(gh * 91.7 + floor(TIME * (9.0 + 8.0 * gh2) + gh * 13.0)) * 43758.5453));
+			float keep = flare_at.w - flare_frost.z;
+			float gedge = step(0.01, flare_frost.z) * smoothstep(-0.4, 0.3, keep - arr) * (1.0 - smoothstep(0.5, 1.9, keep - arr));
+			float gwet = max(gedge, 0.3 * wet) * (1.0 - ice * 0.7) * (1.0 - smoothstep(4.5, 6.0, flare_frost.w));
+			emi += vec3(0.75, 0.9, 1.0) * gd * gtw * gwet * mix(0.9, 2.2, flare_hue.a);
+		}
 		nrm_view = normalize((view * vec4(nw, 0.0)).xyz);
 		// The web shows faint under the ice, and is burnt out under the char (its glow over the inside of the
 		// ring read as orange lines on the black: s2e).
 		// Through the char it glows amber (judge 2, s4), a breath warmer than the web on open ground.
 		// (Judge 3: held at full over the whole char it read as orange straw. Half, and sunk dark by 2 s.)
-		web *= (1.0 - 0.45 * ice) * mix(1.0, 0.55 * (1.0 - smoothstep(0.6, 2.0, bmk.w)), bo.z);
-		web = mix(web, vec3(dot(web, FL_LUM)) * vec3(1.9, 0.95, 0.25), 0.5 * bo.z);
+		// (Judge 3's Return: amber to 2 s, dark by 4 s; the Burns timeline sinks flare_web itself.)
+		web *= (1.0 - 0.45 * ice) * (1.0 - bo.z);
+		// Under the char the web is the crust's own cracks: amber to 2 s, dark red and gone by 4 s (FlareFx.Burns
+		// sinks flare_web), a few joined runs of them alight, not the whole net.
+		if (bo.z > 0.01 && flare_web.x > 0.0) {
+			float fl_sd = fl_seam(w);
+			float fl_px = max(fwidth(w.x), 0.004);
+			float fl_sl = 1.0 - smoothstep(fl_px * 0.6, fl_px * 1.8, fl_sd);
+			float fl_on = smoothstep(0.42, 0.62, texture(flare_noise, w * 0.17 + 0.3).g + (texture(flare_noise, w * 0.6).r - 0.5) * 0.25);
+			float fl_ht = clamp(flare_web.y, 0.0, 1.0);
+			vec3 fl_hot = mix(vec3(0.3, 0.03, 0.008), vec3(1.0, 0.42, 0.08), smoothstep(0.3, 1.0, fl_ht)) * smoothstep(0.0, 0.3, fl_ht);
+			web += fl_hot * fl_sl * fl_on * bo.z * flare_web.x * 1.1;
+		}
 	}
 	emi += web;
 }

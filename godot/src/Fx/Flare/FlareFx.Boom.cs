@@ -169,7 +169,9 @@ public partial class FlareFx
 
     /// <summary>How long a statue stands cracked, the fire showing through its glaze, after the ring's line reaches
     /// it and before it bursts (Flare seconds: one to three frames).</summary>
-    double CrackHold() => (1 + R() * 2) / 60.0;
+    // (Judge 3: the statues the line nears crack two or three frames before it reaches them, the blast ahead of
+    // its fire; after it, they read as knocked down by the char.)
+    double CrackHold() => -(2 + R()) / 60.0;
 
     void BoomClear()
     {

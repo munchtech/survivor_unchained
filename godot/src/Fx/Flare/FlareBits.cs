@@ -27,6 +27,9 @@ public partial class FlareBits : MultiMeshInstance3D
         /// Seed, the column's own eddies (a little of each puff's own).</summary>
         public float Swirl, Seed;
         public Vector3 Wind;
+        /// <summary>The way it is drawn, if not its way of travel (a tongue riding the ring stands up and leans
+        /// out while it runs with the line).</summary>
+        public Vector3? Show;
     }
 
     readonly List<P> live = new();
@@ -131,7 +134,8 @@ public partial class FlareBits : MultiMeshInstance3D
             buf[o + 4] = 0; buf[o + 5] = sz; buf[o + 6] = 0; buf[o + 7] = p.At.Y;
             buf[o + 8] = 0; buf[o + 9] = 0; buf[o + 10] = sz; buf[o + 11] = p.At.Z;
             buf[o + 12] = c.R; buf[o + 13] = c.G; buf[o + 14] = c.B; buf[o + 15] = c.A;
-            buf[o + 16] = p.V.X; buf[o + 17] = p.V.Y; buf[o + 18] = p.V.Z; buf[o + 19] = (int)p.Kind + Mathf.Min(k, 0.999f);
+            var show = p.Show ?? p.V;
+            buf[o + 16] = show.X; buf[o + 17] = show.Y; buf[o + 18] = show.Z; buf[o + 19] = (int)p.Kind + Mathf.Min(k, 0.999f);
             n++;
         }
         if (n > 0 || shown > 0) RenderingServer.MultimeshSetBuffer(mm.GetRid(), buf);

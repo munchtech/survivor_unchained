@@ -39,6 +39,7 @@ public partial class FlareFx : Node3D
 
     readonly FlareBits glow = new(2600, false), bed = new(1400, true), scars = new(700, true);
     readonly FlareShards shards = new(2600);
+    static readonly bool NoWeb = OS.GetEnvironment("FLARE_NOWEB") == "1";
     readonly Random rng = new(71);
     float R() => (float)rng.NextDouble();
 
@@ -232,7 +233,8 @@ public partial class FlareFx : Node3D
             spendLight.LightEnergy = spendLightT < 0 ? 0 : sl < 0.05f ? spendLightPeak : spendLightPeak * Mathf.Exp(-(sl - 0.05f) * 12f); // halved by the 5th frame (§1.6: 1.5x for 4 frames at most)
             if (sl > 0.6f) spendLightT = -1;
             RenderingServer.GlobalShaderParameterSet("flare_look", look);
-            RenderingServer.GlobalShaderParameterSet("flare_web", web);
+            // (FLARE_NOWEB=1, a look-dev switch: the web off, to find what else draws lines on the ground.)
+            RenderingServer.GlobalShaderParameterSet("flare_web", NoWeb ? new Vector4(0, web.Y, web.Z, web.W) : web);
             RenderingServer.GlobalShaderParameterSet("flare_frost", frost);
             UploadMarks();
             if (lastAt > 0)
