@@ -339,7 +339,8 @@ void flare_ground(vec3 wp, inout vec3 alb, inout float rough, inout float spec, 
 		// The web shows faint under the ice, and is burnt out under the char (its glow over the inside of the
 		// ring read as orange lines on the black: s2e).
 		// Through the char it glows amber (judge 2, s4), a breath warmer than the web on open ground.
-		web *= (1.0 - 0.45 * ice) * (1.0 + 0.4 * bo.z);
+		// (Judge 3: held at full over the whole char it read as orange straw. Half, and sunk dark by 2 s.)
+		web *= (1.0 - 0.45 * ice) * mix(1.0, 0.55 * (1.0 - smoothstep(0.6, 2.0, bmk.w)), bo.z);
 		web = mix(web, vec3(dot(web, FL_LUM)) * vec3(1.9, 0.95, 0.25), 0.5 * bo.z);
 	}
 	emi += web;

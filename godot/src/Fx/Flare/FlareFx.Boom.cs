@@ -130,7 +130,7 @@ public partial class FlareFx
             simMat!.SetShaderParameter("life", life);
             simMat.SetShaderParameter("gain", 1.25f * (LessFlash ? 0.6f : 1));
             simMat.SetShaderParameter("smoke", 0.9f);
-            simMat.SetShaderParameter("fade", 1 - Mathf.SmoothStep(0.7f, 1f, life));
+            simMat.SetShaderParameter("fade", (1 - Mathf.SmoothStep(0.5f, 0.8f, c)) * (1 - Mathf.SmoothStep(0.85f, 1f, life)));
             pillar.Visible = cap.Visible = false;
         }
         float grow = 1 - Mathf.Pow(1 - Mathf.Clamp(c / 0.15f, 0, 1), 3);

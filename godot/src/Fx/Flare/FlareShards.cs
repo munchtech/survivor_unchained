@@ -136,7 +136,8 @@ public partial class FlareShards : MultiMeshInstance3D
                     else { s.Down = true; s.V = Vector3.Zero; }
                 }
             }
-            s.Heat *= Mathf.Exp(-dt * (s.Ash ? (s.Down ? 2.6f : 0.9f) : 6f));
+            // (Hot rims for about a third of a second: held longer, the thrown ash lay over the reach as orange straw, judge 3.)
+            s.Heat *= Mathf.Exp(-dt * (s.Ash ? (s.Down ? 6f : 3.2f) : 6f));
             live[i] = s;
         }
         buf ??= new float[cap * 20];

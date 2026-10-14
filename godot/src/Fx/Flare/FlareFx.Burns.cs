@@ -270,7 +270,7 @@ public partial class FlareFx
                 bed.Spawn(FlareBits.Kind.Puff, sp, -em.Dir * 1.5f + Rand3() * 0.4f, 1.1f + R() * 0.9f, 0.35f, new Color(0.09f, 0.08f, 0.075f, 0.55f), sizeEnd: 1.4f + R(), drag: 2.5f, lift: 0.3f);
             }
             // The eye darkens for the last two frames before the last word: the BOOM's punch is the dark before it.
-            if (em.Last && t - em.Born >= em.FallT - 2.2 / 60) Dip(LessFlash ? 0.85f : 0.68f);
+            if (em.Last && t - em.Born >= em.FallT - 2.2 / 60) Dip(LessFlash ? 0.95f : 0.9f);
             if (t >= em.LandAt) Land(em);
         }
         if (colT >= 0) { colT += dt; Column(dt); }
@@ -303,19 +303,22 @@ public partial class FlareFx
             if (age < 0) continue;
             float seed = (c * 0.6180339f) % 1f;
             float gust = 0.3f + 1.4f * Mathf.Clamp(0.5f + 0.5f * Mathf.Sin(age * (2.1f + seed * 1.7f) + seed * 9f) + 0.35f * Mathf.Sin(age * 5.3f + seed * 4f), 0, 1);
-            float rate = 26 * Mathf.Exp(-age * 0.55f) * gust * (Night ? 1 : 0.6f);
+            // (Judge 3: 26 a second read as evenly spaced cotton balls, the brightest things at Verge night: a third as
+            // many, thin, tall, leaning, warm at the root and cold above, none on her.)
+            float rate = 9 * Mathf.Exp(-age * 0.55f) * gust * (Night ? 1 : 0.6f);
             float lean = 0.7f + 0.8f * seed;
             float r0 = Mathf.Abs(m.Z);
             for (int i = 0, n = (int)(rate * dt + R()); i < n; i++)
             {
                 var p = new Vector3(m.X + (R() - 0.5f) * r0 * 0.3f, 0, m.Y + (R() - 0.5f) * r0 * 0.3f);
+                if (new Vector2(p.X - Her.X, p.Z - Her.Z).LengthSquared() < 4) continue;
                 p.Y = (float)HeightAt(p.X, p.Z) + 0.1f;
-                float up = 1.8f + R() * 2.2f;
+                float up = 2.6f + R() * 2.2f;
                 bed.Spawn(new FlareBits.P
                 {
                     Kind = FlareBits.Kind.Puff, At = p, V = new Vector3((R() - 0.5f) * 0.5f, up, (R() - 0.5f) * 0.5f),
-                    Life = 2.4f + R() * 1.6f, Size = 0.28f + R() * 0.12f, SizeEnd = 1.5f + R() * 1.1f,
-                    Color = Night ? new Color(0.6f, 0.63f, 0.67f, 0.2f) : new Color(0.5f, 0.5f, 0.52f, 0.15f), ColorEnd = Night ? new Color(0.62f, 0.64f, 0.68f, 0.07f) : new Color(0.52f, 0.52f, 0.54f, 0.04f),
+                    Life = 2.0f + R() * 1.2f, Size = 0.2f + R() * 0.08f, SizeEnd = 0.6f + R() * 0.45f,
+                    Color = Night ? new Color(0.5f, 0.4f, 0.32f, 0.16f) : new Color(0.62f, 0.58f, 0.52f, 0.13f), ColorEnd = Night ? new Color(0.4f, 0.43f, 0.47f, 0.04f) : new Color(0.6f, 0.6f, 0.6f, 0.03f),
                     Drag = 0.55f, Lift = 0.45f, Swirl = 1.5f, Seed = seed + R() * 0.12f, Wind = SteamWind * lean,
                 });
             }
@@ -420,7 +423,7 @@ public partial class FlareFx
             var v = d * (9 + R() * 13) + new Vector3((R() - 0.5f) * 4, 1.5f + R() * 4.5f, (R() - 0.5f) * 4);
             glow.Spawn(FlareBits.Kind.Mote, p + Vector3.Up * 0.3f, v, 0.4f + R() * 0.45f, 0.045f, new Color(1.4f, 0.72f, 0.24f), new Color(0.6f, 0.12f, 0.02f), gravity: 9, drag: 1.2f);
         }
-        SpendLight(p + Vector3.Up * 3f, new Color(1f, 0.6f, 0.25f), 20 * (banked ? 1.25f : 1));
+        SpendLight(p + Vector3.Up * 3f, new Color(1f, 0.6f, 0.25f), 15 * (banked ? 1.25f : 1));
         spendLight.OmniRange = reach * 1.3f;
         Cam?.Jolt(Vector3.Up, (0.6f + (banked ? 0.1f : 0)) * Motion);
         Cue("ember_last", p, 1);
