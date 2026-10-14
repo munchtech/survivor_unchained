@@ -153,7 +153,7 @@ public partial class FlareFx
             simMat!.SetShaderParameter("life", life);
             // The birth burns through the eye's dip (the world stops down, the fireball doesn't: solver 5 measured the
             // dip taking the birth's whitest pixel from 0.92 to 0.85 at f118); exempt to f142 (0.47 s), handed back over 10 frames (judge 5a 1e).
-            float through = Mathf.Lerp(1, 1 / Math.Max(0.4f, dipNow), 1 - Mathf.SmoothStep(0.3f, 0.47f, c)); // (lead 7: to f132, back by f142: the life lit evenly took the peak to 1.9x)
+            float through = Mathf.Lerp(1, 1 / Math.Max(0.4f, dipNow), 1 - Mathf.SmoothStep(0.15f, 0.27f, c)); // (lead 7, s14: the life exempt re-brightened the frame f126-f140, an extra swing and 18 frames over 1.5x empty; the birth only now, back by f130)
             simMat.SetShaderParameter("gain", 1.25f * through * (LessFlash ? 0.6f : 1));
             // (The soot thins as it climbs: opaque to the end it took the Return's floor to 0.57x at +0.8 s, f6i.)
             // (judge 5a 3: soot 0.7 at f128, <=0.3 at f150, gone by f185, eroding from its thin edge first)
