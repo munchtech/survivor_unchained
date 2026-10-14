@@ -29,6 +29,9 @@ public partial class FlareFx
     // The sim's camera framed SimSize metres across, centred SimLook metres over the crater; played SimRate times
     // its own speed (the column at full height in about 0.15 s).
     const float SimSize = 16.0f, SimLook = 4.5f, SimRate = 1.4f;
+    // It starts SimFirst frames in (its first frames, a smooth star of tongues, read as a cartoon splat: s5f), so
+    // the first frame on screen is already a fireball bursting; it swells the last fifth of its size over 0.12 s.
+    const float SimFirst = 6;
     bool Simmed => simBoom != null;
 
     void BoomReady()
@@ -92,7 +95,7 @@ public partial class FlareFx
         {
             simBoom.GlobalPosition = p + Vector3.Up * SimLook;
             simBoom.Scale = Vector3.One * SimSize;
-            simMat!.SetShaderParameter("life", 0f);
+            simMat!.SetShaderParameter("life", SimFirst / Math.Max(1, simFrames - 1));
             simBoom.Visible = true;
         }
         float y = (float)HeightAt(p.X, p.Z);
@@ -121,7 +124,8 @@ public partial class FlareFx
         // The pillar: full height in 0.15 s, full fire to 0.45 s, burnt out by 1.1 s.
         if (simBoom != null)
         {
-            float life = c * simFps * SimRate / Math.Max(1, simFrames - 1);
+            float life = (SimFirst + c * simFps * SimRate) / Math.Max(1, simFrames - 1);
+            simBoom.Scale = Vector3.One * SimSize * (0.8f + 0.2f * Mathf.SmoothStep(0, 0.12f, c));
             simBoom.Visible = life < 1;
             simMat!.SetShaderParameter("life", life);
             simMat.SetShaderParameter("gain", 1.25f * (LessFlash ? 0.6f : 1));

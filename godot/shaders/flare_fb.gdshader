@@ -17,6 +17,8 @@ uniform float life = 0.0;
 uniform float gain = 1.0;
 uniform float smoke = 1.0;
 uniform float fade = 1.0;
+// The fire's hue: the sim's tone read salmon over the night ground (s5f); less blue makes it burn orange.
+uniform vec3 fire_tint = vec3(1.0, 0.92, 0.6);
 uniform float soft = 0.8;
 
 void vertex() {
@@ -49,6 +51,6 @@ void fragment() {
 		k *= clamp((VERTEX.z - behind.z) / soft, 0.0, 1.0);
 	}
 	float clear = hero_clear(VERTEX, VIEW_MATRIX, PROJECTION_MATRIX, VIEWPORT_SIZE);
-	ALBEDO = c.rgb * gain * k * clear;
+	ALBEDO = c.rgb * fire_tint * gain * k * clear;
 	ALPHA = c.a * smoke * k * clear;
 }
