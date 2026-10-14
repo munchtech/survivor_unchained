@@ -15,6 +15,8 @@ public partial class FlareFx
     MeshInstance3D pillar = null!, cap = null!, haze = null!;
     ShaderMaterial pillarMat = null!, capMat = null!, hazeMat = null!;
     OmniLight3D rimLight = null!;
+    /// <summary>The fireball light's peak energy (FLARE_FIRELIGHT overrides it for look-dev).</summary>
+    static readonly float FireLight = float.TryParse(System.Environment.GetEnvironmentVariable("FLARE_FIRELIGHT"), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var fl) ? fl : 9f;
     readonly Vector3[] jets = new Vector3[12];
     int jetN;
     const float PillarH = 7.5f, PillarR = 0.95f;
@@ -59,7 +61,7 @@ public partial class FlareFx
             MaterialOverride = hazeMat, CastShadow = GeometryInstance3D.ShadowCastingSetting.Off, Visible = false,
             ExtraCullMargin = 8,
         };
-        rimLight = new OmniLight3D { LightColor = new Color(1f, 0.5f, 0.17f), LightEnergy = 0, OmniRange = 6.5f, ShadowEnabled = false };
+        rimLight = new OmniLight3D { LightColor = new Color(1f, 0.69f, 0.376f), LightEnergy = 0, OmniRange = 14f, OmniAttenuation = 1.4f, ShadowEnabled = false };
         AddChild(pillar);
         AddChild(cap);
         AddChild(haze);
@@ -97,6 +99,9 @@ public partial class FlareFx
             simBoom.GlobalPosition = p + Vector3.Up * SimLook;
             simBoom.Scale = Vector3.One * SimSize;
             simMat!.SetShaderParameter("life", SimFirst / Math.Max(1, simFrames - 1));
+            // The soot lit (judge 4 fix 3): amber from the fire below at night, grey-brown sunlit tops by day.
+            simMat.SetShaderParameter("soot_lit", Night ? new Vector3(0.08f, 0.035f, 0.012f) : new Vector3(0.16f, 0.13f, 0.10f));
+            simMat.SetShaderParameter("soot_up", Night ? -1f : 1f);
             simBoom.Visible = true;
         }
         float y = (float)HeightAt(p.X, p.Z);
@@ -105,8 +110,8 @@ public partial class FlareFx
         hazeMat.SetShaderParameter("center", p);
         hazeMat.SetShaderParameter("strength", 0f);
         haze.Visible = true;
-        rimLight.GlobalPosition = p + Vector3.Up * 0.9f;
-        rimLight.LightEnergy = 16 * (LessFlash ? 0.5f : 1);
+        rimLight.GlobalPosition = p + Vector3.Up * 3f;
+        rimLight.LightEnergy = 0;
         jetN = 8 + (int)(R() * 5);
         for (int i = 0; i < jetN; i++)
         {
@@ -120,8 +125,9 @@ public partial class FlareFx
     void BoomTick(float c, float s, float dt)
     {
         var p = boomAt;
-        // The low light: three frames at its peak, catching the rims of the statues round the crater, then gone.
-        rimLight.LightEnergy = c < 0.05f ? 10 * (LessFlash ? 0.5f : 1) : Mathf.MoveToward(rimLight.LightEnergy, 0, dt * 90);
+        // The fireball's light (judge 4 fix 2): warm #FFB060 from inside the ball ~3 m up, rising over its first
+        // three frames, held, gone by f130 (0.27 s), so the statues round it catch fire and the ground stays under 1.4x.
+        rimLight.LightEnergy = FireLight * Mathf.SmoothStep(0, 0.045f, c) * (1 - Mathf.SmoothStep(0.1f, 0.27f, c)) * (LessFlash ? 0.5f : 1);
         // The pillar: full height in 0.15 s, full fire to 0.45 s, burnt out by 1.1 s.
         if (simBoom != null)
         {
@@ -134,7 +140,7 @@ public partial class FlareFx
             float through = Mathf.Lerp(1, 1 / Math.Max(0.4f, dipNow), 1 - Mathf.SmoothStep(0.16f, 0.3f, c));
             simMat.SetShaderParameter("gain", 1.25f * through * (LessFlash ? 0.6f : 1));
             // (The soot thins as it climbs: opaque to the end it took the Return's floor to 0.57x at +0.8 s, f6i.)
-            simMat.SetShaderParameter("smoke", 1.0f - 0.35f * Mathf.SmoothStep(0.35f, 0.8f, c));
+            simMat.SetShaderParameter("smoke", 1.0f - 0.6f * Mathf.SmoothStep(0.2f, 0.6f, c)); // (judge 4: thinned by +0.6 s)
             simMat.SetShaderParameter("fade", (1 - Mathf.SmoothStep(0.9f, 1.4f, c)) * (1 - Mathf.SmoothStep(0.85f, 1f, life)));
             pillar.Visible = cap.Visible = false;
         }

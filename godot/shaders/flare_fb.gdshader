@@ -22,13 +22,19 @@ uniform vec3 fire_tint = vec3(1.0); // (burns_boom5's own colour: no tint)
 uniform float soft = 0.8;
 // The birth (atlas cells 0..birth_end): the atlas tops out at 1.0, so its white-yellow heart (linear luma
 // hot_lo..hot_hi: the top fifth of b5dx's ball in cells 0-2, a tenth in 3) is pushed past the tonemapper's white
-// (hot: how far over, fading out by cell 6) and its body pre-saturated against AgX's desaturation of bright colour
-// (sat, back to 1 by birth_end). Judge 4 fix 1; solver 5's limits.
-uniform float hot = 2.2;
-uniform float hot_lo = 0.82;
-uniform float hot_hi = 0.93;
-uniform float sat = 1.5;
+// (hot: how far over, fading out over cells 4-7) and its body pre-saturated against AgX's desaturation of bright
+// colour (sat, back to 1 by birth_end). Judge 4 fix 1; solver 5's limits. (s9: lo 0.82 gave 11-16% of the ball.)
+uniform float hot = 3.0;
+uniform float hot_lo = 0.74;
+uniform float hot_hi = 0.90;
+uniform float sat = 1.8;
 uniform float birth_end = 9.0;
+// The soot, lit (judge 4 fix 3: black soot read as a hole): its dark pixels lifted to at least soot_lit (night amber
+// lit from below by the fire, day grey-brown with sunlit tops: soot_up +1 lit from above, -1 from below), and laid
+// over the world at most soot_max.
+uniform vec3 soot_lit = vec3(0.08, 0.035, 0.012);
+uniform float soot_up = -1.0;
+uniform float soot_max = 0.7;
 // The BOOM's ring (flare_world): its first tenth of a second shows through the fireball's base (judge 3).
 global uniform sampler2D flare_marks : filter_nearest, repeat_disable;
 
@@ -55,10 +61,20 @@ void fragment() {
 		// straight colour (the atlas is premultiplied): its top channel finds the heart, its luma the body
 		vec3 sc = c.rgb / max(c.a, 1e-3);
 		float l = dot(sc, vec3(0.2126, 0.7152, 0.0722));
-		float heart = smoothstep(hot_lo, hot_hi, l) * (1.0 - smoothstep(3.0, 6.0, f));
+		float heart = smoothstep(hot_lo, hot_hi, l) * (1.0 - smoothstep(4.0, 7.0, f));
 		float s = mix(sat, 1.0, smoothstep(birth_end - 4.0, birth_end, f));
 		sc = max(mix(vec3(l), sc, mix(s, 1.0, heart)), vec3(0.0));
 		c.rgb = sc * c.a * (1.0 + hot * heart);
+	}
+	{
+		// the soot: a pixel's darkness (straight luma under ~0.2) is how much of it is soot
+		float l = dot(c.rgb / max(c.a, 1e-3), vec3(0.2126, 0.7152, 0.0722));
+		float soot = 1.0 - smoothstep(0.02, 0.2, l);
+		float side = 0.5 + 0.5 * soot_up * (1.0 - 2.0 * UV.y);
+		c.rgb = max(c.rgb, soot_lit * mix(0.55, 1.25, side) * c.a * soot);
+		float a = mix(c.a, min(c.a, soot_max), soot);
+		c.rgb *= a / max(c.a, 1e-3);
+		c.a = a;
 	}
 	// Square, soft: the atlas fades its own cells (pack.py); a round fade trimmed the rising smoke.
 	vec2 q = abs(UV * 2.0 - 1.0);
