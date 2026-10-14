@@ -1370,8 +1370,8 @@ SPEC = {
     "darkpurple": ("Leather026", (0.55, 0.2, 0.9), 26, 3, 0.0, 0.35),
     "satin": ("rough_linen", (1.652, 1.379, 1.12), 235, 10, 0.0, 0.3),
     # (s21, her gloves: the stockings' bands' white, a finer weave and a softer sheen over a forearm's length)
-    "glovesatin": ("rough_linen", (1.652, 1.379, 1.12), 228, 40, 0.0, 0.45),
-    "gloveblack": ("rough_linen", (0.3, 0.3, 0.34), 24, 40, 0.0, 0.4),
+    "glovesatin": ("rough_linen", (1.652, 1.379, 1.12), 228, 40, 0.0, 0.3),   # (s23 judge gl1: 0.45 read matte cotton; a satin sheen)
+    "gloveblack": ("rough_linen", (0.3, 0.3, 0.34), 24, 40, 0.0, 0.46),   # (s23 judge gl1: 0.4 near wet-look in the fist close)
     "amethyst": ("rough_linen", (0.62, 0.18, 0.64), 100, 10, 0.0, 0.12),   # (the clasp's violet stone: deep and glossy)
     "greenleather": ("Leather026", (0.42, 0.85, 0.45), 52, 3, 0.0, None),
     "bronze": ("Brushed", (0.72, 0.58, 0.46), 95, 3, 1.0, 0.42),  # (our own brushing, along u: tools/assets/brushed_metal.py)
@@ -5572,13 +5572,61 @@ def arcanist():
             ax = head(bs[1]) - a
             ax /= np.linalg.norm(ax)
             s = (P - a) @ ax
-            cut = FL_CUT_THUMB if fg == "thumb" else FL_CUT
-            if fg == "middle":
+            cut = (FL_CUT_THUMB if fg == "thumb" else FL_CUT) + (FL_FIELD_OVER if FL_EXACT else 0.0)
+            if fg == "middle" and not FL_EXACT:
                 lat = np.abs((P - a) @ side_)
                 cut = cut + FL_POINT * np.clip(1 - lat / FL_POINT_W, 0, 1) * ((P - a) @ up_ > 0)
             wf = np.clip(wsum(*bs), 0, 1)
             f_ = np.minimum(f_, (1 - wf) * 0.05 + wf * (cut - s))
         return f_
+
+    # (s23, judge gl1: the knuckle cut, jagged, a tooth of cloth in every web and half
+    # of each first finger covered: now cut exactly (FL_EXACT), one smooth line across
+    # her hand FL_WEB_GAP short of the webs between her fingers (found on her skin, not
+    # from her bones, which a later body build moves), so no cloth bridges them; over
+    # the back of her hand the line falls FL_V back toward her wrist at its sides, a
+    # point at her middle knuckle; her thumb cut FL_CUT_THUMB past its middle joint.
+    # knuckle_cut's field then stands FL_FIELD_OVER past it, so the exact line decides.)
+    FL_EXACT = os.environ.get("FL_EXACT", "1") == "1"
+    FL_FIELD_OVER = float(os.environ.get("FL_FIELD_OVER", "0.008"))
+    FL_WEB_GAP = float(os.environ.get("FL_WEB_GAP", "0.002"))
+    FL_V = float(os.environ.get("FL_V", "0.008"))
+    FL_P1 = [float(x) for x in os.environ.get("FL_P1", "0.0232,0.0269,0.0267,0.0211").split(",")]
+    def knuckle_exact(sd):
+        # (her frame from her wrist and her middle joints (02), which a body build's
+        # knuckle move leaves where they are; each finger's knot FL_P1 (her F1 rig's first
+        # bones, the right hand's, measured: their 01 heads sat at her webs) short of its
+        # 02 joint, less FL_WEB_GAP)
+        a_ = head(f"hand_{sd}")
+        ax_ = head(f"middle_02_{sd}") - a_
+        ax_ /= np.linalg.norm(ax_)
+        side_ = head(f"pinky_02_{sd}") - head(f"index_02_{sd}")
+        side_ -= ax_ * (side_ @ ax_)
+        side_ /= np.linalg.norm(side_)
+        up_ = np.cross(ax_, side_)
+        up_ *= -np.sign((head(f"thumb_03_{sd}") - head(f"index_02_{sd}")) @ up_)
+        F4 = ("index", "middle", "ring", "pinky")
+        fl = [(head(f"{f}_01_{sd}") - a_) @ side_ for f in F4]
+        knots_t = [(head(f"{f}_02_{sd}") - a_) @ ax_ - FL_P1[k] - FL_WEB_GAP for k, f in enumerate(F4)]
+        o = np.argsort(fl); knots_l = np.array(fl)[o]; knots_t = np.array(knots_t)[o]
+        lmid, half = fl[1], 0.5 * abs(fl[3] - fl[0]) + 0.006
+        print("GLOVE %s knuckle line: %s mm from her wrist" % (sd, " ".join("%.1f" % (t_ * 1000) for t_ in knots_t)))
+        ta_ = head(f"thumb_02_{sd}")
+        tx_ = head(f"thumb_03_{sd}") - ta_
+        tx_ /= np.linalg.norm(tx_)
+        wth = np.clip(wsum(f"thumb_02_{sd}", f"thumb_03_{sd}"), 0, 1)
+        tree = cKDTree(P)
+        def f(q):
+            ql, qt, qu = (q - a_) @ side_, (q - a_) @ ax_, (q - a_) @ up_
+            line = np.interp(ql, knots_l, knots_t)
+            dors = np.clip((qu + 0.004) / 0.008, 0, 1)
+            dors = dors * dors * (3 - 2 * dors)
+            line = line - FL_V * dors * np.clip(np.abs(ql - lmid) / half, 0, 1)
+            c = line - qt
+            _, j = tree.query(q)
+            th = FL_CUT_THUMB - (q - ta_) @ tx_
+            return np.where(wth[j] > 0.5, th, c)
+        return f
 
     # (s21: the elbow glove's top cut exactly, square across her forearm, ARC_GLOVE_ELBOW below her
     # elbow joint (her skin's field a little wider there, so this line decides), and hemmed: a
@@ -5771,7 +5819,10 @@ def arcanist():
                           (lambda q, sd=sd: 0.0012 - GLOVE_SINK * glove_top_k(q, sd) - (0.0012 - GLOVE_TIP_CLEAR) * glove_tip_k(q, sd)))
               if ARC_HANDS == "glove" else
               piece(f"arcanist.glove_{sd}", AND(limb(sd, WRIST_S - GLOVE_TOP - (GLOVE_FIELD_OVER if ARC_CAPS else 0.0), 9.9, legs=False), knuckle_cut(sd)), ARC_GLOVE_MAT, lift=FL_LIFT, thick=FL_THICK, bevel=0.0003, edge=30,
-                    soften=GLOVE_SOFTEN, smooth=GLOVE_SMOOTH, cut=glove_top_cut(sd) if ARC_CAPS else None,
+                    soften=GLOVE_SOFTEN, smooth=GLOVE_SMOOTH,
+                    cut=(lambda q, sd=sd, tc=glove_top_cut(sd) if ARC_CAPS else None, kc=knuckle_exact(sd) if FL_EXACT else None:
+                         (np.minimum(tc(q), kc(q)) if kc is not None else tc(q)) if tc is not None else kc(q))
+                        if (ARC_CAPS or FL_EXACT) else None,
                     trim=(ARC_GLOVE_MAT, GLOVE_HEM, 0.0003, 0.0008) if GLOVE_HEM > 0 else None,
                     clear=lambda q, sd=sd: FL_LIFT - (0.0 if ARC_CAPS else GLOVE_SINK) * glove_top_k(q, sd))
               if ARC_HANDS == "fingerless" else []),
