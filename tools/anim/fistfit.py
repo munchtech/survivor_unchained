@@ -5,6 +5,8 @@
                                                         for the fitted fist (laid on each clip's frames)
     python tools/anim/fistfit.py sword --fit --seat 127,137,147   also try the grip's line moved along her fingers (mm,
                                                         hand_r y of the line at the seat's height); the best seat wins
+    python tools/anim/fistfit.py sword --fit --seat 95,105 --hand '{"knuckles": 20}'   the same on a corrected hand
+                                                        (set_hand: the body build's change, modelled; never written)
     python tools/anim/fistfit.py sword --fit --write    write the fitted WRAP["sword"] into keyed.py (and the seat into
                                                         WeaponSockets.cs if it moved: then rebuild the clips and re-dump
                                                         arms_local, tools_scenes/arms_dump.gd)
@@ -52,6 +54,9 @@ HANG_MAX = 0.0        # mm: the finger's end past the grip's far surface (along 
                       # (end_point): on her 0.93 hand (080103ba) the tip joints sit 3.6-6.3 mm out past the skin, in the air.
 ADJ_MAX = 2.0         # mm: adjacent fingers' outer bones apart
 CAP3 = 62.0           # deg: the last joint's bend
+WRAP_MIN = 180.0      # deg: how far round the line the finger's end has come (from the palm, the way the fingers
+                      # close; 180 the far side). HANG alone passed fingers that never go round: laid along the grip
+                      # or balled up in front of it with their ends near the palm (a search found such "passes").
 OFF_MAX = 3.0         # deg: a held clip's fingers off WRAP's
 
 sk = Skeleton.load(DATA / "heroine_skeleton.json")
@@ -98,10 +103,92 @@ class Grip:
 
 _bodies = {}
 
+# ------------------------------------------------------------ a modelled hand --
+# A corrected hand for the body build, tried here before it is built (--hand, never written): finger joints' pivots
+# moved in hand_r space with her skin left where it is, so the skin weighted to a bone turns about its moved pivot
+# (the bind moves with the joint), and the skin a knuckle moved back passes over handed from the palm to its finger,
+# ramped KNUCKLE_RAMP mm either side of the new pivot (as a skinning tool weights a joint).
+HAND = {}
+KNUCKLE_RAMP = 10.0     # mm
+
+
+def set_hand(spec):
+    """spec: "knuckles" mm each finger's 01 joint goes back along its metacarpal (toward the wrist's pivot);
+    "knuckle_depth" mm each 01 joint goes toward the palm (hand -x); "dips" mm each 03 joint goes along its finger
+    (+ toward the tip: a shorter end bone); "moves" {joint: [x, y, z] mm} as given. Before the first body()."""
+    global HAND
+    assert not _bodies, "set_hand before the first body()"
+    grot, gpos = sk.rest_globals(); grot, gpos = grot[0], gpos[0]
+    Rh = qmatrix(grot[I["hand_r"]]); ph = gpos[I["hand_r"]]
+    loc = lambda n: Rh.T @ (gpos[I[n]] - ph)
+    moves = {}
+    for fn in FINGERS:
+        p1 = loc(f"{fn}_01_r"); d = np.zeros(3)
+        d -= p1 / np.linalg.norm(p1) * spec.get("knuckles", 0.0) / 1000
+        d[0] -= spec.get("knuckle_depth", 0.0) / 1000
+        if d.any():
+            moves[f"{fn}_01_r"] = d
+        if spec.get("dips"):
+            a, b = loc(f"{fn}_02_r"), loc(f"{fn}_03_r")
+            moves[f"{fn}_03_r"] = (b - a) / np.linalg.norm(b - a) * spec["dips"] / 1000
+    for n, v in spec.get("moves", {}).items():
+        moves[n] = moves.get(n, np.zeros(3)) + np.asarray(v, float) / 1000
+    new = gpos.copy()
+    for n, d in moves.items():
+        new[I[n]] = gpos[I[n]] + Rh @ d
+    moved = {I[n] for n in moves}
+    for j in moved | {j for j in range(len(sk.parent)) if sk.parent[j] in moved}:
+        sk.rest_pos[j] = qrot(qinv(grot[sk.parent[j]]), new[j] - new[sk.parent[j]])
+    HAND = dict(spec=spec, moves={n: np.round(d * 1000, 1).tolist() for n, d in moves.items()}, old=gpos, new=new,
+                Rh=Rh)
+    print(f"modelled hand {json.dumps(spec)}: " + "; ".join(f"{n} {v}" for n, v in HAND["moves"].items()), flush=True)
+
+
+def _model_body(b):
+    """The modelled hand on a Body: each moved joint's bind, and the palm's skin a knuckle moved back passes over
+    weighted to its finger (the share it had on hand_r, ramped about the new pivot)."""
+    old, new = HAND["old"], HAND["new"]
+    for j in range(len(new)):
+        if not np.allclose(old[j], new[j]):
+            b.rest[j][:3, 3] = new[j]
+    b.rest_inv = np.linalg.inv(b.rest)
+    hj = I["hand_r"]; fj = [I[f"{fn}_01_r"] for fn in FINGERS]
+    if all(np.allclose(old[j], new[j]) for j in fj):
+        return
+    side = HAND["Rh"] @ np.array([0, 0, 1.0])            # across the knuckles (hand +z), character space
+    kw = (b.J == hj) * b.W; wh = kw.sum(1)
+    cand = np.nonzero(wh > 0)[0]
+    P = b.P[cand]
+    lat = np.stack([(P - new[j]) @ side for j in fj], 1)
+    lane = np.argmin(np.abs(lat), 1)
+    for li, j in enumerate(fj):
+        m = old[j] - new[j]; L = np.linalg.norm(m)
+        if L < 1e-6:
+            continue
+        m /= L
+        sel = cand[(lane == li) & (np.abs(lat[:, li]) < 0.014)]
+        t = (b.P[sel] - new[j]) @ m * 1000
+        s = np.clip((t + KNUCKLE_RAMP) / (2 * KNUCKLE_RAMP), 0, 1); want = s * s * (3 - 2 * s)
+        for v, wc in zip(sel, want):
+            if wc <= 0:
+                continue
+            kh = int(np.nonzero(b.J[v] == hj)[0][0])
+            kf = np.nonzero(b.J[v] == j)[0]
+            if len(kf):
+                kf = int(kf[0])
+            else:
+                order = [k for k in np.argsort(b.W[v]) if k != kh]
+                kf = int(order[0]); b.W[v, kf] = 0.0; b.J[v, kf] = j
+            tot = b.W[v, kh] + b.W[v, kf]; nf = max(b.W[v, kf], tot * wc)
+            b.W[v, kf], b.W[v, kh] = nf, tot - nf
+        b.W[sel] /= b.W[sel].sum(1, keepdims=True)
+
 
 def body(outfit):
     if outfit not in _bodies:
         b = skin.Body.heroine(outfit=outfit, jiggle=False)
+        if HAND:
+            _model_body(b)
         Wst = np.stack([(b.W * (b.J == I[n])).sum(1) for n in HB], 1)
         sel = np.nonzero(Wst.max(1) > 0.5)[0]
         b._fist = dict(sel=sel, bone=np.array([HB[i] for i in Wst.argmax(1)[sel]]), kind=b.kind[sel])
@@ -175,6 +262,13 @@ def palm_dir(h, rf, gr):
     return u / np.linalg.norm(u)
 
 
+def wrap_angle(p, gr, u):
+    """deg round the line from the palm (u) the way the fingers close (over the front, 180 the far side), -30..330."""
+    q = p - gr.A; w0 = np.array([0, 1.0, 0]) - gr.D[1] * gr.D; w0 -= (w0 @ u) * u; w0 /= np.linalg.norm(w0)
+    a = float(np.degrees(np.arctan2(q @ w0, q @ u)))
+    return a + 360 if a < -30 else a
+
+
 def end_point(X3, J, fn):
     """A finger's end: its last bone's skin point furthest along that bone (X3: that bone's skin points)."""
     a = J[f"{fn}_03_r"]; d = J[f"{fn}_04_leaf_r"] - a
@@ -189,9 +283,10 @@ def measure(h, rf, gr):
     for fn in ALLF:
         sub = h.fing[fn]; B = h.bone[sub]; gs = g[sub]; ok = ~np.isnan(gs)
         pads = [round(float(gs[(B == f"{fn}_0{k}_r") & ok].min()), 1) if ((B == f"{fn}_0{k}_r") & ok).any() else None for k in (1, 2, 3)]
-        v = end_point(X[sub][B == f"{fn}_03_r"], J, fn) - gr.A; R = gr.R(v @ gr.D)
+        e = end_point(X[sub][B == f"{fn}_03_r"], J, fn); v = e - gr.A; R = gr.R(v @ gr.D)
         out[fn] = dict(pads=pads, deepest=round(float(gs[ok].min()), 1) if ok.any() else None,
-                       hang=round(float((-(v @ u) - R) * 1000), 1) if not np.isnan(R) else None)
+                       hang=round(float((-(v @ u) - R) * 1000), 1) if not np.isnan(R) else None,
+                       wrap=round(wrap_angle(e, gr, u)))
     okp = ~np.isnan(g[h.palm])
     out["palm"] = round(float(g[h.palm][okp].min()), 1) if okp.any() else None
     out["deepest"] = round(float(np.nanmin(g)), 1)
@@ -213,6 +308,8 @@ def verdict(m, ang=None):
                 bad.append(f"{fn}{k} pad {p}")
         if f["hang"] is None or f["hang"] > HANG_MAX:
             bad.append(f"{fn} tip hangs {f['hang']}")
+        if f["wrap"] < WRAP_MIN:
+            bad.append(f"{fn} only {f['wrap']} deg round")
         if ang is not None and ang[fn][2] > CAP3:
             bad.append(f"{fn} end joint {ang[fn][2]:.0f}")
     if m["deepest"] < -IN_MAX:
@@ -300,6 +397,8 @@ def fit_finger(h, fn, base, spr, gr, u, x0, opp=0.0, roll=0.0):
         v = e - gr.A; R = gr.R(v @ gr.D)
         hang = (-(v @ u) - (0.016 if np.isnan(R) else R)) * 1000
         if hang > HANG_MAX - 1.5: c += 2 * (hang - HANG_MAX + 1.5) ** 2
+        wa = wrap_angle(e, gr, u)
+        if wa < WRAP_MIN + 10: c += 0.05 * (WRAP_MIN + 10 - wa) ** 2
         gg = g[~np.isnan(g)]
         c += 50 * float((np.clip(-0.3 - gg, 0, None) ** 2).sum())
         gp, _ = gr.gap(h.pose(rf, h.palm)); gp = gp[~np.isnan(gp)]
@@ -462,7 +561,12 @@ def main(argv):
     ap.add_argument("--fit", action="store_true")
     ap.add_argument("--seat", default=None, help="comma-separated y0 (mm) to try for the grip's line")
     ap.add_argument("--write", action="store_true")
+    ap.add_argument("--hand", default=None, help="a corrected hand to try (JSON for set_hand, e.g. {\"knuckles\": 20}); "
+                    "never written")
     a = ap.parse_args(argv)
+    if a.hand:
+        assert not a.write, "--hand models a hand that isn't built: nothing is written for it"
+        set_hand(json.loads(a.hand))
     if not a.fit:
         return table(a.piece)
     y0s = [float(v) for v in a.seat.split(",")] if a.seat else None
