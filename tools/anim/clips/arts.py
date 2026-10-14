@@ -223,8 +223,8 @@ SWORD_GUARD_KNUCKLES = (-0.0144, -0.7353, 0.6775)
 # and out, so the blade rises on her right and goes over into the guard
 # (frame, the hand from the shoulder in the chest frame, the elbow's way).
 SWORD_WAY = ((12, SWORD_BACK, SWORD_BACK_POLE),
-             (16, (-0.25, -0.15, 0.08), (-0.25, -1.0, -0.1)),
-             (22, None, None))                 # (None: her guard's)
+             (17, (-0.25, -0.15, 0.08), (-0.25, -1.0, -0.1)),
+             (23, None, None))                 # (None: her guard's)
 SHOVE_AT = np.array((-0.08, 0.0, 0.40))                     # f12: the shield cocked in on the plant (chest frame, from the shoulder)
 # The punch, the impact and the recoil (chest frame, from the shoulder): solved from the build so the shield's hand
 # goes 17 cm forward over the ground at f13, 18 at f14 (a near-hold), back to 12 at f15 (round 7: keyed as a
@@ -238,8 +238,13 @@ REBOUND_HAND = (-0.051, -0.028, 0.426)                           # f16: the shie
 REBOUND_POLE = (1.0, -0.5, -0.4)
 # The sword hand's pace from the plant into the guard (SWING): cm a frame at the tip, as the judge keyed it
 # (slow out of the plant, the peak at f17-18, braking into the guard), one entry per frame f12->f13 ... f21->f22.
-SWORD_PACE = (3, 5, 8, 13, 18, 20, 15, 10, 5, 2)
-OVERSHOOT, OVER_END = 0.035, 25               # the blade runs this far past the guard's turn at f22 (of SWING's turn), back by OVER_END
+# Round 8: the hand's turn a frame (degrees, f12->13 ... f22->23), the judge's landing (r7 Should fix 4): 22 at f18, then
+# 17, 11, 6, 3, 1, its far point at f23 near rest.
+SWORD_PACE = (8, 18, 28, 34, 32, 22, 17, 11, 6, 3, 1)
+# The hand's roll on the forearm and the wrist's bend carried at an even pace (TURN_STEPS, one a frame f12->23), not the
+# hand's: the roll goes 100 degrees from the plant's to the guard's, and at the hand's pace it took 20 a frame.
+TURN_STEPS = (0.4, 0.8, 1, 1, 1, 1, 1, 1, 0.75, 0.4, 0.1)
+OVERSHOOT, OVER_END = 0.015, 26               # the roll and wrist run this far past the guard's (of the turn) at f23, back by OVER_END
 HEAD_NOD = {14: 1.0, 15: 5.0, 16: 5.0, 17: 2.0}   # the recoil's nod (degrees, chin down), a frame behind the chest
 HOME_LIFT = 0.0                                # f22: the shield on her guard (a lift off it brought the rim to her pauldron)
 HEAD_FROM, HEAD_SETTLE = 11, 24
@@ -442,9 +447,9 @@ def _turn_forearm(rig, ride, a, b, lead, start, plant, guard, side="r"):
         if fr < a:
             t = t0 + (ta - t0) * _ease((fr - s0) / lead)
         elif fr < b:
-            t = ta + (tb - ta) * _pace((fr - a) / (b - a))
+            t = ta + (tb - ta) * _turn_pace(fr - a)
         else:
-            t = split(fr, hand(fr, guard)) + (tb - ta) * _over(fr)
+            t = split(fr, hand(fr, guard)) + (tb - ta) * (_turn_pace(fr - a) - 1.0)
         q = qmul(qinv(chest(fr)), qmul(make(fr, t), lq))
         pose = dict(pose)
         pose[f"hand_{side}"] = dict(pose[f"hand_{side}"], frame="chest", aim=1.0, blade=tuple(float(x) for x in qrot(q, [0, 0, 1.0])),
@@ -453,7 +458,7 @@ def _turn_forearm(rig, ride, a, b, lead, start, plant, guard, side="r"):
     return post
 
 
-SWING = (12, 22)   # the sword hand's way and whole turn between these frames (SWORD_WAY)
+SWING = (12, 23)   # the sword hand's way and whole turn between these frames (SWORD_WAY)
 GLIDE_RAMP = 0.25  # the sword's way and turn: the part of SWING its pace takes to ramp up (and down)
 PLANT_ROLL = 0.2   # how far the plant's sword hand is rolled about its blade toward the guard's roll
 TURN_LEAD = 4      # the frames before the plant over which the sword hand eases into its roll there
@@ -507,6 +512,22 @@ def _pace(u):
     return float(c[i] + (c[i + 1] - c[i]) * (x - i))
 
 
+def _turn_pace(k):
+    """0..1 (and the overshoot past 1) of the roll and wrist's turn k frames after SWING's start: TURN_STEPS to the
+    far point at SWING's end, then back to 1 by OVER_END."""
+    c = np.concatenate([[0.0], np.cumsum(TURN_STEPS)]) / sum(TURN_STEPS) * (1.0 + OVERSHOOT)
+    m = len(TURN_STEPS)
+    if k <= m:
+        i = min(int(k), m - 1)
+        return float(c[i] + (c[i + 1] - c[i]) * (k - i))
+    return 1.0 + OVERSHOOT * (1.0 - _ease(min(1.0, (k - m) / (OVER_END - SWING[1]))))
+
+
+def _lead(u):
+    """The elbow's way along SWING, leading the hand: at an even pace (the hand's starts slow)."""
+    return min(1.0, max(0.0, u))
+
+
 def _over(fr):
     """How far past the guard's turn (of SWING's turn) the sword hand runs at frame fr >= SWING's end: the peak at
     its end, back by OVER_END."""
@@ -547,15 +568,32 @@ def _sword_way(a, b):
             out.append(h)
         return out
 
+    def pole_at(t):
+        # the elbow's way turned on the great circle between its waypoints (a curve through them passed near
+        # nothing between two ways 141 degrees apart, and the elbow swung over in a frame)
+        fs = [p[0] for p in pts]
+        k = max(0, min(len(pts) - 2, int(np.searchsorted(fs, t, side="right")) - 1))
+        w = min(1.0, max(0.0, (t - fs[k]) / (fs[k + 1] - fs[k])))
+        return _slerp_dir(pts[k][2], pts[k + 1][2], w)
+
     def post(fr, pose):
         if not a < fr < b:
             return pose
-        t = a + (b - a) * _pace((fr - a) / (b - a))
-        h, pole = at(t)
+        u = (fr - a) / (b - a)
+        h, _ = at(a + (b - a) * _pace(u))
+        pole = pole_at(a + (b - a) * _lead(u))
         pose = dict(pose)
         pose["hand_r"] = {"arc": arc_of(h), "pole": tuple(float(x) for x in pole), "frame": "chest", "twist": 0.5}
         return pose
     return post
+
+
+def _slerp_dir(p0, p1, w):
+    c = float(np.clip(np.dot(p0, p1), -1.0, 1.0))
+    ang = math.acos(c)
+    if ang < 1e-6:
+        return p0
+    return (math.sin((1 - w) * ang) * p0 + math.sin(w * ang) * p1) / math.sin(ang)
 
 
 def _turn_world(rig, first, a, b, lead=3, side="r"):
