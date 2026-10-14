@@ -785,13 +785,15 @@ class Rig:
                 j = I[f"thumb_01_{side}"]
                 local[j] = qmul(local[j], qaxis([0, 1.0, 0], roll * (1 if side == "r" else -1)))
             # Each finger's own spread (a fitted wrap's "spreads", deg; + fans the forefinger toward the thumb, the
-            # others the same way) at its base knuckle before it bends, so the bend's axis turns with it.
-            spreads = spec.get("spreads", {}) if isinstance(spec, dict) else {}
+            # others the same way) at its base knuckle before it bends, so the bend's axis turns with it. The left
+            # hand's axis is the mirror's: the same values fan it the other way (measured, l30), so its sign turns.
+            spreads = (spec if isinstance(spec, dict) else FINGER_PRESETS.get(spec, {})).get("spreads", {})
+            sgn_s = 1.0 if side == "r" else -1.0
             for name, angles in curl.items():
                 for k, a in enumerate(angles):
                     j = I[f"{name}_0{k + 1}_{side}"]
                     if k == 0 and spreads.get(name):
-                        local[j] = qmul(local[j], qaxis(spread_axis(self, j), spreads[name]))
+                        local[j] = qmul(local[j], qaxis(spread_axis(self, j), sgn_s * spreads[name]))
                     if a:
                         local[j] = qmul(local[j], qaxis(self.finger_axis[j], a))
             sp_ = spec.get("spread", 0) if isinstance(spec, dict) else FINGER_PRESETS.get(spec, {}).get("spread", 0)
@@ -960,9 +962,13 @@ FINGER_PRESETS = {
     # V judge r1 saw), swung 9 deg across and rolled a little so its pad faces it (judge r1: A's
     # straight thumb left a V of background beside the forefinger; keep knuckle bends <= 30 until her knuckles move,
     # then about +5 there). Was curl 0.28, cascade 0.25: (22, 27, 18) .. (39, 46, 32), the tips hooked: a claw.
-    "relaxed": {"curl": 0.1, "thumb": 0.25, "cascade": 0.5, "j1": 1.0, "j2": 1.58, "j3": 0.92,
-                "c1": 0.875, "c2": 0.6, "c3": 0.5, "t1": 1.92, "t2": 1.37, "t3": 1.6, "oppose": 0.16, "thumb_roll": -8,
-                "thumb_in": 21},
+    # Her knuckles moved (body build F0, 15 October, animation 30): +5 at every knuckle, (13, 20, 27, 34) index to
+    # little finger, and the thumb drawn in 18 (was 21; its last bone was 1.8 mm off the forefinger on F0). Judge l30-r1
+    # PASS, with the fan closed ("spreads", at the base knuckles): her rest hand is fanned, the tips read as separate
+    # stubs 6-12 mm apart; now index-middle 1.8, middle-ring 2.9, ring-little 5.2 mm, none into another.
+    "relaxed": {"curl": 0.1, "thumb": 0.25, "cascade": 0.5, "j1": 1.625, "j2": 1.58, "j3": 0.92,
+                "c1": 0.5385, "c2": 0.6, "c3": 0.5, "t1": 1.92, "t2": 1.37, "t3": 1.6, "oppose": 0.16, "thumb_roll": -8,
+                "thumb_in": 18, "spreads": {"index": -7.0, "middle": 0.0, "ring": 8.0, "pinky": 22.0}},
     "open": {"curl": 0.05, "thumb": 0.0, "spread": 4},
     # Pressed flat on the ground under her weight: bent back a little.
     "flat": {"curl": -0.12, "thumb": 0.0, "spread": 6},
@@ -999,9 +1005,8 @@ FLEX_TILT = {"index": -2.5, "middle": 1.0, "ring": 5.4, "pinky": 10.2}
 # was 45.5; its CMC is 92 mm from the line, so no turn of the base brings the pad nearer than 28 mm), its proximal pad
 # 18.4 mm (was 23.4), the web from the thumb's knuckle to the index's 63.7 mm (was 79.2, 69.3 at rest, so the glove's
 # web is no longer stretched), the last joint closed over the middle finger; the base's twist 40 deg (was 61).
-WRAP = {"staff": {"bends": {"index": (53.0, 52.8, 36.1), "middle": (43.1, 67.4, 46.1), "ring": (47.0, 51.4, 35.1),
-                            "pinky": (26.3, 56.0, 38.3), "thumb": (9.9, 0.0, 65.0)},
-                  "oppose": 0.44, "thumb_roll": -20.8},
+WRAP = {"staff": {"bends": {"index": (55.1, 76.6, 60.0), "middle": (56.8, 72.2, 60.0), "ring": (51.8, 73.5, 50.7), "pinky": (41.7, 73.3, 60.3), "thumb": (25.5, -5.3, 39.8)}, "spreads": {"index": -9.9, "middle": -12.4, "ring": -8.2, "pinky": 1.3},
+                  "oppose": -0.00, "thumb_roll": 12.7},
         # The one-handed blade (WeaponSockets.BladeAtR / BladeDirR), refitted 14 October (fistfit.py --fit) on her 0.93
         # hand (080103ba) and the chevalier sword's grip thinned to 14.3-15.0 mm round (tools/assets/grip_thin.py; was
         # 16-18.5), in the diagonal grip GRIP["sword"] keys: the forefinger's knuckle 10 deg open, each finger closing
@@ -1014,8 +1019,8 @@ WRAP = {"staff": {"bends": {"index": (53.0, 52.8, 36.1), "middle": (43.1, 67.4, 
         # ends come 146-211 deg round where a fist needs about 225-235 (fistfit WRAP_MIN 180). The bones run at about
         # mid-thickness (pads 6.5-9 mm under them), not high in the finger as round 4 thought. Not passable on this
         # hand: waits on the body build's knuckle and end-joint move (fistfit --hand models it).
-        "sword": {"bends": {"index": (-10.1, 75.8, 58.7), "middle": (45.1, 48.9, 60.7), "ring": (56.4, 34.7, 60.9), "pinky": (52.5, 39.7, 60.5), "thumb": (6.7, -6.8, 9.7)}, "spreads": {"index": -24.3, "middle": -6.6, "ring": 11.2, "pinky": 30.8},
-                  "oppose": 1.00, "thumb_roll": -25.4}}
+        "sword": {"bends": {"index": (34.0, 92.0, 59.0), "middle": (58.0, 82.0, 45.0), "ring": (68.5, 69.5, 60.2), "pinky": (68.1, 65.3, 60.2), "thumb": (0.0, -6.1, 89.3)}, "spreads": {"index": -10.0, "middle": -2.0, "ring": 9.1, "pinky": 11.7},
+                  "oppose": 0.63, "thumb_roll": -0.0}}
 
 
 def spread_axis(rig, j):

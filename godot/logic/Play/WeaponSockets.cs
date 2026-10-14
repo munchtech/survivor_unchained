@@ -73,7 +73,7 @@ public static class WeaponSockets
     /// (13.65 mm round the line), the thumb over the forefinger. (The old pocket, -39, 58, 2 mm, lay at the thumb's root,
     /// 40 mm off the palm and 30-50 mm off the pads: the shaft ran beside the fist, not through it.) An anchored piece's
     /// grip point and shaft are laid on it.</summary>
-    public static readonly Vector3 FistAtR = new(-0.0308f, 0.1188f, -0.0104f);
+    public static readonly Vector3 FistAtR = new(-0.0399f, 0.0948f, -0.0104f);
     public static readonly Vector3 FistDirR = Vector3.Normalize(new Vector3(-0.0863f, 0.1138f, 0.9898f));
 
     /// <summary>The line her right fist closes round on a one-handed blade (tools/anim/keyed.py WRAP["sword"]), in hand_r's
@@ -86,7 +86,7 @@ public static class WeaponSockets
     /// outer pads lie on it (0.3-1.0 mm out), the thumb over the middle finger; the hand spans 76 mm of the 125, its
     /// forefinger 15 mm short of the ferrule and its little finger 13 mm clear of the pommel's collar. (The old seat, the
     /// grip point at the mount, -25, 75, 0 mm, ran the hilt through the lower palm, the fingers 20-34 mm off it.)</summary>
-    public static readonly Vector3 BladeAtR = new(-0.0367f, 0.1178f, -0.0131f);
+    public static readonly Vector3 BladeAtR = new(-0.0381f, 0.0808f, -0.0131f);
     public static readonly Vector3 BladeDirR = new(0f, 0.57357644f, 0.81915204f);
 
     /// <summary>The fitted pocket of her right fist for a kind of piece, or none (that kind keeps the plain mount): the

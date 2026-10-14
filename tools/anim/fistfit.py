@@ -749,7 +749,7 @@ def relaxed(clip="idle_warden_town", frame=30, outfit="warden"):
     the thumb's last bone's skin to the forefinger's skin (mm; the lead's 3..9)."""
     _, rot, pos = load(CLIPS / f"{clip}.json"); h = Hand(rot[frame], pos[frame], outfit)
     p = keyed.FINGER_PRESETS["relaxed"]
-    rf = h.rotf(keyed.finger_curl("relaxed"), p.get("oppose", 0), p.get("thumb_roll", 0), None, p.get("thumb_in", 0))
+    rf = h.rotf(keyed.finger_curl("relaxed"), p.get("oppose", 0), p.get("thumb_roll", 0), p.get("spreads"), p.get("thumb_in", 0))
     X = h.pose(rf); J = h.joints(rf)
     line = lambda fn: [J[f"{fn}_0{k}_r"] for k in (1, 2, 3)] + [J[f"{fn}_04_leaf_r"]]
     out = {"pairs": {}}

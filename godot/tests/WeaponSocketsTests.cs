@@ -97,11 +97,11 @@ public class WeaponSocketsTests
     public void TheFistsPocketIsTheHollowItsFingersCloseRound()
     {
         // In hand_r's space (+Y along the fingers, +Z the thumb's side, the palm toward -X): the pocket lies under the
-        // knuckles (her knuckles are 120-139 mm from the wrist), the leather's 13.65 mm plus the glove off the palm
-        // (-X), not at the thumb's root (58 mm); the shaft square to the fingers within a few degrees.
+        // knuckles (on the body build F0 her knuckle pivots are 100-105 mm from the wrist), the leather's 13.65 mm plus
+        // the glove off the palm (-X), not at the thumb's root (31 mm); the shaft square to the fingers within a few degrees.
         var at = WeaponSockets.FistAtR;
-        Assert.InRange(at.Y, 0.105f, 0.130f);
-        Assert.InRange(at.X, -0.040f, -0.025f);
+        Assert.InRange(at.Y, 0.085f, 0.105f);
+        Assert.InRange(at.X, -0.045f, -0.025f);
         Assert.InRange(at.Z, -0.020f, 0.0f);
         var dir = WeaponSockets.FistDirR;
         Assert.InRange((double)dir.Length(), 0.99999, 1.00001);
