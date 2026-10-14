@@ -41,16 +41,15 @@ public sealed partial class Battle
     /* -------------------------------------------------------------- The Long Cut -- */
 
     /// <summary>The sweep (everything in reach), the cleave (the line along her aim; a boss in it is Sundered), and with
-    /// Second Cut a counter-sweep (a boss takes "secondBoss" of it; the crowd all of it). Line of Morning leaves the line
-    /// burning (a boss takes the fires at "bossMul", as it takes the blows); Through the Wall runs it 36 m.</summary>
+    /// Second Cut a counter-sweep. Line of Morning leaves the line burning; Through the Wall runs it 36 m. A boss takes
+    /// every part whole: no Flare hits a boss for less than it says (the owner, 13 October).</summary>
     void LongCutBlow(FlareDef f, bool last)
     {
         var p = Player;
         bool cleave = flareBlow == 2;
         if (!cleave)
         {
-            double counter = flareBlow > 2 ? f.Arg("secondBoss", 1) : 1;
-            ForEachHostileInRadius(p.X, p.Z, flareReach, (e, d) => FlareHit(e, f.Arg("sweep", 1.5) * (e.Boss ? counter : 1), f.School, 1.0, p.X, p.Z));
+            ForEachHostileInRadius(p.X, p.Z, flareReach, (e, d) => FlareHit(e, f.Arg("sweep", 1.5), f.School, 1.0, p.X, p.Z));
             FlareBlowEvent(f, "sweep", last, p.X, p.Z, null, flareReach, hitstop: (int)f.BeatAt("hitstop", 3));
             return;
         }
@@ -77,7 +76,6 @@ public sealed partial class Battle
                 {
                     z.Credit = "flare";
                     z.Tags = f.Tags;
-                    z.BossMul = f.Arg("bossMul", 1);
                 }
             LineEvent(f, "burnline", false, p.X, p.Z, flareAngle, len, half, null, 0);
         }

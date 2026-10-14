@@ -76,8 +76,6 @@ public sealed partial class Battle
         double dx = e.X - fromX, dz = e.Z - fromZ, d = Len(dx, dz);
         if (d < 1e-6) { dx = 1; dz = 0; d = 1; }
         if (e.Boss && !flareStruckBoss) { flareStruckBoss = true; FlareCastsOnBoss++; }
-        // A staged Flare's measure on a boss ("bossMul"): its blows can gather on a boss as the plain form's never did.
-        if (e.Boss) share *= Flare!.Arg("bossMul", 1);
         return HitEnemy(e, flarePower * share, school, Flare!.Tags, new HitOpts { Credit = "flare", BossDamage = vsBig, Knockback = e.Boss ? 0 : knockback, DirX = dx / d, DirZ = dz / d });
     }
 

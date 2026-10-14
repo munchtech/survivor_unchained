@@ -16,7 +16,7 @@ EARLY = {"kindler.burns_twice.more_embers", "bulwark.bell_of_the_morning.bell_fo
 # power: each blow's damage at level 1. A Strike's blows land over its length; a Stand pulses `blows` a second.
 flare("the_long_cut", "The Long Cut", "warden", "sunderer", "strike", 0.8, 12, 2, 1380, "holy", ["melee", "area", "heavy", "holy"], "A sweep of dawn 12 m round, then a cleave down a 24 m line.",
       beat={"key": 0.2, "first": 0.3, "cleave": 0.55, "second": 0.85, "hitstop": 3, "hitstopCleave": 8, "shake": 0.8},
-      args={"sweep": 1.5, "cleave": 1.5, "line": 24, "lineWidth": 1.5, "sunder": 0.3, "sunderSeconds": 8, "bossMul": 0.6,
+      args={"sweep": 1.5, "cleave": 1.5, "line": 24, "lineWidth": 1.5, "sunder": 0.3, "sunderSeconds": 8, 
             "wall": 36, "sunderWall": 0.4, "burn": 0.25, "burnSeconds": 4})
 flare("dawn_in_the_steel", "Dawn in the Steel", "warden", "sunderer", "stand", 6, 10, 2, 345, "holy", ["melee", "area", "heavy", "holy"], "For 6 s the blade burns with morning: faster swings, crescents of light, every heavy blow staggers.")
 flare("bell_of_the_morning", "Bell of the Morning", "warden", "bulwark", "strike", 0.9, 14, 3, 920, "holy", ["area", "holy", "shield"], "Three tolls on the shield: each stuns and sears everything near, and mends you 4%. The last is a holy blast 8 m round.",
@@ -26,31 +26,31 @@ flare("sixty_on_the_wall", "Sixty on the Wall", "warden", "bulwark", "stand", 6,
 flare("the_butchers_bill", "The Butcher's Bill", "reaver", "butcher", "strike", 1.2, 10, 6, 520, "physical", ["melee", "steel", "physical", "twin"], "A leap on the strongest near you, and a chop for each tenth of health you're missing (at least four): each mends 2%.",
       beat={"key": 0.2, "leap": 0.2, "first": 0.45, "step": 0.06, "lastGap": 0.12, "hitstop": 2, "hitstopLast": 7},
       args={"chop": 1.5, "lastChop": 1.5, "minChops": 4, "maxChops": 10, "mend": 0.02, "splash": 2, "bleed": 0.4, "bleedSeconds": 3, "vault": 6,
-            "emptyLeap": 6, "bossMul": 0.5, "wide": 0.6, "feast": 0.1})
+            "emptyLeap": 6, "wide": 0.6, "feast": 0.1})
 flare("butchers_hour", "Butcher's Hour", "reaver", "butcher", "stand", 8, 4, 0, 290, "physical", ["melee", "steel", "physical", "twin"], "For 8 s: Frenzy full, blows twice as fast, every blow deepens the bleed, ordinary things below 15% die, and each kill adds 0.3 s (up to 8 s more) and mends 1%.",
       beat={"key": 0.3, "hitstop": 1, "hitstopExecute": 4},
       args={"faster": 2, "bleed": 0.8, "bleedSeconds": 3, "deepen": 1, "execute": 0.15, "extend": 0.3, "extendCap": 8, "overtime": 0.6, "overtimeCap": 12, "mend": 0.01, "mistRadius": 5, "flee": 1.5})
 flare("drag_them_under", "Drag Them Under", "reaver", "chainbound", "strike", 0.8, 14, 2, 1590, "physical", ["melee", "physical", "area", "hook"], "Hooks bite everything within 14 m and haul it into one knot at your feet for the slam.",
       beat={"key": 0.2, "first": 0.35, "knot": 0.65, "slam": 0.77, "grindFirst": 0.7, "grindLast": 0.86, "slamGrinder": 0.95, "hitstop": 2, "hitstopLast": 8},
       args={"hook": 0.5, "slam": 1.75, "hooks": 0, "slamRadius": 4, "knotAhead": 1.5, "knotSpread": 1.2, "stun": 1, "bossStun": 1.5, "bossDrag": 3,
-            "bossMul": 1.0, "deeper": 1.5, "grinds": 3, "grind": 0.25, "hold": 3, "emptyHooks": 8})
+            "deeper": 1.5, "grinds": 3, "grind": 0.25, "hold": 3, "emptyHooks": 8})
 flare("storm_on_the_chain", "Storm on the Chain", "reaver", "chainbound", "stand", 5, 8, 2, 400, "storm", ["melee", "storm", "area", "hook"], "For 5 s the chain sweeps 8 m out, and the sky strikes down it.")
 flare("burns_twice", "Burns Twice", "arcanist", "kindler", "strike", 1.1, 14, 12, 1160, "fire", ["spell", "fire", "frost", "area"], "Frost races under every pack near, then twelve embers fall on the frozen ground, and each shatters what is frozen round it.",
       beat={"key": 0.15, "frost": 0.3, "first": 0.55, "last": 1.05, "aim": 0.2, "hitstop": 2, "hitstopFrost": 3, "hitstopLast": 6},
-      args={"frost": 0.3, "freeze": 2, "chill": 3, "ember": 0.675, "shatter": 1.0, "emberRadius": 2.5, "onBoss": 4, "bossMul": 1.0, "moreEmbers": 18, "blackIce": 0.5, "shove": 3, "shoveStun": 0.5, "shoveStagger": 0.15})
+      args={"frost": 0.3, "freeze": 2, "chill": 3, "ember": 0.675, "shatter": 1.0, "emberRadius": 2.5, "onBoss": 4, "moreEmbers": 18, "blackIce": 0.5, "shove": 3, "shoveStun": 0.5, "shoveStagger": 0.15})
 flare("hard_winter", "Hard Winter", "arcanist", "kindler", "stand", 6, 12, 1, 345, "frost", ["spell", "frost", "area", "zone"], "For 6 s the ford's cold: everything near slows and freezes, and the thaw bursts.")
 flare("the_branding", "The Branding", "arcanist", "moonweaver", "strike", 1.1, 14, 2, 2100, "arcane", ["spell", "arcane", "area"], "Every enemy near is branded; the brands burst outward, each death passing a mark.",
       beat={"key": 0.15, "first": 0.45, "burstFirst": 0.75, "burstLast": 1.0, "bossBurst": 1.1, "hop": 0.1, "second": 1.0, "hitstop": 2, "hitstopLast": 6, "hitstopEye": 1},
-      args={"markSeconds": 4, "burst": 1.5, "splash": 0.35, "burstRadius": 2, "bossBurst": 1.5, "bossRadius": 3, "bossMul": 1.0, "pass": 0.75, "passRange": 6, "passMax": 24,
+      args={"markSeconds": 4, "burst": 1.5, "splash": 0.35, "burstRadius": 2, "bossBurst": 1.5, "bossRadius": 3, "pass": 0.75, "passRange": 6, "passMax": 24,
             "deep": 1.5, "secondShare": 0.6, "eye": 0.25, "eyeSeconds": 6, "eyeRange": 8, "eyeMax": 10, "emptyRings": 3})
 flare("the_drowned_moon", "The Drowned Moon", "arcanist", "moonweaver", "stand", 6, 5, 3, 255, "arcane", ["spell", "arcane", "projectile", "zone"], "For 6 s a pool of moonlight follows you and looses motes.")
 flare("the_roads_toll", "The Road's Toll", "stalker", "roadknife", "strike", 1.2, 12, 12, 2100, "physical", ["melee", "steel", "physical", "twin"], "Gone in smoke: twelve cuts in 1.2 s on the strongest near, each poisoned, and anything below 25% dies. On a boss, the last four.",
       beat={"key": 0.24, "first": 0.24, "last": 1.12, "hitstop": 1, "hitstopLast": 6},
-      args={"poison": 0.5, "poisonSeconds": 4, "execute": 0.25, "lastCut": 0.4, "onBoss": 4, "bossMul": 0.25, "doubled": 18, "gone": 3, "emptyFan": 0.45, "emptyRadius": 1.5})
+      args={"poison": 0.5, "poisonSeconds": 4, "execute": 0.25, "lastCut": 0.4, "onBoss": 4, "doubled": 18, "gone": 3, "emptyFan": 0.45, "emptyRadius": 1.5})
 flare("through_and_through", "Through and Through", "stalker", "roadknife", "stand", 6, 3, 2, 290, "physical", ["melee", "steel", "physical"], "For 6 s your dashes are free and endless, and every one cuts.")
 flare("one_arrow", "One Arrow", "stalker", "verge_hunter", "strike", 0.9, 30, 1, 2990, "physical", ["projectile", "ranged", "physical"], "One arrow down a 30 m line, splitting three times on the toughest.",
       beat={"key": 0.35, "first": 0.4, "splitFirst": 0.45, "splitLast": 0.55, "follow": 0.3, "hitstop": 7, "hitstopSplit": 1, "hitstopLast": 3},
-      args={"arrow": 1.0, "line": 30, "lineWidth": 1.2, "execute": 0.3, "bossCrit": 2, "bossMul": 0.45, "splits": 3, "splitMore": 6,
+      args={"arrow": 1.0, "line": 30, "lineWidth": 1.2, "execute": 0.3, "bossCrit": 2, "splits": 3, "splitMore": 6,
             "splitAngle": 0.4, "splitLength": 12, "splitWidth": 0.8, "split": 0.6, "pinned": 2, "heart": 0.6, "heartFan": 0.7, "heartFrom": 4})
 flare("pinning_rain", "Pinning Rain", "stalker", "verge_hunter", "stand", 5, 6, 3, 205, "physical", ["projectile", "ranged", "physical", "area"], "For 5 s arrows rain on ground 12 m across, rooting what they strike.")
 

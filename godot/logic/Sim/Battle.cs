@@ -2131,7 +2131,7 @@ public sealed partial class Battle
         var weapon = WeaponById(z.Weapon);
         ForEachHostileInRadius(z.X, z.Z, z.Radius, (e, _) =>
         {
-            HitEnemy(e, z.Dps * z.Tick * (e.Boss ? z.BossMul : 1), z.School, z.Tags, new HitOpts { Weapon = weapon, Status = z.Status, BossDamage = z.BossDamage, Credit = z.Credit });
+            HitEnemy(e, z.Dps * z.Tick, z.School, z.Tags, new HitOpts { Weapon = weapon, Status = z.Status, BossDamage = z.BossDamage, Credit = z.Credit });
             if (z.Art == "cinder" && e.State == EnemyState.Dying && Has("pyre_walker")) HealPlayer(MaxHp * 0.015, "pyre-walker", true);
             if (z.Art == "snare_hold" && e.Alive && Art.Struck.Add(e.Id)) ApplyStatus(e, new StatusPayload(StatusKind.Stun, 1, 1, e.Boss ? 0.3 : 1.5), 0);
             if (z.Slow > 0)
