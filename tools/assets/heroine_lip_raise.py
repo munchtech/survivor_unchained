@@ -56,8 +56,10 @@ SMOOTH = (31, 12)   # (the old red top's height across her mouth: a median, then
 K = {"own": "border", "highborn": 1.6, "vixen": 1.7, "doe": 1.2, "sunborn": 1.5, "moonlit": 1.2, "saffron": 1.3,
      "wildling": 1.55, "hardwon": 1.45, "fey": 1.7}
 # (the lips_lower each face was shot with, for its lower lip about 15% fuller: for looks.json, not used here)
-LIPS_LOWER = {"own": 0.7, "highborn": 0.65, "vixen": 0.75, "doe": 1.0, "sunborn": 0.65, "moonlit": 0.45, "saffron": 1.0,
-              "wildling": 0.5, "hardwon": 0.6, "fey": 0.6}
+LIPS_LOWER = {"own": 0.7, "highborn": 0.65, "vixen": 0.75, "doe": 1.0, "sunborn": 0.65, "moonlit": 0.45, "saffron": 0.5,
+              "wildling": 0.5, "hardwon": 0.3, "fey": 0.6}
+# (face lead 23, 14 Oct: Saffron 1.0 -> 0.5 and Hard-won 0.6 -> 0.3, judge j2's ratio trims, on the body-pass build with rmeas2.py,
+#  the sharpest skin-to-lip brightness fall over a 13-column median: Saffron 1.94 -> 1.55, Hard-won 1.71 -> 1.57)
 LUMA = np.array([0.2126, 0.7152, 0.0722])
 
 
