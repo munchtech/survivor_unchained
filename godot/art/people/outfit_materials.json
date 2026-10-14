@@ -83,6 +83,14 @@
   "kind": "gloss",
   "repeats": 10
  },
+ "glovesatin": {
+  "kind": "gloss",
+  "repeats": 40
+ },
+ "gloveblack": {
+  "kind": "gloss",
+  "repeats": 40
+ },
  "amethyst": {
   "kind": "gloss",
   "repeats": 10
