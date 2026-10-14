@@ -89,6 +89,19 @@ CORNER_NZ = float(os.environ.get("SMILE_CORNER_NZ", "-1.1"))   # (points whose r
 CARRY_KEYS = tuple(k for k in os.environ.get("SMILE_CARRY_KEYS", "frown").split(",") if k)
 CARRY_H = tuple(float(v) / 1000 for v in os.environ.get("SMILE_CARRY_H_MM", "1.5,4").split(","))
 CARRY_DEPTH = tuple(float(v) / 1000 for v in os.environ.get("SMILE_CARRY_DEPTH_MM", "14,22").split(","))
+# (her laugh's corner pocket (pocket_fit): smile_hold's normals by each mouth corner made so that in her laugh (SMO) her
+# blended normals are her posed face's own, as the mean over FACES of what each lacks; eased in by rest place about
+# POCKET_C (mm off her mouth's middle, over her lips' line), POCKET_R its reach (full inside half of it, none outside);
+# her mouth's inside (vertex colour alpha under POCKET_ALPHA) left as it was. smile_hold is smile x mouth_open, so it is
+# none in her smile alone or her mouth open alone, half at mouth_open .3. OFF (solver pocket2, 14 October 2026): in the
+# screen proxy (the Look's camera, Godot's shots' shade fitted on her blended normals) it eases the notch on every face
+# (own L p5 .57 -> .32, highborn .56 -> .33, moonlit .73 -> .49) but leaves Saffron's and Sunborn's (.74/.71 -> .64/.67)
+# and their commas over .2: the notch's points are her rest commissure's skin (22-24 mm out, -2..+1 mm), and her posed
+# face's own normals sharpen the crease above it (comma2 up on all ten), so this alone can't pass)
+POCKET_ON = os.environ.get("SMILE_POCKET", "0") == "1"
+POCKET_C = tuple(float(v) / 1000 for v in os.environ.get("SMILE_POCKET_C_MM", "23,0").split(","))
+POCKET_R = tuple(float(v) / 1000 for v in os.environ.get("SMILE_POCKET_R_MM", "9,8").split(","))
+POCKET_ALPHA = 0.98
 
 
 def _weld(P):
@@ -242,6 +255,31 @@ def corner_fit(js, binc, hp, names, normals, eased, Vw, Nw, Tw, inv, first, n, l
     return smooth_on(dN, Tw, inv, n, w > 0, w, CORNER_PASSES), int((w > 0.5).sum())
 
 
+def pocket_fit(js, binc, hp, names, normals, eased, Vw, Tw, inv, first, line, mid):
+    """smile_hold's normals (per exported point) by her mouth's corners, made so that her laugh (SMO, every key at its
+    weight there) shows her posed face's own normals, as the mean over FACES of what each lacks (Godot adds the keys'
+    normal deltas and renormalises), eased in about POCKET_C (POCKET_R); her mouth's inside left as it was."""
+    rd = lambda k, a="POSITION": hs._read(js, binc, hp["targets"][names.index(k)][a])
+    N0 = hs._read(js, binc, hp["attributes"]["NORMAL"])
+    col = hs._read(js, binc, hp["attributes"]["COLOR_0"])
+    col = col / (65535.0 if col.max() > 255 else 255.0) if col.max() > 1.5 else col
+    ax, dy = np.abs(Vw[:, 0] - mid), Vw[:, 1] - line
+    r = np.hypot((ax - POCKET_C[0]) / POCKET_R[0], (dy - POCKET_C[1]) / POCKET_R[1])
+    w = (1 - hmo._s01((r - 0.5) / 0.5))[inv] * (col[:, 3] > POCKET_ALPHA)
+    acc = np.zeros_like(N0)
+    for f in FACES:
+        Pf, Bf = Vw.copy(), N0.copy()
+        if f != "own":
+            Pf, Bf = Pf + rd("face_" + f)[first], Bf + rd("face_" + f, "NORMAL")
+        for k, v in SMO.items():
+            Pf = Pf + v * eased[k][1]
+            Bf = Bf + v * normals[k]
+        G = vnormals(Pf, Tw)[inv]
+        acc += G * np.linalg.norm(Bf, axis=1)[:, None] - Bf
+    dN = normals["smile_hold"] + w[:, None] * acc / len(FACES) / SMO["smile_hold"]
+    return dN, int((w > 0.5).sum())
+
+
 def harmonic(V, T, D, band):
     """D on the band's points replaced by the smoothest field that meets D round it (each band point the
     cotangent-weighted mean of its neighbours')."""
@@ -349,6 +387,10 @@ def ease(js, binc, chunks, hm, hp, keys=KEYS):
         normals["smile_open"], cornered = corner_fit(js, binc, hp, names, normals, eased, Vw, Nw, Tw, inv, first, n, line, mid)
         hs._set(js, chunks, tgts["smile_open"]["NORMAL"], normals["smile_open"])
         carried["corners"] = cornered
+    # (then her laugh's corner pocket, on every other key's normals as written)
+    if POCKET_ON and "smile_hold" in normals:
+        normals["smile_hold"], carried["pocket"] = pocket_fit(js, binc, hp, names, normals, eased, Vw, Tw, inv, first, line, mid)
+        hs._set(js, chunks, tgts["smile_hold"]["NORMAL"], normals["smile_hold"])
     hm.setdefault("extras", {})["smile_lip"] = {"band_mm": [B_LO * 1000, B_HI * 1000], "points": int(band.sum()),
                                                 "most_mm": done, "inner_carried": carried}
     print("SMILE_LIP: %s eased across her upper lip's border on %d points (moved at most %s mm; lower lip's inside carried %s); the border %.1f..%.1f mm "
