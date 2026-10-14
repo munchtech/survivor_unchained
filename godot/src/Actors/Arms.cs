@@ -130,6 +130,7 @@ public static class Arms
         holder.SetMeta("sheath", aSheath is { } sa ? turn * (sa.Origin - centre) * k + inner.Position : Vector3.Zero);
         holder.SetMeta("tip", inner.Position.Y + spec.Length / 2);
         holder.SetMeta("kind", (int)(tag != WeaponKind.None ? tag : spec.Kind));
+        if (aGrip != null) holder.SetMeta("anchored", true);
         return holder;
     }
 
@@ -197,9 +198,24 @@ public static class Arms
         att.AddChild(mount);
         mount.Transform = MountTransform(id, bone, person.Own != null);
         var w = Make(id);
-        w.Transform = PieceTransform(id);
+        w.Transform = Seat(w, id, bone);
         mount.AddChild(w);
         return mount;
+    }
+
+    /// <summary>A held piece's place inside its mount (Hold's and ArmsDump's): PieceTransform, and for a piece with an
+    /// anchor_grip in her right hand the fist's seat (WeaponSockets.FistSeat): its grip point on the fist's pocket and its
+    /// shaft along the fist's line, so the anchor rule stays "origin on the shaft where the fist grips, -Y down the shaft".
+    /// Not for a pistol-held piece (its stock sits on the fist) or the forearm. hand_l: its pocket isn't measured yet (the
+    /// left mount isn't mirrored either), so a left-hand piece keeps the plain mount.</summary>
+    public static Transform3D Seat(Node3D piece, string id, string bone)
+    {
+        var t = PieceTransform(id);
+        if (bone != "hand_r" || All[id].Pistol || !piece.HasMeta("anchored")) return t;
+        var m0 = MountTransform(id, bone, false);
+        static System.Numerics.Vector3 N(Vector3 v) => new(v.X, v.Y, v.Z);
+        var (q, at) = WeaponSockets.FistSeat(N(m0.Basis.X), N(m0.Basis.Y), N(m0.Basis.Z), N(m0.Origin));
+        return new Transform3D(new Basis(new Quaternion(q.X, q.Y, q.Z, q.W)), new Vector3(at.X, at.Y, at.Z)) * t;
     }
 
     /// <summary>Where the mount sits in its bone's space (Hold's, and
