@@ -739,6 +739,7 @@ public sealed partial class Battle
         if (s.Has(StatusKind.Sear) && school == School.Holy) dmg *= 1.3;
         if (s.Has(StatusKind.Bound) && tags.Has(Tag.Area)) dmg *= 1 + BoundArea;
         if (s.Has(StatusKind.Shock) && !o.Dot) { dmg *= 1.35 + st.Get(Stat.ShockBonus); if (!Boons.ContainsKey("static_charge")) s.Remove(StatusKind.Shock); }
+        if (e.SunderUntil > Time) dmg *= 1 + e.Sunder;
         dmg *= e.TakenMul;
         dmg *= LampDamageMul(e, school, tags, o);
         dmg *= ReaverDamageMul(e, school, tags, o);
@@ -1543,6 +1544,7 @@ public sealed partial class Battle
         e.HomeX = o.Home?.X ?? x; e.HomeZ = o.Home?.Z ?? z; e.Leash = o.Home?.Leash ?? 0;
         e.LastWeapon = null;
         e.TakenMul = 1;
+        e.SunderUntil = e.Sunder = 0;
         e.LungeX = e.LungeZ = 0;
         e.Decoy = e.Prey = false;
         e.ThawT = 0;
@@ -2129,7 +2131,7 @@ public sealed partial class Battle
         var weapon = WeaponById(z.Weapon);
         ForEachHostileInRadius(z.X, z.Z, z.Radius, (e, _) =>
         {
-            HitEnemy(e, z.Dps * z.Tick, z.School, z.Tags, new HitOpts { Weapon = weapon, Status = z.Status, BossDamage = z.BossDamage, Credit = z.Credit });
+            HitEnemy(e, z.Dps * z.Tick * (e.Boss ? z.BossMul : 1), z.School, z.Tags, new HitOpts { Weapon = weapon, Status = z.Status, BossDamage = z.BossDamage, Credit = z.Credit });
             if (z.Art == "cinder" && e.State == EnemyState.Dying && Has("pyre_walker")) HealPlayer(MaxHp * 0.015, "pyre-walker", true);
             if (z.Art == "snare_hold" && e.Alive && Art.Struck.Add(e.Id)) ApplyStatus(e, new StatusPayload(StatusKind.Stun, 1, 1, e.Boss ? 0.3 : 1.5), 0);
             if (z.Slow > 0)

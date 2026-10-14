@@ -54,6 +54,8 @@ Each lead restarts from its handoff. The worktrees are kept, so brief successors
 
 ### Queued
 
+- **Classes, phase 7 (13 Oct evening):** classes-11 merged (1a6f7ae0). The never-press misses (the Long Cut +7.6%, One Arrow +3.5% against pre-Flare; their types' own, plain too) are phase 7's. The owner's answer on single-target Flares (OWNER_NOTES 13 Oct evening) sets the Bill's and One Arrow's bossMul next. Handoff docs/handoff/classes.md on integration; scratch in 59a43b82 cl11.
+
 - The smile pass (face).
 - The weapon remaster (below).
 - The grip-fist system: fingers wrap to each grip's diameter (see the animation status page).

@@ -137,7 +137,29 @@
     "heavy",
     "holy"
    ],
-   "text": "A sweep of dawn 12 m round, then a cleave down a 24 m line."
+   "text": "A sweep of dawn 12 m round, then a cleave down a 24 m line.",
+   "beat": {
+    "key": 0.2,
+    "first": 0.3,
+    "cleave": 0.55,
+    "second": 0.85,
+    "hitstop": 3,
+    "hitstopCleave": 8,
+    "shake": 0.8
+   },
+   "args": {
+    "sweep": 1.5,
+    "cleave": 1.5,
+    "line": 24,
+    "lineWidth": 1.5,
+    "sunder": 0.3,
+    "sunderSeconds": 8,
+    "bossMul": 0.6,
+    "wall": 36,
+    "sunderWall": 0.4,
+    "burn": 0.25,
+    "burnSeconds": 4
+   }
   },
   {
    "id": "dawn_in_the_steel",
@@ -230,7 +252,31 @@
     "physical",
     "twin"
    ],
-   "text": "A leap on the strongest near you, and a chop for each tenth of health you're missing."
+   "text": "A leap on the strongest near you, and a chop for each tenth of health you're missing (at least four): each mends 2%.",
+   "beat": {
+    "key": 0.2,
+    "leap": 0.2,
+    "first": 0.45,
+    "step": 0.06,
+    "lastGap": 0.12,
+    "hitstop": 2,
+    "hitstopLast": 7
+   },
+   "args": {
+    "chop": 1.5,
+    "lastChop": 1.5,
+    "minChops": 4,
+    "maxChops": 10,
+    "mend": 0.02,
+    "splash": 2,
+    "bleed": 0.4,
+    "bleedSeconds": 3,
+    "vault": 6,
+    "emptyLeap": 6,
+    "bossMul": 0.5,
+    "wide": 0.6,
+    "feast": 0.1
+   }
   },
   {
    "id": "butchers_hour",
@@ -287,7 +333,35 @@
     "area",
     "hook"
    ],
-   "text": "Hooks bite everything within 14 m and haul them into one knot for the slam."
+   "text": "Hooks bite everything within 14 m and haul it into one knot at your feet for the slam.",
+   "beat": {
+    "key": 0.2,
+    "first": 0.35,
+    "knot": 0.65,
+    "slam": 0.77,
+    "grindFirst": 0.7,
+    "grindLast": 0.86,
+    "slamGrinder": 0.95,
+    "hitstop": 2,
+    "hitstopLast": 8
+   },
+   "args": {
+    "hook": 0.5,
+    "slam": 1.75,
+    "hooks": 0,
+    "slamRadius": 4,
+    "knotAhead": 1.5,
+    "knotSpread": 1.2,
+    "stun": 1,
+    "bossStun": 1.5,
+    "bossDrag": 3,
+    "bossMul": 1.0,
+    "deeper": 1.5,
+    "grinds": 3,
+    "grind": 0.25,
+    "hold": 3,
+    "emptyHooks": 8
+   }
   },
   {
    "id": "storm_on_the_chain",
@@ -377,7 +451,7 @@
    "calling": "arcanist",
    "road": "moonweaver",
    "kind": "strike",
-   "length": 1.0,
+   "length": 1.1,
    "radius": 14,
    "blows": 2,
    "power": 2100,
@@ -387,7 +461,38 @@
     "arcane",
     "area"
    ],
-   "text": "Every enemy near is branded; the brands burst outward, each death passing a mark."
+   "text": "Every enemy near is branded; the brands burst outward, each death passing a mark.",
+   "beat": {
+    "key": 0.15,
+    "first": 0.45,
+    "burstFirst": 0.75,
+    "burstLast": 1.0,
+    "bossBurst": 1.1,
+    "hop": 0.1,
+    "second": 1.0,
+    "hitstop": 2,
+    "hitstopLast": 6,
+    "hitstopEye": 1
+   },
+   "args": {
+    "markSeconds": 4,
+    "burst": 1.5,
+    "splash": 0.35,
+    "burstRadius": 2,
+    "bossBurst": 1.5,
+    "bossRadius": 3,
+    "bossMul": 1.0,
+    "pass": 0.75,
+    "passRange": 6,
+    "passMax": 24,
+    "deep": 1.5,
+    "secondShare": 0.6,
+    "eye": 0.25,
+    "eyeSeconds": 6,
+    "eyeRange": 8,
+    "eyeMax": 10,
+    "emptyRings": 3
+   }
   },
   {
    "id": "the_drowned_moon",
@@ -480,7 +585,35 @@
     "ranged",
     "physical"
    ],
-   "text": "One arrow down a 30 m line, splitting three times on the toughest."
+   "text": "One arrow down a 30 m line, splitting three times on the toughest.",
+   "beat": {
+    "key": 0.35,
+    "first": 0.4,
+    "splitFirst": 0.45,
+    "splitLast": 0.55,
+    "follow": 0.3,
+    "hitstop": 7,
+    "hitstopSplit": 1,
+    "hitstopLast": 3
+   },
+   "args": {
+    "arrow": 1.0,
+    "line": 30,
+    "lineWidth": 1.2,
+    "execute": 0.3,
+    "bossCrit": 2,
+    "bossMul": 0.45,
+    "splits": 3,
+    "splitMore": 6,
+    "splitAngle": 0.4,
+    "splitLength": 12,
+    "splitWidth": 0.8,
+    "split": 0.6,
+    "pinned": 2,
+    "heart": 0.6,
+    "heartFan": 0.7,
+    "heartFrom": 4
+   }
   },
   {
    "id": "pinning_rain",
@@ -1388,7 +1521,7 @@
      "do": "flareMod",
      "flare": "the_long_cut",
      "rule": "long_cut.second_cut",
-     "phase": 6
+     "phase": 2
     }
    ]
   },
@@ -1409,7 +1542,7 @@
      "do": "flareMod",
      "flare": "the_long_cut",
      "rule": "long_cut.line_of_morning",
-     "phase": 6
+     "phase": 2
     }
    ]
   },
@@ -1424,13 +1557,14 @@
     "sunderer.the_long_cut"
    ],
    "gate": 3,
+   "early": true,
    "text": "The line runs 36 m, and Sundered is 40% weaker armor on bosses.",
    "effects": [
     {
      "do": "flareMod",
      "flare": "the_long_cut",
      "rule": "long_cut.through_the_wall",
-     "phase": 6
+     "phase": 2
     }
    ]
   },
@@ -3227,7 +3361,7 @@
      "do": "flareMod",
      "flare": "the_butchers_bill",
      "rule": "bill.running_tab",
-     "phase": 6
+     "phase": 2
     }
    ]
   },
@@ -3242,13 +3376,14 @@
     "butcher.the_butchers_bill"
    ],
    "gate": 3,
+   "early": true,
    "text": "Each chop strikes everything 2 m round.",
    "effects": [
     {
      "do": "flareMod",
      "flare": "the_butchers_bill",
      "rule": "bill.wide_chops",
-     "phase": 6
+     "phase": 2
     }
    ]
   },
@@ -3269,7 +3404,7 @@
      "do": "flareMod",
      "flare": "the_butchers_bill",
      "rule": "bill.feast",
-     "phase": 6
+     "phase": 2
     }
    ]
   },
@@ -3943,7 +4078,7 @@
      "do": "flareMod",
      "flare": "drag_them_under",
      "rule": "drag.deeper",
-     "phase": 6
+     "phase": 2
     }
    ]
   },
@@ -3964,7 +4099,7 @@
      "do": "flareMod",
      "flare": "drag_them_under",
      "rule": "drag.grinder",
-     "phase": 6
+     "phase": 2
     }
    ]
   },
@@ -3979,13 +4114,14 @@
     "chainbound.drag_them_under"
    ],
    "gate": 3,
+   "early": true,
    "text": "A boss is pinned 3 s.",
    "effects": [
     {
      "do": "flareMod",
      "flare": "drag_them_under",
      "rule": "drag.hold_him",
-     "phase": 6
+     "phase": 2
     }
    ]
   },
@@ -5169,7 +5305,7 @@
     "kindler.hard_winter"
    ],
    "gate": 12,
-   "text": "The thaw bursts twice as hard.",
+   "text": "A shatter shatters the frozen within 3 m.",
    "effects": [
     {
      "do": "flareMod",
@@ -5783,7 +5919,7 @@
      "do": "flareMod",
      "flare": "the_branding",
      "rule": "branding.second",
-     "phase": 6
+     "phase": 2
     }
    ]
   },
@@ -5804,7 +5940,7 @@
      "do": "flareMod",
      "flare": "the_branding",
      "rule": "branding.deep",
-     "phase": 6
+     "phase": 2
     }
    ]
   },
@@ -5819,13 +5955,14 @@
     "moonweaver.the_branding"
    ],
    "gate": 3,
-   "text": "The boss is branded three times.",
+   "early": true,
+   "text": "The boss's brand stays 6 s and bursts again whenever a mark passes to it.",
    "effects": [
     {
      "do": "flareMod",
      "flare": "the_branding",
      "rule": "branding.eye",
-     "phase": 6
+     "phase": 2
     }
    ]
   },
@@ -7016,7 +7153,7 @@
     "roadknife.through_and_through"
    ],
    "gate": 12,
-   "text": "It lasts 8 s.",
+   "text": "Press the Flare again to cut every notch now; it ends there.",
    "effects": [
     {
      "do": "flareMod",
@@ -7609,7 +7746,7 @@
      "do": "flareMod",
      "flare": "one_arrow",
      "rule": "arrow.split",
-     "phase": 6
+     "phase": 2
     }
    ]
   },
@@ -7624,13 +7761,14 @@
     "verge_hunter.one_arrow"
    ],
    "gate": 3,
+   "early": true,
    "text": "Everything struck is rooted 2 s.",
    "effects": [
     {
      "do": "flareMod",
      "flare": "one_arrow",
      "rule": "arrow.pinned",
-     "phase": 6
+     "phase": 2
     }
    ]
   },
@@ -7645,13 +7783,13 @@
     "verge_hunter.one_arrow"
    ],
    "gate": 3,
-   "text": "Triple crit damage on a boss.",
+   "text": "It stops in the first champion or boss it hits, and its three splits turn back into it.",
    "effects": [
     {
      "do": "flareMod",
      "flare": "one_arrow",
      "rule": "arrow.heart",
-     "phase": 6
+     "phase": 2
     }
    ]
   },
