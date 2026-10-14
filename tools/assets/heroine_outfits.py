@@ -7678,6 +7678,32 @@ RIDERS = [(o, r) for o in made if o.type == "MESH" and o not in RIGID_PIECES for
 rig_helpers.apply(arm, made, skin=lambda p: SKIN_BVH.find_nearest(Vector(p))[0][:], body=body)
 rigid_again(RIGID_PIECES, RIDERS)
 
+# (s21, animation's panel bone, 14 Oct: helpers.py SPEC "panels" and its recipe. The Reaver's front
+# panel (and its trim) onto `panel_front`, a pelvis child the game swings forward with the leading
+# thigh: W = (1 - k) W_built + k panel_front, k = smoothstep(0, 0.06, top - z), top the panel's top
+# edge at rest; its thighs' small share kept in that top band. PANEL_W=0: as built.)
+if os.environ.get("PANEL_W", "1") == "1" and "panel_front" in arm.data.bones:
+    _pobjs = [o for o in made if o.type == "MESH" and o.name.startswith("reaver.loin_front")]
+    _main = [o for o in _pobjs if o.name == "reaver.loin_front"]
+    if _main:
+        _top = max((_main[0].matrix_world @ v.co).z for v in _main[0].data.vertices)
+        _n, _ks = 0, []
+        for o in _pobjs:
+            vg_ = o.vertex_groups.get("panel_front") or o.vertex_groups.new(name="panel_front")
+            for v in o.data.vertices:
+                k_ = float(ramp(_top - (o.matrix_world @ v.co).z, 0.0, 0.06))
+                for g in list(v.groups):
+                    if g.group != vg_.index:
+                        g.weight = g.weight * (1 - k_)
+                vg_.add([v.index], k_, "REPLACE")
+                for g in list(v.groups):
+                    if g.weight < 1e-4 and g.group != vg_.index:
+                        o.vertex_groups[g.group].remove([v.index])
+                _n += 1
+                _ks.append(k_)
+        print("PANEL reaver.loin_front: top %.3f m, %d points onto panel_front (k mean %.2f, %d at 1)"
+              % (_top, _n, float(np.mean(_ks)), int(np.sum(np.array(_ks) > 0.999))))
+
 
 def rings_one(objs):
     """(s18 ranger solver 2, RING_ONE) Each ring of a roll back on one blend
