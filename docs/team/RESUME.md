@@ -54,7 +54,7 @@ Each lead restarts from its handoff. The worktrees are kept, so brief successors
 
 ### Queued
 
-- **Classes, phase 7 (13 Oct evening):** classes-11 merged (1a6f7ae0). The never-press misses (the Long Cut +7.6%, One Arrow +3.5% against pre-Flare; their types' own, plain too) are phase 7's. **Flare share of a boss, revised by the owner** (OWNER_NOTES 13 Oct evening; 35% is out): room-clearing Flares 10-15% of a boss (cut them against bosses, keep the crowd clear), single-target ones (the Bill, the Road's Toll, One Arrow near a boss) 15-20% (a slight rise). Next classes lead: retune bossMul to these bands, re-measure Act 1 and the arena phase cut (its "near 35%" tuning goes too), update CLASSES §7.1. Handoff docs/handoff/classes.md on integration; scratch in 59a43b82 cl11.
+- **Classes, phase 7 (13 Oct evening):** classes-11 merged (1a6f7ae0). The never-press misses (the Long Cut +7.6%, One Arrow +3.5% against pre-Flare; their types' own, plain too) are phase 7's. **Flare share of a boss, revised by the owner** (OWNER_NOTES 13 Oct evening; 35% is out): room-clearing Flares 10-15% of a boss (cut them against bosses, keep the crowd clear), single-target ones (the Bill, the Road's Toll, One Arrow near a boss) 15-20% (a slight rise). Next classes lead: retune bossMul to these bands, re-measure Act 1 and the arena phase cut (its "near 35%" tuning goes too), update CLASSES §7.1. **Floor (the owner):** a Flare stays the hardest-hitting ability against a boss; if any skill's single cast (or its damage over the Flare's window) beats a Flare, cut skills' boss damage, never push the Flare past its band. Handoff docs/handoff/classes.md on integration; scratch in 59a43b82 cl11.
 
 - The smile pass (face).
 - The weapon remaster (below).
