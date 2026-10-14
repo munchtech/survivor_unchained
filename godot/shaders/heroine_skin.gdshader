@@ -284,12 +284,19 @@ uniform float mouth_fill = 0.2;
 // all of them made a grey smudge on her cheek by the corners, f2)
 uniform float corner_shade = 1.0;
 varying float crease;
+// (her inner cheeks beside her lower back teeth (heroine_mouth.py: her head's vertex colour's green, 1 or down to 0
+// there): the mouth's colour there darkened by wall_dark and greyed by wall_grey (linear), so they don't read as a
+// saturated red-pink lit wall beside her far lower row (solver int3))
+uniform float wall_dark = 0.5;
+uniform float wall_grey = 1.0;
+varying float mouth_w;
 varying float mouth_c;
 varying float mouth_f;
 
 void vertex() {
 	mouth_c = mouth_in * (1.0 - COLOR.a);
 	crease = mouth_in * (1.0 - COLOR.r);
+	mouth_w = mouth_in * (1.0 - COLOR.g);
 	tuck_gone = 0.0;
 	if (tuck_channel >= 0) {
 		float h = tuck_channel == 0 ? COLOR.r : tuck_channel == 1 ? COLOR.g : tuck_channel == 2 ? COLOR.b : COLOR.a;
@@ -405,11 +412,12 @@ void fragment() {
 	mouth_f = FRONT_FACING ? mouth_c : 1.0;
 	if (mouth_f > 0.0) {
 		float mc = smoothstep(0.0, 0.35, mouth_f), mo = smoothstep(0.1, 1.0, mouth_f);
-		ALBEDO = mix(ALBEDO, mouth_colour, mc);
+		vec3 mcol = mix(mouth_colour, vec3(dot(mouth_colour, vec3(0.2126, 0.7152, 0.0722))), wall_grey * mouth_w) * (1.0 - wall_dark * mouth_w);
+		ALBEDO = mix(ALBEDO, mcol, mc);
 		BACKLIGHT *= 1.0 - mc;
 		SPECULAR *= 1.0 - mo;
 		AO = min(AO, 1.0 - mouth_occ * mo);
-		EMISSION += mouth_colour * mouth_fill * mc * (1.0 - 0.6 * mo);
+		EMISSION += mcol * mouth_fill * mc * (1.0 - 0.6 * mo);
 	}
 	if (dbg_gate > 0.0) { ALBEDO = vec3(1.0); SPECULAR = 0.0; BACKLIGHT = vec3(0.0); }
 	// (dbg_gate 3+: her maps instead, emitted: red ao_map's shade, green its seam ease, blue the face's paint (features' blue))

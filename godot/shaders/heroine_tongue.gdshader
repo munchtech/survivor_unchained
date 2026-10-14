@@ -25,13 +25,16 @@ void fragment() {
 	vec3 c = texture(paint, UV).rgb;
 	c = mix(c, vec3(dot(c, vec3(0.3, 0.59, 0.11))), grey) * tint;
 	float side = 1.0 - rim * (1.0 - smoothstep(0.0, 0.6, abs(dot(NORMAL, VIEW))));
-	ALBEDO = c * side;
+	// (its vertex colour's green: darker where it touches her lower teeth and on its raised sides (heroine_mouth.py's
+	// TOUCH, EDGE), so its edge there never reads lighter than its top (solver int3))
+	float dark = COLOR.g;
+	ALBEDO = c * side * dark;
 	AO = k * k;
 	AO_LIGHT_AFFECT = 0.0;
 	shade_k = k * k * side;
 	ROUGHNESS = roughness;
-	SPECULAR = specular * k;
-	EMISSION = inside * fill * (1.0 - 0.5 * k);
+	SPECULAR = specular * k * dark;
+	EMISSION = inside * fill * (1.0 - 0.5 * k) * dark;
 }
 
 void light() {

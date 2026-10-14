@@ -74,6 +74,17 @@ HUG_U = (0.45, 0.95)
 # (her teeth's gaps: rounded blocks 0.26-0.57 mm apart, read with open dark wedges between them along the arch (6-8%
 # too wide, the face lead): each tooth widened so much along the arch about its own middle)
 WIDEN = float(os.environ.get("MOUTH_WIDEN", "1.07"))
+# (her tongue (solver int3): 253 points, its raised side a straight-edged light band beside her far lower row and its
+# front edge a straight diagonal in her open mouth: it is subdivided once (Loop, about 950 points) before its sides
+# are raised, and its normals smoothed after. Its paint is darkened where it touches her lower teeth, to TOUCH at
+# them, none TOUCH_MM off; and on its whole raised side to EDGE, so that never reads lighter than its top (heroine_
+# tongue.gdshader: its vertex colour's green))
+TOUCH, TOUCH_MM, EDGE = 0.6, 3.0, 0.8
+# (her inner cheeks beside her lower back teeth (solver int3): from the Look a saturated red-pink lit wall right of her
+# far lower row (Sunborn, Saffron, Hardwon). Her head's vertex colour's green there (1 elsewhere) falls to 0 out past
+# WALL_X (m off her middle, in, full) and WALL_DZ (m behind her lower canines' middles: none, full); the skin shader
+# darkens and greys her mouth's colour by it (heroine_skin.gdshader's wall_*))
+WALL_X, WALL_DZ = (0.017, 0.021), (-0.006, 0.006)
 
 
 def _prim(js, mat):
@@ -193,6 +204,79 @@ def _normals(V, F, old):
     return N
 
 
+def _loop(V, F):
+    """One Loop subdivision of the mesh (V, F) by its index topology (points split at a seam take the boundary rule,
+    alike on both sides, so it stays closed): (S, L, F2), S the smoothing operator (new points x old) for positions and
+    shape keys, L the plain one (each edge's middle) for UVs and weights, F2 the new triangles (each in four, same turn)."""
+    n = len(V)
+    E = np.sort(np.r_[F[:, [0, 1]], F[:, [1, 2]], F[:, [2, 0]]], axis=1)
+    opp = np.r_[F[:, 2], F[:, 0], F[:, 1]]
+    ue, inv = np.unique(E, axis=0, return_inverse=True)
+    inv = inv.ravel()
+    ne = len(ue)
+    cnt = np.bincount(inv, minlength=ne)
+    S = np.zeros((n + ne, n))
+    L = np.zeros((n + ne, n))
+    L[np.arange(n), np.arange(n)] = 1
+    L[n + np.arange(ne), ue[:, 0]] = 0.5
+    L[n + np.arange(ne), ue[:, 1]] = 0.5
+    inner = cnt == 2
+    S[n + np.arange(ne), ue[:, 0]] = np.where(inner, 3 / 8, 0.5)
+    S[n + np.arange(ne), ue[:, 1]] = np.where(inner, 3 / 8, 0.5)
+    for k in range(len(inv)):
+        if inner[inv[k]]:
+            S[n + inv[k], opp[k]] += 1 / 8
+    bd = ue[~inner]
+    for v in range(n):
+        nb = np.unique(ue[(ue == v).any(1)])
+        nb = nb[nb != v]
+        bn = np.unique(bd[(bd == v).any(1)])
+        bn = bn[bn != v]
+        if len(bn):
+            if len(bn) == 2:
+                S[v, v] = 0.75
+                S[v, bn] = 0.125
+            else:
+                S[v, v] = 1.0
+        elif len(nb):
+            b = 3 / 16 if len(nb) == 3 else 3 / (8 * len(nb))
+            S[v, v] = 1 - len(nb) * b
+            S[v, nb] = b
+        else:
+            S[v, v] = 1.0
+    m = n + inv.reshape(3, -1).T          # (each triangle's edges: 01, 12, 20)
+    a, b, c = F[:, 0], F[:, 1], F[:, 2]
+    F2 = np.r_[np.c_[a, m[:, 0], m[:, 2]], np.c_[m[:, 0], b, m[:, 1]], np.c_[m[:, 2], m[:, 1], c], np.c_[m[:, 0], m[:, 1], m[:, 2]]]
+    return S, L, F2
+
+
+def _put(js, chunks, i, vals, ctype=5126, minmax=False):
+    """Accessor i given these values whole (a new count allowed), in component type ctype."""
+    a = js["accessors"][i]
+    dt = {5126: "<f4", 5121: "u1", 5123: "<u2", 5125: "<u4"}[ctype]
+    vals = np.ascontiguousarray(vals.astype(dt))
+    for k in ("bufferView", "byteOffset", "sparse", "min", "max"):
+        a.pop(k, None)
+    a["componentType"], a["count"] = ctype, int(len(vals) if vals.ndim > 1 or a["type"] != "SCALAR" else vals.size)
+    a["bufferView"] = len(js["bufferViews"])
+    js["bufferViews"].append({"buffer": 0})
+    chunks[a["bufferView"]] = vals.tobytes()
+    if minmax:
+        a["min"], a["max"] = [float(v) for v in vals.min(0)], [float(v) for v in vals.max(0)]
+
+
+def _near_dist(P, V, F, per=12):
+    """Each point of P's distance (m) to the surface (V, F), by points spread over its triangles (per each)."""
+    rng = np.random.default_rng(1)
+    w = rng.dirichlet(np.ones(3), per)
+    S = np.einsum("kj,fjd->fkd", w, V[F]).reshape(-1, 3)
+    S = np.r_[S, V]
+    out = np.empty(len(P))
+    for i in range(0, len(P), 256):
+        out[i:i + 256] = np.sqrt(((P[i:i + 256, None] - S[None]) ** 2).sum(2).min(1))
+    return out
+
+
 def _seen(V, I, pts, dirs=((0, 0, 1), (0.3, 0, 1), (-0.3, 0, 1), (0, 0.2, 1), (0, -0.2, 1))):
     """Those of the points pts (indices into V) a ray from in front reaches (any of dirs, toward her front, meets
     none of the triangles I): numpy only (Moller-Trumbore)."""
@@ -275,9 +359,30 @@ def seat(path, out=None):
     TN /= np.linalg.norm(TN, axis=1, keepdims=True)
     TV = TV + wd
     GF = hs._read(js, binc, gp["indices"]).astype(np.int64).reshape(-1, 3)
+    for o in js["meshes"]:
+        for q in o["primitives"]:
+            if q is not gp:
+                used = set(q["attributes"].values()) | {t["POSITION"] for t in q.get("targets", [])} | {q.get("indices")}
+                assert not used & (set(gp["attributes"].values()) | {gp["indices"]}), "MOUTH: the tongue shares an accessor"
+    nv0 = len(GV)
+    S, Lm, GF = _loop(GV, GF)
+    GN0 = Lm @ rd(gp["attributes"]["NORMAL"])
+    GV = S @ GV
+    gt = {nm: S @ rd(t["POSITION"]) for nm, t in zip(gn, gp["targets"])}
+    UV = Lm @ rd(gp["attributes"]["TEXCOORD_0"])
+    J0, W0 = rd(gp["attributes"]["JOINTS_0"]), rd(gp["attributes"]["WEIGHTS_0"])
+    first = np.argmax(Lm > 0, axis=1)
+    last = Lm.shape[1] - 1 - np.argmax(Lm[:, ::-1] > 0, axis=1)
+    same = (J0[first] == J0[last]).all(1)
+    GJ = J0[first]
+    GW = np.where(same[:, None], Lm @ W0, W0[first])
     hug = tongue_hug(GV, TV, (n > 0.002) & (body != gum), mid)
     GV = GV + hug
-    GN = _normals(GV, GF, rd(gp["attributes"]["NORMAL"]))
+    GN = _normals(GV, GF, GN0)
+    lowt = (n > 0.002) & (body != gum)
+    keep = lowt[TF].all(1)
+    touch = TOUCH + (1 - TOUCH) * _s01(_near_dist(GV, TV, TF[keep]) / (TOUCH_MM / 1000))
+    edge = 1 - (1 - EDGE) * _s01(hug[:, 1] / 0.001)
     # (her tongue rides her jaw: her lower teeth's and gum's mouth_open is an affine map of their (y, z), rms 0.1 mm
     # (MakeHuman's jaw morph), so each point of her tongue moves as her jaw does where it is (behind ROOT_Z, as at it).
     # Following the lower teeth nearest it (inverse distance over the 16 nearest, the front teeth weighing most) and
@@ -288,7 +393,7 @@ def seat(path, out=None):
     jaw = n > 0.002
     fit = np.linalg.lstsq(np.c_[TV[jaw][:, 1:], np.ones(jaw.sum())], TD[jaw][:, 1:], rcond=None)[0]
     rms = np.sqrt((np.linalg.norm(np.c_[TV[jaw][:, 1:], np.ones(jaw.sum())] @ fit - TD[jaw][:, 1:], axis=1) ** 2).mean())
-    GD_old = rd(gp["targets"][gn.index("mouth_open")]["POSITION"])
+    GD_old = gt["mouth_open"]
     GD = np.c_[np.zeros(len(GV)), np.c_[GV[:, 1], np.maximum(GV[:, 2], ROOT_Z), np.ones(len(GV))] @ fit]
     mid = 0.5 * (TV[:, 0].min() + TV[:, 0].max())
     wx = 1 - _s01((np.abs(GV[:, 0] - mid) - GROOVE_X[0]) / (GROOVE_X[1] - GROOVE_X[0]))
@@ -299,21 +404,29 @@ def seat(path, out=None):
     TD2 = TD * _s01((n / n.max() - 0.01) / 0.04)[:, None]
     SO, line, raised = smile_open(HV, HD)
     # (each accessor written anew: a shared view would move other parts too)
-    hs._set(js, chunks, gp["targets"][gn.index("mouth_open")]["POSITION"], GD, minmax=True)
+    gt["mouth_open"] = GD
     hs._set(js, chunks, tp["targets"][tn.index("mouth_open")]["POSITION"], TD2, minmax=True)
     dy = np.array([0, -SEAT_MM["own"] / 1000, 0])
     hs._set(js, chunks, tp["attributes"]["POSITION"], TV + dy, minmax=True)
-    hs._set(js, chunks, gp["attributes"]["POSITION"], GV + dy, minmax=True)
     hs._set(js, chunks, tp["attributes"]["NORMAL"], TN)
-    hs._set(js, chunks, gp["attributes"]["NORMAL"], GN)
     for f, mm in SEAT_MM.items():
         if f == "own":
             continue
         extra = np.array([0, -(mm - SEAT_MM["own"]) / 1000, 0])
-        for m, p, names in ((tm, tp, tn), (gm, gp, gn)):
-            if "face_" + f in names:
-                a = p["targets"][names.index("face_" + f)]["POSITION"]
-                hs._set(js, chunks, a, rd(a) + extra, minmax=True)
+        if "face_" + f in tn:
+            a = tp["targets"][tn.index("face_" + f)]["POSITION"]
+            hs._set(js, chunks, a, rd(a) + extra, minmax=True)
+        if "face_" + f in gt:
+            gt["face_" + f] = gt["face_" + f] + extra
+    # (her tongue written whole, subdivided: its points, normals, UVs, weights, shape keys and triangles)
+    _put(js, chunks, gp["attributes"]["POSITION"], GV + dy, minmax=True)
+    _put(js, chunks, gp["attributes"]["NORMAL"], GN)
+    _put(js, chunks, gp["attributes"]["TEXCOORD_0"], UV)
+    _put(js, chunks, gp["attributes"]["JOINTS_0"], GJ, js["accessors"][gp["attributes"]["JOINTS_0"]]["componentType"])
+    _put(js, chunks, gp["attributes"]["WEIGHTS_0"], GW)
+    for nm, t in zip(gn, gp["targets"]):
+        _put(js, chunks, t["POSITION"], gt[nm], minmax=True)
+    _put(js, chunks, gp["indices"], GF.ravel(), 5123 if GF.max() < 65535 else 5125)
     _add_target(js, chunks, hm, hp, "smile_open", SO)
     # (the inside of her mouth, for heroine_skin.gdshader's mouth_in: her head's vertex colour's alpha, 1 outside,
     # falling to 0 with depth behind her lips, on the points facing in toward her mouth's middle; and her tongue's
@@ -346,12 +459,23 @@ def seat(path, out=None):
     cx = np.abs(HV[:, 0])
     crease = (_s01((cx - CREASE_X[0]) / (CREASE_X[1] - CREASE_X[0])) * (1 - _s01((cx - CREASE_X[2]) / (CREASE_X[3] - CREASE_X[2])))
               * (1 - _s01((np.abs(HV[:, 1] - line) - CREASE_Y[0]) / (CREASE_Y[1] - CREASE_Y[0]))))
-    _add_colour(js, chunks, hp, np.c_[1 - crease, np.ones((len(HV), 2)), 1 - depth])
+    can = []
+    for sg in (-1, 1):
+        row = sorted((b for b in np.unique(body) if b != gum and n[body == b].mean() > 0.002 and np.sign(TV[body == b, 0].mean() - mid) == sg),
+                     key=lambda b: abs(TV[body == b, 0].mean() - mid))
+        can.append(TV[body == row[2], 2].mean())
+    zc = float(np.mean(can))
+    wall = np.where(depth > 0, _s01((np.abs(HV[:, 0] - mid) - WALL_X[0]) / (WALL_X[1] - WALL_X[0]))
+                    * _s01((zc - HV[:, 2] - WALL_DZ[0]) / (WALL_DZ[1] - WALL_DZ[0])), 0.0)
+    _add_colour(js, chunks, hp, np.c_[1 - crease, 1 - wall, np.ones(len(HV)), 1 - depth])
     gs = 1 - (1 - TONGUE_ROOT) * _s01((GV[:, 2].max() - GV[:, 2]) / TONGUE_LEN)
-    _add_colour(js, chunks, gp, np.c_[np.repeat(gs[:, None], 3, 1), np.ones(len(GV))])
+    _add_colour(js, chunks, gp, np.c_[gs, touch * edge, gs, np.ones(len(GV))])
     tm.setdefault("extras", {})["mouth_seat"] = {"seat_mm": SEAT_MM, "tongue_jaw_rms_mm": round(1000 * rms, 2), "depress_mm": DEPRESS_MM, "raise_mm": RAISE_MM,
                                                  "line": round(line, 5)}
     hs._save(out or path, js, chunks)
+    print("MOUTH: her inner cheeks behind her lower canines (z %.1f mm) greyed on %d points" % (1000 * zc, int((wall > 0.01).sum())))
+    print("MOUTH: her tongue subdivided, %d points to %d; darkened at her lower teeth on %d, on its raised side %d" % (
+        nv0, len(GV), int((touch < 0.99).sum()), int((edge < 0.99).sum())))
     print("MOUTH: teeth and tongue seated %s mm lower (own %.1f); mouth_open no longer moves her upper teeth; the tongue "
           "rides her jaw (affine fit to %d points, rms %.2f mm; its mouth_open was %.1f mm at most, now %.1f); smile_open raises %d points of "
           "her upper lip %.1f mm (lips' line y %.4f); written %s" % (

@@ -28,6 +28,11 @@ uniform float roughness = 0.35;
 // mouth's own dark red, so it reads as a shaded mouth and not a black hole (the smile pass, f1-f4, with the skin's mouth_fill); 0 none)
 uniform vec3 inside : source_color = vec3(0.42, 0.15, 0.14);
 uniform float fill = 0.2;
+// (her lower row behind its canines, deep in her mouth (heroine_teethshade.py: the green channel, its light as a share
+// of the canine's, 1 elsewhere): its paint warmed to deep_tint (linear) and its sheen cut to deep_spec there. From the
+// Look her far lower molars read blue-grey, blue at or over red (the sky on their enamel), solver int3)
+uniform vec3 deep_tint = vec3(1.0, 1.07, 0.96);
+uniform float deep_spec = 0.15;
 uniform float debug = 0.0;       // (1: her teeth green, emitted, for finding them in a picture; 2: hidden)
 
 void fragment() {
@@ -41,8 +46,9 @@ void fragment() {
 	float f = pow(k, 2.2);
 	// (her lips shut, 1, to parted, 0: shut runs from 1 to 0.6 by mouth_open 0.05)
 	float c = clamp((shut - 0.6) / 0.4, 0.0, 1.0);
-	ALBEDO = mix(texture(paint, UV).rgb * ivory, shade, c);
-	SPECULAR = 0.5 * f * (1.0 - c);
+	float dw = 1.0 - clamp(COLOR.g, 0.0, 1.0);
+	ALBEDO = mix(texture(paint, UV).rgb * ivory * mix(vec3(1.0), deep_tint, dw), shade, c);
+	SPECULAR = 0.5 * f * (1.0 - c) * mix(1.0, deep_spec, min(1.0, 2.0 * dw));
 	ROUGHNESS = mix(mix(0.6, roughness, k), 1.0, c);
 	AO = mix(f, seep, c);
 	AO_LIGHT_AFFECT = 1.0;
