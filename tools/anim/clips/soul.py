@@ -309,17 +309,23 @@ def arcanist_break(rig):
         # The elbow low and forward of the shoulder (not out level with the hand), so the forearm rises to the ear and
         # the wrist stays near straight (it bent 55-65 deg back with the elbow out: the owner, 14 October, "her hands
         # ... going at a very weird angle at the wrists"); the fingers soft and graded, the index leading.
-        tuck = {"pos": (0.13, 1.62, 0.04), "pole": (0.7, -0.6, 0.4), "knuckles": (-0.25, 0.8, -0.55)}
+        tuck = {"pos": (0.145, 1.62, 0.04), "pole": (0.7, -0.6, 0.4), "knuckles": (-0.25, 0.8, -0.3)}
         soft = {"curl": 0.32, "thumb": 0.2, "cascade": 0.45, "spread": 2}
         first = (18, over("arcanist", hand_l=tuck, head=(-6, 4, 8), fingers_l=soft), "ease")
-        second = (28, over("arcanist", hand_l={**tuck, "pos": (0.14, 1.60, -0.02)}, head=(-6, 4, 8), fingers_l=soft), "ease")
-    rising = (9, over("arcanist", hand_l={"pos": (0.16, 1.38, 0.16), "pole": (1.0, -0.3, -0.3), "knuckles": (-0.1, 0.9, 0.3)},
+        second = (28, over("arcanist", hand_l={**tuck, "pos": (0.155, 1.60, -0.02)}, head=(-6, 4, 8), fingers_l=soft), "ease")
+    # Up beside her face, not before it (the fingers stay 6 cm or more out from her mouth), the wrist easing
+    # straight on the way (extension 55 -> 27 deg, no flick back; tools: scratch tuck/wrist.py, facecheck.py), and
+    # down the same way to the hip.
+    rising = (9, over("arcanist", hand_l={"pos": (0.19, 1.40, 0.10), "pole": (1.0, -0.3, -0.3), "knuckles": (-0.2, 0.8, 0.6)},
                       fingers_l="relaxed"), "auto")
+    lower = {"pos": (0.20, 1.36, 0.04), "pole": (1.0, -0.3, -0.3), "knuckles": (-0.1, 0.7, 0.7)}
+    lowering = (36, over("arcanist", hand_l=lower, fingers_l="relaxed"), "auto")
     keys = [
         (0, over("arcanist"), "auto"),
         *([rising] if rig.body != "him" else []),
         first,
         second,
+        *([lowering] if rig.body != "him" else []),
         # Up at the sky, the staff turning in her fingers.
         (44, over("arcanist", head=(10, -24, 0), hand_r=staff(-40)), "ease"),
         (60, over("arcanist", head=(14, -26, 0), hand_r=staff(30)), "auto"),
