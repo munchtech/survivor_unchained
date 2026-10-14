@@ -1,3 +1,4 @@
+using System;
 using SurvivorUnchained.Play;
 using Xunit;
 
@@ -79,7 +80,7 @@ public class WeaponSocketsTests
         System.Numerics.Vector3 mx = new(0, 1, 0), my = new(0, 0, 1), mz = new(1, 0, 0), o = new(-0.025f, 0.075f, 0);
         var (turn, at) = WeaponSockets.FistSeat(mx, my, mz, o);
         System.Numerics.Vector3 Hand(System.Numerics.Vector3 m) => o + mx * m.X + my * m.Y + mz * m.Z;
-        // The grip point lands on the pocket; the shaft runs along the fist's line (6.6 degrees off the mount's).
+        // The grip point lands on the pocket; the shaft runs along the fist's line (8.2 degrees off the mount's).
         var grip = Hand(at);
         Assert.Equal(0.0, (double)System.Numerics.Vector3.Distance(grip, WeaponSockets.FistAtR), 6);
         var shaft = Hand(System.Numerics.Vector3.Transform(System.Numerics.Vector3.UnitY, turn)) - o;
@@ -90,6 +91,21 @@ public class WeaponSocketsTests
         // The least turn: the piece's +Z (its edge or face) stays square to the shaft and keeps its side.
         var face = System.Numerics.Vector3.Transform(System.Numerics.Vector3.UnitZ, turn);
         Assert.True(face.Z > 0.99f);
+    }
+
+    [Fact]
+    public void TheFistsPocketIsTheHollowItsFingersCloseRound()
+    {
+        // In hand_r's space (+Y along the fingers, +Z the thumb's side, the palm toward -X): the pocket lies under the
+        // knuckles (her knuckles are 120-139 mm from the wrist), the leather's 13.65 mm plus the glove off the palm
+        // (-X), not at the thumb's root (58 mm); the shaft square to the fingers within a few degrees.
+        var at = WeaponSockets.FistAtR;
+        Assert.InRange(at.Y, 0.105f, 0.130f);
+        Assert.InRange(at.X, -0.040f, -0.025f);
+        Assert.InRange(at.Z, -0.020f, 0.0f);
+        var dir = WeaponSockets.FistDirR;
+        Assert.InRange((double)dir.Length(), 0.99999, 1.00001);
+        Assert.InRange(Math.Acos(dir.Z) * 180 / Math.PI, 7.0, 9.5);
     }
 
     [Fact]

@@ -66,11 +66,15 @@ public static class WeaponSockets
         return (lng, Vector3.UnitX);
     }
 
-    /// <summary>The line her right `grip` fist closes round, in hand_r's space: the pocket's centre (the mount point plus
-    /// the pocket's offset, -14, -17, +2 mm, Z\staff\chan.py) and the channel's direction, butt toward head (6.6 degrees off
-    /// hand +Z toward the fingers; tools/anim/clips/flare.py AXIS). An anchored piece's grip point and shaft are laid on it.</summary>
-    public static readonly Vector3 FistAtR = new(-0.039f, 0.058f, 0.002f);
-    public static readonly Vector3 FistDirR = Vector3.Normalize(new Vector3(0.001f, 0.1157f, 0.9933f));
+    /// <summary>The line her right `grip` fist closes round, in hand_r's space: the hollow of the fist the keyed clips close
+    /// on a staff (tools/anim/keyed.py WRAP), its centre midway across the four fingers, and its direction, butt toward
+    /// head (8.2 degrees off hand +Z: 6.6 toward the fingers, 5 toward the palm on the thumb's side, as her palm slopes).
+    /// Fitted 13 October on her skin and the arcanist's glove: the palm and every finger's inner pads lie on the leather
+    /// (13.65 mm round the line), the thumb over the forefinger. (The old pocket, -39, 58, 2 mm, lay at the thumb's root,
+    /// 40 mm off the palm and 30-50 mm off the pads: the shaft ran beside the fist, not through it.) An anchored piece's
+    /// grip point and shaft are laid on it.</summary>
+    public static readonly Vector3 FistAtR = new(-0.0308f, 0.1188f, -0.0104f);
+    public static readonly Vector3 FistDirR = Vector3.Normalize(new Vector3(-0.0863f, 0.1138f, 0.9898f));
 
     /// <summary>Where an anchored piece sits inside its mount so that its grip point (the anchor's origin, on the shaft's
     /// centreline) lands on the fist's pocket and its shaft (the piece's +Y, the anchor's -Y) runs along the fist's line:

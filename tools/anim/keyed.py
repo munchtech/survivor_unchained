@@ -139,6 +139,8 @@ class Rig:
         # How far a held weapon's shaft leans in each fist (degrees; GRIP),
         # for the clip being solved.
         self.grip = {}
+        # Each fist's fitted wrap (WRAP) for the clip being solved.
+        self.wrap = {}
         # Her hand's measures (PADS, PALM_DEPTH) to this body's.
         self.hand_scale = float(np.linalg.norm(self.prest[self.I["middle_01_l"]] - self.prest[self.I["hand_l"]])) / HAND_LEN
 
@@ -749,6 +751,8 @@ class Rig:
             local[j] = grot[j] if p < 0 else qmul(qinv(grot[p]), grot[j])
         for side in "lr":
             spec = pose.get(f"fingers_{side}", "relaxed")
+            if spec == "grip" and side in getattr(self, "wrap", {}):
+                spec = self.wrap[side]
             curl = finger_curl(spec)
             # The thumb swung in across the palm before it bends ("oppose", 0..1),
             # so a fist closes over the fingers instead of thumbing a lift.
@@ -757,6 +761,10 @@ class Rig:
                 j = I[f"thumb_01_{side}"]
                 along = qrot(qinv(self.grest[j]), qrot(self.grest[I[f"hand_{side}"]], [0, 1.0, 0]))
                 local[j] = qmul(local[j], qaxis(along / np.linalg.norm(along), oppose * 55 * (1 if side == "l" else -1)))
+            roll = spec.get("thumb_roll", 0) if isinstance(spec, dict) else 0
+            if roll:
+                j = I[f"thumb_01_{side}"]
+                local[j] = qmul(local[j], qaxis([0, 1.0, 0], roll * (1 if side == "r" else -1)))
             for name, angles in curl.items():
                 for k, a in enumerate(angles):
                     j = I[f"{name}_0{k + 1}_{side}"]
@@ -932,7 +940,28 @@ FINGER_PRESETS = {
 }
 
 
+# A fist fitted to a grip (WRAP, by the clip's weapon: wrap_of): "grip" in that hand becomes this, each finger's three
+# bends (knuckle, middle, last joint) and the thumb's (swung across the palm by "oppose", 0..1 of 55 degrees, and
+# rolled "thumb_roll" degrees about its first bone, so its outer joints bend round the shaft) that lay her glove's
+# inner pads on the grip's leather (13.65 mm round its line, within 0.5 mm in to 1.5 mm out), her palm on it too and
+# the thumb's tip over the forefinger. The line is the hollow this fist makes, which Arms.cs seats the piece on
+# (WeaponSockets.FistAtR / FistDirR: hand_r space). Fitted on her skin and the arcanist's glove, 13 October (the
+# "grip" preset closed to a 7.8 mm hollow, the fingertips into the palm, beside the staff, not round it).
+WRAP = {"staff": {"bends": {"index": (53.0, 52.8, 36.1), "middle": (43.1, 67.4, 46.1), "ring": (47.0, 51.4, 35.1),
+                            "pinky": (26.3, 56.0, 38.3), "thumb": (-11.4, 43.0, 31.2)},
+                  "oppose": 0.60, "thumb_roll": -37.0}}
+
+
+def wrap_of(weapon):
+    """Each fist's fitted wrap (WRAP) for a clip that holds `weapon` (as grip_of): only her right hand's pocket is
+    measured, so only "r"."""
+    main = (weapon or "").split("+")[0]
+    return {"r": WRAP[main]} if main in WRAP else {}
+
+
 def finger_curl(spec):
+    if isinstance(spec, dict) and "bends" in spec:
+        return {k: [float(a) for a in v] for k, v in spec["bends"].items()}
     p = dict(FINGER_PRESETS.get(spec, {})) if isinstance(spec, str) else dict(spec)
     c = p.get("curl", 0.3)
     th = p.get("thumb", 0.2)
@@ -1433,6 +1462,7 @@ def solve_frames(rig: Rig, poses, bases=None, loop=False, sigma=2.0, weapon="", 
     {side: n} lays that side's frames 1..n-1 on one path from frame 0's
     elbow to frame n's smoothed one, ignoring the frames between."""
     rig.grip = grip_of(weapon) if rig.grips else {}
+    rig.wrap = wrap_of(weapon) if rig.grips else {}
     n = len(poses)
     J = len(rig.sk)
     rot = np.empty((n, J, 4))
