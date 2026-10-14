@@ -6142,6 +6142,8 @@ def arcanist():
     GLOVE_EYES = [float(v) for v in os.environ.get("GLOVE_EYES", "0.008,0.028,0.048,0.068,0.086").split(",")]
     GLOVE_EYE = tuple(float(v) for v in os.environ.get("GLOVE_EYE", "0.0015,0.00045,0.0026").split(","))
     GLOVE_LACE_R = float(os.environ.get("GLOVE_LACE_R", "0.0009"))
+    GLOVE_LACE_CLEAR = float(os.environ.get("GLOVE_LACE_CLEAR", "0.0004"))   # (s25 gs2: a lace's surface off the built binding and sheet)
+    GLOVE_KNOT_SEAT = float(os.environ.get("GLOVE_KNOT_SEAT", "0.00075"))   # (s25 gs2: the knot's base off what is under it)
     GLOVE_BOW = tuple(float(v) for v in os.environ.get("GLOVE_BOW", "0.009,0.004,0.014,0.0035,0.0011").split(","))
     GLOVE_STYLE_FRAME, GLOVE_HAND = {}, {}
 
@@ -6348,7 +6350,28 @@ def arcanist():
                     co, nn, _, _ = SKIN_BVH.find_nearest(Vector(c + d * (R_ + 0.005)))
                     p_, n = np.array(co[:]), np.array(nn[:])
                 return p_, n
-            def under(p_):
+            # (s25 gs2: the binding as built (its tubes, BIND_SIGMA-eased off the cut), for the laces:
+            # over the cut's estimate one crossing lace dipped 3 mm into it, gsG2g)
+            bobs_ = [o for o in bpy.data.objects if o.type == "MESH" and o.name.startswith(nm + "_bind")]
+            bvb_ = None
+            if bobs_:
+                bv_, bt_, o_ = [], [], 0
+                for o in bobs_:
+                    bv_ += [tuple(o.matrix_world @ v.co) for v in o.data.vertices]
+                    bt_ += [tuple(i + o_ for i in pl.vertices) for pl in o.data.polygons]
+                    o_ += len(o.data.vertices)
+                bvb_ = BVHTree.FromPolygons(bv_, bt_)
+            def built_h(p_, n):
+                # (the highest built face over p_ along n, binding or sheet, off her skin)
+                h = 0.0
+                for bvh_, add in ((bvb_, 0.0), (sbvh, sth)):
+                    if bvh_ is None:
+                        continue
+                    hit = bvh_.ray_cast(Vector(p_ + n * 0.02), Vector(-n), 0.025)
+                    if hit[0] is not None:
+                        h = max(h, float((np.array(hit[0][:]) - p_) @ n) + add)
+                return h
+            def under(p_, n=None):
                 # (what lies under a cord at p_, off her skin: the glove's face, its binding's crown)
                 dd = float(cutf(p_[None])[0])
                 h = lift_c if dd > 0 else 0.0
@@ -6366,7 +6389,7 @@ def arcanist():
                 PN = [arm_pt(s, x) for s, x in sx]
                 pp = np.array([a for a, b in PN])
                 nn = np.array([b for a, b in PN])
-                req = np.array([under(a) for a in pp]) + r + base
+                req = np.array([max(under(a), built_h(a, b) + GLOVE_LACE_CLEAR - base) if key == "glovepipe" else under(a) for a, b in zip(pp, nn)]) + r + base
                 if laid:
                     lp = np.array([a for a, b in laid])
                     lr = np.array([b for a, b in laid])
@@ -6419,10 +6442,13 @@ def arcanist():
                                  lr_, "glovepipe", ends=(eye_end, eye_end))
             bl, bh, tl, al_, ar_ = GLOVE_BOW
             s_k = GLOVE_EYES[0] - 0.0045
-            for sg in (1, -1):
-                made_ += lay_(f"arcanist.glove_{sd}_lace_top{'ab'[sg > 0]}", [(GLOVE_EYES[0], sg * xs[0]), (s_k, sg * 0.0006)], lr_, "glovepipe", ends=(eye_end, None))
             kp, kn = arm_pt(s_k, 0.0)
-            hk = max([((c_ - kp) @ kn) + r_ for c_, r_ in laid if np.linalg.norm(c_ - kp) < 0.004] + [lift_c])
+            # (s25 gs2: the knot seated, its base GLOVE_KNOT_SEAT off what is under it (it stood 4.4 mm off
+            # her on the laces' stack, gsG2g), the top laces' ends inside it, loops and tails from its rim)
+            hb_ = max(under(kp), built_h(kp, kn)) + GLOVE_KNOT_SEAT
+            for sg in (1, -1):
+                made_ += lay_(f"arcanist.glove_{sd}_lace_top{'ab'[sg > 0]}", [(GLOVE_EYES[0], sg * xs[0]), (s_k, sg * 0.0006)], lr_, "glovepipe", ends=(eye_end, hb_ + 0.0003))
+            hk = hb_ + 0.0008   # (the knot dome's base at hk - 0.8 mm = hb_)
             for sg in (1, -1):
                 t = np.linspace(0, 2 * np.pi, 64, endpoint=False)
                 lp_ = np.stack([s_k - 0.5 * bh * np.sin(t) + 0.0006 * (1 - np.cos(t)), sg * 0.5 * bl * (1 - np.cos(t))], 1)
@@ -6442,8 +6468,25 @@ def arcanist():
             for o_ in domes(f"arcanist.glove_{sd}_knot", [kp + kn * (hk - 0.0008)], [kn], "glovepipe", r=0.0019):
                 o_["hides"] = False
                 made_.append(o_)
-            print("GLOVE %s V: %.0f mm wide at the top, its foot %.0f mm down; %d eyelet pairs, %d crossings, the bow's knot %.1f mm off her"
-                  % (sd, hw0 * 1000, (L - ra / np.sin(np.arctan2(0.5 * hw0, L)) + ra) * 1000, ne, ne - 1, hk * 1000))
+            print("GLOVE %s V: %.0f mm wide at the top, its foot %.0f mm down; %d eyelet pairs, %d crossings, the bow's knot's base %.2f mm off what is under it"
+                  % (sd, hw0 * 1000, (L - ra / np.sin(np.arctan2(0.5 * hw0, L)) + ra) * 1000, ne, ne - 1, GLOVE_KNOT_SEAT * 1000))
+            # (the gate: every lace point GLOVE_LACE_CLEAR off every binding tube and the sheet, bar the
+            # eyelet ends, which go into their rings)
+            if bvb_ is not None:
+                worst_ = []
+                for o in made_:
+                    if "_lace" not in o.name and "_tail" not in o.name and "_bow" not in o.name:
+                        continue
+                    for v in o.data.vertices:
+                        q_ = o.matrix_world @ v.co
+                        co, nrm_, _, dist = bvb_.find_nearest(q_)
+                        if co is None:
+                            continue
+                        e_d = min(np.linalg.norm(np.array(q_[:]) - arm_pt(s, sg_ * xs[i])[0]) for i, s in enumerate(GLOVE_EYES) for sg_ in (1, -1)) if dist < 0.0006 else 1.0
+                        if e_d < er + 0.0005:
+                            continue
+                        worst_.append(dist if (np.array(q_[:]) - np.array(co[:])) @ np.array(nrm_[:]) > 0 else -dist)
+                print("GLOVE %s laces off the built binding: nearest %.2f mm (%d lace surface points under 0.3 mm)" % (sd, min(worst_) * 1000, int((np.array(worst_) < 0.0003).sum())))
         return made_
 
     def knuckle_cut(sd):
@@ -8920,6 +8963,60 @@ for name in OUTFITS:
     mine = pieces_of[name]
     if not mine:
         continue
+
+# (s25 gs2, G1: the three points down the back of her hand ride the glove's sheet as finally weighted
+# (helpers split, top refitted, rings): each point of a thread takes the blend of the sheet under it,
+# so thread and cuff move as one in the fist and the open hand. GLOVE_RIDERS=0: as laid.)
+def glove_riders(objs):
+    if os.environ.get("GLOVE_RIDERS", "1") != "1":
+        return
+    bones = [b.name for b in arm.data.bones]
+    bi = {n: i for i, n in enumerate(bones)}
+    for sd in "lr":
+        sheet = [o for o in objs if o.type == "MESH" and o.name == f"arcanist.glove_{sd}"]
+        riders = [o for o in objs if o.type == "MESH" and o.name.startswith(f"arcanist.glove_{sd}_point")]
+        if not sheet or not riders:
+            continue
+        sh = sheet[0]
+        mw = sh.matrix_world
+        sp = np.array([(mw @ v.co)[:] for v in sh.data.vertices])
+        gname = {g.index: g.name for g in sh.vertex_groups}
+        sw = np.zeros((len(sp), len(bones)))
+        for v in sh.data.vertices:
+            for g in v.groups:
+                if gname.get(g.group) in bi:
+                    sw[v.index, bi[gname[g.group]]] += g.weight
+        tris = [tuple(p.vertices) for p in sh.data.polygons]
+        bvh = BVHTree.FromPolygons([tuple(x) for x in sp], tris)
+        worst, n = 0.0, 0
+        for o in riders:
+            mo = o.matrix_world
+            rows = []
+            for v in o.data.vertices:
+                q = mo @ v.co
+                co, _, fi, dist = bvh.find_nearest(q)
+                vs = tris[fi]
+                # (the face's blend at the nearest point: weights by inverse distance to its corners)
+                dd = np.linalg.norm(sp[list(vs)] - np.array(co[:]), axis=1)
+                k = 1.0 / np.maximum(dd, 1e-6)
+                rows.append((k[:, None] * sw[list(vs)]).sum(0) / k.sum())
+                worst = max(worst, dist)
+            rows = four_bones(np.array(rows))
+            rows /= np.maximum(rows.sum(1, keepdims=True), 1e-9)
+            for vg in list(o.vertex_groups):
+                if vg.name in bi:
+                    o.vertex_groups.remove(vg)
+            groups = {}
+            for i, r in enumerate(rows):
+                for j in np.nonzero(r > 1e-4)[0]:
+                    if bones[j] not in groups:
+                        groups[bones[j]] = o.vertex_groups.new(name=bones[j])
+                    groups[bones[j]].add([i], float(r[j]), "REPLACE")
+            n += len(rows)
+        print("GLOVE RIDERS %s: %d points of %d threads on the sheet's own weights (furthest %.1f mm off it)" % (sd, n, len(riders), worst * 1000))
+
+
+glove_riders(made)
     bpy.ops.object.select_all(action="DESELECT")
     arm.select_set(True)
     for o in mine:
