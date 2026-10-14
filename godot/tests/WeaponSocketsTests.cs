@@ -125,8 +125,9 @@ public class WeaponSocketsTests
         Assert.True(System.Numerics.Quaternion.Dot(turn, System.Numerics.Quaternion.Identity) > 0.999999f);
         System.Numerics.Vector3 Hand(System.Numerics.Vector3 m) => o + mx * m.X + my * m.Y + mz * m.Z;
         Assert.Equal(0.0, (double)System.Numerics.Vector3.Distance(Hand(at), pAt), 6);
-        // The hollow under her knuckles (120-139 mm from the wrist), toward the palm (-X): not the old mount point.
-        Assert.InRange(pAt.Y, 0.105f, 0.130f);
+        // The hollow under her knuckles (100-105 mm from the wrist on the body build F0), toward the palm (-X): not the
+        // old mount point.
+        Assert.InRange(pAt.Y, 0.070f, 0.105f);
         Assert.InRange(pAt.X, -0.045f, -0.030f);
     }
 
