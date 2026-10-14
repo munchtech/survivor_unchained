@@ -89,9 +89,11 @@ class Rig:
 
     FEET_OUT = {"her": 0.0, "him": 0.045}
 
-    def __init__(self, sk: Skeleton, body="her", grips=True):
+    def __init__(self, sk: Skeleton, body="her", grips=True, flex_tilt=None):
         self.sk = sk
         self.body = body
+        # Each finger's flexion axis tilt (deg, FLEX_TILT; None: the module's, read now).
+        self.flex_tilt = dict(FLEX_TILT if flex_tilt is None else flex_tilt)
         # Whether weapons sit in a diagonal grip (GRIP): her and the hero;
         # not the folk, who also play the library's clips, held square.
         self.grips = grips
@@ -408,7 +410,14 @@ class Rig:
         else:
             axis_w = np.cross(d, palm)
         axis_w = axis_w / np.linalg.norm(axis_w)
-        return qrot(qinv(g[j]), axis_w)
+        a = qrot(qinv(g[j]), axis_w)
+        tilt = 0.0 if name.startswith("thumb") else self.flex_tilt.get(name.split("_")[0], 0.0)
+        if tilt:
+            # Inclined toward the bone's own line (bone +y; the axis stays square to the palm's normal, so a spread's
+            # axis, spread_axis, keeps its direction), the way that bends the finger toward the thumb as it closes.
+            t = np.radians(tilt) * (1 if side == "r" else -1)
+            a = np.cos(t) * a + np.sin(t) * np.array([0, 1.0, 0])
+        return a
 
     # ------------------------------------------------------------- solve --
     def solve(self, pose: dict, base=None):
@@ -963,6 +972,20 @@ FINGER_PRESETS = {
     "fist": {"curl": 1.0, "thumb": 0.8, "cascade": 0.05},
     "point": {"curl": 0.95, "thumb": 0.6, "index": 0.05},
 }
+
+# Converging flexion (deg, each finger's three joints; + the closing finger toward the thumb side, - toward the little
+# finger). A hand's fingers don't close in parallel planes: flexed, they all point at one spot, roughly the scaphoid's
+# distal pole (Eaton, e-Hand, "Hand examination": the cascade, "with flexion the fingertips tend to converge on one
+# spot"; Kapandji, The Physiology of the Joints vol. 1, the hand: the oblique flexion of the fingers), so the ring and
+# little fingers' axes are inclined toward the thumb and the forefinger's slightly the other way. Each axis leans
+# off square to its bone by its value, toward the bone's line (Rig._bend_axis). Derived on her hand (fistfit.py
+# tilt_for): the value that, at knuckle 90 and middle joint 90, points the middle bone at that spot (her hand_r space
+# y 18, z 16 mm: 13 mm before and 7 mm in from her thumb's base pivot; +-1.5 deg for the spot 6 mm either way). The
+# thumb has its own (Rig._bend_axis). On her hand as built (14 October, animation solver): the relaxed hand moves
+# under 0.3 mm, WRAP["staff"]'s pads under 0.6 and its fingers close up (outer bones 3.3/2.9/6.8 mm apart, were
+# 6.0/6.8/9.5). Her knuckles moved back to 0.46 L (fistfit --hand '{"mcp": 0.46}') derive -2.5, 1.0, 5.5, 10.4:
+# re-derive after the body build (fistfit.tilt_for()).
+FLEX_TILT = {"index": -2.2, "middle": 0.9, "ring": 4.9, "pinky": 9.0}
 
 
 # A fist fitted to a grip (WRAP, by the clip's weapon: wrap_of): "grip" in that hand becomes this, each finger's three
