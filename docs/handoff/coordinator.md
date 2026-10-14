@@ -85,3 +85,11 @@ From the coordinator of 10 October (session 181eef02). Wave 1 restarted, ran abo
   - Rebuild a lead's art on the latest integration before merging binaries (the outfits conflicted with face ship's heroine.glb).
 
 **Coordinator 34daaf5d (14 October; the owner allowed 385k this once).** Merged the staff, the Reaver loincloth, and the rest lips B3-15. New team tools and rules: the freshness gate in turn.py (the caller's checkout or --root), half-size working pictures (tools/half.py), solvers with a numeric pass on su-lead-high, checks scoped to what changed. RESUME trimmed (RESUME_ARCHIVE.md). The owner's direction: beautification only (outfits, animation, face). Lessons: stale Godot imports and stale branches produced false faults twice (the gate fixes it); a body change ripples into every outfit's tessellation, so legal is needed on all four even for hands-only; ask a lead for proportions numbers before taste calls (the audit found the short forearm and the small head). A PC restart killed running solvers: their work is in WIP commits.
+
+**Coordinator d7e64ca2 (14 October, night; outfits, animation, face only).** Nothing merged except docs and tools (the roster, lastmsg.py now finds any session's transcript and reads SendMessage text). The work converged on ONE body build after the owner's glove pick (RESUME "14 October, night").
+- **Lessons:**
+  - A fit that passes on one hand fails when the hand changes (the staff, 6-8 mm). Refit every grip after any body build, before merging.
+  - Two tools disagreeing means a ground-truth measurement in Godot (grip_truth.gd), not a third model.
+  - Decide body-build asks up front and merge them, so the build runs once (hand pivots, thumb, back-of-hand reshape, left hand by its own skin).
+  - Pushback saved a build: anatomy said 24-28 mm where a crude model said 15.
+  - Helpers launched by a lead report to the coordinator and often can't address the lead: relay every one.
