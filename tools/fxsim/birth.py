@@ -462,7 +462,7 @@ PRESETS["b5e"] = dict(
     life_w=((1, 0.0), (6, 0.0), (10, 1.0)),
     w_fold=0.35, w_bill=0.06, w_mid=0.30, w_low=0.10, w_noise=0.55, ch_noise=6.0,
     ch_skin=0.14, ch_w=0.05, ch_rate=1.2, ch_d0=0.0,
-    life_T=((6, 0.80), (14, 0.80), (22, 0.80), (30, 0.78)), life_fold=0.05, life_rad=0.14,  # (lead 7: the birth's falloff kept; was 0.82-0.84, 0.06) life_noise=0.06,
+    life_T=((6, 0.80), (14, 0.80), (22, 0.80), (30, 0.78)), life_fold=0.05, life_rad=0.14, life_noise=0.06,  # (lead 7: the birth's falloff kept; was 0.82-0.84, 0.06)
     front_cool=0.25,
     # soot
     stex=0.45, stex_f=14.0,
