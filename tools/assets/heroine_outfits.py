@@ -8601,6 +8601,11 @@ if BODY_OUT:
         n_eased += 1
     print("BODY breast weights eased at", n_eased, "of her vertices")
     me.color_attributes.active_color = col
+    # (s25, her chest skin faired over the sculpt's irregular triangulation: heroine_chest.py; here,
+    # after every piece is fitted to her as she was, so none changes. Off: CHEST_SMOOTH=0)
+    if os.environ.get("CHEST_SMOOTH", "0") == "1":
+        from heroine_chest import chest_smooth
+        chest_smooth(body, mend_folds)
     # Her helper bones (twists at the shoulders and down the forearms, shares
     # at the shoulders, elbows and knees: tools/anim/helpers.py), her weights
     # split onto them; her pieces take the same split below.
