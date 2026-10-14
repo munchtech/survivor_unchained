@@ -7,10 +7,19 @@ what a player can see). It adds to lookdev:
 - VIEWS="name:deg,height,dist,targety:fov;...": several cameras in one run (the first is the
   window's, the rest SubViewports sharing its world); pictures are out_<name>_NN.png;
 - FOLLOW=1: every camera keeps its offset from her hips, for clips that travel (dash, leap, vault);
+  FOLLOW=<bone> (e.g. clavicle_l): every camera rides that bone rigidly, turn included;
 - MARKS=1: test codes on her skin (marks_section.py: skin near a nipple with its distance, the
   strip a garment must cover, and tucked skin), drawn last in her skin shader so the outfit's
   own tuck and hiding stay as in play, for count.py to read. LEGALBARE=1 also hides the outfit's
-  pieces, to see where its tucked skin lies. Pictures with MARKS and no OUTFIT, or with
+  pieces, to see where its tucked skin lies.
+- FLAT (on with MARKS unless FLAT=0): every material of every outfit piece, each fur shell and
+  next_pass included, is drawn flat grey (shaders' test_flat; a stray StandardMaterial3D is
+  blackened with 0.5 emission): sRGB 188 in all channels, which decodes to no code, so no
+  garment colour can pass for a skin code. Alpha, discards and vertices are untouched, so
+  coverage is as in play. Logs "FLAT grey: N materials"; count.py then asserts that stray() and
+  the binding filter drop nothing. Her hair is untouched; her uncoded skin
+  is drawn flat warm grey (emission 0.5, 0.45, 0.42 linear, marks_section.py), so no highlight is left
+  anywhere; the coded skin and the tuck are as before. Pictures with MARKS and no OUTFIT, or with
   LEGALBARE, show her bare: keep them out of the repo and never publish them.
     python make_motioncheck.py <out.gd>      (run.sh does this into its own output folder)
 Written as UTF-8 without a byte-order mark (Godot refuses a BOM in GDScript)."""
@@ -38,6 +47,8 @@ swap('var players = []\n',
      'var clip_len = 0.0\n'
      'var follow_skel: Skeleton3D\n'
      'var follow_from = Vector3.ZERO\n'
+     'var follow_xf = Transform3D()\n'
+     'var view_xf = []\n'
      'var view_cams = []\n'
      'var view_from = []\n'
      'var view_names = []\n'
@@ -96,7 +107,19 @@ swap('\t\t\tget_root().get_texture().get_image().save_png(out.replace(".png", "_
 swap('\tt += delta\n',
      '\tt += delta\n'
      '\t# FOLLOW=1: every camera keeps its offset from her hips (taken at 0.5 s, once she has settled).\n'
-     '\tif OS.get_environment("FOLLOW") != "" and follow_skel != null:\n'
+     '\t# FOLLOW=<bone> (not 1): every camera rides that bone rigidly (its turn too), so a\n'
+     '\t# shoulder close-up stays on the shoulder when she lies down or raises her arm.\n'
+     '\tvar fbn = OS.get_environment("FOLLOW")\n'
+     '\tif fbn != "" and fbn != "1" and follow_skel != null and follow_skel.find_bone(fbn) >= 0:\n'
+     '\t\tvar g = follow_skel.global_transform * follow_skel.get_bone_global_pose(follow_skel.find_bone(fbn))\n'
+     '\t\tg = g.orthonormalized()\n'
+     '\t\tif t < 0.5:\n'
+     '\t\t\tfollow_xf = g\n'
+     '\t\t\tview_xf.clear()\n'
+     '\t\t\tfor vi in view_cams.size(): view_xf.append(view_cams[vi].global_transform)\n'
+     '\t\telse:\n'
+     '\t\t\tfor vi in view_cams.size(): view_cams[vi].global_transform = g * follow_xf.affine_inverse() * view_xf[vi]\n'
+     '\telif OS.get_environment("FOLLOW") != "" and follow_skel != null:\n'
      '\t\tvar hb = follow_skel.find_bone("pelvis")\n'
      '\t\tif hb < 0: hb = 0\n'
      '\t\tvar hp = follow_skel.global_transform * follow_skel.get_bone_global_pose(hb).origin\n'
@@ -117,6 +140,9 @@ swap('\t\t# HAIR=<style> (heroine_hair_<style>.gltf; "none" for none), HAIRCOLOR
      '\t\t\t\tfor pm in skel.get_children():\n'
      '\t\t\t\t\tif pm is MeshInstance3D and String(pm.name).begins_with(outfit.split("_")[0] + "_"): pm.visible = false\n'
      '\t\t# HAIR=<style> (heroine_hair_<style>.gltf; "none" for none), HAIRCOLOR=#rrggbb.\n')
+# FLAT: every material of the outfit's pieces flat grey (before the hair, after the fur and outfit shaders).
+swap('\t\t# HAIR=<style> (heroine_hair_<style>.gltf; "none" for none), HAIRCOLOR=#rrggbb.\n',
+     '\t\tif OS.get_environment("MARKS") != "" and OS.get_environment("FLAT") != "0" and outfit != "":\n\t\t\tvar nflat = 0\n\t\t\tfor pm in skel.get_children():\n\t\t\t\tif pm is MeshInstance3D and String(pm.name).begins_with(outfit.split("_")[0] + "_"):\n\t\t\t\t\tfor fs in pm.mesh.get_surface_count():\n\t\t\t\t\t\tvar fm = pm.get_surface_override_material(fs)\n\t\t\t\t\t\tif fm == null:\n\t\t\t\t\t\t\tfm = pm.mesh.surface_get_material(fs)\n\t\t\t\t\t\t\tif fm == null: continue\n\t\t\t\t\t\t\tfm = fm.duplicate()\n\t\t\t\t\t\t\tpm.set_surface_override_material(fs, fm)\n\t\t\t\t\t\twhile fm != null:\n\t\t\t\t\t\t\tif fm is ShaderMaterial:\n\t\t\t\t\t\t\t\tfm.set_shader_parameter("test_flat", true)\n\t\t\t\t\t\t\telif fm is StandardMaterial3D:\n\t\t\t\t\t\t\t\tfm.vertex_color_use_as_albedo = false\n\t\t\t\t\t\t\t\tfm.albedo_color = Color(0, 0, 0, fm.albedo_color.a)\n\t\t\t\t\t\t\t\tfm.metallic = 0.0\n\t\t\t\t\t\t\t\tfm.roughness = 1.0\n\t\t\t\t\t\t\t\tfm.metallic_specular = 0.0\n\t\t\t\t\t\t\t\tfm.emission_enabled = true\n\t\t\t\t\t\t\t\tfm.emission = Color(0.5, 0.5, 0.5).linear_to_srgb()\n\t\t\t\t\t\t\t\tfm.emission_energy_multiplier = 1.0\n\t\t\t\t\t\t\tnflat += 1\n\t\t\t\t\t\t\tfm = fm.next_pass\n\t\t\tprint("FLAT grey: %d materials" % nflat)\n' + '\t\t# HAIR=<style> (heroine_hair_<style>.gltf; "none" for none), HAIRCOLOR=#rrggbb.\n')
 # MARKS (or LINEAR=1, to test an outfit's own colours against the codes): a linear tonemapper.
 swap('\te.tonemap_mode = Environment.TONE_MAPPER_AGX\n',
      '\te.tonemap_mode = Environment.TONE_MAPPER_LINEAR if OS.get_environment("MARKS") != "" or OS.get_environment("LINEAR") != "" else Environment.TONE_MAPPER_AGX\n')

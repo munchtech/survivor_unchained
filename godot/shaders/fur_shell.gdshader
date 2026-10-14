@@ -8,11 +8,15 @@ render_mode cull_back, depth_draw_opaque;
 
 uniform sampler2D albedo_tex : source_color, filter_linear_mipmap, repeat_enable;
 uniform vec4 tint : source_color = vec4(1.0);
+uniform bool test_flat = false;   // (the legal motion check: flat grey, coverage unchanged)
 uniform float layer = 0.0;
 uniform float fur_length = 0.008;
 uniform float density = 260.0;
 uniform float clump = 0.35;
 uniform vec3 gravity = vec3(0.0, -1.0, 0.0);
+uniform float root_dark = 0.45;   // (how dark the roots are, shadowed by the pile)
+uniform float backlight = 0.25;   // (light through the strands)
+uniform float droop = 0.35;       // (how far the tips bend down)
 
 float hash(vec2 p) {
 	return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453);
@@ -21,7 +25,7 @@ float hash(vec2 p) {
 void vertex() {
 	// Strands bend down a little toward their tips.
 	vec3 g = (inverse(MODEL_MATRIX) * vec4(gravity, 0.0)).xyz;
-	VERTEX += NORMAL * fur_length * layer + g * fur_length * 0.35 * layer * layer;
+	VERTEX += NORMAL * fur_length * layer + g * fur_length * droop * layer * layer;
 }
 
 void fragment() {
@@ -35,8 +39,16 @@ void fragment() {
 	if (layer > 0.0 && (layer > tall || length(f) > radius)) discard;
 	vec3 c = texture(albedo_tex, UV).rgb * tint.rgb;
 	// Darker at the roots (shadowed by the pile), lighter at the tips.
-	ALBEDO = c * mix(0.45, 1.15, layer);
+	ALBEDO = c * mix(root_dark, 1.15, layer);
 	ROUGHNESS = 0.9;
 	SPECULAR = 0.25;
-	BACKLIGHT = c * 0.25;
+	BACKLIGHT = c * backlight;
+	if (test_flat) {
+		ALBEDO = vec3(0.0);
+		METALLIC = 0.0;
+		ROUGHNESS = 1.0;
+		SPECULAR = 0.0;
+		EMISSION = vec3(0.5);
+		BACKLIGHT = vec3(0.0);
+	}
 }

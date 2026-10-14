@@ -139,6 +139,8 @@ class Rig:
         # How far a held weapon's shaft leans in each fist (degrees; GRIP),
         # for the clip being solved.
         self.grip = {}
+        # Each fist's fitted wrap (WRAP) for the clip being solved.
+        self.wrap = {}
         # Her hand's measures (PADS, PALM_DEPTH) to this body's.
         self.hand_scale = float(np.linalg.norm(self.prest[self.I["middle_01_l"]] - self.prest[self.I["hand_l"]])) / HAND_LEN
 
@@ -749,6 +751,8 @@ class Rig:
             local[j] = grot[j] if p < 0 else qmul(qinv(grot[p]), grot[j])
         for side in "lr":
             spec = pose.get(f"fingers_{side}", "relaxed")
+            if spec == "grip" and side in getattr(self, "wrap", {}):
+                spec = self.wrap[side]
             curl = finger_curl(spec)
             # The thumb swung in across the palm before it bends ("oppose", 0..1),
             # so a fist closes over the fingers instead of thumbing a lift.
@@ -757,6 +761,10 @@ class Rig:
                 j = I[f"thumb_01_{side}"]
                 along = qrot(qinv(self.grest[j]), qrot(self.grest[I[f"hand_{side}"]], [0, 1.0, 0]))
                 local[j] = qmul(local[j], qaxis(along / np.linalg.norm(along), oppose * 55 * (1 if side == "l" else -1)))
+            roll = spec.get("thumb_roll", 0) if isinstance(spec, dict) else 0
+            if roll:
+                j = I[f"thumb_01_{side}"]
+                local[j] = qmul(local[j], qaxis([0, 1.0, 0], roll * (1 if side == "r" else -1)))
             for name, angles in curl.items():
                 for k, a in enumerate(angles):
                     j = I[f"{name}_0{k + 1}_{side}"]
@@ -932,7 +940,32 @@ FINGER_PRESETS = {
 }
 
 
+# A fist fitted to a grip (WRAP, by the clip's weapon: wrap_of): "grip" in that hand becomes this, each finger's three
+# bends (knuckle, middle, last joint) and the thumb's (swung across the palm by "oppose", 0..1 of 55 degrees, and
+# rolled "thumb_roll" degrees about its first bone, so its outer joints bend round the shaft) that lay her glove's
+# inner pads on the grip's leather (13.65 mm round its line, within 0.5 mm in to 1.5 mm out), her palm on it too and
+# the thumb's tip over the forefinger. The line is the hollow this fist makes, which Arms.cs seats the piece on
+# (WeaponSockets.FistAtR / FistDirR: hand_r space). Fitted on her skin and the arcanist's glove, 13 October (the
+# "grip" preset closed to a 7.8 mm hollow, the fingertips into the palm, beside the staff, not round it). The thumb
+# refitted the same day to close the ring: its base swung in toward the shaft (the thenar pad 38.5 mm from the line,
+# was 45.5; its CMC is 92 mm from the line, so no turn of the base brings the pad nearer than 28 mm), its proximal pad
+# 18.4 mm (was 23.4), the web from the thumb's knuckle to the index's 63.7 mm (was 79.2, 69.3 at rest, so the glove's
+# web is no longer stretched), the last joint closed over the middle finger; the base's twist 40 deg (was 61).
+WRAP = {"staff": {"bends": {"index": (53.0, 52.8, 36.1), "middle": (43.1, 67.4, 46.1), "ring": (47.0, 51.4, 35.1),
+                            "pinky": (26.3, 56.0, 38.3), "thumb": (9.9, 0.0, 65.0)},
+                  "oppose": 0.44, "thumb_roll": -20.8}}
+
+
+def wrap_of(weapon):
+    """Each fist's fitted wrap (WRAP) for a clip that holds `weapon` (as grip_of): only her right hand's pocket is
+    measured, so only "r"."""
+    main = (weapon or "").split("+")[0]
+    return {"r": WRAP[main]} if main in WRAP else {}
+
+
 def finger_curl(spec):
+    if isinstance(spec, dict) and "bends" in spec:
+        return {k: [float(a) for a in v] for k, v in spec["bends"].items()}
     p = dict(FINGER_PRESETS.get(spec, {})) if isinstance(spec, str) else dict(spec)
     c = p.get("curl", 0.3)
     th = p.get("thumb", 0.2)
@@ -1097,6 +1130,11 @@ def _zero_default(n):
     return head.startswith(("hips.", "spine", "neck", "head", "clav_")) or head.endswith((".rot", ".toe", ".plant"))
 
 
+# A hand keyed by blade and knuckles turns as one frame between keys (Track._hand_frame); 0 (KEYED_HANDFRAME=0 in the
+# environment) draws the two directions each on its own, as before 13 October.
+HAND_FRAME = __import__("os").environ.get("KEYED_HANDFRAME", "1") != "0"
+
+
 class Track:
     """Keys [(frame, pose, ease), ...] as a pose at any frame."""
 
@@ -1122,6 +1160,17 @@ class Track:
         self.vectors = sorted({n[:-2] for n in self.names if n.endswith("#0") and n.split("#")[0].split(".")[-1]
                                in ("blade", "knuckles", "pole", "thumb") and all(f"{n[:-2]}#{i}" in self.names for i in (1, 2))
                                and len(self.have[n]) == len(self.have[n[:-2] + "#1"]) == len(self.have[n[:-2] + "#2"])})
+        # A hand keyed by its blade AND its knuckles at the same keys turns as one frame (HAND_FRAME), not as two
+        # directions each on its own: a roll of the knuckles about the blade then spreads over the segment instead
+        # of bunching into the frame or two where the two vectors' separate paths cross.
+        self.frames_ = []
+        if HAND_FRAME:
+            for v in self.vectors:
+                if v.endswith(".blade") and v[:-6] + ".knuckles" in self.vectors:
+                    kv = v[:-6] + ".knuckles"
+                    if [h[0] for h in self.have[v + "#0"]] == [h[0] for h in self.have[kv + "#0"]]:
+                        self.frames_.append((v, kv))
+        self.in_frames = {x for pair in self.frames_ for x in pair}
 
     def __call__(self, fr, lead=None):
         """The pose at frame fr. `lead`: frames ahead each part of her runs
@@ -1148,6 +1197,8 @@ class Track:
         # long way apart would otherwise pass near nothing between them and
         # the hand would spin over in a frame.
         for vec in self.vectors:
+            if vec in self.in_frames:
+                continue
             names = [f"{vec}#{i}" for i in range(3)]
             have = self.have[names[0]]
             t = fr
@@ -1176,6 +1227,8 @@ class Track:
             v = lin * (1 - w) + arc * w
             for k, n in enumerate(names):
                 flat[n] = float(v[k])
+        for bvec, kvec in self.frames_:
+            self._hand_frame(flat, bvec, kvec, fr, lead)
         # A hand placed on an arc in one key and at a point in the next: the
         # two targets cross-faded between them (each held from its own keys).
         for side in "lr":
@@ -1195,6 +1248,77 @@ class Track:
             u = float(smoothstep_((fr - t0) / (t1 - t0)))
             flat[f"{h}.mix"] = u if m1 == "pos" else 1 - u
         return _unflatten(flat)
+
+
+def _frame_of(b, k):
+    """The hand's frame from its blade (+Z) and knuckles (+Y, made square to the blade), as Rig's _want_grip builds it."""
+    nb = np.linalg.norm(b)
+    if nb < 1e-6:
+        return None
+    z = b / nb
+    y = k - z * np.dot(k, z)
+    ny = np.linalg.norm(y)
+    if ny < 1e-4:
+        return None
+    y = y / ny
+    return qfrom_basis(np.cross(y, z), y, z)
+
+
+def _qlog(q):
+    """A unit quaternion (x, y, z, w) as a rotation vector (radians), the short way."""
+    q = np.asarray(q, float)
+    if q[3] < 0:
+        q = -q
+    s = np.linalg.norm(q[:3])
+    if s < 1e-12:
+        return np.zeros(3)
+    return q[:3] / s * 2 * math.atan2(s, q[3])
+
+
+def _qexp(v):
+    a = float(np.linalg.norm(v))
+    if a < 1e-12:
+        return np.array([0, 0, 0, 1.0])
+    return np.concatenate([np.asarray(v) / a * math.sin(a / 2), [math.cos(a / 2)]])
+
+
+def _hand_frame(self, flat, bvec, kvec, fr, lead):
+    """Blade and knuckles at frame fr from one turn of the hand's frame: each key's frame as a rotation vector from the
+    segment's first key (the short way), the vectors drawn through the keys with the keys' own timing and eases
+    (_hermite), the turn applied to the first key's frame. Lengths as the components' Hermite gave them."""
+    bn = [f"{bvec}#{i}" for i in range(3)]
+    kn = [f"{kvec}#{i}" for i in range(3)]
+    have = self.have[bn[0]]
+    t = fr
+    if lead:
+        for part, ahead in lead.items():
+            if bn[0].startswith(part):
+                t = min(fr + ahead, have[-1][0])
+                break
+    if len(have) < 2 or t <= have[0][0] or t >= have[-1][0]:
+        return
+    ts = [h[0] for h in have]
+    eases = [h[2] for h in have]
+    B = np.array([[self.have[n][j][1] for n in bn] for j in range(len(have))])
+    K = np.array([[self.have[n][j][1] for n in kn] for j in range(len(have))])
+    qs = [_frame_of(B[j], K[j]) for j in range(len(have))]
+    if any(q is None for q in qs):
+        return
+    i = min(bisect.bisect_right(ts, t) - 1, len(have) - 2)
+    qi = qs[i]
+    logs = np.array([_qlog(qmul(qinv(qi), q)) for q in qs])
+    v = np.array([_hermite(ts, list(logs[:, c]), eases, t) for c in range(3)])
+    R = qmul(qi, _qexp(v))
+    lb = np.linalg.norm([flat[n] for n in bn])
+    lk = np.linalg.norm([flat[n] for n in kn])
+    b = qrot(R, [0, 0, 1.0]) * (lb if lb > 1e-6 else 1.0)
+    k = qrot(R, [0, 1.0, 0]) * (lk if lk > 1e-6 else 1.0)
+    for c in range(3):
+        flat[bn[c]] = float(b[c])
+        flat[kn[c]] = float(k[c])
+
+
+Track._hand_frame = _hand_frame
 
 
 def _aims(keys):
@@ -1342,6 +1466,7 @@ def solve_frames(rig: Rig, poses, bases=None, loop=False, sigma=2.0, weapon="", 
     {side: n} lays that side's frames 1..n-1 on one path from frame 0's
     elbow to frame n's smoothed one, ignoring the frames between."""
     rig.grip = grip_of(weapon) if rig.grips else {}
+    rig.wrap = wrap_of(weapon) if rig.grips else {}
     n = len(poses)
     J = len(rig.sk)
     rot = np.empty((n, J, 4))

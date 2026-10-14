@@ -217,7 +217,7 @@ All eleven share one replacement path: our own weapons modelled in Blender to ou
 | WE-05 | `mace.glb` | "Medieval Mace" by Kama Modeling (design); modelled and textured by Yavuz Temel; https://sketchfab.com/3d-models/medieval-mace-83217215a0c541b2956a8e87a4ae62fe | low: credit both names |
 | WE-06 | `viking_axe.glb` | "Viking battle axe" by Mikhail Antonov, https://sketchfab.com/3d-models/viking-battle-axe-b7123192adbf40f68043c57dd8ddcd15 | low |
 | WE-07 | `snake_axe.glb` | "Snake Axe" by Ashley Jay Thornton, https://sketchfab.com/3d-models/snake-axe-ace485ac031c4ee0a918e99d2b80560b | low |
-| WE-08 | `mage_staff.glb` | "Mage Staff" by RMBehan, https://sketchfab.com/3d-models/mage-staff-a172d06792734bbc9b11272b4f497c2c | low |
+| WE-08 | `mage_staff.glb` | "Mage Staff" by RMBehan, https://sketchfab.com/3d-models/mage-staff-a172d06792734bbc9b11272b4f497c2c; MODIFIED 13 Oct 2026 (animation): bound leather grip (modelled strap, Poly Haven "brown_leather" CC0 textures), steel ferrules, crossbar cap, coil end and a bead strand rebuilt, an anchor_grip node | low |
 | WE-09 | `crossbow.glb` | "Medieval Crossbow" by iedalton, https://sketchfab.com/3d-models/medieval-crossbow-cc36ed347db340d59bd2ec7b06ae0d63 | low |
 | WE-10 | `shield_round.glb` | "Medieval Shield" by Artem Mykhailov, https://sketchfab.com/3d-models/medieval-shield-b98b8f64d935415aab0fe9b70074511f | **medium**: "Based on the concept by Artyom Vlaskin", as WE-01 |
 | WE-11 | `daggers.glb` | "Silver Bladed weapons - Fantasy weapon set" by Peter Nox (listed as "Asylum Nox", peter.pottiez, when downloaded), https://sketchfab.com/3d-models/silver-bladed-weapons-fantasy-weapon-set-d5189211a1d348b0a9d7ddc052a22989 | low |

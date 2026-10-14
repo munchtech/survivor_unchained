@@ -24,6 +24,7 @@ each outfit's own.
 """
 import math
 import os
+import re
 import sys
 
 import bmesh
@@ -42,6 +43,11 @@ OUT = ARGS[0]
 ONLY = ARGS[ARGS.index("--only") + 1] if "--only" in ARGS else None
 BODY_OUT = ARGS[ARGS.index("--body") + 1] if "--body" in ARGS else None
 TEX = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "godot", "art", "outfit")
+# Her boots, made as a bootmaker makes them (heroine_boots.py, on this
+# script's helpers: it reads them from here when it is called).
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import heroine_boots as BOOTS
+BOOTS.bind(globals())
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import heroine_rig as rig_helpers  # noqa: E402  (her helper bones, added just before export)
 
@@ -228,7 +234,7 @@ def _folded(mb, weld, nw):
     return out
 
 
-def mend_folds(me, obj=None):
+def mend_folds(me, obj=None, free=None, normals=True):
     nl = len(me.loops)
     cn = np.empty(nl * 3, np.float32)
     me.corner_normals.foreach_get("vector", cn)
@@ -261,7 +267,7 @@ def mend_folds(me, obj=None):
         bad = _folded(mb, weld, len(key))
         if first is None:
             first = len(bad)
-        move = {weld[v.index] for f in bad for v in f.verts} - still
+        move = {weld[v.index] for f in bad for v in f.verts if free is None or free(v.co)} - still
         if not move:
             break
         new = {k: sum((copies[r][0].co for r in ring[k]), Vector()) / max(len(ring[k]), 1) for k in move}
@@ -274,6 +280,9 @@ def mend_folds(me, obj=None):
     mb.to_mesh(me)
     me.update()
     mb.free()
+    if not normals:
+        print("MEND her folds (before cutting): %d folded, %d left, %d points moved" % (first, left, len(moved)))
+        return
     # each corner against the mean normal of the corners at the places round it
     lw = weld[lv]
     S = np.zeros((len(key), 3))
@@ -296,6 +305,16 @@ def mend_folds(me, obj=None):
     me.normals_split_custom_set([tuple(v) for v in out])
     print("MEND her folds: %d folded, %d left after %d passes (%d hand points kept), %d points moved; %d corners given their neighbours' normal"
           % (first, left, it + 1, len(still), len(moved), int((target & ok).sum())))
+
+# Her folds mended before her pieces are cut from her (and again at export,
+# for her normals): cut from the unmended surface, the Arcanist's suit kept
+# the pinched fold at her upper-outer left breast that the mend took out of
+# her skin (animation's judge 11, B2; judge 6).
+# OFF by default (MEND_PRECUT=1): it broke the Warden's plate cups (they ran
+# together across her cleavage and lost a binding, h4), and still did with
+# only positions off her cleavage mended. B2 wants another way.
+if os.environ.get("MEND_PRECUT", "0") == "1":
+    mend_folds(body.data, body, free=lambda co: abs(co.x) > 0.05, normals=False)
 
 # ------------------------------------------------------------ her surface --
 # Welded (the paint's seams split her vertices) and in triangles.
@@ -505,10 +524,41 @@ def crotch_bridge(name, pos, tris, gap_at, mkey, thick, bevel, trim, lift):
     either side of the slot between her thighs: a gusset of even width laid
     straight along the roof of the slot, overlapping the garment's bound
     edges in front and behind."""
-    path = roof_path(GAP_F - 0.014, GAP_B + 0.014, 18, lift=0.002)
-    # (3.4 cm: what must be covered there is 2.4 cm across, and her thighs
-    # pull the skin beside it wider in a lunge or a leap, or lying on her back)
-    return ribbon(name + "_gusset", path, 0.034, mkey, lift=0.0, thick=thick, snap=False)
+    # (close under her, her skin tucked under it, and each line of it moving
+    # with the skin under that line, as the thongs' gussets)
+    # (cut from her own skin, as the thongs' gussets: see gusset())
+    # (on back under the string's foot by 1.5 cm: stopped at GAP_B, short of
+    # the string, the strip between them showed as she vaulted)
+    foot = back_string(CROTCH + 0.155, CROTCH + 0.012)[-1][1]
+    # (LEO_GW: wider by LEO_GW[0] in front of GAP_F + LEO_GW[1], eased out
+    # by GAP_F + LEO_GW[2], under the U's rounded corners)
+    # (judge fin1: the gusset showed below and beside the U as a second stitched
+    # lobe, a flap and a dark wedge: its own binding and stitches, its 21 mm flare
+    # past the U's corners and its sides down the slot's walls (to |N_x| 0.96),
+    # 4 mm off her. Now unbound, LEO_GHALF wide, up the walls only to LEO_GSTEEP,
+    # LEO_GLIFT off her and LEO_GTHICK thick: on the roof of the slot, its edges in
+    # the slot, the U's binding the one edge seen.)
+    half = LEO_GHALF + LEO_GW[0] * ramp(-Y, -(GAP_F + LEO_GW[2]), -(GAP_F + LEO_GW[1]))
+    return gusset(name + "_gusset", mkey, GAP_F - LEO_GUSSET_F, max(GAP_B + 0.014, foot + 0.015), half=half,
+                  thick=LEO_GTHICK if LEO_GTHICK > 0 else thick, steep=LEO_GSTEEP, lift=LEO_GLIFT, bind=LEO_GBIND)
+
+
+def gusset(name, mkey, y_front, y_back, half=0.016, steep=0.96, thick=0.0018, lift=0.001, bind=True):
+    """A gusset cut from her own skin under her crotch, skin-tight (1 mm off
+    her), its edges bound and her skin tucked under it: from y_front to
+    y_back, |x| under `half`, and up the walls of the slot between her thighs
+    only as far as they face down (|N_x| under `steep`). (A flat strip 1 mm
+    under the midline crossed the walls 6 mm out, the top of the slot being
+    only 4 to 8 mm wide, and left their rounded shoulders bare; hung lower,
+    her skin came through it as her thighs parted.)"""
+    field = AND(half - np.abs(X), (steep - np.abs(N[:, 0])) * 0.02, y_back - Y, Y - y_front,
+                Z - (CROTCH - 0.015), (CROTCH + 0.03) - Z)
+    made = piece(name, field, mkey, lift=lift, thick=thick, smooth=2, soften=0, slot=False, bind=bind)
+    # (her skin tucked under it only 3 mm: it moves with the skin under it,
+    # so it needs no more, and tucked 7 mm, as close pieces are, the walls of
+    # the slot showed a gully along each of its edges as her thighs parted)
+    made[0]["tuck"] = 0.3
+    return made
 
 
 def spline(pts, step=0.004):
@@ -622,6 +672,13 @@ def skin_point(p):
 
 def AND(*f):
     return np.minimum.reduce(f)
+
+
+def ANDR(a, b, r=0.01):
+    """Two fields' overlap (metres, positive inside) with its corners
+    rounded `r`, where AND leaves them sharp."""
+    qa, qb = np.maximum(r - a, 0.0), np.maximum(r - b, 0.0)
+    return r - np.hypot(qa, qb) - np.minimum(np.maximum(r - a, r - b), 0.0)
 
 
 def OR(*f):
@@ -1006,9 +1063,19 @@ def clip(f, pos, attr, tris):
     return p2[live], a2[live], re[t2]
 
 
-def weld(pos, attr, tris, r=0.0007):
+def weld(pos, attr, tris, r=0.0007, joined=False):
     """Points closer than r made one (the cut leaves slivers by the vertices
-    it passes close to); triangles that collapse are dropped."""
+    it passes close to); triangles that collapse are dropped. `joined`: only
+    points an edge of the sheet joins (her skin folds back on itself at a
+    nail's edge and in the creases of her fingers, and a weld by distance
+    alone zipped a glove shut across those folds; thickened and bevelled,
+    the zips tore open, judge 14)."""
+    if os.environ.get("WELDDUMP"):  # SOLVER1 TEMP
+        global _WELD_N
+        _WELD_N = globals().get("_WELD_N", 0) + 1
+        _nm = sys._getframe(1).f_locals.get("name", sys._getframe(1).f_code.co_name)
+        np.savez(os.path.join(os.environ["WELDDUMP"], "weld_%04d_%s.npz" % (_WELD_N, _nm)), pos=pos, tris=tris, r=r,
+                 caller=sys._getframe(1).f_code.co_name, line=sys._getframe(1).f_lineno)
     parent = np.arange(len(pos))
 
     def find(i):
@@ -1017,7 +1084,13 @@ def weld(pos, attr, tris, r=0.0007):
             i = parent[i]
         return i
 
-    for i, j in cKDTree(pos).query_pairs(r):
+    pairs = cKDTree(pos).query_pairs(r, output_type="ndarray")
+    if joined and len(pairs):
+        e_ = np.sort(np.vstack([tris[:, [0, 1]], tris[:, [1, 2]], tris[:, [2, 0]]]), 1)
+        k_ = np.unique(e_[:, 0].astype(np.int64) * len(pos) + e_[:, 1])
+        ps_ = np.sort(pairs, 1)
+        pairs = pairs[np.isin(ps_[:, 0].astype(np.int64) * len(pos) + ps_[:, 1], k_)]
+    for i, j in pairs:
         a, b = find(i), find(j)
         if a != b:
             parent[max(a, b)] = min(a, b)
@@ -1034,7 +1107,29 @@ def weld(pos, attr, tris, r=0.0007):
     ok = (t2[:, 0] != t2[:, 1]) & (t2[:, 1] != t2[:, 2]) & (t2[:, 2] != t2[:, 0])
     t2 = t2[ok]
     area = np.linalg.norm(np.cross(p2[t2[:, 1]] - p2[t2[:, 0]], p2[t2[:, 2]] - p2[t2[:, 0]]), axis=1)
-    return p2, a2, t2[area > 1e-10]
+    return p2, a2, cancelled(t2[area > 1e-10])
+
+
+def cancelled(tris):
+    """Triangles on the same three points (a sliver the weld folded flat)
+    cancelled by their winding, as a fold of no area: left in, three or four
+    triangles met at an edge, the walk round the sheet's rim broke there, and
+    the piece's edge was left as cut (the warden's left pauldron, unbound)."""
+    st = np.sort(tris, 1)
+    _, inv, cnt = np.unique(st, axis=0, return_inverse=True, return_counts=True)
+    inv = np.asarray(inv).ravel()
+    dup = cnt[inv] > 1
+    if not dup.any():
+        return tris
+    # (+1 where a triangle runs round its sorted points, -1 the other way)
+    r = np.argmin(tris, 1)
+    par = np.where(tris[np.arange(len(tris)), (r + 1) % 3] == st[:, 1], 1, -1)
+    keep = ~dup
+    for g in np.unique(inv[dup]):
+        ids = np.where(inv == g)[0]
+        net = int(par[ids].sum())
+        keep[ids[par[ids] == np.sign(net)][:abs(net)]] = True
+    return tris[keep]
 
 
 def vertex_normals(pos, tris):
@@ -1076,7 +1171,10 @@ def relax(pos, tris, interior=0, edge=12):
 SPEC = {
     "steel": ("Metal038", (1.0, 1.0, 1.02), 175, 2.5, 1.0, None),
     "darksteel": ("Metal046B", (1.0, 1.0, 1.05), 95, 2.5, 1.0, None),
-    "gold": ("Metal048C", (1.0, 0.92, 0.8), None, 3, 1.0, None),
+    "iron": ("Metal046B", (0.92, 0.84, 0.74), 88, 2.5, 1.0, 0.5),
+    "rivetbronze": ("Metal046B", (1.0, 0.8, 0.6), 100, 2.5, 1.0, 0.48),   # (the spaulder's rivets dark bronze, not black dots, judge 7)   # (rivets: warm dark iron, an even sheen; at 72 they read as black dots beside the plate, judge 6)
+    "gold": ("Metal048C", (1.0, 0.88, 0.7), None, 3, 1.0, None),   # (warmer: it read olive, judge 8)
+    "claspgold": ("Metal048C", (252, 194, 108), None, 3, 1.0, 0.22),   # (the arcanist's clasp: a warm yellow gold, about sRGB 255,200,125 lit, polished; the scan's grain kept and its colour set, judge 9)
     "rust": ("Metal053C", (1, 1, 1), None, 2.5, 0.8, None),
     "leather": ("Leather037", (1, 1, 1), None, 4, 0.0, None),
     "darkleather": ("Leather026", (1.0, 0.8, 0.65), 30, 3, 0.0, None),
@@ -1092,15 +1190,21 @@ SPEC = {
     "lace": ("rough_linen", (1.652, 1.379, 1.12), 235, 14, 0.0, 0.5, 0.85),
     "darkpurple": ("Leather026", (0.55, 0.2, 0.9), 26, 3, 0.0, 0.35),
     "satin": ("rough_linen", (1.652, 1.379, 1.12), 235, 10, 0.0, 0.3),
+    "amethyst": ("rough_linen", (0.62, 0.18, 0.64), 100, 10, 0.0, 0.12),   # (the clasp's violet stone: deep and glossy)
     "greenleather": ("Leather026", (0.42, 0.85, 0.45), 52, 3, 0.0, None),
-    "bronze": ("Metal048C", (0.72, 0.58, 0.46), 95, 3, 1.0, 0.42),
+    "bronze": ("Brushed", (0.72, 0.58, 0.46), 95, 3, 1.0, 0.42),  # (our own brushing, along u: tools/assets/brushed_metal.py)
     "ink": ("rough_linen", (0.22, 0.26, 0.34), 22, 10, 0.0, 0.65),
     "stocking": ("rough_linen", (1.624, 1.356, 1.11), 232, 14, 0.0, 0.45, 0.42),
     # (the linen scan is blue, about (145, 171, 205): these two are tinted from
     # it to a colour, warm ivory and a light saddle brown)
+    # (the arcanist's feathery trim: soft white, drawn as fur shells, finer and longer)
+    "down": ("rough_linen", (1.45, 1.24, 1.03), 228, 3, 0.0, 0.9),
     "bone": ("rough_linen", (1.376, 1.099, 0.779), 183, 12, 0.0, 0.5),
-    "browncloth": ("rough_linen", (0.606, 0.573, 0.234), 78, 18, 0.0, 0.8),
+    "browncloth": ("rough_linen", (0.75, 0.55, 0.36), 78, 18, 0.0, 0.8),  # (a light brown: the old tint read olive)
     "forestleather": ("Leather026", (0.42, 0.66, 0.42), 40, 3, 0.0, None),
+    # (her boots and their cuffs: a darker, greyer green, matte as worn
+    # leather is, its grain finer so it does not mottle; judge 2)
+    "bootleather": ("Leather026", (0.5, 0.6, 0.46), 32, 7, 0.0, 0.62),
     "thread": ("rough_linen", (1.349, 1.034, 0.682), 170, 60, 0.0, 0.5),
 }
 MATS = {}
@@ -1114,9 +1218,12 @@ def mat(key):
     from PIL import Image
     col = np.asarray(Image.open(os.path.join(TEX, f"{src}_diff.jpg")).convert("RGB"), np.float32)
     col = col * np.array(tint)
+    if key == "claspgold":
+        lum = col.mean(2, keepdims=True)
+        col = np.clip(lum / lum.mean(), 0.92, 1.08) * np.array(tint)
     if mean:
         col = col * (mean / col.mean())
-    if key in ("steel", "darksteel", "gold", "bronze"):
+    if key in ("steel", "darksteel", "iron", "gold", "bronze", "rivetbronze"):
         # Scratches and flecks in the scan read as white specks at this scale.
         med = np.median(col.reshape(-1, 3), 0)
         col = np.clip(col, med * 0.8, med * 1.18)
@@ -1144,7 +1251,7 @@ def mat(key):
     else:
         bsdf.inputs["Roughness"].default_value = rough if rough is not None else 0.55
     mm = img(os.path.join(TEX, f"{src}_metal.jpg"), True)
-    if mm:
+    if mm and key != "claspgold":
         nt.links.new(mm.outputs["Color"], bsdf.inputs["Metallic"])
     else:
         bsdf.inputs["Metallic"].default_value = metal
@@ -1178,6 +1285,110 @@ def smooth_closed(curve, sigma, step=0.002):
     return r
 
 
+# (s18 ranger solver 2, RING_ONE: rolls (tube names) each of whose rings goes back on one blend after the
+# helpers' split, see rings_one; RING_BAND: the sheet under the roll shares its rings' blend, eased back to its
+# own over this far in from the roll's inner reach)
+RING_ONE = {k_ for k_ in os.environ.get("RING_ONE", "ranger.corset_bind1,ranger.corset_bind3").split(",") if k_}
+RING_BAND = float(os.environ.get("RING_BAND", "0.004"))
+# (s18 ranger solver 2, BIND_CLAMP: sheet name -> how far past its bound line its thickened edge may stand, m. Where
+# the edge points were moved onto the fair line some edge triangles fell into slivers standing across the sheet (an
+# ear of three edge points, ranger.corset bind1 rings 221 and 223, its one triangle's normal along the roll's outward),
+# and thickened along such normals the sheet's outer edge stood up to 1.2 mm out past its roll: judge fin2 item 6's knob,
+# r_leo_f (830-840,677-692), and right end, bind3 rings 55-65. Pulled back, inside the roll. Rolls named in RING_ONE.)
+BIND_CLAMP = {k_: float(v_) for k_, v_ in (e_.split("=", 1) for e_ in os.environ.get("BIND_CLAMP", "ranger.corset=0.0003").split(",") if e_)}
+
+
+# (s18 ranger solver 2, BIND_REACH: how far in from a roll's line (RING_ONE rolls) a sheet's loose edge is brought out
+# onto it. Under her crotch the ranger's right leg line had a pinch in its cut edge that edge_loops left out of the
+# bound loop (a sub-loop of 8 points or fewer): its points stayed up to 6.7 mm in from the line, the sheet's edge ran
+# up to 3.8 mm short of its roll over 8 mm (bind1 rings 247-251), and skin showed through between them: judge fin2
+# item 6's slit, r_leo_f (865,714). 0 = off.)
+BIND_REACH = float(os.environ.get("BIND_REACH", "0.008"))
+
+
+def reached_to_rolls(name, pos, tris, rolls):
+    """(s18 BIND_REACH) The sheet's edge points not on any bound line but
+    within BIND_REACH in from one (beside its roll, in the sheet's plane)
+    moved straight out onto it."""
+    e_ = np.sort(np.vstack([tris[:, [0, 1]], tris[:, [1, 2]], tris[:, [2, 0]]]), 1)
+    uk_, c_ = np.unique(e_, axis=0, return_counts=True)
+    bv = np.unique(uk_[c_ == 1])
+    lines = []
+    for roll in rolls:
+        if "ring_line" in roll:
+            nv = int(roll["ring_nv"])
+            rp = np.array(roll["ring_pts"], float).reshape(-1, nv, 3)
+            c0 = rp.mean(1)
+            out = rp[:, 0] - c0
+            out /= np.linalg.norm(out, axis=1)[:, None] + 1e-12
+            up = rp[:, nv // 4] - c0
+            up /= np.linalg.norm(up, axis=1)[:, None] + 1e-12
+            lines.append((np.array(roll["ring_line"], float).reshape(-1, 3), out, up))
+    if not lines or BIND_REACH <= 0:
+        return pos
+    on = np.zeros(len(bv), bool)
+    for cur, _, _ in lines:
+        on |= cKDTree(cur).query(pos[bv])[0] < 0.0005
+    pos = pos.copy()
+    n_, mx = 0, 0.0
+    for cur, out, up in lines:
+        q = pos[bv]
+        dn, jn = cKDTree(cur).query(q)
+        s_ = ((q - cur[jn]) * out[jn]).sum(1)
+        h_ = ((q - cur[jn]) * up[jn]).sum(1)
+        m_ = ~on & (s_ < -0.0003) & (s_ > -BIND_REACH) & (np.abs(h_) < 0.002) & (dn < BIND_REACH + 0.001)
+        pos[bv[m_]] -= out[jn[m_]] * s_[m_][:, None]
+        n_ += int(m_.sum())
+        mx = max(mx, float(-s_[m_].min()) if m_.any() else 0.0)
+    if n_:
+        print("BIND_REACH %s: %d loose edge points brought out onto their roll's line (up to %.1f mm)" % (name, n_, mx * 1000))
+    return pos
+
+
+def clamped_to_rolls(sheet, rolls, past):
+    """(s18 BIND_CLAMP) The thickened sheet's points that stand more than
+    `past` out beyond the line its edge was bound on, beside the roll, pulled
+    straight back in (along the roll's outward) to `past`."""
+    me = sheet.data
+    # (the sheet's own space, the space its rolls' rings were made in)
+    co = np.array([v.co[:] for v in me.vertices]).reshape(-1, 3)
+    P = co.copy()
+    D = np.zeros_like(P)
+    n_ = 0
+    for roll in rolls:
+        if "ring_line" not in roll:
+            continue
+        nv = int(roll["ring_nv"])
+        rp = np.array(roll["ring_pts"], float).reshape(-1, nv, 3)
+        cur = np.array(roll["ring_line"], float).reshape(-1, 3)
+        c0 = rp.mean(1)
+        out = rp[:, 0] - c0
+        rw = np.linalg.norm(out, axis=1)
+        out /= rw[:, None] + 1e-12
+        up = rp[:, nv // 4] - c0
+        rh = np.linalg.norm(up, axis=1)
+        up /= rh[:, None] + 1e-12
+        dn, jn = cKDTree(cur).query(P + D)
+        s_ = ((P + D - cur[jn]) * out[jn]).sum(1)
+        h_ = ((P + D - c0[jn]) * up[jn]).sum(1)
+        m_ = (dn < 2 * rw[jn]) & (s_ > past) & (np.abs(h_) < rh[jn] + 0.001)
+        D[m_] -= out[jn[m_]] * (s_[m_] - past)[:, None]
+        n_ += int(m_.sum())
+    if not n_:
+        return
+    idx = np.nonzero(np.abs(D).sum(1) > 0)[0]
+    dl = D
+    for i in idx:
+        me.vertices[int(i)].co = Vector(co[i] + dl[i])
+    if me.shape_keys is not None:
+        for kb in me.shape_keys.key_blocks:
+            for i in idx:
+                kb.data[int(i)].co = Vector(np.array(kb.data[int(i)].co[:]) + dl[i])
+    me.update()
+    print("BIND_CLAMP %s: %d points of its edge standing past the bound line pulled back to %.1f mm past it (moved up to %.2f mm)"
+          % (sheet.name, len(idx), past * 1000, np.linalg.norm(D, axis=1).max() * 1000))
+
+
 def tube(name, curve, nrm, outward, mkey, width, height, overhang, thick, src_pos, src_wt, closed=True, nv=12):
     """A rolled edge along a line: a flattened tube `width` across, centred
     so it reaches `overhang` past the line on its `outward` side, and stands
@@ -1185,11 +1396,18 @@ def tube(name, curve, nrm, outward, mkey, width, height, overhang, thick, src_po
     height above the sheet, wrapping its cut edge). Weights from the sheet
     it binds, one set to each ring."""
     n = len(curve)
-    c0 = curve + outward * (overhang - width / 2) + nrm * (thick / 2)
-    rw, rh = width / 2, thick / 2 + height
     th = np.linspace(0, 2 * np.pi, nv, endpoint=False)
-    pts = (c0[:, None, :] + outward[:, None, :] * (rw * np.cos(th))[None, :, None]
-           + nrm[:, None, :] * (rh * np.sin(th))[None, :, None]).reshape(-1, 3)
+    if np.ndim(width) or np.ndim(height) or np.ndim(overhang) or np.ndim(thick):
+        # (s18 BIND_SLIM: its profile ring by ring)
+        w_, h_, o_, t_ = (np.broadcast_to(np.asarray(v_, float), (n,)) for v_ in (width, height, overhang, thick))
+        c0 = curve + outward * (o_ - w_ / 2)[:, None] + nrm * (t_ / 2)[:, None]
+        pts = (c0[:, None, :] + outward[:, None, :] * ((w_ / 2)[:, None] * np.cos(th)[None, :])[:, :, None]
+               + nrm[:, None, :] * ((t_ / 2 + h_)[:, None] * np.sin(th)[None, :])[:, :, None]).reshape(-1, 3)
+    else:
+        c0 = curve + outward * (overhang - width / 2) + nrm * (thick / 2)
+        rw, rh = width / 2, thick / 2 + height
+        pts = (c0[:, None, :] + outward[:, None, :] * (rw * np.cos(th))[None, :, None]
+               + nrm[:, None, :] * (rh * np.sin(th))[None, :, None]).reshape(-1, 3)
     rows = n + (0 if closed else -1)
     tris = []
     for i in range(rows):
@@ -1229,6 +1447,11 @@ def tube(name, curve, nrm, outward, mkey, width, height, overhang, thick, src_po
         wt = np.vstack([wt, ring[[0, -1]]])
     obj = finish(name, pts, wt, tris, mkey, 0.0, 0.0, 10 ** 7)
     obj["hides"] = False
+    if name in RING_ONE:
+        # (s18 RING_ONE: its rings as made, for rings_one at export)
+        obj["ring_nv"] = nv
+        obj["ring_pts"] = np.asarray(pts[:n * nv], np.float32).ravel().tolist()
+        obj["ring_line"] = np.asarray(curve, np.float32).ravel().tolist()
     return obj
 
 
@@ -1236,14 +1459,19 @@ def edge_loops(tris):
     """A sheet's edge as loops, found in one pass: each edge of a triangle
     whose reverse no triangle has is on the rim, and following those edges
     the way the triangles wind brings each walk home, pinched corners and
-    all, with no searching."""
-    from collections import defaultdict
+    all, with no searching. Edges are counted by direction, and an edge is
+    on the rim as many times as it runs one way more than the other: so the
+    rim is always closed, even where the weld left three or four triangles
+    on one edge (counted as present or not, such an edge dropped out of the
+    rim and the walk stopped short: the ranger's left glove, a loop's last
+    step 27 mm back to its start)."""
+    from collections import Counter, defaultdict
     e = np.vstack([tris[:, [0, 1]], tris[:, [1, 2]], tris[:, [2, 0]]]).tolist()
-    have = set(map(tuple, e))
+    count = Counter(map(tuple, e))
     out = defaultdict(list)
-    for a, b in e:
-        if (b, a) not in have:
-            out[a].append(b)
+    for (a, b), n in count.items():
+        out[a].extend([b] * max(n - count.get((b, a), 0), 0))
+    out = defaultdict(list, {a: v for a, v in out.items() if v})
     loops = []
     while out:
         start = next(iter(out))
@@ -1261,7 +1489,103 @@ def edge_loops(tris):
     return loops
 
 
-def bind_edges(name, pos, at, tris, key, width, height, overhang, thick, sigma=0.012, stitch=False):
+def rounded(cur, rmin, rounds=400):
+    """A closed line with no bend tighter than `rmin`: each point bent
+    tighter than that (its circle through it and its neighbours smaller)
+    eased toward its neighbours with them, until none is. (Eased by a
+    Gaussian alone, a plate's corner kept a bend tighter than its rolled
+    edge was round, and the edge's rings crossed there in a knot, with a
+    hole and a spike; and the arcanist's plunge came to a V.)"""
+    cur = cur.copy()
+    for _ in range(rounds):
+        a, b = np.roll(cur, 1, 0), np.roll(cur, -1, 0)
+        twice = np.linalg.norm(np.cross(cur - a, b - a), axis=1)
+        r = (np.linalg.norm(b - a, axis=1) * np.linalg.norm(cur - a, axis=1) * np.linalg.norm(b - cur, axis=1)
+             / (2 * twice + 1e-15))
+        tight = r < rmin
+        if not tight.any():
+            break
+        m = tight | np.roll(tight, 1) | np.roll(tight, -1)
+        cur = np.where(m[:, None], 0.5 * cur + 0.25 * (a + b), cur)
+    return cur
+
+
+MIRROR_BIND = {"arcanist.corset"}   # (bound edges made the same both sides: the arcanist's plunge, cut on a mesh that is not, stood 0.63 mm apart at its foot, solver 11 October)
+
+
+def mirror_line(cur):
+    """A closed line made the same both sides of her middle (x = 0): each
+    point taken halfway to the mirror of the line's nearest place to its own
+    mirror, wherever the line is within 3 mm of symmetric already."""
+    flip = np.array([-1.0, 1.0, 1.0])
+    m = cur * flip
+    a, e = cur, np.roll(cur, -1, 0) - cur
+    j = cKDTree(cur).query(m)[1]
+    best, bd = None, None
+    for jj in ((j - 1) % len(cur), j):
+        t = np.clip(((m - a[jj]) * e[jj]).sum(1) / ((e[jj] * e[jj]).sum(1) + 1e-30), 0, 1)
+        q = a[jj] + e[jj] * t[:, None]
+        d = np.linalg.norm(q - m, axis=1)
+        if best is None:
+            best, bd = q, d
+        else:
+            best, bd = np.where((d < bd)[:, None], q, best), np.minimum(d, bd)
+    w = np.clip((0.003 - bd) / 0.001, 0, 1)[:, None]
+    return cur + w * 0.5 * (best * flip - cur)
+
+
+BIND_RMIN = {}   # (a piece's name: no bend of its binding tighter than this)
+# (s17 spike2: a piece's name: its binding faces the sheet's faces within 3 mm of
+# the line, weighed by their area, not the one nearest face: at the arcanist's left
+# hip one folded sliver at the edge (0.18 mm2) was the nearest face of four line
+# points, its facing turned over; eased along the line it swung the roll's frame
+# 100 deg over 4 mm and the roll crumpled into a spur, judge fin1)
+BIND_AREA_N = {k_ for k_ in os.environ.get("BIND_AREA_N", "arcanist.corset").split(",") if k_}
+# (a piece's name: its binding faces the sheet as fitted across the roll's width, see bind_edges)
+BIND_FIT = {"ranger.corset"}
+# (s18, judge fin2: a piece's name: its binding slimmed round and under her crotch, to width : height : overhang :
+# centre-thick (the roll centred half that off the sheet's inside, as the sheet's thickness centres it elsewhere). The
+# one-piece's leg-line roll, 8 mm by 4.2 mm, centred on the full 3 mm sheet, stood 2.7 mm proud of its skived 0.9 mm
+# edge; where it turned under her crotch it showed past the sheet as a knob (a_leo_f, a_full_f's foot) and a ragged
+# end (a_leo_qr). Slim: 7 by 2.4 mm, 0.9 mm proud of the skived edge. Full below CROTCH + 4 mm, none above + 20 mm.)
+BIND_SLIM_STITCH = float(os.environ.get("BIND_SLIM_STITCH", "0.05"))   # (s18 leo2: 0.45 = as built in s18leo)
+BIND_SLIM = {k_: tuple(float(v_) for v_ in r_.split(":")) for k_, r_ in (e_.split("=", 1) for e_ in os.environ.get(
+    "BIND_SLIM", "arcanist.corset=0.007:0.0004:0.0015:0.0016").split(",") if e_)}
+
+
+def sheet_untangled(name, pos, ref, tris, zone, rounds=400):
+    """A sheet with no triangle turned over against `ref` (the same sheet
+    before a shaping), as untangled() does her skin: each folded triangle
+    and two rings round it eased toward their neighbours, the edge kept,
+    within `zone` (a mask of points) only, until none is left."""
+    def normals(Q):
+        return np.cross(Q[tris[:, 1]] - Q[tris[:, 0]], Q[tris[:, 2]] - Q[tris[:, 0]])
+    n0 = normals(ref)
+    A = adjacency(len(pos), tris)
+    e = np.vstack([tris[:, [0, 1]], tris[:, [1, 2]], tris[:, [2, 0]]])
+    uk, c = np.unique(np.sort(e, 1), axis=0, return_counts=True)
+    free = np.asarray(zone, bool).copy()
+    free[uk[c == 1].ravel()] = False
+    S, first, k = pos.copy(), None, 0
+    for k in range(rounds):
+        flip = ((normals(S) * n0).sum(1) <= 0) & free[tris].any(1)
+        if first is None:
+            first = int(flip.sum())
+        if not flip.any():
+            break
+        bad = np.zeros(len(S))
+        bad[tris[flip].ravel()] = 1
+        for _ in range(2):
+            bad = np.maximum(bad, (A @ bad > 0).astype(float))
+        m = (bad > 0) & free
+        S = np.where(m[:, None], 0.5 * S + 0.5 * (A @ S), S)
+    left = int((((normals(S) * n0).sum(1) <= 0) & free[tris].any(1)).sum())
+    print("UNTANGLED %s: %d folded triangles, left %d after %d rounds; moved up to %.1f mm"
+          % (name, first, left, k + 1, np.linalg.norm(S - pos, axis=1).max() * 1000))
+    return S
+
+
+def bind_edges(name, pos, at, tris, key, width, height, overhang, thick, sigma=0.012, stitch=False, rmin=None):
     """A sheet's cut outline made fair and bound: each edge loop eased into
     one smooth curve, the sheet's own edge points moved onto it, and a
     rolled edge laid along it that covers the cut, as a garment's edges are
@@ -1275,14 +1599,21 @@ def bind_edges(name, pos, at, tris, key, width, height, overhang, thick, sigma=0
     beads = []
     pos = pos.copy()
     moved = np.zeros(len(pos), bool)
+    bound = 0
+    planes = []
     for k, loop in enumerate(loops):
         lp = pos[loop]
         seg = np.linalg.norm(np.diff(np.vstack([lp, lp[:1]]), axis=0), axis=1)
         # A walk that jumped across the sheet, or a hole too small to bind
         # (a finger's), is left as cut.
         if seg.max() > 0.015 or seg.sum() < 0.07:
+            print("UNBOUND %s: an edge loop of %d points left as cut (longest step %.1f mm, %.1f cm round)"
+                  % (name, len(loop), seg.max() * 1000, seg.sum() * 100))
             continue
+        bound += 1
         cur = smooth_closed(lp, sigma)
+        # (no bend tighter than twice the rolled edge's radius: see rounded())
+        cur = rounded(cur, rmin or BIND_RMIN.get(name) or width)
         # Back onto the sheet (its surface, not the plane of the nearest
         # point: that changed from point to point and stepped the line in
         # depth, unseen face-on, kinked at a glancing view), the move eased
@@ -1295,6 +1626,16 @@ def bind_edges(name, pos, at, tris, key, width, height, overhang, thick, sigma=0
         nrm = np.array([h[1][:] for h in hits])
         _, j = tree.query(cur)
         nrm = np.where(((nrm * nor[j]).sum(1) < 0)[:, None], -nrm, nrm)
+        if name in BIND_AREA_N:
+            fcr_ = np.cross(pos[tris[:, 1]] - pos[tris[:, 0]], pos[tris[:, 2]] - pos[tris[:, 0]])
+            an_ = nrm.copy()
+            for i_, nb_ in enumerate(cKDTree(pos[tris].mean(1)).query_ball_point(on, 0.003)):
+                s_ = fcr_[nb_].sum(0) if nb_ else np.zeros(3)
+                if np.linalg.norm(s_) > 1e-12:
+                    an_[i_] = s_ / np.linalg.norm(s_)
+            # (one sign for the whole line, the winding being the sheet's own: the
+            # nearest point's normal, which set it point by point, was the sliver's)
+            nrm = an_ * (1.0 if (an_ * nor[j]).sum() >= 0 else -1.0)
         for _ in range(12):
             nrm = (np.roll(nrm, 1, 0) + 2 * nrm + np.roll(nrm, -1, 0)) / 4
         nrm /= np.linalg.norm(nrm, axis=1)[:, None] + 1e-12
@@ -1302,6 +1643,26 @@ def bind_edges(name, pos, at, tris, key, width, height, overhang, thick, sigma=0
         for _ in range(6):
             mv = (np.roll(mv, 1, 0) + 2 * mv + np.roll(mv, -1, 0)) / 4
         cur = cur + mv
+        if name in MIRROR_BIND:
+            cur = mirror_line(cur)
+        if name in BIND_FIT:
+            # (its facing from the sheet itself under the roll: a plane fitted
+            # to the sheet within 6 mm of each point of the line. From the
+            # nearest face, eased along the line, it lagged 17-28 deg where the
+            # ranger's cup edge turns down under her arm, and the leather rose
+            # 1-2 mm over the roll's inner flank there: a torn edge, judge 9)
+            fit = nrm.copy()
+            for i, nb in enumerate(tree.query_ball_point(cur, 0.006)):
+                if len(nb) < 4:
+                    continue
+                q = pos[nb]
+                g = np.exp(-0.5 * (np.linalg.norm(q - cur[i], axis=1) / 0.003) ** 2)[:, None]
+                m = (q * g).sum(0) / g.sum()
+                f = np.linalg.eigh(((q - m) * g).T @ (q - m))[1][:, 0]
+                fit[i] = f if f @ nrm[i] > 0 else -f
+            for _ in range(3):
+                fit = (np.roll(fit, 1, 0) + 2 * fit + np.roll(fit, -1, 0)) / 4
+            nrm = fit / (np.linalg.norm(fit, axis=1)[:, None] + 1e-12)
         tg = np.roll(cur, -1, 0) - np.roll(cur, 1, 0)
         tg /= np.linalg.norm(tg, axis=1)[:, None] + 1e-12
         nrm = nrm - tg * (nrm * tg).sum(1)[:, None]
@@ -1310,6 +1671,9 @@ def bind_edges(name, pos, at, tris, key, width, height, overhang, thick, sigma=0
         for _ in range(8):
             bn = (np.roll(bn, 1, 0) + 2 * bn + np.roll(bn, -1, 0)) / 4
         bn = bn - tg * (bn * tg).sum(1)[:, None]
+        if name in BIND_FIT:
+            # (and square to that facing: eased along a tight turn it tilted out of the sheet's plane)
+            bn = bn - nrm * (bn * nrm).sum(1)[:, None]
         bn /= np.linalg.norm(bn, axis=1)[:, None] + 1e-12
         # Outward: away from the sheet's points near the line.
         votes = []
@@ -1340,12 +1704,32 @@ def bind_edges(name, pos, at, tris, key, width, height, overhang, thick, sigma=0
         fix[loop] = False
         pos[fix] -= outward[jn[fix]] * (out_[fix] + 0.0003)[:, None]
         moved |= fix
-        beads.append(tube(f"{name}_bind{k}" if k else f"{name}_bind", cur, nrm, outward, key, width, height, overhang, thick,
+        w_r, h_r, o_r, t_r = width, height, overhang, thick
+        if name in BIND_SLIM:
+            # (s18 BIND_SLIM: slimmer round and under her crotch, eased along the line)
+            sl_ = ramp(-cur[:, 2], -(CROTCH + 0.02), -(CROTCH + 0.004)) * ramp(-np.abs(cur[:, 0]), -0.06, -0.05)
+            for _ in range(8):
+                sl_ = (np.roll(sl_, 1) + 2 * sl_ + np.roll(sl_, -1)) / 4
+            if sl_.max() > 0.01:
+                ws_, hs_, os_, ts_ = BIND_SLIM[name]
+                w_r, h_r, o_r, t_r = (v_ + sl_ * (s_ - v_) for v_, s_ in ((width, ws_), (height, hs_), (overhang, os_), (thick, ts_)))
+                print("BIND_SLIM %s_bind%d: %d of %d rings slimmed (to %.1f by %.1f mm)" % (name, k, int((sl_ > 0.5).sum()), len(cur), ws_ * 1000, (ts_ + 2 * hs_) * 1000))
+        beads.append(tube(f"{name}_bind{k}" if k else f"{name}_bind", cur, nrm, outward, key, w_r, h_r, o_r, t_r,
                           pos, at[:, 3:3 + NB]))
+        if name in BIND_FIT:
+            planes.append((cur.copy(), nrm.copy(), outward.copy()))
         if stitch:
             # (sewn through the binding, along its inner shoulder)
-            c0 = cur + outward * (overhang - width / 2) + nrm * (thick / 2)
-            line = c0 - outward * (width / 2) * 0.45 + nrm * ((thick / 2 + height) * 0.893 + 0.0001)
+            if np.ndim(w_r):
+                c0 = cur + outward * (o_r - w_r / 2)[:, None] + nrm * (t_r / 2)[:, None]
+                # (s18 leo2, judge fin2 regression: on the slimmed rings the inner shoulder lay ~0.4 mm under the
+                # skived sheet's face and the row was lost; there it moves out toward the roll's crown, BIND_SLIM_STITCH
+                # of its half-width in, on the roll's own surface + 0.1 mm)
+                u_ = 0.45 + (BIND_SLIM_STITCH - 0.45) * sl_
+                line = c0 - outward * (w_r / 2 * u_)[:, None] + nrm * ((t_r / 2 + h_r) * np.sqrt(1 - u_ * u_) + 0.0001)[:, None]
+            else:
+                c0 = cur + outward * (overhang - width / 2) + nrm * (thick / 2)
+                line = c0 - outward * (width / 2) * 0.45 + nrm * ((thick / 2 + height) * 0.893 + 0.0001)
             beads += stitches(f"{name}_stitch{k}", line, nrm, tg, pos, at[:, 3:3 + NB], closed=True)
     # The points next to the edge eased, so the sheet meets its new edge
     # without a crease.
@@ -1357,11 +1741,27 @@ def bind_edges(name, pos, at, tris, key, width, height, overhang, thick, sigma=0
         d_ = 0.5 * (A @ pos - pos)
         d_ -= nor_e * (d_ * nor_e).sum(1)[:, None]
         pos = np.where(near[:, None], pos + d_, pos)
-    print("BOUND", name, len(loops), "edge loops")
+    # (BIND_FIT: the sheet under and just inside its roll laid in the roll's
+    # own plane, fully to BF_IN in from the edge and faded out by BF_OUT: the
+    # leather rose 17 deg from 2.5 mm in and lay over the roll's inner flank,
+    # so the roll showed 0.5 mm and the edge read torn, judge 9, solver E)
+    BF_IN, BF_OUT = (float(v) for v in os.environ.get("BIND_FLAT", "0.004,0.008").split(","))
+    BF_MAX = float(os.environ.get("BIND_FLATMAX", "0.0008"))   # (pulled at most this far: unbounded, 6-12 mm, it folded the cup's turn under her arm, e1)
+    for cur, nrm, outward in planes:
+        dn, jn = cKDTree(cur).query(pos)
+        inw = -((pos - cur[jn]) * outward[jn]).sum(1)       # (how far in from the edge)
+        sel = (dn < BF_OUT + 0.002) & (inw > -0.001)
+        t_ = np.clip((inw[sel] - BF_IN) / (BF_OUT - BF_IN), 0, 1)
+        w_ = 1 - t_ * t_ * (3 - 2 * t_)
+        h_ = ((pos[sel] - cur[jn[sel]]) * nrm[jn[sel]]).sum(1)
+        pos[sel] -= nrm[jn[sel]] * np.clip(w_ * h_, -BF_MAX, BF_MAX)[:, None]
+        if len(h_):
+            print("BINDFLAT %s: %d points laid in the roll's plane, off it by up to %.2f mm before" % (name, sel.sum(), np.abs(h_).max() * 1000))
+    print("BOUND", name, bound, "of", len(loops), "edge loops")
     return pos, beads
 
 
-def domes(name, pts, nrms, mkey, r=0.0028, src=None):
+def domes(name, pts, nrms, mkey, r=0.0028, src=None, rise=0.7):
     """Small domed studs (eyelets, rivets) at points, standing on normals."""
     P2, T2 = [], []
     nu, nv = 12, 4
@@ -1371,12 +1771,12 @@ def domes(name, pts, nrms, mkey, r=0.0028, src=None):
         t /= np.linalg.norm(t)
         b = np.cross(n, t)
         o = sum(len(x) for x in P2)
-        q = [p0 + n * r * 0.7]
+        q = [p0 + n * r * rise]
         for k in range(1, nv + 1):
             th = (np.pi / 2) * k / nv
             for j in range(nu):
                 ph = 2 * np.pi * j / nu
-                q.append(p0 + (np.cos(ph) * t + np.sin(ph) * b) * r * np.sin(th) + n * r * 0.7 * np.cos(th))
+                q.append(p0 + (np.cos(ph) * t + np.sin(ph) * b) * r * np.sin(th) + n * r * rise * np.cos(th))
         tri = [(o, o + 1 + j, o + 1 + (j + 1) % nu) for j in range(nu)]
         for k in range(nv - 1):
             a0, b0 = o + 1 + k * nu, o + 1 + (k + 1) * nu
@@ -1552,7 +1952,9 @@ def studs_on(name, objs, aims, mkey, r=0.0026):
             nrms.append(n)
     if not pts:
         return []
-    made = domes(name, pts, nrms, mkey, r=r)
+    # (judge 4: rivets read as black plastic beads: dark iron, lower and
+    # flatter headed, an even sheen in place of the scan's blotched one)
+    made = domes(name, pts, nrms, "iron" if mkey == "darksteel" else mkey, r=r, rise=0.42)
     for o_ in made:
         o_["hides"] = False
     return made
@@ -1935,11 +2337,12 @@ def bubble(pos, tris, clear, out, ref=None):
     return x
 
 
-def taubin(pos, tris, rounds=40):
+def taubin(pos, tris, rounds=40, w=None):
     """Creases, lumps and uneven patches taken out of a sheet without
     shrinking it (Taubin's smoothing: a step in, a slightly larger step back
     out); the more rounds, the larger the unevenness ironed out, while the
-    size and fit stay. The edge stays put."""
+    size and fit stay. The edge stays put. `w` (0 to 1 a point) irons only
+    where it is asked, easing out round it."""
     e = np.vstack([tris[:, [0, 1]], tris[:, [1, 2]], tris[:, [2, 0]]])
     uk, c = np.unique(np.sort(e, 1), axis=0, return_counts=True)
     onb = np.zeros(len(pos), bool)
@@ -1947,7 +2350,7 @@ def taubin(pos, tris, rounds=40):
     A = adjacency(len(pos), tris)
     for _ in range(rounds):
         for k in (0.5, -0.53):
-            pos = np.where(onb[:, None], pos, pos + k * (A @ pos - pos))
+            pos = np.where(onb[:, None], pos, pos + k * (1.0 if w is None else w[:, None]) * (A @ pos - pos))
     return pos
 
 
@@ -1983,20 +2386,119 @@ def mirrored(pos, at, tris):
     return np.vstack([p, mp]), np.vstack([a, ma]), np.vstack([t, t[:, ::-1] + len(p)])
 
 
-def clear_of_skin(pos, lift):
-    """At least `lift` off her skin everywhere."""
-    moved = 0
+def pushes_off_skin(pos, lift):
+    """How far, and which way, each point must move to stand `lift` off her skin
+    (one distance, or one to each point)."""
+    push = np.zeros_like(pos)
+    lift = np.broadcast_to(np.asarray(lift, float), (len(pos),))
     for i in range(len(pos)):
         q, n, _, _ = BVH.find_nearest(Vector(pos[i]))
         if q is None:
             continue
         d = (Vector(pos[i]) - q).dot(n)
-        if d < lift:
-            pos[i] = (Vector(pos[i]) + n * (lift - d))[:]
-            moved += 1
-    if moved:
-        print("CLEAR pushed", moved, "of", len(pos))
+        if d < lift[i]:
+            push[i] = (n * (lift[i] - d))[:]
+    return push
+
+
+def clear_of_skin(pos, lift, tris=None, spread=0.003, rounds=20, fall=0.9):
+    """At least `lift` off her skin everywhere. With `tris`, the part of any
+    push over `spread` is smoothed over the sheet, its way averaged with its
+    neighbours' and its size never less than the point's own need, nor less
+    than `fall` of theirs (so it fades out round the pushed patch): a plate
+    lifted off a hollow moves as one piece. (Pushed point by point, each
+    along its own nearest normal, the neck side of the ranger's second
+    pauldron, 19 mm off her over the rise of her neck, was torn from 5 mm
+    steps to 24 mm and its rim could not be bound.) Pushes under `spread`
+    (every skin-tight piece's) are left exactly as they were."""
+    push = pushes_off_skin(pos, lift)
+    size = np.linalg.norm(push, axis=1)
+    if tris is not None and len(tris) and size.max() > spread:
+        over = push * (np.maximum(size - spread, 0) / np.maximum(size, 1e-12))[:, None]
+        need = np.linalg.norm(over, axis=1)
+        A = adjacency(len(pos), tris)
+        eased = over.copy()
+        for _ in range(rounds):
+            m = A @ eased
+            ml = np.linalg.norm(m, axis=1)
+            mag = np.maximum(ml * fall, need)
+            eased = np.where((ml > 1e-12)[:, None], m / np.maximum(ml, 1e-12)[:, None] * mag[:, None], eased)
+        pos = pos + (push - over) + eased
+        # (an eased push can lean off a point's own normal: made up here)
+        push = pushes_off_skin(pos, lift)
+        size = np.linalg.norm(push, axis=1)
+        print("CLEAR eased pushes over %.0f mm (largest %.1f mm) out over the sheet" % (spread * 1000, np.linalg.norm(over, axis=1).max() * 1000 + spread * 1000))
+    pos = pos + push
+    if (size > 0).any():
+        print("CLEAR pushed", int((size > 0).sum()), "of", len(pos))
     return pos
+
+
+NEST = {}   # (plates nested in a set: their directions and radii so far)
+
+
+def shell(name, pos, centre, clear, most=0.006, nest=None):
+    """A rigid plate's surface: its distance from `centre` (the ball of her
+    shoulder) fitted, over the directions it covers, by a smooth quadric in
+    them, so the plate is one fair dome and no longer a cast of the muscle
+    under it (judge 2: the pauldrons were lumpy); then lifted as a whole,
+    up to `most`, until it stands `clear` off her everywhere (any rest left
+    to clear_of_skin)."""
+    d = pos - centre
+    r = np.linalg.norm(d, axis=1)
+    u = d / r[:, None]
+    x, y, z = u.T
+    B = np.stack([np.ones_like(x), x, y, z, x * x, y * y, x * y, y * z, z * x], 1)
+    # (fitted again without the points far off it, a scrap or a fold, which
+    # then keep their own distance within 4 mm of the dome's)
+    keep = np.ones(len(r), bool)
+    # (ridged: a plate covering a narrow spread of directions left the fit
+    # ill-posed, and it ran off by a metre at its fringe)
+    for _ in range(4):
+        Bk = B[keep]
+        coef = np.linalg.solve(Bk.T @ Bk + 1e-4 * len(Bk) * np.diag([0] + [1] * (B.shape[1] - 1)), Bk.T @ r[keep])
+        rf = B @ coef
+        res = np.abs(rf - r)
+        keep = res < max(3 * np.sqrt((res[keep] ** 2).mean()), 0.004)
+    # (and no point moved more than 12 mm from where it was cast)
+    if nest is None:
+        rf = np.clip(np.where(keep, rf, np.clip(r, rf - 0.004, rf + 0.004)), r - 0.012, r + 0.012)
+    # (a set's plate is the dome exactly: points left off it within 4 mm
+    # dented lame 2 and waved its rim, judge 5)
+    print("SHELL %s: %d of %d points off the dome, eased to within 4 mm of it" % (name, (~keep).sum(), len(r)))
+    up = 0.0
+    for _ in range(6):
+        q = centre + u * (rf + up)[:, None]
+        need = np.linalg.norm(pushes_off_skin(q, clear), axis=1).max()
+        if need < 0.0002 or up >= most:
+            break
+        up = min(most, up + need * 1.15)
+    print("SHELL %s: fair dome, %.1f mm rms off the cast (largest %.1f), lifted %.1f mm" %
+          (name, np.sqrt(((rf - r) ** 2).mean()) * 1000, np.abs(rf - r).max() * 1000, up * 1000))
+    rf = rf + up
+    if nest is not None:
+        # (lames, built from the lowest up: each lifted as a whole until it
+        # stands `step` outside every plate under it wherever it overlaps
+        # them, so one never cuts through another; fitted alone, they did)
+        # (compared in the world, along this plate's own rays: each plate
+        # has its own centre, on her arm at its height)
+        group, step = nest
+        if group in NEST:
+            q = NEST[group]
+            here = centre + u * rf[:, None]
+            dist, j = cKDTree(q).query(here, distance_upper_bound=0.03)
+            ok = np.isfinite(dist)
+            dd = here[ok] - q[j[ok]]
+            radial = (dd * u[ok]).sum(1)
+            lateral = np.linalg.norm(dd - radial[:, None] * u[ok], axis=1)
+            over = lateral < 0.004
+            need = max(0.0, float((step - radial[over]).max())) if over.any() else 0.0
+            rf = rf + need
+            print("SHELL %s: nested %.1f mm out over the %d points it overlaps" % (name, need * 1000, over.sum()))
+            NEST[group] = np.vstack([q, centre + u * rf[:, None]])
+        else:
+            NEST[group] = centre + u * rf[:, None]
+    return centre + u * rf[:, None]
 
 
 def dump(name, stage, pos, tris, field):
@@ -2006,16 +2508,76 @@ def dump(name, stage, pos, tris, field):
         np.savez(os.path.join(os.environ.get("TEMP", "."), f"dump_{name}_{stage}.npz"), pos=pos, tris=tris, field=field)
 
 
-def over_nipples(pos, tris, least=0.003, s=0.009):
+def mls_flat(pos, w, n, sigma):
+    """A sheet's points moved, along `n`, onto a local quadric fitted to
+    the sheet round each (moving least squares, Gaussian `sigma`): what is
+    smaller than about `sigma` (muscle, a nipple's cone) is gone and the
+    sheet's own curve stays, as a stiffened panel or a cup moulded over a
+    form would lie. Moved by `w` (0 to 1) a point; only points within
+    `sigma` of its height are fitted, so the far side of a fold never pulls
+    on it."""
+    n = np.asarray(n, float) / np.linalg.norm(n)
+    a = np.cross(n, [0.0, 0.0, 1.0] if abs(n[2]) < 0.9 else [1.0, 0.0, 0.0])
+    a /= np.linalg.norm(a)
+    b = np.cross(n, a)
+    u, v, h = pos @ a, pos @ b, pos @ n
+    tree = cKDTree(np.c_[u, v])
+    out = pos.copy()
+    for i in np.where(w > 1e-3)[0]:
+        j = np.asarray(tree.query_ball_point([u[i], v[i]], 2.5 * sigma), int)
+        j = j[np.abs(h[j] - h[i]) < sigma]  # (this layer of the sheet only)
+        if len(j) < 12:
+            continue
+        du, dv = u[j] - u[i], v[j] - v[i]
+        g = np.exp(-(du * du + dv * dv) / (2 * sigma * sigma))
+        M = np.c_[np.ones(len(j)), du, dv, du * du, du * dv, dv * dv] * np.sqrt(g)[:, None]
+        c = np.linalg.lstsq(M, h[j] * np.sqrt(g), rcond=None)[0]
+        out[i] = pos[i] + n * (w[i] * (c[0] - h[i]))
+    return out
+
+
+def over_nipples(pos, tris, least=float(os.environ.get("NIP_RISE", "0.0015")), s=0.008, dome=0.065, rim_reach=0.02, fit=0.02):
     """A garment cut over her filled breasts drawn over each nipple as a
     low, soft rise (`least` high, `s` its spread), so her nipples show
     through it as shapes; the tip of her nipple, through it, is hidden
     under it (the owner: hide the tip, leave the nipple visible). (Raised
-    to clear all of her nipple, it was a cone.)"""
+    to clear all of her nipple, it was a cone; 3 mm high and 9 mm across,
+    the owner wanted less poke, the same on both: 1.5 mm and 11 mm, her
+    skin's own tip tucked under it, and each rise set on the two nipples'
+    mirrored mean, so neither sits higher or further out. Still a point:
+    the cup followed her breast's own cone to its tip, so first it is eased
+    into a dome within `dome` of each tip, along its normals only, and the
+    rise is 0.7 mm over about 16 mm. Judge 9: at 0.7 mm it can't be seen
+    from either side, and the owner asked for it on the Arcanist and the
+    Ranger: back to the owner's own 1.5 mm, NIP_RISE.)"""
+    mean = (NIPPLE["l"] * np.array([-1, 1, 1]) + NIPPLE["r"]) / 2
+    tips = [mean * np.array([-1 if sd == "l" else 1, 1, 1]) for sd in ("l", "r")]
+    dist = np.min([np.linalg.norm(pos - t, axis=1) for t in tips], axis=0)
+    # (judge 3: eased within 35 mm on a smoothstep, the dome's own rim was a
+    # bump in the highlight. Now 65 mm on a smootherstep (curvature-continuous
+    # at its rim), and eased off over `rim_reach` toward the cut edge rather
+    # than pinned there: a sweetheart or plunge line can pass within reach.)
+    w = np.clip(1 - dist / dome, 0, 1)
+    w = w ** 3 * (w * (6 * w - 15) + 10)
+    rim = np.array([v for loop in edge_loops(tris) for v in loop], int)
+    if len(rim):
+        rd = cKDTree(pos[rim]).query(pos)[0]
+        t = np.clip(rd / rim_reach, 0, 1)
+        w = w * t ** 3 * (t * (6 * t - 15) + 10)
+    # (and the cone taken out by a fit, not by smoothing: smoothed along its
+    # normals over so wide a reach, her breast itself would shrink. A local
+    # quadric of the sheet over each breast, `fit` wide, keeps her breast's
+    # curve and drops anything smaller, her nipple's cone with it.)
+    for sd, t in zip(("l", "r"), tips):
+        near = np.linalg.norm(pos - t, axis=1) < dome
+        if near.sum() < 30:
+            continue
+        nrm = vertex_normals(pos, tris)[near].mean(0)
+        pos = mls_flat(pos, w * near, nrm / np.linalg.norm(nrm), fit)
     nor = vertex_normals(pos, tris)
     out = pos.copy()
     for sd in ("l", "r"):
-        tip = NIPPLE[sd]
+        tip = mean * np.array([-1 if sd == "l" else 1, 1, 1])
         near = np.where(np.linalg.norm(pos - tip, axis=1) < 0.05)[0]
         if len(near) < 10:
             continue
@@ -2027,8 +2589,109 @@ def over_nipples(pos, tris, least=0.003, s=0.009):
     return out
 
 
-def piece(name, field, mkey, lift=0.003, thick=0.003, smooth=0, bevel=0.0012, trim=None, clear=None, soften=3, dome=False, keep_off=("Head", "neck_01"), cut=None, iron=0, hull=None, studs=None, budget=None, filled=False, edge=30, slot=True, bridge=False, bind=True):
-    """A region of her skin made into a piece of her outfit. `trim`, as
+SHEET = {}   # (each piece's sheet as finished: points, triangles, weights, thickness)
+
+
+# (judge fin1 c: two steel spikes stood out past the gold roll down the back of each
+# Warden greave, over her heel: a sliver of the cut 0.02-0.04 mm high, or a triangle
+# folded back over its neighbour, at the sheet's edge, thickened along its skewed
+# facing. GREAVE_RIM=1: such triangles at the edge dropped before the plate is made
+# (the roll already lies along the edge and covers the notch they leave); 0: as before.)
+GREAVE_RIM = os.environ.get("GREAVE_RIM", "1") == "1"
+
+
+def rim_cleaned(name, pos, at, tris, least=0.0002, fold=0.3, rounds=6):
+    """A sheet's edge cleared of slivers and folds: each triangle on its edge
+    lower than `least` (its smallest height) or folded against a neighbour
+    (their facings' dot under `fold`) dropped, again as the edge moves in;
+    the points left without a triangle dropped with them."""
+    tris = np.asarray(tris)
+    gone = 0
+    for _ in range(rounds):
+        nf = len(tris)
+        e = np.sort(np.vstack([tris[:, [0, 1]], tris[:, [1, 2]], tris[:, [2, 0]]]), 1)
+        _, iv, cnt = np.unique(e, axis=0, return_inverse=True, return_counts=True)
+        iv = iv.ravel()
+        on_edge = (cnt[iv].reshape(3, -1) == 1).any(0)
+        a, b, c = pos[tris[:, 0]], pos[tris[:, 1]], pos[tris[:, 2]]
+        fn = np.cross(b - a, c - a)
+        ar = np.linalg.norm(fn, axis=1)
+        fu = fn / (ar[:, None] + 1e-15)
+        longest = np.maximum.reduce([np.linalg.norm(b - a, axis=1), np.linalg.norm(c - b, axis=1), np.linalg.norm(a - c, axis=1)])
+        height = ar / (longest + 1e-15)
+        o = np.argsort(iv, kind="stable")
+        s = iv[o]
+        k = np.where(s[1:] == s[:-1])[0]
+        f1, f2 = o[k] % nf, o[k + 1] % nf
+        d = (fu[f1] * fu[f2]).sum(1)
+        worst = np.ones(nf)
+        np.minimum.at(worst, f1, d)
+        np.minimum.at(worst, f2, d)
+        bad = on_edge & ((height < least) | (worst < fold))
+        if not bad.any():
+            break
+        gone += int(bad.sum())
+        tris = tris[~bad]
+    if gone:
+        used = np.unique(tris)
+        remap = np.full(len(pos), -1, dtype=np.int64)
+        remap[used] = np.arange(len(used))
+        pos, at, tris = pos[used], at[used], remap[tris]
+    print("RIMCLEAN %s: %d slivers or folds dropped from its edge" % (name, gone))
+    return pos, at, tris
+
+
+# A lining under part of a piece's edge (GREAVE_LINE, s17 lead; the
+# coordinator's ruling on fin1's dark slit over her heel): dark leather from
+# just inside the edge (spec[3] in, under the plate) down toward her skin,
+# spec[0] short of it and at most spec[1] of the way, eased in over spec[2]
+# where a run of the chosen edge ends. `sel(pos, loop)` picks the loops.
+# Like the Warden cups' CUP_LINE: closed from the inside, the plate's own
+# form and edge are as judged; the lining rides with the plate's weights.
+GREAVE_LINE = [float(v) for v in os.environ.get("GREAVE_LINE", "0.0012,0.9,0.006,0.0015").split(",")]
+
+
+def edge_lining(name, pos, at, tris, spec, sel):
+    if spec[0] <= 0:
+        return None
+    loops = [np.array(lp) for lp in edge_loops(tris) if sel(pos, lp)]
+    tree_ = cKDTree(pos)
+    LP, LW, LT = [], [], []
+    for run in loops:
+        k_ = len(run)
+        if k_ < 4:
+            continue
+        q = pos[run]
+        qq = np.vstack([q[-1:], q, q[:1]])
+        tg = (qq[2:] - qq[:-2])
+        tg /= np.maximum(np.linalg.norm(tg, axis=1), 1e-9)[:, None]
+        n_ = at[run, :3] / np.maximum(np.linalg.norm(at[run, :3], axis=1), 1e-9)[:, None]
+        inn = np.cross(n_, tg)
+        inn /= np.maximum(np.linalg.norm(inn, axis=1), 1e-9)[:, None]
+        m_ = k_ // 2
+        if at[tree_.query(q[m_] + inn[m_] * 0.004)[1], -1] < at[tree_.query(q[m_] - inn[m_] * 0.004)[1], -1]:
+            inn = -inn
+        a_ = q + inn * spec[3] - n_ * 0.0003
+        sk_ = np.array([SKIN_BVH.find_nearest(Vector(v))[0][:] for v in a_])
+        L_ = np.linalg.norm(sk_ - a_, axis=1)
+        f_ = np.clip((L_ - spec[0]) / np.maximum(L_, 1e-6), 0, spec[1])
+        b_ = a_ + (sk_ - a_) * f_[:, None]
+        o_ = sum(len(x) for x in LP)
+        nx = [(i + 1) % k_ for i in range(k_)]
+        LP.append(np.vstack([a_, b_]))
+        LW.append(np.vstack([at[run, 3:3 + NB]] * 2))
+        LT += [[o_ + i, o_ + nx[i], o_ + k_ + nx[i]] for i in range(k_)] + [[o_ + i, o_ + k_ + nx[i], o_ + k_ + i] for i in range(k_)]
+        print("EDGE LINING %s: %d points round its edge; the plate %.1f-%.1f mm off her there, the lining %.1f mm deep at most"
+              % (name, k_, L_.min() * 1000, L_.max() * 1000, (L_ * f_).max() * 1000))
+    if not LP:
+        return None
+    return np.vstack(LP), np.vstack(LW), np.array(LT)
+
+
+def piece(name, field, mkey, lift=0.003, thick=0.003, smooth=0, bevel=0.0012, trim=None, clear=None, soften=3, dome=False, keep_off=("Head", "neck_01"), cut=None, iron=0, hull=None, studs=None, budget=None, filled=False, edge=30, slot=True, bridge=False, bind=True, rigid=None, stiff=None, studs_off=None, weigh=None, hold=None, crotch=None, rim_clean=False, line=None):
+    """A region of her skin made into a piece of her outfit. `rigid`, a
+    centre, makes it a rigid plate: a fair dome round that centre (shell())
+    on one blend of bones throughout, so it moves as one piece. `trim`, as
     (material, width, height, thickness), edges it with a band laid on the
     piece itself, so the two can never part. `clear` is how close to the
     skin it may come once smoothed (the lift unless said): plate lifted well
@@ -2047,20 +2710,57 @@ def piece(name, field, mkey, lift=0.003, thick=0.003, smooth=0, bevel=0.0012, tr
     # behind the slot between her thighs (`gap` is how far a point is out
     # of that box), and the two cut edges joined by a strip under her.
     gap = np.maximum.reduce([GAP_F - Y, Y - GAP_B, Z - GAP_Z, np.abs(X) - 0.07]) if bridge else np.ones(len(P))
-    pos, at, tris = clip(np.minimum(f, gap), P_FILLED if (dome or filled) else P, np.hstack([attr, gap[:, None]]), TRI)
+    # (`crotch`, a field on her skin taken as it is, not eased: what a one-piece
+    # keeps of her under the crotch, its own sheet carried on there, no gusset)
+    clipf = np.minimum(f, gap) if crotch is None else np.maximum(np.minimum(f, gap), crotch)
+    if crotch is not None:
+        attr[:, -1] = clipf
+    dump(name, "0skin", P_FILLED if (dome or filled) else P, TRI, clipf)  # SOLVER1 TEMP
+    pos, at, tris = clip(clipf, P_FILLED if (dome or filled) else P, np.hstack([attr, gap[:, None]]), TRI)
     if len(tris) == 0:
         print("EMPTY", name)
         return []
-    pos, at, tris = weld(pos, at, tris)
+    pos, at, tris = weld(pos, at, tris, joined=name in FOLD_SAFE)
     dump(name, "1clip", pos, tris, at[:, -2])
     gap_at, at = at[:, -1], at[:, :-1]
     nor = at[:, :3] / (np.linalg.norm(at[:, :3], axis=1)[:, None] + 1e-12)
+    if crotch is not None:
+        PIECE_SRC[name] = (pos.copy(), nor.copy())
     pos = pos + nor * lift
     if hull is not None:
         pos = hulled(pos, at[:, -3], tris)
     pos = relax(pos, tris, interior=smooth, edge=edge)
     if iron:
         pos = taubin(pos, tris, rounds=iron)
+    if stiff is not None:
+        # (a stiffened panel: ironed far more where `stiff` asks, then held
+        # off her skin below, so it bridges what it no longer follows)
+        # (judge 3: Taubin's smoothing keeps every wave longer than a few
+        # edges, so her abs stayed; a quadric fit `stiff[0]` wide drops them.)
+        # (several zones, each fitted and lifted on its own: (width, field))
+        for st in (stiff if isinstance(stiff, list) else [stiff]):
+            if callable(st):
+                # (or a piece's own shaping, handed its sheet: the arcanist's
+                # taut gore)
+                pos = st(pos, tris)
+                continue
+            wide, zone = st[:2]
+            sw = zone(pos)
+            if len(st) > 2 and st[2] > 0:
+                # (faded to nothing over the last `st[2]` before its edge: fitted
+                # up to the edge, the plunge's foot stood 7 mm off her and its
+                # bound edge came out toothed, judge 6; the distance to the
+                # edge is the exact cut's where one is given: the field the
+                # sheet was cut from stands 20 mm past the plunge, so it
+                # never faded there)
+                sw = sw * ramp(np.minimum(at[:, -1], cut(pos)) if callable(cut) else at[:, -1], 0.0, st[2])
+            pos = mls_flat(pos, sw, (0.0, -1.0, 0.0), wide)
+            # (lifted as a whole, where stiff, onto what it now bridges: pushed
+            # off point by point it took the shape back)
+            need = np.linalg.norm(pushes_off_skin(pos, lift), axis=1)
+            up = np.percentile(need[sw > 0.5], 95) if (sw > 0.5).any() else 0.0
+            pos = pos + vertex_normals(pos, tris) * (sw * up)[:, None]
+            print("STIFF %s: fitted %.0f mm wide, lifted %.1f mm" % (name, wide * 1000, up * 1000))
     dump(name, "2shaped", pos, tris, at[:, -1])
     if filled and not dome:
         pos = over_nipples(pos, tris)
@@ -2083,14 +2783,32 @@ def piece(name, field, mkey, lift=0.003, thick=0.003, smooth=0, bevel=0.0012, tr
         pos, at, tris = clip(at[:, -2], pos, at, tris)
         pos, at, tris = weld(pos, at, tris)
         pos = relax(pos, tris, interior=0)
+        if crotch is not None and LEO_LIP > 0:
+            # (the one-piece's edge round the V's foot: no lip up a crease's far wall, see LEO_LIP)
+            pos, at, tris = lip_trimmed(name, pos, at, tris, LEO_LIP)
         dump(name, "3cut", pos, tris, at[:, -1])
+    if hold is not None:
+        # (`hold`: chosen edges held down onto her skin, see held_edges)
+        pos, held = held_edges(name, pos, tris, *hold)
+    if rigid is not None:
+        if isinstance(rigid, tuple):
+            pos = shell(name, pos, np.asarray(rigid[0], float), lift if clear is None else clear, nest=rigid[1:])
+        else:
+            pos = shell(name, pos, np.asarray(rigid, float), lift if clear is None else clear)
+        # (one blend for the whole plate, its skin's mean: it moves rigidly)
+        at[:, 3:3 + NB] = four_bones(at[:, 3:3 + NB].mean(0, keepdims=True))
     if not dome and not filled:
-        pos = clear_of_skin(pos, lift if clear is None else clear)
+        pos = clear_of_skin(pos, lift if clear is None else (clear(pos) if callable(clear) else clear), tris)
+    dump(name, "3pre", pos, tris, at[:, -1])  # SOLVER1 TEMP
     # Every edge bound: in the trim's colour where one is asked, else in the
     # piece's own (a rolled hem). Sheer and painted pieces are left as cut.
     beads = []
     # (eased before its edge is bound, so the binding moves as the edge does)
     at[:, 3:3 + NB] = four_bones(eased_weights(pos, tris, at[:, 3:3 + NB]))
+    # (`weigh`: the piece's own weights over its skin's; the spaulder's
+    # leather takes each plate's blend where riveted under it)
+    if weigh is not None:
+        at[:, 3:3 + NB] = four_bones(weigh(pos, at[:, 3:3 + NB]))
     if bind and len(SPEC[mkey]) < 7 and mkey != "ink":
         if trim:
             tkey, w, h, tt = trim
@@ -2099,15 +2817,32 @@ def piece(name, field, mkey, lift=0.003, thick=0.003, smooth=0, bevel=0.0012, tr
             bspec = (mkey, 0.0045, 0.0005, 0.0015)
         pos, beads = bind_edges(name, pos, at, tris, bspec[0], bspec[1], bspec[2], bspec[3], thick,
                                 stitch=kind(mkey) == "leather")
+        if name in BIND_CLAMP:
+            # (s18 BIND_REACH: its loose edge brought out onto its rolls)
+            pos = reached_to_rolls(name, pos, tris, beads)
         dump(name, "4bound", pos, tris, at[:, -1])
         trim = None
+    if rim_clean:
+        # (`rim_clean`: slivers and folds at its edge dropped, see rim_cleaned)
+        pos, at, tris = rim_cleaned(name, pos, at, tris)
+    SHEET[name] = (pos.copy(), tris.copy(), at[:, 3:3 + NB].copy(), thick)
+    lining = edge_lining(name, pos, at, tris, line[0], line[1]) if line is not None else None
     made = [finish(name, pos, at[:, 3:3 + NB], tris, mkey, thick, bevel, budget or (8000 if dome else 3000))] + beads
+    if name in BIND_CLAMP:
+        # (s18 BIND_CLAMP: its thickened edge kept inside its rolls)
+        clamped_to_rolls(made[0], beads, BIND_CLAMP[name])
+    if lining is not None:
+        # (`line`: a dark leather lining under the chosen edge, see edge_lining)
+        made.append(finish(name + "_lining", lining[0], lining[1], lining[2], "darkleather", 0.0012, 0.0004, 10 ** 6))
+    if hold is not None and len(held):
+        # (the held edge as built, for her skin's tuck under it: BODY_OUT)
+        made[0]["hold_line"] = pos[held].ravel().tolist()
     if any("_stitch" in o.name for o in beads):
         made[0]["geo_stitch"] = True
-    if bridge:
+    if bridge and crotch is None:
         made += crotch_bridge(name, pos, tris, gap_at, mkey, thick, bevel, trim, lift)
     if studs:
-        made += rivets(name, pos, at, tris, thick, studs)
+        made += rivets(name, pos, at, tris, thick, studs, off=studs_off)
     if trim:
         tkey, w, h, tt = trim
         tp, ta, tr = clip(w - at[:, -1], pos, at, tris)
@@ -2118,56 +2853,248 @@ def piece(name, field, mkey, lift=0.003, thick=0.003, smooth=0, bevel=0.0012, tr
     # Only the piece itself hides her skin: its binding, trim, studs and
     # stitches overhang its edge, and skin hidden under them showed as holes
     # in her just past it.
+    # (A rigid plate tucks nothing: it moves apart from her skin, and the
+    # skin tucked under it showed in its shadow as it swung.)
     for o in made:
-        o["hides"] = o is made[0] and len(SPEC[mkey]) < 7
+        o["hides"] = o is made[0] and len(SPEC[mkey]) < 7 and rigid is None
     return made
 
 
-def rivets(name, pos, at, tris, thick, mkey, spacing=0.028, inset=0.011, r=0.0032):
-    """Domed rivets set in from a piece's edge every `spacing`, on its
-    outer face: the detail that makes a plate read as made."""
-    f = at[:, -1]
-    cand = np.where(np.abs(f - inset) < 0.0025)[0]
-    if len(cand) == 0:
-        return []
-    picked = []
-    tree_p = []
-    for i in cand[np.argsort(pos[cand, 2])]:
-        if all(np.linalg.norm(pos[i] - q) >= spacing for q in tree_p):
-            picked.append(i)
-            tree_p.append(pos[i])
+HOLD_OFF, HOLD_FULL, HOLD_SLOPE = (float(v) for v in os.environ.get("HOLD", "0.001,0.012,0.25").split(","))
+HOLD_BAND, HOLD_GROOVE, HOLD_SOFT = (float(v) for v in os.environ.get("HOLD_TUCK", "0.05,0.0015,0.030").split(","))
+# (the leotard leg lines held onto her, 419ede90, down to their foot at the crotch
+# (LEO_HOLD_Z: select above, fade from/to, metres over CROTCH): seen from the game camera
+# at her front quarter, the strip showed by a pixel under the foot of the leg line, which
+# stood 2-4 mm off her there; LEO_FOOT widens the foot (eased out over 3.5 cm up) and
+# LEO_GUSSET_F carries the gusset further forward under it, the bare corner between them
+# 3.9 mm from the strip. HOLD_CAP: under a held edge her tuck is eased in from the edge
+# for every rule, not only the hold's (the standard rule tucked 7 mm right at the held edge,
+# seen as cyan slivers when the cloth lifted in motion).)
+LEO_HOLD = os.environ.get("LEO_HOLD", "1") == "1"
+LEO_HOLD_Z = tuple(float(v) for v in os.environ.get("LEO_HOLD_Z", "0.002,-0.02,-0.01").split(","))
+HOLD_CAP = os.environ.get("HOLD_CAP", "1") == "1"
+LEO_FOOT = float(os.environ.get("LEO_FOOT", "0.004"))
+LEO_GUSSET_F = float(os.environ.get("LEO_GUSSET_F", "0.026"))
+LEO_U = tuple(float(v) for v in os.environ.get("LEO_U", "0.016,0.004").split(","))
+# (LEO_GW: the gusset LEO_GW[0] wider in front of GAP_F + LEO_GW[1], eased out by
+# GAP_F + LEO_GW[2], under the U's rounded corners; LEO_UG: where the gusset is
+# under the U's edge, from LEO_UG[0] inside its edge to LEO_UG[1] outside; LEO_UH:
+# there the edge is held onto the gusset's top, LEO_UH * 30 mm higher, not off it)
+LEO_UG = tuple(float(v) for v in os.environ.get("LEO_UG", "0.001,0.005").split(","))
+LEO_GW = tuple(float(v) for v in os.environ.get("LEO_GW", "0.005,0,0.015").split(","))
+# (the arcanist's gusset, judge fin1: LEO_GHALF its half-width, LEO_GSTEEP how far up the
+# slot's walls (|N_x|), LEO_GLIFT off her, LEO_GTHICK thick (0: the corset's), LEO_GBIND=1
+# binds and stitches its edges. Defaults as built before (s17: unbound, narrowed or kept off
+# the walls, the strip under her showed from the game cameras: vis5 game 0 -> 50 to 312))
+LEO_GHALF = float(os.environ.get("LEO_GHALF", "0.016"))
+LEO_GSTEEP = float(os.environ.get("LEO_GSTEEP", "0.96"))
+LEO_GLIFT = float(os.environ.get("LEO_GLIFT", "0.001"))
+LEO_GTHICK = float(os.environ.get("LEO_GTHICK", "0"))
+LEO_GBIND = os.environ.get("LEO_GBIND", "1") == "1"
+LEO_UH = float(os.environ.get("LEO_UH", "0.07"))
+# (judge fin1, route (a): LEO_ONE=1 makes the arcanist's leotard one piece, as a real one is
+# made: the corset's own sheet carried on under her crotch to the thong's foot, one leg-line
+# binding a side from front to back and one stitch row, no U across the foot, no gusset.
+# Under her its leg lines stand LEO_ONE_W[0] (front) to LEO_ONE_W[1] (back) out from her
+# middle, its back end rounded LEO_ONE_W[2]; it goes up the slot's walls while |N_x| is
+# under LEO_ONE_STEEP, laid LEO_ONE_LIFT off her (as the gusset was) below LEO_ONE_Z[0]
+# over the crotch and behind it; the back's thong cut from LEO_ONE_Z[1] up.)
+LEO_ONE = os.environ.get("LEO_ONE", "1") == "1"
+LEO_ONE_W = tuple(float(v) for v in os.environ.get("LEO_ONE_W", "0.0185,0.016,0.012").split(","))
+LEO_ONE_STEEP = float(os.environ.get("LEO_ONE_STEEP", "0.96"))
+LEO_ONE_LIFT = float(os.environ.get("LEO_ONE_LIFT", "0.001"))
+LEO_ONE_Z = tuple(float(v) for v in os.environ.get("LEO_ONE_Z", "0.02,0.03").split(","))
+# (LEO_ONE_LAY: the laid sheet eased in from LEO_ONE_LAY[0] down to LEO_ONE_LAY[1] over the crotch)
+LEO_ONE_LAY = tuple(float(v) for v in os.environ.get("LEO_ONE_LAY", "0.012,0.002").split(","))
+PIECE_SRC = {}   # (a piece cut with `crotch`: its sheet's skin points and normals, before lifting)
+# (LEO_ONE_TUCK: her skin under the one-piece's crotch tucked no deeper than this. The
+# built gusset tucked her not at all (its 'hides' was cleared as it joined the corset's
+# pieces), and lying 1 mm off untucked skin is what kept the strip unseen: tucked all the
+# way under the held leg lines (s17 dry one1) or 3 mm (one2), a tunnel opened under the
+# sheet and the strip showed through it (vis5 game 5 / 120, low 1115 / 483; at 0: 0 / 0).
+# LEO_ONE_DEPTH (0 off): in front of the slot the leg lines go no lower than this under
+# its roof, easing 12 mm deeper from 2 cm in front of the crotch point to 2 cm behind it,
+# so they don't drop below the V's foot seen from the front as two fangs (one3); at 4 mm
+# the strip's bare edge came within 5.8 mm and showed low from the front quarter (one4).)
+LEO_ONE_TUCK = float(os.environ.get("LEO_ONE_TUCK", "0"))
+LEO_ONE_DEPTH = float(os.environ.get("LEO_ONE_DEPTH", "0.007"))
+# (s18 leo2, judge fin2 1a, LEO_SLOT_CAP (0 off): the knob below the U's right end (a_leo_f, a_half_f, a_full_f's foot)
+# was the leg-line roll under her crotch point (posed y -0.008 to 0), down the slot's wall ~9 mm under its roof (cut there
+# by |N_x| 0.96, below LEO_ONE_DEPTH's eased floor), seen through the gap between her thighs below the U's bottom. Round
+# the crotch point (CROTCH_Y -2 cm to +2 cm, full from -8 mm to +8 mm) the walls go no deeper than this: below ~4 mm
+# they are steeper than |N_x| 0.86 there, left out of the strip.)
+# (dry t1/t2: at 5 mm the knob rose ~3 mm (leo_f eye at rest: foot rows 203 -> 181-187, centre 161) but vis5 low went
+# 8 -> 82, mid 0 -> 1: the walls' band 5-9 mm under the roof hides the strip from the low cameras. Off.)
+LEO_SLOT_CAP = float(os.environ.get("LEO_SLOT_CAP", "0"))
+LEO_SLOT_BACK = float(os.environ.get("LEO_SLOT_BACK", "0.008"))   # (full to CROTCH_Y + this, eased out over 12 mm more)
+# (s18 leo3, judge fin2 1a, LEO_BRIDGE (0 off): the knob is the slot's own arch. Seen from the front the sheet lining the slot
+# shows the arch between her thighs: its middle 5-6 mm above the leg-line rolls 9 mm down each wall (rest, a_leo_f eye: the
+# outline over the gap 32 rows concave). LEO_BRIDGE: round the crotch point the laid sheet spans the slot instead, its height
+# over the walls' edge squashed to this, its middle LEO_BRIDGE_SAG lower; LEO_BRIDGE_Y (from CROTCH_Y): eased in, full, full,
+# eased out. Never under the line exact() cuts the walls at.)
+# (dry b2/b3: concave 32 -> 7 rows (a 1 mm notch left at the middle), COVER 10.6 kept, but the pocket under the span lets vis5
+# see the strip: game/mid/low 0/0/7 -> 0/1/11 (b3, zone -0.022,-0.012,0.006,0.016), 0/5/12 (b2, -0.030,-0.014,0.008,0.024). Off.)
+LEO_BRIDGE = float(os.environ.get("LEO_BRIDGE", "0"))
+LEO_BRIDGE_SAG = float(os.environ.get("LEO_BRIDGE_SAG", "0.0008"))
+LEO_BRIDGE_Y = tuple(float(v) for v in os.environ.get("LEO_BRIDGE_Y", "-0.030,-0.014,0.008,0.024").split(","))
+# (LEO_ROOF_FIX: roof_zs cast again from the slot where the cast from below hit her thighs; the floor was deeper than the walls' cut there anyway)
+LEO_ROOF_FIX = os.environ.get("LEO_ROOF_FIX", "1") == "1"
+# (LEO_LIP (0 off): s17 leo3, the flecks at the V's foot. Her right groin crease runs just inside the leg line there
+# (her left one 4-6 mm outside it), so the cut left the sheet's last 2-3 mm turned up the thigh's wall; its roll,
+# faced by that lip, stood on its side and the 3 mm sheet came out through it as ragged flecks (dry one4-7, base:
+# sections across the line). Round the V's foot, in front of the slot, the edge strip is trimmed where it
+# stands more than LEO_LIP off the plane of the sheet 3-8 mm in from its edge, so the roll sits on a flat edge.)
+LEO_LIP = float(os.environ.get("LEO_LIP", "0"))   # (0.0008 in dry lip2: flecks 0 px, but vis5 mid 0->5, low 7->22: off until the trim keeps the strip covered)
+
+
+def lip_trimmed(name, pos, at, tris, h_max):
+    """A cut sheet's edge strip (the last 3 mm) trimmed where it stands more than
+    h_max off the plane of the sheet 3-8 mm in from the edge (a lip turned up a
+    crease's far wall), round the V's foot only (in front of the slot: trimmed under
+    the crotch too, the strip showed, s17 leo3 lip1)."""
+    e = np.sort(np.vstack([tris[:, [0, 1]], tris[:, [1, 2]], tris[:, [2, 0]]]), 1)
+    uk, c = np.unique(e, axis=0, return_counts=True)
+    bv = np.unique(uk[c == 1])
+    bv = bv[(pos[bv, 2] < CROTCH + 0.035) & (pos[bv, 2] > CROTCH - 0.005) & (np.abs(pos[bv, 0]) < 0.05) & (pos[bv, 1] < CROTCH_Y - 0.02) & (pos[bv, 1] > CROTCH_Y - 0.09)]
+    if not len(bv):
+        return pos, at, tris
     nor = vertex_normals(pos, tris)
+    tree = cKDTree(pos)
+    de = cKDTree(pos[np.unique(uk[c == 1])]).query(pos)[0]
+    f = np.full(len(pos), 1.0)
+    for i in bv:
+        nb = np.array(tree.query_ball_point(pos[i], 0.009))
+        nb = nb[(de[nb] > 0.003) & (de[nb] < 0.008)]
+        if len(nb) < 6:
+            continue
+        q = pos[nb]
+        m = q.mean(0)
+        n = np.linalg.eigh((q - m).T @ (q - m))[1][:, 0]
+        st = np.array(tree.query_ball_point(pos[i], 0.004))
+        st = st[de[st] < 0.003]
+        f[st] = np.minimum(f[st], h_max - np.abs((pos[st] - m) @ n))
+    if (f > 0).all():
+        print("LIP %s: no lip over %.1f mm round the V's foot (%d edge points)" % (name, h_max * 1000, len(bv)))
+        return pos, at, tris
+    n0 = int((f <= 0).sum())
+    at = at.copy()
+    at[:, -2] = np.minimum(at[:, -2], f)
+    at[:, -1] = np.minimum(at[:, -1], at[:, -2])
+    pos, at, tris = clip(at[:, -2], pos, at, tris)
+    pos, at, tris = weld(pos, at, tris)
+    pos = relax(pos, tris, interior=0)
+    print("LIP %s: %d points of the edge strip stood over %.1f mm off the sheet round the V's foot: trimmed (%d edge points)" % (name, n0, h_max * 1000, len(bv)))
+    return pos, at, tris
+TUCK_ZONES = {}  # (an outfit: [(cap, zone of her skin 0 to 1)], tucked no deeper there)
+RBOOT_GONE = float(os.environ.get("RBOOT_GONE", "0.005"))
+
+
+def held_edges(name, pos, tris, sel, fade=None):
+    """A skin-tight piece's chosen edges held down onto her skin, as an
+    elastic edge is: within HOLD_FULL of the edge the sheet lies HOLD_OFF off
+    her, and from there it rises back to its own lie no steeper than
+    HOLD_SLOPE (one smooth line, no step or ridge; a stiff panel keeps its
+    look away from the edge). Only ever pulled toward her, along her normal,
+    so the cut stays where it was on her. (The arcanist's leg lines stood 5-7
+    mm off her: looked in at a glance under the edge, her untucked belly
+    showed as a skin wedge, judge 14.) `sel` picks the held edge points,
+    `fade` (0 to 1 a point) eases the hold out where it is not wanted."""
+    e = np.sort(np.vstack([tris[:, [0, 1]], tris[:, [1, 2]], tris[:, [2, 0]]]), 1)
+    uk, c = np.unique(e, axis=0, return_counts=True)
+    be = uk[c == 1]
+    bv = np.unique(be)
+    held = bv[sel(pos[bv])]
+    if not len(held):
+        return pos, held
+    hb = be[np.isin(be[:, 0], held) & np.isin(be[:, 1], held)]
+    smp = np.concatenate([pos[hb[:, 0]] * (1 - t) + pos[hb[:, 1]] * t for t in np.linspace(0, 1, 5)])
+    d, _ = cKDTree(smp).query(pos)
+    rw = 0.004
+    r = np.where(d < HOLD_FULL - rw, 0.0, np.where(d > HOLD_FULL + rw, d - HOLD_FULL, (d - HOLD_FULL + rw) ** 2 / (4 * rw)))
+    cap = HOLD_OFF + HOLD_SLOPE * r + (0.0 if fade is None else (1 - fade(pos)) * 0.03)
+    out = pos.copy()
+    k, drop, at_edge = 0.001, [], []
+    for i in np.nonzero(cap < 0.02)[0]:
+        q, n, _, _ = BVH.find_nearest(Vector(pos[i]))
+        if q is None:
+            continue
+        s_ = (Vector(pos[i]) - q).dot(n)
+        h = min(max(0.5 + 0.5 * (cap[i] - s_) / k, 0.0), 1.0)
+        s2 = cap[i] * (1 - h) + s_ * h - k * h * (1 - h)
+        if d[i] < 0.0015:
+            at_edge.append((s_, min(s_, s2)))
+        if s2 < s_:
+            out[i] = pos[i] + np.array(n[:]) * (s2 - s_)
+            drop.append(s_ - s2)
+    ae = np.array(at_edge) * 1000 if at_edge else np.zeros((1, 2))
+    print("HOLD %s: %d edge points; at the edge %.1f-%.1f mm off her (median %.1f) now %.1f-%.1f (median %.1f); %d points pulled in, up to %.1f mm"
+          % (name, len(held), ae[:, 0].min(), ae[:, 0].max(), np.median(ae[:, 0]), ae[:, 1].min(), ae[:, 1].max(), np.median(ae[:, 1]),
+             len(drop), max(drop, default=0) * 1000))
+    return out, held
+
+
+def rivets(name, pos, at, tris, thick, mkey, spacing=0.028, inset=0.011, r=0.0032, off=None, spots=None):
+    """Domed rivets set in from a piece's edge every `spacing`, on its
+    outer face: the detail that makes a plate read as made. `spots`, as
+    (points on the sheet, their normals, their weights), sets them where a
+    piece has laid out its own rows instead."""
+    if spots is None:
+        f = at[:, -1]
+        cand = np.where(np.abs(f - inset) < 0.0025)[0]
+        if off is not None and len(cand):
+            # (none under or within 4 mm of the plate over this one: the plate's
+            # rim sliced them, judge 5)
+            cand = cand[off[cKDTree(P).query(pos[cand])[1]] < -0.004]
+        if len(cand) == 0:
+            return []
+        picked = []
+        tree_p = []
+        for i in cand[np.argsort(pos[cand, 2])]:
+            if all(np.linalg.norm(pos[i] - q) >= spacing for q in tree_p):
+                picked.append(i)
+                tree_p.append(pos[i])
+        nor = vertex_normals(pos, tris)
+        spots = (pos[picked], nor[picked], at[picked, 3:3 + NB])
+    spot_p, spot_n, spot_w = (np.asarray(x, float) for x in spots)
+    if len(spot_p) == 0:
+        return []
     P2, W2, T2 = [], [], []
     nu, nv = 12, 4
-    for i in picked:
-        n = nor[i]
+    for i in range(len(spot_p)):
+        n = spot_n[i] / np.linalg.norm(spot_n[i])
         t = np.cross(n, [0, 0, 1.0]) if abs(n[2]) < 0.9 else np.cross(n, [1.0, 0, 0])
         t /= np.linalg.norm(t)
         b = np.cross(n, t)
-        base = pos[i] + n * (thick + 0.0003)
-        pts = [base + n * r * 0.75]
-        for k in range(1, nv + 1):
-            th = (np.pi / 2) * k / nv
+        base = spot_p[i] + n * (thick + 0.0003)
+        # (judge 5: near half-spheres read as beads: a dome 30% of its
+        # width high, on a thin flange)
+        fl = 0.08 * r
+        pts = [base + n * (fl + r * 0.52)]
+        rings = [(r * np.sin((np.pi / 2) * k / nv), fl + r * 0.52 * np.cos((np.pi / 2) * k / nv)) for k in range(1, nv + 1)]
+        # (the flange just past the head: 1.3 r wide it caught the light as a pale
+        # washer, a halo, and edge-on round a dark head it read as a hole, judge 7)
+        rings += [(r * 1.12, fl), (r * 1.12, 0.0)]
+        for rr, hh in rings:
             for j in range(nu):
                 ph = 2 * np.pi * j / nu
-                pts.append(base + (np.cos(ph) * t + np.sin(ph) * b) * r * np.sin(th) + n * r * 0.75 * np.cos(th))
+                pts.append(base + (np.cos(ph) * t + np.sin(ph) * b) * rr + n * hh)
         o = sum(len(x) for x in P2)
         tri = [(o, o + 1 + j, o + 1 + (j + 1) % nu) for j in range(nu)]
-        for k in range(nv - 1):
+        for k in range(nv + 1):
             a0, b0 = o + 1 + k * nu, o + 1 + (k + 1) * nu
             for j in range(nu):
                 j1 = (j + 1) % nu
                 tri += [(a0 + j, b0 + j, b0 + j1), (a0 + j, b0 + j1, a0 + j1)]
         P2.append(np.array(pts))
-        W2.append(np.repeat(at[i:i + 1, 3:3 + NB], len(pts), 0))
+        W2.append(np.repeat(spot_w[i:i + 1], len(pts), 0))
         T2.append(np.array(tri))
     if not P2:
         return []
     pp, ww, tt = np.vstack(P2), np.vstack(W2), np.vstack(T2)
-    if (vertex_normals(pp, tt) * (pp - np.repeat(np.array([pos[i] for i in picked]), (nv * nu + 1), 0))).sum(1).mean() < 0:
+    if (vertex_normals(pp, tt) * (pp - np.repeat(spot_p, ((nv + 2) * nu + 1), 0))).sum(1).mean() < 0:
         tt = tt[:, ::-1]
-    print("RIVETS", name, len(picked))
-    return [finish(name + "_rivets", pp, ww, tt, mkey, 0.0002, 0.0, 10 ** 7)]
+    print("RIVETS", name, len(spot_p))
+    return [finish(name + "_rivets", pp, ww, tt, "iron" if mkey == "darksteel" else mkey, 0.0002, 0.0, 10 ** 7, scraps=False)]  # (each rivet is a part: scraps dropped them all past 50, animation)
 
 
 def islands(pos, tris, keep_frac=0.02):
@@ -2298,6 +3225,102 @@ def pinholes_filled(name, pos, wt, tris, most=0.03):
     return np.vstack([pos, add_p]), np.vstack([wt, add_w]), np.vstack([tris, np.array(add_t, int)])
 
 
+RIGID_UV = {}   # (a plate's name: (centre, arm axis, unrolled round the arm?))
+ONE_ISLAND = set()   # (sheets laid out whole, one island with no seams)
+FOLD_SAFE = {"arcanist.glove_l", "arcanist.glove_r"}   # (welded only along their own edges: weld(joined))
+
+
+KEEP_FINE = {}   # (piece name prefix -> f(pos): points finish() never thins)
+KEEP_SUB = {}    # (piece name prefix -> f(pos, wt, tris) -> (pos, wt, tris): zones finish() divides finer first)
+# A skived edge (s17 lead; judge fin1's spikes at the Arcanist's skin edges):
+# leather is pared thin where it goes under its binding, as a leatherworker
+# skives an edge before it is bound. The corset's 3 mm sheet filled its roll
+# with 0.25 mm to spare, and where the sheet tilted against the roll's facing
+# its edge came out through the roll (the plunge's tooth and bump, the leg
+# line's thorn and spurs; s17_spike's posed measure, 0.7-3.85 mm). Exact piece
+# name -> (thickness at the cut as a share of the sheet's, eased to full over
+# this many metres in). EDGE_SKIVE="" turns it off.
+# The Arcanist's boning channels end flush over this many metres at the
+# hip (judge fin1's tab and thorn were their square lower ends). 0 = off.
+BONING_TAPER = float(os.environ.get("BONING_TAPER", "0.008"))
+# (s18: a channel laid on a piece (`onto`) ends this far inside the piece's edge, its taper there. Its control
+# line ran on past the leg line at her hips, where lay() missed the sheet and left its points at the control
+# line's own depth, 10 cm inside her: the channel dived into her at the leg line, and the side of that dive was
+# judge fin1/fin2's tab (r_hand_outer_rest) and thorn (a_leo_qr); the taper was on its end, inside her. 0 = off.)
+BONING_CLIP = float(os.environ.get("BONING_CLIP", "0.008"))
+EDGE_SKIVE = {k_: (float(f_), float(o_)) for k_, f_, o_ in
+              (e_.split(":") for e_ in os.environ.get("EDGE_SKIVE", "arcanist.corset:0.3:0.006").split(",") if e_)}
+
+
+def loop_divided(pos, attr, tris, red, sw):
+    """One Loop step on the faces `red`, closed red-green so it stays one
+    sheet (a face with two or three of its edges split is divided whole, one
+    with one is halved). New points by Loop's rules, every point's move from
+    the plain midpoint (or its old place) scaled by `sw`, 0 to 1 per point;
+    `attr` (weights) carried linearly."""
+    nf = len(tris)
+    fe = np.vstack([tris[:, [0, 1]], tris[:, [1, 2]], tris[:, [2, 0]]])
+    uk, inv = np.unique(np.sort(fe, 1), axis=0, return_inverse=True)
+    inv = inv.ravel().reshape(3, nf).T
+    red = red.copy()
+    while True:
+        split = np.zeros(len(uk), bool)
+        split[inv[red].ravel()] = True
+        more = (~red) & (split[inv].sum(1) >= 2)
+        if not more.any():
+            break
+        red |= more
+    split = np.zeros(len(uk), bool)
+    split[inv[red].ravel()] = True
+    green = (~red) & (split[inv].sum(1) == 1)
+    ef = np.full((len(uk), 2), -1)
+    opp = np.full((len(uk), 2), -1)
+    idx = np.arange(nf)
+    for c in range(3):
+        e, o = inv[:, c], tris[:, (c + 2) % 3]
+        a = ef[e, 0] < 0
+        ef[e[a], 0] = idx[a]
+        opp[e[a], 0] = o[a]
+    for c in range(3):
+        e, o = inv[:, c], tris[:, (c + 2) % 3]
+        b = ef[e, 0] != idx
+        ef[e[b], 1] = idx[b]
+        opp[e[b], 1] = o[b]
+    sp = np.where(split)[0]
+    a, b = uk[sp, 0], uk[sp, 1]
+    lin = (pos[a] + pos[b]) / 2
+    lp = lin.copy()
+    inner = opp[sp, 1] >= 0
+    lp[inner] = 3 / 8 * (pos[a[inner]] + pos[b[inner]]) + 1 / 8 * (pos[opp[sp[inner], 0]] + pos[opp[sp[inner], 1]])
+    newp = lin + (lp - lin) * np.minimum(sw[a], sw[b])[:, None]
+    newa = (attr[a] + attr[b]) / 2
+    n = len(pos)
+    bnd = np.zeros(n, bool)
+    bnd[uk[ef[:, 1] < 0].ravel()] = True
+    allred = np.ones(n, bool)
+    allred[tris[~red].ravel()] = False
+    A = sparse.coo_matrix((np.ones(2 * len(uk)), (np.r_[uk[:, 0], uk[:, 1]], np.r_[uk[:, 1], uk[:, 0]])), shape=(n, n)).tocsr()
+    val = np.maximum(np.asarray(A.sum(1)).ravel(), 1)
+    beta = (5 / 8 - (3 / 8 + np.cos(2 * np.pi / val) / 4) ** 2) / val
+    sm = (1 - val * beta)[:, None] * pos + beta[:, None] * (A @ pos)
+    p2 = pos + (sm - pos) * (sw * (allred & ~bnd))[:, None]
+    mid = np.full(len(uk), -1)
+    mid[sp] = n + np.arange(len(sp))
+    out = [tris[~red & ~green]]
+    r = np.where(red)[0]
+    A_, B_, C_ = tris[r, 0], tris[r, 1], tris[r, 2]
+    ab, bc, ca = mid[inv[r, 0]], mid[inv[r, 1]], mid[inv[r, 2]]
+    out += [np.c_[A_, ab, ca], np.c_[ab, B_, bc], np.c_[ca, bc, C_], np.c_[ab, bc, ca]]
+    g = np.where(green)[0]
+    for c in range(3):
+        gg = g[split[inv[g, c]]]
+        if len(gg):
+            m = mid[inv[gg, c]]
+            v0, v1, v2 = tris[gg, c], tris[gg, (c + 1) % 3], tris[gg, (c + 2) % 3]
+            out += [np.c_[v0, m, v2], np.c_[m, v1, v2]]
+    return np.vstack([p2, newp]), np.vstack([attr, newa]), np.vstack(out)
+
+
 def finish(name, pos, wt, tris, mkey, thick, bevel, budget=3000, scraps=True):
     """A sheet made a piece: her weights, its texture laid out at true size,
     a thickness and a rounded edge, bound to her skeleton. The sheet is
@@ -2316,9 +3339,14 @@ def finish(name, pos, wt, tris, mkey, thick, bevel, budget=3000, scraps=True):
         # (points on top of each other made one, and the flat triangles
         # between them dropped: they have no facing, and thickened, stood
         # out as spikes)
-        pos, wt, tris = weld(pos, np.asarray(wt, float), tris, r=0.0002)
+        pos, wt, tris = weld(pos, np.asarray(wt, float), tris, r=0.0002, joined=name in FOLD_SAFE)
         tris = islands(pos, tris)
         pos, wt, tris = pinholes_filled(name, pos, wt, tris)
+    # (zones a piece asks to have divided finer, KEEP_SUB: the glove's
+    # fingertip caps, their outlines polygonal at 2x with 2 mm edges)
+    sub = next((f for k_, f in KEEP_SUB.items() if name.startswith(k_)), None)
+    if sub is not None:
+        pos, wt, tris = sub(pos, np.asarray(wt, float), tris)
     # Its true edge, the sheet's border before it is thickened (both faces of
     # it): the shader's stitching and worn edges are measured from this. A
     # guess from its shape took any crease for an edge, and stitched rings
@@ -2386,7 +3414,44 @@ def finish(name, pos, wt, tris, mkey, thick, bevel, budget=3000, scraps=True):
     ax /= np.linalg.norm(ax) + 1e-12
     facing = (fn / (np.linalg.norm(fn, axis=1)[:, None] + 1e-12)) @ ax
     uv = me.uv_layers.new().data
-    if np.percentile(facing, 2) > 0.15:
+    if name in RIGID_UV:
+        # (a plate round a joint, laid out round it, one island: a lame
+        # unrolled round her arm, a dome flattened about its middle;
+        # projected flat, its sides stretched and the brushing went blocky)
+        c_, ax_, ring = RIGID_UV[name]
+        d_ = np.array([v.co[:] for v in me.vertices]) - c_
+        mid = d_.mean(0) - ax_ * (d_.mean(0) @ ax_)
+        e1 = mid / np.linalg.norm(mid)
+        e2 = np.cross(ax_, e1)
+        R_ = np.linalg.norm(d_, axis=1).mean()
+        if ring:
+            phi = np.arctan2(d_ @ e2, d_ @ e1)
+            rad = np.linalg.norm(d_ - np.outer(d_ @ ax_, ax_), axis=1).mean()
+            uvv = np.c_[phi * rad, d_ @ ax_]
+        else:
+            # (judge 5: flattened about the top of her arm, the brushing's
+            # blocks turned with the bearing, rotated patches. Now laid out as
+            # the lames are: u round her arm, v down the meridians from its
+            # axis (the angle from it, times the dome's radius))
+            th = np.arccos(np.clip((d_ / np.linalg.norm(d_, axis=1)[:, None]) @ -ax_, -1, 1))
+            phi = np.arctan2(d_ @ e2, d_ @ e1)
+            rho_ = np.linalg.norm(d_ - np.outer(d_ @ ax_, ax_), axis=1)
+            uvv = np.c_[phi * np.median(rho_), th * R_]
+        for poly in me.polygons:
+            for li in poly.loop_indices:
+                uv[li].uv = tuple(float(t) for t in uvv[me.loops[li].vertex_index])
+    elif name in ONE_ISLAND:
+        # (a sheet wrapped round a joint every way, laid out whole with no
+        # seams, as little stretched as can be)
+        bpy.ops.object.mode_set(mode="EDIT")
+        bpy.ops.mesh.select_all(action="SELECT")
+        bpy.ops.mesh.mark_seam(clear=True)
+        try:
+            bpy.ops.uv.unwrap(method="MINIMUM_STRETCH", margin=0.0)
+        except TypeError:
+            bpy.ops.uv.unwrap(method="ANGLE_BASED", margin=0.0)
+        bpy.ops.object.mode_set(mode="OBJECT")
+    elif np.percentile(facing, 2) > 0.15:
         u = np.cross(ax, [0, 0, 1] if abs(ax[2]) < 0.9 else [1, 0, 0])
         u /= np.linalg.norm(u)
         v = np.cross(ax, u)
@@ -2426,6 +3491,16 @@ def finish(name, pos, wt, tris, mkey, thick, bevel, budget=3000, scraps=True):
         A = adjacency(len(pos), tris)
         for _ in range(2):
             keep = np.maximum(keep, (A @ keep > 0).astype(float))
+        # (and any zone a piece asks to keep whole, KEEP_FINE: the glove's
+        # fingertip caps, polygonal at 2x when thinned; the budget grows by it)
+        fine = next((f for k_, f in KEEP_FINE.items() if name.startswith(k_)), None)
+        nfine = 0
+        if fine is not None:
+            kf = np.asarray(fine(pos)) > 0
+            keep = np.maximum(keep, kf.astype(float))
+            nfine = int(kf[tris].all(1).sum())
+            budget += nfine
+            print("KEEP_FINE %s: %d points, %d faces kept whole" % (name, int(kf.sum()), nfine))
         inner = obj.vertex_groups.new(name="_thin")
         inner.add([int(i) for i in np.where(keep == 0)[0]], 1.0, "REPLACE")
         dc = obj.modifiers.new("thin", "DECIMATE")
@@ -2443,6 +3518,19 @@ def finish(name, pos, wt, tris, mkey, thick, bevel, budget=3000, scraps=True):
         so.use_even_offset = False
         so.use_quality_normals = True
         so.use_rim = True
+        # (EDGE_SKIVE: the sheet pared thin toward its bound edge)
+        if name in EDGE_SKIVE and len(be):
+            sf_, so_ = EDGE_SKIVE[name]
+            ds_ = cKDTree(pos[np.unique(be)]).query(pos)[0]
+            ws_ = np.clip(ds_ / so_, 0, 1)
+            ws_ = ws_ * ws_ * (3 - 2 * ws_)
+            gs_ = obj.vertex_groups.new(name="_skive")
+            for i_ in range(len(pos)):
+                gs_.add([i_], float(ws_[i_]), "REPLACE")
+            so.vertex_group = "_skive"
+            so.thickness_vertex_group = sf_
+            print("EDGE SKIVE %s: %.1f mm at the cut, full %.1f mm from %.0f mm in; %d points pared"
+                  % (name, thick * sf_ * 1000, thick * 1000, so_ * 1000, int((ws_ < 1).sum())))
     if bevel > 0:
         bv = obj.modifiers.new("edge", "BEVEL")
         bv.width = min(bevel, thick * 0.45)
@@ -2453,6 +3541,8 @@ def finish(name, pos, wt, tris, mkey, thick, bevel, budget=3000, scraps=True):
         bpy.ops.object.modifier_apply(modifier=mod.name)
     if "_thin" in obj.vertex_groups:
         obj.vertex_groups.remove(obj.vertex_groups["_thin"])
+    if "_skive" in obj.vertex_groups:
+        obj.vertex_groups.remove(obj.vertex_groups["_skive"])
     # After thickening and bevelling, any point left without a bone takes
     # the weights of the nearest point that has some.
     vs = obj.data.vertices
@@ -2548,14 +3638,39 @@ def cups(cover=0.62, plunge=0.02, band=0.03, over=0.022, reach=0.088):
     return OR(*parts), ub
 
 
-def ribbon(name, ctrl, width, mkey, lift=0.0035, thick=0.0025, cols=5, trim=None, snap=True, centre=None):
+def ribbon(name, ctrl, width, mkey, lift=0.0035, thick=0.0025, cols=5, trim=None, snap=True, centre=None,
+           hides=False, follow=False, flare=None, onto=None, taper=None):
     """A strap as a strap is made: a ribbon of even width laid along a
     smooth curve on her skin, so its edges are two clean parallel lines.
     It moves with the skin under each point of it. With `centre` (a point
     inside her), it is laid on her by looking out from there through each
     point of it: the skin nearest a point inside her can jump from one
-    curve of her to another (from her breast to her chest), and kinked it."""
+    curve of her to another (from her breast to her chest), and kinked it.
+    `hides`: her skin under it is tucked in, as under a fitted piece (a
+    gusset or a thong's string, which she must never show through).
+    `follow`: each line along it moves with the skin under that line, as
+    stretched cloth does, rather than the whole width as one strap (a
+    gusset: her thighs part the skin under its edges, and a strap's edges,
+    staying put, let it out from under them). `flare` (width, length): the
+    ribbon widens to that width over that length at its end, as a thong's
+    string opens into its gusset. `onto`, a piece made before it: laid on
+    that piece's outside as seen from ahead, `lift` off it, moving with it
+    (a boning channel on a suit). `taper`, a length: over that much of its
+    end it eases down into the piece it lies on and narrows, so it ends
+    flush, not in a square tab (a boning channel ending on a panel)."""
+    if onto is not None:
+        s_pos, s_tris, s_wt, s_thick = SHEET[onto]
+        s_bvh = BVHTree.FromPolygons([tuple(p) for p in s_pos], s_tris.tolist())
+        s_nrm = vertex_normals(s_pos, s_tris)
+        lift = lift + s_thick
+
     def lay(pts):
+        if onto is not None:
+            out_ = []
+            for p in pts:
+                hit = s_bvh.ray_cast(Vector((p[0], -0.6, p[2])), Vector((0, 1, 0)), 1.2)
+                out_.append(np.array(hit[0][:]) if hit[0] is not None else np.asarray(p, float))
+            return np.array(out_)
         if centre is None:
             return np.array([SKIN_BVH.find_nearest(Vector(p))[0][:] for p in pts])
         o = np.asarray(centre, float)
@@ -2566,7 +3681,7 @@ def ribbon(name, ctrl, width, mkey, lift=0.0035, thick=0.0025, cols=5, trim=None
             out_.append(np.array(hit[0][:]) if hit[0] is not None else np.array(SKIN_BVH.find_nearest(Vector(p))[0][:]))
         return np.array(out_)
     # (columns fine enough that a trim along its edges is a clean line)
-    cols = max(cols, int(np.ceil(width / 0.0015)) + 1)
+    cols = max(cols, int(np.ceil(max(width, flare[0] if flare else 0.0) / 0.0015)) + 1)
     # (a smooth curve through its points, not straight runs between them:
     # those met at corners, and a strap kinked at each)
     c = spline(ctrl, step=0.003)
@@ -2578,7 +3693,23 @@ def ribbon(name, ctrl, width, mkey, lift=0.0035, thick=0.0025, cols=5, trim=None
         c[1:-1] = (c[:-2] + 2 * c[1:-1] + c[2:]) / 4
         if snap:
             c = lay(c)
-    nrm = np.array([SKIN_BVH.find_nearest(Vector(p))[1][:] for p in c])
+    if onto is not None and BONING_CLIP > 0:
+        # (s18, BONING_CLIP: no further than its piece goes, see the knob)
+        hit_ = np.array([s_bvh.ray_cast(Vector((p[0], -0.6, p[2])), Vector((0, 1, 0)), 1.2)[0] is not None for p in c])
+        e_ = np.sort(np.vstack([s_tris[:, [0, 1]], s_tris[:, [1, 2]], s_tris[:, [2, 0]]]), 1)
+        uk_, cn_ = np.unique(e_, axis=0, return_counts=True)
+        be_ = uk_[cn_ == 1]
+        smp_ = np.concatenate([s_pos[be_[:, 0]] * (1 - t_) + s_pos[be_[:, 1]] * t_ for t_ in np.linspace(0, 1, 6)])
+        bad_ = np.nonzero(~(hit_ & (cKDTree(smp_).query(c)[0] > BONING_CLIP)))[0]
+        bad_ = bad_[bad_ > len(c) // 2]
+        if len(bad_):
+            print("BONING %s: ends %.0f mm inside %s's edge, %d of %d points past it dropped" % (name, BONING_CLIP * 1000, onto, len(c) - bad_[0], len(c)))
+            c = c[:bad_[0]]
+    if onto is not None:
+        # (its normal the sheet's own, outward as it was lifted)
+        nrm = s_nrm[cKDTree(s_pos).query(c)[1]]
+    else:
+        nrm = np.array([SKIN_BVH.find_nearest(Vector(p))[1][:] for p in c])
     for _ in range(4):
         nrm[1:-1] = (nrm[:-2] + 2 * nrm[1:-1] + nrm[2:]) / 4
     nrm /= np.linalg.norm(nrm, axis=1)[:, None]
@@ -2586,27 +3717,48 @@ def ribbon(name, ctrl, width, mkey, lift=0.0035, thick=0.0025, cols=5, trim=None
     tg /= np.linalg.norm(tg, axis=1)[:, None] + 1e-12
     bn = np.cross(nrm, tg)
     bn /= np.linalg.norm(bn, axis=1)[:, None] + 1e-12
-    off = np.linspace(-width / 2, width / 2, cols)
-    pos = (c[:, None, :] + nrm[:, None, :] * lift + bn[:, None, :] * off[None, :, None]).reshape(-1, 3)
+    off = np.linspace(-0.5, 0.5, cols)
+    wrow = np.full(len(c), width)
+    if flare:
+        run = np.r_[0, np.cumsum(np.linalg.norm(np.diff(c, axis=0), axis=1))]
+        wrow = width + (flare[0] - width) * ramp(run, run[-1] - flare[1], run[-1])
+    lrow = np.full(len(c), lift)
+    if taper:
+        # (BONING_TAPER: down to the sheet's own surface, the last fifth
+        # under it, even where the sheet is skived thin; narrowed by half)
+        run = np.r_[0, np.cumsum(np.linalg.norm(np.diff(c, axis=0), axis=1))]
+        k_ = ramp(run, run[-1] - taper, run[-1])
+        lrow = lift - (lift - (s_thick - thick - 0.0002 if onto is not None else 0.0)) * ramp(run, run[-1] - taper, run[-1] - 0.2 * taper)
+        lrow = lrow - np.maximum(lrow, 0) * ramp(run, run[-1] - 0.2 * taper, run[-1])
+        wrow = wrow * (1 - 0.5 * k_)
+    pos = (c[:, None, :] + nrm[:, None, :] * lrow[:, None, None] + bn[:, None, :] * (off[None, :] * wrow[:, None])[:, :, None]).reshape(-1, 3)
     tris = grid(len(c), cols)
     nor = vertex_normals(pos, tris)
     if (nor * np.repeat(nrm, cols, 0)).sum(1).mean() < 0:
         tris = tris[:, ::-1]
         nor = -nor
-    # (one set of weights across its width, eased along it: it moves as a strap)
-    wt = soft_weights(pos).reshape(len(c), cols, -1)
-    wt[:] = wt.mean(1, keepdims=True)
+    # (one set of weights across its width, eased along it: it moves as a
+    # strap; or, following, each line along it its own)
+    if onto is not None:
+        # (the sheet's own weights under each point: it moves as the sheet does)
+        dq, jq = cKDTree(s_pos).query(pos, k=4)
+        wq = 1.0 / np.maximum(dq, 1e-5)
+        wt = ((s_wt[jq] * wq[:, :, None]).sum(1) / wq.sum(1)[:, None]).reshape(len(c), cols, -1)
+    else:
+        wt = soft_weights(pos).reshape(len(c), cols, -1)
+    if not follow:
+        wt[:] = wt.mean(1, keepdims=True)
     for _ in range(6):
         wt[1:-1] = (wt[:-2] + 2 * wt[1:-1] + wt[2:]) / 4
-    edge = np.tile(width / 2 - np.abs(off), len(c))
+    edge = (wrow[:, None] / 2 - np.abs(off[None, :] * wrow[:, None])).ravel()
     at = np.hstack([nor, wt.reshape(len(pos), -1), edge[:, None]])
     made = trimmed(name, pos, at, tris, mkey, thick, 0.0008, trim, budget=10 ** 7)
     for o in made:
-        o["hides"] = False
+        o["hides"] = hides and o is made[0]
     if kind(mkey) == "leather" and width >= 0.012:
         inset = 0.0028
         for k, sgn in enumerate((1, -1)):
-            ln = c + nrm * (lift + thick + 0.0001) + bn * (sgn * (width / 2 - inset))
+            ln = c + nrm * (lrow[:, None] + thick + 0.0001) + bn[:] * (sgn * (wrow[:, None] / 2 - inset))
             made += stitches(f"{name}_stitch{k}", ln, nrm, tg, pos, at[:, 3:3 + NB])
         made[0]["geo_stitch"] = True
     return made
@@ -2737,6 +3889,67 @@ def plate_cups(name, mkey, top, lift=0.003, thick=0.003, trim=None, studs=None, 
     inner = rim[np.abs(pos[rim, 0]) < gap + 0.006]
     global CUP_LOW
     CUP_LOW = pos[inner[np.argmin(pos[inner, 2])]] if len(inner) else np.array([0.0, nip[1], UNDERBUST])
+    # A lining under its top edge, from her middle to past her nipple: dark
+    # leather from just under the plate's edge down toward her, CUP_LINE[0]
+    # short of her skin (at most CUP_LINE[1] of the way, eased in over
+    # CUP_LINE[2] at each end). The plate stands off her by up to a
+    # centimetre under the plunge, and bent over (chain_haul, the motion
+    # check's left view, s16_sab2) a look in under that edge met the inner
+    # rim of her right areola (-0.17 cm). Closed from the inside, the plate's
+    # own form and edge are as judged. (Tucking her deeper there only let the
+    # look go deeper: offline, 1.6 cm became 0.7.)
+    line_ = [float(v) for v in os.environ.get("CUP_LINE", "0.0025,0.85,0.01,0.0015").split(",")]
+    lining = None
+    if line_[0] > 0 and loops:
+        ax_ = np.abs(pos[:, 0])
+        on_top = (np.abs(top(ax_) - pos[:, 2]) < 0.0015) & (ax_ < abs(nip[0]) + 0.025)
+        tree_ = cKDTree(pos)
+        LP, LW, LT = [], [], []
+        for lp in loops:
+            lp = np.array(lp)
+            if not on_top[lp].any():
+                continue
+            if not on_top[lp].all():
+                lp = np.roll(lp, -int(np.argmin(on_top[lp])))
+            runs, cur = [], []
+            for v_ in lp:
+                if on_top[v_]:
+                    cur.append(v_)
+                elif cur:
+                    runs.append(cur)
+                    cur = []
+            if cur:
+                runs.append(cur)
+            for run in runs:
+                run = np.array(run)
+                if len(run) < 4:
+                    continue
+                q = pos[run]
+                arc = np.r_[0, np.cumsum(np.linalg.norm(np.diff(q, axis=0), axis=1))]
+                tp_ = np.clip(np.minimum(arc, arc[-1] - arc) / line_[2], 0, 1)
+                tp_ = tp_ * tp_ * (3 - 2 * tp_)
+                n_ = at[run, :3] / np.linalg.norm(at[run, :3], axis=1)[:, None]
+                tg = np.gradient(q, axis=0)
+                tg /= np.maximum(np.linalg.norm(tg, axis=1), 1e-9)[:, None]
+                inn = np.cross(n_, tg)
+                inn /= np.maximum(np.linalg.norm(inn, axis=1), 1e-9)[:, None]
+                m_ = len(run) // 2
+                if at[tree_.query(q[m_] + inn[m_] * 0.004)[1], -1] < at[tree_.query(q[m_] - inn[m_] * 0.004)[1], -1]:
+                    inn = -inn
+                a_ = q + inn * line_[3] - n_ * 0.0003
+                sk_ = np.array([SKIN_BVH.find_nearest(Vector(v))[0][:] for v in a_])
+                L_ = np.linalg.norm(sk_ - a_, axis=1)
+                f_ = np.clip((L_ - line_[0]) / np.maximum(L_, 1e-6), 0, line_[1]) * tp_
+                b_ = a_ + (sk_ - a_) * f_[:, None]
+                o_ = sum(len(x) for x in LP)
+                k_ = len(run)
+                LP.append(np.vstack([a_, b_]))
+                LW.append(np.vstack([at[run, 3:3 + NB]] * 2))
+                LT += [[o_ + i, o_ + i + 1, o_ + k_ + i + 1] for i in range(k_ - 1)] + [[o_ + i, o_ + k_ + i + 1, o_ + k_ + i] for i in range(k_ - 1)]
+                print("CUP LINING %s: %d points along its top edge, %.0f mm long; the plate %.1f-%.1f mm off her there, the lining %.1f mm deep at most"
+                      % (name, k_, arc[-1] * 1000, L_.min() * 1000, L_.max() * 1000, (L_ * f_).max() * 1000))
+        if LP:
+            lining = (np.vstack(LP), np.vstack(LW), np.array(LT))
     pos2 = np.vstack([pos, pos * mirror])
     at2 = np.vstack([at, np.hstack([at[:, :3] * mirror, at[:, 3:3 + NB][:, SWAP], at[:, -1:]])])
     tris2 = np.vstack([tris, tris[:, ::-1] + len(pos)])
@@ -2751,6 +3964,13 @@ def plate_cups(name, mkey, top, lift=0.003, thick=0.003, trim=None, studs=None, 
     made = [finish(name, pos2, at2[:, 3:3 + NB], tris2, mkey, thick, 0.0006, 10 ** 7)] + beads
     if studs:
         made += rivets(name, pos2, at2, tris2, thick, studs)
+    if lining is not None:
+        lp2, lw2, lt2 = lining
+        if only != "r":
+            lp2, lw2, lt2 = np.vstack([lp2, lp2 * mirror]), np.vstack([lw2, lw2[:, SWAP]]), np.vstack([lt2, lt2[:, ::-1] + len(lp2)])
+            if only == "l":
+                lp2, lw2, lt2 = lp2[len(lining[0]):], lw2[len(lining[0]):], lining[2][:, ::-1]
+        made.append(finish(name + "_lining", lp2, lw2, lt2, "darkleather", 0.0012, 0.0004, 10 ** 6))
     for o_ in made:
         o_["hides"] = o_ is made[0]
     print("PLATE CUP %s: %d points" % (name, len(pos2)))
@@ -3042,11 +4262,20 @@ def warden():
         *piece("warden.thong", AND(FRONT - 0.3, np.minimum(0.015 + 0.42 * np.maximum(Z - CROTCH, 0), 0.034) - np.abs(X),
                                    (bz0 - 0.04) - Z, Z - (CROTCH - 0.03)), "darkleather", lift=0.0012, thick=0.0018, smooth=2,
                soften=0),
-        *ribbon("warden.thong_back", thong_back, 0.02, "darkleather", lift=0.003, thick=0.003, snap=False),
+        # (opening into the gusset over its last 3 cm, as a thong's string
+        # does: 2 cm wide all the way, her skin beside it slipped out as her
+        # cheeks parted in a vault)
+        *ribbon("warden.thong_back", thong_back, 0.02, "darkleather", lift=0.003, thick=0.003, snap=False, hides=True,
+                flare=(0.034, 0.03)),
         # (under her, a gusset wider than the string, as a thong's is: the
         # string alone left her bare either side there as she lay on her back)
-        *ribbon("warden.thong_gusset", roof_path(thong_back[-1][1] - 0.004, GAP_F - 0.006, 10), 0.034, "darkleather", lift=0.003,
-                thick=0.003, snap=False),
+        # (close under her, 1 mm, her skin tucked in under it and each line of
+        # it moving with the skin under that line: hung 6 mm under her and
+        # moving as one strap, her skin came through it as her thighs parted)
+        # (1.5 cm up into her cleft, under the string's foot: begun 4 mm
+        # short of it, the turn between them was bare, and 6 mm under it, the
+        # strip beside the hand-over showed as she vaulted)
+        *gusset("warden.thong_gusset", "darkleather", GAP_F - 0.006, thong_back[-1][1] + 0.015),
     ]
     # A skirt of steel plates hung all round from the belt, each its own (her
     # legs move freely between them; each swings with the thigh it is over),
@@ -3080,13 +4309,46 @@ def warden():
     out += studs_on("warden.skirt_rivets", belt, aims, "gold", r=0.0028)
     for sd, sg in (("l", 1), ("r", -1)):
         out += [
-            *piece(f"warden.pauldron_{sd}", cap(shoulder(sd), 0.11), "steel", lift=0.012, thick=0.004, smooth=14, trim=gold(0.01), studs="gold"),
+            *piece(f"warden.pauldron_{sd}", cap(shoulder(sd), 0.11), "steel", lift=0.012, thick=0.004, smooth=14, trim=gold(0.01), studs="gold", rigid=head(f"upperarm_{sd}")),
             *piece(f"warden.vambrace_{sd}", limb(sd, ELBOW_S + 0.05, WRIST_S - 0.01, legs=False), "steel", lift=0.006, smooth=8, trim=gold(), studs="gold"),
-            *piece(f"warden.greave_{sd}", limb(sd, KNEE_S + 0.03, ANKLE_S + 0.01, front_dip=0.04), "steel", lift=0.008, smooth=12, trim=gold(), studs="gold"),
+            *piece(f"warden.greave_{sd}", limb(sd, KNEE_S + 0.03, ANKLE_S + 0.01, front_dip=0.04), "steel", lift=0.008, smooth=12, trim=gold(), studs="gold", rim_clean=GREAVE_RIM,
+                   line=(GREAVE_LINE, lambda p_, lp_: p_[lp_, 2].mean() < p_[:, 2].mean())),
             *piece(f"warden.knee_{sd}", cap(LEG[sd][1] + np.array([0, -0.06, 0]), 0.06), "steel", lift=0.016, thick=0.004, smooth=12, trim=gold(0.006)),
-            *piece(f"warden.sabaton_{sd}", limb(sd, ANKLE_S - 0.02, 9.9), "darksteel", lift=0.005, smooth=6),
+            # (the sabaton a made shoe, lofted as the Ranger's boot is, toe box,
+            # welted sole and heel, its top under the greave: laid on her foot it
+            # showed each toe in steel, animation's judge 49, and laid on her
+            # foot's hull the toes still showed as creases; cut 3.5 cm lower behind,
+            # its back came through the greave over her heel; judge h, still a patent loafer:
+            # now plate, heroine_boots.sabaton: the greave's steel, gold-edged lames, rivets, toe cap, heel cup)
+            *BOOTS.sabaton(f"warden.sabaton_{sd}", sd, ANKLE_S - 0.06, 0.035, BOOTS.SABATON, "steel", under=f"warden.greave_{sd}"),
         ]
     return out
+
+
+PLUNGE_FOOT = float(os.environ.get("PLUNGE_FOOT", 0.022))   # (the round foot's radius)
+PLUNGE_FLARE = float(os.environ.get("PLUNGE_FLARE", 1.8))   # (how late its sides ease out: 1 straight)
+PLUNGE_FOLD = float(os.environ.get("PLUNGE_FOLD", 0.04))    # (how wide the cloth is fitted over the fold beside its foot)
+PLUNGE_FADE = float(os.environ.get("PLUNGE_FADE", 0.0))    # (the fit faded to nothing over this, before its edge; off: at 15 mm, on the U's true distance, the crease came back, 72-80 deg, and the sheet stood 6 mm up through the binding)
+PLUNGE_TAUT = float(os.environ.get("PLUNGE_TAUT", 0.03))    # (the gore at its foot: the round its cloth spans her folds by)
+PLUNGE_RIM = float(os.environ.get("PLUNGE_RIM", 0.0015))    # (the U's rim, its lower part, this far off her: on a taut string along it)
+PLUNGE_STRING = float(os.environ.get("PLUNGE_STRING", 0.035))  # (that string's least round, both ways: it spans her folds, never kinks)
+PLUNGE_BAND = float(os.environ.get("PLUNGE_BAND", 0.028))   # (how far from the rim the cloth eases back into the fitted sheet)
+PLUNGE_TRIM = os.environ.get("PLUNGE_TRIM", "")   # ("down": the owner's option, a white feathery trim along the plunge, for the side-by-side)
+PLUNGE_UNTANGLE = os.environ.get("PLUNGE_UNTANGLE", "1") == "1"   # (s17 spike2: the fold's fit untangled, see plunge_fold)
+PLUNGE_CLASP = os.environ.get("PLUNGE_CLASP", "1") == "1"   # (a small gold crescent clasp with a violet stone at the plunge's foot: the fallback, judge 7)
+CLASP_TH, CLASP_W = (float(v) for v in os.environ.get("CLASP", "100,0.0085").split(","))   # (the clasp's horns' reach round the foot, degrees; its width at its foot)
+# (route D, the coordinator after routes RIDE/S/A failed: a small clasp at the foot only. The horns end
+# CLASP_D_TH degrees round (50, was 100), tapered to their own tips, each drawn CLASP_D_IN in toward the
+# opening so it ends free over her skin, clear of the binding; no seat, the cut only under its foot.
+# CLASP_D=0 gives g0 back)
+CLASP_D = os.environ.get("CLASP_D", "1") == "1"
+CLASP_D_IN = float(os.environ.get("CLASP_D_IN", "0.0"))   # (D2, clasp6: no pull-in; the tips seated on the binding's outer part, CLASP_D_ON
+# onto it from its inner edge, ball CLASP_D_SEAT off it: in her carriage the binding slides 2.0 mm radially and 0.9 mm along
+# relative to the rigid clasp at 25 deg (3.1 / 3.7 at 50) but only 0.1 mm in depth, so the balls stay on it, 0.2-0.3 mm off)
+CLASP_D_ON = float(os.environ.get("CLASP_D_ON", "0.0037"))
+CLASP_D_SEAT = float(os.environ.get("CLASP_D_SEAT", "0.0002"))
+CLASP_D_ROUND = os.environ.get("CLASP_D_ROUND", "1") == "1"   # (D2: a half-round section, no flat ledge on its foot from above, judge h)
+DOWN_IN, DOWN_OUT = 0.004, 0.012   # (how far the trim reaches over her skin, and over the corset, from the cut)
 
 
 def arcanist():
@@ -3113,7 +4375,9 @@ def arcanist():
     # her waist at the sides, front and back.
     # A narrow V in front rising steeply to her hip bones; a thong behind
     # widening into a V above her cheeks.
-    w = (0.0095 + 0.42 * np.maximum(Z - CROTCH, 0)) * FRONT + (-0.01 + 1.5 * np.maximum(Z - CROTCH - 0.13, 0)) * (1 - FRONT)
+    # (2.9 cm across at its foot: what must be covered there is 2.4 cm, and
+    # at 1.9 cm her skin showed either side of it in a lunge)
+    w = (0.0145 + 0.42 * np.maximum(Z - CROTCH, 0) + LEO_FOOT * np.exp(-(np.maximum(Z - CROTCH, 0) / 0.035) ** 2)) * FRONT + (-0.01 + 1.5 * np.maximum(Z - CROTCH - 0.13, 0)) * (1 - FRONT)
     leotard = AND(Z - (CROTCH - 0.03), w - ax)
     # A bodysuit: over her breasts and up to a high neck.
     neck_top = head("neck_01")[2] + 0.07 - 0.035 * (1 - FRONT)
@@ -3132,8 +4396,40 @@ def arcanist():
     # round the sides and back of her neck.
     v_lo, v_hi = UNDERBUST + 0.004, head("neck_01")[2] + 0.02
     nx_ = abs(NIPPLE["r"][0])
-    v_half = np.interp(Z, [v_lo, (NIPPLE["r"][2] + v_lo) / 2, NIPPLE["r"][2] + 0.03, v_hi],
-                       [0.0, nx_ * 0.42, nx_ * 0.62, 0.05])
+    # (one U, judge 2: drawn piecewise straight it came out with a flat
+    # bottom, a hump and a corner. A parabola from its foot, round there,
+    # through the upper breast, then eased up to the collar.)
+    from scipy.interpolate import PchipInterpolator
+    zt, wt_ = NIPPLE["r"][2] + 0.03, nx_ * 0.62
+    # (judge 3: the parabola kept widening, so its sides ran out across the
+    # fold under her breasts in a corner, its foot a flat strip. Now a true
+    # round foot, `R_u`, its sides upright where it ends, rising up her
+    # cleavage before they ease out over her breasts.)
+    R_u = PLUNGE_FOOT
+    a = np.linspace(0, np.pi / 2, 10)
+    zf, xf = v_lo + R_u * (1 - np.cos(a)), R_u * np.sin(a)
+    t = np.linspace(0, 1, 9)[1:]
+    zr = v_lo + R_u + (zt - v_lo - R_u) * t
+    xr = R_u + (wt_ - R_u) * t ** PLUNGE_FLARE
+    zk = np.r_[zf, zr, zt + (v_hi - zt) * np.array([0.35, 0.7]), v_hi]
+    xk = np.r_[xf, xr, wt_ + (0.05 - wt_) * 0.3, wt_ + (0.05 - wt_) * 0.7, 0.05]
+    _vh = PchipInterpolator(zk, xk, extrapolate=False)
+    def vhalf(z):
+        return np.nan_to_num(_vh(np.clip(z, v_lo, v_hi)))
+    print("PLUNGE U: foot round %.1f mm, %.1f cm across at %.1f cm above its foot" % (R_u * 1000, 2 * wt_ * 100, (zt - v_lo) * 100))
+    # The U cut by its signed distance, front on, from one line mirrored, its
+    # foot a true circle (cut by |x| - vhalf, which jumped where its foot
+    # began, the clip set the foot flat on a row of her points).
+    def uhalf(z):
+        r_ = np.clip(z - v_lo, 0.0, R_u)
+        return np.where(z < v_lo + R_u, np.sqrt(np.maximum(R_u * R_u - (R_u - r_) ** 2, 0.0)), vhalf(z))
+    zz_ = np.r_[v_lo + R_u * (1 - np.cos(np.linspace(0, np.pi / 2, 400))), np.arange(v_lo + R_u + 0.0002, v_hi + 0.15, 0.0002)]
+    xx_ = uhalf(zz_)
+    u_tree = cKDTree(np.r_[np.c_[-xx_[::-1], zz_[::-1]], np.c_[xx_, zz_]])
+    def u_dist(qx, qz):
+        d = u_tree.query(np.c_[qx, qz])[0]
+        return np.where((qz >= v_lo) & (np.abs(qx) < uhalf(qz)), -d, d)
+    v_half = vhalf(Z)
     plunge = np.where(FRONT > 0.5, np.abs(X) - v_half, 1.0)
     plunge = np.where(Z < v_lo, 1.0, plunge)
     # Its leg lines and plunge are cut exactly once it is shaped (cut on her
@@ -3141,15 +4437,218 @@ def arcanist():
     # little wider there, so the exact lines decide.
     corset = AND(neck_top - Z, OR(Z - 1.13, leotard + 0.02), sleeve("l"), sleeve("r"), plunge + 0.02)
 
+    # (judge h: the V's foot was a knot, the two leg lines meeting the bridge's
+    # straight cut in two corners, their binding folded and crossed by the
+    # gusset's. Now ONE U across the foot: the leg lines rounded into one curve
+    # LEO_U[0] round, in a chart tilted 45 degrees (t, up the front of her mound
+    # and forward under it alike), its bottom LEO_U[1] in front of the bridge's
+    # cut so this exact line, not the cut, decides; the gusset lies under it.)
+    y_ub = GAP_F - LEO_U[1]
+    t_ub = ((roof_z(0.0, y_ub) - 0.0035) - y_ub) / np.sqrt(2)
+    # (LEO_ONE: the one-piece's back end, where the gusset's was, under the thong's foot)
+    y_end1 = max(GAP_B + 0.014, back_string(CROTCH + 0.155, CROTCH + 0.012)[-1][1] + 0.015)
+    roof_ys = np.linspace(GAP_F - 0.03, y_end1 + 0.01, 80)
+    roof_zs = np.array([roof_z(0.0, y) for y in roof_ys])
+    if LEO_ROOF_FIX:
+        # (s18 leo3: where her thighs meet under the slot, y 0.006-0.016 at rest, the cast from 30 cm below hit them, not the roof)
+        bad_ = roof_zs < CROTCH - 0.02
+        for i_ in np.nonzero(bad_)[0]:
+            hit_ = BVH.ray_cast(Vector((0.0, float(roof_ys[i_]), CROTCH - 0.02)), Vector((0, 0, 1)), 0.1)
+            roof_zs[i_] = hit_[0].z if hit_[0] is not None else np.interp(roof_ys[i_], roof_ys[~bad_], roof_zs[~bad_])
+        print("LEO_ROOF_FIX: %d roof samples (under where her thighs meet) cast again from the slot" % int(bad_.sum()))
+
     def exact(q):
         qx, qy, qz = q[:, 0], q[:, 1], q[:, 2]
         fr = ramp(-(qy - CROTCH_Y), -0.03, 0.03)
         r = qz - CROTCH
-        wq = (0.0095 + 0.42 * np.maximum(r, 0)) * fr + (-0.01 + 1.5 * np.maximum(r - 0.13, 0)) * (1 - fr)
+        wq = (0.0145 + 0.42 * np.maximum(r, 0) + LEO_FOOT * np.exp(-(np.maximum(r, 0) / 0.035) ** 2)) * fr + (-0.01 + 1.5 * np.maximum(r - 0.13, 0)) * (1 - fr)
+        if LEO_ONE:
+            # (one piece: under her crotch the leg lines carry on back to the thong's foot)
+            u_ = ramp(-qz, -(CROTCH + LEO_ONE_Z[1]), -(CROTCH + LEO_ONE_Z[0]))
+            wf_ = 0.0145 + 0.42 * np.maximum(r, 0) + LEO_FOOT * np.exp(-(np.maximum(r, 0) / 0.035) ** 2)
+            wq = wf_ * fr + (1 - fr) * (u_ * LEO_ONE_W[1] + (1 - u_) * (-0.01 + 1.5 * np.maximum(r - 0.13, 0)))
         legs = np.maximum(qz - 1.13, wq - np.abs(qx))
-        vh = np.interp(qz, [v_lo, (NIPPLE["r"][2] + v_lo) / 2, NIPPLE["r"][2] + 0.03, v_hi], [0.0, nx_ * 0.42, nx_ * 0.62, 0.05])
-        pl = np.where((fr > 0.5) & (qz >= v_lo), np.abs(qx) - vh, 1.0)
+        if LEO_ONE:
+            a_, b_, ru = wq - np.abs(qx), y_end1 - qy, LEO_ONE_W[2]
+            end_ = np.where((a_ < ru) & (b_ < ru), ru - np.hypot(ru - a_, ru - b_), np.minimum(a_, b_))
+            legs = np.where((qy > CROTCH_Y) & (u_ > 0), np.minimum(legs, end_), legs)
+            if LEO_ONE_DEPTH > 0:
+                floor_ = np.interp(qy, roof_ys, roof_zs) - LEO_ONE_DEPTH - 0.012 * ramp(qy, CROTCH_Y - 0.02, CROTCH_Y + 0.02)
+                if LEO_SLOT_CAP > 0:
+                    # (s18 leo2, LEO_SLOT_CAP: round her crotch point no deeper than this under the roof)
+                    w_ = ramp(qy, CROTCH_Y - 0.02, CROTCH_Y - 0.008) * (1 - ramp(qy, CROTCH_Y + LEO_SLOT_BACK, CROTCH_Y + LEO_SLOT_BACK + 0.012))
+                    floor_ = floor_ + w_ * np.maximum(np.interp(qy, roof_ys, roof_zs) - LEO_SLOT_CAP - floor_, 0.0)
+                legs = np.where((qy > GAP_F - 0.025) & (qz < CROTCH + 0.005), np.minimum(legs, qz - floor_), legs)
+        if LEO_U[0] > 0 and not LEO_ONE:
+            a_, b_, ru = wq - np.abs(qx), (qz - qy) / np.sqrt(2) - t_ub, LEO_U[0]
+            foot = np.where((a_ < ru) & (b_ < ru), ru - np.hypot(ru - a_, ru - b_), np.minimum(a_, b_))
+            legs = np.where((qy < CROTCH_Y) & (qz < CROTCH + 0.06), foot, legs)
+        pl = np.where(fr > 0.5, u_dist(qx, qz), 1.0)
         return np.minimum(legs, pl)
+    # A boned front from her underbust to below her navel: stiff, so it no
+    # longer shows every muscle of her stomach (judge 2), the rest still
+    # skin-tight.
+    # (judge 4: a small round blister over each collarbone: fitted as the
+    # stomach is, the bone's knob no longer cast in the leather)
+    nz0 = head("neck_01")[2]
+    def collar(q):
+        return (ramp(q[:, 2], NIPPLE["l"][2] + 0.05, NIPPLE["l"][2] + 0.08) * ramp(-q[:, 2], -(nz0 + 0.012), -(nz0 - 0.008))
+                * ramp(-np.abs(q[:, 0]), -0.17, -0.14) * ramp(-q[:, 1], -(q[:, 1].mean() + 0.02), -q[:, 1].mean()))
+    # (the plunge's foot: the fold under each breast ran into the U's sides
+    # as a crease, which the gore lifted but kept (a solver, 11 October).
+    # Fitted wide there, the cloth spans the fold as it would.)
+    def fold(q):
+        return (ramp(-np.abs(q[:, 0]), -0.09, -0.065) * ramp(q[:, 2], v_lo - 0.03, v_lo - 0.012)
+                * ramp(-q[:, 2], -(v_lo + 0.075), -(v_lo + 0.05)) * ramp(-q[:, 1], -(q[:, 1].mean() + 0.02), -q[:, 1].mean()))
+    def front_panel(q):
+        return (ramp(q[:, 2], WAIST - 0.11, WAIST - 0.08) * ramp(-q[:, 2], -(UNDERBUST - 0.005), -(UNDERBUST - 0.025))
+                * ramp(-np.abs(q[:, 0]), -0.12, -0.09) * ramp(-q[:, 1], -(q[:, 1].mean() + 0.02), -q[:, 1].mean()))
+    # The plunge's foot on a taut gore, as cloth spans there: not down into
+    # the fold under her breasts, where any line crossing it kinked (judge 3:
+    # a flat strip across her sternum, a corner at each side; fitted locally,
+    # a notch and a step seen from above, the fold kept). Her sheet, front
+    # on, is closed by a disc `PLUNGE_TAUT` round rolled up and down it (the
+    # fold spanned; her cleavage, which the U opens, not bridged), and across
+    # it below the foot (the groove of her sternum spanned); that lift, the
+    # same both sides, is laid on her sheet round the foot. It only lifts.
+    def taut_gore(pos, tris):
+        from scipy.ndimage import grey_closing, gaussian_filter
+        from scipy.interpolate import RegularGridInterpolator
+        g, R = 0.001, PLUNGE_TAUT
+        gx = np.linspace(-0.1, 0.1, 201)
+        gz = np.arange(v_lo - 0.07, v_lo + 0.12 + 1e-9, g)
+        def front_depth(pp, tt):
+            box = (np.abs(pp[:, 0]) < 0.13) & (np.abs(pp[:, 2] - v_lo - 0.025) < 0.13) & (pp[:, 1] < pp[:, 1].mean())
+            bvh = BVHTree.FromPolygons([tuple(p) for p in pp], tt[box[tt].all(1)].tolist())
+            y0 = pp[:, 1].min() - 0.3
+            d = np.full((len(gz), len(gx)), np.nan)
+            for i, j in np.ndindex(d.shape):
+                hit = bvh.ray_cast(Vector((gx[j], y0, gz[i])), Vector((0.0, 1.0, 0.0)))[0]
+                if hit is not None:
+                    d[i, j] = -hit[1]
+            return d
+        hs, hk = front_depth(pos, tris), front_depth(P_FILLED, TRI)
+        both = ~np.isnan(hs) & ~np.isnan(hk)
+        h = np.where(np.isnan(hs), hk + np.median(hs[both] - hk[both]), hs)
+        h = np.where(np.isnan(h), np.nanmin(h), h)
+        k = int(round(R / g))
+        s = np.sqrt(np.maximum(R * R - (np.arange(-k, k + 1) * g) ** 2, 0.0))
+        up = grey_closing(h, structure=s[:, None], mode="nearest")
+        across = grey_closing(h, structure=s[None, :], mode="nearest")
+        def sstep(t):
+            t = np.clip(t, 0.0, 1.0)
+            return t ** 3 * (t * (6 * t - 15) + 10)
+        below = sstep((v_lo + 0.012 - gz) / 0.012)[:, None]
+        # (not within 20 mm of the U: the rim is pinned there, plunge_rim)
+        mx, mz = np.meshgrid(gx, gz)
+        below = below * sstep((u_dist(mx.ravel(), mz.ravel()).reshape(mx.shape) - 0.01) / 0.01)
+        c = np.maximum(up, h + below * (across - h))
+        c = np.maximum(c, c[:, ::-1])
+        lift_ = gaussian_filter(c - h, 2.0)
+        lf = RegularGridInterpolator((gz, gx), lift_, bounds_error=False, fill_value=0.0)
+        w = (sstep((0.085 - np.abs(pos[:, 0])) / 0.035) * sstep((pos[:, 2] - (v_lo - 0.065)) / 0.03)
+             * sstep((v_lo + 0.115 - pos[:, 2]) / 0.04) * ramp(-pos[:, 1], -(pos[:, 1].mean() + 0.02), -pos[:, 1].mean()))
+        lv = lf(np.c_[pos[:, 2], pos[:, 0]]) * w
+        probe = lambda x_, dz: float(lf([[v_lo + dz, x_]])[0]) * 1000
+        print("TAUT GORE: disc %.0f mm; lifted up to %.1f mm; at its foot %.1f, 15 mm below %.1f, beside it (25 mm out, 15 up) %.1f / %.1f, (35 out, 15 up) %.1f / %.1f"
+              % (R * 1000, lv.max() * 1000, probe(0, 0), probe(0, -0.015), probe(-0.025, 0.015), probe(0.025, 0.015), probe(-0.035, 0.015), probe(0.035, 0.015)))
+        out = pos.copy()
+        out[:, 1] -= lv
+        return out
+    # (the fold beside the plunge's foot fitted `PLUNGE_FOLD` wide as before,
+    # but lifted off her by a smooth field of what each place needs: lifted
+    # as one by the most any place needed, 7.4 mm, its foot stood 16 mm in
+    # front of her sternum, a flat shelf; solver, 11 October)
+    def plunge_fold(pos, tris):
+        pos0_ = pos.copy()
+        sw = fold(pos)
+        pos = mls_flat(pos, sw, (0.0, -1.0, 0.0), PLUNGE_FOLD)
+        on = np.where(sw > 1e-3)[0]
+        need = np.linalg.norm(pushes_off_skin(pos[on], 0.0035), axis=1)
+        tr = cKDTree(pos[on])
+        env = np.array([need[j].max() for j in tr.query_ball_point(pos[on], 0.015)])
+        sm = np.empty(len(on))
+        for i, j in enumerate(tr.query_ball_point(pos[on], 0.018)):
+            g_ = np.exp(-0.5 * (np.linalg.norm(pos[on][j] - pos[on][i], axis=1) / 0.006) ** 2)
+            sm[i] = (env[j] * g_).sum() / g_.sum()
+        lv = np.zeros(len(pos))
+        lv[on] = sm * sw[on]
+        print("PLUNGE FOLD: fitted %.0f mm wide, lifted %.1f to %.1f mm (median %.1f)"
+              % (PLUNGE_FOLD * 1000, sm.min() * 1000, sm.max() * 1000, np.median(sm) * 1000))
+        out_ = pos + vertex_normals(pos, tris) * lv[:, None]
+        if PLUNGE_UNTANGLE:
+            # (s17 spike2: the fit along her depth laid the steep wall of the fold
+            # under each breast flat into a crease of turned-over triangles, which
+            # the U's cut met at each corner of its foot: a flap of the sheet 2 mm
+            # under its roll, the tooth left of the clasp and the speck right of it)
+            out_ = sheet_untangled("arcanist.corset", out_, pos0_, tris, fold(pos0_) > 1e-3)
+        return out_
+    # The U's rim, its lower part, pinned onto her as a bound edge lies: on a
+    # taut string along the U (her skin's depth along it closed and opened by
+    # a round `PLUNGE_STRING`: it spans the fold under each breast without
+    # dipping into it, and never kinks) `PLUNGE_RIM` off her. From it to the
+    # fitted sheet the cloth is a membrane over her (it spans, never goes
+    # through her), eased back into the sheet by `PLUNGE_BAND` from the rim;
+    # the same both sides. (The fit faded before the rim instead, its crease
+    # came back, solver 11 October.)
+    def rim_depth(pp, tt, gx, gz):
+        box = (np.abs(pp[:, 0]) < 0.13) & (np.abs(pp[:, 2] - v_lo - 0.025) < 0.13) & (pp[:, 1] < pp[:, 1].mean())
+        bvh = BVHTree.FromPolygons([tuple(p) for p in pp], tt[box[tt].all(1)].tolist())
+        y0 = pp[:, 1].min() - 0.3
+        d = np.full((len(gz), len(gx)), np.nan)
+        for i, j in np.ndindex(d.shape):
+            hit = bvh.ray_cast(Vector((gx[j], y0, gz[i])), Vector((0.0, 1.0, 0.0)))[0]
+            if hit is not None:
+                d[i, j] = -hit[1]
+        return d
+    def plunge_rim(pos, tris):
+        from scipy.ndimage import grey_closing, grey_opening
+        from scipy.interpolate import RegularGridInterpolator
+        def sstep(t):
+            t = np.clip(t, 0.0, 1.0)
+            return t ** 3 * (t * (6 * t - 15) + 10)
+        g = 0.001
+        gx = np.linspace(-0.09, 0.09, 181)
+        gz = np.arange(v_lo - 0.05, v_lo + 0.1 + 1e-9, g)
+        GX, GZ = np.meshgrid(gx, gz)
+        hs, hk = rim_depth(pos, tris, gx, gz), rim_depth(P_FILLED, TRI, gx, gz)
+        hk = np.where(np.isnan(hk), np.nanmin(hk), hk)
+        hs = np.where(np.isnan(hs), hk + 0.0035, hs)
+        hs_m, hk_m = (hs + hs[:, ::-1]) / 2, (hk + hk[:, ::-1]) / 2
+        # (the string, along the U from its foot, in mm)
+        sl = np.r_[0, np.cumsum(np.linalg.norm(np.diff(np.c_[xx_, zz_], axis=0), axis=1))]
+        s = np.arange(0, sl[-1], g)
+        xu, zu = np.interp(s, sl, xx_), np.interp(s, sl, zz_)
+        keep = zu < gz[-1] - 0.002
+        xu, zu = xu[keep], zu[keep]
+        f = RegularGridInterpolator((gz, gx), hk_m)(np.c_[zu, xu]) * 1000
+        sh = RegularGridInterpolator((gz, gx), hs_m)(np.c_[zu, xu]) * 1000
+        R = PLUNGE_STRING * 1000
+        k = int(R)
+        ball = np.sqrt(np.maximum(R * R - np.arange(-k, k + 1) ** 2, 0.0))
+        full = np.r_[f[:0:-1], f]
+        T = grey_opening(grey_closing(full, structure=ball, mode="nearest"), structure=ball, mode="nearest")[len(f) - 1:] + PLUNGE_RIM * 1000
+        a = sstep((v_lo + 0.08 - zu) / 0.03)
+        Tr = (a * T + (1 - a) * sh) / 1000
+        # (each place: its way from the rim, front on, and the rim's place nearest it)
+        ud = u_dist(GX.ravel(), GZ.ravel()).reshape(GX.shape)
+        near = cKDTree(np.c_[xu, zu]).query(np.c_[np.abs(GX.ravel()), GZ.ravel()])[1].reshape(GX.shape)
+        fixed = (ud <= 0) | (ud >= PLUNGE_BAND)
+        fixed[[0, -1], :] = True
+        fixed[:, [0, -1]] = True
+        D = np.where(ud <= 0, Tr[near], hs_m)
+        floor_ = hk_m + PLUNGE_RIM * 0.8
+        for _ in range(3000):
+            av = 0.25 * (np.roll(D, 1, 0) + np.roll(D, -1, 0) + np.roll(D, 1, 1) + np.roll(D, -1, 1))
+            D = np.where(fixed, D, np.maximum(av, floor_))
+        w = np.where(ud < 0, sstep((ud + 0.012) / 0.006), 1 - sstep((ud - 0.01) / (PLUNGE_BAND - 0.01))) * a[near]
+        lf = RegularGridInterpolator((gz, gx), w * (D - hs), bounds_error=False, fill_value=0.0)
+        lv = lf(np.c_[pos[:, 2], pos[:, 0]]) * ramp(-pos[:, 1], -(pos[:, 1].mean() + 0.02), -pos[:, 1].mean())
+        print("PLUNGE RIM: string %.0f mm round, rim %.1f mm off her (at its foot the string %.1f over her, the sheet was %.1f); moved %.1f to %.1f mm"
+              % (R, PLUNGE_RIM * 1000, T[0] - f[0], sh[0] - f[0], lv.min() * 1000, lv.max() * 1000))
+        out = pos.copy()
+        out[:, 1] -= lv
+        return out
     belt_z = 1.0 + 0.035 * X / 0.18
     belt = AND(0.016 - np.abs(Z - belt_z), 0.3 - arms)
     bones = OR(*[front_line(x, UNDERBUST - 0.022, x * 0.8, 1.025 - 0.025 * (abs(x) < 0.05), 0.009)
@@ -3159,19 +4658,757 @@ def arcanist():
     choker = AND(0.009 - np.abs(Z - (nz + 0.035)), wsum("neck_01", "Head") - 0.4, 0.3 - wsum("Head") + wsum("neck_01") * 0, 0.3 - arms)
     mantle = OR(cap(shoulder("l"), 0.14), cap(shoulder("r"), 0.14),
                 AND(Z - 1.43, (Y - 0.0), 0.3 - arms))
+    # The owner's option (11 October): a white feathery trim along the plunge,
+    # "only increase the skin we cover slightly". A soft roll swept along the
+    # corset's own bound edge (smoothed), DOWN_IN over her skin and DOWN_OUT
+    # over the corset, flat beneath, fur shells grown on it (tuned as down),
+    # tapered to nothing at her neck. (Cut from her skin as a band, it came
+    # out as torn paper ribbons, h4.)
+    def plunge_clasp():
+        """The plunge's foot closed by a small clasp (PLUNGE_CLASP=1; the
+        coordinator's fallback after judge 7: a fair U at the foot would not
+        come clean at 1:1 after two solvers and one more try). A crescent of
+        the corset's gold lying on the binding round the foot, its horns rising
+        up the U's sides past where its kinks were (about 23 mm out), a violet
+        cabochon in a gold bezel at its foot. It covers the binding and at most
+        1 mm of her skin inside it. Its back follows the cloth and binding
+        under it (their front-most surface, eased), 0.6 mm off; each point
+        skinned as the corset point nearest it, so it never parts from them."""
+        cp, ct, cw, cth = SHEET["arcanist.corset"]
+        obs = [o for o in bpy.data.objects if o.type == "MESH" and o.name.startswith("arcanist.corset")]
+        dg = bpy.context.evaluated_depsgraph_get()
+        bvhs = [(BVHTree.FromObject(o.evaluated_get(dg), dg), o.matrix_world.copy()) for o in obs]
+        cz = v_lo + R_u
+        TH0, W0, R_IN = np.radians(CLASP_TH), CLASP_W, R_u - 0.001
+
+        def front(x, z):
+            best = None
+            for bv, mw in bvhs:
+                inv = mw.inverted()
+                h = bv.ray_cast(inv @ Vector((x, -1.0, z)), (inv.to_3x3() @ Vector((0.0, 1.0, 0.0))).normalized(), 2.0)
+                if h[0] is not None:
+                    y = (mw @ h[0])[1]
+                    best = y if best is None else min(best, y)
+            return np.nan if best is None else best
+
+        # (front on: columns round the foot, rows across the crescent)
+        nth, nr = 61, 15
+        uu = 0.5 - 0.5 * np.cos(np.pi * np.linspace(0, 1, nr))   # (across it, closer at its rims)
+        th = np.linspace(-TH0, TH0, nth)
+        # (a boss under the stone tapering to 2.5 mm at its tips, judge 8; the
+        # horns follow the binding's own inner edge on each side, found by
+        # walking out from the foot's centre until the cloth begins, so both
+        # tips lie on it: a round of one radius ran one under the cup and left
+        # the other on her skin)
+        y_ft = front(0.0, v_lo - 0.004)   # (the cloth just below the foot: the front layer's depth)
+
+        def edge(t0):
+            # (the binding's inner edge on the ray at t0 round the foot)
+            for r_ in np.arange(0.5 * R_u, 3.0 * R_u, 0.00025):
+                if front(r_ * np.sin(t0), cz - r_ * np.cos(t0)) < y_ft + 0.04:   # (nan is never less: the opening; her back's cloth is far behind)
+                    return r_
+            return np.nan
+
+        def taper(s_):
+            return (0.0025 + 0.0085 * (1 - s_) ** 1.5) * np.sqrt(np.clip(1 - s_ ** 12, 0.25, 1.0))
+
+        # (judge 8 asked to keep h5's 58 mm span so it reaches past the U's
+        # kinks, where its round foot meets its sides. Once the horns
+        # followed the binding's inner edge, 78 degrees came to 38 mm and
+        # stopped short of them; held at 58 mm the horns climbed 145 degrees
+        # up the sides and it read as a gold lining, no longer a clasp. So
+        # the horns go 100 degrees round, just past the kinks; CLASP_SPAN, in
+        # metres, solves the reach for a span instead)
+        SPAN = float(os.environ.get("CLASP_SPAN", "0"))
+        if SPAN > 0:
+            tg = np.radians(np.arange(0.0, 160.01, 1.0))
+            eg = np.array([edge(t0) for t0 in tg])
+            ok_ = ~np.isnan(eg)
+            top = tg[ok_ & (np.cumsum(~ok_) == 0)].max()   # (as far round as the edge runs unbroken)
+
+            def reach(T):
+                t_ = np.linspace(-T, T, nth)
+                x_ = (np.interp(np.abs(t_), tg[ok_], eg[ok_]) - 0.001 + taper(np.abs(t_) / T)) * np.sin(t_)
+                return x_.max() - x_.min()
+            lo_, hi_ = np.radians(30.0), top
+            for _ in range(30):
+                mid = 0.5 * (lo_ + hi_)
+                lo_, hi_ = (mid, hi_) if reach(mid) < SPAN else (lo_, mid)
+            TH0 = 0.5 * (lo_ + hi_)
+            if reach(TH0) < SPAN - 0.001:
+                print("CLASP: WARNING the binding's edge runs out at %.0f deg; span only %.0f mm" % (np.degrees(top), reach(TH0) * 1000))
+        if CLASP_D:
+            TH0 = np.radians(float(os.environ.get("CLASP_D_TH", "25")))
+        th = np.linspace(-TH0, TH0, nth)
+        s_ = np.abs(th) / TH0
+        wid = taper(s_)
+        r_e = np.array([edge(t0) for t0 in th])
+        r_e = np.where(np.isnan(r_e), np.nanmax(r_e), r_e)
+        for _ in range(6):
+            r_e[1:-1] = 0.25 * r_e[:-2] + 0.5 * r_e[1:-1] + 0.25 * r_e[2:]
+        # (its inner rim 1 mm onto her skin at the foot, meeting it there; out
+        # along the horns it moves onto the binding, 1 mm in from the
+        # binding's inner edge at the tips, and each horn narrows about its
+        # own middle line: narrowed from the outside only, the tips lay
+        # inside the binding's edge, on her skin, as points, judge 8)
+        wfull = 0.0025 + 0.0085 * (1 - s_) ** 1.5
+        # (each tip on its cup's binding, judge 9: the binding's own edges found
+        # front on along each tip's ray, where it is the corset's front-most
+        # piece, and the horn's outer rim CLASP_TIPIN, 1.5 mm, inside its outer
+        # edge. A fixed 5 mm out from the cloth's edge put the right tip under
+        # its cup and left the left one on her skin, n1)
+        bvb = [(BVHTree.FromObject(o.evaluated_get(dg), dg), o.matrix_world.copy()) for o in obs if "_bind" in o.name or o.name.endswith("_trim")]   # (the binding is `<piece>_bind<k>`, tube(); "_trim" alone found none, c1)
+
+        def on_bind(x, z):
+            yb = None
+            for bv, mw in bvb:
+                inv = mw.inverted()
+                h = bv.ray_cast(inv @ Vector((x, -1.0, z)), (inv.to_3x3() @ Vector((0.0, 1.0, 0.0))).normalized(), 2.0)
+                if h[0] is not None:
+                    yb = (mw @ h[0])[1] if yb is None else min(yb, (mw @ h[0])[1])
+            return yb is not None and yb <= front(x, z) + 1e-5
+        TIPIN = float(os.environ.get("CLASP_TIPIN", "0.0015"))
+        outs = {}
+        for a in (0, nth - 1):
+            rs = np.arange(r_e[a] - 0.003, r_e[a] + 0.02, 0.0001)
+            hit = np.array([on_bind(r * np.sin(th[a]), cz - r * np.cos(th[a])) for r in rs])
+            base = r_e[a] - 0.001 + 0.5 * wfull[a]
+            if not hit.any():
+                print("CLASP: WARNING no binding on the tip's ray at %.0f deg" % np.degrees(th[a]))
+                outs[a] = 0.005
+                continue
+            i0 = int(np.argmax(hit))
+            i1 = i0 + int(np.argmin(np.r_[hit[i0:], False]))
+            rb0, rb1 = rs[i0], rs[i1 - 1]
+            want = rb0 + CLASP_D_ON if CLASP_D else max(rb1 - TIPIN - 0.0012, rb0 + 0.0012)
+            outs[a] = want - base
+            print("CLASP: tip at %+.0f deg: binding %.1f to %.1f mm out from the foot's centre (cloth's edge %.1f); horn's middle %.1f, %.1f mm inside its outer edge"
+                  % (np.degrees(th[a]), rb0 * 1000, rb1 * 1000, r_e[a] * 1000, want * 1000, (rb1 - want) * 1000))
+        mid_ = r_e - 0.001 + (np.where(th < 0, outs[0], outs[nth - 1]) - (CLASP_D_IN if CLASP_D else 0.0)) * s_ ** 2 + 0.5 * wfull
+        R_IN = mid_ - 0.5 * wid
+        if CLASP_D and CLASP_D_ROUND:
+            # (D2, judge h: from above its foot stood as a pale ledge (h3), or half-round
+            # as a tall hood, behind the stone: its inner rim lay 1 mm over her skin, so
+            # its back's rim dropped 4.8 mm to her skin there. Now the inner rim lies at
+            # least CLASP_D_RIN onto the binding all along (a smooth max), its outer rim
+            # out by half as much, so the binding's own inner edge, uncut, runs down to
+            # her skin above it as all round the U; the tips stay where they were)
+            d_ = r_e + float(os.environ.get("CLASP_D_RIN", "0.0008")) - R_IN
+            sh = 0.5 * (d_ + np.sqrt(d_ * d_ + 0.0004 ** 2))
+            f_ = np.clip((s_ - 0.8) / 0.2, 0, 1)
+            sh = sh * (1 - f_ * f_ * (3 - 2 * f_))
+            wid = wid - 0.5 * sh
+            R_IN = R_IN + sh
+            print("CLASP: inner rim onto the binding: moved out %.1f mm at the foot, %.1f at 50%% out, %.2f at the tips"
+                  % (sh[nth // 2] * 1000, np.interp(0.5, s_[nth // 2:], sh[nth // 2:]) * 1000, sh[0] * 1000))
+        rr = R_IN[:, None] + wid[:, None] * uu[None, :]
+        X = rr * np.sin(th)[:, None]
+        Zc = cz - rr * np.cos(th)[:, None]
+        Y = np.array([[front(X[a, b], Zc[a, b]) for b in range(nr)] for a in range(nth)])
+        Y[Y > y_ft + 0.04] = np.nan   # (her back's cloth, seen through the opening)
+        Yraw = Y.copy()
+        # (inside the opening the ray finds no cloth: the row's own front-most)
+        for a in range(nth):
+            ok = ~np.isnan(Y[a])
+            Y[a] = np.where(ok, Y[a], np.nanmin(Y[a]) if ok.any() else np.nanmin(Y))
+        Y = np.minimum.accumulate(Y[:, ::-1], axis=1)[:, ::-1]   # (never behind what lies outside it)
+        if CLASP_D and CLASP_D_ROUND and os.environ.get("CLASP_D_LIE", "1") == "1":
+            # (D2: across its foot the back follows the cloth and binding as they are,
+            # not held to the front-most outside each point: there the corset recedes
+            # about 17 deg as it rises and its binding lies flush with it, so held
+            # square the crescent stood 3.4 mm off the binding at its top, its stone
+            # square to her, and from above its foot read as a ledge or hood, judge h.
+            # Laid on them it is seen nearly face on from above; the horns as before)
+            w_ = np.clip((0.7 - s_) / 0.3, 0, 1)
+            Y = Y + (w_ * w_ * (3 - 2 * w_))[:, None] * (np.where(np.isnan(Yraw), Y, Yraw) - Y)
+        # (a rigid piece of metal, not a foil: its back is one smooth surface,
+        # a cubic in x and z hugging the front-most of the cloth and binding
+        # under it (refitted to the lower envelope), then set CLASP_OFF, 3 mm,
+        # in front of every sample. At 0.4 mm the cloth came through it in her
+        # idle (her chest rises under it) and the strip read as crumpled foil
+        # with its horns buried; at 3 mm it lies clean.)
+        Y0 = Y.copy()
+        xs, zs = X.ravel() / 0.03, (Zc.ravel() - cz) / 0.03
+        A = np.stack([xs ** i * zs ** j for i in range(4) for j in range(4 - i)], 1)
+        tgt = Y0.ravel().copy()
+        for _ in range(40):
+            fit = A @ np.linalg.lstsq(A, tgt, rcond=None)[0]
+            tgt = np.minimum(Y0.ravel(), fit)
+        Y = fit.reshape(Y0.shape)
+        Y = Y + min(0.0, float((Y0 - Y).min())) - float(os.environ.get("CLASP_OFF", 0.001))
+        # (the horns laid down onto the binding toward their tips, 0.4 mm off
+        # it: held in front of all the crescent's samples they stood off it)
+        k_ = np.clip((s_ - 0.55) / 0.45, 0, 1)
+        Y = Y + (0.0 if CLASP_D and CLASP_D_IN > 0 else 1.0) * (k_ * k_ * (3 - 2 * k_) * np.maximum((Y0 - Y).min(1) - 0.0004, 0))[:, None]
+        gap = (Y0 - Y) * 1000
+        print(f"CLASP: back off the cloth {gap.min():.2f} to {gap.max():.2f} mm (median {np.median(gap):.2f}; its rim {np.median(np.r_[gap[:, 0], gap[:, -1]]):.2f})")
+        t = uu[None, :]
+        # (a 0.7 mm round at each rim under a polished crown: a thin bright
+        # line along both edges, judge 9)
+        dd = np.minimum(t, 1 - t) * wid[:, None]
+        bump = (0.0006 + 0.0006 * np.sqrt(1 - (1 - np.clip(dd / 0.0007, 0, 1)) ** 2)
+                + 0.0011 * np.sqrt(np.clip(np.sin(np.pi * t), 0, 1)) * (wid[:, None] / W0) ** 0.5)
+        # (its back's rim drawn down onto what lies under it, 0.3 mm off: her
+        # skin where its inner rim is over the opening, else the cloth or
+        # binding. From above a slot showed between its back and her skin,
+        # and the motion check saw her tucked skin through it, judge 9)
+        bsel = (np.abs(P_FILLED[:, 0]) < 0.07) & (np.abs(P_FILLED[:, 2] - cz) < 0.07) & (P_FILLED[:, 1] < y_ft + 0.03)
+        sbv = BVHTree.FromPolygons([tuple(p) for p in P_FILLED], TRI[bsel[TRI].all(1)].tolist())
+
+        def skin_y(x, z):
+            h = sbv.ray_cast(Vector((x, -1.0, z)), Vector((0.0, 1.0, 0.0)))[0]
+            return np.inf if h is None else h[1]
+        under = np.minimum(np.where(np.isnan(Yraw), np.inf, Yraw), np.array([[skin_y(X[a, b], Zc[a, b]) for b in range(nr)] for a in range(nth)]))
+        per = np.zeros((nth, nr), bool)
+        per[:, 0] = per[:, -1] = per[0, :] = per[-1, :] = True
+        if CLASP_D:
+            per &= (s_ < 0.6)[:, None]   # (D: the horns end free over her skin, no skirt drawn down to it)
+        Yb = np.where(per & np.isfinite(under), np.maximum(Y, np.minimum(under - 0.0003, Y + float(os.environ.get("CLASP_PULL", "0.006")))), Y)   # (at most 6 mm: 12 mm reached her skin behind the cup, c1)
+        print("CLASP: back's rim drawn down %.1f to %.1f mm onto what lies under it (inner rim median %.1f)"
+              % (((Yb - Y)[per]).min() * 1000, ((Yb - Y)[per]).max() * 1000, np.median((Yb - Y)[:, 0]) * 1000))
+        Yf = Y - bump
+        if CLASP_D and CLASP_D_ROUND:
+            # (D2's foot read as a pale flat ledge from above, a top hat's brim:
+            # the back's inner rim drawn 4.8 mm down to her skin left a flat wall
+            # under a flat-topped bar, judge h. Now a half-round section all
+            # along: the front rolls from its crown down to the back's rim on both
+            # sides; the drawn-down rim eases out toward the horns (none past 60%
+            # out); the front never nearer the cloth under it than 0.4 mm)
+            fall = np.clip((0.6 - s_) / 0.2, 0, 1)
+            Yb = Y + (Yb - Y) * (fall * fall * (3 - 2 * fall))[:, None]
+            L_ = Y + (1 - t) * (Yb[:, :1] - Y[:, :1]) + t * (Yb[:, -1:] - Y[:, -1:])
+            crown = Y - bump[:, nr // 2][:, None]
+            Yf = L_ - (L_ - crown) * np.sqrt(np.clip(1 - (2 * t - 1) ** 2, 0, 1))
+            Yf = np.minimum(Yf, np.where(np.isnan(Yraw), np.inf, Yraw - 0.0004))
+            Yb = np.maximum(Yb, Yf + 0.0003)
+            print("CLASP: half-round section; at the foot its crown %.1f mm proud of its inner rim, %.1f of its outer; %.1f mm proud at the tips"
+                  % ((L_[nth // 2, 0] - crown[nth // 2, 0]) * 1000, (L_[nth // 2, -1] - crown[nth // 2, 0]) * 1000, (L_[0, 0] - crown[0, 0]) * 1000))
+        back = np.stack([X, Yb, Zc], -1)
+        frnt = np.stack([X, Yf, Zc], -1)
+        P2, T2 = [], []
+
+        def grid(G, flip):
+            o = sum(len(q) for q in P2)
+            P2.append(G.reshape(-1, 3))
+            for a in range(nth - 1):
+                for b in range(nr - 1):
+                    q = [o + a * nr + b, o + (a + 1) * nr + b, o + (a + 1) * nr + b + 1, o + a * nr + b + 1]
+                    T2.extend([(q[0], q[1], q[2]), (q[0], q[2], q[3])] if not flip else [(q[0], q[2], q[1]), (q[0], q[3], q[2])])
+        grid(frnt, False)
+        grid(back, True)
+        n0 = nth * nr
+        rim = ([(a, 0) for a in range(nth)] + [(nth - 1, b) for b in range(nr)]
+               + [(a, nr - 1) for a in range(nth - 1, -1, -1)] + [(0, b) for b in range(nr - 1, -1, -1)])
+        for (a0, b0), (a1, b1) in zip(rim, rim[1:]):
+            i0, i1 = a0 * nr + b0, a1 * nr + b1
+            T2.extend([(i0, n0 + i0, n0 + i1), (i0, n0 + i1, i1)])
+        pp, tt = np.vstack(P2), np.array(T2)
+        if (vertex_normals(pp, tt)[:n0, 1] > 0).mean() > 0.5:
+            tt = tt[:, ::-1]
+        c_foot = back[nth // 2, nr // 2]
+        def sk(pts):
+            # (metal moves as one rigid piece: every point of the crescent, its
+            # bezel and stone takes one row, the cloth's weights averaged over
+            # 12 mm round the foot. Per-point weights mixed her breasts' and
+            # spine's bones differently from point to point, and the four-bone
+            # cut crumpled the strip into zigzags in her idle.)
+            d, j = cKDTree(cp).query(c_foot, k=96)
+            g = np.exp(-(d / 0.012) ** 2)
+            w = (cw[j] * g[:, None]).sum(0) / g.sum()
+            return np.repeat((w / w.sum())[None], len(pts), 0)
+        # (the horns ride their cups: each station takes the cloth's own weights
+        # under its middle (6 mm round it), blended in from the rigid row over
+        # the first 30% out from the foot (there the two nearly agree), so the
+        # crescent bends as the binding under it does and the tips and balls move
+        # with the cups' rolls. Rigid, the rolls slid 9 mm off the balls in her
+        # carriage (rest + HerPose), both over her skin; blended in from 30% to
+        # 85% the horns rode their rolls but folded at a kink, c1. At rest the
+        # balls were within 0.4 mm of the binding, judge 10)
+        w_r = sk(pp[:1])[0]
+        mids = np.stack([X[:, nr // 2], Y[:, nr // 2], Zc[:, nr // 2]], 1)
+        d_w, j_w = cKDTree(cp).query(mids, k=48)
+        g_w = np.exp(-0.5 * (d_w / 0.006) ** 2) + 1e-12
+        w_b = (cw[j_w] * g_w[:, :, None]).sum(1) / g_w.sum(1)[:, None]
+        for _ in range(4):
+            w_b[1:-1] = 0.25 * w_b[:-2] + 0.5 * w_b[1:-1] + 0.25 * w_b[2:]
+        k_w = np.clip((s_ - float(os.environ.get("CLASP_RIDE0", "0.0"))) / 0.3, 0, 1)
+        k_w = k_w * k_w * k_w * (k_w * (6 * k_w - 15) + 10)
+        w_st = (1 - k_w)[:, None] * w_r[None] + k_w[:, None] * w_b
+        w_st = w_st / w_st.sum(1, keepdims=True)
+        print("CLASP: horns ride their cups from %.0f%% out (full by +30%%); tip rows %s | %s" % (100 * float(os.environ.get("CLASP_RIDE0", "0.3")),
+              {BONES[j]: round(float(w_st[0, j]), 3) for j in np.argsort(-w_st[0])[:4]}, {BONES[j]: round(float(w_st[-1, j]), 3) for j in np.argsort(-w_st[-1])[:4]}))
+        RIDE = os.environ.get("CLASP_RIDE", "0") == "1"   # (off: c2 rode the rolls but the crescent came out a flattened, dented bar in her carriage)
+        # (CLASP_SHEAR=1, route S, unjudged: each half's rows blend from the rigid row at the
+        # stone to the cloth's own row under its tip, along ((1 - cos th) / (1 - cos TH0)) ** 0.8,
+        # the binding's own profile round the U (offline: it leads the cosine by 0.03-0.07). Its
+        # U flattens in her carriage (spine_03 pitched 31 deg on spine_02): the tips then ride
+        # the binding as at rest; a tip shift of 0.20 left the balls beside the tube or inside it)
+        if os.environ.get("CLASP_SHEAR", "0") == "1":
+            f_ = ((1 - np.cos(th)) / (1 - np.cos(TH0))) ** float(os.environ.get("CLASP_SHEAR_P", "0.8"))
+            w_st = (1 - f_)[:, None] * w_r[None] + f_[:, None] * np.where((th < 0)[:, None], w_b[0][None], w_b[-1][None])
+            w_st = w_st / w_st.sum(1, keepdims=True)
+            RIDE = True
+            print("CLASP: SHEAR on: tip rows %s | %s" % ({BONES[j]: round(float(w_st[0, j]), 3) for j in np.argsort(-w_st[0])[:4]},
+                  {BONES[j]: round(float(w_st[-1, j]), 3) for j in np.argsort(-w_st[-1])[:4]}))
+        # (CLASP_A=1, route A, unjudged, failed offline: the whole clasp (crescent, bezel, stone, balls)
+        # one rigid row, the mean of the corset's own rows under its two tips, so it keeps its shape and
+        # its balls stay seated in her carriage (0.8 / 0.5 mm off their rest seats). Her U flattens there
+        # (its sides drop 14 mm on its foot), so the clasp's foot lands 14 mm below the U's foot and 4.5 mm
+        # in: the cloth below covers the stone and foot and the cut under the clasp opens, 77 of 78 mm^2)
+        if os.environ.get("CLASP_A", "0") == "1":
+            w_a = 0.5 * (w_b[0] + w_b[-1])
+            w_a = w_a / w_a.sum()
+            sk = lambda pts, w_a=w_a: np.repeat(w_a[None], len(pts), 0)
+            RIDE = False
+            print("CLASP: A on: one row %s" % {BONES[j]: round(float(w_a[j]), 3) for j in np.argsort(-w_a)[:5]})
+        made = [finish("arcanist.clasp", pp, w_st[(np.arange(len(pp)) % (nth * nr)) // nr] if RIDE else sk(pp), tt, "claspgold", 0.0, 0.0, 10 ** 6, scraps=False)]
+        # (the stone: an oval cabochon at the foot, 10 x 8 mm, 3.2 mm high, in
+        # a gold bezel ring 1 mm proud of the crescent)
+        c0 = frnt[nth // 2, nr // 2]
+        nu, nv = 24, 6
+        # (D2: the stone and bezel laid on the crescent's back at the foot, not square
+        # to her: the cloth there recedes as it rises, so a square bezel's top stood
+        # off the crescent and its bottom sank into it; CLASP_D_TILT=0 squares it)
+        m_ = float(np.polyfit(Zc[nth // 2], Y[nth // 2], 1)[0]) if CLASP_D and CLASP_D_ROUND and os.environ.get("CLASP_D_TILT", "1") == "1" else 0.0
+        nh_, vh_ = np.array([0.0, -1.0, m_]) / math.hypot(1.0, m_), np.array([0.0, m_, 1.0]) / math.hypot(1.0, m_)
+
+        def jw(dx, dy, dz):
+            # (a point of the jewel: dx across, dy behind its seat (- in front), dz up its face)
+            return c0 + np.array([dx, 0.0, 0.0]) - dy * nh_ + dz * vh_
+        sp = [jw(0.005 * np.cos(2 * np.pi * j / nu) * np.cos(k / nv * np.pi / 2), -0.0032 * np.sin(k / nv * np.pi / 2),
+                 0.004 * np.sin(2 * np.pi * j / nu) * np.cos(k / nv * np.pi / 2)) for k in range(nv + 1) for j in range(nu)]
+        st = [t_ for k in range(nv) for j in range(nu) for t_ in ((k * nu + j, k * nu + (j + 1) % nu, (k + 1) * nu + (j + 1) % nu),
+                                                                   (k * nu + j, (k + 1) * nu + (j + 1) % nu, (k + 1) * nu + j))]
+        sp, st = np.array(sp), np.array(st)
+        if (vertex_normals(sp, st)[:, 1] > 0).mean() > 0.5:
+            st = st[:, ::-1]
+        _, jn = cKDTree(cp).query(sp)
+        made.append(finish("arcanist.clasp_stone", sp, sk(sp), st, "amethyst", 0.0, 0.0, 10 ** 6, scraps=False))
+        # (under a half-round crescent the bezel's ring stood off it at its top and
+        # bottom: its outer wall flares back 3.5 mm into the crescent, a bezel cup)
+        BEZ = ((1.0, 0.0), (1.0, -0.001), (1.2, -0.001), (1.2, 0.0)) if not (CLASP_D and CLASP_D_ROUND) else               ((1.0, 0.0), (1.0, -0.001), (1.2, -0.001), (1.25, -0.0002), (1.3, 0.0035))
+        cup = [BEZ[-1][1]] * nu
+        if CLASP_D and CLASP_D_ROUND:
+            # (D2: the cup's last row reaches back to what lies behind it, 0.3 mm
+            # into it: the crescent's front where it lies under it, else the binding
+            # or cloth, else her skin; at most 6 mm. A fixed 3.5 mm stood off the
+            # binding at its top and sank into the crescent at its sides)
+            def behind(x, z):
+                r_, t_ = math.hypot(x, cz - z), math.atan2(x, cz - z)
+                if abs(t_) <= TH0:
+                    ri, wi = np.interp(t_, th, R_IN), np.interp(t_, th, wid)
+                    u_ = (r_ - ri) / wi
+                    if -0.001 / wi <= u_ <= 1.0 + 0.001 / wi:   # (within 1 mm of it: onto its rim)
+                        u_ = min(max(u_, 0.0), 1.0)
+                        fa = np.interp(t_, th, np.arange(nth))
+                        a0 = min(int(fa), nth - 2)
+                        fb = np.arccos(np.clip(1 - 2 * u_, -1, 1)) / np.pi * (nr - 1)
+                        b0 = min(int(fb), nr - 2)
+                        wa, wb = fa - a0, fb - b0
+                        return float((1 - wa) * ((1 - wb) * Yf[a0, b0] + wb * Yf[a0, b0 + 1]) + wa * ((1 - wb) * Yf[a0 + 1, b0] + wb * Yf[a0 + 1, b0 + 1])), True
+                y_ = front(x, z)
+                return (skin_y(x, z) if np.isnan(y_) or y_ > y_ft + 0.04 else y_), False
+            ra_ = BEZ[-1][0]
+            for j in range(nu):
+                dx_, dz_, D_ = 0.005 * ra_ * np.cos(2 * np.pi * j / nu), 0.004 * ra_ * np.sin(2 * np.pi * j / nu), 0.001
+                for _ in range(6):
+                    q_ = jw(dx_, D_, dz_)
+                    ys_, in_ = behind(q_[0], q_[2])
+                    D_ = float(np.clip(D_ + ((ys_ if np.isfinite(ys_) else q_[1] + 0.01) + 0.0003 - q_[1]) * math.hypot(1.0, m_), 0.0005, 0.006))
+                # (only its upper half reaches back, where a slot behind it shows from
+                # above; elsewhere, over the cloth beside and below the boss or over the
+                # crescent's lower half, the cup stays shallow, CLASP_D_CUPOUT: reaching
+                # 4.8 mm to the cloth it stood as a drum round the stone (clasp16a), 3.2
+                # mm to the crescent below it a thick double rim front on (clasp16b))
+                cup[j] = D_ if in_ and dz_ > 0 else min(D_, float(os.environ.get("CLASP_D_CUPOUT", "0.0012")))
+            print("CLASP: jewel laid %.0f deg back on the crescent; bezel cup reaches back %.1f mm at its top, %.1f at its sides, %.1f at its bottom"
+                  % (np.degrees(np.arctan(m_)), cup[nu // 4] * 1000, 0.5 * (cup[0] + cup[nu // 2]) * 1000, cup[3 * nu // 4] * 1000))
+        bp = [jw(0.005 * ra * np.cos(2 * np.pi * j / nu), cup[j] if k_ == len(BEZ) - 1 else dy, 0.004 * ra * np.sin(2 * np.pi * j / nu))
+              for k_, (ra, dy) in enumerate(BEZ) for j in range(nu)]
+        bt = [t_ for k in range(len(BEZ) - 1) for j in range(nu) for t_ in ((k * nu + j, (k + 1) * nu + (j + 1) % nu, k * nu + (j + 1) % nu),
+                                                                  (k * nu + j, (k + 1) * nu + j, (k + 1) * nu + (j + 1) % nu))]
+        bp, bt = np.array(bp), np.array(bt)
+        _, jn = cKDTree(cp).query(bp)
+        made.append(finish("arcanist.clasp_bezel", bp, sk(bp), bt, "claspgold", 0.0, 0.0, 10 ** 6, scraps=False))
+        # (a small gold ball at each horn's tip, 3.2 mm across, seated on the
+        # binding: the narrowed tips read as sharp points, judge 8)
+        tp, tt_ = [], []
+        for a in (0, nth - 1):
+            # (centred on the horn's front at its middle line, over the binding:
+            # set 1.2 mm in front of its back, the horn's front buried it, j1)
+            q0 = frnt[a, nr // 2].copy()
+            if CLASP_D and CLASP_D_IN == 0:   # (D2: seated on the binding under it, CLASP_D_SEAT off it)
+                q0[1] = front(q0[0], q0[2]) - float(os.environ.get("CLASP_D_BALL", "0.0011")) - CLASP_D_SEAT
+            o_ = len(tp)
+            tp += [q0 + (float(os.environ.get("CLASP_D_BALL", "0.0011")) if CLASP_D else 0.0009) * np.array([np.cos(2 * np.pi * j / nu) * np.cos(0.98 * np.pi * (k / nv - 0.5)), np.sin(0.98 * np.pi * (k / nv - 0.5)),
+                                            np.sin(2 * np.pi * j / nu) * np.cos(0.98 * np.pi * (k / nv - 0.5))]) for k in range(nv + 1) for j in range(nu)]
+            tt_ += [(o_ + t0, o_ + t1, o_ + t2) for k in range(nv) for j in range(nu)
+                    for t0, t1, t2 in ((k * nu + j, k * nu + (j + 1) % nu, (k + 1) * nu + (j + 1) % nu),
+                                       (k * nu + j, (k + 1) * nu + (j + 1) % nu, (k + 1) * nu + j))]
+        tp, tt_ = np.array(tp), np.array(tt_)
+        if (vertex_normals(tp, tt_)[:len(tp) // 2] * (tp[:len(tp) // 2] - tp[:len(tp) // 2].mean(0))).sum(1).mean() < 0:
+            tt_ = tt_[:, ::-1]
+        made.append(finish("arcanist.clasp_tips", tp, np.repeat(w_st[[0, nth - 1]], len(tp) // 2, 0) if RIDE else sk(tp), tt_, "claspgold", 0.0, 0.0, 10 ** 6, scraps=False))
+        print("CLASP: crescent %.0f mm across, horns %.0f deg round the foot, %.1f mm wide at its foot; stone at z %.3f"
+              % ((X.max() - X.min()) * 1000, np.degrees(TH0), wid[nth // 2] * 1000, c0[2]))
+        # (the cloth, binding and stitches under it cut away 1 mm inside its
+        # edge: lumps of the cloth came through a rigid clasp seated close in
+        # her idle, and 3 mm off it showed a dark slot round it, judge 8)
+        yb, ncut = float(Y.max()) + 0.012, 0
+        for o in obs:
+            mw = o.matrix_world
+            bm = bmesh.new()
+            bm.from_mesh(o.data)
+            gone = []
+            for f in bm.faces:
+                ins = True
+                for v in f.verts:
+                    q = mw @ v.co
+                    r_, t_ = math.hypot(q.x, cz - q.z), math.atan2(q.x, cz - q.z)
+                    ri, wi = np.interp(t_, th, R_IN), np.interp(t_, th, wid)
+                    if abs(t_) >= TH0 * (float(os.environ.get("CLASP_D_CUT", "0.6")) if CLASP_D else 0.97) or q.y > yb or not (ri + 0.001 < r_ < ri + wi - 0.001):
+                        ins = False
+                        break
+                if ins:
+                    gone.append(f)
+            if gone:
+                bmesh.ops.delete(bm, geom=gone, context="FACES")
+                bm.to_mesh(o.data)
+            bm.free()
+            ncut += len(gone)
+        print("CLASP: %d faces of cloth, binding and stitches cut away under it" % ncut)
+        return made
+
+    def down_tube():
+        cp, ct, cw, cth = SHEET["arcanist.corset"]
+        cn = vertex_normals(cp, ct)
+        best = None
+        for lp in edge_loops(ct):
+            lp = np.array(lp)
+            q = cp[lp]
+            on = (np.abs(u_dist(q[:, 0], q[:, 2])) < 0.008) & (q[:, 2] > v_lo - 0.02) & (q[:, 2] < head("neck_01")[2] + 0.05) & (q[:, 1] < 0)
+            if on.sum() > (0 if best is None else best[1].sum()):
+                best = (lp, on)
+        lp, on = best
+        # (the longest run round the loop that is on the plunge)
+        k0 = int(np.argmin(on))
+        lp, on = np.roll(lp, -k0), np.roll(on, -k0)
+        runs, s0 = [], None
+        for k, v in enumerate(np.r_[on, False]):
+            if v and s0 is None:
+                s0 = k
+            if not v and s0 is not None:
+                runs.append((s0, k))
+                s0 = None
+        a0, a1 = max(runs, key=lambda r: r[1] - r[0])
+        C = cp[lp[a0:a1]]
+        C = C[C[:, 2] <= min(C[0, 2], C[-1, 2]) + 1e-6]   # (both ends as high, so it mirrors onto itself)
+        L = np.r_[0, np.cumsum(np.linalg.norm(np.diff(C, axis=0), axis=1))]
+        t = np.arange(0, L[-1], 0.0015)
+        C = np.stack([np.interp(t, L, C[:, k]) for k in range(3)], 1)
+        # (made the same both sides, its mirror's average, and eased over about
+        # 15 mm: along the edge as bound, the foot's kinks came through, h4)
+        C = 0.5 * (C + C[::-1] * np.array([-1.0, 1.0, 1.0]))
+        for _ in range(200):
+            C[1:-1] = 0.25 * C[:-2] + 0.5 * C[1:-1] + 0.25 * C[2:]
+        _, jn = cKDTree(cp).query(C)
+        n_ = cn[jn]
+        T_ = np.gradient(C, axis=0)
+        T_ /= np.linalg.norm(T_, axis=1)[:, None]
+        b_ = np.cross(T_, n_)
+        b_ /= np.linalg.norm(b_, axis=1)[:, None]
+        # (b toward the corset: the side its sheet lies on)
+        mid = cp[cKDTree(cp).query(C + b_ * 0.006)[1]] - C
+        if ((mid * b_).sum(1) < 0).mean() > 0.5:
+            b_ = -b_
+        n_ = np.cross(b_, T_)
+        w_ = (DOWN_IN + DOWN_OUT) / 2
+        off = (DOWN_OUT - DOWN_IN) / 2
+        s_ = np.r_[0, np.cumsum(np.linalg.norm(np.diff(C, axis=0), axis=1))]
+        taper = np.clip(np.minimum(s_, s_[-1] - s_) / 0.015, 0.03, 1.0)
+        taper = taper * taper * (3 - 2 * taper)
+        nseg = 18
+        ph = np.linspace(0, 2 * np.pi, nseg, endpoint=False)
+        cx, cy = np.cos(ph), np.maximum(np.sin(ph), -0.25)
+        cen = C + n_ * (cth + 0.0022) + b_ * off * taper[:, None]
+        pos = (cen[:, None, :] + (b_[:, None, :] * cx[None, :, None] * w_ + n_[:, None, :] * cy[None, :, None] * 0.0042) * taper[:, None, None]).reshape(-1, 3)
+        rows = len(C)
+        tris = []
+        for r in range(rows - 1):
+            for k in range(nseg):
+                a, b2, c2, d = r * nseg + k, r * nseg + (k + 1) % nseg, (r + 1) * nseg + k, (r + 1) * nseg + (k + 1) % nseg
+                tris += [(a, c2, b2), (b2, c2, d)]
+        tris = np.array(tris)
+        nr_ = vertex_normals(pos, tris)
+        if ((nr_.reshape(rows, nseg, 3) * (pos.reshape(rows, nseg, 3) - cen[:, None, :])).sum(2).mean() < 0):
+            tris = tris[:, ::-1]
+        # (its weights the corset's under it, eased along it)
+        wt = cw[jn].astype(float)
+        for _ in range(30):
+            wt[1:-1] = 0.25 * wt[:-2] + 0.5 * wt[1:-1] + 0.25 * wt[2:]
+        wt = four_bones(np.repeat(wt, nseg, 0))
+        print("DOWN arcanist.down: %.0f mm along the plunge, %d rings" % (s_[-1] * 1000, rows))
+        return [finish("arcanist.down", pos, wt, tris, "down", 0.0, 0.0, 10 ** 6, scraps=False)]
+
     global GARTER_Z
     GARTER_Z = CROTCH + 0.2
+    # (the gloves' cuffs 4 cm up under the sleeves, which end 6 cm short of her
+    # wrists: at 2 cm a notch at the sleeve's hem showed her skin, judge 14)
+    GLOVE_TOP = float(os.environ.get("GLOVE_TOP", 0.10))
+    # (the U's foot lies on the gusset, not held down through it: where the gusset
+    # is under it, 0 to 1, held onto its top; LEO_U, LEO_UG, LEO_UH. Released
+    # there instead, the held leg line stepped 2 mm up within 2 mm, a bump.)
+    def on_gusset(q):
+        hf = LEO_GHALF + LEO_GW[0] * ramp(-q[:, 1], -(GAP_F + LEO_GW[2]), -(GAP_F + LEO_GW[1]))
+        return (float(LEO_U[0] > 0 and not LEO_ONE) * ramp(hf + LEO_UG[1] - np.abs(q[:, 0]), 0.0, LEO_UG[0] + LEO_UG[1]) * ramp(q[:, 1], GAP_F - LEO_GUSSET_F - 0.002, GAP_F - LEO_GUSSET_F + 0.004)
+                * ramp(-q[:, 2], -(CROTCH + 0.035), -(CROTCH + 0.028)))
+    # (judge h: the glove copied the nail's free edge at the thumb tip, an
+    # overhang with a dark wedge under it, and a pale lip at the thumb and
+    # index tips. Dark flecks at the sleeve's hem over the glove's top: its
+    # top 15 mm sunk GLOVE_SINK deeper, under the sleeve.)
+    # (The sheet copies her nail: it folds back under the nail's free edge and
+    # into the grooves round it. Laid point by point on the tip's convex hull,
+    # the fold was only flattened onto it, its triangles still turned over, and
+    # thickened along their turned normals they showed as the wedge. So each
+    # fingertip, over its last GLOVE_TIP_R[0] (the whole nail; the thumb's
+    # GLOVE_TIP_THUMB times as far), eased out by GLOVE_TIP_R[1], is relaxed
+    # over the hull, GLOVE_TIP_ROUNDS times each point toward its neighbours'
+    # mean and back onto the hull: one taut round cap, nothing turned over. The
+    # hull holds her own fingertip lifted as far as the rest of the glove
+    # (1.2 mm), so the cap is never nearer her than that; clear_of_skin pushes
+    # only under GLOVE_TIP_CLEAR there, as its push along the nearest face's
+    # normal at the nail's edge is what folded the sheet again.)
+    GLOVE_TIP_R = tuple(float(v) for v in os.environ.get("GLOVE_TIP_R", "0.011,0.017").split(","))
+    GLOVE_TIP_THUMB = float(os.environ.get("GLOVE_TIP_THUMB", "1.25"))
+    GLOVE_TIP_ROUNDS = int(os.environ.get("GLOVE_TIP_ROUNDS", "40"))
+    GLOVE_TIP_RELAX = float(os.environ.get("GLOVE_TIP_RELAX", "0.85"))
+    GLOVE_TIP_CLEAR = float(os.environ.get("GLOVE_TIP_CLEAR", "0.0005"))
+    GLOVE_SINK = float(os.environ.get("GLOVE_SINK", "0.001"))
+    # (s17: each cap ends GLOVE_TIP_DIP short of where her skin starts to bend
+    # with the finger's middle bone (its last bone's weight under
+    # GLOVE_TIP_BEND), eased over at least GLOVE_TIP_EASE, its hull taken
+    # GLOVE_TIP_HULL past it; rounded by GLOVE_TIP_TAUBIN rounds and held
+    # GLOVE_TIP_FLOOR off her; Loop-divided GLOVE_TIP_SUB times in finish())
+    # (GLOVE_TIP_BEND off (0) by default: her skin's weights fade from the last
+    # bone from 5 to 19 mm short of the tip, unevenly between her hands)
+    GLOVE_TIP_BEND = float(os.environ.get("GLOVE_TIP_BEND", "0"))
+    GLOVE_TIP_FAIR = int(os.environ.get("GLOVE_TIP_FAIR", "4"))
+    GLOVE_TIP_DIP = float(os.environ.get("GLOVE_TIP_DIP", "0.002"))
+    GLOVE_TIP_EASE = float(os.environ.get("GLOVE_TIP_EASE", "0.004"))
+    GLOVE_TIP_HULL = float(os.environ.get("GLOVE_TIP_HULL", "0.002"))
+    GLOVE_TIP_TAUBIN = int(os.environ.get("GLOVE_TIP_TAUBIN", "20"))
+    GLOVE_TIP_FLOOR = float(os.environ.get("GLOVE_TIP_FLOOR", "0.001"))
+    GLOVE_TIP_SUB = int(os.environ.get("GLOVE_TIP_SUB", "1"))
+    skin_kd = cKDTree(P)
+    glove_tips_ = {}
+
+    def glove_tips(sd):
+        # (each finger: its bones, the tip of its skin, its two radii)
+        if sd not in glove_tips_:
+            glove_tips_[sd] = []
+            for fg in ("thumb", "index", "middle", "ring", "pinky"):
+                bs = [BI[f"{fg}_0{i}_{sd}"] for i in (1, 2, 3) if f"{fg}_0{i}_{sd}" in BI]
+                if len(bs) < 3:
+                    continue
+                sel = W[:, bs[2]] > 0.5
+                if sel.sum() < 5:
+                    continue
+                base = P[W[:, bs[1]] > 0.5].mean(0)
+                tip = P[sel][np.argmax(np.linalg.norm(P[sel] - base, axis=1))]
+                sc = GLOVE_TIP_THUMB if fg == "thumb" else 1.0
+                r0, r1 = GLOVE_TIP_R[0] * sc, GLOVE_TIP_R[1] * sc
+                # (fin1's 17 mm reached over the pinky's last joint: curled
+                # (idle), the leather bridged over its crease folded into a
+                # ragged patch with pale glints)
+                bend = (W[:, bs].sum(1) > 0.5) & (W[:, bs[2]] < GLOVE_TIP_BEND)
+                if bend.any():
+                    r1 = min(r1, float(np.linalg.norm(P[bend] - tip, axis=1).min()) - GLOVE_TIP_DIP)
+                    r0 = min(r0, r1 - GLOVE_TIP_EASE)
+                glove_tips_[sd].append((fg, bs, tip, r0, r1))
+        return glove_tips_[sd]
+
+    def glove_tip_k(pos, sd):
+        # (1 over each fingertip's cap, eased to 0 at its edge; its own finger only)
+        nb = skin_kd.query(pos)[1]
+        k = np.zeros(len(pos))
+        for fg, bs, tip, r0, r1 in glove_tips(sd):
+            kk = np.clip((r1 - np.linalg.norm(pos - tip, axis=1)) / (r1 - r0), 0, 1)
+            k = np.maximum(k, np.where(W[nb][:, bs].sum(1) > 0.5, kk * kk * (3 - 2 * kk), 0.0))
+        return k
+
+    for sd_ in "lr":
+        KEEP_FINE[f"arcanist.glove_{sd_}"] = lambda q, sd_=sd_: glove_tip_k(q, sd_)
+
+    def glove_sub(pos, wt, tris, sd):
+        # (the caps Loop-divided GLOVE_TIP_SUB times: every face with a point
+        # on a cap, the move eased by the cap)
+        n0 = len(tris)
+        for _ in range(GLOVE_TIP_SUB):
+            k = glove_tip_k(pos, sd)
+            pos, wt, tris = loop_divided(pos, wt, tris, (k[tris] > 0).any(1), k)
+        print("GLOVE %s: caps Loop-divided %d times, %d faces -> %d" % (sd, GLOVE_TIP_SUB, n0, len(tris)))
+        return pos, wt, tris
+    for sd_ in "lr":
+        KEEP_SUB[f"arcanist.glove_{sd_}"] = lambda q, w_, t_, sd_=sd_: glove_sub(q, w_, t_, sd_)
+
+    def glove_top_k(pos, sd):
+        k = np.clip(1 - (ARM_S[sd][skin_kd.query(pos)[1]] - (WRIST_S - GLOVE_TOP)) / 0.015, 0, 1)
+        return k * k * (3 - 2 * k)
+
+    def glove_shape(pos, tris, sd):
+        nb = skin_kd.query(pos)[1]
+        nor = vertex_normals(pos, tris)
+        sgn = 1.0 if (nor * N[nb]).sum(1).mean() > 0 else -1.0
+        from scipy.spatial import ConvexHull
+        A_ = adjacency(len(pos), tris)
+        p0 = pos.copy()
+        x = pos.copy()
+        nfill = 0
+        for fg, bs, tip, r0, r1 in glove_tips(sd):
+            d = np.linalg.norm(p0 - tip, axis=1)
+            own = W[nb][:, bs].sum(1) > 0.5
+            m = own & (d < r1 + GLOVE_TIP_HULL)
+            if m.sum() < 20:
+                continue
+            # (the hull of the sheet there and of her fingertip lifted 1.2 mm)
+            sk = (W[:, bs].sum(1) > 0.5) & (np.linalg.norm(P - tip, axis=1) < r1 + GLOVE_TIP_HULL)
+            hp = np.vstack([p0[m], P[sk] + N[sk] * 0.0012])
+            h = ConvexHull(hp)
+            hb = BVHTree.FromPolygons([tuple(q) for q in hp], h.simplices.tolist())
+            k = np.clip((r1 - d) / (r1 - r0), 0, 1)
+            k = np.where(own, k * k * (3 - 2 * k), 0.0)
+            idx = np.where(k > 0)[0]
+            # (each point held to where it first lands on the hull by 1 -
+            # GLOVE_TIP_RELAX of each step: the fold opens, and the cap's
+            # points slide no further than a few of their spacings)
+            h0 = p0.copy()
+            for i in idx:
+                q = hb.find_nearest(Vector(p0[i]))[0]
+                if q is not None:
+                    h0[i] = np.array(q[:])
+            for _ in range(GLOVE_TIP_ROUNDS):
+                av = (1 - GLOVE_TIP_RELAX) * h0 + GLOVE_TIP_RELAX * (A_ @ x)
+                for i in idx:
+                    q = hb.find_nearest(Vector(av[i]))[0]
+                    if q is not None:
+                        x[i] = p0[i] * (1 - k[i]) + np.array(q[:]) * k[i]
+            nfill += len(idx)
+        # (then rounded: a hull is flat between its points, and its ridges,
+        # up to 42 deg at the index tip (fin1), showed as corners in the
+        # outline. Taubin's rounds weighted by the cap; any point that comes
+        # nearer her than GLOVE_TIP_FLOOR put back out along her normal.)
+        kc = glove_tip_k(p0, sd)
+        # (and GLOVE_TIP_FAIR rings past it, fading: the cap's edge stood as a
+        # kink, up to 59 deg at 15-21 mm from the pinky's tip, fin1)
+        for _ in range(GLOVE_TIP_FAIR):
+            kc = np.maximum(kc, 0.75 * (A_ @ kc))
+        for _ in range(GLOVE_TIP_TAUBIN):
+            for lam in (0.5, -0.53):
+                x = x + (lam * kc)[:, None] * (A_ @ x - x)
+        nlift = 0
+        for i in np.where(kc > 0)[0]:
+            co, nn, _f, _d = BVH.find_nearest(Vector(x[i]))
+            if co is None:
+                continue
+            short = GLOVE_TIP_FLOOR - float(np.dot(x[i] - np.array(co[:]), np.array(nn[:])))
+            if short > 0:
+                x[i] = x[i] + np.array(nn[:]) * short
+                nlift += 1
+        mv = np.linalg.norm(x - p0, axis=1)
+        kt = glove_top_k(x, sd)
+        pos = x - sgn * vertex_normals(x, tris) * (GLOVE_SINK * kt)[:, None]
+        print("GLOVE %s: fingertips relaxed over their hulls, %d points (moved up to %.2f mm, %d over 0.3 mm); top %d points sunk %.1f mm"
+              % (sd, nfill, mv.max() * 1000, int((mv > 0.0003).sum()), int((kt > 0.5).sum()), GLOVE_SINK * 1000))
+        print("GLOVE %s: caps (mm) %s; %d Taubin rounds, %d points held out to %.1f mm"
+              % (sd, " ".join("%s %.1f-%.1f" % (fg, r0 * 1000, r1 * 1000) for fg, bs, tip, r0, r1 in glove_tips(sd)), GLOVE_TIP_TAUBIN, nlift, GLOVE_TIP_FLOOR * 1000))
+        return pos
+    # (LEO_ONE, route (a): what the sheet keeps of her under the crotch (taken as it is,
+    # then cut by exact's leg lines and back end), and there laid LEO_ONE_LIFT off her
+    # from the skin it was cut from (eased as the gusset was), not lifted 3.5 mm and
+    # ironed (an arch so narrow sagged into the slot))
+    def one_zone(q):
+        z_ = q[:, 2]
+        return (np.maximum(ramp(-z_, -(CROTCH + LEO_ONE_LAY[0]), -(CROTCH + LEO_ONE_LAY[1])), ramp(q[:, 1], CROTCH_Y, CROTCH_Y + 0.01))
+                * ramp(-np.abs(q[:, 0]), -0.05, -0.04) * ramp(-z_, -(CROTCH + 0.06), -(CROTCH + 0.05)))
+    # (in front of the slot, where LEO_ONE_DEPTH's line decides, kept down its walls
+    # whatever their slope: cut there by |N_x| too, the walls' patches of steeper skin
+    # tore the sheet at the line into flecks (dry one5); eased 3 rounds, no jag)
+    one_keep = smooth_field(AND(0.03 - np.abs(X), (LEO_ONE_STEEP + (0.999 - LEO_ONE_STEEP) * float(LEO_ONE_DEPTH > 0) * (1 - ramp(Y, CROTCH_Y - 0.012, CROTCH_Y + 0.004)) - np.abs(N[:, 0])) * 0.02,
+                                (y_end1 + 0.006) - Y, Z - (CROTCH - 0.015), (CROTCH + 0.04) - Z), 3) if LEO_ONE else None
+    def slot_bridged(q):
+        # (s18 leo3, LEO_BRIDGE: see its knob)
+        if LEO_BRIDGE <= 0:
+            return q
+        from scipy.ndimage import gaussian_filter1d
+        x_, y_, z_ = q[:, 0], q[:, 1], q[:, 2]
+        a0, a1, b0, b1 = LEO_BRIDGE_Y
+        wy = ramp(y_, CROTCH_Y + a0, CROTCH_Y + a1) * (1 - ramp(y_, CROTCH_Y + b0, CROTCH_Y + b1))
+        inz = (wy > 0) & (np.abs(x_) < 0.03) & (z_ < CROTCH + 0.015)
+        if not inz.any():
+            return q
+        yb = np.arange(CROTCH_Y + a0 - 0.002, CROTCH_Y + b1 + 0.0021, 0.001)
+        bi = np.clip(np.round((y_ - yb[0]) / 0.001).astype(int), 0, len(yb) - 1)
+        def per_bin(m_, f_):
+            zb = np.full(len(yb), np.nan)
+            for b_ in np.unique(bi[m_]):
+                zb[b_] = f_(z_[m_ & (bi == b_)])
+            ok = ~np.isnan(zb)
+            return gaussian_filter1d(np.interp(np.arange(len(yb)), np.nonzero(ok)[0], zb[ok]), 2.0, mode="nearest")
+        zl, zr = per_bin(inz & (x_ < -0.001), np.min), per_bin(inz & (x_ > 0.001), np.min)
+        # (never under the line exact() cuts the walls at: the span laid just above it)
+        fl_ = np.interp(yb, roof_ys, roof_zs) - LEO_ONE_DEPTH - 0.012 * ramp(yb, CROTCH_Y - 0.02, CROTCH_Y + 0.02)
+        if LEO_SLOT_CAP > 0:
+            w2_ = ramp(yb, CROTCH_Y - 0.02, CROTCH_Y - 0.008) * (1 - ramp(yb, CROTCH_Y + LEO_SLOT_BACK, CROTCH_Y + LEO_SLOT_BACK + 0.012))
+            fl_ = fl_ + w2_ * np.maximum(np.interp(yb, roof_ys, roof_zs) - LEO_SLOT_CAP - fl_, 0.0)
+        zl, zr = np.maximum(zl, fl_ + 0.0006), np.maximum(zr, fl_ + 0.0006)
+        zc = per_bin(inz & (np.abs(x_) < 0.0015), np.max)
+        zep = zl[bi] + (zr[bi] - zl[bi]) * ramp(x_, -0.004, 0.004)
+        H = np.maximum(zc[bi] - zep, 1e-4)
+        h = z_ - zep
+        zt = zep + np.maximum(h, 0) * np.minimum(LEO_BRIDGE / H, 1.0) + np.minimum(h, 0)
+        # (LEO_BRIDGE_SAG: its middle that much lower than over its leg lines, so seen from the front its foot is round, not flat)
+        zt = zt - LEO_BRIDGE_SAG * np.clip(1 - (x_ / 0.008) ** 2, 0, 1) * np.clip(h / 0.003, 0, 1)
+        out = q.copy()
+        out[:, 2] = np.where(inz, z_ + wy * (zt - z_), z_)
+        mv = np.abs(out[:, 2] - z_)
+        print("LEO_BRIDGE: the slot spanned %.1f mm over its leg lines, %d points lowered up to %.1f mm" % (LEO_BRIDGE * 1000, int((mv > 0.0002).sum()), mv.max() * 1000))
+        np.savez(os.path.join(os.environ.get("TEMP", "."), "bridge.npz"), yb=yb, zl=zl, zr=zr, zc=zc)
+        return out
+    def crotch_lay(pos, tris):
+        src, ns = PIECE_SRC["arcanist.corset"]
+        w_ = one_zone(src)[:, None]
+        laid = slot_bridged(relax(src + ns * LEO_ONE_LIFT, tris, interior=2, edge=30))
+        print("LEO_ONE: %d points laid %.1f mm off her under the crotch" % (int((w_ > 0.5).sum()), LEO_ONE_LIFT * 1000))
+        return pos * (1 - w_) + laid * w_
+    def one_clear(q):
+        return 0.0035 - (0.0035 - LEO_ONE_LIFT) * one_zone(q)
+    if LEO_ONE:
+        TUCK_ZONES["arcanist"] = [(LEO_ONE_TUCK, one_zone)]
     out = [
+        # (opening into the gusset at its foot, as the warden's does)
         *ribbon("arcanist.thong", back_string(CROTCH + 0.155, CROTCH + 0.012), 0.016, "plumleather", lift=0.003, thick=0.003,
-               trim=gold(0.004), snap=False),
+               trim=gold(0.004), snap=False, hides=True, flare=(0.034, 0.03)),
         *piece("arcanist.corset", corset, "plumleather", lift=0.0035, smooth=8, iron=60, trim=gold(0.008), keep_off=("Head",), filled=True, edge=120, soften=80,
-               bridge=True, cut=exact),
+               bridge=True, cut=exact, stiff=[(0.03, front_panel), (0.03, collar), plunge_fold, taut_gore, plunge_rim] + ([crotch_lay] if LEO_ONE else []),
+               crotch=one_keep, clear=one_clear if LEO_ONE else None,
+               hold=None if not LEO_HOLD else (lambda q: (q[:, 2] > CROTCH + LEO_HOLD_Z[0]) & (q[:, 2] < 1.2) & (np.abs(q[:, 0]) < 0.3), lambda q: ramp(q[:, 2], CROTCH + LEO_HOLD_Z[1], CROTCH + LEO_HOLD_Z[2]) * (1 - LEO_UH * on_gusset(q)))),
+        *(down_tube() if PLUNGE_TRIM == "down" else []),
+        *(plunge_clasp() if PLUNGE_CLASP else []),
+        # (judge 4: the front read as moulded latex. Four stitched boning
+        # channels, as a corset's front is made, from under her cups to
+        # her hips, raised on the suit and moving with it.)
+        *[o for k, x in enumerate((-0.088, -0.044, 0.044, 0.088))
+          for o in ribbon(f"arcanist.boning{'abcd'[k]}",
+                          [np.array([x + (x * 0.82 - x) * t, 0.0, (UNDERBUST - 0.024) + (1.03 - UNDERBUST + 0.024) * t]) for t in np.linspace(0, 1, 7)],
+                          0.012, "plumleather", lift=0.0002, thick=0.0007, onto="arcanist.corset",
+                          taper=BONING_TAPER or None)],
         *piece("arcanist.choker", choker, "blackleather", lift=0.002, soften=0, keep_off=("Head",)),
         *witch_hat("arcanist.hat", "plumleather", "darkpurple"),
     ]
     for sd in "lr":
         out += [
-            *piece(f"arcanist.glove_{sd}", limb(sd, WRIST_S - 0.08, 9.9, legs=False), "blackleather", lift=0.0012, thick=0.001, bevel=0.0004, trim=gold(0.008), edge=30, soften=12),
+            *piece(f"arcanist.glove_{sd}", limb(sd, WRIST_S - GLOVE_TOP, 9.9, legs=False), "blackleather", lift=0.0012, thick=0.001, bevel=0.0004, trim=gold(0.008), edge=30, soften=12,
+                   stiff=[lambda q, t_, sd=sd: glove_shape(q, t_, sd)], clear=lambda q, sd=sd: 0.0012 - GLOVE_SINK * glove_top_k(q, sd) - (0.0012 - GLOVE_TIP_CLEAR) * glove_tip_k(q, sd)),
             # (her leg by where it is, not by its weights: her inner thigh is
             # partly her hips', and a weight test tore a hole there; and no
             # gap kept for the slot between her thighs, which ends above it)
@@ -3189,6 +5426,666 @@ def leg_z(sd, s0):
     pts = LEG[sd]
     d = np.r_[0, np.cumsum(np.linalg.norm(np.diff(np.array(pts), axis=0), axis=1))]
     return float(np.interp(s0, d, np.array(pts)[:, 2]))
+
+
+PL_SPOTS = []   # (the pauldron's rivets as laid: plate, centre; for its checks)
+PL_ROWS = {}    # (each pauldron plate's one blend of bones)
+
+
+def pl_frame(Q, F_):
+    """Points in her left arm's frame: `s` down the arm from the ball of her
+    shoulder, the bearing round it (0 up her outer arm, + to her front) and
+    the distance off its axis."""
+    c_, a_, e0_, e1_ = F_
+    d_ = np.atleast_2d(Q) - c_
+    s_ = d_ @ a_
+    r_ = d_ - np.outer(s_, a_)
+    return s_, np.arctan2(r_ @ e1_, r_ @ e0_), np.linalg.norm(r_, axis=1)
+
+
+def pl_point(s_, th_, rho_, F_):
+    c_, a_, e0_, e1_ = F_
+    return c_ + np.outer(s_, a_) + np.asarray(rho_)[:, None] * (np.outer(np.cos(th_), e0_) + np.outer(np.sin(th_), e1_))
+
+
+def pl_row(base, w):
+    """A plate's one blend of bones: `w` of her upper arm, the rest the
+    shoulder's own blend under the dome (her collarbone, chest and neck)."""
+    arm_l = [BI[n] for n in BONES if n.endswith("_l") and n.split("_")[0] in
+             ("upperarm", "lowerarm", "hand", "index", "middle", "pinky", "ring", "thumb")]
+    rest = np.array(base, float)
+    rest[arm_l] = 0
+    rest /= rest.sum()
+    row = rest * (1 - w)
+    row[BI["upperarm_l"]] += w
+    return four_bones(row[None])[0]
+
+
+def pl_one_blend(objs, row):
+    """Every point of these parts on the plate's one blend (it moves rigidly)."""
+    keep = np.where(row > 0.003)[0]
+    for o in objs:
+        for vg in list(o.vertex_groups):
+            o.vertex_groups.remove(vg)
+        idx = list(range(len(o.data.vertices)))
+        for j in keep:
+            o.vertex_groups.new(name=BONES[j]).add(idx, float(row[j] / row[keep].sum()), "REPLACE")
+
+
+def pl_rim(pos, tris, F_):
+    """A plate's lower rim round her arm, from its outline as built: the
+    lowest crossing at each bearing (half a degree apart) and the plate's
+    distance off her arm there; only the rim proper, round the lowest point
+    for as long as it runs round her arm at 45 degrees or less (past that it
+    is the plate's end, turning up)."""
+    loop = max(edge_loops(tris), key=len)
+    s_, th_, rho_ = pl_frame(pos[loop], F_)
+    g_ = np.radians(np.arange(-150, 150.01, 0.5))
+    lo, rr = np.full(len(g_), -np.inf), np.zeros(len(g_))
+    for i in range(len(loop)):
+        j = (i + 1) % len(loop)
+        if min(rho_[i], rho_[j]) < 0.02 or abs(th_[j] - th_[i]) > 0.5 or th_[j] == th_[i]:
+            continue
+        k = np.where((g_ >= min(th_[i], th_[j])) & (g_ < max(th_[i], th_[j])))[0]
+        if not len(k):
+            continue
+        f = (g_[k] - th_[i]) / (th_[j] - th_[i])
+        sv, rv = s_[i] + f * (s_[j] - s_[i]), rho_[i] + f * (rho_[j] - rho_[i])
+        up = sv > lo[k]
+        lo[k[up]], rr[k[up]] = sv[up], rv[up]
+    ok = np.isfinite(lo)
+    mid = np.where(ok & (np.abs(g_) < np.radians(60)))[0]
+    i0 = mid[np.argmax(lo[mid])]
+    dg = np.radians(0.5)
+    a0 = b0 = i0
+    while a0 > 0 and ok[a0 - 1] and abs(lo[a0 - 1] - lo[a0]) <= rr[a0] * dg:
+        a0 -= 1
+    while b0 < len(g_) - 1 and ok[b0 + 1] and abs(lo[b0 + 1] - lo[b0]) <= rr[b0] * dg:
+        b0 += 1
+    return g_[a0:b0 + 1], lo[a0:b0 + 1], rr[a0:b0 + 1]
+
+
+def pl_lame(name, above, F_, row, O, V, E=0.016, tuck=0.0045, taper=-0.04, flare=0.004, joggle=0.003,
+            rc=0.010, thick=0.0015, rv_end=0.022, rv_up=0.009, cut=None):
+    """A lame: a band round her arm under the rim of the plate above it, built
+    in her arm's frame and never drawn on her skin (an outline on her skin,
+    lifted off it, slid 10 to 18 mm, and no tuck survived: judge 5). Its top
+    edge follows the built rim above `O` up under it, its lower edge `V` below
+    that rim, each end `E` inside the rim's own end, the corners rounded `rc`.
+    Its distance off her arm is one smooth law: the plate above's, less
+    `tuck`, at every bearing (a Chebyshev fit, then lowered until it is under
+    that plate everywhere they overlap), narrowing down her arm by `taper`,
+    the hidden top bent `joggle` further in, the lower edge flared `flare`
+    out over its last 12 mm. Laid out round her arm (its brushing runs round
+    it, one island), bound all round, rivets `rv_up` above its lower edge."""
+    from numpy.polynomial import chebyshev as cheb
+    from scipy.interpolate import LinearNDInterpolator
+    pa, ta = above
+    th_r, s_r, rho_r = pl_rim(pa, ta, F_)
+    rl = rho_r - tuck
+    u_r = np.r_[0, np.cumsum(np.diff(th_r) * (rl[1:] + rl[:-1]) / 2)]
+    u_r -= np.interp(0.0, th_r, u_r)
+
+    def th_of(u):
+        return np.where(u < u_r[0], th_r[0] + (u - u_r[0]) / rl[0],
+                        np.where(u > u_r[-1], th_r[-1] + (u - u_r[-1]) / rl[-1], np.interp(u, u_r, th_r)))
+
+    def u_of(th):
+        return np.where(th < th_r[0], u_r[0] + (th - th_r[0]) * rl[0],
+                        np.where(th > th_r[-1], u_r[-1] + (th - th_r[-1]) * rl[-1], np.interp(th, th_r, u_r)))
+    cl = np.r_[0, np.cumsum(np.hypot(np.diff(u_r), np.diff(s_r)))]
+    L = cl[-1]
+    tt = np.arange(0, L, 0.0005)
+    C = np.c_[np.interp(tt, cl, u_r), np.interp(tt, cl, s_r)]
+    T = np.gradient(C, axis=0)
+    T /= np.linalg.norm(T, axis=1)[:, None]
+    Nn = np.c_[-T[:, 1], T[:, 0]]
+    # (a grid over the band's box, each point placed along the rim and below it)
+    inb = (tt >= E) & (tt <= L - E)
+    box = np.vstack([C[inb] + d * Nn[inb] for d in (-O, V)])
+    h = 0.0015
+    gu = np.arange(box[:, 0].min() - 0.004, box[:, 0].max() + 0.004, h)
+    gs = np.arange(box[:, 1].min() - 0.004, box[:, 1].max() + 0.004, h)
+    UU, SS = np.meshgrid(gu, gs, indexing="ij")
+    uv2 = np.c_[UU.ravel(), SS.ravel()]
+    ns = len(gs)
+    ii = (np.arange(len(gu) - 1)[:, None] * ns + np.arange(ns - 1)[None, :]).ravel()
+    tri = np.vstack([np.c_[ii, ii + ns, ii + 1], np.c_[ii + ns, ii + ns + 1, ii + 1]])
+    _, jn = cKDTree(C).query(uv2)
+    t_ = tt[jn]
+    d_ = ((uv2 - C[jn]) * Nn[jn]).sum(1)
+    # (`cut`: the hidden top lowered cut[0] at its back end, over cut[1] from
+    # it, eased back over cut[2]: at her idle the back of her arm rises under
+    # the dome, and lame 1's top corner came up through the dome, judge 7)
+    Ot = O - (cut[0] * (1 - ramp(t_ - E, cut[1], cut[1] + cut[2])) if cut else 0.0)
+    tc, hw, dc, hh = L / 2, (L - 2 * E) / 2, (V - Ot) / 2, (V + Ot) / 2
+    qx, qy = np.abs(t_ - tc) - (hw - rc), np.abs(d_ - dc) - (hh - rc)
+    field = -(np.minimum(np.maximum(qx, qy), 0) + np.hypot(np.maximum(qx, 0), np.maximum(qy, 0)) - rc)
+    th_g = th_of(uv2[:, 0])
+    # (the plate above, as built, round her arm: its distance off the axis at
+    # each bearing and height)
+    sa, tha, rha = pl_frame(pa, F_)
+    near = (np.abs(tha) < np.radians(150)) & (rha > 0.02)
+    rad_above = LinearNDInterpolator(np.c_[tha[near] * rl.mean(), sa[near]], rha[near])(th_g * rl.mean(), uv2[:, 1])
+    jog = joggle * np.clip(-d_ / O, 0, 1) ** 2
+    fl = flare * np.clip((d_ - (V - 0.012)) / 0.012, 0, 1) ** 2
+    ov = (field > -0.003) & (d_ < 0.001) & np.isfinite(rad_above)
+    bound = rad_above - tuck - taper * d_
+    lo_t, hi_t = th_g[ov].min(), th_g[ov].max()
+
+    def xb(th):
+        return np.clip((th - lo_t) / (hi_t - lo_t) * 2 - 1, -1, 1)
+    bins = np.round(np.degrees(th_g[ov])).astype(int)
+    ub = np.unique(bins)
+    cb = np.array([bound[ov][bins == b].min() for b in ub])
+    xs = xb(np.radians(ub))
+    tgt = cb.copy()
+    for _ in range(8):
+        coef = cheb.chebfit(xs, tgt, 6)
+        over = cheb.chebval(xs, coef) - cb
+        if over.max() < 0.0001:
+            break
+        tgt -= np.maximum(over, 0)
+    shift = max(0.0, float((cheb.chebval(xb(th_g[ov]), coef) - bound[ov]).max())) + 0.0002
+
+    def law(th, d):
+        return (cheb.chebval(xb(th), coef) - shift + taper * d + flare * np.clip((d - (V - 0.012)) / 0.012, 0, 1) ** 2
+                - joggle * np.clip(-d / O, 0, 1) ** 2)
+    X = pl_point(uv2[:, 1], th_g, law(th_g, d_), F_)
+    at = np.c_[np.zeros((len(X), 3)), np.repeat(row[None], len(X), 0), t_, d_, field]
+    pos, at, tris = clip(field, X, at, tri)
+    pos, at, tris = weld(pos, at, tris)
+    tris = islands(pos, tris)
+    nr = vertex_normals(pos, tris)
+    sp, thp, _ = pl_frame(pos, F_)
+    if (nr * (np.cos(thp)[:, None] * F_[2] + np.sin(thp)[:, None] * F_[3])).sum(1).mean() < 0:
+        tris = tris[:, ::-1]
+        nr = -nr
+    at[:, :3] = nr
+    pos, beads = bind_edges(name, pos, at, tris, "bronze", 0.0045, 0.0005, 0.0015, thick, sigma=0.003)
+    # (how far the bound sheet stands off its own law: rigid, none)
+    sp, thp, rp = pl_frame(pos, F_)
+    q2 = np.c_[u_of(thp), sp]
+    _, jq = cKDTree(C).query(q2)
+    dev = np.abs(rp - law(thp, ((q2 - C[jq]) * Nn[jq]).sum(1)))
+    print("PAULDRON %s: %.0f mm long round her arm, %d points, off its law by %.2f mm at most (%.2f mm 99%%), "
+          "lowered %.1f mm" % (name, (L - 2 * E) * 1000, len(pos), dev.max() * 1000, np.percentile(dev, 99) * 1000, shift * 1000))
+    SHEET[name] = (pos.copy(), tris.copy(), at[:, 3:3 + NB].copy(), thick)
+    RIGID_UV[name] = (F_[0], F_[1], True)
+    made = [finish(name, pos, at[:, 3:3 + NB], tris, "bronze", thick, 0.0012, 3000)] + beads
+    # (rivets in one row `rv_up` above its lower edge, `rv_end` in from its ends)
+    n = max(2, int(round((L - 2 * E - 2 * rv_end) / 0.028)) + 1)
+    tk = np.linspace(E + rv_end, L - E - rv_end, n)
+    pk = np.c_[np.interp(tk, tt, C[:, 0]), np.interp(tk, tt, C[:, 1])] + (V - rv_up) * np.c_[np.interp(tk, tt, Nn[:, 0]), np.interp(tk, tt, Nn[:, 1])]
+    thk = th_of(pk[:, 0])
+    spots = pl_point(pk[:, 1], thk, law(thk, np.full(n, V - rv_up)), F_)
+    _, jv = cKDTree(pos).query(spots)
+    made += rivets(name, pos, at, tris, thick, "darksteel", spots=(spots, vertex_normals(pos, tris)[jv], np.repeat(row[None], n, 0)))
+    PL_SPOTS.extend((name, p) for p in spots)
+    pl_one_blend([o for o in made if o is not None], row)
+    PL_ROWS[name] = row
+    return made, (pos, tris)
+
+
+def pl_border_spots(pos, tris, F_, inset=0.0095, step=0.028):
+    """Rivets in a row `inset` inside a plate's outline, `step` apart round
+    it, one at its lowest point on her outer arm."""
+    loop = max(edge_loops(tris), key=len)
+    lp = np.vstack([pos[loop], pos[loop[:1]]])
+    run = np.r_[0, np.cumsum(np.linalg.norm(np.diff(lp, axis=0), axis=1))]
+    Lp = run[-1]
+    rd = np.arange(0, Lp, 0.0005)
+    dense = np.stack([np.interp(rd, run, lp[:, k]) for k in range(3)], 1)
+    dist, j = cKDTree(dense).query(pos)
+    par = rd[j]
+    # (and none nearer the edge than inset less 1.5 mm: chosen within 3 mm,
+    # the cap's nearest rivet stood 7.9 mm in at an inset of 10, short of the
+    # 8.2 that puts it 2 mm inside the rolled rim, judge 8)
+    cand = np.where((np.abs(dist - inset) < 0.003) & (dist > inset - 0.0015))[0]
+    s_, th_, _ = pl_frame(dense, F_)
+    lat = np.where(np.abs(th_) < np.radians(30))[0]
+    a0 = rd[lat[np.argmax(s_[lat])]]
+    n = int(round(Lp / step))
+    nor = vertex_normals(pos, tris)
+    pts, nrs = [], []
+    for k in range(n):
+        tgt = (a0 + k * Lp / n) % Lp
+        dp = np.abs((par[cand] - tgt + Lp / 2) % Lp - Lp / 2)
+        best = np.argmin(dp + 2 * np.abs(dist[cand] - inset))
+        if dp[best] < 0.005:
+            pts.append(pos[cand[best]])
+            nrs.append(nor[cand[best]])
+        else:
+            # (no point in the band near this slot: the cap had 16 of 17, a
+            # gap of two steps in its row, judge 9. A wider band, never
+            # nearer the edge, then the nearest along it)
+            c2 = np.where((dist > inset - 0.0015) & (dist < inset + 0.006))[0]
+            dp2 = np.abs((par[c2] - tgt + Lp / 2) % Lp - Lp / 2)
+            b2 = np.argmin(dp2 + np.abs(dist[c2] - inset))
+            if dp2[b2] < 0.008:
+                pts.append(pos[c2[b2]])
+                nrs.append(nor[c2[b2]])
+            else:
+                print("RIVETS: WARNING slot %d of %d found no point (nearest %.1f mm along)" % (k, n, dp2[b2] * 1000))
+    return np.array(pts), np.array(nrs)
+
+
+def ranger_pauldron():
+    """Her left spaulder: a bronze dome over her shoulder and three lames down
+    her arm, each a rigid plate on one blend of bones, stepping from the
+    dome's (her shoulder's, seated on her trapezius) to her upper arm's."""
+    out = []
+    sh = shoulder("l")
+    ctr = head("upperarm_l")
+    ax_ = head("lowerarm_l") - ctr
+    ax_ /= np.linalg.norm(ax_)
+    e0 = (sh - ctr) - ax_ * ((sh - ctr) @ ax_)
+    e0 /= np.linalg.norm(e0)
+    F_ = (ctr, ax_, e0, np.cross(ax_, e0))
+    NEST.pop("ranger.pauldron", None)
+    # (her upper arm's share in each plate: the dome stays with her shoulder,
+    # the lames step to her arm, by less lower down, where the same turn
+    # about her shoulder's ball swings a lame further out under the one above)
+    PL_W = tuple(float(x) for x in os.environ.get("PL_W", "0.05,0.42,0.60,0.72").split(","))
+    PL_O = tuple(float(x) for x in os.environ.get("PL_O", "0.022,0.016,0.014").split(","))   # (how far each lame goes up under the plate above)
+    PL_V = tuple(float(x) for x in os.environ.get("PL_V", "0.030,0.029,0.028").split(","))   # (and shows below it)
+    PL_LIFT = float(os.environ.get("PL_LIFT", "0.026"))
+    PL_TUCK = float(os.environ.get("PL_TUCK", "0.0045"))
+    PL_CUT = tuple(float(x) for x in os.environ["PL_CUT"].split(",")) if os.environ.get("PL_CUT") else None   # (lame 1's hidden back top lowered; off until tuned)
+    zone = ANDR(cap(sh, 0.11), Z - (sh[2] - 0.11 * 0.55), r=0.011)
+    RIGID_UV["ranger.pauldron0"] = (ctr, ax_, False)
+    dome = piece("ranger.pauldron0", zone, "bronze", lift=PL_LIFT, clear=0.015, thick=0.0015, smooth=14,
+                 soften=10, rigid=(ctr, "ranger.pauldron", 0.0028))
+    pd, td, wd, _ = SHEET["ranger.pauldron0"]
+    row = pl_row(wd[0], PL_W[0])
+    pts, nrs = pl_border_spots(pd, td, F_)
+    dome += rivets("ranger.pauldron0", pd, None, td, 0.0015, "darksteel", spots=(pts, nrs, np.repeat(row[None], len(pts), 0)))
+    PL_SPOTS.extend(("ranger.pauldron0", p) for p in pts)
+    pl_one_blend([o for o in dome if o is not None], row)
+    PL_ROWS["ranger.pauldron0"] = row
+    SHEET["ranger.pauldron0"] = (pd, td, np.repeat(row[None], len(pd), 0), 0.0015)
+    out += dome
+    above = (pd, td)
+    for k in (1, 2, 3):
+        made, above = pl_lame(f"ranger.pauldron{k}", above, F_, pl_row(wd[0], PL_W[k]), PL_O[k - 1], PL_V[k - 1],
+                              tuck=PL_TUCK, rv_end=0.022 if k < 3 else 0.012, cut=PL_CUT if k == 1 else None)
+        out += made
+    return out
+
+
+def sp_env(k, d):
+    return tuple(float(x) for x in os.environ.get(k, d).split(","))
+
+
+def ranger_spaulder():
+    """The simpler pauldron (PAULDRON=leather, for the owner beside the lames):
+    a leather spaulder over her left shoulder, skinned as her other leathers
+    are, so its neck end lies on her trapezius (the rigid dome stood 17-26 mm
+    off it), with a bronze cap plate and two bronze bands riveted onto it,
+    spaced and never overlapping, so no plate can rise through another (lame
+    1 rose through the dome at her idle, judge 6). The leather under each
+    plate takes its shape and its one blend of bones, so they move as one
+    where riveted."""
+    out = []
+    sh = shoulder("l")
+    ctr = head("upperarm_l")
+    ax_ = head("lowerarm_l") - ctr
+    ax_ /= np.linalg.norm(ax_)
+    e0 = (sh - ctr) - ax_ * ((sh - ctr) @ ax_)
+    e0 /= np.linalg.norm(e0)
+    F_ = (ctr, ax_, e0, np.cross(ax_, e0))
+    S0, C2 = sp_env("SP_LINE", "0.012,0.012")          # (the cap plate's lower edge: s = S0 + C2 th^2 down her arm)
+    G, H = sp_env("SP_BAND", "0.011,0.0245")           # (gap between plates; band height: 7 mm closed and the plates crossed in a third of her poses, the sweep)
+    THB, = sp_env("SP_THB", "1.55")                    # (bands' half-span round her arm, radians)
+    S_MED, = sp_env("SP_MED", "-0.055")                # (the cap plate stops here toward her neck: short of her trapezius, judge 7)
+    R_CAP, = sp_env("SP_R", "0.105")                   # (the cap plate's reach over her shoulder)
+    LIFT, THK, GAP = sp_env("SP_LIFT", "0.003,0.0025,0.0012")
+    W_ = sp_env("SP_W", "0.5,0.55,0.6")                # (upper arm's share in the cap and each band: close, so they turn nearly as one; 0.45-0.7 crossed them)
+    LKEY = os.environ.get("SP_LEATHER", "forestleather")
+    FAR, *FAR_W = sp_env("SP_FAR", "0.016,0.016,0.006")   # (past these from any plate the leather takes her skin's shape; past the cap and the bands, her skin's bones)
+    CLR = LIFT + THK + GAP
+    CAP_UP, = sp_env("SP_CAP_UP", "0.0045")           # (the cap stands further off: her shoulder swells under it at her idle; 4 mm left band 1 1.17 mm under it, judge 8)
+    # (the hem away from the cap: how close it lies on her, the strip along
+    # it on one set of weights, and the width under a band over which the
+    # leather goes from the band's row to her skin's, hidden by the band)
+    HEM_LIFT, STRIP, TRANS = sp_env("SP_HEM", "0.0015,0.012,0.0")
+    # (how far the leather runs past band 2: 11 mm, and the change from the
+    # band's row to her skin's in that strip folded it at her idle, judge 8;
+    # made under the band instead, the leather on her skin's weights rose
+    # 4.8 mm through it at her idle, so the leather ends just past the band
+    # and moves with it, sp9)
+    # (and how far round her arm it runs past the bands' ends: 11 mm, and
+    # that corner, past any plate, hung off the back of her arm as a loop
+    # with a void under it through two solvers, judge 8; now it ends 3 mm
+    # inside the bands' ends, so all of it below the cap rides a band)
+    TONGUE, TSIDE = sp_env("SP_TONGUE", "0.006,-0.003")
+    s_, th_, rho_ = pl_frame(P, F_)
+    line = S0 + C2 * th_ ** 2
+    # (never round into her armpit; a distance, not a step: cut on a step,
+    # the leather's edge followed her triangles in a stair and its binding
+    # tore, judge 7. The cap stops CAP_TH round her arm behind and CAP_TH2
+    # in front, on top of her shoulder: her front deltoid swells 6-8 mm
+    # through a rigid plate at her idle, and the leather alone covers it)
+    CAP_TH, LEAF_TH, CAP_TH2 = sp_env("SP_TH", "90,115,65")
+    side = (np.radians(LEAF_TH) - np.abs(th_)) * rho_
+    side_c = (np.radians(np.where(th_ < 0, CAP_TH, CAP_TH2)) - np.abs(th_)) * rho_
+    capf = ANDR(ANDR(cap(sh, R_CAP), line - s_, r=0.008), s_ - S_MED, r=0.012)
+    capf = ANDR(capf, side_c, r=0.008)
+
+    def band(k):
+        top = line + G + (k - 1) * (H + G)
+        return ANDR(np.minimum(s_ - top, top + H - s_), (THB - np.abs(th_)) * rho_, r=0.009)
+    bot = line + 2 * (H + G) + TONGUE
+    # (the leather shows only toward her neck, between the bands and below
+    # them; round the rest of the cap plate it ends hidden under its rim)
+    tongue = ANDR(ANDR(bot - s_, (THB - np.abs(th_)) * rho_ + TSIDE, r=0.014), s_ - (line - 0.02), r=0.004)
+    # (the leather runs MARGIN past the cap plate all round, so the plate
+    # lies on it everywhere: ended hidden under its rim, her skin showed
+    # under the rim's front as she moved, judge 7; its neck end, TRAP past
+    # the cap's reach, stops short of her neck's bones, whose pull had torn
+    # its edge)
+    MARGIN, TRAP = sp_env("SP_MARGIN", "0.008,0.01")
+    # (the neck end's corners: at 12 mm its binding turned up off her
+    # trapezius in a hook, judge 8)
+    NECK_R, = sp_env("SP_NECK_R", "0.024")
+    # (and its hem there, past the cap's neck stop and NOFF out from under
+    # the cap, lies NLIFT on her (judge 8 asked 1 mm or less; it was 1.5))
+    # (NSTRIP: over how much of it the leather rises from NLIFT to LIFT: over
+    # STRIP, the binding's fair line, rounded inside the hem at the front
+    # corner, found the leather 2-2.5 mm up and stood off with it, solver 3)
+    NOFF, NLIFT, NS, NSTRIP = sp_env("SP_NECKPIN", "0.004,0.0013,0.0,0.024")
+    LOWPASS = int(os.environ.get("SP_LOWPASS", "20"))   # (Taubin rounds over the leather away from the plates)
+    _ua = ANDR(cap(sh, R_CAP + MARGIN), line - s_ + MARGIN, r=0.008)
+    # (SP_NECKCUT: how far past S_MED the neck end reaches, and its drop
+    # below the shoulder; shorter, it stops before the top of her trapezius)
+    NK_MED, NK_DROP = sp_env("SP_NECKCUT", "0.02,0.0605")
+    _ub = ANDR(ANDR(cap(sh, R_CAP + TRAP), Z - (sh[2] - NK_DROP), r=NECK_R), (S_MED + NK_MED) - s_, r=NECK_R)
+    # (the neck end as a soft 0-1 weight over NKW, not a hard mask: its
+    # switch stepped the hem's height, the strip's width and the weights,
+    # and the leather creased along it, a pale line from the binding's kink,
+    # judge 9 A5)
+    NKW = float(os.environ.get("SP_NECKW", "0.012"))
+
+    def nkw(pos, own, past):
+        a = np.clip(0.5 + (S_MED + NS - pl_frame(pos, F_)[0]) / NKW, 0, 1)
+        b = np.clip(0.5 + (past[0] - NOFF) / NKW, 0, 1)
+        sm = lambda t: t * t * (3 - 2 * t)
+        return sm(a) * sm(b) * (own < 0)
+    _fil = float(os.environ.get("SP_FILLET", "0.012"))
+    under = -ANDR(-_ua, -_ub, r=_fil) if _fil > 0 else OR(_ua, _ub)
+    # (its corners round, 16-18 mm: at 8 the neck corner's binding turned
+    # tight and curled up off her trapezius, judge 8)
+    leaf = ANDR(OR(under, tongue), side, r=0.016)
+    # The plates first: the leather is shaped under them.
+    names = ["ranger.pauldron0", "ranger.pauldron1", "ranger.pauldron2"]
+    base = W[capf > 0].mean(0)
+    plates = []
+    for k, (nm, fld) in enumerate(zip(names, [capf, band(1), band(2)])):
+        if k == 0:
+            cen = ctr
+            RIGID_UV[nm] = (ctr, ax_, False)
+        else:
+            sm = float(np.median(s_[fld > 0]))
+            cen = ctr + ax_ * sm
+            RIGID_UV[nm] = (ctr, ax_, True)
+        cl = CLR + (CAP_UP if k == 0 else 0.0)
+        made = piece(nm, fld, "bronze", lift=cl, clear=cl, thick=0.0015, smooth=14, soften=6 if k == 0 else 3, rigid=cen)
+        pd, td, wd, _ = SHEET[nm]
+        row = pl_row(base, W_[k])
+        if k == 0:
+            # (10 mm in: at 9.5 the cap's border rivets stood only 1.6 mm inside
+            # its rolled rim, judge 8 asked for 2 mm or more)
+            pts, nrs = pl_border_spots(pd, td, F_, inset=0.0100)
+        else:
+            sp_, tp_, rp_ = pl_frame(pd, F_)
+            mid = float(np.median(sp_))
+            lo, hi = tp_.min(), tp_.max()
+            pts, nrs = [], []
+            nr_ = vertex_normals(pd, td)
+            arc = (hi - lo) * float(np.median(rp_)) - 0.03
+            n = max(2, int(round(arc / 0.028)) + 1)
+            # (each at its bearing on the band's own middle, the point there
+            # farthest from the plate's rim, and none nearer it than 8.2 mm
+            # (its edge 2 mm inside the rolled rim's inner edge):
+            # on the band's median height overall, the end rivet sat on the
+            # rolled rim where the band curves up, half off it in a ring,
+            # judge 8)
+            ein_ = cKDTree(pd[max(edge_loops(td), key=len)]).query(pd)[0]
+            for t in np.linspace(lo + 0.018 / np.median(rp_), hi - 0.018 / np.median(rp_), n):
+                near_ = np.where(np.abs(tp_ - t) * rp_ < 0.002)[0]
+                j = near_[np.argmax(ein_[near_])] if len(near_) else int(np.argmin(np.abs(tp_ - t)))
+                if ein_[j] < 0.0082:
+                    continue
+                pts.append(pd[j])
+                nrs.append(nr_[j])
+            pts, nrs = np.array(pts), np.array(nrs)
+        made += rivets(nm, pd, None, td, 0.0015, "rivetbronze", spots=(pts, nrs, np.repeat(row[None], len(pts), 0)))
+        PL_SPOTS.extend((nm, p) for p in pts)
+        pl_one_blend([o for o in made if o is not None], row)
+        PL_ROWS[nm] = row
+        SHEET[nm] = (pd, td, np.repeat(row[None], len(pd), 0), 0.0015)
+        loop = max(edge_loops(td), key=len)
+        ein = cKDTree(pd[loop]).query(pd)[0]
+        print("SPAULDER %s: rivet nearest its plate's edge %.1f mm" % (nm, cKDTree(pd[loop]).query(pts)[0].min() * 1000))
+        plates.append((pd, vertex_normals(pd, td), ein, cKDTree(pd), row))
+        out += made
+        print("SPAULDER %s: %d points, rivets %d, upper arm %.2f" % (nm, len(pd), len(pts), W_[k]))
+
+    def owned(pos):
+        """Which plate each point of the leather lies under (-1: none), the
+        leather's place under it, and how far each point is past the
+        nearest plate's edge (0 under one)."""
+        own = -np.ones(len(pos), int)
+        tgt = pos.copy()
+        past = np.full((len(plates), len(pos)), np.inf)
+        for k, (pd, nd, ein, kd, row) in enumerate(plates):
+            _, j = kd.query(pos)
+            d = pos - pd[j]
+            dn = (d * nd[j]).sum(1)
+            tan = np.linalg.norm(d - nd[j] * dn[:, None], axis=1)
+            sd = np.where(ein[j] > 0.0025, ein[j], -tan)
+            near = np.abs(dn) < 0.03
+            under = near & (sd >= 0)
+            own[under] = k
+            tgt[under] = (pos - nd[j] * (dn + GAP + THK)[:, None])[under]
+            past[k] = np.where(near, np.maximum(-sd, 0), np.inf)
+        return own, tgt, past
+
+    def fill(tris, vals, known):
+        """Harmonic fill: `vals` kept where `known`, eased between."""
+        n = len(vals)
+        e = np.vstack([tris[:, [0, 1]], tris[:, [1, 2]], tris[:, [2, 0]]])
+        e = np.unique(np.sort(e, 1), axis=0)
+        A = sparse.coo_matrix((np.ones(2 * len(e)), (np.r_[e[:, 0], e[:, 1]], np.r_[e[:, 1], e[:, 0]])), shape=(n, n)).tocsr()
+        Lp = sparse.diags(np.asarray(A.sum(1)).ravel()) - A
+        fr = np.where(~known)[0]
+        kn = np.where(known)[0]
+        if len(fr) == 0:
+            return vals
+        from scipy.sparse.linalg import spsolve
+        rhs = -Lp[fr][:, kn] @ vals[kn]
+        out = vals.copy()
+        sol = spsolve(Lp[fr][:, fr].tocsc(), rhs)
+        out[fr] = sol.reshape(len(fr), -1) if vals.ndim > 1 else sol
+        return out
+
+    # (the leather is held to each plate's underside where under it and to
+    # her skin past FAR from any plate; between, in the gaps between plates
+    # and up her trapezius from the cap's neck end, it is eased harmonically:
+    # blending each plate's tangent plane by distance crumpled it into
+    # facets and shards, judge 7)
+    TRIS_L = []     # (the leather's triangles, for weigh(): piece() hands it none)
+
+    def conform(pos, tris):
+        TRIS_L[:] = [tris]
+        own, tgt, past = owned(pos)
+        known = (own >= 0) | (past.min(0) > FAR)
+        disp = np.where((own >= 0)[:, None], tgt - pos, 0.0)
+        # (its hem, past the plates, hugs her: ironed, it bridged the hollow
+        # behind her armpit and flared 8-13 mm off her arm, judge 7)
+        hem = np.unique(np.concatenate(edge_loops(tris)))
+        hem = hem[own[hem] < 0]
+        # (away from the cap it lies close on her, HEM_LIFT, as a tailored
+        # edge does, rising to LIFT over the strip along it: held 3 mm off,
+        # its rear corner stood off her arm as a tongue with a void under
+        # it, and its neck corner curled up off her trapezius, judge 8)
+        far_ = np.clip((past[0] - FAR_W[0] / 2) / (FAR_W[0] / 2), 0, 1) * np.clip((past[1:].min(0) - STRIP) / STRIP, 0, 1)
+        nw_ = nkw(pos, own, past)
+        far_ = far_ + (1.0 - far_) * nw_
+        hl_ = HEM_LIFT + (NLIFT - HEM_LIFT) * nw_
+        for i in hem:
+            q, n, _, _ = BVH.find_nearest(Vector(pos[i]))
+            if q is not None:
+                disp[i] = np.array(n) * (LIFT - (LIFT - hl_[i]) * far_[i] - (Vector(pos[i]) - q).dot(n))
+        known[hem] = True
+        disp = fill(tris, disp, known)
+        out_ = pos + disp
+        # (and nothing of it nearer her than that: piece() clears it only by
+        # HEM_LIFT now, so the rest is cleared by LIFT here, as before)
+        # (and away from the plates and the hem, low-passed (Taubin, so it
+        # does not shrink): it took her skin's every sub-millimetre ridge, and
+        # the rim light drew the edge of her shoulders' graft across it as a
+        # pale line, judge 8)
+        import scipy.sparse as sps
+        ed_ = np.r_[tris[:, [0, 1]], tris[:, [1, 2]], tris[:, [2, 0]]]
+        A_ = sps.coo_matrix((np.ones(len(ed_)), (ed_[:, 0], ed_[:, 1])), shape=(len(pos), len(pos))).tocsr()
+        A_ = ((A_ + A_.T) > 0).astype(float)
+        deg_ = np.asarray(A_.sum(1)).ravel()
+        free_ = np.setdiff1d(np.where(own < 0)[0], hem)
+        for k_ in range(LOWPASS):
+            lam_ = 0.5 if k_ % 2 == 0 else -0.53
+            avg_ = (A_ @ out_) / np.maximum(deg_, 1)[:, None]
+            out_[free_] += lam_ * (avg_[free_] - out_[free_])
+        d_e, j_e = cKDTree(out_[hem]).query(out_)
+        need = LIFT - (LIFT - hl_[hem][j_e]) * far_[hem][j_e] * np.clip(1 - d_e / (STRIP + (NSTRIP - STRIP) * nw_[hem][j_e]), 0, 1)
+        for i in np.where(own < 0)[0]:
+            q, n, _, _ = BVH.find_nearest(Vector(out_[i]))
+            if q is not None:
+                d = (Vector(out_[i]) - q).dot(n)
+                if d < need[i] - (0.0008 if LOWPASS else 0.0):   # (a ridge under it may come 0.8 mm nearer)
+                    out_[i] = out_[i] + np.array(n) * (need[i] - d)
+        print("SPAULDER leather held under the plates at %d of %d points, eased at %d" % ((own >= 0).sum(), len(pos), (~known).sum()))
+        return out_
+
+    def weigh(pos, wt):
+        own, _, past = owned(pos)
+        # (the cap's bones reach further than a band's: her shoulder swells
+        # under it at her idle, and leather just past its rim, skinned as
+        # she is, rose over the rim, judge 7)
+        rows = np.array([pl[4] for pl in plates])
+        known = (own >= 0) | ((past[0] > FAR_W[0]) & (past[1:].min(0) > FAR_W[1]))
+        vals = np.where((own >= 0)[:, None], rows[np.maximum(own, 0)], wt)
+        # (its hem strip away from the cap, the last STRIP of it, binding and
+        # all, on one set of weights across it: her skin's at the edge, eased
+        # along it. Under band 2 it took the band's row and 7-11 mm lower her
+        # skin's, and the sheet folded just inside the binding: a ragged edge
+        # with her skin at its notch, judge 8. The change from a band's row to
+        # her skin's is made under the band, over TRANS, hidden by it)
+        tris = TRIS_L[0]
+        hp, hw, hk = [], [], []
+        for lp in edge_loops(tris):
+            lp = np.asarray(lp)
+            w_ = np.asarray(wt, float)[lp]
+            for _ in range(30):
+                w_ = (np.roll(w_, 1, 0) + 2 * w_ + np.roll(w_, -1, 0)) / 4
+            # (soft at the neck end too: a hard stop there ended the strip
+            # abruptly and the leather creased from the binding's corner, A5)
+            kw_ = np.maximum((past[0][lp] > FAR_W[0]).astype(float), nkw(pos[lp], own[lp], past[:, lp])) \
+                * (past[1:, lp].min(0) > STRIP + 0.004)
+            keep = kw_ > 0
+            hp.append(lp[keep])
+            hw.append(w_[keep])
+            hk.append(kw_[keep])
+        hp, hw, hk = np.concatenate(hp), np.vstack(hw), np.concatenate(hk)
+        if len(hp):
+            d_e, j_e = cKDTree(pos[hp]).query(pos)
+            strip = (d_e < STRIP) & (own < 0)   # (never under a plate: the neck's strip reaches the cap)
+            k_ = hk[j_e[strip]][:, None]
+            vals[strip] = (1 - k_) * vals[strip] + k_ * hw[j_e[strip]]
+            known |= strip
+            known &= ~((own >= 1) & ~strip & (d_e < STRIP + TRANS))
+            print("SPAULDER hem strip on its edge's weights at %d points, eased from the bands' rows at %d" % (
+                strip.sum(), ((own >= 1) & ~strip & (d_e < STRIP + TRANS)).sum()))
+        # (the neck end, past the cap's neck stop, on the very weights of her
+        # skin beneath, point by point, not eased: on weights eased over the
+        # piece, its tip near her neck took less of her neck's bone and none
+        # of her head's than her skin there (clavicle .58 neck .20 against
+        # .45 and .25 with head .05), and it stood 5-7 mm off her trapezius
+        # at her idle, 2-3 at rest: the hook of judge 8 #3, j2)
+        nw_ = nkw(pos, own, past)
+        nk_ = nw_ > 0
+        vals[nk_] = (1 - nw_[nk_, None]) * vals[nk_] + nw_[nk_, None] * W[cKDTree(P).query(pos[nk_])[1]]
+        known |= nk_
+        print("SPAULDER neck end on her skin's weights at %d points (eased in at %d)" % (nk_.sum(), (nk_ & (nw_ < 1)).sum()))
+        return fill(tris, vals, known)
+
+    # (laid out whole, one island: cut into four by smart_project, it showed
+    # a pale line across it near her neck, judge 8)
+    ONE_ISLAND.add("ranger.spaulder")
+    BIND_RMIN["ranger.spaulder"] = 0.012
+
+    # (cleared to HEM_LIFT all over once shaped, the neck end's hem, pinned at
+    # NLIFT, went back up to 1.5 mm, and its binding's underside, 0.6 mm
+    # below the leather, stood 1-2.5 mm off her trapezius at rest: there it
+    # keeps NLIFT, solver 3)
+    def clear_(pos):
+        own, _, past = owned(pos)
+        return HEM_LIFT + (min(NLIFT, HEM_LIFT) - HEM_LIFT) * nkw(pos, own, past)
+    lm = piece("ranger.spaulder", leaf, LKEY, lift=LIFT, thick=THK, smooth=10, soften=10, iron=20, clear=clear_,
+               trim=("darkleather", 0.006, 0.0006, 0.0013), stiff=[conform], weigh=weigh)
+    # (its binding and stitches on the weights the leather's edge ends with:
+    # the binding took the sheet's weights before finish() eased them again,
+    # and at her idle the two parted by up to 9 mm at the lower corners (26 mm
+    # over the sweep): the leather rose over the binding in a ragged edge with
+    # her skin showing, and the rear corner hung off as a tongue, judge 8)
+    sheet = lm[0]
+    vs_ = sheet.data.vertices
+    sp_ = np.array([sheet.matrix_world @ v.co for v in vs_])
+    sw_ = np.zeros((len(vs_), len(BONES)))
+    for v in vs_:
+        for gg in v.groups:
+            sw_[v.index, BI[sheet.vertex_groups[gg.group].name]] = gg.weight
+    kd_ = cKDTree(sp_)
+    rings = {}
+    # (one set to each ring of the binding, as tube() gives, from the
+    # leather round the ring's centre, eased along it: each point of a ring
+    # on its own nearest leather, the roll came out toothed as she moved)
+    for o in sorted([o for o in lm[1:] if o is not None], key=lambda o: "_stitch" in o.name):
+        op_ = np.array([o.matrix_world @ v.co for v in o.data.vertices])
+        if "_bind" in o.name and len(op_) % 12 == 0:
+            rc_ = op_.reshape(-1, 12, 3).mean(1)
+            d_, j_ = kd_.query(rc_, k=8)
+            g_ = np.exp(-0.5 * (d_ / 0.003) ** 2) + 1e-12
+            rw_ = (sw_[j_] * g_[:, :, None]).sum(1) / g_.sum(1)[:, None]
+            for _ in range(3):
+                rw_ = (np.roll(rw_, 1, 0) + 2 * rw_ + np.roll(rw_, -1, 0)) / 4
+            rings[o.name] = (rc_, rw_)
+            ow_ = four_bones(np.repeat(rw_, 12, 0))
+        elif rings:
+            # (stitches on the ring of the binding they are sewn through)
+            rc_ = np.vstack([r[0] for r in rings.values()])
+            rw_ = np.vstack([r[1] for r in rings.values()])
+            ow_ = four_bones(rw_[cKDTree(rc_).query(op_)[1]])
+        else:
+            continue
+        for vg in list(o.vertex_groups):
+            o.vertex_groups.remove(vg)
+        for b in np.where(ow_.max(0) > 0.003)[0]:
+            grp = o.vertex_groups.new(name=BONES[b])
+            for i in np.where(ow_[:, b] > 0.003)[0]:
+                grp.add([int(i)], float(ow_[i, b]), "REPLACE")
+    print("SPAULDER binding and stitches on the leather's final weights: %d parts" % (len(lm) - 1))
+    out = lm + out
+    return out
+
+
+# (RANGER_GUSSET "front,back,z0,z1": the ranger corset's thong made wider at her crotch, by
+# `front` each side in front of it and `back` behind, in full up to z0 over her crotch and eased
+# out by z1, one fair line into the leg line and the thong above. s17: as cut it was 5 mm each side
+# of her middle under her crotch (the strip a garment must cover is 12), the strip 2-4 mm inside
+# its roll, and it showed by a pixel past her right edge behind, seen from below in a wide stance.
+# "0,0,0.02,0.07" is the cut as before.)
+RG_F, RG_B, RG_Z0, RG_Z1 = (float(v) for v in os.environ.get("RANGER_GUSSET", "0.004,0.008,0.02,0.07").split(","))
 
 
 def ranger():
@@ -3257,7 +6154,10 @@ def ranger():
     rise = np.maximum(Z - CROTCH, 0)
     # (between her legs a narrow strip, a little wider in front; behind, a
     # thong down her cleft)
-    strip = (0.012 + 0.3 * rise) * FRONT + np.minimum(0.008 + 0.07 * rise, 0.018) * (1 - FRONT) - ax_
+    # (RANGER_GUSSET: wider at her crotch, eased out up the leg line and the thong)
+    def gusset(z, fr_):
+        return (RG_F * fr_ + RG_B * (1 - fr_)) * (1 - ramp(z - CROTCH, RG_Z0, RG_Z1))
+    strip = (0.012 + 0.3 * rise) * FRONT + np.minimum(0.008 + 0.07 * rise, 0.018) * (1 - FRONT) + gusset(Z, FRONT) - ax_
     legs = OR(np.where(X < 0, right + 0.03, Z - edge_l), strip)
     # (her skin's field reaches lower under her crotch than the exact foot)
     # (her breasts always held; elsewhere never her arm, the cut eased so it
@@ -3283,7 +6183,7 @@ def ranger():
         qx, qy, qz = q[:, 0], q[:, 1], q[:, 2]
         fr = ramp(-(qy - CROTCH_Y), -0.03, 0.03)
         r = qz - CROTCH
-        reach = np.where(r < 0, 0.012 + 0.004 * np.clip(r / 0.035 + 1, 0, 1), 0.016 + 0.056 * np.clip(r, 0, None) / 0.24)
+        reach = np.where(r < 0, 0.012 + 0.004 * np.clip(r / 0.035 + 1, 0, 1), 0.016 + 0.056 * np.clip(r, 0, None) / 0.24) + gusset(qz, 1.0)
         # (her breast held by its own form: inside the ellipsoid her cups are
         # built on, a little grown, so the edge runs round its underside as
         # one closed curve; a height for each width folded back on the
@@ -3295,7 +6195,7 @@ def ranger():
         band = qz - (UNDERBUST + 0.015 + 0.01 * u)
         side = front * fr + band * (1 - fr)
         rq = np.maximum(r, 0)
-        thong = (0.015 + 0.3 * rq) * fr + np.minimum(0.015 + 0.07 * rq, 0.018) * (1 - fr) - np.abs(qx)
+        thong = (0.015 + 0.3 * rq) * fr + np.minimum(0.015 + 0.07 * rq, 0.018) * (1 - fr) + gusset(qz, fr) - np.abs(qx)
         right_q = np.where(qx < 0, np.maximum(side, thong), 1.0)
         slot = np.where((qz < lace_top + 0.018) & (qz > lace_bot - 0.045) & (fr > 0.5), np.abs(qx) - half, 1.0)
         # (and its foot under her crotch, cut with the rest, so the corner
@@ -3384,7 +6284,7 @@ def ranger():
     pant = AND(X - 0.004, (edge_l + 0.03) - Z, (tops["l"] + 0.06) - LEG_S["l"], 0.3 - ARMW["l"])
     out = [
         *piece("ranger.corset", corset, "forestleather", lift=lift, thick=thick, smooth=8, iron=60, soften=20, slot="right",
-               trim=edge(0.006), filled=True, keep_off=("Head", "neck_01"), edge=6, cut=exact),
+               trim=("darkleather", 0.006, float(os.environ.get("CORSET_ROLL", "0.001")), 0.0013), filled=True, keep_off=("Head", "neck_01"), edge=6, cut=exact),   # (its roll 1 mm proud: at 0.6 the cup's own rise behind it covered its inner flank, judge 9)
         *grommets("ranger.eyelets", eye[1] + eye[-1], enrm[1] + enrm[-1], "bronze"),
         *laces,
         *girdle("ranger.belt", belt_z, 0.042, "brownleather", lift=belt_lift, thick=0.004),
@@ -3407,22 +6307,28 @@ def ranger():
     for _ in range(4):
         seam[1:-1] = (seam[:-2] + 2 * seam[1:-1] + seam[2:]) / 4
     out += ribbon("ranger.pant_seam", list(seam), 0.005, "brownleather", lift=0.0022, thick=0.0012)
-    sh = shoulder("l")
-    for k, (dz, r, lft) in enumerate(((0.0, 0.11, 0.024), (-0.045, 0.1, 0.019), (-0.09, 0.09, 0.014), (-0.13, 0.08, 0.009))):
-        c = sh + np.array([0.02 * k, 0, dz])
-        out += piece(f"ranger.pauldron{k}", AND(cap(c, r), Z - (c[2] - r * 0.55)), "bronze", lift=lft, thick=0.004, smooth=14,
-                     soften=10, studs="darksteel")
+    # (two pauldrons for the owner to choose between: the lamed one, and the
+    # leather spaulder with riveted plates)
+    out += ranger_spaulder() if os.environ.get("PAULDRON") == "leather" else ranger_pauldron()
     for sd in "lr":
+        # (the bracers satin and brushed round her forearm as the plates are
+        # round her arm, judge 7)
+        fa = head(f"lowerarm_{sd}")
+        RIGID_UV[f"ranger.bracer_{sd}"] = (fa, (head(f"hand_{sd}") - fa) / np.linalg.norm(head(f"hand_{sd}") - fa), True)
         cz = leg_z(sd, tops[sd] + 0.02)
+        # (the right boot, over her knee in front, cut 8 cm lower behind, as a
+        # riding boot is, its cuff with it: cut level, the cuff stood 24 mm
+        # into the back of her knee as she knelt)
+        dip = {"r": 0.08, "l": 0.0}
         out += [
             *piece(f"ranger.bracer_{sd}", limb(sd, ELBOW_S + 0.04, WRIST_S - 0.015, legs=False), "bronze", lift=0.007, smooth=8,
                    soften=10, trim=edge(0.006, "brownleather"), studs="darksteel"),
             *piece(f"ranger.glove_{sd}", AND(limb(sd, WRIST_S - 0.03, 9.9, legs=False), 0.4 - fingers), "forestleather", lift=0.0015,
                    thick=0.0012, bevel=0.0004, soften=8),
-            *piece(f"ranger.boot_{sd}", limb(sd, tops[sd], 9.9), "forestleather", lift=0.005 if sd == "r" else 0.0065, smooth=8,
-                   iron=300, hull=LEG_S[sd] - ANKLE_S - 0.03, soften=10),
-            *girdle(f"ranger.cuff_{sd}", lambda a, cz=cz: np.full_like(a, cz), 0.06, "forestleather", lift=0.01 if sd == "r" else 0.012,
-                    thick=0.003, trim=edge(0.005), mask=(LEGW[sd] > 0.6) & (np.abs(Z - cz) < 0.07), flare=0.012),
+            *BOOTS.boot(f"ranger.boot_{sd}", sd, tops[sd], dip[sd], BOOTS.RANGER, "bootleather"),
+            *girdle(f"ranger.cuff_{sd}", lambda a, cz=cz, d=dip[sd]: cz - d * (1 - np.cos(a)) / 2, 0.06, "bootleather",
+                    lift=0.01 if sd == "r" else 0.012, thick=0.003, trim=edge(0.005),
+                    mask=(LEGW[sd] > 0.6) & (np.abs(Z - cz) < 0.07 + dip[sd]), flare=0.012),
         ]
     # The right boot laced up the front of her shin, below its cuff.
     kx = LEG["r"][1][0]
@@ -3430,14 +6336,15 @@ def ranger():
     z0, z1 = LEG["r"][2][2] + 0.07, leg_z("r", tops["r"] + 0.02) - 0.04
     lz = np.linspace(z1, z0, 9)
     bl = {}
+    # (laid on the boot's shaft: 1.5 mm off its outer face)
+    shell = BVHTree.FromPolygons([tuple(p) for p in BOOTS.SHELL["r"][0]], BOOTS.SHELL["r"][1].tolist())
     for sgn in (1, -1):
         e = []
         for z in lz:
             t = (LEG["r"][1][2] - z) / (LEG["r"][1][2] - LEG["r"][2][2])
             x = kx + (ax0 - kx) * t + 0.013 * sgn
-            q = front_point(x, z)
-            n = np.array(SKIN_BVH.find_nearest(Vector(q))[1][:])
-            e.append(q + n * 0.0095)
+            loc, n, _, _ = shell.find_nearest(Vector(front_point(x, z)))
+            e.append(np.array(loc[:]) + np.array(n[:]) * (0.0025 + 0.0015))
         bl[sgn] = e
     for i in range(len(lz) - 1):
         for sg in (1, -1):
@@ -3653,6 +6560,19 @@ def girdle(name, zfun, width, mkey, lift=0.004, thick=0.004, trim=None, rows=9, 
     return made
 
 
+def section(z, keep):
+    """Her outline at height z, as points (x, y): where her triangles whose
+    points are all `keep` cross that level."""
+    tri = TRI[keep[TRI].all(1)]
+    out = []
+    for i, j in ((0, 1), (1, 2), (2, 0)):
+        p, q = P[tri[:, i]], P[tri[:, j]]
+        s = (p[:, 2] - z) * (q[:, 2] - z) < 0
+        t = (z - p[s, 2]) / (q[s, 2] - p[s, 2])
+        out.append(p[s, :2] + t[:, None] * (q[s, :2] - p[s, :2]))
+    return np.vstack(out)
+
+
 def bandeau(name, mkey, zc, width, lift=0.004, thick=0.003, trim=None, rows=11, nu=120):
     """A strip of leather round her chest at height `zc`, `width` tall,
     pulled taut: each row of it lies on the convex hull of her body's
@@ -3667,8 +6587,12 @@ def bandeau(name, mkey, zc, width, lift=0.004, thick=0.003, trim=None, rows=11, 
     R = np.zeros((rows, nu))
     cxy = None
     for k, z in enumerate(zs):
-        m = body_pts & (np.abs(Z - z) < 0.01)
-        q = P[m][:, :2]
+        # Her outline at this row's own height, exactly (where her triangles
+        # cross it). (The hull of her points within a centimetre of it took
+        # the fuller breast below for the row above: the upper rows stood 5 to
+        # 20 mm off her upper breast, and a camera at her side saw in behind
+        # the band to her areola as she vaulted.)
+        q = section(z, body_pts)
         if cxy is None:
             cxy = q.mean(0)
         h = ConvexHull(q)
@@ -3711,9 +6635,21 @@ def bandeau(name, mkey, zc, width, lift=0.004, thick=0.003, trim=None, rows=11, 
     # (all of it on her skin's own weights, her arms' share kept: steadied, it
     # stayed put as her arm drew the skin at her breasts' sides from under it)
     UNSTEADIED.add(name)
-    made = trimmed(name, pos, at, tris, mkey, thick, 0.001, trim)
+    # (its edges bound with a rolled binding, as every other piece's are: a
+    # flat strip laid over the edge showed the sheet's own edge as a pale
+    # sliver between two dark lines, and stretched at a corner, judge 5)
+    beads = []
+    if trim:
+        tkey, w, h, tt = trim
+        pos, beads = bind_edges(name, pos, at, tris, tkey, max(w, 0.005), max(h, 0.0006), 0.0018, thick,
+                                stitch=kind(mkey) == "leather")
+    made = [finish(name, pos, at[:, 3:3 + NB], tris, mkey, thick, 0.001)] + beads
     for o in made:
         o["hides"] = o is made[0]
+    # (her skin tucked under it only 3.5 mm: it moves with her skin, springs
+    # and all; tucked 6 mm, as close pieces are, the gap under its taut top
+    # edge showed the tuck as a dark slit, seen from above as she ran)
+    made[0]["tuck"] = 0.35
     print("BANDEAU", name, "at %.3f, %.3f tall" % (zc, width))
     return made
 
@@ -3800,11 +6736,12 @@ def reaver():
         *piece("reaver.gstring", OR(
             AND(FRONT - 0.3, np.minimum(0.015 + 0.42 * np.maximum(Z - CROTCH, 0), 0.034) - np.abs(X), (belt_z + 0.005) - Z, Z - (CROTCH - 0.03)),
             ), "oldleather", lift=0.002, smooth=2, soften=0),
+        # (opening into the gusset at its foot, as on the warden's thong)
         *ribbon("reaver.gstring_back", back_string(bz0 + 0.07, CROTCH + 0.012), 0.022, "oldleather", lift=0.003, thick=0.004,
-                trim=edge(0.004, "blackleather"), snap=False),
-        # (under her a gusset wider than the string, as on the warden's thong)
-        *ribbon("reaver.gstring_gusset", roof_path(back_string(bz0 + 0.07, CROTCH + 0.012)[-1][1] - 0.004, GAP_F - 0.006, 10),
-                0.028, "oldleather", lift=0.003, thick=0.004, snap=False),
+                trim=edge(0.004, "blackleather"), snap=False, hides=True, flare=(0.028, 0.03)),
+        # (under her a gusset wider than the string, close under her and
+        # following her skin, as on the warden's thong)
+        *gusset("reaver.gstring_gusset", "oldleather", GAP_F - 0.006, back_string(bz0 + 0.07, CROTCH + 0.012)[-1][1] + 0.015),
         *piece("reaver.cape", cape, "fur", lift=0.012, thick=0.004, smooth=12, soften=10, keep_off=("Head",)),
         *piece("reaver.tattoo_arm", OR(zigzag_band("r", ELBOW_S - 0.12, legs=False), zigzag_band("r", ELBOW_S - 0.06, legs=False, amp=0.01, width=0.012)), "ink", lift=0.0012, thick=0.0002, bevel=0.0, soften=0, budget=10 ** 7),
         *piece("reaver.tattoo_thigh", OR(zigzag_band("l", 0.15), zigzag_band("l", 0.22, amp=0.01, width=0.013)), "ink", lift=0.0012, thick=0.0002, bevel=0.0, soften=0, budget=10 ** 7),
@@ -3825,9 +6762,14 @@ OUTFITS = {"warden": warden, "arcanist": arcanist, "ranger": ranger, "reaver": r
 # leather (grain, burnished edges, stitching), metal (forged, polished at
 # the edges, dark in the crevices), cloth (weave, sheen), gloss (latex,
 # satin: clean). Fur and sheer stockings have shaders of their own.
-KIND = {"steel": "metal", "darksteel": "metal", "gold": "metal", "bronze": "metal", "rust": "metal",
+KIND = {"steel": "metal", "darksteel": "metal", "iron": "metal", "rivetbronze": "metal", "gold": "metal", "claspgold": "metal", "bronze": "metal", "rust": "metal",
         "velvet": "cloth", "arcvelvet": "cloth", "linen": "cloth", "lace": "cloth", "ink": "cloth",
-        "browncloth": "twill", "thread": "gloss", "satin": "gloss", "bone": "leather", "fur": "fur", "stocking": "sheer"}
+        "browncloth": "twill", "thread": "gloss", "satin": "gloss", "amethyst": "gloss", "bone": "leather", "fur": "fur", "down": "fur", "stocking": "sheer"}
+
+
+# Decals laid on her skin, drawn this far toward the camera so they never
+# z-fight it (the Reaver's ink half sank into her skin in the full model).
+PULL = {"ink": 0.0015}
 
 
 def kind(key):
@@ -3910,7 +6852,11 @@ def detail(objs, rays=20, reach=0.03):
         # (each point's few rays are noisy: eased over its neighbours, or a
         # smooth plate reads blotched)
         el_mean = float(np.median(el)) if len(el) else 0.002
-        for _ in range(int(np.clip((0.015 / max(el_mean, 1e-4)) ** 2, 8, 200))):
+        # (a rivet's eased only a little: eased 200 times over a 3 mm head, its
+        # contact shadow spread over all of it, and it read as a black dot with
+        # no ring where it meets the plate, judge 6)
+        n_ease = 2 if o.name.endswith("_rivets") else int(np.clip((0.015 / max(el_mean, 1e-4)) ** 2, 8, 200))
+        for _ in range(n_ease):
             ao = 0.5 * ao + 0.5 * mean_nb(ao)
         loops = np.zeros(len(me.loops), np.int32)
         me.loops.foreach_get("vertex_index", loops)
@@ -3921,7 +6867,10 @@ def detail(objs, rays=20, reach=0.03):
         rnd = (zlib.crc32(o.name.split(".")[-1].split("_")[0].encode()) % 1000) / 1000.0
         col = me.color_attributes.new("detail", "FLOAT_COLOR", "POINT")
         painted = 0.0 if o.get("geo_stitch") else 1.0
-        col.data.foreach_set("color", np.c_[ao, np.full(len(V), rnd), np.full(len(V), painted), np.ones(len(V))].astype(np.float32).ravel())
+        # (alpha, a flag for the shader: 0 a rolled binding, drawn matte if leather;
+        # 0.5 a pauldron plate laid out round her arm, brushed along its UVs)
+        flag = 0.0 if "_bind" in o.name else 0.5 if re.fullmatch(r"ranger\.(pauldron\d|bracer_[lr])", o.name) else 1.0
+        col.data.foreach_set("color", np.c_[ao, np.full(len(V), rnd), np.full(len(V), painted), np.full(len(V), flag)].astype(np.float32).ravel())
         me.color_attributes.active_color = col
     print("DETAIL", len(objs), "pieces")
 
@@ -3931,7 +6880,7 @@ def material_table(path):
     many times its texture repeats in a metre (its UVs are in those units)."""
     import json
     with open(path, "w", encoding="utf-8") as fh:
-        json.dump({k: {"kind": kind(k), "repeats": v[3]} for k, v in SPEC.items()}, fh, indent=1)
+        json.dump({k: {"kind": kind(k), "repeats": v[3], **({"pull": PULL[k]} if k in PULL else {})} for k, v in SPEC.items()}, fh, indent=1)
 
 made = []
 for name, build in OUTFITS.items():
@@ -3939,6 +6888,98 @@ for name, build in OUTFITS.items():
         continue
     made += [o for o in build() if o]
 
+
+# ---------------------------------------------------- what must be covered --
+# The legal motion check's own regions (tools/legal/motioncheck/marks_section.py),
+# measured here at rest after every build: the strip a garment must cover (the
+# midline, 1.2 cm either side, from 2.3 cm behind the lowest point under her
+# crotch forward to just below the front of her mons, skin facing sideways left
+# out) and each areola (2.2 cm round the centre of its pigment). For each outfit,
+# how much of each is bare at rest, and how near bare skin comes to it: the margin
+# it has to move in before the check sees it. (The motion check proves it moving.)
+def _cover_regions():
+    mid = np.abs(X) < 0.003
+    down = mid & (Z > 0.6) & (Z < 1.1) & (N[:, 2] < -0.9) & (np.abs(N[:, 0]) < 0.6)
+    u = P[down][np.argmin(Z[down])]
+    fwd = mid & (Y < u[1]) & (Z > u[2]) & (Z < u[2] + 0.15) & (N[:, 1] < -0.8)
+    m = P[fwd][np.argmin(Z[fwd])]
+    strip = (np.abs(X) < 0.012) & (np.abs(N[:, 0]) < 0.7) & (Y < u[1] + 0.023) & (Z > u[2] - 0.005) & (Z < m[2] - 0.005)
+    # Her paint at each point (the darkest of a seam's sides), as the check reads it.
+    me = body.data
+    img = next(n.image for n in me.materials[0].node_tree.nodes if n.type == "TEX_IMAGE" and n.image)
+    w_, h_ = img.size
+    px = np.array(img.pixels[:]).reshape(h_, w_, 4)[:, :, :3]
+    lum_v = np.full(len(me.vertices), 9.0)
+    uvl = me.uv_layers.active.data
+    for l in me.loops:
+        uv_ = uvl[l.index].uv
+        c_ = px[min(max(int(uv_[1] * h_), 0), h_ - 1), min(max(int(uv_[0] * w_), 0), w_ - 1)]
+        lum_v[l.vertex_index] = min(lum_v[l.vertex_index], 0.3 * c_[0] + 0.59 * c_[1] + 0.11 * c_[2])
+    co = np.array([(body.matrix_world @ v.co)[:] for v in me.vertices])
+    _, jl = cKDTree(co).query(P)
+    lum = lum_v[jl]
+    areolas = {}
+    for sd in "lr":
+        bn = arm.data.bones[f"breast_{sd}"]
+        hd = np.array((arm.matrix_world @ bn.head_local)[:])
+        ax_ = np.array((arm.matrix_world @ bn.tail_local)[:]) - hd
+        ax_ /= np.linalg.norm(ax_)
+        own = W[:, BI[f"breast_{sd}"]] > 0.5
+        along = (P - hd) @ ax_
+        cand = own & (along >= 0.5 * along[own].max())
+        dark = cand & (lum < 0.8 * np.median(lum[cand]))
+        areolas[sd] = P[dark].mean(0)
+    print("COVER regions: strip %d points, from %.3f to %.3f deep and %.3f to %.3f high; areolas at %s and %s"
+          % (strip.sum(), u[1] + 0.023, P[strip, 1].min(), u[2] - 0.005, m[2] - 0.005,
+             areolas["l"].round(3), areolas["r"].round(3)))
+    return strip, areolas
+
+
+def cover_report(name, objs, tuck=None):
+    """How bare her strip and areolas are under one outfit at rest (see above),
+    her skin drawn tucked in as the game draws it (`tuck`: metres, each point)."""
+    Pt = P - N * (tuck[:, None] if tuck is not None else 0.0)
+    vs, fs = [], []
+    for o in objs:
+        key = o.data.materials[0].name if o.data.materials else ""
+        if key in SPEC and len(SPEC[key]) >= 7:   # (seen through: stockings, lace)
+            continue
+        base = len(vs)
+        vs += [tuple(o.matrix_world @ v.co) for v in o.data.vertices]
+        fs += [[base + i for i in p.vertices] for p in o.data.polygons]
+    if not fs:
+        return
+    tree = BVHTree.FromPolygons(vs, fs)
+    near = np.zeros(len(P), bool)
+    for c in [P[COVER_STRIP].mean(0)] + list(COVER_AREOLAS.values()):
+        near |= np.linalg.norm(P - c, axis=1) < 0.1
+    bare = np.zeros(len(P), bool)
+    for i in np.where(near)[0]:
+        bare[i] = tree.ray_cast(Vector(Pt[i] + N[i] * 0.0003), Vector(N[i]), 0.03)[0] is None
+    # (bare skin facing sideways, the walls of the slot between her thighs, is
+    # hidden in it and left out of the strip by the check too: not counted near it)
+    seen = bare & (np.abs(N[:, 0]) < 0.7)
+    regions = [("strip", COVER_STRIP, seen)] + [("areola %s" % sd, np.linalg.norm(P - c, axis=1) < 0.022, bare)
+                                                for sd, c in COVER_AREOLAS.items()]
+    for rname, reg, against in regions:
+        if not reg.any():
+            continue
+        bt = cKDTree(P[against]) if against.any() else None
+        if bt is None:
+            print("COVER %s %s: all of %d points covered; no bare skin within 10 cm" % (name, rname, reg.sum()))
+            continue
+        d, j = bt.query(P[reg])
+        k = int(np.argmin(d))
+        where = P[reg][k]
+        print("COVER %s %s: %d of %d points bare at rest; bare skin nearest %.1f mm away (at %s)"
+              % (name, rname, int((bare & reg).sum()), int(reg.sum()), d[k] * 1000, where.round(3)))
+
+
+COVER_STRIP, COVER_AREOLAS = _cover_regions()
+
+# (a full tuck's mark, and how far inside a glove's cuff her hand goes undrawn)
+TUCK_FULL = 0.98
+GONE_IN = 0.02
 # Her skin under each outfit's fitted pieces is marked, one colour channel
 # an outfit (CHANNELS, as People.cs has them), for the game to draw tucked a
 # few millimetres in (shaders/heroine_skin.gdshader): a smooth cup need not
@@ -3956,12 +6997,16 @@ if BODY_OUT:
         objs = [o for o in made if o.name.startswith(name + ".") and o.get("hides")]
         if not objs or k > 3:
             continue
-        vs, fs = [], []
+        vs, fs, cap, deep = [], [], [], []
         for o in objs:
             base = len(vs)
             vs += [tuple(o.matrix_world @ v.co) for v in o.data.vertices]
             fs += [[base + i for i in p.vertices] for p in o.data.polygons]
+            cap += [o.get("tuck", 1.0)] * len(o.data.polygons)
+            # (a boot's parts: its top edge's heights round its middle, and its leg)
+            deep += [(np.array(o["deep_zt"][:]), np.array(o["deep_c"][:]), o["deep_side"]) if "deep_zt" in o else None] * len(o.data.polygons)
         tree = BVHTree.FromPolygons(vs, fs)
+        reach = 0.03 if any(d is not None for d in deep) else 0.012
         hid = 0
         # Her skin under a piece (it faces the piece, within 12 mm), and
         # where her skin stands proud of the filled form the pieces are cut
@@ -3971,19 +7016,46 @@ if BODY_OUT:
         # (and all of each nipple's disc, under whatever covers it: hidden only
         # at the tip, the skin round the tip came through a plate cup as she
         # ran, the plate and her breast swinging a little apart)
-        disc = np.minimum(*[np.linalg.norm(P[jj] - q, axis=1) for q in NIPPLE.values()]) < 0.028
+        to_tip = np.minimum(*[np.linalg.norm(P[jj] - q, axis=1) for q in NIPPLE.values()])
+        disc = to_tip < 0.028
         proud = ((((P - P_FILLED) * N).sum(1)[jj] > 0.0005) & (P[jj, 2] > CROTCH + 0.12)) | disc
+        # (and each nipple's bump, standing proud of the form the pieces are
+        # made on, tucked all the way under whatever covers it: tucked only as
+        # deep as the piece lay close, 2 to 4 mm off it, its tip came through a
+        # cup's outline by a pixel as she swung; at least 2 cm inside every
+        # piece's edge, so the deeper tuck can't be seen)
+        bump = (((P - P_FILLED) * N).sum(1)[jj] > 0.0005) & (to_tip < 0.012)
         # Tucked as deep as the piece lies close: skin a piece stands well
         # clear of (a pauldron, a bracer) cannot come through it, and tucked
         # there it showed as a deeper gap under the piece's edge as it swung.
         for v in me.vertices:
             co = body.matrix_world @ v.co
             n = (mw3 @ v.normal).normalized()
-            hit = tree.ray_cast(co + n * 0.0005, n, 0.012)
+            hit = tree.ray_cast(co + n * 0.0005, n, reach)
+            # A boot (its parts keep 'deep_*') tucks her skin all the way
+            # under it, through a 30 mm ray, eased in from 4 to 8 cm under its
+            # top edge (the standard rule above that: tucked deep from 1 cm
+            # down, it showed as a deep gap seen up into the boot's top as she
+            # vaulted): it stands well off her, and her calf, ankle and toes
+            # would come through it as she moved.
+            # Every other piece keeps the standard rule and its 12 mm ray.
+            # (how deep under the top edge both the hit and her skin are: a
+            # long ray from skin just past a boot's edge grazed its wall, and
+            # tucked bare skin deep there)
+            dp = deep[hit[2]] if hit[0] is not None else None
+            t_ = 0.0
+            if dp is not None and LEGW[dp[2]][jj[v.index]] >= 0.3:
+                ka_ = np.arange(len(dp[0]) + 1) * 2 * np.pi / len(dp[0])
+                d_ = [np.interp(np.mod(np.arctan2(q[1] - dp[1][1], q[0] - dp[1][0]), 2 * np.pi), ka_, np.r_[dp[0], dp[0][:1]]) - q[2]
+                      for q in (hit[0], co)]
+                t_ = float(ramp(min(d_), 0.04, 0.08))
+            if hit[0] is not None and hit[3] > 0.012 and t_ <= 0:
+                hit = (None, None, None, None)
             if proud[v.index] and tree.ray_cast(co + n * 0.0005, -n, 0.015)[0] is not None:
                 vals[v.index, k] = 1
             elif hit[0] is not None:
-                vals[v.index, k] = 0.8 * np.clip((0.005 - hit[3] - 0.0005) / 0.004, 0, 1)
+                vals[v.index, k] = 1.0 if bump[v.index] else min(cap[hit[2]], 0.8 * np.clip((0.005 - hit[3] - 0.0005) / 0.004, 0, 1))
+                vals[v.index, k] = vals[v.index, k] * (1 - t_) + t_
             hid += vals[v.index, k] > 0
         # Tucked in gradually from the border, a third, two thirds, then all
         # the way, so her skin slopes under a piece's edge as if it pressed
@@ -3998,6 +7070,51 @@ if BODY_OUT:
             nxt = under & ~reached & ((_body_nb @ reached.astype(float)) > 0)
             ring[nxt], reached = r_, reached | nxt
         vals[:, k] *= np.where(ring > 0, ring / 3, 1.0)
+        # Under a held edge (held_edges: a leotard's leg lines) she is tucked
+        # all the way, out to HOLD_BAND from it, so a look in under the edge
+        # meets the piece's inside, not her; the last row before the edge only
+        # as deep as keeps her skin just past it from dipping more than
+        # HOLD_GROOVE under it (her rows are 4-20 mm apart there).
+        for o in objs:
+            if "hold_line" not in o:
+                continue
+            hl = np.array(o["hold_line"][:]).reshape(-1, 3)
+            bw_ = np.array([(body.matrix_world @ v.co)[:] for v in me.vertices])
+            dl, _ = cKDTree(hl).query(bw_)
+            und = np.zeros(len(dl), bool)
+            for i in np.nonzero(dl < HOLD_BAND)[0]:
+                v = me.vertices[i]
+                co = body.matrix_world @ v.co
+                n = (mw3 @ v.normal).normalized()
+                und[i] = tree.ray_cast(co + n * 0.0005, n, 0.012)[0] is not None
+            nb = _body_nb.tocoo()
+            m_ = und[nb.row] & ~und[nb.col] & (vals[nb.col, k] == 0)
+            u_ = dl[nb.col[m_]] / np.maximum(dl[nb.col[m_]] + dl[nb.row[m_]], 1e-6)
+            lim = np.ones(len(dl))
+            np.minimum.at(lim, nb.row[m_], HOLD_GROOVE / 0.010 / np.maximum(u_, 1e-3))
+            before = vals[und, k].copy()
+            # (eased in: a full tuck only from HOLD_SOFT inside the edge, a
+            # depth of a third of the way in nearer it at 30 mm; tucked all the way
+            # right up to the edge, her skin showed as cyan slivers and a sawtooth
+            # along the leg line as the cloth lifted in chain_haul, daggers_fore and
+            # the vaults, and eased over 10 mm it changed nothing, her rows there
+            # being 4-20 mm apart)
+            soft = np.clip(dl / HOLD_SOFT, 0.0, 1.0) if HOLD_SOFT > 0 else np.ones(len(dl))
+            vals[und, k] = np.minimum(soft[und], lim[und]) if HOLD_CAP else np.maximum(vals[und, k], np.minimum(soft[und], lim[und]))
+            print("HOLD TUCK %s: %d vertices of hers under it within %.0f mm of its held edge; marks %.2f -> %.2f (mean), %d at the edge row limited (mean %.2f)"
+                  % (o.name, und.sum(), HOLD_BAND * 1000, before.mean(), vals[und, k].mean(), (und & (lim < 1)).sum(), lim[und & (lim < 1)].mean() if (und & (lim < 1)).any() else 0))
+        if name == "arcanist":
+            # (her forearm and elbow under the sleeve and glove tucked all the way,
+            # from 5 cm above her elbow to 1 cm short of her wrist: with her elbow
+            # shut to 145 degrees its inside came through, animation's judge 11 and
+            # judge 6; her hand is left as it was, a full tuck would cross a finger)
+            for sd in ("l", "r"):
+                fa = (ARM_S[sd][jj] > ELBOW_S - 0.05) & (ARM_S[sd][jj] < WRIST_S - 0.01) & (ARMW[sd][jj] > 0.5)
+                vals[fa & (vals[:, k] > 0), k] = 1.0
+        for cap_, zone_ in TUCK_ZONES.get(name, []):
+            zw_ = zone_(P[jj])
+            print("TUCK ZONE %s: %d vertices of hers capped at %.2f" % (name, int(((zw_ > 0.5) & (vals[:, k] > cap_)).sum()), cap_))
+            vals[:, k] = vals[:, k] * (1 - zw_) + np.minimum(vals[:, k], cap_) * zw_
         if name in BALD:
             # Her hair is part of her body: hidden under a hat that is to carry the look.
             _, j = cKDTree(P).query(np.array([(body.matrix_world @ v.co)[:] for v in me.vertices]))
@@ -4005,8 +7122,53 @@ if BODY_OUT:
             for _ in range(6):
                 hair = np.maximum(hair, (ADJ @ hair > 0.05).astype(float))
             vals[(hair[j] > 0.5) & (wsum("Head", "neck_01")[j] > 0.2), k] = 1
+        # A full tuck is marked TUCK_FULL (heroine_skin.gdshader reads 0.973 and
+        # over as all of it): a mark of 1 is her skin not drawn at all. So are
+        # her hands inside the Arcanist's gloves, from her fingertips to GONE_IN
+        # inside the cuff: no tuck keeps a hand in (a finger is thinner than a
+        # full tuck), and the back of her wrist, bent back as she caught her
+        # breath, came through the back of the glove tucked all the way (judge
+        # 10). Under the cuff's own edge she is tucked as before, so no gap
+        # opens there and a look into the cuff finds her.
+        vals[:, k] = np.minimum(vals[:, k], TUCK_FULL)
+        if name == "arcanist":
+            for sd in ("l", "r"):
+                glv = [o for o in objs if o.name.startswith(f"arcanist.glove_{sd}")]
+                if not glv:
+                    continue
+                gw = np.array([(o.matrix_world @ v.co)[:] for o in glv for v in o.data.vertices])
+                jn = cKDTree(P).query(gw)[1]
+                cuff = ARM_S[sd][jn[(ARMW[sd][jn] > 0.5) & (ARM_S[sd][jn] > ELBOW_S)]].min()
+                inside = (ARMW[sd][jj] > 0.5) & (ARM_S[sd][jj] > cuff + GONE_IN)
+                # every hand vertex past the cuff line, the fingertips and knuckles the
+                # coverage mark never reached too: the weld of the glove by position shows
+                # its finger ends closed, so each of them sits inside leather (judge 13)
+                gone = inside
+                vals[gone, k] = 1.0
+                print("HIDES arcanist glove_%s: her hand inside not drawn, %d vertices, from %.3f m down her arm (the cuff at %.3f, her wrist at %.3f); %d there unmarked, drawn"
+                      % (sd, gone.sum(), cuff + GONE_IN, cuff, WRIST_S, (inside & ~gone).sum()))
+        if name in ("ranger", "warden"):
+            # (her foot inside each Ranger boot and Warden sabaton not drawn, from RBOOT_GONE under her
+            # ankle down, where the boot rides her foot rigidly: her heel skin carries
+            # calf weight and swung 43-51 mm against the rigid heel counter, out
+            # through it in run_stalker; the shaft above keeps the tuck, so a look
+            # down into the boot still finds her)
+            for sd in ("l", "r"):
+                za = BOOTS.Leg(sd).ankle[2]
+                foot = (LEGW[sd][jj] > 0.5) & (P[jj, 2] < za - RBOOT_GONE)
+                gone = foot & (vals[:, k] > 0)
+                vals[gone, k] = 1.0
+                print("HIDES %s boot_%s: her foot inside not drawn, %d vertices under %.3f m (ankle %.3f); %d there unmarked, drawn"
+                      % (name, sd, gone.sum(), za - RBOOT_GONE, za, (foot & ~gone).sum()))
         print("HIDES", name, hid, "of", len(me.vertices), "vertices of her skin")
     col.data.foreach_set("color", vals.ravel())
+    # Each outfit's coverage at rest, her skin tucked as the game draws it
+    # (heroine_skin.gdshader: 10 mm times the outfit's channel).
+    _, jb = cKDTree(np.array([(body.matrix_world @ v.co)[:] for v in me.vertices])).query(P)
+    for name in OUTFITS:
+        objs = [o for o in made if o.name.startswith(name + ".")]
+        if objs and CHANNELS.index(name) <= 3:
+            cover_report(name, objs, 0.010 * np.where(vals[jb, CHANNELS.index(name)] > 0.973, 1.0, vals[jb, CHANNELS.index(name)]))
     _, jw = cKDTree(P).query(np.array([(body.matrix_world @ v.co)[:] for v in me.vertices]))
     changed = np.abs(W - W_AUTHORED).sum(1) > 1e-4
     groups = {vg.name: vg for vg in body.vertex_groups}
@@ -4059,7 +7221,222 @@ material_table(os.path.join(os.path.dirname(OUT), "outfit_materials.json"))
 # One file an outfit, so the game loads only what she wears.
 # (each outfit's pieces listed before any are joined: a joined piece is gone)
 # Every piece split onto her helper bones as her skin is, so they move as one.
+BONE_NAMES = {b.name for b in arm.data.bones}
+
+
+def one_blend_pieces(objs):
+    """The pieces on one blend of bones: rigid plates, the clasp, rivets."""
+    out = []
+    for o in objs:
+        if o.type != "MESH" or not len(o.data.vertices):
+            continue
+        gname = {g.index: g.name for g in o.vertex_groups}
+        rows = {tuple(sorted((gname[g.group], round(g.weight, 4)) for g in v.groups
+                             if g.weight > 1e-4 and gname[g.group] in BONE_NAMES)) for v in o.data.vertices}
+        if len(rows) == 1 and rows != {()}:
+            out.append(o)
+    return out
+
+
+def rows_of(o):
+    gname = {g.index: g.name for g in o.vertex_groups}
+    return [tuple(sorted((gname[g.group], round(g.weight, 4)) for g in v.groups
+                         if g.weight > 1e-4 and gname[g.group] in BONE_NAMES)) for v in o.data.vertices]
+
+
+def rigid_again(objs, riders):
+    """Each one-blend piece back on one blend after the helpers' split, and
+    its corrective shapes made a shift of the whole. The split reads each
+    point's own place (the twist bones' reach, the skin under it), so a plate
+    on one blend came out bent, point by point: it takes the mean of its
+    points' split instead, its four largest shares."""
+    for o in objs:
+        gname = {g.index: g.name for g in o.vertex_groups}
+        tot = {}
+        for v in o.data.vertices:
+            for g in v.groups:
+                n = gname[g.group]
+                if n in BONE_NAMES:
+                    tot[n] = tot.get(n, 0.0) + g.weight
+        keep = sorted(tot, key=tot.get, reverse=True)[:4]
+        s = sum(tot[n] for n in keep)
+        sh_ = [(n, tot[n] / s) for n in keep]
+        # (the spaulder's plates go back on their blends from before the
+        # split: split by their places, the cap rode the shoulder's helper
+        # and band 1 the twist bone, and band 1 went through the cap in 13 of
+        # 24 lying frames (death_back, get_up_back), j2; on the bones they
+        # were judged on, h5, the nearest was 1.17 mm)
+        if PL_RAW and o.name.startswith("ranger.pauldron"):
+            sh_ = list(RIGID_ROWS[o.name])
+        # (the leather spaulder's cap and band 1 on her shoulder's share bone
+        # alone: on blends of her collarbone and upper arm (.50, .55) linear
+        # skinning shrank each plate and turned them apart when her arm went
+        # high or she lay down, and band 1 went through the cap in 11 of 64
+        # Godot frames, j3. The share bone is that half turn as a true turn,
+        # unshrunk, so the two move as one and keep their 5.9 mm in every
+        # pose; band 2 stays on its blend (offline over the six clips: never
+        # nearer band 1 than 2.8 mm), sv)
+        if o.name.split("_")[0] in SP_SHARE:
+            sh_ = [("upperarm_share_l", 1.0)]
+        # (or all three plates on one row, SP_ROW: they move as one and can't
+        # cross; the twist bone's share keeps the shrink small, so band 1
+        # keeps 2.1 mm or more under the cap and band 2 under band 1 in all
+        # six clips, offline; on their own blends 11 frames crossed, j3, and
+        # the share bone alone slid the cap 25 mm round her arm at idle, s1)
+        if SP_ROW and o.name.split("_")[0].startswith("ranger.pauldron"):
+            sh_ = list(SP_ROW)
+        idx = list(range(len(o.data.vertices)))
+        for g in list(o.vertex_groups):
+            if g.name in BONE_NAMES:
+                o.vertex_groups.remove(g)
+        for n, w in sh_:
+            o.vertex_groups.new(name=n).add(idx, w, "REPLACE")
+        keys = o.data.shape_keys
+        if keys is not None:
+            base = np.array([k.co[:] for k in keys.reference_key.data])
+            for kb in keys.key_blocks[1:]:
+                d = np.array([k.co[:] for k in kb.data]) - base
+                for i, k in enumerate(kb.data):
+                    k.co = Vector(base[i] + d.mean(0))
+    # (what rides a plate on its very blend, the spaulder's leather riveted
+    # under it, takes the plate's new blend too, so they still move as one)
+    by_row = {}
+    for o in objs:
+        gname = {g.index: g.name for g in o.vertex_groups}
+        by_row[RIGID_ROWS[o.name]] = [(gname[g.group], g.weight) for g in o.data.vertices[0].groups if gname[g.group] in BONE_NAMES]
+    n_ride = 0
+    for o, rows in riders:
+        hit = [i for i, r in enumerate(rows) if r in _rset]
+        if not hit:
+            continue
+        groups = {g.name: g for g in o.vertex_groups}
+        for i in hit:
+            for g in list(o.data.vertices[i].groups):
+                if o.vertex_groups[g.group].name in BONE_NAMES:
+                    o.vertex_groups[g.group].remove([i])
+            for n, w in by_row[rows[i]]:
+                if n not in groups:
+                    groups[n] = o.vertex_groups.new(name=n)
+                groups[n].add([i], w, "REPLACE")
+        n_ride += len(hit)
+    print("RIGID: %d points riding a plate on its blend moved with it" % n_ride)
+    print("RIGID: %d one-blend pieces kept on one blend after the helpers' split" % len(objs))
+
+
+PL_RAW = os.environ.get("PL_RAW", "1") == "1"
+SP_SHARE = {"ranger.pauldron%d" % k for k, on in enumerate(os.environ.get("SP_SHARE", "0,0,0").split(",")) if on == "1"}     if os.environ.get("PAULDRON") == "leather" else set()
+SP_ROW = [(n, float(w)) for n, w in (kv.split(":") for kv in os.environ.get("SP_ROW", "clavicle_l:0.4206,spine_03:0.0494,upperarm_l:0.26,upperarm_twist_01_l:0.27").split(",") if kv)] if os.environ.get("PAULDRON") == "leather" else []
+RIGID_PIECES = one_blend_pieces(made)
+RIGID_ROWS = {o.name: rows_of(o)[0] for o in RIGID_PIECES}
+_rset = {r for r in RIGID_ROWS.values() if len(r) > 1}   # (a blend, never one bone's whole: cloth on one bone is no rider)
+RIDERS = [(o, r) for o in made if o.type == "MESH" and o not in RIGID_PIECES for r in [rows_of(o)] if _rset & set(r)]
 rig_helpers.apply(arm, made, skin=lambda p: SKIN_BVH.find_nearest(Vector(p))[0][:], body=body)
+rigid_again(RIGID_PIECES, RIDERS)
+
+
+def rings_one(objs):
+    """(s18 ranger solver 2, RING_ONE) Each ring of a roll back on one blend
+    after the helpers' split, as tube() made it: the blend of the sheet round
+    the ring as split (24 nearest points, weighed by nearness, eased along
+    the line), the roll's stitches on their ring's, and the sheet under the
+    roll on it too, eased back to its own over RING_BAND in from the roll's
+    inner reach, so roll, stitches and edge move as one. Split point by
+    point, a ring's twelve points took the skin under each: round the
+    ranger's leg-line rolls her right and left thighs' shares varied by up to
+    0.29 within a ring (corset_bind1 ring 261, under her crotch), and posed
+    the rings sheared up to 6 mm and the roll left its edge: judge fin2's
+    slit (item 6, r_leo_f (865,714)) and much of the knob."""
+    if not RING_ONE:
+        return
+    bones = [b.name for b in arm.data.bones]
+    bi = {n: i for i, n in enumerate(bones)}
+    by = {o.name: o for o in objs if o.type == "MESH"}
+
+    def wts(o):
+        gname = {g.index: g.name for g in o.vertex_groups}
+        w_ = np.zeros((len(o.data.vertices), len(bones)))
+        for v in o.data.vertices:
+            for g in v.groups:
+                if gname[g.group] in bi:
+                    w_[v.index, bi[gname[g.group]]] += g.weight
+        return w_
+
+    def where(o):
+        # (the pieces' own space, the space their rings were made in)
+        return np.array([v.co[:] for v in o.data.vertices]).reshape(-1, 3)
+
+    def put(o, idx, rows):
+        groups = {g.name: g for g in o.vertex_groups}
+        for i, r in zip(idx, rows):
+            i = int(i)
+            for gi in [g.group for g in o.data.vertices[i].groups]:
+                if o.vertex_groups[gi].name in bi:
+                    o.vertex_groups[gi].remove([i])
+            for j in np.nonzero(r > 1e-4)[0]:
+                if bones[j] not in groups:
+                    groups[bones[j]] = o.vertex_groups.new(name=bones[j])
+                groups[bones[j]].add([i], float(r[j]), "REPLACE")
+
+    band = {}
+    for rn in sorted(RING_ONE):
+        roll = by.get(rn)
+        if roll is None or "ring_pts" not in roll:
+            continue
+        base, k = rn.rsplit("_bind", 1)
+        sheet = by.get(base)
+        if sheet is None:
+            continue
+        nv = int(roll["ring_nv"])
+        rp = np.array(roll["ring_pts"], float).reshape(-1, nv, 3)
+        c0 = rp.mean(1)
+        out = rp[:, 0] - c0
+        rw = np.linalg.norm(out, axis=1)
+        out /= rw[:, None] + 1e-12
+        up = rp[:, nv // 4] - c0
+        rh = np.linalg.norm(up, axis=1)
+        up /= rh[:, None] + 1e-12
+        if base not in band:
+            band[base] = (where(sheet), wts(sheet), [])
+        ps, ws, parts = band[base]
+        kk = min(24, len(ps))
+        d_, j_ = cKDTree(ps).query(c0, k=kk)
+        d_, j_ = np.reshape(d_, (len(c0), kk)), np.reshape(j_, (len(c0), kk))
+        g_ = np.exp(-0.5 * (d_ / 0.006) ** 2) + 1e-12
+        ring = (ws[j_] * g_[:, :, None]).sum(1) / g_.sum(1)[:, None]
+        for _ in range(8):
+            ring = (np.roll(ring, 1, 0) + 2 * ring + np.roll(ring, -1, 0)) / 4
+        ring = four_bones(ring)
+        vr = where(roll)
+        ri = np.minimum(cKDTree(rp.reshape(-1, 3)).query(vr)[1] // nv, len(c0) - 1)
+        wr = wts(roll)
+        spread = max((np.abs(wr[ri == i] - wr[ri == i].mean(0)).sum(1).max() for i in range(len(c0)) if (ri == i).any()), default=0.0)
+        put(roll, range(len(vr)), ring[ri])
+        st = by.get(base + "_stitch" + (k or "0"))
+        nst = 0
+        if st is not None and len(st.data.vertices):
+            vs = where(st)
+            put(st, range(len(vs)), ring[cKDTree(c0).query(vs)[1]])
+            nst = len(vs)
+        dn, jn = cKDTree(c0).query(ps)
+        s_ = ((ps - c0[jn]) * out[jn]).sum(1)
+        h_ = ((ps - c0[jn]) * up[jn]).sum(1)
+        t_ = np.clip((-s_ - rw[jn]) / max(RING_BAND, 1e-6), 0, 1)
+        f_ = np.where((dn < rw[jn] + RING_BAND + 0.002) & (np.abs(h_) < rh[jn] + 0.002), 1 - t_ * t_ * (3 - 2 * t_), 0.0)
+        parts.append((f_, ring[jn]))
+        print("RING_ONE %s: %d rings on one blend each (their points' shares had differed by up to %.2f); %d stitch points on theirs; %d points of %s under it shared"
+              % (rn, len(c0), spread, nst, int((f_ > 1e-3).sum()), base))
+    for base, (ps, ws, parts) in band.items():
+        F = sum(f_ for f_, _ in parts)
+        sel = np.nonzero(F > 1e-3)[0]
+        if not len(sel):
+            continue
+        acc = sum(f_[sel, None] * r_[sel] for f_, r_ in parts)
+        Fs = F[sel, None]
+        new = np.where(Fs > 1, acc / np.maximum(Fs, 1e-9), acc + ws[sel] * (1 - Fs))
+        put(by[base], sel, four_bones(new))
+
+
+rings_one(made)
 pieces_of = {name: [o for o in made if o.name.startswith(name + ".")] for name in OUTFITS}
 for name in OUTFITS:
     mine = pieces_of[name]

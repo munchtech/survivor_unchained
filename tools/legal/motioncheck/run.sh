@@ -9,7 +9,7 @@
 #   tools/legal/motioncheck/run.sh cup        the warden's sprint (the first finding)
 #   tools/legal/motioncheck/run.sh all        every clip below for ONLY (default: all four outfits)
 #
-# Then: python tools/legal/motioncheck/count.py "$OUT" 6   (flags any frame showing a mark).
+# Then: python tools/legal/motioncheck/count.py "$OUT"   (flags any frame showing a mark).
 # GODOT: the Godot 4.5.1 .NET console binary. OUT: where pictures go, outside the repo by default.
 # PROJECT: the imported godot folder to run in (default: this checkout's; a worktree has no import,
 # so from a worktree pass the main checkout's, at the same commit).

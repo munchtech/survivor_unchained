@@ -7,7 +7,19 @@
   "kind": "metal",
   "repeats": 2.5
  },
+ "iron": {
+  "kind": "metal",
+  "repeats": 2.5
+ },
+ "rivetbronze": {
+  "kind": "metal",
+  "repeats": 2.5
+ },
  "gold": {
+  "kind": "metal",
+  "repeats": 3
+ },
+ "claspgold": {
   "kind": "metal",
   "repeats": 3
  },
@@ -71,6 +83,10 @@
   "kind": "gloss",
   "repeats": 10
  },
+ "amethyst": {
+  "kind": "gloss",
+  "repeats": 10
+ },
  "greenleather": {
   "kind": "leather",
   "repeats": 3
@@ -81,11 +97,16 @@
  },
  "ink": {
   "kind": "cloth",
-  "repeats": 10
+  "repeats": 10,
+  "pull": 0.0015
  },
  "stocking": {
   "kind": "sheer",
   "repeats": 14
+ },
+ "down": {
+  "kind": "fur",
+  "repeats": 3
  },
  "bone": {
   "kind": "leather",
@@ -98,6 +119,10 @@
  "forestleather": {
   "kind": "leather",
   "repeats": 3
+ },
+ "bootleather": {
+  "kind": "leather",
+  "repeats": 7
  },
  "thread": {
   "kind": "gloss",

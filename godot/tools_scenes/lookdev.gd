@@ -87,6 +87,9 @@ func _init():
 					for kv in OS.get_environment("SKIN").split(",", false):
 						var e = kv.split("=")
 						sk.set_shader_parameter(e[0], float(e[1]))
+					# (TONE=#rrggbb: her skin's tone as People.SkinTone gives it for a swatch, e.g. the
+					# lightest and darkest for an outfit's skin edges: fair #FFEDDE, deep #6E4F3F)
+					if OS.get_environment("TONE") != "": sk.set_shader_parameter("tone", Color(OS.get_environment("TONE")))
 					mi.set_surface_override_material(s, sk)
 					continue
 				m.albedo_color = Color(1.0, 0.86, 0.74)
@@ -193,7 +196,20 @@ func _init():
 				if not lib.has_animation(n): lib.add_animation(n, L.get_animation(n))
 		ap.add_animation_library("", lib)
 		ap.root_node = ".."
+		# CLIPFRAME=k [CLIPFRAMES=n, default 10]: the clip held at the motion check's picture k of n
+		# (its SPREAD=1 run: picture k at 1 s + k * length / n, on a 60 fps tick, the clip looping),
+		# so a close-up here is the same moment as that numbered frame there. Clip as there: "her/catch_breath".
+		var cframe = OS.get_environment("CLIPFRAME")
+		if cframe != "" and not ap.has_animation_library("her"):
+			ap.add_animation_library("her", load("res://art/anim/heroine.res"))
 		ap.play(clips[i])
+		if cframe != "":
+			var cl = ap.get_animation(clips[i]).length
+			var nf = float(OS.get_environment("CLIPFRAMES")) if OS.get_environment("CLIPFRAMES") != "" else 10.0
+			var tk = (ceil((1.0 + float(cframe) * cl / nf) * 60.0 - 0.0001) - 2.0) / 60.0   # (measured: the clip is two ticks behind the clock there)
+			ap.get_animation(clips[i]).loop_mode = Animation.LOOP_LINEAR
+			ap.seek(fmod(tk, cl), true)
+			ap.speed_scale = 0.0
 		players.append(ap)
 	var cam = Camera3D.new()
 	cam.position = Vector3(0, float(OS.get_environment("CAMY")) if OS.get_environment("CAMY") != "" else 1.0, (1.6 + clips.size() * 0.75) * (float(OS.get_environment("CAMD")) if OS.get_environment("CAMD") != "" else 1.0))
@@ -205,8 +221,11 @@ func _init():
 	if orbit != "":
 		var o = orbit.split(",")
 		var a = deg_to_rad(float(o[0]))
-		cam.position = Vector3(sin(a) * float(o[2]), float(o[1]), cos(a) * float(o[2]))
-		cam.look_at_from_position(cam.position, Vector3(0, float(o[3]), 0))
+		# (optional ,x,z: the target off her middle, the camera moved with it: a
+		# true profile of her bust, say)
+		var off = Vector3(float(o[4]), 0, float(o[5])) if o.size() > 5 else Vector3.ZERO
+		cam.position = Vector3(sin(a) * float(o[2]), float(o[1]), cos(a) * float(o[2])) + off
+		cam.look_at_from_position(cam.position, Vector3(0, float(o[3]), 0) + off)
 	var env = WorldEnvironment.new()
 	var e = Environment.new()
 	e.background_mode = Environment.BG_COLOR
@@ -240,6 +259,19 @@ func _init():
 	rim.rotation_degrees = Vector3(-20, 200, 0)
 	rim.light_energy = 0.0 if OS.get_environment("NORIM") != "" else 1.2
 	root.add_child(rim)
+	# LIGHTS=mirror: the whole rig mirrored left for right, to judge one side
+	# under the light the other had (a mirrored camera alone is not that).
+	# LIGHTS=side: two matched lights raking from either side, no rim.
+	var lights = OS.get_environment("LIGHTS")
+	if lights == "mirror":
+		key.rotation_degrees.y = -key.rotation_degrees.y
+		rim.rotation_degrees.y = -rim.rotation_degrees.y
+	elif lights == "side":
+		key.rotation_degrees = Vector3(-25, 70, 0)
+		key.light_energy = 1.1
+		rim.rotation_degrees = Vector3(-25, -70, 0)
+		rim.light_energy = 1.1
+		rim.shadow_enabled = key.shadow_enabled
 
 # As People.OutfitMaterials: her outfit's pieces by shaders/heroine_outfit.gdshader
 # (OLDOUTFIT=1: as exported, to compare).
@@ -264,6 +296,10 @@ func outfit_materials(mi):
 		m.set_shader_parameter("roughness_value", src.roughness)
 		m.set_shader_parameter("metallic_value", src.metallic)
 		m.set_shader_parameter("repeats", float(outfit_table[String(src.resource_name)]["repeats"]))
+		if outfit_table[String(src.resource_name)].has("pull"): m.set_shader_parameter("view_pull", float(outfit_table[String(src.resource_name)]["pull"]))
+		if OS.get_environment("GOLD_GLOSS") != "": m.set_shader_parameter("gold_gloss", float(OS.get_environment("GOLD_GLOSS")))
+		if OS.get_environment("GOLD_FLOOR") != "": m.set_shader_parameter("gold_floor", float(OS.get_environment("GOLD_FLOOR")))
+		if OS.get_environment("GOLD_ROUGH") != "": m.set_shader_parameter("gold_rough", float(OS.get_environment("GOLD_ROUGH")))
 		if OS.get_environment("OUTFITVIEW") != "": m.set_shader_parameter("debug_view", int(OS.get_environment("OUTFITVIEW")))
 		for kv in OS.get_environment("OUTFITSET").split(",", false):
 			var e = kv.split("=")
@@ -297,7 +333,8 @@ func fur(mi, shells = 20):
 			sm.shader = load("res://shaders/sheer.gdshader")
 			mi.set_surface_override_material(si, sm)
 			continue
-		if src == null or src.resource_name != "fur": continue
+		if src == null or (src.resource_name != "fur" and src.resource_name != "down"): continue
+		var down = src.resource_name == "down"   # (as People.Fur: the arcanist's feathery trim)
 		var first = null
 		var last = null
 		for i in shells + 1:
@@ -306,6 +343,9 @@ func fur(mi, shells = 20):
 			m.set_shader_parameter("albedo_tex", src.albedo_texture)
 			m.set_shader_parameter("tint", src.albedo_color)
 			m.set_shader_parameter("layer", float(i) / shells)
+			if down:
+				for kv in [["fur_length", 0.009], ["density", 520.0], ["clump", 0.15], ["root_dark", 0.78], ["backlight", 0.6], ["droop", 0.12]]:
+					m.set_shader_parameter(kv[0], kv[1])
 			if last: last.next_pass = m
 			else: first = m
 			last = m
