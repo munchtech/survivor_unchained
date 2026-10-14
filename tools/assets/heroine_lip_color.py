@@ -48,6 +48,10 @@ OWN_SIGMA = 5.0             # (each texel's own detail against the paint smoothe
 #  the border, its height over the mouth line this fraction of the border's, per face (--upper own=0.9,moonlit=0.8),
 #  for an upper lip about 2/3 of the lower; with --edge 0.35 a crisp vermilion border, not a fade)
 UPPER = {}
+# (or, --upper-paint own=1.7: the paint's own red top's height over the mouth line scaled so, never past the border:
+#  the portrait's own cupid's bow and taper kept; the border's crease, scaled, read boxy on her own face and scalloped
+#  on Moonlit's)
+UPPER_P = {}
 
 
 def lin(c):
@@ -93,6 +97,8 @@ def fields(F, m, t, paint_front, face="", t_new=None):
     ok_e = ok & ~np.isnan(e)
     ee = np.full(len(m), np.nan)
     ee[ok] = np.interp(x[ok], x[ok_e], hl.smooth_cols(e, 6)[ok_e]) if ok_e.sum() > 3 else np.nan
+    if face in UPPER_P:                                            # (B3: the paint's own red top, scaled up)
+        tt = np.where(np.isnan(ee), tt, np.minimum(tt, m + UPPER_P[face] * (ee - m)))
     ee = np.minimum(ee, tt)                                        # (never above the border)
     ys = hl.Y1 - (np.arange(F.shape[0]) + 0.5) * hl.D
     Y = ys[:, None]
@@ -198,6 +204,10 @@ def main():
     if "--upper" in args:
         i = args.index("--upper")
         UPPER.update({k: float(v) for k, v in (kv.split("=") for kv in args[i + 1].split(","))})
+        del args[i:i + 2]
+    if "--upper-paint" in args:
+        i = args.index("--upper-paint")
+        UPPER_P.update({k: float(v) for k, v in (kv.split("=") for kv in args[i + 1].split(","))})
         del args[i:i + 2]
     if "--edge" in args:
         i = args.index("--edge")

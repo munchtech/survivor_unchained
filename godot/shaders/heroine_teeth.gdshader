@@ -35,7 +35,9 @@ void fragment() {
 	SPECULAR = 0.5 * k * k * (1.0 - c);
 	ROUGHNESS = mix(mix(0.75, roughness, k), 1.0, c);
 	AO = mix(k * k, seep, c);
-	AO_LIGHT_AFFECT = mix(shut * (1.0 - k), 1.0, c);
+	// (her side teeth, k low, keep out of the lamps with her mouth open too: by shut alone, half the lamps reached
+	// them and her molars showed as lit brown blocks behind her front teeth (the smile pass, a3))
+	AO_LIGHT_AFFECT = mix(max(shut * (1.0 - k), 1.0 - k * k * k), 1.0, c);
 	NORMAL = normalize(mix(NORMAL, VIEW, c));
 	if (debug > 0.5) { ALBEDO = vec3(0.0); SPECULAR = 0.0; AO = 0.0; AO_LIGHT_AFFECT = 1.0; EMISSION = vec3(0.0, 2.0, 0.0); }
 }
