@@ -201,6 +201,20 @@
 		"note": "the shoulders settle over 1.2 s, held",
 		"source": "keyed (tools/anim)"
 	},
+	"flare_burns_twice": {
+		"blend_out": 1.53333333333333,
+		"contact": 0.666666666666667,
+		"contacts": [
+			0.666666666666667,
+			1.43333333333333
+		],
+		"layer": "full",
+		"length": 2.0,
+		"licence": "own work",
+		"loop": false,
+		"source": "keyed (tools/anim)",
+		"weapon": "staff"
+	},
 	"flask_drink": {
 		"changes": "retargeted to her skeleton, feet locked, centred; back, head and arms keyed over",
 		"hold": true,
@@ -311,6 +325,16 @@
 		"loop": false,
 		"source": "keyed (tools/anim)",
 		"weapon": "sword+shield"
+	},
+	"idle_warden_town": {
+		"changes": "retargeted to her skeleton, feet locked, looped (seam spread), centred",
+		"layer": "full",
+		"length": 5.33333349227905,
+		"licence": "CC BY 4.0",
+		"loop": true,
+		"source": "100STYLE WiggleHips_ID frames 1458-1778 (60 fps)",
+		"speed": 0.0,
+		"weapon": ""
 	},
 	"kneel_to_stand_snap": {
 		"hold": true,
@@ -451,6 +475,17 @@
 		"steps": 2.0,
 		"weapon": "sword+shield"
 	},
+	"run_warden_town": {
+		"cycle": 0.7,
+		"layer": "full",
+		"length": 0.699999988079071,
+		"licence": "own work",
+		"loop": true,
+		"source": "keyed (tools/anim/gait.py)",
+		"speed": 5.1,
+		"steps": 2.0,
+		"weapon": ""
+	},
 	"shiver": {
 		"layer": "gesture",
 		"length": 1.06666672229767,
@@ -552,6 +587,17 @@
 		"steps": 2.0,
 		"weapon": "sword+shield"
 	},
+	"sprint_warden_town": {
+		"cycle": 0.7,
+		"layer": "full",
+		"length": 0.699999988079071,
+		"licence": "own work",
+		"loop": true,
+		"source": "keyed (tools/anim/gait.py)",
+		"speed": 7.395,
+		"steps": 2.0,
+		"weapon": ""
+	},
 	"stalker_show": {
 		"layer": "full",
 		"length": 3.0,
@@ -623,6 +669,22 @@
 		"loop": false,
 		"source": "keyed (tools/anim)",
 		"weapon": "sword+shield"
+	},
+	"stop_warden_town_l": {
+		"layer": "full",
+		"length": 0.800000011920929,
+		"licence": "own work",
+		"loop": false,
+		"source": "keyed (tools/anim)",
+		"weapon": ""
+	},
+	"stop_warden_town_r": {
+		"layer": "full",
+		"length": 0.800000011920929,
+		"licence": "own work",
+		"loop": false,
+		"source": "keyed (tools/anim)",
+		"weapon": ""
 	},
 	"sword_back": {
 		"contact": 0.0833333333333333,

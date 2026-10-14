@@ -768,9 +768,14 @@ class Rig:
             if roll:
                 j = I[f"thumb_01_{side}"]
                 local[j] = qmul(local[j], qaxis([0, 1.0, 0], roll * (1 if side == "r" else -1)))
+            # Each finger's own spread (a fitted wrap's "spreads", deg; + fans the forefinger toward the thumb, the
+            # others the same way) at its base knuckle before it bends, so the bend's axis turns with it.
+            spreads = spec.get("spreads", {}) if isinstance(spec, dict) else {}
             for name, angles in curl.items():
                 for k, a in enumerate(angles):
                     j = I[f"{name}_0{k + 1}_{side}"]
+                    if k == 0 and spreads.get(name):
+                        local[j] = qmul(local[j], qaxis(spread_axis(self, j), spreads[name]))
                     if a:
                         local[j] = qmul(local[j], qaxis(self.finger_axis[j], a))
             sp_ = spec.get("spread", 0) if isinstance(spec, dict) else FINGER_PRESETS.get(spec, {}).get("spread", 0)
@@ -957,16 +962,23 @@ FINGER_PRESETS = {
 WRAP = {"staff": {"bends": {"index": (53.0, 52.8, 36.1), "middle": (43.1, 67.4, 46.1), "ring": (47.0, 51.4, 35.1),
                             "pinky": (26.3, 56.0, 38.3), "thumb": (9.9, 0.0, 65.0)},
                   "oppose": 0.44, "thumb_roll": -20.8},
-        # The one-handed blade (WeaponSockets.BladeAtR / BladeDirR), fitted 14 October on her skin (the warden's hands
-        # are bare) and the chevalier sword's barrel hilt (13.3-18.5 mm round), in the diagonal grip GRIP["sword"] keys:
-        # the forefinger's first bone on the grip (its knuckle 10 deg open, a sword hand's forefinger), each finger
-        # closing harder toward the little finger, every finger's two outer pads on the grip (0.4-1.0 mm), the palm on
-        # it (0.5), the thumb fully across and rolled so its pad lies on the grip and its tip over the middle finger.
-        # (The little finger's first bone stays 14 mm off: her palm doesn't cup, and its knuckle is 50 mm from the
-        # grip's line; no lean from 15 to 35 deg brings it nearer than 11 mm.)
-        "sword": {"bends": {"index": (-10.4, 65.0, 23.0), "middle": (25.1, 54.4, 49.5), "ring": (50.2, 37.2, 35.3),
-                            "pinky": (65.4, 27.8, 22.2), "thumb": (4.5, -5.2, 20.9)},
-                  "oppose": 1.0, "thumb_roll": -24.0}}
+        # The one-handed blade (WeaponSockets.BladeAtR / BladeDirR), refitted 14 October (fistfit.py --fit) on her 0.93
+        # hand (080103ba) and the chevalier sword's grip thinned to 14.3-15.0 mm round (tools/assets/grip_thin.py; was
+        # 16-18.5), in the diagonal grip GRIP["sword"] keys: the forefinger's knuckle 10 deg open, each finger closing
+        # harder toward the little finger, the end joints at their 60 deg, nothing more than 0.4 mm into the hilt, the
+        # palm on it (0.3). "spreads" draw the fingers together (her rest hand is fanned: knuckles 22-23 mm apart,
+        # fingers 14-15 mm across): outer bones 1.4-1.5 mm apart, the little finger's 4.6. Not yet the pass: the
+        # forefinger's middle bone 8 mm off, the ring's 3.7, the little finger's 6.3; the fingers' ends 2-8 mm past the
+        # grip's far side (her finger bones run 11-12 mm above their pads' skin, so a finger lying on the grip has its
+        # end 20-27 mm out from the line, and the pass wants it wrapped some 236 deg round; at 60 deg end joints the
+        # ends come 154 (forefinger), 219 (middle), 198 (ring), 158 deg (little) round, 180 the far side).
+        "sword": {"bends": {"index": (-10.1, 75.8, 58.7), "middle": (45.1, 48.9, 60.7), "ring": (56.4, 34.7, 60.9), "pinky": (52.5, 39.7, 60.5), "thumb": (6.7, -6.8, 9.7)}, "spreads": {"index": -24.3, "middle": -6.6, "ring": 11.2, "pinky": 30.8},
+                  "oppose": 1.00, "thumb_roll": -25.4}}
+
+
+def spread_axis(rig, j):
+    """A finger's base knuckle's spread axis (bone space): across its bend axis and its own line, the palm's normal."""
+    return np.cross([0, 1.0, 0], rig.finger_axis[j])
 
 
 def wrap_of(weapon):

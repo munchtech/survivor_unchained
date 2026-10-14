@@ -15,7 +15,7 @@ rebuilt (outfits) this re-derives the fist in one command.
 
 The pass (PASS below), per finger at every measured frame: the two outer pads (02, 03 bones) on the leather (gap
 -0.5..1.5 mm), nothing of the hand more than 0.5 mm into the hilt, the finger's end not past the grip's far side in
-the hand's frame (HANG: its tip joint no further from the palm than the grip's far surface: a fist, not fingers hooked
+the hand's frame (HANG: the end of its skin no further from the palm than the grip's far surface: a fist, not fingers hooked
 over a bar with their ends hanging below it), adjacent fingers touching (ADJ), the last joint at most CAP3 degrees (a
 claw past that). And every clip that holds the piece lays the same fist (OFF: its fingers within 3 deg of WRAP's).
 Wrist: flex (+ toward the palm) and deviation (+ away from the thumb) at each frame, reported (the swing's drape).
@@ -48,7 +48,8 @@ ALLF = FINGERS + ("thumb",)
 PIECES = {"sword": dict(arms="chevalier_sword@hand_r", at="BladeAtR", dir="BladeDirR", outfit="warden", rest=("idle_warden", 76))}
 PAD = (-0.5, 1.5)     # mm: the 02/03 pads' gap to the leather
 IN_MAX = 0.5          # mm: deepest any of the hand may go into the hilt
-HANG_MAX = 0.0        # mm: the tip joint past the grip's far surface (along the palm's normal)
+HANG_MAX = 0.0        # mm: the finger's end past the grip's far surface (along the palm's normal). Its end is its skin's
+                      # (end_point): on her 0.93 hand (080103ba) the tip joints sit 3.6-6.3 mm out past the skin, in the air.
 ADJ_MAX = 2.0         # mm: adjacent fingers' outer bones apart
 CAP3 = 62.0           # deg: the last joint's bend
 OFF_MAX = 3.0         # deg: a held clip's fingers off WRAP's
@@ -140,14 +141,17 @@ class Hand:
         G = self.G(rot_f)
         return {n: (G[I[n]][:3, 3] - self.ph) @ self.Rh for n in HB}
 
-    def rotf(self, ang, oppose=0.0, roll=0.0):
+    def rotf(self, ang, oppose=0.0, roll=0.0, spread=None):
         """Finger bends {finger: (a1, a2, a3)} laid as keyed.Rig.solve lays a WRAP (rest, the thumb's oppose and roll,
-        each bend about its joint's axis); fingers not given keep the frame's own."""
-        r = self.rot_f.copy()
+        each finger's spread at its base knuckle (spread {finger: deg}, keyed.spread_axis), then each bend about its
+        joint's axis); fingers not given keep the frame's own."""
+        r = self.rot_f.copy(); spread = spread or {}
         for name, angles in ang.items():
             for k, a in enumerate(angles):
                 j = I[f"{name}_0{k + 1}_r"]
                 q = sk.rest_rot[j]
+                if k == 0 and spread.get(name):
+                    q = qmul(q, qaxis(keyed.spread_axis(RIG, j), spread[name]))
                 if name == "thumb" and k == 0:
                     if oppose:
                         along = qrot(qinv(RIG.grest[j]), qrot(RIG.grest[I["hand_r"]], [0, 1.0, 0]))
@@ -160,7 +164,7 @@ class Hand:
 
 def wrap_args(w):
     ang = {k: list(v) for k, v in w["bends"].items()}
-    return ang, w.get("oppose", 0.0), w.get("thumb_roll", 0.0)
+    return ang, w.get("oppose", 0.0), w.get("thumb_roll", 0.0), dict(w.get("spreads", {}))
 
 
 def palm_dir(h, rf, gr):
@@ -171,6 +175,12 @@ def palm_dir(h, rf, gr):
     return u / np.linalg.norm(u)
 
 
+def end_point(X3, J, fn):
+    """A finger's end: its last bone's skin point furthest along that bone (X3: that bone's skin points)."""
+    a = J[f"{fn}_03_r"]; d = J[f"{fn}_04_leaf_r"] - a
+    return X3[int(np.argmax((X3 - a) @ d))]
+
+
 def measure(h, rf, gr):
     """Per finger: pads (01, 02, 03 min gap mm), deepest into the hilt, the tip's hang past the far side; the palm's
     gap, adjacent fingers' distance."""
@@ -179,7 +189,7 @@ def measure(h, rf, gr):
     for fn in ALLF:
         sub = h.fing[fn]; B = h.bone[sub]; gs = g[sub]; ok = ~np.isnan(gs)
         pads = [round(float(gs[(B == f"{fn}_0{k}_r") & ok].min()), 1) if ((B == f"{fn}_0{k}_r") & ok).any() else None for k in (1, 2, 3)]
-        v = J[f"{fn}_04_leaf_r"] - gr.A; R = gr.R(v @ gr.D)
+        v = end_point(X[sub][B == f"{fn}_03_r"], J, fn) - gr.A; R = gr.R(v @ gr.D)
         out[fn] = dict(pads=pads, deepest=round(float(gs[ok].min()), 1) if ok.any() else None,
                        hang=round(float((-(v @ u) - R) * 1000), 1) if not np.isnan(R) else None)
     okp = ~np.isnan(g[h.palm])
@@ -220,16 +230,17 @@ def wrist(rot, pos, f):
     return round(float(np.degrees(np.arctan2(d[0], d[1]))), 1), round(float(np.degrees(np.arctan2(d[2], d[1]))), 1)
 
 
-def finger_off(rot_f, h, ang, opp, roll):
-    ref = h.rotf(ang, opp, roll)
+def finger_off(rot_f, h, ang, opp, roll, spr=None):
+    ref = h.rotf(ang, opp, roll, spr)
     return max(float(np.degrees(2 * np.arccos(min(1.0, abs(float(np.dot(rot_f[j], ref[j]))))))) for j in CHAIN)
 
 
 # ------------------------------------------------------------------ fitting --
-def seat_x(h, y0, w, D, prof, ang, opp, roll):
-    """The line's depth (hand x) at which the palm and the thumb's base sit 0.3 mm off the hilt."""
+def seat_x(h, y0, w, D, prof, ang, opp, roll, spr=None):
+    """The line's depth (hand x) at which the palm and the thumb's base sit 0.3 mm off the hilt (the fist as fitted
+    so far: pass all its fingers, not only the thumb, or the frame's own fingers stand in for them)."""
     sub = np.concatenate([h.palm, h.fing["thumb"][h.bone[h.fing["thumb"]] == "thumb_01_r"]])
-    X = h.pose(h.rotf(ang, opp, roll), sub)
+    X = h.pose(h.rotf(ang, opp, roll, spr), sub)
     lo, hi = -0.080, 0.0
     for _ in range(30):
         x = (lo + hi) / 2
@@ -239,12 +250,42 @@ def seat_x(h, y0, w, D, prof, ang, opp, roll):
     return lo
 
 
-def fit_finger(h, fn, base, gr, u, x0):
-    sub = h.fing[fn]; B = h.bone[sub]
-    lims = ((-10.0 if fn == "index" else 0.0, 95.0), (0.0, 105.0), (0.0, CAP3 - 2))
+# deg: each finger's spread at its base knuckle in a fist (+ toward the thumb side). Her rest hand is fanned (straight,
+# her outer bones 8-11 mm apart: knuckles 22-23 mm apart, fingers 14-15 mm across), so closing them takes the outer
+# fingers well in from it, the forefinger toward the little finger and the little finger toward the forefinger.
+SPREAD = {"index": (-30.0, 8.0), "middle": (-20.0, 8.0), "ring": (-8.0, 20.0), "pinky": (-8.0, 30.0)}
+ADJ_FIT = 1.2           # mm: the fit's aim for adjacent fingers' outer bones (ADJ_MAX the pass)
+
+
+def _outer(h, fn):
+    return h.fing[fn][np.isin(h.bone[h.fing[fn]], [f"{fn}_02_r", f"{fn}_03_r"])]
+
+
+def _axis_dist(P, J, fn):
+    """mm from each point to a finger's outer bones' line (02 -> 03 -> tip joints)."""
+    pts = [J[f"{fn}_02_r"], J[f"{fn}_03_r"], J[f"{fn}_04_leaf_r"]]
+    best = np.full(len(P), np.inf)
+    for a, b in zip(pts, pts[1:]):
+        d = b - a; L2 = float(d @ d); t = np.clip((P - a) @ d / L2, 0, 1)
+        best = np.minimum(best, np.linalg.norm(P - (a + np.outer(t, d)), axis=1))
+    return best * 1000
+
+
+def fit_finger(h, fn, base, spr, gr, u, x0, opp=0.0, roll=0.0):
+    """A finger's three bends and its spread: its pads on the grip, its end not past the far side, its outer bones
+    against its neighbours' (ADJ_FIT mm, not into them), none of it or the palm into the hilt."""
+    sub = h.fing[fn]; B = h.bone[sub]; outer = np.isin(B, [f"{fn}_02_r", f"{fn}_03_r"])
+    lims = ((-10.0 if fn == "index" else 0.0, 95.0), (0.0, 105.0), (0.0, CAP3 - 2), SPREAD[fn])
+    rf0 = h.rotf(base, opp, roll, spr); J0 = h.joints(rf0)
+    nbs = []
+    for f2 in FINGERS:
+        if abs(FINGERS.index(f2) - FINGERS.index(fn)) == 1:
+            Pn = h.pose(rf0, _outer(h, f2))
+            nbs.append((f2, cKDTree(Pn), _axis_dist(Pn, J0, f2)))
+
     def cost(th):
-        a = dict(base); a[fn] = list(th)
-        rf = h.rotf(a)
+        a = dict(base); a[fn] = list(th[:3]); s = dict(spr); s[fn] = th[3]
+        rf = h.rotf(a, opp, roll, s)
         X = h.pose(rf, sub); g, _ = gr.gap(X); J = h.joints(rf)
         c = 0.0
         for k, wt in (("01", 1.0 if fn in ("ring", "pinky") else 0.5), ("02", 1.0), ("03", 1.0)):
@@ -252,28 +293,39 @@ def fit_finger(h, fn, base, gr, u, x0):
             if not m.any(): c += 400; continue
             d = g[m].min() - 0.6
             c += wt * (d * d if d > 0 else 25 * d * d)
-        tip = (np.linalg.norm(X - J[f"{fn}_04_leaf_r"], axis=1) < 0.012) & ~np.isnan(g)
+        e = end_point(X[B == f"{fn}_03_r"], J, fn)
+        tip = (np.linalg.norm(X - e, axis=1) < 0.010) & ~np.isnan(g)
         d = (g[tip].min() if tip.any() else 20.0) - 1.0
         if d > 0: c += d * d
-        v = J[f"{fn}_04_leaf_r"] - gr.A; R = gr.R(v @ gr.D)
+        v = e - gr.A; R = gr.R(v @ gr.D)
         hang = (-(v @ u) - (0.016 if np.isnan(R) else R)) * 1000
-        if hang > HANG_MAX - 2: c += 0.5 * (hang - HANG_MAX + 2) ** 2
+        if hang > HANG_MAX - 1.5: c += 2 * (hang - HANG_MAX + 1.5) ** 2
         gg = g[~np.isnan(g)]
         c += 50 * float((np.clip(-0.3 - gg, 0, None) ** 2).sum())
         gp, _ = gr.gap(h.pose(rf, h.palm)); gp = gp[~np.isnan(gp)]
         c += 50 * float((np.clip(-0.3 - gp, 0, None) ** 2).sum())
+        Xo = X[outer]
+        for f2, tree, rax in nbs:
+            dd, ii = tree.query(Xo); dmin = dd.min() * 1000
+            if dmin > ADJ_FIT: c += 5 * (dmin - ADJ_FIT) ** 2
+            # Into the neighbour: nearer its line than its own skin there.
+            ins = rax[ii] - _axis_dist(Xo, J0, f2) - 0.3
+            c += 20 * float((np.clip(ins, 0, None) ** 2).sum())
         for v_, (lo, hi) in zip(th, lims):
-            if v_ < lo: c += (lo - v_) ** 2
-            if v_ > hi: c += (v_ - hi) ** 2
+            if v_ < lo: c += 4 * (lo - v_) ** 2
+            if v_ > hi: c += 4 * (v_ - hi) ** 2
         return c
     best = None
-    for s0 in (x0, (40, 70, 50), (60, 60, 40), (30, 90, 55), (70, 80, 30)):
-        s = minimize(cost, np.array(s0, float), method="Nelder-Mead", options={"xatol": 0.2, "fatol": 0.01, "maxiter": 600})
+    lean = {"index": -20, "middle": -8, "ring": 8, "pinky": 20}[fn]
+    for s0 in (tuple(x0), (40, 70, 50, lean), (60, 60, 40, lean / 2), (30, 90, 55, lean), (70, 80, 30, lean * 1.3),
+               (50, 85, 55, 0)):
+        s = minimize(cost, np.array(s0, float), method="Nelder-Mead",
+                     options={"xatol": 0.2, "fatol": 0.01, "maxiter": 1200, "adaptive": True})
         if best is None or s.fun < best.fun: best = s
-    return [round(float(v), 1) for v in best.x]
+    return [round(float(v), 1) for v in best.x[:3]], round(float(best.x[3]), 1)
 
 
-def fit_thumb(h, gr, ang, x0, span, tgt=0.4, d_lo=1.0, d_hi=3.0):
+def fit_thumb(h, gr, ang, x0, span, tgt=0.4, d_lo=1.0, d_hi=3.0, spr=None):
     """Oppose, roll and three bends: its outer pads on the grip, none of it inside, its last bone over the forefinger's
     or middle finger's outer bones (d_lo..d_hi mm off them), its tip within `span` (mm along the line)."""
     sub_t = h.fing["thumb"]; sub_i = np.concatenate([h.fing["index"], h.fing["middle"]])
@@ -282,7 +334,7 @@ def fit_thumb(h, gr, ang, x0, span, tgt=0.4, d_lo=1.0, d_hi=3.0):
     def cost(x):
         opp, roll, a1, a2, a3 = x
         a = dict(ang); a["thumb"] = [a1, a2, a3]
-        rf = h.rotf(a, opp, roll)
+        rf = h.rotf(a, opp, roll, spr)
         Xt = h.pose(rf, sub_t); Xi = h.pose(rf, sub_i); g, _ = gr.gap(Xt)
         c = 0.0
         for n, w in (("thumb_02_r", 0.5), ("thumb_03_r", 1.0)):
@@ -308,35 +360,41 @@ def fit_thumb(h, gr, ang, x0, span, tgt=0.4, d_lo=1.0, d_hi=3.0):
     return [round(float(v), 2) for v in best.x]
 
 
-def fit(piece, y0s=None):
-    """Re-derive the WRAP (and, given y0s, the seat) on the rest frame. Returns (wrap, A, report)."""
+def fit(piece, y0s=None, prof=None, iters=3):
+    """Re-derive the WRAP (and, given y0s, the seat) on the rest frame. Returns (wrap, A, prof)."""
     P = PIECES[piece]; A0, D = read_seat(piece); D = D / np.linalg.norm(D)
-    prof = hilt_profile(piece, A0, D)
+    prof = prof or hilt_profile(piece, A0, D)
     _, rot, pos = load(CLIPS / f"{P['rest'][0]}.json"); h = Hand(rot[P["rest"][1]], pos[P["rest"][1]], P["outfit"])
     # A = (x, y0, 0) + w D: w (where along the hilt the hand is) kept; y0 the line's place along her fingers, x its depth.
     w = float(A0[2] / D[2]); base0 = A0 - w * D
-    old, opp0, roll0 = wrap_args(keyed.WRAP[piece])
+    old, opp0, roll0, spr0 = wrap_args(keyed.WRAP[piece])
     best = None
     for y0 in (y0s or [base0[1] * 1000]):
         y0 /= 1000
         ang = {fn: list(old[fn]) for fn in FINGERS}; th = [opp0, roll0] + list(old["thumb"])
-        x0 = {fn: tuple(old[fn]) for fn in FINGERS}
-        for it in range(3):
-            x = base0[0] if (y0s is None) else seat_x(h, y0, w, D, prof, {"thumb": th[2:]}, th[0], th[1])
+        spr = {fn: float(spr0.get(fn, 0.0)) for fn in FINGERS}
+        for it in range(iters):
+            a = dict(ang, thumb=th[2:])
+            # The line's depth for the fist as fitted so far (its fingers too, not the frame's own).
+            x = base0[0] if (y0s is None) else seat_x(h, y0, w, D, prof, a, th[0], th[1], spr)
             gr = Grip(np.array([x, y0, 0]) + w * D, D, prof)
-            u = palm_dir(h, h.rotf(dict(ang, thumb=th[2:]), th[0], th[1]), gr)
+            u = palm_dir(h, h.rotf(a, th[0], th[1], spr), gr)
             for fn in FINGERS:
-                ang[fn] = fit_finger(h, fn, dict(ang, thumb=th[2:]), gr, u, ang[fn] if it else x0[fn])
-            J = h.joints(h.rotf(dict(ang, thumb=th[2:]), th[0], th[1]))
+                ang[fn], spr[fn] = fit_finger(h, fn, dict(ang, thumb=th[2:]), spr, gr, u,
+                                              tuple(ang[fn]) + (spr[fn],), th[0], th[1])
+            J = h.joints(h.rotf(dict(ang, thumb=th[2:]), th[0], th[1], spr))
             ti, tm = [float((J[f"{fn}_03_r"] - gr.A) @ D) * 1000 for fn in ("index", "middle")]
-            th = fit_thumb(h, gr, dict(ang), th, (tm - 5, ti + 5))
+            th = fit_thumb(h, gr, dict(ang), th, (tm - 5, ti + 5), spr=spr)
         a = dict(ang, thumb=th[2:])
-        m = measure(h, h.rotf(a, th[0], th[1]), gr); bad = verdict(m, a)
+        m = measure(h, h.rotf(a, th[0], th[1], spr), gr); bad = verdict(m, a)
         # Into the hilt or the palm through it disqualifies a seat; then the fewest fails, then the least hang.
-        score = (100 if m["deepest"] < -IN_MAX or (m["palm"] or 0) < -IN_MAX else 0) + len(bad)             + sum(max(0.0, m[fn]["hang"] or 0) for fn in FINGERS) / 10
-        print(f"  seat y0 {y0 * 1000:.0f}: A {np.round(gr.A * 1000, 1).tolist()} fails {len(bad)}: {'; '.join(bad) or 'none'}")
+        score = (100 if m["deepest"] < -IN_MAX or (m["palm"] or 0) < -IN_MAX else 0) + len(bad) \
+            + sum(max(0.0, m[fn]["hang"] or 0) for fn in FINGERS) / 10
+        print(f"  seat y0 {y0 * 1000:.0f}: A {np.round(gr.A * 1000, 1).tolist()} spreads {spr} fails {len(bad)}: "
+              f"{'; '.join(bad) or 'none'}", flush=True)
         if best is None or score < best[0]:
-            best = (score, dict(bends={k: tuple(v) for k, v in a.items()}, oppose=th[0], thumb_roll=th[1]), gr.A)
+            best = (score, dict(bends={k: tuple(v) for k, v in a.items()}, spreads=dict(spr), oppose=th[0],
+                                thumb_roll=th[1]), gr.A)
     return best[1], best[2], prof
 
 
@@ -344,7 +402,9 @@ def write_wrap(piece, wrap):
     p = HERE / "keyed.py"; s = p.read_text(encoding="utf-8")
     b = wrap["bends"]
     body_ = (f'"{piece}": {{"bends": {{' + ", ".join(f'"{k}": ({", ".join(f"{v:.1f}" for v in b[k])})' for k in ALLF)
-             + f'}},\n                  "oppose": {wrap["oppose"]:.2f}, "thumb_roll": {wrap["thumb_roll"]:.1f}}}')
+             + "}" + (", \"spreads\": {" + ", ".join(f'"{k}": {v:.1f}' for k, v in wrap["spreads"].items()) + "}"
+                      if wrap.get("spreads") else "")
+             + f',\n                  "oppose": {wrap["oppose"]:.2f}, "thumb_roll": {wrap["thumb_roll"]:.1f}}}')
     s2, n = re.subn(rf'"{piece}": \{{"bends": \{{.*?"thumb_roll": [-0-9.]+\}}', body_, s, count=1, flags=re.S)
     assert n == 1, "WRAP entry not found"
     p.write_text(s2, encoding="utf-8")
@@ -364,7 +424,7 @@ def table(piece, wrap=None, A=None, prof=None):
     P = PIECES[piece]; A0, D = read_seat(piece); D = D / np.linalg.norm(D)
     prof = prof or hilt_profile(piece, A0, D)
     gr = Grip(A0 if A is None else A, D, prof)
-    built, bopp, broll = wrap_args(keyed.WRAP[piece])
+    built, bopp, broll, bspr = wrap_args(keyed.WRAP[piece])
     rows, fails = [], 0
     for path in sorted(CLIPS.glob("*.json")):
         d = json.load(open(path)); meta = d.get("meta", {})
@@ -378,11 +438,11 @@ def table(piece, wrap=None, A=None, prof=None):
             frames = [P["rest"][1]]
         for f in frames:
             h = Hand(rot[f], pos[f], P["outfit"])
-            off = finger_off(rot[f], h, built, bopp, broll)
+            off = finger_off(rot[f], h, built, bopp, broll, bspr)
             if wrap is None:
                 rf = rot[f]
             else:
-                a, o, r = wrap_args(wrap); rf = h.rotf(a, o, r)
+                a, o, r, sp = wrap_args(wrap); rf = h.rotf(a, o, r, sp)
             m = measure(h, rf, gr); bad = verdict(m) + ([f"fingers off WRAP {off:.0f} deg"] if off > OFF_MAX else [])
             fails += bool(bad)
             rows.append((path.stem, f, m, wrist(rot, pos, f), off, bad))

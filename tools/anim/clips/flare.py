@@ -158,7 +158,7 @@ def _body_keys():
         k(17, "auto", hips=(-0.017, -0.095, -0.25), hrot=(-9.5, 3, 1), spine=(-11, 7, 1), neck=(0, -1, -14), head=(0, -2, -4),
           cl=(17, 18), cr=(3, 1.5)),
         k(18, "auto", hips=(-0.02, -0.15, -0.27), hrot=(-11, 8, 2), spine=(-15, 14, 2), neck=(0, 1, -18), head=(0, 3, -7),
-          cl=(12, 24), cr=(-6, 3)),
+          cl=(12, 24), cr=(-1, 3)),
         k(19, "auto", hips=(-0.025, -0.225, -0.30), hrot=(-9.5, 12, 2.5), spine=(-16.5, 15, 2), neck=(0, 0, -34), head=(0, 5, -12),
           cl=(7, 28), cr=(-16, 3.5)),
         k(CONTACT, "ease", hips=(-0.07, -0.37, -0.33), hrot=(-7, 16, 10), spine=(-18, 19, 2), neck=(0, -3, -40), head=(0, 1, -3),
@@ -214,8 +214,11 @@ STAFF = [
     # elbow keyed by its way from the shoulder (E): forward, then down, the
     # forearm out-forward to the planted staff.
     (16, "grip", (-0.135, 1.950, -0.070), _n(0.945, 0.307, 0.110), (-1.0, 0.0, 0.4)),
-    (17, "grip", (-0.190, 1.581, 0.103), _n(0.874, 0.480, 0.066), _n(0.1, -0.2, 0.9), "E"),
-    (18, "grip", (-0.301, 1.310, 0.233), _n(0.470, 0.874, 0.123), _n(-0.1, -0.6, 0.7), "E"),
+    # (New rig, 14 Oct: the forearm 5 cm longer. The f17-18 elbow keyed out
+    # to her right and level, and the f18 fist 4 cm higher, so the bent arm
+    # rides over her right breast rather than down its side.)
+    (17, "grip", (-0.190, 1.581, 0.103), _n(0.874, 0.480, 0.066), _n(-0.3, 0.0, 0.95), "E"),
+    (18, "grip", (-0.301, 1.350, 0.223), _n(0.470, 0.874, 0.123), _n(-0.7, 0.0, 0.7), "E"),
     (19, "grip", (-0.408, 1.001, -0.057), _n(-0.024, 0.996, 0.078), _n(-0.55, -0.55, -0.6), "E"),
     # Planted the fist's +Z is keyed (the staff's own line is AXIS in it,
     # 6.6 degrees toward the fingers, which face out to her right here): so
