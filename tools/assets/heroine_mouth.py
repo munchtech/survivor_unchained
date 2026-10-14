@@ -67,6 +67,17 @@ CO_X = (0.020, 0.028)
 CHEEK_HOLD = float(os.environ.get("MOUTH_CHEEK_HOLD", "0"))
 CH_X = tuple(float(v) / 1000 for v in os.environ.get("MOUTH_CH_X_MM", "21,25,32,40").split(","))
 CH_Y = tuple(float(v) / 1000 for v in os.environ.get("MOUTH_CH_Y_MM", "5,10").split(","))
+# (her laugh's corner pocket (pocket): smile_hold brings the band just past each mouth corner forward POCKET_MM (per
+# unit of smile_hold), over PK_X (mm off her mouth's middle: none at the first, full from the second to the third,
+# none past the fourth) and PK_Y (mm over her lips' line, likewise), on her face's outside. OFF (solver pocket, 14
+# October 2026): placed by rest place or by place in her laugh (own, or the ten faces' mean), 4-12 mm only moved the
+# wall between her cheek and her jaw's side up or down, or grew it, in a front shade: the pocket and the smile's crease
+# are the same points (rest 1-4 mm over her lips' line, 22-30 mm out), and its dark is mostly the keys' blended normals)
+POCKET_MM = float(os.environ.get("MOUTH_POCKET_MM", "0"))
+LAUGH = (0.6, 0.8)             # (her laugh: mouth_open, smile; smile_hold is their product)
+PK_X = tuple(float(v) / 1000 for v in os.environ.get("MOUTH_PK_X_MM", "21.5,25,31,37").split(","))
+PK_Y = tuple(float(v) / 1000 for v in os.environ.get("MOUTH_PK_Y_MM", "-9,-3,2,8").split(","))
+PK_UP = float(os.environ.get("MOUTH_PK_UP", "0"))   # (and up, this share of the forward move)
 LINE_NEAR = 1.692              # (her lips' line is looked for within 2 cm of this height, m)
 CAV_AXIS_Z, CAV_FRONT, CAV_SIDE, CAV_DEPTH = 0.04, 0.088, 0.6, 0.025   # (m: her mouth's axis; its opening's z at her
 #                                middle, falling back CAV_SIDE per metre out; dark at CAV_DEPTH behind it)
@@ -174,6 +185,20 @@ def smile_open(V, D):
     hold = -c[:, None] * D
     hold[:, 2] -= ch * (1 - c) * np.minimum(D[:, 2], 0)
     return out, hold, line, int((w > 0.5).sum())
+
+
+def pocket(V, N, Q, line):
+    """smile_hold's push forward of her cheek just past each mouth corner (POCKET_MM in her laugh, PK_X, PK_Y about
+    where each point is in it, Q): (move per unit of smile_hold, weights)."""
+    mid = float(np.median(V[(np.abs(V[:, 1] - line - 0.004) < 0.008) & (np.abs(V[:, 0]) < 0.03) & (V[:, 2] > 0.085), 0]))
+    ax, h = np.abs(Q[:, 0] - mid), Q[:, 1] - line
+    w = (_s01((ax - PK_X[0]) / (PK_X[1] - PK_X[0])) * (1 - _s01((ax - PK_X[2]) / (PK_X[3] - PK_X[2])))
+         * _s01((h - PK_Y[0]) / (PK_Y[1] - PK_Y[0])) * (1 - _s01((h - PK_Y[2]) / (PK_Y[3] - PK_Y[2]))))
+    w = np.where((N[:, 2] > 0.0) & (V[:, 2] > 0.06), w, 0.0)
+    out = np.zeros_like(V)
+    out[:, 2] = POCKET_MM / 1000 * w / LAUGH[1]
+    out[:, 1] = PK_UP * out[:, 2]
+    return out, w
 
 
 def _smooth(z, v, zq, win):
@@ -455,6 +480,12 @@ def seat(path, out=None):
     # back molars and gum, which stretched into a wall over her tongue's side, black in the shade (the smile pass, e2))
     TD2 = TD * _s01((n / n.max() - 0.01) / 0.04)[:, None]
     SO, SH, line, raised = smile_open(HV, HD)
+    if POCKET_MM:
+        o = min(LAUGH[0] / 0.3, 1)
+        fk = ["face_" + f for f in SEAT_MM if f != "own" and "face_" + f in hn]   # (her nine other faces, and her own)
+        Q = (HV + sum(rd(hp["targets"][hn.index(k)]["POSITION"]) for k in fk) / (len(fk) + 1) + LAUGH[0] * HD
+             + LAUGH[1] * rd(hp["targets"][hn.index("smile")]["POSITION"]) + LAUGH[1] * o * o * (3 - 2 * o) * SO + LAUGH[0] * LAUGH[1] * SH)
+        SH = SH + pocket(HV, rd(hp["attributes"]["NORMAL"]), Q, line)[0]
     # (each accessor written anew: a shared view would move other parts too)
     gt["mouth_open"] = GD
     hs._set(js, chunks, tp["targets"][tn.index("mouth_open")]["POSITION"], TD2, minmax=True)
