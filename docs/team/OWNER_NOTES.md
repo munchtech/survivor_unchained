@@ -254,3 +254,7 @@ Not made by us: poses or animation whose purpose is a sex act, or that show nudi
 
 ## 14 October 2026: fuller lips, reopened
 - The owner, on the face lead's clay mouth sheet: "the full lips in the face leads current work look nice. but they aren't painted so maybe they aren't idk. I've wavered back and forth on bigger lips". The earlier no to fuller lips is open again. Sent to face successor 20: say whether the clay lips are the shipped shape (if so, the paint is softening the border); then a painted A/B (shipped vs fuller, by paint or a 10-15% shape increase, never a recolour) at the Look camera and the game close-up, day and night, for the owner to pick.
+
+## 14 October 2026: the gloves (from playing the build, Arcanist in town)
+- The owner: "something about those gloves just looks bad. its like her hands are giant or going at a very weird angle at the wrists. they definitely aren't sexy female hands. should we drop the gloves and have more delicate hands?. like those fingers just look silly". Screenshot kept in coordinator scratchpad 34daaf5d images\2.webp.
+- Sent to outfits successor 20: diagnose (bare hands in the same frame; hand size against her height and face; the glove's offset from the skin), then A = current, B = a thin second-skin glove (about 1 mm or less, tapered fingers, knuckles, slim wrist), C = bare hands, for the owner to pick. The coordinator leans B only if it truly reads delicate, otherwise C. Sent to animation: the hat-brim clip's hard wrist bend and stiff splayed fingers.
