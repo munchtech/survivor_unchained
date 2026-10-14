@@ -157,12 +157,12 @@ def _body_keys():
           cl=(27, 12), cr=(9, 0)),
         k(17, "auto", hips=(-0.017, -0.095, -0.25), hrot=(-9.5, 3, 1), spine=(-15, 7, 1), neck=(0, -1, -12), head=(0, -2, -4),
           cl=(17, 18), cr=(3, 1.5)),
-        k(18, "auto", hips=(-0.02, -0.15, -0.27), hrot=(-11, 8, 2), spine=(-17, 11, 2), neck=(0, 3, -12), head=(0, 5, -5),
+        k(18, "auto", hips=(-0.02, -0.15, -0.27), hrot=(-11, 8, 2), spine=(-17, 14, 2), neck=(0, 3, -12), head=(0, 5, -5),
           cl=(7, 24), cr=(-1, 3)),
-        k(19, "auto", hips=(-0.025, -0.225, -0.30), hrot=(-9.5, 12, 2.5), spine=(-20, 11, 2), neck=(0, 4, -17), head=(0, 8, -7),
-          cl=(2, 28), cr=(-16, 3.5)),
+        k(19, "auto", hips=(-0.025, -0.225, -0.30), hrot=(-9.5, 12, 2.5), spine=(-20, 15, 2), neck=(0, 4, -17), head=(0, 8, -7),
+          cl=(2, 43), cr=(14, 3.5)),
         k(CONTACT, "ease", hips=(-0.07, -0.37, -0.33), hrot=(-7, 16, 10), spine=(-22, 19, 2), neck=(0, 2, -23), head=(0, 5, -3),
-          cl=(-3, 32), cr=(-14, 4)),
+          cl=(-3, 32), cr=(-6, 4)),
         # The settle: the weight lands, the pelvis 2-3 cm lower and the chest
         # a few degrees further over than the pose it comes back to (f25).
         k(21, "auto", hips=(-0.075, -0.405, -0.33), hrot=(-4, 15, 11), spine=(-24, 21, 3), neck=(0, 1, -25), head=(0, 2, -3),
@@ -218,8 +218,8 @@ STAFF = [
     # to her right and level, and the f18 fist 4 cm higher, so the bent arm
     # rides over her right breast rather than down its side.)
     (17, "grip", (-0.190, 1.581, 0.103), _n(0.874, 0.480, 0.066), _n(-0.3, 0.0, 0.95), "E"),
-    (18, "grip", (-0.301, 1.350, 0.223), _n(0.470, 0.874, 0.123), _n(-0.7, 0.0, 0.7), "E"),
-    (19, "grip", (-0.480, 1.180, 0.040), _n(0.030, 0.990, 0.105), _n(-0.8, -0.45, -0.4), "E"),
+    (18, "grip", (-0.301, 1.350, 0.253), _n(0.470, 0.874, 0.123), _n(-0.7, 0.0, 0.7), "E"),
+    (19, "grip", (-0.440, 1.150, 0.140), _n(0.030, 0.990, 0.105), _n(-0.8, -0.45, -0.4), "E"),
     # Planted the fist's +Z is keyed (the staff's own line is AXIS in it,
     # 6.6 degrees toward the fingers, which face out to her right here): so
     # the shaft stands about (-0.05, 0.99, 0.10), near upright, its head over
@@ -228,7 +228,7 @@ STAFF = [
     (22, "butt", BUTT_AT, _n(-0.120, 0.985, 0.120), _n(0.15, -0.97, -0.10), "E"),
     (28, "butt", BUTT_AT, _n(-0.047, 0.992, 0.117), _n(0.15, -0.97, -0.10), "E"),
     (40, "butt", BUTT_AT, _n(-0.033, 0.990, 0.133), _n(0.15, -0.97, -0.10), "E"),
-    (SWEEP, "butt", BUTT_AT, _n(-0.338, 0.920, 0.196), (-0.6, -0.8, -0.4)),
+    (SWEEP, "butt", BUTT_AT, _n(-0.318, 0.927, 0.196), (-0.6, -0.8, -0.4)),
     (BLEND, "grip", (-0.386, 0.985, -0.157), _n(-0.113, 0.970, 0.214), (-0.8, -0.3, -0.6)),
     (52, "grip", (-0.321, 1.129, -0.039), _n(-0.075, 0.959, 0.272), (-0.8, -0.3, -0.6)),
 ]
