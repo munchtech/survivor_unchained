@@ -765,6 +765,12 @@ class Rig:
                 j = I[f"thumb_01_{side}"]
                 along = qrot(qinv(self.grest[j]), qrot(self.grest[I[f"hand_{side}"]], [0, 1.0, 0]))
                 local[j] = qmul(local[j], qaxis(along / np.linalg.norm(along), oppose * 55 * (1 if side == "l" else -1)))
+            # The thumb drawn in beside the forefinger ("thumb_in", deg, about its base's spread axis): a relaxed hand's
+            # thumb rests along the forefinger's side, not off the front of the hand.
+            t_in = preset.get("thumb_in", 0)
+            if t_in:
+                j = I[f"thumb_01_{side}"]
+                local[j] = qmul(local[j], qaxis(spread_axis(self, j), t_in * (1 if side == "l" else -1)))
             roll = preset.get("thumb_roll", 0)
             if roll:
                 j = I[f"thumb_01_{side}"]
@@ -941,11 +947,13 @@ FINGER_PRESETS = {
     # evenly): each joint its own scale and cascade, so the forefinger lies nearly straight and each finger toward
     # the little one bends more, mostly at the knuckle and the middle joint, the end joints only a little. Index to
     # little finger (knuckle, middle, last): (8, 15, 6) (15, 24, 9) (22, 33, 12) (29, 42, 15); the thumb soft beside
-    # the forefinger (12, 12, 16), swung 9 deg in toward it and rolled a little so its pad faces it (judge r1: A's
+    # the forefinger (12, 12, 16), drawn in 21 deg (its last bone's skin 5-9 mm off the forefinger's, was 30-36: the
+    # V judge r1 saw), swung 9 deg across and rolled a little so its pad faces it (judge r1: A's
     # straight thumb left a V of background beside the forefinger; keep knuckle bends <= 30 until her knuckles move,
     # then about +5 there). Was curl 0.28, cascade 0.25: (22, 27, 18) .. (39, 46, 32), the tips hooked: a claw.
     "relaxed": {"curl": 0.1, "thumb": 0.25, "cascade": 0.5, "j1": 1.0, "j2": 1.58, "j3": 0.92,
-                "c1": 0.875, "c2": 0.6, "c3": 0.5, "t1": 1.92, "t2": 1.37, "t3": 1.6, "oppose": 0.16, "thumb_roll": -8},
+                "c1": 0.875, "c2": 0.6, "c3": 0.5, "t1": 1.92, "t2": 1.37, "t3": 1.6, "oppose": 0.16, "thumb_roll": -8,
+                "thumb_in": 21},
     "open": {"curl": 0.05, "thumb": 0.0, "spread": 4},
     # Pressed flat on the ground under her weight: bent back a little.
     "flat": {"curl": -0.12, "thumb": 0.0, "spread": 6},
@@ -1136,7 +1144,7 @@ def smoothstep_(x):
 
 
 FINGER_DEFAULTS = {"curl": 0.3, "thumb": 0.2, "cascade": 0.15, "tip": 1.0, "oppose": 0.0, "spread": 0.0,
-                   "j1": 1.0, "j2": 1.0, "j3": 1.0, "t1": 1.0, "t2": 1.0, "t3": 1.0, "thumb_roll": 0.0}
+                   "j1": 1.0, "j2": 1.0, "j3": 1.0, "t1": 1.0, "t2": 1.0, "t3": 1.0, "thumb_roll": 0.0, "thumb_in": 0.0}
 
 
 def _even_fingers(keys):
