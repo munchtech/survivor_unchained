@@ -376,6 +376,14 @@ func hide_skin(mi, ch):
 
 func _process(delta):
 	t += delta
+	# HEADSCALE=k: her head (and all skinned to it: hair, hat) scaled k about its bone, every frame (a head-size A/B).
+	if OS.get_environment("HEADSCALE") != "":
+		var hk = float(OS.get_environment("HEADSCALE"))
+		for h in get_root().get_child(0).get_children():
+			if h.has_method("find_children"):
+				for sk in h.find_children("*", "Skeleton3D", true, false):
+					var hb = sk.find_bone("Head")
+					if hb >= 0: sk.set_bone_pose_scale(hb, Vector3.ONE * hk)
 	# MOVE=metres: each figure carried forward and back that far, about one
 	# return a second and a half (to see her hair swing and stream).
 	if OS.get_environment("MOVE") != "":
