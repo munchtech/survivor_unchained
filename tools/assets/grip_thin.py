@@ -14,7 +14,8 @@ piece: src), so --radius can be re-chosen.
 Pieces (mesh space, as the file has it): the long axis, the grip's ring range along it, and the end ring kept.
 chevalier_sword (WE-01, rubenve, CC-BY-4.0): a barrel grip 37 mm across at its widest (18.5 mm round), too thick for
 her fist to close on (fistfit.py: no fit passes; a real one-handed grip is 28-32 mm across). Thinned to 15 mm,
-14 October 2026 (docs/legal/ASSET_PROVENANCE.md, WE-01).
+14 October 2026, then to 13.7 mm (--radius 13.7: the staff's shaft size; the pommel-end ring is 13.68, so
+the grip comes out near a cylinder) (docs/legal/ASSET_PROVENANCE.md, WE-01).
 """
 from __future__ import annotations
 
