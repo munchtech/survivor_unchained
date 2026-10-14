@@ -7250,6 +7250,10 @@ if BODY_OUT:
     # (and her side teeth in the cheeks' shade: heroine_teethshade.py)
     import heroine_teethshade
     heroine_teethshade.shade(BODY_OUT)
+    # (and her teeth and tongue seated for an open mouth and a smile, her mouth's inside dark by depth and the
+    # smile_open key: heroine_mouth.py)
+    import heroine_mouth
+    heroine_mouth.seat(BODY_OUT)
     print("BODY", BODY_OUT)
 
 # Nothing else rides along (the scene may hold strays).
