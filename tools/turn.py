@@ -195,8 +195,12 @@ if __name__ == "__main__":
         kind, who = a[1], (a[2] if len(a) > 2 and not a[2].startswith("--") else "someone")
         if kind in ("godot", "blender") and "--stale-ok" not in a:
             sys.path.insert(0, str(Path(__file__).resolve().parent))
-            from freshness import check  # 14 Oct: judges were shown the old body; free, local check
-            if probs := check(Path(__file__).resolve().parent.parent, imports=kind == "godot"):
+            from freshness import check, toplevel  # 14 Oct: judges were shown the old body; free, local check
+            # The checkout being shot: --root, else the caller's (cwd), never this file's (scripts call the main checkout's turn.py)
+            root = a[a.index("--root") + 1] if "--root" in a else toplevel(Path.cwd())
+            if not root:
+                print("freshness: not run (cwd is not in a checkout); pass --root <your worktree> to check it")
+            elif probs := check(root, imports=kind == "godot"):
                 print("\n".join("STALE: " + x for x in probs))
                 print("Not taking the turn: a shot from here would show old art. Fix the above, or add "
                       "--stale-ok if this shot doesn't need current art (say so in any sheet you make).")
