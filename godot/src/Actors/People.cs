@@ -1037,7 +1037,11 @@ public static class People
     /// gap opened in her wherever a piece swung off her as she moved.</summary>
     static void TuckSkin(MeshInstance3D mi, int ch)
     {
-        // (Only her body is marked; her head is left as it is, shape keys and all.)
+        // (Only her body is marked; her head is left as it is, shape keys and all. Her head and tongue carry
+        // vertex colours of their own since the smile pass (heroine_mouth.py: the mouth's depth, the tongue's
+        // shade), which read as an outfit's channel would tuck them in and discard them whole: skipped by name.)
+        string n = mi.Name.ToString();
+        if (n.EndsWith("Head") || n.EndsWith("Tongue")) return;
         if (mi.Mesh is not ArrayMesh am || (am.SurfaceGetFormat(0) & Mesh.ArrayFormat.FormatColor) == 0) return;
         for (int s = 0; s < mi.GetSurfaceOverrideMaterialCount(); s++)
             if (mi.GetSurfaceOverrideMaterial(s) is ShaderMaterial m && m.Shader == skinShader2)
