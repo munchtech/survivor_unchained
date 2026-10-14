@@ -43,6 +43,8 @@ void fragment() {
 	// them and her molars showed as lit brown blocks behind her front teeth (the smile pass, a3))
 	AO_LIGHT_AFFECT = mix(max(shut * (1.0 - k), 1.0 - k * k * k), 1.0, c);
 	NORMAL = normalize(mix(NORMAL, VIEW, c));
-	EMISSION = mix(inside, ALBEDO, k) * fill * (1.0 - k) * (1.0 - c);
+	// (on her gums and palate alone, by their paint's red: lit so, her side teeth read as brown blocks (g1))
+	vec3 p = texture(paint, UV).rgb;
+	EMISSION = inside * fill * (1.0 - k) * (1.0 - c) * smoothstep(0.08, 0.25, p.r - p.b);
 	if (debug > 0.5) { ALBEDO = vec3(0.0); SPECULAR = 0.0; AO = 0.0; AO_LIGHT_AFFECT = 1.0; EMISSION = vec3(0.0, 2.0, 0.0); }
 }

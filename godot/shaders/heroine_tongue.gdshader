@@ -8,9 +8,9 @@ shader_type spatial;
 render_mode shadows_disabled;
 
 uniform sampler2D paint : source_color, filter_linear_mipmap, hint_default_white;
-uniform vec3 tint : source_color = vec3(0.7, 0.5, 0.46);     // (its paint, a bright salmon, muted to a rose in shade)
+uniform vec3 tint : source_color = vec3(0.66, 0.44, 0.4);      // (its paint, a bright salmon, muted to a rose in shade)
 uniform vec3 inside : source_color = vec3(0.42, 0.15, 0.14);  // (the mouth's own dark red, heroine_skin's mouth_colour)
-uniform float lamps = 0.8;
+uniform float lamps = 0.6;
 uniform float fill = 0.15;
 uniform float roughness = 0.45;
 uniform float specular = 0.3;

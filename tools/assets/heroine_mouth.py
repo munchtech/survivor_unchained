@@ -98,6 +98,35 @@ def smile_open(V, D):
     return out, line, int((w > 0.5).sum())
 
 
+def _seen(V, I, pts, dirs=((0, 0, 1), (0.3, 0, 1), (-0.3, 0, 1), (0, 0.2, 1), (0, -0.2, 1))):
+    """Those of the points pts (indices into V) a ray from in front reaches (any of dirs, toward her front, meets
+    none of the triangles I): numpy only (Moller-Trumbore)."""
+    A, B, C = V[I[:, 0]], V[I[:, 1]], V[I[:, 2]]
+    e1, e2 = B - A, C - A
+    seen = []
+    for p in pts:
+        o = V[p]
+        far = (I != p).all(1)
+        hit_all = True
+        for d in dirs:
+            d = np.array(d, float) / np.linalg.norm(d)
+            h = np.cross(d, e2)
+            a = (e1 * h).sum(1)
+            ok = np.abs(a) > 1e-12
+            f = np.where(ok, 1 / np.where(ok, a, 1), 0)
+            s = o - A
+            u = f * (s * h).sum(1)
+            q = np.cross(s, e1)
+            v = f * (q @ d)
+            t = f * (e2 * q).sum(1)
+            if not (ok & far & (u >= 0) & (v >= 0) & (u + v <= 1) & (t > 2e-4)).any():
+                hit_all = False
+                break
+        if not hit_all:
+            seen.append(p)
+    return np.array(seen, dtype=np.int64)
+
+
 def _add_target(js, chunks, mesh, prim, name, vals):
     js["accessors"].append({"componentType": 5126, "count": len(vals), "type": "VEC3"})
     i = len(js["accessors"]) - 1
@@ -178,6 +207,18 @@ def seat(path, out=None):
     # as paint, an orange-brown wedge lit at each corner of her smile (a4): there, at least CORNER_DEPTH, a wet dark red)
     cw = _s01((np.abs(HV[:, 0]) - CORNER_X[0]) / (CORNER_X[1] - CORNER_X[0]))
     depth = np.where(inside, np.maximum(depth, CORNER_DEPTH * cw), depth)
+    # (her mouth's inside pokes out through her cheek under her jaw's side (|x| 31-34 mm, 21 mm under her lips): the
+    # skin shader draws the inside's back faces, so it showed as a dark red speck there, on every face (g1). Seen from
+    # in front with her lips closed nothing of the inside shows, so any of it a ray from in front reaches is outside:
+    # none of the mouth's shade there, nor near it)
+    HI = hs._read(js, binc, hp["indices"]).astype(np.int64).reshape(-1, 3)
+    # (away from her lips' line, where her closed lips leave a hairline gap a ray can pass)
+    poke = _seen(HV, HI, np.where((depth > 0) & (np.abs(HV[:, 1] - line) > 0.008))[0])
+    if len(poke):
+        near = np.linalg.norm(HV[:, None] - HV[poke][None], axis=2).min(1) < 0.004
+        depth = np.where(near, 0.0, depth)
+    print("MOUTH: %d points of her mouth's inside seen from in front (poking out), cleared with %d near them"
+          % (len(poke), int(near.sum()) if len(poke) else 0))
     # (her mouth's corners, the crease where her lips meet: in her smile it folds in, sideways and back, and the lamps
     # behind her lit it, an orange-brown wedge through her skin's light (the smile pass, e3: by the lamps behind her,
     # not her paint and not the mouth's red). Shadows at this scale don't reach it; red: 1, or down to 0 there, the
