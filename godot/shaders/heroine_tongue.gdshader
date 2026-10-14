@@ -18,7 +18,9 @@ uniform float lamps = 0.6;
 uniform float fill = 0.15;
 uniform float roughness = 0.45;
 uniform float specular = 0.3;
+uniform float shine = 0.15;     // (the lamps' sheen on it, x.15 of what it was, by its depth and darkening (COLOR.r*COLOR.g) so it dies toward its root and where it touches her lower teeth: a blue-white glint on its far raised edge there (judge r4))
 varying float shade_k;
+varying float shine_k;
 
 void fragment() {
 	float k = COLOR.r;
@@ -32,6 +34,7 @@ void fragment() {
 	AO = k * k;
 	AO_LIGHT_AFFECT = 0.0;
 	shade_k = k * k * side;
+	shine_k = shine * k * dark;
 	ROUGHNESS = roughness;
 	SPECULAR = specular * k * dark;
 	EMISSION = inside * fill * (1.0 - 0.5 * k) * dark;
@@ -41,5 +44,5 @@ void light() {
 	DIFFUSE_LIGHT += lamps * shade_k * clamp(dot(NORMAL, LIGHT), 0.0, 1.0) * ATTENUATION * LIGHT_COLOR / PI;
 	vec3 h = normalize(VIEW + LIGHT);
 	float s = pow(clamp(dot(NORMAL, h), 0.0, 1.0), mix(8.0, 128.0, 1.0 - ROUGHNESS));
-	SPECULAR_LIGHT += lamps * shade_k * SPECULAR_AMOUNT * s * ATTENUATION * LIGHT_COLOR * clamp(dot(NORMAL, LIGHT), 0.0, 1.0);
+	SPECULAR_LIGHT += lamps * shade_k * shine_k * SPECULAR_AMOUNT * s * ATTENUATION * LIGHT_COLOR * clamp(dot(NORMAL, LIGHT), 0.0, 1.0);
 }

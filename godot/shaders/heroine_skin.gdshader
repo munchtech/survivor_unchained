@@ -287,8 +287,8 @@ varying float crease;
 // (her inner cheeks beside her lower back teeth (heroine_mouth.py: her head's vertex colour's green, 1 or down to 0
 // there): the mouth's colour there darkened by wall_dark and greyed by wall_grey (linear), so they don't read as a
 // saturated red-pink lit wall beside her far lower row (solver int3))
-uniform float wall_dark = 0.5;
-uniform float wall_grey = 1.0;
+uniform float wall_dark = 0.35;
+uniform float wall_grey = 0.55;
 varying float mouth_w;
 varying float mouth_c;
 varying float mouth_f;

@@ -42,7 +42,8 @@ SIDE_LOW, DEPTH_LOW, POW_LOW = (float(v) for v in os.environ.get("TEETH_LOW", "0
 # premolars' and three molars' middles), on both sides alike; the green channel is that light as a share of the
 # canine's, 1 elsewhere: the shader warms the paint and cuts the sheen by it (heroine_teeth.gdshader's deep_*))
 LOW_DZ = (0.0, 0.002, 0.0049, 0.0106, 0.0181, 0.0262, 0.0345)
-LOW_F = tuple(float(v) for v in os.environ.get("TEETH_LOW_F", "0.24,0.11,0.13,0.05,0.038,0.035").split(","))
+# (steeper past the 2nd premolar: the lower molars 0.029, 0.0255, 0.021 from 0.05, 0.038, 0.035; judge r4)
+LOW_F = tuple(float(v) for v in os.environ.get("TEETH_LOW_F", "0.24,0.11,0.13,0.029,0.0255,0.021").split(","))
 MOVED = 0.002                         # (m: a point mouth_open moves more than this at 1 is her lower row's)
 
 
