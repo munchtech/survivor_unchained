@@ -130,6 +130,9 @@ TAKES = {
     ),
 }
 
+# burns_boom5 with its birth graded (lead 6): the ramp's exponent high to f5, back to 1 by f10, the light kept.
+TAKES["burns_boom5b"] = dict(TAKES["burns_boom5"], pow_keys=((1, 1.8), (5, 1.6), (10, 1.0)))
+
 
 def args():
     a = sys.argv[sys.argv.index("--") + 1:] if "--" in sys.argv else []
@@ -292,7 +295,11 @@ def src_material(t):
     ff = math("MULTIPLY", math("POWER", f, t.get("fq", 1.0)), t["flame_k"])
     if zf:
         ff = math("MULTIPLY", ff, zf)
+    # pow_keys: the ramp's exponent keyed over frames (burns_boom5b: its birth read as a cream blob in the game; high
+    # for f1-f5, only the densest heart reaches white, the rest burns yellow to orange).
     fp = math("POWER", f, t.get("flame_pow", 1.0))
+    # (Only the colour: the light stays the flame's.)
+    fpr = math("POWER", f, keyed(nt, "pow_f", t["pow_keys"], 1.0).outputs[0]) if t.get("pow_keys") else fp
     ramp = nt.nodes.new("ShaderNodeValToRGB")
     cr = ramp.color_ramp
     rk = t["ramp"]
@@ -300,7 +307,7 @@ def src_material(t):
     cr.elements[1].position = rk[-1][0]; cr.elements[1].color = tuple(rk[-1][1]) + (1,)
     for p, c in rk[1:-1]:
         e = cr.elements.new(p); e.color = tuple(c) + (1,)
-    L(fp, ramp.inputs["Fac"])
+    L(fpr, ramp.inputs["Fac"])
     inten = math("MULTIPLY", math("POWER", fp, t.get("emit_m", 2.0)), t["emit_k"])
     if t.get("fire_keys"):
         inten = math("MULTIPLY", inten, keyed(nt, "fire_taper", t["fire_keys"], 1.0).outputs[0])

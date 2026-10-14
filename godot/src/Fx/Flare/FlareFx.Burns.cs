@@ -526,10 +526,16 @@ public partial class FlareFx
             // The ring's burst (judge 2, s4: even, still confetti): the ice thrown out along the line's way,
             // stretched by its speed and lit orange through its faces, landing a metre or three on and cooling grey.
             shards.Burst(w + Vector3.Up * 0.9f * scale, Plates(scale), 7.5f, 0.24f * Mathf.Sqrt(scale), new Color(0.32f, 0.3f, 0.27f, 0.6f), 1.3f, away, thrown: true);
-            // The line flares where it crosses a body.
-            glow.Spawn(FlareBits.Kind.Fire, w + Vector3.Up * 0.45f * scale + away * 0.25f, away * 3.5f + Vector3.Up * 2.0f, 0.12f + R() * 0.05f, 0.26f * scale, new Color(0.95f, 0.38f, 0.09f), new Color(0.55f, 0.08f, 0.02f), sizeEnd: 0.6f * scale, drag: 3);
-            if (R() < 0.5f)
-                glow.Spawn(FlareBits.Kind.Tongue, w + Vector3.Up * 0.5f * scale, away * 5 + Vector3.Up * (3.5f + R() * 2), 0.1f + R() * 0.06f, (0.26f + R() * 0.1f) * scale, new Color(1.1f, 0.5f, 0.14f), new Color(0.65f, 0.12f, 0.02f), drag: 2);
+            // The line flares where it crosses a body (while the line is there: a late one threw a lone upright
+            // tongue, a vertical bar at +1.4 s, f6h).
+            if (lastAt > 0 && t - lastAt < 0.7) glow.Spawn(FlareBits.Kind.Fire, w + Vector3.Up * 0.45f * scale + away * 0.25f, away * 3.5f + Vector3.Up * 2.0f, 0.12f + R() * 0.05f, 0.26f * scale, new Color(0.95f, 0.38f, 0.09f), new Color(0.55f, 0.08f, 0.02f), sizeEnd: 0.6f * scale, drag: 3);
+            if (R() < 0.5f && lastAt > 0 && t - lastAt < 0.7)
+                glow.Spawn(new FlareBits.P
+                {
+                    Kind = FlareBits.Kind.Tongue, At = w + Vector3.Up * 0.5f * scale, V = away * 5 + Vector3.Up * (3.5f + R() * 2), Show = away + Vector3.Up * 0.9f,
+                    Life = 0.1f + R() * 0.06f, Size = (0.26f + R() * 0.1f) * scale, SizeEnd = (0.26f + R() * 0.1f) * scale, Drag = 2,
+                    Color = new Color(1.1f, 0.5f, 0.14f), ColorEnd = new Color(0.65f, 0.12f, 0.02f),
+                });
             // A short breath of steam off the hot ice, off one in four (f6b: off all 250, a sheet of cotton).
             if (R() < 0.25f) bed.Spawn(new FlareBits.P
             {

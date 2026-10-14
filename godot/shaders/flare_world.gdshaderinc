@@ -394,12 +394,13 @@ void flare_ground(vec3 wp, inout vec3 alb, inout float rough, inout float spec, 
 			float fl_sd = fl_seam(w);
 			float fl_px = max(fwidth(w.x), 0.004);
 			// (f6b: the whole net lit, 3 px wide, read as a giraffe's hide at 1.6x the frame. One pixel; a sixth of it.)
-			float fl_sl = 1.0 - smoothstep(fl_px * 0.35, fl_px * 1.05, fl_sd);
+			float fl_sl = 1.0 - smoothstep(fl_px * 0.2, fl_px * 0.8, fl_sd);
 			// (f6d: lit in loose bits it read as scattered straw. Patches a few metres across where the whole crust
 			// glows, joined, cooling to dark at their edges.)
 			float fl_on = smoothstep(0.58, 0.72, texture(flare_noise, w * 0.11 + 0.3).g);
 			float fl_ht = clamp(flare_web.y, 0.0, 1.0);
-			vec3 fl_hot = mix(vec3(0.3, 0.03, 0.008), vec3(1.0, 0.42, 0.08), smoothstep(0.3, 1.0, fl_ht)) * smoothstep(0.0, 0.3, fl_ht);
+			// (f6h at 100%: at (1, 0.42, 0.08) over the char they read as tan twigs. Deep ember orange, cooling to red.)
+			vec3 fl_hot = mix(vec3(0.35, 0.025, 0.005), vec3(1.0, 0.27, 0.035), smoothstep(0.3, 1.0, fl_ht)) * smoothstep(0.0, 0.3, fl_ht);
 			web += fl_hot * fl_sl * fl_on * bo.z * flare_web.x * 0.8 * mix(0.3, 1.0, flare_hue.a);
 		}
 	}

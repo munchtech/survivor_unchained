@@ -121,7 +121,7 @@ public partial class FlareFx
     {
         var p = boomAt;
         // The low light: three frames at its peak, catching the rims of the statues round the crater, then gone.
-        rimLight.LightEnergy = c < 0.05f ? 16 * (LessFlash ? 0.5f : 1) : Mathf.MoveToward(rimLight.LightEnergy, 0, dt * 90);
+        rimLight.LightEnergy = c < 0.05f ? 10 * (LessFlash ? 0.5f : 1) : Mathf.MoveToward(rimLight.LightEnergy, 0, dt * 90);
         // The pillar: full height in 0.15 s, full fire to 0.45 s, burnt out by 1.1 s.
         if (simBoom != null)
         {
@@ -130,7 +130,8 @@ public partial class FlareFx
             simBoom.Visible = life < 1;
             simMat!.SetShaderParameter("life", life);
             simMat.SetShaderParameter("gain", 1.25f * (LessFlash ? 0.6f : 1));
-            simMat.SetShaderParameter("smoke", 1.0f);
+            // (The soot thins as it climbs: opaque to the end it took the Return's floor to 0.57x at +0.8 s, f6i.)
+            simMat.SetShaderParameter("smoke", 1.0f - 0.35f * Mathf.SmoothStep(0.35f, 0.8f, c));
             simMat.SetShaderParameter("fade", (1 - Mathf.SmoothStep(0.9f, 1.4f, c)) * (1 - Mathf.SmoothStep(0.85f, 1f, life)));
             pillar.Visible = cap.Visible = false;
         }
