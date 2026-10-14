@@ -7320,6 +7320,9 @@ COVER_STRIP, COVER_AREOLAS = _cover_regions()
 
 # (a full tuck's mark, and how far inside a glove's cuff her hand goes undrawn)
 TUCK_FULL = 0.98
+# (the Arcanist's elbow glove's top: her skin's tuck at its line, and how far in it is full)
+GLOVE_TUCK_RIM = float(os.environ.get("GLOVE_TUCK_RIM", "0.05"))
+GLOVE_TUCK_IN = float(os.environ.get("GLOVE_TUCK_IN", "0.03"))
 GONE_IN = 0.02
 # Her skin under each outfit's fitted pieces is marked, one colour channel
 # an outfit (CHANNELS, as People.cs has them), for the game to draw tucked a
@@ -7452,6 +7455,19 @@ if BODY_OUT:
             for sd in ("l", "r"):
                 fa = (ARM_S[sd][jj] > ELBOW_S - 0.05) & (ARM_S[sd][jj] < WRIST_S - 0.01) & (ARMW[sd][jj] > 0.5)
                 vals[fa & (vals[:, k] > 0), k] = 1.0
+            # (s22: the elbow glove's top (shoulder caps, her elbow bare): her skin under it eased in
+            # from the glove's own cut, GLOVE_TUCK_RIM of a full tuck at the line, all of it
+            # GLOVE_TUCK_IN inside, and none past it. Tucked by the rays and the rule above, the
+            # tuck's border followed her coarse rows across the line: a sawtooth, partly past the
+            # top (seen into the glove, its inside blue-grey) and partly short of it, 10 mm deep
+            # one row in; with her elbow shut at the hat brim the top looked torn.)
+            if ARC_HANDS == "fingerless" and os.environ.get("ARC_CAPS", "1") == "1" and GLOVE_TUCK_IN > 0:
+                for sd in ("l", "r"):
+                    e_, w_ = ARM[sd][1], ARM[sd][2]
+                    d_ = (P[jj] - e_) @ ((w_ - e_) / np.linalg.norm(w_ - e_)) - float(os.environ.get("ARC_GLOVE_ELBOW", "0.04"))
+                    fa = (ARMW[sd][jj] > 0.5) & (d_ > -0.05) & (d_ < GLOVE_TUCK_IN)
+                    vals[fa, k] = np.where(d_[fa] > 0, GLOVE_TUCK_RIM + (1.0 - GLOVE_TUCK_RIM) * ramp(d_[fa], 0.0, GLOVE_TUCK_IN), 0.0)
+                    print("GLOVE TUCK %s: %d vertices of hers eased in under its top, %d past it untucked" % (sd, int((fa & (d_ > 0)).sum()), int((fa & (d_ <= 0)).sum())))
         for cap_, zone_ in TUCK_ZONES.get(name, []):
             zw_ = zone_(P[jj])
             print("TUCK ZONE %s: %d vertices of hers capped at %.2f" % (name, int(((zw_ > 0.5) & (vals[:, k] > cap_)).sum()), cap_))
