@@ -569,6 +569,12 @@ def finger_mix():
     return full("relaxed"), full("grip"), full("spread")
 
 
+# The rise out of the settle, eased (14 Oct, the r10 judge): the pelvis came up
+# 650 677 680 690 693 mm at f22-26 (+27 in one frame, then +3/+10/+3); these
+# take it up 650 662 674 684 690 692 at f22-27 instead.
+RISE_EASE = {23: -0.015, 24: -0.006, 25: -0.006, 26: -0.003}
+
+
 def flare_burns_twice(rig, rounds=10, log=None):
     F = Flare(rig)
     clip = None
@@ -580,6 +586,8 @@ def flare_burns_twice(rig, rounds=10, log=None):
             # (14 Oct: taken once the hands have settled; at round 1 the drop
             # read the first round's rough fists and sank her 4-6 cm at f20-24.)
             F.dy = F.dy + F.reach_drop(S_r, HR)
+            for fr, d in RISE_EASE.items():
+                F.dy[fr] += d
             S_r, S_l, chest = F.body()
             HR = F.right(S_r, chest)
         HL = F.left(S_l, chest, G)
