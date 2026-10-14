@@ -170,6 +170,10 @@ public sealed class FaceShape
     /// <summary>Its iris's radius (of the eye's paint; 0: 0.117) and how much of the iris its upper lid covers at
     /// rest (0 to 1, its portrait's), where the lid's shadow on the eye is laid.</summary>
     public double Iris, Cover;
+    /// <summary>How much fuller its lower lip is than its sculpt's (the lips_lower slider's key, added under the
+    /// player's slider): the owner's lips B3-15 (14 October 2026), about 15% fuller, lower:upper about 1.5
+    /// (tools/assets/heroine_lip_raise.py's LIPS_LOWER).</summary>
+    public double Lips;
     public Dictionary<string, double> Shape = new();
 }
 
