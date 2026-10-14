@@ -751,7 +751,10 @@ class Rig:
             local[j] = grot[j] if p < 0 else qmul(qinv(grot[p]), grot[j])
         for side in "lr":
             spec = pose.get(f"fingers_{side}", "relaxed")
-            if spec == "grip" and side in getattr(self, "wrap", {}):
+            # A hand that holds a piece with a fitted wrap closes on it in that wrap whether its keys say "grip" or
+            # "fist" (a run's carriage keys "fist" for both hands: run_warden and sprint_warden closed her sword
+            # hand's fingers into the palm, through the hilt, 14 October).
+            if spec in ("grip", "fist") and side in getattr(self, "wrap", {}):
                 spec = self.wrap[side]
             curl = finger_curl(spec)
             # The thumb swung in across the palm before it bends ("oppose", 0..1),
