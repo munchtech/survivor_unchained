@@ -51,10 +51,10 @@ END, CONTACT, SWEEP, BLEND = 60, 20, 43, 46
 
 # The staff in hand_r's own space (the bound staff, seated on the fist's line by Arms.Seat: WeaponSockets.FistSeat).
 M_R = np.array([-0.025, 0.075, 0.0])                 # the mount: the shaft through the right fist
-BUTT = np.array([-0.0398, -0.0331, -0.7803])         # the butt's foot (on the shaft's line, 787.6 mm below the pocket)
-AXIS = np.array([0.001, 0.1157, 0.9933])             # the shaft's line, butt toward head (the fist's line)
+BUTT = np.array([0.0372, 0.0292, -0.7900])           # the butt's foot (on the shaft's line, 787.6 mm below the pocket)
+AXIS = np.array([-0.0863, 0.1138, 0.9898])           # the shaft's line, butt toward head (the fist's line: WeaponSockets.FistDirR, 4eb83530)
 AXIS = AXIS / np.linalg.norm(AXIS)
-SHAFT0 = np.array([-0.039, 0.058, 0.002])            # the shaft's centre where it crosses the fist (the fist's pocket)
+SHAFT0 = np.array([-0.0308, 0.1188, -0.0104])        # the shaft's centre where it crosses the fist (the fist's pocket: FistAtR, refitted to the wrapped fist)
 LEFT_AT = 0.235                                      # the left fist this far up the shaft (m along it)
 # The left fist's pocket (the mirror of the right's: her left hand's +X is
 # across the palm, her right's across the back).
@@ -202,32 +202,32 @@ def _body_keys():
 # `point`; "butt": the butt's foot at `point` (planted).
 BUTT_AT = np.array([-0.40, 0.004, -0.17])  # beside her right foot (the lunge's lead), by its heel
 STAFF = [
-    (1, "grip", (-0.30, 1.28, 0.14), _n(0.10, 0.90, 0.42), (-0.9, -0.4, -0.2)),
-    (3, "grip", (-0.17, 1.40, 0.36), _n(0.75, 0.62, 0.15), (-0.9, -0.4, -0.2)),
-    (5, "grip", (-0.13, 1.70, 0.12), _n(0.95, 0.30, 0.05), (-1.0, 0.0, 0.1)),
-    (7, "grip", (-0.11, 1.89, -0.21), _n(0.996, 0.087, 0.0), (-1.0, 0.2, 0.3)),
-    (12, "grip", (-0.11, 1.90, -0.22), _n(0.996, 0.087, 0.0), (-1.0, 0.2, 0.3)),
-    (15, "grip", (-0.11, 1.925, -0.21), _n(0.996, 0.087, 0.0), (-1.0, 0.2, 0.3)),
+    (1, "grip", (-0.299, 1.203, 0.068), _n(0.259, 0.860, 0.439), (-0.9, -0.4, -0.2)),
+    (3, "grip", (-0.161, 1.397, 0.340), _n(0.784, 0.567, 0.251), (-0.9, -0.4, -0.2)),
+    (5, "grip", (-0.128, 1.681, 0.108), _n(0.979, 0.161, -0.121), (-1.0, 0.0, 0.1)),
+    (7, "grip", (-0.110, 1.868, -0.205), _n(0.999, -0.012, 0.044), (-1.0, 0.2, 0.3)),
+    (12, "grip", (-0.110, 1.878, -0.217), _n(0.999, -0.000, 0.035), (-1.0, 0.2, 0.3)),
+    (15, "grip", (-0.106, 1.915, -0.207), _n(0.981, 0.176, 0.083), (-1.0, 0.2, 0.3)),
     # The drive: the staff wheeled about the middle of her two fists (its
     # head up, its butt down at her right), down in front of her face and
     # out of its way, then driven straight down into the ground. The right
     # elbow keyed by its way from the shoulder (E): forward, then down, the
     # forearm out-forward to the planted staff.
-    (16, "grip", (-0.13, 1.955, -0.15), _n(1.0, 0.07, -0.05), (-1.0, 0.0, 0.4)),
-    (17, "grip", (-0.20, 1.60, 0.10), _n(0.90, 0.44, -0.08), _n(0.1, -0.2, 0.9), "E"),
-    (18, "grip", (-0.32, 1.32, 0.20), _n(0.56, 0.83, -0.04), _n(-0.1, -0.6, 0.7), "E"),
-    (19, "grip", (-0.41, 1.00, -0.06), _n(0.15, 0.99, 0.04), _n(-0.35, -0.9, 0.1), "E"),
+    (16, "grip", (-0.135, 1.940, -0.130), _n(0.945, 0.307, 0.110), (-1.0, 0.0, 0.4)),
+    (17, "grip", (-0.190, 1.581, 0.103), _n(0.874, 0.480, 0.066), _n(0.1, -0.2, 0.9), "E"),
+    (18, "grip", (-0.301, 1.310, 0.233), _n(0.470, 0.874, 0.123), _n(-0.1, -0.6, 0.7), "E"),
+    (19, "grip", (-0.408, 1.001, -0.057), _n(-0.024, 0.996, 0.078), _n(-0.35, -0.9, 0.1), "E"),
     # Planted the fist's +Z is keyed (the staff's own line is AXIS in it,
     # 6.6 degrees toward the fingers, which face out to her right here): so
     # the shaft stands about (-0.05, 0.99, 0.10), near upright, its head over
     # the butt and the left fist within her reach.
-    (CONTACT, "butt", BUTT_AT, _n(0.0, 1.0, 0.04), _n(0.15, -0.97, -0.10), "E"),
-    (22, "butt", BUTT_AT, _n(0.0, 1.0, 0.04), _n(0.15, -0.97, -0.10), "E"),
-    (28, "butt", BUTT_AT, _n(0.03, 1.0, 0.03), _n(0.15, -0.97, -0.10), "E"),
-    (40, "butt", BUTT_AT, _n(0.02, 1.0, 0.03), _n(0.15, -0.97, -0.10), "E"),
-    (SWEEP, "butt", BUTT_AT, _n(-0.24, 0.96, 0.14), (-0.6, -0.8, -0.4)),
-    (BLEND, "grip", (-0.40, 0.98, -0.14), _n(-0.08, 0.99, 0.10), (-0.8, -0.3, -0.6)),
-    (52, "grip", (-0.33, 1.12, -0.06), _n(-0.03, 1.0, 0.14), (-0.8, -0.3, -0.6)),
+    (CONTACT, "butt", BUTT_AT, _n(-0.109, 0.990, 0.084), _n(0.15, -0.97, -0.10), "E"),
+    (22, "butt", BUTT_AT, _n(-0.089, 0.989, 0.113), _n(0.15, -0.97, -0.10), "E"),
+    (28, "butt", BUTT_AT, _n(-0.047, 0.992, 0.117), _n(0.15, -0.97, -0.10), "E"),
+    (40, "butt", BUTT_AT, _n(-0.033, 0.990, 0.133), _n(0.15, -0.97, -0.10), "E"),
+    (SWEEP, "butt", BUTT_AT, _n(-0.338, 0.920, 0.196), (-0.6, -0.8, -0.4)),
+    (BLEND, "grip", (-0.386, 0.985, -0.157), _n(-0.113, 0.970, 0.214), (-0.8, -0.3, -0.6)),
+    (52, "grip", (-0.321, 1.129, -0.039), _n(-0.075, 0.959, 0.272), (-0.8, -0.3, -0.6)),
 ]
 # Through the drive the fist turns on one even turn from its last poster
 # frame to its plant (as last solved), this far along at each frame: the
@@ -360,6 +360,10 @@ class Flare:
                 q = qslerp(qa, -qb if float(np.dot(qa, qb)) < 0 else qb, DRIVE_U[fr])
                 d = qrot(q, np.array([0, 0, 1.0]))
                 kn = qrot(q, np.array([0, 1.0, 0]))
+            if kn is None and R is not None:
+                # The key's way is the SHAFT's line (round 9: AXIS moved with the refitted pocket, 4eb83530): the hand's
+                # +Z (the "blade" the arm solve keys) turned, as last solved, by the shortest turn putting the shaft on it.
+                d = qrot(qbetween(qrot(R, AXIS), d), qrot(R, np.array([0, 0, 1.0])))
             w = _curve(R_ON, fr)
             if w < 1.0:
                 Wi = S_r[fr] + qrot(chest[fr], v_idle)
@@ -378,7 +382,7 @@ class Flare:
     def _wrist_of(self, key, fr, R):
         """The wrist that puts the key's anchor at its point (with the hand
         turned as last solved at this frame)."""
-        anchor = BUTT if key[1] == "butt" else M_R
+        anchor = BUTT if key[1] == "butt" else SHAFT0
         p = np.array(key[2], float)
         if R is None:
             return p - (0.79 * -key[3] if key[1] == "butt" else 0.0)
