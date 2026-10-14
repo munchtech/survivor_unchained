@@ -375,7 +375,7 @@ def bull_rush(rig):
     # riding the forearm between the two ends, then again with the hand's
     # whole turn on the forearm (its roll about it and the wrist's bend)
     # carried evenly from the one end's to the other's.
-    way = _sword_way(*SWING)
+    way = _sword_way(*SWING, rig=rig)
     s0 = SWING[0] - TURN_LEAD
     ride = build("bull_rush", rig, keys, post=_then(_head_held(HEAD_FROM, HEAD_SETTLE, guard), way, _riding(s0, OVER_END)), meta=meta)
     turn = _turn_forearm(rig, ride, *SWING, TURN_LEAD, (_n(*SWORD_CARRY_BLADE), _n(*SWORD_CARRY_KNUCKLES)), SWORD_BACK_TURN,
@@ -434,17 +434,24 @@ def _turn_forearm(rig, ride, a, b, lead, start, plant, guard, side="r"):
         hand_t = qmul(qaxis(fa(fr), t[0]), g[fr, h])
         return qmul(rig._wrist_join(t[1], t[2], hand_t, side), hand_t)
 
-    t0, ta, tb = split(s0, hand(s0, start)), np.array(plant, float), split(b, hand(b, guard))
+    t0, ta = split(s0, hand(s0, start)), np.array(plant, float)
+    tb = np.array([split(ROLL_END, hand(ROLL_END, guard))[0], *split(b, hand(b, guard))[1:]])
+    roll_cum = np.concatenate([[0.0], np.cumsum(ROLL_STEPS)]) / sum(ROLL_STEPS)
+    wrist_cum = (0.0,) + tuple(WRIST_CUM)
 
     def post(fr, pose):
         if not s0 < fr <= OVER_END:
             return pose
         if fr < a:
             t = t0 + (ta - t0) * _ease((fr - s0) / lead)
-        elif fr < b:
-            t = ta + (tb - ta) * _pace((fr - a) / (b - a))
         else:
-            t = split(fr, hand(fr, guard)) + (tb - ta) * _over(fr)
+            t, at_guard = np.zeros(3), None
+            for i, (end, cum) in enumerate(((ROLL_END, roll_cum), (b, wrist_cum), (b, wrist_cum))):
+                if fr < end:
+                    t[i] = ta[i] + (tb[i] - ta[i]) * cum[fr - a]
+                else:
+                    at_guard = split(fr, hand(fr, guard)) if at_guard is None else at_guard
+                    t[i] = at_guard[i] + (tb[i] - ta[i]) * _over(fr, end)
         q = qmul(qinv(chest(fr)), qmul(make(fr, t), lq))
         pose = dict(pose)
         pose[f"hand_{side}"] = dict(pose[f"hand_{side}"], frame="chest", aim=1.0, blade=tuple(float(x) for x in qrot(q, [0, 0, 1.0])),
@@ -457,6 +464,16 @@ SWING = (12, 22)   # the sword hand's way and whole turn between these frames (S
 GLIDE_RAMP = 0.25  # the sword's way and turn: the part of SWING its pace takes to ramp up (and down)
 PLANT_ROLL = 0.2   # how far the plant's sword hand is rolled about its blade toward the guard's roll
 TURN_LEAD = 4      # the frames before the plant over which the sword hand eases into its roll there
+# Round 8, solver 8: the turn's roll on the forearm (about 100 degrees from the plant's to the guard's) spread over
+# f12-23 at <= 12 a frame (degrees' share a frame, f12->13 ... f22->23), and the wrist's bend on its own pace
+# (its share at f13 ... f22), so it is within 25 flex / 20 deviation until f21 and the guard's at f22.
+ROLL_END = 23
+ROLL_STEPS = (4, 8, 11, 12, 12, 12, 12, 11, 9, 6, 3)
+WRIST_CUM = (.04, .12, .22, .33, .44, .55, .65, .74, .82, 1.0)
+# The elbow's way over SWING (_sword_way): its swivel about the hand's line from the shoulder carried from the
+# plant's to the guard's with no turn of its own along the hand's way, plus an even swivel (glided), plus a bump
+# (degrees, at ELBOW_BUMP_AT +- ELBOW_BUMP_W frames) that takes the elbow down toward her ribs mid-swing.
+ELBOW_BUMP, ELBOW_BUMP_AT, ELBOW_BUMP_W = 0.0, 16.0, 4.0
 
 
 def _toward(pose, goal, w):
@@ -507,10 +524,10 @@ def _pace(u):
     return float(c[i] + (c[i + 1] - c[i]) * (x - i))
 
 
-def _over(fr):
-    """How far past the guard's turn (of SWING's turn) the sword hand runs at frame fr >= SWING's end: the peak at
-    its end, back by OVER_END."""
-    b = SWING[1]
+def _over(fr, b=None):
+    """How far past the guard's turn (of SWING's turn) the sword hand runs at frame fr >= the turn's end b (SWING's
+    end): the peak at its end, back by OVER_END."""
+    b = SWING[1] if b is None else b
     u = (fr - b) / (OVER_END - b)
     return OVERSHOOT * (1 - _ease(min(1.0, max(0.0, u))))
 
@@ -521,7 +538,7 @@ def _unarc(arc):
     return np.array([math.sin(az) * math.cos(el), math.sin(el), math.cos(az) * math.cos(el)]) * r
 
 
-def _sword_way(a, b):
+def _sword_way(a, b, rig=None):
     """The sword hand between frames a and b on SWORD_WAY: its place and its
     elbow's way through the waypoints on one smooth curve (Catmull-Rom on
     their frames), eased along it; the hand rides the forearm (its turn is
@@ -547,13 +564,52 @@ def _sword_way(a, b):
             out.append(h)
         return out
 
+    if rig is None:
+        def post(fr, pose):
+            if not a < fr < b:
+                return pose
+            h, pole = at(a + (b - a) * _pace((fr - a) / (b - a)))
+            pose = dict(pose)
+            pose["hand_r"] = {"arc": arc_of(h), "pole": tuple(float(x) for x in pole), "frame": "chest", "twist": 0.5}
+            return pose
+        return post
+    # The elbow's way (round 8, solver 8): the plane of shoulder, elbow and hand laid frame by frame, carried from the
+    # plant's to the guard's along the hand's way with no turn of its own, plus an even swivel about the hand's line
+    # (and ELBOW_BUMP), given to the solve as the pole that makes that plane. (The waypoints' poles swung the first
+    # solve's elbow 72 degrees in a frame at f15; solve_frames' smoothing averaged it with the plant's, collapsed it
+    # toward the hand's line and spun the arm's plane 51 degrees at f13: the forearm spun 41, the hand 48.)
+    from rig import qaxis, qbetween, qmul, qrot
+    I = rig.I
+    up = rig.prest[I["lowerarm_r"]] - rig.prest[I["upperarm_r"]]
+
+    def elbow_rest(clav):  # the elbow from the shoulder before the arm is solved (chest frame): the clavicle's turn
+        return qrot(qmul(qaxis([0, 0, 1], -clav[0]), qaxis([0, 1, 0], clav[1])), up)
+
+    def perp(v, hn):
+        v = v - hn * np.dot(v, hn)
+        return v / np.linalg.norm(v)
+    H = {f: at(a + (b - a) * _pace((f - a) / (b - a)))[0] for f in range(a + 1, b)}
+    H[a], H[b] = np.array(SWORD_BACK, float), pts[-1][1]
+    Hn = {f: H[f] / np.linalg.norm(H[f]) for f in H}
+    r = perp(elbow_rest((6, -4)) + np.array(SWORD_BACK_POLE, float), Hn[a])
+    carried = {a: r}
+    for f in range(a + 1, b + 1):
+        r = perp(qrot(qbetween(Hn[f - 1], Hn[f]), r), Hn[f])
+        carried[f] = r
+    rb = perp(elbow_rest(GUARD.get("clav_r", (0, 0))) + np.array(GUARD["hand_r"]["pole"], float), Hn[b])
+    d = math.degrees(math.atan2(np.dot(np.cross(carried[b], rb), Hn[b]), np.dot(carried[b], rb)))
+
+    def swivel(f):
+        x = (f - ELBOW_BUMP_AT) / ELBOW_BUMP_W
+        return d * _glide((f - a) / (b - a)) + (ELBOW_BUMP * math.cos(math.pi * x / 2) ** 2 if abs(x) < 1 else 0.0)
+    plane = {f: qrot(qaxis(Hn[f], swivel(f)), carried[f]) for f in H}
+
     def post(fr, pose):
         if not a < fr < b:
             return pose
-        t = a + (b - a) * _pace((fr - a) / (b - a))
-        h, pole = at(t)
         pose = dict(pose)
-        pose["hand_r"] = {"arc": arc_of(h), "pole": tuple(float(x) for x in pole), "frame": "chest", "twist": 0.5}
+        pole = plane[fr] - elbow_rest(pose.get("clav_r", (0, 0)))
+        pose["hand_r"] = {"arc": arc_of(H[fr]), "pole": tuple(float(x) for x in pole), "frame": "chest", "twist": 0.5}
         return pose
     return post
 
