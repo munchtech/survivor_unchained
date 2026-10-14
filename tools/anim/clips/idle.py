@@ -81,17 +81,53 @@ def warden(t, f):
     }
 
 
+# Her free hand on her hip (14 Oct; the owner: "going at a very weird angle at the wrists"): laid on the side of her
+# hip, fingers down and a little forward along it, the palm on her and the hand rolled 8 degrees onto its little
+# finger's side, the thumb along the forefinger. The wrist bends back 33-34 degrees (was 60, its hand off her and the
+# thumb and fingers 10-30 mm into her hip). Kept on her pelvis, not her chest, as she sways (idle_arcanist, below):
+# the wrist (character space at rest) and the hand's way in the pelvis's frame.
+ARC_HIP = {"pos": (0.1773, 1.0527, -0.0902), "knuckles": (0.2852, -0.9346, -0.2127), "blade": (0.5188, -0.0361, 0.8541)}
+ARC_HIP_FINGERS = {"curl": 0.045, "thumb": 0.1, "oppose": 0.0, "thumb_in": 40}
+
+
+def _arc_hand_fingers():
+    from keyed import FINGER_PRESETS
+    return dict(FINGER_PRESETS["relaxed"], **ARC_HIP_FINGERS)
+
+
 def arcanist(t, f):
     return {
-        "hand_l": {"arc": arc_of((-0.02, -0.40, -0.05)), "pole": (1.0, 0.0, -0.7), "frame": "chest",
-                   "knuckles": _n((0.2, -0.6, 0.6)), "twist": 0.3},
+        # (ARC_HIP at the captured standing's first frame, in the chest's frame, for the clips that take the idle's
+        # arms as they are: its breaks, the stops, the Flare's settle.)
+        "hand_l": {"arc": arc_of((-0.0311, -0.4865, 0.0217)), "pole": (1.0, 0.0, -0.7), "frame": "chest",
+                   "knuckles": _n((0.2144, -0.9719, 0.0969)), "blade": _n((0.5197, 0.1975, 0.8312)), "twist": 0.3},
         # The staff upright at her side, its head leaning in a little and its foot out past her right leg
         # (13 Oct: on the seated bound staff, blade (-0.12, 1.0, 0.18) crossed its lower half behind her right
         # thigh and calf every frame; now >= 10 mm off her legs and her hat).
         "hand_r": {"arc": arc_of((-0.16, -0.28, 0.12)), "pole": (-0.8, -0.3, -0.6), "frame": "chest",
                    "blade": _n((0.03, 1.0, 0.06)), "twist": 0.5},
-        "fingers_l": "relaxed", "fingers_r": "grip",
+        "fingers_l": _arc_hand_fingers(), "fingers_r": "grip",
     }
+
+
+def _on_hip(rig, base, arms):
+    """`arms` with the left hand kept on her pelvis (ARC_HIP) frame by frame, in the chest's frame the solver reads."""
+    from rig import qmul, qinv, qrot
+    I = rig.I
+    grest, prest = (a[0] for a in rig.sk.rest_globals())
+    pel, s3, ua = I["pelvis"], I["spine_03"], I["upperarm_l"]
+    g, p = rig.sk.fk(base.rot, base.pos)
+
+    def over(t, f):
+        d = dict(arms(t, f))
+        dp = qmul(g[f, pel], qinv(grest[pel]))
+        ic = qinv(qmul(g[f, s3], qinv(grest[s3])))
+        W = p[f, pel] + qrot(dp, np.array(ARC_HIP["pos"]) - prest[pel])
+        d["hand_l"] = dict(d["hand_l"], arc=arc_of(qrot(ic, W - p[f, ua])),
+                           knuckles=tuple(qrot(ic, qrot(dp, np.array(ARC_HIP["knuckles"])))),
+                           blade=tuple(qrot(ic, qrot(dp, np.array(ARC_HIP["blade"])))))
+        return d
+    return over
 
 
 def reaver(t, f):
@@ -158,5 +194,8 @@ def clips(rig, want):
     for name, (style, arms, weapon) in IDLES.items():
         if want and not any(w in name for w in want):
             continue
-        out.append(layered(name, rig, base_of(rig, name[5:]), arms, {"weapon": weapon}))
+        base = base_of(rig, name[5:])
+        if arms is arcanist:
+            arms = _on_hip(rig, base, arms)
+        out.append(layered(name, rig, base, arms, {"weapon": weapon}))
     return out
