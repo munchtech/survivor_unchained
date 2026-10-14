@@ -287,8 +287,9 @@ varying float crease;
 // (her inner cheeks beside her lower back teeth (heroine_mouth.py: her head's vertex colour's green, 1 or down to 0
 // there): the mouth's colour there darkened by wall_dark and greyed by wall_grey (linear), so they don't read as a
 // saturated red-pink lit wall beside her far lower row (solver int3))
-uniform float wall_dark = 0.35;
-uniform float wall_grey = 0.55;
+uniform float wall_dark = 0.3;
+uniform float wall_grey = 0.8;
+uniform vec3 wall_tint = vec3(1.0, 0.88, 0.78);   // (the grey it goes to, warmed: blue under green, a dark maroon like the cavity, judge r4)
 varying float mouth_w;
 varying float mouth_c;
 varying float mouth_f;
@@ -412,7 +413,7 @@ void fragment() {
 	mouth_f = FRONT_FACING ? mouth_c : 1.0;
 	if (mouth_f > 0.0) {
 		float mc = smoothstep(0.0, 0.35, mouth_f), mo = smoothstep(0.1, 1.0, mouth_f);
-		vec3 mcol = mix(mouth_colour, vec3(dot(mouth_colour, vec3(0.2126, 0.7152, 0.0722))), wall_grey * mouth_w) * (1.0 - wall_dark * mouth_w);
+		vec3 mcol = mix(mouth_colour, vec3(dot(mouth_colour, vec3(0.2126, 0.7152, 0.0722))) * wall_tint, wall_grey * mouth_w) * (1.0 - wall_dark * mouth_w);
 		ALBEDO = mix(ALBEDO, mcol, mc);
 		BACKLIGHT *= 1.0 - mc;
 		SPECULAR *= 1.0 - mo;
