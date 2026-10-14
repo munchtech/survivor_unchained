@@ -8773,6 +8773,153 @@ rigid_again(RIGID_PIECES, RIDERS)
 # together, so they cannot part; then four bones, cut smoothly. GLOVE_WSMOOTH=0: as rigged.)
 GLOVE_WSMOOTH = tuple(float(v) for v in os.environ.get("GLOVE_WSMOOTH", "0.008,0.003").split(","))
 GLOVE_WSMOOTH_BAND = tuple(float(v) for v in os.environ.get("GLOVE_WSMOOTH_BAND", "0.02,0.035").split(","))
+# (s26 solver, the top in her bent elbow: her skin's weights change fast round her arm at the crook
+# and the elbow's point, so the smoothed top bent on another blend than the skin under it, and her
+# skin came through it there (2.2 mm at the brim, 1.7 mm casting). Now each point of the top band
+# takes the four-bone blend that best keeps it where it sits on its nearest triangle of her skin
+# (at its own height off it), her elbow bent 0-165 degrees, her forearm rolled -60..60 and her upper
+# arm -30..30, her helpers driven and her correctives keyed as the game does (tools/anim/helpers.py);
+# poses where it would sink into her skin count GLOVE_WFIT_ASYM times more. Her rest is untouched
+# (any blend is exact there). GLOVE_WFIT=0, or no game skeleton for the armature: the s23 smoothing.)
+GLOVE_WFIT = os.environ.get("GLOVE_WFIT", "1") == "1"
+GLOVE_WFIT_LAM = float(os.environ.get("GLOVE_WFIT_LAM", "1.0"))
+GLOVE_WFIT_ASYM = float(os.environ.get("GLOVE_WFIT_ASYM", "10"))
+
+
+def glove_fit_poses():
+    """(her game skeleton, [(skin matrices [J, 4, 4], game space, rest to posed; {corrective: weight})]), or None."""
+    sk = rig_helpers._game_skeleton(arm)
+    if sk is None:
+        return None
+    hp = rig_helpers.hp
+    from rig import qaxis, qmul
+    nj = len(sk.names)
+    grot0, gpos0 = sk.rest_globals()
+    rest_inv = np.linalg.inv(hp.mats(grot0[0], gpos0[0]))
+    out = []
+    for deg in range(0, 166, 15):
+        for roll in (-60, -30, 0, 30, 60):
+            for ur in (-30, 0, 30):
+                rot = sk.rest_rot.copy()
+                for s_ in "lr":
+                    la, ua = sk.index["lowerarm_" + s_], sk.index["upperarm_" + s_]
+                    rot[la] = qmul(hp.bent(sk, "lowerarm_" + s_, deg)[la], qaxis([0, 1.0, 0], roll))
+                    rot[ua] = qmul(rot[ua], qaxis([0, 1.0, 0], ur))
+                scale, shift = np.ones((nj, 3)), np.zeros((nj, 3))
+                rot = hp.drive(sk, rot, scale, shift)
+                grot, gpos = sk.fk(rot[None])
+                out.append((hp.mats(grot[0], gpos[0], scale, shift) @ rest_inv, hp.corrective_weights(sk, rot)))
+    return sk, out
+
+
+def glove_keys_game(o, names):
+    """{name: [V, 3] moves, game space} of o's shape keys `names` it has."""
+    out = {}
+    if o.data.shape_keys is None:
+        return out
+    n = len(o.data.vertices)
+    base = np.empty(n * 3)
+    o.data.shape_keys.reference_key.data.foreach_get("co", base)
+    m3 = np.array(o.matrix_world.to_3x3())
+    for nm in names:
+        kb = o.data.shape_keys.key_blocks.get(nm)
+        if kb is not None:
+            co = np.empty(n * 3)
+            kb.data.foreach_get("co", co)
+            out[nm] = rig_helpers._to_game((co - base).reshape(-1, 3) @ m3.T)
+    return out
+
+
+def glove_fit_rows(fitp, gl, X, W0, sel, bones):
+    """The band's rows (`sel` of X, Blender world; W0 by `bones`) fitted to follow her skin over fitp's poses."""
+    from scipy.optimize import nnls
+    sk, poses = fitp
+    S = np.stack([m for m, _ in poses])                     # (f, J, 4, 4)
+    sv = [sh for _, sh in poses]
+    kn = ("elbow_point_l", "elbow_point_r")
+    mw = body.matrix_world
+    nbv = len(body.data.vertices)
+    co = np.empty(nbv * 3)
+    body.data.vertices.foreach_get("co", co)
+    PB = rig_helpers._to_game(co.reshape(-1, 3) @ np.array(mw.to_3x3()).T + np.array(mw.translation))
+    WB = rig_helpers._weights(body, sk.names)
+    KB = glove_keys_game(body, kn)
+    body.data.calc_loop_triangles()
+    TB = np.empty(len(body.data.loop_triangles) * 3, np.int64)
+    body.data.loop_triangles.foreach_get("vertices", TB)
+    TB = TB.reshape(-1, 3)
+    XG = rig_helpers._to_game(X)
+    KG = {k_: [] for k_ in kn}
+    for o in gl:
+        kk_ = glove_keys_game(o, kn)
+        for k_ in kn:
+            KG[k_].append(kk_.get(k_, np.zeros((len(o.data.vertices), 3))))
+    KG = {k_: np.vstack(v) for k_, v in KG.items()}
+    near = cKDTree(XG[sel]).query(PB)[0] < 0.03
+    TB = TB[near[TB].any(1)]
+    bvh = BVHTree.FromPolygons([tuple(p) for p in PB], TB.tolist())
+    T = np.array([TB[bvh.find_nearest(Vector(XG[i]))[2]] for i in sel])
+    A_, B_, C_ = PB[T[:, 0]], PB[T[:, 1]], PB[T[:, 2]]
+    nf = np.cross(B_ - A_, C_ - A_)
+    nf /= np.linalg.norm(nf, axis=1, keepdims=True)
+    d = ((XG[sel] - A_) * nf).sum(1)
+    q = XG[sel] - nf * d[:, None] - A_
+    e1, e2 = B_ - A_, C_ - A_
+    g11, g12, g22 = (e1 * e1).sum(1), (e1 * e2).sum(1), (e2 * e2).sum(1)
+    r1, r2 = (q * e1).sum(1), (q * e2).sum(1)
+    det = g11 * g22 - g12 * g12
+    u = (g22 * r1 - g12 * r2) / det
+    v = (g11 * r2 - g12 * r1) / det
+    bc = np.column_stack([1 - u - v, u, v])
+    Wi = (WB[T] * np.clip(bc, 0, 1)[:, :, None]).sum(1)
+    Wi /= np.maximum(Wi.sum(1, keepdims=True), 1e-9)
+    # her skin under the band, posed (her correctives keyed) in every pose
+    U = np.unique(T)
+    ui = np.searchsorted(U, T)
+    PBp = []
+    for f in range(len(S)):
+        Pu = PB[U] + sum(sv[f].get(k_, 0.0) * KB[k_][U] for k_ in KB)
+        Mu = np.einsum("uj,jab->uab", WB[U], S[f])
+        PBp.append(np.einsum("uab,ub->ua", Mu[:, :3, :3], Pu) + Mu[:, :3, 3])
+    PBp = np.stack(PBp, 1) * 1e3                             # (U, f, 3) mm
+    bix_ = {n: i for i, n in enumerate(bones)}
+    tob = np.array([bix_[n] for n in sk.names])
+    fromb = {bix_[n]: j for j, n in enumerate(sk.names)}
+    Wn = np.zeros((len(sel), len(bones)))
+    sl = np.sqrt(GLOVE_WFIT_LAM)
+    SWm = np.array([[sv[f].get(k_, 0.0) for k_ in kn] for f in range(len(S))])
+    worst = 0.0
+    for r, i in enumerate(sel):
+        a_, b_, c_ = PBp[ui[r, 0]], PBp[ui[r, 1]], PBp[ui[r, 2]]
+        n_ = np.cross(b_ - a_, c_ - a_)
+        n_ /= np.maximum(np.linalg.norm(n_, axis=1, keepdims=True), 1e-12)
+        tg = a_ + (b_ - a_) * u[r] + (c_ - a_) * v[r] + n_ * d[r] * 1e3
+        cand = np.nonzero((WB[T[r]].max(0) > 0) | (W0[i, tob] > 0))[0]
+        pf = XG[i][None, :] + SWm @ np.stack([KG[k_][i] for k_ in kn])
+        Xm = (np.einsum("fcab,fb->fca", S[:, cand, :3, :3], pf) + S[:, cand, :3, 3]) * 1e3   # (f, c, 3)
+        Xm = Xm.transpose(0, 2, 1).reshape(-1, len(cand))
+        y = tg.reshape(-1)
+        Aa = np.vstack([Xm, sl * np.eye(len(cand)), 1e3 * np.ones((1, len(cand)))])
+        ya = np.concatenate([y, sl * Wi[r, cand], [1e3]])
+        cf = np.ones(len(S))
+        for _ in range(4 if GLOVE_WFIT_ASYM > 0 else 1):
+            rw = np.concatenate([np.repeat(np.sqrt(cf), 3), np.ones(len(cand) + 1)])
+            w_, _ = nnls(Aa * rw[:, None], ya * rw)
+            if (w_ > 1e-6).sum() > 4:
+                keep = np.argsort(-w_)[:4]
+                w2, _ = nnls(Aa[:, keep] * rw[:, None], ya * rw)
+                w_ = np.zeros(len(cand))
+                w_[keep] = w2
+            en = ((Xm @ w_ - y).reshape(-1, 3) * n_).sum(1)
+            cf = cf + GLOVE_WFIT_ASYM * (en < -0.1)
+        worst = max(worst, -en.min())
+        Wn[r, tob[cand]] = w_
+    Wn = np.maximum(Wn, 0.0)
+    Wn /= np.maximum(Wn.sum(1, keepdims=True), 1e-9)
+    return Wn, worst
+
+
+_GLOVE_FITP = []
 
 
 def glove_top_weights(objs):
@@ -8811,7 +8958,13 @@ def glove_top_weights(objs):
         rad /= np.maximum(np.linalg.norm(rad, axis=1, keepdims=True), 1e-9)
         tree = cKDTree(X)
         Wn = W0.copy()
-        for i in sel:
+        if GLOVE_WFIT and not _GLOVE_FITP:
+            _GLOVE_FITP.append(glove_fit_poses())
+        if GLOVE_WFIT and _GLOVE_FITP[0] is not None:
+            Wn[sel], worst = glove_fit_rows(_GLOVE_FITP[0], gl, X, W0, sel, bones)
+            print("GLOVE TOP FIT %s: %d points fitted over %d poses (LAM %g, ASYM %g); most a point still sinks into her skin %.2f mm"
+                  % (sd, len(sel), len(_GLOVE_FITP[0][1]), GLOVE_WFIT_LAM, GLOVE_WFIT_ASYM, worst))
+        for i in (sel if not (GLOVE_WFIT and _GLOVE_FITP[0] is not None) else []):
             J = np.array(tree.query_ball_point(X[i], 2.5 * max(sc, sa)))
             D = X[J] - X[i]
             da, dn, dc = D @ ax, D @ rad[i], D @ np.cross(ax, rad[i])
