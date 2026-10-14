@@ -87,17 +87,54 @@ TAKES = {
         amb=0.15, look=4.5, ortho=16.0,
         tone=dict(exp=1.0, knee=0.6, hot=0.0, sat=1.0, amb=(0.0, 0.0, 0.0)),
     ),
+    # Never one sphere (so never a disc): the blast is a cluster of lumpy puffs flung out of one heart. f1 is the heart
+    # alone, white-hot and lumpy, 1.4 m; fire puffs thrown out along even directions, fast then slowing (full size by
+    # f5), each its own fuel, so they burn out by turns, in patches; soot puffs riding out on the fire's front a frame
+    # behind, patchy, so the fire shows between them and tears through them. In a 15 m box, so the cloud never meets
+    # its walls. Shaded as burns_boom4 (src_material), but the fire is the flame alone (the hot gas only a dull ember
+    # red, never an orange-lit fog), and burning gas is clear (the soot thick where the fire has died).
+    "burns_boom5": dict(
+        dom=(15.0, 15.0, 13.0), tscale=4.0, steps_max=4, vort=0.5, flame_vort=2.0, beta=1.8, alpha=0.3,
+        burn=0.05, flame_smoke=3.0, dissolve=55, noise=0, noise_k=1.0, sub=3,
+        fuel=2.0, temp=3.0, smoke=0.0, vfac=0.0, out=0.0, vol=1.0, surf=0.12,
+        burst=True, burst_c=(0.0, 0.0, 1.5),
+        heart=dict(keys=((1, 0.62), (2, 0.85), (3, 1.0)), on=(1, 3), fuel=2.6, temp=3.0, smoke=0.0,
+                   tex=(0.45, 1.3, 1.0), lump=0.45),
+        fp=dict(n=26, seed=11, start=(1, 1), end=(4, 6), d0=(0.15, 0.45), d1=(1.3, 2.5), r0=(0.32, 0.45),
+                r1=(0.8, 1.3), zmin=-0.3, fuel=(1.2, 2.8), temp=3.0, smoke=0.0, lump=0.45, tex=(0.5, 1.4, 1.0),
+                ease=2.0, vfac=0.25, jit=0.25),
+        sp=dict(n=40, seed=23, start=(2, 3), end=(5, 7), d1=(2.7, 3.9), d0_rel=(0.55, 0.75), r0=(0.25, 0.4),
+                r1=(0.55, 1.05), zmin=-0.15, smoke=(0.25, 0.9), temp=1.4, lump=0.5, tex=(0.6, 1.6, 1.0),
+                ease=2.0, vfac=0.2, jit=0.3),
+        stem=dict(r=0.32, z=0.35, on=(1, 5), fuel=1.0, temp=2.0, smoke=0.6, up=2.0),
+        turb=((1, 3.0), (8, 3.0), (20, 1.5), (36, 0.6)), turb_size=1.2, turb_z=(2.5, 9.0), turb_xy=(0.0, 0.0),
+        src=True,
+        smoke_k=30.0, dpow=1.0, smoke_rgb=(0.04, 0.036, 0.032), absorb=(0.45, 0.25, 0.08),
+        flame_k=8.0, fq=1.0, flame_pow=1.0, emit_k=3.5, emit_m=3.0, heat_fire=(0.55, 1.0), heat_w=0.9,
+        heat_cap=0.38, fmask=(0.15, 0.6, 0.15), side=(1.6, 0.35),
+        soot_noise=(0.9, 0.3, 4.0), soot_up=5.0,
+        ramp=((0.0, (0.0, 0.0, 0.0)), (0.10, (0.55, 0.03, 0.0)), (0.30, (0.92, 0.12, 0.01)),
+              (0.50, (1.0, 0.30, 0.02)), (0.70, (1.0, 0.50, 0.06)), (0.85, (1.0, 0.70, 0.20)),
+              (0.93, (1.0, 0.84, 0.46)), (1.0, (1.0, 0.95, 0.80))),
+        fnoise=0.35, fnoise_s=2.5, fnoise_up=4.0,
+        glow_rgb=(1.0, 0.22, 0.04), glow_k=0.0, glow_heat=(0.5, 1.0),
+        heat_keys=((1, 0.6), (4, 0.6), (10, 1.0), (18, 0.8), (26, 0.35), (34, 0.0)),
+        zfade=(9.5, 12.8), smoke_keys=((1, 1.0), (26, 1.0), (38, 0.5), (47, 0.12)), fire_keys=(),
+        amb=0.15, look=4.5, ortho=16.0,
+        tone=dict(exp=1.0, knee=0.6, hot=0.0, sat=1.0, amb=(0.0, 0.0, 0.0)),
+    ),
 }
 
 
 def args():
     a = sys.argv[sys.argv.index("--") + 1:] if "--" in sys.argv else []
     o = dict(out=a[0], take="burns_boom", res=160, frames=48, px=512, pitch=66.0, samples=48,
-             bake_only=False, render_only=False, set="", only="", fmt="exr", vbounce=1, step=1.0, dry=False, cache="")
+             bake_only=False, render_only=False, set="", only="", fmt="exr", vbounce=1, step=1.0, dry=False, cache="",
+             stats=False, norender=False)
     i = 1
     while i < len(a):
         k = a[i].lstrip("-").replace("-", "_")
-        if k in ("bake_only", "render_only", "dry"):
+        if k in ("bake_only", "render_only", "dry", "stats", "norender"):
             o[k] = True; i += 1; continue
         v = a[i + 1]; i += 2
         o[k] = type(o[k])(v) if k in o else v
@@ -161,6 +198,20 @@ def src_material(t):
         mr.inputs["To Min"].default_value, mr.inputs["To Max"].default_value = 1.0, 0.0
         L(geo.outputs["Position"], sep.inputs[0]); L(sep.outputs["Z"], mr.inputs["Value"])
         zf = mr.outputs["Result"]
+    if t.get("side"):
+        # A guard at the domain's side walls: all of it thinned to nothing over the last side[0] m before a wall
+        # (side[1] m short of it), so no straight cut can ever show.
+        geo = nt.nodes.new("ShaderNodeNewGeometry"); sep = nt.nodes.new("ShaderNodeSeparateXYZ")
+        L(geo.outputs["Position"], sep.inputs[0])
+        w0, w1 = t["side"]
+        sf = None
+        for ax, half in (("X", t["dom"][0] / 2), ("Y", t["dom"][1] / 2)):
+            mr = nt.nodes.new("ShaderNodeMapRange"); mr.clamp = True
+            mr.inputs["From Min"].default_value, mr.inputs["From Max"].default_value = half - w0 - w1, half - w1
+            mr.inputs["To Min"].default_value, mr.inputs["To Max"].default_value = 1.0, 0.0
+            L(math("ABSOLUTE", sep.outputs[ax]), mr.inputs["Value"])
+            sf = mr.outputs["Result"] if sf is None else math("MULTIPLY", sf, mr.outputs["Result"])
+        zf = sf if zf is None else math("MULTIPLY", zf, sf)
     # Soot.
     tap = keyed(nt, "smoke_taper", t.get("smoke_keys", ()), 1.0).outputs[0]
     ds = math("MULTIPLY", math("POWER", attr("density"), t.get("dpow", 1.0)), t["smoke_k"])
@@ -180,6 +231,15 @@ def src_material(t):
         l2.default_value = (0.3, 0, -t.get("soot_up", 5.0)); l2.keyframe_insert("default_value", frame=33)
         mk = math("MULTIPLY", math("SUBTRACT", nz2.outputs["Fac"], th), gain, clamp=True)
         ds = math("MULTIPLY", ds, mk)
+    if t.get("fmask"):
+        # Burning gas is clear: the soot thinned where the flame is high (to fmask[2] of itself at fmask[1]), so the
+        # fire shows where it burns at the cloud's skin and the soot lies thick where the fire has died.
+        fm0, fm1, fmin = t["fmask"]
+        fmr = nt.nodes.new("ShaderNodeMapRange"); fmr.clamp = True
+        fmr.inputs["From Min"].default_value, fmr.inputs["From Max"].default_value = fm0, fm1
+        fmr.inputs["To Min"].default_value, fmr.inputs["To Max"].default_value = 1.0, fmin
+        L(attr("flame"), fmr.inputs["Value"])
+        ds = math("MULTIPLY", ds, fmr.outputs["Result"])
     # Fire: the flame broken finer than the grid by a noise that climbs with it.
     f = attr("flame")
     if t.get("fnoise", 0.0) > 0:
@@ -202,7 +262,10 @@ def src_material(t):
         hf.inputs["From Min"].default_value, hf.inputs["From Max"].default_value = a0, a1
         L(attr(t.get("heat_attr", "heat")), hf.inputs["Value"])
         hc = keyed(nt, "heat_cool_f", t.get("heat_keys", ()), 1.0).outputs[0]
-        f = math("MAXIMUM", f, math("MULTIPLY", math("MULTIPLY", hf.outputs["Result"], hc), t.get("heat_w", 0.8)))
+        hw = math("MULTIPLY", math("MULTIPLY", hf.outputs["Result"], hc), t.get("heat_w", 0.8))
+        if t.get("heat_cap"):
+            hw = math("MINIMUM", hw, t["heat_cap"])  # hot gas only an ember red, never the fire's orange
+        f = math("MAXIMUM", f, hw)
     ff = math("MULTIPLY", math("POWER", f, t.get("fq", 1.0)), t["flame_k"])
     if zf:
         ff = math("MULTIPLY", ff, zf)
@@ -345,8 +408,13 @@ def main():
     o = args()
     t = dict(TAKES[o["take"]])
     for kv in filter(None, o["set"].split(";")):
-        k, v = kv.split("=")
-        t[k] = type(t[k])(v) if k in t and not isinstance(t[k], (tuple, bool)) else eval(v)
+        k, v = kv.split("=", 1)
+        d_ = t
+        if "." in k:  # a nested setting: "fp.n=30"
+            k0, k = k.split(".", 1)
+            d_ = t[k0] = dict(t[k0])
+        d_[k] = type(d_[k])(v) if k in d_ and isinstance(d_[k], (int, float, str)) and not isinstance(d_[k], bool) \
+            else eval(v)
     print("TAKE", t)
     out = os.path.abspath(o["out"])
     os.makedirs(out, exist_ok=True)
@@ -561,9 +629,82 @@ def main():
             z0, z1 = t.get("turb_z", (2.0, 8.0))
             tb.location = (0, 0, z0); tb.keyframe_insert("location", frame=1)
             tb.location = (0.4, -0.3, z1); tb.keyframe_insert("location", frame=o["frames"])
+    if t.get("burst"):
+        cx, cy, cz = t["burst_c"]
+
+        def spiral(n, zmin, seed, jit):
+            """n directions spread evenly over the sphere above zmin (a jittered Fibonacci spiral), shuffled."""
+            r = random.Random(seed)
+            m = max(n, int(round(n * 2.0 / (1.0 - zmin))))
+            ga = math.pi * (3.0 - math.sqrt(5.0))
+            out_ = []
+            for k in range(m):
+                z = 1.0 - 2.0 * (k + 0.5) / m
+                if z < zmin:
+                    continue
+                rr = math.sqrt(max(0.0, 1.0 - z * z)); th = k * ga
+                v = [rr * math.cos(th) + r.uniform(-jit, jit), rr * math.sin(th) + r.uniform(-jit, jit),
+                     z + r.uniform(-jit, jit)]
+                ln = math.sqrt(sum(c * c for c in v)) or 1.0
+                out_.append(tuple(c / ln for c in v))
+            r.shuffle(out_)
+            return out_[:n]
+
+        def fling(prefix, p, kind):
+            """Puffs flung out from the heart along spiral() directions: from d0 to d1 m (or born at d0_rel of d1,
+            on the front), radius r0 to r1, eased out (fast, then slowing), on from a frame in p["start"] to one in
+            p["end"]; each lumpy, its emission broken by its own clouds."""
+            r = random.Random(p["seed"] + 1)
+            for i, dv in enumerate(spiral(p["n"], p["zmin"], p["seed"], p.get("jit", 0.25))):
+                a = r.randint(*p["start"]); b = max(r.randint(*p["end"]), a + 1)
+                d1 = r.uniform(*p["d1"])
+                d0 = d1 * r.uniform(*p["d0_rel"]) if p.get("d0_rel") else r.uniform(*p["d0"])
+                r0_, r1_ = r.uniform(*p["r0"]), r.uniform(*p["r1"])
+                keys = []
+                for fr in range(a, b + 1):
+                    e = 1.0 - (1.0 - (fr - a) / (b - a)) ** p.get("ease", 2.0)
+                    d = d0 + (d1 - d0) * e; rad = r0_ + (r1_ - r0_) * e
+                    keys.append((fr, (cx + dv[0] * d, cy + dv[1] * d, max(cz + dv[2] * d, 0.3)), (rad, rad, rad)))
+                bpy.ops.mesh.primitive_ico_sphere_add(subdivisions=3, radius=1.0, location=keys[0][1])
+                ob = bpy.context.object
+                lumpy(ob, p["lump"])
+                if kind == "fire":
+                    charge(f"{prefix}{i}", ob, (a, b), keys, r.uniform(*p["fuel"]), p["temp"], p.get("smoke", 0.0),
+                           vfac=p.get("vfac", 0.0), tex=p.get("tex"), sub=t.get("sub", 3))
+                else:
+                    charge(f"{prefix}{i}", ob, (a, b), keys, 0.0, p["temp"], r.uniform(*p["smoke"]),
+                           vfac=p.get("vfac", 0.0), kind="SMOKE", tex=p.get("tex"), sub=t.get("sub", 3))
+                fs_ = ob.modifiers["Fluid"].flow_settings
+                if fs_.use_texture:
+                    fs_.texture_offset = r.uniform(0.0, 10.0)  # each puff its own pattern
+
+        # The heart: white-hot and lumpy on f1, swelling as the puffs leave it.
+        hp = t["heart"]
+        bpy.ops.mesh.primitive_ico_sphere_add(subdivisions=4, radius=1.0, location=(cx, cy, cz))
+        hb = bpy.context.object
+        lumpy(hb, hp["lump"])
+        charge("heart", hb, hp["on"], [(fr, (cx, cy, cz), (k, k, k)) for fr, k in hp["keys"]], hp["fuel"],
+               hp["temp"], hp["smoke"], tex=hp.get("tex"), sub=t.get("sub", 3))
+        fling("fire", t["fp"], "fire")
+        fling("soot", t["sp"], "soot")
+        st = t["stem"]
+        bpy.ops.mesh.primitive_ico_sphere_add(subdivisions=3, radius=1.0, location=(0, 0, st["z"]))
+        sm = bpy.context.object
+        charge("stem", sm, st["on"], [(1, (0, 0, st["z"]), (st["r"],) * 3)], st["fuel"], st["temp"], st["smoke"],
+               vcoord=(0.0, 0.0, st["up"]), sub=t.get("sub", 3))
+        if t.get("turb"):
+            bpy.ops.object.effector_add(type="TURBULENCE", location=(0, 0, 2.0))
+            tb = bpy.context.object
+            tb.field.size = t.get("turb_size", 1.0); tb.field.flow = 0.0; tb.field.noise = 0.0
+            for fr, v in t["turb"]:
+                tb.field.strength = v; tb.field.keyframe_insert("strength", frame=fr)
+            z0, z1 = t.get("turb_z", (2.0, 8.0))
+            tx_, ty_ = t.get("turb_xy", (0.0, 0.0))
+            tb.location = (0, 0, z0); tb.keyframe_insert("location", frame=1)
+            tb.location = (tx_, ty_, z1); tb.keyframe_insert("location", frame=o["frames"])
     r0 = t.get("emit_r", 0.7)
     top = t.get("top", 7.0)
-    if t.get("core_keys") or t.get("ball"):
+    if t.get("core_keys") or t.get("ball") or t.get("burst"):
         pass
     elif t.get("particles"):
         # The column: puffs thrown straight up out of the crater, fast; the blast: puffs thrown out flat along the
@@ -583,7 +724,7 @@ def main():
         bpy.ops.mesh.primitive_ico_sphere_add(subdivisions=3, radius=r0, location=(0, 0, t["emit_z"]))
         emitter("core", bpy.context.object, t["out"] * 0.3, t["burst"],
                 [(1, (0, 0, t["emit_z"]), (1, 1, 1)), (t["rise"], (0, 0, top), (1.6, 1.6, 1.6))])
-    if t.get("skirt") and not t.get("particles") and not t.get("core_keys"):
+    if t.get("skirt") and not t.get("particles") and not t.get("core_keys") and not t.get("burst"):
         # The skirt: a flat ring at the ground spreading fast, throwing flame outward along it.
         bpy.ops.mesh.primitive_torus_add(major_radius=r0 * 1.2, minor_radius=0.22, location=(0, 0, 0.25))
         sk = t["skirt_to"]
@@ -606,6 +747,47 @@ def main():
             bpy.ops.fluid.bake_all()
         print("BAKED", ds.cache_directory)
     if o["bake_only"]:
+        return
+    if o["stats"]:
+        # The bake's numbers per frame: the fire (flame > 0.25) and the soot (dense enough to see: density *
+        # smoke_k > 1 per m), their extent in metres, and how near the soot comes to the side walls.
+        import numpy as np
+        dg = bpy.context.evaluated_depsgraph_get()
+        for f in range(1, o["frames"] + 1):
+            sc.frame_set(f)
+            ev = dom.evaluated_get(bpy.context.evaluated_depsgraph_get()).modifiers["Fluid"].domain_settings
+            res = [int(v) for v in ev.domain_resolution]
+            n = res[0] * res[1] * res[2]
+            h = max(W, D, H) / max(res)
+
+            def grid(p):
+                a = np.empty(n, np.float32)
+                try:
+                    p.foreach_get(a)
+                except Exception:
+                    a = np.array(p, np.float32)
+                return a.reshape(res[2], res[1], res[0]) if a.size == n else None
+            dn, fl, ht = grid(ev.density_grid), grid(ev.flame_grid), grid(ev.heat_grid)
+            if dn is None:
+                print("STAT", f, "no grid"); continue
+
+            def ext(m):
+                if not m.any():
+                    return "-"
+                zz, yy, xx = [np.nonzero(m.any(axis=tuple(j for j in range(3) if j != ax)))[0] for ax in range(3)]
+                return "x %.1f..%.1f y %.1f..%.1f z %.1f..%.1f" % (
+                    xx[0] * h - W / 2, (xx[-1] + 1) * h - W / 2, yy[0] * h - D / 2, (yy[-1] + 1) * h - D / 2,
+                    zz[0] * h, (zz[-1] + 1) * h)
+            soot = dn * t.get("smoke_k", 30.0) > 1.0
+            fire = fl > 0.25
+            k = max(1, int(0.6 / h))
+            wall = max(float(dn[:, :, :k].max()), float(dn[:, :, -k:].max()), float(dn[:, :k, :].max()),
+                       float(dn[:, -k:, :].max())) * t.get("smoke_k", 30.0)
+            print("STAT f%02d" % f, "flame max %.2f vol %.1f m3 [%s]" % (fl.max(), fire.sum() * h ** 3, ext(fire)),
+                  "| soot vol %.1f m3 [%s] dmax %.2f" % (soot.sum() * h ** 3, ext(soot), dn.max()),
+                  "| heat max %.2f mean(soot) %.2f" % (ht.max(), ht[soot].mean() if soot.any() else 0),
+                  "| wall %.2f/m" % wall, flush=True)
+    if o["norender"]:
         return
 
     # The camera: the game's pitch, orthographic, looking at the column's middle, framing the whole domain.
