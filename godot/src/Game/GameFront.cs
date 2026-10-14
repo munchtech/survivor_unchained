@@ -58,7 +58,12 @@ public partial class Game
         figure = new PersonView(spec, null, 0.8);
         scene!.AddChild(figure);
         float sx = Fire.X + 2.05f, sz = Fire.Y - 0.1f;
-        figure.Place(sx + 0.12, scene.HeightAt(sx, sz) + 0.08, sz, -Math.PI / 2 - 0.12, true);
+        // (on the log (Camp's seat log, seed 1): her root brought `on` metres along her facing
+        // and lowered `down`, so sit_log's glutes rest on the log's crown and her thighs on its
+        // fire side (measured on the stalker's outfit: thighs 2 mm off, glutes 5 mm, cloth at
+        // most 4 mm in), her boot soles on the ground (1 mm) and her feet clear of the log)
+        double heading = -Math.PI / 2 - 0.12, on = 0.61, down = 0.18;
+        figure.Place(sx + 0.12 + on * Math.Sin(heading), scene.HeightAt(sx, sz) + 0.08 - down, sz + on * Math.Cos(heading), heading, true);
         figure.Loop("Sit_Chair_Idle", 0);
     }
 
