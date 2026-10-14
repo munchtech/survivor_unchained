@@ -161,7 +161,7 @@ def _body_keys():
           cl=(2, 12), cr=(-2, 3)),
         k(19, "auto", hips=(-0.025, -0.225, -0.30), hrot=(-3.5, 12, 2.5), spine=(-12.5, 18, 2), neck=(0, 0, -32), head=(0, 5, -12),
           cl=(1, 16), cr=(-6, 3.5)),
-        k(CONTACT, "ease", hips=(-0.03, -0.33, -0.33), hrot=(-4, 16, 3), spine=(-16, 19, 2), neck=(0, -3, -20), head=(0, 1, -3),
+        k(CONTACT, "ease", hips=(-0.03, -0.37, -0.33), hrot=(-4, 16, 3), spine=(-16, 19, 2), neck=(0, -3, -20), head=(0, 1, -3),
           cl=(0, 20), cr=(-10, 4)),
         # The settle: the weight lands, the pelvis 2-3 cm lower and the chest
         # a few degrees further over than the pose it comes back to (f25).
@@ -232,7 +232,7 @@ STAFF = [
 # Through the drive the fist turns on one even turn from its last poster
 # frame to its plant (as last solved), this far along at each frame: the
 # staff wheels in her front plane and the fist rolls no more than it must.
-DRIVE_U = {16: 0.1, 17: 0.32, 18: 0.64, 19: 0.94}
+DRIVE_U = {16: 0.1, 17: 0.32, 18: 0.64, 19: 0.94, CONTACT: 1.0}
 # How much of the hand is the path's (the rest the idle's own arm; done
 # with by f56 so the idle's own elbow is settled by the seam).
 R_ON = [(0, 0.0), (3, 1.0), (51, 1.0), (56, 0.0)]
@@ -356,7 +356,10 @@ class Flare:
             vb = np.array(b[4]) if len(b) > 5 else hang + np.array(b[4])
             pole = (va + (vb - va) * u) - hang
             if fr in DRIVE_U and self.Rr is not None:
-                qa, qb = self.Rr[15], self.Rr[CONTACT]
+                # Turned toward the fist as planted and settled (f21): at the contact itself the arm
+                # solve left alone missed the key's line by 14 degrees, the shaft leant out and the fist
+                # chased it 18 cm out to her right (round 9's f20).
+                qa, qb = self.Rr[15], self.Rr[CONTACT + 1]
                 q = qslerp(qa, -qb if float(np.dot(qa, qb)) < 0 else qb, DRIVE_U[fr])
                 d = qrot(q, np.array([0, 0, 1.0]))
                 kn = qrot(q, np.array([0, 1.0, 0]))
