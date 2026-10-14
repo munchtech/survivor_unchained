@@ -257,7 +257,10 @@ def wrap_args(w):
 def palm_dir(h, rf, gr):
     """The way from the grip's line to the palm (square to the line), hand_r space."""
     Xp = h.pose(rf, h.palm); g, _ = gr.gap(Xp)
-    P = Xp[(g < 8) & ~np.isnan(g)].mean(0)
+    near = (g < 8) & ~np.isnan(g)
+    if near.sum() < 3:      # the palm off the grip (a seat out along the fingers): its nearest points
+        near = np.argsort(np.where(np.isnan(g), np.inf, g))[:30]
+    P = Xp[near].mean(0)
     v = P - gr.A; u = v - (v @ gr.D) * gr.D
     return u / np.linalg.norm(u)
 
