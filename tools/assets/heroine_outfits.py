@@ -7557,6 +7557,10 @@ if BODY_OUT:
     # smile_open key: heroine_mouth.py)
     import heroine_mouth
     heroine_mouth.seat(BODY_OUT)
+    # (and her smile's and open mouth's moves eased across her upper lip's border, so no groove or fold opens
+    # there: heroine_smile_lip.py)
+    import heroine_smile_lip
+    heroine_smile_lip.run(BODY_OUT)
     # (her head +7%, the owner 14 Oct: the Head joint's rest scaled, her meshes as they were, so it
     # may run before or after any step that measures them (heroine_mouth.seat); keep it last)
     import heroine_headscale
