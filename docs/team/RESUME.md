@@ -37,7 +37,7 @@ Scratch for every lead this session: `C:\Users\munch\AppData\Local\Temp\claude\C
 2. **Animation:** a fresh lead 29 in worktree agent-af8dbda3195e438e4 @ 5cee3e9a, section 0.
    - Before the body build: the Flare frame-offset check (a runner seeks the packed clip at frames 18-20), the f23-27 pelvis smoothing, and the Reaver knee-drive measurement.
    - After it: the refits and the judges.
-3. **Face:** a fresh successor 25 in worktree agent-a2d632df7c7f21ec0, from its latest "Start here". Add the faint throat line in outfits' glove sheet (play row 1).
+3. **Face:** a fresh successor 25 in worktree agent-a2d632df7c7f21ec0 @ 67d38290, from its latest "Start here". The mouth interior is SHIP. The smile seam fix 083f41ab is unjudged and goes to a judge first. The heroine.glb m15 is uncommitted (unjudged art, also in `scratchpadace\seam\m15.glb`). Add the faint throat line in outfits' glove sheet (play row 1).
 
 ## 14 October, later: coordinator 34daaf5d (running lean to its 125% grace; the owner's choice)
 
