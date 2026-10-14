@@ -297,7 +297,7 @@ public sealed class DigBoilsOver : StoryFight
                     foreach (var e in bb.Enemies.Living().ToList())
                         if (e.Disposition == Disposition.Hostile && !e.Elite && !e.Boss && e.State != EnemyState.Dying
                             && Math.Abs(e.X - rx) < 1.1 + e.Radius && e.Z > z0 && e.Z < z1)
-                            bb.HitEnemy(e, e.MaxHp * 4, School.Physical, [Tag.Physical], new HitOpts { NoCrit = true, NoProcs = true });
+                            bb.HitEnemy(e, e.MaxHp * 4, School.Physical, [Tag.Physical], new HitOpts { Credit = "story", NoCrit = true, NoProcs = true });
                 },
             });
         }
@@ -421,7 +421,7 @@ public sealed class DigBoilsOver : StoryFight
             var (px, pz) = A.Place["pump"];
             foreach (var e in B.Enemies.Living().ToList())
                 if (e.Disposition == Disposition.Hostile && e.State != EnemyState.Dying && Dist(e.X, e.Z, px, pz) < 10)
-                    B.HitEnemy(e, e.MaxHp * 4, School.Fire, [Tag.Fire, Tag.Explosion], new HitOpts { NoCrit = true, NoProcs = true });
+                    B.HitEnemy(e, e.MaxHp * 4, School.Fire, [Tag.Fire, Tag.Explosion], new HitOpts { Credit = "story", NoCrit = true, NoProcs = true });
             B.Events.Emit(new Ev.Explosion { X = px, Z = pz, Radius = 10, School = School.Fire, Power = 2 });
             B.Events.Emit(new Ev.Shake { Amount = 0.6 });
             Snib(A, "The PUMP! Who will pump? Snib will not pump.");

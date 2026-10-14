@@ -418,7 +418,7 @@ public sealed class RaidOnTheRoost : StoryFight
                 if (e.Disposition == Disposition.Ally || e.State == EnemyState.Dying || Dist(e.X, e.Z, cx, cz) > 12) continue;
                 if (e == captain) { e.Hp = Math.Min(e.Hp, e.MaxHp * 0.25); continue; }
                 e.Disposition = Disposition.Hostile;
-                B.HitEnemy(e, e.MaxHp * 4, School.Fire, [Tag.Fire, Tag.Explosion], new HitOpts { NoCrit = true, NoProcs = true, Provoke = true });
+                B.HitEnemy(e, e.MaxHp * 4, School.Fire, [Tag.Fire, Tag.Explosion], new HitOpts { Credit = "story", NoCrit = true, NoProcs = true, Provoke = true });
             }
             levy?.Break();
             B.Events.Emit(new Ev.Explosion { X = cx, Z = cz, Radius = 12, School = School.Fire, Power = 2 });

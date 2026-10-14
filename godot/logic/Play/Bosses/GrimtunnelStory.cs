@@ -516,10 +516,10 @@ public sealed class GrimtunnelStory : StoryBoss, IBound
             bb.Events.Emit(new Ev.Explosion { X = x, Z = z, Radius = 4, School = School.Fire, Power = 1.5 });
             foreach (var e in bb.Enemies.Living().ToList())
                 if (e != E && e.Disposition == Disposition.Hostile && e.State != EnemyState.Dying && Dist(e.X, e.Z, x, z) < 4)
-                    bb.HitEnemy(e, e.MaxHp * 4, School.Fire, [Tag.Fire, Tag.Explosion], new HitOpts { NoCrit = true, NoProcs = true });
+                    bb.HitEnemy(e, e.MaxHp * 4, School.Fire, [Tag.Fire, Tag.Explosion], new HitOpts { Credit = "story", NoCrit = true, NoProcs = true });
             if (E is { Alive: true } && !Ending && Dist(E.X, E.Z, x, z) < 4 + E.Radius)
             {
-                bb.HitEnemy(E, E.MaxHp * 0.1, School.Fire, [Tag.Fire, Tag.Explosion], new HitOpts { NoCrit = true, NoProcs = true });
+                bb.HitEnemy(E, E.MaxHp * 0.1, School.Fire, [Tag.Fire, Tag.Explosion], new HitOpts { Credit = "story", NoCrit = true, NoProcs = true });
                 cracked = 12;
                 S.Say("His hide cracks", "He takes more, for a while", "boon");
                 Snib("Snib did NOT roll that. ...Snib rolled that.", 1.2);
