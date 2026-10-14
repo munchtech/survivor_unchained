@@ -80,9 +80,13 @@ public abstract class ArenaBoss
 
     /// <summary>Its health over its people's champion's: set so a par build takes a minute and a half.</summary>
     public virtual double HealthMul(int tier) => 12 + 2 * tier;
-    /// <summary>Every arena boss's health over its script's (the owner, 13 October: no hidden boss-damage cuts, "we need
-    /// to just buff the bosses"): the Flare's share of a boss is reached by health, not by a measure on what it takes.</summary>
-    public static double Toughness = 1;
+    /// <summary>Its health in the fight, over its people's champion's (the owner, 13 October: no hidden boss-damage cuts, "we
+    /// need to just buff the bosses"): its first tier's HealthMul times Toughness at every tier. A Flare's share of a boss sits
+    /// 10-15% (room clears) or 15-20% (single target) by health and the Flares' own numbers (CLASSES §7). Its tier slope went:
+    /// the kit grows about threefold from T1 to T4 against the Flare's 1.7, and the slope left T4's Flares under their band.
+    /// The keeper's and the core's health still read HealthMul.</summary>
+    public double FightHealth(int tier) => HealthMul(1) * Toughness;
+    public static double Toughness = 2.5;
     /// <summary>Harness (--bosstiers k1,k2,k3,k4): each tier's arena boss health scaled, to find the tier rule.</summary>
     public static double[] TierMul = [];
     public virtual double DamageMul => 1.3;

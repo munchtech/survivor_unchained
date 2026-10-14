@@ -884,7 +884,7 @@ public sealed class ArenaRun : ZoneRuntime, IBossArena
             boss.Boss = true;
             // Named, so its body glows as a named thing's does and its blows carry its name.
             boss.Named = new Named { Title = BossName };
-            boss.MaxHp = boss.Hp = boss.MaxHp * (script?.HealthMul(Spec.Tier) ?? 12 + 2 * Spec.Tier) * ArenaBoss.Toughness * (Spec.Tier >= 1 && Spec.Tier <= ArenaBoss.TierMul.Length ? ArenaBoss.TierMul[Spec.Tier - 1] : 1);
+            boss.MaxHp = boss.Hp = boss.MaxHp * (script?.FightHealth(Spec.Tier) ?? (12 + 2 * 1) * ArenaBoss.Toughness) * (Spec.Tier >= 1 && Spec.Tier <= ArenaBoss.TierMul.Length ? ArenaBoss.TierMul[Spec.Tier - 1] : 1);
             boss.Damage *= script?.DamageMul ?? 1.3;
             // Come again, it is the first fight and a part more each time, by a rule the player
             // can learn, not the night's hardening and its levels on top of the boss's own (that

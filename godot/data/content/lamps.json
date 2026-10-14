@@ -129,7 +129,7 @@
    "length": 0.8,
    "radius": 12,
    "blows": 2,
-   "power": 1380,
+   "power": 497,
    "school": "holy",
    "tags": [
     "melee",
@@ -188,7 +188,7 @@
    "length": 0.9,
    "radius": 14,
    "blows": 3,
-   "power": 920,
+   "power": 597,
    "school": "holy",
    "tags": [
     "area",
@@ -243,7 +243,7 @@
    "length": 1.2,
    "radius": 10,
    "blows": 6,
-   "power": 520,
+   "power": 240,
    "school": "physical",
    "tags": [
     "melee",
@@ -323,7 +323,7 @@
    "length": 0.8,
    "radius": 14,
    "blows": 2,
-   "power": 1590,
+   "power": 937,
    "school": "physical",
    "tags": [
     "melee",
@@ -388,7 +388,7 @@
    "length": 1.1,
    "radius": 14,
    "blows": 12,
-   "power": 1160,
+   "power": 932,
    "school": "fire",
    "tags": [
     "spell",
@@ -450,7 +450,7 @@
    "length": 1.1,
    "radius": 14,
    "blows": 2,
-   "power": 2100,
+   "power": 1154,
    "school": "arcane",
    "tags": [
     "spell",
@@ -517,7 +517,7 @@
    "length": 1.2,
    "radius": 12,
    "blows": 12,
-   "power": 2100,
+   "power": 584,
    "school": "physical",
    "tags": [
     "melee",
@@ -572,7 +572,7 @@
    "length": 0.9,
    "radius": 30,
    "blows": 1,
-   "power": 2990,
+   "power": 1180,
    "school": "physical",
    "tags": [
     "projectile",
@@ -603,7 +603,7 @@
     "splitWidth": 0.8,
     "split": 0.6,
     "pinned": 2,
-    "heart": 0.6,
+    "heart": 0.15,
     "heartFan": 0.7,
     "heartFrom": 4
    }

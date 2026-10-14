@@ -85,16 +85,19 @@ public sealed partial class Battle
     }
     /// <summary>The fill table, tuned by the harness (CLASSES.md §3.2).</summary>
     public const double FlareStartNight = 25;
-    /// <summary>The Flare's power grows by this share for every lamp lit.</summary>
-    public static double FlareLampGlow = 0.02;
+    /// <summary>The Flare's power grows by this share for every lamp lit: 0 from 14 October (0.02 before; Act 1 lights one or
+    /// two lamps, a full arena board 15-24, so the glow fed the arena's boss share alone).</summary>
+    public static double FlareLampGlow = 0;
     public const double FillHurt = 0.40, FillAnswer = 35, FillPerfect = 10, FillBlock = 6,
         FillChampion = 2, FillChampionRate = 0.6, FillKill = 0.1, FillKillRate = 0.65;
     /// <summary>A boss's fill: this much for each 1% of its health she takes (the harness's --fillboss).</summary>
     public static double FillBoss = 1.8;
     /// <summary>Harness only (--fillcrowd): the kill and champion fills scaled, to measure what they give a boss fight.</summary>
     public static double FillCrowdMul = 1;
-    /// <summary>Harness (--bossonly 1): while a boss is in the fight (struck in the last 5 s), kills and champions don't fill the Flare.</summary>
-    public static bool BossOnlyFill;
+    /// <summary>While she fights a boss (she struck one in the last 5 s), kills and champions don't fill the Flare: the boss
+    /// does (FillBoss for each 1% she takes). The arena's horde filled it about three times as fast as Act 1's (CLASSES §7);
+    /// harness --bossonly 0 turns it off.</summary>
+    public static bool BossOnlyFill = true;
     double bossHitAt = -99;
     bool answeredTwice;
 
