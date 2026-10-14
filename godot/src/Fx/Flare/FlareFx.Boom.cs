@@ -18,6 +18,7 @@ public partial class FlareFx
     /// <summary>The fireball light's peak energy (FLARE_FIRELIGHT overrides it for look-dev).</summary>
     /// <summary>The fireball's centre over the crater in the sim (birth.py's centre), and its rim light on the statues.</summary>
     const float BallY = 1.5f;
+    const float Roll = 0f;
     static readonly float FireRim = float.TryParse(System.Environment.GetEnvironmentVariable("FLARE_FIRERIM"), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var fr) ? fr : 1.2f;
     static readonly float FireLight = float.TryParse(System.Environment.GetEnvironmentVariable("FLARE_FIRELIGHT"), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var fl) ? fl : 9f;
     readonly Vector3[] jets = new Vector3[12];
@@ -135,8 +136,10 @@ public partial class FlareFx
         LabelsAlpha(Mathf.SmoothStep(0.8f, 1.1f, c));
         // The ball rolls out and rises (judge 5a 1a): 1.0 -> 1.35 ease-out over f116-f130, about its own centre (BallY up
         // in the sim), rising ~0.1 m a frame from f118 and slowing.
+        // (b5e rolls out by itself: its fire's radius 2.14 m at f116, 3.05 m at f130, 4.1 m at f150, easing out, so
+        // the quad's own roll is spent; Roll keeps the hook.)
         float rx = Mathf.Clamp((c - 0.033f) / 0.27f, 0, 1);
-        float roll = 1 + 0.35f * (1 - (1 - rx) * (1 - rx));
+        float roll = 1 + Roll * (1 - (1 - rx) * (1 - rx));
         float rise = c < 0.067f ? 0 : 2.4f * (1 - Mathf.Exp(-(c - 0.067f) / 0.4f));
         // The frozen statues' rims catch the fireball (judge 5a 2: warm light on cyan ice gives back nothing; vat.gdshaderinc).
         RenderingServer.GlobalShaderParameterSet("flare_fire", new Vector4(p.X, p.Y + BallY + rise, p.Z, FireRim * lit));

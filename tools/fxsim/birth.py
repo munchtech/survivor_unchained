@@ -289,6 +289,9 @@ def regrade3(fl, dn, tp, f, P, cubes, tabs):
     chiH = smooth(Tg / pk, key(P["hrel0"], f), key(P["hrel1"], f))
     chi = np.maximum(chiF, chiH).astype(np.float32)
     nzi = np.argwhere(chi > 0.02)
+    if not len(nzi):  # the fire long gone (f45 on): the bake's own soot, held as the frames before it
+        z = np.zeros_like(fl)
+        return z, z, (dn * key(P["k_out"], f)).astype(np.float32), dict(R=0.0, cg=[0.0, 0.0, 0.0], pk=pk, skin_fire=0.0, thr=0.0)
     pad = int(1.2 / h) + 2
     lo = np.maximum(nzi.min(0) - pad, 0); hi = np.minimum(nzi.max(0) + pad + 1, N)
     sl = tuple(slice(a, b) for a, b in zip(lo, hi))
@@ -315,8 +318,11 @@ def regrade3(fl, dn, tp, f, P, cubes, tabs):
     sd = sd0.copy()
     creases = []
     amp = key(P["bamp"], f)
+    # the cells' walls bent by a smooth noise (else the folds run in straight lines, a cracked plate)
+    wq = q * P["warp_f"]
+    warp = np.stack([sample(cubes[0], (wq + 3.1 + 7.7 * j).T) - 0.5 for j in range(3)], 1) * 2.0
     for k, (s, A, rad, cw) in enumerate(P["layers"]):
-        F1, F2 = worley(q + 13.7 * (k + 1), s, tabs[k])
+        F1, F2 = worley(q + 13.7 * (k + 1) + warp * P["warp"][k] * s, s, tabs[k])
         dome = np.sqrt(np.clip(1 - (F1 / rad) ** 2, 0, 1))
         creases.append(1 - smooth(F2 - F1, 0, cw))
         sd[bi] -= A * amp * (dome - 0.5)
@@ -327,7 +333,7 @@ def regrade3(fl, dn, tp, f, P, cubes, tabs):
         rng = np.random.default_rng(P["seed"] + 300)
         nt = P["tongues"]
         ph = (np.arange(nt) + rng.uniform(0.15, 0.85, nt)) / nt * 2 * np.pi + P["tongue_rot"]
-        el = rng.uniform(-0.35, 0.35, nt)   # out of the screen's plane (rad)
+        el = rng.uniform(-0.25, 0.25, nt)   # out of the screen's plane (rad)
         ln = rng.uniform(*P["tongue_len"], nt)
         ex = np.array([1.0, 0.0, 0.0], np.float32)
         p3 = np.stack([gx[bi[0], 0, 0], gy[0, bi[1], 0], gz[0, 0, bi[2]]], 1)
@@ -346,14 +352,18 @@ def regrade3(fl, dn, tp, f, P, cubes, tabs):
     rr = rho / R
     crM = np.zeros_like(sd); crB = np.zeros_like(sd)
     crM[bi] = creases[0]
+    # the billows' borders dark only here and there (a noise picks them), never every cell outlined alike
+    msk = [smooth(sample(cubes[1], (q * P["bmask_f"] + 11.3 * (k + 1)).T), 0.38, 0.62) for k in range(len(creases) - 1)]
     if len(creases) > 1:
-        crB[bi] = np.maximum.reduce(creases[1:])
+        crB[bi] = np.maximum.reduce([creases[k + 1] * msk[k] * P["bwt"][k] for k in range(len(creases) - 1)])
+    tex = np.zeros_like(sd)
+    tex[bi] = sample(cubes[0], (q * P["tex_f"] + 57.0).T) - 0.5
     low = smooth(-sv / R, 0.0, 0.8)
     outw = smooth(rr, 0.3, 0.95)
     foldw = P["fold_in"] + (1 - P["fold_in"]) * np.maximum(low, outw)
     # Birth heat.
     T = (key(P["base"], f) + P["k_depth"] * (dep - 0.5) - key(P["k_rad"], f) * smooth(rr, 0.12, 1.05)
-         - key(P["k_fold"], f) * crM * foldw - key(P["k_bcr"], f) * crB)
+         - key(P["k_fold"], f) * crM * foldw - key(P["k_bcr"], f) * crB * (0.6 + 0.4 * foldw) + P["k_tex"] * tex)
     hr = key(P["heart_m"], f)
     Hc = np.exp(-(rho / max(hr, 1e-3)) ** 2) * (1 - P["heart_crease"] * np.maximum(crM, crB))
     T = T + key(P["heart"], f) * Hc
@@ -366,15 +376,17 @@ def regrade3(fl, dn, tp, f, P, cubes, tabs):
         # a noise riding the ball (in its own scaled frame, as the billows), climbing a little
         qq = np.stack(np.broadcast_arrays(gx, gy, gz), 0).reshape(3, -1) * sc * P["ch_noise"]
         nzv = sample(cubes[1], qq + 31.0).reshape(sd.shape)
+        # The front: a score on the skin (folds, the middle, low, a noise) ranked, so the share of the skin still
+        # burning is about 1 - thr; past it the char reaches inward (ch_rate m per unit of score), so the fire under
+        # charred skin is hidden, not glowing through a film.
         score = (P["w_fold"] * crM + P["w_bill"] * crB + P["w_mid"] * (1 - np.clip(rr, 0, 1))
-                 + P["w_deep"] * smooth(np.clip(-sd, 0, None), 0, P["ch_deep"]) + P["w_low"] * low
-                 + P["w_noise"] * (nzv - 0.5))
+                 + P["w_low"] * low + P["w_noise"] * (nzv - 0.5))
         surf = (occ > 0.3) & (np.abs(sd) < P["ch_skin"])
         ss = np.sort(score[surf])
         if ss.size > 100:
             srank = np.interp(score, ss, np.linspace(0, 1, ss.size)).astype(np.float32)
-            ws = P["ch_w"]
-            ch = (1 - smooth(srank, thr - ws, thr + ws)) * (occ > 0.01)
+            zc = P["ch_rate"] * (thr - srank) + P["ch_d0"]
+            ch = smooth(zc - np.clip(-sd, 0, None), -P["ch_w"], P["ch_w"]) * (occ > 0.01)
         Fo = occ * (1 - ch)
         # the fire still burning: its own heat, bright to the end (0.7-0.85 on screen), cooling at the front
         Tl = (key(P["life_T"], f) + P["life_fold"] * crM - P["life_rad"] * smooth(rr, 0.3, 1.0)
@@ -388,7 +400,10 @@ def regrade3(fl, dn, tp, f, P, cubes, tabs):
     tin = smooth(nd.gaussian_filter(occ, 0.25 / h), 0.15, 0.6)   # inside the fire's cloud
     dch = key(P["dch"], f)
     kin, kout = key(P["k_in"], f), key(P["k_out"], f)
-    Dnew = Dbox * (kin * tin + kout * (1 - tin)) + dch * ch * occ
+    # the charred soot lumpy, not a smooth shell: its density broken by a finer noise riding the ball
+    qs = np.stack(np.broadcast_arrays(gx, gy, gz), 0).reshape(3, -1) * sc * P["stex_f"]
+    stex = sample(cubes[0], qs + 77.0).reshape(sd.shape)
+    Dnew = Dbox * (kin * tin + kout * (1 - tin)) + dch * ch * occ * (1 - P["stex"] + 2 * P["stex"] * stex)
     # early: the thrown soot born torn (as b5d), outside the fire
     tear = key(P["tear"], f)
     if tear > 0:
@@ -408,7 +423,8 @@ def regrade3(fl, dn, tp, f, P, cubes, tabs):
         Lf = nd.gaussian_filter(hot, P["l_sig"] / h)
         Lf = np.clip(Lf / P["l_ref"], 0, 1) ** P["l_pow"]
         under = smooth(-gz / max(R, 0.3), -0.7, 0.7)
-        Ls = key(P["lsoot"], f) * Lf * (P["l_top"] + (1 - P["l_top"]) * under) + key(P["lmin"], f)
+        Ls = (key(P["lsoot"], f) * Lf * (P["l_top"] + (1 - P["l_top"]) * under) * (0.7 + 0.6 * stex)
+              + key(P["lmin"], f))
         sootl = np.sqrt(np.clip(Ls / gk, 0, 1))
     # The heat grid: the fire's own heat where it burns, the soot's light where it has charred.
     Tw = np.where(Fo > 0.05, (1 - ch) * T + ch * sootl, sootl * (Dnew > 1e-3))
@@ -425,29 +441,33 @@ PRESETS["b5e"] = dict(
     PRESETS["b5c"], v=3,
     fsig=((1, 0.6), (3, 1.0), (4, 1.6), (48, 1.6)), chi=(0.05, 0.35),
     flame_w=((1, 1.0), (5, 1.0), (8, 0.0)),
-    tsig=((1, 1.0), (48, 1.4)), hrel0=((1, 0.50), (6, 0.50), (12, 0.42), (48, 0.40)),
-    hrel1=((1, 0.73), (6, 0.73), (12, 0.64), (48, 0.62)),
+    tsig=((1, 1.0), (48, 1.4)), hrel0=((1, 0.50), (6, 0.50), (12, 0.53), (17, 0.56), (22, 0.58), (48, 0.60)),
+    hrel1=((1, 0.73), (6, 0.73), (12, 0.75), (17, 0.78), (22, 0.80), (48, 0.82)),
     band=0.8, r_ref=2.2, beta=1.0, edge=0.06, deep=0.5,
-    # (spacing m, displacement m, dome radius, crease width): big masses, then two billow sizes
-    layers=((2.3, 0.55, 0.9, 0.22), (0.72, 0.16, 0.85, 0.28), (0.30, 0.07, 0.85, 0.30)),
+    # (spacing m, displacement m, dome radius, crease width): big masses, then two billow sizes; their walls bent
+    layers=((2.3, 0.55, 0.9, 0.16), (0.75, 0.24, 0.85, 0.22), (0.32, 0.10, 0.85, 0.20)),
+    bwt=(1.0, 0.6), bmask_f=4.0, tex_f=22.0, k_tex=0.05,
+    warp=(0.35, 0.3, 0.3), warp_f=3.3,
     bamp=((1, 0.7), (2, 1.0), (48, 1.0)),
     tongue=((1, 0.0), (1.6, 0.6), (2.5, 1.0), (4.5, 1.0), (6, 0.4), (7, 0.0)), tongues=5, tongue_rot=0.4,
-    tongue_len=(0.12, 0.22), tongue_w=0.10, tongue_curl=0.35,
-    base=((1, 0.84), (3, 0.84), (5, 0.83), (6, 0.82), (9, 0.80)), k_depth=0.12,
-    k_rad=((1, 0.15), (6, 0.15), (9, 0.10)),
-    fold_in=0.45, k_fold=((1, 0.34), (6, 0.34), (8, 0.15), (10, 0.0)), k_bcr=((1, 0.07), (8, 0.05), (10, 0.0)),
+    tongue_len=(0.38, 0.52), tongue_w=0.085, tongue_curl=0.35,
+    base=((1, 0.88), (6, 0.88), (9, 0.84)), k_depth=0.12,
+    k_rad=((1, 0.13), (6, 0.13), (9, 0.10)),
+    fold_in=0.45, k_fold=((1, 0.30), (6, 0.30), (8, 0.12), (10, 0.0)), k_bcr=((1, 0.12), (4, 0.12), (6, 0.08), (8, 0.04), (10, 0.0)),
     heart=((1, 0.55), (2, 0.50), (3, 0.42), (4, 0.28), (5, 0.15), (6, 0.04), (7, 0.0)),
     heart_m=((1, 1.0), (2, 1.15), (3, 1.35), (4, 1.1), (5, 0.8), (6, 0.55), (7, 0.5)), heart_crease=0.6,
-    # life: the char front's threshold over the surface's ranked scores (share of the skin still burning ~ 1 - thr)
-    thr=((1, -0.3), (6, -0.12), (8, 0.05), (12, 0.38), (17, 0.66), (22, 0.88), (26, 0.97), (30, 1.15)),
+    # life: the char front over the skin's ranked scores (the share of the skin still burning ~ 1 - thr), reaching
+    # ch_rate m inward per unit of score past it
+    thr=((1, -0.3), (6, -0.1), (7, 0.0), (9, 0.2), (12, 0.42), (17, 0.78), (22, 1.0), (26, 1.15), (30, 1.6), (36, 3.0)),
     life_w=((1, 0.0), (6, 0.0), (10, 1.0)),
-    w_fold=0.42, w_bill=0.12, w_mid=0.30, w_deep=0.30, w_low=0.10, w_noise=0.35, ch_noise=10.0, ch_deep=0.45,
-    ch_skin=0.14, ch_w=0.07,
+    w_fold=0.35, w_bill=0.06, w_mid=0.30, w_low=0.10, w_noise=0.55, ch_noise=6.0,
+    ch_skin=0.14, ch_w=0.05, ch_rate=1.2, ch_d0=0.0,
     life_T=((6, 0.82), (14, 0.84), (22, 0.84), (30, 0.80)), life_fold=0.05, life_rad=0.06, life_noise=0.06,
     front_cool=0.25,
     # soot
-    dch=((1, 0.0), (6, 0.04), (9, 0.12), (30, 0.12), (40, 0.06)),
-    k_in=((1, 1.0), (6, 0.6), (14, 0.5), (30, 0.6), (40, 0.8)), k_out=((1, 0.6), (6, 0.45), (14, 0.5), (30, 0.7), (40, 0.9)),
+    stex=0.45, stex_f=14.0,
+    dch=((1, 0.0), (6, 0.0), (7, 0.2), (9, 0.3), (30, 0.3), (40, 0.12)),
+    k_in=((1, 1.0), (6, 0.6), (14, 0.5), (30, 0.6), (40, 0.8)), k_out=((1, 0.6), (6, 0.35), (17, 0.35), (30, 0.6), (40, 0.9)),
     k_far=((1, 0.5), (14, 0.5), (30, 0.7), (40, 0.9)), clear_out=((1, 0.0),),
     tear=((1, 1.0), (6, 1.0), (9, 0.4), (12, 0.0)),
     glow_k=1.0, lsoot=((1, 0.0), (6, 0.0), (9, 0.09), (20, 0.08), (28, 0.03), (34, 0.0)),

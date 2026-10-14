@@ -28,7 +28,8 @@ uniform float hot = 3.0;
 uniform float hot_lo = 0.74;
 uniform float hot_hi = 0.90;
 uniform float sat = 1.8;
-uniform float birth_end = 9.0;
+// (b5e burns to ~f24: its fire keeps the birth's saturation through its whole life, the soot never gets it.)
+uniform float birth_end = 24.0;
 // The soot, lit (judge 4 fix 3: black soot read as a hole): its dark pixels lifted to at least soot_lit (night amber
 // lit from below by the fire, day grey-brown with sunlit tops: soot_up +1 lit from above, -1 from below), and laid
 // over the world at most soot_max.
@@ -63,7 +64,7 @@ void fragment() {
 		vec3 sc = c.rgb / max(c.a, 1e-3);
 		float l = dot(sc, vec3(0.2126, 0.7152, 0.0722));
 		float heart = smoothstep(hot_lo, hot_hi, l) * (1.0 - smoothstep(4.0, 7.0, f));
-		float s = mix(sat, 1.0, smoothstep(birth_end - 4.0, birth_end, f));
+		float s = mix(1.0, mix(sat, 1.0, smoothstep(birth_end - 4.0, birth_end, f)), smoothstep(0.04, 0.15, l));
 		sc = max(mix(vec3(l), sc, mix(s, 1.0, heart)), vec3(0.0));
 		c.rgb = sc * c.a * (1.0 + hot * heart);
 	}
