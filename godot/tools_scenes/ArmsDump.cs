@@ -57,7 +57,7 @@ public partial class ArmsDump : Node
         foreach (var (id, bone) in Pairs)
         {
             var piece = Arms.Make(id);
-            piece.Transform = Arms.PieceTransform(id);
+            piece.Transform = Arms.Seat(piece, id, bone);
             var v = new List<Vector3>();
             var t = new List<int[]>();
             Collect(piece, piece.Transform, Arms.MountTransform(id, bone, true), v, t);
