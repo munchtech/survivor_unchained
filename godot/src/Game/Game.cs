@@ -142,6 +142,20 @@ public partial class Game : Node, IZoneHost
         }
     }
 
+    /// <summary>A quick survivor's face: --preset ID's sliders, then --face slider=v,slider=v over them (pictures of a
+    /// face shaped so, or an expression, in play as at the Look).</summary>
+    static Dictionary<string, double>? QuickFace()
+    {
+        var face = Args.Get("preset") is string ps && Loadouts.HeroKit(Sex.Female)?.Faces.FirstOrDefault(f => f.Id == ps) is { } pf
+            ? new Dictionary<string, double>(pf.Shape) : null;
+        if (Args.Get("face") is string fc)
+            foreach (var kv in fc.Split(',', StringSplitOptions.RemoveEmptyEntries))
+                if (kv.Split('=') is [var k, var v] && double.TryParse(v, System.Globalization.NumberStyles.Float,
+                        System.Globalization.CultureInfo.InvariantCulture, out var x))
+                    (face ??= new())[k] = x;
+        return face;
+    }
+
     /// <summary>A stock survivor straight into the game (tools and tests).</summary>
     void Quick()
     {
@@ -159,8 +173,7 @@ public partial class Game : Node, IZoneHost
             Figure = Args.Has("figure") ? Args.Num("figure", 1) : null,
             // --preset ID [--eyes ID]: one of her faces (pictures of a face in play, by day and by torch).
             FaceShape = Args.Get("preset"), Eyes = Args.Get("eyes"),
-            Face = Args.Get("preset") is string ps && Loadouts.HeroKit(Sex.Female)?.Faces.FirstOrDefault(f => f.Id == ps) is { } pf
-                ? new(pf.Shape) : null,
+            Face = QuickFace(),
         });
         // --art ID[:FACET+FACET]: that art in hand, learned and (with facets) mastered.
         if (Args.Get("art") is string art)
