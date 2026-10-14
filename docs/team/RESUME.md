@@ -10,7 +10,7 @@ Scratch for every lead this session: `C:\Users\munch\AppData\Local\Temp\claude\C
   - the thumb MCP 12.4 mm back (the "thumb" entry);
   - the back-of-hand drop moved to the new MCPs (an outfits solver);
   - the left hand's pivots by the same rule on its own skin (`handpivots_left.json`). No mirror re-projection, the coordinator's call: the body is 3.6 mm asymmetric by sculpt;
-  - the Reaver panel's top-band weights (`anim\panelweights.json`, the panel3 solver);
+  - NOT the Reaver panel weights: panel3 found no weight or pivot change passes (`anim\panelweights.md`). Her thigh's top rises to belt height at knee drive, so the thigh shows through the panel and belt at the game camera (sprint f3, sit_log). Fix: (b) less knee drive in run, sprint and sit_log (animation measures it first), else (a) a hip-flexion corrective in this body build (outfits);
   - the Arcanist glove rebuild for the pick.
   Legal on whatever it re-tessellates.
 - **Outfits** (s23 a58bbd501930f73d1, worktree agent-a5ca10091b08dc429):
