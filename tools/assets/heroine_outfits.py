@@ -8612,7 +8612,7 @@ if BODY_OUT:
     me.color_attributes.active_color = col
     # (s25, her chest skin faired over the sculpt's irregular triangulation: heroine_chest.py; here,
     # after every piece is fitted to her as she was, so none changes. Off: CHEST_SMOOTH=0)
-    if os.environ.get("CHEST_SMOOTH", "0") == "1":
+    if os.environ.get("CHEST_SMOOTH", "1") == "1":
         from heroine_chest import chest_smooth
         chest_smooth(body, mend_folds)
     # Her helper bones (twists at the shoulders and down the forearms, shares
