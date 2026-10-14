@@ -1,6 +1,6 @@
 # Classes (phase 2 done; phase-6 plan with the owner; Act 1 baseline named)
 
-**State (13 October, session 16):** branch `classes-11`, NOT merge-ready. Wave 6a built; all five measured once at `bossMul` 1.0: the Branding passes; Drag Them Under passes at 1.0 (-2.0%; but it clears less of an arena room than its stand-in); the Long Cut, the Bill and One Arrow run 9-11% faster than their plain forms on Act 1 (rule: ±3%), so each needs a `bossMul`. Found and confirmed on seeds 1-96 against plain: the Bill 0.5 (+0.9%), One Arrow 0.45 (+0.9%); the Long Cut 0.6 (-1.3% on seeds 1-288; its arena share over 30% is open). None is in lamps_quarters yet. Early modifiers not picked; judge not run; CLASSES §7 not updated. Handoff: `docs/handoff/classes.md`.
+**State (13 October, session 17):** branch `classes-11`, merge requested. Wave 6a measured and judged (S/verdict_6a.md, S = scratch `cl11` of session 59a43b82): all five pass Act 1 against their plain forms (bossMul Long Cut 0.6, Bill 0.5, One Arrow 0.45, Drag and Branding 1.0); any one modifier at most 35% of an arena boss at every tier; Drag Them Under now hooks everything in reach (rooms cleared 51% -> 100%); early modifiers Through the Wall, Wide Chops, Pinned to the Earth, Hold Him, The Eye. `dotnet test`: 904 passed, 0 failed. Follow-ups: the owner's question on single-target Flares, then the Bill and One Arrow bossMul raised to about -2%.
 
 **Key decisions**
 - Flare roles follow FLARE_LOOK (six Clears, four Saves, two Singles, four Contexts), confirmed in CLASSES §7's phase-6 plan. Judge 6's first table differed on eight Flares; the look's reading matches what each does in play.
@@ -16,6 +16,7 @@
 - Burns' shove and aim, re-measured against the true parent 3935476c (batch W, fresh arena seeds): Flare kills a press +12-16% at every tier, Act 1 -1.4% (inside 2%; without the boss stagger -2.6%, so it stays at 0.15), arena deaths and damage taken within noise. Merge requested at 30899ed3.
 
 **Notes for other areas**
+- **Flare lead and skills VFX (6a, 13 October):** Drag Them Under now hooks everything in its 14 m reach: in arena hordes about 60 hooked lines a press on average (budget them). Second Cut hits a boss whole again.
 - **Flare lead and skills VFX:** Burns Twice's "aim" (one per ember, Target id or 0, Last on the 12th; the ember Blow follows 0.2 s later on its target's current spot, or bends to the nearest pack within 3 m of the aim if its target fell). "shove" (one per survivor after the last ember: TX/TZ where it rests, Radius how far, 0 for a boss). The Toll's empty cuts. Butcher's Hour has no blow: stage its press roar and frenzy until End. One Arrow's plain form is a 30 m clear today ("line" is phase 6). FLARE_LOOK L546 (Through and Through, Empty) needs the no-dash ring of cuts (judge 7).
 - **Experience and animation:** `Ev.Flare` phases and `Beat` timings as before (Sim/Events.cs, lamps.json "beat"). Burns' embers still land 0.55-1.05 s from the press.
 - **Story:** names unchanged. The four replaced modifiers' names (Thaw-Burst, The Eye, Free Hands, Through the Heart) still go to the story lead.
