@@ -2927,6 +2927,18 @@ LEO_ONE_DEPTH = float(os.environ.get("LEO_ONE_DEPTH", "0.007"))
 # 8 -> 82, mid 0 -> 1: the walls' band 5-9 mm under the roof hides the strip from the low cameras. Off.)
 LEO_SLOT_CAP = float(os.environ.get("LEO_SLOT_CAP", "0"))
 LEO_SLOT_BACK = float(os.environ.get("LEO_SLOT_BACK", "0.008"))   # (full to CROTCH_Y + this, eased out over 12 mm more)
+# (s18 leo3, judge fin2 1a, LEO_BRIDGE (0 off): the knob is the slot's own arch. Seen from the front the sheet lining the slot
+# shows the arch between her thighs: its middle 5-6 mm above the leg-line rolls 9 mm down each wall (rest, a_leo_f eye: the
+# outline over the gap 32 rows concave). LEO_BRIDGE: round the crotch point the laid sheet spans the slot instead, its height
+# over the walls' edge squashed to this, its middle LEO_BRIDGE_SAG lower; LEO_BRIDGE_Y (from CROTCH_Y): eased in, full, full,
+# eased out. Never under the line exact() cuts the walls at.)
+# (dry b2/b3: concave 32 -> 7 rows (a 1 mm notch left at the middle), COVER 10.6 kept, but the pocket under the span lets vis5
+# see the strip: game/mid/low 0/0/7 -> 0/1/11 (b3, zone -0.022,-0.012,0.006,0.016), 0/5/12 (b2, -0.030,-0.014,0.008,0.024). Off.)
+LEO_BRIDGE = float(os.environ.get("LEO_BRIDGE", "0"))
+LEO_BRIDGE_SAG = float(os.environ.get("LEO_BRIDGE_SAG", "0.0008"))
+LEO_BRIDGE_Y = tuple(float(v) for v in os.environ.get("LEO_BRIDGE_Y", "-0.030,-0.014,0.008,0.024").split(","))
+# (LEO_ROOF_FIX: roof_zs cast again from the slot where the cast from below hit her thighs; the floor was deeper than the walls' cut there anyway)
+LEO_ROOF_FIX = os.environ.get("LEO_ROOF_FIX", "1") == "1"
 # (LEO_LIP (0 off): s17 leo3, the flecks at the V's foot. Her right groin crease runs just inside the leg line there
 # (her left one 4-6 mm outside it), so the cut left the sheet's last 2-3 mm turned up the thigh's wall; its roll,
 # faced by that lip, stood on its side and the 3 mm sheet came out through it as ragged flecks (dry one4-7, base:
@@ -4437,6 +4449,13 @@ def arcanist():
     y_end1 = max(GAP_B + 0.014, back_string(CROTCH + 0.155, CROTCH + 0.012)[-1][1] + 0.015)
     roof_ys = np.linspace(GAP_F - 0.03, y_end1 + 0.01, 80)
     roof_zs = np.array([roof_z(0.0, y) for y in roof_ys])
+    if LEO_ROOF_FIX:
+        # (s18 leo3: where her thighs meet under the slot, y 0.006-0.016 at rest, the cast from 30 cm below hit them, not the roof)
+        bad_ = roof_zs < CROTCH - 0.02
+        for i_ in np.nonzero(bad_)[0]:
+            hit_ = BVH.ray_cast(Vector((0.0, float(roof_ys[i_]), CROTCH - 0.02)), Vector((0, 0, 1)), 0.1)
+            roof_zs[i_] = hit_[0].z if hit_[0] is not None else np.interp(roof_ys[i_], roof_ys[~bad_], roof_zs[~bad_])
+        print("LEO_ROOF_FIX: %d roof samples (under where her thighs meet) cast again from the slot" % int(bad_.sum()))
 
     def exact(q):
         qx, qy, qz = q[:, 0], q[:, 1], q[:, 2]
@@ -5316,10 +5335,49 @@ def arcanist():
     # tore the sheet at the line into flecks (dry one5); eased 3 rounds, no jag)
     one_keep = smooth_field(AND(0.03 - np.abs(X), (LEO_ONE_STEEP + (0.999 - LEO_ONE_STEEP) * float(LEO_ONE_DEPTH > 0) * (1 - ramp(Y, CROTCH_Y - 0.012, CROTCH_Y + 0.004)) - np.abs(N[:, 0])) * 0.02,
                                 (y_end1 + 0.006) - Y, Z - (CROTCH - 0.015), (CROTCH + 0.04) - Z), 3) if LEO_ONE else None
+    def slot_bridged(q):
+        # (s18 leo3, LEO_BRIDGE: see its knob)
+        if LEO_BRIDGE <= 0:
+            return q
+        from scipy.ndimage import gaussian_filter1d
+        x_, y_, z_ = q[:, 0], q[:, 1], q[:, 2]
+        a0, a1, b0, b1 = LEO_BRIDGE_Y
+        wy = ramp(y_, CROTCH_Y + a0, CROTCH_Y + a1) * (1 - ramp(y_, CROTCH_Y + b0, CROTCH_Y + b1))
+        inz = (wy > 0) & (np.abs(x_) < 0.03) & (z_ < CROTCH + 0.015)
+        if not inz.any():
+            return q
+        yb = np.arange(CROTCH_Y + a0 - 0.002, CROTCH_Y + b1 + 0.0021, 0.001)
+        bi = np.clip(np.round((y_ - yb[0]) / 0.001).astype(int), 0, len(yb) - 1)
+        def per_bin(m_, f_):
+            zb = np.full(len(yb), np.nan)
+            for b_ in np.unique(bi[m_]):
+                zb[b_] = f_(z_[m_ & (bi == b_)])
+            ok = ~np.isnan(zb)
+            return gaussian_filter1d(np.interp(np.arange(len(yb)), np.nonzero(ok)[0], zb[ok]), 2.0, mode="nearest")
+        zl, zr = per_bin(inz & (x_ < -0.001), np.min), per_bin(inz & (x_ > 0.001), np.min)
+        # (never under the line exact() cuts the walls at: the span laid just above it)
+        fl_ = np.interp(yb, roof_ys, roof_zs) - LEO_ONE_DEPTH - 0.012 * ramp(yb, CROTCH_Y - 0.02, CROTCH_Y + 0.02)
+        if LEO_SLOT_CAP > 0:
+            w2_ = ramp(yb, CROTCH_Y - 0.02, CROTCH_Y - 0.008) * (1 - ramp(yb, CROTCH_Y + LEO_SLOT_BACK, CROTCH_Y + LEO_SLOT_BACK + 0.012))
+            fl_ = fl_ + w2_ * np.maximum(np.interp(yb, roof_ys, roof_zs) - LEO_SLOT_CAP - fl_, 0.0)
+        zl, zr = np.maximum(zl, fl_ + 0.0006), np.maximum(zr, fl_ + 0.0006)
+        zc = per_bin(inz & (np.abs(x_) < 0.0015), np.max)
+        zep = zl[bi] + (zr[bi] - zl[bi]) * ramp(x_, -0.004, 0.004)
+        H = np.maximum(zc[bi] - zep, 1e-4)
+        h = z_ - zep
+        zt = zep + np.maximum(h, 0) * np.minimum(LEO_BRIDGE / H, 1.0) + np.minimum(h, 0)
+        # (LEO_BRIDGE_SAG: its middle that much lower than over its leg lines, so seen from the front its foot is round, not flat)
+        zt = zt - LEO_BRIDGE_SAG * np.clip(1 - (x_ / 0.008) ** 2, 0, 1) * np.clip(h / 0.003, 0, 1)
+        out = q.copy()
+        out[:, 2] = np.where(inz, z_ + wy * (zt - z_), z_)
+        mv = np.abs(out[:, 2] - z_)
+        print("LEO_BRIDGE: the slot spanned %.1f mm over its leg lines, %d points lowered up to %.1f mm" % (LEO_BRIDGE * 1000, int((mv > 0.0002).sum()), mv.max() * 1000))
+        np.savez(os.path.join(os.environ.get("TEMP", "."), "bridge.npz"), yb=yb, zl=zl, zr=zr, zc=zc)
+        return out
     def crotch_lay(pos, tris):
         src, ns = PIECE_SRC["arcanist.corset"]
         w_ = one_zone(src)[:, None]
-        laid = relax(src + ns * LEO_ONE_LIFT, tris, interior=2, edge=30)
+        laid = slot_bridged(relax(src + ns * LEO_ONE_LIFT, tris, interior=2, edge=30))
         print("LEO_ONE: %d points laid %.1f mm off her under the crotch" % (int((w_ > 0.5).sum()), LEO_ONE_LIFT * 1000))
         return pos * (1 - w_) + laid * w_
     def one_clear(q):
