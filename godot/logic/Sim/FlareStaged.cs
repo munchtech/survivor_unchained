@@ -141,10 +141,10 @@ public sealed partial class Battle
     /// <summary>Called Down's target (an enemy id; -1 none).</summary>
     int calledDown = -1;
 
-    /// <summary>Called Down's choice: the toughest it can hurt (a boss, then champions, then the most health),
-    /// frozen first among the rest.</summary>
-    Enemy? CalledDownPick(List<Enemy> near) => near.Where(FlareCanHurt)
-        .OrderByDescending(e => e.Boss).ThenByDescending(e => e.Elite).ThenByDescending(e => e.Status.Has(StatusKind.Frozen)).ThenByDescending(e => e.Hp)
+    /// <summary>Called Down's choice: "the toughest frozen thing", as its lamp says (frozen first, then champions, then
+    /// the most health). A boss is chilled, never frozen: it keeps only the embers that seek it (four of twelve).</summary>
+    Enemy? CalledDownPick(List<Enemy> near) => near.Where(e => !e.Boss && FlareCanHurt(e))
+        .OrderByDescending(e => e.Status.Has(StatusKind.Frozen)).ThenByDescending(e => e.Elite).ThenByDescending(e => e.Hp)
         .FirstOrDefault();
 
     /// <summary>The aims' times: "aim" (beat) before each ember lands, never before the frost (they aim at what it froze),
@@ -185,7 +185,7 @@ public sealed partial class Battle
         // Four of twelve seek the boss, evenly (the third, sixth, ninth and twelfth).
         bool seek = boss != null && ember * onBoss / Math.Max(1, embers) > (ember - 1) * onBoss / Math.Max(1, embers);
         Enemy? target = null;
-        if (FlareMod("burns.called_down"))
+        if (FlareMod("burns.called_down") && !seek)
         {
             // Called Down keeps the target it chose at the frost, and when that falls moves to the next toughest.
             var held = calledDown >= 0 && calledDown < Enemies.Items.Length ? Enemies.Items[calledDown] : null;

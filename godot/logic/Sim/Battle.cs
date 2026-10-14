@@ -827,6 +827,7 @@ public sealed partial class Battle
         FlareOnDealt(e, took, by);
         if (e.Boss)
         {
+            bossHitAt = Time;
             BossDamageBy[by] = BossDamageBy.GetValueOrDefault(by) + Math.Min(dmg, Math.Max(0, before));
             BossHealthBy[by] = BossHealthBy.GetValueOrDefault(by) + took;
             if (TrackBossHits)

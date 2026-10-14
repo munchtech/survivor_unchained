@@ -83,6 +83,8 @@ public abstract class ArenaBoss
     /// <summary>Every arena boss's health over its script's (the owner, 13 October: no hidden boss-damage cuts, "we need
     /// to just buff the bosses"): the Flare's share of a boss is reached by health, not by a measure on what it takes.</summary>
     public static double Toughness = 1;
+    /// <summary>Harness (--bosstiers k1,k2,k3,k4): each tier's arena boss health scaled, to find the tier rule.</summary>
+    public static double[] TierMul = [];
     public virtual double DamageMul => 1.3;
 
     /// <summary>Its health as it came (the creature it was is pooled: once it is gone the

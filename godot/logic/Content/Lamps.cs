@@ -213,5 +213,7 @@ public static class Lamps
 
     /// <summary>A Flare's damage scales with level (the character's by day and in maps, the ember's at night),
     /// by the rule every ember-scaled blow of hers follows (Battle.BaseOf's flat damage, Rise Fire, thorns): +8% a level.</summary>
-    public static double FlarePower(FlareDef f, int level) => f.Power * (1 + 0.08 * Math.Max(0, level - 1));
+    /// <summary>The Flare's growth for each level (the harness's --flaregrow).</summary>
+    public static double FlareGrowth = 0.08;
+    public static double FlarePower(FlareDef f, int level) => f.Power * (1 + FlareGrowth * Math.Max(0, level - 1));
 }

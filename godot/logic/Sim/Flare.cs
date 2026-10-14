@@ -86,9 +86,16 @@ public sealed partial class Battle
     /// <summary>The fill table, tuned by the harness (CLASSES.md §3.2).</summary>
     public const double FlareStartNight = 25;
     /// <summary>The Flare's power grows by this share for every lamp lit.</summary>
-    public const double FlareLampGlow = 0.02;
-    public const double FillHurt = 0.40, FillAnswer = 35, FillPerfect = 10, FillBlock = 6, FillBoss = 1.8,
+    public static double FlareLampGlow = 0.02;
+    public const double FillHurt = 0.40, FillAnswer = 35, FillPerfect = 10, FillBlock = 6,
         FillChampion = 2, FillChampionRate = 0.6, FillKill = 0.1, FillKillRate = 0.65;
+    /// <summary>A boss's fill: this much for each 1% of its health she takes (the harness's --fillboss).</summary>
+    public static double FillBoss = 1.8;
+    /// <summary>Harness only (--fillcrowd): the kill and champion fills scaled, to measure what they give a boss fight.</summary>
+    public static double FillCrowdMul = 1;
+    /// <summary>Harness (--bossonly 1): while a boss is in the fight (struck in the last 5 s), kills and champions don't fill the Flare.</summary>
+    public static bool BossOnlyFill;
+    double bossHitAt = -99;
     bool answeredTwice;
 
     public int FlareCharges => Lamp("flare.banked") ? (int)Lamps.Full("flare.banked", "charges", 2) : 1;
@@ -173,8 +180,9 @@ public sealed partial class Battle
     {
         if (Flare == null) return;
         if (e.Boss) return;
-        if (e.Elite) { FillFlare(Draw(0, FillChampion, FillChampionRate, FillChampion), "champion"); return; }
-        FillFlare(Draw(1, FillKill, FillKillRate, FillKillRate), "kills");
+        if (BossOnlyFill && Time - bossHitAt < 5) return;
+        if (e.Elite) { FillFlare(FillCrowdMul * Draw(0, FillChampion, FillChampionRate, FillChampion), "champion"); return; }
+        FillFlare(FillCrowdMul * Draw(1, FillKill, FillKillRate, FillKillRate), "kills");
         if (byBleed && Lamp("flare.bleed_kill")) FillFlare(Draw(2, Lamps.Full("flare.bleed_kill", "fill", 0.2), FillKillRate, FillKillRate), "bleed");
     }
 

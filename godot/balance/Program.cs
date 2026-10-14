@@ -61,6 +61,13 @@ foreach (var kv in opt.List("storyhp", "").Where(x => x.Contains('=')))
 ArenaSim.Director = opt.Get("charges", "1") != "0";
 StorySim.Flare = opt.Get("flare", "");
 SurvivorUnchained.Play.Bosses.ArenaBoss.Floors = double.Parse(opt.Get("floors", "1"), System.Globalization.CultureInfo.InvariantCulture);
+// --flareglow G, --fillboss F, --flaregrow G: the Flare's growth per lamp lit, a boss's fill per 1% taken, its growth per level.
+if (opt.Has("flareglow")) SurvivorUnchained.Sim.Battle.FlareLampGlow = double.Parse(opt.Get("flareglow", "0.02"), System.Globalization.CultureInfo.InvariantCulture);
+if (opt.Has("fillcrowd")) SurvivorUnchained.Sim.Battle.FillCrowdMul = double.Parse(opt.Get("fillcrowd", "1"), System.Globalization.CultureInfo.InvariantCulture);
+if (opt.Has("bossonly")) SurvivorUnchained.Sim.Battle.BossOnlyFill = opt.Get("bossonly", "0") == "1";
+if (opt.Has("bosstiers")) SurvivorUnchained.Play.Bosses.ArenaBoss.TierMul = opt.Get("bosstiers", "").Split(',').Select(x => double.Parse(x, System.Globalization.CultureInfo.InvariantCulture)).ToArray();
+if (opt.Has("fillboss")) SurvivorUnchained.Sim.Battle.FillBoss = double.Parse(opt.Get("fillboss", "1.8"), System.Globalization.CultureInfo.InvariantCulture);
+if (opt.Has("flaregrow")) SurvivorUnchained.Content.Lamps.FlareGrowth = double.Parse(opt.Get("flaregrow", "0.08"), System.Globalization.CultureInfo.InvariantCulture);
 // --flarecut MAX[,RATE]: the most a Flare cuts an arena phase floor, and how fast (0 = floors as before).
 if (opt.Has("flarecut"))
 {
