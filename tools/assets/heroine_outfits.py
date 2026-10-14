@@ -718,7 +718,7 @@ if HAND_PIVOTS:
 # toward her wrist so her old drop's edge rows reach the new knuckle; a soft rise of BH_A
 # BH_BACK behind each pivot (her knuckle). Weighted to her top surface, nothing on her palm
 # side, her thin webs kept (BH_WEB), eased in by distance from all skin that stays (BH_EASE_R).
-BACKHAND = os.environ.get("BACKHAND", "1") == "1"   # (s24: on for the body build; unjudged)
+BACKHAND = os.environ.get("BACKHAND", "0") == "1"   # (off: judge bh1 FAILED it 14 Oct, hard facets at the ease-in on a ~7 mm mesh; detail belongs in the normal map)
 _bhf = lambda k, d: float(os.environ.get(k, d))
 BH_A = _bhf("BH_A", "0.0025")
 BH_SIG = (_bhf("BH_SIG_T", "0.0045"), _bhf("BH_SIG_U", "0.0045"))
