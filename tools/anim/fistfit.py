@@ -148,6 +148,19 @@ def set_hand(spec):
             dip += r2 * np.linalg.norm(a - (p1 + d)) - np.linalg.norm(b - a)
         if dip:
             moves[f"{fn}_03_r"] = e * dip
+    th = spec.get("thumb")
+    if th:
+        # "thumb" {"cmc": [x, y, z] mm (a move), "mcp": mm, "ip": mm}: the CMC moved as given; the MCP put at "mcp" mm
+        # from the CMC along her metacarpal's line, the IP at "ip" mm from the MCP along her proximal phalanx's line
+        # (the bones' directions kept); a joint not given stays where it is. Skin handed over by _model_thumb.
+        c0, m0, i0 = (loc(f"thumb_0{k}_r") for k in (1, 2, 3))
+        c1 = c0 + np.asarray(th.get("cmc", (0.0, 0.0, 0.0)), float) / 1000
+        e1 = (m0 - c0) / np.linalg.norm(m0 - c0); e2 = (i0 - m0) / np.linalg.norm(i0 - m0)
+        m1 = c1 + e1 * th["mcp"] / 1000 if "mcp" in th else m0
+        i1 = m1 + e2 * th["ip"] / 1000 if "ip" in th else i0
+        for k, p0, p1 in ((1, c0, c1), (2, m0, m1), (3, i0, i1)):
+            if not np.allclose(p0, p1):
+                moves[f"thumb_0{k}_r"] = p1 - p0
     for n, v in spec.get("moves", {}).items():
         moves[n] = moves.get(n, np.zeros(3)) + np.asarray(v, float) / 1000
     new = gpos.copy()
@@ -227,12 +240,52 @@ def _model_dips(b):
         b.W[sel] /= b.W[sel].sum(1, keepdims=True)
 
 
+THUMB_RAMP = {"thumb_01_r": 10.0, "thumb_02_r": 10.0, "thumb_03_r": 5.0}   # mm either side of a moved thumb pivot
+
+
+def _model_thumb(b):
+    """A thumb joint moved along its chain: the skin between its old and new pivot handed over between the bone before
+    it (hand_r for the CMC) and the bone after it, a smoothstep ramped THUMB_RAMP mm either side of the new pivot (t
+    along the chain there). Moved toward the wrist: the skin past the new pivot goes to the bone after it (never less
+    on it than it had); toward the tip: the skin short of it goes to the bone before it (never more on the bone after).
+    The CMC's hand-over only re-shares skin already weighted to the thumb's first bone."""
+    old, new = HAND["old"], HAND["new"]
+    for k in (1, 2, 3):
+        n = f"thumb_0{k}_r"; jc = I[n]; jp = sk.parent[jc]
+        d = new[jc] - old[jc]
+        if np.linalg.norm(d) < 1e-6:
+            continue
+        nxt = I["thumb_04_leaf_r" if k == 3 else f"thumb_0{k + 1}_r"]
+        e = new[nxt] - new[jp]; e /= np.linalg.norm(e)
+        back = float(d @ e) < 0
+        has = lambda j: ((b.J == j) * b.W).sum(1) > 0
+        sel = np.nonzero(has(jc) | has(jp))[0] if k > 1 else np.nonzero(has(jc))[0]
+        R = THUMB_RAMP[n]
+        t = (b.P[sel] - new[jc]) @ e * 1000
+        s = np.clip((t + R) / (2 * R), 0, 1); want = s * s * (3 - 2 * s)
+        for v, wc in zip(sel, want):
+            kc = np.nonzero(b.J[v] == jc)[0]; kp = np.nonzero(b.J[v] == jp)[0]
+            if (not len(kc) and not len(kp)) or (back and (wc <= 0 or not len(kp))) or (not back and (wc >= 1 or not len(kc))):
+                continue
+            if not len(kc) or not len(kp):
+                keep = int((kc if len(kc) else kp)[0])
+                order = [q for q in np.argsort(b.W[v]) if q != keep]
+                q = int(order[0]); b.W[v, q] = 0.0; b.J[v, q] = jp if len(kc) else jc
+                kc = np.nonzero(b.J[v] == jc)[0]; kp = np.nonzero(b.J[v] == jp)[0]
+            kc, kp = int(kc[0]), int(kp[0])
+            tot = b.W[v, kc] + b.W[v, kp]
+            nc = max(b.W[v, kc], tot * wc) if back else min(b.W[v, kc], tot * wc)
+            b.W[v, kc], b.W[v, kp] = nc, tot - nc
+        b.W[sel] /= b.W[sel].sum(1, keepdims=True)
+
+
 def body(outfit):
     if outfit not in _bodies:
         b = skin.Body.heroine(outfit=outfit, jiggle=False)
         if HAND:
             _model_body(b)
             _model_dips(b)
+            _model_thumb(b)
         Wst = np.stack([(b.W * (b.J == I[n])).sum(1) for n in HB], 1)
         sel = np.nonzero(Wst.max(1) > 0.5)[0]
         b._fist = dict(sel=sel, bone=np.array([HB[i] for i in Wst.argmax(1)[sel]]), kind=b.kind[sel])
