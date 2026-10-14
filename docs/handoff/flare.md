@@ -2,60 +2,61 @@
 
 Read `docs/team/README.md`, `RESUME.md` (top block), `OWNER_NOTES.md` (13 October), then this page, then
 `docs/design/FLARE_LOOK.md` §0, §1.6, §4.1, §4.4. Branch `flare-1`, worktree `.claude/worktrees/agent-af0782e2e3f51bc1f`.
-Numbers are classes' (paused; send anything for classes through the coordinator). Her clip is animation's (ae15fd13a044b8303).
+Numbers are classes' (paused; send anything for classes through the coordinator). Her clip is animation's.
 
 ## The owner's words
 "super epic flare animations. like beyond anything we've done yet"; "an 'oh shit' button ... a 'clear the whole room'
 button"; "pushing a flare should always do something visible"; "flares should be unique"; "sounds that feel awesome".
 
-## State (successor 4 stopped here; 887 tests green; NOTHING passed a judge, no merge request)
-- **HEAD is solver 3's WIP (86ee84d9) and it is BROKEN:** after the last word the arena night frame goes flat bright
-  salmon inside the reach (3.1-4.1x of ready, 142 frames over 1.5x). The Verge is fine. Sheet: `s5_final.jpg`.
-- **Bisected (lq.sh, arena night):**
-  - Everything up to 3bc0cdfe, plus solver 3's C#, holds §1.6: peak 1.58x, 3 frames over (s6b). So the C# side
-    (FlareFx.Boom.cs: pillar, cap, haze, jets) is not the cause.
-  - Solver 3's `flare_world.gdshaderinc` alone brings the salmon back (s6c).
-  - Reverting only `flare_boom()` to 3bc0cdfe doesn't fix it (s6d).
-  - The cause is in the other hunks of `git diff 3bc0cdfe 86ee84d9 -- godot/shaders/flare_world.gdshaderinc`.
-    Checked by reading: `flare_boom_light`, `flare_boom_flash`, the char/ember block in `flare_ground`, the web line
-    (damping the web didn't change it), `flare_prop`, and `flare_crack` (`flare_crack` needs the new vat; it was off in s6c).
-  - Next: swap one function at a time with `bis.py "<function head>"` (it puts 3bc0cdfe's version of that function back
-    in place), run `lq.sh TAG`, and look at one c2 crop. A flat value unchanged by albedo edits smells of inf/NaN
-    emission or a lit surface with no `bo.z` (check `flare_boom_behind` users, and `flare_blade`: arena leaves cover
-    the whole ground).
-- **Judge 2 (s4, shot at fdbdd9cc; sheet `s4_judge.jpg`): NOT ready.** The fixes worked: the statues stand (CrowdView
-  skipped Flare kills marked Burst), drops are held until 1 s after each statue breaks, the ring is a thin line with no
-  flecks (they were arena leaves), and §1.6 holds (1.59x, 3 frames over). It FAILED 11 (the BOOM is a soft flash plus rods,
-  then a bead chain of puffs) and 21; 7 and 10 are WEAK (a gummy pale-blue carpet, square glints, the ring bursting looks like
-  confetti); the Return goes near-black. Its fix list, in order: BOOM pillar + cap + jets + heat ring; ring tongues, wobble,
-  red edge; statues crack then burst with orange-faced shards; char dark warm brown with amber web, the dip back to 0.75x by
-  +0.5 s; frost glaze 1.5-2x ground, star glints, cyan thin edges, per-body variety; LEVEL popup held. Solver 3 built all
-  the BOOM items (86ee84d9). I built the frost items and the popup hold (018e0fad, 3bc0cdfe). None of it has been judged.
-- **Done and unjudged since judge 2:** glaze per-region hue, rime, narrower rim, 2-4 px twinkling glints (still reads pale at
-  Verge night, s4g); `FlareFx.HoldsFrame` holds the Journey's announcements (Game.Announce) and the level pillar
-  (BattleFx.LevelLight) until 1.2 s after the last word.
-- **Classes' events wired (052f059d):** "aim" drops an ember that lands on its blow's frame at the Blow's TX/TZ
-  (`Drop`/`WhereFalls`/`DoomUnder`); "shove" gets a skid of churned frost, and a boss rocks in a ring of it (`Shove`).
-- **Her clip:** not wired anywhere in the view yet. Animation's round 8 is in work: contact f20, blend_out 46/30, run from its
-  f10 over a 0.3 s fade; mage_staff.glb gets an anchor_grip (the staff moves about 3 cm). Wire it when they send the packed clip.
+## Paused here (successor 5, 13 October); next:
+- **Salmon fixed (6b747aad):** arena_ground's `uniform vec3 ember` won over flare_ground's local `ember`. Locals in
+  flare_world.gdshaderinc take an `fl_` prefix when in doubt (it is included by arena_ground, terrain, vat, grass, kit...).
+- **The BOOM is now a simulated burst** (tools/fxsim): `boom_sim.py` (Blender 4.5 Mantaflow, TAKES presets, `--set`,
+  `--render-only`), `run.sh NAME args` (takes the blender turn, bake ~15-20 min, render ~3), `pack.py atlas|preview|frames`
+  (EXR, tone-mapped hue-kept; needs `pip install OpenEXR`), `calib.py` (Mantaflow is ~30x slow at this scale: time scale 4).
+  Atlas `godot/art/fx/flare/burns_boom.png/.json` (7x7 x 384, 48 frames, 24 fps). The game plays it on one camera-facing
+  quad (`flare_fb.gdshader`, `FlareFx.Boom.cs`: SimSize 16, SimLook 4.5, SimRate 1.4, SimFirst 6, fire_tint, faded by
+  +0.8 s); when the atlas is there the mesh pillar, cap, jets and Column particles are off (fallback only).
+- **Judge 3 (f6, sheets `scratchpad f5/f6_boom.jpg`, `59a43b82 scratchpad flare/f6_judge.jpg`): NOT ready.**
+  BOOM WEAK (was FAIL: real fireball, scale "whoa", but lit orange smoke, salmon, see-through, no soot, no tongues;
+  starfish birth with grey squares), ring WEAK (best thing: no tongues, no red edge, coals in a polka grid), shards FAIL
+  (dark glass invisible on char; orange "straw" carpet), frost PASS, Return FAIL (dead black frame 0.56-0.60x; cotton-ball
+  steam; no melt glints), day WEAK, §1.6 FAIL narrowly (Verge night 2.5 swings/s), bar FAIL.
+- **Done after judge 3 (0c47329a):** steam a third, thin, warm roots, none within 2 m of her; thrown shards' hot rims
+  ~0.3 s; web under char halved and sunk by 2 s; pre-BOOM dip 0.9; BOOM light 15; sim fade by +0.8 s. Measured f7:
+  arena peak 1.79x, 4 frames over, 1.5 swings/s; Verge night 1.61x, 3 over, 1.0/s. BUT the Return's floor fell to
+  0.29x arena / 0.37x Verge night: the steam had been lighting it. Its own light (judge fix 4) is the next build.
+- **Solver 2 (sim shading) was running at handoff:** dark opaque soot, blackbody flame, a round birth with no starfish
+  so SimFirst can go to 0, no tail speckle. See "Solver 2" below for its result.
 
-## Next, in order
-1. Find the salmon (above), then lq.sh: at most 4 frames over 1.5x.
-2. Shoot `batch8.sh TAG` and `jsheet.sh TAG`, add b4/b5 and +0.1 s frames, then a fresh judge 3 (judge 2's checklist and
-   measurements: Verge day §1.6, post-BOOM floor per row, glaze/ground ratio at b6, BOOM distance from her).
-3. Then embers, impacts, the Return's steam (lavender cotton at night), day colour, the clip, the owner's 60 fps captures with
-   sound plus the BOOM's sound alone.
+## Next, in order (judge 3's fixes; full text in its verdict, summarised)
+1. Integrate solver 2's take (SimSize/SimLook/SimFirst, drop fire_tint if it says so), shoot, look once.
+2. BOOM birth: white-hot core ~1-1.5 m at once, full size in 4-6 frames; spend 1-1.5% of pixels over the knee for 3
+   frames; whole-frame peak <= 1.6x (now 1.79x); draw the ring's first 0.1 s over the fireball's base.
+3. The Return's light: web amber 0-2 s then dark by 4 s; meltwater glints (sharp, twinkling, ~1/m², at the frost's
+   receding edge); char >= 70% of the ground around; arena-night floor >= 0.70x through +3 s from these lights.
+4. Shards: 3-6 faceted plates per statue, 15-40 cm, cold blue-grey glass body with a flickering glint; landed ones melt
+   to water glints over 1-1.5 s. Find what the remaining "sticks" are (hide the web for one +0.6 s frame).
+5. Ring: flame tongues 0.5-1.2 m tall every ~0.6 m, leaning out; a red edge 2-3 px outside the line; coals jittered
+   ±0.5 m, sized 0.5-2x, a third out early; statues within 1 m crack 2-3 frames before the line.
+6. Day Return: char a clear disc 25-35% darker than the ground with a warm rim; steam warm-white; no grid of stumps.
+7. Hold tips (e.g. "THE MAP") from the press to +3 s.
+8. Then judge 4 with: frames 112-122 one by one (arena night, 60 fps), a 400x400 crop of 4 frames at the ring's front,
+   +3 s and +6 s frames (an, sd), in-reach vs outside luminance at +1/+3 s, a boss run (`--boss`), and the sound.
+9. Then captures for the owner: `scratchpad f5/cap.sh TAG ZONE TIME COUNT` (60 fps frames + `--wav`, muxed by
+   `tools/fxsim/cap.py`; tape starts at game 0, sync measured: BOOM onset 7.850 s audio vs frame 7.85-7.88 s).
 
-## Tools (back-ups in `survivorsunchained_inputs/scratch_59a43b82/flare/`)
-`quick.sh TAG an sn sd` (clean rows, takes and gives the turn), `lq.sh TAG` (arena row + 60 fps + §1.6, deletes the frames),
-`batch8.sh TAG` (judge rows + real rows + --wav + 60 fps), `jsheet.sh TAG` (judge sheet), `sheet.py`, `lum60.py`, `bis.py`.
-Build C#: `dotnet build godot/SurvivorUnchained.csproj -v q`. Shaders need no build.
+## Tools
+Old scratch (still on disk): `59a43b82.../scratchpad/flare/` (`lq.sh TAG`, `batch8.sh TAG`, `jsheet.sh TAG`, `sheet.py`,
+`lum60.py`, `meas.py TAG`, `shot.sh`). Mine: `1be2d2a9.../scratchpad/f5/` (`q.sh TAG an` = import + clean row + a BOOM
+sequence at 20 fps from 7.75 s; `lqs.sh TAG` = Verge night lq; `cap.sh`; `onset.py WAV t0 t1`; `bisect.sh`).
+Back them up to `survivorsunchained_inputs/scratch_1be2d2a9/flare/` before the scratch is cleared.
+Build C#: `dotnet build godot/SurvivorUnchained.csproj -v q`. Tests: `dotnet test godot/tests/Tests.csproj` (887 green).
 
 ## Gotchas
-- **NEVER `git stash`, `git reset --hard` or `git checkout .` here.** The reset rewrites `godot/assets` (a symlink kept as a
-  file, assume-unchanged), and on Windows removing the junction emptied the worktree's own `public/assets` (13 Oct: 858
-  tracked + 811 untracked env files; restored from git + copied from main; junction re-made to THIS worktree's
-  public/assets). Checking out named files (`git checkout -- <file>`) is safe.
-- NEVER `python -` (it hangs). Wait on a background job by its exact output file.
-- Solvers ran out at about 200k after one round each. Give them one problem and a working pipeline.
-- The Flare clock runs at 0.1 during hitstop; the column/particles move in real time.
+- **NEVER `git stash`, `git reset --hard` or `git checkout .` here** (godot/assets junction; see README DANGER).
+- NEVER `python -` (it hangs, even with a heredoc). Write a .py file.
+- Mantaflow: setting any domain property after `cache_directory` deletes the bake (it is set last now).
+- pack.py once handed PIL float64 planes as "F" and wrote noise into every resized cell: keep the float32 cast.
+- The Flare clock runs at 0.1 during hitstop; the column/particles and the sim quad run on real time.
+- Solvers run out at about 200-220k after one round. Give them one problem and a working pipeline.
