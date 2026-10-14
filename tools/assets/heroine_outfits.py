@@ -328,10 +328,13 @@ if os.environ.get("MEND_PRECUT", "0") == "1":
 # her height (227 mm -> 205); clips key her fingers' rotations only, so every
 # clip still plays, and grips re-fit. Her forearm is untouched (it eases in by
 # her hand's own weights at her wrist).)
-HAND_SLIM = float(os.environ.get("HAND_SLIM", "0.85"))
-HAND_TAPER = float(os.environ.get("HAND_TAPER", "0.08"))
-HAND_PALM = float(os.environ.get("HAND_PALM", "0.96"))
-HAND_SCALE = float(os.environ.get("HAND_SCALE", "0.90"))
+# (the owner, on 0.90: "the hands went slightly too small": 0.93, about 211 mm,
+# 11.3% of her height, slimmed a touch softer, the tips not pointed)
+HAND_SLIM = float(os.environ.get("HAND_SLIM", "0.88"))
+HAND_TAPER = float(os.environ.get("HAND_TAPER", "0.03"))
+HAND_PALM = float(os.environ.get("HAND_PALM", "0.97"))
+HAND_SCALE = float(os.environ.get("HAND_SCALE", "0.93"))
+HEAD_SCALE = float(os.environ.get("HEAD_SCALE", "1.07"))   # (heroine_headscale.py: the last step of her export)
 # (s21, the owner 14 Oct, the audit: her forearm ran 215 mm elbow to wrist,
 # 0.116 of her height (a woman's 0.146): FOREARM_ADD lengthens it, her hand
 # carried out along it and her forearm's skin stretched evenly from her elbow
@@ -1366,6 +1369,9 @@ SPEC = {
     "lace": ("rough_linen", (1.652, 1.379, 1.12), 235, 14, 0.0, 0.5, 0.85),
     "darkpurple": ("Leather026", (0.55, 0.2, 0.9), 26, 3, 0.0, 0.35),
     "satin": ("rough_linen", (1.652, 1.379, 1.12), 235, 10, 0.0, 0.3),
+    # (s21, her gloves: the stockings' bands' white, a finer weave and a softer sheen over a forearm's length)
+    "glovesatin": ("rough_linen", (1.652, 1.379, 1.12), 228, 40, 0.0, 0.45),
+    "gloveblack": ("rough_linen", (0.3, 0.3, 0.34), 24, 40, 0.0, 0.4),
     "amethyst": ("rough_linen", (0.62, 0.18, 0.64), 100, 10, 0.0, 0.12),   # (the clasp's violet stone: deep and glossy)
     "greenleather": ("Leather026", (0.42, 0.85, 0.45), 52, 3, 0.0, None),
     "bronze": ("Brushed", (0.72, 0.58, 0.46), 95, 3, 1.0, 0.42),  # (our own brushing, along u: tools/assets/brushed_metal.py)
@@ -3417,7 +3423,7 @@ def pinholes_filled(name, pos, wt, tris, most=0.03):
 RIGID_UV = {}   # (a plate's name: (centre, arm axis, unrolled round the arm?))
 ONE_ISLAND = set()   # (sheets laid out whole, one island with no seams)
 SHEER_UNTANGLE = {k_ for k_ in os.environ.get("SHEER_UNTANGLE", "arcanist.stocking_l,arcanist.stocking_r").split(",") if k_}   # (s20, see piece)
-ARC_HANDS = os.environ.get("ARC_HANDS", "glove")   # (s20: set again in arcanist(), see there)
+ARC_HANDS = os.environ.get("ARC_HANDS", "fingerless")   # (s20: set again in arcanist(), see there)
 FOLD_SAFE = {"arcanist.glove_l", "arcanist.glove_r"}   # (welded only along their own edges: weld(joined))
 
 
@@ -5431,8 +5437,8 @@ def arcanist():
     # a fingerless glove in ARC_GLOVE_MAT ("satin": the white of her stockings'
     # bands), second-skin: FL_LIFT off her, FL_THICK thick)
     global ARC_HANDS
-    ARC_HANDS = os.environ.get("ARC_HANDS", "glove")
-    ARC_GLOVE_MAT = os.environ.get("ARC_GLOVE_MAT", "blackleather")
+    ARC_HANDS = os.environ.get("ARC_HANDS", "fingerless")
+    ARC_GLOVE_MAT = os.environ.get("ARC_GLOVE_MAT", "glovesatin")
     FL_LIFT = float(os.environ.get("FL_LIFT", "0.0005"))
     FL_THICK = float(os.environ.get("FL_THICK", "0.0006"))
     FL_CUT = float(os.environ.get("FL_CUT", "0.012"))
@@ -5566,6 +5572,19 @@ def arcanist():
             wf = np.clip(wsum(*bs), 0, 1)
             f_ = np.minimum(f_, (1 - wf) * 0.05 + wf * (cut - s))
         return f_
+
+    # (s21: the elbow glove's top cut exactly, square across her forearm, ARC_GLOVE_ELBOW below her
+    # elbow joint (her skin's field a little wider there, so this line decides), and hemmed: a
+    # GLOVE_HEM binding in the glove's own cloth round every edge; GLOVE_SOFTEN/GLOVE_SMOOTH: the
+    # second skin eased over her skin's facets)
+    GLOVE_HEM = float(os.environ.get("GLOVE_HEM", "0.0035"))
+    GLOVE_SOFTEN = int(os.environ.get("GLOVE_SOFTEN", "24"))
+    GLOVE_SMOOTH = int(os.environ.get("GLOVE_SMOOTH", "6"))
+    def glove_top_cut(sd):
+        e_, w_ = ARM[sd][1], ARM[sd][2]
+        ax_ = (w_ - e_) / np.linalg.norm(w_ - e_)
+        off_ = float(os.environ.get("ARC_GLOVE_ELBOW", "0.015"))
+        return lambda q: (q - e_) @ ax_ - off_
 
     def glove_top_k(pos, sd):
         k = np.clip(1 - (ARM_S[sd][skin_kd.query(pos)[1]] - (WRIST_S - GLOVE_TOP)) / 0.015, 0, 1)
@@ -5726,7 +5745,9 @@ def arcanist():
             *(piece(f"arcanist.glove_{sd}", limb(sd, WRIST_S - GLOVE_TOP, 9.9, legs=False), "blackleather", lift=0.0012, thick=0.001, bevel=0.0004, trim=gold(0.008), edge=30, soften=12,
                    stiff=[lambda q, t_, sd=sd: glove_shape(q, t_, sd)], clear=lambda q, sd=sd: 0.0012 - GLOVE_SINK * glove_top_k(q, sd) - (0.0012 - GLOVE_TIP_CLEAR) * glove_tip_k(q, sd))
               if ARC_HANDS == "glove" else
-              piece(f"arcanist.glove_{sd}", AND(limb(sd, WRIST_S - GLOVE_TOP, 9.9, legs=False), knuckle_cut(sd)), ARC_GLOVE_MAT, lift=FL_LIFT, thick=FL_THICK, bevel=0.0003, edge=30, soften=8,
+              piece(f"arcanist.glove_{sd}", AND(limb(sd, WRIST_S - GLOVE_TOP - (0.02 if ARC_CAPS else 0.0), 9.9, legs=False), knuckle_cut(sd)), ARC_GLOVE_MAT, lift=FL_LIFT, thick=FL_THICK, bevel=0.0003, edge=30,
+                    soften=GLOVE_SOFTEN, smooth=GLOVE_SMOOTH, cut=glove_top_cut(sd) if ARC_CAPS else None,
+                    trim=(ARC_GLOVE_MAT, GLOVE_HEM, 0.0003, 0.0008) if GLOVE_HEM > 0 else None,
                     clear=lambda q, sd=sd: FL_LIFT - GLOVE_SINK * glove_top_k(q, sd))
               if ARC_HANDS == "fingerless" else []),
             # (her leg by where it is, not by its weights: her inner thigh is
@@ -7084,7 +7105,7 @@ OUTFITS = {"warden": warden, "arcanist": arcanist, "ranger": ranger, "reaver": r
 # satin: clean). Fur and sheer stockings have shaders of their own.
 KIND = {"steel": "metal", "darksteel": "metal", "iron": "metal", "rivetbronze": "metal", "gold": "metal", "claspgold": "metal", "bronze": "metal", "rust": "metal",
         "velvet": "cloth", "arcvelvet": "cloth", "linen": "cloth", "lace": "cloth", "ink": "cloth",
-        "browncloth": "twill", "thread": "gloss", "satin": "gloss", "amethyst": "gloss", "bone": "leather", "fur": "fur", "down": "fur", "stocking": "sheer"}
+        "browncloth": "twill", "thread": "gloss", "satin": "gloss", "glovesatin": "gloss", "gloveblack": "gloss", "amethyst": "gloss", "bone": "leather", "fur": "fur", "down": "fur", "stocking": "sheer"}
 
 
 # Decals laid on her skin, drawn this far toward the camera so they never
@@ -7532,6 +7553,10 @@ if BODY_OUT:
     # (and her side teeth in the cheeks' shade: heroine_teethshade.py)
     import heroine_teethshade
     heroine_teethshade.shade(BODY_OUT)
+    # (her head +7%, the owner 14 Oct: the Head joint's rest scaled, her meshes as they were, so it
+    # may run before or after any step that measures them (heroine_mouth.seat); keep it last)
+    import heroine_headscale
+    heroine_headscale.scale(BODY_OUT, HEAD_SCALE)
     print("BODY", BODY_OUT)
 
 # Nothing else rides along (the scene may hold strays).
