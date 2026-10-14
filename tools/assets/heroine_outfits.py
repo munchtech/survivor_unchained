@@ -2722,6 +2722,7 @@ def piece(name, field, mkey, lift=0.003, thick=0.003, smooth=0, bevel=0.0012, tr
         return []
     pos, at, tris = weld(pos, at, tris, joined=name in FOLD_SAFE)
     dump(name, "1clip", pos, tris, at[:, -2])
+    skin_at = pos.copy()   # (her skin as cut, for SHEER_UNTANGLE)
     gap_at, at = at[:, -1], at[:, :-1]
     nor = at[:, :3] / (np.linalg.norm(at[:, :3], axis=1)[:, None] + 1e-12)
     if crotch is not None:
@@ -2825,6 +2826,18 @@ def piece(name, field, mkey, lift=0.003, thick=0.003, smooth=0, bevel=0.0012, tr
     if rim_clean:
         # (`rim_clean`: slivers and folds at its edge dropped, see rim_cleaned)
         pos, at, tris = rim_cleaned(name, pos, at, tris)
+    if name in SHEER_UNTANGLE and len(skin_at) == len(pos):
+        # (s20: the stocking had 126 triangles turned over against her skin,
+        # 2-3 cm folds 3-11 cm in from its edges on her inner front thighs:
+        # sheer, its alpha rises where it faces away, so each read as a white
+        # or lavender streak, animation judge 5. Untangled against her skin
+        # as cut, then held off her again.)
+        dump(name, "5folded", pos, tris, at[:, -1])
+        pos = sheet_untangled(name, pos, skin_at, tris, np.ones(len(pos), bool))
+        pos = clear_of_skin(pos, lift, None)
+        n_ = np.cross(pos[tris[:, 1]] - pos[tris[:, 0]], pos[tris[:, 2]] - pos[tris[:, 0]])
+        n0_ = np.cross(skin_at[tris[:, 1]] - skin_at[tris[:, 0]], skin_at[tris[:, 2]] - skin_at[tris[:, 0]])
+        print("SHEER_UNTANGLE %s: %d turned over after the clearance" % (name, int(((n_ * n0_).sum(1) <= 0).sum())))
     SHEET[name] = (pos.copy(), tris.copy(), at[:, 3:3 + NB].copy(), thick)
     lining = edge_lining(name, pos, at, tris, line[0], line[1]) if line is not None else None
     made = [finish(name, pos, at[:, 3:3 + NB], tris, mkey, thick, bevel, budget or (8000 if dome else 3000))] + beads
@@ -3227,6 +3240,7 @@ def pinholes_filled(name, pos, wt, tris, most=0.03):
 
 RIGID_UV = {}   # (a plate's name: (centre, arm axis, unrolled round the arm?))
 ONE_ISLAND = set()   # (sheets laid out whole, one island with no seams)
+SHEER_UNTANGLE = {k_ for k_ in os.environ.get("SHEER_UNTANGLE", "arcanist.stocking_l,arcanist.stocking_r").split(",") if k_}   # (s20, see piece)
 FOLD_SAFE = {"arcanist.glove_l", "arcanist.glove_r"}   # (welded only along their own edges: weld(joined))
 
 
