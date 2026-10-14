@@ -983,9 +983,9 @@ FINGER_PRESETS = {
 # y 18, z 16 mm: 13 mm before and 7 mm in from her thumb's base pivot; +-1.5 deg for the spot 6 mm either way). The
 # thumb has its own (Rig._bend_axis). On her hand as built (14 October, animation solver): the relaxed hand moves
 # under 0.3 mm, WRAP["staff"]'s pads under 0.6 and its fingers close up (outer bones 3.3/2.9/6.8 mm apart, were
-# 6.0/6.8/9.5). Her knuckles moved back to 0.46 L (fistfit --hand '{"mcp": 0.46}') derive -2.5, 1.0, 5.5, 10.4:
-# re-derive after the body build (fistfit.tilt_for()).
-FLEX_TILT = {"index": -2.2, "middle": 0.9, "ring": 4.9, "pinky": 9.0}
+# 6.0/6.8/9.5). Re-derived on the body build F0 (15 October, animation 30: hand pivots mcp 0.48 / p2 0.65, the thumb's
+# base pivot unchanged at y 31.4, z 23.0, so the spot stands): fistfit.tilt_for() on its game-skeleton dump.
+FLEX_TILT = {"index": -2.5, "middle": 1.0, "ring": 5.4, "pinky": 10.2}
 
 
 # A fist fitted to a grip (WRAP, by the clip's weapon: wrap_of): "grip" in that hand becomes this, each finger's three
