@@ -40,7 +40,8 @@ def add_bones(arm):
     lower bone's frame turned about its line onto the joint's hinge."""
     have = {b.name for b in arm.data.bones}
     want = [(h, n) for h in hp.SPEC["helpers"] for n in hp.each(h["name"])]
-    if all(n in have for _, n in want):
+    panels = [p for p in hp.SPEC.get("panels", []) if p["parent"] in have]
+    if all(n in have for _, n in want) and all(p["name"] in have for p in panels):
         return 0
     _active(arm)
     bpy.ops.object.mode_set(mode="EDIT")
@@ -72,6 +73,27 @@ def add_bones(arm):
         b.parent = parent
         b.use_connect = False
         b.use_deform = True
+        made += 1
+    # Panel bones (SPEC "panels"): at the parent's head + pivot (her rest
+    # axes, game's +Y up / +Z front: Blender's +Z up / -Y front), pointing
+    # down the panel, its +Z her front and +X her right (the game turns it
+    # about that X: HerJoints, helpers.drive_panels).
+    for p in panels:
+        if p["name"] in eb:
+            continue
+        parent = eb[p["parent"]]
+        gx, gy, gz = p["pivot"]
+        h = parent.head + Vector((gx, -gz, gy))
+        m = Matrix(((-1.0, 0.0, 0.0, h.x), (0.0, 0.0, -1.0, h.y), (0.0, -1.0, 0.0, h.z), (0.0, 0.0, 0.0, 1.0)))
+        b = eb.new(p["name"])
+        b.head = (0.0, 0.0, 0.0)
+        b.tail = (0.0, p["length"], 0.0)
+        b.matrix = m
+        b.length = p["length"]
+        b.parent = parent
+        b.use_connect = False
+        b.use_deform = True
+        print(f"RIG panel {p['name']}: head {tuple(round(v, 4) for v in b.head)} tail {tuple(round(v, 4) for v in b.tail)}")
         made += 1
     bpy.ops.object.mode_set(mode="OBJECT")
     return made
